@@ -1139,13 +1139,17 @@ impl WxmlRenderer {
         
         if !Self::is_leaf_component(&node.tag) {
             let is_scroll_view = node.tag == "scroll-view";
+            let has_overflow_hidden = node.style.overflow == super::components::Overflow::Hidden;
             let mut child_offset_y = 0.0;
             let scroll_position: f32;
             
-            if is_scroll_view {
+            // 对于 overflow: hidden 的容器，应用裁剪
+            if has_overflow_hidden || is_scroll_view {
                 canvas.save();
                 canvas.clip_rect(GeoRect::new(x, y, w, h));
-                
+            }
+            
+            if is_scroll_view {
                 scroll_position = if let Some(controller) = interaction.get_scroll_controller(&component_id) {
                     let pos = controller.get_position();
                     child_offset_y = -pos * sf; // 转换为物理像素
@@ -1178,7 +1182,7 @@ impl WxmlRenderer {
                 }
             }
 
-            if is_scroll_view {
+            if has_overflow_hidden || is_scroll_view {
                 canvas.restore();
             }
         }

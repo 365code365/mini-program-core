@@ -36,10 +36,9 @@ impl IconComponent {
         let icon_size = node.get_attr("size").and_then(|s| s.parse::<f32>().ok()).unwrap_or(23.0);
         let icon_color = node.get_attr("color").and_then(|c| parse_color_str(c));
         
-        // 检查 CSS 是否定义了尺寸和颜色
+        // 检查 CSS 是否定义了尺寸
         let has_custom_size = !matches!(ts.size.width, Dimension::Auto) || 
                               !matches!(ts.size.height, Dimension::Auto);
-        let has_custom_color = ns.text_color.is_some();
         
         // 只在 CSS 没有定义尺寸时使用 size 属性
         if !has_custom_size {
@@ -47,8 +46,12 @@ impl IconComponent {
             ts.size = Size { width: length(size), height: length(size) };
         }
         
-        // 根据类型设置默认颜色（微信官方配色）- 只在没有自定义颜色时使用
-        if !has_custom_color {
+        // 颜色优先级：WXML color 属性 > CSS color > 默认颜色
+        if let Some(color) = icon_color {
+            // WXML 属性颜色优先
+            ns.text_color = Some(color);
+        } else if ns.text_color.is_none() {
+            // 没有 CSS 颜色时使用默认颜色
             let default_color = match icon_type {
                 "success" | "success_no_circle" => Color::from_hex(0x09BB07),
                 "info" | "info_circle" => Color::from_hex(0x10AEFF),
@@ -59,9 +62,7 @@ impl IconComponent {
                 "search" => Color::from_hex(0xB2B2B2),
                 _ => Color::from_hex(0x09BB07),
             };
-            
-            // 属性颜色优先于默认颜色
-            ns.text_color = icon_color.or(Some(default_color));
+            ns.text_color = Some(default_color);
         }
         
         ns.font_size = icon_size;
@@ -113,8 +114,19 @@ impl IconComponent {
             "cancel" | "clear" => Self::draw_cancel(canvas, cx, cy, r, color, stroke_width),
             "download" => Self::draw_download(canvas, cx, cy, r, color, stroke_width),
             "search" => Self::draw_search(canvas, cx, cy, r, color, stroke_width),
+            "circle" => Self::draw_circle_icon(canvas, cx, cy, r, color, stroke_width),
             _ => Self::draw_success(canvas, cx, cy, r, color, true, stroke_width),
         }
+    }
+    
+    /// 绘制空心圆圈图标
+    fn draw_circle_icon(canvas: &mut Canvas, cx: f32, cy: f32, r: f32, color: Color, stroke_width: f32) {
+        // 绘制空心圆圈
+        let paint = Paint::new()
+            .with_color(color)
+            .with_style(PaintStyle::Stroke)
+            .with_anti_alias(true);
+        canvas.draw_circle(cx, cy, r - stroke_width, &paint);
     }
     
     fn draw_success(canvas: &mut Canvas, cx: f32, cy: f32, r: f32, color: Color, with_circle: bool, stroke_width: f32) {
