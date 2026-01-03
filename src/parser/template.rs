@@ -242,7 +242,9 @@ impl TemplateEngine {
             return Self::is_truthy(value);
         }
         
-        !expr.is_empty() && expr != "false" && expr != "0"
+        // 如果变量不存在，返回 false
+        // 只有字面量 "true" 才返回 true
+        expr == "true"
     }
     
     /// 获取数据值

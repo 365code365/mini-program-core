@@ -533,6 +533,17 @@ impl WxmlRenderer {
                         ts.overflow.x = taffy::style::Overflow::Visible;
                         ts.overflow.y = taffy::style::Overflow::Visible;
                         
+                        // 检查是否是横向滚动
+                        let scroll_x = node.get_attr("scroll-x")
+                            .map(|s| s == "true" || s == "{{true}}")
+                            .unwrap_or(false);
+                        
+                        if scroll_x {
+                            // 横向滚动：子元素横向排列
+                            ts.flex_direction = FlexDirection::Row;
+                            ts.flex_wrap = FlexWrap::NoWrap;
+                        }
+                        
                         // 为 scroll-view 的子元素设置 flex-shrink: 0，防止被压缩
                         for child in &children {
                             if let Ok(mut style) = ctx.taffy.style(child.taffy_node).cloned() {
@@ -1199,7 +1210,7 @@ impl WxmlRenderer {
             "image" => ImageComponent::draw(node, canvas, self.text_renderer.as_ref(), x, y, w, h, sf),
             "video" => VideoComponent::draw(node, canvas, self.text_renderer.as_ref(), x, y, w, h, sf),
             "canvas" => CanvasComponent::draw(node, canvas, x, y, w, h, sf),
-            "swiper" => SwiperComponent::draw(node, canvas, x, y, w, h, sf),
+            "swiper" => SwiperComponent::draw_with_text(node, canvas, x, y, w, h, sf, self.text_renderer.as_ref()),
             "rich-text" => RichTextComponent::draw(node, canvas, self.text_renderer.as_ref(), x, y, w, h, sf),
             "picker" => PickerComponent::draw(node, canvas, self.text_renderer.as_ref(), x, y, w, h, sf),
             "picker-view" => PickerViewComponent::draw(node, canvas, self.text_renderer.as_ref(), x, y, w, h, sf),

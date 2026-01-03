@@ -55,14 +55,23 @@ struct MiniAppWindow {
 }
 
 impl MiniAppWindow {
-    fn new() -> Result<Self, String> {
+    fn new(app_path: Option<std::path::PathBuf>) -> Result<Self, String> {
+        // 设置小程序路径
+        if let Some(path) = app_path {
+            page_loader::set_app_path(path);
+        }
+        
         let mut app = MiniApp::new(LOGICAL_WIDTH, LOGICAL_HEIGHT)?;
         app.init()?;
         
-        app.load_script(include_str!("../../sample-app/app.js"))?;
+        // 动态加载 app.js
+        let app_js = page_loader::load_app_js();
+        app.load_script(&app_js)?;
         println!("📱 App.js loaded");
         
-        let app_config: AppConfig = serde_json::from_str(include_str!("../../sample-app/app.json"))
+        // 动态加载 app.json
+        let app_json_str = page_loader::load_app_json();
+        let app_config: AppConfig = serde_json::from_str(&app_json_str)
             .map_err(|e| format!("Failed to parse app.json: {}", e))?;
         
         let custom_tabbar = if app_config.tab_bar.as_ref().map(|tb| tb.custom).unwrap_or(false) {
@@ -70,8 +79,14 @@ impl MiniAppWindow {
         } else { None };
         
         let pages = load_all_pages();
+        
+        // 获取首页路径
+        let first_page = app_config.pages.first()
+            .cloned()
+            .unwrap_or_else(|| "pages/index/index".to_string());
+        
         let has_tabbar = app_config.tab_bar.as_ref()
-            .map(|tb| tb.list.iter().any(|item| item.page_path == "pages/index/index"))
+            .map(|tb| tb.list.iter().any(|item| item.page_path == first_page))
             .unwrap_or(false);
         
         let now = Instant::now();
@@ -88,7 +103,7 @@ impl MiniAppWindow {
             toast: None, loading: None, modal: None,
         };
         
-        window.navigate_to("pages/index/index", HashMap::new())?;
+        window.navigate_to(&first_page, HashMap::new())?;
         Ok(window)
     }
     
@@ -524,8 +539,25 @@ impl ApplicationHandler for MiniAppWindow {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("🚀 Mini App Engine\n");
+    
+    // 解析命令行参数
+    let args: Vec<String> = std::env::args().collect();
+    let app_path = if args.len() > 1 {
+        let path = std::path::PathBuf::from(&args[1]);
+        if path.exists() && path.is_dir() {
+            println!("📂 加载小程序: {}", path.display());
+            Some(path)
+        } else {
+            eprintln!("❌ 目录不存在: {}", path.display());
+            return Err(format!("目录不存在: {}", path.display()).into());
+        }
+    } else {
+        println!("📂 使用内置 sample-app");
+        None
+    };
+    
     let event_loop = EventLoop::new()?;
     event_loop.set_control_flow(ControlFlow::Poll);
-    event_loop.run_app(&mut MiniAppWindow::new()?)?;
+    event_loop.run_app(&mut MiniAppWindow::new(app_path)?)?;
     Ok(())
 }
