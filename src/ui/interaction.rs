@@ -173,6 +173,9 @@ pub struct InteractiveElement {
     // Scroll area specific
     pub content_height: f32,
     pub viewport_height: f32,
+    pub content_width: f32,
+    pub viewport_width: f32,
+    pub is_horizontal: bool,
     pub is_fixed: bool,
 }
 
@@ -240,10 +243,18 @@ impl InteractionManager {
     pub fn register_element(&mut self, element: InteractiveElement) {
         if element.interaction_type == InteractionType::ScrollArea {
             if !self.scroll_controllers.contains_key(&element.id) {
-                let controller = ScrollController::new(element.content_height, element.viewport_height);
+                let controller = if element.is_horizontal {
+                    ScrollController::new_horizontal(element.content_width, element.viewport_width)
+                } else {
+                    ScrollController::new(element.content_height, element.viewport_height)
+                };
                 self.scroll_controllers.insert(element.id.clone(), controller);
             } else if let Some(controller) = self.scroll_controllers.get_mut(&element.id) {
-                controller.update_content_height(element.content_height, element.viewport_height);
+                if element.is_horizontal {
+                    controller.update_content_height(element.content_width, element.viewport_width);
+                } else {
+                    controller.update_content_height(element.content_height, element.viewport_height);
+                }
             }
         }
         self.elements.push(element);

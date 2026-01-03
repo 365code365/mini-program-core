@@ -66,7 +66,9 @@ pub fn handle_mouse_pressed(
             InteractionType::ScrollArea => {
                 if !element.is_fixed {
                     if let Some(controller) = interaction.get_scroll_controller_mut(&element.id) {
-                        controller.begin_drag(y, timestamp);
+                        // 根据滚动方向使用 x 或 y
+                        let drag_pos = if element.is_horizontal { x } else { y };
+                        controller.begin_drag(drag_pos, timestamp);
                         interaction.dragging_scroll_area = Some(element.id.clone());
                         return true;
                     }

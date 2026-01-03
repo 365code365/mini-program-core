@@ -480,7 +480,49 @@ fn apply_style_property(
             "color" => if let StyleValue::Color(c) = value { ns.text_color = Some(*c); }
             "border-color" => if let StyleValue::Color(c) = value { ns.border_color = Some(*c); }
             "border-width" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ns.border_width = v * sf; }
-            "border-radius" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ns.border_radius = v * sf; }
+            "border-radius" => {
+                // 支持 border-radius 简写：1-4 个值
+                if let StyleValue::String(s) = value {
+                    let parts: Vec<&str> = s.split_whitespace().collect();
+                    let values: Vec<f32> = parts.iter()
+                        .filter_map(|p| {
+                            let sv = parse_inline_value(p);
+                            to_px(&sv, ctx.screen_width, ctx.screen_height)
+                        })
+                        .map(|v| v * sf)
+                        .collect();
+                    
+                    match values.len() {
+                        1 => {
+                            ns.border_radius = values[0];
+                        }
+                        2 => {
+                            // top-left/bottom-right, top-right/bottom-left
+                            ns.border_radius_tl = Some(values[0]);
+                            ns.border_radius_br = Some(values[0]);
+                            ns.border_radius_tr = Some(values[1]);
+                            ns.border_radius_bl = Some(values[1]);
+                        }
+                        3 => {
+                            // top-left, top-right/bottom-left, bottom-right
+                            ns.border_radius_tl = Some(values[0]);
+                            ns.border_radius_tr = Some(values[1]);
+                            ns.border_radius_bl = Some(values[1]);
+                            ns.border_radius_br = Some(values[2]);
+                        }
+                        4 => {
+                            // top-left, top-right, bottom-right, bottom-left
+                            ns.border_radius_tl = Some(values[0]);
+                            ns.border_radius_tr = Some(values[1]);
+                            ns.border_radius_br = Some(values[2]);
+                            ns.border_radius_bl = Some(values[3]);
+                        }
+                        _ => {}
+                    }
+                } else if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) {
+                    ns.border_radius = v * sf;
+                }
+            }
             "border-top-left-radius" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ns.border_radius_tl = Some(v * sf); }
             "border-top-right-radius" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ns.border_radius_tr = Some(v * sf); }
             "border-bottom-right-radius" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ns.border_radius_br = Some(v * sf); }
@@ -589,11 +631,16 @@ fn apply_style_property(
             }
             "position" => if let StyleValue::String(s) = value {
                 match s.as_str() {
-                    "absolute" => ts.position = Position::Absolute,
+                    "absolute" => {
+                        ts.position = Position::Absolute;
+                    }
                     "fixed" => {
                         // fixed 定位：使用 absolute 让 Taffy 处理，但标记为 fixed
                         ts.position = Position::Absolute;
                         ns.is_fixed = true;
+                    }
+                    "relative" => {
+                        ts.position = Position::Relative;
                     }
                     _ => ts.position = Position::Relative,
                 };
@@ -602,6 +649,12 @@ fn apply_style_property(
                 if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { 
                     ts.inset.top = LengthPercentageAuto::Length(v * sf);
                     ns.fixed_top = Some(v * sf);
+                }
+            }
+            "left" => {
+                if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { 
+                    ts.inset.left = LengthPercentageAuto::Length(v * sf);
+                    ns.fixed_left = Some(v * sf);
                 }
             }
             "right" => {
@@ -614,12 +667,6 @@ fn apply_style_property(
                 if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { 
                     ts.inset.bottom = LengthPercentageAuto::Length(v * sf);
                     ns.fixed_bottom = Some(v * sf);
-                }
-            }
-            "left" => {
-                if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { 
-                    ts.inset.left = LengthPercentageAuto::Length(v * sf);
-                    ns.fixed_left = Some(v * sf);
                 }
             }
             _ => {}

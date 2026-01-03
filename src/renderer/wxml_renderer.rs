@@ -1140,8 +1140,14 @@ impl WxmlRenderer {
         if !Self::is_leaf_component(&node.tag) {
             let is_scroll_view = node.tag == "scroll-view";
             let has_overflow_hidden = node.style.overflow == super::components::Overflow::Hidden;
+            let mut child_offset_x = 0.0;
             let mut child_offset_y = 0.0;
             let scroll_position: f32;
+            
+            // 检查是否是横向滚动
+            let is_horizontal_scroll = is_scroll_view && node.attrs.get("scroll-x")
+                .map(|s| s == "true" || s == "{{true}}")
+                .unwrap_or(false);
             
             // 对于 overflow: hidden 的容器，应用裁剪
             if has_overflow_hidden || is_scroll_view {
@@ -1152,7 +1158,11 @@ impl WxmlRenderer {
             if is_scroll_view {
                 scroll_position = if let Some(controller) = interaction.get_scroll_controller(&component_id) {
                     let pos = controller.get_position();
-                    child_offset_y = -pos * sf; // 转换为物理像素
+                    if is_horizontal_scroll {
+                        child_offset_x = -pos * sf; // 横向滚动
+                    } else {
+                        child_offset_y = -pos * sf; // 纵向滚动
+                    }
                     pos
                 } else {
                     0.0
@@ -1163,17 +1173,35 @@ impl WxmlRenderer {
 
             // 对于 scroll-view，只渲染可见区域内的子元素（视口裁剪优化）
             if is_scroll_view {
-                let viewport_top = scroll_position * sf;
-                let viewport_bottom = viewport_top + h;
-                
-                for child in &node.children {
-                    let child_layout = taffy.layout(child.taffy_node).unwrap();
-                    let child_top = child_layout.location.y;
-                    let child_bottom = child_top + child_layout.size.height;
+                if is_horizontal_scroll {
+                    // 横向滚动：检查水平方向的可见性
+                    let viewport_left = scroll_position * sf;
+                    let viewport_right = viewport_left + w;
                     
-                    // 只渲染与视口相交的子元素
-                    if child_bottom >= viewport_top && child_top <= viewport_bottom {
-                        self.draw_child_with_interaction(canvas, taffy, child, x, y + child_offset_y, text_color, interaction, scroll_offset, viewport_height); 
+                    for child in &node.children {
+                        let child_layout = taffy.layout(child.taffy_node).unwrap();
+                        let child_left = child_layout.location.x;
+                        let child_right = child_left + child_layout.size.width;
+                        
+                        // 只渲染与视口相交的子元素
+                        if child_right >= viewport_left && child_left <= viewport_right {
+                            self.draw_child_with_interaction(canvas, taffy, child, x + child_offset_x, y, text_color, interaction, scroll_offset, viewport_height); 
+                        }
+                    }
+                } else {
+                    // 纵向滚动：检查垂直方向的可见性
+                    let viewport_top = scroll_position * sf;
+                    let viewport_bottom = viewport_top + h;
+                    
+                    for child in &node.children {
+                        let child_layout = taffy.layout(child.taffy_node).unwrap();
+                        let child_top = child_layout.location.y;
+                        let child_bottom = child_top + child_layout.size.height;
+                        
+                        // 只渲染与视口相交的子元素
+                        if child_bottom >= viewport_top && child_top <= viewport_bottom {
+                            self.draw_child_with_interaction(canvas, taffy, child, x, y + child_offset_y, text_color, interaction, scroll_offset, viewport_height); 
+                        }
                     }
                 }
             } else {
@@ -1240,19 +1268,31 @@ impl WxmlRenderer {
         
         match original_node.tag.as_str() {
             "scroll-view" => {
+                // 检查是否是横向滚动
+                let scroll_x = original_node.attrs.get("scroll-x")
+                    .map(|s| s == "true" || s == "{{true}}")
+                    .unwrap_or(false);
+                
                 let mut content_height = 0.0;
-                // 计算内容高度：所有子节点的底部最大值
+                let mut content_width = 0.0;
+                
+                // 计算内容尺寸：所有子节点的边界最大值
                 for child in original_node.children.iter() {
                     if let Ok(layout) = taffy.layout(child.taffy_node) {
                         let bottom = layout.location.y + layout.size.height;
+                        let right = layout.location.x + layout.size.width;
                         if bottom > content_height {
                             content_height = bottom;
+                        }
+                        if right > content_width {
+                            content_width = right;
                         }
                     }
                 }
                 
                 // 转换为逻辑像素
                 let logical_content_height = content_height / self.scale_factor;
+                let logical_content_width = content_width / self.scale_factor;
                 
                 interaction.register_element(InteractiveElement {
                     interaction_type: InteractionType::ScrollArea,
@@ -1265,6 +1305,9 @@ impl WxmlRenderer {
                     max: 0.0,
                     content_height: logical_content_height,
                     viewport_height: bounds.height,
+                    content_width: logical_content_width,
+                    viewport_width: bounds.width,
+                    is_horizontal: scroll_x,
                     is_fixed,
                 });
             }
@@ -1280,6 +1323,9 @@ impl WxmlRenderer {
                     max: 1.0,
                     content_height: 0.0,
                     viewport_height: 0.0,
+                    content_width: 0.0,
+                    viewport_width: 0.0,
+                    is_horizontal: false,
                     is_fixed,
                 });
             }
@@ -1295,6 +1341,9 @@ impl WxmlRenderer {
                     max: 1.0,
                     content_height: 0.0,
                     viewport_height: 0.0,
+                    content_width: 0.0,
+                    viewport_width: 0.0,
+                    is_horizontal: false,
                     is_fixed,
                 });
             }
@@ -1310,6 +1359,9 @@ impl WxmlRenderer {
                     max: 1.0,
                     content_height: 0.0,
                     viewport_height: 0.0,
+                    content_width: 0.0,
+                    viewport_width: 0.0,
+                    is_horizontal: false,
                     is_fixed,
                 });
             }
@@ -1327,6 +1379,9 @@ impl WxmlRenderer {
                     max,
                     content_height: 0.0,
                     viewport_height: 0.0,
+                    content_width: 0.0,
+                    viewport_width: 0.0,
+                    is_horizontal: false,
                     is_fixed,
                 });
             }
@@ -1349,6 +1404,9 @@ impl WxmlRenderer {
                     max: 0.0,
                     content_height: 0.0,
                     viewport_height: 0.0,
+                    content_width: 0.0,
+                    viewport_width: 0.0,
+                    is_horizontal: false,
                     is_fixed,
                 });
             }
@@ -1364,6 +1422,9 @@ impl WxmlRenderer {
                     max: 0.0,
                     content_height: 0.0,
                     viewport_height: 0.0,
+                    content_width: 0.0,
+                    viewport_width: 0.0,
+                    is_horizontal: false,
                     is_fixed,
                 });
             }

@@ -10,6 +10,18 @@ pub enum ScrollEvent {
     ReachBottom,
     /// 滚动到顶部/下拉刷新（回弹结束后触发）
     ReachTop,
+    /// 滚动到右边（横向滚动）
+    ReachRight,
+    /// 滚动到左边（横向滚动）
+    ReachLeft,
+}
+
+/// 滚动方向
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub enum ScrollDirection {
+    #[default]
+    Vertical,
+    Horizontal,
 }
 
 /// 微信小程序风格滚动控制器
@@ -18,7 +30,7 @@ pub struct ScrollController {
     velocity: f32,
     min_scroll: f32,
     max_scroll: f32,
-    last_content_height: f32,
+    last_content_size: f32,
     pub is_dragging: bool,
     drag_start_pos: f32,
     drag_start_scroll: f32,
@@ -39,16 +51,19 @@ pub struct ScrollController {
     reach_bottom_distance: f32,
     /// 是否已经触发过触底事件（防止重复触发）
     reach_bottom_triggered: bool,
+    
+    /// 滚动方向
+    pub direction: ScrollDirection,
 }
 
 impl ScrollController {
-    pub fn new(content_height: f32, viewport_height: f32) -> Self {
+    pub fn new(content_size: f32, viewport_size: f32) -> Self {
         Self {
             position: 0.0,
             velocity: 0.0,
             min_scroll: 0.0,
-            max_scroll: (content_height - viewport_height).max(0.0),
-            last_content_height: content_height,
+            max_scroll: (content_size - viewport_size).max(0.0),
+            last_content_size: content_size,
             is_dragging: false,
             drag_start_pos: 0.0,
             drag_start_scroll: 0.0,
@@ -62,21 +77,39 @@ impl ScrollController {
             was_over_top: false,
             reach_bottom_distance: 50.0,
             reach_bottom_triggered: false,
+            direction: ScrollDirection::Vertical,
         }
     }
     
-    /// 更新内容高度（当实际内容高度变化时调用）
-    pub fn update_content_height(&mut self, content_height: f32, viewport_height: f32) {
-        if (content_height - self.last_content_height).abs() > 1.0 || (self.max_scroll - (content_height - viewport_height).max(0.0)).abs() > 1.0 {
-            self.last_content_height = content_height;
-            // max_scroll = 内容高度 - 视口高度，确保滚动到底时内容底部刚好贴着视口底部
-            self.max_scroll = (content_height - viewport_height).max(0.0).floor();
+    /// 创建横向滚动控制器
+    pub fn new_horizontal(content_width: f32, viewport_width: f32) -> Self {
+        let mut controller = Self::new(content_width, viewport_width);
+        controller.direction = ScrollDirection::Horizontal;
+        controller
+    }
+    
+    /// 更新内容尺寸（当实际内容尺寸变化时调用）
+    pub fn update_content_height(&mut self, content_size: f32, viewport_size: f32) {
+        if (content_size - self.last_content_size).abs() > 1.0 || (self.max_scroll - (content_size - viewport_size).max(0.0)).abs() > 1.0 {
+            self.last_content_size = content_size;
+            // max_scroll = 内容尺寸 - 视口尺寸，确保滚动到底/右时内容底部/右边刚好贴着视口底部/右边
+            self.max_scroll = (content_size - viewport_size).max(0.0).floor();
             if self.position > self.max_scroll {
                 self.position = self.max_scroll;
             }
-            // 内容高度变化时重置触底状态
+            // 内容尺寸变化时重置触底状态
             self.reach_bottom_triggered = false;
         }
+    }
+    
+    /// 设置滚动方向
+    pub fn set_direction(&mut self, direction: ScrollDirection) {
+        self.direction = direction;
+    }
+    
+    /// 获取滚动方向
+    pub fn get_direction(&self) -> ScrollDirection {
+        self.direction
     }
     
     pub fn begin_drag(&mut self, y: f32, timestamp: u64) {

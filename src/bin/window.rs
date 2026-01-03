@@ -466,7 +466,9 @@ impl ApplicationHandler for MiniAppWindow {
                             }
                             InteractionType::ScrollArea => {
                                 if let Some(c) = self.interaction.get_scroll_controller_mut(&el.id) {
-                                    c.begin_drag(y, ts);
+                                    // 根据滚动方向使用 x 或 y
+                                    let drag_pos = if el.is_horizontal { x } else { y };
+                                    c.begin_drag(drag_pos, ts);
                                     self.interaction.dragging_scroll_area = Some(el.id.clone());
                                     return;
                                 }

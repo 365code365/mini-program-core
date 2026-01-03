@@ -110,6 +110,12 @@ pub fn handle_scroll_event(
             app.eval(call_code).ok();
             print_js_output(app);
         }
+        ScrollEvent::ReachRight => {
+            println!("📜 scroll-view reached right edge");
+        }
+        ScrollEvent::ReachLeft => {
+            println!("📜 scroll-view reached left edge");
+        }
     }
 }
 
@@ -302,7 +308,10 @@ pub fn handle_cursor_moved(
         needs_redraw = true;
     } else if let Some(id) = interaction.dragging_scroll_area.clone() {
         if let Some(controller) = interaction.get_scroll_controller_mut(&id) {
-            controller.update_drag(y, timestamp);
+            // 根据滚动方向使用 x 或 y
+            use mini_render::ui::scroll_controller::ScrollDirection;
+            let drag_pos = if controller.get_direction() == ScrollDirection::Horizontal { x } else { y };
+            controller.update_drag(drag_pos, timestamp);
         }
     } else if scroll.is_dragging {
         scroll.update_drag(y, timestamp);
@@ -319,12 +328,16 @@ pub fn handle_mouse_wheel(
     scroll: &mut mini_render::ui::ScrollController,
     scale_factor: f64,
 ) -> bool {
-    let (delta_y, is_precise) = match delta {
-        MouseScrollDelta::LineDelta(_, y) => (-y * 20.0, false),
-        MouseScrollDelta::PixelDelta(pos) => (-pos.y as f32 / scale_factor as f32, true),
+    let (delta_x, delta_y, is_precise) = match delta {
+        MouseScrollDelta::LineDelta(x, y) => (-x * 20.0, -y * 20.0, false),
+        MouseScrollDelta::PixelDelta(pos) => (
+            -pos.x as f32 / scale_factor as f32,
+            -pos.y as f32 / scale_factor as f32,
+            true
+        ),
     };
     
-    if delta_y.abs() < 0.1 {
+    if delta_x.abs() < 0.1 && delta_y.abs() < 0.1 {
         return false;
     }
     
@@ -338,7 +351,7 @@ pub fn handle_mouse_wheel(
     // 首先检查 fixed 元素
     let mut scroll_area_id = if let Some(element) = interaction.hit_test(x, y) {
         if element.is_fixed && element.interaction_type == InteractionType::ScrollArea {
-            Some(element.id.clone())
+            Some((element.id.clone(), element.is_horizontal))
         } else {
             None
         }
@@ -350,20 +363,24 @@ pub fn handle_mouse_wheel(
     if scroll_area_id.is_none() {
         if let Some(element) = interaction.hit_test(x, actual_y) {
             if !element.is_fixed && element.interaction_type == InteractionType::ScrollArea {
-                scroll_area_id = Some(element.id.clone());
+                scroll_area_id = Some((element.id.clone(), element.is_horizontal));
             }
         }
     }
     
-    if let Some(id) = scroll_area_id {
+    if let Some((id, is_horizontal)) = scroll_area_id {
         if let Some(controller) = interaction.get_scroll_controller_mut(&id) {
-            controller.handle_scroll(delta_y, is_precise);
-            handled_by_scrollview = true;
-            needs_redraw = true;
+            // 根据滚动方向使用 delta_x 或 delta_y
+            let delta = if is_horizontal { delta_x } else { delta_y };
+            if delta.abs() > 0.1 {
+                controller.handle_scroll(delta, is_precise);
+                handled_by_scrollview = true;
+                needs_redraw = true;
+            }
         }
     }
     
-    if !handled_by_scrollview {
+    if !handled_by_scrollview && delta_y.abs() > 0.1 {
         scroll.handle_scroll(delta_y, is_precise);
     }
     

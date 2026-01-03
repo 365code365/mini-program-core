@@ -536,3 +536,65 @@ fn test_list_item_layout() {
         "list_info height should be at least {}, but got {}", 
         expected_list_info_height, list_info_layout.size.height);
 }
+
+
+/// 测试 absolute 定位与 padding 的交互
+#[test]
+fn test_absolute_with_padding() {
+    let mut taffy: TaffyTree<()> = TaffyTree::new();
+    
+    // 创建 absolute 定位的子元素（badge）
+    let badge = taffy.new_leaf(Style {
+        position: Position::Absolute,
+        size: Size { width: length(50.0), height: length(20.0) },
+        inset: Rect {
+            top: LengthPercentageAuto::Length(0.0),
+            right: LengthPercentageAuto::Auto,
+            bottom: LengthPercentageAuto::Auto,
+            left: LengthPercentageAuto::Length(0.0),
+        },
+        ..Default::default()
+    }).unwrap();
+    
+    // 创建普通子元素
+    let content = taffy.new_leaf(Style {
+        size: Size { width: length(100.0), height: length(100.0) },
+        ..Default::default()
+    }).unwrap();
+    
+    // 创建父容器（position: relative，有 padding）
+    let card = taffy.new_with_children(
+        Style {
+            position: Position::Relative,
+            size: Size { width: length(200.0), height: length(200.0) },
+            padding: Rect {
+                top: length(10.0),
+                right: length(10.0),
+                bottom: length(10.0),
+                left: length(10.0),
+            },
+            ..Default::default()
+        },
+        &[badge, content],
+    ).unwrap();
+    
+    taffy.compute_layout(card, Size::MAX_CONTENT).unwrap();
+    
+    let badge_layout = taffy.layout(badge).unwrap();
+    let content_layout = taffy.layout(content).unwrap();
+    
+    eprintln!("Badge: x={}, y={}, w={}, h={}", 
+        badge_layout.location.x, badge_layout.location.y,
+        badge_layout.size.width, badge_layout.size.height);
+    eprintln!("Content: x={}, y={}, w={}, h={}", 
+        content_layout.location.x, content_layout.location.y,
+        content_layout.size.width, content_layout.size.height);
+    
+    // absolute 定位的元素应该在 (0, 0)，忽略 padding
+    assert_eq!(badge_layout.location.x, 0.0);
+    assert_eq!(badge_layout.location.y, 0.0);
+    
+    // 普通元素应该在 padding 内
+    assert_eq!(content_layout.location.x, 10.0);
+    assert_eq!(content_layout.location.y, 10.0);
+}
