@@ -7,6 +7,7 @@ use crate::{Canvas, Color, Paint, PaintStyle, Rect as GeoRect};
 use std::collections::HashMap;
 use std::sync::Mutex;
 use once_cell::sync::Lazy;
+use taffy::prelude::*;
 
 /// Swiper 状态管理器
 pub struct SwiperStateManager {
@@ -114,20 +115,18 @@ impl SwiperComponent {
         })
     }
     
-    /// 绘制 swiper 组件（只绘制背景和指示点，子元素由渲染器处理）
+    /// 绘制 swiper 组件
     pub fn draw(node: &RenderNode, canvas: &mut Canvas, x: f32, y: f32, w: f32, h: f32, sf: f32) {
         Self::draw_with_text(node, canvas, x, y, w, h, sf, None);
     }
     
     /// 绘制 swiper 组件（带文本渲染器）
     pub fn draw_with_text(node: &RenderNode, canvas: &mut Canvas, x: f32, y: f32, w: f32, h: f32, sf: f32, text_renderer: Option<&TextRenderer>) {
-        let radius = node.style.border_radius;
-        
-        // 如果有圆角，先裁剪（使用矩形裁剪，圆角通过背景绘制实现）
+        // 裁剪区域
         canvas.save();
         canvas.clip_rect(GeoRect::new(x, y, w, h));
         
-        // 绘制背景（带圆角）
+        // 绘制背景
         draw_background(canvas, &node.style, x, y, w, h);
         
         // 获取属性
@@ -144,10 +143,10 @@ impl SwiperComponent {
             .unwrap_or(true);
         let indicator_color = node.attrs.get("indicator-color")
             .and_then(|s| parse_color_str(s))
-            .unwrap_or(Color::new(255, 255, 255, 100)); // 半透明白色
+            .unwrap_or(Color::new(255, 255, 255, 100));
         let indicator_active_color = node.attrs.get("indicator-active-color")
             .and_then(|s| parse_color_str(s))
-            .unwrap_or(Color::WHITE); // 纯白色
+            .unwrap_or(Color::WHITE);
         
         let total = node.children.len();
         if total == 0 {
@@ -166,10 +165,10 @@ impl SwiperComponent {
             }
         };
         
-        // 绘制当前 swiper-item 的内容
+        // 只绘制当前 swiper-item
         if current < node.children.len() {
             let child = &node.children[current];
-            draw_swiper_item_content(canvas, child, x, y, w, h, sf, text_renderer);
+            Self::draw_swiper_item(canvas, child, x, y, w, h, sf, text_renderer);
         }
         
         // 绘制指示点
@@ -192,6 +191,133 @@ impl SwiperComponent {
         }
         
         canvas.restore();
+    }
+    
+    /// 绘制单个 swiper-item
+    fn draw_swiper_item(
+        canvas: &mut Canvas,
+        item: &RenderNode,
+        x: f32,
+        y: f32,
+        w: f32,
+        h: f32,
+        sf: f32,
+        text_renderer: Option<&TextRenderer>
+    ) {
+        // 绘制 swiper-item 的背景
+        if let Some(bg) = item.style.background_color {
+            let paint = Paint::new().with_color(bg).with_style(PaintStyle::Fill);
+            canvas.draw_rect(&GeoRect::new(x, y, w, h), &paint);
+        }
+        
+        // 递归绘制子元素
+        Self::draw_children(canvas, &item.children, x, y, w, h, sf, text_renderer, Color::WHITE);
+    }
+    
+    /// 递归绘制子元素
+    fn draw_children(
+        canvas: &mut Canvas,
+        children: &[RenderNode],
+        parent_x: f32,
+        parent_y: f32,
+        parent_w: f32,
+        parent_h: f32,
+        sf: f32,
+        text_renderer: Option<&TextRenderer>,
+        inherited_color: Color
+    ) {
+        let padding = 20.0 * sf;
+        let mut current_y = parent_y + padding;
+        let content_x = parent_x + padding;
+        let content_w = parent_w - padding * 2.0;
+        
+        for child in children {
+            let text_color = child.style.text_color.unwrap_or(inherited_color);
+            
+            match child.tag.as_str() {
+                "view" => {
+                    // 检查是否有背景色（可能是标签）
+                    if let Some(bg) = child.style.background_color {
+                        // 绘制标签背景
+                        let tag_h = 28.0 * sf;
+                        let tag_text = Self::get_text_content(child);
+                        let font_size = 11.0 * sf;
+                        let padding_h = 10.0 * sf;
+                        
+                        let text_w = if let Some(tr) = text_renderer {
+                            tr.measure_text(&tag_text, font_size)
+                        } else {
+                            tag_text.chars().count() as f32 * font_size * 0.6
+                        };
+                        let tag_w = text_w + padding_h * 2.0;
+                        
+                        let radius = child.style.border_radius.max(10.0 * sf);
+                        let paint = Paint::new().with_color(bg).with_style(PaintStyle::Fill);
+                        let mut path = crate::Path::new();
+                        path.add_round_rect(content_x, current_y, tag_w, tag_h, radius);
+                        canvas.draw_path(&path, &paint);
+                        
+                        // 绘制标签文本
+                        let tag_text_color = Self::get_child_text_color(child).unwrap_or(Color::from_hex(0xFF6B35));
+                        if let Some(tr) = text_renderer {
+                            let paint = Paint::new().with_color(tag_text_color);
+                            tr.draw_text(canvas, &tag_text, content_x + padding_h, current_y + tag_h * 0.7, font_size, &paint);
+                        }
+                        
+                        current_y += tag_h + 10.0 * sf;
+                    } else {
+                        // 普通 view，递归绘制子元素
+                        Self::draw_children(canvas, &child.children, content_x, current_y, content_w, parent_h - (current_y - parent_y), sf, text_renderer, text_color);
+                    }
+                }
+                "text" | "#text" => {
+                    let text = &child.text;
+                    if !text.is_empty() {
+                        let font_size = child.style.font_size * sf;
+                        
+                        if let Some(tr) = text_renderer {
+                            let paint = Paint::new().with_color(text_color);
+                            tr.draw_text(canvas, text, content_x, current_y + font_size, font_size, &paint);
+                        }
+                        
+                        current_y += font_size * 1.5;
+                    }
+                }
+                "image" => {
+                    // 图片占位
+                    let img_h = 100.0 * sf;
+                    let paint = Paint::new().with_color(Color::from_hex(0xCCCCCC)).with_style(PaintStyle::Fill);
+                    canvas.draw_rect(&GeoRect::new(content_x, current_y, content_w, img_h), &paint);
+                    current_y += img_h + 10.0 * sf;
+                }
+                _ => {}
+            }
+        }
+    }
+    
+    /// 获取节点的文本内容
+    fn get_text_content(node: &RenderNode) -> String {
+        let mut text = String::new();
+        for child in &node.children {
+            if child.tag == "text" || child.tag == "#text" {
+                text.push_str(&child.text);
+            } else {
+                text.push_str(&Self::get_text_content(child));
+            }
+        }
+        text
+    }
+    
+    /// 获取子节点的文本颜色
+    fn get_child_text_color(node: &RenderNode) -> Option<Color> {
+        for child in &node.children {
+            if child.tag == "text" || child.tag == "#text" {
+                if let Some(color) = child.style.text_color {
+                    return Some(color);
+                }
+            }
+        }
+        None
     }
     
     /// 获取当前显示的 swiper-item 索引
@@ -222,134 +348,6 @@ impl SwiperComponent {
         if let Ok(mut manager) = SWIPER_MANAGER.lock() {
             manager.set_current(swiper_id, index);
         }
-    }
-}
-
-/// 递归绘制 swiper-item 的内容
-fn draw_swiper_item_content(
-    canvas: &mut Canvas, 
-    node: &RenderNode, 
-    x: f32, 
-    y: f32, 
-    w: f32, 
-    h: f32, 
-    sf: f32,
-    text_renderer: Option<&TextRenderer>
-) {
-    // 绘制背景
-    if let Some(bg) = node.style.background_color {
-        let paint = Paint::new().with_color(bg).with_style(PaintStyle::Fill);
-        let radius = node.style.border_radius;
-        if radius > 0.0 {
-            let mut path = crate::Path::new();
-            path.add_round_rect(x, y, w, h, radius);
-            canvas.draw_path(&path, &paint);
-        } else {
-            canvas.draw_rect(&GeoRect::new(x, y, w, h), &paint);
-        }
-    }
-    
-    // 计算子元素布局
-    let padding = 20.0 * sf;
-    let content_x = x + padding;
-    let content_y = y + padding;
-    let content_w = w - padding * 2.0;
-    
-    let mut current_y = content_y;
-    
-    for child in &node.children {
-        match child.tag.as_str() {
-            "view" => {
-                // 检查是否是 banner-tag 样式的 view
-                let child_h = if child.style.background_color.is_some() {
-                    // 有背景色的 view，可能是标签
-                    let tag_h = 28.0 * sf;
-                    draw_banner_tag(canvas, child, content_x, current_y, content_w, tag_h, sf, text_renderer);
-                    tag_h + 10.0 * sf
-                } else {
-                    // 普通 view，递归绘制
-                    draw_swiper_item_content(canvas, child, content_x, current_y, content_w, h - (current_y - y), sf, text_renderer);
-                    0.0
-                };
-                current_y += child_h;
-            }
-            "text" | "#text" => {
-                let text = &child.text;
-                if !text.is_empty() {
-                    let text_color = child.style.text_color.unwrap_or(Color::WHITE);
-                    let font_size = child.style.font_size * sf;
-                    let font_weight = child.style.font_weight;
-                    
-                    if let Some(tr) = text_renderer {
-                        let paint = Paint::new().with_color(text_color);
-                        tr.draw_text(canvas, text, content_x, current_y + font_size, font_size, &paint);
-                    } else {
-                        // 没有文本渲染器时，绘制占位
-                        let paint = Paint::new().with_color(text_color).with_style(PaintStyle::Fill);
-                        let text_w = text.chars().count() as f32 * font_size * 0.6;
-                        canvas.draw_rect(&GeoRect::new(content_x, current_y, text_w.min(content_w), font_size), &paint);
-                    }
-                    
-                    current_y += font_size + 10.0 * sf;
-                }
-            }
-            "image" => {
-                // 图片占位
-                let img_h = 100.0 * sf;
-                let paint = Paint::new().with_color(Color::from_hex(0xCCCCCC)).with_style(PaintStyle::Fill);
-                canvas.draw_rect(&GeoRect::new(content_x, current_y, content_w, img_h), &paint);
-                current_y += img_h + 10.0 * sf;
-            }
-            _ => {}
-        }
-    }
-}
-
-/// 绘制 banner 标签（如 "限时特惠"、"会员专享" 等）
-fn draw_banner_tag(
-    canvas: &mut Canvas,
-    node: &RenderNode,
-    x: f32,
-    y: f32,
-    _max_w: f32,
-    h: f32,
-    sf: f32,
-    text_renderer: Option<&TextRenderer>
-) {
-    let bg_color = node.style.background_color.unwrap_or(Color::WHITE);
-    let radius = node.style.border_radius.max(10.0 * sf);
-    
-    // 获取文本内容
-    let text = node.children.iter()
-        .find(|c| c.tag == "text" || c.tag == "#text")
-        .map(|c| c.text.clone())
-        .unwrap_or_default();
-    
-    // 计算标签宽度
-    let font_size = 11.0 * sf;
-    let padding_h = 10.0 * sf;
-    let text_w = if let Some(tr) = text_renderer {
-        tr.measure_text(&text, font_size)
-    } else {
-        text.chars().count() as f32 * font_size * 0.6
-    };
-    let tag_w = text_w + padding_h * 2.0;
-    
-    // 绘制背景
-    let paint = Paint::new().with_color(bg_color).with_style(PaintStyle::Fill);
-    let mut path = crate::Path::new();
-    path.add_round_rect(x, y, tag_w, h, radius);
-    canvas.draw_path(&path, &paint);
-    
-    // 绘制文本
-    let text_color = node.children.iter()
-        .find(|c| c.tag == "text" || c.tag == "#text")
-        .and_then(|c| c.style.text_color)
-        .unwrap_or(Color::from_hex(0xFF6B35));
-    
-    if let Some(tr) = text_renderer {
-        let text_paint = Paint::new().with_color(text_color);
-        tr.draw_text(canvas, &text, x + padding_h, y + h * 0.7, font_size, &text_paint);
     }
 }
 

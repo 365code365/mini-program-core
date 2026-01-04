@@ -476,9 +476,34 @@ fn apply_style_property(
             }
             "row-gap" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.gap.height = length(v * sf); }
             "column-gap" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.gap.width = length(v * sf); }
-            "background-color" | "background" => if let StyleValue::Color(c) = value { ns.background_color = Some(*c); }
-            "color" => if let StyleValue::Color(c) = value { ns.text_color = Some(*c); }
-            "border-color" => if let StyleValue::Color(c) = value { ns.border_color = Some(*c); }
+            "background-color" | "background" => {
+                if let StyleValue::Color(c) = value { 
+                    ns.background_color = Some(*c); 
+                } else if let StyleValue::String(s) = value {
+                    // 尝试从字符串解析颜色
+                    if let Some(c) = parse_color_str(s) {
+                        ns.background_color = Some(c);
+                    }
+                }
+            }
+            "color" => {
+                if let StyleValue::Color(c) = value { 
+                    ns.text_color = Some(*c); 
+                } else if let StyleValue::String(s) = value {
+                    if let Some(c) = parse_color_str(s) {
+                        ns.text_color = Some(c);
+                    }
+                }
+            }
+            "border-color" => {
+                if let StyleValue::Color(c) = value { 
+                    ns.border_color = Some(*c); 
+                } else if let StyleValue::String(s) = value {
+                    if let Some(c) = parse_color_str(s) {
+                        ns.border_color = Some(c);
+                    }
+                }
+            }
             "border-width" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ns.border_width = v * sf; }
             "border-radius" => {
                 // 支持 border-radius 简写：1-4 个值
@@ -649,24 +674,37 @@ fn apply_style_property(
                 if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { 
                     ts.inset.top = LengthPercentageAuto::Length(v * sf);
                     ns.fixed_top = Some(v * sf);
+                } else if let StyleValue::Number(n) = value {
+                    // 处理纯数字（如 top: 0）
+                    ts.inset.top = LengthPercentageAuto::Length(*n * sf);
+                    ns.fixed_top = Some(*n * sf);
                 }
             }
             "left" => {
                 if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { 
                     ts.inset.left = LengthPercentageAuto::Length(v * sf);
                     ns.fixed_left = Some(v * sf);
+                } else if let StyleValue::Number(n) = value {
+                    ts.inset.left = LengthPercentageAuto::Length(*n * sf);
+                    ns.fixed_left = Some(*n * sf);
                 }
             }
             "right" => {
                 if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { 
                     ts.inset.right = LengthPercentageAuto::Length(v * sf);
                     ns.fixed_right = Some(v * sf);
+                } else if let StyleValue::Number(n) = value {
+                    ts.inset.right = LengthPercentageAuto::Length(*n * sf);
+                    ns.fixed_right = Some(*n * sf);
                 }
             }
             "bottom" => {
                 if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { 
                     ts.inset.bottom = LengthPercentageAuto::Length(v * sf);
                     ns.fixed_bottom = Some(v * sf);
+                } else if let StyleValue::Number(n) = value {
+                    ts.inset.bottom = LengthPercentageAuto::Length(*n * sf);
+                    ns.fixed_bottom = Some(*n * sf);
                 }
             }
             _ => {}

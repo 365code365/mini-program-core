@@ -570,7 +570,7 @@ impl WxmlRenderer {
         matches!(tag, 
             "text" | "button" | "icon" | "progress" | "switch" | 
             "checkbox" | "radio" | "slider" | "input" | "textarea" | "image" | "video" | "canvas" |
-            "rich-text" | "picker" | "picker-view-column"
+            "rich-text" | "picker" | "picker-view-column" | "swiper"
         )
     }
     
