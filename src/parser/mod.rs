@@ -3,6 +3,7 @@
 pub mod wxml;
 pub mod wxss;
 pub mod template;
+pub mod expr;
 
 pub use wxml::{WxmlParser, WxmlNode, WxmlNodeType};
 pub use wxss::{WxssParser, StyleSheet, StyleRule, StyleValue};

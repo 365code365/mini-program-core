@@ -99,6 +99,61 @@ impl MiniApp {
         self.load_script(&code)
     }
     
+    /// 注册一个 CommonJS 模块（延迟执行）
+    pub fn define_module(&self, path: &str, source: &str) -> Result<(), String> {
+        let rt = self.runtime.lock().unwrap();
+        rt.define_module(path, source)
+    }
+    
+    /// require 一个模块，触发其执行（例如页面/组件的注册）
+    pub fn require_module(&self, path: &str) -> Result<(), String> {
+        let rt = self.runtime.lock().unwrap();
+        rt.require_module(path)
+    }
+    
+    /// 递归扫描目录，把其中所有 .js 文件注册为 CommonJS 模块。
+    ///
+    /// key 为相对 `root` 的路径（去掉 .js 后缀），例如 `utils/util`、
+    /// `pages/index/index`。注册后可用 `require_module` 触发执行。
+    pub fn register_all_modules(&self, root: &std::path::Path) -> Result<usize, String> {
+        let mut count = 0usize;
+        self.register_modules_recursive(root, root, &mut count)?;
+        Ok(count)
+    }
+    
+    fn register_modules_recursive(
+        &self,
+        root: &std::path::Path,
+        dir: &std::path::Path,
+        count: &mut usize,
+    ) -> Result<(), String> {
+        let entries = std::fs::read_dir(dir).map_err(|e| e.to_string())?;
+        for entry in entries {
+            let entry = entry.map_err(|e| e.to_string())?;
+            let path = entry.path();
+            if path.is_dir() {
+                self.register_modules_recursive(root, &path, count)?;
+            } else if path.extension().and_then(|s| s.to_str()) == Some("js") {
+                let rel = path
+                    .strip_prefix(root)
+                    .map_err(|e| e.to_string())?
+                    .to_string_lossy()
+                    .replace('\\', "/");
+                let key = rel.trim_end_matches(".js");
+                let source = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
+                self.define_module(key, &source)?;
+                *count += 1;
+            }
+        }
+        Ok(())
+    }
+    
+    /// 泵出 JS 微任务队列（Promise / async 回调）
+    pub fn pump_jobs(&self) {
+        let rt = self.runtime.lock().unwrap();
+        rt.pump_jobs();
+    }
+    
     /// 启动应用
     pub fn start(&mut self) -> Result<(), String> {
         self.running = true;
@@ -131,6 +186,9 @@ impl MiniApp {
         
         // 处理桥接事件
         self.process_bridge_events()?;
+        
+        // 泵出微任务队列（Promise / async 回调），确保异步链得以推进
+        self.pump_jobs();
         
         Ok(())
     }

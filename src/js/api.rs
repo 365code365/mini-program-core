@@ -20,6 +20,8 @@ impl MiniAppApi {
     
     /// 初始化所有 API
     pub fn init(&self) -> Result<(), String> {
+        println!("    init_module_system...");
+        self.init_module_system().map_err(|e| format!("module: {}", e))?;
         println!("    init_console...");
         self.init_console().map_err(|e| format!("console: {}", e))?;
         println!("    init_wx_object...");
@@ -40,6 +42,75 @@ impl MiniAppApi {
     fn init_wx_object(&self) -> Result<(), String> {
         let rt = self.runtime.lock().unwrap();
         rt.eval("var wx = wx || {};")?;
+        Ok(())
+    }
+    
+    /// 初始化 CommonJS 模块系统（require / module.exports）
+    ///
+    /// 官方小程序逻辑层以 CommonJS 组织多文件依赖。之前的实现直接把单个
+    /// 文件整段 eval，无法处理 `require('../utils/util.js')` 这类依赖。
+    fn init_module_system(&self) -> Result<(), String> {
+        let rt = self.runtime.lock().unwrap();
+        rt.eval(r#"
+            var __modules = {};       // key -> factory(module, exports, require)
+            var __moduleCache = {};   // key -> module 实例
+            
+            function __normalizePath(path) {
+                var parts = String(path).split('/');
+                var stack = [];
+                for (var i = 0; i < parts.length; i++) {
+                    var p = parts[i];
+                    if (p === '' || p === '.') continue;
+                    if (p === '..') { stack.pop(); continue; }
+                    stack.push(p);
+                }
+                return stack.join('/');
+            }
+            
+            function __stripJs(key) {
+                if (key.length > 3 && key.substring(key.length - 3) === '.js') {
+                    return key.substring(0, key.length - 3);
+                }
+                return key;
+            }
+            
+            function __dirname(path) {
+                var idx = path.lastIndexOf('/');
+                return idx >= 0 ? path.substring(0, idx) : '';
+            }
+            
+            function __resolveModulePath(currentDir, request) {
+                var full;
+                if (request.charAt(0) === '/') {
+                    full = request.substring(1);
+                } else {
+                    full = (currentDir ? currentDir + '/' : '') + request;
+                }
+                return __stripJs(__normalizePath(full));
+            }
+            
+            function __defineModule(path, factory) {
+                __modules[__stripJs(__normalizePath(path))] = factory;
+            }
+            
+            function __require(currentDir, request) {
+                var key = __resolveModulePath(currentDir, request);
+                if (__moduleCache[key]) { return __moduleCache[key].exports; }
+                var factory = __modules[key];
+                if (!factory) {
+                    throw new Error('Cannot find module: ' + request + ' (resolved: ' + key + ')');
+                }
+                var module = { exports: {} };
+                __moduleCache[key] = module;
+                var dir = __dirname(key);
+                var localRequire = function(req) { return __require(dir, req); };
+                factory.call(module.exports, module, module.exports, localRequire);
+                return module.exports;
+            }
+            
+            // 全局 require（相对项目根目录解析）
+            function require(request) { return __require('', request); }
+        "#)?;
         Ok(())
     }
     

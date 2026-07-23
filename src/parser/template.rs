@@ -1,6 +1,11 @@
-//! 模板引擎 - 处理数据绑定和条件渲染
+//! 模板引擎 - 处理数据绑定、条件渲染、列表渲染
+//!
+//! 表达式求值统一委托给 `super::expr`（完整的 `{{}}` 表达式引擎），
+//! 本模块只负责 WXML 控制流：`wx:if / wx:elif / wx:else`、`wx:for`、
+//! `<block>` 透传，以及文本/属性插值。
 
-use super::wxml::WxmlNode;
+use super::wxml::{WxmlNode, WxmlNodeType};
+use super::expr;
 use serde_json::Value as JsonValue;
 
 /// 模板引擎
@@ -9,292 +14,220 @@ pub struct TemplateEngine;
 impl TemplateEngine {
     /// 渲染模板，替换 {{}} 表达式
     pub fn render(nodes: &[WxmlNode], data: &JsonValue) -> Vec<WxmlNode> {
-        Self::render_with_virtual_list(nodes, data, None)
+        Self::render_nodes(nodes, data)
     }
     
-    /// 渲染模板，支持虚拟列表
-    /// viewport: (scroll_offset, viewport_height) 用于虚拟列表优化
-    pub fn render_with_virtual_list(nodes: &[WxmlNode], data: &JsonValue, viewport: Option<(f32, f32)>) -> Vec<WxmlNode> {
-        let mut result = Vec::new();
+    /// 渲染模板（保留 viewport 形参以兼容旧调用；虚拟列表裁剪在绘制阶段处理）
+    pub fn render_with_virtual_list(
+        nodes: &[WxmlNode],
+        data: &JsonValue,
+        _viewport: Option<(f32, f32)>,
+    ) -> Vec<WxmlNode> {
+        Self::render_nodes(nodes, data)
+    }
+    
+    /// 渲染一组兄弟节点，处理 if/elif/else 链
+    fn render_nodes(nodes: &[WxmlNode], data: &JsonValue) -> Vec<WxmlNode> {
+        let mut out = Vec::new();
+        // if/elif/else 链状态
+        let mut chain_active = false; // 当前是否处于一个 wx:if 链中
+        let mut chain_taken = false;  // 链中是否已有分支命中
         
         for node in nodes {
-            if let Some(rendered) = Self::render_node_with_viewport(node, data, viewport) {
-                result.extend(rendered);
-            }
-        }
-        
-        result
-    }
-    
-    fn render_node_with_viewport(node: &WxmlNode, data: &JsonValue, viewport: Option<(f32, f32)>) -> Option<Vec<WxmlNode>> {
-        match node.node_type {
-            super::wxml::WxmlNodeType::Text => {
-                let text = Self::interpolate(&node.text_content, data);
-                Some(vec![WxmlNode::new_text(&text)])
-            }
-            super::wxml::WxmlNodeType::Element => {
-                // 处理 wx:if
-                if let Some(condition) = node.attributes.get("wx:if") {
-                    let expr = Self::extract_expression(condition);
-                    if !Self::evaluate_condition(&expr, data) {
-                        return None;
-                    }
+            match node.node_type {
+                WxmlNodeType::Comment => { /* 丢弃注释 */ }
+                WxmlNodeType::Text => {
+                    chain_active = false;
+                    let text = Self::interpolate(&node.text_content, data);
+                    out.push(WxmlNode::new_text(&text));
                 }
-                
-                // 处理 wx:for - 使用虚拟列表优化
-                if let Some(for_expr) = node.attributes.get("wx:for") {
-                    return Some(Self::render_for_loop_virtual(node, for_expr, data, viewport));
-                }
-                
-                // 普通元素
-                let mut new_node = WxmlNode::new_element(&node.tag_name);
-                
-                // 处理属性
-                for (key, value) in &node.attributes {
-                    if key.starts_with("wx:") {
+                WxmlNodeType::Element => {
+                    // wx:for 优先级最高
+                    if node.attributes.contains_key("wx:for") {
+                        chain_active = false;
+                        Self::render_for(node, data, &mut out);
                         continue;
                     }
-                    let new_value = Self::interpolate(value, data);
-                    new_node.attributes.insert(key.clone(), new_value);
+                    
+                    if let Some(cond) = node.attributes.get("wx:if") {
+                        chain_active = true;
+                        chain_taken = Self::eval_condition(cond, data);
+                        if chain_taken {
+                            Self::emit_element(node, data, &mut out);
+                        }
+                    } else if let Some(cond) = node.attributes.get("wx:elif") {
+                        if chain_active && !chain_taken && Self::eval_condition(cond, data) {
+                            chain_taken = true;
+                            Self::emit_element(node, data, &mut out);
+                        }
+                    } else if node.attributes.contains_key("wx:else") {
+                        if chain_active && !chain_taken {
+                            Self::emit_element(node, data, &mut out);
+                        }
+                        chain_active = false;
+                        chain_taken = false;
+                    } else {
+                        chain_active = false;
+                        Self::emit_element(node, data, &mut out);
+                    }
                 }
-                
-                // 处理子节点
-                new_node.children = Self::render_with_virtual_list(&node.children, data, viewport);
-                
-                Some(vec![new_node])
             }
-            _ => Some(vec![node.clone()]),
         }
+        
+        out
     }
     
-    /// 虚拟列表渲染 - 只渲染可见区域的元素
-    /// 注意：为了保持布局正确，我们仍然渲染所有元素，视口裁剪在绘制阶段处理
-    fn render_for_loop_virtual(node: &WxmlNode, for_expr: &str, data: &JsonValue, _viewport: Option<(f32, f32)>) -> Vec<WxmlNode> {
-        let array_name = Self::extract_expression(for_expr);
-        let item_name = node.attributes.get("wx:for-item")
-            .map(|s| s.as_str())
-            .unwrap_or("item");
-        let index_name = node.attributes.get("wx:for-index")
-            .map(|s| s.as_str())
-            .unwrap_or("index");
+    /// 输出一个已经通过条件判断的元素。
+    /// `<block>` 不产生真实节点，只展开其子节点。
+    fn emit_element(node: &WxmlNode, data: &JsonValue, out: &mut Vec<WxmlNode>) {
+        if node.tag_name == "block" {
+            let children = Self::render_nodes(&node.children, data);
+            out.extend(children);
+            return;
+        }
         
-        let array = match Self::get_value(&array_name, data) {
-            Some(v) => v,
-            None => return Vec::new(),
-        };
-        
-        let arr = match array.as_array() {
-            Some(a) => a,
-            None => return Vec::new(),
-        };
-        
-        // 直接使用完整渲染，视口裁剪在绘制阶段处理
-        Self::render_for_loop_full(node, arr, item_name, index_name, data)
+        let mut new_node = WxmlNode::new_element(&node.tag_name);
+        for (key, value) in &node.attributes {
+            if Self::is_directive(key) {
+                continue;
+            }
+            new_node.attributes.insert(key.clone(), Self::interpolate(value, data));
+        }
+        new_node.children = Self::render_nodes(&node.children, data);
+        out.push(new_node);
     }
     
-    /// 完整渲染 for 循环（不使用虚拟列表）
-    fn render_for_loop_full(node: &WxmlNode, arr: &[JsonValue], item_name: &str, index_name: &str, data: &JsonValue) -> Vec<WxmlNode> {
-        let mut result = Vec::new();
+    /// 渲染 wx:for 循环
+    fn render_for(node: &WxmlNode, data: &JsonValue, out: &mut Vec<WxmlNode>) {
+        let for_expr = match node.attributes.get("wx:for") {
+            Some(e) => e,
+            None => return,
+        };
+        let item_name = node.attributes.get("wx:for-item").map(|s| s.as_str()).unwrap_or("item");
+        let index_name = node.attributes.get("wx:for-index").map(|s| s.as_str()).unwrap_or("index");
         
-        for (index, item) in arr.iter().enumerate() {
-            // 创建循环上下文
+        // 计算被遍历的集合
+        let arr_val = Self::eval_value(for_expr, data);
+        let items: Vec<JsonValue> = match arr_val {
+            JsonValue::Array(a) => a,
+            // wx:for 作用于对象时遍历其值
+            JsonValue::Object(m) => m.into_iter().map(|(_, v)| v).collect(),
+            // 作用于字符串时按字符遍历
+            JsonValue::String(s) => s.chars().map(|c| JsonValue::String(c.to_string())).collect(),
+            _ => return,
+        };
+        
+        for (index, item) in items.iter().enumerate() {
             let mut loop_data = data.clone();
             if let Some(obj) = loop_data.as_object_mut() {
                 obj.insert(item_name.to_string(), item.clone());
                 obj.insert(index_name.to_string(), JsonValue::Number(index.into()));
             }
             
-            // 渲染节点（不包含 wx:for 属性）
-            let mut new_node = WxmlNode::new_element(&node.tag_name);
-            
-            for (key, value) in &node.attributes {
-                if key.starts_with("wx:") {
+            // wx:for 与 wx:if 同时存在时，wx:if 对每个 item 求值
+            if let Some(cond) = node.attributes.get("wx:if") {
+                if !Self::eval_condition(cond, &loop_data) {
                     continue;
                 }
-                let new_value = Self::interpolate(value, &loop_data);
-                new_node.attributes.insert(key.clone(), new_value);
             }
             
-            new_node.children = Self::render(&node.children, &loop_data);
-            result.push(new_node);
+            Self::emit_element(node, &loop_data, out);
         }
-        
-        result
     }
     
-    /// 插值替换 {{expression}}
+    /// 文本/属性插值：替换所有 {{ ... }} 片段
     fn interpolate(template: &str, data: &JsonValue) -> String {
-        let mut result = template.to_string();
-        let mut start = 0;
+        if !template.contains("{{") {
+            return template.to_string();
+        }
         
-        while let Some(open) = result[start..].find("{{") {
-            let open = start + open;
-            if let Some(close) = result[open..].find("}}") {
-                let close = open + close;
-                let expr = &result[open + 2..close].trim();
-                let value = Self::evaluate_expression(expr, data);
-                result = format!("{}{}{}", &result[..open], value, &result[close + 2..]);
-                start = open + value.len();
+        let mut result = String::new();
+        let mut rest = template;
+        
+        while let Some(open) = rest.find("{{") {
+            result.push_str(&rest[..open]);
+            rest = &rest[open + 2..];
+            if let Some(close) = rest.find("}}") {
+                let expr_src = &rest[..close];
+                result.push_str(&expr::eval_to_display(expr_src, data));
+                rest = &rest[close + 2..];
             } else {
+                // 没有闭合，原样输出
+                result.push_str("{{");
+                result.push_str(rest);
+                rest = "";
                 break;
             }
         }
-        
+        result.push_str(rest);
         result
     }
     
-    /// 提取 {{}} 中的表达式
+    /// 求值一个可能被 {{ }} 包裹的表达式，返回 JSON 值（用于 wx:for）
+    fn eval_value(raw: &str, data: &JsonValue) -> JsonValue {
+        expr::eval_str(&Self::extract_expression(raw), data)
+    }
+    
+    /// 求值条件表达式（用于 wx:if / wx:elif）
+    fn eval_condition(raw: &str, data: &JsonValue) -> bool {
+        expr::is_truthy(&Self::eval_value(raw, data))
+    }
+    
+    /// 提取 {{ }} 中的表达式；若没有大括号则原样返回
     fn extract_expression(s: &str) -> String {
         let s = s.trim();
-        if s.starts_with("{{") && s.ends_with("}}") {
+        if s.starts_with("{{") && s.ends_with("}}") && s.len() >= 4 {
             s[2..s.len() - 2].trim().to_string()
         } else {
             s.to_string()
         }
     }
     
-    /// 计算表达式
-    fn evaluate_expression(expr: &str, data: &JsonValue) -> String {
-        let expr = expr.trim();
-        
-        // 三元表达式: condition ? true_val : false_val
-        if let Some(q_pos) = expr.find('?') {
-            if let Some(c_pos) = expr[q_pos..].find(':') {
-                let condition = &expr[..q_pos].trim();
-                let true_val = &expr[q_pos + 1..q_pos + c_pos].trim();
-                let false_val = &expr[q_pos + c_pos + 1..].trim();
-                
-                if Self::evaluate_condition(condition, data) {
-                    return Self::evaluate_expression(true_val, data);
-                } else {
-                    return Self::evaluate_expression(false_val, data);
-                }
-            }
-        }
-        
-        // 字符串字面量
-        if (expr.starts_with('\'') && expr.ends_with('\'')) ||
-           (expr.starts_with('"') && expr.ends_with('"')) {
-            return expr[1..expr.len() - 1].to_string();
-        }
-        
-        // 数字字面量
-        if let Ok(_) = expr.parse::<f64>() {
-            return expr.to_string();
-        }
-        
-        // 处理 .length 属性（数组或字符串）
-        if expr.ends_with(".length") {
-            let base_path = &expr[..expr.len() - 7]; // 去掉 ".length"
-            if let Some(value) = Self::get_value(base_path, data) {
-                if let Some(arr) = value.as_array() {
-                    return arr.len().to_string();
-                } else if let Some(s) = value.as_str() {
-                    return s.chars().count().to_string();
-                }
-            }
-            return "0".to_string();
-        }
-        
-        // 变量访问
-        if let Some(value) = Self::get_value(expr, data) {
-            return Self::json_to_string(value);
-        }
-        
-        expr.to_string()
+    /// 是否为 wx: 指令属性（渲染时不输出到最终节点）
+    fn is_directive(key: &str) -> bool {
+        key.starts_with("wx:")
     }
-    
-    /// 计算条件表达式
-    fn evaluate_condition(expr: &str, data: &JsonValue) -> bool {
-        let expr = expr.trim();
-        
-        // 否定 - 处理 !variable 形式
-        if expr.starts_with('!') {
-            let inner = expr[1..].trim();
-            // 如果是变量，先获取值再取反
-            if let Some(value) = Self::get_value(inner, data) {
-                return !Self::is_truthy(value);
-            }
-            // 否则递归处理
-            return !Self::evaluate_condition(inner, data);
-        }
-        
-        // 比较运算
-        for op in &["===", "!==", "==", "!=", ">=", "<=", ">", "<"] {
-            if let Some(pos) = expr.find(op) {
-                let left = Self::evaluate_expression(&expr[..pos], data);
-                let right = Self::evaluate_expression(&expr[pos + op.len()..], data);
-                
-                return match *op {
-                    "===" | "==" => left == right,
-                    "!==" | "!=" => left != right,
-                    ">" => left.parse::<f64>().unwrap_or(0.0) > right.parse::<f64>().unwrap_or(0.0),
-                    "<" => left.parse::<f64>().unwrap_or(0.0) < right.parse::<f64>().unwrap_or(0.0),
-                    ">=" => left.parse::<f64>().unwrap_or(0.0) >= right.parse::<f64>().unwrap_or(0.0),
-                    "<=" => left.parse::<f64>().unwrap_or(0.0) <= right.parse::<f64>().unwrap_or(0.0),
-                    _ => false,
-                };
-            }
-        }
-        
-        // 布尔值
-        if let Some(value) = Self::get_value(expr, data) {
-            return Self::is_truthy(value);
-        }
-        
-        // 如果变量不存在，返回 false
-        // 只有字面量 "true" 才返回 true
-        expr == "true"
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::parser::wxml::WxmlParser;
+    use serde_json::json;
+
+    fn render_wxml(wxml: &str, data: &JsonValue) -> Vec<WxmlNode> {
+        let mut parser = WxmlParser::new(wxml);
+        let nodes = parser.parse().unwrap();
+        TemplateEngine::render(&nodes, data)
     }
-    
-    /// 获取数据值
-    fn get_value<'a>(path: &str, data: &'a JsonValue) -> Option<&'a JsonValue> {
-        let parts: Vec<&str> = path.split('.').collect();
-        let mut current = data;
-        
-        for part in parts {
-            // 处理数组索引 item[0]
-            if let Some(bracket_pos) = part.find('[') {
-                let name = &part[..bracket_pos];
-                let index_str = &part[bracket_pos + 1..part.len() - 1];
-                
-                if !name.is_empty() {
-                    current = current.get(name)?;
-                }
-                
-                if let Ok(index) = index_str.parse::<usize>() {
-                    current = current.get(index)?;
-                }
-            } else {
-                current = current.get(part)?;
-            }
-        }
-        
-        Some(current)
+
+    #[test]
+    fn test_if_elif_else() {
+        let wxml = r#"
+            <view wx:if="{{n === 1}}">one</view>
+            <view wx:elif="{{n === 2}}">two</view>
+            <view wx:else>other</view>
+        "#;
+        let out = render_wxml(wxml, &json!({"n": 2}));
+        assert_eq!(out.len(), 1);
+        assert_eq!(out[0].children[0].text_content, "two");
     }
-    
-    fn json_to_string(value: &JsonValue) -> String {
-        match value {
-            JsonValue::String(s) => s.clone(),
-            JsonValue::Number(n) => n.to_string(),
-            JsonValue::Bool(b) => b.to_string(),
-            JsonValue::Null => "".to_string(),
-            // 对于对象和数组，生成 JSON 字符串
-            // 将双引号替换为单引号，避免与 HTML 属性引号冲突
-            JsonValue::Object(_) | JsonValue::Array(_) => {
-                value.to_string().replace('"', "'")
-            }
-        }
+
+    #[test]
+    fn test_for_loop() {
+        let wxml = r#"<view wx:for="{{list}}">{{item}}-{{index}}</view>"#;
+        let out = render_wxml(wxml, &json!({"list": ["a", "b"]}));
+        assert_eq!(out.len(), 2);
+        assert_eq!(out[0].children[0].text_content, "a-0");
+        assert_eq!(out[1].children[0].text_content, "b-1");
     }
-    
-    fn is_truthy(value: &JsonValue) -> bool {
-        match value {
-            JsonValue::Null => false,
-            JsonValue::Bool(b) => *b,
-            JsonValue::Number(n) => n.as_f64().unwrap_or(0.0) != 0.0,
-            JsonValue::String(s) => !s.is_empty(),
-            JsonValue::Array(a) => !a.is_empty(),
-            JsonValue::Object(_) => true,
-        }
+
+    #[test]
+    fn test_block_unwrap() {
+        let wxml = r#"<block wx:if="{{show}}"><text>x</text><text>y</text></block>"#;
+        let out = render_wxml(wxml, &json!({"show": true}));
+        assert_eq!(out.len(), 2);
+        assert_eq!(out[0].tag_name, "text");
+        assert_eq!(out[1].tag_name, "text");
     }
 }
