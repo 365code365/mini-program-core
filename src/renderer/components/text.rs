@@ -47,21 +47,27 @@ impl TextComponent {
         // 设置 flex-shrink 允许收缩
         ts.flex_shrink = 1.0;
         
-        // 设置高度为文本行数 * 行高（而不是 min_size，确保 taffy 正确计算父容器高度）
-        // 同时设置 min_size 作为保底
+        // 文本自身内边距：清空 taffy padding，改为把 padding 计入盒子尺寸，
+        // 绘制时再把文字画进内容区（修复带 padding 的 <text>，如标签/徽章，文字溢出背景）
+        let pad_t = ns.padding_top * sf;
+        let pad_b = ns.padding_bottom * sf;
+        let pad_l = ns.padding_left * sf;
+        let pad_r = ns.padding_right * sf;
+        ts.padding = Rect::zero();
+        
+        // 盒子高度 = 文本行高 + 上下内边距
         let text_height = actual_line_height * min_lines as f32;
-        ts.size.height = length(text_height);
-        ts.min_size.height = length(text_height);
+        ts.size.height = length(text_height + pad_t + pad_b);
+        ts.min_size.height = length(text_height + pad_t + pad_b);
         
         // 如果 CSS 没有设置宽度，根据 display / text-align 决定宽度
         // display:block 或 text-align 为 center/right 时使用 100%（便于水平对齐），
-        // 否则使用估算的文本宽度
+        // 否则使用估算的文本宽度 + 左右内边距
         if matches!(ts.size.width, Dimension::Auto) {
             if ns.is_block || matches!(ns.text_align, TextAlign::Center | TextAlign::Right) {
                 ts.size.width = Dimension::Percent(1.0);
             } else {
-                // 使用估算的文本宽度
-                ts.size.width = length(max_line_width);
+                ts.size.width = length(max_line_width + pad_l + pad_r);
             }
         }
         
@@ -93,8 +99,18 @@ impl TextComponent {
         let line_height = node.style.line_height.map(|lh| lh * sf).unwrap_or(size * 1.5);
         let letter_spacing = node.style.letter_spacing * sf;
         
-        // 绘制文本自身的背景（<text> 也可有 background-color / 圆角）
+        // 绘制文本自身的背景（<text> 也可有 background-color / 圆角），覆盖整个盒子
         draw_background(canvas, &node.style, x, y, w, h);
+        
+        // 内容区 = 盒子扣除自身 padding，文字在内容区内定位
+        let pl = node.style.padding_left * sf;
+        let pr = node.style.padding_right * sf;
+        let pt = node.style.padding_top * sf;
+        let pb = node.style.padding_bottom * sf;
+        let cx = x + pl;
+        let cy = y + pt;
+        let cw = (w - pl - pr).max(0.0);
+        let chh = (h - pt - pb).max(0.0);
         
         if let Some(tr) = text_renderer {
             let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill);
@@ -105,8 +121,8 @@ impl TextComponent {
             
             let text = &node.text;
             let text_w = tr.measure_text_with_spacing(text, size, letter_spacing);
-            // 是否需要多行：含换行符，或允许换行且超出宽度
-            let multiline = text.contains('\n') || (should_wrap && w > 0.0 && text_w > w);
+            // 是否需要多行：含换行符，或允许换行且超出内容宽度
+            let multiline = text.contains('\n') || (should_wrap && cw > 0.0 && text_w > cw);
             
             // 粗体：字体无独立 bold 字面时用轻微偏移二次描绘模拟（faux-bold）
             let is_bold = matches!(
@@ -116,33 +132,33 @@ impl TextComponent {
             let bold_dx = if is_bold { 0.7 * sf } else { 0.0 };
             
             if multiline {
-                // 多行：顶部对齐换行绘制
+                // 多行：顶部对齐换行绘制（在内容区内）
                 draw_text_wrapped_advanced(
-                    canvas, tr, text, x, y + size, size, w, h,
+                    canvas, tr, text, cx, cy + size, size, cw, chh,
                     line_height, letter_spacing, &node.style, &paint
                 );
                 if is_bold {
                     draw_text_wrapped_advanced(
-                        canvas, tr, text, x + bold_dx, y + size, size, w, h,
+                        canvas, tr, text, cx + bold_dx, cy + size, size, cw, chh,
                         line_height, letter_spacing, &node.style, &paint
                     );
                 }
             } else {
-                // 单行：在盒内垂直居中（基线 ≈ 盒中心 + 0.34*字号）
-                let baseline = y + h / 2.0 + size * 0.34;
-                // 水平对齐：text-align center/right 时在盒内做水平偏移
-                let align_dx = if w > text_w {
+                // 单行：在内容区内垂直居中（基线 ≈ 内容区中心 + 0.34*字号）
+                let baseline = cy + chh / 2.0 + size * 0.34;
+                // 水平对齐：text-align center/right 时在内容区内做水平偏移
+                let align_dx = if cw > text_w {
                     match node.style.text_align {
-                        TextAlign::Center => (w - text_w) / 2.0,
-                        TextAlign::Right => w - text_w,
+                        TextAlign::Center => (cw - text_w) / 2.0,
+                        TextAlign::Right => cw - text_w,
                         _ => 0.0,
                     }
                 } else { 0.0 };
-                let ax = x + align_dx;
-                if w > 0.0 && use_ellipsis && text_w > w {
-                    draw_text_with_ellipsis(canvas, tr, text, x, baseline, size, w, letter_spacing, &paint);
+                let ax = cx + align_dx;
+                if cw > 0.0 && use_ellipsis && text_w > cw {
+                    draw_text_with_ellipsis(canvas, tr, text, cx, baseline, size, cw, letter_spacing, &paint);
                     if is_bold {
-                        draw_text_with_ellipsis(canvas, tr, text, x + bold_dx, baseline, size, w, letter_spacing, &paint);
+                        draw_text_with_ellipsis(canvas, tr, text, cx + bold_dx, baseline, size, cw, letter_spacing, &paint);
                     }
                 } else {
                     tr.draw_text_with_spacing(canvas, text, ax, baseline, size, letter_spacing, &paint);

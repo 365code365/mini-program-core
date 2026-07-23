@@ -34,6 +34,11 @@ pub struct NodeStyle {
     pub font_size: f32,
     pub font_weight: FontWeight,
     pub opacity: f32,
+    /// 元素自身内边距（逻辑像素），供文本组件在内容区内定位文字
+    pub padding_top: f32,
+    pub padding_right: f32,
+    pub padding_bottom: f32,
+    pub padding_left: f32,
     pub text_align: TextAlign,
     pub text_decoration: TextDecoration,
     pub line_height: Option<f32>,
@@ -449,11 +454,12 @@ fn apply_style_property(
                     top: length(t * sf), right: length(r * sf),
                     bottom: length(b * sf), left: length(l * sf),
                 };
+                ns.padding_top = t; ns.padding_right = r; ns.padding_bottom = b; ns.padding_left = l;
             }
-            "padding-top" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.padding.top = length(v * sf); }
-            "padding-right" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.padding.right = length(v * sf); }
-            "padding-bottom" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.padding.bottom = length(v * sf); }
-            "padding-left" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.padding.left = length(v * sf); }
+            "padding-top" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.padding.top = length(v * sf); ns.padding_top = v; }
+            "padding-right" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.padding.right = length(v * sf); ns.padding_right = v; }
+            "padding-bottom" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.padding.bottom = length(v * sf); ns.padding_bottom = v; }
+            "padding-left" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.padding.left = length(v * sf); ns.padding_left = v; }
             "margin" => {
                 if matches!(value, StyleValue::Auto) {
                     // margin: auto -> 居中
