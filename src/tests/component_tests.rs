@@ -62,6 +62,7 @@ fn test_view_component_build() {
         screen_height: 667.0,
         stylesheet: &stylesheet,
         taffy: &mut taffy,
+        ancestors: Vec::new(),
     };
     
     let render_node = ViewComponent::build(&node, &mut ctx);
@@ -99,6 +100,7 @@ fn test_text_component_build() {
         screen_height: 667.0,
         stylesheet: &stylesheet,
         taffy: &mut taffy,
+        ancestors: Vec::new(),
     };
     
     let render_node = TextComponent::build(&node, &mut ctx);
@@ -132,6 +134,7 @@ fn test_button_component_build() {
         screen_height: 667.0,
         stylesheet: &stylesheet,
         taffy: &mut taffy,
+        ancestors: Vec::new(),
     };
     
     let render_node = ButtonComponent::build(&node, &mut ctx);
@@ -161,6 +164,7 @@ fn test_icon_component_build() {
         screen_height: 667.0,
         stylesheet: &stylesheet,
         taffy: &mut taffy,
+        ancestors: Vec::new(),
     };
     
     let render_node = IconComponent::build(&node, &mut ctx);
@@ -188,6 +192,7 @@ fn test_progress_component_build() {
         screen_height: 667.0,
         stylesheet: &stylesheet,
         taffy: &mut taffy,
+        ancestors: Vec::new(),
     };
     
     let render_node = ProgressComponent::build(&node, &mut ctx);
@@ -216,6 +221,7 @@ fn test_switch_component_build() {
         screen_height: 667.0,
         stylesheet: &stylesheet,
         taffy: &mut taffy,
+        ancestors: Vec::new(),
     };
     
     let render_node = SwitchComponent::build(&node, &mut ctx);
@@ -244,6 +250,7 @@ fn test_checkbox_component_build() {
         screen_height: 667.0,
         stylesheet: &stylesheet,
         taffy: &mut taffy,
+        ancestors: Vec::new(),
     };
     
     let render_node = CheckboxComponent::build(&node, &mut ctx);
@@ -271,6 +278,7 @@ fn test_radio_component_build() {
         screen_height: 667.0,
         stylesheet: &stylesheet,
         taffy: &mut taffy,
+        ancestors: Vec::new(),
     };
     
     let render_node = RadioComponent::build(&node, &mut ctx);
@@ -299,6 +307,7 @@ fn test_slider_component_build() {
         screen_height: 667.0,
         stylesheet: &stylesheet,
         taffy: &mut taffy,
+        ancestors: Vec::new(),
     };
     
     let render_node = SliderComponent::build(&node, &mut ctx);
@@ -334,6 +343,7 @@ fn test_input_component_build() {
         screen_height: 667.0,
         stylesheet: &stylesheet,
         taffy: &mut taffy,
+        ancestors: Vec::new(),
     };
     
     let render_node = InputComponent::build(&node, &mut ctx);
@@ -370,6 +380,7 @@ fn test_image_component_build() {
         screen_height: 667.0,
         stylesheet: &stylesheet,
         taffy: &mut taffy,
+        ancestors: Vec::new(),
     };
     
     let render_node = ImageComponent::build(&node, &mut ctx);
@@ -498,6 +509,7 @@ fn test_fixed_position_style() {
         screen_height: 667.0,
         stylesheet: &stylesheet,
         taffy: &mut taffy,
+        ancestors: Vec::new(),
     };
     
     let render_node = ViewComponent::build(&node, &mut ctx);

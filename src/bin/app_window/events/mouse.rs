@@ -256,10 +256,11 @@ pub fn handle_content_click(
         }
     }
     
-    // 检查其他事件绑定
+    // 检查其他事件绑定 —— 使用冒泡链分发（bindtap 冒泡，catchtap 阻止）
     if let Some(renderer) = renderer {
-        if let Some(binding) = renderer.hit_test(x, adjusted_y) {
-            println!("👆 {} -> {}", binding.event_type, binding.handler);
+        let chain = renderer.hit_test_bubble(x, adjusted_y, "tap");
+        for binding in &chain {
+            println!("👆 {} -> {} (bubble)", binding.event_type, binding.handler);
             let data_json = serde_json::to_string(&binding.data).unwrap_or("{}".to_string());
             let call_code = format!("__callPageMethod('{}', {})", binding.handler, data_json);
             app.eval(&call_code).ok();

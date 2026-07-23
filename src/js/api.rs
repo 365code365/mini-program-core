@@ -36,6 +36,8 @@ impl MiniAppApi {
         self.init_canvas_api().map_err(|e| format!("canvas: {}", e))?;
         println!("    init_app...");
         self.init_app().map_err(|e| format!("app: {}", e))?;
+        println!("    init_component...");
+        self.init_component().map_err(|e| format!("component: {}", e))?;
         Ok(())
     }
     
@@ -453,13 +455,15 @@ impl MiniAppApi {
         rt.eval(r#"
             var __app = null;
             var __pages = {};
-            var __currentPage = null;
+            var __pageStack = [];      // 真实页面栈
+            var __currentPage = null;  // 栈顶页面（保持与 native 的兼容契约）
             var __pendingNavigation = null;
             
             function App(config) {
                 __app = config;
+                __app.globalData = __app.globalData || {};
                 if (config.onLaunch) {
-                    config.onLaunch();
+                    try { config.onLaunch(); } catch (e) { __native_print('[App.onLaunch] ' + e.message); }
                 }
                 return __app;
             }
@@ -468,31 +472,79 @@ impl MiniAppApi {
                 return __app;
             }
             
+            // ---- setData 数据路径工具（支持 'a.b.c'、'list[0].x'） ----
+            function __parseDataPath(path) {
+                var tokens = [];
+                var buf = '';
+                for (var i = 0; i < path.length; i++) {
+                    var ch = path[i];
+                    if (ch === '.') {
+                        if (buf !== '') { tokens.push(buf); buf = ''; }
+                    } else if (ch === '[') {
+                        if (buf !== '') { tokens.push(buf); buf = ''; }
+                    } else if (ch === ']') {
+                        if (buf !== '') { tokens.push(parseInt(buf, 10)); buf = ''; }
+                    } else {
+                        buf += ch;
+                    }
+                }
+                if (buf !== '') { tokens.push(buf); }
+                return tokens;
+            }
+            
+            function __setByPath(obj, path, value) {
+                var tokens = __parseDataPath(path);
+                if (tokens.length === 0) { return; }
+                var cur = obj;
+                for (var i = 0; i < tokens.length - 1; i++) {
+                    var key = tokens[i];
+                    var next = tokens[i + 1];
+                    if (cur[key] === undefined || cur[key] === null) {
+                        cur[key] = (typeof next === 'number') ? [] : {};
+                    }
+                    cur = cur[key];
+                }
+                cur[tokens[tokens.length - 1]] = value;
+            }
+            
+            // 通用 setData 实现（页面与组件共用）
+            function __applySetData(instance, newData, callback) {
+                if (newData) {
+                    for (var key in newData) {
+                        if (!newData.hasOwnProperty(key)) { continue; }
+                        if (key.indexOf('.') >= 0 || key.indexOf('[') >= 0) {
+                            __setByPath(instance.data, key, newData[key]);
+                        } else {
+                            instance.data[key] = newData[key];
+                        }
+                    }
+                }
+                if (typeof __native_page_update === 'function') {
+                    __native_page_update(JSON.stringify(instance.data));
+                }
+                if (typeof callback === 'function') {
+                    try { callback(); } catch (e) { __native_print('[setData.cb] ' + e.message); }
+                }
+            }
+            
             function Page(config) {
                 // 创建页面实例
                 var page = {
                     data: config.data || {},
+                    __isPage: true,
+                    route: __pendingRoute || '',
                     
-                    // setData 方法 - 更新数据并触发重新渲染
+                    // setData 方法 - 更新数据并触发重新渲染（支持数据路径）
                     setData: function(newData, callback) {
-                        // 合并数据
-                        for (var key in newData) {
-                            if (newData.hasOwnProperty(key)) {
-                                this.data[key] = newData[key];
-                            }
-                        }
-                        // 通知 native 层数据更新
-                        if (typeof __native_page_update === 'function') {
-                            __native_page_update(JSON.stringify(this.data));
-                        }
-                        // 执行回调
-                        if (callback) {
-                            callback();
-                        }
-                    }
+                        __applySetData(this, newData, callback);
+                    },
+                    
+                    // 官方 API：selectComponent 等（占位，待渲染层接入组件树后完善）
+                    selectComponent: function() { return null; },
+                    selectAllComponents: function() { return []; }
                 };
                 
-                // 复制所有方法到页面实例
+                // 复制所有方法/字段到页面实例
                 for (var key in config) {
                     if (config.hasOwnProperty(key) && key !== 'data') {
                         if (typeof config[key] === 'function') {
@@ -503,14 +555,29 @@ impl MiniAppApi {
                     }
                 }
                 
-                // 保存当前页面
+                // 入栈并置为当前页面
+                __pageStack.push(page);
                 __currentPage = page;
                 
                 return page;
             }
             
+            // 页面出栈（供 navigateBack 使用）
+            function __popPage(delta) {
+                delta = delta || 1;
+                for (var i = 0; i < delta && __pageStack.length > 1; i++) {
+                    __pageStack.pop();
+                }
+                __currentPage = __pageStack[__pageStack.length - 1] || null;
+                return __currentPage;
+            }
+            
+            // native 在加载页面 JS 前可设置将要创建页面的路由
+            var __pendingRoute = '';
+            function __setPendingRoute(route) { __pendingRoute = route || ''; }
+            
             function getCurrentPages() {
-                return __currentPage ? [__currentPage] : [];
+                return __pageStack.slice();
             }
             
             // 获取当前页面实例（供 native 调用）
@@ -561,12 +628,15 @@ impl MiniAppApi {
                         }
                     }
                     
+                    var targetInfo = { id: '', offsetLeft: 0, offsetTop: 0, dataset: dataset };
                     var event = {
                         type: 'tap',
-                        currentTarget: {
-                            dataset: dataset
-                        },
-                        detail: dataset
+                        timeStamp: Date.now(),
+                        target: targetInfo,
+                        currentTarget: targetInfo,
+                        detail: dataset,
+                        touches: [],
+                        changedTouches: []
                     };
                     try {
                         __currentPage[methodName](event);
@@ -598,10 +668,13 @@ impl MiniAppApi {
             
             wx.navigateBack = function(options) {
                 options = options || {};
+                var delta = options.delta || 1;
                 __pendingNavigation = {
                     type: 'navigateBack',
-                    delta: options.delta || 1
+                    delta: delta
                 };
+                // 逻辑层页面栈出栈（native 侧应配合使用实例复用而非重新加载页面 JS）
+                __popPage(delta);
                 __native_print('[Navigate] navigateBack');
                 options.success && options.success();
             };
@@ -653,6 +726,172 @@ impl MiniAppApi {
             };
         "#)?;
         
+        Ok(())
+    }
+    
+    /// 初始化自定义组件 / Behavior 运行时
+    ///
+    /// 提供 `Component()`、`Behavior()` 以及组件实例工厂。渲染层在遇到自定义
+    /// 组件标签时可调用 `__createComponentInstance` 创建实例。properties 默认值、
+    /// data、methods、observers、生命周期（created/attached/ready）、triggerEvent
+    /// 均已支持。渲染层与组件树的接线属于后续 native 侧工作。
+    fn init_component(&self) -> Result<(), String> {
+        let rt = self.runtime.lock().unwrap();
+        rt.eval(r#"
+            var __componentDefs = {};       // path -> { def, merged }
+            var __componentInstances = {};  // instanceId -> instance
+            var __componentSeq = 0;
+            var __pendingComponentPath = '';
+            var __componentEventHandlers = {}; // instanceId:eventName -> pageMethodName
+            
+            function __setPendingComponentPath(p) { __pendingComponentPath = p || ''; }
+            
+            // Behavior 返回定义本身，供 behaviors 数组引用
+            function Behavior(def) { return def || {}; }
+            
+            // 合并 behaviors 与顶层生命周期
+            function __mergeBehaviors(def) {
+                var result = {
+                    properties: {}, data: {}, methods: {},
+                    observers: {}, lifetimes: {}, pageLifetimes: {}
+                };
+                function mergeOne(src) {
+                    if (!src) { return; }
+                    if (src.behaviors) {
+                        for (var i = 0; i < src.behaviors.length; i++) { mergeOne(src.behaviors[i]); }
+                    }
+                    var maps = ['properties', 'data', 'methods', 'observers', 'lifetimes', 'pageLifetimes'];
+                    for (var m = 0; m < maps.length; m++) {
+                        var name = maps[m];
+                        if (src[name]) {
+                            for (var k in src[name]) {
+                                if (src[name].hasOwnProperty(k)) { result[name][k] = src[name][k]; }
+                            }
+                        }
+                    }
+                    // 旧式：生命周期直接写在 def 顶层
+                    var top = ['created', 'attached', 'ready', 'moved', 'detached'];
+                    for (var t = 0; t < top.length; t++) {
+                        if (typeof src[top[t]] === 'function') { result.lifetimes[top[t]] = src[top[t]]; }
+                    }
+                }
+                mergeOne(def);
+                return result;
+            }
+            
+            function Component(def) {
+                def = def || {};
+                var path = __pendingComponentPath || ('__comp_' + (++__componentSeq));
+                __componentDefs[path] = { def: def, merged: __mergeBehaviors(def) };
+                return def;
+            }
+            
+            // 解析 properties 默认值
+            function __propDefault(prop) {
+                if (prop === null || prop === undefined) { return null; }
+                if (prop === String) { return ''; }
+                if (prop === Number) { return 0; }
+                if (prop === Boolean) { return false; }
+                if (prop === Array) { return []; }
+                if (prop === Object) { return null; }
+                if (typeof prop === 'object') {
+                    if (prop.value !== undefined) { return prop.value; }
+                    var ty = prop.type;
+                    if (ty === String) { return ''; }
+                    if (ty === Number) { return 0; }
+                    if (ty === Boolean) { return false; }
+                    if (ty === Array) { return []; }
+                    return null;
+                }
+                return null;
+            }
+            
+            // 创建组件实例（供渲染层调用）
+            function __createComponentInstance(path, initialProps) {
+                var entry = __componentDefs[path];
+                if (!entry) { return null; }
+                var merged = entry.merged;
+                var id = '__ci_' + (++__componentSeq);
+                
+                var data = {};
+                for (var pk in merged.properties) {
+                    if (merged.properties.hasOwnProperty(pk)) { data[pk] = __propDefault(merged.properties[pk]); }
+                }
+                for (var dk in merged.data) {
+                    if (merged.data.hasOwnProperty(dk)) { data[dk] = merged.data[dk]; }
+                }
+                initialProps = initialProps || {};
+                for (var ik in initialProps) {
+                    if (initialProps.hasOwnProperty(ik)) { data[ik] = initialProps[ik]; }
+                }
+                
+                var instance = {
+                    is: path,
+                    id: id,
+                    data: data,
+                    properties: data,
+                    __isComponent: true,
+                    __observers: merged.observers,
+                    setData: function(newData, callback) {
+                        __applySetData(this, newData, callback);
+                        __runObservers(this, newData);
+                    },
+                    triggerEvent: function(name, detail, options) {
+                        __triggerComponentEvent(this, name, detail, options);
+                    },
+                    selectComponent: function() { return null; },
+                    selectAllComponents: function() { return []; }
+                };
+                
+                for (var mk in merged.methods) {
+                    if (merged.methods.hasOwnProperty(mk)) { instance[mk] = merged.methods[mk].bind(instance); }
+                }
+                
+                __componentInstances[id] = instance;
+                
+                var lc = merged.lifetimes;
+                if (typeof lc.created === 'function') { try { lc.created.call(instance); } catch (e) { __native_print('[Component.created] ' + e.message); } }
+                if (typeof lc.attached === 'function') { try { lc.attached.call(instance); } catch (e) { __native_print('[Component.attached] ' + e.message); } }
+                if (typeof lc.ready === 'function') { try { lc.ready.call(instance); } catch (e) { __native_print('[Component.ready] ' + e.message); } }
+                
+                return instance;
+            }
+            
+            // 属性变化触发 observers
+            function __runObservers(instance, changed) {
+                if (!instance.__observers || !changed) { return; }
+                for (var key in changed) {
+                    if (!changed.hasOwnProperty(key)) { continue; }
+                    var field = key.split('.')[0].split('[')[0];
+                    var obs = instance.__observers[key] || instance.__observers[field];
+                    if (typeof obs === 'function') {
+                        try { obs.call(instance, changed[key]); } catch (e) { __native_print('[observer] ' + e.message); }
+                    }
+                }
+            }
+            
+            // 组件 triggerEvent -> 宿主页面绑定的处理器
+            function __triggerComponentEvent(instance, name, detail, options) {
+                var key = instance.id + ':' + name;
+                var handlerName = __componentEventHandlers[key];
+                if (handlerName && __currentPage && typeof __currentPage[handlerName] === 'function') {
+                    var event = {
+                        type: name,
+                        timeStamp: Date.now(),
+                        detail: detail || {},
+                        target: { id: instance.id, dataset: {} },
+                        currentTarget: { id: instance.id, dataset: {} }
+                    };
+                    try { __currentPage[handlerName](event); }
+                    catch (e) { __native_print('[triggerEvent] ' + e.message); }
+                }
+            }
+            
+            // 渲染层登记组件事件绑定
+            function __bindComponentEvent(instanceId, eventName, pageMethod) {
+                __componentEventHandlers[instanceId + ':' + eventName] = pageMethod;
+            }
+        "#)?;
         Ok(())
     }
 }

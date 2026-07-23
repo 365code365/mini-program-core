@@ -14,6 +14,7 @@ fn test_inline_style_parsing() {
         screen_height: 667.0,
         stylesheet: &stylesheet,
         taffy: &mut taffy,
+        ancestors: Vec::new(),
     };
     
     let mut node = WxmlNode::new_element("view");

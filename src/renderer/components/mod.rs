@@ -70,6 +70,7 @@ impl ComponentRegistry {
             screen_height: self.screen_height,
             stylesheet,
             taffy,
+            ancestors: Vec::new(),
         };
         
         match tag {

@@ -6,5 +6,5 @@ pub mod template;
 pub mod expr;
 
 pub use wxml::{WxmlParser, WxmlNode, WxmlNodeType};
-pub use wxss::{WxssParser, StyleSheet, StyleRule, StyleValue};
+pub use wxss::{WxssParser, StyleSheet, StyleRule, StyleValue, ElementDesc};
 pub use template::TemplateEngine;

@@ -1,7 +1,7 @@
 //! WXML 渲染器 - 使用组件系统渲染微信小程序
 
 use crate::parser::wxml::{WxmlNode, WxmlNodeType};
-use crate::parser::wxss::StyleSheet;
+use crate::parser::wxss::{StyleSheet, ElementDesc};
 use crate::text::TextRenderer;
 use crate::ui::interaction::{InteractionManager, InteractiveElement, InteractionType};
 use crate::ui::scroll_cache::ScrollCacheManager;
@@ -102,7 +102,7 @@ impl WxmlRenderer {
         let mut render_nodes = Vec::new();
         
         for node in &rendered {
-            if let Some(rn) = self.build_tree(&mut taffy, node) {
+            if let Some(rn) = self.build_tree(&mut taffy, node, &[]) {
                 render_nodes.push(rn);
             }
         }
@@ -434,7 +434,7 @@ impl WxmlRenderer {
         
         let mut render_nodes = Vec::new();
         for node in &rendered {
-            if let Some(rn) = self.build_tree(&mut taffy, node) {
+            if let Some(rn) = self.build_tree(&mut taffy, node, &[]) {
                 render_nodes.push(rn);
             }
         }
@@ -456,7 +456,7 @@ impl WxmlRenderer {
         }
     }
 
-    fn build_tree(&self, taffy: &mut TaffyTree, node: &WxmlNode) -> Option<RenderNode> {
+    fn build_tree(&self, taffy: &mut TaffyTree, node: &WxmlNode, ancestors: &[ElementDesc]) -> Option<RenderNode> {
         let sf = self.scale_factor;
         
         if node.node_type == WxmlNodeType::Text {
@@ -488,6 +488,7 @@ impl WxmlRenderer {
             screen_height: self.screen_height,
             stylesheet: &self.stylesheet,
             taffy,
+            ancestors: ancestors.to_vec(),
         };
         
         let mut render_node = match tag {
@@ -516,9 +517,21 @@ impl WxmlRenderer {
         
         if let Some(ref mut rn) = render_node {
             if !Self::is_leaf_component(tag) {
+                // 扩展祖先链：当前节点作为子节点的父级，用于后代/子选择器匹配
+                let mut child_ancestors = ancestors.to_vec();
+                let node_classes: Vec<&str> = node.get_attr("class")
+                    .map(|s| s.split_whitespace().collect())
+                    .unwrap_or_default();
+                child_ancestors.push(ElementDesc::new(
+                    &node.tag_name,
+                    node.get_attr("id"),
+                    &node_classes,
+                    &node.attributes,
+                ));
+                
                 let mut children = vec![];
                 for c in &node.children {
-                    if let Some(cr) = self.build_tree(ctx.taffy, c) { 
+                    if let Some(cr) = self.build_tree(ctx.taffy, c, &child_ancestors) { 
                         children.push(cr); 
                     }
                 }
@@ -1511,6 +1524,39 @@ impl WxmlRenderer {
 
     pub fn hit_test(&self, x: f32, y: f32) -> Option<&EventBinding> {
         self.event_bindings.iter().rev().find(|b| b.bounds.contains(&crate::Point::new(x, y)))
+    }
+    
+    /// 命中测试并返回事件冒泡链。
+    ///
+    /// 对齐官方语义：`tap` 事件从最内层节点向外冒泡，`catchtap` 阻止继续冒泡。
+    /// 由于渲染层是扁平的绑定列表，这里用包围盒面积升序近似节点由内到外的层级
+    /// （子节点面积必然 <= 父节点）。遇到 `is_catch` 的绑定后停止（含该项）。
+    ///
+    /// 只返回与 `event_type` 匹配的绑定（点击对应 "tap"）。
+    pub fn hit_test_bubble(&self, x: f32, y: f32, event_type: &str) -> Vec<EventBinding> {
+        let p = crate::Point::new(x, y);
+        let mut matched: Vec<EventBinding> = self.event_bindings.iter()
+            .filter(|b| b.event_type == event_type && b.bounds.contains(&p))
+            .cloned()
+            .collect();
+        
+        // 面积升序：最内层（最小）在前
+        matched.sort_by(|a, b| {
+            let area_a = a.bounds.width * a.bounds.height;
+            let area_b = b.bounds.width * b.bounds.height;
+            area_a.partial_cmp(&area_b).unwrap_or(std::cmp::Ordering::Equal)
+        });
+        
+        // 冒泡：从内到外，遇 catch 停止
+        let mut chain = Vec::new();
+        for b in matched {
+            let stop = b.is_catch;
+            chain.push(b);
+            if stop {
+                break;
+            }
+        }
+        chain
     }
     
     /// 获取事件绑定数量

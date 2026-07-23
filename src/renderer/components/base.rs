@@ -1,7 +1,7 @@
 //! 组件基础定义
 
 use crate::parser::wxml::WxmlNode;
-use crate::parser::wxss::{StyleSheet, StyleValue, LengthUnit, rpx_to_px};
+use crate::parser::wxss::{StyleSheet, StyleValue, LengthUnit, rpx_to_px, ElementDesc};
 use crate::{Canvas, Color, Paint, PaintStyle, Path, Rect as GeoRect};
 use std::collections::HashMap;
 use taffy::prelude::*;
@@ -180,6 +180,8 @@ pub struct ComponentContext<'a> {
     pub screen_height: f32,
     pub stylesheet: &'a StyleSheet,
     pub taffy: &'a mut TaffyTree,
+    /// 祖先元素链（根 -> 父），用于后代/子选择器匹配。缺省为空。
+    pub ancestors: Vec<ElementDesc>,
 }
 
 /// 组件 trait
@@ -301,7 +303,11 @@ pub fn build_base_style(
     ctx: &mut ComponentContext,
 ) -> (Style, NodeStyle) {
     let classes = get_classes(node);
-    let css = ctx.stylesheet.get_styles(&classes, &node.tag_name);
+    let id = node.get_attr("id");
+    // 构建「祖先链 + 当前元素」，支持 #id、[attr]、*、后代/子选择器
+    let mut chain = ctx.ancestors.clone();
+    chain.push(ElementDesc::new(&node.tag_name, id, &classes, &node.attributes));
+    let css = ctx.stylesheet.get_styles_chain(&chain);
     
     let mut ns = NodeStyle { font_size: 14.0, opacity: 1.0, ..Default::default() };
     
@@ -333,6 +339,34 @@ pub fn build_base_style(
     }
     
     (ts, ns)
+}
+
+/// 解析盒模型简写（margin/padding），返回 [top, right, bottom, left]（像素，未乘 sf）。
+///
+/// 支持 CSS 1-4 值语法：
+/// - 1 值：四边相同
+/// - 2 值：上下 / 左右
+/// - 3 值：上 / 左右 / 下
+/// - 4 值：上 / 右 / 下 / 左
+///
+/// 之前只处理单值，`padding: 10rpx 20rpx` 这类会被静默丢弃。
+fn box_sides_px(value: &StyleValue, ctx: &ComponentContext) -> Option<[f32; 4]> {
+    match value {
+        StyleValue::String(s) => {
+            let vals: Vec<f32> = s
+                .split_whitespace()
+                .filter_map(|p| to_px(&parse_inline_value(p), ctx.screen_width, ctx.screen_height))
+                .collect();
+            match vals.len() {
+                1 => Some([vals[0], vals[0], vals[0], vals[0]]),
+                2 => Some([vals[0], vals[1], vals[0], vals[1]]),
+                3 => Some([vals[0], vals[1], vals[2], vals[1]]),
+                4 => Some([vals[0], vals[1], vals[2], vals[3]]),
+                _ => None,
+            }
+        }
+        _ => to_px(value, ctx.screen_width, ctx.screen_height).map(|v| [v, v, v, v]),
+    }
 }
 
 /// 解析内联样式值
@@ -373,17 +407,26 @@ fn apply_style_property(
             "min-height" => if let Some(v) = to_dimension(value, ctx.screen_width, ctx.screen_height, sf) { ts.min_size.height = v; }
             "max-width" => if let Some(v) = to_dimension(value, ctx.screen_width, ctx.screen_height, sf) { ts.max_size.width = v; }
             "max-height" => if let Some(v) = to_dimension(value, ctx.screen_width, ctx.screen_height, sf) { ts.max_size.height = v; }
-            "padding" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) {
-                let sv = v * sf;
-                ts.padding = Rect { top: length(sv), right: length(sv), bottom: length(sv), left: length(sv) };
+            "padding" => if let Some([t, r, b, l]) = box_sides_px(value, ctx) {
+                ts.padding = Rect {
+                    top: length(t * sf), right: length(r * sf),
+                    bottom: length(b * sf), left: length(l * sf),
+                };
             }
             "padding-top" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.padding.top = length(v * sf); }
             "padding-right" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.padding.right = length(v * sf); }
             "padding-bottom" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.padding.bottom = length(v * sf); }
             "padding-left" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.padding.left = length(v * sf); }
-            "margin" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) {
-                let sv = v * sf;
-                ts.margin = Rect { top: length(sv), right: length(sv), bottom: length(sv), left: length(sv) };
+            "margin" => {
+                if matches!(value, StyleValue::Auto) {
+                    // margin: auto -> 居中
+                    ts.margin = Rect { top: auto(), right: auto(), bottom: auto(), left: auto() };
+                } else if let Some([t, r, b, l]) = box_sides_px(value, ctx) {
+                    ts.margin = Rect {
+                        top: length(t * sf), right: length(r * sf),
+                        bottom: length(b * sf), left: length(l * sf),
+                    };
+                }
             }
             "margin-top" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.margin.top = length(v * sf); }
             "margin-right" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.margin.right = length(v * sf); }
