@@ -456,6 +456,29 @@ impl WxmlRenderer {
         }
     }
 
+    /// 测量给定 WXML+数据的内容总高度（逻辑像素），用于自适应画布尺寸。
+    pub fn measure_content_height(&self, nodes: &[WxmlNode], data: &JsonValue) -> f32 {
+        let rendered = crate::parser::TemplateEngine::render(nodes, data);
+        let mut taffy = TaffyTree::new();
+        let mut render_nodes = Vec::new();
+        for node in &rendered {
+            if let Some(rn) = self.build_tree(&mut taffy, node, &[], &InheritedText::default()) {
+                render_nodes.push(rn);
+            }
+        }
+        let child_ids: Vec<NodeId> = render_nodes.iter().map(|n| n.taffy_node).collect();
+        let root = taffy.new_with_children(
+            Style {
+                size: Size { width: length(self.screen_width * self.scale_factor), height: auto() },
+                flex_direction: FlexDirection::Column,
+                ..Default::default()
+            },
+            &child_ids,
+        ).unwrap();
+        taffy.compute_layout(root, Size::MAX_CONTENT).unwrap();
+        taffy.layout(root).unwrap().size.height / self.scale_factor
+    }
+    
     fn build_tree(&self, taffy: &mut TaffyTree, node: &WxmlNode, ancestors: &[ElementDesc], inherited: &InheritedText) -> Option<RenderNode> {
         let sf = self.scale_factor;
         

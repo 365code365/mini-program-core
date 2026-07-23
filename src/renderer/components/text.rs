@@ -92,6 +92,9 @@ impl TextComponent {
         let line_height = node.style.line_height.map(|lh| lh * sf).unwrap_or(size * 1.5);
         let letter_spacing = node.style.letter_spacing * sf;
         
+        // 绘制文本自身的背景（<text> 也可有 background-color / 圆角）
+        draw_background(canvas, &node.style, x, y, w, h);
+        
         if let Some(tr) = text_renderer {
             let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill);
             

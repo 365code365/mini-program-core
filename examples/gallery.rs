@@ -13,13 +13,18 @@ const SCALE: f32 = 2.0;
 fn render(name: &str, bg: u32, wxml: &str, wxss: &str, data: Value) {
     let nodes = WxmlParser::new(wxml).parse().expect("wxml");
     let ss = WxssParser::new(wxss).parse().expect("wxss");
-    let mut r = WxmlRenderer::new_with_scale(ss, W as f32, H as f32, SCALE);
-    let mut canvas = Canvas::new((W as f32 * SCALE) as u32, (H as f32 * SCALE) as u32);
+    let r = WxmlRenderer::new_with_scale(ss, W as f32, H as f32, SCALE);
+    // 按内容高度自适应画布：保证截图完整、无裁切、无大片空白
+    let content_h = r.measure_content_height(&nodes, &data).max(240.0);
+    let mut r = r;
+    let cw = (W as f32 * SCALE) as u32;
+    let ch = (content_h * SCALE).ceil() as u32;
+    let mut canvas = Canvas::new(cw, ch);
     canvas.clear(Color::from_hex(bg));
     r.render(&mut canvas, &nodes, &data);
     let path = format!("doc/gallery/{}.png", name);
     canvas.save_png(&path).expect("save");
-    println!("  ✓ {}", path);
+    println!("  ✓ {} ({}x{})", path, cw, ch);
 }
 
 fn main() {
