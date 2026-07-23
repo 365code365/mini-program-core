@@ -1,0 +1,154 @@
+//! 事件系统测试
+//! 覆盖 bindtap 冒泡、catchtap 阻止冒泡、事件对象 dataset、多层嵌套
+
+use crate::renderer::wxml_renderer::WxmlRenderer;
+use crate::parser::wxml::WxmlParser;
+use crate::parser::wxss::WxssParser;
+use crate::Canvas;
+use serde_json::json;
+
+/// scale=1.0，便于用逻辑坐标断言
+fn render(css: &str, wxml: &str) -> WxmlRenderer {
+    let ss = WxssParser::new(css).parse().unwrap_or_default();
+    let mut r = WxmlRenderer::new_with_scale(ss, 375.0, 667.0, 1.0);
+    let mut c = Canvas::new(375, 667);
+    let ns = WxmlParser::new(wxml).parse().unwrap();
+    r.render(&mut c, &ns, &json!({}));
+    r
+}
+
+#[test]
+fn test_event_binding_and_dataset() {
+    let r = render("", r#"<view bindtap="onTap" data-id="42" data-name="foo"><text>x</text></view>"#);
+    let bindings = r.get_event_bindings();
+    assert!(!bindings.is_empty());
+    let b = bindings.iter().find(|b| b.handler == "onTap").expect("onTap binding");
+    assert_eq!(b.event_type, "tap");
+    assert_eq!(b.data.get("id"), Some(&"42".to_string()));
+    assert_eq!(b.data.get("name"), Some(&"foo".to_string()));
+    assert!(!b.is_catch);
+}
+
+#[test]
+fn test_catchtap_is_catch_flag() {
+    let r = render("", r#"<view catchtap="onCatch"><text>x</text></view>"#);
+    let b = r.get_event_bindings().iter().find(|b| b.handler == "onCatch").cloned();
+    assert!(b.is_some());
+    assert!(b.unwrap().is_catch, "catchtap 应标记为 catch");
+}
+
+#[test]
+fn test_tap_bubbles_inner_to_outer() {
+    let css = ".outer{width:200px;height:200px;} .inner{width:100px;height:100px;}";
+    let wxml = r#"
+        <view class="outer" bindtap="onOuter">
+            <view class="inner" bindtap="onInner"></view>
+        </view>
+    "#;
+    let r = render(css, wxml);
+    // 点击内层区域 (10,10)，应同时命中 inner 和 outer，冒泡顺序 内 -> 外
+    let chain = r.hit_test_bubble(10.0, 10.0, "tap");
+    let handlers: Vec<&str> = chain.iter().map(|b| b.handler.as_str()).collect();
+    assert_eq!(handlers, vec!["onInner", "onOuter"], "应从内向外冒泡");
+}
+
+#[test]
+fn test_catchtap_stops_bubbling() {
+    let css = ".outer{width:200px;height:200px;} .inner{width:100px;height:100px;}";
+    let wxml = r#"
+        <view class="outer" bindtap="onOuter">
+            <view class="inner" catchtap="onInner"></view>
+        </view>
+    "#;
+    let r = render(css, wxml);
+    let chain = r.hit_test_bubble(10.0, 10.0, "tap");
+    let handlers: Vec<&str> = chain.iter().map(|b| b.handler.as_str()).collect();
+    assert_eq!(handlers, vec!["onInner"], "catchtap 应阻止冒泡到外层");
+}
+
+#[test]
+fn test_tap_outside_inner_only_hits_outer() {
+    let css = ".outer{width:200px;height:200px;} .inner{width:100px;height:100px;}";
+    let wxml = r#"
+        <view class="outer" bindtap="onOuter">
+            <view class="inner" bindtap="onInner"></view>
+        </view>
+    "#;
+    let r = render(css, wxml);
+    // 点击 (150,150)：在 outer 内、inner 外
+    let chain = r.hit_test_bubble(150.0, 150.0, "tap");
+    let handlers: Vec<&str> = chain.iter().map(|b| b.handler.as_str()).collect();
+    assert_eq!(handlers, vec!["onOuter"]);
+}
+
+#[test]
+fn test_three_level_bubbling() {
+    let css = r#"
+        .a{width:300px;height:300px;}
+        .b{width:200px;height:200px;}
+        .c{width:100px;height:100px;}
+    "#;
+    let wxml = r#"
+        <view class="a" bindtap="onA">
+            <view class="b" bindtap="onB">
+                <view class="c" bindtap="onC"></view>
+            </view>
+        </view>
+    "#;
+    let r = render(css, wxml);
+    let chain = r.hit_test_bubble(10.0, 10.0, "tap");
+    let handlers: Vec<&str> = chain.iter().map(|b| b.handler.as_str()).collect();
+    assert_eq!(handlers, vec!["onC", "onB", "onA"], "三层冒泡顺序");
+}
+
+#[test]
+fn test_three_level_catch_middle_stops() {
+    let css = r#"
+        .a{width:300px;height:300px;}
+        .b{width:200px;height:200px;}
+        .c{width:100px;height:100px;}
+    "#;
+    let wxml = r#"
+        <view class="a" bindtap="onA">
+            <view class="b" catchtap="onB">
+                <view class="c" bindtap="onC"></view>
+            </view>
+        </view>
+    "#;
+    let r = render(css, wxml);
+    let chain = r.hit_test_bubble(10.0, 10.0, "tap");
+    let handlers: Vec<&str> = chain.iter().map(|b| b.handler.as_str()).collect();
+    assert_eq!(handlers, vec!["onC", "onB"], "中层 catch 应在自己这里停止");
+}
+
+#[test]
+fn test_multiple_independent_handlers() {
+    let css = ".item{width:100px;height:50px;}";
+    let wxml = r#"
+        <view>
+            <view class="item" bindtap="onItem1" data-idx="0"></view>
+            <view class="item" bindtap="onItem2" data-idx="1"></view>
+            <view class="item" bindtap="onItem3" data-idx="2"></view>
+        </view>
+    "#;
+    let r = render(css, wxml);
+    assert_eq!(r.get_event_bindings().len(), 3);
+}
+
+#[test]
+fn test_different_event_types_not_mixed() {
+    let css = ".box{width:100px;height:100px;}";
+    // 同一元素上 tap 与 confirm 两种事件，hit_test_bubble("tap") 只返回 tap
+    let wxml = r#"
+        <view class="box" bindtap="onTap" bindconfirm="onConfirm"></view>
+    "#;
+    let r = render(css, wxml);
+    // 两种事件都被解析
+    let all = r.get_event_bindings();
+    assert!(all.iter().any(|b| b.event_type == "confirm"));
+    // 但冒泡链只含 tap
+    let chain = r.hit_test_bubble(10.0, 10.0, "tap");
+    assert!(!chain.is_empty());
+    assert!(chain.iter().all(|b| b.event_type == "tap"));
+    assert!(chain.iter().any(|b| b.handler == "onTap"));
+}

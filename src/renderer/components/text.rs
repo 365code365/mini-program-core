@@ -28,17 +28,21 @@ impl TextComponent {
         let min_lines = (newline_count + 1).max(1);
         
         // 估算文本宽度（单行最大宽度）
+        // 注意：ASCII 字符系数取略大于平均值，并额外加余量，避免估算宽度
+        // 略小于实际测量宽度而触发非预期换行（例如 "Canvas" 恰好溢出 0.1px）
         let mut max_line_width: f32 = 0.0;
         for line in text_content.split('\n') {
             let line_width: f32 = line.chars().map(|c| {
                 if c.is_ascii() {
-                    font_size * 0.6
+                    font_size * 0.62
                 } else {
                     font_size
                 }
             }).sum();
             max_line_width = max_line_width.max(line_width);
         }
+        // 额外余量，吸收估算与实际测量之间的误差
+        max_line_width += 4.0 * sf;
         
         // 设置 flex-shrink 允许收缩
         ts.flex_shrink = 1.0;
@@ -164,17 +168,21 @@ fn draw_text_wrapped_advanced(
             
             // 检查是否需要换行
             if current_width + char_width > max_width && i > line_start {
-                // 检查是否超出高度
-                if max_height > 0.0 && current_y + actual_line_height > y + max_height - size {
+                let line: String = chars[line_start..i].iter().collect();
+                
+                // 若下一行会超出容器高度，则先画完当前行再停止（绝不整行不画）
+                // 容器底部（基线坐标系）约为 (y - size) + max_height
+                let next_line_top = current_y + actual_line_height;
+                if max_height > 0.0 && next_line_top > (y - size) + max_height {
                     if use_ellipsis {
-                        let line: String = chars[line_start..i].iter().collect();
                         draw_text_with_ellipsis(canvas, tr, &line, x, current_y, size, max_width, letter_spacing, paint);
+                    } else {
+                        tr.draw_text_with_spacing(canvas, &line, x, current_y, size, letter_spacing, paint);
                     }
                     return;
                 }
                 
                 // 绘制当前行
-                let line: String = chars[line_start..i].iter().collect();
                 tr.draw_text_with_spacing(canvas, &line, x, current_y, size, letter_spacing, paint);
                 
                 current_y += actual_line_height;

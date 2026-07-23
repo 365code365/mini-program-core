@@ -5,7 +5,10 @@ edition = "2021"
 
 [lib]
 name = "mini_render"
-crate-type = ["cdylib", "rlib"]
+# cdylib: 动态库(.so/.dylib/.dll, 供 Android/Linux/Windows/macOS 使用)
+# staticlib: 静态库(.a, 供 iOS XCFramework / 静态链接使用)
+# rlib: Rust 库(供 Rust 项目依赖)
+crate-type = ["cdylib", "staticlib", "rlib"]
 
 [dependencies]
 image = "0.24"

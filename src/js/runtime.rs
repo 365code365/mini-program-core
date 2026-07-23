@@ -42,12 +42,12 @@ impl JsRuntime {
         let result = self.context.with(|ctx| {
             let result: JsResult<Value> = ctx.eval(code);
             match result {
-                Ok(val) => Ok(js_value_to_string(&ctx, &val)),
+                Ok(val) => Ok(js_value_to_string(&val)),
                 Err(e) => {
                     // 尝试获取更详细的错误信息：若是 JS 抛出的异常，取回异常对象
                     if matches!(e, rquickjs::Error::Exception) {
                         let exc = ctx.catch();
-                        Err(format!("JS Exception: {}", js_value_to_string(&ctx, &exc)))
+                        Err(format!("JS Exception: {}", js_value_to_string(&exc)))
                     } else {
                         Err(format!("{:?}", e))
                     }
@@ -98,10 +98,10 @@ impl JsRuntime {
             let func_clone = func.clone();
             
             // 使用 Rest<Value> 来接收可变数量的参数
-            let js_func = Function::new(ctx.clone(), move |ctx: Ctx, args: Rest<Value>| -> JsResult<String> {
+            let js_func = Function::new(ctx.clone(), move |_ctx: Ctx, args: Rest<Value>| -> JsResult<String> {
                 let string_args: Vec<String> = args.0
                     .iter()
-                    .map(|v| js_value_to_string(&ctx, v))
+                    .map(|v| js_value_to_string(v))
                     .collect();
                 
                 let f = func_clone.borrow();
@@ -143,7 +143,7 @@ impl JsRuntime {
             let global = ctx.globals();
             let val: JsResult<Value> = global.get(name);
             match val {
-                Ok(v) => Ok(js_value_to_string(&ctx, &v)),
+                Ok(v) => Ok(js_value_to_string(&v)),
                 Err(e) => Err(e.to_string()),
             }
         })
@@ -154,7 +154,7 @@ impl JsRuntime {
 ///
 /// 对于对象/数组，使用 JS 侧的 `JSON.stringify` 做序列化，
 /// 这样 native 侧就能拿到完整的对象数据，而不再是之前的 `"[object]"`。
-fn js_value_to_string(ctx: &Ctx, val: &Value) -> String {
+fn js_value_to_string(val: &Value) -> String {
     if val.is_undefined() {
         "undefined".to_string()
     } else if val.is_null() {
@@ -169,14 +169,15 @@ fn js_value_to_string(ctx: &Ctx, val: &Value) -> String {
         // JS 数字语义：整数值不带小数点
         format_js_number(n)
     } else if val.is_array() || val.is_object() {
-        json_stringify(ctx, val).unwrap_or_else(|| "[object Object]".to_string())
+        json_stringify(val).unwrap_or_else(|| "[object Object]".to_string())
     } else {
         "[unknown]".to_string()
     }
 }
 
-/// 用 JS 侧 JSON.stringify 序列化对象/数组
-fn json_stringify(ctx: &Ctx, val: &Value) -> Option<String> {
+/// 用 JS 侧 JSON.stringify 序列化对象/数组（从 value 自身获取上下文）
+fn json_stringify(val: &Value) -> Option<String> {
+    let ctx = val.ctx();
     let globals = ctx.globals();
     let json: Object = globals.get("JSON").ok()?;
     let stringify: Function = json.get("stringify").ok()?;

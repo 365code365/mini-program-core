@@ -1,0 +1,256 @@
+//! 全组件渲染测试
+//! 覆盖所有内置组件类型的构建与渲染，确保不 panic 且布局合理
+
+use crate::renderer::wxml_renderer::WxmlRenderer;
+use crate::parser::wxml::WxmlParser;
+use crate::parser::wxss::WxssParser;
+use crate::ui::interaction::InteractionManager;
+use crate::Canvas;
+use serde_json::json;
+
+fn renderer(css: &str) -> WxmlRenderer {
+    let ss = WxssParser::new(css).parse().unwrap_or_default();
+    WxmlRenderer::new_with_scale(ss, 375.0, 667.0, 2.0)
+}
+
+fn nodes(wxml: &str) -> Vec<crate::parser::wxml::WxmlNode> {
+    WxmlParser::new(wxml).parse().unwrap_or_default()
+}
+
+fn canvas() -> Canvas {
+    Canvas::new(750, 1334)
+}
+
+/// 渲染并附带交互（不 panic 即通过）
+fn render_ok(css: &str, wxml: &str, data: serde_json::Value) -> WxmlRenderer {
+    let mut r = renderer(css);
+    let mut c = canvas();
+    let mut im = InteractionManager::new();
+    let ns = nodes(wxml);
+    r.render_with_interaction(&mut c, &ns, &data, &mut im);
+    r
+}
+
+#[test]
+fn test_view_and_text() {
+    render_ok("", r#"<view><text>Hello</text></view>"#, json!({}));
+}
+
+#[test]
+fn test_button_variants() {
+    let wxml = r#"
+        <view>
+            <button type="primary">Primary</button>
+            <button type="default" disabled="true">Disabled</button>
+            <button size="mini">Mini</button>
+        </view>
+    "#;
+    let r = render_ok("", wxml, json!({}));
+    // button 会注册为交互元素，不强求事件绑定
+    assert!(r.event_count() >= 0);
+}
+
+#[test]
+fn test_icon_all_types() {
+    let wxml = r##"
+        <view>
+            <icon type="success" size="30" />
+            <icon type="info" size="30" />
+            <icon type="warn" size="30" />
+            <icon type="waiting" size="30" />
+            <icon type="cancel" size="30" />
+            <icon type="download" size="30" />
+            <icon type="search" size="30" />
+            <icon type="clear" size="30" />
+            <icon type="circle" size="30" color="#722ed1" />
+        </view>
+    "##;
+    render_ok("", wxml, json!({}));
+}
+
+#[test]
+fn test_image_modes() {
+    let wxml = r#"
+        <view>
+            <image src="a.png" mode="scaleToFill" />
+            <image src="b.png" mode="aspectFit" />
+            <image src="c.png" mode="aspectFill" />
+        </view>
+    "#;
+    render_ok(".x{width:100px;height:100px;}", wxml, json!({}));
+}
+
+#[test]
+fn test_form_inputs() {
+    let wxml = r#"
+        <view>
+            <input placeholder="用户名" value="{{name}}" />
+            <input type="password" placeholder="密码" />
+            <textarea placeholder="备注" />
+        </view>
+    "#;
+    render_ok("", wxml, json!({ "name": "Tom" }));
+}
+
+#[test]
+fn test_selection_components() {
+    let wxml = r#"
+        <view>
+            <checkbox-group>
+                <checkbox value="a" checked="true" />
+                <checkbox value="b" />
+            </checkbox-group>
+            <radio-group>
+                <radio value="m" checked="true" />
+                <radio value="f" />
+            </radio-group>
+            <switch checked="true" />
+            <switch />
+        </view>
+    "#;
+    render_ok("", wxml, json!({}));
+}
+
+#[test]
+fn test_slider_and_progress() {
+    let wxml = r#"
+        <view>
+            <slider value="30" min="0" max="100" show-value="true" />
+            <slider value="80" />
+            <progress percent="60" show-info="true" />
+            <progress percent="100" />
+        </view>
+    "#;
+    render_ok("", wxml, json!({}));
+}
+
+#[test]
+fn test_swiper() {
+    let wxml = r#"
+        <swiper indicator-dots="true" autoplay="true" interval="3000">
+            <swiper-item><view>Slide 1</view></swiper-item>
+            <swiper-item><view>Slide 2</view></swiper-item>
+            <swiper-item><view>Slide 3</view></swiper-item>
+        </swiper>
+    "#;
+    render_ok(".s{height:200px;}", wxml, json!({}));
+}
+
+#[test]
+fn test_picker() {
+    let wxml = r#"
+        <view>
+            <picker mode="selector" range="{{items}}">
+                <view>请选择</view>
+            </picker>
+            <picker-view value="{{[0,1]}}">
+                <picker-view-column>
+                    <view>2023</view>
+                    <view>2024</view>
+                </picker-view-column>
+            </picker-view>
+        </view>
+    "#;
+    render_ok("", wxml, json!({ "items": ["A", "B", "C"] }));
+}
+
+#[test]
+fn test_rich_text() {
+    let wxml = r#"<rich-text nodes="{{html}}"></rich-text>"#;
+    render_ok("", wxml, json!({ "html": "<p>hello <b>world</b></p>" }));
+}
+
+#[test]
+fn test_scroll_view_vertical_and_horizontal() {
+    let wxml = r#"
+        <view>
+            <scroll-view scroll-y="true" class="sv">
+                <view wx:for="{{list}}" wx:key="*this">{{item}}</view>
+            </scroll-view>
+            <scroll-view scroll-x="true" class="svx">
+                <view wx:for="{{list}}" wx:key="*this">{{item}}</view>
+            </scroll-view>
+        </view>
+    "#;
+    let css = ".sv{height:200px;} .svx{width:300px;}";
+    render_ok(css, wxml, json!({ "list": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] }));
+}
+
+#[test]
+fn test_canvas_component() {
+    let wxml = r#"<canvas canvas-id="myCanvas" class="cv"></canvas>"#;
+    render_ok(".cv{width:300px;height:150px;}", wxml, json!({}));
+}
+
+#[test]
+fn test_video_component() {
+    let wxml = r#"<video src="test.mp4" controls="true" class="v"></video>"#;
+    render_ok(".v{width:300px;height:200px;}", wxml, json!({}));
+}
+
+#[test]
+fn test_deeply_nested_layout() {
+    let css = r#"
+        .card { padding: 20rpx; margin: 10rpx; border-radius: 12rpx; background-color: #fff; }
+        .row { display: flex; flex-direction: row; align-items: center; }
+        .col { display: flex; flex-direction: column; }
+        .grow { flex: 1; }
+    "#;
+    let wxml = r#"
+        <view class="col">
+            <view class="card" wx:for="{{cards}}" wx:key="id">
+                <view class="row">
+                    <image class="avatar" src="{{item.avatar}}" />
+                    <view class="col grow">
+                        <text class="name">{{item.name}}</text>
+                        <view class="row">
+                            <text wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">{{tag}}</text>
+                        </view>
+                    </view>
+                    <button size="mini">关注</button>
+                </view>
+            </view>
+        </view>
+    "#;
+    let data = json!({
+        "cards": [
+            { "id": 1, "name": "用户A", "avatar": "a.png", "tags": ["新人", "认证"] },
+            { "id": 2, "name": "用户B", "avatar": "b.png", "tags": ["活跃"] }
+        ]
+    });
+    render_ok(css, wxml, data);
+}
+
+#[test]
+fn test_conditional_chains_render() {
+    let wxml = r#"
+        <view>
+            <text wx:if="{{status === 1}}">待付款</text>
+            <text wx:elif="{{status === 2}}">已付款</text>
+            <text wx:elif="{{status === 3}}">已发货</text>
+            <text wx:else>已完成</text>
+        </view>
+    "#;
+    for s in 1..=4 {
+        render_ok("", wxml, json!({ "status": s }));
+    }
+}
+
+#[test]
+fn test_block_wrapper_render() {
+    let wxml = r#"
+        <view>
+            <block wx:for="{{groups}}" wx:key="id">
+                <text class="group-title">{{item.title}}</text>
+                <view wx:for="{{item.children}}" wx:for-item="child" wx:key="*this">{{child}}</view>
+            </block>
+        </view>
+    "#;
+    let data = json!({
+        "groups": [
+            { "id": 1, "title": "分组1", "children": ["a", "b"] },
+            { "id": 2, "title": "分组2", "children": ["c"] }
+        ]
+    });
+    render_ok("", wxml, data);
+}

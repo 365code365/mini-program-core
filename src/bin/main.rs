@@ -17,6 +17,8 @@ fn main() -> Result<(), String> {
     // 加载页面 JS
     let page_js = include_str!("../../sample-app/pages/index/index.js");
     app.load_script(page_js)?;
+    // 触发 onLoad 生命周期
+    app.eval("if (__currentPage && __currentPage.onLoad) __currentPage.onLoad({})").ok();
     
     // 解析 WXML
     let wxml_content = include_str!("../../sample-app/pages/index/index.wxml");
@@ -33,18 +35,14 @@ fn main() -> Result<(), String> {
     // 创建渲染器
     let mut renderer = WxmlRenderer::new(stylesheet, 375.0, 667.0);
     
-    // 页面数据
-    let page_data = json!({
-        "count": 42,
-        "todos": [
-            { "id": 1, "text": "学习小程序开发", "done": true },
-            { "id": 2, "text": "完成渲染引擎", "done": false },
-            { "id": 3, "text": "添加交互功能", "done": false }
-        ],
-        "inputValue": "",
-        "colors": ["#FF3B30", "#FF9500", "#FFCC00", "#34C759", "#007AFF", "#5856D6", "#AF52DE", "#FF2D55"],
-        "selectedColor": "#007AFF"
-    });
+    // 页面数据 —— 使用页面 JS 中的真实 data（通过 __getPageData 读取）
+    let page_data = app.eval("__getPageData()")
+        .ok()
+        .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
+        .unwrap_or_else(|| json!({}));
+    println!("✅ Page data loaded: hotProducts={}, newProducts={}",
+        page_data.get("hotProducts").and_then(|v| v.as_array()).map(|a| a.len()).unwrap_or(0),
+        page_data.get("newProducts").and_then(|v| v.as_array()).map(|a| a.len()).unwrap_or(0));
     
     // 创建画布
     let mut canvas = Canvas::new(375, 667);

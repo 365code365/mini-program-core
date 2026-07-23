@@ -17,7 +17,7 @@ use crate::parser::wxml::{WxmlNode, WxmlNodeType};
 pub type Path = Vec<usize>;
 
 /// 一条 patch 操作
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum Patch {
     /// 整体替换该路径的节点（标签或节点类型变化）
     Replace(Path, WxmlNode),
@@ -38,7 +38,8 @@ pub enum Patch {
 /// 根路径为空 `[]`，其下第 i 个节点路径为 `[i]`。
 pub fn diff_forest(old: &[WxmlNode], new: &[WxmlNode]) -> Vec<Patch> {
     let mut patches = Vec::new();
-    diff_children(&[], old, new, &mut patches);
+    let root: Path = Vec::new();
+    diff_children(&root, old, new, &mut patches);
     patches
 }
 
