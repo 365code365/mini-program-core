@@ -1,21 +1,29 @@
 # Mini Render
 
-一个用 Rust 实现的轻量级微信小程序渲染引擎，支持 WXML/WXSS 解析、Flexbox 布局、组件渲染和 JavaScript 运行时。
+一个用 Rust 实现的轻量级微信小程序渲染引擎。内置 2D 渲染、Flexbox 布局、WXML/WXSS 解析、完整 CSS 选择器引擎、`{{ }}` 表达式引擎，以及基于 QuickJS 的 JavaScript 运行时（App / Page / Component / 模块系统 / Promise），并向 Skyline 的实现对齐。
+
+> 纯 Rust，无系统渲染依赖；核心库可编译为 **Android / iOS / Windows / macOS / Linux** 的原生库供各端集成。
 
 ## ✨ 特性
 
-- 🎨 **2D 渲染引擎** - 纯 Rust 实现，支持抗锯齿、Alpha 混合
-- ⚡ **QuickJS 脚本引擎** - 完整的 JavaScript 运行时
-- 🧩 **丰富的组件** - 支持 26+ 微信小程序组件
-- 📐 **Flexbox 布局** - 基于 Taffy 的完整 Flexbox 支持
-- 🖼️ **Canvas 2D** - 完整的 Canvas 2D 绑图 API
-- 📄 **WXML/WXSS 解析** - 支持模板语法和 rpx 单位
-- 🎯 **完整 CSS 支持** - 组件支持标准 CSS 样式
-- 🔗 **C FFI 接口** - 可嵌入其他语言
+- 🎨 **2D 渲染引擎** — 纯 Rust 实现，抗锯齿、Alpha 混合、圆角、阴影、渐变
+- ⚡ **QuickJS 脚本引擎** — 完整 JS 运行时，支持 Promise / async-await 微任务泵
+- 🧩 **26+ 内置组件** — view/text/button/input/scroll-view/swiper/canvas 等
+- 📐 **Flexbox 布局** — 基于 Taffy 的完整 Flexbox
+- 🎯 **完整 CSS 选择器引擎** — 标签 / 类 / `#id` / `*` / 属性 `[attr]` / 组合器（后代、子 `>`、兄弟）/ 正确的特异性 / `@import` / `var()` / `calc()`
+- 📄 **WXML 模板** — `wx:if/elif/else`、`wx:for`、`<block>`、真正的 `{{ }}` 表达式（算术/逻辑/三元/成员/索引/字面量）
+- 🔀 **逻辑层运行时** — 页面栈路由、`setData` 数据路径、自定义组件 + Behavior、CommonJS 模块
+- 👆 **事件系统** — `bindtap` 冒泡、`catchtap` 阻止冒泡、`dataset`
+- 🖱️ **交互** — 滚动惯性/回弹、输入框、勾选/单选/开关/滑块
+- 🔗 **C FFI** — 可嵌入 C/C++/移动端/桌面端
 
 ## 📸 运行效果
 
-<img src="doc/img.png" width="375" alt="运行展示图">
+由内置示例小程序渲染的首页（`cargo run --bin mini-app` 输出）：
+
+<img src="doc/mini_app_ui.png" width="360" alt="示例小程序渲染效果">
+
+<img src="doc/img.png" width="360" alt="运行展示图">
 
 ## 🏗️ 架构
 
@@ -24,384 +32,311 @@
 │                  Mini App                        │
 │  ┌──────────────────────────────────────────┐   │
 │  │              JavaScript (QuickJS)         │   │
-│  │  ┌─────────┐  ┌─────────┐  ┌──────────┐  │   │
-│  │  │   App   │  │  Page   │  │Component │  │   │
-│  │  └─────────┘  └─────────┘  └──────────┘  │   │
+│  │  App · Page · Component · Behavior        │   │
+│  │  require/module · Promise · setData 路径   │   │
 │  └──────────────────────────────────────────┘   │
 │                      ↕ Bridge                    │
 │  ┌──────────────────────────────────────────┐   │
 │  │              Native (Rust)                │   │
-│  │  ┌─────────┐  ┌─────────┐  ┌──────────┐  │   │
-│  │  │ Canvas  │  │  Taffy  │  │  Event   │  │   │
-│  │  │ Render  │  │ Layout  │  │  System  │  │   │
-│  │  └─────────┘  └─────────┘  └──────────┘  │   │
-│  │  ┌─────────┐  ┌─────────┐  ┌──────────┐  │   │
-│  │  │  WXML   │  │  WXSS   │  │ Template │  │   │
-│  │  │ Parser  │  │ Parser  │  │  Engine  │  │   │
-│  │  └─────────┘  └─────────┘  └──────────┘  │   │
+│  │  Canvas 渲染 · Taffy 布局 · 事件系统       │   │
+│  │  WXML 解析 · WXSS 选择器引擎 · 模板引擎     │   │
 │  └──────────────────────────────────────────┘   │
-│                      ↕ FFI                       │
+│                      ↕ FFI (mr_*)                │
 │  ┌──────────────────────────────────────────┐   │
-│  │           Host Application                │   │
-│  │      (iOS / Android / Desktop / Web)      │   │
+│  │   Host: Android / iOS / Windows / macOS / │   │
+│  │         Linux / C / C++                    │   │
 │  └──────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────┘
 ```
 
 ## 🧩 支持的组件
 
-### 基础组件
-| 组件 | 说明 | CSS 支持 |
-|------|------|----------|
-| `view` | 视图容器 | ✅ 完整 |
-| `text` | 文本 | ✅ 完整 |
-| `image` | 图片 | ✅ 完整 |
-| `icon` | 图标 | ✅ 完整 |
-| `rich-text` | 富文本 | ✅ 基础 |
+| 分类 | 组件 |
+|------|------|
+| 基础 | `view` `text` `image` `icon` `rich-text` |
+| 表单 | `button` `input` `textarea` `checkbox` `checkbox-group` `radio` `radio-group` `switch` `slider` `progress` `picker` `picker-view` `picker-view-column` |
+| 容器 | `scroll-view` `swiper` `swiper-item` |
+| 媒体 | `video` `canvas` |
 
-### 表单组件
-| 组件 | 说明 | CSS 支持 |
-|------|------|----------|
-| `button` | 按钮 | ✅ 完整 |
-| `input` | 输入框 | ✅ 完整 |
-| `textarea` | 多行输入 | ✅ 完整 |
-| `checkbox` | 复选框 | ✅ 完整 |
-| `checkbox-group` | 复选框组 | ✅ 基础 |
-| `radio` | 单选框 | ✅ 完整 |
-| `radio-group` | 单选框组 | ✅ 基础 |
-| `switch` | 开关 | ✅ 完整 |
-| `slider` | 滑动选择器 | ✅ 完整 |
-| `progress` | 进度条 | ✅ 完整 |
-| `picker` | 选择器 | ✅ 基础 |
-| `picker-view` | 嵌入式选择器 | ✅ 基础 |
+## 🎯 CSS 支持
 
-### 容器组件
-| 组件 | 说明 | CSS 支持 |
-|------|------|----------|
-| `scroll-view` | 滚动视图 | ✅ 完整 |
-| `swiper` | 轮播图 | ✅ 基础 |
-| `swiper-item` | 轮播项 | ✅ 基础 |
+**选择器**：`view`、`.class`、`#id`、`*`、`.a.b`（复合）、`.a .b`（后代）、`.a > .b`（子）、`[type="primary"]` 等属性选择器、伪类；按 (id, class, tag) 计算特异性并叠加书写顺序。
 
-### 媒体组件
-| 组件 | 说明 | CSS 支持 |
-|------|------|----------|
-| `video` | 视频 | ✅ 基础 |
-| `canvas` | 画布 | ✅ 完整 |
+**取值**：`rpx`/`px`/`%`/`vw`/`vh`/`em`/`rem`、`#rgb`/`#rrggbb`/`#rrggbbaa`/`rgb()`/`rgba()`/命名颜色/渐变、`var(--x, fallback)`、`calc(a + b)`（同单位）、`@import`。
 
-## 🎨 CSS 样式支持
+**布局**：`display` `flex-*` `justify-content` `align-*` `width/height/min/max` `padding/margin`（1–4 值简写）`position` `top/right/bottom/left` `gap`。
 
-所有组件支持以下 CSS 属性：
+**外观/文本/变换**：`background` `color` `border` `border-radius`（四角）`box-shadow` `opacity` `overflow`；`font-size` `font-weight` `text-align` `text-decoration` `line-height` `letter-spacing` `white-space` `text-overflow`；`transform`（translate/scale/rotate）`z-index`。
 
-### 布局
-- `display`: flex, block, none, grid
-- `flex-direction`, `flex-wrap`, `flex-grow`, `flex-shrink`
-- `justify-content`, `align-items`, `align-self`, `align-content`
-- `width`, `height`, `min-width`, `max-width`, `min-height`, `max-height`
-- `padding`, `margin` (支持四个方向独立设置)
-- `position`: relative, absolute, fixed
-- `top`, `right`, `bottom`, `left`
-- `gap`, `row-gap`, `column-gap`
-
-### 外观
-- `background-color`, `color`
-- `border`, `border-width`, `border-color`
-- `border-radius` (支持四角独立设置)
-- `box-shadow`
-- `opacity`
-- `overflow`: visible, hidden, scroll, auto
-
-### 文本
-- `font-size`, `font-weight`
-- `text-align`: left, center, right, justify
-- `text-decoration`: none, underline, line-through
-- `line-height`, `letter-spacing`
-- `white-space`: normal, nowrap, pre, pre-wrap
-- `text-overflow`: clip, ellipsis
-- `vertical-align`: baseline, top, middle, bottom
-- `word-break`: normal, break-all, keep-all
-
-### 变换
-- `transform`: translate, scale, rotate, skew
-- `z-index`
-
-## 📄 WXML 模板语法
+## 📄 WXML / WXSS / JS 语法
 
 ```html
-<!-- 数据绑定 -->
-<view>{{message}}</view>
+<!-- 数据绑定 + 表达式 -->
+<view>{{ user.name }} 共 {{ list.length }} 项，{{ vip ? '会员' : '普通' }}</view>
 
-<!-- 列表渲染 -->
-<view wx:for="{{items}}" wx:key="id">
-  <text>{{item.name}}</text>
+<!-- 列表 / 条件 / block -->
+<block wx:for="{{items}}" wx:key="id">
+  <view wx:if="{{item.stock > 0}}">{{item.title}} ¥{{item.price}}</view>
+  <view wx:else>已售罄</view>
+</block>
+
+<!-- 事件（冒泡 / 阻止冒泡） -->
+<view bindtap="onOuter">
+  <button catchtap="onBuy" data-id="{{id}}">购买</button>
 </view>
-
-<!-- 条件渲染 -->
-<view wx:if="{{condition}}">显示</view>
-<view wx:elif="{{other}}">其他</view>
-<view wx:else>默认</view>
-
-<!-- 事件绑定 -->
-<button bindtap="handleTap" data-id="{{id}}">点击</button>
 ```
-
-## 📐 WXSS 样式
 
 ```css
-/* 支持 rpx 单位 */
-.container {
-  width: 750rpx;
-  padding: 20rpx;
-}
-
-/* 支持 Flexbox */
-.flex-row {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-}
-
-/* 支持圆角和阴影 */
-.card {
-  border-radius: 16rpx;
-  box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.1);
-}
+.card { padding: 20rpx; border-radius: 16rpx; box-shadow: 0 4rpx 12rpx rgba(0,0,0,.1); }
+.list .item { color: var(--fg, #333); }          /* 后代选择器 + CSS 变量 */
+.bar { width: calc(100rpx + 20rpx); }             /* calc 同单位 */
 ```
 
-## ⚡ JavaScript API
-
-### 应用生命周期
-```javascript
-App({
-  onLaunch() { },
-  onShow() { },
-  globalData: { }
-})
-```
-
-### 页面生命周期
 ```javascript
 Page({
-  data: { message: 'Hello' },
-  onLoad(options) { },
-  onShow() { },
-  onReady() { },
-  setData(data) { }
+  data: { count: 0, list: [] },
+  onLoad() { this.setData({ 'list[0].done': true }); },   // 数据路径
+  inc() { this.setData({ count: this.data.count + 1 }); },
 })
-```
-
-### 微信 API
-```javascript
-// 数据存储
-wx.setStorageSync('key', 'value')
-wx.getStorageSync('key')
-
-// UI 反馈
-wx.showToast({ title: '成功' })
-wx.showModal({ title: '提示', content: '确认?' })
-wx.showLoading({ title: '加载中' })
-
-// 页面导航
-wx.navigateTo({ url: '/pages/detail/detail' })
-wx.navigateBack()
-wx.switchTab({ url: '/pages/index/index' })
-
-// 系统信息
-wx.getSystemInfoSync()
-
-// Canvas 绑图
-const ctx = wx.createCanvasContext('myCanvas')
-ctx.setFillStyle('#FF0000')
-ctx.fillRect(10, 10, 100, 50)
-ctx.draw()
-
-// 定时器
-setTimeout(() => {}, 1000)
-setInterval(() => {}, 1000)
-```
-
-### Canvas 2D API
-
-```javascript
-// 创建 Canvas 上下文
-const ctx = wx.createCanvasContext('canvasId')
-
-// 样式设置
-ctx.setFillStyle('#FF0000')      // 填充颜色
-ctx.setStrokeStyle('#00FF00')    // 描边颜色
-ctx.setLineWidth(2)              // 线宽
-ctx.setGlobalAlpha(0.5)          // 全局透明度
-
-// 矩形绑制
-ctx.fillRect(x, y, width, height)    // 填充矩形
-ctx.strokeRect(x, y, width, height)  // 描边矩形
-ctx.clearRect(x, y, width, height)   // 清除矩形区域
-
-// 路径绑制
-ctx.beginPath()                      // 开始路径
-ctx.moveTo(x, y)                     // 移动到点
-ctx.lineTo(x, y)                     // 画线到点
-ctx.arc(x, y, r, startAngle, endAngle, counterclockwise)  // 圆弧
-ctx.closePath()                      // 闭合路径
-ctx.fill()                           // 填充路径
-ctx.stroke()                         // 描边路径
-
-// 状态管理
-ctx.save()                           // 保存状态
-ctx.restore()                        // 恢复状态
-ctx.translate(x, y)                  // 平移
-
-// 提交绘制
-ctx.draw()                           // 绑制到 canvas
 ```
 
 ## 🚀 快速开始
 
-### 安装依赖
-
 ```bash
-# 安装 Rust
+# 1) 安装 Rust
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
-# 克隆项目
-git clone <repo-url>
-cd mini-render
-
-# 构建
+# 2) 构建
 cargo build --release
+
+# 3) 运行示例
+cargo run --bin mini-app          # 无窗口渲染示例小程序首页 -> mini_app_ui.png
+cargo run --bin mini-launcher     # 小程序启动器（扫描 sample 目录加载）
+cargo run --bin mini-app-window   # 窗口应用
+cargo run --example demo          # 2D 渲染示例
+
+# 4) 测试（192 个用例）
+cargo test
 ```
 
-### 运行示例
+## 📦 编译为各平台 SDK
+
+`crate-type = ["cdylib", "staticlib", "rlib"]`，可产出动态库(.so/.dylib/.dll)、静态库(.a)与 Rust 库。仓库 `scripts/` 下提供了各平台构建脚本。
+
+| 平台 | 脚本 | 产物 |
+|------|------|------|
+| macOS | `scripts/build-macos.sh` | `libmini_render.dylib` / `.a`（arm64+x86_64 通用） |
+| Linux | `scripts/build-linux.sh [target]` | `libmini_render.so` / `.a` |
+| Windows | `scripts/build-windows.ps1` | `mini_render.dll` + 导入库 `.lib` |
+| Android | `scripts/build-android.sh` | 4 个 ABI 的 `libmini_render.so`（jniLibs 结构） |
+| iOS | `scripts/build-ios.sh` | `MiniRender.xcframework` |
+
+### 桌面端（开箱即用）
 
 ```bash
-# 运行小程序启动器（推荐 - 可加载 sample 目录下的小程序）
-cargo run --release --bin mini-launcher
+# macOS 通用库（已验证：lipo 输出 x86_64 arm64）
+bash scripts/build-macos.sh
 
-# 运行内置示例小程序
-cargo run --release --bin mini-app-window
+# Linux（在 Linux 主机执行；可传目标三元组）
+bash scripts/build-linux.sh                       # 当前架构
+bash scripts/build-linux.sh aarch64-unknown-linux-gnu
 
-# 运行渲染示例
-cargo run --example demo
+# Windows（在 Windows 主机 + MSVC 执行）
+pwsh scripts/build-windows.ps1
 ```
 
-### 小程序启动器
+### 移动端精简构建（Android / iOS）⚠️
 
-`mini-launcher` 是一个小程序启动器，可以扫描 `sample` 目录下的所有小程序并加载运行：
+核心渲染/解析/JS 库是可移植的，但**默认构建捆绑了桌面端专用依赖**（窗口 `winit`/`softbuffer`、音频 `rodio`、视频 `openh264`、剪贴板 `arboard`、网络 `ureq`），这些依赖无法直接交叉编译到移动端。生成移动端 SDK 需要两步准备：
 
-1. 在 `sample` 目录下创建小程序项目（使用微信开发者工具创建）
-2. 运行 `cargo run --bin mini-launcher`
-3. 在列表中点击"启动"按钮加载小程序
-4. 点击左上角返回按钮回到列表
+1. **启用 rquickjs 的 bindgen**：`rquickjs-sys` 对 `*-apple-ios`、`*-linux-android` 等目标没有预置绑定，需要在运行期生成。在 `Cargo.toml` 为 rquickjs 打开 `bindgen`（或 `bindgen-runtime`）特性（需系统安装 libclang）。
+2. **裁剪桌面依赖**：把上述桌面端依赖改为可选（cargo `features`），并对使用处 `#[cfg(...)]` 门控，移动端以 `--no-default-features` 构建仅含核心渲染与 FFI 的精简库。
+
+完成上述准备后：
+
+```bash
+# Android（需 Android NDK + cargo-ndk）
+cargo install cargo-ndk
+rustup target add aarch64-linux-android armv7-linux-androideabi \
+                  x86_64-linux-android i686-linux-android
+bash scripts/build-android.sh
+# -> target/android/jniLibs/{arm64-v8a,armeabi-v7a,x86_64,x86}/libmini_render.so
+
+# iOS（需 Xcode）
+rustup target add aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios
+bash scripts/build-ios.sh
+# -> target/ios/MiniRender.xcframework
+```
+
+### 重新生成 C 头文件
+
+```bash
+cargo install cbindgen
+bash scripts/gen-header.sh   # -> include/mini_render.h
+```
+
+## 💡 使用示例
+
+### 1) Rust — 渲染 WXML/WXSS 到图片
+
+```rust
+use mini_render::parser::{WxmlParser, WxssParser};
+use mini_render::renderer::WxmlRenderer;
+use mini_render::{Canvas, Color};
+use serde_json::json;
+
+fn main() {
+    let wxml = WxmlParser::new(
+        r#"<view class="card"><text class="title">{{title}}</text></view>"#
+    ).parse().unwrap();
+
+    let ss = WxssParser::new(
+        r#".card{padding:24rpx;background-color:#fff;border-radius:16rpx;}
+           .title{font-size:34rpx;color:#333;}"#
+    ).parse().unwrap();
+
+    let mut renderer = WxmlRenderer::new(ss, 375.0, 667.0);
+    let mut canvas = Canvas::new(375, 667);
+    canvas.clear(Color::from_hex(0xF5F5F5));
+    renderer.render(&mut canvas, &wxml, &json!({ "title": "Hello Mini" }));
+    canvas.save_png("out.png").unwrap();
+}
+```
+
+### 2) Rust — 驱动完整小程序逻辑层
+
+```rust
+use mini_render::runtime::MiniApp;
+
+fn main() -> Result<(), String> {
+    let mut app = MiniApp::new(375, 667)?;
+    app.init()?;
+
+    // 多文件依赖
+    app.define_module("utils/util", "exports.double = x => x * 2;")?;
+    app.load_script(r#"
+        const util = require('utils/util');
+        Page({
+            data: { count: 0 },
+            inc() { this.setData({ count: util.double(this.data.count + 1) }); }
+        });
+    "#)?;
+
+    app.eval("__currentPage.inc()")?;
+    println!("data = {}", app.eval("__getPageData()")?); // {"count":2}
+
+    // 页面栈路由
+    app.load_script(r#"Page({ data: { name: "详情页" } });"#)?; // navigateTo 入栈
+    println!("stack = {}", app.eval("getCurrentPages().length")?); // 2
+    app.eval("wx.navigateBack()")?;                                 // 出栈
+    Ok(())
+}
+```
+
+### 3) C / C++ — 通过 FFI 使用 2D 渲染
+
+```c
+#include "mini_render.h"
+
+int main(void) {
+    Canvas* canvas = mr_canvas_new(375, 667);
+    mr_canvas_clear(canvas, 245, 245, 245, 255);
+
+    // 卡片（圆角矩形用 path）
+    Path* card = mr_path_new();
+    mr_path_add_round_rect(card, 20, 20, 335, 120, 16);
+    mr_canvas_draw_path(canvas, card, 255, 255, 255, 255, 0, 0); // 填充白色
+    mr_path_free(card);
+
+    // 圆形头像
+    mr_canvas_draw_circle(canvas, 70, 80, 30, 74, 144, 217, 255, 0, 0);
+
+    mr_canvas_save_png(canvas, "card.png");
+    mr_canvas_free(canvas);
+    return 0;
+}
+```
+
+编译链接（macOS）：
+
+```bash
+cargo build --release
+clang examples/demo.c -Iinclude -Ltarget/release -lmini_render -o demo_c
+DYLD_LIBRARY_PATH=target/release ./demo_c
+```
+
+### 4) Android — 获取像素填充 Bitmap（NDK / C 侧）
+
+`libmini_render.so` 暴露 C 接口。在 NDK C 代码中渲染并把 RGBA 拷回 `Bitmap`：
+
+```c
+// 渲染并将像素写入 Android Bitmap 的像素缓冲
+Canvas* c = mr_canvas_new(w, h);
+mr_canvas_clear(c, 255, 255, 255, 255);
+mr_canvas_draw_rect(c, 10, 10, 100, 50, 74, 144, 217, 255, 0, 0);
+
+size_t need = (size_t)w * h * 4;
+uint8_t* buf = malloc(need);
+mr_canvas_get_pixels(c, buf, need);   // RGBA8888
+// AndroidBitmap_lockPixels 后 memcpy(pixels, buf, need)
+free(buf);
+mr_canvas_free(c);
+```
+
+> Java/Kotlin 侧通过一个薄 JNI 包装（`JNIEXPORT` 函数内部调用 `mr_*`）即可调用；`build-android.sh` 产出的 `jniLibs` 放入 `src/main/jniLibs`。
+
+### 5) iOS — Swift 调用 XCFramework
+
+将 `MiniRender.xcframework` 拖入工程，桥接头 `#import "mini_render.h"`：
+
+```swift
+let canvas = mr_canvas_new(375, 667)
+mr_canvas_clear(canvas, 245, 245, 245, 255)
+mr_canvas_draw_circle(canvas, 100, 100, 40, 231, 76, 60, 255, 0, 0)
+
+let w = 375, h = 667, len = w * h * 4
+var buf = [UInt8](repeating: 0, count: len)
+mr_canvas_get_pixels(canvas, &buf, len)   // 填入 CGContext / UIImage
+mr_canvas_free(canvas)
+```
+
+## 🧪 测试
+
+覆盖表达式引擎、WXSS 选择器（含 `var()`/`calc()`）、模板控制流、布局、全组件渲染、交互、滚动/惯性/回弹、页面栈路由、组件模型、CommonJS 模块、Promise、事件冒泡等：
+
+```bash
+cargo test          # 192 个用例
+cargo test route    # 路由/页面栈/组件/模块/异步
+cargo test scroll   # 滚动与惯性
+cargo test event    # 事件冒泡/catch
+```
 
 ## 📁 项目结构
 
 ```
 mini-render/
 ├── src/
-│   ├── lib.rs                  # 库入口
-│   ├── canvas.rs               # 画布核心（绘图、抗锯齿）
-│   ├── color.rs                # 颜色处理
-│   ├── geometry.rs             # 几何图形
-│   ├── paint.rs                # 画笔样式
-│   ├── path.rs                 # 路径绘制
-│   ├── text.rs                 # 文本渲染
+│   ├── lib.rs / canvas.rs / color.rs / geometry.rs / paint.rs / path.rs / text.rs
+│   ├── ffi.rs                  # C FFI (mr_*)
 │   ├── event.rs                # 事件系统
-│   ├── ffi.rs                  # C FFI 接口
-│   ├── bin/
-│   │   ├── main.rs             # CLI 入口
-│   │   └── window.rs           # 窗口应用
-│   ├── js/                     # JavaScript 引擎
-│   │   ├── runtime.rs          # QuickJS 运行时
-│   │   ├── api.rs              # 小程序 API 实现
-│   │   └── bridge.rs           # JS-Native 桥接
-│   ├── parser/                 # 解析器
-│   │   ├── wxml.rs             # WXML 解析器
-│   │   ├── wxss.rs             # WXSS 解析器
-│   │   └── template.rs         # 模板引擎
-│   ├── renderer/               # 渲染器
-│   │   ├── wxml_renderer.rs    # WXML 渲染器
-│   │   └── components/         # 组件实现
-│   │       ├── base.rs         # 基础样式解析
-│   │       ├── view.rs         # View 组件
-│   │       ├── text.rs         # Text 组件
-│   │       ├── button.rs       # Button 组件
-│   │       ├── image.rs        # Image 组件
-│   │       ├── input.rs        # Input 组件
-│   │       ├── checkbox.rs     # Checkbox 组件
-│   │       ├── checkbox_group.rs # CheckboxGroup/RadioGroup
-│   │       ├── radio.rs        # Radio 组件
-│   │       ├── switch.rs       # Switch 组件
-│   │       ├── slider.rs       # Slider 组件
-│   │       ├── progress.rs     # Progress 组件
-│   │       ├── icon.rs         # Icon 组件
-│   │       ├── video.rs        # Video 组件
-│   │       ├── canvas.rs       # Canvas 组件
-│   │       ├── swiper.rs       # Swiper 组件
-│   │       ├── rich_text.rs    # RichText 组件
-│   │       └── picker.rs       # Picker 组件
-│   ├── layout/                 # 布局系统
-│   ├── ui/                     # UI 工具
-│   │   ├── scroll_controller.rs # 滚动控制
-│   │   └── scroll_cache.rs     # 滚动缓存优化
-│   └── runtime/                # 应用运行时
+│   ├── bin/                    # mini-app / mini-app-window / mini-launcher
+│   ├── js/                     # QuickJS runtime / api（App/Page/Component/模块）/ bridge
+│   ├── parser/                 # wxml / wxss（选择器引擎）/ expr（表达式）/ template
+│   ├── renderer/               # wxml_renderer / vdom_diff / components/*
+│   ├── ui/                     # interaction / scroll_controller / scroll_cache
+│   ├── runtime/                # MiniApp 应用运行时
+│   └── tests/                  # 单元/集成测试
+├── scripts/                    # 各平台 SDK 构建脚本
 ├── assets/                     # 字体资源
-│   └── NotoSansSC-Regular.ttf
-├── include/
-│   └── mini_render.h           # C 头文件
-├── examples/                   # 示例代码
-│   ├── demo.rs
-│   ├── demo.c
-│   └── mini_app_window.rs
-└── sample-app/                 # 示例小程序
-    ├── app.js
-    ├── app.json
-    ├── custom-tab-bar/         # 自定义 TabBar
-    └── pages/
-        ├── index/              # 首页
-        ├── category/           # 分类页
-        ├── cart/               # 购物车
-        ├── profile/            # 个人中心
-        ├── list/               # 列表页
-        ├── detail/             # 详情页
-        ├── canvas/             # Canvas 示例页
-        └── components/         # 组件示例页
-```
-
-## 🔧 C/C++ 集成
-
-```c
-#include "mini_render.h"
-
-// 创建画布
-Canvas* canvas = mr_canvas_new(375, 667);
-mr_canvas_clear(canvas, 255, 255, 255, 255);
-
-// 绘制图形
-mr_canvas_draw_rect(canvas, 10, 10, 100, 50, 0x4A, 0x90, 0xD9, 255, 0, 0);
-mr_canvas_draw_circle(canvas, 200, 100, 30, 0xE7, 0x4C, 0x3C, 255, 0, 0);
-
-// 保存为 PNG
-mr_canvas_save_png(canvas, "output.png");
-mr_canvas_free(canvas);
-```
-
-### 编译动态库
-
-```bash
-cargo build --release
-
-# macOS: target/release/libmini_render.dylib
-# Linux: target/release/libmini_render.so
-# Windows: target/release/mini_render.dll
+├── include/mini_render.h       # C 头文件
+├── examples/                   # demo.rs / demo.c / mini_app_window.rs
+├── doc/                        # 文档与效果图
+└── sample-app/                 # 示例小程序（index/category/cart/... ）
 ```
 
 ## 📋 依赖
 
-- [Taffy](https://github.com/DioxusLabs/taffy) - Flexbox 布局引擎
-- [QuickJS](https://bellard.org/quickjs/) - JavaScript 引擎
-- [winit](https://github.com/rust-windowing/winit) - 跨平台窗口
-- [softbuffer](https://github.com/rust-windowing/softbuffer) - 软件渲染
-- [image](https://github.com/image-rs/image) - 图片处理
-- [fontdue](https://github.com/mooman219/fontdue) - 字体渲染
+[Taffy](https://github.com/DioxusLabs/taffy)（布局）· [rquickjs](https://github.com/DelSkayn/rquickjs)（JS）· [winit](https://github.com/rust-windowing/winit) + [softbuffer](https://github.com/rust-windowing/softbuffer)（窗口，桌面）· [image](https://github.com/image-rs/image) · [fontdue](https://github.com/mooman219/fontdue)（字体）· rodio/symphonia（音频）· openh264（视频）
 
 ## 📄 License
 
