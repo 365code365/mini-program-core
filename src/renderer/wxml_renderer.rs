@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use taffy::prelude::*;
 
 use super::components::{
-    RenderNode, NodeStyle, ComponentContext, InheritedText,
+    RenderNode, NodeStyle, ComponentContext, InheritedText, TextAlign,
     ViewComponent, TextComponent, ButtonComponent, IconComponent,
     ProgressComponent, SwitchComponent, CheckboxComponent, RadioComponent,
     SliderComponent, InputComponent, ImageComponent, VideoComponent,
@@ -489,8 +489,14 @@ impl WxmlRenderer {
             let fs = inherited.font_size;
             let line_h = inherited.line_height.unwrap_or(fs * 1.4);
             let tw = self.measure_text(text, fs * sf);
+            // 居中/右对齐的文本撑满可用宽度，绘制时再按对齐做偏移（否则无法居中）
+            let width_dim: Dimension = if matches!(inherited.align, TextAlign::Center | TextAlign::Right) {
+                percent(1.0)
+            } else {
+                length(tw + 2.0 * sf)
+            };
             let tn = taffy.new_leaf(Style {
-                size: Size { width: length(tw + 2.0 * sf), height: length(line_h * sf) },
+                size: Size { width: width_dim, height: length(line_h * sf) },
                 ..Default::default()
             }).unwrap();
             return Some(RenderNode {

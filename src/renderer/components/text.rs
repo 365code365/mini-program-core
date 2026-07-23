@@ -53,10 +53,11 @@ impl TextComponent {
         ts.size.height = length(text_height);
         ts.min_size.height = length(text_height);
         
-        // 如果 CSS 没有设置宽度，根据 display 属性决定宽度
-        // display: block 时使用 100%，否则使用估算的文本宽度
+        // 如果 CSS 没有设置宽度，根据 display / text-align 决定宽度
+        // display:block 或 text-align 为 center/right 时使用 100%（便于水平对齐），
+        // 否则使用估算的文本宽度
         if matches!(ts.size.width, Dimension::Auto) {
-            if ns.is_block {
+            if ns.is_block || matches!(ns.text_align, TextAlign::Center | TextAlign::Right) {
                 ts.size.width = Dimension::Percent(1.0);
             } else {
                 // 使用估算的文本宽度
@@ -129,15 +130,24 @@ impl TextComponent {
             } else {
                 // 单行：在盒内垂直居中（基线 ≈ 盒中心 + 0.34*字号）
                 let baseline = y + h / 2.0 + size * 0.34;
+                // 水平对齐：text-align center/right 时在盒内做水平偏移
+                let align_dx = if w > text_w {
+                    match node.style.text_align {
+                        TextAlign::Center => (w - text_w) / 2.0,
+                        TextAlign::Right => w - text_w,
+                        _ => 0.0,
+                    }
+                } else { 0.0 };
+                let ax = x + align_dx;
                 if w > 0.0 && use_ellipsis && text_w > w {
                     draw_text_with_ellipsis(canvas, tr, text, x, baseline, size, w, letter_spacing, &paint);
                     if is_bold {
                         draw_text_with_ellipsis(canvas, tr, text, x + bold_dx, baseline, size, w, letter_spacing, &paint);
                     }
                 } else {
-                    tr.draw_text_with_spacing(canvas, text, x, baseline, size, letter_spacing, &paint);
+                    tr.draw_text_with_spacing(canvas, text, ax, baseline, size, letter_spacing, &paint);
                     if is_bold {
-                        tr.draw_text_with_spacing(canvas, text, x + bold_dx, baseline, size, letter_spacing, &paint);
+                        tr.draw_text_with_spacing(canvas, text, ax + bold_dx, baseline, size, letter_spacing, &paint);
                     }
                 }
             }

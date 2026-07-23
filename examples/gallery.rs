@@ -197,11 +197,12 @@ fn product_detail() {
 
 // 4. 购物车
 fn cart() {
-    let wxml = r#"
+    let wxml = r##"
     <view class="page">
         <text class="head">购物车（3）</text>
         <view class="card row" wx:for="{{items}}" wx:key="id">
-            <view class="check {{item.checked ? 'on' : ''}}"></view>
+            <icon class="ck" wx:if="{{item.checked}}" type="success" size="22" />
+            <icon class="ck" wx:else type="circle" size="22" color="#cccccc" />
             <view class="thumb"></view>
             <view class="col grow info">
                 <text class="name">{{item.name}}</text>
@@ -220,13 +221,12 @@ fn cart() {
             <text class="total">合计：<text class="tp">¥927</text></text>
             <view class="checkout">结算(3)</view>
         </view>
-    </view>"#;
+    </view>"##;
     let wxss = r#"
     .page{ padding:24rpx; }
     .head{ font-size:34rpx; font-weight:bold; color:#1a1a1a; margin-bottom:20rpx; }
     .card{ background-color:#fff; border-radius:20rpx; padding:24rpx; margin-bottom:20rpx; display:flex; flex-direction:row; align-items:center; }
-    .check{ width:40rpx; height:40rpx; border-radius:20rpx; background-color:#e0e0e0; margin-right:20rpx; }
-    .check.on{ background-color:#07c160; }
+    .ck{ margin-right:20rpx; }
     .thumb{ width:150rpx; height:150rpx; border-radius:16rpx; background-color:#e8eaf0; }
     .info{ margin-left:20rpx; flex:1; display:flex; flex-direction:column; }
     .row{ display:flex; flex-direction:row; align-items:center; }
