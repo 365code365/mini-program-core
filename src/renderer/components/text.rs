@@ -170,14 +170,16 @@ fn draw_text_wrapped_advanced(
             if current_width + char_width > max_width && i > line_start {
                 let line: String = chars[line_start..i].iter().collect();
                 
-                // 若下一行会超出容器高度，则先画完当前行再停止（绝不整行不画）
+                // 若下一行会超出容器高度：这是最后一行，把「剩余全部内容」画在当前行，
+                // 宁可横向溢出也不丢字（修复 "92%" 被裁成 "92" 这类尾字符丢失）。
                 // 容器底部（基线坐标系）约为 (y - size) + max_height
                 let next_line_top = current_y + actual_line_height;
                 if max_height > 0.0 && next_line_top > (y - size) + max_height {
+                    let rest: String = chars[line_start..].iter().collect();
                     if use_ellipsis {
-                        draw_text_with_ellipsis(canvas, tr, &line, x, current_y, size, max_width, letter_spacing, paint);
+                        draw_text_with_ellipsis(canvas, tr, &rest, x, current_y, size, max_width, letter_spacing, paint);
                     } else {
-                        tr.draw_text_with_spacing(canvas, &line, x, current_y, size, letter_spacing, paint);
+                        tr.draw_text_with_spacing(canvas, &rest, x, current_y, size, letter_spacing, paint);
                     }
                     return;
                 }

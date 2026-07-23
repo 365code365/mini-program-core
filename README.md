@@ -21,9 +21,33 @@
 
 由内置示例小程序渲染的首页（`cargo run --bin mini-app` 输出）：
 
-<img src="doc/mini_app_ui.png" width="360" alt="示例小程序渲染效果">
+<img src="doc/mini_app_ui.png" width="300" alt="示例小程序渲染效果">
 
-<img src="doc/img.png" width="360" alt="运行展示图">
+## 🖼️ 场景画廊
+
+以下页面均由本引擎真实渲染输出（纯 WXML + WXSS + 数据），一键生成：
+
+```bash
+cargo run --example gallery   # 渲染全部场景到 doc/gallery/
+```
+
+### 电商 · 社交 · 导航
+
+| | | |
+|:---:|:---:|:---:|
+| <img src="doc/gallery/01_login.png" width="230"/><br/>**登录页** | <img src="doc/gallery/02_product_list.png" width="230"/><br/>**商品列表** | <img src="doc/gallery/03_product_detail.png" width="230"/><br/>**商品详情** |
+| <img src="doc/gallery/04_cart.png" width="230"/><br/>**购物车** | <img src="doc/gallery/05_profile.png" width="230"/><br/>**个人中心** | <img src="doc/gallery/06_settings.png" width="230"/><br/>**设置页** |
+| <img src="doc/gallery/07_chat.png" width="230"/><br/>**聊天对话** | <img src="doc/gallery/08_feed.png" width="230"/><br/>**动态流** | <img src="doc/gallery/09_grid_menu.png" width="230"/><br/>**宫格导航** |
+
+### 表单 · 数据 · 生活
+
+| | | |
+|:---:|:---:|:---:|
+| <img src="doc/gallery/10_form.png" width="230"/><br/>**表单填写** | <img src="doc/gallery/11_dashboard.png" width="230"/><br/>**数据看板** | <img src="doc/gallery/12_gallery.png" width="230"/><br/>**图片画廊** |
+| <img src="doc/gallery/13_weather.png" width="230"/><br/>**天气** | <img src="doc/gallery/14_orders.png" width="230"/><br/>**订单列表** | <img src="doc/gallery/15_home.png" width="230"/><br/>**商城首页** |
+| <img src="doc/gallery/16_contacts.png" width="230"/><br/>**通讯录** | <img src="doc/gallery/17_music.png" width="230"/><br/>**音乐播放器** | <img src="doc/gallery/18_tags.png" width="230"/><br/>**标签与徽章** |
+
+> 这些页面覆盖了卡片、列表、宫格、Flex 布局、圆角/阴影、渐变色、进度条、开关/滑块/单选框、气泡、徽章、头像等常见 UI 模式，全部通过 `wx:for` / `{{ }}` 数据绑定驱动。
 
 ## 🏗️ 架构
 

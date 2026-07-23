@@ -1,0 +1,805 @@
+//! 渲染画廊：把多个不同场景的小程序页面渲染成 PNG，输出到 doc/gallery/
+//! 用于 README 九宫格展示。运行： cargo run --example gallery
+
+use mini_render::parser::{WxmlParser, WxssParser};
+use mini_render::renderer::WxmlRenderer;
+use mini_render::{Canvas, Color};
+use serde_json::{json, Value};
+
+const W: u32 = 375;
+const H: u32 = 667;
+const SCALE: f32 = 2.0;
+
+fn render(name: &str, bg: u32, wxml: &str, wxss: &str, data: Value) {
+    let nodes = WxmlParser::new(wxml).parse().expect("wxml");
+    let ss = WxssParser::new(wxss).parse().expect("wxss");
+    let mut r = WxmlRenderer::new_with_scale(ss, W as f32, H as f32, SCALE);
+    let mut canvas = Canvas::new((W as f32 * SCALE) as u32, (H as f32 * SCALE) as u32);
+    canvas.clear(Color::from_hex(bg));
+    r.render(&mut canvas, &nodes, &data);
+    let path = format!("doc/gallery/{}.png", name);
+    canvas.save_png(&path).expect("save");
+    println!("  ✓ {}", path);
+}
+
+fn main() {
+    std::fs::create_dir_all("doc/gallery").ok();
+    println!("渲染画廊 ->");
+
+    login();
+    product_list();
+    product_detail();
+    cart();
+    profile();
+    settings();
+    chat();
+    feed();
+    grid_menu();
+    form();
+    dashboard();
+    gallery_grid();
+    weather();
+    orders();
+    home();
+    contacts();
+    music();
+    tags();
+
+    println!("完成，共 18 个场景。");
+}
+
+// 通用样式片段
+fn common() -> &'static str {
+    r#"
+    .page{ padding:24rpx; }
+    .card{ background-color:#ffffff; border-radius:20rpx; padding:28rpx; margin-bottom:20rpx; box-shadow:0 4rpx 16rpx rgba(0,0,0,0.06); }
+    .row{ display:flex; flex-direction:row; align-items:center; }
+    .between{ justify-content:space-between; }
+    .col{ display:flex; flex-direction:column; }
+    .grow{ flex:1; }
+    .title{ font-size:36rpx; color:#1a1a1a; font-weight:bold; }
+    .sub{ font-size:26rpx; color:#999999; }
+    .price{ font-size:34rpx; color:#ff5000; font-weight:bold; }
+    .primary{ background-color:#07c160; color:#ffffff; border-radius:44rpx; padding:20rpx; text-align:center; font-size:30rpx; }
+    .avatar{ width:88rpx; height:88rpx; border-radius:44rpx; background-color:#c7e0ff; }
+    .thumb{ width:140rpx; height:140rpx; border-radius:16rpx; background-color:#e8eaf0; }
+    .tag{ background-color:#fff0e8; color:#ff5000; font-size:22rpx; padding:6rpx; border-radius:8rpx; margin-right:12rpx; }
+    "#
+}
+
+// 1. 登录
+fn login() {
+    let wxml = r#"
+    <view class="page">
+        <view class="logo"></view>
+        <text class="h1">欢迎登录</text>
+        <text class="tip">请输入账号密码</text>
+        <view class="field"><input value="13800138000" placeholder="手机号" /></view>
+        <view class="field"><input type="password" value="password" placeholder="密码" /></view>
+        <view class="btn">登 录</view>
+        <view class="links">
+            <text class="link">忘记密码</text>
+            <text class="link">注册账号</text>
+        </view>
+    </view>"#;
+    let wxss = r#"
+    .page{ padding:60rpx 48rpx; }
+    .logo{ width:140rpx; height:140rpx; border-radius:32rpx; background-color:#07c160; margin:40rpx auto 40rpx auto; }
+    .h1{ font-size:48rpx; font-weight:bold; color:#1a1a1a; text-align:center; }
+    .tip{ font-size:26rpx; color:#999; text-align:center; margin-bottom:60rpx; }
+    .field{ background-color:#f5f6f8; border-radius:16rpx; padding:26rpx; margin-bottom:28rpx; }
+    .field input{ font-size:30rpx; color:#333; }
+    .btn{ background-color:#07c160; color:#fff; text-align:center; font-size:32rpx; padding:26rpx; border-radius:44rpx; margin-top:20rpx; }
+    .links{ display:flex; flex-direction:row; justify-content:space-between; margin-top:36rpx; }
+    .link{ font-size:26rpx; color:#576b95; }
+    "#;
+    render("01_login", 0xFFFFFF, wxml, wxss, json!({}));
+}
+
+// 2. 商品列表
+fn product_list() {
+    let wxml = r#"
+    <view class="page">
+        <view class="card row" wx:for="{{items}}" wx:key="id">
+            <view class="thumb"></view>
+            <view class="col grow info">
+                <text class="title">{{item.name}}</text>
+                <text class="sub">{{item.desc}}</text>
+                <view class="row between bottom">
+                    <text class="price">¥{{item.price}}</text>
+                    <view class="buy">加入购物车</view>
+                </view>
+            </view>
+        </view>
+    </view>"#;
+    let wxss = r#"
+    .page{ padding:24rpx; }
+    .card{ background-color:#fff; border-radius:20rpx; padding:24rpx; margin-bottom:20rpx; display:flex; flex-direction:row; }
+    .thumb{ width:180rpx; height:180rpx; border-radius:16rpx; background-color:#e8eaf0; }
+    .info{ margin-left:24rpx; display:flex; flex-direction:column; flex:1; }
+    .title{ font-size:32rpx; color:#1a1a1a; font-weight:bold; }
+    .sub{ font-size:24rpx; color:#999; margin-top:8rpx; }
+    .row{ display:flex; flex-direction:row; align-items:center; }
+    .between{ justify-content:space-between; }
+    .bottom{ margin-top:40rpx; }
+    .price{ font-size:36rpx; color:#ff5000; font-weight:bold; }
+    .buy{ background-color:#07c160; color:#fff; font-size:24rpx; padding:12rpx; border-radius:32rpx; }
+    "#;
+    let data = json!({"items":[
+        {"id":1,"name":"无线蓝牙耳机","desc":"降噪 · 30h续航","price":"199"},
+        {"id":2,"name":"智能运动手表","desc":"心率 · 血氧监测","price":"599"},
+        {"id":3,"name":"便携充电宝","desc":"20000mAh 快充","price":"129"},
+        {"id":4,"name":"机械键盘","desc":"青轴 · RGB背光","price":"359"}
+    ]});
+    render("02_product_list", 0xF5F6F8, wxml, wxss, data);
+}
+
+// 3. 商品详情
+fn product_detail() {
+    let wxml = r#"
+    <view class="wrap">
+        <view class="hero"></view>
+        <view class="body">
+            <view class="row between">
+                <text class="price">¥3999</text>
+                <text class="old">¥4299</text>
+            </view>
+            <text class="name">全面屏旗舰手机 12+256GB 幻夜黑</text>
+            <view class="tags">
+                <text class="tag">顺丰包邮</text>
+                <text class="tag">7天无理由</text>
+                <text class="tag">正品保障</text>
+            </view>
+            <view class="spec">
+                <text class="spec-t">已选：幻夜黑 / 12+256GB</text>
+            </view>
+            <view class="param">
+                <view class="row between p"><text class="k">品牌</text><text class="v">MiniTech</text></view>
+                <view class="row between p"><text class="k">屏幕</text><text class="v">6.7英寸 OLED</text></view>
+                <view class="row between p"><text class="k">电池</text><text class="v">5000mAh</text></view>
+            </view>
+        </view>
+        <view class="bar">
+            <view class="icon"></view>
+            <view class="icon"></view>
+            <view class="cart">加入购物车</view>
+            <view class="now">立即购买</view>
+        </view>
+    </view>"#;
+    let wxss = r#"
+    .hero{ width:750rpx; height:560rpx; background-color:#dfe6ef; }
+    .body{ padding:28rpx; }
+    .row{ display:flex; flex-direction:row; align-items:center; }
+    .between{ justify-content:space-between; }
+    .price{ font-size:52rpx; color:#ff5000; font-weight:bold; }
+    .old{ font-size:28rpx; color:#bbb; text-decoration:line-through; }
+    .name{ font-size:34rpx; color:#1a1a1a; font-weight:bold; margin-top:12rpx; }
+    .tags{ display:flex; flex-direction:row; margin-top:20rpx; }
+    .tag{ background-color:#fff0e8; color:#ff5000; font-size:22rpx; padding:8rpx; border-radius:8rpx; margin-right:12rpx; }
+    .spec{ background-color:#f7f8fa; border-radius:16rpx; padding:24rpx; margin-top:24rpx; }
+    .spec-t{ font-size:28rpx; color:#333; }
+    .param{ margin-top:24rpx; }
+    .p{ padding:18rpx 0; }
+    .k{ font-size:28rpx; color:#999; }
+    .v{ font-size:28rpx; color:#333; }
+    .bar{ display:flex; flex-direction:row; align-items:center; padding:16rpx 24rpx; }
+    .icon{ width:72rpx; height:72rpx; border-radius:36rpx; background-color:#f0f0f0; margin-right:16rpx; }
+    .cart{ flex:1; background-color:#ffb400; color:#fff; text-align:center; font-size:28rpx; padding:22rpx; border-radius:44rpx 0 0 44rpx; }
+    .now{ flex:1; background-color:#ff5000; color:#fff; text-align:center; font-size:28rpx; padding:22rpx; border-radius:0 44rpx 44rpx 0; }
+    "#;
+    render("03_product_detail", 0xFFFFFF, wxml, wxss, json!({}));
+}
+
+// 4. 购物车
+fn cart() {
+    let wxml = r#"
+    <view class="page">
+        <text class="head">购物车（3）</text>
+        <view class="card row" wx:for="{{items}}" wx:key="id">
+            <view class="check {{item.checked ? 'on' : ''}}"></view>
+            <view class="thumb"></view>
+            <view class="col grow info">
+                <text class="name">{{item.name}}</text>
+                <text class="sku">{{item.sku}}</text>
+                <view class="row between">
+                    <text class="price">¥{{item.price}}</text>
+                    <view class="stepper row">
+                        <text class="minus">-</text>
+                        <text class="qty">{{item.qty}}</text>
+                        <text class="plus">+</text>
+                    </view>
+                </view>
+            </view>
+        </view>
+        <view class="bar row between">
+            <text class="total">合计：<text class="tp">¥927</text></text>
+            <view class="checkout">结算(3)</view>
+        </view>
+    </view>"#;
+    let wxss = r#"
+    .page{ padding:24rpx; }
+    .head{ font-size:34rpx; font-weight:bold; color:#1a1a1a; margin-bottom:20rpx; }
+    .card{ background-color:#fff; border-radius:20rpx; padding:24rpx; margin-bottom:20rpx; display:flex; flex-direction:row; align-items:center; }
+    .check{ width:40rpx; height:40rpx; border-radius:20rpx; background-color:#e0e0e0; margin-right:20rpx; }
+    .check.on{ background-color:#07c160; }
+    .thumb{ width:150rpx; height:150rpx; border-radius:16rpx; background-color:#e8eaf0; }
+    .info{ margin-left:20rpx; flex:1; display:flex; flex-direction:column; }
+    .row{ display:flex; flex-direction:row; align-items:center; }
+    .between{ justify-content:space-between; }
+    .name{ font-size:30rpx; color:#1a1a1a; }
+    .sku{ font-size:24rpx; color:#999; margin:10rpx 0 30rpx 0; }
+    .price{ font-size:34rpx; color:#ff5000; font-weight:bold; }
+    .stepper{ display:flex; flex-direction:row; align-items:center; }
+    .minus,.plus{ width:48rpx; height:48rpx; background-color:#f2f2f2; border-radius:8rpx; text-align:center; font-size:32rpx; color:#666; }
+    .qty{ font-size:28rpx; color:#333; padding:0 24rpx; }
+    .bar{ display:flex; flex-direction:row; justify-content:space-between; align-items:center; background-color:#fff; border-radius:20rpx; padding:24rpx; margin-top:12rpx; }
+    .total{ font-size:28rpx; color:#333; }
+    .tp{ font-size:38rpx; color:#ff5000; font-weight:bold; }
+    .checkout{ background-color:#ff5000; color:#fff; font-size:30rpx; padding:20rpx 48rpx; border-radius:44rpx; }
+    "#;
+    let data = json!({"items":[
+        {"id":1,"name":"无线蓝牙耳机","sku":"白色 标准版","price":"199","qty":1,"checked":true},
+        {"id":2,"name":"智能运动手表","sku":"黑色 46mm","price":"599","qty":1,"checked":true},
+        {"id":3,"name":"便携充电宝","sku":"20000mAh","price":"129","qty":1,"checked":false}
+    ]});
+    render("04_cart", 0xF5F6F8, wxml, wxss, data);
+}
+
+// 5. 个人中心
+fn profile() {
+    let wxml = r#"
+    <view class="wrap">
+        <view class="header">
+            <view class="row">
+                <view class="avatar"></view>
+                <view class="col hi">
+                    <text class="name">时光旅人</text>
+                    <text class="id">ID: 88888888</text>
+                </view>
+                <view class="vip">VIP</view>
+            </view>
+            <view class="stats row">
+                <view class="col stat"><text class="num">12</text><text class="lbl">收藏</text></view>
+                <view class="col stat"><text class="num">36</text><text class="lbl">关注</text></view>
+                <view class="col stat"><text class="num">128</text><text class="lbl">粉丝</text></view>
+                <view class="col stat"><text class="num">6</text><text class="lbl">优惠券</text></view>
+            </view>
+        </view>
+        <view class="menu">
+            <view class="mi row between" wx:for="{{menu}}" wx:key="*this">
+                <view class="row"><view class="mi-ico"></view><text class="mt">{{item}}</text></view>
+                <text class="arrow">></text>
+            </view>
+        </view>
+    </view>"#;
+    let wxss = r#"
+    .header{ background-color:#07c160; padding:60rpx 40rpx 40rpx 40rpx; }
+    .row{ display:flex; flex-direction:row; align-items:center; }
+    .between{ justify-content:space-between; }
+    .avatar{ width:120rpx; height:120rpx; border-radius:60rpx; background-color:#ffffff; }
+    .hi{ margin-left:24rpx; flex:1; display:flex; flex-direction:column; }
+    .name{ font-size:38rpx; color:#fff; font-weight:bold; }
+    .id{ font-size:24rpx; color:#e6fff0; margin-top:8rpx; }
+    .vip{ background-color:#ffd700; color:#7a5b00; font-size:24rpx; padding:8rpx 16rpx; border-radius:20rpx; }
+    .stats{ display:flex; flex-direction:row; justify-content:space-between; margin-top:44rpx; }
+    .stat{ display:flex; flex-direction:column; align-items:center; flex:1; }
+    .num{ font-size:38rpx; color:#fff; font-weight:bold; }
+    .lbl{ font-size:24rpx; color:#e6fff0; margin-top:6rpx; }
+    .menu{ margin:24rpx; background-color:#fff; border-radius:20rpx; padding:8rpx 28rpx; }
+    .mi{ display:flex; flex-direction:row; justify-content:space-between; align-items:center; padding:30rpx 0; border-bottom:1rpx solid #f0f0f0; }
+    .mi-ico{ width:48rpx; height:48rpx; border-radius:12rpx; background-color:#e8f7ee; margin-right:20rpx; }
+    .mt{ font-size:30rpx; color:#333; }
+    .arrow{ font-size:30rpx; color:#ccc; }
+    "#;
+    let data = json!({"menu":["我的订单","收货地址","账户安全","消息通知","帮助中心","关于我们"]});
+    render("05_profile", 0xF5F6F8, wxml, wxss, data);
+}
+
+// 6. 设置
+fn settings() {
+    let wxml = r#"
+    <view class="page">
+        <text class="grp">通用</text>
+        <view class="card">
+            <view class="item row between"><text class="t">夜间模式</text><switch checked="true" /></view>
+            <view class="item row between"><text class="t">消息推送</text><switch checked="true" /></view>
+            <view class="item row between"><text class="t">自动播放</text><switch /></view>
+            <view class="item row between"><text class="t">流量提醒</text><switch checked="true" /></view>
+        </view>
+        <text class="grp">隐私</text>
+        <view class="card">
+            <view class="item row between"><text class="t">个性化推荐</text><switch checked="true" /></view>
+            <view class="item row between"><text class="t">位置权限</text><text class="v">仅使用时 ></text></view>
+            <view class="item row between"><text class="t">清除缓存</text><text class="v">128MB ></text></view>
+        </view>
+        <view class="logout">退出登录</view>
+    </view>"#;
+    let wxss = r#"
+    .page{ padding:24rpx; }
+    .grp{ font-size:26rpx; color:#999; margin:20rpx 0 12rpx 12rpx; }
+    .card{ background-color:#fff; border-radius:20rpx; padding:0 28rpx; }
+    .row{ display:flex; flex-direction:row; align-items:center; }
+    .between{ justify-content:space-between; }
+    .item{ display:flex; flex-direction:row; justify-content:space-between; align-items:center; padding:30rpx 0; border-bottom:1rpx solid #f2f2f2; }
+    .t{ font-size:30rpx; color:#333; }
+    .v{ font-size:28rpx; color:#999; }
+    .logout{ background-color:#fff; color:#ff3b30; text-align:center; font-size:30rpx; padding:28rpx; border-radius:20rpx; margin-top:40rpx; }
+    "#;
+    render("06_settings", 0xF5F6F8, wxml, wxss, json!({}));
+}
+
+// 7. 聊天
+fn chat() {
+    let wxml = r#"
+    <view class="page">
+        <view class="msg row {{item.me ? 'me' : ''}}" wx:for="{{msgs}}" wx:key="id">
+            <view class="av" wx:if="{{!item.me}}"></view>
+            <view class="bubble {{item.me ? 'b-me' : ''}}"><text class="tx {{item.me ? 'tx-me' : ''}}">{{item.text}}</text></view>
+            <view class="av" wx:if="{{item.me}}"></view>
+        </view>
+    </view>"#;
+    let wxss = r#"
+    .page{ padding:24rpx; }
+    .msg{ display:flex; flex-direction:row; align-items:flex-start; margin-bottom:30rpx; }
+    .msg.me{ justify-content:flex-end; }
+    .av{ width:72rpx; height:72rpx; border-radius:16rpx; background-color:#c7e0ff; }
+    .bubble{ background-color:#ffffff; border-radius:16rpx; padding:20rpx 24rpx; margin:0 20rpx; max-width:460rpx; }
+    .b-me{ background-color:#95ec69; }
+    .tx{ font-size:30rpx; color:#1a1a1a; }
+    "#;
+    let data = json!({"msgs":[
+        {"id":1,"me":false,"text":"在吗？周末有空一起爬山不？"},
+        {"id":2,"me":true,"text":"有空啊！几点集合？"},
+        {"id":3,"me":false,"text":"早上八点，老地方见"},
+        {"id":4,"me":true,"text":"好嘞，带上水和干粮"},
+        {"id":5,"me":false,"text":"好的，到时候见"}
+    ]});
+    render("07_chat", 0xEDEDED, wxml, wxss, data);
+}
+
+// 8. 动态流
+fn feed() {
+    let wxml = r#"
+    <view class="page">
+        <view class="card" wx:for="{{posts}}" wx:key="id">
+            <view class="row top">
+                <view class="avatar"></view>
+                <view class="col grow"><text class="name">{{item.user}}</text><text class="time">{{item.time}}</text></view>
+                <view class="follow">关注</view>
+            </view>
+            <text class="content">{{item.text}}</text>
+            <view class="imgs row">
+                <view class="ig"></view><view class="ig"></view><view class="ig"></view>
+            </view>
+            <view class="actions row between">
+                <text class="act">赞 {{item.likes}}</text>
+                <text class="act">评论 {{item.comments}}</text>
+                <text class="act">转发</text>
+            </view>
+        </view>
+    </view>"#;
+    let wxss = r#"
+    .page{ padding:20rpx; }
+    .card{ background-color:#fff; border-radius:20rpx; padding:28rpx; margin-bottom:20rpx; }
+    .row{ display:flex; flex-direction:row; align-items:center; }
+    .between{ justify-content:space-between; }
+    .top{ margin-bottom:20rpx; }
+    .avatar{ width:84rpx; height:84rpx; border-radius:42rpx; background-color:#ffd8a8; margin-right:20rpx; }
+    .col{ display:flex; flex-direction:column; }
+    .grow{ flex:1; }
+    .name{ font-size:30rpx; color:#1a1a1a; font-weight:bold; }
+    .time{ font-size:24rpx; color:#bbb; margin-top:6rpx; }
+    .follow{ background-color:#07c160; color:#fff; font-size:24rpx; padding:10rpx 24rpx; border-radius:28rpx; }
+    .content{ font-size:30rpx; color:#333; line-height:44rpx; }
+    .imgs{ display:flex; flex-direction:row; margin-top:20rpx; }
+    .ig{ width:210rpx; height:210rpx; border-radius:12rpx; background-color:#e8eaf0; margin-right:12rpx; }
+    .actions{ display:flex; flex-direction:row; justify-content:space-between; margin-top:24rpx; }
+    .act{ font-size:26rpx; color:#888; }
+    "#;
+    let data = json!({"posts":[
+        {"id":1,"user":"摄影师阿凯","time":"10分钟前","text":"周末去了趟海边，随手一拍都是壁纸 📷","likes":328,"comments":42},
+        {"id":2,"user":"美食日记","time":"1小时前","text":"在家复刻了一份提拉米苏，成功！","likes":156,"comments":23}
+    ]});
+    render("08_feed", 0xF5F6F8, wxml, wxss, data);
+}
+
+// 9. 宫格导航
+fn grid_menu() {
+    let wxml = r#"
+    <view class="page">
+        <text class="head">全部服务</text>
+        <view class="grid">
+            <view class="cell col" wx:for="{{apps}}" wx:key="*this">
+                <view class="ico" style="background-color:{{item.c}}"></view>
+                <text class="lbl">{{item.n}}</text>
+            </view>
+        </view>
+    </view>"#;
+    let wxss = r#"
+    .page{ padding:24rpx; }
+    .head{ font-size:34rpx; font-weight:bold; color:#1a1a1a; margin-bottom:24rpx; }
+    .grid{ display:flex; flex-direction:row; flex-wrap:wrap; background-color:#fff; border-radius:20rpx; padding:24rpx; }
+    .cell{ width:25%; display:flex; flex-direction:column; align-items:center; margin-bottom:36rpx; }
+    .ico{ width:96rpx; height:96rpx; border-radius:24rpx; }
+    .lbl{ font-size:24rpx; color:#555; margin-top:14rpx; }
+    "#;
+    let data = json!({"apps":[
+        {"n":"扫一扫","c":"#4a90d9"},{"n":"付款码","c":"#07c160"},{"n":"卡包","c":"#ff9500"},{"n":"出行","c":"#5856d6"},
+        {"n":"外卖","c":"#ff3b30"},{"n":"充值","c":"#34c759"},{"n":"理财","c":"#ffcc00"},{"n":"医疗","c":"#af52de"},
+        {"n":"公益","c":"#ff2d55"},{"n":"游戏","c":"#00c7be"},{"n":"读书","c":"#ff6b35"},{"n":"更多","c":"#8e8e93"}
+    ]});
+    render("09_grid_menu", 0xF5F6F8, wxml, wxss, data);
+}
+
+// 10. 表单
+fn form() {
+    let wxml = r#"
+    <view class="page">
+        <view class="card">
+            <view class="fi col"><text class="lb">姓名</text><input value="张三" placeholder="请输入姓名" /></view>
+            <view class="fi col"><text class="lb">手机号</text><input value="13800138000" /></view>
+            <view class="fi row between"><text class="lb">性别</text>
+                <view class="row"><radio checked="true" /><text class="rl">男</text><radio /><text class="rl">女</text></view>
+            </view>
+            <view class="fi row between"><text class="lb">接收通知</text><switch checked="true" /></view>
+            <view class="fi col"><text class="lb">满意度</text><slider value="70" show-value="true" /></view>
+            <view class="fi row"><checkbox checked="true" /><text class="agree">我已阅读并同意用户协议</text></view>
+        </view>
+        <view class="submit">提交</view>
+    </view>"#;
+    let wxss = r#"
+    .page{ padding:24rpx; }
+    .card{ background-color:#fff; border-radius:20rpx; padding:12rpx 28rpx; }
+    .fi{ padding:26rpx 0; border-bottom:1rpx solid #f2f2f2; }
+    .row{ display:flex; flex-direction:row; align-items:center; }
+    .col{ display:flex; flex-direction:column; }
+    .between{ justify-content:space-between; }
+    .lb{ font-size:28rpx; color:#999; margin-bottom:12rpx; }
+    .fi input{ font-size:32rpx; color:#333; }
+    .rl{ font-size:30rpx; color:#333; margin:0 30rpx 0 10rpx; }
+    .agree{ font-size:26rpx; color:#666; margin-left:14rpx; }
+    .submit{ background-color:#07c160; color:#fff; text-align:center; font-size:32rpx; padding:26rpx; border-radius:44rpx; margin-top:40rpx; }
+    "#;
+    render("10_form", 0xF5F6F8, wxml, wxss, json!({}));
+}
+
+// 11. 数据看板
+fn dashboard() {
+    let wxml = r#"
+    <view class="page">
+        <text class="head">数据概览</text>
+        <view class="cards row">
+            <view class="stat" style="background-color:#4a90d9"><text class="sv">1,286</text><text class="sl">今日访客</text></view>
+            <view class="stat" style="background-color:#07c160"><text class="sv">¥8,420</text><text class="sl">今日收入</text></view>
+        </view>
+        <view class="cards row">
+            <view class="stat" style="background-color:#ff9500"><text class="sv">328</text><text class="sl">新增订单</text></view>
+            <view class="stat" style="background-color:#af52de"><text class="sv">92%</text><text class="sl">好评率</text></view>
+        </view>
+        <view class="card">
+            <text class="ct">分类占比</text>
+            <view class="bar-row row" wx:for="{{bars}}" wx:key="n">
+                <text class="bn">{{item.n}}</text>
+                <view class="track grow"><view class="fill" style="width:{{item.p}};background-color:{{item.c}}"></view></view>
+                <text class="bp">{{item.p}}</text>
+            </view>
+        </view>
+    </view>"#;
+    let wxss = r#"
+    .page{ padding:24rpx; }
+    .head{ font-size:36rpx; font-weight:bold; color:#1a1a1a; margin-bottom:20rpx; }
+    .row{ display:flex; flex-direction:row; align-items:center; }
+    .cards{ display:flex; flex-direction:row; margin-bottom:20rpx; }
+    .stat{ flex:1; border-radius:20rpx; padding:32rpx; margin-right:20rpx; display:flex; flex-direction:column; }
+    .sv{ font-size:44rpx; color:#fff; font-weight:bold; }
+    .sl{ font-size:24rpx; color:#eafff2; margin-top:10rpx; }
+    .card{ background-color:#fff; border-radius:20rpx; padding:28rpx; margin-top:8rpx; }
+    .ct{ font-size:30rpx; color:#1a1a1a; font-weight:bold; }
+    .bar-row{ display:flex; flex-direction:row; align-items:center; margin-top:26rpx; }
+    .bn{ font-size:26rpx; color:#666; width:120rpx; }
+    .track{ height:20rpx; background-color:#f0f0f0; border-radius:10rpx; flex:1; margin:0 16rpx; }
+    .fill{ height:20rpx; border-radius:10rpx; }
+    .bp{ font-size:24rpx; color:#999; width:70rpx; text-align:right; }
+    "#;
+    let data = json!({"bars":[
+        {"n":"电子产品","p":"75%","c":"#4a90d9"},
+        {"n":"服饰","p":"55%","c":"#07c160"},
+        {"n":"食品","p":"40%","c":"#ff9500"},
+        {"n":"其他","p":"20%","c":"#af52de"}
+    ]});
+    render("11_dashboard", 0xF5F6F8, wxml, wxss, data);
+}
+
+// 12. 图片画廊
+fn gallery_grid() {
+    let wxml = r#"
+    <view class="page">
+        <text class="head">发现美图</text>
+        <view class="grid">
+            <view class="tile" wx:for="{{tiles}}" wx:key="*this" style="background-color:{{item}}"></view>
+        </view>
+    </view>"#;
+    let wxss = r#"
+    .page{ padding:24rpx; }
+    .head{ font-size:34rpx; font-weight:bold; color:#1a1a1a; margin-bottom:20rpx; }
+    .grid{ display:flex; flex-direction:row; flex-wrap:wrap; }
+    .tile{ width:220rpx; height:220rpx; border-radius:16rpx; margin:0 12rpx 12rpx 0; }
+    "#;
+    let data = json!({"tiles":[
+        "#ffadad","#ffd6a5","#fdffb6","#caffbf","#9bf6ff","#a0c4ff","#bdb2ff","#ffc6ff","#fffffc"
+    ]});
+    render("12_gallery", 0xFFFFFF, wxml, wxss, data);
+}
+
+// 13. 天气
+fn weather() {
+    let wxml = r#"
+    <view class="wrap">
+        <view class="hero">
+            <text class="city">深圳市 · 南山区</text>
+            <text class="temp">26°</text>
+            <text class="desc">多云转晴  ·  东南风 3级</text>
+            <text class="range">最高 29°  最低 21°</text>
+        </view>
+        <view class="hours card">
+            <view class="hour col" wx:for="{{hours}}" wx:key="t">
+                <text class="ht">{{item.t}}</text>
+                <view class="dot"></view>
+                <text class="hv">{{item.v}}°</text>
+            </view>
+        </view>
+        <view class="card">
+            <view class="drow row between" wx:for="{{days}}" wx:key="d">
+                <text class="dd">{{item.d}}</text><text class="dw">{{item.w}}</text><text class="dt">{{item.t}}</text>
+            </view>
+        </view>
+    </view>"#;
+    let wxss = r#"
+    .hero{ background-color:#4a90d9; padding:70rpx 40rpx 50rpx 40rpx; display:flex; flex-direction:column; align-items:center; }
+    .city{ font-size:32rpx; color:#eaf3ff; }
+    .temp{ font-size:140rpx; color:#fff; font-weight:bold; }
+    .desc{ font-size:28rpx; color:#eaf3ff; }
+    .range{ font-size:26rpx; color:#cfe2ff; margin-top:12rpx; }
+    .card{ background-color:#fff; border-radius:20rpx; padding:28rpx; margin:24rpx; }
+    .hours{ display:flex; flex-direction:row; justify-content:space-between; }
+    .hour{ display:flex; flex-direction:column; align-items:center; flex:1; }
+    .ht{ font-size:24rpx; color:#999; }
+    .dot{ width:20rpx; height:20rpx; border-radius:10rpx; background-color:#ffcc00; margin:18rpx 0; }
+    .hv{ font-size:28rpx; color:#333; }
+    .row{ display:flex; flex-direction:row; align-items:center; }
+    .between{ justify-content:space-between; }
+    .drow{ display:flex; flex-direction:row; justify-content:space-between; padding:20rpx 0; border-bottom:1rpx solid #f2f2f2; }
+    .dd{ font-size:28rpx; color:#333; width:120rpx; }
+    .dw{ font-size:28rpx; color:#888; }
+    .dt{ font-size:28rpx; color:#333; }
+    "#;
+    let data = json!({
+        "hours":[{"t":"现在","v":26},{"t":"14时","v":28},{"t":"15时","v":29},{"t":"16时","v":28},{"t":"17时","v":26}],
+        "days":[{"d":"今天","w":"多云","t":"21°~29°"},{"d":"明天","w":"晴","t":"22°~31°"},{"d":"周三","w":"小雨","t":"20°~26°"}]
+    });
+    render("13_weather", 0x4A90D9, wxml, wxss, data);
+}
+
+// 14. 订单列表
+fn orders() {
+    let wxml = r#"
+    <view class="page">
+        <view class="tabs row">
+            <text class="tab on">全部</text><text class="tab">待付款</text><text class="tab">待发货</text><text class="tab">待收货</text>
+        </view>
+        <view class="card" wx:for="{{orders}}" wx:key="id">
+            <view class="row between oh">
+                <text class="shop">{{item.shop}}</text>
+                <text class="st" style="color:{{item.c}}">{{item.status}}</text>
+            </view>
+            <view class="row goods">
+                <view class="thumb"></view>
+                <view class="col grow gi"><text class="gn">{{item.name}}</text><text class="gs">{{item.sku}}</text></view>
+                <view class="col gp"><text class="pp">¥{{item.price}}</text><text class="qn">x{{item.qty}}</text></view>
+            </view>
+            <view class="row between foot">
+                <text class="ft">共{{item.qty}}件 合计 <text class="fp">¥{{item.price}}</text></text>
+                <view class="btn">{{item.action}}</view>
+            </view>
+        </view>
+    </view>"#;
+    let wxss = r#"
+    .page{ padding:0 0 24rpx 0; }
+    .tabs{ display:flex; flex-direction:row; background-color:#fff; padding:24rpx 0; }
+    .tab{ flex:1; text-align:center; font-size:28rpx; color:#666; }
+    .tab.on{ color:#07c160; font-weight:bold; }
+    .card{ background-color:#fff; border-radius:20rpx; padding:26rpx; margin:20rpx 24rpx 0 24rpx; }
+    .row{ display:flex; flex-direction:row; align-items:center; }
+    .between{ justify-content:space-between; }
+    .col{ display:flex; flex-direction:column; }
+    .grow{ flex:1; }
+    .oh{ padding-bottom:20rpx; border-bottom:1rpx solid #f2f2f2; }
+    .shop{ font-size:28rpx; color:#333; }
+    .st{ font-size:26rpx; }
+    .goods{ display:flex; flex-direction:row; padding:24rpx 0; }
+    .thumb{ width:140rpx; height:140rpx; border-radius:12rpx; background-color:#e8eaf0; }
+    .gi{ margin-left:20rpx; flex:1; }
+    .gn{ font-size:30rpx; color:#1a1a1a; }
+    .gs{ font-size:24rpx; color:#999; margin-top:10rpx; }
+    .gp{ display:flex; flex-direction:column; align-items:flex-end; }
+    .pp{ font-size:30rpx; color:#333; }
+    .qn{ font-size:24rpx; color:#999; margin-top:10rpx; }
+    .foot{ padding-top:20rpx; }
+    .ft{ font-size:26rpx; color:#666; }
+    .fp{ font-size:32rpx; color:#ff5000; font-weight:bold; }
+    .btn{ border:1rpx solid #07c160; color:#07c160; font-size:26rpx; padding:12rpx 28rpx; border-radius:32rpx; }
+    "#;
+    let data = json!({"orders":[
+        {"id":1,"shop":"官方旗舰店","status":"待发货","c":"#ff9500","name":"智能运动手表","sku":"黑色 46mm","price":"599","qty":1,"action":"提醒发货"},
+        {"id":2,"shop":"数码专营店","status":"已完成","c":"#999","name":"无线蓝牙耳机","sku":"白色","price":"199","qty":2,"action":"再次购买"}
+    ]});
+    render("14_orders", 0xF5F6F8, wxml, wxss, data);
+}
+
+// 15. 首页
+fn home() {
+    let wxml = r#"
+    <view class="wrap">
+        <view class="search row"><view class="sbox row"><view class="sicon"></view><text class="sp">搜索商品</text></view></view>
+        <view class="banner"><text class="bt">新品首发 全场8折</text></view>
+        <view class="cats row">
+            <view class="cat col" wx:for="{{cats}}" wx:key="n"><view class="ci" style="background-color:{{item.c}}"></view><text class="cn">{{item.n}}</text></view>
+        </view>
+        <view class="sec row between"><text class="stitle">热销推荐</text><text class="more">更多 ></text></view>
+        <view class="plist row">
+            <view class="pcard col" wx:for="{{prods}}" wx:key="n">
+                <view class="pimg"></view>
+                <text class="pn">{{item.n}}</text>
+                <text class="pp">¥{{item.p}}</text>
+            </view>
+        </view>
+    </view>"#;
+    let wxss = r#"
+    .search{ background-color:#07c160; padding:24rpx; }
+    .sbox{ flex:1; background-color:#fff; border-radius:32rpx; padding:18rpx 28rpx; display:flex; flex-direction:row; align-items:center; }
+    .sicon{ width:30rpx; height:30rpx; border-radius:15rpx; background-color:#ddd; margin-right:14rpx; }
+    .sp{ font-size:28rpx; color:#bbb; }
+    .banner{ height:260rpx; background-color:#ff9500; margin:24rpx; border-radius:20rpx; display:flex; align-items:center; justify-content:center; }
+    .bt{ font-size:44rpx; color:#fff; font-weight:bold; }
+    .row{ display:flex; flex-direction:row; align-items:center; }
+    .between{ justify-content:space-between; }
+    .col{ display:flex; flex-direction:column; }
+    .cats{ display:flex; flex-direction:row; justify-content:space-between; padding:0 24rpx; }
+    .cat{ display:flex; flex-direction:column; align-items:center; flex:1; }
+    .ci{ width:96rpx; height:96rpx; border-radius:48rpx; }
+    .cn{ font-size:24rpx; color:#555; margin-top:12rpx; }
+    .sec{ display:flex; flex-direction:row; justify-content:space-between; padding:36rpx 24rpx 16rpx 24rpx; }
+    .stitle{ font-size:34rpx; font-weight:bold; color:#1a1a1a; }
+    .more{ font-size:26rpx; color:#999; }
+    .plist{ display:flex; flex-direction:row; padding:0 24rpx; }
+    .pcard{ flex:1; background-color:#fff; border-radius:16rpx; padding:16rpx; margin-right:16rpx; display:flex; flex-direction:column; }
+    .pimg{ width:100%; height:200rpx; border-radius:12rpx; background-color:#e8eaf0; }
+    .pn{ font-size:26rpx; color:#333; margin-top:14rpx; }
+    .pp{ font-size:32rpx; color:#ff5000; font-weight:bold; margin-top:8rpx; }
+    "#;
+    let data = json!({
+        "cats":[{"n":"数码","c":"#4a90d9"},{"n":"服饰","c":"#ff3b30"},{"n":"美妆","c":"#ff9500"},{"n":"食品","c":"#34c759"},{"n":"家居","c":"#af52de"}],
+        "prods":[{"n":"蓝牙耳机","p":"199"},{"n":"运动手表","p":"599"},{"n":"充电宝","p":"129"}]
+    });
+    render("15_home", 0xF5F6F8, wxml, wxss, data);
+}
+
+// 16. 通讯录
+fn contacts() {
+    let wxml = r#"
+    <view class="page">
+        <view class="grp" wx:for="{{groups}}" wx:key="letter">
+            <text class="gl">{{item.letter}}</text>
+            <view class="ci row" wx:for="{{item.people}}" wx:for-item="p" wx:key="*this">
+                <view class="av" style="background-color:{{p.c}}"></view>
+                <text class="nm">{{p.n}}</text>
+            </view>
+        </view>
+    </view>"#;
+    let wxss = r#"
+    .page{ background-color:#fff; }
+    .gl{ font-size:26rpx; color:#999; background-color:#f5f6f8; padding:10rpx 32rpx; }
+    .ci{ display:flex; flex-direction:row; align-items:center; padding:22rpx 32rpx; border-bottom:1rpx solid #f5f5f5; }
+    .av{ width:80rpx; height:80rpx; border-radius:16rpx; margin-right:24rpx; }
+    .nm{ font-size:32rpx; color:#1a1a1a; }
+    "#;
+    let data = json!({"groups":[
+        {"letter":"A","people":[{"n":"阿伟","c":"#ff9f43"},{"n":"安琪","c":"#ee5253"}]},
+        {"letter":"L","people":[{"n":"李雷","c":"#0abde3"},{"n":"林徽因","c":"#10ac84"},{"n":"刘备","c":"#5f27cd"}]},
+        {"letter":"Z","people":[{"n":"张三","c":"#576574"},{"n":"赵云","c":"#ff6b6b"}]}
+    ]});
+    render("16_contacts", 0xFFFFFF, wxml, wxss, data);
+}
+
+// 17. 音乐播放器
+fn music() {
+    let wxml = r#"
+    <view class="wrap col">
+        <view class="cover"></view>
+        <text class="song">夜空中最亮的星</text>
+        <text class="singer">逃跑计划</text>
+        <view class="prog row">
+            <text class="tm">01:24</text>
+            <view class="track grow"><view class="fill"></view><view class="knob"></view></view>
+            <text class="tm">04:12</text>
+        </view>
+        <view class="ctrls row between">
+            <view class="c csm"></view>
+            <view class="c cmd"></view>
+            <view class="play"></view>
+            <view class="c cmd"></view>
+            <view class="c csm"></view>
+        </view>
+    </view>"#;
+    let wxss = r#"
+    .wrap{ display:flex; flex-direction:column; align-items:center; padding:80rpx 48rpx; }
+    .cover{ width:460rpx; height:460rpx; border-radius:230rpx; background-color:#3a3a4a; margin-bottom:60rpx; }
+    .song{ font-size:44rpx; color:#fff; font-weight:bold; }
+    .singer{ font-size:28rpx; color:#aaa; margin-top:16rpx; }
+    .row{ display:flex; flex-direction:row; align-items:center; }
+    .grow{ flex:1; }
+    .prog{ display:flex; flex-direction:row; align-items:center; width:100%; margin-top:80rpx; }
+    .tm{ font-size:24rpx; color:#999; }
+    .track{ height:8rpx; background-color:#3a3a4a; border-radius:4rpx; margin:0 20rpx; position:relative; }
+    .fill{ width:200rpx; height:8rpx; background-color:#07c160; border-radius:4rpx; }
+    .knob{ width:28rpx; height:28rpx; border-radius:14rpx; background-color:#fff; position:absolute; top:-10rpx; left:186rpx; }
+    .ctrls{ display:flex; flex-direction:row; align-items:center; justify-content:space-between; width:100%; margin-top:80rpx; }
+    .c{ background-color:#4a4a58; }
+    .csm{ width:44rpx; height:44rpx; border-radius:22rpx; }
+    .cmd{ width:64rpx; height:64rpx; border-radius:32rpx; }
+    .play{ width:120rpx; height:120rpx; border-radius:60rpx; background-color:#07c160; }
+    "#;
+    render("17_music", 0x1E1E28, wxml, wxss, json!({}));
+}
+
+// 18. 标签 / 徽章 / 按钮
+fn tags() {
+    let wxml = r#"
+    <view class="page">
+        <text class="h">按钮</text>
+        <view class="card row wrap">
+            <view class="btn primary">主要按钮</view>
+            <view class="btn default">默认按钮</view>
+            <view class="btn warn">警告按钮</view>
+            <view class="btn ghost">描边按钮</view>
+        </view>
+        <text class="h">标签</text>
+        <view class="card row wrap">
+            <text class="tag t1">新品</text><text class="tag t2">热卖</text><text class="tag t3">包邮</text>
+            <text class="tag t4">限时</text><text class="tag t5">秒杀</text><text class="tag t6">推荐</text>
+        </view>
+        <text class="h">状态徽章</text>
+        <view class="card">
+            <view class="brow row between"><text class="bt">未读消息</text><view class="badge">99+</view></view>
+            <view class="brow row between"><text class="bt">进行中</text><view class="dotb dg"></view></view>
+            <view class="brow row between"><text class="bt">已离线</text><view class="dotb dgy"></view></view>
+        </view>
+    </view>"#;
+    let wxss = r#"
+    .page{ padding:24rpx; }
+    .h{ font-size:28rpx; color:#999; margin:20rpx 0 14rpx 8rpx; }
+    .card{ background-color:#fff; border-radius:20rpx; padding:28rpx; }
+    .row{ display:flex; flex-direction:row; align-items:center; }
+    .wrap{ flex-wrap:wrap; }
+    .between{ justify-content:space-between; }
+    .btn{ font-size:28rpx; padding:18rpx 32rpx; border-radius:12rpx; margin:0 16rpx 16rpx 0; }
+    .primary{ background-color:#07c160; color:#fff; }
+    .default{ background-color:#f2f2f2; color:#333; }
+    .warn{ background-color:#ff9500; color:#fff; }
+    .ghost{ border:1rpx solid #07c160; color:#07c160; }
+    .tag{ font-size:24rpx; padding:8rpx 20rpx; border-radius:24rpx; margin:0 16rpx 16rpx 0; }
+    .t1{ background-color:#e8f7ee; color:#07c160; }
+    .t2{ background-color:#ffeceb; color:#ff3b30; }
+    .t3{ background-color:#fff3e0; color:#ff9500; }
+    .t4{ background-color:#eef1ff; color:#5856d6; }
+    .t5{ background-color:#ffeaf3; color:#ff2d70; }
+    .t6{ background-color:#e6f7ff; color:#0a94ff; }
+    .brow{ display:flex; flex-direction:row; justify-content:space-between; align-items:center; padding:24rpx 0; border-bottom:1rpx solid #f2f2f2; }
+    .bt{ font-size:30rpx; color:#333; }
+    .badge{ background-color:#ff3b30; color:#fff; font-size:22rpx; padding:6rpx 14rpx; border-radius:20rpx; }
+    .dotb{ width:24rpx; height:24rpx; border-radius:12rpx; }
+    .dg{ background-color:#07c160; }
+    .dgy{ background-color:#c7c7cc; }
+    "#;
+    render("18_tags", 0xF5F6F8, wxml, wxss, json!({}));
+}
