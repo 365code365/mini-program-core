@@ -271,21 +271,10 @@ impl InputComponent {
             };
         }
         
-        // 默认背景色
-        if !has_custom_bg {
-            ns.background_color = Some(Color::WHITE);
-        }
-        
-        // 默认边框
-        if !has_custom_border {
-            ns.border_color = Some(Color::from_hex(0xD9D9D9));
-            ns.border_width = 1.0 * sf;
-        }
-        
-        // 默认圆角
-        if !has_custom_radius {
-            ns.border_radius = 4.0 * sf;
-        }
+        // 微信小程序 <input> 默认无边框、无背景（透明），交由外层容器决定外观。
+        // 之前强制加了白底 + 灰色边框，导致放进带样式的容器里出现「双层框」。
+        // 仅当 CSS 未定义时保持透明，不再注入默认边框/底色。
+        let _ = (has_custom_bg, has_custom_border, has_custom_radius);
         
         // 默认字体大小
         if !has_custom_font_size {
@@ -417,18 +406,11 @@ impl InputComponent {
         };
         
         if style.border_width > 0.0 {
-            let paint = Paint::new().with_color(border_color).with_style(PaintStyle::Stroke);
-            if has_radius {
-                let mut path = Path::new();
-                if uniform_radius {
-                    path.add_round_rect(x, y, w, h, radius_tl);
-                } else {
-                    path.add_round_rect_varying(x, y, w, h, radius_tl, radius_tr, radius_br, radius_bl);
-                }
-                canvas.draw_path(&path, &paint);
-            } else {
-                canvas.draw_rect(&GeoRect::new(x, y, w, h), &paint);
-            }
+            stroke_round_rect_ring(
+                canvas, x, y, w, h,
+                [radius_tl, radius_tr, radius_br, radius_bl],
+                style.border_width, border_color,
+            );
         }
         
         // 计算文本位置

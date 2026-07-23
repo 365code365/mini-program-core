@@ -90,9 +90,20 @@ struct LauncherApp {
     last_frame: Instant,
     click_start_pos: (f32, f32),
     click_start_time: Instant,
+    frame_interval: std::time::Duration,
+    last_present: Instant,
 }
 
 impl LauncherApp {
+    /// 是否需要连续出帧（列表惯性滚动 / 运行中的小程序有滚动或定时器）
+    fn is_active(&self) -> bool {
+        match &self.state {
+            LauncherState::List => self.list_scroll.is_animating() || self.list_scroll.is_dragging,
+            LauncherState::Running(app) => {
+                app.scroll.is_animating() || app.scroll.is_dragging || app.mini_app.has_active_timers()
+            }
+        }
+    }
     fn new() -> Self {
         let canvas = Canvas::new(WINDOW_WIDTH * 2, WINDOW_HEIGHT * 2);
         let text_renderer = TextRenderer::load_system_font()
@@ -119,6 +130,8 @@ impl LauncherApp {
             last_frame: now,
             click_start_pos: (0.0, 0.0),
             click_start_time: now,
+            frame_interval: std::time::Duration::from_micros(16_667),
+            last_present: now,
         }
     }
     
@@ -334,6 +347,12 @@ impl ApplicationHandler for LauncherApp {
             .with_resizable(false);
         
         let window = Rc::new(event_loop.create_window(window_attrs).unwrap());
+        // 按显示器刷新率设定帧间隔（支持高刷屏）
+        let millihertz = window.current_monitor()
+            .and_then(|m| m.refresh_rate_millihertz())
+            .filter(|&hz| hz > 0)
+            .unwrap_or(60_000);
+        self.frame_interval = std::time::Duration::from_secs_f64(1000.0 / millihertz as f64);
         
         let context = softbuffer::Context::new(window.clone()).unwrap();
         let surface = Surface::new(&context, window.clone()).unwrap();
@@ -417,12 +436,8 @@ impl ApplicationHandler for LauncherApp {
                     buffer.present().unwrap();
                 }
                 
-                // 如果有动画，继续请求重绘
-                if needs_redraw {
-                    if let Some(window) = &self.window {
-                        window.request_redraw();
-                    }
-                }
+                self.last_present = Instant::now();
+                let _ = needs_redraw; // 后续帧调度交给 about_to_wait（按刷新率节流）
             }
             
             WindowEvent::CursorMoved { position, .. } => {
@@ -552,6 +567,22 @@ impl ApplicationHandler for LauncherApp {
             }
             
             _ => {}
+        }
+    }
+
+    /// WaitUntil 到期唤醒 -> 触发下一帧
+    fn new_events(&mut self, _event_loop: &ActiveEventLoop, cause: winit::event::StartCause) {
+        if let winit::event::StartCause::ResumeTimeReached { .. } = cause {
+            if let Some(window) = &self.window { window.request_redraw(); }
+        }
+    }
+
+    /// 有动画则按刷新率安排下一帧，空闲则休眠（0 CPU）
+    fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+        if self.is_active() {
+            event_loop.set_control_flow(ControlFlow::WaitUntil(self.last_present + self.frame_interval));
+        } else {
+            event_loop.set_control_flow(ControlFlow::Wait);
         }
     }
 }
@@ -766,7 +797,8 @@ fn main() {
     println!("扫描 sample 目录下的小程序...\n");
     
     let event_loop = EventLoop::new().unwrap();
-    event_loop.set_control_flow(ControlFlow::Poll);
+    // 默认空闲休眠；动画期间由 about_to_wait 按刷新率切换到 WaitUntil。
+    event_loop.set_control_flow(ControlFlow::Wait);
     
     let mut app = LauncherApp::new();
     event_loop.run_app(&mut app).unwrap();

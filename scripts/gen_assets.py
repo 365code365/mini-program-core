@@ -151,4 +151,53 @@ i_shuffle((200, 200, 210, 255))
 i_repeat((200, 200, 210, 255))
 i_heart(red, True)
 
+
+# ---- 底部 TabBar 图标（线稿，普通灰 + 选中绿两态）----
+GRAY = (153, 153, 153, 255)
+GREEN = (7, 193, 96, 255)
+
+
+def _tab_home(d, c):
+    d.line([(20, 50), (48, 24), (76, 50)], fill=c, width=6, joint="curve")
+    d.rounded_rectangle([28, 48, 68, 76], radius=4, outline=c, width=6)
+
+
+def _tab_cat(d, c):
+    for ox in (22, 52):
+        for oy in (22, 52):
+            d.rounded_rectangle([ox, oy, ox + 22, oy + 22], radius=4, outline=c, width=6)
+
+
+def _tab_cart(d, c):
+    d.line([(18, 24), (30, 24), (38, 58), (70, 58), (76, 34), (34, 34)], fill=c, width=6, joint="curve")
+    d.ellipse([38, 66, 50, 78], outline=c, width=5)
+    d.ellipse([60, 66, 72, 78], outline=c, width=5)
+
+
+def _tab_user(d, c):
+    d.ellipse([34, 20, 62, 48], outline=c, width=6)
+    d.arc([22, 50, 74, 96], start=180, end=360, fill=c, width=6)
+
+
+def tab_icon(name, drawer):
+    im, d = new_icon(); drawer(d, GRAY); save(im, "tab_" + name)
+    im, d = new_icon(); drawer(d, GREEN); save(im, "tab_" + name + "_on")
+
+
+tab_icon("home", _tab_home)
+tab_icon("cat", _tab_cat)
+tab_icon("cart", _tab_cart)
+tab_icon("user", _tab_user)
+
+
+# ---- 搜索图标（放大镜）----
+def i_search(color=(153, 153, 153, 255)):
+    im, d = new_icon()
+    d.ellipse([24, 24, 60, 60], outline=color, width=7)
+    d.line([(56, 56), (76, 76)], fill=color, width=8)
+    save(im, "search")
+
+
+i_search()
+
 print("完成。")

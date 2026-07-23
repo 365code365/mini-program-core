@@ -16,10 +16,10 @@ use mini_render::text::TextRenderer;
 use serde_json::json;
 use std::num::NonZeroU32;
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Instant, Duration};
 use std::collections::HashMap;
 use winit::application::ApplicationHandler;
-use winit::event::{ElementState, MouseButton, WindowEvent};
+use winit::event::{ElementState, MouseButton, WindowEvent, StartCause};
 use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
 use winit::window::{Window, WindowAttributes, WindowId};
 use mini_render::ui::ScrollController;
@@ -52,6 +52,10 @@ struct MiniAppWindow {
     toast: Option<ToastState>,
     loading: Option<LoadingState>,
     modal: Option<ModalState>,
+    /// 每帧时间间隔（依据显示器刷新率，默认 60Hz，支持 120/144Hz 高刷）
+    frame_interval: Duration,
+    /// 上一帧呈现的时间戳，用于按刷新率节流
+    last_present: Instant,
 }
 
 impl MiniAppWindow {
@@ -101,6 +105,8 @@ impl MiniAppWindow {
             modifiers: winit::keyboard::ModifiersState::empty(),
             clipboard: arboard::Clipboard::new().ok(),
             toast: None, loading: None, modal: None,
+            frame_interval: Duration::from_micros(16_667), // 默认 60Hz，resumed 后按显示器实际刷新率修正
+            last_present: now,
         };
         
         window.navigate_to(&first_page, HashMap::new())?;
@@ -117,6 +123,21 @@ impl MiniAppWindow {
     
     fn is_custom_tabbar(&self) -> bool {
         self.app_config.tab_bar.as_ref().map(|tb| tb.custom).unwrap_or(false) && self.custom_tabbar.is_some()
+    }
+
+    /// 是否存在持续动画/需要连续帧的状态（滚动、惯性、视频、光标闪烁、定时器、弹层等）。
+    /// 用于决定事件循环是「按刷新率连续出帧」还是「空闲休眠（0 CPU）」。
+    fn is_animating(&self) -> bool {
+        let scrolling = self.scroll.is_animating() || self.scroll.is_dragging;
+        let sv_scroll = self.interaction.scroll_controllers.values().any(|c| c.is_animating() || c.is_dragging);
+        scrolling
+            || sv_scroll
+            || self.interaction.has_focused_input()
+            || self.app.has_active_timers()
+            || self.toast.as_ref().map(|t| t.visible).unwrap_or(false)
+            || self.loading.as_ref().map(|l| l.visible).unwrap_or(false)
+            || self.modal.as_ref().map(|m| m.visible).unwrap_or(false)
+            || mini_render::renderer::components::has_playing_video()
     }
 
     fn navigate_to(&mut self, path: &str, query: HashMap<String, String>) -> Result<(), String> {
@@ -357,6 +378,13 @@ impl ApplicationHandler for MiniAppWindow {
         let window = Arc::new(event_loop.create_window(WindowAttributes::default()
             .with_title("Mini App").with_inner_size(winit::dpi::LogicalSize::new(LOGICAL_WIDTH, LOGICAL_HEIGHT)).with_resizable(false)).unwrap());
         window.set_ime_allowed(true);
+        // 依据显示器刷新率设定每帧间隔，适配 60/120/144Hz 等高刷屏
+        let millihertz = window.current_monitor()
+            .and_then(|m| m.refresh_rate_millihertz())
+            .filter(|&hz| hz > 0)
+            .unwrap_or(60_000);
+        self.frame_interval = Duration::from_secs_f64(1000.0 / millihertz as f64);
+        println!("🖥️  显示器刷新率: {:.1}Hz -> 每帧 {:.2}ms", millihertz as f64 / 1000.0, self.frame_interval.as_secs_f64() * 1000.0);
         self.setup_canvas(window.scale_factor());
         self.update_renderers();
         let ctx = softbuffer::Context::new(window.clone()).unwrap();
@@ -527,14 +555,32 @@ impl ApplicationHandler for MiniAppWindow {
                     self.needs_redraw = false;
                 }
                 self.present();
-                
-                if scrolling || sv_scroll || self.interaction.has_focused_input() || self.app.has_active_timers() ||
-                   self.toast.as_ref().map(|t| t.visible).unwrap_or(false) || self.loading.as_ref().map(|l| l.visible).unwrap_or(false) ||
-                   self.modal.as_ref().map(|m| m.visible).unwrap_or(false) || mini_render::renderer::components::has_playing_video() {
-                    if let Some(w) = &self.window { w.request_redraw(); }
-                }
+                self.last_present = Instant::now();
+                // 后续帧的调度交给 about_to_wait：动画中按刷新率 WaitUntil，空闲则 Wait 休眠。
             }
             _ => {}
+        }
+    }
+
+    /// 定时唤醒（WaitUntil 到期）时触发下一帧重绘，实现按刷新率的稳定出帧节流。
+    fn new_events(&mut self, _event_loop: &ActiveEventLoop, cause: StartCause) {
+        if let StartCause::ResumeTimeReached { .. } = cause {
+            if let Some(w) = &self.window { w.request_redraw(); }
+        }
+    }
+
+    /// 事件处理完毕后决定控制流：
+    /// - 有动画：按显示器刷新率安排下一帧（WaitUntil），保证 60/120Hz 平滑且不空转。
+    /// - 空闲：Wait 休眠，CPU 占用降为 0，直到下一个输入事件。
+    fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+        if self.needs_redraw {
+            if let Some(w) = &self.window { w.request_redraw(); }
+        }
+        if self.is_animating() || self.pending_navigation.is_some() {
+            let target = self.last_present + self.frame_interval;
+            event_loop.set_control_flow(ControlFlow::WaitUntil(target));
+        } else if !self.needs_redraw {
+            event_loop.set_control_flow(ControlFlow::Wait);
         }
     }
 }
@@ -559,7 +605,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     
     let event_loop = EventLoop::new()?;
-    event_loop.set_control_flow(ControlFlow::Poll);
+    // 默认空闲休眠；动画期间由 about_to_wait 按刷新率切换到 WaitUntil。
+    event_loop.set_control_flow(ControlFlow::Wait);
     event_loop.run_app(&mut MiniAppWindow::new(app_path)?)?;
     Ok(())
 }

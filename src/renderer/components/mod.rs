@@ -2,6 +2,7 @@
 //! 每个组件独立文件，便于维护
 
 mod base;
+mod style_parse;
 mod view;
 mod text;
 mod button;

@@ -222,35 +222,12 @@ pub trait Component {
     fn draw(node: &RenderNode, canvas: &mut Canvas, x: f32, y: f32, w: f32, h: f32, sf: f32);
 }
 
-/// 解析颜色字符串
-pub fn parse_color_str(s: &str) -> Option<Color> {
-    let s = s.trim();
-    if s.starts_with('#') {
-        let hex = s.trim_start_matches('#');
-        if hex.len() == 6 {
-            let r = u8::from_str_radix(&hex[0..2], 16).ok()?;
-            let g = u8::from_str_radix(&hex[2..4], 16).ok()?;
-            let b = u8::from_str_radix(&hex[4..6], 16).ok()?;
-            return Some(Color::new(r, g, b, 255));
-        } else if hex.len() == 3 {
-            let r = u8::from_str_radix(&hex[0..1], 16).ok()? * 17;
-            let g = u8::from_str_radix(&hex[1..2], 16).ok()? * 17;
-            let b = u8::from_str_radix(&hex[2..3], 16).ok()? * 17;
-            return Some(Color::new(r, g, b, 255));
-        }
-    } else if s.starts_with("rgb") {
-        let nums: Vec<u8> = s.chars()
-            .filter(|c| c.is_ascii_digit() || *c == ',')
-            .collect::<String>()
-            .split(',')
-            .filter_map(|n| n.trim().parse().ok())
-            .collect();
-        if nums.len() >= 3 {
-            return Some(Color::new(nums[0], nums[1], nums[2], 255));
-        }
-    }
-    None
-}
+// CSS 取值解析（parse_color_str / parse_box_shadow / parse_transform /
+// parse_border_shorthand / parse_length_simple）已拆分到 style_parse 模块，
+// 这里重新导出以保持 `use super::base::*` 的调用点不变。
+pub use super::style_parse::{
+    parse_color_str, parse_box_shadow, parse_transform, parse_border_shorthand, parse_length_simple,
+};
 
 /// 提取事件绑定
 /// 返回 (event_type, handler, data, is_catch)
@@ -414,6 +391,7 @@ fn box_sides_px(value: &StyleValue, ctx: &ComponentContext) -> Option<[f32; 4]> 
 /// 解析内联样式值
 fn parse_inline_value(value: &str) -> StyleValue {
     let value = value.trim();
+    if value == "auto" { return StyleValue::Auto; }
     if value.ends_with("rpx") {
         if let Ok(n) = value.trim_end_matches("rpx").parse() { return StyleValue::Length(n, LengthUnit::Rpx); }
     }
@@ -471,10 +449,10 @@ fn apply_style_property(
                     };
                 }
             }
-            "margin-top" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.margin.top = length(v * sf); }
-            "margin-right" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.margin.right = length(v * sf); }
-            "margin-bottom" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.margin.bottom = length(v * sf); }
-            "margin-left" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.margin.left = length(v * sf); }
+            "margin-top" => if matches!(value, StyleValue::Auto) { ts.margin.top = auto(); } else if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.margin.top = length(v * sf); }
+            "margin-right" => if matches!(value, StyleValue::Auto) { ts.margin.right = auto(); } else if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.margin.right = length(v * sf); }
+            "margin-bottom" => if matches!(value, StyleValue::Auto) { ts.margin.bottom = auto(); } else if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.margin.bottom = length(v * sf); }
+            "margin-left" => if matches!(value, StyleValue::Auto) { ts.margin.left = auto(); } else if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.margin.left = length(v * sf); }
             "display" => if let StyleValue::String(s) = value {
                 match s.as_str() {
                     "none" => ts.display = Display::None,
@@ -797,132 +775,6 @@ fn apply_style_property(
     }
 }
 
-/// 解析 box-shadow
-fn parse_box_shadow(s: &str, screen_width: f32) -> Option<BoxShadow> {
-    let s = s.trim();
-    if s == "none" { return None; }
-    
-    let mut shadow = BoxShadow::default();
-    shadow.color = Color::new(0, 0, 0, 128);
-    
-    let parts: Vec<&str> = s.split_whitespace().collect();
-    let mut num_idx = 0;
-    
-    for part in parts {
-        if part == "inset" {
-            shadow.inset = true;
-        } else if part.starts_with('#') || part.starts_with("rgb") {
-            if let Some(color) = parse_color_str(part) {
-                shadow.color = color;
-            }
-        } else if let Some((num, unit)) = parse_length_simple(part) {
-            let px = match unit {
-                "rpx" => num * screen_width / 750.0,
-                _ => num,
-            };
-            match num_idx {
-                0 => shadow.offset_x = px,
-                1 => shadow.offset_y = px,
-                2 => shadow.blur = px,
-                3 => shadow.spread = px,
-                _ => {}
-            }
-            num_idx += 1;
-        }
-    }
-    
-    Some(shadow)
-}
-
-/// 解析 transform
-fn parse_transform(s: &str) -> Option<Transform> {
-    let mut transform = Transform::new();
-    let mut remaining = s.trim();
-    
-    while !remaining.is_empty() {
-        if let Some(paren_start) = remaining.find('(') {
-            let func_name = remaining[..paren_start].trim();
-            if let Some(paren_end) = remaining.find(')') {
-                let args = &remaining[paren_start + 1..paren_end];
-                
-                match func_name {
-                    "translate" | "translateX" | "translateY" => {
-                        let values: Vec<f32> = args.split(',')
-                            .filter_map(|v| parse_length_simple(v.trim()).map(|(n, _)| n))
-                            .collect();
-                        if func_name == "translateX" && !values.is_empty() {
-                            transform.translate_x = values[0];
-                        } else if func_name == "translateY" && !values.is_empty() {
-                            transform.translate_y = values[0];
-                        } else if !values.is_empty() {
-                            transform.translate_x = values[0];
-                            if values.len() > 1 { transform.translate_y = values[1]; }
-                        }
-                    }
-                    "scale" | "scaleX" | "scaleY" => {
-                        let values: Vec<f32> = args.split(',')
-                            .filter_map(|v| v.trim().parse().ok())
-                            .collect();
-                        if func_name == "scaleX" && !values.is_empty() {
-                            transform.scale_x = values[0];
-                        } else if func_name == "scaleY" && !values.is_empty() {
-                            transform.scale_y = values[0];
-                        } else if !values.is_empty() {
-                            transform.scale_x = values[0];
-                            transform.scale_y = if values.len() > 1 { values[1] } else { values[0] };
-                        }
-                    }
-                    "rotate" => {
-                        let angle = args.trim().trim_end_matches("deg");
-                        if let Ok(deg) = angle.parse::<f32>() { transform.rotate = deg; }
-                    }
-                    "skew" | "skewX" | "skewY" => {
-                        let values: Vec<f32> = args.split(',')
-                            .filter_map(|v| v.trim().trim_end_matches("deg").parse().ok())
-                            .collect();
-                        if func_name == "skewX" && !values.is_empty() {
-                            transform.skew_x = values[0];
-                        } else if func_name == "skewY" && !values.is_empty() {
-                            transform.skew_y = values[0];
-                        } else if !values.is_empty() {
-                            transform.skew_x = values[0];
-                            if values.len() > 1 { transform.skew_y = values[1]; }
-                        }
-                    }
-                    _ => {}
-                }
-                remaining = remaining[paren_end + 1..].trim();
-            } else { break; }
-        } else { break; }
-    }
-    Some(transform)
-}
-
-/// 解析 border 简写
-fn parse_border_shorthand(s: &str, ns: &mut NodeStyle, screen_width: f32, sf: f32) {
-    for part in s.split_whitespace() {
-        if part.starts_with('#') || part.starts_with("rgb") {
-            if let Some(color) = parse_color_str(part) { ns.border_color = Some(color); }
-        } else if let Some((num, unit)) = parse_length_simple(part) {
-            let px = match unit { "rpx" => num * screen_width / 750.0, _ => num };
-            ns.border_width = px * sf;
-        }
-    }
-}
-
-/// 简单长度解析
-fn parse_length_simple(s: &str) -> Option<(f32, &str)> {
-    let s = s.trim();
-    for unit in ["rpx", "px", "em", "rem", "vh", "vw", "%"] {
-        if s.ends_with(unit) {
-            if let Ok(num) = s.trim_end_matches(unit).parse::<f32>() {
-                return Some((num, unit));
-            }
-        }
-    }
-    s.parse::<f32>().ok().map(|n| (n, "px"))
-}
-
 /// 绘制盒子阴影
 pub fn draw_box_shadow(canvas: &mut Canvas, shadow: &BoxShadow, x: f32, y: f32, w: f32, h: f32, border_radius: f32) {
     if shadow.inset {
@@ -1003,23 +855,44 @@ pub fn draw_background(canvas: &mut Canvas, style: &NodeStyle, x: f32, y: f32, w
         }
     }
     
-    // 绘制边框
+    // 绘制边框（宽度精确 + 抗锯齿的环形填充）
     if style.border_width > 0.0 {
         if let Some(bc) = style.border_color {
-            let paint = Paint::new().with_color(bc).with_style(PaintStyle::Stroke);
-            if has_different_radii {
-                let mut path = Path::new();
-                add_round_rect_with_radii(&mut path, x, y, w, h, radii);
-                canvas.draw_path(&path, &paint);
-            } else if style.border_radius > 0.0 {
-                let mut path = Path::new();
-                path.add_round_rect(x, y, w, h, style.border_radius);
-                canvas.draw_path(&path, &paint);
-            } else {
-                canvas.draw_rect(&GeoRect::new(x, y, w, h), &paint);
-            }
+            let bc = if style.opacity < 1.0 {
+                Color::new(bc.r, bc.g, bc.b, (bc.a as f32 * style.opacity) as u8)
+            } else { bc };
+            stroke_round_rect_ring(canvas, x, y, w, h, radii, style.border_width, bc);
         }
     }
+}
+
+/// 以指定宽度绘制（可带圆角的）边框环，抗锯齿。
+///
+/// 之前边框用 `PaintStyle::Stroke` 走 `draw_line`（Wu 1px 线），既忽略 `border-width`
+/// 又在圆角处产生锯齿。这里改为「外圆角矩形 - 内圆角矩形」组成的环形，用扫描线
+/// even-odd 填充（自带 4x 超采样抗锯齿），边框宽度精确、边缘平滑。
+pub fn stroke_round_rect_ring(
+    canvas: &mut Canvas,
+    x: f32, y: f32, w: f32, h: f32,
+    radii: [f32; 4],
+    width: f32,
+    color: Color,
+) {
+    if width <= 0.0 || w <= 0.0 || h <= 0.0 { return; }
+    let bw = width.min(w / 2.0).min(h / 2.0);
+    let [tl, tr, br, bl] = radii;
+
+    let mut path = Path::new();
+    // 外圈
+    add_round_rect_with_radii(&mut path, x, y, w, h, radii);
+    // 内圈（内缩 border-width，圆角相应减小），形成挖空的环
+    let iw = (w - 2.0 * bw).max(0.0);
+    let ih = (h - 2.0 * bw).max(0.0);
+    let ir = |r: f32| (r - bw).max(0.0);
+    add_round_rect_with_radii(&mut path, x + bw, y + bw, iw, ih, [ir(tl), ir(tr), ir(br), ir(bl)]);
+
+    let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill).with_anti_alias(true);
+    canvas.draw_path(&path, &paint);
 }
 
 /// 添加带有不同圆角的圆角矩形路径

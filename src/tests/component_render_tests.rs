@@ -37,6 +37,31 @@ fn test_view_and_text() {
 }
 
 #[test]
+fn test_block_text_wraps_to_multiple_lines() {
+    // display:block 的长文本应按容器宽度换行，盒子高度随行数增长（CSS 语义）。
+    // 回归测试第二遍布局修正 correct_wrapped_text_heights。
+    let css = ".box{ width:200px; } .t{ display:block; font-size:16px; line-height:24px; }";
+    let long = "这是一段很长的中文文本用来验证在固定宽度容器内能够正确地自动换行到多行而不是被压缩成一行显示";
+    let wxml = format!(r#"<view class="box"><text class="t">{}</text></view>"#, long);
+    let r = renderer(css);
+    let ns = nodes(&wxml);
+    let h = r.measure_content_height(&ns, &json!({}));
+    // 单行约 24px；这段文本在 200px 宽下必然超过 3 行，高度应明显大于单行。
+    assert!(h > 24.0 * 3.0, "block 长文本未正确换行撑高，height={}", h);
+}
+
+#[test]
+fn test_short_text_stays_single_line() {
+    // 短文本不应被误判为多行。
+    let css = ".t{ display:block; font-size:16px; line-height:24px; }";
+    let wxml = r#"<view style="width:300px"><text class="t">短文本</text></view>"#;
+    let r = renderer(css);
+    let ns = nodes(wxml);
+    let h = r.measure_content_height(&ns, &json!({}));
+    assert!(h < 24.0 * 2.5, "短文本高度异常偏大，height={}", h);
+}
+
+#[test]
 fn test_button_variants() {
     let wxml = r#"
         <view>

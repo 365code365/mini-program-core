@@ -293,21 +293,12 @@ impl ImageComponent {
                 } else {
                     bc
                 };
-                let border_paint = Paint::new()
-                    .with_color(border_color)
-                    .with_style(PaintStyle::Stroke)
-                    .with_anti_alias(true);
-                if has_radius {
-                    let mut path = Path::new();
-                    if uniform_radius {
-                        path.add_round_rect(x, y, w, h, radius);
-                    } else {
-                        path.add_round_rect_varying(x, y, w, h, radius_tl, radius_tr, radius_br, radius_bl);
-                    }
-                    canvas.draw_path(&path, &border_paint);
-                } else {
-                    canvas.draw_rect(&GeoRect::new(x, y, w, h), &border_paint);
-                }
+                let _ = (has_radius, uniform_radius);
+                stroke_round_rect_ring(
+                    canvas, x, y, w, h,
+                    [radius_tl, radius_tr, radius_br, radius_bl],
+                    style.border_width, border_color,
+                );
             }
         }
     }

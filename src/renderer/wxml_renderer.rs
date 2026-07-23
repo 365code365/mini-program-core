@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use taffy::prelude::*;
 
 use super::components::{
-    RenderNode, NodeStyle, ComponentContext, InheritedText, TextAlign,
+    RenderNode, NodeStyle, ComponentContext, InheritedText, TextAlign, WhiteSpace,
     ViewComponent, TextComponent, ButtonComponent, IconComponent,
     ProgressComponent, SwitchComponent, CheckboxComponent, RadioComponent,
     SliderComponent, InputComponent, ImageComponent, VideoComponent,
@@ -119,6 +119,10 @@ impl WxmlRenderer {
         ).unwrap();
         
         taffy.compute_layout(root, Size::MAX_CONTENT).unwrap();
+        // 第二遍：按实际宽度修正换行文本高度后重新布局
+        if self.correct_wrapped_text_heights(&mut taffy, &render_nodes) {
+            taffy.compute_layout(root, Size::MAX_CONTENT).unwrap();
+        }
         
         // 获取实际内容高度
         let root_layout = taffy.layout(root).unwrap();
@@ -450,6 +454,9 @@ impl WxmlRenderer {
         ).unwrap();
         
         taffy.compute_layout(root, Size::MAX_CONTENT).unwrap();
+        if self.correct_wrapped_text_heights(&mut taffy, &render_nodes) {
+            taffy.compute_layout(root, Size::MAX_CONTENT).unwrap();
+        }
         
         for rn in &render_nodes {
             self.draw(canvas, &taffy, rn, 0.0, 0.0);
@@ -476,9 +483,58 @@ impl WxmlRenderer {
             &child_ids,
         ).unwrap();
         taffy.compute_layout(root, Size::MAX_CONTENT).unwrap();
+        if self.correct_wrapped_text_heights(&mut taffy, &render_nodes) {
+            taffy.compute_layout(root, Size::MAX_CONTENT).unwrap();
+        }
         taffy.layout(root).unwrap().size.height / self.scale_factor
     }
     
+    /// 第二遍布局修正：首遍 `compute_layout` 后文本节点的实际宽度已知，
+    /// 对「宽度为百分比/100%」等在 build 阶段无法预知换行的文本重新计算换行行数，
+    /// 据此修正其盒子高度，避免多行文本被压成一行高而与后续兄弟节点重叠。
+    /// 返回是否有节点高度被修改（需要重新 compute_layout）。
+    ///
+    /// 这是对标准 CSS「文本按可用宽度自动换行、盒子高度随行数增长」语义的补齐。
+    fn correct_wrapped_text_heights(&self, taffy: &mut TaffyTree, nodes: &[RenderNode]) -> bool {
+        let tr = match &self.text_renderer { Some(t) => t, None => return false };
+        let sf = self.scale_factor;
+        let mut changed = false;
+        for node in nodes {
+            if node.tag == "text" && !node.text.is_empty() {
+                let should_wrap = !matches!(node.style.white_space, WhiteSpace::NoWrap | WhiteSpace::Pre);
+                if should_wrap {
+                    if let Ok(layout) = taffy.layout(node.taffy_node) {
+                        let box_w = layout.size.width;
+                        let box_h = layout.size.height;
+                        let pl = node.style.padding_left * sf;
+                        let pr = node.style.padding_right * sf;
+                        let pt = node.style.padding_top * sf;
+                        let pb = node.style.padding_bottom * sf;
+                        let avail = (box_w - pl - pr).max(1.0);
+                        let size = node.style.font_size * sf;
+                        let ls = node.style.letter_spacing * sf;
+                        let line_height = node.style.line_height.map(|lh| lh * sf)
+                            .unwrap_or(size * 1.5).max(size * 1.2);
+                        let lines = count_wrapped_lines(tr, &node.text, avail, size, ls);
+                        let needed_h = lines as f32 * line_height + pt + pb;
+                        if needed_h > box_h + 0.5 {
+                            if let Ok(mut st) = taffy.style(node.taffy_node).cloned() {
+                                st.size.height = length(needed_h);
+                                st.min_size.height = length(needed_h);
+                                taffy.set_style(node.taffy_node, st).ok();
+                                changed = true;
+                            }
+                        }
+                    }
+                }
+            }
+            if self.correct_wrapped_text_heights(taffy, &node.children) {
+                changed = true;
+            }
+        }
+        changed
+    }
+
     fn build_tree(&self, taffy: &mut TaffyTree, node: &WxmlNode, ancestors: &[ElementDesc], inherited: &InheritedText) -> Option<RenderNode> {
         let sf = self.scale_factor;
         
@@ -1648,4 +1704,34 @@ impl WxmlRenderer {
                 binding.data);
         }
     }
+}
+
+/// 按与 text.rs 绘制一致的贪心算法统计文本在给定可用宽度下的换行行数。
+/// 用于第二遍布局修正文本盒子高度（含 `\n` 硬换行）。
+fn count_wrapped_lines(tr: &TextRenderer, text: &str, max_width: f32, size: f32, letter_spacing: f32) -> usize {
+    if max_width <= 0.0 {
+        return text.split('\n').count().max(1);
+    }
+    let mut lines = 0usize;
+    for paragraph in text.split('\n') {
+        if paragraph.is_empty() {
+            lines += 1;
+            continue;
+        }
+        let chars: Vec<char> = paragraph.chars().collect();
+        let mut line_start = 0usize;
+        let mut current_width = 0.0f32;
+        for (i, ch) in chars.iter().enumerate() {
+            let char_width = tr.measure_char(*ch, size) + letter_spacing;
+            if current_width + char_width > max_width && i > line_start {
+                lines += 1;
+                line_start = i;
+                current_width = char_width;
+            } else {
+                current_width += char_width;
+            }
+        }
+        lines += 1; // 段落最后一行
+    }
+    lines.max(1)
 }

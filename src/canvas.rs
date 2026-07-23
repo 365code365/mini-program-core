@@ -605,34 +605,26 @@ impl Canvas {
 
         for dest_y in dest_y0..dest_y1 {
             for dest_x in dest_x0..dest_x1 {
-                // 检查圆角裁剪
+                // 圆角抗锯齿覆盖率：像素中心到圆角圆心的距离，落在边缘 1px 带内时按比例淡出，
+                // 消除之前硬裁剪（continue）造成的圆角锯齿。
+                let mut corner_cover = 1.0f32;
                 if has_radius {
-                    let dx = dest_x as f32 - x;
-                    let dy = dest_y as f32 - y;
-                    
-                    // 检查四个角
-                    let in_corner = |corner_x: f32, corner_y: f32| -> bool {
-                        let cdx = dx - corner_x;
-                        let cdy = dy - corner_y;
-                        cdx * cdx + cdy * cdy > radius * radius
+                    let dx = dest_x as f32 + 0.5 - x;
+                    let dy = dest_y as f32 + 0.5 - y;
+                    let cover_at = |cx: f32, cy: f32| -> f32 {
+                        let d = ((dx - cx) * (dx - cx) + (dy - cy) * (dy - cy)).sqrt();
+                        (radius + 0.5 - d).clamp(0.0, 1.0)
                     };
-                    
-                    // 左上角
-                    if dx < radius && dy < radius && in_corner(radius, radius) {
-                        continue;
+                    if dx < radius && dy < radius {
+                        corner_cover = cover_at(radius, radius);
+                    } else if dx > w - radius && dy < radius {
+                        corner_cover = cover_at(w - radius, radius);
+                    } else if dx < radius && dy > h - radius {
+                        corner_cover = cover_at(radius, h - radius);
+                    } else if dx > w - radius && dy > h - radius {
+                        corner_cover = cover_at(w - radius, h - radius);
                     }
-                    // 右上角
-                    if dx > w - radius && dy < radius && in_corner(w - radius, radius) {
-                        continue;
-                    }
-                    // 左下角
-                    if dx < radius && dy > h - radius && in_corner(radius, h - radius) {
-                        continue;
-                    }
-                    // 右下角
-                    if dx > w - radius && dy > h - radius && in_corner(w - radius, h - radius) {
-                        continue;
-                    }
+                    if corner_cover <= 0.0 { continue; }
                 }
 
                 // 计算源图片坐标
@@ -672,7 +664,9 @@ impl Canvas {
                 let r = lerp(lerp(c00.0, c10.0, fx), lerp(c01.0, c11.0, fx), fy) as u8;
                 let g = lerp(lerp(c00.1, c10.1, fx), lerp(c01.1, c11.1, fx), fy) as u8;
                 let b = lerp(lerp(c00.2, c10.2, fx), lerp(c01.2, c11.2, fx), fy) as u8;
-                let a = lerp(lerp(c00.3, c10.3, fx), lerp(c01.3, c11.3, fx), fy) as u8;
+                let a_f = lerp(lerp(c00.3, c10.3, fx), lerp(c01.3, c11.3, fx), fy);
+                // 圆角边缘按覆盖率淡出 alpha，实现抗锯齿
+                let a = (a_f * corner_cover) as u8;
 
                 self.set_pixel(dest_x, dest_y, Color::new(r, g, b, a));
             }
