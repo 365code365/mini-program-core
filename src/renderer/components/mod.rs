@@ -71,6 +71,7 @@ impl ComponentRegistry {
             stylesheet,
             taffy,
             ancestors: Vec::new(),
+            inherited: Default::default(),
         };
         
         match tag {

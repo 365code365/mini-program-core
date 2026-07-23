@@ -15,6 +15,7 @@ fn test_inline_style_parsing() {
         stylesheet: &stylesheet,
         taffy: &mut taffy,
         ancestors: Vec::new(),
+        inherited: Default::default(),
     };
     
     let mut node = WxmlNode::new_element("view");

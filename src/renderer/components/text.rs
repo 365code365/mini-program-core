@@ -100,19 +100,43 @@ impl TextComponent {
             let use_ellipsis = matches!(node.style.text_overflow, TextOverflow::Ellipsis);
             
             let text = &node.text;
+            let text_w = tr.measure_text_with_spacing(text, size, letter_spacing);
+            // 是否需要多行：含换行符，或允许换行且超出宽度
+            let multiline = text.contains('\n') || (should_wrap && w > 0.0 && text_w > w);
             
-            if w > 0.0 && should_wrap {
-                // 自动换行绘制
+            // 粗体：字体无独立 bold 字面时用轻微偏移二次描绘模拟（faux-bold）
+            let is_bold = matches!(
+                node.style.font_weight,
+                FontWeight::Bold | FontWeight::W600 | FontWeight::W700 | FontWeight::W800 | FontWeight::W900
+            );
+            let bold_dx = if is_bold { 0.7 * sf } else { 0.0 };
+            
+            if multiline {
+                // 多行：顶部对齐换行绘制
                 draw_text_wrapped_advanced(
                     canvas, tr, text, x, y + size, size, w, h,
                     line_height, letter_spacing, &node.style, &paint
                 );
-            } else if w > 0.0 && use_ellipsis {
-                // 单行 + 省略号
-                draw_text_with_ellipsis(canvas, tr, text, x, y + size, size, w, letter_spacing, &paint);
+                if is_bold {
+                    draw_text_wrapped_advanced(
+                        canvas, tr, text, x + bold_dx, y + size, size, w, h,
+                        line_height, letter_spacing, &node.style, &paint
+                    );
+                }
             } else {
-                // 普通绘制
-                tr.draw_text_with_spacing(canvas, text, x, y + size, size, letter_spacing, &paint);
+                // 单行：在盒内垂直居中（基线 ≈ 盒中心 + 0.34*字号）
+                let baseline = y + h / 2.0 + size * 0.34;
+                if w > 0.0 && use_ellipsis && text_w > w {
+                    draw_text_with_ellipsis(canvas, tr, text, x, baseline, size, w, letter_spacing, &paint);
+                    if is_bold {
+                        draw_text_with_ellipsis(canvas, tr, text, x + bold_dx, baseline, size, w, letter_spacing, &paint);
+                    }
+                } else {
+                    tr.draw_text_with_spacing(canvas, text, x, baseline, size, letter_spacing, &paint);
+                    if is_bold {
+                        tr.draw_text_with_spacing(canvas, text, x + bold_dx, baseline, size, letter_spacing, &paint);
+                    }
+                }
             }
             
             // 绘制文本装饰

@@ -173,6 +173,31 @@ impl Transform {
     }
 }
 
+/// 可继承的文本样式（CSS 继承语义：color / font-size / font-weight / text-align /
+/// line-height / letter-spacing 会从父元素传递给子元素，直到被显式覆盖）。
+#[derive(Clone)]
+pub struct InheritedText {
+    pub font_size: f32,
+    pub color: Option<Color>,
+    pub weight: FontWeight,
+    pub align: TextAlign,
+    pub line_height: Option<f32>,
+    pub letter_spacing: f32,
+}
+
+impl Default for InheritedText {
+    fn default() -> Self {
+        Self {
+            font_size: 16.0, // 根默认字号（对齐移动端常见默认 16px）
+            color: None,
+            weight: FontWeight::Normal,
+            align: TextAlign::Left,
+            line_height: None,
+            letter_spacing: 0.0,
+        }
+    }
+}
+
 /// 组件上下文
 pub struct ComponentContext<'a> {
     pub scale_factor: f32,
@@ -182,6 +207,8 @@ pub struct ComponentContext<'a> {
     pub taffy: &'a mut TaffyTree,
     /// 祖先元素链（根 -> 父），用于后代/子选择器匹配。缺省为空。
     pub ancestors: Vec<ElementDesc>,
+    /// 从父元素继承下来的文本样式。
+    pub inherited: InheritedText,
 }
 
 /// 组件 trait
@@ -309,7 +336,17 @@ pub fn build_base_style(
     chain.push(ElementDesc::new(&node.tag_name, id, &classes, &node.attributes));
     let css = ctx.stylesheet.get_styles_chain(&chain);
     
-    let mut ns = NodeStyle { font_size: 14.0, opacity: 1.0, ..Default::default() };
+    // 先用继承的文本样式做默认值，再用 CSS/内联覆盖（CSS 继承语义）
+    let mut ns = NodeStyle {
+        font_size: ctx.inherited.font_size,
+        text_color: ctx.inherited.color,
+        font_weight: ctx.inherited.weight,
+        text_align: ctx.inherited.align,
+        line_height: ctx.inherited.line_height,
+        letter_spacing: ctx.inherited.letter_spacing,
+        opacity: 1.0,
+        ..Default::default()
+    };
     
     // 默认样式：flex 布局，列方向
     let mut ts = Style { 

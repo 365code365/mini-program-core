@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use taffy::prelude::*;
 
 use super::components::{
-    RenderNode, NodeStyle, ComponentContext,
+    RenderNode, NodeStyle, ComponentContext, InheritedText,
     ViewComponent, TextComponent, ButtonComponent, IconComponent,
     ProgressComponent, SwitchComponent, CheckboxComponent, RadioComponent,
     SliderComponent, InputComponent, ImageComponent, VideoComponent,
@@ -102,7 +102,7 @@ impl WxmlRenderer {
         let mut render_nodes = Vec::new();
         
         for node in &rendered {
-            if let Some(rn) = self.build_tree(&mut taffy, node, &[]) {
+            if let Some(rn) = self.build_tree(&mut taffy, node, &[], &InheritedText::default()) {
                 render_nodes.push(rn);
             }
         }
@@ -434,7 +434,7 @@ impl WxmlRenderer {
         
         let mut render_nodes = Vec::new();
         for node in &rendered {
-            if let Some(rn) = self.build_tree(&mut taffy, node, &[]) {
+            if let Some(rn) = self.build_tree(&mut taffy, node, &[], &InheritedText::default()) {
                 render_nodes.push(rn);
             }
         }
@@ -456,16 +456,18 @@ impl WxmlRenderer {
         }
     }
 
-    fn build_tree(&self, taffy: &mut TaffyTree, node: &WxmlNode, ancestors: &[ElementDesc]) -> Option<RenderNode> {
+    fn build_tree(&self, taffy: &mut TaffyTree, node: &WxmlNode, ancestors: &[ElementDesc], inherited: &InheritedText) -> Option<RenderNode> {
         let sf = self.scale_factor;
         
         if node.node_type == WxmlNodeType::Text {
             let text = node.text_content.trim();
             if text.is_empty() { return None; }
-            let fs = 14.0;
+            // 原始文本节点继承父级的字号/颜色/字重/对齐/行高
+            let fs = inherited.font_size;
+            let line_h = inherited.line_height.unwrap_or(fs * 1.4);
             let tw = self.measure_text(text, fs * sf);
             let tn = taffy.new_leaf(Style {
-                size: Size { width: length(tw), height: length((fs + 4.0) * sf) },
+                size: Size { width: length(tw + 2.0 * sf), height: length(line_h * sf) },
                 ..Default::default()
             }).unwrap();
             return Some(RenderNode {
@@ -473,7 +475,16 @@ impl WxmlRenderer {
                 text: text.into(), 
                 attrs: HashMap::new(),
                 taffy_node: tn,
-                style: NodeStyle { font_size: fs, text_color: Some(Color::BLACK), opacity: 1.0, ..Default::default() },
+                style: NodeStyle {
+                    font_size: fs,
+                    text_color: inherited.color,
+                    font_weight: inherited.weight,
+                    text_align: inherited.align,
+                    line_height: inherited.line_height,
+                    letter_spacing: inherited.letter_spacing,
+                    opacity: 1.0,
+                    ..Default::default()
+                },
                 children: vec![], 
                 events: vec![],
             });
@@ -489,6 +500,7 @@ impl WxmlRenderer {
             stylesheet: &self.stylesheet,
             taffy,
             ancestors: ancestors.to_vec(),
+            inherited: inherited.clone(),
         };
         
         let mut render_node = match tag {
@@ -529,9 +541,19 @@ impl WxmlRenderer {
                     &node.attributes,
                 ));
                 
+                // 计算传递给子节点的继承文本样式（来自当前节点的计算样式）
+                let child_inherited = InheritedText {
+                    font_size: rn.style.font_size,
+                    color: rn.style.text_color,
+                    weight: rn.style.font_weight,
+                    align: rn.style.text_align,
+                    line_height: rn.style.line_height,
+                    letter_spacing: rn.style.letter_spacing,
+                };
+                
                 let mut children = vec![];
                 for c in &node.children {
-                    if let Some(cr) = self.build_tree(ctx.taffy, c, &child_ancestors) { 
+                    if let Some(cr) = self.build_tree(ctx.taffy, c, &child_ancestors, &child_inherited) { 
                         children.push(cr); 
                     }
                 }
