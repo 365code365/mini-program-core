@@ -176,6 +176,21 @@ impl TextComponent {
     }
 }
 
+/// 计算某一行按 text-align 对齐后的起始 x
+fn aligned_line_x(tr: &TextRenderer, line: &str, x: f32, max_width: f32, size: f32, ls: f32, align: TextAlign) -> f32 {
+    match align {
+        TextAlign::Center | TextAlign::Right => {
+            let lw = tr.measure_text_with_spacing(line, size, ls);
+            if max_width > lw {
+                if align == TextAlign::Center { x + (max_width - lw) / 2.0 } else { x + (max_width - lw) }
+            } else {
+                x
+            }
+        }
+        _ => x,
+    }
+}
+
 /// 高级换行绘制（支持 line-height, letter-spacing, 换行符）
 fn draw_text_wrapped_advanced(
     canvas: &mut Canvas,
@@ -237,8 +252,9 @@ fn draw_text_wrapped_advanced(
                     return;
                 }
                 
-                // 绘制当前行
-                tr.draw_text_with_spacing(canvas, &line, x, current_y, size, letter_spacing, paint);
+                // 绘制当前行（按 text-align 对齐）
+                let lx = aligned_line_x(tr, &line, x, max_width, size, letter_spacing, style.text_align);
+                tr.draw_text_with_spacing(canvas, &line, lx, current_y, size, letter_spacing, paint);
                 
                 current_y += actual_line_height;
                 line_start = i;
@@ -251,7 +267,8 @@ fn draw_text_wrapped_advanced(
         // 绘制段落的最后一行
         if line_start < chars.len() {
             let line: String = chars[line_start..].iter().collect();
-            tr.draw_text_with_spacing(canvas, &line, x, current_y, size, letter_spacing, paint);
+            let lx = aligned_line_x(tr, &line, x, max_width, size, letter_spacing, style.text_align);
+            tr.draw_text_with_spacing(canvas, &line, lx, current_y, size, letter_spacing, paint);
         }
         
         // 段落之间换行

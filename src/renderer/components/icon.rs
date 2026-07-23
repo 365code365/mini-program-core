@@ -115,8 +115,46 @@ impl IconComponent {
             "download" => Self::draw_download(canvas, cx, cy, r, color, stroke_width),
             "search" => Self::draw_search(canvas, cx, cy, r, color, stroke_width),
             "circle" => Self::draw_circle_icon(canvas, cx, cy, r, color, stroke_width),
+            "star" => Self::draw_star(canvas, cx, cy, r, color, true, stroke_width),
+            "star-o" | "star_o" => Self::draw_star(canvas, cx, cy, r, color, false, stroke_width),
+            "heart" => Self::draw_heart(canvas, cx, cy, r, color),
             _ => Self::draw_success(canvas, cx, cy, r, color, true, stroke_width),
         }
+    }
+    
+    /// 绘制五角星（filled=true 实心，否则描边）
+    fn draw_star(canvas: &mut Canvas, cx: f32, cy: f32, r: f32, color: Color, filled: bool, stroke_width: f32) {
+        use std::f32::consts::PI;
+        let outer = r;
+        let inner = r * 0.42;
+        let mut path = Path::new();
+        for i in 0..10 {
+            let ang = -PI / 2.0 + i as f32 * PI / 5.0; // 从正上方开始
+            let rad = if i % 2 == 0 { outer } else { inner };
+            let px = cx + rad * ang.cos();
+            let py = cy + rad * ang.sin();
+            if i == 0 { path.move_to(px, py); } else { path.line_to(px, py); }
+        }
+        path.close();
+        let style = if filled { PaintStyle::Fill } else { PaintStyle::Stroke };
+        let mut paint = Paint::new().with_color(color).with_style(style).with_anti_alias(true);
+        paint.stroke_width = stroke_width;
+        canvas.draw_path(&path, &paint);
+    }
+    
+    /// 绘制爱心
+    fn draw_heart(canvas: &mut Canvas, cx: f32, cy: f32, r: f32, color: Color) {
+        let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill).with_anti_alias(true);
+        // 两个圆 + 一个三角近似爱心
+        let cr = r * 0.5;
+        canvas.draw_circle(cx - cr * 0.6, cy - cr * 0.35, cr, &paint);
+        canvas.draw_circle(cx + cr * 0.6, cy - cr * 0.35, cr, &paint);
+        let mut tri = Path::new();
+        tri.move_to(cx - r * 0.92, cy - r * 0.05);
+        tri.line_to(cx + r * 0.92, cy - r * 0.05);
+        tri.line_to(cx, cy + r * 0.9);
+        tri.close();
+        canvas.draw_path(&tri, &paint);
     }
     
     /// 绘制空心圆圈图标

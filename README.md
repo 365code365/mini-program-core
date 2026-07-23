@@ -49,6 +49,16 @@ cargo run --example gallery   # 渲染全部场景到 doc/gallery/
 
 > 这些页面覆盖了卡片、列表、宫格、Flex 布局、圆角/阴影、渐变色、进度条、开关/滑块/单选框、气泡、徽章、头像等常见 UI 模式，全部通过 `wx:for` / `{{ }}` 数据绑定驱动。
 
+### 弹窗 · 滑动 · 交互
+
+| | | |
+|:---:|:---:|:---:|
+| <img src="doc/gallery/19_modal.png" width="230"/><br/>**确认弹窗** | <img src="doc/gallery/20_action_sheet.png" width="230"/><br/>**操作面板** | <img src="doc/gallery/21_toast.png" width="230"/><br/>**Toast 提示** |
+| <img src="doc/gallery/22_swiper.png" width="230"/><br/>**Swiper 轮播** | <img src="doc/gallery/23_h_scroll.png" width="230"/><br/>**左右滑动** | <img src="doc/gallery/24_v_scroll.png" width="230"/><br/>**上下滑动** |
+| <img src="doc/gallery/25_picker.png" width="230"/><br/>**底部选择器** | <img src="doc/gallery/26_calendar.png" width="230"/><br/>**日历** | <img src="doc/gallery/27_rating_steps.png" width="230"/><br/>**评分与物流** |
+
+> 弹窗类通过半透明遮罩 + 居中/底部面板实现；`swiper` 轮播、`scroll-view` 的横向/纵向滚动均为组件真实渲染；星级评分使用 `icon` 的 `star` 类型（路径绘制）。
+
 ## 🏗️ 架构
 
 ```

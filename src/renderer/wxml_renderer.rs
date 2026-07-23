@@ -624,6 +624,30 @@ impl WxmlRenderer {
                     // 更新样式（保留原有样式中已设置的值，但用新样式覆盖）
                     rn.style = ns;
                 }
+            } else if tag == "swiper" {
+                // swiper 是叶子（自绘），但仍需构建其 swiper-item 子树供组件绘制当前页
+                let mut child_ancestors = ancestors.to_vec();
+                let node_classes: Vec<&str> = node.get_attr("class")
+                    .map(|s| s.split_whitespace().collect())
+                    .unwrap_or_default();
+                child_ancestors.push(ElementDesc::new(
+                    &node.tag_name, node.get_attr("id"), &node_classes, &node.attributes,
+                ));
+                let child_inherited = InheritedText {
+                    font_size: rn.style.font_size,
+                    color: rn.style.text_color,
+                    weight: rn.style.font_weight,
+                    align: rn.style.text_align,
+                    line_height: rn.style.line_height,
+                    letter_spacing: rn.style.letter_spacing,
+                };
+                let mut children = vec![];
+                for c in &node.children {
+                    if let Some(cr) = self.build_tree(ctx.taffy, c, &child_ancestors, &child_inherited) {
+                        children.push(cr);
+                    }
+                }
+                rn.children = children;
             }
         }
         
