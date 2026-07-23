@@ -60,6 +60,11 @@ IMAGES = [
     ("p_phone", "modern flagship smartphone with full screen display, black color, front and back view, product photo, pure white background, studio lighting, e-commerce"),
     ("p_phone2", "modern flagship smartphone back view showing triple camera, black glass, product photo, pure white background, studio lighting"),
     ("logo", "minimal modern app logo icon, green rounded square with a white leaf or spark symbol, flat design, clean, centered, app store icon style"),
+    # 天气城市背景（宽幅横图，顶部留白便于叠加文字）
+    ("w_sunny", "sunny clear blue sky over a modern city skyline, bright daylight, a few soft white clouds, vibrant, cinematic wide shot"),
+    ("w_cloudy", "overcast grey cloudy sky over a city skyline, soft diffused light, moody atmosphere, cinematic wide shot"),
+    ("w_rain", "rainy day over a city skyline, dark storm clouds, wet reflective streets, cinematic wide shot, moody blue tones"),
+    ("w_night", "city skyline at night with glowing warm lights and skyscrapers, deep blue starry sky, cinematic wide shot"),
 ]
 
 print("生成 AI 图片 ...")

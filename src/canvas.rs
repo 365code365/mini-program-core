@@ -497,16 +497,63 @@ impl Canvas {
     }
 
     /// 描边路径
+    ///
+    /// 细线（≤1.5px）用抗锯齿 Wu 直线；粗线按 `stroke_width` 展开为填充的四边形段
+    /// + 顶点圆角关节，得到宽度精确、边缘平滑的描边（修复此前粗描边退化成 1px 锯齿线）。
+    /// 注意：传入的 contours 已在 draw_path 中应用过平移，这里不再重复平移。
     fn stroke_path(&mut self, contours: &[Vec<Point>], paint: &Paint) {
+        if paint.stroke_width <= 1.5 {
+            for contour in contours {
+                for i in 0..contour.len().saturating_sub(1) {
+                    // draw_line 会再次应用平移，这里先抵消（contours 已平移）
+                    let (tx, ty) = self.translation;
+                    self.translation = (0.0, 0.0);
+                    self.draw_line(contour[i].x, contour[i].y, contour[i + 1].x, contour[i + 1].y, paint);
+                    self.translation = (tx, ty);
+                }
+            }
+            return;
+        }
+
+        let hw = (paint.stroke_width * 0.5).max(0.5);
+        let fill = Paint::new()
+            .with_color(paint.color)
+            .with_style(PaintStyle::Fill)
+            .with_anti_alias(paint.anti_alias);
+
         for contour in contours {
-            for i in 0..contour.len().saturating_sub(1) {
-                self.draw_line(
-                    contour[i].x, contour[i].y,
-                    contour[i + 1].x, contour[i + 1].y,
-                    paint
-                );
+            if contour.len() < 2 { continue; }
+            for i in 0..contour.len() - 1 {
+                let p0 = contour[i];
+                let p1 = contour[i + 1];
+                let dx = p1.x - p0.x;
+                let dy = p1.y - p0.y;
+                let len = (dx * dx + dy * dy).sqrt();
+                if len < 1e-4 { continue; }
+                let (nx, ny) = (-dy / len * hw, dx / len * hw);
+                // 段矩形（四个角，已在平移后的坐标系）
+                let quad = vec![
+                    Point::new(p0.x + nx, p0.y + ny),
+                    Point::new(p1.x + nx, p1.y + ny),
+                    Point::new(p1.x - nx, p1.y - ny),
+                    Point::new(p0.x - nx, p0.y - ny),
+                ];
+                self.fill_path(&[quad], &fill);
+                // 顶点圆角关节，填补相邻段之间的缝隙（覆盖接缝，避免 AA 双混色）
+                self.fill_stroke_joint(p1.x, p1.y, hw, &fill);
             }
         }
+    }
+
+    /// 在描边顶点填充一个圆形关节（16 边形近似），不应用平移。
+    fn fill_stroke_joint(&mut self, cx: f32, cy: f32, r: f32, fill: &Paint) {
+        const N: usize = 16;
+        let mut poly = Vec::with_capacity(N);
+        for i in 0..N {
+            let a = i as f32 / N as f32 * std::f32::consts::TAU;
+            poly.push(Point::new(cx + r * a.cos(), cy + r * a.sin()));
+        }
+        self.fill_path(&[poly], fill);
     }
 
     /// 导出为 RGBA 字节数组

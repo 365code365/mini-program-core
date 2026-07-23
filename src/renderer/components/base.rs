@@ -26,6 +26,16 @@ pub struct NodeStyle {
     pub text_color: Option<Color>,
     pub border_color: Option<Color>,
     pub border_width: f32,
+    /// 各边独立边框宽度（逻辑像素 * sf；0 表示该边无独立边框）
+    pub border_top_width: f32,
+    pub border_right_width: f32,
+    pub border_bottom_width: f32,
+    pub border_left_width: f32,
+    /// 各边独立边框颜色（None 时回退到 border_color）
+    pub border_top_color: Option<Color>,
+    pub border_right_color: Option<Color>,
+    pub border_bottom_color: Option<Color>,
+    pub border_left_color: Option<Color>,
     pub border_radius: f32,
     pub border_radius_tl: Option<f32>,
     pub border_radius_tr: Option<f32>,
@@ -226,7 +236,7 @@ pub trait Component {
 // parse_border_shorthand / parse_length_simple）已拆分到 style_parse 模块，
 // 这里重新导出以保持 `use super::base::*` 的调用点不变。
 pub use super::style_parse::{
-    parse_color_str, parse_box_shadow, parse_transform, parse_border_shorthand, parse_length_simple,
+    parse_color_str, parse_box_shadow, parse_transform, parse_border_shorthand, parse_border_side, parse_length_simple,
 };
 
 /// 提取事件绑定
@@ -409,6 +419,15 @@ fn parse_inline_value(value: &str) -> StyleValue {
     }
     
     StyleValue::String(value.to_string())
+}
+
+/// 从 StyleValue 解析颜色（Color 直取，String 解析）
+fn color_value(v: &StyleValue) -> Option<Color> {
+    match v {
+        StyleValue::Color(c) => Some(*c),
+        StyleValue::String(s) => parse_color_str(s),
+        _ => None,
+    }
 }
 
 /// 应用单个样式属性
@@ -622,6 +641,25 @@ fn apply_style_property(
                     parse_border_shorthand(s, ns, ctx.screen_width, sf);
                 }
             }
+            "border-top" | "border-right" | "border-bottom" | "border-left" => {
+                if let StyleValue::String(s) = value {
+                    let (w, c) = parse_border_side(s, ctx.screen_width, sf);
+                    match name {
+                        "border-top" => { if let Some(w) = w { ns.border_top_width = w; } ns.border_top_color = c.or(ns.border_top_color); }
+                        "border-right" => { if let Some(w) = w { ns.border_right_width = w; } ns.border_right_color = c.or(ns.border_right_color); }
+                        "border-bottom" => { if let Some(w) = w { ns.border_bottom_width = w; } ns.border_bottom_color = c.or(ns.border_bottom_color); }
+                        _ => { if let Some(w) = w { ns.border_left_width = w; } ns.border_left_color = c.or(ns.border_left_color); }
+                    }
+                }
+            }
+            "border-top-width" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ns.border_top_width = v * sf; }
+            "border-right-width" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ns.border_right_width = v * sf; }
+            "border-bottom-width" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ns.border_bottom_width = v * sf; }
+            "border-left-width" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ns.border_left_width = v * sf; }
+            "border-top-color" => { if let Some(c) = color_value(value) { ns.border_top_color = Some(c); } }
+            "border-right-color" => { if let Some(c) = color_value(value) { ns.border_right_color = Some(c); } }
+            "border-bottom-color" => { if let Some(c) = color_value(value) { ns.border_bottom_color = Some(c); } }
+            "border-left-color" => { if let Some(c) = color_value(value) { ns.border_left_color = Some(c); } }
             "font-size" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ns.font_size = v; }
             "font-weight" => if let StyleValue::String(s) = value {
                 ns.font_weight = match s.as_str() {
@@ -863,6 +901,34 @@ pub fn draw_background(canvas: &mut Canvas, style: &NodeStyle, x: f32, y: f32, w
             } else { bc };
             stroke_round_rect_ring(canvas, x, y, w, h, radii, style.border_width, bc);
         }
+    }
+    
+    // 各边独立边框（常用于列表分割线 border-bottom 等），画为轴对齐细矩形
+    draw_side_borders(canvas, style, x, y, w, h);
+}
+
+/// 绘制各边独立边框（border-top/right/bottom/left）。
+fn draw_side_borders(canvas: &mut Canvas, style: &NodeStyle, x: f32, y: f32, w: f32, h: f32) {
+    let fallback = style.border_color.unwrap_or(Color::from_hex(0xE5E5E5));
+    let alpha = |c: Color| if style.opacity < 1.0 {
+        Color::new(c.r, c.g, c.b, (c.a as f32 * style.opacity) as u8)
+    } else { c };
+    let mut fill = |rx: f32, ry: f32, rw: f32, rh: f32, c: Color| {
+        if rw <= 0.0 || rh <= 0.0 { return; }
+        let paint = Paint::new().with_color(alpha(c)).with_style(PaintStyle::Fill);
+        canvas.draw_rect(&GeoRect::new(rx, ry, rw, rh), &paint);
+    };
+    if style.border_top_width > 0.0 {
+        fill(x, y, w, style.border_top_width, style.border_top_color.unwrap_or(fallback));
+    }
+    if style.border_bottom_width > 0.0 {
+        fill(x, y + h - style.border_bottom_width, w, style.border_bottom_width, style.border_bottom_color.unwrap_or(fallback));
+    }
+    if style.border_left_width > 0.0 {
+        fill(x, y, style.border_left_width, h, style.border_left_color.unwrap_or(fallback));
+    }
+    if style.border_right_width > 0.0 {
+        fill(x + w - style.border_right_width, y, style.border_right_width, h, style.border_right_color.unwrap_or(fallback));
     }
 }
 

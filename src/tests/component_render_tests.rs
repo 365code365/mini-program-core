@@ -51,6 +51,25 @@ fn test_block_text_wraps_to_multiple_lines() {
 }
 
 #[test]
+fn test_side_borders_render() {
+    // border-bottom 分割线应真实绘制（此前被忽略）。
+    // 在白底容器上画一条深色底边，检测该行是否出现深色像素。
+    let css = ".row{ width:200px; height:60px; background-color:#ffffff; border-bottom:4px solid #ff0000; }";
+    let wxml = r#"<view class="row"></view>"#;
+    let mut r = renderer(css);
+    let mut c = canvas();
+    let mut im = InteractionManager::new();
+    let ns = nodes(wxml);
+    r.render_with_interaction(&mut c, &ns, &json!({}), &mut im);
+    // 检测画布中是否有红色像素（底边）
+    let mut red = 0;
+    for px in c.pixels() {
+        if px.r > 200 && px.g < 80 && px.b < 80 { red += 1; }
+    }
+    assert!(red > 100, "border-bottom 未绘制，红色像素={}", red);
+}
+
+#[test]
 fn test_short_text_stays_single_line() {
     // 短文本不应被误判为多行。
     let css = ".t{ display:block; font-size:16px; line-height:24px; }";

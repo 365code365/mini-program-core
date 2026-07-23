@@ -162,3 +162,18 @@ pub fn parse_border_shorthand(s: &str, ns: &mut NodeStyle, screen_width: f32, sf
         }
     }
 }
+
+/// 解析单边 `border-top/right/bottom/left: <width> <style> <color>`，
+/// 返回 (宽度像素*sf, 颜色)。style 关键字（solid/dashed 等）忽略。
+pub fn parse_border_side(s: &str, screen_width: f32, sf: f32) -> (Option<f32>, Option<Color>) {
+    let (mut width, mut color) = (None, None);
+    for part in s.split_whitespace() {
+        if part.starts_with('#') || part.starts_with("rgb") {
+            if let Some(c) = parse_color_str(part) { color = Some(c); }
+        } else if let Some((num, unit)) = parse_length_simple(part) {
+            let px = match unit { "rpx" => num * screen_width / 750.0, _ => num };
+            width = Some(px * sf);
+        }
+    }
+    (width, color)
+}

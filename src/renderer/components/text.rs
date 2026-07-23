@@ -6,6 +6,15 @@ use crate::text::TextRenderer;
 use crate::{Canvas, Color, Paint, PaintStyle};
 use taffy::prelude::*;
 
+/// 与渲染器同款的系统字体（用于 build 阶段按真实字形宽度测量文本盒子宽度，
+/// 避免用粗糙估算导致盒子偏窄、二次布局误判换行）。
+static TEXT_MEASURE_FONT: once_cell::sync::Lazy<Option<TextRenderer>> =
+    once_cell::sync::Lazy::new(|| {
+        TextRenderer::load_system_font()
+            .or_else(|_| TextRenderer::from_bytes(include_bytes!("../../../assets/ArialUnicode.ttf")))
+            .ok()
+    });
+
 pub struct TextComponent;
 
 impl TextComponent {
@@ -27,21 +36,19 @@ impl TextComponent {
         let newline_count = text_content.matches('\n').count();
         let min_lines = (newline_count + 1).max(1);
         
-        // 估算文本宽度（单行最大宽度）
-        // 注意：ASCII 字符系数取略大于平均值，并额外加余量，避免估算宽度
-        // 略小于实际测量宽度而触发非预期换行（例如 "Canvas" 恰好溢出 0.1px）
+        // 单行最大宽度：优先用真实字体度量（与绘制/二次布局一致），无字体时回退估算。
+        let letter_spacing = ns.letter_spacing * sf;
+        let measure_font = TEXT_MEASURE_FONT.as_ref();
         let mut max_line_width: f32 = 0.0;
         for line in text_content.split('\n') {
-            let line_width: f32 = line.chars().map(|c| {
-                if c.is_ascii() {
-                    font_size * 0.62
-                } else {
-                    font_size
-                }
-            }).sum();
+            let line_width = if let Some(tr) = measure_font {
+                tr.measure_text_with_spacing(line, font_size, letter_spacing)
+            } else {
+                line.chars().map(|c| if c.is_ascii() { font_size * 0.62 } else { font_size }).sum()
+            };
             max_line_width = max_line_width.max(line_width);
         }
-        // 额外余量，吸收估算与实际测量之间的误差
+        // 额外余量，吸收度量与绘制之间的亚像素误差，避免边界处误换行
         max_line_width += 4.0 * sf;
         
         // 设置 flex-shrink 允许收缩
