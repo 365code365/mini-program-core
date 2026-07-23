@@ -153,35 +153,65 @@ i_heart(red, True)
 
 
 # ---- 底部 TabBar 图标（线稿，普通灰 + 选中绿两态）----
+# 关键：以 4x 超采样绘制再 LANCZOS 缩小，得到抗锯齿、边缘平滑的高清图标。
 GRAY = (153, 153, 153, 255)
 GREEN = (7, 193, 96, 255)
+SS = 4  # 超采样倍率
 
 
-def _tab_home(d, c):
-    d.line([(20, 50), (48, 24), (76, 50)], fill=c, width=6, joint="curve")
-    d.rounded_rectangle([28, 48, 68, 76], radius=4, outline=c, width=6)
+def _sp(pts, k):
+    """按倍率缩放点集"""
+    return [(x * k, y * k) for (x, y) in pts]
 
 
-def _tab_cat(d, c):
+def _sb(box, k):
+    """按倍率缩放包围盒"""
+    return [v * k for v in box]
+
+
+def _tab_home(d, c, k):
+    w = 6 * k
+    # 屋顶
+    d.line(_sp([(16, 48), (48, 20), (80, 48)], k), fill=c, width=w, joint="curve")
+    # 房身（左墙 -> 底 -> 右墙）
+    d.line(_sp([(27, 45), (27, 78), (69, 78), (69, 45)], k), fill=c, width=w, joint="curve")
+
+
+def _tab_cat(d, c, k):
+    w = 6 * k
+    r = 6 * k
     for ox in (22, 52):
         for oy in (22, 52):
-            d.rounded_rectangle([ox, oy, ox + 22, oy + 22], radius=4, outline=c, width=6)
+            d.rounded_rectangle(_sb([ox, oy, ox + 22, oy + 22], k), radius=r, outline=c, width=w)
 
 
-def _tab_cart(d, c):
-    d.line([(18, 24), (30, 24), (38, 58), (70, 58), (76, 34), (34, 34)], fill=c, width=6, joint="curve")
-    d.ellipse([38, 66, 50, 78], outline=c, width=5)
-    d.ellipse([60, 66, 72, 78], outline=c, width=5)
+def _tab_cart(d, c, k):
+    w = 6 * k
+    # 提手 + 车斗左侧斜边 + 底边
+    d.line(_sp([(15, 24), (26, 24), (35, 62), (69, 62)], k), fill=c, width=w, joint="curve")
+    # 车斗上沿 + 右侧斜边到底边右端
+    d.line(_sp([(30, 36), (78, 36), (69, 62)], k), fill=c, width=w, joint="curve")
+    # 两个轮子（实心）
+    d.ellipse(_sb([36, 68, 48, 80], k), fill=c)
+    d.ellipse(_sb([58, 68, 70, 80], k), fill=c)
 
 
-def _tab_user(d, c):
-    d.ellipse([34, 20, 62, 48], outline=c, width=6)
-    d.arc([22, 50, 74, 96], start=180, end=360, fill=c, width=6)
+def _tab_user(d, c, k):
+    w = 6 * k
+    # 头
+    d.ellipse(_sb([35, 18, 61, 44], k), outline=c, width=w)
+    # 肩（半圆弧）
+    d.arc(_sb([26, 50, 70, 90], k), start=180, end=360, fill=c, width=w)
 
 
 def tab_icon(name, drawer):
-    im, d = new_icon(); drawer(d, GRAY); save(im, "tab_" + name)
-    im, d = new_icon(); drawer(d, GREEN); save(im, "tab_" + name + "_on")
+    for suffix, col in (("", GRAY), ("_on", GREEN)):
+        big = Image.new("RGBA", (S * SS, S * SS), (0, 0, 0, 0))
+        d = ImageDraw.Draw(big)
+        drawer(d, col, SS)
+        small = big.resize((S, S), Image.LANCZOS)
+        small.save(f"{OUT}/icons/tab_{name}{suffix}.png")
+        print("  icon tab_" + name + suffix)
 
 
 tab_icon("home", _tab_home)
@@ -190,12 +220,14 @@ tab_icon("cart", _tab_cart)
 tab_icon("user", _tab_user)
 
 
-# ---- 搜索图标（放大镜）----
-def i_search(color=(153, 153, 153, 255)):
-    im, d = new_icon()
-    d.ellipse([24, 24, 60, 60], outline=color, width=7)
-    d.line([(56, 56), (76, 76)], fill=color, width=8)
-    save(im, "search")
+# ---- 搜索图标（放大镜，4x 超采样抗锯齿）----
+def i_search(color=GRAY):
+    big = Image.new("RGBA", (S * SS, S * SS), (0, 0, 0, 0))
+    d = ImageDraw.Draw(big)
+    d.ellipse(_sb([24, 24, 58, 58], SS), outline=color, width=6 * SS)
+    d.line(_sp([(55, 55), (76, 76)], SS), fill=color, width=7 * SS)
+    big.resize((S, S), Image.LANCZOS).save(f"{OUT}/icons/search.png")
+    print("  icon search")
 
 
 i_search()

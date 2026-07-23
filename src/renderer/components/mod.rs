@@ -1,4 +1,4 @@
-//! 微信小程序组件实现
+    //! 微信小程序组件实现
 //! 每个组件独立文件，便于维护
 
 mod base;
@@ -34,8 +34,11 @@ pub use slider::SliderComponent;
 pub use input::InputComponent;
 pub use image::ImageComponent;
 pub use video::VideoComponent;
-pub use video::has_playing_video;
-pub use canvas::{CanvasComponent, Canvas2DContext, CanvasContextManager, LinearGradient, RadialGradient, execute_canvas_draw};
+pub use video::{
+    has_playing_video, get_or_create_player, get_video_frame, get_video_progress,
+    toggle_video_play, is_video_playing,
+};
+pub use canvas::{CanvasComponent, Canvas2DContext, CanvasContextManager, LinearGradient, RadialGradient, execute_canvas_draw, ensure_canvas_context};
 pub use swiper::{SwiperComponent, SwiperItemComponent, SWIPER_MANAGER};
 pub use rich_text::RichTextComponent;
 pub use picker::{PickerComponent, PickerViewComponent, PickerViewColumnComponent, PickerMode, PICKER_MANAGER};

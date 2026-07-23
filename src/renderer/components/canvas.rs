@@ -34,11 +34,24 @@ pub struct Canvas2DContext {
     text_baseline: TextBaseline,
     /// 全局透明度
     global_alpha: f32,
+    /// 线帽 / 线连接
+    line_cap: crate::paint::StrokeCap,
+    line_join: crate::paint::StrokeJoin,
+    /// 当前 2D 仿射变换矩阵 [a, b, c, d, e, f]（列优先：x'=a*x+c*y+e, y'=b*x+d*y+f）
+    transform: [f32; 6],
     /// 当前路径
     current_path: Vec<PathCommand>,
     /// 状态栈
     state_stack: Vec<ContextState>,
 }
+
+/// Canvas 文本渲染用的全局字体（懒加载系统字体）
+static CANVAS_FONT: once_cell::sync::Lazy<Option<crate::text::TextRenderer>> =
+    once_cell::sync::Lazy::new(|| {
+        crate::text::TextRenderer::load_system_font()
+            .or_else(|_| crate::text::TextRenderer::from_bytes(include_bytes!("../../../assets/ArialUnicode.ttf")))
+            .ok()
+    });
 
 
 /// 文本基线
@@ -75,9 +88,39 @@ struct ContextState {
     text_align: TextAlign,
     text_baseline: TextBaseline,
     global_alpha: f32,
+    transform: [f32; 6],
 }
 
 impl Canvas2DContext {
+    /// 单位矩阵
+    const IDENTITY: [f32; 6] = [1.0, 0.0, 0.0, 1.0, 0.0, 0.0];
+
+    /// 用当前矩阵变换一个点
+    fn tp(&self, x: f32, y: f32) -> (f32, f32) {
+        let m = &self.transform;
+        (m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5])
+    }
+
+    /// 当前矩阵的平均缩放（用于圆半径、线宽的近似缩放）
+    fn avg_scale(&self) -> f32 {
+        let m = &self.transform;
+        let sx = (m[0] * m[0] + m[1] * m[1]).sqrt();
+        let sy = (m[2] * m[2] + m[3] * m[3]).sqrt();
+        ((sx + sy) / 2.0).max(0.0001)
+    }
+
+    /// 右乘一个矩阵 other（self = self * other）
+    fn mul(&mut self, o: [f32; 6]) {
+        let m = self.transform;
+        self.transform = [
+            m[0] * o[0] + m[2] * o[1],
+            m[1] * o[0] + m[3] * o[1],
+            m[0] * o[2] + m[2] * o[3],
+            m[1] * o[2] + m[3] * o[3],
+            m[0] * o[4] + m[2] * o[5] + m[4],
+            m[1] * o[4] + m[3] * o[5] + m[5],
+        ];
+    }
     pub fn new(canvas_id: &str, width: u32, height: u32) -> Self {
         let canvas = Canvas::new(width, height);
         Self {
@@ -92,6 +135,9 @@ impl Canvas2DContext {
             text_align: TextAlign::Left,
             text_baseline: TextBaseline::default(),
             global_alpha: 1.0,
+            line_cap: crate::paint::StrokeCap::Butt,
+            line_join: crate::paint::StrokeJoin::Miter,
+            transform: Self::IDENTITY,
             current_path: Vec::new(),
             state_stack: Vec::new(),
         }
@@ -109,10 +155,8 @@ impl Canvas2DContext {
             text_align: self.text_align,
             text_baseline: self.text_baseline,
             global_alpha: self.global_alpha,
+            transform: self.transform,
         });
-        if let Ok(mut canvas) = self.canvas.lock() {
-            canvas.save();
-        }
     }
     
     /// 恢复上一次保存的状态
@@ -125,9 +169,7 @@ impl Canvas2DContext {
             self.text_align = state.text_align;
             self.text_baseline = state.text_baseline;
             self.global_alpha = state.global_alpha;
-        }
-        if let Ok(mut canvas) = self.canvas.lock() {
-            canvas.restore();
+            self.transform = state.transform;
         }
     }
 
@@ -210,26 +252,39 @@ impl Canvas2DContext {
         }
     }
     
+    /// 构建一个经当前矩阵变换的矩形路径（支持旋转/缩放）
+    fn rect_path(&self, x: f32, y: f32, w: f32, h: f32) -> Path {
+        let (p0, p1, p2, p3) = (
+            self.tp(x, y), self.tp(x + w, y), self.tp(x + w, y + h), self.tp(x, y + h),
+        );
+        let mut path = Path::new();
+        path.move_to(p0.0, p0.1);
+        path.line_to(p1.0, p1.1);
+        path.line_to(p2.0, p2.1);
+        path.line_to(p3.0, p3.1);
+        path.close();
+        path
+    }
+
     /// 填充矩形
     pub fn fill_rect(&mut self, x: f32, y: f32, width: f32, height: f32) {
+        let path = self.rect_path(x, y, width, height);
+        let color = self.apply_alpha(self.fill_style);
         if let Ok(mut canvas) = self.canvas.lock() {
-            let rect = GeoRect::new(x, y, width, height);
-            let paint = Paint::new()
-                .with_color(self.apply_alpha(self.fill_style))
-                .with_style(PaintStyle::Fill);
-            canvas.draw_rect(&rect, &paint);
+            let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill).with_anti_alias(true);
+            canvas.draw_path(&path, &paint);
         }
     }
 
     /// 描边矩形
     pub fn stroke_rect(&mut self, x: f32, y: f32, width: f32, height: f32) {
+        let path = self.rect_path(x, y, width, height);
+        let color = self.apply_alpha(self.stroke_style);
+        let lw = self.line_width * self.avg_scale();
         if let Ok(mut canvas) = self.canvas.lock() {
-            let rect = GeoRect::new(x, y, width, height);
-            let paint = Paint::new()
-                .with_color(self.apply_alpha(self.stroke_style))
-                .with_style(PaintStyle::Stroke)
-                .with_stroke_width(self.line_width);
-            canvas.draw_rect(&rect, &paint);
+            let paint = Paint::new().with_color(color).with_style(PaintStyle::Stroke)
+                .with_stroke_width(lw).with_anti_alias(true);
+            canvas.draw_path(&path, &paint);
         }
     }
 
@@ -290,37 +345,102 @@ impl Canvas2DContext {
     /// 描边当前路径
     pub fn stroke(&mut self) {
         let path = self.build_path();
+        let lw = self.line_width * self.avg_scale();
         if let Ok(mut canvas) = self.canvas.lock() {
             let paint = Paint::new()
                 .with_color(self.apply_alpha(self.stroke_style))
                 .with_style(PaintStyle::Stroke)
-                .with_stroke_width(self.line_width)
+                .with_stroke_width(lw)
                 .with_anti_alias(true);
             canvas.draw_path(&path, &paint);
         }
     }
     
-    /// 构建 Path 对象
+    /// 填充文本
+    pub fn fill_text(&mut self, text: &str, x: f32, y: f32) {
+        let tr = match CANVAS_FONT.as_ref() { Some(t) => t, None => return };
+        let size = self.font_size * self.avg_scale();
+        // 测量宽度以支持 textAlign
+        let tw = tr.measure_text(text, size);
+        let mut ax = x;
+        match self.text_align {
+            TextAlign::Center => ax = x - tw / self.avg_scale() / 2.0,
+            TextAlign::Right => ax = x - tw / self.avg_scale(),
+            _ => {}
+        }
+        // baseline 调整（近似）
+        let ay = match self.text_baseline {
+            TextBaseline::Top | TextBaseline::Hanging => y + self.font_size * 0.8,
+            TextBaseline::Middle => y + self.font_size * 0.35,
+            TextBaseline::Bottom => y,
+            _ => y, // alphabetic/ideographic
+        };
+        let (px, py) = self.tp(ax, ay);
+        let color = self.apply_alpha(self.fill_style);
+        if let Ok(mut canvas) = self.canvas.lock() {
+            let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill);
+            tr.draw_text(&mut canvas, text, px, py, size, &paint);
+        }
+    }
+    
+    /// 描边文本（本实现以填充近似）
+    pub fn stroke_text(&mut self, text: &str, x: f32, y: f32) {
+        // 保存 fill，用 stroke 颜色画文本
+        let saved = self.fill_style;
+        self.fill_style = self.stroke_style;
+        self.fill_text(text, x, y);
+        self.fill_style = saved;
+    }
+    
+    /// 绘制图片（支持目标位置与目标尺寸；旋转/斜切按轴对齐近似）
+    pub fn draw_image(&mut self, src: &str, dx: f32, dy: f32, dw: f32, dh: f32) {
+        // 加载图片
+        let bytes = std::fs::read(src).ok()
+            .or_else(|| std::fs::read(src.trim_start_matches('/')).ok());
+        let bytes = match bytes { Some(b) => b, None => return };
+        let img = match image::load_from_memory(&bytes) { Ok(i) => i, Err(_) => return };
+        use image::GenericImageView;
+        let (iw, ih) = img.dimensions();
+        let rgba = img.to_rgba8().into_raw();
+        let (tw, th) = (dw * self.avg_scale(), dh * self.avg_scale());
+        let (px, py) = self.tp(dx, dy);
+        if let Ok(mut canvas) = self.canvas.lock() {
+            canvas.draw_image(&rgba, iw, ih, px, py, tw, th, "scaleToFill", 0.0);
+        }
+    }
+    
+    /// 构建 Path 对象（所有坐标经当前仿射矩阵变换）
     fn build_path(&self) -> Path {
         let mut path = Path::new();
         for cmd in &self.current_path {
             match cmd {
-                PathCommand::MoveTo(x, y) => { path.move_to(*x, *y); }
-                PathCommand::LineTo(x, y) => { path.line_to(*x, *y); }
+                PathCommand::MoveTo(x, y) => { let (px, py) = self.tp(*x, *y); path.move_to(px, py); }
+                PathCommand::LineTo(x, y) => { let (px, py) = self.tp(*x, *y); path.line_to(px, py); }
                 PathCommand::Arc(x, y, r, start, end, ccw) => {
-                    path.arc(*x, *y, *r, *start, *end, *ccw);
+                    // 以变换后圆心 + 平均缩放半径近似（不支持椭圆化的斜切）
+                    let (cx, cy) = self.tp(*x, *y);
+                    path.arc(cx, cy, *r * self.avg_scale(), *start, *end, *ccw);
                 }
                 PathCommand::QuadraticCurveTo(cpx, cpy, x, y) => {
-                    path.quad_to(*cpx, *cpy, *x, *y);
+                    let (c0, c1) = self.tp(*cpx, *cpy);
+                    let (px, py) = self.tp(*x, *y);
+                    path.quad_to(c0, c1, px, py);
                 }
                 PathCommand::BezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y) => {
-                    path.cubic_to(*cp1x, *cp1y, *cp2x, *cp2y, *x, *y);
+                    let (a0, a1) = self.tp(*cp1x, *cp1y);
+                    let (b0, b1) = self.tp(*cp2x, *cp2y);
+                    let (px, py) = self.tp(*x, *y);
+                    path.cubic_to(a0, a1, b0, b1, px, py);
                 }
                 PathCommand::Rect(x, y, w, h) => {
-                    path.move_to(*x, *y);
-                    path.line_to(*x + *w, *y);
-                    path.line_to(*x + *w, *y + *h);
-                    path.line_to(*x, *y + *h);
+                    let p0 = self.tp(*x, *y);
+                    let p1 = self.tp(*x + *w, *y);
+                    let p2 = self.tp(*x + *w, *y + *h);
+                    let p3 = self.tp(*x, *y + *h);
+                    path.move_to(p0.0, p0.1);
+                    path.line_to(p1.0, p1.1);
+                    path.line_to(p2.0, p2.1);
+                    path.line_to(p3.0, p3.1);
                     path.close();
                 }
                 PathCommand::ClosePath => { path.close(); }
@@ -333,24 +453,25 @@ impl Canvas2DContext {
     
     /// 绘制填充圆
     pub fn fill_circle(&mut self, x: f32, y: f32, radius: f32) {
+        let (cx, cy) = self.tp(x, y);
+        let r = radius * self.avg_scale();
+        let color = self.apply_alpha(self.fill_style);
         if let Ok(mut canvas) = self.canvas.lock() {
-            let paint = Paint::new()
-                .with_color(self.apply_alpha(self.fill_style))
-                .with_style(PaintStyle::Fill)
-                .with_anti_alias(true);
-            canvas.draw_circle(x, y, radius, &paint);
+            let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill).with_anti_alias(true);
+            canvas.draw_circle(cx, cy, r, &paint);
         }
     }
 
     /// 绘制描边圆
     pub fn stroke_circle(&mut self, x: f32, y: f32, radius: f32) {
+        let (cx, cy) = self.tp(x, y);
+        let r = radius * self.avg_scale();
+        let lw = self.line_width * self.avg_scale();
+        let color = self.apply_alpha(self.stroke_style);
         if let Ok(mut canvas) = self.canvas.lock() {
-            let paint = Paint::new()
-                .with_color(self.apply_alpha(self.stroke_style))
-                .with_style(PaintStyle::Stroke)
-                .with_stroke_width(self.line_width)
-                .with_anti_alias(true);
-            canvas.draw_circle(x, y, radius, &paint);
+            let paint = Paint::new().with_color(color).with_style(PaintStyle::Stroke)
+                .with_stroke_width(lw).with_anti_alias(true);
+            canvas.draw_circle(cx, cy, r, &paint);
         }
     }
 
@@ -358,22 +479,50 @@ impl Canvas2DContext {
     
     /// 绘制线条（从当前点到指定点）
     pub fn draw_line(&mut self, x1: f32, y1: f32, x2: f32, y2: f32) {
+        let (a0, a1) = self.tp(x1, y1);
+        let (b0, b1) = self.tp(x2, y2);
+        let lw = self.line_width * self.avg_scale();
+        let color = self.apply_alpha(self.stroke_style);
         if let Ok(mut canvas) = self.canvas.lock() {
-            let paint = Paint::new()
-                .with_color(self.apply_alpha(self.stroke_style))
-                .with_stroke_width(self.line_width)
-                .with_anti_alias(true);
-            canvas.draw_line(x1, y1, x2, y2, &paint);
+            let paint = Paint::new().with_color(color).with_stroke_width(lw).with_anti_alias(true);
+            canvas.draw_line(a0, a1, b0, b1, &paint);
         }
     }
 
     // ========== 变换 ==========
     
-    /// 平移
+    /// 平移（累积到当前变换矩阵）
     pub fn translate(&mut self, x: f32, y: f32) {
-        if let Ok(mut canvas) = self.canvas.lock() {
-            canvas.translate(x, y);
-        }
+        self.mul([1.0, 0.0, 0.0, 1.0, x, y]);
+    }
+    
+    /// 旋转（弧度，累积到当前变换矩阵）
+    pub fn rotate(&mut self, angle: f32) {
+        let (s, c) = angle.sin_cos();
+        self.mul([c, s, -s, c, 0.0, 0.0]);
+    }
+    
+    /// 缩放（累积到当前变换矩阵）
+    pub fn scale(&mut self, sx: f32, sy: f32) {
+        self.mul([sx, 0.0, 0.0, sy, 0.0, 0.0]);
+    }
+    
+    /// 设置线帽
+    pub fn set_line_cap(&mut self, cap: &str) {
+        self.line_cap = match cap {
+            "round" => crate::paint::StrokeCap::Round,
+            "square" => crate::paint::StrokeCap::Square,
+            _ => crate::paint::StrokeCap::Butt,
+        };
+    }
+    
+    /// 设置线连接
+    pub fn set_line_join(&mut self, join: &str) {
+        self.line_join = match join {
+            "round" => crate::paint::StrokeJoin::Round,
+            "bevel" => crate::paint::StrokeJoin::Bevel,
+            _ => crate::paint::StrokeJoin::Miter,
+        };
     }
 
     // ========== 渐变 ==========
@@ -673,6 +822,71 @@ impl CanvasContextManager {
                     let y = cmd.get("y").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
                     ctx.translate(x, y);
                 }
+                "rotate" => {
+                    let a = cmd.get("angle").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
+                    ctx.rotate(a);
+                }
+                "scale" => {
+                    let sx = cmd.get("scaleX").and_then(|v| v.as_f64()).unwrap_or(1.0) as f32;
+                    let sy = cmd.get("scaleY").and_then(|v| v.as_f64()).unwrap_or(1.0) as f32;
+                    ctx.scale(sx, sy);
+                }
+                "setFontSize" => {
+                    if let Some(s) = cmd.get("size").and_then(|v| v.as_f64()) { ctx.font_size = s as f32; }
+                }
+                "setTextAlign" => {
+                    if let Some(a) = cmd.get("align").and_then(|v| v.as_str()) { ctx.set_text_align(a); }
+                }
+                "setTextBaseline" => {
+                    if let Some(b) = cmd.get("baseline").and_then(|v| v.as_str()) { ctx.set_text_baseline(b); }
+                }
+                "setGlobalAlpha" => {
+                    if let Some(a) = cmd.get("alpha").and_then(|v| v.as_f64()) { ctx.set_global_alpha(a as f32); }
+                }
+                "setLineCap" => {
+                    if let Some(c) = cmd.get("cap").and_then(|v| v.as_str()) { ctx.set_line_cap(c); }
+                }
+                "setLineJoin" => {
+                    if let Some(j) = cmd.get("join").and_then(|v| v.as_str()) { ctx.set_line_join(j); }
+                }
+                "rect" => {
+                    let x = cmd.get("x").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
+                    let y = cmd.get("y").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
+                    let w = cmd.get("width").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
+                    let h = cmd.get("height").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
+                    ctx.rect(x, y, w, h);
+                }
+                "quadraticCurveTo" => {
+                    let cpx = cmd.get("cpx").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
+                    let cpy = cmd.get("cpy").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
+                    let x = cmd.get("x").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
+                    let y = cmd.get("y").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
+                    ctx.quadratic_curve_to(cpx, cpy, x, y);
+                }
+                "bezierCurveTo" => {
+                    let a = |k: &str| cmd.get(k).and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
+                    ctx.bezier_curve_to(a("cp1x"), a("cp1y"), a("cp2x"), a("cp2y"), a("x"), a("y"));
+                }
+                "fillText" => {
+                    let text = cmd.get("text").and_then(|v| v.as_str()).unwrap_or("");
+                    let x = cmd.get("x").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
+                    let y = cmd.get("y").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
+                    ctx.fill_text(text, x, y);
+                }
+                "strokeText" => {
+                    let text = cmd.get("text").and_then(|v| v.as_str()).unwrap_or("");
+                    let x = cmd.get("x").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
+                    let y = cmd.get("y").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
+                    ctx.stroke_text(text, x, y);
+                }
+                "drawImage" => {
+                    let src = cmd.get("src").and_then(|v| v.as_str()).unwrap_or("");
+                    let dx = cmd.get("dx").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
+                    let dy = cmd.get("dy").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
+                    let dw = cmd.get("dWidth").and_then(|v| v.as_f64()).unwrap_or(100.0) as f32;
+                    let dh = cmd.get("dHeight").and_then(|v| v.as_f64()).unwrap_or(100.0) as f32;
+                    ctx.draw_image(src, dx, dy, dw, dh);
+                }
                 _ => {}
             }
         }
@@ -693,6 +907,13 @@ use once_cell::sync::Lazy;
 pub static CANVAS_MANAGER: Lazy<Mutex<CanvasContextManager>> = Lazy::new(|| {
     Mutex::new(CanvasContextManager::new())
 });
+
+/// 预创建指定尺寸的 canvas 上下文（用于静态渲染场景先建好画布再绘制）。
+pub fn ensure_canvas_context(canvas_id: &str, width: u32, height: u32) {
+    if let Ok(mut manager) = CANVAS_MANAGER.lock() {
+        manager.get_context(canvas_id, width, height);
+    }
+}
 
 /// 执行 Canvas 绘制命令（供外部调用）
 pub fn execute_canvas_draw(canvas_id: &str, commands_json: &str) {
@@ -777,5 +998,70 @@ impl CanvasComponent {
             let rect = GeoRect::new(x, y, w, h);
             canvas.draw_rect(&rect, &paint);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_canvas_fill_rect_produces_pixels() {
+        let mut ctx = Canvas2DContext::new("t", 100, 100);
+        ctx.set_fill_style("#ff0000");
+        ctx.fill_rect(10.0, 10.0, 50.0, 50.0);
+        let data = ctx.get_image_data();
+        // 应存在红色像素
+        let mut red = 0;
+        for px in data.chunks(4) {
+            if px[0] > 200 && px[1] < 60 && px[2] < 60 && px[3] > 200 { red += 1; }
+        }
+        assert!(red > 1000, "红色填充像素过少: {}", red);
+    }
+
+    #[test]
+    fn test_canvas_transform_rotate_scale() {
+        // 变换矩阵：translate + rotate + scale 组合后点变换正确
+        let mut ctx = Canvas2DContext::new("t", 200, 200);
+        ctx.translate(100.0, 100.0);
+        ctx.rotate(std::f32::consts::FRAC_PI_2); // 90°
+        let (x, y) = ctx.tp(10.0, 0.0);
+        // (10,0) 绕原点转 90° -> (0,10)，再平移 (100,100) -> (100,110)
+        assert!((x - 100.0).abs() < 0.5 && (y - 110.0).abs() < 0.5, "变换结果 =({},{})", x, y);
+    }
+
+    #[test]
+    fn test_canvas_path_fill() {
+        let mut ctx = Canvas2DContext::new("t", 100, 100);
+        ctx.set_fill_style("#00ff00");
+        ctx.begin_path();
+        ctx.move_to(10.0, 10.0);
+        ctx.line_to(90.0, 10.0);
+        ctx.line_to(50.0, 90.0);
+        ctx.close_path();
+        ctx.fill();
+        let data = ctx.get_image_data();
+        let mut green = 0;
+        for px in data.chunks(4) {
+            if px[1] > 200 && px[0] < 60 && px[3] > 200 { green += 1; }
+        }
+        assert!(green > 500, "三角形填充像素过少: {}", green);
+    }
+
+    #[test]
+    fn test_canvas_execute_commands_json() {
+        let mut mgr = CanvasContextManager::new();
+        let cmds = r##"[
+            {"type":"setFillStyle","color":"#0000ff"},
+            {"type":"fillRect","x":0,"y":0,"width":40,"height":40},
+            {"type":"save"},{"type":"translate","x":50,"y":50},{"type":"rotate","angle":0.5},
+            {"type":"setFillStyle","color":"#ff0000"},
+            {"type":"fillRect","x":-10,"y":-10,"width":20,"height":20},
+            {"type":"restore"}
+        ]"##;
+        mgr.execute_commands("c", cmds);
+        let ctx = mgr.get_existing_context("c").unwrap();
+        let data = ctx.get_image_data();
+        assert!(data.iter().any(|&b| b > 0), "命令执行后画布应有内容");
     }
 }
