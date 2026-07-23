@@ -103,8 +103,8 @@ fn common() -> &'static str {
 // 1. 登录
 fn login() {
     let wxml = r#"
-    <view class="page">
-        <view class="logo"></view>
+    <view class="page col">
+        <image class="logo" src="doc/gallery/assets/logo.jpg" mode="aspectFill" />
         <text class="h1">欢迎登录</text>
         <text class="tip">请输入账号密码</text>
         <view class="field"><input value="13800138000" placeholder="手机号" /></view>
@@ -116,10 +116,11 @@ fn login() {
         </view>
     </view>"#;
     let wxss = r#"
-    .page{ padding:60rpx 48rpx; }
-    .logo{ width:140rpx; height:140rpx; border-radius:32rpx; background-color:#07c160; margin:40rpx auto 40rpx auto; }
+    .page{ padding:80rpx 48rpx; display:flex; flex-direction:column; }
+    .col{ display:flex; flex-direction:column; }
+    .logo{ width:150rpx; height:150rpx; border-radius:34rpx; margin-bottom:36rpx; align-self:center; }
     .h1{ font-size:48rpx; font-weight:bold; color:#1a1a1a; text-align:center; }
-    .tip{ font-size:26rpx; color:#999; text-align:center; margin-bottom:60rpx; }
+    .tip{ font-size:26rpx; color:#999; text-align:center; margin-top:12rpx; margin-bottom:70rpx; }
     .field{ background-color:#f5f6f8; border-radius:16rpx; padding:26rpx; margin-bottom:28rpx; }
     .field input{ font-size:30rpx; color:#333; }
     .btn{ background-color:#07c160; color:#fff; text-align:center; font-size:32rpx; padding:26rpx; border-radius:44rpx; margin-top:20rpx; }
@@ -169,22 +170,29 @@ fn product_list() {
 
 // 3. 商品详情
 fn product_detail() {
-    let wxml = r#"
+    let wxml = r##"
     <view class="wrap">
-        <view class="hero"></view>
+        <image class="hero" src="doc/gallery/assets/p_phone.jpg" mode="aspectFill" />
+        <view class="thumbs row">
+            <image class="tb tbon" src="doc/gallery/assets/p_phone.jpg" mode="aspectFill" />
+            <image class="tb" src="doc/gallery/assets/p_phone2.jpg" mode="aspectFill" />
+            <image class="tb" src="doc/gallery/assets/p_earbuds.jpg" mode="aspectFill" />
+            <image class="tb" src="doc/gallery/assets/p_watch.jpg" mode="aspectFill" />
+        </view>
         <view class="body">
-            <view class="row between">
-                <text class="price">¥3999</text>
+            <view class="row bl">
+                <text class="cur">¥</text><text class="price">3999</text>
                 <text class="old">¥4299</text>
             </view>
             <text class="name">全面屏旗舰手机 12+256GB 幻夜黑</text>
-            <view class="tags">
+            <view class="tags row">
                 <text class="tag">顺丰包邮</text>
                 <text class="tag">7天无理由</text>
                 <text class="tag">正品保障</text>
             </view>
-            <view class="spec">
+            <view class="spec row between">
                 <text class="spec-t">已选：幻夜黑 / 12+256GB</text>
+                <text class="spec-a">></text>
             </view>
             <view class="param">
                 <view class="row between p"><text class="k">品牌</text><text class="v">MiniTech</text></view>
@@ -192,33 +200,41 @@ fn product_detail() {
                 <view class="row between p"><text class="k">电池</text><text class="v">5000mAh</text></view>
             </view>
         </view>
-        <view class="bar">
-            <view class="icon"></view>
-            <view class="icon"></view>
+        <view class="bar row">
+            <view class="ib col"><icon type="chat" size="24" color="#666666" /><text class="ibt">客服</text></view>
+            <view class="ib col"><icon type="star-o" size="24" color="#666666" /><text class="ibt">收藏</text></view>
             <view class="cart">加入购物车</view>
             <view class="now">立即购买</view>
         </view>
-    </view>"#;
+    </view>"##;
     let wxss = r#"
-    .hero{ width:750rpx; height:560rpx; background-color:#dfe6ef; }
+    .hero{ width:750rpx; height:560rpx; }
+    .thumbs{ display:flex; flex-direction:row; padding:20rpx 28rpx 0 28rpx; }
+    .tb{ width:120rpx; height:120rpx; border-radius:12rpx; margin-right:18rpx; border:2rpx solid #eeeeee; }
+    .tbon{ border:4rpx solid #ff5000; }
     .body{ padding:28rpx; }
     .row{ display:flex; flex-direction:row; align-items:center; }
+    .col{ display:flex; flex-direction:column; align-items:center; }
     .between{ justify-content:space-between; }
-    .price{ font-size:52rpx; color:#ff5000; font-weight:bold; }
-    .old{ font-size:28rpx; color:#bbb; text-decoration:line-through; }
-    .name{ font-size:34rpx; color:#1a1a1a; font-weight:bold; margin-top:12rpx; }
+    .bl{ align-items:baseline; }
+    .cur{ font-size:32rpx; color:#ff5000; font-weight:bold; white-space:nowrap; }
+    .price{ font-size:56rpx; color:#ff5000; font-weight:bold; white-space:nowrap; }
+    .old{ font-size:28rpx; color:#bbb; text-decoration:line-through; margin-left:16rpx; white-space:nowrap; }
+    .name{ font-size:34rpx; color:#1a1a1a; font-weight:bold; margin-top:16rpx; line-height:48rpx; }
     .tags{ display:flex; flex-direction:row; margin-top:20rpx; }
-    .tag{ background-color:#fff0e8; color:#ff5000; font-size:22rpx; padding:8rpx; border-radius:8rpx; margin-right:12rpx; }
-    .spec{ background-color:#f7f8fa; border-radius:16rpx; padding:24rpx; margin-top:24rpx; }
+    .tag{ background-color:#fff0e8; color:#ff5000; font-size:22rpx; padding:8rpx 14rpx; border-radius:8rpx; margin-right:12rpx; }
+    .spec{ display:flex; flex-direction:row; justify-content:space-between; align-items:center; background-color:#f7f8fa; border-radius:16rpx; padding:26rpx 24rpx; margin-top:24rpx; }
     .spec-t{ font-size:28rpx; color:#333; }
-    .param{ margin-top:24rpx; }
-    .p{ padding:18rpx 0; }
-    .k{ font-size:28rpx; color:#999; }
-    .v{ font-size:28rpx; color:#333; }
+    .spec-a{ font-size:28rpx; color:#bbb; }
+    .param{ margin-top:12rpx; }
+    .p{ padding:20rpx 0; border-bottom:1rpx solid #f2f2f2; }
+    .k{ font-size:28rpx; color:#999; white-space:nowrap; }
+    .v{ font-size:28rpx; color:#333; white-space:nowrap; }
     .bar{ display:flex; flex-direction:row; align-items:center; padding:16rpx 24rpx; }
-    .icon{ width:72rpx; height:72rpx; border-radius:36rpx; background-color:#f0f0f0; margin-right:16rpx; }
-    .cart{ flex:1; background-color:#ffb400; color:#fff; text-align:center; font-size:28rpx; padding:22rpx; border-radius:44rpx 0 0 44rpx; }
-    .now{ flex:1; background-color:#ff5000; color:#fff; text-align:center; font-size:28rpx; padding:22rpx; border-radius:0 44rpx 44rpx 0; }
+    .ib{ display:flex; flex-direction:column; align-items:center; margin-right:28rpx; }
+    .ibt{ font-size:20rpx; color:#666; margin-top:4rpx; }
+    .cart{ flex:1; background-color:#ffb400; color:#fff; text-align:center; font-size:30rpx; padding:24rpx; border-radius:44rpx 0 0 44rpx; }
+    .now{ flex:1; background-color:#ff5000; color:#fff; text-align:center; font-size:30rpx; padding:24rpx; border-radius:0 44rpx 44rpx 0; }
     "#;
     render("03_product_detail", 0xFFFFFF, wxml, wxss, json!({}));
 }
@@ -366,9 +382,9 @@ fn chat() {
     let wxml = r#"
     <view class="page">
         <view class="msg row {{item.me ? 'me' : ''}}" wx:for="{{msgs}}" wx:key="id">
-            <view class="av" wx:if="{{!item.me}}"></view>
+            <image class="av" wx:if="{{!item.me}}" src="doc/gallery/assets/avatar2.jpg" mode="aspectFill" />
             <view class="bubble {{item.me ? 'b-me' : ''}}"><text class="tx {{item.me ? 'tx-me' : ''}}">{{item.text}}</text></view>
-            <view class="av" wx:if="{{item.me}}"></view>
+            <image class="av" wx:if="{{item.me}}" src="doc/gallery/assets/avatar1.jpg" mode="aspectFill" />
         </view>
     </view>"#;
     let wxss = r#"
@@ -553,7 +569,7 @@ fn gallery_grid() {
     <view class="page">
         <text class="head">发现美图</text>
         <view class="grid">
-            <view class="tile" wx:for="{{tiles}}" wx:key="*this" style="background-color:{{item}}"></view>
+            <image class="tile" wx:for="{{tiles}}" wx:key="*this" src="{{item}}" mode="aspectFill" />
         </view>
     </view>"#;
     let wxss = r#"
@@ -563,7 +579,9 @@ fn gallery_grid() {
     .tile{ width:220rpx; height:220rpx; border-radius:16rpx; margin:0 12rpx 12rpx 0; }
     "#;
     let data = json!({"tiles":[
-        "#ffadad","#ffd6a5","#fdffb6","#caffbf","#9bf6ff","#a0c4ff","#bdb2ff","#ffc6ff","#fffffc"
+        "doc/gallery/assets/album.jpg","doc/gallery/assets/banner.jpg","doc/gallery/assets/p_coffee.jpg",
+        "doc/gallery/assets/p_cake.jpg","doc/gallery/assets/p_sneakers.jpg","doc/gallery/assets/p_backpack.jpg",
+        "doc/gallery/assets/p_lipstick.jpg","doc/gallery/assets/p_thermos.jpg","doc/gallery/assets/p_watch.jpg"
     ]});
     render("12_gallery", 0xFFFFFF, wxml, wxss, data);
 }
@@ -1256,7 +1274,7 @@ fn ecommerce_home() {
     .pcard{ width:50%; display:flex; flex-direction:column; }
     .pimg{ width:329rpx; height:329rpx; border-radius:16rpx; margin:8rpx; }
     .pinfo{ display:flex; flex-direction:column; padding:0 16rpx; }
-    .pn{ font-size:28rpx; color:#1a1a1a; line-height:40rpx; }
+    .pn{ width:311rpx; font-size:28rpx; color:#1a1a1a; line-height:40rpx; }
     .ptags{ display:flex; flex-direction:row; margin-top:10rpx; }
     .pt1{ background-color:#fff0e8; color:#ff5000; font-size:20rpx; padding:4rpx 12rpx; border-radius:6rpx; }
     .prow{ display:flex; flex-direction:row; justify-content:space-between; align-items:center; margin-top:12rpx; }
@@ -1311,8 +1329,8 @@ fn coupon_popup() {
                 </view>
             </view>
             <view class="allbtn">一键领取全部</view>
-            <view class="close">X</view>
         </view>
+        <view class="close">X</view>
     </view>"##;
     let wxss = r##"
     .mask{ height:1334rpx; background-color:rgba(0,0,0,0.6); display:flex; flex-direction:column; justify-content:center; align-items:center; }
@@ -1335,7 +1353,7 @@ fn coupon_popup() {
     .cp-time{ font-size:22rpx; color:#999999; margin-top:10rpx; }
     .cp-btn{ background-color:#ff3b30; color:#ffffff; font-size:26rpx; padding:14rpx 24rpx; border-radius:28rpx; }
     .allbtn{ width:500rpx; background-color:#ff3b30; color:#ffffff; text-align:center; font-size:32rpx; font-weight:bold; padding:26rpx; border-radius:48rpx; margin-top:16rpx; }
-    .close{ width:56rpx; height:56rpx; border-radius:28rpx; background-color:rgba(255,255,255,0.25); color:#ffffff; text-align:center; font-size:32rpx; margin-top:32rpx; }
+    .close{ width:64rpx; height:64rpx; border-radius:32rpx; border:2rpx solid rgba(255,255,255,0.8); color:#ffffff; text-align:center; font-size:34rpx; margin-top:44rpx; }
     "##;
     let data = json!({"coupons":[
         {"amt":"20","cond":"100","name":"全场通用券","exp":"07-31"},

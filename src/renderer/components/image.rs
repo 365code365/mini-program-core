@@ -163,10 +163,10 @@ impl ImageComponent {
             ts.size.height = length(default_height * sf);
         }
         
-        // 只在 CSS 没有定义时使用默认占位符背景
-        if !has_custom_bg {
-            ns.background_color = Some(Color::from_hex(0xF5F5F5));
-        }
+        // 注意：不再强制设置默认背景色。
+        // 透明 PNG（如图标）不应有不透明底色；仅当 CSS 显式设置 background-color
+        // 时才绘制底色，图片加载失败时才回退到占位符浅灰底。
+        let _ = has_custom_bg;
         
         // 只在 CSS 没有定义时使用默认圆角
         if !has_custom_radius {
@@ -229,23 +229,26 @@ impl ImageComponent {
             draw_box_shadow(canvas, shadow, x, y, w, h, radius);
         }
         
-        // 绘制背景
-        let bg_color = apply_opacity(style.background_color.unwrap_or(Color::from_hex(0xF5F5F5)));
-        let bg_paint = Paint::new()
-            .with_color(bg_color)
-            .with_style(PaintStyle::Fill)
-            .with_anti_alias(true);
-        
-        if has_radius {
-            let mut path = Path::new();
-            if uniform_radius {
-                path.add_round_rect(x, y, w, h, radius);
+        // 仅当 CSS 显式设置了 background-color 时才绘制底色。
+        // 这样透明 PNG（图标）不会被套上不透明底框。
+        if let Some(bg) = style.background_color {
+            let bg_color = apply_opacity(bg);
+            let bg_paint = Paint::new()
+                .with_color(bg_color)
+                .with_style(PaintStyle::Fill)
+                .with_anti_alias(true);
+            
+            if has_radius {
+                let mut path = Path::new();
+                if uniform_radius {
+                    path.add_round_rect(x, y, w, h, radius);
+                } else {
+                    path.add_round_rect_varying(x, y, w, h, radius_tl, radius_tr, radius_br, radius_bl);
+                }
+                canvas.draw_path(&path, &bg_paint);
             } else {
-                path.add_round_rect_varying(x, y, w, h, radius_tl, radius_tr, radius_br, radius_bl);
+                canvas.draw_rect(&GeoRect::new(x, y, w, h), &bg_paint);
             }
-            canvas.draw_path(&path, &bg_paint);
-        } else {
-            canvas.draw_rect(&GeoRect::new(x, y, w, h), &bg_paint);
         }
         
         // 尝试加载并绘制图片
@@ -319,6 +322,25 @@ impl ImageComponent {
         radius_tl: f32, radius_tr: f32, radius_br: f32, radius_bl: f32,
         style: &NodeStyle,
     ) {
+        // 若 CSS 未显式设置底色，绘制默认浅灰底，保证占位图标可见
+        if style.background_color.is_none() {
+            let ph_paint = Paint::new()
+                .with_color(Color::from_hex(0xF5F5F5))
+                .with_style(PaintStyle::Fill)
+                .with_anti_alias(true);
+            if has_radius {
+                let mut path = Path::new();
+                if uniform_radius {
+                    path.add_round_rect(x, y, w, h, radius);
+                } else {
+                    path.add_round_rect_varying(x, y, w, h, radius_tl, radius_tr, radius_br, radius_bl);
+                }
+                canvas.draw_path(&path, &ph_paint);
+            } else {
+                canvas.draw_rect(&GeoRect::new(x, y, w, h), &ph_paint);
+            }
+        }
+        
         let icon_size = w.min(h) * 0.35;
         let cx = x + w / 2.0;
         let cy = y + h / 2.0;

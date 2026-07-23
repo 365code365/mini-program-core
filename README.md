@@ -25,10 +25,11 @@
 
 ## 🖼️ 场景画廊
 
-以下页面均由本引擎真实渲染输出（纯 WXML + WXSS + 数据），一键生成：
+以下 **29 个页面**均由本引擎真实渲染输出（纯 WXML + WXSS + 数据），一键生成：
 
 ```bash
-cargo run --example gallery   # 渲染全部场景到 doc/gallery/
+python3 scripts/gen_assets.py   # 首次运行：生成商品图/头像/图标等真实素材（见「素材图片生成」）
+cargo run --example gallery     # 渲染全部 29 个场景到 doc/gallery/
 ```
 
 ### 电商 · 社交 · 导航
@@ -58,6 +59,62 @@ cargo run --example gallery   # 渲染全部场景到 doc/gallery/
 | <img src="doc/gallery/25_picker.png" width="230"/><br/>**底部选择器** | <img src="doc/gallery/26_calendar.png" width="230"/><br/>**日历** | <img src="doc/gallery/27_rating_steps.png" width="230"/><br/>**评分与物流** |
 
 > 弹窗类通过半透明遮罩 + 居中/底部面板实现；`swiper` 轮播、`scroll-view` 的横向/纵向滚动均为组件真实渲染；星级评分使用 `icon` 的 `star` 类型（路径绘制）。
+
+### 电商复杂场景（真实图片）
+
+| | |
+|:---:|:---:|
+| <img src="doc/gallery/28_ecommerce_home.png" width="230"/><br/>**电商首页**（搜索栏 / 轮播 Banner / 金刚区 / 限时秒杀横滑 / 商品瀑布流） | <img src="doc/gallery/29_coupon_popup.png" width="230"/><br/>**优惠券弹窗**（活动促销弹层 / 多档满减券 / 一键领取） |
+
+> 电商首页综合运用了 `swiper` 图片轮播、`scroll-view` 横向滚动秒杀、`flex-wrap` 商品瀑布流；页面中的 Banner、商品图、头像等**均为真实图片**（见下方「素材图片生成」）。
+
+## 🖌️ 素材图片生成
+
+画廊中的商品图、Banner、专辑封面、头像等**真实照片**由火山引擎「豆包·文生图」模型生成，播放器控制图标（play/pause/prev/next/shuffle/repeat/heart）由 PIL 绘制为**透明 PNG**。一键生成到 `doc/gallery/assets/`（已存在的文件自动跳过，避免重复消耗 API）：
+
+```bash
+python3 scripts/gen_assets.py
+# -> doc/gallery/assets/*.jpg          （AI 生成的商品/封面/头像/Banner）
+# -> doc/gallery/assets/icons/*.png    （PIL 绘制的透明矢量图标）
+```
+
+`<image>` 组件支持本地文件（相对工作目录）与网络 URL 两种来源，`mode` 支持 `scaleToFill` / `aspectFit` / `aspectFill` / `widthFix` 等；透明 PNG 不会被套上不透明底框，仅在图片加载失败时回退到占位符。
+
+## ♻️ 小程序生命周期
+
+三级生命周期钩子均已接入（JS 侧注册 + Native 侧分发）：
+
+| 层级 | 钩子 |
+|------|------|
+| **App** | `onLaunch` · `onShow` · `onHide` · `onError` · `onPageNotFound` · `onUnhandledRejection` · `onThemeChange` |
+| **Page** | `onLoad` · `onShow` · `onReady` · `onHide` · `onUnload` · `onPullDownRefresh` · `onReachBottom` · `onPageScroll` · `onResize` · `onTabItemTap` · `onShareAppMessage` · `onShareTimeline` · `onAddToFavorites` |
+| **Component** | `created` · `attached` · `ready` · `moved` · `detached`；`pageLifetimes`：`show` · `hide` · `resize` |
+
+- 页面 `onShow` / `onHide` / `onResize` 会**联动**页面内自定义组件的 `pageLifetimes`；
+- 页面 `onUnload` 会自动回收其组件实例并触发各组件的 `detached`；
+- Native 侧通过 `__dispatchApp(name, arg)` / `__dispatchPage(name, arg)` 统一分发，事件桥（`bridge.rs`）已接线 `AppShow/AppHide/PageLoad/PageShow/PageHide/PageUnload`。
+
+```javascript
+App({
+  onLaunch() {},           // 小程序初始化
+  onShow(opts) {},         // 前台
+  onHide() {},             // 后台
+  onError(msg) {},         // 脚本错误
+})
+
+Page({
+  onLoad(query) {},        // 载入（带页面参数）
+  onReady() {},            // 首次渲染完成
+  onPullDownRefresh() {},  // 下拉刷新
+  onReachBottom() {},      // 触底加载
+  onShareAppMessage() { return { title: '分享' }; },
+})
+
+Component({
+  lifetimes: { attached() {}, detached() {} },
+  pageLifetimes: { show() {}, hide() {} },
+})
+```
 
 ## 🏗️ 架构
 
@@ -149,7 +206,7 @@ cargo run --bin mini-launcher     # 小程序启动器（扫描 sample 目录加
 cargo run --bin mini-app-window   # 窗口应用
 cargo run --example demo          # 2D 渲染示例
 
-# 4) 测试（192 个用例）
+# 4) 测试（196 个用例）
 cargo test
 ```
 
@@ -339,8 +396,8 @@ mr_canvas_free(canvas)
 覆盖表达式引擎、WXSS 选择器（含 `var()`/`calc()`）、模板控制流、布局、全组件渲染、交互、滚动/惯性/回弹、页面栈路由、组件模型、CommonJS 模块、Promise、事件冒泡等：
 
 ```bash
-cargo test          # 192 个用例
-cargo test route    # 路由/页面栈/组件/模块/异步
+cargo test          # 196 个用例
+cargo test route    # 路由/页面栈/组件/模块/异步/生命周期
 cargo test scroll   # 滚动与惯性
 cargo test event    # 事件冒泡/catch
 ```

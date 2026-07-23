@@ -1,6 +1,7 @@
 //! Swiper 轮播图组件
 
 use super::base::*;
+use super::ImageComponent;
 use crate::parser::wxml::WxmlNode;
 use crate::text::TextRenderer;
 use crate::{Canvas, Color, Paint, PaintStyle, Rect as GeoRect};
@@ -210,6 +211,12 @@ impl SwiperComponent {
             canvas.draw_rect(&GeoRect::new(x, y, w, h), &paint);
         }
         
+        // 全屏图片轮播（banner）：若 item 内含 image，则整屏铺满绘制真实图片
+        if let Some(img_node) = Self::find_image(item) {
+            ImageComponent::draw(img_node, canvas, text_renderer, x, y, w, h, sf);
+            return;
+        }
+        
         // 递归绘制子元素
         Self::draw_children(canvas, &item.children, x, y, w, h, sf, text_renderer, Color::WHITE);
     }
@@ -293,6 +300,19 @@ impl SwiperComponent {
                 _ => {}
             }
         }
+    }
+    
+    /// 递归查找 item 内的第一个 image 节点（用于整屏 banner 轮播）
+    fn find_image(node: &RenderNode) -> Option<&RenderNode> {
+        for child in &node.children {
+            if child.tag == "image" {
+                return Some(child);
+            }
+            if let Some(found) = Self::find_image(child) {
+                return Some(found);
+            }
+        }
+        None
     }
     
     /// 获取节点的文本内容

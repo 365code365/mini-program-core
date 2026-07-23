@@ -57,6 +57,9 @@ IMAGES = [
     ("p_cake", "delicious strawberry cream cake slice on a plate, product photo, clean background"),
     ("avatar1", "portrait of a smiling young asian woman, headshot, soft studio light, clean background, professional"),
     ("avatar2", "portrait of a young asian man, headshot, soft studio light, clean background, professional"),
+    ("p_phone", "modern flagship smartphone with full screen display, black color, front and back view, product photo, pure white background, studio lighting, e-commerce"),
+    ("p_phone2", "modern flagship smartphone back view showing triple camera, black glass, product photo, pure white background, studio lighting"),
+    ("logo", "minimal modern app logo icon, green rounded square with a white leaf or spark symbol, flat design, clean, centered, app store icon style"),
 ]
 
 print("生成 AI 图片 ...")
