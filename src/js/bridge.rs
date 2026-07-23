@@ -223,16 +223,25 @@ impl JsBridge {
                 ))?;
             }
             Event::AppShow => {
-                rt.eval("__app && __app.onShow && __app.onShow()")?;
+                rt.eval("__dispatchApp && __dispatchApp('onShow')")?;
             }
             Event::AppHide => {
-                rt.eval("__app && __app.onHide && __app.onHide()")?;
+                rt.eval("__dispatchApp && __dispatchApp('onHide')")?;
             }
             Event::PageLoad => {
-                rt.eval("__currentPage && __currentPage.onLoad && __currentPage.onLoad()")?;
+                rt.eval("__dispatchPage && __dispatchPage('onLoad')")?;
             }
             Event::PageShow => {
-                rt.eval("__currentPage && __currentPage.onShow && __currentPage.onShow()")?;
+                // onShow 同时联动组件 pageLifetimes.show
+                rt.eval("__dispatchPage && __dispatchPage('onShow')")?;
+            }
+            Event::PageHide => {
+                // onHide 同时联动组件 pageLifetimes.hide
+                rt.eval("__dispatchPage && __dispatchPage('onHide')")?;
+            }
+            Event::PageUnload => {
+                // onUnload 触发后回收页面内组件实例（detached）
+                rt.eval("__dispatchPage && __dispatchPage('onUnload')")?;
             }
             _ => {}
         }

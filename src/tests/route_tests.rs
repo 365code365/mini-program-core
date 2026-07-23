@@ -208,6 +208,110 @@ fn test_component_lifetime_created_attached() {
 }
 
 #[test]
+fn test_component_detached_and_moved() {
+    let app = new_app();
+    app.eval(r#"
+        globalThis.__lc = [];
+        __setPendingComponentPath('components/dm');
+        Component({
+            data: {},
+            lifetimes: {
+                detached: function() { __lc.push('detached'); },
+                moved: function() { __lc.push('moved'); }
+            }
+        });
+        var inst = __createComponentInstance('components/dm', {});
+        __moveComponentInstance(inst.id);
+        __detachComponentInstance(inst.id);
+    "#).unwrap();
+    assert_eq!(app.eval("__lc.join(',')").unwrap(), "moved,detached");
+    // 实例已被回收
+    assert_eq!(app.eval("typeof __componentInstances[inst.id]").unwrap(), "undefined");
+}
+
+#[test]
+fn test_component_page_lifetimes() {
+    let app = new_app();
+    app.eval(r#"
+        globalThis.__pl = [];
+        __setPendingComponentPath('components/pl');
+        Component({
+            data: {},
+            pageLifetimes: {
+                show: function() { __pl.push('show'); },
+                hide: function() { __pl.push('hide'); },
+                resize: function() { __pl.push('resize'); }
+            }
+        });
+        __createComponentInstance('components/pl', {});
+        // 页面级生命周期应联动组件 pageLifetimes
+        Page({ data: {}, onShow: function(){}, onHide: function(){}, onResize: function(){} });
+        __dispatchPage('onShow');
+        __dispatchPage('onResize');
+        __dispatchPage('onHide');
+    "#).unwrap();
+    assert_eq!(app.eval("__pl.join(',')").unwrap(), "show,resize,hide");
+}
+
+#[test]
+fn test_page_full_lifecycle_dispatch() {
+    let app = new_app();
+    app.eval(r#"
+        globalThis.__seq = [];
+        Page({
+            data: {},
+            onLoad: function(){ __seq.push('load'); },
+            onShow: function(){ __seq.push('show'); },
+            onReady: function(){ __seq.push('ready'); },
+            onPullDownRefresh: function(){ __seq.push('pull'); },
+            onReachBottom: function(){ __seq.push('bottom'); },
+            onPageScroll: function(){ __seq.push('scroll'); },
+            onShareAppMessage: function(){ __seq.push('share'); return {title:'t'}; },
+            onHide: function(){ __seq.push('hide'); },
+            onUnload: function(){ __seq.push('unload'); }
+        });
+        __dispatchPage('onLoad');
+        __dispatchPage('onShow');
+        __dispatchPage('onReady');
+        __dispatchPage('onPullDownRefresh');
+        __dispatchPage('onReachBottom');
+        __dispatchPage('onPageScroll');
+        __dispatchPage('onShareAppMessage');
+        __dispatchPage('onHide');
+        __dispatchPage('onUnload');
+    "#).unwrap();
+    assert_eq!(
+        app.eval("__seq.join(',')").unwrap(),
+        "load,show,ready,pull,bottom,scroll,share,hide,unload"
+    );
+}
+
+#[test]
+fn test_app_lifecycle_dispatch() {
+    let app = new_app();
+    app.eval(r#"
+        globalThis.__ap = [];
+        App({
+            onLaunch: function(){ __ap.push('launch'); },
+            onShow: function(){ __ap.push('show'); },
+            onHide: function(){ __ap.push('hide'); },
+            onError: function(e){ __ap.push('error:' + e); },
+            onPageNotFound: function(){ __ap.push('404'); },
+            onThemeChange: function(t){ __ap.push('theme:' + t.theme); }
+        });
+        __dispatchApp('onShow');
+        __dispatchApp('onHide');
+        __dispatchApp('onError', 'boom');
+        __dispatchApp('onPageNotFound');
+        __dispatchApp('onThemeChange', { theme: 'dark' });
+    "#).unwrap();
+    assert_eq!(
+        app.eval("__ap.join(',')").unwrap(),
+        "launch,show,hide,error:boom,404,theme:dark"
+    );
+}
+
+#[test]
 fn test_behavior_mixin() {
     let app = new_app();
     app.eval(r#"

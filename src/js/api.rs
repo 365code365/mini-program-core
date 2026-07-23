@@ -585,6 +585,37 @@ impl MiniAppApi {
                 return __currentPage;
             }
             
+            // ==================== 完整生命周期分发 ====================
+            // App 级生命周期：onLaunch/onShow/onHide/onError/onPageNotFound/
+            //                 onUnhandledRejection/onThemeChange
+            function __dispatchApp(name, arg) {
+                if (__app && typeof __app[name] === 'function') {
+                    try { return __app[name](arg); }
+                    catch (e) { __native_print('[App.' + name + '] ' + e.message); }
+                }
+            }
+            
+            // Page 级生命周期：onLoad/onShow/onReady/onHide/onUnload/
+            //   onPullDownRefresh/onReachBottom/onPageScroll/onResize/
+            //   onTabItemTap/onShareAppMessage/onShareTimeline/onAddToFavorites
+            // 同时联动页面内组件的 pageLifetimes(show/hide/resize)。
+            function __dispatchPage(name, arg) {
+                var result;
+                if (__currentPage && typeof __currentPage[name] === 'function') {
+                    try { result = __currentPage[name](arg); }
+                    catch (e) { __native_print('[Page.' + name + '] ' + e.message); }
+                }
+                var mapped = { onShow: 'show', onHide: 'hide', onResize: 'resize' };
+                if (mapped[name] && typeof __dispatchAllComponentsPageLifetime === 'function') {
+                    __dispatchAllComponentsPageLifetime(mapped[name], arg);
+                }
+                // 页面卸载：销毁其组件实例，触发 detached
+                if (name === 'onUnload' && typeof __detachAllComponents === 'function') {
+                    __detachAllComponents();
+                }
+                return result;
+            }
+            
             // 调用页面方法（供 native 调用事件处理）
             function __callPageMethod(methodName, eventData) {
                 if (__currentPage && typeof __currentPage[methodName] === 'function') {
@@ -890,6 +921,54 @@ impl MiniAppApi {
             // 渲染层登记组件事件绑定
             function __bindComponentEvent(instanceId, eventName, pageMethod) {
                 __componentEventHandlers[instanceId + ':' + eventName] = pageMethod;
+            }
+            
+            // ==================== 组件生命周期补全 ====================
+            // 页面 show/hide/resize 联动所有组件的 pageLifetimes
+            function __dispatchAllComponentsPageLifetime(name, arg) {
+                for (var id in __componentInstances) {
+                    if (!__componentInstances.hasOwnProperty(id)) { continue; }
+                    var inst = __componentInstances[id];
+                    var entry = __componentDefs[inst.is];
+                    if (!entry) { continue; }
+                    var pl = entry.merged.pageLifetimes;
+                    if (pl && typeof pl[name] === 'function') {
+                        try { pl[name].call(inst, arg); }
+                        catch (e) { __native_print('[Component.pageLifetimes.' + name + '] ' + e.message); }
+                    }
+                }
+            }
+            
+            // 组件从节点树移除：触发 detached 生命周期并回收实例
+            function __detachComponentInstance(id) {
+                var inst = __componentInstances[id];
+                if (!inst) { return; }
+                var entry = __componentDefs[inst.is];
+                if (entry && typeof entry.merged.lifetimes.detached === 'function') {
+                    try { entry.merged.lifetimes.detached.call(inst); }
+                    catch (e) { __native_print('[Component.detached] ' + e.message); }
+                }
+                delete __componentInstances[id];
+            }
+            
+            // 组件在节点树中被移动：触发 moved 生命周期
+            function __moveComponentInstance(id) {
+                var inst = __componentInstances[id];
+                if (!inst) { return; }
+                var entry = __componentDefs[inst.is];
+                if (entry && typeof entry.merged.lifetimes.moved === 'function') {
+                    try { entry.merged.lifetimes.moved.call(inst); }
+                    catch (e) { __native_print('[Component.moved] ' + e.message); }
+                }
+            }
+            
+            // 页面卸载时回收其全部组件实例
+            function __detachAllComponents() {
+                var ids = [];
+                for (var id in __componentInstances) {
+                    if (__componentInstances.hasOwnProperty(id)) { ids.push(id); }
+                }
+                for (var i = 0; i < ids.length; i++) { __detachComponentInstance(ids[i]); }
             }
         "#)?;
         Ok(())

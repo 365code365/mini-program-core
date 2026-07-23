@@ -55,14 +55,7 @@ impl TextComponent {
         let pad_r = ns.padding_right * sf;
         ts.padding = Rect::zero();
         
-        // 盒子高度 = 文本行高 + 上下内边距
-        let text_height = actual_line_height * min_lines as f32;
-        ts.size.height = length(text_height + pad_t + pad_b);
-        ts.min_size.height = length(text_height + pad_t + pad_b);
-        
-        // 如果 CSS 没有设置宽度，根据 display / text-align 决定宽度
-        // display:block 或 text-align 为 center/right 时使用 100%（便于水平对齐），
-        // 否则使用估算的文本宽度 + 左右内边距
+        // 先决定宽度：display:block 或 text-align center/right 时占满 100%，否则用文本内容宽 + 左右内边距
         if matches!(ts.size.width, Dimension::Auto) {
             if ns.is_block || matches!(ns.text_align, TextAlign::Center | TextAlign::Right) {
                 ts.size.width = Dimension::Percent(1.0);
@@ -70,6 +63,23 @@ impl TextComponent {
                 ts.size.width = length(max_line_width + pad_l + pad_r);
             }
         }
+        
+        // 根据最终宽度估算换行行数：当可用宽度已知（显式/内容宽）且窄于整段文本时会换行，
+        // 据此把盒子高度设为多行，避免绘制时因盒子只有一行高而把文字挤成一行溢出
+        let avail_w = if let Dimension::Length(px) = ts.size.width {
+            (px - pad_l - pad_r).max(1.0)
+        } else {
+            f32::MAX
+        };
+        let wrap_lines = if avail_w < max_line_width {
+            (max_line_width / avail_w).ceil() as usize
+        } else {
+            1
+        };
+        let total_lines = min_lines.max(wrap_lines);
+        let text_height = actual_line_height * total_lines as f32;
+        ts.size.height = length(text_height + pad_t + pad_b);
+        ts.min_size.height = length(text_height + pad_t + pad_b);
         
         let tn = ctx.taffy.new_leaf(ts).unwrap();
         
@@ -238,17 +248,12 @@ fn draw_text_wrapped_advanced(
             if current_width + char_width > max_width && i > line_start {
                 let line: String = chars[line_start..i].iter().collect();
                 
-                // 若下一行会超出容器高度：这是最后一行，把「剩余全部内容」画在当前行，
-                // 宁可横向溢出也不丢字（修复 "92%" 被裁成 "92" 这类尾字符丢失）。
-                // 容器底部（基线坐标系）约为 (y - size) + max_height
+                // 仅当设置了 text-overflow:ellipsis 且下一行超出容器高度时，用省略号截断并停止；
+                // 否则正常继续换行（宁可纵向溢出也不横向溢出/挤成一行）。
                 let next_line_top = current_y + actual_line_height;
-                if max_height > 0.0 && next_line_top > (y - size) + max_height {
+                if use_ellipsis && max_height > 0.0 && next_line_top > (y - size) + max_height {
                     let rest: String = chars[line_start..].iter().collect();
-                    if use_ellipsis {
-                        draw_text_with_ellipsis(canvas, tr, &rest, x, current_y, size, max_width, letter_spacing, paint);
-                    } else {
-                        tr.draw_text_with_spacing(canvas, &rest, x, current_y, size, letter_spacing, paint);
-                    }
+                    draw_text_with_ellipsis(canvas, tr, &rest, x, current_y, size, max_width, letter_spacing, paint);
                     return;
                 }
                 
