@@ -1,0 +1,139 @@
+/* 由 address.wxss 编译 */
+.page {
+  min-height: 100vh;
+  background: #f5f5f5;
+  padding: 10px;
+}
+
+.addr-list {
+  display: flex;
+  flex-direction: column;
+}
+.addr-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  background: #fff;
+  border-radius: 8px;
+  padding: 14px 12px;
+  margin-bottom: 8px;
+}
+.addr-radio {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid #ccc;
+  flex-shrink: 0;
+  margin-right: 10px;
+}
+.addr-radio.on {
+  border-color: #FF6B35;
+  background: #FF6B35;
+  box-shadow: inset 0 0 0 3px #fff;
+}
+.addr-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.addr-head {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.addr-name {
+  font-size: 15px;
+  font-weight: bold;
+  color: #333;
+}
+.addr-phone {
+  font-size: 13px;
+  color: #666;
+  margin-left: 10px;
+}
+.addr-default {
+  font-size: 10px;
+  color: #fff;
+  background: #FF6B35;
+  border-radius: 3px;
+  padding: 1px 5px;
+  margin-left: 8px;
+}
+.addr-detail {
+  font-size: 13px;
+  color: #999;
+  margin-top: 4px;
+}
+.addr-del {
+  font-size: 13px;
+  color: #FF3B30;
+  padding-left: 8px;
+}
+
+.empty {
+  padding: 30px 0;
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+}
+.empty-text {
+  font-size: 13px;
+  color: #999;
+}
+
+.form-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+}
+.form-title {
+  font-size: 15px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 6px;
+}
+.form-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: 45px;
+  border-bottom: 0.500px solid #f0f0f0;
+}
+.form-label {
+  width: 70px;
+  font-size: 14px;
+  color: #333;
+}
+.form-input {
+  flex: 1;
+  font-size: 14px;
+  color: #333;
+}
+.switch-row {
+  justify-content: space-between;
+}
+.save-btn {
+  margin-top: 12px;
+  background: #FF6B35;
+  color: #fff;
+  border-radius: 22px;
+  font-size: 15px;
+}
+
+.preview {
+  margin-top: 8px;
+  background: #fff8f2;
+  border: 0.500px solid #ffd8bf;
+  border-radius: 6px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+}
+.preview-line {
+  font-size: 12px;
+  color: #b35;
+  line-height: 1.8;
+}

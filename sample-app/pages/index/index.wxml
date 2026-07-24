@@ -88,4 +88,28 @@
   </view>
 
   <view class="bottom-space"></view>
+
+  <!-- 首页新人优惠券弹窗 -->
+  <view class="coupon-mask" wx:if="{{showCoupon}}" catchtap="onCloseCoupon">
+    <view class="coupon-dialog" catchtap="onNoop">
+      <view class="coupon-dialog-head">
+        <text class="coupon-dialog-title">新人专享礼包</text>
+        <text class="coupon-dialog-sub">下单立减，先到先得</text>
+      </view>
+      <view class="coupon-list-pop">
+        <view class="coupon-card" wx:for="{{coupons}}" wx:key="id">
+          <view class="coupon-left">
+            <text class="coupon-amount">¥{{item.amount}}</text>
+            <text class="coupon-cond">满{{item.min}}元可用</text>
+          </view>
+          <view class="coupon-right">
+            <text class="coupon-name">{{item.name}}</text>
+            <text class="coupon-tip">{{item.tip}}</text>
+          </view>
+        </view>
+      </view>
+      <button class="coupon-claim-btn" type="primary" bindtap="onClaimCoupons">一键领取</button>
+      <view class="coupon-close" catchtap="onCloseCoupon">✕</view>
+    </view>
+  </view>
 </view>

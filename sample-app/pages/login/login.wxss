@@ -1,0 +1,100 @@
+.page {
+  min-height: 100vh;
+  background: #fff;
+  padding: 60rpx 48rpx;
+}
+
+.logo-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 40rpx 0 60rpx;
+}
+.logo {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 28rpx;
+  background: linear-gradient(135deg, #FF6B35, #FF3B30);
+  color: #fff;
+  font-size: 64rpx;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.brand {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #333;
+  margin-top: 20rpx;
+}
+.slogan {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 8rpx;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+}
+.field-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: 96rpx;
+  border-bottom: 1rpx solid #eee;
+}
+.field-label {
+  width: 120rpx;
+  font-size: 28rpx;
+  color: #333;
+}
+.field-input {
+  flex: 1;
+  font-size: 28rpx;
+  color: #333;
+}
+.code-btn {
+  font-size: 26rpx;
+  color: #FF6B35;
+  padding-left: 20rpx;
+  white-space: nowrap;
+}
+.code-btn.disabled {
+  color: #bbb;
+}
+
+.agree-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin: 32rpx 0;
+}
+.agree-cb {
+  width: 32rpx;
+  height: 32rpx;
+}
+.agree-text {
+  font-size: 24rpx;
+  color: #999;
+  margin-left: 12rpx;
+}
+
+.login-btn {
+  background: #FF6B35;
+  color: #fff;
+  border-radius: 44rpx;
+  font-size: 32rpx;
+  margin-top: 16rpx;
+}
+.other-login {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  margin-top: 40rpx;
+}
+.other-text {
+  font-size: 26rpx;
+  color: #07c160;
+}

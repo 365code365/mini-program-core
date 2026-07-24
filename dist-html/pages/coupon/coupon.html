@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/coupon/coupon</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./coupon.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view page">
+    <div class="wx-view tabs">
+      <span class="wx-text tab on" data-tap="onTab" data-ds-tab="available">可领取</span>
+      <span class="wx-text tab " data-tap="onTab" data-ds-tab="mine">我的券(0)</span>
+    </div>
+    <div class="wx-view list">
+      <div class="wx-view coupon ">
+        <div class="wx-view c-left">
+          <span class="wx-text c-amount">
+            ¥
+            <span class="wx-text c-num">10</span>
+          </span>
+          <span class="wx-text c-cond">满39元可用</span>
+        </div>
+        <div class="wx-view c-mid">
+          <span class="wx-text c-name">新人无门槛券</span>
+          <span class="wx-text c-date">有效期至 2026-12-31</span>
+        </div>
+        <div class="wx-view c-btn " data-tap="onClaim" data-ds-id="1">领取</div>
+      </div>
+      <div class="wx-view coupon ">
+        <div class="wx-view c-left">
+          <span class="wx-text c-amount">
+            ¥
+            <span class="wx-text c-num">30</span>
+          </span>
+          <span class="wx-text c-cond">满99元可用</span>
+        </div>
+        <div class="wx-view c-mid">
+          <span class="wx-text c-name">满99减30券</span>
+          <span class="wx-text c-date">有效期至 2026-12-31</span>
+        </div>
+        <div class="wx-view c-btn " data-tap="onClaim" data-ds-id="2">领取</div>
+      </div>
+      <div class="wx-view coupon ">
+        <div class="wx-view c-left">
+          <span class="wx-text c-amount">
+            ¥
+            <span class="wx-text c-num">50</span>
+          </span>
+          <span class="wx-text c-cond">满199元可用</span>
+        </div>
+        <div class="wx-view c-mid">
+          <span class="wx-text c-name">满199减50券</span>
+          <span class="wx-text c-date">有效期至 2026-12-31</span>
+        </div>
+        <div class="wx-view c-btn " data-tap="onClaim" data-ds-id="3">领取</div>
+      </div>
+      <div class="wx-view coupon ">
+        <div class="wx-view c-left">
+          <span class="wx-text c-amount">
+            ¥
+            <span class="wx-text c-num">88</span>
+          </span>
+          <span class="wx-text c-cond">满399元可用</span>
+        </div>
+        <div class="wx-view c-mid">
+          <span class="wx-text c-name">满399减88券</span>
+          <span class="wx-text c-date">有效期至 2026-12-31</span>
+        </div>
+        <div class="wx-view c-btn " data-tap="onClaim" data-ds-id="4">领取</div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+window.__PAGE_ROUTE__ = "pages/coupon/coupon";
+window.__WXML__ = [{"a":{"class":"page"},"c":[{"a":{"class":"tabs"},"c":[{"a":{"bindtap":"onTab","class":"tab {{tab == 'available' ? 'on' : ''}}","data-tab":"available"},"c":[{"t":"tx","x":"可领取"}],"n":"text","t":"el"},{"a":{"bindtap":"onTab","class":"tab {{tab == 'mine' ? 'on' : ''}}","data-tab":"mine"},"c":[{"t":"tx","x":"我的券({{mineCount}})"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"list"},"c":[{"a":{"class":"coupon {{item.claimed ? 'claimed' : ''}}","wx:for":"{{shown}}","wx:key":"id"},"c":[{"a":{"class":"c-left"},"c":[{"a":{"class":"c-amount"},"c":[{"t":"tx","x":"¥"},{"a":{"class":"c-num"},"c":[{"t":"tx","x":"{{item.amount}}"}],"n":"text","t":"el"}],"n":"text","t":"el"},{"a":{"class":"c-cond"},"c":[{"t":"tx","x":"满{{item.min}}元可用"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"c-mid"},"c":[{"a":{"class":"c-name"},"c":[{"t":"tx","x":"{{item.name}}"}],"n":"text","t":"el"},{"a":{"class":"c-date"},"c":[{"t":"tx","x":"有效期至 {{item.expire}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onClaim","class":"c-btn {{item.claimed ? 'got' : ''}}","data-id":"{{item.id}}"},"c":[{"t":"tx","x":"{{item.claimed ? '已领取' : '领取'}}\n      "}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"empty","wx:if":"{{shown.length == 0}}"},"c":[{"a":{"class":"empty-text"},"c":[{"t":"tx","x":"暂无优惠券"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./coupon.js"></script>
+</body>
+</html>

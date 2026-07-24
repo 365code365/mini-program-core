@@ -1,6 +1,9 @@
 // 个人中心页面
 Page({
   data: {
+    loggedIn: false,
+    userName: '点击登录',
+    couponText: '5张可用',
     userInfo: {
       name: '用户12345',
       level: '普通会员'
@@ -23,20 +26,36 @@ Page({
   },
 
   onLoad: function() {
-    console.log('👤 个人中心加载');
+    this.refreshUser();
+  },
+  onShow: function() {
+    this.refreshUser();
+  },
+  refreshUser: function() {
+    var user = wx.getStorageSync('user');
+    if (user && user.nickname) {
+      this.setData({ loggedIn: true, userName: user.nickname });
+    } else {
+      this.setData({ loggedIn: false, userName: '点击登录' });
+    }
+  },
+
+  onUserTap: function() {
+    if (!this.data.loggedIn) {
+      wx.navigateTo({ url: '/pages/login/login' });
+    }
   },
 
   onOrderTap: function(e) {
     var type = e.currentTarget.dataset.type;
-    console.log('📋 查看订单:', type);
     wx.showToast({ title: '查看' + type + '订单', icon: 'none' });
   },
 
   onMenuTap: function(e) {
     var id = e.currentTarget.dataset.id;
-    var item = this.data.menuList.find(function(m) { return m.id === id; });
-    console.log('📌 点击菜单:', item.name);
-    wx.showToast({ title: item.name, icon: 'none' });
+    if (id === 1) { wx.navigateTo({ url: '/pages/address/address' }); return; }
+    if (id === 3) { wx.navigateTo({ url: '/pages/coupon/coupon' }); return; }
+    wx.showToast({ title: '功能开发中', icon: 'none' });
   },
 
   onSettings: function() {
@@ -45,13 +64,15 @@ Page({
   },
 
   onLogout: function() {
-    console.log('🚪 退出登录');
+    var self = this;
     wx.showModal({
       title: '提示',
       content: '确定要退出登录吗？',
       success: function(res) {
         if (res.confirm) {
-          console.log('✅ 已退出登录');
+          wx.removeStorageSync('user');
+          self.refreshUser();
+          wx.showToast({ title: '已退出', icon: 'none' });
         }
       }
     });

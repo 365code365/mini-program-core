@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/login/login</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./login.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view page">
+    <div class="wx-view logo-wrap">
+      <div class="wx-view logo">M</div>
+      <span class="wx-text brand">Mini Shop</span>
+      <span class="wx-text slogan">登录享更多会员权益</span>
+    </div>
+    <div class="wx-view form">
+      <div class="wx-view field-row">
+        <span class="wx-text field-label">手机号</span>
+        <input class="wx-input field-input" type="number" value="" placeholder="请输入手机号">
+      </div>
+      <div class="wx-view field-row">
+        <span class="wx-text field-label">验证码</span>
+        <input class="wx-input field-input" type="number" value="" placeholder="请输入验证码">
+        <div class="wx-view code-btn " data-tap="onSendCode">获取验证码</div>
+      </div>
+      <div class="wx-view agree-row" data-tap="onToggleAgree">
+        <input class="wx-checkbox agree-cb" type="checkbox">
+        <span class="wx-text agree-text">我已阅读并同意《用户协议》和《隐私政策》</span>
+      </div>
+      <button class="wx-button login-btn wx-button-primary" data-tap="onLogin">登录</button>
+      <div class="wx-view other-login">
+        <span class="wx-text other-text" data-tap="onWechatLogin">微信一键登录</span>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+window.__PAGE_ROUTE__ = "pages/login/login";
+window.__WXML__ = [{"a":{"class":"page"},"c":[{"a":{"class":"logo-wrap"},"c":[{"a":{"class":"logo"},"c":[{"t":"tx","x":"M"}],"n":"view","t":"el"},{"a":{"class":"brand"},"c":[{"t":"tx","x":"Mini Shop"}],"n":"text","t":"el"},{"a":{"class":"slogan"},"c":[{"t":"tx","x":"登录享更多会员权益"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"form"},"c":[{"a":{"class":"field-row"},"c":[{"a":{"class":"field-label"},"c":[{"t":"tx","x":"手机号"}],"n":"text","t":"el"},{"a":{"class":"field-input","maxlength":"11","model:value":"{{phone}}","placeholder":"请输入手机号","type":"number"},"c":[],"n":"input","t":"el"}],"n":"view","t":"el"},{"a":{"class":"field-row"},"c":[{"a":{"class":"field-label"},"c":[{"t":"tx","x":"验证码"}],"n":"text","t":"el"},{"a":{"class":"field-input","maxlength":"6","model:value":"{{code}}","placeholder":"请输入验证码","type":"number"},"c":[],"n":"input","t":"el"},{"a":{"bindtap":"onSendCode","class":"code-btn {{counting ? 'disabled' : ''}}"},"c":[{"t":"tx","x":"{{counting ? countdown + 's' : '获取验证码'}}"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onToggleAgree","class":"agree-row"},"c":[{"a":{"checked":"{{agreed}}","class":"agree-cb"},"c":[],"n":"checkbox","t":"el"},{"a":{"class":"agree-text"},"c":[{"t":"tx","x":"我已阅读并同意《用户协议》和《隐私政策》"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onLogin","class":"login-btn","type":"primary"},"c":[{"t":"tx","x":"登录"}],"n":"button","t":"el"},{"a":{"class":"other-login"},"c":[{"a":{"bindtap":"onWechatLogin","class":"other-text"},"c":[{"t":"tx","x":"微信一键登录"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./login.js"></script>
+</body>
+</html>

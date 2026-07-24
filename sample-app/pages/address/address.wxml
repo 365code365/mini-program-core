@@ -1,0 +1,52 @@
+<view class="page">
+  <!-- 地址列表 -->
+  <view class="addr-list" wx:if="{{addresses.length > 0}}">
+    <view class="addr-item" wx:for="{{addresses}}" wx:key="id" bindtap="onSelect" data-id="{{item.id}}">
+      <view class="addr-radio {{selectedId == item.id ? 'on' : ''}}"></view>
+      <view class="addr-body">
+        <view class="addr-head">
+          <text class="addr-name">{{item.name}}</text>
+          <text class="addr-phone">{{item.phone}}</text>
+          <text class="addr-default" wx:if="{{item.isDefault}}">默认</text>
+        </view>
+        <text class="addr-detail">{{item.region}}{{item.detail}}</text>
+      </view>
+      <text class="addr-del" catchtap="onDelete" data-id="{{item.id}}">删除</text>
+    </view>
+  </view>
+  <view class="empty" wx:else>
+    <text class="empty-text">还没有收货地址，添加一个吧</text>
+  </view>
+
+  <!-- 新增地址表单 -->
+  <view class="form-card">
+    <text class="form-title">新增收货地址</text>
+    <view class="form-row">
+      <text class="form-label">收货人</text>
+      <input class="form-input" model:value="{{name}}" placeholder="姓名" />
+    </view>
+    <view class="form-row">
+      <text class="form-label">手机号</text>
+      <input class="form-input" type="number" maxlength="11" model:value="{{phone}}" placeholder="手机号码" />
+    </view>
+    <view class="form-row">
+      <text class="form-label">所在地区</text>
+      <input class="form-input" model:value="{{region}}" placeholder="省 / 市 / 区" />
+    </view>
+    <view class="form-row">
+      <text class="form-label">详细地址</text>
+      <input class="form-input" model:value="{{detail}}" placeholder="街道、门牌号等" />
+    </view>
+    <view class="form-row switch-row">
+      <text class="form-label">设为默认</text>
+      <switch checked="{{setDefault}}" bindchange="onDefaultChange" />
+    </view>
+    <button class="save-btn" type="primary" bindtap="onSave">保存地址</button>
+  </view>
+
+  <!-- 实时预览 -->
+  <view class="preview" wx:if="{{name || phone || detail}}">
+    <text class="preview-line">预览：{{name}} {{phone}}</text>
+    <text class="preview-line">{{region}}{{detail}}</text>
+  </view>
+</view>

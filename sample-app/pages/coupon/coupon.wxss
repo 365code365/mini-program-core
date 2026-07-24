@@ -1,0 +1,111 @@
+.page {
+  min-height: 100vh;
+  background: #f5f5f5;
+}
+
+.tabs {
+  display: flex;
+  flex-direction: row;
+  background: #fff;
+  height: 88rpx;
+  align-items: center;
+}
+.tab {
+  flex: 1;
+  text-align: center;
+  font-size: 28rpx;
+  color: #666;
+  height: 88rpx;
+  line-height: 88rpx;
+}
+.tab.on {
+  color: #FF6B35;
+  font-weight: bold;
+  border-bottom: 4rpx solid #FF6B35;
+}
+
+.list {
+  padding: 20rpx;
+  display: flex;
+  flex-direction: column;
+}
+.coupon {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  background: #fff;
+  border-radius: 16rpx;
+  overflow: hidden;
+  margin-bottom: 20rpx;
+  height: 180rpx;
+}
+.c-left {
+  width: 220rpx;
+  background: linear-gradient(135deg, #FF6B35, #FF3B30);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+.c-amount {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #fff;
+}
+.c-num {
+  font-size: 64rpx;
+  color: #fff;
+}
+.c-cond {
+  font-size: 22rpx;
+  color: rgba(255,255,255,0.9);
+  margin-top: 6rpx;
+}
+.c-mid {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0 24rpx;
+}
+.c-name {
+  font-size: 30rpx;
+  color: #333;
+  font-weight: bold;
+}
+.c-date {
+  font-size: 22rpx;
+  color: #999;
+  margin-top: 12rpx;
+}
+.c-btn {
+  width: 120rpx;
+  height: 60rpx;
+  margin-right: 24rpx;
+  background: #FF6B35;
+  color: #fff;
+  border-radius: 30rpx;
+  font-size: 26rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.c-btn.got {
+  background: #eee;
+  color: #999;
+}
+.coupon.claimed .c-left {
+  background: linear-gradient(135deg, #ccc, #aaa);
+}
+
+.empty {
+  padding: 100rpx 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.empty-text {
+  font-size: 26rpx;
+  color: #999;
+}

@@ -1,0 +1,26 @@
+<view class="page">
+  <view class="tabs">
+    <text class="tab {{tab == 'available' ? 'on' : ''}}" bindtap="onTab" data-tab="available">可领取</text>
+    <text class="tab {{tab == 'mine' ? 'on' : ''}}" bindtap="onTab" data-tab="mine">我的券({{mineCount}})</text>
+  </view>
+
+  <view class="list">
+    <view class="coupon {{item.claimed ? 'claimed' : ''}}" wx:for="{{shown}}" wx:key="id">
+      <view class="c-left">
+        <text class="c-amount">¥<text class="c-num">{{item.amount}}</text></text>
+        <text class="c-cond">满{{item.min}}元可用</text>
+      </view>
+      <view class="c-mid">
+        <text class="c-name">{{item.name}}</text>
+        <text class="c-date">有效期至 {{item.expire}}</text>
+      </view>
+      <view class="c-btn {{item.claimed ? 'got' : ''}}" bindtap="onClaim" data-id="{{item.id}}">
+        {{item.claimed ? '已领取' : '领取'}}
+      </view>
+    </view>
+  </view>
+
+  <view class="empty" wx:if="{{shown.length == 0}}">
+    <text class="empty-text">暂无优惠券</text>
+  </view>
+</view>

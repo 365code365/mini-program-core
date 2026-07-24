@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/address/address</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./address.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view page">
+    <div class="wx-view addr-list">
+      <div class="wx-view addr-item" data-tap="onSelect" data-ds-id="1">
+        <div class="wx-view addr-radio on"></div>
+        <div class="wx-view addr-body">
+          <div class="wx-view addr-head">
+            <span class="wx-text addr-name">张三</span>
+            <span class="wx-text addr-phone">13800001111</span>
+            <span class="wx-text addr-default">默认</span>
+          </div>
+          <span class="wx-text addr-detail">广东省深圳市南山区科技园路 1 号</span>
+        </div>
+        <span class="wx-text addr-del" data-tap="onDelete" data-ds-id="1">删除</span>
+      </div>
+    </div>
+    <div class="wx-view form-card">
+      <span class="wx-text form-title">新增收货地址</span>
+      <div class="wx-view form-row">
+        <span class="wx-text form-label">收货人</span>
+        <input class="wx-input form-input" type="text" value="" placeholder="姓名">
+      </div>
+      <div class="wx-view form-row">
+        <span class="wx-text form-label">手机号</span>
+        <input class="wx-input form-input" type="number" value="" placeholder="手机号码">
+      </div>
+      <div class="wx-view form-row">
+        <span class="wx-text form-label">所在地区</span>
+        <input class="wx-input form-input" type="text" value="" placeholder="省 / 市 / 区">
+      </div>
+      <div class="wx-view form-row">
+        <span class="wx-text form-label">详细地址</span>
+        <input class="wx-input form-input" type="text" value="" placeholder="街道、门牌号等">
+      </div>
+      <div class="wx-view form-row switch-row">
+        <span class="wx-text form-label">设为默认</span>
+        <div class="wx-switch" data-change="onDefaultChange"><span class="wx-switch-knob"></span></div>
+      </div>
+      <button class="wx-button save-btn wx-button-primary" data-tap="onSave">保存地址</button>
+    </div>
+  </div>
+</div>
+<script>
+window.__PAGE_ROUTE__ = "pages/address/address";
+window.__WXML__ = [{"a":{"class":"page"},"c":[{"a":{"class":"addr-list","wx:if":"{{addresses.length > 0}}"},"c":[{"a":{"bindtap":"onSelect","class":"addr-item","data-id":"{{item.id}}","wx:for":"{{addresses}}","wx:key":"id"},"c":[{"a":{"class":"addr-radio {{selectedId == item.id ? 'on' : ''}}"},"c":[],"n":"view","t":"el"},{"a":{"class":"addr-body"},"c":[{"a":{"class":"addr-head"},"c":[{"a":{"class":"addr-name"},"c":[{"t":"tx","x":"{{item.name}}"}],"n":"text","t":"el"},{"a":{"class":"addr-phone"},"c":[{"t":"tx","x":"{{item.phone}}"}],"n":"text","t":"el"},{"a":{"class":"addr-default","wx:if":"{{item.isDefault}}"},"c":[{"t":"tx","x":"默认"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"addr-detail"},"c":[{"t":"tx","x":"{{item.region}}{{item.detail}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"catchtap":"onDelete","class":"addr-del","data-id":"{{item.id}}"},"c":[{"t":"tx","x":"删除"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"empty","wx:else":""},"c":[{"a":{"class":"empty-text"},"c":[{"t":"tx","x":"还没有收货地址，添加一个吧"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"form-card"},"c":[{"a":{"class":"form-title"},"c":[{"t":"tx","x":"新增收货地址"}],"n":"text","t":"el"},{"a":{"class":"form-row"},"c":[{"a":{"class":"form-label"},"c":[{"t":"tx","x":"收货人"}],"n":"text","t":"el"},{"a":{"class":"form-input","model:value":"{{name}}","placeholder":"姓名"},"c":[],"n":"input","t":"el"}],"n":"view","t":"el"},{"a":{"class":"form-row"},"c":[{"a":{"class":"form-label"},"c":[{"t":"tx","x":"手机号"}],"n":"text","t":"el"},{"a":{"class":"form-input","maxlength":"11","model:value":"{{phone}}","placeholder":"手机号码","type":"number"},"c":[],"n":"input","t":"el"}],"n":"view","t":"el"},{"a":{"class":"form-row"},"c":[{"a":{"class":"form-label"},"c":[{"t":"tx","x":"所在地区"}],"n":"text","t":"el"},{"a":{"class":"form-input","model:value":"{{region}}","placeholder":"省 / 市 / 区"},"c":[],"n":"input","t":"el"}],"n":"view","t":"el"},{"a":{"class":"form-row"},"c":[{"a":{"class":"form-label"},"c":[{"t":"tx","x":"详细地址"}],"n":"text","t":"el"},{"a":{"class":"form-input","model:value":"{{detail}}","placeholder":"街道、门牌号等"},"c":[],"n":"input","t":"el"}],"n":"view","t":"el"},{"a":{"class":"form-row switch-row"},"c":[{"a":{"class":"form-label"},"c":[{"t":"tx","x":"设为默认"}],"n":"text","t":"el"},{"a":{"bindchange":"onDefaultChange","checked":"{{setDefault}}"},"c":[],"n":"switch","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onSave","class":"save-btn","type":"primary"},"c":[{"t":"tx","x":"保存地址"}],"n":"button","t":"el"}],"n":"view","t":"el"},{"a":{"class":"preview","wx:if":"{{name || phone || detail}}"},"c":[{"a":{"class":"preview-line"},"c":[{"t":"tx","x":"预览：{{name}} {{phone}}"}],"n":"text","t":"el"},{"a":{"class":"preview-line"},"c":[{"t":"tx","x":"{{region}}{{detail}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./address.js"></script>
+</body>
+</html>

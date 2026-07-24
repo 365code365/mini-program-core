@@ -1,13 +1,14 @@
 <view class="page">
   <!-- 用户信息 -->
-  <view class="user-header">
+  <view class="user-header" bindtap="onUserTap">
     <view class="avatar">
       <icon type="success" size="48" color="#fff"></icon>
     </view>
     <view class="user-info">
-      <text class="user-name">用户12345</text>
-      <text class="user-level">普通会员</text>
+      <text class="user-name">{{userName}}</text>
+      <text class="user-level">{{loggedIn ? '普通会员' : '点击登录 / 注册'}}</text>
     </view>
+    <text class="menu-arrow">></text>
   </view>
 
   <!-- 订单统计 -->
@@ -48,7 +49,7 @@
     <view class="menu-item" bindtap="onMenuTap" data-id="3">
       <icon type="waiting" size="24" color="#52C41A"></icon>
       <text class="menu-text">优惠券</text>
-      <text class="menu-value">5张可用</text>
+      <text class="menu-value">{{couponText}}</text>
       <text class="menu-arrow">></text>
     </view>
     <view class="menu-item" bindtap="onMenuTap" data-id="4">
