@@ -23,6 +23,8 @@ pub struct RenderNode {
 #[derive(Clone, Default)]
 pub struct NodeStyle {
     pub background_color: Option<Color>,
+    /// 线性渐变背景（优先于 background_color 绘制）
+    pub background_gradient: Option<LinearGradientBg>,
     pub text_color: Option<Color>,
     pub border_color: Option<Color>,
     pub border_width: f32,
@@ -155,6 +157,15 @@ pub enum WordBreak {
     BreakWord,
 }
 
+/// 线性渐变背景
+#[derive(Clone)]
+pub struct LinearGradientBg {
+    /// CSS 角度：0deg=向上(to top)，90deg=向右，180deg=向下，顺时针
+    pub angle_deg: f32,
+    /// 颜色停靠点 (位置 0~1, 颜色)，按位置升序
+    pub stops: Vec<(f32, Color)>,
+}
+
 /// 盒子阴影
 #[derive(Clone, Copy, Default)]
 pub struct BoxShadow {
@@ -239,7 +250,8 @@ pub trait Component {
 // parse_border_shorthand / parse_length_simple）已拆分到 style_parse 模块，
 // 这里重新导出以保持 `use super::base::*` 的调用点不变。
 pub use super::style_parse::{
-    parse_color_str, parse_box_shadow, parse_transform, parse_border_shorthand, parse_border_side, parse_length_simple,
+    parse_color_str, parse_box_shadow, parse_transform, parse_border_shorthand, parse_border_side,
+    parse_length_simple, parse_linear_gradient,
 };
 
 /// 提取事件绑定
@@ -563,14 +575,20 @@ fn apply_style_property(
             }
             "row-gap" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.gap.height = length(v * sf); }
             "column-gap" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.gap.width = length(v * sf); }
-            "background-color" | "background" => {
-                if let StyleValue::Color(c) = value { 
-                    ns.background_color = Some(*c); 
-                } else if let StyleValue::String(s) = value {
-                    // 尝试从字符串解析颜色
-                    if let Some(c) = parse_color_str(s) {
-                        ns.background_color = Some(c);
+            "background-color" | "background" | "background-image" => {
+                match value {
+                    StyleValue::Color(c) => ns.background_color = Some(*c),
+                    StyleValue::String(s) if s.contains("linear-gradient(") => {
+                        if let Some(g) = parse_linear_gradient(s) {
+                            // 兜底纯色（渐变未绘制处使用）取首个停靠点
+                            ns.background_color = g.stops.first().map(|(_, c)| *c);
+                            ns.background_gradient = Some(g);
+                        }
                     }
+                    StyleValue::String(s) => {
+                        if let Some(c) = parse_color_str(s) { ns.background_color = Some(c); }
+                    }
+                    _ => {}
                 }
             }
             "color" => {
@@ -817,6 +835,79 @@ fn apply_style_property(
     }
 }
 
+/// 绘制线性渐变背景（逐像素投影到渐变轴取色，圆角边缘抗锯齿）。
+pub fn draw_linear_gradient(
+    canvas: &mut Canvas,
+    grad: &LinearGradientBg,
+    x: f32, y: f32, w: f32, h: f32,
+    radii: [f32; 4],
+    opacity: f32,
+) {
+    if w <= 0.0 || h <= 0.0 || grad.stops.is_empty() { return; }
+    let stops = &grad.stops;
+    // 渐变方向单位向量：0deg 向上=(0,-1)，顺时针
+    let a = grad.angle_deg.to_radians();
+    let (dx, dy) = (a.sin(), -a.cos());
+    let (cx, cy) = (x + w / 2.0, y + h / 2.0);
+    let full = (w * dx).abs() + (h * dy).abs(); // 渐变线总长
+    let [tl, tr, br, bl] = radii;
+
+    let color_at = |t: f32| -> Color {
+        let t = t.clamp(0.0, 1.0);
+        if t <= stops[0].0 { return stops[0].1; }
+        if t >= stops[stops.len() - 1].0 { return stops[stops.len() - 1].1; }
+        for i in 0..stops.len() - 1 {
+            let (t0, c0) = stops[i];
+            let (t1, c1) = stops[i + 1];
+            if t >= t0 && t <= t1 {
+                let r = if (t1 - t0).abs() < 1e-6 { 0.0 } else { (t - t0) / (t1 - t0) };
+                return Color::new(
+                    (c0.r as f32 + (c1.r as f32 - c0.r as f32) * r) as u8,
+                    (c0.g as f32 + (c1.g as f32 - c0.g as f32) * r) as u8,
+                    (c0.b as f32 + (c1.b as f32 - c0.b as f32) * r) as u8,
+                    (c0.a as f32 + (c1.a as f32 - c0.a as f32) * r) as u8,
+                );
+            }
+        }
+        stops[stops.len() - 1].1
+    };
+
+    // 圆角覆盖率（与图片圆角一致）
+    let corner_cover = |px: f32, py: f32| -> f32 {
+        let lx = px - x;
+        let ly = py - y;
+        let calc = |ccx: f32, ccy: f32, r: f32| -> f32 {
+            if r <= 0.0 { return 1.0; }
+            let d = ((lx - ccx) * (lx - ccx) + (ly - ccy) * (ly - ccy)).sqrt();
+            (r + 0.5 - d).clamp(0.0, 1.0)
+        };
+        if lx < tl && ly < tl { calc(tl, tl, tl) }
+        else if lx > w - tr && ly < tr { calc(w - tr, tr, tr) }
+        else if lx > w - br && ly > h - br { calc(w - br, h - br, br) }
+        else if lx < bl && ly > h - bl { calc(bl, h - bl, bl) }
+        else { 1.0 }
+    };
+
+    let x0 = x.floor() as i32;
+    let y0 = y.floor() as i32;
+    let x1 = (x + w).ceil() as i32;
+    let y1 = (y + h).ceil() as i32;
+    for py in y0..y1 {
+        for px in x0..x1 {
+            let fx = px as f32 + 0.5;
+            let fy = py as f32 + 0.5;
+            let cover = corner_cover(fx, fy);
+            if cover <= 0.0 { continue; }
+            let proj = (fx - cx) * dx + (fy - cy) * dy;
+            let t = if full > 0.0 { proj / full + 0.5 } else { 0.5 };
+            let mut c = color_at(t);
+            let alpha = (c.a as f32 * opacity * cover) as u8;
+            c.a = alpha;
+            canvas.set_pixel(px, py, c);
+        }
+    }
+}
+
 /// 绘制盒子阴影
 pub fn draw_box_shadow(canvas: &mut Canvas, shadow: &BoxShadow, x: f32, y: f32, w: f32, h: f32, border_radius: f32) {
     if shadow.inset {
@@ -877,8 +968,10 @@ pub fn draw_background(canvas: &mut Canvas, style: &NodeStyle, x: f32, y: f32, w
     let radii = get_border_radii(style);
     let has_different_radii = radii[0] != radii[1] || radii[1] != radii[2] || radii[2] != radii[3];
     
-    // 绘制背景
-    if let Some(bg) = style.background_color {
+    // 绘制背景：线性渐变优先，否则纯色
+    if let Some(grad) = &style.background_gradient {
+        draw_linear_gradient(canvas, grad, x, y, w, h, radii, style.opacity);
+    } else if let Some(bg) = style.background_color {
         let mut paint = Paint::new().with_color(bg).with_style(PaintStyle::Fill);
         if style.opacity < 1.0 { 
             paint.color.a = (paint.color.a as f32 * style.opacity) as u8; 

@@ -234,33 +234,45 @@ const PAGE_HTML: &str = r#"<!doctype html><html lang="zh"><head><meta charset="u
 <style>
   body{margin:0;background:#20232a;color:#eee;font-family:-apple-system,system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;padding:24px}
   h1{font-size:16px;font-weight:600;color:#9ad}
-  .phone{width:375px;box-shadow:0 12px 40px rgba(0,0,0,.5);border-radius:20px;overflow:hidden;background:#000}
-  img{display:block;width:375px;cursor:pointer}
+  .phone{width:375px;height:667px;box-shadow:0 12px 40px rgba(0,0,0,.5);border-radius:20px;overflow:hidden;background:#000}
+  canvas{display:block;width:375px;height:667px;cursor:pointer}
   .bar{margin:14px 0;display:flex;gap:10px;align-items:center;font-size:13px;color:#aaa}
   button{background:#07c160;color:#fff;border:0;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px}
   button.back{background:#576b95}
-  .hint{font-size:12px;color:#888;margin-top:8px;max-width:420px;text-align:center}
+  .hint{font-size:12px;color:#888;margin-top:8px;max-width:440px;text-align:center}
 </style></head><body>
-<h1>Mini Render · 浏览器调试预览</h1>
-<div class="phone"><img id="f" src="/frame.png"></div>
+<h1>Mini Render · 浏览器调试预览 <span style="color:#07c160">(canvas 载体)</span></h1>
+<div class="phone"><canvas id="c" width="750" height="1334"></canvas></div>
 <div class="bar">
   <button class="back" onclick="nav('/back')">← 返回</button>
   <button onclick="refresh()">刷新</button>
   <label><input type="checkbox" id="auto" checked> 自动刷新</label>
   <span id="msg"></span>
 </div>
-<div class="hint">点击画面即可操作：命中 bindtap / 表单控件 / 页面跳转(navigateTo/switchTab) / Toast，均会实时重渲染。</div>
+<div class="hint">画面以 &lt;canvas&gt; 承载（原生分辨率、更清晰）。点击即可操作：bindtap / 表单控件 / 页面跳转(navigateTo/switchTab) / Toast，均会实时重渲染。</div>
 <script>
-const img=document.getElementById('f'), msg=document.getElementById('msg');
-function refresh(){ img.src='/frame.png?t='+Date.now(); }
+const cv=document.getElementById('c'), ctx=cv.getContext('2d'), msg=document.getElementById('msg');
+let busy=false;
+async function refresh(){
+  try{
+    const r=await fetch('/frame.png?t='+Date.now());
+    const blob=await r.blob();
+    const bmp=await createImageBitmap(blob);
+    ctx.drawImage(bmp,0,0,cv.width,cv.height);
+    if(bmp.close) bmp.close();
+  }catch(e){}
+}
 async function nav(u){ await fetch(u); refresh(); }
-img.addEventListener('click', async (e)=>{
-  const x=Math.round(e.offsetX), y=Math.round(e.offsetY);
+cv.addEventListener('click', async (e)=>{
+  const rect=cv.getBoundingClientRect();
+  const x=Math.round((e.clientX-rect.left)*(375/rect.width));
+  const y=Math.round((e.clientY-rect.top)*(667/rect.height));
   msg.textContent='tap ('+x+','+y+')';
-  await fetch('/tap?x='+x+'&y='+y);
-  refresh();
+  if(busy) return; busy=true;
+  try{ await fetch('/tap?x='+x+'&y='+y); await refresh(); }finally{ busy=false; }
 });
-setInterval(()=>{ if(document.getElementById('auto').checked) refresh(); }, 600);
+refresh();
+setInterval(()=>{ if(document.getElementById('auto').checked && !busy) refresh(); }, 700);
 </script></body></html>"#;
 
 fn http_response(status: &str, content_type: &str, body: &[u8]) -> Vec<u8> {
@@ -313,9 +325,20 @@ fn main() -> Result<(), String> {
     println!("📂 加载小程序: {}", app_root);
     let mut preview = Preview::new(&app_root)?;
 
-    let addr = format!("127.0.0.1:{}", port);
-    let listener = TcpListener::bind(&addr).map_err(|e| format!("无法监听 {}: {}", addr, e))?;
-    println!("\n🌐 调试预览已启动，请在浏览器打开：\n   http://{}\n", addr);
+    // 端口被占用（例如残留的旧实例）时自动向后尝试，避免新代码无法启动而误连旧服务
+    let mut listener = None;
+    let mut bound_port = port;
+    for p in port..port.saturating_add(20) {
+        match TcpListener::bind(("127.0.0.1", p)) {
+            Ok(l) => { listener = Some(l); bound_port = p; break; }
+            Err(_) => println!("⚠️  端口 {} 被占用（可能是残留的旧实例），尝试 {} ...", p, p + 1),
+        }
+    }
+    let listener = listener.ok_or_else(|| format!("{}~{} 端口均被占用", port, port + 19))?;
+    println!("\n🌐 调试预览已启动，请在浏览器打开：\n   http://127.0.0.1:{}\n", bound_port);
+    if bound_port != port {
+        println!("（注意：{} 被占用，已改用 {}。如需释放旧端口：lsof -ti :{} | xargs kill -9）", port, bound_port, port);
+    }
     println!("（点击画面操作 UI，支持页面跳转/表单/Toast；Ctrl+C 退出）");
 
     for stream in listener.incoming() {

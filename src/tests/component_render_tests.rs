@@ -51,6 +51,24 @@ fn test_block_text_wraps_to_multiple_lines() {
 }
 
 #[test]
+fn test_linear_gradient_background() {
+    // 垂直渐变（红->蓝）：顶部应偏红、底部应偏蓝
+    let css = ".g{ width:200px; height:200px; background: linear-gradient(to bottom, #ff0000, #0000ff); }";
+    let wxml = r#"<view class="g"></view>"#;
+    let mut r = renderer(css);
+    let mut c = canvas();
+    let mut im = InteractionManager::new();
+    let ns = nodes(wxml);
+    r.render_with_interaction(&mut c, &ns, &json!({}), &mut im);
+    // 采样：顶部行 y=10、底部行 y=380（物理像素，SCALE=2 -> 200px 高=400 物理）
+    let w = c.width();
+    let top = c.get_pixel(w / 4, 10);
+    let bot = c.get_pixel(w / 4, 380);
+    assert!(top.r > top.b, "渐变顶部应偏红: {:?}", (top.r, top.g, top.b));
+    assert!(bot.b > bot.r, "渐变底部应偏蓝: {:?}", (bot.r, bot.g, bot.b));
+}
+
+#[test]
 fn test_last_child_pseudo_selector() {
     use crate::parser::wxss::{WxssParser, ElementDesc};
     use std::collections::HashMap;

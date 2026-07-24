@@ -4,8 +4,92 @@
 //! 长度单位等的解析逻辑，便于独立测试、复用与维护。这些函数不触碰 Taffy 布局树，
 //! 只负责把字符串解析为结构化的样式值。
 
-use super::base::{NodeStyle, BoxShadow, Transform};
+use super::base::{NodeStyle, BoxShadow, Transform, LinearGradientBg};
 use crate::Color;
+
+/// 解析 `linear-gradient(<方向|角度>, c1 [pos], c2 [pos], ...)`。
+/// 方向支持 `to top/right/bottom/left` 及对角，或 `Ndeg`；缺省为 `to bottom`(180deg)。
+pub fn parse_linear_gradient(s: &str) -> Option<LinearGradientBg> {
+    let s = s.trim();
+    let inner = s.strip_prefix("linear-gradient(")?.strip_suffix(")")?.trim();
+    // 顶层逗号切分（跳过 rgba(...) 内的逗号）
+    let parts = split_top_commas(inner);
+    if parts.is_empty() { return None; }
+
+    let mut idx = 0;
+    let mut angle = 180.0f32; // 默认向下
+    let first = parts[0].trim();
+    let is_dir = first.starts_with("to ") || first.ends_with("deg")
+        || first.ends_with("turn") || first.ends_with("rad");
+    if is_dir {
+        angle = parse_gradient_angle(first);
+        idx = 1;
+    }
+
+    let mut stops: Vec<(f32, Color)> = Vec::new();
+    let color_tokens: Vec<&str> = parts[idx..].iter().map(|s| s.trim()).collect();
+    let n = color_tokens.len();
+    for (i, tok) in color_tokens.iter().enumerate() {
+        // "color pos%" 或 "color"
+        let mut it = tok.rsplitn(2, char::is_whitespace);
+        let last = it.next().unwrap_or("");
+        let (color_str, pos): (&str, Option<f32>) = if last.ends_with('%') {
+            let head = it.next().unwrap_or("").trim();
+            let p = last.trim_end_matches('%').parse::<f32>().ok().map(|v| v / 100.0);
+            if head.is_empty() { (tok.trim(), None) } else { (head, p) }
+        } else {
+            (tok.trim(), None)
+        };
+        if let Some(c) = parse_color_str(color_str) {
+            let position = pos.unwrap_or_else(|| if n <= 1 { 0.0 } else { i as f32 / (n - 1) as f32 });
+            stops.push((position.clamp(0.0, 1.0), c));
+        }
+    }
+    if stops.is_empty() { return None; }
+    stops.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+    Some(LinearGradientBg { angle_deg: angle, stops })
+}
+
+fn parse_gradient_angle(dir: &str) -> f32 {
+    let d = dir.trim();
+    if let Some(rest) = d.strip_suffix("deg") {
+        return rest.trim().parse::<f32>().unwrap_or(180.0);
+    }
+    if let Some(rest) = d.strip_suffix("turn") {
+        return rest.trim().parse::<f32>().map(|t| t * 360.0).unwrap_or(180.0);
+    }
+    if let Some(rest) = d.strip_suffix("rad") {
+        return rest.trim().parse::<f32>().map(|r| r.to_degrees()).unwrap_or(180.0);
+    }
+    match d {
+        "to top" => 0.0,
+        "to right" => 90.0,
+        "to bottom" => 180.0,
+        "to left" => 270.0,
+        "to top right" | "to right top" => 45.0,
+        "to bottom right" | "to right bottom" => 135.0,
+        "to bottom left" | "to left bottom" => 225.0,
+        "to top left" | "to left top" => 315.0,
+        _ => 180.0,
+    }
+}
+
+/// 顶层逗号切分（保留 rgba(...) / rgb(...) 内部逗号）
+fn split_top_commas(s: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut depth = 0i32;
+    let mut cur = String::new();
+    for ch in s.chars() {
+        match ch {
+            '(' => { depth += 1; cur.push(ch); }
+            ')' => { depth -= 1; cur.push(ch); }
+            ',' if depth == 0 => { out.push(cur.trim().to_string()); cur.clear(); }
+            _ => cur.push(ch),
+        }
+    }
+    if !cur.trim().is_empty() { out.push(cur.trim().to_string()); }
+    out
+}
 
 /// 解析颜色字符串：支持 `#rgb` / `#rrggbb` / `rgb(...)`。
 pub fn parse_color_str(s: &str) -> Option<Color> {

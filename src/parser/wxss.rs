@@ -893,8 +893,12 @@ impl WxssParser {
             }
         }
         
-        // 渐变值 - 提取第一个颜色作为 fallback
-        if value.starts_with("linear-gradient") || value.starts_with("radial-gradient") {
+        // 线性渐变：保留完整字符串，交由渲染层解析绘制
+        if value.starts_with("linear-gradient") {
+            return StyleValue::String(value.to_string());
+        }
+        // 径向渐变暂以首色兜底
+        if value.starts_with("radial-gradient") {
             if let Some(color) = Self::parse_gradient_fallback(value) {
                 return StyleValue::Color(color);
             }

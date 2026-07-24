@@ -151,7 +151,7 @@ fn coupon_popup() {
     .grow{ flex:1; }
     .bl{ align-items:baseline; }
     .pop{ width:600rpx; background-color:#ffffff; border-radius:28rpx; display:flex; flex-direction:column; align-items:center; padding-bottom:36rpx; overflow:hidden; }
-    .head{ width:600rpx; background-color:#ff3b30; display:flex; flex-direction:column; align-items:center; padding:44rpx 0 36rpx 0; }
+    .head{ width:600rpx; background:linear-gradient(135deg, #ff5f6d, #ff3b30, #ff9500); display:flex; flex-direction:column; align-items:center; padding:44rpx 0 36rpx 0; }
     .htitle{ font-size:44rpx; color:#ffffff; font-weight:bold; }
     .hsub{ font-size:26rpx; color:#ffe0dd; margin-top:12rpx; }
     .body{ display:flex; flex-direction:column; width:540rpx; margin-top:28rpx; }
