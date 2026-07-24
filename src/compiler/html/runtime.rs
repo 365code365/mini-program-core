@@ -484,9 +484,11 @@ pub const RUNTIME_JS: &str = r####"/* mini-render 响应式运行时（导出 HT
       pageInst.setData = function (patch, cb) { setData(patch, cb); };
       pageInst.selectComponent = function () { return null; };
       var q = parseQuery();
+      // 先按初始 data 挂载 DOM，再跑生命周期——这样 onLoad 里 wx.createCanvasContext
+      // 等依赖真实节点的调用能拿到已存在的元素（canvas 绘制才生效）。
+      if (!mountPage()) initWidgets();
       try { if (pageInst.onLoad) pageInst.onLoad(q); } catch (e) { console.error(e); }
       try { if (pageInst.onShow) pageInst.onShow(); } catch (e) { console.error(e); }
-      if (!mountPage()) initWidgets();
       try { if (pageInst.onReady) pageInst.onReady(); } catch (e) { console.error(e); }
     } else {
       initWidgets();

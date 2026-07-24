@@ -1,6 +1,12 @@
 // 首页 - 性能测试版本
 Page({
   data: {
+    showCoupon: false,
+    coupons: [
+      { id: 1, amount: 10, min: 39, name: '新人无门槛券', tip: '仅限新用户' },
+      { id: 2, amount: 30, min: 99, name: '满99减30', tip: '全场通用' },
+      { id: 3, amount: 50, min: 199, name: '满199减50', tip: '全场通用' }
+    ],
     hotProducts: [
       { id: 101, name: '无线蓝牙耳机', price: 199, image: '' },
       { id: 102, name: '智能手表', price: 599, image: '' },
@@ -45,8 +51,23 @@ Page({
 
   onLoad: function() {
     console.log('🏠 首页加载');
-    console.log('📊 热销商品数量:', this.data.hotProducts.length);
-    console.log('📊 新品推荐数量:', this.data.newProducts.length);
+    // 进入首页弹出新人优惠券（每次会话仅弹一次）
+    if (!wx.getStorageSync('couponPopupShown')) {
+      this.setData({ showCoupon: true });
+      wx.setStorageSync('couponPopupShown', true);
+    }
+  },
+
+  onCloseCoupon: function() {
+    this.setData({ showCoupon: false });
+  },
+  onNoop: function() {},
+  onClaimCoupons: function() {
+    this.setData({ showCoupon: false });
+    wx.showToast({ title: '领取成功', icon: 'success' });
+  },
+  onGoCoupon: function() {
+    wx.navigateTo({ url: '/pages/coupon/coupon' });
   },
 
   onReachBottom: function() {

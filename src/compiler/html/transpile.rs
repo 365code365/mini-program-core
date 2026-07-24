@@ -576,8 +576,13 @@ body{font-size:16px;color:#333;font-family:-apple-system,system-ui,"PingFang SC"
 .wx-swiper-dot{width:7px;height:7px;border-radius:50%;background:rgba(0,0,0,.3);transition:background .2s;}
 .wx-swiper-dot.active{background:#fff;box-shadow:0 0 2px rgba(0,0,0,.4);}
 
-/* ── checkbox / radio：原生控件 + 微信绿 ── */
-.wx-checkbox,.wx-radio{width:22px;height:22px;accent-color:#09bb07;margin:0;flex:none;cursor:pointer;}
+/* ── checkbox / radio：自绘微信风格（圆角方框 / 圆形，选中填充微信绿 + 白勾）── */
+.wx-checkbox,.wx-radio{-webkit-appearance:none;appearance:none;width:22px;height:22px;margin:0;flex:none;cursor:pointer;box-sizing:border-box;border:1px solid #cfcfcf;background:#fff;transition:background .15s,border-color .15s;vertical-align:middle;}
+.wx-checkbox{border-radius:4px;}
+.wx-radio{border-radius:50%;}
+.wx-checkbox:checked{background:#07c160 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.5 6.5 11.5 12.5 5' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/15px no-repeat;border-color:#07c160;}
+.wx-radio:checked{border-color:#07c160;background:#07c160;box-shadow:inset 0 0 0 3px #fff;}
+.wx-checkbox:disabled,.wx-radio:disabled{background:#e6e6e6;border-color:#dcdcdc;}
 
 /* ── switch 开关 ── */
 .wx-switch{flex:none;width:44px;height:26px;border-radius:13px;background:#e5e5e5;position:relative;transition:background .2s;cursor:pointer;display:inline-block;}

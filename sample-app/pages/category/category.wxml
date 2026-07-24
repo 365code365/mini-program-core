@@ -61,8 +61,8 @@
         <text class="cart-tip">另需配送费¥5</text>
       </view>
     </view>
-    <view class="cart-right" bindtap="onCheckout">
-      <button style="border-radius: 30px;background: #012000;color: black">{{totalCount > 0 ? '去结算' : '未选购商品'}}</button>
+    <view class="cart-right {{totalCount > 0 ? 'active' : ''}}" bindtap="onCheckout">
+      <text>{{totalCount > 0 ? '去结算' : '未选购商品'}}</text>
     </view>
   </view>
 
