@@ -8,14 +8,14 @@
   <link rel="stylesheet" href="../../common/app.css">
   <link rel="stylesheet" href="./index.css">
   <style>
-    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;padding-bottom:50px;}
   </style>
 </head>
 <body>
 <div id="app">
   <div class="wx-view page">
     <div class="wx-view search-bar">
-      <input class="wx-input search-input" type="text" placeholder="搜索商品" data-confirm="onSearch" data-input="onSearchInput">
+      <input class="wx-input search-input" type="text" placeholder="搜索商品" data-input="onSearchInput" data-confirm="onSearch">
     </div>
     <div class="wx-view banner">
       <span class="wx-text banner-tag">限时特惠</span>
@@ -60,7 +60,7 @@
       <div class="wx-view product-row">
         <div class="wx-view product-card" data-tap="onProductTap" data-ds-id="101">
           <div class="wx-view product-img">
-            <i class="wx-icon wxicon wxicon-success" style="font-size:33px;background:#FF6B35"></i>
+            <img class="wx-image product-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <span class="wx-text product-name">无线蓝牙耳机</span>
           <div class="wx-view product-price-row">
@@ -72,7 +72,7 @@
         </div>
         <div class="wx-view product-card" data-tap="onProductTap" data-ds-id="102">
           <div class="wx-view product-img">
-            <i class="wx-icon wxicon wxicon-success" style="font-size:33px;background:#FF6B35"></i>
+            <img class="wx-image product-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <span class="wx-text product-name">智能手表</span>
           <div class="wx-view product-price-row">
@@ -84,7 +84,7 @@
         </div>
         <div class="wx-view product-card" data-tap="onProductTap" data-ds-id="103">
           <div class="wx-view product-img">
-            <i class="wx-icon wxicon wxicon-success" style="font-size:33px;background:#FF6B35"></i>
+            <img class="wx-image product-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <span class="wx-text product-name">便携充电宝</span>
           <div class="wx-view product-price-row">
@@ -96,7 +96,7 @@
         </div>
         <div class="wx-view product-card" data-tap="onProductTap" data-ds-id="104">
           <div class="wx-view product-img">
-            <i class="wx-icon wxicon wxicon-success" style="font-size:33px;background:#FF6B35"></i>
+            <img class="wx-image product-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <span class="wx-text product-name">机械键盘</span>
           <div class="wx-view product-price-row">
@@ -108,7 +108,7 @@
         </div>
         <div class="wx-view product-card" data-tap="onProductTap" data-ds-id="105">
           <div class="wx-view product-img">
-            <i class="wx-icon wxicon wxicon-success" style="font-size:33px;background:#FF6B35"></i>
+            <img class="wx-image product-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <span class="wx-text product-name">无线鼠标</span>
           <div class="wx-view product-price-row">
@@ -120,7 +120,7 @@
         </div>
         <div class="wx-view product-card" data-tap="onProductTap" data-ds-id="106">
           <div class="wx-view product-img">
-            <i class="wx-icon wxicon wxicon-success" style="font-size:33px;background:#FF6B35"></i>
+            <img class="wx-image product-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <span class="wx-text product-name">显示器支架</span>
           <div class="wx-view product-price-row">
@@ -139,7 +139,7 @@
       <div class="wx-view product-list">
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="201">
           <div class="wx-view list-img">
-            <i class="wx-icon wxicon wxicon-info" style="font-size:30px;background:#4A90D9"></i>
+            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">轻薄笔记本电脑</span>
@@ -150,7 +150,7 @@
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="202">
           <div class="wx-view list-img">
-            <i class="wx-icon wxicon wxicon-info" style="font-size:30px;background:#4A90D9"></i>
+            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">降噪耳机Pro</span>
@@ -161,7 +161,7 @@
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="203">
           <div class="wx-view list-img">
-            <i class="wx-icon wxicon wxicon-info" style="font-size:30px;background:#4A90D9"></i>
+            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">智能音箱</span>
@@ -172,7 +172,7 @@
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="204">
           <div class="wx-view list-img">
-            <i class="wx-icon wxicon wxicon-info" style="font-size:30px;background:#4A90D9"></i>
+            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">4K显示器</span>
@@ -183,7 +183,7 @@
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="205">
           <div class="wx-view list-img">
-            <i class="wx-icon wxicon wxicon-info" style="font-size:30px;background:#4A90D9"></i>
+            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">机械键盘RGB</span>
@@ -194,7 +194,7 @@
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="206">
           <div class="wx-view list-img">
-            <i class="wx-icon wxicon wxicon-info" style="font-size:30px;background:#4A90D9"></i>
+            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">游戏鼠标</span>
@@ -205,7 +205,7 @@
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="207">
           <div class="wx-view list-img">
-            <i class="wx-icon wxicon wxicon-info" style="font-size:30px;background:#4A90D9"></i>
+            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">固态硬盘1TB</span>
@@ -216,7 +216,7 @@
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="208">
           <div class="wx-view list-img">
-            <i class="wx-icon wxicon wxicon-info" style="font-size:30px;background:#4A90D9"></i>
+            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">内存条32GB</span>
@@ -227,7 +227,7 @@
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="209">
           <div class="wx-view list-img">
-            <i class="wx-icon wxicon wxicon-info" style="font-size:30px;background:#4A90D9"></i>
+            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">散热器风冷</span>
@@ -238,7 +238,7 @@
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="210">
           <div class="wx-view list-img">
-            <i class="wx-icon wxicon wxicon-info" style="font-size:30px;background:#4A90D9"></i>
+            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">电竞椅</span>
@@ -249,7 +249,7 @@
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="211">
           <div class="wx-view list-img">
-            <i class="wx-icon wxicon wxicon-info" style="font-size:30px;background:#4A90D9"></i>
+            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">桌面音响</span>
@@ -260,7 +260,7 @@
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="212">
           <div class="wx-view list-img">
-            <i class="wx-icon wxicon wxicon-info" style="font-size:30px;background:#4A90D9"></i>
+            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">摄像头1080P</span>
@@ -271,7 +271,7 @@
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="213">
           <div class="wx-view list-img">
-            <i class="wx-icon wxicon wxicon-info" style="font-size:30px;background:#4A90D9"></i>
+            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">USB扩展坞</span>
@@ -282,7 +282,7 @@
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="214">
           <div class="wx-view list-img">
-            <i class="wx-icon wxicon wxicon-info" style="font-size:30px;background:#4A90D9"></i>
+            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">无线充电器</span>
@@ -293,7 +293,7 @@
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="215">
           <div class="wx-view list-img">
-            <i class="wx-icon wxicon wxicon-info" style="font-size:30px;background:#4A90D9"></i>
+            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">平板支架</span>
@@ -304,7 +304,7 @@
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="216">
           <div class="wx-view list-img">
-            <i class="wx-icon wxicon wxicon-info" style="font-size:30px;background:#4A90D9"></i>
+            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">蓝牙适配器</span>
@@ -315,7 +315,7 @@
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="217">
           <div class="wx-view list-img">
-            <i class="wx-icon wxicon wxicon-info" style="font-size:30px;background:#4A90D9"></i>
+            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">网线Cat6</span>
@@ -326,7 +326,7 @@
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="218">
           <div class="wx-view list-img">
-            <i class="wx-icon wxicon wxicon-info" style="font-size:30px;background:#4A90D9"></i>
+            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">鼠标垫超大</span>
@@ -337,7 +337,7 @@
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="219">
           <div class="wx-view list-img">
-            <i class="wx-icon wxicon wxicon-info" style="font-size:30px;background:#4A90D9"></i>
+            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">屏幕挂灯</span>
@@ -348,7 +348,7 @@
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="220">
           <div class="wx-view list-img">
-            <i class="wx-icon wxicon wxicon-info" style="font-size:30px;background:#4A90D9"></i>
+            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">桌面收纳盒</span>
@@ -359,7 +359,7 @@
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="221">
           <div class="wx-view list-img">
-            <i class="wx-icon wxicon wxicon-info" style="font-size:30px;background:#4A90D9"></i>
+            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">智能手环</span>
@@ -370,7 +370,7 @@
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="222">
           <div class="wx-view list-img">
-            <i class="wx-icon wxicon wxicon-info" style="font-size:30px;background:#4A90D9"></i>
+            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">运动耳机</span>
@@ -381,7 +381,7 @@
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="223">
           <div class="wx-view list-img">
-            <i class="wx-icon wxicon wxicon-info" style="font-size:30px;background:#4A90D9"></i>
+            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">移动电源20000mAh</span>
@@ -392,7 +392,7 @@
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="224">
           <div class="wx-view list-img">
-            <i class="wx-icon wxicon wxicon-info" style="font-size:30px;background:#4A90D9"></i>
+            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">数据线套装</span>
@@ -403,7 +403,7 @@
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="225">
           <div class="wx-view list-img">
-            <i class="wx-icon wxicon wxicon-info" style="font-size:30px;background:#4A90D9"></i>
+            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">手机支架</span>
@@ -414,7 +414,7 @@
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="226">
           <div class="wx-view list-img">
-            <i class="wx-icon wxicon wxicon-info" style="font-size:30px;background:#4A90D9"></i>
+            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">蓝牙音箱迷你</span>
@@ -425,7 +425,7 @@
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="227">
           <div class="wx-view list-img">
-            <i class="wx-icon wxicon wxicon-info" style="font-size:30px;background:#4A90D9"></i>
+            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">电子书阅读器</span>
@@ -436,7 +436,7 @@
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="228">
           <div class="wx-view list-img">
-            <i class="wx-icon wxicon wxicon-info" style="font-size:30px;background:#4A90D9"></i>
+            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">智能门锁</span>
@@ -447,7 +447,7 @@
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="229">
           <div class="wx-view list-img">
-            <i class="wx-icon wxicon wxicon-info" style="font-size:30px;background:#4A90D9"></i>
+            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">空气净化器</span>
@@ -458,7 +458,7 @@
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="230">
           <div class="wx-view list-img">
-            <i class="wx-icon wxicon wxicon-info" style="font-size:30px;background:#4A90D9"></i>
+            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/img.png">
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">加湿器</span>
@@ -514,9 +514,10 @@
     </div>
   </div>
 </div>
+<nav class="wx-tabbar" style="background:#FFFFFF"><a class="wx-tabbar-item" href="../../pages/index/index.html" style="color:#FF6B35"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg><span class="wx-tabbar-text">首页</span></a><a class="wx-tabbar-item" href="../../pages/category/category.html" style="color:#999999"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span class="wx-tabbar-text">分类</span></a><a class="wx-tabbar-item" href="../../pages/cart/cart.html" style="color:#999999"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.2 12h11l1.8-8H6"/></svg><span class="wx-tabbar-text">购物车</span></a><a class="wx-tabbar-item" href="../../pages/profile/profile.html" style="color:#999999"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-6.5 8-6.5s8 2.5 8 6.5"/></svg><span class="wx-tabbar-text">我的</span></a></nav>
 <script>
 window.__PAGE_ROUTE__ = "pages/index/index";
-window.__WXML__ = [{"a":{"class":"page"},"c":[{"a":{"class":"search-bar"},"c":[{"a":{"bindconfirm":"onSearch","bindinput":"onSearchInput","class":"search-input","maxlength":"50","placeholder":"搜索商品"},"c":[],"n":"input","t":"el"}],"n":"view","t":"el"},{"a":{"class":"banner"},"c":[{"a":{"class":"banner-tag"},"c":[{"t":"tx","x":"限时特惠"}],"n":"text","t":"el"},{"a":{"class":"banner-title"},"c":[{"t":"tx","x":"新品上市 全场8折"}],"n":"text","t":"el"},{"a":{"class":"banner-desc"},"c":[{"t":"tx","x":"精选好物 品质保证"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"category-section"},"c":[{"a":{"class":"category-row"},"c":[{"a":{"bindtap":"onCategoryTap","class":"category-item","data-id":"1"},"c":[{"a":{"color":"#FF6B35","size":"28","type":"success"},"c":[],"n":"icon","t":"el"},{"a":{"class":"category-name"},"c":[{"t":"tx","x":"数码"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onCategoryTap","class":"category-item","data-id":"2"},"c":[{"a":{"color":"#4A90D9","size":"28","type":"info"},"c":[],"n":"icon","t":"el"},{"a":{"class":"category-name"},"c":[{"t":"tx","x":"服饰"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onCategoryTap","class":"category-item","data-id":"3"},"c":[{"a":{"color":"#FF69B4","size":"28","type":"warn"},"c":[],"n":"icon","t":"el"},{"a":{"class":"category-name"},"c":[{"t":"tx","x":"美妆"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onCategoryTap","class":"category-item","data-id":"4"},"c":[{"a":{"color":"#52C41A","size":"28","type":"waiting"},"c":[],"n":"icon","t":"el"},{"a":{"class":"category-name"},"c":[{"t":"tx","x":"食品"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"category-row"},"c":[{"a":{"bindtap":"onCanvasTap","class":"category-item"},"c":[{"a":{"color":"#722ed1","size":"28","type":"circle"},"c":[],"n":"icon","t":"el"},{"a":{"class":"category-name"},"c":[{"t":"tx","x":"Canvas"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onComponentsTap","class":"category-item"},"c":[{"a":{"color":"#13c2c2","size":"28","type":"success"},"c":[],"n":"icon","t":"el"},{"a":{"class":"category-name"},"c":[{"t":"tx","x":"组件"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"section"},"c":[{"a":{"class":"section-header"},"c":[{"a":{"class":"section-title"},"c":[{"t":"tx","x":"🔥 热销商品"}],"n":"text","t":"el"},{"a":{"bindtap":"onViewMore","class":"section-more"},"c":[{"t":"tx","x":"更多 >"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"product-row"},"c":[{"a":{"bindtap":"onProductTap","class":"product-card","data-id":"{{item.id}}","wx:for":"{{hotProducts}}","wx:key":"id"},"c":[{"a":{"class":"product-img"},"c":[{"a":{"color":"#FF6B35","size":"40","type":"success"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"},{"a":{"class":"product-name"},"c":[{"t":"tx","x":"{{item.name}}"}],"n":"text","t":"el"},{"a":{"class":"product-price-row"},"c":[{"a":{"class":"product-price"},"c":[{"t":"tx","x":"¥{{item.price}}"}],"n":"text","t":"el"},{"a":{"catchtap":"onAddCart","class":"add-btn","data-product":"{{item}}"},"c":[{"a":{"class":"add-btn-text"},"c":[{"t":"tx","x":"+"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"section"},"c":[{"a":{"class":"section-header"},"c":[{"a":{"class":"section-title"},"c":[{"t":"tx","x":"✨ 新品推荐 ({{newProducts.length}}件)"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"product-list"},"c":[{"a":{"bindtap":"onProductTap","class":"list-item","data-id":"{{item.id}}","wx:for":"{{newProducts}}","wx:key":"id"},"c":[{"a":{"class":"list-img"},"c":[{"a":{"color":"#4A90D9","size":"36","type":"info"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"},{"a":{"class":"list-info"},"c":[{"a":{"class":"list-name"},"c":[{"t":"tx","x":"{{item.name}}"}],"n":"text","t":"el"},{"a":{"class":"list-desc"},"c":[{"t":"tx","x":"{{item.desc}}"}],"n":"text","t":"el"},{"a":{"class":"list-price"},"c":[{"t":"tx","x":"¥{{item.price}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"catchtap":"onAddCart","class":"list-btn","data-product":"{{item}}","size":"mini","type":"primary"},"c":[{"t":"tx","x":"购买"}],"n":"button","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"bottom-space"},"c":[],"n":"view","t":"el"},{"a":{"catchtap":"onCloseCoupon","class":"coupon-mask","wx:if":"{{showCoupon}}"},"c":[{"a":{"catchtap":"onNoop","class":"coupon-dialog"},"c":[{"a":{"class":"coupon-dialog-head"},"c":[{"a":{"class":"coupon-dialog-title"},"c":[{"t":"tx","x":"新人专享礼包"}],"n":"text","t":"el"},{"a":{"class":"coupon-dialog-sub"},"c":[{"t":"tx","x":"下单立减，先到先得"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"coupon-list-pop"},"c":[{"a":{"class":"coupon-card","wx:for":"{{coupons}}","wx:key":"id"},"c":[{"a":{"class":"coupon-left"},"c":[{"a":{"class":"coupon-amount"},"c":[{"t":"tx","x":"¥{{item.amount}}"}],"n":"text","t":"el"},{"a":{"class":"coupon-cond"},"c":[{"t":"tx","x":"满{{item.min}}元可用"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"coupon-right"},"c":[{"a":{"class":"coupon-name"},"c":[{"t":"tx","x":"{{item.name}}"}],"n":"text","t":"el"},{"a":{"class":"coupon-tip"},"c":[{"t":"tx","x":"{{item.tip}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onClaimCoupons","class":"coupon-claim-btn","type":"primary"},"c":[{"t":"tx","x":"一键领取"}],"n":"button","t":"el"},{"a":{"catchtap":"onCloseCoupon","class":"coupon-close"},"c":[{"t":"tx","x":"✕"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}];
+window.__WXML__ = [{"a":{"class":"page"},"c":[{"a":{"class":"search-bar"},"c":[{"a":{"bindconfirm":"onSearch","bindinput":"onSearchInput","class":"search-input","maxlength":"50","placeholder":"搜索商品"},"c":[],"n":"input","t":"el"}],"n":"view","t":"el"},{"a":{"class":"banner"},"c":[{"a":{"class":"banner-tag"},"c":[{"t":"tx","x":"限时特惠"}],"n":"text","t":"el"},{"a":{"class":"banner-title"},"c":[{"t":"tx","x":"新品上市 全场8折"}],"n":"text","t":"el"},{"a":{"class":"banner-desc"},"c":[{"t":"tx","x":"精选好物 品质保证"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"category-section"},"c":[{"a":{"class":"category-row"},"c":[{"a":{"bindtap":"onCategoryTap","class":"category-item","data-id":"1"},"c":[{"a":{"color":"#FF6B35","size":"28","type":"success"},"c":[],"n":"icon","t":"el"},{"a":{"class":"category-name"},"c":[{"t":"tx","x":"数码"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onCategoryTap","class":"category-item","data-id":"2"},"c":[{"a":{"color":"#4A90D9","size":"28","type":"info"},"c":[],"n":"icon","t":"el"},{"a":{"class":"category-name"},"c":[{"t":"tx","x":"服饰"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onCategoryTap","class":"category-item","data-id":"3"},"c":[{"a":{"color":"#FF69B4","size":"28","type":"warn"},"c":[],"n":"icon","t":"el"},{"a":{"class":"category-name"},"c":[{"t":"tx","x":"美妆"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onCategoryTap","class":"category-item","data-id":"4"},"c":[{"a":{"color":"#52C41A","size":"28","type":"waiting"},"c":[],"n":"icon","t":"el"},{"a":{"class":"category-name"},"c":[{"t":"tx","x":"食品"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"category-row"},"c":[{"a":{"bindtap":"onCanvasTap","class":"category-item"},"c":[{"a":{"color":"#722ed1","size":"28","type":"circle"},"c":[],"n":"icon","t":"el"},{"a":{"class":"category-name"},"c":[{"t":"tx","x":"Canvas"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onComponentsTap","class":"category-item"},"c":[{"a":{"color":"#13c2c2","size":"28","type":"success"},"c":[],"n":"icon","t":"el"},{"a":{"class":"category-name"},"c":[{"t":"tx","x":"组件"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"section"},"c":[{"a":{"class":"section-header"},"c":[{"a":{"class":"section-title"},"c":[{"t":"tx","x":"🔥 热销商品"}],"n":"text","t":"el"},{"a":{"bindtap":"onViewMore","class":"section-more"},"c":[{"t":"tx","x":"更多 >"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"product-row"},"c":[{"a":{"bindtap":"onProductTap","class":"product-card","data-id":"{{item.id}}","wx:for":"{{hotProducts}}","wx:key":"id"},"c":[{"a":{"class":"product-img"},"c":[{"a":{"class":"product-img-el","mode":"aspectFill","src":"/assets/img.png"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"},{"a":{"class":"product-name"},"c":[{"t":"tx","x":"{{item.name}}"}],"n":"text","t":"el"},{"a":{"class":"product-price-row"},"c":[{"a":{"class":"product-price"},"c":[{"t":"tx","x":"¥{{item.price}}"}],"n":"text","t":"el"},{"a":{"catchtap":"onAddCart","class":"add-btn","data-product":"{{item}}"},"c":[{"a":{"class":"add-btn-text"},"c":[{"t":"tx","x":"+"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"section"},"c":[{"a":{"class":"section-header"},"c":[{"a":{"class":"section-title"},"c":[{"t":"tx","x":"✨ 新品推荐 ({{newProducts.length}}件)"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"product-list"},"c":[{"a":{"bindtap":"onProductTap","class":"list-item","data-id":"{{item.id}}","wx:for":"{{newProducts}}","wx:key":"id"},"c":[{"a":{"class":"list-img"},"c":[{"a":{"class":"list-img-el","mode":"aspectFill","src":"/assets/img.png"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"},{"a":{"class":"list-info"},"c":[{"a":{"class":"list-name"},"c":[{"t":"tx","x":"{{item.name}}"}],"n":"text","t":"el"},{"a":{"class":"list-desc"},"c":[{"t":"tx","x":"{{item.desc}}"}],"n":"text","t":"el"},{"a":{"class":"list-price"},"c":[{"t":"tx","x":"¥{{item.price}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"catchtap":"onAddCart","class":"list-btn","data-product":"{{item}}","size":"mini","type":"primary"},"c":[{"t":"tx","x":"购买"}],"n":"button","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"bottom-space"},"c":[],"n":"view","t":"el"},{"a":{"catchtap":"onCloseCoupon","class":"coupon-mask","wx:if":"{{showCoupon}}"},"c":[{"a":{"catchtap":"onNoop","class":"coupon-dialog"},"c":[{"a":{"class":"coupon-dialog-head"},"c":[{"a":{"class":"coupon-dialog-title"},"c":[{"t":"tx","x":"新人专享礼包"}],"n":"text","t":"el"},{"a":{"class":"coupon-dialog-sub"},"c":[{"t":"tx","x":"下单立减，先到先得"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"coupon-list-pop"},"c":[{"a":{"class":"coupon-card","wx:for":"{{coupons}}","wx:key":"id"},"c":[{"a":{"class":"coupon-left"},"c":[{"a":{"class":"coupon-amount"},"c":[{"t":"tx","x":"¥{{item.amount}}"}],"n":"text","t":"el"},{"a":{"class":"coupon-cond"},"c":[{"t":"tx","x":"满{{item.min}}元可用"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"coupon-right"},"c":[{"a":{"class":"coupon-name"},"c":[{"t":"tx","x":"{{item.name}}"}],"n":"text","t":"el"},{"a":{"class":"coupon-tip"},"c":[{"t":"tx","x":"{{item.tip}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onClaimCoupons","class":"coupon-claim-btn","type":"primary"},"c":[{"t":"tx","x":"一键领取"}],"n":"button","t":"el"},{"a":{"catchtap":"onCloseCoupon","class":"coupon-close"},"c":[{"t":"tx","x":"✕"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}];
 </script>
 <script src="../../common/runtime.js"></script>
 <script src="../../common/app.js"></script>

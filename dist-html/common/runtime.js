@@ -146,8 +146,12 @@
     return v;
   }
 
+  // 绝对资源路径（以 / 开头）→ 相对当前页面的路径（导出工程用 file:// 打开也能加载）
+  var PAGE_UP = (function () { var seg = (window.__PAGE_ROUTE__ || "").split("/"); var d = seg.length - 1; return d > 0 ? new Array(d + 1).join("../") : ""; })();
+  function assetUrl(src) { return (src && src.charAt(0) === "/") ? PAGE_UP + src.slice(1) : src; }
+
   function applyElAttrs(tag, a, scope, attrs, v) {
-    if (tag === "image") { if (a["src"]) attrs["src"] = interp(a["src"], scope); }
+    if (tag === "image") { if (a["src"]) attrs["src"] = assetUrl(interp(a["src"], scope)); }
     else if (tag === "input") {
       var t = interp(a["type"] || "text", scope);
       attrs["type"] = truthy(evalWhole(a["password"], scope)) ? "password" : ((t === "number" || t === "digit" || t === "idcard") ? "number" : t);
@@ -424,13 +428,52 @@
     return up + seg.slice(0, -1).join("/") + "/" + leaf + ".html" + qs;
   }
   function nav(o) { if (o && o.url) location.href = routeToHref(o.url); if (o && o.success) o.success({}); if (o && o.complete) o.complete({}); }
-  function toast(o) { o = o || {}; var d = document.createElement("div"); d.textContent = o.title || ""; d.style.cssText = "position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:9999;background:rgba(0,0,0,.75);color:#fff;padding:14px 20px;border-radius:10px;font-size:14px;max-width:70%;text-align:center;"; document.body.appendChild(d); setTimeout(function () { d.remove(); if (o.success) o.success(); if (o.complete) o.complete(); }, o.duration || 1500); }
+  var toastEl = null;
+  function toast(o) {
+    o = o || {};
+    if (toastEl) { toastEl.remove(); toastEl = null; }
+    var d = document.createElement("div");
+    var big = o.icon && o.icon !== "none";
+    var ic = "";
+    if (o.icon === "success") ic = "<div style='font-size:40px;line-height:1;margin-bottom:6px;'>\u2713</div>";
+    else if (o.icon === "error" || o.icon === "fail") ic = "<div style='font-size:40px;line-height:1;margin-bottom:6px;'>\u2715</div>";
+    else if (o.icon === "loading") ic = "<div style='width:34px;height:34px;margin:0 auto 8px;border:3px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:wxspin .8s linear infinite;'></div>";
+    d.innerHTML = ic + "<div>" + esc(o.title || "") + "</div>";
+    d.style.cssText = "position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:10000;background:rgba(0,0,0,.72);color:#fff;border-radius:12px;text-align:center;font-size:14px;pointer-events:none;" + (big ? "padding:20px 24px;min-width:120px;" : "padding:11px 18px;max-width:70%;");
+    document.body.appendChild(d);
+    toastEl = d;
+    if (o.icon !== "loading" || o.duration) {
+      setTimeout(function () { if (d.parentNode) d.remove(); if (toastEl === d) toastEl = null; if (o.success) o.success(); if (o.complete) o.complete(); }, o.duration || 1500);
+    }
+  }
+  function hideToastNow() { if (toastEl) { toastEl.remove(); toastEl = null; } }
 
   window.wx = {
     navigateTo: nav, redirectTo: nav, switchTab: nav, reLaunch: nav,
     navigateBack: function () { history.back(); },
-    showToast: toast, showLoading: toast, hideToast: function () {}, hideLoading: function () {}, stopPullDownRefresh: function () {},
-    showModal: function (o) { o = o || {}; var ok = window.confirm((o.title ? o.title + "\n\n" : "") + (o.content || "")); if (o.success) o.success({ confirm: ok, cancel: !ok }); },
+    showToast: toast,
+    showLoading: function (o) { o = o || {}; o.icon = "loading"; toast(o); },
+    hideToast: hideToastNow, hideLoading: hideToastNow, stopPullDownRefresh: function () {},
+    showModal: function (o) {
+      o = o || {};
+      var mask = document.createElement("div");
+      mask.style.cssText = "position:fixed;inset:0;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:10001;display:flex;align-items:center;justify-content:center;";
+      var showCancel = o.showCancel !== false;
+      var box = document.createElement("div");
+      box.style.cssText = "width:280px;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.2);";
+      box.innerHTML =
+        "<div style='padding:26px 20px 20px;text-align:center;'>" +
+        (o.title ? "<div style='font-size:17px;font-weight:600;color:#111;margin-bottom:8px;'>" + esc(o.title) + "</div>" : "") +
+        "<div style='font-size:14px;color:#666;line-height:1.5;'>" + esc(o.content || "") + "</div></div>" +
+        "<div style='display:flex;border-top:1px solid #eee;'>" +
+        (showCancel ? "<button class='wxmc' style='flex:1;border:0;background:none;padding:13px;font-size:16px;color:" + (o.cancelColor || "#333") + ";border-right:1px solid #eee;cursor:pointer;'>" + esc(o.cancelText || "取消") + "</button>" : "") +
+        "<button class='wxmo' style='flex:1;border:0;background:none;padding:13px;font-size:16px;font-weight:500;color:" + (o.confirmColor || "#07c160") + ";cursor:pointer;'>" + esc(o.confirmText || "确定") + "</button></div>";
+      mask.appendChild(box); document.body.appendChild(mask);
+      function done(r) { mask.remove(); if (o.success) o.success(r); if (o.complete) o.complete(); }
+      var ok = box.querySelector(".wxmo"), no = box.querySelector(".wxmc");
+      if (ok) ok.addEventListener("click", function () { done({ confirm: true, cancel: false }); });
+      if (no) no.addEventListener("click", function () { done({ confirm: false, cancel: true }); });
+    },
     setStorageSync: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
     getStorageSync: function (k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : ""; } catch (e) { return ""; } },
     removeStorageSync: function (k) { try { localStorage.removeItem(k); } catch (e) {} },

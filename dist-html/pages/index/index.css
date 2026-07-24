@@ -337,3 +337,7 @@
   align-items: center;
   justify-content: center;
 }
+
+/* 商品真实图片 */
+.product-img-el { width: 100%; height: 100%; border-radius: 4px; display: block; }
+.list-img-el { width: 100%; height: 100%; border-radius: 4px; display: block; }

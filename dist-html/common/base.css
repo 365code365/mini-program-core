@@ -1,5 +1,6 @@
 
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+@keyframes wxspin{to{transform:rotate(360deg);}}
 /* 还原小程序默认盒模型：view 等默认 flex 纵向排列（与引擎一致，可收缩以适应宽度）*/
 .wx-view,.wx-cover-view,.wx-navigator,.wx-checkbox-group,.wx-radio-group,.wx-form,.wx-movable-view,.wx-movable-area{display:flex;flex-direction:column;}
 /* scroll-view：块级可滚动容器——子元素保持自身高度、超出则滚动，而非像 flex 那样被压缩 */
@@ -59,6 +60,12 @@ body{font-size:16px;color:#333;font-family:-apple-system,system-ui,"PingFang SC"
 .wx-progress-outer{flex:1;height:6px;border-radius:3px;background:#ebebeb;overflow:hidden;}
 .wx-progress-inner{height:100%;background:#09bb07;border-radius:3px;transition:width .3s;}
 .wx-progress-info{margin-left:8px;font-size:12px;color:#666;min-width:2.5em;text-align:right;}
+
+/* ── tabBar 底部导航（固定，居中对齐 375 宽）── */
+.wx-tabbar{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:375px;max-width:100%;height:50px;display:flex;flex-direction:row;border-top:1px solid #ededed;z-index:500;box-shadow:0 -1px 6px rgba(0,0,0,.04);}
+.wx-tabbar-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-decoration:none;padding-top:4px;}
+.wx-tabbar-item svg{width:24px;height:24px;display:block;}
+.wx-tabbar-text{font-size:11px;line-height:1;margin-top:3px;}
 
 /* ── 媒体 ── */
 .wx-video{display:block;width:100%;height:225px;background:#000;}

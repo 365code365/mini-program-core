@@ -53,7 +53,7 @@
     <view class="product-row">
       <view class="product-card" wx:for="{{hotProducts}}" wx:key="id" bindtap="onProductTap" data-id="{{item.id}}">
         <view class="product-img">
-          <icon type="success" size="40" color="#FF6B35"></icon>
+          <image class="product-img-el" src="/assets/img.png" mode="aspectFill"></image>
         </view>
         <text class="product-name">{{item.name}}</text>
         <view class="product-price-row">
@@ -75,7 +75,7 @@
     <view class="product-list">
       <view class="list-item" wx:for="{{newProducts}}" wx:key="id" bindtap="onProductTap" data-id="{{item.id}}">
         <view class="list-img">
-          <icon type="info" size="36" color="#4A90D9"></icon>
+          <image class="list-img-el" src="/assets/img.png" mode="aspectFill"></image>
         </view>
         <view class="list-info">
           <text class="list-name">{{item.name}}</text>

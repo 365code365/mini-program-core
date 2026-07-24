@@ -57,6 +57,20 @@ impl CompileTarget for HtmlTarget {
         // ── 静态资源 ──
         collect_assets(Path::new(&app.root).join("assets").as_path(), "assets", &mut files);
 
+        // ── tabBar 配置（导出为固定底部导航栏，各 tab 页面均注入）──
+        let tb = app.config.get("tabBar");
+        let tab_list: Vec<(String, String)> = tb
+            .and_then(|t| t.get("list")).and_then(|l| l.as_array())
+            .map(|a| a.iter().filter_map(|it| {
+                let p = it.get("pagePath")?.as_str()?.to_string();
+                let t = it.get("text").and_then(|x| x.as_str()).unwrap_or("").to_string();
+                Some((p, t))
+            }).collect())
+            .unwrap_or_default();
+        let tab_color = tb.and_then(|t| t.get("color")).and_then(|c| c.as_str()).unwrap_or("#999999");
+        let tab_sel = tb.and_then(|t| t.get("selectedColor")).and_then(|c| c.as_str()).unwrap_or("#FF6B35");
+        let tab_bg = tb.and_then(|t| t.get("backgroundColor")).and_then(|c| c.as_str()).unwrap_or("#ffffff");
+
         // ── 逐页面 ──
         let mut nav_items = String::new();
         for page in &app.pages {
@@ -74,11 +88,19 @@ impl CompileTarget for HtmlTarget {
                 files.push(EmittedFile::text(format!("{}/{}.js", dir, leaf), page.js.clone()));
             }
 
+            // tabBar：当前页在 list 中则注入底部导航
+            let is_tab = tab_list.iter().any(|(p, _)| p == &page.route);
+            let tabbar_html = if is_tab {
+                build_tabbar(&tab_list, &page.route, &rel, tab_color, tab_sel, tab_bg)
+            } else {
+                String::new()
+            };
+
             // 静态首屏（无 JS 时的回退视图）
             let body = wxml_to_html_pretty(&page.wxml, &page.data);
             // 供 runtime 响应式重渲染的 WXML AST
             let ast = nodes_to_json(&page.wxml);
-            let html = build_page_html(&page.route, leaf, &rel, &body, &ast, has_js);
+            let html = build_page_html(&page.route, leaf, &rel, &body, &ast, has_js, &tabbar_html, is_tab);
             files.push(EmittedFile::text(format!("{}/{}.html", dir, leaf), html));
 
             nav_items.push_str(&format!(
@@ -135,13 +157,42 @@ fn node_to_json(node: &WxmlNode) -> Option<JsonValue> {
     }
 }
 
-/// 生成单个页面的 HTML（分离引用 base.css / app.css / <page>.css + 内嵌 AST + runtime）
-fn build_page_html(route: &str, leaf: &str, rel: &str, body: &str, ast: &JsonValue, has_js: bool) -> String {
+/// tabBar 底部导航（固定，位于 #app 之外，不受 setData 重渲染影响）
+fn build_tabbar(list: &[(String, String)], current: &str, rel: &str, color: &str, sel: &str, bg: &str) -> String {
+    let mut items = String::new();
+    for (i, (path, text)) in list.iter().enumerate() {
+        let active = path == current;
+        let c = if active { sel } else { color };
+        items.push_str(&format!(
+            "<a class=\"wx-tabbar-item\" href=\"{rel}{path}.html\" style=\"color:{c}\">{icon}<span class=\"wx-tabbar-text\">{text}</span></a>",
+            rel = rel, path = path, c = c, icon = tabbar_icon(i, text), text = text
+        ));
+    }
+    format!("<nav class=\"wx-tabbar\" style=\"background:{bg}\">{items}</nav>", bg = bg, items = items)
+}
+
+/// 按文本/序号选择 tab 图标（描边式 SVG，用 currentColor 跟随选中态着色）
+fn tabbar_icon(idx: usize, text: &str) -> &'static str {
+    let home = "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 10.5 12 3l9 7.5\"/><path d=\"M5 9.5V21h14V9.5\"/></svg>";
+    let grid = "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"3\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\" rx=\"1\"/></svg>";
+    let cart = "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"9\" cy=\"20\" r=\"1.4\"/><circle cx=\"18\" cy=\"20\" r=\"1.4\"/><path d=\"M2 3h3l2.2 12h11l1.8-8H6\"/></svg>";
+    let user = "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"8\" r=\"4\"/><path d=\"M4 21c0-4 3.5-6.5 8-6.5s8 2.5 8 6.5\"/></svg>";
+    if text.contains("首页") || text.contains("主页") { return home; }
+    if text.contains("分类") || text.contains("类目") { return grid; }
+    if text.contains("购物车") || text.contains("车") { return cart; }
+    if text.contains("我") || text.contains("用户") || text.contains("个人") { return user; }
+    match idx { 0 => home, 1 => grid, 2 => cart, _ => user }
+}
+
+/// 生成单个页面的 HTML（分离引用 base.css / app.css / <page>.css + 内嵌 AST + runtime + tabBar）
+fn build_page_html(route: &str, leaf: &str, rel: &str, body: &str, ast: &JsonValue, has_js: bool, tabbar: &str, is_tab: bool) -> String {
     let logic = if has_js {
         format!("<script src=\"./{}.js\"></script>\n", leaf)
     } else {
         String::new()
     };
+    // tab 页给内容留出底部导航高度，避免被遮挡
+    let pad = if is_tab { "padding-bottom:50px;" } else { "" };
     format!(
 "<!doctype html>
 <html lang=\"zh\">
@@ -153,12 +204,13 @@ fn build_page_html(route: &str, leaf: &str, rel: &str, body: &str, ast: &JsonVal
   <link rel=\"stylesheet\" href=\"{rel}common/app.css\">
   <link rel=\"stylesheet\" href=\"./{leaf}.css\">
   <style>
-    #app{{width:{w}px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}}
+    #app{{width:{w}px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;{pad}}}
   </style>
 </head>
 <body>
 <div id=\"app\">
 {body}</div>
+{tabbar}
 <script>
 window.__PAGE_ROUTE__ = {route_json};
 window.__WXML__ = {ast};
@@ -168,7 +220,7 @@ window.__WXML__ = {ast};
 {logic}</body>
 </html>
 ",
-        route = route, rel = rel, leaf = leaf, w = WIDTH, body = body,
+        route = route, rel = rel, leaf = leaf, w = WIDTH, body = body, pad = pad, tabbar = tabbar,
         route_json = serde_json::to_string(route).unwrap(),
         ast = serde_json::to_string(ast).unwrap(),
         logic = logic,
