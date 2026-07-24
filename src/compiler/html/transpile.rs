@@ -329,6 +329,18 @@ fn build_open_tag(node: &WxmlNode) -> (String, &'static str, bool) {
     if node.tag_name == "switch" && is_truthy(node.get_attr("checked")) {
         class.push_str(" wx-switch-on");
     }
+    // button 的 type/size/disabled → 修饰类（还原微信默认按钮外观）
+    if node.tag_name == "button" {
+        match node.get_attr("type") {
+            Some("primary") => class.push_str(" wx-button-primary"),
+            Some("warn") => class.push_str(" wx-button-warn"),
+            Some("default") | None => class.push_str(" wx-button-default"),
+            _ => class.push_str(" wx-button-default"),
+        }
+        if node.get_attr("size") == Some("mini") { class.push_str(" wx-button-mini"); }
+        if is_truthy(node.get_attr("plain")) { class.push_str(" wx-button-plain"); }
+        if is_truthy(node.get_attr("disabled")) { class.push_str(" wx-button-disabled"); }
+    }
     attrs.push_str(&format!(" class=\"{}\"", escape_attr(&class)));
     if let Some(id) = node.get_attr("id") {
         attrs.push_str(&format!(" id=\"{}\"", escape_attr(id)));
@@ -524,11 +536,23 @@ pub fn base_css() -> &'static str {
 .wx-view,.wx-scroll-view,.wx-cover-view,.wx-navigator,.wx-checkbox-group,.wx-radio-group,.wx-form{display:flex;flex-direction:column;}
 .wx-text{display:inline;}
 .wx-image{display:block;}
-.wx-button{border:0;background:none;font:inherit;color:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;}
 .wx-input,.wx-textarea{border:0;outline:none;background:none;font:inherit;color:inherit;width:100%;}
 .wx-navigator{text-decoration:none;color:inherit;}
 img{display:block;}
 body{font-size:16px;color:#333;font-family:-apple-system,system-ui,"PingFang SC","Hiragino Sans GB",sans-serif;background:#f5f6f8;}
+
+/* ── 交互反馈：带事件的元素显示手型光标 + 按压态 ── */
+[data-tap],[data-longpress],[data-longtap],.wx-button,.wx-navigator,.wx-checkbox,.wx-radio,.wx-switch,.wx-slider,.wx-picker{cursor:pointer;}
+[data-tap]:active{opacity:.6;}
+
+/* ── button：还原微信默认按钮盒模型（页面样式只需覆盖颜色等即可保持一致） ── */
+.wx-button{position:relative;box-sizing:border-box;display:flex;align-items:center;justify-content:center;min-height:46px;padding:0 14px;font-size:17px;line-height:1.35;text-align:center;border:0;border-radius:5px;background:#f7f7f7;color:#000;cursor:pointer;transition:opacity .12s ease;overflow:hidden;}
+.wx-button:active{opacity:.85;}
+.wx-button-primary{background:#07c160;color:#fff;}
+.wx-button-warn{background:#fa5151;color:#fff;}
+.wx-button-plain{background:transparent;border:1px solid currentColor;}
+.wx-button-mini{display:inline-flex;width:auto;min-height:30px;padding:0 14px;font-size:13px;border-radius:4px;}
+.wx-button-disabled{opacity:.5;pointer-events:none;}
 
 /* ── swiper 轮播：横向 scroll-snap，一屏一页 ── */
 .wx-swiper{display:flex;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;height:150px;scroll-snap-type:x mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scrollbar-width:none;}

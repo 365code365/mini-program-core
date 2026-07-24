@@ -33,8 +33,8 @@ pub mod parser;
 // UI 渲染器
 pub mod renderer;
 
-// 小程序源码 -> HTML/CSS 编译（transpile）
-pub mod transpile;
+// 多端编译器框架（HTML / 未来 Android、iOS ...）
+pub mod compiler;
 
 // Yoga 布局引擎
 pub mod layout;

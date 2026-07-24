@@ -22,7 +22,7 @@
 <body>
 <aside>
   <h1>Mini App · HTML 工程</h1>
-  <p>共 7 个页面 · 点击预览</p>
+  <p>共 8 个页面 · 点击预览</p>
   <button class="nav-item" data-src="pages/index/index.html">pages/index/index</button>
 <button class="nav-item" data-src="pages/category/category.html">pages/category/category</button>
 <button class="nav-item" data-src="pages/cart/cart.html">pages/cart/cart</button>
@@ -30,11 +30,12 @@
 <button class="nav-item" data-src="pages/detail/detail.html">pages/detail/detail</button>
 <button class="nav-item" data-src="pages/canvas/canvas.html">pages/canvas/canvas</button>
 <button class="nav-item" data-src="pages/components/components.html">pages/components/components</button>
+<button class="nav-item" data-src="pages/form/form.html">pages/form/form</button>
 
 </aside>
 <main>
   <div class="phone"><iframe id="preview" src="pages/index/index.html"></iframe></div>
-  <div class="hint">结构化 HTML 工程：common/ 公共资源 · pages/ 各页面(html·css·js) · assets/ 静态资源。<br>页面内支持点击事件与 wx 跳转；完整响应式实时预览请运行 <b>mini-devserver</b>。</div>
+  <div class="hint">结构化 HTML 工程：common/ 公共资源 · pages/ 各页面(html·css·js) · assets/ 静态资源。<br>页面内支持事件、setData 响应式重渲染、model 双向绑定与 wx 跳转。</div>
 </main>
 <script>
   var frame=document.getElementById('preview');

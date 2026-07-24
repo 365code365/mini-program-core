@@ -1,0 +1,85 @@
+<view class="page">
+  <view class="header">
+    <text class="title">表单与事件</text>
+    <text class="subtitle">双向绑定 · setData 响应式 · 各类事件</text>
+  </view>
+
+  <!-- 双向数据绑定 model:value -->
+  <view class="section">
+    <text class="section-title">双向绑定 model:value</text>
+    <input class="field" model:value="{{nickname}}" placeholder="输入昵称，实时同步" />
+    <textarea class="field textarea" model:value="{{bio}}" placeholder="个人简介（model 绑定）"></textarea>
+    <view class="preview">
+      <text class="preview-line">昵称：{{nickname}}</text>
+      <text class="preview-line">简介：{{bio}}</text>
+      <text class="preview-line">昵称长度：{{nickname.length}}</text>
+    </view>
+  </view>
+
+  <!-- bindinput 事件 -->
+  <view class="section">
+    <text class="section-title">bindinput 事件</text>
+    <input class="field" value="{{search}}" bindinput="onSearchInput" placeholder="搜索（bindinput）" />
+    <text class="hint" wx:if="{{search}}">你正在搜索：{{search}}</text>
+    <text class="hint" wx:else>输入点什么试试</text>
+  </view>
+
+  <!-- 计数器：tap + setData 重渲染 -->
+  <view class="section">
+    <text class="section-title">计数器（tap + setData）</text>
+    <view class="counter">
+      <button class="cbtn" size="mini" bindtap="onDec">-</button>
+      <text class="cval">{{count}}</text>
+      <button class="cbtn" type="primary" size="mini" bindtap="onInc">+</button>
+      <button class="cbtn reset" size="mini" bindtap="onReset">清零</button>
+    </view>
+    <text class="hint" wx:if="{{count > 5}}">已经大于 5 啦！</text>
+  </view>
+
+  <!-- switch / slider -->
+  <view class="section">
+    <text class="section-title">开关与滑块</text>
+    <view class="row">
+      <text class="label">推送通知</text>
+      <switch checked="{{pushOn}}" bindchange="onPushChange" />
+      <text class="state">{{pushOn ? '开' : '关'}}</text>
+    </view>
+    <view class="row">
+      <text class="label">音量 {{volume}}</text>
+      <slider class="slider" min="0" max="100" value="{{volume}}" bindchange="onVolume" />
+    </view>
+  </view>
+
+  <!-- checkbox-group / radio-group -->
+  <view class="section">
+    <text class="section-title">多选与单选</text>
+    <checkbox-group class="opts" bindchange="onHobby">
+      <label class="opt" wx:for="{{hobbies}}" wx:key="value">
+        <checkbox value="{{item.value}}" checked="{{item.checked}}" />
+        <text>{{item.label}}</text>
+      </label>
+    </checkbox-group>
+    <text class="hint">已选爱好：{{hobbyText}}</text>
+    <radio-group class="opts" bindchange="onGender">
+      <label class="opt"><radio value="male" checked="{{gender=='male'}}" /><text>男</text></label>
+      <label class="opt"><radio value="female" checked="{{gender=='female'}}" /><text>女</text></label>
+    </radio-group>
+    <text class="hint">性别：{{gender}}</text>
+  </view>
+
+  <!-- form 提交 -->
+  <view class="section">
+    <text class="section-title">form 表单提交</text>
+    <form bindsubmit="onSubmit" bindreset="onReset2">
+      <input class="field" name="username" placeholder="用户名" />
+      <input class="field" name="phone" type="number" placeholder="手机号" />
+      <view class="form-actions">
+        <button class="cbtn" size="mini" form-type="reset">重置</button>
+        <button class="cbtn" type="primary" size="mini" form-type="submit">提交</button>
+      </view>
+    </form>
+    <text class="hint" wx:if="{{submitted}}">已提交：{{submitted}}</text>
+  </view>
+
+  <view class="back-btn" bindtap="onBack"><text class="back-text">返回首页</text></view>
+</view>

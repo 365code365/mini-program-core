@@ -12,7 +12,7 @@
 use mini_render::runtime::MiniApp;
 use mini_render::parser::{WxmlParser, WxssParser};
 use mini_render::parser::wxml::WxmlNode;
-use mini_render::transpile::{wxml_to_html, wxss_to_css, base_css};
+use mini_render::compiler::html::{wxml_to_html, wxss_to_css, base_css};
 
 use std::collections::HashMap;
 use std::io::{Read, Write};

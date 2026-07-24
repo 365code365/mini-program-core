@@ -1,0 +1,148 @@
+.page {
+  min-height: 100vh;
+  background: #f5f5f5;
+  padding: 20rpx;
+}
+
+.header {
+  padding: 24rpx 0 8rpx;
+  text-align: center;
+}
+.title {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #333;
+  display: block;
+}
+.subtitle {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.section {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-top: 24rpx;
+}
+.section-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333;
+  display: block;
+  margin-bottom: 20rpx;
+}
+
+.field {
+  background: #f7f7f8;
+  border-radius: 10rpx;
+  padding: 18rpx 20rpx;
+  font-size: 28rpx;
+  color: #333;
+  margin-bottom: 16rpx;
+}
+.textarea {
+  height: 120rpx;
+}
+
+.preview {
+  background: #fafafa;
+  border-radius: 10rpx;
+  padding: 16rpx 20rpx;
+  margin-top: 8rpx;
+}
+.preview-line {
+  display: block;
+  font-size: 26rpx;
+  color: #666;
+  line-height: 1.9;
+}
+
+.hint {
+  font-size: 24rpx;
+  color: #07c160;
+  display: block;
+  margin-top: 8rpx;
+}
+
+.counter {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.cbtn {
+  margin-right: 16rpx;
+}
+.cbtn.reset {
+  margin-left: auto;
+  margin-right: 0;
+}
+.cval {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #FF6B35;
+  min-width: 80rpx;
+  text-align: center;
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 12rpx 0;
+}
+.label {
+  font-size: 28rpx;
+  color: #333;
+  margin-right: 16rpx;
+}
+.state {
+  font-size: 26rpx;
+  color: #999;
+  margin-left: 16rpx;
+}
+.slider {
+  flex: 1;
+  margin-left: 16rpx;
+}
+
+.opts {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+.opt {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-right: 28rpx;
+  margin-bottom: 12rpx;
+  font-size: 28rpx;
+  color: #333;
+}
+.opt text {
+  margin-left: 8rpx;
+}
+
+.form-actions {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  margin-top: 8rpx;
+}
+.form-actions .cbtn {
+  margin-left: 16rpx;
+  margin-right: 0;
+}
+
+.back-btn {
+  margin: 32rpx 0;
+  padding: 24rpx;
+  background: #fff;
+  border-radius: 12rpx;
+  text-align: center;
+}
+.back-text {
+  font-size: 28rpx;
+  color: #FF6B35;
+}

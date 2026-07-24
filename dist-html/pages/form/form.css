@@ -1,0 +1,149 @@
+/* 由 form.wxss 编译 */
+.page {
+  min-height: 100vh;
+  background: #f5f5f5;
+  padding: 10px;
+}
+
+.header {
+  padding: 12px 0 4px;
+  text-align: center;
+}
+.title {
+  font-size: 20px;
+  font-weight: bold;
+  color: #333;
+  display: block;
+}
+.subtitle {
+  font-size: 12px;
+  color: #999;
+}
+
+.section {
+  background: #fff;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 12px;
+}
+.section-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.field {
+  background: #f7f7f8;
+  border-radius: 5px;
+  padding: 9px 10px;
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 8px;
+}
+.textarea {
+  height: 60px;
+}
+
+.preview {
+  background: #fafafa;
+  border-radius: 5px;
+  padding: 8px 10px;
+  margin-top: 4px;
+}
+.preview-line {
+  display: block;
+  font-size: 13px;
+  color: #666;
+  line-height: 1.9;
+}
+
+.hint {
+  font-size: 12px;
+  color: #07c160;
+  display: block;
+  margin-top: 4px;
+}
+
+.counter {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.cbtn {
+  margin-right: 8px;
+}
+.cbtn.reset {
+  margin-left: auto;
+  margin-right: 0;
+}
+.cval {
+  font-size: 20px;
+  font-weight: bold;
+  color: #FF6B35;
+  min-width: 40px;
+  text-align: center;
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 6px 0;
+}
+.label {
+  font-size: 14px;
+  color: #333;
+  margin-right: 8px;
+}
+.state {
+  font-size: 13px;
+  color: #999;
+  margin-left: 8px;
+}
+.slider {
+  flex: 1;
+  margin-left: 8px;
+}
+
+.opts {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+.opt {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-right: 14px;
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: #333;
+}
+.opt .wx-text {
+  margin-left: 4px;
+}
+
+.form-actions {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+.form-actions .cbtn {
+  margin-left: 8px;
+  margin-right: 0;
+}
+
+.back-btn {
+  margin: 16px 0;
+  padding: 12px;
+  background: #fff;
+  border-radius: 6px;
+  text-align: center;
+}
+.back-text {
+  font-size: 14px;
+  color: #FF6B35;
+}

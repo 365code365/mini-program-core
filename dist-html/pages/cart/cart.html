@@ -20,12 +20,15 @@
     <div class="wx-view empty">
       <i class="wx-icon wxicon wxicon-info" style="font-size:53px;background:#ccc"></i>
       <span class="wx-text empty-text">购物车是空的</span>
-      <button class="wx-button" data-tap="goShopping">去逛逛</button>
+      <button class="wx-button wx-button-primary" data-tap="goShopping">去逛逛</button>
     </div>
     <div class="wx-view bottom-space"></div>
   </div>
 </div>
-<script>window.__PAGE_ROUTE__ = "pages/cart/cart";</script>
+<script>
+window.__PAGE_ROUTE__ = "pages/cart/cart";
+window.__WXML__ = [{"a":{"class":"page"},"c":[{"a":{"class":"header"},"c":[{"a":{"class":"header-title"},"c":[{"t":"tx","x":"🛒 购物车"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"empty","wx:if":"{{cartItems.length == 0}}"},"c":[{"a":{"color":"#ccc","size":"64","type":"info"},"c":[],"n":"icon","t":"el"},{"a":{"class":"empty-text"},"c":[{"t":"tx","x":"购物车是空的"}],"n":"text","t":"el"},{"a":{"bindtap":"goShopping","type":"primary"},"c":[{"t":"tx","x":"去逛逛"}],"n":"button","t":"el"}],"n":"view","t":"el"},{"a":{"class":"cart-list","wx:if":"{{cartItems.length > 0}}"},"c":[{"a":{"class":"cart-item","wx:for":"{{cartItems}}","wx:key":"id"},"c":[{"a":{"bindtap":"onToggleSelect","checked":"{{item.selected}}","color":"#FF6B35","data-index":"{{index}}"},"c":[],"n":"checkbox","t":"el"},{"a":{"class":"item-icon"},"c":[{"a":{"color":"#FF6B35","size":"32","type":"success"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"},{"a":{"class":"item-info"},"c":[{"a":{"class":"item-name"},"c":[{"t":"tx","x":"{{item.name}}"}],"n":"text","t":"el"},{"a":{"class":"item-row"},"c":[{"a":{"class":"item-price"},"c":[{"t":"tx","x":"¥{{item.price}}"}],"n":"text","t":"el"},{"a":{"class":"qty-box"},"c":[{"a":{"bindtap":"onDecrease","class":"qty-btn","data-index":"{{index}}"},"c":[{"a":{},"c":[{"t":"tx","x":"-"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"qty-num"},"c":[{"t":"tx","x":"{{item.quantity}}"}],"n":"text","t":"el"},{"a":{"bindtap":"onIncrease","class":"qty-btn","data-index":"{{index}}"},"c":[{"a":{},"c":[{"t":"tx","x":"+"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onDelete","class":"delete-btn","data-index":"{{index}}"},"c":[{"a":{"color":"#999","size":"20","type":"cancel"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"checkout","wx:if":"{{cartItems.length > 0}}"},"c":[{"a":{"class":"checkout-left"},"c":[{"a":{"bindtap":"onToggleAll","checked":"{{allSelected}}","color":"#FF6B35"},"c":[],"n":"checkbox","t":"el"},{"a":{"class":"select-text"},"c":[{"t":"tx","x":"全选"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"checkout-right"},"c":[{"a":{"class":"total-text"},"c":[{"t":"tx","x":"合计: "}],"n":"text","t":"el"},{"a":{"class":"total-price"},"c":[{"t":"tx","x":"¥{{totalPrice}}"}],"n":"text","t":"el"},{"a":{"bindtap":"onCheckout","class":"checkout-btn","type":"primary"},"c":[{"t":"tx","x":"结算({{selectedCount}})"}],"n":"button","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"bottom-space"},"c":[],"n":"view","t":"el"}],"n":"view","t":"el"}];
+</script>
 <script src="../../common/runtime.js"></script>
 <script src="../../common/app.js"></script>
 <script src="./cart.js"></script>

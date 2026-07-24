@@ -52,7 +52,7 @@ fn test_block_text_wraps_to_multiple_lines() {
 
 #[test]
 fn test_transpile_wxml_to_html_and_wxss_to_css() {
-    use crate::transpile::{wxml_to_html, wxss_to_css};
+    use crate::compiler::html::{wxml_to_html, wxss_to_css};
     use crate::parser::wxml::WxmlParser;
     let nodes = WxmlParser::new(
         r#"<view class="a" bindtap="onTap" data-id="7"><text>{{name}}</text><image src="p.jpg" mode="aspectFill"/></view>"#
@@ -74,7 +74,7 @@ fn test_transpile_wxml_to_html_and_wxss_to_css() {
 
 #[test]
 fn test_wxss_tag_selector_rewrite() {
-    use crate::transpile::wxss_to_css;
+    use crate::compiler::html::wxss_to_css;
     // 后代标签选择器 → .wx-<tag>
     let css = wxss_to_css(".item text { color: #666; } .item.active text { color: red; }");
     assert!(css.contains(".item .wx-text"), "descendant text->.wx-text: {}", css);
@@ -96,6 +96,41 @@ fn test_wxss_tag_selector_rewrite() {
     let css5 = wxss_to_css("@media screen { text { color: #000; } }");
     assert!(css5.contains("@media screen"), "media condition kept: {}", css5);
     assert!(css5.contains(".wx-text"), "rule inside media rewritten: {}", css5);
+}
+
+#[test]
+fn test_button_type_size_classes() {
+    use crate::compiler::html::{wxml_to_html, base_css};
+    use crate::parser::wxml::WxmlParser;
+    let nodes = WxmlParser::new(
+        r#"<button type="primary" size="mini" bindtap="a">买</button><button>普通</button>"#
+    ).parse().unwrap();
+    let html = wxml_to_html(&nodes, &json!({}));
+    assert!(html.contains("wx-button-primary"), "primary class: {}", html);
+    assert!(html.contains("wx-button-mini"), "mini class: {}", html);
+    assert!(html.contains("wx-button-default"), "default class for typeless button: {}", html);
+    assert!(html.contains("data-tap=\"a\""), "tap event mapped: {}", html);
+    // 基础样式包含按钮盒模型与交互反馈
+    let b = base_css();
+    assert!(b.contains(".wx-button-primary"), "base css has primary");
+    assert!(b.contains("cursor:pointer"), "base css has pointer cursor");
+    assert!(b.contains("[data-tap]:active"), "base css has tap active feedback");
+}
+
+#[test]
+fn test_form_and_media_components() {
+    use crate::compiler::html::wxml_to_html;
+    use crate::parser::wxml::WxmlParser;
+    // checkbox / radio → 原生 input；switch → 带 knob 的 div；progress → 进度条
+    let nodes = WxmlParser::new(
+        r#"<checkbox value="a" checked="true"/><radio value="b"/><switch checked="true"/><progress percent="60" show-info="true"/><rich-text nodes="{{n}}"/>"#
+    ).parse().unwrap();
+    let html = wxml_to_html(&nodes, &json!({"n": [{"type":"text","text":"hi"}]}));
+    assert!(html.contains(r#"<input class="wx-checkbox" type="checkbox" value="a" checked>"#), "checkbox: {}", html);
+    assert!(html.contains(r#"type="radio""#), "radio: {}", html);
+    assert!(html.contains("wx-switch-on") && html.contains("wx-switch-knob"), "switch: {}", html);
+    assert!(html.contains("wx-progress-inner") && html.contains("width:60%"), "progress: {}", html);
+    assert!(html.contains(">hi</div>") || html.contains("hi"), "rich-text nodes rendered: {}", html);
 }
 
 #[test]

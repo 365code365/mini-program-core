@@ -1,4 +1,17 @@
-/* mini-render 响应式运行时（导出 HTML 工程） */
+//! 浏览器端**响应式**运行时（导出 HTML 工程用）
+//!
+//! 与静态首屏不同，运行时内置一个 WXML 解释器：读取页面内嵌的 `window.__WXML__` AST，
+//! 结合页面 `data` 渲染真实 DOM；`setData` 会按模板**重新渲染**，从而让所有事件、
+//! 列表更新、条件渲染、`model:` 双向数据绑定都能真正工作。
+//!
+//! 关键点：
+//! - `{{表达式}}` 直接用 `new Function + with(scope)` 求值（WXML 表达式本就是 JS 语法）
+//! - `wx:for` / `wx:if` / `wx:elif` / `wx:else` / `block` 支持
+//! - 事件委托（bind/catch → data-*），`model:value` → `data-model` 双向绑定
+//! - `wx.*` 常用 API、旧版 canvas 2D 适配
+
+/// 运行时 JS 源码
+pub const RUNTIME_JS: &str = r####"/* mini-render 响应式运行时（导出 HTML 工程） */
 (function () {
   "use strict";
   var appConfig = null, appInst = null, pageConfig = null, pageInst = null;
@@ -405,3 +418,4 @@
     }
   });
 })();
+"####;

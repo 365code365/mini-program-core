@@ -6,7 +6,8 @@
     "pages/profile/profile",
     "pages/detail/detail",
     "pages/canvas/canvas",
-    "pages/components/components"
+    "pages/components/components",
+    "pages/form/form"
   ],
   "window": {
     "navigationBarTitleText": "Mini Shop",
