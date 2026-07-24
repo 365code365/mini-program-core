@@ -270,8 +270,13 @@ fn map_tag(node: &WxmlNode) -> (&'static str, String, bool) {
     match node.tag_name.as_str() {
         "view" | "block" | "cover-view" => ("div", String::new(), false),
         "scroll-view" => {
-            let sx = node.get_attr("scroll-x").map(|v| v == "true").unwrap_or(false);
-            let style = if sx { "overflow-x:auto;overflow-y:hidden" } else { "overflow-y:auto" };
+            let sx = is_truthy(node.get_attr("scroll-x"));
+            // 横向滚动：改为 flex 行排列 + 不换行；纵向滚动：保持列排列
+            let style = if sx {
+                "display:flex;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden"
+            } else {
+                "overflow-y:auto"
+            };
             ("div", style.to_string(), false)
         }
         "text" => ("span", String::new(), false),
@@ -388,7 +393,10 @@ fn build_open_tag(node: &WxmlNode) -> (String, &'static str, bool) {
                 }
             };
             attrs.push_str(&format!(" type=\"{}\"", ty));
-            if let Some(v) = node.get_attr("value") { attrs.push_str(&format!(" value=\"{}\"", escape_attr(v))); }
+            // value 优先 value，其次 model:value（双向绑定初始值）
+            if let Some(v) = node.get_attr("value").or_else(|| node.get_attr("model:value")) {
+                attrs.push_str(&format!(" value=\"{}\"", escape_attr(v)));
+            }
             if let Some(p) = node.get_attr("placeholder") { attrs.push_str(&format!(" placeholder=\"{}\"", escape_attr(p))); }
         }
         "navigator" => {
@@ -532,8 +540,11 @@ fn emit_pretty(node: &WxmlNode, depth: usize, out: &mut String) {
 pub fn base_css() -> &'static str {
     r#"
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-/* 还原小程序默认盒模型：view/scroll-view 等默认 flex 纵向排列（与引擎渲染一致）*/
-.wx-view,.wx-scroll-view,.wx-cover-view,.wx-navigator,.wx-checkbox-group,.wx-radio-group,.wx-form{display:flex;flex-direction:column;}
+/* 还原小程序默认盒模型：view 等默认 flex 纵向排列（与引擎一致，可收缩以适应宽度）*/
+.wx-view,.wx-cover-view,.wx-navigator,.wx-checkbox-group,.wx-radio-group,.wx-form,.wx-movable-view,.wx-movable-area{display:flex;flex-direction:column;}
+/* scroll-view：块级可滚动容器——子元素保持自身高度、超出则滚动，而非像 flex 那样被压缩 */
+.wx-scroll-view{display:block;}
+.wx-scroll-view>*{flex-shrink:0;}
 .wx-text{display:inline;}
 .wx-image{display:block;}
 .wx-input,.wx-textarea{border:0;outline:none;background:none;font:inherit;color:inherit;width:100%;}

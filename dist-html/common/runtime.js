@@ -3,7 +3,7 @@
   "use strict";
   var appConfig = null, appInst = null, pageConfig = null, pageInst = null;
   var AST = window.__WXML__ || [];
-  var composing = false, delegated = false, swiperTimers = [];
+  var composing = false, delegated = false;
 
   // ───────── 框架 API ─────────
   window.App = function (cfg) { appConfig = cfg; };
@@ -66,23 +66,32 @@
     }
   }
 
-  // ───────── 渲染 ─────────
-  function renderNodes(nodes, scope) {
-    var html = "", branch = false;
+  // ───────── 渲染为 VNode 树 ─────────
+  // VNode: { t:'el', tag, attrs:{}, children:[], value?, checked?, innerHTML? } | { t:'tx', text }
+  function renderNodesV(nodes, scope) {
+    var out = [], branch = false;
     for (var i = 0; i < nodes.length; i++) {
       var node = nodes[i];
-      if (node.t === "tx") { html += escText(interp(node.x, scope)); branch = false; continue; }
+      if (node.t === "tx") { out.push({ t: "tx", text: interp(node.x, scope) }); branch = false; continue; }
       var a = node.a || {};
-      if ("wx:for" in a) { html += renderFor(node, scope); branch = false; continue; }
-      if ("wx:if" in a) { var c = !!evalWhole(a["wx:if"], scope); branch = c; if (c) html += renderEl(node, scope); continue; }
-      if ("wx:elif" in a) { if (!branch) { var c2 = !!evalWhole(a["wx:elif"], scope); if (c2) { branch = true; html += renderEl(node, scope); } } continue; }
-      if ("wx:else" in a) { if (!branch) html += renderEl(node, scope); branch = false; continue; }
-      html += renderEl(node, scope); branch = false;
+      if ("wx:for" in a) { renderForV(node, scope, out); branch = false; continue; }
+      if ("wx:if" in a) { var c = !!evalWhole(a["wx:if"], scope); branch = c; if (c) pushEl(out, node, scope); continue; }
+      if ("wx:elif" in a) { if (!branch) { var c2 = !!evalWhole(a["wx:elif"], scope); if (c2) { branch = true; pushEl(out, node, scope); } } continue; }
+      if ("wx:else" in a) { if (!branch) pushEl(out, node, scope); branch = false; continue; }
+      pushEl(out, node, scope); branch = false;
     }
-    return html;
+    return out;
   }
-
-  function renderFor(node, scope) {
+  function pushEl(out, node, scope) {
+    var tag = node.n;
+    if (tag === "block" || tag === "template" || tag === "import" || tag === "include") {
+      var kids = renderNodesV(node.c || [], scope);
+      for (var i = 0; i < kids.length; i++) out.push(kids[i]);
+      return;
+    }
+    out.push(vnodeEl(node, scope));
+  }
+  function renderForV(node, scope, out) {
     var a = node.a;
     var list = evalWhole(a["wx:for"], scope);
     var itemName = a["wx:for-item"] || "item", idxName = a["wx:for-index"] || "index";
@@ -92,18 +101,17 @@
     else if (typeof list === "number") { for (var z = 0; z < list; z++) arr.push(z); }
     var inner = { t: "el", n: node.n, a: {}, c: node.c };
     for (var k in a) { if (k !== "wx:for" && k !== "wx:for-item" && k !== "wx:for-index" && k !== "wx:key") inner.a[k] = a[k]; }
-    var html = "";
     for (var i = 0; i < arr.length; i++) {
       var cs = Object.create(scope || {}); cs[itemName] = arr[i]; cs[idxName] = i;
-      html += renderEl(inner, cs);
+      pushEl(out, inner, cs);
     }
-    return html;
   }
 
-  function renderEl(node, scope) {
+  function vnodeEl(node, scope) {
     var tag = node.n, a = node.a || {};
-    if (tag === "block" || tag === "template" || tag === "import" || tag === "include") return renderNodes(node.c || [], scope);
+    if (tag === "swiper") return swiperVNode(node, a, scope);
     var htmlTag = mapTag(tag), isVoid = !!VOID[tag];
+    var attrs = {};
     var cls = "wx-" + tag;
     if (a["class"]) cls += " " + interp(a["class"], scope);
     if (tag === "icon" && a["type"]) cls += " wxicon wxicon-" + interp(a["type"], scope);
@@ -115,9 +123,8 @@
       if (truthy(evalWhole(a["plain"], scope))) cls += " wx-button-plain";
       if (truthy(evalWhole(a["disabled"], scope))) cls += " wx-button-disabled";
     }
-    var attrs = ' class="' + esc(cls) + '"';
-    if (a["id"]) attrs += ' id="' + esc(interp(a["id"], scope)) + '"';
-
+    attrs["class"] = cls;
+    if (a["id"]) attrs["id"] = interp(a["id"], scope);
     var style = a["style"] ? convertRpx(interp(a["style"], scope)) : "";
     var ex = extraStyle(tag, a, scope);
     if (ex) { if (style && !/;\s*$/.test(style)) style += ";"; style += ex; }
@@ -125,55 +132,87 @@
       if (a["size"]) { var sz = parseFloat(interp(a["size"], scope)) || 23; if (style && !/;\s*$/.test(style)) style += ";"; style += "font-size:" + Math.round(sz / 1.2) + "px"; }
       if (a["color"]) { if (style && !/;\s*$/.test(style)) style += ";"; style += "background:" + interp(a["color"], scope); }
     }
-    if (style) attrs += ' style="' + esc(style) + '"';
-    attrs += elAttrs(tag, a, scope);
-    attrs += eventAttrs(a, scope);
+    if (style) attrs["style"] = style;
 
-    if (isVoid) return "<" + htmlTag + attrs + ">";
+    var v = { t: "el", tag: htmlTag, attrs: attrs };
+    applyElAttrs(tag, a, scope, attrs, v);
+    applyEvents(a, scope, attrs);
+
+    if (isVoid) return v;
     var inner = customInner(tag, a, scope);
-    if (inner != null) return "<" + htmlTag + attrs + ">" + inner + "</" + htmlTag + ">";
-    if (tag === "textarea") return "<textarea" + attrs + ">" + escText(interp(a["value"] || "", scope)) + "</textarea>";
-    return "<" + htmlTag + attrs + ">" + renderNodes(node.c || [], scope) + "</" + htmlTag + ">";
+    if (inner != null) { v.innerHTML = inner; return v; }
+    if (tag === "textarea") { v.value = interp(a["value"] != null ? a["value"] : (a["model:value"] || ""), scope); v.children = []; return v; }
+    v.children = renderNodesV(node.c || [], scope);
+    return v;
+  }
+
+  function applyElAttrs(tag, a, scope, attrs, v) {
+    if (tag === "image") { if (a["src"]) attrs["src"] = interp(a["src"], scope); }
+    else if (tag === "input") {
+      var t = interp(a["type"] || "text", scope);
+      attrs["type"] = truthy(evalWhole(a["password"], scope)) ? "password" : ((t === "number" || t === "digit" || t === "idcard") ? "number" : t);
+      var iv = a["value"] != null ? interp(a["value"], scope) : (a["model:value"] != null ? interp(a["model:value"], scope) : null);
+      if (iv != null) v.value = iv;
+      if (a["placeholder"]) attrs["placeholder"] = interp(a["placeholder"], scope);
+    }
+    else if (tag === "checkbox" || tag === "radio") {
+      attrs["type"] = tag === "checkbox" ? "checkbox" : "radio";
+      if (a["value"] != null) attrs["value"] = interp(a["value"], scope);
+      v.checked = truthy(evalWhole(a["checked"], scope));
+      if (truthy(evalWhole(a["disabled"], scope))) attrs["disabled"] = "disabled";
+    }
+    else if (tag === "slider") {
+      attrs["type"] = "range";
+      attrs["min"] = interp(a["min"], scope) || "0";
+      attrs["max"] = interp(a["max"], scope) || "100";
+      attrs["step"] = interp(a["step"], scope) || "1";
+      if (a["value"] != null) v.value = interp(a["value"], scope);
+    }
+    else if (tag === "navigator") { if (a["url"]) attrs["href"] = "#" + interp(a["url"], scope); }
+    else if (tag === "video") { if (a["src"]) attrs["src"] = interp(a["src"], scope); if (a["poster"]) attrs["poster"] = interp(a["poster"], scope); attrs["controls"] = "controls"; attrs["playsinline"] = "playsinline"; }
+    else if (tag === "audio") { if (a["src"]) attrs["src"] = interp(a["src"], scope); attrs["controls"] = "controls"; }
+    else if (tag === "canvas") { if (a["canvas-id"]) attrs["data-canvas-id"] = interp(a["canvas-id"], scope); }
+    else if (tag === "button" && a["form-type"]) { attrs["data-form-type"] = interp(a["form-type"], scope); }
+    if (a["name"] && /^(input|textarea|checkbox|radio|switch|slider|picker)$/.test(tag)) attrs["name"] = interp(a["name"], scope);
+  }
+
+  function applyEvents(a, scope, attrs) {
+    for (var k in a) {
+      var ev = k.indexOf("bind") === 0 ? k.slice(4) : (k.indexOf("catch") === 0 ? k.slice(5) : null);
+      if (ev) { if (ev.charAt(0) === ":") ev = ev.slice(1); if (ev) attrs["data-" + ev] = interp(a[k], scope); }
+    }
+    for (var k2 in a) {
+      if (k2.indexOf("data-") === 0) {
+        var val = evalWhole(a[k2], scope);
+        attrs["data-ds-" + k2.slice(5)] = (val != null && typeof val === "object") ? JSON.stringify(val) : ("" + (val == null ? "" : val));
+      } else if (k2.indexOf("model:") === 0) {
+        var m = /^\s*\{\{([\s\S]+)\}\}\s*$/.exec(a[k2] || "");
+        attrs["data-model"] = m ? m[1].trim() : a[k2];
+      }
+    }
+  }
+
+  function swiperVNode(node, a, scope) {
+    var swCls = "wx-swiper"; if (a["class"]) swCls += " " + interp(a["class"], scope);
+    var swAttrs = { "class": swCls };
+    swAttrs["data-autoplay"] = "" + truthy(evalWhole(a["autoplay"], scope));
+    swAttrs["data-interval"] = interp(a["interval"], scope) || "5000";
+    if (truthy(evalWhole(a["vertical"], scope))) swAttrs["data-vertical"] = "true";
+    var style = a["style"] ? convertRpx(interp(a["style"], scope)) : ""; if (style) swAttrs["style"] = style;
+    var items = renderNodesV(node.c || [], scope);
+    var wrapCh = [{ t: "el", tag: "div", attrs: swAttrs, children: items }];
+    if (truthy(evalWhole(a["indicator-dots"], scope))) {
+      var dots = [];
+      for (var i = 0; i < items.length; i++) dots.push({ t: "el", tag: "i", attrs: { "class": "wx-swiper-dot" }, children: [] });
+      wrapCh.push({ t: "el", tag: "div", attrs: { "class": "wx-swiper-dots" }, children: dots });
+    }
+    return { t: "el", tag: "div", attrs: { "class": "wx-swiper-wrap" }, children: wrapCh };
   }
 
   function extraStyle(tag, a, scope) {
-    if (tag === "scroll-view") return truthy(evalWhole(a["scroll-x"], scope)) ? "overflow-x:auto;overflow-y:hidden" : "overflow-y:auto";
+    if (tag === "scroll-view") return truthy(evalWhole(a["scroll-x"], scope)) ? "display:flex;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden" : "overflow-y:auto";
     if (tag === "image") { var mode = interp(a["mode"] || "scaleToFill", scope); return mode === "aspectFit" ? "object-fit:contain" : mode === "aspectFill" ? "object-fit:cover" : mode === "widthFix" ? "height:auto" : "object-fit:fill"; }
     return "";
-  }
-
-  function elAttrs(tag, a, scope) {
-    var s = "";
-    if (tag === "image") { if (a["src"]) s += ' src="' + esc(interp(a["src"], scope)) + '"'; }
-    else if (tag === "input") {
-      var t = interp(a["type"] || "text", scope);
-      var ty = truthy(evalWhole(a["password"], scope)) ? "password" : ((t === "number" || t === "digit" || t === "idcard") ? "number" : t);
-      s += ' type="' + ty + '"';
-      if (a["value"] != null) s += ' value="' + esc(interp(a["value"], scope)) + '"';
-      if (a["placeholder"]) s += ' placeholder="' + esc(interp(a["placeholder"], scope)) + '"';
-    }
-    else if (tag === "checkbox" || tag === "radio") {
-      s += ' type="' + (tag === "checkbox" ? "checkbox" : "radio") + '"';
-      if (a["value"] != null) s += ' value="' + esc(interp(a["value"], scope)) + '"';
-      if (truthy(evalWhole(a["checked"], scope))) s += " checked";
-      if (truthy(evalWhole(a["disabled"], scope))) s += " disabled";
-    }
-    else if (tag === "slider") {
-      s += ' type="range" min="' + (interp(a["min"], scope) || "0") + '" max="' + (interp(a["max"], scope) || "100") + '" step="' + (interp(a["step"], scope) || "1") + '"';
-      if (a["value"] != null) s += ' value="' + esc(interp(a["value"], scope)) + '"';
-    }
-    else if (tag === "swiper") {
-      s += ' data-autoplay="' + truthy(evalWhole(a["autoplay"], scope)) + '" data-interval="' + (interp(a["interval"], scope) || "5000") + '" data-circular="' + truthy(evalWhole(a["circular"], scope)) + '" data-dots="' + truthy(evalWhole(a["indicator-dots"], scope)) + '"';
-      if (truthy(evalWhole(a["vertical"], scope))) s += ' data-vertical="true"';
-    }
-    else if (tag === "navigator") { if (a["url"]) s += ' href="#' + esc(interp(a["url"], scope)) + '"'; }
-    else if (tag === "video") { if (a["src"]) s += ' src="' + esc(interp(a["src"], scope)) + '"'; if (a["poster"]) s += ' poster="' + esc(interp(a["poster"], scope)) + '"'; s += " controls playsinline"; }
-    else if (tag === "audio") { if (a["src"]) s += ' src="' + esc(interp(a["src"], scope)) + '"'; s += " controls"; }
-    else if (tag === "canvas") { if (a["canvas-id"]) s += ' data-canvas-id="' + esc(interp(a["canvas-id"], scope)) + '"'; }
-    else if (tag === "button" && a["form-type"]) { s += ' data-form-type="' + esc(interp(a["form-type"], scope)) + '"'; }
-    // 表单控件的 name（供 form 提交收集）
-    if (a["name"] && /^(input|textarea|checkbox|radio|switch|slider|picker)$/.test(tag)) s += ' name="' + esc(interp(a["name"], scope)) + '"';
-    return s;
   }
 
   function customInner(tag, a, scope) {
@@ -201,45 +240,76 @@
     return "";
   }
 
-  function eventAttrs(a, scope) {
-    var s = "";
-    for (var k in a) {
-      var ev = k.indexOf("bind") === 0 ? k.slice(4) : (k.indexOf("catch") === 0 ? k.slice(5) : null);
-      if (ev) { if (ev.charAt(0) === ":") ev = ev.slice(1); if (ev) s += " data-" + ev + '="' + esc(interp(a[k], scope)) + '"'; }
-    }
-    for (var k2 in a) {
-      if (k2.indexOf("data-") === 0) {
-        var val = evalWhole(a[k2], scope);
-        var enc = (val != null && typeof val === "object") ? JSON.stringify(val) : ("" + (val == null ? "" : val));
-        s += " data-ds-" + k2.slice(5) + '="' + esc(enc) + '"';
-      } else if (k2.indexOf("model:") === 0) {
-        var m = /^\s*\{\{([\s\S]+)\}\}\s*$/.exec(a[k2] || "");
-        s += ' data-model="' + esc(m ? m[1].trim() : a[k2]) + '"';
-      }
-    }
-    return s;
+  // ───────── VNode → 真实 DOM（创建 & diff/patch，增量更新，保留焦点/输入状态）─────────
+  function createEl(v) {
+    if (v.t === "tx") return document.createTextNode(v.text);
+    var el = document.createElement(v.tag);
+    var a = v.attrs || {};
+    for (var k in a) el.setAttribute(k, a[k]);
+    if (v.value != null) el.value = v.value;
+    if (v.checked != null) el.checked = v.checked;
+    if (v.innerHTML != null) el.innerHTML = v.innerHTML;
+    else if (v.children) for (var i = 0; i < v.children.length; i++) el.appendChild(createEl(v.children[i]));
+    return el;
+  }
+  function patchAttrs(dom, oldA, newA) {
+    for (var k in oldA) { if (!(k in newA)) dom.removeAttribute(k); }
+    for (var k2 in newA) { if (oldA[k2] !== newA[k2]) dom.setAttribute(k2, newA[k2]); }
+  }
+  function patch(parent, dom, oldV, newV) {
+    if (oldV == null) { parent.appendChild(createEl(newV)); return; }
+    if (newV == null) { if (dom && dom.parentNode === parent) parent.removeChild(dom); return; }
+    if (oldV.t !== newV.t || (newV.t === "el" && oldV.tag !== newV.tag)) { parent.replaceChild(createEl(newV), dom); return; }
+    if (newV.t === "tx") { if (oldV.text !== newV.text) dom.textContent = newV.text; return; }
+    patchAttrs(dom, oldV.attrs || {}, newV.attrs || {});
+    // value/checked 作为“属性属性”：仅当数据驱动值变化时才写回 DOM，且避免覆盖用户正在输入的值
+    // —— 这保证输入不被清空、光标不跳动、复选/滑块的用户交互不被回滚。
+    if (newV.value != null && oldV.value !== newV.value && dom.value !== newV.value) dom.value = newV.value;
+    if (newV.checked != null && oldV.checked !== newV.checked) dom.checked = newV.checked;
+    if (newV.innerHTML != null) { if (oldV.innerHTML !== newV.innerHTML) dom.innerHTML = newV.innerHTML; return; }
+    patchChildren(dom, oldV.children || [], newV.children || []);
+  }
+  function patchChildren(parent, oldCh, newCh) {
+    var common = Math.min(oldCh.length, newCh.length);
+    for (var i = 0; i < common; i++) patch(parent, parent.childNodes[i], oldCh[i], newCh[i]);
+    for (var r = oldCh.length - 1; r >= newCh.length; r--) { var d = parent.childNodes[r]; if (d) parent.removeChild(d); }
+    for (var k = common; k < newCh.length; k++) parent.appendChild(createEl(newCh[k]));
   }
 
-  // ───────── setData / 渲染 ─────────
+  // ───────── setData / 挂载 / 更新 ─────────
+  var curVTree = null;
+  function pageData() { return pageInst ? pageInst.data : {}; }
   function setByPath(obj, path, val) {
     var tokens = path.replace(/\[(\w+)\]/g, ".$1").split(".");
     var o = obj;
     for (var i = 0; i < tokens.length - 1; i++) { var t = tokens[i]; if (o[t] == null) o[t] = {}; o = o[t]; }
     o[tokens[tokens.length - 1]] = val;
   }
-  function renderPage() {
+  function mountPage() {
     var app = document.getElementById("app");
     if (!app || !AST || !AST.length) return false;
-    try { app.innerHTML = renderNodes(AST, pageInst ? pageInst.data : {}); setupComponents(); return true; }
-    catch (e) { console.error("render error", e); return false; }
+    try {
+      var vtree = renderNodesV(AST, pageData());
+      app.innerHTML = "";
+      for (var i = 0; i < vtree.length; i++) app.appendChild(createEl(vtree[i]));
+      curVTree = vtree;
+      initWidgets();
+      return true;
+    } catch (e) { console.error("render error", e); return false; }
   }
-  function setDataAndRender(patch, cb) {
+  function updatePage() {
+    var app = document.getElementById("app");
+    if (!app || curVTree == null) { mountPage(); return; }
+    try {
+      var vtree = renderNodesV(AST, pageData());
+      patchChildren(app, curVTree, vtree);
+      curVTree = vtree;
+      initWidgets();
+    } catch (e) { console.error("patch error", e); }
+  }
+  function setData(patch, cb) {
     if (patch) for (var k in patch) setByPath(pageInst.data, k, patch[k]);
-    var active = document.activeElement;
-    var model = active && active.getAttribute ? active.getAttribute("data-model") : null;
-    var pos = null; try { pos = active ? active.selectionStart : null; } catch (e) {}
-    renderPage();
-    if (model) { var el = document.querySelector('[data-model="' + model.replace(/"/g, '\\"') + '"]'); if (el) { try { el.focus(); if (pos != null && el.setSelectionRange) el.setSelectionRange(pos, pos); } catch (e) {} } }
+    updatePage();
     if (cb) try { cb(); } catch (e) {}
   }
 
@@ -298,7 +368,7 @@
       var el = e.target; if (!el.getAttribute) return;
       var val = el.value;
       var model = el.getAttribute("data-model");
-      if (model) { if (composing) { setByPath(pageInst.data, model, val); } else { var p = {}; p[model] = val; setDataAndRender(p); } }
+      if (model) { if (composing) { setByPath(pageInst.data, model, val); } else { var p = {}; p[model] = val; setData(p); } }
       var inp = el.getAttribute("data-input"); if (inp) call(inp, evObj(el, { value: val }));
       if (el.classList && el.classList.contains("wx-slider")) { var sc = el.getAttribute("data-change") || el.getAttribute("data-changing"); if (sc) call(sc, evObj(el, { value: Number(val) })); }
     });
@@ -311,31 +381,36 @@
       if (el.getAttribute) { var cf = el.getAttribute("data-confirm"); if (cf) call(cf, evObj(el, { value: el.value })); var ch = el.getAttribute("data-change"); if (ch && !(el.classList && el.classList.contains("wx-slider"))) call(ch, evObj(el, { value: el.value })); }
     });
     document.addEventListener("compositionstart", function () { composing = true; });
-    document.addEventListener("compositionend", function (e) { composing = false; var el = e.target; if (el.getAttribute && el.getAttribute("data-model")) { var p = {}; p[el.getAttribute("data-model")] = el.value; setDataAndRender(p); } });
+    document.addEventListener("compositionend", function (e) { composing = false; var el = e.target; if (el.getAttribute && el.getAttribute("data-model")) { var p = {}; p[el.getAttribute("data-model")] = el.value; setData(p); } });
   }
 
-  // ───────── 组件行为（每次渲染后重建） ─────────
-  function setupComponents() {
-    swiperTimers.forEach(clearInterval); swiperTimers = [];
-    document.querySelectorAll(".wx-swiper").forEach(function (sw) {
-      var items = sw.querySelectorAll(".wx-swiper-item");
-      if (!items.length) return;
-      var vertical = sw.getAttribute("data-vertical") === "true";
-      var wrap = document.createElement("div"); wrap.className = "wx-swiper-wrap";
-      sw.parentNode.insertBefore(wrap, sw); wrap.appendChild(sw);
-      var dots = null;
-      if (sw.getAttribute("data-dots") === "true") {
-        dots = document.createElement("div"); dots.className = "wx-swiper-dots";
-        items.forEach(function (_, i) { var d = document.createElement("i"); d.className = "wx-swiper-dot" + (i === 0 ? " active" : ""); dots.appendChild(d); });
-        wrap.appendChild(dots);
-      }
-      var idx = 0, n = items.length;
-      function upd() { if (dots) for (var i = 0; i < dots.children.length; i++) dots.children[i].className = "wx-swiper-dot" + (i === idx ? " active" : ""); }
-      function go(i) { idx = (i % n + n) % n; var pos = idx * (vertical ? sw.clientHeight : sw.clientWidth); sw.scrollTo(vertical ? { top: pos, behavior: "smooth" } : { left: pos, behavior: "smooth" }); upd(); }
-      sw.addEventListener("scroll", function () { var i = Math.round(vertical ? sw.scrollTop / sw.clientHeight : sw.scrollLeft / sw.clientWidth); if (i !== idx) { idx = i; upd(); } });
-      if (sw.getAttribute("data-autoplay") === "true") { var iv = parseInt(sw.getAttribute("data-interval"), 10) || 5000; swiperTimers.push(setInterval(function () { go(idx + 1); }, iv)); }
+  // ───────── 组件初始化（幂等，不重构 DOM，兼容 vdom 增量更新）─────────
+  // swiper 的 wrap/dots 已由 vnode 生成；这里只“一次性”为每个 swiper 绑定滚动/自动播放，
+  // 并直接操作 dot 的 active 类（不写入 vnode.attrs，故 patch 不会覆盖）。
+  function initWidgets() {
+    document.querySelectorAll(".wx-radio-group").forEach(function (g, gi) {
+      var name = "wxradio_" + gi;
+      g.querySelectorAll(".wx-radio").forEach(function (r) { r.name = name; });
     });
-    document.querySelectorAll(".wx-radio-group").forEach(function (g, gi) { var name = "wxradio_" + gi; g.querySelectorAll(".wx-radio").forEach(function (r) { r.name = name; }); });
+    document.querySelectorAll(".wx-swiper").forEach(function (sw) {
+      if (sw.__init) return; sw.__init = true;
+      var vertical = sw.getAttribute("data-vertical") === "true";
+      var dots = sw.parentNode ? sw.parentNode.querySelector(".wx-swiper-dots") : null;
+      function upd() {
+        var i = Math.round(vertical ? sw.scrollTop / (sw.clientHeight || 1) : sw.scrollLeft / (sw.clientWidth || 1));
+        if (dots) for (var j = 0; j < dots.children.length; j++) dots.children[j].className = "wx-swiper-dot" + (j === i ? " active" : "");
+      }
+      sw.addEventListener("scroll", upd); upd();
+      if (sw.getAttribute("data-autoplay") === "true") {
+        var iv = parseInt(sw.getAttribute("data-interval"), 10) || 5000;
+        setInterval(function () {
+          var n = sw.querySelectorAll(".wx-swiper-item").length; if (!n) return;
+          var cur = Math.round(vertical ? sw.scrollTop / (sw.clientHeight || 1) : sw.scrollLeft / (sw.clientWidth || 1));
+          var nx = (cur + 1) % n, pos = nx * (vertical ? sw.clientHeight : sw.clientWidth);
+          sw.scrollTo(vertical ? { top: pos, behavior: "smooth" } : { left: pos, behavior: "smooth" });
+        }, iv);
+      }
+    });
   }
 
   // ───────── 页面跳转 & wx.* ─────────
@@ -393,15 +468,15 @@
       pageInst = pageConfig;
       pageInst.data = pageConfig.data || {};
       pageInst.route = window.__PAGE_ROUTE__;
-      pageInst.setData = function (patch, cb) { setDataAndRender(patch, cb); };
+      pageInst.setData = function (patch, cb) { setData(patch, cb); };
       pageInst.selectComponent = function () { return null; };
       var q = parseQuery();
       try { if (pageInst.onLoad) pageInst.onLoad(q); } catch (e) { console.error(e); }
       try { if (pageInst.onShow) pageInst.onShow(); } catch (e) { console.error(e); }
-      if (!renderPage()) setupComponents();
+      if (!mountPage()) initWidgets();
       try { if (pageInst.onReady) pageInst.onReady(); } catch (e) { console.error(e); }
     } else {
-      setupComponents();
+      initWidgets();
     }
   });
 })();

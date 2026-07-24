@@ -1,7 +1,10 @@
 
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-/* 还原小程序默认盒模型：view/scroll-view 等默认 flex 纵向排列（与引擎渲染一致）*/
-.wx-view,.wx-scroll-view,.wx-cover-view,.wx-navigator,.wx-checkbox-group,.wx-radio-group,.wx-form{display:flex;flex-direction:column;}
+/* 还原小程序默认盒模型：view 等默认 flex 纵向排列（与引擎一致，可收缩以适应宽度）*/
+.wx-view,.wx-cover-view,.wx-navigator,.wx-checkbox-group,.wx-radio-group,.wx-form,.wx-movable-view,.wx-movable-area{display:flex;flex-direction:column;}
+/* scroll-view：块级可滚动容器——子元素保持自身高度、超出则滚动，而非像 flex 那样被压缩 */
+.wx-scroll-view{display:block;}
+.wx-scroll-view>*{flex-shrink:0;}
 .wx-text{display:inline;}
 .wx-image{display:block;}
 .wx-input,.wx-textarea{border:0;outline:none;background:none;font:inherit;color:inherit;width:100%;}
