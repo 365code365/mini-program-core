@@ -102,6 +102,9 @@ pub struct MatchTarget<'a> {
     pub id: Option<&'a str>,
     pub classes: &'a [&'a str],
     pub attrs: Option<&'a HashMap<String, String>>,
+    /// 在兄弟中的位置（0 起）与兄弟总数，用于 :first-child/:last-child/:nth-child
+    pub sibling_index: usize,
+    pub sibling_count: usize,
 }
 
 /// 元素描述（用于祖先链匹配，拥有所有权）
@@ -111,6 +114,9 @@ pub struct ElementDesc {
     pub id: Option<String>,
     pub classes: Vec<String>,
     pub attrs: HashMap<String, String>,
+    /// 在兄弟中的位置（0 起）与兄弟总数（用于结构性伪类）
+    pub sibling_index: usize,
+    pub sibling_count: usize,
 }
 
 impl ElementDesc {
@@ -120,7 +126,16 @@ impl ElementDesc {
             id: id.map(|s| s.to_string()),
             classes: classes.iter().map(|s| s.to_string()).collect(),
             attrs: attrs.clone(),
+            sibling_index: 0,
+            sibling_count: 1,
         }
+    }
+
+    /// 设置兄弟位置（供结构性伪类 :first-child/:last-child/:nth-child 匹配）
+    pub fn with_position(mut self, index: usize, count: usize) -> Self {
+        self.sibling_index = index;
+        self.sibling_count = count.max(1);
+        self
     }
 }
 
@@ -532,8 +547,34 @@ fn compound_matches_desc(c: &Compound, d: &ElementDesc) -> bool {
         id: d.id.as_deref(),
         classes: &classes,
         attrs: Some(&d.attrs),
+        sibling_index: d.sibling_index,
+        sibling_count: d.sibling_count,
     };
     matches_compound(c, &target)
+}
+
+/// 评估结构性伪类；未知伪类（hover/active/focus 等）宽松放行。
+fn matches_pseudo(p: &str, t: &MatchTarget) -> bool {
+    let idx = t.sibling_index;
+    let cnt = t.sibling_count.max(1);
+    match p {
+        "first-child" => idx == 0,
+        "last-child" => idx + 1 == cnt,
+        "only-child" => cnt == 1,
+        _ => {
+            if let Some(arg) = p.strip_prefix("nth-child(").and_then(|s| s.strip_suffix(")")) {
+                let arg = arg.trim();
+                let n1 = idx + 1;
+                match arg {
+                    "odd" => n1 % 2 == 1,
+                    "even" => n1 % 2 == 0,
+                    _ => arg.parse::<usize>().map(|k| n1 == k).unwrap_or(true),
+                }
+            } else {
+                true // :hover / :active / :focus / 伪元素 等：放行
+            }
+        }
+    }
 }
 
 fn matches_compound(c: &Compound, target: &MatchTarget) -> bool {
@@ -562,8 +603,12 @@ fn matches_compound(c: &Compound, target: &MatchTarget) -> bool {
             return false;
         }
     }
-    // 伪类：无上下文时无法判定的结构伪类先放行（宽松策略）
-    // universal '*' 不额外约束
+    // 伪类：结构性伪类按兄弟位置判定，其余放行
+    for p in &c.pseudos {
+        if !matches_pseudo(p, target) {
+            return false;
+        }
+    }
     true
 }
 

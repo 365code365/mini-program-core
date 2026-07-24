@@ -66,7 +66,8 @@ fn weather_scene(id: &str, city: &str, bg: &str, temp: i32, desc: &str, hi: i32,
     .ht{ font-size:24rpx; color:#999; }
     .dot{ width:20rpx; height:20rpx; border-radius:10rpx; margin:18rpx 0; }
     .hv{ font-size:30rpx; color:#333; font-weight:bold; }
-    .drow{ display:flex; flex-direction:row; justify-content:space-between; align-items:center; padding:22rpx 0; border-bottom:1rpx solid #f2f2f2; }
+    .drow{ display:flex; flex-direction:row; justify-content:space-between; align-items:center; padding:22rpx 0; border-bottom:1rpx solid #eef1f5; }
+    .drow:last-child{ border-bottom:0; }
     .dd{ font-size:28rpx; color:#333; width:120rpx; }
     .dw{ font-size:28rpx; color:#888; }
     .dt{ font-size:28rpx; color:#333; }

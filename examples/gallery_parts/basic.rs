@@ -126,6 +126,7 @@ fn product_detail() {
     .spec-a{ font-size:28rpx; color:#bbb; }
     .param{ margin-top:12rpx; }
     .p{ padding:20rpx 0; border-bottom:1rpx solid #f2f2f2; }
+    .p:last-child{ border-bottom:0; }
     .k{ font-size:28rpx; color:#999; white-space:nowrap; }
     .v{ font-size:28rpx; color:#333; white-space:nowrap; }
     .bar{ display:flex; flex-direction:row; align-items:center; padding:16rpx 24rpx; }
@@ -213,8 +214,8 @@ fn profile() {
             </view>
         </view>
         <view class="menu">
-            <view class="mi row between" wx:for="{{menu}}" wx:key="*this">
-                <view class="row"><view class="mi-ico"></view><text class="mt">{{item}}</text></view>
+            <view class="mi row between" wx:for="{{menu}}" wx:key="n">
+                <view class="row"><image class="mi-ico" src="{{item.icon}}" mode="aspectFit"></image><text class="mt">{{item.n}}</text></view>
                 <text class="arrow">></text>
             </view>
         </view>
@@ -234,11 +235,19 @@ fn profile() {
     .lbl{ font-size:24rpx; color:#e6fff0; margin-top:6rpx; }
     .menu{ margin:24rpx; background-color:#fff; border-radius:20rpx; padding:8rpx 28rpx; }
     .mi{ display:flex; flex-direction:row; justify-content:space-between; align-items:center; padding:30rpx 0; border-bottom:1rpx solid #f0f0f0; }
-    .mi-ico{ width:48rpx; height:48rpx; border-radius:12rpx; background-color:#e8f7ee; margin-right:20rpx; }
+    .mi:last-child{ border-bottom:0; }
+    .mi-ico{ width:52rpx; height:52rpx; margin-right:22rpx; }
     .mt{ font-size:30rpx; color:#333; }
     .arrow{ font-size:30rpx; color:#ccc; }
     "#;
-    let data = json!({"menu":["我的订单","收货地址","账户安全","消息通知","帮助中心","关于我们"]});
+    let data = json!({"menu":[
+        {"n":"我的订单","icon":"doc/gallery/assets/icons/mi_order.png"},
+        {"n":"收货地址","icon":"doc/gallery/assets/icons/mi_address.png"},
+        {"n":"账户安全","icon":"doc/gallery/assets/icons/mi_security.png"},
+        {"n":"消息通知","icon":"doc/gallery/assets/icons/mi_notify.png"},
+        {"n":"帮助中心","icon":"doc/gallery/assets/icons/mi_help.png"},
+        {"n":"关于我们","icon":"doc/gallery/assets/icons/mi_about.png"}
+    ]});
     render("05_profile", 0xF5F6F8, wxml, wxss, data);
 }
 
@@ -268,6 +277,7 @@ fn settings() {
     .row{ display:flex; flex-direction:row; align-items:center; }
     .between{ justify-content:space-between; }
     .item{ display:flex; flex-direction:row; justify-content:space-between; align-items:center; padding:30rpx 0; border-bottom:1rpx solid #f2f2f2; }
+    .item:last-child{ border-bottom:0; }
     .t{ font-size:30rpx; color:#333; }
     .v{ font-size:28rpx; color:#999; }
     .logout{ background-color:#fff; color:#ff3b30; text-align:center; font-size:30rpx; padding:28rpx; border-radius:20rpx; margin-top:40rpx; }

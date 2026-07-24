@@ -93,6 +93,7 @@ fn v_scroll() {
     .between{ justify-content:space-between; }
     .vs{ height:1100rpx; background-color:#ffffff; }
     .mi{ display:flex; flex-direction:row; align-items:center; padding:24rpx 28rpx; border-bottom:1rpx solid #f2f2f2; }
+    .mi:last-child{ border-bottom:0; }
     .mav{ width:96rpx; height:96rpx; border-radius:16rpx; margin-right:24rpx; }
     .mc{ flex:1; display:flex; flex-direction:column; }
     .mn{ font-size:32rpx; color:#1a1a1a; }

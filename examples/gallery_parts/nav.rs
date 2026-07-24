@@ -156,6 +156,7 @@ fn input_events() {
     .card{ background-color:#ffffff; border-radius:20rpx; padding:12rpx 28rpx; }
     .col{ display:flex; flex-direction:column; }
     .fi{ padding:24rpx 0; border-bottom:1rpx solid #f2f2f2; display:flex; flex-direction:column; }
+    .fi:last-child{ border-bottom:0; }
     .lb{ font-size:26rpx; color:#888; margin-bottom:16rpx; }
     .ipt{ background-color:#f7f8fa; border-radius:12rpx; }
     .ipt.focus{ border:2rpx solid #07c160; background-color:#ffffff; }

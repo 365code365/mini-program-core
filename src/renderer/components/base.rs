@@ -224,6 +224,9 @@ pub struct ComponentContext<'a> {
     pub ancestors: Vec<ElementDesc>,
     /// 从父元素继承下来的文本样式。
     pub inherited: InheritedText,
+    /// 当前元素在兄弟中的位置（0 起）与兄弟总数，用于结构性伪类匹配。
+    pub sibling_index: usize,
+    pub sibling_count: usize,
 }
 
 /// 组件 trait
@@ -325,7 +328,8 @@ pub fn build_base_style(
     let id = node.get_attr("id");
     // 构建「祖先链 + 当前元素」，支持 #id、[attr]、*、后代/子选择器
     let mut chain = ctx.ancestors.clone();
-    chain.push(ElementDesc::new(&node.tag_name, id, &classes, &node.attributes));
+    chain.push(ElementDesc::new(&node.tag_name, id, &classes, &node.attributes)
+        .with_position(ctx.sibling_index, ctx.sibling_count));
     let css = ctx.stylesheet.get_styles_chain(&chain);
     
     // 先用继承的文本样式做默认值，再用 CSS/内联覆盖（CSS 继承语义）

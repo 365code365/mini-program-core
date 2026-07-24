@@ -101,8 +101,8 @@ impl WxmlRenderer {
         
         let mut render_nodes = Vec::new();
         
-        for node in &rendered {
-            if let Some(rn) = self.build_tree(&mut taffy, node, &[], &InheritedText::default()) {
+        for (sib_i, node) in rendered.iter().enumerate() {
+            if let Some(rn) = self.build_tree(&mut taffy, node, &[], &InheritedText::default(), sib_i, rendered.len()) {
                 render_nodes.push(rn);
             }
         }
@@ -437,8 +437,8 @@ impl WxmlRenderer {
         let mut taffy = TaffyTree::new();
         
         let mut render_nodes = Vec::new();
-        for node in &rendered {
-            if let Some(rn) = self.build_tree(&mut taffy, node, &[], &InheritedText::default()) {
+        for (sib_i, node) in rendered.iter().enumerate() {
+            if let Some(rn) = self.build_tree(&mut taffy, node, &[], &InheritedText::default(), sib_i, rendered.len()) {
                 render_nodes.push(rn);
             }
         }
@@ -468,8 +468,8 @@ impl WxmlRenderer {
         let rendered = crate::parser::TemplateEngine::render(nodes, data);
         let mut taffy = TaffyTree::new();
         let mut render_nodes = Vec::new();
-        for node in &rendered {
-            if let Some(rn) = self.build_tree(&mut taffy, node, &[], &InheritedText::default()) {
+        for (sib_i, node) in rendered.iter().enumerate() {
+            if let Some(rn) = self.build_tree(&mut taffy, node, &[], &InheritedText::default(), sib_i, rendered.len()) {
                 render_nodes.push(rn);
             }
         }
@@ -535,7 +535,7 @@ impl WxmlRenderer {
         changed
     }
 
-    fn build_tree(&self, taffy: &mut TaffyTree, node: &WxmlNode, ancestors: &[ElementDesc], inherited: &InheritedText) -> Option<RenderNode> {
+    fn build_tree(&self, taffy: &mut TaffyTree, node: &WxmlNode, ancestors: &[ElementDesc], inherited: &InheritedText, sib_index: usize, sib_count: usize) -> Option<RenderNode> {
         let sf = self.scale_factor;
         
         if node.node_type == WxmlNodeType::Text {
@@ -586,6 +586,8 @@ impl WxmlRenderer {
             taffy,
             ancestors: ancestors.to_vec(),
             inherited: inherited.clone(),
+            sibling_index: sib_index,
+            sibling_count: sib_count,
         };
         
         let mut render_node = match tag {
@@ -637,8 +639,8 @@ impl WxmlRenderer {
                 };
                 
                 let mut children = vec![];
-                for c in &node.children {
-                    if let Some(cr) = self.build_tree(ctx.taffy, c, &child_ancestors, &child_inherited) { 
+                for (sib_ci, c) in node.children.iter().enumerate() {
+                    if let Some(cr) = self.build_tree(ctx.taffy, c, &child_ancestors, &child_inherited, sib_ci, node.children.len()) { 
                         children.push(cr); 
                     }
                 }
@@ -698,8 +700,8 @@ impl WxmlRenderer {
                     letter_spacing: rn.style.letter_spacing,
                 };
                 let mut children = vec![];
-                for c in &node.children {
-                    if let Some(cr) = self.build_tree(ctx.taffy, c, &child_ancestors, &child_inherited) {
+                for (sib_ci, c) in node.children.iter().enumerate() {
+                    if let Some(cr) = self.build_tree(ctx.taffy, c, &child_ancestors, &child_inherited, sib_ci, node.children.len()) {
                         children.push(cr);
                     }
                 }

@@ -1,12 +1,13 @@
 //! 浏览器调试预览服务器
 //!
-//! 把小程序页面渲染成图片，通过内置 HTTP 服务在浏览器打开，
-//! 可直接在页面上点击操作 UI（点击 -> 命中事件 -> 调用页面方法 -> setData -> 重渲染）。
+//! 把小程序渲染成图片，通过内置 HTTP 服务在浏览器打开，可直接在画面上点击操作：
+//! 点击 → 命中事件/交互控件 → 调用页面方法 → setData / 导航 / Toast → 重渲染。
+//! 支持 tap、表单控件切换、navigateTo/switchTab/redirectTo/navigateBack 页面跳转、Toast 提示。
 //!
 //! 运行：
-//!   cargo run --bin mini-devserver                      # 默认加载 sample-app/pages/index
-//!   cargo run --bin mini-devserver <页面目录> [端口]     # 指定页面目录与端口
-//! 然后浏览器打开终端输出的 http://127.0.0.1:9000
+//!   cargo run --bin mini-devserver                 # 默认加载 sample-app（首页）
+//!   cargo run --bin mini-devserver <小程序根目录> [端口]
+//! 然后浏览器打开 http://127.0.0.1:9000
 //!
 //! 仅使用标准库网络（无额外依赖）。
 
@@ -15,11 +16,13 @@ use mini_render::parser::{WxmlParser, WxssParser};
 use mini_render::parser::wxml::WxmlNode;
 use mini_render::renderer::WxmlRenderer;
 use mini_render::ui::interaction::InteractionManager;
-use mini_render::{Canvas, Color};
-use serde_json::json;
+use mini_render::text::TextRenderer;
+use mini_render::{Canvas, Color, Paint, PaintStyle, Path, Rect as GeoRect};
 
+use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
+use std::time::Instant;
 
 const W: u32 = 375;
 const H: u32 = 667;
@@ -27,83 +30,202 @@ const SCALE: f32 = 2.0;
 
 struct Preview {
     app: MiniApp,
+    app_root: String,
     renderer: WxmlRenderer,
     nodes: Vec<WxmlNode>,
     interaction: InteractionManager,
-    bg: u32,
+    text: Option<TextRenderer>,
+    /// 页面栈：(页面路径, query)，栈顶为当前页
+    stack: Vec<(String, HashMap<String, String>)>,
+    toast: Option<(String, Instant, u32)>,
 }
 
 impl Preview {
-    fn load(dir: &str) -> Result<Self, String> {
-        let js = read_page(dir, "js").unwrap_or_default();
-        let wxml_src = read_page(dir, "wxml").ok_or_else(|| format!("目录下未找到 .wxml: {}", dir))?;
-        let wxss_src = read_page(dir, "wxss").unwrap_or_default();
-
+    fn new(app_root: &str) -> Result<Self, String> {
         let mut app = MiniApp::new(W, H)?;
         app.init()?;
-        if !js.is_empty() {
-            app.load_script(&js)?;
-            app.eval("if (__currentPage && __currentPage.onLoad) __currentPage.onLoad({})").ok();
-            app.eval("if (__currentPage && __currentPage.onShow) __currentPage.onShow()").ok();
-            app.eval("if (__currentPage && __currentPage.onReady) __currentPage.onReady()").ok();
+        // 加载 app.js（提供 App()/getApp() 等）
+        if let Ok(js) = std::fs::read_to_string(format!("{}/app.js", app_root)) {
+            app.load_script(&js).ok();
+            app.eval("if (typeof __app !== 'undefined' && __app && __app.onLaunch) __app.onLaunch({})").ok();
         }
+        let start = std::fs::read_to_string(format!("{}/app.json", app_root))
+            .ok()
+            .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
+            .and_then(|v| v.get("pages").and_then(|p| p.get(0)).and_then(|p| p.as_str().map(String::from)))
+            .unwrap_or_else(|| "pages/index/index".to_string());
 
-        let nodes = WxmlParser::new(&wxml_src).parse().map_err(|e| format!("WXML: {}", e))?;
+        let empty_ss = WxssParser::new("").parse().unwrap_or_default();
+        let mut me = Self {
+            app,
+            app_root: app_root.to_string(),
+            renderer: WxmlRenderer::new_with_scale(empty_ss, W as f32, H as f32, SCALE),
+            nodes: Vec::new(),
+            interaction: InteractionManager::new(),
+            text: TextRenderer::load_system_font().ok(),
+            stack: Vec::new(),
+            toast: None,
+        };
+        me.load_page(&start, &HashMap::new())?;
+        me.stack.push((start, HashMap::new()));
+        Ok(me)
+    }
+
+    /// 加载指定页面（读取 js/wxml/wxss，跑生命周期，重建渲染器）
+    fn load_page(&mut self, path: &str, query: &HashMap<String, String>) -> Result<(), String> {
+        let prefix = format!("{}/{}", self.app_root, path);
+        let js = std::fs::read_to_string(format!("{}.js", prefix)).unwrap_or_default();
+        let wxml_src = std::fs::read_to_string(format!("{}.wxml", prefix))
+            .map_err(|_| format!("未找到页面 WXML: {}.wxml", prefix))?;
+        let wxss_src = std::fs::read_to_string(format!("{}.wxss", prefix)).unwrap_or_default();
+
+        if !js.is_empty() {
+            self.app.load_script(&js)?;
+            let q = query_json(query);
+            self.app.eval(&format!("if (__currentPage && __currentPage.onLoad) __currentPage.onLoad({})", q)).ok();
+            self.app.eval("if (__currentPage && __currentPage.onShow) __currentPage.onShow()").ok();
+            self.app.eval("if (__currentPage && __currentPage.onReady) __currentPage.onReady()").ok();
+        }
+        self.nodes = WxmlParser::new(&wxml_src).parse().map_err(|e| format!("WXML: {}", e))?;
         let ss = WxssParser::new(&wxss_src).parse().unwrap_or_default();
-        let renderer = WxmlRenderer::new_with_scale(ss, W as f32, H as f32, SCALE);
-
-        Ok(Self { app, renderer, nodes, interaction: InteractionManager::new(), bg: 0xF5F6F8 })
+        self.renderer = WxmlRenderer::new_with_scale(ss, W as f32, H as f32, SCALE);
+        self.interaction = InteractionManager::new();
+        self.app.eval("__pendingNavigation = null;").ok();
+        Ok(())
     }
 
     fn page_data(&self) -> serde_json::Value {
         self.app.eval("__getPageData()").ok()
             .and_then(|s| serde_json::from_str(&s).ok())
-            .unwrap_or_else(|| json!({}))
+            .unwrap_or_else(|| serde_json::json!({}))
     }
 
-    /// 渲染当前页面为 PNG 字节
     fn render_png(&mut self) -> Vec<u8> {
         let data = self.page_data();
         let mut canvas = Canvas::new((W as f32 * SCALE) as u32, (H as f32 * SCALE) as u32);
-        canvas.clear(Color::from_hex(self.bg));
+        canvas.clear(Color::from_hex(0xF5F6F8));
         self.renderer.render_with_interaction(&mut canvas, &self.nodes, &data, &mut self.interaction);
+        // Toast 覆盖层
+        if let Some((title, since, dur)) = &self.toast {
+            if since.elapsed().as_millis() < *dur as u128 {
+                self.draw_toast(&mut canvas, title);
+            }
+        }
         encode_png(&canvas)
     }
 
-    /// 处理一次点击（逻辑坐标），派发到 JS 事件处理函数
+    fn draw_toast(&self, canvas: &mut Canvas, title: &str) {
+        let tr = match &self.text { Some(t) => t, None => return };
+        let sf = SCALE;
+        let fs = 15.0 * sf;
+        let tw = tr.measure_text(title, fs);
+        let pad = 20.0 * sf;
+        let bw = (tw + pad * 2.0).max(120.0 * sf);
+        let bh = 70.0 * sf;
+        let cx = W as f32 * sf / 2.0;
+        let cy = H as f32 * sf / 2.0;
+        let x = cx - bw / 2.0;
+        let y = cy - bh / 2.0;
+        let mut path = Path::new();
+        path.add_round_rect(x, y, bw, bh, 12.0 * sf);
+        canvas.draw_path(&path, &Paint::new().with_color(Color::new(0, 0, 0, 200)).with_style(PaintStyle::Fill).with_anti_alias(true));
+        let paint = Paint::new().with_color(Color::WHITE).with_style(PaintStyle::Fill);
+        tr.draw_text(canvas, title, cx - tw / 2.0, cy + fs * 0.35, fs, &paint);
+    }
+
+    /// 处理一次点击（逻辑坐标）
     fn tap(&mut self, x: f32, y: f32) {
+        // 1) 表单控件（checkbox/switch/radio/slider）就地切换
+        if self.interaction.handle_click(x, y).is_some() {
+            // 状态已更新，重渲染即可反映
+        }
+        // 2) tap 事件冒泡链 → 调用页面方法
         let chain = self.renderer.hit_test_bubble(x, y, "tap");
         for b in &chain {
-            let data_json = serde_json::to_string(&b.data).unwrap_or_else(|_| "{}".into());
+            let dj = serde_json::to_string(&b.data).unwrap_or_else(|_| "{}".into());
             let code = format!(
                 "__callPageMethod('{}', {{ type:'tap', currentTarget:{{ dataset:{} }}, target:{{ dataset:{} }}, detail:{{}} }})",
-                b.handler, data_json, data_json
+                b.handler, dj, dj
             );
             self.app.eval(&code).ok();
         }
-        // 泵一次事件循环，处理 setData/Promise/定时器等异步
+        // 3) 泵事件循环（setData/Promise/定时器）
         self.app.update().ok();
+        // 4) Toast（读取并清空 __toastConfig）
+        if let Ok(t) = self.app.eval("(function(){var t=(typeof __toastConfig!=='undefined')?__toastConfig:null; __toastConfig=null; return t?JSON.stringify(t):'';})()") {
+            if !t.is_empty() && t != "null" {
+                if let Ok(v) = serde_json::from_str::<serde_json::Value>(&t) {
+                    if let Some(title) = v.get("title").and_then(|s| s.as_str()) {
+                        if !title.is_empty() { self.toast = Some((title.to_string(), Instant::now(), 1500)); }
+                    }
+                }
+            }
+        }
+        // 5) 导航
+        self.dispatch_nav();
+    }
+
+    fn dispatch_nav(&mut self) {
+        let nav = self.app.eval("JSON.stringify(__pendingNavigation || null)").unwrap_or_else(|_| "null".into());
+        if nav == "null" || nav.is_empty() { return; }
+        let v: serde_json::Value = match serde_json::from_str(&nav) { Ok(v) => v, Err(_) => return };
+        self.app.eval("__pendingNavigation = null;").ok();
+        let typ = v.get("type").and_then(|t| t.as_str()).unwrap_or("");
+        let url = v.get("url").and_then(|u| u.as_str()).unwrap_or("");
+        match typ {
+            "navigateTo" => {
+                let (p, q) = parse_url(url);
+                if self.load_page(&p, &q).is_ok() { self.stack.push((p, q)); }
+            }
+            "redirectTo" => {
+                let (p, q) = parse_url(url);
+                if self.load_page(&p, &q).is_ok() { self.stack.pop(); self.stack.push((p, q)); }
+            }
+            "switchTab" | "reLaunch" => {
+                let (p, q) = parse_url(url);
+                if self.load_page(&p, &q).is_ok() { self.stack.clear(); self.stack.push((p, q)); }
+            }
+            "navigateBack" => { self.back(); }
+            _ => {}
+        }
+    }
+
+    fn back(&mut self) {
+        if self.stack.len() > 1 {
+            self.stack.pop();
+            let (p, q) = self.stack.last().unwrap().clone();
+            self.load_page(&p, &q).ok();
+        }
     }
 }
 
-/// 找到目录下第一个匹配扩展名的文件名
-fn read_page(dir: &str, ext: &str) -> Option<String> {
-    let entries = std::fs::read_dir(dir).ok()?;
-    for e in entries.flatten() {
-        let p = e.path();
-        if p.extension().and_then(|s| s.to_str()) == Some(ext) {
-            return std::fs::read_to_string(&p).ok();
+fn parse_url(url: &str) -> (String, HashMap<String, String>) {
+    let url = url.trim_start_matches('/');
+    let mut parts = url.splitn(2, '?');
+    let path = parts.next().unwrap_or("").to_string();
+    let mut query = HashMap::new();
+    if let Some(qs) = parts.next() {
+        for kv in qs.split('&') {
+            let mut it = kv.splitn(2, '=');
+            if let (Some(k), Some(val)) = (it.next(), it.next()) {
+                query.insert(k.to_string(), val.to_string());
+            }
         }
     }
-    None
+    (path, query)
+}
+
+fn query_json(q: &HashMap<String, String>) -> String {
+    let items: Vec<String> = q.iter()
+        .map(|(k, v)| format!("{}:{}", serde_json::to_string(k).unwrap(), serde_json::to_string(v).unwrap()))
+        .collect();
+    format!("{{{}}}", items.join(","))
 }
 
 fn encode_png(canvas: &Canvas) -> Vec<u8> {
     let buf = image::RgbaImage::from_raw(canvas.width(), canvas.height(), canvas.to_rgba());
     let mut out = std::io::Cursor::new(Vec::new());
-    if let Some(b) = buf {
-        b.write_to(&mut out, image::ImageFormat::Png).ok();
-    }
+    if let Some(b) = buf { b.write_to(&mut out, image::ImageFormat::Png).ok(); }
     out.into_inner()
 }
 
@@ -116,26 +238,29 @@ const PAGE_HTML: &str = r#"<!doctype html><html lang="zh"><head><meta charset="u
   img{display:block;width:375px;cursor:pointer}
   .bar{margin:14px 0;display:flex;gap:10px;align-items:center;font-size:13px;color:#aaa}
   button{background:#07c160;color:#fff;border:0;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px}
-  .hint{font-size:12px;color:#888;margin-top:8px}
+  button.back{background:#576b95}
+  .hint{font-size:12px;color:#888;margin-top:8px;max-width:420px;text-align:center}
 </style></head><body>
 <h1>Mini Render · 浏览器调试预览</h1>
 <div class="phone"><img id="f" src="/frame.png"></div>
 <div class="bar">
+  <button class="back" onclick="nav('/back')">← 返回</button>
   <button onclick="refresh()">刷新</button>
-  <label><input type="checkbox" id="auto" checked> 自动刷新(动画/定时器)</label>
+  <label><input type="checkbox" id="auto" checked> 自动刷新</label>
   <span id="msg"></span>
 </div>
-<div class="hint">在上面的画面里点击即可操作 UI：点击会命中事件并调用页面方法，再自动重渲染。</div>
+<div class="hint">点击画面即可操作：命中 bindtap / 表单控件 / 页面跳转(navigateTo/switchTab) / Toast，均会实时重渲染。</div>
 <script>
 const img=document.getElementById('f'), msg=document.getElementById('msg');
 function refresh(){ img.src='/frame.png?t='+Date.now(); }
+async function nav(u){ await fetch(u); refresh(); }
 img.addEventListener('click', async (e)=>{
   const x=Math.round(e.offsetX), y=Math.round(e.offsetY);
   msg.textContent='tap ('+x+','+y+')';
   await fetch('/tap?x='+x+'&y='+y);
   refresh();
 });
-setInterval(()=>{ if(document.getElementById('auto').checked) refresh(); }, 500);
+setInterval(()=>{ if(document.getElementById('auto').checked) refresh(); }, 600);
 </script></body></html>"#;
 
 fn http_response(status: &str, content_type: &str, body: &[u8]) -> Vec<u8> {
@@ -151,15 +276,12 @@ fn handle(stream: &mut TcpStream, preview: &mut Preview) {
     let mut buf = [0u8; 2048];
     let n = match stream.read(&mut buf) { Ok(n) => n, Err(_) => return };
     let req = String::from_utf8_lossy(&buf[..n]);
-    let path = req.lines().next()
-        .and_then(|l| l.split_whitespace().nth(1))
-        .unwrap_or("/");
+    let path = req.lines().next().and_then(|l| l.split_whitespace().nth(1)).unwrap_or("/");
 
     let out = if path.starts_with("/frame") {
         let png = preview.render_png();
         http_response("200 OK", "image/png", &png)
     } else if path.starts_with("/tap") {
-        // 解析 ?x=..&y=..
         let (mut x, mut y) = (0.0f32, 0.0f32);
         if let Some(q) = path.split('?').nth(1) {
             for kv in q.split('&') {
@@ -173,6 +295,9 @@ fn handle(stream: &mut TcpStream, preview: &mut Preview) {
         }
         preview.tap(x, y);
         http_response("200 OK", "text/plain", b"ok")
+    } else if path.starts_with("/back") {
+        preview.back();
+        http_response("200 OK", "text/plain", b"ok")
     } else {
         http_response("200 OK", "text/html; charset=utf-8", PAGE_HTML.as_bytes())
     };
@@ -182,23 +307,19 @@ fn handle(stream: &mut TcpStream, preview: &mut Preview) {
 
 fn main() -> Result<(), String> {
     let args: Vec<String> = std::env::args().collect();
-    let dir = args.get(1).cloned().unwrap_or_else(|| "sample-app/pages/index".to_string());
+    let app_root = args.get(1).cloned().unwrap_or_else(|| "sample-app".to_string());
     let port: u16 = args.get(2).and_then(|s| s.parse().ok()).unwrap_or(9000);
 
-    println!("📂 加载页面目录: {}", dir);
-    let mut preview = Preview::load(&dir)?;
+    println!("📂 加载小程序: {}", app_root);
+    let mut preview = Preview::new(&app_root)?;
 
     let addr = format!("127.0.0.1:{}", port);
     let listener = TcpListener::bind(&addr).map_err(|e| format!("无法监听 {}: {}", addr, e))?;
-    println!("\n🌐 调试预览已启动，请在浏览器打开：");
-    println!("   http://{}\n", addr);
-    println!("（在画面上点击即可操作 UI；Ctrl+C 退出）");
+    println!("\n🌐 调试预览已启动，请在浏览器打开：\n   http://{}\n", addr);
+    println!("（点击画面操作 UI，支持页面跳转/表单/Toast；Ctrl+C 退出）");
 
     for stream in listener.incoming() {
-        match stream {
-            Ok(mut s) => handle(&mut s, &mut preview),
-            Err(_) => {}
-        }
+        if let Ok(mut s) = stream { handle(&mut s, &mut preview); }
     }
     Ok(())
 }

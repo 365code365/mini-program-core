@@ -84,6 +84,7 @@ fn tags() {
     .t5{ background-color:#ffeaf3; color:#ff2d70; }
     .t6{ background-color:#e6f7ff; color:#0a94ff; }
     .brow{ display:flex; flex-direction:row; justify-content:space-between; align-items:center; padding:24rpx 0; border-bottom:1rpx solid #f2f2f2; }
+    .brow:last-child{ border-bottom:0; }
     .bt{ font-size:30rpx; color:#333; }
     .badge{ background-color:#ff3b30; color:#fff; font-size:22rpx; padding:6rpx 14rpx; border-radius:20rpx; }
     .dotb{ width:24rpx; height:24rpx; border-radius:12rpx; }

@@ -76,6 +76,8 @@ impl ComponentRegistry {
             taffy,
             ancestors: Vec::new(),
             inherited: Default::default(),
+            sibling_index: 0,
+            sibling_count: 1,
         };
         
         match tag {

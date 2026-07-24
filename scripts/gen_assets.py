@@ -237,4 +237,66 @@ def i_search(color=GRAY):
 
 i_search()
 
+
+# ---- 个人中心菜单图标（4x 超采样彩色线稿）----
+def _mi_order(d, c, k):
+    w = 5 * k
+    d.rounded_rectangle(_sb([26, 20, 70, 78], k), radius=6 * k, outline=c, width=w)
+    for oy in (34, 48, 62):
+        d.line(_sp([(36, oy), (60, oy)], k), fill=c, width=4 * k)
+
+
+def _mi_address(d, c, k):
+    w = 5 * k
+    # 定位针
+    d.arc(_sb([28, 16, 68, 56], k), start=150, end=390, fill=c, width=w)
+    d.polygon(_sp([(36, 48), (60, 48), (48, 80)], k), fill=c)
+    d.ellipse(_sb([40, 28, 56, 44], k), outline=c, width=w)
+
+
+def _mi_security(d, c, k):
+    w = 5 * k
+    d.line(_sp([(48, 16), (74, 28), (74, 52), (48, 82), (22, 52), (22, 28), (48, 16)], k), fill=c, width=w, joint="curve")
+    d.line(_sp([(38, 48), (46, 58), (62, 38)], k), fill=c, width=w, joint="curve")
+
+
+def _mi_notify(d, c, k):
+    w = 5 * k
+    d.arc(_sb([26, 22, 70, 66], k), start=180, end=360, fill=c, width=w)
+    d.line(_sp([(26, 44), (26, 64), (70, 64), (70, 44)], k), fill=c, width=w, joint="curve")
+    d.line(_sp([(22, 64), (74, 64)], k), fill=c, width=w)
+    d.ellipse(_sb([42, 70, 54, 82], k), fill=c)
+    d.line(_sp([(48, 16), (48, 24)], k), fill=c, width=w)
+
+
+def _mi_help(d, c, k):
+    w = 5 * k
+    d.ellipse(_sb([20, 20, 76, 76], k), outline=c, width=w)
+    d.arc(_sb([38, 30, 60, 52], k), start=150, end=390, fill=c, width=w)
+    d.line(_sp([(48, 52), (48, 60)], k), fill=c, width=w)
+    d.ellipse(_sb([45, 64, 51, 70], k), fill=c)
+
+
+def _mi_about(d, c, k):
+    w = 5 * k
+    d.ellipse(_sb([20, 20, 76, 76], k), outline=c, width=w)
+    d.ellipse(_sb([45, 32, 51, 38], k), fill=c)
+    d.line(_sp([(48, 46), (48, 64)], k), fill=c, width=w)
+
+
+def menu_icon(name, drawer, color):
+    big = Image.new("RGBA", (S * SS, S * SS), (0, 0, 0, 0))
+    d = ImageDraw.Draw(big)
+    drawer(d, color, SS)
+    big.resize((S, S), Image.LANCZOS).save(f"{OUT}/icons/mi_{name}.png")
+    print("  icon mi_" + name)
+
+
+menu_icon("order", _mi_order, (255, 149, 0, 255))
+menu_icon("address", _mi_address, (74, 144, 217, 255))
+menu_icon("security", _mi_security, (7, 193, 96, 255))
+menu_icon("notify", _mi_notify, (255, 59, 48, 255))
+menu_icon("help", _mi_help, (175, 82, 222, 255))
+menu_icon("about", _mi_about, (0, 199, 190, 255))
+
 print("完成。")

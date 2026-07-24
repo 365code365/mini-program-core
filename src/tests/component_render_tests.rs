@@ -51,6 +51,35 @@ fn test_block_text_wraps_to_multiple_lines() {
 }
 
 #[test]
+fn test_last_child_pseudo_selector() {
+    use crate::parser::wxss::{WxssParser, ElementDesc};
+    use std::collections::HashMap;
+    let ss = WxssParser::new(".item{ color:#000000; } .item:last-child{ color:#ff0000; }").parse().unwrap();
+    let attrs = HashMap::new();
+    let mk = |i: usize, c: usize| vec![ElementDesc::new("view", None, &["item"], &attrs).with_position(i, c)];
+    let mid = ss.get_styles_chain(&mk(0, 3));
+    let last = ss.get_styles_chain(&mk(2, 3));
+    // 中间元素不匹配 :last-child，末尾元素匹配 -> 两者 color 不同
+    assert_ne!(
+        format!("{:?}", mid.get("color")),
+        format!("{:?}", last.get("color")),
+        "last-child 伪类未生效"
+    );
+}
+
+#[test]
+fn test_first_child_pseudo_selector() {
+    use crate::parser::wxss::{WxssParser, ElementDesc};
+    use std::collections::HashMap;
+    let ss = WxssParser::new(".row:first-child{ color:#00ff00; }").parse().unwrap();
+    let attrs = HashMap::new();
+    let first = ss.get_styles_chain(&[ElementDesc::new("view", None, &["row"], &attrs).with_position(0, 4)]);
+    let other = ss.get_styles_chain(&[ElementDesc::new("view", None, &["row"], &attrs).with_position(1, 4)]);
+    assert!(first.get("color").is_some(), "first-child 应匹配首元素");
+    assert!(other.get("color").is_none(), "first-child 不应匹配非首元素");
+}
+
+#[test]
 fn test_side_borders_render() {
     // border-bottom 分割线应真实绘制（此前被忽略）。
     // 在白底容器上画一条深色底边，检测该行是否出现深色像素。

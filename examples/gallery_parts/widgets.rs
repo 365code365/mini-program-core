@@ -46,6 +46,7 @@ fn form() {
     .page{ padding:24rpx; }
     .card{ background-color:#fff; border-radius:20rpx; padding:12rpx 28rpx; }
     .fi{ padding:26rpx 0; border-bottom:1rpx solid #f2f2f2; }
+    .fi:last-child{ border-bottom:0; }
     .row{ display:flex; flex-direction:row; align-items:center; }
     .col{ display:flex; flex-direction:column; }
     .between{ justify-content:space-between; }
