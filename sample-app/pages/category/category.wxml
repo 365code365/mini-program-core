@@ -27,7 +27,7 @@
       
       <view wx:for="{{products}}" wx:key="id" class="product-item">
         <view class="product-image">
-          <image src="/assets/img.png" mode="aspectFill" style="width:100%;height:100%;border-radius:12rpx"></image>
+          <icon type="{{item.icon}}" size="40" color="{{item.color}}"></icon>
         </view>
         <view class="product-info">
           <text class="product-name">{{item.name}}</text>

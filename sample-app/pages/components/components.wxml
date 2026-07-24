@@ -69,6 +69,29 @@
     </radio-group>
   </view>
 
+  <!-- CSS 动画 -->
+  <view class="section">
+    <text class="section-title">CSS 动画 / 过渡</text>
+    <view class="anim-row">
+      <view class="anim-cell">
+        <view class="loader"></view>
+        <text class="anim-label">旋转 spin</text>
+      </view>
+      <view class="anim-cell">
+        <view class="pulse"></view>
+        <text class="anim-label">脉冲 pulse</text>
+      </view>
+      <view class="anim-cell">
+        <view class="bounce">HOT</view>
+        <text class="anim-label">弹跳 bounce</text>
+      </view>
+    </view>
+    <view class="fade-in-box">
+      <text class="fade-text">进入淡入 fade-in</text>
+    </view>
+    <view class="trans-btn">悬停/按压有过渡效果</view>
+  </view>
+
   <!-- 返回按钮 -->
   <view class="back-btn" bindtap="onBack">
     <text class="back-text">返回首页</text>

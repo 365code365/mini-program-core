@@ -1,7 +1,7 @@
 <view class="page">
   <!-- 商品图片区域 -->
   <view class="product-image">
-    <image src="/assets/img.png" mode="aspectFill" style="width:100%;height:100%"></image>
+    <image src="/assets/p_phone.jpg" mode="aspectFill" style="width:100%;height:100%"></image>
     <!-- 促销标签 -->
     <view class="promo-tag" wx:if="{{product.discount}}">
       <text>{{product.discount}}</text>

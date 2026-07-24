@@ -99,6 +99,24 @@ fn test_wxss_tag_selector_rewrite() {
 }
 
 #[test]
+fn test_wxss_animation_preserved() {
+    use crate::compiler::html::wxss_to_css;
+    // @keyframes / animation / transition 必须原样保留（CSS 动画支持）
+    let css = wxss_to_css(
+        "@keyframes spin { 0% { transform: rotate(0); } 100% { transform: rotate(360deg); } }\n\
+         .loader { animation: spin 1s linear infinite; transition: transform .3s ease; }\n\
+         .box { transition: all .2s; }"
+    );
+    assert!(css.contains("@keyframes spin"), "keyframes preserved: {}", css);
+    assert!(css.contains("0%") && css.contains("100%"), "keyframe stops kept: {}", css);
+    assert!(css.contains("rotate(360deg)"), "keyframe body kept: {}", css);
+    assert!(css.contains("animation: spin 1s linear infinite"), "animation prop kept: {}", css);
+    assert!(css.contains("transition: transform .3s ease"), "transition kept: {}", css);
+    // 关键帧里的 0%/100% 不能被误当作标签选择器改写
+    assert!(!css.contains(".wx-"), "keyframe内部不应产生 .wx- 改写: {}", css);
+}
+
+#[test]
 fn test_button_type_size_classes() {
     use crate::compiler::html::{wxml_to_html, base_css};
     use crate::parser::wxml::WxmlParser;

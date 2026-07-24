@@ -8,12 +8,12 @@ Page({
       { id: 3, amount: 50, min: 199, name: '满199减50', tip: '全场通用' }
     ],
     hotProducts: [
-      { id: 101, name: '无线蓝牙耳机', price: 199, image: '' },
-      { id: 102, name: '智能手表', price: 599, image: '' },
-      { id: 103, name: '便携充电宝', price: 129, image: '' },
-      { id: 104, name: '机械键盘', price: 349, image: '' },
-      { id: 105, name: '无线鼠标', price: 89, image: '' },
-      { id: 106, name: '显示器支架', price: 159, image: '' }
+      { id: 101, name: '无线蓝牙耳机', price: 199, image: '/assets/p_earbuds.jpg' },
+      { id: 102, name: '智能运动手表', price: 599, image: '/assets/p_watch.jpg' },
+      { id: 103, name: '潮流运动鞋', price: 329, image: '/assets/p_sneakers.jpg' },
+      { id: 104, name: '时尚双肩包', price: 259, image: '/assets/p_backpack.jpg' },
+      { id: 105, name: '精品咖啡礼盒', price: 89, image: '/assets/p_coffee.jpg' },
+      { id: 106, name: '旗舰智能手机', price: 3999, image: '/assets/p_phone.jpg' }
     ],
     newProducts: [
       { id: 201, name: '轻薄笔记本电脑', desc: '14英寸高性能 i7处理器', price: 4999 },
@@ -51,6 +51,17 @@ Page({
 
   onLoad: function() {
     console.log('🏠 首页加载');
+    // 为新品列表补充真实图片（复用已有商品图，循环使用）
+    var imgs = [
+      '/assets/p_phone.jpg', '/assets/p_phone2.jpg', '/assets/p_earbuds.jpg',
+      '/assets/p_watch.jpg', '/assets/p_sneakers.jpg', '/assets/p_backpack.jpg',
+      '/assets/p_coffee.jpg', '/assets/p_cake.jpg', '/assets/p_lipstick.jpg', '/assets/p_thermos.jpg'
+    ];
+    var list = this.data.newProducts.map(function(p, i) {
+      p.image = imgs[i % imgs.length];
+      return p;
+    });
+    this.setData({ newProducts: list });
     // 进入首页弹出新人优惠券（每次会话仅弹一次）
     if (!wx.getStorageSync('couponPopupShown')) {
       this.setData({ showCoupon: true });
