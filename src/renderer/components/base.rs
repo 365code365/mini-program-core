@@ -982,9 +982,8 @@ pub fn draw_background(canvas: &mut Canvas, style: &NodeStyle, x: f32, y: f32, w
             add_round_rect_with_radii(&mut path, x, y, w, h, radii);
             canvas.draw_path(&path, &paint);
         } else if style.border_radius > 0.0 {
-            let mut path = Path::new();
-            path.add_round_rect(x, y, w, h, style.border_radius);
-            canvas.draw_path(&path, &paint);
+            // 快速圆角填充（实心内部 + 抗锯齿角），避免整块 4x 扫描线
+            canvas.fill_round_rect(x, y, w, h, style.border_radius, paint.color);
         } else {
             canvas.draw_rect(&GeoRect::new(x, y, w, h), &paint);
         }

@@ -154,6 +154,48 @@ impl Canvas {
         }
     }
 
+    /// 快速填充圆角矩形：实心内部用整块矩形填充，仅四个圆角做抗锯齿。
+    /// 相比通用 4x 超采样扫描线填充（遍历整块面积）快一个数量级，
+    /// 是圆角背景/卡片大量出现时的关键性能优化。
+    pub fn fill_round_rect(&mut self, x: f32, y: f32, w: f32, h: f32, r: f32, color: Color) {
+        if w <= 0.0 || h <= 0.0 { return; }
+        let r = r.min(w / 2.0).min(h / 2.0).max(0.0);
+        if r < 0.6 {
+            self.fill_rect(&Rect::new(x, y, w, h), &color);
+            return;
+        }
+        // 内部实心（中间整宽条 + 上下去角条），避开四角
+        self.fill_rect(&Rect::new(x, y + r, w, h - 2.0 * r), &color);
+        self.fill_rect(&Rect::new(x + r, y, w - 2.0 * r, r), &color);
+        self.fill_rect(&Rect::new(x + r, y + h - r, w - 2.0 * r, r), &color);
+        // 四角抗锯齿（仅各自 r×r 的角区，不与内部重叠）
+        let (tx, ty) = self.translation;
+        let corners = [
+            (x + r, y + r, x, y),                 // 左上：角区 [x, x+r]
+            (x + w - r, y + r, x + w - r, y),      // 右上
+            (x + w - r, y + h - r, x + w - r, y + h - r), // 右下
+            (x + r, y + h - r, x, y + h - r),      // 左下
+        ];
+        for &(cx, cy, bx, by) in &corners {
+            let x0 = (bx + tx).floor() as i32;
+            let y0 = (by + ty).floor() as i32;
+            let x1 = (bx + tx + r).ceil() as i32;
+            let y1 = (by + ty + r).ceil() as i32;
+            let (ccx, ccy) = (cx + tx, cy + ty);
+            for py in y0..y1 {
+                for px in x0..x1 {
+                    let dx = px as f32 + 0.5 - ccx;
+                    let dy = py as f32 + 0.5 - ccy;
+                    let d = (dx * dx + dy * dy).sqrt();
+                    let cov = (r + 0.5 - d).clamp(0.0, 1.0);
+                    if cov > 0.0 {
+                        self.set_pixel_aa(px, py, color, cov);
+                    }
+                }
+            }
+        }
+    }
+
     fn fill_rect(&mut self, rect: &Rect, color: &Color) {
         let tx = self.translation.0;
         let ty = self.translation.1;

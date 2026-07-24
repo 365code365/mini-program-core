@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pages/profile/profile</title>
+<style>
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+view,scroll-view,swiper,swiper-item,cover-view{display:flex;flex-direction:column;}
+image{display:block;}
+button{border:0;background:none;font:inherit;color:inherit;cursor:pointer;display:block;width:100%;}
+input,textarea{border:0;outline:none;background:none;font:inherit;color:inherit;width:100%;}
+a{color:inherit;text-decoration:none;}
+body{font-size:16px;color:#333;font-family:-apple-system,system-ui,"PingFang SC","Hiragino Sans GB",sans-serif;background:#f5f6f8;}
+/* 内置矢量图标（对齐 <icon type> 常用类型）*/
+.wxicon{display:inline-flex;align-items:center;justify-content:center;width:1.2em;height:1.2em;border-radius:50%;color:#fff;font-style:normal;font-size:.7em;line-height:1;}
+.wxicon-success{background:#09bb07;}.wxicon-success::before{content:"\2713";}
+.wxicon-info{background:#10aeff;}.wxicon-info::before{content:"i";font-weight:bold;}
+.wxicon-warn{background:#f76260;}.wxicon-warn::before{content:"!";font-weight:bold;}
+.wxicon-waiting{background:#10aeff;}.wxicon-waiting::before{content:"\2026";}
+.wxicon-cancel{background:#f43530;}.wxicon-cancel::before{content:"\2715";}
+.wxicon-download{background:#09bb07;}.wxicon-download::before{content:"\2193";}
+.wxicon-search{background:#b2b2b2;}.wxicon-search::before{content:"\1F50D";}
+.wxicon-clear{background:#b2b2b2;}.wxicon-clear::before{content:"\2715";}
+
+#app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+
+.page {
+  background-color: #F5F5F5;
+}
+
+/* 用户头部 */
+.user-header {
+  background-color: #FF6B35;
+  padding: 20px 15px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 30px;
+  background-color: rgba(255,255,255,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-info {
+  margin-left: 12px;
+}
+
+.user-name {
+  display: block;
+  font-size: 18px;
+  color: #fff;
+  font-weight: bold;
+}
+
+.user-level {
+  display: block;
+  font-size: 12px;
+  color: rgba(255,255,255,0.8);
+  margin-top: 4px;
+}
+
+/* 订单统计 */
+.order-section {
+  background-color: #fff;
+  margin: 10px;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.order-title {
+  font-size: 15px;
+  color: #333;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.order-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+}
+
+.order-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.order-num {
+  font-size: 20px;
+  color: #333;
+  font-weight: bold;
+}
+
+.order-label {
+  font-size: 12px;
+  color: #999;
+  margin-top: 4px;
+}
+
+/* 功能菜单 */
+.menu-section {
+  background-color: #fff;
+  margin: 0 10px 10px;
+  border-radius: 8px;
+}
+
+.menu-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 14px 12px;
+  border-bottom: 0.500px solid #f5f5f5;
+}
+
+.menu-item:last-child {
+  border-bottom: none;
+}
+
+.menu-text {
+  flex: 1;
+  font-size: 15px;
+  color: #333;
+  margin-left: 8px;
+}
+
+.menu-value {
+  font-size: 13px;
+  color: #999;
+  margin-right: 4px;
+}
+
+.menu-arrow {
+  font-size: 14px;
+  color: #ccc;
+}
+
+/* 退出登录 */
+.logout-section {
+  padding: 20px 10px;
+}
+
+.logout-btn {
+  background-color: #fff;
+  color: #FF6B35;
+  border: 1px solid #FF6B35;
+  border-radius: 22px;
+}
+
+.bottom-space {
+  height: 0;
+}
+
+</style></head>
+<body><div id="app"><div class="page"><div class="user-header"><div class="avatar"><i class="wxicon wxicon-success"></i></div><div class="user-info"><span class="user-name">用户12345</span><span class="user-level">普通会员</span></div></div><div class="order-section"><div class="order-title">我的订单</div><div class="order-row"><div class="order-item" data-tap="onOrderTap" data-ds-type="pending"><span class="order-num">2</span><span class="order-label">待付款</span></div><div class="order-item" data-tap="onOrderTap" data-ds-type="shipping"><span class="order-num">1</span><span class="order-label">待发货</span></div><div class="order-item" data-tap="onOrderTap" data-ds-type="receiving"><span class="order-num">3</span><span class="order-label">待收货</span></div><div class="order-item" data-tap="onOrderTap" data-ds-type="review"><span class="order-num">5</span><span class="order-label">待评价</span></div></div></div><div class="menu-section"><div class="menu-item" data-tap="onMenuTap" data-ds-id="1"><i class="wxicon wxicon-success"></i><span class="menu-text">收货地址</span><span class="menu-arrow">&gt;</span></div><div class="menu-item" data-tap="onMenuTap" data-ds-id="2"><i class="wxicon wxicon-warn"></i><span class="menu-text">我的收藏</span><span class="menu-arrow">&gt;</span></div><div class="menu-item" data-tap="onMenuTap" data-ds-id="3"><i class="wxicon wxicon-waiting"></i><span class="menu-text">优惠券</span><span class="menu-value">5张可用</span><span class="menu-arrow">&gt;</span></div><div class="menu-item" data-tap="onMenuTap" data-ds-id="4"><i class="wxicon wxicon-info"></i><span class="menu-text">帮助中心</span><span class="menu-arrow">&gt;</span></div></div><div class="logout-section"><button class="logout-btn" data-tap="onLogout">退出登录</button></div><div class="bottom-space"></div></div></div></body></html>

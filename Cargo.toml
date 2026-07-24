@@ -58,3 +58,7 @@ path = "src/bin/launcher.rs"
 [[bin]]
 name = "mini-devserver"
 path = "src/bin/devserver.rs"
+
+[[bin]]
+name = "mini-compiler"
+path = "src/bin/compiler.rs"

@@ -51,6 +51,27 @@ fn test_block_text_wraps_to_multiple_lines() {
 }
 
 #[test]
+fn test_transpile_wxml_to_html_and_wxss_to_css() {
+    use crate::transpile::{wxml_to_html, wxss_to_css};
+    use crate::parser::wxml::WxmlParser;
+    let nodes = WxmlParser::new(
+        r#"<view class="a" bindtap="onTap" data-id="7"><text>{{name}}</text><image src="p.jpg" mode="aspectFill"/></view>"#
+    ).parse().unwrap();
+    let html = wxml_to_html(&nodes, &json!({"name": "小明"}));
+    assert!(html.contains("<div"), "view->div: {}", html);
+    assert!(html.contains("class=\"a\""));
+    assert!(html.contains("data-tap=\"onTap\""), "bindtap->data-tap");
+    assert!(html.contains("data-ds-id=\"7\""), "dataset->data-ds-*");
+    assert!(html.contains("<span"), "text->span");
+    assert!(html.contains("小明"), "{{ }} expanded");
+    assert!(html.contains("<img") && html.contains("object-fit:cover"), "image->img+object-fit");
+
+    let css = wxss_to_css(".x{ width:100rpx; height:200rpx; margin:8rpx; }");
+    assert!(css.contains("50px") && css.contains("100px") && css.contains("4px"), "rpx->px: {}", css);
+    assert!(!css.contains("rpx"), "no rpx left: {}", css);
+}
+
+#[test]
 fn test_linear_gradient_background() {
     // 垂直渐变（红->蓝）：顶部应偏红、底部应偏蓝
     let css = ".g{ width:200px; height:200px; background: linear-gradient(to bottom, #ff0000, #0000ff); }";

@@ -69,22 +69,41 @@ cargo test
 
 ---
 
-## 🌐 浏览器调试预览
+## 🔄 编译为 HTML 工程（transpile）
 
-无需模拟器，在**浏览器里直接操作小程序 UI**：内置的 HTTP 服务把页面实时渲染成图片推送到浏览器，点击画面即命中事件、调用页面方法、`setData` 后自动重渲染。
+因为 WXSS 基本是标准 CSS、WXML 与 HTML 结构一一对应，引擎内置**源码编译器**，把小程序
+编译成浏览器可原生渲染的 HTML + CSS（`src/transpile.rs`）：
+
+- WXML(+data) → HTML（`wx:for/wx:if/{{}}` 展开 + 标签映射；`bindtap`→`data-tap`、`data-*`→`data-ds-*`）
+- WXSS → CSS（`rpx`→`px`，1rpx=0.5px @375；其余样式浏览器直接识别）
 
 ```bash
-cargo run --bin mini-devserver                    # 默认加载 sample-app/pages/index
-cargo run --bin mini-devserver <页面目录> [端口]   # 指定页面与端口（默认 9000）
+cargo run --bin mini-compiler                    # sample-app -> dist-html/（静态 HTML 工程）
+cargo run --bin mini-compiler <小程序根> <输出目录>
+# 打开 dist-html/index.html 查看每个页面编译出的独立 HTML
 ```
 
-启动后打开终端输出的 `http://127.0.0.1:9000` 即可。仅使用 Rust 标准库网络，无额外依赖。
+> 这既是「一套源码、两套 UI」（Rust canvas 渲染 + 浏览器 HTML 渲染）的基础，也是后续
+> 「编译到 Android / iOS 原生源码」的中间层。
+
+## 🌐 浏览器调试预览（HTML 直渲染，极速）
+
+无需模拟器，在**浏览器里直接操作小程序 UI**：内置 HTTP 服务把页面编译成 HTML/CSS 交给
+浏览器**原生渲染**（不再逐帧渲染图片），点击即时命中事件、`setData`/页面跳转后返回新的
+HTML 片段做局部替换——单次交互 ~3ms，真实 DOM 可交互。
+
+```bash
+cargo run --bin mini-devserver                    # 默认加载 sample-app（首页）
+cargo run --bin mini-devserver <小程序根> [端口]   # 端口被占用会自动顺延
+```
+
+启动后打开终端输出的 `http://127.0.0.1:9000`。仅使用 Rust 标准库网络，无额外依赖。
 
 | 路由 | 作用 |
 |------|------|
-| `GET /` | 调试页面（画面 + 点击捕获 + 自动刷新） |
-| `GET /frame.png` | 当前页面的实时渲染图 |
-| `GET /tap?x&y` | 命中事件 → 调用页面方法 → 重渲染 |
+| `GET /` | 编译好的整页 HTML（base.css + 页面 CSS + body + 运行时） |
+| `POST /event` | 命中事件 → 调用页面方法/`setData`/导航 → 返回新 HTML 片段 |
+| `POST /back` | 返回上一页 |
 
 ---
 
