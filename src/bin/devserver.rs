@@ -38,6 +38,11 @@ struct Preview {
     /// 页面栈：(页面路径, query)，栈顶为当前页
     stack: Vec<(String, HashMap<String, String>)>,
     toast: Option<(String, Instant, u32)>,
+    /// 帧缓存：仅在页面变化(dirty)时重渲染，空闲轮询直接返回缓存，避免卡顿
+    dirty: bool,
+    cache: Vec<u8>,
+    /// 版本号：每次页面变化 +1，浏览器据此判断是否需要重新拉取帧
+    ver: u64,
 }
 
 impl Preview {
@@ -65,6 +70,9 @@ impl Preview {
             text: TextRenderer::load_system_font().ok(),
             stack: Vec::new(),
             toast: None,
+            dirty: true,
+            cache: Vec::new(),
+            ver: 0,
         };
         me.load_page(&start, &HashMap::new())?;
         me.stack.push((start, HashMap::new()));
@@ -91,7 +99,13 @@ impl Preview {
         self.renderer = WxmlRenderer::new_with_scale(ss, W as f32, H as f32, SCALE);
         self.interaction = InteractionManager::new();
         self.app.eval("__pendingNavigation = null;").ok();
+        self.mark_dirty();
         Ok(())
+    }
+
+    fn mark_dirty(&mut self) {
+        self.dirty = true;
+        self.ver = self.ver.wrapping_add(1);
     }
 
     fn page_data(&self) -> serde_json::Value {
@@ -100,18 +114,45 @@ impl Preview {
             .unwrap_or_else(|| serde_json::json!({}))
     }
 
+    /// 返回当前帧 PNG：仅在页面变化(dirty)或存在动画时重渲染，否则返回缓存。
+    fn frame(&mut self) -> Vec<u8> {
+        // 动画状态（定时器/视频/Toast 显示中）需要持续出帧
+        let animating = self.app.has_active_timers()
+            || mini_render::renderer::components::has_playing_video()
+            || self.toast.as_ref().map(|(_, t, d)| t.elapsed().as_millis() < *d as u128).unwrap_or(false);
+        if animating {
+            self.mark_dirty();
+        }
+        if self.dirty || self.cache.is_empty() {
+            self.cache = self.render_png();
+            self.dirty = false;
+        }
+        self.cache.clone()
+    }
+
     fn render_png(&mut self) -> Vec<u8> {
+        let t0 = Instant::now();
         let data = self.page_data();
+        let td = t0.elapsed();
         let mut canvas = Canvas::new((W as f32 * SCALE) as u32, (H as f32 * SCALE) as u32);
         canvas.clear(Color::from_hex(0xF5F6F8));
+        let tl = Instant::now();
+        let _h = self.renderer.measure_content_height(&self.nodes, &data);
+        let layout_t = tl.elapsed();
+        let tr0 = Instant::now();
         self.renderer.render_with_interaction(&mut canvas, &self.nodes, &data, &mut self.interaction);
+        let trend = tr0.elapsed();
+        eprintln!("[perf] page_data={:?} layout(build)={:?} render(total)={:?}", td, layout_t, trend);
         // Toast 覆盖层
         if let Some((title, since, dur)) = &self.toast {
             if since.elapsed().as_millis() < *dur as u128 {
                 self.draw_toast(&mut canvas, title);
             }
         }
-        encode_png(&canvas)
+        let te = Instant::now();
+        let png = encode_png(&canvas);
+        eprintln!("[perf] encode={:?} bytes={}", te.elapsed(), png.len());
+        png
     }
 
     fn draw_toast(&self, canvas: &mut Canvas, title: &str) {
@@ -163,6 +204,8 @@ impl Preview {
         }
         // 5) 导航
         self.dispatch_nav();
+        // 状态可能已变化（setData/Toast），标记需要重渲染
+        self.mark_dirty();
     }
 
     fn dispatch_nav(&mut self) {
@@ -223,10 +266,16 @@ fn query_json(q: &HashMap<String, String>) -> String {
 }
 
 fn encode_png(canvas: &Canvas) -> Vec<u8> {
-    let buf = image::RgbaImage::from_raw(canvas.width(), canvas.height(), canvas.to_rgba());
-    let mut out = std::io::Cursor::new(Vec::new());
-    if let Some(b) = buf { b.write_to(&mut out, image::ImageFormat::Png).ok(); }
-    out.into_inner()
+    // 使用最快压缩 + 无滤波，大幅降低编码耗时（点击时才编码，追求低延迟）
+    use image::codecs::png::{PngEncoder, CompressionType, FilterType};
+    use image::{ColorType, ImageEncoder};
+    let rgba = canvas.to_rgba();
+    let mut out: Vec<u8> = Vec::new();
+    let enc = PngEncoder::new_with_quality(&mut out, CompressionType::Fast, FilterType::NoFilter);
+    if enc.write_image(&rgba, canvas.width(), canvas.height(), ColorType::Rgba8).is_err() {
+        return Vec::new();
+    }
+    out
 }
 
 const PAGE_HTML: &str = r#"<!doctype html><html lang="zh"><head><meta charset="utf-8">
@@ -252,27 +301,33 @@ const PAGE_HTML: &str = r#"<!doctype html><html lang="zh"><head><meta charset="u
 <div class="hint">画面以 &lt;canvas&gt; 承载（原生分辨率、更清晰）。点击即可操作：bindtap / 表单控件 / 页面跳转(navigateTo/switchTab) / Toast，均会实时重渲染。</div>
 <script>
 const cv=document.getElementById('c'), ctx=cv.getContext('2d'), msg=document.getElementById('msg');
-let busy=false;
-async function refresh(){
+let lastVer=-1, busy=false;
+async function drawFrame(){
+  const r=await fetch('/frame.png?t='+Date.now());
+  const blob=await r.blob();
+  const bmp=await createImageBitmap(blob);
+  ctx.drawImage(bmp,0,0,cv.width,cv.height);
+  if(bmp.close) bmp.close();
+}
+// 只查询轻量版本号，变化时才拉取整帧，空闲几乎零开销
+async function poll(){
+  if(busy) return;
   try{
-    const r=await fetch('/frame.png?t='+Date.now());
-    const blob=await r.blob();
-    const bmp=await createImageBitmap(blob);
-    ctx.drawImage(bmp,0,0,cv.width,cv.height);
-    if(bmp.close) bmp.close();
+    const v=await (await fetch('/ver?t='+Date.now())).text();
+    if(v!==lastVer){ lastVer=v; await drawFrame(); }
   }catch(e){}
 }
-async function nav(u){ await fetch(u); refresh(); }
+async function nav(u){ busy=true; try{ await fetch(u); lastVer=-1; await poll(); }finally{ busy=false; } }
 cv.addEventListener('click', async (e)=>{
   const rect=cv.getBoundingClientRect();
   const x=Math.round((e.clientX-rect.left)*(375/rect.width));
   const y=Math.round((e.clientY-rect.top)*(667/rect.height));
   msg.textContent='tap ('+x+','+y+')';
   if(busy) return; busy=true;
-  try{ await fetch('/tap?x='+x+'&y='+y); await refresh(); }finally{ busy=false; }
+  try{ await fetch('/tap?x='+x+'&y='+y); lastVer=-1; await poll(); }finally{ busy=false; }
 });
-refresh();
-setInterval(()=>{ if(document.getElementById('auto').checked && !busy) refresh(); }, 700);
+poll();
+setInterval(()=>{ if(document.getElementById('auto').checked) poll(); }, 300);
 </script></body></html>"#;
 
 fn http_response(status: &str, content_type: &str, body: &[u8]) -> Vec<u8> {
@@ -290,8 +345,11 @@ fn handle(stream: &mut TcpStream, preview: &mut Preview) {
     let req = String::from_utf8_lossy(&buf[..n]);
     let path = req.lines().next().and_then(|l| l.split_whitespace().nth(1)).unwrap_or("/");
 
-    let out = if path.starts_with("/frame") {
-        let png = preview.render_png();
+    let out = if path.starts_with("/ver") {
+        // 轻量版本号轮询：不变则浏览器不拉取帧
+        http_response("200 OK", "text/plain", preview.ver.to_string().as_bytes())
+    } else if path.starts_with("/frame") {
+        let png = preview.frame();
         http_response("200 OK", "image/png", &png)
     } else if path.starts_with("/tap") {
         let (mut x, mut y) = (0.0f32, 0.0f32);
