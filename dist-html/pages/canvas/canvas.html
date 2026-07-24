@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/canvas/canvas</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./canvas.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view page">
+    <div class="wx-view header">
+      <span class="wx-text title">Canvas 示例</span>
+      <span class="wx-text subtitle">展示 Canvas 2D 绑图能力</span>
+    </div>
+    <div class="wx-view canvas-section">
+      <div class="wx-view section-title">基础图形</div>
+      <div class="wx-view canvas-box">
+        <canvas class="wx-canvas canvas canvas-basic" data-canvas-id="canvas1"></canvas>
+      </div>
+      <div class="wx-view canvas-desc">矩形、圆形、线条</div>
+    </div>
+    <div class="wx-view canvas-section">
+      <div class="wx-view section-title">渐变填充</div>
+      <div class="wx-view canvas-box">
+        <canvas class="wx-canvas canvas canvas-gradient" data-canvas-id="canvas2"></canvas>
+      </div>
+      <div class="wx-view canvas-desc">线性渐变、径向渐变</div>
+    </div>
+    <div class="wx-view canvas-section">
+      <div class="wx-view section-title">图表</div>
+      <div class="wx-view canvas-box canvas-chart-box">
+        <canvas class="wx-canvas canvas canvas-chart" data-canvas-id="canvas3"></canvas>
+      </div>
+      <div class="wx-view canvas-desc">柱状图示例</div>
+    </div>
+    <div class="wx-view action-section">
+      <button class="wx-button action-btn" data-tap="redraw">重新绑制</button>
+      <button class="wx-button action-btn action-btn-clear" data-tap="clearAll">清除全部</button>
+    </div>
+    <div class="wx-view canvas-info">
+      <span class="wx-text info-title">Canvas API 说明</span>
+      <div class="wx-view info-item">
+        <span class="wx-text info-label">wx.createCanvasContext(id)</span>
+        <span class="wx-text info-desc">获取 2D 绑制上下文</span>
+      </div>
+      <div class="wx-view info-item">
+        <span class="wx-text info-label">ctx.fillRect(x, y, w, h)</span>
+        <span class="wx-text info-desc">绑制填充矩形</span>
+      </div>
+      <div class="wx-view info-item">
+        <span class="wx-text info-label">ctx.arc(x, y, r, start, end)</span>
+        <span class="wx-text info-desc">绑制圆弧/圆形</span>
+      </div>
+    </div>
+    <div class="wx-view bottom-space"></div>
+  </div>
+</div>
+<script>window.__PAGE_ROUTE__ = "pages/canvas/canvas";</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./canvas.js"></script>
+</body>
+</html>

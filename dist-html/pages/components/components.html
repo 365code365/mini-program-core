@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/components/components</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./components.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view container">
+    <div class="wx-view header">
+      <span class="wx-text title">组件示例</span>
+    </div>
+    <div class="wx-view section">
+      <span class="wx-text section-title">Swiper 轮播图</span>
+      <div class="wx-swiper swiper" data-autoplay="true" data-interval="3000" data-circular="true" data-dots="true">
+        <div class="wx-swiper-item swiper-item" style="background-color: #FF6B35;">
+          <span class="wx-text swiper-text">第一页</span>
+        </div>
+        <div class="wx-swiper-item swiper-item" style="background-color: #07c160;">
+          <span class="wx-text swiper-text">第二页</span>
+        </div>
+        <div class="wx-swiper-item swiper-item" style="background-color: #1890ff;">
+          <span class="wx-text swiper-text">第三页</span>
+        </div>
+      </div>
+    </div>
+    <div class="wx-view section">
+      <span class="wx-text section-title">Picker 选择器</span>
+      <div class="wx-picker" data-change="onPickerChange">
+        <div class="wx-view picker-item">
+          <span class="wx-text">当前选择：选项一</span>
+        </div>
+      </div>
+    </div>
+    <div class="wx-view section">
+      <span class="wx-text section-title">Rich-text 富文本</span>
+      <div class="wx-rich-text rich-text-box">这是一段<span style="color: #ff0000;">红色</span>的富文本内容。</div>
+    </div>
+    <div class="wx-view section">
+      <span class="wx-text section-title">Checkbox Group</span>
+      <div class="wx-checkbox-group" data-change="onCheckboxChange">
+        <div class="wx-view checkbox-item">
+          <input class="wx-checkbox" type="checkbox" value="apple" checked>
+          <span class="wx-text">苹果</span>
+        </div>
+        <div class="wx-view checkbox-item">
+          <input class="wx-checkbox" type="checkbox" value="banana">
+          <span class="wx-text">香蕉</span>
+        </div>
+        <div class="wx-view checkbox-item">
+          <input class="wx-checkbox" type="checkbox" value="orange">
+          <span class="wx-text">橙子</span>
+        </div>
+      </div>
+    </div>
+    <div class="wx-view section">
+      <span class="wx-text section-title">Radio Group</span>
+      <div class="wx-radio-group" data-change="onRadioChange">
+        <div class="wx-view radio-item">
+          <input class="wx-radio" type="radio" value="male" checked>
+          <span class="wx-text">男</span>
+        </div>
+        <div class="wx-view radio-item">
+          <input class="wx-radio" type="radio" value="female">
+          <span class="wx-text">女</span>
+        </div>
+      </div>
+    </div>
+    <div class="wx-view back-btn" data-tap="onBack">
+      <span class="wx-text back-text">返回首页</span>
+    </div>
+  </div>
+</div>
+<script>window.__PAGE_ROUTE__ = "pages/components/components";</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./components.js"></script>
+</body>
+</html>

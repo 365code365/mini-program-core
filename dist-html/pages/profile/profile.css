@@ -1,0 +1,133 @@
+/* 由 profile.wxss 编译 */
+.page {
+  background-color: #F5F5F5;
+}
+
+/* 用户头部 */
+.user-header {
+  background-color: #FF6B35;
+  padding: 20px 15px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 30px;
+  background-color: rgba(255,255,255,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-info {
+  margin-left: 12px;
+}
+
+.user-name {
+  display: block;
+  font-size: 18px;
+  color: #fff;
+  font-weight: bold;
+}
+
+.user-level {
+  display: block;
+  font-size: 12px;
+  color: rgba(255,255,255,0.8);
+  margin-top: 4px;
+}
+
+/* 订单统计 */
+.order-section {
+  background-color: #fff;
+  margin: 10px;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.order-title {
+  font-size: 15px;
+  color: #333;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.order-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+}
+
+.order-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.order-num {
+  font-size: 20px;
+  color: #333;
+  font-weight: bold;
+}
+
+.order-label {
+  font-size: 12px;
+  color: #999;
+  margin-top: 4px;
+}
+
+/* 功能菜单 */
+.menu-section {
+  background-color: #fff;
+  margin: 0 10px 10px;
+  border-radius: 8px;
+}
+
+.menu-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 14px 12px;
+  border-bottom: 0.500px solid #f5f5f5;
+}
+
+.menu-item:last-child {
+  border-bottom: none;
+}
+
+.menu-text {
+  flex: 1;
+  font-size: 15px;
+  color: #333;
+  margin-left: 8px;
+}
+
+.menu-value {
+  font-size: 13px;
+  color: #999;
+  margin-right: 4px;
+}
+
+.menu-arrow {
+  font-size: 14px;
+  color: #ccc;
+}
+
+/* 退出登录 */
+.logout-section {
+  padding: 20px 10px;
+}
+
+.logout-btn {
+  background-color: #fff;
+  color: #FF6B35;
+  border: 1px solid #FF6B35;
+  border-radius: 22px;
+}
+
+.bottom-space {
+  height: 0;
+}

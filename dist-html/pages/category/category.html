@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/category/category</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./category.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view page">
+    <div class="wx-view search-bar">
+      <div class="wx-view search-input">
+        <i class="wx-icon wxicon wxicon-search" style="font-size:13px;background:#999"></i>
+        <span class="wx-text search-placeholder">搜索商品</span>
+      </div>
+    </div>
+    <div class="wx-view main-content">
+      <div class="wx-scroll-view category-nav" style="overflow-y:auto">
+        <div class="wx-view category-item active" data-tap="onSelectCategory" data-ds-id="0">
+          <span class="wx-text">热销</span>
+        </div>
+        <div class="wx-view category-item " data-tap="onSelectCategory" data-ds-id="1">
+          <span class="wx-text">主食</span>
+        </div>
+        <div class="wx-view category-item " data-tap="onSelectCategory" data-ds-id="2">
+          <span class="wx-text">小吃</span>
+        </div>
+        <div class="wx-view category-item " data-tap="onSelectCategory" data-ds-id="3">
+          <span class="wx-text">饮品</span>
+        </div>
+        <div class="wx-view category-item " data-tap="onSelectCategory" data-ds-id="4">
+          <span class="wx-text">甜点</span>
+        </div>
+        <div class="wx-view category-item " data-tap="onSelectCategory" data-ds-id="5">
+          <span class="wx-text">套餐</span>
+        </div>
+        <div class="wx-view category-item " data-tap="onSelectCategory" data-ds-id="6">
+          <span class="wx-text">早餐</span>
+        </div>
+        <div class="wx-view category-item " data-tap="onSelectCategory" data-ds-id="7">
+          <span class="wx-text">夜宵</span>
+        </div>
+        <div class="wx-view category-item " data-tap="onSelectCategory" data-ds-id="8">
+          <span class="wx-text">沙拉</span>
+        </div>
+        <div class="wx-view category-item " data-tap="onSelectCategory" data-ds-id="9">
+          <span class="wx-text">沙拉1</span>
+        </div>
+        <div class="wx-view category-item " data-tap="onSelectCategory" data-ds-id="10">
+          <span class="wx-text">沙拉2</span>
+        </div>
+        <div class="wx-view category-item " data-tap="onSelectCategory" data-ds-id="11">
+          <span class="wx-text">沙拉4</span>
+        </div>
+        <div class="wx-view category-item " data-tap="onSelectCategory" data-ds-id="12">
+          <span class="wx-text">沙拉5</span>
+        </div>
+        <div class="wx-view category-item " data-tap="onSelectCategory" data-ds-id="13">
+          <span class="wx-text">沙拉6</span>
+        </div>
+        <div class="wx-view category-item " data-tap="onSelectCategory" data-ds-id="14">
+          <span class="wx-text">沙拉1</span>
+        </div>
+        <div class="wx-view category-item " data-tap="onSelectCategory" data-ds-id="15">
+          <span class="wx-text">汤品1</span>
+        </div>
+      </div>
+      <div class="wx-view product-list">
+        <div class="wx-view category-title">
+          <span class="wx-text">热销</span>
+        </div>
+        <div class="wx-view product-item">
+          <div class="wx-view product-image">
+            <i class="wx-icon wxicon wxicon-success" style="font-size:33px;background:#FF6B35"></i>
+          </div>
+          <div class="wx-view product-info">
+            <span class="wx-text product-name">招牌炒饭</span>
+            <span class="wx-text product-desc">蛋炒饭配火腿肠</span>
+            <div class="wx-view product-bottom">
+              <span class="wx-text product-price">¥18</span>
+              <div class="wx-view quantity-control">
+                <div class="wx-view plus-btn" data-tap="onPlus" data-ds-id="101">
+                  <span class="wx-text">+</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="wx-view product-item">
+          <div class="wx-view product-image">
+            <i class="wx-icon wxicon wxicon-info" style="font-size:33px;background:#4A90D9"></i>
+          </div>
+          <div class="wx-view product-info">
+            <span class="wx-text product-name">红烧牛肉面</span>
+            <span class="wx-text product-desc">大块牛肉 劲道面条</span>
+            <div class="wx-view product-bottom">
+              <span class="wx-text product-price">¥26</span>
+              <div class="wx-view quantity-control">
+                <div class="wx-view plus-btn" data-tap="onPlus" data-ds-id="102">
+                  <span class="wx-text">+</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="wx-view product-item">
+          <div class="wx-view product-image">
+            <i class="wx-icon wxicon wxicon-waiting" style="font-size:33px;background:#52C41A"></i>
+          </div>
+          <div class="wx-view product-info">
+            <span class="wx-text product-name">鸡腿饭</span>
+            <span class="wx-text product-desc">香酥鸡腿配米饭</span>
+            <div class="wx-view product-bottom">
+              <span class="wx-text product-price">¥22</span>
+              <div class="wx-view quantity-control">
+                <div class="wx-view plus-btn" data-tap="onPlus" data-ds-id="103">
+                  <span class="wx-text">+</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="wx-view cart-bar" style="position: fixed; bottom: 56px; left: 0; right: 0;">
+      <div class="wx-view cart-left" data-tap="onShowCart">
+        <div class="wx-view cart-icon-wrap">
+          <i class="wx-icon wxicon wxicon-success" style="font-size:23px;background:#fff"></i>
+        </div>
+        <div class="wx-view cart-info">
+          <span class="wx-text cart-total">¥0.00</span>
+          <span class="wx-text cart-tip">另需配送费¥5</span>
+        </div>
+      </div>
+      <div class="wx-view cart-right" data-tap="onCheckout">
+        <button class="wx-button" style="border-radius: 30px;background: #012000;color: black">未选购商品</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>window.__PAGE_ROUTE__ = "pages/category/category";</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./category.js"></script>
+</body>
+</html>

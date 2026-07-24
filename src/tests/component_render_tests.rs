@@ -59,7 +59,8 @@ fn test_transpile_wxml_to_html_and_wxss_to_css() {
     ).parse().unwrap();
     let html = wxml_to_html(&nodes, &json!({"name": "小明"}));
     assert!(html.contains("<div"), "view->div: {}", html);
-    assert!(html.contains("class=\"a\""));
+    // class 现在带上 wx-<原标签> 基类（还原小程序默认盒模型），再拼用户 class
+    assert!(html.contains("class=\"wx-view a\""), "wx-tag base class prepended: {}", html);
     assert!(html.contains("data-tap=\"onTap\""), "bindtap->data-tap");
     assert!(html.contains("data-ds-id=\"7\""), "dataset->data-ds-*");
     assert!(html.contains("<span"), "text->span");
@@ -69,6 +70,32 @@ fn test_transpile_wxml_to_html_and_wxss_to_css() {
     let css = wxss_to_css(".x{ width:100rpx; height:200rpx; margin:8rpx; }");
     assert!(css.contains("50px") && css.contains("100px") && css.contains("4px"), "rpx->px: {}", css);
     assert!(!css.contains("rpx"), "no rpx left: {}", css);
+}
+
+#[test]
+fn test_wxss_tag_selector_rewrite() {
+    use crate::transpile::wxss_to_css;
+    // 后代标签选择器 → .wx-<tag>
+    let css = wxss_to_css(".item text { color: #666; } .item.active text { color: red; }");
+    assert!(css.contains(".item .wx-text"), "descendant text->.wx-text: {}", css);
+    assert!(css.contains(".item.active .wx-text"), "compound: {}", css);
+    // 直接子代/兄弟组合器
+    let css2 = wxss_to_css("view > text { font-size: 12px; } image + view { margin: 0; }");
+    assert!(css2.contains(".wx-view > .wx-text"), "child combinator: {}", css2);
+    assert!(css2.contains(".wx-image + .wx-view"), "adjacent: {}", css2);
+    // 不能误改类名 / 属性选择器 / 声明值
+    let css3 = wxss_to_css(".view-box { border-image: none; } input[type=text] { color: viewblue; }");
+    assert!(css3.contains(".view-box"), "class .view-box untouched: {}", css3);
+    assert!(css3.contains("border-image: none"), "property value untouched: {}", css3);
+    assert!(css3.contains("[type=text]"), "attr selector untouched: {}", css3);
+    // page 根选择器 → #app
+    let css4 = wxss_to_css("page { background: #fff; } .page { padding: 0; }");
+    assert!(css4.contains("#app {"), "page->#app: {}", css4);
+    assert!(css4.contains(".page {"), "class .page untouched: {}", css4);
+    // @media 条件不被改写，内部规则被改写
+    let css5 = wxss_to_css("@media screen { text { color: #000; } }");
+    assert!(css5.contains("@media screen"), "media condition kept: {}", css5);
+    assert!(css5.contains(".wx-text"), "rule inside media rewritten: {}", css5);
 }
 
 #[test]

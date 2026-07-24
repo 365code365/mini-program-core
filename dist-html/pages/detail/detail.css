@@ -1,29 +1,4 @@
-<!doctype html>
-<html lang="zh"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>pages/detail/detail</title>
-<style>
-
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-view,scroll-view,swiper,swiper-item,cover-view{display:flex;flex-direction:column;}
-image{display:block;}
-button{border:0;background:none;font:inherit;color:inherit;cursor:pointer;display:block;width:100%;}
-input,textarea{border:0;outline:none;background:none;font:inherit;color:inherit;width:100%;}
-a{color:inherit;text-decoration:none;}
-body{font-size:16px;color:#333;font-family:-apple-system,system-ui,"PingFang SC","Hiragino Sans GB",sans-serif;background:#f5f6f8;}
-/* 内置矢量图标（对齐 <icon type> 常用类型）*/
-.wxicon{display:inline-flex;align-items:center;justify-content:center;width:1.2em;height:1.2em;border-radius:50%;color:#fff;font-style:normal;font-size:.7em;line-height:1;}
-.wxicon-success{background:#09bb07;}.wxicon-success::before{content:"\2713";}
-.wxicon-info{background:#10aeff;}.wxicon-info::before{content:"i";font-weight:bold;}
-.wxicon-warn{background:#f76260;}.wxicon-warn::before{content:"!";font-weight:bold;}
-.wxicon-waiting{background:#10aeff;}.wxicon-waiting::before{content:"\2026";}
-.wxicon-cancel{background:#f43530;}.wxicon-cancel::before{content:"\2715";}
-.wxicon-download{background:#09bb07;}.wxicon-download::before{content:"\2193";}
-.wxicon-search{background:#b2b2b2;}.wxicon-search::before{content:"\1F50D";}
-.wxicon-clear{background:#b2b2b2;}.wxicon-clear::before{content:"\2715";}
-
-#app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
-
+/* 由 detail.wxss 编译 */
 .page {
   background: linear-gradient(180deg, #fff5f0 0%, #f5f5f5 100px);
   min-height: 100vh;
@@ -55,7 +30,7 @@ body{font-size:16px;color:#333;font-family:-apple-system,system-ui,"PingFang SC"
   border-radius: 10px;
 }
 
-.promo-tag text {
+.promo-tag .wx-text {
   color: #fff;
   font-size: 12px;
   font-weight: bold;
@@ -225,7 +200,7 @@ body{font-size:16px;color:#333;font-family:-apple-system,system-ui,"PingFang SC"
   transition: all 0.2s;
 }
 
-.spec-item text {
+.spec-item .wx-text {
   font-size: 14px;
   color: #333;
 }
@@ -235,7 +210,7 @@ body{font-size:16px;color:#333;font-family:-apple-system,system-ui,"PingFang SC"
   border-color: #ff6b35;
 }
 
-.spec-item.active text {
+.spec-item.active .wx-text {
   color: #ff6b35;
   font-weight: bold;
 }
@@ -266,7 +241,7 @@ body{font-size:16px;color:#333;font-family:-apple-system,system-ui,"PingFang SC"
   background: #f0f0f0;
 }
 
-.qty-btn text {
+.qty-btn .wx-text {
   font-size: 18px;
   color: #333;
   font-weight: bold;
@@ -276,7 +251,7 @@ body{font-size:16px;color:#333;font-family:-apple-system,system-ui,"PingFang SC"
   background: #f8f8f8;
 }
 
-.qty-btn.disabled text {
+.qty-btn.disabled .wx-text {
   color: #ccc;
 }
 
@@ -289,7 +264,7 @@ body{font-size:16px;color:#333;font-family:-apple-system,system-ui,"PingFang SC"
   background: #fff;
 }
 
-.qty-input text {
+.qty-input .wx-text {
   font-size: 15px;
   color: #1a1a1a;
   font-weight: bold;
@@ -309,7 +284,7 @@ body{font-size:16px;color:#333;font-family:-apple-system,system-ui,"PingFang SC"
   align-items: center;
 }
 
-.service-item text {
+.service-item .wx-text {
   font-size: 12px;
   color: #666;
   margin-left: 4px;
@@ -395,7 +370,7 @@ body{font-size:16px;color:#333;font-family:-apple-system,system-ui,"PingFang SC"
   position: relative;
 }
 
-.action-icon-item text {
+.action-icon-item .wx-text {
   font-size: 11px;
   color: #666;
   margin-top: 2px;
@@ -412,7 +387,7 @@ body{font-size:16px;color:#333;font-family:-apple-system,system-ui,"PingFang SC"
   min-width: 16px;
 }
 
-.cart-badge text {
+.cart-badge .wx-text {
   font-size: 10px;
   color: #fff;
   margin-top: 0;
@@ -454,15 +429,3 @@ body{font-size:16px;color:#333;font-family:-apple-system,system-ui,"PingFang SC"
   border-radius: 18px;
   border: none;
 }
-
-</style></head>
-<body><div id="app"><div class="page"><div class="product-image"><div class="image-placeholder"><i class="wxicon wxicon-success"></i></div><div class="promo-tag"><span>6.7折</span></div></div><div class="product-card"><div class="price-section"><div class="price-main"><span class="price-text">¥199</span><span class="original-price">¥299</span></div><div class="price-tags"><span class="tag tag-hot">热卖</span><span class="tag tag-free">包邮</span></div></div><div class="product-title-section"><span class="product-name">无线蓝牙耳机 Pro</span><span class="product-desc">高清音质 主动降噪 40小时超长续航</span></div><div class="meta-section"><div class="meta-item"><span class="meta-value">2341</span><span class="meta-label">销量</span></div><div class="meta-divider"></div><div class="meta-item"><span class="meta-value">999</span><span class="meta-label">库存</span></div><div class="meta-divider"></div><div class="meta-item"><span class="meta-value">4.9</span><span class="meta-label">评分</span></div></div></div><div class="section-card"><div class="section-header"><span class="section-title">规格选择</span><span class="section-hint">已选：黑色</span></div><div class="spec-list"><div class="spec-item active" data-tap="onSelectSpec" data-ds-index="0"><span>黑色</span></div><div class="spec-item " data-tap="onSelectSpec" data-ds-index="1"><span>白色</span></div><div class="spec-item " data-tap="onSelectSpec" data-ds-index="2"><span>蓝色</span></div></div></div><div class="section-card qty-card"><span class="section-title">购买数量</span><div class="qty-control"><div class="qty-btn disabled" data-tap="onDecrease"><span>-</span></div><div class="qty-input"><span>1</span></div><div class="qty-btn " data-tap="onIncrease"><span>+</span></div></div></div><div class="section-card service-card"><div class="service-item"><i class="wxicon wxicon-success"></i><span>正品保证</span></div><div class="service-item"><i class="wxicon wxicon-success"></i><span>7天退换</span></div><div class="service-item"><i class="wxicon wxicon-success"></i><span>极速发货</span></div></div><div class="detail-card"><div class="detail-header"><div class="detail-line"></div><span class="detail-title">商品详情</span><div class="detail-line"></div></div><div class="detail-content"><span class="detail-text">【产品特点】
-• 高品质材料，经久耐用
-• 精心设计，使用便捷
-• 品牌保证，售后无忧
-• 快速发货，物流可追踪
-
-【包装清单】
-产品 x 1
-说明书 x 1
-保修卡 x 1</span></div></div><div class="bottom-space"></div><div class="action-bar"><div class="action-icons"><div class="action-icon-item" data-tap="onGoHome"><i class="wxicon wxicon-success"></i><span>首页</span></div><div class="action-icon-item" data-tap="onGoCart"><i class="wxicon wxicon-waiting"></i><span>购物车</span></div></div><div class="action-buttons"><button class="btn-cart" data-tap="onAddCart">加入购物车</button><div class="btn-gap"></div><button class="btn-buy" data-tap="onBuyNow">立即购买</button></div></div></div></div></body></html>

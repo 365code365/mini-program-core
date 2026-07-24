@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/profile/profile</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./profile.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view page">
+    <div class="wx-view user-header">
+      <div class="wx-view avatar">
+        <i class="wx-icon wxicon wxicon-success" style="font-size:40px;background:#fff"></i>
+      </div>
+      <div class="wx-view user-info">
+        <span class="wx-text user-name">用户12345</span>
+        <span class="wx-text user-level">普通会员</span>
+      </div>
+    </div>
+    <div class="wx-view order-section">
+      <div class="wx-view order-title">我的订单</div>
+      <div class="wx-view order-row">
+        <div class="wx-view order-item" data-tap="onOrderTap" data-ds-type="pending">
+          <span class="wx-text order-num">2</span>
+          <span class="wx-text order-label">待付款</span>
+        </div>
+        <div class="wx-view order-item" data-tap="onOrderTap" data-ds-type="shipping">
+          <span class="wx-text order-num">1</span>
+          <span class="wx-text order-label">待发货</span>
+        </div>
+        <div class="wx-view order-item" data-tap="onOrderTap" data-ds-type="receiving">
+          <span class="wx-text order-num">3</span>
+          <span class="wx-text order-label">待收货</span>
+        </div>
+        <div class="wx-view order-item" data-tap="onOrderTap" data-ds-type="review">
+          <span class="wx-text order-num">5</span>
+          <span class="wx-text order-label">待评价</span>
+        </div>
+      </div>
+    </div>
+    <div class="wx-view menu-section">
+      <div class="wx-view menu-item" data-tap="onMenuTap" data-ds-id="1">
+        <i class="wx-icon wxicon wxicon-success" style="font-size:20px;background:#FF6B35"></i>
+        <span class="wx-text menu-text">收货地址</span>
+        <span class="wx-text menu-arrow">&gt;</span>
+      </div>
+      <div class="wx-view menu-item" data-tap="onMenuTap" data-ds-id="2">
+        <i class="wx-icon wxicon wxicon-warn" style="font-size:20px;background:#FF69B4"></i>
+        <span class="wx-text menu-text">我的收藏</span>
+        <span class="wx-text menu-arrow">&gt;</span>
+      </div>
+      <div class="wx-view menu-item" data-tap="onMenuTap" data-ds-id="3">
+        <i class="wx-icon wxicon wxicon-waiting" style="font-size:20px;background:#52C41A"></i>
+        <span class="wx-text menu-text">优惠券</span>
+        <span class="wx-text menu-value">5张可用</span>
+        <span class="wx-text menu-arrow">&gt;</span>
+      </div>
+      <div class="wx-view menu-item" data-tap="onMenuTap" data-ds-id="4">
+        <i class="wx-icon wxicon wxicon-info" style="font-size:20px;background:#4A90D9"></i>
+        <span class="wx-text menu-text">帮助中心</span>
+        <span class="wx-text menu-arrow">&gt;</span>
+      </div>
+    </div>
+    <div class="wx-view logout-section">
+      <button class="wx-button logout-btn" data-tap="onLogout">退出登录</button>
+    </div>
+    <div class="wx-view bottom-space"></div>
+  </div>
+</div>
+<script>window.__PAGE_ROUTE__ = "pages/profile/profile";</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./profile.js"></script>
+</body>
+</html>

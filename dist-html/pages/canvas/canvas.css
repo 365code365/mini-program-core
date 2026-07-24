@@ -1,0 +1,132 @@
+/* 由 canvas.wxss 编译 */
+.page {
+  padding: 16px;
+  background-color: #f5f5f5;
+  min-height: 100%;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  display: block;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #666;
+  margin-top: 8px;
+  display: block;
+}
+
+.canvas-section {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 12px;
+}
+
+.canvas-box {
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.canvas {
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 4px;
+}
+
+.canvas-basic {
+  width: 300px;
+  height: 150px;
+}
+
+.canvas-gradient {
+  width: 300px;
+  height: 120px;
+}
+
+.canvas-chart {
+  width: 320px;
+  height: 180px;
+}
+
+.canvas-desc {
+  font-size: 12px;
+  color: #999;
+  text-align: center;
+  margin-top: 8px;
+}
+
+.action-section {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.action-btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 16px;
+  background: #07c160;
+  color: #fff;
+}
+
+.action-btn-clear {
+  background: #999;
+}
+
+.canvas-info {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.info-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.info-item {
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.info-label {
+  font-size: 13px;
+  color: #07c160;
+  display: block;
+}
+
+.info-desc {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+  display: block;
+}
+
+.bottom-space {
+  height: 80px;
+}

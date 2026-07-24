@@ -48,9 +48,121 @@ pub fn convert_rpx(s: &str) -> String {
     out
 }
 
-/// WXSS → CSS
+/// 小程序内置元素标签名（这些在 HTML 里被映射成 div/span/img 等，需把选择器改写为 .wx-<tag>）
+const WX_TAGS: &[&str] = &[
+    "view", "scroll-view", "swiper", "swiper-item", "movable-view", "movable-area",
+    "cover-view", "cover-image", "text", "rich-text", "image", "icon", "progress",
+    "button", "checkbox", "checkbox-group", "radio", "radio-group", "switch", "slider",
+    "input", "textarea", "picker", "picker-view", "picker-view-column", "form", "label",
+    "navigator", "video", "audio", "camera", "live-player", "live-pusher", "canvas",
+    "map", "web-view", "ad", "block",
+];
+
+/// WXSS → CSS：
+/// ① rpx → px；② 元素类型选择器改写为 `.wx-<tag>`（因为 HTML 里 view→div、text→span 等，
+///    否则 `.foo text{...}` 这类后代标签选择器全部失效，样式大面积丢失）。
 pub fn wxss_to_css(src: &str) -> String {
-    convert_rpx(src)
+    rewrite_tag_selectors(&convert_rpx(src))
+}
+
+/// 判断某标识符是否为需要改写的小程序标签
+fn is_wx_tag(ident: &str) -> bool {
+    WX_TAGS.contains(&ident)
+}
+
+/// 改写单个选择器串里的元素类型选择器：`.a text` → `.a .wx-text`，`view>text` → `.wx-view>.wx-text`
+fn rewrite_selector_tokens(sel: &str) -> String {
+    let chars: Vec<char> = sel.chars().collect();
+    let n = chars.len();
+    let mut out = String::with_capacity(sel.len() + 8);
+    let mut i = 0;
+    let mut attr_depth = 0i32; // 处于 [...] 内不改写
+    while i < n {
+        let c = chars[i];
+        if c == '[' { attr_depth += 1; out.push(c); i += 1; continue; }
+        if c == ']' { if attr_depth > 0 { attr_depth -= 1; } out.push(c); i += 1; continue; }
+        if attr_depth > 0 { out.push(c); i += 1; continue; }
+
+        if c.is_ascii_alphabetic() {
+            // 上一个有效字符（决定是否处于「类型选择器」位置）
+            let prev = out.chars().last();
+            let type_pos = match prev {
+                None => true,
+                Some(p) => matches!(p, ' ' | '\t' | '\n' | '\r' | '>' | '+' | '~' | ',' | '('),
+            };
+            let start = i;
+            while i < n && (chars[i].is_ascii_alphanumeric() || chars[i] == '-') { i += 1; }
+            let ident: String = chars[start..i].iter().collect();
+            if type_pos && ident == "page" {
+                // WXSS 根选择器 page → HTML 根容器 #app
+                out.push_str("#app");
+            } else if type_pos && is_wx_tag(&ident) {
+                out.push_str(".wx-");
+                out.push_str(&ident);
+            } else {
+                out.push_str(&ident);
+            }
+            continue;
+        }
+        out.push(c);
+        i += 1;
+    }
+    out
+}
+
+/// 扫描整段 CSS，只在「选择器位置」改写标签选择器；声明块、@media 条件、@keyframes 内容保持原样。
+fn rewrite_tag_selectors(css: &str) -> String {
+    let mut out = String::with_capacity(css.len() + 64);
+    let mut sel = String::new();
+    let mut in_block = false;
+    let mut depth = 0i32;
+    for c in css.chars() {
+        if in_block {
+            out.push(c);
+            if c == '{' { depth += 1; }
+            else if c == '}' { depth -= 1; if depth == 0 { in_block = false; } }
+            continue;
+        }
+        // 选择器 / at-rule 前导 区域
+        match c {
+            '{' => {
+                let trimmed = sel.trim_start();
+                let low = trimmed.to_ascii_lowercase();
+                if low.starts_with("@media") || low.starts_with("@supports") || low.starts_with("@container") {
+                    // 分组 at-rule：条件原样输出，内部仍是规则（继续在选择器模式）
+                    out.push_str(&sel);
+                    out.push('{');
+                } else if trimmed.starts_with('@') {
+                    // @keyframes / @font-face / @page 等：内容原样，进入块模式
+                    out.push_str(&sel);
+                    out.push('{');
+                    in_block = true;
+                    depth = 1;
+                } else {
+                    out.push_str(&rewrite_selector_tokens(&sel));
+                    out.push('{');
+                    in_block = true;
+                    depth = 1;
+                }
+                sel.clear();
+            }
+            '}' => {
+                // 关闭分组 at-rule（如 @media）
+                out.push_str(&sel);
+                sel.clear();
+                out.push('}');
+            }
+            ';' => {
+                // 顶层 @import / @charset 等以分号结束的语句
+                out.push_str(&sel);
+                sel.clear();
+                out.push(';');
+            }
+            _ => sel.push(c),
+        }
+    }
+    out.push_str(&sel);
+    out
 }
 
 /// WXML(+data) → HTML 片段（不含 <html>/<body> 包裹）
@@ -68,6 +180,89 @@ fn escape_text(s: &str) -> String {
 }
 fn escape_attr(s: &str) -> String {
     s.replace('&', "&amp;").replace('"', "&quot;").replace('<', "&lt;")
+}
+
+/// 布尔属性判定：`checked`、`checked="true"`、`checked="{{true}}"`(渲染为 "true") 等均视为真
+fn is_truthy(v: Option<&str>) -> bool {
+    match v {
+        None => false,
+        Some(s) => {
+            let t = s.trim();
+            t.is_empty() || t == "true" || t == "1"
+        }
+    }
+}
+
+/// 判断某标签是否需要在 emit 时生成自定义内部结构（switch/progress/rich-text）
+fn has_custom_inner(tag: &str) -> bool {
+    matches!(tag, "switch" | "progress" | "rich-text")
+}
+
+/// 生成 switch/progress/rich-text 的内部 HTML
+fn custom_inner_html(node: &WxmlNode) -> String {
+    match node.tag_name.as_str() {
+        "switch" => "<span class=\"wx-switch-knob\"></span>".to_string(),
+        "progress" => {
+            let percent = node.get_attr("percent")
+                .and_then(|v| v.trim().parse::<f32>().ok()).unwrap_or(0.0)
+                .clamp(0.0, 100.0);
+            let color = node.get_attr("activeColor")
+                .or_else(|| node.get_attr("active-color"))
+                .or_else(|| node.get_attr("color"))
+                .unwrap_or("#09bb07");
+            let mut s = format!(
+                "<div class=\"wx-progress-outer\"><div class=\"wx-progress-inner\" style=\"width:{}%;background:{}\"></div></div>",
+                percent, color
+            );
+            if is_truthy(node.get_attr("show-info")) {
+                s.push_str(&format!("<span class=\"wx-progress-info\">{}%</span>", percent as i32));
+            }
+            s
+        }
+        "rich-text" => rich_text_inner(node),
+        _ => String::new(),
+    }
+}
+
+/// rich-text：nodes 可为 HTML 字符串或节点数组（模板插值会把 " 转成 '，此处还原后按 JSON 解析）
+fn rich_text_inner(node: &WxmlNode) -> String {
+    let nodes = match node.get_attr("nodes") {
+        Some(n) => n.trim().to_string(),
+        None => return String::new(),
+    };
+    if nodes.starts_with('[') || nodes.starts_with('{') {
+        if let Ok(v) = serde_json::from_str::<JsonValue>(&nodes.replace('\'', "\"")) {
+            return render_rich_nodes(&v);
+        }
+    }
+    // 否则视为 HTML 字符串，原样输出
+    nodes
+}
+
+fn render_rich_nodes(v: &JsonValue) -> String {
+    match v {
+        JsonValue::Array(a) => a.iter().map(render_rich_nodes).collect(),
+        JsonValue::String(s) => escape_text(s),
+        JsonValue::Object(o) => {
+            // 文本节点：{ type:"text", text:"..." }
+            if o.get("type").and_then(|t| t.as_str()) == Some("text") {
+                return escape_text(o.get("text").and_then(|t| t.as_str()).unwrap_or(""));
+            }
+            // 元素节点：{ name, attrs:{...}, children:[...] }
+            let name = o.get("name").and_then(|n| n.as_str()).unwrap_or("div");
+            let mut attrs = String::new();
+            if let Some(JsonValue::Object(at)) = o.get("attrs") {
+                for (k, val) in at {
+                    if let Some(sv) = val.as_str() {
+                        attrs.push_str(&format!(" {}=\"{}\"", k, escape_attr(sv)));
+                    }
+                }
+            }
+            let children = o.get("children").map(render_rich_nodes).unwrap_or_default();
+            format!("<{n}{a}>{c}</{n}>", n = name, a = attrs, c = children)
+        }
+        _ => String::new(),
+    }
 }
 
 /// 标签映射：返回 (html标签, 附加内联样式, 是否自闭合)
@@ -94,35 +289,47 @@ fn map_tag(node: &WxmlNode) -> (&'static str, String, bool) {
         "input" => ("input", String::new(), true),
         "textarea" => ("textarea", String::new(), false),
         "navigator" => ("a", String::new(), false),
-        "swiper" => ("div", "overflow:hidden;position:relative".to_string(), false),
+        // 轮播：布局与指示点由 base.css / runtime.js 处理
+        "swiper" => ("div", String::new(), false),
         "swiper-item" => ("div", String::new(), false),
         "icon" => ("i", String::new(), false),
+        // 表单控件：映射为原生元素（可交互 + 微信风格样式见 base.css）
+        "checkbox" => ("input", String::new(), true),
+        "radio" => ("input", String::new(), true),
+        "slider" => ("input", String::new(), true),
+        // switch / progress / rich-text 的内部结构在 emit_* 中生成
+        "switch" => ("div", String::new(), false),
+        "progress" => ("div", String::new(), false),
+        "rich-text" => ("div", String::new(), false),
+        // 媒体
+        "video" => ("video", String::new(), false),
+        "audio" => ("audio", String::new(), false),
+        "canvas" => ("canvas", String::new(), false),
         _ => ("div", String::new(), false),
     }
 }
 
-fn emit_node(node: &WxmlNode, out: &mut String) {
-    if node.node_type == WxmlNodeType::Text {
-        out.push_str(&escape_text(&node.text_content));
-        return;
-    }
-    if node.node_type != WxmlNodeType::Element {
-        return;
-    }
+/// 构建元素的开标签字符串 `<tag ...>`，返回 (开标签, html标签名, 是否自闭合)
+fn build_open_tag(node: &WxmlNode) -> (String, &'static str, bool) {
     let (tag, extra_style, void) = map_tag(node);
     let mut attrs = String::new();
 
-    // class：icon 追加内置图标类
-    let mut class = node.get_attr("class").unwrap_or("").to_string();
+    // class：始终带上 wx-<原标签> 基类（用于还原小程序默认盒模型：view=flex列 等），
+    // 再拼用户 class，icon 追加内置图标类。
+    let mut class = format!("wx-{}", node.tag_name);
+    if let Some(c) = node.get_attr("class") {
+        if !c.is_empty() { class.push(' '); class.push_str(c); }
+    }
     if node.tag_name == "icon" {
         if let Some(t) = node.get_attr("type") {
-            if !class.is_empty() { class.push(' '); }
-            class.push_str(&format!("wxicon wxicon-{}", t));
+            class.push_str(&format!(" wxicon wxicon-{}", t));
         }
     }
-    if !class.is_empty() {
-        attrs.push_str(&format!(" class=\"{}\"", escape_attr(&class)));
+    // switch 初始开启状态用类名表示（knob 位置由 CSS 控制）
+    if node.tag_name == "switch" && is_truthy(node.get_attr("checked")) {
+        class.push_str(" wx-switch-on");
     }
+    attrs.push_str(&format!(" class=\"{}\"", escape_attr(&class)));
     if let Some(id) = node.get_attr("id") {
         attrs.push_str(&format!(" id=\"{}\"", escape_attr(id)));
     }
@@ -132,6 +339,21 @@ fn emit_node(node: &WxmlNode, out: &mut String) {
     if !extra_style.is_empty() {
         if !style.is_empty() && !style.trim_end().ends_with(';') { style.push(';'); }
         style.push_str(&extra_style);
+    }
+    // icon 的 size/color 映射为内联样式（size 决定图标直径，color 决定颜色）
+    if node.tag_name == "icon" {
+        let mut push_style = |s: &str| {
+            if !style.is_empty() && !style.trim_end().ends_with(';') { style.push(';'); }
+            style.push_str(s);
+        };
+        if let Some(sz) = node.get_attr("size") {
+            // size 单位为 px（WXML 数值），图标宽高为 1.2em，故用 font-size 控制
+            let px: f32 = sz.trim().trim_end_matches("px").parse().unwrap_or(23.0);
+            push_style(&format!("font-size:{}px", (px / 1.2).round() as i32));
+        }
+        if let Some(col) = node.get_attr("color") {
+            push_style(&format!("background:{}", col));
+        }
     }
     if !style.is_empty() {
         attrs.push_str(&format!(" style=\"{}\"", escape_attr(&style)));
@@ -160,6 +382,51 @@ fn emit_node(node: &WxmlNode, out: &mut String) {
         "navigator" => {
             if let Some(u) = node.get_attr("url") { attrs.push_str(&format!(" href=\"#{}\"", escape_attr(u))); }
         }
+        "checkbox" | "radio" => {
+            let ty = if node.tag_name == "checkbox" { "checkbox" } else { "radio" };
+            attrs.push_str(&format!(" type=\"{}\"", ty));
+            if let Some(v) = node.get_attr("value") { attrs.push_str(&format!(" value=\"{}\"", escape_attr(v))); }
+            if is_truthy(node.get_attr("checked")) { attrs.push_str(" checked"); }
+            if is_truthy(node.get_attr("disabled")) { attrs.push_str(" disabled"); }
+        }
+        "slider" => {
+            attrs.push_str(" type=\"range\"");
+            attrs.push_str(&format!(" min=\"{}\"", node.get_attr("min").unwrap_or("0")));
+            attrs.push_str(&format!(" max=\"{}\"", node.get_attr("max").unwrap_or("100")));
+            attrs.push_str(&format!(" step=\"{}\"", node.get_attr("step").unwrap_or("1")));
+            if let Some(v) = node.get_attr("value") { attrs.push_str(&format!(" value=\"{}\"", escape_attr(v))); }
+            if is_truthy(node.get_attr("disabled")) { attrs.push_str(" disabled"); }
+        }
+        "swiper" => {
+            // 轮播配置透传给 runtime.js（自动播放 / 间隔 / 循环 / 指示点 / 纵向）
+            attrs.push_str(&format!(" data-autoplay=\"{}\"", is_truthy(node.get_attr("autoplay"))));
+            attrs.push_str(&format!(" data-interval=\"{}\"", node.get_attr("interval").unwrap_or("5000")));
+            attrs.push_str(&format!(" data-circular=\"{}\"", is_truthy(node.get_attr("circular"))));
+            attrs.push_str(&format!(" data-dots=\"{}\"", is_truthy(node.get_attr("indicator-dots"))));
+            if is_truthy(node.get_attr("vertical")) { attrs.push_str(" data-vertical=\"true\""); }
+        }
+        "video" => {
+            if let Some(s) = node.get_attr("src") { attrs.push_str(&format!(" src=\"{}\"", escape_attr(s))); }
+            if let Some(p) = node.get_attr("poster") { attrs.push_str(&format!(" poster=\"{}\"", escape_attr(p))); }
+            if node.get_attr("controls").map(|v| v != "false").unwrap_or(true) { attrs.push_str(" controls"); }
+            if is_truthy(node.get_attr("autoplay")) { attrs.push_str(" autoplay"); }
+            if is_truthy(node.get_attr("loop")) { attrs.push_str(" loop"); }
+            if is_truthy(node.get_attr("muted")) { attrs.push_str(" muted"); }
+            attrs.push_str(" playsinline");
+        }
+        "audio" => {
+            if let Some(s) = node.get_attr("src") { attrs.push_str(&format!(" src=\"{}\"", escape_attr(s))); }
+            if node.get_attr("controls").map(|v| v != "false").unwrap_or(true) { attrs.push_str(" controls"); }
+        }
+        "canvas" => {
+            // canvas-id / type 透传，供 runtime 定位并创建 2D 上下文
+            if let Some(cid) = node.get_attr("canvas-id") {
+                attrs.push_str(&format!(" data-canvas-id=\"{}\"", escape_attr(cid)));
+            }
+            if let Some(t) = node.get_attr("type") {
+                attrs.push_str(&format!(" data-type=\"{}\"", escape_attr(t)));
+            }
+        }
         _ => {}
     }
 
@@ -178,30 +445,126 @@ fn emit_node(node: &WxmlNode, out: &mut String) {
         }
     }
 
-    out.push_str(&format!("<{}{}>", tag, attrs));
-    if void {
+    (format!("<{}{}>", tag, attrs), tag, void)
+}
+
+/// 紧凑输出（用于 devserver 实时渲染）
+fn emit_node(node: &WxmlNode, out: &mut String) {
+    if node.node_type == WxmlNodeType::Text {
+        out.push_str(&escape_text(&node.text_content));
         return;
     }
-    // textarea 的初始值放内容
+    if node.node_type != WxmlNodeType::Element { return; }
+    let (open, tag, void) = build_open_tag(node);
+    out.push_str(&open);
+    if void { return; }
+    if has_custom_inner(&node.tag_name) {
+        out.push_str(&custom_inner_html(node));
+        out.push_str(&format!("</{}>", tag));
+        return;
+    }
     if node.tag_name == "textarea" {
         if let Some(v) = node.get_attr("value") { out.push_str(&escape_text(v)); }
     }
-    for c in &node.children {
-        emit_node(c, out);
-    }
+    for c in &node.children { emit_node(c, out); }
     out.push_str(&format!("</{}>", tag));
+}
+
+/// WXML(+data) → 带缩进的可读 HTML（用于导出 HTML 工程源码）
+pub fn wxml_to_html_pretty(nodes: &[WxmlNode], data: &JsonValue) -> String {
+    let rendered = TemplateEngine::render(nodes, data);
+    let mut out = String::new();
+    for n in &rendered {
+        emit_pretty(n, 1, &mut out);
+    }
+    out
+}
+
+fn emit_pretty(node: &WxmlNode, depth: usize, out: &mut String) {
+    let indent = "  ".repeat(depth);
+    if node.node_type == WxmlNodeType::Text {
+        let t = node.text_content.trim();
+        if !t.is_empty() { out.push_str(&format!("{}{}\n", indent, escape_text(t))); }
+        return;
+    }
+    if node.node_type != WxmlNodeType::Element { return; }
+    let (open, tag, void) = build_open_tag(node);
+    if void {
+        out.push_str(&format!("{}{}\n", indent, open));
+        return;
+    }
+    // switch/progress/rich-text：内部结构由编译器生成，单行输出
+    if has_custom_inner(&node.tag_name) {
+        out.push_str(&format!("{}{}{}</{}>\n", indent, open, custom_inner_html(node), tag));
+        return;
+    }
+    // 无子元素（或只有文本）：单行输出更紧凑可读
+    let only_text = node.children.iter().all(|c| c.node_type == WxmlNodeType::Text);
+    if only_text {
+        let mut inner = String::new();
+        if node.tag_name == "textarea" {
+            if let Some(v) = node.get_attr("value") { inner.push_str(&escape_text(v)); }
+        }
+        for c in &node.children {
+            if c.node_type == WxmlNodeType::Text { inner.push_str(&escape_text(c.text_content.trim())); }
+        }
+        out.push_str(&format!("{}{}{}</{}>\n", indent, open, inner, tag));
+        return;
+    }
+    out.push_str(&format!("{}{}\n", indent, open));
+    for c in &node.children { emit_pretty(c, depth + 1, out); }
+    out.push_str(&format!("{}</{}>\n", indent, tag));
 }
 
 /// 基础样式：CSS reset + 常见默认（贴近小程序默认盒模型）+ 内置 icon 图标。
 pub fn base_css() -> &'static str {
     r#"
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-view,scroll-view,swiper,swiper-item,cover-view{display:flex;flex-direction:column;}
-image{display:block;}
-button{border:0;background:none;font:inherit;color:inherit;cursor:pointer;display:block;width:100%;}
-input,textarea{border:0;outline:none;background:none;font:inherit;color:inherit;width:100%;}
-a{color:inherit;text-decoration:none;}
+/* 还原小程序默认盒模型：view/scroll-view 等默认 flex 纵向排列（与引擎渲染一致）*/
+.wx-view,.wx-scroll-view,.wx-cover-view,.wx-navigator,.wx-checkbox-group,.wx-radio-group,.wx-form{display:flex;flex-direction:column;}
+.wx-text{display:inline;}
+.wx-image{display:block;}
+.wx-button{border:0;background:none;font:inherit;color:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.wx-input,.wx-textarea{border:0;outline:none;background:none;font:inherit;color:inherit;width:100%;}
+.wx-navigator{text-decoration:none;color:inherit;}
+img{display:block;}
 body{font-size:16px;color:#333;font-family:-apple-system,system-ui,"PingFang SC","Hiragino Sans GB",sans-serif;background:#f5f6f8;}
+
+/* ── swiper 轮播：横向 scroll-snap，一屏一页 ── */
+.wx-swiper{display:flex;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;height:150px;scroll-snap-type:x mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.wx-swiper::-webkit-scrollbar{display:none;width:0;height:0;}
+.wx-swiper[data-vertical="true"]{flex-direction:column;overflow-x:hidden;overflow-y:auto;scroll-snap-type:y mandatory;}
+.wx-swiper-item{flex:0 0 100%;width:100%;min-width:100%;height:100%;scroll-snap-align:start;display:flex;flex-direction:column;}
+.wx-swiper[data-vertical="true"] .wx-swiper-item{flex:0 0 100%;height:100%;}
+.wx-swiper-wrap{position:relative;}
+.wx-swiper-dots{position:absolute;left:0;right:0;bottom:8px;display:flex;flex-direction:row;justify-content:center;gap:6px;pointer-events:none;}
+.wx-swiper-dot{width:7px;height:7px;border-radius:50%;background:rgba(0,0,0,.3);transition:background .2s;}
+.wx-swiper-dot.active{background:#fff;box-shadow:0 0 2px rgba(0,0,0,.4);}
+
+/* ── checkbox / radio：原生控件 + 微信绿 ── */
+.wx-checkbox,.wx-radio{width:22px;height:22px;accent-color:#09bb07;margin:0;flex:none;cursor:pointer;}
+
+/* ── switch 开关 ── */
+.wx-switch{flex:none;width:44px;height:26px;border-radius:13px;background:#e5e5e5;position:relative;transition:background .2s;cursor:pointer;display:inline-block;}
+.wx-switch.wx-switch-on{background:#09bb07;}
+.wx-switch-knob{position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.35);transition:left .2s;}
+.wx-switch.wx-switch-on .wx-switch-knob{left:20px;}
+
+/* ── slider 滑块 ── */
+.wx-slider{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:2px;background:#e5e5e5;accent-color:#09bb07;cursor:pointer;}
+.wx-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.3);}
+
+/* ── progress 进度条 ── */
+.wx-progress{display:flex;flex-direction:row;align-items:center;}
+.wx-progress-outer{flex:1;height:6px;border-radius:3px;background:#ebebeb;overflow:hidden;}
+.wx-progress-inner{height:100%;background:#09bb07;border-radius:3px;transition:width .3s;}
+.wx-progress-info{margin-left:8px;font-size:12px;color:#666;min-width:2.5em;text-align:right;}
+
+/* ── 媒体 ── */
+.wx-video{display:block;width:100%;height:225px;background:#000;}
+.wx-canvas{display:block;}
+.wx-audio{display:block;width:100%;}
+
 /* 内置矢量图标（对齐 <icon type> 常用类型）*/
 .wxicon{display:inline-flex;align-items:center;justify-content:center;width:1.2em;height:1.2em;border-radius:50%;color:#fff;font-style:normal;font-size:.7em;line-height:1;}
 .wxicon-success{background:#09bb07;}.wxicon-success::before{content:"\2713";}
@@ -212,6 +575,7 @@ body{font-size:16px;color:#333;font-family:-apple-system,system-ui,"PingFang SC"
 .wxicon-download{background:#09bb07;}.wxicon-download::before{content:"\2193";}
 .wxicon-search{background:#b2b2b2;}.wxicon-search::before{content:"\1F50D";}
 .wxicon-clear{background:#b2b2b2;}.wxicon-clear::before{content:"\2715";}
+.wxicon-circle{background:#fff;border:1px solid #ccc;}
 "#
 }
 

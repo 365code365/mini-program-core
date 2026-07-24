@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/detail/detail</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./detail.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view page">
+    <div class="wx-view product-image">
+      <div class="wx-view image-placeholder">
+        <i class="wx-icon wxicon wxicon-success" style="font-size:83px;background:#FF6B35"></i>
+      </div>
+      <div class="wx-view promo-tag">
+        <span class="wx-text">6.7折</span>
+      </div>
+    </div>
+    <div class="wx-view product-card">
+      <div class="wx-view price-section">
+        <div class="wx-view price-main">
+          <span class="wx-text price-text">¥199</span>
+          <span class="wx-text original-price">¥299</span>
+        </div>
+        <div class="wx-view price-tags">
+          <span class="wx-text tag tag-hot">热卖</span>
+          <span class="wx-text tag tag-free">包邮</span>
+        </div>
+      </div>
+      <div class="wx-view product-title-section">
+        <span class="wx-text product-name">无线蓝牙耳机 Pro</span>
+        <span class="wx-text product-desc">高清音质 主动降噪 40小时超长续航</span>
+      </div>
+      <div class="wx-view meta-section">
+        <div class="wx-view meta-item">
+          <span class="wx-text meta-value">2341</span>
+          <span class="wx-text meta-label">销量</span>
+        </div>
+        <div class="wx-view meta-divider"></div>
+        <div class="wx-view meta-item">
+          <span class="wx-text meta-value">999</span>
+          <span class="wx-text meta-label">库存</span>
+        </div>
+        <div class="wx-view meta-divider"></div>
+        <div class="wx-view meta-item">
+          <span class="wx-text meta-value">4.9</span>
+          <span class="wx-text meta-label">评分</span>
+        </div>
+      </div>
+    </div>
+    <div class="wx-view section-card">
+      <div class="wx-view section-header">
+        <span class="wx-text section-title">规格选择</span>
+        <span class="wx-text section-hint">已选：黑色</span>
+      </div>
+      <div class="wx-view spec-list">
+        <div class="wx-view spec-item active" data-tap="onSelectSpec" data-ds-index="0">
+          <span class="wx-text">黑色</span>
+        </div>
+        <div class="wx-view spec-item " data-tap="onSelectSpec" data-ds-index="1">
+          <span class="wx-text">白色</span>
+        </div>
+        <div class="wx-view spec-item " data-tap="onSelectSpec" data-ds-index="2">
+          <span class="wx-text">蓝色</span>
+        </div>
+      </div>
+    </div>
+    <div class="wx-view section-card qty-card">
+      <span class="wx-text section-title">购买数量</span>
+      <div class="wx-view qty-control">
+        <div class="wx-view qty-btn disabled" data-tap="onDecrease">
+          <span class="wx-text">-</span>
+        </div>
+        <div class="wx-view qty-input">
+          <span class="wx-text">1</span>
+        </div>
+        <div class="wx-view qty-btn " data-tap="onIncrease">
+          <span class="wx-text">+</span>
+        </div>
+      </div>
+    </div>
+    <div class="wx-view section-card service-card">
+      <div class="wx-view service-item">
+        <i class="wx-icon wxicon wxicon-success" style="font-size:13px;background:#52c41a"></i>
+        <span class="wx-text">正品保证</span>
+      </div>
+      <div class="wx-view service-item">
+        <i class="wx-icon wxicon wxicon-success" style="font-size:13px;background:#52c41a"></i>
+        <span class="wx-text">7天退换</span>
+      </div>
+      <div class="wx-view service-item">
+        <i class="wx-icon wxicon wxicon-success" style="font-size:13px;background:#52c41a"></i>
+        <span class="wx-text">极速发货</span>
+      </div>
+    </div>
+    <div class="wx-view detail-card">
+      <div class="wx-view detail-header">
+        <div class="wx-view detail-line"></div>
+        <span class="wx-text detail-title">商品详情</span>
+        <div class="wx-view detail-line"></div>
+      </div>
+      <div class="wx-view detail-content">
+        <span class="wx-text detail-text">【产品特点】
+• 高品质材料，经久耐用
+• 精心设计，使用便捷
+• 品牌保证，售后无忧
+• 快速发货，物流可追踪
+
+【包装清单】
+产品 x 1
+说明书 x 1
+保修卡 x 1</span>
+      </div>
+    </div>
+    <div class="wx-view bottom-space"></div>
+    <div class="wx-view action-bar">
+      <div class="wx-view action-icons">
+        <div class="wx-view action-icon-item" data-tap="onGoHome">
+          <i class="wx-icon wxicon wxicon-success" style="font-size:18px;background:#666"></i>
+          <span class="wx-text">首页</span>
+        </div>
+        <div class="wx-view action-icon-item" data-tap="onGoCart">
+          <i class="wx-icon wxicon wxicon-waiting" style="font-size:18px;background:#666"></i>
+          <span class="wx-text">购物车</span>
+        </div>
+      </div>
+      <div class="wx-view action-buttons">
+        <button class="wx-button btn-cart" data-tap="onAddCart">加入购物车</button>
+        <div class="wx-view btn-gap"></div>
+        <button class="wx-button btn-buy" data-tap="onBuyNow">立即购买</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>window.__PAGE_ROUTE__ = "pages/detail/detail";</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./detail.js"></script>
+</body>
+</html>
