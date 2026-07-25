@@ -1,0 +1,78 @@
+/* 头条新闻 · 全局样式 */
+page {
+  background-color: #F4F5F6;
+}
+
+/* 顶部品牌栏（红底 + 搜索框） */
+.nav-bar {
+  background-color: #D43C33;
+  padding: 16rpx 24rpx;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.nav-logo {
+  font-size: 34rpx;
+  font-weight: bold;
+  color: #fff;
+  margin-right: 16rpx;
+}
+
+.nav-search {
+  flex: 1;
+  background-color: rgba(255, 255, 255, 0.92);
+  border-radius: 30rpx;
+  height: 60rpx;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0 20rpx;
+}
+
+.nav-search-text {
+  font-size: 26rpx;
+  color: #9A9A9A;
+  margin-left: 10rpx;
+}
+
+/* 卡片通用 */
+.card {
+  background-color: #fff;
+  padding: 24rpx;
+  border-bottom: 1rpx solid #EDEDED;
+}
+
+.meta-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-top: 14rpx;
+}
+
+.meta-source {
+  font-size: 22rpx;
+  color: #8A8A8A;
+}
+
+.meta-dot {
+  width: 6rpx;
+  height: 6rpx;
+  border-radius: 50%;
+  background-color: #CFCFCF;
+  margin: 0 12rpx;
+}
+
+.meta-comment {
+  font-size: 22rpx;
+  color: #8A8A8A;
+}
+
+.tag {
+  font-size: 20rpx;
+  color: #D43C33;
+  border: 1rpx solid #F0BDB9;
+  border-radius: 4rpx;
+  padding: 2rpx 8rpx;
+  margin-right: 10rpx;
+}

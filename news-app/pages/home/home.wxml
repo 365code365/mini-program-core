@@ -1,0 +1,93 @@
+<view class="page">
+  <!-- 顶部品牌 + 搜索 -->
+  <view class="nav-bar">
+    <text class="nav-logo">头条</text>
+    <view class="nav-search" bindtap="onSearchTap">
+      <icon type="search" size="14" color="#9A9A9A"></icon>
+      <text class="nav-search-text">{{searchHint}}</text>
+    </view>
+  </view>
+
+  <!-- 频道栏（横向滚动，当前频道下划线高亮） -->
+  <scroll-view class="channel-bar" scroll-x="true">
+    <view
+      wx:for="{{channels}}"
+      wx:key="id"
+      class="channel-item {{currentChannel == item.id ? 'channel-active' : ''}}"
+      bindtap="onSelectChannel"
+      data-id="{{item.id}}"
+    >
+      <text class="channel-text">{{item.name}}</text>
+      <view wx:if="{{currentChannel == item.id}}" class="channel-underline"></view>
+    </view>
+  </scroll-view>
+
+  <!-- 置顶要闻 -->
+  <view class="top-news">
+    <text class="top-badge">置顶</text>
+    <text class="top-title">{{topNews.title}}</text>
+  </view>
+
+  <!-- 信息流 -->
+  <view class="feed">
+    <!-- 大图卡片 -->
+    <view class="card big-card" bindtap="onOpenArticle" data-id="{{bigCard.id}}">
+      <text class="big-title">{{bigCard.title}}</text>
+      <image class="big-cover" src="{{bigCard.cover}}" mode="aspectFill"></image>
+      <view class="meta-row">
+        <text class="tag">{{bigCard.tag}}</text>
+        <text class="meta-source">{{bigCard.source}}</text>
+        <view class="meta-dot"></view>
+        <text class="meta-comment">{{bigCard.comments}}评论</text>
+      </view>
+    </view>
+
+    <!-- 左文右图卡片列表 -->
+    <view
+      class="card row-card"
+      wx:for="{{list}}"
+      wx:key="id"
+      bindtap="onOpenArticle"
+      data-id="{{item.id}}"
+    >
+      <view class="row-left">
+        <text class="row-title">{{item.title}}</text>
+        <view class="meta-row">
+          <text wx:if="{{item.hot}}" class="tag">热</text>
+          <text class="meta-source">{{item.source}}</text>
+          <view class="meta-dot"></view>
+          <text class="meta-comment">{{item.comments}}评论</text>
+        </view>
+      </view>
+      <image class="row-thumb" src="{{item.thumb}}" mode="aspectFill"></image>
+    </view>
+
+    <!-- 三图卡片 -->
+    <view class="card triple-card" bindtap="onOpenArticle" data-id="{{tripleCard.id}}">
+      <text class="row-title">{{tripleCard.title}}</text>
+      <view class="triple-imgs">
+        <image class="triple-img" wx:for="{{tripleCard.images}}" wx:key="*this" src="{{item}}" mode="aspectFill"></image>
+      </view>
+      <view class="meta-row">
+        <text class="meta-source">{{tripleCard.source}}</text>
+        <view class="meta-dot"></view>
+        <text class="meta-comment">{{tripleCard.comments}}评论</text>
+      </view>
+    </view>
+
+    <!-- 热榜 -->
+    <view class="card hot-card">
+      <view class="hot-head">
+        <text class="hot-title">🔥 今日热榜</text>
+        <text class="hot-more" bindtap="onMoreHot">更多</text>
+      </view>
+      <view class="hot-item" wx:for="{{hotList}}" wx:key="id" bindtap="onOpenArticle" data-id="{{item.id}}">
+        <text class="hot-rank rank-{{index < 3 ? 'top' : 'normal'}}">{{index + 1}}</text>
+        <text class="hot-text">{{item.title}}</text>
+        <text class="hot-heat">{{item.heat}}万</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="bottom-space"></view>
+</view>

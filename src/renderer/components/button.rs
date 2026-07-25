@@ -118,13 +118,15 @@ impl ButtonComponent {
                 percent(1.0)
             };
         }
-        // 最小高度：按 CSS 级联语义，控件默认样式表里的 min-height 不会被页面的
-        // height 覆盖（min-height 优先级高于 height），因此只要页面没有显式写
-        // min-height 就应用微信默认值——与浏览器端 .wx-button{min-height:46px} 一致。
-        let _ = has_custom_height;
-        if matches!(ts.min_size.height, Dimension::Auto) {
+        // 高度：页面没写 height 时给出「微信默认按钮高度」。
+        //
+        // 这里用显式 height 而不是 min-height：按钮是叶子节点，taffy 无法从内容推出
+        // 高度（内容高按 0 处理），若只给 min-height，flex 基准尺寸 0 与最小高度之间的
+        // 差值会被当作溢出，进而把同一列 flex 容器里的兄弟节点（如 icon）压缩变形。
+        // 单行标签下 height == max(默认高, 字号+上下内边距)，与 HTML 端 min-height 等价。
+        if !has_custom_height {
             let content_min = (ns.font_size + padding_v * 2.0) * sf;
-            ts.min_size.height = length(content_min.max(min_height * sf));
+            ts.size.height = length(content_min.max(min_height * sf));
         }
         
         // 默认 margin（如果没有自定义）

@@ -1,0 +1,13 @@
+<view class="news-tabbar">
+  <view
+    wx:for="{{list}}"
+    wx:key="index"
+    class="tab-item {{selected == index ? 'tab-active' : ''}}"
+    bindtap="switchTab"
+    data-index="{{index}}"
+    data-path="{{item.pagePath}}"
+  >
+    <icon type="{{item.iconType}}" size="22" color="{{selected == index ? '#D43C33' : '#B5B5B5'}}"></icon>
+    <text class="tab-label {{selected == index ? 'tab-label-active' : ''}}">{{item.text}}</text>
+  </view>
+</view>

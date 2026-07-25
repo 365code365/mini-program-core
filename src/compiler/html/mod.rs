@@ -182,9 +182,49 @@ fn build_custom_tabbar(bar: &crate::compiler::TabBarSource, selected: usize, rel
         obj.insert("selected".to_string(), json!(selected));
     }
     let inner = wxml_to_html(&bar.wxml, &data);
-    // 把 data-ds-path 转成可点击链接前缀，供无 JS 环境使用（不影响有 JS 的事件流）
-    let inner = inner.replace(" data-ds-path=\"", &format!(" data-href=\"{}", rel));
-    format!("<div class=\"wx-custom-tabbar\">{inner}</div>")
+    // 为每个 tab 项补一个编译期算好的可跳转地址（保留原 data-ds-path 供事件 dataset 使用）
+    let inner = add_tabbar_href(&inner, rel);
+    // 自带跳转脚本：tabBar 位于 #app 之外，其 bindtap 是「组件方法」，页面 runtime 只
+    // 能分发页面方法，因此点击不会切页。这里用一段自包含的委托脚本完成 switchTab 语义，
+    // 即使页面没有 JS 也能正常切换。
+    format!(
+        "<nav class=\"wx-custom-tabbar\">{inner}</nav>\n\
+<script>\n\
+(function(){{var bar=document.currentScript&&document.currentScript.previousElementSibling;\n\
+ if(!bar||!bar.classList.contains('wx-custom-tabbar')){{bar=document.querySelector('.wx-custom-tabbar');}}\n\
+ if(!bar)return;\n\
+ bar.addEventListener('click',function(e){{\n\
+  var el=e.target.closest?e.target.closest('[data-tabbar-href]'):null;\n\
+  if(!el)return;\n\
+  var href=el.getAttribute('data-tabbar-href');\n\
+  if(href){{e.preventDefault();e.stopPropagation();window.location.href=href;}}\n\
+ }},true);}})();\n\
+</script>"
+    )
+}
+
+/// 给带 `data-ds-path="<route>"` 的 tab 项追加 `data-tabbar-href="<rel><route>.html"`。
+fn add_tabbar_href(html: &str, rel: &str) -> String {
+    const KEY: &str = " data-ds-path=\"";
+    let mut out = String::with_capacity(html.len() + 64);
+    let mut rest = html;
+    while let Some(pos) = rest.find(KEY) {
+        let value_start = pos + KEY.len();
+        let Some(end_offset) = rest[value_start..].find('"') else { break };
+        let value_end = value_start + end_offset;
+        let route = &rest[value_start..value_end];
+        out.push_str(&rest[..value_end + 1]);
+        if !route.is_empty() {
+            out.push_str(&format!(
+                " data-tabbar-href=\"{}{}.html\"",
+                rel,
+                route.trim_start_matches('/')
+            ));
+        }
+        rest = &rest[value_end + 1..];
+    }
+    out.push_str(rest);
+    out
 }
 
 /// tabBar 底部导航（固定，位于 #app 之外，不受 setData 重渲染影响）

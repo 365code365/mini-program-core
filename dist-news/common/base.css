@@ -1,0 +1,90 @@
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+@keyframes wxspin{to{transform:rotate(360deg);}}
+/* 还原小程序默认盒模型：view 等默认 flex 纵向排列（与引擎一致，可收缩以适应宽度）*/
+.wx-view,.wx-cover-view,.wx-navigator,.wx-checkbox-group,.wx-radio-group,.wx-form,.wx-movable-view,.wx-movable-area{display:flex;flex-direction:column;}
+/* scroll-view：块级可滚动容器——子元素保持自身高度、超出则滚动，而非像 flex 那样被压缩 */
+.wx-scroll-view{display:block;}
+.wx-scroll-view>*{flex-shrink:0;}
+.wx-text{display:inline;}
+.wx-image{display:block;}
+.wx-input,.wx-textarea{border:0;outline:none;background:none;font:inherit;color:inherit;width:100%;}
+.wx-navigator{text-decoration:none;color:inherit;}
+img{display:block;}
+body{font-size:16px;color:#333;font-family:-apple-system,system-ui,"PingFang SC","Hiragino Sans GB",sans-serif;background:#f5f6f8;}
+
+/* ── 交互反馈：带事件的元素显示手型光标 + 按压态 ── */
+[data-tap],[data-longpress],[data-longtap],.wx-button,.wx-navigator,.wx-checkbox,.wx-radio,.wx-switch,.wx-slider,.wx-picker{cursor:pointer;}
+[data-tap]:active{opacity:.6;}
+
+/* ── button：还原微信默认按钮盒模型（页面样式只需覆盖颜色等即可保持一致） ── */
+.wx-button{position:relative;box-sizing:border-box;display:flex;align-items:center;justify-content:center;min-height:46px;padding:0 14px;font-size:17px;line-height:1.35;text-align:center;border:0;border-radius:5px;background:#f7f7f7;color:#000;cursor:pointer;transition:opacity .12s ease;overflow:hidden;}
+.wx-button:active{opacity:.85;}
+.wx-button-primary{background:#07c160;color:#fff;}
+.wx-button-warn{background:#fa5151;color:#fff;}
+.wx-button-plain{background:transparent;border:1px solid currentColor;}
+.wx-button-mini{display:inline-flex;width:auto;min-height:30px;padding:0 14px;font-size:13px;border-radius:4px;}
+.wx-button-disabled{opacity:.5;pointer-events:none;}
+
+/* ── swiper 轮播：横向 scroll-snap，一屏一页 ── */
+.wx-swiper{display:flex;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;height:150px;scroll-snap-type:x mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.wx-swiper::-webkit-scrollbar{display:none;width:0;height:0;}
+.wx-swiper[data-vertical="true"]{flex-direction:column;overflow-x:hidden;overflow-y:auto;scroll-snap-type:y mandatory;}
+.wx-swiper-item{flex:0 0 100%;width:100%;min-width:100%;height:100%;scroll-snap-align:start;display:flex;flex-direction:column;}
+.wx-swiper[data-vertical="true"] .wx-swiper-item{flex:0 0 100%;height:100%;}
+/* 无 JS（静态首屏/截图）时只显示第一屏，避免各 item 堆叠；JS 接管后加 .wx-swiper-live 恢复多屏滚动 */
+.wx-swiper:not(.wx-swiper-live)>.wx-swiper-item:not(:first-child){display:none;}
+.wx-swiper-wrap{position:relative;}
+.wx-swiper-dots{position:absolute;left:0;right:0;bottom:8px;display:flex;flex-direction:row;justify-content:center;gap:6px;pointer-events:none;}
+.wx-swiper-dot{width:7px;height:7px;border-radius:50%;background:rgba(0,0,0,.3);transition:background .2s;}
+.wx-swiper-dot.active{background:#fff;box-shadow:0 0 2px rgba(0,0,0,.4);}
+
+/* ── checkbox / radio：自绘微信风格（圆角方框 / 圆形，选中填充微信绿 + 白勾）── */
+.wx-checkbox,.wx-radio{-webkit-appearance:none;appearance:none;width:22px;height:22px;margin:0;flex:none;cursor:pointer;box-sizing:border-box;border:1px solid #cfcfcf;background:#fff;transition:background .15s,border-color .15s;vertical-align:middle;}
+.wx-checkbox{border-radius:4px;}
+.wx-radio{border-radius:50%;}
+.wx-checkbox:checked{background:#07c160 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.5 6.5 11.5 12.5 5' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/15px no-repeat;border-color:#07c160;}
+.wx-radio:checked{border-color:#07c160;background:#07c160;box-shadow:inset 0 0 0 3px #fff;}
+.wx-checkbox:disabled,.wx-radio:disabled{background:#e6e6e6;border-color:#dcdcdc;}
+
+/* ── switch 开关 ── */
+.wx-switch{flex:none;width:44px;height:26px;border-radius:13px;background:#e5e5e5;position:relative;transition:background .2s;cursor:pointer;display:inline-block;}
+.wx-switch.wx-switch-on{background:#09bb07;}
+.wx-switch-knob{position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.35);transition:left .2s;}
+.wx-switch.wx-switch-on .wx-switch-knob{left:20px;}
+
+/* ── slider 滑块 ── */
+.wx-slider{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:2px;background:#e5e5e5;accent-color:#09bb07;cursor:pointer;}
+.wx-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.3);}
+
+/* ── progress 进度条 ── */
+.wx-progress{display:flex;flex-direction:row;align-items:center;}
+.wx-progress-outer{flex:1;height:6px;border-radius:3px;background:#ebebeb;overflow:hidden;}
+.wx-progress-inner{height:100%;background:#09bb07;border-radius:3px;transition:width .3s;}
+.wx-progress-info{margin-left:8px;font-size:12px;color:#666;min-width:2.5em;text-align:right;}
+
+/* ── tabBar 底部导航（固定，居中对齐 375 宽）── */
+.wx-tabbar{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:375px;max-width:100%;height:50px;display:flex;flex-direction:row;border-top:1px solid #ededed;z-index:500;box-shadow:0 -1px 6px rgba(0,0,0,.04);}
+.wx-tabbar-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-decoration:none;padding-top:4px;}
+.wx-tabbar-item svg{width:24px;height:24px;display:block;}
+.wx-tabbar-text{font-size:11px;line-height:1;margin-top:3px;}
+
+/* ── 媒体 ── */
+.wx-video{display:block;width:100%;height:225px;background:#000;}
+.wx-canvas{display:block;}
+.wx-audio{display:block;width:100%;}
+
+/* 内置矢量图标：内联 SVG（见 icon_svg），圆底取 currentColor，尺寸由 size 属性决定，
+   与原生渲染器自绘的矢量图标一一对应（含 waiting 时钟表盘）。*/
+.wxicon{display:inline-flex;align-items:center;justify-content:center;width:23px;height:23px;flex:none;font-style:normal;line-height:0;vertical-align:middle;}
+.wxicon>svg{width:100%;height:100%;display:block;}
+.wxicon-success{color:#09bb07;}
+.wxicon-success_no_circle{color:#09bb07;}
+.wxicon-info,.wxicon-info_circle{color:#10aeff;}
+.wxicon-warn{color:#f76260;}
+.wxicon-waiting,.wxicon-waiting_circle{color:#10aeff;}
+.wxicon-cancel{color:#f43530;}
+.wxicon-download{color:#09bb07;}
+.wxicon-search{color:#b2b2b2;}
+.wxicon-clear{color:#f43530;}
+.wxicon-circle{color:#ccc;}

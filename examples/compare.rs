@@ -16,6 +16,7 @@ use mini_render::compiler::html::HtmlTarget;
 use mini_render::compiler::{
     load_app_source, write_files, AppSource, CompileTarget, PageSource, TabBarSource,
 };
+use mini_render::parser::wxml::{WxmlNode, WxmlNodeType};
 use mini_render::parser::{WxmlParser, WxssParser};
 use mini_render::renderer::WxmlRenderer;
 use mini_render::{Canvas, Color};
@@ -571,21 +572,44 @@ fn render_custom_tab_bar(
     if let Some(obj) = data.as_object_mut() {
         obj.insert("selected".to_string(), serde_json::json!(selected));
     }
-    let wxss = format!(
-        "{}\n{}\n.custom-tabbar{{position:fixed;left:0;right:0;bottom:0;}}\n",
-        app.app_wxss, bar.wxss
-    );
+    let wxss = format!("{}\n{}", app.app_wxss, bar.wxss);
     let stylesheet = WxssParser::new(&wxss)
         .parse()
         .map_err(|error| format!("解析 custom-tab-bar WXSS 失败: {error}"))?;
+    // 组件 WXSS 不含定位信息（在小程序里由宿主固定于底部）。这里给根节点加内联
+    // position:fixed 而不是按类名注入 CSS —— 类名由各小程序自定义（.custom-tabbar /
+    // .news-tabbar ...），按名字写死会让别的应用的 tabBar 落回正常流并盖住页面顶部。
+    let nodes = pin_nodes_to_bottom(&bar.wxml);
     let mut renderer = WxmlRenderer::new_with_scale(
         stylesheet,
         VIEWPORT_WIDTH as f32,
         VIEWPORT_HEIGHT as f32,
         DEVICE_SCALE as f32,
     );
-    renderer.render(canvas, &bar.wxml, &data);
+    renderer.render(canvas, &nodes, &data);
     Ok(())
+}
+
+/// 复制节点树，并给根元素追加「固定到视口底部」的内联样式。
+fn pin_nodes_to_bottom(nodes: &[WxmlNode]) -> Vec<WxmlNode> {
+    const PIN: &str = "position:fixed;left:0;right:0;bottom:0";
+    nodes
+        .iter()
+        .map(|node| {
+            let mut node = node.clone();
+            if node.node_type == WxmlNodeType::Element {
+                let merged = match node.attributes.get("style") {
+                    Some(existing) if !existing.trim().is_empty() => {
+                        let sep = if existing.trim_end().ends_with(';') { "" } else { ";" };
+                        format!("{existing}{sep}{PIN}")
+                    }
+                    _ => PIN.to_string(),
+                };
+                node.attributes.insert("style".to_string(), merged);
+            }
+            node
+        })
+        .collect()
 }
 
 fn capture_html_page(

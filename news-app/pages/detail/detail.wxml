@@ -1,0 +1,70 @@
+<view class="page">
+  <!-- 文章头部 -->
+  <view class="article">
+    <text class="article-title">{{article.title}}</text>
+    <view class="author-row">
+      <image class="author-avatar" src="{{article.avatar}}" mode="aspectFill"></image>
+      <view class="author-info">
+        <text class="author-name">{{article.author}}</text>
+        <text class="author-time">{{article.time}} · {{article.readCount}}阅读</text>
+      </view>
+      <view class="follow-btn {{followed ? 'followed' : ''}}" bindtap="onToggleFollow">
+        <text class="follow-text">{{followed ? '已关注' : '关注'}}</text>
+      </view>
+    </view>
+
+    <image class="article-cover" src="{{article.cover}}" mode="aspectFill"></image>
+
+    <text class="article-body">{{article.body}}</text>
+
+    <view class="tag-row">
+      <text class="tag" wx:for="{{article.tags}}" wx:key="*this">{{item}}</text>
+    </view>
+  </view>
+
+  <!-- 相关阅读 -->
+  <view class="related">
+    <text class="section-title">相关阅读</text>
+    <view class="related-item" wx:for="{{related}}" wx:key="id" bindtap="onOpenRelated" data-id="{{item.id}}">
+      <text class="related-title">{{item.title}}</text>
+      <text class="related-meta">{{item.source}} · {{item.comments}}评论</text>
+    </view>
+  </view>
+
+  <!-- 评论区 -->
+  <view class="comments">
+    <text class="section-title">精彩评论（{{comments.length}}）</text>
+    <view class="comment-item" wx:for="{{comments}}" wx:key="id">
+      <image class="comment-avatar" src="{{item.avatar}}" mode="aspectFill"></image>
+      <view class="comment-body">
+        <text class="comment-user">{{item.user}}</text>
+        <text class="comment-text">{{item.text}}</text>
+        <view class="comment-foot">
+          <text class="comment-time">{{item.time}}</text>
+          <text class="comment-like" bindtap="onLikeComment" data-id="{{item.id}}">👍 {{item.likes}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="bottom-space"></view>
+
+  <!-- 底部固定操作栏 -->
+  <view class="action-bar">
+    <view class="comment-input" bindtap="onWriteComment">
+      <text class="comment-input-text">写评论…</text>
+    </view>
+    <view class="action-item" bindtap="onLike">
+      <icon type="success" size="20" color="{{liked ? '#D43C33' : '#8A8A8A'}}"></icon>
+      <text class="action-count">{{likeCount}}</text>
+    </view>
+    <view class="action-item" bindtap="onCollect">
+      <icon type="waiting" size="20" color="{{collected ? '#F0A020' : '#8A8A8A'}}"></icon>
+      <text class="action-count">收藏</text>
+    </view>
+    <view class="action-item" bindtap="onShare">
+      <icon type="info" size="20" color="#8A8A8A"></icon>
+      <text class="action-count">分享</text>
+    </view>
+  </view>
+</view>

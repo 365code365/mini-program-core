@@ -1,0 +1,53 @@
+<view class="page">
+  <!-- 用户头部 -->
+  <view class="user-header" bindtap="onLoginTap">
+    <image class="user-avatar" src="{{user.avatar}}" mode="aspectFill"></image>
+    <view class="user-info">
+      <text class="user-name">{{user.name}}</text>
+      <text class="user-desc">{{user.desc}}</text>
+    </view>
+    <text class="user-arrow">></text>
+  </view>
+
+  <!-- 数据统计 -->
+  <view class="stat-card">
+    <view class="stat-item" wx:for="{{stats}}" wx:key="label" bindtap="onStatTap" data-label="{{item.label}}">
+      <text class="stat-value">{{item.value}}</text>
+      <text class="stat-label">{{item.label}}</text>
+    </view>
+  </view>
+
+  <!-- 我的服务 -->
+  <view class="menu-card">
+    <text class="menu-head">我的服务</text>
+    <view class="menu-item" wx:for="{{menus}}" wx:key="id" bindtap="onMenuTap" data-id="{{item.id}}">
+      <icon type="{{item.icon}}" size="20" color="{{item.color}}"></icon>
+      <text class="menu-text">{{item.name}}</text>
+      <text wx:if="{{item.badge}}" class="menu-badge">{{item.badge}}</text>
+      <text class="menu-arrow">></text>
+    </view>
+  </view>
+
+  <!-- 阅读偏好开关 -->
+  <view class="menu-card">
+    <text class="menu-head">阅读设置</text>
+    <view class="switch-row">
+      <text class="switch-label">夜间模式</text>
+      <switch checked="{{nightMode}}" bindchange="onNightModeChange"></switch>
+    </view>
+    <view class="switch-row">
+      <text class="switch-label">非 Wi-Fi 自动播放</text>
+      <switch checked="{{autoPlay}}" bindchange="onAutoPlayChange"></switch>
+    </view>
+    <view class="slider-row">
+      <text class="switch-label">正文字号</text>
+      <slider value="{{fontLevel}}" min="1" max="5" step="1" show-value="true" bindchange="onFontLevelChange"></slider>
+    </view>
+  </view>
+
+  <view class="logout-wrap">
+    <button class="logout-btn" bindtap="onLogout">退出登录</button>
+  </view>
+
+  <view class="bottom-space"></view>
+</view>

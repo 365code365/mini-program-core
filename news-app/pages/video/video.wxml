@@ -1,0 +1,45 @@
+<view class="page">
+  <view class="nav-bar">
+    <text class="nav-logo">视频</text>
+    <view class="nav-search" bindtap="onSearchTap">
+      <icon type="search" size="14" color="#9A9A9A"></icon>
+      <text class="nav-search-text">搜索短视频</text>
+    </view>
+  </view>
+
+  <!-- 分类胶囊 -->
+  <view class="filter-row">
+    <view
+      class="filter-chip {{currentFilter == item.id ? 'chip-active' : ''}}"
+      wx:for="{{filters}}"
+      wx:key="id"
+      bindtap="onSelectFilter"
+      data-id="{{item.id}}"
+    >
+      <text class="chip-text">{{item.name}}</text>
+    </view>
+  </view>
+
+  <!-- 视频卡片 -->
+  <view class="video-card" wx:for="{{videos}}" wx:key="id" bindtap="onPlay" data-id="{{item.id}}">
+    <view class="cover-wrap">
+      <image class="cover" src="{{item.cover}}" mode="aspectFill"></image>
+      <view class="duration">
+        <text class="duration-text">{{item.duration}}</text>
+      </view>
+      <view class="play-badge">
+        <text class="play-icon">▶</text>
+      </view>
+    </view>
+    <text class="video-title">{{item.title}}</text>
+    <view class="meta-row">
+      <text class="meta-source">{{item.author}}</text>
+      <view class="meta-dot"></view>
+      <text class="meta-comment">{{item.plays}}次播放</text>
+      <view class="meta-dot"></view>
+      <text class="meta-comment">{{item.comments}}评论</text>
+    </view>
+  </view>
+
+  <view class="bottom-space"></view>
+</view>

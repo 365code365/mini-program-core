@@ -1,0 +1,233 @@
+/* 由 detail.wxss 编译 */
+.article {
+  background-color: #fff;
+  padding: 14px 12px 12px;
+}
+
+.article-title {
+  display: block;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: bold;
+  color: #1A1A1A;
+}
+
+.author-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.author-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background-color: #EFEFEF;
+  flex-shrink: 0;
+}
+
+.author-info {
+  flex: 1;
+  margin-left: 8px;
+}
+
+.author-name {
+  display: block;
+  font-size: 14px;
+  color: #2A2A2A;
+  font-weight: bold;
+}
+
+.author-time {
+  display: block;
+  font-size: 11px;
+  color: #9A9A9A;
+  margin-top: 3px;
+}
+
+.follow-btn {
+  border: 0.500px solid #D43C33;
+  border-radius: 14px;
+  padding: 4px 12px;
+  flex-shrink: 0;
+}
+
+.follow-btn.followed {
+  border-color: #D9D9D9;
+  background-color: #F5F5F5;
+}
+
+.follow-text {
+  font-size: 12px;
+  color: #D43C33;
+}
+
+.followed .follow-text {
+  color: #9A9A9A;
+}
+
+.article-cover {
+  width: 100%;
+  height: 190px;
+  border-radius: 5px;
+  margin-top: 12px;
+  background-color: #F0F0F0;
+}
+
+.article-body {
+  display: block;
+  font-size: 15px;
+  line-height: 26px;
+  color: #333;
+  margin-top: 12px;
+}
+
+.tag-row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+/* 相关阅读 / 评论 */
+.section-title {
+  display: block;
+  font-size: 15px;
+  font-weight: bold;
+  color: #1A1A1A;
+  margin-bottom: 6px;
+}
+
+.related {
+  background-color: #fff;
+  margin-top: 8px;
+  padding: 12px;
+}
+
+.related-item {
+  padding: 9px 0;
+  border-bottom: 0.500px solid #F2F2F2;
+}
+
+.related-title {
+  display: block;
+  font-size: 14px;
+  color: #2A2A2A;
+  line-height: 20px;
+}
+
+.related-meta {
+  display: block;
+  font-size: 11px;
+  color: #9A9A9A;
+  margin-top: 4px;
+}
+
+.comments {
+  background-color: #fff;
+  margin-top: 8px;
+  padding: 12px;
+}
+
+.comment-item {
+  display: flex;
+  flex-direction: row;
+  padding: 10px 0;
+  border-bottom: 0.500px solid #F5F5F5;
+}
+
+.comment-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: #EFEFEF;
+  flex-shrink: 0;
+}
+
+.comment-body {
+  flex: 1;
+  margin-left: 8px;
+}
+
+.comment-user {
+  display: block;
+  font-size: 12px;
+  color: #5A6B8C;
+  font-weight: bold;
+}
+
+.comment-text {
+  display: block;
+  font-size: 14px;
+  color: #2A2A2A;
+  line-height: 20px;
+  margin-top: 4px;
+}
+
+.comment-foot {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 5px;
+}
+
+.comment-time {
+  font-size: 11px;
+  color: #B5B5B5;
+}
+
+.comment-like {
+  font-size: 11px;
+  color: #8A8A8A;
+}
+
+.bottom-space {
+  height: 60px;
+}
+
+/* 底部固定操作栏 */
+.action-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 50px;
+  background-color: #fff;
+  border-top: 0.500px solid #E6E6E6;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0 10px;
+}
+
+.comment-input {
+  flex: 1;
+  height: 32px;
+  background-color: #F2F3F5;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  margin-right: 10px;
+}
+
+.comment-input-text {
+  font-size: 13px;
+  color: #9A9A9A;
+}
+
+.action-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+}
+
+.action-count {
+  font-size: 10px;
+  color: #8A8A8A;
+  margin-top: 2px;
+}

@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/home/home</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./home.css">
+  <link rel="stylesheet" href="../../common/tabbar.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;padding-bottom:50px;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view page">
+    <div class="wx-view nav-bar">
+      <span class="wx-text nav-logo">头条</span>
+      <div class="wx-view nav-search" data-tap="onSearchTap">
+        <i class="wx-icon wxicon wxicon-search" style="width:14px;height:14px;color:#9A9A9A"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.4" cy="10.4" r="6.4" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15.2 15.2 21 21" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></i>
+        <span class="wx-text nav-search-text">搜索热点新闻</span>
+      </div>
+    </div>
+    <div class="wx-scroll-view channel-bar" style="display:flex;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden">
+      <div class="wx-view channel-item channel-active" data-tap="onSelectChannel" data-ds-id="1">
+        <span class="wx-text channel-text">推荐</span>
+        <div class="wx-view channel-underline"></div>
+      </div>
+      <div class="wx-view channel-item " data-tap="onSelectChannel" data-ds-id="2">
+        <span class="wx-text channel-text">科技</span>
+      </div>
+      <div class="wx-view channel-item " data-tap="onSelectChannel" data-ds-id="3">
+        <span class="wx-text channel-text">体育</span>
+      </div>
+      <div class="wx-view channel-item " data-tap="onSelectChannel" data-ds-id="4">
+        <span class="wx-text channel-text">娱乐</span>
+      </div>
+      <div class="wx-view channel-item " data-tap="onSelectChannel" data-ds-id="5">
+        <span class="wx-text channel-text">财经</span>
+      </div>
+      <div class="wx-view channel-item " data-tap="onSelectChannel" data-ds-id="6">
+        <span class="wx-text channel-text">军事</span>
+      </div>
+      <div class="wx-view channel-item " data-tap="onSelectChannel" data-ds-id="7">
+        <span class="wx-text channel-text">国际</span>
+      </div>
+    </div>
+    <div class="wx-view top-news">
+      <span class="wx-text top-badge">置顶</span>
+      <span class="wx-text top-title">国务院发布新一轮稳增长政策，涉及六大领域</span>
+    </div>
+    <div class="wx-view feed">
+      <div class="wx-view card big-card" data-tap="onOpenArticle" data-ds-id="1001">
+        <span class="wx-text big-title">数字经济规模再创新高，实体产业融合成为主线</span>
+        <img class="wx-image big-cover" style="object-fit:cover" src="/assets/banner.jpg">
+        <div class="wx-view meta-row">
+          <span class="wx-text tag">独家</span>
+          <span class="wx-text meta-source">新华观察</span>
+          <div class="wx-view meta-dot"></div>
+          <span class="wx-text meta-comment">1286评论</span>
+        </div>
+      </div>
+      <div class="wx-view card row-card" data-tap="onOpenArticle" data-ds-id="101">
+        <div class="wx-view row-left">
+          <span class="wx-text row-title">国产大飞机再获百架订单 交付节奏明显加快</span>
+          <div class="wx-view meta-row">
+            <span class="wx-text tag">热</span>
+            <span class="wx-text meta-source">经济观察</span>
+            <div class="wx-view meta-dot"></div>
+            <span class="wx-text meta-comment">328评论</span>
+          </div>
+        </div>
+        <img class="wx-image row-thumb" style="object-fit:cover" src="/assets/p_phone.jpg">
+      </div>
+      <div class="wx-view card row-card" data-tap="onOpenArticle" data-ds-id="102">
+        <div class="wx-view row-left">
+          <span class="wx-text row-title">多地推出住房消费新政 首套房贷利率下调</span>
+          <div class="wx-view meta-row">
+            <span class="wx-text meta-source">财经快讯</span>
+            <div class="wx-view meta-dot"></div>
+            <span class="wx-text meta-comment">156评论</span>
+          </div>
+        </div>
+        <img class="wx-image row-thumb" style="object-fit:cover" src="/assets/p_backpack.jpg">
+      </div>
+      <div class="wx-view card row-card" data-tap="onOpenArticle" data-ds-id="103">
+        <div class="wx-view row-left">
+          <span class="wx-text row-title">人工智能进课堂：一线教师的真实体验</span>
+          <div class="wx-view meta-row">
+            <span class="wx-text meta-source">教育前沿</span>
+            <div class="wx-view meta-dot"></div>
+            <span class="wx-text meta-comment">92评论</span>
+          </div>
+        </div>
+        <img class="wx-image row-thumb" style="object-fit:cover" src="/assets/p_watch.jpg">
+      </div>
+      <div class="wx-view card row-card" data-tap="onOpenArticle" data-ds-id="104">
+        <div class="wx-view row-left">
+          <span class="wx-text row-title">暑运客流创新高 铁路部门加开夜间高铁</span>
+          <div class="wx-view meta-row">
+            <span class="wx-text tag">热</span>
+            <span class="wx-text meta-source">出行观察</span>
+            <div class="wx-view meta-dot"></div>
+            <span class="wx-text meta-comment">241评论</span>
+          </div>
+        </div>
+        <img class="wx-image row-thumb" style="object-fit:cover" src="/assets/p_sneakers.jpg">
+      </div>
+      <div class="wx-view card triple-card" data-tap="onOpenArticle" data-ds-id="1002">
+        <span class="wx-text row-title">城市更新样本：老街区如何焕发新活力</span>
+        <div class="wx-view triple-imgs">
+          <img class="wx-image triple-img" style="object-fit:cover" src="/assets/p_coffee.jpg">
+          <img class="wx-image triple-img" style="object-fit:cover" src="/assets/p_cake.jpg">
+          <img class="wx-image triple-img" style="object-fit:cover" src="/assets/p_lipstick.jpg">
+        </div>
+        <div class="wx-view meta-row">
+          <span class="wx-text meta-source">城市观察</span>
+          <div class="wx-view meta-dot"></div>
+          <span class="wx-text meta-comment">214评论</span>
+        </div>
+      </div>
+      <div class="wx-view card hot-card">
+        <div class="wx-view hot-head">
+          <span class="wx-text hot-title">🔥 今日热榜</span>
+          <span class="wx-text hot-more" data-tap="onMoreHot">更多</span>
+        </div>
+        <div class="wx-view hot-item" data-tap="onOpenArticle" data-ds-id="2001">
+          <span class="wx-text hot-rank rank-top">1</span>
+          <span class="wx-text hot-text">多部门联合发布消费提振举措</span>
+          <span class="wx-text hot-heat">128万</span>
+        </div>
+        <div class="wx-view hot-item" data-tap="onOpenArticle" data-ds-id="2002">
+          <span class="wx-text hot-rank rank-top">2</span>
+          <span class="wx-text hot-text">台风路径调整 沿海地区加强防御</span>
+          <span class="wx-text hot-heat">96万</span>
+        </div>
+        <div class="wx-view hot-item" data-tap="onOpenArticle" data-ds-id="2003">
+          <span class="wx-text hot-rank rank-top">3</span>
+          <span class="wx-text hot-text">国产芯片良率提升引发关注</span>
+          <span class="wx-text hot-heat">87万</span>
+        </div>
+        <div class="wx-view hot-item" data-tap="onOpenArticle" data-ds-id="2004">
+          <span class="wx-text hot-rank rank-normal">4</span>
+          <span class="wx-text hot-text">暑期研学市场火爆背后的隐忧</span>
+          <span class="wx-text hot-heat">65万</span>
+        </div>
+        <div class="wx-view hot-item" data-tap="onOpenArticle" data-ds-id="2005">
+          <span class="wx-text hot-rank rank-normal">5</span>
+          <span class="wx-text hot-text">新职业目录发布 新增19个工种</span>
+          <span class="wx-text hot-heat">43万</span>
+        </div>
+      </div>
+    </div>
+    <div class="wx-view bottom-space"></div>
+  </div>
+</div>
+<nav class="wx-custom-tabbar"><div class="wx-view news-tabbar"><div class="wx-view tab-item tab-active" data-tap="switchTab" data-ds-index="0" data-ds-path="pages/home/home" data-tabbar-href="../../pages/home/home.html"><i class="wx-icon wxicon wxicon-success" style="width:22px;height:22px;color:#D43C33"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><path d="M5.8 12.4 10 16.4 18.2 7.6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i><span class="wx-text tab-label tab-label-active">首页</span></div><div class="wx-view tab-item " data-tap="switchTab" data-ds-path="pages/video/video" data-tabbar-href="../../pages/video/video.html" data-ds-index="1"><i class="wx-icon wxicon wxicon-waiting" style="width:22px;height:22px;color:#B5B5B5"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><rect x="10.9" y="6.2" width="2.2" height="6.6" rx="1.1" fill="#fff"/><rect x="12" y="10.9" width="5.2" height="2.2" rx="1.1" fill="#fff"/><circle cx="12" cy="12" r="1.6" fill="#fff"/></svg></i><span class="wx-text tab-label ">视频</span></div><div class="wx-view tab-item " data-tap="switchTab" data-ds-path="pages/mine/mine" data-tabbar-href="../../pages/mine/mine.html" data-ds-index="2"><i class="wx-icon wxicon wxicon-info" style="width:22px;height:22px;color:#B5B5B5"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><circle cx="12" cy="7.6" r="1.7" fill="#fff"/><rect x="10.9" y="10.8" width="2.2" height="7" rx="1.1" fill="#fff"/></svg></i><span class="wx-text tab-label ">我的</span></div></div></nav>
+<script>
+(function(){var bar=document.currentScript&&document.currentScript.previousElementSibling;
+if(!bar||!bar.classList.contains('wx-custom-tabbar')){bar=document.querySelector('.wx-custom-tabbar');}
+if(!bar)return;
+bar.addEventListener('click',function(e){
+var el=e.target.closest?e.target.closest('[data-tabbar-href]'):null;
+if(!el)return;
+var href=el.getAttribute('data-tabbar-href');
+if(href){e.preventDefault();e.stopPropagation();window.location.href=href;}
+},true);})();
+</script>
+<script>
+window.__PAGE_ROUTE__ = "pages/home/home";
+window.__WXML__ = [{"a":{"class":"page"},"c":[{"a":{"class":"nav-bar"},"c":[{"a":{"class":"nav-logo"},"c":[{"t":"tx","x":"头条"}],"n":"text","t":"el"},{"a":{"bindtap":"onSearchTap","class":"nav-search"},"c":[{"a":{"color":"#9A9A9A","size":"14","type":"search"},"c":[],"n":"icon","t":"el"},{"a":{"class":"nav-search-text"},"c":[{"t":"tx","x":"{{searchHint}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"channel-bar","scroll-x":"true"},"c":[{"a":{"bindtap":"onSelectChannel","class":"channel-item {{currentChannel == item.id ? 'channel-active' : ''}}","data-id":"{{item.id}}","wx:for":"{{channels}}","wx:key":"id"},"c":[{"a":{"class":"channel-text"},"c":[{"t":"tx","x":"{{item.name}}"}],"n":"text","t":"el"},{"a":{"class":"channel-underline","wx:if":"{{currentChannel == item.id}}"},"c":[],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"scroll-view","t":"el"},{"a":{"class":"top-news"},"c":[{"a":{"class":"top-badge"},"c":[{"t":"tx","x":"置顶"}],"n":"text","t":"el"},{"a":{"class":"top-title"},"c":[{"t":"tx","x":"{{topNews.title}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"feed"},"c":[{"a":{"bindtap":"onOpenArticle","class":"card big-card","data-id":"{{bigCard.id}}"},"c":[{"a":{"class":"big-title"},"c":[{"t":"tx","x":"{{bigCard.title}}"}],"n":"text","t":"el"},{"a":{"class":"big-cover","mode":"aspectFill","src":"{{bigCard.cover}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"meta-row"},"c":[{"a":{"class":"tag"},"c":[{"t":"tx","x":"{{bigCard.tag}}"}],"n":"text","t":"el"},{"a":{"class":"meta-source"},"c":[{"t":"tx","x":"{{bigCard.source}}"}],"n":"text","t":"el"},{"a":{"class":"meta-dot"},"c":[],"n":"view","t":"el"},{"a":{"class":"meta-comment"},"c":[{"t":"tx","x":"{{bigCard.comments}}评论"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onOpenArticle","class":"card row-card","data-id":"{{item.id}}","wx:for":"{{list}}","wx:key":"id"},"c":[{"a":{"class":"row-left"},"c":[{"a":{"class":"row-title"},"c":[{"t":"tx","x":"{{item.title}}"}],"n":"text","t":"el"},{"a":{"class":"meta-row"},"c":[{"a":{"class":"tag","wx:if":"{{item.hot}}"},"c":[{"t":"tx","x":"热"}],"n":"text","t":"el"},{"a":{"class":"meta-source"},"c":[{"t":"tx","x":"{{item.source}}"}],"n":"text","t":"el"},{"a":{"class":"meta-dot"},"c":[],"n":"view","t":"el"},{"a":{"class":"meta-comment"},"c":[{"t":"tx","x":"{{item.comments}}评论"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"row-thumb","mode":"aspectFill","src":"{{item.thumb}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onOpenArticle","class":"card triple-card","data-id":"{{tripleCard.id}}"},"c":[{"a":{"class":"row-title"},"c":[{"t":"tx","x":"{{tripleCard.title}}"}],"n":"text","t":"el"},{"a":{"class":"triple-imgs"},"c":[{"a":{"class":"triple-img","mode":"aspectFill","src":"{{item}}","wx:for":"{{tripleCard.images}}","wx:key":"*this"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"},{"a":{"class":"meta-row"},"c":[{"a":{"class":"meta-source"},"c":[{"t":"tx","x":"{{tripleCard.source}}"}],"n":"text","t":"el"},{"a":{"class":"meta-dot"},"c":[],"n":"view","t":"el"},{"a":{"class":"meta-comment"},"c":[{"t":"tx","x":"{{tripleCard.comments}}评论"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card hot-card"},"c":[{"a":{"class":"hot-head"},"c":[{"a":{"class":"hot-title"},"c":[{"t":"tx","x":"🔥 今日热榜"}],"n":"text","t":"el"},{"a":{"bindtap":"onMoreHot","class":"hot-more"},"c":[{"t":"tx","x":"更多"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onOpenArticle","class":"hot-item","data-id":"{{item.id}}","wx:for":"{{hotList}}","wx:key":"id"},"c":[{"a":{"class":"hot-rank rank-{{index < 3 ? 'top' : 'normal'}}"},"c":[{"t":"tx","x":"{{index + 1}}"}],"n":"text","t":"el"},{"a":{"class":"hot-text"},"c":[{"t":"tx","x":"{{item.title}}"}],"n":"text","t":"el"},{"a":{"class":"hot-heat"},"c":[{"t":"tx","x":"{{item.heat}}万"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"bottom-space"},"c":[],"n":"view","t":"el"}],"n":"view","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./home.js"></script>
+</body>
+</html>

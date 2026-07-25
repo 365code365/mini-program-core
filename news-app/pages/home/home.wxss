@@ -1,0 +1,179 @@
+/* 频道栏 */
+.channel-bar {
+  background-color: #fff;
+  white-space: nowrap;
+  height: 84rpx;
+  border-bottom: 1rpx solid #EDEDED;
+}
+
+.channel-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 84rpx;
+  padding: 0 26rpx;
+}
+
+.channel-text {
+  font-size: 30rpx;
+  color: #4A4A4A;
+}
+
+.channel-active .channel-text {
+  color: #D43C33;
+  font-weight: bold;
+  font-size: 32rpx;
+}
+
+.channel-underline {
+  width: 36rpx;
+  height: 6rpx;
+  border-radius: 3rpx;
+  background-color: #D43C33;
+  margin-top: 6rpx;
+}
+
+/* 置顶要闻 */
+.top-news {
+  background-color: #FFF8F7;
+  padding: 18rpx 24rpx;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  border-bottom: 1rpx solid #F4E3E1;
+}
+
+.top-badge {
+  font-size: 20rpx;
+  color: #fff;
+  background-color: #D43C33;
+  border-radius: 4rpx;
+  padding: 3rpx 10rpx;
+  margin-right: 14rpx;
+}
+
+.top-title {
+  flex: 1;
+  font-size: 28rpx;
+  color: #1A1A1A;
+  font-weight: bold;
+}
+
+/* 大图卡片 */
+.big-title {
+  display: block;
+  font-size: 34rpx;
+  line-height: 46rpx;
+  color: #1A1A1A;
+  font-weight: bold;
+}
+
+.big-cover {
+  width: 100%;
+  height: 340rpx;
+  border-radius: 8rpx;
+  margin-top: 16rpx;
+  background-color: #F0F0F0;
+}
+
+/* 左文右图 */
+.row-card {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+.row-left {
+  flex: 1;
+  margin-right: 18rpx;
+}
+
+.row-title {
+  display: block;
+  font-size: 30rpx;
+  line-height: 42rpx;
+  color: #1A1A1A;
+}
+
+.row-thumb {
+  width: 220rpx;
+  height: 150rpx;
+  border-radius: 8rpx;
+  background-color: #F0F0F0;
+  flex-shrink: 0;
+}
+
+/* 三图 */
+.triple-imgs {
+  display: flex;
+  flex-direction: row;
+  margin-top: 16rpx;
+}
+
+.triple-img {
+  width: 216rpx;
+  height: 150rpx;
+  border-radius: 6rpx;
+  margin-right: 10rpx;
+  background-color: #F0F0F0;
+}
+
+/* 热榜 */
+.hot-head {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8rpx;
+}
+
+.hot-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #1A1A1A;
+}
+
+.hot-more {
+  font-size: 24rpx;
+  color: #8A8A8A;
+}
+
+.hot-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid #F5F5F5;
+}
+
+.hot-rank {
+  width: 40rpx;
+  font-size: 26rpx;
+  font-weight: bold;
+  text-align: center;
+}
+
+.rank-top {
+  color: #D43C33;
+}
+
+.rank-normal {
+  color: #B5B5B5;
+}
+
+.hot-text {
+  flex: 1;
+  font-size: 28rpx;
+  color: #2A2A2A;
+  margin-left: 12rpx;
+}
+
+.hot-heat {
+  font-size: 22rpx;
+  color: #B5B5B5;
+}
+
+.bottom-space {
+  height: 110rpx;
+}

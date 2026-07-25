@@ -1,0 +1,96 @@
+/* 由 video.wxss 编译 */
+.filter-row {
+  display: flex;
+  flex-direction: row;
+  background-color: #fff;
+  padding: 9px 12px;
+  border-bottom: 0.500px solid #EDEDED;
+}
+
+.filter-chip {
+  background-color: #F2F3F5;
+  border-radius: 13px;
+  padding: 5px 13px;
+  margin-right: 8px;
+}
+
+.chip-active {
+  background-color: #FDECEA;
+}
+
+.chip-text {
+  font-size: 13px;
+  color: #5A5A5A;
+}
+
+.chip-active .chip-text {
+  color: #D43C33;
+  font-weight: bold;
+}
+
+.video-card {
+  background-color: #fff;
+  padding: 12px;
+  border-bottom: 0.500px solid #EDEDED;
+}
+
+.cover-wrap {
+  position: relative;
+  width: 100%;
+  height: 190px;
+  border-radius: 5px;
+  overflow: hidden;
+  background-color: #EDEDED;
+}
+
+.cover {
+  width: 100%;
+  height: 100%;
+}
+
+.duration {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  background-color: rgba(0, 0, 0, 0.65);
+  border-radius: 3px;
+  padding: 2px 6px;
+}
+
+.duration-text {
+  font-size: 10px;
+  color: #fff;
+}
+
+.play-badge {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  margin-left: -22px;
+  margin-top: -22px;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.play-icon {
+  font-size: 16px;
+  color: #fff;
+}
+
+.video-title {
+  display: block;
+  font-size: 16px;
+  line-height: 22px;
+  color: #1A1A1A;
+  font-weight: bold;
+  margin-top: 9px;
+}
+
+.bottom-space {
+  height: 55px;
+}

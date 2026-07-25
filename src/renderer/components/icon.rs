@@ -45,6 +45,10 @@ impl IconComponent {
             let size = icon_size * sf;
             ts.size = Size { width: length(size), height: length(size) };
         }
+        // 图标不参与 flex 压缩/拉伸（与 HTML 端 .wxicon{flex:none} 一致），
+        // 否则同列的兄弟节点一有溢出就会把图标压扁。
+        ts.flex_shrink = 0.0;
+        ts.flex_grow = 0.0;
         
         // 颜色优先级：WXML color 属性 > CSS color > 默认颜色
         if let Some(color) = icon_color {

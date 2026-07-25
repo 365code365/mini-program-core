@@ -1,0 +1,29 @@
+.news-tabbar {
+  display: flex;
+  flex-direction: row;
+  background-color: #ffffff;
+  height: 98rpx;
+  width: 100%;
+  border-top: 1rpx solid #E6E6E6;
+  align-items: center;
+}
+
+.tab-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 88rpx;
+}
+
+.tab-label {
+  font-size: 20rpx;
+  color: #B5B5B5;
+  margin-top: 6rpx;
+}
+
+.tab-label-active {
+  color: #D43C33;
+  font-weight: bold;
+}

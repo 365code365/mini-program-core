@@ -1,0 +1,25 @@
+{
+  "pages": [
+    "pages/home/home",
+    "pages/video/video",
+    "pages/detail/detail",
+    "pages/mine/mine"
+  ],
+  "window": {
+    "navigationBarTitleText": "头条新闻",
+    "navigationBarBackgroundColor": "#D43C33",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#F4F5F6"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#8A8A8A",
+    "selectedColor": "#D43C33",
+    "backgroundColor": "#FFFFFF",
+    "list": [
+      { "pagePath": "pages/home/home", "text": "首页" },
+      { "pagePath": "pages/video/video", "text": "视频" },
+      { "pagePath": "pages/mine/mine", "text": "我的" }
+    ]
+  }
+}

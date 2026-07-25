@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/detail/detail</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./detail.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view page">
+    <div class="wx-view article">
+      <span class="wx-text article-title">数字经济规模再创新高，实体产业融合成为主线</span>
+      <div class="wx-view author-row">
+        <img class="wx-image author-avatar" style="object-fit:cover" src="/assets/avatar1.jpg">
+        <div class="wx-view author-info">
+          <span class="wx-text author-name">新华观察</span>
+          <span class="wx-text author-time">2 小时前 · 12.8万阅读</span>
+        </div>
+        <div class="wx-view follow-btn " data-tap="onToggleFollow">
+          <span class="wx-text follow-text">关注</span>
+        </div>
+      </div>
+      <img class="wx-image article-cover" style="object-fit:cover" src="/assets/banner.jpg">
+      <span class="wx-text article-body">记者从相关部门获悉，上半年数字经济核心产业增加值同比增长明显，占国内生产总值比重进一步提升。
+
+从结构上看，数字技术与实体产业的融合成为增长主线：智能制造改造项目数量同比增加，工业互联网平台连接设备规模持续扩大，一批中小企业通过轻量化改造实现了产能与良率的同步提升。
+
+业内人士分析认为，下一阶段的重点将从"建平台"转向"用平台"，数据要素的流通与定价机制、算力资源的跨区域调度，都会成为政策关注的方向。
+
+多位受访企业负责人表示，融合发展带来的效率提升已在订单交付周期上体现，但复合型人才短缺仍是主要制约因素。</span>
+      <div class="wx-view tag-row">
+        <span class="wx-text tag">数字经济</span>
+        <span class="wx-text tag">产业升级</span>
+        <span class="wx-text tag">独家</span>
+      </div>
+    </div>
+    <div class="wx-view related">
+      <span class="wx-text section-title">相关阅读</span>
+      <div class="wx-view related-item" data-tap="onOpenRelated" data-ds-id="3001">
+        <span class="wx-text related-title">工业互联网平台连接设备数突破新高</span>
+        <span class="wx-text related-meta">产业观察 · 132评论</span>
+      </div>
+      <div class="wx-view related-item" data-tap="onOpenRelated" data-ds-id="3002">
+        <span class="wx-text related-title">数据要素市场化配置改革试点扩围</span>
+        <span class="wx-text related-meta">政策解读 · 88评论</span>
+      </div>
+      <div class="wx-view related-item" data-tap="onOpenRelated" data-ds-id="3003">
+        <span class="wx-text related-title">算力调度网络建设进入快车道</span>
+        <span class="wx-text related-meta">科技前沿 · 205评论</span>
+      </div>
+    </div>
+    <div class="wx-view comments">
+      <span class="wx-text section-title">精彩评论（3）</span>
+      <div class="wx-view comment-item">
+        <img class="wx-image comment-avatar" style="object-fit:cover" src="/assets/avatar1.jpg">
+        <div class="wx-view comment-body">
+          <span class="wx-text comment-user">industry_watcher</span>
+          <span class="wx-text comment-text">融合是关键，单纯上系统解决不了产线的实际问题。</span>
+          <div class="wx-view comment-foot">
+            <span class="wx-text comment-time">1 小时前</span>
+            <span class="wx-text comment-like" data-tap="onLikeComment" data-ds-id="1">👍 216</span>
+          </div>
+        </div>
+      </div>
+      <div class="wx-view comment-item">
+        <img class="wx-image comment-avatar" style="object-fit:cover" src="/assets/avatar1.jpg">
+        <div class="wx-view comment-body">
+          <span class="wx-text comment-user">制造业老张</span>
+          <span class="wx-text comment-text">我们厂去年做了改造，良率确实提升了，但人才招不到。</span>
+          <div class="wx-view comment-foot">
+            <span class="wx-text comment-time">2 小时前</span>
+            <span class="wx-text comment-like" data-tap="onLikeComment" data-ds-id="2">👍 154</span>
+          </div>
+        </div>
+      </div>
+      <div class="wx-view comment-item">
+        <img class="wx-image comment-avatar" style="object-fit:cover" src="/assets/avatar1.jpg">
+        <div class="wx-view comment-body">
+          <span class="wx-text comment-user">data_fan</span>
+          <span class="wx-text comment-text">希望数据定价机制能尽快明确，现在交易顾虑比较多。</span>
+          <div class="wx-view comment-foot">
+            <span class="wx-text comment-time">3 小时前</span>
+            <span class="wx-text comment-like" data-tap="onLikeComment" data-ds-id="3">👍 97</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="wx-view bottom-space"></div>
+    <div class="wx-view action-bar">
+      <div class="wx-view comment-input" data-tap="onWriteComment">
+        <span class="wx-text comment-input-text">写评论…</span>
+      </div>
+      <div class="wx-view action-item" data-tap="onLike">
+        <i class="wx-icon wxicon wxicon-success" style="width:20px;height:20px;color:#8A8A8A"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><path d="M5.8 12.4 10 16.4 18.2 7.6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+        <span class="wx-text action-count">1286</span>
+      </div>
+      <div class="wx-view action-item" data-tap="onCollect">
+        <i class="wx-icon wxicon wxicon-waiting" style="width:20px;height:20px;color:#8A8A8A"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><rect x="10.9" y="6.2" width="2.2" height="6.6" rx="1.1" fill="#fff"/><rect x="12" y="10.9" width="5.2" height="2.2" rx="1.1" fill="#fff"/><circle cx="12" cy="12" r="1.6" fill="#fff"/></svg></i>
+        <span class="wx-text action-count">收藏</span>
+      </div>
+      <div class="wx-view action-item" data-tap="onShare">
+        <i class="wx-icon wxicon wxicon-info" style="width:20px;height:20px;color:#8A8A8A"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><circle cx="12" cy="7.6" r="1.7" fill="#fff"/><rect x="10.9" y="10.8" width="2.2" height="7" rx="1.1" fill="#fff"/></svg></i>
+        <span class="wx-text action-count">分享</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/detail/detail";
+window.__WXML__ = [{"a":{"class":"page"},"c":[{"a":{"class":"article"},"c":[{"a":{"class":"article-title"},"c":[{"t":"tx","x":"{{article.title}}"}],"n":"text","t":"el"},{"a":{"class":"author-row"},"c":[{"a":{"class":"author-avatar","mode":"aspectFill","src":"{{article.avatar}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"author-info"},"c":[{"a":{"class":"author-name"},"c":[{"t":"tx","x":"{{article.author}}"}],"n":"text","t":"el"},{"a":{"class":"author-time"},"c":[{"t":"tx","x":"{{article.time}} · {{article.readCount}}阅读"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onToggleFollow","class":"follow-btn {{followed ? 'followed' : ''}}"},"c":[{"a":{"class":"follow-text"},"c":[{"t":"tx","x":"{{followed ? '已关注' : '关注'}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"article-cover","mode":"aspectFill","src":"{{article.cover}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"article-body"},"c":[{"t":"tx","x":"{{article.body}}"}],"n":"text","t":"el"},{"a":{"class":"tag-row"},"c":[{"a":{"class":"tag","wx:for":"{{article.tags}}","wx:key":"*this"},"c":[{"t":"tx","x":"{{item}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"related"},"c":[{"a":{"class":"section-title"},"c":[{"t":"tx","x":"相关阅读"}],"n":"text","t":"el"},{"a":{"bindtap":"onOpenRelated","class":"related-item","data-id":"{{item.id}}","wx:for":"{{related}}","wx:key":"id"},"c":[{"a":{"class":"related-title"},"c":[{"t":"tx","x":"{{item.title}}"}],"n":"text","t":"el"},{"a":{"class":"related-meta"},"c":[{"t":"tx","x":"{{item.source}} · {{item.comments}}评论"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"comments"},"c":[{"a":{"class":"section-title"},"c":[{"t":"tx","x":"精彩评论（{{comments.length}}）"}],"n":"text","t":"el"},{"a":{"class":"comment-item","wx:for":"{{comments}}","wx:key":"id"},"c":[{"a":{"class":"comment-avatar","mode":"aspectFill","src":"{{item.avatar}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"comment-body"},"c":[{"a":{"class":"comment-user"},"c":[{"t":"tx","x":"{{item.user}}"}],"n":"text","t":"el"},{"a":{"class":"comment-text"},"c":[{"t":"tx","x":"{{item.text}}"}],"n":"text","t":"el"},{"a":{"class":"comment-foot"},"c":[{"a":{"class":"comment-time"},"c":[{"t":"tx","x":"{{item.time}}"}],"n":"text","t":"el"},{"a":{"bindtap":"onLikeComment","class":"comment-like","data-id":"{{item.id}}"},"c":[{"t":"tx","x":"👍 {{item.likes}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"bottom-space"},"c":[],"n":"view","t":"el"},{"a":{"class":"action-bar"},"c":[{"a":{"bindtap":"onWriteComment","class":"comment-input"},"c":[{"a":{"class":"comment-input-text"},"c":[{"t":"tx","x":"写评论…"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onLike","class":"action-item"},"c":[{"a":{"color":"{{liked ? '#D43C33' : '#8A8A8A'}}","size":"20","type":"success"},"c":[],"n":"icon","t":"el"},{"a":{"class":"action-count"},"c":[{"t":"tx","x":"{{likeCount}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onCollect","class":"action-item"},"c":[{"a":{"color":"{{collected ? '#F0A020' : '#8A8A8A'}}","size":"20","type":"waiting"},"c":[],"n":"icon","t":"el"},{"a":{"class":"action-count"},"c":[{"t":"tx","x":"收藏"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onShare","class":"action-item"},"c":[{"a":{"color":"#8A8A8A","size":"20","type":"info"},"c":[],"n":"icon","t":"el"},{"a":{"class":"action-count"},"c":[{"t":"tx","x":"分享"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./detail.js"></script>
+</body>
+</html>
