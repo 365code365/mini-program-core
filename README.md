@@ -1,13 +1,90 @@
 # Mini Render
 
-用 Rust 从零实现的轻量级**微信小程序渲染引擎**：内置 2D 光栅渲染、Flexbox 布局、WXML/WXSS 解析、完整 CSS 选择器与 `{{ }}` 表达式引擎，以及基于 QuickJS 的 JavaScript 运行时（App / Page / Component / 模块系统 / Promise），持续向微信 **Skyline** 渲染实现对齐。
+**一个全新的、自绘的小程序渲染引擎 —— 不基于 WebView，也不依赖任何系统 UI 控件。**
 
-> 纯 Rust、无系统 UI 依赖；核心库可编译为 **Android / iOS / Windows / macOS / Linux** 原生库，供各端集成。
+用 Rust 从零实现：自己解析 WXML/WXSS、自己算布局、自己把每个像素画进帧缓冲，再配一个基于 QuickJS 的逻辑层（App / Page / Component / 模块系统 / Promise）。同时内置一个**编译器**，可把同一份小程序源码编译成其他端可直接运行的源码（当前已实现 HTML 目标）。
+
+> 纯 Rust、无系统 UI 依赖；核心库可编译为 **Android / iOS / Windows / macOS / Linux** 原生库供各端集成。
+
+---
+
+## 🧠 渲染原理（这引擎和别的有什么不一样）
+
+### 它不是什么
+
+| 常见方案 | 做法 | 本引擎 |
+|---------|------|--------|
+| 微信小程序 WebView 渲染层 | WXML → DOM，交给浏览器内核排版绘制 | ❌ 不用 DOM、不用浏览器内核 |
+| React Native / Weex | JS 描述 → 映射到系统原生控件（UIView / android.view） | ❌ 不映射系统控件 |
+| Flutter | Dart + Skia 自绘 | ✅ 思路相近，但这里是 **Rust + 自研光栅器**，无 Skia 依赖 |
+| Electron / Tauri WebView | 打包一个浏览器 | ❌ 不打包浏览器 |
+
+整个渲染链路是自己的：**没有 WebView、没有 Skia、没有系统控件**，产物是一个纯 Rust 库（`cdylib` / `staticlib` / `rlib`），落地只需要一块可写的像素缓冲。
+
+### 一帧是怎么画出来的
+
+```text
+WXML 源码 ──┐
+            │  ① 解析：手写 WXML 解析器 → 节点树；WXSS 解析器 → 样式表
+WXSS 源码 ──┤     （CSS 选择器引擎：标签/类/#id/*/属性/后代/子代 + 特异性排序）
+            │
+page.js ────┘  ② 逻辑层：QuickJS 执行 App/Page/Component，setData 产出数据快照
+                  ↓
+            ③ 模板求值：{{ }} 表达式引擎 + wx:if / wx:for 展开 → 渲染节点树
+                  ↓
+            ④ 样式计算：命中的 CSS + 内联 style 合成计算样式（含继承语义：
+                         color / font-size / font-weight / line-height ...）
+                  ↓
+            ⑤ 布局：Taffy(Flexbox) 计算盒模型；文本节点挂 **自定义度量函数**，
+                     由字体真实字形宽度决定 min-content / max-content 与换行行数
+                  ↓
+            ⑥ 绘制：自研 2D 光栅器逐层画进 Canvas（RGBA 像素缓冲）
+                     · 路径填充：扫描线 + even-odd，4× 超采样抗锯齿
+                     · 圆角：三次贝塞尔逼近四分之一圆（K=0.5523），按 min(w,h)/2 夹紧
+                     · 文本：fontdue 光栅化字形 + 自建字形缓存 + 多字体回退
+                     · 图片：双线性采样、object-fit 等价的 5 种 mode、GIF 逐帧
+                     · 其它：线性渐变、阴影、Alpha 混合、clip 裁剪栈
+                  ↓
+            ⑦ 分层合成：正常流 → 宿主外壳(tabBar) → position:fixed 覆盖层
+                         （保证全屏遮罩能压暗 tabBar，与浏览器层叠顺序一致）
+                  ↓
+            ⑧ 上屏：softbuffer 把像素缓冲贴到窗口；或 save_png 出图；或交给各端宿主
+```
+
+关键设计取舍：
+
+- **文本度量驱动布局**：文本不是"估算宽度"，而是把 `TextMeasure` 上下文挂到 Taffy 叶子上，由真实字形度量参与布局。这样"定宽容器内按容器宽换行"和"收缩容器被内容撑开"两种 CSS 语义能同时成立。
+- **行高对齐浏览器**：`line-height: normal` 按行内实际用字区分 —— 含 CJK 用 1.375、纯西文用 1.1777（对 headless Chrome 实测校准），避免逐行累积垂直漂移。
+- **字体全进程共享**：系统字体解析一次约 0.9s，因此用 `OnceLock` 全局共享一份（只读 + 内部字形缓存自带锁），任何数量的渲染器实例创建成本都是常数级（实测 ~42ns）。
+- **无 GC、无 DOM diff**：每帧从渲染节点树直接绘制，布局结果带缓存；重绘只做像素写入，不维护中间 DOM。
+
+### 双端一致性是被量化验证的
+
+引擎自带对比工具：同一份小程序源码，一边走原生渲染出 PNG，一边编译成 HTML 用 Chrome 截图，逐像素比对并产出报告。
+
+```bash
+cargo run --example compare -- --all --out target/render-compare
+# 输出 rust.png / html.png / side-by-side.png / diff.png + report.json（变化像素比、MAE、RMSE）
+```
+
+当前实测（375×667 @2x）：`sample-app` 11 页整体差异 **5.8%**，`news-app` 4 页 **9.3%**，剩余差异集中在图片缩放插值与亚像素文本位置。
+
+### 编译器：同一份源码，编译出别端源码
+
+除了原生渲染，引擎还包含一个多目标编译器（`src/compiler/`）。它复用同一套解析器与数据快照，把小程序编译成**目标端的源码工程**，而不是套壳运行：
+
+```bash
+cargo run --bin mini-compiler                      # sample-app → dist-html/
+cargo run --bin mini-compiler news-app dist-news html
+```
+
+HTML 目标产出结构化工程（`common/base.css` + 每页 html/css/js + 运行时），支持事件、`setData` 响应式重渲染、`model:` 双向绑定、`wx.*` 跳转、自定义 tabBar 切换。新增目标端只需实现 `CompileTarget` trait 并在 CLI 注册。
 
 ---
 
 ## 目录
 
+- [渲染原理](#-渲染原理这引擎和别的有什么不一样)
 - [特性总览](#-特性总览)
 - [快速开始](#-快速开始)
 - [浏览器调试预览](#-浏览器调试预览)
@@ -146,7 +223,23 @@ cargo run --example gallery     # 渲染 57 个场景到 doc/gallery/
 |:---:|:---:|:---:|
 | <img src="doc/gallery/28_ecommerce_home.png" width="230"/><br/>**电商首页**（轮播/秒杀/瀑布流） | <img src="doc/gallery/29_coupon_popup.png" width="230"/><br/>**优惠券弹窗** | <img src="doc/gallery/30_tabbar.png" width="230"/><br/>**底部 TabBar** |
 | <img src="doc/gallery/31_search_nav.png" width="230"/><br/>**自定义搜索栏** | <img src="doc/gallery/32_input_events.png" width="230"/><br/>**输入与事件** | <img src="doc/gallery/33_video.png" width="230"/><br/>**视频播放器** |
-| <img src="doc/gallery/34_canvas.png" width="230"/><br/>**Canvas 2D 绘图** | | |
+| <img src="doc/gallery/34_canvas.png" width="230"/><br/>**Canvas 2D 绘图** | <img src="doc/gallery/35_gif_frame1.png" width="230"/><br/>**GIF 动图**（逐帧播放） | |
+
+### 资讯类（与 `news-app` 示例同款设计）
+
+| | | |
+|:---:|:---:|:---:|
+| <img src="doc/gallery/36_news_feed.png" width="230"/><br/>**新闻信息流**（频道横滑/热榜） | <img src="doc/gallery/37_news_article.png" width="230"/><br/>**文章详情**（长文/评论） | <img src="doc/gallery/38_news_video.png" width="230"/><br/>**视频频道** |
+| <img src="doc/gallery/39_news_mine.png" width="230"/><br/>**我的**（开关/滑块设置） | | |
+
+### 更多商业场景
+
+| | | |
+|:---:|:---:|:---:|
+| <img src="doc/gallery/40_logistics.png" width="230"/><br/>**物流跟踪**（时间轴） | <img src="doc/gallery/41_live_shopping.png" width="230"/><br/>**直播带货** | <img src="doc/gallery/42_food_order.png" width="230"/><br/>**外卖点餐**（左右分栏） |
+| <img src="doc/gallery/43_member_center.png" width="230"/><br/>**会员中心** | <img src="doc/gallery/44_payment.png" width="230"/><br/>**支付收银台** | <img src="doc/gallery/45_reviews.png" width="230"/><br/>**评价晒单** |
+| <img src="doc/gallery/46_search_result.png" width="230"/><br/>**搜索结果** | <img src="doc/gallery/47_message_center.png" width="230"/><br/>**消息中心** | <img src="doc/gallery/48_checkin.png" width="230"/><br/>**签到打卡** |
+| <img src="doc/gallery/49_market_board.png" width="230"/><br/>**行情看板** | <img src="doc/gallery/50_hotel_booking.png" width="230"/><br/>**酒店预订** | <img src="doc/gallery/51_health_dashboard.png" width="230"/><br/>**运动健康** |
 
 ---
 
