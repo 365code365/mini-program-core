@@ -18,7 +18,7 @@ use super::components::{
     CanvasComponent, SwiperComponent, SwiperItemComponent, RichTextComponent,
     PickerComponent, PickerViewComponent, PickerViewColumnComponent,
     CheckboxGroupComponent, RadioGroupComponent,
-    build_base_style,
+    build_base_style, Tree, TextMeasure, measure_text_node,
 };
 
 #[derive(Debug, Clone)]
@@ -33,7 +33,7 @@ pub struct EventBinding {
 
 pub struct CachedLayout {
     pub render_nodes: Vec<RenderNode>,
-    pub taffy: TaffyTree,
+    pub taffy: Tree,
     pub content_height: f32,
     pub data: JsonValue,
 }
@@ -97,7 +97,7 @@ impl WxmlRenderer {
         self.scroll_cache.mark_all_dirty();
         
         let rendered = crate::parser::TemplateEngine::render_with_virtual_list(nodes, data, viewport);
-        let mut taffy = TaffyTree::new();
+        let mut taffy = Tree::new();
         
         let mut render_nodes = Vec::new();
         
@@ -118,10 +118,10 @@ impl WxmlRenderer {
             &child_ids,
         ).unwrap();
         
-        taffy.compute_layout(root, Size::MAX_CONTENT).unwrap();
+        self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT);
         // 第二遍：按实际宽度修正换行文本高度后重新布局
         if self.correct_wrapped_text_heights(&mut taffy, &render_nodes) {
-            taffy.compute_layout(root, Size::MAX_CONTENT).unwrap();
+            self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT);
         }
         
         // 获取实际内容高度
@@ -268,7 +268,7 @@ impl WxmlRenderer {
     /// 使用原始 taffy 布局绘制 fixed 元素
     fn draw_fixed_element_original(
         &mut self,
-        taffy: &TaffyTree,
+        taffy: &Tree,
         canvas: &mut Canvas,
         node: &RenderNode,
         fixed_x: f32,
@@ -317,7 +317,7 @@ impl WxmlRenderer {
     /// 递归绘制 fixed 元素的子节点
     fn draw_fixed_child_recursive(
         &mut self,
-        taffy: &TaffyTree,
+        taffy: &Tree,
         canvas: &mut Canvas,
         node: &RenderNode,
         x: f32,
@@ -432,9 +432,23 @@ impl WxmlRenderer {
     
     /// 兼容旧接口
     pub fn render(&mut self, canvas: &mut Canvas, nodes: &[WxmlNode], data: &JsonValue) {
+        self.render_with_shell(canvas, nodes, data, |_| {});
+    }
+
+    /// 渲染页面，并在「正常流」与「fixed 覆盖层」之间插入宿主外壳绘制（如 tabBar）。
+    ///
+    /// 层叠顺序与浏览器一致：页面背景/内容 → 宿主外壳(tabBar) → 页面内 position:fixed
+    /// 覆盖层（遮罩/弹窗）。这样全屏遮罩会同时压暗 tabBar，而 tabBar 又不会被页面背景覆盖。
+    pub fn render_with_shell(
+        &mut self,
+        canvas: &mut Canvas,
+        nodes: &[WxmlNode],
+        data: &JsonValue,
+        draw_shell: impl FnOnce(&mut Canvas),
+    ) {
         self.event_bindings.clear();
         let rendered = crate::parser::TemplateEngine::render(nodes, data);
-        let mut taffy = TaffyTree::new();
+        let mut taffy = Tree::new();
         
         let mut render_nodes = Vec::new();
         for (sib_i, node) in rendered.iter().enumerate() {
@@ -453,20 +467,27 @@ impl WxmlRenderer {
             &child_ids,
         ).unwrap();
         
-        taffy.compute_layout(root, Size::MAX_CONTENT).unwrap();
+        self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT);
         if self.correct_wrapped_text_heights(&mut taffy, &render_nodes) {
-            taffy.compute_layout(root, Size::MAX_CONTENT).unwrap();
+            self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT);
         }
         
+        // 正常流：跳过 fixed 子树（顶层与嵌套均由固定层处理）
         for rn in &render_nodes {
+            if rn.style.is_fixed { continue; }
             self.draw(canvas, &taffy, rn, 0.0, 0.0);
         }
+        // 宿主外壳（tabBar 等）：位于页面内容之上、页面 fixed 覆盖层之下
+        draw_shell(canvas);
+        // 固定层：把 position:fixed 元素钉在视口（画布高度即视口）
+        let viewport_h = canvas.height() as f32;
+        self.draw_fixed_layer(canvas, &mut taffy, &render_nodes, viewport_h);
     }
 
     /// 测量给定 WXML+数据的内容总高度（逻辑像素），用于自适应画布尺寸。
     pub fn measure_content_height(&self, nodes: &[WxmlNode], data: &JsonValue) -> f32 {
         let rendered = crate::parser::TemplateEngine::render(nodes, data);
-        let mut taffy = TaffyTree::new();
+        let mut taffy = Tree::new();
         let mut render_nodes = Vec::new();
         for (sib_i, node) in rendered.iter().enumerate() {
             if let Some(rn) = self.build_tree(&mut taffy, node, &[], &InheritedText::default(), sib_i, rendered.len()) {
@@ -482,9 +503,9 @@ impl WxmlRenderer {
             },
             &child_ids,
         ).unwrap();
-        taffy.compute_layout(root, Size::MAX_CONTENT).unwrap();
+        self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT);
         if self.correct_wrapped_text_heights(&mut taffy, &render_nodes) {
-            taffy.compute_layout(root, Size::MAX_CONTENT).unwrap();
+            self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT);
         }
         taffy.layout(root).unwrap().size.height / self.scale_factor
     }
@@ -495,7 +516,24 @@ impl WxmlRenderer {
     /// 返回是否有节点高度被修改（需要重新 compute_layout）。
     ///
     /// 这是对标准 CSS「文本按可用宽度自动换行、盒子高度随行数增长」语义的补齐。
-    fn correct_wrapped_text_heights(&self, taffy: &mut TaffyTree, nodes: &[RenderNode]) -> bool {
+    /// 用文本度量闭包计算布局：仅带 TextMeasure 上下文的（block/auto 宽）文本按可用
+    /// 宽度解析换行与高度；其它叶子沿用各自 Style 里的显式尺寸（known dimensions）。
+    fn compute_with_text(&self, taffy: &mut Tree, root: NodeId, available: Size<AvailableSpace>) {
+        let tr = self.text_renderer.as_ref();
+        let _ = taffy.compute_layout_with_measure(
+            root,
+            available,
+            |known, avail, _id, ctx: Option<&mut TextMeasure>| match ctx {
+                Some(tm) => measure_text_node(known, avail, tm, tr),
+                None => Size {
+                    width: known.width.unwrap_or(0.0),
+                    height: known.height.unwrap_or(0.0),
+                },
+            },
+        );
+    }
+
+    fn correct_wrapped_text_heights(&self, taffy: &mut Tree, nodes: &[RenderNode]) -> bool {
         let tr = match &self.text_renderer { Some(t) => t, None => return false };
         let sf = self.scale_factor;
         let mut changed = false;
@@ -514,7 +552,7 @@ impl WxmlRenderer {
                         let size = node.style.font_size * sf;
                         let ls = node.style.letter_spacing * sf;
                         let line_height = node.style.line_height.map(|lh| lh * sf)
-                            .unwrap_or(size * 1.5).max(size * 1.2);
+                            .unwrap_or_else(|| tr.natural_line_height_for(&node.text, size)).max(size);
                         let lines = count_wrapped_lines(tr, &node.text, avail, size, ls);
                         let needed_h = lines as f32 * line_height + pt + pb;
                         if needed_h > box_h + 0.5 {
@@ -535,7 +573,7 @@ impl WxmlRenderer {
         changed
     }
 
-    fn build_tree(&self, taffy: &mut TaffyTree, node: &WxmlNode, ancestors: &[ElementDesc], inherited: &InheritedText, sib_index: usize, sib_count: usize) -> Option<RenderNode> {
+    fn build_tree(&self, taffy: &mut Tree, node: &WxmlNode, ancestors: &[ElementDesc], inherited: &InheritedText, sib_index: usize, sib_count: usize) -> Option<RenderNode> {
         let sf = self.scale_factor;
         
         if node.node_type == WxmlNodeType::Text {
@@ -543,7 +581,11 @@ impl WxmlRenderer {
             if text.is_empty() { return None; }
             // 原始文本节点继承父级的字号/颜色/字重/对齐/行高
             let fs = inherited.font_size;
-            let line_h = inherited.line_height.unwrap_or(fs * 1.4);
+            // 默认行高取字体自然行高（≈浏览器 normal），无字体时回退 1.2 倍
+            let natural_lh = self.text_renderer.as_ref()
+                .map(|tr| tr.natural_line_height_for(text, fs * sf) / sf)
+                .unwrap_or(fs * crate::text::NORMAL_LINE_HEIGHT_FACTOR);
+            let line_h = inherited.line_height.unwrap_or(natural_lh);
             let tw = self.measure_text(text, fs * sf);
             // 居中/右对齐的文本撑满可用宽度，绘制时再按对齐做偏移（否则无法居中）
             let width_dim: Dimension = if matches!(inherited.align, TextAlign::Center | TextAlign::Right) {
@@ -713,10 +755,12 @@ impl WxmlRenderer {
     }
     
     fn is_leaf_component(tag: &str) -> bool {
+        // rich-text / picker 不再是叶子：rich-text 自建带样式的文本片段子树；
+        // picker 渲染其子元素（触发视图，如“当前选择：xxx”）而非合成占位 UI。
         matches!(tag, 
             "text" | "button" | "icon" | "progress" | "switch" | 
             "checkbox" | "radio" | "slider" | "input" | "textarea" | "image" | "video" | "canvas" |
-            "rich-text" | "picker" | "picker-view-column" | "swiper"
+            "picker-view-column" | "swiper"
         )
     }
     
@@ -732,7 +776,7 @@ impl WxmlRenderer {
     fn draw_with_interaction(
         &mut self, 
         canvas: &mut Canvas, 
-        taffy: &TaffyTree, 
+        taffy: &Tree, 
         node: &RenderNode, 
         ox: f32, 
         oy: f32,
@@ -982,7 +1026,7 @@ impl WxmlRenderer {
     fn draw_child_to_cache(
         &self,
         canvas: &mut Canvas,
-        taffy: &TaffyTree,
+        taffy: &Tree,
         node: &RenderNode,
         ox: f32,
         oy: f32,
@@ -1060,7 +1104,7 @@ impl WxmlRenderer {
     /// 注册 scroll-view 子元素的交互区域
     fn register_child_interactions(
         &mut self,
-        taffy: &TaffyTree,
+        taffy: &Tree,
         node: &RenderNode,
         ox: f32,
         oy: f32,
@@ -1115,7 +1159,7 @@ impl WxmlRenderer {
     fn draw_child_with_interaction(
         &mut self, 
         canvas: &mut Canvas, 
-        taffy: &TaffyTree, 
+        taffy: &Tree, 
         node: &RenderNode, 
         ox: f32, 
         oy: f32, 
@@ -1402,7 +1446,7 @@ impl WxmlRenderer {
         drawn_node: &RenderNode,
         bounds: &GeoRect, 
         interaction: &mut InteractionManager,
-        taffy: &TaffyTree,
+        taffy: &Tree,
         is_in_fixed_container: bool
     ) {
         let disabled = original_node.attrs.get("disabled")
@@ -1582,7 +1626,7 @@ impl WxmlRenderer {
     }
 
     
-    fn draw(&mut self, canvas: &mut Canvas, taffy: &TaffyTree, node: &RenderNode, ox: f32, oy: f32) {
+    fn draw(&mut self, canvas: &mut Canvas, taffy: &Tree, node: &RenderNode, ox: f32, oy: f32) {
         let sf = self.scale_factor;
         let layout = taffy.layout(node.taffy_node).unwrap();
         let x = ox + layout.location.x;
@@ -1596,6 +1640,8 @@ impl WxmlRenderer {
         if !Self::is_leaf_component(&node.tag) {
             let text_color = node.style.text_color.unwrap_or(Color::BLACK);
             for child in &node.children { 
+                // fixed 子元素不在正常流内绘制，改由视口固定层单独绘制
+                if child.style.is_fixed { continue; }
                 self.draw_with_color(canvas, taffy, child, x, y, text_color); 
             }
         }
@@ -1611,7 +1657,7 @@ impl WxmlRenderer {
         }
     }
     
-    fn draw_with_color(&mut self, canvas: &mut Canvas, taffy: &TaffyTree, node: &RenderNode, ox: f32, oy: f32, inherited_color: Color) {
+    fn draw_with_color(&mut self, canvas: &mut Canvas, taffy: &Tree, node: &RenderNode, ox: f32, oy: f32, inherited_color: Color) {
         let sf = self.scale_factor;
         let layout = taffy.layout(node.taffy_node).unwrap();
         let x = ox + layout.location.x;
@@ -1630,6 +1676,8 @@ impl WxmlRenderer {
         
         if !Self::is_leaf_component(&node.tag) {
             for child in &node.children { 
+                // fixed 子元素不在正常流内绘制，改由视口固定层单独绘制
+                if child.style.is_fixed { continue; }
                 self.draw_with_color(canvas, taffy, child, x, y, text_color); 
             }
         }
@@ -1642,6 +1690,111 @@ impl WxmlRenderer {
                 bounds: logical_bounds,
                 is_catch: *is_catch,
             });
+        }
+    }
+
+    /// 收集 fixed 子树（含嵌套）到列表。
+    fn collect_fixed_nodes<'a>(node: &'a RenderNode, out: &mut Vec<&'a RenderNode>) {
+        for child in &node.children {
+            if child.style.is_fixed {
+                out.push(child);
+            }
+            // fixed 子树内部不再单独收集（其内部随父一起按视口绘制）
+            if !child.style.is_fixed {
+                Self::collect_fixed_nodes(child, out);
+            }
+        }
+    }
+
+    /// 简单渲染路径下的 fixed 层：把 position:fixed 元素钉在视口而非内容流底部，
+    /// 与浏览器 position:fixed 语义一致。
+    ///
+    /// 关键点：fixed 元素的 top/bottom/left/right 需相对「视口」解析，而 Taffy 是相对
+    /// 根容器（内容全高）解析的。因此这里先按视口把该元素的宽/高约束出来，再以视口尺寸
+    /// 为可用空间对其子树单独重排，最后按视口把整棵子树钉到目标位置——这样 top:0;bottom:0
+    /// 的全屏遮罩才会是视口高、其居中的对话框才落在可见区内。
+    fn draw_fixed_layer(&mut self, canvas: &mut Canvas, taffy: &mut Tree, roots: &[RenderNode], viewport_h: f32) {
+        let sf = self.scale_factor;
+        let vp_width = self.screen_width * sf;
+        let mut fixed_ids: Vec<(NodeId, NodeStyle)> = Vec::new();
+        {
+            let mut fixed_nodes: Vec<&RenderNode> = Vec::new();
+            for root in roots {
+                if root.style.is_fixed {
+                    fixed_nodes.push(root);
+                }
+                Self::collect_fixed_nodes(root, &mut fixed_nodes);
+            }
+            fixed_nodes.sort_by(|a, b| a.style.z_index.cmp(&b.style.z_index));
+            for n in fixed_nodes {
+                fixed_ids.push((n.taffy_node, n.style.clone()));
+            }
+        }
+
+        // 建立 taffy_node -> RenderNode 引用查找（fixed 子树根）
+        fn find_node<'a>(nodes: &'a [RenderNode], id: NodeId) -> Option<&'a RenderNode> {
+            for n in nodes {
+                if n.taffy_node == id { return Some(n); }
+                if let Some(found) = find_node(&n.children, id) { return Some(found); }
+            }
+            None
+        }
+
+        for (id, st) in &fixed_ids {
+            // 当前（相对根容器的）布局，用作缺省尺寸
+            let cur = match taffy.layout(*id) { Ok(l) => *l, Err(_) => continue };
+            let mut target_w = cur.size.width;
+            let mut target_h = cur.size.height;
+            // 视口约束：left+right → 宽；top+bottom → 高
+            if let (Some(l), Some(r)) = (st.fixed_left, st.fixed_right) {
+                target_w = (vp_width - l - r).max(0.0);
+            }
+            if let (Some(t), Some(b)) = (st.fixed_top, st.fixed_bottom) {
+                target_h = (viewport_h - t - b).max(0.0);
+            }
+
+            // 以视口约束尺寸对该 fixed 子树单独重排（绝对定位，不影响主流）
+            if let Ok(mut style) = taffy.style(*id).cloned() {
+                style.position = Position::Relative;
+                style.inset = Rect { top: auto(), right: auto(), bottom: auto(), left: auto() };
+                style.size = Size { width: length(target_w), height: length(target_h) };
+                if taffy.set_style(*id, style).is_ok() {
+                    self.compute_with_text(
+                        taffy,
+                        *id,
+                        Size {
+                            width: AvailableSpace::Definite(target_w),
+                            height: AvailableSpace::Definite(target_h),
+                        },
+                    );
+                }
+            }
+
+            let new_layout = match taffy.layout(*id) { Ok(l) => *l, Err(_) => continue };
+            let w = new_layout.size.width;
+            let h = new_layout.size.height;
+
+            let pinned_x = if let Some(left) = st.fixed_left {
+                left
+            } else if let Some(right) = st.fixed_right {
+                vp_width - right - w
+            } else {
+                cur.location.x
+            };
+            let pinned_y = if let Some(bottom) = st.fixed_bottom {
+                viewport_h - bottom - h
+            } else if let Some(top) = st.fixed_top {
+                top
+            } else {
+                cur.location.y
+            };
+
+            if let Some(node) = find_node(roots, *id) {
+                // 重排后该节点作为子树根，location 约为 0，直接以钉住点为原点绘制
+                let base_x = pinned_x - new_layout.location.x;
+                let base_y = pinned_y - new_layout.location.y;
+                self.draw(canvas, taffy, node, base_x, base_y);
+            }
         }
     }
 

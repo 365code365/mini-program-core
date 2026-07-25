@@ -6,12 +6,54 @@ use std::path::Path;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
+/// CSS `line-height: normal` 的等效系数（含中日韩字符的行）。
+///
+/// 浏览器的行盒高度取「该行实际用到的字体」的度量。在 `-apple-system, PingFang SC,
+/// Hiragino Sans GB` 这类字体栈下实测（Chrome，headless，DSF=1）：
+/// 含 CJK 的行稳定为 1.375 倍（16px→22px、24px→33px）。
+pub const CJK_LINE_HEIGHT_FACTOR: f32 = 1.375;
+
+/// CSS `line-height: normal` 的等效系数（纯西文/数字的行）。
+///
+/// 同一字体栈下这类行由系统 UI 字体（SF）供字，实测 24px→28px、16px→18px、12px→15px，
+/// 与 SF 的 `new_line_size` 比例 1.1777 吻合。
+pub const LATIN_LINE_HEIGHT_FACTOR: f32 = 1.1777;
+
+/// 兼容旧调用点的默认系数（按含 CJK 处理，与小程序界面以中文为主的现实一致）。
+pub const NORMAL_LINE_HEIGHT_FACTOR: f32 = CJK_LINE_HEIGHT_FACTOR;
+
+/// 该字符是否会让行盒采用 CJK 字体度量（中日韩及全角标点）。
+pub fn is_cjk_char(ch: char) -> bool {
+    matches!(ch as u32,
+        0x1100..=0x11FF |   // 谚文字母
+        0x2E80..=0x2EFF |   // CJK 部首补充
+        0x3000..=0x303F |   // CJK 符号和标点（含全角空格、。、）
+        0x3040..=0x30FF |   // 平假名/片假名
+        0x3130..=0x318F |   // 谚文兼容字母
+        0x3400..=0x4DBF |   // CJK 扩展 A
+        0x4E00..=0x9FFF |   // CJK 基本区
+        0xA960..=0xA97F |
+        0xAC00..=0xD7FF |   // 谚文音节
+        0xF900..=0xFAFF |   // CJK 兼容表意
+        0xFE30..=0xFE4F |   // CJK 兼容form
+        0xFF00..=0xFFEF |   // 全角/半角形式
+        0x20000..=0x2FA1F   // CJK 扩展 B+
+    )
+}
+
+/// 文本是否包含使行盒采用 CJK 度量的字符。
+pub fn text_has_cjk(text: &str) -> bool {
+    text.chars().any(is_cjk_char)
+}
+
 /// 文本渲染器 - 支持多字体回退（中文 + Emoji）
 pub struct TextRenderer {
     /// 主字体（中文/英文）
     main_font: Font,
     /// Emoji 字体
     emoji_font: Option<Font>,
+    /// 符号字体（✕ ✓ ★ 等主字体缺失的字形）
+    symbol_font: Option<Font>,
     /// 简单的字形缓存 (char, size_u32) -> (Metrics, Bitmap)
     /// 使用 Mutex 实现内部可变性，因为 draw 方法是 &self
     cache: Arc<Mutex<HashMap<(char, u32), (Metrics, Vec<u8>)>>>,
@@ -29,6 +71,7 @@ impl TextRenderer {
         Ok(Self { 
             main_font: font,
             emoji_font: None,
+            symbol_font: None,
             cache: Arc::new(Mutex::new(HashMap::new())),
         })
     }
@@ -40,6 +83,42 @@ impl TextRenderer {
         Self::from_bytes(&font_data)
     }
     
+    /// 判断主字体是否有该字符的字形（无字形时 fontdue 返回索引 0）
+    fn main_has_glyph(&self, ch: char) -> bool {
+        self.main_font.lookup_glyph_index(ch) != 0
+    }
+
+    /// 为某字符选择字体：主字体缺字形时依次回退 Emoji 字体、符号字体。
+    ///
+    /// 修复：中文字体（如 Hiragino Sans GB）缺少 ✕ ✓ ★ 等符号字形，直接用主字体会
+    /// 画成豆腐块（□）。回退到系统符号字体后与浏览器表现一致。
+    fn font_for(&self, ch: char) -> &Font {
+        // Emoji 优先用彩色 Emoji 字体，但必须确认其确有该字形：
+        // is_emoji 的区间（如 0x2700..=0x27BF）包含 ✕ ✓ 这类纯符号，
+        // Apple Color Emoji 并不覆盖，若无条件返回会渲染成豆腐块。
+        if Self::is_emoji(ch) {
+            if let Some(font) = &self.emoji_font {
+                if font.lookup_glyph_index(ch) != 0 {
+                    return font;
+                }
+            }
+        }
+        if self.main_has_glyph(ch) {
+            return &self.main_font;
+        }
+        if let Some(font) = &self.symbol_font {
+            if font.lookup_glyph_index(ch) != 0 {
+                return font;
+            }
+        }
+        if let Some(font) = &self.emoji_font {
+            if font.lookup_glyph_index(ch) != 0 {
+                return font;
+            }
+        }
+        &self.main_font
+    }
+
     /// 加载系统字体（macOS）- 包含 Emoji 支持
     pub fn load_system_font() -> Result<Self, String> {
         // 主字体路径（中文优先）
@@ -87,6 +166,37 @@ impl TextRenderer {
                         break;
                     }
                 }
+            }
+        }
+
+        // 加载符号字体（补齐中文字体缺失的 ✕ ✓ ★ 等字形，避免渲染成豆腐块）。
+        // 按覆盖度排序：Arial Unicode / Menlo / ZapfDingbats 实测含 U+2715、U+2713；
+        // Apple Symbols 反而缺这两个字形，因此不作首选。
+        let symbol_font_paths = [
+            "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+            "/Library/Fonts/Arial Unicode.ttf",
+            "/System/Library/Fonts/Menlo.ttc",
+            "/System/Library/Fonts/Apple Symbols.ttf",
+        ];
+        for path in &symbol_font_paths {
+            if Path::new(path).exists() {
+                if let Ok(data) = std::fs::read(path) {
+                    let settings = FontSettings { scale: 40.0, ..Default::default() };
+                    if let Ok(font) = Font::from_bytes(data.as_slice(), settings) {
+                        renderer.symbol_font = Some(font);
+                        break;
+                    }
+                }
+            }
+        }
+        // 系统无可用符号字体时用随包字体兜底（保证跨平台一致）
+        if renderer.symbol_font.is_none() {
+            let settings = FontSettings { scale: 40.0, ..Default::default() };
+            if let Ok(font) = Font::from_bytes(
+                include_bytes!("../assets/ArialUnicode.ttf").as_slice(),
+                settings,
+            ) {
+                renderer.symbol_font = Some(font);
             }
         }
         
@@ -143,13 +253,8 @@ impl TextRenderer {
             let (metrics, bitmap) = if let Some(data) = cached_data {
                 data
             } else {
-                // 缓存未命中，执行光栅化
-                // 选择字体
-                let font = if Self::is_emoji(ch) {
-                    self.emoji_font.as_ref().unwrap_or(&self.main_font)
-                } else {
-                    &self.main_font
-                };
+                // 缓存未命中，执行光栅化（按字形可用性选择字体，含符号回退）
+                let font = self.font_for(ch);
                 
                 let (metrics, bitmap) = font.rasterize(ch, size);
                 
@@ -204,11 +309,7 @@ impl TextRenderer {
         let mut width = 0.0;
         let char_count = text.chars().count();
         for (i, ch) in text.chars().enumerate() {
-            let font = if Self::is_emoji(ch) {
-                self.emoji_font.as_ref().unwrap_or(&self.main_font)
-            } else {
-                &self.main_font
-            };
+            let font = self.font_for(ch);
             let metrics = font.metrics(ch, size);
             width += metrics.advance_width;
             if i < char_count - 1 {
@@ -220,18 +321,41 @@ impl TextRenderer {
     
     /// 测量单个字符宽度
     pub fn measure_char(&self, ch: char, size: f32) -> f32 {
-        let font = if Self::is_emoji(ch) {
-            self.emoji_font.as_ref().unwrap_or(&self.main_font)
-        } else {
-            &self.main_font
-        };
-        font.metrics(ch, size).advance_width
+        self.font_for(ch).metrics(ch, size).advance_width
     }
     
     /// 测量文本高度
     pub fn measure_height(&self, size: f32) -> f32 {
         let metrics = self.main_font.metrics('M', size);
         metrics.height as f32
+    }
+
+    /// CSS `line-height: normal` 的等效行高（默认按含 CJK 处理）。
+    ///
+    /// 不能直接用字体表里的 `new_line_size`：实测同机上它随字体剧烈波动
+    /// （Hiragino Sans GB 1.50、Arial Unicode 1.34、SF 1.18），而浏览器是按
+    /// 「该行实际用到的字体」取度量。因此这里用实测校准的系数，并以字体的
+    /// ascent-descent 作为下限防止裁字。
+    pub fn natural_line_height(&self, size: f32) -> f32 {
+        self.line_height_with_factor(size, CJK_LINE_HEIGHT_FACTOR)
+    }
+
+    /// 按文本内容选择 `line-height: normal` 行高：含 CJK 用 1.375，纯西文用 1.1777。
+    ///
+    /// 这与浏览器行为一致——同一段 CSS 下，`¥199` 这类纯西文行比中文行更矮，
+    /// 若统一按 CJK 系数计算会让价格、数字等卡片整体偏高并逐行累积漂移。
+    pub fn natural_line_height_for(&self, text: &str, size: f32) -> f32 {
+        let factor = if text_has_cjk(text) {
+            CJK_LINE_HEIGHT_FACTOR
+        } else {
+            LATIN_LINE_HEIGHT_FACTOR
+        };
+        self.line_height_with_factor(size, factor)
+    }
+
+    fn line_height_with_factor(&self, size: f32, factor: f32) -> f32 {
+        // 至少一个字号高，避免异常字体度量导致行高塌陷
+        (size * factor).max(size)
     }
     
     /// 自动换行绘制文本
@@ -248,12 +372,7 @@ impl TextRenderer {
         let mut current_width = 0.0;
         
         for (i, ch) in chars.iter().enumerate() {
-            let font = if Self::is_emoji(*ch) {
-                self.emoji_font.as_ref().unwrap_or(&self.main_font)
-            } else {
-                &self.main_font
-            };
-            let metrics = font.metrics(*ch, size);
+            let metrics = self.font_for(*ch).metrics(*ch, size);
             let char_width = metrics.advance_width;
             
             // 检查是否需要换行
@@ -289,12 +408,7 @@ impl TextRenderer {
         let mut current_width = 0.0;
         
         for ch in text.chars() {
-            let font = if Self::is_emoji(ch) {
-                self.emoji_font.as_ref().unwrap_or(&self.main_font)
-            } else {
-                &self.main_font
-            };
-            let metrics = font.metrics(ch, size);
+            let metrics = self.font_for(ch).metrics(ch, size);
             let char_width = metrics.advance_width;
             
             if current_width + char_width > max_width && current_width > 0.0 {

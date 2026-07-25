@@ -28,9 +28,15 @@ impl TextComponent {
         
         let sf = ctx.scale_factor;
         let font_size = ns.font_size * sf;
-        let line_height = ns.line_height.map(|lh| lh * sf).unwrap_or(font_size * 1.5);
-        // 确保 line_height 至少等于 font_size
-        let actual_line_height = line_height.max(font_size * 1.2);
+        // 无显式 line-height 时，用字体自然行高（≈浏览器 line-height:normal），
+        // 而非写死 1.5，避免与 HTML 逐行累积垂直漂移。
+        let natural_lh = TEXT_MEASURE_FONT
+            .as_ref()
+            .map(|tr| tr.natural_line_height_for(&text_content, font_size))
+            .unwrap_or(font_size * crate::text::NORMAL_LINE_HEIGHT_FACTOR);
+        let line_height = ns.line_height.map(|lh| lh * sf).unwrap_or(natural_lh);
+        // 确保 line_height 至少等于字号
+        let actual_line_height = line_height.max(font_size);
         
         // 计算文本行数（考虑换行符）
         let newline_count = text_content.matches('\n').count();
@@ -62,23 +68,49 @@ impl TextComponent {
         let pad_r = ns.padding_right * sf;
         ts.padding = Rect::zero();
         
-        // 先决定宽度：display:block 或 text-align center/right 时占满 100%，否则用文本内容宽 + 左右内边距
-        if matches!(ts.size.width, Dimension::Auto) {
-            if ns.is_block || matches!(ns.text_align, TextAlign::Center | TextAlign::Right) {
-                ts.size.width = Dimension::Percent(1.0);
-            } else {
-                ts.size.width = length(max_line_width + pad_l + pad_r);
-            }
+        let content_w = max_line_width + pad_l + pad_r;
+        let nowrap = matches!(ns.white_space, WhiteSpace::NoWrap | WhiteSpace::Pre);
+
+        // display:block 或居中/右对齐且宽度未显式指定：交给 taffy 文本度量。
+        // 度量提供 min-content / max-content，使文本在定宽父级按容器换行、在收缩父级
+        // 撑到内容宽——两种 CSS 语义都成立，无需 percent+min-width 的 hack（会破坏定宽换行）。
+        let use_measure = matches!(ts.size.width, Dimension::Auto)
+            && (ns.is_block || matches!(ns.text_align, TextAlign::Center | TextAlign::Right));
+        if use_measure {
+            let min_unit_width = min_unit_width(&text_content, measure_font, font_size, letter_spacing);
+            let tm = TextMeasure {
+                text: text_content.clone(),
+                font_px: font_size,
+                letter_spacing_px: letter_spacing,
+                line_height_px: actual_line_height,
+                pad_l, pad_r, pad_t, pad_b,
+                nowrap,
+                min_lines,
+                max_line_width,
+                min_unit_width,
+            };
+            let tn = ctx.taffy.new_leaf_with_context(ts, tm).unwrap();
+            return Some(RenderNode {
+                tag: "text".into(),
+                text: text_content,
+                attrs,
+                taffy_node: tn,
+                style: ns,
+                children: vec![],
+                events,
+            });
         }
-        
-        // 根据最终宽度估算换行行数：当可用宽度已知（显式/内容宽）且窄于整段文本时会换行，
-        // 据此把盒子高度设为多行，避免绘制时因盒子只有一行高而把文字挤成一行溢出
+
+        // 否则（inline 文本或显式宽度）：用内容宽 + 按内容宽估算换行行数设定显式盒高。
+        if matches!(ts.size.width, Dimension::Auto) {
+            ts.size.width = length(content_w);
+        }
         let avail_w = if let Dimension::Length(px) = ts.size.width {
             (px - pad_l - pad_r).max(1.0)
         } else {
             f32::MAX
         };
-        let wrap_lines = if avail_w < max_line_width {
+        let wrap_lines = if !nowrap && avail_w < max_line_width {
             (max_line_width / avail_w).ceil() as usize
         } else {
             1
@@ -113,7 +145,10 @@ impl TextComponent {
     ) {
         let color = node.style.text_color.unwrap_or(Color::BLACK);
         let size = node.style.font_size * sf;
-        let line_height = node.style.line_height.map(|lh| lh * sf).unwrap_or(size * 1.5);
+        let natural_lh = text_renderer
+            .map(|tr| tr.natural_line_height_for(&node.text, size))
+            .unwrap_or(size * crate::text::NORMAL_LINE_HEIGHT_FACTOR);
+        let line_height = node.style.line_height.map(|lh| lh * sf).unwrap_or(natural_lh);
         let letter_spacing = node.style.letter_spacing * sf;
         
         // 绘制文本自身的背景（<text> 也可有 background-color / 圆角），覆盖整个盒子
@@ -228,8 +263,8 @@ fn draw_text_wrapped_advanced(
         return;
     }
     
-    // 确保 line_height 至少等于 font_size
-    let actual_line_height = line_height.max(size * 1.2);
+    // 确保 line_height 至少等于 font_size（默认已是字体自然行高）
+    let actual_line_height = line_height.max(size);
     
     let mut current_y = y;
     let use_ellipsis = matches!(style.text_overflow, TextOverflow::Ellipsis);

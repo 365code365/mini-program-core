@@ -129,8 +129,9 @@
     var ex = extraStyle(tag, a, scope);
     if (ex) { if (style && !/;\s*$/.test(style)) style += ";"; style += ex; }
     if (tag === "icon") {
-      if (a["size"]) { var sz = parseFloat(interp(a["size"], scope)) || 23; if (style && !/;\s*$/.test(style)) style += ";"; style += "font-size:" + Math.round(sz / 1.2) + "px"; }
-      if (a["color"]) { if (style && !/;\s*$/.test(style)) style += ";"; style += "background:" + interp(a["color"], scope); }
+      // size 决定图标直径，color 作为 CSS color 供内联 SVG 的 currentColor 使用
+      if (a["size"]) { var sz = parseFloat(interp(a["size"], scope)) || 23; if (style && !/;\s*$/.test(style)) style += ";"; style += "width:" + sz + "px;height:" + sz + "px"; }
+      if (a["color"]) { if (style && !/;\s*$/.test(style)) style += ";"; style += "color:" + interp(a["color"], scope); }
     }
     if (style) attrs["style"] = style;
 
@@ -197,7 +198,8 @@
   }
 
   function swiperVNode(node, a, scope) {
-    var swCls = "wx-swiper"; if (a["class"]) swCls += " " + interp(a["class"], scope);
+    // JS 接管后标记 live，恢复多屏横向滚动（无 JS 静态首屏仅显示第一屏）
+    var swCls = "wx-swiper wx-swiper-live"; if (a["class"]) swCls += " " + interp(a["class"], scope);
     var swAttrs = { "class": swCls };
     swAttrs["data-autoplay"] = "" + truthy(evalWhole(a["autoplay"], scope));
     swAttrs["data-interval"] = interp(a["interval"], scope) || "5000";
@@ -229,7 +231,29 @@
       return h;
     }
     if (tag === "rich-text") return renderRich(evalWhole(a["nodes"], scope));
+    if (tag === "icon") return iconSvg(interp(a["type"] || "success", scope));
     return null;
+  }
+  // 与编译期 icon_svg 保持一致的矢量图标（圆底 currentColor + 白色标记）
+  function iconSvg(t) {
+    var circle = '<circle cx="12" cy="12" r="12" fill="currentColor"/>';
+    var check = '<path d="M5.8 12.4 10 16.4 18.2 7.6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>';
+    var body;
+    switch (t) {
+      case "success_no_circle": body = '<path d="M3.5 12.5 9 18 20.5 5.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>'; break;
+      case "info": case "info_circle": body = circle + '<circle cx="12" cy="7.6" r="1.7" fill="#fff"/><rect x="10.9" y="10.8" width="2.2" height="7" rx="1.1" fill="#fff"/>'; break;
+      case "warn": body = circle + '<rect x="10.9" y="5.4" width="2.2" height="7.2" rx="1.1" fill="#fff"/><circle cx="12" cy="16.6" r="1.7" fill="#fff"/>'; break;
+      case "waiting": case "waiting_circle": body = circle + '<rect x="10.9" y="6.2" width="2.2" height="6.6" rx="1.1" fill="#fff"/><rect x="12" y="10.9" width="5.2" height="2.2" rx="1.1" fill="#fff"/><circle cx="12" cy="12" r="1.6" fill="#fff"/>'; break;
+      case "cancel": case "clear": body = circle + '<path d="M7.6 7.6 16.4 16.4M16.4 7.6 7.6 16.4" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>'; break;
+      case "download": body = '<circle cx="12" cy="12" r="10.8" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 6v7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M8 12.4 12 16.6 16 12.4Z" fill="currentColor"/><rect x="7" y="17.4" width="10" height="2.2" rx="1.1" fill="currentColor"/>'; break;
+      case "search": body = '<circle cx="10.4" cy="10.4" r="6.4" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15.2 15.2 21 21" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>'; break;
+      case "circle": body = '<circle cx="12" cy="12" r="10.8" fill="none" stroke="currentColor" stroke-width="2.2"/>'; break;
+      case "star": body = '<path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="currentColor"/>'; break;
+      case "star-o": case "star_o": body = '<path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>'; break;
+      case "heart": body = '<path d="M12 21C6 16.5 2.6 13.4 2.6 9.6 2.6 6.5 5 4.2 8 4.2c1.8 0 3.2.9 4 2.2.8-1.3 2.2-2.2 4-2.2 3 0 5.4 2.3 5.4 5.4 0 3.8-3.4 6.9-9.4 11.4Z" fill="currentColor"/>'; break;
+      default: body = circle + check;
+    }
+    return '<svg viewBox="0 0 24 24" aria-hidden="true">' + body + "</svg>";
   }
   function renderRich(v) {
     if (v == null) return "";

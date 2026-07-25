@@ -2,9 +2,61 @@
 
 use crate::parser::wxml::WxmlNode;
 use crate::parser::wxss::{StyleSheet, StyleValue, LengthUnit, rpx_to_px, ElementDesc};
+use crate::text::TextRenderer;
 use crate::{Canvas, Color, Paint, PaintStyle, Path, Rect as GeoRect};
 use std::collections::HashMap;
 use taffy::prelude::*;
+
+/// 与渲染器同款的共享度量字体：build 阶段按真实字形宽度测量文本盒宽度，
+/// 避免用粗糙估算导致按钮/标签等叶子组件盒子偏窄或塌缩。
+static MEASURE_FONT: once_cell::sync::Lazy<Option<TextRenderer>> =
+    once_cell::sync::Lazy::new(|| {
+        TextRenderer::load_system_font()
+            .or_else(|_| TextRenderer::from_bytes(include_bytes!("../../../assets/ArialUnicode.ttf")))
+            .ok()
+    });
+
+/// 用真实字体度量文本宽度（物理像素）。取不到字体时按中文全宽/西文 0.6 估算回退。
+pub fn intrinsic_text_width(text: &str, font_px: f32, letter_spacing_px: f32) -> f32 {
+    if let Some(tr) = MEASURE_FONT.as_ref() {
+        tr.measure_text_with_spacing(text, font_px, letter_spacing_px)
+    } else {
+        text.chars()
+            .map(|c| if c.is_ascii() { font_px * 0.6 } else { font_px } + letter_spacing_px)
+            .sum()
+    }
+}
+
+/// 给定物理字号的 CSS `line-height:normal` 行高（按含 CJK 处理）。
+pub fn natural_line_height_px(font_px: f32) -> f32 {
+    MEASURE_FONT
+        .as_ref()
+        .map(|tr| tr.natural_line_height(font_px))
+        .unwrap_or(font_px * crate::text::NORMAL_LINE_HEIGHT_FACTOR)
+}
+
+/// 按文本内容选择的 `line-height:normal` 行高（含 CJK 与纯西文系数不同，见 text 模块）。
+pub fn natural_line_height_px_for(text: &str, font_px: f32) -> f32 {
+    MEASURE_FONT
+        .as_ref()
+        .map(|tr| tr.natural_line_height_for(text, font_px))
+        .unwrap_or_else(|| {
+            let factor = if crate::text::text_has_cjk(text) {
+                crate::text::CJK_LINE_HEIGHT_FACTOR
+            } else {
+                crate::text::LATIN_LINE_HEIGHT_FACTOR
+            };
+            font_px * factor
+        })
+}
+
+/// 从 taffy 的 LengthPercentage 取出长度像素（百分比/auto 记 0）。
+pub fn length_px(v: LengthPercentage) -> f32 {
+    match v {
+        LengthPercentage::Length(px) => px,
+        _ => 0.0,
+    }
+}
 
 /// 渲染节点
 #[derive(Clone)]
@@ -18,6 +70,33 @@ pub struct RenderNode {
     /// 事件绑定: (event_type, handler, data, is_catch)
     pub events: Vec<(String, String, HashMap<String, String>, bool)>,
 }
+
+/// 文本叶子的 taffy 度量上下文：让 taffy 在布局时按「可用宽度」正确解析文本的
+/// 最小/最大内容宽与换行高度。这样 block 文本在定宽父级里按容器宽换行，在收缩型
+/// （auto 宽）父级里又能把父级撑到内容宽——两种 CSS 语义都成立，无需宽度 hack。
+#[derive(Clone)]
+pub struct TextMeasure {
+    pub text: String,
+    pub font_px: f32,
+    pub letter_spacing_px: f32,
+    pub line_height_px: f32,
+    pub pad_l: f32,
+    pub pad_r: f32,
+    pub pad_t: f32,
+    pub pad_b: f32,
+    pub nowrap: bool,
+    /// 显式换行符决定的最少行数
+    pub min_lines: usize,
+    /// 不换行时的单行内容宽（多段取最宽），即 max-content 宽
+    pub max_line_width: f32,
+    /// 最小不可拆分单元宽（CJK 单字 / 最长西文词），即 min-content 宽
+    pub min_unit_width: f32,
+}
+
+/// 节点的 taffy 上下文（目前仅文本需要度量；其它叶子用显式尺寸）。
+pub type NodeContext = TextMeasure;
+/// 带文本度量上下文的 taffy 树类型别名。
+pub type Tree = taffy::TaffyTree<NodeContext>;
 
 /// 节点样式
 #[derive(Clone, Default)]
@@ -230,7 +309,7 @@ pub struct ComponentContext<'a> {
     pub screen_width: f32,
     pub screen_height: f32,
     pub stylesheet: &'a StyleSheet,
-    pub taffy: &'a mut TaffyTree,
+    pub taffy: &'a mut Tree,
     /// 祖先元素链（根 -> 父），用于后代/子选择器匹配。缺省为空。
     pub ancestors: Vec<ElementDesc>,
     /// 从父元素继承下来的文本样式。
@@ -253,6 +332,113 @@ pub use super::style_parse::{
     parse_color_str, parse_box_shadow, parse_transform, parse_border_shorthand, parse_border_side,
     parse_length_simple, parse_linear_gradient,
 };
+
+/// taffy 文本度量：给定已知尺寸与可用空间，按 CSS 语义算出文本盒尺寸。
+///
+/// - 两维都已知：直接返回。
+/// - 宽度未知：按 available 决定（Definite=定宽换行；MaxContent=单行内容宽；MinContent=最小单元宽）。
+/// - 高度按解析出的行数 * 行高 + 上下内边距。
+pub fn measure_text_node(
+    known: taffy::geometry::Size<Option<f32>>,
+    available: taffy::geometry::Size<taffy::style::AvailableSpace>,
+    tm: &TextMeasure,
+    tr: Option<&crate::text::TextRenderer>,
+) -> taffy::geometry::Size<f32> {
+    use taffy::style::AvailableSpace;
+    let pad_w = tm.pad_l + tm.pad_r;
+    let pad_h = tm.pad_t + tm.pad_b;
+    let content_w = tm.max_line_width + pad_w;
+
+    // 解析可用宽度 → 内容区宽
+    let box_w = match known.width {
+        Some(w) => w,
+        None => match available.width {
+            AvailableSpace::Definite(w) => w.min(content_w).max(tm.min_unit_width + pad_w),
+            AvailableSpace::MaxContent => content_w,
+            AvailableSpace::MinContent => tm.min_unit_width + pad_w,
+        },
+    };
+    let inner_w = (box_w - pad_w).max(1.0);
+
+    // 行数：nowrap 只按显式换行；否则按内容宽/可用宽估算，再取真实度量
+    let lines = if tm.nowrap {
+        tm.min_lines.max(1)
+    } else {
+        let wrap = if let Some(tr) = tr {
+            count_wrapped_text_lines(tr, &tm.text, inner_w, tm.font_px, tm.letter_spacing_px)
+        } else if inner_w < tm.max_line_width {
+            (tm.max_line_width / inner_w).ceil() as usize
+        } else {
+            1
+        };
+        tm.min_lines.max(wrap).max(1)
+    };
+
+    let height = known
+        .height
+        .unwrap_or(lines as f32 * tm.line_height_px + pad_h);
+    taffy::geometry::Size { width: box_w, height }
+}
+
+/// 文本的最小内容宽（CSS min-content）：最宽的不可拆分单元。
+/// CJK 逐字可断，故为单字宽；连续 ASCII 视作整词不可断，取最长词宽。
+pub fn min_unit_width(
+    text: &str,
+    tr: Option<&crate::text::TextRenderer>,
+    font_px: f32,
+    letter_spacing_px: f32,
+) -> f32 {
+    let measure = |s: &str| -> f32 {
+        if let Some(tr) = tr {
+            tr.measure_text_with_spacing(s, font_px, letter_spacing_px)
+        } else {
+            s.chars()
+                .map(|c| if c.is_ascii() { font_px * 0.62 } else { font_px } + letter_spacing_px)
+                .sum()
+        }
+    };
+    let mut widest = 0.0f32;
+    let mut word = String::new();
+    for ch in text.chars() {
+        if ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' || ch == '.' {
+            word.push(ch);
+        } else {
+            if !word.is_empty() {
+                widest = widest.max(measure(&word));
+                word.clear();
+            }
+            if !ch.is_whitespace() {
+                widest = widest.max(measure(&ch.to_string()));
+            }
+        }
+    }
+    if !word.is_empty() {
+        widest = widest.max(measure(&word));
+    }
+    widest.max(font_px)
+}
+
+/// 统计文本在给定宽度下的换行行数（含显式换行符），供度量使用。
+fn count_wrapped_text_lines(tr: &crate::text::TextRenderer, text: &str, max_width: f32, size: f32, ls: f32) -> usize {
+    if max_width <= 0.0 { return text.split('\n').count().max(1); }
+    let mut total = 0usize;
+    for para in text.split('\n') {
+        if para.is_empty() { total += 1; continue; }
+        let mut line_w = 0.0f32;
+        let mut lines_here = 1usize;
+        for ch in para.chars() {
+            let cw = tr.measure_char(ch, size) + ls;
+            if line_w + cw > max_width && line_w > 0.0 {
+                lines_here += 1;
+                line_w = cw;
+            } else {
+                line_w += cw;
+            }
+        }
+        total += lines_here;
+    }
+    total.max(1)
+}
 
 /// 提取事件绑定
 /// 返回 (event_type, handler, data, is_catch)
@@ -948,7 +1134,7 @@ pub fn draw_box_shadow(canvas: &mut Canvas, shadow: &BoxShadow, x: f32, y: f32, 
     }
 }
 
-/// 获取有效的边框圆角
+/// 获取有效的边框圆角（未按盒子尺寸裁剪）
 pub fn get_border_radii(style: &NodeStyle) -> [f32; 4] {
     [
         style.border_radius_tl.unwrap_or(style.border_radius),
@@ -958,6 +1144,18 @@ pub fn get_border_radii(style: &NodeStyle) -> [f32; 4] {
     ]
 }
 
+/// 获取按盒子尺寸裁剪后的圆角（与 CSS 一致：每个角最多为对应边的一半）。
+///
+/// 关键修复：`border-radius:50%` 在解析期被换算成 `50% * screen_width`（≈187px），
+/// 对小元素（如关闭按钮圆圈）会产生远超盒子的半径，圆角路径的控制点飞到盒外，画出
+/// 巨大杂散曲线。这里在绘制期按 min(w,h)/2 夹紧，既修复杂散曲线又让 50% 得到正确圆形。
+pub fn get_border_radii_clamped(style: &NodeStyle, w: f32, h: f32) -> [f32; 4] {
+    let max_r = (w.min(h) / 2.0).max(0.0);
+    let clamp = |r: f32| r.max(0.0).min(max_r);
+    let [tl, tr, br, bl] = get_border_radii(style);
+    [clamp(tl), clamp(tr), clamp(br), clamp(bl)]
+}
+
 /// 绘制背景和边框
 pub fn draw_background(canvas: &mut Canvas, style: &NodeStyle, x: f32, y: f32, w: f32, h: f32) {
     // 绘制阴影（在背景之前）
@@ -965,8 +1163,9 @@ pub fn draw_background(canvas: &mut Canvas, style: &NodeStyle, x: f32, y: f32, w
         draw_box_shadow(canvas, shadow, x, y, w, h, style.border_radius);
     }
     
-    let radii = get_border_radii(style);
+    let radii = get_border_radii_clamped(style, w, h);
     let has_different_radii = radii[0] != radii[1] || radii[1] != radii[2] || radii[2] != radii[3];
+    let uniform_radius = radii[0];
     
     // 绘制背景：线性渐变优先，否则纯色
     if let Some(grad) = &style.background_gradient {
@@ -981,9 +1180,9 @@ pub fn draw_background(canvas: &mut Canvas, style: &NodeStyle, x: f32, y: f32, w
             let mut path = Path::new();
             add_round_rect_with_radii(&mut path, x, y, w, h, radii);
             canvas.draw_path(&path, &paint);
-        } else if style.border_radius > 0.0 {
+        } else if uniform_radius > 0.0 {
             // 快速圆角填充（实心内部 + 抗锯齿角），避免整块 4x 扫描线
-            canvas.fill_round_rect(x, y, w, h, style.border_radius, paint.color);
+            canvas.fill_round_rect(x, y, w, h, uniform_radius, paint.color);
         } else {
             canvas.draw_rect(&GeoRect::new(x, y, w, h), &paint);
         }
@@ -1057,36 +1256,60 @@ pub fn stroke_round_rect_ring(
     canvas.draw_path(&path, &paint);
 }
 
-/// 添加带有不同圆角的圆角矩形路径
+/// 添加带有不同圆角的圆角矩形路径。
+///
+/// 圆角用三次贝塞尔逼近四分之一圆（控制点系数 0.5523），而不是「控制点落在角点」的
+/// 单段二次贝塞尔——后者明显比真正的圆弧更方，`border-radius:50%` 会画成方角化的
+/// 「squircle」而非圆形。
 fn add_round_rect_with_radii(path: &mut Path, x: f32, y: f32, w: f32, h: f32, radii: [f32; 4]) {
-    let [tl, tr, br, bl] = radii;
-    
-    // 从左上角开始，顺时针绘制
+    // 四分之一圆的三次贝塞尔控制点比例
+    const K: f32 = 0.552_284_75;
+    let max_r = (w.min(h) / 2.0).max(0.0);
+    let clamp = |r: f32| r.max(0.0).min(max_r);
+    let [tl, tr, br, bl] = [clamp(radii[0]), clamp(radii[1]), clamp(radii[2]), clamp(radii[3])];
+
+    // 从左上角圆弧终点开始，顺时针
     path.move_to(x + tl, y);
-    
-    // 上边 + 右上角
+
+    // 上边 → 右上角
     path.line_to(x + w - tr, y);
     if tr > 0.0 {
-        path.quad_to(x + w, y, x + w, y + tr);
+        path.cubic_to(
+            x + w - tr + tr * K, y,
+            x + w, y + tr - tr * K,
+            x + w, y + tr,
+        );
     }
-    
-    // 右边 + 右下角
+
+    // 右边 → 右下角
     path.line_to(x + w, y + h - br);
     if br > 0.0 {
-        path.quad_to(x + w, y + h, x + w - br, y + h);
+        path.cubic_to(
+            x + w, y + h - br + br * K,
+            x + w - br + br * K, y + h,
+            x + w - br, y + h,
+        );
     }
-    
-    // 下边 + 左下角
+
+    // 下边 → 左下角
     path.line_to(x + bl, y + h);
     if bl > 0.0 {
-        path.quad_to(x, y + h, x, y + h - bl);
+        path.cubic_to(
+            x + bl - bl * K, y + h,
+            x, y + h - bl + bl * K,
+            x, y + h - bl,
+        );
     }
-    
-    // 左边 + 左上角
+
+    // 左边 → 左上角
     path.line_to(x, y + tl);
     if tl > 0.0 {
-        path.quad_to(x, y, x + tl, y);
+        path.cubic_to(
+            x, y + tl - tl * K,
+            x + tl - tl * K, y,
+            x + tl, y,
+        );
     }
-    
+
     path.close();
 }

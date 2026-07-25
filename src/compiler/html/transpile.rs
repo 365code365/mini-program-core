@@ -193,9 +193,48 @@ fn is_truthy(v: Option<&str>) -> bool {
     }
 }
 
-/// 判断某标签是否需要在 emit 时生成自定义内部结构（switch/progress/rich-text）
+/// 判断某标签是否需要在 emit 时生成自定义内部结构（switch/progress/rich-text/icon）
 fn has_custom_inner(tag: &str) -> bool {
-    matches!(tag, "switch" | "progress" | "rich-text")
+    matches!(tag, "switch" | "progress" | "rich-text" | "icon")
+}
+
+/// `<icon>` 的矢量图形（内联 SVG）。
+///
+/// 之前用文字字形（✓ / i / ! / … / ✕）近似，`waiting` 这类实际是时钟的图标会明显走形，
+/// 与原生渲染器自绘的矢量图标不一致。这里改为与原生同构的 SVG：圆底用 currentColor，
+/// 内部标记用白色，尺寸由外层 width/height 控制。
+fn icon_svg(icon_type: &str) -> String {
+    // 统一 24x24 视图盒，圆心 (12,12) 半径 12
+    let circle = "<circle cx=\"12\" cy=\"12\" r=\"12\" fill=\"currentColor\"/>";
+    let body = match icon_type {
+        "success" => format!(
+            "{circle}<path d=\"M5.8 12.4 10 16.4 18.2 7.6\" fill=\"none\" stroke=\"#fff\" stroke-width=\"2.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+        ),
+        "success_no_circle" => "<path d=\"M3.5 12.5 9 18 20.5 5.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>".to_string(),
+        "info" | "info_circle" => format!(
+            "{circle}<circle cx=\"12\" cy=\"7.6\" r=\"1.7\" fill=\"#fff\"/><rect x=\"10.9\" y=\"10.8\" width=\"2.2\" height=\"7\" rx=\"1.1\" fill=\"#fff\"/>"
+        ),
+        "warn" => format!(
+            "{circle}<rect x=\"10.9\" y=\"5.4\" width=\"2.2\" height=\"7.2\" rx=\"1.1\" fill=\"#fff\"/><circle cx=\"12\" cy=\"16.6\" r=\"1.7\" fill=\"#fff\"/>"
+        ),
+        // waiting：微信为时钟表盘（时针+分针）
+        "waiting" | "waiting_circle" => format!(
+            "{circle}<rect x=\"10.9\" y=\"6.2\" width=\"2.2\" height=\"6.6\" rx=\"1.1\" fill=\"#fff\"/><rect x=\"12\" y=\"10.9\" width=\"5.2\" height=\"2.2\" rx=\"1.1\" fill=\"#fff\"/><circle cx=\"12\" cy=\"12\" r=\"1.6\" fill=\"#fff\"/>"
+        ),
+        "cancel" | "clear" => format!(
+            "{circle}<path d=\"M7.6 7.6 16.4 16.4M16.4 7.6 7.6 16.4\" fill=\"none\" stroke=\"#fff\" stroke-width=\"2.6\" stroke-linecap=\"round\"/>"
+        ),
+        "download" => "<circle cx=\"12\" cy=\"12\" r=\"10.8\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\"/><path d=\"M12 6v7\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\"/><path d=\"M8 12.4 12 16.6 16 12.4Z\" fill=\"currentColor\"/><rect x=\"7\" y=\"17.4\" width=\"10\" height=\"2.2\" rx=\"1.1\" fill=\"currentColor\"/>".to_string(),
+        "search" => "<circle cx=\"10.4\" cy=\"10.4\" r=\"6.4\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\"/><path d=\"M15.2 15.2 21 21\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\"/>".to_string(),
+        "circle" => "<circle cx=\"12\" cy=\"12\" r=\"10.8\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\"/>".to_string(),
+        "star" => "<path d=\"M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z\" fill=\"currentColor\"/>".to_string(),
+        "star-o" | "star_o" => "<path d=\"M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\"/>".to_string(),
+        "heart" => "<path d=\"M12 21C6 16.5 2.6 13.4 2.6 9.6 2.6 6.5 5 4.2 8 4.2c1.8 0 3.2.9 4 2.2.8-1.3 2.2-2.2 4-2.2 3 0 5.4 2.3 5.4 5.4 0 3.8-3.4 6.9-9.4 11.4Z\" fill=\"currentColor\"/>".to_string(),
+        _ => format!(
+            "{circle}<path d=\"M5.8 12.4 10 16.4 18.2 7.6\" fill=\"none\" stroke=\"#fff\" stroke-width=\"2.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+        ),
+    };
+    format!("<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\">{body}</svg>")
 }
 
 /// 生成 switch/progress/rich-text 的内部 HTML
@@ -220,6 +259,7 @@ fn custom_inner_html(node: &WxmlNode) -> String {
             s
         }
         "rich-text" => rich_text_inner(node),
+        "icon" => icon_svg(node.get_attr("type").unwrap_or("success")),
         _ => String::new(),
     }
 }
@@ -357,19 +397,19 @@ fn build_open_tag(node: &WxmlNode) -> (String, &'static str, bool) {
         if !style.is_empty() && !style.trim_end().ends_with(';') { style.push(';'); }
         style.push_str(&extra_style);
     }
-    // icon 的 size/color 映射为内联样式（size 决定图标直径，color 决定颜色）
+    // icon 的 size/color 映射为内联样式：size 决定图标直径（与原生一致），
+    // color 作为 CSS color 供内联 SVG 的 currentColor 使用。
     if node.tag_name == "icon" {
         let mut push_style = |s: &str| {
             if !style.is_empty() && !style.trim_end().ends_with(';') { style.push(';'); }
             style.push_str(s);
         };
         if let Some(sz) = node.get_attr("size") {
-            // size 单位为 px（WXML 数值），图标宽高为 1.2em，故用 font-size 控制
             let px: f32 = sz.trim().trim_end_matches("px").parse().unwrap_or(23.0);
-            push_style(&format!("font-size:{}px", (px / 1.2).round() as i32));
+            push_style(&format!("width:{px}px;height:{px}px"));
         }
         if let Some(col) = node.get_attr("color") {
-            push_style(&format!("background:{}", col));
+            push_style(&format!("color:{}", col));
         }
     }
     if !style.is_empty() {
@@ -572,6 +612,8 @@ body{font-size:16px;color:#333;font-family:-apple-system,system-ui,"PingFang SC"
 .wx-swiper[data-vertical="true"]{flex-direction:column;overflow-x:hidden;overflow-y:auto;scroll-snap-type:y mandatory;}
 .wx-swiper-item{flex:0 0 100%;width:100%;min-width:100%;height:100%;scroll-snap-align:start;display:flex;flex-direction:column;}
 .wx-swiper[data-vertical="true"] .wx-swiper-item{flex:0 0 100%;height:100%;}
+/* 无 JS（静态首屏/截图）时只显示第一屏，避免各 item 堆叠；JS 接管后加 .wx-swiper-live 恢复多屏滚动 */
+.wx-swiper:not(.wx-swiper-live)>.wx-swiper-item:not(:first-child){display:none;}
 .wx-swiper-wrap{position:relative;}
 .wx-swiper-dots{position:absolute;left:0;right:0;bottom:8px;display:flex;flex-direction:row;justify-content:center;gap:6px;pointer-events:none;}
 .wx-swiper-dot{width:7px;height:7px;border-radius:50%;background:rgba(0,0,0,.3);transition:background .2s;}
@@ -612,17 +654,20 @@ body{font-size:16px;color:#333;font-family:-apple-system,system-ui,"PingFang SC"
 .wx-canvas{display:block;}
 .wx-audio{display:block;width:100%;}
 
-/* 内置矢量图标（对齐 <icon type> 常用类型）*/
-.wxicon{display:inline-flex;align-items:center;justify-content:center;width:1.2em;height:1.2em;border-radius:50%;color:#fff;font-style:normal;font-size:.7em;line-height:1;}
-.wxicon-success{background:#09bb07;}.wxicon-success::before{content:"\2713";}
-.wxicon-info{background:#10aeff;}.wxicon-info::before{content:"i";font-weight:bold;}
-.wxicon-warn{background:#f76260;}.wxicon-warn::before{content:"!";font-weight:bold;}
-.wxicon-waiting{background:#10aeff;}.wxicon-waiting::before{content:"\2026";}
-.wxicon-cancel{background:#f43530;}.wxicon-cancel::before{content:"\2715";}
-.wxicon-download{background:#09bb07;}.wxicon-download::before{content:"\2193";}
-.wxicon-search{background:#b2b2b2;}.wxicon-search::before{content:"\1F50D";}
-.wxicon-clear{background:#b2b2b2;}.wxicon-clear::before{content:"\2715";}
-.wxicon-circle{background:#fff;border:1px solid #ccc;}
+/* 内置矢量图标：内联 SVG（见 icon_svg），圆底取 currentColor，尺寸由 size 属性决定，
+   与原生渲染器自绘的矢量图标一一对应（含 waiting 时钟表盘）。*/
+.wxicon{display:inline-flex;align-items:center;justify-content:center;width:23px;height:23px;flex:none;font-style:normal;line-height:0;vertical-align:middle;}
+.wxicon>svg{width:100%;height:100%;display:block;}
+.wxicon-success{color:#09bb07;}
+.wxicon-success_no_circle{color:#09bb07;}
+.wxicon-info,.wxicon-info_circle{color:#10aeff;}
+.wxicon-warn{color:#f76260;}
+.wxicon-waiting,.wxicon-waiting_circle{color:#10aeff;}
+.wxicon-cancel{color:#f43530;}
+.wxicon-download{color:#09bb07;}
+.wxicon-search{color:#b2b2b2;}
+.wxicon-clear{color:#f43530;}
+.wxicon-circle{color:#ccc;}
 "#
 }
 

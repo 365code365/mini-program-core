@@ -201,11 +201,8 @@ impl ImageComponent {
     ) {
         let style = &node.style;
         
-        // 获取圆角值（支持四个角独立设置）
-        let radius_tl = style.border_radius_tl.unwrap_or(style.border_radius);
-        let radius_tr = style.border_radius_tr.unwrap_or(style.border_radius);
-        let radius_br = style.border_radius_br.unwrap_or(style.border_radius);
-        let radius_bl = style.border_radius_bl.unwrap_or(style.border_radius);
+        // 获取圆角值（支持四个角独立设置），并按盒子尺寸夹紧（含 border-radius:50% 圆形图）
+        let [radius_tl, radius_tr, radius_br, radius_bl] = get_border_radii_clamped(style, w, h);
         let has_radius = radius_tl > 0.0 || radius_tr > 0.0 || radius_br > 0.0 || radius_bl > 0.0;
         let uniform_radius = radius_tl == radius_tr && radius_tr == radius_br && radius_br == radius_bl;
         let radius = radius_tl; // 用于统一圆角的情况

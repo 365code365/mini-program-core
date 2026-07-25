@@ -65,7 +65,7 @@ impl ComponentRegistry {
         &self,
         node: &WxmlNode,
         stylesheet: &StyleSheet,
-        taffy: &mut TaffyTree,
+        taffy: &mut Tree,
     ) -> Option<RenderNode> {
         let tag = node.tag_name.as_str();
         let mut ctx = ComponentContext {

@@ -46,6 +46,21 @@ pub struct PageSource {
     pub data: JsonValue,
 }
 
+/// 自定义 tabBar 组件源码（`custom-tab-bar/`）。
+///
+/// 当 app.json 的 `tabBar.custom` 为真时，微信使用开发者提供的该组件渲染底部导航，
+/// 而不是内置样式的导航条；两端都应遵循这一语义才能保持一致。
+pub struct TabBarSource {
+    /// 解析后的 WXML 节点树
+    pub wxml: Vec<WxmlNode>,
+    /// 组件 WXSS 源码
+    pub wxss: String,
+    /// 组件 JS 源码
+    pub js: String,
+    /// 组件实例化后的 data 快照（含 list / selected 等）
+    pub data: JsonValue,
+}
+
 /// 整个小程序的源码
 pub struct AppSource {
     /// 小程序根目录
@@ -58,6 +73,48 @@ pub struct AppSource {
     pub app_js: String,
     /// 所有页面
     pub pages: Vec<PageSource>,
+    /// 自定义 tabBar（存在 `custom-tab-bar/` 时）
+    pub custom_tab_bar: Option<TabBarSource>,
+}
+
+impl AppSource {
+    /// tabBar 中的页面列表：(pagePath, text)
+    pub fn tab_list(&self) -> Vec<(String, String)> {
+        self.config
+            .get("tabBar")
+            .and_then(|t| t.get("list"))
+            .and_then(|l| l.as_array())
+            .map(|items| {
+                items
+                    .iter()
+                    .filter_map(|item| {
+                        let path = item.get("pagePath")?.as_str()?.to_string();
+                        let text = item
+                            .get("text")
+                            .and_then(|x| x.as_str())
+                            .unwrap_or("")
+                            .to_string();
+                        Some((path, text))
+                    })
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+
+    /// 是否使用自定义 tabBar（app.json 声明 custom 且组件存在）
+    pub fn uses_custom_tab_bar(&self) -> bool {
+        self.config
+            .get("tabBar")
+            .and_then(|t| t.get("custom"))
+            .and_then(|c| c.as_bool())
+            .unwrap_or(false)
+            && self.custom_tab_bar.is_some()
+    }
+
+    /// 给定路由在 tabBar 列表中的下标
+    pub fn tab_index_of(&self, route: &str) -> Option<usize> {
+        self.tab_list().iter().position(|(path, _)| path == route)
+    }
 }
 
 /// 编译目标：不同端实现该 trait 即可接入统一编译流程
@@ -104,7 +161,40 @@ pub fn load_app_source(root: &str) -> Result<AppSource, String> {
         pages.push(PageSource { route: route.clone(), wxml, wxss, js, data });
     }
 
-    Ok(AppSource { root: root.to_string(), config, app_wxss, app_js, pages })
+    let custom_tab_bar = load_custom_tab_bar(root, &app_js);
+
+    Ok(AppSource { root: root.to_string(), config, app_wxss, app_js, pages, custom_tab_bar })
+}
+
+/// 加载 `custom-tab-bar/` 组件（不存在则返回 None）。
+fn load_custom_tab_bar(root: &str, app_js: &str) -> Option<TabBarSource> {
+    let dir = Path::new(root).join("custom-tab-bar");
+    let wxml_src = std::fs::read_to_string(dir.join("index.wxml")).ok()?;
+    let wxss = std::fs::read_to_string(dir.join("index.wxss")).unwrap_or_default();
+    let js = std::fs::read_to_string(dir.join("index.js")).unwrap_or_default();
+    let wxml = WxmlParser::new(&wxml_src).parse().ok()?;
+    let data = snapshot_component_data(app_js, &js).unwrap_or_else(|| serde_json::json!({}));
+    Some(TabBarSource { wxml, wxss, js, data })
+}
+
+/// 执行组件 JS 并实例化，取回其 data 快照（用于静态渲染自定义 tabBar）。
+fn snapshot_component_data(app_js: &str, component_js: &str) -> Option<JsonValue> {
+    if component_js.is_empty() {
+        return None;
+    }
+    let mut app = MiniApp::new(WIDTH, HEIGHT).ok()?;
+    app.init().ok()?;
+    if !app_js.is_empty() {
+        app.load_script(app_js).ok();
+    }
+    // 注册到固定路径后实例化，读取合并 properties/data 后的实例数据
+    app.eval("__setPendingComponentPath('custom-tab-bar')").ok();
+    app.load_script(component_js).ok();
+    app.eval("__setPendingComponentPath('')").ok();
+    let json = app
+        .eval("JSON.stringify((__createComponentInstance('custom-tab-bar', {}) || {}).data || {})")
+        .ok()?;
+    serde_json::from_str(&json).ok()
 }
 
 /// 执行 app.js + page.js 的生命周期，取回 `__getPageData()`

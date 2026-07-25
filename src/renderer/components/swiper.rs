@@ -217,8 +217,65 @@ impl SwiperComponent {
             return;
         }
         
-        // 递归绘制子元素
+        // 纯文本 banner（swiper-item 通常 justify/align center）：整体居中绘制，
+        // 与 HTML 的 .wx-swiper-item flex 居中一致，避免文字固定在左上角。
+        let lines = Self::collect_text_lines(item);
+        if !lines.is_empty() {
+            let gap = 6.0 * sf;
+            // fs 为逻辑字号，绘制按物理像素 fs*sf
+            let mut total_h = 0.0;
+            for (i, (_t, fs, _c)) in lines.iter().enumerate() {
+                total_h += fs * sf * 1.3;
+                if i + 1 < lines.len() { total_h += gap; }
+            }
+            let mut cy = y + (h - total_h) / 2.0;
+            if let Some(tr) = text_renderer {
+                for (t, fs, c) in &lines {
+                    let fs_px = fs * sf;
+                    let tw = tr.measure_text(t, fs_px);
+                    let tx = x + (w - tw) / 2.0;
+                    let paint = Paint::new().with_color(*c);
+                    tr.draw_text(canvas, t, tx.max(x), cy + fs_px, fs_px, &paint);
+                    cy += fs_px * 1.3 + gap;
+                }
+            }
+            return;
+        }
+        
+        // 其它复杂内容：退回原有从上到下的简易布局
         Self::draw_children(canvas, &item.children, x, y, w, h, sf, text_renderer, Color::WHITE);
+    }
+    
+    /// 收集 item 内的文本行（文本, 物理字号, 颜色），用于居中绘制纯文本 banner。
+    /// 若包含带背景的 view（标签等）复杂结构，返回空表示走通用布局。
+    fn collect_text_lines(item: &RenderNode) -> Vec<(String, f32, Color)> {
+        let sf_hint = 2.0; // 仅用于判断，真实字号在调用处按 style*sf 计算；这里返回逻辑字号*sf
+        let _ = sf_hint;
+        let mut lines = Vec::new();
+        fn walk(node: &RenderNode, out: &mut Vec<(String, f32, Color)>, inherited: Color) -> bool {
+            for child in &node.children {
+                match child.tag.as_str() {
+                    "text" | "#text" => {
+                        let t = child.text.trim();
+                        if !t.is_empty() {
+                            let color = child.style.text_color.unwrap_or(inherited);
+                            // 物理字号：style.font_size 已是逻辑值，绘制处乘 sf；这里存逻辑值，
+                            // 由调用方统一乘 sf。用占位 1.0，下面在外部乘 sf。
+                            out.push((t.to_string(), child.style.font_size, color));
+                        }
+                    }
+                    "view" => {
+                        // 含背景的 view（标签/卡片）视为复杂结构，放弃居中简化
+                        if child.style.background_color.is_some() { return false; }
+                        if !walk(child, out, child.style.text_color.unwrap_or(inherited)) { return false; }
+                    }
+                    "image" => return false,
+                    _ => {}
+                }
+            }
+            true
+        }
+        if walk(item, &mut lines, Color::WHITE) { lines } else { Vec::new() }
     }
     
     /// 递归绘制子元素

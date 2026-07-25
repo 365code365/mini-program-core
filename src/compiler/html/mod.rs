@@ -59,17 +59,27 @@ impl CompileTarget for HtmlTarget {
 
         // ── tabBar 配置（导出为固定底部导航栏，各 tab 页面均注入）──
         let tb = app.config.get("tabBar");
-        let tab_list: Vec<(String, String)> = tb
-            .and_then(|t| t.get("list")).and_then(|l| l.as_array())
-            .map(|a| a.iter().filter_map(|it| {
-                let p = it.get("pagePath")?.as_str()?.to_string();
-                let t = it.get("text").and_then(|x| x.as_str()).unwrap_or("").to_string();
-                Some((p, t))
-            }).collect())
-            .unwrap_or_default();
+        let tab_list = app.tab_list();
         let tab_color = tb.and_then(|t| t.get("color")).and_then(|c| c.as_str()).unwrap_or("#999999");
         let tab_sel = tb.and_then(|t| t.get("selectedColor")).and_then(|c| c.as_str()).unwrap_or("#FF6B35");
         let tab_bg = tb.and_then(|t| t.get("backgroundColor")).and_then(|c| c.as_str()).unwrap_or("#ffffff");
+        // custom:true 时使用开发者的 custom-tab-bar 组件（微信语义），其样式单独产出
+        let use_custom_tab_bar = app.uses_custom_tab_bar();
+        if use_custom_tab_bar {
+            if let Some(bar) = &app.custom_tab_bar {
+                files.push(EmittedFile::text(
+                    "common/tabbar.css",
+                    format!(
+                        "/* 由 custom-tab-bar/index.wxss 编译 */\n{}\n\
+                         /* 自定义 tabBar 固定在视口底部（对齐 375 宽） */\n\
+                         .wx-custom-tabbar{{position:fixed;left:50%;transform:translateX(-50%);\
+                         bottom:0;width:{w}px;max-width:100%;z-index:500;}}\n",
+                        wxss_to_css(&bar.wxss),
+                        w = WIDTH
+                    ),
+                ));
+            }
+        }
 
         // ── 逐页面 ──
         let mut nav_items = String::new();
@@ -89,18 +99,23 @@ impl CompileTarget for HtmlTarget {
             }
 
             // tabBar：当前页在 list 中则注入底部导航
-            let is_tab = tab_list.iter().any(|(p, _)| p == &page.route);
-            let tabbar_html = if is_tab {
-                build_tabbar(&tab_list, &page.route, &rel, tab_color, tab_sel, tab_bg)
-            } else {
-                String::new()
+            let tab_index = tab_list.iter().position(|(p, _)| p == &page.route);
+            let is_tab = tab_index.is_some();
+            let tabbar_html = match (is_tab, use_custom_tab_bar, &app.custom_tab_bar) {
+                // 自定义 tabBar：按当前页设置 selected，渲染组件自身 WXML
+                (true, true, Some(bar)) => {
+                    build_custom_tabbar(bar, tab_index.unwrap_or(0), &rel)
+                }
+                (true, _, _) => build_tabbar(&tab_list, &page.route, &rel, tab_color, tab_sel, tab_bg),
+                _ => String::new(),
             };
 
             // 静态首屏（无 JS 时的回退视图）
             let body = wxml_to_html_pretty(&page.wxml, &page.data);
             // 供 runtime 响应式重渲染的 WXML AST
             let ast = nodes_to_json(&page.wxml);
-            let html = build_page_html(&page.route, leaf, &rel, &body, &ast, has_js, &tabbar_html, is_tab);
+            let tabbar_css = is_tab && use_custom_tab_bar;
+            let html = build_page_html(&page.route, leaf, &rel, &body, &ast, has_js, &tabbar_html, is_tab, tabbar_css);
             files.push(EmittedFile::text(format!("{}/{}.html", dir, leaf), html));
 
             nav_items.push_str(&format!(
@@ -157,6 +172,21 @@ fn node_to_json(node: &WxmlNode) -> Option<JsonValue> {
     }
 }
 
+/// 自定义 tabBar：渲染 `custom-tab-bar` 组件的 WXML，`selected` 置为当前页下标。
+///
+/// 组件内的 `bindtap="switchTab"` 会被转成 `data-tap`，其点击行为由页面 runtime 处理；
+/// 这里额外把每项的 `data-ds-path` 用作静态导航兜底（无 JS 时也能跳转）。
+fn build_custom_tabbar(bar: &crate::compiler::TabBarSource, selected: usize, rel: &str) -> String {
+    let mut data = bar.data.clone();
+    if let Some(obj) = data.as_object_mut() {
+        obj.insert("selected".to_string(), json!(selected));
+    }
+    let inner = wxml_to_html(&bar.wxml, &data);
+    // 把 data-ds-path 转成可点击链接前缀，供无 JS 环境使用（不影响有 JS 的事件流）
+    let inner = inner.replace(" data-ds-path=\"", &format!(" data-href=\"{}", rel));
+    format!("<div class=\"wx-custom-tabbar\">{inner}</div>")
+}
+
 /// tabBar 底部导航（固定，位于 #app 之外，不受 setData 重渲染影响）
 fn build_tabbar(list: &[(String, String)], current: &str, rel: &str, color: &str, sel: &str, bg: &str) -> String {
     let mut items = String::new();
@@ -185,7 +215,7 @@ fn tabbar_icon(idx: usize, text: &str) -> &'static str {
 }
 
 /// 生成单个页面的 HTML（分离引用 base.css / app.css / <page>.css + 内嵌 AST + runtime + tabBar）
-fn build_page_html(route: &str, leaf: &str, rel: &str, body: &str, ast: &JsonValue, has_js: bool, tabbar: &str, is_tab: bool) -> String {
+fn build_page_html(route: &str, leaf: &str, rel: &str, body: &str, ast: &JsonValue, has_js: bool, tabbar: &str, is_tab: bool, tabbar_css: bool) -> String {
     let logic = if has_js {
         format!("<script src=\"./{}.js\"></script>\n", leaf)
     } else {
@@ -193,6 +223,11 @@ fn build_page_html(route: &str, leaf: &str, rel: &str, body: &str, ast: &JsonVal
     };
     // tab 页给内容留出底部导航高度，避免被遮挡
     let pad = if is_tab { "padding-bottom:50px;" } else { "" };
+    let tabbar_link = if tabbar_css {
+        format!("  <link rel=\"stylesheet\" href=\"{rel}common/tabbar.css\">\n")
+    } else {
+        String::new()
+    };
     format!(
 "<!doctype html>
 <html lang=\"zh\">
@@ -203,7 +238,7 @@ fn build_page_html(route: &str, leaf: &str, rel: &str, body: &str, ast: &JsonVal
   <link rel=\"stylesheet\" href=\"{rel}common/base.css\">
   <link rel=\"stylesheet\" href=\"{rel}common/app.css\">
   <link rel=\"stylesheet\" href=\"./{leaf}.css\">
-  <style>
+{tabbar_link}  <style>
     #app{{width:{w}px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;{pad}}}
   </style>
 </head>
@@ -221,6 +256,7 @@ window.__WXML__ = {ast};
 </html>
 ",
         route = route, rel = rel, leaf = leaf, w = WIDTH, body = body, pad = pad, tabbar = tabbar,
+        tabbar_link = tabbar_link,
         route_json = serde_json::to_string(route).unwrap(),
         ast = serde_json::to_string(ast).unwrap(),
         logic = logic,

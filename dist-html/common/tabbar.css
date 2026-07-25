@@ -1,0 +1,33 @@
+/* 由 custom-tab-bar/index.wxss 编译 */
+.custom-tabbar {
+  display: flex;
+  flex-direction: row;
+  background-color: #ffffff;
+  height: 50px;
+  width: 100%;
+  justify-content: space-around;
+  align-items: center;
+  border-top: 0.500px solid #E5E5E5;
+}
+
+.tabbar-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  height: 45px;
+}
+
+.tabbar-label {
+  font-size: 11px;
+  color: #999;
+  margin-top: 2px;
+}
+
+.tabbar-label.label-active {
+  color: #FF6B35;
+}
+
+/* 自定义 tabBar 固定在视口底部（对齐 375 宽） */
+.wx-custom-tabbar{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:375px;max-width:100%;z-index:500;}

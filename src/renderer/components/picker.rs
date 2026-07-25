@@ -131,7 +131,13 @@ impl PickerComponent {
     pub fn draw(node: &RenderNode, canvas: &mut Canvas, text_renderer: Option<&TextRenderer>, x: f32, y: f32, w: f32, h: f32, sf: f32) {
         // 绘制背景
         draw_background(canvas, &node.style, x, y, w, h);
-        
+
+        // 有子节点（开发者自定义触发视图，如“当前选择：xxx”）时，picker 只作容器，
+        // 由子节点渲染内容，不再合成占位文本/箭头（与微信及 HTML 端一致）。
+        if !node.children.is_empty() {
+            return;
+        }
+
         let font_size = node.style.font_size * sf;
         let text_color = node.style.text_color.unwrap_or(Color::BLACK);
         let padding = 12.0 * sf;

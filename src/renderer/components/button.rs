@@ -79,47 +79,52 @@ impl ButtonComponent {
             ns.text_color = Some(Color::from_hex(0xB2B2B2));
         }
         
-        // 只有在 CSS 没有定义尺寸时才使用默认尺寸
-        let has_custom_size = !matches!(ts.size.width, Dimension::Auto) || 
-                              !matches!(ts.size.height, Dimension::Auto);
+        // 各项默认值相互独立地应用（此前它们被绑在同一个 if 里：页面只要写了
+        // `width:100%` 就会让 has_custom_size 为真，连默认内边距/最小高度/字号一起丢掉，
+        // 于是按钮只有文字高，明显比微信和 HTML 端的 46px 矮）。
+        let has_custom_width = !matches!(ts.size.width, Dimension::Auto);
+        let has_custom_height = !matches!(ts.size.height, Dimension::Auto);
         let has_custom_padding = !matches!(ts.padding.top, LengthPercentage::Length(0.0)) ||
                                   !matches!(ts.padding.left, LengthPercentage::Length(0.0));
         
-        if !has_custom_size || !has_custom_padding {
-            let (font_size, padding_v, padding_h, radius) = match btn_size {
-                "mini" => (13.0, 4.0, 12.0, 3.0),
-                _ => (18.0, 12.0, 24.0, 5.0),
+        // 微信默认度量：字号 / 垂直内边距 / 水平内边距 / 圆角 / 最小高度
+        let (font_size, padding_v, padding_h, radius, min_height) = match btn_size {
+            "mini" => (13.0, 4.0, 12.0, 3.0, 30.0),
+            _ => (18.0, 12.0, 24.0, 5.0, 46.0),
+        };
+        
+        // 只在没有自定义 font-size 时使用默认值（14.0 是 NodeStyle 的默认值）
+        if ns.font_size == 14.0 {
+            ns.font_size = font_size;
+        }
+        // 只在没有自定义 border-radius 时使用默认值
+        if ns.border_radius == 0.0 {
+            ns.border_radius = radius * sf;
+        }
+        if !has_custom_padding {
+            ts.padding = Rect { 
+                top: length(padding_v * sf), 
+                right: length(padding_h * sf), 
+                bottom: length(padding_v * sf), 
+                left: length(padding_h * sf) 
             };
-            
-            // 只在没有自定义 font-size 时使用默认值
-            if ns.font_size == 14.0 { // 14.0 是 NodeStyle 的默认值
-                ns.font_size = font_size;
-            }
-            
-            // 只在没有自定义 border-radius 时使用默认值
-            if ns.border_radius == 0.0 {
-                ns.border_radius = radius * sf;
-            }
-            
-            if !has_custom_size {
-                // 估算文本宽度
-                let char_width = ns.font_size * 0.6 * sf;
-                let tw = text.chars().count() as f32 * char_width;
-                
-                ts.size = Size { 
-                    width: if btn_size == "mini" { length(tw + padding_h * 2.0 * sf) } else { percent(1.0) },
-                    height: length((ns.font_size + padding_v * 2.0) * sf) 
-                };
-            }
-            
-            if !has_custom_padding {
-                ts.padding = Rect { 
-                    top: length(padding_v * sf), 
-                    right: length(padding_h * sf), 
-                    bottom: length(padding_v * sf), 
-                    left: length(padding_h * sf) 
-                };
-            }
+        }
+        // 宽度：mini 按内容宽，其余占满一行（与微信 block 按钮一致）
+        if !has_custom_width {
+            ts.size.width = if btn_size == "mini" {
+                let tw = intrinsic_text_width(&text, ns.font_size * sf, ns.letter_spacing * sf);
+                length(tw + padding_h * 2.0 * sf)
+            } else {
+                percent(1.0)
+            };
+        }
+        // 最小高度：按 CSS 级联语义，控件默认样式表里的 min-height 不会被页面的
+        // height 覆盖（min-height 优先级高于 height），因此只要页面没有显式写
+        // min-height 就应用微信默认值——与浏览器端 .wx-button{min-height:46px} 一致。
+        let _ = has_custom_height;
+        if matches!(ts.min_size.height, Dimension::Auto) {
+            let content_min = (ns.font_size + padding_v * 2.0) * sf;
+            ts.min_size.height = length(content_min.max(min_height * sf));
         }
         
         // 默认 margin（如果没有自定义）
@@ -139,6 +144,27 @@ impl ButtonComponent {
         }
         if ts.justify_content.is_none() {
             ts.justify_content = Some(JustifyContent::Center);
+        }
+        
+        // 按钮文字默认水平居中（微信与 HTML 端 .wx-button 均为 text-align:center）。
+        // build_base_style 用继承值作为初值，若 CSS/内联未改写 text-align（仍等于继承值），
+        // 说明页面没有显式指定，此时取居中而不是继承来的左对齐。
+        if ns.text_align == ctx.inherited.align {
+            ns.text_align = TextAlign::Center;
+        }
+        
+        // 关键修复：button 是叶子节点（文本存在 node.text，taffy 无法据此推断内容宽）。
+        // 当宽度为 auto 时，用「真实文本宽 + 左右内边距」作为 min-width，避免在 flex-row
+        // 里塌缩成小圆块；同时保留 flex-column 下 align:stretch 撑满整行的默认全宽行为。
+        if matches!(ts.size.width, Dimension::Auto) && !text.is_empty() {
+            let pad_w = length_px(ts.padding.left) + length_px(ts.padding.right);
+            let text_w = intrinsic_text_width(&text, ns.font_size * sf, ns.letter_spacing * sf);
+            let min_w = text_w + pad_w + 2.0 * sf;
+            let keep = match ts.min_size.width {
+                Dimension::Length(px) => px.max(min_w),
+                _ => min_w,
+            };
+            ts.min_size.width = length(keep);
         }
         
         let tn = ctx.taffy.new_leaf(ts).unwrap();
@@ -183,11 +209,8 @@ impl ButtonComponent {
             .map(|s| s == "true" || s == "{{true}}")
             .unwrap_or(false);
         
-        // 获取圆角值（支持四个角独立设置）
-        let radius_tl = style.border_radius_tl.unwrap_or(style.border_radius);
-        let radius_tr = style.border_radius_tr.unwrap_or(style.border_radius);
-        let radius_br = style.border_radius_br.unwrap_or(style.border_radius);
-        let radius_bl = style.border_radius_bl.unwrap_or(style.border_radius);
+        // 获取圆角值（支持四个角独立设置），并按盒子尺寸夹紧（含 border-radius:50% 情况）
+        let [radius_tl, radius_tr, radius_br, radius_bl] = get_border_radii_clamped(style, w, h);
         let has_radius = radius_tl > 0.0 || radius_tr > 0.0 || radius_br > 0.0 || radius_bl > 0.0;
         let uniform_radius = radius_tl == radius_tr && radius_tr == radius_br && radius_br == radius_bl;
         
