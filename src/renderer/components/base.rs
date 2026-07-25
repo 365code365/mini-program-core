@@ -510,6 +510,51 @@ pub fn get_text_content(node: &WxmlNode) -> String {
 }
 
 /// 将 StyleValue 转换为像素值
+/// 定位偏移所在的轴（决定百分比在「相对视口」场景下参照宽还是高）
+#[derive(Clone, Copy, PartialEq)]
+pub enum Axis {
+    Horizontal,
+    Vertical,
+}
+
+/// 写入一条 `top/right/bottom/left`。
+///
+/// - 百分比 → `LengthPercentageAuto::Percent`，由布局引擎按包含块解析（CSS 语义）
+/// - `auto` → `LengthPercentageAuto::Auto`
+/// - 其它长度 → 像素
+///
+/// 同时记录一份「相对视口」的像素值给 `position:fixed` 的固定层使用。
+fn set_inset(
+    value: &StyleValue,
+    ctx: &ComponentContext,
+    sf: f32,
+    axis: Axis,
+    slot: &mut LengthPercentageAuto,
+    fixed_slot: &mut Option<f32>,
+) {
+    let viewport = if axis == Axis::Horizontal { ctx.screen_width } else { ctx.screen_height };
+    match value {
+        StyleValue::Auto => {
+            *slot = LengthPercentageAuto::Auto;
+            *fixed_slot = None;
+        }
+        StyleValue::Length(n, LengthUnit::Percent) => {
+            *slot = LengthPercentageAuto::Percent(*n / 100.0);
+            *fixed_slot = Some(*n / 100.0 * viewport * sf);
+        }
+        _ => {
+            let px = match value {
+                StyleValue::Number(n) => Some(*n),
+                other => to_px(other, ctx.screen_width, viewport),
+            };
+            if let Some(px) = px {
+                *slot = LengthPercentageAuto::Length(px * sf);
+                *fixed_slot = Some(px * sf);
+            }
+        }
+    }
+}
+
 pub fn to_px(v: &StyleValue, screen_width: f32, screen_height: f32) -> Option<f32> {
     match v {
         StyleValue::Length(n, u) => Some(match u {
@@ -1082,43 +1127,18 @@ fn apply_style_property(
                     _ => ts.position = Position::Relative,
                 };
             }
-            "top" => {
-                if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { 
-                    ts.inset.top = LengthPercentageAuto::Length(v * sf);
-                    ns.fixed_top = Some(v * sf);
-                } else if let StyleValue::Number(n) = value {
-                    // 处理纯数字（如 top: 0）
-                    ts.inset.top = LengthPercentageAuto::Length(*n * sf);
-                    ns.fixed_top = Some(*n * sf);
-                }
-            }
-            "left" => {
-                if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { 
-                    ts.inset.left = LengthPercentageAuto::Length(v * sf);
-                    ns.fixed_left = Some(v * sf);
-                } else if let StyleValue::Number(n) = value {
-                    ts.inset.left = LengthPercentageAuto::Length(*n * sf);
-                    ns.fixed_left = Some(*n * sf);
-                }
-            }
-            "right" => {
-                if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { 
-                    ts.inset.right = LengthPercentageAuto::Length(v * sf);
-                    ns.fixed_right = Some(v * sf);
-                } else if let StyleValue::Number(n) = value {
-                    ts.inset.right = LengthPercentageAuto::Length(*n * sf);
-                    ns.fixed_right = Some(*n * sf);
-                }
-            }
-            "bottom" => {
-                if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { 
-                    ts.inset.bottom = LengthPercentageAuto::Length(v * sf);
-                    ns.fixed_bottom = Some(v * sf);
-                } else if let StyleValue::Number(n) = value {
-                    ts.inset.bottom = LengthPercentageAuto::Length(*n * sf);
-                    ns.fixed_bottom = Some(*n * sf);
-                }
-            }
+            // ── 定位偏移 top/right/bottom/left ──
+            //
+            // 百分比必须交给布局引擎按「包含块」解析，不能在这里换算成像素：
+            // `to_px` 对百分比一律乘屏幕宽度，于是居中老写法
+            // `left:50%; top:50%; margin:-44rpx` 里的 `top:50%` 变成 187.5px，
+            // 元素被推到父容器下方（视频页封面上的播放按钮就这样被裁掉一半）。
+            // `position:fixed` 另算：固定层用 ns.fixed_* 的像素值，
+            // 相对视口解析（水平轴用视口宽、垂直轴用视口高）。
+            "top" => set_inset(value, ctx, sf, Axis::Vertical, &mut ts.inset.top, &mut ns.fixed_top),
+            "left" => set_inset(value, ctx, sf, Axis::Horizontal, &mut ts.inset.left, &mut ns.fixed_left),
+            "right" => set_inset(value, ctx, sf, Axis::Horizontal, &mut ts.inset.right, &mut ns.fixed_right),
+            "bottom" => set_inset(value, ctx, sf, Axis::Vertical, &mut ts.inset.bottom, &mut ns.fixed_bottom),
             _ => {}
     }
 }
