@@ -238,6 +238,49 @@ style=\"background:linear-gradient(to right,{active} 0%,{active} {percent}%,{bac
     html
 }
 
+/// 容器类标签在子节点之后追加的静态结构。
+///
+/// swiper 的指示点原来只由 runtime.js 在水合时创建，于是「无 JS 的静态首屏」
+/// （也包括双端对比截图）里没有圆点，而原生端一直画着 —— 两端凭空差一排点。
+fn container_suffix_html(node: &WxmlNode) -> Option<String> {
+    if node.tag_name != "swiper" || !is_truthy(node.get_attr("indicator-dots")) {
+        return None;
+    }
+    let total = node
+        .children
+        .iter()
+        .filter(|c| c.node_type == WxmlNodeType::Element)
+        .count();
+    if total < 2 {
+        return None;
+    }
+    let active = node
+        .get_attr("current")
+        .and_then(|v| v.parse::<usize>().ok())
+        .unwrap_or(0)
+        .min(total - 1);
+    let color = node.get_attr("indicator-color").unwrap_or("");
+    let active_color = node.get_attr("indicator-active-color").unwrap_or("");
+    let mut dots = String::from("<div class=\"wx-swiper-dots\">");
+    for i in 0..total {
+        let on = i == active;
+        let style = if on && !active_color.is_empty() {
+            format!(" style=\"background:{}\"", escape_attr(active_color))
+        } else if !on && !color.is_empty() {
+            format!(" style=\"background:{}\"", escape_attr(color))
+        } else {
+            String::new()
+        };
+        dots.push_str(&format!(
+            "<i class=\"wx-swiper-dot{}\"{}></i>",
+            if on { " active" } else { "" },
+            style
+        ));
+    }
+    dots.push_str("</div>");
+    Some(dots)
+}
+
 /// `<icon>` 的矢量图形（内联 SVG）。
 ///
 /// 之前用文字字形（✓ / i / ! / … / ✕）近似，`waiting` 这类实际是时钟的图标会明显走形，
@@ -581,6 +624,7 @@ fn emit_node(node: &WxmlNode, out: &mut String) {
         if let Some(v) = node.get_attr("value") { out.push_str(&escape_text(v)); }
     }
     for c in &node.children { emit_node(c, out); }
+    if let Some(suffix) = container_suffix_html(node) { out.push_str(&suffix); }
     out.push_str(&format!("</{}>", tag));
 }
 
@@ -627,6 +671,9 @@ fn emit_pretty(node: &WxmlNode, depth: usize, out: &mut String) {
     }
     out.push_str(&format!("{}{}\n", indent, open));
     for c in &node.children { emit_pretty(c, depth + 1, out); }
+    if let Some(suffix) = container_suffix_html(node) {
+        out.push_str(&format!("{}  {}\n", indent, suffix));
+    }
     out.push_str(&format!("{}</{}>\n", indent, tag));
 }
 
@@ -662,7 +709,7 @@ body{font-size:16px;color:#333;font-family:-apple-system,system-ui,"PingFang SC"
 .wx-button-disabled{opacity:.5;pointer-events:none;}
 
 /* ── swiper 轮播：横向 scroll-snap，一屏一页 ── */
-.wx-swiper{display:flex;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;height:150px;scroll-snap-type:x mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.wx-swiper{position:relative;display:flex;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;height:150px;scroll-snap-type:x mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
 .wx-swiper::-webkit-scrollbar{display:none;width:0;height:0;}
 .wx-swiper[data-vertical="true"]{flex-direction:column;overflow-x:hidden;overflow-y:auto;scroll-snap-type:y mandatory;}
 .wx-swiper-item{flex:0 0 100%;width:100%;min-width:100%;height:100%;scroll-snap-align:start;display:flex;flex-direction:column;}
