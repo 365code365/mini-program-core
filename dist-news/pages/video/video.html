@@ -32,9 +32,14 @@
       <div class="wx-view filter-chip " data-tap="onSelectFilter" data-ds-id="3">
         <span class="wx-text chip-text">娱乐</span>
       </div>
+      <div class="wx-view grow"></div>
+      <div class="wx-view auto-line">
+        <span class="wx-text auto-tx">自动播放</span>
+        <div class="wx-switch wx-switch-on" data-change="onAutoPlayChange"><span class="wx-switch-knob"></span></div>
+      </div>
     </div>
-    <div class="wx-view video-card" data-tap="onPlay" data-ds-id="501">
-      <div class="wx-view cover-wrap">
+    <div class="wx-view video-card">
+      <div class="wx-view cover-wrap" data-tap="onPlay" data-ds-id="501">
         <img class="wx-image cover" style="object-fit:cover" src="/assets/p_phone.jpg">
         <div class="wx-view duration">
           <span class="wx-text duration-text">03:24</span>
@@ -43,17 +48,21 @@
           <span class="wx-text play-icon">▶</span>
         </div>
       </div>
-      <span class="wx-text video-title">实拍：国产大飞机完成高原试飞全过程</span>
+      <span class="wx-text video-title" data-tap="onOpenArticle" data-ds-id="501">实拍：国产大飞机完成高原试飞全过程</span>
       <div class="wx-view meta-row">
         <span class="wx-text meta-source">航空观察</span>
         <div class="wx-view meta-dot"></div>
         <span class="wx-text meta-comment">86.2万次播放</span>
         <div class="wx-view meta-dot"></div>
         <span class="wx-text meta-comment">1263评论</span>
+        <div class="wx-view grow"></div>
+        <div class="wx-view act" data-tap="onToggleFav" data-ds-id="501" data-ds-title="实拍：国产大飞机完成高原试飞全过程">
+          <i class="wx-icon wxicon wxicon-star_o" style="width:14px;height:14px;color:#bbbbbb"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></i>
+        </div>
       </div>
     </div>
-    <div class="wx-view video-card" data-tap="onPlay" data-ds-id="502">
-      <div class="wx-view cover-wrap">
+    <div class="wx-view video-card">
+      <div class="wx-view cover-wrap" data-tap="onPlay" data-ds-id="502">
         <img class="wx-image cover" style="object-fit:cover" src="/assets/p_watch.jpg">
         <div class="wx-view duration">
           <span class="wx-text duration-text">02:58</span>
@@ -62,17 +71,21 @@
           <span class="wx-text play-icon">▶</span>
         </div>
       </div>
-      <span class="wx-text video-title">三分钟看懂新能源车电池技术路线之争</span>
+      <span class="wx-text video-title" data-tap="onOpenArticle" data-ds-id="502">三分钟看懂新能源车电池技术路线之争</span>
       <div class="wx-view meta-row">
         <span class="wx-text meta-source">汽车实验室</span>
         <div class="wx-view meta-dot"></div>
         <span class="wx-text meta-comment">42.7万次播放</span>
         <div class="wx-view meta-dot"></div>
         <span class="wx-text meta-comment">486评论</span>
+        <div class="wx-view grow"></div>
+        <div class="wx-view act" data-tap="onToggleFav" data-ds-id="502" data-ds-title="三分钟看懂新能源车电池技术路线之争">
+          <i class="wx-icon wxicon wxicon-star_o" style="width:14px;height:14px;color:#bbbbbb"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></i>
+        </div>
       </div>
     </div>
-    <div class="wx-view video-card" data-tap="onPlay" data-ds-id="503">
-      <div class="wx-view cover-wrap">
+    <div class="wx-view video-card">
+      <div class="wx-view cover-wrap" data-tap="onPlay" data-ds-id="503">
         <img class="wx-image cover" style="object-fit:cover" src="/assets/p_coffee.jpg">
         <div class="wx-view duration">
           <span class="wx-text duration-text">05:12</span>
@@ -81,19 +94,23 @@
           <span class="wx-text play-icon">▶</span>
         </div>
       </div>
-      <span class="wx-text video-title">老街区改造前后对比，变化令人惊叹</span>
+      <span class="wx-text video-title" data-tap="onOpenArticle" data-ds-id="503">老街区改造前后对比，变化令人惊叹</span>
       <div class="wx-view meta-row">
         <span class="wx-text meta-source">城市影像</span>
         <div class="wx-view meta-dot"></div>
         <span class="wx-text meta-comment">31.5万次播放</span>
         <div class="wx-view meta-dot"></div>
         <span class="wx-text meta-comment">274评论</span>
+        <div class="wx-view grow"></div>
+        <div class="wx-view act" data-tap="onToggleFav" data-ds-title="老街区改造前后对比，变化令人惊叹" data-ds-id="503">
+          <i class="wx-icon wxicon wxicon-star_o" style="width:14px;height:14px;color:#bbbbbb"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></i>
+        </div>
       </div>
     </div>
     <div class="wx-view bottom-space"></div>
   </div>
 </div>
-<nav class="wx-custom-tabbar"><div class="wx-view news-tabbar"><div class="wx-view tab-item " data-tap="switchTab" data-ds-path="pages/home/home" data-tabbar-href="../../pages/home/home.html" data-ds-index="0"><i class="wx-icon wxicon wxicon-success" style="width:22px;height:22px;color:#B5B5B5"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><path d="M5.8 12.4 10 16.4 18.2 7.6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i><span class="wx-text tab-label ">首页</span></div><div class="wx-view tab-item tab-active" data-tap="switchTab" data-ds-index="1" data-ds-path="pages/video/video" data-tabbar-href="../../pages/video/video.html"><i class="wx-icon wxicon wxicon-waiting" style="width:22px;height:22px;color:#D43C33"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><rect x="10.9" y="6.2" width="2.2" height="6.6" rx="1.1" fill="#fff"/><rect x="12" y="10.9" width="5.2" height="2.2" rx="1.1" fill="#fff"/><circle cx="12" cy="12" r="1.6" fill="#fff"/></svg></i><span class="wx-text tab-label tab-label-active">视频</span></div><div class="wx-view tab-item " data-tap="switchTab" data-ds-index="2" data-ds-path="pages/mine/mine" data-tabbar-href="../../pages/mine/mine.html"><i class="wx-icon wxicon wxicon-info" style="width:22px;height:22px;color:#B5B5B5"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><circle cx="12" cy="7.6" r="1.7" fill="#fff"/><rect x="10.9" y="10.8" width="2.2" height="7" rx="1.1" fill="#fff"/></svg></i><span class="wx-text tab-label ">我的</span></div></div></nav>
+<nav class="wx-custom-tabbar"><div class="wx-view news-tabbar"><div class="wx-view tab-item " data-tap="switchTab" data-ds-index="0" data-ds-path="pages/home/home" data-tabbar-href="../../pages/home/home.html"><i class="wx-icon wxicon wxicon-success" style="width:22px;height:22px;color:#B5B5B5"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><path d="M5.8 12.4 10 16.4 18.2 7.6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i><span class="wx-text tab-label ">首页</span></div><div class="wx-view tab-item tab-active" data-tap="switchTab" data-ds-index="1" data-ds-path="pages/video/video" data-tabbar-href="../../pages/video/video.html"><i class="wx-icon wxicon wxicon-waiting" style="width:22px;height:22px;color:#D43C33"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><rect x="10.9" y="6.2" width="2.2" height="6.6" rx="1.1" fill="#fff"/><rect x="12" y="10.9" width="5.2" height="2.2" rx="1.1" fill="#fff"/><circle cx="12" cy="12" r="1.6" fill="#fff"/></svg></i><span class="wx-text tab-label tab-label-active">视频</span></div><div class="wx-view tab-item " data-tap="switchTab" data-ds-index="2" data-ds-path="pages/mine/mine" data-tabbar-href="../../pages/mine/mine.html"><i class="wx-icon wxicon wxicon-info" style="width:22px;height:22px;color:#B5B5B5"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><circle cx="12" cy="7.6" r="1.7" fill="#fff"/><rect x="10.9" y="10.8" width="2.2" height="7" rx="1.1" fill="#fff"/></svg></i><span class="wx-text tab-label ">我的</span></div></div></nav>
 <script>
 (function(){var bar=document.currentScript&&document.currentScript.previousElementSibling;
 if(!bar||!bar.classList.contains('wx-custom-tabbar')){bar=document.querySelector('.wx-custom-tabbar');}
@@ -107,7 +124,7 @@ if(href){e.preventDefault();e.stopPropagation();window.location.href=href;}
 </script>
 <script>
 window.__PAGE_ROUTE__ = "pages/video/video";
-window.__WXML__ = [{"a":{"class":"page"},"c":[{"a":{"class":"nav-bar"},"c":[{"a":{"class":"nav-logo"},"c":[{"t":"tx","x":"视频"}],"n":"text","t":"el"},{"a":{"bindtap":"onSearchTap","class":"nav-search"},"c":[{"a":{"color":"#9A9A9A","size":"14","type":"search"},"c":[],"n":"icon","t":"el"},{"a":{"class":"nav-search-text"},"c":[{"t":"tx","x":"搜索短视频"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"filter-row"},"c":[{"a":{"bindtap":"onSelectFilter","class":"filter-chip {{currentFilter == item.id ? 'chip-active' : ''}}","data-id":"{{item.id}}","wx:for":"{{filters}}","wx:key":"id"},"c":[{"a":{"class":"chip-text"},"c":[{"t":"tx","x":"{{item.name}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onPlay","class":"video-card","data-id":"{{item.id}}","wx:for":"{{videos}}","wx:key":"id"},"c":[{"a":{"class":"cover-wrap"},"c":[{"a":{"class":"cover","mode":"aspectFill","src":"{{item.cover}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"duration"},"c":[{"a":{"class":"duration-text"},"c":[{"t":"tx","x":"{{item.duration}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"play-badge"},"c":[{"a":{"class":"play-icon"},"c":[{"t":"tx","x":"▶"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"video-title"},"c":[{"t":"tx","x":"{{item.title}}"}],"n":"text","t":"el"},{"a":{"class":"meta-row"},"c":[{"a":{"class":"meta-source"},"c":[{"t":"tx","x":"{{item.author}}"}],"n":"text","t":"el"},{"a":{"class":"meta-dot"},"c":[],"n":"view","t":"el"},{"a":{"class":"meta-comment"},"c":[{"t":"tx","x":"{{item.plays}}次播放"}],"n":"text","t":"el"},{"a":{"class":"meta-dot"},"c":[],"n":"view","t":"el"},{"a":{"class":"meta-comment"},"c":[{"t":"tx","x":"{{item.comments}}评论"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"bottom-space"},"c":[],"n":"view","t":"el"}],"n":"view","t":"el"}];
+window.__WXML__ = [{"a":{"class":"page"},"c":[{"a":{"class":"nav-bar"},"c":[{"a":{"class":"nav-logo"},"c":[{"t":"tx","x":"视频"}],"n":"text","t":"el"},{"a":{"bindtap":"onSearchTap","class":"nav-search"},"c":[{"a":{"color":"#9A9A9A","size":"14","type":"search"},"c":[],"n":"icon","t":"el"},{"a":{"class":"nav-search-text"},"c":[{"t":"tx","x":"搜索短视频"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"filter-row"},"c":[{"a":{"bindtap":"onSelectFilter","class":"filter-chip {{currentFilter == item.id ? 'chip-active' : ''}}","data-id":"{{item.id}}","wx:for":"{{filters}}","wx:key":"id"},"c":[{"a":{"class":"chip-text"},"c":[{"t":"tx","x":"{{item.name}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"grow"},"c":[],"n":"view","t":"el"},{"a":{"class":"auto-line"},"c":[{"a":{"class":"auto-tx"},"c":[{"t":"tx","x":"自动播放"}],"n":"text","t":"el"},{"a":{"bindchange":"onAutoPlayChange","checked":"{{autoPlay}}","color":"#D43C33"},"c":[],"n":"switch","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"video-card","wx:for":"{{videos}}","wx:key":"id"},"c":[{"a":{"autoplay":"{{true}}","class":"player","controls":"{{true}}","loop":"{{false}}","muted":"{{false}}","src":"{{item.src}}","wx:if":"{{playingId === item.id}}"},"c":[],"n":"video","t":"el"},{"a":{"bindtap":"onPlay","class":"cover-wrap","data-id":"{{item.id}}","wx:else":""},"c":[{"a":{"class":"cover","mode":"aspectFill","src":"{{item.cover}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"duration"},"c":[{"a":{"class":"duration-text"},"c":[{"t":"tx","x":"{{item.duration}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"play-badge"},"c":[{"a":{"class":"play-icon"},"c":[{"t":"tx","x":"▶"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onOpenArticle","class":"video-title","data-id":"{{item.id}}"},"c":[{"t":"tx","x":"{{item.title}}"}],"n":"text","t":"el"},{"a":{"class":"meta-row"},"c":[{"a":{"class":"meta-source"},"c":[{"t":"tx","x":"{{item.author}}"}],"n":"text","t":"el"},{"a":{"class":"meta-dot"},"c":[],"n":"view","t":"el"},{"a":{"class":"meta-comment"},"c":[{"t":"tx","x":"{{item.plays}}次播放"}],"n":"text","t":"el"},{"a":{"class":"meta-dot"},"c":[],"n":"view","t":"el"},{"a":{"class":"meta-comment"},"c":[{"t":"tx","x":"{{item.comments}}评论"}],"n":"text","t":"el"},{"a":{"class":"grow"},"c":[],"n":"view","t":"el"},{"a":{"catchtap":"onToggleFav","class":"act","data-id":"{{item.id}}","data-title":"{{item.title}}"},"c":[{"a":{"color":"{{favMap['a' + item.id] ? '#D43C33' : '#bbbbbb'}}","size":"14","type":"{{favMap['a' + item.id] ? 'star' : 'star_o'}}"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"bottom-space"},"c":[],"n":"view","t":"el"}],"n":"view","t":"el"}];
 </script>
 <script src="../../common/runtime.js"></script>
 <script src="../../common/app.js"></script>

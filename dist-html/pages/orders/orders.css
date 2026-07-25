@@ -1,0 +1,133 @@
+/* 由 orders.wxss 编译 */
+/* 我的订单 */
+.tabs {
+  width: 100%;
+  background-color: #fff;
+  padding: 10px 12px;
+}
+.tabs-row {
+  display: flex;
+  flex-direction: row;
+}
+.tabs-row .pill {
+  white-space: nowrap;
+  text-align: center;
+}
+
+.order-card {
+  background-color: #fff;
+  border-radius: 8px;
+  margin: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+}
+.order-no {
+  font-size: 12px;
+  color: #999;
+}
+.order-status {
+  font-size: 13px;
+  color: #FF6B35;
+  font-weight: bold;
+}
+.status-paid {
+  color: #FAAD14;
+}
+.gap {
+  margin: 10px 0;
+}
+.order-goods {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 7px 0;
+}
+.order-img {
+  width: 60px;
+  height: 60px;
+  min-width: 60px;
+  border-radius: 5px;
+  background-color: #F5F5F5;
+}
+.order-info {
+  margin-left: 10px;
+}
+.order-name {
+  font-size: 14px;
+  color: #333;
+}
+.order-foot {
+  margin-top: 6px;
+}
+.order-total {
+  font-size: 14px;
+  color: #1a1a1a;
+  font-weight: bold;
+}
+
+/* 物流 */
+.ship-box {
+  background-color: #FAFAFA;
+  border-radius: 6px;
+  padding: 10px;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+}
+.trace {
+  display: flex;
+  flex-direction: column;
+  margin-top: 10px;
+}
+.trace-item {
+  display: flex;
+  flex-direction: row;
+  padding: 6px 0;
+}
+.trace-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+  background-color: #DDDDDD;
+  margin-right: 10px;
+  margin-top: 5px;
+}
+.trace-dot-on {
+  background-color: #FF6B35;
+}
+.trace-text {
+  font-size: 13px;
+  color: #666;
+}
+.trace-text-on {
+  color: #1a1a1a;
+  font-weight: bold;
+}
+.trace-time {
+  font-size: 11px;
+  color: #bbb;
+  margin-top: 3px;
+}
+
+/* 操作按钮 */
+.order-actions {
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+.ghost-btn {
+  font-size: 13px;
+  color: #666;
+  border: 0.500px solid #DDDDDD;
+  border-radius: 16px;
+  padding: 6px 14px;
+  margin-left: 8px;
+}
+.primary-btn {
+  font-size: 13px;
+  color: #fff;
+  background-color: #FF6B35;
+  border-radius: 16px;
+  padding: 6px 14px;
+  margin-left: 8px;
+}

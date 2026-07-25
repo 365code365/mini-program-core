@@ -112,7 +112,7 @@
 /* 底部结算 */
 .checkout {
   position: fixed;
-  bottom: 60px;
+  bottom: 50px;
   left: 0;
   right: 0;
   height: 50px;
@@ -163,4 +163,53 @@
 
 .bottom-space {
   height: 0;
+}
+
+/* ── 新增：商品图 / 规格 / 删除 / 合计 ── */
+.header-count {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.9);
+  margin-top: 4px;
+}
+.item-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+}
+.item-spec {
+  font-size: 11px;
+  color: #999;
+  margin-top: 3px;
+}
+.del-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.qty-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background-color: #F5F5F5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.qty-num {
+  font-size: 13px;
+  color: #333;
+  min-width: 28px;
+  text-align: center;
+}
+.total-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-right: 10px;
+}
+.checkout-btn {
+  border-radius: 20px;
+  min-width: 100px;
 }

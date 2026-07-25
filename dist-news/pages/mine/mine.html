@@ -19,49 +19,49 @@
       <img class="wx-image user-avatar" style="object-fit:cover" src="/assets/avatar1.jpg">
       <div class="wx-view user-info">
         <span class="wx-text user-name">头条读者</span>
-        <span class="wx-text user-desc">已连续阅读 128 天</span>
+        <span class="wx-text user-desc">已连续签到 0 天 · 阅读 0 篇</span>
       </div>
       <span class="wx-text user-arrow">&gt;</span>
     </div>
     <div class="wx-view stat-card">
-      <div class="wx-view stat-item" data-tap="onStatTap" data-ds-label="关注">
-        <span class="wx-text stat-value">42</span>
+      <div class="wx-view stat-item" data-tap="onStatTap" data-ds-key="follow">
+        <span class="wx-text stat-value">0</span>
         <span class="wx-text stat-label">关注</span>
       </div>
-      <div class="wx-view stat-item" data-tap="onStatTap" data-ds-label="收藏">
-        <span class="wx-text stat-value">186</span>
+      <div class="wx-view stat-item" data-tap="onStatTap" data-ds-key="fav">
+        <span class="wx-text stat-value">0</span>
         <span class="wx-text stat-label">收藏</span>
       </div>
-      <div class="wx-view stat-item" data-tap="onStatTap" data-ds-label="历史">
-        <span class="wx-text stat-value">1.2万</span>
+      <div class="wx-view stat-item" data-tap="onStatTap" data-ds-key="history">
+        <span class="wx-text stat-value">0</span>
         <span class="wx-text stat-label">历史</span>
       </div>
-      <div class="wx-view stat-item" data-tap="onStatTap" data-ds-label="评论">
-        <span class="wx-text stat-value">73</span>
-        <span class="wx-text stat-label">评论</span>
+      <div class="wx-view stat-item" data-tap="onStatTap" data-ds-key="hot">
+        <span class="wx-text stat-value">榜</span>
+        <span class="wx-text stat-label">热榜</span>
       </div>
     </div>
     <div class="wx-view menu-card">
       <span class="wx-text menu-head">我的服务</span>
-      <div class="wx-view menu-item" data-tap="onMenuTap" data-ds-id="1">
-        <i class="wx-icon wxicon wxicon-success" style="width:20px;height:20px;color:#D43C33"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><path d="M5.8 12.4 10 16.4 18.2 7.6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+      <div class="wx-view menu-item" data-tap="onMenuTap" data-ds-key="fav">
+        <i class="wx-icon wxicon wxicon-star" style="width:20px;height:20px;color:#D43C33"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="currentColor"/></svg></i>
         <span class="wx-text menu-text">我的收藏</span>
         <span class="wx-text menu-arrow">&gt;</span>
       </div>
-      <div class="wx-view menu-item" data-tap="onMenuTap" data-ds-id="2">
-        <i class="wx-icon wxicon wxicon-waiting" style="width:20px;height:20px;color:#F0A020"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><rect x="10.9" y="6.2" width="2.2" height="6.6" rx="1.1" fill="#fff"/><rect x="12" y="10.9" width="5.2" height="2.2" rx="1.1" fill="#fff"/><circle cx="12" cy="12" r="1.6" fill="#fff"/></svg></i>
+      <div class="wx-view menu-item" data-tap="onMenuTap" data-ds-key="history">
+        <i class="wx-icon wxicon wxicon-clock" style="width:20px;height:20px;color:#F0A020"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.4" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 5.6V12h5.2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></i>
         <span class="wx-text menu-text">阅读历史</span>
         <span class="wx-text menu-arrow">&gt;</span>
       </div>
-      <div class="wx-view menu-item" data-tap="onMenuTap" data-ds-id="3">
-        <i class="wx-icon wxicon wxicon-info" style="width:20px;height:20px;color:#3A7BD5"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><circle cx="12" cy="7.6" r="1.7" fill="#fff"/><rect x="10.9" y="10.8" width="2.2" height="7" rx="1.1" fill="#fff"/></svg></i>
-        <span class="wx-text menu-text">消息通知</span>
-        <span class="wx-text menu-badge">9</span>
+      <div class="wx-view menu-item" data-tap="onMenuTap" data-ds-key="search">
+        <i class="wx-icon wxicon wxicon-search" style="width:20px;height:20px;color:#3A7BD5"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.4" cy="10.4" r="6.4" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15.2 15.2 21 21" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></i>
+        <span class="wx-text menu-text">搜索发现</span>
         <span class="wx-text menu-arrow">&gt;</span>
       </div>
-      <div class="wx-view menu-item" data-tap="onMenuTap" data-ds-id="4">
-        <i class="wx-icon wxicon wxicon-warn" style="width:20px;height:20px;color:#7B61FF"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><rect x="10.9" y="5.4" width="2.2" height="7.2" rx="1.1" fill="#fff"/><circle cx="12" cy="16.6" r="1.7" fill="#fff"/></svg></i>
-        <span class="wx-text menu-text">意见反馈</span>
+      <div class="wx-view menu-item" data-tap="onMenuTap" data-ds-key="hot">
+        <i class="wx-icon wxicon wxicon-arrow_up" style="width:20px;height:20px;color:#7B61FF"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15.5 12 7.5 20 15.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+        <span class="wx-text menu-text">热榜与签到</span>
+        <span class="wx-text menu-badge">未签</span>
         <span class="wx-text menu-arrow">&gt;</span>
       </div>
     </div>
@@ -77,7 +77,8 @@
       </div>
       <div class="wx-view slider-row">
         <span class="wx-text switch-label">正文字号</span>
-        <div class="wx-slider-wrap" data-change="onFontLevelChange"><input class="wx-slider" type="range" min="1" max="5" step="1" value="3" style="background:linear-gradient(to right,#09bb07 0%,#09bb07 50%,#e5e5e5 50%,#e5e5e5 100%);--wx-block:#ffffff"><span class="wx-slider-value">3</span></div>
+        <div class="wx-slider-wrap" data-change="onFontLevelChange"><input class="wx-slider" type="range" min="1" max="5" step="1" value="3" style="background:linear-gradient(to right,#D43C33 0%,#D43C33 50%,#e5e5e5 50%,#e5e5e5 100%);--wx-block:#ffffff"><span class="wx-slider-value">3</span></div>
+        <span class="wx-text font-sample" style="font-size:17px">正文预览：数字经济规模再创新高。</span>
       </div>
     </div>
     <div class="wx-view logout-wrap">
@@ -86,7 +87,7 @@
     <div class="wx-view bottom-space"></div>
   </div>
 </div>
-<nav class="wx-custom-tabbar"><div class="wx-view news-tabbar"><div class="wx-view tab-item " data-tap="switchTab" data-ds-path="pages/home/home" data-tabbar-href="../../pages/home/home.html" data-ds-index="0"><i class="wx-icon wxicon wxicon-success" style="width:22px;height:22px;color:#B5B5B5"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><path d="M5.8 12.4 10 16.4 18.2 7.6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i><span class="wx-text tab-label ">首页</span></div><div class="wx-view tab-item " data-tap="switchTab" data-ds-path="pages/video/video" data-tabbar-href="../../pages/video/video.html" data-ds-index="1"><i class="wx-icon wxicon wxicon-waiting" style="width:22px;height:22px;color:#B5B5B5"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><rect x="10.9" y="6.2" width="2.2" height="6.6" rx="1.1" fill="#fff"/><rect x="12" y="10.9" width="5.2" height="2.2" rx="1.1" fill="#fff"/><circle cx="12" cy="12" r="1.6" fill="#fff"/></svg></i><span class="wx-text tab-label ">视频</span></div><div class="wx-view tab-item tab-active" data-tap="switchTab" data-ds-path="pages/mine/mine" data-tabbar-href="../../pages/mine/mine.html" data-ds-index="2"><i class="wx-icon wxicon wxicon-info" style="width:22px;height:22px;color:#D43C33"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><circle cx="12" cy="7.6" r="1.7" fill="#fff"/><rect x="10.9" y="10.8" width="2.2" height="7" rx="1.1" fill="#fff"/></svg></i><span class="wx-text tab-label tab-label-active">我的</span></div></div></nav>
+<nav class="wx-custom-tabbar"><div class="wx-view news-tabbar"><div class="wx-view tab-item " data-tap="switchTab" data-ds-index="0" data-ds-path="pages/home/home" data-tabbar-href="../../pages/home/home.html"><i class="wx-icon wxicon wxicon-success" style="width:22px;height:22px;color:#B5B5B5"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><path d="M5.8 12.4 10 16.4 18.2 7.6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i><span class="wx-text tab-label ">首页</span></div><div class="wx-view tab-item " data-tap="switchTab" data-ds-index="1" data-ds-path="pages/video/video" data-tabbar-href="../../pages/video/video.html"><i class="wx-icon wxicon wxicon-waiting" style="width:22px;height:22px;color:#B5B5B5"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><rect x="10.9" y="6.2" width="2.2" height="6.6" rx="1.1" fill="#fff"/><rect x="12" y="10.9" width="5.2" height="2.2" rx="1.1" fill="#fff"/><circle cx="12" cy="12" r="1.6" fill="#fff"/></svg></i><span class="wx-text tab-label ">视频</span></div><div class="wx-view tab-item tab-active" data-tap="switchTab" data-ds-index="2" data-ds-path="pages/mine/mine" data-tabbar-href="../../pages/mine/mine.html"><i class="wx-icon wxicon wxicon-info" style="width:22px;height:22px;color:#D43C33"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><circle cx="12" cy="7.6" r="1.7" fill="#fff"/><rect x="10.9" y="10.8" width="2.2" height="7" rx="1.1" fill="#fff"/></svg></i><span class="wx-text tab-label tab-label-active">我的</span></div></div></nav>
 <script>
 (function(){var bar=document.currentScript&&document.currentScript.previousElementSibling;
 if(!bar||!bar.classList.contains('wx-custom-tabbar')){bar=document.querySelector('.wx-custom-tabbar');}
@@ -100,7 +101,7 @@ if(href){e.preventDefault();e.stopPropagation();window.location.href=href;}
 </script>
 <script>
 window.__PAGE_ROUTE__ = "pages/mine/mine";
-window.__WXML__ = [{"a":{"class":"page"},"c":[{"a":{"bindtap":"onLoginTap","class":"user-header"},"c":[{"a":{"class":"user-avatar","mode":"aspectFill","src":"{{user.avatar}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"user-info"},"c":[{"a":{"class":"user-name"},"c":[{"t":"tx","x":"{{user.name}}"}],"n":"text","t":"el"},{"a":{"class":"user-desc"},"c":[{"t":"tx","x":"{{user.desc}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"user-arrow"},"c":[{"t":"tx","x":">"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"stat-card"},"c":[{"a":{"bindtap":"onStatTap","class":"stat-item","data-label":"{{item.label}}","wx:for":"{{stats}}","wx:key":"label"},"c":[{"a":{"class":"stat-value"},"c":[{"t":"tx","x":"{{item.value}}"}],"n":"text","t":"el"},{"a":{"class":"stat-label"},"c":[{"t":"tx","x":"{{item.label}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"menu-card"},"c":[{"a":{"class":"menu-head"},"c":[{"t":"tx","x":"我的服务"}],"n":"text","t":"el"},{"a":{"bindtap":"onMenuTap","class":"menu-item","data-id":"{{item.id}}","wx:for":"{{menus}}","wx:key":"id"},"c":[{"a":{"color":"{{item.color}}","size":"20","type":"{{item.icon}}"},"c":[],"n":"icon","t":"el"},{"a":{"class":"menu-text"},"c":[{"t":"tx","x":"{{item.name}}"}],"n":"text","t":"el"},{"a":{"class":"menu-badge","wx:if":"{{item.badge}}"},"c":[{"t":"tx","x":"{{item.badge}}"}],"n":"text","t":"el"},{"a":{"class":"menu-arrow"},"c":[{"t":"tx","x":">"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"menu-card"},"c":[{"a":{"class":"menu-head"},"c":[{"t":"tx","x":"阅读设置"}],"n":"text","t":"el"},{"a":{"class":"switch-row"},"c":[{"a":{"class":"switch-label"},"c":[{"t":"tx","x":"夜间模式"}],"n":"text","t":"el"},{"a":{"bindchange":"onNightModeChange","checked":"{{nightMode}}"},"c":[],"n":"switch","t":"el"}],"n":"view","t":"el"},{"a":{"class":"switch-row"},"c":[{"a":{"class":"switch-label"},"c":[{"t":"tx","x":"非 Wi-Fi 自动播放"}],"n":"text","t":"el"},{"a":{"bindchange":"onAutoPlayChange","checked":"{{autoPlay}}"},"c":[],"n":"switch","t":"el"}],"n":"view","t":"el"},{"a":{"class":"slider-row"},"c":[{"a":{"class":"switch-label"},"c":[{"t":"tx","x":"正文字号"}],"n":"text","t":"el"},{"a":{"bindchange":"onFontLevelChange","max":"5","min":"1","show-value":"true","step":"1","value":"{{fontLevel}}"},"c":[],"n":"slider","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"logout-wrap"},"c":[{"a":{"bindtap":"onLogout","class":"logout-btn"},"c":[{"t":"tx","x":"退出登录"}],"n":"button","t":"el"}],"n":"view","t":"el"},{"a":{"class":"bottom-space"},"c":[],"n":"view","t":"el"}],"n":"view","t":"el"}];
+window.__WXML__ = [{"a":{"class":"page"},"c":[{"a":{"bindtap":"onLoginTap","class":"user-header"},"c":[{"a":{"class":"user-avatar","mode":"aspectFill","src":"{{user.avatar}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"user-info"},"c":[{"a":{"class":"user-name"},"c":[{"t":"tx","x":"{{user.name}}"}],"n":"text","t":"el"},{"a":{"class":"user-desc"},"c":[{"t":"tx","x":"{{user.desc}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"user-arrow"},"c":[{"t":"tx","x":">"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"stat-card"},"c":[{"a":{"bindtap":"onStatTap","class":"stat-item","data-key":"{{item.key}}","wx:for":"{{stats}}","wx:key":"label"},"c":[{"a":{"class":"stat-value"},"c":[{"t":"tx","x":"{{item.value}}"}],"n":"text","t":"el"},{"a":{"class":"stat-label"},"c":[{"t":"tx","x":"{{item.label}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"menu-card"},"c":[{"a":{"class":"menu-head"},"c":[{"t":"tx","x":"我的服务"}],"n":"text","t":"el"},{"a":{"bindtap":"onMenuTap","class":"menu-item","data-key":"{{item.key}}","wx:for":"{{menus}}","wx:key":"id"},"c":[{"a":{"color":"{{item.color}}","size":"20","type":"{{item.icon}}"},"c":[],"n":"icon","t":"el"},{"a":{"class":"menu-text"},"c":[{"t":"tx","x":"{{item.name}}"}],"n":"text","t":"el"},{"a":{"class":"menu-badge","wx:if":"{{item.badge}}"},"c":[{"t":"tx","x":"{{item.badge}}"}],"n":"text","t":"el"},{"a":{"class":"menu-arrow"},"c":[{"t":"tx","x":">"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"menu-card"},"c":[{"a":{"class":"menu-head"},"c":[{"t":"tx","x":"阅读设置"}],"n":"text","t":"el"},{"a":{"class":"switch-row"},"c":[{"a":{"class":"switch-label"},"c":[{"t":"tx","x":"夜间模式"}],"n":"text","t":"el"},{"a":{"bindchange":"onNightModeChange","checked":"{{nightMode}}"},"c":[],"n":"switch","t":"el"}],"n":"view","t":"el"},{"a":{"class":"switch-row"},"c":[{"a":{"class":"switch-label"},"c":[{"t":"tx","x":"非 Wi-Fi 自动播放"}],"n":"text","t":"el"},{"a":{"bindchange":"onAutoPlayChange","checked":"{{autoPlay}}"},"c":[],"n":"switch","t":"el"}],"n":"view","t":"el"},{"a":{"class":"slider-row"},"c":[{"a":{"class":"switch-label"},"c":[{"t":"tx","x":"正文字号"}],"n":"text","t":"el"},{"a":{"activeColor":"#D43C33","bindchange":"onFontLevelChange","max":"5","min":"1","show-value":"{{true}}","step":"1","value":"{{fontLevel}}"},"c":[],"n":"slider","t":"el"},{"a":{"class":"font-sample","style":"font-size:{{fontSample}}px"},"c":[{"t":"tx","x":"正文预览：数字经济规模再创新高。"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"logout-wrap"},"c":[{"a":{"bindtap":"onLogout","class":"logout-btn"},"c":[{"t":"tx","x":"退出登录"}],"n":"button","t":"el"}],"n":"view","t":"el"},{"a":{"class":"bottom-space"},"c":[],"n":"view","t":"el"}],"n":"view","t":"el"}];
 </script>
 <script src="../../common/runtime.js"></script>
 <script src="../../common/app.js"></script>

@@ -275,6 +275,12 @@
     var body;
     switch (t) {
       case "success_no_circle": body = '<path d="M3.5 12.5 9 18 20.5 5.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>'; break;
+      case "back": case "arrow_left": case "arrow-left": body = '<path d="M15.5 4 7.5 12 15.5 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>'; break;
+      case "arrow": case "arrow_right": case "arrow-right": body = '<path d="M8.5 4 16.5 12 8.5 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>'; break;
+      case "arrow_up": case "arrow-up": body = '<path d="M4 15.5 12 7.5 20 15.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>'; break;
+      case "arrow_down": case "arrow-down": body = '<path d="M4 8.5 12 16.5 20 8.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>'; break;
+      case "plus": body = '<path d="M12 4.5V19.5M4.5 12H19.5" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/>'; break;
+      case "minus": body = '<path d="M4.5 12H19.5" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/>'; break;
       case "info": case "info_circle": body = circle + '<circle cx="12" cy="7.6" r="1.7" fill="#fff"/><rect x="10.9" y="10.8" width="2.2" height="7" rx="1.1" fill="#fff"/>'; break;
       case "warn": body = circle + '<rect x="10.9" y="5.4" width="2.2" height="7.2" rx="1.1" fill="#fff"/><circle cx="12" cy="16.6" r="1.7" fill="#fff"/>'; break;
       case "waiting": case "waiting_circle": body = circle + '<rect x="10.9" y="6.2" width="2.2" height="6.6" rx="1.1" fill="#fff"/><rect x="12" y="10.9" width="5.2" height="2.2" rx="1.1" fill="#fff"/><circle cx="12" cy="12" r="1.6" fill="#fff"/>'; break;

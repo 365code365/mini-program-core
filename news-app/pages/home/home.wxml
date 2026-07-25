@@ -6,6 +6,9 @@
       <icon type="search" size="14" color="#9A9A9A"></icon>
       <text class="nav-search-text">{{searchHint}}</text>
     </view>
+    <view class="nav-hot" bindtap="onMoreHot">
+      <icon type="star" size="18" color="#ffffff"></icon>
+    </view>
   </view>
 
   <!-- 频道栏（横向滚动，当前频道下划线高亮） -->
@@ -22,8 +25,31 @@
     </view>
   </scroll-view>
 
+  <!-- 要闻轮播 -->
+  <swiper class="focus-swiper" indicator-dots="{{true}}" autoplay="{{true}}" interval="3200"
+          circular="{{true}}" indicator-color="rgba(255,255,255,0.5)" indicator-active-color="#ffffff">
+    <swiper-item wx:for="{{focusList}}" wx:key="id">
+      <view class="focus-item" bindtap="onOpenArticle" data-id="{{item.id}}">
+        <image class="focus-img" src="{{item.cover}}" mode="aspectFill"></image>
+        <view class="focus-shade">
+          <text class="focus-tag">{{item.tag}}</text>
+          <text class="focus-title">{{item.title}}</text>
+        </view>
+      </view>
+    </swiper-item>
+  </swiper>
+
+  <!-- 刷新提示（下拉刷新时出现，带动画） -->
+  <view wx:if="{{refreshing}}" class="refresh-row">
+    <view class="refresh-ring"></view>
+    <text class="refresh-tx">正在刷新…</text>
+  </view>
+  <view wx:if="{{refreshedTip}}" class="refreshed anim-fade">
+    <text class="refreshed-tx">{{refreshedTip}}</text>
+  </view>
+
   <!-- 置顶要闻 -->
-  <view class="top-news">
+  <view class="top-news" bindtap="onOpenArticle" data-id="{{topNews.id}}">
     <text class="top-badge">置顶</text>
     <text class="top-title">{{topNews.title}}</text>
   </view>
@@ -31,14 +57,21 @@
   <!-- 信息流 -->
   <view class="feed">
     <!-- 大图卡片 -->
-    <view class="card big-card" bindtap="onOpenArticle" data-id="{{bigCard.id}}">
-      <text class="big-title">{{bigCard.title}}</text>
-      <image class="big-cover" src="{{bigCard.cover}}" mode="aspectFill"></image>
+    <view class="card big-card">
+      <text class="big-title" bindtap="onOpenArticle" data-id="{{bigCard.id}}">{{bigCard.title}}</text>
+      <image class="big-cover" src="{{bigCard.cover}}" mode="aspectFill"
+             bindtap="onOpenArticle" data-id="{{bigCard.id}}"></image>
       <view class="meta-row">
         <text class="tag">{{bigCard.tag}}</text>
         <text class="meta-source">{{bigCard.source}}</text>
         <view class="meta-dot"></view>
         <text class="meta-comment">{{bigCard.comments}}评论</text>
+        <view class="grow"></view>
+        <view class="act" catchtap="onToggleFav" data-id="{{bigCard.id}}" data-title="{{bigCard.title}}">
+          <icon type="{{favMap['a' + bigCard.id] ? 'star' : 'star_o'}}" size="14"
+                color="{{favMap['a' + bigCard.id] ? '#D43C33' : '#bbbbbb'}}"></icon>
+          <text class="act-tx">收藏</text>
+        </view>
       </view>
     </view>
 
@@ -57,6 +90,11 @@
           <text class="meta-source">{{item.source}}</text>
           <view class="meta-dot"></view>
           <text class="meta-comment">{{item.comments}}评论</text>
+          <view class="grow"></view>
+          <view class="act" catchtap="onToggleFav" data-id="{{item.id}}" data-title="{{item.title}}">
+            <icon type="{{favMap['a' + item.id] ? 'star' : 'star_o'}}" size="14"
+                  color="{{favMap['a' + item.id] ? '#D43C33' : '#bbbbbb'}}"></icon>
+          </view>
         </view>
       </view>
       <image class="row-thumb" src="{{item.thumb}}" mode="aspectFill"></image>
@@ -86,6 +124,12 @@
         <text class="hot-text">{{item.title}}</text>
         <text class="hot-heat">{{item.heat}}万</text>
       </view>
+    </view>
+
+    <!-- 触底加载 -->
+    <view wx:if="{{loadingMore}}" class="refresh-row">
+      <view class="refresh-ring"></view>
+      <text class="refresh-tx">加载更多…</text>
     </view>
   </view>
 

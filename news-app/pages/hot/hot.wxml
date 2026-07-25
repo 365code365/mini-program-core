@@ -1,0 +1,88 @@
+<view class="page">
+  <view class="hnav">
+    <view class="hnav-back" bindtap="onBack">
+      <icon type="back" size="20" color="#ffffff"></icon>
+    </view>
+    <text class="hnav-title">热榜 · 签到</text>
+    <view class="hnav-act" bindtap="onShare">
+      <icon type="arrow_up" size="18" color="#ffffff"></icon>
+    </view>
+  </view>
+
+  <!-- 签到卡：连续天数 + 日历 -->
+  <view class="card">
+    <view class="row-between">
+      <view class="col">
+        <text class="card-title">阅读签到</text>
+        <text class="sub">已连续签到 {{streak}} 天，明天可得 +{{nextReward}} 积分</text>
+      </view>
+      <view class="checkin-btn {{checkedToday ? 'checked' : 'anim-pulse'}}" bindtap="onCheckin">
+        <text class="checkin-tx">{{checkedToday ? '已签到' : '签到'}}</text>
+      </view>
+    </view>
+
+    <!-- 日历（本月） -->
+    <view class="cal-week">
+      <text class="cal-wd" wx:for="{{weekdays}}" wx:key="*this">{{item}}</text>
+    </view>
+    <view class="cal-grid">
+      <view class="cal-cell" wx:for="{{calendar}}" wx:key="key">
+        <view wx:if="{{item.day}}" class="cal-day {{item.done ? 'cal-done' : ''}} {{item.today ? 'cal-today' : ''}}"
+              bindtap="onPickDay" data-d="{{item.day}}">
+          <text class="cal-tx {{item.done ? 'cal-tx-on' : ''}}">{{item.day}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 阅读统计：canvas 柱状图 -->
+  <view class="card">
+    <text class="card-title">近 7 日阅读时长</text>
+    <canvas class="chart" canvas-id="readChart"></canvas>
+    <view class="row-between">
+      <text class="sub">本周共 {{weekTotal}} 分钟</text>
+      <text class="sub">日均 {{weekAvg}} 分钟</text>
+    </view>
+    <progress percent="{{goalPercent}}" stroke-width="6" activeColor="#D43C33" backgroundColor="#EDEDED"></progress>
+    <text class="sub">周目标完成度 {{goalPercent}}%</text>
+  </view>
+
+  <!-- 完整热榜 -->
+  <view class="card">
+    <view class="row-between">
+      <text class="card-title">🔥 完整热榜</text>
+      <view class="row">
+        <text class="filter {{range === 'day' ? 'on' : ''}}" bindtap="onRange" data-k="day">今日</text>
+        <text class="filter {{range === 'week' ? 'on' : ''}}" bindtap="onRange" data-k="week">本周</text>
+      </view>
+    </view>
+    <view class="rank-line" wx:for="{{ranking}}" wx:key="id" bindtap="onOpen" data-id="{{item.id}}">
+      <text class="rank-no no-{{index < 3 ? 'top' : 'normal'}}">{{index + 1}}</text>
+      <view class="col grow">
+        <text class="rank-title">{{item.title}}</text>
+        <view class="bar-bg">
+          <view class="bar-in" style="width:{{item.percent}}%"></view>
+        </view>
+      </view>
+      <text class="rank-heat">{{item.heat}}万</text>
+    </view>
+  </view>
+
+  <!-- 我的收藏 -->
+  <view class="card">
+    <view class="row-between">
+      <text class="card-title">我的收藏（{{favorites.length}}）</text>
+      <text class="sub" wx:if="{{favorites.length > 0}}" bindtap="onClearFav">清空</text>
+    </view>
+    <view wx:if="{{favorites.length == 0}}" class="empty">
+      <icon type="star_o" size="44" color="#dddddd"></icon>
+      <text class="empty-tx">还没有收藏，去首页点个星标试试</text>
+    </view>
+    <view class="fav-line" wx:for="{{favorites}}" wx:key="id" bindtap="onOpen" data-id="{{item.id}}">
+      <icon type="star" size="14" color="#D43C33"></icon>
+      <text class="fav-tx">{{item.title}}</text>
+    </view>
+  </view>
+
+  <view class="bottom-space"></view>
+</view>

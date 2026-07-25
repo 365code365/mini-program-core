@@ -1,0 +1,78 @@
+<view class="page">
+  <view class="nav-bar">
+    <view class="nav-back" bindtap="onBack">
+      <icon type="back" size="20" color="#ffffff"></icon>
+    </view>
+    <text class="nav-title">我的订单</text>
+    <view class="nav-action" bindtap="onGoHome">
+      <icon type="success_no_circle" size="18" color="#ffffff"></icon>
+    </view>
+  </view>
+
+  <!-- 状态筛选（横向滚动 tab） -->
+  <scroll-view class="tabs" scroll-x="{{true}}">
+    <view class="tabs-row">
+      <text class="pill {{statusKey === item.key ? 'pill-on' : ''}}" wx:for="{{statusTabs}}" wx:key="key"
+            bindtap="onSwitchStatus" data-key="{{item.key}}">{{item.name}}({{item.count}})</text>
+    </view>
+  </scroll-view>
+
+  <!-- 空态 -->
+  <view class="empty-box" wx:if="{{list.length == 0}}">
+    <icon type="info" size="64" color="#dddddd"></icon>
+    <text class="empty-tip">还没有相关订单</text>
+    <button type="primary" bindtap="onGoHome">去下单</button>
+  </view>
+
+  <!-- 订单列表 -->
+  <view class="order-card anim-fade-up" wx:for="{{list}}" wx:key="id">
+    <view class="row-between">
+      <text class="order-no">订单号 {{item.id}}</text>
+      <text class="order-status {{item.status === 'paid' ? 'status-paid' : ''}}">{{item.statusText}}</text>
+    </view>
+    <view class="divider gap"></view>
+    <view class="order-goods" wx:for="{{item.items}}" wx:for-item="g" wx:key="id"
+          bindtap="onGoodsTap" data-id="{{g.id}}">
+      <image class="order-img" src="{{g.image}}" mode="aspectFill"></image>
+      <view class="col grow order-info">
+        <text class="order-name">{{g.name}}</text>
+        <text class="muted">规格：{{g.spec}} · x{{g.quantity}}</text>
+      </view>
+      <text class="price">¥{{g.price}}</text>
+    </view>
+    <view class="row-between order-foot">
+      <text class="muted">{{item.createdAt}} · {{item.ship}}</text>
+      <text class="order-total">实付 ¥{{item.total}}</text>
+    </view>
+
+    <!-- 物流进度 -->
+    <view class="ship-box">
+      <view class="row-between" bindtap="onToggleTrace" data-id="{{item.id}}">
+        <text class="h2">物流进度 {{item.progress}}%</text>
+        <view class="row">
+          <text class="muted">{{openId === item.id ? '收起' : '展开'}}</text>
+          <icon type="{{openId === item.id ? 'arrow_up' : 'arrow_down'}}" size="12" color="#999"></icon>
+        </view>
+      </view>
+      <progress percent="{{item.progress}}" stroke-width="4" activeColor="#FF6B35" backgroundColor="#F0F0F0"></progress>
+      <view wx:if="{{openId === item.id}}" class="trace">
+        <view class="trace-item" wx:for="{{item.trace}}" wx:for-item="t" wx:key="time">
+          <view class="trace-dot {{index === 0 ? 'trace-dot-on' : ''}}"></view>
+          <view class="col grow">
+            <text class="trace-text {{index === 0 ? 'trace-text-on' : ''}}">{{t.text}}</text>
+            <text class="trace-time">{{t.time}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="row order-actions">
+      <view class="ghost-btn" bindtap="onContact">联系客服</view>
+      <view wx:if="{{item.status === 'paid'}}" class="ghost-btn" bindtap="onRemind" data-id="{{item.id}}">提醒发货</view>
+      <view wx:if="{{item.status !== 'done'}}" class="primary-btn" bindtap="onConfirm" data-id="{{item.id}}">确认收货</view>
+      <view wx:else class="primary-btn" bindtap="onReview" data-id="{{item.id}}">去评价</view>
+    </view>
+  </view>
+
+  <view class="bottom-space"></view>
+</view>

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/search/search</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./search.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view page">
+    <div class="wx-view snav">
+      <div class="wx-view snav-back" data-tap="onBack">
+        <i class="wx-icon wxicon wxicon-back" style="width:20px;height:20px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 4 7.5 12 15.5 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+      </div>
+      <div class="wx-view snav-box">
+        <i class="wx-icon wxicon wxicon-search" style="width:14px;height:14px;color:#9A9A9A"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.4" cy="10.4" r="6.4" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15.2 15.2 21 21" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></i>
+        <input class="wx-input snav-input" type="text" value="" placeholder="搜索新闻 / 视频 / 作者" data-confirm="onSearch" data-input="onInput">
+      </div>
+      <span class="wx-text snav-go" data-tap="onSearch">搜索</span>
+    </div>
+    <div class="wx-view">
+      <div class="wx-view card">
+        <div class="wx-view card-head">
+          <span class="wx-text card-title">🔥 热搜榜</span>
+          <span class="wx-text card-more" data-tap="onGoHot">完整榜单</span>
+        </div>
+        <div class="wx-view hot-line" data-tap="onTapTag" data-ds-k="数字经济">
+          <span class="wx-text hot-idx idx-top">1</span>
+          <span class="wx-text hot-word">数字经济</span>
+          <span class="wx-text hot-flag">爆</span>
+          <div class="wx-view grow"></div>
+          <span class="wx-text hot-num">210万</span>
+        </div>
+        <div class="wx-view hot-line" data-tap="onTapTag" data-ds-k="大飞机">
+          <span class="wx-text hot-idx idx-top">2</span>
+          <span class="wx-text hot-word">大飞机</span>
+          <span class="wx-text hot-flag">热</span>
+          <div class="wx-view grow"></div>
+          <span class="wx-text hot-num">128万</span>
+        </div>
+        <div class="wx-view hot-line" data-tap="onTapTag" data-ds-k="新能源车">
+          <span class="wx-text hot-idx idx-top">3</span>
+          <span class="wx-text hot-word">新能源车</span>
+          <div class="wx-view grow"></div>
+          <span class="wx-text hot-num">165万</span>
+        </div>
+        <div class="wx-view hot-line" data-tap="onTapTag" data-ds-k="房贷利率">
+          <span class="wx-text hot-idx idx-normal">4</span>
+          <span class="wx-text hot-word">房贷利率</span>
+          <div class="wx-view grow"></div>
+          <span class="wx-text hot-num">96万</span>
+        </div>
+        <div class="wx-view hot-line" data-tap="onTapTag" data-ds-k="联赛绝杀">
+          <span class="wx-text hot-idx idx-normal">5</span>
+          <span class="wx-text hot-word">联赛绝杀</span>
+          <div class="wx-view grow"></div>
+          <span class="wx-text hot-num">188万</span>
+        </div>
+        <div class="wx-view hot-line" data-tap="onTapTag" data-ds-k="人工智能">
+          <span class="wx-text hot-idx idx-normal">6</span>
+          <span class="wx-text hot-word">人工智能</span>
+          <span class="wx-text hot-flag">新</span>
+          <div class="wx-view grow"></div>
+          <span class="wx-text hot-num">74万</span>
+        </div>
+      </div>
+    </div>
+    <div class="wx-view bottom-space"></div>
+  </div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/search/search";
+window.__WXML__ = [{"a":{"class":"page"},"c":[{"a":{"class":"snav"},"c":[{"a":{"bindtap":"onBack","class":"snav-back"},"c":[{"a":{"color":"#ffffff","size":"20","type":"back"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"},{"a":{"class":"snav-box"},"c":[{"a":{"color":"#9A9A9A","size":"14","type":"search"},"c":[],"n":"icon","t":"el"},{"a":{"bindconfirm":"onSearch","bindinput":"onInput","class":"snav-input","focus":"{{true}}","placeholder":"搜索新闻 / 视频 / 作者","value":"{{keyword}}"},"c":[],"n":"input","t":"el"},{"a":{"bindtap":"onClear","wx:if":"{{keyword}}"},"c":[{"a":{"color":"#cccccc","size":"15","type":"clear"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onSearch","class":"snav-go"},"c":[{"t":"tx","x":"搜索"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"wx:if":"{{!searched}}"},"c":[{"a":{"class":"card","wx:if":"{{history.length > 0}}"},"c":[{"a":{"class":"card-head"},"c":[{"a":{"class":"card-title"},"c":[{"t":"tx","x":"搜索历史"}],"n":"text","t":"el"},{"a":{"bindtap":"onClearHistory","class":"card-more"},"c":[{"t":"tx","x":"清空"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"tag-wrap"},"c":[{"a":{"bindtap":"onTapTag","class":"s-tag","data-k":"{{item}}","wx:for":"{{history}}","wx:key":"*this"},"c":[{"t":"tx","x":"{{item}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card"},"c":[{"a":{"class":"card-head"},"c":[{"a":{"class":"card-title"},"c":[{"t":"tx","x":"🔥 热搜榜"}],"n":"text","t":"el"},{"a":{"bindtap":"onGoHot","class":"card-more"},"c":[{"t":"tx","x":"完整榜单"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onTapTag","class":"hot-line","data-k":"{{item.word}}","wx:for":"{{hotSearch}}","wx:key":"word"},"c":[{"a":{"class":"hot-idx idx-{{index < 3 ? 'top' : 'normal'}}"},"c":[{"t":"tx","x":"{{index + 1}}"}],"n":"text","t":"el"},{"a":{"class":"hot-word"},"c":[{"t":"tx","x":"{{item.word}}"}],"n":"text","t":"el"},{"a":{"class":"hot-flag","wx:if":"{{item.flag}}"},"c":[{"t":"tx","x":"{{item.flag}}"}],"n":"text","t":"el"},{"a":{"class":"grow"},"c":[],"n":"view","t":"el"},{"a":{"class":"hot-num"},"c":[{"t":"tx","x":"{{item.heat}}万"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"wx:if":"{{searched}}"},"c":[{"a":{"class":"res-bar"},"c":[{"a":{"class":"res-tip"},"c":[{"t":"tx","x":"「{{keyword}}」找到 {{results.length}} 条"}],"n":"text","t":"el"},{"a":{"class":"row"},"c":[{"a":{"bindtap":"onSort","class":"res-sort {{sortKey === 'rel' ? 'on' : ''}}","data-k":"rel"},"c":[{"t":"tx","x":"相关"}],"n":"text","t":"el"},{"a":{"bindtap":"onSort","class":"res-sort {{sortKey === 'hot' ? 'on' : ''}}","data-k":"hot"},"c":[{"t":"tx","x":"最热"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"empty","wx:if":"{{results.length == 0}}"},"c":[{"a":{"color":"#dddddd","size":"52","type":"search"},"c":[],"n":"icon","t":"el"},{"a":{"class":"empty-tx"},"c":[{"t":"tx","x":"没有找到相关内容，换个词试试"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onOpen","class":"res-item","data-id":"{{item.id}}","wx:for":"{{results}}","wx:key":"id"},"c":[{"a":{"class":"res-left"},"c":[{"a":{"class":"res-title"},"c":[{"t":"tx","x":"{{item.title}}"}],"n":"text","t":"el"},{"a":{"class":"row res-meta"},"c":[{"a":{"class":"kind","wx:if":"{{item.kind === 'video'}}"},"c":[{"t":"tx","x":"视频"}],"n":"text","t":"el"},{"a":{"class":"res-source"},"c":[{"t":"tx","x":"{{item.source}}"}],"n":"text","t":"el"},{"a":{"class":"dot"},"c":[],"n":"view","t":"el"},{"a":{"class":"res-source"},"c":[{"t":"tx","x":"{{item.comments}}评论"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"res-thumb","mode":"aspectFill","src":"{{item.thumb}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"bottom-space"},"c":[],"n":"view","t":"el"}],"n":"view","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./search.js"></script>
+</body>
+</html>

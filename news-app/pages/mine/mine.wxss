@@ -145,3 +145,10 @@
 .bottom-space {
   height: 110rpx;
 }
+
+/* ── 新增：字号预览 ── */
+.font-sample {
+  color: #555;
+  line-height: 1.8;
+  margin-top: 16rpx;
+}

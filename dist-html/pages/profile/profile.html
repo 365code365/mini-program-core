@@ -16,66 +16,108 @@
 <div id="app">
   <div class="wx-view page">
     <div class="wx-view user-header" data-tap="onUserTap">
-      <div class="wx-view avatar">
-        <i class="wx-icon wxicon wxicon-success" style="width:48px;height:48px;color:#fff"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><path d="M5.8 12.4 10 16.4 18.2 7.6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
-      </div>
+      <img class="wx-image avatar-img" style="object-fit:cover" src="/assets/avatar1.jpg">
       <div class="wx-view user-info">
-        <span class="wx-text user-name">点击登录</span>
+        <span class="wx-text user-name">未登录</span>
         <span class="wx-text user-level">点击登录 / 注册</span>
       </div>
-      <span class="wx-text menu-arrow">&gt;</span>
+      <i class="wx-icon wxicon wxicon-arrow_right" style="width:16px;height:16px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 4 16.5 12 8.5 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
     </div>
     <div class="wx-view order-section">
-      <div class="wx-view order-title">我的订单</div>
+      <div class="wx-view row-between">
+        <span class="wx-text order-title">我的订单</span>
+        <div class="wx-view row" data-tap="onAllOrders">
+          <span class="wx-text muted">全部订单</span>
+          <i class="wx-icon wxicon wxicon-arrow_right" style="width:12px;height:12px;color:#999"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 4 16.5 12 8.5 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+        </div>
+      </div>
       <div class="wx-view order-row">
         <div class="wx-view order-item" data-tap="onOrderTap" data-ds-type="pending">
-          <span class="wx-text order-num">2</span>
+          <span class="wx-text order-num">0</span>
           <span class="wx-text order-label">待付款</span>
         </div>
-        <div class="wx-view order-item" data-tap="onOrderTap" data-ds-type="shipping">
-          <span class="wx-text order-num">1</span>
+        <div class="wx-view order-item" data-tap="onOrderTap" data-ds-type="paid">
+          <span class="wx-text order-num">0</span>
           <span class="wx-text order-label">待发货</span>
         </div>
-        <div class="wx-view order-item" data-tap="onOrderTap" data-ds-type="receiving">
-          <span class="wx-text order-num">3</span>
+        <div class="wx-view order-item" data-tap="onOrderTap" data-ds-type="shipping">
+          <span class="wx-text order-num">0</span>
           <span class="wx-text order-label">待收货</span>
         </div>
-        <div class="wx-view order-item" data-tap="onOrderTap" data-ds-type="review">
-          <span class="wx-text order-num">5</span>
-          <span class="wx-text order-label">待评价</span>
+        <div class="wx-view order-item" data-tap="onOrderTap" data-ds-type="done">
+          <span class="wx-text order-num">0</span>
+          <span class="wx-text order-label">已完成</span>
         </div>
       </div>
     </div>
     <div class="wx-view menu-section">
-      <div class="wx-view menu-item" data-tap="onMenuTap" data-ds-id="1">
-        <i class="wx-icon wxicon wxicon-success" style="width:24px;height:24px;color:#FF6B35"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><path d="M5.8 12.4 10 16.4 18.2 7.6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+      <div class="wx-view menu-item" data-tap="onMenuTap" data-ds-key="address">
+        <div class="wx-view menu-icon" style="background-color:#FF6B35">
+          <i class="wx-icon wxicon wxicon-info_no_circle" style="width:18px;height:18px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5.6" r="2" fill="currentColor"/><rect x="10.4" y="9.8" width="3.2" height="9.4" rx="1.6" fill="currentColor"/></svg></i>
+        </div>
         <span class="wx-text menu-text">收货地址</span>
-        <span class="wx-text menu-arrow">&gt;</span>
+        <i class="wx-icon wxicon wxicon-arrow_right" style="width:14px;height:14px;color:#cccccc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 4 16.5 12 8.5 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
       </div>
-      <div class="wx-view menu-item" data-tap="onMenuTap" data-ds-id="2">
-        <i class="wx-icon wxicon wxicon-warn" style="width:24px;height:24px;color:#FF69B4"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><rect x="10.9" y="5.4" width="2.2" height="7.2" rx="1.1" fill="#fff"/><circle cx="12" cy="16.6" r="1.7" fill="#fff"/></svg></i>
-        <span class="wx-text menu-text">我的收藏</span>
-        <span class="wx-text menu-arrow">&gt;</span>
-      </div>
-      <div class="wx-view menu-item" data-tap="onMenuTap" data-ds-id="3">
-        <i class="wx-icon wxicon wxicon-waiting" style="width:24px;height:24px;color:#52C41A"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><rect x="10.9" y="6.2" width="2.2" height="6.6" rx="1.1" fill="#fff"/><rect x="12" y="10.9" width="5.2" height="2.2" rx="1.1" fill="#fff"/><circle cx="12" cy="12" r="1.6" fill="#fff"/></svg></i>
+      <div class="wx-view menu-item" data-tap="onMenuTap" data-ds-key="coupon">
+        <div class="wx-view menu-icon" style="background-color:#FAAD14">
+          <i class="wx-icon wxicon wxicon-arrow_down" style="width:18px;height:18px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.5 12 16.5 20 8.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+        </div>
         <span class="wx-text menu-text">优惠券</span>
-        <span class="wx-text menu-value">5张可用</span>
-        <span class="wx-text menu-arrow">&gt;</span>
+        <span class="wx-text menu-value">3 张可领</span>
+        <i class="wx-icon wxicon wxicon-arrow_right" style="width:14px;height:14px;color:#cccccc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 4 16.5 12 8.5 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
       </div>
-      <div class="wx-view menu-item" data-tap="onMenuTap" data-ds-id="4">
-        <i class="wx-icon wxicon wxicon-info" style="width:24px;height:24px;color:#4A90D9"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><circle cx="12" cy="7.6" r="1.7" fill="#fff"/><rect x="10.9" y="10.8" width="2.2" height="7" rx="1.1" fill="#fff"/></svg></i>
-        <span class="wx-text menu-text">帮助中心</span>
-        <span class="wx-text menu-arrow">&gt;</span>
+      <div class="wx-view menu-item" data-tap="onMenuTap" data-ds-key="cart">
+        <div class="wx-view menu-icon" style="background-color:#52C41A">
+          <i class="wx-icon wxicon wxicon-clock" style="width:18px;height:18px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.4" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 5.6V12h5.2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></i>
+        </div>
+        <span class="wx-text menu-text">购物车</span>
+        <span class="wx-text menu-value">空</span>
+        <i class="wx-icon wxicon wxicon-arrow_right" style="width:14px;height:14px;color:#cccccc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 4 16.5 12 8.5 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+      </div>
+      <div class="wx-view menu-item" data-tap="onMenuTap" data-ds-key="search">
+        <div class="wx-view menu-icon" style="background-color:#13c2c2">
+          <i class="wx-icon wxicon wxicon-search" style="width:18px;height:18px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.4" cy="10.4" r="6.4" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15.2 15.2 21 21" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></i>
+        </div>
+        <span class="wx-text menu-text">搜索历史</span>
+        <span class="wx-text menu-value">0 条</span>
+        <i class="wx-icon wxicon wxicon-arrow_right" style="width:14px;height:14px;color:#cccccc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 4 16.5 12 8.5 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+      </div>
+      <div class="wx-view menu-item" data-tap="onMenuTap" data-ds-key="showcase">
+        <div class="wx-view menu-icon" style="background-color:#EB2F96">
+          <i class="wx-icon wxicon wxicon-star" style="width:18px;height:18px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="currentColor"/></svg></i>
+        </div>
+        <span class="wx-text menu-text">能力展示</span>
+        <i class="wx-icon wxicon wxicon-arrow_right" style="width:14px;height:14px;color:#cccccc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 4 16.5 12 8.5 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+      </div>
+      <div class="wx-view menu-item" data-tap="onMenuTap" data-ds-key="form">
+        <div class="wx-view menu-icon" style="background-color:#722ed1">
+          <i class="wx-icon wxicon wxicon-success_no_circle" style="width:18px;height:18px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12.5 9 18 20.5 5.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+        </div>
+        <span class="wx-text menu-text">表单与事件</span>
+        <i class="wx-icon wxicon wxicon-arrow_right" style="width:14px;height:14px;color:#cccccc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 4 16.5 12 8.5 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+      </div>
+      <div class="wx-view menu-item" data-tap="onMenuTap" data-ds-key="canvas">
+        <div class="wx-view menu-icon" style="background-color:#2F54EB">
+          <i class="wx-icon wxicon wxicon-plus" style="width:18px;height:18px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5V19.5M4.5 12H19.5" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg></i>
+        </div>
+        <span class="wx-text menu-text">Canvas 绘图</span>
+        <i class="wx-icon wxicon wxicon-arrow_right" style="width:14px;height:14px;color:#cccccc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 4 16.5 12 8.5 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+      </div>
+      <div class="wx-view menu-item" data-tap="onMenuTap" data-ds-key="components">
+        <div class="wx-view menu-icon" style="background-color:#FA541C">
+          <i class="wx-icon wxicon wxicon-warn_no_circle" style="width:18px;height:18px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="10.4" y="3" width="3.2" height="11.2" rx="1.6" fill="currentColor"/><circle cx="12" cy="18.8" r="2" fill="currentColor"/></svg></i>
+        </div>
+        <span class="wx-text menu-text">组件示例</span>
+        <i class="wx-icon wxicon wxicon-arrow_right" style="width:14px;height:14px;color:#cccccc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 4 16.5 12 8.5 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
       </div>
     </div>
     <div class="wx-view logout-section">
-      <button class="wx-button logout-btn wx-button-default" data-tap="onLogout">退出登录</button>
+      <button class="wx-button logout-btn wx-button-default" data-tap="onLogout">立即登录</button>
     </div>
     <div class="wx-view bottom-space"></div>
   </div>
 </div>
-<nav class="wx-custom-tabbar"><div class="wx-view custom-tabbar"><div class="wx-view tabbar-item " data-tap="switchTab" data-ds-path="pages/index/index" data-tabbar-href="../../pages/index/index.html" data-ds-index="0"><i class="wx-icon wxicon wxicon-success" style="width:24px;height:24px;color:#999"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><path d="M5.8 12.4 10 16.4 18.2 7.6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i><span class="wx-text tabbar-label ">首页</span></div><div class="wx-view tabbar-item " data-tap="switchTab" data-ds-path="pages/category/category" data-tabbar-href="../../pages/category/category.html" data-ds-index="1"><i class="wx-icon wxicon wxicon-info" style="width:24px;height:24px;color:#999"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><circle cx="12" cy="7.6" r="1.7" fill="#fff"/><rect x="10.9" y="10.8" width="2.2" height="7" rx="1.1" fill="#fff"/></svg></i><span class="wx-text tabbar-label ">分类</span></div><div class="wx-view tabbar-item " data-tap="switchTab" data-ds-path="pages/cart/cart" data-tabbar-href="../../pages/cart/cart.html" data-ds-index="2"><i class="wx-icon wxicon wxicon-waiting" style="width:24px;height:24px;color:#999"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><rect x="10.9" y="6.2" width="2.2" height="6.6" rx="1.1" fill="#fff"/><rect x="12" y="10.9" width="5.2" height="2.2" rx="1.1" fill="#fff"/><circle cx="12" cy="12" r="1.6" fill="#fff"/></svg></i><span class="wx-text tabbar-label ">购物车</span></div><div class="wx-view tabbar-item active" data-tap="switchTab" data-ds-path="pages/profile/profile" data-tabbar-href="../../pages/profile/profile.html" data-ds-index="3"><i class="wx-icon wxicon wxicon-warn" style="width:24px;height:24px;color:#FF6B35"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><rect x="10.9" y="5.4" width="2.2" height="7.2" rx="1.1" fill="#fff"/><circle cx="12" cy="16.6" r="1.7" fill="#fff"/></svg></i><span class="wx-text tabbar-label label-active">我的</span></div></div></nav>
+<nav class="wx-custom-tabbar"><div class="wx-view custom-tabbar"><div class="wx-view tabbar-item " data-tap="switchTab" data-ds-path="pages/index/index" data-tabbar-href="../../pages/index/index.html" data-ds-index="0"><i class="wx-icon wxicon wxicon-success" style="width:24px;height:24px;color:#999"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><path d="M5.8 12.4 10 16.4 18.2 7.6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i><span class="wx-text tabbar-label ">首页</span></div><div class="wx-view tabbar-item " data-tap="switchTab" data-ds-path="pages/category/category" data-tabbar-href="../../pages/category/category.html" data-ds-index="1"><i class="wx-icon wxicon wxicon-info" style="width:24px;height:24px;color:#999"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><circle cx="12" cy="7.6" r="1.7" fill="#fff"/><rect x="10.9" y="10.8" width="2.2" height="7" rx="1.1" fill="#fff"/></svg></i><span class="wx-text tabbar-label ">分类</span></div><div class="wx-view tabbar-item " data-tap="switchTab" data-ds-index="2" data-ds-path="pages/cart/cart" data-tabbar-href="../../pages/cart/cart.html"><i class="wx-icon wxicon wxicon-waiting" style="width:24px;height:24px;color:#999"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><rect x="10.9" y="6.2" width="2.2" height="6.6" rx="1.1" fill="#fff"/><rect x="12" y="10.9" width="5.2" height="2.2" rx="1.1" fill="#fff"/><circle cx="12" cy="12" r="1.6" fill="#fff"/></svg></i><span class="wx-text tabbar-label ">购物车</span></div><div class="wx-view tabbar-item active" data-tap="switchTab" data-ds-index="3" data-ds-path="pages/profile/profile" data-tabbar-href="../../pages/profile/profile.html"><i class="wx-icon wxicon wxicon-warn" style="width:24px;height:24px;color:#FF6B35"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><rect x="10.9" y="5.4" width="2.2" height="7.2" rx="1.1" fill="#fff"/><circle cx="12" cy="16.6" r="1.7" fill="#fff"/></svg></i><span class="wx-text tabbar-label label-active">我的</span></div></div></nav>
 <script>
 (function(){var bar=document.currentScript&&document.currentScript.previousElementSibling;
 if(!bar||!bar.classList.contains('wx-custom-tabbar')){bar=document.querySelector('.wx-custom-tabbar');}
@@ -89,7 +131,7 @@ if(href){e.preventDefault();e.stopPropagation();window.location.href=href;}
 </script>
 <script>
 window.__PAGE_ROUTE__ = "pages/profile/profile";
-window.__WXML__ = [{"a":{"class":"page"},"c":[{"a":{"bindtap":"onUserTap","class":"user-header"},"c":[{"a":{"class":"avatar"},"c":[{"a":{"color":"#fff","size":"48","type":"success"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"},{"a":{"class":"user-info"},"c":[{"a":{"class":"user-name"},"c":[{"t":"tx","x":"{{userName}}"}],"n":"text","t":"el"},{"a":{"class":"user-level"},"c":[{"t":"tx","x":"{{loggedIn ? '普通会员' : '点击登录 / 注册'}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"menu-arrow"},"c":[{"t":"tx","x":">"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"order-section"},"c":[{"a":{"class":"order-title"},"c":[{"t":"tx","x":"我的订单"}],"n":"view","t":"el"},{"a":{"class":"order-row"},"c":[{"a":{"bindtap":"onOrderTap","class":"order-item","data-type":"pending"},"c":[{"a":{"class":"order-num"},"c":[{"t":"tx","x":"2"}],"n":"text","t":"el"},{"a":{"class":"order-label"},"c":[{"t":"tx","x":"待付款"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onOrderTap","class":"order-item","data-type":"shipping"},"c":[{"a":{"class":"order-num"},"c":[{"t":"tx","x":"1"}],"n":"text","t":"el"},{"a":{"class":"order-label"},"c":[{"t":"tx","x":"待发货"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onOrderTap","class":"order-item","data-type":"receiving"},"c":[{"a":{"class":"order-num"},"c":[{"t":"tx","x":"3"}],"n":"text","t":"el"},{"a":{"class":"order-label"},"c":[{"t":"tx","x":"待收货"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onOrderTap","class":"order-item","data-type":"review"},"c":[{"a":{"class":"order-num"},"c":[{"t":"tx","x":"5"}],"n":"text","t":"el"},{"a":{"class":"order-label"},"c":[{"t":"tx","x":"待评价"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"menu-section"},"c":[{"a":{"bindtap":"onMenuTap","class":"menu-item","data-id":"1"},"c":[{"a":{"color":"#FF6B35","size":"24","type":"success"},"c":[],"n":"icon","t":"el"},{"a":{"class":"menu-text"},"c":[{"t":"tx","x":"收货地址"}],"n":"text","t":"el"},{"a":{"class":"menu-arrow"},"c":[{"t":"tx","x":">"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onMenuTap","class":"menu-item","data-id":"2"},"c":[{"a":{"color":"#FF69B4","size":"24","type":"warn"},"c":[],"n":"icon","t":"el"},{"a":{"class":"menu-text"},"c":[{"t":"tx","x":"我的收藏"}],"n":"text","t":"el"},{"a":{"class":"menu-arrow"},"c":[{"t":"tx","x":">"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onMenuTap","class":"menu-item","data-id":"3"},"c":[{"a":{"color":"#52C41A","size":"24","type":"waiting"},"c":[],"n":"icon","t":"el"},{"a":{"class":"menu-text"},"c":[{"t":"tx","x":"优惠券"}],"n":"text","t":"el"},{"a":{"class":"menu-value"},"c":[{"t":"tx","x":"{{couponText}}"}],"n":"text","t":"el"},{"a":{"class":"menu-arrow"},"c":[{"t":"tx","x":">"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onMenuTap","class":"menu-item","data-id":"4"},"c":[{"a":{"color":"#4A90D9","size":"24","type":"info"},"c":[],"n":"icon","t":"el"},{"a":{"class":"menu-text"},"c":[{"t":"tx","x":"帮助中心"}],"n":"text","t":"el"},{"a":{"class":"menu-arrow"},"c":[{"t":"tx","x":">"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"logout-section"},"c":[{"a":{"bindtap":"onLogout","class":"logout-btn"},"c":[{"t":"tx","x":"退出登录"}],"n":"button","t":"el"}],"n":"view","t":"el"},{"a":{"class":"bottom-space"},"c":[],"n":"view","t":"el"}],"n":"view","t":"el"}];
+window.__WXML__ = [{"a":{"class":"page"},"c":[{"a":{"bindtap":"onUserTap","class":"user-header"},"c":[{"a":{"class":"avatar-img","mode":"aspectFill","src":"/assets/avatar1.jpg"},"c":[],"n":"image","t":"el"},{"a":{"class":"user-info"},"c":[{"a":{"class":"user-name"},"c":[{"t":"tx","x":"{{userName}}"}],"n":"text","t":"el"},{"a":{"class":"user-level"},"c":[{"t":"tx","x":"{{loggedIn ? '普通会员 · 积分 ' + points : '点击登录 / 注册'}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"color":"#ffffff","size":"16","type":"arrow_right"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"},{"a":{"class":"order-section"},"c":[{"a":{"class":"row-between"},"c":[{"a":{"class":"order-title"},"c":[{"t":"tx","x":"我的订单"}],"n":"text","t":"el"},{"a":{"bindtap":"onAllOrders","class":"row"},"c":[{"a":{"class":"muted"},"c":[{"t":"tx","x":"全部订单"}],"n":"text","t":"el"},{"a":{"color":"#999","size":"12","type":"arrow_right"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"order-row"},"c":[{"a":{"bindtap":"onOrderTap","class":"order-item","data-type":"{{item.key}}","wx:for":"{{orderStats}}","wx:key":"key"},"c":[{"a":{"class":"order-num"},"c":[{"t":"tx","x":"{{item.count}}"}],"n":"text","t":"el"},{"a":{"class":"order-label"},"c":[{"t":"tx","x":"{{item.name}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"menu-section"},"c":[{"a":{"bindtap":"onMenuTap","class":"menu-item","data-key":"{{item.key}}","wx:for":"{{menus}}","wx:key":"key"},"c":[{"a":{"class":"menu-icon","style":"background-color:{{item.color}}"},"c":[{"a":{"color":"#ffffff","size":"18","type":"{{item.icon}}"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"},{"a":{"class":"menu-text"},"c":[{"t":"tx","x":"{{item.name}}"}],"n":"text","t":"el"},{"a":{"class":"menu-value","wx:if":"{{item.value}}"},"c":[{"t":"tx","x":"{{item.value}}"}],"n":"text","t":"el"},{"a":{"color":"#cccccc","size":"14","type":"arrow_right"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"logout-section"},"c":[{"a":{"bindtap":"onLogout","class":"logout-btn"},"c":[{"t":"tx","x":"{{loggedIn ? '退出登录' : '立即登录'}}"}],"n":"button","t":"el"}],"n":"view","t":"el"},{"a":{"class":"bottom-space"},"c":[],"n":"view","t":"el"}],"n":"view","t":"el"}];
 </script>
 <script src="../../common/runtime.js"></script>
 <script src="../../common/app.js"></script>

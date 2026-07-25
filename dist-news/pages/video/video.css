@@ -94,3 +94,29 @@
 .bottom-space {
   height: 55px;
 }
+
+/* ── 新增：播放器 / 自动播放开关 / 收藏 ── */
+.player {
+  width: 100%;
+  height: 190px;
+  border-radius: 5px;
+  background-color: #000;
+}
+.grow {
+  flex: 1;
+}
+.auto-line {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.auto-tx {
+  font-size: 11px;
+  color: #8A8A8A;
+  margin-right: 6px;
+}
+.act {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}

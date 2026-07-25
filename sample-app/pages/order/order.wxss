@@ -1,0 +1,150 @@
+/* 确认订单 */
+.addr-card {
+  background-color: #fff;
+  border-radius: 16rpx;
+  margin: 20rpx;
+  padding: 28rpx 24rpx;
+}
+.addr-body {
+  flex: 1;
+  margin-left: 16rpx;
+}
+.addr-name {
+  font-size: 30rpx;
+  color: #1a1a1a;
+  font-weight: bold;
+}
+.addr-phone {
+  font-size: 26rpx;
+  color: #666;
+  margin-left: 20rpx;
+  margin-right: 16rpx;
+}
+.addr-detail {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 10rpx;
+}
+
+/* 商品清单 */
+.goods {
+  display: flex;
+  flex-direction: row;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #F5F5F5;
+}
+.goods-img {
+  width: 140rpx;
+  height: 140rpx;
+  min-width: 140rpx;
+  border-radius: 12rpx;
+  background-color: #F5F5F5;
+}
+.goods-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-left: 20rpx;
+}
+.goods-name {
+  font-size: 28rpx;
+  color: #333;
+}
+.goods-bottom {
+  margin-top: 16rpx;
+}
+
+/* 表单行 */
+.pick-line {
+  width: 100%;
+}
+.gap {
+  margin: 24rpx 0;
+}
+.remark {
+  flex: 1;
+  font-size: 26rpx;
+  color: #333;
+  text-align: right;
+}
+.coupon-val {
+  font-size: 26rpx;
+  color: #FF6B35;
+  margin-right: 6rpx;
+}
+.pay-line {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 20rpx 0;
+}
+.pay-name {
+  font-size: 28rpx;
+  color: #333;
+  margin-left: 20rpx;
+  margin-right: 16rpx;
+}
+
+/* 金额 */
+.fee-line {
+  padding: 10rpx 0;
+}
+.fee {
+  font-size: 26rpx;
+  color: #333;
+}
+.fee-cut {
+  font-size: 26rpx;
+  color: #FF3B30;
+}
+.big {
+  font-size: 40rpx;
+}
+
+/* 提交栏 */
+.submit-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 110rpx;
+  background-color: #fff;
+  border-top: 1rpx solid #EDEDED;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24rpx;
+  z-index: 500;
+}
+.submit-btn {
+  border-radius: 44rpx;
+  min-width: 260rpx;
+}
+
+/* 优惠券弹层 */
+.coupon-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #fff;
+  border-radius: 24rpx 24rpx 0 0;
+  padding: 32rpx 24rpx 40rpx 24rpx;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+.coupon-opt {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid #F5F5F5;
+}
+.coupon-amt {
+  font-size: 30rpx;
+  color: #FF3B30;
+  font-weight: bold;
+  margin-right: 20rpx;
+}

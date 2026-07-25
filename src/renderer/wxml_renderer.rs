@@ -18,7 +18,7 @@ use super::components::{
     CanvasComponent, SwiperComponent, SwiperItemComponent, RichTextComponent,
     PickerComponent, PickerViewComponent, PickerViewColumnComponent,
     CheckboxGroupComponent, RadioGroupComponent,
-    build_base_style, Tree, TextMeasure, measure_text_node,
+    build_base_style, Tree, TextMeasure, measure_text_node, draw_background,
 };
 
 #[derive(Debug, Clone)]
@@ -195,6 +195,49 @@ impl WxmlRenderer {
             }
         }
         Some((resolved, transform.unwrap_or_else(super::components::Transform::new)))
+    }
+
+    /// 绘制 swiper 容器：裁剪到自身盒子 → 整行按当前页横向偏移 → 逐项走普通绘制 → 指示点。
+    ///
+    /// 只有"当前页在哪儿"是 swiper 特有的，item 内容（图片、浮层、flex、动画、
+    /// 绝对定位）全部复用通用绘制路径，不再自成一套。
+    fn draw_swiper_container(
+        &mut self,
+        canvas: &mut Canvas,
+        taffy: &Tree,
+        node: &RenderNode,
+        x: f32,
+        y: f32,
+        w: f32,
+        h: f32,
+        interaction: &mut InteractionManager,
+        kind: DrawKind,
+    ) {
+        let sf = self.scale_factor;
+        draw_background(canvas, &node.style, x, y, w, h);
+        if node.children.is_empty() || w <= 0.0 || h <= 0.0 {
+            return;
+        }
+        let current = SwiperComponent::current_index(node, x, y);
+        if node.children.len() > 1 {
+            self.animations_active = true; // 自动播放/切页需要持续出帧
+        }
+
+        canvas.save();
+        canvas.clip_rect(GeoRect::new(x, y, w, h));
+        // 子项在 taffy 里排成一行/一列（每项一屏），整体沿主轴移动 current 屏
+        let vertical = SwiperComponent::is_vertical(node);
+        let (dx, dy) = if vertical {
+            (0.0, -(current as f32) * h)
+        } else {
+            (-(current as f32) * w, 0.0)
+        };
+        for child in &node.children {
+            self.dispatch_draw(canvas, taffy, child, x + dx, y + dy, interaction, kind);
+        }
+        canvas.restore();
+
+        SwiperComponent::draw_indicators(node, canvas, x, y, w, h, sf, current);
     }
 
     /// 分发到对应的绘制路径（顶层节点 / 子节点两套上下文）
@@ -870,6 +913,32 @@ impl WxmlRenderer {
                     let child_ids: Vec<NodeId> = children.iter().map(|c| c.taffy_node).collect();
                     let (mut ts, ns) = build_base_style(node, &mut ctx);
                     
+                    // 这里重新算了一遍基础样式，会覆盖组件 build 里设的布局，
+                    // 所以需要容器语义的组件必须在这里再补一次（swiper / swiper-item）。
+                    if tag == "swiper" {
+                        let vertical = node.get_attr("vertical")
+                            .map(|v| v == "true" || v == "{{true}}")
+                            .unwrap_or(false);
+                        ts.flex_direction = if vertical { FlexDirection::Column } else { FlexDirection::Row };
+                        ts.flex_wrap = FlexWrap::NoWrap;
+                        if matches!(ts.size.width, Dimension::Auto) {
+                            ts.size.width = percent(1.0);
+                        }
+                        if matches!(ts.size.height, Dimension::Auto) {
+                            ts.size.height = length(SwiperComponent::DEFAULT_HEIGHT * ctx.scale_factor);
+                        }
+                        // 每个 item 占满一屏且不收缩（对齐 HTML .wx-swiper-item{flex:0 0 100%}）
+                        for child in &children {
+                            if let Ok(mut style) = ctx.taffy.style(child.taffy_node).cloned() {
+                                style.size = taffy::geometry::Size { width: percent(1.0), height: percent(1.0) };
+                                style.min_size.width = percent(1.0);
+                                style.flex_shrink = 0.0;
+                                style.flex_grow = 0.0;
+                                ctx.taffy.set_style(child.taffy_node, style).ok();
+                            }
+                        }
+                    }
+                    
                     // 对于 scroll-view，使用 Overflow::Visible 让子节点能够正确布局
                     // 裁剪在渲染时通过 canvas.clip_rect 处理
                     if tag == "scroll-view" {
@@ -903,30 +972,6 @@ impl WxmlRenderer {
                     // 更新样式（保留原有样式中已设置的值，但用新样式覆盖）
                     rn.style = ns;
                 }
-            } else if tag == "swiper" {
-                // swiper 是叶子（自绘），但仍需构建其 swiper-item 子树供组件绘制当前页
-                let mut child_ancestors = ancestors.to_vec();
-                let node_classes: Vec<&str> = node.get_attr("class")
-                    .map(|s| s.split_whitespace().collect())
-                    .unwrap_or_default();
-                child_ancestors.push(ElementDesc::new(
-                    &node.tag_name, node.get_attr("id"), &node_classes, &node.attributes,
-                ));
-                let child_inherited = InheritedText {
-                    font_size: rn.style.font_size,
-                    color: rn.style.text_color,
-                    weight: rn.style.font_weight,
-                    align: rn.style.text_align,
-                    line_height: rn.style.line_height,
-                    letter_spacing: rn.style.letter_spacing,
-                };
-                let mut children = vec![];
-                for (sib_ci, c) in node.children.iter().enumerate() {
-                    if let Some(cr) = self.build_tree(ctx.taffy, c, &child_ancestors, &child_inherited, sib_ci, node.children.len()) {
-                        children.push(cr);
-                    }
-                }
-                rn.children = children;
             }
         }
         
@@ -948,7 +993,7 @@ impl WxmlRenderer {
         matches!(tag, 
             "text" | "button" | "icon" | "progress" | "switch" | 
             "checkbox" | "radio" | "slider" | "input" | "textarea" | "image" | "video" | "canvas" |
-            "picker-view-column" | "swiper"
+            "picker-view-column"
         )
     }
     
@@ -996,6 +1041,12 @@ impl WxmlRenderer {
         let w = layout.size.width;
         let h = layout.size.height;
         // 渲染整个内容到 canvas，滚动在 present_to_buffer 中处理
+        
+        if node.tag == "swiper" {
+            self.draw_swiper_container(canvas, taffy, node, x, y, w, h, interaction,
+                DrawKind::Top { scroll_offset, viewport_height });
+            return;
+        }
         
         let logical_bounds = GeoRect::new(x / sf, y / sf, w / sf, h / sf);
         
@@ -1402,6 +1453,12 @@ impl WxmlRenderer {
         let w = layout.size.width;
         let h = layout.size.height;
         
+        if node.tag == "swiper" {
+            self.draw_swiper_container(canvas, taffy, node, x, y, w, h, interaction,
+                DrawKind::Child { inherited: inherited_color, scroll_offset, viewport_height });
+            return;
+        }
+
         let logical_bounds = GeoRect::new(x / sf, y / sf, w / sf, h / sf);
 
         let text_color = node.style.text_color.unwrap_or(inherited_color);
@@ -1667,7 +1724,8 @@ impl WxmlRenderer {
             "image" => ImageComponent::draw(node, canvas, self.text_renderer.as_deref(), x, y, w, h, sf),
             "video" => VideoComponent::draw(node, canvas, self.text_renderer.as_deref(), x, y, w, h, sf),
             "canvas" => CanvasComponent::draw(node, canvas, x, y, w, h, sf),
-            "swiper" => SwiperComponent::draw_with_text(node, canvas, x, y, w, h, sf, self.text_renderer.as_deref()),
+            // swiper 的背景由通用路径绘制；子项与指示点见 draw_swiper_container
+            "swiper" => draw_background(canvas, &node.style, x, y, w, h),
             "rich-text" => RichTextComponent::draw(node, canvas, self.text_renderer.as_deref(), x, y, w, h, sf),
             "picker" => PickerComponent::draw(node, canvas, self.text_renderer.as_deref(), x, y, w, h, sf),
             "picker-view" => PickerViewComponent::draw(node, canvas, self.text_renderer.as_deref(), x, y, w, h, sf),

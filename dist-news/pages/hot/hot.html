@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/hot/hot</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./hot.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view page">
+    <div class="wx-view hnav">
+      <div class="wx-view hnav-back" data-tap="onBack">
+        <i class="wx-icon wxicon wxicon-back" style="width:20px;height:20px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 4 7.5 12 15.5 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+      </div>
+      <span class="wx-text hnav-title">热榜 · 签到</span>
+      <div class="wx-view hnav-act" data-tap="onShare">
+        <i class="wx-icon wxicon wxicon-arrow_up" style="width:18px;height:18px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15.5 12 7.5 20 15.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+      </div>
+    </div>
+    <div class="wx-view card">
+      <div class="wx-view row-between">
+        <div class="wx-view col">
+          <span class="wx-text card-title">阅读签到</span>
+          <span class="wx-text sub">已连续签到 0 天，明天可得 +5 积分</span>
+        </div>
+        <div class="wx-view checkin-btn anim-pulse" data-tap="onCheckin">
+          <span class="wx-text checkin-tx">签到</span>
+        </div>
+      </div>
+      <div class="wx-view cal-week">
+        <span class="wx-text cal-wd">一</span>
+        <span class="wx-text cal-wd">二</span>
+        <span class="wx-text cal-wd">三</span>
+        <span class="wx-text cal-wd">四</span>
+        <span class="wx-text cal-wd">五</span>
+        <span class="wx-text cal-wd">六</span>
+        <span class="wx-text cal-wd">日</span>
+      </div>
+      <div class="wx-view cal-grid">
+        <div class="wx-view cal-cell"></div>
+        <div class="wx-view cal-cell"></div>
+        <div class="wx-view cal-cell">
+          <div class="wx-view cal-day  " data-tap="onPickDay" data-ds-d="1">
+            <span class="wx-text cal-tx ">1</span>
+          </div>
+        </div>
+        <div class="wx-view cal-cell">
+          <div class="wx-view cal-day  " data-tap="onPickDay" data-ds-d="2">
+            <span class="wx-text cal-tx ">2</span>
+          </div>
+        </div>
+        <div class="wx-view cal-cell">
+          <div class="wx-view cal-day  " data-tap="onPickDay" data-ds-d="3">
+            <span class="wx-text cal-tx ">3</span>
+          </div>
+        </div>
+        <div class="wx-view cal-cell">
+          <div class="wx-view cal-day  " data-tap="onPickDay" data-ds-d="4">
+            <span class="wx-text cal-tx ">4</span>
+          </div>
+        </div>
+        <div class="wx-view cal-cell">
+          <div class="wx-view cal-day  " data-tap="onPickDay" data-ds-d="5">
+            <span class="wx-text cal-tx ">5</span>
+          </div>
+        </div>
+        <div class="wx-view cal-cell">
+          <div class="wx-view cal-day  " data-tap="onPickDay" data-ds-d="6">
+            <span class="wx-text cal-tx ">6</span>
+          </div>
+        </div>
+        <div class="wx-view cal-cell">
+          <div class="wx-view cal-day  " data-tap="onPickDay" data-ds-d="7">
+            <span class="wx-text cal-tx ">7</span>
+          </div>
+        </div>
+        <div class="wx-view cal-cell">
+          <div class="wx-view cal-day  " data-tap="onPickDay" data-ds-d="8">
+            <span class="wx-text cal-tx ">8</span>
+          </div>
+        </div>
+        <div class="wx-view cal-cell">
+          <div class="wx-view cal-day  " data-tap="onPickDay" data-ds-d="9">
+            <span class="wx-text cal-tx ">9</span>
+          </div>
+        </div>
+        <div class="wx-view cal-cell">
+          <div class="wx-view cal-day  " data-tap="onPickDay" data-ds-d="10">
+            <span class="wx-text cal-tx ">10</span>
+          </div>
+        </div>
+        <div class="wx-view cal-cell">
+          <div class="wx-view cal-day  " data-tap="onPickDay" data-ds-d="11">
+            <span class="wx-text cal-tx ">11</span>
+          </div>
+        </div>
+        <div class="wx-view cal-cell">
+          <div class="wx-view cal-day  " data-tap="onPickDay" data-ds-d="12">
+            <span class="wx-text cal-tx ">12</span>
+          </div>
+        </div>
+        <div class="wx-view cal-cell">
+          <div class="wx-view cal-day  " data-tap="onPickDay" data-ds-d="13">
+            <span class="wx-text cal-tx ">13</span>
+          </div>
+        </div>
+        <div class="wx-view cal-cell">
+          <div class="wx-view cal-day  " data-tap="onPickDay" data-ds-d="14">
+            <span class="wx-text cal-tx ">14</span>
+          </div>
+        </div>
+        <div class="wx-view cal-cell">
+          <div class="wx-view cal-day  " data-tap="onPickDay" data-ds-d="15">
+            <span class="wx-text cal-tx ">15</span>
+          </div>
+        </div>
+        <div class="wx-view cal-cell">
+          <div class="wx-view cal-day  " data-tap="onPickDay" data-ds-d="16">
+            <span class="wx-text cal-tx ">16</span>
+          </div>
+        </div>
+        <div class="wx-view cal-cell">
+          <div class="wx-view cal-day  " data-tap="onPickDay" data-ds-d="17">
+            <span class="wx-text cal-tx ">17</span>
+          </div>
+        </div>
+        <div class="wx-view cal-cell">
+          <div class="wx-view cal-day  " data-tap="onPickDay" data-ds-d="18">
+            <span class="wx-text cal-tx ">18</span>
+          </div>
+        </div>
+        <div class="wx-view cal-cell">
+          <div class="wx-view cal-day  " data-tap="onPickDay" data-ds-d="19">
+            <span class="wx-text cal-tx ">19</span>
+          </div>
+        </div>
+        <div class="wx-view cal-cell">
+          <div class="wx-view cal-day  " data-tap="onPickDay" data-ds-d="20">
+            <span class="wx-text cal-tx ">20</span>
+          </div>
+        </div>
+        <div class="wx-view cal-cell">
+          <div class="wx-view cal-day  " data-tap="onPickDay" data-ds-d="21">
+            <span class="wx-text cal-tx ">21</span>
+          </div>
+        </div>
+        <div class="wx-view cal-cell">
+          <div class="wx-view cal-day  " data-tap="onPickDay" data-ds-d="22">
+            <span class="wx-text cal-tx ">22</span>
+          </div>
+        </div>
+        <div class="wx-view cal-cell">
+          <div class="wx-view cal-day  " data-tap="onPickDay" data-ds-d="23">
+            <span class="wx-text cal-tx ">23</span>
+          </div>
+        </div>
+        <div class="wx-view cal-cell">
+          <div class="wx-view cal-day  " data-tap="onPickDay" data-ds-d="24">
+            <span class="wx-text cal-tx ">24</span>
+          </div>
+        </div>
+        <div class="wx-view cal-cell">
+          <div class="wx-view cal-day  cal-today" data-tap="onPickDay" data-ds-d="25">
+            <span class="wx-text cal-tx ">25</span>
+          </div>
+        </div>
+        <div class="wx-view cal-cell">
+          <div class="wx-view cal-day  " data-tap="onPickDay" data-ds-d="26">
+            <span class="wx-text cal-tx ">26</span>
+          </div>
+        </div>
+        <div class="wx-view cal-cell">
+          <div class="wx-view cal-day  " data-tap="onPickDay" data-ds-d="27">
+            <span class="wx-text cal-tx ">27</span>
+          </div>
+        </div>
+        <div class="wx-view cal-cell">
+          <div class="wx-view cal-day  " data-tap="onPickDay" data-ds-d="28">
+            <span class="wx-text cal-tx ">28</span>
+          </div>
+        </div>
+        <div class="wx-view cal-cell">
+          <div class="wx-view cal-day  " data-tap="onPickDay" data-ds-d="29">
+            <span class="wx-text cal-tx ">29</span>
+          </div>
+        </div>
+        <div class="wx-view cal-cell">
+          <div class="wx-view cal-day  " data-tap="onPickDay" data-ds-d="30">
+            <span class="wx-text cal-tx ">30</span>
+          </div>
+        </div>
+        <div class="wx-view cal-cell">
+          <div class="wx-view cal-day  " data-tap="onPickDay" data-ds-d="31">
+            <span class="wx-text cal-tx ">31</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="wx-view card">
+      <span class="wx-text card-title">近 7 日阅读时长</span>
+      <canvas class="wx-canvas chart" data-canvas-id="readChart"></canvas>
+      <div class="wx-view row-between">
+        <span class="wx-text sub">本周共 232 分钟</span>
+        <span class="wx-text sub">日均 33 分钟</span>
+      </div>
+      <div class="wx-progress"><div class="wx-progress-outer"><div class="wx-progress-inner" style="width:77%;background:#D43C33"></div></div></div>
+      <span class="wx-text sub">周目标完成度 77%</span>
+    </div>
+    <div class="wx-view card">
+      <div class="wx-view row-between">
+        <span class="wx-text card-title">🔥 完整热榜</span>
+        <div class="wx-view row">
+          <span class="wx-text filter on" data-tap="onRange" data-ds-k="day">今日</span>
+          <span class="wx-text filter " data-tap="onRange" data-ds-k="week">本周</span>
+        </div>
+      </div>
+      <div class="wx-view rank-line" data-tap="onOpen" data-ds-id="1001">
+        <span class="wx-text rank-no no-top">1</span>
+        <div class="wx-view col grow">
+          <span class="wx-text rank-title">数字经济规模再创新高，实体产业融合成为主线</span>
+          <div class="wx-view bar-bg">
+            <div class="wx-view bar-in" style="width:100%"></div>
+          </div>
+        </div>
+        <span class="wx-text rank-heat">210万</span>
+      </div>
+      <div class="wx-view rank-line" data-tap="onOpen" data-ds-id="301">
+        <span class="wx-text rank-no no-top">2</span>
+        <div class="wx-view col grow">
+          <span class="wx-text rank-title">联赛焦点战：主队补时绝杀 现场万人沸腾</span>
+          <div class="wx-view bar-bg">
+            <div class="wx-view bar-in" style="width:90%"></div>
+          </div>
+        </div>
+        <span class="wx-text rank-heat">188万</span>
+      </div>
+      <div class="wx-view rank-line" data-tap="onOpen" data-ds-id="201">
+        <span class="wx-text rank-no no-top">3</span>
+        <div class="wx-view col grow">
+          <span class="wx-text rank-title">新能源车渗透率突破关键节点</span>
+          <div class="wx-view bar-bg">
+            <div class="wx-view bar-in" style="width:79%"></div>
+          </div>
+        </div>
+        <span class="wx-text rank-heat">165万</span>
+      </div>
+      <div class="wx-view rank-line" data-tap="onOpen" data-ds-id="501">
+        <span class="wx-text rank-no no-normal">4</span>
+        <div class="wx-view col grow">
+          <span class="wx-text rank-title">实拍：国产大飞机完成高原试飞全过程</span>
+          <div class="wx-view bar-bg">
+            <div class="wx-view bar-in" style="width:68%"></div>
+          </div>
+        </div>
+        <span class="wx-text rank-heat">143万</span>
+      </div>
+      <div class="wx-view rank-line" data-tap="onOpen" data-ds-id="101">
+        <span class="wx-text rank-no no-normal">5</span>
+        <div class="wx-view col grow">
+          <span class="wx-text rank-title">国产大飞机再获百架订单</span>
+          <div class="wx-view bar-bg">
+            <div class="wx-view bar-in" style="width:61%"></div>
+          </div>
+        </div>
+        <span class="wx-text rank-heat">128万</span>
+      </div>
+      <div class="wx-view rank-line" data-tap="onOpen" data-ds-id="102">
+        <span class="wx-text rank-no no-normal">6</span>
+        <div class="wx-view col grow">
+          <span class="wx-text rank-title">多地推出住房消费新政</span>
+          <div class="wx-view bar-bg">
+            <div class="wx-view bar-in" style="width:46%"></div>
+          </div>
+        </div>
+        <span class="wx-text rank-heat">96万</span>
+      </div>
+      <div class="wx-view rank-line" data-tap="onOpen" data-ds-id="1002">
+        <span class="wx-text rank-no no-normal">7</span>
+        <div class="wx-view col grow">
+          <span class="wx-text rank-title">城市更新样本：老街区如何焕发新活力</span>
+          <div class="wx-view bar-bg">
+            <div class="wx-view bar-in" style="width:42%"></div>
+          </div>
+        </div>
+        <span class="wx-text rank-heat">88万</span>
+      </div>
+    </div>
+    <div class="wx-view card">
+      <div class="wx-view row-between">
+        <span class="wx-text card-title">我的收藏（0）</span>
+      </div>
+      <div class="wx-view empty">
+        <i class="wx-icon wxicon wxicon-star_o" style="width:44px;height:44px;color:#dddddd"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></i>
+        <span class="wx-text empty-tx">还没有收藏，去首页点个星标试试</span>
+      </div>
+    </div>
+    <div class="wx-view bottom-space"></div>
+  </div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/hot/hot";
+window.__WXML__ = [{"a":{"class":"page"},"c":[{"a":{"class":"hnav"},"c":[{"a":{"bindtap":"onBack","class":"hnav-back"},"c":[{"a":{"color":"#ffffff","size":"20","type":"back"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"},{"a":{"class":"hnav-title"},"c":[{"t":"tx","x":"热榜 · 签到"}],"n":"text","t":"el"},{"a":{"bindtap":"onShare","class":"hnav-act"},"c":[{"a":{"color":"#ffffff","size":"18","type":"arrow_up"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card"},"c":[{"a":{"class":"row-between"},"c":[{"a":{"class":"col"},"c":[{"a":{"class":"card-title"},"c":[{"t":"tx","x":"阅读签到"}],"n":"text","t":"el"},{"a":{"class":"sub"},"c":[{"t":"tx","x":"已连续签到 {{streak}} 天，明天可得 +{{nextReward}} 积分"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onCheckin","class":"checkin-btn {{checkedToday ? 'checked' : 'anim-pulse'}}"},"c":[{"a":{"class":"checkin-tx"},"c":[{"t":"tx","x":"{{checkedToday ? '已签到' : '签到'}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"cal-week"},"c":[{"a":{"class":"cal-wd","wx:for":"{{weekdays}}","wx:key":"*this"},"c":[{"t":"tx","x":"{{item}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"cal-grid"},"c":[{"a":{"class":"cal-cell","wx:for":"{{calendar}}","wx:key":"key"},"c":[{"a":{"bindtap":"onPickDay","class":"cal-day {{item.done ? 'cal-done' : ''}} {{item.today ? 'cal-today' : ''}}","data-d":"{{item.day}}","wx:if":"{{item.day}}"},"c":[{"a":{"class":"cal-tx {{item.done ? 'cal-tx-on' : ''}}"},"c":[{"t":"tx","x":"{{item.day}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card"},"c":[{"a":{"class":"card-title"},"c":[{"t":"tx","x":"近 7 日阅读时长"}],"n":"text","t":"el"},{"a":{"canvas-id":"readChart","class":"chart"},"c":[],"n":"canvas","t":"el"},{"a":{"class":"row-between"},"c":[{"a":{"class":"sub"},"c":[{"t":"tx","x":"本周共 {{weekTotal}} 分钟"}],"n":"text","t":"el"},{"a":{"class":"sub"},"c":[{"t":"tx","x":"日均 {{weekAvg}} 分钟"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"activeColor":"#D43C33","backgroundColor":"#EDEDED","percent":"{{goalPercent}}","stroke-width":"6"},"c":[],"n":"progress","t":"el"},{"a":{"class":"sub"},"c":[{"t":"tx","x":"周目标完成度 {{goalPercent}}%"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card"},"c":[{"a":{"class":"row-between"},"c":[{"a":{"class":"card-title"},"c":[{"t":"tx","x":"🔥 完整热榜"}],"n":"text","t":"el"},{"a":{"class":"row"},"c":[{"a":{"bindtap":"onRange","class":"filter {{range === 'day' ? 'on' : ''}}","data-k":"day"},"c":[{"t":"tx","x":"今日"}],"n":"text","t":"el"},{"a":{"bindtap":"onRange","class":"filter {{range === 'week' ? 'on' : ''}}","data-k":"week"},"c":[{"t":"tx","x":"本周"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onOpen","class":"rank-line","data-id":"{{item.id}}","wx:for":"{{ranking}}","wx:key":"id"},"c":[{"a":{"class":"rank-no no-{{index < 3 ? 'top' : 'normal'}}"},"c":[{"t":"tx","x":"{{index + 1}}"}],"n":"text","t":"el"},{"a":{"class":"col grow"},"c":[{"a":{"class":"rank-title"},"c":[{"t":"tx","x":"{{item.title}}"}],"n":"text","t":"el"},{"a":{"class":"bar-bg"},"c":[{"a":{"class":"bar-in","style":"width:{{item.percent}}%"},"c":[],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"rank-heat"},"c":[{"t":"tx","x":"{{item.heat}}万"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card"},"c":[{"a":{"class":"row-between"},"c":[{"a":{"class":"card-title"},"c":[{"t":"tx","x":"我的收藏（{{favorites.length}}）"}],"n":"text","t":"el"},{"a":{"bindtap":"onClearFav","class":"sub","wx:if":"{{favorites.length > 0}}"},"c":[{"t":"tx","x":"清空"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"empty","wx:if":"{{favorites.length == 0}}"},"c":[{"a":{"color":"#dddddd","size":"44","type":"star_o"},"c":[],"n":"icon","t":"el"},{"a":{"class":"empty-tx"},"c":[{"t":"tx","x":"还没有收藏，去首页点个星标试试"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onOpen","class":"fav-line","data-id":"{{item.id}}","wx:for":"{{favorites}}","wx:key":"id"},"c":[{"a":{"color":"#D43C33","size":"14","type":"star"},"c":[],"n":"icon","t":"el"},{"a":{"class":"fav-tx"},"c":[{"t":"tx","x":"{{item.title}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"bottom-space"},"c":[],"n":"view","t":"el"}],"n":"view","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./hot.js"></script>
+</body>
+</html>

@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/order/order</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./order.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view page">
+    <div class="wx-view nav-bar">
+      <div class="wx-view nav-back" data-tap="onBack">
+        <i class="wx-icon wxicon wxicon-back" style="width:20px;height:20px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 4 7.5 12 15.5 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+      </div>
+      <span class="wx-text nav-title">确认订单</span>
+      <div class="wx-view nav-action"></div>
+    </div>
+    <div class="wx-view addr-card anim-fade-up" data-tap="onPickAddress">
+      <div class="wx-view row">
+        <i class="wx-icon wxicon wxicon-info_no_circle" style="width:18px;height:18px;color:#FF6B35"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5.6" r="2" fill="currentColor"/><rect x="10.4" y="9.8" width="3.2" height="9.4" rx="1.6" fill="currentColor"/></svg></i>
+        <div class="wx-view col addr-body">
+          <div class="wx-view row">
+            <span class="wx-text addr-name">张三</span>
+            <span class="wx-text addr-phone">13800001111</span>
+            <span class="wx-text tag-mini">默认</span>
+          </div>
+          <span class="wx-text addr-detail">广东省深圳市南山区 科技园路 1 号</span>
+        </div>
+        <i class="wx-icon wxicon wxicon-arrow_right" style="width:14px;height:14px;color:#cccccc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 4 16.5 12 8.5 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+      </div>
+    </div>
+    <div class="wx-view card">
+      <span class="wx-text h2">商品清单</span>
+    </div>
+    <div class="wx-view card">
+      <div class="wx-picker pick-line" data-change="onShipChange">
+        <div class="wx-view row-between">
+          <span class="wx-text h2">配送方式</span>
+          <div class="wx-view row">
+            <span class="wx-text muted">普通快递（免运费）</span>
+            <i class="wx-icon wxicon wxicon-arrow_right" style="width:12px;height:12px;color:#cccccc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 4 16.5 12 8.5 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+          </div>
+        </div>
+      </div>
+      <div class="wx-view divider gap"></div>
+      <div class="wx-view row-between" data-tap="onPickCoupon">
+        <span class="wx-text h2">优惠券</span>
+        <div class="wx-view row">
+          <span class="wx-text coupon-val">3 张可用</span>
+          <i class="wx-icon wxicon wxicon-arrow_right" style="width:12px;height:12px;color:#cccccc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 4 16.5 12 8.5 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+        </div>
+      </div>
+      <div class="wx-view divider gap"></div>
+      <div class="wx-view row-between">
+        <span class="wx-text h2">订单备注</span>
+        <input class="wx-input remark" type="text" value="" placeholder="选填，如口味/发票信息" data-input="onRemarkInput">
+      </div>
+    </div>
+    <div class="wx-view card">
+      <span class="wx-text h2">支付方式</span>
+      <div class="wx-radio-group" data-change="onPayChange">
+        <div class="wx-label pay-line">
+          <input class="wx-radio" type="radio" value="wechat" checked>
+          <span class="wx-text pay-name">微信支付</span>
+          <span class="wx-text muted">推荐</span>
+        </div>
+        <div class="wx-label pay-line">
+          <input class="wx-radio" type="radio" value="alipay">
+          <span class="wx-text pay-name">支付宝</span>
+          <span class="wx-text muted"></span>
+        </div>
+        <div class="wx-label pay-line">
+          <input class="wx-radio" type="radio" value="card">
+          <span class="wx-text pay-name">银行卡</span>
+          <span class="wx-text muted"></span>
+        </div>
+      </div>
+    </div>
+    <div class="wx-view card">
+      <div class="wx-view row-between fee-line">
+        <span class="wx-text muted">商品总额</span>
+        <span class="wx-text fee">¥0.00</span>
+      </div>
+      <div class="wx-view row-between fee-line">
+        <span class="wx-text muted">运费</span>
+        <span class="wx-text fee">¥0.00</span>
+      </div>
+      <div class="wx-view row-between fee-line">
+        <span class="wx-text muted">优惠券</span>
+        <span class="wx-text fee-cut">-¥0.00</span>
+      </div>
+      <div class="wx-view divider gap"></div>
+      <div class="wx-view row-between">
+        <span class="wx-text h2">应付金额</span>
+        <span class="wx-text price big">¥0.00</span>
+      </div>
+    </div>
+    <div class="wx-view bottom-space"></div>
+    <div class="wx-view submit-bar">
+      <div class="wx-view col">
+        <span class="wx-text muted">应付</span>
+        <span class="wx-text price big">¥0.00</span>
+      </div>
+      <button class="wx-button submit-btn wx-button-primary" data-tap="onSubmit">提交订单</button>
+    </div>
+  </div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/order/order";
+window.__WXML__ = [{"a":{"class":"page"},"c":[{"a":{"class":"nav-bar"},"c":[{"a":{"bindtap":"onBack","class":"nav-back"},"c":[{"a":{"color":"#ffffff","size":"20","type":"back"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"},{"a":{"class":"nav-title"},"c":[{"t":"tx","x":"确认订单"}],"n":"text","t":"el"},{"a":{"class":"nav-action"},"c":[],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onPickAddress","class":"addr-card anim-fade-up"},"c":[{"a":{"class":"row","wx:if":"{{address}}"},"c":[{"a":{"color":"#FF6B35","size":"18","type":"info_no_circle"},"c":[],"n":"icon","t":"el"},{"a":{"class":"col addr-body"},"c":[{"a":{"class":"row"},"c":[{"a":{"class":"addr-name"},"c":[{"t":"tx","x":"{{address.name}}"}],"n":"text","t":"el"},{"a":{"class":"addr-phone"},"c":[{"t":"tx","x":"{{address.phone}}"}],"n":"text","t":"el"},{"a":{"class":"tag-mini","wx:if":"{{address.isDefault}}"},"c":[{"t":"tx","x":"默认"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"addr-detail"},"c":[{"t":"tx","x":"{{address.region}} {{address.detail}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"color":"#cccccc","size":"14","type":"arrow_right"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"},{"a":{"class":"row-between","wx:else":""},"c":[{"a":{"class":"muted"},"c":[{"t":"tx","x":"请选择收货地址"}],"n":"text","t":"el"},{"a":{"color":"#cccccc","size":"14","type":"arrow_right"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card"},"c":[{"a":{"class":"h2"},"c":[{"t":"tx","x":"商品清单"}],"n":"text","t":"el"},{"a":{"class":"goods","wx:for":"{{items}}","wx:key":"id"},"c":[{"a":{"class":"goods-img","mode":"aspectFill","src":"{{item.image}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"goods-info"},"c":[{"a":{"class":"goods-name"},"c":[{"t":"tx","x":"{{item.name}}"}],"n":"text","t":"el"},{"a":{"class":"muted"},"c":[{"t":"tx","x":"规格：{{item.spec}}"}],"n":"text","t":"el"},{"a":{"class":"row-between goods-bottom"},"c":[{"a":{"class":"price"},"c":[{"t":"tx","x":"¥{{item.price}}"}],"n":"text","t":"el"},{"a":{"class":"muted"},"c":[{"t":"tx","x":"x{{item.quantity}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card"},"c":[{"a":{"bindchange":"onShipChange","class":"pick-line","mode":"selector","range":"{{shipMethods}}","value":"{{shipIndex}}"},"c":[{"a":{"class":"row-between"},"c":[{"a":{"class":"h2"},"c":[{"t":"tx","x":"配送方式"}],"n":"text","t":"el"},{"a":{"class":"row"},"c":[{"a":{"class":"muted"},"c":[{"t":"tx","x":"{{shipMethods[shipIndex]}}"}],"n":"text","t":"el"},{"a":{"color":"#cccccc","size":"12","type":"arrow_right"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"picker","t":"el"},{"a":{"class":"divider gap"},"c":[],"n":"view","t":"el"},{"a":{"bindtap":"onPickCoupon","class":"row-between"},"c":[{"a":{"class":"h2"},"c":[{"t":"tx","x":"优惠券"}],"n":"text","t":"el"},{"a":{"class":"row"},"c":[{"a":{"class":"coupon-val"},"c":[{"t":"tx","x":"{{couponText}}"}],"n":"text","t":"el"},{"a":{"color":"#cccccc","size":"12","type":"arrow_right"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"divider gap"},"c":[],"n":"view","t":"el"},{"a":{"class":"row-between"},"c":[{"a":{"class":"h2"},"c":[{"t":"tx","x":"订单备注"}],"n":"text","t":"el"},{"a":{"bindinput":"onRemarkInput","class":"remark","placeholder":"选填，如口味/发票信息","value":"{{remark}}"},"c":[],"n":"input","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card"},"c":[{"a":{"class":"h2"},"c":[{"t":"tx","x":"支付方式"}],"n":"text","t":"el"},{"a":{"bindchange":"onPayChange"},"c":[{"a":{"class":"pay-line","wx:for":"{{payMethods}}","wx:key":"key"},"c":[{"a":{"checked":"{{item.key === payMethod}}","color":"#FF6B35","value":"{{item.key}}"},"c":[],"n":"radio","t":"el"},{"a":{"class":"pay-name"},"c":[{"t":"tx","x":"{{item.name}}"}],"n":"text","t":"el"},{"a":{"class":"muted"},"c":[{"t":"tx","x":"{{item.tip}}"}],"n":"text","t":"el"}],"n":"label","t":"el"}],"n":"radio-group","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card"},"c":[{"a":{"class":"row-between fee-line"},"c":[{"a":{"class":"muted"},"c":[{"t":"tx","x":"商品总额"}],"n":"text","t":"el"},{"a":{"class":"fee"},"c":[{"t":"tx","x":"¥{{goodsTotal}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"row-between fee-line"},"c":[{"a":{"class":"muted"},"c":[{"t":"tx","x":"运费"}],"n":"text","t":"el"},{"a":{"class":"fee"},"c":[{"t":"tx","x":"¥{{shipFee}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"row-between fee-line"},"c":[{"a":{"class":"muted"},"c":[{"t":"tx","x":"优惠券"}],"n":"text","t":"el"},{"a":{"class":"fee-cut"},"c":[{"t":"tx","x":"-¥{{couponCut}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"divider gap"},"c":[],"n":"view","t":"el"},{"a":{"class":"row-between"},"c":[{"a":{"class":"h2"},"c":[{"t":"tx","x":"应付金额"}],"n":"text","t":"el"},{"a":{"class":"price big"},"c":[{"t":"tx","x":"¥{{payTotal}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"bottom-space"},"c":[],"n":"view","t":"el"},{"a":{"class":"submit-bar"},"c":[{"a":{"class":"col"},"c":[{"a":{"class":"muted"},"c":[{"t":"tx","x":"应付"}],"n":"text","t":"el"},{"a":{"class":"price big"},"c":[{"t":"tx","x":"¥{{payTotal}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onSubmit","class":"submit-btn","disabled":"{{submitting}}","type":"primary"},"c":[{"t":"tx","x":"{{submitting ? '提交中…' : '提交订单'}}\n    "}],"n":"button","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onCloseCoupon","class":"sheet-mask","wx:if":"{{couponVisible}}"},"c":[],"n":"view","t":"el"},{"a":{"class":"coupon-sheet anim-slide-up","wx:if":"{{couponVisible}}"},"c":[{"a":{"class":"row-between"},"c":[{"a":{"class":"h1"},"c":[{"t":"tx","x":"选择优惠券"}],"n":"text","t":"el"},{"a":{"bindtap":"onCloseCoupon"},"c":[{"a":{"color":"#cccccc","size":"18","type":"cancel"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onSelectCoupon","class":"coupon-opt","data-index":"{{index}}","wx:for":"{{coupons}}","wx:key":"id"},"c":[{"a":{"class":"col grow"},"c":[{"a":{"class":"h2"},"c":[{"t":"tx","x":"{{item.name}}"}],"n":"text","t":"el"},{"a":{"class":"muted"},"c":[{"t":"tx","x":"满 {{item.min}} 元可用"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"coupon-amt"},"c":[{"t":"tx","x":"-¥{{item.amount}}"}],"n":"text","t":"el"},{"a":{"color":"#FF6B35","size":"18","type":"success","wx:if":"{{couponIndex === index}}"},"c":[],"n":"icon","t":"el"},{"a":{"color":"#dddddd","size":"18","type":"circle","wx:else":""},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onSelectCoupon","class":"coupon-opt","data-index":"-1"},"c":[{"a":{"class":"h2 grow"},"c":[{"t":"tx","x":"不使用优惠券"}],"n":"text","t":"el"},{"a":{"color":"#FF6B35","size":"18","type":"success","wx:if":"{{couponIndex === -1}}"},"c":[],"n":"icon","t":"el"},{"a":{"color":"#dddddd","size":"18","type":"circle","wx:else":""},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./order.js"></script>
+</body>
+</html>

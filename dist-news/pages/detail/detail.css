@@ -231,3 +231,157 @@
   color: #8A8A8A;
   margin-top: 2px;
 }
+
+/* ── 新增：返回栏 / 夜间模式 / 评论输入 / 字号面板 ── */
+.dnav {
+  background-color: #D43C33;
+  height: 44px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0 12px;
+}
+.dnav-back {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dnav-title {
+  flex: 1;
+  font-size: 16px;
+  color: #fff;
+  font-weight: bold;
+  text-align: center;
+}
+.dnav-act {
+  width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+.dnav-font {
+  font-size: 13px;
+  color: #fff;
+}
+
+/* 夜间模式 */
+.night {
+  background-color: #1B1B1B;
+}
+.night .article,
+.night .related,
+.night .comments {
+  background-color: #242424;
+}
+.night .article-title,
+.night .section-title,
+.night .related-title,
+.night .comment-user {
+  color: #EDEDED;
+}
+.night .article-body,
+.night .comment-text {
+  color: #BFBFBF;
+}
+
+/* 阅读进度 */
+.read-row {
+  display: flex;
+  flex-direction: column;
+  margin-top: 12px;
+}
+.read-tx {
+  font-size: 11px;
+  color: #8A8A8A;
+  margin-bottom: 5px;
+}
+
+/* 评论输入 */
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.mine-tag {
+  font-size: 9px;
+  color: #fff;
+  background-color: #D43C33;
+  border-radius: 2px;
+  padding: 1px 4px;
+  margin-left: 6px;
+}
+.compose {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.compose-input {
+  flex: 1;
+  height: 32px;
+  background-color: #F2F3F5;
+  border-radius: 16px;
+  padding: 0 12px;
+  font-size: 13px;
+  color: #333;
+}
+.send-btn {
+  background-color: #D43C33;
+  border-radius: 16px;
+  padding: 6px 14px;
+  margin-left: 8px;
+}
+.send-tx {
+  font-size: 13px;
+  color: #fff;
+}
+
+/* 字号面板 */
+.font-mask {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  z-index: 900;
+}
+.font-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #fff;
+  border-radius: 12px 12px 0 0;
+  padding: 16px 16px 20px 16px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+.font-title {
+  font-size: 16px;
+  color: #1a1a1a;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+.font-preview {
+  color: #666;
+  line-height: 1.8;
+  margin-top: 10px;
+}
+.font-done {
+  background-color: #D43C33;
+  border-radius: 22px;
+  padding: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 14px;
+}
+.font-done-tx {
+  font-size: 15px;
+  color: #fff;
+  font-weight: bold;
+}

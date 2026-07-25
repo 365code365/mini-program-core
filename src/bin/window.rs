@@ -178,6 +178,9 @@ impl MiniAppWindow {
         let mut wxss_parser = WxssParser::new(&merged_wxss);
         let stylesheet = wxss_parser.parse().map_err(|e| format!("WXSS error: {}", e))?;
         
+        // 先登记路由：页面实例的 `this.route` / `getCurrentPages()` 都依赖它，
+        // 返回时也靠它判断逻辑层是否已经出过栈
+        self.app.eval(&format!("__setPendingRoute({})", serde_json::to_string(path).unwrap_or_else(|_| "''".into()))).ok();
         self.app.load_script(&page_info.js)?;
         let query_json = serde_json::to_string(&query).unwrap_or("{}".to_string());
         self.app.eval(&format!("if(__currentPage && __currentPage.onLoad) __currentPage.onLoad({})", query_json)).ok();
@@ -196,20 +199,33 @@ impl MiniAppWindow {
         Ok(())
     }
     
+    /// 返回上一页（微信 navigateBack 语义）。
+    ///
+    /// 关键点：**不重新加载上一页的 JS**。页面实例还在逻辑层的页面栈里，重载脚本
+    /// 会重新执行 `Page({...})` 并再跑一遍 `onLoad`，用户在上一页的状态（筛选、
+    /// 滚动位置、已填表单）全部丢失，而且会重复触发"仅首次进入"的逻辑。
+    /// 正确做法是让逻辑层出栈、恢复原实例，只补一次 `onShow`。
     fn navigate_back(&mut self) -> Result<(), String> {
         if self.page_stack.len() <= 1 { return Ok(()); }
+        // 离开当前页：先给它 onUnload
+        self.app.eval("if(__currentPage && __currentPage.onUnload) __currentPage.onUnload()").ok();
         self.page_stack.pop();
+        self.interaction.clear_page_state();
         
         if let Some(page) = self.page_stack.last() {
-            let (path, query) = (page.path.clone(), page.query.clone());
-            if let Some(page_info) = self.pages.get(&path) {
-                self.app.load_script(&page_info.js)?;
-                self.app.eval(&format!("if(__currentPage && __currentPage.onLoad) __currentPage.onLoad({})", 
-                    serde_json::to_string(&query).unwrap_or("{}".to_string()))).ok();
-                print_js_output(&self.app);
+            let path = page.path.clone();
+            // 逻辑层出栈并恢复上一页实例（wx.navigateBack 触发时 JS 已自行出栈，
+            // 这里用当前路由校验：不一致才补一次出栈，避免重复 pop）
+            let current_route = self.app.eval("(__currentPage && __currentPage.route) || ''").unwrap_or_default();
+            if current_route.trim_matches('"') != path {
+                self.app.eval("__popPage(1)").ok();
             }
+            self.app.eval("if(__currentPage && __currentPage.onShow) __currentPage.onShow()").ok();
+            print_js_output(&self.app);
+            
             let has_tabbar = self.is_tabbar_page(&path);
             self.scroll = ScrollController::new(CONTENT_HEIGHT as f32, (LOGICAL_HEIGHT - if has_tabbar { tabbar_height() } else { 0 }) as f32);
+            println!("↩️  返回: {}", path);
         }
         self.needs_redraw = true;
         Ok(())
@@ -218,6 +234,8 @@ impl MiniAppWindow {
     fn switch_tab(&mut self, path: &str) -> Result<(), String> {
         self.page_stack.clear();
         self.interaction.clear_page_state();
+        // 切 tab 会销毁原页面栈（微信语义），逻辑层的栈也要一起清，否则越切越长
+        self.app.eval("__resetPageStack()").ok();
         self.navigate_to(path.trim_start_matches('/'), HashMap::new())
     }
     
@@ -405,6 +423,22 @@ impl MiniAppWindow {
                 NavigationRequest::NavigateTo { url } => { let (p, q) = parse_url(&url); self.navigate_to(&p, q).ok(); }
                 NavigationRequest::NavigateBack => { self.navigate_back().ok(); }
                 NavigationRequest::SwitchTab { url } => { let (p, _) = parse_url(&url); self.switch_tab(&p).ok(); }
+                NavigationRequest::RedirectTo { url } => {
+                    // 关闭当前页再开新页：栈深度不变
+                    let (p, q) = parse_url(&url);
+                    self.app.eval("if(__currentPage && __currentPage.onUnload) __currentPage.onUnload()").ok();
+                    self.page_stack.pop();
+                    self.app.eval("__popPage(1)").ok();
+                    self.interaction.clear_page_state();
+                    self.navigate_to(&p, q).ok();
+                }
+                NavigationRequest::ReLaunch { url } => {
+                    let (p, q) = parse_url(&url);
+                    self.page_stack.clear();
+                    self.interaction.clear_page_state();
+                    self.app.eval("__resetPageStack()").ok();
+                    self.navigate_to(&p, q).ok();
+                }
             }
             self.update_renderers();
         }
@@ -596,6 +630,15 @@ impl ApplicationHandler for MiniAppWindow {
                 print_js_output(&self.app);
                 
                 if evt::process_ui_events(&mut self.app, &mut self.toast, &mut self.loading, &mut self.modal) { self.needs_redraw = true; }
+                // 每帧轮询一次导航请求：此前只在「内容区被点击」时检查，
+                // 于是 setTimeout / 网络回调里发起的 wx.navigateTo / navigateBack
+                // 永远不会被宿主取走（登录成功 800ms 后自动返回就是这么失效的）。
+                if self.pending_navigation.is_none() {
+                    if let Some(nav) = app_window::check_navigation(&mut self.app) {
+                        self.pending_navigation = Some(nav);
+                        self.needs_redraw = true;
+                    }
+                }
                 if evt::update_toast_timeout(&mut self.toast) { self.needs_redraw = true; }
                 
                 self.update_scroll();
@@ -645,7 +688,7 @@ impl MiniAppWindow {
     /// 这是「窗体是否忠实还原小程序」的可验证入口 —— 页面加载、样式合并、
     /// 自定义 tabBar、fixed 覆盖层、Toast/Modal 外壳、像素合成顺序都与真实运行一致，
     /// 因此产出的 PNG 可以直接和编译出的 H5 截图做像素级对比。
-    fn snapshot_all(&mut self, out_dir: &std::path::Path, scale: f64, time: Option<f32>, only: Option<&str>, scroll: f32, eval: Option<&str>) -> Result<usize, String> {
+    fn snapshot_all(&mut self, out_dir: &std::path::Path, scale: f64, time: Option<f32>, only: Option<&str>, scroll: f32, evals: &[String]) -> Result<usize, String> {
         self.setup_canvas(scale);
         let routes: Vec<String> = match only {
             Some(route) => vec![route.trim_start_matches('/').to_string()],
@@ -668,10 +711,23 @@ impl MiniAppWindow {
             self.update_renderers();
             // 注入页面状态：把「交互之后」的场景（购物车有商品、开关已打开等）
             // 也纳入可截图、可对比的范围，而不是只能测首次进入的初始态
-            if let Some(script) = eval {
+            // 逐段执行注入脚本：每段之后都把导航请求跑完，
+            // 于是「点商品进详情 → 返回上一页」这类多步交互可以脚本化验证。
+            for script in evals {
                 match self.app.eval(script) {
                     Ok(_) => print_js_output(&self.app),
                     Err(e) => eprintln!("⚠️  --eval 执行失败: {}", e),
+                }
+                for _ in 0..8 {
+                    self.app.update().ok();
+                    if self.pending_navigation.is_none() {
+                        self.pending_navigation = app_window::check_navigation(&mut self.app);
+                    }
+                    if self.pending_navigation.is_none() {
+                        break;
+                    }
+                    self.process_navigation();
+                    print_js_output(&self.app);
                 }
             }
             self.scroll.set_position(scroll);
@@ -688,6 +744,8 @@ impl MiniAppWindow {
                 (LOGICAL_HEIGHT as f64 * scale) as u32,
             );
             let mut buffer = vec![0u32; (pw * ph) as usize];
+            // 导航之后当前页可能已不是入口 route
+            let route = self.page_stack.last().map(|p| p.path.clone()).unwrap_or(route);
             let has_tabbar = self.is_tabbar_page(&route);
             if let Some(canvas) = &self.canvas {
                 present_to_buffer(
@@ -729,7 +787,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut anim_time: Option<f32> = None;
     let mut route: Option<String> = None;
     let mut scroll = 0.0f32;
-    let mut eval: Option<String> = None;
+    let mut evals: Vec<String> = Vec::new();
     let mut it = args.into_iter();
     while let Some(arg) = it.next() {
         match arg.as_str() {
@@ -738,9 +796,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "--time" => anim_time = it.next().and_then(|v| v.parse().ok()),
             "--route" => route = it.next(),
             "--scroll" => scroll = it.next().and_then(|v| v.parse().ok()).unwrap_or(0.0),
-            "--eval" => eval = it.next(),
+            "--eval" => { if let Some(v) = it.next() { evals.push(v); } }
             "--help" | "-h" => {
-                println!("用法: mini-app-window <小程序目录> [--snapshot <输出目录>] [--scale 2] [--time 0.3] [--route pages/x/x] [--scroll 600] [--eval JS]");
+                println!("用法: mini-app-window <小程序目录> [--snapshot <输出目录>] [--scale 2] [--time 0.3] [--route pages/x/x] [--scroll 600] [--eval JS ...（可重复，每段之后跑完导航）]");
                 return Ok(());
             }
             other => {
@@ -763,7 +821,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 快照模式：不开窗口，直接把整帧写成 PNG（用于与 H5 做像素对比）
     if let Some(out) = snapshot {
-        let count = window.snapshot_all(&out, scale, anim_time, route.as_deref(), scroll, eval.as_deref())?;
+        let count = window.snapshot_all(&out, scale, anim_time, route.as_deref(), scroll, &evals)?;
         println!("\n✅ 快照完成：{} 个页面 -> {}", count, out.display());
         return Ok(());
     }

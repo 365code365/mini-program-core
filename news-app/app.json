@@ -2,8 +2,10 @@
   "pages": [
     "pages/home/home",
     "pages/video/video",
+    "pages/mine/mine",
     "pages/detail/detail",
-    "pages/mine/mine"
+    "pages/search/search",
+    "pages/hot/hot"
   ],
   "window": {
     "navigationBarTitleText": "头条新闻",

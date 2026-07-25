@@ -14,124 +14,126 @@
 <body>
 <div id="app">
   <div class="wx-view page">
-    <div class="wx-view product-image">
-      <img class="wx-image" style="width:100%;height:100%;object-fit:cover" src="/assets/p_phone.jpg">
-      <div class="wx-view promo-tag">
-        <span class="wx-text">6.7折</span>
+    <div class="wx-view nav-bar">
+      <div class="wx-view nav-back" data-tap="onBack">
+        <i class="wx-icon wxicon wxicon-back" style="width:20px;height:20px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 4 7.5 12 15.5 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+      </div>
+      <span class="wx-text nav-title">商品详情</span>
+      <div class="wx-view nav-action" data-tap="onGoHome">
+        <i class="wx-icon wxicon wxicon-success_no_circle" style="width:18px;height:18px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12.5 9 18 20.5 5.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
       </div>
     </div>
-    <div class="wx-view product-card">
-      <div class="wx-view price-section">
-        <div class="wx-view price-main">
-          <span class="wx-text price-text">¥199</span>
-          <span class="wx-text original-price">¥299</span>
+    <div class="wx-view">
+      <div class="wx-swiper gallery" data-autoplay="false" data-interval="5000" data-circular="true" data-dots="true">
+        <div class="wx-swiper-item">
+          <img class="wx-image gallery-img" style="object-fit:cover" src="/assets/p_earbuds.jpg">
         </div>
-        <div class="wx-view price-tags">
-          <span class="wx-text tag tag-hot">热卖</span>
-          <span class="wx-text tag tag-free">包邮</span>
+        <div class="wx-swiper-item">
+          <img class="wx-image gallery-img" style="object-fit:cover" src="/assets/p_sneakers.jpg">
         </div>
-      </div>
-      <div class="wx-view product-title-section">
-        <span class="wx-text product-name">无线蓝牙耳机 Pro</span>
-        <span class="wx-text product-desc">高清音质 主动降噪 40小时超长续航</span>
-      </div>
-      <div class="wx-view meta-section">
-        <div class="wx-view meta-item">
-          <span class="wx-text meta-value">2341</span>
-          <span class="wx-text meta-label">销量</span>
-        </div>
-        <div class="wx-view meta-divider"></div>
-        <div class="wx-view meta-item">
-          <span class="wx-text meta-value">999</span>
-          <span class="wx-text meta-label">库存</span>
-        </div>
-        <div class="wx-view meta-divider"></div>
-        <div class="wx-view meta-item">
-          <span class="wx-text meta-value">4.9</span>
-          <span class="wx-text meta-label">评分</span>
+        <div class="wx-swiper-item">
+          <img class="wx-image gallery-img" style="object-fit:cover" src="/assets/p_coffee.jpg">
         </div>
       </div>
+      <div class="wx-view price-card">
+        <div class="wx-view row">
+          <span class="wx-text now-price">¥199</span>
+          <span class="wx-text old-price">¥299</span>
+          <span class="wx-text discount-tag">6.7折</span>
+        </div>
+        <span class="wx-text prod-name">无线蓝牙耳机 Pro</span>
+        <span class="wx-text prod-desc">高清音质 主动降噪 40小时超长续航</span>
+        <div class="wx-view row-between meta-line">
+          <span class="wx-text muted">已售 2341</span>
+          <span class="wx-text muted">库存 999</span>
+          <span class="wx-text muted">顺丰包邮</span>
+        </div>
+      </div>
+      <div class="wx-view card">
+        <div class="wx-view row-between" data-tap="onOpenSpec">
+          <span class="wx-text h2">选择规格</span>
+          <div class="wx-view row">
+            <span class="wx-text muted">黑色 · 1件</span>
+            <i class="wx-icon wxicon wxicon-arrow_right" style="width:12px;height:12px;color:#999"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 4 16.5 12 8.5 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+          </div>
+        </div>
+        <div class="wx-view divider spec-divider"></div>
+        <div class="wx-view row-between">
+          <span class="wx-text h2">服务保障</span>
+          <div class="wx-view row">
+            <span class="wx-text tag-mini">7天无理由</span>
+            <span class="wx-text tag-mini">正品保证</span>
+            <span class="wx-text tag-mini">极速退款</span>
+          </div>
+        </div>
+      </div>
+      <div class="wx-view card">
+        <div class="wx-view row-between">
+          <span class="wx-text h2">商品评价（3）</span>
+          <div class="wx-view row">
+            <span class="wx-text muted">好评率 98%</span>
+            <i class="wx-icon wxicon wxicon-arrow_right" style="width:12px;height:12px;color:#999"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 4 16.5 12 8.5 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+          </div>
+        </div>
+        <div class="wx-view review">
+          <div class="wx-view row">
+            <img class="wx-image review-avatar" style="object-fit:cover" src="/assets/avatar1.jpg">
+            <span class="wx-text review-name">张**</span>
+            <div class="wx-view row stars">
+              <i class="wx-icon wxicon wxicon-star" style="width:12px;height:12px;color:#FFB400"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="currentColor"/></svg></i>
+              <i class="wx-icon wxicon wxicon-star" style="width:12px;height:12px;color:#FFB400"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="currentColor"/></svg></i>
+              <i class="wx-icon wxicon wxicon-star" style="width:12px;height:12px;color:#FFB400"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="currentColor"/></svg></i>
+              <i class="wx-icon wxicon wxicon-star" style="width:12px;height:12px;color:#FFB400"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="currentColor"/></svg></i>
+              <i class="wx-icon wxicon wxicon-star" style="width:12px;height:12px;color:#FFB400"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="currentColor"/></svg></i>
+            </div>
+          </div>
+          <span class="wx-text review-text">做工扎实，音质比预期好，续航也够用，日常通勤很合适。</span>
+        </div>
+        <div class="wx-view review">
+          <div class="wx-view row">
+            <img class="wx-image review-avatar" style="object-fit:cover" src="/assets/avatar1.jpg">
+            <span class="wx-text review-name">李**</span>
+            <div class="wx-view row stars">
+              <i class="wx-icon wxicon wxicon-star" style="width:12px;height:12px;color:#FFB400"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="currentColor"/></svg></i>
+              <i class="wx-icon wxicon wxicon-star" style="width:12px;height:12px;color:#FFB400"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="currentColor"/></svg></i>
+              <i class="wx-icon wxicon wxicon-star" style="width:12px;height:12px;color:#FFB400"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="currentColor"/></svg></i>
+              <i class="wx-icon wxicon wxicon-star" style="width:12px;height:12px;color:#FFB400"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="currentColor"/></svg></i>
+            </div>
+          </div>
+          <span class="wx-text review-text">包装完好，发货快。第二次回购了，送朋友也合适。</span>
+        </div>
+        <div class="wx-view review">
+          <div class="wx-view row">
+            <img class="wx-image review-avatar" style="object-fit:cover" src="/assets/avatar1.jpg">
+            <span class="wx-text review-name">王**</span>
+            <div class="wx-view row stars">
+              <i class="wx-icon wxicon wxicon-star" style="width:12px;height:12px;color:#FFB400"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="currentColor"/></svg></i>
+              <i class="wx-icon wxicon wxicon-star" style="width:12px;height:12px;color:#FFB400"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="currentColor"/></svg></i>
+              <i class="wx-icon wxicon wxicon-star" style="width:12px;height:12px;color:#FFB400"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="currentColor"/></svg></i>
+              <i class="wx-icon wxicon wxicon-star" style="width:12px;height:12px;color:#FFB400"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="currentColor"/></svg></i>
+              <i class="wx-icon wxicon wxicon-star" style="width:12px;height:12px;color:#FFB400"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="currentColor"/></svg></i>
+            </div>
+          </div>
+          <span class="wx-text review-text">客服响应很快，遇到问题当天就解决了，好评。</span>
+        </div>
+      </div>
+      <div class="wx-view card">
+        <span class="wx-text h2">图文详情</span>
+        <div class="wx-rich-text rich"><p style="font-size:13px;color:#666;line-height:1.9">【产品特点】高品质材料，经久耐用；精心设计，使用便捷。</p><p style="font-size:13px;color:#666;line-height:1.9">【包装清单】产品 x1 · 说明书 x1 · 保修卡 x1</p><p style="font-size:13px;color:#FF6B35;line-height:1.9">【售后服务】7 天无理由退换，全国联保一年。</p></div>
+        <img class="wx-image detail-img" style="height:auto" src="/assets/p_earbuds.jpg">
+      </div>
+      <div class="wx-view bottom-space"></div>
     </div>
-    <div class="wx-view section-card">
-      <div class="wx-view section-header">
-        <span class="wx-text section-title">规格选择</span>
-        <span class="wx-text section-hint">已选：黑色</span>
-      </div>
-      <div class="wx-view spec-list">
-        <div class="wx-view spec-item active" data-tap="onSelectSpec" data-ds-index="0">
-          <span class="wx-text">黑色</span>
-        </div>
-        <div class="wx-view spec-item " data-tap="onSelectSpec" data-ds-index="1">
-          <span class="wx-text">白色</span>
-        </div>
-        <div class="wx-view spec-item " data-tap="onSelectSpec" data-ds-index="2">
-          <span class="wx-text">蓝色</span>
-        </div>
-      </div>
-    </div>
-    <div class="wx-view section-card qty-card">
-      <span class="wx-text section-title">购买数量</span>
-      <div class="wx-view qty-control">
-        <div class="wx-view qty-btn disabled" data-tap="onDecrease">
-          <span class="wx-text">-</span>
-        </div>
-        <div class="wx-view qty-input">
-          <span class="wx-text">1</span>
-        </div>
-        <div class="wx-view qty-btn " data-tap="onIncrease">
-          <span class="wx-text">+</span>
-        </div>
-      </div>
-    </div>
-    <div class="wx-view section-card service-card">
-      <div class="wx-view service-item">
-        <i class="wx-icon wxicon wxicon-success" style="width:16px;height:16px;color:#52c41a"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><path d="M5.8 12.4 10 16.4 18.2 7.6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
-        <span class="wx-text">正品保证</span>
-      </div>
-      <div class="wx-view service-item">
-        <i class="wx-icon wxicon wxicon-success" style="width:16px;height:16px;color:#52c41a"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><path d="M5.8 12.4 10 16.4 18.2 7.6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
-        <span class="wx-text">7天退换</span>
-      </div>
-      <div class="wx-view service-item">
-        <i class="wx-icon wxicon wxicon-success" style="width:16px;height:16px;color:#52c41a"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><path d="M5.8 12.4 10 16.4 18.2 7.6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
-        <span class="wx-text">极速发货</span>
-      </div>
-    </div>
-    <div class="wx-view detail-card">
-      <div class="wx-view detail-header">
-        <div class="wx-view detail-line"></div>
-        <span class="wx-text detail-title">商品详情</span>
-        <div class="wx-view detail-line"></div>
-      </div>
-      <div class="wx-view detail-content">
-        <span class="wx-text detail-text">【产品特点】
-• 高品质材料，经久耐用
-• 精心设计，使用便捷
-• 品牌保证，售后无忧
-• 快速发货，物流可追踪
-
-【包装清单】
-产品 x 1
-说明书 x 1
-保修卡 x 1</span>
-      </div>
-    </div>
-    <div class="wx-view bottom-space"></div>
     <div class="wx-view action-bar">
-      <div class="wx-view action-icons">
-        <div class="wx-view action-icon-item" data-tap="onGoHome">
-          <i class="wx-icon wxicon wxicon-success" style="width:22px;height:22px;color:#666"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><path d="M5.8 12.4 10 16.4 18.2 7.6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
-          <span class="wx-text">首页</span>
-        </div>
-        <div class="wx-view action-icon-item" data-tap="onGoCart">
-          <i class="wx-icon wxicon wxicon-waiting" style="width:22px;height:22px;color:#666"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><rect x="10.9" y="6.2" width="2.2" height="6.6" rx="1.1" fill="#fff"/><rect x="12" y="10.9" width="5.2" height="2.2" rx="1.1" fill="#fff"/><circle cx="12" cy="12" r="1.6" fill="#fff"/></svg></i>
-          <span class="wx-text">购物车</span>
-        </div>
+      <div class="wx-view action-icon" data-tap="onGoCart">
+        <i class="wx-icon wxicon wxicon-clock" style="width:20px;height:20px;color:#666"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.4" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 5.6V12h5.2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></i>
+        <span class="wx-text action-icon-text">购物车</span>
       </div>
-      <div class="wx-view action-buttons">
-        <button class="wx-button btn-cart wx-button-default" data-tap="onAddCart">加入购物车</button>
-        <div class="wx-view btn-gap"></div>
-        <button class="wx-button btn-buy wx-button-default" data-tap="onBuyNow">立即购买</button>
+      <div class="wx-view action-btn add-cart" data-tap="onAddCart">
+        <span class="wx-text action-btn-text">加入购物车</span>
+      </div>
+      <div class="wx-view action-btn buy-now" data-tap="onBuyNow">
+        <span class="wx-text action-btn-text">立即购买</span>
       </div>
     </div>
   </div>
@@ -139,7 +141,7 @@
 
 <script>
 window.__PAGE_ROUTE__ = "pages/detail/detail";
-window.__WXML__ = [{"a":{"class":"page"},"c":[{"a":{"class":"product-image"},"c":[{"a":{"mode":"aspectFill","src":"/assets/p_phone.jpg","style":"width:100%;height:100%"},"c":[],"n":"image","t":"el"},{"a":{"class":"promo-tag","wx:if":"{{product.discount}}"},"c":[{"a":{},"c":[{"t":"tx","x":"{{product.discount}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"product-card"},"c":[{"a":{"class":"price-section"},"c":[{"a":{"class":"price-main"},"c":[{"a":{"class":"price-text"},"c":[{"t":"tx","x":"¥{{product.price}}"}],"n":"text","t":"el"},{"a":{"class":"original-price","wx:if":"{{product.originalPrice}}"},"c":[{"t":"tx","x":"¥{{product.originalPrice}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"price-tags"},"c":[{"a":{"class":"tag tag-hot"},"c":[{"t":"tx","x":"热卖"}],"n":"text","t":"el"},{"a":{"class":"tag tag-free"},"c":[{"t":"tx","x":"包邮"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"product-title-section"},"c":[{"a":{"class":"product-name"},"c":[{"t":"tx","x":"{{product.name}}"}],"n":"text","t":"el"},{"a":{"class":"product-desc"},"c":[{"t":"tx","x":"{{product.desc}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"meta-section"},"c":[{"a":{"class":"meta-item"},"c":[{"a":{"class":"meta-value"},"c":[{"t":"tx","x":"{{product.sales}}"}],"n":"text","t":"el"},{"a":{"class":"meta-label"},"c":[{"t":"tx","x":"销量"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"meta-divider"},"c":[],"n":"view","t":"el"},{"a":{"class":"meta-item"},"c":[{"a":{"class":"meta-value"},"c":[{"t":"tx","x":"{{product.stock}}"}],"n":"text","t":"el"},{"a":{"class":"meta-label"},"c":[{"t":"tx","x":"库存"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"meta-divider"},"c":[],"n":"view","t":"el"},{"a":{"class":"meta-item"},"c":[{"a":{"class":"meta-value"},"c":[{"t":"tx","x":"4.9"}],"n":"text","t":"el"},{"a":{"class":"meta-label"},"c":[{"t":"tx","x":"评分"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"section-card"},"c":[{"a":{"class":"section-header"},"c":[{"a":{"class":"section-title"},"c":[{"t":"tx","x":"规格选择"}],"n":"text","t":"el"},{"a":{"class":"section-hint"},"c":[{"t":"tx","x":"已选：{{selectedSpec}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"spec-list"},"c":[{"a":{"bindtap":"onSelectSpec","class":"spec-item {{item.selected ? 'active' : ''}}","data-index":"{{index}}","wx:for":"{{specs}}","wx:key":"id"},"c":[{"a":{},"c":[{"t":"tx","x":"{{item.name}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"section-card qty-card"},"c":[{"a":{"class":"section-title"},"c":[{"t":"tx","x":"购买数量"}],"n":"text","t":"el"},{"a":{"class":"qty-control"},"c":[{"a":{"bindtap":"onDecrease","class":"qty-btn {{quantity <= 1 ? 'disabled' : ''}}"},"c":[{"a":{},"c":[{"t":"tx","x":"-"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"qty-input"},"c":[{"a":{},"c":[{"t":"tx","x":"{{quantity}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onIncrease","class":"qty-btn {{quantity >= product.stock ? 'disabled' : ''}}"},"c":[{"a":{},"c":[{"t":"tx","x":"+"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"section-card service-card"},"c":[{"a":{"class":"service-item"},"c":[{"a":{"color":"#52c41a","size":"16","type":"success"},"c":[],"n":"icon","t":"el"},{"a":{},"c":[{"t":"tx","x":"正品保证"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"service-item"},"c":[{"a":{"color":"#52c41a","size":"16","type":"success"},"c":[],"n":"icon","t":"el"},{"a":{},"c":[{"t":"tx","x":"7天退换"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"service-item"},"c":[{"a":{"color":"#52c41a","size":"16","type":"success"},"c":[],"n":"icon","t":"el"},{"a":{},"c":[{"t":"tx","x":"极速发货"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"detail-card"},"c":[{"a":{"class":"detail-header"},"c":[{"a":{"class":"detail-line"},"c":[],"n":"view","t":"el"},{"a":{"class":"detail-title"},"c":[{"t":"tx","x":"商品详情"}],"n":"text","t":"el"},{"a":{"class":"detail-line"},"c":[],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"detail-content"},"c":[{"a":{"class":"detail-text"},"c":[{"t":"tx","x":"{{product.detail}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"bottom-space"},"c":[],"n":"view","t":"el"},{"a":{"class":"action-bar"},"c":[{"a":{"class":"action-icons"},"c":[{"a":{"bindtap":"onGoHome","class":"action-icon-item"},"c":[{"a":{"color":"#666","size":"22","type":"success"},"c":[],"n":"icon","t":"el"},{"a":{},"c":[{"t":"tx","x":"首页"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onGoCart","class":"action-icon-item"},"c":[{"a":{"color":"#666","size":"22","type":"waiting"},"c":[],"n":"icon","t":"el"},{"a":{},"c":[{"t":"tx","x":"购物车"}],"n":"text","t":"el"},{"a":{"class":"cart-badge","wx:if":"{{cartCount > 0}}"},"c":[{"a":{},"c":[{"t":"tx","x":"{{cartCount > 99 ? '99+' : cartCount}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"action-buttons"},"c":[{"a":{"bindtap":"onAddCart","class":"btn-cart"},"c":[{"t":"tx","x":"加入购物车"}],"n":"button","t":"el"},{"a":{"class":"btn-gap"},"c":[],"n":"view","t":"el"},{"a":{"bindtap":"onBuyNow","class":"btn-buy"},"c":[{"t":"tx","x":"立即购买"}],"n":"button","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}];
+window.__WXML__ = [{"a":{"class":"page"},"c":[{"a":{"class":"nav-bar"},"c":[{"a":{"bindtap":"onBack","class":"nav-back"},"c":[{"a":{"color":"#ffffff","size":"20","type":"back"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"},{"a":{"class":"nav-title"},"c":[{"t":"tx","x":"商品详情"}],"n":"text","t":"el"},{"a":{"bindtap":"onGoHome","class":"nav-action"},"c":[{"a":{"color":"#ffffff","size":"18","type":"success_no_circle"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"empty-box","wx:if":"{{!product}}"},"c":[{"a":{"class":"loading-ring"},"c":[],"n":"view","t":"el"},{"a":{"class":"empty-tip"},"c":[{"t":"tx","x":"加载中…"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"wx:if":"{{product}}"},"c":[{"a":{"autoplay":"{{false}}","circular":"{{true}}","class":"gallery","indicator-active-color":"#FF6B35","indicator-color":"rgba(0,0,0,0.2)","indicator-dots":"{{true}}"},"c":[{"a":{"wx:for":"{{gallery}}","wx:key":"*this"},"c":[{"a":{"class":"gallery-img","mode":"aspectFill","src":"{{item}}"},"c":[],"n":"image","t":"el"}],"n":"swiper-item","t":"el"}],"n":"swiper","t":"el"},{"a":{"class":"price-card"},"c":[{"a":{"class":"row"},"c":[{"a":{"class":"now-price"},"c":[{"t":"tx","x":"¥{{product.price}}"}],"n":"text","t":"el"},{"a":{"class":"old-price"},"c":[{"t":"tx","x":"¥{{product.originalPrice}}"}],"n":"text","t":"el"},{"a":{"class":"discount-tag"},"c":[{"t":"tx","x":"{{product.discount}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"prod-name"},"c":[{"t":"tx","x":"{{product.name}}"}],"n":"text","t":"el"},{"a":{"class":"prod-desc"},"c":[{"t":"tx","x":"{{product.desc}}"}],"n":"text","t":"el"},{"a":{"class":"row-between meta-line"},"c":[{"a":{"class":"muted"},"c":[{"t":"tx","x":"已售 {{product.sales}}"}],"n":"text","t":"el"},{"a":{"class":"muted"},"c":[{"t":"tx","x":"库存 {{product.stock}}"}],"n":"text","t":"el"},{"a":{"class":"muted"},"c":[{"t":"tx","x":"顺丰包邮"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card"},"c":[{"a":{"bindtap":"onOpenSpec","class":"row-between"},"c":[{"a":{"class":"h2"},"c":[{"t":"tx","x":"选择规格"}],"n":"text","t":"el"},{"a":{"class":"row"},"c":[{"a":{"class":"muted"},"c":[{"t":"tx","x":"{{selectedSpec}} · {{quantity}}件"}],"n":"text","t":"el"},{"a":{"color":"#999","size":"12","type":"arrow_right"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"divider spec-divider"},"c":[],"n":"view","t":"el"},{"a":{"class":"row-between"},"c":[{"a":{"class":"h2"},"c":[{"t":"tx","x":"服务保障"}],"n":"text","t":"el"},{"a":{"class":"row"},"c":[{"a":{"class":"tag-mini"},"c":[{"t":"tx","x":"7天无理由"}],"n":"text","t":"el"},{"a":{"class":"tag-mini"},"c":[{"t":"tx","x":"正品保证"}],"n":"text","t":"el"},{"a":{"class":"tag-mini"},"c":[{"t":"tx","x":"极速退款"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card"},"c":[{"a":{"class":"row-between"},"c":[{"a":{"class":"h2"},"c":[{"t":"tx","x":"商品评价（{{reviews.length}}）"}],"n":"text","t":"el"},{"a":{"class":"row"},"c":[{"a":{"class":"muted"},"c":[{"t":"tx","x":"好评率 98%"}],"n":"text","t":"el"},{"a":{"color":"#999","size":"12","type":"arrow_right"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"review","wx:for":"{{reviews}}","wx:key":"id"},"c":[{"a":{"class":"row"},"c":[{"a":{"class":"review-avatar","mode":"aspectFill","src":"/assets/avatar1.jpg"},"c":[],"n":"image","t":"el"},{"a":{"class":"review-name"},"c":[{"t":"tx","x":"{{item.name}}"}],"n":"text","t":"el"},{"a":{"class":"row stars"},"c":[{"a":{"color":"#FFB400","size":"12","type":"star","wx:for":"{{item.stars}}","wx:for-item":"s","wx:key":"*this"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"review-text"},"c":[{"t":"tx","x":"{{item.text}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card"},"c":[{"a":{"class":"h2"},"c":[{"t":"tx","x":"图文详情"}],"n":"text","t":"el"},{"a":{"class":"rich","nodes":"{{detailNodes}}"},"c":[],"n":"rich-text","t":"el"},{"a":{"class":"detail-img","mode":"widthFix","src":"{{product.image}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"},{"a":{"class":"bottom-space"},"c":[],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"action-bar","wx:if":"{{product}}"},"c":[{"a":{"bindtap":"onGoCart","class":"action-icon"},"c":[{"a":{"color":"#666","size":"20","type":"clock"},"c":[],"n":"icon","t":"el"},{"a":{"class":"action-icon-text"},"c":[{"t":"tx","x":"购物车"}],"n":"text","t":"el"},{"a":{"class":"cart-badge","wx:if":"{{cartCount > 0}}"},"c":[{"t":"tx","x":"{{cartCount}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onAddCart","class":"action-btn add-cart"},"c":[{"a":{"class":"action-btn-text"},"c":[{"t":"tx","x":"加入购物车"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onBuyNow","class":"action-btn buy-now"},"c":[{"a":{"class":"action-btn-text"},"c":[{"t":"tx","x":"立即购买"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onCloseSpec","class":"sheet-mask","wx:if":"{{specVisible}}"},"c":[],"n":"view","t":"el"},{"a":{"class":"spec-sheet anim-slide-up","wx:if":"{{specVisible}}"},"c":[{"a":{"class":"row-between"},"c":[{"a":{"class":"h1"},"c":[{"t":"tx","x":"选择规格"}],"n":"text","t":"el"},{"a":{"bindtap":"onCloseSpec"},"c":[{"a":{"color":"#cccccc","size":"18","type":"cancel"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"row spec-row"},"c":[{"a":{"bindtap":"onSelectSpec","class":"pill {{item.selected ? 'pill-on' : ''}}","data-index":"{{index}}","wx:for":"{{specs}}","wx:key":"id"},"c":[{"t":"tx","x":"{{item.name}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"row-between qty-line"},"c":[{"a":{"class":"h2"},"c":[{"t":"tx","x":"购买数量"}],"n":"text","t":"el"},{"a":{"class":"row"},"c":[{"a":{"bindtap":"onDecrease","class":"qty-btn"},"c":[{"a":{"color":"#666","size":"14","type":"minus"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"},{"a":{"class":"qty-num"},"c":[{"t":"tx","x":"{{quantity}}"}],"n":"text","t":"el"},{"a":{"bindtap":"onIncrease","class":"qty-btn qty-plus"},"c":[{"a":{"color":"#ffffff","size":"14","type":"plus"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onCloseSpec","class":"spec-confirm","type":"primary"},"c":[{"t":"tx","x":"确定"}],"n":"button","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}];
 </script>
 <script src="../../common/runtime.js"></script>
 <script src="../../common/app.js"></script>

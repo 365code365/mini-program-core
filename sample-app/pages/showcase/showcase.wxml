@@ -1,0 +1,180 @@
+<view class="page">
+  <view class="nav-bar">
+    <view class="nav-back" bindtap="onBack">
+      <icon type="back" size="20" color="#ffffff"></icon>
+    </view>
+    <text class="nav-title">能力展示</text>
+    <view class="nav-action" bindtap="onToast">
+      <icon type="info_no_circle" size="18" color="#ffffff"></icon>
+    </view>
+  </view>
+
+  <!-- 1. CSS 动画 -->
+  <view class="card">
+    <text class="h1">CSS 动画 @keyframes</text>
+    <text class="muted">原生端在绘制期按时钟求值，动画帧成本≈静态帧</text>
+    <view class="row anim-row">
+      <view class="anim-cell">
+        <view class="loading-ring"></view>
+        <text class="cell-tip">旋转</text>
+      </view>
+      <view class="anim-cell">
+        <view class="dot-pulse"></view>
+        <text class="cell-tip">脉冲</text>
+      </view>
+      <view class="anim-cell">
+        <view class="bounce-box"><text class="bounce-tx">NEW</text></view>
+        <text class="cell-tip">弹跳</text>
+      </view>
+      <view class="anim-cell">
+        <view class="breathe-box"></view>
+        <text class="cell-tip">呼吸</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 2. transform -->
+  <view class="card">
+    <text class="h1">transform 变换</text>
+    <text class="muted">缩放/旋转/倾斜作用于整棵子树（离屏仿射合成）</text>
+    <view class="row tf-row">
+      <view class="tf tf-none"><text class="tf-tx">原始</text></view>
+      <view class="tf tf-scale"><text class="tf-tx">缩放</text></view>
+      <view class="tf tf-rot"><text class="tf-tx">旋转</text></view>
+      <view class="tf tf-skew"><text class="tf-tx">倾斜</text></view>
+    </view>
+  </view>
+
+  <!-- 3. 彩色 emoji 与图文混排 -->
+  <view class="card">
+    <text class="h1">彩色 Emoji 混排</text>
+    <text class="emoji-line">🛒 下单 · 📦 发货 · 🚚 运输 · ✅ 收货</text>
+    <text class="emoji-small">🔥 热销 · ✨ 新品 · 💳 支付 · 🎁 礼盒 · 📰 资讯</text>
+  </view>
+
+  <!-- 4. 竖向轮播 + GIF -->
+  <view class="card">
+    <text class="h1">Swiper 与动图</text>
+    <view class="row media-row">
+      <swiper class="v-swiper" vertical="{{true}}" autoplay="{{true}}" interval="2200" circular="{{true}}">
+        <swiper-item wx:for="{{notices}}" wx:key="*this">
+          <view class="notice"><text class="notice-tx">{{item}}</text></view>
+        </swiper-item>
+      </swiper>
+      <view class="col gif-box">
+        <image class="gif" src="/assets/loading.gif"></image>
+        <text class="cell-tip">GIF 逐帧</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 5. 表单控件 -->
+  <view class="card">
+    <text class="h1">表单控件</text>
+    <view class="row-between line">
+      <text class="h2">推送通知</text>
+      <switch checked="{{pushOn}}" bindchange="onPushChange" color="#FF6B35"></switch>
+    </view>
+    <view class="row-between line">
+      <text class="h2">音量 {{volume}}</text>
+      <slider class="slider" value="{{volume}}" min="0" max="100" show-value="{{true}}"
+              activeColor="#FF6B35" bindchange="onVolume"></slider>
+    </view>
+    <view class="line">
+      <text class="h2">配送时段</text>
+      <picker mode="selector" range="{{slots}}" value="{{slotIndex}}" bindchange="onSlot">
+        <view class="row-between picker-line">
+          <text class="muted">{{slots[slotIndex]}}</text>
+          <icon type="arrow_right" size="12" color="#cccccc"></icon>
+        </view>
+      </picker>
+    </view>
+    <view class="line">
+      <text class="h2">口味偏好</text>
+      <checkbox-group bindchange="onTaste">
+        <label class="opt" wx:for="{{tastes}}" wx:key="*this">
+          <checkbox value="{{item}}" color="#FF6B35"></checkbox>
+          <text class="opt-tx">{{item}}</text>
+        </label>
+      </checkbox-group>
+    </view>
+    <view class="line">
+      <text class="h2">发票类型</text>
+      <radio-group bindchange="onInvoice">
+        <label class="opt" wx:for="{{invoices}}" wx:key="*this">
+          <radio value="{{item}}" checked="{{item === invoice}}" color="#FF6B35"></radio>
+          <text class="opt-tx">{{item}}</text>
+        </label>
+      </radio-group>
+    </view>
+    <view class="line">
+      <text class="h2">备注</text>
+      <textarea class="ta" placeholder="想对商家说的话…" value="{{note}}" bindinput="onNote"></textarea>
+      <text class="muted">已输入 {{note.length}} 字</text>
+    </view>
+  </view>
+
+  <!-- 6. 进度与评分 -->
+  <view class="card">
+    <text class="h1">进度 · 评分 · 徽标</text>
+    <view class="line">
+      <text class="h2">下载进度 {{progress}}%</text>
+      <progress percent="{{progress}}" stroke-width="6" activeColor="#FF6B35" backgroundColor="#F0F0F0"></progress>
+      <view class="row btn-row">
+        <view class="mini-btn" bindtap="onProgressStep" data-d="-10">-10</view>
+        <view class="mini-btn" bindtap="onProgressStep" data-d="10">+10</view>
+      </view>
+    </view>
+    <view class="row-between line">
+      <text class="h2">商品评分</text>
+      <view class="row">
+        <view wx:for="{{[1,2,3,4,5]}}" wx:key="*this" bindtap="onRate" data-n="{{item}}">
+          <icon type="{{item <= rating ? 'star' : 'star_o'}}" size="20"
+                color="{{item <= rating ? '#FFB400' : '#dddddd'}}"></icon>
+        </view>
+        <text class="muted rate-tx">{{rating}} 分</text>
+      </view>
+    </view>
+    <view class="row-between line">
+      <text class="h2">消息徽标</text>
+      <view class="row">
+        <view class="badge-wrap">
+          <icon type="clock" size="22" color="#666"></icon>
+          <text class="badge">{{badge}}</text>
+        </view>
+        <view class="mini-btn" bindtap="onBadge">收到消息</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 7. 富文本 + Canvas -->
+  <view class="card">
+    <text class="h1">富文本与 Canvas</text>
+    <rich-text nodes="{{richNodes}}"></rich-text>
+    <canvas class="chart" canvas-id="showcaseChart"></canvas>
+  </view>
+
+  <!-- 8. 弹层类交互 -->
+  <view class="card">
+    <text class="h1">弹层交互</text>
+    <view class="row btn-row">
+      <view class="mini-btn" bindtap="onToast">Toast</view>
+      <view class="mini-btn" bindtap="onLoading">Loading</view>
+      <view class="mini-btn" bindtap="onModal">Modal</view>
+      <view class="mini-btn" bindtap="onSheet">操作面板</view>
+    </view>
+  </view>
+
+  <view class="bottom-space"></view>
+
+  <!-- 操作面板 -->
+  <view wx:if="{{sheetVisible}}" class="sheet-mask" bindtap="onCloseSheet"></view>
+  <view wx:if="{{sheetVisible}}" class="sheet anim-slide-up">
+    <view class="sheet-item" wx:for="{{sheetActions}}" wx:key="*this" bindtap="onSheetAction" data-k="{{item}}">
+      <text class="sheet-tx">{{item}}</text>
+    </view>
+    <view class="sheet-item sheet-cancel" bindtap="onCloseSheet">
+      <text class="sheet-tx sheet-cancel-tx">取消</text>
+    </view>
+  </view>
+</view>

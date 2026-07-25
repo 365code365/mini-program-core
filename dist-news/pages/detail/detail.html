@@ -13,9 +13,18 @@
 </head>
 <body>
 <div id="app">
-  <div class="wx-view page">
+  <div class="wx-view page ">
+    <div class="wx-view dnav">
+      <div class="wx-view dnav-back" data-tap="onBack">
+        <i class="wx-icon wxicon wxicon-back" style="width:20px;height:20px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 4 7.5 12 15.5 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+      </div>
+      <span class="wx-text dnav-title">新华观察</span>
+      <div class="wx-view dnav-act" data-tap="onOpenFontPanel">
+        <span class="wx-text dnav-font">字号</span>
+      </div>
+    </div>
     <div class="wx-view article">
-      <span class="wx-text article-title">数字经济规模再创新高，实体产业融合成为主线</span>
+      <span class="wx-text article-title" style="font-size:24px">数字经济规模再创新高，实体产业融合成为主线</span>
       <div class="wx-view author-row">
         <img class="wx-image author-avatar" style="object-fit:cover" src="/assets/avatar1.jpg">
         <div class="wx-view author-info">
@@ -27,7 +36,7 @@
         </div>
       </div>
       <img class="wx-image article-cover" style="object-fit:cover" src="/assets/banner.jpg">
-      <span class="wx-text article-body">记者从相关部门获悉，上半年数字经济核心产业增加值同比增长明显，占国内生产总值比重进一步提升。
+      <span class="wx-text article-body" style="font-size:17px">记者从相关部门获悉，上半年数字经济核心产业增加值同比增长明显，占国内生产总值比重进一步提升。
 
 从结构上看，数字技术与实体产业的融合成为增长主线：智能制造改造项目数量同比增加，工业互联网平台连接设备规模持续扩大，一批中小企业通过轻量化改造实现了产能与良率的同步提升。
 
@@ -38,6 +47,10 @@
         <span class="wx-text tag">数字经济</span>
         <span class="wx-text tag">产业升级</span>
         <span class="wx-text tag">独家</span>
+      </div>
+      <div class="wx-view read-row">
+        <span class="wx-text read-tx">本文阅读量 12.8万</span>
+        <div class="wx-progress"><div class="wx-progress-outer"><div class="wx-progress-inner" style="width:72%;background:#D43C33"></div></div></div>
       </div>
     </div>
     <div class="wx-view related">
@@ -60,7 +73,9 @@
       <div class="wx-view comment-item">
         <img class="wx-image comment-avatar" style="object-fit:cover" src="/assets/avatar1.jpg">
         <div class="wx-view comment-body">
-          <span class="wx-text comment-user">industry_watcher</span>
+          <div class="wx-view row">
+            <span class="wx-text comment-user">industry_watcher</span>
+          </div>
           <span class="wx-text comment-text">融合是关键，单纯上系统解决不了产线的实际问题。</span>
           <div class="wx-view comment-foot">
             <span class="wx-text comment-time">1 小时前</span>
@@ -71,7 +86,9 @@
       <div class="wx-view comment-item">
         <img class="wx-image comment-avatar" style="object-fit:cover" src="/assets/avatar1.jpg">
         <div class="wx-view comment-body">
-          <span class="wx-text comment-user">制造业老张</span>
+          <div class="wx-view row">
+            <span class="wx-text comment-user">制造业老张</span>
+          </div>
           <span class="wx-text comment-text">我们厂去年做了改造，良率确实提升了，但人才招不到。</span>
           <div class="wx-view comment-foot">
             <span class="wx-text comment-time">2 小时前</span>
@@ -82,7 +99,9 @@
       <div class="wx-view comment-item">
         <img class="wx-image comment-avatar" style="object-fit:cover" src="/assets/avatar1.jpg">
         <div class="wx-view comment-body">
-          <span class="wx-text comment-user">data_fan</span>
+          <div class="wx-view row">
+            <span class="wx-text comment-user">data_fan</span>
+          </div>
           <span class="wx-text comment-text">希望数据定价机制能尽快明确，现在交易顾虑比较多。</span>
           <div class="wx-view comment-foot">
             <span class="wx-text comment-time">3 小时前</span>
@@ -97,15 +116,15 @@
         <span class="wx-text comment-input-text">写评论…</span>
       </div>
       <div class="wx-view action-item" data-tap="onLike">
-        <i class="wx-icon wxicon wxicon-success" style="width:20px;height:20px;color:#8A8A8A"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><path d="M5.8 12.4 10 16.4 18.2 7.6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+        <i class="wx-icon wxicon wxicon-star_o" style="width:20px;height:20px;color:#8A8A8A"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></i>
         <span class="wx-text action-count">1286</span>
       </div>
       <div class="wx-view action-item" data-tap="onCollect">
-        <i class="wx-icon wxicon wxicon-waiting" style="width:20px;height:20px;color:#8A8A8A"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><rect x="10.9" y="6.2" width="2.2" height="6.6" rx="1.1" fill="#fff"/><rect x="12" y="10.9" width="5.2" height="2.2" rx="1.1" fill="#fff"/><circle cx="12" cy="12" r="1.6" fill="#fff"/></svg></i>
+        <i class="wx-icon wxicon wxicon-circle" style="width:20px;height:20px;color:#8A8A8A"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.8" fill="none" stroke="currentColor" stroke-width="2.2"/></svg></i>
         <span class="wx-text action-count">收藏</span>
       </div>
       <div class="wx-view action-item" data-tap="onShare">
-        <i class="wx-icon wxicon wxicon-info" style="width:20px;height:20px;color:#8A8A8A"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><circle cx="12" cy="7.6" r="1.7" fill="#fff"/><rect x="10.9" y="10.8" width="2.2" height="7" rx="1.1" fill="#fff"/></svg></i>
+        <i class="wx-icon wxicon wxicon-arrow_up" style="width:20px;height:20px;color:#8A8A8A"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15.5 12 7.5 20 15.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
         <span class="wx-text action-count">分享</span>
       </div>
     </div>
@@ -114,7 +133,7 @@
 
 <script>
 window.__PAGE_ROUTE__ = "pages/detail/detail";
-window.__WXML__ = [{"a":{"class":"page"},"c":[{"a":{"class":"article"},"c":[{"a":{"class":"article-title"},"c":[{"t":"tx","x":"{{article.title}}"}],"n":"text","t":"el"},{"a":{"class":"author-row"},"c":[{"a":{"class":"author-avatar","mode":"aspectFill","src":"{{article.avatar}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"author-info"},"c":[{"a":{"class":"author-name"},"c":[{"t":"tx","x":"{{article.author}}"}],"n":"text","t":"el"},{"a":{"class":"author-time"},"c":[{"t":"tx","x":"{{article.time}} · {{article.readCount}}阅读"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onToggleFollow","class":"follow-btn {{followed ? 'followed' : ''}}"},"c":[{"a":{"class":"follow-text"},"c":[{"t":"tx","x":"{{followed ? '已关注' : '关注'}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"article-cover","mode":"aspectFill","src":"{{article.cover}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"article-body"},"c":[{"t":"tx","x":"{{article.body}}"}],"n":"text","t":"el"},{"a":{"class":"tag-row"},"c":[{"a":{"class":"tag","wx:for":"{{article.tags}}","wx:key":"*this"},"c":[{"t":"tx","x":"{{item}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"related"},"c":[{"a":{"class":"section-title"},"c":[{"t":"tx","x":"相关阅读"}],"n":"text","t":"el"},{"a":{"bindtap":"onOpenRelated","class":"related-item","data-id":"{{item.id}}","wx:for":"{{related}}","wx:key":"id"},"c":[{"a":{"class":"related-title"},"c":[{"t":"tx","x":"{{item.title}}"}],"n":"text","t":"el"},{"a":{"class":"related-meta"},"c":[{"t":"tx","x":"{{item.source}} · {{item.comments}}评论"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"comments"},"c":[{"a":{"class":"section-title"},"c":[{"t":"tx","x":"精彩评论（{{comments.length}}）"}],"n":"text","t":"el"},{"a":{"class":"comment-item","wx:for":"{{comments}}","wx:key":"id"},"c":[{"a":{"class":"comment-avatar","mode":"aspectFill","src":"{{item.avatar}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"comment-body"},"c":[{"a":{"class":"comment-user"},"c":[{"t":"tx","x":"{{item.user}}"}],"n":"text","t":"el"},{"a":{"class":"comment-text"},"c":[{"t":"tx","x":"{{item.text}}"}],"n":"text","t":"el"},{"a":{"class":"comment-foot"},"c":[{"a":{"class":"comment-time"},"c":[{"t":"tx","x":"{{item.time}}"}],"n":"text","t":"el"},{"a":{"bindtap":"onLikeComment","class":"comment-like","data-id":"{{item.id}}"},"c":[{"t":"tx","x":"👍 {{item.likes}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"bottom-space"},"c":[],"n":"view","t":"el"},{"a":{"class":"action-bar"},"c":[{"a":{"bindtap":"onWriteComment","class":"comment-input"},"c":[{"a":{"class":"comment-input-text"},"c":[{"t":"tx","x":"写评论…"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onLike","class":"action-item"},"c":[{"a":{"color":"{{liked ? '#D43C33' : '#8A8A8A'}}","size":"20","type":"success"},"c":[],"n":"icon","t":"el"},{"a":{"class":"action-count"},"c":[{"t":"tx","x":"{{likeCount}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onCollect","class":"action-item"},"c":[{"a":{"color":"{{collected ? '#F0A020' : '#8A8A8A'}}","size":"20","type":"waiting"},"c":[],"n":"icon","t":"el"},{"a":{"class":"action-count"},"c":[{"t":"tx","x":"收藏"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onShare","class":"action-item"},"c":[{"a":{"color":"#8A8A8A","size":"20","type":"info"},"c":[],"n":"icon","t":"el"},{"a":{"class":"action-count"},"c":[{"t":"tx","x":"分享"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}];
+window.__WXML__ = [{"a":{"class":"page {{nightMode ? 'night' : ''}}"},"c":[{"a":{"class":"dnav"},"c":[{"a":{"bindtap":"onBack","class":"dnav-back"},"c":[{"a":{"color":"#ffffff","size":"20","type":"back"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"},{"a":{"class":"dnav-title"},"c":[{"t":"tx","x":"{{article.author}}"}],"n":"text","t":"el"},{"a":{"bindtap":"onOpenFontPanel","class":"dnav-act"},"c":[{"a":{"class":"dnav-font"},"c":[{"t":"tx","x":"字号"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"article"},"c":[{"a":{"class":"article-title","style":"font-size:{{titleSize}}px"},"c":[{"t":"tx","x":"{{article.title}}"}],"n":"text","t":"el"},{"a":{"class":"author-row"},"c":[{"a":{"class":"author-avatar","mode":"aspectFill","src":"{{article.avatar}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"author-info"},"c":[{"a":{"class":"author-name"},"c":[{"t":"tx","x":"{{article.author}}"}],"n":"text","t":"el"},{"a":{"class":"author-time"},"c":[{"t":"tx","x":"{{article.time}} · {{article.readCount}}阅读"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onToggleFollow","class":"follow-btn {{followed ? 'followed' : ''}}"},"c":[{"a":{"class":"follow-text"},"c":[{"t":"tx","x":"{{followed ? '已关注' : '关注'}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"article-cover","mode":"aspectFill","src":"{{article.cover}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"article-body","style":"font-size:{{bodySize}}px"},"c":[{"t":"tx","x":"{{article.body}}"}],"n":"text","t":"el"},{"a":{"class":"tag-row"},"c":[{"a":{"class":"tag","wx:for":"{{article.tags}}","wx:key":"*this"},"c":[{"t":"tx","x":"{{item}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"read-row"},"c":[{"a":{"class":"read-tx"},"c":[{"t":"tx","x":"本文阅读量 {{article.readCount}}"}],"n":"text","t":"el"},{"a":{"activeColor":"#D43C33","backgroundColor":"#EDEDED","percent":"{{readPercent}}","stroke-width":"3"},"c":[],"n":"progress","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"related"},"c":[{"a":{"class":"section-title"},"c":[{"t":"tx","x":"相关阅读"}],"n":"text","t":"el"},{"a":{"bindtap":"onOpenRelated","class":"related-item","data-id":"{{item.id}}","wx:for":"{{related}}","wx:key":"id"},"c":[{"a":{"class":"related-title"},"c":[{"t":"tx","x":"{{item.title}}"}],"n":"text","t":"el"},{"a":{"class":"related-meta"},"c":[{"t":"tx","x":"{{item.source}} · {{item.comments}}评论"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"comments"},"c":[{"a":{"class":"section-title"},"c":[{"t":"tx","x":"精彩评论（{{comments.length}}）"}],"n":"text","t":"el"},{"a":{"class":"comment-item","wx:for":"{{comments}}","wx:key":"id"},"c":[{"a":{"class":"comment-avatar","mode":"aspectFill","src":"{{item.avatar}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"comment-body"},"c":[{"a":{"class":"row"},"c":[{"a":{"class":"comment-user"},"c":[{"t":"tx","x":"{{item.user}}"}],"n":"text","t":"el"},{"a":{"class":"mine-tag","wx:if":"{{item.mine}}"},"c":[{"t":"tx","x":"我的"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"comment-text"},"c":[{"t":"tx","x":"{{item.text}}"}],"n":"text","t":"el"},{"a":{"class":"comment-foot"},"c":[{"a":{"class":"comment-time"},"c":[{"t":"tx","x":"{{item.time}}"}],"n":"text","t":"el"},{"a":{"bindtap":"onLikeComment","class":"comment-like","data-id":"{{item.id}}"},"c":[{"t":"tx","x":"👍 {{item.likes}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"bottom-space"},"c":[],"n":"view","t":"el"},{"a":{"class":"action-bar"},"c":[{"a":{"bindtap":"onWriteComment","class":"comment-input","wx:if":"{{!composing}}"},"c":[{"a":{"class":"comment-input-text"},"c":[{"t":"tx","x":"写评论…"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"compose","wx:if":"{{composing}}"},"c":[{"a":{"bindconfirm":"onSubmitComment","bindinput":"onDraftInput","class":"compose-input","focus":"{{true}}","placeholder":"说说你的看法…","value":"{{draft}}"},"c":[],"n":"input","t":"el"},{"a":{"bindtap":"onSubmitComment","class":"send-btn"},"c":[{"a":{"class":"send-tx"},"c":[{"t":"tx","x":"发送"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onLike","class":"action-item","wx:if":"{{!composing}}"},"c":[{"a":{"color":"{{liked ? '#D43C33' : '#8A8A8A'}}","size":"20","type":"{{liked ? 'star' : 'star_o'}}"},"c":[],"n":"icon","t":"el"},{"a":{"class":"action-count"},"c":[{"t":"tx","x":"{{likeCount}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onCollect","class":"action-item","wx:if":"{{!composing}}"},"c":[{"a":{"color":"{{collected ? '#F0A020' : '#8A8A8A'}}","size":"20","type":"{{collected ? 'success' : 'circle'}}"},"c":[],"n":"icon","t":"el"},{"a":{"class":"action-count"},"c":[{"t":"tx","x":"收藏"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onShare","class":"action-item","wx:if":"{{!composing}}"},"c":[{"a":{"color":"#8A8A8A","size":"20","type":"arrow_up"},"c":[],"n":"icon","t":"el"},{"a":{"class":"action-count"},"c":[{"t":"tx","x":"分享"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onCloseFontPanel","class":"font-mask","wx:if":"{{fontPanel}}"},"c":[],"n":"view","t":"el"},{"a":{"class":"font-sheet","wx:if":"{{fontPanel}}"},"c":[{"a":{"class":"font-title"},"c":[{"t":"tx","x":"正文字号"}],"n":"text","t":"el"},{"a":{"activeColor":"#D43C33","bindchange":"onFontChange","max":"5","min":"1","show-value":"{{true}}","step":"1","value":"{{fontLevel}}"},"c":[],"n":"slider","t":"el"},{"a":{"class":"font-preview","style":"font-size:{{bodySize}}px"},"c":[{"t":"tx","x":"这是当前字号的正文预览效果。"}],"n":"text","t":"el"},{"a":{"bindtap":"onCloseFontPanel","class":"font-done"},"c":[{"a":{"class":"font-done-tx"},"c":[{"t":"tx","x":"完成"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}];
 </script>
 <script src="../../common/runtime.js"></script>
 <script src="../../common/app.js"></script>

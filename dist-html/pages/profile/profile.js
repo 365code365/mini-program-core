@@ -1,78 +1,95 @@
-// 个人中心页面
+// 我的：订单统计 / 功能入口 / 登录态
 Page({
   data: {
+    userName: '未登录',
     loggedIn: false,
-    userName: '点击登录',
-    couponText: '5张可用',
-    userInfo: {
-      name: '用户12345',
-      level: '普通会员'
-    },
-    orderStats: {
-      pending: 2,
-      shipping: 1,
-      receiving: 3,
-      review: 5
-    },
-    menuList: [
-      { id: 1, name: '我的订单', icon: 'success', color: '#FF6B35', value: '查看全部' },
-      { id: 2, name: '收货地址', icon: 'info', color: '#4A90D9', value: '3个地址' },
-      { id: 3, name: '我的收藏', icon: 'warn', color: '#FF69B4', value: '12件' },
-      { id: 4, name: '优惠券', icon: 'waiting', color: '#52C41A', value: '5张可用' },
-      { id: 5, name: '积分商城', icon: 'success', color: '#FFB800', value: '1280积分' },
-      { id: 6, name: '帮助中心', icon: 'info', color: '#999', value: '' },
-      { id: 7, name: '关于我们', icon: 'info', color: '#999', value: '' }
-    ]
+    points: 0,
+    orderStats: [],
+    menus: []
   },
 
-  onLoad: function() {
-    this.refreshUser();
+  onShow: function () {
+    var app = getApp();
+    var user = wx.getStorageSync('userInfo');
+    var orders = app.getOrders();
+    var count = function (status) {
+      return orders.filter(function (o) { return o.status === status; }).length;
+    };
+    var cartCount = app.updateCartCount();
+    this.setData({
+      userName: user ? user.name : '未登录',
+      loggedIn: !!user,
+      points: user ? (user.points || 1280) : 0,
+      orderStats: [
+        { key: 'pending', name: '待付款', count: count('pending') },
+        { key: 'paid', name: '待发货', count: count('paid') },
+        { key: 'shipping', name: '待收货', count: count('shipping') },
+        { key: 'done', name: '已完成', count: count('done') }
+      ],
+      menus: [
+        { key: 'address', name: '收货地址', icon: 'info_no_circle', color: '#FF6B35', value: '' },
+        { key: 'coupon', name: '优惠券', icon: 'arrow_down', color: '#FAAD14', value: wx.getStorageSync('couponClaimed') ? '已领取' : '3 张可领' },
+        { key: 'cart', name: '购物车', icon: 'clock', color: '#52C41A', value: cartCount ? cartCount + ' 件' : '空' },
+        { key: 'search', name: '搜索历史', icon: 'search', color: '#13c2c2', value: app.getSearchHistory().length + ' 条' },
+        { key: 'showcase', name: '能力展示', icon: 'star', color: '#EB2F96', value: '' },
+        { key: 'form', name: '表单与事件', icon: 'success_no_circle', color: '#722ed1', value: '' },
+        { key: 'canvas', name: 'Canvas 绘图', icon: 'plus', color: '#2F54EB', value: '' },
+        { key: 'components', name: '组件示例', icon: 'warn_no_circle', color: '#FA541C', value: '' }
+      ]
+    });
   },
-  onShow: function() {
-    this.refreshUser();
-  },
-  refreshUser: function() {
-    var user = wx.getStorageSync('user');
-    if (user && user.nickname) {
-      this.setData({ loggedIn: true, userName: user.nickname });
+
+  onUserTap: function () {
+    if (this.data.loggedIn) {
+      wx.showToast({ title: '已登录：' + this.data.userName, icon: 'none' });
     } else {
-      this.setData({ loggedIn: false, userName: '点击登录' });
-    }
-  },
-
-  onUserTap: function() {
-    if (!this.data.loggedIn) {
       wx.navigateTo({ url: '/pages/login/login' });
     }
   },
 
-  onOrderTap: function(e) {
-    var type = e.currentTarget.dataset.type;
-    wx.showToast({ title: '查看' + type + '订单', icon: 'none' });
+  onAllOrders: function () {
+    wx.navigateTo({ url: '/pages/orders/orders' });
   },
 
-  onMenuTap: function(e) {
-    var id = e.currentTarget.dataset.id;
-    if (id === 1) { wx.navigateTo({ url: '/pages/address/address' }); return; }
-    if (id === 3) { wx.navigateTo({ url: '/pages/coupon/coupon' }); return; }
-    wx.showToast({ title: '功能开发中', icon: 'none' });
+  onOrderTap: function (e) {
+    wx.navigateTo({ url: '/pages/orders/orders?status=' + e.currentTarget.dataset.type });
   },
 
-  onSettings: function() {
-    console.log('⚙️ 设置');
-    wx.showToast({ title: '设置', icon: 'none' });
+  onMenuTap: function (e) {
+    var key = e.currentTarget.dataset.key;
+    if (key === 'cart') {
+      wx.switchTab({ url: '/pages/cart/cart' });
+      return;
+    }
+    var routes = {
+      address: '/pages/address/address',
+      coupon: '/pages/coupon/coupon',
+      search: '/pages/search/search',
+      showcase: '/pages/showcase/showcase',
+      form: '/pages/form/form',
+      canvas: '/pages/canvas/canvas',
+      components: '/pages/components/components'
+    };
+    if (routes[key]) {
+      wx.navigateTo({ url: routes[key] });
+    }
   },
 
-  onLogout: function() {
+  onLogout: function () {
     var self = this;
+    if (!this.data.loggedIn) {
+      wx.navigateTo({ url: '/pages/login/login' });
+      return;
+    }
     wx.showModal({
-      title: '提示',
-      content: '确定要退出登录吗？',
-      success: function(res) {
+      title: '退出登录',
+      content: '确定要退出当前账号吗？',
+      success: function (res) {
         if (res.confirm) {
-          wx.removeStorageSync('user');
-          self.refreshUser();
-          wx.showToast({ title: '已退出', icon: 'none' });
+          wx.removeStorageSync('userInfo');
+          getApp().globalData.userInfo = null;
+          self.onShow();
+          wx.showToast({ title: '已退出', icon: 'success' });
         }
       }
     });

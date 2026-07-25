@@ -64,6 +64,9 @@ impl IconComponent {
                 "cancel" | "clear" => Color::from_hex(0xF43530),
                 "download" => Color::from_hex(0x09BB07),
                 "search" => Color::from_hex(0xB2B2B2),
+                "back" | "arrow_left" | "arrow-left" | "arrow" | "arrow_right" | "arrow-right"
+                | "arrow_up" | "arrow-up" | "arrow_down" | "arrow-down"
+                | "plus" | "minus" => Color::from_hex(0xC8C8CD),
                 _ => Color::from_hex(0x09BB07),
             };
             ns.text_color = Some(default_color);
@@ -131,10 +134,52 @@ impl IconComponent {
             "star" => Self::draw_star(canvas, cx, cy, r, color, true, stroke_width),
             "star-o" | "star_o" => Self::draw_star(canvas, cx, cy, r, color, false, stroke_width),
             "heart" => Self::draw_heart(canvas, cx, cy, r, color),
+            // ── 箭头/尖角：返回按钮与列表右侧箭头用（此前只能拿 ">" 之类的字符凑） ──
+            "back" | "arrow_left" | "arrow-left" => Self::draw_chevron(canvas, cx, cy, r, color, stroke_width * 1.2, 180.0),
+            "arrow" | "arrow_right" | "arrow-right" => Self::draw_chevron(canvas, cx, cy, r, color, stroke_width * 1.2, 0.0),
+            "arrow_up" | "arrow-up" => Self::draw_chevron(canvas, cx, cy, r, color, stroke_width * 1.2, -90.0),
+            "arrow_down" | "arrow-down" => Self::draw_chevron(canvas, cx, cy, r, color, stroke_width * 1.2, 90.0),
+            "plus" => Self::draw_plus(canvas, cx, cy, r, color, stroke_width * 1.2),
+            "minus" => Self::draw_minus(canvas, cx, cy, r, color, stroke_width * 1.2),
             _ => Self::draw_success(canvas, cx, cy, r, color, true, stroke_width),
         }
     }
     
+    /// 绘制尖角箭头（`>` 形），`rotate_deg` 决定朝向：0=右、180=左、-90=上、90=下
+    fn draw_chevron(canvas: &mut Canvas, cx: f32, cy: f32, r: f32, color: Color, stroke_width: f32, rotate_deg: f32) {
+        let rad = rotate_deg.to_radians();
+        let (sin, cos) = (rad.sin(), rad.cos());
+        // 以朝右的 `>` 为基准，三个端点绕中心旋转
+        let arm = r * 0.55;
+        let pts = [(-arm * 0.6, -arm), (arm * 0.5, 0.0), (-arm * 0.6, arm)];
+        let mut paint = Paint::new().with_color(color).with_style(PaintStyle::Stroke).with_anti_alias(true);
+        paint.stroke_width = stroke_width;
+        let mut path = Path::new();
+        for (i, (px, py)) in pts.iter().enumerate() {
+            let rx = cx + px * cos - py * sin;
+            let ry = cy + px * sin + py * cos;
+            if i == 0 { path.move_to(rx, ry); } else { path.line_to(rx, ry); }
+        }
+        canvas.draw_path(&path, &paint);
+    }
+
+    /// 绘制加号
+    fn draw_plus(canvas: &mut Canvas, cx: f32, cy: f32, r: f32, color: Color, stroke_width: f32) {
+        let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill).with_anti_alias(true);
+        let half = r * 0.62;
+        let t = stroke_width / 2.0;
+        canvas.fill_round_rect(cx - half, cy - t, half * 2.0, t * 2.0, t, color);
+        canvas.fill_round_rect(cx - t, cy - half, t * 2.0, half * 2.0, t, color);
+        let _ = paint;
+    }
+
+    /// 绘制减号
+    fn draw_minus(canvas: &mut Canvas, cx: f32, cy: f32, r: f32, color: Color, stroke_width: f32) {
+        let half = r * 0.62;
+        let t = stroke_width / 2.0;
+        canvas.fill_round_rect(cx - half, cy - t, half * 2.0, t * 2.0, t, color);
+    }
+
     /// 绘制五角星（filled=true 实心，否则描边）
     fn draw_star(canvas: &mut Canvas, cx: f32, cy: f32, r: f32, color: Color, filled: bool, stroke_width: f32) {
         use std::f32::consts::PI;

@@ -146,3 +146,10 @@
 .bottom-space {
   height: 55px;
 }
+
+/* ── 新增：字号预览 ── */
+.font-sample {
+  color: #555;
+  line-height: 1.8;
+  margin-top: 8px;
+}

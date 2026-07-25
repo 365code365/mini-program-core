@@ -1,279 +1,398 @@
 /* 由 index.wxss 编译 */
+/* 首页 */
 .page {
   background-color: #F5F5F5;
 }
 
-/* 搜索栏 */
-.search-bar {
+/* 顶部搜索栏 */
+.top-bar {
   background-color: #FF6B35;
-  padding: 10px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
 }
-
-.search-input {
+.search-entry {
+  flex: 1;
   background-color: #fff;
   border-radius: 16px;
-  padding: 8px 12px;
-  font-size: 14px;
-  width: 100%;
+  height: 32px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0 12px;
+}
+.search-entry-text {
+  font-size: 13px;
+  color: #999;
+  margin-left: 6px;
+}
+.top-msg {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 4px;
 }
 
-/* Banner */
-.banner {
+/* 轮播 */
+.banner-wrap {
   background-color: #FF6B35;
-  margin: 10px;
-  padding: 15px;
-  border-radius: 8px;
+  padding: 0 12px 12px 12px;
 }
-
+.banner-swiper {
+  width: 100%;
+  height: 150px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.banner-item {
+  width: 100%;
+  height: 150px;
+  position: relative;
+}
+.banner-img {
+  width: 100%;
+  height: 150px;
+}
+.banner-text {
+  position: absolute;
+  left: 14px;
+  top: 20px;
+  display: flex;
+  flex-direction: column;
+}
 .banner-tag {
-  background-color: #fff;
+  font-size: 10px;
   color: #FF6B35;
-  font-size: 11px;
-  padding: 3px 8px;
-  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.92);
+  border-radius: 3px;
+  padding: 2px 6px;
+  margin-bottom: 6px;
 }
-
 .banner-title {
-  display: block;
+  font-size: 19px;
   color: #fff;
-  font-size: 18px;
   font-weight: bold;
-  margin-top: 8px;
 }
-
 .banner-desc {
-  display: block;
-  color: rgba(255,255,255,0.8);
   font-size: 12px;
+  color: rgba(255, 255, 255, 0.92);
   margin-top: 4px;
 }
 
-/* 分类 */
-.category-section {
+/* 金刚区 */
+.quick-card {
   background-color: #fff;
-  margin: 0 10px 10px;
-  padding: 12px;
   border-radius: 8px;
+  margin: -6px 10px 0 10px;
+  padding: 12px 4px;
 }
-
-.category-row {
+.quick-row {
   display: flex;
   flex-direction: row;
-  justify-content: space-around;
+  flex-wrap: wrap;
 }
-
-.category-item {
+.quick-item {
+  width: 20%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 60px;
+  padding: 6px 0;
+}
+.quick-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 19px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.quick-name {
+  font-size: 11px;
+  color: #666;
+  margin-top: 5px;
 }
 
-.category-name {
-  font-size: 12px;
-  color: #333;
-  margin-top: 6px;
+/* 秒杀 */
+.seckill {
+  background-color: #fff;
+  border-radius: 8px;
+  margin: 10px;
+  padding: 12px;
+}
+.seckill-head {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+.seckill-title {
+  font-size: 16px;
+  color: #1a1a1a;
+  font-weight: bold;
+}
+.seckill-flag {
+  font-size: 10px;
+  color: #fff;
+  background-color: #FF3B30;
+  border-radius: 3px;
+  padding: 2px 5px;
+  margin-left: 6px;
+}
+.seckill-tip {
+  font-size: 11px;
+  color: #999;
+  margin-right: 5px;
+}
+.clock-num {
+  font-size: 11px;
+  color: #fff;
+  background-color: #2D2D2D;
+  border-radius: 3px;
+  padding: 2px 4px;
+  min-width: 20px;
+  text-align: center;
+}
+.clock-sep {
+  font-size: 11px;
+  color: #2D2D2D;
+  padding: 0 2px;
+}
+.seckill-scroll {
+  width: 100%;
+  margin-top: 10px;
+}
+.seckill-row {
+  display: flex;
+  flex-direction: row;
+}
+.seckill-item {
+  width: 90px;
+  min-width: 90px;
+  margin-right: 10px;
+  display: flex;
+  flex-direction: column;
+}
+.seckill-img {
+  width: 90px;
+  height: 90px;
+  border-radius: 6px;
+  background-color: #F5F5F5;
+}
+.seckill-price {
+  font-size: 15px;
+  color: #FF3B30;
+  font-weight: bold;
+  margin-top: 5px;
+}
+.seckill-origin {
+  font-size: 11px;
+  color: #bbb;
+  text-decoration: line-through;
+}
+.seckill-bar {
+  height: 5px;
+  border-radius: 3px;
+  background-color: #F0F0F0;
+  margin-top: 5px;
+  overflow: hidden;
+}
+.seckill-bar-in {
+  height: 5px;
+  border-radius: 3px;
+  background-color: #FF3B30;
+}
+.seckill-left {
+  font-size: 10px;
+  color: #999;
+  margin-top: 4px;
 }
 
-/* 区块 */
+/* 通用区块 */
 .section {
   background-color: #fff;
-  margin: 0 10px 10px;
-  padding: 12px;
   border-radius: 8px;
+  margin: 10px;
+  padding: 12px;
 }
-
 .section-header {
   display: flex;
   flex-direction: row;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   margin-bottom: 10px;
-  width: 100%;
 }
-
 .section-title {
   font-size: 16px;
+  color: #1a1a1a;
   font-weight: bold;
-  color: #333;
 }
-
 .section-more {
-  font-size: 13px;
+  font-size: 12px;
   color: #999;
+  margin-right: 3px;
 }
 
-/* 商品网格 */
+/* 热销：两列卡片 */
 .product-row {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  justify-content: space-between;
 }
-
 .product-card {
-  width: 48%;
-  background-color: #FAFAFA;
-  border-radius: 6px;
-  padding: 8px;
-  margin-bottom: 8px;
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  padding: 5px;
 }
-
 .product-img {
   width: 100%;
-  height: 90px;
-  background-color: #f0f0f0;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  height: 140px;
+  border-radius: 6px;
+  background-color: #F5F5F5;
+  position: relative;
+  overflow: hidden;
 }
-
+.product-img-el {
+  width: 100%;
+  height: 140px;
+}
+.product-badge {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: 10px;
+  color: #fff;
+  background-color: #FF3B30;
+  padding: 2px 6px;
+  border-radius: 6px 0 6px 0;
+}
 .product-name {
-  display: block;
   font-size: 13px;
   color: #333;
   margin-top: 6px;
 }
-
 .product-price-row {
   display: flex;
   flex-direction: row;
-  justify-content: space-between;
   align-items: center;
-  margin-top: 6px;
-  width: 100%;
+  justify-content: space-between;
+  margin-top: 4px;
 }
-
 .product-price {
-  font-size: 16px;
+  font-size: 15px;
   color: #FF6B35;
   font-weight: bold;
 }
-
 .add-btn {
   width: 24px;
   height: 24px;
-  background-color: #FF6B35;
   border-radius: 12px;
+  background-color: #FF6B35;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.add-btn-text {
-  color: #fff;
-  font-size: 16px;
-}
-
-/* 商品列表 */
+/* 新品列表 */
 .product-list {
   display: flex;
   flex-direction: column;
 }
-
 .list-item {
   display: flex;
   flex-direction: row;
   align-items: center;
-  padding: 8px 0;
-  border-bottom: 0.500px solid #f0f0f0;
+  padding: 10px 0;
+  border-bottom: 0.500px solid #F5F5F5;
 }
-
-.list-item:last-child {
-  border-bottom: none;
-}
-
 .list-img {
-  width: 60px;
-  height: 60px;
-  background-color: #f0f0f0;
+  width: 80px;
+  height: 80px;
+  min-width: 80px;
   border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.list-info {
-  flex: 1;
-  margin-left: 8px;
+  background-color: #F5F5F5;
   overflow: hidden;
 }
-
+.list-img-el {
+  width: 80px;
+  height: 80px;
+}
+.list-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-left: 10px;
+}
 .list-name {
-  display: block;
   font-size: 14px;
   color: #333;
   font-weight: 500;
 }
-
 .list-desc {
-  display: block;
   font-size: 12px;
   color: #999;
-  margin-top: 3px;
+  margin-top: 4px;
 }
-
 .list-price {
-  display: block;
   font-size: 15px;
   color: #FF6B35;
   font-weight: bold;
-  margin-top: 4px;
+  margin-top: 6px;
 }
-
+.list-sold {
+  font-size: 11px;
+  color: #bbb;
+  margin-left: 8px;
+  margin-top: 6px;
+}
 .list-btn {
-  background-color: #FF6B35;
-  flex-shrink: 0;
+  margin-left: 8px;
+}
+.loading-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 0;
+}
+.loading-text {
+  font-size: 12px;
+  color: #999;
   margin-left: 8px;
 }
 
-.bottom-space {
-  height: 10px;
-}
-
-/* 首页优惠券弹窗 */
-.coupon-mask {
-  position: fixed;
-  left: 0; top: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.55);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
+/* 新人优惠券弹窗 */
 .coupon-dialog {
   position: relative;
   width: 300px;
-  background: #fff;
+  background-color: #fff;
   border-radius: 12px;
-  padding: 20px 16px 16px;
+  padding: 20px 16px 16px 16px;
   display: flex;
   flex-direction: column;
-  align-items: center;
 }
 .coupon-dialog-head {
-  align-items: center;
   display: flex;
   flex-direction: column;
-  margin-bottom: 12px;
+  align-items: center;
 }
 .coupon-dialog-title {
-  font-size: 20px;
+  font-size: 19px;
+  color: #1a1a1a;
   font-weight: bold;
-  color: #FF3B30;
 }
 .coupon-dialog-sub {
   font-size: 12px;
   color: #999;
-  margin-top: 4px;
+  margin-top: 5px;
 }
 .coupon-list-pop {
-  width: 100%;
   display: flex;
   flex-direction: column;
+  margin-top: 14px;
 }
 .coupon-card {
   display: flex;
@@ -289,18 +408,19 @@
   flex-direction: column;
   align-items: center;
   width: 80px;
-  border-right: 0.500px dashed rgba(255,255,255,0.6);
+  border-right: 0.500px dashed rgba(255, 255, 255, 0.6);
 }
 .coupon-amount {
-  font-size: 24px;
-  font-weight: bold;
+  font-size: 22px;
   color: #fff;
+  font-weight: bold;
 }
 .coupon-cond {
   font-size: 10px;
-  color: rgba(255,255,255,0.9);
+  color: rgba(255, 255, 255, 0.9);
 }
 .coupon-right {
+  flex: 1;
   display: flex;
   flex-direction: column;
   margin-left: 12px;
@@ -312,32 +432,22 @@
 }
 .coupon-tip {
   font-size: 11px;
-  color: rgba(255,255,255,0.85);
+  color: rgba(255, 255, 255, 0.9);
   margin-top: 3px;
 }
 .coupon-claim-btn {
-  margin-top: 8px;
-  width: 100%;
-  background: #FF3B30;
-  color: #fff;
+  margin-top: 6px;
   border-radius: 22px;
-  font-size: 15px;
 }
 .coupon-close {
   position: absolute;
-  top: -32px;
-  right: 0;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 0.500px solid rgba(255,255,255,0.8);
-  color: #fff;
-  font-size: 14px;
+  right: 10px;
+  top: 10px;
+  width: 22px;
+  height: 22px;
+  border-radius: 11px;
+  background-color: rgba(0, 0, 0, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
 }
-
-/* 商品真实图片 */
-.product-img-el { width: 100%; height: 100%; border-radius: 4px; display: block; }
-.list-img-el { width: 100%; height: 100%; border-radius: 4px; display: block; }

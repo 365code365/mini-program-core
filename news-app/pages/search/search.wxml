@@ -1,0 +1,72 @@
+<view class="page">
+  <view class="snav">
+    <view class="snav-back" bindtap="onBack">
+      <icon type="back" size="20" color="#ffffff"></icon>
+    </view>
+    <view class="snav-box">
+      <icon type="search" size="14" color="#9A9A9A"></icon>
+      <input class="snav-input" placeholder="搜索新闻 / 视频 / 作者" value="{{keyword}}"
+             focus="{{true}}" bindinput="onInput" bindconfirm="onSearch" />
+      <view wx:if="{{keyword}}" bindtap="onClear"><icon type="clear" size="15" color="#cccccc"></icon></view>
+    </view>
+    <text class="snav-go" bindtap="onSearch">搜索</text>
+  </view>
+
+  <!-- 搜索前 -->
+  <view wx:if="{{!searched}}">
+    <view class="card" wx:if="{{history.length > 0}}">
+      <view class="card-head">
+        <text class="card-title">搜索历史</text>
+        <text class="card-more" bindtap="onClearHistory">清空</text>
+      </view>
+      <view class="tag-wrap">
+        <text class="s-tag" wx:for="{{history}}" wx:key="*this" bindtap="onTapTag" data-k="{{item}}">{{item}}</text>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="card-head">
+        <text class="card-title">🔥 热搜榜</text>
+        <text class="card-more" bindtap="onGoHot">完整榜单</text>
+      </view>
+      <view class="hot-line" wx:for="{{hotSearch}}" wx:key="word" bindtap="onTapTag" data-k="{{item.word}}">
+        <text class="hot-idx idx-{{index < 3 ? 'top' : 'normal'}}">{{index + 1}}</text>
+        <text class="hot-word">{{item.word}}</text>
+        <text wx:if="{{item.flag}}" class="hot-flag">{{item.flag}}</text>
+        <view class="grow"></view>
+        <text class="hot-num">{{item.heat}}万</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 搜索结果 -->
+  <view wx:if="{{searched}}">
+    <view class="res-bar">
+      <text class="res-tip">「{{keyword}}」找到 {{results.length}} 条</text>
+      <view class="row">
+        <text class="res-sort {{sortKey === 'rel' ? 'on' : ''}}" bindtap="onSort" data-k="rel">相关</text>
+        <text class="res-sort {{sortKey === 'hot' ? 'on' : ''}}" bindtap="onSort" data-k="hot">最热</text>
+      </view>
+    </view>
+
+    <view wx:if="{{results.length == 0}}" class="empty">
+      <icon type="search" size="52" color="#dddddd"></icon>
+      <text class="empty-tx">没有找到相关内容，换个词试试</text>
+    </view>
+
+    <view class="res-item" wx:for="{{results}}" wx:key="id" bindtap="onOpen" data-id="{{item.id}}">
+      <view class="res-left">
+        <text class="res-title">{{item.title}}</text>
+        <view class="row res-meta">
+          <text wx:if="{{item.kind === 'video'}}" class="kind">视频</text>
+          <text class="res-source">{{item.source}}</text>
+          <view class="dot"></view>
+          <text class="res-source">{{item.comments}}评论</text>
+        </view>
+      </view>
+      <image class="res-thumb" src="{{item.thumb}}" mode="aspectFill"></image>
+    </view>
+  </view>
+
+  <view class="bottom-space"></view>
+</view>

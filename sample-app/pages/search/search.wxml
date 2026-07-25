@@ -1,0 +1,88 @@
+<view class="page">
+  <!-- 搜索栏 -->
+  <view class="nav-bar nav-bar-light">
+    <view class="nav-back" bindtap="onBack">
+      <icon type="back" size="20" color="#333333"></icon>
+    </view>
+    <view class="search-box">
+      <icon type="search" size="14" color="#999"></icon>
+      <input class="search-input" placeholder="搜索商品 / 品牌" value="{{keyword}}"
+             bindinput="onInput" bindconfirm="onSearch" focus="{{true}}" />
+      <view wx:if="{{keyword}}" bindtap="onClear"><icon type="clear" size="16" color="#cccccc"></icon></view>
+    </view>
+    <text class="search-go" bindtap="onSearch">搜索</text>
+  </view>
+
+  <!-- 搜索前：历史 + 热搜 -->
+  <view wx:if="{{!searched}}">
+    <view class="card" wx:if="{{history.length > 0}}">
+      <view class="row-between">
+        <text class="h2">搜索历史</text>
+        <view class="row" bindtap="onClearHistory">
+          <icon type="cancel_no_circle" size="12" color="#999"></icon>
+          <text class="muted clear-text">清空</text>
+        </view>
+      </view>
+      <view class="row tag-wrap">
+        <text class="pill" wx:for="{{history}}" wx:key="*this" bindtap="onTapTag" data-k="{{item}}">{{item}}</text>
+      </view>
+    </view>
+
+    <view class="card">
+      <text class="h2">热门搜索</text>
+      <view class="row tag-wrap">
+        <text class="hot-tag" wx:for="{{hotWords}}" wx:key="word" bindtap="onTapTag" data-k="{{item.word}}">
+          {{item.word}}
+        </text>
+      </view>
+    </view>
+
+    <view class="card">
+      <text class="h2">大家都在买</text>
+      <view class="rank" wx:for="{{ranking}}" wx:key="id" bindtap="onProductTap" data-id="{{item.id}}">
+        <text class="rank-no rank-no-{{index < 3 ? 'top' : 'normal'}}">{{index + 1}}</text>
+        <image class="rank-img" src="{{item.image}}" mode="aspectFill"></image>
+        <view class="col grow rank-info">
+          <text class="rank-name">{{item.name}}</text>
+          <text class="muted">{{item.tip}}</text>
+        </view>
+        <text class="price">¥{{item.price}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 搜索结果 -->
+  <view wx:if="{{searched}}">
+    <view class="result-bar">
+      <text class="muted">「{{keyword}}」共 {{results.length}} 个结果</text>
+      <view class="row">
+        <text class="sort {{sortKey === 'default' ? 'sort-on' : ''}}" bindtap="onSort" data-k="default">综合</text>
+        <text class="sort {{sortKey === 'price' ? 'sort-on' : ''}}" bindtap="onSort" data-k="price">价格</text>
+        <text class="sort {{sortKey === 'sales' ? 'sort-on' : ''}}" bindtap="onSort" data-k="sales">销量</text>
+      </view>
+    </view>
+
+    <view class="empty-box" wx:if="{{results.length == 0}}">
+      <icon type="search" size="56" color="#dddddd"></icon>
+      <text class="empty-tip">没有找到相关商品，换个词试试</text>
+    </view>
+
+    <view class="result-item anim-fade-up" wx:for="{{results}}" wx:key="id"
+          bindtap="onProductTap" data-id="{{item.id}}">
+      <image class="result-img" src="{{item.image}}" mode="aspectFill"></image>
+      <view class="col grow result-info">
+        <text class="result-name">{{item.name}}</text>
+        <view class="row">
+          <text class="tag-mini">包邮</text>
+          <text class="tag-mini">7天退换</text>
+        </view>
+        <view class="row-between result-bottom">
+          <text class="price">¥{{item.price}}</text>
+          <text class="muted">已售{{item.sales}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="bottom-space"></view>
+</view>

@@ -51,5 +51,12 @@ Page({
       name: '', phone: '', region: '', detail: '', setDefault: false
     });
     wx.showToast({ title: '保存成功', icon: 'success' });
+  },
+  onBack: function () {
+    wx.navigateBack();
+  },
+
+  onNavHome: function () {
+    wx.switchTab({ url: '/pages/index/index' });
   }
 });

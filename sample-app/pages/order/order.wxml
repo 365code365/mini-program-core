@@ -1,0 +1,128 @@
+<view class="page">
+  <view class="nav-bar">
+    <view class="nav-back" bindtap="onBack">
+      <icon type="back" size="20" color="#ffffff"></icon>
+    </view>
+    <text class="nav-title">确认订单</text>
+    <view class="nav-action"></view>
+  </view>
+
+  <!-- 收货地址 -->
+  <view class="addr-card anim-fade-up" bindtap="onPickAddress">
+    <view wx:if="{{address}}" class="row">
+      <icon type="info_no_circle" size="18" color="#FF6B35"></icon>
+      <view class="col addr-body">
+        <view class="row">
+          <text class="addr-name">{{address.name}}</text>
+          <text class="addr-phone">{{address.phone}}</text>
+          <text wx:if="{{address.isDefault}}" class="tag-mini">默认</text>
+        </view>
+        <text class="addr-detail">{{address.region}} {{address.detail}}</text>
+      </view>
+      <icon type="arrow_right" size="14" color="#cccccc"></icon>
+    </view>
+    <view wx:else class="row-between">
+      <text class="muted">请选择收货地址</text>
+      <icon type="arrow_right" size="14" color="#cccccc"></icon>
+    </view>
+  </view>
+
+  <!-- 商品清单 -->
+  <view class="card">
+    <text class="h2">商品清单</text>
+    <view class="goods" wx:for="{{items}}" wx:key="id">
+      <image class="goods-img" src="{{item.image}}" mode="aspectFill"></image>
+      <view class="goods-info">
+        <text class="goods-name">{{item.name}}</text>
+        <text class="muted">规格：{{item.spec}}</text>
+        <view class="row-between goods-bottom">
+          <text class="price">¥{{item.price}}</text>
+          <text class="muted">x{{item.quantity}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 配送 / 优惠 / 备注 -->
+  <view class="card">
+    <picker class="pick-line" mode="selector" range="{{shipMethods}}" value="{{shipIndex}}" bindchange="onShipChange">
+      <view class="row-between">
+        <text class="h2">配送方式</text>
+        <view class="row">
+          <text class="muted">{{shipMethods[shipIndex]}}</text>
+          <icon type="arrow_right" size="12" color="#cccccc"></icon>
+        </view>
+      </view>
+    </picker>
+    <view class="divider gap"></view>
+    <view class="row-between" bindtap="onPickCoupon">
+      <text class="h2">优惠券</text>
+      <view class="row">
+        <text class="coupon-val">{{couponText}}</text>
+        <icon type="arrow_right" size="12" color="#cccccc"></icon>
+      </view>
+    </view>
+    <view class="divider gap"></view>
+    <view class="row-between">
+      <text class="h2">订单备注</text>
+      <input class="remark" placeholder="选填，如口味/发票信息" value="{{remark}}" bindinput="onRemarkInput" />
+    </view>
+  </view>
+
+  <!-- 支付方式 -->
+  <view class="card">
+    <text class="h2">支付方式</text>
+    <radio-group bindchange="onPayChange">
+      <label class="pay-line" wx:for="{{payMethods}}" wx:key="key">
+        <radio value="{{item.key}}" checked="{{item.key === payMethod}}" color="#FF6B35"></radio>
+        <text class="pay-name">{{item.name}}</text>
+        <text class="muted">{{item.tip}}</text>
+      </label>
+    </radio-group>
+  </view>
+
+  <!-- 金额明细 -->
+  <view class="card">
+    <view class="row-between fee-line"><text class="muted">商品总额</text><text class="fee">¥{{goodsTotal}}</text></view>
+    <view class="row-between fee-line"><text class="muted">运费</text><text class="fee">¥{{shipFee}}</text></view>
+    <view class="row-between fee-line"><text class="muted">优惠券</text><text class="fee-cut">-¥{{couponCut}}</text></view>
+    <view class="divider gap"></view>
+    <view class="row-between"><text class="h2">应付金额</text><text class="price big">¥{{payTotal}}</text></view>
+  </view>
+
+  <view class="bottom-space"></view>
+
+  <!-- 提交栏 -->
+  <view class="submit-bar">
+    <view class="col">
+      <text class="muted">应付</text>
+      <text class="price big">¥{{payTotal}}</text>
+    </view>
+    <button class="submit-btn" type="primary" bindtap="onSubmit" disabled="{{submitting}}">
+      {{submitting ? '提交中…' : '提交订单'}}
+    </button>
+  </view>
+
+  <!-- 优惠券选择弹层 -->
+  <view wx:if="{{couponVisible}}" class="sheet-mask" bindtap="onCloseCoupon"></view>
+  <view wx:if="{{couponVisible}}" class="coupon-sheet anim-slide-up">
+    <view class="row-between">
+      <text class="h1">选择优惠券</text>
+      <view bindtap="onCloseCoupon"><icon type="cancel" size="18" color="#cccccc"></icon></view>
+    </view>
+    <view class="coupon-opt" wx:for="{{coupons}}" wx:key="id" bindtap="onSelectCoupon" data-index="{{index}}">
+      <view class="col grow">
+        <text class="h2">{{item.name}}</text>
+        <text class="muted">满 {{item.min}} 元可用</text>
+      </view>
+      <text class="coupon-amt">-¥{{item.amount}}</text>
+      <icon wx:if="{{couponIndex === index}}" type="success" size="18" color="#FF6B35"></icon>
+      <icon wx:else type="circle" size="18" color="#dddddd"></icon>
+    </view>
+    <view class="coupon-opt" bindtap="onSelectCoupon" data-index="-1">
+      <text class="h2 grow">不使用优惠券</text>
+      <icon wx:if="{{couponIndex === -1}}" type="success" size="18" color="#FF6B35"></icon>
+      <icon wx:else type="circle" size="18" color="#dddddd"></icon>
+    </view>
+  </view>
+</view>

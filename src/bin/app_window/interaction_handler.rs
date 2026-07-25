@@ -151,6 +151,8 @@ pub fn check_navigation(app: &mut MiniApp) -> Option<super::navigation::Navigati
                         "navigateTo" => Some(NavigationRequest::NavigateTo { url: url.to_string() }),
                         "navigateBack" => Some(NavigationRequest::NavigateBack),
                         "switchTab" => Some(NavigationRequest::SwitchTab { url: url.to_string() }),
+                        "redirectTo" => Some(NavigationRequest::RedirectTo { url: url.to_string() }),
+                        "reLaunch" => Some(NavigationRequest::ReLaunch { url: url.to_string() }),
                         _ => None,
                     };
                     // 清除导航请求

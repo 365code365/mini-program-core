@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/showcase/showcase</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./showcase.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view page">
+    <div class="wx-view nav-bar">
+      <div class="wx-view nav-back" data-tap="onBack">
+        <i class="wx-icon wxicon wxicon-back" style="width:20px;height:20px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 4 7.5 12 15.5 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+      </div>
+      <span class="wx-text nav-title">能力展示</span>
+      <div class="wx-view nav-action" data-tap="onToast">
+        <i class="wx-icon wxicon wxicon-info_no_circle" style="width:18px;height:18px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5.6" r="2" fill="currentColor"/><rect x="10.4" y="9.8" width="3.2" height="9.4" rx="1.6" fill="currentColor"/></svg></i>
+      </div>
+    </div>
+    <div class="wx-view card">
+      <span class="wx-text h1">CSS 动画 @keyframes</span>
+      <span class="wx-text muted">原生端在绘制期按时钟求值，动画帧成本≈静态帧</span>
+      <div class="wx-view row anim-row">
+        <div class="wx-view anim-cell">
+          <div class="wx-view loading-ring"></div>
+          <span class="wx-text cell-tip">旋转</span>
+        </div>
+        <div class="wx-view anim-cell">
+          <div class="wx-view dot-pulse"></div>
+          <span class="wx-text cell-tip">脉冲</span>
+        </div>
+        <div class="wx-view anim-cell">
+          <div class="wx-view bounce-box">
+            <span class="wx-text bounce-tx">NEW</span>
+          </div>
+          <span class="wx-text cell-tip">弹跳</span>
+        </div>
+        <div class="wx-view anim-cell">
+          <div class="wx-view breathe-box"></div>
+          <span class="wx-text cell-tip">呼吸</span>
+        </div>
+      </div>
+    </div>
+    <div class="wx-view card">
+      <span class="wx-text h1">transform 变换</span>
+      <span class="wx-text muted">缩放/旋转/倾斜作用于整棵子树（离屏仿射合成）</span>
+      <div class="wx-view row tf-row">
+        <div class="wx-view tf tf-none">
+          <span class="wx-text tf-tx">原始</span>
+        </div>
+        <div class="wx-view tf tf-scale">
+          <span class="wx-text tf-tx">缩放</span>
+        </div>
+        <div class="wx-view tf tf-rot">
+          <span class="wx-text tf-tx">旋转</span>
+        </div>
+        <div class="wx-view tf tf-skew">
+          <span class="wx-text tf-tx">倾斜</span>
+        </div>
+      </div>
+    </div>
+    <div class="wx-view card">
+      <span class="wx-text h1">彩色 Emoji 混排</span>
+      <span class="wx-text emoji-line">🛒 下单 · 📦 发货 · 🚚 运输 · ✅ 收货</span>
+      <span class="wx-text emoji-small">🔥 热销 · ✨ 新品 · 💳 支付 · 🎁 礼盒 · 📰 资讯</span>
+    </div>
+    <div class="wx-view card">
+      <span class="wx-text h1">Swiper 与动图</span>
+      <div class="wx-view row media-row">
+        <div class="wx-swiper v-swiper" data-autoplay="true" data-interval="2200" data-circular="true" data-dots="false" data-vertical="true">
+          <div class="wx-swiper-item">
+            <div class="wx-view notice">
+              <span class="wx-text notice-tx">📢 今日下单最快次日达</span>
+            </div>
+          </div>
+          <div class="wx-swiper-item">
+            <div class="wx-view notice">
+              <span class="wx-text notice-tx">🎁 会员日全场 8 折</span>
+            </div>
+          </div>
+          <div class="wx-swiper-item">
+            <div class="wx-view notice">
+              <span class="wx-text notice-tx">🚚 满 99 元包邮</span>
+            </div>
+          </div>
+          <div class="wx-swiper-item">
+            <div class="wx-view notice">
+              <span class="wx-text notice-tx">⭐️ 好评返 5 元</span>
+            </div>
+          </div>
+        </div>
+        <div class="wx-view col gif-box">
+          <img class="wx-image gif" style="object-fit:fill" src="/assets/loading.gif">
+          <span class="wx-text cell-tip">GIF 逐帧</span>
+        </div>
+      </div>
+    </div>
+    <div class="wx-view card">
+      <span class="wx-text h1">表单控件</span>
+      <div class="wx-view row-between line">
+        <span class="wx-text h2">推送通知</span>
+        <div class="wx-switch wx-switch-on" data-change="onPushChange"><span class="wx-switch-knob"></span></div>
+      </div>
+      <div class="wx-view row-between line">
+        <span class="wx-text h2">音量 60</span>
+        <div class="wx-slider-wrap slider" data-change="onVolume"><input class="wx-slider" type="range" min="0" max="100" step="1" value="60" style="background:linear-gradient(to right,#FF6B35 0%,#FF6B35 60.000004%,#e5e5e5 60.000004%,#e5e5e5 100%);--wx-block:#ffffff"><span class="wx-slider-value">60</span></div>
+      </div>
+      <div class="wx-view line">
+        <span class="wx-text h2">配送时段</span>
+        <div class="wx-picker" data-change="onSlot">
+          <div class="wx-view row-between picker-line">
+            <span class="wx-text muted">今天 18:00-20:00</span>
+            <i class="wx-icon wxicon wxicon-arrow_right" style="width:12px;height:12px;color:#cccccc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 4 16.5 12 8.5 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+          </div>
+        </div>
+      </div>
+      <div class="wx-view line">
+        <span class="wx-text h2">口味偏好</span>
+        <div class="wx-checkbox-group" data-change="onTaste">
+          <div class="wx-label opt">
+            <input class="wx-checkbox" type="checkbox" value="微辣">
+            <span class="wx-text opt-tx">微辣</span>
+          </div>
+          <div class="wx-label opt">
+            <input class="wx-checkbox" type="checkbox" value="不要香菜">
+            <span class="wx-text opt-tx">不要香菜</span>
+          </div>
+          <div class="wx-label opt">
+            <input class="wx-checkbox" type="checkbox" value="少糖">
+            <span class="wx-text opt-tx">少糖</span>
+          </div>
+        </div>
+      </div>
+      <div class="wx-view line">
+        <span class="wx-text h2">发票类型</span>
+        <div class="wx-radio-group" data-change="onInvoice">
+          <div class="wx-label opt">
+            <input class="wx-radio" type="radio" value="个人" checked>
+            <span class="wx-text opt-tx">个人</span>
+          </div>
+          <div class="wx-label opt">
+            <input class="wx-radio" type="radio" value="企业">
+            <span class="wx-text opt-tx">企业</span>
+          </div>
+          <div class="wx-label opt">
+            <input class="wx-radio" type="radio" value="不需要">
+            <span class="wx-text opt-tx">不需要</span>
+          </div>
+        </div>
+      </div>
+      <div class="wx-view line">
+        <span class="wx-text h2">备注</span>
+        <textarea class="wx-textarea ta" data-input="onNote"></textarea>
+        <span class="wx-text muted">已输入 0 字</span>
+      </div>
+    </div>
+    <div class="wx-view card">
+      <span class="wx-text h1">进度 · 评分 · 徽标</span>
+      <div class="wx-view line">
+        <span class="wx-text h2">下载进度 40%</span>
+        <div class="wx-progress"><div class="wx-progress-outer"><div class="wx-progress-inner" style="width:40%;background:#FF6B35"></div></div></div>
+        <div class="wx-view row btn-row">
+          <div class="wx-view mini-btn" data-tap="onProgressStep" data-ds-d="-10">-10</div>
+          <div class="wx-view mini-btn" data-tap="onProgressStep" data-ds-d="10">+10</div>
+        </div>
+      </div>
+      <div class="wx-view row-between line">
+        <span class="wx-text h2">商品评分</span>
+        <div class="wx-view row">
+          <div class="wx-view" data-tap="onRate" data-ds-n="1">
+            <i class="wx-icon wxicon wxicon-star" style="width:20px;height:20px;color:#FFB400"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="currentColor"/></svg></i>
+          </div>
+          <div class="wx-view" data-tap="onRate" data-ds-n="2">
+            <i class="wx-icon wxicon wxicon-star" style="width:20px;height:20px;color:#FFB400"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="currentColor"/></svg></i>
+          </div>
+          <div class="wx-view" data-tap="onRate" data-ds-n="3">
+            <i class="wx-icon wxicon wxicon-star" style="width:20px;height:20px;color:#FFB400"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="currentColor"/></svg></i>
+          </div>
+          <div class="wx-view" data-tap="onRate" data-ds-n="4">
+            <i class="wx-icon wxicon wxicon-star" style="width:20px;height:20px;color:#FFB400"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="currentColor"/></svg></i>
+          </div>
+          <div class="wx-view" data-tap="onRate" data-ds-n="5">
+            <i class="wx-icon wxicon wxicon-star_o" style="width:20px;height:20px;color:#dddddd"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></i>
+          </div>
+          <span class="wx-text muted rate-tx">4 分</span>
+        </div>
+      </div>
+      <div class="wx-view row-between line">
+        <span class="wx-text h2">消息徽标</span>
+        <div class="wx-view row">
+          <div class="wx-view badge-wrap">
+            <i class="wx-icon wxicon wxicon-clock" style="width:22px;height:22px;color:#666"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.4" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 5.6V12h5.2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></i>
+            <span class="wx-text badge">3</span>
+          </div>
+          <div class="wx-view mini-btn" data-tap="onBadge">收到消息</div>
+        </div>
+      </div>
+    </div>
+    <div class="wx-view card">
+      <span class="wx-text h1">富文本与 Canvas</span>
+      <div class="wx-rich-text"><p style="font-size:13px;color:#666;line-height:1.9">rich-text 支持按节点树渲染带样式的文本片段：</p><p style="font-size:15px;color:#FF6B35;line-height:1.9">加粗大号橙色标题</p><p style="font-size:12px;color:#999;line-height:1.9">小号灰色说明文字 · 与原生文本同一套排版</p></div>
+      <canvas class="wx-canvas chart" data-canvas-id="showcaseChart"></canvas>
+    </div>
+    <div class="wx-view card">
+      <span class="wx-text h1">弹层交互</span>
+      <div class="wx-view row btn-row">
+        <div class="wx-view mini-btn" data-tap="onToast">Toast</div>
+        <div class="wx-view mini-btn" data-tap="onLoading">Loading</div>
+        <div class="wx-view mini-btn" data-tap="onModal">Modal</div>
+        <div class="wx-view mini-btn" data-tap="onSheet">操作面板</div>
+      </div>
+    </div>
+    <div class="wx-view bottom-space"></div>
+  </div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/showcase/showcase";
+window.__WXML__ = [{"a":{"class":"page"},"c":[{"a":{"class":"nav-bar"},"c":[{"a":{"bindtap":"onBack","class":"nav-back"},"c":[{"a":{"color":"#ffffff","size":"20","type":"back"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"},{"a":{"class":"nav-title"},"c":[{"t":"tx","x":"能力展示"}],"n":"text","t":"el"},{"a":{"bindtap":"onToast","class":"nav-action"},"c":[{"a":{"color":"#ffffff","size":"18","type":"info_no_circle"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card"},"c":[{"a":{"class":"h1"},"c":[{"t":"tx","x":"CSS 动画 @keyframes"}],"n":"text","t":"el"},{"a":{"class":"muted"},"c":[{"t":"tx","x":"原生端在绘制期按时钟求值，动画帧成本≈静态帧"}],"n":"text","t":"el"},{"a":{"class":"row anim-row"},"c":[{"a":{"class":"anim-cell"},"c":[{"a":{"class":"loading-ring"},"c":[],"n":"view","t":"el"},{"a":{"class":"cell-tip"},"c":[{"t":"tx","x":"旋转"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"anim-cell"},"c":[{"a":{"class":"dot-pulse"},"c":[],"n":"view","t":"el"},{"a":{"class":"cell-tip"},"c":[{"t":"tx","x":"脉冲"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"anim-cell"},"c":[{"a":{"class":"bounce-box"},"c":[{"a":{"class":"bounce-tx"},"c":[{"t":"tx","x":"NEW"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"cell-tip"},"c":[{"t":"tx","x":"弹跳"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"anim-cell"},"c":[{"a":{"class":"breathe-box"},"c":[],"n":"view","t":"el"},{"a":{"class":"cell-tip"},"c":[{"t":"tx","x":"呼吸"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card"},"c":[{"a":{"class":"h1"},"c":[{"t":"tx","x":"transform 变换"}],"n":"text","t":"el"},{"a":{"class":"muted"},"c":[{"t":"tx","x":"缩放/旋转/倾斜作用于整棵子树（离屏仿射合成）"}],"n":"text","t":"el"},{"a":{"class":"row tf-row"},"c":[{"a":{"class":"tf tf-none"},"c":[{"a":{"class":"tf-tx"},"c":[{"t":"tx","x":"原始"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"tf tf-scale"},"c":[{"a":{"class":"tf-tx"},"c":[{"t":"tx","x":"缩放"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"tf tf-rot"},"c":[{"a":{"class":"tf-tx"},"c":[{"t":"tx","x":"旋转"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"tf tf-skew"},"c":[{"a":{"class":"tf-tx"},"c":[{"t":"tx","x":"倾斜"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card"},"c":[{"a":{"class":"h1"},"c":[{"t":"tx","x":"彩色 Emoji 混排"}],"n":"text","t":"el"},{"a":{"class":"emoji-line"},"c":[{"t":"tx","x":"🛒 下单 · 📦 发货 · 🚚 运输 · ✅ 收货"}],"n":"text","t":"el"},{"a":{"class":"emoji-small"},"c":[{"t":"tx","x":"🔥 热销 · ✨ 新品 · 💳 支付 · 🎁 礼盒 · 📰 资讯"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card"},"c":[{"a":{"class":"h1"},"c":[{"t":"tx","x":"Swiper 与动图"}],"n":"text","t":"el"},{"a":{"class":"row media-row"},"c":[{"a":{"autoplay":"{{true}}","circular":"{{true}}","class":"v-swiper","interval":"2200","vertical":"{{true}}"},"c":[{"a":{"wx:for":"{{notices}}","wx:key":"*this"},"c":[{"a":{"class":"notice"},"c":[{"a":{"class":"notice-tx"},"c":[{"t":"tx","x":"{{item}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"swiper-item","t":"el"}],"n":"swiper","t":"el"},{"a":{"class":"col gif-box"},"c":[{"a":{"class":"gif","src":"/assets/loading.gif"},"c":[],"n":"image","t":"el"},{"a":{"class":"cell-tip"},"c":[{"t":"tx","x":"GIF 逐帧"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card"},"c":[{"a":{"class":"h1"},"c":[{"t":"tx","x":"表单控件"}],"n":"text","t":"el"},{"a":{"class":"row-between line"},"c":[{"a":{"class":"h2"},"c":[{"t":"tx","x":"推送通知"}],"n":"text","t":"el"},{"a":{"bindchange":"onPushChange","checked":"{{pushOn}}","color":"#FF6B35"},"c":[],"n":"switch","t":"el"}],"n":"view","t":"el"},{"a":{"class":"row-between line"},"c":[{"a":{"class":"h2"},"c":[{"t":"tx","x":"音量 {{volume}}"}],"n":"text","t":"el"},{"a":{"activeColor":"#FF6B35","bindchange":"onVolume","class":"slider","max":"100","min":"0","show-value":"{{true}}","value":"{{volume}}"},"c":[],"n":"slider","t":"el"}],"n":"view","t":"el"},{"a":{"class":"line"},"c":[{"a":{"class":"h2"},"c":[{"t":"tx","x":"配送时段"}],"n":"text","t":"el"},{"a":{"bindchange":"onSlot","mode":"selector","range":"{{slots}}","value":"{{slotIndex}}"},"c":[{"a":{"class":"row-between picker-line"},"c":[{"a":{"class":"muted"},"c":[{"t":"tx","x":"{{slots[slotIndex]}}"}],"n":"text","t":"el"},{"a":{"color":"#cccccc","size":"12","type":"arrow_right"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"}],"n":"picker","t":"el"}],"n":"view","t":"el"},{"a":{"class":"line"},"c":[{"a":{"class":"h2"},"c":[{"t":"tx","x":"口味偏好"}],"n":"text","t":"el"},{"a":{"bindchange":"onTaste"},"c":[{"a":{"class":"opt","wx:for":"{{tastes}}","wx:key":"*this"},"c":[{"a":{"color":"#FF6B35","value":"{{item}}"},"c":[],"n":"checkbox","t":"el"},{"a":{"class":"opt-tx"},"c":[{"t":"tx","x":"{{item}}"}],"n":"text","t":"el"}],"n":"label","t":"el"}],"n":"checkbox-group","t":"el"}],"n":"view","t":"el"},{"a":{"class":"line"},"c":[{"a":{"class":"h2"},"c":[{"t":"tx","x":"发票类型"}],"n":"text","t":"el"},{"a":{"bindchange":"onInvoice"},"c":[{"a":{"class":"opt","wx:for":"{{invoices}}","wx:key":"*this"},"c":[{"a":{"checked":"{{item === invoice}}","color":"#FF6B35","value":"{{item}}"},"c":[],"n":"radio","t":"el"},{"a":{"class":"opt-tx"},"c":[{"t":"tx","x":"{{item}}"}],"n":"text","t":"el"}],"n":"label","t":"el"}],"n":"radio-group","t":"el"}],"n":"view","t":"el"},{"a":{"class":"line"},"c":[{"a":{"class":"h2"},"c":[{"t":"tx","x":"备注"}],"n":"text","t":"el"},{"a":{"bindinput":"onNote","class":"ta","placeholder":"想对商家说的话…","value":"{{note}}"},"c":[],"n":"textarea","t":"el"},{"a":{"class":"muted"},"c":[{"t":"tx","x":"已输入 {{note.length}} 字"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card"},"c":[{"a":{"class":"h1"},"c":[{"t":"tx","x":"进度 · 评分 · 徽标"}],"n":"text","t":"el"},{"a":{"class":"line"},"c":[{"a":{"class":"h2"},"c":[{"t":"tx","x":"下载进度 {{progress}}%"}],"n":"text","t":"el"},{"a":{"activeColor":"#FF6B35","backgroundColor":"#F0F0F0","percent":"{{progress}}","stroke-width":"6"},"c":[],"n":"progress","t":"el"},{"a":{"class":"row btn-row"},"c":[{"a":{"bindtap":"onProgressStep","class":"mini-btn","data-d":"-10"},"c":[{"t":"tx","x":"-10"}],"n":"view","t":"el"},{"a":{"bindtap":"onProgressStep","class":"mini-btn","data-d":"10"},"c":[{"t":"tx","x":"+10"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"row-between line"},"c":[{"a":{"class":"h2"},"c":[{"t":"tx","x":"商品评分"}],"n":"text","t":"el"},{"a":{"class":"row"},"c":[{"a":{"bindtap":"onRate","data-n":"{{item}}","wx:for":"{{[1,2,3,4,5]}}","wx:key":"*this"},"c":[{"a":{"color":"{{item <= rating ? '#FFB400' : '#dddddd'}}","size":"20","type":"{{item <= rating ? 'star' : 'star_o'}}"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"},{"a":{"class":"muted rate-tx"},"c":[{"t":"tx","x":"{{rating}} 分"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"row-between line"},"c":[{"a":{"class":"h2"},"c":[{"t":"tx","x":"消息徽标"}],"n":"text","t":"el"},{"a":{"class":"row"},"c":[{"a":{"class":"badge-wrap"},"c":[{"a":{"color":"#666","size":"22","type":"clock"},"c":[],"n":"icon","t":"el"},{"a":{"class":"badge"},"c":[{"t":"tx","x":"{{badge}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onBadge","class":"mini-btn"},"c":[{"t":"tx","x":"收到消息"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card"},"c":[{"a":{"class":"h1"},"c":[{"t":"tx","x":"富文本与 Canvas"}],"n":"text","t":"el"},{"a":{"nodes":"{{richNodes}}"},"c":[],"n":"rich-text","t":"el"},{"a":{"canvas-id":"showcaseChart","class":"chart"},"c":[],"n":"canvas","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card"},"c":[{"a":{"class":"h1"},"c":[{"t":"tx","x":"弹层交互"}],"n":"text","t":"el"},{"a":{"class":"row btn-row"},"c":[{"a":{"bindtap":"onToast","class":"mini-btn"},"c":[{"t":"tx","x":"Toast"}],"n":"view","t":"el"},{"a":{"bindtap":"onLoading","class":"mini-btn"},"c":[{"t":"tx","x":"Loading"}],"n":"view","t":"el"},{"a":{"bindtap":"onModal","class":"mini-btn"},"c":[{"t":"tx","x":"Modal"}],"n":"view","t":"el"},{"a":{"bindtap":"onSheet","class":"mini-btn"},"c":[{"t":"tx","x":"操作面板"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"bottom-space"},"c":[],"n":"view","t":"el"},{"a":{"bindtap":"onCloseSheet","class":"sheet-mask","wx:if":"{{sheetVisible}}"},"c":[],"n":"view","t":"el"},{"a":{"class":"sheet anim-slide-up","wx:if":"{{sheetVisible}}"},"c":[{"a":{"bindtap":"onSheetAction","class":"sheet-item","data-k":"{{item}}","wx:for":"{{sheetActions}}","wx:key":"*this"},"c":[{"a":{"class":"sheet-tx"},"c":[{"t":"tx","x":"{{item}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onCloseSheet","class":"sheet-item sheet-cancel"},"c":[{"a":{"class":"sheet-tx sheet-cancel-tx"},"c":[{"t":"tx","x":"取消"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./showcase.js"></script>
+</body>
+</html>

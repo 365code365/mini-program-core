@@ -110,5 +110,12 @@ Page({
       ctx.clearRect(0, 0, 320, 200);
       ctx.draw();
     }
+  },
+  onBack: function () {
+    wx.navigateBack();
+  },
+
+  onNavHome: function () {
+    wx.switchTab({ url: '/pages/index/index' });
   }
 });

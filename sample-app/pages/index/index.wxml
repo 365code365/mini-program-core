@@ -1,77 +1,108 @@
 <view class="page">
-  <!-- 搜索栏 -->
-  <view class="search-bar">
-    <input class="search-input" placeholder="搜索商品" bindinput="onSearchInput" bindconfirm="onSearch" maxlength="50" />
+  <!-- 顶部搜索栏（点击进入搜索页） -->
+  <view class="top-bar">
+    <view class="search-entry" bindtap="onGoSearch">
+      <icon type="search" size="15" color="#999"></icon>
+      <text class="search-entry-text">{{searchPlaceholder}}</text>
+    </view>
+    <view class="top-msg" bindtap="onGoOrders">
+      <icon type="waiting_no_circle" size="20" color="#ffffff"></icon>
+    </view>
   </view>
 
-  <!-- Banner -->
-  <view class="banner">
-    <text class="banner-tag">限时特惠</text>
-    <text class="banner-title">新品上市 全场8折</text>
-    <text class="banner-desc">精选好物 品质保证</text>
+  <!-- 轮播 banner：自动播放 + 指示点 -->
+  <view class="banner-wrap">
+    <swiper class="banner-swiper" indicator-dots="{{true}}" autoplay="{{true}}" interval="3000"
+            duration="400" circular="{{true}}" indicator-color="rgba(255,255,255,0.5)"
+            indicator-active-color="#ffffff" current="{{bannerIndex}}" bindchange="onBannerChange">
+      <swiper-item wx:for="{{banners}}" wx:key="id">
+        <view class="banner-item" bindtap="onBannerTap" data-id="{{item.link}}">
+          <image class="banner-img" src="{{item.image}}" mode="aspectFill"></image>
+          <view class="banner-text">
+            <text class="banner-tag">{{item.tag}}</text>
+            <text class="banner-title">{{item.title}}</text>
+            <text class="banner-desc">{{item.desc}}</text>
+          </view>
+        </view>
+      </swiper-item>
+    </swiper>
   </view>
 
-  <!-- 分类入口 -->
-  <view class="category-section">
-    <view class="category-row">
-      <view class="category-item" bindtap="onCategoryTap" data-id="1">
-        <icon type="success" size="28" color="#FF6B35"></icon>
-        <text class="category-name">数码</text>
-      </view>
-      <view class="category-item" bindtap="onCategoryTap" data-id="2">
-        <icon type="info" size="28" color="#4A90D9"></icon>
-        <text class="category-name">服饰</text>
-      </view>
-      <view class="category-item" bindtap="onCategoryTap" data-id="3">
-        <icon type="warn" size="28" color="#FF69B4"></icon>
-        <text class="category-name">美妆</text>
-      </view>
-      <view class="category-item" bindtap="onCategoryTap" data-id="4">
-        <icon type="waiting" size="28" color="#52C41A"></icon>
-        <text class="category-name">食品</text>
+  <!-- 金刚区 -->
+  <view class="quick-card anim-fade-up">
+    <view class="quick-row">
+      <view class="quick-item" wx:for="{{quickEntries}}" wx:key="key" bindtap="onQuickTap" data-key="{{item.key}}">
+        <view class="quick-icon" style="background-color:{{item.color}}">
+          <icon type="{{item.icon}}" size="24" color="#ffffff"></icon>
+        </view>
+        <text class="quick-name">{{item.name}}</text>
       </view>
     </view>
-    <view class="category-row">
-      <view class="category-item" bindtap="onCanvasTap">
-        <icon type="circle" size="28" color="#722ed1"></icon>
-        <text class="category-name">Canvas</text>
+  </view>
+
+  <!-- 限时秒杀：真实倒计时 + 横滑列表 -->
+  <view class="seckill">
+    <view class="seckill-head">
+      <view class="row">
+        <text class="seckill-title">限时秒杀</text>
+        <text class="seckill-flag anim-pulse">HOT</text>
       </view>
-      <view class="category-item" bindtap="onComponentsTap">
-        <icon type="success" size="28" color="#13c2c2"></icon>
-        <text class="category-name">组件</text>
+      <view class="row">
+        <text class="seckill-tip">距结束</text>
+        <text class="clock-num">{{countdown.h}}</text>
+        <text class="clock-sep">:</text>
+        <text class="clock-num">{{countdown.m}}</text>
+        <text class="clock-sep">:</text>
+        <text class="clock-num">{{countdown.s}}</text>
       </view>
     </view>
+    <scroll-view class="seckill-scroll" scroll-x="{{true}}">
+      <view class="seckill-row">
+        <view class="seckill-item" wx:for="{{seckillProducts}}" wx:key="id"
+              bindtap="onProductTap" data-id="{{item.id}}">
+          <image class="seckill-img" src="{{item.image}}" mode="aspectFill"></image>
+          <text class="seckill-price">¥{{item.price}}</text>
+          <text class="seckill-origin">¥{{item.originalPrice}}</text>
+          <view class="seckill-bar">
+            <view class="seckill-bar-in" style="width:{{item.percent}}%"></view>
+          </view>
+          <text class="seckill-left">仅剩{{item.stock}}件</text>
+        </view>
+      </view>
+    </scroll-view>
   </view>
 
   <!-- 热销商品 -->
   <view class="section">
     <view class="section-header">
       <text class="section-title">🔥 热销商品</text>
-      <text class="section-more" bindtap="onViewMore">更多 ></text>
+      <view class="row" bindtap="onViewMore">
+        <text class="section-more">更多</text>
+        <icon type="arrow_right" size="12" color="#999"></icon>
+      </view>
     </view>
-    
     <view class="product-row">
       <view class="product-card" wx:for="{{hotProducts}}" wx:key="id" bindtap="onProductTap" data-id="{{item.id}}">
         <view class="product-img">
           <image class="product-img-el" src="{{item.image}}" mode="aspectFill"></image>
+          <text wx:if="{{item.badge}}" class="product-badge">{{item.badge}}</text>
         </view>
         <text class="product-name">{{item.name}}</text>
         <view class="product-price-row">
           <text class="product-price">¥{{item.price}}</text>
           <view class="add-btn" catchtap="onAddCart" data-product="{{item}}">
-            <text class="add-btn-text">+</text>
+            <icon type="plus" size="14" color="#ffffff"></icon>
           </view>
         </view>
       </view>
     </view>
   </view>
 
-  <!-- 新品推荐 - 大量商品列表测试 -->
+  <!-- 新品推荐（触底加载更多） -->
   <view class="section">
     <view class="section-header">
       <text class="section-title">✨ 新品推荐 ({{newProducts.length}}件)</text>
     </view>
-    
     <view class="product-list">
       <view class="list-item" wx:for="{{newProducts}}" wx:key="id" bindtap="onProductTap" data-id="{{item.id}}">
         <view class="list-img">
@@ -80,18 +111,25 @@
         <view class="list-info">
           <text class="list-name">{{item.name}}</text>
           <text class="list-desc">{{item.desc}}</text>
-          <text class="list-price">¥{{item.price}}</text>
+          <view class="row">
+            <text class="list-price">¥{{item.price}}</text>
+            <text class="list-sold">已售{{item.sold}}</text>
+          </view>
         </view>
         <button class="list-btn" size="mini" type="primary" catchtap="onAddCart" data-product="{{item}}">购买</button>
       </view>
+    </view>
+    <view wx:if="{{loadingMore}}" class="loading-row">
+      <view class="loading-ring"></view>
+      <text class="loading-text">正在加载更多…</text>
     </view>
   </view>
 
   <view class="bottom-space"></view>
 
-  <!-- 首页新人优惠券弹窗 -->
-  <view class="coupon-mask" wx:if="{{showCoupon}}" catchtap="onCloseCoupon">
-    <view class="coupon-dialog" catchtap="onNoop">
+  <!-- 进入首页即弹出的新人优惠券（弹窗与卡片都带入场动画） -->
+  <view class="mask" wx:if="{{showCoupon}}" catchtap="onCloseCoupon">
+    <view class="coupon-dialog anim-pop" catchtap="onNoop">
       <view class="coupon-dialog-head">
         <text class="coupon-dialog-title">新人专享礼包</text>
         <text class="coupon-dialog-sub">下单立减，先到先得</text>
@@ -109,7 +147,9 @@
         </view>
       </view>
       <button class="coupon-claim-btn" type="primary" bindtap="onClaimCoupons">一键领取</button>
-      <view class="coupon-close" catchtap="onCloseCoupon"><icon type="close" size="15" color="#ffffff"></icon></view>
+      <view class="coupon-close" catchtap="onCloseCoupon">
+        <icon type="close" size="15" color="#ffffff"></icon>
+      </view>
     </view>
   </view>
 </view>

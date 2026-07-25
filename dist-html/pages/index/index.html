@@ -15,71 +15,210 @@
 <body>
 <div id="app">
   <div class="wx-view page">
-    <div class="wx-view search-bar">
-      <input class="wx-input search-input" type="text" placeholder="搜索商品" data-input="onSearchInput" data-confirm="onSearch">
+    <div class="wx-view top-bar">
+      <div class="wx-view search-entry" data-tap="onGoSearch">
+        <i class="wx-icon wxicon wxicon-search" style="width:15px;height:15px;color:#999"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.4" cy="10.4" r="6.4" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15.2 15.2 21 21" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></i>
+        <span class="wx-text search-entry-text">搜索商品 / 品牌</span>
+      </div>
+      <div class="wx-view top-msg" data-tap="onGoOrders">
+        <i class="wx-icon wxicon wxicon-waiting_no_circle" style="width:20px;height:20px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.4" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 5.6V12h5.2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></i>
+      </div>
     </div>
-    <div class="wx-view banner">
-      <span class="wx-text banner-tag">限时特惠</span>
-      <span class="wx-text banner-title">新品上市 全场8折</span>
-      <span class="wx-text banner-desc">精选好物 品质保证</span>
-    </div>
-    <div class="wx-view category-section">
-      <div class="wx-view category-row">
-        <div class="wx-view category-item" data-tap="onCategoryTap" data-ds-id="1">
-          <i class="wx-icon wxicon wxicon-success" style="width:28px;height:28px;color:#FF6B35"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><path d="M5.8 12.4 10 16.4 18.2 7.6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
-          <span class="wx-text category-name">数码</span>
+    <div class="wx-view banner-wrap">
+      <div class="wx-swiper banner-swiper" data-autoplay="true" data-interval="3000" data-circular="true" data-dots="true" data-change="onBannerChange">
+        <div class="wx-swiper-item">
+          <div class="wx-view banner-item" data-tap="onBannerTap" data-ds-id="101">
+            <img class="wx-image banner-img" style="object-fit:cover" src="/assets/banner.jpg">
+            <div class="wx-view banner-text">
+              <span class="wx-text banner-tag">限时特惠</span>
+              <span class="wx-text banner-title">新品上市 全场8折</span>
+              <span class="wx-text banner-desc">精选好物 品质保证</span>
+            </div>
+          </div>
         </div>
-        <div class="wx-view category-item" data-tap="onCategoryTap" data-ds-id="2">
-          <i class="wx-icon wxicon wxicon-info" style="width:28px;height:28px;color:#4A90D9"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><circle cx="12" cy="7.6" r="1.7" fill="#fff"/><rect x="10.9" y="10.8" width="2.2" height="7" rx="1.1" fill="#fff"/></svg></i>
-          <span class="wx-text category-name">服饰</span>
+        <div class="wx-swiper-item">
+          <div class="wx-view banner-item" data-tap="onBannerTap" data-ds-id="106">
+            <img class="wx-image banner-img" style="object-fit:cover" src="/assets/p_phone.jpg">
+            <div class="wx-view banner-text">
+              <span class="wx-text banner-tag">数码专场</span>
+              <span class="wx-text banner-title">旗舰手机直降600</span>
+              <span class="wx-text banner-desc">12期免息 顺丰包邮</span>
+            </div>
+          </div>
         </div>
-        <div class="wx-view category-item" data-tap="onCategoryTap" data-ds-id="3">
-          <i class="wx-icon wxicon wxicon-warn" style="width:28px;height:28px;color:#FF69B4"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><rect x="10.9" y="5.4" width="2.2" height="7.2" rx="1.1" fill="#fff"/><circle cx="12" cy="16.6" r="1.7" fill="#fff"/></svg></i>
-          <span class="wx-text category-name">美妆</span>
-        </div>
-        <div class="wx-view category-item" data-tap="onCategoryTap" data-ds-id="4">
-          <i class="wx-icon wxicon wxicon-waiting" style="width:28px;height:28px;color:#52C41A"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><rect x="10.9" y="6.2" width="2.2" height="6.6" rx="1.1" fill="#fff"/><rect x="12" y="10.9" width="5.2" height="2.2" rx="1.1" fill="#fff"/><circle cx="12" cy="12" r="1.6" fill="#fff"/></svg></i>
-          <span class="wx-text category-name">食品</span>
+        <div class="wx-swiper-item">
+          <div class="wx-view banner-item" data-tap="onBannerTap" data-ds-id="103">
+            <img class="wx-image banner-img" style="object-fit:cover" src="/assets/p_sneakers.jpg">
+            <div class="wx-view banner-text">
+              <span class="wx-text banner-tag">会员日</span>
+              <span class="wx-text banner-title">第二件半价</span>
+              <span class="wx-text banner-desc">穿搭好物一站配齐</span>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="wx-view category-row">
-        <div class="wx-view category-item" data-tap="onCanvasTap">
-          <i class="wx-icon wxicon wxicon-circle" style="width:28px;height:28px;color:#722ed1"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.8" fill="none" stroke="currentColor" stroke-width="2.2"/></svg></i>
-          <span class="wx-text category-name">Canvas</span>
+    </div>
+    <div class="wx-view quick-card anim-fade-up">
+      <div class="wx-view quick-row">
+        <div class="wx-view quick-item" data-tap="onQuickTap" data-ds-key="digital">
+          <div class="wx-view quick-icon" style="background-color:#FF6B35">
+            <i class="wx-icon wxicon wxicon-success_no_circle" style="width:24px;height:24px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12.5 9 18 20.5 5.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+          </div>
+          <span class="wx-text quick-name">数码</span>
         </div>
-        <div class="wx-view category-item" data-tap="onComponentsTap">
-          <i class="wx-icon wxicon wxicon-success" style="width:28px;height:28px;color:#13c2c2"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><path d="M5.8 12.4 10 16.4 18.2 7.6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
-          <span class="wx-text category-name">组件</span>
+        <div class="wx-view quick-item" data-tap="onQuickTap" data-ds-key="clothes">
+          <div class="wx-view quick-icon" style="background-color:#4A90D9">
+            <i class="wx-icon wxicon wxicon-info_no_circle" style="width:24px;height:24px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5.6" r="2" fill="currentColor"/><rect x="10.4" y="9.8" width="3.2" height="9.4" rx="1.6" fill="currentColor"/></svg></i>
+          </div>
+          <span class="wx-text quick-name">服饰</span>
+        </div>
+        <div class="wx-view quick-item" data-tap="onQuickTap" data-ds-key="beauty">
+          <div class="wx-view quick-icon" style="background-color:#FF69B4">
+            <i class="wx-icon wxicon wxicon-warn_no_circle" style="width:24px;height:24px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="10.4" y="3" width="3.2" height="11.2" rx="1.6" fill="currentColor"/><circle cx="12" cy="18.8" r="2" fill="currentColor"/></svg></i>
+          </div>
+          <span class="wx-text quick-name">美妆</span>
+        </div>
+        <div class="wx-view quick-item" data-tap="onQuickTap" data-ds-key="food">
+          <div class="wx-view quick-icon" style="background-color:#52C41A">
+            <i class="wx-icon wxicon wxicon-clock" style="width:24px;height:24px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.4" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 5.6V12h5.2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></i>
+          </div>
+          <span class="wx-text quick-name">食品</span>
+        </div>
+        <div class="wx-view quick-item" data-tap="onQuickTap" data-ds-key="coupon">
+          <div class="wx-view quick-icon" style="background-color:#FAAD14">
+            <i class="wx-icon wxicon wxicon-arrow_down" style="width:24px;height:24px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.5 12 16.5 20 8.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+          </div>
+          <span class="wx-text quick-name">领券</span>
+        </div>
+        <div class="wx-view quick-item" data-tap="onQuickTap" data-ds-key="orders">
+          <div class="wx-view quick-icon" style="background-color:#722ed1">
+            <i class="wx-icon wxicon wxicon-success_no_circle" style="width:24px;height:24px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12.5 9 18 20.5 5.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+          </div>
+          <span class="wx-text quick-name">订单</span>
+        </div>
+        <div class="wx-view quick-item" data-tap="onQuickTap" data-ds-key="search">
+          <div class="wx-view quick-icon" style="background-color:#13c2c2">
+            <i class="wx-icon wxicon wxicon-search" style="width:24px;height:24px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.4" cy="10.4" r="6.4" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15.2 15.2 21 21" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></i>
+          </div>
+          <span class="wx-text quick-name">搜索</span>
+        </div>
+        <div class="wx-view quick-item" data-tap="onQuickTap" data-ds-key="showcase">
+          <div class="wx-view quick-icon" style="background-color:#EB2F96">
+            <i class="wx-icon wxicon wxicon-star" style="width:24px;height:24px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="currentColor"/></svg></i>
+          </div>
+          <span class="wx-text quick-name">能力</span>
+        </div>
+        <div class="wx-view quick-item" data-tap="onQuickTap" data-ds-key="canvas">
+          <div class="wx-view quick-icon" style="background-color:#2F54EB">
+            <i class="wx-icon wxicon wxicon-plus" style="width:24px;height:24px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5V19.5M4.5 12H19.5" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg></i>
+          </div>
+          <span class="wx-text quick-name">画板</span>
+        </div>
+        <div class="wx-view quick-item" data-tap="onQuickTap" data-ds-key="components">
+          <div class="wx-view quick-icon" style="background-color:#FA541C">
+            <i class="wx-icon wxicon wxicon-success_no_circle" style="width:24px;height:24px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12.5 9 18 20.5 5.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+          </div>
+          <span class="wx-text quick-name">组件</span>
+        </div>
+      </div>
+    </div>
+    <div class="wx-view seckill">
+      <div class="wx-view seckill-head">
+        <div class="wx-view row">
+          <span class="wx-text seckill-title">限时秒杀</span>
+          <span class="wx-text seckill-flag anim-pulse">HOT</span>
+        </div>
+        <div class="wx-view row">
+          <span class="wx-text seckill-tip">距结束</span>
+          <span class="wx-text clock-num">02</span>
+          <span class="wx-text clock-sep">:</span>
+          <span class="wx-text clock-num">00</span>
+          <span class="wx-text clock-sep">:</span>
+          <span class="wx-text clock-num">00</span>
+        </div>
+      </div>
+      <div class="wx-scroll-view seckill-scroll" style="display:flex;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden">
+        <div class="wx-view seckill-row">
+          <div class="wx-view seckill-item" data-tap="onProductTap" data-ds-id="101">
+            <img class="wx-image seckill-img" style="object-fit:cover" src="/assets/p_earbuds.jpg">
+            <span class="wx-text seckill-price">¥149</span>
+            <span class="wx-text seckill-origin">¥299</span>
+            <div class="wx-view seckill-bar">
+              <div class="wx-view seckill-bar-in" style="width:76%"></div>
+            </div>
+            <span class="wx-text seckill-left">仅剩12件</span>
+          </div>
+          <div class="wx-view seckill-item" data-tap="onProductTap" data-ds-id="102">
+            <img class="wx-image seckill-img" style="object-fit:cover" src="/assets/p_watch.jpg">
+            <span class="wx-text seckill-price">¥499</span>
+            <span class="wx-text seckill-origin">¥799</span>
+            <div class="wx-view seckill-bar">
+              <div class="wx-view seckill-bar-in" style="width:84%"></div>
+            </div>
+            <span class="wx-text seckill-left">仅剩8件</span>
+          </div>
+          <div class="wx-view seckill-item" data-tap="onProductTap" data-ds-id="105">
+            <img class="wx-image seckill-img" style="object-fit:cover" src="/assets/p_coffee.jpg">
+            <span class="wx-text seckill-price">¥59</span>
+            <span class="wx-text seckill-origin">¥129</span>
+            <div class="wx-view seckill-bar">
+              <div class="wx-view seckill-bar-in" style="width:48%"></div>
+            </div>
+            <span class="wx-text seckill-left">仅剩26件</span>
+          </div>
+          <div class="wx-view seckill-item" data-tap="onProductTap" data-ds-id="103">
+            <img class="wx-image seckill-img" style="object-fit:cover" src="/assets/p_sneakers.jpg">
+            <span class="wx-text seckill-price">¥259</span>
+            <span class="wx-text seckill-origin">¥429</span>
+            <div class="wx-view seckill-bar">
+              <div class="wx-view seckill-bar-in" style="width:90%"></div>
+            </div>
+            <span class="wx-text seckill-left">仅剩5件</span>
+          </div>
+          <div class="wx-view seckill-item" data-tap="onProductTap" data-ds-id="104">
+            <img class="wx-image seckill-img" style="object-fit:cover" src="/assets/p_backpack.jpg">
+            <span class="wx-text seckill-price">¥199</span>
+            <span class="wx-text seckill-origin">¥359</span>
+            <div class="wx-view seckill-bar">
+              <div class="wx-view seckill-bar-in" style="width:38%"></div>
+            </div>
+            <span class="wx-text seckill-left">仅剩31件</span>
+          </div>
         </div>
       </div>
     </div>
     <div class="wx-view section">
       <div class="wx-view section-header">
         <span class="wx-text section-title">🔥 热销商品</span>
-        <span class="wx-text section-more" data-tap="onViewMore">更多 &gt;</span>
+        <div class="wx-view row" data-tap="onViewMore">
+          <span class="wx-text section-more">更多</span>
+          <i class="wx-icon wxicon wxicon-arrow_right" style="width:12px;height:12px;color:#999"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 4 16.5 12 8.5 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+        </div>
       </div>
       <div class="wx-view product-row">
         <div class="wx-view product-card" data-tap="onProductTap" data-ds-id="101">
           <div class="wx-view product-img">
             <img class="wx-image product-img-el" style="object-fit:cover" src="/assets/p_earbuds.jpg">
+            <span class="wx-text product-badge">爆款</span>
           </div>
           <span class="wx-text product-name">无线蓝牙耳机</span>
           <div class="wx-view product-price-row">
             <span class="wx-text product-price">¥199</span>
-            <div class="wx-view add-btn" data-tap="onAddCart" data-ds-product="{'id':101,'image':'/assets/p_earbuds.jpg','name':'无线蓝牙耳机','price':199}">
-              <span class="wx-text add-btn-text">+</span>
+            <div class="wx-view add-btn" data-tap="onAddCart" data-ds-product="{'badge':'爆款','id':101,'image':'/assets/p_earbuds.jpg','name':'无线蓝牙耳机','price':199}">
+              <i class="wx-icon wxicon wxicon-plus" style="width:14px;height:14px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5V19.5M4.5 12H19.5" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg></i>
             </div>
           </div>
         </div>
         <div class="wx-view product-card" data-tap="onProductTap" data-ds-id="102">
           <div class="wx-view product-img">
             <img class="wx-image product-img-el" style="object-fit:cover" src="/assets/p_watch.jpg">
+            <span class="wx-text product-badge">新品</span>
           </div>
           <span class="wx-text product-name">智能运动手表</span>
           <div class="wx-view product-price-row">
             <span class="wx-text product-price">¥599</span>
-            <div class="wx-view add-btn" data-tap="onAddCart" data-ds-product="{'id':102,'image':'/assets/p_watch.jpg','name':'智能运动手表','price':599}">
-              <span class="wx-text add-btn-text">+</span>
+            <div class="wx-view add-btn" data-tap="onAddCart" data-ds-product="{'badge':'新品','id':102,'image':'/assets/p_watch.jpg','name':'智能运动手表','price':599}">
+              <i class="wx-icon wxicon wxicon-plus" style="width:14px;height:14px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5V19.5M4.5 12H19.5" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg></i>
             </div>
           </div>
         </div>
@@ -90,8 +229,8 @@
           <span class="wx-text product-name">潮流运动鞋</span>
           <div class="wx-view product-price-row">
             <span class="wx-text product-price">¥329</span>
-            <div class="wx-view add-btn" data-tap="onAddCart" data-ds-product="{'id':103,'image':'/assets/p_sneakers.jpg','name':'潮流运动鞋','price':329}">
-              <span class="wx-text add-btn-text">+</span>
+            <div class="wx-view add-btn" data-tap="onAddCart" data-ds-product="{'badge':'','id':103,'image':'/assets/p_sneakers.jpg','name':'潮流运动鞋','price':329}">
+              <i class="wx-icon wxicon wxicon-plus" style="width:14px;height:14px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5V19.5M4.5 12H19.5" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg></i>
             </div>
           </div>
         </div>
@@ -102,32 +241,34 @@
           <span class="wx-text product-name">时尚双肩包</span>
           <div class="wx-view product-price-row">
             <span class="wx-text product-price">¥259</span>
-            <div class="wx-view add-btn" data-tap="onAddCart" data-ds-product="{'id':104,'image':'/assets/p_backpack.jpg','name':'时尚双肩包','price':259}">
-              <span class="wx-text add-btn-text">+</span>
+            <div class="wx-view add-btn" data-tap="onAddCart" data-ds-product="{'badge':'','id':104,'image':'/assets/p_backpack.jpg','name':'时尚双肩包','price':259}">
+              <i class="wx-icon wxicon wxicon-plus" style="width:14px;height:14px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5V19.5M4.5 12H19.5" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg></i>
             </div>
           </div>
         </div>
         <div class="wx-view product-card" data-tap="onProductTap" data-ds-id="105">
           <div class="wx-view product-img">
             <img class="wx-image product-img-el" style="object-fit:cover" src="/assets/p_coffee.jpg">
+            <span class="wx-text product-badge">直降</span>
           </div>
           <span class="wx-text product-name">精品咖啡礼盒</span>
           <div class="wx-view product-price-row">
             <span class="wx-text product-price">¥89</span>
-            <div class="wx-view add-btn" data-tap="onAddCart" data-ds-product="{'id':105,'image':'/assets/p_coffee.jpg','name':'精品咖啡礼盒','price':89}">
-              <span class="wx-text add-btn-text">+</span>
+            <div class="wx-view add-btn" data-tap="onAddCart" data-ds-product="{'badge':'直降','id':105,'image':'/assets/p_coffee.jpg','name':'精品咖啡礼盒','price':89}">
+              <i class="wx-icon wxicon wxicon-plus" style="width:14px;height:14px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5V19.5M4.5 12H19.5" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg></i>
             </div>
           </div>
         </div>
         <div class="wx-view product-card" data-tap="onProductTap" data-ds-id="106">
           <div class="wx-view product-img">
             <img class="wx-image product-img-el" style="object-fit:cover" src="/assets/p_phone.jpg">
+            <span class="wx-text product-badge">12期免息</span>
           </div>
           <span class="wx-text product-name">旗舰智能手机</span>
           <div class="wx-view product-price-row">
             <span class="wx-text product-price">¥3999</span>
-            <div class="wx-view add-btn" data-tap="onAddCart" data-ds-product="{'id':106,'image':'/assets/p_phone.jpg','name':'旗舰智能手机','price':3999}">
-              <span class="wx-text add-btn-text">+</span>
+            <div class="wx-view add-btn" data-tap="onAddCart" data-ds-product="{'badge':'12期免息','id':106,'image':'/assets/p_phone.jpg','name':'旗舰智能手机','price':3999}">
+              <i class="wx-icon wxicon wxicon-plus" style="width:14px;height:14px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5V19.5M4.5 12H19.5" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg></i>
             </div>
           </div>
         </div>
@@ -135,7 +276,7 @@
     </div>
     <div class="wx-view section">
       <div class="wx-view section-header">
-        <span class="wx-text section-title">✨ 新品推荐 (30件)</span>
+        <span class="wx-text section-title">✨ 新品推荐 (20件)</span>
       </div>
       <div class="wx-view product-list">
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="201">
@@ -144,10 +285,13 @@
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">轻薄笔记本电脑</span>
-            <span class="wx-text list-desc">14英寸高性能 i7处理器</span>
-            <span class="wx-text list-price">¥4999</span>
+            <span class="wx-text list-desc">高性能 热销款</span>
+            <div class="wx-view row">
+              <span class="wx-text list-price">¥99</span>
+              <span class="wx-text list-sold">已售100</span>
+            </div>
           </div>
-          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'14英寸高性能 i7处理器','id':201,'image':'/assets/p_phone.jpg','name':'轻薄笔记本电脑','price':4999}">购买</button>
+          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'高性能 热销款','id':201,'image':'/assets/p_phone.jpg','name':'轻薄笔记本电脑','price':99,'sold':100}">购买</button>
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="202">
           <div class="wx-view list-img">
@@ -155,10 +299,13 @@
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">降噪耳机Pro</span>
-            <span class="wx-text list-desc">40小时续航 主动降噪</span>
-            <span class="wx-text list-price">¥899</span>
+            <span class="wx-text list-desc">新品上市 限时优惠</span>
+            <div class="wx-view row">
+              <span class="wx-text list-price">¥236</span>
+              <span class="wx-text list-sold">已售411</span>
+            </div>
           </div>
-          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'40小时续航 主动降噪','id':202,'image':'/assets/p_phone2.jpg','name':'降噪耳机Pro','price':899}">购买</button>
+          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'新品上市 限时优惠','id':202,'image':'/assets/p_phone2.jpg','name':'降噪耳机Pro','price':236,'sold':411}">购买</button>
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="203">
           <div class="wx-view list-img">
@@ -166,10 +313,13 @@
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">智能音箱</span>
-            <span class="wx-text list-desc">语音助手 智能家居控制</span>
-            <span class="wx-text list-price">¥299</span>
+            <span class="wx-text list-desc">爆款推荐 好评如潮</span>
+            <div class="wx-view row">
+              <span class="wx-text list-price">¥373</span>
+              <span class="wx-text list-sold">已售722</span>
+            </div>
           </div>
-          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'语音助手 智能家居控制','id':203,'image':'/assets/p_earbuds.jpg','name':'智能音箱','price':299}">购买</button>
+          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'爆款推荐 好评如潮','id':203,'image':'/assets/p_earbuds.jpg','name':'智能音箱','price':373,'sold':722}">购买</button>
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="204">
           <div class="wx-view list-img">
@@ -177,10 +327,13 @@
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">4K显示器</span>
-            <span class="wx-text list-desc">27英寸 IPS面板</span>
-            <span class="wx-text list-price">¥1999</span>
+            <span class="wx-text list-desc">品质保证 顺丰包邮</span>
+            <div class="wx-view row">
+              <span class="wx-text list-price">¥510</span>
+              <span class="wx-text list-sold">已售1033</span>
+            </div>
           </div>
-          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'27英寸 IPS面板','id':204,'image':'/assets/p_watch.jpg','name':'4K显示器','price':1999}">购买</button>
+          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'品质保证 顺丰包邮','id':204,'image':'/assets/p_watch.jpg','name':'4K显示器','price':510,'sold':1033}">购买</button>
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="205">
           <div class="wx-view list-img">
@@ -188,10 +341,13 @@
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">机械键盘RGB</span>
-            <span class="wx-text list-desc">青轴 全键无冲</span>
-            <span class="wx-text list-price">¥459</span>
+            <span class="wx-text list-desc">厂家直销 假一赔十</span>
+            <div class="wx-view row">
+              <span class="wx-text list-price">¥647</span>
+              <span class="wx-text list-sold">已售1344</span>
+            </div>
           </div>
-          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'青轴 全键无冲','id':205,'image':'/assets/p_sneakers.jpg','name':'机械键盘RGB','price':459}">购买</button>
+          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'厂家直销 假一赔十','id':205,'image':'/assets/p_sneakers.jpg','name':'机械键盘RGB','price':647,'sold':1344}">购买</button>
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="206">
           <div class="wx-view list-img">
@@ -199,10 +355,13 @@
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">游戏鼠标</span>
-            <span class="wx-text list-desc">16000DPI 可编程按键</span>
-            <span class="wx-text list-price">¥299</span>
+            <span class="wx-text list-desc">高性能 热销款</span>
+            <div class="wx-view row">
+              <span class="wx-text list-price">¥784</span>
+              <span class="wx-text list-sold">已售1655</span>
+            </div>
           </div>
-          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'16000DPI 可编程按键','id':206,'image':'/assets/p_backpack.jpg','name':'游戏鼠标','price':299}">购买</button>
+          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'高性能 热销款','id':206,'image':'/assets/p_backpack.jpg','name':'游戏鼠标','price':784,'sold':1655}">购买</button>
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="207">
           <div class="wx-view list-img">
@@ -210,10 +369,13 @@
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">固态硬盘1TB</span>
-            <span class="wx-text list-desc">NVMe协议 读取3500MB/s</span>
-            <span class="wx-text list-price">¥599</span>
+            <span class="wx-text list-desc">新品上市 限时优惠</span>
+            <div class="wx-view row">
+              <span class="wx-text list-price">¥921</span>
+              <span class="wx-text list-sold">已售1966</span>
+            </div>
           </div>
-          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'NVMe协议 读取3500MB/s','id':207,'image':'/assets/p_coffee.jpg','name':'固态硬盘1TB','price':599}">购买</button>
+          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'新品上市 限时优惠','id':207,'image':'/assets/p_coffee.jpg','name':'固态硬盘1TB','price':921,'sold':1966}">购买</button>
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="208">
           <div class="wx-view list-img">
@@ -221,10 +383,13 @@
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">内存条32GB</span>
-            <span class="wx-text list-desc">DDR4 3200MHz</span>
-            <span class="wx-text list-price">¥699</span>
+            <span class="wx-text list-desc">爆款推荐 好评如潮</span>
+            <div class="wx-view row">
+              <span class="wx-text list-price">¥1058</span>
+              <span class="wx-text list-sold">已售2277</span>
+            </div>
           </div>
-          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'DDR4 3200MHz','id':208,'image':'/assets/p_cake.jpg','name':'内存条32GB','price':699}">购买</button>
+          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'爆款推荐 好评如潮','id':208,'image':'/assets/p_cake.jpg','name':'内存条32GB','price':1058,'sold':2277}">购买</button>
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="209">
           <div class="wx-view list-img">
@@ -232,10 +397,13 @@
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">散热器风冷</span>
-            <span class="wx-text list-desc">6热管 静音设计</span>
-            <span class="wx-text list-price">¥199</span>
+            <span class="wx-text list-desc">品质保证 顺丰包邮</span>
+            <div class="wx-view row">
+              <span class="wx-text list-price">¥1195</span>
+              <span class="wx-text list-sold">已售2588</span>
+            </div>
           </div>
-          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'6热管 静音设计','id':209,'image':'/assets/p_lipstick.jpg','name':'散热器风冷','price':199}">购买</button>
+          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'品质保证 顺丰包邮','id':209,'image':'/assets/p_lipstick.jpg','name':'散热器风冷','price':1195,'sold':2588}">购买</button>
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="210">
           <div class="wx-view list-img">
@@ -243,10 +411,13 @@
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">电竞椅</span>
-            <span class="wx-text list-desc">人体工学 可调节扶手</span>
-            <span class="wx-text list-price">¥1299</span>
+            <span class="wx-text list-desc">厂家直销 假一赔十</span>
+            <div class="wx-view row">
+              <span class="wx-text list-price">¥1332</span>
+              <span class="wx-text list-sold">已售2899</span>
+            </div>
           </div>
-          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'人体工学 可调节扶手','id':210,'image':'/assets/p_thermos.jpg','name':'电竞椅','price':1299}">购买</button>
+          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'厂家直销 假一赔十','id':210,'image':'/assets/p_thermos.jpg','name':'电竞椅','price':1332,'sold':2899}">购买</button>
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="211">
           <div class="wx-view list-img">
@@ -254,10 +425,13 @@
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">桌面音响</span>
-            <span class="wx-text list-desc">2.1声道 蓝牙5.0</span>
-            <span class="wx-text list-price">¥399</span>
+            <span class="wx-text list-desc">高性能 热销款</span>
+            <div class="wx-view row">
+              <span class="wx-text list-price">¥1469</span>
+              <span class="wx-text list-sold">已售3210</span>
+            </div>
           </div>
-          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'2.1声道 蓝牙5.0','id':211,'image':'/assets/p_phone.jpg','name':'桌面音响','price':399}">购买</button>
+          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'高性能 热销款','id':211,'image':'/assets/p_phone.jpg','name':'桌面音响','price':1469,'sold':3210}">购买</button>
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="212">
           <div class="wx-view list-img">
@@ -265,10 +439,13 @@
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">摄像头1080P</span>
-            <span class="wx-text list-desc">自动对焦 内置麦克风</span>
-            <span class="wx-text list-price">¥199</span>
+            <span class="wx-text list-desc">新品上市 限时优惠</span>
+            <div class="wx-view row">
+              <span class="wx-text list-price">¥1606</span>
+              <span class="wx-text list-sold">已售3521</span>
+            </div>
           </div>
-          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'自动对焦 内置麦克风','id':212,'image':'/assets/p_phone2.jpg','name':'摄像头1080P','price':199}">购买</button>
+          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'新品上市 限时优惠','id':212,'image':'/assets/p_phone2.jpg','name':'摄像头1080P','price':1606,'sold':3521}">购买</button>
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="213">
           <div class="wx-view list-img">
@@ -276,10 +453,13 @@
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">USB扩展坞</span>
-            <span class="wx-text list-desc">Type-C 10合1</span>
-            <span class="wx-text list-price">¥259</span>
+            <span class="wx-text list-desc">爆款推荐 好评如潮</span>
+            <div class="wx-view row">
+              <span class="wx-text list-price">¥1743</span>
+              <span class="wx-text list-sold">已售3832</span>
+            </div>
           </div>
-          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'Type-C 10合1','id':213,'image':'/assets/p_earbuds.jpg','name':'USB扩展坞','price':259}">购买</button>
+          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'爆款推荐 好评如潮','id':213,'image':'/assets/p_earbuds.jpg','name':'USB扩展坞','price':1743,'sold':3832}">购买</button>
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="214">
           <div class="wx-view list-img">
@@ -287,10 +467,13 @@
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">无线充电器</span>
-            <span class="wx-text list-desc">15W快充 兼容多设备</span>
-            <span class="wx-text list-price">¥99</span>
+            <span class="wx-text list-desc">品质保证 顺丰包邮</span>
+            <div class="wx-view row">
+              <span class="wx-text list-price">¥1880</span>
+              <span class="wx-text list-sold">已售4143</span>
+            </div>
           </div>
-          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'15W快充 兼容多设备','id':214,'image':'/assets/p_watch.jpg','name':'无线充电器','price':99}">购买</button>
+          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'品质保证 顺丰包邮','id':214,'image':'/assets/p_watch.jpg','name':'无线充电器','price':1880,'sold':4143}">购买</button>
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="215">
           <div class="wx-view list-img">
@@ -298,10 +481,13 @@
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">平板支架</span>
-            <span class="wx-text list-desc">铝合金 可折叠</span>
-            <span class="wx-text list-price">¥79</span>
+            <span class="wx-text list-desc">厂家直销 假一赔十</span>
+            <div class="wx-view row">
+              <span class="wx-text list-price">¥117</span>
+              <span class="wx-text list-sold">已售4454</span>
+            </div>
           </div>
-          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'铝合金 可折叠','id':215,'image':'/assets/p_sneakers.jpg','name':'平板支架','price':79}">购买</button>
+          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'厂家直销 假一赔十','id':215,'image':'/assets/p_sneakers.jpg','name':'平板支架','price':117,'sold':4454}">购买</button>
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="216">
           <div class="wx-view list-img">
@@ -309,215 +495,76 @@
           </div>
           <div class="wx-view list-info">
             <span class="wx-text list-name">蓝牙适配器</span>
-            <span class="wx-text list-desc">5.0版本 即插即用</span>
-            <span class="wx-text list-price">¥39</span>
+            <span class="wx-text list-desc">高性能 热销款</span>
+            <div class="wx-view row">
+              <span class="wx-text list-price">¥254</span>
+              <span class="wx-text list-sold">已售4765</span>
+            </div>
           </div>
-          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'5.0版本 即插即用','id':216,'image':'/assets/p_backpack.jpg','name':'蓝牙适配器','price':39}">购买</button>
+          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'高性能 热销款','id':216,'image':'/assets/p_backpack.jpg','name':'蓝牙适配器','price':254,'sold':4765}">购买</button>
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="217">
           <div class="wx-view list-img">
             <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/p_coffee.jpg">
           </div>
           <div class="wx-view list-info">
-            <span class="wx-text list-name">网线Cat6</span>
-            <span class="wx-text list-desc">10米 千兆网络</span>
-            <span class="wx-text list-price">¥29</span>
+            <span class="wx-text list-name">屏幕挂灯</span>
+            <span class="wx-text list-desc">新品上市 限时优惠</span>
+            <div class="wx-view row">
+              <span class="wx-text list-price">¥391</span>
+              <span class="wx-text list-sold">已售276</span>
+            </div>
           </div>
-          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'10米 千兆网络','id':217,'image':'/assets/p_coffee.jpg','name':'网线Cat6','price':29}">购买</button>
+          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'新品上市 限时优惠','id':217,'image':'/assets/p_coffee.jpg','name':'屏幕挂灯','price':391,'sold':276}">购买</button>
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="218">
           <div class="wx-view list-img">
             <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/p_cake.jpg">
           </div>
           <div class="wx-view list-info">
-            <span class="wx-text list-name">鼠标垫超大</span>
-            <span class="wx-text list-desc">900x400mm 防滑底</span>
-            <span class="wx-text list-price">¥49</span>
+            <span class="wx-text list-name">桌面收纳盒</span>
+            <span class="wx-text list-desc">爆款推荐 好评如潮</span>
+            <div class="wx-view row">
+              <span class="wx-text list-price">¥528</span>
+              <span class="wx-text list-sold">已售587</span>
+            </div>
           </div>
-          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'900x400mm 防滑底','id':218,'image':'/assets/p_cake.jpg','name':'鼠标垫超大','price':49}">购买</button>
+          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'爆款推荐 好评如潮','id':218,'image':'/assets/p_cake.jpg','name':'桌面收纳盒','price':528,'sold':587}">购买</button>
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="219">
           <div class="wx-view list-img">
             <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/p_lipstick.jpg">
           </div>
           <div class="wx-view list-info">
-            <span class="wx-text list-name">屏幕挂灯</span>
-            <span class="wx-text list-desc">护眼 无频闪</span>
-            <span class="wx-text list-price">¥149</span>
+            <span class="wx-text list-name">智能手环</span>
+            <span class="wx-text list-desc">品质保证 顺丰包邮</span>
+            <div class="wx-view row">
+              <span class="wx-text list-price">¥665</span>
+              <span class="wx-text list-sold">已售898</span>
+            </div>
           </div>
-          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'护眼 无频闪','id':219,'image':'/assets/p_lipstick.jpg','name':'屏幕挂灯','price':149}">购买</button>
+          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'品质保证 顺丰包邮','id':219,'image':'/assets/p_lipstick.jpg','name':'智能手环','price':665,'sold':898}">购买</button>
         </div>
         <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="220">
           <div class="wx-view list-img">
             <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/p_thermos.jpg">
           </div>
           <div class="wx-view list-info">
-            <span class="wx-text list-name">桌面收纳盒</span>
-            <span class="wx-text list-desc">多功能 大容量</span>
-            <span class="wx-text list-price">¥59</span>
-          </div>
-          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'多功能 大容量','id':220,'image':'/assets/p_thermos.jpg','name':'桌面收纳盒','price':59}">购买</button>
-        </div>
-        <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="221">
-          <div class="wx-view list-img">
-            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/p_phone.jpg">
-          </div>
-          <div class="wx-view list-info">
-            <span class="wx-text list-name">智能手环</span>
-            <span class="wx-text list-desc">心率监测 睡眠分析</span>
-            <span class="wx-text list-price">¥199</span>
-          </div>
-          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'心率监测 睡眠分析','id':221,'image':'/assets/p_phone.jpg','name':'智能手环','price':199}">购买</button>
-        </div>
-        <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="222">
-          <div class="wx-view list-img">
-            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/p_phone2.jpg">
-          </div>
-          <div class="wx-view list-info">
             <span class="wx-text list-name">运动耳机</span>
-            <span class="wx-text list-desc">防水IPX7 挂耳式</span>
-            <span class="wx-text list-price">¥149</span>
+            <span class="wx-text list-desc">厂家直销 假一赔十</span>
+            <div class="wx-view row">
+              <span class="wx-text list-price">¥802</span>
+              <span class="wx-text list-sold">已售1209</span>
+            </div>
           </div>
-          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'防水IPX7 挂耳式','id':222,'image':'/assets/p_phone2.jpg','name':'运动耳机','price':149}">购买</button>
-        </div>
-        <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="223">
-          <div class="wx-view list-img">
-            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/p_earbuds.jpg">
-          </div>
-          <div class="wx-view list-info">
-            <span class="wx-text list-name">移动电源20000mAh</span>
-            <span class="wx-text list-desc">双向快充 LED显示</span>
-            <span class="wx-text list-price">¥159</span>
-          </div>
-          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'双向快充 LED显示','id':223,'image':'/assets/p_earbuds.jpg','name':'移动电源20000mAh','price':159}">购买</button>
-        </div>
-        <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="224">
-          <div class="wx-view list-img">
-            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/p_watch.jpg">
-          </div>
-          <div class="wx-view list-info">
-            <span class="wx-text list-name">数据线套装</span>
-            <span class="wx-text list-desc">Type-C/Lightning/Micro</span>
-            <span class="wx-text list-price">¥39</span>
-          </div>
-          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'Type-C/Lightning/Micro','id':224,'image':'/assets/p_watch.jpg','name':'数据线套装','price':39}">购买</button>
-        </div>
-        <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="225">
-          <div class="wx-view list-img">
-            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/p_sneakers.jpg">
-          </div>
-          <div class="wx-view list-info">
-            <span class="wx-text list-name">手机支架</span>
-            <span class="wx-text list-desc">车载/桌面两用</span>
-            <span class="wx-text list-price">¥29</span>
-          </div>
-          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'车载/桌面两用','id':225,'image':'/assets/p_sneakers.jpg','name':'手机支架','price':29}">购买</button>
-        </div>
-        <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="226">
-          <div class="wx-view list-img">
-            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/p_backpack.jpg">
-          </div>
-          <div class="wx-view list-info">
-            <span class="wx-text list-name">蓝牙音箱迷你</span>
-            <span class="wx-text list-desc">便携 防水</span>
-            <span class="wx-text list-price">¥99</span>
-          </div>
-          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'便携 防水','id':226,'image':'/assets/p_backpack.jpg','name':'蓝牙音箱迷你','price':99}">购买</button>
-        </div>
-        <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="227">
-          <div class="wx-view list-img">
-            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/p_coffee.jpg">
-          </div>
-          <div class="wx-view list-info">
-            <span class="wx-text list-name">电子书阅读器</span>
-            <span class="wx-text list-desc">6英寸墨水屏</span>
-            <span class="wx-text list-price">¥699</span>
-          </div>
-          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'6英寸墨水屏','id':227,'image':'/assets/p_coffee.jpg','name':'电子书阅读器','price':699}">购买</button>
-        </div>
-        <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="228">
-          <div class="wx-view list-img">
-            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/p_cake.jpg">
-          </div>
-          <div class="wx-view list-info">
-            <span class="wx-text list-name">智能门锁</span>
-            <span class="wx-text list-desc">指纹/密码/APP</span>
-            <span class="wx-text list-price">¥1299</span>
-          </div>
-          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'指纹/密码/APP','id':228,'image':'/assets/p_cake.jpg','name':'智能门锁','price':1299}">购买</button>
-        </div>
-        <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="229">
-          <div class="wx-view list-img">
-            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/p_lipstick.jpg">
-          </div>
-          <div class="wx-view list-info">
-            <span class="wx-text list-name">空气净化器</span>
-            <span class="wx-text list-desc">HEPA滤网 静音</span>
-            <span class="wx-text list-price">¥899</span>
-          </div>
-          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'HEPA滤网 静音','id':229,'image':'/assets/p_lipstick.jpg','name':'空气净化器','price':899}">购买</button>
-        </div>
-        <div class="wx-view list-item" data-tap="onProductTap" data-ds-id="230">
-          <div class="wx-view list-img">
-            <img class="wx-image list-img-el" style="object-fit:cover" src="/assets/p_thermos.jpg">
-          </div>
-          <div class="wx-view list-info">
-            <span class="wx-text list-name">加湿器</span>
-            <span class="wx-text list-desc">大容量 静音</span>
-            <span class="wx-text list-price">¥199</span>
-          </div>
-          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'大容量 静音','id':230,'image':'/assets/p_thermos.jpg','name':'加湿器','price':199}">购买</button>
+          <button class="wx-button list-btn wx-button-primary wx-button-mini" data-tap="onAddCart" data-ds-product="{'desc':'厂家直销 假一赔十','id':220,'image':'/assets/p_thermos.jpg','name':'运动耳机','price':802,'sold':1209}">购买</button>
         </div>
       </div>
     </div>
     <div class="wx-view bottom-space"></div>
-    <div class="wx-view coupon-mask" data-tap="onCloseCoupon">
-      <div class="wx-view coupon-dialog" data-tap="onNoop">
-        <div class="wx-view coupon-dialog-head">
-          <span class="wx-text coupon-dialog-title">新人专享礼包</span>
-          <span class="wx-text coupon-dialog-sub">下单立减，先到先得</span>
-        </div>
-        <div class="wx-view coupon-list-pop">
-          <div class="wx-view coupon-card">
-            <div class="wx-view coupon-left">
-              <span class="wx-text coupon-amount">¥10</span>
-              <span class="wx-text coupon-cond">满39元可用</span>
-            </div>
-            <div class="wx-view coupon-right">
-              <span class="wx-text coupon-name">新人无门槛券</span>
-              <span class="wx-text coupon-tip">仅限新用户</span>
-            </div>
-          </div>
-          <div class="wx-view coupon-card">
-            <div class="wx-view coupon-left">
-              <span class="wx-text coupon-amount">¥30</span>
-              <span class="wx-text coupon-cond">满99元可用</span>
-            </div>
-            <div class="wx-view coupon-right">
-              <span class="wx-text coupon-name">满99减30</span>
-              <span class="wx-text coupon-tip">全场通用</span>
-            </div>
-          </div>
-          <div class="wx-view coupon-card">
-            <div class="wx-view coupon-left">
-              <span class="wx-text coupon-amount">¥50</span>
-              <span class="wx-text coupon-cond">满199元可用</span>
-            </div>
-            <div class="wx-view coupon-right">
-              <span class="wx-text coupon-name">满199减50</span>
-              <span class="wx-text coupon-tip">全场通用</span>
-            </div>
-          </div>
-        </div>
-        <button class="wx-button coupon-claim-btn wx-button-primary" data-tap="onClaimCoupons">一键领取</button>
-        <div class="wx-view coupon-close" data-tap="onCloseCoupon">
-          <i class="wx-icon wxicon wxicon-close" style="width:15px;height:15px;color:#ffffff"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5 19 19M19 5 5 19" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></i>
-        </div>
-      </div>
-    </div>
   </div>
 </div>
-<nav class="wx-custom-tabbar"><div class="wx-view custom-tabbar"><div class="wx-view tabbar-item active" data-tap="switchTab" data-ds-path="pages/index/index" data-tabbar-href="../../pages/index/index.html" data-ds-index="0"><i class="wx-icon wxicon wxicon-success" style="width:24px;height:24px;color:#FF6B35"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><path d="M5.8 12.4 10 16.4 18.2 7.6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i><span class="wx-text tabbar-label label-active">首页</span></div><div class="wx-view tabbar-item " data-tap="switchTab" data-ds-index="1" data-ds-path="pages/category/category" data-tabbar-href="../../pages/category/category.html"><i class="wx-icon wxicon wxicon-info" style="width:24px;height:24px;color:#999"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><circle cx="12" cy="7.6" r="1.7" fill="#fff"/><rect x="10.9" y="10.8" width="2.2" height="7" rx="1.1" fill="#fff"/></svg></i><span class="wx-text tabbar-label ">分类</span></div><div class="wx-view tabbar-item " data-tap="switchTab" data-ds-path="pages/cart/cart" data-tabbar-href="../../pages/cart/cart.html" data-ds-index="2"><i class="wx-icon wxicon wxicon-waiting" style="width:24px;height:24px;color:#999"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><rect x="10.9" y="6.2" width="2.2" height="6.6" rx="1.1" fill="#fff"/><rect x="12" y="10.9" width="5.2" height="2.2" rx="1.1" fill="#fff"/><circle cx="12" cy="12" r="1.6" fill="#fff"/></svg></i><span class="wx-text tabbar-label ">购物车</span></div><div class="wx-view tabbar-item " data-tap="switchTab" data-ds-index="3" data-ds-path="pages/profile/profile" data-tabbar-href="../../pages/profile/profile.html"><i class="wx-icon wxicon wxicon-warn" style="width:24px;height:24px;color:#999"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><rect x="10.9" y="5.4" width="2.2" height="7.2" rx="1.1" fill="#fff"/><circle cx="12" cy="16.6" r="1.7" fill="#fff"/></svg></i><span class="wx-text tabbar-label ">我的</span></div></div></nav>
+<nav class="wx-custom-tabbar"><div class="wx-view custom-tabbar"><div class="wx-view tabbar-item active" data-tap="switchTab" data-ds-path="pages/index/index" data-tabbar-href="../../pages/index/index.html" data-ds-index="0"><i class="wx-icon wxicon wxicon-success" style="width:24px;height:24px;color:#FF6B35"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><path d="M5.8 12.4 10 16.4 18.2 7.6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i><span class="wx-text tabbar-label label-active">首页</span></div><div class="wx-view tabbar-item " data-tap="switchTab" data-ds-path="pages/category/category" data-tabbar-href="../../pages/category/category.html" data-ds-index="1"><i class="wx-icon wxicon wxicon-info" style="width:24px;height:24px;color:#999"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><circle cx="12" cy="7.6" r="1.7" fill="#fff"/><rect x="10.9" y="10.8" width="2.2" height="7" rx="1.1" fill="#fff"/></svg></i><span class="wx-text tabbar-label ">分类</span></div><div class="wx-view tabbar-item " data-tap="switchTab" data-ds-index="2" data-ds-path="pages/cart/cart" data-tabbar-href="../../pages/cart/cart.html"><i class="wx-icon wxicon wxicon-waiting" style="width:24px;height:24px;color:#999"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><rect x="10.9" y="6.2" width="2.2" height="6.6" rx="1.1" fill="#fff"/><rect x="12" y="10.9" width="5.2" height="2.2" rx="1.1" fill="#fff"/><circle cx="12" cy="12" r="1.6" fill="#fff"/></svg></i><span class="wx-text tabbar-label ">购物车</span></div><div class="wx-view tabbar-item " data-tap="switchTab" data-ds-index="3" data-ds-path="pages/profile/profile" data-tabbar-href="../../pages/profile/profile.html"><i class="wx-icon wxicon wxicon-warn" style="width:24px;height:24px;color:#999"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><rect x="10.9" y="5.4" width="2.2" height="7.2" rx="1.1" fill="#fff"/><circle cx="12" cy="16.6" r="1.7" fill="#fff"/></svg></i><span class="wx-text tabbar-label ">我的</span></div></div></nav>
 <script>
 (function(){var bar=document.currentScript&&document.currentScript.previousElementSibling;
 if(!bar||!bar.classList.contains('wx-custom-tabbar')){bar=document.querySelector('.wx-custom-tabbar');}
@@ -531,7 +578,7 @@ if(href){e.preventDefault();e.stopPropagation();window.location.href=href;}
 </script>
 <script>
 window.__PAGE_ROUTE__ = "pages/index/index";
-window.__WXML__ = [{"a":{"class":"page"},"c":[{"a":{"class":"search-bar"},"c":[{"a":{"bindconfirm":"onSearch","bindinput":"onSearchInput","class":"search-input","maxlength":"50","placeholder":"搜索商品"},"c":[],"n":"input","t":"el"}],"n":"view","t":"el"},{"a":{"class":"banner"},"c":[{"a":{"class":"banner-tag"},"c":[{"t":"tx","x":"限时特惠"}],"n":"text","t":"el"},{"a":{"class":"banner-title"},"c":[{"t":"tx","x":"新品上市 全场8折"}],"n":"text","t":"el"},{"a":{"class":"banner-desc"},"c":[{"t":"tx","x":"精选好物 品质保证"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"category-section"},"c":[{"a":{"class":"category-row"},"c":[{"a":{"bindtap":"onCategoryTap","class":"category-item","data-id":"1"},"c":[{"a":{"color":"#FF6B35","size":"28","type":"success"},"c":[],"n":"icon","t":"el"},{"a":{"class":"category-name"},"c":[{"t":"tx","x":"数码"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onCategoryTap","class":"category-item","data-id":"2"},"c":[{"a":{"color":"#4A90D9","size":"28","type":"info"},"c":[],"n":"icon","t":"el"},{"a":{"class":"category-name"},"c":[{"t":"tx","x":"服饰"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onCategoryTap","class":"category-item","data-id":"3"},"c":[{"a":{"color":"#FF69B4","size":"28","type":"warn"},"c":[],"n":"icon","t":"el"},{"a":{"class":"category-name"},"c":[{"t":"tx","x":"美妆"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onCategoryTap","class":"category-item","data-id":"4"},"c":[{"a":{"color":"#52C41A","size":"28","type":"waiting"},"c":[],"n":"icon","t":"el"},{"a":{"class":"category-name"},"c":[{"t":"tx","x":"食品"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"category-row"},"c":[{"a":{"bindtap":"onCanvasTap","class":"category-item"},"c":[{"a":{"color":"#722ed1","size":"28","type":"circle"},"c":[],"n":"icon","t":"el"},{"a":{"class":"category-name"},"c":[{"t":"tx","x":"Canvas"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onComponentsTap","class":"category-item"},"c":[{"a":{"color":"#13c2c2","size":"28","type":"success"},"c":[],"n":"icon","t":"el"},{"a":{"class":"category-name"},"c":[{"t":"tx","x":"组件"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"section"},"c":[{"a":{"class":"section-header"},"c":[{"a":{"class":"section-title"},"c":[{"t":"tx","x":"🔥 热销商品"}],"n":"text","t":"el"},{"a":{"bindtap":"onViewMore","class":"section-more"},"c":[{"t":"tx","x":"更多 >"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"product-row"},"c":[{"a":{"bindtap":"onProductTap","class":"product-card","data-id":"{{item.id}}","wx:for":"{{hotProducts}}","wx:key":"id"},"c":[{"a":{"class":"product-img"},"c":[{"a":{"class":"product-img-el","mode":"aspectFill","src":"{{item.image}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"},{"a":{"class":"product-name"},"c":[{"t":"tx","x":"{{item.name}}"}],"n":"text","t":"el"},{"a":{"class":"product-price-row"},"c":[{"a":{"class":"product-price"},"c":[{"t":"tx","x":"¥{{item.price}}"}],"n":"text","t":"el"},{"a":{"catchtap":"onAddCart","class":"add-btn","data-product":"{{item}}"},"c":[{"a":{"class":"add-btn-text"},"c":[{"t":"tx","x":"+"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"section"},"c":[{"a":{"class":"section-header"},"c":[{"a":{"class":"section-title"},"c":[{"t":"tx","x":"✨ 新品推荐 ({{newProducts.length}}件)"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"product-list"},"c":[{"a":{"bindtap":"onProductTap","class":"list-item","data-id":"{{item.id}}","wx:for":"{{newProducts}}","wx:key":"id"},"c":[{"a":{"class":"list-img"},"c":[{"a":{"class":"list-img-el","mode":"aspectFill","src":"{{item.image}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"},{"a":{"class":"list-info"},"c":[{"a":{"class":"list-name"},"c":[{"t":"tx","x":"{{item.name}}"}],"n":"text","t":"el"},{"a":{"class":"list-desc"},"c":[{"t":"tx","x":"{{item.desc}}"}],"n":"text","t":"el"},{"a":{"class":"list-price"},"c":[{"t":"tx","x":"¥{{item.price}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"catchtap":"onAddCart","class":"list-btn","data-product":"{{item}}","size":"mini","type":"primary"},"c":[{"t":"tx","x":"购买"}],"n":"button","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"bottom-space"},"c":[],"n":"view","t":"el"},{"a":{"catchtap":"onCloseCoupon","class":"coupon-mask","wx:if":"{{showCoupon}}"},"c":[{"a":{"catchtap":"onNoop","class":"coupon-dialog"},"c":[{"a":{"class":"coupon-dialog-head"},"c":[{"a":{"class":"coupon-dialog-title"},"c":[{"t":"tx","x":"新人专享礼包"}],"n":"text","t":"el"},{"a":{"class":"coupon-dialog-sub"},"c":[{"t":"tx","x":"下单立减，先到先得"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"coupon-list-pop"},"c":[{"a":{"class":"coupon-card","wx:for":"{{coupons}}","wx:key":"id"},"c":[{"a":{"class":"coupon-left"},"c":[{"a":{"class":"coupon-amount"},"c":[{"t":"tx","x":"¥{{item.amount}}"}],"n":"text","t":"el"},{"a":{"class":"coupon-cond"},"c":[{"t":"tx","x":"满{{item.min}}元可用"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"coupon-right"},"c":[{"a":{"class":"coupon-name"},"c":[{"t":"tx","x":"{{item.name}}"}],"n":"text","t":"el"},{"a":{"class":"coupon-tip"},"c":[{"t":"tx","x":"{{item.tip}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onClaimCoupons","class":"coupon-claim-btn","type":"primary"},"c":[{"t":"tx","x":"一键领取"}],"n":"button","t":"el"},{"a":{"catchtap":"onCloseCoupon","class":"coupon-close"},"c":[{"a":{"color":"#ffffff","size":"15","type":"close"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}];
+window.__WXML__ = [{"a":{"class":"page"},"c":[{"a":{"class":"top-bar"},"c":[{"a":{"bindtap":"onGoSearch","class":"search-entry"},"c":[{"a":{"color":"#999","size":"15","type":"search"},"c":[],"n":"icon","t":"el"},{"a":{"class":"search-entry-text"},"c":[{"t":"tx","x":"{{searchPlaceholder}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onGoOrders","class":"top-msg"},"c":[{"a":{"color":"#ffffff","size":"20","type":"waiting_no_circle"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"banner-wrap"},"c":[{"a":{"autoplay":"{{true}}","bindchange":"onBannerChange","circular":"{{true}}","class":"banner-swiper","current":"{{bannerIndex}}","duration":"400","indicator-active-color":"#ffffff","indicator-color":"rgba(255,255,255,0.5)","indicator-dots":"{{true}}","interval":"3000"},"c":[{"a":{"wx:for":"{{banners}}","wx:key":"id"},"c":[{"a":{"bindtap":"onBannerTap","class":"banner-item","data-id":"{{item.link}}"},"c":[{"a":{"class":"banner-img","mode":"aspectFill","src":"{{item.image}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"banner-text"},"c":[{"a":{"class":"banner-tag"},"c":[{"t":"tx","x":"{{item.tag}}"}],"n":"text","t":"el"},{"a":{"class":"banner-title"},"c":[{"t":"tx","x":"{{item.title}}"}],"n":"text","t":"el"},{"a":{"class":"banner-desc"},"c":[{"t":"tx","x":"{{item.desc}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"swiper-item","t":"el"}],"n":"swiper","t":"el"}],"n":"view","t":"el"},{"a":{"class":"quick-card anim-fade-up"},"c":[{"a":{"class":"quick-row"},"c":[{"a":{"bindtap":"onQuickTap","class":"quick-item","data-key":"{{item.key}}","wx:for":"{{quickEntries}}","wx:key":"key"},"c":[{"a":{"class":"quick-icon","style":"background-color:{{item.color}}"},"c":[{"a":{"color":"#ffffff","size":"24","type":"{{item.icon}}"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"},{"a":{"class":"quick-name"},"c":[{"t":"tx","x":"{{item.name}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"seckill"},"c":[{"a":{"class":"seckill-head"},"c":[{"a":{"class":"row"},"c":[{"a":{"class":"seckill-title"},"c":[{"t":"tx","x":"限时秒杀"}],"n":"text","t":"el"},{"a":{"class":"seckill-flag anim-pulse"},"c":[{"t":"tx","x":"HOT"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"row"},"c":[{"a":{"class":"seckill-tip"},"c":[{"t":"tx","x":"距结束"}],"n":"text","t":"el"},{"a":{"class":"clock-num"},"c":[{"t":"tx","x":"{{countdown.h}}"}],"n":"text","t":"el"},{"a":{"class":"clock-sep"},"c":[{"t":"tx","x":":"}],"n":"text","t":"el"},{"a":{"class":"clock-num"},"c":[{"t":"tx","x":"{{countdown.m}}"}],"n":"text","t":"el"},{"a":{"class":"clock-sep"},"c":[{"t":"tx","x":":"}],"n":"text","t":"el"},{"a":{"class":"clock-num"},"c":[{"t":"tx","x":"{{countdown.s}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"seckill-scroll","scroll-x":"{{true}}"},"c":[{"a":{"class":"seckill-row"},"c":[{"a":{"bindtap":"onProductTap","class":"seckill-item","data-id":"{{item.id}}","wx:for":"{{seckillProducts}}","wx:key":"id"},"c":[{"a":{"class":"seckill-img","mode":"aspectFill","src":"{{item.image}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"seckill-price"},"c":[{"t":"tx","x":"¥{{item.price}}"}],"n":"text","t":"el"},{"a":{"class":"seckill-origin"},"c":[{"t":"tx","x":"¥{{item.originalPrice}}"}],"n":"text","t":"el"},{"a":{"class":"seckill-bar"},"c":[{"a":{"class":"seckill-bar-in","style":"width:{{item.percent}}%"},"c":[],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"seckill-left"},"c":[{"t":"tx","x":"仅剩{{item.stock}}件"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"scroll-view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"section"},"c":[{"a":{"class":"section-header"},"c":[{"a":{"class":"section-title"},"c":[{"t":"tx","x":"🔥 热销商品"}],"n":"text","t":"el"},{"a":{"bindtap":"onViewMore","class":"row"},"c":[{"a":{"class":"section-more"},"c":[{"t":"tx","x":"更多"}],"n":"text","t":"el"},{"a":{"color":"#999","size":"12","type":"arrow_right"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"product-row"},"c":[{"a":{"bindtap":"onProductTap","class":"product-card","data-id":"{{item.id}}","wx:for":"{{hotProducts}}","wx:key":"id"},"c":[{"a":{"class":"product-img"},"c":[{"a":{"class":"product-img-el","mode":"aspectFill","src":"{{item.image}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"product-badge","wx:if":"{{item.badge}}"},"c":[{"t":"tx","x":"{{item.badge}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"product-name"},"c":[{"t":"tx","x":"{{item.name}}"}],"n":"text","t":"el"},{"a":{"class":"product-price-row"},"c":[{"a":{"class":"product-price"},"c":[{"t":"tx","x":"¥{{item.price}}"}],"n":"text","t":"el"},{"a":{"catchtap":"onAddCart","class":"add-btn","data-product":"{{item}}"},"c":[{"a":{"color":"#ffffff","size":"14","type":"plus"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"section"},"c":[{"a":{"class":"section-header"},"c":[{"a":{"class":"section-title"},"c":[{"t":"tx","x":"✨ 新品推荐 ({{newProducts.length}}件)"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"product-list"},"c":[{"a":{"bindtap":"onProductTap","class":"list-item","data-id":"{{item.id}}","wx:for":"{{newProducts}}","wx:key":"id"},"c":[{"a":{"class":"list-img"},"c":[{"a":{"class":"list-img-el","mode":"aspectFill","src":"{{item.image}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"},{"a":{"class":"list-info"},"c":[{"a":{"class":"list-name"},"c":[{"t":"tx","x":"{{item.name}}"}],"n":"text","t":"el"},{"a":{"class":"list-desc"},"c":[{"t":"tx","x":"{{item.desc}}"}],"n":"text","t":"el"},{"a":{"class":"row"},"c":[{"a":{"class":"list-price"},"c":[{"t":"tx","x":"¥{{item.price}}"}],"n":"text","t":"el"},{"a":{"class":"list-sold"},"c":[{"t":"tx","x":"已售{{item.sold}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"catchtap":"onAddCart","class":"list-btn","data-product":"{{item}}","size":"mini","type":"primary"},"c":[{"t":"tx","x":"购买"}],"n":"button","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"loading-row","wx:if":"{{loadingMore}}"},"c":[{"a":{"class":"loading-ring"},"c":[],"n":"view","t":"el"},{"a":{"class":"loading-text"},"c":[{"t":"tx","x":"正在加载更多…"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"bottom-space"},"c":[],"n":"view","t":"el"},{"a":{"catchtap":"onCloseCoupon","class":"mask","wx:if":"{{showCoupon}}"},"c":[{"a":{"catchtap":"onNoop","class":"coupon-dialog anim-pop"},"c":[{"a":{"class":"coupon-dialog-head"},"c":[{"a":{"class":"coupon-dialog-title"},"c":[{"t":"tx","x":"新人专享礼包"}],"n":"text","t":"el"},{"a":{"class":"coupon-dialog-sub"},"c":[{"t":"tx","x":"下单立减，先到先得"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"coupon-list-pop"},"c":[{"a":{"class":"coupon-card","wx:for":"{{coupons}}","wx:key":"id"},"c":[{"a":{"class":"coupon-left"},"c":[{"a":{"class":"coupon-amount"},"c":[{"t":"tx","x":"¥{{item.amount}}"}],"n":"text","t":"el"},{"a":{"class":"coupon-cond"},"c":[{"t":"tx","x":"满{{item.min}}元可用"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"coupon-right"},"c":[{"a":{"class":"coupon-name"},"c":[{"t":"tx","x":"{{item.name}}"}],"n":"text","t":"el"},{"a":{"class":"coupon-tip"},"c":[{"t":"tx","x":"{{item.tip}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onClaimCoupons","class":"coupon-claim-btn","type":"primary"},"c":[{"t":"tx","x":"一键领取"}],"n":"button","t":"el"},{"a":{"catchtap":"onCloseCoupon","class":"coupon-close"},"c":[{"a":{"color":"#ffffff","size":"15","type":"close"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}];
 </script>
 <script src="../../common/runtime.js"></script>
 <script src="../../common/app.js"></script>

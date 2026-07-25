@@ -1,4 +1,14 @@
 <view class="page">
+  <!-- 顶部返回栏 -->
+  <view class="nav-bar">
+    <view class="nav-back" bindtap="onBack">
+      <icon type="back" size="20" color="#ffffff"></icon>
+    </view>
+    <text class="nav-title">收货地址</text>
+    <view class="nav-action" bindtap="onNavHome">
+      <icon type="success_no_circle" size="18" color="#ffffff"></icon>
+    </view>
+  </view>
   <!-- 地址列表 -->
   <view class="addr-list" wx:if="{{addresses.length > 0}}">
     <view class="addr-item" wx:for="{{addresses}}" wx:key="id" bindtap="onSelect" data-id="{{item.id}}">

@@ -1,7 +1,18 @@
-<view class="page">
+<view class="page {{nightMode ? 'night' : ''}}">
+  <!-- 顶部返回栏 -->
+  <view class="dnav">
+    <view class="dnav-back" bindtap="onBack">
+      <icon type="back" size="20" color="#ffffff"></icon>
+    </view>
+    <text class="dnav-title">{{article.author}}</text>
+    <view class="dnav-act" bindtap="onOpenFontPanel">
+      <text class="dnav-font">字号</text>
+    </view>
+  </view>
+
   <!-- 文章头部 -->
   <view class="article">
-    <text class="article-title">{{article.title}}</text>
+    <text class="article-title" style="font-size:{{titleSize}}px">{{article.title}}</text>
     <view class="author-row">
       <image class="author-avatar" src="{{article.avatar}}" mode="aspectFill"></image>
       <view class="author-info">
@@ -12,13 +23,15 @@
         <text class="follow-text">{{followed ? '已关注' : '关注'}}</text>
       </view>
     </view>
-
     <image class="article-cover" src="{{article.cover}}" mode="aspectFill"></image>
-
-    <text class="article-body">{{article.body}}</text>
-
+    <text class="article-body" style="font-size:{{bodySize}}px">{{article.body}}</text>
     <view class="tag-row">
       <text class="tag" wx:for="{{article.tags}}" wx:key="*this">{{item}}</text>
+    </view>
+    <!-- 阅读进度 -->
+    <view class="read-row">
+      <text class="read-tx">本文阅读量 {{article.readCount}}</text>
+      <progress percent="{{readPercent}}" stroke-width="3" activeColor="#D43C33" backgroundColor="#EDEDED"></progress>
     </view>
   </view>
 
@@ -37,7 +50,10 @@
     <view class="comment-item" wx:for="{{comments}}" wx:key="id">
       <image class="comment-avatar" src="{{item.avatar}}" mode="aspectFill"></image>
       <view class="comment-body">
-        <text class="comment-user">{{item.user}}</text>
+        <view class="row">
+          <text class="comment-user">{{item.user}}</text>
+          <text wx:if="{{item.mine}}" class="mine-tag">我的</text>
+        </view>
         <text class="comment-text">{{item.text}}</text>
         <view class="comment-foot">
           <text class="comment-time">{{item.time}}</text>
@@ -51,20 +67,35 @@
 
   <!-- 底部固定操作栏 -->
   <view class="action-bar">
-    <view class="comment-input" bindtap="onWriteComment">
+    <view wx:if="{{!composing}}" class="comment-input" bindtap="onWriteComment">
       <text class="comment-input-text">写评论…</text>
     </view>
-    <view class="action-item" bindtap="onLike">
-      <icon type="success" size="20" color="{{liked ? '#D43C33' : '#8A8A8A'}}"></icon>
+    <view wx:if="{{composing}}" class="compose">
+      <input class="compose-input" placeholder="说说你的看法…" value="{{draft}}"
+             focus="{{true}}" bindinput="onDraftInput" bindconfirm="onSubmitComment" />
+      <view class="send-btn" bindtap="onSubmitComment"><text class="send-tx">发送</text></view>
+    </view>
+    <view wx:if="{{!composing}}" class="action-item" bindtap="onLike">
+      <icon type="{{liked ? 'star' : 'star_o'}}" size="20" color="{{liked ? '#D43C33' : '#8A8A8A'}}"></icon>
       <text class="action-count">{{likeCount}}</text>
     </view>
-    <view class="action-item" bindtap="onCollect">
-      <icon type="waiting" size="20" color="{{collected ? '#F0A020' : '#8A8A8A'}}"></icon>
+    <view wx:if="{{!composing}}" class="action-item" bindtap="onCollect">
+      <icon type="{{collected ? 'success' : 'circle'}}" size="20" color="{{collected ? '#F0A020' : '#8A8A8A'}}"></icon>
       <text class="action-count">收藏</text>
     </view>
-    <view class="action-item" bindtap="onShare">
-      <icon type="info" size="20" color="#8A8A8A"></icon>
+    <view wx:if="{{!composing}}" class="action-item" bindtap="onShare">
+      <icon type="arrow_up" size="20" color="#8A8A8A"></icon>
       <text class="action-count">分享</text>
     </view>
+  </view>
+
+  <!-- 字号面板 -->
+  <view wx:if="{{fontPanel}}" class="font-mask" bindtap="onCloseFontPanel"></view>
+  <view wx:if="{{fontPanel}}" class="font-sheet">
+    <text class="font-title">正文字号</text>
+    <slider value="{{fontLevel}}" min="1" max="5" step="1" show-value="{{true}}"
+            activeColor="#D43C33" bindchange="onFontChange"></slider>
+    <text class="font-preview" style="font-size:{{bodySize}}px">这是当前字号的正文预览效果。</text>
+    <view class="font-done" bindtap="onCloseFontPanel"><text class="font-done-tx">完成</text></view>
   </view>
 </view>

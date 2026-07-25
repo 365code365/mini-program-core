@@ -58,5 +58,8 @@ Page({
 
   onBack: function () {
     wx.switchTab({ url: '/pages/index/index' });
+  },
+  onNavHome: function () {
+    wx.switchTab({ url: '/pages/index/index' });
   }
 });

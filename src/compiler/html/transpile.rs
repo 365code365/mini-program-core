@@ -272,6 +272,13 @@ fn icon_svg(icon_type: &str) -> String {
         "download" => "<circle cx=\"12\" cy=\"12\" r=\"10.8\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\"/><path d=\"M12 6v7\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\"/><path d=\"M8 12.4 12 16.6 16 12.4Z\" fill=\"currentColor\"/><rect x=\"7\" y=\"17.4\" width=\"10\" height=\"2.2\" rx=\"1.1\" fill=\"currentColor\"/>".to_string(),
         "search" => "<circle cx=\"10.4\" cy=\"10.4\" r=\"6.4\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\"/><path d=\"M15.2 15.2 21 21\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\"/>".to_string(),
         "circle" => "<circle cx=\"12\" cy=\"12\" r=\"10.8\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\"/>".to_string(),
+        // ── 箭头 / 加减号：返回按钮与列表右侧尖角（与原生 draw_chevron 同构） ──
+        "back" | "arrow_left" | "arrow-left" => "<path d=\"M15.5 4 7.5 12 15.5 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>".to_string(),
+        "arrow" | "arrow_right" | "arrow-right" => "<path d=\"M8.5 4 16.5 12 8.5 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>".to_string(),
+        "arrow_up" | "arrow-up" => "<path d=\"M4 15.5 12 7.5 20 15.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>".to_string(),
+        "arrow_down" | "arrow-down" => "<path d=\"M4 8.5 12 16.5 20 8.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>".to_string(),
+        "plus" => "<path d=\"M12 4.5V19.5M4.5 12H19.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.8\" stroke-linecap=\"round\"/>".to_string(),
+        "minus" => "<path d=\"M4.5 12H19.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.8\" stroke-linecap=\"round\"/>".to_string(),
         "star" => "<path d=\"M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z\" fill=\"currentColor\"/>".to_string(),
         "star-o" | "star_o" => "<path d=\"M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\"/>".to_string(),
         "heart" => "<path d=\"M12 21C6 16.5 2.6 13.4 2.6 9.6 2.6 6.5 5 4.2 8 4.2c1.8 0 3.2.9 4 2.2.8-1.3 2.2-2.2 4-2.2 3 0 5.4 2.3 5.4 5.4 0 3.8-3.4 6.9-9.4 11.4Z\" fill=\"currentColor\"/>".to_string(),
@@ -723,6 +730,7 @@ body{font-size:16px;color:#333;font-family:-apple-system,system-ui,"PingFang SC"
 .wxicon-clear{color:#f43530;}
 .wxicon-circle{color:#ccc;}
 .wxicon-close,.wxicon-cancel_no_circle,.wxicon-info_no_circle,.wxicon-warn_no_circle,.wxicon-waiting_no_circle,.wxicon-clock{color:currentColor;}
+.wxicon-back,.wxicon-arrow,.wxicon-arrow_left,.wxicon-arrow_right,.wxicon-arrow_up,.wxicon-arrow_down,.wxicon-plus,.wxicon-minus{color:#c8c8cd;}
 "#
 }
 

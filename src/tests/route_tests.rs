@@ -447,3 +447,70 @@ fn test_json_roundtrip_object() {
     assert!(json.contains("Tom"));
     assert!(json.contains("\"tags\""));
 }
+
+// ============ 返回上一页：实例复用 / 路由 / 栈重置 ============
+
+/// 返回上一页必须**复用**上一页实例（不能重跑 onLoad）：
+/// 宿主此前在返回时重新加载页面 JS，用户在上一页的状态会全部丢失。
+#[test]
+fn test_navigate_back_preserves_previous_page_state() {
+    let app = new_app();
+    app.eval("__setPendingRoute('pages/index/index')").unwrap();
+    app.load_script(
+        r#"Page({ data: { keyword: '', loaded: 0 },
+                 onLoad: function () { this.setData({ loaded: this.data.loaded + 1 }); } });"#,
+    )
+    .unwrap();
+    // 首页产生一些用户状态
+    app.eval("__currentPage.onLoad(); __currentPage.setData({ keyword: '耳机' })").unwrap();
+    assert_eq!(app.eval("__currentPage.data.keyword").unwrap(), "耳机");
+    assert_eq!(app.eval("__currentPage.route").unwrap(), "pages/index/index");
+
+    // 进入详情页
+    app.eval("__setPendingRoute('pages/detail/detail')").unwrap();
+    app.load_script(r#"Page({ data: { id: 101 } });"#).unwrap();
+    assert_eq!(app.eval("getCurrentPages().length").unwrap(), "2");
+    assert_eq!(app.eval("__currentPage.route").unwrap(), "pages/detail/detail");
+
+    // 返回：实例与状态都还在，onLoad 不会重跑
+    app.eval("__popPage(1)").unwrap();
+    assert_eq!(app.eval("getCurrentPages().length").unwrap(), "1");
+    assert_eq!(app.eval("__currentPage.route").unwrap(), "pages/index/index");
+    assert_eq!(app.eval("__currentPage.data.keyword").unwrap(), "耳机");
+    assert_eq!(app.eval("__currentPage.data.loaded").unwrap(), "1");
+}
+
+/// switchTab 语义：切换 tab 会销毁整个页面栈
+#[test]
+fn test_reset_page_stack_on_switch_tab() {
+    let app = new_app();
+    app.eval("__setPendingRoute('pages/index/index')").unwrap();
+    app.load_script("Page({ data: {} });").unwrap();
+    app.eval("__setPendingRoute('pages/detail/detail')").unwrap();
+    app.load_script("Page({ data: {} });").unwrap();
+    assert_eq!(app.eval("getCurrentPages().length").unwrap(), "2");
+
+    app.eval("__resetPageStack()").unwrap();
+    assert_eq!(app.eval("getCurrentPages().length").unwrap(), "0");
+
+    app.eval("__setPendingRoute('pages/cart/cart')").unwrap();
+    app.load_script("Page({ data: {} });").unwrap();
+    assert_eq!(app.eval("getCurrentPages().length").unwrap(), "1");
+    assert_eq!(app.eval("__currentPage.route").unwrap(), "pages/cart/cart");
+}
+
+/// wx.navigateBack 要把出栈请求交给宿主，并且逻辑层同步出栈
+#[test]
+fn test_wx_navigate_back_emits_pending_navigation() {
+    let app = new_app();
+    app.eval("__setPendingRoute('pages/index/index')").unwrap();
+    app.load_script("Page({ data: {} });").unwrap();
+    app.eval("__setPendingRoute('pages/detail/detail')").unwrap();
+    app.load_script("Page({ data: {}, back: function () { wx.navigateBack(); } });").unwrap();
+
+    app.eval("__currentPage.back()").unwrap();
+    let nav = app.eval("JSON.stringify(__pendingNavigation)").unwrap();
+    assert!(nav.contains("navigateBack"), "宿主应收到返回请求: {}", nav);
+    // 逻辑层已出栈，当前页回到首页
+    assert_eq!(app.eval("__currentPage.route").unwrap(), "pages/index/index");
+}

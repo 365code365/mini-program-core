@@ -18,11 +18,19 @@
     >
       <text class="chip-text">{{item.name}}</text>
     </view>
+    <view class="grow"></view>
+    <view class="auto-line">
+      <text class="auto-tx">自动播放</text>
+      <switch checked="{{autoPlay}}" bindchange="onAutoPlayChange" color="#D43C33"></switch>
+    </view>
   </view>
 
   <!-- 视频卡片 -->
-  <view class="video-card" wx:for="{{videos}}" wx:key="id" bindtap="onPlay" data-id="{{item.id}}">
-    <view class="cover-wrap">
+  <view class="video-card" wx:for="{{videos}}" wx:key="id">
+    <!-- 命中的那条切换为真实播放器 -->
+    <video wx:if="{{playingId === item.id}}" class="player" src="{{item.src}}"
+           controls="{{true}}" autoplay="{{true}}" loop="{{false}}" muted="{{false}}"></video>
+    <view wx:else class="cover-wrap" bindtap="onPlay" data-id="{{item.id}}">
       <image class="cover" src="{{item.cover}}" mode="aspectFill"></image>
       <view class="duration">
         <text class="duration-text">{{item.duration}}</text>
@@ -31,13 +39,18 @@
         <text class="play-icon">▶</text>
       </view>
     </view>
-    <text class="video-title">{{item.title}}</text>
+    <text class="video-title" bindtap="onOpenArticle" data-id="{{item.id}}">{{item.title}}</text>
     <view class="meta-row">
       <text class="meta-source">{{item.author}}</text>
       <view class="meta-dot"></view>
       <text class="meta-comment">{{item.plays}}次播放</text>
       <view class="meta-dot"></view>
       <text class="meta-comment">{{item.comments}}评论</text>
+      <view class="grow"></view>
+      <view class="act" catchtap="onToggleFav" data-id="{{item.id}}" data-title="{{item.title}}">
+        <icon type="{{favMap['a' + item.id] ? 'star' : 'star_o'}}" size="14"
+              color="{{favMap['a' + item.id] ? '#D43C33' : '#bbbbbb'}}"></icon>
+      </view>
     </view>
   </view>
 

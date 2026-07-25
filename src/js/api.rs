@@ -562,6 +562,12 @@ impl MiniAppApi {
                 return page;
             }
             
+            // 清空页面栈（switchTab 语义：切换 tab 会销毁原有页面栈）
+            function __resetPageStack() {
+                __pageStack = [];
+                __currentPage = null;
+                return true;
+            }
             // 页面出栈（供 navigateBack 使用）
             function __popPage(delta) {
                 delta = delta || 1;

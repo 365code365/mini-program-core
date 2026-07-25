@@ -39,5 +39,12 @@ Page({
     this.setData({ coupons: coupons });
     this.refresh();
     wx.showToast({ title: '领取成功', icon: 'success' });
+  },
+  onBack: function () {
+    wx.navigateBack();
+  },
+
+  onNavHome: function () {
+    wx.switchTab({ url: '/pages/index/index' });
   }
 });
