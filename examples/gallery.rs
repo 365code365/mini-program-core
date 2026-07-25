@@ -19,6 +19,8 @@ include!("gallery_parts/scroll.rs");
 include!("gallery_parts/promo.rs");
 include!("gallery_parts/nav.rs");
 include!("gallery_parts/canvas_video.rs");
+include!("gallery_parts/news.rs");
+include!("gallery_parts/business.rs");
 
 fn main() {
     std::fs::create_dir_all("doc/gallery").ok();
@@ -65,6 +67,24 @@ fn main() {
     canvas_demo();
     // 动图：连续 4 张快照展示 GIF 逐帧推进
     gif_animation();
+    // 资讯类（头条新闻同款设计）
+    news_feed();
+    news_article();
+    news_video_list();
+    news_mine();
+    // 更多商业级场景
+    logistics_track();
+    live_shopping();
+    food_order();
+    member_center();
+    payment_confirm();
+    review_list();
+    search_result();
+    message_center();
+    checkin_calendar();
+    market_board();
+    hotel_booking();
+    health_dashboard();
 
-    println!("完成，共 41 张场景图（含 4 个城市天气、4 帧 GIF 动画快照）。");
+    println!("完成，共 57 张场景图（含 4 个城市天气、4 帧 GIF 动画快照、4 张资讯页、12 张商业场景）。");
 }
