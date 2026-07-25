@@ -26,6 +26,25 @@ fn render(name: &str, bg: u32, wxml: &str, wxss: &str, data: Value) {
 }
 
 
+/// 在指定动画时刻渲染（秒）。CSS `@keyframes` 在原生端由绘制阶段按时钟求值，
+/// 固定时钟就能把动画的任意一帧稳定截出来，便于回归对比。
+fn render_at_time(name: &str, bg: u32, wxml: &str, wxss: &str, data: Value, seconds: f32) {
+    let nodes = WxmlParser::new(wxml).parse().expect("wxml");
+    let ss = WxssParser::new(wxss).parse().expect("wxss");
+    let r = WxmlRenderer::new_with_scale(ss, W as f32, H as f32, SCALE);
+    let content_h = r.measure_content_height(&nodes, &data).max(240.0);
+    let mut r = r;
+    r.set_animation_time(seconds);
+    let cw = (W as f32 * SCALE) as u32;
+    let ch = (content_h * SCALE).ceil() as u32;
+    let mut canvas = Canvas::new(cw, ch);
+    canvas.clear(Color::from_hex(bg));
+    r.render(&mut canvas, &nodes, &data);
+    let path = format!("doc/gallery/{}.png", name);
+    canvas.save_png(&path).expect("save");
+    println!("  ✓ {} ({}x{}) t={}s", path, cw, ch, seconds);
+}
+
 fn render_screen(name: &str, bg: u32, wxml: &str, wxss: &str, data: Value) {
     let nodes = WxmlParser::new(wxml).parse().expect("wxml");
     let ss = WxssParser::new(wxss).parse().expect("wxss");

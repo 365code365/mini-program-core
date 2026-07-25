@@ -208,7 +208,11 @@ impl InputComponent {
         let sf = ctx.scale_factor;
         
         // 解析属性
-        let value = node.get_attr("value").unwrap_or("");
+        // `model:value` 是小程序的双向绑定写法，取值语义与 `value` 相同
+        let value = node
+            .get_attr("value")
+            .or_else(|| node.get_attr("model:value"))
+            .unwrap_or("");
         let placeholder = node.get_attr("placeholder").unwrap_or("");
         let input_type = InputType::from_str(node.get_attr("type").unwrap_or("text"));
         let password = node.get_attr("password").map(|s| s == "true" || s == "{{true}}").unwrap_or(false)
@@ -256,12 +260,7 @@ impl InputComponent {
             ts.flex_shrink = 1.0;
         }
         
-        // 默认高度
-        if !has_custom_height {
-            ts.size.height = length(if is_textarea { 80.0 * sf } else { 42.0 * sf });
-        }
-        
-        // 默认 padding
+        // 默认 padding（要先定 padding，高度按「行高 + 上下内边距」推）
         if !has_custom_padding {
             ts.padding = Rect { 
                 top: length(8.0 * sf), 
@@ -269,6 +268,26 @@ impl InputComponent {
                 bottom: length(8.0 * sf), 
                 left: length(12.0 * sf) 
             };
+            ns.padding_top = 8.0;
+            ns.padding_bottom = 8.0;
+            ns.padding_left = 12.0;
+            ns.padding_right = 12.0;
+        }
+        
+        // 默认高度：单行输入框 = 字体行盒 + 上下内边距，不再写死 42px。
+        //
+        // 浏览器里 `<input>` 不写 height 时高度就是「line-height:normal 的行盒 + padding」，
+        // 例如 font-size:14px + padding:8px → 32.5px。固定 42px 会让输入框凭空高出近 10px，
+        // 其后所有内容一路下移，两端从首屏就开始整体错位（首页搜索栏即是此因）。
+        // 行高取西文因子：输入框行盒只由字体决定，不随占位文字是否中文而变（与浏览器一致）。
+        if !has_custom_height {
+            let pad_v = (ns.padding_top + ns.padding_bottom) * sf;
+            let line = ns.font_size * sf * crate::text::LATIN_LINE_HEIGHT_FACTOR;
+            ts.size.height = length(if is_textarea {
+                (line * 4.0 + pad_v).max(80.0 * sf)
+            } else {
+                line + pad_v
+            });
         }
         
         // 微信小程序 <input> 默认无边框、无背景（透明），交由外层容器决定外观。

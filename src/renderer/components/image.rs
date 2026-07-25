@@ -202,25 +202,11 @@ fn load_image_from_url(url: &str) -> Option<ImageData> {
     decode_with_animation(url, &bytes)
 }
 
-/// 从本地文件加载图片
+/// 从本地文件加载图片（按宿主登记的小程序根目录解析包内绝对路径）
 fn load_image_from_file(path: &str) -> Option<ImageData> {
-    // 尝试多个可能的路径
-    let paths_to_try = vec![
-        path.to_string(),
-        format!("sample-app{}", path),
-        format!("sample-app/{}", path.trim_start_matches('/')),
-        format!("assets{}", path),
-        format!("assets/{}", path.trim_start_matches('/')),
-    ];
-
-    for p in paths_to_try {
-        if let Ok(bytes) = std::fs::read(&p) {
-            if let Some(img) = decode_with_animation(path, &bytes) {
-                return Some(img);
-            }
-        }
-    }
-    None
+    let resolved = crate::assets::resolve(path)?;
+    let bytes = std::fs::read(&resolved).ok()?;
+    decode_with_animation(path, &bytes)
 }
 
 /// 解码字节：若为多帧 GIF 则登记到动图缓存并返回首帧，否则按静态图解码。

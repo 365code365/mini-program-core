@@ -159,6 +159,11 @@ pub struct NodeStyle {
     pub fixed_right: Option<f32>,
     /// 是否是 block 显示（占满整行）
     pub is_block: bool,
+    /// CSS 动画（`animation` 简写或分项），由渲染器在绘制阶段按全局时钟求值
+    pub animation: Option<crate::renderer::anim::AnimationSpec>,
+    /// 无单位 line-height（倍数）。在全部声明应用完后再乘以最终字号，
+    /// 避免受 CSS 声明遍历顺序影响（HashMap 无序，line-height 可能先于 font-size 生效）。
+    pub line_height_scale: Option<f32>,
 }
 
 #[derive(Clone, Copy, Default, PartialEq)]
@@ -260,7 +265,7 @@ pub struct BoxShadow {
 }
 
 /// 变换
-#[derive(Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub struct Transform {
     pub translate_x: f32,
     pub translate_y: f32,
@@ -369,7 +374,7 @@ pub fn measure_text_node(
     } else {
         let wrap = if let Some(tr) = tr {
             count_wrapped_text_lines(tr, &tm.text, inner_w, tm.font_px, tm.letter_spacing_px, tm.bold)
-        } else if inner_w < tm.max_line_width {
+        } else if inner_w + WRAP_TOLERANCE_PX < tm.max_line_width {
             (tm.max_line_width / inner_w).ceil() as usize
         } else {
             1
@@ -422,6 +427,14 @@ pub fn min_unit_width(
     widest.max(font_px)
 }
 
+/// 换行判定的亚像素容差（物理像素）。
+///
+/// 文本盒宽度来自字形度量求和，绘制时逐字累加同样的度量，理论上正好放得下；
+/// 但两处的浮点累加顺序不同，末字可能因 1e-3 级误差被判为"超出"而换行。
+/// 用半像素容差吸收这个误差 —— 而不是把每个文本盒都加宽几个像素
+/// （后者会让所有按内容定宽的元素比浏览器宽一圈）。
+pub const WRAP_TOLERANCE_PX: f32 = 0.5;
+
 /// 统计文本在给定宽度下的换行行数（含显式换行符），供度量使用。
 fn count_wrapped_text_lines(tr: &crate::text::TextRenderer, text: &str, max_width: f32, size: f32, ls: f32, bold: bool) -> usize {
     if max_width <= 0.0 { return text.split('\n').count().max(1); }
@@ -432,7 +445,7 @@ fn count_wrapped_text_lines(tr: &crate::text::TextRenderer, text: &str, max_widt
         let mut lines_here = 1usize;
         for ch in para.chars() {
             let cw = tr.measure_char_weighted(ch, size, bold) + ls;
-            if line_w + cw > max_width && line_w > 0.0 {
+            if line_w + cw > max_width + WRAP_TOLERANCE_PX && line_w > 0.0 {
                 lines_here += 1;
                 line_w = cw;
             } else {
@@ -571,6 +584,11 @@ pub fn build_base_style(
                 apply_style_property(name, &value, &mut ts, &mut ns, ctx);
             }
         }
+    }
+    
+    // 无单位 line-height 在所有声明落地后统一按最终字号换算
+    if let Some(scale) = ns.line_height_scale {
+        ns.line_height = Some(ns.font_size * scale);
     }
     
     (ts, ns)
@@ -873,8 +891,15 @@ fn apply_style_property(
             "border-bottom-color" => { if let Some(c) = color_value(value) { ns.border_bottom_color = Some(c); } }
             "border-left-color" => { if let Some(c) = color_value(value) { ns.border_left_color = Some(c); } }
             "font-size" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ns.font_size = v; }
-            "font-weight" => if let StyleValue::String(s) = value {
-                ns.font_weight = match s.as_str() {
+            "font-weight" => {
+                // 数字字重（400/700）与关键字（normal/bold）都要支持
+                let text = match value {
+                    StyleValue::String(s) => s.clone(),
+                    StyleValue::Number(n) => format!("{}", *n as i32),
+                    StyleValue::Length(v, _) => format!("{}", *v as i32),
+                    _ => String::new(),
+                };
+                ns.font_weight = match text.as_str() {
                     "100" => FontWeight::W100,
                     "200" => FontWeight::W200,
                     "300" | "light" => FontWeight::W300,
@@ -904,10 +929,14 @@ fn apply_style_property(
                 };
             }
             "line-height" => {
-                if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { 
-                    ns.line_height = Some(v); 
-                } else if let StyleValue::Number(n) = value {
-                    ns.line_height = Some(ns.font_size * n);
+                // 顺序很关键：无单位值是「倍数」，必须先判数字。
+                // 之前先走 to_px，`line-height:1.9` 被当成 1.9 像素，行距直接被压成一条线。
+                if let StyleValue::Number(n) = value {
+                    ns.line_height_scale = Some(*n);
+                    ns.line_height = None;
+                } else if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) {
+                    ns.line_height = Some(v);
+                    ns.line_height_scale = None;
                 }
             }
             "letter-spacing" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ns.letter_spacing = v; }
@@ -956,17 +985,86 @@ fn apply_style_property(
                     _ => WordBreak::Normal,
                 };
             }
-            "z-index" => if let StyleValue::Number(n) = value { ns.z_index = *n as i32; }
-            "opacity" => if let StyleValue::Number(n) = value { ns.opacity = *n; }
+            "z-index" => if let Some(n) = unitless_number(value) { ns.z_index = n as i32; }
+            "opacity" => if let Some(n) = unitless_number(value) { ns.opacity = n.clamp(0.0, 1.0); }
             "box-shadow" => if let StyleValue::String(s) = value {
                 if let Some(shadow) = parse_box_shadow(s, ctx.screen_width) {
                     ns.box_shadow = Some(shadow);
                 }
             }
             "transform" => if let StyleValue::String(s) = value {
-                if let Some(transform) = parse_transform(s) {
+                // 用带单位换算的解析：rpx 位移必须按 750 设计宽折算，否则位移量翻倍
+                if let Some(transform) = crate::renderer::anim::parse_transform_px(s, ctx.screen_width, sf) {
+                    ns.transform = Some(transform);
+                } else if let Some(transform) = parse_transform(s) {
                     ns.transform = Some(transform);
                 }
+            }
+            // ── CSS 动画：animation 简写 + 各分项 ──
+            "animation" => if let StyleValue::String(s) = value {
+                ns.animation = crate::renderer::anim::AnimationSpec::parse_shorthand(s);
+            }
+            "animation-name" => if let StyleValue::String(s) = value {
+                let name = s.trim().split(',').next().unwrap_or("").trim().to_string();
+                if name.is_empty() || name == "none" {
+                    ns.animation = None;
+                } else {
+                    let mut spec = ns.animation.clone().unwrap_or_default();
+                    spec.name = name;
+                    ns.animation = Some(spec);
+                }
+            }
+            "animation-duration" | "animation-delay" => {
+                let text = match value {
+                    StyleValue::String(s) => s.clone(),
+                    StyleValue::Length(v, _) => format!("{}s", v),
+                    StyleValue::Number(n) => format!("{}s", n),
+                    _ => String::new(),
+                };
+                if let Some(secs) = crate::renderer::anim::parse_time(text.split(',').next().unwrap_or("")) {
+                    let mut spec = ns.animation.clone().unwrap_or_default();
+                    if name == "animation-duration" { spec.duration = secs; } else { spec.delay = secs; }
+                    ns.animation = Some(spec);
+                }
+            }
+            "animation-timing-function" => if let StyleValue::String(s) = value {
+                if let Some(timing) = crate::renderer::anim::Timing::parse(s.split(',').next().unwrap_or("").trim()) {
+                    let mut spec = ns.animation.clone().unwrap_or_default();
+                    spec.timing = timing;
+                    ns.animation = Some(spec);
+                }
+            }
+            "animation-iteration-count" => {
+                let mut spec = ns.animation.clone().unwrap_or_default();
+                spec.iterations = match value {
+                    StyleValue::Number(n) => *n,
+                    StyleValue::String(s) if s.trim() == "infinite" => f32::INFINITY,
+                    StyleValue::String(s) => s.trim().parse().unwrap_or(1.0),
+                    _ => 1.0,
+                };
+                ns.animation = Some(spec);
+            }
+            "animation-direction" => if let StyleValue::String(s) = value {
+                use crate::renderer::anim::Direction;
+                let mut spec = ns.animation.clone().unwrap_or_default();
+                spec.direction = match s.trim() {
+                    "reverse" => Direction::Reverse,
+                    "alternate" => Direction::Alternate,
+                    "alternate-reverse" => Direction::AlternateReverse,
+                    _ => Direction::Normal,
+                };
+                ns.animation = Some(spec);
+            }
+            "animation-fill-mode" => if let StyleValue::String(s) = value {
+                use crate::renderer::anim::FillMode;
+                let mut spec = ns.animation.clone().unwrap_or_default();
+                spec.fill = match s.trim() {
+                    "forwards" => FillMode::Forwards,
+                    "backwards" => FillMode::Backwards,
+                    "both" => FillMode::Both,
+                    _ => FillMode::None,
+                };
+                ns.animation = Some(spec);
             }
             "position" => if let StyleValue::String(s) = value {
                 match s.as_str() {
@@ -1195,10 +1293,26 @@ pub fn draw_background(canvas: &mut Canvas, style: &NodeStyle, x: f32, y: f32, w
     // 绘制边框（宽度精确 + 抗锯齿的环形填充）
     if style.border_width > 0.0 {
         if let Some(bc) = style.border_color {
-            let bc = if style.opacity < 1.0 {
-                Color::new(bc.r, bc.g, bc.b, (bc.a as f32 * style.opacity) as u8)
-            } else { bc };
-            stroke_round_rect_ring(canvas, x, y, w, h, radii, style.border_width, bc);
+            let fade = |c: Color| if style.opacity < 1.0 {
+                Color::new(c.r, c.g, c.b, (c.a as f32 * style.opacity) as u8)
+            } else { c };
+            // border-top-color 这类「只改某一边颜色」的写法：CSS 里宽度来自 border 简写，
+            // 单边宽度为 0，所以不能走 draw_side_borders；必须把环按对角线分成四段着色
+            // （加载动画 `border-top-color` 转圈就依赖这个）。
+            let sides = [
+                style.border_top_color.unwrap_or(bc),
+                style.border_right_color.unwrap_or(bc),
+                style.border_bottom_color.unwrap_or(bc),
+                style.border_left_color.unwrap_or(bc),
+            ];
+            if sides.iter().any(|c| *c != bc) {
+                stroke_round_rect_ring_sides(
+                    canvas, x, y, w, h, radii, style.border_width,
+                    [fade(sides[0]), fade(sides[1]), fade(sides[2]), fade(sides[3])],
+                );
+            } else {
+                stroke_round_rect_ring(canvas, x, y, w, h, radii, style.border_width, fade(bc));
+            }
         }
     }
     
@@ -1228,6 +1342,90 @@ fn draw_side_borders(canvas: &mut Canvas, style: &NodeStyle, x: f32, y: f32, w: 
     }
     if style.border_right_width > 0.0 {
         fill(x + w - style.border_right_width, y, style.border_right_width, h, style.border_right_color.unwrap_or(fallback));
+    }
+}
+
+/// 取「无单位数值」：解析器对 `opacity:.5` 这类值历史上会给出 `Length(_, Px)`，
+/// 两种形态都接受，避免声明被静默忽略。
+fn unitless_number(value: &StyleValue) -> Option<f32> {
+    match value {
+        StyleValue::Number(n) => Some(*n),
+        StyleValue::Length(v, _) => Some(*v),
+        StyleValue::String(s) => s.trim().parse().ok(),
+        _ => None,
+    }
+}
+
+/// 圆角矩形的有符号距离（负数在内部），按象限取对应圆角半径。
+fn round_rect_sdf(px: f32, py: f32, x: f32, y: f32, w: f32, h: f32, radii: [f32; 4]) -> f32 {
+    let (hw, hh) = (w / 2.0, h / 2.0);
+    let (cx, cy) = (x + hw, y + hh);
+    let (dx, dy) = (px - cx, py - cy);
+    // radii 顺序：左上、右上、右下、左下
+    let r = match (dx >= 0.0, dy >= 0.0) {
+        (false, false) => radii[0],
+        (true, false) => radii[1],
+        (true, true) => radii[2],
+        (false, true) => radii[3],
+    };
+    let r = r.min(hw).min(hh).max(0.0);
+    let qx = dx.abs() - (hw - r);
+    let qy = dy.abs() - (hh - r);
+    let outside = (qx.max(0.0) * qx.max(0.0) + qy.max(0.0) * qy.max(0.0)).sqrt();
+    outside + qx.max(qy).min(0.0) - r
+}
+
+/// 逐边着色的边框环：按盒子对角线把环分成上/右/下/左四段，各段用各自颜色。
+///
+/// 与浏览器一致的分界方式（对角线斜接）。用有符号距离场做 1px 抗锯齿带，
+/// 因此对 `border-radius:50%` 的圆环同样正确。
+pub fn stroke_round_rect_ring_sides(
+    canvas: &mut Canvas,
+    x: f32, y: f32, w: f32, h: f32,
+    radii: [f32; 4],
+    width: f32,
+    colors: [Color; 4],
+) {
+    if width <= 0.0 || w <= 0.0 || h <= 0.0 { return; }
+    let bw = width.min(w / 2.0).min(h / 2.0);
+    let inner_radii = [
+        (radii[0] - bw).max(0.0),
+        (radii[1] - bw).max(0.0),
+        (radii[2] - bw).max(0.0),
+        (radii[3] - bw).max(0.0),
+    ];
+    let (cx, cy) = (x + w / 2.0, y + h / 2.0);
+    let x0 = x.floor() as i32;
+    let y0 = y.floor() as i32;
+    let x1 = (x + w).ceil() as i32;
+    let y1 = (y + h).ceil() as i32;
+
+    for py in y0..y1 {
+        for px in x0..x1 {
+            let (fx, fy) = (px as f32 + 0.5, py as f32 + 0.5);
+            let d_out = round_rect_sdf(fx, fy, x, y, w, h, radii);
+            let d_in = round_rect_sdf(fx, fy, x + bw, y + bw, w - bw * 2.0, h - bw * 2.0, inner_radii);
+            // 在外轮廓内 且 在内轮廓外
+            let cov_out = (0.5 - d_out).clamp(0.0, 1.0);
+            let cov_in = (0.5 - d_in).clamp(0.0, 1.0);
+            let coverage = cov_out * (1.0 - cov_in);
+            if coverage <= 0.002 { continue; }
+
+            // 归一化方向决定归属哪一边（对角线分界）
+            let ndx = (fx - cx) / (w / 2.0).max(0.001);
+            let ndy = (fy - cy) / (h / 2.0).max(0.001);
+            let color = if ndy.abs() >= ndx.abs() {
+                if ndy < 0.0 { colors[0] } else { colors[2] }
+            } else if ndx > 0.0 {
+                colors[1]
+            } else {
+                colors[3]
+            };
+            let alpha = (color.a as f32 * coverage).round().clamp(0.0, 255.0) as u8;
+            if alpha > 0 {
+                canvas.set_pixel(px, py, Color::new(color.r, color.g, color.b, alpha));
+            }
+        }
     }
 }
 

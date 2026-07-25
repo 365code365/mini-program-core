@@ -38,6 +38,14 @@ pub struct CachedLayout {
     pub data: JsonValue,
 }
 
+/// 绘制上下文种类：顶层节点与子节点的绘制入口签名不同，
+/// transform/动画处理需要在两者间复用同一套逻辑。
+#[derive(Clone, Copy)]
+enum DrawKind {
+    Top { scroll_offset: f32, viewport_height: f32 },
+    Child { inherited: Color, scroll_offset: f32, viewport_height: f32 },
+}
+
 pub struct WxmlRenderer {
     stylesheet: StyleSheet,
     screen_width: f32,
@@ -50,6 +58,12 @@ pub struct WxmlRenderer {
     scroll_cache: ScrollCacheManager,
     /// 当前视口信息 (scroll_offset, viewport_height) - 用于虚拟列表
     current_viewport: Option<(f32, f32)>,
+    /// `@keyframes` 时间轴缓存（按动画名，None 表示样式表里没有该动画）
+    timelines: HashMap<String, Option<crate::renderer::anim::Timeline>>,
+    /// 本帧是否有仍在推进的 CSS 动画（宿主据此决定是否继续出帧）
+    animations_active: bool,
+    /// 动画时钟（秒）。宿主每帧写入，未设置时用全局时钟。
+    anim_time: Option<f32>,
 }
 
 impl WxmlRenderer {
@@ -71,7 +85,211 @@ impl WxmlRenderer {
             cache: None,
             scroll_cache: ScrollCacheManager::new(),
             current_viewport: None,
+            timelines: HashMap::new(),
+            animations_active: false,
+            anim_time: None,
         }
+    }
+
+    /// 本帧是否存在仍在推进的 CSS 动画。宿主用它决定「继续按刷新率出帧」还是「空闲休眠」。
+    pub fn has_active_animations(&self) -> bool {
+        self.animations_active
+    }
+
+    /// 开关类组件（switch）的状态过渡进度：点击后在 `TOGGLE_DURATION` 内从旧值滑到新值。
+    ///
+    /// 微信的开关滑块是带缓动的位移（weui 用 cubic-bezier(.4,.4,.25,1.35) 略带回弹），
+    /// 直接跳变会失去"拨动"手感。
+    fn toggle_progress(
+        &mut self,
+        interaction: &InteractionManager,
+        id: &str,
+        checked: bool,
+    ) -> f32 {
+        const TOGGLE_DURATION: f32 = 0.3;
+        let target = if checked { 1.0 } else { 0.0 };
+        let Some(started) = interaction.transitions.get(id).copied() else { return target };
+        let elapsed = self.animation_time() - started;
+        if elapsed < 0.0 || elapsed >= TOGGLE_DURATION {
+            return target;
+        }
+        self.animations_active = true;
+        let eased = crate::renderer::anim::cubic_bezier(elapsed / TOGGLE_DURATION, 0.4, 0.4, 0.25, 1.35);
+        if checked { eased.clamp(0.0, 1.0) } else { (1.0 - eased).clamp(0.0, 1.0) }
+    }
+
+    /// 显式设置动画时钟（秒）。用于静态截图/测试等需要确定性时间的场景；
+    /// 不设置时使用进程内全局时钟。
+    pub fn set_animation_time(&mut self, seconds: f32) {
+        self.anim_time = Some(seconds);
+    }
+
+    fn animation_time(&self) -> f32 {
+        self.anim_time.unwrap_or_else(crate::renderer::anim::now_secs)
+    }
+
+    /// 取（并缓存）动画名对应的时间轴
+    fn timeline_for(&mut self, name: &str) -> Option<&crate::renderer::anim::Timeline> {
+        if !self.timelines.contains_key(name) {
+            let built = self
+                .stylesheet
+                .keyframes_named(name)
+                .map(|rule| {
+                    crate::renderer::anim::Timeline::from_rule(rule, self.screen_width, self.scale_factor)
+                })
+                .filter(|tl| !tl.is_empty());
+            self.timelines.insert(name.to_string(), built);
+        }
+        self.timelines.get(name).and_then(|t| t.as_ref())
+    }
+
+    /// 求节点此刻的 CSS 动画覆盖值；顺带标记「本帧还有动画在跑」。
+    fn animated_values(&mut self, node: &RenderNode) -> Option<crate::renderer::anim::AnimatedValues> {
+        let spec = node.style.animation.clone()?;
+        let now = self.animation_time();
+        // 无限循环 / 未结束的动画都要求宿主继续出帧
+        let still_running = !spec.iterations.is_finite()
+            || now < spec.delay + spec.duration * spec.iterations;
+        if still_running {
+            self.animations_active = true;
+        }
+        let progress = spec.progress_at(now)?;
+        let timeline = self.timeline_for(&spec.name)?;
+        let values = timeline.sample(progress);
+        if values.is_empty() {
+            None
+        } else {
+            Some(values)
+        }
+    }
+
+    /// 把动画求值结果 + 静态 transform 合成成「本帧要用的节点」。
+    /// 返回 None 表示该节点本帧无需特殊处理（走普通绘制路径）。
+    fn resolve_animated_node(
+        &mut self,
+        node: &RenderNode,
+    ) -> Option<(RenderNode, super::components::Transform)> {
+        let values = self.animated_values(node);
+        let has_values = values.is_some();
+        let transform = values
+            .as_ref()
+            .and_then(|v| v.transform)
+            .or(node.style.transform);
+        if !has_values && transform.is_none() {
+            return None;
+        }
+        let mut resolved = node.clone();
+        // 动画值已在此处落地，避免离屏重绘时再次求值（否则会无限递归）
+        resolved.style.animation = None;
+        resolved.style.transform = None;
+        if let Some(v) = &values {
+            if let Some(op) = v.opacity {
+                resolved.style.opacity = (node.style.opacity * op).clamp(0.0, 1.0);
+            }
+            if let Some(bg) = v.background_color {
+                resolved.style.background_color = Some(bg);
+                resolved.style.background_gradient = None;
+            }
+            if let Some(color) = v.text_color {
+                resolved.style.text_color = Some(color);
+            }
+        }
+        Some((resolved, transform.unwrap_or_else(super::components::Transform::new)))
+    }
+
+    /// 分发到对应的绘制路径（顶层节点 / 子节点两套上下文）
+    fn dispatch_draw(
+        &mut self,
+        canvas: &mut Canvas,
+        taffy: &Tree,
+        node: &RenderNode,
+        ox: f32,
+        oy: f32,
+        interaction: &mut InteractionManager,
+        kind: DrawKind,
+    ) {
+        match kind {
+            DrawKind::Top { scroll_offset, viewport_height } => {
+                self.draw_with_interaction(canvas, taffy, node, ox, oy, interaction, scroll_offset, viewport_height)
+            }
+            DrawKind::Child { inherited, scroll_offset, viewport_height } => self
+                .draw_child_with_interaction(canvas, taffy, node, ox, oy, inherited, interaction, scroll_offset, viewport_height),
+        }
+    }
+
+    /// 处理节点的 CSS 动画与 `transform`。返回 true 表示本节点（含子树）已绘制完成。
+    ///
+    /// 三条路径：
+    /// 1. 只有颜色/透明度在动 → 直接用求值后的节点走普通绘制；
+    /// 2. 纯平移 → 加偏移绘制（子树、命中区都自然跟随）；
+    /// 3. 含缩放/旋转/倾斜 → 子树画到离屏画布再仿射贴回。
+    fn draw_with_transform(
+        &mut self,
+        canvas: &mut Canvas,
+        taffy: &Tree,
+        node: &RenderNode,
+        ox: f32,
+        oy: f32,
+        interaction: &mut InteractionManager,
+        kind: DrawKind,
+    ) -> bool {
+        let Some((resolved, transform)) = self.resolve_animated_node(node) else { return false };
+
+        if super::compose::is_identity(&transform) {
+            self.dispatch_draw(canvas, taffy, &resolved, ox, oy, interaction, kind);
+            return true;
+        }
+        if super::compose::is_translate_only(&transform) {
+            self.dispatch_draw(
+                canvas,
+                taffy,
+                &resolved,
+                ox + transform.translate_x,
+                oy + transform.translate_y,
+                interaction,
+                kind,
+            );
+            return true;
+        }
+
+        let layout = taffy.layout(node.taffy_node).unwrap();
+        let (x, y) = (ox + layout.location.x, oy + layout.location.y);
+        let (w, h) = (layout.size.width, layout.size.height);
+        let pad = super::compose::transform_padding(w, h, &transform);
+        let tw = (w + pad * 2.0).ceil() as u32;
+        let th = (h + pad * 2.0).ceil() as u32;
+        if w <= 0.0 || h <= 0.0 || tw == 0 || th == 0 || tw > 4096 || th > 4096 {
+            // 尺寸异常（含 0 尺寸叶子）时退回不变换绘制，避免分配巨大离屏画布
+            self.dispatch_draw(canvas, taffy, &resolved, ox, oy, interaction, kind);
+            return true;
+        }
+
+        let mut offscreen = Canvas::new(tw, th);
+        offscreen.clear(Color::TRANSPARENT);
+        // 变换后的子树坐标与屏幕不再一一对应：命中区与事件绑定用一次性容器承接，
+        // 不污染真实的交互命中表（旋转/缩放子树内的点击是已知限制）。
+        let mut scratch = InteractionManager::new();
+        let bindings_before = self.event_bindings.len();
+        self.dispatch_draw(
+            &mut offscreen,
+            taffy,
+            &resolved,
+            pad - layout.location.x,
+            pad - layout.location.y,
+            &mut scratch,
+            kind,
+        );
+        self.event_bindings.truncate(bindings_before);
+
+        super::compose::blit_transformed(
+            canvas,
+            &offscreen,
+            (x - pad, y - pad),
+            (x + w / 2.0, y + h / 2.0),
+            &transform,
+            1.0,
+        );
+        true
     }
 
     fn update_layout_if_needed(
@@ -172,6 +390,7 @@ impl WxmlRenderer {
         // 传递视口信息给模板引擎，用于虚拟列表优化
         self.update_layout_if_needed(nodes, data, Some((scroll_offset, viewport_height)));
         
+        self.animations_active = false;
         self.event_bindings.clear();
         // 不清除交互元素，保留 scroll controller 状态
         // interaction.clear_elements();  // 移除这行，避免每帧重建
@@ -190,76 +409,29 @@ impl WxmlRenderer {
         0.0
     }
     
-    /// 单独渲染 fixed 元素到指定的 canvas
-    /// 这个方法应该在主内容渲染后调用，fixed_canvas 是一个覆盖在主内容上的透明层
+    /// 单独渲染 fixed 元素到指定的 canvas（覆盖在主内容之上的透明层）。
+    ///
+    /// 与静态渲染走**同一套** `draw_fixed_layer`：先按视口约束（left+right → 宽、
+    /// top+bottom → 高）对 fixed 子树重排，再钉到视口坐标。
+    /// 此前窗体自己实现了一套简化版，直接拿「相对根容器」的布局尺寸当 fixed 尺寸 ——
+    /// `top:0;bottom:0` 的全屏遮罩会被撑到整页内容高（近 2000px），于是遮罩铺满屏幕
+    /// 而居中的弹窗被推到视口下方看不见（首页新人券弹窗就是这么"消失"的）。
     pub fn render_fixed_elements(
         &mut self,
         canvas: &mut Canvas,
         nodes: &[WxmlNode],
         data: &JsonValue,
         interaction: &mut InteractionManager,
-        _viewport_height: f32, // Ignore content viewport height, use full screen height for fixed elements
+        _viewport_height: f32, // fixed 层以画布高度为视口高
     ) {
         // 使用已缓存的视口信息，不重新计算布局
         self.update_layout_if_needed(nodes, data, self.current_viewport);
         
-        if let Some(cache) = self.cache.take() {
-            // 收集 fixed 元素
-            struct FixedNodeInfo {
-                node: RenderNode,
-            }
-            
-            fn collect_fixed(nodes: &[RenderNode], fixed_list: &mut Vec<FixedNodeInfo>) {
-                for node in nodes {
-                    if node.style.is_fixed {
-                        fixed_list.push(FixedNodeInfo { node: node.clone() });
-                    }
-                    collect_fixed(&node.children, fixed_list);
-                }
-            }
-            
-            let mut fixed_nodes = Vec::new();
-            collect_fixed(&cache.render_nodes, &mut fixed_nodes);
-            
-            // Sort by z-index
-            fixed_nodes.sort_by(|a, b| a.node.style.z_index.cmp(&b.node.style.z_index));
-            
-            if !fixed_nodes.is_empty() {
-                let sf = self.scale_factor;
-                let vp_width = self.screen_width * sf;
-                let vp_height = self.screen_height * sf; // Use full screen height for fixed elements
-                
-                for info in &fixed_nodes {
-                    let rn = &info.node;
-                    let layout = cache.taffy.layout(rn.taffy_node).unwrap();
-                    let w = layout.size.width;
-                    let h = layout.size.height;
-                    
-                    // 计算 fixed 元素的位置（相对于视口）
-                    let actual_w = if rn.style.fixed_left.is_some() && rn.style.fixed_right.is_some() {
-                        let left = rn.style.fixed_left.unwrap_or(0.0);
-                        let right = rn.style.fixed_right.unwrap_or(0.0);
-                        vp_width - left - right
-                    } else {
-                        w
-                    };
-                    
-                    let x = rn.style.fixed_left.unwrap_or(0.0);
-                    let y = if let Some(bottom) = rn.style.fixed_bottom {
-                        // bottom 定位：从视口底部计算
-                        vp_height - bottom - h
-                    } else if let Some(top) = rn.style.fixed_top {
-                        // top 定位：从视口顶部计算
-                        top
-                    } else {
-                        0.0
-                    };
-                    
-                    // 渲染 fixed 元素
-                    self.draw_fixed_element_original(&cache.taffy, canvas, rn, x, y, actual_w, h, interaction, vp_height);
-                }
-            }
-            
+        if let Some(mut cache) = self.cache.take() {
+            let viewport_h = canvas.height() as f32;
+            let roots = std::mem::take(&mut cache.render_nodes);
+            self.draw_fixed_layer_inner(canvas, &mut cache.taffy, &roots, viewport_h, Some(interaction));
+            cache.render_nodes = roots;
             self.cache = Some(cache);
         }
     }
@@ -445,6 +617,7 @@ impl WxmlRenderer {
         data: &JsonValue,
         draw_shell: impl FnOnce(&mut Canvas),
     ) {
+        self.animations_active = false;
         self.event_bindings.clear();
         let rendered = crate::parser::TemplateEngine::render(nodes, data);
         let mut taffy = Tree::new();
@@ -596,7 +769,8 @@ impl WxmlRenderer {
             let width_dim: Dimension = if matches!(inherited.align, TextAlign::Center | TextAlign::Right) {
                 percent(1.0)
             } else {
-                length(tw + 2.0 * sf)
+                // 取整到整像素即可（换行判定另有亚像素容差），不额外加宽
+                length(tw.ceil())
             };
             let tn = taffy.new_leaf(Style {
                 size: Size { width: width_dim, height: length(line_h * sf) },
@@ -759,6 +933,15 @@ impl WxmlRenderer {
         render_node
     }
     
+    /// 取输入类组件的初始值：`value` 或双向绑定写法 `model:value`。
+    fn input_value_attr(node: &RenderNode) -> String {
+        node.attrs
+            .get("value")
+            .or_else(|| node.attrs.get("model:value"))
+            .cloned()
+            .unwrap_or_default()
+    }
+
     fn is_leaf_component(tag: &str) -> bool {
         // rich-text / picker 不再是叶子：rich-text 自建带样式的文本片段子树；
         // picker 渲染其子元素（触发视图，如“当前选择：xxx”）而非合成占位 UI。
@@ -793,6 +976,18 @@ impl WxmlRenderer {
         if node.style.is_fixed {
             return;
         }
+        // CSS 动画 / transform：由专门路径接管（含离屏仿射合成）
+        if self.draw_with_transform(
+            canvas,
+            taffy,
+            node,
+            ox,
+            oy,
+            interaction,
+            DrawKind::Top { scroll_offset, viewport_height },
+        ) {
+            return;
+        }
         
         let sf = self.scale_factor;
         let layout = taffy.layout(node.taffy_node).unwrap();
@@ -808,9 +1003,19 @@ impl WxmlRenderer {
         
         // 应用交互状态
         let mut node_to_draw = node.clone();
+        let state_checked = interaction.get_state(&component_id).map(|s| s.checked);
+        let switch_progress = if node.tag == "switch" {
+            state_checked.map(|checked| self.toggle_progress(interaction, &component_id, checked))
+        } else {
+            None
+        };
         if let Some(state) = interaction.get_state(&component_id) {
             match node.tag.as_str() {
-                "checkbox" | "switch" => {
+                // switch 的配色由组件自己按进度求值（轨道关态是微信的浅灰，不是纯白）
+                "switch" => {
+                    node_to_draw.style.custom_data = switch_progress.unwrap_or(if state.checked { 1.0 } else { 0.0 });
+                }
+                "checkbox" => {
                     node_to_draw.style.custom_data = if state.checked { 1.0 } else { 0.0 };
                     // 更新颜色
                     let checkbox_color = node.attrs.get("color")
@@ -870,7 +1075,7 @@ impl WxmlRenderer {
         } else if matches!(node.tag.as_str(), "input" | "textarea") {
             // 输入框但还没有交互状态，显示 placeholder 或初始值
             let placeholder = node.attrs.get("placeholder").cloned().unwrap_or_default();
-            let initial_value = node.attrs.get("value").cloned().unwrap_or_default();
+            let initial_value = Self::input_value_attr(node);
             
             if initial_value.is_empty() {
                 node_to_draw.text = placeholder;
@@ -1177,6 +1382,18 @@ impl WxmlRenderer {
         if node.style.is_fixed {
             return;
         }
+        // CSS 动画 / transform：由专门路径接管（含离屏仿射合成）
+        if self.draw_with_transform(
+            canvas,
+            taffy,
+            node,
+            ox,
+            oy,
+            interaction,
+            DrawKind::Child { inherited: inherited_color, scroll_offset, viewport_height },
+        ) {
+            return;
+        }
         
         let sf = self.scale_factor;
         let layout = taffy.layout(node.taffy_node).unwrap();
@@ -1195,6 +1412,15 @@ impl WxmlRenderer {
             || matches!(node.tag.as_str(), "checkbox" | "switch" | "radio" | "slider" | "input" | "textarea")
             && interaction.get_state(&component_id).is_some();
         
+        let switch_progress = if node.tag == "switch" {
+            interaction
+                .get_state(&component_id)
+                .map(|s| s.checked)
+                .map(|checked| self.toggle_progress(interaction, &component_id, checked))
+        } else {
+            None
+        };
+        
         // 只在需要时才 clone
         let node_to_draw: std::borrow::Cow<RenderNode> = if needs_modification {
             let mut modified = node.clone();
@@ -1205,7 +1431,11 @@ impl WxmlRenderer {
             // 应用交互状态
             if let Some(state) = interaction.get_state(&component_id) {
                 match node.tag.as_str() {
-                    "checkbox" | "switch" => {
+                    // switch 的配色由组件自己按进度求值（轨道关态是微信的浅灰，不是纯白）
+                    "switch" => {
+                        modified.style.custom_data = switch_progress.unwrap_or(if state.checked { 1.0 } else { 0.0 });
+                    }
+                    "checkbox" => {
                         modified.style.custom_data = if state.checked { 1.0 } else { 0.0 };
                         let checkbox_color = node.attrs.get("color")
                             .and_then(|c| super::components::parse_color_str(c))
@@ -1260,7 +1490,7 @@ impl WxmlRenderer {
         } else if matches!(node.tag.as_str(), "input" | "textarea") {
             // 输入框但还没有交互状态，显示 placeholder 或初始值
             let placeholder = node.attrs.get("placeholder").cloned().unwrap_or_default();
-            let initial_value = node.attrs.get("value").cloned().unwrap_or_default();
+            let initial_value = Self::input_value_attr(node);
             
             let mut modified = node.clone();
             if initial_value.is_empty() {
@@ -1512,7 +1742,7 @@ impl WxmlRenderer {
                     id,
                     bounds: *bounds,
                     checked: drawn_node.style.custom_data > 0.5,
-                    value: original_node.attrs.get("value").cloned().unwrap_or_default(),
+                    value: Self::input_value_attr(original_node),
                     disabled,
                     min: 0.0,
                     max: 1.0,
@@ -1530,7 +1760,7 @@ impl WxmlRenderer {
                     id,
                     bounds: *bounds,
                     checked: drawn_node.style.custom_data > 0.5,
-                    value: original_node.attrs.get("value").cloned().unwrap_or_default(),
+                    value: Self::input_value_attr(original_node),
                     disabled,
                     min: 0.0,
                     max: 1.0,
@@ -1582,7 +1812,7 @@ impl WxmlRenderer {
             }
             "input" | "textarea" => {
                 // 只使用原始 value 属性，不使用 placeholder
-                let actual_value = original_node.attrs.get("value").cloned().unwrap_or_default();
+                let actual_value = Self::input_value_attr(original_node);
                 // 如果已有状态，使用状态中的值
                 let current_value = interaction.get_state(&id)
                     .map(|s| s.value.clone())
@@ -1632,6 +1862,9 @@ impl WxmlRenderer {
 
     
     fn draw(&mut self, canvas: &mut Canvas, taffy: &Tree, node: &RenderNode, ox: f32, oy: f32) {
+        if self.draw_transformed_plain(canvas, taffy, node, ox, oy, Color::BLACK) {
+            return;
+        }
         let sf = self.scale_factor;
         let layout = taffy.layout(node.taffy_node).unwrap();
         let x = ox + layout.location.x;
@@ -1662,7 +1895,69 @@ impl WxmlRenderer {
         }
     }
     
+    /// 无交互上下文的绘制路径（静态渲染 / 宿主外壳）上的动画与 transform 处理。
+    fn draw_transformed_plain(
+        &mut self,
+        canvas: &mut Canvas,
+        taffy: &Tree,
+        node: &RenderNode,
+        ox: f32,
+        oy: f32,
+        inherited: Color,
+    ) -> bool {
+        let Some((resolved, transform)) = self.resolve_animated_node(node) else { return false };
+        if super::compose::is_identity(&transform) {
+            self.draw_with_color(canvas, taffy, &resolved, ox, oy, inherited);
+            return true;
+        }
+        if super::compose::is_translate_only(&transform) {
+            self.draw_with_color(
+                canvas,
+                taffy,
+                &resolved,
+                ox + transform.translate_x,
+                oy + transform.translate_y,
+                inherited,
+            );
+            return true;
+        }
+        let layout = taffy.layout(node.taffy_node).unwrap();
+        let (x, y) = (ox + layout.location.x, oy + layout.location.y);
+        let (w, h) = (layout.size.width, layout.size.height);
+        let pad = super::compose::transform_padding(w, h, &transform);
+        let tw = (w + pad * 2.0).ceil() as u32;
+        let th = (h + pad * 2.0).ceil() as u32;
+        if w <= 0.0 || h <= 0.0 || tw == 0 || th == 0 || tw > 4096 || th > 4096 {
+            self.draw_with_color(canvas, taffy, &resolved, ox, oy, inherited);
+            return true;
+        }
+        let mut offscreen = Canvas::new(tw, th);
+        offscreen.clear(Color::TRANSPARENT);
+        let bindings_before = self.event_bindings.len();
+        self.draw_with_color(
+            &mut offscreen,
+            taffy,
+            &resolved,
+            pad - layout.location.x,
+            pad - layout.location.y,
+            inherited,
+        );
+        self.event_bindings.truncate(bindings_before);
+        super::compose::blit_transformed(
+            canvas,
+            &offscreen,
+            (x - pad, y - pad),
+            (x + w / 2.0, y + h / 2.0),
+            &transform,
+            1.0,
+        );
+        true
+    }
+
     fn draw_with_color(&mut self, canvas: &mut Canvas, taffy: &Tree, node: &RenderNode, ox: f32, oy: f32, inherited_color: Color) {
+        if self.draw_transformed_plain(canvas, taffy, node, ox, oy, inherited_color) {
+            return;
+        }
         let sf = self.scale_factor;
         let layout = taffy.layout(node.taffy_node).unwrap();
         let x = ox + layout.location.x;
@@ -1719,6 +2014,19 @@ impl WxmlRenderer {
     /// 为可用空间对其子树单独重排，最后按视口把整棵子树钉到目标位置——这样 top:0;bottom:0
     /// 的全屏遮罩才会是视口高、其居中的对话框才落在可见区内。
     fn draw_fixed_layer(&mut self, canvas: &mut Canvas, taffy: &mut Tree, roots: &[RenderNode], viewport_h: f32) {
+        self.draw_fixed_layer_inner(canvas, taffy, roots, viewport_h, None);
+    }
+
+    /// fixed 覆盖层绘制。`interaction` 为 Some 时同时注册交互元素与命中区（宿主运行态），
+    /// 为 None 时纯绘制（静态渲染/截图）。
+    fn draw_fixed_layer_inner(
+        &mut self,
+        canvas: &mut Canvas,
+        taffy: &mut Tree,
+        roots: &[RenderNode],
+        viewport_h: f32,
+        mut interaction: Option<&mut InteractionManager>,
+    ) {
         let sf = self.scale_factor;
         let vp_width = self.screen_width * sf;
         let mut fixed_ids: Vec<(NodeId, NodeStyle)> = Vec::new();
@@ -1798,7 +2106,15 @@ impl WxmlRenderer {
                 // 重排后该节点作为子树根，location 约为 0，直接以钉住点为原点绘制
                 let base_x = pinned_x - new_layout.location.x;
                 let base_y = pinned_y - new_layout.location.y;
-                self.draw(canvas, taffy, node, base_x, base_y);
+                match interaction.as_deref_mut() {
+                    Some(im) => {
+                        // 子树根自身的 is_fixed 需要清掉，否则会被「跳过 fixed」的分支拦下
+                        let mut root = node.clone();
+                        root.style.is_fixed = false;
+                        self.draw_with_interaction(canvas, taffy, &root, base_x, base_y, im, 0.0, viewport_h);
+                    }
+                    None => self.draw(canvas, taffy, node, base_x, base_y),
+                }
             }
         }
     }
@@ -1883,7 +2199,7 @@ fn count_wrapped_lines(tr: &TextRenderer, text: &str, max_width: f32, size: f32,
         let mut current_width = 0.0f32;
         for (i, ch) in chars.iter().enumerate() {
             let char_width = tr.measure_char_weighted(*ch, size, bold) + letter_spacing;
-            if current_width + char_width > max_width && i > line_start {
+            if current_width + char_width > max_width + super::components::WRAP_TOLERANCE_PX && i > line_start {
                 lines += 1;
                 line_start = i;
                 current_width = char_width;

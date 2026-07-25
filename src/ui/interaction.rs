@@ -198,6 +198,8 @@ pub struct ClickAnimation {
 pub struct InteractionManager {
     /// 组件状态
     pub states: HashMap<String, ComponentState>,
+    /// 状态切换时刻（秒，全局动画时钟），用于 switch 滑块等状态过渡动画
+    pub transitions: HashMap<String, f32>,
     /// 聚焦的输入框
     pub focused_input: Option<FocusedInput>,
     /// 拖动中的滑块
@@ -222,6 +224,7 @@ impl InteractionManager {
     pub fn new() -> Self {
         Self {
             states: HashMap::new(),
+            transitions: HashMap::new(),
             focused_input: None,
             dragging_slider: None,
             pressed_button: None,
@@ -304,6 +307,9 @@ impl InteractionManager {
                     checked: new_checked,
                     value: element.value.clone(),
                 });
+                // 记录切换时刻：switch 的滑块靠它做缓动位移（微信是 0.3s 左右的滑动，
+                // 直接跳变会没有"拨动开关"的手感）
+                self.transitions.insert(element.id.clone(), crate::renderer::anim::now_secs());
                 
                 Some(InteractionResult::Toggle {
                     id: element.id,
@@ -740,6 +746,7 @@ impl InteractionManager {
     /// 页面切换时清除状态
     pub fn clear_page_state(&mut self) {
         self.states.clear();
+        self.transitions.clear();
         self.focused_input = None;
         self.dragging_slider = None;
         self.scroll_controllers.clear();

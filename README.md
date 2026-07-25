@@ -42,8 +42,14 @@ page.js ────┘  ② 逻辑层：QuickJS 执行 App/Page/Component，set
                      · 路径填充：扫描线 + even-odd，4× 超采样抗锯齿
                      · 圆角：三次贝塞尔逼近四分之一圆（K=0.5523），按 min(w,h)/2 夹紧
                      · 文本：fontdue 光栅化字形 + 自建字形缓存 + 多字体回退
+                     · 彩色 Emoji：自己读 Apple `sbix` 位图表取 PNG 字形（轮廓光栅
+                       器画不出位图字体），按字号缓存后 blit，与文字同基线
                      · 图片：双线性采样、object-fit 等价的 5 种 mode、GIF 逐帧
                      · 其它：线性渐变、阴影、Alpha 混合、clip 裁剪栈
+                  ↓
+            ⑥' CSS 动画：`@keyframes` 在**绘制阶段**按全局时钟求值（transform /
+                     opacity / 颜色只影响绘制，不触发重排 → 动画帧成本≈静态帧）；
+                     `transform` 的缩放/旋转/倾斜把子树画到离屏画布再逆仿射采样贴回
                   ↓
             ⑦ 分层合成：正常流 → 宿主外壳(tabBar) → position:fixed 覆盖层
                          （保证全屏遮罩能压暗 tabBar，与浏览器层叠顺序一致）
@@ -57,6 +63,8 @@ page.js ────┘  ② 逻辑层：QuickJS 执行 App/Page/Component，set
 - **行高对齐浏览器**：`line-height: normal` 按行内实际用字区分 —— 含 CJK 用 1.375、纯西文用 1.1777（对 headless Chrome 实测校准），避免逐行累积垂直漂移。
 - **字体全进程共享**：系统字体解析一次约 0.9s，因此用 `OnceLock` 全局共享一份（只读 + 内部字形缓存自带锁），任何数量的渲染器实例创建成本都是常数级（实测 ~42ns）。
 - **无 GC、无 DOM diff**：每帧从渲染节点树直接绘制，布局结果带缓存；重绘只做像素写入，不维护中间 DOM。
+- **动画只重绘不重排**：CSS 动画求值放在绘制期而非布局期，代价是 `@keyframes` 里改 `width/height` 这类会引发重排的属性不生效（改 `transform`/`opacity`/颜色都生效）。
+- **不给盒子留"保险余量"**：文本盒宽度就是字形度量之和（只向上取整到整像素），换行判定另留 0.5px 亚像素容差。曾经用"每个文本盒 +4px"防误换行，结果所有按内容定宽的元素（徽标/标签/胶囊）都比浏览器宽一圈。
 
 ### 双端一致性是被量化验证的
 
@@ -67,7 +75,21 @@ cargo run --example compare -- --all --out target/render-compare
 # 输出 rust.png / html.png / side-by-side.png / diff.png + report.json（变化像素比、MAE、RMSE）
 ```
 
-当前实测（375×667 @2x）：`sample-app` 11 页整体差异 **5.8%**，`news-app` 4 页 **9.3%**，剩余差异集中在图片缩放插值与亚像素文本位置。
+更进一步，**被对比的可以是窗体宿主真实出的那一帧**：窗体带无头快照模式，走与交互运行完全相同的管线（页面加载、`app.wxss` 合并、自定义 tabBar、fixed 覆盖层、Toast/Modal、像素合成顺序）输出整帧 PNG，再交给对比工具。这样报告衡量的是「用户真正看到的画面 vs H5」，而不是示例里另写一份渲染。
+
+```bash
+# 整帧快照：可指定动画时刻 / 滚动位置 / 注入交互后的状态
+cargo run --release --bin mini-app-window -- sample-app --snapshot target/window-snap
+cargo run --release --bin mini-app-window -- sample-app --snapshot target/s \
+    --route pages/components/components --scroll 760 --time 0.45
+cargo run --release --bin mini-app-window -- sample-app --snapshot target/s \
+    --route pages/category/category --eval "__currentPage.onPlus({currentTarget:{dataset:{id:101}}})"
+
+# 让窗体的帧参与逐像素对比
+cargo run --release --example compare -- --all --rust-from target/window-snap --out target/window-compare
+```
+
+当前实测（375×667 @2x，窗体整帧 vs Chrome）：`sample-app` 11 页整体差异 **4.4%**（单页 1.5%~7.9%），`news-app` 4 页 **8.8%**，剩余差异集中在大图缩放插值与粗体字形/亚像素文本位置。
 
 ### 编译器：同一份源码，编译出别端源码
 
@@ -88,7 +110,7 @@ HTML 目标产出结构化工程（`common/base.css` + 每页 html/css/js + 运�
 - [特性总览](#-特性总览)
 - [快速开始](#-快速开始)
 - [浏览器调试预览](#-浏览器调试预览)
-- [场景画廊](#-场景画廊57-个真实渲染)
+- [场景画廊](#-场景画廊64-个真实渲染)
 - [视频与 Canvas](#-视频与-canvas)
 - [支持的组件](#-支持的组件)
 - [CSS 支持](#-css-支持)
@@ -134,7 +156,7 @@ source "$HOME/.cargo/env"
 cargo build --release
 
 # 3) 运行示例
-cargo run --example gallery         # 渲染全部 57 个场景到 doc/gallery/
+cargo run --example gallery         # 渲染全部 64 个场景到 doc/gallery/
 cargo run --bin mini-devserver      # 浏览器调试预览（见下节）
 cargo run --example video_player    # 独立视频播放窗口（自动循环 + 声音）
 cargo run --bin mini-app-window     # 窗口应用（加载 sample-app）
@@ -184,13 +206,13 @@ cargo run --bin mini-devserver <小程序根> [端口]   # 端口被占用会自
 
 ---
 
-## 🖼️ 场景画廊（57 个真实渲染）
+## 🖼️ 场景画廊（64 个真实渲染）
 
 以下页面均由本引擎真实渲染输出（纯 WXML + WXSS + 数据），一键生成：
 
 ```bash
 python3 scripts/gen_assets.py   # 首次：生成真实商品图/头像/图标素材
-cargo run --example gallery     # 渲染 57 个场景到 doc/gallery/
+cargo run --example gallery     # 渲染 64 个场景到 doc/gallery/
 ```
 
 ### 电商 · 社交 · 导航
@@ -240,6 +262,16 @@ cargo run --example gallery     # 渲染 57 个场景到 doc/gallery/
 | <img src="doc/gallery/43_member_center.png" width="230"/><br/>**会员中心** | <img src="doc/gallery/44_payment.png" width="230"/><br/>**支付收银台** | <img src="doc/gallery/45_reviews.png" width="230"/><br/>**评价晒单** |
 | <img src="doc/gallery/46_search_result.png" width="230"/><br/>**搜索结果** | <img src="doc/gallery/47_message_center.png" width="230"/><br/>**消息中心** | <img src="doc/gallery/48_checkin.png" width="230"/><br/>**签到打卡** |
 | <img src="doc/gallery/49_market_board.png" width="230"/><br/>**行情看板** | <img src="doc/gallery/50_hotel_booking.png" width="230"/><br/>**酒店预订** | <img src="doc/gallery/51_health_dashboard.png" width="230"/><br/>**运动健康** |
+
+### CSS 动画 · 变换 · 控件度量
+
+`58_css_anim_frame1~4` 是同一份 WXML/WXSS 在 `t = 0 / 0.3 / 0.6 / 0.9s` 的四张快照 —— 固定动画时钟就能把 `@keyframes` 的任意一帧稳定截出来，因此动画也能进回归对比。
+
+| | | |
+|:---:|:---:|:---:|
+| <img src="doc/gallery/58_css_anim_frame1.png" width="230"/><br/>**CSS 动画 t=0s** | <img src="doc/gallery/58_css_anim_frame3.png" width="230"/><br/>**CSS 动画 t=0.6s**（旋转/脉冲/弹跳） | <img src="doc/gallery/59_transform.png" width="230"/><br/>**transform**（平移/缩放/旋转/倾斜） |
+| <img src="doc/gallery/60_form_controls.png" width="230"/><br/>**表单控件**（switch 各态/勾选/滑块） | <img src="doc/gallery/61_emoji_text.png" width="230"/><br/>**彩色 Emoji 混排** | |
+
 
 ---
 

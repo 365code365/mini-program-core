@@ -41,12 +41,30 @@ pub struct StyleRule {
     pub properties: HashMap<String, StyleValue>,
 }
 
+/// `@keyframes` 里的一个关键帧（`0%` / `from` / `to` / `50%`）
+#[derive(Debug, Clone)]
+pub struct KeyframeStep {
+    /// 时间轴位置，0.0 ~ 1.0
+    pub offset: f32,
+    pub properties: HashMap<String, StyleValue>,
+}
+
+/// 一条 `@keyframes name { ... }` 规则
+#[derive(Debug, Clone)]
+pub struct KeyframesRule {
+    pub name: String,
+    /// 按 offset 升序
+    pub steps: Vec<KeyframeStep>,
+}
+
 /// 样式表
 #[derive(Debug, Clone, Default)]
 pub struct StyleSheet {
     pub rules: Vec<StyleRule>,
     /// @import 记录的外部 wxss 路径（由加载器解析合并）
     pub imports: Vec<String>,
+    /// `@keyframes` 动画时间轴（原生端由渲染器按帧求值）
+    pub keyframes: Vec<KeyframesRule>,
 }
 
 // ============================ 选择器模型 ============================
@@ -141,15 +159,23 @@ impl ElementDesc {
 
 impl StyleSheet {
     pub fn new() -> Self {
-        Self { rules: Vec::new(), imports: Vec::new() }
+        Self { rules: Vec::new(), imports: Vec::new(), keyframes: Vec::new() }
     }
-    
+
+    /// 按名字查关键帧时间轴（后定义的同名规则覆盖先定义的，与 CSS 一致）
+    pub fn keyframes_named(&self, name: &str) -> Option<&KeyframesRule> {
+        self.keyframes.iter().rev().find(|k| k.name == name)
+    }
+
     /// 将 `other`（通常是被 @import 的样式表）的规则并入本表前部，
     /// 使本表（局部）规则在同特异性时因书写顺序更靠后而胜出。
     pub fn prepend_rules(&mut self, other: StyleSheet) {
         let mut rules = other.rules;
         rules.append(&mut self.rules);
         self.rules = rules;
+        let mut frames = other.keyframes;
+        frames.append(&mut self.keyframes);
+        self.keyframes = frames;
     }
     
     /// 解析所有 `var(--x, fallback)` 引用。
@@ -633,6 +659,21 @@ fn matches_attr(a: &AttrSel, target: &MatchTarget) -> bool {
 // ============================ WXSS 解析器 ============================
 
 /// WXSS 解析器
+/// 关键帧选择器 → 时间轴位置：`from`=0、`to`=1、`37.5%`=0.375
+fn parse_keyframe_offset(sel: &str) -> Option<f32> {
+    match sel {
+        "from" => Some(0.0),
+        "to" => Some(1.0),
+        other => {
+            let pct = other.trim_end_matches('%');
+            if pct.len() == other.len() {
+                return None; // 既不是 from/to 也没有百分号
+            }
+            pct.trim().parse::<f32>().ok().map(|v| (v / 100.0).clamp(0.0, 1.0))
+        }
+    }
+}
+
 pub struct WxssParser {
     input: Vec<char>,
     pos: usize,
@@ -666,6 +707,8 @@ impl WxssParser {
             if self.current_char() == '@' {
                 if let Some(import) = self.try_parse_import() {
                     stylesheet.imports.push(import);
+                } else if let Some(rule) = self.try_parse_keyframes() {
+                    stylesheet.keyframes.push(rule);
                 } else {
                     self.skip_at_rule();
                 }
@@ -728,6 +771,67 @@ impl WxssParser {
         Some(path)
     }
     
+    /// 尝试解析 `@keyframes name { 0% {...} 50%,80% {...} to {...} }`
+    /// （同时兼容 `@-webkit-keyframes`）。失败时回退到 `skip_at_rule`。
+    fn try_parse_keyframes(&mut self) -> Option<KeyframesRule> {
+        let start = self.pos;
+        let prefixes = ["@keyframes", "@-webkit-keyframes", "@-moz-keyframes"];
+        let matched = prefixes.iter().find(|p| self.starts_with(p))?;
+        self.pos += matched.len();
+        self.skip_whitespace_and_comments();
+
+        // 动画名
+        let mut name = String::new();
+        while self.pos < self.input.len() {
+            let c = self.current_char();
+            if c.is_whitespace() || c == '{' {
+                break;
+            }
+            name.push(c);
+            self.advance();
+        }
+        self.skip_whitespace_and_comments();
+        if name.is_empty() || self.current_char() != '{' {
+            self.pos = start;
+            return None;
+        }
+        self.advance(); // 吃掉 '{'
+
+        let mut steps: Vec<KeyframeStep> = Vec::new();
+        loop {
+            self.skip_whitespace_and_comments();
+            if self.pos >= self.input.len() {
+                break;
+            }
+            if self.current_char() == '}' {
+                self.advance();
+                break;
+            }
+            // 关键帧选择器（可能是 `0%, 100%` 这种多值）
+            let selector = self.parse_selector();
+            if self.current_char() != '{' {
+                // 结构异常：整条规则放弃，交给通用跳过逻辑
+                self.pos = start;
+                return None;
+            }
+            self.advance();
+            let properties = self.parse_properties().ok()?;
+            self.skip_whitespace_and_comments();
+            if self.current_char() == '}' {
+                self.advance();
+            }
+
+            for part in selector.split(',') {
+                if let Some(offset) = parse_keyframe_offset(part.trim()) {
+                    steps.push(KeyframeStep { offset, properties: properties.clone() });
+                }
+            }
+        }
+
+        steps.sort_by(|a, b| a.offset.partial_cmp(&b.offset).unwrap_or(std::cmp::Ordering::Equal));
+        Some(KeyframesRule { name, steps })
+    }
+
     fn skip_at_rule(&mut self) {
         while self.pos < self.input.len() && self.current_char() != ';' && self.current_char() != '{' {
             self.advance();
@@ -909,6 +1013,16 @@ impl WxssParser {
             return StyleValue::Color(color);
         }
         
+        // 无单位数值属性：这些属性的裸数字是「倍数 / 纯数」而不是长度。
+        // `parse_length` 会把裸数字一律当成 px，于是 `line-height:1.9` 变成 1.9 像素
+        // （行距被压成一条线），`opacity:.5` / `z-index:10` 因为拿到的是 Length 而不是
+        // Number，对应的样式处理分支根本不会命中 —— 等于整条声明被静默丢掉。
+        if Self::is_unitless_property(name) {
+            if let Ok(num) = value.parse::<f32>() {
+                return StyleValue::Number(num);
+            }
+        }
+        
         // 长度值
         if let Some((num, unit)) = Self::parse_length(value) {
             return StyleValue::Length(num, unit);
@@ -930,6 +1044,24 @@ impl WxssParser {
         StyleValue::String(value.to_string())
     }
     
+    /// 裸数字应按「数值」而非「长度」理解的属性
+    fn is_unitless_property(name: &str) -> bool {
+        matches!(
+            name,
+            "line-height"
+                | "opacity"
+                | "z-index"
+                | "flex"
+                | "flex-grow"
+                | "flex-shrink"
+                | "order"
+                | "font-weight"
+                | "animation-iteration-count"
+                | "aspect-ratio"
+                | "zoom"
+        )
+    }
+
     fn parse_named_color(name: &str) -> Option<Color> {
         let color = match name.to_lowercase().as_str() {
             "transparent" => Color::new(0, 0, 0, 0),

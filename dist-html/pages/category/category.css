@@ -78,6 +78,13 @@
   border-radius: 8px;
   margin-left: 4px;
 }
+/* 选中项里 `.category-item.active .wx-text` 的特异性高于 `.category-badge`，
+   会把徽标文字也染成橙色（橙底橙字＝看不见）。这里用更高特异性锁定徽标配色。 */
+.category-item.active .category-badge {
+  color: #fff;
+  font-size: 10px;
+  font-weight: normal;
+}
 
 /* 右侧商品列表 - 占满剩余空间 */
 .product-list {
@@ -161,7 +168,7 @@
   height: 24px;
   border-radius: 12px;
   background-color: #fff;
-  border: 0.500px solid #ddd;
+  border: 1px solid #ccc;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -169,7 +176,7 @@
 
 .minus-btn .wx-text {
   font-size: 16px;
-  color: #666;
+  color: #333;
 }
 
 .plus-btn {

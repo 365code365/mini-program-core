@@ -2,9 +2,7 @@
 
 use mini_render::{Canvas, Color, Paint};
 use mini_render::text::TextRenderer;
-use std::sync::Arc;
 use std::time::Instant;
-use winit::window::Window;
 
 /// Toast 状态
 #[derive(Clone)]
@@ -37,7 +35,7 @@ pub struct ModalState {
 
 /// 渲染 UI 覆盖层（Toast/Loading/Modal）
 pub fn render_ui_overlay(
-    buffer: &mut softbuffer::Buffer<Arc<Window>, Arc<Window>>,
+    buffer: &mut [u32],
     width: u32, height: u32, sf: f32, last_frame: Instant,
     toast: &Option<ToastState>, loading: &Option<LoadingState>, modal: &Option<ModalState>,
     text_renderer: Option<&TextRenderer>
@@ -69,7 +67,7 @@ pub fn render_ui_overlay(
 
 /// 渲染 Toast 到 buffer
 fn render_toast_to_buffer(
-    buffer: &mut softbuffer::Buffer<Arc<Window>, Arc<Window>>,
+    buffer: &mut [u32],
     width: u32, height: u32, title: &str, icon: &str, sf: f32,
     text_renderer: Option<&TextRenderer>
 ) {
@@ -120,7 +118,7 @@ fn render_toast_to_buffer(
 
 /// 渲染 Loading 到 buffer
 fn render_loading_to_buffer(
-    buffer: &mut softbuffer::Buffer<Arc<Window>, Arc<Window>>,
+    buffer: &mut [u32],
     width: u32, height: u32, title: &str, sf: f32, last_frame: Instant,
     text_renderer: Option<&TextRenderer>
 ) {
@@ -163,7 +161,7 @@ fn render_loading_to_buffer(
 
 /// 渲染 Modal 到 buffer
 fn render_modal_to_buffer(
-    buffer: &mut softbuffer::Buffer<Arc<Window>, Arc<Window>>,
+    buffer: &mut [u32],
     width: u32, height: u32, modal: &ModalState, sf: f32,
     text_renderer: Option<&TextRenderer>
 ) {

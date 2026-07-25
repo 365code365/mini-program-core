@@ -6,8 +6,24 @@ use mini_render::{Canvas, Color, Paint, PaintStyle, Rect};
 use mini_render::text::TextRenderer;
 use super::config::TabBarConfig;
 
-pub const TABBAR_HEIGHT: u32 = 56;
+/// 原生 tabBar 默认高度（逻辑像素）。微信原生 tabBar 为 50px；
+/// 自定义 tabBar 的高度由组件自己的 WXSS 决定，启动时实测后写入 `set_tabbar_height`。
+pub const TABBAR_HEIGHT: u32 = 50;
 pub const LOGICAL_WIDTH: u32 = 375;
+
+/// 当前宿主使用的 tabBar 高度（逻辑像素）。
+///
+/// 之前这里写死 56px，而 sample-app 的自定义 tabBar 实际是 100rpx=50px，
+/// 于是窗体里内容视口比 H5 少 6px、fixed 底栏与 tabBar 之间多出一条缝。
+static TABBAR_H: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(TABBAR_HEIGHT);
+
+pub fn tabbar_height() -> u32 {
+    TABBAR_H.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+pub fn set_tabbar_height(h: u32) {
+    TABBAR_H.store(h.clamp(24, 200), std::sync::atomic::Ordering::Relaxed);
+}
 
 /// 自定义 TabBar 组件
 pub struct CustomTabBar {
@@ -39,7 +55,7 @@ pub fn render_native_tabbar(
 ) {
     let sf = scale_factor as f32;
     let width = LOGICAL_WIDTH as f32 * sf;
-    let _height = TABBAR_HEIGHT as f32 * sf;
+    let _height = tabbar_height() as f32 * sf;
     
     // 背景色
     let bg_color = parse_color(&tab_bar.background_color).unwrap_or(Color::WHITE);

@@ -21,6 +21,7 @@ include!("gallery_parts/nav.rs");
 include!("gallery_parts/canvas_video.rs");
 include!("gallery_parts/news.rs");
 include!("gallery_parts/business.rs");
+include!("gallery_parts/anim.rs");
 
 fn main() {
     std::fs::create_dir_all("doc/gallery").ok();
@@ -85,6 +86,11 @@ fn main() {
     market_board();
     hotel_booking();
     health_dashboard();
+    // CSS 动画 / transform / 表单控件 / 彩色 emoji
+    css_animation_frames();
+    transform_showcase();
+    form_controls();
+    emoji_text();
 
-    println!("完成，共 57 张场景图（含 4 个城市天气、4 帧 GIF 动画快照、4 张资讯页、12 张商业场景）。");
+    println!("完成，共 64 张场景图（含 4 个城市天气、4 帧 GIF、4 帧 CSS 动画、4 张资讯页、12 张商业场景）。");
 }

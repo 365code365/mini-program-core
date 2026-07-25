@@ -4,7 +4,7 @@ use mini_render::ui::interaction::{InteractionManager, InteractionResult, Intera
 use mini_render::renderer::WxmlRenderer;
 use mini_render::runtime::MiniApp;
 use mini_render::ui::scroll_controller::ScrollController;
-use super::super::tabbar::TABBAR_HEIGHT;
+use super::super::tabbar::tabbar_height;
 
 pub const LOGICAL_HEIGHT: u32 = 667;
 
@@ -124,7 +124,7 @@ pub fn handle_content_click(
     text_renderer: Option<&mini_render::text::TextRenderer>,
 ) -> Option<InteractionResult> {
     let actual_y = y + scroll_pos;
-    let tabbar_y = if has_tabbar { (LOGICAL_HEIGHT - TABBAR_HEIGHT) as f32 } else { LOGICAL_HEIGHT as f32 };
+    let tabbar_y = if has_tabbar { (LOGICAL_HEIGHT - tabbar_height()) as f32 } else { LOGICAL_HEIGHT as f32 };
     
     // 首先检查 fixed 元素（使用视口坐标）
     let fixed_binding = if let Some(renderer) = renderer {

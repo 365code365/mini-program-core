@@ -48,13 +48,39 @@ pub fn present_to_buffer(
         }
     }
     
-    // 渲染 fixed 元素
+    // 渲染 TabBar（宿主外壳）：在页面内容之上、页面 fixed 覆盖层之下。
+    // 与浏览器里 #app 内的全屏遮罩压暗底部导航的层叠结果一致；此前 tabBar 画在最后，
+    // 弹窗遮罩压不住它，和 H5 观感相反。
+    if has_tabbar {
+        if let Some(tabbar_canvas) = tabbar_canvas {
+            let tabbar_pixels = tabbar_canvas.pixels();
+            let tabbar_width = tabbar_canvas.width() as usize;
+            let tabbar_height = tabbar_canvas.height();
+            
+            let draw_h = tabbar_physical_height.min(tabbar_height);
+            let draw_w = (buffer_width as usize).min(tabbar_width);
+            
+            for y in 0..draw_h {
+                let dst_y = content_area_height + y;
+                if dst_y >= buffer_height { break; }
+                let src_row = (y as usize) * tabbar_width;
+                let dst_row = (dst_y * buffer_width) as usize;
+                
+                for x in 0..draw_w {
+                    let color = &tabbar_pixels[src_row + x];
+                    buffer[dst_row + x] = ((color.r as u32) << 16) | ((color.g as u32) << 8) | (color.b as u32);
+                }
+            }
+        }
+    }
+    
+    // 渲染 fixed 元素（覆盖到整个视口，含 tabBar 区域）
     if let Some(fixed_canvas) = fixed_canvas {
         let fixed_pixels = fixed_canvas.pixels();
         let fixed_width = fixed_canvas.width() as usize;
         let fixed_height = fixed_canvas.height();
         
-        let draw_h = content_area_height.min(fixed_height);
+        let draw_h = buffer_height.min(fixed_height);
         let draw_w = (buffer_width as usize).min(fixed_width);
         
         for y in 0..draw_h {
@@ -76,29 +102,6 @@ pub fn present_to_buffer(
                         let b = (color.b as u32 * alpha + (dst & 0xFF) * inv_alpha) / 255;
                         buffer[dst_idx] = (r << 16) | (g << 8) | b;
                     }
-                }
-            }
-        }
-    }
-    
-    // 渲染 TabBar
-    if has_tabbar {
-        if let Some(tabbar_canvas) = tabbar_canvas {
-            let tabbar_pixels = tabbar_canvas.pixels();
-            let tabbar_width = tabbar_canvas.width() as usize;
-            let tabbar_height = tabbar_canvas.height();
-            
-            let draw_h = tabbar_physical_height.min(tabbar_height);
-            let draw_w = (buffer_width as usize).min(tabbar_width);
-            
-            for y in 0..draw_h {
-                let dst_y = content_area_height + y;
-                let src_row = (y as usize) * tabbar_width;
-                let dst_row = (dst_y * buffer_width) as usize;
-                
-                for x in 0..draw_w {
-                    let color = &tabbar_pixels[src_row + x];
-                    buffer[dst_row + x] = ((color.r as u32) << 16) | ((color.g as u32) << 8) | (color.b as u32);
                 }
             }
         }

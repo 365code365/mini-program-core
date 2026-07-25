@@ -54,6 +54,9 @@ struct Config {
     compile_html: bool,
     pixel_threshold: u8,
     settle_ms: u64,
+    /// 直接复用外部已渲染好的原生截图目录（`<dir>/<route>/rust.png`）。
+    /// 用于让「窗体宿主实际出的帧」而不是示例自己的渲染参与对比。
+    rust_from: Option<PathBuf>,
 }
 
 #[derive(Serialize)]
@@ -323,6 +326,7 @@ fn parse_args() -> Result<Option<Config>, String> {
         compile_html: true,
         pixel_threshold: DEFAULT_PIXEL_THRESHOLD,
         settle_ms: DEFAULT_SETTLE_MS,
+        rust_from: None,
     };
 
     let mut args = std::env::args().skip(1);
@@ -334,6 +338,9 @@ fn parse_args() -> Result<Option<Config>, String> {
             "--app" => config.app_root = PathBuf::from(next_value(&mut args, "--app")?),
             "--html" => config.html_root = PathBuf::from(next_value(&mut args, "--html")?),
             "--out" => config.output_root = PathBuf::from(next_value(&mut args, "--out")?),
+            "--rust-from" => {
+                config.rust_from = Some(PathBuf::from(next_value(&mut args, "--rust-from")?));
+            }
             "--browser" => {
                 config.browser = Some(PathBuf::from(next_value(&mut args, "--browser")?));
             }
@@ -372,7 +379,7 @@ fn print_usage() {
         "Rust 原生渲染与 HTML/Chrome 批量对比\n\n\
 用法:\n  cargo run --example compare -- [路由 ...] [选项]\n\n\
 默认不传路由时比较 app.json 中全部页面。\n\n\
-选项:\n  --all                   比较全部页面（忽略位置路由）\n  --app <目录>            小程序源码目录，默认 sample-app\n  --html <目录>           HTML 编译目录，默认 dist-html\n  --out <目录>            图片和报告目录，默认 target/render-compare\n  --browser <可执行文件>  Chrome/Chromium 路径\n  --pixel-threshold <0-255>  单通道差异阈值，默认 16\n  --settle-ms <毫秒>      截图前虚拟等待时间，默认 1000\n  --no-compile            复用已有 HTML，不重新编译\n  -h, --help              显示帮助"
+选项:\n  --all                   比较全部页面（忽略位置路由）\n  --app <目录>            小程序源码目录，默认 sample-app\n  --html <目录>           HTML 编译目录，默认 dist-html\n  --out <目录>            图片和报告目录，默认 target/render-compare\n  --browser <可执行文件>  Chrome/Chromium 路径\n  --pixel-threshold <0-255>  单通道差异阈值，默认 16\n  --settle-ms <毫秒>      截图前虚拟等待时间，默认 1000\n  --rust-from <目录>      用外部原生截图（窗体 --snapshot 产物）替代内置渲染\n  --no-compile            复用已有 HTML，不重新编译\n  -h, --help              显示帮助"
     );
 }
 
@@ -437,7 +444,12 @@ fn compare_page(
         }
     }
 
-    if let Err(error) = render_rust_page(app, page, &rust_path) {
+    let native_result = match &config.rust_from {
+        // 复用窗体宿主产出的整帧截图：这样报告里的差异就是「真实运行的窗体 vs H5」
+        Some(dir) => copy_external_rust_png(dir, &page.route, &rust_path),
+        None => render_rust_page(app, page, &rust_path),
+    };
+    if let Err(error) = native_result {
         report.error = Some(error);
         return report;
     }
@@ -496,6 +508,17 @@ fn compare_page(
         Err(error) => report.error = Some(error),
     }
     report
+}
+
+/// 从外部目录取窗体已渲染好的整帧 PNG（`<dir>/<route>/rust.png`）。
+fn copy_external_rust_png(dir: &Path, route: &str, output: &Path) -> Result<(), String> {
+    let source = dir.join(route).join("rust.png");
+    if !source.exists() {
+        return Err(format!("缺少窗体截图: {}（先跑 mini-app-window --snapshot）", source.display()));
+    }
+    fs::copy(&source, output)
+        .map(|_| ())
+        .map_err(|error| format!("复制 {} 失败: {error}", source.display()))
 }
 
 fn render_rust_page(app: &AppSource, page: &PageSource, output: &Path) -> Result<(), String> {

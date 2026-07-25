@@ -34,6 +34,8 @@ struct MiniAppWindow {
     renderer: Option<WxmlRenderer>,
     tabbar_renderer: Option<WxmlRenderer>,
     text_renderer: Option<std::sync::Arc<TextRenderer>>,
+    /// 全局样式（app.wxss 原文），每次解析页面样式时并入
+    app_wxss: String,
     page_stack: Vec<PageInstance>,
     pages: HashMap<String, PageInfo>,
     app_config: AppConfig,
@@ -60,10 +62,12 @@ struct MiniAppWindow {
 
 impl MiniAppWindow {
     fn new(app_path: Option<std::path::PathBuf>) -> Result<Self, String> {
-        // 设置小程序路径
-        if let Some(path) = app_path {
-            page_loader::set_app_path(path);
-        }
+        // 登记小程序根目录：页面/组件加载与包内资源（图片）解析都依赖它
+        page_loader::set_app_path(
+            app_path.unwrap_or_else(|| {
+                std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("sample-app")
+            }),
+        );
         
         let mut app = MiniApp::new(LOGICAL_WIDTH, LOGICAL_HEIGHT)?;
         app.init()?;
@@ -78,9 +82,26 @@ impl MiniAppWindow {
         let app_config: AppConfig = serde_json::from_str(&app_json_str)
             .map_err(|e| format!("Failed to parse app.json: {}", e))?;
         
+        // 全局样式：小程序语义下 app.wxss 对所有页面生效，必须并进每个页面的样式表
+        let app_wxss = page_loader::load_app_wxss();
+        if !app_wxss.trim().is_empty() {
+            println!("🎨 app.wxss loaded ({} 字节)", app_wxss.len());
+        }
+        
         let custom_tabbar = if app_config.tab_bar.as_ref().map(|tb| tb.custom).unwrap_or(false) {
-            load_custom_tabbar()?
+            load_custom_tabbar_with_app_wxss(&app_wxss)?
         } else { None };
+        
+        // tabBar 高度以组件 WXSS 实测为准（微信同样由组件自身决定），
+        // 写死常量会让内容视口和固定层与 H5 差几个像素。
+        if let Some(ct) = &custom_tabbar {
+            let probe = WxmlRenderer::new(ct.stylesheet.clone(), LOGICAL_WIDTH as f32, LOGICAL_HEIGHT as f32);
+            let measured = probe.measure_content_height(&ct.wxml_nodes, &ct.data);
+            if measured > 1.0 {
+                set_tabbar_height(measured.round() as u32);
+                println!("📐 自定义 tabBar 高度: {:.0}px", measured);
+            }
+        }
         
         let pages = load_all_pages();
         
@@ -96,10 +117,10 @@ impl MiniAppWindow {
         let now = Instant::now();
         let mut window = Self {
             window: None, surface: None, app, canvas: None, tabbar_canvas: None, fixed_canvas: None,
-            renderer: None, tabbar_renderer: None, text_renderer: None,
+            renderer: None, tabbar_renderer: None, text_renderer: None, app_wxss,
             page_stack: Vec::new(), pages, app_config, custom_tabbar,
             mouse_pos: (0.0, 0.0), needs_redraw: true, scale_factor: 1.0,
-            scroll: ScrollController::new(CONTENT_HEIGHT as f32, (LOGICAL_HEIGHT - if has_tabbar { TABBAR_HEIGHT } else { 0 }) as f32),
+            scroll: ScrollController::new(CONTENT_HEIGHT as f32, (LOGICAL_HEIGHT - if has_tabbar { tabbar_height() } else { 0 }) as f32),
             last_frame: now, click_start_pos: (0.0, 0.0), click_start_time: now,
             pending_navigation: None, interaction: InteractionManager::new(),
             modifiers: winit::keyboard::ModifiersState::empty(),
@@ -130,8 +151,13 @@ impl MiniAppWindow {
     fn is_animating(&self) -> bool {
         let scrolling = self.scroll.is_animating() || self.scroll.is_dragging;
         let sv_scroll = self.interaction.scroll_controllers.values().any(|c| c.is_animating() || c.is_dragging);
+        // CSS @keyframes / switch 拨动过渡：渲染器在上一帧求值时标记，
+        // 有动画在跑就继续按刷新率出帧（否则动画只会画出第一帧然后停住）
+        let css_anim = self.renderer.as_ref().map(|r| r.has_active_animations()).unwrap_or(false)
+            || self.tabbar_renderer.as_ref().map(|r| r.has_active_animations()).unwrap_or(false);
         scrolling
             || sv_scroll
+            || css_anim
             || self.interaction.has_focused_input()
             || self.app.has_active_timers()
             || self.toast.as_ref().map(|t| t.visible).unwrap_or(false)
@@ -147,19 +173,24 @@ impl MiniAppWindow {
         let mut wxml_parser = WxmlParser::new(&page_info.wxml);
         let wxml_nodes = remove_manual_tabbar(&wxml_parser.parse().map_err(|e| format!("WXML error: {}", e))?);
         
-        let mut wxss_parser = WxssParser::new(&page_info.wxss);
+        // app.wxss 在前、页面 WXSS 在后：同特异性时页面样式因书写顺序更靠后而胜出
+        let merged_wxss = format!("{}\n{}", self.app_wxss, page_info.wxss);
+        let mut wxss_parser = WxssParser::new(&merged_wxss);
         let stylesheet = wxss_parser.parse().map_err(|e| format!("WXSS error: {}", e))?;
         
         self.app.load_script(&page_info.js)?;
         let query_json = serde_json::to_string(&query).unwrap_or("{}".to_string());
         self.app.eval(&format!("if(__currentPage && __currentPage.onLoad) __currentPage.onLoad({})", query_json)).ok();
         self.app.eval("if(__currentPage && __currentPage.onShow) __currentPage.onShow()").ok();
+        // onReady：微信在首次渲染完成后触发；编译端取数据快照时也会走这一步，
+        // 窗体不调用会导致两端初始数据不同（例如在 onReady 里补数据的页面）。
+        self.app.eval("if(__currentPage && __currentPage.onReady) __currentPage.onReady()").ok();
         print_js_output(&self.app);
         
         self.page_stack.push(PageInstance { path: path.to_string(), query, wxml_nodes, stylesheet });
         
         let has_tabbar = self.is_tabbar_page(path);
-        self.scroll = ScrollController::new(CONTENT_HEIGHT as f32, (LOGICAL_HEIGHT - if has_tabbar { TABBAR_HEIGHT } else { 0 }) as f32);
+        self.scroll = ScrollController::new(CONTENT_HEIGHT as f32, (LOGICAL_HEIGHT - if has_tabbar { tabbar_height() } else { 0 }) as f32);
         self.needs_redraw = true;
         println!("✅ Page loaded: {}", path);
         Ok(())
@@ -178,7 +209,7 @@ impl MiniAppWindow {
                 print_js_output(&self.app);
             }
             let has_tabbar = self.is_tabbar_page(&path);
-            self.scroll = ScrollController::new(CONTENT_HEIGHT as f32, (LOGICAL_HEIGHT - if has_tabbar { TABBAR_HEIGHT } else { 0 }) as f32);
+            self.scroll = ScrollController::new(CONTENT_HEIGHT as f32, (LOGICAL_HEIGHT - if has_tabbar { tabbar_height() } else { 0 }) as f32);
         }
         self.needs_redraw = true;
         Ok(())
@@ -194,7 +225,7 @@ impl MiniAppWindow {
         self.scale_factor = scale_factor;
         let (pw, ph) = ((LOGICAL_WIDTH as f64 * scale_factor) as u32, (CONTENT_HEIGHT as f64 * scale_factor) as u32);
         self.canvas = Some(Canvas::new(pw, ph));
-        self.tabbar_canvas = Some(Canvas::new(pw, (TABBAR_HEIGHT as f64 * scale_factor) as u32));
+        self.tabbar_canvas = Some(Canvas::new(pw, (tabbar_height() as f64 * scale_factor) as u32));
         self.fixed_canvas = Some(Canvas::new(pw, (LOGICAL_HEIGHT as f64 * scale_factor) as u32));
         // 共享进程内唯一字体实例（加载一次约 0.9s，若每次切页都重载会造成明显卡顿）
         self.text_renderer = mini_render::text::shared_fonts();
@@ -204,7 +235,7 @@ impl MiniAppWindow {
         if let Some(page) = self.page_stack.last() {
             self.renderer = Some(WxmlRenderer::new_with_scale(page.stylesheet.clone(), LOGICAL_WIDTH as f32, LOGICAL_HEIGHT as f32, self.scale_factor as f32));
             if let Some(ref ct) = self.custom_tabbar {
-                self.tabbar_renderer = Some(WxmlRenderer::new_with_scale(ct.stylesheet.clone(), LOGICAL_WIDTH as f32, TABBAR_HEIGHT as f32, self.scale_factor as f32));
+                self.tabbar_renderer = Some(WxmlRenderer::new_with_scale(ct.stylesheet.clone(), LOGICAL_WIDTH as f32, tabbar_height() as f32, self.scale_factor as f32));
             }
         }
     }
@@ -213,7 +244,7 @@ impl MiniAppWindow {
         let page_data = self.app.eval("__getPageData()").map(|s| serde_json::from_str(&s).unwrap_or(json!({}))).unwrap_or(json!({}));
         let page = match self.page_stack.last() { Some(p) => p, None => return };
         let (current_path, has_tabbar) = (page.path.clone(), self.is_tabbar_page(&page.path));
-        let viewport_height = (LOGICAL_HEIGHT - if has_tabbar { TABBAR_HEIGHT } else { 0 }) as f32;
+        let viewport_height = (LOGICAL_HEIGHT - if has_tabbar { tabbar_height() } else { 0 }) as f32;
         let scroll_offset = self.scroll.get_position();
         
         let mut content_height = 0.0f32;
@@ -304,7 +335,7 @@ impl MiniAppWindow {
                 if let Ok(mut buffer) = surface.buffer_mut() {
                     present_to_buffer(&mut buffer, size.width, size.height, canvas, self.fixed_canvas.as_ref(), self.tabbar_canvas.as_ref(),
                         (self.scroll.get_position() * self.scale_factor as f32) as i32, has_tabbar,
-                        if has_tabbar { (TABBAR_HEIGHT as f64 * self.scale_factor) as u32 } else { 0 });
+                        if has_tabbar { (tabbar_height() as f64 * self.scale_factor) as u32 } else { 0 });
                     render_ui_overlay(&mut buffer, size.width, size.height, self.scale_factor as f32, self.last_frame,
                         &toast_state, &loading_state, &modal_state, self.text_renderer.as_deref());
                     buffer.present().ok();
@@ -319,7 +350,7 @@ impl MiniAppWindow {
         
         let page = match self.page_stack.last() { Some(p) => p, None => return };
         let has_tabbar = self.is_tabbar_page(&page.path);
-        let tabbar_y = if has_tabbar { (LOGICAL_HEIGHT - TABBAR_HEIGHT) as f32 } else { LOGICAL_HEIGHT as f32 };
+        let tabbar_y = if has_tabbar { (LOGICAL_HEIGHT - tabbar_height()) as f32 } else { LOGICAL_HEIGHT as f32 };
         
         if has_tabbar && y >= tabbar_y {
             let nav = if self.is_custom_tabbar() {
@@ -474,7 +505,7 @@ impl ApplicationHandler for MiniAppWindow {
                     if self.loading.as_ref().map(|l| l.visible).unwrap_or(false) { return; }
                     
                     let has_tabbar = self.page_stack.last().map(|p| self.is_tabbar_page(&p.path)).unwrap_or(false);
-                    let tabbar_y = if has_tabbar { (LOGICAL_HEIGHT - TABBAR_HEIGHT) as f32 } else { LOGICAL_HEIGHT as f32 };
+                    let tabbar_y = if has_tabbar { (LOGICAL_HEIGHT - tabbar_height()) as f32 } else { LOGICAL_HEIGHT as f32 };
                     if has_tabbar && y >= tabbar_y { return; }
                     
                     let actual_y = y + self.scroll.get_position();
@@ -572,7 +603,8 @@ impl ApplicationHandler for MiniAppWindow {
                 
                 let scrolling = self.scroll.is_animating() || self.scroll.is_dragging;
                 let sv_scroll = self.interaction.scroll_controllers.values().any(|c| c.is_animating() || c.is_dragging);
-                if self.needs_redraw || mini_render::renderer::components::has_playing_video() || sv_scroll || self.interaction.has_focused_input() || scrolling {
+                let css_anim = self.renderer.as_ref().map(|r| r.has_active_animations()).unwrap_or(false);
+                if self.needs_redraw || mini_render::renderer::components::has_playing_video() || sv_scroll || self.interaction.has_focused_input() || scrolling || css_anim {
                     self.render();
                     self.needs_redraw = false;
                 }
@@ -607,28 +639,138 @@ impl ApplicationHandler for MiniAppWindow {
     }
 }
 
+impl MiniAppWindow {
+    /// 无窗口模式：按**与交互窗体完全相同的管线**把每个页面合成成整帧图片。
+    ///
+    /// 这是「窗体是否忠实还原小程序」的可验证入口 —— 页面加载、样式合并、
+    /// 自定义 tabBar、fixed 覆盖层、Toast/Modal 外壳、像素合成顺序都与真实运行一致，
+    /// 因此产出的 PNG 可以直接和编译出的 H5 截图做像素级对比。
+    fn snapshot_all(&mut self, out_dir: &std::path::Path, scale: f64, time: Option<f32>, only: Option<&str>, scroll: f32, eval: Option<&str>) -> Result<usize, String> {
+        self.setup_canvas(scale);
+        let routes: Vec<String> = match only {
+            Some(route) => vec![route.trim_start_matches('/').to_string()],
+            None => self.app_config.pages.clone(),
+        };
+        let mut written = 0usize;
+        for route in routes {
+            if !self.pages.contains_key(&route) {
+                eprintln!("⚠️  跳过 {}（页面未加载）", route);
+                continue;
+            }
+            // 构造函数已经加载过首页：重复 navigate 会让 onLoad 跑第二遍，
+            // 依赖「首次进入」的逻辑（如只弹一次的新人券）会被吃掉，两端数据就不一致了。
+            let already_loaded = self.page_stack.last().map(|p| p.path == route).unwrap_or(false);
+            if !already_loaded {
+                self.page_stack.clear();
+                self.interaction.clear_page_state();
+                self.navigate_to(&route, HashMap::new())?;
+            }
+            self.update_renderers();
+            // 注入页面状态：把「交互之后」的场景（购物车有商品、开关已打开等）
+            // 也纳入可截图、可对比的范围，而不是只能测首次进入的初始态
+            if let Some(script) = eval {
+                match self.app.eval(script) {
+                    Ok(_) => print_js_output(&self.app),
+                    Err(e) => eprintln!("⚠️  --eval 执行失败: {}", e),
+                }
+            }
+            self.scroll.set_position(scroll);
+            if let Some(secs) = time {
+                if let Some(r) = &mut self.renderer { r.set_animation_time(secs); }
+                if let Some(r) = &mut self.tabbar_renderer { r.set_animation_time(secs); }
+            }
+            self.app.update().ok();
+            evt::process_ui_events(&mut self.app, &mut self.toast, &mut self.loading, &mut self.modal);
+            self.render();
+
+            let (pw, ph) = (
+                (LOGICAL_WIDTH as f64 * scale) as u32,
+                (LOGICAL_HEIGHT as f64 * scale) as u32,
+            );
+            let mut buffer = vec![0u32; (pw * ph) as usize];
+            let has_tabbar = self.is_tabbar_page(&route);
+            if let Some(canvas) = &self.canvas {
+                present_to_buffer(
+                    &mut buffer, pw, ph, canvas,
+                    self.fixed_canvas.as_ref(), self.tabbar_canvas.as_ref(),
+                    (self.scroll.get_position() * scale as f32) as i32, has_tabbar,
+                    if has_tabbar { (tabbar_height() as f64 * scale) as u32 } else { 0 },
+                );
+            }
+            render_ui_overlay(
+                &mut buffer, pw, ph, scale as f32, self.last_frame,
+                &self.toast, &self.loading, &self.modal, self.text_renderer.as_deref(),
+            );
+
+            let mut rgba = Vec::with_capacity(buffer.len() * 4);
+            for px in &buffer {
+                rgba.extend_from_slice(&[((px >> 16) & 0xFF) as u8, ((px >> 8) & 0xFF) as u8, (px & 0xFF) as u8, 255]);
+            }
+            let dir = out_dir.join(&route);
+            std::fs::create_dir_all(&dir).map_err(|e| format!("创建 {:?} 失败: {}", dir, e))?;
+            let file = dir.join("rust.png");
+            image::save_buffer(&file, &rgba, pw, ph, image::ColorType::Rgba8)
+                .map_err(|e| format!("写入 {:?} 失败: {}", file, e))?;
+            println!("🖼  {} -> {}", route, file.display());
+            written += 1;
+        }
+        Ok(written)
+    }
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("🚀 Mini App Engine\n");
     
-    // 解析命令行参数
-    let args: Vec<String> = std::env::args().collect();
-    let app_path = if args.len() > 1 {
-        let path = std::path::PathBuf::from(&args[1]);
-        if path.exists() && path.is_dir() {
-            println!("📂 加载小程序: {}", path.display());
-            Some(path)
-        } else {
-            eprintln!("❌ 目录不存在: {}", path.display());
-            return Err(format!("目录不存在: {}", path.display()).into());
+    // 解析命令行参数：<app-dir> [--snapshot <out>] [--scale n] [--time secs] [--route r]
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    let mut app_path: Option<std::path::PathBuf> = None;
+    let mut snapshot: Option<std::path::PathBuf> = None;
+    let mut scale = 2.0f64;
+    let mut anim_time: Option<f32> = None;
+    let mut route: Option<String> = None;
+    let mut scroll = 0.0f32;
+    let mut eval: Option<String> = None;
+    let mut it = args.into_iter();
+    while let Some(arg) = it.next() {
+        match arg.as_str() {
+            "--snapshot" => snapshot = it.next().map(std::path::PathBuf::from),
+            "--scale" => scale = it.next().and_then(|v| v.parse().ok()).unwrap_or(2.0),
+            "--time" => anim_time = it.next().and_then(|v| v.parse().ok()),
+            "--route" => route = it.next(),
+            "--scroll" => scroll = it.next().and_then(|v| v.parse().ok()).unwrap_or(0.0),
+            "--eval" => eval = it.next(),
+            "--help" | "-h" => {
+                println!("用法: mini-app-window <小程序目录> [--snapshot <输出目录>] [--scale 2] [--time 0.3] [--route pages/x/x] [--scroll 600] [--eval JS]");
+                return Ok(());
+            }
+            other => {
+                let path = std::path::PathBuf::from(other);
+                if path.exists() && path.is_dir() {
+                    println!("📂 加载小程序: {}", path.display());
+                    app_path = Some(path);
+                } else {
+                    eprintln!("❌ 目录不存在: {}", path.display());
+                    return Err(format!("目录不存在: {}", path.display()).into());
+                }
+            }
         }
-    } else {
+    }
+    if app_path.is_none() {
         println!("📂 使用内置 sample-app");
-        None
-    };
+    }
+
+    let mut window = MiniAppWindow::new(app_path)?;
+
+    // 快照模式：不开窗口，直接把整帧写成 PNG（用于与 H5 做像素对比）
+    if let Some(out) = snapshot {
+        let count = window.snapshot_all(&out, scale, anim_time, route.as_deref(), scroll, eval.as_deref())?;
+        println!("\n✅ 快照完成：{} 个页面 -> {}", count, out.display());
+        return Ok(());
+    }
     
     let event_loop = EventLoop::new()?;
     // 默认空闲休眠；动画期间由 about_to_wait 按刷新率切换到 WaitUntil。
     event_loop.set_control_flow(ControlFlow::Wait);
-    event_loop.run_app(&mut MiniAppWindow::new(app_path)?)?;
+    event_loop.run_app(&mut window)?;
     Ok(())
 }

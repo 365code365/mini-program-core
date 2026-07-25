@@ -17,7 +17,7 @@ pub use tabbar::*;
 pub use render::*;
 pub use interaction_handler::*;
 pub use ui_overlay::{ToastState, LoadingState, ModalState, render_ui_overlay};
-pub use page_loader::{CustomTabBar, load_all_pages, load_custom_tabbar};
+pub use page_loader::{CustomTabBar, load_all_pages, load_custom_tabbar, load_custom_tabbar_with_app_wxss};
 pub use click_handler::*;
 pub use event_handler::*;
 
@@ -25,4 +25,3 @@ pub use event_handler::*;
 pub const LOGICAL_WIDTH: u32 = 375;
 pub const LOGICAL_HEIGHT: u32 = 667;
 pub const CONTENT_HEIGHT: u32 = 1500;
-pub const TABBAR_HEIGHT: u32 = 56;

@@ -56,8 +56,14 @@ impl TextComponent {
             };
             max_line_width = max_line_width.max(line_width);
         }
-        // 额外余量，吸收度量与绘制之间的亚像素误差，避免边界处误换行
-        max_line_width += 4.0 * sf;
+        // 向上取整到整像素即可，不再额外加宽。
+        //
+        // 这里原来无条件 `+= 4px`，名义上是"吸收亚像素误差防误换行"，代价是**每一个**
+        // 靠内容定宽的文本盒都比浏览器宽 4px：徽标/标签/胶囊会明显臃肿（分类页 badge
+        // 实测 23.5px vs Chrome 18.9px），居中文本的可用宽也整体偏大。
+        // 正确做法是在「是否换行」的比较里留亚像素容差（见 WRAP_TOLERANCE_PX），
+        // 而不是把盒子本身撑大。
+        max_line_width = max_line_width.ceil();
         
         // 设置 flex-shrink 允许收缩
         ts.flex_shrink = 1.0;
@@ -113,7 +119,7 @@ impl TextComponent {
         } else {
             f32::MAX
         };
-        let wrap_lines = if !nowrap && avail_w < max_line_width {
+        let wrap_lines = if !nowrap && avail_w + WRAP_TOLERANCE_PX < max_line_width {
             (max_line_width / avail_w).ceil() as usize
         } else {
             1
@@ -293,7 +299,7 @@ fn draw_text_wrapped_advanced(
             let char_width = tr.measure_char_weighted(*ch, size, bold) + letter_spacing;
             
             // 检查是否需要换行
-            if current_width + char_width > max_width && i > line_start {
+            if current_width + char_width > max_width + WRAP_TOLERANCE_PX && i > line_start {
                 let line: String = chars[line_start..i].iter().collect();
                 
                 // 仅当设置了 text-overflow:ellipsis 且下一行超出容器高度时，用省略号截断并停止；

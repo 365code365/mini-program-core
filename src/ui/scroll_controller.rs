@@ -363,6 +363,10 @@ impl ScrollController {
     }
     
     pub fn get_position(&self) -> f32 { self.position }
+    /// 直接设置滚动位置（用于导航后回到顶部、快照渲染等确定性场景）
+    pub fn set_position(&mut self, position: f32) {
+        self.position = position.clamp(self.min_scroll, self.max_scroll.max(self.min_scroll));
+    }
     pub fn get_max_scroll(&self) -> f32 { self.max_scroll }
     pub fn is_animating(&self) -> bool { self.is_decelerating || self.is_bouncing }
     

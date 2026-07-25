@@ -109,14 +109,20 @@ impl ButtonComponent {
                 left: length(padding_h * sf) 
             };
         }
-        // 宽度：mini 按内容宽，其余占满一行（与微信 block 按钮一致）
+        // 宽度：交给父容器的对齐语义决定，只保证不小于内容宽。
+        //
+        // 微信里 button 是 display:block、width:auto —— 在普通块/列容器里（align-items 默认
+        // stretch）会撑满一行，但父级写了 `align-items:center` 时就只有内容宽。之前这里
+        // 无条件写 `width:100%`，于是「空购物车」那种居中容器里的按钮被拉成整行，和 H5 不一致。
         if !has_custom_width {
-            ts.size.width = if btn_size == "mini" {
-                let tw = intrinsic_text_width(&text, ns.font_size * sf, ns.letter_spacing * sf);
-                length(tw + padding_h * 2.0 * sf)
+            let tw = intrinsic_text_width(&text, ns.font_size * sf, ns.letter_spacing * sf);
+            let content_width = tw + padding_h * 2.0 * sf;
+            if btn_size == "mini" {
+                ts.size.width = length(content_width);
             } else {
-                percent(1.0)
-            };
+                ts.size.width = Dimension::Auto;
+                ts.min_size.width = length(content_width);
+            }
         }
         // 高度：页面没写 height 时给出「微信默认按钮高度」。
         //
@@ -129,16 +135,12 @@ impl ButtonComponent {
             ts.size.height = length(content_min.max(min_height * sf));
         }
         
-        // 默认 margin（如果没有自定义）
-        let has_custom_margin = !matches!(ts.margin.top, LengthPercentageAuto::Length(0.0));
-        if !has_custom_margin {
-            ts.margin = Rect { 
-                top: length(5.0 * sf), 
-                right: length(0.0), 
-                bottom: length(5.0 * sf), 
-                left: length(0.0) 
-            };
-        }
+        // 不给 button 任何默认 margin。
+        //
+        // 微信与 HTML 端（`*{margin:0}` + `.wx-button` 无 margin）都没有默认外边距，
+        // 这里原先无条件写入 `margin:5px 0`：一来每个按钮凭空多出 10px 垂直间距，
+        // 二来判定「是否自定义」只看 margin.top，页面写 `margin-left:auto`（靠右对齐）
+        // 时整个 margin 会被这段默认值覆盖掉，按钮永远靠不到右边。
         
         // 默认居中对齐
         if ts.align_items.is_none() {

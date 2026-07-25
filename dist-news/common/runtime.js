@@ -117,6 +117,7 @@
     var cls = "wx-" + tag;
     if (a["class"]) cls += " " + interp(a["class"], scope);
     if (tag === "icon" && a["type"]) cls += " wxicon wxicon-" + interp(a["type"], scope);
+    if (tag === "switch" && truthy(evalWhole(a["disabled"], scope))) cls += " wx-switch-disabled";
     if (tag === "switch" && truthy(evalWhole(a["checked"], scope))) cls += " wx-switch-on";
     if (tag === "button") {
       var bt = a["type"] ? interp(a["type"], scope) : "default";

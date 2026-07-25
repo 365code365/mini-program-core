@@ -332,6 +332,22 @@ impl TextRenderer {
         self.draw_text_weighted(canvas, text, x, y, size, letter_spacing, false, paint);
     }
 
+    /// 彩色 emoji 位图（仅对 emoji 区间的码点尝试，避免数字/`#`/`*` 被 keycap 字形抢走）
+    fn color_emoji(ch: char, size: f32) -> Option<std::sync::Arc<crate::emoji::EmojiBitmap>> {
+        if !Self::is_emoji(ch) {
+            return None;
+        }
+        crate::emoji::glyph_bitmap(ch, size)
+    }
+
+    /// emoji 的前进宽度（无彩色字形时返回 None，交给常规字体链）
+    fn emoji_advance(ch: char, size: f32) -> Option<f32> {
+        if !Self::is_emoji(ch) {
+            return None;
+        }
+        crate::emoji::advance(ch, size)
+    }
+
     /// 渲染文本到画布（带字间距 + 字重）。bold 为真且存在真实粗体字面时用该字面绘制。
     pub fn draw_text_weighted(&self, canvas: &mut Canvas, text: &str, x: f32, y: f32, size: f32, letter_spacing: f32, bold: bool, paint: &Paint) {
         let bold = bold && self.bold_font.is_some();
@@ -343,6 +359,28 @@ impl TextRenderer {
         // 但考虑到 font.rasterize 是耗时操作，不应该在锁内做。
         
         for ch in text.chars() {
+            // 变体选择符 / ZWJ 等零宽码点不绘制也不占位
+            if crate::emoji::is_zero_width(ch) {
+                continue;
+            }
+            // 彩色 emoji：走位图 blit（轮廓光栅化画不出位图字形，会变豆腐块）
+            if let Some(bitmap) = Self::color_emoji(ch, size) {
+                let draw_x = cursor_x + bitmap.left;
+                let draw_y = y - bitmap.bottom - bitmap.draw_h;
+                canvas.draw_image(
+                    &bitmap.rgba,
+                    bitmap.width,
+                    bitmap.height,
+                    draw_x,
+                    draw_y,
+                    bitmap.draw_w,
+                    bitmap.draw_h,
+                    "scaleToFill",
+                    0.0,
+                );
+                cursor_x += bitmap.advance + letter_spacing;
+                continue;
+            }
             // 先尝试从缓存获取（快速路径）
             let cached_data = {
                 let cache = self.cache.lock().unwrap();
@@ -414,9 +452,10 @@ impl TextRenderer {
         let mut width = 0.0;
         let char_count = text.chars().count();
         for (i, ch) in text.chars().enumerate() {
-            let font = self.font_for_weight(ch, bold);
-            let metrics = font.metrics(ch, size);
-            width += metrics.advance_width;
+            if crate::emoji::is_zero_width(ch) {
+                continue;
+            }
+            width += self.measure_char_weighted(ch, size, bold);
             if i < char_count - 1 {
                 width += letter_spacing;
             }
@@ -426,11 +465,18 @@ impl TextRenderer {
     
     /// 测量单个字符宽度
     pub fn measure_char(&self, ch: char, size: f32) -> f32 {
-        self.font_for(ch).metrics(ch, size).advance_width
+        self.measure_char_weighted(ch, size, false)
     }
 
-    /// 测量单个字符宽度（带字重）
+    /// 测量单个字符宽度（带字重）。彩色 emoji 用位图字体的前进宽度，
+    /// 与绘制路径保持一致，否则文本会与背景框错位。
     pub fn measure_char_weighted(&self, ch: char, size: f32, bold: bool) -> f32 {
+        if crate::emoji::is_zero_width(ch) {
+            return 0.0;
+        }
+        if let Some(advance) = Self::emoji_advance(ch, size) {
+            return advance;
+        }
         let bold = bold && self.bold_font.is_some();
         self.font_for_weight(ch, bold).metrics(ch, size).advance_width
     }
