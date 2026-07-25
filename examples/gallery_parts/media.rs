@@ -94,3 +94,52 @@ fn tags() {
     render("18_tags", 0xF5F6F8, wxml, wxss, json!({}));
 }
 
+
+// 35. GIF 动图（逐帧推进）
+//
+// 原生渲染器会解码 GIF 的全部帧并按各帧延时循环播放；这里连续渲染 4 张，
+// 每张之间等待若干毫秒，输出的图片可直观看到帧在推进（不是静态首帧）。
+fn gif_animation() {
+    let wxml = r##"
+    <view class="page">
+        <text class="h">GIF 动图 · 原生逐帧播放</text>
+        <view class="card">
+            <view class="row">
+                <image class="gif" src="sample-app/assets/loading.gif" mode="scaleToFill"></image>
+                <view class="info">
+                    <text class="t">loading.gif</text>
+                    <text class="d">8 帧 · 每帧 120ms · 循环播放</text>
+                    <text class="d">原生：解码全部帧后按时间取帧</text>
+                    <text class="d">HTML：交由浏览器原生播放</text>
+                </view>
+            </view>
+        </view>
+        <text class="h">不同尺寸与裁剪模式</text>
+        <view class="card row around">
+            <image class="gif-sm" src="sample-app/assets/loading.gif" mode="aspectFit"></image>
+            <image class="gif-md" src="sample-app/assets/loading.gif" mode="aspectFill"></image>
+            <image class="gif-round" src="sample-app/assets/loading.gif" mode="scaleToFill"></image>
+        </view>
+    </view>"##;
+    let wxss = r#"
+    .page{ padding:24rpx; }
+    .h{ font-size:28rpx; color:#999; margin:20rpx 0 14rpx 8rpx; }
+    .card{ background-color:#fff; border-radius:20rpx; padding:28rpx; }
+    .row{ display:flex; flex-direction:row; align-items:center; }
+    .around{ justify-content:space-around; }
+    .gif{ width:200rpx; height:200rpx; border-radius:16rpx; }
+    .info{ flex:1; margin-left:28rpx; }
+    .t{ display:block; font-size:30rpx; color:#333; font-weight:bold; }
+    .d{ display:block; font-size:24rpx; color:#999; margin-top:10rpx; }
+    .gif-sm{ width:120rpx; height:120rpx; }
+    .gif-md{ width:160rpx; height:120rpx; border-radius:12rpx; }
+    .gif-round{ width:140rpx; height:140rpx; border-radius:70rpx; }
+    "#;
+    // 连续 4 帧快照，间隔 240ms（跨越两帧延时），可见动画推进
+    for shot in 0..4 {
+        if shot > 0 {
+            std::thread::sleep(std::time::Duration::from_millis(240));
+        }
+        render(&format!("35_gif_frame{}", shot + 1), 0xF5F6F8, wxml, wxss, json!({}));
+    }
+}

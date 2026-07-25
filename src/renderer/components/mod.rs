@@ -32,7 +32,7 @@ pub use checkbox::CheckboxComponent;
 pub use radio::RadioComponent;
 pub use slider::SliderComponent;
 pub use input::InputComponent;
-pub use image::ImageComponent;
+pub use image::{ImageComponent, is_animated, animation_total_ms};
 pub use video::VideoComponent;
 pub use video::{
     has_playing_video, get_or_create_player, get_video_frame, get_video_progress,

@@ -63,6 +63,8 @@ fn main() {
     input_events();
     video_player();
     canvas_demo();
+    // 动图：连续 4 张快照展示 GIF 逐帧推进
+    gif_animation();
 
-    println!("完成，共 37 张场景图（含 4 个城市天气）。");
+    println!("完成，共 41 张场景图（含 4 个城市天气、4 帧 GIF 动画快照）。");
 }

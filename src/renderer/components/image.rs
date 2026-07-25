@@ -37,15 +37,123 @@ struct ImageData {
     height: u32,
 }
 
+/// 动图（GIF）解码结果：逐帧 RGBA + 每帧展示时长
+struct AnimatedImage {
+    /// 每帧 (RGBA 数据, 该帧持续毫秒)
+    frames: Vec<(Vec<u8>, u32)>,
+    width: u32,
+    height: u32,
+    /// 一轮播放的总时长（毫秒，至少 1）
+    total_ms: u32,
+    /// 首次解码时刻，用作播放起点（保证首帧渲染确定为第 0 帧）
+    started: std::time::Instant,
+}
+
+impl AnimatedImage {
+    /// 按「距首次加载的经过时间」取当前帧下标（循环播放）
+    fn current_index(&self) -> usize {
+        if self.frames.len() <= 1 {
+            return 0;
+        }
+        let elapsed = self.started.elapsed().as_millis() as u64;
+        let mut offset = (elapsed % self.total_ms.max(1) as u64) as u32;
+        for (index, (_, delay)) in self.frames.iter().enumerate() {
+            let delay = (*delay).max(1);
+            if offset < delay {
+                return index;
+            }
+            offset -= delay;
+        }
+        self.frames.len() - 1
+    }
+}
+
 /// 全局图片缓存
 static IMAGE_CACHE: OnceLock<Arc<Mutex<HashMap<String, Option<ImageData>>>>> = OnceLock::new();
+/// 全局动图缓存（GIF 多帧）
+static ANIM_CACHE: OnceLock<Arc<Mutex<HashMap<String, Arc<AnimatedImage>>>>> = OnceLock::new();
 
 fn get_image_cache() -> &'static Arc<Mutex<HashMap<String, Option<ImageData>>>> {
     IMAGE_CACHE.get_or_init(|| Arc::new(Mutex::new(HashMap::new())))
 }
 
-/// 加载图片（支持网络URL和本地文件）
+fn get_anim_cache() -> &'static Arc<Mutex<HashMap<String, Arc<AnimatedImage>>>> {
+    ANIM_CACHE.get_or_init(|| Arc::new(Mutex::new(HashMap::new())))
+}
+
+/// 该资源是否为多帧动图（GIF）。
+pub fn is_animated(src: &str) -> bool {
+    get_anim_cache()
+        .lock()
+        .map(|cache| cache.get(src).map(|a| a.frames.len() > 1).unwrap_or(false))
+        .unwrap_or(false)
+}
+
+/// 已缓存动图的一轮播放时长（毫秒）；非动图返回 None。
+pub fn animation_total_ms(src: &str) -> Option<u32> {
+    let cache = get_anim_cache().lock().ok()?;
+    cache.get(src).filter(|a| a.frames.len() > 1).map(|a| a.total_ms)
+}
+
+/// 尝试把字节解码为多帧动图；单帧或非 GIF 返回 None。
+fn decode_animated_gif(bytes: &[u8]) -> Option<AnimatedImage> {
+    // 仅对 GIF magic 尝试多帧解码，避免无谓开销
+    if bytes.len() < 6 || &bytes[..4] != b"GIF8" {
+        return None;
+    }
+    use image::codecs::gif::GifDecoder;
+    use image::AnimationDecoder;
+
+    let decoder = GifDecoder::new(std::io::Cursor::new(bytes.to_vec())).ok()?;
+    let frames = decoder.into_frames().collect_frames().ok()?;
+    if frames.len() <= 1 {
+        return None;
+    }
+
+    let mut out: Vec<(Vec<u8>, u32)> = Vec::with_capacity(frames.len());
+    let mut width = 0;
+    let mut height = 0;
+    let mut total_ms: u32 = 0;
+    for frame in frames {
+        let (numer, denom) = frame.delay().numer_denom_ms();
+        // GIF 常见 0/1 延时表示「尽快」，浏览器按 100ms 处理，这里保持一致
+        let delay = if denom == 0 { 100 } else { (numer / denom.max(1)).max(10) };
+        let buffer = frame.into_buffer();
+        width = buffer.width();
+        height = buffer.height();
+        total_ms = total_ms.saturating_add(delay);
+        out.push((buffer.into_raw(), delay));
+    }
+    if out.is_empty() || width == 0 || height == 0 {
+        return None;
+    }
+    Some(AnimatedImage {
+        frames: out,
+        width,
+        height,
+        total_ms: total_ms.max(1),
+        started: std::time::Instant::now(),
+    })
+}
+
+/// 加载图片（支持网络URL和本地文件；GIF 动图按时间取当前帧）
 fn load_image(src: &str) -> Option<ImageData> {
+    // 动图：命中后按经过时间取帧，实现循环播放
+    {
+        let cache = get_anim_cache();
+        if let Ok(cache_guard) = cache.lock() {
+            if let Some(anim) = cache_guard.get(src) {
+                let index = anim.current_index();
+                let (frame, _) = &anim.frames[index];
+                return Some(ImageData {
+                    data: frame.clone(),
+                    width: anim.width,
+                    height: anim.height,
+                });
+            }
+        }
+    }
+
     // 检查缓存
     {
         let cache = get_image_cache();
@@ -91,7 +199,7 @@ fn load_image_from_url(url: &str) -> Option<ImageData> {
     let mut bytes = Vec::new();
     response.into_reader().take(10 * 1024 * 1024).read_to_end(&mut bytes).ok()?;
     
-    decode_image_bytes(&bytes)
+    decode_with_animation(url, &bytes)
 }
 
 /// 从本地文件加载图片
@@ -107,12 +215,28 @@ fn load_image_from_file(path: &str) -> Option<ImageData> {
 
     for p in paths_to_try {
         if let Ok(bytes) = std::fs::read(&p) {
-            if let Some(img) = decode_image_bytes(&bytes) {
+            if let Some(img) = decode_with_animation(path, &bytes) {
                 return Some(img);
             }
         }
     }
     None
+}
+
+/// 解码字节：若为多帧 GIF 则登记到动图缓存并返回首帧，否则按静态图解码。
+fn decode_with_animation(src: &str, bytes: &[u8]) -> Option<ImageData> {
+    if let Some(anim) = decode_animated_gif(bytes) {
+        let first = ImageData {
+            data: anim.frames[0].0.clone(),
+            width: anim.width,
+            height: anim.height,
+        };
+        if let Ok(mut cache) = get_anim_cache().lock() {
+            cache.insert(src.to_string(), Arc::new(anim));
+        }
+        return Some(first);
+    }
+    decode_image_bytes(bytes)
 }
 
 /// 解码图片字节数据

@@ -116,6 +116,10 @@ impl IconComponent {
             "warn" => Self::draw_warn(canvas, cx, cy, r, color, stroke_width),
             "waiting" | "waiting_circle" => Self::draw_waiting(canvas, cx, cy, r, color, stroke_width),
             "cancel" | "clear" => Self::draw_cancel(canvas, cx, cy, r, color, stroke_width),
+            // 纯叉号（无圆底）：用于弹窗关闭按钮等场景，线条居中且抗锯齿
+            "close" | "cancel_no_circle" => {
+                Self::draw_thick_x(canvas, cx, cy, r * 0.62, color, stroke_width * 1.5)
+            }
             "download" => Self::draw_download(canvas, cx, cy, r, color, stroke_width),
             "search" => Self::draw_search(canvas, cx, cy, r, color, stroke_width),
             "circle" => Self::draw_circle_icon(canvas, cx, cy, r, color, stroke_width),

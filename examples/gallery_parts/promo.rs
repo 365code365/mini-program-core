@@ -142,7 +142,7 @@ fn coupon_popup() {
             </view>
             <view class="allbtn">一键领取全部</view>
         </view>
-        <view class="close">X</view>
+        <view class="close"><icon type="close" size="18" color="#ffffff"></icon></view>
     </view>"##;
     let wxss = r##"
     .mask{ height:1334rpx; background-color:rgba(0,0,0,0.6); display:flex; flex-direction:column; justify-content:center; align-items:center; }
@@ -165,7 +165,7 @@ fn coupon_popup() {
     .cp-time{ font-size:22rpx; color:#999999; margin-top:10rpx; }
     .cp-btn{ background-color:#ff3b30; color:#ffffff; font-size:26rpx; padding:14rpx 24rpx; border-radius:28rpx; }
     .allbtn{ width:500rpx; background-color:#ff3b30; color:#ffffff; text-align:center; font-size:32rpx; font-weight:bold; padding:26rpx; border-radius:48rpx; margin-top:16rpx; }
-    .close{ width:64rpx; height:64rpx; border-radius:32rpx; border:2rpx solid rgba(255,255,255,0.8); color:#ffffff; text-align:center; font-size:34rpx; margin-top:44rpx; }
+    .close{ width:64rpx; height:64rpx; border-radius:32rpx; border:2rpx solid rgba(255,255,255,0.8); display:flex; align-items:center; justify-content:center; margin-top:44rpx; }
     "##;
     let data = json!({"coupons":[
         {"amt":"20","cond":"100","name":"全场通用券","exp":"07-31"},

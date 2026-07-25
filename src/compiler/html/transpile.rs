@@ -195,7 +195,47 @@ fn is_truthy(v: Option<&str>) -> bool {
 
 /// 判断某标签是否需要在 emit 时生成自定义内部结构（switch/progress/rich-text/icon）
 fn has_custom_inner(tag: &str) -> bool {
-    matches!(tag, "switch" | "progress" | "rich-text" | "icon")
+    matches!(tag, "switch" | "progress" | "rich-text" | "icon" | "slider")
+}
+
+/// `<slider>` 的内部结构：range input（已滑过部分着色）+ 可选数值标签。
+///
+/// 原生渲染器与微信都会把「已滑过的轨道」画成激活色，并在 show-value 时显示数值；
+/// 纯 `<input type=range>` 做不到这两点，故在编译期用渐变背景与数值标签补齐。
+fn slider_inner_html(node: &WxmlNode) -> String {
+    let num = |name: &str, fallback: f32| -> f32 {
+        node.get_attr(name).and_then(|v| v.trim().parse::<f32>().ok()).unwrap_or(fallback)
+    };
+    let min = num("min", 0.0);
+    let max = num("max", 100.0);
+    let step = node.get_attr("step").unwrap_or("1").to_string();
+    let value = num("value", min);
+    let span = if (max - min).abs() < f32::EPSILON { 1.0 } else { max - min };
+    let percent = (((value - min) / span) * 100.0).clamp(0.0, 100.0);
+    let active = node.get_attr("activeColor")
+        .or_else(|| node.get_attr("active-color"))
+        .unwrap_or("#09bb07");
+    let background = node.get_attr("backgroundColor")
+        .or_else(|| node.get_attr("background-color"))
+        .unwrap_or("#e5e5e5");
+    let block_color = node.get_attr("block-color").unwrap_or("#ffffff");
+    let disabled = if is_truthy(node.get_attr("disabled")) { " disabled" } else { "" };
+    let mut html = format!(
+        "<input class=\"wx-slider\" type=\"range\" min=\"{min}\" max=\"{max}\" step=\"{step}\" value=\"{value}\"{disabled} \
+style=\"background:linear-gradient(to right,{active} 0%,{active} {percent}%,{background} {percent}%,{background} 100%);--wx-block:{block_color}\">",
+        min = min, max = max, step = escape_attr(&step), value = value,
+        disabled = disabled, active = active, background = background,
+        percent = percent, block_color = block_color,
+    );
+    if is_truthy(node.get_attr("show-value")) || is_truthy(node.get_attr("show-info")) {
+        let text = if (value - value.round()).abs() < 1e-6 {
+            format!("{}", value.round() as i64)
+        } else {
+            format!("{value}")
+        };
+        html.push_str(&format!("<span class=\"wx-slider-value\">{text}</span>"));
+    }
+    html
 }
 
 /// `<icon>` 的矢量图形（内联 SVG）。
@@ -221,6 +261,8 @@ fn icon_svg(icon_type: &str) -> String {
         "waiting" | "waiting_circle" => format!(
             "{circle}<rect x=\"10.9\" y=\"6.2\" width=\"2.2\" height=\"6.6\" rx=\"1.1\" fill=\"#fff\"/><rect x=\"12\" y=\"10.9\" width=\"5.2\" height=\"2.2\" rx=\"1.1\" fill=\"#fff\"/><circle cx=\"12\" cy=\"12\" r=\"1.6\" fill=\"#fff\"/>"
         ),
+        // 纯叉号（无圆底），与原生 draw_thick_x 对应
+        "close" | "cancel_no_circle" => "<path d=\"M5 5 19 19M19 5 5 19\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.6\" stroke-linecap=\"round\"/>".to_string(),
         "cancel" | "clear" => format!(
             "{circle}<path d=\"M7.6 7.6 16.4 16.4M16.4 7.6 7.6 16.4\" fill=\"none\" stroke=\"#fff\" stroke-width=\"2.6\" stroke-linecap=\"round\"/>"
         ),
@@ -260,6 +302,7 @@ fn custom_inner_html(node: &WxmlNode) -> String {
         }
         "rich-text" => rich_text_inner(node),
         "icon" => icon_svg(node.get_attr("type").unwrap_or("success")),
+        "slider" => slider_inner_html(node),
         _ => String::new(),
     }
 }
@@ -341,7 +384,8 @@ fn map_tag(node: &WxmlNode) -> (&'static str, String, bool) {
         // 表单控件：映射为原生元素（可交互 + 微信风格样式见 base.css）
         "checkbox" => ("input", String::new(), true),
         "radio" => ("input", String::new(), true),
-        "slider" => ("input", String::new(), true),
+        // slider 编译为容器：内部是 range input + 可选数值（见 slider_inner_html）
+        "slider" => ("div", String::new(), false),
         // switch / progress / rich-text 的内部结构在 emit_* 中生成
         "switch" => ("div", String::new(), false),
         "progress" => ("div", String::new(), false),
@@ -361,7 +405,11 @@ fn build_open_tag(node: &WxmlNode) -> (String, &'static str, bool) {
 
     // class：始终带上 wx-<原标签> 基类（用于还原小程序默认盒模型：view=flex列 等），
     // 再拼用户 class，icon 追加内置图标类。
-    let mut class = format!("wx-{}", node.tag_name);
+    let mut class = if node.tag_name == "slider" {
+        "wx-slider-wrap".to_string()
+    } else {
+        format!("wx-{}", node.tag_name)
+    };
     if let Some(c) = node.get_attr("class") {
         if !c.is_empty() { class.push(' '); class.push_str(c); }
     }
@@ -449,14 +497,7 @@ fn build_open_tag(node: &WxmlNode) -> (String, &'static str, bool) {
             if is_truthy(node.get_attr("checked")) { attrs.push_str(" checked"); }
             if is_truthy(node.get_attr("disabled")) { attrs.push_str(" disabled"); }
         }
-        "slider" => {
-            attrs.push_str(" type=\"range\"");
-            attrs.push_str(&format!(" min=\"{}\"", node.get_attr("min").unwrap_or("0")));
-            attrs.push_str(&format!(" max=\"{}\"", node.get_attr("max").unwrap_or("100")));
-            attrs.push_str(&format!(" step=\"{}\"", node.get_attr("step").unwrap_or("1")));
-            if let Some(v) = node.get_attr("value") { attrs.push_str(&format!(" value=\"{}\"", escape_attr(v))); }
-            if is_truthy(node.get_attr("disabled")) { attrs.push_str(" disabled"); }
-        }
+
         "swiper" => {
             // 轮播配置透传给 runtime.js（自动播放 / 间隔 / 循环 / 指示点 / 纵向）
             attrs.push_str(&format!(" data-autoplay=\"{}\"", is_truthy(node.get_attr("autoplay"))));
@@ -634,7 +675,9 @@ body{font-size:16px;color:#333;font-family:-apple-system,system-ui,"PingFang SC"
 .wx-switch-knob{position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.35);transition:left .2s;}
 .wx-switch.wx-switch-on .wx-switch-knob{left:20px;}
 
-/* ── slider 滑块 ── */
+/* ── slider 滑块（wrapper + 轨道 + 数值） ── */
+.wx-slider-wrap{display:flex;flex-direction:row;align-items:center;}
+.wx-slider-value{margin-left:12px;font-size:14px;color:#999;min-width:2.2em;text-align:center;}
 .wx-slider{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:2px;background:#e5e5e5;accent-color:#09bb07;cursor:pointer;}
 .wx-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.3);}
 
@@ -669,6 +712,7 @@ body{font-size:16px;color:#333;font-family:-apple-system,system-ui,"PingFang SC"
 .wxicon-search{color:#b2b2b2;}
 .wxicon-clear{color:#f43530;}
 .wxicon-circle{color:#ccc;}
+.wxicon-close,.wxicon-cancel_no_circle{color:currentColor;}
 "#
 }
 

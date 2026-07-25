@@ -234,7 +234,38 @@
     }
     if (tag === "rich-text") return renderRich(evalWhole(a["nodes"], scope));
     if (tag === "icon") return iconSvg(interp(a["type"] || "success", scope));
+    if (tag === "slider") return sliderInner(a, scope);
     return null;
+  }
+  // slider：range input（已滑过部分着色）+ 可选数值标签，与编译期产物一致
+  function sliderInner(a, scope) {
+    var num = function (k, d) { var v = parseFloat(interp(a[k], scope)); return isNaN(v) ? d : v; };
+    var min = num("min", 0), max = num("max", 100), val = num("value", min);
+    var step = interp(a["step"], scope) || "1";
+    var span = (max - min) || 1;
+    var pct = Math.max(0, Math.min(100, ((val - min) / span) * 100));
+    var active = interp(a["activeColor"] || a["active-color"] || "#09bb07", scope);
+    var bg = interp(a["backgroundColor"] || a["background-color"] || "#e5e5e5", scope);
+    var dis = truthy(evalWhole(a["disabled"], scope)) ? " disabled" : "";
+    var h = '<input class="wx-slider" type="range" min="' + min + '" max="' + max + '" step="' + step +
+      '" value="' + val + '"' + dis + ' style="background:linear-gradient(to right,' + active + ' 0%,' +
+      active + ' ' + pct + '%,' + bg + ' ' + pct + '%,' + bg + ' 100%)">';
+    if (truthy(evalWhole(a["show-value"], scope)) || truthy(evalWhole(a["show-info"], scope))) {
+      h += '<span class="wx-slider-value">' + (Math.round(val) === val ? val : val.toFixed(1)) + "</span>";
+    }
+    return h;
+  }
+  // 拖动时即时更新已滑过轨道与数值（避免等 setData 回流）
+  function refreshSlider(el) {
+    if (!el || !el.classList || !el.classList.contains("wx-slider")) return;
+    var min = parseFloat(el.min || "0"), max = parseFloat(el.max || "100"), val = parseFloat(el.value || "0");
+    var span = (max - min) || 1;
+    var pct = Math.max(0, Math.min(100, ((val - min) / span) * 100));
+    var bgm = /linear-gradient\(to right,([^ ]+) 0%,[^,]+,([^ ]+) [\d.]+%/.exec(el.style.background || "");
+    var active = bgm ? bgm[1] : "#09bb07", bg = bgm ? bgm[2] : "#e5e5e5";
+    el.style.background = "linear-gradient(to right," + active + " 0%," + active + " " + pct + "%," + bg + " " + pct + "%," + bg + " 100%)";
+    var label = el.parentNode && el.parentNode.querySelector(".wx-slider-value");
+    if (label) label.textContent = (Math.round(val) === val ? val : val.toFixed(1));
   }
   // 与编译期 icon_svg 保持一致的矢量图标（圆底 currentColor + 白色标记）
   function iconSvg(t) {
@@ -400,7 +431,13 @@
       var model = el.getAttribute("data-model");
       if (model) { if (composing) { setByPath(pageInst.data, model, val); } else { var p = {}; p[model] = val; setData(p); } }
       var inp = el.getAttribute("data-input"); if (inp) call(inp, evObj(el, { value: val }));
-      if (el.classList && el.classList.contains("wx-slider")) { var sc = el.getAttribute("data-change") || el.getAttribute("data-changing"); if (sc) call(sc, evObj(el, { value: Number(val) })); }
+      if (el.classList && el.classList.contains("wx-slider")) {
+        refreshSlider(el);
+        var slWrap = el.closest ? el.closest(".wx-slider-wrap") : null;
+        var sc = (slWrap && (slWrap.getAttribute("data-change") || slWrap.getAttribute("data-changing")))
+          || el.getAttribute("data-change") || el.getAttribute("data-changing");
+        if (sc) call(sc, evObj(slWrap || el, { value: Number(val) }));
+      }
     });
     document.addEventListener("change", function (e) {
       var el = e.target; if (!el.closest) return;

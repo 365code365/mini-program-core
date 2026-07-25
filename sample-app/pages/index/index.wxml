@@ -109,7 +109,7 @@
         </view>
       </view>
       <button class="coupon-claim-btn" type="primary" bindtap="onClaimCoupons">一键领取</button>
-      <view class="coupon-close" catchtap="onCloseCoupon">✕</view>
+      <view class="coupon-close" catchtap="onCloseCoupon"><icon type="close" size="15" color="#ffffff"></icon></view>
     </view>
   </view>
 </view>
