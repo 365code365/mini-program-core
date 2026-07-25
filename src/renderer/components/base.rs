@@ -18,8 +18,13 @@ static MEASURE_FONT: once_cell::sync::Lazy<Option<TextRenderer>> =
 
 /// 用真实字体度量文本宽度（物理像素）。取不到字体时按中文全宽/西文 0.6 估算回退。
 pub fn intrinsic_text_width(text: &str, font_px: f32, letter_spacing_px: f32) -> f32 {
+    intrinsic_text_width_weighted(text, font_px, letter_spacing_px, false)
+}
+
+/// 同 [`intrinsic_text_width`]，但按字重度量（粗体字面通常更宽，必须与绘制一致）。
+pub fn intrinsic_text_width_weighted(text: &str, font_px: f32, letter_spacing_px: f32, bold: bool) -> f32 {
     if let Some(tr) = MEASURE_FONT.as_ref() {
-        tr.measure_text_with_spacing(text, font_px, letter_spacing_px)
+        tr.measure_text_weighted(text, font_px, letter_spacing_px, bold)
     } else {
         text.chars()
             .map(|c| if c.is_ascii() { font_px * 0.6 } else { font_px } + letter_spacing_px)
@@ -85,6 +90,8 @@ pub struct TextMeasure {
     pub pad_t: f32,
     pub pad_b: f32,
     pub nowrap: bool,
+    /// 是否用粗体字面度量（与绘制端一致）
+    pub bold: bool,
     /// 显式换行符决定的最少行数
     pub min_lines: usize,
     /// 不换行时的单行内容宽（多段取最宽），即 max-content 宽
@@ -365,7 +372,7 @@ pub fn measure_text_node(
         tm.min_lines.max(1)
     } else {
         let wrap = if let Some(tr) = tr {
-            count_wrapped_text_lines(tr, &tm.text, inner_w, tm.font_px, tm.letter_spacing_px)
+            count_wrapped_text_lines(tr, &tm.text, inner_w, tm.font_px, tm.letter_spacing_px, tm.bold)
         } else if inner_w < tm.max_line_width {
             (tm.max_line_width / inner_w).ceil() as usize
         } else {
@@ -387,10 +394,11 @@ pub fn min_unit_width(
     tr: Option<&crate::text::TextRenderer>,
     font_px: f32,
     letter_spacing_px: f32,
+    bold: bool,
 ) -> f32 {
     let measure = |s: &str| -> f32 {
         if let Some(tr) = tr {
-            tr.measure_text_with_spacing(s, font_px, letter_spacing_px)
+            tr.measure_text_weighted(s, font_px, letter_spacing_px, bold)
         } else {
             s.chars()
                 .map(|c| if c.is_ascii() { font_px * 0.62 } else { font_px } + letter_spacing_px)
@@ -419,7 +427,7 @@ pub fn min_unit_width(
 }
 
 /// 统计文本在给定宽度下的换行行数（含显式换行符），供度量使用。
-fn count_wrapped_text_lines(tr: &crate::text::TextRenderer, text: &str, max_width: f32, size: f32, ls: f32) -> usize {
+fn count_wrapped_text_lines(tr: &crate::text::TextRenderer, text: &str, max_width: f32, size: f32, ls: f32, bold: bool) -> usize {
     if max_width <= 0.0 { return text.split('\n').count().max(1); }
     let mut total = 0usize;
     for para in text.split('\n') {
@@ -427,7 +435,7 @@ fn count_wrapped_text_lines(tr: &crate::text::TextRenderer, text: &str, max_widt
         let mut line_w = 0.0f32;
         let mut lines_here = 1usize;
         for ch in para.chars() {
-            let cw = tr.measure_char(ch, size) + ls;
+            let cw = tr.measure_char_weighted(ch, size, bold) + ls;
             if line_w + cw > max_width && line_w > 0.0 {
                 lines_here += 1;
                 line_w = cw;

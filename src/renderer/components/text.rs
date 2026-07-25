@@ -45,10 +45,16 @@ impl TextComponent {
         // 单行最大宽度：优先用真实字体度量（与绘制/二次布局一致），无字体时回退估算。
         let letter_spacing = ns.letter_spacing * sf;
         let measure_font = TEXT_MEASURE_FONT.as_ref();
+        // 字重影响字形宽度：布局度量必须与绘制所用字面一致
+        let is_bold_weight = matches!(
+            ns.font_weight,
+            FontWeight::Bold | FontWeight::W600 | FontWeight::W700 | FontWeight::W800 | FontWeight::W900
+        );
+        let measure_bold = is_bold_weight && measure_font.map(|tr| tr.has_bold_face()).unwrap_or(false);
         let mut max_line_width: f32 = 0.0;
         for line in text_content.split('\n') {
             let line_width = if let Some(tr) = measure_font {
-                tr.measure_text_with_spacing(line, font_size, letter_spacing)
+                tr.measure_text_weighted(line, font_size, letter_spacing, measure_bold)
             } else {
                 line.chars().map(|c| if c.is_ascii() { font_size * 0.62 } else { font_size }).sum()
             };
@@ -77,7 +83,7 @@ impl TextComponent {
         let use_measure = matches!(ts.size.width, Dimension::Auto)
             && (ns.is_block || matches!(ns.text_align, TextAlign::Center | TextAlign::Right));
         if use_measure {
-            let min_unit_width = min_unit_width(&text_content, measure_font, font_size, letter_spacing);
+            let min_unit_width = min_unit_width(&text_content, measure_font, font_size, letter_spacing, measure_bold);
             let tm = TextMeasure {
                 text: text_content.clone(),
                 font_px: font_size,
@@ -85,6 +91,7 @@ impl TextComponent {
                 line_height_px: actual_line_height,
                 pad_l, pad_r, pad_t, pad_b,
                 nowrap,
+                bold: measure_bold,
                 min_lines,
                 max_line_width,
                 min_unit_width,
@@ -171,28 +178,30 @@ impl TextComponent {
             let should_wrap = !matches!(node.style.white_space, WhiteSpace::NoWrap | WhiteSpace::Pre);
             let use_ellipsis = matches!(node.style.text_overflow, TextOverflow::Ellipsis);
             
-            let text = &node.text;
-            let text_w = tr.measure_text_with_spacing(text, size, letter_spacing);
-            // 是否需要多行：含换行符，或允许换行且超出内容宽度
-            let multiline = text.contains('\n') || (should_wrap && cw > 0.0 && text_w > cw);
-            
-            // 粗体：字体无独立 bold 字面时用轻微偏移二次描绘模拟（faux-bold）
+            // 粗体：优先用字体自带的粗体字面（与浏览器一致）；字体没有粗体字面时，
+            // 才退回「轻微偏移二次描绘」的 faux-bold 近似。
             let is_bold = matches!(
                 node.style.font_weight,
                 FontWeight::Bold | FontWeight::W600 | FontWeight::W700 | FontWeight::W800 | FontWeight::W900
             );
-            let bold_dx = if is_bold { 0.7 * sf } else { 0.0 };
+            let real_bold = is_bold && tr.has_bold_face();
+            let faux_bold_dx = if is_bold && !real_bold { 0.7 * sf } else { 0.0 };
+            
+            let text = &node.text;
+            let text_w = tr.measure_text_weighted(text, size, letter_spacing, real_bold);
+            // 是否需要多行：含换行符，或允许换行且超出内容宽度
+            let multiline = text.contains('\n') || (should_wrap && cw > 0.0 && text_w > cw);
             
             if multiline {
                 // 多行：顶部对齐换行绘制（在内容区内）
                 draw_text_wrapped_advanced(
                     canvas, tr, text, cx, cy + size, size, cw, chh,
-                    line_height, letter_spacing, &node.style, &paint
+                    line_height, letter_spacing, real_bold, &node.style, &paint
                 );
-                if is_bold {
+                if faux_bold_dx > 0.0 {
                     draw_text_wrapped_advanced(
-                        canvas, tr, text, cx + bold_dx, cy + size, size, cw, chh,
-                        line_height, letter_spacing, &node.style, &paint
+                        canvas, tr, text, cx + faux_bold_dx, cy + size, size, cw, chh,
+                        line_height, letter_spacing, real_bold, &node.style, &paint
                     );
                 }
             } else {
@@ -208,14 +217,14 @@ impl TextComponent {
                 } else { 0.0 };
                 let ax = cx + align_dx;
                 if cw > 0.0 && use_ellipsis && text_w > cw {
-                    draw_text_with_ellipsis(canvas, tr, text, cx, baseline, size, cw, letter_spacing, &paint);
-                    if is_bold {
-                        draw_text_with_ellipsis(canvas, tr, text, cx + bold_dx, baseline, size, cw, letter_spacing, &paint);
+                    draw_text_with_ellipsis(canvas, tr, text, cx, baseline, size, cw, letter_spacing, real_bold, &paint);
+                    if faux_bold_dx > 0.0 {
+                        draw_text_with_ellipsis(canvas, tr, text, cx + faux_bold_dx, baseline, size, cw, letter_spacing, real_bold, &paint);
                     }
                 } else {
-                    tr.draw_text_with_spacing(canvas, text, ax, baseline, size, letter_spacing, &paint);
-                    if is_bold {
-                        tr.draw_text_with_spacing(canvas, text, ax + bold_dx, baseline, size, letter_spacing, &paint);
+                    tr.draw_text_weighted(canvas, text, ax, baseline, size, letter_spacing, real_bold, &paint);
+                    if faux_bold_dx > 0.0 {
+                        tr.draw_text_weighted(canvas, text, ax + faux_bold_dx, baseline, size, letter_spacing, real_bold, &paint);
                     }
                 }
             }
@@ -229,10 +238,10 @@ impl TextComponent {
 }
 
 /// 计算某一行按 text-align 对齐后的起始 x
-fn aligned_line_x(tr: &TextRenderer, line: &str, x: f32, max_width: f32, size: f32, ls: f32, align: TextAlign) -> f32 {
+fn aligned_line_x(tr: &TextRenderer, line: &str, x: f32, max_width: f32, size: f32, ls: f32, bold: bool, align: TextAlign) -> f32 {
     match align {
         TextAlign::Center | TextAlign::Right => {
-            let lw = tr.measure_text_with_spacing(line, size, ls);
+            let lw = tr.measure_text_weighted(line, size, ls, bold);
             if max_width > lw {
                 if align == TextAlign::Center { x + (max_width - lw) / 2.0 } else { x + (max_width - lw) }
             } else {
@@ -255,11 +264,12 @@ fn draw_text_wrapped_advanced(
     max_height: f32,
     line_height: f32,
     letter_spacing: f32,
+    bold: bool,
     style: &NodeStyle,
     paint: &Paint,
 ) {
     if max_width <= 0.0 {
-        tr.draw_text_with_spacing(canvas, text, x, y, size, letter_spacing, paint);
+        tr.draw_text_weighted(canvas, text, x, y, size, letter_spacing, bold, paint);
         return;
     }
     
@@ -284,7 +294,7 @@ fn draw_text_wrapped_advanced(
         let mut current_width = 0.0;
         
         for (i, ch) in chars.iter().enumerate() {
-            let char_width = tr.measure_char(*ch, size) + letter_spacing;
+            let char_width = tr.measure_char_weighted(*ch, size, bold) + letter_spacing;
             
             // 检查是否需要换行
             if current_width + char_width > max_width && i > line_start {
@@ -295,13 +305,13 @@ fn draw_text_wrapped_advanced(
                 let next_line_top = current_y + actual_line_height;
                 if use_ellipsis && max_height > 0.0 && next_line_top > (y - size) + max_height {
                     let rest: String = chars[line_start..].iter().collect();
-                    draw_text_with_ellipsis(canvas, tr, &rest, x, current_y, size, max_width, letter_spacing, paint);
+                    draw_text_with_ellipsis(canvas, tr, &rest, x, current_y, size, max_width, letter_spacing, bold, paint);
                     return;
                 }
                 
                 // 绘制当前行（按 text-align 对齐）
-                let lx = aligned_line_x(tr, &line, x, max_width, size, letter_spacing, style.text_align);
-                tr.draw_text_with_spacing(canvas, &line, lx, current_y, size, letter_spacing, paint);
+                let lx = aligned_line_x(tr, &line, x, max_width, size, letter_spacing, bold, style.text_align);
+                tr.draw_text_weighted(canvas, &line, lx, current_y, size, letter_spacing, bold, paint);
                 
                 current_y += actual_line_height;
                 line_start = i;
@@ -314,8 +324,8 @@ fn draw_text_wrapped_advanced(
         // 绘制段落的最后一行
         if line_start < chars.len() {
             let line: String = chars[line_start..].iter().collect();
-            let lx = aligned_line_x(tr, &line, x, max_width, size, letter_spacing, style.text_align);
-            tr.draw_text_with_spacing(canvas, &line, lx, current_y, size, letter_spacing, paint);
+            let lx = aligned_line_x(tr, &line, x, max_width, size, letter_spacing, bold, style.text_align);
+            tr.draw_text_weighted(canvas, &line, lx, current_y, size, letter_spacing, bold, paint);
         }
         
         // 段落之间换行
@@ -335,14 +345,15 @@ fn draw_text_with_ellipsis(
     size: f32,
     max_width: f32,
     letter_spacing: f32,
+    bold: bool,
     paint: &Paint,
 ) {
     let ellipsis = "...";
-    let ellipsis_width = tr.measure_text_with_spacing(ellipsis, size, letter_spacing);
+    let ellipsis_width = tr.measure_text_weighted(ellipsis, size, letter_spacing, bold);
     
-    let text_width = tr.measure_text_with_spacing(text, size, letter_spacing);
+    let text_width = tr.measure_text_weighted(text, size, letter_spacing, bold);
     if text_width <= max_width {
-        tr.draw_text_with_spacing(canvas, text, x, y, size, letter_spacing, paint);
+        tr.draw_text_weighted(canvas, text, x, y, size, letter_spacing, bold, paint);
         return;
     }
     
@@ -352,7 +363,7 @@ fn draw_text_with_ellipsis(
     let mut truncate_at = chars.len();
     
     for (i, ch) in chars.iter().enumerate() {
-        let char_width = tr.measure_char(*ch, size) + letter_spacing;
+        let char_width = tr.measure_char_weighted(*ch, size, bold) + letter_spacing;
         if current_width + char_width + ellipsis_width > max_width {
             truncate_at = i;
             break;
@@ -362,7 +373,7 @@ fn draw_text_with_ellipsis(
     
     let truncated: String = chars[..truncate_at].iter().collect();
     let display_text = format!("{}{}", truncated, ellipsis);
-    tr.draw_text_with_spacing(canvas, &display_text, x, y, size, letter_spacing, paint);
+    tr.draw_text_weighted(canvas, &display_text, x, y, size, letter_spacing, bold, paint);
 }
 
 /// 绘制文本装饰（下划线、删除线等）

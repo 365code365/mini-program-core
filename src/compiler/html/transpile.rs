@@ -586,7 +586,8 @@ pub fn base_css() -> &'static str {
 /* scroll-view：块级可滚动容器——子元素保持自身高度、超出则滚动，而非像 flex 那样被压缩 */
 .wx-scroll-view{display:block;}
 .wx-scroll-view>*{flex-shrink:0;}
-.wx-text{display:inline;}
+/* text：保留数据里的换行（小程序 <text> 中 \n 就是换行），但仍折叠连续空格与缩进 */
+.wx-text{display:inline;white-space:pre-line;}
 .wx-image{display:block;}
 .wx-input,.wx-textarea{border:0;outline:none;background:none;font:inherit;color:inherit;width:100%;}
 .wx-navigator{text-decoration:none;color:inherit;}

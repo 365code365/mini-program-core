@@ -85,7 +85,9 @@ pub const RUNTIME_JS: &str = r####"/* mini-render 响应式运行时（导出 HT
     var out = [], branch = false;
     for (var i = 0; i < nodes.length; i++) {
       var node = nodes[i];
-      if (node.t === "tx") { out.push({ t: "tx", text: interp(node.x, scope) }); branch = false; continue; }
+      // 文本节点：与原生渲染器一致地去掉首尾空白（WXML 缩进换行不应产生可见空行；
+      // 数据里的 \n 由 .wx-text{white-space:pre-line} 保留为换行）
+      if (node.t === "tx") { out.push({ t: "tx", text: interp(node.x, scope).replace(/^[\s\u3000]+|[\s\u3000]+$/g, "") }); branch = false; continue; }
       var a = node.a || {};
       if ("wx:for" in a) { renderForV(node, scope, out); branch = false; continue; }
       if ("wx:if" in a) { var c = !!evalWhole(a["wx:if"], scope); branch = c; if (c) pushEl(out, node, scope); continue; }

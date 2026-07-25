@@ -553,7 +553,13 @@ impl WxmlRenderer {
                         let ls = node.style.letter_spacing * sf;
                         let line_height = node.style.line_height.map(|lh| lh * sf)
                             .unwrap_or_else(|| tr.natural_line_height_for(&node.text, size)).max(size);
-                        let lines = count_wrapped_lines(tr, &node.text, avail, size, ls);
+                        let bold = matches!(
+                            node.style.font_weight,
+                            super::components::FontWeight::Bold | super::components::FontWeight::W600
+                                | super::components::FontWeight::W700 | super::components::FontWeight::W800
+                                | super::components::FontWeight::W900
+                        ) && tr.has_bold_face();
+                        let lines = count_wrapped_lines(tr, &node.text, avail, size, ls, bold);
                         let needed_h = lines as f32 * line_height + pt + pb;
                         if needed_h > box_h + 0.5 {
                             if let Ok(mut st) = taffy.style(node.taffy_node).cloned() {
@@ -1863,7 +1869,7 @@ impl WxmlRenderer {
 
 /// 按与 text.rs 绘制一致的贪心算法统计文本在给定可用宽度下的换行行数。
 /// 用于第二遍布局修正文本盒子高度（含 `\n` 硬换行）。
-fn count_wrapped_lines(tr: &TextRenderer, text: &str, max_width: f32, size: f32, letter_spacing: f32) -> usize {
+fn count_wrapped_lines(tr: &TextRenderer, text: &str, max_width: f32, size: f32, letter_spacing: f32, bold: bool) -> usize {
     if max_width <= 0.0 {
         return text.split('\n').count().max(1);
     }
@@ -1877,7 +1883,7 @@ fn count_wrapped_lines(tr: &TextRenderer, text: &str, max_width: f32, size: f32,
         let mut line_start = 0usize;
         let mut current_width = 0.0f32;
         for (i, ch) in chars.iter().enumerate() {
-            let char_width = tr.measure_char(*ch, size) + letter_spacing;
+            let char_width = tr.measure_char_weighted(*ch, size, bold) + letter_spacing;
             if current_width + char_width > max_width && i > line_start {
                 lines += 1;
                 line_start = i;

@@ -50,13 +50,15 @@ pub fn text_has_cjk(text: &str) -> bool {
 pub struct TextRenderer {
     /// 主字体（中文/英文）
     main_font: Font,
+    /// 主字体的粗体字面（若字体集合内提供），用于替代描边式 faux-bold
+    bold_font: Option<Font>,
     /// Emoji 字体
     emoji_font: Option<Font>,
     /// 符号字体（✕ ✓ ★ 等主字体缺失的字形）
     symbol_font: Option<Font>,
-    /// 简单的字形缓存 (char, size_u32) -> (Metrics, Bitmap)
+    /// 简单的字形缓存 (char, size_u32, bold) -> (Metrics, Bitmap)
     /// 使用 Mutex 实现内部可变性，因为 draw 方法是 &self
-    cache: Arc<Mutex<HashMap<(char, u32), (Metrics, Vec<u8>)>>>,
+    cache: Arc<Mutex<HashMap<(char, u32, bool), (Metrics, Vec<u8>)>>>,
 }
 
 impl TextRenderer {
@@ -70,10 +72,48 @@ impl TextRenderer {
             .map_err(|e| e.to_string())?;
         Ok(Self { 
             main_font: font,
+            bold_font: None,
             emoji_font: None,
             symbol_font: None,
             cache: Arc::new(Mutex::new(HashMap::new())),
         })
+    }
+
+    /// 从同一份字体数据里挑选粗体字面（TTC 字体集合常把 W3/W6 放在不同 face）。
+    ///
+    /// 判定方式：光栅化同一个汉字，比较墨水覆盖率，取显著更黑且步进宽度一致的字面。
+    /// 找不到就返回 None，绘制端回退到 faux-bold。
+    fn detect_bold_face(font_data: &[u8], regular: &Font) -> Option<Font> {
+        const PROBE: char = '国';
+        const PROBE_SIZE: f32 = 32.0;
+        let ink_ratio = |font: &Font| -> f32 {
+            let (metrics, bitmap) = font.rasterize(PROBE, PROBE_SIZE);
+            let area = (metrics.width * metrics.height).max(1) as u32;
+            let ink: u32 = bitmap.iter().map(|v| *v as u32).sum();
+            ink as f32 / (area * 255) as f32
+        };
+        let regular_ratio = ink_ratio(regular);
+        let regular_advance = regular.metrics(PROBE, PROBE_SIZE).advance_width;
+        let mut best: Option<(f32, Font)> = None;
+        for index in 1..8u32 {
+            let settings = FontSettings { scale: 40.0, collection_index: index, ..Default::default() };
+            let Ok(candidate) = Font::from_bytes(font_data, settings) else { break };
+            if candidate.lookup_glyph_index(PROBE) == 0 {
+                continue;
+            }
+            let advance = candidate.metrics(PROBE, PROBE_SIZE).advance_width;
+            // 粗体字面应与常规字面等宽（同一字族的等宽 CJK），否则可能是压缩/斜体字面
+            if (advance - regular_advance).abs() > 0.6 {
+                continue;
+            }
+            let ratio = ink_ratio(&candidate);
+            if ratio > regular_ratio * 1.25 {
+                if best.as_ref().map(|(r, _)| ratio > *r).unwrap_or(true) {
+                    best = Some((ratio, candidate));
+                }
+            }
+        }
+        best.map(|(_, font)| font)
     }
     
     /// 从文件路径加载字体
@@ -92,6 +132,24 @@ impl TextRenderer {
     ///
     /// 修复：中文字体（如 Hiragino Sans GB）缺少 ✕ ✓ ★ 等符号字形，直接用主字体会
     /// 画成豆腐块（□）。回退到系统符号字体后与浏览器表现一致。
+    /// 是否有真实粗体字面可用（无则调用方回退 faux-bold）。
+    pub fn has_bold_face(&self) -> bool {
+        self.bold_font.is_some()
+    }
+
+    /// 按字重选择字体：粗体优先用真实粗体字面（主字体集合内的 W6 等），
+    /// 该字面缺字形时回退到常规选择链。
+    fn font_for_weight(&self, ch: char, bold: bool) -> &Font {
+        if bold {
+            if let Some(font) = &self.bold_font {
+                if font.lookup_glyph_index(ch) != 0 {
+                    return font;
+                }
+            }
+        }
+        self.font_for(ch)
+    }
+
     fn font_for(&self, ch: char) -> &Font {
         // Emoji 优先用彩色 Emoji 字体，但必须确认其确有该字形：
         // is_emoji 的区间（如 0x2700..=0x27BF）包含 ✕ ✓ 这类纯符号，
@@ -135,18 +193,24 @@ impl TextRenderer {
             "/System/Library/Fonts/AppleColorEmoji.ttf",
         ];
         
-        // 加载主字体
+        // 加载主字体，并在同一字体集合里寻找真正的粗体字面
         let mut renderer: Option<TextRenderer> = None;
         for path in &main_font_paths {
-            if Path::new(path).exists() {
-                match Self::from_file(path) {
-                    Ok(r) => {
-                        println!("✅ Main font: {}", path);
-                        renderer = Some(r);
-                        break;
+            if !Path::new(path).exists() {
+                continue;
+            }
+            let Ok(data) = std::fs::read(path) else { continue };
+            match Self::from_bytes(&data) {
+                Ok(mut r) => {
+                    println!("✅ Main font: {}", path);
+                    r.bold_font = Self::detect_bold_face(&data, &r.main_font);
+                    if r.bold_font.is_some() {
+                        println!("✅ Bold face: {}", path);
                     }
-                    Err(_) => continue,
+                    renderer = Some(r);
+                    break;
                 }
+                Err(_) => continue,
             }
         }
         
@@ -236,6 +300,12 @@ impl TextRenderer {
     
     /// 渲染文本到画布（带字间距）
     pub fn draw_text_with_spacing(&self, canvas: &mut Canvas, text: &str, x: f32, y: f32, size: f32, letter_spacing: f32, paint: &Paint) {
+        self.draw_text_weighted(canvas, text, x, y, size, letter_spacing, false, paint);
+    }
+
+    /// 渲染文本到画布（带字间距 + 字重）。bold 为真且存在真实粗体字面时用该字面绘制。
+    pub fn draw_text_weighted(&self, canvas: &mut Canvas, text: &str, x: f32, y: f32, size: f32, letter_spacing: f32, bold: bool, paint: &Paint) {
+        let bold = bold && self.bold_font.is_some();
         let mut cursor_x = x;
         let size_key = (size * 10.0) as u32; // 将 size 转换为整数 key，保留1位小数精度
         
@@ -247,20 +317,20 @@ impl TextRenderer {
             // 先尝试从缓存获取（快速路径）
             let cached_data = {
                 let cache = self.cache.lock().unwrap();
-                cache.get(&(ch, size_key)).cloned()
+                cache.get(&(ch, size_key, bold)).cloned()
             };
             
             let (metrics, bitmap) = if let Some(data) = cached_data {
                 data
             } else {
-                // 缓存未命中，执行光栅化（按字形可用性选择字体，含符号回退）
-                let font = self.font_for(ch);
+                // 缓存未命中，执行光栅化（按字重与字形可用性选择字体，含符号回退）
+                let font = self.font_for_weight(ch, bold);
                 
                 let (metrics, bitmap) = font.rasterize(ch, size);
                 
                 // 存入缓存
                 let mut cache = self.cache.lock().unwrap();
-                cache.insert((ch, size_key), (metrics.clone(), bitmap.clone()));
+                cache.insert((ch, size_key, bold), (metrics.clone(), bitmap.clone()));
                 (metrics, bitmap)
             };
             
@@ -306,10 +376,16 @@ impl TextRenderer {
     
     /// 测量文本宽度（带字间距）
     pub fn measure_text_with_spacing(&self, text: &str, size: f32, letter_spacing: f32) -> f32 {
+        self.measure_text_weighted(text, size, letter_spacing, false)
+    }
+
+    /// 测量文本宽度（带字间距 + 字重）：粗体用真实粗体字面度量，避免测量与绘制不一致。
+    pub fn measure_text_weighted(&self, text: &str, size: f32, letter_spacing: f32, bold: bool) -> f32 {
+        let bold = bold && self.bold_font.is_some();
         let mut width = 0.0;
         let char_count = text.chars().count();
         for (i, ch) in text.chars().enumerate() {
-            let font = self.font_for(ch);
+            let font = self.font_for_weight(ch, bold);
             let metrics = font.metrics(ch, size);
             width += metrics.advance_width;
             if i < char_count - 1 {
@@ -322,6 +398,12 @@ impl TextRenderer {
     /// 测量单个字符宽度
     pub fn measure_char(&self, ch: char, size: f32) -> f32 {
         self.font_for(ch).metrics(ch, size).advance_width
+    }
+
+    /// 测量单个字符宽度（带字重）
+    pub fn measure_char_weighted(&self, ch: char, size: f32, bold: bool) -> f32 {
+        let bold = bold && self.bold_font.is_some();
+        self.font_for_weight(ch, bold).metrics(ch, size).advance_width
     }
     
     /// 测量文本高度
