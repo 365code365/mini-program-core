@@ -91,3 +91,4 @@ body{font-size:16px;color:#333;font-family:-apple-system,system-ui,"PingFang SC"
 .wxicon-search{color:#b2b2b2;}
 .wxicon-clear{color:#f43530;}
 .wxicon-circle{color:#ccc;}
+.wxicon-close,.wxicon-cancel_no_circle,.wxicon-info_no_circle,.wxicon-warn_no_circle,.wxicon-waiting_no_circle,.wxicon-clock{color:currentColor;}

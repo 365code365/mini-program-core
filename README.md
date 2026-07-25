@@ -88,7 +88,7 @@ HTML 目标产出结构化工程（`common/base.css` + 每页 html/css/js + 运�
 - [特性总览](#-特性总览)
 - [快速开始](#-快速开始)
 - [浏览器调试预览](#-浏览器调试预览)
-- [场景画廊](#-场景画廊34-个真实渲染)
+- [场景画廊](#-场景画廊57-个真实渲染)
 - [视频与 Canvas](#-视频与-canvas)
 - [支持的组件](#-支持的组件)
 - [CSS 支持](#-css-支持)
@@ -134,13 +134,13 @@ source "$HOME/.cargo/env"
 cargo build --release
 
 # 3) 运行示例
-cargo run --example gallery         # 渲染全部 34 个场景到 doc/gallery/
+cargo run --example gallery         # 渲染全部 57 个场景到 doc/gallery/
 cargo run --bin mini-devserver      # 浏览器调试预览（见下节）
 cargo run --example video_player    # 独立视频播放窗口（自动循环 + 声音）
 cargo run --bin mini-app-window     # 窗口应用（加载 sample-app）
 cargo run --bin mini-launcher       # 小程序启动器（扫描 sample 目录）
 
-# 4) 测试（202 个用例）
+# 4) 测试（214 个用例）
 cargo test
 ```
 
@@ -458,7 +458,7 @@ free(buf); mr_canvas_free(c);
 覆盖表达式引擎、WXSS 选择器（含 `var()`/`calc()`）、模板控制流、布局与文本换行、全组件渲染、Canvas 2D、交互、滚动/惯性、页面栈路由、组件模型、CommonJS 模块、Promise、生命周期、事件冒泡等：
 
 ```bash
-cargo test          # 202 个用例
+cargo test          # 214 个用例
 cargo test route    # 路由/页面栈/组件/模块/异步/生命周期
 cargo test canvas   # Canvas 2D 上下文与命令
 cargo test scroll   # 滚动与惯性
