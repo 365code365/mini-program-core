@@ -81,7 +81,7 @@ struct LauncherApp {
     window: Option<Rc<Window>>,
     surface: Option<Surface<Rc<Window>, Rc<Window>>>,
     canvas: Canvas,
-    text_renderer: Option<TextRenderer>,
+    text_renderer: Option<std::sync::Arc<TextRenderer>>,
     mini_apps: Vec<MiniAppInfo>,
     state: LauncherState,
     scale_factor: f32,
@@ -106,8 +106,8 @@ impl LauncherApp {
     }
     fn new() -> Self {
         let canvas = Canvas::new(WINDOW_WIDTH * 2, WINDOW_HEIGHT * 2);
-        let text_renderer = TextRenderer::load_system_font()
-            .or_else(|_| TextRenderer::from_bytes(include_bytes!("../../assets/ArialUnicode.ttf")))
+        let text_renderer = mini_render::text::shared_fonts()
+            .ok_or_else(|| "no font".to_string())
             .ok();
         
         // 扫描 sample 目录

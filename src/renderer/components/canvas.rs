@@ -46,12 +46,8 @@ pub struct Canvas2DContext {
 }
 
 /// Canvas 文本渲染用的全局字体（懒加载系统字体）
-static CANVAS_FONT: once_cell::sync::Lazy<Option<crate::text::TextRenderer>> =
-    once_cell::sync::Lazy::new(|| {
-        crate::text::TextRenderer::load_system_font()
-            .or_else(|_| crate::text::TextRenderer::from_bytes(include_bytes!("../../../assets/ArialUnicode.ttf")))
-            .ok()
-    });
+static CANVAS_FONT: once_cell::sync::Lazy<Option<std::sync::Arc<crate::text::TextRenderer>>> =
+    once_cell::sync::Lazy::new(crate::text::shared_fonts);
 
 
 /// 文本基线

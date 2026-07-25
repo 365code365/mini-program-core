@@ -107,13 +107,13 @@ cargo run --bin mini-devserver <小程序根> [端口]   # 端口被占用会自
 
 ---
 
-## 🖼️ 场景画廊（34 个真实渲染）
+## 🖼️ 场景画廊（57 个真实渲染）
 
 以下页面均由本引擎真实渲染输出（纯 WXML + WXSS + 数据），一键生成：
 
 ```bash
 python3 scripts/gen_assets.py   # 首次：生成真实商品图/头像/图标素材
-cargo run --example gallery     # 渲染 34 个场景到 doc/gallery/
+cargo run --example gallery     # 渲染 57 个场景到 doc/gallery/
 ```
 
 ### 电商 · 社交 · 导航

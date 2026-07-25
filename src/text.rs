@@ -4,7 +4,7 @@ use crate::{Canvas, Color, Paint};
 use fontdue::{Font, FontSettings, Metrics};
 use std::path::Path;
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 
 /// CSS `line-height: normal` 的等效系数（含中日韩字符的行）。
 ///
@@ -46,6 +46,28 @@ pub fn text_has_cjk(text: &str) -> bool {
     text.chars().any(is_cjk_char)
 }
 
+/// 进程内共享的字体渲染器。
+///
+/// 加载系统字体要读取整套 TTC（中文字体 + Apple Color Emoji 合计上百 MB），实测单次
+/// 约 1.3s。此前每个 `WxmlRenderer`、每个度量用的 Lazy 都各自加载一份，切换页面时会
+/// 创建多个渲染器，于是每次切页都要花数秒——这是交互卡顿的主因。
+/// 字体是只读的（内部字形缓存自带 Mutex），因此全进程共享一份即可。
+static SHARED_FONTS: OnceLock<Option<Arc<TextRenderer>>> = OnceLock::new();
+
+/// 取进程内共享的字体渲染器（首次调用时加载，之后为原子指针克隆）。
+pub fn shared_fonts() -> Option<Arc<TextRenderer>> {
+    SHARED_FONTS
+        .get_or_init(|| {
+            TextRenderer::load_system_font()
+                .or_else(|_| {
+                    TextRenderer::from_bytes(include_bytes!("../assets/ArialUnicode.ttf"))
+                })
+                .ok()
+                .map(Arc::new)
+        })
+        .clone()
+}
+
 /// 文本渲染器 - 支持多字体回退（中文 + Emoji）
 pub struct TextRenderer {
     /// 主字体（中文/英文）
@@ -54,8 +76,9 @@ pub struct TextRenderer {
     bold_font: Option<Font>,
     /// Emoji 字体
     emoji_font: Option<Font>,
-    /// 符号字体（✕ ✓ ★ 等主字体缺失的字形）
-    symbol_font: Option<Font>,
+    /// 符号字体（✕ ✓ ★ 等主字体缺失的字形）。
+    /// 懒加载：多数页面不含这类符号，启动时不必解析 20MB+ 字体。
+    symbol_font: OnceLock<Option<Font>>,
     /// 简单的字形缓存 (char, size_u32, bold) -> (Metrics, Bitmap)
     /// 使用 Mutex 实现内部可变性，因为 draw 方法是 &self
     cache: Arc<Mutex<HashMap<(char, u32, bool), (Metrics, Vec<u8>)>>>,
@@ -74,7 +97,7 @@ impl TextRenderer {
             main_font: font,
             bold_font: None,
             emoji_font: None,
-            symbol_font: None,
+            symbol_font: OnceLock::new(),
             cache: Arc::new(Mutex::new(HashMap::new())),
         })
     }
@@ -94,8 +117,7 @@ impl TextRenderer {
         };
         let regular_ratio = ink_ratio(regular);
         let regular_advance = regular.metrics(PROBE, PROBE_SIZE).advance_width;
-        let mut best: Option<(f32, Font)> = None;
-        for index in 1..8u32 {
+        for index in 1..6u32 {
             let settings = FontSettings { scale: 40.0, collection_index: index, ..Default::default() };
             let Ok(candidate) = Font::from_bytes(font_data, settings) else { break };
             if candidate.lookup_glyph_index(PROBE) == 0 {
@@ -106,14 +128,13 @@ impl TextRenderer {
             if (advance - regular_advance).abs() > 0.6 {
                 continue;
             }
-            let ratio = ink_ratio(&candidate);
-            if ratio > regular_ratio * 1.25 {
-                if best.as_ref().map(|(r, _)| ratio > *r).unwrap_or(true) {
-                    best = Some((ratio, candidate));
-                }
+            // 命中第一个「明显更黑且等宽」的字面即返回：继续扫描只会把同一个
+            // 22MB 字体集合反复解析，白白拖慢启动
+            if ink_ratio(&candidate) > regular_ratio * 1.25 {
+                return Some(candidate);
             }
         }
-        best.map(|(_, font)| font)
+        None
     }
     
     /// 从文件路径加载字体
@@ -132,6 +153,39 @@ impl TextRenderer {
     ///
     /// 修复：中文字体（如 Hiragino Sans GB）缺少 ✕ ✓ ★ 等符号字形，直接用主字体会
     /// 画成豆腐块（□）。回退到系统符号字体后与浏览器表现一致。
+    /// 惰性加载符号字体：补齐中文字体缺失的 ✕ ✓ ★ 等字形。
+    ///
+    /// 按覆盖度排序（实测 Apple Symbols 反而缺 U+2715/U+2713，故不作首选）；
+    /// 系统都不可用时回退到随包字体，保证跨平台一致。
+    fn symbol_font(&self) -> Option<&Font> {
+        self.symbol_font
+            .get_or_init(|| {
+                let candidates = [
+                    "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+                    "/Library/Fonts/Arial Unicode.ttf",
+                    "/System/Library/Fonts/Menlo.ttc",
+                    "/System/Library/Fonts/Apple Symbols.ttf",
+                ];
+                let settings = FontSettings { scale: 40.0, ..Default::default() };
+                for path in candidates {
+                    if !Path::new(path).exists() {
+                        continue;
+                    }
+                    if let Ok(data) = std::fs::read(path) {
+                        if let Ok(font) = Font::from_bytes(data.as_slice(), settings.clone()) {
+                            return Some(font);
+                        }
+                    }
+                }
+                Font::from_bytes(
+                    include_bytes!("../assets/ArialUnicode.ttf").as_slice(),
+                    settings,
+                )
+                .ok()
+            })
+            .as_ref()
+    }
+
     /// 是否有真实粗体字面可用（无则调用方回退 faux-bold）。
     pub fn has_bold_face(&self) -> bool {
         self.bold_font.is_some()
@@ -164,7 +218,7 @@ impl TextRenderer {
         if self.main_has_glyph(ch) {
             return &self.main_font;
         }
-        if let Some(font) = &self.symbol_font {
+        if let Some(font) = self.symbol_font() {
             if font.lookup_glyph_index(ch) != 0 {
                 return font;
             }
@@ -216,54 +270,29 @@ impl TextRenderer {
         
         let mut renderer = renderer.ok_or("No main font found")?;
         
-        // 加载 Emoji 字体
-        for path in &emoji_font_paths {
-            if Path::new(path).exists() {
-                if let Ok(data) = std::fs::read(path) {
-                    let settings = FontSettings {
-                        scale: 40.0,
-                        ..Default::default()
-                    };
-                    if let Ok(font) = Font::from_bytes(data.as_slice(), settings) {
-                        println!("✅ Emoji font: {}", path);
-                        renderer.emoji_font = Some(font);
-                        break;
+        // Emoji 字体：默认不加载。
+        //
+        // Apple Color Emoji 是 183MB 的彩色位图字体（sbix），fontdue 只支持轮廓字形，
+        // 无法光栅化它的位图 —— 加载后既画不出 emoji，又让每次初始化多花约 1.5 秒。
+        // 需要时可设 MINI_LOAD_EMOJI_FONT=1 显式开启（例如换用支持位图的光栅化后端后）。
+        if std::env::var_os("MINI_LOAD_EMOJI_FONT").is_some() {
+            for path in &emoji_font_paths {
+                if Path::new(path).exists() {
+                    if let Ok(data) = std::fs::read(path) {
+                        let settings = FontSettings {
+                            scale: 40.0,
+                            ..Default::default()
+                        };
+                        if let Ok(font) = Font::from_bytes(data.as_slice(), settings) {
+                            println!("✅ Emoji font: {}", path);
+                            renderer.emoji_font = Some(font);
+                            break;
+                        }
                     }
                 }
             }
         }
 
-        // 加载符号字体（补齐中文字体缺失的 ✕ ✓ ★ 等字形，避免渲染成豆腐块）。
-        // 按覆盖度排序：Arial Unicode / Menlo / ZapfDingbats 实测含 U+2715、U+2713；
-        // Apple Symbols 反而缺这两个字形，因此不作首选。
-        let symbol_font_paths = [
-            "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
-            "/Library/Fonts/Arial Unicode.ttf",
-            "/System/Library/Fonts/Menlo.ttc",
-            "/System/Library/Fonts/Apple Symbols.ttf",
-        ];
-        for path in &symbol_font_paths {
-            if Path::new(path).exists() {
-                if let Ok(data) = std::fs::read(path) {
-                    let settings = FontSettings { scale: 40.0, ..Default::default() };
-                    if let Ok(font) = Font::from_bytes(data.as_slice(), settings) {
-                        renderer.symbol_font = Some(font);
-                        break;
-                    }
-                }
-            }
-        }
-        // 系统无可用符号字体时用随包字体兜底（保证跨平台一致）
-        if renderer.symbol_font.is_none() {
-            let settings = FontSettings { scale: 40.0, ..Default::default() };
-            if let Ok(font) = Font::from_bytes(
-                include_bytes!("../assets/ArialUnicode.ttf").as_slice(),
-                settings,
-            ) {
-                renderer.symbol_font = Some(font);
-            }
-        }
-        
         Ok(renderer)
     }
 

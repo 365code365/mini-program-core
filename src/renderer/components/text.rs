@@ -8,12 +8,8 @@ use taffy::prelude::*;
 
 /// 与渲染器同款的系统字体（用于 build 阶段按真实字形宽度测量文本盒子宽度，
 /// 避免用粗糙估算导致盒子偏窄、二次布局误判换行）。
-static TEXT_MEASURE_FONT: once_cell::sync::Lazy<Option<TextRenderer>> =
-    once_cell::sync::Lazy::new(|| {
-        TextRenderer::load_system_font()
-            .or_else(|_| TextRenderer::from_bytes(include_bytes!("../../../assets/ArialUnicode.ttf")))
-            .ok()
-    });
+static TEXT_MEASURE_FONT: once_cell::sync::Lazy<Option<std::sync::Arc<TextRenderer>>> =
+    once_cell::sync::Lazy::new(crate::text::shared_fonts);
 
 pub struct TextComponent;
 
@@ -44,7 +40,7 @@ impl TextComponent {
         
         // 单行最大宽度：优先用真实字体度量（与绘制/二次布局一致），无字体时回退估算。
         let letter_spacing = ns.letter_spacing * sf;
-        let measure_font = TEXT_MEASURE_FONT.as_ref();
+        let measure_font = TEXT_MEASURE_FONT.as_deref();
         // 字重影响字形宽度：布局度量必须与绘制所用字面一致
         let is_bold_weight = matches!(
             ns.font_weight,

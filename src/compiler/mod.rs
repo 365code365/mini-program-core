@@ -178,7 +178,7 @@ fn load_custom_tab_bar(root: &str, app_js: &str) -> Option<TabBarSource> {
 }
 
 /// 执行组件 JS 并实例化，取回其 data 快照（用于静态渲染自定义 tabBar）。
-fn snapshot_component_data(app_js: &str, component_js: &str) -> Option<JsonValue> {
+pub fn snapshot_component_data(app_js: &str, component_js: &str) -> Option<JsonValue> {
     if component_js.is_empty() {
         return None;
     }

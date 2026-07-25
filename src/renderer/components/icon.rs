@@ -116,10 +116,15 @@ impl IconComponent {
             "warn" => Self::draw_warn(canvas, cx, cy, r, color, stroke_width),
             "waiting" | "waiting_circle" => Self::draw_waiting(canvas, cx, cy, r, color, stroke_width),
             "cancel" | "clear" => Self::draw_cancel(canvas, cx, cy, r, color, stroke_width),
-            // 纯叉号（无圆底）：用于弹窗关闭按钮等场景，线条居中且抗锯齿
+            // ── 无圆底变体：只画标记本身，便于放进已有的彩色圆/胶囊里 ──
+            // （success/info/warn/waiting 自带实心圆底，若再放进彩色圆并把 color 设为白色，
+            //   白圆会盖住底色、白色标记也看不见，视觉上只剩一个圆环）
             "close" | "cancel_no_circle" => {
                 Self::draw_thick_x(canvas, cx, cy, r * 0.62, color, stroke_width * 1.5)
             }
+            "info_no_circle" => Self::draw_info_mark(canvas, cx, cy, r, color),
+            "warn_no_circle" => Self::draw_warn_mark(canvas, cx, cy, r, color),
+            "waiting_no_circle" | "clock" => Self::draw_clock_mark(canvas, cx, cy, r, color, stroke_width),
             "download" => Self::draw_download(canvas, cx, cy, r, color, stroke_width),
             "search" => Self::draw_search(canvas, cx, cy, r, color, stroke_width),
             "circle" => Self::draw_circle_icon(canvas, cx, cy, r, color, stroke_width),
@@ -230,6 +235,44 @@ impl IconComponent {
         canvas.draw_circle(p2.0, p2.1, half, &paint);
     }
     
+    /// 「i」标记（无圆底）：点 + 竖条，颜色取 color
+    fn draw_info_mark(canvas: &mut Canvas, cx: f32, cy: f32, r: f32, color: Color) {
+        let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill).with_anti_alias(true);
+        canvas.draw_circle(cx, cy - r * 0.52, r * 0.17, &paint);
+        let bar_w = r * 0.26;
+        let mut bar = Path::new();
+        bar.add_round_rect(cx - bar_w / 2.0, cy - r * 0.18, bar_w, r * 0.78, bar_w / 2.0);
+        canvas.draw_path(&bar, &paint);
+    }
+
+    /// 「!」标记（无圆底）：竖条 + 点
+    fn draw_warn_mark(canvas: &mut Canvas, cx: f32, cy: f32, r: f32, color: Color) {
+        let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill).with_anti_alias(true);
+        let bar_w = r * 0.26;
+        let mut bar = Path::new();
+        bar.add_round_rect(cx - bar_w / 2.0, cy - r * 0.78, bar_w, r * 0.86, bar_w / 2.0);
+        canvas.draw_path(&bar, &paint);
+        canvas.draw_circle(cx, cy + r * 0.56, r * 0.17, &paint);
+    }
+
+    /// 时钟标记（无圆底）：圆环 + 指针
+    fn draw_clock_mark(canvas: &mut Canvas, cx: f32, cy: f32, r: f32, color: Color, stroke_width: f32) {
+        let ring = stroke_width.max(1.5);
+        let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill).with_anti_alias(true);
+        // 圆环：外圆挖内圆
+        let mut path = Path::new();
+        path.add_circle(cx, cy, r * 0.92);
+        path.add_circle(cx, cy, (r * 0.92 - ring).max(0.5));
+        canvas.draw_path(&path, &paint);
+        // 指针
+        let mut v = Path::new();
+        v.add_round_rect(cx - ring / 2.0, cy - r * 0.52, ring, r * 0.56, ring / 2.0);
+        canvas.draw_path(&v, &paint);
+        let mut h = Path::new();
+        h.add_round_rect(cx - ring / 2.0, cy - ring / 2.0, r * 0.44, ring, ring / 2.0);
+        canvas.draw_path(&h, &paint);
+    }
+
     fn draw_info(canvas: &mut Canvas, cx: f32, cy: f32, r: f32, color: Color, _stroke_width: f32) {
         let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill).with_anti_alias(true);
         

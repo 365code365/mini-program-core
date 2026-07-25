@@ -290,6 +290,9 @@ pub const RUNTIME_JS: &str = r####"/* mini-render 响应式运行时（导出 HT
       case "info": case "info_circle": body = circle + '<circle cx="12" cy="7.6" r="1.7" fill="#fff"/><rect x="10.9" y="10.8" width="2.2" height="7" rx="1.1" fill="#fff"/>'; break;
       case "warn": body = circle + '<rect x="10.9" y="5.4" width="2.2" height="7.2" rx="1.1" fill="#fff"/><circle cx="12" cy="16.6" r="1.7" fill="#fff"/>'; break;
       case "waiting": case "waiting_circle": body = circle + '<rect x="10.9" y="6.2" width="2.2" height="6.6" rx="1.1" fill="#fff"/><rect x="12" y="10.9" width="5.2" height="2.2" rx="1.1" fill="#fff"/><circle cx="12" cy="12" r="1.6" fill="#fff"/>'; break;
+      case "info_no_circle": body = '<circle cx="12" cy="5.6" r="2" fill="currentColor"/><rect x="10.4" y="9.8" width="3.2" height="9.4" rx="1.6" fill="currentColor"/>'; break;
+      case "warn_no_circle": body = '<rect x="10.4" y="3" width="3.2" height="11.2" rx="1.6" fill="currentColor"/><circle cx="12" cy="18.8" r="2" fill="currentColor"/>'; break;
+      case "waiting_no_circle": case "clock": body = '<circle cx="12" cy="12" r="10.4" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 5.6V12h5.2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>'; break;
       case "close": case "cancel_no_circle": body = '<path d="M5 5 19 19M19 5 5 19" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>'; break;
       case "cancel": case "clear": body = circle + '<path d="M7.6 7.6 16.4 16.4M16.4 7.6 7.6 16.4" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>'; break;
       case "download": body = '<circle cx="12" cy="12" r="10.8" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 6v7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M8 12.4 12 16.6 16 12.4Z" fill="currentColor"/><rect x="7" y="17.4" width="10" height="2.2" rx="1.1" fill="currentColor"/>'; break;

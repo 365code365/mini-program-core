@@ -33,7 +33,7 @@ struct MiniAppWindow {
     fixed_canvas: Option<Canvas>,
     renderer: Option<WxmlRenderer>,
     tabbar_renderer: Option<WxmlRenderer>,
-    text_renderer: Option<TextRenderer>,
+    text_renderer: Option<std::sync::Arc<TextRenderer>>,
     page_stack: Vec<PageInstance>,
     pages: HashMap<String, PageInfo>,
     app_config: AppConfig,
@@ -196,8 +196,8 @@ impl MiniAppWindow {
         self.canvas = Some(Canvas::new(pw, ph));
         self.tabbar_canvas = Some(Canvas::new(pw, (TABBAR_HEIGHT as f64 * scale_factor) as u32));
         self.fixed_canvas = Some(Canvas::new(pw, (LOGICAL_HEIGHT as f64 * scale_factor) as u32));
-        self.text_renderer = TextRenderer::load_system_font()
-            .or_else(|_| TextRenderer::from_bytes(include_bytes!("../../assets/ArialUnicode.ttf"))).ok();
+        // 共享进程内唯一字体实例（加载一次约 0.9s，若每次切页都重载会造成明显卡顿）
+        self.text_renderer = mini_render::text::shared_fonts();
     }
     
     fn update_renderers(&mut self) {
@@ -253,8 +253,30 @@ impl MiniAppWindow {
     
     fn render_custom_tabbar(&mut self, current_path: &str) {
         let tb = match &self.app_config.tab_bar { Some(tb) => tb.clone(), None => return };
-        let list: Vec<serde_json::Value> = tb.list.iter().map(|i| json!({"pagePath": i.page_path, "text": i.text})).collect();
-        let data = json!({"selected": self.get_tabbar_index(current_path).unwrap_or(0), "list": list});
+        // 数据以「组件自身 data」为准（微信语义）：iconType 等字段只存在于组件里，
+        // 只用 app.json 拼 list 会丢掉图标类型，导致所有 tab 图标退化成默认样式。
+        let mut data = self
+            .custom_tabbar
+            .as_ref()
+            .map(|ct| ct.data.clone())
+            .unwrap_or_else(|| json!({}));
+        if !data.is_object() {
+            data = json!({});
+        }
+        let has_list = data.get("list").and_then(|l| l.as_array()).map(|a| !a.is_empty()).unwrap_or(false);
+        if let Some(obj) = data.as_object_mut() {
+            if !has_list {
+                // 组件没有提供 list 时，退回 app.json 的配置
+                let list: Vec<serde_json::Value> = tb.list.iter()
+                    .map(|i| json!({"pagePath": i.page_path, "text": i.text}))
+                    .collect();
+                obj.insert("list".to_string(), json!(list));
+            }
+            obj.insert(
+                "selected".to_string(),
+                json!(self.get_tabbar_index(current_path).unwrap_or(0)),
+            );
+        }
         let ct = match &self.custom_tabbar { Some(ct) => ct, None => return };
         if let (Some(c), Some(r)) = (&mut self.tabbar_canvas, &mut self.tabbar_renderer) {
             c.clear(Color::WHITE);
@@ -264,7 +286,7 @@ impl MiniAppWindow {
     
     fn render_native_tabbar(&mut self, current_path: &str) {
         let tb = match &self.app_config.tab_bar { Some(tb) => tb.clone(), None => return };
-        if let (Some(c), Some(tr)) = (&mut self.tabbar_canvas, &self.text_renderer) {
+        if let (Some(c), Some(tr)) = (&mut self.tabbar_canvas, self.text_renderer.as_deref()) {
             render_native_tabbar(c, tr, &tb, current_path, self.scale_factor);
         }
     }
@@ -284,7 +306,7 @@ impl MiniAppWindow {
                         (self.scroll.get_position() * self.scale_factor as f32) as i32, has_tabbar,
                         if has_tabbar { (TABBAR_HEIGHT as f64 * self.scale_factor) as u32 } else { 0 });
                     render_ui_overlay(&mut buffer, size.width, size.height, self.scale_factor as f32, self.last_frame,
-                        &toast_state, &loading_state, &modal_state, self.text_renderer.as_ref());
+                        &toast_state, &loading_state, &modal_state, self.text_renderer.as_deref());
                     buffer.present().ok();
                 }
             }
@@ -308,7 +330,7 @@ impl MiniAppWindow {
             if let Some(n) = nav { self.pending_navigation = Some(n); if let Some(w) = &self.window { w.request_redraw(); } }
         } else {
             if let Some(nav) = click::handle_content_click(x, y, &self.scroll, has_tabbar, &mut self.interaction,
-                self.renderer.as_ref(), &mut self.app, self.scale_factor, self.text_renderer.as_ref(), self.window.as_ref(), &mut self.clipboard) {
+                self.renderer.as_ref(), &mut self.app, self.scale_factor, self.text_renderer.as_deref(), self.window.as_ref(), &mut self.clipboard) {
                 self.pending_navigation = Some(nav);
             }
             self.needs_redraw = true;
@@ -317,7 +339,7 @@ impl MiniAppWindow {
     
     fn handle_modal_press(&mut self, x: f32, y: f32) -> bool {
         let modal = match &self.modal { Some(m) if m.visible => m, _ => return false };
-        let layout = click::calculate_modal_layout(modal, self.scale_factor as f32, self.text_renderer.as_ref());
+        let layout = click::calculate_modal_layout(modal, self.scale_factor as f32, self.text_renderer.as_deref());
         if let Some(btn) = click::detect_modal_button(x, y, &layout, modal.show_cancel) {
             if let Some(m) = &mut self.modal { m.pressed_button = Some(btn); }
             self.needs_redraw = true;
@@ -331,7 +353,7 @@ impl MiniAppWindow {
         let pressed = self.modal.as_ref().and_then(|m| m.pressed_button.clone());
         if let Some(m) = &mut self.modal { m.pressed_button = None; }
         let modal = match &self.modal { Some(m) if m.visible => m, _ => return };
-        let layout = click::calculate_modal_layout(modal, self.scale_factor as f32, self.text_renderer.as_ref());
+        let layout = click::calculate_modal_layout(modal, self.scale_factor as f32, self.text_renderer.as_deref());
         if let Some(btn) = click::detect_modal_button(x, y, &layout, modal.show_cancel) {
             if pressed.as_deref() == Some(&btn) {
                 let code = if btn == "cancel" { "if(__modalCallback) __modalCallback({ confirm: false, cancel: true })" }
@@ -426,7 +448,7 @@ impl ApplicationHandler for MiniAppWindow {
             WindowEvent::CursorMoved { position, .. } => {
                 let (x, y) = (position.x as f32 / self.scale_factor as f32, position.y as f32 / self.scale_factor as f32);
                 self.mouse_pos = (x, y);
-                if evt::handle_cursor_moved(x, y, &mut self.interaction, &mut self.scroll, self.text_renderer.as_ref(),
+                if evt::handle_cursor_moved(x, y, &mut self.interaction, &mut self.scroll, self.text_renderer.as_deref(),
                     self.window.as_ref(), self.renderer.as_ref(), &mut self.app, &mut self.clipboard, self.scale_factor) {
                     self.needs_redraw = true;
                 }

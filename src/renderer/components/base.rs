@@ -9,12 +9,8 @@ use taffy::prelude::*;
 
 /// 与渲染器同款的共享度量字体：build 阶段按真实字形宽度测量文本盒宽度，
 /// 避免用粗糙估算导致按钮/标签等叶子组件盒子偏窄或塌缩。
-static MEASURE_FONT: once_cell::sync::Lazy<Option<TextRenderer>> =
-    once_cell::sync::Lazy::new(|| {
-        TextRenderer::load_system_font()
-            .or_else(|_| TextRenderer::from_bytes(include_bytes!("../../../assets/ArialUnicode.ttf")))
-            .ok()
-    });
+static MEASURE_FONT: once_cell::sync::Lazy<Option<std::sync::Arc<TextRenderer>>> =
+    once_cell::sync::Lazy::new(crate::text::shared_fonts);
 
 /// 用真实字体度量文本宽度（物理像素）。取不到字体时按中文全宽/西文 0.6 估算回退。
 pub fn intrinsic_text_width(text: &str, font_px: f32, letter_spacing_px: f32) -> f32 {

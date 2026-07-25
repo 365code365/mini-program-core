@@ -261,6 +261,9 @@ fn icon_svg(icon_type: &str) -> String {
         "waiting" | "waiting_circle" => format!(
             "{circle}<rect x=\"10.9\" y=\"6.2\" width=\"2.2\" height=\"6.6\" rx=\"1.1\" fill=\"#fff\"/><rect x=\"12\" y=\"10.9\" width=\"5.2\" height=\"2.2\" rx=\"1.1\" fill=\"#fff\"/><circle cx=\"12\" cy=\"12\" r=\"1.6\" fill=\"#fff\"/>"
         ),
+        "info_no_circle" => "<circle cx=\"12\" cy=\"5.6\" r=\"2\" fill=\"currentColor\"/><rect x=\"10.4\" y=\"9.8\" width=\"3.2\" height=\"9.4\" rx=\"1.6\" fill=\"currentColor\"/>".to_string(),
+        "warn_no_circle" => "<rect x=\"10.4\" y=\"3\" width=\"3.2\" height=\"11.2\" rx=\"1.6\" fill=\"currentColor\"/><circle cx=\"12\" cy=\"18.8\" r=\"2\" fill=\"currentColor\"/>".to_string(),
+        "waiting_no_circle" | "clock" => "<circle cx=\"12\" cy=\"12\" r=\"10.4\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\"/><path d=\"M12 5.6V12h5.2\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\"/>".to_string(),
         // 纯叉号（无圆底），与原生 draw_thick_x 对应
         "close" | "cancel_no_circle" => "<path d=\"M5 5 19 19M19 5 5 19\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.6\" stroke-linecap=\"round\"/>".to_string(),
         "cancel" | "clear" => format!(
@@ -712,7 +715,7 @@ body{font-size:16px;color:#333;font-family:-apple-system,system-ui,"PingFang SC"
 .wxicon-search{color:#b2b2b2;}
 .wxicon-clear{color:#f43530;}
 .wxicon-circle{color:#ccc;}
-.wxicon-close,.wxicon-cancel_no_circle{color:currentColor;}
+.wxicon-close,.wxicon-cancel_no_circle,.wxicon-info_no_circle,.wxicon-warn_no_circle,.wxicon-waiting_no_circle,.wxicon-clock{color:currentColor;}
 "#
 }
 

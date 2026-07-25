@@ -97,8 +97,8 @@ fn live_shopping() {
         </view>
         <view class="bar row">
             <view class="inp"><text class="itext">说点什么…</text></view>
-            <view class="ico"><icon type="success" size="20" color="#ffffff"></icon></view>
-            <view class="ico"><icon type="info" size="20" color="#ffffff"></icon></view>
+            <view class="ico"><icon type="heart" size="20" color="#ffffff"></icon></view>
+            <view class="ico"><icon type="star" size="20" color="#ffffff"></icon></view>
             <view class="cart"><text class="ctext">12</text></view>
         </view>
     </view>"##;
@@ -494,7 +494,7 @@ fn message_center() {
         <view class="head row"><text class="htitle">消息</text><text class="hread">全部已读</text></view>
         <view class="quick row">
             <view class="q" wx:for="{{quicks}}" wx:key="n">
-                <view class="qico" style="background-color:{{item.c}}"><icon type="{{item.i}}" size="20" color="#ffffff"></icon></view>
+                <view class="qico" style="background-color:{{item.c}}"><icon type="{{item.i}}" size="18" color="#ffffff"></icon></view>
                 <text class="qname">{{item.n}}</text>
             </view>
         </view>
@@ -528,8 +528,8 @@ fn message_center() {
     "#;
     let data = json!({
         "quicks":[
-            {"n":"订单","i":"success","c":"#ff6b35"},{"n":"物流","i":"waiting","c":"#3a7bd5"},
-            {"n":"优惠","i":"warn","c":"#ff2d70"},{"n":"客服","i":"info","c":"#07c160"}
+            {"n":"订单","i":"success_no_circle","c":"#ff6b35"},{"n":"物流","i":"clock","c":"#3a7bd5"},
+            {"n":"优惠","i":"warn_no_circle","c":"#ff2d70"},{"n":"客服","i":"info_no_circle","c":"#07c160"}
         ],
         "convs":[
             {"n":"官方客服","m":"您的售后申请已受理，预计 24 小时内处理","t":"09:24","u":"2"},
@@ -774,7 +774,7 @@ fn health_dashboard() {
         <view class="block">
             <text class="bhead">今日计划</text>
             <view class="plan" wx:for="{{plans}}" wx:key="n">
-                <view class="pico" style="background-color:{{item.c}}"><icon type="{{item.i}}" size="18" color="#ffffff"></icon></view>
+                <view class="pico" style="background-color:{{item.c}}"><icon type="{{item.i}}" size="16" color="#ffffff"></icon></view>
                 <view class="pcol"><text class="pn">{{item.n}}</text><text class="pd">{{item.d}}</text></view>
                 <progress percent="{{item.p}}" show-info="true" activeColor="{{item.c}}"></progress>
             </view>
@@ -816,9 +816,9 @@ fn health_dashboard() {
         ],
         "week":[{"d":"一","h":90},{"d":"二","h":130},{"d":"三","h":70},{"d":"四","h":150},{"d":"五","h":110},{"d":"六","h":160},{"d":"日","h":140}],
         "plans":[
-            {"n":"晨跑 5 公里","d":"已完成 4.6 公里","p":92,"i":"success","c":"#00c6a9"},
-            {"n":"力量训练","d":"胸背 · 40 分钟","p":60,"i":"warn","c":"#ff6b35"},
-            {"n":"拉伸放松","d":"未开始","p":0,"i":"waiting","c":"#0a94ff"}
+            {"n":"晨跑 5 公里","d":"已完成 4.6 公里","p":92,"i":"success_no_circle","c":"#00c6a9"},
+            {"n":"力量训练","d":"胸背 · 40 分钟","p":60,"i":"warn_no_circle","c":"#ff6b35"},
+            {"n":"拉伸放松","d":"未开始","p":0,"i":"clock","c":"#0a94ff"}
         ]
     });
     render("51_health_dashboard", 0xF5F6F8, wxml, wxss, data);

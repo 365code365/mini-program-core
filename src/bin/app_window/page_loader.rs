@@ -10,6 +10,8 @@ use super::navigation::PageInfo;
 
 /// 自定义 TabBar 数据
 pub struct CustomTabBar {
+    /// 组件自身 data 快照（含 list/iconType 等，微信语义下由组件而非 app.json 提供）
+    pub data: serde_json::Value,
     pub wxml_nodes: Vec<WxmlNode>,
     pub stylesheet: StyleSheet,
     pub js_code: String,
@@ -137,7 +139,13 @@ pub fn load_custom_tabbar() -> Result<Option<CustomTabBar>, String> {
     let mut wxss_parser = WxssParser::new(&wxss);
     let stylesheet = wxss_parser.parse().map_err(|e| format!("Custom TabBar WXSS error: {}", e))?;
     
+    // 执行组件 JS 取 data 快照：iconType 这类字段只存在于组件里，app.json 没有
+    let app_js = load_app_js();
+    let data = mini_render::compiler::snapshot_component_data(&app_js, &js)
+        .unwrap_or_else(|| serde_json::json!({}));
+
     Ok(Some(CustomTabBar {
+        data,
         wxml_nodes,
         stylesheet,
         js_code: js,

@@ -43,7 +43,7 @@ pub struct WxmlRenderer {
     screen_width: f32,
     screen_height: f32,
     event_bindings: Vec<EventBinding>,
-    text_renderer: Option<TextRenderer>,
+    text_renderer: Option<std::sync::Arc<TextRenderer>>,
     scale_factor: f32,
     cache: Option<CachedLayout>,
     /// Scroll-view 离屏缓存管理器
@@ -58,9 +58,8 @@ impl WxmlRenderer {
     }
     
     pub fn new_with_scale(stylesheet: StyleSheet, screen_width: f32, screen_height: f32, scale_factor: f32) -> Self {
-        let text_renderer = TextRenderer::load_system_font()
-            .or_else(|_| TextRenderer::from_bytes(include_bytes!("../../assets/ArialUnicode.ttf")))
-            .ok();
+        // 共享进程内唯一的字体实例：避免每次创建渲染器都重新加载上百 MB 字体
+        let text_renderer = crate::text::shared_fonts();
         
         Self { 
             stylesheet, 
@@ -351,7 +350,7 @@ impl WxmlRenderer {
             "button" => {
                 let pressed = interaction.is_button_pressed(&component_id);
                 ButtonComponent::draw_with_state(
-                    &node_to_draw, canvas, self.text_renderer.as_ref(),
+                    &node_to_draw, canvas, self.text_renderer.as_deref(),
                     x, y, w, h, sf, pressed
                 );
             }
@@ -519,7 +518,7 @@ impl WxmlRenderer {
     /// 用文本度量闭包计算布局：仅带 TextMeasure 上下文的（block/auto 宽）文本按可用
     /// 宽度解析换行与高度；其它叶子沿用各自 Style 里的显式尺寸（known dimensions）。
     fn compute_with_text(&self, taffy: &mut Tree, root: NodeId, available: Size<AvailableSpace>) {
-        let tr = self.text_renderer.as_ref();
+        let tr = self.text_renderer.as_deref();
         let _ = taffy.compute_layout_with_measure(
             root,
             available,
@@ -534,7 +533,7 @@ impl WxmlRenderer {
     }
 
     fn correct_wrapped_text_heights(&self, taffy: &mut Tree, nodes: &[RenderNode]) -> bool {
-        let tr = match &self.text_renderer { Some(t) => t, None => return false };
+        let tr = match self.text_renderer.as_deref() { Some(t) => t, None => return false };
         let sf = self.scale_factor;
         let mut changed = false;
         for node in nodes {
@@ -588,7 +587,7 @@ impl WxmlRenderer {
             // 原始文本节点继承父级的字号/颜色/字重/对齐/行高
             let fs = inherited.font_size;
             // 默认行高取字体自然行高（≈浏览器 normal），无字体时回退 1.2 倍
-            let natural_lh = self.text_renderer.as_ref()
+            let natural_lh = self.text_renderer.as_deref()
                 .map(|tr| tr.natural_line_height_for(text, fs * sf) / sf)
                 .unwrap_or(fs * crate::text::NORMAL_LINE_HEIGHT_FACTOR);
             let line_h = inherited.line_height.unwrap_or(natural_lh);
@@ -897,13 +896,13 @@ impl WxmlRenderer {
                         (0, None)
                     };
                     InputComponent::draw_with_selection(
-                        &node_to_draw, canvas, self.text_renderer.as_ref(), 
+                        &node_to_draw, canvas, self.text_renderer.as_deref(), 
                         x, y, w, h, sf, focused, cursor_pos, selection
                     );
                     
                     // 更新 text_offset（用于点击位置计算）
                     if focused {
-                        if let Some(tr) = self.text_renderer.as_ref() {
+                        if let Some(tr) = self.text_renderer.as_deref() {
                             let font_size = node_to_draw.style.font_size * sf;
                             let padding_left = 12.0 * sf;
                             let padding_right = 12.0 * sf;
@@ -929,7 +928,7 @@ impl WxmlRenderer {
             "button" => {
                 let pressed = interaction.is_button_pressed(&component_id);
                 ButtonComponent::draw_with_state(
-                    &node_to_draw, canvas, self.text_renderer.as_ref(),
+                    &node_to_draw, canvas, self.text_renderer.as_deref(),
                     x, y, w, h, sf, pressed
                 );
             }
@@ -1291,13 +1290,13 @@ impl WxmlRenderer {
                         (0, None)
                     };
                     InputComponent::draw_with_selection(
-                        &node_to_draw, canvas, self.text_renderer.as_ref(), 
+                        &node_to_draw, canvas, self.text_renderer.as_deref(), 
                         x, y, w, h, sf, focused, cursor_pos, selection
                     );
                     
                     // 更新 text_offset（用于点击位置计算）
                     if focused {
-                        if let Some(tr) = self.text_renderer.as_ref() {
+                        if let Some(tr) = self.text_renderer.as_deref() {
                             let font_size = node_to_draw.style.font_size * sf;
                             let padding_left = 12.0 * sf;
                             let padding_right = 12.0 * sf;
@@ -1324,7 +1323,7 @@ impl WxmlRenderer {
                 "button" => {
                 let pressed = interaction.is_button_pressed(&component_id);
                 ButtonComponent::draw_with_state(
-                    &node_to_draw, canvas, self.text_renderer.as_ref(),
+                    &node_to_draw, canvas, self.text_renderer.as_deref(),
                     x, y, w, h, sf, pressed
                 );
             }
@@ -1424,24 +1423,24 @@ impl WxmlRenderer {
     
     fn draw_component(&self, canvas: &mut Canvas, node: &RenderNode, x: f32, y: f32, w: f32, h: f32, sf: f32) {
         match node.tag.as_str() {
-            "#text" | "text" => TextComponent::draw(node, canvas, self.text_renderer.as_ref(), x, y, w, h, sf),
-            "button" => ButtonComponent::draw(node, canvas, self.text_renderer.as_ref(), x, y, w, h, sf),
+            "#text" | "text" => TextComponent::draw(node, canvas, self.text_renderer.as_deref(), x, y, w, h, sf),
+            "button" => ButtonComponent::draw(node, canvas, self.text_renderer.as_deref(), x, y, w, h, sf),
             "icon" => IconComponent::draw(node, canvas, x, y, w, h, sf),
-            "progress" => ProgressComponent::draw(node, canvas, self.text_renderer.as_ref(), x, y, w, h, sf),
+            "progress" => ProgressComponent::draw(node, canvas, self.text_renderer.as_deref(), x, y, w, h, sf),
             "switch" => SwitchComponent::draw(node, canvas, x, y, w, h, sf),
             "checkbox" => CheckboxComponent::draw(node, canvas, x, y, w, h, sf),
             "checkbox-group" => CheckboxGroupComponent::draw(node, canvas, x, y, w, h, sf),
             "radio" => RadioComponent::draw(node, canvas, x, y, w, h, sf),
             "radio-group" => RadioGroupComponent::draw(node, canvas, x, y, w, h, sf),
-            "slider" => SliderComponent::draw(node, canvas, self.text_renderer.as_ref(), x, y, w, h, sf),
-            "input" | "textarea" => InputComponent::draw(node, canvas, self.text_renderer.as_ref(), x, y, w, h, sf),
-            "image" => ImageComponent::draw(node, canvas, self.text_renderer.as_ref(), x, y, w, h, sf),
-            "video" => VideoComponent::draw(node, canvas, self.text_renderer.as_ref(), x, y, w, h, sf),
+            "slider" => SliderComponent::draw(node, canvas, self.text_renderer.as_deref(), x, y, w, h, sf),
+            "input" | "textarea" => InputComponent::draw(node, canvas, self.text_renderer.as_deref(), x, y, w, h, sf),
+            "image" => ImageComponent::draw(node, canvas, self.text_renderer.as_deref(), x, y, w, h, sf),
+            "video" => VideoComponent::draw(node, canvas, self.text_renderer.as_deref(), x, y, w, h, sf),
             "canvas" => CanvasComponent::draw(node, canvas, x, y, w, h, sf),
-            "swiper" => SwiperComponent::draw_with_text(node, canvas, x, y, w, h, sf, self.text_renderer.as_ref()),
-            "rich-text" => RichTextComponent::draw(node, canvas, self.text_renderer.as_ref(), x, y, w, h, sf),
-            "picker" => PickerComponent::draw(node, canvas, self.text_renderer.as_ref(), x, y, w, h, sf),
-            "picker-view" => PickerViewComponent::draw(node, canvas, self.text_renderer.as_ref(), x, y, w, h, sf),
+            "swiper" => SwiperComponent::draw_with_text(node, canvas, x, y, w, h, sf, self.text_renderer.as_deref()),
+            "rich-text" => RichTextComponent::draw(node, canvas, self.text_renderer.as_deref(), x, y, w, h, sf),
+            "picker" => PickerComponent::draw(node, canvas, self.text_renderer.as_deref(), x, y, w, h, sf),
+            "picker-view" => PickerViewComponent::draw(node, canvas, self.text_renderer.as_deref(), x, y, w, h, sf),
             _ => ViewComponent::draw(node, canvas, x, y, w, h, sf),
         }
     }
@@ -1805,7 +1804,7 @@ impl WxmlRenderer {
     }
 
     fn measure_text(&self, text: &str, size: f32) -> f32 {
-        self.text_renderer.as_ref()
+        self.text_renderer.as_deref()
             .map(|tr| tr.measure_text(text, size))
             .unwrap_or(text.chars().count() as f32 * size * 0.6)
     }
