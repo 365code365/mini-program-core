@@ -20,8 +20,9 @@ pub struct CustomTabBar {
 /// 小程序目录路径（全局状态）
 static mut APP_PATH: Option<PathBuf> = None;
 
-/// 设置小程序目录路径
+/// 设置小程序目录路径（同时登记到引擎，供图片等包内资源路径解析）
 pub fn set_app_path(path: PathBuf) {
+    mini_render::assets::set_app_root(path.clone());
     unsafe {
         APP_PATH = Some(path);
     }
@@ -104,6 +105,15 @@ pub fn load_app_js() -> String {
     })
 }
 
+/// 加载 app.wxss（全局样式）。
+///
+/// 之前窗体只解析页面自己的 WXSS，`app.wxss` 里的全局类（news-app 的 `.nav-bar`
+/// `.card` `.tag` 等）全部丢失，同一份小程序在窗体里和编译出的 H5 里长得完全不同。
+pub fn load_app_wxss() -> String {
+    let app_path = get_app_path();
+    fs::read_to_string(app_path.join("app.wxss")).unwrap_or_default()
+}
+
 /// 加载 app.json
 pub fn load_app_json() -> String {
     let app_path = get_app_path();
@@ -117,6 +127,11 @@ pub fn load_app_json() -> String {
 
 /// 加载自定义 TabBar
 pub fn load_custom_tabbar() -> Result<Option<CustomTabBar>, String> {
+    load_custom_tabbar_with_app_wxss("")
+}
+
+/// 加载自定义 TabBar，并把 app.wxss 并入组件样式表（与页面一致的全局样式语义）
+pub fn load_custom_tabbar_with_app_wxss(app_wxss: &str) -> Result<Option<CustomTabBar>, String> {
     let app_path = get_app_path();
     let tabbar_dir = app_path.join("custom-tab-bar");
     
@@ -136,7 +151,8 @@ pub fn load_custom_tabbar() -> Result<Option<CustomTabBar>, String> {
     let mut wxml_parser = WxmlParser::new(&wxml);
     let wxml_nodes = wxml_parser.parse().map_err(|e| format!("Custom TabBar WXML error: {}", e))?;
     
-    let mut wxss_parser = WxssParser::new(&wxss);
+    let merged_wxss = format!("{}\n{}", app_wxss, wxss);
+    let mut wxss_parser = WxssParser::new(&merged_wxss);
     let stylesheet = wxss_parser.parse().map_err(|e| format!("Custom TabBar WXSS error: {}", e))?;
     
     // 执行组件 JS 取 data 快照：iconType 这类字段只存在于组件里，app.json 没有
