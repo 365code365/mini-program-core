@@ -89,7 +89,7 @@ cargo run --release --bin mini-app-window -- sample-app --snapshot target/s \
 cargo run --release --example compare -- --all --rust-from target/window-snap --out target/window-compare
 ```
 
-当前实测（375×667 @2x，窗体整帧 vs Chrome）：`sample-app` 11 页整体差异 **4.4%**（单页 1.5%~7.9%），`news-app` 4 页 **8.8%**，剩余差异集中在大图缩放插值与粗体字形/亚像素文本位置。
+当前实测（375×667 @2x，窗体整帧 vs Chrome）：`sample-app` 15 页整体差异 **4.8%**（单页 1.5%~7.8%），`news-app` 6 页 **6.8%**，剩余差异集中在大图缩放插值与粗体字形/亚像素文本位置。
 
 ### 编译器：同一份源码，编译出别端源码
 
@@ -203,6 +203,38 @@ cargo run --bin mini-devserver <小程序根> [端口]   # 端口被占用会自
 | `GET /` | 编译好的整页 HTML（base.css + 页面 CSS + body + 运行时） |
 | `POST /event` | 命中事件 → 调用页面方法/`setData`/导航 → 返回新 HTML 片段 |
 | `POST /back` | 返回上一页 |
+
+---
+
+## 📱 两个可用的示例小程序
+
+仓库里的 `sample-app`（商城）与 `news-app`（头条新闻）不是静态样板，而是**功能闭环**的小程序，原生窗体与编译出的 H5 行为一致：
+
+| | `sample-app` 商城（15 页） | `news-app` 新闻（6 页） |
+|---|---|---|
+| 首页 | 自动轮播 banner、金刚区、**进页即弹新人优惠券**（缩放入场动画）、限时秒杀真实倒计时、触底加载、下拉刷新 | 要闻轮播、频道横滑切换、下拉刷新、触底加载、卡片收藏 |
+| 详情 | 图片轮播、规格半屏弹层、加购 / 立即购买、rich-text 图文、评价 | 正文字号设置**即时生效**、评论发布、点赞 / 收藏 / 关注持久化、相关阅读 |
+| 交易 · 互动 | 购物车（storage 持久化）→ 确认订单（地址 / 配送 picker / 优惠券 / 支付方式 / 备注）→ 提交下单 → 订单列表 + 物流时间轴 + 确认收货；搜索页含历史与热搜 | 搜索（历史 + 热搜榜 + 排序）、热榜 + 签到日历 + Canvas 阅读统计 |
+| 能力总览 | `pages/showcase`：CSS 动画、transform、彩色 emoji、竖向轮播、GIF、表单控件全家桶、进度 / 评分 / 徽标、rich-text、Canvas 图表、Toast / Loading / Modal / 操作面板 | 视频页可真实播放 `<video>`，自动播放开关持久化 |
+| 返回上一页 | 二级页自绘返回栏（`wx.navigateBack`）；逻辑层页面栈复用实例，返回不会重跑 `onLoad` | 同上 |
+
+跨页数据（购物车、订单、收藏、设置、搜索历史）统一走 `wx.storage`，所以编译成 H5 后即使每个页面是独立文档也不丢状态。
+
+```bash
+cargo run --release --bin mini-app-window -- sample-app   # 商城
+cargo run --release --bin mini-app-window -- news-app     # 新闻
+```
+
+多步交互也能脚本化验证（每段 `--eval` 之后宿主会把导航跑完）：
+
+```bash
+cargo run --release --bin mini-app-window -- sample-app --snapshot target/flow \
+    --route pages/detail/detail --eval "__currentPage.onBuyNow()"          # 进入确认订单页
+cargo run --release --bin mini-app-window -- news-app --snapshot target/nav \
+    --route pages/home/home \
+    --eval "__currentPage.onOpenArticle({currentTarget:{dataset:{id:301}}})" \
+    --eval "wx.navigateBack()"                                            # 进详情再返回
+```
 
 ---
 

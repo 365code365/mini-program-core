@@ -10,7 +10,7 @@
   <!-- 收货地址 -->
   <view class="addr-card anim-fade-up" bindtap="onPickAddress">
     <view wx:if="{{address}}" class="row">
-      <icon type="info_no_circle" size="18" color="#FF6B35"></icon>
+      <icon type="info" size="20" color="#FF6B35"></icon>
       <view class="col addr-body">
         <view class="row">
           <text class="addr-name">{{address.name}}</text>
