@@ -131,25 +131,30 @@ pub fn handle_content_click(
     let actual_y = y + scroll_pos;
     let tabbar_y = if has_tabbar { (LOGICAL_HEIGHT - tabbar_height()) as f32 } else { LOGICAL_HEIGHT as f32 };
     
-    // 首先检查 fixed 元素（使用视口坐标）
-    let fixed_binding = if let Some(renderer) = renderer {
-        if let Some(binding) = renderer.hit_test(x, y) {
-            let viewport_height = if has_tabbar { tabbar_y } else { LOGICAL_HEIGHT as f32 };
-            if binding.bounds.y >= 0.0 && binding.bounds.y + binding.bounds.height <= viewport_height + 10.0 {
-                Some((binding.event_type.clone(), binding.handler.clone(), binding.data.clone(), binding.bounds))
+    // ── 覆盖层优先，且到此为止 ──
+    // `position: fixed` 层画在页面之上，坐标是视口坐标。点击必须先只在它里面找：
+    // 命中了就派发并返回；即使没命中任何处理器，只要落在覆盖层的范围内
+    // （典型就是弹窗的半透明遮罩）也要把点击吞掉，不能穿透到下层页面。
+    //
+    // 从前是「拿全局 hit_test 的结果，再用 bounds 是否落在视口内来猜它是不是 fixed」——
+    // 页面顶部的普通元素同样满足这个条件，于是弹窗弹着也能点到底下的商品。
+    let mut fixed_binding = None;
+    if let Some(renderer) = renderer {
+        if renderer.fixed_layer_hit(x, y) {
+            let chain = renderer.hit_test_bubble_fixed(x, y, "tap");
+            if let Some(b) = chain.first() {
+                fixed_binding = Some((b.event_type.clone(), b.handler.clone(), b.data.clone(), b.bounds));
             } else {
-                None
+                // 落在覆盖层上但这一点没有处理器：消费掉，不往下透
+                return interaction.handle_click_scoped(x, y, true);
             }
-        } else {
-            None
         }
-    } else {
-        None
-    };
+    }
+    let _ = tabbar_y;
     
     if let Some((event_type, handler, data, _bounds)) = fixed_binding {
-        // 检查交互元素（使用视口坐标）
-        if let Some(result) = interaction.handle_click(x, y) {
+        // 检查交互元素（视口坐标，且只看覆盖层自己的元素）
+        if let Some(result) = interaction.handle_click_scoped(x, y, true) {
             let should_call_js = matches!(&result, 
                 InteractionResult::ButtonClick { .. } |
                 InteractionResult::Toggle { .. } |

@@ -337,6 +337,19 @@ pub fn handle_mouse_wheel(
     scroll: &mut mini_render::ui::ScrollController,
     scale_factor: f64,
 ) -> bool {
+    handle_mouse_wheel_gated(delta, mouse_pos, interaction, scroll, scale_factor, false)
+}
+
+/// 同上，`lock_page_scroll` 为真时不滚动页面（指针停在 fixed 覆盖层上，
+/// 例如弹窗遮罩 —— 微信里这种情况页面是锁住的），覆盖层内部的 scroll-view 仍可滚。
+pub fn handle_mouse_wheel_gated(
+    delta: MouseScrollDelta,
+    mouse_pos: (f32, f32),
+    interaction: &mut mini_render::ui::interaction::InteractionManager,
+    scroll: &mut mini_render::ui::ScrollController,
+    scale_factor: f64,
+    lock_page_scroll: bool,
+) -> bool {
     let (delta_x, delta_y, is_precise) = match delta {
         MouseScrollDelta::LineDelta(x, y) => (-x * 20.0, -y * 20.0, false),
         MouseScrollDelta::PixelDelta(pos) => (
@@ -389,7 +402,7 @@ pub fn handle_mouse_wheel(
         }
     }
     
-    if !handled_by_scrollview && delta_y.abs() > 0.1 {
+    if !handled_by_scrollview && delta_y.abs() > 0.1 && !lock_page_scroll {
         let before = scroll.get_position();
         scroll.handle_scroll(delta_y, is_precise);
         // 页面滚动同样要请求重绘。缺了这一句时只有「命中页面内 scroll-view」才会重绘，

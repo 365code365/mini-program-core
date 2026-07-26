@@ -29,6 +29,10 @@ pub struct EventBinding {
     pub bounds: GeoRect,
     /// 是否是 catch 事件（阻止冒泡）
     pub is_catch: bool,
+    /// 是否来自 `position: fixed` 覆盖层。
+    /// 覆盖层的坐标是视口坐标（不含滚动偏移），而且它在页面之上 ——
+    /// 命中判定必须先只看覆盖层，命中就到此为止，否则点击会穿透到下层。
+    pub is_fixed: bool,
 }
 
 pub struct CachedLayout {
@@ -107,6 +111,12 @@ pub struct WxmlRenderer {
     damage_clip: Option<GeoRect>,
     /// `wx.createAnimation` 载荷指纹 -> 播放起始时刻（秒）
     js_animations: HashMap<u64, f32>,
+    /// 正在绘制 `position: fixed` 覆盖层（此期间注册的事件绑定标记为 fixed）
+    registering_fixed: bool,
+    /// 覆盖层各子树根在视口中的逻辑包围盒。
+    /// 落在这些区域内的点击一律由覆盖层消费 —— 即使那里没有事件处理器
+    /// （比如只写了半透明遮罩），也不能穿透到下层页面。
+    fixed_hit_regions: Vec<GeoRect>,
 }
 
 impl WxmlRenderer {
@@ -136,6 +146,8 @@ impl WxmlRenderer {
             animated_bounds: Vec::new(),
             damage_clip: None,
             js_animations: HashMap::new(),
+            registering_fixed: false,
+            fixed_hit_regions: Vec::new(),
         }
     }
 
@@ -730,7 +742,34 @@ impl WxmlRenderer {
             kind,
         );
         self.drawing_offscreen = was_offscreen;
+        // 离屏那一趟注册的绑定用的是离屏画布的局部坐标，直接留下会命中错位置，先丢掉
         self.event_bindings.truncate(bindings_before);
+        // 再按**未变换**的真实位置重新注册一遍。
+        //
+        // 从前到这里就结束了（注释写作「旋转/缩放子树内的点击是已知限制」）——
+        // 结果是带 `scale`/`rotate` 动画的容器里所有按钮都是死的：弹窗用
+        // `animation: popIn`（含 scale）做入场，弹窗里的关闭按钮、领取按钮全都点不动，
+        // 而且点击会穿透到下层页面。
+        // 用未变换几何做命中是个近似（浏览器按变换后的几何命中），但对
+        // 「围绕中心缩放/旋转」这类实际用法足够接近，比彻底没有绑定好得多。
+        let inherited = match kind {
+            DrawKind::Child { inherited, .. } => inherited,
+            DrawKind::Top { .. } => Color::BLACK,
+        };
+        let (scroll_offset, viewport_height) = match kind {
+            DrawKind::Top { scroll_offset, viewport_height }
+            | DrawKind::Child { scroll_offset, viewport_height, .. } => (scroll_offset, viewport_height),
+        };
+        self.register_child_interactions(
+            taffy,
+            &resolved,
+            ox,
+            oy,
+            inherited,
+            interaction,
+            scroll_offset,
+            viewport_height / self.scale_factor,
+        );
 
         super::compose::blit_transformed(
             canvas,
@@ -910,7 +949,10 @@ impl WxmlRenderer {
         if let Some(mut cache) = self.cache.take() {
             let viewport_h = canvas.height() as f32;
             let roots = std::mem::take(&mut cache.render_nodes);
+            self.registering_fixed = true;
+            self.fixed_hit_regions.clear();
             self.draw_fixed_layer_inner(canvas, &mut cache.taffy, &roots, viewport_h, Some(interaction));
+            self.registering_fixed = false;
             cache.render_nodes = roots;
             self.cache = Some(cache);
         }
@@ -961,6 +1003,7 @@ impl WxmlRenderer {
                 data: data.clone(),
                 bounds: logical_bounds,
                 is_catch: *is_catch,
+                is_fixed: self.registering_fixed,
             });
         }
     }
@@ -1077,6 +1120,7 @@ impl WxmlRenderer {
                 data: data.clone(),
                 bounds: logical_bounds,
                 is_catch: *is_catch,
+                is_fixed: self.registering_fixed,
             });
         }
     }
@@ -1731,6 +1775,7 @@ impl WxmlRenderer {
                 data: d.clone(), 
                 bounds: logical_bounds,
                 is_catch: *is_catch,
+                is_fixed: self.registering_fixed,
             });
         }
     }
@@ -1865,6 +1910,7 @@ impl WxmlRenderer {
                 data: d.clone(),
                 bounds: logical_bounds,
                 is_catch: *is_catch,
+                is_fixed: self.registering_fixed,
             });
         }
     }
@@ -2160,6 +2206,7 @@ impl WxmlRenderer {
                 data: d.clone(), 
                 bounds: logical_bounds,
                 is_catch: *is_catch,
+                is_fixed: self.registering_fixed,
             });
         }
     }
@@ -2405,6 +2452,7 @@ impl WxmlRenderer {
                 data: d.clone(), 
                 bounds: logical_bounds,
                 is_catch: *is_catch,
+                is_fixed: self.registering_fixed,
             });
         }
     }
@@ -2503,6 +2551,7 @@ impl WxmlRenderer {
                 data: d.clone(), 
                 bounds: logical_bounds,
                 is_catch: *is_catch,
+                is_fixed: self.registering_fixed,
             });
         }
     }
@@ -2620,6 +2669,15 @@ impl WxmlRenderer {
                 // 重排后该节点作为子树根，location 约为 0，直接以钉住点为原点绘制
                 let base_x = pinned_x - new_layout.location.x;
                 let base_y = pinned_y - new_layout.location.y;
+                // 记录遮挡区域（逻辑坐标）：落在这里的点击不允许穿透到下层
+                if self.registering_fixed && w > 0.0 && h > 0.0 {
+                    self.fixed_hit_regions.push(GeoRect::new(
+                        pinned_x / sf,
+                        pinned_y / sf,
+                        w / sf,
+                        h / sf,
+                    ));
+                }
                 match interaction.as_deref_mut() {
                     Some(im) => {
                         // 子树根自身的 is_fixed 需要清掉，否则会被「跳过 fixed」的分支拦下
@@ -2646,6 +2704,45 @@ impl WxmlRenderer {
     pub fn hit_test(&self, x: f32, y: f32) -> Option<&EventBinding> {
         self.event_bindings.iter().rev().find(|b| b.bounds.contains(&crate::Point::new(x, y)))
     }
+
+    /// 视口坐标 (x, y) 是否落在 `position: fixed` 覆盖层上。
+    ///
+    /// 这是「弹窗不穿透」的判定依据：覆盖层画在页面之上，落在它范围内的点击
+    /// 必须由它消费掉，即使那块区域没有绑事件（例如只写了半透明遮罩）。
+    pub fn fixed_layer_hit(&self, x: f32, y: f32) -> bool {
+        let p = crate::Point::new(x, y);
+        self.fixed_hit_regions.iter().any(|r| r.contains(&p))
+    }
+
+    /// 只在覆盖层里做命中冒泡（视口坐标）
+    pub fn hit_test_bubble_fixed(&self, x: f32, y: f32, event_type: &str) -> Vec<EventBinding> {
+        self.hit_test_bubble_filtered(x, y, event_type, true)
+    }
+
+    /// 只在正常流里做命中冒泡（内容坐标，已含滚动偏移）
+    pub fn hit_test_bubble_flow(&self, x: f32, y: f32, event_type: &str) -> Vec<EventBinding> {
+        self.hit_test_bubble_filtered(x, y, event_type, false)
+    }
+
+    /// 覆盖层的事件绑定（供宿主在「跳过覆盖层重绘」的帧里补回来）
+    pub fn fixed_event_bindings(&self) -> Vec<EventBinding> {
+        self.event_bindings.iter().filter(|b| b.is_fixed).cloned().collect()
+    }
+
+    /// 覆盖层的遮挡区域（同上，供宿主缓存）
+    pub fn fixed_hit_regions(&self) -> &[GeoRect] {
+        &self.fixed_hit_regions
+    }
+
+    /// 把上一帧缓存的覆盖层绑定与遮挡区域补回来。
+    ///
+    /// 事件绑定每帧都会清空重建，而覆盖层在「内容没变」的帧里是跳过重绘的 ——
+    /// 不补回来的话，那些帧里弹窗就没有任何绑定，点击会直接穿到下层页面。
+    pub fn restore_fixed_bindings(&mut self, bindings: &[EventBinding], regions: &[GeoRect]) {
+        self.event_bindings.extend(bindings.iter().cloned());
+        self.fixed_hit_regions.clear();
+        self.fixed_hit_regions.extend_from_slice(regions);
+    }
     
     /// 命中测试并返回事件冒泡链。
     ///
@@ -2660,6 +2757,28 @@ impl WxmlRenderer {
             .filter(|b| b.event_type == event_type && b.bounds.contains(&p))
             .cloned()
             .collect();
+        Self::bubble_chain(&mut matched)
+    }
+
+    /// 同 [`Self::hit_test_bubble`]，但只看覆盖层或只看正常流的绑定
+    fn hit_test_bubble_filtered(
+        &self,
+        x: f32,
+        y: f32,
+        event_type: &str,
+        fixed: bool,
+    ) -> Vec<EventBinding> {
+        let p = crate::Point::new(x, y);
+        let mut matched: Vec<EventBinding> = self.event_bindings.iter()
+            .filter(|b| b.is_fixed == fixed && b.event_type == event_type && b.bounds.contains(&p))
+            .cloned()
+            .collect();
+        Self::bubble_chain(&mut matched)
+    }
+
+    fn bubble_chain(matched: &mut Vec<EventBinding>) -> Vec<EventBinding> {
+        let matched = std::mem::take(matched);
+        let mut matched = matched;
         
         // 面积升序：最内层（最小）在前
         matched.sort_by(|a, b| {

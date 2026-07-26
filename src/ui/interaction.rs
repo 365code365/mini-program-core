@@ -294,7 +294,17 @@ impl InteractionManager {
     
     /// 处理点击事件
     pub fn handle_click(&mut self, x: f32, y: f32) -> Option<InteractionResult> {
-        let element = self.hit_test(x, y)?.clone();
+        self.handle_click_scoped(x, y, false)
+    }
+
+    /// 同上。`fixed_only` 为真时只考虑 `position: fixed` 覆盖层里的元素 ——
+    /// 弹窗弹着的时候，点击不该让下层页面的输入框获得焦点、开关被拨动。
+    pub fn handle_click_scoped(&mut self, x: f32, y: f32, fixed_only: bool) -> Option<InteractionResult> {
+        let element = if fixed_only {
+            self.hit_test(x, y).filter(|e| e.is_fixed)?.clone()
+        } else {
+            self.hit_test(x, y)?.clone()
+        };
         
         match element.interaction_type {
             InteractionType::Checkbox | InteractionType::Switch => {

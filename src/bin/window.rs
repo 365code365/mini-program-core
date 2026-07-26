@@ -73,6 +73,11 @@ struct MiniAppWindow {
     last_animated_bounds: Vec<GeoRect>,
     /// fixed 覆盖层里是否有动画（有的话不能走局部重绘）
     fixed_layer_animates: bool,
+    /// 覆盖层上一次产生的事件绑定与遮挡区域。
+    /// 事件绑定每帧清空重建，而覆盖层可能跳过重绘 —— 跳过的帧要靠这份缓存补回来，
+    /// 否则弹窗在那些帧里点击会穿透到下层。
+    cached_fixed_bindings: Vec<mini_render::renderer::EventBinding>,
+    cached_fixed_regions: Vec<GeoRect>,
     /// 进程启动时刻：用作与帧无关的动画相位时钟
     started_at: Instant,
     /// 下一帧的目标时点（固定节拍累加，不受单帧耗时抖动影响）
@@ -178,6 +183,8 @@ impl MiniAppWindow {
             fps_worst_render_parts: (0.0, 0.0, 0.0),
             last_animated_bounds: Vec::new(),
             fixed_layer_animates: false,
+            cached_fixed_bindings: Vec::new(),
+            cached_fixed_regions: Vec::new(),
             started_at: now,
             next_frame_at: now,
             last_scroll_at: None,
@@ -574,8 +581,17 @@ impl MiniAppWindow {
                     r.set_animations_active(page_anim || fixed_anim);
                     // 覆盖层自己带动画时，局部重绘会让它停住 —— 禁用局部路径
                     self.fixed_layer_animates = fixed_anim;
+                    // 记下覆盖层这一趟产生的事件绑定与遮挡区域：
+                    // 事件绑定每帧都会清空重建，而覆盖层在「内容没变」的帧里跳过重绘，
+                    // 不缓存的话那些帧里弹窗没有任何绑定，点击会直接穿到下层页面。
+                    self.cached_fixed_bindings = r.fixed_event_bindings();
+                    self.cached_fixed_regions = r.fixed_hit_regions().to_vec();
                 }
             }
+        } else if let Some(r) = &mut self.renderer {
+            // 这一帧没重绘覆盖层：把上一次的绑定与遮挡区域补回来
+            let (b, g) = (self.cached_fixed_bindings.clone(), self.cached_fixed_regions.clone());
+            r.restore_fixed_bindings(&b, &g);
         }
         let t_fixed_done = Instant::now();
         
@@ -840,7 +856,14 @@ impl ApplicationHandler for MiniAppWindow {
             }
             
             WindowEvent::MouseWheel { delta, phase, .. } => {
-                if evt::handle_mouse_wheel(delta, self.mouse_pos, &mut self.interaction, &mut self.scroll, self.scale_factor) {
+                // 指针停在 fixed 覆盖层（弹窗遮罩）上时锁住页面滚动，与微信一致；
+                // 覆盖层内部自己的 scroll-view 仍然可滚（下面按元素命中处理）
+                let over_fixed = self
+                    .renderer
+                    .as_ref()
+                    .map(|r| r.fixed_layer_hit(self.mouse_pos.0, self.mouse_pos.1))
+                    .unwrap_or(false);
+                if evt::handle_mouse_wheel_gated(delta, self.mouse_pos, &mut self.interaction, &mut self.scroll, self.scale_factor, over_fixed) {
                     self.needs_redraw = true;
                     self.last_scroll_at = Some(Instant::now());
                 }
@@ -870,6 +893,14 @@ impl ApplicationHandler for MiniAppWindow {
                     if has_tabbar && y >= tabbar_y { return; }
                     
                     let actual_y = y + self.scroll.get_position();
+                    // 落在 `position: fixed` 覆盖层上（弹窗/遮罩）：按压与拖动都不允许穿透。
+                    // 覆盖层内部自己的可交互元素（fixed 的滚动区、按钮）由下面的
+                    // hit_test 分支处理 —— 它本来就先查 fixed 元素。
+                    let on_fixed_layer = self
+                        .renderer
+                        .as_ref()
+                        .map(|r| r.fixed_layer_hit(x, y))
+                        .unwrap_or(false);
                     
                     // 输入框内点击
                     if let Some(focused) = &self.interaction.focused_input {
@@ -889,7 +920,14 @@ impl ApplicationHandler for MiniAppWindow {
                     }
                     
                     // 交互元素
-                    if let Some(el) = self.interaction.hit_test(x, y).or_else(|| self.interaction.hit_test(x, actual_y)).cloned() {
+                    // 覆盖层之上：只允许命中覆盖层自己的元素（is_fixed），
+                    // 下层页面的元素一律不参与，避免「弹窗弹着还能按到底下的商品」
+                    let hit = if on_fixed_layer {
+                        self.interaction.hit_test(x, y).filter(|el| el.is_fixed).cloned()
+                    } else {
+                        self.interaction.hit_test(x, y).or_else(|| self.interaction.hit_test(x, actual_y)).cloned()
+                    };
+                    if let Some(el) = hit {
                         use mini_render::ui::interaction::InteractionType;
                         // 任何可点元素都进入按压态（`:active` / `hover-class` 靠它生效），
                         // 滚动区域除外 —— 那是拖动不是按压
@@ -926,7 +964,10 @@ impl ApplicationHandler for MiniAppWindow {
                         }
                     }
                     
-                    if !self.interaction.is_dragging_slider() { self.scroll.begin_drag(y, ts); }
+                    // 覆盖层上按下不能带动页面滚动（微信里弹窗遮罩会锁住页面滚动）
+                    if !self.interaction.is_dragging_slider() && !on_fixed_layer {
+                        self.scroll.begin_drag(y, ts);
+                    }
                 } else {
                     // Released
                     if self.modal.as_ref().map(|m| m.visible && m.pressed_button.is_some()).unwrap_or(false) {
@@ -1140,7 +1181,7 @@ impl MiniAppWindow {
     /// 这是「窗体是否忠实还原小程序」的可验证入口 —— 页面加载、样式合并、
     /// 自定义 tabBar、fixed 覆盖层、Toast/Modal 外壳、像素合成顺序都与真实运行一致，
     /// 因此产出的 PNG 可以直接和编译出的 H5 截图做像素级对比。
-    fn snapshot_all(&mut self, out_dir: &std::path::Path, scale: f64, time: Option<f32>, settle: Option<f32>, only: Option<&str>, scroll: f32, evals: &[String], frames: u32) -> Result<usize, String> {
+    fn snapshot_all(&mut self, out_dir: &std::path::Path, scale: f64, time: Option<f32>, settle: Option<f32>, only: Option<&str>, scroll: f32, evals: &[String], frames: u32, click: Option<(f32, f32)>) -> Result<usize, String> {
         self.setup_canvas(scale);
         let routes: Vec<String> = match only {
             Some(route) => vec![route.trim_start_matches('/').to_string()],
@@ -1247,6 +1288,27 @@ impl MiniAppWindow {
                     std::thread::sleep(Duration::from_millis(8));
                 }
             }
+            // `--click x,y`：走**与交互窗体完全相同的点击链路**（命中测试、覆盖层拦截、
+            // 事件冒泡、导航），用于脚本化验证「弹窗不穿透」这类交互语义。
+            if let Some((cx, cy)) = click {
+                // 命中测试依赖上一帧注册的事件绑定，先确保出过一帧
+                // （真实窗体里也不可能在首帧之前点击）
+                self.render();
+                self.handle_click(cx, cy);
+                for _ in 0..8 {
+                    self.app.update().ok();
+                    if self.pending_navigation.is_none() {
+                        self.pending_navigation = app_window::check_navigation(&mut self.app);
+                    }
+                    if self.pending_navigation.is_none() {
+                        break;
+                    }
+                    self.process_navigation();
+                }
+                print_js_output(&self.app);
+                self.needs_redraw = true;
+                self.render();
+            }
             // `--frames N`：按刷新率跑 N 个**与交互窗体同一套闸门/损伤区逻辑**的帧再截图。
             // 局部重绘这类只在连续出帧时才暴露的问题（比如某个动画元素被漏出损伤区而静止），
             // 只有这样才测得到 —— 单帧快照永远走整帧重绘，看不出来。
@@ -1314,6 +1376,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut anim_time: Option<f32> = None;
     let mut settle: Option<f32> = None;
     let mut frames = 0u32;
+    let mut click: Option<(f32, f32)> = None;
     let mut route: Option<String> = None;
     let mut scroll = 0.0f32;
     let mut evals: Vec<String> = Vec::new();
@@ -1325,6 +1388,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "--time" => anim_time = it.next().and_then(|v| v.parse().ok()),
             "--settle" => settle = it.next().and_then(|v| v.parse().ok()),
             "--frames" => frames = it.next().and_then(|v| v.parse().ok()).unwrap_or(0),
+            "--click" => {
+                click = it.next().and_then(|v| {
+                    let (a, b) = v.split_once(',')?;
+                    Some((a.trim().parse().ok()?, b.trim().parse().ok()?))
+                });
+            }
             "--route" => route = it.next(),
             "--scroll" => scroll = it.next().and_then(|v| v.parse().ok()).unwrap_or(0.0),
             "--eval" => { if let Some(v) = it.next() { evals.push(v); } }
@@ -1333,6 +1402,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("  --time <秒>    动画时钟位置（CSS @keyframes 求值到该时刻，不消耗真实时间）");
                 println!("  --settle <秒>  真实等待该时长，让 setTimeout/setInterval、延时弹层、");
                 println!("  --frames <N>   按刷新率跑 N 个与交互窗体同逻辑的帧再截图（验证动画/局部重绘）");
+                println!("  --click <x,y>  在该逻辑坐标模拟一次点击，走真实命中/冒泡/导航链路");
                 println!("                 轮播自动播放跑起来（要「和真机一样」的画面时用这个）");
                 println!("  --route <页面路径>   --scroll <像素>");
                 println!("  --eval <JS>    可重复；在 --settle 之后依次执行，每段跑完导航");
@@ -1358,7 +1428,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 快照模式：不开窗口，直接把整帧写成 PNG（用于与 H5 做像素对比）
     if let Some(out) = snapshot {
-        let count = window.snapshot_all(&out, scale, anim_time, settle, route.as_deref(), scroll, &evals, frames)?;
+        let count = window.snapshot_all(&out, scale, anim_time, settle, route.as_deref(), scroll, &evals, frames, click)?;
         println!("\n✅ 快照完成：{} 个页面 -> {}", count, out.display());
         return Ok(());
     }

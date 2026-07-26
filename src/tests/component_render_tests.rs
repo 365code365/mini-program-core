@@ -516,3 +516,84 @@ fn test_keyframes_missing_from_uses_element_base() {
     assert!((c - 270.0).abs() < 5.0, "75% 应到 270° 附近，实际 {}", c);
     assert!(a < b && b < c, "角度必须随时间单调推进：{} {} {}", a, b, c);
 }
+
+/// 弹窗（`position: fixed` 覆盖层）必须拦住点击，不能穿透到下层页面。
+///
+/// 覆盖两件事：
+/// 1. 覆盖层区域被记录下来 —— 落在里面的点击即使没命中处理器也要被吞掉；
+/// 2. 带 `scale` 动画的弹窗容器里的按钮仍然有事件绑定 ——
+///    离屏合成那条路径从前直接丢弃绑定，弹窗里的按钮全是死的，点击还会穿到下层。
+#[test]
+fn test_fixed_overlay_blocks_clicks_below() {
+    use crate::parser::wxml::WxmlParser;
+    use crate::parser::wxss::WxssParser;
+    use crate::renderer::wxml_renderer::WxmlRenderer;
+    use crate::ui::interaction::InteractionManager;
+    use crate::Canvas;
+    use serde_json::json;
+
+    let wxml = r#"
+      <view class="page">
+        <view class="card" bindtap="onCardTap">下层可点区域</view>
+        <view class="mask" catchtap="onMaskTap">
+          <view class="dialog" catchtap="onNoop">
+            <view class="btn" bindtap="onConfirm">确定</view>
+          </view>
+        </view>
+      </view>
+    "#;
+    // 弹窗容器带 scale 动画：走离屏合成路径，正是从前丢绑定的场景
+    let wxss = r#"
+      @keyframes popIn { from { transform: scale(0.8); } to { transform: scale(1); } }
+      .card { width: 375px; height: 200px; }
+      .mask { position: fixed; left: 0; top: 0; right: 0; bottom: 0; }
+      .dialog { width: 300px; height: 200px; animation: popIn 0.3s ease-out both; }
+      .btn { width: 200px; height: 44px; }
+    "#;
+
+    let nodes = WxmlParser::new(wxml).parse().unwrap();
+    let stylesheet = WxssParser::new(wxss).parse().unwrap();
+    let mut renderer = WxmlRenderer::new_with_scale(stylesheet, 375.0, 667.0, 1.0);
+    let mut canvas = Canvas::new(375, 667);
+    let mut im = InteractionManager::new();
+    let data = json!({});
+
+    renderer.render_with_scroll_and_viewport(&mut canvas, &nodes, &data, &mut im, 0.0, 667.0);
+    let mut fixed_canvas = Canvas::new(375, 667);
+    renderer.render_fixed_elements(&mut fixed_canvas, &nodes, &data, &mut im, 667.0);
+
+    // 1. 覆盖层区域覆盖整屏
+    assert!(renderer.fixed_layer_hit(180.0, 60.0), "整屏遮罩应拦住任意一点");
+    assert!(renderer.fixed_layer_hit(10.0, 600.0));
+
+    // 2. 遮罩自己的处理器能命中
+    let mask_chain = renderer.hit_test_bubble_fixed(10.0, 640.0, "tap");
+    assert!(
+        mask_chain.iter().any(|b| b.handler == "onMaskTap"),
+        "遮罩空白处应命中 onMaskTap，实际 {:?}",
+        mask_chain.iter().map(|b| b.handler.clone()).collect::<Vec<_>>()
+    );
+
+    // 3. 带 scale 动画的弹窗里，按钮与容器的绑定都还在（离屏路径不得丢绑定）
+    let fixed: Vec<String> = renderer
+        .get_event_bindings()
+        .iter()
+        .filter(|b| b.is_fixed)
+        .map(|b| b.handler.clone())
+        .collect();
+    assert!(fixed.contains(&"onConfirm".to_string()), "弹窗内按钮绑定丢失: {:?}", fixed);
+    assert!(fixed.contains(&"onNoop".to_string()), "弹窗容器绑定丢失: {:?}", fixed);
+
+    // 4. 下层页面的绑定不属于覆盖层（命中判定必须能把两者分开）
+    let flow: Vec<String> = renderer
+        .get_event_bindings()
+        .iter()
+        .filter(|b| !b.is_fixed)
+        .map(|b| b.handler.clone())
+        .collect();
+    assert!(flow.contains(&"onCardTap".to_string()), "下层绑定应存在且非 fixed: {:?}", flow);
+    assert!(
+        renderer.hit_test_bubble_fixed(180.0, 100.0, "tap").iter().all(|b| b.handler != "onCardTap"),
+        "覆盖层命中里不该出现下层页面的处理器"
+    );
+}
