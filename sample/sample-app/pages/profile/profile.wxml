@@ -1,67 +1,47 @@
 <view class="page">
   <!-- 用户信息 -->
-  <view class="user-header">
-    <view class="avatar">
-      <icon type="success" size="48" color="#fff"></icon>
-    </view>
+  <view class="user-header" bindtap="onUserTap">
+    <image class="avatar-img" src="/assets/avatar1.jpg" mode="aspectFill"></image>
     <view class="user-info">
-      <text class="user-name">用户12345</text>
-      <text class="user-level">普通会员</text>
+      <text class="user-name">{{userName}}</text>
+      <text class="user-level">{{loggedIn ? '普通会员 · 积分 ' + points : '点击登录 / 注册'}}</text>
     </view>
+    <icon type="arrow_right" size="16" color="#ffffff"></icon>
   </view>
 
   <!-- 订单统计 -->
   <view class="order-section">
-    <view class="order-title">我的订单</view>
+    <view class="row-between">
+      <text class="order-title">我的订单</text>
+      <view class="row" bindtap="onAllOrders">
+        <text class="muted">全部订单</text>
+        <icon type="arrow_right" size="12" color="#999"></icon>
+      </view>
+    </view>
     <view class="order-row">
-      <view class="order-item" bindtap="onOrderTap" data-type="pending">
-        <text class="order-num">2</text>
-        <text class="order-label">待付款</text>
-      </view>
-      <view class="order-item" bindtap="onOrderTap" data-type="shipping">
-        <text class="order-num">1</text>
-        <text class="order-label">待发货</text>
-      </view>
-      <view class="order-item" bindtap="onOrderTap" data-type="receiving">
-        <text class="order-num">3</text>
-        <text class="order-label">待收货</text>
-      </view>
-      <view class="order-item" bindtap="onOrderTap" data-type="review">
-        <text class="order-num">5</text>
-        <text class="order-label">待评价</text>
+      <view class="order-item" wx:for="{{orderStats}}" wx:key="key"
+            bindtap="onOrderTap" data-type="{{item.key}}">
+        <text class="order-num">{{item.count}}</text>
+        <text class="order-label">{{item.name}}</text>
       </view>
     </view>
   </view>
 
   <!-- 功能菜单 -->
   <view class="menu-section">
-    <view class="menu-item" bindtap="onMenuTap" data-id="1">
-      <icon type="success" size="24" color="#FF6B35"></icon>
-      <text class="menu-text">收货地址</text>
-      <text class="menu-arrow">></text>
-    </view>
-    <view class="menu-item" bindtap="onMenuTap" data-id="2">
-      <icon type="warn" size="24" color="#FF69B4"></icon>
-      <text class="menu-text">我的收藏</text>
-      <text class="menu-arrow">></text>
-    </view>
-    <view class="menu-item" bindtap="onMenuTap" data-id="3">
-      <icon type="waiting" size="24" color="#52C41A"></icon>
-      <text class="menu-text">优惠券</text>
-      <text class="menu-value">5张可用</text>
-      <text class="menu-arrow">></text>
-    </view>
-    <view class="menu-item" bindtap="onMenuTap" data-id="4">
-      <icon type="info" size="24" color="#4A90D9"></icon>
-      <text class="menu-text">帮助中心</text>
-      <text class="menu-arrow">></text>
+    <view class="menu-item" wx:for="{{menus}}" wx:key="key" bindtap="onMenuTap" data-key="{{item.key}}">
+      <view class="menu-icon" style="background-color:{{item.color}}">
+        <icon type="{{item.icon}}" size="18" color="#ffffff"></icon>
+      </view>
+      <text class="menu-text">{{item.name}}</text>
+      <text wx:if="{{item.value}}" class="menu-value">{{item.value}}</text>
+      <icon type="arrow_right" size="14" color="#cccccc"></icon>
     </view>
   </view>
 
   <!-- 退出登录 -->
   <view class="logout-section">
-    <button class="logout-btn" bindtap="onLogout">退出登录</button>
+    <button class="logout-btn" bindtap="onLogout">{{loggedIn ? '退出登录' : '立即登录'}}</button>
   </view>
-
   <view class="bottom-space"></view>
 </view>

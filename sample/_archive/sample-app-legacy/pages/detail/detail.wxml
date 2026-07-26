@@ -1,0 +1,133 @@
+<view class="page">
+  <!-- 商品图片区域 -->
+  <view class="product-image">
+    <view class="image-placeholder">
+      <icon type="success" size="100" color="#FF6B35"></icon>
+    </view>
+    <!-- 促销标签 -->
+    <view class="promo-tag" wx:if="{{product.discount}}">
+      <text>{{product.discount}}</text>
+    </view>
+  </view>
+
+  <!-- 商品信息卡片 -->
+  <view class="product-card">
+    <!-- 价格区域 -->
+    <view class="price-section">
+      <view class="price-main">
+        <text class="price-text">¥{{product.price}}</text>
+        <text class="original-price" wx:if="{{product.originalPrice}}">¥{{product.originalPrice}}</text>
+      </view>
+      <view class="price-tags">
+        <text class="tag tag-hot">热卖</text>
+        <text class="tag tag-free">包邮</text>
+      </view>
+    </view>
+    
+    <!-- 商品标题 -->
+    <view class="product-title-section">
+      <text class="product-name">{{product.name}}</text>
+      <text class="product-desc">{{product.desc}}</text>
+    </view>
+    
+    <!-- 销量库存 -->
+    <view class="meta-section">
+      <view class="meta-item">
+        <text class="meta-value">{{product.sales}}</text>
+        <text class="meta-label">销量</text>
+      </view>
+      <view class="meta-divider"></view>
+      <view class="meta-item">
+        <text class="meta-value">{{product.stock}}</text>
+        <text class="meta-label">库存</text>
+      </view>
+      <view class="meta-divider"></view>
+      <view class="meta-item">
+        <text class="meta-value">4.9</text>
+        <text class="meta-label">评分</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 规格选择 -->
+  <view class="section-card">
+    <view class="section-header">
+      <text class="section-title">规格选择</text>
+      <text class="section-hint">已选：{{selectedSpec}}</text>
+    </view>
+    <view class="spec-list">
+      <view class="spec-item {{item.selected ? 'active' : ''}}" wx:for="{{specs}}" wx:key="id" bindtap="onSelectSpec" data-index="{{index}}">
+        <text>{{item.name}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 数量选择 -->
+  <view class="section-card qty-card">
+    <text class="section-title">购买数量</text>
+    <view class="qty-control">
+      <view class="qty-btn {{quantity <= 1 ? 'disabled' : ''}}" bindtap="onDecrease">
+        <text>-</text>
+      </view>
+      <view class="qty-input">
+        <text>{{quantity}}</text>
+      </view>
+      <view class="qty-btn {{quantity >= product.stock ? 'disabled' : ''}}" bindtap="onIncrease">
+        <text>+</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 服务保障 -->
+  <view class="section-card service-card">
+    <view class="service-item">
+      <icon type="success" size="16" color="#52c41a"></icon>
+      <text>正品保证</text>
+    </view>
+    <view class="service-item">
+      <icon type="success" size="16" color="#52c41a"></icon>
+      <text>7天退换</text>
+    </view>
+    <view class="service-item">
+      <icon type="success" size="16" color="#52c41a"></icon>
+      <text>极速发货</text>
+    </view>
+  </view>
+
+  <!-- 商品详情 -->
+  <view class="detail-card">
+    <view class="detail-header">
+      <view class="detail-line"></view>
+      <text class="detail-title">商品详情</text>
+      <view class="detail-line"></view>
+    </view>
+    <view class="detail-content">
+      <text class="detail-text">{{product.detail}}</text>
+    </view>
+  </view>
+
+  <!-- 底部空白 -->
+  <view class="bottom-space"></view>
+
+  <!-- 底部操作栏 -->
+  <view class="action-bar">
+    <view class="action-icons">
+      <view class="action-icon-item" bindtap="onGoHome">
+        <icon type="success" size="22" color="#666"></icon>
+        <text>首页</text>
+      </view>
+      <view class="action-icon-item" bindtap="onGoCart">
+        <icon type="waiting" size="22" color="#666"></icon>
+        <text>购物车</text>
+        <view class="cart-badge" wx:if="{{cartCount > 0}}">
+          <text>{{cartCount > 99 ? '99+' : cartCount}}</text>
+        </view>
+      </view>
+    </view>
+    <view class="action-buttons">
+      <button class="btn-cart" bindtap="onAddCart">加入购物车</button>
+      <view class="btn-gap"></view>
+      <button class="btn-buy" bindtap="onBuyNow">立即购买</button>
+    </view>
+  </view>
+</view>

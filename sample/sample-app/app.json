@@ -5,7 +5,16 @@
     "pages/cart/cart",
     "pages/profile/profile",
     "pages/detail/detail",
-    "pages/canvas/canvas"
+    "pages/order/order",
+    "pages/orders/orders",
+    "pages/search/search",
+    "pages/showcase/showcase",
+    "pages/canvas/canvas",
+    "pages/components/components",
+    "pages/form/form",
+    "pages/login/login",
+    "pages/address/address",
+    "pages/coupon/coupon"
   ],
   "window": {
     "navigationBarTitleText": "Mini Shop",

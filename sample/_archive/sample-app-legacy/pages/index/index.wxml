@@ -1,0 +1,87 @@
+<view class="page">
+  <!-- 搜索栏 -->
+  <view class="search-bar">
+    <input class="search-input" placeholder="搜索商品" bindinput="onSearchInput" bindconfirm="onSearch" maxlength="50" />
+  </view>
+
+  <!-- Banner -->
+  <view class="banner">
+    <text class="banner-tag">限时特惠</text>
+    <text class="banner-title">新品上市 全场8折</text>
+    <text class="banner-desc">精选好物 品质保证</text>
+  </view>
+
+  <!-- 分类入口 -->
+  <view class="category-section">
+    <view class="category-row">
+      <view class="category-item" bindtap="onCategoryTap" data-id="1">
+        <icon type="success" size="28" color="#FF6B35"></icon>
+        <text class="category-name">数码</text>
+      </view>
+      <view class="category-item" bindtap="onCategoryTap" data-id="2">
+        <icon type="info" size="28" color="#4A90D9"></icon>
+        <text class="category-name">服饰</text>
+      </view>
+      <view class="category-item" bindtap="onCategoryTap" data-id="3">
+        <icon type="warn" size="28" color="#FF69B4"></icon>
+        <text class="category-name">美妆</text>
+      </view>
+      <view class="category-item" bindtap="onCategoryTap" data-id="4">
+        <icon type="waiting" size="28" color="#52C41A"></icon>
+        <text class="category-name">食品</text>
+      </view>
+    </view>
+    <view class="category-row">
+      <view class="category-item" bindtap="onCanvasTap">
+        <icon type="circle" size="28" color="#722ed1"></icon>
+        <text class="category-name">Canvas</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 热销商品 -->
+  <view class="section">
+    <view class="section-header">
+      <text class="section-title">🔥 热销商品</text>
+      <text class="section-more" bindtap="onViewMore">更多 ></text>
+    </view>
+    
+    <view class="product-row">
+      <view class="product-card" wx:for="{{hotProducts}}" wx:key="id" bindtap="onProductTap" data-id="{{item.id}}">
+        <view class="product-img">
+          <icon type="success" size="40" color="#FF6B35"></icon>
+        </view>
+        <text class="product-name">{{item.name}}</text>
+        <view class="product-price-row">
+          <text class="product-price">¥{{item.price}}</text>
+          <view class="add-btn" catchtap="onAddCart" data-product="{{item}}">
+            <text class="add-btn-text">+</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 新品推荐 - 大量商品列表测试 -->
+  <view class="section">
+    <view class="section-header">
+      <text class="section-title">✨ 新品推荐 ({{newProducts.length}}件)</text>
+    </view>
+    
+    <view class="product-list">
+      <view class="list-item" wx:for="{{newProducts}}" wx:key="id" bindtap="onProductTap" data-id="{{item.id}}">
+        <view class="list-img">
+          <icon type="info" size="36" color="#4A90D9"></icon>
+        </view>
+        <view class="list-info">
+          <text class="list-name">{{item.name}}</text>
+          <text class="list-desc">{{item.desc}}</text>
+          <text class="list-price">¥{{item.price}}</text>
+        </view>
+        <button class="list-btn" size="mini" type="primary" catchtap="onAddCart" data-product="{{item}}">购买</button>
+      </view>
+    </view>
+  </view>
+
+  <view class="bottom-space"></view>
+</view>

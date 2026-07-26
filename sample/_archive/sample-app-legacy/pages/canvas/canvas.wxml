@@ -1,14 +1,4 @@
 <view class="page">
-  <!-- 顶部返回栏 -->
-  <view class="nav-bar">
-    <view class="nav-back" bindtap="onBack">
-      <icon type="back" size="20" color="#ffffff"></icon>
-    </view>
-    <text class="nav-title">Canvas 示例</text>
-    <view class="nav-action" bindtap="onNavHome">
-      <icon type="success_no_circle" size="18" color="#ffffff"></icon>
-    </view>
-  </view>
   <view class="header">
     <text class="title">Canvas 示例</text>
     <text class="subtitle">展示 Canvas 2D 绑图能力</text>

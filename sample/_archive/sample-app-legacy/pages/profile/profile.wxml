@@ -1,0 +1,67 @@
+<view class="page">
+  <!-- 用户信息 -->
+  <view class="user-header">
+    <view class="avatar">
+      <icon type="success" size="48" color="#fff"></icon>
+    </view>
+    <view class="user-info">
+      <text class="user-name">用户12345</text>
+      <text class="user-level">普通会员</text>
+    </view>
+  </view>
+
+  <!-- 订单统计 -->
+  <view class="order-section">
+    <view class="order-title">我的订单</view>
+    <view class="order-row">
+      <view class="order-item" bindtap="onOrderTap" data-type="pending">
+        <text class="order-num">2</text>
+        <text class="order-label">待付款</text>
+      </view>
+      <view class="order-item" bindtap="onOrderTap" data-type="shipping">
+        <text class="order-num">1</text>
+        <text class="order-label">待发货</text>
+      </view>
+      <view class="order-item" bindtap="onOrderTap" data-type="receiving">
+        <text class="order-num">3</text>
+        <text class="order-label">待收货</text>
+      </view>
+      <view class="order-item" bindtap="onOrderTap" data-type="review">
+        <text class="order-num">5</text>
+        <text class="order-label">待评价</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 功能菜单 -->
+  <view class="menu-section">
+    <view class="menu-item" bindtap="onMenuTap" data-id="1">
+      <icon type="success" size="24" color="#FF6B35"></icon>
+      <text class="menu-text">收货地址</text>
+      <text class="menu-arrow">></text>
+    </view>
+    <view class="menu-item" bindtap="onMenuTap" data-id="2">
+      <icon type="warn" size="24" color="#FF69B4"></icon>
+      <text class="menu-text">我的收藏</text>
+      <text class="menu-arrow">></text>
+    </view>
+    <view class="menu-item" bindtap="onMenuTap" data-id="3">
+      <icon type="waiting" size="24" color="#52C41A"></icon>
+      <text class="menu-text">优惠券</text>
+      <text class="menu-value">5张可用</text>
+      <text class="menu-arrow">></text>
+    </view>
+    <view class="menu-item" bindtap="onMenuTap" data-id="4">
+      <icon type="info" size="24" color="#4A90D9"></icon>
+      <text class="menu-text">帮助中心</text>
+      <text class="menu-arrow">></text>
+    </view>
+  </view>
+
+  <!-- 退出登录 -->
+  <view class="logout-section">
+    <button class="logout-btn" bindtap="onLogout">退出登录</button>
+  </view>
+
+  <view class="bottom-space"></view>
+</view>

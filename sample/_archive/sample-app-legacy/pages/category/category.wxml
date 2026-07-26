@@ -50,10 +50,10 @@
   </view>
 
   <!-- 底部购物车栏 - 在 tabbar 上方 -->
-  <view class="cart-bar" style="position: fixed; bottom: 100rpx; left: 0; right: 0;">
+  <view class="cart-bar" style="position: fixed; bottom: 56px; left: 0; right: 0;">
     <view class="cart-left" bindtap="onShowCart">
       <view class="cart-icon-wrap">
-        <icon type="success_no_circle" size="26" color="#fff"></icon>
+        <icon type="success" size="28" color="#fff"></icon>
         <text wx:if="{{totalCount > 0}}" class="cart-badge-icon">{{totalCount}}</text>
       </view>
       <view class="cart-info">
@@ -61,14 +61,14 @@
         <text class="cart-tip">另需配送费¥5</text>
       </view>
     </view>
-    <view class="cart-right {{totalCount > 0 ? 'active' : ''}}" bindtap="onCheckout">
-      <text>{{totalCount > 0 ? '去结算' : '未选购商品'}}</text>
+    <view class="cart-right" bindtap="onCheckout">
+      <button style="border-radius: 30px;background: #012000;color: black">{{totalCount > 0 ? '去结算' : '未选购商品'}}</button>
     </view>
   </view>
 
   <!-- 购物车弹窗 -->
-  <view wx:if="{{showCartPopup}}" class="cart-popup-mask" style="bottom: 200rpx;" bindtap="onHideCart"></view>
-  <view wx:if="{{showCartPopup}}" class="cart-popup" style="position: fixed; bottom: 200rpx; left: 0; right: 0;">
+  <view wx:if="{{showCartPopup}}" class="cart-popup-mask" style="bottom: 156px;" bindtap="onHideCart"></view>
+  <view wx:if="{{showCartPopup}}" class="cart-popup" style="position: fixed; bottom: 156px; left: 0; right: 0;">
     <view class="cart-popup-header">
       <text class="cart-popup-title">已选商品</text>
       <view class="cart-clear" bindtap="onClearCart">
