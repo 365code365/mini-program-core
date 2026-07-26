@@ -165,6 +165,26 @@
     </view>
   </view>
 
+  <!-- JS 操作样式：wx.createAnimation + animation 属性 -->
+  <view class="card">
+    <text class="h1">JS 动画（wx.createAnimation）</text>
+    <view class="row anim-demo-row">
+      <view class="anim-demo-box" animation="{{boxAnim}}">JS</view>
+      <view class="mini-btn" bindtap="onPlayAnim">播放</view>
+      <view class="mini-btn" bindtap="onResetAnim">复位</view>
+    </view>
+    <text class="desc">链式 translate / rotate / scale / opacity，逐步播放</text>
+  </view>
+
+  <!-- 按压反馈：hover-class（小程序官方写法） -->
+  <view class="card">
+    <text class="h1">按压反馈 hover-class</text>
+    <view class="row btn-row">
+      <view class="mini-btn" hover-class="mini-btn-hover">按住我</view>
+      <view class="press-btn" hover-class="press-btn-hover">带过渡的按压</view>
+    </view>
+  </view>
+
   <view class="bottom-space"></view>
 
   <!-- 操作面板 -->

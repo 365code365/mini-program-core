@@ -24,6 +24,7 @@ use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
 use winit::window::{Window, WindowAttributes, WindowId};
 use mini_render::ui::ScrollController;
 use mini_render::ui::scroll_controller::PULL_REFRESH_HEIGHT;
+use mini_render::Rect as GeoRect;
 
 struct MiniAppWindow {
     window: Option<Arc<Window>>,
@@ -68,8 +69,15 @@ struct MiniAppWindow {
     fps_worst_parts: (f32, f32, f32),
     /// 上一次 render() 内部分段耗时（页面, fixed 覆盖层, tabBar），单位 ms
     render_parts: (f32, f32, f32),
-    /// 画布上那条带是按哪个滚动偏移画的（上屏偏移必须与它一致）
-    last_render_scroll: f32,
+    /// 上一次整帧重绘记录的动画元素包围盒（物理像素，画布坐标）
+    last_animated_bounds: Vec<GeoRect>,
+    /// fixed 覆盖层里是否有动画（有的话不能走局部重绘）
+    fixed_layer_animates: bool,
+    /// 进程启动时刻：用作与帧无关的动画相位时钟
+    started_at: Instant,
+    /// 页面画布上「已经画过内容」的行区间（物理像素，画布坐标）。
+    /// 滚动只要还落在里面就不必重绘，直接换切片上屏。
+    drawn_band: Option<(f32, f32)>,
     /// 当前是否处于下拉刷新态（内容被按住、指示器转圈，等 `wx.stopPullDownRefresh()`）
     pull_refreshing: bool,
     /// 最慢一帧对应的 render 内部分段
@@ -157,7 +165,10 @@ impl MiniAppWindow {
             fps_worst_parts: (0.0, 0.0, 0.0),
             render_parts: (0.0, 0.0, 0.0),
             fps_worst_render_parts: (0.0, 0.0, 0.0),
-            last_render_scroll: f32::NAN,
+            last_animated_bounds: Vec::new(),
+            fixed_layer_animates: false,
+            started_at: now,
+            drawn_band: None,
             pull_refreshing: false,
             page_data: std::sync::Arc::new(json!({})),
             page_data_dirty: true,
@@ -193,11 +204,106 @@ impl MiniAppWindow {
             || css_anim
             || self.interaction.has_focused_input()
             || self.pull_refreshing // 指示器要持续转
+            // 有自动播放的 swiper：即使页面没有 JS 定时器也要按刷新率醒着，
+            // 否则到点该翻页时没人来推进它的状态
+            || mini_render::renderer::components::has_autoplay_swiper()
             || self.app.has_active_timers()
             || self.toast.as_ref().map(|t| t.visible).unwrap_or(false)
             || self.loading.as_ref().map(|l| l.visible).unwrap_or(false)
             || self.modal.as_ref().map(|m| m.visible).unwrap_or(false)
             || mini_render::renderer::components::has_playing_video()
+    }
+
+    /// 按闸门决定这一帧要不要重绘，以及走整帧还是损伤区。
+    ///
+    /// - `structural`：数据/滚动/交互引起的变化，必须整帧重绘。
+    /// - `css_anim`：只有 CSS/JS 动画在跑，走损伤区：只清并只画动画元素的包围盒。
+    ///   一个 `infinite` 的小徽标不该逼着整屏每帧重新光栅化 ——
+    ///   浏览器靠图层合成避免这件事，这里用裁剪矩形达到同样效果。
+    fn render_frame_if_needed(&mut self, structural: bool, css_anim: bool) {
+        if !(structural || css_anim) {
+            return;
+        }
+        let damage = if structural { None } else { self.animation_damage_rect() };
+        self.render_with_damage(damage);
+        self.needs_redraw = false;
+    }
+
+    /// 跑一帧「逻辑 + 渲染 + 上屏」，与交互窗体 `RedrawRequested` 走同一套闸门。
+    /// 供 `--frames` 用：局部重绘这类只在连续出帧时才暴露的问题，单帧快照测不到。
+    fn pump_one_frame(&mut self) {
+        self.app.update().ok();
+        if self.app.take_data_dirty() {
+            self.needs_redraw = true;
+            self.page_data_dirty = true;
+        }
+        let mut pull_req: Option<bool> = None;
+        evt::process_ui_events(&mut self.app, &mut self.toast, &mut self.loading, &mut self.modal, &mut pull_req);
+        self.apply_pull_down_request(pull_req);
+        self.update_scroll();
+        if self.scroll.take_pull_trigger() && self.page_enables_pull_down() {
+            self.set_pull_refreshing(true);
+        }
+        if !self.viewport_inside_drawn_band() {
+            self.needs_redraw = true;
+        }
+        let scrolling = self.scroll.is_animating() || self.scroll.is_dragging;
+        let sv_scroll = self.interaction.scroll_controllers.values().any(|c| c.is_animating() || c.is_dragging);
+        let css_anim = self.renderer.as_ref().map(|r| r.has_active_animations()).unwrap_or(false);
+        let structural = self.needs_redraw
+            || mini_render::renderer::components::has_playing_video()
+            || sv_scroll
+            || self.interaction.has_focused_input()
+            || scrolling
+            || mini_render::renderer::components::swiper_needs_frame();
+        self.render_frame_if_needed(structural, css_anim);
+    }
+
+    /// 上一帧动画元素包围盒的并集，作为本帧的损伤区。
+    ///
+    /// 返回 None 表示「不值得做局部重绘」：没有记录、或并集已经占到视口的三成以上
+    /// （那时局部重绘省不下多少，还要多付一次裁剪判断）。
+    fn animation_damage_rect(&self) -> Option<GeoRect> {
+        if self.fixed_layer_animates {
+            return None; // 覆盖层在动，必须整帧重绘
+        }
+        let bounds = &self.last_animated_bounds;
+        if bounds.is_empty() {
+            return None;
+        }
+        let (mut x0, mut y0) = (f32::MAX, f32::MAX);
+        let (mut x1, mut y1) = (f32::MIN, f32::MIN);
+        for r in bounds {
+            x0 = x0.min(r.x);
+            y0 = y0.min(r.y);
+            x1 = x1.max(r.x + r.width);
+            y1 = y1.max(r.y + r.height);
+        }
+        if x1 <= x0 || y1 <= y0 {
+            return None;
+        }
+        let sf = self.scale_factor as f32;
+        let viewport_area = (LOGICAL_WIDTH as f32 * sf) * (LOGICAL_HEIGHT as f32 * sf);
+        if (x1 - x0) * (y1 - y0) > viewport_area * 0.3 {
+            return None;
+        }
+        Some(GeoRect::new(x0, y0, x1 - x0, y1 - y0))
+    }
+
+    /// 上屏要用的那段画布是否已经画过（画布之外的行由上屏填背景色，不算未绘制）
+    fn viewport_inside_drawn_band(&self) -> bool {
+        let Some((band_top, band_bottom)) = self.drawn_band else { return false };
+        let Some(canvas) = &self.canvas else { return false };
+        let sf = self.scale_factor as f32;
+        let has_tabbar = self
+            .page_stack
+            .last()
+            .map(|p| self.is_tabbar_page(&p.path))
+            .unwrap_or(false);
+        let viewport = (LOGICAL_HEIGHT - if has_tabbar { tabbar_height() } else { 0 }) as f32;
+        let top = (self.scroll.get_position() * sf).max(0.0);
+        let bottom = (self.scroll.get_position() * sf + viewport * sf).min(canvas.height() as f32);
+        top >= band_top - 0.01 && bottom <= band_bottom + 0.01
     }
 
     /// 当前页是否声明了 `enablePullDownRefresh`
@@ -347,6 +453,12 @@ impl MiniAppWindow {
     }
 
     fn render(&mut self) {
+        self.render_with_damage(None);
+    }
+
+    /// `damage` 为 `Some(rect)` 时只重绘该矩形（动画帧的局部重绘），
+    /// 其余像素保留上一帧结果，并且不更新「已绘制条带」。
+    fn render_with_damage(&mut self, damage: Option<GeoRect>) {
         // 页面数据只在逻辑层 setData 之后才会变，所以只有脏了才做这趟
         // 「JS 侧 JSON.stringify 整份 data → Rust 侧反序列化」往返。
         // 从前每帧都做一次：动画帧里白付一次全量序列化。
@@ -380,9 +492,19 @@ impl MiniAppWindow {
         let t_render_begin = Instant::now();
         let mut content_height = 0.0f32;
         if let Some(canvas) = &mut self.canvas {
-            canvas.clear_band(band_y0, band_y1, Color::from_hex(0xF5F5F5));
+            match &damage {
+                Some(rect) => canvas.clear_area(rect, Color::from_hex(0xF5F5F5)),
+                None => canvas.clear_band(band_y0, band_y1, Color::from_hex(0xF5F5F5)),
+            }
             if let Some(renderer) = &mut self.renderer {
+                renderer.set_damage_clip(damage);
                 content_height = renderer.render_with_scroll_and_viewport(canvas, &page.wxml_nodes, &page_data, &mut self.interaction, scroll_offset, viewport_height);
+            }
+        }
+        if let Some(r) = &mut self.renderer {
+            let bounds = r.take_animated_bounds();
+            if !bounds.is_empty() || damage.is_none() {
+                self.last_animated_bounds = bounds;
             }
         }
         
@@ -401,19 +523,35 @@ impl MiniAppWindow {
         }
         
         let t_page_done = Instant::now();
-        if let Some(page) = self.page_stack.last() {
-            if let (Some(fc), Some(r)) = (&mut self.fixed_canvas, &mut self.renderer) {
-                fc.clear(Color::new(0, 0, 0, 0));
-                r.render_fixed_elements(fc, &page.wxml_nodes, &page_data, &mut self.interaction, viewport_height);
+        // 局部重绘帧里 fixed 覆盖层与 tabBar 不会变，直接沿用上一帧的画布 ——
+        // 除非覆盖层自己带动画（那时 animation_damage_rect 会拒绝走局部路径）。
+        if damage.is_none() {
+            if let Some(page) = self.page_stack.last() {
+                if let (Some(fc), Some(r)) = (&mut self.fixed_canvas, &mut self.renderer) {
+                    // 在两趟之间清零，才能分辨「动画在页面里」还是「在 fixed 覆盖层里」
+                    let page_anim = r.has_active_animations();
+                    r.set_animations_active(false);
+                    fc.clear(Color::new(0, 0, 0, 0));
+                    r.render_fixed_elements(fc, &page.wxml_nodes, &page_data, &mut self.interaction, viewport_height);
+                    let fixed_anim = r.has_active_animations();
+                    r.set_animations_active(page_anim || fixed_anim);
+                    // 覆盖层自己带动画时，局部重绘会让它停住 —— 禁用局部路径
+                    self.fixed_layer_animates = fixed_anim;
+                }
             }
         }
         let t_fixed_done = Instant::now();
         
-        if has_tabbar {
+        if has_tabbar && damage.is_none() {
             if self.is_custom_tabbar() { self.render_custom_tabbar(&current_path); }
             else { self.render_native_tabbar(&current_path); }
         }
-        self.last_render_scroll = scroll_offset;
+        // 记下这一帧真正画过的行区间（夹到画布内；画布之外由上屏填背景色）
+        let canvas_h = self.canvas.as_ref().map(|c| c.height() as f32).unwrap_or(0.0);
+        self.drawn_band = Some((
+            (band_y0 as f32).max(0.0),
+            (band_y1 as f32).min(canvas_h),
+        ));
         self.render_parts = (
             (t_page_done - t_render_begin).as_secs_f32() * 1000.0,
             (t_fixed_done - t_page_done).as_secs_f32() * 1000.0,
@@ -489,7 +627,9 @@ impl MiniAppWindow {
                         app_window::render::render_pull_indicator(
                             &mut buffer, size.width, size.height, self.scale_factor as f32,
                             gap, self.pull_refreshing, self.scroll.pull_progress(),
-                            (self.last_frame.elapsed().as_secs_f32() * 1.1).fract(),
+                            // 相位要用「进程启动至今」的时钟：last_frame 每帧都会被重置，
+                            // 拿它算 elapsed 恒为 0，三点看起来是静止的。
+                            (self.started_at.elapsed().as_secs_f32() * 1.1).fract(),
                         );
                     }
                     render_ui_overlay(&mut buffer, size.width, size.height, self.scale_factor as f32, self.last_frame,
@@ -709,6 +849,12 @@ impl ApplicationHandler for MiniAppWindow {
                     // 交互元素
                     if let Some(el) = self.interaction.hit_test(x, y).or_else(|| self.interaction.hit_test(x, actual_y)).cloned() {
                         use mini_render::ui::interaction::InteractionType;
+                        // 任何可点元素都进入按压态（`:active` / `hover-class` 靠它生效），
+                        // 滚动区域除外 —— 那是拖动不是按压
+                        if !el.disabled && el.interaction_type != InteractionType::ScrollArea {
+                            self.interaction.set_button_pressed(el.id.clone(), el.bounds);
+                            self.needs_redraw = true;
+                        }
                         match el.interaction_type {
                             InteractionType::Slider if !el.disabled => {
                                 let ty = if el.is_fixed { y } else { actual_y };
@@ -803,11 +949,15 @@ impl ApplicationHandler for MiniAppWindow {
                     self.set_pull_refreshing(true);
                 }
                 self.process_navigation();
-                // 不变量：上屏用的滚动偏移，必须等于画布上那条带被绘制时的偏移。
-                // 页面画布只画「视口 ± 裁剪余量」，偏移一变就必须重画，否则上屏会取到
-                // 未绘制的区域（表现为滑动时一片空白，停下才出现内容）。
-                // 这里按位置比对而不是依赖各输入路径记得置标记 —— 少一处就会露白。
-                if (self.scroll.get_position() - self.last_render_scroll).abs() > 0.01 {
+                // 不变量：上屏要用的那段画布必须是已经画过的。
+                // 页面画布只画「视口 ± 裁剪余量」，所以滚动出这条带就必须重画，
+                // 否则上屏取到没画过的区域（表现为滑动时一片空白，停下才出现内容）。
+                //
+                // 反过来说：只要还在这条带内，滚动**不需要重绘** —— 页面画布用的是
+                // 内容坐标，滚动只是取不同的切片，上屏本身就是一次逐行拷贝。
+                // 这是滑动流畅度的关键：滚动期间大部分帧只花上屏的 3~4ms，
+                // 而不是每帧重画整屏的 8~14ms（帧时间抖动就是「卡卡的」来源）。
+                if !self.viewport_inside_drawn_band() {
                     self.needs_redraw = true;
                 }
                 
@@ -815,10 +965,15 @@ impl ApplicationHandler for MiniAppWindow {
                 let sv_scroll = self.interaction.scroll_controllers.values().any(|c| c.is_animating() || c.is_dragging);
                 let css_anim = self.renderer.as_ref().map(|r| r.has_active_animations()).unwrap_or(false);
                 let t_logic = frame_begin.elapsed();
-                if self.needs_redraw || mini_render::renderer::components::has_playing_video() || sv_scroll || self.interaction.has_focused_input() || scrolling || css_anim {
-                    self.render();
-                    self.needs_redraw = false;
-                }
+                // swiper 自动播放到点/正在滑动时也要重绘（它的状态在绘制期推进）
+                let swiper_frame = mini_render::renderer::components::swiper_needs_frame();
+                let structural = self.needs_redraw
+                    || mini_render::renderer::components::has_playing_video()
+                    || sv_scroll
+                    || self.interaction.has_focused_input()
+                    || scrolling
+                    || swiper_frame;
+                self.render_frame_if_needed(structural, css_anim);
                 let t_render = frame_begin.elapsed();
                 self.present();
                 if self.fps_log {
@@ -908,7 +1063,7 @@ impl MiniAppWindow {
     /// 这是「窗体是否忠实还原小程序」的可验证入口 —— 页面加载、样式合并、
     /// 自定义 tabBar、fixed 覆盖层、Toast/Modal 外壳、像素合成顺序都与真实运行一致，
     /// 因此产出的 PNG 可以直接和编译出的 H5 截图做像素级对比。
-    fn snapshot_all(&mut self, out_dir: &std::path::Path, scale: f64, time: Option<f32>, settle: Option<f32>, only: Option<&str>, scroll: f32, evals: &[String]) -> Result<usize, String> {
+    fn snapshot_all(&mut self, out_dir: &std::path::Path, scale: f64, time: Option<f32>, settle: Option<f32>, only: Option<&str>, scroll: f32, evals: &[String], frames: u32) -> Result<usize, String> {
         self.setup_canvas(scale);
         let routes: Vec<String> = match only {
             Some(route) => vec![route.trim_start_matches('/').to_string()],
@@ -1002,6 +1157,26 @@ impl MiniAppWindow {
                 self.app.update().ok();
                 std::thread::sleep(Duration::from_millis(8));
             }
+            // 注入脚本刚触发的动画（`wx.createAnimation`、按压过渡）需要一点真实时间
+            // 才能看出效果，否则截到的永远是第 0 帧。只在有 --eval 时等，
+            // 双端对比那条链路不受影响（它靠 --time 固定动画时钟）。
+            if !evals.is_empty() {
+                let deadline = Instant::now() + Duration::from_millis(300);
+                while Instant::now() < deadline {
+                    self.app.update().ok();
+                    // 必须真的出帧：动画的起点是「渲染器第一次看到它」的时刻，
+                    // 只 update 不 render 的话最后截到的永远是第 0 帧。
+                    self.render();
+                    std::thread::sleep(Duration::from_millis(8));
+                }
+            }
+            // `--frames N`：按刷新率跑 N 个**与交互窗体同一套闸门/损伤区逻辑**的帧再截图。
+            // 局部重绘这类只在连续出帧时才暴露的问题（比如某个动画元素被漏出损伤区而静止），
+            // 只有这样才测得到 —— 单帧快照永远走整帧重绘，看不出来。
+            for _ in 0..frames {
+                self.pump_one_frame();
+                std::thread::sleep(self.frame_interval);
+            }
             { let mut pull_req: Option<bool> = None;
                         evt::process_ui_events(&mut self.app, &mut self.toast, &mut self.loading, &mut self.modal, &mut pull_req);
                         self.apply_pull_down_request(pull_req); }
@@ -1061,6 +1236,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut scale = 2.0f64;
     let mut anim_time: Option<f32> = None;
     let mut settle: Option<f32> = None;
+    let mut frames = 0u32;
     let mut route: Option<String> = None;
     let mut scroll = 0.0f32;
     let mut evals: Vec<String> = Vec::new();
@@ -1071,6 +1247,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "--scale" => scale = it.next().and_then(|v| v.parse().ok()).unwrap_or(2.0),
             "--time" => anim_time = it.next().and_then(|v| v.parse().ok()),
             "--settle" => settle = it.next().and_then(|v| v.parse().ok()),
+            "--frames" => frames = it.next().and_then(|v| v.parse().ok()).unwrap_or(0),
             "--route" => route = it.next(),
             "--scroll" => scroll = it.next().and_then(|v| v.parse().ok()).unwrap_or(0.0),
             "--eval" => { if let Some(v) = it.next() { evals.push(v); } }
@@ -1078,6 +1255,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("用法: mini-app-window <小程序目录> [--snapshot <输出目录>] [--scale 2]");
                 println!("  --time <秒>    动画时钟位置（CSS @keyframes 求值到该时刻，不消耗真实时间）");
                 println!("  --settle <秒>  真实等待该时长，让 setTimeout/setInterval、延时弹层、");
+                println!("  --frames <N>   按刷新率跑 N 个与交互窗体同逻辑的帧再截图（验证动画/局部重绘）");
                 println!("                 轮播自动播放跑起来（要「和真机一样」的画面时用这个）");
                 println!("  --route <页面路径>   --scroll <像素>");
                 println!("  --eval <JS>    可重复；在 --settle 之后依次执行，每段跑完导航");
@@ -1103,7 +1281,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 快照模式：不开窗口，直接把整帧写成 PNG（用于与 H5 做像素对比）
     if let Some(out) = snapshot {
-        let count = window.snapshot_all(&out, scale, anim_time, settle, route.as_deref(), scroll, &evals)?;
+        let count = window.snapshot_all(&out, scale, anim_time, settle, route.as_deref(), scroll, &evals, frames)?;
         println!("\n✅ 快照完成：{} 个页面 -> {}", count, out.display());
         return Ok(());
     }

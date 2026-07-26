@@ -139,6 +139,19 @@ Page({
     wx.showToast({ title: e.currentTarget.dataset.k, icon: 'none' });
   },
 
+  // ── JS 操作样式：wx.createAnimation ──
+  onPlayAnim: function () {
+    var anim = wx.createAnimation({ duration: 500, timingFunction: 'ease-out' });
+    anim.translateX(120).rotate(180).scale(1.4).step();
+    anim.translateX(0).rotate(360).scale(1).opacity(0.5).step({ duration: 500 });
+    anim.opacity(1).step({ duration: 200 });
+    this.setData({ boxAnim: anim.export() });
+  },
+  onResetAnim: function () {
+    var anim = wx.createAnimation({ duration: 250 });
+    anim.translateX(0).rotate(0).scale(1).opacity(1).step();
+    this.setData({ boxAnim: anim.export() });
+  },
   onBack: function () {
     wx.navigateBack();
   }

@@ -198,6 +198,13 @@
         attrs["data-model"] = m ? m[1].trim() : a[k2];
       }
     }
+    // hover-class：按压反馈的类名（由 bindHoverClass 在按住时加上）
+    if (a["hover-class"]) attrs["data-hover-class"] = interp(a["hover-class"], scope);
+    // animation：wx.createAnimation 的 export 载荷，载荷变化时由 patchAttrs 触发重播
+    if (a["animation"]) {
+      var av = evalWhole(a["animation"], scope);
+      if (av && typeof av === "object") attrs["data-animation"] = JSON.stringify(av);
+    }
   }
 
   function swiperVNode(node, a, scope) {
@@ -327,6 +334,53 @@
   function patchAttrs(dom, oldA, newA) {
     for (var k in oldA) { if (!(k in newA)) dom.removeAttribute(k); }
     for (var k2 in newA) { if (oldA[k2] !== newA[k2]) dom.setAttribute(k2, newA[k2]); }
+    // animation="{{animData}}"（wx.createAnimation 的 export）：载荷变化就重播
+    if (newA["data-animation"] && oldA["data-animation"] !== newA["data-animation"]) {
+      playJsAnimation(dom, newA["data-animation"]);
+    }
+  }
+
+  // ───────── wx.createAnimation 的播放：把 actions 逐步映射成 CSS transition ─────────
+  // 与原生端同一份载荷、同一套语义（每步绝对目标值、按 delay/duration 顺序播）。
+  function playJsAnimation(el, payload) {
+    var data;
+    try { data = typeof payload === "string" ? JSON.parse(payload.replace(/'/g, '"')) : payload; } catch (e) { return; }
+    if (!data || !data.actions || !data.actions.length) return;
+    if (el.__animTimers) el.__animTimers.forEach(clearTimeout);
+    el.__animTimers = [];
+    // 累积状态：未提及的属性沿用上一步
+    var st = { tx: 0, ty: 0, rotate: 0, sx: 1, sy: 1, skx: 0, sky: 0, opacity: null, bg: null };
+    var at = 0;
+    data.actions.forEach(function (action) {
+      var tr = (action.option && action.option.transition) || {};
+      var dur = tr.duration === undefined ? 400 : tr.duration;
+      var delay = tr.delay || 0;
+      var tf = tr.timingFunction || "linear";
+      (action.animates || []).forEach(function (a) {
+        var v = a.args || [];
+        switch (a.type) {
+          case "translate": st.tx = v[0] || 0; st.ty = v[1] || 0; break;
+          case "translateX": st.tx = v[0] || 0; break;
+          case "translateY": st.ty = v[0] || 0; break;
+          case "rotate": st.rotate = v[0] || 0; break;
+          case "scale": st.sx = v[0] === undefined ? 1 : v[0]; st.sy = v[1] === undefined ? st.sx : v[1]; break;
+          case "scaleX": st.sx = v[0] === undefined ? 1 : v[0]; break;
+          case "scaleY": st.sy = v[0] === undefined ? 1 : v[0]; break;
+          case "skew": st.skx = v[0] || 0; st.sky = v[1] || 0; break;
+          case "opacity": st.opacity = v[0]; break;
+          case "backgroundColor": st.bg = v[0]; break;
+        }
+      });
+      var snapshot = JSON.parse(JSON.stringify(st));
+      el.__animTimers.push(setTimeout(function () {
+        el.style.transition = "transform " + dur + "ms " + tf + ", opacity " + dur + "ms " + tf + ", background-color " + dur + "ms " + tf;
+        el.style.transform = "translate(" + snapshot.tx + "px," + snapshot.ty + "px) rotate(" + snapshot.rotate
+          + "deg) scale(" + snapshot.sx + "," + snapshot.sy + ") skew(" + snapshot.skx + "deg," + snapshot.sky + "deg)";
+        if (snapshot.opacity !== null) el.style.opacity = snapshot.opacity;
+        if (snapshot.bg !== null) el.style.backgroundColor = snapshot.bg;
+      }, at + delay));
+      at += delay + dur;
+    });
   }
   function patch(parent, dom, oldV, newV) {
     if (oldV == null) { parent.appendChild(createEl(newV)); return; }
@@ -528,6 +582,7 @@
     showToast: toast,
     showLoading: function (o) { o = o || {}; o.icon = "loading"; toast(o); },
     hideToast: hideToastNow, hideLoading: hideToastNow,
+    createAnimation: createAnimation,
     startPullDownRefresh: function (o) { pullDown.start(); o && o.success && o.success(); o && o.complete && o.complete(); },
     stopPullDownRefresh: function (o) { pullDown.stop(); o && o.success && o.success(); o && o.complete && o.complete(); },
     showModal: function (o) {
@@ -580,6 +635,74 @@
   function noopCanvasCtx() { var noop = function () { return noop; }; return new Proxy({}, { get: function () { return noop; } }); }
 
   // ───────── 下拉刷新（与原生端同一套语义：64px 阈值 + 三点指示器） ─────────
+  // ───────── wx.createAnimation（与原生端 API 与语义一致） ─────────
+  function createAnimation(option) {
+    option = option || {};
+    var def = {
+      duration: option.duration === undefined ? 400 : option.duration,
+      delay: option.delay || 0,
+      timingFunction: option.timingFunction || "linear"
+    };
+    var actions = [], pending = [];
+    function rec(type, args) { pending.push({ type: type, args: args }); return api; }
+    var api = {
+      translate: function (x, y) { return rec("translate", [x || 0, y || 0]); },
+      translateX: function (v) { return rec("translateX", [v || 0]); },
+      translateY: function (v) { return rec("translateY", [v || 0]); },
+      rotate: function (d) { return rec("rotate", [d || 0]); },
+      rotateZ: function (d) { return rec("rotate", [d || 0]); },
+      scale: function (sx, sy) { return rec("scale", [sx === undefined ? 1 : sx, sy === undefined ? sx : sy]); },
+      scaleX: function (v) { return rec("scaleX", [v === undefined ? 1 : v]); },
+      scaleY: function (v) { return rec("scaleY", [v === undefined ? 1 : v]); },
+      skew: function (x, y) { return rec("skew", [x || 0, y || 0]); },
+      opacity: function (v) { return rec("opacity", [v]); },
+      backgroundColor: function (c) { return rec("backgroundColor", [c]); },
+      width: function (v) { return rec("width", [v]); },
+      height: function (v) { return rec("height", [v]); },
+      step: function (cfg) {
+        cfg = cfg || {};
+        actions.push({
+          animates: pending,
+          option: {
+            transition: {
+              duration: cfg.duration === undefined ? def.duration : cfg.duration,
+              delay: cfg.delay === undefined ? def.delay : cfg.delay,
+              timingFunction: cfg.timingFunction || def.timingFunction
+            }
+          }
+        });
+        pending = [];
+        return api;
+      },
+      export: function () { var o = { actions: actions }; actions = []; return o; }
+    };
+    return api;
+  }
+
+  // ───────── hover-class：按住时加类，松手/移出时去掉（小程序官方按压反馈） ─────────
+  function bindHoverClass() {
+    var active = null;
+    function on(e) {
+      var el = e.target.closest && e.target.closest("[data-hover-class]");
+      if (!el) return;
+      off();
+      var cls = el.getAttribute("data-hover-class");
+      if (!cls) return;
+      el.classList.add.apply(el.classList, cls.split(/\s+/));
+      active = { el: el, cls: cls };
+    }
+    function off() {
+      if (!active) return;
+      active.el.classList.remove.apply(active.el.classList, active.cls.split(/\s+/));
+      active = null;
+    }
+    document.addEventListener("touchstart", on, { passive: true });
+    document.addEventListener("mousedown", on);
+    ["touchend", "touchcancel", "mouseup", "mouseleave"].forEach(function (n) {
+      document.addEventListener(n, off, { passive: true });
+    });
+  }
+
   var pullDown = (function () {
     var HEIGHT = 64;             // 指示器区域高度，同时是触发阈值（与原生端一致）
     var enabled = false, app = null, indicator = null;
@@ -658,6 +781,7 @@
   document.addEventListener("DOMContentLoaded", function () {
     if (appConfig) { appInst = appConfig; appInst.globalData = appConfig.globalData || {}; try { if (appInst.onLaunch) appInst.onLaunch({}); } catch (e) { console.error(e); } try { if (appInst.onShow) appInst.onShow({}); } catch (e) { console.error(e); } }
     bindDelegation();
+    bindHoverClass();
     if (pageConfig) {
       pageInst = pageConfig;
       pageInst.data = pageConfig.data || {};

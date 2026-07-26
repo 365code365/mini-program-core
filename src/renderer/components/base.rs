@@ -102,8 +102,31 @@ pub type NodeContext = TextMeasure;
 pub type Tree = taffy::TaffyTree<NodeContext>;
 
 /// 节点样式
+/// `transition` 规格：时长、延迟与缓动曲线
+#[derive(Clone, Copy, Debug)]
+pub struct TransitionSpec {
+    pub duration: f32,
+    pub delay: f32,
+    /// 三次贝塞尔的四个控制点（ease / linear / ease-in-out 都归一到这里）
+    pub curve: (f32, f32, f32, f32),
+}
+
+impl Default for TransitionSpec {
+    fn default() -> Self {
+        // CSS 默认 ease
+        Self { duration: 0.0, delay: 0.0, curve: (0.25, 0.1, 0.25, 1.0) }
+    }
+}
+
 #[derive(Clone, Default)]
 pub struct NodeStyle {
+    /// 按压态（`:active` 命中或小程序的 `hover-class`）下的整套样式。
+    /// 在建树期算好，绘制期按需切换 —— 按压不触发重新布局，代价是
+    /// 只有绘制类属性会生效（背景/颜色/透明度/transform）。
+    pub pressed_style: Option<Box<NodeStyle>>,
+    /// `transition` 的时长与缓动（秒 / 三次贝塞尔控制点）。
+    /// 只在「常态 ↔ 按压态」之间做插值，覆盖 CSS transition 的主要用法。
+    pub transition: Option<TransitionSpec>,
     pub background_color: Option<Color>,
     /// 线性渐变背景（优先于 background_color 绘制）
     pub background_gradient: Option<LinearGradientBg>,
@@ -435,6 +458,66 @@ pub fn min_unit_width(
 /// （后者会让所有按内容定宽的元素比浏览器宽一圈）。
 pub const WRAP_TOLERANCE_PX: f32 = 0.5;
 
+/// 解析 CSS 时间值（`.25s` / `250ms`）为秒
+pub fn parse_css_time(s: &str) -> f32 {
+    let s = s.trim();
+    if let Some(ms) = s.strip_suffix("ms") {
+        ms.trim().parse::<f32>().unwrap_or(0.0) / 1000.0
+    } else if let Some(sec) = s.strip_suffix('s') {
+        sec.trim().parse::<f32>().unwrap_or(0.0)
+    } else {
+        s.parse::<f32>().unwrap_or(0.0)
+    }
+}
+
+/// 解析缓动函数名/`cubic-bezier(...)` 为三次贝塞尔控制点
+pub fn parse_timing_function(s: &str) -> (f32, f32, f32, f32) {
+    let s = s.trim();
+    if let Some(args) = s.strip_prefix("cubic-bezier(").and_then(|v| v.strip_suffix(')')) {
+        let nums: Vec<f32> = args
+            .split(',')
+            .filter_map(|v| v.trim().parse::<f32>().ok())
+            .collect();
+        if nums.len() == 4 {
+            return (nums[0], nums[1], nums[2], nums[3]);
+        }
+    }
+    match s {
+        "linear" => (0.0, 0.0, 1.0, 1.0),
+        "ease-in" => (0.42, 0.0, 1.0, 1.0),
+        "ease-out" => (0.0, 0.0, 0.58, 1.0),
+        "ease-in-out" => (0.42, 0.0, 0.58, 1.0),
+        _ => (0.25, 0.1, 0.25, 1.0), // ease
+    }
+}
+
+/// 解析 `transition` 简写。属性名被忽略：按压态是整套样式切换，统一插值。
+/// 形如 `background .25s ease, transform .15s` 时取第一段的时长/缓动。
+fn parse_transition_shorthand(s: &str) -> Option<TransitionSpec> {
+    let first = s.split(',').next()?.trim();
+    if first.is_empty() || first == "none" {
+        return None;
+    }
+    let mut spec = TransitionSpec::default();
+    let mut times = Vec::new();
+    for tok in first.split_whitespace() {
+        if tok.ends_with("ms") || tok.ends_with('s') {
+            times.push(parse_css_time(tok));
+        } else if tok.starts_with("cubic-bezier(")
+            || matches!(tok, "linear" | "ease" | "ease-in" | "ease-out" | "ease-in-out")
+        {
+            spec.curve = parse_timing_function(tok);
+        }
+    }
+    // CSS 规定：第一个时间是 duration，第二个是 delay
+    spec.duration = times.first().copied().unwrap_or(0.0);
+    spec.delay = times.get(1).copied().unwrap_or(0.0);
+    if spec.duration <= 0.0 {
+        return None;
+    }
+    Some(spec)
+}
+
 /// 一个字符是否属于「不可拆分的西文词」。与 [`min_unit_width`] 同一套规则，
 /// 保证 min-content 宽度和实际断行位置不会互相打架。
 pub fn is_wrap_word_char(c: char) -> bool {
@@ -695,6 +778,50 @@ pub fn build_base_style(
     // 无单位 line-height 在所有声明落地后统一按最终字号换算
     if let Some(scale) = ns.line_height_scale {
         ns.line_height = Some(ns.font_size * scale);
+    }
+
+    // ── 按压态样式 ──
+    // 同一条祖先链，把目标元素标记为 pressed 并补上 `hover-class` 的类名，
+    // 再取一次 CSS 声明 —— `:active` 与小程序的 `hover-class` 因此走同一条路径。
+    // 只覆盖绘制类属性（taffy 布局结果丢弃）：按压不触发重新布局，
+    // 这是刻意的取舍，按一下就重排整页在纯软件光栅上代价太高。
+    let hover_class = node
+        .get_attr("hover-class")
+        .filter(|s| !s.trim().is_empty() && s.trim() != "none")
+        .map(|s| s.to_string());
+    if ctx.stylesheet.has_active_rules() || hover_class.is_some() {
+        let mut pressed_chain = chain;
+        if let Some(last) = pressed_chain.last_mut() {
+            last.pressed = true;
+            if let Some(hc) = &hover_class {
+                for c in hc.split_whitespace() {
+                    last.classes.push(c.to_string());
+                }
+            }
+        }
+        let pressed_css = ctx.stylesheet.get_styles_chain(&pressed_chain);
+        let mut pressed_ns = ns.clone();
+        let mut throwaway_ts = ts.clone();
+        for (name, value) in &pressed_css {
+            apply_style_property(name, value, &mut throwaway_ts, &mut pressed_ns, ctx);
+        }
+        // 内联 style 优先级高于类样式，按压态同样要重放一遍
+        if let Some(style_str) = node.get_attr("style") {
+            for part in style_str.split(';') {
+                let part = part.trim();
+                if part.is_empty() { continue; }
+                if let Some(colon_pos) = part.find(':') {
+                    let name = part[..colon_pos].trim();
+                    let value = parse_inline_value(part[colon_pos + 1..].trim());
+                    apply_style_property(name, &value, &mut throwaway_ts, &mut pressed_ns, ctx);
+                }
+            }
+        }
+        if let Some(scale) = pressed_ns.line_height_scale {
+            pressed_ns.line_height = Some(pressed_ns.font_size * scale);
+        }
+        pressed_ns.pressed_style = None; // 不递归
+        ns.pressed_style = Some(Box::new(pressed_ns));
     }
     
     (ts, ns)
@@ -1107,6 +1234,25 @@ fn apply_style_property(
                 }
             }
             // ── CSS 动画：animation 简写 + 各分项 ──
+            // transition 简写：只取时长/延迟/缓动，属性列表忽略（在常态↔按压态之间整体插值）
+            "transition" => if let StyleValue::String(s) = value {
+                ns.transition = parse_transition_shorthand(s);
+            }
+            "transition-duration" => if let StyleValue::String(s) = value {
+                let mut t = ns.transition.unwrap_or_default();
+                t.duration = parse_css_time(s.split(',').next().unwrap_or("0"));
+                ns.transition = Some(t);
+            }
+            "transition-delay" => if let StyleValue::String(s) = value {
+                let mut t = ns.transition.unwrap_or_default();
+                t.delay = parse_css_time(s.split(',').next().unwrap_or("0"));
+                ns.transition = Some(t);
+            }
+            "transition-timing-function" => if let StyleValue::String(s) = value {
+                let mut t = ns.transition.unwrap_or_default();
+                t.curve = parse_timing_function(s.split(',').next().unwrap_or("ease"));
+                ns.transition = Some(t);
+            }
             "animation" => if let StyleValue::String(s) = value {
                 ns.animation = crate::renderer::anim::AnimationSpec::parse_shorthand(s);
             }

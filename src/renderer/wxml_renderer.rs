@@ -38,6 +38,26 @@ pub struct CachedLayout {
     pub data: JsonValue,
 }
 
+/// 在两个可选颜色之间插值：任一侧为 None 时按「另一侧的透明版本」处理，
+/// 这样「常态无背景 → 按压态有背景」会淡入而不是硬切。
+fn lerp_color_opt(a: Option<Color>, b: Option<Color>, t: f32) -> Option<Color> {
+    match (a, b) {
+        (Some(x), Some(y)) => Some(crate::renderer::anim::lerp_color(x, y, t)),
+        (None, Some(y)) => Some(crate::renderer::anim::lerp_color(Color::new(y.r, y.g, y.b, 0), y, t)),
+        (Some(x), None) => Some(crate::renderer::anim::lerp_color(x, Color::new(x.r, x.g, x.b, 0), t)),
+        (None, None) => None,
+    }
+}
+
+/// `wx.createAnimation` 求值出的样式覆盖值
+#[derive(Clone)]
+struct JsAnimValues {
+    transform: super::components::Transform,
+    has_transform: bool,
+    opacity: Option<f32>,
+    background_color: Option<Color>,
+}
+
 /// 视口裁剪的余量（物理像素）：视口外这个距离内的节点仍然绘制，
 /// 兜住阴影、溢出内容与滚动到来前的一小段预取。
 ///
@@ -69,11 +89,24 @@ pub struct WxmlRenderer {
     timelines: HashMap<String, Option<crate::renderer::anim::Timeline>>,
     /// 本帧是否有仍在推进的 CSS 动画（宿主据此决定是否继续出帧）
     animations_active: bool,
+    /// 「标记过动画」的次数。用来判断**具体某个节点**有没有动画 ——
+    /// 只看 `animations_active` 的话，第一个动画节点置真之后，
+    /// 后面的节点全都看不出自己在动，损伤区就会漏掉它们（表现为只有第一个动画在跑）。
+    anim_marks: u64,
     /// 动画时钟（秒）。宿主每帧写入，未设置时用全局时钟。
     anim_time: Option<f32>,
     /// 正在往 transform 离屏画布上绘制：此时坐标是画布局部坐标，
     /// 与屏幕/滚动空间无关，视口裁剪必须停用（否则整棵子树会被误剔除）。
     drawing_offscreen: bool,
+    /// 本帧「有动画在跑」的节点包围盒（物理像素，画布坐标）。
+    ///
+    /// 宿主用它做损伤区重绘：一个 `infinite` 的小徽标不该逼着整屏每帧重新光栅化
+    /// （浏览器是靠图层合成避免这件事的）。
+    animated_bounds: Vec<GeoRect>,
+    /// 本帧只重绘这个矩形（其余像素保持上一帧）。None 表示整条带都画。
+    damage_clip: Option<GeoRect>,
+    /// `wx.createAnimation` 载荷指纹 -> 播放起始时刻（秒）
+    js_animations: HashMap<u64, f32>,
 }
 
 impl WxmlRenderer {
@@ -97,9 +130,38 @@ impl WxmlRenderer {
             current_viewport: None,
             timelines: HashMap::new(),
             animations_active: false,
+            anim_marks: 0,
             anim_time: None,
             drawing_offscreen: false,
+            animated_bounds: Vec::new(),
+            damage_clip: None,
+            js_animations: HashMap::new(),
         }
+    }
+
+    /// 取走本帧记录的动画节点包围盒（物理像素，画布坐标）
+    pub fn take_animated_bounds(&mut self) -> Vec<GeoRect> {
+        std::mem::take(&mut self.animated_bounds)
+    }
+
+    /// 标记「本帧有动画在跑」，同时推进计数器
+    fn mark_animating(&mut self) {
+        self.animations_active = true;
+        self.anim_marks += 1;
+    }
+
+    /// 直接设置「本帧有动画」标记。
+    ///
+    /// `render_fixed_elements` 是接着页面那一趟累加的，宿主要分别知道
+    /// 「页面在动」和「fixed 覆盖层在动」（后者不能走局部重绘），
+    /// 于是需要在两趟之间清零再合并回来。
+    pub fn set_animations_active(&mut self, active: bool) {
+        self.animations_active = active;
+    }
+
+    /// 限定本帧只重绘这个矩形（物理像素，画布坐标）。每帧渲染前设置，渲染后自动清空。
+    pub fn set_damage_clip(&mut self, rect: Option<GeoRect>) {
+        self.damage_clip = rect;
     }
 
     /// 本帧是否存在仍在推进的 CSS 动画。宿主用它决定「继续按刷新率出帧」还是「空闲休眠」。
@@ -124,9 +186,70 @@ impl WxmlRenderer {
         if elapsed < 0.0 || elapsed >= TOGGLE_DURATION {
             return target;
         }
-        self.animations_active = true;
+        self.mark_animating();
         let eased = crate::renderer::anim::cubic_bezier(elapsed / TOGGLE_DURATION, 0.4, 0.4, 0.25, 1.35);
         if checked { eased.clamp(0.0, 1.0) } else { (1.0 - eased).clamp(0.0, 1.0) }
+    }
+
+    /// 把按压态样式应用到待绘制节点上。
+    ///
+    /// 有 `transition` 时在常态与按压态之间按缓动插值（只插值绘制类属性：
+    /// 背景色、文字色、边框色、透明度）；没有就直接切换。
+    /// 插值期间标记「本帧有动画」，宿主才会继续出帧把过渡走完。
+    fn apply_pressed_style(
+        &mut self,
+        node_to_draw: &mut RenderNode,
+        interaction: &InteractionManager,
+        component_id: &str,
+    ) {
+        let Some(pressed) = node_to_draw.style.pressed_style.clone() else { return };
+        let is_pressed = interaction.is_button_pressed(component_id);
+        let spec = node_to_draw.style.transition;
+
+        // 过渡进度：0 = 常态，1 = 按压态
+        let progress = match spec {
+            Some(t) if t.duration > 0.0 => {
+                let started = interaction.transitions.get(component_id).copied();
+                match started {
+                    Some(start) => {
+                        let elapsed = self.animation_time() - start - t.delay;
+                        let raw = (elapsed / t.duration).clamp(0.0, 1.0);
+                        if elapsed < t.duration {
+                            self.mark_animating();
+                        }
+                        let eased =
+                            crate::renderer::anim::cubic_bezier(raw, t.curve.0, t.curve.1, t.curve.2, t.curve.3);
+                        if is_pressed { eased } else { 1.0 - eased }
+                    }
+                    // 没有记录过起始时刻：直接给终态
+                    None => if is_pressed { 1.0 } else { 0.0 },
+                }
+            }
+            _ => if is_pressed { 1.0 } else { 0.0 },
+        };
+
+        if progress <= 0.001 {
+            return;
+        }
+        if progress >= 0.999 {
+            let keep = node_to_draw.style.pressed_style.take();
+            let transition = node_to_draw.style.transition;
+            node_to_draw.style = *pressed;
+            node_to_draw.style.pressed_style = keep;
+            node_to_draw.style.transition = transition;
+            return;
+        }
+        // 中间态：只插值绘制类属性
+        let base = &mut node_to_draw.style;
+        base.background_color = lerp_color_opt(base.background_color, pressed.background_color, progress);
+        base.text_color = lerp_color_opt(base.text_color, pressed.text_color, progress);
+        base.border_color = lerp_color_opt(base.border_color, pressed.border_color, progress);
+        base.opacity += (pressed.opacity - base.opacity) * progress;
+        if pressed.transform.is_some() || base.transform.is_some() {
+            let from = base.transform.unwrap_or_else(super::components::Transform::new);
+            let to = pressed.transform.unwrap_or_else(super::components::Transform::new);
+            base.transform = Some(crate::renderer::anim::lerp_transform(from, to, progress));
+        }
     }
 
     /// 显式设置动画时钟（秒）。用于静态截图/测试等需要确定性时间的场景；
@@ -162,16 +285,179 @@ impl WxmlRenderer {
         let still_running = !spec.iterations.is_finite()
             || now < spec.delay + spec.duration * spec.iterations;
         if still_running {
-            self.animations_active = true;
+            self.mark_animating();
         }
         let progress = spec.progress_at(now)?;
+        // 元素自身的计算值作为隐式 0%/100% 关键帧（CSS 语义）
+        let base = crate::renderer::anim::FrameValues {
+            offset: 0.0,
+            opacity: Some(node.style.opacity),
+            transform: Some(node.style.transform.unwrap_or_else(super::components::Transform::new)),
+            background_color: node.style.background_color,
+            text_color: node.style.text_color,
+        };
         let timeline = self.timeline_for(&spec.name)?;
-        let values = timeline.sample(progress);
+        let values = timeline.sample_with_base(progress, &base);
         if values.is_empty() {
             None
         } else {
             Some(values)
         }
+    }
+
+    /// 求 `animation="{{animData}}"`（`wx.createAnimation().export()`）此刻的样式覆盖值。
+    ///
+    /// 载荷形如 `{actions:[{animates:[{type,args}],option:{transition:{duration,delay,timingFunction}}}]}`，
+    /// 每个 action 是一「步」：按 delay/duration 顺序播放，步与步之间对目标值做插值。
+    /// 起始时刻按载荷指纹记忆 —— 同一份 export 在后续帧里继续播，换了新的 export 就重新开始。
+    fn js_animated_values(&mut self, node: &RenderNode) -> Option<JsAnimValues> {
+        let raw = node.attrs.get("animation")?;
+        if !raw.contains("actions") {
+            return None;
+        }
+        // 属性里的对象被序列化成单引号 JSON（见 expr::render_value），这里还原
+        let parsed: JsonValue = serde_json::from_str(&raw.replace('\'', "\"")).ok()?;
+        let actions = parsed.get("actions")?.as_array()?;
+        if actions.is_empty() {
+            return None;
+        }
+
+        let fingerprint = {
+            // FNV-1a：只用来判断「还是不是同一份 export」
+            let mut h: u64 = 0xcbf2_9ce4_8422_2325;
+            for b in raw.as_bytes() {
+                h ^= *b as u64;
+                h = h.wrapping_mul(0x1000_0000_01b3);
+            }
+            h
+        };
+        let now = self.animation_time();
+        let start = match self.js_animations.get(&fingerprint) {
+            Some(s) => *s,
+            None => {
+                if self.js_animations.len() > 64 {
+                    self.js_animations.clear();
+                }
+                self.js_animations.insert(fingerprint, now);
+                now
+            }
+        };
+        let elapsed = now - start;
+
+        let sf = self.scale_factor;
+        let mut state = JsAnimValues {
+            transform: super::components::Transform::new(),
+            has_transform: false,
+            opacity: None,
+            background_color: None,
+        };
+        let mut cursor = 0.0f32;
+        let mut finished = true;
+        for action in actions {
+            let tr = action.get("option").and_then(|o| o.get("transition"));
+            let ms = |k: &str, d: f32| {
+                tr.and_then(|t| t.get(k)).and_then(|v| v.as_f64()).unwrap_or(d as f64) as f32 / 1000.0
+            };
+            let duration = ms("duration", 400.0).max(0.0);
+            let delay = ms("delay", 0.0).max(0.0);
+            let curve = tr
+                .and_then(|t| t.get("timingFunction"))
+                .and_then(|v| v.as_str())
+                .map(super::components::parse_timing_function)
+                .unwrap_or((0.0, 0.0, 1.0, 1.0)); // createAnimation 默认 linear
+
+            let target = Self::apply_js_animates(&state, action.get("animates"), sf);
+            let step_start = cursor + delay;
+            let step_end = step_start + duration;
+            if elapsed >= step_end || duration <= 0.0 {
+                state = target;
+                cursor = step_end;
+                continue;
+            }
+            finished = false;
+            let p = if elapsed <= step_start {
+                0.0
+            } else {
+                (elapsed - step_start) / duration
+            };
+            let eased = crate::renderer::anim::cubic_bezier(p, curve.0, curve.1, curve.2, curve.3);
+            state = JsAnimValues {
+                transform: crate::renderer::anim::lerp_transform(state.transform, target.transform, eased),
+                has_transform: state.has_transform || target.has_transform,
+                opacity: match (state.opacity, target.opacity) {
+                    (Some(a), Some(b)) => Some(a + (b - a) * eased),
+                    (None, Some(b)) => Some(1.0 + (b - 1.0) * eased),
+                    (a, None) => a,
+                },
+                background_color: match (state.background_color, target.background_color) {
+                    (Some(a), Some(b)) => Some(crate::renderer::anim::lerp_color(a, b, eased)),
+                    (None, Some(b)) => Some(b),
+                    (a, None) => a,
+                },
+            };
+            break;
+        }
+        if !finished {
+            self.mark_animating();
+        }
+        Some(state)
+    }
+
+    /// 把一步里的 animates 累积到状态上（每步给的是绝对目标值，未提及的属性沿用上一步）
+    fn apply_js_animates(
+        base: &JsAnimValues,
+        animates: Option<&JsonValue>,
+        sf: f32,
+    ) -> JsAnimValues {
+        let mut out = base.clone();
+        let Some(list) = animates.and_then(|a| a.as_array()) else { return out };
+        for item in list {
+            let ty = item.get("type").and_then(|v| v.as_str()).unwrap_or("");
+            let args = item.get("args").and_then(|v| v.as_array());
+            let num = |i: usize, d: f32| {
+                args.and_then(|a| a.get(i))
+                    .and_then(|v| v.as_f64())
+                    .map(|v| v as f32)
+                    .unwrap_or(d)
+            };
+            match ty {
+                // translate 的参数是逻辑 px，Transform 用物理 px
+                "translate" => {
+                    out.transform.translate_x = num(0, 0.0) * sf;
+                    out.transform.translate_y = num(1, 0.0) * sf;
+                    out.has_transform = true;
+                }
+                "translateX" => { out.transform.translate_x = num(0, 0.0) * sf; out.has_transform = true; }
+                "translateY" => { out.transform.translate_y = num(0, 0.0) * sf; out.has_transform = true; }
+                "rotate" => { out.transform.rotate = num(0, 0.0); out.has_transform = true; }
+                "scale" => {
+                    let sx = num(0, 1.0);
+                    out.transform.scale_x = sx;
+                    out.transform.scale_y = num(1, sx);
+                    out.has_transform = true;
+                }
+                "scaleX" => { out.transform.scale_x = num(0, 1.0); out.has_transform = true; }
+                "scaleY" => { out.transform.scale_y = num(0, 1.0); out.has_transform = true; }
+                "skew" => {
+                    out.transform.skew_x = num(0, 0.0);
+                    out.transform.skew_y = num(1, 0.0);
+                    out.has_transform = true;
+                }
+                "opacity" => out.opacity = Some(num(0, 1.0).clamp(0.0, 1.0)),
+                "backgroundColor" => {
+                    if let Some(c) = args
+                        .and_then(|a| a.first())
+                        .and_then(|v| v.as_str())
+                        .and_then(super::components::parse_color_str)
+                    {
+                        out.background_color = Some(c);
+                    }
+                }
+                // width/height 会引发重排，与 CSS 动画同样的取舍：不支持
+                _ => {}
+            }
+        }
+        out
     }
 
     /// 把动画求值结果 + 静态 transform 合成成「本帧要用的节点」。
@@ -181,18 +467,27 @@ impl WxmlRenderer {
         node: &RenderNode,
     ) -> Option<(RenderNode, super::components::Transform)> {
         let values = self.animated_values(node);
-        let has_values = values.is_some();
-        let transform = values
+        let js = self.js_animated_values(node);
+        let has_values = values.is_some() || js.is_some();
+        let mut transform = values
             .as_ref()
             .and_then(|v| v.transform)
             .or(node.style.transform);
+        if let Some(j) = &js {
+            if j.has_transform {
+                transform = Some(j.transform);
+            }
+        }
         if !has_values && transform.is_none() {
             return None;
         }
         let mut resolved = node.clone();
-        // 动画值已在此处落地，避免离屏重绘时再次求值（否则会无限递归）
+        // 动画值已在此处落地，避免离屏重绘时再次求值（否则会无限递归）。
+        // `animation` 属性（wx.createAnimation 的载荷）同样要摘掉 —— 只清 style
+        // 不清属性的话，重入这条路径时又会解析出动画，直接栈溢出。
         resolved.style.animation = None;
         resolved.style.transform = None;
+        resolved.attrs.remove("animation");
         if let Some(v) = &values {
             if let Some(op) = v.opacity {
                 resolved.style.opacity = (node.style.opacity * op).clamp(0.0, 1.0);
@@ -203,6 +498,16 @@ impl WxmlRenderer {
             }
             if let Some(color) = v.text_color {
                 resolved.style.text_color = Some(color);
+            }
+        }
+        // JS 动画（wx.createAnimation）优先级高于 CSS 动画：它是逻辑层刚下发的目标态
+        if let Some(j) = &js {
+            if let Some(op) = j.opacity {
+                resolved.style.opacity = (node.style.opacity * op).clamp(0.0, 1.0);
+            }
+            if let Some(bg) = j.background_color {
+                resolved.style.background_color = Some(bg);
+                resolved.style.background_gradient = None;
             }
         }
         Some((resolved, transform.unwrap_or_else(super::components::Transform::new)))
@@ -291,22 +596,32 @@ impl WxmlRenderer {
             return;
         }
         let current = SwiperComponent::current_index(node, x, y);
-        if node.children.len() > 1 {
-            self.animations_active = true; // 自动播放/切页需要持续出帧
+        // 换页是滑过去的（与微信一致）：拿到 prev→current 之间的浮点页号。
+        // 只有滑动进行中才要求继续出帧 —— 从前是「有多于一项就每帧重绘」，
+        // 而 swiper 平时根本不动，等于让带轮播的页面永远整屏重绘。
+        let (page_pos, sliding) = SwiperComponent::slide_position(node, x, y)
+            .unwrap_or((current as f32, false));
+        if sliding {
+            self.mark_animating();
         }
 
         canvas.save();
         canvas.clip_rect(GeoRect::new(x, y, w, h));
-        // 子项在 taffy 里排成一行/一列（每项一屏），整体沿主轴移动 current 屏
+        // 子项在 taffy 里排成一行/一列（每项一屏），整体沿主轴移动 page_pos 屏
         let vertical = SwiperComponent::is_vertical(node);
         let (dx, dy) = if vertical {
-            (0.0, -(current as f32) * h)
+            (0.0, -page_pos * h)
         } else {
-            (-(current as f32) * w, 0.0)
+            (-page_pos * w, 0.0)
         };
-        // 只画当前页：非当前页被裁剪掉后完全不可见，逐帧重采样它们的图片纯属浪费
-        if let Some(child) = node.children.get(current) {
-            self.dispatch_draw(canvas, taffy, child, x + dx, y + dy, interaction, kind);
+        // 滑动中要画相邻两页（否则中间过程一侧是空白）；静止时只画当前页 ——
+        // 非当前页被裁剪后完全不可见，逐帧重采样它们的图片纯属浪费。
+        let first = page_pos.floor().max(0.0) as usize;
+        let last = if sliding { page_pos.ceil().max(0.0) as usize } else { first };
+        for idx in first..=last.min(node.children.len().saturating_sub(1)) {
+            if let Some(child) = node.children.get(idx) {
+                self.dispatch_draw(canvas, taffy, child, x + dx, y + dy, interaction, kind);
+            }
         }
         canvas.restore();
 
@@ -349,7 +664,24 @@ impl WxmlRenderer {
         interaction: &mut InteractionManager,
         kind: DrawKind,
     ) -> bool {
+        let marks_before = self.anim_marks;
         let Some((resolved, transform)) = self.resolve_animated_node(node) else { return false };
+        // 这个节点自己有动画在跑的话，记下它的包围盒（含 transform 溢出余量），
+        // 宿主据此只重绘这些小块而不是整屏。按计数器判断而不是看全局标记 ——
+        // 后者被前一个动画节点置真后，后续节点就无法自证「我在动」。
+        if self.anim_marks != marks_before && !self.drawing_offscreen {
+            if let Ok(layout) = taffy.layout(node.taffy_node) {
+                let (x, y) = (ox + layout.location.x, oy + layout.location.y);
+                let (w, h) = (layout.size.width, layout.size.height);
+                let pad = super::compose::transform_padding(w, h, &transform).max(2.0);
+                self.animated_bounds.push(GeoRect::new(
+                    x - pad,
+                    y - pad,
+                    w + pad * 2.0,
+                    h + pad * 2.0,
+                ));
+            }
+        }
 
         if super::compose::is_identity(&transform) {
             self.dispatch_draw(canvas, taffy, &resolved, ox, oy, interaction, kind);
@@ -528,16 +860,27 @@ impl WxmlRenderer {
         self.update_layout_if_needed(nodes, data, Some((scroll_offset, viewport_height)));
         
         self.animations_active = false;
+        self.anim_marks = 0;
+        self.animated_bounds.clear();
         self.event_bindings.clear();
         // 不清除交互元素，保留 scroll controller 状态
         // interaction.clear_elements();  // 移除这行，避免每帧重建
         
         if let Some(cache) = self.cache.take() {
             let content_height = cache.content_height;
+            // 损伤区重绘：只有这块矩形内的像素会被改写，其余保留上一帧
+            let damaged = self.damage_clip.take();
+            if let Some(rect) = damaged {
+                canvas.save();
+                canvas.clip_rect(rect);
+            }
             // 渲染所有元素（fixed 元素会在 draw_with_interaction 中被跳过）
             // 不使用滚动偏移渲染，滚动在 present_to_buffer 中处理
             for rn in &cache.render_nodes {
                 self.draw_with_interaction(canvas, &cache.taffy, rn, 0.0, 0.0, interaction, scroll_offset, viewport_height * self.scale_factor);
+            }
+            if damaged.is_some() {
+                canvas.restore();
             }
             self.cache = Some(cache);
             return content_height;
@@ -1153,6 +1496,9 @@ impl WxmlRenderer {
         
         // 应用交互状态
         let mut node_to_draw = Self::shallow_for_draw(node);
+        // 按压态：`:active` / `hover-class` 在建树期已算好整套样式，这里按需切换，
+        // 有 `transition` 就在常态与按压态之间插值
+        self.apply_pressed_style(&mut node_to_draw, interaction, &component_id);
         let state_checked = interaction.get_state(&component_id).map(|s| s.checked);
         let switch_progress = if node.tag == "switch" {
             state_checked.map(|checked| self.toggle_progress(interaction, &component_id, checked))

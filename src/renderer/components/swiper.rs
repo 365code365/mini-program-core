@@ -13,6 +13,9 @@ pub struct SwiperStateManager {
     states: HashMap<String, SwiperState>,
 }
 
+/// 翻页滑动时长（毫秒）。微信的 swiper 换页是滑过去的，不是硬切。
+pub const SLIDE_DURATION_MS: f32 = 300.0;
+
 #[derive(Clone)]
 pub struct SwiperState {
     pub current: usize,
@@ -20,6 +23,9 @@ pub struct SwiperState {
     pub last_update: std::time::Instant,
     pub autoplay_interval: u64,
     pub autoplay: bool,
+    /// 上一页序号：换页后的 `SLIDE_DURATION_MS` 内在它与 `current` 之间插值，
+    /// 于是换页是滑动而不是跳变。
+    pub prev: usize,
 }
 
 impl SwiperStateManager {
@@ -34,6 +40,7 @@ impl SwiperStateManager {
             last_update: std::time::Instant::now(),
             autoplay_interval: interval,
             autoplay,
+            prev: 0,
         })
     }
     
@@ -43,6 +50,7 @@ impl SwiperStateManager {
     
     pub fn set_current(&mut self, id: &str, current: usize) {
         if let Some(state) = self.states.get_mut(id) {
+            state.prev = state.current;
             state.current = current;
             state.last_update = std::time::Instant::now();
         }
@@ -50,6 +58,7 @@ impl SwiperStateManager {
     
     pub fn next(&mut self, id: &str) {
         if let Some(state) = self.states.get_mut(id) {
+            state.prev = state.current;
             state.current = (state.current + 1) % state.total;
             state.last_update = std::time::Instant::now();
         }
@@ -77,6 +86,7 @@ impl SwiperStateManager {
             if state.autoplay && state.total > 1 {
                 let elapsed = state.last_update.elapsed().as_millis() as u64;
                 if elapsed >= state.autoplay_interval {
+                    state.prev = state.current;
                     state.current = (state.current + 1) % state.total;
                     state.last_update = std::time::Instant::now();
                     return true;
@@ -85,12 +95,50 @@ impl SwiperStateManager {
         }
         false
     }
+
+    /// 是否有 swiper 现在就需要出帧：正在滑动换页，或自动播放已到点该翻页。
+    ///
+    /// 从前只要 swiper 有多于一项就无条件要求「每帧重绘」，而 swiper 本身是硬切页 ——
+    /// 等于让带轮播的页面永远按刷新率整屏重绘（首页每帧 8~14ms 就是这么来的）。
+    pub fn any_needs_frame(&self) -> bool {
+        self.states.values().any(|s| {
+            if s.total <= 1 {
+                return false;
+            }
+            let elapsed = s.last_update.elapsed().as_millis() as f32;
+            if elapsed < SLIDE_DURATION_MS {
+                return true; // 换页滑动进行中
+            }
+            s.autoplay && elapsed >= s.autoplay_interval as f32
+        })
+    }
+
+    /// 当前换页滑动的位置（在 `prev` 与 `current` 之间的浮点页号）与是否仍在滑动
+    pub fn slide_position(&self, id: &str) -> Option<(f32, bool)> {
+        let s = self.states.get(id)?;
+        let elapsed = s.last_update.elapsed().as_millis() as f32;
+        if elapsed >= SLIDE_DURATION_MS || s.prev == s.current {
+            return Some((s.current as f32, false));
+        }
+        // ease-out cubic：起步快、收尾稳，和微信的换页手感接近
+        let t = (elapsed / SLIDE_DURATION_MS).clamp(0.0, 1.0);
+        let eased = 1.0 - (1.0 - t).powi(3);
+        Some((s.prev as f32 + (s.current as f32 - s.prev as f32) * eased, true))
+    }
 }
 
 /// 全局 Swiper 状态管理器
 pub static SWIPER_MANAGER: Lazy<Mutex<SwiperStateManager>> = Lazy::new(|| {
     Mutex::new(SwiperStateManager::new())
 });
+
+/// 是否有 swiper 现在需要出帧（换页滑动中，或自动播放到点）
+pub fn swiper_needs_frame() -> bool {
+    SWIPER_MANAGER
+        .lock()
+        .map(|m| m.any_needs_frame())
+        .unwrap_or(false)
+}
 
 /// 是否存在正在自动播放的 swiper（宿主据此决定是否继续按刷新率出帧）
 pub fn has_autoplay_swiper() -> bool {
@@ -195,6 +243,13 @@ impl SwiperComponent {
         } else {
             0
         }
+    }
+
+    /// 当前换页滑动位置（浮点页号）与是否仍在滑动。
+    /// 必须在 [`Self::current_index`] 之后调用（后者负责推进自动播放状态）。
+    pub fn slide_position(node: &RenderNode, x: f32, y: f32) -> Option<(f32, bool)> {
+        let id = Self::state_id(node, x, y);
+        SWIPER_MANAGER.lock().ok()?.slide_position(&id)
     }
 
     /// 是否纵向轮播（偏移轴由此决定）

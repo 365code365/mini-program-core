@@ -824,14 +824,19 @@ impl InteractionManager {
         self.is_selecting_text
     }
     
-    /// 设置按钮按下状态
+    /// 设置按钮按下状态。同时登记过渡起始时刻，`transition` 才能从常态平滑到按压态。
     pub fn set_button_pressed(&mut self, id: String, bounds: Rect) {
+        if self.pressed_button.as_ref().map(|b| b.id != id).unwrap_or(true) {
+            self.transitions.insert(id.clone(), crate::renderer::anim::now_secs());
+        }
         self.pressed_button = Some(PressedButton { id, bounds });
     }
     
-    /// 清除按钮按下状态
+    /// 清除按钮按下状态（松手），并登记回弹到常态的过渡起始时刻
     pub fn clear_button_pressed(&mut self) {
-        self.pressed_button = None;
+        if let Some(b) = self.pressed_button.take() {
+            self.transitions.insert(b.id, crate::renderer::anim::now_secs());
+        }
     }
     
     /// 检查按钮是否被按下

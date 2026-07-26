@@ -39,7 +39,7 @@ pub use video::{
     toggle_video_play, is_video_playing,
 };
 pub use canvas::{CanvasComponent, Canvas2DContext, CanvasContextManager, LinearGradient, RadialGradient, execute_canvas_draw, ensure_canvas_context};
-pub use swiper::{SwiperComponent, SwiperItemComponent, SWIPER_MANAGER};
+pub use swiper::{SwiperComponent, SwiperItemComponent, SWIPER_MANAGER, swiper_needs_frame, has_autoplay_swiper};
 pub use rich_text::RichTextComponent;
 pub use picker::{PickerComponent, PickerViewComponent, PickerViewColumnComponent, PickerMode, PICKER_MANAGER};
 pub use checkbox_group::{CheckboxGroupComponent, RadioGroupComponent};

@@ -364,6 +364,65 @@ impl MiniAppApi {
                 options.complete && options.complete();
             };
             
+            // ── wx.createAnimation：小程序里「用 JS 操作样式」的正式做法 ──
+            // 链式调用累积一步的目标值，step() 定格一步，export() 交给
+            // `animation="{{animData}}"` 属性，渲染层按 actions 顺序插值。
+            wx.createAnimation = function(option) {
+                option = option || {};
+                var defaults = {
+                    duration: option.duration === undefined ? 400 : option.duration,
+                    delay: option.delay === undefined ? 0 : option.delay,
+                    timingFunction: option.timingFunction || 'linear',
+                    transformOrigin: option.transformOrigin || '50% 50% 0'
+                };
+                var actions = [];
+                var pending = { animates: [], option: null };
+                function record(type, args) {
+                    pending.animates.push({ type: type, args: args });
+                    return api;
+                }
+                var api = {
+                    // 变换（H5 端 runtime.js 有一份同语义实现）
+                    translate: function(x, y) { return record('translate', [x || 0, y || 0]); },
+                    translateX: function(v) { return record('translateX', [v || 0]); },
+                    translateY: function(v) { return record('translateY', [v || 0]); },
+                    rotate: function(deg) { return record('rotate', [deg || 0]); },
+                    rotateZ: function(deg) { return record('rotate', [deg || 0]); },
+                    scale: function(sx, sy) { return record('scale', [sx === undefined ? 1 : sx, sy === undefined ? sx : sy]); },
+                    scaleX: function(v) { return record('scaleX', [v === undefined ? 1 : v]); },
+                    scaleY: function(v) { return record('scaleY', [v === undefined ? 1 : v]); },
+                    skew: function(x, y) { return record('skew', [x || 0, y || 0]); },
+                    // 样式
+                    opacity: function(v) { return record('opacity', [v]); },
+                    backgroundColor: function(c) { return record('backgroundColor', [c]); },
+                    width: function(v) { return record('width', [v]); },
+                    height: function(v) { return record('height', [v]); },
+                    // 定格一步
+                    step: function(cfg) {
+                        cfg = cfg || {};
+                        actions.push({
+                            animates: pending.animates,
+                            option: {
+                                transition: {
+                                    duration: cfg.duration === undefined ? defaults.duration : cfg.duration,
+                                    delay: cfg.delay === undefined ? defaults.delay : cfg.delay,
+                                    timingFunction: cfg.timingFunction || defaults.timingFunction
+                                },
+                                transformOrigin: cfg.transformOrigin || defaults.transformOrigin
+                            }
+                        });
+                        pending = { animates: [], option: null };
+                        return api;
+                    },
+                    export: function() {
+                        var out = { actions: actions };
+                        actions = [];
+                        return out;
+                    }
+                };
+                return api;
+            };
+
             // 下拉刷新：指示器与内容位移都由宿主负责，逻辑层只发「开始/结束」
             wx.startPullDownRefresh = function(options) {
                 options = options || {};

@@ -449,3 +449,70 @@ fn test_block_wrapper_render() {
     });
     render_ok("", wxml, data);
 }
+
+/// `:active` 只在按压态匹配。
+/// 从前所有未知伪类都无条件放行，`.btn:active{...}` 会永久生效 —— 元素看着一直是按下态。
+#[test]
+fn test_active_pseudo_only_matches_when_pressed() {
+    use crate::parser::wxss::{ElementDesc, WxssParser};
+    use std::collections::HashMap;
+
+    let mut ss = WxssParser::new(
+        ".btn { background-color: #f5f5f5; } .btn:active { background-color: #ff6b35; }",
+    )
+    .parse()
+    .unwrap();
+    assert!(ss.has_active_rules());
+
+    let attrs: HashMap<String, String> = HashMap::new();
+    let normal = ss.get_styles_chain(&[ElementDesc::new("view", None, &["btn"], &attrs)]);
+    let pressed = ss.get_styles_chain(&[
+        ElementDesc::new("view", None, &["btn"], &attrs).with_pressed(true)
+    ]);
+
+    let bg = |m: &std::collections::HashMap<String, crate::parser::wxss::StyleValue>| {
+        match m.get("background-color") {
+            Some(crate::parser::wxss::StyleValue::String(s)) => s.clone(),
+            other => format!("{:?}", other),
+        }
+    };
+    assert!(bg(&normal).contains("f5f5f5"), "常态应是浅灰，实际 {}", bg(&normal));
+    assert!(bg(&pressed).contains("ff6b35"), "按压态应是橙色，实际 {}", bg(&pressed));
+    let _ = &mut ss;
+}
+
+/// `@keyframes spin { to { transform: rotate(360deg) } }`：缺失的 0% 关键帧
+/// 要用元素自身的计算值补上，否则整个周期恒等于 360°（视觉上永远不转）。
+#[test]
+fn test_keyframes_missing_from_uses_element_base() {
+    use crate::parser::wxss::WxssParser;
+    use crate::renderer::anim::{FrameValues, Timeline};
+    use crate::renderer::components::Transform;
+
+    let ss = WxssParser::new("@keyframes spin { to { transform: rotate(360deg); } }")
+        .parse()
+        .unwrap();
+    let rule = ss.keyframes_named("spin").expect("应解析出 spin 关键帧");
+    let timeline = Timeline::from_rule(rule, 375.0, 2.0);
+
+    // 元素自身没有 transform：隐式 0% 就是 rotate(0)
+    let base = FrameValues {
+        offset: 0.0,
+        opacity: Some(1.0),
+        transform: Some(Transform::new()),
+        background_color: None,
+        text_color: None,
+    };
+    let at = |t: f32| {
+        timeline
+            .sample_with_base(t, &base)
+            .transform
+            .map(|tr| tr.rotate)
+            .unwrap_or(0.0)
+    };
+    let (a, b, c) = (at(0.0), at(0.25), at(0.75));
+    assert!(a.abs() < 1.0, "0% 应从 0° 开始，实际 {}", a);
+    assert!((b - 90.0).abs() < 5.0, "25% 应到 90° 附近，实际 {}", b);
+    assert!((c - 270.0).abs() < 5.0, "75% 应到 270° 附近，实际 {}", c);
+    assert!(a < b && b < c, "角度必须随时间单调推进：{} {} {}", a, b, c);
+}

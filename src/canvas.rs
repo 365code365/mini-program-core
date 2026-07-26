@@ -252,6 +252,22 @@ impl Canvas {
         }
     }
 
+    /// 只清理一个矩形区域（其余像素保持原样）。用于损伤区局部重绘：
+    /// 不能按整行清，否则会把矩形左右两侧的内容一起抹掉（裁剪会阻止它们被重画）。
+    pub fn clear_area(&mut self, rect: &Rect, color: Color) {
+        let x0 = rect.x.floor().clamp(0.0, self.width as f32) as usize;
+        let x1 = rect.right().ceil().clamp(0.0, self.width as f32) as usize;
+        let y0 = rect.y.floor().clamp(0.0, self.height as f32) as usize;
+        let y1 = rect.bottom().ceil().clamp(0.0, self.height as f32) as usize;
+        if x1 <= x0 || y1 <= y0 {
+            return;
+        }
+        let width = self.width as usize;
+        for y in y0..y1 {
+            self.pixels[y * width + x0..y * width + x1].fill(color);
+        }
+    }
+
     /// 只清理 [y0, y1) 这一条横带（其余像素保持原样）。
     ///
     /// 整页画布可能上万像素高，而每帧真正会被绘制/上屏的只有视口附近一条带；

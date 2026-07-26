@@ -293,12 +293,12 @@ impl AnimatedValues {
 
 /// 单个关键帧上被支持的属性（已按屏宽换算成物理像素）
 #[derive(Debug, Clone, Default)]
-struct FrameValues {
-    offset: f32,
-    opacity: Option<f32>,
-    transform: Option<Transform>,
-    background_color: Option<Color>,
-    text_color: Option<Color>,
+pub struct FrameValues {
+    pub offset: f32,
+    pub opacity: Option<f32>,
+    pub transform: Option<Transform>,
+    pub background_color: Option<Color>,
+    pub text_color: Option<Color>,
 }
 
 /// 已解析好的动画时间轴（按名字缓存，避免每帧重新解析字符串）
@@ -344,24 +344,36 @@ impl Timeline {
 
     /// 在时间轴位置 `t`（0..1，已缓动）上求值。
     pub fn sample(&self, t: f32) -> AnimatedValues {
+        self.sample_with_base(t, &FrameValues::default())
+    }
+
+    /// 按元素自身的计算样式作为「隐式关键帧」求值。
+    ///
+    /// CSS 规定：`@keyframes` 里缺失的 `0%` / `100%` 关键帧，用元素自身的计算值补上。
+    /// 少了这条，`@keyframes spin { to { transform: rotate(360deg) } }` 这种只写 `to`
+    /// 的写法会在整个周期里恒等于 360°（看着就是永远不转）—— 而它恰好是最常见的写法。
+    pub fn sample_with_base(&self, t: f32, base: &FrameValues) -> AnimatedValues {
         let mut out = AnimatedValues::default();
         if self.frames.is_empty() {
             return out;
         }
-        out.opacity = self.interpolate(t, |f| f.opacity, lerp_f32);
-        out.transform = self.interpolate(t, |f| f.transform, lerp_transform);
-        out.background_color = self.interpolate(t, |f| f.background_color, lerp_color);
-        out.text_color = self.interpolate(t, |f| f.text_color, lerp_color);
+        out.opacity = self.interpolate(t, |f| f.opacity, lerp_f32, base.opacity);
+        out.transform = self.interpolate(t, |f| f.transform, lerp_transform, base.transform);
+        out.background_color =
+            self.interpolate(t, |f| f.background_color, lerp_color, base.background_color);
+        out.text_color = self.interpolate(t, |f| f.text_color, lerp_color, base.text_color);
         out
     }
 
     /// 对单个属性求插值：只在**声明了该属性**的关键帧之间插值
     /// （CSS 语义：某属性缺失的关键帧不参与该属性的时间轴）。
+    /// `base` 是元素自身的计算值，用来补出缺失的首/末关键帧。
     fn interpolate<T: Copy>(
         &self,
         t: f32,
         pick: impl Fn(&FrameValues) -> Option<T>,
         lerp: impl Fn(T, T, f32) -> T,
+        base: Option<T>,
     ) -> Option<T> {
         let mut prev: Option<(f32, T)> = None;
         let mut next: Option<(f32, T)> = None;
@@ -380,8 +392,22 @@ impl Timeline {
                 let local = if span > 1e-6 { (t - p_off) / span } else { 0.0 };
                 Some(lerp(p_val, n_val, local.clamp(0.0, 1.0)))
             }
-            (Some((_, v)), None) => Some(v),
-            (None, Some((_, v))) => Some(v),
+            // 没有后续关键帧：末尾缺 100%，从最后一帧插值回元素自身值
+            (Some((p_off, p_val)), None) => match base {
+                Some(b) if p_off < 1.0 - 1e-6 => {
+                    let local = ((t - p_off) / (1.0 - p_off)).clamp(0.0, 1.0);
+                    Some(lerp(p_val, b, local))
+                }
+                _ => Some(p_val),
+            },
+            // 没有前置关键帧：开头缺 0%，从元素自身值插值到第一帧
+            (None, Some((n_off, n_val))) => match base {
+                Some(b) if n_off > 1e-6 => {
+                    let local = (t / n_off).clamp(0.0, 1.0);
+                    Some(lerp(b, n_val, local))
+                }
+                _ => Some(n_val),
+            },
             (None, None) => None,
         }
     }
@@ -395,7 +421,7 @@ fn lerp_u8(a: u8, b: u8, t: f32) -> u8 {
     (a as f32 + (b as f32 - a as f32) * t).round().clamp(0.0, 255.0) as u8
 }
 
-fn lerp_color(a: Color, b: Color, t: f32) -> Color {
+pub fn lerp_color(a: Color, b: Color, t: f32) -> Color {
     Color::new(
         lerp_u8(a.r, b.r, t),
         lerp_u8(a.g, b.g, t),
@@ -404,7 +430,7 @@ fn lerp_color(a: Color, b: Color, t: f32) -> Color {
     )
 }
 
-fn lerp_transform(a: Transform, b: Transform, t: f32) -> Transform {
+pub fn lerp_transform(a: Transform, b: Transform, t: f32) -> Transform {
     Transform {
         translate_x: lerp_f32(a.translate_x, b.translate_x, t),
         translate_y: lerp_f32(a.translate_y, b.translate_y, t),

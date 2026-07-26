@@ -47,6 +47,11 @@ pub fn handle_mouse_pressed(
     // 然后检查普通元素（使用滚动后的坐标）
     if let Some(element) = interaction.hit_test(x, actual_y) {
         let element = element.clone();
+        // 任何可点元素都进入按压态（`:active` / `hover-class` 靠它生效），
+        // 滚动区域除外 —— 那是拖动，不是按压。
+        if !element.disabled && element.interaction_type != InteractionType::ScrollArea {
+            interaction.set_button_pressed(element.id.clone(), element.bounds);
+        }
         
         match element.interaction_type {
             InteractionType::Slider => {

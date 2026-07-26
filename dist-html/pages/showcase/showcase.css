@@ -220,3 +220,37 @@
 .sheet-cancel-tx {
   color: #999;
 }
+
+/* JS 动画演示 */
+.anim-demo-row {
+  align-items: center;
+}
+.anim-demo-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #FF6B35;
+  color: #fff;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10px;
+}
+/* hover-class：按住时生效（小程序官方写法） */
+.mini-btn-hover {
+  background: #FF6B35;
+  color: #fff;
+}
+.press-btn {
+  padding: 7px 12px;
+  border-radius: 5px;
+  background: #f5f5f5;
+  color: #333;
+  font-size: 13px;
+  transition: background 0.25s ease, color 0.25s ease;
+}
+.press-btn-hover {
+  background: #07c160;
+  color: #fff;
+}

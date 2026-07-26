@@ -140,6 +140,8 @@ pub struct MatchTarget<'a> {
     /// 在兄弟中的位置（0 起）与兄弟总数，用于 :first-child/:last-child/:nth-child
     pub sibling_index: usize,
     pub sibling_count: usize,
+    /// 是否处于按压态（供 `:active` 求值）
+    pub pressed: bool,
 }
 
 /// 元素描述（用于祖先链匹配，拥有所有权）
@@ -152,6 +154,8 @@ pub struct ElementDesc {
     /// 在兄弟中的位置（0 起）与兄弟总数（用于结构性伪类）
     pub sibling_index: usize,
     pub sibling_count: usize,
+    /// 是否处于按压态（供 `:active` 求值）
+    pub pressed: bool,
 }
 
 impl ElementDesc {
@@ -163,7 +167,14 @@ impl ElementDesc {
             attrs: attrs.clone(),
             sibling_index: 0,
             sibling_count: 1,
+            pressed: false,
         }
+    }
+
+    /// 标记按压态（供 `:active` 匹配）
+    pub fn with_pressed(mut self, pressed: bool) -> Self {
+        self.pressed = pressed;
+        self
     }
 
     /// 设置兄弟位置（供结构性伪类 :first-child/:last-child/:nth-child 匹配）
@@ -182,6 +193,12 @@ impl StyleSheet {
     /// 按名字查关键帧时间轴（后定义的同名规则覆盖先定义的，与 CSS 一致）
     pub fn keyframes_named(&self, name: &str) -> Option<&KeyframesRule> {
         self.keyframes.iter().rev().find(|k| k.name == name)
+    }
+
+    /// 样式表里是否出现过 `:active` 规则。
+    /// 建树期据此决定要不要多算一份「按压态样式」，没有就一分钱不花。
+    pub fn has_active_rules(&self) -> bool {
+        self.rules.iter().any(|r| r.selector.contains(":active"))
     }
 
     /// 将 `other`（通常是被 @import 的样式表）的规则并入本表前部，
@@ -590,11 +607,17 @@ fn compound_matches_desc(c: &Compound, d: &ElementDesc) -> bool {
         attrs: Some(&d.attrs),
         sibling_index: d.sibling_index,
         sibling_count: d.sibling_count,
+        pressed: d.pressed,
     };
     matches_compound(c, &target)
 }
 
-/// 评估结构性伪类；未知伪类（hover/active/focus 等）宽松放行。
+/// 评估伪类。
+///
+/// `:active` 按元素的按压态求值 —— 从前所有未知伪类都**无条件放行**，
+/// 于是 `.btn:active{background:orange}` 这类规则永远生效，元素看起来一直是按下态。
+/// `:hover` / `:focus` 在触屏语义下不成立，一律不匹配（要按压反馈就用
+/// `:active` 或小程序的 `hover-class`）。
 fn matches_pseudo(p: &str, t: &MatchTarget) -> bool {
     let idx = t.sibling_index;
     let cnt = t.sibling_count.max(1);
@@ -602,6 +625,8 @@ fn matches_pseudo(p: &str, t: &MatchTarget) -> bool {
         "first-child" => idx == 0,
         "last-child" => idx + 1 == cnt,
         "only-child" => cnt == 1,
+        "active" => t.pressed,
+        "hover" | "focus" | "focus-within" | "focus-visible" | "visited" | "target" => false,
         _ => {
             if let Some(arg) = p.strip_prefix("nth-child(").and_then(|s| s.strip_suffix(")")) {
                 let arg = arg.trim();
@@ -612,7 +637,7 @@ fn matches_pseudo(p: &str, t: &MatchTarget) -> bool {
                     _ => arg.parse::<usize>().map(|k| n1 == k).unwrap_or(true),
                 }
             } else {
-                true // :hover / :active / :focus / 伪元素 等：放行
+                true // 其它未知伪类/伪元素：放行，避免整条规则失效
             }
         }
     }
