@@ -66,6 +66,41 @@ page.js ────┘  ② 逻辑层：QuickJS 执行 App/Page/Component，set
 - **动画只重绘不重排**：CSS 动画求值放在绘制期而非布局期，代价是 `@keyframes` 里改 `width/height` 这类会引发重排的属性不生效（改 `transform`/`opacity`/颜色都生效）。
 - **不给盒子留"保险余量"**：文本盒宽度就是字形度量之和（只向上取整到整像素），换行判定另留 0.5px 亚像素容差。曾经用"每个文本盒 +4px"防误换行，结果所有按内容定宽的元素（徽标/标签/胶囊）都比浏览器宽一圈。
 
+### 帧成本是怎么压下来的
+
+纯软件光栅意味着每一帧的每个像素都由 CPU 写出，所以性能全靠减少"无用像素写入"和"无用内存拷贝"。四条优化把商城首页从 **49.6ms/帧压到 6.1ms/帧**（375×667 @2x，750×1334 物理像素）：
+
+| 优化 | 做法 | 为什么有效 |
+|------|------|-----------|
+| **矩形行填充** | `fill_rect` 先把裁剪矩形并入范围，不透明色直接 `pixels[start..end].fill(..)` 整行写 | 原来逐像素 `set_pixel`，每个像素都重做一次越界检查 + 裁剪栈判断。背景/卡片/分割线占满屏面积，这一步收益最大 |
+| **图片缩放缓存** | `draw_image_cached` 缓存"某张图缩放到某尺寸"的结果，key 含目标整数几何 + 亚像素偏移 | 长列表里同一封面每帧重复做双线性重采样。缓存上限 192 条，超 4M 像素的大图不缓存（内存换不回时间） |
+| **视口裁剪** | `cull_outside_viewport` 横纵双向剔除屏幕外节点（留 400 物理 px 余量；带 transform/animation 的节点不剔） | 滚动页面里大部分节点在视口外，此前照样跑完整绘制流程 |
+| **绘制期浅拷贝** | `shallow_for_draw` 只复制节点自身样式/属性，不复制子树 | 原先绘制每个节点前 `node.clone()`，等于把整棵子树复制一遍，深度越大越贵 |
+
+配套改动：`load_image` 返回 `Arc<ImageData>` 且像素数据是 `Arc<Vec<u8>>`（GIF 每帧不再深拷贝整张 RGBA）；组件 id 与图片 cache key 去掉浮点格式化。
+
+帧调度上，`RedrawRequested` 结束时若 `is_animating()` 就立刻自续一次 `request_redraw()`，动画期实测 **47 → 72~78 FPS**；空闲时仍回到 `Wait` 休眠，不占核。
+
+```bash
+# 打开逐秒帧率日志：「N 帧/秒，最慢一帧 X ms」
+MINI_FPS=1 cargo run --release --bin mini-app-window -- sample-app
+```
+
+各页单帧耗时（优化前 → 后）：
+
+| 页面 | 前 | 后 |
+|------|----|----|
+| `sample-app` 首页（轮播 + 倒计时 + 骨架动画） | 49.6ms | **6.1ms** |
+| `sample-app` 组件页 | 8.6ms | **1.0ms** |
+| `sample-app` 能力展示页 | 10.3ms | **2.2ms** |
+| `sample-app` 购物车 | 2.0ms | **0.5ms** |
+| `news-app` 首页 | 24.3ms | **~11ms** |
+| `news-app` 详情 | 13.0ms | **~5ms** |
+
+`news-app` 首页仍偏高：焦点图上的半透明浮层走的是逐像素 Alpha 混合路径，无法用行填充直写。
+
+> 明确没做的事：不引入 GPU（项目定位就是"给我一块像素缓冲我就能画"），不做 dirty-rect 与元素级位图缓存（改动面过大、与动画/裁剪栈交互复杂）。
+
 ### 双端一致性是被量化验证的
 
 引擎自带对比工具：同一份小程序源码，一边走原生渲染出 PNG，一边编译成 HTML 用 Chrome 截图，逐像素比对并产出报告。
@@ -89,7 +124,7 @@ cargo run --release --bin mini-app-window -- sample-app --snapshot target/s \
 cargo run --release --example compare -- --all --rust-from target/window-snap --out target/window-compare
 ```
 
-当前实测（375×667 @2x，窗体整帧 vs Chrome）：`sample-app` 15 页整体差异 **4.8%**（单页 1.5%~7.8%），`news-app` 6 页 **6.8%**，剩余差异集中在大图缩放插值与粗体字形/亚像素文本位置。
+当前实测（375×667 @2x，窗体整帧 vs Chrome）：`sample-app` 15 页整体差异 **4.7%**（单页 1.5%~7.8%），`news-app` 6 页 **6.5%**，剩余差异集中在大图缩放插值与粗体字形/亚像素文本位置。
 
 ### 编译器：同一份源码，编译出别端源码
 
@@ -162,7 +197,7 @@ cargo run --example video_player    # 独立视频播放窗口（自动循环 + 
 cargo run --bin mini-app-window     # 窗口应用（加载 sample-app）
 cargo run --bin mini-launcher       # 小程序启动器（扫描 sample 目录）
 
-# 4) 测试（214 个用例）
+# 4) 测试（217 个用例）
 cargo test
 ```
 
@@ -522,7 +557,7 @@ free(buf); mr_canvas_free(c);
 覆盖表达式引擎、WXSS 选择器（含 `var()`/`calc()`）、模板控制流、布局与文本换行、全组件渲染、Canvas 2D、交互、滚动/惯性、页面栈路由、组件模型、CommonJS 模块、Promise、生命周期、事件冒泡等：
 
 ```bash
-cargo test          # 214 个用例
+cargo test          # 217 个用例
 cargo test route    # 路由/页面栈/组件/模块/异步/生命周期
 cargo test canvas   # Canvas 2D 上下文与命令
 cargo test scroll   # 滚动与惯性

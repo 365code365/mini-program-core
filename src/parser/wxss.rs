@@ -39,6 +39,23 @@ pub enum LengthUnit {
 pub struct StyleRule {
     pub selector: String,
     pub properties: HashMap<String, StyleValue>,
+    /// 选择器在解析期就编译好的形态（逗号分组后每组一个复合选择器）。
+    ///
+    /// 匹配是「每个节点 × 每条规则」的二重循环，从前在里面现场
+    /// `parse_complex(选择器字符串)` —— 一次全页重建就是十万次字符串分词，
+    /// 占掉整次 setData 重建的绝大部分时间。
+    compiled: Vec<ComplexSelector>,
+}
+
+impl StyleRule {
+    /// 由选择器字符串构造，顺手编译选择器
+    pub fn new(selector: String, properties: HashMap<String, StyleValue>) -> Self {
+        let compiled = split_selector_groups(&selector)
+            .into_iter()
+            .filter_map(|part| parse_complex(&part))
+            .collect();
+        Self { selector, properties, compiled }
+    }
 }
 
 /// `@keyframes` 里的一个关键帧（`0%` / `from` / `to` / `50%`）
@@ -240,11 +257,9 @@ impl StyleSheet {
         
         for (order, rule) in self.rules.iter().enumerate() {
             let mut best: Option<u32> = None;
-            for part in split_selector_groups(&rule.selector) {
-                if let Some(cs) = parse_complex(&part) {
-                    if matches_complex(&cs, chain) {
-                        best = Some(best.map_or(cs.specificity, |b| b.max(cs.specificity)));
-                    }
+            for cs in &rule.compiled {
+                if matches_complex(cs, chain) {
+                    best = Some(best.map_or(cs.specificity, |b| b.max(cs.specificity)));
                 }
             }
             if let Some(spec) = best {
@@ -871,7 +886,7 @@ impl WxssParser {
             self.advance();
         }
         
-        Ok(Some(StyleRule { selector, properties }))
+        Ok(Some(StyleRule::new(selector, properties)))
     }
     
     fn parse_selector(&mut self) -> String {

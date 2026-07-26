@@ -32,15 +32,20 @@ use std::io::Read;
 
 /// 图片缓存数据
 struct ImageData {
-    data: Vec<u8>,  // RGBA 数据
+    /// RGBA 数据。用 Arc 共享：`load_image` 每帧都会被调用，
+    /// 以前每次都把整张解码后的位图深拷贝一份（一张 1500x1000 的图就是 6MB memcpy/帧/张）。
+    data: Arc<Vec<u8>>,
     width: u32,
     height: u32,
+    /// 动图当前帧序号（静态图恒为 0）。缩放缓存 key 要带上它，
+    /// 否则 GIF 会一直复用第一帧的重采样结果。
+    frame_index: u32,
 }
 
 /// 动图（GIF）解码结果：逐帧 RGBA + 每帧展示时长
 struct AnimatedImage {
     /// 每帧 (RGBA 数据, 该帧持续毫秒)
-    frames: Vec<(Vec<u8>, u32)>,
+    frames: Vec<(Arc<Vec<u8>>, u32)>,
     width: u32,
     height: u32,
     /// 一轮播放的总时长（毫秒，至少 1）
@@ -69,11 +74,11 @@ impl AnimatedImage {
 }
 
 /// 全局图片缓存
-static IMAGE_CACHE: OnceLock<Arc<Mutex<HashMap<String, Option<ImageData>>>>> = OnceLock::new();
+static IMAGE_CACHE: OnceLock<Arc<Mutex<HashMap<String, Option<Arc<ImageData>>>>>> = OnceLock::new();
 /// 全局动图缓存（GIF 多帧）
 static ANIM_CACHE: OnceLock<Arc<Mutex<HashMap<String, Arc<AnimatedImage>>>>> = OnceLock::new();
 
-fn get_image_cache() -> &'static Arc<Mutex<HashMap<String, Option<ImageData>>>> {
+fn get_image_cache() -> &'static Arc<Mutex<HashMap<String, Option<Arc<ImageData>>>>> {
     IMAGE_CACHE.get_or_init(|| Arc::new(Mutex::new(HashMap::new())))
 }
 
@@ -110,7 +115,7 @@ fn decode_animated_gif(bytes: &[u8]) -> Option<AnimatedImage> {
         return None;
     }
 
-    let mut out: Vec<(Vec<u8>, u32)> = Vec::with_capacity(frames.len());
+    let mut out: Vec<(Arc<Vec<u8>>, u32)> = Vec::with_capacity(frames.len());
     let mut width = 0;
     let mut height = 0;
     let mut total_ms: u32 = 0;
@@ -122,7 +127,7 @@ fn decode_animated_gif(bytes: &[u8]) -> Option<AnimatedImage> {
         width = buffer.width();
         height = buffer.height();
         total_ms = total_ms.saturating_add(delay);
-        out.push((buffer.into_raw(), delay));
+        out.push((Arc::new(buffer.into_raw()), delay));
     }
     if out.is_empty() || width == 0 || height == 0 {
         return None;
@@ -137,7 +142,7 @@ fn decode_animated_gif(bytes: &[u8]) -> Option<AnimatedImage> {
 }
 
 /// 加载图片（支持网络URL和本地文件；GIF 动图按时间取当前帧）
-fn load_image(src: &str) -> Option<ImageData> {
+fn load_image(src: &str) -> Option<Arc<ImageData>> {
     // 动图：命中后按经过时间取帧，实现循环播放
     {
         let cache = get_anim_cache();
@@ -145,11 +150,12 @@ fn load_image(src: &str) -> Option<ImageData> {
             if let Some(anim) = cache_guard.get(src) {
                 let index = anim.current_index();
                 let (frame, _) = &anim.frames[index];
-                return Some(ImageData {
-                    data: frame.clone(),
+                return Some(Arc::new(ImageData {
+                    data: frame.clone(), // Arc clone，非深拷贝
                     width: anim.width,
                     height: anim.height,
-                });
+                    frame_index: index as u32,
+                }));
             }
         }
     }
@@ -159,11 +165,7 @@ fn load_image(src: &str) -> Option<ImageData> {
         let cache = get_image_cache();
         let cache_guard = cache.lock().ok()?;
         if let Some(cached) = cache_guard.get(src) {
-            return cached.as_ref().map(|d| ImageData {
-                data: d.data.clone(),
-                width: d.width,
-                height: d.height,
-            });
+            return cached.clone();
         }
     }
 
@@ -173,15 +175,12 @@ fn load_image(src: &str) -> Option<ImageData> {
         load_image_from_file(src)
     };
 
-    // 存入缓存
+    // 存入缓存（Arc 共享，后续帧零拷贝取用）
+    let result = result.map(Arc::new);
     {
         let cache = get_image_cache();
         if let Ok(mut cache_guard) = cache.lock() {
-            cache_guard.insert(src.to_string(), result.as_ref().map(|d| ImageData {
-                data: d.data.clone(),
-                width: d.width,
-                height: d.height,
-            }));
+            cache_guard.insert(src.to_string(), result.clone());
         }
     }
 
@@ -216,6 +215,7 @@ fn decode_with_animation(src: &str, bytes: &[u8]) -> Option<ImageData> {
             data: anim.frames[0].0.clone(),
             width: anim.width,
             height: anim.height,
+            frame_index: 0,
         };
         if let Ok(mut cache) = get_anim_cache().lock() {
             cache.insert(src.to_string(), Arc::new(anim));
@@ -234,9 +234,10 @@ fn decode_image_bytes(bytes: &[u8]) -> Option<ImageData> {
     let (width, height) = img.dimensions();
     
     Some(ImageData {
-        data: rgba.into_raw(),
+        data: Arc::new(rgba.into_raw()),
         width,
         height,
+        frame_index: 0,
     })
 }
 
@@ -362,7 +363,9 @@ impl ImageComponent {
         if !src.is_empty() {
             if let Some(img_data) = load_image(src) {
                 // 绘制图片（透明度通过背景色已经处理）
-                canvas.draw_image(
+                // 走带缩放缓存的绘制：动画页面每帧重绘时不再重复重采样
+                canvas.draw_image_cached(
+                    &format!("{}#{}", src, img_data.frame_index),
                     &img_data.data,
                     img_data.width,
                     img_data.height,

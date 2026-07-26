@@ -58,6 +58,11 @@ struct MiniAppWindow {
     frame_interval: Duration,
     /// 上一帧呈现的时间戳，用于按刷新率节流
     last_present: Instant,
+    /// 帧率诊断（`MINI_FPS=1` 开启）：统计窗口内的实际出帧数与单帧最长耗时
+    fps_log: bool,
+    fps_window_start: Instant,
+    fps_frames: u32,
+    fps_worst_ms: f32,
 }
 
 impl MiniAppWindow {
@@ -128,6 +133,10 @@ impl MiniAppWindow {
             toast: None, loading: None, modal: None,
             frame_interval: Duration::from_micros(16_667), // 默认 60Hz，resumed 后按显示器实际刷新率修正
             last_present: now,
+            fps_log: std::env::var("MINI_FPS").is_ok(),
+            fps_window_start: now,
+            fps_frames: 0,
+            fps_worst_ms: 0.0,
         };
         
         window.navigate_to(&first_page, HashMap::new())?;
@@ -626,8 +635,15 @@ impl ApplicationHandler for MiniAppWindow {
             }
             
             WindowEvent::RedrawRequested => {
+                let frame_begin = Instant::now();
                 self.app.update().ok();
                 print_js_output(&self.app);
+                // 逻辑层这一帧改过数据就必须重绘。没有这一步的话，定时器/网络回调
+                // 里的 setData 只在「刚好还有 CSS 动画在跑」时才顺带上屏，
+                // 纯 JS 驱动的页面（秒杀倒计时、轮询刷新）会一直显示旧值。
+                if self.app.take_data_dirty() {
+                    self.needs_redraw = true;
+                }
                 
                 if evt::process_ui_events(&mut self.app, &mut self.toast, &mut self.loading, &mut self.modal) { self.needs_redraw = true; }
                 // 每帧轮询一次导航请求：此前只在「内容区被点击」时检查，
@@ -653,6 +669,41 @@ impl ApplicationHandler for MiniAppWindow {
                 }
                 self.present();
                 self.last_present = Instant::now();
+                // 本帧真正花在「逻辑 + 渲染 + 上屏」上的时间（不含为限速而睡的时间）
+                let work_ms = frame_begin.elapsed().as_secs_f32() * 1000.0;
+                // 动画期间自己续订下一帧：只靠 about_to_wait 的定时唤醒时，
+                // 每个周期要多绕一次事件循环，实测在 144Hz 屏上只能跑到 ~47FPS
+                // （单帧渲染其实只要 4ms）。
+                // 续帧前睡到下一个刷新时点 —— softbuffer 的 present 不阻塞垂直同步，
+                // 不限速会以 2~4 倍刷新率空转，白烧一个核画没人看得见的帧。
+                // 时点要从**帧开始**算：从 present 之后算的话，每帧会多出一整个
+                // 渲染耗时（16.7ms 节拍变成 21ms，只剩 46FPS）。
+                if self.is_animating() {
+                    let target = frame_begin + self.frame_interval;
+                    let now = Instant::now();
+                    if now < target {
+                        std::thread::sleep(target - now);
+                    }
+                    if let Some(w) = &self.window {
+                        w.request_redraw();
+                    }
+                }
+                if self.fps_log {
+                    let ms = work_ms;
+                    self.fps_frames += 1;
+                    self.fps_worst_ms = self.fps_worst_ms.max(ms);
+                    if self.fps_window_start.elapsed().as_secs_f32() >= 1.0 {
+                        println!(
+                            "📊 {} 帧/秒，最慢一帧 {:.1}ms{}",
+                            self.fps_frames,
+                            self.fps_worst_ms,
+                            if self.is_animating() { "（动画中）" } else { "" }
+                        );
+                        self.fps_window_start = Instant::now();
+                        self.fps_frames = 0;
+                        self.fps_worst_ms = 0.0;
+                    }
+                }
                 // 后续帧的调度交给 about_to_wait：动画中按刷新率 WaitUntil，空闲则 Wait 休眠。
             }
             _ => {}
@@ -688,7 +739,7 @@ impl MiniAppWindow {
     /// 这是「窗体是否忠实还原小程序」的可验证入口 —— 页面加载、样式合并、
     /// 自定义 tabBar、fixed 覆盖层、Toast/Modal 外壳、像素合成顺序都与真实运行一致，
     /// 因此产出的 PNG 可以直接和编译出的 H5 截图做像素级对比。
-    fn snapshot_all(&mut self, out_dir: &std::path::Path, scale: f64, time: Option<f32>, only: Option<&str>, scroll: f32, evals: &[String]) -> Result<usize, String> {
+    fn snapshot_all(&mut self, out_dir: &std::path::Path, scale: f64, time: Option<f32>, settle: Option<f32>, only: Option<&str>, scroll: f32, evals: &[String]) -> Result<usize, String> {
         self.setup_canvas(scale);
         let routes: Vec<String> = match only {
             Some(route) => vec![route.trim_start_matches('/').to_string()],
@@ -709,9 +760,38 @@ impl MiniAppWindow {
                 self.navigate_to(&route, HashMap::new())?;
             }
             self.update_renderers();
+            // `--settle`：让**真实时间**流过给定时长，把逻辑层真正跑起来 ——
+            // 不等的话 setInterval / setTimeout 一次都不会触发，秒杀倒计时、
+            // 延时弹层、轮播自动播放在快照里全停在 0s 的样子（和真机不符）。
+            //
+            // 和 `--time` 分开是有意的：双端对比时 H5 侧刻意禁用了页面脚本
+            // （见 examples/compare.rs 的 inject_capture_override，为了截图确定性），
+            // 那条链路只需要把动画时钟拨到位，不能让 JS 状态往前跑。
+            if let Some(secs) = settle {
+                let deadline = Instant::now() + Duration::from_secs_f32(secs);
+                while Instant::now() < deadline {
+                    self.app.update().ok();
+                    print_js_output(&self.app);
+                    evt::process_ui_events(&mut self.app, &mut self.toast, &mut self.loading, &mut self.modal);
+                    evt::update_toast_timeout(&mut self.toast);
+                    if self.pending_navigation.is_none() {
+                        self.pending_navigation = app_window::check_navigation(&mut self.app);
+                    }
+                    if self.pending_navigation.is_some() {
+                        self.process_navigation();
+                    }
+                    std::thread::sleep(Duration::from_millis(8)); // ≈120Hz，与真机出帧节奏同量级
+                }
+            }
+            if let Some(secs) = time {
+                if let Some(r) = &mut self.renderer { r.set_animation_time(secs); }
+                if let Some(r) = &mut self.tabbar_renderer { r.set_animation_time(secs); }
+            }
             // 注入页面状态：把「交互之后」的场景（购物车有商品、开关已打开等）
-            // 也纳入可截图、可对比的范围，而不是只能测首次进入的初始态
-            // 逐段执行注入脚本：每段之后都把导航请求跑完，
+            // 也纳入可截图、可对比的范围，而不是只能测首次进入的初始态。
+            // 放在等待之后执行：页面此时已稳定（入场动画结束、延时弹层已弹出），
+            // 脚本里「关掉优惠券弹层」这类操作才不会被随后的 setTimeout 又打开。
+            // 逐段执行：每段之后都把导航请求跑完，
             // 于是「点商品进详情 → 返回上一页」这类多步交互可以脚本化验证。
             for script in evals {
                 match self.app.eval(script) {
@@ -731,10 +811,6 @@ impl MiniAppWindow {
                 }
             }
             self.scroll.set_position(scroll);
-            if let Some(secs) = time {
-                if let Some(r) = &mut self.renderer { r.set_animation_time(secs); }
-                if let Some(r) = &mut self.tabbar_renderer { r.set_animation_time(secs); }
-            }
             self.app.update().ok();
             evt::process_ui_events(&mut self.app, &mut self.toast, &mut self.loading, &mut self.modal);
             self.render();
@@ -785,6 +861,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut snapshot: Option<std::path::PathBuf> = None;
     let mut scale = 2.0f64;
     let mut anim_time: Option<f32> = None;
+    let mut settle: Option<f32> = None;
     let mut route: Option<String> = None;
     let mut scroll = 0.0f32;
     let mut evals: Vec<String> = Vec::new();
@@ -794,11 +871,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "--snapshot" => snapshot = it.next().map(std::path::PathBuf::from),
             "--scale" => scale = it.next().and_then(|v| v.parse().ok()).unwrap_or(2.0),
             "--time" => anim_time = it.next().and_then(|v| v.parse().ok()),
+            "--settle" => settle = it.next().and_then(|v| v.parse().ok()),
             "--route" => route = it.next(),
             "--scroll" => scroll = it.next().and_then(|v| v.parse().ok()).unwrap_or(0.0),
             "--eval" => { if let Some(v) = it.next() { evals.push(v); } }
             "--help" | "-h" => {
-                println!("用法: mini-app-window <小程序目录> [--snapshot <输出目录>] [--scale 2] [--time 0.3] [--route pages/x/x] [--scroll 600] [--eval JS ...（可重复，每段之后跑完导航）]");
+                println!("用法: mini-app-window <小程序目录> [--snapshot <输出目录>] [--scale 2]");
+                println!("  --time <秒>    动画时钟位置（CSS @keyframes 求值到该时刻，不消耗真实时间）");
+                println!("  --settle <秒>  真实等待该时长，让 setTimeout/setInterval、延时弹层、");
+                println!("                 轮播自动播放跑起来（要「和真机一样」的画面时用这个）");
+                println!("  --route <页面路径>   --scroll <像素>");
+                println!("  --eval <JS>    可重复；在 --settle 之后依次执行，每段跑完导航");
                 return Ok(());
             }
             other => {
@@ -821,7 +904,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 快照模式：不开窗口，直接把整帧写成 PNG（用于与 H5 做像素对比）
     if let Some(out) = snapshot {
-        let count = window.snapshot_all(&out, scale, anim_time, route.as_deref(), scroll, &evals)?;
+        let count = window.snapshot_all(&out, scale, anim_time, settle, route.as_deref(), scroll, &evals)?;
         println!("\n✅ 快照完成：{} 个页面 -> {}", count, out.display());
         return Ok(());
     }

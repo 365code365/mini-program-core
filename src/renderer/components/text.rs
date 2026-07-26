@@ -292,42 +292,29 @@ fn draw_text_wrapped_advanced(
         }
         
         let chars: Vec<char> = paragraph.chars().collect();
-        let mut line_start = 0;
-        let mut current_width = 0.0;
-        
-        for (i, ch) in chars.iter().enumerate() {
-            let char_width = tr.measure_char_weighted(*ch, size, bold) + letter_spacing;
-            
-            // 检查是否需要换行
-            if current_width + char_width > max_width + WRAP_TOLERANCE_PX && i > line_start {
-                let line: String = chars[line_start..i].iter().collect();
-                
-                // 仅当设置了 text-overflow:ellipsis 且下一行超出容器高度时，用省略号截断并停止；
-                // 否则正常继续换行（宁可纵向溢出也不横向溢出/挤成一行）。
-                let next_line_top = current_y + actual_line_height;
-                if use_ellipsis && max_height > 0.0 && next_line_top > (y - size) + max_height {
-                    let rest: String = chars[line_start..].iter().collect();
-                    draw_text_with_ellipsis(canvas, tr, &rest, x, current_y, size, max_width, letter_spacing, bold, paint);
-                    return;
-                }
-                
-                // 绘制当前行（按 text-align 对齐）
-                let lx = aligned_line_x(tr, &line, x, max_width, size, letter_spacing, bold, style.text_align);
-                tr.draw_text_weighted(canvas, &line, lx, current_y, size, letter_spacing, bold, paint);
-                
-                current_y += actual_line_height;
-                line_start = i;
-                current_width = char_width;
-            } else {
-                current_width += char_width;
+        // 断行交给共享算法：西文整词不可断、行尾空白不占位（与度量、行数统计同一套规则）
+        let measure = |s: &[char]| -> f32 {
+            s.iter().map(|c| tr.measure_char_weighted(*c, size, bold) + letter_spacing).sum()
+        };
+        let lines = super::base::wrap_paragraph_lines(&chars, max_width, measure);
+
+        for (idx, (ls_i, le_i)) in lines.iter().enumerate() {
+            let has_more = idx + 1 < lines.len();
+            // 仅当设置了 text-overflow:ellipsis 且下一行超出容器高度时，用省略号截断并停止；
+            // 否则正常继续换行（宁可纵向溢出也不横向溢出/挤成一行）。
+            if has_more && use_ellipsis && max_height > 0.0
+                && current_y + actual_line_height > (y - size) + max_height
+            {
+                let rest: String = chars[*ls_i..].iter().collect();
+                draw_text_with_ellipsis(canvas, tr, &rest, x, current_y, size, max_width, letter_spacing, bold, paint);
+                return;
             }
-        }
-        
-        // 绘制段落的最后一行
-        if line_start < chars.len() {
-            let line: String = chars[line_start..].iter().collect();
+            let line: String = chars[*ls_i..*le_i].iter().collect();
             let lx = aligned_line_x(tr, &line, x, max_width, size, letter_spacing, bold, style.text_align);
             tr.draw_text_weighted(canvas, &line, lx, current_y, size, letter_spacing, bold, paint);
+            if has_more {
+                current_y += actual_line_height;
+            }
         }
         
         // 段落之间换行

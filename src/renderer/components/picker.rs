@@ -88,6 +88,10 @@ impl PickerComponent {
         let (ts, mut ns) = build_base_style(node, ctx);
         let events = extract_events(node);
         let mut attrs = node.attributes.clone();
+        // 有元素子节点时标记：绘制期只作容器（绘制路径的浅拷贝不带 children）
+        if node.children.iter().any(|c| c.node_type == crate::parser::wxml::WxmlNodeType::Element) {
+            attrs.insert("__has_trigger".to_string(), "1".to_string());
+        }
         
         // 解析 mode
         let mode = match node.get_attr("mode").unwrap_or("selector") {
@@ -134,7 +138,8 @@ impl PickerComponent {
 
         // 有子节点（开发者自定义触发视图，如“当前选择：xxx”）时，picker 只作容器，
         // 由子节点渲染内容，不再合成占位文本/箭头（与微信及 HTML 端一致）。
-        if !node.children.is_empty() {
+        if node.attrs.get("__has_trigger").is_some() {
+            // 开发者自定义了触发视图（子节点），picker 只作容器
             return;
         }
 

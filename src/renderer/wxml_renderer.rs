@@ -64,6 +64,9 @@ pub struct WxmlRenderer {
     animations_active: bool,
     /// 动画时钟（秒）。宿主每帧写入，未设置时用全局时钟。
     anim_time: Option<f32>,
+    /// 正在往 transform 离屏画布上绘制：此时坐标是画布局部坐标，
+    /// 与屏幕/滚动空间无关，视口裁剪必须停用（否则整棵子树会被误剔除）。
+    drawing_offscreen: bool,
 }
 
 impl WxmlRenderer {
@@ -88,6 +91,7 @@ impl WxmlRenderer {
             timelines: HashMap::new(),
             animations_active: false,
             anim_time: None,
+            drawing_offscreen: false,
         }
     }
 
@@ -197,6 +201,67 @@ impl WxmlRenderer {
         Some((resolved, transform.unwrap_or_else(super::components::Transform::new)))
     }
 
+    /// 绘制期的**浅拷贝**：只复制这一个节点自身（标签/文本/属性/样式），不复制子树。
+    ///
+    /// 绘制路径为了写入继承色、勾选态等要改样式，原来直接 `node.clone()`。
+    /// 而 `RenderNode` 自己持有 `children: Vec<RenderNode>`，于是「每个节点都克隆一遍
+    /// 自己的整棵子树」—— 越靠近根越贵，整体是 O(n²)。首页那种 6800px 长页面每帧
+    /// 光克隆就吃掉十几毫秒（页面有动画时每帧都发生），这是"卡"的主因之一。
+    ///
+    /// 组件绘制只用到自身的 tag/text/attrs/style；需要知道"有没有子节点"的
+    /// rich-text / picker 已改为读属性标记，swiper 走独立容器路径拿原节点。
+    fn shallow_for_draw(node: &RenderNode) -> RenderNode {
+        RenderNode {
+            tag: node.tag.clone(),
+            text: node.text.clone(),
+            attrs: node.attrs.clone(),
+            taffy_node: node.taffy_node,
+            style: node.style.clone(),
+            children: Vec::new(),
+            events: Vec::new(),
+        }
+    }
+
+    /// 视口裁剪：子树完全落在可见区之外时跳过整棵绘制。
+    ///
+    /// 宿主把整页内容画进一张「内容高」的长画布，再按滚动位置 blit 可见的一屏。
+    /// 页面有 CSS 动画时每帧都要重绘，于是首页那种 6800px 高的长页面每帧都在
+    /// 光栅化 5M 像素（实测 49.6ms/帧 ≈ 20FPS，肉眼就是卡）。
+    /// 可见区之外的内容 blit 时根本读不到，绘制它纯属浪费。
+    ///
+    /// 留一段余量并跳过带 transform/动画的节点：它们的实际绘制范围可能超出布局盒
+    /// （离屏仿射、位移），不能只按盒子判断。
+    fn cull_outside_viewport(
+        &self,
+        node: &RenderNode,
+        x: f32,
+        y: f32,
+        w: f32,
+        h: f32,
+        scroll_offset: f32,
+        viewport_height: f32,
+    ) -> bool {
+        // 离屏合成时坐标是画布局部坐标，和滚动空间没有对应关系，不能用它裁剪
+        if self.drawing_offscreen {
+            return false;
+        }
+        if node.style.transform.is_some() || node.style.animation.is_some() {
+            return false;
+        }
+        const MARGIN: f32 = 400.0; // 物理像素余量，兜住阴影/溢出内容
+        // 横向：画布宽就是屏宽，横滑列表里被推到屏幕外的项同样不可见
+        let canvas_w = self.screen_width * self.scale_factor;
+        if x + w < -MARGIN || x > canvas_w + MARGIN {
+            return true;
+        }
+        if viewport_height <= 0.0 {
+            return false;
+        }
+        let visible_top = scroll_offset * self.scale_factor - MARGIN;
+        let visible_bottom = scroll_offset * self.scale_factor + viewport_height + MARGIN;
+        y + h < visible_top || y > visible_bottom
+    }
+
     /// 绘制 swiper 容器：裁剪到自身盒子 → 整行按当前页横向偏移 → 逐项走普通绘制 → 指示点。
     ///
     /// 只有"当前页在哪儿"是 swiper 特有的，item 内容（图片、浮层、flex、动画、
@@ -232,7 +297,8 @@ impl WxmlRenderer {
         } else {
             (-(current as f32) * w, 0.0)
         };
-        for child in &node.children {
+        // 只画当前页：非当前页被裁剪掉后完全不可见，逐帧重采样它们的图片纯属浪费
+        if let Some(child) = node.children.get(current) {
             self.dispatch_draw(canvas, taffy, child, x + dx, y + dy, interaction, kind);
         }
         canvas.restore();
@@ -313,6 +379,8 @@ impl WxmlRenderer {
         // 不污染真实的交互命中表（旋转/缩放子树内的点击是已知限制）。
         let mut scratch = InteractionManager::new();
         let bindings_before = self.event_bindings.len();
+        let was_offscreen = self.drawing_offscreen;
+        self.drawing_offscreen = true;
         self.dispatch_draw(
             &mut offscreen,
             taffy,
@@ -322,6 +390,7 @@ impl WxmlRenderer {
             &mut scratch,
             kind,
         );
+        self.drawing_offscreen = was_offscreen;
         self.event_bindings.truncate(bindings_before);
 
         super::compose::blit_transformed(
@@ -356,7 +425,13 @@ impl WxmlRenderer {
         // 数据变化，标记所有 scroll-view 缓存为脏
         self.scroll_cache.mark_all_dirty();
         
+        // 重建耗时诊断（`MINI_LAYOUT_LOG=1`）：一次 setData 会走完整条
+        // 「模板求值 → 建树/样式 → 布局」流水线，是交互卡顿的主要来源，
+        // 分段计时能直接指出该优化哪一段。
+        let log_timing = std::env::var("MINI_LAYOUT_LOG").is_ok();
+        let t_start = std::time::Instant::now();
         let rendered = crate::parser::TemplateEngine::render_with_virtual_list(nodes, data, viewport);
+        let t_template = std::time::Instant::now();
         let mut taffy = Tree::new();
         
         let mut render_nodes = Vec::new();
@@ -366,6 +441,7 @@ impl WxmlRenderer {
                 render_nodes.push(rn);
             }
         }
+        let t_build = std::time::Instant::now();
         
         // 构建正常布局树（包含所有节点，fixed 元素也参与布局计算）
         let child_ids: Vec<NodeId> = render_nodes.iter().map(|n| n.taffy_node).collect();
@@ -379,9 +455,20 @@ impl WxmlRenderer {
         ).unwrap();
         
         self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT);
+        let t_layout1 = std::time::Instant::now();
         // 第二遍：按实际宽度修正换行文本高度后重新布局
         if self.correct_wrapped_text_heights(&mut taffy, &render_nodes) {
             self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT);
+        }
+        if log_timing {
+            let ms = |a: std::time::Instant, b: std::time::Instant| (b - a).as_secs_f32() * 1000.0;
+            eprintln!(
+                "⏱  重建布局：模板 {:.1}ms  建树+样式 {:.1}ms  布局一遍 {:.1}ms  换行修正 {:.1}ms",
+                ms(t_start, t_template),
+                ms(t_template, t_build),
+                ms(t_build, t_layout1),
+                ms(t_layout1, std::time::Instant::now()),
+            );
         }
         
         // 获取实际内容高度
@@ -551,7 +638,7 @@ impl WxmlRenderer {
         let logical_bounds = GeoRect::new(x / sf, y / sf, w / sf, h / sf);
         
         let text_color = node.style.text_color.unwrap_or(inherited_color);
-        let mut node_to_draw = node.clone();
+        let mut node_to_draw = Self::shallow_for_draw(node);
         if node_to_draw.style.text_color.is_none() {
             node_to_draw.style.text_color = Some(text_color);
         }
@@ -1003,7 +1090,8 @@ impl WxmlRenderer {
                 return id.clone();
             }
         }
-        format!("{}_{:.0}_{:.0}", node.tag, bounds.x, bounds.y)
+        // 用整数格式化：`{:.0}` 走浮点转十进制，逐节点逐帧调用时开销不可忽略
+        format!("{}_{}_{}", node.tag, bounds.x as i32, bounds.y as i32)
     }
 
     fn draw_with_interaction(
@@ -1042,6 +1130,10 @@ impl WxmlRenderer {
         let h = layout.size.height;
         // 渲染整个内容到 canvas，滚动在 present_to_buffer 中处理
         
+        if self.cull_outside_viewport(node, x, y, w, h, scroll_offset, viewport_height) {
+            return;
+        }
+        
         if node.tag == "swiper" {
             self.draw_swiper_container(canvas, taffy, node, x, y, w, h, interaction,
                 DrawKind::Top { scroll_offset, viewport_height });
@@ -1053,7 +1145,7 @@ impl WxmlRenderer {
         let component_id = Self::get_component_id(node, &logical_bounds);
         
         // 应用交互状态
-        let mut node_to_draw = node.clone();
+        let mut node_to_draw = Self::shallow_for_draw(node);
         let state_checked = interaction.get_state(&component_id).map(|s| s.checked);
         let switch_progress = if node.tag == "switch" {
             state_checked.map(|checked| self.toggle_progress(interaction, &component_id, checked))
@@ -1305,7 +1397,7 @@ impl WxmlRenderer {
         let component_id = Self::get_component_id(node, &logical_bounds);
         
         let text_color = node.style.text_color.unwrap_or(inherited_color);
-        let mut node_to_draw = node.clone();
+        let mut node_to_draw = Self::shallow_for_draw(node);
         if node_to_draw.style.text_color.is_none() {
             node_to_draw.style.text_color = Some(text_color);
         }
@@ -1453,6 +1545,10 @@ impl WxmlRenderer {
         let w = layout.size.width;
         let h = layout.size.height;
         
+        if self.cull_outside_viewport(node, x, y, w, h, scroll_offset, viewport_height) {
+            return;
+        }
+
         if node.tag == "swiper" {
             self.draw_swiper_container(canvas, taffy, node, x, y, w, h, interaction,
                 DrawKind::Child { inherited: inherited_color, scroll_offset, viewport_height });
@@ -1480,7 +1576,7 @@ impl WxmlRenderer {
         
         // 只在需要时才 clone
         let node_to_draw: std::borrow::Cow<RenderNode> = if needs_modification {
-            let mut modified = node.clone();
+            let mut modified = Self::shallow_for_draw(node);
             if modified.style.text_color.is_none() {
                 modified.style.text_color = Some(text_color);
             }
@@ -1549,7 +1645,7 @@ impl WxmlRenderer {
             let placeholder = node.attrs.get("placeholder").cloned().unwrap_or_default();
             let initial_value = Self::input_value_attr(node);
             
-            let mut modified = node.clone();
+            let mut modified = Self::shallow_for_draw(node);
             if initial_value.is_empty() {
                 modified.text = placeholder;
                 modified.style.text_color = Some(Color::from_hex(0xBFBFBF));
@@ -2025,7 +2121,7 @@ impl WxmlRenderer {
         let logical_bounds = GeoRect::new(x / sf, y / sf, w / sf, h / sf);
 
         let text_color = node.style.text_color.unwrap_or(inherited_color);
-        let mut node_with_color = node.clone();
+        let mut node_with_color = Self::shallow_for_draw(node);
         if node_with_color.style.text_color.is_none() {
             node_with_color.style.text_color = Some(text_color);
         }
@@ -2253,19 +2349,10 @@ fn count_wrapped_lines(tr: &TextRenderer, text: &str, max_width: f32, size: f32,
             continue;
         }
         let chars: Vec<char> = paragraph.chars().collect();
-        let mut line_start = 0usize;
-        let mut current_width = 0.0f32;
-        for (i, ch) in chars.iter().enumerate() {
-            let char_width = tr.measure_char_weighted(*ch, size, bold) + letter_spacing;
-            if current_width + char_width > max_width + super::components::WRAP_TOLERANCE_PX && i > line_start {
-                lines += 1;
-                line_start = i;
-                current_width = char_width;
-            } else {
-                current_width += char_width;
-            }
-        }
-        lines += 1; // 段落最后一行
+        let measure = |s: &[char]| -> f32 {
+            s.iter().map(|c| tr.measure_char_weighted(*c, size, bold) + letter_spacing).sum()
+        };
+        lines += super::components::wrap_paragraph_lines(&chars, max_width, measure).len();
     }
     lines.max(1)
 }

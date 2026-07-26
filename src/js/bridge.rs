@@ -12,6 +12,8 @@ pub struct JsBridge {
     component_tree: Arc<Mutex<ComponentTree>>,
     storage: Arc<Mutex<HashMap<String, String>>>,
     event_queue: Arc<Mutex<Vec<BridgeEvent>>>,
+    /// 逻辑层调用过 `setData`（宿主每帧取走一次，决定要不要重绘）
+    data_dirty: Arc<std::sync::atomic::AtomicBool>,
 }
 
 /// 桥接事件
@@ -43,7 +45,14 @@ impl JsBridge {
             component_tree: Arc::new(Mutex::new(ComponentTree::new())),
             storage: Arc::new(Mutex::new(HashMap::new())),
             event_queue: Arc::new(Mutex::new(Vec::new())),
+            data_dirty: Arc::new(std::sync::atomic::AtomicBool::new(false)),
         }
+    }
+
+    /// 取走「逻辑层改过数据」标记（读后清零）。宿主用它决定本帧是否重绘：
+    /// 定时器、网络回调里的 `setData` 全靠这个上屏。
+    pub fn take_data_dirty(&self) -> bool {
+        self.data_dirty.swap(false, std::sync::atomic::Ordering::Relaxed)
     }
     
     /// 初始化 native 函数
@@ -66,10 +75,15 @@ impl JsBridge {
             function __native_print(msg) {
                 __print_buffer.push(String(msg));
             }
-            function __native_page_update(dataJson) {
-                __print_buffer.push('[PageUpdate] ' + dataJson);
-            }
         "#)?;
+        // setData 的脏标记走原生回调：宿主每帧取走一次决定要不要重绘。
+        // 从前这里是 JS 侧 `__print_buffer.push('[PageUpdate] ' + JSON.stringify(data))`，
+        // 没有任何消费方 —— 每次 setData 白付一次全量序列化，还把日志刷成一片。
+        let dirty = self.data_dirty.clone();
+        rt.register_function("__native_page_update", move |_| {
+            dirty.store(true, std::sync::atomic::Ordering::Relaxed);
+            "undefined".to_string()
+        })?;
         Ok(())
     }
     

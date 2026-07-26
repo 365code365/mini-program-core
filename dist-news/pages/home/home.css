@@ -214,6 +214,9 @@
   background-color: rgba(0, 0, 0, 0.35);
   display: flex;
   flex-direction: column;
+  /* 纵向 flex 的交叉轴默认 stretch，会把「要闻」标签拉成和标题一样宽
+     （浏览器行为一致），这里让子项按内容宽度靠左 */
+  align-items: flex-start;
 }
 .focus-tag {
   font-size: 10px;

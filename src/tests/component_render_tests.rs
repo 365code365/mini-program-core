@@ -132,7 +132,10 @@ fn test_button_type_size_classes() {
     let b = base_css();
     assert!(b.contains(".wx-button-primary"), "base css has primary");
     assert!(b.contains("cursor:pointer"), "base css has pointer cursor");
-    assert!(b.contains("[data-tap]:active"), "base css has tap active feedback");
+    // 按压反馈只在 button 上（普通 view 被点不该整体变半透明，否则点遮罩关弹窗会闪一下，
+    // 而原生端并没有这个效果）
+    assert!(b.contains(".wx-button:active"), "base css has button active feedback");
+    assert!(!b.contains("[data-tap]:active"), "普通可点元素不应有整体变透明的按压反馈");
 }
 
 #[test]

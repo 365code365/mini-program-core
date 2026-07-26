@@ -62,6 +62,9 @@
   top: 20px;
   display: flex;
   flex-direction: column;
+  /* 纵向 flex 默认 stretch，会把「限时特惠」标签拉到与标题同宽（浏览器同样如此），
+     这里让子项按内容宽靠左对齐 */
+  align-items: flex-start;
 }
 .banner-tag {
   font-size: 10px;

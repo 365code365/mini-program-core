@@ -174,6 +174,11 @@ impl MiniApp {
     pub fn has_active_timers(&self) -> bool {
         !self.timers.is_empty()
     }
+
+    /// 取走「逻辑层改过数据」标记（读后清零），宿主据此决定本帧是否重绘
+    pub fn take_data_dirty(&self) -> bool {
+        self.bridge.take_data_dirty()
+    }
     
     /// 更新一帧
     pub fn update(&mut self) -> Result<(), String> {

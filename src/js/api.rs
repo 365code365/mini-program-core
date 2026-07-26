@@ -520,7 +520,7 @@ impl MiniAppApi {
                     }
                 }
                 if (typeof __native_page_update === 'function') {
-                    __native_page_update(JSON.stringify(instance.data));
+                    __native_page_update();
                 }
                 if (typeof callback === 'function') {
                     try { callback(); } catch (e) { __native_print('[setData.cb] ' + e.message); }

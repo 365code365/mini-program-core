@@ -81,6 +81,12 @@ impl RichTextComponent {
 
         let child_ids: Vec<NodeId> = children.iter().map(|c| c.taffy_node).collect();
         let tn = ctx.taffy.new_with_children(ts, &child_ids).unwrap();
+        // 标记「已生成文本片段子树」：绘制期据此判断，不再读 node.children
+        // （绘制路径为了改写样式会浅拷贝节点，children 不再可靠）
+        let mut attrs = attrs;
+        if !children.is_empty() {
+            attrs.insert("__fragments".to_string(), "1".to_string());
+        }
 
         Some(RenderNode {
             tag: "rich-text".into(),
@@ -98,7 +104,7 @@ impl RichTextComponent {
         draw_background(canvas, &node.style, x, y, w, h);
 
         // 纯文本退化叶子（无子节点）：直接画文本
-        if node.children.is_empty() && !node.text.is_empty() {
+        if node.attrs.get("__fragments").is_none() && !node.text.is_empty() {
             if let Some(tr) = text_renderer {
                 let font_size = node.style.font_size * sf;
                 let pl = node.style.padding_left * sf;
