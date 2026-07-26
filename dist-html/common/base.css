@@ -75,6 +75,26 @@ body{font-size:16px;color:#333;font-family:-apple-system,system-ui,"PingFang SC"
 .wx-slider{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:2px;background:#e5e5e5;accent-color:#09bb07;cursor:pointer;}
 .wx-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.3);}
 
+/* ── picker 底部选择面板（点 picker 弹出，与原生窗体的选择器一致）── */
+.wxpk-mask{position:fixed;inset:0;background:rgba(0,0,0,0);z-index:9998;transition:background .22s ease;}
+.wxpk-mask.show{background:rgba(0,0,0,.5);}
+.wxpk-sheet{position:fixed;left:0;right:0;bottom:0;background:#fff;z-index:9999;transform:translateY(100%);transition:transform .22s cubic-bezier(.2,.8,.2,1);}
+.wxpk-sheet.show{transform:translateY(0);}
+.wxpk-head{display:flex;align-items:center;justify-content:space-between;height:45px;border-bottom:1px solid #e5e5e5;font-size:17px;}
+.wxpk-cancel,.wxpk-confirm{padding:0 16px;line-height:45px;cursor:pointer;}
+.wxpk-cancel{color:#888;}
+.wxpk-confirm{color:#576b95;}
+.wxpk-cols{display:flex;height:220px;position:relative;}
+/* 选中行的上下参考线，落在正中一格 */
+.wxpk-cols::before,.wxpk-cols::after{content:"";position:absolute;left:0;right:0;height:1px;background:#d9d9d9;z-index:2;pointer-events:none;}
+.wxpk-cols::before{top:88px;}
+.wxpk-cols::after{top:132px;}
+.wxpk-col{flex:1;overflow-y:auto;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;text-align:center;}
+.wxpk-col::-webkit-scrollbar{display:none;width:0;height:0;}
+/* 上下各留两格空白，让首/末项也能滚到正中 */
+.wxpk-col-pad{height:88px;}
+.wxpk-item{height:44px;line-height:44px;font-size:17px;color:#000;scroll-snap-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
 /* ── progress 进度条 ── */
 .wx-progress{display:flex;flex-direction:row;align-items:center;}
 .wx-progress-outer{flex:1;height:6px;border-radius:3px;background:#ebebeb;overflow:hidden;}

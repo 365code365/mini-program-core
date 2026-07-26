@@ -91,6 +91,24 @@ fn split_top_commas(s: &str) -> Vec<String> {
     out
 }
 
+/// 解析「属性里的 JSON」。
+///
+/// 模板引擎把数组/对象插值成**单引号** JSON（`['a','b']`），因为属性值本身用双引号
+/// 包裹，直接塞双引号 JSON 会把属性截断。这里先按标准 JSON 试，失败再把单引号
+/// 换回双引号重试 —— 与 H5 运行时 `__callPageMethod` 里的还原方式一致。
+///
+/// 解析不出来时返回 `Null`，调用方自行降级。
+pub fn parse_attr_json(s: &str) -> serde_json::Value {
+    let s = s.trim();
+    if s.is_empty() {
+        return serde_json::Value::Null;
+    }
+    if let Ok(v) = serde_json::from_str(s) {
+        return v;
+    }
+    serde_json::from_str(&s.replace('\'', "\"")).unwrap_or(serde_json::Value::Null)
+}
+
 /// 解析颜色字符串：支持 `#rgb` / `#rrggbb` / `rgb(...)`。
 pub fn parse_color_str(s: &str) -> Option<Color> {
     let s = s.trim();

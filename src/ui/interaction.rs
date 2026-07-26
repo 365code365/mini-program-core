@@ -242,6 +242,21 @@ impl InteractionManager {
         self.elements.clear();
     }
     
+    /// 丢掉正常流的交互元素，保留 `position: fixed` 覆盖层的。
+    ///
+    /// 每帧页面重绘前调用。元素表从前只增不减：滚动过后旧位置留下的陈旧元素还在表里，
+    /// 而 `hit_test` 取「最后一个命中」—— 陈旧元素会遮住当前元素，点击落到一个
+    /// 没有处理器的僵尸元素上就什么都不发生（表现为「页面点击全部失效」）。
+    /// 覆盖层的元素不能在这里丢：它可能整帧都不重绘（性能优化），要单独重建。
+    pub fn retain_only_fixed_elements(&mut self) {
+        self.elements.retain(|e| e.is_fixed);
+    }
+
+    /// 丢掉覆盖层的交互元素（覆盖层重绘前调用）
+    pub fn clear_fixed_elements(&mut self) {
+        self.elements.retain(|e| !e.is_fixed);
+    }
+
     /// 注册交互元素
     pub fn register_element(&mut self, element: InteractiveElement) {
         if element.interaction_type == InteractionType::ScrollArea {
@@ -292,6 +307,28 @@ impl InteractionManager {
         })
     }
     
+    /// 只在 `position: fixed` 覆盖层的元素里做命中测试（坐标是视口坐标）。
+    ///
+    /// 直接用 `hit_test` 再判 `is_fixed` 是不对的：正常流的元素按内容坐标登记，
+    /// 视口坐标下同样可能落在包围盒里，且注册顺序在覆盖层之后，
+    /// 于是把真正的覆盖层元素挡掉。
+    pub fn hit_test_fixed(&self, x: f32, y: f32) -> Option<&InteractiveElement> {
+        self.elements.iter().rev().find(|e| {
+            e.is_fixed && !e.disabled &&
+            x >= e.bounds.x && x <= e.bounds.x + e.bounds.width &&
+            y >= e.bounds.y && y <= e.bounds.y + e.bounds.height
+        })
+    }
+
+    /// 只在正常流的元素里做命中测试（坐标是内容坐标，即已加上页面滚动量）
+    pub fn hit_test_flow(&self, x: f32, y: f32) -> Option<&InteractiveElement> {
+        self.elements.iter().rev().find(|e| {
+            !e.is_fixed && !e.disabled &&
+            x >= e.bounds.x && x <= e.bounds.x + e.bounds.width &&
+            y >= e.bounds.y && y <= e.bounds.y + e.bounds.height
+        })
+    }
+
     /// 处理点击事件
     pub fn handle_click(&mut self, x: f32, y: f32) -> Option<InteractionResult> {
         self.handle_click_scoped(x, y, false)

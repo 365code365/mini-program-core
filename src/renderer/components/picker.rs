@@ -102,21 +102,32 @@ impl PickerComponent {
             _ => PickerMode::Selector,
         };
         
-        // 解析 range（选项列表）
+        // 解析 range（选项列表）。模板引擎把数组插值成单引号 JSON，不能直接喂 serde。
         let range_str = node.get_attr("range").unwrap_or("[]");
-        let range: Vec<String> = serde_json::from_str(range_str)
-            .unwrap_or_else(|_| vec![]);
+        let range_key = node.get_attr("range-key");
+        let range: Vec<String> = match super::parse_attr_json(range_str) {
+            serde_json::Value::Array(items) => items
+                .iter()
+                .map(|item| match (item, range_key) {
+                    (serde_json::Value::Object(_), Some(key)) => item
+                        .get(key)
+                        .map(crate::parser::expr::render_value)
+                        .unwrap_or_default(),
+                    _ => crate::parser::expr::render_value(item),
+                })
+                .collect(),
+            _ => Vec::new(),
+        };
         
-        // 获取当前值
-        let value = node.get_attr("value")
-            .and_then(|s| s.parse().ok())
-            .unwrap_or(0usize);
+        // 获取当前值：selector 是下标；time/date 直接就是要显示的字符串
+        let raw_value = node.get_attr("value").unwrap_or("").trim().to_string();
+        let value: usize = raw_value.parse().unwrap_or(0);
         
         // 获取显示文本
-        let display_text = if value < range.len() {
-            range[value].clone()
-        } else {
-            node.get_attr("placeholder").unwrap_or("请选择").to_string()
+        let display_text = match mode {
+            PickerMode::Time | PickerMode::Date if !raw_value.is_empty() => raw_value.clone(),
+            PickerMode::Selector if value < range.len() => range[value].clone(),
+            _ => node.get_attr("placeholder").unwrap_or("请选择").to_string(),
         };
         
         let tn = ctx.taffy.new_leaf(ts).unwrap();

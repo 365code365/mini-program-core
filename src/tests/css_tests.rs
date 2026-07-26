@@ -495,3 +495,50 @@ fn test_selector_specificity() {
         assert_eq!(c.b, 0);
     }
 }
+
+/// 简写与细项同时中选时，细项必须赢 —— 而且**每次运行结果都要一样**。
+///
+/// 回归的是一个真实 bug：`.dot{border:2rpx solid #ccc}` 与
+/// `.dot.on{border-color:#FF6B35}` 两条规则合并后，级联结果里同时存在
+/// `border`（简写）和 `border-color`（细项）两个键。样式落地时按 HashMap 遍历顺序
+/// 应用，而 Rust 的 HashMap 每进程一个随机 hash 种子 ——
+/// 于是同一份源码每次运行渲染结果都可能不同（地址页那个选中圆点时橙时灰）。
+#[test]
+fn test_shorthand_longhand_cascade_is_deterministic() {
+    use crate::renderer::components::{build_base_style, ComponentContext};
+    use crate::parser::wxml::WxmlNode;
+    use crate::renderer::components::Tree;
+
+    let css = r#"
+        .dot { width: 18px; height: 18px; border: 2px solid #CCCCCC; }
+        .dot.on { border-color: #FF6B35; }
+    "#;
+    let stylesheet = parse_css(css);
+
+    let mut node = WxmlNode::new_element("view");
+    node.attributes.insert("class".to_string(), "dot on".to_string());
+
+    // 跑多次：每次都是一个新 HashMap（同进程内种子相同，但遍历顺序仍取决于插入/容量），
+    // 关键是断言结果稳定且等于 CSS 语义要求的那个值
+    for _ in 0..8 {
+        let mut taffy = Tree::new();
+        let mut ctx = ComponentContext {
+            taffy: &mut taffy,
+            stylesheet: &stylesheet,
+            screen_width: 375.0,
+            screen_height: 667.0,
+            scale_factor: 1.0,
+            ancestors: Vec::new(),
+            inherited: Default::default(),
+            sibling_index: 0,
+            sibling_count: 1,
+        };
+        let (_ts, ns) = build_base_style(&node, &mut ctx);
+        let c = ns.border_color.expect("border-color 应该落地");
+        assert_eq!(
+            (c.r, c.g, c.b), (0xFF, 0x6B, 0x35),
+            "细项 border-color 必须覆盖简写 border 里的颜色"
+        );
+        assert!((ns.border_width - 2.0).abs() < 0.01, "简写里的宽度应保留");
+    }
+}

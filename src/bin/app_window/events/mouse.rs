@@ -20,32 +20,27 @@ pub fn handle_mouse_pressed(
     // 考虑滚动偏移
     let actual_y = y + scroll.get_position();
     
-    // 首先检查固定元素（使用原始坐标）
-    if let Some(element) = interaction.hit_test(x, y) {
+    // 首先检查固定元素（使用原始坐标，且只看覆盖层自己的元素）
+    if let Some(element) = interaction.hit_test_fixed(x, y) {
         let element = element.clone();
-        if element.is_fixed {
-            match element.interaction_type {
-                InteractionType::Button => {
-                    if !element.disabled {
-                        interaction.set_button_pressed(element.id.clone(), element.bounds);
+        if !element.disabled && element.interaction_type != InteractionType::ScrollArea {
+            interaction.set_button_pressed(element.id.clone(), element.bounds);
+        }
+        match element.interaction_type {
+            InteractionType::Switch | InteractionType::Checkbox | InteractionType::Radio => {
+                if !element.disabled {
+                    if let Some(_result) = interaction.handle_click_scoped(x, y, true) {
                         return true;
                     }
                 }
-                InteractionType::Switch | InteractionType::Checkbox | InteractionType::Radio => {
-                    if !element.disabled {
-                        if let Some(_result) = interaction.handle_click(x, y) { // Fixed elements use screen coords
-                            return true;
-                        }
-                    }
-                }
-                _ => {}
             }
-            return true; // Fixed element consumed click
+            _ => {}
         }
+        return true; // Fixed element consumed click
     }
 
     // 然后检查普通元素（使用滚动后的坐标）
-    if let Some(element) = interaction.hit_test(x, actual_y) {
+    if let Some(element) = interaction.hit_test_flow(x, actual_y) {
         let element = element.clone();
         // 任何可点元素都进入按压态（`:active` / `hover-class` 靠它生效），
         // 滚动区域除外 —— 那是拖动，不是按压。

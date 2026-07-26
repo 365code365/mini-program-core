@@ -101,6 +101,11 @@ struct MiniAppWindow {
     /// 当前页面数据快照。逻辑层 setData 之后才重新取，避免每帧一次全量 JSON 往返。
     page_data: std::sync::Arc<serde_json::Value>,
     page_data_dirty: bool,
+    /// `<picker>` 弹出的底部选择面板（微信里是原生浮层）。None 表示当前没有面板。
+    picker_sheet: Option<picker_sheet::PickerSheetState>,
+    /// 覆盖层画布上真正画过的物理行区间。`None` = 全透明（上屏可整层跳过）。
+    /// 只在覆盖层重绘那一帧重算，其余帧复用。
+    fixed_rows: Option<(u32, u32)>,
 }
 
 impl MiniAppWindow {
@@ -196,6 +201,7 @@ impl MiniAppWindow {
             pull_refreshing: false,
             page_data: std::sync::Arc::new(json!({})),
             page_data_dirty: true,
+            picker_sheet: None,
         };
         
         window.navigate_to(&first_page, HashMap::new())?;
@@ -235,6 +241,8 @@ impl MiniAppWindow {
             || self.toast.as_ref().map(|t| t.visible).unwrap_or(false)
             || self.loading.as_ref().map(|l| l.visible).unwrap_or(false)
             || self.modal.as_ref().map(|m| m.visible).unwrap_or(false)
+            // picker 面板入场/退场动画期间要连续出帧
+            || self.picker_sheet.as_ref().map(|s| s.animating()).unwrap_or(false)
             || mini_render::renderer::components::has_playing_video()
     }
 
@@ -269,17 +277,17 @@ impl MiniAppWindow {
         if self.scroll.take_pull_trigger() && self.page_enables_pull_down() {
             self.set_pull_refreshing(true);
         }
+        self.reap_picker_sheet();
         if !self.viewport_inside_drawn_band() {
             self.needs_redraw = true;
         }
-        let scrolling = self.scroll.is_animating() || self.scroll.is_dragging;
+        // 页面滚动不进 structural（理由见 RedrawRequested 里的同名判断）
         let sv_scroll = self.interaction.scroll_controllers.values().any(|c| c.is_animating() || c.is_dragging);
         let css_anim = self.renderer.as_ref().map(|r| r.has_active_animations()).unwrap_or(false);
         let structural = self.needs_redraw
             || mini_render::renderer::components::has_playing_video()
             || sv_scroll
             || self.interaction.has_focused_input()
-            || scrolling
             || mini_render::renderer::components::swiper_needs_frame();
         self.render_frame_if_needed(structural, css_anim);
     }
@@ -665,6 +673,7 @@ impl MiniAppWindow {
         let page = match self.page_stack.last() { Some(p) => p, None => return };
         let has_tabbar = self.is_tabbar_page(&page.path);
         let (toast_state, loading_state, modal_state) = (self.toast.clone(), self.loading.clone(), self.modal.clone());
+        let picker_state = self.picker_sheet.clone();
         
         if let (Some(window), Some(surface)) = (&self.window, &mut self.surface) {
             let size = window.inner_size();
@@ -687,6 +696,10 @@ impl MiniAppWindow {
                     }
                     render_ui_overlay(&mut buffer, size.width, size.height, self.scale_factor as f32, self.last_frame,
                         &toast_state, &loading_state, &modal_state, self.text_renderer.as_deref());
+                    // picker 面板在所有覆盖层之上
+                    if let Some(sheet) = &picker_state {
+                        picker_sheet::render(&mut buffer, size.width, size.height, self.scale_factor as f32, sheet, self.text_renderer.as_deref());
+                    }
                     buffer.present().ok();
                 }
             }
@@ -694,8 +707,11 @@ impl MiniAppWindow {
     }
     
     fn handle_click(&mut self, x: f32, y: f32) {
+        if self.picker_sheet.as_ref().map(|s| s.visible).unwrap_or(false) { return; }
         if self.modal.as_ref().map(|m| m.visible).unwrap_or(false) { self.handle_modal_click(x, y); return; }
         if self.loading.as_ref().map(|l| l.visible).unwrap_or(false) { return; }
+        // 点在 picker 上：弹出选择面板，不再走普通内容点击
+        if self.open_picker_if_hit(x, y) { return; }
         
         let page = match self.page_stack.last() { Some(p) => p, None => return };
         let has_tabbar = self.is_tabbar_page(&page.path);
@@ -747,6 +763,92 @@ impl MiniAppWindow {
     }
     
     fn handle_modal_click(&mut self, x: f32, y: f32) { self.handle_modal_release(x, y); }
+
+    /// 点击落在某个 `<picker>` 上时弹出底部选择面板。返回是否弹出了面板。
+    fn open_picker_if_hit(&mut self, x: f32, y: f32) -> bool {
+        let scroll = self.scroll.get_position();
+        let on_fixed_layer = self.renderer.as_ref().map(|r| r.fixed_layer_hit(x, y)).unwrap_or(false);
+        let binding = self.renderer.as_ref().and_then(|r| {
+            // 覆盖层上的 picker 用视口坐标；正常流的用内容坐标（y + 滚动量）
+            r.picker_hit(x, y, true)
+                .or_else(|| if on_fixed_layer { None } else { r.picker_hit(x, y + scroll, false) })
+                .cloned()
+        });
+        let Some(binding) = binding else {
+            if std::env::var("MINI_PICKER_LOG").is_ok() {
+                if let Some(r) = &self.renderer {
+                    eprintln!("PICKER miss @({},{}) scroll={} regions={:?}", x, y, scroll,
+                        r.picker_regions().iter().map(|p| (p.id.clone(), p.bounds)).collect::<Vec<_>>());
+                }
+            }
+            return false;
+        };
+        println!("👆 picker -> 打开选择面板 mode={}", binding.mode);
+        let sheet = picker_sheet::build(&binding);
+        self.picker_sheet = Some(sheet);
+        self.needs_redraw = true;
+        if let Some(w) = &self.window { w.request_redraw(); }
+        true
+    }
+
+    /// 面板可见时的按下：记录按压的头部按钮以给出反馈。返回是否消费了事件。
+    fn handle_picker_sheet_press(&mut self, x: f32, y: f32) -> bool {
+        let Some(sheet) = &mut self.picker_sheet else { return false };
+        if !sheet.visible { return false; }
+        let hit = picker_sheet::hit_test(sheet, x, y);
+        sheet.pressed = match hit {
+            picker_sheet::SheetHit::Cancel | picker_sheet::SheetHit::Confirm => Some(hit),
+            _ => None,
+        };
+        self.needs_redraw = true;
+        if let Some(w) = &self.window { w.request_redraw(); }
+        true
+    }
+
+    /// 面板可见时的抬手：确定/取消/选项滚动/点遮罩关闭。返回是否消费了事件。
+    fn handle_picker_sheet_release(&mut self, x: f32, y: f32) -> bool {
+        let Some(sheet) = &mut self.picker_sheet else { return false };
+        if !sheet.visible { return false; }
+        sheet.pressed = None;
+        // 退场动画进行中时，只吞事件不再响应
+        if sheet.closing {
+            return true;
+        }
+        let hit = picker_sheet::hit_test(sheet, x, y);
+        match hit {
+            picker_sheet::SheetHit::Confirm => {
+                let value = sheet.change_value();
+                let handler = sheet.handler.clone();
+                let labels = sheet.picked_labels().join(" ");
+                sheet.begin_close();
+                if let Some(handler) = handler {
+                    println!("👆 picker 确定 -> {} value={} ({})", handler, value, labels);
+                    let code = format!("__callPageMethod('{}', {{ detail: {{ value: {} }} }})", handler, value);
+                    self.app.eval(&code).ok();
+                }
+            }
+            picker_sheet::SheetHit::Cancel | picker_sheet::SheetHit::Mask => {
+                sheet.begin_close();
+            }
+            picker_sheet::SheetHit::Item { col, delta } => {
+                sheet.move_selection(col, delta);
+                if delta != 0 {
+                    picker_sheet::relink_region(sheet, col);
+                }
+            }
+        }
+        self.needs_redraw = true;
+        if let Some(w) = &self.window { w.request_redraw(); }
+        true
+    }
+
+    /// 退场动画走完后丢弃面板
+    fn reap_picker_sheet(&mut self) {
+        if self.picker_sheet.as_ref().map(|s| s.finished_closing()).unwrap_or(false) {
+            self.picker_sheet = None;
+            self.needs_redraw = true;
+        }
+    }
     
     fn process_navigation(&mut self) {
         if let Some(nav) = self.pending_navigation.take() {
@@ -885,6 +987,8 @@ impl ApplicationHandler for MiniAppWindow {
                     self.click_start_pos = self.mouse_pos;
                     self.click_start_time = Instant::now();
                     
+                    // picker 面板在最上层，先于弹窗/页面吃事件
+                    if self.handle_picker_sheet_press(x, y) { return; }
                     if self.modal.as_ref().map(|m| m.visible).unwrap_or(false) { self.handle_modal_press(x, y); return; }
                     if self.loading.as_ref().map(|l| l.visible).unwrap_or(false) { return; }
                     
@@ -970,6 +1074,8 @@ impl ApplicationHandler for MiniAppWindow {
                     }
                 } else {
                     // Released
+                    // picker 面板在最上层，先于弹窗/页面吃事件
+                    if self.handle_picker_sheet_release(x, y) { return; }
                     if self.modal.as_ref().map(|m| m.visible && m.pressed_button.is_some()).unwrap_or(false) {
                         self.handle_modal_release(x, y);
                         return;
@@ -1043,6 +1149,7 @@ impl ApplicationHandler for MiniAppWindow {
                     self.set_pull_refreshing(true);
                 }
                 self.process_navigation();
+                self.reap_picker_sheet();
                 // 不变量：上屏要用的那段画布必须是已经画过的。
                 // 页面画布只画「视口 ± 裁剪余量」，所以滚动出这条带就必须重画，
                 // 否则上屏取到没画过的区域（表现为滑动时一片空白，停下才出现内容）。
@@ -1055,7 +1162,13 @@ impl ApplicationHandler for MiniAppWindow {
                     self.needs_redraw = true;
                 }
                 
-                let scrolling = self.scroll.is_animating() || self.scroll.is_dragging;
+                // 页面级滚动**不进** structural：整页画布用内容坐标，滚动只是让 present()
+                // 按新偏移取不同切片（present 每帧都会跑）。只有滚出「已绘制条带」时，
+                // 上面的 viewport_inside_drawn_band 才置 needs_redraw 触发一次重绘。
+                // 从前把 `self.scroll.is_animating()||is_dragging` 也算进 structural，
+                // 于是滚动的每一帧都整条带重画（6~7ms），刚好卡在 144Hz 的 6.9ms 预算边缘，
+                // 时不时超一点就丢帧 —— 这正是「滑动像抖动、高刷没体现」的根因。
+                // scroll-view 内滚动仍要重画：它的内容是按自身偏移画进整页画布的，没有独立切片。
                 let sv_scroll = self.interaction.scroll_controllers.values().any(|c| c.is_animating() || c.is_dragging);
                 let css_anim = self.renderer.as_ref().map(|r| r.has_active_animations()).unwrap_or(false);
                 let t_logic = frame_begin.elapsed();
@@ -1065,7 +1178,6 @@ impl ApplicationHandler for MiniAppWindow {
                     || mini_render::renderer::components::has_playing_video()
                     || sv_scroll
                     || self.interaction.has_focused_input()
-                    || scrolling
                     || swiper_frame;
                 self.render_frame_if_needed(structural, css_anim);
                 let t_render = frame_begin.elapsed();
@@ -1181,7 +1293,7 @@ impl MiniAppWindow {
     /// 这是「窗体是否忠实还原小程序」的可验证入口 —— 页面加载、样式合并、
     /// 自定义 tabBar、fixed 覆盖层、Toast/Modal 外壳、像素合成顺序都与真实运行一致，
     /// 因此产出的 PNG 可以直接和编译出的 H5 截图做像素级对比。
-    fn snapshot_all(&mut self, out_dir: &std::path::Path, scale: f64, time: Option<f32>, settle: Option<f32>, only: Option<&str>, scroll: f32, evals: &[String], frames: u32, click: Option<(f32, f32)>) -> Result<usize, String> {
+    fn snapshot_all(&mut self, out_dir: &std::path::Path, scale: f64, time: Option<f32>, settle: Option<f32>, only: Option<&str>, scroll: f32, evals: &[String], frames: u32, click: Option<(f32, f32)>, press: Option<(f32, f32)>) -> Result<usize, String> {
         self.setup_canvas(scale);
         let routes: Vec<String> = match only {
             Some(route) => vec![route.trim_start_matches('/').to_string()],
@@ -1290,6 +1402,20 @@ impl MiniAppWindow {
             }
             // `--click x,y`：走**与交互窗体完全相同的点击链路**（命中测试、覆盖层拦截、
             // 事件冒泡、导航），用于脚本化验证「弹窗不穿透」这类交互语义。
+            // `--press x,y`：只按下不松手，用于验证按压态样式与过渡
+            if let Some((px, py)) = press {
+                self.render(); // 命中测试依赖上一帧的交互元素注册
+                let ts = Instant::now().elapsed().as_millis() as u64;
+                app_window::events::mouse::handle_mouse_pressed(
+                    px,
+                    py,
+                    &mut self.scroll,
+                    &mut self.interaction,
+                    ts,
+                );
+                self.needs_redraw = true;
+                self.render();
+            }
             if let Some((cx, cy)) = click {
                 // 命中测试依赖上一帧注册的事件绑定，先确保出过一帧
                 // （真实窗体里也不可能在首帧之前点击）
@@ -1348,6 +1474,9 @@ impl MiniAppWindow {
                 &mut buffer, pw, ph, scale as f32, self.last_frame,
                 &self.toast, &self.loading, &self.modal, self.text_renderer.as_deref(),
             );
+            if let Some(sheet) = &self.picker_sheet {
+                picker_sheet::render(&mut buffer, pw, ph, scale as f32, sheet, self.text_renderer.as_deref());
+            }
 
             let mut rgba = Vec::with_capacity(buffer.len() * 4);
             for px in &buffer {
@@ -1377,6 +1506,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut settle: Option<f32> = None;
     let mut frames = 0u32;
     let mut click: Option<(f32, f32)> = None;
+    let mut press: Option<(f32, f32)> = None;
     let mut route: Option<String> = None;
     let mut scroll = 0.0f32;
     let mut evals: Vec<String> = Vec::new();
@@ -1388,6 +1518,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "--time" => anim_time = it.next().and_then(|v| v.parse().ok()),
             "--settle" => settle = it.next().and_then(|v| v.parse().ok()),
             "--frames" => frames = it.next().and_then(|v| v.parse().ok()).unwrap_or(0),
+            "--press" => {
+                press = it.next().and_then(|v| {
+                    let (a, b) = v.split_once(',')?;
+                    Some((a.trim().parse().ok()?, b.trim().parse().ok()?))
+                });
+            }
             "--click" => {
                 click = it.next().and_then(|v| {
                     let (a, b) = v.split_once(',')?;
@@ -1403,6 +1539,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("  --settle <秒>  真实等待该时长，让 setTimeout/setInterval、延时弹层、");
                 println!("  --frames <N>   按刷新率跑 N 个与交互窗体同逻辑的帧再截图（验证动画/局部重绘）");
                 println!("  --click <x,y>  在该逻辑坐标模拟一次点击，走真实命中/冒泡/导航链路");
+                println!("  --press <x,y>  在该坐标按下并保持（验证 :active / hover-class 与过渡）");
                 println!("                 轮播自动播放跑起来（要「和真机一样」的画面时用这个）");
                 println!("  --route <页面路径>   --scroll <像素>");
                 println!("  --eval <JS>    可重复；在 --settle 之后依次执行，每段跑完导航");
@@ -1428,7 +1565,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 快照模式：不开窗口，直接把整帧写成 PNG（用于与 H5 做像素对比）
     if let Some(out) = snapshot {
-        let count = window.snapshot_all(&out, scale, anim_time, settle, route.as_deref(), scroll, &evals, frames, click)?;
+        let count = window.snapshot_all(&out, scale, anim_time, settle, route.as_deref(), scroll, &evals, frames, click, press)?;
         println!("\n✅ 快照完成：{} 个页面 -> {}", count, out.display());
         return Ok(());
     }

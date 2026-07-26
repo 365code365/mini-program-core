@@ -175,6 +175,14 @@ cargo run --release --bin mini-app-window -- sample-app --snapshot target/t \
 
 > 有一条不变量必须守住：**上屏用的滚动偏移，必须等于画布上那条带被绘制时的偏移**。页面画布只画「视口 ± 裁剪余量」，偏移变了却没重画，上屏就会取到没画过的区域 —— 表现为滑动时一片空白、停下来内容才出现。所以帧循环里按位置比对来决定重绘，而不是依赖每条输入路径都记得置脏标记（漏一处就会露白）。
 
+> 反过来，**页面滚动本身不该触发重绘**。页面画布是整页高的、用内容坐标，滚动只是让上屏按新偏移取不同的切片（上屏每帧都做）。所以「正在滚动」不进重绘闸门 —— 只有滚出已绘制条带那一刻才补画一次。曾经把「正在滚动/惯性中」也算进闸门，于是滚动的每一帧都整条带重画（约 6~7ms），刚好卡在 144Hz 的 6.9ms 预算边缘，偶尔超一点就丢帧 —— 这正是「滑动像抖动、高刷没体现出来」的根因。改掉之后滚动的绝大多数帧只花上屏的拷贝时间（约 2~3ms），只有跨条带的那一帧才有一次整页重绘的尖峰。`scroll-view` 内滚动仍要重绘（它的内容按自身偏移画进整页画布，没有独立切片）。
+
+### picker 选择器
+
+`<picker>` 不是页面里的一段 DOM，而是宿主弹出的底部浮层（和微信一致）：点一下弹出、选好按「确定」才回调 `bindchange`，点「取消」或遮罩直接关。渲染层只负责把「这里有个 picker、它有哪些选项、当前选到第几个、变更回调叫什么」登记下来（`bindchange` 本身不是可命中事件，靠事件绑定表找不到它），面板的状态机 / 绘制 / 命中在宿主侧。
+
+五种 mode 都支持：`selector`（单列下标）、`multiSelector`（多列下标数组）、`time`（时/分）、`date`（年/月/日，`fields` 控制到哪一级、`start`/`end` 限定年份、换月自动重算天数含闰年）、`region`（省/市/区联动，内置一份行政区划表）。面板入场/退场是 ease-out 位移动画，滚轮离中心越远越淡。编译出的 H5 有一份同构实现（底部面板 + scroll-snap 滚轮），`detail.value` 的格式与原生端逐一对齐。
+
 ### 双端一致性是被量化验证的
 
 引擎自带对比工具：同一份小程序源码，一边走原生渲染出 PNG，一边编译成 HTML 用 Chrome 截图，逐像素比对并产出报告。
@@ -285,7 +293,7 @@ cargo run --example video_player    # 独立视频播放窗口（自动循环 + 
 cargo run --bin mini-app-window     # 窗口应用（加载 sample-app）
 cargo run --bin mini-launcher       # 小程序启动器（扫描 sample 目录）
 
-# 4) 测试（217 个用例）
+# 4) 测试（223 个用例）
 cargo test
 ```
 
@@ -485,6 +493,9 @@ ctx.draw();
 - **布局**：`display` `flex-*` `justify-content` `align-*` `width/height/min/max` `padding/margin`（1–4 值简写、`auto` 居中）`position` `top/right/bottom/left` `gap`。
 - **外观/文本/变换**：`background` `color` `border`（宽度精确、抗锯齿）`border-radius`（四角）`box-shadow` `opacity` `overflow`；`font-size` `font-weight` `text-align` `text-decoration` `line-height` `letter-spacing` `white-space` `text-overflow`；`transform`（translate/scale/rotate）`z-index`。
 - **文本换行**：`display:block` / `width:100%` 的文本按容器宽度自动换行，盒子高度随行数增长（二次布局修正）。
+- **简写 vs 细项**：级联把所有中选规则合并成一张表，简写与细项的先后关系在这一步就没了。落地时因此按固定档位排序（`border` 这类全能简写 → `border-color` 这类边/方向简写 → 细项），保证细项永远覆盖简写。
+
+> 这里曾经藏着一个**渲染结果随机**的 bug：`.dot{border:2rpx solid #ccc}` 加 `.dot.on{border-color:#FF6B35}`，合并后表里同时有 `border` 和 `border-color`，而落地是按 HashMap 遍历顺序做的 —— Rust 每个进程一个随机 hash 种子，于是同一份源码**每次运行结果都可能不同**（地址页那个选中圆点时橙时灰）。修掉之后，固定动画时钟下 15 个页面的整帧快照跨进程逐字节稳定，这条也成了双端对比可信的前提。
 
 ---
 
@@ -527,7 +538,24 @@ ctx.draw();
 └─────────────────────────────────────────────────┘
 ```
 
-模块按职责细分，便于扩展维护：`parser/`（wxml/wxss/expr/template）、`renderer/`（wxml_renderer + `components/*` 每组件独立文件 + `style_parse` CSS 取值解析）、`layout/`、`js/`（runtime/api/bridge）、`ui/`（交互/滚动）、`runtime/`、`bin/`（各可执行程序）。
+模块按职责细分，便于扩展维护：`parser/`（wxml/wxss/expr/template）、`renderer/`（`wxml_renderer/` + `components/*` 每组件独立文件 + `style_parse` CSS 取值解析）、`layout/`、`js/`（runtime/api/bridge）、`ui/`（交互/滚动）、`runtime/`、`bin/`（各可执行程序）。
+
+渲染器本身按单一职责拆成一组模块（原先是一个 3000 行的单文件，改动一处要在无关代码里翻半天）：
+
+| 模块 | 职责 |
+|------|------|
+| `mod.rs` | 类型定义（事件绑定 / picker 登记 / 布局缓存）与渲染器构造 |
+| `entry.rs` | 对外渲染入口：各入口只差「给不给交互上下文、给不给滚动偏移」 |
+| `layout.rs` | 建树 + 样式解析 + flexbox 求解 + 换行高度修正 + 按数据指纹缓存 |
+| `draw.rs` | 视口裁剪、绘制分派，以及不带交互的绘制路径 |
+| `draw_interactive.rs` | 页面主路径：边画边登记交互（顶层与子节点两个入口） |
+| `animation.rs` | `@keyframes` / `transition` / `wx.createAnimation` 求值与 transform 合成、损伤区 |
+| `pressed.rs` | 按压态（`:active` / `hover-class`）与 switch 拨动的进度与烘焙 |
+| `fixed_layer.rs` | `position: fixed` 覆盖层（独立画布 + 视口坐标） |
+| `hit_test.rs` | 事件绑定表、命中与冒泡（覆盖层与正常流分开）、picker 可点区域 |
+| `interactions.rs` | 有内部状态的元素登记（勾选/开关/滑块/输入/滚动区/按压 view） |
+
+拆分是**纯代码搬迁**，并且被验证过：拆分前后 15 个页面的整帧快照（固定动画时钟）逐字节相同。
 
 ---
 
@@ -647,7 +675,7 @@ free(buf); mr_canvas_free(c);
 覆盖表达式引擎、WXSS 选择器（含 `var()`/`calc()`）、模板控制流、布局与文本换行、全组件渲染、Canvas 2D、交互、滚动/惯性、页面栈路由、组件模型、CommonJS 模块、Promise、生命周期、事件冒泡等：
 
 ```bash
-cargo test          # 217 个用例
+cargo test          # 223 个用例
 cargo test route    # 路由/页面栈/组件/模块/异步/生命周期
 cargo test canvas   # Canvas 2D 上下文与命令
 cargo test scroll   # 滚动与惯性
@@ -666,7 +694,7 @@ mini-render/
 │   ├── bin/                    # mini-app / mini-app-window / mini-launcher / mini-devserver
 │   ├── js/                     # QuickJS runtime / api（App/Page/Component）/ bridge
 │   ├── parser/                 # wxml / wxss（选择器引擎）/ expr / template
-│   ├── renderer/               # wxml_renderer / components/*（含 style_parse、canvas、video）
+│   ├── renderer/               # wxml_renderer/*（布局/绘制/动画/命中/覆盖层）+ components/*
 │   ├── ui/                     # interaction / scroll_controller / scroll_cache
 │   ├── runtime/                # MiniApp 应用运行时
 │   └── tests/                  # 单元/集成测试
