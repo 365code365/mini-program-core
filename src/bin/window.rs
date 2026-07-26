@@ -63,6 +63,15 @@ struct MiniAppWindow {
     fps_window_start: Instant,
     fps_frames: u32,
     fps_worst_ms: f32,
+    /// 最慢那一帧的分段耗时（逻辑, 渲染, 上屏），单位 ms
+    fps_worst_parts: (f32, f32, f32),
+    /// 上一次 render() 内部分段耗时（页面, fixed 覆盖层, tabBar），单位 ms
+    render_parts: (f32, f32, f32),
+    /// 最慢一帧对应的 render 内部分段
+    fps_worst_render_parts: (f32, f32, f32),
+    /// 当前页面数据快照。逻辑层 setData 之后才重新取，避免每帧一次全量 JSON 往返。
+    page_data: std::sync::Arc<serde_json::Value>,
+    page_data_dirty: bool,
 }
 
 impl MiniAppWindow {
@@ -125,7 +134,10 @@ impl MiniAppWindow {
             renderer: None, tabbar_renderer: None, text_renderer: None, app_wxss,
             page_stack: Vec::new(), pages, app_config, custom_tabbar,
             mouse_pos: (0.0, 0.0), needs_redraw: true, scale_factor: 1.0,
-            scroll: ScrollController::new(CONTENT_HEIGHT as f32, (LOGICAL_HEIGHT - if has_tabbar { tabbar_height() } else { 0 }) as f32),
+            scroll: { let vp = (LOGICAL_HEIGHT - if has_tabbar { tabbar_height() } else { 0 }) as f32;
+                // 初始内容高 = 视口高（max_scroll 为 0）：真实内容高要等第一帧渲染后才知道。
+                // 从前这里塞的是写死的 1500，于是内容不足一屏的页面在首帧前也能拉出 800+ 像素空白。
+                ScrollController::new(vp, vp) },
             last_frame: now, click_start_pos: (0.0, 0.0), click_start_time: now,
             pending_navigation: None, interaction: InteractionManager::new(),
             modifiers: winit::keyboard::ModifiersState::empty(),
@@ -137,6 +149,11 @@ impl MiniAppWindow {
             fps_window_start: now,
             fps_frames: 0,
             fps_worst_ms: 0.0,
+            fps_worst_parts: (0.0, 0.0, 0.0),
+            render_parts: (0.0, 0.0, 0.0),
+            fps_worst_render_parts: (0.0, 0.0, 0.0),
+            page_data: std::sync::Arc::new(json!({})),
+            page_data_dirty: true,
         };
         
         window.navigate_to(&first_page, HashMap::new())?;
@@ -200,9 +217,15 @@ impl MiniAppWindow {
         print_js_output(&self.app);
         
         self.page_stack.push(PageInstance { path: path.to_string(), query, wxml_nodes, stylesheet });
+        // 换页必须重取数据快照：新页面的 onLoad 里可能一次 setData 都没有，
+        // 那样缓存里还是上一页的数据。
+        self.page_data_dirty = true;
         
         let has_tabbar = self.is_tabbar_page(path);
-        self.scroll = ScrollController::new(CONTENT_HEIGHT as f32, (LOGICAL_HEIGHT - if has_tabbar { tabbar_height() } else { 0 }) as f32);
+        self.scroll = { let vp = (LOGICAL_HEIGHT - if has_tabbar { tabbar_height() } else { 0 }) as f32;
+                // 初始内容高 = 视口高（max_scroll 为 0）：真实内容高要等第一帧渲染后才知道。
+                // 从前这里塞的是写死的 1500，于是内容不足一屏的页面在首帧前也能拉出 800+ 像素空白。
+                ScrollController::new(vp, vp) };
         self.needs_redraw = true;
         println!("✅ Page loaded: {}", path);
         Ok(())
@@ -233,9 +256,14 @@ impl MiniAppWindow {
             print_js_output(&self.app);
             
             let has_tabbar = self.is_tabbar_page(&path);
-            self.scroll = ScrollController::new(CONTENT_HEIGHT as f32, (LOGICAL_HEIGHT - if has_tabbar { tabbar_height() } else { 0 }) as f32);
+            self.scroll = { let vp = (LOGICAL_HEIGHT - if has_tabbar { tabbar_height() } else { 0 }) as f32;
+                // 初始内容高 = 视口高（max_scroll 为 0）：真实内容高要等第一帧渲染后才知道。
+                // 从前这里塞的是写死的 1500，于是内容不足一屏的页面在首帧前也能拉出 800+ 像素空白。
+                ScrollController::new(vp, vp) };
             println!("↩️  返回: {}", path);
         }
+        // 恢复的是上一页实例，数据快照要重取（返回后可能一次 setData 都没有）
+        self.page_data_dirty = true;
         self.needs_redraw = true;
         Ok(())
     }
@@ -268,15 +296,40 @@ impl MiniAppWindow {
     }
 
     fn render(&mut self) {
-        let page_data = self.app.eval("__getPageData()").map(|s| serde_json::from_str(&s).unwrap_or(json!({}))).unwrap_or(json!({}));
+        // 页面数据只在逻辑层 setData 之后才会变，所以只有脏了才做这趟
+        // 「JS 侧 JSON.stringify 整份 data → Rust 侧反序列化」往返。
+        // 从前每帧都做一次：动画帧里白付一次全量序列化。
+        if self.app.take_data_dirty() {
+            self.page_data_dirty = true;
+        }
+        if self.page_data_dirty {
+            self.page_data = std::sync::Arc::new(
+                self.app
+                    .eval("__getPageData()")
+                    .map(|s| serde_json::from_str(&s).unwrap_or(json!({})))
+                    .unwrap_or(json!({})),
+            );
+            self.page_data_dirty = false;
+        }
+        // Arc 克隆：只加引用计数，不复制整棵 JSON（渲染期同时要可变借用 canvas/renderer）
+        let page_data = std::sync::Arc::clone(&self.page_data);
+        let page_data = &*page_data;
         let page = match self.page_stack.last() { Some(p) => p, None => return };
         let (current_path, has_tabbar) = (page.path.clone(), self.is_tabbar_page(&page.path));
         let viewport_height = (LOGICAL_HEIGHT - if has_tabbar { tabbar_height() } else { 0 }) as f32;
         let scroll_offset = self.scroll.get_position();
         
+        // 只清理「渲染器实际会画的那条带」：视口 ± 裁剪余量。
+        // 页面画布是整页高的（首页 6870px），每帧全量 clear 白烧几毫秒。
+        let sf = self.scale_factor as f32;
+        let margin = mini_render::renderer::VIEWPORT_CULL_MARGIN_PX;
+        let band_y0 = (scroll_offset * sf - margin).floor() as i32;
+        let band_y1 = (scroll_offset * sf + viewport_height * sf + margin).ceil() as i32;
+
+        let t_render_begin = Instant::now();
         let mut content_height = 0.0f32;
         if let Some(canvas) = &mut self.canvas {
-            canvas.clear(Color::from_hex(0xF5F5F5));
+            canvas.clear_band(band_y0, band_y1, Color::from_hex(0xF5F5F5));
             if let Some(renderer) = &mut self.renderer {
                 content_height = renderer.render_with_scroll_and_viewport(canvas, &page.wxml_nodes, &page_data, &mut self.interaction, scroll_offset, viewport_height);
             }
@@ -289,23 +342,38 @@ impl MiniAppWindow {
                 self.canvas = Some(Canvas::new((LOGICAL_WIDTH as f64 * self.scale_factor) as u32, required_height));
                 if let Some(page) = self.page_stack.last() {
                     if let (Some(canvas), Some(renderer)) = (&mut self.canvas, &mut self.renderer) {
-                        canvas.clear(Color::from_hex(0xF5F5F5));
+                        canvas.clear_band(band_y0, band_y1, Color::from_hex(0xF5F5F5));
                         renderer.render_with_scroll_and_viewport(canvas, &page.wxml_nodes, &page_data, &mut self.interaction, scroll_offset, viewport_height);
                     }
                 }
             }
         }
         
+        let t_page_done = Instant::now();
         if let Some(page) = self.page_stack.last() {
             if let (Some(fc), Some(r)) = (&mut self.fixed_canvas, &mut self.renderer) {
                 fc.clear(Color::new(0, 0, 0, 0));
                 r.render_fixed_elements(fc, &page.wxml_nodes, &page_data, &mut self.interaction, viewport_height);
             }
         }
+        let t_fixed_done = Instant::now();
         
         if has_tabbar {
             if self.is_custom_tabbar() { self.render_custom_tabbar(&current_path); }
             else { self.render_native_tabbar(&current_path); }
+        }
+        self.render_parts = (
+            (t_page_done - t_render_begin).as_secs_f32() * 1000.0,
+            (t_fixed_done - t_page_done).as_secs_f32() * 1000.0,
+            t_fixed_done.elapsed().as_secs_f32() * 1000.0,
+        );
+        if std::env::var("MINI_SCROLL_LOG").is_ok() {
+            eprintln!(
+                "📐 {} 内容高 {:.1} 视口 {:.1} 画布高 {} 滚动 {:.1}/{:.1}",
+                current_path, content_height, viewport_height,
+                self.canvas.as_ref().map(|c| c.height()).unwrap_or(0),
+                self.scroll.get_position(), self.scroll.get_max_scroll()
+            );
         }
     }
     
@@ -529,9 +597,16 @@ impl ApplicationHandler for MiniAppWindow {
                 if let Some(w) = &self.window { w.request_redraw(); }
             }
             
-            WindowEvent::MouseWheel { delta, .. } => {
+            WindowEvent::MouseWheel { delta, phase, .. } => {
                 if evt::handle_mouse_wheel(delta, self.mouse_pos, &mut self.interaction, &mut self.scroll, self.scale_factor) {
                     self.needs_redraw = true;
+                }
+                // 触控板抬手/取消：越界立即回弹（鼠标滚轮没有这个阶段，由控制器的静默计时兜底）
+                if matches!(phase, winit::event::TouchPhase::Ended | winit::event::TouchPhase::Cancelled) {
+                    if self.scroll.end_wheel_gesture() { self.needs_redraw = true; }
+                    for c in self.interaction.scroll_controllers.values_mut() {
+                        c.end_wheel_gesture();
+                    }
                 }
                 if let Some(w) = &self.window { w.request_redraw(); }
             }
@@ -643,6 +718,7 @@ impl ApplicationHandler for MiniAppWindow {
                 // 纯 JS 驱动的页面（秒杀倒计时、轮询刷新）会一直显示旧值。
                 if self.app.take_data_dirty() {
                     self.needs_redraw = true;
+                    self.page_data_dirty = true;
                 }
                 
                 if evt::process_ui_events(&mut self.app, &mut self.toast, &mut self.loading, &mut self.modal) { self.needs_redraw = true; }
@@ -663,11 +739,24 @@ impl ApplicationHandler for MiniAppWindow {
                 let scrolling = self.scroll.is_animating() || self.scroll.is_dragging;
                 let sv_scroll = self.interaction.scroll_controllers.values().any(|c| c.is_animating() || c.is_dragging);
                 let css_anim = self.renderer.as_ref().map(|r| r.has_active_animations()).unwrap_or(false);
+                let t_logic = frame_begin.elapsed();
                 if self.needs_redraw || mini_render::renderer::components::has_playing_video() || sv_scroll || self.interaction.has_focused_input() || scrolling || css_anim {
                     self.render();
                     self.needs_redraw = false;
                 }
+                let t_render = frame_begin.elapsed();
                 self.present();
+                if self.fps_log {
+                    let total = frame_begin.elapsed();
+                    if total.as_secs_f32() * 1000.0 > self.fps_worst_ms {
+                        self.fps_worst_parts = (
+                            t_logic.as_secs_f32() * 1000.0,
+                            (t_render - t_logic).as_secs_f32() * 1000.0,
+                            (total - t_render).as_secs_f32() * 1000.0,
+                        );
+                        self.fps_worst_render_parts = self.render_parts;
+                    }
+                }
                 self.last_present = Instant::now();
                 // 本帧真正花在「逻辑 + 渲染 + 上屏」上的时间（不含为限速而睡的时间）
                 let work_ms = frame_begin.elapsed().as_secs_f32() * 1000.0;
@@ -693,15 +782,20 @@ impl ApplicationHandler for MiniAppWindow {
                     self.fps_frames += 1;
                     self.fps_worst_ms = self.fps_worst_ms.max(ms);
                     if self.fps_window_start.elapsed().as_secs_f32() >= 1.0 {
+                        let (l, r, p) = self.fps_worst_parts;
+                        let (rp, rf, rt) = self.fps_worst_render_parts;
                         println!(
-                            "📊 {} 帧/秒，最慢一帧 {:.1}ms{}",
+                            "📊 {} 帧/秒，最慢一帧 {:.1}ms（逻辑 {:.1} 渲染 {:.1}[页面 {:.1} 覆盖层 {:.1} tabBar {:.1}] 上屏 {:.1}）{}",
                             self.fps_frames,
                             self.fps_worst_ms,
+                            l, r, rp, rf, rt, p,
                             if self.is_animating() { "（动画中）" } else { "" }
                         );
                         self.fps_window_start = Instant::now();
                         self.fps_frames = 0;
                         self.fps_worst_ms = 0.0;
+                        self.fps_worst_parts = (0.0, 0.0, 0.0);
+                        self.fps_worst_render_parts = (0.0, 0.0, 0.0);
                     }
                 }
                 // 后续帧的调度交给 about_to_wait：动画中按刷新率 WaitUntil，空闲则 Wait 休眠。
@@ -809,6 +903,11 @@ impl MiniAppWindow {
                     self.process_navigation();
                     print_js_output(&self.app);
                 }
+            }
+            // 真实内容高要渲染一次才知道，而 set_position 会按 max_scroll 夹紧 ——
+            // 不先渲染的话 `--scroll` 会被夹到初始上限，深位置截图全都截到同一处。
+            if scroll > 0.0 {
+                self.render();
             }
             self.scroll.set_position(scroll);
             self.app.update().ok();

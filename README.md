@@ -68,22 +68,41 @@ page.js ────┘  ② 逻辑层：QuickJS 执行 App/Page/Component，set
 
 ### 帧成本是怎么压下来的
 
-纯软件光栅意味着每一帧的每个像素都由 CPU 写出，所以性能全靠减少"无用像素写入"和"无用内存拷贝"。四条优化把商城首页从 **49.6ms/帧压到 6.1ms/帧**（375×667 @2x，750×1334 物理像素）：
+纯软件光栅意味着每一帧的每个像素都由 CPU 写出，所以性能全靠减少"无用像素写入"和"无用内存拷贝"。商城首页从 **49.6ms/帧** 压到 **6ms 级**（375×667 @2x，750×1334 物理像素），带全屏遮罩弹层的重状态下仍稳定 **~89 FPS**。
+
+绘制侧：
 
 | 优化 | 做法 | 为什么有效 |
 |------|------|-----------|
-| **矩形行填充** | `fill_rect` 先把裁剪矩形并入范围，不透明色直接 `pixels[start..end].fill(..)` 整行写 | 原来逐像素 `set_pixel`，每个像素都重做一次越界检查 + 裁剪栈判断。背景/卡片/分割线占满屏面积，这一步收益最大 |
-| **图片缩放缓存** | `draw_image_cached` 缓存"某张图缩放到某尺寸"的结果，key 含目标整数几何 + 亚像素偏移 | 长列表里同一封面每帧重复做双线性重采样。缓存上限 192 条，超 4M 像素的大图不缓存（内存换不回时间） |
-| **视口裁剪** | `cull_outside_viewport` 横纵双向剔除屏幕外节点（留 400 物理 px 余量；带 transform/animation 的节点不剔） | 滚动页面里大部分节点在视口外，此前照样跑完整绘制流程 |
-| **绘制期浅拷贝** | `shallow_for_draw` 只复制节点自身样式/属性，不复制子树 | 原先绘制每个节点前 `node.clone()`，等于把整棵子树复制一遍，深度越大越贵 |
+| **矩形行填充** | `fill_rect` 先把裁剪矩形并入范围，不透明色直接 `pixels[start..end].fill(..)` 整行写；半透明色把 alpha 系数提到循环外只做整数乘加 | 原来逐像素 `set_pixel`，每个像素都重做越界检查 + 裁剪矩形的浮点截断。背景/卡片/全屏遮罩占满屏面积，这一步收益最大 |
+| **视口裁剪** | `cull_outside_viewport` 横纵双向剔除屏幕外节点（余量 `VIEWPORT_CULL_MARGIN_PX`；带 transform/animation 的节点不剔） | 滚动页面里大部分节点在视口外，此前照样跑完整绘制流程 |
+| **只清可见带** | 宿主用 `Canvas::clear_band` 只清「视口 ± 裁剪余量」 | 页面画布是整页高的（首页 750×6870），每帧全量 `clear` 相当于 20MB memset |
+| **图片两级过滤** | 缩小时先按目标尺寸做一次面积（盒式）降采样并缓存（mip），逐帧只在这张小图上做双线性；再用 `draw_image_cached` 缓存最终缩放结果 | 纯双线性只看 4 个邻域，缩小超过 1 倍就漏采样，照片边缘明显锯齿。而面积滤波很贵：轮播平移时亚像素偏移每帧都变，不分两级的话按帧重算（实测 135 → 58 FPS） |
+| **行级 blit** | 图片贴回走 `blend_row`，越界与裁剪按行判一次 | 大面积逐像素 blit 里，边界判断本身就是主要开销 |
+| **绘制期浅拷贝** | `shallow_for_draw` 只复制节点自身样式/属性，不复制子树 | 原先绘制每个节点前 `node.clone()`，等于把整棵子树复制一遍 |
+
+样式与数据侧（一次 `setData` 的重建成本 **32ms → 4ms**）：
+
+| 优化 | 做法 | 为什么有效 |
+|------|------|-----------|
+| **选择器解析期编译** | `StyleRule` 持有编译好的复合选择器，匹配时直接用 | 匹配是「每个节点 × 每条规则」的二重循环，从前在里面现场分词解析选择器字符串 —— 一次全页重建十万次。建树+样式 **28.7ms → 2.9ms** |
+| **setData 脏标记** | `__native_page_update` 是原生回调，只置一个 AtomicBool | 从前 JS 侧把整份 data `JSON.stringify` 塞进日志缓冲，没有任何消费方 —— 每次 setData 白付一次全量序列化 |
+| **数据快照缓存** | 页面数据存 `Arc<Value>`，只在脏了才做一次 JS→Rust 的 JSON 往返 | 从前每帧都取一次整份页面数据 |
+| **上屏零边界检查** | `present_to_buffer` 逐行用切片 `zip` 转换 | 整屏 100 万像素的索引访问，边界检查占比可观 |
 
 配套改动：`load_image` 返回 `Arc<ImageData>` 且像素数据是 `Arc<Vec<u8>>`（GIF 每帧不再深拷贝整张 RGBA）；组件 id 与图片 cache key 去掉浮点格式化。
 
-帧调度上，`RedrawRequested` 结束时若 `is_animating()` 就立刻自续一次 `request_redraw()`，动画期实测 **47 → 72~78 FPS**；空闲时仍回到 `Wait` 休眠，不占核。
+帧调度上，`RedrawRequested` 结束时若 `is_animating()` 就**睡到下一个刷新时点**再自续一次 `request_redraw()`：只靠事件循环的定时唤醒每周期要多绕一圈（144Hz 屏上只有 ~47FPS），完全不限速又会以 2~4 倍刷新率空转烧核。时点必须从**帧开始**算 —— 从 present 之后算会多出一整个渲染耗时（16.7ms 的节拍变成 21ms，只剩 46FPS）。空闲时回到 `Wait` 休眠。
+
+逻辑层的 `setData` 必须能自己触发重绘：定时器/网络回调改数据时页面上可能一个 CSS 动画都没有，没有脏标记的话秒杀倒计时会一直显示旧值。
 
 ```bash
-# 打开逐秒帧率日志：「N 帧/秒，最慢一帧 X ms」
+# 逐秒帧率与帧内分段：「N 帧/秒，最慢一帧 X ms（逻辑 / 渲染[页面 覆盖层 tabBar] / 上屏）」
 MINI_FPS=1 cargo run --release --bin mini-app-window -- sample-app
+# 布局重建分段：「模板求值 / 建树+样式 / 布局 / 换行修正」
+MINI_LAYOUT_LOG=1 cargo run --release --bin mini-app-window -- sample-app
+# 滚动诊断：内容高 / 视口 / 画布高 / 当前位置与上限
+MINI_SCROLL_LOG=1 cargo run --release --bin mini-app-window -- sample-app
 ```
 
 各页单帧耗时（优化前 → 后）：
@@ -97,9 +116,18 @@ MINI_FPS=1 cargo run --release --bin mini-app-window -- sample-app
 | `news-app` 首页 | 24.3ms | **~11ms** |
 | `news-app` 详情 | 13.0ms | **~5ms** |
 
-`news-app` 首页仍偏高：焦点图上的半透明浮层走的是逐像素 Alpha 混合路径，无法用行填充直写。
+> 明确没做的事：不引入 GPU（项目定位就是"给我一块像素缓冲我就能画"），不做 dirty-rect 与元素级位图缓存（改动面过大、与动画/裁剪栈交互复杂）。抗锯齿也**没有**换成子采样：圆和圆角的覆盖率用的是有符号距离的线性斜坡，对曲率半径远大于像素的边界，面积占比在法线方向本来就是线性的 —— 换成 4×4 子采样反而量化成 1/16 档，实测与 Chrome 的差异从 4.7% 涨到 5.3%。
 
-> 明确没做的事：不引入 GPU（项目定位就是"给我一块像素缓冲我就能画"），不做 dirty-rect 与元素级位图缓存（改动面过大、与动画/裁剪栈交互复杂）。
+### 滚动手感是按 iOS/微信那套做的
+
+滚动不是"位置加减再夹到边界"：
+
+- **越界走橡皮筋**：超出边界的位移按 `1 - 1/(x·0.55/d + 1)` 衰减（`d` 取真实视口尺寸，页面内的小 `scroll-view` 用自己的高度而不是整屏高）。
+- **手势结束回弹**：触控板给 `TouchPhase::Ended`（winit 把 macOS 的动量阶段也映射进来），据此立刻回弹；鼠标滚轮没有抬手事件，由控制器的静默计时兜底。
+- **拖拽与滚轮同一套语义**：滚轮/触控板维护一个"未夹紧"的累计位置，再经同一个橡皮筋映射成显示位置，所以两种输入的手感一致。
+- **内容变短要收回位置**：换页或列表收起后如果位置还停在原处，会停在画布之外的空白上，而且因为"不越界"永远不会触发回弹。
+
+窗体在拿到第一帧的真实内容高之前，滚动上限是 0（不是某个写死的常数）—— 否则内容不足一屏的页面在首帧前就能被拉出几百像素空白。
 
 ### 双端一致性是被量化验证的
 
@@ -113,7 +141,7 @@ cargo run --example compare -- --all --out target/render-compare
 更进一步，**被对比的可以是窗体宿主真实出的那一帧**：窗体带无头快照模式，走与交互运行完全相同的管线（页面加载、`app.wxss` 合并、自定义 tabBar、fixed 覆盖层、Toast/Modal、像素合成顺序）输出整帧 PNG，再交给对比工具。这样报告衡量的是「用户真正看到的画面 vs H5」，而不是示例里另写一份渲染。
 
 ```bash
-# 整帧快照：可指定动画时刻 / 滚动位置 / 注入交互后的状态
+# 整帧快照：可指定动画时刻 / 真实等待 / 滚动位置 / 注入交互后的状态
 cargo run --release --bin mini-app-window -- sample-app --snapshot target/window-snap
 cargo run --release --bin mini-app-window -- sample-app --snapshot target/s \
     --route pages/components/components --scroll 760 --time 0.45
@@ -124,7 +152,20 @@ cargo run --release --bin mini-app-window -- sample-app --snapshot target/s \
 cargo run --release --example compare -- --all --rust-from target/window-snap --out target/window-compare
 ```
 
-当前实测（375×667 @2x，窗体整帧 vs Chrome）：`sample-app` 15 页整体差异 **4.7%**（单页 1.5%~7.8%），`news-app` 6 页 **6.5%**，剩余差异集中在大图缩放插值与粗体字形/亚像素文本位置。
+`--time` 与 `--settle` 是两件事，别混用：
+
+- `--time <秒>`：把 CSS 动画时钟拨到某个时刻求值，**不消耗真实时间**。双端对比走这条 —— H5 侧为了截图确定性刻意禁用了页面脚本，那边的 JS 状态也不会往前跑。
+- `--settle <秒>`：真实等待，让 `setInterval`/`setTimeout`、延时弹层、轮播自动播放跑起来。要「和真机一样」的画面时用它。`--eval` 在 `--settle` 之后执行，所以脚本里"关掉优惠券弹层"这种操作不会被随后的 setTimeout 又打开。
+
+```bash
+# 真实运行 4 秒后截图：新人券已弹出、秒杀倒计时已走到 01:59:56
+cargo run --release --bin mini-app-window -- sample-app --snapshot target/real \
+    --route pages/index/index --settle 4 --time 4
+```
+
+含 `<canvas>` 的页面是个例外：canvas 的画面只能由 JS 画出来，静态 HTML 里是一块空白，所以对比工具对这类页面保留脚本 —— 否则等于拿"空画布"当参考基准，原生端画对了反而会让差异变大。
+
+当前实测（375×667 @2x，窗体整帧 vs Chrome）：`sample-app` 15 页整体差异 **4.66%**（单页 1.5%~8.0%），`news-app` 6 页 **6.47%**，剩余差异集中在粗体字形与亚像素文本位置。
 
 ### 编译器：同一份源码，编译出别端源码
 
@@ -374,6 +415,8 @@ ctx.draw();
 ```
 
 支持：`fillRect/strokeRect/clearRect`、`beginPath/moveTo/lineTo/arc/quadraticCurveTo/bezierCurveTo/rect/closePath`、`fill/stroke`、`fillText/strokeText`、`drawImage`、`setFillStyle/StrokeStyle/LineWidth/LineCap/LineJoin/FontSize/TextAlign/TextBaseline/GlobalAlpha`、`save/restore`、以及 `translate/rotate/scale` 完整仿射变换、线性/径向渐变。
+
+后备缓冲按**设备分辨率**分配：元素逻辑尺寸 × 设备像素比，基础变换矩阵同步预乘这个比例，所以上面这些指令仍然用逻辑坐标下发，画出来是原生分辨率而不是放大的马赛克。元素真实尺寸只有布局后才知道，而 `ctx.draw()` 通常发生在 `onLoad` —— 因此指令流会被记下来，后备缓冲按实际尺寸重建后重放一遍。少了这一步，上下文只能用一个写死的默认尺寸，再被 1:1 拷进 2 倍分辨率的页面画布，内容就只落在元素左上角的四分之一里。
 
 ---
 

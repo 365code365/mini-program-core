@@ -1105,9 +1105,17 @@ fn serve_connection(mut stream: TcpStream, root: &Path) -> Result<(), String> {
 /// - 禁用脚本：编译产物的静态首屏 HTML 已由同一份 data 快照完整渲染并带全部 CSS 类，
 ///   与原生渲染器的静态渲染语义一致。runtime.js 的响应式重渲染只服务交互，对静态
 ///   截图无意义，且其异步执行会与截图时机竞争（偶发丢样式）。禁用后截图完全确定。
+/// - 例外：页面含 `<canvas>` 时保留脚本。canvas 的画面**只能**由 JS 画出来，
+///   静态 HTML 里是一块空白，禁用脚本等于拿「空画布」当参考基准 —— 那样原生端
+///   把 canvas 画对了反而会让差异变大，这项对比就失去意义了。
 fn inject_capture_override(html: &str) -> String {
+    let has_canvas = html.to_ascii_lowercase().contains("<canvas");
     // 把 <script ...> 改成惰性类型，浏览器不再执行任何页面脚本。
-    let disabled = replace_case_insensitive(html, "<script", "<script type=\"application/x-mini-disabled\" ");
+    let disabled = if has_canvas {
+        html.to_string()
+    } else {
+        replace_case_insensitive(html, "<script", "<script type=\"application/x-mini-disabled\" ")
+    };
     let override_style = format!(
         "<style id=\"__mini_compare_override\">\
          html,body{{margin:0!important;padding:0!important;width:{VIEWPORT_WIDTH}px!important;\

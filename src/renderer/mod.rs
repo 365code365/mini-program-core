@@ -9,7 +9,7 @@ pub mod anim;
 /// transform 离屏仿射合成
 pub mod compose;
 
-pub use wxml_renderer::{WxmlRenderer, EventBinding};
+pub use wxml_renderer::{WxmlRenderer, EventBinding, VIEWPORT_CULL_MARGIN_PX};
 pub use vdom_diff::{Patch, diff_forest, is_structural};
 pub use style_resolver::StyleResolver;
 pub use components::{RenderNode, NodeStyle, ComponentRegistry};

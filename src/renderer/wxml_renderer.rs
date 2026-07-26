@@ -38,6 +38,13 @@ pub struct CachedLayout {
     pub data: JsonValue,
 }
 
+/// 视口裁剪的余量（物理像素）：视口外这个距离内的节点仍然绘制，
+/// 兜住阴影、溢出内容与滚动到来前的一小段预取。
+///
+/// 宿主据此只清理/只使用画布上的这一条带 —— 整页画布可能有上万像素高，
+/// 每帧全量 clear 是纯浪费（首页那张 750x6870 的画布相当于每帧 20MB memset）。
+pub const VIEWPORT_CULL_MARGIN_PX: f32 = 400.0;
+
 /// 绘制上下文种类：顶层节点与子节点的绘制入口签名不同，
 /// transform/动画处理需要在两者间复用同一套逻辑。
 #[derive(Clone, Copy)]
@@ -248,7 +255,7 @@ impl WxmlRenderer {
         if node.style.transform.is_some() || node.style.animation.is_some() {
             return false;
         }
-        const MARGIN: f32 = 400.0; // 物理像素余量，兜住阴影/溢出内容
+        const MARGIN: f32 = VIEWPORT_CULL_MARGIN_PX;
         // 横向：画布宽就是屏宽，横滑列表里被推到屏幕外的项同样不可见
         let canvas_w = self.screen_width * self.scale_factor;
         if x + w < -MARGIN || x > canvas_w + MARGIN {

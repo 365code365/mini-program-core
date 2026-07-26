@@ -33,10 +33,12 @@ pub fn present_to_buffer(
         if src_y >= 0 && src_y < canvas_height as i32 {
             let src_row_start = (src_y as u32 * canvas_width) as usize;
             
-            // 批量转换像素
-            for x in 0..copy_width {
-                let color = &pixels[src_row_start + x];
-                buffer[dst_row_start + x] = ((color.r as u32) << 16) | ((color.g as u32) << 8) | (color.b as u32);
+            // 逐行 zip：切片迭代器让编译器省掉每个像素的边界检查并做向量化。
+            // 上屏要转换整屏（750x1334 ≈ 100 万）像素，索引访问的边界检查在这里很显眼。
+            let src_row = &pixels[src_row_start..src_row_start + copy_width];
+            let dst_row = &mut buffer[dst_row_start..dst_row_start + copy_width];
+            for (dst, color) in dst_row.iter_mut().zip(src_row) {
+                *dst = ((color.r as u32) << 16) | ((color.g as u32) << 8) | (color.b as u32);
             }
             
             // 填充剩余宽度

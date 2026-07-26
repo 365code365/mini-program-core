@@ -87,16 +87,30 @@ fn test_controller_reach_bottom_event() {
 }
 
 #[test]
-fn test_controller_wheel_scroll_clamped() {
+fn test_controller_wheel_scroll_rubber_bands_then_bounces() {
     let mut c = ScrollController::new(300.0, 100.0); // max 200
     c.handle_scroll(50.0, false); // 鼠标滚轮 delta*2 = 100
     assert!(c.get_position() > 0.0 && c.get_position() <= 200.0);
-    // 大量向下滚动，应被 clamp
+
+    // 越界不再硬夹：经橡皮筋衰减，且不超过「边界 + 视口」
     c.handle_scroll(9999.0, false);
-    assert_eq!(c.get_position(), 200.0);
-    // 向上滚回顶部
+    assert!(c.get_position() > 200.0, "越界应该能拉出去一点（有回弹手感）");
+    assert!(c.get_position() < 200.0 + 100.0, "橡皮筋衰减上限是一个视口");
+
+    // 停下后自动回弹到边界
+    for _ in 0..120 {
+        if !c.update(0.016) { break; }
+    }
+    assert!((c.get_position() - 200.0).abs() < 0.5, "松手后应回弹到底部边界");
+
+    // 反向同理
     c.handle_scroll(-9999.0, false);
-    assert_eq!(c.get_position(), 0.0);
+    assert!(c.get_position() < 0.0, "顶部越界也应有橡皮筋");
+    assert!(c.end_wheel_gesture(), "抬手时越界应触发回弹");
+    for _ in 0..120 {
+        if !c.update(0.016) { break; }
+    }
+    assert!((c.get_position() - 0.0).abs() < 0.5, "松手后应回弹到顶部");
 }
 
 #[test]
@@ -113,8 +127,12 @@ fn test_controller_horizontal() {
 fn test_controller_content_resize() {
     let mut c = ScrollController::new(300.0, 100.0); // max 200
     c.handle_scroll(999.0, false);
-    assert_eq!(c.get_position(), 200.0);
-    // 内容变短 -> 位置应被约束
+    c.end_wheel_gesture();
+    for _ in 0..120 {
+        if !c.update(0.016) { break; }
+    }
+    assert!((c.get_position() - 200.0).abs() < 0.5);
+    // 内容变短 -> 位置应被约束（否则会停在画布之外的空白上且不再回弹）
     c.update_content_height(150.0, 100.0); // max 50
     assert!(c.get_position() <= 50.0, "内容变短后位置应被约束到新 max");
 }

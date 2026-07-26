@@ -37,6 +37,9 @@ pub struct Canvas2DContext {
     /// 线帽 / 线连接
     line_cap: crate::paint::StrokeCap,
     line_join: crate::paint::StrokeJoin,
+    /// 设备像素比：后备缓冲按物理像素分配，绘制指令（小程序 API 用逻辑 px）
+    /// 由基础矩阵预乘这个比例 —— 这样 2x 屏上的 canvas 内容是原生分辨率而不是放大的马赛克。
+    dpr: f32,
     /// 当前 2D 仿射变换矩阵 [a, b, c, d, e, f]（列优先：x'=a*x+c*y+e, y'=b*x+d*y+f）
     transform: [f32; 6],
     /// 当前路径
@@ -118,11 +121,22 @@ impl Canvas2DContext {
         ];
     }
     pub fn new(canvas_id: &str, width: u32, height: u32) -> Self {
-        let canvas = Canvas::new(width, height);
+        Self::new_with_dpr(canvas_id, width, height, 1.0)
+    }
+
+    /// 按设备像素比创建：`width`/`height` 是逻辑尺寸，后备缓冲按 `dpr` 放大，
+    /// 基础变换矩阵同步预乘 `dpr`，所以调用方仍然用逻辑坐标下指令。
+    pub fn new_with_dpr(canvas_id: &str, width: u32, height: u32, dpr: f32) -> Self {
+        let dpr = if dpr.is_finite() && dpr > 0.0 { dpr } else { 1.0 };
+        let canvas = Canvas::new(
+            ((width as f32 * dpr).round() as u32).max(1),
+            ((height as f32 * dpr).round() as u32).max(1),
+        );
         Self {
             canvas_id: canvas_id.to_string(),
             width,
             height,
+            dpr,
             canvas: Arc::new(Mutex::new(canvas)),
             fill_style: Color::BLACK,
             stroke_style: Color::BLACK,
@@ -133,11 +147,15 @@ impl Canvas2DContext {
             global_alpha: 1.0,
             line_cap: crate::paint::StrokeCap::Butt,
             line_join: crate::paint::StrokeJoin::Miter,
-            transform: Self::IDENTITY,
+            transform: [dpr, 0.0, 0.0, dpr, 0.0, 0.0],
             current_path: Vec::new(),
             state_stack: Vec::new(),
         }
     }
+
+    /// 逻辑尺寸与设备像素比（供宿主判断后备缓冲是否需要按元素实际尺寸重建）
+    pub fn logical_size(&self) -> (u32, u32) { (self.width, self.height) }
+    pub fn device_pixel_ratio(&self) -> f32 { self.dpr }
 
     // ========== 状态管理 ==========
     
@@ -233,6 +251,11 @@ impl Canvas2DContext {
     
     /// 清除矩形区域（设置为透明）
     pub fn clear_rect(&mut self, x: f32, y: f32, width: f32, height: f32) {
+        // 坐标同样要过当前矩阵（含 dpr 预缩放），否则 2x 屏上只清掉左上角四分之一
+        let (tx0, ty0) = self.tp(x, y);
+        let (tx1, ty1) = self.tp(x + width, y + height);
+        let (x, y) = (tx0.min(tx1), ty0.min(ty1));
+        let (width, height) = ((tx1 - tx0).abs(), (ty1 - ty0).abs());
         if let Ok(mut canvas) = self.canvas.lock() {
             let x0 = x.max(0.0) as i32;
             let y0 = y.max(0.0) as i32;
@@ -711,11 +734,41 @@ impl RadialGradient {
 /// Canvas 上下文管理器 - 全局管理所有 canvas 实例
 pub struct CanvasContextManager {
     contexts: HashMap<String, Canvas2DContext>,
+    /// 每个 canvas 最近一次收到的指令流。元素真实尺寸与设备像素比只有布局后才知道，
+    /// 而 `ctx.draw()` 一般发生在 onLoad —— 后备缓冲重建后要靠它把内容重画一遍。
+    last_commands: HashMap<String, String>,
 }
 
 impl CanvasContextManager {
     pub fn new() -> Self {
-        Self { contexts: HashMap::new() }
+        Self { contexts: HashMap::new(), last_commands: HashMap::new() }
+    }
+
+    /// 按元素的逻辑尺寸与设备像素比对齐后备缓冲；尺寸/DPR 变了就重建并重放指令。
+    ///
+    /// 没有这一步时上下文一律是写死的 400x300 逻辑缓冲，又被 1:1 拷进 2 倍分辨率的
+    /// 页面画布 —— 内容只落在元素左上角的四分之一里（看起来就是「canvas 画的不居中」）。
+    pub fn sync_backing(&mut self, canvas_id: &str, logical_w: u32, logical_h: u32, dpr: f32) {
+        if logical_w == 0 || logical_h == 0 {
+            return;
+        }
+        let needs_rebuild = match self.contexts.get(canvas_id) {
+            Some(ctx) => {
+                ctx.logical_size() != (logical_w, logical_h)
+                    || (ctx.device_pixel_ratio() - dpr).abs() > 0.01
+            }
+            None => true,
+        };
+        if !needs_rebuild {
+            return;
+        }
+        self.contexts.insert(
+            canvas_id.to_string(),
+            Canvas2DContext::new_with_dpr(canvas_id, logical_w, logical_h, dpr),
+        );
+        if let Some(commands) = self.last_commands.get(canvas_id).cloned() {
+            self.execute_commands(canvas_id, &commands);
+        }
     }
     
     /// 获取或创建 canvas 上下文
@@ -741,10 +794,14 @@ impl CanvasContextManager {
     
     /// 执行绘制命令
     pub fn execute_commands(&mut self, canvas_id: &str, commands_json: &str) {
+        // 记住指令流：后备缓冲按元素真实尺寸重建后要重放一遍（见 `sync_backing`）
+        if self.last_commands.get(canvas_id).map(|s| s.as_str()) != Some(commands_json) {
+            self.last_commands.insert(canvas_id.to_string(), commands_json.to_string());
+        }
         // 解析命令
         let commands: Vec<serde_json::Value> = serde_json::from_str(commands_json).unwrap_or_default();
         
-        // 获取或创建上下文（使用较大的默认尺寸以适应大多数 canvas）
+        // 获取或创建上下文（元素尺寸未知时先给个较大的默认值，随后由 sync_backing 校正）
         let ctx = self.contexts.entry(canvas_id.to_string())
             .or_insert_with(|| Canvas2DContext::new(canvas_id, 400, 300));
         
@@ -954,28 +1011,33 @@ impl CanvasComponent {
         
         // 从全局管理器获取绘制内容并复制到主 canvas
         if !canvas_id.is_empty() {
-            if let Ok(manager) = CANVAS_MANAGER.lock() {
+            if let Ok(mut manager) = CANVAS_MANAGER.lock() {
+                // 先让后备缓冲与元素实际尺寸/设备像素比一致（必要时重建并重放指令），
+                // 之后就能 1:1 拷贝：canvas 内容是原生分辨率，不做任何放大。
+                let dpr = if sf.is_finite() && sf > 0.0 { sf } else { 1.0 };
+                manager.sync_backing(
+                    &canvas_id,
+                    (w / dpr).round().max(0.0) as u32,
+                    (h / dpr).round().max(0.0) as u32,
+                    dpr,
+                );
                 if let Some(ctx) = manager.get_existing_context(&canvas_id) {
-                    // 获取 canvas 上下文的像素数据
                     if let Ok(src_canvas) = ctx.get_canvas().lock() {
-                        let src_pixels = src_canvas.pixels();
                         let src_w = src_canvas.width() as usize;
                         let src_h = src_canvas.height() as usize;
-                        
-                        // 复制像素到目标位置
-                        let dst_x = x as i32;
-                        let dst_y = y as i32;
-                        let copy_w = (w as usize).min(src_w);
-                        let copy_h = (h as usize).min(src_h);
-                        
+                        let src_pixels = src_canvas.pixels();
+                        let dst_x = x.round() as i32;
+                        let dst_y = y.round() as i32;
+                        let copy_w = (w.round().max(0.0) as usize).min(src_w);
+                        let copy_h = (h.round().max(0.0) as usize).min(src_h);
+
                         for sy in 0..copy_h {
+                            let row = sy * src_w;
                             for sx in 0..copy_w {
-                                let src_idx = sy * src_w + sx;
-                                if src_idx < src_pixels.len() {
-                                    let color = src_pixels[src_idx];
-                                    if color.a > 0 {
-                                        canvas.set_pixel(dst_x + sx as i32, dst_y + sy as i32, color);
-                                    }
+                                let color = src_pixels[row + sx];
+                                // set_pixel 走 alpha 混合：半透明绘制能正确压在元素背景上
+                                if color.a > 0 {
+                                    canvas.set_pixel(dst_x + sx as i32, dst_y + sy as i32, color);
                                 }
                             }
                         }
