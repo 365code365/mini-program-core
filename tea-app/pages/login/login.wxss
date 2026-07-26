@@ -1,0 +1,241 @@
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+.page {
+  flex: 1;
+  background-color: #536254;
+  padding: 0 48rpx;
+  align-items: center;
+}
+.brand {
+  align-items: center;
+  margin-top: 160rpx;
+}
+.brand-cn {
+  font-size: 52rpx;
+  font-weight: bold;
+  color: #ffffff;
+  letter-spacing: 6rpx;
+  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+}
+.brand-en {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 4rpx;
+  margin-top: 12rpx;
+  font-family: "Playfair Display", serif;
+}
+.brand-sub {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.75);
+  margin-top: 20rpx;
+}
+.card {
+  width: 100%;
+  background-color: #ffffff;
+  border-radius: 28rpx;
+  padding: 40rpx 36rpx;
+  margin-top: 72rpx;
+}
+.tabs {
+  flex-direction: row;
+  margin-bottom: 16rpx;
+}
+.tab {
+  font-size: 28rpx;
+  color: #82786c;
+  margin-right: 40rpx;
+  padding-bottom: 12rpx;
+}
+.tab-on {
+  color: #4a3020;
+  font-weight: bold;
+  border-bottom: 4rpx solid #a87536;
+}
+.field {
+  margin-top: 28rpx;
+}
+.f-label {
+  font-size: 24rpx;
+  color: #82786c;
+}
+.f-input {
+  height: 80rpx;
+  font-size: 30rpx;
+  color: #2d251e;
+  border-bottom: 2rpx solid rgba(112, 83, 48, 0.11);
+}
+.ph {
+  color: #c4bfb4;
+}
+.code-row {
+  flex-direction: row;
+  align-items: center;
+}
+.f-input-code {
+  flex: 1;
+}
+.code-btn {
+  background-color: rgba(168, 117, 54, 0.12);
+  border-radius: 36rpx;
+  padding: 14rpx 24rpx;
+  margin-left: 16rpx;
+}
+.code-btn-off {
+  opacity: 0.5;
+}
+.code-btn-t {
+  font-size: 24rpx;
+  color: #a87536;
+}
+.submit {
+  background-color: #a87536;
+  border-radius: 44rpx;
+  height: 88rpx;
+  align-items: center;
+  justify-content: center;
+  margin-top: 56rpx;
+}
+.submit-off {
+  opacity: 0.6;
+}
+.submit-t {
+  color: #ffffff;
+  font-size: 32rpx;
+  font-weight: bold;
+  letter-spacing: 4rpx;
+}
+.skip {
+  align-items: center;
+  margin-top: 28rpx;
+}
+.skip-t {
+  font-size: 26rpx;
+  color: #82786c;
+}
+.or-row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  margin-top: 40rpx;
+}
+.or-line {
+  flex: 1;
+  height: 2rpx;
+  background-color: rgba(112, 83, 48, 0.11);
+}
+.or-t {
+  font-size: 22rpx;
+  color: #82786c;
+  margin: 0 20rpx;
+}
+.wx-btn {
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  background-color: #07c160;
+  border-radius: 44rpx;
+  height: 88rpx;
+  margin-top: 28rpx;
+  border: none;
+}
+.wx-btn::after {
+  border: none;
+}
+.wx-btn-t {
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: bold;
+  letter-spacing: 2rpx;
+}
+.agree-row {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  margin-top: 48rpx;
+  padding: 0 16rpx;
+}
+.cb-wrap {
+  padding: 6rpx;
+  margin-right: 8rpx;
+}
+.cb {
+  width: 30rpx;
+  height: 30rpx;
+  border-radius: 8rpx;
+  border: 2rpx solid rgba(255, 255, 255, 0.5);
+  align-items: center;
+  justify-content: center;
+}
+.cb-on {
+  background-color: #a87536;
+  border-color: #a87536;
+}
+.cb-t {
+  width: 20rpx;
+  height: 20rpx;
+}
+.agree {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.6);
+}
+.agree-link {
+  font-size: 22rpx;
+  color: #c5a46d;
+}
+.mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  align-items: center;
+  justify-content: center;
+  padding: 0 48rpx;
+}
+.sheet {
+  width: 100%;
+  height: 78%;
+  background-color: #ffffff;
+  border-radius: 24rpx;
+  flex-direction: column;
+}
+.sheet-head {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28rpx 32rpx;
+  border-bottom: 2rpx solid rgba(0, 0, 0, 0.06);
+}
+.sheet-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #4a3020;
+}
+.sheet-x {
+  width: 36rpx;
+  height: 36rpx;
+}
+.sheet-body {
+  flex: 1;
+  padding: 28rpx 32rpx;
+}
+.ag-text {
+  font-size: 26rpx;
+  color: #5a5248;
+  line-height: 44rpx;
+}
+.sheet-ok {
+  background-color: #a87536;
+  border-radius: 44rpx;
+  margin: 8rpx 32rpx 32rpx;
+  padding: 22rpx 0;
+  align-items: center;
+}
+.sheet-ok-t {
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: bold;
+}

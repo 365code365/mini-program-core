@@ -1,0 +1,88 @@
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.card {
+  background-color: #536254;
+  border-radius: 24rpx;
+  margin: 24rpx;
+  padding: 36rpx;
+}
+.card-k {
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.8);
+}
+.card-v {
+  font-size: 60rpx;
+  font-weight: bold;
+  color: #ffffff;
+  margin-top: 8rpx;
+}
+.card-unit {
+  font-size: 28rpx;
+  font-weight: normal;
+}
+.card-tip {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 8rpx;
+}
+.days {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  padding: 0 24rpx;
+}
+.day {
+  width: 162rpx;
+  background-color: #ffffff;
+  border-radius: 20rpx;
+  padding: 24rpx 0;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+.day-on {
+  background-color: rgba(199, 154, 82, 0.12);
+}
+.day-ic {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 36rpx;
+  background-color: #f0ece3;
+  align-items: center;
+  justify-content: center;
+}
+.day-ic-on {
+  background-color: #a87536;
+}
+.day-ic-t {
+  font-size: 24rpx;
+  color: #ffffff;
+}
+.day-ic-img {
+  width: 28rpx;
+  height: 28rpx;
+}
+.day-label {
+  font-size: 22rpx;
+  color: #7a746a;
+  margin-top: 12rpx;
+}
+.btn {
+  background-color: #a87536;
+  border-radius: 44rpx;
+  margin: 28rpx 24rpx 0;
+  padding: 26rpx 0;
+  align-items: center;
+}
+.btn-off {
+  opacity: 0.5;
+}
+.btn-t {
+  color: #ffffff;
+  font-size: 32rpx;
+  font-weight: bold;
+}

@@ -1,0 +1,7 @@
+{
+  "navigationStyle": "custom",
+  "navigationBarTitleText": "选茶",
+  "usingComponents": {
+    "tab-bar": "../../components/tab-bar/tab-bar"
+  }
+}

@@ -159,6 +159,8 @@ mod entry;
 mod fixed_layer;
 mod hit_test;
 mod interactions;
+mod invalidate;
+pub use invalidate::FramePlan;
 mod layout;
 mod pressed;
 

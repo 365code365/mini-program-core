@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "凤凰云岫好茶",
+  "usingComponents": {
+    "tab-bar": "../../components/tab-bar/tab-bar"
+  }
+}

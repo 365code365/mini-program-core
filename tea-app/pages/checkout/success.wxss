@@ -1,0 +1,163 @@
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.top {
+  background-color: #536254;
+  align-items: center;
+  padding: 80rpx 0 60rpx;
+}
+.check {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 60rpx;
+  background-color: rgba(255, 255, 255, 0.15);
+  align-items: center;
+  justify-content: center;
+}
+.check-t {
+  width: 72rpx;
+  height: 72rpx;
+}
+.title {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #ffffff;
+  margin-top: 24rpx;
+}
+.sub {
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 8rpx;
+}
+.cert {
+  background-color: #fbf8f1;
+  border: 2rpx solid rgba(199, 154, 82, 0.3);
+  border-radius: 24rpx;
+  margin: -40rpx 24rpx 0;
+  padding: 32rpx;
+}
+.cert-head {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2rpx dashed rgba(199, 154, 82, 0.3);
+  padding-bottom: 20rpx;
+}
+.cert-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #a87536;
+}
+.cert-no {
+  font-size: 22rpx;
+  color: #82786c;
+}
+.cert-body {
+  padding-top: 20rpx;
+}
+.kv {
+  flex-direction: row;
+  justify-content: space-between;
+  padding: 6rpx 0;
+}
+.k {
+  font-size: 26rpx;
+  color: #9a8c70;
+}
+.v {
+  font-size: 26rpx;
+  color: #3a2c18;
+}
+.hash {
+  background-color: rgba(47, 79, 79, 0.05);
+  border-radius: 12rpx;
+  padding: 14rpx;
+  margin-top: 20rpx;
+}
+.hash-t {
+  font-size: 20rpx;
+  color: #536254;
+}
+.cert-png {
+  width: 100%;
+  border-radius: 12rpx;
+  margin-top: 20rpx;
+}
+.cert-tip {
+  font-size: 20rpx;
+  color: #82786c;
+  text-align: center;
+  margin-top: 10rpx;
+}
+.sec {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #4a3020;
+  margin: 32rpx 24rpx 16rpx;
+}
+.form {
+  background-color: #ffffff;
+  border-radius: 20rpx;
+  margin: 0 24rpx;
+  padding: 24rpx;
+}
+.label {
+  font-size: 24rpx;
+  color: #82786c;
+  margin-top: 8rpx;
+}
+.input {
+  background-color: #faf9f6;
+  border: 2rpx solid rgba(0, 0, 0, 0.1);
+  border-radius: 16rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  padding: 0 24rpx;
+  font-size: 28rpx;
+  margin-top: 10rpx;
+}
+.textarea {
+  background-color: #faf9f6;
+  border: 2rpx solid rgba(0, 0, 0, 0.1);
+  border-radius: 16rpx;
+  padding: 18rpx 24rpx;
+  font-size: 28rpx;
+  height: 140rpx;
+  margin-top: 10rpx;
+}
+.btn {
+  background-color: #a87536;
+  border-radius: 44rpx;
+  padding: 24rpx 0;
+  align-items: center;
+  margin-top: 28rpx;
+}
+.btn-off {
+  opacity: 0.4;
+}
+.btn-t {
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: bold;
+}
+.done {
+  background-color: #ffffff;
+  border-radius: 20rpx;
+  margin: 0 24rpx;
+  padding: 40rpx 24rpx;
+  align-items: center;
+}
+.done-t {
+  font-size: 30rpx;
+  color: #4a3020;
+}
+.done-sub {
+  font-size: 24rpx;
+  color: #82786c;
+  margin-top: 10rpx;
+  text-align: center;
+}

@@ -9,18 +9,19 @@
 use super::*;
 
 impl WxmlRenderer {
+    /// 需要时重建布局树，并返回这次数据变化的重绘范围（见 [`FramePlan`]）。
     pub(super) fn update_layout_if_needed(
         &mut self,
         nodes: &[WxmlNode],
         data: &JsonValue,
         viewport: Option<(f32, f32)>,
-    ) {
+    ) -> FramePlan {
         // 检查视口是否变化（用于虚拟列表）
         let viewport_changed = self.current_viewport != viewport;
         
         if let Some(cache) = &self.cache {
             if cache.data == *data && !viewport_changed {
-                return; // Cache hit!
+                return FramePlan::Unchanged; // Cache hit!
             }
         }
         
@@ -79,6 +80,13 @@ impl WxmlRenderer {
         // 获取实际内容高度
         let root_layout = taffy.layout(root).unwrap();
         let content_height = root_layout.size.height / self.scale_factor;
+
+        // 与上一棵树比对，算出这次只需要重画哪一块。
+        // 视口变了走的是虚拟列表，结构本来就会变，直接整帧。
+        let plan = match (&self.cache, viewport_changed) {
+            (Some(old), false) => self.plan_from_diff(old, &render_nodes, &taffy, content_height),
+            _ => FramePlan::Full,
+        };
         
         self.cache = Some(CachedLayout {
             render_nodes,
@@ -86,6 +94,21 @@ impl WxmlRenderer {
             content_height,
             data: data.clone(),
         });
+        plan
+    }
+
+    /// 先把布局算好，并告诉调用方这一帧的重绘范围。
+    ///
+    /// 必须与绘制分成两步：宿主要按这个范围决定「清多大画布」，
+    /// 而清屏发生在绘制之前 —— 边画边算范围就来不及了。
+    /// 之后的绘制调用会命中布局缓存，不会重复这趟开销。
+    pub fn plan_frame(
+        &mut self,
+        nodes: &[WxmlNode],
+        data: &JsonValue,
+        viewport: Option<(f32, f32)>,
+    ) -> FramePlan {
+        self.update_layout_if_needed(nodes, data, viewport)
     }
 
     /// 测量给定 WXML+数据的内容总高度（逻辑像素），用于自适应画布尺寸。

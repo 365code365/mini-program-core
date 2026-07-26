@@ -1,0 +1,84 @@
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.head {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #a87536;
+  border-radius: 24rpx;
+  margin: 24rpx;
+  padding: 28rpx;
+}
+.head-left {
+  flex-direction: column;
+}
+.head-k {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.8);
+}
+.head-v {
+  font-size: 56rpx;
+  font-weight: bold;
+  color: #ffffff;
+}
+.head-tip {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.8);
+}
+.grid {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  padding: 0 24rpx;
+}
+.cell {
+  width: 335rpx;
+  background-color: #ffffff;
+  border-radius: 20rpx;
+  padding: 24rpx;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+.cell-ic {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 48rpx;
+  background-color: #f3efe7;
+  align-items: center;
+  justify-content: center;
+}
+.cell-emoji {
+  width: 48rpx;
+  height: 48rpx;
+}
+.cell-name {
+  font-size: 26rpx;
+  color: #4a3020;
+  margin-top: 12rpx;
+}
+.cell-cost {
+  font-size: 26rpx;
+  font-weight: bold;
+  color: #a87536;
+  margin-top: 6rpx;
+}
+.cell-btn {
+  background-color: #a87536;
+  border-radius: 40rpx;
+  padding: 12rpx 0;
+  align-items: center;
+  margin-top: 16rpx;
+  width: 100%;
+}
+.cell-btn-off {
+  opacity: 0.4;
+}
+.cell-btn-t {
+  color: #ffffff;
+  font-size: 22rpx;
+}

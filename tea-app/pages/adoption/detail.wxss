@@ -1,0 +1,178 @@
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.scroll {
+  flex: 1;
+}
+.cover-wrap {
+  position: relative;
+}
+.cover {
+  width: 100%;
+}
+.monitor {
+  position: absolute;
+  right: 24rpx;
+  bottom: 24rpx;
+  flex-direction: row;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.55);
+  border-radius: 40rpx;
+  padding: 10rpx 24rpx;
+}
+.monitor-ic {
+  width: 30rpx;
+  height: 30rpx;
+  margin-right: 8rpx;
+}
+.monitor-t {
+  color: #ffffff;
+  font-size: 24rpx;
+}
+.body {
+  padding: 28rpx 32rpx;
+}
+.tags {
+  flex-direction: row;
+}
+.tag {
+  font-size: 22rpx;
+  padding: 4rpx 14rpx;
+  border-radius: 8rpx;
+  margin-right: 12rpx;
+}
+.tag-gold {
+  background-color: rgba(199, 154, 82, 0.18);
+  color: #a87536;
+}
+.tag-muted {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: #8a8478;
+}
+.name {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #4a3020;
+  margin-top: 16rpx;
+}
+.stats {
+  flex-direction: row;
+  background-color: #ffffff;
+  border-radius: 20rpx;
+  padding: 24rpx 0;
+  margin-top: 24rpx;
+}
+.stat {
+  flex: 1;
+  align-items: center;
+}
+.stat-v {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #4a3020;
+}
+.stat-k {
+  font-size: 22rpx;
+  color: #82786c;
+  margin-top: 6rpx;
+}
+.sec {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #4a3020;
+  margin: 36rpx 0 16rpx;
+}
+.benefits {
+  background-color: #ffffff;
+  border-radius: 20rpx;
+  padding: 24rpx;
+}
+.ben {
+  flex-direction: row;
+  align-items: center;
+  padding: 10rpx 0;
+}
+.ben-dot {
+  width: 24rpx;
+  height: 24rpx;
+  margin-right: 14rpx;
+}
+.ben-t {
+  font-size: 28rpx;
+  color: #5a5248;
+}
+.picker {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #ffffff;
+  border-radius: 20rpx;
+  padding: 28rpx 24rpx;
+}
+.picker-t {
+  font-size: 28rpx;
+  color: #5a5248;
+}
+.stepper {
+  flex-direction: row;
+  align-items: center;
+}
+.step-btn {
+  width: 56rpx;
+  height: 56rpx;
+  border: 2rpx solid rgba(0, 0, 0, 0.15);
+  border-radius: 28rpx;
+  text-align: center;
+  line-height: 52rpx;
+  font-size: 36rpx;
+  color: #4a3020;
+}
+.step-n {
+  width: 64rpx;
+  text-align: center;
+  font-size: 36rpx;
+  font-weight: bold;
+}
+.bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #ffffff;
+  padding: 20rpx 32rpx;
+  border-top: 2rpx solid rgba(0, 0, 0, 0.05);
+}
+.bar-left {
+  flex-direction: column;
+}
+.bar-label {
+  font-size: 22rpx;
+  color: #82786c;
+}
+.bar-total {
+  font-size: 44rpx;
+  font-weight: bold;
+  color: #a87536;
+}
+.btn {
+  background-color: #a87536;
+  border-radius: 44rpx;
+  padding: 22rpx 60rpx;
+}
+.btn-disabled {
+  background-color: #c4bdb0;
+  border-radius: 44rpx;
+  padding: 22rpx 60rpx;
+}
+.btn-t {
+  color: #ffffff;
+  font-size: 32rpx;
+  font-weight: bold;
+}

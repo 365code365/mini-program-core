@@ -1,0 +1,85 @@
+{
+  "pages": [
+    "pages/splash/splash",
+    "pages/index/index",
+    "pages/choose/choose",
+    "pages/gift/gift",
+    "pages/origin/origin",
+    "pages/mine/mine",
+    "pages/ai-result/ai-result",
+    "pages/recommend/recommend",
+    "pages/category/category",
+    "pages/cart/cart",
+    "pages/adoption/list",
+    "pages/adoption/detail",
+    "pages/checkout/checkout",
+    "pages/checkout/success",
+    "pages/shop/list",
+    "pages/shop/detail",
+    "pages/cart/checkout",
+    "pages/cart/order-success",
+    "pages/orders/orders",
+    "pages/orders/detail",
+    "pages/my-garden/my-garden",
+    "pages/plate/plate",
+    "pages/trace/trace",
+    "pages/garden/garden",
+    "pages/process/process",
+    "pages/tea-king/tea-king",
+    "pages/brand/brand",
+    "pages/search/search",
+    "pages/recharge/recharge",
+    "pages/checkin/checkin",
+    "pages/coupons/coupons",
+    "pages/points/points",
+    "pages/address/address",
+    "pages/login/login",
+    "pages/subscribe/subscribe"
+  ],
+  "window": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "凤凰云岫",
+    "navigationBarBackgroundColor": "#F7F3EC",
+    "backgroundColor": "#F7F3EC"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#7d7469",
+    "selectedColor": "#a8793e",
+    "backgroundColor": "#fffdf9",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "static/tabicons/home-off.png",
+        "selectedIconPath": "static/tabicons/home-on.png"
+      },
+      {
+        "pagePath": "pages/choose/choose",
+        "text": "选茶",
+        "iconPath": "static/tabicons/leaf-off.png",
+        "selectedIconPath": "static/tabicons/leaf-on.png"
+      },
+      {
+        "pagePath": "pages/gift/gift",
+        "text": "茶礼",
+        "iconPath": "static/tabicons/gift-off.png",
+        "selectedIconPath": "static/tabicons/gift-on.png"
+      },
+      {
+        "pagePath": "pages/origin/origin",
+        "text": "初心",
+        "iconPath": "static/tabicons/pot-off.png",
+        "selectedIconPath": "static/tabicons/pot-on.png"
+      },
+      {
+        "pagePath": "pages/mine/mine",
+        "text": "我的",
+        "iconPath": "static/tabicons/mine-off.png",
+        "selectedIconPath": "static/tabicons/mine-on.png"
+      }
+    ]
+  },
+  "usingComponents": {}
+}

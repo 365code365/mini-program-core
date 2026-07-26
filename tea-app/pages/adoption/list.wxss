@@ -1,0 +1,93 @@
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.intro {
+  padding: 16rpx 32rpx;
+}
+.intro-t {
+  font-size: 26rpx;
+  color: #7a746a;
+  line-height: 40rpx;
+}
+.filters {
+  flex-direction: row;
+  padding: 8rpx 32rpx 0;
+}
+.fil {
+  font-size: 26rpx;
+  color: #7a746a;
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 10rpx 28rpx;
+  border-radius: 40rpx;
+  margin-right: 16rpx;
+}
+.fil-on {
+  background-color: #a87536;
+  color: #ffffff;
+}
+.list {
+  padding: 16rpx 24rpx;
+}
+.card {
+  background-color: #ffffff;
+  border-radius: 24rpx;
+  margin-bottom: 24rpx;
+  overflow: hidden;
+}
+.cover-wrap {
+  position: relative;
+}
+.cover {
+  width: 100%;
+}
+.soldout {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  align-items: center;
+  justify-content: center;
+}
+.soldout-t {
+  color: #ffffff;
+  font-size: 28rpx;
+  border: 2rpx solid #ffffff;
+  padding: 8rpx 28rpx;
+  border-radius: 40rpx;
+}
+.info {
+  padding: 20rpx 24rpx 24rpx;
+}
+.meta {
+  font-size: 24rpx;
+  color: #8a8478;
+}
+.info-bottom {
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-top: 14rpx;
+}
+.price-wrap {
+  flex-direction: row;
+  align-items: baseline;
+}
+.price {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #a87536;
+}
+.price-unit {
+  font-size: 22rpx;
+  color: #82786c;
+}
+.left {
+  font-size: 24rpx;
+  color: #82786c;
+}

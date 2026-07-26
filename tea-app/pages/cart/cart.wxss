@@ -1,0 +1,219 @@
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.empty {
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding-top: 200rpx;
+}
+.empty-ic {
+  width: 96rpx;
+  height: 96rpx;
+  opacity: 0.5;
+}
+.empty-t {
+  font-size: 28rpx;
+  color: #82786c;
+  margin-top: 24rpx;
+}
+.empty-btn {
+  background-color: #a87536;
+  border-radius: 40rpx;
+  padding: 18rpx 48rpx;
+  margin-top: 32rpx;
+}
+.empty-btn-t {
+  color: #ffffff;
+  font-size: 28rpx;
+}
+.scroll {
+  flex: 1;
+}
+.cart-ph {
+  height: calc(222rpx + env(safe-area-inset-bottom));
+}
+.item {
+  flex-direction: row;
+  align-items: center;
+  background-color: #ffffff;
+  border-radius: 20rpx;
+  margin: 20rpx 24rpx 0;
+  padding: 20rpx;
+}
+.cb {
+  width: 38rpx;
+  height: 38rpx;
+  border-radius: 19rpx;
+  border: 2rpx solid rgba(0, 0, 0, 0.25);
+  align-items: center;
+  justify-content: center;
+}
+.cb-on {
+  background-color: #a87536;
+  border-color: #a87536;
+}
+.cb-t {
+  width: 24rpx;
+  height: 24rpx;
+}
+.item-img {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 16rpx;
+  margin: 0 20rpx;
+}
+.item-info {
+  flex: 1;
+}
+.item-top {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+.item-name {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #4a3020;
+  flex: 1;
+}
+.item-del {
+  font-size: 22rpx;
+  color: #c4bdb0;
+}
+.invalid {
+  font-size: 22rpx;
+  color: #c0392b;
+  margin-top: 6rpx;
+}
+.item-bottom {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12rpx;
+}
+.price {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #a87536;
+}
+.stepper {
+  flex-direction: row;
+  align-items: center;
+}
+.step-btn {
+  width: 48rpx;
+  height: 48rpx;
+  border: 2rpx solid rgba(0, 0, 0, 0.15);
+  border-radius: 24rpx;
+  text-align: center;
+  line-height: 44rpx;
+  font-size: 32rpx;
+}
+.step-n {
+  width: 56rpx;
+  text-align: center;
+  font-size: 28rpx;
+}
+.bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(102rpx + env(safe-area-inset-bottom));
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #ffffff;
+  padding: 20rpx 32rpx;
+  border-top: 2rpx solid rgba(0, 0, 0, 0.05);
+}
+.all {
+  flex-direction: row;
+  align-items: center;
+}
+.all-t {
+  font-size: 28rpx;
+  color: #5a5248;
+  margin-left: 14rpx;
+}
+.bar-right {
+  flex-direction: row;
+  align-items: center;
+}
+.total-box {
+  align-items: flex-end;
+  margin-right: 20rpx;
+}
+.total-label {
+  font-size: 22rpx;
+  color: #82786c;
+}
+.total {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #a87536;
+}
+.btn {
+  background-color: #a87536;
+  border-radius: 44rpx;
+  padding: 20rpx 48rpx;
+}
+.btn-off {
+  background-color: #c4bdb0;
+}
+.btn-t {
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: bold;
+}
+.custom-tab {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+  overflow: visible;
+}
+.tab-bar-box {
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: space-around;
+  background-color: #ffffff;
+  padding: 8rpx 0 calc(6rpx + env(safe-area-inset-bottom));
+  border-top: 2rpx solid rgba(0, 0, 0, 0.06);
+  overflow: visible;
+}
+.tab-item {
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  height: 88rpx;
+}
+.tab-item-center {
+  height: 88rpx;
+  justify-content: center;
+  overflow: visible;
+}
+.tab-icon {
+  width: 56rpx;
+  height: 56rpx;
+}
+.tab-text {
+  font-size: 24rpx;
+  color: #9a9488;
+  margin-top: 6rpx;
+}
+.tab-text-on {
+  color: #a87536;
+  font-weight: bold;
+}
+.brand-img {
+  width: 150rpx;
+  height: 150rpx;
+  border-radius: 75rpx;
+  margin-top: -40rpx;
+}

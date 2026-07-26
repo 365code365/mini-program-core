@@ -1,0 +1,145 @@
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+.page {
+  flex: 1;
+  position: relative;
+  background-color: #e8e2d5;
+}
+.background {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+.wash {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  height: 46%;
+  background-color: rgba(248, 244, 237, 0.28);
+}
+.overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  flex-direction: column;
+  padding-left: 48rpx;
+  padding-right: 48rpx;
+}
+.head {
+  align-items: stretch;
+}
+.brand-wrap {
+  align-items: center;
+}
+.brand {
+  color: #37291b;
+  font-size: 44rpx;
+  font-weight: 900;
+  letter-spacing: 8rpx;
+  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+}
+.brand-en {
+  color: rgba(74, 54, 34, 0.7);
+  font-size: 15rpx;
+  letter-spacing: 6rpx;
+  margin-top: 4rpx;
+  font-family: "Playfair Display", "Times New Roman", serif;
+}
+.title {
+  color: #2c2216;
+  font-size: 54rpx;
+  line-height: 74rpx;
+  font-weight: 900;
+  letter-spacing: 2rpx;
+  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+}
+.title-first {
+  margin-top: 60rpx;
+}
+.subtitle {
+  color: #5b4b39;
+  font-size: 25rpx;
+  margin-top: 20rpx;
+}
+.mid {
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+}
+.play {
+  width: 108rpx;
+  height: 108rpx;
+  border-radius: 56rpx;
+  border: 3rpx solid rgba(255, 255, 255, 0.9);
+  background-color: rgba(255, 255, 255, 0.2);
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4rpx 18rpx rgba(60, 45, 28, 0.2);
+}
+.play-text {
+  color: #ffffff;
+  font-size: 40rpx;
+}
+.sec {
+  margin-top: 22rpx;
+  height: 42rpx;
+  padding-left: 18rpx;
+  padding-right: 18rpx;
+  border-radius: 22rpx;
+  background-color: rgba(54, 40, 26, 0.34);
+  align-items: center;
+  justify-content: center;
+}
+.sec-text {
+  color: #ffffff;
+  font-size: 20rpx;
+  letter-spacing: 1rpx;
+}
+.foot {
+  align-items: center;
+  padding-bottom: calc(70rpx + env(safe-area-inset-bottom));
+}
+.enter {
+  width: 100%;
+  height: 100rpx;
+  border-radius: 20rpx;
+  background-color: #b18c53;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10rpx 26rpx rgba(80, 54, 22, 0.32);
+}
+.enter-text {
+  color: #fdf7ec;
+  font-size: 33rpx;
+  font-weight: 900;
+  letter-spacing: 8rpx;
+  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+}
+.progress {
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  margin-top: 34rpx;
+}
+.progress-on {
+  width: 28rpx;
+  height: 8rpx;
+  border-radius: 5rpx;
+  background-color: #b18c53;
+  margin-left: 5rpx;
+  margin-right: 5rpx;
+}
+.progress-dot {
+  width: 8rpx;
+  height: 8rpx;
+  border-radius: 5rpx;
+  background-color: rgba(90, 70, 45, 0.35);
+  margin-left: 5rpx;
+  margin-right: 5rpx;
+}

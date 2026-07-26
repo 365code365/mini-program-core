@@ -1,0 +1,260 @@
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+.root {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.nav-title, .hero-title, .value-word, .origin-title, .standard-title, .standard-name, .connect-title, .connect-name {
+  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+}
+.nav-en {
+  font-family: "Playfair Display", "Times New Roman", serif;
+}
+.nav {
+  height: 108rpx;
+  align-items: center;
+  justify-content: center;
+}
+.nav-title {
+  color: #4a3020;
+  font-size: 36rpx;
+  font-weight: 900;
+  letter-spacing: 6rpx;
+}
+.nav-en {
+  color: #9b7b51;
+  font-size: 15rpx;
+  letter-spacing: 5rpx;
+  margin-top: 3rpx;
+}
+.hero {
+  margin: 4rpx 24rpx 0;
+  height: 328rpx;
+  border-radius: 24rpx;
+  overflow: hidden;
+  position: relative;
+  background-color: #e6ddce;
+}
+.hero-image {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+.hero-wash {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 72%;
+  background-color: rgba(247, 243, 235, 0.86);
+}
+.hero-copy {
+  position: absolute;
+  left: 34rpx;
+  top: 44rpx;
+  right: 200rpx;
+}
+.hero-title {
+  color: #4a3020;
+  font-size: 40rpx;
+  line-height: 54rpx;
+  font-weight: 900;
+}
+.hero-text {
+  color: #6d6257;
+  font-size: 21rpx;
+  line-height: 34rpx;
+  margin-top: 6rpx;
+}
+.hero-text-first {
+  margin-top: 22rpx;
+}
+.values {
+  flex-direction: row;
+  margin: 22rpx 20rpx 0;
+  padding: 30rpx 4rpx;
+  border-radius: 22rpx;
+  background-color: rgba(255, 255, 255, 0.6);
+}
+.value {
+  flex: 1;
+  align-items: center;
+}
+.value-word {
+  color: #6f5330;
+  font-size: 34rpx;
+  font-weight: 900;
+}
+.value-l1 {
+  color: #5c4936;
+  font-size: 17rpx;
+  margin-top: 14rpx;
+}
+.value-l2 {
+  color: #82786c;
+  font-size: 15rpx;
+  margin-top: 3rpx;
+}
+.origin-card {
+  margin: 22rpx 24rpx 0;
+  height: 240rpx;
+  border-radius: 24rpx;
+  overflow: hidden;
+  position: relative;
+  background-color: #e6ddce;
+}
+.origin-image {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+.origin-wash {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 78%;
+  background-color: rgba(247, 243, 235, 0.82);
+}
+.origin-copy {
+  position: absolute;
+  left: 30rpx;
+  top: 34rpx;
+  right: 120rpx;
+}
+.origin-title {
+  color: #4a3020;
+  font-size: 30rpx;
+  font-weight: 900;
+}
+.origin-text {
+  color: #6d6257;
+  font-size: 19rpx;
+  line-height: 31rpx;
+  margin-top: 8rpx;
+}
+.origin-text-first {
+  margin-top: 14rpx;
+}
+.origin-arrow {
+  position: absolute;
+  right: 30rpx;
+  top: 96rpx;
+  color: #9b7b51;
+  font-size: 48rpx;
+}
+.standard-card {
+  margin: 22rpx 24rpx 0;
+  padding: 30rpx 20rpx;
+  border-radius: 24rpx;
+  background-color: rgba(255, 255, 255, 0.6);
+}
+.standard-title {
+  color: #4a3020;
+  font-size: 31rpx;
+  font-weight: 900;
+}
+.standards {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  margin-top: 20rpx;
+}
+.standard {
+  width: 326rpx;
+  min-height: 108rpx;
+  flex-direction: row;
+  align-items: center;
+  padding: 16rpx 8rpx;
+}
+.standard-icon-ring {
+  width: 66rpx;
+  height: 66rpx;
+  border-radius: 34rpx;
+  border: 2rpx solid rgba(168, 124, 61, 0.32);
+  align-items: center;
+  justify-content: center;
+}
+.standard-icon {
+  width: 36rpx;
+  height: 36rpx;
+}
+.standard-copy {
+  flex: 1;
+  margin-left: 14rpx;
+}
+.standard-name {
+  color: #5b4936;
+  font-size: 23rpx;
+  font-weight: 900;
+}
+.standard-desc {
+  color: #82786c;
+  font-size: 16rpx;
+  line-height: 24rpx;
+  margin-top: 4rpx;
+}
+.connect {
+  margin: 22rpx 24rpx 0;
+}
+.connect-title {
+  color: #4a3020;
+  font-size: 31rpx;
+  font-weight: 900;
+}
+.connect-row {
+  flex-direction: row;
+  justify-content: space-between;
+  margin-top: 18rpx;
+}
+.connect-card {
+  width: 330rpx;
+  height: 208rpx;
+  border-radius: 20rpx;
+  overflow: hidden;
+  position: relative;
+  background-color: #ddd5c7;
+}
+.connect-image {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+.connect-shade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 118rpx;
+  background-color: rgba(43, 31, 20, 0.5);
+}
+.connect-copy {
+  position: absolute;
+  left: 22rpx;
+  right: 16rpx;
+  bottom: 20rpx;
+}
+.connect-name {
+  color: #ffffff;
+  font-size: 28rpx;
+  font-weight: 900;
+}
+.connect-sub {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 18rpx;
+  margin-top: 5rpx;
+}
+.bottom-space {
+  height: calc(164rpx + env(safe-area-inset-bottom));
+}

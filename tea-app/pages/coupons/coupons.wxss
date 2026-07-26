@@ -1,0 +1,251 @@
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.tabs {
+  flex-direction: row;
+  justify-content: center;
+  padding: 16rpx 0;
+}
+.tab {
+  font-size: 28rpx;
+  color: #82786c;
+  margin: 0 32rpx;
+  padding-bottom: 10rpx;
+}
+.tab-on {
+  color: #4a3020;
+  font-weight: bold;
+  border-bottom: 4rpx solid #c5a46d;
+}
+.scroll {
+  flex: 1;
+}
+.empty {
+  align-items: center;
+  padding-top: 140rpx;
+}
+.empty-t {
+  font-size: 26rpx;
+  color: #82786c;
+}
+.redeem {
+  background-color: rgba(199, 154, 82, 0.12);
+  border-radius: 16rpx;
+  margin: 16rpx 24rpx 0;
+  padding: 20rpx 24rpx;
+}
+.redeem-t {
+  font-size: 24rpx;
+  color: #a87536;
+}
+.coupon {
+  flex-direction: row;
+  background-color: #ffffff;
+  border-radius: 20rpx;
+  margin: 16rpx 24rpx 0;
+  overflow: hidden;
+}
+.coupon-left {
+  width: 200rpx;
+  background-color: #a87536;
+  align-items: center;
+  justify-content: center;
+  padding: 28rpx 0;
+}
+.coupon-amt {
+  font-size: 44rpx;
+  font-weight: bold;
+  color: #ffffff;
+}
+.coupon-cond {
+  font-size: 18rpx;
+  color: rgba(255, 255, 255, 0.85);
+  margin-top: 6rpx;
+}
+.coupon-right {
+  flex: 1;
+  padding: 24rpx;
+  justify-content: center;
+}
+.coupon-name {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #4a3020;
+}
+.coupon-exp {
+  font-size: 22rpx;
+  color: #82786c;
+  margin-top: 8rpx;
+}
+.tasting {
+  flex-direction: row;
+  align-items: center;
+  background-color: #ffffff;
+  border-radius: 20rpx;
+  margin: 16rpx 24rpx 0;
+  padding: 24rpx;
+}
+.tasting-ic {
+  width: 56rpx;
+  height: 56rpx;
+}
+.tasting-info {
+  flex: 1;
+  margin-left: 16rpx;
+}
+.tasting-name {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #4a3020;
+}
+.tasting-desc {
+  font-size: 22rpx;
+  color: #82786c;
+  margin-top: 4rpx;
+}
+.tasting-btn {
+  background-color: #a87536;
+  border-radius: 40rpx;
+  padding: 12rpx 24rpx;
+}
+.tasting-btn-t {
+  color: #ffffff;
+  font-size: 22rpx;
+}
+.tasting-use {
+  background-color: #ffffff;
+  border: 2rpx solid #a87536;
+  margin-right: 12rpx;
+}
+.tasting-use .tasting-btn-t {
+  color: #a87536;
+}
+.sl-list {
+  max-height: 520rpx;
+  margin-top: 16rpx;
+}
+.sl-row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 0;
+  border-bottom: 2rpx solid rgba(0, 0, 0, 0.05);
+}
+.sl-left {
+  flex: 1;
+}
+.sl-uid {
+  font-size: 26rpx;
+  color: #4a3020;
+}
+.sl-time {
+  font-size: 22rpx;
+  color: #82786c;
+  margin-top: 4rpx;
+}
+.sl-right {
+  align-items: flex-end;
+}
+.sl-status {
+  font-size: 24rpx;
+  color: #82786c;
+}
+.sl-done {
+  color: #a87536;
+  font-weight: bold;
+}
+.mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  align-items: center;
+  justify-content: center;
+  padding: 0 64rpx;
+}
+.dialog {
+  width: 100%;
+  background-color: #ffffff;
+  border-radius: 24rpx;
+  padding: 40rpx 36rpx;
+}
+.dialog-t {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #4a3020;
+  text-align: center;
+}
+.dialog-sub {
+  font-size: 24rpx;
+  color: #82786c;
+  margin-top: 12rpx;
+  text-align: center;
+}
+.code-box {
+  background-color: #faf6ee;
+  border: 2rpx dashed #c5a46d;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  align-items: center;
+  margin-top: 24rpx;
+}
+.code-val {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #a87536;
+  letter-spacing: 4rpx;
+}
+.share-msg {
+  background-color: #f7f5f0;
+  border-radius: 16rpx;
+  padding: 18rpx 20rpx;
+  font-size: 24rpx;
+  color: #5a5248;
+  height: 130rpx;
+  margin-top: 20rpx;
+}
+.redeem-input {
+  background-color: #faf9f6;
+  border: 2rpx solid rgba(0, 0, 0, 0.1);
+  border-radius: 16rpx;
+  height: 88rpx;
+  line-height: 88rpx;
+  padding: 0 24rpx;
+  font-size: 28rpx;
+  margin-top: 24rpx;
+}
+.ph {
+  color: #c4bfb4;
+}
+.dialog-btns {
+  flex-direction: row;
+  margin-top: 28rpx;
+}
+.d-btn {
+  flex: 1;
+  border-radius: 44rpx;
+  padding: 20rpx 0;
+  align-items: center;
+}
+.d-line {
+  border: 2rpx solid rgba(0, 0, 0, 0.15);
+  margin-right: 16rpx;
+}
+.d-line-t {
+  color: #4a3020;
+  font-size: 28rpx;
+}
+.d-fill {
+  background-color: #a87536;
+}
+.d-fill-t {
+  color: #ffffff;
+  font-size: 28rpx;
+  font-weight: bold;
+}

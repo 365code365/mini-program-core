@@ -1,0 +1,57 @@
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+  align-items: center;
+  justify-content: center;
+}
+.check {
+  width: 140rpx;
+  height: 140rpx;
+  border-radius: 70rpx;
+  background-color: #536254;
+  align-items: center;
+  justify-content: center;
+}
+.check-t {
+  width: 80rpx;
+  height: 80rpx;
+}
+.title {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #4a3020;
+  margin-top: 32rpx;
+}
+.sub {
+  font-size: 28rpx;
+  color: #8a8478;
+  margin-top: 12rpx;
+}
+.btns {
+  flex-direction: row;
+  margin-top: 56rpx;
+}
+.btn-line {
+  border: 2rpx solid #a87536;
+  border-radius: 44rpx;
+  padding: 20rpx 48rpx;
+  margin-right: 24rpx;
+}
+.btn-line-t {
+  color: #a87536;
+  font-size: 28rpx;
+  font-weight: bold;
+}
+.btn-fill {
+  background-color: #a87536;
+  border-radius: 44rpx;
+  padding: 20rpx 48rpx;
+}
+.btn-fill-t {
+  color: #ffffff;
+  font-size: 28rpx;
+  font-weight: bold;
+}

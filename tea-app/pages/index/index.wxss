@@ -1,0 +1,399 @@
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+.root, .page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.nav {
+  height: 92rpx;
+  align-items: center;
+  justify-content: center;
+}
+.brand {
+  align-items: center;
+  justify-content: center;
+}
+.brand-cn {
+  color: #4a3020;
+  font-size: 40rpx;
+  line-height: 46rpx;
+  font-weight: 900;
+  letter-spacing: 6rpx;
+  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+}
+
+/* 原 12rpx 折算到真机不足 6px，英文品牌行几乎糊成一条线，放大并加深 */
+.brand-en {
+  color: #7a6144;
+  font-size: 20rpx;
+  letter-spacing: 4rpx;
+  margin-top: 6rpx;
+  font-family: "Playfair Display", "Times New Roman", serif;
+}
+.content {
+  padding-left: 24rpx;
+  padding-right: 24rpx;
+}
+.hero {
+  height: 396rpx;
+  border-radius: 24rpx;
+  overflow: hidden;
+  position: relative;
+  background-color: #ddd5c7;
+}
+.hero-image {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* 文案压在茶山实拍图上，原来 34% 遮罩时深棕字最暗处对比度只有 4.3，山影处基本糊掉。
+   文案带用 55% 平铺保证可读，下方再用同色渐变淡出，避免出现一条硬边。 */
+.hero-wash {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  height: 205rpx;
+  background-color: rgba(249, 245, 238, 0.55);
+}
+.hero-wash-fade {
+  position: absolute;
+  left: 0;
+  top: 205rpx;
+  right: 0;
+  height: 130rpx;
+  background-image: linear-gradient(to bottom, rgba(249, 245, 238, 0.55), rgba(249, 245, 238, 0));
+}
+.hero-copy {
+  position: absolute;
+  left: 34rpx;
+  top: 40rpx;
+  right: 34rpx;
+}
+.hero-title {
+  color: #2e1f12;
+  font-size: 38rpx;
+  line-height: 52rpx;
+  font-weight: 900;
+  letter-spacing: 1rpx;
+  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+}
+
+/* 字号维持 22rpx：再放大就会顶到居中的播放键，可读性靠遮罩与更深的字色解决 */
+.hero-sub {
+  color: #4a3826;
+  font-size: 22rpx;
+  margin-top: 16rpx;
+}
+
+/* 遮罩加强后底色变浅，半透明白的圆盘会和背景糊在一起，改成浅褐圆盘托住白色播放键 */
+.play {
+  position: absolute;
+  left: 50%;
+  top: 154rpx;
+  margin-left: -44rpx;
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 46rpx;
+  border: 3rpx solid rgba(255, 255, 255, 0.92);
+  background-color: rgba(58, 42, 26, 0.42);
+  align-items: center;
+  justify-content: center;
+}
+.play-icon {
+  color: #ffffff;
+  font-size: 32rpx;
+  margin-left: 6rpx;
+}
+.badge {
+  position: absolute;
+  left: 24rpx;
+  bottom: 24rpx;
+  height: 40rpx;
+  padding: 0 16rpx;
+  border-radius: 20rpx;
+  background-color: rgba(43, 31, 20, 0.4);
+  align-items: center;
+  justify-content: center;
+}
+.badge-text {
+  color: #ffffff;
+  font-size: 19rpx;
+}
+.dots {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 24rpx;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+.dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 7rpx;
+  background-color: rgba(255, 255, 255, 0.55);
+  margin-left: 5rpx;
+  margin-right: 5rpx;
+}
+.dot-on {
+  width: 26rpx;
+  background-color: #cba15a;
+}
+.entry-row {
+  flex-direction: row;
+  justify-content: space-between;
+  margin-top: 20rpx;
+}
+.entry {
+  width: 340rpx;
+  height: 128rpx;
+  border-radius: 18rpx;
+  flex-direction: row;
+  align-items: center;
+  padding-left: 26rpx;
+  padding-right: 20rpx;
+}
+.entry-gold {
+  background-color: #b28f57;
+}
+.entry-red {
+  background-color: #9d4b39;
+}
+.entry-icon {
+  width: 62rpx;
+  height: 62rpx;
+  border-radius: 32rpx;
+  border: 2rpx solid rgba(255, 255, 255, 0.55);
+  align-items: center;
+  justify-content: center;
+}
+.entry-icon-img {
+  width: 34rpx;
+  height: 34rpx;
+}
+.entry-copy {
+  flex: 1;
+  margin-left: 18rpx;
+}
+.entry-title {
+  font-size: 32rpx;
+  font-weight: 900;
+  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+}
+.entry-title-light {
+  color: #ffffff;
+}
+.entry-sub {
+  font-size: 18rpx;
+  margin-top: 6rpx;
+}
+.entry-sub-light {
+  color: rgba(255, 255, 255, 0.86);
+}
+.entry-arrow {
+  font-size: 30rpx;
+}
+.entry-arrow-light {
+  color: rgba(255, 255, 255, 0.9);
+}
+.block {
+  margin-top: 26rpx;
+  padding: 26rpx 22rpx;
+  border-radius: 22rpx;
+  background-color: rgba(255, 255, 255, 0.5);
+}
+.block-head {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+.block-title {
+  color: #4a3020;
+  font-size: 33rpx;
+  font-weight: 900;
+  letter-spacing: 2rpx;
+  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+}
+.block-all {
+  color: #82786c;
+  font-size: 21rpx;
+}
+.rec-row {
+  flex-direction: row;
+  justify-content: space-between;
+  margin-top: 20rpx;
+}
+.rec-card {
+  width: 318rpx;
+  height: 226rpx;
+  border-radius: 16rpx;
+  overflow: hidden;
+  position: relative;
+  background-color: #ece5da;
+}
+.rec-image {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+.rec-wash {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 62%;
+  background-color: rgba(248, 245, 239, 0.8);
+}
+.rec-copy {
+  position: absolute;
+  left: 24rpx;
+  top: 22rpx;
+  right: 12rpx;
+}
+.rec-name {
+  color: #4a3020;
+  font-size: 32rpx;
+  font-weight: 900;
+  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+}
+.rec-sub {
+  color: #675c50;
+  font-size: 18rpx;
+  margin-top: 6rpx;
+}
+.rec-arrow {
+  position: absolute;
+  left: 24rpx;
+  bottom: 20rpx;
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 21rpx;
+  border: 2rpx solid #9c7747;
+  align-items: center;
+  justify-content: center;
+}
+.rec-arrow-text {
+  color: #806039;
+  font-size: 28rpx;
+  margin-top: -3rpx;
+}
+.why {
+  margin-top: 22rpx;
+  padding: 30rpx 20rpx;
+  border-radius: 22rpx;
+  background-color: rgba(255, 255, 255, 0.5);
+}
+.why-title {
+  color: #4a3020;
+  font-size: 30rpx;
+  font-weight: 900;
+  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+}
+.why-grid {
+  flex-direction: row;
+  justify-content: space-between;
+  margin-top: 22rpx;
+}
+.why-item {
+  flex: 1;
+  align-items: center;
+}
+.why-icon {
+  width: 76rpx;
+  height: 76rpx;
+  border-radius: 40rpx;
+  border: 2rpx solid rgba(168, 124, 61, 0.34);
+  align-items: center;
+  justify-content: center;
+}
+.why-icon-img {
+  width: 40rpx;
+  height: 40rpx;
+}
+.why-name {
+  color: #5c4936;
+  font-size: 21rpx;
+  font-weight: 900;
+  margin-top: 12rpx;
+}
+.why-desc {
+  color: #82786c;
+  font-size: 16rpx;
+  line-height: 24rpx;
+  text-align: center;
+  margin-top: 5rpx;
+}
+.feature-row {
+  flex-direction: row;
+  justify-content: space-between;
+  margin-top: 22rpx;
+}
+.feature {
+  width: 340rpx;
+  height: 232rpx;
+  border-radius: 18rpx;
+  overflow: hidden;
+  position: relative;
+  background-color: #eae3d8;
+}
+.feature-image {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+.feature-wash {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 66%;
+  background-color: rgba(247, 243, 235, 0.82);
+}
+.feature-copy {
+  position: absolute;
+  left: 24rpx;
+  top: 22rpx;
+  right: 14rpx;
+  bottom: 22rpx;
+}
+.feature-eyebrow {
+  color: #9b7b51;
+  font-size: 20rpx;
+  letter-spacing: 2rpx;
+}
+.feature-title {
+  color: #4a3020;
+  font-size: 28rpx;
+  line-height: 38rpx;
+  font-weight: 900;
+  margin-top: 8rpx;
+  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+}
+.feature-btn {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 50rpx;
+  padding: 0 22rpx;
+  border-radius: 26rpx;
+  border: 2rpx solid rgba(139, 105, 58, 0.4);
+  align-items: center;
+  justify-content: center;
+}
+.feature-btn-text {
+  color: #886537;
+  font-size: 19rpx;
+}
+.bottom-space {
+  height: calc(164rpx + env(safe-area-inset-bottom));
+}

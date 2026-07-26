@@ -1,0 +1,284 @@
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+.root {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.hero-title, .type-name, .consult-title, .section-title, .featured-name, .enterprise-title, .cap-title {
+  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+}
+.hero {
+  position: relative;
+  height: 452rpx;
+  overflow: hidden;
+  background-color: #e9dfd0;
+}
+.hero-image {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+.hero-wash {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 74%;
+  background-color: rgba(247, 242, 233, 0.72);
+}
+.hero-copy {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  padding-left: 46rpx;
+  padding-right: 46rpx;
+}
+.hero-title {
+  color: #40301f;
+  font-size: 48rpx;
+  line-height: 66rpx;
+  font-weight: 900;
+  letter-spacing: 3rpx;
+  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+}
+.hero-line {
+  width: 46rpx;
+  height: 3rpx;
+  background-color: #b08a52;
+  margin-top: 22rpx;
+}
+.hero-sub {
+  color: #6f5e4b;
+  font-size: 23rpx;
+  margin-top: 20rpx;
+}
+.gift-types {
+  flex-direction: row;
+  justify-content: space-between;
+  margin: 18rpx 24rpx 0;
+}
+.gift-type {
+  width: 224rpx;
+  min-height: 176rpx;
+  border-radius: 18rpx;
+  background-color: #ffffff;
+  align-items: center;
+  padding: 20rpx 12rpx 26rpx;
+  position: relative;
+  box-shadow: 0 6rpx 18rpx rgba(78, 52, 27, 0.05);
+}
+.type-ring {
+  width: 62rpx;
+  height: 62rpx;
+  border-radius: 32rpx;
+  background-color: #f1e7d7;
+  align-items: center;
+  justify-content: center;
+}
+.type-icon {
+  width: 34rpx;
+  height: 34rpx;
+}
+.type-name {
+  color: #4a3020;
+  font-size: 25rpx;
+  font-weight: 900;
+  margin-top: 12rpx;
+  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+}
+.type-desc {
+  color: #82786c;
+  font-size: 17rpx;
+  line-height: 26rpx;
+  text-align: center;
+  margin-top: 6rpx;
+}
+.type-arrow {
+  position: absolute;
+  right: 16rpx;
+  bottom: 10rpx;
+  color: #a8875a;
+  font-size: 28rpx;
+}
+.consult {
+  margin: 22rpx 24rpx 0;
+  border-radius: 22rpx;
+  background-color: #f1e7d8;
+  padding: 24rpx;
+  flex-direction: row;
+  align-items: center;
+}
+.consult-icon {
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 35rpx;
+  background-color: #fffaf2;
+  align-items: center;
+  justify-content: center;
+}
+.consult-img {
+  width: 42rpx;
+  height: 42rpx;
+}
+.consult-copy {
+  flex: 1;
+  margin-left: 18rpx;
+}
+.consult-title {
+  color: #4a3020;
+  font-size: 27rpx;
+  font-weight: 900;
+}
+.consult-desc {
+  color: #74695d;
+  font-size: 19rpx;
+  line-height: 29rpx;
+  margin-top: 4rpx;
+}
+.consult-action {
+  color: #9b6f3a;
+  font-size: 20rpx;
+  margin-left: 10rpx;
+}
+.section-head {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30rpx 28rpx 16rpx;
+}
+.section-title {
+  color: #4a3020;
+  font-size: 31rpx;
+  font-weight: 900;
+}
+.more {
+  color: #9b7d57;
+  font-size: 20rpx;
+}
+.featured {
+  flex-direction: row;
+  justify-content: space-between;
+  padding: 0 24rpx;
+}
+.featured-card {
+  width: 342rpx;
+  height: 285rpx;
+  border-radius: 20rpx;
+  overflow: hidden;
+  position: relative;
+  background-color: #e8e1d7;
+}
+.featured-img {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+.featured-shade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 126rpx;
+  background-color: rgba(45, 31, 19, 0.56);
+}
+.featured-copy {
+  position: absolute;
+  left: 20rpx;
+  right: 16rpx;
+  bottom: 17rpx;
+}
+.featured-name {
+  color: #ffffff;
+  font-size: 28rpx;
+  font-weight: 900;
+}
+.featured-sub {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 18rpx;
+  margin-top: 6rpx;
+}
+.featured-price {
+  color: #f1d39f;
+  font-size: 24rpx;
+  margin-top: 7rpx;
+}
+.enterprise {
+  margin: 24rpx;
+  border-radius: 24rpx;
+  background-color: #ffffff;
+  padding: 28rpx 22rpx;
+}
+.enterprise-title {
+  color: #4a3020;
+  font-size: 31rpx;
+  font-weight: 900;
+  text-align: center;
+}
+.enterprise-sub {
+  color: #82786c;
+  font-size: 20rpx;
+  text-align: center;
+  margin-top: 7rpx;
+}
+.capabilities {
+  flex-direction: row;
+  margin-top: 26rpx;
+}
+.capability {
+  flex: 1;
+  align-items: center;
+}
+.cap-icon {
+  width: 43rpx;
+  height: 43rpx;
+}
+.cap-title {
+  color: #63503d;
+  font-size: 22rpx;
+  font-weight: 900;
+  margin-top: 9rpx;
+}
+.cap-sub {
+  color: #82786c;
+  font-size: 16rpx;
+  margin-top: 5rpx;
+  text-align: center;
+}
+.enterprise-actions {
+  flex-direction: row;
+  margin-top: 26rpx;
+}
+.outline-btn, .solid-btn {
+  flex: 1;
+  height: 68rpx;
+  border-radius: 35rpx;
+  align-items: center;
+  justify-content: center;
+}
+.outline-btn {
+  border: 2rpx solid #a68151;
+  margin-right: 10rpx;
+}
+.solid-btn {
+  background-color: #9d7645;
+  margin-left: 10rpx;
+}
+.outline-text {
+  color: #8c683c;
+  font-size: 21rpx;
+}
+.solid-text {
+  color: #ffffff;
+  font-size: 21rpx;
+}
+.bottom-space {
+  height: calc(164rpx + env(safe-area-inset-bottom));
+}

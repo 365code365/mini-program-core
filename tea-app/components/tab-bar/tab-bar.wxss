@@ -1,0 +1,37 @@
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+}
+.bar {
+  padding-top: 12rpx;
+  padding-bottom: calc(14rpx + env(safe-area-inset-bottom));
+  background-color: #fdfaf4;
+  border-top: 2rpx solid rgba(111, 83, 49, 0.12);
+  flex-direction: row;
+  align-items: center;
+}
+.cell {
+  flex: 1;
+  height: 86rpx;
+  align-items: center;
+  justify-content: center;
+}
+.icon {
+  width: 46rpx;
+  height: 46rpx;
+}
+.label {
+  color: #837a6c;
+  font-size: 21rpx;
+  margin-top: 7rpx;
+  font-family: "Songti SC", "STSong", "Noto Serif SC", serif;
+}
+.label-on {
+  color: #a87536;
+  font-weight: 900;
+}

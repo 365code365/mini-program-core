@@ -1,0 +1,275 @@
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.scroll {
+  flex: 1;
+}
+.status-bar {
+  background-color: #536254;
+  padding: 32rpx;
+}
+.status-t {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #ffffff;
+}
+.status-hint {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.75);
+  margin-top: 8rpx;
+}
+.addr {
+  flex-direction: row;
+  align-items: center;
+  background-color: #ffffff;
+  border-radius: 20rpx;
+  margin: 20rpx 24rpx 0;
+  padding: 24rpx;
+}
+.addr-pin {
+  width: 36rpx;
+  height: 36rpx;
+  margin-right: 16rpx;
+}
+.addr-info {
+  flex: 1;
+}
+.addr-name {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #4a3020;
+}
+.addr-detail {
+  font-size: 24rpx;
+  color: #8a8478;
+  margin-top: 6rpx;
+}
+.card {
+  background-color: #ffffff;
+  border-radius: 20rpx;
+  margin: 20rpx 24rpx 0;
+  padding: 24rpx;
+}
+.goods {
+  flex-direction: row;
+  align-items: center;
+  padding: 10rpx 0;
+}
+.goods-img {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 12rpx;
+}
+.goods-name {
+  flex: 1;
+  font-size: 28rpx;
+  color: #4a3020;
+  margin-left: 16rpx;
+}
+.goods-right {
+  align-items: flex-end;
+}
+.goods-price {
+  font-size: 28rpx;
+  color: #4a3020;
+}
+.goods-qty {
+  font-size: 22rpx;
+  color: #82786c;
+}
+.foot {
+  flex-direction: row;
+  justify-content: flex-end;
+  border-top: 2rpx solid rgba(0, 0, 0, 0.05);
+  padding-top: 14rpx;
+}
+.foot-t {
+  font-size: 28rpx;
+  color: #a87536;
+  font-weight: bold;
+}
+.kv {
+  flex-direction: row;
+  justify-content: space-between;
+  padding: 8rpx 0;
+}
+.k {
+  font-size: 26rpx;
+  color: #82786c;
+}
+.v {
+  font-size: 26rpx;
+  color: #3a2c18;
+}
+.bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  flex-direction: row;
+  justify-content: flex-end;
+  background-color: #ffffff;
+  padding: 20rpx 32rpx;
+  border-top: 2rpx solid rgba(0, 0, 0, 0.05);
+}
+.btn-line {
+  border: 2rpx solid rgba(0, 0, 0, 0.15);
+  border-radius: 44rpx;
+  padding: 18rpx 40rpx;
+  margin-left: 16rpx;
+}
+.btn-line-t {
+  color: #4a3020;
+  font-size: 28rpx;
+}
+.btn-fill {
+  background-color: #a87536;
+  border-radius: 44rpx;
+  padding: 18rpx 40rpx;
+  margin-left: 16rpx;
+}
+.btn-fill-t {
+  color: #ffffff;
+  font-size: 28rpx;
+  font-weight: bold;
+}
+.mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  justify-content: flex-end;
+}
+.sheet {
+  background-color: #ffffff;
+  border-top-left-radius: 24rpx;
+  border-top-right-radius: 24rpx;
+  padding: 28rpx;
+  max-height: 76%;
+}
+.sheet-head {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+.sheet-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #4a3020;
+}
+.sheet-x {
+  width: 36rpx;
+  height: 36rpx;
+}
+.rf-label {
+  font-size: 24rpx;
+  color: #82786c;
+  margin-top: 20rpx;
+}
+.rf-reasons {
+  margin-top: 8rpx;
+}
+.rf-reason {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 0;
+  border-bottom: 2rpx solid rgba(0, 0, 0, 0.05);
+}
+.rf-reason-t {
+  font-size: 28rpx;
+  color: #5a5248;
+}
+.rf-on {
+  color: #a87536;
+  font-weight: bold;
+}
+.cb {
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 18rpx;
+  border: 2rpx solid rgba(0, 0, 0, 0.25);
+  align-items: center;
+  justify-content: center;
+}
+.cb-on {
+  background-color: #a87536;
+  border-color: #a87536;
+}
+.cb-t {
+  width: 22rpx;
+  height: 22rpx;
+}
+.rf-textarea {
+  background-color: #faf9f6;
+  border: 2rpx solid rgba(0, 0, 0, 0.1);
+  border-radius: 16rpx;
+  padding: 18rpx 24rpx;
+  font-size: 28rpx;
+  height: 140rpx;
+  margin-top: 10rpx;
+}
+.rf-ok {
+  background-color: #a87536;
+  border-radius: 44rpx;
+  padding: 22rpx 0;
+  align-items: center;
+  margin-top: 24rpx;
+}
+.rf-off {
+  opacity: 0.5;
+}
+.rf-ok-t {
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: bold;
+}
+.ex-head {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #faf8f4;
+  border-radius: 12rpx;
+  padding: 20rpx;
+  margin-top: 16rpx;
+}
+.ex-name {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #4a3020;
+}
+.ex-no {
+  font-size: 24rpx;
+  color: #82786c;
+}
+.ex-list {
+  margin-top: 16rpx;
+  max-height: 480rpx;
+}
+.ex-node {
+  padding: 16rpx 0;
+  border-bottom: 2rpx solid rgba(0, 0, 0, 0.05);
+}
+.ex-ctx {
+  font-size: 26rpx;
+  color: #3a2c18;
+}
+.ex-time {
+  font-size: 22rpx;
+  color: #82786c;
+  margin-top: 6rpx;
+}
+.ex-empty {
+  padding: 50rpx 0;
+  align-items: center;
+}
+.ex-empty-t {
+  font-size: 26rpx;
+  color: #82786c;
+}

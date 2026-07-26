@@ -145,22 +145,26 @@ impl PickerSheetState {
         self.columns[2] = new_col;
     }
 
-    /// 按当前选择算出 `bindchange` 的 `detail.value`（已是 JS 侧能解析的字符串形式）
-    pub fn change_value(&self) -> String {
+    /// 按当前选择算出 `bindchange` 的 `detail.value`，类型与微信一致：
+    /// `selector` 是数字下标、`multiSelector` 是下标数组、
+    /// `time`/`date` 是字符串、`region` 是名称数组。
+    ///
+    /// 返回 `serde_json::Value` 而不是拼好的字符串 —— 拼字符串会踩两个坑：
+    /// `time` 的 `09:05` 塞进 JS 字面量是语法错误，
+    /// `date` 的 `2024-03-15` 会被当成算术表达式算成 2006。
+    pub fn change_value(&self) -> serde_json::Value {
+        use serde_json::json;
         match self.mode {
-            SheetMode::Selector => self.selected.first().copied().unwrap_or(0).to_string(),
-            SheetMode::MultiSelector => {
-                let parts: Vec<String> = self.selected.iter().map(|v| v.to_string()).collect();
-                format!("[{}]", parts.join(","))
-            }
-            SheetMode::Time => {
-                let h = self.picked_number(0).unwrap_or(0);
-                let m = self.picked_number(1).unwrap_or(0);
-                format!("{:02}:{:02}", h, m)
-            }
+            SheetMode::Selector => json!(self.selected.first().copied().unwrap_or(0)),
+            SheetMode::MultiSelector => json!(self.selected),
+            SheetMode::Time => json!(format!(
+                "{:02}:{:02}",
+                self.picked_number(0).unwrap_or(0),
+                self.picked_number(1).unwrap_or(0)
+            )),
             SheetMode::Date => {
                 let y = self.picked_number(0).unwrap_or(1970);
-                match self.date_fields {
+                json!(match self.date_fields {
                     DateFields::Year => format!("{:04}", y),
                     DateFields::Month => format!("{:04}-{:02}", y, self.picked_number(1).unwrap_or(1)),
                     DateFields::Day => format!(
@@ -169,22 +173,9 @@ impl PickerSheetState {
                         self.picked_number(1).unwrap_or(1),
                         self.picked_number(2).unwrap_or(1)
                     ),
-                }
+                })
             }
-            SheetMode::Region => {
-                let names: Vec<String> = self
-                    .columns
-                    .iter()
-                    .enumerate()
-                    .map(|(i, col)| {
-                        col.get(self.selected.get(i).copied().unwrap_or(0))
-                            .cloned()
-                            .unwrap_or_default()
-                    })
-                    .collect();
-                let quoted: Vec<String> = names.iter().map(|n| format!("'{}'", n)).collect();
-                format!("[{}]", quoted.join(","))
-            }
+            SheetMode::Region => json!(self.picked_labels()),
         }
     }
 
@@ -656,7 +647,7 @@ mod tests {
         let mut s = open_sheet(SheetMode::Selector, vec![cols(&["A", "B", "C"])], vec![0]);
         s.move_selection(0, 2);
         assert_eq!(s.selected[0], 2);
-        assert_eq!(s.change_value(), "2");
+        assert_eq!(s.change_value(), serde_json::json!(2));
     }
 
     #[test]
@@ -676,7 +667,7 @@ mod tests {
             vec![0, 0],
         );
         s.move_selection(1, 2);
-        assert_eq!(s.change_value(), "[0,2]");
+        assert_eq!(s.change_value(), serde_json::json!([0, 2]));
     }
 
     #[test]
@@ -684,9 +675,9 @@ mod tests {
         let hours: Vec<String> = (0..24).map(|h| format!("{:02}时", h)).collect();
         let mins: Vec<String> = (0..60).map(|m| format!("{:02}分", m)).collect();
         let mut s = open_sheet(SheetMode::Time, vec![hours, mins], vec![9, 5]);
-        assert_eq!(s.change_value(), "09:05");
+        assert_eq!(s.change_value(), serde_json::json!("09:05"));
         s.move_selection(0, 3); // 9 -> 12 时
-        assert_eq!(s.change_value(), "12:05");
+        assert_eq!(s.change_value(), serde_json::json!("12:05"));
     }
 
     #[test]
@@ -695,7 +686,7 @@ mod tests {
         let months: Vec<String> = (1..=12).map(|m| format!("{}月", m)).collect();
         let days: Vec<String> = (1..=31).map(|d| format!("{}日", d)).collect();
         let s = open_sheet(SheetMode::Date, vec![years, months, days], vec![1, 2, 14]);
-        assert_eq!(s.change_value(), "2024-03-15");
+        assert_eq!(s.change_value(), serde_json::json!("2024-03-15"));
     }
 
     #[test]
@@ -723,6 +714,42 @@ mod tests {
         assert_eq!(hit_test(&s, 100.0, wheel_center), SheetHit::Item { col: 0, delta: 0 });
     }
 
+    /// 回归：交给 `__callPageMethod` 的载荷必须是**扁平的** `{"value": ...}`。
+    ///
+    /// 那个函数把第二个参数整体当 dataset，事件对象里 `detail` 直接指向它。
+    /// 从前多包了一层 `{detail:{value:..}}`，页面里 `e.detail.value` 于是是 undefined ——
+    /// 选了「选项二」按确定，页面纹丝不动。
+    #[test]
+    fn confirm_payload_is_flat_value_object() {
+        let s = open_sheet(SheetMode::Selector, vec![cols(&["A", "B", "C"])], vec![1]);
+        let payload = serde_json::json!({ "value": s.change_value() });
+        assert_eq!(payload, serde_json::json!({ "value": 1 }));
+        // 序列化出来要是合法 JSON（同时也是合法 JS 对象字面量）
+        assert_eq!(payload.to_string(), r#"{"value":1}"#);
+    }
+
+    /// `time` / `date` 的值必须是带引号的字符串。
+    /// 拼字符串字面量时 `09:05` 是 JS 语法错误，`2024-03-15` 会被算成 2006。
+    #[test]
+    fn time_and_date_payloads_stay_quoted_strings() {
+        let hours: Vec<String> = (0..24).map(|h| format!("{:02}时", h)).collect();
+        let mins: Vec<String> = (0..60).map(|m| format!("{:02}分", m)).collect();
+        let t = open_sheet(SheetMode::Time, vec![hours, mins], vec![9, 5]);
+        assert_eq!(
+            serde_json::json!({ "value": t.change_value() }).to_string(),
+            r#"{"value":"09:05"}"#
+        );
+
+        let years = vec!["2024年".to_string()];
+        let months: Vec<String> = (1..=12).map(|m| format!("{}月", m)).collect();
+        let days: Vec<String> = (1..=31).map(|d| format!("{}日", d)).collect();
+        let d = open_sheet(SheetMode::Date, vec![years, months, days], vec![0, 2, 14]);
+        assert_eq!(
+            serde_json::json!({ "value": d.change_value() }).to_string(),
+            r#"{"value":"2024-03-15"}"#
+        );
+    }
+
     #[test]
     fn confirm_value_after_wheel_tap() {
         // 模拟：点中心下一行 → 选择 +1 → 确定值随之更新
@@ -732,6 +759,6 @@ mod tests {
         if let SheetHit::Item { col, delta } = hit_test(&s, 100.0, one_below) {
             s.move_selection(col, delta);
         }
-        assert_eq!(s.change_value(), "1");
+        assert_eq!(s.change_value(), serde_json::json!(1));
     }
 }

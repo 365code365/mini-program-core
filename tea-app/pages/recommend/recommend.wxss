@@ -1,0 +1,199 @@
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.banner-title, .pname {
+  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+}
+.tabs {
+  flex-direction: row;
+  justify-content: center;
+  padding-top: 22rpx;
+}
+.tab {
+  height: 66rpx;
+  padding-left: 26rpx;
+  padding-right: 26rpx;
+  border-radius: 34rpx;
+  border: 2rpx solid rgba(158, 121, 71, 0.3);
+  background-color: rgba(255, 255, 255, 0.55);
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  margin-left: 9rpx;
+  margin-right: 9rpx;
+}
+.tab-on {
+  background-color: #b28f57;
+  border-color: #b28f57;
+}
+.tab-icon {
+  width: 28rpx;
+  height: 28rpx;
+  margin-right: 9rpx;
+}
+.tab-text {
+  color: #8a6c42;
+  font-size: 23rpx;
+}
+.tab-text-on {
+  color: #ffffff;
+  font-weight: 900;
+}
+.section {
+  margin: 22rpx 24rpx 0;
+  border-radius: 22rpx;
+  background-color: #f3ecdf;
+  overflow: hidden;
+}
+.banner {
+  height: 296rpx;
+  position: relative;
+}
+.banner-img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+.banner-wash {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 70%;
+  background-color: rgba(246, 240, 230, 0.84);
+}
+.banner-copy {
+  position: absolute;
+  left: 32rpx;
+  top: 34rpx;
+  right: 250rpx;
+}
+.banner-title {
+  color: #3d2d1d;
+  font-size: 44rpx;
+  line-height: 56rpx;
+  font-weight: 900;
+  letter-spacing: 2rpx;
+}
+.banner-sub {
+  color: #5e5142;
+  font-size: 23rpx;
+  margin-top: 10rpx;
+}
+.banner-line {
+  width: 42rpx;
+  height: 3rpx;
+  background-color: #b28f57;
+  margin-top: 22rpx;
+}
+.banner-tag {
+  color: #a07c46;
+  font-size: 20rpx;
+  line-height: 30rpx;
+  margin-top: 20rpx;
+}
+.grid {
+  flex-direction: row;
+  justify-content: space-between;
+  background-color: #ffffff;
+  border-radius: 18rpx;
+  margin-left: 12rpx;
+  margin-right: 12rpx;
+  margin-bottom: 12rpx;
+  padding: 14rpx 12rpx;
+}
+.pcard {
+  width: 211rpx;
+}
+.pimg-wrap {
+  position: relative;
+  width: 211rpx;
+  height: 152rpx;
+  border-radius: 12rpx;
+  overflow: hidden;
+  background-color: #eee8de;
+}
+.pimg {
+  width: 100%;
+  height: 100%;
+}
+.pbadge {
+  position: absolute;
+  left: 8rpx;
+  top: 8rpx;
+  height: 30rpx;
+  padding-left: 10rpx;
+  padding-right: 10rpx;
+  border-radius: 16rpx;
+  background-color: rgba(255, 250, 240, 0.92);
+  align-items: center;
+  justify-content: center;
+}
+.badge-newbie {
+  background-color: rgba(243, 247, 235, 0.94);
+}
+.pbadge-t {
+  color: #8f6336;
+  font-size: 15rpx;
+}
+.pname {
+  color: #3a2c1e;
+  font-size: 22rpx;
+  line-height: 30rpx;
+  font-weight: 900;
+  margin-top: 12rpx;
+}
+.pdesc {
+  color: #82786c;
+  font-size: 16rpx;
+  line-height: 24rpx;
+  margin-top: 5rpx;
+}
+.prow {
+  flex-direction: row;
+  align-items: baseline;
+  margin-top: 9rpx;
+}
+.pprice {
+  color: #a5652f;
+  font-size: 25rpx;
+  font-weight: 900;
+}
+.punit {
+  color: #82786c;
+  font-size: 15rpx;
+  margin-left: 4rpx;
+}
+.pbtn {
+  height: 46rpx;
+  border-radius: 24rpx;
+  border: 2rpx solid rgba(150, 116, 66, 0.4);
+  align-items: center;
+  justify-content: center;
+  margin-top: 11rpx;
+}
+.pbtn-t {
+  color: #8a683c;
+  font-size: 17rpx;
+}
+.empty {
+  height: 160rpx;
+  margin: 0 12rpx 12rpx;
+  border-radius: 18rpx;
+  background-color: #ffffff;
+  align-items: center;
+  justify-content: center;
+}
+.empty-text {
+  color: #82786c;
+  font-size: 22rpx;
+}
+.bottom-space {
+  height: calc(60rpx + env(safe-area-inset-bottom));
+}

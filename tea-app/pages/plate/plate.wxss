@@ -1,0 +1,128 @@
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.head {
+  padding: 36rpx 32rpx 28rpx;
+}
+.h-name {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #4a3020;
+}
+.h-sub {
+  font-size: 24rpx;
+  color: #82786c;
+  margin-top: 12rpx;
+}
+.h-tag {
+  align-self: flex-start;
+  margin-top: 18rpx;
+  background-color: rgba(199, 154, 82, 0.14);
+  border-radius: 8rpx;
+  padding: 6rpx 16rpx;
+}
+.h-tag-done {
+  background-color: rgba(47, 79, 79, 0.12);
+}
+.h-tag-t {
+  font-size: 22rpx;
+  color: #a87536;
+}
+.preview {
+  background-color: #f7f0e1;
+  border: 2rpx solid #e3d8c0;
+  border-radius: 20rpx;
+  margin: 0 32rpx;
+  padding: 36rpx 28rpx;
+  align-items: center;
+}
+.pv-h {
+  font-size: 22rpx;
+  color: #9a8458;
+  letter-spacing: 2rpx;
+}
+.pv-line {
+  width: 56rpx;
+  height: 2rpx;
+  background-color: #a87536;
+  margin: 16rpx 0;
+}
+.pv-name {
+  font-size: 38rpx;
+  font-weight: bold;
+  color: #3a2c18;
+}
+.pv-msg {
+  font-size: 24rpx;
+  color: #7a6a47;
+  margin-top: 14rpx;
+  line-height: 38rpx;
+  text-align: center;
+}
+.form {
+  background-color: #ffffff;
+  border-radius: 20rpx;
+  margin: 28rpx 32rpx 0;
+  padding: 8rpx 28rpx 28rpx;
+}
+.field {
+  margin-top: 28rpx;
+}
+.f-label {
+  font-size: 26rpx;
+  color: #4a3020;
+  font-weight: bold;
+}
+.req {
+  color: #c0392b;
+}
+.f-input {
+  height: 84rpx;
+  font-size: 30rpx;
+  color: #2d251e;
+  border-bottom: 2rpx solid rgba(112, 83, 48, 0.11);
+}
+.f-area {
+  height: 140rpx;
+  font-size: 28rpx;
+  color: #2d251e;
+  border-bottom: 2rpx solid rgba(112, 83, 48, 0.11);
+  padding: 12rpx 0;
+  width: 100%;
+}
+.ph {
+  color: #c4bfb4;
+}
+.f-count {
+  font-size: 20rpx;
+  color: #82786c;
+  align-self: flex-end;
+  margin-top: 8rpx;
+}
+.tip {
+  font-size: 22rpx;
+  color: #82786c;
+  line-height: 36rpx;
+  margin: 24rpx 36rpx 0;
+}
+.submit {
+  background-color: #a87536;
+  border-radius: 44rpx;
+  height: 88rpx;
+  align-items: center;
+  justify-content: center;
+  margin: 36rpx 32rpx 0;
+}
+.submit-off {
+  opacity: 0.6;
+}
+.submit-t {
+  color: #ffffff;
+  font-size: 32rpx;
+  font-weight: bold;
+  letter-spacing: 2rpx;
+}

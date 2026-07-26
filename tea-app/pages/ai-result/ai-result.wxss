@@ -1,0 +1,277 @@
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.summary, .empty-title, .product-name, .detail-title, .taste-label, .advice-title {
+  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+}
+.summary-card {
+  margin: 24rpx;
+  padding: 26rpx;
+  border-radius: 22rpx;
+  background-color: #efe5d7;
+  flex-direction: row;
+  align-items: center;
+}
+.summary-icon {
+  width: 70rpx;
+  height: 70rpx;
+  border-radius: 36rpx;
+  background-color: #fffaf2;
+  align-items: center;
+  justify-content: center;
+}
+.summary-img {
+  width: 42rpx;
+  height: 42rpx;
+}
+.summary-copy {
+  flex: 1;
+  margin-left: 20rpx;
+}
+.summary-label {
+  color: #9c7543;
+  font-size: 20rpx;
+}
+.summary {
+  color: #4a3020;
+  font-size: 26rpx;
+  line-height: 38rpx;
+  margin-top: 5rpx;
+  font-weight: 900;
+}
+.loading, .empty {
+  align-items: center;
+  padding: 120rpx 40rpx;
+}
+.loading-dot {
+  width: 22rpx;
+  height: 22rpx;
+  border-radius: 12rpx;
+  background-color: #a87536;
+}
+.loading-text, .empty-desc {
+  color: #82786c;
+  font-size: 24rpx;
+  margin-top: 18rpx;
+  text-align: center;
+}
+.empty-title {
+  color: #4a3020;
+  font-size: 30rpx;
+  font-weight: 900;
+}
+.retry {
+  margin-top: 26rpx;
+  background-color: #a87536;
+  border-radius: 38rpx;
+  padding: 16rpx 38rpx;
+}
+.retry-text {
+  color: #ffffff;
+  font-size: 24rpx;
+}
+.results {
+  padding: 0 24rpx;
+}
+.product {
+  background-color: #ffffff;
+  border-radius: 22rpx;
+  padding: 20rpx 18rpx;
+  margin-bottom: 20rpx;
+  border: 2rpx solid rgba(135, 101, 58, 0.09);
+}
+.main-row {
+  flex-direction: row;
+  align-items: flex-start;
+}
+.product-image {
+  width: 198rpx;
+  height: 236rpx;
+  border-radius: 14rpx;
+  background-color: #efe9df;
+}
+.product-mid {
+  flex: 1;
+  margin-left: 16rpx;
+  margin-right: 12rpx;
+}
+.name-row {
+  flex-direction: row;
+  align-items: center;
+}
+.product-name {
+  color: #3a2c1e;
+  font-size: 28rpx;
+  line-height: 36rpx;
+  font-weight: 900;
+}
+.rank {
+  height: 30rpx;
+  padding-left: 10rpx;
+  padding-right: 10rpx;
+  border-radius: 16rpx;
+  background-color: #f0e6d5;
+  align-items: center;
+  justify-content: center;
+  margin-left: 10rpx;
+}
+.rank-t {
+  color: #94703d;
+  font-size: 15rpx;
+}
+.product-sub {
+  color: #7d7367;
+  font-size: 18rpx;
+  margin-top: 6rpx;
+}
+.detail-row {
+  flex-direction: row;
+  align-items: flex-start;
+  margin-top: 14rpx;
+}
+.detail-icon {
+  width: 28rpx;
+  height: 28rpx;
+  margin-top: 2rpx;
+}
+.detail-copy {
+  flex: 1;
+  margin-left: 10rpx;
+}
+.detail-title {
+  color: #5b4936;
+  font-size: 20rpx;
+  font-weight: 900;
+}
+.detail-text {
+  color: #82796d;
+  font-size: 17rpx;
+  line-height: 26rpx;
+  margin-top: 3rpx;
+}
+.actions {
+  width: 176rpx;
+  align-items: stretch;
+}
+.primary-btn {
+  height: 62rpx;
+  border-radius: 12rpx;
+  background-color: #9a7342;
+  align-items: center;
+  justify-content: center;
+}
+.ghost-btn {
+  height: 62rpx;
+  border-radius: 12rpx;
+  border: 2rpx solid #b3936a;
+  align-items: center;
+  justify-content: center;
+  margin-top: 14rpx;
+}
+.primary-text {
+  color: #ffffff;
+  font-size: 21rpx;
+}
+.ghost-text {
+  color: #8a683c;
+  font-size: 21rpx;
+}
+.tags {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 16rpx;
+  padding-top: 14rpx;
+  border-top: 2rpx solid rgba(120, 92, 55, 0.08);
+}
+.taste-label {
+  color: #5b4936;
+  font-size: 19rpx;
+  font-weight: 900;
+  margin-right: 12rpx;
+}
+.tag {
+  color: #896739;
+  font-size: 17rpx;
+  background-color: #f5eee3;
+  border-radius: 20rpx;
+  padding: 6rpx 14rpx;
+  margin-right: 10rpx;
+  margin-bottom: 6rpx;
+}
+.advice {
+  margin: 4rpx 24rpx 0;
+  padding: 26rpx 18rpx;
+  border-radius: 22rpx;
+  background-color: #f1e9db;
+}
+.advice-head {
+  flex-direction: row;
+  align-items: center;
+}
+.advice-leaf {
+  width: 30rpx;
+  height: 30rpx;
+  margin-right: 10rpx;
+}
+.advice-title {
+  color: #4a3020;
+  font-size: 28rpx;
+  font-weight: 900;
+}
+.tips {
+  flex-direction: row;
+  justify-content: space-between;
+  margin-top: 22rpx;
+}
+.tip {
+  flex: 1;
+  align-items: center;
+  padding-left: 4rpx;
+  padding-right: 4rpx;
+}
+.tip-icon {
+  width: 38rpx;
+  height: 38rpx;
+}
+.tip-title {
+  color: #5c4936;
+  font-size: 18rpx;
+  font-weight: 900;
+  margin-top: 10rpx;
+  text-align: center;
+}
+.tip-desc {
+  color: #82786c;
+  font-size: 14rpx;
+  line-height: 22rpx;
+  text-align: center;
+  margin-top: 5rpx;
+}
+.skill-tip {
+  color: #9d7b50;
+  font-size: 17rpx;
+  margin-top: 16rpx;
+}
+.chat-more {
+  margin: 18rpx 24rpx 24rpx;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+.chat-more-icon {
+  width: 28rpx;
+  height: 28rpx;
+  margin-right: 10rpx;
+}
+.chat-more-text {
+  color: #9a7b54;
+  font-size: 20rpx;
+}
+.bottom-space {
+  height: 30rpx;
+}

@@ -1,0 +1,120 @@
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.tabs {
+  flex-direction: row;
+  justify-content: space-between;
+  background-color: #f7f3ec;
+  padding: 16rpx 24rpx;
+}
+.tab {
+  font-size: 26rpx;
+  color: #82786c;
+  padding-bottom: 10rpx;
+}
+.tab-on {
+  color: #4a3020;
+  font-weight: bold;
+  border-bottom: 4rpx solid #c5a46d;
+}
+.scroll {
+  flex: 1;
+}
+.empty {
+  align-items: center;
+  padding-top: 160rpx;
+}
+.empty-t {
+  font-size: 28rpx;
+  color: #82786c;
+}
+.empty-btn {
+  background-color: #a87536;
+  border-radius: 40rpx;
+  padding: 16rpx 40rpx;
+  margin-top: 24rpx;
+}
+.empty-btn-t {
+  color: #ffffff;
+  font-size: 26rpx;
+}
+.order {
+  background-color: #ffffff;
+  border-radius: 20rpx;
+  margin: 20rpx 24rpx 0;
+  padding: 20rpx;
+}
+.order-head {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 14rpx;
+}
+.order-no {
+  font-size: 22rpx;
+  color: #82786c;
+}
+.status {
+  font-size: 22rpx;
+  padding: 4rpx 14rpx;
+  border-radius: 8rpx;
+}
+.status-gold {
+  background-color: rgba(199, 154, 82, 0.15);
+  color: #a87536;
+}
+.status-muted {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: #82786c;
+}
+.goods {
+  flex-direction: row;
+  align-items: center;
+  border-top: 2rpx solid rgba(0, 0, 0, 0.05);
+  padding: 14rpx 0;
+}
+.goods-img {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 12rpx;
+}
+.goods-name {
+  flex: 1;
+  font-size: 28rpx;
+  color: #4a3020;
+  margin-left: 16rpx;
+}
+.goods-right {
+  align-items: flex-end;
+}
+.goods-price {
+  font-size: 28rpx;
+  color: #4a3020;
+}
+.goods-qty {
+  font-size: 22rpx;
+  color: #82786c;
+}
+.order-foot {
+  flex-direction: row;
+  justify-content: flex-end;
+  border-top: 2rpx solid rgba(0, 0, 0, 0.05);
+  padding-top: 14rpx;
+}
+.foot-t {
+  font-size: 28rpx;
+  color: #a87536;
+  font-weight: bold;
+}
+.nomore {
+  align-items: center;
+  padding: 24rpx 0;
+}
+.nomore-t {
+  font-size: 22rpx;
+  color: #82786c;
+}
