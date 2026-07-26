@@ -105,7 +105,7 @@ fn gif_animation() {
         <text class="h">GIF 动图 · 原生逐帧播放</text>
         <view class="card">
             <view class="row">
-                <image class="gif" src="sample-app/assets/loading.gif" mode="scaleToFill"></image>
+                <image class="gif" src="sample/sample-app/assets/loading.gif" mode="scaleToFill"></image>
                 <view class="info">
                     <text class="t">loading.gif</text>
                     <text class="d">8 帧 · 每帧 120ms · 循环播放</text>
@@ -116,9 +116,9 @@ fn gif_animation() {
         </view>
         <text class="h">不同尺寸与裁剪模式</text>
         <view class="card row around">
-            <image class="gif-sm" src="sample-app/assets/loading.gif" mode="aspectFit"></image>
-            <image class="gif-md" src="sample-app/assets/loading.gif" mode="aspectFill"></image>
-            <image class="gif-round" src="sample-app/assets/loading.gif" mode="scaleToFill"></image>
+            <image class="gif-sm" src="sample/sample-app/assets/loading.gif" mode="aspectFit"></image>
+            <image class="gif-md" src="sample/sample-app/assets/loading.gif" mode="aspectFill"></image>
+            <image class="gif-round" src="sample/sample-app/assets/loading.gif" mode="scaleToFill"></image>
         </view>
     </view>"##;
     let wxss = r#"

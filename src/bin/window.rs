@@ -120,16 +120,26 @@ impl MiniAppWindow {
         // 登记小程序根目录：页面/组件加载与包内资源（图片）解析都依赖它
         page_loader::set_app_path(
             app_path.unwrap_or_else(|| {
-                std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("sample-app")
+                mini_render::app_dir::default_app()
             }),
         );
         
         let mut app = MiniApp::new(LOGICAL_WIDTH, LOGICAL_HEIGHT)?;
         app.init()?;
         
-        // 动态加载 app.js
+        // 先把小程序目录里所有 .js 注册成 CommonJS 模块，`require('./x.js')` 才解析得到。
+        // uni-app / TS 编译出来的小程序会 require 一个几百 KB 的 vendor 包，
+        // 不预注册的话第一行 require 就失败。
+        let app_root = page_loader::get_app_path();
+        match app.register_all_modules(&app_root) {
+            Ok(n) if n > 0 => println!("📦 已注册 {} 个 JS 模块", n),
+            Err(e) => eprintln!("⚠️  模块注册失败: {}", e),
+            _ => {}
+        }
+
+        // 动态加载 app.js（按模块作用域执行：小程序里每个 .js 都是 CommonJS 模块）
         let app_js = page_loader::load_app_js();
-        app.load_script(&app_js)?;
+        app.load_module_script("app", &app_js)?;
         println!("📱 App.js loaded");
         
         // 动态加载 app.json
@@ -289,6 +299,9 @@ impl MiniAppWindow {
             self.set_pull_refreshing(true);
         }
         self.reap_picker_sheet();
+        if mini_render::renderer::components::advance_due_swipers() {
+            self.needs_redraw = true;
+        }
         if !self.viewport_inside_drawn_band() {
             self.needs_redraw = true;
         }
@@ -415,7 +428,9 @@ impl MiniAppWindow {
         // 先登记路由：页面实例的 `this.route` / `getCurrentPages()` 都依赖它，
         // 返回时也靠它判断逻辑层是否已经出过栈
         self.app.eval(&format!("__setPendingRoute({})", serde_json::to_string(path).unwrap_or_else(|_| "''".into()))).ok();
-        self.app.load_script(&page_info.js)?;
+        // 页面 js 同样按模块作用域执行，且每次进入都重跑（`Page({...})` 要重新注册）。
+        // path 即页面路由，决定页面里相对 require 的基准目录。
+        self.app.load_module_script(path, &page_info.js)?;
         let query_json = serde_json::to_string(&query).unwrap_or("{}".to_string());
         self.app.eval(&format!("if(__currentPage && __currentPage.onLoad) __currentPage.onLoad({})", query_json)).ok();
         self.app.eval("if(__currentPage && __currentPage.onShow) __currentPage.onShow()").ok();
@@ -1242,6 +1257,11 @@ impl ApplicationHandler for MiniAppWindow {
                 }
                 self.process_navigation();
                 self.reap_picker_sheet();
+                // swiper 的自动播放由宿主推进，而不是等它被画到才走时钟 ——
+                // 滚出视口或被局部重绘剪掉的 swiper 会永远"到点"，把整页拖成每帧重绘
+                if mini_render::renderer::components::advance_due_swipers() {
+                    self.needs_redraw = true;
+                }
                 // 不变量：上屏要用的那段画布必须是已经画过的。
                 // 页面画布只画「视口 ± 裁剪余量」，所以滚动出这条带就必须重画，
                 // 否则上屏取到没画过的区域（表现为滑动时一片空白，停下才出现内容）。
@@ -1313,9 +1333,12 @@ impl ApplicationHandler for MiniAppWindow {
                     // 平均帧率看着达标，实际帧间隔在抖，这正是「高刷没体现出来」的手感。
                     let now = Instant::now();
                     let mut target = self.next_frame_at + self.frame_interval;
-                    // 落后超过一整帧（大重绘、系统抢占）就重新对齐，避免追帧追出一串挤压帧
+                    // 落后超过一整帧（大重绘、系统抢占）就重新对齐，避免追帧追出一串挤压帧。
+                    // 对齐到「现在」而不是「现在 + 一个周期」：一帧干了 10ms 活本来就已经
+                    // 超预算了，再补睡 6.9ms 会把帧间隔顶到 17ms —— 手上感觉到的顿挫是
+                    // **帧间隔**，不是干活时间，白睡的这一下等于把一次超时放大成两帧。
                     if target <= now {
-                        target = now + self.frame_interval;
+                        target = now;
                     }
                     self.next_frame_at = target;
                     // 只睡到「还差一个自旋余量」，剩下的用让出时间片的忙等把边缘对准；
@@ -1665,13 +1688,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 return Ok(());
             }
             other => {
-                let path = std::path::PathBuf::from(other);
-                if path.exists() && path.is_dir() {
+                // 示例小程序收在 sample/ 下，但命令行习惯写裸名字（`sample-app`），
+                // 交给解析器统一处理裸名字 / `sample/xxx` / 任意路径三种写法
+                let path = mini_render::app_dir::resolve(other);
+                if path.is_dir() {
                     println!("📂 加载小程序: {}", path.display());
                     app_path = Some(path);
                 } else {
-                    eprintln!("❌ 目录不存在: {}", path.display());
-                    return Err(format!("目录不存在: {}", path.display()).into());
+                    eprintln!("❌ 找不到小程序: {}", other);
+                    let apps = mini_render::app_dir::list_apps();
+                    if !apps.is_empty() {
+                        eprintln!("   可用的示例：{}", apps.join("、"));
+                    }
+                    return Err(format!("找不到小程序: {}", other).into());
                 }
             }
         }

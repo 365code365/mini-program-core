@@ -9,7 +9,7 @@ use crate::renderer::WxmlRenderer;
 use crate::{Canvas, Color};
 use serde_json::json;
 
-const GIF: &str = "sample-app/assets/loading.gif";
+const GIF: &str = "sample/sample-app/assets/loading.gif";
 
 fn render_gif(src: &str) -> Vec<u8> {
     let css = ".g{ width:60px; height:60px; }";
@@ -64,7 +64,7 @@ fn test_gif_frame_advances_over_time() {
 
 #[test]
 fn test_static_image_is_not_animated() {
-    let jpg = "sample-app/assets/p_phone.jpg";
+    let jpg = "sample/sample-app/assets/p_phone.jpg";
     if !std::path::Path::new(jpg).exists() {
         return;
     }

@@ -15,19 +15,19 @@ fn main() -> Result<(), String> {
     app.init()?;
     
     // 加载页面 JS
-    let page_js = include_str!("../../sample-app/pages/index/index.js");
+    let page_js = include_str!("../../sample/sample-app/pages/index/index.js");
     app.load_script(page_js)?;
     // 触发 onLoad 生命周期
     app.eval("if (__currentPage && __currentPage.onLoad) __currentPage.onLoad({})").ok();
     
     // 解析 WXML
-    let wxml_content = include_str!("../../sample-app/pages/index/index.wxml");
+    let wxml_content = include_str!("../../sample/sample-app/pages/index/index.wxml");
     let mut wxml_parser = WxmlParser::new(wxml_content);
     let wxml_nodes = wxml_parser.parse().map_err(|e| format!("WXML parse error: {}", e))?;
     println!("✅ WXML parsed: {} root nodes", wxml_nodes.len());
     
     // 解析 WXSS
-    let wxss_content = include_str!("../../sample-app/pages/index/index.wxss");
+    let wxss_content = include_str!("../../sample/sample-app/pages/index/index.wxss");
     let mut wxss_parser = WxssParser::new(wxss_content);
     let stylesheet = wxss_parser.parse().map_err(|e| format!("WXSS parse error: {}", e))?;
     println!("✅ WXSS parsed: {} rules", stylesheet.rules.len());

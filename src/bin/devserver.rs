@@ -243,7 +243,8 @@ fn handle(stream: &mut TcpStream, preview: &mut Preview) {
 
 fn main() -> Result<(), String> {
     let args: Vec<String> = std::env::args().collect();
-    let app_root = args.get(1).cloned().unwrap_or_else(|| "sample-app".to_string());
+    let app_arg = args.get(1).cloned().unwrap_or_else(|| "sample-app".to_string());
+    let app_root = mini_render::app_dir::resolve(&app_arg).to_string_lossy().to_string();
     let start_port: u16 = args.get(2).and_then(|s| s.parse().ok()).unwrap_or(9000);
 
     println!("📂 加载小程序: {}", app_root);

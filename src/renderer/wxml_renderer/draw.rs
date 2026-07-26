@@ -52,6 +52,23 @@ impl WxmlRenderer {
         if x + w < -MARGIN || x > canvas_w + MARGIN {
             return true;
         }
+        // 局部重绘帧：离损伤区太远的子树连遍历都不必要。
+        //
+        // 从前只按视口裁剪，于是一个 45x33 的倒计时损伤区，也要把视口内
+        // 六百来个节点全部走一遍、各自发起绘制，最后才在像素级被裁掉 ——
+        // 白付约 3ms。整帧预算只有 6.94ms，这一笔是掉帧的直接原因之一。
+        //
+        // 余量沿用视口裁剪的同一个值：阴影、溢出的绝对定位子节点可能画到
+        // 布局盒之外，判据必须比盒子宽松（`tools/damage-check.sh` 逐像素校验这一点）。
+        if let Some(d) = self.damage_clip {
+            if x + w < d.x - MARGIN
+                || x > d.x + d.width + MARGIN
+                || y + h < d.y - MARGIN
+                || y > d.y + d.height + MARGIN
+            {
+                return true;
+            }
+        }
         if viewport_height <= 0.0 {
             return false;
         }

@@ -96,6 +96,31 @@ impl SwiperStateManager {
         false
     }
 
+    /// 把所有「自动播放已到点」的 swiper 推进一页，返回是否有 swiper 真的翻了页。
+    ///
+    /// 这一步必须与**绘制解耦**。从前只有 `draw_swiper_container` 里会调
+    /// `check_autoplay`，于是 swiper 一旦没被画到（滚出视口被裁掉、或者局部重绘帧
+    /// 里整棵子树被剪掉），它的 `last_update` 就永远停在原地：
+    /// `elapsed >= interval` 恒成立 → `any_needs_frame()` 每帧都说"要出帧" →
+    /// 宿主每帧整屏重绘。带轮播的长页面因此被永久钉在 ~100FPS 且帧间隔忽大忽小。
+    ///
+    /// 现在由宿主每帧调一次：翻页只在到点那一帧发生，其余帧 swiper 不再索要重绘。
+    pub fn advance_due_autoplay(&mut self) -> bool {
+        let mut flipped = false;
+        for state in self.states.values_mut() {
+            if !state.autoplay || state.total <= 1 {
+                continue;
+            }
+            if state.last_update.elapsed().as_millis() as u64 >= state.autoplay_interval {
+                state.prev = state.current;
+                state.current = (state.current + 1) % state.total;
+                state.last_update = std::time::Instant::now();
+                flipped = true;
+            }
+        }
+        flipped
+    }
+
     /// 是否有 swiper 现在就需要出帧：正在滑动换页，或自动播放已到点该翻页。
     ///
     /// 从前只要 swiper 有多于一项就无条件要求「每帧重绘」，而 swiper 本身是硬切页 ——
@@ -131,6 +156,14 @@ impl SwiperStateManager {
 pub static SWIPER_MANAGER: Lazy<Mutex<SwiperStateManager>> = Lazy::new(|| {
     Mutex::new(SwiperStateManager::new())
 });
+
+/// 推进所有到点的自动播放 swiper，返回是否有 swiper 翻页（宿主每帧调一次）
+pub fn advance_due_swipers() -> bool {
+    SWIPER_MANAGER
+        .lock()
+        .map(|mut m| m.advance_due_autoplay())
+        .unwrap_or(false)
+}
 
 /// 是否有 swiper 现在需要出帧（换页滑动中，或自动播放到点）
 pub fn swiper_needs_frame() -> bool {

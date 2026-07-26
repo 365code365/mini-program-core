@@ -199,6 +199,46 @@ bash tools/damage-check.sh
 
 > 连带修掉一个隐蔽的耦合：局部重绘帧只访问了裁剪范围内的节点，收集到的「动画元素包围盒」是不完整的。拿它覆盖旧记录，下一个动画帧的损伤区就只剩这一小块，范围外的动画会**就此冻住**。现在只有「裁剪范围覆盖了全部动画元素」的帧（整帧、或损伤区本就由动画包围盒算出来的帧）才更新这份记录。
 
+### 局部重绘要「少算」，不只是「少画」
+
+设了损伤区之后，绘制期的视口裁剪也要把**离损伤区太远的子树整棵剪掉**。否则一个
+45×33 的倒计时损伤区，照样要把视口里六百来个节点逐个走一遍、各自发起绘制，
+最后才在像素级被裁掉 —— 白付约 2.5ms，而整帧预算只有 6.94ms。
+
+> 这里踩过一个自己挖的坑：绘制入口原本写的是 `self.damage_clip.take()`。像素级裁剪
+> 照样正确，所以看不出问题，但 `cull_outside_viewport` 拿到的永远是 `None`，
+> 子树裁剪等于没生效。**改完没量到收益时，先确认自己的开关真的通到了目标位置。**
+
+### 组件的时钟不能挂在绘制上
+
+swiper 的自动播放原先只在 `draw_swiper_container` 里推进。于是它一旦没被画到
+（滚出视口被裁掉、或者局部重绘帧里整棵子树被剪掉），`last_update` 就永远停在原地，
+`elapsed >= interval` 恒成立 → 每帧都报「我要出帧」→ 宿主每帧整屏重绘。
+带轮播的长页面因此被永久钉在 ~100FPS，帧间隔 14~17ms 忽大忽小。
+
+现在自动播放由宿主每帧推进一次（`advance_due_swipers()`），与是否被绘制解耦：
+翻页只在到点那一帧发生，其余帧 swiper 不再索要重绘。**凡是「状态推进」写在绘制路径里
+的组件，都会在裁剪优化面前变成隐性的每帧重绘源。**
+
+### 超时的那一帧不要再补睡一个周期
+
+帧限速原本在「落后超过一整帧」时把下一帧对齐到 `now + 一个周期`。但一帧已经干了
+11ms 活、本来就超预算了，再补睡 6.9ms 会把**帧间隔**顶到 17ms —— 手上感觉到的顿挫
+是帧间隔，不是干活时间，白睡这一下等于把一次超时放大成两帧。现在直接对齐到 `now`。
+
+首页（长页 + 轮播 + 每秒倒计时 setData）实测：
+
+| | 帧间隔峰值 | 最慢一帧 |
+|---|---|---|
+| 本轮之前 | 24.9ms | 17.9ms |
+| setData 增量失效 | 19.9ms | 12.4ms |
+| + 损伤区裁剪 | 17.0ms | 10.0ms |
+| + swiper 解耦 & 限速修正 | **11.4ms** | **11.4ms** |
+
+稳态 144FPS / 6.9~7.0ms。剩下的一次超时是每秒那一帧 setData 仍要**整棵重建布局树**
+（模板 1.0ms + 建树与样式 4.0ms + 布局 0.3ms），要压到预算内需要增量树打补丁 ——
+基础设施（`FramePlan`、损伤区、`tools/damage-check.sh`）已经就位。
+
 > 反过来，**页面滚动本身不该触发重绘**。页面画布是整页高的、用内容坐标，滚动只是让上屏按新偏移取不同的切片（上屏每帧都做）。所以「正在滚动」不进重绘闸门 —— 只有滚出已绘制条带那一刻才补画一次。曾经把「正在滚动/惯性中」也算进闸门，于是滚动的每一帧都整条带重画（约 6~7ms），刚好卡在 144Hz 的 6.9ms 预算边缘，偶尔超一点就丢帧 —— 这正是「滑动像抖动、高刷没体现出来」的根因。改掉之后滚动的绝大多数帧只花上屏的拷贝时间（约 2~3ms），只有跨条带的那一帧才有一次整页重绘的尖峰。`scroll-view` 内滚动仍要重绘（它的内容按自身偏移画进整页画布，没有独立切片）。
 
 ### picker 选择器
@@ -251,7 +291,7 @@ cargo run --release --bin mini-app-window -- sample-app --snapshot target/real \
 除了原生渲染，引擎还包含一个多目标编译器（`src/compiler/`）。它复用同一套解析器与数据快照，把小程序编译成**目标端的源码工程**，而不是套壳运行：
 
 ```bash
-cargo run --bin mini-compiler                      # sample-app → dist-html/
+cargo run --bin mini-compiler                      # sample-app → dist-html/（裸名字即可）
 cargo run --bin mini-compiler news-app dist-news html
 ```
 
@@ -310,16 +350,38 @@ source "$HOME/.cargo/env"
 # 2) 构建
 cargo build --release
 
-# 3) 运行示例
+# 3) 跑一个小程序：交互式选择
+./run.sh                            # 列出 sample/ 下的小程序，输编号或名字
+./run.sh sample-app                 # 直接指定（裸名字 / sample/xxx / 任意路径都行）
+./run.sh 4                          # 按菜单编号
+./run.sh --list                     # 只看有哪些
+./run.sh --fps sample-app           # 带帧率诊断跑
+
+# 4) 其它示例
 cargo run --example gallery         # 渲染全部 64 个场景到 doc/gallery/
 cargo run --bin mini-devserver      # 浏览器调试预览（见下节）
 cargo run --example video_player    # 独立视频播放窗口（自动循环 + 声音）
-cargo run --bin mini-app-window     # 窗口应用（加载 sample-app）
-cargo run --bin mini-launcher       # 小程序启动器（扫描 sample 目录）
+cargo run --bin mini-app-window     # 窗口应用（默认加载 sample-app）
 
-# 4) 测试（223 个用例）
+# 5) 测试（227 个用例）
 cargo test
 ```
+
+### 示例小程序放在哪
+
+全部收在 `sample/` 下，**一层子目录里有 `app.json` 就算一个小程序**，`run.sh` 与
+`mini-launcher` 都按这个规则扫描（所以 `sample/_archive/` 这类归档不会被当成示例）：
+
+| 目录 | 页数 | 说明 |
+|------|------|------|
+| `sample/sample-app` | 15 | 商城：轮播 / 秒杀倒计时 / 优惠券弹层 / 自定义 tabBar / Canvas |
+| `sample/tea-app` | 35 | **uni-app 编译产物**（Vue 3 运行时 + 60 个 CommonJS 模块），验证真实工程链路 |
+| `sample/news-app` | 6 | 资讯：长列表 / 视频 / 富文本 |
+| `sample/real-sample` | 8 | 微信官方 demo |
+
+命令行里写**裸名字**就行（`sample-app`），路径由 `src/app_dir.rs` 统一解析 ——
+裸名字、`sample/xxx`、任意绝对/相对路径都接受。把这件事收在一处，是为了避免
+「迁一次目录要改十几处硬编码字符串」。
 
 ---
 
@@ -361,9 +423,9 @@ cargo run --bin mini-devserver <小程序根> [端口]   # 端口被占用会自
 
 ---
 
-## 📱 两个可用的示例小程序
+## 📱 可用的示例小程序
 
-仓库里的 `sample-app`（商城）与 `news-app`（头条新闻）不是静态样板，而是**功能闭环**的小程序，原生窗体与编译出的 H5 行为一致：
+`sample/sample-app`（商城）与 `sample/news-app`（头条新闻）不是静态样板，而是**功能闭环**的小程序，原生窗体与编译出的 H5 行为一致：
 
 | | `sample-app` 商城（15 页） | `news-app` 新闻（6 页） |
 |---|---|---|
@@ -376,9 +438,28 @@ cargo run --bin mini-devserver <小程序根> [端口]   # 端口被占用会自
 跨页数据（购物车、订单、收藏、设置、搜索历史）统一走 `wx.storage`，所以编译成 H5 后即使每个页面是独立文档也不丢状态。
 
 ```bash
-cargo run --release --bin mini-app-window -- sample-app   # 商城
-cargo run --release --bin mini-app-window -- news-app     # 新闻
+./run.sh sample-app     # 商城
+./run.sh news-app       # 新闻
+./run.sh tea-app        # uni-app 编译产物
+./run.sh real-sample    # 微信官方 demo
 ```
+
+### 还能跑真实工程的编译产物
+
+`sample/tea-app` 是 **uni-app 编译到 mp-weixin 的产物**：36 个 wxml + 一个 259KB 的
+Vue 3 运行时 + 60 个 CommonJS 模块。跑通它需要三件事，都是引擎侧的通用能力：
+
+- **每个 `.js` 都按 CommonJS 模块作用域执行**（`module` / `exports` / 相对 `require`）。
+  从前 app.js 是当裸脚本 eval 的，TS / uni-app 产物第一行 `Object.defineProperty(exports, …)`
+  就 `ReferenceError`。页面 js 同样按模块执行但**不缓存** —— 每次进入要重跑，
+  `Page({...})` 才会重新注册。
+- 启动时把小程序目录下所有 `.js` 预注册成模块，`require('./common/vendor.js')` 才解析得到。
+- `global` / `self` 指向 `globalThis`：打包器与框架运行时普遍靠这些别名做环境探测。
+
+> 能定位到这些，前提是**报错得有内容**。`Error` 的 `message`/`stack` 是不可枚举属性，
+> 原来对异常对象做 `JSON.stringify` 永远得到 `{}` —— 屏幕上只有 `JS Exception: {}`，
+> 等于逼着人去通读源码猜。现在异常会打印 `name: message` 加栈的前两行。
+> 顺带把 `real-sample`（微信官方 demo）也一起修活了：它挂在同一个原因上。
 
 多步交互也能脚本化验证（每段 `--eval` 之后宿主会把导航跑完）：
 
@@ -582,6 +663,16 @@ ctx.draw();
 
 拆分是**纯代码搬迁**，并且被验证过：拆分前后 15 个页面的整帧快照（固定动画时钟）逐字节相同。
 
+### 项目规则（`.kiro/steering/`）
+
+协作约定写成了三条常驻规则，Kiro 每次会话都会读到：
+
+| 文件 | 约定 |
+|------|------|
+| `00-scan-policy.md` | **默认不扫 `sample/` 等已固化路径**。排查顺序固定为「先看诊断产物 → 再看引擎代码 → 最后才定向读一眼小程序源码」，只有确认问题落在某个具体页面后才读那一个片段 |
+| `10-skyline-target.md` | 唯一对标对象是微信 [Skyline 渲染引擎](https://developers.weixin.qq.com/miniprogram/dev/framework/runtime/skyline/introduction.html)；测试目标必须可判定；**流畅度看最慢一帧与帧间隔峰值，不看平均帧率** |
+| `20-code-structure.md` | 单个 `.rs` 超过 500 行就要拆（数据表 / 不可分割算法 / 平台胶水可例外但需注明理由）；重构与改行为分两次做，纯搬迁必须用固定动画时钟的逐字节快照证明等价 |
+
 ---
 
 ## 🖌️ 素材图片生成
@@ -700,7 +791,7 @@ free(buf); mr_canvas_free(c);
 覆盖表达式引擎、WXSS 选择器（含 `var()`/`calc()`）、模板控制流、布局与文本换行、全组件渲染、Canvas 2D、交互、滚动/惯性、页面栈路由、组件模型、CommonJS 模块、Promise、生命周期、事件冒泡等：
 
 ```bash
-cargo test          # 223 个用例
+cargo test          # 227 个用例
 cargo test route    # 路由/页面栈/组件/模块/异步/生命周期
 cargo test canvas   # Canvas 2D 上下文与命令
 cargo test scroll   # 滚动与惯性

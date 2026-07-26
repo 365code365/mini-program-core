@@ -12,6 +12,9 @@ pub mod emoji;
 // 小程序资源根目录（图片等相对路径解析）
 pub mod assets;
 
+/// 示例小程序目录的定位（裸名字 / `sample/xxx` / 任意路径都能解析）
+pub mod app_dir;
+
 pub use canvas::Canvas;
 pub use color::Color;
 pub use geometry::{Point, Rect, Size};

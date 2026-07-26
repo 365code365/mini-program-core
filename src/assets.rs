@@ -35,7 +35,7 @@ pub fn resolve(path: &str) -> Option<PathBuf> {
     candidates.push(PathBuf::from(path));
     candidates.push(PathBuf::from(trimmed));
     candidates.push(Path::new("assets").join(trimmed));
-    candidates.push(Path::new("sample-app").join(trimmed));
+    candidates.push(crate::app_dir::default_app().join(trimmed));
 
     candidates.into_iter().find(|p| p.is_file())
 }

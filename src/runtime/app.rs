@@ -97,6 +97,25 @@ impl MiniApp {
         Ok(())
     }
     
+    /// 以模块作用域加载并运行 JS（app.js / 页面 js 走这条）。
+    ///
+    /// 小程序里每个 .js 都是 CommonJS 模块，所以 `module` / `exports` / 相对 `require`
+    /// 必须在作用域里 —— 否则 TS / uni-app 这类编译产物第一行就报
+    /// `'exports' is not defined`。`path` 决定相对 require 的基准目录。
+    pub fn load_module_script(&self, path: &str, code: &str) -> Result<(), String> {
+        let rt = self.runtime.lock().unwrap();
+        rt.run_as_module(path, code)
+            .map_err(|e| format!("Script error ({}): {}", path, e))?;
+        let output = rt.eval("__print_buffer.join('\\n')").unwrap_or_default();
+        if !output.is_empty() && output != "undefined" {
+            println!("\n--- JS Output ---");
+            println!("{}", output);
+            println!("-----------------\n");
+        }
+        rt.eval("__print_buffer = [];").ok();
+        Ok(())
+    }
+
     /// 加载 JS 文件
     pub fn load_file(&self, path: &str) -> Result<(), String> {
         let code = std::fs::read_to_string(path).map_err(|e| e.to_string())?;

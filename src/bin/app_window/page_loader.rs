@@ -194,57 +194,57 @@ fn load_builtin_pages() -> HashMap<String, PageInfo> {
     
     pages.insert("pages/index/index".to_string(), PageInfo {
         path: "pages/index/index".to_string(),
-        wxml: include_str!("../../../sample-app/pages/index/index.wxml").to_string(),
-        wxss: include_str!("../../../sample-app/pages/index/index.wxss").to_string(),
-        js: include_str!("../../../sample-app/pages/index/index.js").to_string(),
+        wxml: include_str!("../../../sample/sample-app/pages/index/index.wxml").to_string(),
+        wxss: include_str!("../../../sample/sample-app/pages/index/index.wxss").to_string(),
+        js: include_str!("../../../sample/sample-app/pages/index/index.js").to_string(),
         enable_pull_down_refresh: false,
     });
     
     pages.insert("pages/category/category".to_string(), PageInfo {
         path: "pages/category/category".to_string(),
-        wxml: include_str!("../../../sample-app/pages/category/category.wxml").to_string(),
-        wxss: include_str!("../../../sample-app/pages/category/category.wxss").to_string(),
-        js: include_str!("../../../sample-app/pages/category/category.js").to_string(),
+        wxml: include_str!("../../../sample/sample-app/pages/category/category.wxml").to_string(),
+        wxss: include_str!("../../../sample/sample-app/pages/category/category.wxss").to_string(),
+        js: include_str!("../../../sample/sample-app/pages/category/category.js").to_string(),
         enable_pull_down_refresh: false,
     });
     
     pages.insert("pages/cart/cart".to_string(), PageInfo {
         path: "pages/cart/cart".to_string(),
-        wxml: include_str!("../../../sample-app/pages/cart/cart.wxml").to_string(),
-        wxss: include_str!("../../../sample-app/pages/cart/cart.wxss").to_string(),
-        js: include_str!("../../../sample-app/pages/cart/cart.js").to_string(),
+        wxml: include_str!("../../../sample/sample-app/pages/cart/cart.wxml").to_string(),
+        wxss: include_str!("../../../sample/sample-app/pages/cart/cart.wxss").to_string(),
+        js: include_str!("../../../sample/sample-app/pages/cart/cart.js").to_string(),
         enable_pull_down_refresh: false,
     });
     
     pages.insert("pages/profile/profile".to_string(), PageInfo {
         path: "pages/profile/profile".to_string(),
-        wxml: include_str!("../../../sample-app/pages/profile/profile.wxml").to_string(),
-        wxss: include_str!("../../../sample-app/pages/profile/profile.wxss").to_string(),
-        js: include_str!("../../../sample-app/pages/profile/profile.js").to_string(),
+        wxml: include_str!("../../../sample/sample-app/pages/profile/profile.wxml").to_string(),
+        wxss: include_str!("../../../sample/sample-app/pages/profile/profile.wxss").to_string(),
+        js: include_str!("../../../sample/sample-app/pages/profile/profile.js").to_string(),
         enable_pull_down_refresh: false,
     });
     
     pages.insert("pages/detail/detail".to_string(), PageInfo {
         path: "pages/detail/detail".to_string(),
-        wxml: include_str!("../../../sample-app/pages/detail/detail.wxml").to_string(),
-        wxss: include_str!("../../../sample-app/pages/detail/detail.wxss").to_string(),
-        js: include_str!("../../../sample-app/pages/detail/detail.js").to_string(),
+        wxml: include_str!("../../../sample/sample-app/pages/detail/detail.wxml").to_string(),
+        wxss: include_str!("../../../sample/sample-app/pages/detail/detail.wxss").to_string(),
+        js: include_str!("../../../sample/sample-app/pages/detail/detail.js").to_string(),
         enable_pull_down_refresh: false,
     });
     
     pages.insert("pages/canvas/canvas".to_string(), PageInfo {
         path: "pages/canvas/canvas".to_string(),
-        wxml: include_str!("../../../sample-app/pages/canvas/canvas.wxml").to_string(),
-        wxss: include_str!("../../../sample-app/pages/canvas/canvas.wxss").to_string(),
-        js: include_str!("../../../sample-app/pages/canvas/canvas.js").to_string(),
+        wxml: include_str!("../../../sample/sample-app/pages/canvas/canvas.wxml").to_string(),
+        wxss: include_str!("../../../sample/sample-app/pages/canvas/canvas.wxss").to_string(),
+        js: include_str!("../../../sample/sample-app/pages/canvas/canvas.js").to_string(),
         enable_pull_down_refresh: false,
     });
     
     pages.insert("pages/components/components".to_string(), PageInfo {
         path: "pages/components/components".to_string(),
-        wxml: include_str!("../../../sample-app/pages/components/components.wxml").to_string(),
-        wxss: include_str!("../../../sample-app/pages/components/components.wxss").to_string(),
-        js: include_str!("../../../sample-app/pages/components/components.js").to_string(),
+        wxml: include_str!("../../../sample/sample-app/pages/components/components.wxml").to_string(),
+        wxss: include_str!("../../../sample/sample-app/pages/components/components.wxss").to_string(),
+        js: include_str!("../../../sample/sample-app/pages/components/components.js").to_string(),
         enable_pull_down_refresh: false,
     });
     

@@ -46,8 +46,7 @@ impl JsRuntime {
                 Err(e) => {
                     // 尝试获取更详细的错误信息：若是 JS 抛出的异常，取回异常对象
                     if matches!(e, rquickjs::Error::Exception) {
-                        let exc = ctx.catch();
-                        Err(format!("JS Exception: {}", js_value_to_string(&exc)))
+                        Err(format!("JS Exception: {}", describe_exception(&ctx)))
                     } else {
                         Err(format!("{:?}", e))
                     }
@@ -65,6 +64,18 @@ impl JsRuntime {
         self.eval(&code)
     }
     
+    /// 以模块作用域立即执行一段源码（`module` / `exports` / 相对 `require` 都可用）。
+    ///
+    /// `path` 是该文件相对小程序根目录的路径（如 `app`、`pages/index/index`），
+    /// 决定了里面相对 `require` 的解析基准目录。不缓存 —— 页面 js 每次进入都要重跑。
+    pub fn run_as_module(&self, path: &str, source: &str) -> Result<String, String> {
+        let code = format!(
+            "__runAsModule({:?}, function(module, exports, require) {{\n{}\n}});",
+            path, source
+        );
+        self.eval(&code)
+    }
+
     /// 注册一个 CommonJS 模块（不立即执行，等 require 时才执行工厂函数）
     ///
     /// `path` 为相对项目根目录的路径（可带或不带 .js 后缀），
@@ -154,6 +165,45 @@ impl JsRuntime {
 ///
 /// 对于对象/数组，使用 JS 侧的 `JSON.stringify` 做序列化，
 /// 这样 native 侧就能拿到完整的对象数据，而不再是之前的 `"[object]"`。
+/// 把当前抛出的异常描述成人能看懂的一行（含 name / message / stack 首行）。
+///
+/// 从前直接对异常对象做 `JSON.stringify` —— 而 `Error` 的 `message`/`stack` 都是
+/// **不可枚举**属性，于是 stringify 出来永远是 `{}`。加载一个跑不起来的小程序时
+/// 只能看到 `JS Exception: {}`，等于没有报错信息，只能靠通读源码去猜。
+fn describe_exception(ctx: &Ctx) -> String {
+    let exc = ctx.catch();
+    // 先按 Error 对象取字段
+    if let Some(obj) = exc.as_object() {
+        let get = |k: &str| -> Option<String> {
+            obj.get::<_, Value>(k).ok().and_then(|v| {
+                if v.is_undefined() || v.is_null() {
+                    None
+                } else {
+                    Some(js_value_to_string(&v))
+                }
+            })
+        };
+        let name = get("name").unwrap_or_else(|| "Error".to_string());
+        if let Some(msg) = get("message") {
+            let mut out = format!("{}: {}", name, msg);
+            if let Some(stack) = get("stack") {
+                // 栈可能很长，只取前两行足够定位
+                let brief: Vec<&str> = stack.lines().filter(|l| !l.trim().is_empty()).take(2).collect();
+                if !brief.is_empty() {
+                    out.push_str(&format!("\n    {}", brief.join("\n    ")));
+                }
+            }
+            return out;
+        }
+    }
+    let s = js_value_to_string(&exc);
+    if s == "{}" || s.is_empty() {
+        "（异常对象没有可读信息）".to_string()
+    } else {
+        s
+    }
+}
+
 fn js_value_to_string(val: &Value) -> String {
     if val.is_undefined() {
         "undefined".to_string()

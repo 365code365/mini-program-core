@@ -12,7 +12,9 @@ use mini_render::compiler::html::HtmlTarget;
 
 fn main() -> Result<(), String> {
     let args: Vec<String> = std::env::args().collect();
-    let app_root = args.get(1).cloned().unwrap_or_else(|| "sample-app".to_string());
+    let app_arg = args.get(1).cloned().unwrap_or_else(|| "sample-app".to_string());
+    // 示例小程序都在 sample/ 下，但命令行习惯写裸名字，统一交给解析器
+    let app_root = mini_render::app_dir::resolve(&app_arg).to_string_lossy().to_string();
     let out_dir = args.get(2).cloned().unwrap_or_else(|| "dist-html".to_string());
     let target_name = args.get(3).cloned().unwrap_or_else(|| "html".to_string());
 

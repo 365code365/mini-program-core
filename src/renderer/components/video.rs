@@ -111,8 +111,8 @@ impl VideoPlayer {
         let paths_to_try = vec![
             self.src.clone(),
             self.src.trim_start_matches('/').to_string(),
-            format!("sample-app{}", self.src),
-            format!("sample-app/{}", self.src.trim_start_matches('/')),
+            crate::app_dir::default_app().join(self.src.trim_start_matches('/')).to_string_lossy().to_string(),
+            crate::app_dir::default_app().to_string_lossy().to_string() + "/" + self.src.trim_start_matches('/'),
         ];
         
         let mut actual_path = None;

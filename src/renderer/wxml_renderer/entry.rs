@@ -54,8 +54,12 @@ impl WxmlRenderer {
         
         if let Some(cache) = self.cache.take() {
             let content_height = cache.content_height;
-            // 损伤区重绘：只有这块矩形内的像素会被改写，其余保留上一帧
-            let damaged = self.damage_clip.take();
+            // 损伤区重绘：只有这块矩形内的像素会被改写，其余保留上一帧。
+            // 注意这里**不能 take()** —— 绘制期的 `cull_outside_viewport` 还要靠
+            // `self.damage_clip` 把离损伤区太远的子树整棵剪掉。
+            // 提前取空的话像素级裁剪照样正确，但那六百个节点还是会被逐个走一遍、
+            // 各自发起绘制，白付几毫秒（局部重绘就只剩"少画"没有"少算"）。
+            let damaged = self.damage_clip;
             if let Some(rect) = damaged {
                 canvas.save();
                 canvas.clip_rect(rect);
@@ -68,6 +72,8 @@ impl WxmlRenderer {
             if damaged.is_some() {
                 canvas.restore();
             }
+            // 用完即清：下一帧由宿主重新设置（不清的话整帧重绘会被上一帧的损伤区裁掉）
+            self.damage_clip = None;
             self.cache = Some(cache);
             return content_height;
         }
