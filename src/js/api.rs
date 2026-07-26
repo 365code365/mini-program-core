@@ -364,17 +364,21 @@ impl MiniAppApi {
                 options.complete && options.complete();
             };
             
-            // 下拉刷新相关
+            // 下拉刷新：指示器与内容位移都由宿主负责，逻辑层只发「开始/结束」
             wx.startPullDownRefresh = function(options) {
                 options = options || {};
-                __native_print('[PullDownRefresh] start');
+                if (typeof __native_start_pull_down_refresh === 'function') {
+                    __native_start_pull_down_refresh();
+                }
                 options.success && options.success();
                 options.complete && options.complete();
             };
             
             wx.stopPullDownRefresh = function(options) {
                 options = options || {};
-                __native_print('[PullDownRefresh] stop');
+                if (typeof __native_stop_pull_down_refresh === 'function') {
+                    __native_stop_pull_down_refresh();
+                }
                 options.success && options.success();
                 options.complete && options.complete();
             };

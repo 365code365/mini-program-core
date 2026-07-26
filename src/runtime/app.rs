@@ -16,6 +16,10 @@ pub enum UiEvent {
     HideLoading,
     ShowModal { title: String, content: String, show_cancel: bool, cancel_text: String, confirm_text: String },
     HideModal,
+    /// `wx.startPullDownRefresh()`：由逻辑层主动进入下拉刷新态
+    StartPullDownRefresh,
+    /// `wx.stopPullDownRefresh()`：刷新完成，收起指示器并把内容归位
+    StopPullDownRefresh,
 }
 
 /// 小程序应用
@@ -262,6 +266,12 @@ impl MiniApp {
                 BridgeEvent::ShowModal { title, content, show_cancel, cancel_text, confirm_text } => {
                     println!("[Modal] {}: {}", title, content);
                     self.ui_events.push(UiEvent::ShowModal { title, content, show_cancel, cancel_text, confirm_text });
+                }
+                BridgeEvent::StartPullDownRefresh => {
+                    self.ui_events.push(UiEvent::StartPullDownRefresh);
+                }
+                BridgeEvent::StopPullDownRefresh => {
+                    self.ui_events.push(UiEvent::StopPullDownRefresh);
                 }
                 BridgeEvent::NavigateTo(url) => {
                     println!("[Navigate] {}", url);

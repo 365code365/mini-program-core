@@ -682,6 +682,15 @@ pub fn base_css() -> &'static str {
     r#"
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 @keyframes wxspin{to{transform:rotate(360deg);}}
+/* ── 下拉刷新指示器：与原生端同一套外观（64px 区域 + 三个灰点） ── */
+.wx-pull-indicator{position:fixed;top:0;left:50%;transform:translateX(-50%);width:375px;height:64px;
+  display:flex;align-items:center;justify-content:center;gap:8px;opacity:0;pointer-events:none;z-index:5;}
+.wx-pull-indicator>i{width:6px;height:6px;border-radius:50%;background:#888;display:block;}
+@keyframes wxpulldot{0%,100%{opacity:.3;}50%{opacity:1;}}
+.wx-pull-indicator.is-refreshing>i{animation:wxpulldot .9s ease-in-out infinite;}
+.wx-pull-indicator.is-refreshing>i:nth-child(2){animation-delay:.15s;}
+.wx-pull-indicator.is-refreshing>i:nth-child(3){animation-delay:.3s;}
+#app{transition:transform .25s ease-out;}
 /* 还原小程序默认盒模型：view 等默认 flex 纵向排列（与引擎一致，可收缩以适应宽度）*/
 .wx-view,.wx-cover-view,.wx-navigator,.wx-checkbox-group,.wx-radio-group,.wx-form,.wx-movable-view,.wx-movable-area{display:flex;flex-direction:column;}
 /* scroll-view：块级可滚动容器——子元素保持自身高度、超出则滚动，而非像 flex 那样被压缩 */

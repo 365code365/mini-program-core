@@ -23,6 +23,7 @@ use winit::event::{ElementState, MouseButton, WindowEvent, StartCause};
 use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
 use winit::window::{Window, WindowAttributes, WindowId};
 use mini_render::ui::ScrollController;
+use mini_render::ui::scroll_controller::PULL_REFRESH_HEIGHT;
 
 struct MiniAppWindow {
     window: Option<Arc<Window>>,
@@ -67,6 +68,10 @@ struct MiniAppWindow {
     fps_worst_parts: (f32, f32, f32),
     /// 上一次 render() 内部分段耗时（页面, fixed 覆盖层, tabBar），单位 ms
     render_parts: (f32, f32, f32),
+    /// 画布上那条带是按哪个滚动偏移画的（上屏偏移必须与它一致）
+    last_render_scroll: f32,
+    /// 当前是否处于下拉刷新态（内容被按住、指示器转圈，等 `wx.stopPullDownRefresh()`）
+    pull_refreshing: bool,
     /// 最慢一帧对应的 render 内部分段
     fps_worst_render_parts: (f32, f32, f32),
     /// 当前页面数据快照。逻辑层 setData 之后才重新取，避免每帧一次全量 JSON 往返。
@@ -152,6 +157,8 @@ impl MiniAppWindow {
             fps_worst_parts: (0.0, 0.0, 0.0),
             render_parts: (0.0, 0.0, 0.0),
             fps_worst_render_parts: (0.0, 0.0, 0.0),
+            last_render_scroll: f32::NAN,
+            pull_refreshing: false,
             page_data: std::sync::Arc::new(json!({})),
             page_data_dirty: true,
         };
@@ -185,11 +192,55 @@ impl MiniAppWindow {
             || sv_scroll
             || css_anim
             || self.interaction.has_focused_input()
+            || self.pull_refreshing // 指示器要持续转
             || self.app.has_active_timers()
             || self.toast.as_ref().map(|t| t.visible).unwrap_or(false)
             || self.loading.as_ref().map(|l| l.visible).unwrap_or(false)
             || self.modal.as_ref().map(|m| m.visible).unwrap_or(false)
             || mini_render::renderer::components::has_playing_video()
+    }
+
+    /// 当前页是否声明了 `enablePullDownRefresh`
+    fn page_enables_pull_down(&self) -> bool {
+        self.page_stack
+            .last()
+            .and_then(|p| self.pages.get(&p.path))
+            .map(|info| info.enable_pull_down_refresh)
+            .unwrap_or(false)
+    }
+
+    /// 进入/退出下拉刷新态。
+    ///
+    /// 进入时把内容按住在露出指示器的位置（等价 iOS 的 contentInset.top），
+    /// 并回调 `onPullDownRefresh`；退出时收回 inset，内容回弹归位。
+    fn set_pull_refreshing(&mut self, on: bool) {
+        if self.pull_refreshing == on {
+            return;
+        }
+        self.pull_refreshing = on;
+        self.scroll
+            .set_top_inset(if on { PULL_REFRESH_HEIGHT } else { 0.0 });
+        self.needs_redraw = true;
+        if on {
+            println!("📜 onPullDownRefresh");
+            self.app
+                .eval("if(__currentPage && __currentPage.onPullDownRefresh) __currentPage.onPullDownRefresh()")
+                .ok();
+            print_js_output(&self.app);
+        }
+    }
+
+    /// 处理逻辑层的 `wx.startPullDownRefresh` / `wx.stopPullDownRefresh`
+    fn apply_pull_down_request(&mut self, request: Option<bool>) {
+        match request {
+            Some(true) => {
+                if self.page_enables_pull_down() {
+                    self.set_pull_refreshing(true);
+                }
+            }
+            Some(false) => self.set_pull_refreshing(false),
+            None => {}
+        }
     }
 
     fn navigate_to(&mut self, path: &str, query: HashMap<String, String>) -> Result<(), String> {
@@ -362,6 +413,7 @@ impl MiniAppWindow {
             if self.is_custom_tabbar() { self.render_custom_tabbar(&current_path); }
             else { self.render_native_tabbar(&current_path); }
         }
+        self.last_render_scroll = scroll_offset;
         self.render_parts = (
             (t_page_done - t_render_begin).as_secs_f32() * 1000.0,
             (t_fixed_done - t_page_done).as_secs_f32() * 1000.0,
@@ -431,6 +483,15 @@ impl MiniAppWindow {
                     present_to_buffer(&mut buffer, size.width, size.height, canvas, self.fixed_canvas.as_ref(), self.tabbar_canvas.as_ref(),
                         (self.scroll.get_position() * self.scale_factor as f32) as i32, has_tabbar,
                         if has_tabbar { (tabbar_height() as f64 * self.scale_factor) as u32 } else { 0 });
+                    // 下拉刷新指示器画在页面之上、Toast/Modal 之下
+                    let gap = self.scroll.top_gap();
+                    if gap > 0.5 || self.pull_refreshing {
+                        app_window::render::render_pull_indicator(
+                            &mut buffer, size.width, size.height, self.scale_factor as f32,
+                            gap, self.pull_refreshing, self.scroll.pull_progress(),
+                            (self.last_frame.elapsed().as_secs_f32() * 1.1).fract(),
+                        );
+                    }
                     render_ui_overlay(&mut buffer, size.width, size.height, self.scale_factor as f32, self.last_frame,
                         &toast_state, &loading_state, &modal_state, self.text_renderer.as_deref());
                     buffer.present().ok();
@@ -721,7 +782,9 @@ impl ApplicationHandler for MiniAppWindow {
                     self.page_data_dirty = true;
                 }
                 
-                if evt::process_ui_events(&mut self.app, &mut self.toast, &mut self.loading, &mut self.modal) { self.needs_redraw = true; }
+                let mut pull_req: Option<bool> = None;
+                if evt::process_ui_events(&mut self.app, &mut self.toast, &mut self.loading, &mut self.modal, &mut pull_req) { self.needs_redraw = true; }
+                self.apply_pull_down_request(pull_req);
                 // 每帧轮询一次导航请求：此前只在「内容区被点击」时检查，
                 // 于是 setTimeout / 网络回调里发起的 wx.navigateTo / navigateBack
                 // 永远不会被宿主取走（登录成功 800ms 后自动返回就是这么失效的）。
@@ -734,7 +797,19 @@ impl ApplicationHandler for MiniAppWindow {
                 if evt::update_toast_timeout(&mut self.toast) { self.needs_redraw = true; }
                 
                 self.update_scroll();
+                // 下拉到位并松手：只有页面声明了 enablePullDownRefresh 才进入刷新态
+                // （微信里回弹一直有，指示器与回调由这个开关决定）
+                if self.scroll.take_pull_trigger() && self.page_enables_pull_down() {
+                    self.set_pull_refreshing(true);
+                }
                 self.process_navigation();
+                // 不变量：上屏用的滚动偏移，必须等于画布上那条带被绘制时的偏移。
+                // 页面画布只画「视口 ± 裁剪余量」，偏移一变就必须重画，否则上屏会取到
+                // 未绘制的区域（表现为滑动时一片空白，停下才出现内容）。
+                // 这里按位置比对而不是依赖各输入路径记得置标记 —— 少一处就会露白。
+                if (self.scroll.get_position() - self.last_render_scroll).abs() > 0.01 {
+                    self.needs_redraw = true;
+                }
                 
                 let scrolling = self.scroll.is_animating() || self.scroll.is_dragging;
                 let sv_scroll = self.interaction.scroll_controllers.values().any(|c| c.is_animating() || c.is_dragging);
@@ -866,7 +941,9 @@ impl MiniAppWindow {
                 while Instant::now() < deadline {
                     self.app.update().ok();
                     print_js_output(&self.app);
-                    evt::process_ui_events(&mut self.app, &mut self.toast, &mut self.loading, &mut self.modal);
+                    { let mut pull_req: Option<bool> = None;
+                        evt::process_ui_events(&mut self.app, &mut self.toast, &mut self.loading, &mut self.modal, &mut pull_req);
+                        self.apply_pull_down_request(pull_req); }
                     evt::update_toast_timeout(&mut self.toast);
                     if self.pending_navigation.is_none() {
                         self.pending_navigation = app_window::check_navigation(&mut self.app);
@@ -911,7 +988,23 @@ impl MiniAppWindow {
             }
             self.scroll.set_position(scroll);
             self.app.update().ok();
-            evt::process_ui_events(&mut self.app, &mut self.toast, &mut self.loading, &mut self.modal);
+            // 先把逻辑层这一批 UI 指令（Toast/Modal/下拉刷新）交给宿主，
+            // 再让宿主侧的滚动动画（惯性、边界回弹、下拉刷新的按住/归位）走完 ——
+            // 顺序反了的话脚本刚触发的状态在图里还没体现出来。
+            {
+                let mut pull_req: Option<bool> = None;
+                evt::process_ui_events(&mut self.app, &mut self.toast, &mut self.loading, &mut self.modal, &mut pull_req);
+                self.apply_pull_down_request(pull_req);
+            }
+            let anim_deadline = Instant::now() + Duration::from_millis(600);
+            while self.scroll.is_animating() && Instant::now() < anim_deadline {
+                self.update_scroll();
+                self.app.update().ok();
+                std::thread::sleep(Duration::from_millis(8));
+            }
+            { let mut pull_req: Option<bool> = None;
+                        evt::process_ui_events(&mut self.app, &mut self.toast, &mut self.loading, &mut self.modal, &mut pull_req);
+                        self.apply_pull_down_request(pull_req); }
             self.render();
 
             let (pw, ph) = (
@@ -928,6 +1021,13 @@ impl MiniAppWindow {
                     self.fixed_canvas.as_ref(), self.tabbar_canvas.as_ref(),
                     (self.scroll.get_position() * scale as f32) as i32, has_tabbar,
                     if has_tabbar { (tabbar_height() as f64 * scale) as u32 } else { 0 },
+                );
+            }
+            let gap = self.scroll.top_gap();
+            if gap > 0.5 || self.pull_refreshing {
+                app_window::render::render_pull_indicator(
+                    &mut buffer, pw, ph, scale as f32,
+                    gap, self.pull_refreshing, self.scroll.pull_progress(), 0.25,
                 );
             }
             render_ui_overlay(

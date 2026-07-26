@@ -527,7 +527,9 @@
     navigateBack: function () { history.back(); },
     showToast: toast,
     showLoading: function (o) { o = o || {}; o.icon = "loading"; toast(o); },
-    hideToast: hideToastNow, hideLoading: hideToastNow, stopPullDownRefresh: function () {},
+    hideToast: hideToastNow, hideLoading: hideToastNow,
+    startPullDownRefresh: function (o) { pullDown.start(); o && o.success && o.success(); o && o.complete && o.complete(); },
+    stopPullDownRefresh: function (o) { pullDown.stop(); o && o.success && o.success(); o && o.complete && o.complete(); },
     showModal: function (o) {
       o = o || {};
       var mask = document.createElement("div");
@@ -577,6 +579,81 @@
   }
   function noopCanvasCtx() { var noop = function () { return noop; }; return new Proxy({}, { get: function () { return noop; } }); }
 
+  // ───────── 下拉刷新（与原生端同一套语义：64px 阈值 + 三点指示器） ─────────
+  var pullDown = (function () {
+    var HEIGHT = 64;             // 指示器区域高度，同时是触发阈值（与原生端一致）
+    var enabled = false, app = null, indicator = null;
+    var pulling = false, refreshing = false, startY = 0, offset = 0;
+
+    function ensureDom() {
+      if (indicator || !app) return;
+      indicator = document.createElement("div");
+      indicator.className = "wx-pull-indicator";
+      indicator.innerHTML = "<i></i><i></i><i></i>";
+      app.parentNode.insertBefore(indicator, app);
+    }
+    function setOffset(v) {
+      offset = v;
+      if (!app) return;
+      app.style.transform = v > 0 ? "translateY(" + v + "px)" : "";
+      if (indicator) {
+        // 点的不透明度跟随下拉进度；刷新中交给 CSS 动画
+        var p = Math.min(1, v / HEIGHT);
+        indicator.style.opacity = refreshing ? 1 : p;
+        indicator.classList.toggle("is-refreshing", refreshing);
+      }
+    }
+    function atTop() {
+      var el = document.scrollingElement || document.documentElement;
+      return (el.scrollTop || 0) <= 0 && (window.scrollY || 0) <= 0;
+    }
+    return {
+      init: function () {
+        enabled = !!window.__PAGE_PULL_DOWN__;
+        app = document.getElementById("app");
+        if (!enabled || !app) return;
+        ensureDom();
+        // 触摸下拉
+        app.addEventListener("touchstart", function (e) {
+          if (refreshing || !atTop()) return;
+          pulling = true; startY = e.touches[0].clientY;
+        }, { passive: true });
+        app.addEventListener("touchmove", function (e) {
+          if (!pulling) return;
+          var d = e.touches[0].clientY - startY;
+          if (d <= 0) { setOffset(0); return; }
+          // 橡皮筋衰减，与原生端同一公式
+          setOffset((1 - 1 / (d * 0.55 / window.innerHeight + 1)) * window.innerHeight);
+        }, { passive: true });
+        app.addEventListener("touchend", function () {
+          if (!pulling) return;
+          pulling = false;
+          if (offset >= HEIGHT) { pullDown.start(); } else { setOffset(0); }
+        });
+        // 桌面端用滚轮模拟：在顶部继续向上滚就是下拉
+        window.addEventListener("wheel", function (e) {
+          if (refreshing || e.deltaY >= 0 || !atTop()) return;
+          setOffset(Math.min(HEIGHT * 1.5, offset - e.deltaY * 0.5));
+          clearTimeout(pullDown._t);
+          pullDown._t = setTimeout(function () {
+            if (offset >= HEIGHT) { pullDown.start(); } else { setOffset(0); }
+          }, 120);
+        }, { passive: true });
+      },
+      start: function () {
+        if (!enabled || refreshing) return;
+        refreshing = true;
+        setOffset(HEIGHT);
+        try { if (pageInst && pageInst.onPullDownRefresh) pageInst.onPullDownRefresh(); } catch (err) { console.error(err); }
+      },
+      stop: function () {
+        if (!refreshing) { setOffset(0); return; }
+        refreshing = false;
+        setOffset(0);
+      }
+    };
+  })();
+
   // ───────── 启动 ─────────
   document.addEventListener("DOMContentLoaded", function () {
     if (appConfig) { appInst = appConfig; appInst.globalData = appConfig.globalData || {}; try { if (appInst.onLaunch) appInst.onLaunch({}); } catch (e) { console.error(e); } try { if (appInst.onShow) appInst.onShow({}); } catch (e) { console.error(e); } }
@@ -594,6 +671,7 @@
       try { if (pageInst.onLoad) pageInst.onLoad(q); } catch (e) { console.error(e); }
       try { if (pageInst.onShow) pageInst.onShow(); } catch (e) { console.error(e); }
       try { if (pageInst.onReady) pageInst.onReady(); } catch (e) { console.error(e); }
+      pullDown.init();
     } else {
       initWidgets();
     }

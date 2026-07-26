@@ -18,6 +18,7 @@ pub fn process_ui_events(
     toast: &mut Option<ToastState>,
     loading: &mut Option<LoadingState>,
     modal: &mut Option<ModalState>,
+    pull_down: &mut Option<bool>,
 ) -> bool {
     let events = app.drain_ui_events();
     let mut needs_redraw = false;
@@ -71,6 +72,14 @@ pub fn process_ui_events(
                 }
                 needs_redraw = true;
             }
+            UiEvent::StartPullDownRefresh => {
+                *pull_down = Some(true);
+                needs_redraw = true;
+            }
+            UiEvent::StopPullDownRefresh => {
+                *pull_down = Some(false);
+                needs_redraw = true;
+            }
         }
     }
     needs_redraw
@@ -105,10 +114,10 @@ pub fn handle_scroll_event(
             print_js_output(app);
         }
         ScrollEvent::ReachTop => {
-            println!("📜 onPullDownRefresh triggered");
-            let call_code = "if(__currentPage && __currentPage.onPullDownRefresh) __currentPage.onPullDownRefresh()";
-            app.eval(call_code).ok();
-            print_js_output(app);
+            // 下拉刷新不在这里触发：回弹结束才回调的话，指示器/内容位移都来不及做，
+            // 而且不管下拉多少都会触发。现在由控制器的「下拉到位并松手」信号驱动
+            // （见 ScrollController::take_pull_trigger），这里只留日志语义。
+            let _ = app;
         }
         ScrollEvent::ReachRight => {
             println!("📜 scroll-view reached right edge");
@@ -381,7 +390,14 @@ pub fn handle_mouse_wheel(
     }
     
     if !handled_by_scrollview && delta_y.abs() > 0.1 {
+        let before = scroll.get_position();
         scroll.handle_scroll(delta_y, is_precise);
+        // 页面滚动同样要请求重绘。缺了这一句时只有「命中页面内 scroll-view」才会重绘，
+        // 页面级滚动只改了滚动位置：上屏按新偏移取画布，而画布上还是上一帧那条带
+        // —— 滑动过程一片空白，停下后被别的原因触发一次重绘内容才出现。
+        if (scroll.get_position() - before).abs() > 0.001 {
+            needs_redraw = true;
+        }
     }
     
     needs_redraw

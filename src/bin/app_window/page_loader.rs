@@ -86,12 +86,32 @@ fn load_page(app_path: &Path, page_path: &str) -> Option<PageInfo> {
         return None;
     }
     
+    // 页面 json 的 enablePullDownRefresh 优先，缺省回落到 app.json 的 window 配置
+    let page_json = fs::read_to_string(base_path.with_extension("json")).unwrap_or_default();
+    let enable_pull_down_refresh = serde_json::from_str::<serde_json::Value>(&page_json)
+        .ok()
+        .and_then(|v| v.get("enablePullDownRefresh").and_then(|b| b.as_bool()))
+        .unwrap_or_else(app_enables_pull_down_refresh);
+
     Some(PageInfo {
         path: page_path.to_string(),
         wxml,
         wxss,
         js,
+        enable_pull_down_refresh,
     })
+}
+
+/// app.json 的 `window.enablePullDownRefresh`（全局默认）
+fn app_enables_pull_down_refresh() -> bool {
+    serde_json::from_str::<serde_json::Value>(&load_app_json())
+        .ok()
+        .and_then(|v| {
+            v.get("window")
+                .and_then(|w| w.get("enablePullDownRefresh"))
+                .and_then(|b| b.as_bool())
+        })
+        .unwrap_or(false)
 }
 
 /// 加载 app.js
@@ -177,6 +197,7 @@ fn load_builtin_pages() -> HashMap<String, PageInfo> {
         wxml: include_str!("../../../sample-app/pages/index/index.wxml").to_string(),
         wxss: include_str!("../../../sample-app/pages/index/index.wxss").to_string(),
         js: include_str!("../../../sample-app/pages/index/index.js").to_string(),
+        enable_pull_down_refresh: false,
     });
     
     pages.insert("pages/category/category".to_string(), PageInfo {
@@ -184,6 +205,7 @@ fn load_builtin_pages() -> HashMap<String, PageInfo> {
         wxml: include_str!("../../../sample-app/pages/category/category.wxml").to_string(),
         wxss: include_str!("../../../sample-app/pages/category/category.wxss").to_string(),
         js: include_str!("../../../sample-app/pages/category/category.js").to_string(),
+        enable_pull_down_refresh: false,
     });
     
     pages.insert("pages/cart/cart".to_string(), PageInfo {
@@ -191,6 +213,7 @@ fn load_builtin_pages() -> HashMap<String, PageInfo> {
         wxml: include_str!("../../../sample-app/pages/cart/cart.wxml").to_string(),
         wxss: include_str!("../../../sample-app/pages/cart/cart.wxss").to_string(),
         js: include_str!("../../../sample-app/pages/cart/cart.js").to_string(),
+        enable_pull_down_refresh: false,
     });
     
     pages.insert("pages/profile/profile".to_string(), PageInfo {
@@ -198,6 +221,7 @@ fn load_builtin_pages() -> HashMap<String, PageInfo> {
         wxml: include_str!("../../../sample-app/pages/profile/profile.wxml").to_string(),
         wxss: include_str!("../../../sample-app/pages/profile/profile.wxss").to_string(),
         js: include_str!("../../../sample-app/pages/profile/profile.js").to_string(),
+        enable_pull_down_refresh: false,
     });
     
     pages.insert("pages/detail/detail".to_string(), PageInfo {
@@ -205,6 +229,7 @@ fn load_builtin_pages() -> HashMap<String, PageInfo> {
         wxml: include_str!("../../../sample-app/pages/detail/detail.wxml").to_string(),
         wxss: include_str!("../../../sample-app/pages/detail/detail.wxss").to_string(),
         js: include_str!("../../../sample-app/pages/detail/detail.js").to_string(),
+        enable_pull_down_refresh: false,
     });
     
     pages.insert("pages/canvas/canvas".to_string(), PageInfo {
@@ -212,6 +237,7 @@ fn load_builtin_pages() -> HashMap<String, PageInfo> {
         wxml: include_str!("../../../sample-app/pages/canvas/canvas.wxml").to_string(),
         wxss: include_str!("../../../sample-app/pages/canvas/canvas.wxss").to_string(),
         js: include_str!("../../../sample-app/pages/canvas/canvas.js").to_string(),
+        enable_pull_down_refresh: false,
     });
     
     pages.insert("pages/components/components".to_string(), PageInfo {
@@ -219,6 +245,7 @@ fn load_builtin_pages() -> HashMap<String, PageInfo> {
         wxml: include_str!("../../../sample-app/pages/components/components.wxml").to_string(),
         wxss: include_str!("../../../sample-app/pages/components/components.wxss").to_string(),
         js: include_str!("../../../sample-app/pages/components/components.js").to_string(),
+        enable_pull_down_refresh: false,
     });
     
     pages

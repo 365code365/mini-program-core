@@ -3,6 +3,10 @@
 /// 视口高度常量
 pub const LOGICAL_HEIGHT: u32 = 667;
 
+/// 下拉刷新指示器区域高度（逻辑 px），同时也是触发刷新的下拉阈值。
+/// 与微信一致：下拉不到这个距离只回弹，不触发 `onPullDownRefresh`。
+pub const PULL_REFRESH_HEIGHT: f32 = 64.0;
+
 /// 滚动事件类型
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ScrollEvent {
@@ -39,6 +43,15 @@ pub struct ScrollController {
     wheel_raw: f32,
     /// 越界且没有新滚动事件的累计时长（秒）：滚轮没有「抬手」事件，靠它判定手势结束
     idle_after_wheel: f32,
+    /// 顶部 inset（等价 iOS 的 contentInset.top）：下拉刷新期间把内容按住不归位，
+    /// 露出的这段空间给刷新指示器。回弹目标随之变成 `-top_inset`。
+    top_inset: f32,
+    /// 本次手势内到达过的最大顶部越界量（逻辑 px），用于判断是否够触发下拉刷新
+    max_over_top: f32,
+    /// 「下拉到位并松手」的一次性信号，宿主取走后决定是否进入刷新态
+    pull_triggered: bool,
+    /// 触发下拉刷新的阈值（逻辑 px），与微信的指示器高度一致
+    pull_threshold: f32,
     pub is_dragging: bool,
     drag_start_pos: f32,
     drag_start_scroll: f32,
@@ -75,6 +88,10 @@ impl ScrollController {
             viewport_size: viewport_size.max(1.0),
             wheel_raw: 0.0,
             idle_after_wheel: 0.0,
+            top_inset: 0.0,
+            max_over_top: 0.0,
+            pull_triggered: false,
+            pull_threshold: PULL_REFRESH_HEIGHT,
             is_dragging: false,
             drag_start_pos: 0.0,
             drag_start_scroll: 0.0,
@@ -149,13 +166,14 @@ impl ScrollController {
         if !self.is_dragging { return; }
         let delta = self.drag_start_pos - y;
         let raw = self.drag_start_scroll + delta;
-        if raw < self.min_scroll {
+        if raw < self.min_bound() {
             self.was_over_top = true;
         } else if raw > self.max_scroll {
             self.was_over_bottom = true;
         }
         self.position = self.apply_rubber_band(raw);
         self.wheel_raw = self.position;
+        self.max_over_top = self.max_over_top.max(self.top_overscroll());
         self.velocity_samples.push((y, timestamp));
         // Keep samples from last 100ms
         self.velocity_samples.retain(|(_, t)| timestamp >= *t && timestamp - *t < 100);
@@ -164,8 +182,9 @@ impl ScrollController {
     pub fn end_drag(&mut self) -> bool {
         if !self.is_dragging { return false; }
         self.is_dragging = false;
+        self.settle_pull_gesture();
         self.velocity = self.calculate_release_velocity();
-        if self.position < self.min_scroll || self.position > self.max_scroll {
+        if self.position < self.min_bound() || self.position > self.max_scroll {
             self.start_bounce();
         } else if self.velocity.abs() > 50.0 {
             self.is_decelerating = true;
@@ -195,7 +214,8 @@ impl ScrollController {
         self.is_decelerating = false;
         self.bounce_timer = 0.0;
         self.bounce_start_pos = self.position;
-        self.bounce_target_pos = self.position.clamp(self.min_scroll, self.max_scroll.max(self.min_scroll));
+        let min_bound = self.min_bound();
+        self.bounce_target_pos = self.position.clamp(min_bound, self.max_scroll.max(min_bound));
         self.velocity = 0.0;
         self.idle_after_wheel = 0.0;
         self.wheel_raw = self.bounce_target_pos;
@@ -203,7 +223,7 @@ impl ScrollController {
 
     /// 当前是否停在边界之外（等待回弹）
     fn is_out_of_bounds(&self) -> bool {
-        self.position < self.min_scroll - 0.01 || self.position > self.max_scroll + 0.01
+        self.position < self.min_bound() - 0.01 || self.position > self.max_scroll + 0.01
     }
 
     /// 滚轮/触控板停下后自动回弹：越界且静默超过阈值就开始回弹。
@@ -243,7 +263,7 @@ impl ScrollController {
             self.position += self.velocity * dt;
             
             // 严格限制在边界内
-            self.position = self.position.clamp(self.min_scroll, self.max_scroll);
+            self.position = self.position.clamp(self.min_bound(), self.max_scroll);
             
             // 停止条件
             if self.velocity.abs() < 3.0 {
@@ -298,8 +318,8 @@ impl ScrollController {
                 return (false, None);
             }
             
-            if self.position <= self.min_scroll {
-                self.position = self.min_scroll;
+            if self.position <= self.min_bound() {
+                self.position = self.min_bound();
                 self.velocity = 0.0;
                 self.is_decelerating = false;
                 return (false, None);
@@ -325,7 +345,7 @@ impl ScrollController {
     /// 回弹结束时检查是否触发事件
     fn check_bounce_end_event(&mut self) -> Option<ScrollEvent> {
         // 如果之前超出了顶部边界，现在回弹到顶部，触发 ReachTop
-        if self.was_over_top && self.bounce_target_pos <= self.min_scroll {
+        if self.was_over_top && self.bounce_target_pos <= self.min_bound() {
             self.was_over_top = false;
             return Some(ScrollEvent::ReachTop);
         }
@@ -362,38 +382,108 @@ impl ScrollController {
         // 触控板一次事件就是一次真实位移；滚轮是脉冲，放大到接近一"格"的观感
         let step = if is_precise { delta } else { delta * 2.0 };
         // 越界方向上先把累计位置对齐到当前显示位置，避免来回切换方向时跳变
-        if self.wheel_raw > self.min_scroll && self.wheel_raw < self.max_scroll {
+        if self.wheel_raw > self.min_bound() && self.wheel_raw < self.max_scroll {
             self.wheel_raw = self.position;
         }
         self.wheel_raw += step;
         self.position = self.apply_rubber_band(self.wheel_raw);
-        if self.position < self.min_scroll {
+        if self.position < self.min_bound() {
             self.was_over_top = true;
         } else if self.position > self.max_scroll {
             self.was_over_bottom = true;
         }
+        self.max_over_top = self.max_over_top.max(self.top_overscroll());
     }
 
     /// 触控板手势结束（`TouchPhase::Ended`）：越界则回弹
     pub fn end_wheel_gesture(&mut self) -> bool {
         self.wheel_raw = self.position;
-        if self.position < self.min_scroll || self.position > self.max_scroll {
+        self.settle_pull_gesture();
+        if self.is_out_of_bounds() {
             self.start_bounce();
             return true;
         }
         false
     }
 
+    /// 顶部边界。下拉刷新期间 `top_inset > 0`，内容被按住在露出指示器的位置。
+    fn min_bound(&self) -> f32 {
+        self.min_scroll - self.top_inset
+    }
+
     /// 把「未夹紧」的位置按橡皮筋映射成实际显示位置
     fn apply_rubber_band(&self, raw: f32) -> f32 {
         let dim = self.viewport_size;
-        if raw < self.min_scroll {
-            self.min_scroll - Self::rubber_band(self.min_scroll - raw, dim)
+        let min_bound = self.min_bound();
+        if raw < min_bound {
+            min_bound - Self::rubber_band(min_bound - raw, dim)
         } else if raw > self.max_scroll {
             self.max_scroll + Self::rubber_band(raw - self.max_scroll, dim)
         } else {
             raw
         }
+    }
+
+    /// 进入/退出下拉刷新态：`inset > 0` 时把内容按住露出指示器，回弹目标随之改变。
+    pub fn set_top_inset(&mut self, inset: f32) {
+        let inset = inset.max(0.0);
+        if (self.top_inset - inset).abs() < 0.01 {
+            return;
+        }
+        let growing = inset > self.top_inset;
+        self.top_inset = inset;
+        if self.is_dragging {
+            return;
+        }
+        let min_bound = self.min_bound();
+        let target = if growing {
+            // 进入刷新：把内容拉到露出指示器的位置。
+            // 只在本来就贴着顶部时才拉 —— 页面滚到中间时 `wx.startPullDownRefresh()`
+            // 不该把画面跳回顶部。
+            if self.position <= self.min_scroll + 1.0 { min_bound } else { self.position }
+        } else {
+            // 结束刷新：内容归位
+            self.position.clamp(min_bound, self.max_scroll.max(min_bound))
+        };
+        if (target - self.position).abs() > 0.01 {
+            self.bounce_start_pos = self.position;
+            self.bounce_target_pos = target;
+            self.bounce_timer = 0.0;
+            self.is_bouncing = true;
+            self.is_decelerating = false;
+            self.velocity = 0.0;
+            self.idle_after_wheel = 0.0;
+            self.wheel_raw = target;
+        }
+    }
+
+    /// 取走「下拉到位并松手」信号（读后清零）
+    pub fn take_pull_trigger(&mut self) -> bool {
+        std::mem::take(&mut self.pull_triggered)
+    }
+
+    /// 当前顶部越界量（逻辑 px，未越界为 0）。宿主用它画下拉指示器的进度。
+    pub fn top_overscroll(&self) -> f32 {
+        (self.min_bound() - self.position).max(0.0)
+    }
+
+    /// 顶部露出的空白高度（逻辑 px）：下拉过程与刷新期间都用它定位指示器。
+    /// 注意不能用 `top_overscroll()` —— 刷新期内容正好停在 `-top_inset`，不算越界。
+    pub fn top_gap(&self) -> f32 {
+        (self.min_scroll - self.position).max(0.0)
+    }
+
+    /// 下拉进度（0~1）：到 1 表示松手就会触发刷新
+    pub fn pull_progress(&self) -> f32 {
+        (self.top_gap() / self.pull_threshold).clamp(0.0, 1.0)
+    }
+
+    /// 手势结束时判定是否够触发下拉刷新
+    fn settle_pull_gesture(&mut self) {
+        if self.max_over_top >= self.pull_threshold && self.top_inset <= 0.01 {
+            self.pull_triggered = true;
+        }
+        self.max_over_top = 0.0;
     }
     
     /// 检查是否应该触发触底事件（用于触控板/鼠标滚轮滚动）
@@ -417,7 +507,7 @@ impl ScrollController {
     pub fn get_position(&self) -> f32 { self.position }
     /// 直接设置滚动位置（用于导航后回到顶部、快照渲染等确定性场景）
     pub fn set_position(&mut self, position: f32) {
-        self.position = position.clamp(self.min_scroll, self.max_scroll.max(self.min_scroll));
+        self.position = position.clamp(self.min_bound(), self.max_scroll.max(self.min_bound()));
         self.wheel_raw = self.position;
         self.velocity = 0.0;
         self.is_decelerating = false;
@@ -432,7 +522,7 @@ impl ScrollController {
     
     /// 是否在顶部
     pub fn is_at_top(&self) -> bool {
-        self.position <= self.min_scroll + 1.0
+        self.position <= self.min_bound() + 1.0
     }
     
     /// 是否在底部

@@ -31,6 +31,8 @@ pub enum BridgeEvent {
     NavigateBack(u32),
     SetTimer { id: u32, delay: u32, repeat: bool },
     ClearTimer(u32),
+    StartPullDownRefresh,
+    StopPullDownRefresh,
     CanvasDraw { canvas_id: String, commands: String },
     StorageSet { key: String, value: String },
     StorageGet { key: String },
@@ -185,6 +187,18 @@ impl JsBridge {
         let q = queue.clone();
         rt.register_function("__native_hide_loading", move |_args| {
             q.lock().unwrap().push(BridgeEvent::HideLoading);
+            "undefined".to_string()
+        })?;
+
+        // 下拉刷新：宿主负责指示器与内容位移，逻辑层只发开始/结束
+        let q = queue.clone();
+        rt.register_function("__native_start_pull_down_refresh", move |_args| {
+            q.lock().unwrap().push(BridgeEvent::StartPullDownRefresh);
+            "undefined".to_string()
+        })?;
+        let q = queue.clone();
+        rt.register_function("__native_stop_pull_down_refresh", move |_args| {
+            q.lock().unwrap().push(BridgeEvent::StopPullDownRefresh);
             "undefined".to_string()
         })?;
         

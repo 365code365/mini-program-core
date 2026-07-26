@@ -10,6 +10,10 @@ pub struct PageInfo {
     pub wxml: String,
     pub wxss: String,
     pub js: String,
+    /// 页面 json 的 `enablePullDownRefresh`（缺省继承 app.json 的 `window` 配置）。
+    /// 微信里下拉回弹一直有，但只有开了这个开关才出现刷新指示器并回调
+    /// `onPullDownRefresh`，所以两者要分开处理。
+    pub enable_pull_down_refresh: bool,
 }
 
 /// 页面栈中的页面实例

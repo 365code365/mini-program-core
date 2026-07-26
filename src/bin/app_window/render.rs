@@ -109,3 +109,80 @@ pub fn present_to_buffer(
         }
     }
 }
+
+/// 在页面顶部露出的空白里画下拉刷新指示器（微信那套三点跑马灯）。
+///
+/// - 下拉过程：三个点随进度依次淡入并变深，到阈值时全部点亮 —— 用户据此知道「再拉就刷新」。
+/// - 刷新期间：三点循环呼吸，直到逻辑层调用 `wx.stopPullDownRefresh()`。
+///
+/// 画在窗口缓冲上而不是页面画布上：这块空白本来就不属于页面内容
+/// （页面画布只有内容那么高），指示器是宿主外壳的一部分，和微信一致。
+pub fn render_pull_indicator(
+    buffer: &mut [u32],
+    buffer_width: u32,
+    buffer_height: u32,
+    scale: f32,
+    gap_logical: f32,
+    refreshing: bool,
+    progress: f32,
+    phase: f32,
+) {
+    use mini_render::{Color, Paint};
+
+    let gap_px = (gap_logical * scale).round() as u32;
+    if gap_px < 8 || buffer_width == 0 {
+        return;
+    }
+    let band = gap_px.min(buffer_height);
+    let mut layer = Canvas::new(buffer_width, band);
+    layer.clear(Color::TRANSPARENT);
+
+    let cx = buffer_width as f32 / 2.0;
+    // 指示器贴着空白区域底部一点，下拉越多越往下走（跟着内容走，不是钉在顶上）
+    let cy = (band as f32 * 0.5).min(gap_px as f32 - 10.0 * scale).max(6.0 * scale);
+    let dot_r = 3.0 * scale;
+    let spacing = 11.0 * scale;
+
+    for i in 0..3 {
+        let alpha = if refreshing {
+            // 相位错开的呼吸：t 在 0..1 之间往复，映射成 0.3~1.0 的不透明度
+            let t = (phase - i as f32 * 0.18).rem_euclid(1.0);
+            0.3 + 0.7 * (1.0 - (t * 2.0 - 1.0).abs())
+        } else {
+            // 下拉过程：第 i 个点从 progress = i/3 开始淡入
+            ((progress - i as f32 / 3.0) * 3.0).clamp(0.0, 1.0) * 0.85
+        };
+        if alpha <= 0.02 {
+            continue;
+        }
+        let paint = Paint::new()
+            .with_color(Color::new(
+                0x88,
+                0x88,
+                0x88,
+                (alpha * 255.0).clamp(0.0, 255.0) as u8,
+            ))
+            .with_anti_alias(true);
+        layer.draw_circle(cx + (i as f32 - 1.0) * spacing, cy, dot_r, &paint);
+    }
+
+    // 合成到窗口缓冲（缓冲是不透明 RGB，按 alpha 手动混合）
+    let pixels = layer.pixels();
+    for y in 0..band {
+        let row = (y * buffer_width) as usize;
+        for x in 0..buffer_width as usize {
+            let c = pixels[row + x];
+            if c.a == 0 {
+                continue;
+            }
+            let dst = buffer[row + x];
+            let (dr, dg, db) = ((dst >> 16) & 0xFF, (dst >> 8) & 0xFF, dst & 0xFF);
+            let a = c.a as u32;
+            let inv = 255 - a;
+            let r = (c.r as u32 * a + dr * inv) / 255;
+            let g = (c.g as u32 * a + dg * inv) / 255;
+            let b = (c.b as u32 * a + db * inv) / 255;
+            buffer[row + x] = (r << 16) | (g << 8) | b;
+        }
+    }
+}

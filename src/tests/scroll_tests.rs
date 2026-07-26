@@ -234,3 +234,57 @@ fn test_render_with_scroll_offsets() {
     let h2 = r.render_with_scroll_and_viewport(&mut c, &ns, &data, &mut im, 600.0, 667.0);
     assert!(h0 > 0.0 && h1 > 0.0 && h2 > 0.0);
 }
+
+/// 下拉不到阈值只回弹，不触发刷新
+#[test]
+fn test_pull_down_below_threshold_does_not_trigger() {
+    use crate::ui::scroll_controller::PULL_REFRESH_HEIGHT;
+    let mut c = ScrollController::new(900.0, 300.0);
+    c.begin_drag(100.0, 0);
+    // 往下拖一点点（手指下移 => 内容下移 => 顶部越界）
+    c.update_drag(100.0 + PULL_REFRESH_HEIGHT * 0.3, 16);
+    assert!(c.top_gap() > 0.0, "下拉应该有可见的越界位移");
+    c.end_drag();
+    assert!(!c.take_pull_trigger(), "没到阈值不该触发下拉刷新");
+    for _ in 0..120 {
+        if !c.update(0.016) { break; }
+    }
+    assert!(c.top_gap() < 0.5, "松手后应回弹归位");
+}
+
+/// 下拉到位并松手 -> 触发一次刷新信号；进入刷新态时内容被按住，结束后归位
+#[test]
+fn test_pull_down_refresh_hold_and_release() {
+    use crate::ui::scroll_controller::PULL_REFRESH_HEIGHT;
+    let mut c = ScrollController::new(900.0, 300.0);
+    c.begin_drag(100.0, 0);
+    // 拖到足够远：橡皮筋会衰减，所以手指位移要给足
+    c.update_drag(100.0 + PULL_REFRESH_HEIGHT * 4.0, 16);
+    assert!(c.pull_progress() >= 1.0, "下拉进度应到满，实际 {}", c.pull_progress());
+    c.end_drag();
+    assert!(c.take_pull_trigger(), "下拉到位松手应触发刷新");
+    assert!(!c.take_pull_trigger(), "信号是一次性的");
+
+    // 宿主进入刷新态：内容被按住在露出指示器的位置
+    c.set_top_inset(PULL_REFRESH_HEIGHT);
+    for _ in 0..120 {
+        if !c.update(0.016) { break; }
+    }
+    assert!(
+        (c.top_gap() - PULL_REFRESH_HEIGHT).abs() < 1.0,
+        "刷新期间应保持露出指示器，实际 gap {}",
+        c.top_gap()
+    );
+    // 刷新期间再下拉不应重复触发
+    c.begin_drag(100.0, 0);
+    c.update_drag(100.0 + PULL_REFRESH_HEIGHT * 4.0, 16);
+    c.end_drag();
+    assert!(!c.take_pull_trigger(), "刷新中不应重复触发");
+
+    // stopPullDownRefresh：收回 inset，内容归位
+    c.set_top_inset(0.0);
+    for _ in 0..120 {
+        if !c.update(0.016) { break; }
+    }
+    assert!(c.top_gap() < 0.5, "刷新结束应归位，实际 gap {}", c.top_gap());
+}

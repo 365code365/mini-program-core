@@ -44,6 +44,8 @@ pub struct PageSource {
     pub js: String,
     /// 执行 `Page().data` + `onLoad` 后的初始数据快照
     pub data: JsonValue,
+    /// 页面 json 的 `enablePullDownRefresh`（缺省继承 app.json 的 `window`）
+    pub enable_pull_down_refresh: bool,
 }
 
 /// 自定义 tabBar 组件源码（`custom-tab-bar/`）。
@@ -158,7 +160,20 @@ pub fn load_app_source(root: &str) -> Result<AppSource, String> {
         let data = snapshot_page_data(&app_js, &js).unwrap_or_else(|| serde_json::json!({}));
         let wxml = WxmlParser::new(&wxml_src).parse().map_err(|e| format!("{} WXML: {}", route, e))?;
 
-        pages.push(PageSource { route: route.clone(), wxml, wxss, js, data });
+        // 页面 json 的 enablePullDownRefresh 优先，缺省回落到 app.json 的 window
+        let page_json = std::fs::read_to_string(format!("{}.json", prefix)).unwrap_or_default();
+        let enable_pull_down_refresh = serde_json::from_str::<JsonValue>(&page_json)
+            .ok()
+            .and_then(|v| v.get("enablePullDownRefresh").and_then(|b| b.as_bool()))
+            .unwrap_or_else(|| {
+                config
+                    .get("window")
+                    .and_then(|w| w.get("enablePullDownRefresh"))
+                    .and_then(|b| b.as_bool())
+                    .unwrap_or(false)
+            });
+
+        pages.push(PageSource { route: route.clone(), wxml, wxss, js, data, enable_pull_down_refresh });
     }
 
     let custom_tab_bar = load_custom_tab_bar(root, &app_js);
