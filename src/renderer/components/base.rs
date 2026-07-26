@@ -732,7 +732,14 @@ pub fn build_base_style(
     let id = node.get_attr("id");
     // 构建「祖先链 + 当前元素」，支持 #id、[attr]、*、后代/子选择器
     let mut chain = ctx.ancestors.clone();
-    chain.push(ElementDesc::new(&node.tag_name, id, &classes, &node.attributes)
+    // 属性表只有 `[attr]` 选择器用得到；没有这类规则就别带 —— 它会随祖先链克隆被深拷很多遍
+    static EMPTY_ATTRS: std::sync::OnceLock<HashMap<String, String>> = std::sync::OnceLock::new();
+    let desc_attrs = if ctx.stylesheet.has_attr_selectors() {
+        &node.attributes
+    } else {
+        EMPTY_ATTRS.get_or_init(HashMap::new)
+    };
+    chain.push(ElementDesc::new(&node.tag_name, id, &classes, desc_attrs)
         .with_position(ctx.sibling_index, ctx.sibling_count));
     let css = ctx.stylesheet.get_styles_chain(&chain);
     

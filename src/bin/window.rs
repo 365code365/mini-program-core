@@ -75,6 +75,17 @@ struct MiniAppWindow {
     fixed_layer_animates: bool,
     /// 进程启动时刻：用作与帧无关的动画相位时钟
     started_at: Instant,
+    /// 下一帧的目标时点（固定节拍累加，不受单帧耗时抖动影响）
+    next_frame_at: Instant,
+    /// 最近一次滚动位置发生变化的时刻（裁剪余量按它自适应）
+    last_scroll_at: Option<Instant>,
+    /// fixed 覆盖层需要重绘（数据变化 / 按压态变化 / 换页 / 画布重建）。
+    /// 滚动不影响它 —— 覆盖层是钉在视口上的，重画纯属浪费。
+    fixed_dirty: bool,
+    /// 帧间隔抖动统计：本统计窗口内最大/最小帧间隔（ms）
+    frame_gap_max_ms: f32,
+    frame_gap_min_ms: f32,
+    last_frame_begin: Option<Instant>,
     /// 页面画布上「已经画过内容」的行区间（物理像素，画布坐标）。
     /// 滚动只要还落在里面就不必重绘，直接换切片上屏。
     drawn_band: Option<(f32, f32)>,
@@ -168,6 +179,12 @@ impl MiniAppWindow {
             last_animated_bounds: Vec::new(),
             fixed_layer_animates: false,
             started_at: now,
+            next_frame_at: now,
+            last_scroll_at: None,
+            fixed_dirty: true,
+            frame_gap_max_ms: 0.0,
+            frame_gap_min_ms: f32::MAX,
+            last_frame_begin: None,
             drawn_band: None,
             pull_refreshing: false,
             page_data: std::sync::Arc::new(json!({})),
@@ -236,6 +253,7 @@ impl MiniAppWindow {
         if self.app.take_data_dirty() {
             self.needs_redraw = true;
             self.page_data_dirty = true;
+        self.fixed_dirty = true;
         }
         let mut pull_req: Option<bool> = None;
         evt::process_ui_events(&mut self.app, &mut self.toast, &mut self.loading, &mut self.modal, &mut pull_req);
@@ -288,6 +306,13 @@ impl MiniAppWindow {
             return None;
         }
         Some(GeoRect::new(x0, y0, x1 - x0, y1 - y0))
+    }
+
+    /// 最近是否发生过滚动（用于决定裁剪余量留多大）
+    fn scroll_recent(&self) -> bool {
+        self.last_scroll_at
+            .map(|t| t.elapsed() < Duration::from_millis(400))
+            .unwrap_or(false)
     }
 
     /// 上屏要用的那段画布是否已经画过（画布之外的行由上屏填背景色，不算未绘制）
@@ -421,6 +446,7 @@ impl MiniAppWindow {
         }
         // 恢复的是上一页实例，数据快照要重取（返回后可能一次 setData 都没有）
         self.page_data_dirty = true;
+        self.fixed_dirty = true;
         self.needs_redraw = true;
         Ok(())
     }
@@ -464,8 +490,12 @@ impl MiniAppWindow {
         // 从前每帧都做一次：动画帧里白付一次全量序列化。
         if self.app.take_data_dirty() {
             self.page_data_dirty = true;
+            // 数据变了 fixed 覆盖层也要重画。这里是所有渲染路径的共同入口，
+            // 只在事件循环里标记的话，快照/无窗口路径会漏掉（底部固定栏会整条丢失）。
+            self.fixed_dirty = true;
         }
         if self.page_data_dirty {
+            self.fixed_dirty = true;
             self.page_data = std::sync::Arc::new(
                 self.app
                     .eval("__getPageData()")
@@ -485,7 +515,13 @@ impl MiniAppWindow {
         // 只清理「渲染器实际会画的那条带」：视口 ± 裁剪余量。
         // 页面画布是整页高的（首页 6870px），每帧全量 clear 白烧几毫秒。
         let sf = self.scale_factor as f32;
-        let margin = mini_render::renderer::VIEWPORT_CULL_MARGIN_PX;
+        // 余量是自适应的：滚动时留大一些（少触发重绘，滚动期间大部分帧只做上屏），
+        // 静止时留小一些（`setData` 这种偶发整帧重绘只画可见区，帧尖峰更低）。
+        let margin = if self.scroll.is_dragging || self.scroll.is_animating() || self.scroll_recent() {
+            mini_render::renderer::VIEWPORT_CULL_MARGIN_PX
+        } else {
+            48.0
+        };
         let band_y0 = (scroll_offset * sf - margin).floor() as i32;
         let band_y1 = (scroll_offset * sf + viewport_height * sf + margin).ceil() as i32;
 
@@ -525,7 +561,8 @@ impl MiniAppWindow {
         let t_page_done = Instant::now();
         // 局部重绘帧里 fixed 覆盖层与 tabBar 不会变，直接沿用上一帧的画布 ——
         // 除非覆盖层自己带动画（那时 animation_damage_rect 会拒绝走局部路径）。
-        if damage.is_none() {
+        if damage.is_none() && (self.fixed_dirty || self.fixed_layer_animates) {
+            self.fixed_dirty = false;
             if let Some(page) = self.page_stack.last() {
                 if let (Some(fc), Some(r)) = (&mut self.fixed_canvas, &mut self.renderer) {
                     // 在两趟之间清零，才能分辨「动画在页面里」还是「在 fixed 覆盖层里」
@@ -727,7 +764,11 @@ impl MiniAppWindow {
         let dt = now.duration_since(self.last_frame).as_secs_f32();
         self.last_frame = now;
         
+        let before = self.scroll.get_position();
         let (animating, event) = self.scroll.update_with_events(dt);
+        if (self.scroll.get_position() - before).abs() > 0.01 {
+            self.last_scroll_at = Some(now);
+        }
         if let Some(e) = event { evt::handle_scroll_event(e, &mut self.app); self.needs_redraw = true; }
         
         let mut changed = animating;
@@ -801,6 +842,7 @@ impl ApplicationHandler for MiniAppWindow {
             WindowEvent::MouseWheel { delta, phase, .. } => {
                 if evt::handle_mouse_wheel(delta, self.mouse_pos, &mut self.interaction, &mut self.scroll, self.scale_factor) {
                     self.needs_redraw = true;
+                    self.last_scroll_at = Some(Instant::now());
                 }
                 // 触控板抬手/取消：越界立即回弹（鼠标滚轮没有这个阶段，由控制器的静默计时兜底）
                 if matches!(phase, winit::event::TouchPhase::Ended | winit::event::TouchPhase::Cancelled) {
@@ -854,6 +896,7 @@ impl ApplicationHandler for MiniAppWindow {
                         if !el.disabled && el.interaction_type != InteractionType::ScrollArea {
                             self.interaction.set_button_pressed(el.id.clone(), el.bounds);
                             self.needs_redraw = true;
+                            self.fixed_dirty = true; // 按压的可能是覆盖层里的元素
                         }
                         match el.interaction_type {
                             InteractionType::Slider if !el.disabled => {
@@ -892,6 +935,7 @@ impl ApplicationHandler for MiniAppWindow {
                     }
                     
                     self.interaction.clear_button_pressed();
+                    self.fixed_dirty = true;
                     let was_sel = self.interaction.is_dragging_selection();
                     self.interaction.end_text_selection();
                     if was_sel { self.needs_redraw = true; if let Some(w) = &self.window { w.request_redraw(); } return; }
@@ -918,6 +962,14 @@ impl ApplicationHandler for MiniAppWindow {
             
             WindowEvent::RedrawRequested => {
                 let frame_begin = Instant::now();
+                if self.fps_log {
+                    if let Some(prev) = self.last_frame_begin {
+                        let gap = (frame_begin - prev).as_secs_f32() * 1000.0;
+                        self.frame_gap_max_ms = self.frame_gap_max_ms.max(gap);
+                        self.frame_gap_min_ms = self.frame_gap_min_ms.min(gap);
+                    }
+                    self.last_frame_begin = Some(frame_begin);
+                }
                 self.app.update().ok();
                 print_js_output(&self.app);
                 // 逻辑层这一帧改过数据就必须重绘。没有这一步的话，定时器/网络回调
@@ -926,6 +978,7 @@ impl ApplicationHandler for MiniAppWindow {
                 if self.app.take_data_dirty() {
                     self.needs_redraw = true;
                     self.page_data_dirty = true;
+                    self.fixed_dirty = true;
                 }
                 
                 let mut pull_req: Option<bool> = None;
@@ -998,14 +1051,34 @@ impl ApplicationHandler for MiniAppWindow {
                 // 时点要从**帧开始**算：从 present 之后算的话，每帧会多出一整个
                 // 渲染耗时（16.7ms 节拍变成 21ms，只剩 46FPS）。
                 if self.is_animating() {
-                    let target = frame_begin + self.frame_interval;
+                    // 固定节拍：下一帧时点是「上一个时点 + 一个刷新周期」的累加，
+                    // 不是「本帧开始 + 一个周期」。后者每帧都把 sleep 的过冲（macOS 上
+                    // 约 0.5~2ms）算进新的起点，节拍会越走越偏且忽快忽慢 ——
+                    // 平均帧率看着达标，实际帧间隔在抖，这正是「高刷没体现出来」的手感。
                     let now = Instant::now();
-                    if now < target {
-                        std::thread::sleep(target - now);
+                    let mut target = self.next_frame_at + self.frame_interval;
+                    // 落后超过一整帧（大重绘、系统抢占）就重新对齐，避免追帧追出一串挤压帧
+                    if target <= now {
+                        target = now + self.frame_interval;
+                    }
+                    self.next_frame_at = target;
+                    // 只睡到「还差一个自旋余量」，剩下的用让出时间片的忙等把边缘对准；
+                    // sleep 的分辨率不足以稳定命中 6.9ms 的节拍。
+                    const SPIN_MARGIN: Duration = Duration::from_micros(900);
+                    if let Some(coarse) = target.checked_sub(SPIN_MARGIN) {
+                        let now = Instant::now();
+                        if coarse > now {
+                            std::thread::sleep(coarse - now);
+                        }
+                    }
+                    while Instant::now() < target {
+                        std::hint::spin_loop();
                     }
                     if let Some(w) = &self.window {
                         w.request_redraw();
                     }
+                } else {
+                    self.next_frame_at = Instant::now();
                 }
                 if self.fps_log {
                     let ms = work_ms;
@@ -1015,8 +1088,10 @@ impl ApplicationHandler for MiniAppWindow {
                         let (l, r, p) = self.fps_worst_parts;
                         let (rp, rf, rt) = self.fps_worst_render_parts;
                         println!(
-                            "📊 {} 帧/秒，最慢一帧 {:.1}ms（逻辑 {:.1} 渲染 {:.1}[页面 {:.1} 覆盖层 {:.1} tabBar {:.1}] 上屏 {:.1}）{}",
+                            "📊 {} 帧/秒，帧间隔 {:.1}~{:.1}ms，最慢一帧 {:.1}ms（逻辑 {:.1} 渲染 {:.1}[页面 {:.1} 覆盖层 {:.1} tabBar {:.1}] 上屏 {:.1}）{}",
                             self.fps_frames,
+                            if self.frame_gap_min_ms == f32::MAX { 0.0 } else { self.frame_gap_min_ms },
+                            self.frame_gap_max_ms,
                             self.fps_worst_ms,
                             l, r, rp, rf, rt, p,
                             if self.is_animating() { "（动画中）" } else { "" }
@@ -1026,6 +1101,8 @@ impl ApplicationHandler for MiniAppWindow {
                         self.fps_worst_ms = 0.0;
                         self.fps_worst_parts = (0.0, 0.0, 0.0);
                         self.fps_worst_render_parts = (0.0, 0.0, 0.0);
+                        self.frame_gap_max_ms = 0.0;
+                        self.frame_gap_min_ms = f32::MAX;
                     }
                 }
                 // 后续帧的调度交给 about_to_wait：动画中按刷新率 WaitUntil，空闲则 Wait 休眠。

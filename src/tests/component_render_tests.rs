@@ -470,14 +470,14 @@ fn test_active_pseudo_only_matches_when_pressed() {
         ElementDesc::new("view", None, &["btn"], &attrs).with_pressed(true)
     ]);
 
-    let bg = |m: &std::collections::HashMap<String, crate::parser::wxss::StyleValue>| {
+    let rgb = |m: &std::collections::HashMap<String, crate::parser::wxss::StyleValue>| {
         match m.get("background-color") {
-            Some(crate::parser::wxss::StyleValue::String(s)) => s.clone(),
-            other => format!("{:?}", other),
+            Some(crate::parser::wxss::StyleValue::Color(c)) => (c.r, c.g, c.b),
+            other => panic!("background-color 应解析成颜色，实际 {:?}", other),
         }
     };
-    assert!(bg(&normal).contains("f5f5f5"), "常态应是浅灰，实际 {}", bg(&normal));
-    assert!(bg(&pressed).contains("ff6b35"), "按压态应是橙色，实际 {}", bg(&pressed));
+    assert_eq!(rgb(&normal), (0xF5, 0xF5, 0xF5), "常态应是浅灰");
+    assert_eq!(rgb(&pressed), (0xFF, 0x6B, 0x35), "按压态应是橙色");
     let _ = &mut ss;
 }
 

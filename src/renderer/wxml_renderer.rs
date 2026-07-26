@@ -1322,11 +1322,18 @@ impl WxmlRenderer {
                 let node_classes: Vec<&str> = node.get_attr("class")
                     .map(|s| s.split_whitespace().collect())
                     .unwrap_or_default();
+                // 同上：没有属性选择器就不带属性表，省掉祖先链克隆时的深拷贝
+                static EMPTY_ATTRS: std::sync::OnceLock<HashMap<String, String>> = std::sync::OnceLock::new();
+                let desc_attrs = if self.stylesheet.has_attr_selectors() {
+                    &node.attributes
+                } else {
+                    EMPTY_ATTRS.get_or_init(HashMap::new)
+                };
                 child_ancestors.push(ElementDesc::new(
                     &node.tag_name,
                     node.get_attr("id"),
                     &node_classes,
-                    &node.attributes,
+                    desc_attrs,
                 ));
                 
                 // 计算传递给子节点的继承文本样式（来自当前节点的计算样式）

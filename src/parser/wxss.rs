@@ -201,6 +201,14 @@ impl StyleSheet {
         self.rules.iter().any(|r| r.selector.contains(":active"))
     }
 
+    /// 样式表里是否出现过属性选择器（`[data-x]` / `[type=text]`）。
+    ///
+    /// 没有的话，祖先链里的 `ElementDesc` 就不必带属性表 —— 那份 HashMap 会随
+    /// 「每个节点 × 祖先链克隆」被深拷贝很多遍，是一次 setData 全量重建的大头之一。
+    pub fn has_attr_selectors(&self) -> bool {
+        self.rules.iter().any(|r| r.selector.contains('['))
+    }
+
     /// 将 `other`（通常是被 @import 的样式表）的规则并入本表前部，
     /// 使本表（局部）规则在同特异性时因书写顺序更靠后而胜出。
     pub fn prepend_rules(&mut self, other: StyleSheet) {
