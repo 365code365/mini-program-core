@@ -15,6 +15,9 @@ pub mod assets;
 /// 示例小程序目录的定位（裸名字 / `sample/xxx` / 任意路径都能解析）
 pub mod app_dir;
 
+/// `wx.request` 等网络 API 的原生实现（后台线程 + 按帧取回）
+pub mod net;
+
 pub use canvas::Canvas;
 pub use color::Color;
 pub use geometry::{Point, Rect, Size};

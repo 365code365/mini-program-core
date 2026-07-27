@@ -67,6 +67,8 @@ impl JsBridge {
         self.register_storage_functions().map_err(|e| format!("storage: {}", e))?;
         println!("    register_ui_functions...");
         self.register_ui_functions().map_err(|e| format!("ui: {}", e))?;
+        println!("    register_network_functions...");
+        self.register_network_functions().map_err(|e| format!("network: {}", e))?;
         Ok(())
     }
     
@@ -116,6 +118,21 @@ impl JsBridge {
         Ok(())
     }
     
+    /// `wx.request` 的原生入口：立刻返回，结果由宿主每帧取回喂给 `__resolveRequest`
+    fn register_network_functions(&self) -> Result<(), String> {
+        let rt = self.runtime.lock().unwrap();
+        rt.register_function("__native_request", move |args| {
+            // (id, method, url, headersJson, body, timeoutMs)
+            if args.len() >= 5 {
+                let id: u32 = args[0].parse().unwrap_or(0);
+                let timeout: u64 = args.get(5).and_then(|s| s.parse().ok()).unwrap_or(0);
+                crate::net::submit(id, &args[1], &args[2], &args[3], &args[4], timeout);
+            }
+            "undefined".to_string()
+        })?;
+        Ok(())
+    }
+
     fn register_storage_functions(&self) -> Result<(), String> {
         let storage = self.storage.clone();
         let rt = self.runtime.lock().unwrap();

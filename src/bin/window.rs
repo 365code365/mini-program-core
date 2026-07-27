@@ -259,6 +259,8 @@ impl MiniAppWindow {
             // 否则到点该翻页时没人来推进它的状态
             || mini_render::renderer::components::has_autoplay_swiper()
             || self.app.has_active_timers()
+            // 有请求在飞：必须继续出帧，否则响应回来了没人去取（页面永远停在加载态）
+            || self.app.has_pending_network()
             || self.toast.as_ref().map(|t| t.visible).unwrap_or(false)
             || self.loading.as_ref().map(|l| l.visible).unwrap_or(false)
             || self.modal.as_ref().map(|m| m.visible).unwrap_or(false)
@@ -286,6 +288,10 @@ impl MiniAppWindow {
     /// 供 `--frames` 用：局部重绘这类只在连续出帧时才暴露的问题，单帧快照测不到。
     fn pump_one_frame(&mut self) {
         self.app.update().ok();
+        // 与交互窗体的 RedrawRequested 一致：每帧把逻辑层的输出冲出来。
+        // 少了这一句，定时器 / 网络回调里的 console.log 全都攒在缓冲里看不到 ——
+        // 排查时会误判成「回调没跑」。
+        print_js_output(&self.app);
         if self.app.take_data_dirty() {
             self.needs_redraw = true;
             self.page_data_dirty = true;
@@ -1233,6 +1239,12 @@ impl ApplicationHandler for MiniAppWindow {
                     self.needs_redraw = true;
                     self.page_data_dirty = true;
                     self.fixed_dirty = true;
+                }
+                // 网络响应回来了：即使这一帧逻辑层没有 setData（比如回调里只存了缓存），
+                // 也要重绘一次 —— 图片 src 之类可能已经跟着变了
+                if self.app.take_network_dirty() {
+                    self.needs_redraw = true;
+                    self.page_data_dirty = true;
                 }
                 
                 let mut pull_req: Option<bool> = None;

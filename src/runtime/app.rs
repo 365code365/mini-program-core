@@ -215,10 +215,64 @@ impl MiniApp {
         // 处理桥接事件
         self.process_bridge_events()?;
         
+        // 取回已完成的网络响应并回调 JS。放在这里（而不是各宿主里）是为了让
+        // 窗体、devserver、快照、launcher 都自动拿到网络能力。
+        self.process_network_responses()?;
+        
         // 泵出微任务队列（Promise / async 回调），确保异步链得以推进
         self.pump_jobs();
         
         Ok(())
+    }
+
+    /// 把后台线程完成的 HTTP 响应喂回 JS 的 `__resolveRequest`
+    fn process_network_responses(&mut self) -> Result<(), String> {
+        let done = crate::net::take_completed();
+        if done.is_empty() {
+            return Ok(());
+        }
+        if std::env::var("MINI_NET_LOG").is_ok() {
+            eprintln!("🌐 取回 {} 条响应，回调 JS", done.len());
+        }
+        let rt = self.runtime.lock().unwrap();
+        for r in done {
+            let headers: serde_json::Map<String, serde_json::Value> = r
+                .headers
+                .into_iter()
+                .map(|(k, v)| (k, serde_json::Value::String(v)))
+                .collect();
+            // 全部走 JSON 字面量注入：正文里可能有引号、换行、反斜杠，
+            // 手拼字符串一定会在某个响应上炸掉。
+            let code = format!(
+                "__resolveRequest({}, {}, {}, {}, {})",
+                r.id,
+                r.status,
+                serde_json::Value::String(serde_json::Value::Object(headers).to_string()),
+                serde_json::Value::String(r.body),
+                match r.error {
+                    Some(e) => serde_json::Value::String(e),
+                    None => serde_json::Value::Null,
+                },
+            );
+            if let Err(e) = rt.eval(&code) {
+                // 别把回调里的异常吞掉：请求明明成功了却什么也没发生，
+                // 没有这条日志根本无从下手
+                eprintln!("⚠️  网络回调执行失败 (id={}): {}", r.id, e);
+            }
+        }
+        // 数据可能因此变化，通知宿主重绘
+        crate::net::mark_dirty();
+        Ok(())
+    }
+
+    /// 是否有网络请求在飞或刚回来（宿主据此决定要不要继续出帧等回调）
+    pub fn has_pending_network(&self) -> bool {
+        crate::net::has_pending()
+    }
+
+    /// 取走「网络响应导致需要重绘」的标记
+    pub fn take_network_dirty(&self) -> bool {
+        crate::net::take_dirty()
     }
     
     fn process_timers(&mut self) -> Result<(), String> {
