@@ -98,6 +98,8 @@ struct MiniAppWindow {
     page_opened_at: Instant,
     /// 正在进行的左边缘侧滑返回（跟手位移 + 松手收尾动画）
     edge_back: Option<app_window::edge_back::EdgeBack>,
+    /// 最近一次派发给页面的 `onPageScroll` 位置（避免同一位置反复回调）
+    last_page_scroll_sent: f32,
     /// 页面栈里**被覆盖的那些页**离开时留下的视口像素。
     /// 侧滑时下面那一页要真的显示出来，而它已经不是当前页、渲染器里也没有它了。
     /// 约定：`back_shots[i]` 对应 `page_stack[i]`（只对被覆盖的页有值）。
@@ -241,6 +243,7 @@ impl MiniAppWindow {
             scroll_pos_at_press: 0.0,
             page_opened_at: now,
             edge_back: None,
+            last_page_scroll_sent: 0.0,
             back_shots: Vec::new(),
             force_full_redraw: false,
             frame_gap_max_ms: 0.0,
@@ -1152,6 +1155,13 @@ impl MiniAppWindow {
             self.last_scroll_at = Some(now);
         }
         if let Some(e) = event { evt::handle_scroll_event(e, &mut self.app); self.needs_redraw = true; }
+        // `onPageScroll`：位置变了就回调一次（微信语义）。放在这里而不是各条输入路径里 ——
+        // 拖动、惯性、回弹、滚轮、脚本设置位置最终都会经过这一帧检查，只写一处不会漏。
+        let pos = self.scroll.get_position();
+        if (pos - self.last_page_scroll_sent).abs() > 0.5 {
+            self.last_page_scroll_sent = pos;
+            evt::dispatch_page_scroll(&mut self.app, pos);
+        }
         
         let mut changed = animating;
         for c in self.interaction.scroll_controllers.values_mut() { if c.update(dt) { changed = true; } }

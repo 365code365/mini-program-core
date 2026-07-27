@@ -1,0 +1,4 @@
+.outer{ width:375px; }
+.inner{ width:375px; height:200px; background-color:#eef; }
+.mask{ width:375px; height:200px; background-color:#fee; }
+.tall{ width:375px; height:1200px; background-color:#efe; }

@@ -316,6 +316,25 @@ impl WxmlRenderer {
         cache.render_nodes.iter().find_map(|n| walk(&cache.taffy, n, class))
     }
 
+    /// 按 class 找节点，返回 (字号, 文字色, 该节点文本)。布局/样式回归用例用它断言
+    /// 「这个节点最终用的是哪一档样式」。
+    #[cfg(test)]
+    pub fn node_style_by_class(&self, class: &str) -> Option<(f32, Option<Color>, String)> {
+        fn walk(n: &RenderNode, class: &str) -> Option<(f32, Option<Color>, String)> {
+            let hit = n
+                .attrs
+                .get("class")
+                .map(|c| c.split_whitespace().any(|c| c == class))
+                .unwrap_or(false);
+            if hit {
+                return Some((n.style.font_size, n.style.text_color, n.text.clone()));
+            }
+            n.children.iter().find_map(|c| walk(c, class))
+        }
+        let cache = self.cache.as_ref()?;
+        cache.render_nodes.iter().find_map(|n| walk(n, class))
+    }
+
     /// 获取事件绑定数量
     pub fn event_count(&self) -> usize {
         self.event_bindings.len()

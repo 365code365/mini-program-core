@@ -99,6 +99,25 @@ pub fn update_toast_timeout(toast: &mut Option<ToastState>) -> bool {
     false
 }
 
+/// 页面滚动回调 `onPageScroll({ scrollTop })`（微信语义：滚动位置一变就回调）。
+///
+/// 逻辑层一直有派发入口（`__dispatchPage('onPageScroll', arg)`），但**宿主从来没调过它** ——
+/// 于是「滚动到一定位置显示回到顶部按钮」「吸顶导航变色」这类写法在引擎里完全不生效，
+/// 页面自己无从知道当前滚到哪了。这里按帧派发（位置真的变了才发），
+/// 与微信一样交给页面自己决定要不要 `setData`。
+pub fn dispatch_page_scroll(app: &mut mini_render::runtime::MiniApp, scroll_top: f32) {
+    let code = format!(
+        "if(__currentPage && __currentPage.onPageScroll) __dispatchPage('onPageScroll', {{ scrollTop: {:.1} }})",
+        scroll_top
+    );
+    if std::env::var("MINI_SCROLL_LOG").is_ok() {
+        eprintln!("📜 onPageScroll scrollTop={:.1}", scroll_top);
+    }
+    if let Err(e) = app.eval(&code) {
+        eprintln!("⚠️  onPageScroll 派发失败: {}", e);
+    }
+}
+
 /// 处理滚动事件
 pub fn handle_scroll_event(
     event: mini_render::ui::scroll_controller::ScrollEvent,

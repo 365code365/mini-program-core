@@ -1,0 +1,7 @@
+<view class="outer" capture-bind:touchstart="capOuterTS" bindtouchstart="tsOuter" bindtouchmove="tmOuter"
+      bindtouchend="teOuter" bindtouchcancel="tcOuter" bindtap="tapOuter" bindlongpress="lpOuter" data-who="outer">
+  <view class="inner" bindtouchstart="tsInner" bindtouchmove="tmInner" bindtouchend="teInner" bindtouchcancel="tcInner"
+        catchtap="tapInner" bindlongpress="lpInner" data-who="inner">内层</view>
+  <view class="mask" catchtouchmove="lockMove" data-who="mask">遮罩锁滚</view>
+  <view class="tall">很高的内容，让页面可以滚动</view>
+</view>
