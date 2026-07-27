@@ -38,6 +38,44 @@ impl MiniAppApi {
         self.init_app().map_err(|e| format!("app: {}", e))?;
         println!("    init_component...");
         self.init_component().map_err(|e| format!("component: {}", e))?;
+        self.init_missing_api_probe().map_err(|e| format!("probe: {}", e))?;
+        Ok(())
+    }
+
+    /// 给 `wx` 装一层探针：读到**尚未实现**的 API 时打一条警告（每个名字只打一次）。
+    ///
+    /// 只在所有 API 注册完成之后装，所以已实现的照常返回。
+    /// 关键是**仍然返回 `undefined`** —— 框架普遍用 `typeof wx.xxx === 'function'`
+    /// 做能力探测，返回一个假函数会让它们走上不存在的分支。
+    ///
+    /// 动机：QuickJS 对着 undefined 调用只会抛 `TypeError: not a function`，
+    /// 既没有名字也没有栈。跑第三方编译产物（uni-app / Taro）时，
+    /// 这一行警告能直接指出缺哪个 API，省掉通读几十万行 vendor 包。
+    fn init_missing_api_probe(&self) -> Result<(), String> {
+        let rt = self.runtime.lock().unwrap();
+        rt.eval(r#"
+            if (typeof Proxy === 'function' && typeof wx === 'object' && !wx.__probed) {
+                var __wxImpl = wx;
+                var __warned = {};
+                __wxImpl.__probed = true;
+                wx = new Proxy(__wxImpl, {
+                    get: function (target, key) {
+                        if (!(key in target) && typeof key === 'string' && key.indexOf('__') !== 0) {
+                            if (!__warned[key]) {
+                                __warned[key] = true;
+                                if (typeof console !== 'undefined' && console.warn) {
+                                    console.warn('[未实现的 API] wx.' + key);
+                                }
+                            }
+                            return undefined;
+                        }
+                        return target[key];
+                    }
+                });
+                // uni-app / Taro 会把 uni 指向 wx，保持同一层探针
+                if (typeof uni !== 'undefined' && uni === __wxImpl) { uni = wx; }
+            }
+        "#)?;
         Ok(())
     }
     
@@ -147,14 +185,31 @@ impl MiniAppApi {
         let rt = self.runtime.lock().unwrap();
         rt.eval(r#"
             var __console_buffer = [];
+            // Error 参数要连栈一起打。框架（Vue 等）的错误处理器普遍是
+            // `console.error(err)`，而 `String(err)` 只有 "TypeError: not a function" ——
+            // 没有名字也没有位置，等于逼人去通读几十万行 vendor 包。
+            function __fmtArg(a) {
+                if (a instanceof Error) {
+                    var s = (a.name || 'Error') + ': ' + (a.message || '');
+                    if (a.stack) { s += '\n' + a.stack; }
+                    return s;
+                }
+                if (a && typeof a === 'object') {
+                    try { return JSON.stringify(a); } catch (e) { return String(a); }
+                }
+                return String(a);
+            }
+            function __fmtArgs(args) {
+                return Array.prototype.map.call(args, __fmtArg).join(' ');
+            }
             var console = {
                 log: function() {
-                    var msg = Array.prototype.slice.call(arguments).join(' ');
+                    var msg = __fmtArgs(arguments);
                     __console_buffer.push('[LOG] ' + msg);
                     if (typeof __native_print === 'function') { __native_print(msg); }
                 },
                 error: function() {
-                    var msg = Array.prototype.slice.call(arguments).join(' ');
+                    var msg = __fmtArgs(arguments);
                     __console_buffer.push('[ERROR] ' + msg);
                     if (typeof __native_print === 'function') { __native_print('[ERROR] ' + msg); }
                 },
@@ -648,10 +703,28 @@ impl MiniAppApi {
                 // 入栈并置为当前页面
                 __pageStack.push(page);
                 __currentPage = page;
+                __pendingPageCreated = true;
                 
                 return page;
             }
             
+            // uni-app / Taro 这类框架不直接调 `Page()`，而是走 `wx.createPage(定义)`
+            // （对应 `wx.createComponent` / `wx.createApp`）。它们语义上就是官方那三个
+            // 全局注册函数的别名，桥过去即可 —— 缺了它页面 js 跑完也没有任何页面被注册，
+            // `__currentPage` 一直是 null，于是 data 全空：模板里的 `{{a}}` 渲染成空串、
+            // `bindtap="{{c}}"` 拿不到处理函数名，页面只剩一张静态骨架。
+            if (typeof wx === 'object') {
+                if (typeof wx.createPage !== 'function') {
+                    wx.createPage = function(config) { return Page(config || {}); };
+                }
+                if (typeof wx.createComponent !== 'function') {
+                    wx.createComponent = function(config) { return Component(config || {}); };
+                }
+                if (typeof wx.createApp !== 'function') {
+                    wx.createApp = function(config) { return App(config || {}); };
+                }
+            }
+
             // 清空页面栈（switchTab 语义：切换 tab 会销毁原有页面栈）
             function __resetPageStack() {
                 __pageStack = [];
@@ -670,7 +743,13 @@ impl MiniAppApi {
             
             // native 在加载页面 JS 前可设置将要创建页面的路由
             var __pendingRoute = '';
-            function __setPendingRoute(route) { __pendingRoute = route || ''; }
+            // 本次页面 js 是否已经建出页面实例。用来区分「用 Component 定义页面」
+            // 和「页面 js 里顺手注册了一个自定义组件」——只有前者要建页面。
+            var __pendingPageCreated = false;
+            function __setPendingRoute(route) {
+                __pendingRoute = route || '';
+                __pendingPageCreated = false;
+            }
             
             function getCurrentPages() {
                 return __pageStack.slice();
@@ -851,6 +930,35 @@ impl MiniAppApi {
                 options.success && options.success(info);
                 options.complete && options.complete();
             };
+
+            // 启动参数：框架（uni-app / Taro）在 onLaunch 里必读，缺了会整个
+            // onLaunch 抛异常 —— 于是 Vue 的响应式层根本没起来，页面只剩静态骨架。
+            wx.getLaunchOptionsSync = function() {
+                return {
+                    path: (typeof __launchPath === 'string' ? __launchPath : ''),
+                    scene: 1001,
+                    query: {},
+                    shareTicket: '',
+                    referrerInfo: {},
+                    forwardMaterials: [],
+                    chatType: undefined,
+                    apiCategory: 'default'
+                };
+            };
+            // 「本次进入」的参数，字段与启动参数同构
+            wx.getEnterOptionsSync = function() { return wx.getLaunchOptionsSync(); };
+
+            // 动态字体：本引擎的字体来自系统（见 text.rs 的字体发现），不支持按 URL
+            // 远程加载。这里必须**存在且回调 success** —— 应用普遍在 onLaunch 里连着
+            // 加载好几个字体，抛异常会把整个 onLaunch 打断（框架的响应式层就此起不来，
+            // 页面只剩静态骨架）。降级为「用系统字体渲染」，比整个应用起不来好得多。
+            wx.loadFontFace = function(options) {
+                options = options || {};
+                var family = options.family || '';
+                __native_print('[loadFontFace] 忽略远程字体 ' + family + '（改用系统字体）');
+                options.success && options.success({ status: 'loaded' });
+                options.complete && options.complete({ status: 'loaded' });
+            };
         "#)?;
         
         Ok(())
@@ -910,7 +1018,92 @@ impl MiniAppApi {
                 def = def || {};
                 var path = __pendingComponentPath || ('__comp_' + (++__componentSeq));
                 __componentDefs[path] = { def: def, merged: __mergeBehaviors(def) };
+                // 微信允许**用 Component 构造器定义页面**，uni-app / Taro 正是走这条：
+                // 它们的 `wx.createPage` 把 Vue 组件选项转成组件定义后调 `Component()`，
+                // 而不是 `Page()`。只认 `Page()` 的话页面永远注册不上 ——
+                // `__currentPage` 为 null、data 全空，模板里 `{{a}}` 渲染成空串、
+                // `bindtap="{{c}}"` 也拿不到处理函数名，最后只剩一张静态骨架。
+                //
+                // 判据是「当前正在加载某个页面的 js」（__pendingRoute 非空且还没建页面）。
+                // 页面 js 里注册真正的自定义组件时 __pendingComponentPath 会被置上，
+                // 那种情况不当页面处理。
+                if (__pendingRoute && !__pendingPageCreated && !__pendingComponentPath) {
+                    var __page = Page(__componentDefToPage(def));
+                    // 组件实例该有的东西：`properties` 是**求值后的属性值**（不是类型表），
+                    // uni-app 的 initVueIds 会去读 `properties.uI` 并 split；
+                    // 还有 triggerEvent 等实例方法。缺了就在 attached 里抛 not a function。
+                    var __props = {};
+                    if (def.properties) {
+                        for (var __p in def.properties) {
+                            if (def.properties.hasOwnProperty(__p)) {
+                                __props[__p] = __propDefault(def.properties[__p]);
+                            }
+                        }
+                    }
+                    __page.properties = __props;
+                    __page.is = __pendingRoute;
+                    if (typeof __page.triggerEvent !== 'function') {
+                        __page.triggerEvent = function() {};
+                    }
+                    if (typeof __page.getRelationNodes !== 'function') {
+                        __page.getRelationNodes = function() { return []; };
+                    }
+                    if (typeof __page.selectOwnerComponent !== 'function') {
+                        __page.selectOwnerComponent = function() { return null; };
+                    }
+                    // 组件式页面的**创建钩子**必须真的跑：`created` / `attached` 是组件
+                    // 自己的生命周期，与页面的 onLoad 是两套。uni-app 正是在 attached 里
+                    // 挂载 Vue 组件并触发首次 setData —— 漏掉它页面就只有一份空 data，
+                    // 模板全部渲染成空串（表现为「只有静态骨架」）。
+                    var __lt = def.lifetimes || {};
+                    var __hooks = [def.created, __lt.created, def.attached, __lt.attached];
+                    for (var __i = 0; __i < __hooks.length; __i++) {
+                        if (typeof __hooks[__i] === 'function') {
+                            try { __hooks[__i].call(__page); }
+                            catch (e) { if (typeof console !== 'undefined') { console.error(e); } }
+                        }
+                    }
+                }
                 return def;
+            }
+
+            /// 把「用 Component 写的页面」的定义摊平成 Page() 认识的形状。
+            ///
+            /// 组件构造器里页面生命周期（onLoad / onShow / onReady…）与事件处理函数都写在
+            /// `methods` 下，而 Page() 期望它们在顶层；`lifetimes.attached` 对应页面的
+            /// 创建时机，也一并映射过去。
+            function __componentAsPageConfig(def) { return __componentDefToPage(def); }
+            function __componentDefToPage(def) {
+                var out = {};
+                for (var k in def) {
+                    if (!def.hasOwnProperty(k)) { continue; }
+                    if (k === 'methods' || k === 'lifetimes' || k === 'pageLifetimes' || k === 'behaviors') { continue; }
+                    out[k] = def[k];
+                }
+                if (def.methods) {
+                    for (var m in def.methods) {
+                        if (def.methods.hasOwnProperty(m)) { out[m] = def.methods[m]; }
+                    }
+                }
+                // properties 的默认值也算页面初始 data（组件式页面常把状态放这儿）
+                if (def.properties) {
+                    out.data = out.data || {};
+                    for (var p in def.properties) {
+                        if (def.properties.hasOwnProperty(p) && !(p in out.data)) {
+                            out.data[p] = __propDefault(def.properties[p]);
+                        }
+                    }
+                }
+                if (def.lifetimes) {
+                    // attached ≈ 页面 onLoad 之前的创建期；没有 onLoad 时用它兜底
+                    if (typeof def.lifetimes.attached === 'function' && typeof out.onLoad !== 'function') {
+                        out.__attached = def.lifetimes.attached;
+                    }
+                    if (typeof def.lifetimes.ready === 'function' && typeof out.onReady !== 'function') {
+                        out.onReady = def.lifetimes.ready;
+                    }
+                }
+                return out;
             }
             
             // 解析 properties 默认值

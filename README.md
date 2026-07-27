@@ -455,11 +455,36 @@ Vue 3 运行时 + 60 个 CommonJS 模块。跑通它需要三件事，都是引�
   `Page({...})` 才会重新注册。
 - 启动时把小程序目录下所有 `.js` 预注册成模块，`require('./common/vendor.js')` 才解析得到。
 - `global` / `self` 指向 `globalThis`：打包器与框架运行时普遍靠这些别名做环境探测。
+- **支持用 `Component()` 构造器定义页面**（微信允许，uni-app / Taro 就走这条）：它们的
+  `wx.createPage` 把 Vue 组件选项转成组件定义后调 `Component()`，而不是 `Page()`。
+  只认 `Page()` 的话页面永远注册不上，`__currentPage` 为 null、data 全空 ——
+  模板里 `{{a}}` 渲染成空串、`bindtap="{{c}}"` 拿不到处理函数名，屏幕上只剩一张静态骨架。
+  组件式页面还要真的跑 `created` / `attached`（框架在 attached 里挂载组件并触发首次
+  `setData`），并补上组件实例该有的 `properties`（**求值后的属性值**，不是类型表）与
+  `triggerEvent` 等方法。
+- `wx.getLaunchOptionsSync` / `wx.loadFontFace`：框架在 `onLaunch` 里必调。
+  远程字体本引擎不支持（字体来自系统），但**必须存在且回调 `success`** ——
+  抛异常会打断整个 `onLaunch`，框架的响应式层就此起不来。
 
-> 能定位到这些，前提是**报错得有内容**。`Error` 的 `message`/`stack` 是不可枚举属性，
-> 原来对异常对象做 `JSON.stringify` 永远得到 `{}` —— 屏幕上只有 `JS Exception: {}`，
-> 等于逼着人去通读源码猜。现在异常会打印 `name: message` 加栈的前两行。
-> 顺带把 `real-sample`（微信官方 demo）也一起修活了：它挂在同一个原因上。
+> 能定位到这些，前提是**报错得有内容**。这轮为此加了三件诊断，缺一个就得回去通读
+> 几十万行 vendor 包：
+>
+> 1. `Error` 的 `message`/`stack` 是不可枚举属性，原来对异常对象做 `JSON.stringify`
+>    永远得到 `{}` —— 屏幕上只有 `JS Exception: {}`。现在打印 `name: message` + 栈。
+> 2. `console.error(err)` 也要带栈。框架的错误处理器就是这么调的，而 `String(err)`
+>    只剩一句 `TypeError: not a function`，没有名字也没有位置。
+> 3. **未实现 API 探针**：`wx` 外面套一层 `Proxy`，读到尚未实现的键就警告一次
+>    （`[未实现的 API] wx.getLaunchOptionsSync`）。关键是**仍返回 `undefined`** ——
+>    框架普遍用 `typeof wx.xxx === 'function'` 做能力探测，返回假函数会让它们走进
+>    不存在的分支。
+>
+> 顺带把 `real-sample`（微信官方 demo）也一起修活了：它挂在模块作用域这同一个原因上。
+
+**当前边界**：tea-app 的 Vue 层已经能启动、页面能注册、`data` 开始有值，但首页自己的
+`data()` 里调了 `getStorageSync(key).toMap()` —— 那是 uni-app x(UTS) 的存储 API，
+不是微信的（微信 `getStorageSync` 读不到时返回 `''`）。按「对齐 Skyline」的原则这里
+不迁就：**引擎不为偏离微信语义的写法让路**。所以 35 页里 28 页有内容，但依赖该工具函数
+的页面目前只渲染静态骨架、交互不通。
 
 多步交互也能脚本化验证（每段 `--eval` 之后宿主会把导航跑完）：
 
