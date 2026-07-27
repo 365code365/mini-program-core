@@ -1110,120 +1110,46 @@ impl WxssParser {
         )
     }
 
+    // 颜色解析只有一份实现：`renderer::components::color_parse`。
+    // 这里保留三个薄封装是为了不动上面 6 处调用点的分支结构（`#` / `rgb` / 命名色
+    // 各走一支，顺序有意义）。以前 wxss 自己带一份，和渲染层那份对 alpha、
+    // 百分比通道、4 位十六进制的支持各不相同，同一个色值在两条路径上会画出两种结果。
     fn parse_named_color(name: &str) -> Option<Color> {
-        let color = match name.to_lowercase().as_str() {
-            "transparent" => Color::new(0, 0, 0, 0),
-            "black" => Color::BLACK,
-            "white" => Color::WHITE,
-            "red" => Color::new(255, 0, 0, 255),
-            "green" => Color::new(0, 128, 0, 255),
-            "blue" => Color::new(0, 0, 255, 255),
-            "yellow" => Color::new(255, 255, 0, 255),
-            "orange" => Color::new(255, 165, 0, 255),
-            "purple" => Color::new(128, 0, 128, 255),
-            "pink" => Color::new(255, 192, 203, 255),
-            "gray" | "grey" => Color::new(128, 128, 128, 255),
-            "lightgray" | "lightgrey" => Color::new(211, 211, 211, 255),
-            "darkgray" | "darkgrey" => Color::new(169, 169, 169, 255),
-            "cyan" => Color::new(0, 255, 255, 255),
-            "magenta" => Color::new(255, 0, 255, 255),
-            "brown" => Color::new(165, 42, 42, 255),
-            "navy" => Color::new(0, 0, 128, 255),
-            "teal" => Color::new(0, 128, 128, 255),
-            "olive" => Color::new(128, 128, 0, 255),
-            "maroon" => Color::new(128, 0, 0, 255),
-            "silver" => Color::new(192, 192, 192, 255),
-            "lime" => Color::new(0, 255, 0, 255),
-            "aqua" => Color::new(0, 255, 255, 255),
-            "fuchsia" => Color::new(255, 0, 255, 255),
-            _ => return None,
-        };
-        Some(color)
+        crate::renderer::components::parse_named_color(name)
     }
-    
+
     fn parse_color(value: &str) -> Option<Color> {
-        let hex = value.trim_start_matches('#');
-        
-        let (r, g, b, a) = match hex.len() {
-            3 => {
-                let r = u8::from_str_radix(&hex[0..1], 16).ok()? * 17;
-                let g = u8::from_str_radix(&hex[1..2], 16).ok()? * 17;
-                let b = u8::from_str_radix(&hex[2..3], 16).ok()? * 17;
-                (r, g, b, 255)
-            }
-            6 => {
-                let r = u8::from_str_radix(&hex[0..2], 16).ok()?;
-                let g = u8::from_str_radix(&hex[2..4], 16).ok()?;
-                let b = u8::from_str_radix(&hex[4..6], 16).ok()?;
-                (r, g, b, 255)
-            }
-            8 => {
-                let r = u8::from_str_radix(&hex[0..2], 16).ok()?;
-                let g = u8::from_str_radix(&hex[2..4], 16).ok()?;
-                let b = u8::from_str_radix(&hex[4..6], 16).ok()?;
-                let a = u8::from_str_radix(&hex[6..8], 16).ok()?;
-                (r, g, b, a)
-            }
-            _ => return None,
-        };
-        
-        Some(Color::new(r, g, b, a))
+        let v = value.trim();
+        // 调用点已保证以 `#` 开头，这里补一次以防将来被复用
+        let with_hash = if v.starts_with('#') { v.to_string() } else { format!("#{v}") };
+        crate::renderer::components::parse_color_str(&with_hash)
     }
-    
+
     fn parse_rgb_color(value: &str) -> Option<Color> {
-        let inner = value
-            .trim_start_matches("rgba(")
-            .trim_start_matches("rgb(")
-            .trim_end_matches(')');
-        
-        let parts: Vec<&str> = inner.split(',').collect();
-        if parts.len() < 3 {
-            return None;
-        }
-        
-        let r = parts[0].trim().parse::<u8>().ok()?;
-        let g = parts[1].trim().parse::<u8>().ok()?;
-        let b = parts[2].trim().parse::<u8>().ok()?;
-        let a = if parts.len() > 3 {
-            (parts[3].trim().parse::<f32>().ok()? * 255.0) as u8
-        } else {
-            255
-        };
-        
-        Some(Color::new(r, g, b, a))
+        crate::renderer::components::parse_color_str(value)
     }
-    
-    /// 解析渐变值，提取第一个颜色作为 fallback
+
+    /// 解析渐变值，提取第一个颜色作为 fallback（用于 `radial-gradient`：
+    /// 我们还不画径向渐变，先用首个色标当纯色兜底）。
     fn parse_gradient_fallback(value: &str) -> Option<Color> {
         let start = value.find('(')?;
         let end = value.rfind(')')?;
-        let inner = &value[start + 1..end];
-        
-        for part in inner.split(',') {
+        // 顶层逗号切分：`rgba(0, 0, 0, .5)` 内部的逗号不能算分隔符
+        for part in crate::renderer::components::split_top_commas(&value[start + 1..end]) {
             let part = part.trim();
-            
-            if part.ends_with("deg") || part.starts_with("to ") {
+            if part.is_empty() || part.ends_with("deg") || part.starts_with("to ") {
                 continue;
             }
-            
-            let color_part = part.split_whitespace().next()?;
-            
-            if color_part.starts_with('#') {
-                if let Some(color) = Self::parse_color(color_part) {
-                    return Some(color);
-                }
-            } else if color_part.starts_with("rgb") {
-                if let Some(rgb_end) = part.find(')') {
-                    let rgb_part = &part[..rgb_end + 1];
-                    if let Some(color) = Self::parse_rgb_color(rgb_part) {
-                        return Some(color);
-                    }
-                }
-            } else if let Some(color) = Self::parse_named_color(color_part) {
+            // `<color> <position>`：位置在最后，去掉后再解析颜色
+            if let Some(color) = crate::renderer::components::parse_color_str(part) {
                 return Some(color);
             }
+            if let Some((head, _)) = part.rsplit_once(char::is_whitespace) {
+                if let Some(color) = crate::renderer::components::parse_color_str(head) {
+                    return Some(color);
+                }
+            }
         }
-        
         None
     }
     

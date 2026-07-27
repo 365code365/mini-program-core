@@ -21,6 +21,9 @@ pub mod net;
 /// `wx.setStorageSync` 的跨启动落盘
 pub mod storage_file;
 
+/// 页面 json 的 `usingComponents`：自定义组件三件套加载与样式作用域
+pub mod using_components;
+
 pub use canvas::Canvas;
 pub use color::Color;
 pub use geometry::{Point, Rect, Size};

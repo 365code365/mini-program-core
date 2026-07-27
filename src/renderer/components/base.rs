@@ -371,9 +371,11 @@ pub trait Component {
 // CSS 取值解析（parse_color_str / parse_box_shadow / parse_transform /
 // parse_border_shorthand / parse_length_simple）已拆分到 style_parse 模块，
 // 这里重新导出以保持 `use super::base::*` 的调用点不变。
+pub use super::color_parse::{parse_color_str, parse_named_color};
 pub use super::style_parse::{
-    parse_color_str, parse_box_shadow, parse_transform, parse_border_shorthand, parse_border_side,
+    parse_box_shadow, parse_transform, parse_border_shorthand, parse_border_side,
     parse_length_simple, parse_linear_gradient, parse_attr_json,
+    split_top_commas, split_top_ws,
 };
 
 /// taffy 文本度量：给定已知尺寸与可用空间，按 CSS 语义算出文本盒尺寸。
@@ -1424,117 +1426,21 @@ fn apply_style_property(
     }
 }
 
-/// 绘制线性渐变背景（逐像素投影到渐变轴取色，圆角边缘抗锯齿）。
-pub fn draw_linear_gradient(
-    canvas: &mut Canvas,
-    grad: &LinearGradientBg,
-    x: f32, y: f32, w: f32, h: f32,
-    radii: [f32; 4],
-    opacity: f32,
-) {
-    if w <= 0.0 || h <= 0.0 || grad.stops.is_empty() { return; }
-    let stops = &grad.stops;
-    // 渐变方向单位向量：0deg 向上=(0,-1)，顺时针
-    let a = grad.angle_deg.to_radians();
-    let (dx, dy) = (a.sin(), -a.cos());
-    let (cx, cy) = (x + w / 2.0, y + h / 2.0);
-    let full = (w * dx).abs() + (h * dy).abs(); // 渐变线总长
-    let [tl, tr, br, bl] = radii;
-
-    let color_at = |t: f32| -> Color {
-        let t = t.clamp(0.0, 1.0);
-        if t <= stops[0].0 { return stops[0].1; }
-        if t >= stops[stops.len() - 1].0 { return stops[stops.len() - 1].1; }
-        for i in 0..stops.len() - 1 {
-            let (t0, c0) = stops[i];
-            let (t1, c1) = stops[i + 1];
-            if t >= t0 && t <= t1 {
-                let r = if (t1 - t0).abs() < 1e-6 { 0.0 } else { (t - t0) / (t1 - t0) };
-                return Color::new(
-                    (c0.r as f32 + (c1.r as f32 - c0.r as f32) * r) as u8,
-                    (c0.g as f32 + (c1.g as f32 - c0.g as f32) * r) as u8,
-                    (c0.b as f32 + (c1.b as f32 - c0.b as f32) * r) as u8,
-                    (c0.a as f32 + (c1.a as f32 - c0.a as f32) * r) as u8,
-                );
-            }
-        }
-        stops[stops.len() - 1].1
-    };
-
-    // 圆角覆盖率（与图片圆角一致）
-    let corner_cover = |px: f32, py: f32| -> f32 {
-        let lx = px - x;
-        let ly = py - y;
-        let calc = |ccx: f32, ccy: f32, r: f32| -> f32 {
-            if r <= 0.0 { return 1.0; }
-            let d = ((lx - ccx) * (lx - ccx) + (ly - ccy) * (ly - ccy)).sqrt();
-            (r + 0.5 - d).clamp(0.0, 1.0)
-        };
-        if lx < tl && ly < tl { calc(tl, tl, tl) }
-        else if lx > w - tr && ly < tr { calc(w - tr, tr, tr) }
-        else if lx > w - br && ly > h - br { calc(w - br, h - br, br) }
-        else if lx < bl && ly > h - bl { calc(bl, h - bl, bl) }
-        else { 1.0 }
-    };
-
-    let x0 = x.floor() as i32;
-    let y0 = y.floor() as i32;
-    let x1 = (x + w).ceil() as i32;
-    let y1 = (y + h).ceil() as i32;
-    for py in y0..y1 {
-        for px in x0..x1 {
-            let fx = px as f32 + 0.5;
-            let fy = py as f32 + 0.5;
-            let cover = corner_cover(fx, fy);
-            if cover <= 0.0 { continue; }
-            let proj = (fx - cx) * dx + (fy - cy) * dy;
-            let t = if full > 0.0 { proj / full + 0.5 } else { 0.5 };
-            let mut c = color_at(t);
-            let alpha = (c.a as f32 * opacity * cover) as u8;
-            c.a = alpha;
-            canvas.set_pixel(px, py, c);
-        }
-    }
-}
+// 线性渐变的绘制搬到了 `components::gradient`（那里有轴对齐快路径与一致性测试），
+// 这里重新导出以保持 `use super::base::*` 的调用点不变。
+pub use super::gradient::draw_linear_gradient;
 
 /// 绘制盒子阴影
 pub fn draw_box_shadow(canvas: &mut Canvas, shadow: &BoxShadow, x: f32, y: f32, w: f32, h: f32, border_radius: f32) {
     if shadow.inset {
         return; // 暂不支持内阴影
     }
-    
-    let shadow_x = x + shadow.offset_x;
-    let shadow_y = y + shadow.offset_y;
-    let shadow_w = w + shadow.spread * 2.0;
-    let shadow_h = h + shadow.spread * 2.0;
-    let adjusted_x = shadow_x - shadow.spread;
-    let adjusted_y = shadow_y - shadow.spread;
-    
-    // 简化的阴影绘制：使用多层半透明矩形模拟模糊
-    let blur_steps = (shadow.blur / 2.0).max(1.0) as i32;
-    let base_alpha = shadow.color.a as f32 / blur_steps as f32;
-    
-    for i in 0..blur_steps {
-        let expand = i as f32 * 2.0;
-        let alpha = (base_alpha * (1.0 - i as f32 / blur_steps as f32)) as u8;
-        if alpha == 0 { continue; }
-        
-        let color = Color::new(shadow.color.r, shadow.color.g, shadow.color.b, alpha);
-        let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill);
-        
-        let sx = adjusted_x - expand;
-        let sy = adjusted_y - expand;
-        let sw = shadow_w + expand * 2.0;
-        let sh = shadow_h + expand * 2.0;
-        
-        if border_radius > 0.0 {
-            let mut path = Path::new();
-            path.add_round_rect(sx, sy, sw, sh, border_radius + expand);
-            canvas.draw_path(&path, &paint);
-        } else {
-            canvas.draw_rect(&GeoRect::new(sx, sy, sw, sh), &paint);
-        }
-    }
+    // 模糊掩膜 + 一次混合（实现与理由见 components::shadow）
+    super::shadow::draw_outer_shadow(
+        canvas, shadow.color,
+        shadow.offset_x, shadow.offset_y, shadow.blur, shadow.spread,
+        x, y, w, h, border_radius,
+    );
 }
 
 /// 获取有效的边框圆角（未按盒子尺寸裁剪）
@@ -1561,8 +1467,10 @@ pub fn get_border_radii_clamped(style: &NodeStyle, w: f32, h: f32) -> [f32; 4] {
 
 /// 绘制背景和边框
 pub fn draw_background(canvas: &mut Canvas, style: &NodeStyle, x: f32, y: f32, w: f32, h: f32) {
+    use crate::renderer::draw_profile::Timer;
     // 绘制阴影（在背景之前）
     if let Some(shadow) = &style.box_shadow {
+        let _t = Timer::start("背景:阴影");
         draw_box_shadow(canvas, shadow, x, y, w, h, style.border_radius);
     }
     
@@ -1572,8 +1480,10 @@ pub fn draw_background(canvas: &mut Canvas, style: &NodeStyle, x: f32, y: f32, w
     
     // 绘制背景：线性渐变优先，否则纯色
     if let Some(grad) = &style.background_gradient {
+        let _t = Timer::start("背景:渐变");
         draw_linear_gradient(canvas, grad, x, y, w, h, radii, style.opacity);
     } else if let Some(bg) = style.background_color {
+        let _t = Timer::start(if uniform_radius > 0.0 || has_different_radii { "背景:圆角填充" } else { "背景:纯色" });
         let mut paint = Paint::new().with_color(bg).with_style(PaintStyle::Fill);
         if style.opacity < 1.0 { 
             paint.color.a = (paint.color.a as f32 * style.opacity) as u8; 
@@ -1593,6 +1503,7 @@ pub fn draw_background(canvas: &mut Canvas, style: &NodeStyle, x: f32, y: f32, w
     
     // 绘制边框（宽度精确 + 抗锯齿的环形填充）
     if style.border_width > 0.0 {
+        let _t = Timer::start("背景:边框环");
         if let Some(bc) = style.border_color {
             let fade = |c: Color| if style.opacity < 1.0 {
                 Color::new(c.r, c.g, c.b, (c.a as f32 * style.opacity) as u8)
@@ -1618,7 +1529,10 @@ pub fn draw_background(canvas: &mut Canvas, style: &NodeStyle, x: f32, y: f32, w
     }
     
     // 各边独立边框（常用于列表分割线 border-bottom 等），画为轴对齐细矩形
-    draw_side_borders(canvas, style, x, y, w, h);
+    {
+        let _t = Timer::start("背景:单边框");
+        draw_side_borders(canvas, style, x, y, w, h);
+    }
 }
 
 /// 绘制各边独立边框（border-top/right/bottom/left）。

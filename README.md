@@ -109,7 +109,13 @@ MINI_SCROLL_LOG=1 cargo run --release --bin mini-app-window -- sample-app
 MINI_NO_DAMAGE=1 cargo run --release --bin mini-app-window -- sample-app
 # 网络请求日志（方法 / URL / 状态码 / 耗时）与 storage 读写日志
 MINI_NET_LOG=1 MINI_STORAGE_LOG=1 MINI_IMG_LOG=1 ./run.sh tea-app
+# 绘制耗时按组件类型/绘制阶段归因（image / text / 背景:阴影 / 背景:边框环 …）
+MINI_DRAW_LOG=1 cargo run --release --bin mini-app-window -- tea-app --drag 8x60 --snapshot target/drag
 ```
+
+> **滑动手感要能无头测**：`--drag <每帧像素>x<帧数>` 用与交互窗体同一套鼠标事件模拟一次
+> 手指拖动，逐帧计时后给出 p50/p95/最慢与超预算帧比例。快照永远只出一帧、也不走拖动路径，
+> 「滑动发抖」这类问题此前只能靠人肉拖窗口，改动前后无法比对。
 
 > 「整帧归因」这一行是为了让性能问题能收敛：**「为什么这一帧又整屏重画了」如果只能靠猜就永远查不完**。它直接指出了首页每秒一顿的元凶是倒计时的 `setData`（每秒 1 次整帧），而不是当时以为的滚动或动画。
 
@@ -365,7 +371,7 @@ cargo run --bin mini-devserver      # 浏览器调试预览（见下节）
 cargo run --example video_player    # 独立视频播放窗口（自动循环 + 声音）
 cargo run --bin mini-app-window     # 窗口应用（默认加载 sample-app）
 
-# 5) 测试（243 个用例）
+# 5) 测试（259 个用例）
 cargo test
 ```
 
@@ -555,6 +561,80 @@ Vue 3 运行时 + 60 个 CommonJS 模块。跑通它需要三件事，都是引�
 微信的 `getStorageSync` 读不到时返回 `''`。按「对齐 Skyline」的原则这里不迁就：
 **引擎不为偏离微信语义的写法让路**。所以它的首次运行仍会命中这个应用侧的问题，
 第二次运行起（缓存已落盘，`getStorageSync` 返回 uni 包装过的 `UTSJSONObject`）一切正常。
+
+### 颜色的 alpha 曾经被整条丢掉
+
+`rgba(…, .55)` 一律画成不透明色 —— 半透明遮罩、淡出、发丝描边全糊成实色块。
+tea-app 首页 banner 上那道横线就是这么来的：`.hero-wash-fade` 是
+「顶部 55% → 底部 0%」的淡出，解析成两个不透明色标之后变成一块实色，
+在它结束的地方留下一条硬边。
+
+根因是**同一份颜色语法有四个入口各写一份实现**：WXSS 声明、内联 `style`、
+渐变色标、canvas `fillStyle`。其中两份把第四个分量直接扔了。现在统一到
+`components::color_parse` 一处（`#rgb`/`#rgba`/`#rrggbb`/`#rrggbbaa`、
+`rgb()/rgba()` 的逗号式与 `r g b / a` 新语法、百分比通道、常用命名色），
+WXSS 解析器改成薄封装调它。
+
+同一批修的还有两个「值被空白切碎」的问题：`border: 2rpx solid rgba(0, 0, 0, .04)`
+和 `box-shadow: 0 8rpx 24rpx rgba(76, 52, 29, .06)` 以前直接 `split_whitespace()`，
+`rgba(0,` `0,` `0,` `.04)` 四段残片全都解析失败 —— 边框退回默认灰、阴影退回
+50% 纯黑。现在按**括号感知**的空白切分（`split_top_ws`）。tea-app 里这类声明有 83 条。
+
+### `letter-spacing` 会让文字凭空少一行
+
+盒子宽度按内容宽定，断行算法却用另一把尺子量：`measure_text_weighted` 按
+`(n-1)` 份字间距算，断行按 `n` 份算。于是「刚好装下」被判成「装不下」，
+最后一个字掉到第二行，**盒子高一倍**。
+
+Chrome 实测 `letter-spacing:10px` 的 4 字符 inline-block 正好宽 40px（不是 30px）——
+CSS 把字间距加进每个字形的前进宽度，末字符也算。按这个口径统一之后：
+tea-app 首页 `.brand-cn` 不再变成两行，被它挤出定高导航栏的 `PHOENIX YUNXIU`
+也回来了。（sample/news 两个示例不用 letter-spacing，15 页快照逐字节不变。）
+
+### 滑动帧成本：先量出来，再改
+
+滑动手感只有**连续拖动**才测得出来，而快照永远只出一帧。所以先加了两件工具：
+
+```bash
+# 模拟手指拖动并逐帧计时（每帧上移 8px，共 60 帧）
+./target/release/mini-app-window tea-app --route pages/category/category \
+    --settle 2 --drag 8x60 --snapshot target/drag
+# 🖐  pages/category/category：60 帧，单帧耗时 平均 5.32ms  p50 5.49ms  p95 8.89ms  最慢 9.94ms
+#    ↳ 最慢一帧 9.94ms 的渲染构成：页面 9.71ms  覆盖层 0.32ms  tabBar 0.00ms
+
+MINI_DRAW_LOG=1 ...   # 再按组件类型/绘制阶段摊开耗时
+#    ↳ 绘制归因（合计 523.9ms）：view 188.2ms/2346次  image 121.0ms/832次
+#      背景:圆角填充 102.8ms/460次  背景:边框环 79.3ms/646次  text 19.5ms/1620次
+```
+
+有了归因，三个热点一目了然（也说明**先量再改**为什么值得）：
+
+- **`box-shadow` 用 12 层半透明圆角矩形叠出模糊**：`0 8rpx 24rpx` 在 2 倍屏上
+  blur=24px → 12 层，每层都要把整张卡片面积做一遍带抗锯齿的路径填充，
+  一张卡一帧 140 万次像素混合。改成 CSS 的做法：把阴影形状画成 8 位覆盖率掩膜、
+  可分离盒式模糊三遍逼近高斯（σ = blur/2），**掩膜按几何尺寸缓存**，
+  每帧只剩一趟乘加合成（`components::shadow`）。与 Chrome 的剖面差在 3~10/255 之间。
+- **抗锯齿路径填充横扫整个包围盒**：`border` 的圆角描边是「外圈套内圈」的环形路径，
+  中间是空的，而填充器逐像素扫过 662px 宽的卡片，其中 650+ 个像素算出覆盖率 0。
+  改成**按扫描线区间遍历**（合并各子扫描线的区间，同一像素只访问一次），
+  输出逐像素不变 —— 分类页这一项 354ms → 79ms。
+- **渐变逐像素投影 + 查色标**：实际用到的渐变几乎全是轴对齐的，垂直方向同一行同色
+  （整行一次填充）、水平方向所有行同色序列（只算一行，其余行整行复用），
+  只有圆角波及的那几行退回逐像素（`components::gradient`）。
+- scroll-view 从离屏缓存上屏是逐像素 `set_pixel`（一屏一百万次带边界+裁剪判断），
+  改成按行成片拷贝、整行不透明时退化成 memcpy。
+
+tea-app 十个页面的拖动帧（60 帧一次，取平均/最慢）：
+
+| 页面 | 改前 | 改后 |
+| --- | --- | --- |
+| 首页 | 7.17ms / 最慢 11.6ms | **3.74ms / 10.0ms** |
+| 产区选茶 | 9.76ms / 最慢 14.0ms | **5.32ms / 9.9ms** |
+| 我的 | 8.95ms / 最慢 11.4ms | **2.49ms / 6.9ms** |
+
+其余页面 0.09~5.74ms。全部落进 60Hz 预算，多数落进 120Hz 预算；
+最慢帧仍会碰到 144Hz 的 6.94ms 上限 —— 因为拖动时整屏内容仍在逐帧重新光栅化，
+而 Skyline 那边滑动是纯合成。下一步是把 scroll-view 的内容也纳入离屏缓存复用。
 
 多步交互也能脚本化验证（每段 `--eval` 之后宿主会把导航跑完）：
 
@@ -886,7 +966,7 @@ free(buf); mr_canvas_free(c);
 覆盖表达式引擎、WXSS 选择器（含 `var()`/`calc()`）、模板控制流、布局与文本换行、全组件渲染、Canvas 2D、交互、滚动/惯性、页面栈路由、组件模型、CommonJS 模块、Promise、生命周期、事件冒泡等：
 
 ```bash
-cargo test          # 243 个用例
+cargo test          # 259 个用例
 cargo test route    # 路由/页面栈/组件/模块/异步/生命周期
 cargo test canvas   # Canvas 2D 上下文与命令
 cargo test scroll   # 滚动与惯性

@@ -84,6 +84,12 @@ impl ScrollViewCache {
     /// - scroll_offset: 滚动偏移（逻辑像素）
     /// - dest_x, dest_y: 目标位置（物理像素）
     /// - scale_factor: 缩放因子
+    /// 按**行**成片拷贝，不逐像素。
+    ///
+    /// 一屏是 750x1334 ≈ 一百万像素，逐像素 `set_pixel` 要为每个像素重做边界比较
+    /// 与裁剪矩形的浮点截断；Skyline 那边滑动是纯合成操作，我们这一笔白花的开销
+    /// 直接表现为「拖动时掉帧、发抖」。`Canvas::blend_pixels` 每行只判一次边界，
+    /// 整行不透明时退化成 memcpy。
     pub fn blit_to(
         &self,
         target: &mut Canvas,
@@ -93,34 +99,26 @@ impl ScrollViewCache {
         scale_factor: f32,
     ) {
         let src_pixels = self.canvas.pixels();
-        let src_width = self.canvas.width();
+        let src_width = self.canvas.width() as usize;
         let src_height = self.canvas.height();
-        
-        // 计算源区域（物理像素）
+        if src_width == 0 || src_height == 0 {
+            return;
+        }
+
+        // 源区域（物理像素）
         let src_y_start = (scroll_offset * scale_factor).max(0.0) as u32;
+        if src_y_start >= src_height {
+            return;
+        }
         let visible_height = (self.viewport_height as f32 * scale_factor) as u32;
         let src_y_end = (src_y_start + visible_height).min(src_height);
-        
-        // 目标位置
-        let dest_x = dest_x as i32;
-        let dest_y = dest_y as i32;
-        
-        // 复制像素
-        for src_y in src_y_start..src_y_end {
-            let dst_y = dest_y + (src_y - src_y_start) as i32;
-            
-            for src_x in 0..src_width {
-                let dst_x = dest_x + src_x as i32;
-                let src_idx = (src_y * src_width + src_x) as usize;
-                
-                if src_idx < src_pixels.len() {
-                    let color = src_pixels[src_idx];
-                    if color.a > 0 {
-                        target.set_pixel(dst_x, dst_y, color);
-                    }
-                }
-            }
+        if src_y_end <= src_y_start {
+            return;
         }
+
+        let from = src_y_start as usize * src_width;
+        let to = src_y_end as usize * src_width;
+        target.blend_pixels(dest_x as i32, dest_y as i32, &src_pixels[from..to], src_width);
     }
 }
 

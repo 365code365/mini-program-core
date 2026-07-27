@@ -152,6 +152,20 @@ impl WxmlRenderer {
     }
 
     pub(super) fn draw_component(&self, canvas: &mut Canvas, node: &RenderNode, x: f32, y: f32, w: f32, h: f32, sf: f32) {
+        // 绘制耗时按组件类型归因（`MINI_DRAW_LOG=1`）：一帧 8ms 里到底是图片重采样贵、
+        // 还是上百个文字光栅化贵，只有摊开才知道该优化哪里。关掉时零开销。
+        let _t = crate::renderer::draw_profile::Timer::start(match node.tag.as_str() {
+            "#text" | "text" => "text",
+            "image" => "image",
+            "view" | "" => "view",
+            "scroll-view" => "scroll-view",
+            "swiper" => "swiper",
+            "button" => "button",
+            "input" | "textarea" => "input",
+            "canvas" => "canvas",
+            "video" => "video",
+            _ => "其它",
+        });
         match node.tag.as_str() {
             "#text" | "text" => TextComponent::draw(node, canvas, self.text_renderer.as_deref(), x, y, w, h, sf),
             "button" => ButtonComponent::draw(node, canvas, self.text_renderer.as_deref(), x, y, w, h, sf),

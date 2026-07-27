@@ -12,6 +12,8 @@ pub mod click_handler;
 pub mod event_handler;
 pub mod picker_sheet;
 pub mod region_data;
+pub mod scroll_bench;
+pub mod component_mount;
 
 pub use config::*;
 pub use navigation::*;

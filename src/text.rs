@@ -447,18 +447,24 @@ impl TextRenderer {
     }
 
     /// 测量文本宽度（带字间距 + 字重）：粗体用真实粗体字面度量，避免测量与绘制不一致。
+    /// 文本宽度（含 `letter-spacing`）。
+    ///
+    /// 字间距**每个字符后面都要加一份，末字符也算**：CSS 把 letter-spacing 加进
+    /// 每个字形的前进宽度，行盒因此带一段行尾空隙（Chrome 实测 `letter-spacing:10px`
+    /// 的 4 字符串正好宽 40px，不是 30px）。
+    ///
+    /// 从前这里按 `(n-1)` 份算，比绘制与断行用的 `n` 份窄了一份，于是**盒子按内容宽
+    /// 定好之后，断行算法又认为同样的文字装不下**，最后一个字被挤到第二行：
+    /// 带 letter-spacing 的标题盒子凭空高出一行（tea-app 首页
+    /// `.brand-cn` 正是如此，把同一行的 `.brand-en` 挤出定高导航栏而整行消失）。
     pub fn measure_text_weighted(&self, text: &str, size: f32, letter_spacing: f32, bold: bool) -> f32 {
         let bold = bold && self.bold_font.is_some();
         let mut width = 0.0;
-        let char_count = text.chars().count();
-        for (i, ch) in text.chars().enumerate() {
+        for ch in text.chars() {
             if crate::emoji::is_zero_width(ch) {
                 continue;
             }
-            width += self.measure_char_weighted(ch, size, bold);
-            if i < char_count - 1 {
-                width += letter_spacing;
-            }
+            width += self.measure_char_weighted(ch, size, bold) + letter_spacing;
         }
         width
     }

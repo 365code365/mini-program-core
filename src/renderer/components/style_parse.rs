@@ -5,6 +5,7 @@
 //! 只负责把字符串解析为结构化的样式值。
 
 use super::base::{NodeStyle, BoxShadow, Transform, LinearGradientBg};
+use super::color_parse::parse_color_str;
 use crate::Color;
 
 /// 解析 `linear-gradient(<方向|角度>, c1 [pos], c2 [pos], ...)`。
@@ -74,8 +75,31 @@ fn parse_gradient_angle(dir: &str) -> f32 {
     }
 }
 
+/// 顶层空白切分（保留 `rgba(0, 0, 0, .06)` 这类带内部空格的函数值）。
+///
+/// `border` / `box-shadow` 这些简写以前直接用 `split_whitespace()`，
+/// 于是 `2rpx solid rgba(0, 0, 0, 0.04)` 被切成 `rgba(0,` `0,` `0,` `0.04)` 四段残片，
+/// 颜色永远解析失败：边框退回默认灰、阴影退回 50% 纯黑。
+pub fn split_top_ws(s: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut depth = 0i32;
+    let mut cur = String::new();
+    for ch in s.chars() {
+        match ch {
+            '(' => { depth += 1; cur.push(ch); }
+            ')' => { depth -= 1; cur.push(ch); }
+            c if c.is_whitespace() && depth == 0 => {
+                if !cur.is_empty() { out.push(std::mem::take(&mut cur)); }
+            }
+            _ => cur.push(ch),
+        }
+    }
+    if !cur.is_empty() { out.push(cur); }
+    out
+}
+
 /// 顶层逗号切分（保留 rgba(...) / rgb(...) 内部逗号）
-fn split_top_commas(s: &str) -> Vec<String> {
+pub fn split_top_commas(s: &str) -> Vec<String> {
     let mut out = Vec::new();
     let mut depth = 0i32;
     let mut cur = String::new();
@@ -109,35 +133,7 @@ pub fn parse_attr_json(s: &str) -> serde_json::Value {
     serde_json::from_str(&s.replace('\'', "\"")).unwrap_or(serde_json::Value::Null)
 }
 
-/// 解析颜色字符串：支持 `#rgb` / `#rrggbb` / `rgb(...)`。
-pub fn parse_color_str(s: &str) -> Option<Color> {
-    let s = s.trim();
-    if s.starts_with('#') {
-        let hex = s.trim_start_matches('#');
-        if hex.len() == 6 {
-            let r = u8::from_str_radix(&hex[0..2], 16).ok()?;
-            let g = u8::from_str_radix(&hex[2..4], 16).ok()?;
-            let b = u8::from_str_radix(&hex[4..6], 16).ok()?;
-            return Some(Color::new(r, g, b, 255));
-        } else if hex.len() == 3 {
-            let r = u8::from_str_radix(&hex[0..1], 16).ok()? * 17;
-            let g = u8::from_str_radix(&hex[1..2], 16).ok()? * 17;
-            let b = u8::from_str_radix(&hex[2..3], 16).ok()? * 17;
-            return Some(Color::new(r, g, b, 255));
-        }
-    } else if s.starts_with("rgb") {
-        let nums: Vec<u8> = s.chars()
-            .filter(|c| c.is_ascii_digit() || *c == ',')
-            .collect::<String>()
-            .split(',')
-            .filter_map(|n| n.trim().parse().ok())
-            .collect();
-        if nums.len() >= 3 {
-            return Some(Color::new(nums[0], nums[1], nums[2], 255));
-        }
-    }
-    None
-}
+// 颜色解析统一在 `color_parse` 模块（见那里的文件头注释：alpha 曾被丢掉）。
 
 /// 简单长度解析：返回 (数值, 单位字符串)。无单位按 px 处理。
 pub fn parse_length_simple(s: &str) -> Option<(f32, &str)> {
@@ -160,16 +156,14 @@ pub fn parse_box_shadow(s: &str, screen_width: f32) -> Option<BoxShadow> {
     let mut shadow = BoxShadow::default();
     shadow.color = Color::new(0, 0, 0, 128);
 
-    let parts: Vec<&str> = s.split_whitespace().collect();
+    let parts = split_top_ws(s);
     let mut num_idx = 0;
 
-    for part in parts {
+    for part in parts.iter().map(|p| p.as_str()) {
         if part == "inset" {
             shadow.inset = true;
-        } else if part.starts_with('#') || part.starts_with("rgb") {
-            if let Some(color) = parse_color_str(part) {
-                shadow.color = color;
-            }
+        } else if let Some(color) = parse_color_str(part) {
+            shadow.color = color;
         } else if let Some((num, unit)) = parse_length_simple(part) {
             let px = match unit {
                 "rpx" => num * screen_width / 750.0,
@@ -255,9 +249,9 @@ pub fn parse_transform(s: &str) -> Option<Transform> {
 
 /// 解析 `border: <width> <style> <color>` 简写（style 关键字忽略）。
 pub fn parse_border_shorthand(s: &str, ns: &mut NodeStyle, screen_width: f32, sf: f32) {
-    for part in s.split_whitespace() {
-        if part.starts_with('#') || part.starts_with("rgb") {
-            if let Some(color) = parse_color_str(part) { ns.border_color = Some(color); }
+    for part in split_top_ws(s).iter().map(|p| p.as_str()) {
+        if let Some(color) = parse_color_str(part) {
+            ns.border_color = Some(color);
         } else if let Some((num, unit)) = parse_length_simple(part) {
             let px = match unit { "rpx" => num * screen_width / 750.0, _ => num };
             ns.border_width = px * sf;
@@ -269,13 +263,40 @@ pub fn parse_border_shorthand(s: &str, ns: &mut NodeStyle, screen_width: f32, sf
 /// 返回 (宽度像素*sf, 颜色)。style 关键字（solid/dashed 等）忽略。
 pub fn parse_border_side(s: &str, screen_width: f32, sf: f32) -> (Option<f32>, Option<Color>) {
     let (mut width, mut color) = (None, None);
-    for part in s.split_whitespace() {
-        if part.starts_with('#') || part.starts_with("rgb") {
-            if let Some(c) = parse_color_str(part) { color = Some(c); }
+    for part in split_top_ws(s).iter().map(|p| p.as_str()) {
+        if let Some(c) = parse_color_str(part) {
+            color = Some(c);
         } else if let Some((num, unit)) = parse_length_simple(part) {
             let px = match unit { "rpx" => num * screen_width / 750.0, _ => num };
             width = Some(px * sf);
         }
     }
     (width, color)
+}
+
+#[cfg(test)]
+mod gradient_tests {
+    use super::*;
+
+    /// `background-image: linear-gradient(to bottom, rgba(…,.55), rgba(…,0))`
+    /// 是「顶部半透明 → 底部全透明」的淡出。方向与**每个 stop 的 alpha** 都必须解析对，
+    /// 否则淡出会变成一块平铺的半透明色，在它结束的地方留下一条硬边
+    /// （tea-app 首页 banner 上那道横线就是这么来的）。
+    #[test]
+    fn parses_to_bottom_fade_with_alpha_stops() {
+        let g = parse_linear_gradient(
+            "linear-gradient(to bottom, rgba(249, 245, 238, 0.55), rgba(249, 245, 238, 0))",
+        )
+        .expect("应能解析 to bottom 的 rgba 渐变");
+        assert!(
+            (g.angle_deg - 180.0).abs() < 0.01,
+            "`to bottom` 应等于 180deg，实际 {}",
+            g.angle_deg
+        );
+        assert_eq!(g.stops.len(), 2, "应有两个色标");
+        let a0 = g.stops[0].1.a;
+        let a1 = g.stops[1].1.a;
+        assert!(a0 > 120 && a0 < 160, "首个色标 alpha 应约 140(0.55)，实际 {}", a0);
+        assert_eq!(a1, 0, "末尾色标应完全透明，实际 {}", a1);
+    }
 }

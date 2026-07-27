@@ -99,7 +99,7 @@ impl WxmlRenderer {
     ) {
         self.animations_active = false;
         self.event_bindings.clear();
-        let rendered = crate::parser::TemplateEngine::render(nodes, data);
+        let rendered = crate::parser::TemplateEngine::render_with_components(nodes, data, &self.component_templates);
         let mut taffy = Tree::new();
         
         let mut render_nodes = Vec::new();

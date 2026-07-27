@@ -3,6 +3,8 @@
 use std::collections::HashMap;
 use mini_render::parser::wxml::WxmlNode;
 use mini_render::parser::wxss::StyleSheet;
+use mini_render::parser::template::ComponentTemplates;
+use mini_render::using_components::ComponentSource;
 
 /// 页面信息
 pub struct PageInfo {
@@ -14,6 +16,8 @@ pub struct PageInfo {
     /// 微信里下拉回弹一直有，但只有开了这个开关才出现刷新指示器并回调
     /// `onPullDownRefresh`，所以两者要分开处理。
     pub enable_pull_down_refresh: bool,
+    /// 页面 json `usingComponents` 声明的自定义组件（三件套源码）
+    pub components: Vec<ComponentSource>,
 }
 
 /// 页面栈中的页面实例
@@ -22,6 +26,8 @@ pub struct PageInstance {
     pub query: HashMap<String, String>,
     pub wxml_nodes: Vec<WxmlNode>,
     pub stylesheet: StyleSheet,
+    /// 自定义组件模板（标签名 → 组件 WXML），渲染时按标签展开
+    pub component_templates: ComponentTemplates,
 }
 
 /// 导航请求类型

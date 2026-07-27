@@ -35,6 +35,13 @@ impl WxmlRenderer {
         self.damage_clip = rect;
     }
 
+    /// 登记 `usingComponents` 声明的自定义组件模板（标签名 → 组件 WXML 根节点）。
+    /// 换页时由宿主重新设置：组件是按页面声明的。
+    pub fn set_component_templates(&mut self, templates: crate::parser::template::ComponentTemplates) {
+        self.component_templates = templates;
+        self.cache = None; // 模板变了，上一棵树不再可复用
+    }
+
     /// 本帧是否存在仍在推进的 CSS 动画。宿主用它决定「继续按刷新率出帧」还是「空闲休眠」。
     pub fn has_active_animations(&self) -> bool {
         self.animations_active

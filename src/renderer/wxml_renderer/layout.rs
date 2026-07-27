@@ -36,7 +36,7 @@ impl WxmlRenderer {
         // 分段计时能直接指出该优化哪一段。
         let log_timing = std::env::var("MINI_LAYOUT_LOG").is_ok();
         let t_start = std::time::Instant::now();
-        let rendered = crate::parser::TemplateEngine::render_with_virtual_list(nodes, data, viewport);
+        let rendered = crate::parser::TemplateEngine::render_with_components(nodes, data, &self.component_templates);
         let t_template = std::time::Instant::now();
         let mut taffy = Tree::new();
         
@@ -131,7 +131,7 @@ impl WxmlRenderer {
 
     /// 测量给定 WXML+数据的内容总高度（逻辑像素），用于自适应画布尺寸。
     pub fn measure_content_height(&self, nodes: &[WxmlNode], data: &JsonValue) -> f32 {
-        let rendered = crate::parser::TemplateEngine::render(nodes, data);
+        let rendered = crate::parser::TemplateEngine::render_with_components(nodes, data, &self.component_templates);
         let mut taffy = Tree::new();
         let mut render_nodes = Vec::new();
         for (sib_i, node) in rendered.iter().enumerate() {

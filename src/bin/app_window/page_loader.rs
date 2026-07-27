@@ -93,12 +93,24 @@ fn load_page(app_path: &Path, page_path: &str) -> Option<PageInfo> {
         .and_then(|v| v.get("enablePullDownRefresh").and_then(|b| b.as_bool()))
         .unwrap_or_else(app_enables_pull_down_refresh);
 
+    // 页面 json 的 `usingComponents`：自定义组件三件套（含组件自己再声明的组件）
+    let components = mini_render::using_components::load_page_components(app_path, page_path);
+    if !components.is_empty() {
+        println!(
+            "🧩 {} 使用 {} 个自定义组件: {}",
+            page_path,
+            components.len(),
+            components.iter().map(|c| c.tag.as_str()).collect::<Vec<_>>().join(", ")
+        );
+    }
+
     Some(PageInfo {
         path: page_path.to_string(),
         wxml,
         wxss,
         js,
         enable_pull_down_refresh,
+        components,
     })
 }
 
@@ -198,6 +210,7 @@ fn load_builtin_pages() -> HashMap<String, PageInfo> {
         wxss: include_str!("../../../sample/sample-app/pages/index/index.wxss").to_string(),
         js: include_str!("../../../sample/sample-app/pages/index/index.js").to_string(),
         enable_pull_down_refresh: false,
+        components: Vec::new(),
     });
     
     pages.insert("pages/category/category".to_string(), PageInfo {
@@ -206,6 +219,7 @@ fn load_builtin_pages() -> HashMap<String, PageInfo> {
         wxss: include_str!("../../../sample/sample-app/pages/category/category.wxss").to_string(),
         js: include_str!("../../../sample/sample-app/pages/category/category.js").to_string(),
         enable_pull_down_refresh: false,
+        components: Vec::new(),
     });
     
     pages.insert("pages/cart/cart".to_string(), PageInfo {
@@ -214,6 +228,7 @@ fn load_builtin_pages() -> HashMap<String, PageInfo> {
         wxss: include_str!("../../../sample/sample-app/pages/cart/cart.wxss").to_string(),
         js: include_str!("../../../sample/sample-app/pages/cart/cart.js").to_string(),
         enable_pull_down_refresh: false,
+        components: Vec::new(),
     });
     
     pages.insert("pages/profile/profile".to_string(), PageInfo {
@@ -222,6 +237,7 @@ fn load_builtin_pages() -> HashMap<String, PageInfo> {
         wxss: include_str!("../../../sample/sample-app/pages/profile/profile.wxss").to_string(),
         js: include_str!("../../../sample/sample-app/pages/profile/profile.js").to_string(),
         enable_pull_down_refresh: false,
+        components: Vec::new(),
     });
     
     pages.insert("pages/detail/detail".to_string(), PageInfo {
@@ -230,6 +246,7 @@ fn load_builtin_pages() -> HashMap<String, PageInfo> {
         wxss: include_str!("../../../sample/sample-app/pages/detail/detail.wxss").to_string(),
         js: include_str!("../../../sample/sample-app/pages/detail/detail.js").to_string(),
         enable_pull_down_refresh: false,
+        components: Vec::new(),
     });
     
     pages.insert("pages/canvas/canvas".to_string(), PageInfo {
@@ -238,6 +255,7 @@ fn load_builtin_pages() -> HashMap<String, PageInfo> {
         wxss: include_str!("../../../sample/sample-app/pages/canvas/canvas.wxss").to_string(),
         js: include_str!("../../../sample/sample-app/pages/canvas/canvas.js").to_string(),
         enable_pull_down_refresh: false,
+        components: Vec::new(),
     });
     
     pages.insert("pages/components/components".to_string(), PageInfo {
@@ -246,6 +264,7 @@ fn load_builtin_pages() -> HashMap<String, PageInfo> {
         wxss: include_str!("../../../sample/sample-app/pages/components/components.wxss").to_string(),
         js: include_str!("../../../sample/sample-app/pages/components/components.js").to_string(),
         enable_pull_down_refresh: false,
+        components: Vec::new(),
     });
     
     pages

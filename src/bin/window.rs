@@ -455,12 +455,29 @@ impl MiniAppWindow {
         
         let mut wxml_parser = WxmlParser::new(&page_info.wxml);
         let wxml_nodes = remove_manual_tabbar(&wxml_parser.parse().map_err(|e| format!("WXML error: {}", e))?);
+
+        // 页面 json 声明的自定义组件（`usingComponents`）：模板按标签登记，
+        // 样式并入页面样式表（已带作用域前缀），JS 稍后作为模块执行并建实例。
+        let mut component_templates = mini_render::parser::template::ComponentTemplates::new();
+        let mut component_wxss = String::new();
+        for c in &page_info.components {
+            match WxmlParser::new(&c.wxml).parse() {
+                Ok(nodes) => {
+                    component_templates.insert(c.tag.clone(), nodes);
+                    component_wxss.push('\n');
+                    component_wxss.push_str(&c.wxss);
+                }
+                Err(e) => eprintln!("⚠️  组件 {} 的 WXML 解析失败: {}", c.tag, e),
+            }
+        }
         
         // app.wxss 在前、页面 WXSS 在后：同特异性时页面样式因书写顺序更靠后而胜出
-        let merged_wxss = format!("{}\n{}", self.app_wxss, page_info.wxss);
+        let merged_wxss = format!("{}\n{}\n{}", self.app_wxss, page_info.wxss, component_wxss);
         let mut wxss_parser = WxssParser::new(&merged_wxss);
         let stylesheet = wxss_parser.parse().map_err(|e| format!("WXSS error: {}", e))?;
         
+        // 上一页的组件实例作废（组件是按页面声明的）
+        self.app.eval("__resetPageComponents()").ok();
         // 先登记路由：页面实例的 `this.route` / `getCurrentPages()` 都依赖它，
         // 返回时也靠它判断逻辑层是否已经出过栈
         self.app.eval(&format!("__setPendingRoute({})", serde_json::to_string(path).unwrap_or_else(|_| "''".into()))).ok();
@@ -473,9 +490,13 @@ impl MiniAppWindow {
         // onReady：微信在首次渲染完成后触发；编译端取数据快照时也会走这一步，
         // 窗体不调用会导致两端初始数据不同（例如在 onReady 里补数据的页面）。
         self.app.eval("if(__currentPage && __currentPage.onReady) __currentPage.onReady()").ok();
+        // 自定义组件：先按「组件路径」执行它的 js（`Component()` 借此注册到该路径），
+        // 再建实例。实例必须真的建出来 —— 框架型产物在 attached 里挂载自己的组件树
+        // 并触发首次 setData，没有实例的话组件模板里全是空值（底部导航整条空白）。
+        app_window::component_mount::mount_page_components(&mut self.app, &page_info.components, &wxml_nodes);
         print_js_output(&self.app);
         
-        self.page_stack.push(PageInstance { path: path.to_string(), query, wxml_nodes, stylesheet });
+        self.page_stack.push(PageInstance { path: path.to_string(), query, wxml_nodes, stylesheet, component_templates });
         // 换页必须重取数据快照：新页面的 onLoad 里可能一次 setData 都没有，
         // 那样缓存里还是上一页的数据。
         self.page_data_dirty = true;
@@ -548,7 +569,9 @@ impl MiniAppWindow {
     
     fn update_renderers(&mut self) {
         if let Some(page) = self.page_stack.last() {
-            self.renderer = Some(WxmlRenderer::new_with_scale(page.stylesheet.clone(), LOGICAL_WIDTH as f32, LOGICAL_HEIGHT as f32, self.scale_factor as f32));
+            let mut r = WxmlRenderer::new_with_scale(page.stylesheet.clone(), LOGICAL_WIDTH as f32, LOGICAL_HEIGHT as f32, self.scale_factor as f32);
+            r.set_component_templates(page.component_templates.clone());
+            self.renderer = Some(r);
             if let Some(ref ct) = self.custom_tabbar {
                 self.tabbar_renderer = Some(WxmlRenderer::new_with_scale(ct.stylesheet.clone(), LOGICAL_WIDTH as f32, tabbar_height() as f32, self.scale_factor as f32));
             }
@@ -586,7 +609,7 @@ impl MiniAppWindow {
             self.fixed_dirty = true;
             self.page_data = std::sync::Arc::new(
                 self.app
-                    .eval("__getPageData()")
+                    .eval("__getRenderData()")
                     .map(|s| serde_json::from_str(&s).unwrap_or(json!({})))
                     .unwrap_or(json!({})),
             );
@@ -1489,7 +1512,8 @@ impl MiniAppWindow {
     /// 这是「窗体是否忠实还原小程序」的可验证入口 —— 页面加载、样式合并、
     /// 自定义 tabBar、fixed 覆盖层、Toast/Modal 外壳、像素合成顺序都与真实运行一致，
     /// 因此产出的 PNG 可以直接和编译出的 H5 截图做像素级对比。
-    fn snapshot_all(&mut self, out_dir: &std::path::Path, scale: f64, time: Option<f32>, settle: Option<f32>, only: Option<&str>, scroll: f32, evals: &[String], frames: u32, click: Option<(f32, f32)>, press: Option<(f32, f32)>) -> Result<usize, String> {
+    #[allow(clippy::too_many_arguments)]
+    fn snapshot_all(&mut self, out_dir: &std::path::Path, scale: f64, time: Option<f32>, settle: Option<f32>, only: Option<&str>, scroll: f32, evals: &[String], frames: u32, click: Option<(f32, f32)>, press: Option<(f32, f32)>, drag: Option<app_window::scroll_bench::DragSpec>) -> Result<usize, String> {
         self.setup_canvas(scale);
         let routes: Vec<String> = match only {
             Some(route) => vec![route.trim_start_matches('/').to_string()],
@@ -1624,19 +1648,68 @@ impl MiniAppWindow {
                 // （真实窗体里也不可能在首帧之前点击）
                 self.render();
                 self.handle_click(cx, cy);
+                // 点击引发的导航**可能是延后一个微任务的**：框架型产物（uni-app）的事件
+                // 代理对冒泡事件走 `nextTick(invoke)`，所以处理函数在下一次 pump 才真正执行。
+                // 从前这里「拿不到导航就立刻 break」，等于只泵了一次 —— 点底部导航在快照
+                // 工具里永远换不了页（交互窗体反而正常，因为它每帧都 pump）。
                 for _ in 0..8 {
                     self.app.update().ok();
                     if self.pending_navigation.is_none() {
                         self.pending_navigation = app_window::check_navigation(&mut self.app);
                     }
-                    if self.pending_navigation.is_none() {
-                        break;
+                    if self.pending_navigation.is_some() {
+                        self.process_navigation();
                     }
-                    self.process_navigation();
                 }
                 print_js_output(&self.app);
                 self.needs_redraw = true;
                 self.render();
+            }
+            // `--drag <每帧像素>x<帧数>`：走与交互窗体同一套鼠标事件模拟一次手指拖动，
+            // 逐帧计时。滑动手感只有连续拖动才测得出来（见 app_window::scroll_bench）。
+            if let Some(spec) = drag {
+                self.render(); // 命中测试依赖上一帧注册的交互区域
+                let (cx, mut cy) = (LOGICAL_WIDTH as f32 / 2.0, LOGICAL_HEIGHT as f32 * 0.75);
+                let ts = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis() as u64;
+                self.mouse_pos = (cx, cy);
+                app_window::events::mouse::handle_mouse_pressed(
+                    cx, cy, &mut self.scroll, &mut self.interaction, ts,
+                );
+                let mut frame_ms: Vec<f32> = Vec::with_capacity(spec.frames as usize);
+                let mut worst = (0.0f32, (0.0f32, 0.0f32, 0.0f32));
+                for _ in 0..spec.frames {
+                    cy -= spec.dy;
+                    let t0 = Instant::now();
+                    self.mouse_pos = (cx, cy);
+                    if evt::handle_cursor_moved(
+                        cx, cy, &mut self.interaction, &mut self.scroll,
+                        self.text_renderer.as_deref(), self.window.as_ref(),
+                        self.renderer.as_ref(), &mut self.app, &mut self.clipboard,
+                        self.scale_factor,
+                    ) {
+                        self.needs_redraw = true;
+                    }
+                    self.pump_one_frame();
+                    let ms = t0.elapsed().as_secs_f32() * 1000.0;
+                    if ms > worst.0 {
+                        worst = (ms, self.render_parts);
+                    }
+                    frame_ms.push(ms);
+                    // 按刷新率节流，模拟真实拖动的采样节奏
+                    let spent = t0.elapsed();
+                    if let Some(rest) = self.frame_interval.checked_sub(spent) {
+                        std::thread::sleep(rest);
+                    }
+                }
+                app_window::events::mouse::handle_mouse_released(&mut self.scroll, &mut self.interaction);
+                app_window::scroll_bench::report(&route, &frame_ms, self.frame_interval);
+                app_window::scroll_bench::report_worst_parts(worst.0, worst.1);
+                if let Some(s) = mini_render::renderer::draw_profile::summary(8) {
+                    println!("   ↳ {s}");
+                }
             }
             // `--frames N`：按刷新率跑 N 个**与交互窗体同一套闸门/损伤区逻辑**的帧再截图。
             // 局部重绘这类只在连续出帧时才暴露的问题（比如某个动画元素被漏出损伤区而静止），
@@ -1719,6 +1792,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut click: Option<(f32, f32)> = None;
     let mut press: Option<(f32, f32)> = None;
     let mut route: Option<String> = None;
+    let mut drag: Option<app_window::scroll_bench::DragSpec> = None;
     let mut scroll = 0.0f32;
     let mut evals: Vec<String> = Vec::new();
     let mut it = args.into_iter();
@@ -1742,6 +1816,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 });
             }
             "--route" => route = it.next(),
+            "--drag" => drag = it.next().as_deref().and_then(app_window::scroll_bench::parse),
             "--scroll" => scroll = it.next().and_then(|v| v.parse().ok()).unwrap_or(0.0),
             "--eval" => { if let Some(v) = it.next() { evals.push(v); } }
             "--help" | "-h" => {
@@ -1753,6 +1828,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("  --press <x,y>  在该坐标按下并保持（验证 :active / hover-class 与过渡）");
                 println!("                 轮播自动播放跑起来（要「和真机一样」的画面时用这个）");
                 println!("  --route <页面路径>   --scroll <像素>");
+                println!("  --drag <px>x<帧数>  模拟手指拖动并逐帧计时（滑动手感的可回归测量）");
                 println!("  --eval <JS>    可重复；在 --settle 之后依次执行，每段跑完导航");
                 return Ok(());
             }
@@ -1782,7 +1858,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 快照模式：不开窗口，直接把整帧写成 PNG（用于与 H5 做像素对比）
     if let Some(out) = snapshot {
-        let count = window.snapshot_all(&out, scale, anim_time, settle, route.as_deref(), scroll, &evals, frames, click, press)?;
+        let count = window.snapshot_all(&out, scale, anim_time, settle, route.as_deref(), scroll, &evals, frames, click, press, drag)?;
         println!("\n✅ 快照完成：{} 个页面 -> {}", count, out.display());
         return Ok(());
     }

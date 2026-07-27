@@ -240,6 +240,10 @@ impl WxmlRenderer {
                     cache.needs_render()
                 };
                 
+                // 滑动手感的归因（`MINI_SCROLL_LOG=1`）：scroll-view 每帧的开销分三段
+                // ——「重画离屏内容」「上屏 blit」「登记交互区域」。哪一段贵，改哪一段。
+                let log_scroll = std::env::var("MINI_SCROLL_LOG").is_ok();
+                let t_begin = std::time::Instant::now();
                 if cache_needs_render {
                     // 创建临时 Canvas 用于渲染
                     let mut temp_canvas = Canvas::new(w as u32, content_height.ceil() as u32);
@@ -260,6 +264,7 @@ impl WxmlRenderer {
                     }
                 }
                 
+                let t_content = std::time::Instant::now();
                 // 从缓存复制可见区域到主 Canvas
                 canvas.save();
                 canvas.clip_rect(GeoRect::new(x, y, w, h));
@@ -269,12 +274,24 @@ impl WxmlRenderer {
                 }
                 
                 canvas.restore();
+                let t_blit = std::time::Instant::now();
                 
                 // 注册子元素的交互区域（需要考虑滚动偏移）
                 child_offset_y = -scroll_position * sf;
                 let text_color = node.style.text_color.unwrap_or(Color::BLACK);
                 for child in &node.children {
                     self.register_child_interactions(taffy, child, x, y + child_offset_y, text_color, interaction, scroll_position, h / sf);
+                }
+                if log_scroll {
+                    let ms = |a: std::time::Instant, b: std::time::Instant| (b - a).as_secs_f32() * 1000.0;
+                    eprintln!(
+                        "🎢 scroll-view {} 内容高 {:.0}：离屏重画 {:.2}ms（{}）  上屏 blit {:.2}ms  交互登记 {:.2}ms",
+                        component_id, content_height,
+                        ms(t_begin, t_content),
+                        if cache_needs_render { "本帧重画" } else { "命中缓存" },
+                        ms(t_content, t_blit),
+                        t_blit.elapsed().as_secs_f32() * 1000.0,
+                    );
                 }
             } else {
                 let text_color = node.style.text_color.unwrap_or(Color::BLACK);

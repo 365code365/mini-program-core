@@ -791,9 +791,11 @@ impl MiniAppApi {
                 return result;
             }
             
-            // 调用页面方法（供 native 调用事件处理）
+            // 调用页面方法（供 native 调用事件处理）。
+            // 处理函数可能挂在页面上，也可能挂在页面内的自定义组件实例上
+            // （组件模板里的 bindtap 绑的是组件自己的方法）。
             function __callPageMethod(methodName, eventData) {
-                if (__currentPage && typeof __currentPage[methodName] === 'function') {
+                if (__hasHandler(methodName)) {
                     // 确保 eventData 是对象
                     if (typeof eventData === 'string') {
                         try {
@@ -845,11 +847,23 @@ impl MiniAppApi {
                         changedTouches: []
                     };
                     try {
-                        __currentPage[methodName](event);
+                        __dispatchHandler(methodName, event);
                     } catch (e) {
-                        __native_print('[Error] ' + methodName + ': ' + e.message);
+                        __native_print('[Error] ' + methodName + ': ' + (e && e.message ? e.message : e));
                     }
                     return true;
+                }
+                return false;
+            }
+
+            /// 页面或其组件实例上是否存在该处理函数
+            function __hasHandler(name) {
+                if (!name) { return false; }
+                if (__currentPage && typeof __currentPage[name] === 'function') { return true; }
+                for (var tag in __pageComponents) {
+                    if (!__pageComponents.hasOwnProperty(tag)) { continue; }
+                    var inst = __componentInstances[__pageComponents[tag]];
+                    if (inst && typeof inst[name] === 'function') { return true; }
                 }
                 return false;
             }
@@ -860,6 +874,73 @@ impl MiniAppApi {
                     return JSON.stringify(__currentPage.data);
                 }
                 return '{}';
+            }
+
+            // ==================== 页面内自定义组件（usingComponents） ====================
+            // 标签名 -> 组件实例 id。渲染层按标签名取组件自己的 data 去渲染组件模板：
+            // 组件的 `{{a}}` 与页面的 `{{a}}` 是两套数据，不能共用一个作用域。
+            var __pageComponents = {};
+
+            function __resetPageComponents() { __pageComponents = {}; }
+
+            /// 在页面数据作用域里求一个表达式（用于 `u-p="{{r||''}}"` 这类「父传子」属性）
+            function __evalInPageData(exprSrc) {
+                try {
+                    var d = (__currentPage && __currentPage.data) || {};
+                    var f = new Function('d', 'with (d) { return (' + exprSrc + '); }');
+                    return f(d);
+                } catch (e) { return null; }
+            }
+
+            /// 挂载一个页面内自定义组件：建实例（会跑 created/attached/ready）并记下标签名。
+            /// 框架型产物（uni-app / Taro）正是在 attached 里挂载自己的组件并触发首次 setData，
+            /// 所以实例必须真的建出来，光有定义没有实例的话组件模板里全是空值。
+            function __mountPageComponent(tag, path, propsExpr) {
+                var props = propsExpr ? __evalInPageData(propsExpr) : null;
+                if (props === null || typeof props !== 'object') { props = {}; }
+                var inst = __createComponentInstance(path, props);
+                if (!inst) { return ''; }
+                __pageComponents[tag] = inst.id;
+                return inst.id;
+            }
+
+            /// 渲染数据 = 页面 data + `$comp`（各组件实例的 data）
+            function __getRenderData() {
+                var out = {};
+                if (__currentPage && __currentPage.data) {
+                    for (var k in __currentPage.data) {
+                        if (__currentPage.data.hasOwnProperty(k)) { out[k] = __currentPage.data[k]; }
+                    }
+                }
+                var comp = {};
+                var any = false;
+                for (var tag in __pageComponents) {
+                    if (!__pageComponents.hasOwnProperty(tag)) { continue; }
+                    var inst = __componentInstances[__pageComponents[tag]];
+                    if (inst) { comp[tag] = inst.data; any = true; }
+                }
+                if (any) { out['$comp'] = comp; }
+                return JSON.stringify(out);
+            }
+
+            /// 把事件派发到「持有该处理函数的对象」：先找页面，再找页面内的组件实例。
+            /// 组件模板里的 `bindtap="{{item.e}}"` 绑的是**组件**的方法，
+            /// 只在页面上找的话点了没反应（底部导航点不动就是这个原因）。
+            function __dispatchHandler(name, event) {
+                if (!name) { return false; }
+                if (__currentPage && typeof __currentPage[name] === 'function') {
+                    __currentPage[name](event);
+                    return true;
+                }
+                for (var tag in __pageComponents) {
+                    if (!__pageComponents.hasOwnProperty(tag)) { continue; }
+                    var inst = __componentInstances[__pageComponents[tag]];
+                    if (inst && typeof inst[name] === 'function') {
+                        inst[name](event);
+                        return true;
+                    }
+                }
+                return false;
             }
             
             // 导航 API

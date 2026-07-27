@@ -109,6 +109,9 @@ enum DrawKind {
 
 pub struct WxmlRenderer {
     stylesheet: StyleSheet,
+    /// 页面 json `usingComponents` 声明的自定义组件模板（标签名 → 组件 WXML）。
+    /// 渲染时把 `<tab-bar/>` 这类标签展开成组件自己的模板 + 组件实例数据。
+    component_templates: crate::parser::template::ComponentTemplates,
     screen_width: f32,
     screen_height: f32,
     event_bindings: Vec<EventBinding>,
@@ -177,6 +180,7 @@ impl WxmlRenderer {
         
         Self { 
             stylesheet, 
+            component_templates: Default::default(),
             screen_width,
             screen_height,
             event_bindings: Vec::new(),

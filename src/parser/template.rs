@@ -7,6 +7,14 @@
 use super::wxml::{WxmlNode, WxmlNodeType};
 use super::expr;
 use serde_json::Value as JsonValue;
+use std::collections::HashMap;
+
+/// 自定义组件模板表：标签名 → 组件 WXML 根节点
+pub type ComponentTemplates = HashMap<String, Vec<WxmlNode>>;
+
+/// 组件实例数据在渲染数据里的存放位置：`data["$comp"]["<标签名>"]`。
+/// 用 `$` 开头是因为 WXML 表达式里不会出现这样的标识符，不会和页面字段撞名。
+pub const COMPONENT_DATA_KEY: &str = "$comp";
 
 /// 模板引擎
 pub struct TemplateEngine;
@@ -14,7 +22,7 @@ pub struct TemplateEngine;
 impl TemplateEngine {
     /// 渲染模板，替换 {{}} 表达式
     pub fn render(nodes: &[WxmlNode], data: &JsonValue) -> Vec<WxmlNode> {
-        Self::render_nodes(nodes, data)
+        Self::render_nodes(nodes, data, &ComponentTemplates::new())
     }
     
     /// 渲染模板（保留 viewport 形参以兼容旧调用；虚拟列表裁剪在绘制阶段处理）
@@ -23,11 +31,23 @@ impl TemplateEngine {
         data: &JsonValue,
         _viewport: Option<(f32, f32)>,
     ) -> Vec<WxmlNode> {
-        Self::render_nodes(nodes, data)
+        Self::render_nodes(nodes, data, &ComponentTemplates::new())
+    }
+
+    /// 渲染模板，并把 `usingComponents` 声明的自定义组件标签展开成组件自己的模板。
+    ///
+    /// 组件子树用**组件实例自己的 data** 求值（放在 `data["$comp"][标签名]`）——
+    /// 组件的 `{{a}}` 与页面的 `{{a}}` 是两套东西，共用一个作用域会互相串味。
+    pub fn render_with_components(
+        nodes: &[WxmlNode],
+        data: &JsonValue,
+        components: &ComponentTemplates,
+    ) -> Vec<WxmlNode> {
+        Self::render_nodes(nodes, data, components)
     }
     
     /// 渲染一组兄弟节点，处理 if/elif/else 链
-    fn render_nodes(nodes: &[WxmlNode], data: &JsonValue) -> Vec<WxmlNode> {
+    fn render_nodes(nodes: &[WxmlNode], data: &JsonValue, comps: &ComponentTemplates) -> Vec<WxmlNode> {
         let mut out = Vec::new();
         // if/elif/else 链状态
         let mut chain_active = false; // 当前是否处于一个 wx:if 链中
@@ -45,7 +65,7 @@ impl TemplateEngine {
                     // wx:for 优先级最高
                     if node.attributes.contains_key("wx:for") {
                         chain_active = false;
-                        Self::render_for(node, data, &mut out);
+                        Self::render_for(node, data, comps, &mut out);
                         continue;
                     }
                     
@@ -53,22 +73,22 @@ impl TemplateEngine {
                         chain_active = true;
                         chain_taken = Self::eval_condition(cond, data);
                         if chain_taken {
-                            Self::emit_element(node, data, &mut out);
+                            Self::emit_element(node, data, comps, &mut out);
                         }
                     } else if let Some(cond) = node.attributes.get("wx:elif") {
                         if chain_active && !chain_taken && Self::eval_condition(cond, data) {
                             chain_taken = true;
-                            Self::emit_element(node, data, &mut out);
+                            Self::emit_element(node, data, comps, &mut out);
                         }
                     } else if node.attributes.contains_key("wx:else") {
                         if chain_active && !chain_taken {
-                            Self::emit_element(node, data, &mut out);
+                            Self::emit_element(node, data, comps, &mut out);
                         }
                         chain_active = false;
                         chain_taken = false;
                     } else {
                         chain_active = false;
-                        Self::emit_element(node, data, &mut out);
+                        Self::emit_element(node, data, comps, &mut out);
                     }
                 }
             }
@@ -79,10 +99,14 @@ impl TemplateEngine {
     
     /// 输出一个已经通过条件判断的元素。
     /// `<block>` 不产生真实节点，只展开其子节点。
-    fn emit_element(node: &WxmlNode, data: &JsonValue, out: &mut Vec<WxmlNode>) {
+    fn emit_element(node: &WxmlNode, data: &JsonValue, comps: &ComponentTemplates, out: &mut Vec<WxmlNode>) {
         if node.tag_name == "block" {
-            let children = Self::render_nodes(&node.children, data);
+            let children = Self::render_nodes(&node.children, data, comps);
             out.extend(children);
+            return;
+        }
+        if let Some(tpl) = comps.get(&node.tag_name) {
+            Self::emit_component(node, tpl, data, comps, out);
             return;
         }
         
@@ -91,14 +115,87 @@ impl TemplateEngine {
             if Self::is_directive(key) {
                 continue;
             }
-            new_node.attributes.insert(key.clone(), Self::interpolate(value, data));
+            new_node.attributes.insert(key.clone(), Self::interpolate_attr(key, value, data));
         }
-        new_node.children = Self::render_nodes(&node.children, data);
+        new_node.children = Self::render_nodes(&node.children, data, comps);
         out.push(new_node);
+    }
+
+    /// 属性插值。`class` / `style` 绑定到数组或对象时按 CSS 语义拼接，
+    /// 而不是把 JSON 直接塞进属性值。
+    ///
+    /// `class="{{['tabbar', d]}}"` 是 uni-app 每个组件/页面根节点的固定写法
+    /// （`d` 是虚拟宿主类名）。原来走通用插值会得到字面量 `['tabbar','']`，
+    /// 于是 `.tabbar` / `.root` / `.page` 这些**根节点样式全部失效** ——
+    /// 底部导航因此既没有 `position:fixed` 也没有背景，整页配色也对不上。
+    fn interpolate_attr(key: &str, value: &str, data: &JsonValue) -> String {
+        if key != "class" && key != "style" {
+            return Self::interpolate(value, data);
+        }
+        let trimmed = value.trim();
+        // 只有「整个属性值就是一个表达式」时才需要特殊拼接
+        let inner = match trimmed.strip_prefix("{{").and_then(|s| s.strip_suffix("}}")) {
+            Some(i) if !i.contains("{{") => i.trim(),
+            _ => return Self::interpolate(value, data),
+        };
+        let sep = if key == "class" { " " } else { ";" };
+        match expr::eval_str(inner, data) {
+            JsonValue::Array(items) => items
+                .iter()
+                .map(expr::render_value)
+                .filter(|s| !s.trim().is_empty())
+                .collect::<Vec<_>>()
+                .join(sep),
+            // `class="{{ {active: on} }}"`：取值为真的键；style 取 `k:v`
+            JsonValue::Object(map) => map
+                .iter()
+                .filter(|(_, v)| expr::is_truthy(v))
+                .map(|(k, v)| {
+                    if key == "class" {
+                        k.clone()
+                    } else {
+                        format!("{k}:{}", expr::render_value(v))
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join(sep),
+            other => expr::render_value(&other),
+        }
+    }
+
+    /// 展开一个自定义组件：保留一个以组件标签命名的**宿主节点**（承载使用方写在标签上的
+    /// class/style，并让组件 WXSS 里的 `:host` 与作用域前缀能命中），
+    /// 其内容用组件实例自己的 data 渲染。
+    fn emit_component(
+        node: &WxmlNode,
+        tpl: &[WxmlNode],
+        data: &JsonValue,
+        comps: &ComponentTemplates,
+        out: &mut Vec<WxmlNode>,
+    ) {
+        let mut host = WxmlNode::new_element(&node.tag_name);
+        for (key, value) in &node.attributes {
+            if Self::is_directive(key) {
+                continue;
+            }
+            host.attributes.insert(key.clone(), Self::interpolate_attr(key, value, data));
+        }
+        let comp_data = data
+            .get(COMPONENT_DATA_KEY)
+            .and_then(|m| m.get(&node.tag_name))
+            .cloned()
+            .unwrap_or_else(|| JsonValue::Object(Default::default()));
+        // 组件内部再用别的组件时，`$comp` 要继续可见
+        let mut scope = comp_data;
+        if let (Some(obj), Some(all)) = (scope.as_object_mut(), data.get(COMPONENT_DATA_KEY)) {
+            obj.insert(COMPONENT_DATA_KEY.to_string(), all.clone());
+        }
+        host.children = Self::render_nodes(tpl, &scope, comps);
+        out.push(host);
     }
     
     /// 渲染 wx:for 循环
-    fn render_for(node: &WxmlNode, data: &JsonValue, out: &mut Vec<WxmlNode>) {
+    fn render_for(node: &WxmlNode, data: &JsonValue, comps: &ComponentTemplates, out: &mut Vec<WxmlNode>) {
         let for_expr = match node.attributes.get("wx:for") {
             Some(e) => e,
             None => return,
@@ -131,7 +228,7 @@ impl TemplateEngine {
                 }
             }
             
-            Self::emit_element(node, &loop_data, out);
+            Self::emit_element(node, &loop_data, comps, out);
         }
     }
     
