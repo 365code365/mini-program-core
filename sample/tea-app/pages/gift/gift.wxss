@@ -1,6 +1,8 @@
 @import "../../uvue.wxss";
 :host{display:flex;flex-direction:column}
 /* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+/* 字体栈第一位必须是 App.uvue 里 loadFontFace 注册过的 family，否则安卓机没有本机宋体，
+   会整站掉到系统黑体。Yunxiu Serif = Noto Serif SC Regular(正文)，Source Han Serif SC = Heavy(标题)。 */
 .root {
   flex: 1;
   background-color: #f7f3ec;
@@ -10,7 +12,7 @@
   background-color: #f7f3ec;
 }
 .hero-title, .type-name, .consult-title, .section-title, .featured-name, .enterprise-title, .cap-title {
-  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+  font-family: "Source Han Serif SC", "Yunxiu Serif", "Songti SC", "STSong", "Noto Serif CJK SC", serif;
 }
 .hero {
   position: relative;
@@ -47,7 +49,7 @@
   line-height: 66rpx;
   font-weight: 900;
   letter-spacing: 3rpx;
-  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+  font-family: "Source Han Serif SC", "Yunxiu Serif", "Songti SC", "STSong", "Noto Serif CJK SC", serif;
 }
 .hero-line {
   width: 46rpx;
@@ -92,7 +94,7 @@
   font-size: 25rpx;
   font-weight: 900;
   margin-top: 12rpx;
-  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+  font-family: "Source Han Serif SC", "Yunxiu Serif", "Songti SC", "STSong", "Noto Serif CJK SC", serif;
 }
 .type-desc {
   color: #82786c;

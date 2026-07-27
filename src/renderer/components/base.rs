@@ -94,6 +94,8 @@ pub struct TextMeasure {
     pub max_line_width: f32,
     /// 最小不可拆分单元宽（CJK 单字 / 最长西文词），即 min-content 宽
     pub min_unit_width: f32,
+    /// 这段文字的字体栈：taffy 的度量闭包据此解析出与绘制**同一个**字体
+    pub font_family: Option<std::sync::Arc<str>>,
 }
 
 /// 节点的 taffy 上下文（目前仅文本需要度量；其它叶子用显式尺寸）。
@@ -164,6 +166,9 @@ pub struct NodeStyle {
     pub text_decoration: TextDecoration,
     pub line_height: Option<f32>,
     pub letter_spacing: f32,
+    /// CSS `font-family` 原样保留的字体栈（解析成具体字体见 `text_family`）。
+    /// 用 `Arc<str>`：NodeStyle 每个节点都要克隆一份，字符串共享比复制便宜。
+    pub font_family: Option<std::sync::Arc<str>>,
     pub white_space: WhiteSpace,
     pub text_overflow: TextOverflow,
     pub overflow: Overflow,
@@ -323,6 +328,8 @@ pub struct InheritedText {
     pub align: TextAlign,
     pub line_height: Option<f32>,
     pub letter_spacing: f32,
+    /// 继承下来的字体栈（`font-family` 是继承属性）
+    pub font_family: Option<std::sync::Arc<str>>,
 }
 
 impl Default for InheritedText {
@@ -334,6 +341,7 @@ impl Default for InheritedText {
             align: TextAlign::Left,
             line_height: None,
             letter_spacing: 0.0,
+            font_family: None,
         }
     }
 }
@@ -390,6 +398,9 @@ pub fn measure_text_node(
     tr: Option<&crate::text::TextRenderer>,
 ) -> taffy::geometry::Size<f32> {
     use taffy::style::AvailableSpace;
+    // 指定了 font-family 就用那一族的字体来数换行：与绘制端同一把尺子
+    let family = crate::text_family::renderer_for_family(tm.font_family.as_deref());
+    let tr = family.as_deref().or(tr);
     let pad_w = tm.pad_l + tm.pad_r;
     let pad_h = tm.pad_t + tm.pad_b;
     let content_w = tm.max_line_width + pad_w;
@@ -798,6 +809,7 @@ pub fn build_base_style(
         text_align: ctx.inherited.align,
         line_height: ctx.inherited.line_height,
         letter_spacing: ctx.inherited.letter_spacing,
+        font_family: ctx.inherited.font_family.clone(),
         opacity: 1.0,
         ..Default::default()
     };
@@ -1246,6 +1258,16 @@ fn apply_style_property(
                 }
             }
             "letter-spacing" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ns.letter_spacing = v; }
+            // 字体栈原样留到绘制/度量期解析（见 `text_family::renderer_for_family`）：
+            // 哪个字族可用取决于本机装了什么字体，样式解析期不该下这个判断。
+            "font-family" => {
+                if let StyleValue::String(s) = value {
+                    let v = s.trim();
+                    if !v.is_empty() && v != "inherit" {
+                        ns.font_family = Some(std::sync::Arc::from(v));
+                    }
+                }
+            }
             "white-space" => if let StyleValue::String(s) = value {
                 ns.white_space = match s.as_str() {
                     "nowrap" => WhiteSpace::NoWrap,

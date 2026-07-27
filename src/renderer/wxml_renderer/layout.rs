@@ -72,8 +72,10 @@ impl WxmlRenderer {
         
         self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT);
         let t_layout1 = std::time::Instant::now();
-        // 第二遍：按实际宽度修正换行文本高度后重新布局
-        if self.correct_wrapped_text_heights(&mut taffy, &render_nodes) {
+        // 第二遍：按实际宽度修正换行文本高度、按实际包含块高度修正绝对定位高度，再重新布局
+        let mut need_relayout = self.correct_wrapped_text_heights(&mut taffy, &render_nodes);
+        need_relayout |= self.correct_absolute_heights(&mut taffy, &render_nodes, viewport_h);
+        if need_relayout {
             self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT);
         }
         // 注：根节点保持 `height: auto`（内容高驱动滚动）。
@@ -134,8 +136,10 @@ impl WxmlRenderer {
         let rendered = crate::parser::TemplateEngine::render_with_components(nodes, data, &self.component_templates);
         let mut taffy = Tree::new();
         let mut render_nodes = Vec::new();
+        // 同 `update_layout_if_needed`：继承起点是 `page { … }`（字号影响内容高）
+        let page = self.page_style();
         for (sib_i, node) in rendered.iter().enumerate() {
-            if let Some(rn) = self.build_tree(&mut taffy, node, &[], &InheritedText::default(), sib_i, rendered.len(), false) {
+            if let Some(rn) = self.build_tree(&mut taffy, node, &[], &page.inherited, sib_i, rendered.len(), false) {
                 render_nodes.push(rn);
             }
         }
@@ -149,7 +153,13 @@ impl WxmlRenderer {
             &child_ids,
         ).unwrap();
         self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT);
-        if self.correct_wrapped_text_heights(&mut taffy, &render_nodes) {
+        let mut need_relayout = self.correct_wrapped_text_heights(&mut taffy, &render_nodes);
+        need_relayout |= self.correct_absolute_heights(
+            &mut taffy,
+            &render_nodes,
+            self.screen_height * self.scale_factor,
+        );
+        if need_relayout {
             self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT);
         }
         taffy.layout(root).unwrap().size.height / self.scale_factor
@@ -178,14 +188,77 @@ impl WxmlRenderer {
         );
     }
 
+    /// 第二遍布局修正之二：**绝对定位元素的包含块高度塌成 0 时按视口折算**。
+    ///
+    /// CSS 规则：`position:absolute` 的包含块是最近的定位祖先，没有则是初始包含块（视口）。
+    /// 建树期已经处理了「一个定位祖先都没有」的情况，但还有一类同样常见：
+    /// 定位祖先存在，而它的**使用高度是 0** —— 典型就是整屏铺底的写法
+    ///
+    /// ```text
+    /// .page { flex: 1; position: relative }        /* 子节点全是绝对定位 → 没有在流内容 → 高 0 */
+    /// .background { position: absolute; inset: 0; width: 100%; height: 100% }
+    /// ```
+    ///
+    /// 微信/Skyline 里页面根节点就是视口高，所以 `.page` 是满屏的；我们的布局根是
+    /// `height: auto`（内容高驱动滚动），于是这类页面整屏都塌掉：闪屏页的背景图不见了、
+    /// 文案全挤在顶部。这里在**布局之后**用实际使用高度判断，塌成 0 就退回视口高度。
+    ///
+    /// 放在布局之后而不是建树期，是因为「包含块的使用高度」只有布局算完才知道。
+    pub(super) fn correct_absolute_heights(&self, taffy: &mut Tree, nodes: &[RenderNode], viewport_h: f32) -> bool {
+        let mut changed = false;
+        self.fix_abs_in(taffy, nodes, viewport_h, &mut changed);
+        changed
+    }
+
+    fn fix_abs_in(&self, taffy: &mut Tree, nodes: &[RenderNode], cb_h: f32, changed: &mut bool) {
+        for node in nodes {
+            // 该节点作为「包含块」时的高度：自己是定位元素且有实际高度才换参照物，
+            // 高度为 0 说明它自己也没被撑开，继续沿用上层的参照物（最终是视口）。
+            let used_h = taffy.layout(node.taffy_node).map(|l| l.size.height).unwrap_or(0.0);
+            let child_cb = if node.style.is_positioned && used_h > 1.0 { used_h } else { cb_h };
+
+            for child in &node.children {
+                let Ok(st) = taffy.style(child.taffy_node).cloned() else { continue };
+                if st.position != Position::Absolute {
+                    continue;
+                }
+                let target = match st.size.height {
+                    // `height: 50%` → 按包含块折算
+                    Dimension::Percent(p) => Some(child_cb * p),
+                    // `top/bottom` 都给了而高度 auto：高度 = 包含块高 - top - bottom
+                    Dimension::Auto => match (st.inset.top, st.inset.bottom) {
+                        (LengthPercentageAuto::Length(t), LengthPercentageAuto::Length(b)) => {
+                            Some((child_cb - t - b).max(0.0))
+                        }
+                        _ => None,
+                    },
+                    _ => None,
+                };
+                if let Some(h) = target {
+                    let cur = taffy.layout(child.taffy_node).map(|l| l.size.height).unwrap_or(0.0);
+                    if (cur - h).abs() > 0.5 && h > 0.5 {
+                        let mut st2 = st.clone();
+                        st2.size.height = length(h);
+                        taffy.set_style(child.taffy_node, st2).ok();
+                        *changed = true;
+                    }
+                }
+            }
+            self.fix_abs_in(taffy, &node.children, child_cb, changed);
+        }
+    }
+
     pub(super) fn correct_wrapped_text_heights(&self, taffy: &mut Tree, nodes: &[RenderNode]) -> bool {
-        let tr = match self.text_renderer.as_deref() { Some(t) => t, None => return false };
+        let default_tr = match self.text_renderer.as_deref() { Some(t) => t, None => return false };
         let sf = self.scale_factor;
         let mut changed = false;
         for node in nodes {
             if node.tag == "text" && !node.text.is_empty() {
                 let should_wrap = !matches!(node.style.white_space, WhiteSpace::NoWrap | WhiteSpace::Pre);
                 if should_wrap {
+                    // 与建树/绘制端同一族字体，否则「按 A 字体定的盒子」用 B 字体数行数
+                    let family = crate::text_family::renderer_for_family(node.style.font_family.as_deref());
+                    let tr = family.as_deref().unwrap_or(default_tr);
                     if let Ok(layout) = taffy.layout(node.taffy_node) {
                         let box_w = layout.size.width;
                         let box_h = layout.size.height;
@@ -233,12 +306,24 @@ impl WxmlRenderer {
             if text.is_empty() { return None; }
             // 原始文本节点继承父级的字号/颜色/字重/对齐/行高
             let fs = inherited.font_size;
+            // 字族也是继承来的：裸文本（`<view>文字</view>`）同样要按父级的 font-family
+            // 度量与绘制，否则宋体页面里这类文字会用黑体量宽度、再用宋体画
+            let family = crate::text_family::renderer_for_family(inherited.font_family.as_deref());
+            let text_tr = family.as_deref().or(self.text_renderer.as_deref());
             // 默认行高取字体自然行高（≈浏览器 normal），无字体时回退 1.2 倍
-            let natural_lh = self.text_renderer.as_deref()
+            let natural_lh = text_tr
                 .map(|tr| tr.natural_line_height_for(text, fs * sf) / sf)
                 .unwrap_or(fs * crate::text::NORMAL_LINE_HEIGHT_FACTOR);
             let line_h = inherited.line_height.unwrap_or(natural_lh);
-            let tw = self.measure_text(text, fs * sf);
+            let tw = match text_tr {
+                Some(tr) => tr.measure_text_weighted(
+                    text,
+                    fs * sf,
+                    inherited.letter_spacing * sf,
+                    false,
+                ),
+                None => self.measure_text(text, fs * sf),
+            };
             // 居中/右对齐的文本撑满可用宽度，绘制时再按对齐做偏移（否则无法居中）
             let width_dim: Dimension = if matches!(inherited.align, TextAlign::Center | TextAlign::Right) {
                 percent(1.0)
@@ -262,6 +347,7 @@ impl WxmlRenderer {
                     text_align: inherited.align,
                     line_height: inherited.line_height,
                     letter_spacing: inherited.letter_spacing,
+                    font_family: inherited.font_family.clone(),
                     opacity: 1.0,
                     ..Default::default()
                 },
@@ -339,6 +425,7 @@ impl WxmlRenderer {
                     align: rn.style.text_align,
                     line_height: rn.style.line_height,
                     letter_spacing: rn.style.letter_spacing,
+                    font_family: rn.style.font_family.clone(),
                 };
                 
                 // 子节点是否「有定位祖先」：祖先链上已经有，或者**当前节点自己**被定位。

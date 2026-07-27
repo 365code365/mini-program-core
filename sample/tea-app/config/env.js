@@ -1,12 +1,16 @@
 "use strict";
 const BASE_URL = "https://wx.51aihelp.com/api/front";
 const ASSET_BASE = "https://wx.51aihelp.com/crmebimage/public/ui";
+const FONT_BASE = "https://wx.51aihelp.com/fonts";
+const FONT_VER = "2";
 const TOKEN_HEADER = "Authori-zation";
 const TOKEN_KEY = "yuncha_token";
 const USER_KEY = "yuncha_user";
 const TIMEOUT = 15e3;
 exports.ASSET_BASE = ASSET_BASE;
 exports.BASE_URL = BASE_URL;
+exports.FONT_BASE = FONT_BASE;
+exports.FONT_VER = FONT_VER;
 exports.TIMEOUT = TIMEOUT;
 exports.TOKEN_HEADER = TOKEN_HEADER;
 exports.TOKEN_KEY = TOKEN_KEY;

@@ -172,11 +172,11 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
       });
     }),
     g: common_assets._imports_0$2,
-    h: common_assets._imports_2,
+    h: common_assets._imports_2$1,
     i: common_assets._imports_3$1
   }, {
     d: $data.products.length == 0,
-    j: common_assets._imports_2,
+    j: common_assets._imports_2$1,
     k: common_vendor.f($data.tips, (item, i, i0) => {
       return {
         a: item.icon,

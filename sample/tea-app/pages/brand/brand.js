@@ -11,8 +11,8 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
   return {
     a: common_vendor.o((...args) => $options.goBack && $options.goBack(...args), "d0"),
     b: common_assets._imports_0$13,
-    c: common_assets._imports_1$1,
-    d: common_assets._imports_2,
+    c: common_assets._imports_1$2,
+    d: common_assets._imports_2$1,
     e: common_assets._imports_3,
     f: common_vendor.o(($event) => $options.nav("/pages/adoption/list"), "b5"),
     g: common_vendor.sei(common_vendor.gei(_ctx, ""), "scroll-view"),

@@ -86,6 +86,15 @@ impl WxmlRenderer {
                         out.inherited.letter_spacing = v * sf;
                     }
                 }
+                // 整页的字体栈：在 `page` 上写宋体的应用，全页文字都该是宋体
+                "font-family" => {
+                    if let crate::parser::wxss::StyleValue::String(s) = value {
+                        let v = s.trim();
+                        if !v.is_empty() {
+                            out.inherited.font_family = Some(std::sync::Arc::from(v));
+                        }
+                    }
+                }
                 // `height: 100%` / `100vh`：整页高度以视口为准。
                 // 百分比要在这里单独处理 —— `to_px` 没有参照物，而 page 的参照物
                 // 恰恰就是视口本身。

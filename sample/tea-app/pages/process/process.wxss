@@ -1,6 +1,8 @@
 @import "../../uvue.wxss";
 :host{display:flex;flex-direction:column}
 /* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+/* 字体栈第一位必须是 App.uvue 里 loadFontFace 注册过的 family，否则安卓机没有本机宋体，
+   会整站掉到系统黑体。Yunxiu Serif = Noto Serif SC Regular(正文)，Source Han Serif SC = Heavy(标题)。 */
 .page {
   flex: 1;
   background-color: #f7f3ec;
@@ -32,7 +34,7 @@
   font-size: 22rpx;
   color: rgba(255, 255, 255, 0.8);
   margin-top: 6rpx;
-  font-family: "Playfair Display", serif;
+  font-family: "Playfair Display", "Times New Roman", serif;
 }
 .timeline {
   padding: 16rpx 32rpx;

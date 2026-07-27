@@ -7,7 +7,7 @@ const _sfc_main = common_vendor.defineComponent({
     return {
       gardenId: 0,
       playUrl: "",
-      temp: "18.6℃",
+      temp: "18.6°C",
       humidity: "76%",
       light: "适中",
       altitude: "980m",
@@ -27,7 +27,7 @@ const _sfc_main = common_vendor.defineComponent({
         var _a, _b;
         const t = d.getNumber("temperature");
         if (t != null)
-          this.temp = t + "℃";
+          this.temp = t + "°C";
         const h = d.getNumber("humidity");
         if (h != null)
           this.humidity = h + "%";

@@ -85,17 +85,18 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
   return {
     a: common_vendor.s("padding-top:" + ($data.statusBarH + 8) + "px"),
     b: $data.imgHero,
-    c: common_vendor.o((...args) => $options.openSplash && $options.openSplash(...args), "9c"),
-    d: common_assets._imports_0,
-    e: common_vendor.o((...args) => $options.goAi && $options.goAi(...args), "e8"),
-    f: common_assets._imports_1,
-    g: common_vendor.o((...args) => $options.goGift && $options.goGift(...args), "de"),
-    h: common_vendor.o((...args) => $options.goRecommend && $options.goRecommend(...args), "34"),
-    i: $data.imgRecKing,
-    j: common_vendor.o((...args) => $options.goRecommend && $options.goRecommend(...args), "28"),
-    k: $data.imgRecTasting,
-    l: common_vendor.o((...args) => $options.goRecommend && $options.goRecommend(...args), "43"),
-    m: common_vendor.f($data.reasons, (item, i, i0) => {
+    c: common_assets._imports_0,
+    d: common_vendor.o((...args) => $options.openSplash && $options.openSplash(...args), "9c"),
+    e: common_assets._imports_1,
+    f: common_vendor.o((...args) => $options.goAi && $options.goAi(...args), "76"),
+    g: common_assets._imports_2,
+    h: common_vendor.o((...args) => $options.goGift && $options.goGift(...args), "37"),
+    i: common_vendor.o((...args) => $options.goRecommend && $options.goRecommend(...args), "82"),
+    j: $data.imgRecKing,
+    k: common_vendor.o((...args) => $options.goRecommend && $options.goRecommend(...args), "cf"),
+    l: $data.imgRecTasting,
+    m: common_vendor.o((...args) => $options.goRecommend && $options.goRecommend(...args), "4c"),
+    n: common_vendor.f($data.reasons, (item, i, i0) => {
       return {
         a: item.icon,
         b: common_vendor.t(item.name),
@@ -103,16 +104,16 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
         d: i
       };
     }),
-    n: $data.imgFeatOrigin,
-    o: common_vendor.o((...args) => $options.goOrigin && $options.goOrigin(...args), "2b"),
-    p: $data.imgFeatBiz,
-    q: common_vendor.o((...args) => $options.goBiz && $options.goBiz(...args), "3b"),
-    r: common_vendor.p({
+    o: $data.imgFeatOrigin,
+    p: common_vendor.o((...args) => $options.goOrigin && $options.goOrigin(...args), "36"),
+    q: $data.imgFeatBiz,
+    r: common_vendor.o((...args) => $options.goBiz && $options.goBiz(...args), "de"),
+    s: common_vendor.p({
       current: 0
     }),
-    s: common_vendor.sei(common_vendor.gei(_ctx, ""), "view"),
-    t: `${_ctx.u_s_b_h}px`,
-    v: common_vendor.pvhc(_ctx.$scope.data.virtualHostClass)
+    t: common_vendor.sei(common_vendor.gei(_ctx, ""), "view"),
+    v: `${_ctx.u_s_b_h}px`,
+    w: common_vendor.pvhc(_ctx.$scope.data.virtualHostClass)
   };
 }
 const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render]]);

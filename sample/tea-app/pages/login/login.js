@@ -242,7 +242,7 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
     C: $data.showAgree
   }, $data.showAgree ? {
     D: common_vendor.t($data.agreeTitle),
-    E: common_assets._imports_1$3,
+    E: common_assets._imports_1$4,
     F: common_vendor.o(($event) => $data.showAgree = false, "d6"),
     G: common_vendor.t($data.agreeBody),
     H: common_vendor.o((...args) => $options.agreeAndClose && $options.agreeAndClose(...args), "8c"),

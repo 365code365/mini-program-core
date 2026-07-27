@@ -4,6 +4,7 @@
 pub mod layout_tests;
 pub mod flex_shrink_tests;
 pub mod custom_component_tests;
+pub mod font_family_tests;
 pub mod complex_layout_tests;
 pub mod css_tests;
 pub mod component_tests;

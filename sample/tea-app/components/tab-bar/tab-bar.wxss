@@ -1,5 +1,7 @@
 :host{display:flex;flex-direction:column}
 /* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+/* 字体栈第一位必须是 App.uvue 里 loadFontFace 注册过的 family，否则安卓机没有本机宋体，
+   会整站掉到系统黑体。Yunxiu Serif = Noto Serif SC Regular(正文)，Source Han Serif SC = Heavy(标题)。 */
 .tabbar {
   position: fixed;
   left: 0;
@@ -29,7 +31,7 @@
   color: #837a6c;
   font-size: 21rpx;
   margin-top: 7rpx;
-  font-family: "Songti SC", "STSong", "Noto Serif SC", serif;
+  font-family: "Yunxiu Serif", "Songti SC", "STSong", "Noto Serif CJK SC", serif;
 }
 .label-on {
   color: #a87536;

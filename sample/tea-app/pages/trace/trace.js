@@ -52,7 +52,7 @@ const _sfc_main = common_vendor.defineComponent({
       batch: "YN-2024-PK-0061",
       gardenName: "凤凰坪坑口古树园",
       variety: "鸭屎香单丛",
-      temp: "18.6℃",
+      temp: "18.6°C",
       humidity: "76%",
       light: "适中",
       reportNo: "编号 SGS-2024-CHA-0061",
@@ -144,7 +144,7 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
     j: common_vendor.o(($event) => $data.showReport = true, "b3"),
     k: $data.showReport
   }, $data.showReport ? {
-    l: common_assets._imports_1$3,
+    l: common_assets._imports_1$4,
     m: common_vendor.o(($event) => $data.showReport = false, "bf"),
     n: common_assets._imports_0$5,
     o: common_vendor.f($data.rows, (r, i, i0) => {

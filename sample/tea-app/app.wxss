@@ -1,17 +1,19 @@
 
+/* 全局字体栈：第一位是 loadFontFace 注册名，保证各端一致；
+   后面依次是 iOS/macOS、Windows、安卓自带宋体，网络字体没下完时先顶上。 */
 page {
   background-color: #f7f3ec;
   color: #2d251e;
-  font-family: "Songti SC", "STSong", "Noto Serif SC", "SimSun", serif;
+  font-family: "Yunxiu Serif", "Songti SC", "STSong", "Noto Serif CJK SC", "SimSun", serif;
   font-size: 28rpx;
 }
 text,
 input,
 button {
-  font-family: "Songti SC", "STSong", "Noto Serif SC", "SimSun", serif;
+  font-family: "Yunxiu Serif", "Songti SC", "STSong", "Noto Serif CJK SC", "SimSun", serif;
 }
 .brand-serif {
-  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+  font-family: "Source Han Serif SC", "Yunxiu Serif", "Songti SC", "STSong", serif;
   font-weight: 900;
 }
 .brand-latin {

@@ -103,8 +103,12 @@ impl WxmlRenderer {
         let mut taffy = Tree::new();
         
         let mut render_nodes = Vec::new();
+        // 继承起点用 `page { … }`：这条路径（画廊、离屏渲染、双端对比的内置渲染）
+        // 从前用的是内置默认值，与窗体那条路径不一致 —— 在 page 上定义字号/字色/字族的
+        // 应用会出现「两个入口画出两种结果」。
+        let page = self.page_style();
         for (sib_i, node) in rendered.iter().enumerate() {
-            if let Some(rn) = self.build_tree(&mut taffy, node, &[], &InheritedText::default(), sib_i, rendered.len(), false) {
+            if let Some(rn) = self.build_tree(&mut taffy, node, &[], &page.inherited, sib_i, rendered.len(), false) {
                 render_nodes.push(rn);
             }
         }
@@ -120,7 +124,13 @@ impl WxmlRenderer {
         ).unwrap();
         
         self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT);
-        if self.correct_wrapped_text_heights(&mut taffy, &render_nodes) {
+        let mut need_relayout = self.correct_wrapped_text_heights(&mut taffy, &render_nodes);
+        need_relayout |= self.correct_absolute_heights(
+            &mut taffy,
+            &render_nodes,
+            canvas.height() as f32,
+        );
+        if need_relayout {
             self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT);
         }
         

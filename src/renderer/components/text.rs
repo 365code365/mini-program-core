@@ -26,7 +26,11 @@ impl TextComponent {
         let font_size = ns.font_size * sf;
         // 无显式 line-height 时，用字体自然行高（≈浏览器 line-height:normal），
         // 而非写死 1.5，避免与 HTML 逐行累积垂直漂移。
-        let natural_lh = TEXT_MEASURE_FONT
+        // 度量必须用**这段文字实际会用的字体**：字体不同，字形宽度与自然行高都不同，
+        // 用默认字体量、用宋体画的话盒子宽度与文字对不上（换行位置也会错）。
+        let family_font = crate::text_family::renderer_for_family(ns.font_family.as_deref());
+        let measure_font_arc = family_font.clone().or_else(|| TEXT_MEASURE_FONT.clone());
+        let natural_lh = measure_font_arc
             .as_ref()
             .map(|tr| tr.natural_line_height_for(&text_content, font_size))
             .unwrap_or(font_size * crate::text::NORMAL_LINE_HEIGHT_FACTOR);
@@ -40,7 +44,7 @@ impl TextComponent {
         
         // 单行最大宽度：优先用真实字体度量（与绘制/二次布局一致），无字体时回退估算。
         let letter_spacing = ns.letter_spacing * sf;
-        let measure_font = TEXT_MEASURE_FONT.as_deref();
+        let measure_font = measure_font_arc.as_deref();
         // 字重影响字形宽度：布局度量必须与绘制所用字面一致
         let is_bold_weight = matches!(
             ns.font_weight,
@@ -97,6 +101,7 @@ impl TextComponent {
                 min_lines,
                 max_line_width,
                 min_unit_width,
+                font_family: ns.font_family.clone(),
             };
             let tn = ctx.taffy.new_leaf_with_context(ts, tm).unwrap();
             return Some(RenderNode {
@@ -154,6 +159,9 @@ impl TextComponent {
     ) {
         let color = node.style.text_color.unwrap_or(Color::BLACK);
         let size = node.style.font_size * sf;
+        // `font-family` 指定的字族优先（度量端用的是同一个，见 build / measure_text_node）
+        let family = crate::text_family::renderer_for_family(node.style.font_family.as_deref());
+        let text_renderer = family.as_deref().or(text_renderer);
         let natural_lh = text_renderer
             .map(|tr| tr.natural_line_height_for(&node.text, size))
             .unwrap_or(size * crate::text::NORMAL_LINE_HEIGHT_FACTOR);

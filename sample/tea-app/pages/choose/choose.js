@@ -35,7 +35,8 @@ const _sfc_main = common_vendor.defineComponent({
       imgHero: utils_assets.assetUrl("choose_hero", "/static/gen/choose-hero.jpg"),
       inputText: "",
       quickOptions: ["我自己喝", "第一次喝单枞", "想试品鉴装", "想喝好一点", "我想送人", "不确定，帮我推荐"],
-      quickIcons: ["◔", "◌", "▣", "↑", "◈", "?"],
+      // 图标用包内 PNG：品牌宋体没有几何图形类码位(U+25xx)，用文字字形真机会掉成豆腐块/emoji
+      quickIcons: ["/static/icons/user.png", "/static/icons/leaf.png", "/static/icons/plate.png", "/static/icons/star.png", "/static/icons/gift.png", "/static/icons/chat.png"],
       directions: [
         new Direction({ name: "新手入门", desc: "清香柔和，容易喜欢", cover: utils_assets.assetUrl("choose_dir_newbie", "/static/gen/dir-newbie.jpg"), text: "第一次喝单枞，想从清香柔和的入门款开始" }),
         new Direction({ name: "日常自饮", desc: "香气馥郁，口感平衡", cover: utils_assets.assetUrl("choose_dir_daily", "/static/gen/dir-daily.jpg"), text: "自己日常喝，希望香气馥郁、口感平衡" }),
@@ -120,18 +121,18 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
   return {
     a: common_vendor.s("padding-top:" + ($data.statusBarH + 8) + "px"),
     b: $data.imgHero,
-    c: common_assets._imports_2,
-    d: common_assets._imports_2,
+    c: common_assets._imports_2$1,
+    d: common_assets._imports_2$1,
     e: common_vendor.f($data.quickOptions, (item, i, i0) => {
       return {
-        a: common_vendor.t($data.quickIcons[i]),
+        a: $data.quickIcons[i],
         b: common_vendor.t(item),
         c: i,
         d: common_vendor.o(($event) => $options.chooseQuick(i), i)
       };
     }),
-    f: common_assets._imports_2,
-    g: common_vendor.o((...args) => $options.rotateDirections && $options.rotateDirections(...args), "8a"),
+    f: common_assets._imports_2$1,
+    g: common_vendor.o((...args) => $options.rotateDirections && $options.rotateDirections(...args), "2d"),
     h: common_vendor.f($data.directions, (item, i, i0) => {
       return {
         a: item.cover,
@@ -143,15 +144,16 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
     }),
     i: common_vendor.o((...args) => $options.sendText && $options.sendText(...args), "12"),
     j: $data.inputText,
-    k: common_vendor.o(($event) => $data.inputText = $event.detail.value, "90"),
-    l: common_vendor.o((...args) => $options.sendText && $options.sendText(...args), "96"),
-    m: common_vendor.s("bottom:" + ($data.safeBottom + 108) + "px"),
-    n: common_vendor.p({
+    k: common_vendor.o(($event) => $data.inputText = $event.detail.value, "bc"),
+    l: common_assets._imports_1$1,
+    m: common_vendor.o((...args) => $options.sendText && $options.sendText(...args), "57"),
+    n: common_vendor.s("bottom:" + ($data.safeBottom + 108) + "px"),
+    o: common_vendor.p({
       current: 1
     }),
-    o: common_vendor.sei(common_vendor.gei(_ctx, ""), "view"),
-    p: `${_ctx.u_s_b_h}px`,
-    q: common_vendor.pvhc(_ctx.$scope.data.virtualHostClass)
+    p: common_vendor.sei(common_vendor.gei(_ctx, ""), "view"),
+    q: `${_ctx.u_s_b_h}px`,
+    r: common_vendor.pvhc(_ctx.$scope.data.virtualHostClass)
   };
 }
 const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render]]);

@@ -89,8 +89,8 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
     i: $data.imgTasting,
     j: common_vendor.o(($event) => $options.openGift("品鉴"), "17"),
     k: common_assets._imports_5$1,
-    l: common_assets._imports_2$1,
-    m: common_assets._imports_2,
+    l: common_assets._imports_2$2,
+    m: common_assets._imports_2$1,
     n: common_vendor.o((...args) => $options.consult && $options.consult(...args), "9a"),
     o: common_vendor.o((...args) => $options.reserve && $options.reserve(...args), "e9"),
     p: common_vendor.p({

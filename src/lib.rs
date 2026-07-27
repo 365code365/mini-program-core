@@ -7,6 +7,8 @@ mod geometry;
 mod paint;
 mod path;
 pub mod text;
+/// `font-family` → 具体字体（按字体栈解析 + 每族一份渲染器）
+pub mod text_family;
 // 彩色 Emoji 位图字形（Apple sbix）
 pub mod emoji;
 // 小程序资源根目录（图片等相对路径解析）

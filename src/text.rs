@@ -79,6 +79,9 @@ pub struct TextRenderer {
     /// 符号字体（✕ ✓ ★ 等主字体缺失的字形）。
     /// 懒加载：多数页面不含这类符号，启动时不必解析 20MB+ 字体。
     symbol_font: OnceLock<Option<Font>>,
+    /// 指定 `font-family` 时的兜底渲染器（系统默认字体）。
+    /// 西文字体没有汉字、宋体没有某些符号，逐字回退到它，行为与浏览器一致。
+    fallback: Option<Arc<TextRenderer>>,
     /// 简单的字形缓存 (char, size_u32, bold) -> (Metrics, Bitmap)
     /// 使用 Mutex 实现内部可变性，因为 draw 方法是 &self
     cache: Arc<Mutex<HashMap<(char, u32, bool), (Metrics, Vec<u8>)>>>,
@@ -98,6 +101,7 @@ impl TextRenderer {
             bold_font: None,
             emoji_font: None,
             symbol_font: OnceLock::new(),
+            fallback: None,
             cache: Arc::new(Mutex::new(HashMap::new())),
         })
     }
@@ -218,6 +222,14 @@ impl TextRenderer {
         if self.main_has_glyph(ch) {
             return &self.main_font;
         }
+        // 指定字族缺字形时回退到系统默认字体（浏览器也是逐字回退的）：
+        // `font-family: "Times New Roman", serif` 里的西文字体没有汉字，
+        // 不回退的话中文全变豆腐块。
+        if let Some(base) = &self.fallback {
+            if base.main_has_glyph(ch) {
+                return &base.main_font;
+            }
+        }
         if let Some(font) = self.symbol_font() {
             if font.lookup_glyph_index(ch) != 0 {
                 return font;
@@ -228,7 +240,25 @@ impl TextRenderer {
                 return font;
             }
         }
+        if let Some(base) = &self.fallback {
+            return &base.main_font;
+        }
         &self.main_font
+    }
+
+    /// 按 `font-family` 加载具体字体：同集合里找粗体字面，缺字形时回退系统默认字体。
+    ///
+    /// 与 `from_file` 的区别就是这两条回退 —— 直接用 `from_file` 的话，
+    /// 宋体没有的符号、西文字体没有的汉字都会画成豆腐块。
+    pub fn from_file_with_fallback(path: &str) -> Result<Self, String> {
+        let data = std::fs::read(path).map_err(|e| format!("读取字体 {path} 失败: {e}"))?;
+        let mut r = Self::from_bytes(&data)?;
+        r.bold_font = Self::detect_bold_face(&data, &r.main_font);
+        // 只在该字体缺汉字时才挂回退（宋体自带汉字，不必多占一份）
+        if !r.main_has_glyph('国') {
+            r.fallback = shared_fonts();
+        }
+        Ok(r)
     }
 
     /// 加载系统字体（macOS）- 包含 Emoji 支持

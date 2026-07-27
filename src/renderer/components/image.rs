@@ -375,6 +375,12 @@ impl ImageComponent {
         }
         
         // 如果图片加载失败，绘制占位符
+        //
+        // 诊断（`MINI_IMG_LOG=1`）：画成占位是「还在下载」「下载失败」还是「src 为空」，
+        // 光看图片分不出来 —— 而这三种的修法完全不同。
+        if super::image_net::log_enabled() {
+            eprintln!("🖼 ▢ 占位 {:.0}x{:.0} src={:?}", w, h, src);
+        }
         Self::draw_placeholder(canvas, x, y, w, h, has_radius, uniform_radius, 
                                radius, radius_tl, radius_tr, radius_br, radius_bl, style);
     }

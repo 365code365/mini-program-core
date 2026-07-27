@@ -111,6 +111,8 @@ MINI_NO_DAMAGE=1 cargo run --release --bin mini-app-window -- sample-app
 MINI_NET_LOG=1 MINI_STORAGE_LOG=1 MINI_IMG_LOG=1 ./run.sh tea-app
 # 绘制耗时按组件类型/绘制阶段归因（image / text / 背景:阴影 / 背景:边框环 …）
 MINI_DRAW_LOG=1 cargo run --release --bin mini-app-window -- tea-app --drag 8x60 --snapshot target/drag
+# font-family 解析到了哪个字体文件；远程图片下载/缓存/占位原因
+MINI_FONT_LOG=1 MINI_IMG_LOG=1 ./run.sh tea-app
 ```
 
 > **滑动手感要能无头测**：`--drag <每帧像素>x<帧数>` 用与交互窗体同一套鼠标事件模拟一次
@@ -371,7 +373,7 @@ cargo run --bin mini-devserver      # 浏览器调试预览（见下节）
 cargo run --example video_player    # 独立视频播放窗口（自动循环 + 声音）
 cargo run --bin mini-app-window     # 窗口应用（默认加载 sample-app）
 
-# 5) 测试（259 个用例）
+# 5) 测试（281 个用例）
 cargo test
 ```
 
@@ -561,6 +563,86 @@ Vue 3 运行时 + 60 个 CommonJS 模块。跑通它需要三件事，都是引�
 微信的 `getStorageSync` 读不到时返回 `''`。按「对齐 Skyline」的原则这里不迁就：
 **引擎不为偏离微信语义的写法让路**。所以它的首次运行仍会命中这个应用侧的问题，
 第二次运行起（缓存已落盘，`getStorageSync` 返回 uni 包装过的 `UTSJSONObject`）一切正常。
+
+### 页面内的自定义组件（`usingComponents`）
+
+`<tab-bar/>` 这种页面 json 里声明的自定义组件，以前落到「未知标签」的兜底分支被当成空
+`view` —— **整条底部导航（图标 + 文字）在原生端凭空消失**。而 uni-app / Taro 编译出来的
+产物普遍把 tabBar 做成页面内组件（Skyline 下 tabBar 也推荐自绘），所以这不是个别写法。
+
+打通它需要四段：
+
+- **加载**（`src/using_components.rs`）：按页面 json 递归读组件三件套（组件自己也可以再
+  声明组件）。样式做**单向隔离** —— 组件 WXSS 的每条选择器前缀成 `<标签名> …`，
+  `:host` 改写成标签本身。`.icon` / `.label` 这类通名不做隔离会直接污染页面。
+- **展开**（`TemplateEngine::render_with_components`）：保留一个以组件标签命名的宿主节点
+  （承载使用方写在标签上的 class/style，也让 `:host` 与作用域前缀有落点），
+  子树用**组件实例自己的 data** 求值 —— 组件的 `{{a}}` 与页面的 `{{a}}` 是两套东西。
+- **实例**（`component_mount.rs` + `__mountPageComponent`）：以「组件路径」为键执行组件 js
+  （`Component()` 借此注册到该路径，而不是把当前页面顶掉），再建实例。实例必须真的建出来：
+  框架型产物是在 `attached` 里挂载自己的组件树并触发首次 `setData` 的，
+  没有实例的话组件模板里全是空值。使用处的属性按微信规则转成组件属性
+  （`u-p` → `uP`、`u-i` → `uI`，dashed → camelCase），uni-app 的 props 就是这么传的。
+- **事件**：处理函数可能挂在页面上，也可能挂在组件实例上，`__callPageMethod` 两边都找。
+  只找页面的话点了没反应 —— 底部导航点不动就是这个原因。
+
+> 一个连带的大坑：`class="{{['tabbar', d]}}"` 是 uni-app **每个组件/页面根节点**的固定写法
+> （`d` 是虚拟宿主类名）。通用插值会把它渲染成字面量 `['tabbar','']`，于是
+> `.tabbar` / `.root` / `.page` 这些根节点样式**一条都命中不了** —— 底部导航既没有
+> `position:fixed` 也没有背景，整页配色也对不上。现在 `class` / `style` 绑定到数组或对象时
+> 按 CSS 语义拼接（空格 / 分号）。
+
+### `font-family` 曾经被整条忽略
+
+全局只有一个系统主字体（macOS 上是黑体系的 PingFang / Hiragino Sans GB），
+于是所有声明宋体/衬线的文字都画成黑体。对以「书卷感」为设计语言的应用来说，
+这是第一眼就能看出来的差别（tea-app 的品牌名、导航文字、正文全都指定
+`"Songti SC","STSong",serif`）。
+
+`src/text_family.rs` 按浏览器的规则解析：**字体栈从左到右取第一个「本机存在」的字族**，
+通用族兜底（`serif` → 宋体、`monospace` → Menlo、`sans-serif` / `system-ui` → 默认字体）。
+`"Playfair Display","Times New Roman",serif` 在 macOS 上就落到 Times New Roman ——
+与浏览器一致，因为 Playfair 确实没装。
+
+- 每个字族一份 `TextRenderer`（自带字形缓存），按规范化后的字体栈字符串缓存，
+  同一条 `font-family` 只解析、只加载一次；
+- 缺字形时**逐字回退**到系统默认字体：`"Times New Roman"` 没有汉字，
+  不回退的话中文全是豆腐块；
+- `font-family` 是继承属性，`page { font-family }` 作为整页基线；
+- **度量与绘制必须用同一族**：字形宽度、自然行高都随字体变，
+  用默认字体量、用宋体画的话盒子和文字对不上，还会误换行。
+  所以 `TextMeasure` 带上字体栈，taffy 的度量闭包、二次换行修正、裸文本节点全部按它取字体。
+
+诊断：`MINI_FONT_LOG=1` 打印每条 `font-family` 解析到了哪个字体文件。
+
+### 绝对定位的包含块高度塌成 0
+
+```text
+.page { flex: 1; position: relative }   /* 子节点全是绝对定位 → 没有在流内容 → 高 0 */
+.background { position: absolute; inset: 0; width: 100%; height: 100% }
+```
+
+微信/Skyline 里页面根节点就是视口高，`.page` 因此是满屏的；而我们的布局根是
+`height: auto`（内容高驱动滚动），于是这类「整屏铺底」的写法整屏塌掉：
+闪屏页的背景照片不见了、文案全挤在顶部。
+
+建树期已经处理了「一个定位祖先都没有」的情况，现在补上「有定位祖先、但它的使用高度是 0」：
+`correct_absolute_heights` 在**布局之后**按实际使用高度判断，塌成 0 就退回视口高度，
+并顺带处理 `top`/`bottom` 都给了而高度 auto 的情况。放在布局之后是必须的 ——
+「包含块的使用高度」只有布局算完才知道。
+
+### 异步图片到位时必须整帧重绘
+
+远程图片下载完成属于「内容变了但数据没变」，`setData` 的失效范围算不出它。
+于是在**每秒都有 setData** 的页面上（闪屏倒计时、首页秒杀），增量范围只覆盖那一小块文字，
+刚到位的图片永远不会被重画 —— 表现就是图片一直停在占位图。现在
+`image_net::take_dirty()` 会把这一帧标记成强制整帧。
+
+> 同一个问题在快照工具里还有一层：`--settle` 从前只 `update` 不出帧，
+> 而**异步资源是绘制期才发起的**（绘制到 `<image src="http…">` 才知道要下载它），
+> 等待的那几秒里根本没人发起下载。现在 `--settle` 跑的是完整的一帧（与交互窗体同一套闸门），
+> 截图前再补一帧。`MINI_IMG_LOG=1` 下画占位会打印 src，
+> 用来区分「还在下载 / 下载失败 / src 为空」这三种完全不同的原因。
 
 ### 颜色的 alpha 曾经被整条丢掉
 
@@ -966,7 +1048,7 @@ free(buf); mr_canvas_free(c);
 覆盖表达式引擎、WXSS 选择器（含 `var()`/`calc()`）、模板控制流、布局与文本换行、全组件渲染、Canvas 2D、交互、滚动/惯性、页面栈路由、组件模型、CommonJS 模块、Promise、生命周期、事件冒泡等：
 
 ```bash
-cargo test          # 259 个用例
+cargo test          # 281 个用例
 cargo test route    # 路由/页面栈/组件/模块/异步/生命周期
 cargo test canvas   # Canvas 2D 上下文与命令
 cargo test scroll   # 滚动与惯性

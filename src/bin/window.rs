@@ -84,6 +84,12 @@ struct MiniAppWindow {
     next_frame_at: Instant,
     /// 最近一次滚动位置发生变化的时刻（裁剪余量按它自适应）
     last_scroll_at: Option<Instant>,
+    /// 这一帧必须**整帧**重绘，不许被 setData 的增量失效范围收窄。
+    ///
+    /// 远程图片下载完成属于「内容变了但数据没变」：`setData` 的失效范围算不出它，
+    /// 于是在「每秒都有 setData」的页面上（闪屏倒计时、首页秒杀），增量范围只覆盖
+    /// 那一小块文字，刚到位的图片永远不会被重画 —— 表现就是图片一直是占位图。
+    force_full_redraw: bool,
     /// fixed 覆盖层需要重绘（数据变化 / 按压态变化 / 换页 / 画布重建）。
     /// 滚动不影响它 —— 覆盖层是钉在视口上的，重画纯属浪费。
     fixed_dirty: bool,
@@ -211,6 +217,7 @@ impl MiniAppWindow {
             next_frame_at: now,
             last_scroll_at: None,
             fixed_dirty: true,
+            force_full_redraw: false,
             frame_gap_max_ms: 0.0,
             frame_gap_min_ms: f32::MAX,
             last_frame_begin: None,
@@ -337,6 +344,7 @@ impl MiniAppWindow {
         if mini_render::renderer::components::image_net::take_dirty() {
             self.needs_redraw = true;
             self.fixed_dirty = true;
+            self.force_full_redraw = true;
         }
         if !self.viewport_inside_drawn_band() {
             self.needs_redraw = true;
@@ -646,9 +654,11 @@ impl MiniAppWindow {
             .as_mut()
             .map(|r| r.plan_frame(&page.wxml_nodes, page_data, Some((scroll_offset, viewport_height))))
             .unwrap_or(FramePlan::Full);
+        // 「有新图到位」这类数据之外的内容变化：本帧强制整帧，不能被增量范围收窄
+        let force_full = std::mem::take(&mut self.force_full_redraw);
         // 数据变化的失效范围优先于调用方给的动画损伤区：
         // 这一帧既有 setData 又有动画时，两者的并集才是完整的重绘范围。
-        let damage = match plan {
+        let damage = if force_full { None } else { match plan {
             FramePlan::Unchanged => damage,
             // `MINI_NO_DAMAGE=1` 关掉增量失效，用来做「局部重绘 vs 整帧重绘逐像素一致」对照
             _ if self.no_damage => None,
@@ -676,7 +686,7 @@ impl MiniAppWindow {
                     })
                 }
             }
-        };
+        } };
         // 页面底色以 `page { background-color }` 为准（微信语义），拿不到才退回默认灰。
         // 写死 #F5F5F5 会让在 page 上定义暖色底的应用整体色调都不对。
         let page_bg = self
@@ -1318,6 +1328,7 @@ impl ApplicationHandler for MiniAppWindow {
                 if mini_render::renderer::components::image_net::take_dirty() {
                     self.needs_redraw = true;
                     self.fixed_dirty = true;
+                    self.force_full_redraw = true;
                 }
                 
                 let mut pull_req: Option<bool> = None;
@@ -1544,18 +1555,15 @@ impl MiniAppWindow {
             if let Some(secs) = settle {
                 let deadline = Instant::now() + Duration::from_secs_f32(secs);
                 while Instant::now() < deadline {
-                    self.app.update().ok();
-                    print_js_output(&self.app);
-                    { let mut pull_req: Option<bool> = None;
-                        evt::process_ui_events(&mut self.app, &mut self.toast, &mut self.loading, &mut self.modal, &mut pull_req);
-                        self.apply_pull_down_request(pull_req); }
+                    // 跑**完整的一帧**（与交互窗体同一套闸门），不只是 update。
+                    //
+                    // 关键在于「真的出帧」：远程图片、`wx.request` 这些异步资源是
+                    // **绘制期**才发起的（绘制到 `<image src="http…">` 才知道要下载它）。
+                    // 从前 settle 只 update 不 render，于是等待这几秒里根本没人发起下载，
+                    // 最后一帧才发起、当然来不及 —— 闪屏页的整屏背景图因此永远是占位图，
+                    // 而真机上那几秒是一直在出帧的。
+                    self.pump_one_frame();
                     evt::update_toast_timeout(&mut self.toast);
-                    if self.pending_navigation.is_none() {
-                        self.pending_navigation = app_window::check_navigation(&mut self.app);
-                    }
-                    if self.pending_navigation.is_some() {
-                        self.process_navigation();
-                    }
                     std::thread::sleep(Duration::from_millis(8)); // ≈120Hz，与真机出帧节奏同量级
                 }
             }
@@ -1721,6 +1729,11 @@ impl MiniAppWindow {
             { let mut pull_req: Option<bool> = None;
                         evt::process_ui_events(&mut self.app, &mut self.toast, &mut self.loading, &mut self.modal, &mut pull_req);
                         self.apply_pull_down_request(pull_req); }
+            // 截图前再走一帧完整闸门：异步资源（远程图片、网络回调）刚到位时
+            // 需要一次**整帧**重绘才会出现 —— 只调 render() 的话，这一帧的重绘范围
+            // 会被上一次 setData 的增量失效范围收窄（闪屏页倒计时每秒 setData，
+            // 图片区域因此永远不在范围内，截出来一直是占位图）。
+            self.pump_one_frame();
             self.render();
 
             let (pw, ph) = (

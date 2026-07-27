@@ -1,6 +1,8 @@
 @import "../../uvue.wxss";
 :host{display:flex;flex-direction:column}
 /* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+/* 字体栈第一位必须是 App.uvue 里 loadFontFace 注册过的 family，否则安卓机没有本机宋体，
+   会整站掉到系统黑体。Yunxiu Serif = Noto Serif SC Regular(正文)，Source Han Serif SC = Heavy(标题)。 */
 .page {
   flex: 1;
   position: relative;
@@ -42,7 +44,7 @@
   font-size: 44rpx;
   font-weight: 900;
   letter-spacing: 8rpx;
-  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+  font-family: "Source Han Serif SC", "Yunxiu Serif", "Songti SC", "STSong", "Noto Serif CJK SC", serif;
 }
 .brand-en {
   color: rgba(74, 54, 34, 0.7);
@@ -57,7 +59,7 @@
   line-height: 74rpx;
   font-weight: 900;
   letter-spacing: 2rpx;
-  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+  font-family: "Source Han Serif SC", "Yunxiu Serif", "Songti SC", "STSong", "Noto Serif CJK SC", serif;
 }
 .title-first {
   margin-top: 60rpx;
@@ -82,9 +84,11 @@
   justify-content: center;
   box-shadow: 0 4rpx 18rpx rgba(60, 45, 28, 0.2);
 }
-.play-text {
-  color: #ffffff;
-  font-size: 40rpx;
+
+/* ▶/Ⅱ 这两个码位品牌宋体里没有，真机会掉到系统 emoji 字体，改用白色 PNG 图标 */
+.play-icon {
+  width: 44rpx;
+  height: 44rpx;
 }
 .sec {
   margin-top: 22rpx;
@@ -119,7 +123,7 @@
   font-size: 33rpx;
   font-weight: 900;
   letter-spacing: 8rpx;
-  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+  font-family: "Source Han Serif SC", "Yunxiu Serif", "Songti SC", "STSong", "Noto Serif CJK SC", serif;
 }
 .progress {
   flex-direction: row;

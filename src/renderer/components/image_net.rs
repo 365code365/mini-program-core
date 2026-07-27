@@ -54,7 +54,7 @@ fn pending() -> &'static Mutex<u32> {
     PENDING.get_or_init(|| Mutex::new(0))
 }
 
-fn log_enabled() -> bool {
+pub fn log_enabled() -> bool {
     static L: OnceLock<bool> = OnceLock::new();
     *L.get_or_init(|| std::env::var("MINI_IMG_LOG").is_ok())
 }

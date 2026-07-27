@@ -166,7 +166,7 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
     G: $data.showAgree
   }, $data.showAgree ? common_vendor.e({
     H: common_vendor.t($data.agreeName),
-    I: common_assets._imports_1$3,
+    I: common_assets._imports_1$4,
     J: common_vendor.o(($event) => $data.showAgree = false, "18"),
     K: $data.agreeContent.length > 0 && $data.agreeIsHtml
   }, $data.agreeContent.length > 0 && $data.agreeIsHtml ? {

@@ -300,7 +300,7 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
     g: $data.editing
   }, $data.editing ? {
     h: common_vendor.t($data.fId == 0 ? "新增地址" : "编辑地址"),
-    i: common_assets._imports_1$3,
+    i: common_assets._imports_1$4,
     j: common_vendor.o(($event) => $data.editing = false, "6a"),
     k: $data.fName,
     l: common_vendor.o(($event) => $data.fName = $event.detail.value, "86"),
@@ -308,7 +308,7 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
     n: common_vendor.o(($event) => $data.fPhone = $event.detail.value, "43"),
     o: common_vendor.t($data.fRegion.length == 0 ? "请选择省 / 市 / 区" : $data.fRegion),
     p: common_vendor.n($data.fRegion.length == 0 ? "picker-ph" : ""),
-    q: common_assets._imports_2$3,
+    q: common_assets._imports_2$4,
     r: common_vendor.o((...args) => $options.openRegion && $options.openRegion(...args), "2c"),
     s: $data.fDetail,
     t: common_vendor.o(($event) => $data.fDetail = $event.detail.value, "c7"),
@@ -322,7 +322,7 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
   } : {}, {
     C: $data.regionPicking
   }, $data.regionPicking ? common_vendor.e({
-    D: common_assets._imports_1$3,
+    D: common_assets._imports_1$4,
     E: common_vendor.o(($event) => $data.regionPicking = false, "34"),
     F: common_vendor.t($data.selProvinceName.length == 0 ? "请选择" : $data.selProvinceName),
     G: common_vendor.n($data.step == 0 ? "rg-tab-t-on" : ""),

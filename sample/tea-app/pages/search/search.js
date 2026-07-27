@@ -81,7 +81,7 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
     d: common_vendor.o(($event) => $data.q = $event.detail.value, "6a"),
     e: $data.q.length > 0
   }, $data.q.length > 0 ? {
-    f: common_assets._imports_1$3,
+    f: common_assets._imports_1$4,
     g: common_vendor.o((...args) => $options.clear && $options.clear(...args), "de")
   } : {}, {
     h: !$data.searched
