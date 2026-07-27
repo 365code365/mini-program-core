@@ -229,8 +229,21 @@ impl MiniAppWindow {
         Ok(window)
     }
     
+    /// 宿主是否要为这个页面画 tabBar（并为它预留高度）。
+    ///
+    /// `tabBar.custom = true` 的语义是「**由小程序自己画**」。此时宿主既不画原生
+    /// tabBar 也不该预留高度 —— 页面会自带一条。uni-app 这类框架就是把 tabBar
+    /// 编译进每个页面的，仓库里连 `custom-tab-bar/` 目录都没有。
+    ///
+    /// 从前只要「声明了 custom 且我们成功加载到 custom-tab-bar 组件」才认；
+    /// 组件不存在时就悄悄退回原生 tabBar，于是页面自带的那条和原生那条**叠在一起**
+    /// （tea-app 底部因此出现一排巨大的宋体字压在真正的图标标签上）。
     fn is_tabbar_page(&self, path: &str) -> bool {
-        self.app_config.tab_bar.as_ref().map(|tb| tb.list.iter().any(|item| item.page_path == path)).unwrap_or(false)
+        let Some(tb) = self.app_config.tab_bar.as_ref() else { return false };
+        if tb.custom && self.custom_tabbar.is_none() {
+            return false; // 小程序自己画，宿主完全不参与
+        }
+        tb.list.iter().any(|item| item.page_path == path)
     }
     
     fn get_tabbar_index(&self, path: &str) -> Option<usize> {
