@@ -207,7 +207,7 @@ impl WxmlRenderer {
         }
         
         // 绘制子节点
-        if !Self::is_leaf_component(&node.tag) {
+        if Self::draws_children(node) {
             let is_scroll_view = node.tag == "scroll-view";
             let mut child_offset_y = 0.0;
             let scroll_position: f32;
@@ -389,7 +389,7 @@ impl WxmlRenderer {
         self.draw_component(canvas, &node_to_draw, x, y, w, h, sf);
         
         // 递归绘制子节点
-        if !Self::is_leaf_component(&node.tag) {
+        if Self::draws_children(node) {
             for child in &node.children {
                 self.draw_child_to_cache(canvas, taffy, child, x, y, text_color, interaction);
             }
@@ -611,7 +611,7 @@ impl WxmlRenderer {
             }
         }
         
-        if !Self::is_leaf_component(&node.tag) {
+        if Self::draws_children(node) {
             let is_scroll_view = node.tag == "scroll-view";
             let has_overflow_hidden = node.style.overflow == crate::renderer::components::Overflow::Hidden;
             let mut child_offset_x = 0.0;

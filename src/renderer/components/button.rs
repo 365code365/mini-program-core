@@ -22,7 +22,15 @@ impl ButtonComponent {
         let attrs = node.attributes.clone();
         let sf = ctx.scale_factor;
         
-        let text = get_text_content(node);
+        // `<button>` 里写了元素子节点（典型 `<button><text class="…">…</text></button>`）时，
+        // 文字由子树自己按各自的 CSS 画（见 layout.rs 的 button_as_container）。
+        // 这里就不能再把收集到的文本当按钮标签用了 —— 否则同一段文字会被按钮
+        // 用「继承来的」样式画一遍，页面写在子 text 上的颜色/字号全看不到。
+        let has_element_children = node
+            .children
+            .iter()
+            .any(|c| c.node_type == crate::parser::wxml::WxmlNodeType::Element);
+        let text = if has_element_children { String::new() } else { get_text_content(node) };
         let btn_type = node.get_attr("type").unwrap_or("default");
         let btn_size = node.get_attr("size").unwrap_or("default");
         let plain = node.get_attr("plain").map(|s| s == "true" || s == "{{true}}").unwrap_or(false);

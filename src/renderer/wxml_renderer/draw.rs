@@ -204,7 +204,7 @@ impl WxmlRenderer {
 
         self.draw_component(canvas, node, x, y, w, h, sf);
         
-        if !Self::is_leaf_component(&node.tag) {
+        if Self::draws_children(node) {
             let text_color = node.style.text_color.unwrap_or(Color::BLACK);
             for child in &node.children { 
                 // fixed 子元素不在正常流内绘制，改由视口固定层单独绘制
@@ -248,7 +248,7 @@ impl WxmlRenderer {
 
         self.draw_component(canvas, &node_with_color, x, y, w, h, sf);
         
-        if !Self::is_leaf_component(&node.tag) {
+        if Self::draws_children(node) {
             for child in &node.children { 
                 // fixed 子元素不在正常流内绘制，改由视口固定层单独绘制
                 if child.style.is_fixed { continue; }

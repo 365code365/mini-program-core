@@ -1669,7 +1669,10 @@ pub fn draw_background(canvas: &mut Canvas, style: &NodeStyle, x: f32, y: f32, w
 }
 
 /// 绘制各边独立边框（border-top/right/bottom/left）。
-fn draw_side_borders(canvas: &mut Canvas, style: &NodeStyle, x: f32, y: f32, w: f32, h: f32) {
+///
+/// 自绘型组件（input/textarea 这些自己画盒子的）也要能调它 —— 否则
+/// `border-bottom: 2rpx solid …`（表单下划线的标准写法）画不出来。
+pub fn draw_side_borders(canvas: &mut Canvas, style: &NodeStyle, x: f32, y: f32, w: f32, h: f32) {
     let fallback = style.border_color.unwrap_or(Color::from_hex(0xE5E5E5));
     let alpha = |c: Color| if style.opacity < 1.0 {
         Color::new(c.r, c.g, c.b, (c.a as f32 * style.opacity) as u8)

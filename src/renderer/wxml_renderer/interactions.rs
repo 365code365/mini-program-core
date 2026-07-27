@@ -46,7 +46,7 @@ impl WxmlRenderer {
         self.register_interactive_element(node, node, &logical_bounds, interaction, taffy, false);
         
         // 递归注册子元素
-        if !Self::is_leaf_component(&node.tag) {
+        if Self::draws_children(node) {
             for child in &node.children {
                 self.register_child_interactions(taffy, child, x, y, text_color, interaction, scroll_position, viewport_height);
             }

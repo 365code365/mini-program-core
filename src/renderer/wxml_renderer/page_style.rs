@@ -52,9 +52,15 @@ impl WxmlRenderer {
                         out.inherited.color = Some(*c);
                     }
                 }
+                // 注意：`InheritedText` 里的文字度量是**逻辑像素**（默认 16.0 就是 16 逻辑 px），
+                // 缩放在绘制/度量时才乘。这里曾经写成 `v * sf`，于是在 @2x 的真机上
+                // `page{font-size:28rpx}`（= 14 逻辑 px）继承下去变成 28 逻辑 px ——
+                // 所有「没写字号、靠继承」的文字整整大一倍（tea-app 登录页的
+                // 「微信一键登录」就是这么变成 28px 的，设计稿是 15px）。
+                // 单测当年是用 scale_factor=1 建的渲染器，正好把这个 bug 盖住了。
                 "font-size" => {
                     if let Some(v) = px(value) {
-                        out.inherited.font_size = v * sf;
+                        out.inherited.font_size = v;
                     }
                 }
                 "font-weight" => {
@@ -76,14 +82,15 @@ impl WxmlRenderer {
                         };
                     }
                 }
+                // 同上，行高与字距也是逻辑像素
                 "line-height" => {
                     if let Some(v) = px(value) {
-                        out.inherited.line_height = Some(v * sf);
+                        out.inherited.line_height = Some(v);
                     }
                 }
                 "letter-spacing" => {
                     if let Some(v) = px(value) {
-                        out.inherited.letter_spacing = v * sf;
+                        out.inherited.letter_spacing = v;
                     }
                 }
                 // 整页的字体栈：在 `page` 上写宋体的应用，全页文字都该是宋体
@@ -136,6 +143,20 @@ mod tests {
         // 28rpx 在 375 宽下 = 14px
         let fs = ps.inherited.font_size;
         assert!((fs - 14.0).abs() < 0.51, "28rpx 应约等于 14px，实际 {}", fs);
+    }
+
+    /// 关键回归：继承下去的文字度量是**逻辑像素**，不能跟着 scale_factor 放大。
+    /// 这条用例必须用 @2x 的渲染器 —— 原来只测 scale_factor=1，`* sf` 的 bug 被盖住了。
+    #[test]
+    fn inherited_text_metrics_are_logical_px_at_2x() {
+        let ss = WxssParser::new("page { font-size: 28rpx; line-height: 40rpx; letter-spacing: 4rpx; }")
+            .parse()
+            .unwrap_or_default();
+        let r = WxmlRenderer::new_with_scale(ss, 375.0, 667.0, 2.0);
+        let ps = r.page_style();
+        assert!((ps.inherited.font_size - 14.0).abs() < 0.51, "28rpx 应是 14 逻辑 px，实际 {}", ps.inherited.font_size);
+        assert!((ps.inherited.line_height.unwrap() - 20.0).abs() < 0.51, "40rpx 应是 20 逻辑 px");
+        assert!((ps.inherited.letter_spacing - 2.0).abs() < 0.51, "4rpx 应是 2 逻辑 px");
     }
 
     #[test]

@@ -182,7 +182,10 @@ fn walk_rich(value: &serde_json::Value, color: Option<Color>, bold: bool, font: 
 
 /// 把一段文本切成可独立换行的单元：CJK 每字一单元，连续 ASCII 词一单元，
 /// 保留末尾空格并按显式换行断开。
-fn split_wrappable(text: &str) -> Vec<String> {
+///
+/// `<text>` 里嵌套 `<text>`（价格的「¥」+ 大号数字、必填项的红星号）也要拆成 run
+/// 才能既保留各自样式又能换行，所以这里对 crate 内公开。
+pub(crate) fn split_wrappable(text: &str) -> Vec<String> {
     let mut units: Vec<String> = Vec::new();
     let mut ascii = String::new();
     let flush = |ascii: &mut String, units: &mut Vec<String>| {

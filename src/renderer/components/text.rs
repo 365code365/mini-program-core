@@ -21,6 +21,34 @@ impl TextComponent {
         
         let text_content = get_text_content(node);
         if text_content.is_empty() { return None; }
+
+        // `<text>` 里嵌套 `<text>`：每一段用**自己**的样式。
+        //
+        // 这是小程序里很常见的写法 —— 价格 `<text class="amt">¥<text class="num">99</text></text>`、
+        // 必填项 `<text class="label">挂牌名 <text class="req">*</text></text>`。
+        // 从前的做法是把整棵子树的文字**拍平成一个字符串**，用最外层的样式画一遍：
+        // 优惠券页的「¥10」于是整个是 32rpx，而 `.c-num` 明明写了 64rpx（浏览器里 ¥ 小、数字大）。
+        //
+        // 处理方式与 `rich-text` 一致：容器改成「行内排列 + 允许换行 + 基线对齐」，
+        // 把混排内容切成一个个 run（裸文字按最外层样式，嵌套 `<text>` 按它自己的 CSS），
+        // 每个 run 再按可换行单元细分，这样既保留各自样式又不会整段无法折行。
+        if let Some(runs) = Self::build_inline_runs(node, ctx, &ns) {
+            ts.flex_direction = FlexDirection::Row;
+            ts.flex_wrap = FlexWrap::Wrap;
+            ts.align_items = Some(AlignItems::BASELINE);
+            let child_ids: Vec<NodeId> = runs.iter().map(|c| c.taffy_node).collect();
+            let tn = ctx.taffy.new_with_children(ts, &child_ids).unwrap();
+            return Some(RenderNode {
+                tag: "text".into(),
+                // 文本交给 run 子节点画，容器自己不再画一遍
+                text: String::new(),
+                attrs,
+                taffy_node: tn,
+                style: ns,
+                children: runs,
+                events,
+            });
+        }
         
         let sf = ctx.scale_factor;
         let font_size = ns.font_size * sf;
@@ -160,6 +188,132 @@ impl TextComponent {
         })
     }
     
+    /// 把 `<text>` 的混排内容切成行内 run。
+    ///
+    /// 返回 `None` 表示「不需要按 run 处理」——没有元素子节点，或者子元素里有
+    /// 非 `<text>` 的东西（`<image>` 之类）。后者退回原来的拍平逻辑：本引擎没有真正的
+    /// 行内流，硬拆反而会把图文混排拆成上下两行，不如保持现状。
+    fn build_inline_runs(
+        node: &WxmlNode,
+        ctx: &mut ComponentContext,
+        outer: &NodeStyle,
+    ) -> Option<Vec<RenderNode>> {
+        use crate::parser::wxml::WxmlNodeType;
+        let mut has_element = false;
+        for c in &node.children {
+            match c.node_type {
+                WxmlNodeType::Element => {
+                    if c.tag_name != "text" {
+                        return None; // 图文混排等复杂情况不接
+                    }
+                    has_element = true;
+                }
+                _ => {}
+            }
+        }
+        if !has_element {
+            return None;
+        }
+
+        // 嵌套 `<text>` 的 CSS 解析要带上「自己作为父级」的祖先链，
+        // 否则 `.label .req{…}` 这种后代选择器匹配不上。
+        let classes = get_classes(node);
+        let mut child_ancestors = ctx.ancestors.clone();
+        child_ancestors.push(crate::parser::wxss::ElementDesc::new(
+            &node.tag_name,
+            node.get_attr("id"),
+            &classes,
+            &node.attributes,
+        ));
+
+        let sf = ctx.scale_factor;
+        let mut runs: Vec<RenderNode> = Vec::new();
+        let child_count = node.children.len();
+        for (idx, child) in node.children.iter().enumerate() {
+            // 每一段的样式：裸文字用最外层的，嵌套 <text> 用它自己解析出来的
+            let (seg_text, seg_style) = match child.node_type {
+                WxmlNodeType::Element => {
+                    let mut sub_ctx = ComponentContext {
+                        scale_factor: ctx.scale_factor,
+                        screen_width: ctx.screen_width,
+                        screen_height: ctx.screen_height,
+                        stylesheet: ctx.stylesheet,
+                        taffy: ctx.taffy,
+                        ancestors: child_ancestors.clone(),
+                        inherited: InheritedText {
+                            font_size: outer.font_size,
+                            color: outer.text_color,
+                            weight: outer.font_weight,
+                            align: outer.text_align,
+                            line_height: outer.line_height,
+                            letter_spacing: outer.letter_spacing,
+                            font_family: outer.font_family.clone(),
+                        },
+                        sibling_index: idx,
+                        sibling_count: child_count,
+                        has_positioned_ancestor: ctx.has_positioned_ancestor,
+                    };
+                    let (_, cns) = build_base_style(child, &mut sub_ctx);
+                    (get_text_content(child), cns)
+                }
+                _ => (child.text_content.clone(), outer.clone()),
+            };
+            if seg_text.trim().is_empty() && !seg_text.contains(' ') {
+                continue;
+            }
+            let family = crate::text_family::renderer_for_family(seg_style.font_family.as_deref());
+            let font_px = seg_style.font_size * sf;
+            let ls = seg_style.letter_spacing * sf;
+            let bold = matches!(
+                seg_style.font_weight,
+                FontWeight::Bold | FontWeight::W600 | FontWeight::W700 | FontWeight::W800 | FontWeight::W900
+            ) && family
+                .as_deref()
+                .or(TEXT_MEASURE_FONT.as_deref())
+                .map(|tr| tr.has_bold_face())
+                .unwrap_or(false);
+            for unit in crate::renderer::components::rich_text::split_wrappable(&seg_text) {
+                if unit.is_empty() {
+                    continue;
+                }
+                let line_h = seg_style
+                    .line_height
+                    .map(|lh| lh * sf)
+                    .unwrap_or_else(|| natural_line_height_px_for(&unit, font_px))
+                    .max(font_px);
+                let measure = family.as_deref().or(TEXT_MEASURE_FONT.as_deref());
+                let w = measure
+                    .map(|tr| tr.measure_text_weighted(&unit, font_px, ls, bold))
+                    .unwrap_or_else(|| {
+                        unit.chars()
+                            .map(|c| if c.is_ascii() { font_px * 0.62 } else { font_px })
+                            .sum()
+                    })
+                    .ceil();
+                let cts = Style {
+                    size: Size { width: length(w), height: length(line_h) },
+                    flex_shrink: 0.0,
+                    ..Default::default()
+                };
+                let ctn = ctx.taffy.new_leaf(cts).ok()?;
+                runs.push(RenderNode {
+                    tag: "text".into(),
+                    text: unit,
+                    attrs: std::collections::HashMap::new(),
+                    taffy_node: ctn,
+                    style: seg_style.clone(),
+                    children: vec![],
+                    events: vec![],
+                });
+            }
+        }
+        if runs.is_empty() {
+            None
+        } else {
+            Some(runs)
+        }
+    }
+
     pub fn draw(
         node: &RenderNode, 
         canvas: &mut Canvas, 

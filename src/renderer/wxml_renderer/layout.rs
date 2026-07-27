@@ -65,7 +65,15 @@ impl WxmlRenderer {
             .unwrap_or(self.screen_height * self.scale_factor);
         let root = taffy.new_with_children(
             Style {
+                // 页面根：高度由内容驱动（要能滚），但**至少一屏**。
+                //
+                // 这等价于 CSS 的 `min-height: 100vh` —— 编译出的 H5 端一直是这么写的
+                // （`#app{min-height:100vh}`），而这边只写了 `height:auto`。差别在内容不足
+                // 一屏的页面上肉眼可见：页面根上写 `flex:1` 的容器（框架产物的标准结构）
+                // 撑不满视口，底下漏出 `page` 的背景色 —— tea-app 登录页底部就露出一条
+                // 12px 的浅米色，而设计稿/微信里整屏都是深绿。
                 size: Size { width: length(canvas_w), height: auto() },
+                min_size: Size { width: auto(), height: length(viewport_h) },
                 flex_direction: FlexDirection::Column,
                 ..Default::default()
             },
@@ -401,8 +409,17 @@ impl WxmlRenderer {
             _ => ViewComponent::build(node, &mut ctx),
         };
         
+        // `<button>` 在微信里是普通容器：里面写 `<text class="…">` 时，那段文字的
+        // 颜色/字号/字重由它自己的 CSS 说的算。一律当叶子会把子树整个吞掉、
+        // 只用按钮自身的样式把收集到的文本画一遍 —— tea-app 登录页的「微信一键登录」
+        // 因此变成继承来的深色 + 大一号字，而 `.wx-btn-t` 明明写了 `color:#fff; font-size:30rpx`。
+        // 只有「带元素子节点」的按钮才按容器处理，`<button>纯文字</button>` 仍走叶子那条
+        // 成熟路径（默认配色/内边距/最小高度都在那里）。
+        let button_as_container = tag == "button"
+            && node.children.iter().any(|c| c.node_type == WxmlNodeType::Element);
+
         if let Some(ref mut rn) = render_node {
-            if !Self::is_leaf_component(tag) {
+            if !Self::is_leaf_component(tag) || button_as_container {
                 // 扩展祖先链：当前节点作为子节点的父级，用于后代/子选择器匹配
                 let mut child_ancestors = ancestors.to_vec();
                 let node_classes: Vec<&str> = node.get_attr("class")
@@ -531,6 +548,15 @@ impl WxmlRenderer {
             .or_else(|| node.attrs.get("model:value"))
             .cloned()
             .unwrap_or_default()
+    }
+
+    /// 绘制/交互登记时要不要遍历子节点。
+    ///
+    /// 叶子组件自己画完就结束；但**建好树以后带子节点的叶子**（`<button><text/></button>`
+    /// 这种，见 build_tree 里的 `button_as_container`）说明它其实是按容器建的，
+    /// 子树必须照常画出来 —— 否则页面上只剩按钮的底色。
+    pub(super) fn draws_children(node: &RenderNode) -> bool {
+        !Self::is_leaf_component(&node.tag) || !node.children.is_empty()
     }
 
     pub(super) fn is_leaf_component(tag: &str) -> bool {

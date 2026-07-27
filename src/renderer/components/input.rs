@@ -431,6 +431,10 @@ impl InputComponent {
                 style.border_width, border_color,
             );
         }
+        // 逐边边框（`border-bottom` 那条下划线是表单最常见的写法）。
+        // input 自己画盒子，不走通用的背景/边框绘制，所以这里要显式补一次 ——
+        // 漏了它的话「下划线式输入框」在引擎里完全看不见（登录页的手机号/验证码就是）。
+        draw_side_borders(canvas, style, x, y, w, h);
         
         // 计算文本位置
         let font_size = style.font_size * sf;

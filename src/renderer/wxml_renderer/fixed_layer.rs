@@ -62,7 +62,7 @@ impl WxmlRenderer {
         self.register_interactive_element(node, node, &logical_bounds, interaction, taffy, true);
 
         // 绘制子节点 - 子节点位置相对于 fixed 元素
-        if !Self::is_leaf_component(&node.tag) {
+        if Self::draws_children(node) {
             let text_color = node.style.text_color.unwrap_or(Color::BLACK);
             for child in &node.children {
                 // 获取子节点在原始布局中相对于父节点的位置
@@ -139,7 +139,7 @@ impl WxmlRenderer {
         }
         
         // 递归绘制子节点
-        if !Self::is_leaf_component(&node.tag) {
+        if Self::draws_children(node) {
             let is_scroll_view = node.tag == "scroll-view";
             let mut child_offset_y = 0.0;
             let scroll_position: f32;

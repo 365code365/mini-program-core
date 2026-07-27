@@ -656,6 +656,21 @@ fn emit_pretty(node: &WxmlNode, depth: usize, out: &mut String) {
         out.push_str(&format!("{}{}{}</{}>\n", indent, open, custom_inner_html(node), tag));
         return;
     }
+    // `<text>` 一律单行输出（哪怕里面嵌了 `<text>`）。
+    //
+    // `.wx-text` 带 `white-space: pre-line` —— 那是为了保留 WXML 里写在文本里的换行。
+    // 代价是：一旦漂亮打印在 `<text>` 内部插入缩进换行，浏览器就会把它当**真实换行**渲染。
+    // 优惠券的 `<text class="c-amount">¥<text class="c-num">10</text></text>` 因此在
+    // Chrome 里被拆成两行（¥ 一行、10 一行），而小程序里本该是一行。
+    // 这条 bug 还会污染双端对比的基线 —— 参照物自己先错了。
+    if node.tag_name == "text" {
+        let mut inner = String::new();
+        for c in &node.children {
+            emit_node(c, &mut inner);
+        }
+        out.push_str(&format!("{}{}{}</{}>\n", indent, open, inner, tag));
+        return;
+    }
     // 无子元素（或只有文本）：单行输出更紧凑可读
     let only_text = node.children.iter().all(|c| c.node_type == WxmlNodeType::Text);
     if only_text {
