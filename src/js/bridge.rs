@@ -135,12 +135,24 @@ impl JsBridge {
 
     fn register_storage_functions(&self) -> Result<(), String> {
         let storage = self.storage.clone();
+        // 先把上次会话存下的内容读回来：微信的 storage 是跨启动持久的，
+        // 「首次拉数据存起来、之后走缓存」这类逻辑只有这样才会真的走到缓存分支
+        {
+            let restored = crate::storage_file::load();
+            if !restored.is_empty() {
+                storage.lock().unwrap().extend(restored);
+            }
+        }
         let rt = self.runtime.lock().unwrap();
-        
+
+        // 写操作一律**写穿到磁盘**。storage 的量级是几十 KB，页面写入也不频繁，
+        // 换来的是「进程被杀也不丢」，比攒着等退出时再存可靠。
         let s = storage.clone();
         rt.register_function("__native_storage_set", move |args| {
             if args.len() >= 2 {
-                s.lock().unwrap().insert(args[0].clone(), args[1].clone());
+                let mut map = s.lock().unwrap();
+                map.insert(args[0].clone(), args[1].clone());
+                crate::storage_file::save(&map);
             }
             "undefined".to_string()
         })?;
@@ -157,14 +169,18 @@ impl JsBridge {
         let s = storage.clone();
         rt.register_function("__native_storage_remove", move |args| {
             if let Some(key) = args.first() {
-                s.lock().unwrap().remove(key);
+                let mut map = s.lock().unwrap();
+                map.remove(key);
+                crate::storage_file::save(&map);
             }
             "undefined".to_string()
         })?;
         
         let s = storage.clone();
         rt.register_function("__native_storage_clear", move |_args| {
-            s.lock().unwrap().clear();
+            let mut map = s.lock().unwrap();
+            map.clear();
+            crate::storage_file::save(&map);
             "undefined".to_string()
         })?;
         

@@ -18,6 +18,9 @@ pub mod app_dir;
 /// `wx.request` 等网络 API 的原生实现（后台线程 + 按帧取回）
 pub mod net;
 
+/// `wx.setStorageSync` 的跨启动落盘
+pub mod storage_file;
+
 pub use canvas::Canvas;
 pub use color::Color;
 pub use geometry::{Point, Rect, Size};

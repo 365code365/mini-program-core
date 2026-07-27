@@ -14,3 +14,4 @@ pub mod scroll_tests;
 pub mod route_tests;
 pub mod event_tests;
 pub mod gif_tests;
+pub mod network_tests;

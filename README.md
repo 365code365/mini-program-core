@@ -107,6 +107,8 @@ MINI_LAYOUT_LOG=1 cargo run --release --bin mini-app-window -- sample-app
 MINI_SCROLL_LOG=1 cargo run --release --bin mini-app-window -- sample-app
 # 关掉 setData 的增量失效（一律整帧）：用于逐像素对照验证，见 tools/damage-check.sh
 MINI_NO_DAMAGE=1 cargo run --release --bin mini-app-window -- sample-app
+# 网络请求日志（方法 / URL / 状态码 / 耗时）与 storage 读写日志
+MINI_NET_LOG=1 MINI_STORAGE_LOG=1 ./run.sh tea-app
 ```
 
 > 「整帧归因」这一行是为了让性能问题能收敛：**「为什么这一帧又整屏重画了」如果只能靠猜就永远查不完**。它直接指出了首页每秒一顿的元凶是倒计时的 `setData`（每秒 1 次整帧），而不是当时以为的滚动或动画。
@@ -363,7 +365,7 @@ cargo run --bin mini-devserver      # 浏览器调试预览（见下节）
 cargo run --example video_player    # 独立视频播放窗口（自动循环 + 声音）
 cargo run --bin mini-app-window     # 窗口应用（默认加载 sample-app）
 
-# 5) 测试（227 个用例）
+# 5) 测试（237 个用例）
 cargo test
 ```
 
@@ -480,11 +482,40 @@ Vue 3 运行时 + 60 个 CommonJS 模块。跑通它需要三件事，都是引�
 >
 > 顺带把 `real-sample`（微信官方 demo）也一起修活了：它挂在模块作用域这同一个原因上。
 
-**当前边界**：tea-app 的 Vue 层已经能启动、页面能注册、`data` 开始有值，但首页自己的
-`data()` 里调了 `getStorageSync(key).toMap()` —— 那是 uni-app x(UTS) 的存储 API，
-不是微信的（微信 `getStorageSync` 读不到时返回 `''`）。按「对齐 Skyline」的原则这里
-不迁就：**引擎不为偏离微信语义的写法让路**。所以 35 页里 28 页有内容，但依赖该工具函数
-的页面目前只渲染静态骨架、交互不通。
+### 网络与缓存：让「拉数据 → 存起来 → 下次走缓存」真的成立
+
+`wx.request` 之前是**完全没有实现**的（`ureq` 只用在图片加载上）。现在补齐：
+
+- `src/net.rs`：请求切成「提交 → 后台线程跑 → 宿主按帧取回」三段，**不阻塞 JS 线程**。
+  响应回来后由 `MiniApp::update()` 喂给 `__resolveRequest`，所以 `Promise` 链、
+  `async/await` 都能正常推进（它们靠微任务队列，宿主每帧 pump 一次）。
+- 微信语义逐条对齐：**4xx/5xx 仍走 `success`**（只是 `statusCode` 不是 2xx）、
+  GET 的 `data` 拼进 query、`dataType` 缺省 `json` 且解析失败就原样给字符串、
+  `header` 原样透出、`RequestTask.abort()` 之后不再回 `success` 但仍调 `complete`。
+- `wx.setStorageSync` **跨启动持久化**（`src/storage_file.rs`，写到
+  `target/mini-storage/<小程序名>.json`，按小程序隔离且**不写进 `sample/`**）。
+  之前只有进程内的 HashMap，于是每次启动都是空的 ——
+  任何「首次拉取存起来、之后走缓存」的逻辑永远只走首次分支，缓存代码等于从没执行过。
+- `getSystemInfoSync` 补全 `safeArea` / `safeAreaInsets` / `statusBarHeight` 等字段
+  （以及拆分出来的 `getWindowInfo` / `getDeviceInfo` / `getAppBaseInfo`）：
+  这些是布局算式的输入，少一个就是一个 `cannot read property 'bottom' of undefined`。
+
+网络语义有 6 个**离线**回归测试（`src/tests/network_tests.rs`）—— 直接调
+`__resolveRequest` 模拟原生回调，不依赖外网，所以能进 CI。诊断开关
+`MINI_NET_LOG=1` 打印每条请求的方法/URL/状态码/耗时，`MINI_STORAGE_LOG=1` 打印缓存读写。
+
+补上这两块之后 tea-app 的表现变化很直接：首屏倒计时会真的走到 0 并
+`switchTab` 进首页，首页从 3384 色（占位方块）变成 85860 色（真实照片）。
+
+> 顺带修掉一个「排查时会把人带偏」的问题：`--frames` 跑帧时不冲 JS 输出缓冲，
+> 也不处理导航请求。于是定时器/网络回调里的 `console.log` 全攒在缓冲里看不到，
+> 靠时间驱动的跳转也只在日志里出现、页面其实没换 —— 看起来就像「回调没跑」。
+
+**当前边界**：tea-app 是 uni-app x(UTS) 的产物，它的资源缓存工具在**首次运行**
+（storage 为空）时会对 `''` 调 `.toMap()` 而抛异常 —— 那是 UTS 的 API，
+微信的 `getStorageSync` 读不到时返回 `''`。按「对齐 Skyline」的原则这里不迁就：
+**引擎不为偏离微信语义的写法让路**。所以它的首次运行仍会命中这个应用侧的问题，
+第二次运行起（缓存已落盘，`getStorageSync` 返回 uni 包装过的 `UTSJSONObject`）一切正常。
 
 多步交互也能脚本化验证（每段 `--eval` 之后宿主会把导航跑完）：
 
@@ -816,7 +847,7 @@ free(buf); mr_canvas_free(c);
 覆盖表达式引擎、WXSS 选择器（含 `var()`/`calc()`）、模板控制流、布局与文本换行、全组件渲染、Canvas 2D、交互、滚动/惯性、页面栈路由、组件模型、CommonJS 模块、Promise、生命周期、事件冒泡等：
 
 ```bash
-cargo test          # 227 个用例
+cargo test          # 237 个用例
 cargo test route    # 路由/页面栈/组件/模块/异步/生命周期
 cargo test canvas   # Canvas 2D 上下文与命令
 cargo test scroll   # 滚动与惯性

@@ -304,6 +304,13 @@ impl MiniAppWindow {
         if self.scroll.take_pull_trigger() && self.page_enables_pull_down() {
             self.set_pull_refreshing(true);
         }
+        // 与交互窗体一致：每帧取一次导航请求并执行。
+        // 少了这一步，`--frames` 跑到的「倒计时结束自动进首页」只会在日志里出现，
+        // 页面其实没换 —— 快照就测不到这类靠时间驱动的跳转。
+        if self.pending_navigation.is_none() {
+            self.pending_navigation = app_window::check_navigation(&mut self.app);
+        }
+        self.process_navigation();
         self.reap_picker_sheet();
         if mini_render::renderer::components::advance_due_swipers() {
             self.needs_redraw = true;
