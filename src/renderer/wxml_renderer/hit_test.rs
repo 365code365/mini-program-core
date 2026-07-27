@@ -295,6 +295,27 @@ impl WxmlRenderer {
         chain
     }
     
+
+    /// 按 class 找节点，返回它的布局尺寸（物理像素）。布局回归用例用它断言
+    /// 「这一格有没有被压窄/折行」，比逐像素比图更能说明问题出在哪。
+    #[cfg(test)]
+    pub fn node_size_by_class(&self, class: &str) -> Option<(f32, f32)> {
+        fn walk(taffy: &Tree, n: &RenderNode, class: &str) -> Option<(f32, f32)> {
+            let hit = n
+                .attrs
+                .get("class")
+                .map(|c| c.split_whitespace().any(|c| c == class))
+                .unwrap_or(false);
+            if hit {
+                let l = taffy.layout(n.taffy_node).ok()?;
+                return Some((l.size.width, l.size.height));
+            }
+            n.children.iter().find_map(|c| walk(taffy, c, class))
+        }
+        let cache = self.cache.as_ref()?;
+        cache.render_nodes.iter().find_map(|n| walk(&cache.taffy, n, class))
+    }
+
     /// 获取事件绑定数量
     pub fn event_count(&self) -> usize {
         self.event_bindings.len()

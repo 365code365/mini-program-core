@@ -21,20 +21,23 @@ use std::path::PathBuf;
 use std::fs::File;
 
 // 音频播放
-use rodio::{OutputStream, Sink, Source};
-use symphonia::core::audio::SampleBuffer;
-use symphonia::core::codecs::DecoderOptions;
+// rodio 0.22：`Sink` 改名 `Player`，`OutputStream::try_default()` 换成
+// 「设备 sink 构建器 + mixer」两段式；`Source` 的 span/声道/采样率也换了类型。
+use rodio::stream::MixerDeviceSink;
+use rodio::{ChannelCount, Player, SampleRate, Source};
+use symphonia::core::codecs::audio::AudioDecoderOptions;
+use symphonia::core::codecs::CodecParameters;
 use symphonia::core::formats::FormatOptions;
 use symphonia::core::io::MediaSourceStream;
 use symphonia::core::meta::MetadataOptions;
-use symphonia::core::probe::Hint;
+use symphonia::core::formats::probe::Hint;
 
 // H.264 解码
 use openh264::decoder::Decoder as H264Decoder;
 
 // 音频播放器 (thread_local 因为 OutputStream 不是 Send)
 thread_local! {
-    static AUDIO_STREAM: std::cell::RefCell<Option<(OutputStream, Sink)>> = std::cell::RefCell::new(None);
+    static AUDIO_STREAM: std::cell::RefCell<Option<(MixerDeviceSink, Player)>> = std::cell::RefCell::new(None);
 }
 
 /// 视频帧数据
@@ -451,27 +454,32 @@ impl VideoPlayer {
         let mut hint = Hint::new();
         hint.with_extension("mp4");
         
-        let probed = symphonia::default::get_probe()
-            .format(&hint, mss, &FormatOptions::default(), &MetadataOptions::default())
+        // symphonia 0.6：`get_probe().format(..)` 换成 `probe(..)` 且直接给出
+        // `FormatReader`（不再有 `ProbedFormat` 包装）；轨道的编解码参数改成
+        // `Option<CodecParameters>` 的枚举（音频/视频/字幕分开），所以「找音频轨」
+        // 从「codec != CODEC_TYPE_NULL」变成「参数是 Audio 这一支」。
+        let mut format = symphonia::default::get_probe()
+            .probe(&hint, mss, FormatOptions::default(), MetadataOptions::default())
             .map_err(|e| format!("Probe error: {}", e))?;
-        
-        let mut format = probed.format;
-        
+
         // 查找音频轨道
-        let track = format.tracks()
+        let (track_id, audio_params) = format
+            .tracks()
             .iter()
-            .find(|t| t.codec_params.codec != symphonia::core::codecs::CODEC_TYPE_NULL)
+            .find_map(|t| match &t.codec_params {
+                Some(CodecParameters::Audio(p)) => Some((t.id, p.clone())),
+                _ => None,
+            })
             .ok_or("No audio track")?;
-        
-        let track_id = track.id;
-        let sample_rate = track.codec_params.sample_rate.unwrap_or(44100);
-        let channels = track.codec_params.channels.map(|c| c.count() as u16).unwrap_or(2);
+
+        let sample_rate = audio_params.sample_rate.unwrap_or(44100);
+        let channels = audio_params.channels.as_ref().map(|c| c.count() as u16).unwrap_or(2);
         
         println!("   Audio: {} Hz, {} channels", sample_rate, channels);
         
         // 创建解码器
         let mut decoder = symphonia::default::get_codecs()
-            .make(&track.codec_params, &DecoderOptions::default())
+            .make_audio_decoder(&audio_params, &AudioDecoderOptions::default())
             .map_err(|e| format!("Decoder error: {}", e))?;
         
         let mut audio_buffer = AudioBuffer::new();
@@ -479,25 +487,26 @@ impl VideoPlayer {
         audio_buffer.channels = channels;
         
         // 解码所有音频包
+        // symphonia 0.6：`next_packet()` 返回 `Result<Option<Packet>>`（`Ok(None)` 就是读完了，
+        // 不再靠「IoError == UnexpectedEof」判结尾）；解码结果是 `GenericAudioBufferRef`，
+        // 交错成 f32 用 `copy_to_vec_interleaved`，不必自己建 `SampleBuffer`。
+        let mut interleaved: Vec<f32> = Vec::new();
         loop {
             let packet = match format.next_packet() {
-                Ok(p) => p,
-                Err(symphonia::core::errors::Error::IoError(ref e)) 
-                    if e.kind() == std::io::ErrorKind::UnexpectedEof => break,
+                Ok(Some(p)) => p,
+                Ok(None) => break,
                 Err(_) => break,
             };
-            
-            if packet.track_id() != track_id {
+
+            if packet.track_id != track_id {
                 continue;
             }
-            
+
             match decoder.decode(&packet) {
                 Ok(decoded) => {
-                    let spec = *decoded.spec();
-                    let duration = decoded.capacity() as u64;
-                    let mut sample_buf = SampleBuffer::<f32>::new(duration, spec);
-                    sample_buf.copy_interleaved_ref(decoded);
-                    audio_buffer.samples.extend_from_slice(sample_buf.samples());
+                    interleaved.clear();
+                    decoded.copy_to_vec_interleaved(&mut interleaved);
+                    audio_buffer.samples.extend_from_slice(&interleaved);
                 }
                 Err(_) => continue,
             }
@@ -602,22 +611,19 @@ impl VideoPlayer {
         let sample_rate = audio_buffer.sample_rate;
         let channels = audio_buffer.channels;
         
-        match OutputStream::try_default() {
-            Ok((stream, stream_handle)) => {
-                match Sink::try_new(&stream_handle) {
-                    Ok(sink) => {
-                        let source = SamplesSource::new(samples, sample_rate, channels);
-                        sink.append(source);
-                        sink.play();
-                        
-                        AUDIO_STREAM.with(|cell| {
-                            *cell.borrow_mut() = Some((stream, sink));
-                        });
-                        
-                        println!("🔊 Audio playback started");
-                    }
-                    Err(e) => println!("❌ Sink error: {:?}", e),
-                }
+        match rodio::stream::DeviceSinkBuilder::open_default_sink() {
+            Ok(mut device) => {
+                // rodio 0.22 在 DeviceSink 析构时会打一行提示，正常停播也会触发 ——
+                // 对宿主日志来说是纯噪声，关掉。
+                device.log_on_drop(false);
+                let player = Player::connect_new(device.mixer());
+                let source = SamplesSource::new(samples, sample_rate, channels);
+                player.append(source);
+                player.play();
+                AUDIO_STREAM.with(|cell| {
+                    *cell.borrow_mut() = Some((device, player));
+                });
+                println!("🔊 Audio playback started");
             }
             Err(e) => println!("❌ Audio output error: {:?}", e),
         }
@@ -625,8 +631,8 @@ impl VideoPlayer {
     
     fn stop_audio_static() {
         AUDIO_STREAM.with(|cell| {
-            if let Some((_, ref sink)) = *cell.borrow() {
-                sink.stop();
+            if let Some((_, ref player)) = *cell.borrow() {
+                player.stop();
             }
             *cell.borrow_mut() = None;
         });
@@ -644,15 +650,15 @@ impl VideoPlayer {
         let sample_rate = audio_buffer.sample_rate;
         let channels = audio_buffer.channels;
         
-        if let Ok((stream, stream_handle)) = OutputStream::try_default() {
-            if let Ok(sink) = Sink::try_new(&stream_handle) {
-                let source = SamplesSource::new(samples, sample_rate, channels);
-                sink.append(source);
-                sink.play();
-                AUDIO_STREAM.with(|cell| {
-                    *cell.borrow_mut() = Some((stream, sink));
-                });
-            }
+        if let Ok(mut device) = rodio::stream::DeviceSinkBuilder::open_default_sink() {
+            device.log_on_drop(false);
+            let player = Player::connect_new(device.mixer());
+            let source = SamplesSource::new(samples, sample_rate, channels);
+            player.append(source);
+            player.play();
+            AUDIO_STREAM.with(|cell| {
+                *cell.borrow_mut() = Some((device, player));
+            });
         }
     }
 }
@@ -686,16 +692,16 @@ impl Iterator for SamplesSource {
 }
 
 impl Source for SamplesSource {
-    fn current_frame_len(&self) -> Option<usize> {
+    // rodio 0.22：`current_frame_len` 改名 `current_span_len`（"frame" 一词让给
+    // 「同一时刻各声道的一组样本」这个含义），声道数与采样率也换成了非零类型。
+    fn current_span_len(&self) -> Option<usize> {
         Some(self.samples.len() - self.position)
     }
-    
-    fn channels(&self) -> u16 {
-        self.channels
+    fn channels(&self) -> ChannelCount {
+        ChannelCount::new(self.channels).unwrap_or(ChannelCount::new(2).unwrap())
     }
-    
-    fn sample_rate(&self) -> u32 {
-        self.sample_rate
+    fn sample_rate(&self) -> SampleRate {
+        SampleRate::new(self.sample_rate).unwrap_or(SampleRate::new(44100).unwrap())
     }
     
     fn total_duration(&self) -> Option<std::time::Duration> {
@@ -974,10 +980,10 @@ impl VideoComponent {
         let default_width = 300.0;
         let default_height = 225.0;
         
-        if ts.size.width == Dimension::Auto {
+        if dim_is_auto(ts.size.width) {
             ts.size.width = length(default_width * sf);
         }
-        if ts.size.height == Dimension::Auto {
+        if dim_is_auto(ts.size.height) {
             ts.size.height = length(default_height * sf);
         }
         

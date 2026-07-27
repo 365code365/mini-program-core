@@ -42,8 +42,8 @@ impl SwitchComponent {
         let switch_type = node.get_attr("type").unwrap_or("switch");
         
         // 检查 CSS 是否定义了尺寸和颜色
-        let has_custom_size = !matches!(ts.size.width, Dimension::Auto) || 
-                              !matches!(ts.size.height, Dimension::Auto);
+        let has_custom_size = !dim_is_auto(ts.size.width) || 
+                              !dim_is_auto(ts.size.height);
         let has_custom_radius = ns.border_radius > 0.0;
         
         // 微信（weui）官方 switch 度量：轨道 52x32、1px 边框、滑块直径 30。

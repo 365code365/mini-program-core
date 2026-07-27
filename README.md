@@ -389,16 +389,46 @@ HTML 目标产出结构化工程（`common/base.css` + 每页 html/css/js + 运�
 | 📐 **Flexbox 布局** | 基于 [Taffy]；含文本按容器宽度自动换行的二次布局修正 |
 | 🧩 **30+ 组件** | view/text/image/button/input/scroll-view/swiper/**canvas**/**video** 等 |
 | ⚡ **QuickJS 运行时** | 完整 JS，App/Page/Component、Behavior、CommonJS 模块、Promise 微任务 |
-| 🎯 **CSS 选择器引擎** | 标签/类/`#id`/`*`/属性/组合器/特异性/`@import`/`var()`/`calc()` |
+| 🎯 **CSS 选择器引擎** | 标签/类/`#id`/`*`/属性/组合器/特异性/`@import`/`var()`/`calc()`（含 `env(safe-area-inset-*)`，无刘海视口按 0 解析） |
 | 📄 **WXML 模板** | `wx:if/elif/else`、`wx:for`、`<block>`、真正的 `{{ }}` 表达式 |
 | ♻️ **完整生命周期** | App / Page / Component 三级钩子 + 组件 `pageLifetimes` 联动 |
 | 🎬 **视频播放** | 手写 MP4 解复用 + openh264 解码 + rodio 音频（桌面端 macOS 音频接口） |
 | 🖌️ **Canvas 2D** | `wx.createCanvasContext` 全套 API：路径/圆弧/文本/图片/渐变/变换 |
-| 👆 **事件系统** | `bindtap` 冒泡、`catchtap` 阻止冒泡、`dataset`、输入事件 |
-| 🖱️ **交互** | 滚动惯性/回弹、输入框、勾选/单选/开关/滑块 |
+| 👆 **事件系统** | `bind/catch/mut-bind/capture-*` 全套语法、捕获+冒泡两阶段、`dataset`、完整 touch 事件对象 |
+| 🖱️ **交互** | 滚动惯性/回弹、方向锁定与嵌套滚动传递、左边缘侧滑返回、输入框、勾选/单选/开关/滑块 |
 | 🌐 **浏览器调试** | 内置 HTTP 服务，浏览器打开链接即可实时操作 UI |
 | ⏱️ **高刷适配** | 事件循环按显示器刷新率出帧（60/120/144Hz），空闲零占用 |
 | 🔗 **多端集成** | C FFI（`mr_*`），可编译为 5 大平台原生库 |
+
+### 依赖版本
+
+第三方依赖都跟到当前最新可用版本（`winit` 例外：最新的 0.31 只有 beta，稳定线仍是 0.30）。
+
+| 依赖 | 版本 | 用途 / 升级要点 |
+|------|------|----------------|
+| [Taffy] | 0.12 | 布局求解。0.4→0.12 的适配见下一节 |
+| rquickjs | 0.12 | JS 引擎。跟着升上来的 QuickJS 已支持 `Array.at/findLast/toSorted`、`Object.hasOwn/groupBy`、`String.replaceAll/matchAll`、`WeakRef`、`??`/`?.`（`structuredClone` 仍无） |
+| image | 0.25 | 图片解码。JPEG 解码器换成 zune-jpeg，同一张图的像素有 ±2/通道的差异（肉眼不可见，双端差异不变） |
+| ureq | 3.3 | `wx.request` 与远程图片。**必须 `http_status_as_error(false)`** —— ureq 3 默认把 4xx/5xx 当 Err，而微信语义里它们照样走 success 回调 |
+| symphonia | 0.6 | 音频解码（探测/取轨/解码 API 全变了，见 video.rs 注释） |
+| rodio | 0.22 | 音频播放。`Sink`→`Player`，输出流改成「设备 sink + mixer」两段式 |
+| openh264 | 0.9 | H.264 解码（零改动） |
+| fontdue | 0.9 | 字形光栅化（零改动，输出逐字节一致） |
+| winit / softbuffer | 0.30 / 0.4 | 窗口与软件帧缓冲 |
+
+### Taffy 0.4 → 0.12 的适配
+
+- `Dimension` / `LengthPercentage(Auto)` 从枚举变成包着 `CompactLength` 的**不透明结构**（tag 压进 f32 低位），**不能再 `match`**。读值收敛成四个封装：`dim_is_auto` / `dim_length` / `dim_percent` / `lpa_length`（`components/base.rs`）。
+- 对齐类（`AlignItems`/`AlignSelf`/`AlignContent`/`JustifyContent`）也变成结构 + 关联常量：`FlexStart` → `FLEX_START`。
+- 度量闭包多了第五个参数 `&Style`。
+- **唯一需要改行为的地方**：靠内容定宽的行内文本要 `flex-shrink: 0`。taffy 0.12 开始严格执行 flex 项的自动最小宽度（`min-width:auto` = min-content），而本引擎把行内 `<text>` 建成定宽叶子（min-content 等于整行宽），于是「一行里几段文本加起来略超容器」时收缩量会落到文本上 —— 文字被压窄、绘制期折行、溢出容器。也试过让文本真正可压（挂度量上下文 + `max_size` 封顶），那样确实与 Chrome 完全一致，但**首页双端差异从 4.1% 涨到 13.0%**：我们的字形度量与 Chrome 差那 1px，就足以让标题误折行。宁可溢出一处，不要整页排版跳掉。
+- 收益：同一台机器、同一条 `--drag 8x60`，商城首页拖动的单帧成本从 **3.87ms 降到 1.9ms**（p95 8.61ms → 2.1ms）。
+
+顺带用上了两个 0.12 才有的东西，以及一条被否决的尝试：
+
+- **`box-sizing` 真正生效**（0.4 没有这个概念，这条属性从前被整条忽略，写 `content-box` 的元素比浏览器窄一圈内边距）。
+- **`display:block` 走真正的 block 算法**（此前只能映射成 flex column）。三套基线零像素变化，但语义更贴 Chrome。
+- **`scroll-view` 用 `Overflow::Scroll`：试过，否决**。图的是 CSS「滚动容器自动最小尺寸为 0」这条规则，但本引擎的页面画布高度来自内容高，而滚动容器不把内容尺寸往外传 —— 「整页套一个 `height:100%` 的 scroll-view」（框架产物的常见结构）会整页塌成空白，实测 tea-app 21 个页面只剩底部导航。结论写在 `layout.rs` 里，免得以后再踩。
 
 ---
 

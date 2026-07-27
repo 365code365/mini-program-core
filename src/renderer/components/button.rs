@@ -82,10 +82,10 @@ impl ButtonComponent {
         // 各项默认值相互独立地应用（此前它们被绑在同一个 if 里：页面只要写了
         // `width:100%` 就会让 has_custom_size 为真，连默认内边距/最小高度/字号一起丢掉，
         // 于是按钮只有文字高，明显比微信和 HTML 端的 46px 矮）。
-        let has_custom_width = !matches!(ts.size.width, Dimension::Auto);
-        let has_custom_height = !matches!(ts.size.height, Dimension::Auto);
-        let has_custom_padding = !matches!(ts.padding.top, LengthPercentage::Length(0.0)) ||
-                                  !matches!(ts.padding.left, LengthPercentage::Length(0.0));
+        let has_custom_width = !dim_is_auto(ts.size.width);
+        let has_custom_height = !dim_is_auto(ts.size.height);
+        let has_custom_padding = !(length_px(ts.padding.top) == 0.0) ||
+                                  !(length_px(ts.padding.left) == 0.0);
         
         // 微信默认度量：字号 / 垂直内边距 / 水平内边距 / 圆角 / 最小高度
         let (font_size, padding_v, padding_h, radius, min_height) = match btn_size {
@@ -120,7 +120,7 @@ impl ButtonComponent {
             if btn_size == "mini" {
                 ts.size.width = length(content_width);
             } else {
-                ts.size.width = Dimension::Auto;
+                ts.size.width = Dimension::auto();
                 ts.min_size.width = length(content_width);
             }
         }
@@ -144,10 +144,10 @@ impl ButtonComponent {
         
         // 默认居中对齐
         if ts.align_items.is_none() {
-            ts.align_items = Some(AlignItems::Center);
+            ts.align_items = Some(AlignItems::CENTER);
         }
         if ts.justify_content.is_none() {
-            ts.justify_content = Some(JustifyContent::Center);
+            ts.justify_content = Some(JustifyContent::CENTER);
         }
         
         // 按钮文字默认水平居中（微信与 HTML 端 .wx-button 均为 text-align:center）。
@@ -160,14 +160,11 @@ impl ButtonComponent {
         // 关键修复：button 是叶子节点（文本存在 node.text，taffy 无法据此推断内容宽）。
         // 当宽度为 auto 时，用「真实文本宽 + 左右内边距」作为 min-width，避免在 flex-row
         // 里塌缩成小圆块；同时保留 flex-column 下 align:stretch 撑满整行的默认全宽行为。
-        if matches!(ts.size.width, Dimension::Auto) && !text.is_empty() {
+        if dim_is_auto(ts.size.width) && !text.is_empty() {
             let pad_w = length_px(ts.padding.left) + length_px(ts.padding.right);
             let text_w = intrinsic_text_width(&text, ns.font_size * sf, ns.letter_spacing * sf);
             let min_w = text_w + pad_w + 2.0 * sf;
-            let keep = match ts.min_size.width {
-                Dimension::Length(px) => px.max(min_w),
-                _ => min_w,
-            };
+            let keep = dim_length(ts.min_size.width).map(|px| px.max(min_w)).unwrap_or(min_w);
             ts.min_size.width = length(keep);
         }
         

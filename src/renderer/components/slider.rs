@@ -45,7 +45,7 @@ impl SliderComponent {
         let has_custom_bg = ns.background_color.is_some();
         let has_custom_active = ns.text_color.is_some();
         let has_custom_block = ns.border_color.is_some();
-        let has_custom_height = !matches!(ts.size.height, Dimension::Auto);
+        let has_custom_height = !dim_is_auto(ts.size.height);
         
         // 只在 CSS 没有定义时使用属性值或默认值
         if !has_custom_bg {
@@ -73,13 +73,13 @@ impl SliderComponent {
         }
         
         // 默认宽度 100%
-        if matches!(ts.size.width, Dimension::Auto) {
+        if dim_is_auto(ts.size.width) {
             ts.size.width = percent(1.0);
         }
         
         ts.flex_direction = FlexDirection::Row;
         if ts.align_items.is_none() {
-            ts.align_items = Some(AlignItems::Center);
+            ts.align_items = Some(AlignItems::CENTER);
         }
         
         ns.custom_data = ((value - min) / (max - min)).clamp(0.0, 1.0);

@@ -39,7 +39,7 @@ impl ProgressComponent {
         // 检查 CSS 是否定义了颜色
         let has_custom_bg = ns.background_color.is_some();
         let has_custom_active = ns.text_color.is_some();
-        let has_custom_height = !matches!(ts.size.height, Dimension::Auto);
+        let has_custom_height = !dim_is_auto(ts.size.height);
         let has_custom_radius = ns.border_radius > 0.0;
         
         // 只在 CSS 没有定义时使用属性值或默认值
@@ -62,17 +62,17 @@ impl ProgressComponent {
         }
         
         // 默认宽度 100%
-        if matches!(ts.size.width, Dimension::Auto) {
+        if dim_is_auto(ts.size.width) {
             ts.size.width = percent(1.0);
         }
         
         ts.flex_direction = FlexDirection::Row;
         if ts.align_items.is_none() {
-            ts.align_items = Some(AlignItems::Center);
+            ts.align_items = Some(AlignItems::CENTER);
         }
         
         // 默认底部间距
-        if matches!(ts.margin.bottom, LengthPercentageAuto::Length(0.0)) {
+        if lpa_length(ts.margin.bottom) == Some(0.0) {
             ts.margin.bottom = length(4.0 * sf);
         }
         

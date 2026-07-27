@@ -93,7 +93,7 @@ fn test_justify_content_center() {
         Style {
             size: Size { width: length(200.0), height: length(100.0) },
             flex_direction: FlexDirection::Row,
-            justify_content: Some(JustifyContent::Center),
+            justify_content: Some(JustifyContent::CENTER),
             ..Default::default()
         },
         &[child],
@@ -124,7 +124,7 @@ fn test_justify_content_space_between() {
         Style {
             size: Size { width: length(200.0), height: length(100.0) },
             flex_direction: FlexDirection::Row,
-            justify_content: Some(JustifyContent::SpaceBetween),
+            justify_content: Some(JustifyContent::SPACE_BETWEEN),
             ..Default::default()
         },
         &[child1, child2],
@@ -153,7 +153,7 @@ fn test_align_items_center() {
         Style {
             size: Size { width: length(200.0), height: length(100.0) },
             flex_direction: FlexDirection::Row,
-            align_items: Some(AlignItems::Center),
+            align_items: Some(AlignItems::CENTER),
             ..Default::default()
         },
         &[child],
@@ -348,10 +348,10 @@ fn test_absolute_position() {
         position: Position::Absolute,
         size: Size { width: length(50.0), height: length(50.0) },
         inset: Rect {
-            top: LengthPercentageAuto::Length(10.0),
-            right: LengthPercentageAuto::Auto,
-            bottom: LengthPercentageAuto::Auto,
-            left: LengthPercentageAuto::Length(10.0),
+            top: LengthPercentageAuto::length(10.0),
+            right: LengthPercentageAuto::auto(),
+            bottom: LengthPercentageAuto::auto(),
+            left: LengthPercentageAuto::length(10.0),
         },
         ..Default::default()
     }).unwrap();
@@ -416,7 +416,7 @@ fn test_nested_layout() {
         Style {
             size: Size { width: length(100.0), height: length(50.0) },
             flex_direction: FlexDirection::Row,
-            justify_content: Some(JustifyContent::SpaceBetween),
+            justify_content: Some(JustifyContent::SPACE_BETWEEN),
             ..Default::default()
         },
         &[inner_child1, inner_child2],
@@ -427,7 +427,7 @@ fn test_nested_layout() {
         Style {
             size: Size { width: length(200.0), height: length(200.0) },
             flex_direction: FlexDirection::Column,
-            align_items: Some(AlignItems::Center),
+            align_items: Some(AlignItems::CENTER),
             ..Default::default()
         },
         &[inner_container],
@@ -463,20 +463,20 @@ fn test_list_item_layout() {
     
     // list-info 的子元素（三个 text）
     let list_name = taffy.new_leaf(Style {
-        size: Size { width: Dimension::Percent(1.0), height: auto() },
+        size: Size { width: Dimension::percent(1.0), height: auto() },
         min_size: Size { width: auto(), height: length(42.0) },
         ..Default::default()
     }).unwrap();
     
     let list_desc = taffy.new_leaf(Style {
-        size: Size { width: Dimension::Percent(1.0), height: auto() },
+        size: Size { width: Dimension::percent(1.0), height: auto() },
         min_size: Size { width: auto(), height: length(36.0) },
         margin: Rect { top: length(8.0), ..Rect::zero() },
         ..Default::default()
     }).unwrap();
     
     let list_price = taffy.new_leaf(Style {
-        size: Size { width: Dimension::Percent(1.0), height: auto() },
+        size: Size { width: Dimension::percent(1.0), height: auto() },
         min_size: Size { width: auto(), height: length(45.0) },
         margin: Rect { top: length(8.0), ..Rect::zero() },
         ..Default::default()
@@ -504,7 +504,7 @@ fn test_list_item_layout() {
         Style {
             size: Size { width: length(702.0), height: auto() },
             flex_direction: FlexDirection::Row,
-            align_items: Some(AlignItems::Center),
+            align_items: Some(AlignItems::CENTER),
             padding: Rect { top: length(16.0), bottom: length(16.0), ..Rect::zero() },
             ..Default::default()
         },
@@ -548,10 +548,10 @@ fn test_absolute_with_padding() {
         position: Position::Absolute,
         size: Size { width: length(50.0), height: length(20.0) },
         inset: Rect {
-            top: LengthPercentageAuto::Length(0.0),
-            right: LengthPercentageAuto::Auto,
-            bottom: LengthPercentageAuto::Auto,
-            left: LengthPercentageAuto::Length(0.0),
+            top: LengthPercentageAuto::length(0.0),
+            right: LengthPercentageAuto::auto(),
+            bottom: LengthPercentageAuto::auto(),
+            left: LengthPercentageAuto::length(0.0),
         },
         ..Default::default()
     }).unwrap();

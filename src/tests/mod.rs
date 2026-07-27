@@ -19,3 +19,4 @@ pub mod route_tests;
 pub mod event_tests;
 pub mod gif_tests;
 pub mod network_tests;
+pub mod inline_text_layout_tests;

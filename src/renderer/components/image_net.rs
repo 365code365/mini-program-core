@@ -156,15 +156,16 @@ fn fetch_bytes(url: &str) -> Option<Vec<u8>> {
         }
         return Some(bytes);
     }
-    use std::io::Read;
-    let resp = ureq::get(url)
-        .timeout(Duration::from_secs(15))
-        .call()
-        .ok()?;
-    let mut buf = Vec::new();
-    resp.into_reader()
-        .take(20 * 1024 * 1024)
-        .read_to_end(&mut buf)
+    // ureq 3：超时挪到 Agent 配置上，正文读取带上限（避免一张坏图把内存吃光）
+    let config = ureq::Agent::config_builder()
+        .timeout_global(Some(Duration::from_secs(15)))
+        .build();
+    let mut resp = ureq::Agent::new_with_config(config).get(url).call().ok()?;
+    let buf = resp
+        .body_mut()
+        .with_config()
+        .limit(20 * 1024 * 1024)
+        .read_to_vec()
         .ok()?;
     disk_put(url, &buf);
     Some(buf)

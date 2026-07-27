@@ -37,8 +37,8 @@ impl IconComponent {
         let icon_color = node.get_attr("color").and_then(|c| parse_color_str(c));
         
         // 检查 CSS 是否定义了尺寸
-        let has_custom_size = !matches!(ts.size.width, Dimension::Auto) || 
-                              !matches!(ts.size.height, Dimension::Auto);
+        let has_custom_size = !dim_is_auto(ts.size.width) || 
+                              !dim_is_auto(ts.size.height);
         
         // 只在 CSS 没有定义尺寸时使用 size 属性
         if !has_custom_size {

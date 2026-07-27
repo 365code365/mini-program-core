@@ -51,11 +51,44 @@ pub fn natural_line_height_px_for(text: &str, font_px: f32) -> f32 {
         })
 }
 
+// ── taffy 尺寸值的读取 ──
+//
+// taffy 0.12 起 `Dimension` / `LengthPercentage(Auto)` 不再是枚举，而是包着
+// `CompactLength`（把 tag 塞进 f32 低位的位压缩表示）的不透明结构 —— 省内存、
+// 但也意味着**不能再 match**。这里把「读值」收成三个判据，免得每个调用点各写一遍
+// tag 比较，将来再换表示也只改这里。
+
+/// `Dimension` 是不是 `auto`
+#[inline]
+pub fn dim_is_auto(d: Dimension) -> bool {
+    d.is_auto()
+}
+
+/// `Dimension` 是绝对长度时取出像素值
+#[inline]
+pub fn dim_length(d: Dimension) -> Option<f32> {
+    (d.tag() == CompactLength::LENGTH_TAG).then(|| d.value())
+}
+
+/// `Dimension` 是百分比时取出比例（0~1，注意不是 0~100）
+#[inline]
+pub fn dim_percent(d: Dimension) -> Option<f32> {
+    (d.tag() == CompactLength::PERCENT_TAG).then(|| d.value())
+}
+
+/// `LengthPercentageAuto` 是绝对长度时取出像素值
+#[inline]
+pub fn lpa_length(v: LengthPercentageAuto) -> Option<f32> {
+    let raw = v.into_raw();
+    (raw.tag() == CompactLength::LENGTH_TAG).then(|| raw.value())
+}
+
 /// 从 taffy 的 LengthPercentage 取出长度像素（百分比/auto 记 0）。
 pub fn length_px(v: LengthPercentage) -> f32 {
-    match v {
-        LengthPercentage::Length(px) => px,
-        _ => 0.0,
+    if v.into_raw().tag() == CompactLength::LENGTH_TAG {
+        v.into_raw().value()
+    } else {
+        0.0
     }
 }
 
@@ -755,7 +788,7 @@ pub enum Axis {
 /// 写入一条 `top/right/bottom/left`。
 ///
 /// - 百分比 → `LengthPercentageAuto::Percent`，由布局引擎按包含块解析（CSS 语义）
-/// - `auto` → `LengthPercentageAuto::Auto`
+/// - `auto` → `LengthPercentageAuto::auto()`
 /// - 其它长度 → 像素
 ///
 /// 同时记录一份「相对视口」的像素值给 `position:fixed` 的固定层使用。
@@ -770,11 +803,11 @@ fn set_inset(
     let viewport = if axis == Axis::Horizontal { ctx.screen_width } else { ctx.screen_height };
     match value {
         StyleValue::Auto => {
-            *slot = LengthPercentageAuto::Auto;
+            *slot = LengthPercentageAuto::auto();
             *fixed_slot = None;
         }
         StyleValue::Length(n, LengthUnit::Percent) => {
-            *slot = LengthPercentageAuto::Percent(*n / 100.0);
+            *slot = LengthPercentageAuto::percent(*n / 100.0);
             *fixed_slot = Some(*n / 100.0 * viewport * sf);
         }
         _ => {
@@ -783,7 +816,7 @@ fn set_inset(
                 other => to_px(other, ctx.screen_width, viewport),
             };
             if let Some(px) = px {
-                *slot = LengthPercentageAuto::Length(px * sf);
+                *slot = LengthPercentageAuto::length(px * sf);
                 *fixed_slot = Some(px * sf);
             }
         }
@@ -808,7 +841,7 @@ pub fn to_px(v: &StyleValue, screen_width: f32, screen_height: f32) -> Option<f3
 /// 将 StyleValue 转换为 Dimension
 pub fn to_dimension(v: &StyleValue, screen_width: f32, screen_height: f32, sf: f32) -> Option<Dimension> {
     match v {
-        StyleValue::Auto => Some(Dimension::Auto),
+        StyleValue::Auto => Some(Dimension::auto()),
         StyleValue::Length(n, LengthUnit::Percent) => Some(percent(*n / 100.0)),
         _ => to_px(v, screen_width, screen_height).map(|px| length(px * sf)),
     }
@@ -926,8 +959,8 @@ pub fn build_base_style(
     // 与 H5 的差异从 5.4%/3.8% 恶化到 12.5%/10.2%）。
     // 高度不一样：父节点高度是 auto 时百分比没有参照物，会直接塌成 0。
     if ts.position == Position::Absolute && !ctx.has_positioned_ancestor {
-        if let Dimension::Percent(p) = ts.size.height {
-            ts.size.height = Dimension::Length(ctx.screen_height * ctx.scale_factor * p);
+        if let Some(p) = dim_percent(ts.size.height) {
+            ts.size.height = Dimension::length(ctx.screen_height * ctx.scale_factor * p);
         }
     }
 
@@ -1084,12 +1117,24 @@ fn apply_style_property(
                 match s.as_str() {
                     "none" => ts.display = Display::None,
                     "block" => {
-                        ts.display = Display::Flex;
+                        ts.display = Display::Block;
                         ns.is_block = true;
                     }
                     "flex" => ts.display = Display::Flex,
                     "grid" => ts.display = Display::Grid,
                     _ => ts.display = Display::Flex,
+                };
+            }
+            // `box-sizing`：决定 width/height 算的是内容盒还是边框盒。
+            //
+            // 从前这条属性被整条忽略（布局引擎里没有这个概念），于是写
+            // `box-sizing: content-box` 的元素会比浏览器窄一圈内边距 + 边框。
+            // 两端的缺省都是 `border-box`（编译出的 H5 里有 `*{box-sizing:border-box}`，
+            // 布局引擎的缺省也是它），所以只有显式写 content-box 的地方会变。
+            "box-sizing" => if let StyleValue::String(s) = value {
+                ts.box_sizing = match s.as_str() {
+                    "content-box" => BoxSizing::ContentBox,
+                    _ => BoxSizing::BorderBox,
                 };
             }
             "flex-direction" => if let StyleValue::String(s) = value {
@@ -1113,52 +1158,52 @@ fn apply_style_property(
                 ts.flex_grow = v;
                 // flex: <number> implies flex-grow: <number>, flex-shrink: 1, flex-basis: 0
                 ts.flex_shrink = 1.0;
-                ts.flex_basis = Dimension::Length(0.0);
+                ts.flex_basis = Dimension::length(0.0);
             }
             "flex-shrink" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.flex_shrink = v; }
             "flex-basis" => if let Some(v) = to_dimension(value, ctx.screen_width, ctx.screen_height, sf) { ts.flex_basis = v; }
             "justify-content" => if let StyleValue::String(s) = value {
                 ts.justify_content = Some(match s.as_str() {
-                    "center" => JustifyContent::Center,
-                    "space-between" => JustifyContent::SpaceBetween,
-                    "space-around" => JustifyContent::SpaceAround,
-                    "space-evenly" => JustifyContent::SpaceEvenly,
-                    "flex-end" | "end" => JustifyContent::FlexEnd,
-                    "flex-start" | "start" => JustifyContent::FlexStart,
-                    _ => JustifyContent::FlexStart,
+                    "center" => JustifyContent::CENTER,
+                    "space-between" => JustifyContent::SPACE_BETWEEN,
+                    "space-around" => JustifyContent::SPACE_AROUND,
+                    "space-evenly" => JustifyContent::SPACE_EVENLY,
+                    "flex-end" | "end" => JustifyContent::FLEX_END,
+                    "flex-start" | "start" => JustifyContent::FLEX_START,
+                    _ => JustifyContent::FLEX_START,
                 });
             }
             "align-items" => if let StyleValue::String(s) = value {
                 let align = match s.as_str() {
-                    "center" => AlignItems::Center,
-                    "flex-end" | "end" => AlignItems::FlexEnd,
-                    "flex-start" | "start" => AlignItems::FlexStart,
-                    "stretch" => AlignItems::Stretch,
-                    "baseline" => AlignItems::Baseline,
-                    _ => AlignItems::FlexStart,
+                    "center" => AlignItems::CENTER,
+                    "flex-end" | "end" => AlignItems::FLEX_END,
+                    "flex-start" | "start" => AlignItems::FLEX_START,
+                    "stretch" => AlignItems::STRETCH,
+                    "baseline" => AlignItems::BASELINE,
+                    _ => AlignItems::FLEX_START,
                 };
                 ts.align_items = Some(align);
             }
             "align-self" => if let StyleValue::String(s) = value {
                 ts.align_self = Some(match s.as_str() {
-                    "center" => AlignSelf::Center,
-                    "flex-end" | "end" => AlignSelf::FlexEnd,
-                    "flex-start" | "start" => AlignSelf::FlexStart,
-                    "stretch" => AlignSelf::Stretch,
-                    "baseline" => AlignSelf::Baseline,
-                    _ => AlignSelf::Start,
+                    "center" => AlignSelf::CENTER,
+                    "flex-end" | "end" => AlignSelf::FLEX_END,
+                    "flex-start" | "start" => AlignSelf::FLEX_START,
+                    "stretch" => AlignSelf::STRETCH,
+                    "baseline" => AlignSelf::BASELINE,
+                    _ => AlignSelf::START,
                 });
             }
             "align-content" => if let StyleValue::String(s) = value {
                 ts.align_content = Some(match s.as_str() {
-                    "center" => AlignContent::Center,
-                    "flex-end" | "end" => AlignContent::FlexEnd,
-                    "flex-start" | "start" => AlignContent::FlexStart,
-                    "stretch" => AlignContent::Stretch,
-                    "space-between" => AlignContent::SpaceBetween,
-                    "space-around" => AlignContent::SpaceAround,
-                    "space-evenly" => AlignContent::SpaceEvenly,
-                    _ => AlignContent::FlexStart,
+                    "center" => AlignContent::CENTER,
+                    "flex-end" | "end" => AlignContent::FLEX_END,
+                    "flex-start" | "start" => AlignContent::FLEX_START,
+                    "stretch" => AlignContent::STRETCH,
+                    "space-between" => AlignContent::SPACE_BETWEEN,
+                    "space-around" => AlignContent::SPACE_AROUND,
+                    "space-evenly" => AlignContent::SPACE_EVENLY,
+                    _ => AlignContent::FLEX_START,
                 });
             }
             "gap" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { 

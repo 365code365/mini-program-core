@@ -35,8 +35,8 @@ impl CheckboxComponent {
             .unwrap_or(Color::from_hex(0x09BB07));
         
         // 检查 CSS 是否定义了尺寸
-        let has_custom_size = !matches!(ts.size.width, Dimension::Auto) || 
-                              !matches!(ts.size.height, Dimension::Auto);
+        let has_custom_size = !dim_is_auto(ts.size.width) || 
+                              !dim_is_auto(ts.size.height);
         let has_custom_bg = ns.background_color.is_some();
         let has_custom_border = ns.border_color.is_some();
         let has_custom_radius = ns.border_radius > 0.0;
@@ -51,10 +51,10 @@ impl CheckboxComponent {
         
         // 默认居中对齐
         if ts.justify_content.is_none() {
-            ts.justify_content = Some(JustifyContent::Center);
+            ts.justify_content = Some(JustifyContent::CENTER);
         }
         if ts.align_items.is_none() {
-            ts.align_items = Some(AlignItems::Center);
+            ts.align_items = Some(AlignItems::CENTER);
         }
         
         // 只在 CSS 没有定义时使用微信默认颜色
@@ -79,10 +79,10 @@ impl CheckboxComponent {
         // 存储 visual_size 用于绘制
         ns.border_width = if has_custom_size {
             // 如果有自定义尺寸，使用较小的那个作为 visual_size
-            match (&ts.size.width, &ts.size.height) {
-                (Dimension::Length(w), Dimension::Length(h)) => w.min(*h) * 0.6,
-                (Dimension::Length(w), _) => *w * 0.6,
-                (_, Dimension::Length(h)) => *h * 0.6,
+            match (dim_length(ts.size.width), dim_length(ts.size.height)) {
+                (Some(w), Some(h)) => w.min(h) * 0.6,
+                (Some(w), None) => w * 0.6,
+                (None, Some(h)) => h * 0.6,
                 _ => visual_size,
             }
         } else {

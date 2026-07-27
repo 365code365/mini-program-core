@@ -247,8 +247,8 @@ impl ImageComponent {
         let mode = node.get_attr("mode").unwrap_or("scaleToFill");
         
         // 检查 CSS 是否定义了尺寸和样式
-        let has_custom_width = !matches!(ts.size.width, Dimension::Auto);
-        let has_custom_height = !matches!(ts.size.height, Dimension::Auto);
+        let has_custom_width = !dim_is_auto(ts.size.width);
+        let has_custom_height = !dim_is_auto(ts.size.height);
         let has_custom_bg = ns.background_color.is_some();
         let has_custom_radius = ns.border_radius > 0.0 || 
                                 ns.border_radius_tl.is_some() ||

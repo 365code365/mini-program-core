@@ -135,34 +135,52 @@ fn perform(
     body: &str,
     timeout: Duration,
 ) -> NetResponse {
-    let agent = ureq::AgentBuilder::new()
-        .timeout(timeout)
+    let config = ureq::Agent::config_builder()
+        .timeout_global(Some(timeout))
         // 跟随重定向：微信的 request 默认也跟
-        .redirects(5)
+        .max_redirects(5)
+        // **4xx/5xx 不当错误**：微信里它们照样走 success 回调，只是 statusCode 不是 2xx。
+        // ureq 3 默认把状态码当 Err（2.x 是 `Error::Status(code, resp)` 带着响应），
+        // 关掉这个开关才能拿到响应体 —— 否则接口返回 400 + 错误详情时，
+        // 页面只能看到一句 request:fail，看不到服务端说了什么。
+        .http_status_as_error(false)
         .build();
-    let mut req = agent.request(method, url);
+    let agent = ureq::Agent::new_with_config(config);
+
+    let mut req = ureq::http::Request::builder()
+        .method(method)
+        .uri(url);
     let mut has_content_type = false;
     for (k, v) in headers {
         if k.eq_ignore_ascii_case("content-type") {
             has_content_type = true;
         }
-        req = req.set(k, v);
+        req = req.header(k, v);
     }
     // 微信的默认 content-type 是 application/json
     if !has_content_type && !body.is_empty() {
-        req = req.set("content-type", "application/json");
+        req = req.header("content-type", "application/json");
     }
-
-    let result = if body.is_empty() {
-        req.call()
+    let built = if body.is_empty() {
+        req.body(String::new())
     } else {
-        req.send_string(body)
+        req.body(body.to_string())
+    };
+    let request = match built {
+        Ok(r) => r,
+        Err(e) => {
+            return NetResponse {
+                id: 0,
+                status: 0,
+                headers: Vec::new(),
+                body: String::new(),
+                error: Some(format!("request:fail {}", e)),
+            }
+        }
     };
 
-    match result {
+    match agent.run(request) {
         Ok(resp) => collect(resp, None),
-        // HTTP 错误码（4xx/5xx）在微信里**仍然走 success**，只是 statusCode 不是 2xx
-        Err(ureq::Error::Status(_, resp)) => collect(resp, None),
         Err(e) => NetResponse {
             id: 0,
             status: 0,
@@ -173,15 +191,22 @@ fn perform(
     }
 }
 
-fn collect(resp: ureq::Response, error: Option<String>) -> NetResponse {
-    let status = resp.status();
+fn collect(mut resp: ureq::http::Response<ureq::Body>, error: Option<String>) -> NetResponse {
+    let status = resp.status().as_u16();
     let headers: Vec<(String, String)> = resp
-        .headers_names()
-        .into_iter()
-        .filter_map(|n| resp.header(&n).map(|v| (n.to_lowercase(), v.to_string())))
+        .headers()
+        .iter()
+        .filter_map(|(n, v)| v.to_str().ok().map(|v| (n.as_str().to_lowercase(), v.to_string())))
         .collect();
-    // 读不出正文时给空串而不是报错：微信在这种情况下也会回 success + 空 data
-    let body = resp.into_string().unwrap_or_default();
+    // 读不出正文时给空串而不是报错：微信在这种情况下也会回 success + 空 data。
+    // `lossy_utf8` 让非 UTF-8 的响应也能读出来（替换非法字节），
+    // 而不是整个正文丢成空串。
+    let body = resp
+        .body_mut()
+        .with_config()
+        .lossy_utf8(true)
+        .read_to_string()
+        .unwrap_or_default();
     NetResponse { id: 0, status, headers, body, error }
 }
 

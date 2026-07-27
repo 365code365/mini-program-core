@@ -7,6 +7,8 @@
 //! 数据没变（滚动、动画帧、按压）就直接复用上一次的树。
 
 use super::*;
+// taffy 0.12 的尺寸值是位压缩结构，读值走这几个封装（见 components::base）
+use crate::renderer::components::{dim_is_auto, dim_percent, lpa_length};
 
 impl WxmlRenderer {
     /// 需要时重建布局树，并返回这次数据变化的重绘范围（见 [`FramePlan`]）。
@@ -175,10 +177,12 @@ impl WxmlRenderer {
     /// 宽度解析换行与高度；其它叶子沿用各自 Style 里的显式尺寸（known dimensions）。
     pub(super) fn compute_with_text(&self, taffy: &mut Tree, root: NodeId, available: Size<AvailableSpace>) {
         let tr = self.text_renderer.as_deref();
+        // taffy 0.12 的度量回调多了一个 `&Style` 参数（叶子自己的样式），
+        // 文本度量用不到它 —— 换行只取决于「已知尺寸 + 可用宽度」。
         let _ = taffy.compute_layout_with_measure(
             root,
             available,
-            |known, avail, _id, ctx: Option<&mut TextMeasure>| match ctx {
+            |known, avail, _id, ctx: Option<&mut TextMeasure>, _style| match ctx {
                 Some(tm) => measure_text_node(known, avail, tm, tr),
                 None => Size {
                     width: known.width.unwrap_or(0.0),
@@ -222,17 +226,18 @@ impl WxmlRenderer {
                 if st.position != Position::Absolute {
                     continue;
                 }
-                let target = match st.size.height {
+                // taffy 0.12 起这些尺寸值是位压缩结构、不能 match，用读值判据代替
+                let target = if let Some(p) = dim_percent(st.size.height) {
                     // `height: 50%` → 按包含块折算
-                    Dimension::Percent(p) => Some(child_cb * p),
+                    Some(child_cb * p)
+                } else if dim_is_auto(st.size.height) {
                     // `top/bottom` 都给了而高度 auto：高度 = 包含块高 - top - bottom
-                    Dimension::Auto => match (st.inset.top, st.inset.bottom) {
-                        (LengthPercentageAuto::Length(t), LengthPercentageAuto::Length(b)) => {
-                            Some((child_cb - t - b).max(0.0))
-                        }
+                    match (lpa_length(st.inset.top), lpa_length(st.inset.bottom)) {
+                        (Some(t), Some(b)) => Some((child_cb - t - b).max(0.0)),
                         _ => None,
-                    },
-                    _ => None,
+                    }
+                } else {
+                    None
                 };
                 if let Some(h) = target {
                     let cur = taffy.layout(child.taffy_node).map(|l| l.size.height).unwrap_or(0.0);
@@ -454,10 +459,10 @@ impl WxmlRenderer {
                             .unwrap_or(false);
                         ts.flex_direction = if vertical { FlexDirection::Column } else { FlexDirection::Row };
                         ts.flex_wrap = FlexWrap::NoWrap;
-                        if matches!(ts.size.width, Dimension::Auto) {
+                        if dim_is_auto(ts.size.width) {
                             ts.size.width = percent(1.0);
                         }
-                        if matches!(ts.size.height, Dimension::Auto) {
+                        if dim_is_auto(ts.size.height) {
                             ts.size.height = length(SwiperComponent::DEFAULT_HEIGHT * ctx.scale_factor);
                         }
                         // 每个 item 占满一屏且不收缩（对齐 HTML .wx-swiper-item{flex:0 0 100%}）
@@ -474,15 +479,23 @@ impl WxmlRenderer {
                     
                     // 对于 scroll-view，使用 Overflow::Visible 让子节点能够正确布局
                     // 裁剪在渲染时通过 canvas.clip_rect 处理
+                    //
+                    // 试过按 CSS 的滚动容器建模（`Overflow::Scroll`，与编译出的 H5 的
+                    // `overflow-y:auto` 一致），图的是「滚动容器的自动最小尺寸为 0」这条
+                    // 规则 —— 那样一行里的 scroll-view 就不会因为内部内容很宽而挤压兄弟。
+                    // **结论是不能这么做**：本引擎的页面画布高度来自内容高，而滚动容器
+                    // 不把内容尺寸往外传，于是「整页套一个 height:100% 的 scroll-view」
+                    // 这种写法（uni-app 产物的常见结构）整页塌成空白 ——
+                    // 实测 tea-app 21 个页面只剩下底部 tab。
                     if tag == "scroll-view" {
                         ts.overflow.x = taffy::style::Overflow::Visible;
                         ts.overflow.y = taffy::style::Overflow::Visible;
-                        
+
                         // 检查是否是横向滚动
                         let scroll_x = node.get_attr("scroll-x")
                             .map(|s| s == "true" || s == "{{true}}")
                             .unwrap_or(false);
-                        
+
                         if scroll_x {
                             // 横向滚动：子元素横向排列
                             ts.flex_direction = FlexDirection::Row;

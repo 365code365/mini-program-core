@@ -44,7 +44,7 @@ impl RichTextComponent {
         // 富文本容器：行内排列 + 允许换行，模拟 inline 文本流
         ts.flex_direction = FlexDirection::Row;
         ts.flex_wrap = FlexWrap::Wrap;
-        ts.align_items = Some(AlignItems::Baseline);
+        ts.align_items = Some(AlignItems::BASELINE);
 
         let measure_ls = 0.0;
         let mut children: Vec<RenderNode> = Vec::new();

@@ -73,8 +73,8 @@ fn test_category_item_layout() {
         Style {
             size: Size { width: length(180.0), height: auto() },
             flex_direction: FlexDirection::Row,
-            justify_content: Some(JustifyContent::SpaceBetween),
-            align_items: Some(AlignItems::Center),
+            justify_content: Some(JustifyContent::SPACE_BETWEEN),
+            align_items: Some(AlignItems::CENTER),
             padding: Rect {
                 top: length(28.0),
                 right: length(16.0),
@@ -164,7 +164,7 @@ fn test_product_item_layout() {
     let quantity_control = taffy.new_with_children(
         Style {
             flex_direction: FlexDirection::Row,
-            align_items: Some(AlignItems::Center),
+            align_items: Some(AlignItems::CENTER),
             ..Default::default()
         },
         &[minus_btn, quantity, plus_btn],
@@ -174,8 +174,8 @@ fn test_product_item_layout() {
     let product_bottom = taffy.new_with_children(
         Style {
             flex_direction: FlexDirection::Row,
-            justify_content: Some(JustifyContent::SpaceBetween),
-            align_items: Some(AlignItems::Center),
+            justify_content: Some(JustifyContent::SPACE_BETWEEN),
+            align_items: Some(AlignItems::CENTER),
             margin: Rect { top: length(16.0), ..Rect::zero() },
             ..Default::default()
         },
@@ -273,7 +273,7 @@ fn test_cart_bar_layout() {
         Style {
             flex_grow: 1.0,
             flex_direction: FlexDirection::Row,
-            align_items: Some(AlignItems::Center),
+            align_items: Some(AlignItems::CENTER),
             ..Default::default()
         },
         &[cart_icon, cart_info],
@@ -290,7 +290,7 @@ fn test_cart_bar_layout() {
         Style {
             size: Size { width: length(750.0), height: length(100.0) },
             flex_direction: FlexDirection::Row,
-            align_items: Some(AlignItems::Center),
+            align_items: Some(AlignItems::CENTER),
             padding: Rect {
                 top: length(0.0),
                 right: length(24.0),
@@ -362,7 +362,7 @@ fn test_cart_popup_item_layout() {
     let qty_control = taffy.new_with_children(
         Style {
             flex_direction: FlexDirection::Row,
-            align_items: Some(AlignItems::Center),
+            align_items: Some(AlignItems::CENTER),
             ..Default::default()
         },
         &[minus, qty, plus],
@@ -373,7 +373,7 @@ fn test_cart_popup_item_layout() {
         Style {
             size: Size { width: length(750.0), height: auto() },
             flex_direction: FlexDirection::Row,
-            align_items: Some(AlignItems::Center),
+            align_items: Some(AlignItems::CENTER),
             padding: Rect {
                 top: length(24.0),
                 right: length(24.0),
@@ -437,8 +437,8 @@ fn test_nested_flex_layout() {
     let row = taffy.new_with_children(
         Style {
             flex_direction: FlexDirection::Row,
-            align_items: Some(AlignItems::Center),
-            justify_content: Some(JustifyContent::SpaceBetween),
+            align_items: Some(AlignItems::CENTER),
+            justify_content: Some(JustifyContent::SPACE_BETWEEN),
             size: Size { width: length(300.0), height: auto() },
             ..Default::default()
         },
@@ -565,7 +565,7 @@ fn test_align_self_override() {
     // 有 align-self 的子元素
     let child2 = taffy.new_leaf(Style {
         size: Size { width: length(50.0), height: length(30.0) },
-        align_self: Some(AlignSelf::FlexEnd),
+        align_self: Some(AlignSelf::FLEX_END),
         ..Default::default()
     }).unwrap();
     
@@ -573,7 +573,7 @@ fn test_align_self_override() {
         Style {
             size: Size { width: length(200.0), height: length(100.0) },
             flex_direction: FlexDirection::Row,
-            align_items: Some(AlignItems::Center),
+            align_items: Some(AlignItems::CENTER),
             ..Default::default()
         },
         &[child1, child2],

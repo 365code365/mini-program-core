@@ -86,7 +86,7 @@ impl TextComponent {
         // display:block 或居中/右对齐且宽度未显式指定：交给 taffy 文本度量。
         // 度量提供 min-content / max-content，使文本在定宽父级按容器换行、在收缩父级
         // 撑到内容宽——两种 CSS 语义都成立，无需 percent+min-width 的 hack（会破坏定宽换行）。
-        let use_measure = matches!(ts.size.width, Dimension::Auto)
+        let use_measure = dim_is_auto(ts.size.width)
             && (ns.is_block || matches!(ns.text_align, TextAlign::Center | TextAlign::Right));
         if use_measure {
             let min_unit_width = min_unit_width(&text_content, measure_font, font_size, letter_spacing, measure_bold);
@@ -116,10 +116,23 @@ impl TextComponent {
         }
 
         // 否则（inline 文本或显式宽度）：用内容宽 + 按内容宽估算换行行数设定显式盒高。
-        if matches!(ts.size.width, Dimension::Auto) {
+        if dim_is_auto(ts.size.width) {
             ts.size.width = length(content_w);
+            // 靠内容定宽的行内文本**不参与收缩**。
+            //
+            // taffy 0.12 开始严格执行 flex 项的自动最小宽度（`min-width:auto` = min-content），
+            // 于是「一行里几段文本加起来略微超过容器宽」时，收缩量会落到这些定宽文本上，
+            // 把它们压窄、绘制期折行、还溢出容器（弹窗优惠券行里的「立即领取」就是这样）。
+            //
+            // 浏览器里这些文本本来就能压到 min-content（中文一个字），但我们把它们建成了
+            // **定宽叶子**（min-content == max-content == 整行宽），所以「谁该被压」的分配
+            // 从一开始就和浏览器不同。两条路可选：让文本真正可压（需要文字度量与 Chrome
+            // 完全对齐，否则 1px 的度量误差就会让标题突然折行 —— 实测首页差异 4.1%→13.0%），
+            // 或者让它们不参与收缩、宁可溢出。这里选后者：溢出只影响这一处，
+            // 而误折行会让整页排版跳掉。
+            ts.flex_shrink = 0.0;
         }
-        let avail_w = if let Dimension::Length(px) = ts.size.width {
+        let avail_w = if let Some(px) = dim_length(ts.size.width) {
             (px - pad_l - pad_r).max(1.0)
         } else {
             f32::MAX

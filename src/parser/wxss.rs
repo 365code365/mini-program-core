@@ -1181,6 +1181,15 @@ impl WxssParser {
                 (n, Some(u))
             } else if let Ok(n) = (*tok).parse::<f32>() {
                 (n, None)
+            } else if tok.starts_with("env(") {
+                // `env(safe-area-inset-*)` 记 0：渲染视口是 375×667 的无刘海机型，
+                // 四边都没有安全区内缩（对比用的 Chrome 视口同样返回 0）。
+                //
+                // 从前整条 calc 因为这个 token 解析失败而被**丢弃**，属性等于没写 ——
+                // `height: calc(164rpx + env(safe-area-inset-bottom))` 这种写法
+                // （uni-app 产物里自定义 tabBar 的标准高度）在浏览器里算出 82px，
+                // 在我们这里退成 auto，高度全靠内容撑。
+                (0.0, None)
             } else {
                 return None;
             };

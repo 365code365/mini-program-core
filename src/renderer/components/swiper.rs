@@ -210,10 +210,10 @@ impl SwiperComponent {
             .unwrap_or(false);
         ts.flex_direction = if vertical { FlexDirection::Column } else { FlexDirection::Row };
         ts.flex_wrap = FlexWrap::NoWrap;
-        if matches!(ts.size.width, Dimension::Auto) {
+        if dim_is_auto(ts.size.width) {
             ts.size.width = percent(1.0);
         }
-        if matches!(ts.size.height, Dimension::Auto) {
+        if dim_is_auto(ts.size.height) {
             ts.size.height = length(Self::DEFAULT_HEIGHT * sf);
         }
 

@@ -1,5 +1,5 @@
 use crate::parser::wxml::WxmlNode;
-use crate::renderer::components::{build_base_style, ComponentContext};
+use crate::renderer::components::{build_base_style, dim_percent, ComponentContext};
 use crate::parser::wxss::StyleSheet;
 use taffy::prelude::*;
 
@@ -37,7 +37,7 @@ fn test_inline_style_parsing() {
     // 宽度仍交给布局引擎按包含块解析（父节点通常就是整宽）：
     // 只有**高度**的百分比会在无定位祖先时按视口折算，因为父节点 auto 高度时
     // 百分比没有参照物会塌成 0。
-    if let Dimension::Percent(p) = style.size.width {
+    if let Some(p) = dim_percent(style.size.width) {
         assert_eq!(p, 1.0);
     } else {
         panic!("Width should be percent, got {:?}", style.size.width);

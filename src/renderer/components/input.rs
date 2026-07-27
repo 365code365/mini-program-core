@@ -238,10 +238,10 @@ impl InputComponent {
         let is_textarea = node.tag_name == "textarea";
         
         // 检查 CSS 是否定义了样式
-        let has_custom_width = !matches!(ts.size.width, Dimension::Auto);
-        let has_custom_height = !matches!(ts.size.height, Dimension::Auto);
-        let has_custom_padding = !matches!(ts.padding.top, LengthPercentage::Length(0.0)) ||
-                                  !matches!(ts.padding.left, LengthPercentage::Length(0.0));
+        let has_custom_width = !dim_is_auto(ts.size.width);
+        let has_custom_height = !dim_is_auto(ts.size.height);
+        let has_custom_padding = !(length_px(ts.padding.top) == 0.0) ||
+                                  !(length_px(ts.padding.left) == 0.0);
         let has_custom_bg = ns.background_color.is_some();
         let has_custom_border = ns.border_color.is_some() || ns.border_width > 0.0;
         let has_custom_radius = ns.border_radius > 0.0;
