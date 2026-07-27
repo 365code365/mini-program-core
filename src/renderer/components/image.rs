@@ -169,11 +169,18 @@ fn load_image(src: &str) -> Option<Arc<ImageData>> {
         }
     }
 
-    let result = if src.starts_with("http://") || src.starts_with("https://") {
-        load_image_from_url(src)
-    } else {
-        load_image_from_file(src)
-    };
+    // 远程图走**异步**路径：绘制期只查表，没有就后台下载，本帧先画占位。
+    // 同步下载会把渲染线程钉在 HTTP 往返上（实测单张 276KB 的图 3.2s），
+    // 长列表里每滚出一张新图就卡一次 —— 这是「滑动很卡」的直接来源。
+    if src.starts_with("http://") || src.starts_with("https://") {
+        let url = src.to_string();
+        return super::image_net::get_or_fetch::<ImageData, _>(src, move |bytes| {
+            decode_with_animation(&url, bytes)
+        });
+    }
+
+    // 本地文件：读盘 + 解码很快，保持同步（也避免首帧闪空）
+    let result = load_image_from_file(src);
 
     // 存入缓存（Arc 共享，后续帧零拷贝取用）
     let result = result.map(Arc::new);
@@ -185,20 +192,6 @@ fn load_image(src: &str) -> Option<Arc<ImageData>> {
     }
 
     result
-}
-
-/// 从网络URL加载图片
-fn load_image_from_url(url: &str) -> Option<ImageData> {
-    // 使用 ureq 下载图片
-    let response = ureq::get(url)
-        .timeout(std::time::Duration::from_secs(10))
-        .call()
-        .ok()?;
-    
-    let mut bytes = Vec::new();
-    response.into_reader().take(10 * 1024 * 1024).read_to_end(&mut bytes).ok()?;
-    
-    decode_with_animation(url, &bytes)
 }
 
 /// 从本地文件加载图片（按宿主登记的小程序根目录解析包内绝对路径）

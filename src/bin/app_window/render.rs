@@ -43,6 +43,8 @@ pub fn present_to_buffer(
     has_tabbar: bool,
     tabbar_physical_height: u32,
     fixed_rows: Option<(u32, u32)>,
+    // 画布之外区域的填充色（取 `page { background-color }`）
+    page_bg: u32,
 ) {
     let pixels = canvas.pixels();
     let canvas_width = canvas.width();
@@ -50,8 +52,9 @@ pub fn present_to_buffer(
     
     let content_area_height = buffer_height - if has_tabbar { tabbar_physical_height } else { 0 };
     
-    // 背景色 (0xF5F5F5)
-    let bg_color: u32 = 0xF5F5F5;
+    // 画布之外（内容不足一屏、或回弹露出的部分）用页面底色填，
+    // 写死浅灰会在暖色底的应用上露出一条突兀的灰边
+    let bg_color: u32 = page_bg;
     
     let copy_width = buffer_width.min(canvas_width) as usize;
     

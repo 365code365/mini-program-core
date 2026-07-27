@@ -104,7 +104,7 @@ impl WxmlRenderer {
         
         let mut render_nodes = Vec::new();
         for (sib_i, node) in rendered.iter().enumerate() {
-            if let Some(rn) = self.build_tree(&mut taffy, node, &[], &InheritedText::default(), sib_i, rendered.len()) {
+            if let Some(rn) = self.build_tree(&mut taffy, node, &[], &InheritedText::default(), sib_i, rendered.len(), false) {
                 render_nodes.push(rn);
             }
         }

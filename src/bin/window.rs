@@ -261,6 +261,8 @@ impl MiniAppWindow {
             || self.app.has_active_timers()
             // 有请求在飞：必须继续出帧，否则响应回来了没人去取（页面永远停在加载态）
             || self.app.has_pending_network()
+            // 有远程图片在下载：同理，下完要有一帧把它画出来
+            || mini_render::renderer::components::image_net::has_pending()
             || self.toast.as_ref().map(|t| t.visible).unwrap_or(false)
             || self.loading.as_ref().map(|l| l.visible).unwrap_or(false)
             || self.modal.as_ref().map(|m| m.visible).unwrap_or(false)
@@ -314,6 +316,14 @@ impl MiniAppWindow {
         self.reap_picker_sheet();
         if mini_render::renderer::components::advance_due_swipers() {
             self.needs_redraw = true;
+        }
+        if self.app.take_network_dirty() {
+            self.needs_redraw = true;
+            self.page_data_dirty = true;
+        }
+        if mini_render::renderer::components::image_net::take_dirty() {
+            self.needs_redraw = true;
+            self.fixed_dirty = true;
         }
         if !self.viewport_inside_drawn_band() {
             self.needs_redraw = true;
@@ -631,11 +641,18 @@ impl MiniAppWindow {
                 }
             }
         };
+        // 页面底色以 `page { background-color }` 为准（微信语义），拿不到才退回默认灰。
+        // 写死 #F5F5F5 会让在 page 上定义暖色底的应用整体色调都不对。
+        let page_bg = self
+            .renderer
+            .as_ref()
+            .and_then(|r| r.page_style().background)
+            .unwrap_or(Color::from_hex(0xF5F5F5));
         let mut content_height = 0.0f32;
         if let Some(canvas) = &mut self.canvas {
             match &damage {
-                Some(rect) => canvas.clear_area(rect, Color::from_hex(0xF5F5F5)),
-                None => canvas.clear_band(band_y0, band_y1, Color::from_hex(0xF5F5F5)),
+                Some(rect) => canvas.clear_area(rect, page_bg),
+                None => canvas.clear_band(band_y0, band_y1, page_bg),
             }
             if let Some(renderer) = &mut self.renderer {
                 renderer.set_damage_clip(damage);
@@ -663,7 +680,7 @@ impl MiniAppWindow {
                 self.canvas = Some(Canvas::new((LOGICAL_WIDTH as f64 * self.scale_factor) as u32, required_height));
                 if let Some(page) = self.page_stack.last() {
                     if let (Some(canvas), Some(renderer)) = (&mut self.canvas, &mut self.renderer) {
-                        canvas.clear_band(band_y0, band_y1, Color::from_hex(0xF5F5F5));
+                        canvas.clear_band(band_y0, band_y1, page_bg);
                         renderer.render_with_scroll_and_viewport(canvas, &page.wxml_nodes, &page_data, &mut self.interaction, scroll_offset, viewport_height);
                     }
                 }
@@ -780,6 +797,13 @@ impl MiniAppWindow {
         let has_tabbar = self.is_tabbar_page(&page.path);
         let (toast_state, loading_state, modal_state) = (self.toast.clone(), self.loading.clone(), self.modal.clone());
         let picker_state = self.picker_sheet.clone();
+        // 画布之外的填充色同样取 page 底色，避免露出突兀的灰边
+        let present_bg = self
+            .renderer
+            .as_ref()
+            .and_then(|r| r.page_style().background)
+            .map(|c| ((c.r as u32) << 16) | ((c.g as u32) << 8) | c.b as u32)
+            .unwrap_or(0xF5F5F5);
         
         if let (Some(window), Some(surface)) = (&self.window, &mut self.surface) {
             let size = window.inner_size();
@@ -798,7 +822,7 @@ impl MiniAppWindow {
                     present_to_buffer(&mut buffer, size.width, size.height, canvas, self.fixed_canvas.as_ref(), self.tabbar_canvas.as_ref(),
                         (self.scroll.get_position() * self.scale_factor as f32) as i32, has_tabbar,
                         if has_tabbar { (tabbar_height() as f64 * self.scale_factor) as u32 } else { 0 },
-                        self.fixed_rows);
+                        self.fixed_rows, present_bg);
                     // 下拉刷新指示器画在页面之上、Toast/Modal 之下
                     let gap = self.scroll.top_gap();
                     if gap > 0.5 || self.pull_refreshing {
@@ -1253,6 +1277,12 @@ impl ApplicationHandler for MiniAppWindow {
                     self.needs_redraw = true;
                     self.page_data_dirty = true;
                 }
+                // 远程图片下载完了：重绘一次让它出现（异步加载的必要配套 ——
+                // 不置脏的话图片只会在下一次别的原因触发重绘时才显示）
+                if mini_render::renderer::components::image_net::take_dirty() {
+                    self.needs_redraw = true;
+                    self.fixed_dirty = true;
+                }
                 
                 let mut pull_req: Option<bool> = None;
                 if evt::process_ui_events(&mut self.app, &mut self.toast, &mut self.loading, &mut self.modal, &mut pull_req) { self.needs_redraw = true; }
@@ -1612,6 +1642,12 @@ impl MiniAppWindow {
                 (LOGICAL_HEIGHT as f64 * scale) as u32,
             );
             let mut buffer = vec![0u32; (pw * ph) as usize];
+            let present_bg = self
+                .renderer
+                .as_ref()
+                .and_then(|r| r.page_style().background)
+                .map(|c| ((c.r as u32) << 16) | ((c.g as u32) << 8) | c.b as u32)
+                .unwrap_or(0xF5F5F5);
             // 导航之后当前页可能已不是入口 route
             let route = self.page_stack.last().map(|p| p.path.clone()).unwrap_or(route);
             let has_tabbar = self.is_tabbar_page(&route);
@@ -1622,6 +1658,7 @@ impl MiniAppWindow {
                     (self.scroll.get_position() * scale as f32) as i32, has_tabbar,
                     if has_tabbar { (tabbar_height() as f64 * scale) as u32 } else { 0 },
                     self.fixed_rows,
+                    present_bg,
                 );
             }
             let gap = self.scroll.top_gap();

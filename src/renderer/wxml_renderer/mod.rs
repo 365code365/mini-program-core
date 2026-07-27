@@ -162,6 +162,8 @@ mod interactions;
 mod invalidate;
 pub use invalidate::FramePlan;
 mod layout;
+mod page_style;
+pub use page_style::PageStyle;
 mod pressed;
 
 impl WxmlRenderer {

@@ -33,6 +33,7 @@ pub use radio::RadioComponent;
 pub use slider::SliderComponent;
 pub use input::InputComponent;
 pub use image::{ImageComponent, is_animated, animation_total_ms};
+pub mod image_net;
 pub use video::VideoComponent;
 pub use video::{
     has_playing_video, get_or_create_player, get_video_frame, get_video_progress,
@@ -78,6 +79,7 @@ impl ComponentRegistry {
             inherited: Default::default(),
             sibling_index: 0,
             sibling_count: 1,
+            has_positioned_ancestor: false,
         };
         
         match tag {

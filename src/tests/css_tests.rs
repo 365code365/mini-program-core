@@ -532,6 +532,7 @@ fn test_shorthand_longhand_cascade_is_deterministic() {
             inherited: Default::default(),
             sibling_index: 0,
             sibling_count: 1,
+            has_positioned_ancestor: false,
         };
         let (_ts, ns) = build_base_style(&node, &mut ctx);
         let c = ns.border_color.expect("border-color 应该落地");

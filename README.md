@@ -108,7 +108,7 @@ MINI_SCROLL_LOG=1 cargo run --release --bin mini-app-window -- sample-app
 # 关掉 setData 的增量失效（一律整帧）：用于逐像素对照验证，见 tools/damage-check.sh
 MINI_NO_DAMAGE=1 cargo run --release --bin mini-app-window -- sample-app
 # 网络请求日志（方法 / URL / 状态码 / 耗时）与 storage 读写日志
-MINI_NET_LOG=1 MINI_STORAGE_LOG=1 ./run.sh tea-app
+MINI_NET_LOG=1 MINI_STORAGE_LOG=1 MINI_IMG_LOG=1 ./run.sh tea-app
 ```
 
 > 「整帧归因」这一行是为了让性能问题能收敛：**「为什么这一帧又整屏重画了」如果只能靠猜就永远查不完**。它直接指出了首页每秒一顿的元凶是倒计时的 `setData`（每秒 1 次整帧），而不是当时以为的滚动或动画。
@@ -365,7 +365,7 @@ cargo run --bin mini-devserver      # 浏览器调试预览（见下节）
 cargo run --example video_player    # 独立视频播放窗口（自动循环 + 声音）
 cargo run --bin mini-app-window     # 窗口应用（默认加载 sample-app）
 
-# 5) 测试（237 个用例）
+# 5) 测试（243 个用例）
 cargo test
 ```
 
@@ -481,6 +481,45 @@ Vue 3 运行时 + 60 个 CommonJS 模块。跑通它需要三件事，都是引�
 >    不存在的分支。
 >
 > 顺带把 `real-sample`（微信官方 demo）也一起修活了：它挂在模块作用域这同一个原因上。
+
+### 远程图片必须异步加载
+
+`<image src="https://…">` 曾经是在**绘制期同步** `ureq::get` 的 —— 渲染线程直接卡在 HTTP
+往返上。实测 tea-app 首屏背景图 276KB / 3.2s，也就是那一帧卡 3.2 秒；长列表里每滚出
+一张新图就再卡一次。**这是「很多页面滑动很卡」的直接原因**，跟布局、光栅化都无关。
+
+而且失败结果被永久缓存成 `None`：网络抖一下，那张图这辈子都不会再出现（「图片没展示」）。
+
+`src/renderer/components/image_net.rs` 改成和浏览器一致的三段式：
+
+- 绘制期**只查表**，没有就登记「下载中」并立刻返回（本帧画占位），永不阻塞；
+- 后台线程下载 + **解码**（解码大图同样贵，不能放回渲染线程），完成后置脏，宿主重绘一帧；
+- 失败带**退避重试**（2s 起翻倍，上限 30s，最多 4 次），不再一次失败终身失败；
+- **磁盘缓存**（`target/mini-imgcache/`，URL 哈希命名 + 先写临时文件再重命名）：
+  同一张图第二次打开 6132ms → **11ms**。没有它，tea-app 那张 6 秒才下完的闪屏背景
+  永远来不及在 5 秒的闪屏里出现。
+
+有个配套细节容易漏：宿主必须在「有图在下载」时保持出帧、在「图下载完」时置脏重绘，
+否则图片下完了也要等下一次别的原因触发重绘才显示。
+
+### `page { … }` 与绝对定位的包含块
+
+两个让 tea-app「差距有点大」的渲染语义缺口：
+
+- **`page` 选择器之前完全被忽略**。页面底色写死 `#F5F5F5`，文字继承从内置默认值起步。
+  于是在 `page` 上定义暖米色底（`#f7f3ec`）+ 宋体 + 字号的应用，整体色调与字形全对不上。
+  现在 `page` 的 `background-color` 作为清屏色与画布外填充色，`color / font-size /
+  font-weight / line-height / letter-spacing / text-align` 作为继承链的起点。
+- **`position:absolute` 且没有定位祖先时，百分比高度按视口折算**。CSS 规则是「包含块为
+  最近的定位祖先，没有则是初始包含块（视口）」，而布局引擎只按父节点解析百分比 ——
+  父节点是 auto 高度时 `height:100%` 直接塌成 0，整屏铺底的背景图就此消失。
+
+> 这两条里第二条我先做过头了：一开始把**宽度**也按视口折算，结果 canvas 页与组件页
+> 与 H5 的差异从 5.4%/3.8% 恶化到 12.5%/10.2%。原因是元素的 `left/top` 偏移仍然相对父
+> 节点，只改尺寸不改偏移，窄父节点里的绝对定位元素就会「变宽但不移位」。
+> 还试过补一趟「根高度换成确定值」的布局来给百分比提供参照物，那会改变 flex 的分配规则，
+> 同样两页整页错位。两次都靠**逐字节快照基线**当场发现并回退了 —— 最终只保留
+> 「无定位祖先时按视口折算高度」这一条最小改动，15 页快照与基线逐字节一致、双端 4.66% 不变。
 
 ### 网络与缓存：让「拉数据 → 存起来 → 下次走缓存」真的成立
 
@@ -847,7 +886,7 @@ free(buf); mr_canvas_free(c);
 覆盖表达式引擎、WXSS 选择器（含 `var()`/`calc()`）、模板控制流、布局与文本换行、全组件渲染、Canvas 2D、交互、滚动/惯性、页面栈路由、组件模型、CommonJS 模块、Promise、生命周期、事件冒泡等：
 
 ```bash
-cargo test          # 237 个用例
+cargo test          # 243 个用例
 cargo test route    # 路由/页面栈/组件/模块/异步/生命周期
 cargo test canvas   # Canvas 2D 上下文与命令
 cargo test scroll   # 滚动与惯性

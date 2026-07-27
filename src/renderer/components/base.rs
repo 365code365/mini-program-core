@@ -124,6 +124,10 @@ pub struct NodeStyle {
     /// 在建树期算好，绘制期按需切换 —— 按压不触发重新布局，代价是
     /// 只有绘制类属性会生效（背景/颜色/透明度/transform）。
     pub pressed_style: Option<Box<NodeStyle>>,
+    /// 是否显式声明了 `position`（relative / absolute / fixed）。
+    /// 用来判断「定位祖先」——taffy 的默认 position 就是 Relative，
+    /// 光看它分不出 CSS 的 static 与 relative。
+    pub is_positioned: bool,
     /// `transition` 的时长与缓动（秒 / 三次贝塞尔控制点）。
     /// 只在「常态 ↔ 按压态」之间做插值，覆盖 CSS transition 的主要用法。
     pub transition: Option<TransitionSpec>,
@@ -348,6 +352,14 @@ pub struct ComponentContext<'a> {
     /// 当前元素在兄弟中的位置（0 起）与兄弟总数，用于结构性伪类匹配。
     pub sibling_index: usize,
     pub sibling_count: usize,
+    /// 祖先链里是否存在**定位祖先**（`position` 为 relative/absolute/fixed）。
+    ///
+    /// CSS 规则：`position:absolute` 元素的包含块是最近的定位祖先；一个都没有时
+    /// 是「初始包含块」，也就是**视口**。而布局引擎只会按父节点解析百分比，
+    /// 于是 `position:absolute; height:100%` 的铺底元素挂在 auto 高度的父节点下时
+    /// 会塌成 0（tea-app 闪屏的整屏背景图就是这么消失的）。
+    /// 有了这个标记，就能在没有定位祖先时把百分比按视口折算成确定像素。
+    pub has_positioned_ancestor: bool,
 }
 
 /// 组件 trait
@@ -818,6 +830,25 @@ pub fn build_base_style(
     // 无单位 line-height 在所有声明落地后统一按最终字号换算
     if let Some(scale) = ns.line_height_scale {
         ns.line_height = Some(ns.font_size * scale);
+    }
+
+    // ── 绝对定位的包含块修正（CSS 语义）──
+    //
+    // `position:absolute` 的包含块是「最近的定位祖先」，一个都没有时是**初始包含块**
+    // （视口）。布局引擎只会按父节点解析百分比，于是
+    // `.background{position:absolute;left:0;top:0;width:100%;height:100%}` 挂在
+    // 一个 auto 高度的父 view 下时，高度会塌成 0 —— 整屏铺底的背景图就此消失。
+    //
+    // 没有定位祖先时，这里把百分比尺寸按视口折算成确定像素，等价于把包含块换成视口。
+    // 只修**高度**：宽度按父节点解析本来就是对的（父节点通常就是整宽），
+    // 而且元素的 left/top 偏移仍然是相对父节点的 —— 把宽度也换成视口宽会让
+    // 「窄父节点里的绝对定位元素」既变宽又不移位，反而画错（实测 canvas/组件页
+    // 与 H5 的差异从 5.4%/3.8% 恶化到 12.5%/10.2%）。
+    // 高度不一样：父节点高度是 auto 时百分比没有参照物，会直接塌成 0。
+    if ts.position == Position::Absolute && !ctx.has_positioned_ancestor {
+        if let Dimension::Percent(p) = ts.size.height {
+            ts.size.height = Dimension::Length(ctx.screen_height * ctx.scale_factor * p);
+        }
     }
 
     // ── 按压态样式 ──
@@ -1362,14 +1393,17 @@ fn apply_style_property(
                 match s.as_str() {
                     "absolute" => {
                         ts.position = Position::Absolute;
+                        ns.is_positioned = true;
                     }
                     "fixed" => {
                         // fixed 定位：使用 absolute 让 Taffy 处理，但标记为 fixed
                         ts.position = Position::Absolute;
                         ns.is_fixed = true;
+                        ns.is_positioned = true;
                     }
                     "relative" => {
                         ts.position = Position::Relative;
+                        ns.is_positioned = true;
                     }
                     _ => ts.position = Position::Relative,
                 };

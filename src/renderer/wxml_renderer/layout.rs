@@ -42,8 +42,12 @@ impl WxmlRenderer {
         
         let mut render_nodes = Vec::new();
         
+        // `page { color / font-size / font-family … }` 是整页的文字基线，要作为
+        // 继承链的起点。之前从内置默认值起步，于是在 page 上定义字号/字色的应用
+        // 整体字形与色调都对不上。
+        let page = self.page_style();
         for (sib_i, node) in rendered.iter().enumerate() {
-            if let Some(rn) = self.build_tree(&mut taffy, node, &[], &InheritedText::default(), sib_i, rendered.len()) {
+            if let Some(rn) = self.build_tree(&mut taffy, node, &[], &page.inherited, sib_i, rendered.len(), false) {
                 render_nodes.push(rn);
             }
         }
@@ -51,9 +55,15 @@ impl WxmlRenderer {
         
         // 构建正常布局树（包含所有节点，fixed 元素也参与布局计算）
         let child_ids: Vec<NodeId> = render_nodes.iter().map(|n| n.taffy_node).collect();
+        let canvas_w = self.screen_width * self.scale_factor;
+        let viewport_h = viewport
+            .map(|(_, h)| h * self.scale_factor)
+            .filter(|h| *h > 1.0)
+            .or(page.explicit_height)
+            .unwrap_or(self.screen_height * self.scale_factor);
         let root = taffy.new_with_children(
             Style {
-                size: Size { width: length(self.screen_width * self.scale_factor), height: auto() },
+                size: Size { width: length(canvas_w), height: auto() },
                 flex_direction: FlexDirection::Column,
                 ..Default::default()
             },
@@ -66,6 +76,14 @@ impl WxmlRenderer {
         if self.correct_wrapped_text_heights(&mut taffy, &render_nodes) {
             self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT);
         }
+        // 注：根节点保持 `height: auto`（内容高驱动滚动）。
+        //
+        // 曾经试过再补一趟「把根高度换成 max(视口, 内容高) 的确定值」来给百分比高度
+        // 提供参照物，结果 flex 的分配规则跟着变了 —— canvas 页与组件页整页错位，
+        // 与 H5 的差异从 5.4%/3.8% 恶化到 12.5%/10.2%。已回退。
+        //
+        // 百分比高度塌成 0 的问题改在建树期解决：绝对定位元素在没有定位祖先时
+        // 按视口折算高度（见 `components::base` 里的包含块修正），不动布局结构。
         if log_timing {
             let ms = |a: std::time::Instant, b: std::time::Instant| (b - a).as_secs_f32() * 1000.0;
             eprintln!(
@@ -117,7 +135,7 @@ impl WxmlRenderer {
         let mut taffy = Tree::new();
         let mut render_nodes = Vec::new();
         for (sib_i, node) in rendered.iter().enumerate() {
-            if let Some(rn) = self.build_tree(&mut taffy, node, &[], &InheritedText::default(), sib_i, rendered.len()) {
+            if let Some(rn) = self.build_tree(&mut taffy, node, &[], &InheritedText::default(), sib_i, rendered.len(), false) {
                 render_nodes.push(rn);
             }
         }
@@ -206,7 +224,8 @@ impl WxmlRenderer {
         changed
     }
 
-    pub(super) fn build_tree(&self, taffy: &mut Tree, node: &WxmlNode, ancestors: &[ElementDesc], inherited: &InheritedText, sib_index: usize, sib_count: usize) -> Option<RenderNode> {
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn build_tree(&self, taffy: &mut Tree, node: &WxmlNode, ancestors: &[ElementDesc], inherited: &InheritedText, sib_index: usize, sib_count: usize, positioned_ancestor: bool) -> Option<RenderNode> {
         let sf = self.scale_factor;
         
         if node.node_type == WxmlNodeType::Text {
@@ -264,6 +283,7 @@ impl WxmlRenderer {
             inherited: inherited.clone(),
             sibling_index: sib_index,
             sibling_count: sib_count,
+            has_positioned_ancestor: positioned_ancestor,
         };
         
         let mut render_node = match tag {
@@ -321,9 +341,16 @@ impl WxmlRenderer {
                     letter_spacing: rn.style.letter_spacing,
                 };
                 
+                // 子节点是否「有定位祖先」：祖先链上已经有，或者**当前节点自己**被定位。
+                // 绝对定位元素的百分比包含块由此决定（见 base.rs 里的包含块修正）。
+                // `position: relative` 也算定位祖先（CSS 语义）。
+                // 不能问 taffy —— 它的默认 position 就是 Relative，分不出 static。
+                let self_positioned = rn.style.is_positioned;
+                let child_positioned = positioned_ancestor || self_positioned;
+
                 let mut children = vec![];
                 for (sib_ci, c) in node.children.iter().enumerate() {
-                    if let Some(cr) = self.build_tree(ctx.taffy, c, &child_ancestors, &child_inherited, sib_ci, node.children.len()) { 
+                    if let Some(cr) = self.build_tree(ctx.taffy, c, &child_ancestors, &child_inherited, sib_ci, node.children.len(), child_positioned) { 
                         children.push(cr); 
                     }
                 }
