@@ -272,6 +272,18 @@ impl TextComponent {
                 .or(TEXT_MEASURE_FONT.as_deref())
                 .map(|tr| tr.has_bold_face())
                 .unwrap_or(false);
+            // run 带上来源节点的 class：排查和回归用例都要靠它定位到具体这一段
+            let seg_attrs: std::collections::HashMap<String, String> = match child.node_type {
+                WxmlNodeType::Element => child
+                    .get_attr("class")
+                    .map(|c| {
+                        let mut m = std::collections::HashMap::new();
+                        m.insert("class".to_string(), c.to_string());
+                        m
+                    })
+                    .unwrap_or_default(),
+                _ => std::collections::HashMap::new(),
+            };
             for unit in crate::renderer::components::rich_text::split_wrappable(&seg_text) {
                 if unit.is_empty() {
                     continue;
@@ -299,7 +311,7 @@ impl TextComponent {
                 runs.push(RenderNode {
                     tag: "text".into(),
                     text: unit,
-                    attrs: std::collections::HashMap::new(),
+                    attrs: seg_attrs.clone(),
                     taffy_node: ctn,
                     style: seg_style.clone(),
                     children: vec![],
