@@ -243,6 +243,25 @@ impl WxmlRenderer {
         chain
     }
 
+    /// 命中点上**最内层**的那条绑定（不限事件类型）。
+    ///
+    /// 事件对象里的 `target` 指「真正被摸到的节点」，与「挂着处理函数的节点」
+    /// （`currentTarget`）是两回事：`touchend` 只绑在外层容器上时，
+    /// `target` 仍应是里面那个列表项 —— 页面靠 `e.target.dataset.id` 取行号。
+    /// 完全没有任何绑定的节点这里找不到（渲染层只留了绑定表），返回 None。
+    pub fn innermost_binding_at(&self, x: f32, y: f32, scope: Option<bool>) -> Option<EventBinding> {
+        let p = crate::Point::new(x, y);
+        self.event_bindings
+            .iter()
+            .filter(|b| scope.map(|s| b.is_fixed == s).unwrap_or(true) && b.bounds.contains(&p))
+            .min_by(|a, b| {
+                let area_a = a.bounds.width * a.bounds.height;
+                let area_b = b.bounds.width * b.bounds.height;
+                area_a.partial_cmp(&area_b).unwrap_or(std::cmp::Ordering::Equal)
+            })
+            .cloned()
+    }
+
     /// 命中点上是否存在该事件的 `catch` 绑定（含捕获阶段）。
     ///
     /// 手势层要用它：遮罩上的 `catchtouchmove` 就是「不许滚动下层页面」的标准写法。

@@ -320,6 +320,30 @@ impl InteractionManager {
         })
     }
 
+    /// 命中点上**最内层的可滚区域**（面积最小的那个 scroll-view）。
+    ///
+    /// 手势仲裁要的是「这一下可能交给谁滚」，而 `hit_test` 只会给出最上层的元素 ——
+    /// 卡片、按钮盖在 scroll-view 上面时它返回的是卡片，于是整页只会走页面滚动，
+    /// 真正装着内容的 scroll-view 一动不动。
+    pub fn hit_test_scroll_area(&self, x: f32, y: f32, fixed: bool) -> Option<&InteractiveElement> {
+        self.elements
+            .iter()
+            .filter(|e| {
+                e.is_fixed == fixed
+                    && e.interaction_type == InteractionType::ScrollArea
+                    && !e.disabled
+                    && x >= e.bounds.x
+                    && x <= e.bounds.x + e.bounds.width
+                    && y >= e.bounds.y
+                    && y <= e.bounds.y + e.bounds.height
+            })
+            .min_by(|a, b| {
+                let area_a = a.bounds.width * a.bounds.height;
+                let area_b = b.bounds.width * b.bounds.height;
+                area_a.partial_cmp(&area_b).unwrap_or(std::cmp::Ordering::Equal)
+            })
+    }
+
     /// 只在正常流的元素里做命中测试（坐标是内容坐标，即已加上页面滚动量）
     pub fn hit_test_flow(&self, x: f32, y: f32) -> Option<&InteractiveElement> {
         self.elements.iter().rev().find(|e| {

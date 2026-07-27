@@ -112,6 +112,7 @@ pub fn handle_mouse_released(
 }
 
 /// 处理内容区域点击
+#[allow(clippy::too_many_arguments)]
 pub fn handle_content_click(
     x: f32,
     y: f32,
@@ -122,6 +123,8 @@ pub fn handle_content_click(
     app: &mut MiniApp,
     scale_factor: f64,
     text_renderer: Option<&mini_render::text::TextRenderer>,
+    // tap_ctx: 本次 tap 所属触点的标识与页面时间戳（写进事件对象）
+    tap_ctx: (u32, u64),
 ) -> Option<InteractionResult> {
     let actual_y = y + scroll_pos;
     let tabbar_y = if has_tabbar { (LOGICAL_HEIGHT - tabbar_height()) as f32 } else { LOGICAL_HEIGHT as f32 };
@@ -133,13 +136,11 @@ pub fn handle_content_click(
     //
     // 从前是「拿全局 hit_test 的结果，再用 bounds 是否落在视口内来猜它是不是 fixed」——
     // 页面顶部的普通元素同样满足这个条件，于是弹窗弹着也能点到底下的商品。
-    let mut fixed_binding = None;
+    let mut on_fixed_with_handler = false;
     if let Some(renderer) = renderer {
         if renderer.fixed_layer_hit(x, y) {
-            let chain = renderer.hit_test_bubble_fixed(x, y, "tap");
-            if let Some(b) = chain.first() {
-                fixed_binding = Some((b.event_type.clone(), b.handler.clone(), b.data.clone(), b.bounds));
-            } else {
+            on_fixed_with_handler = !renderer.dispatch_chain(x, y, "tap", Some(true)).is_empty();
+            if !on_fixed_with_handler {
                 // 落在覆盖层上但这一点没有处理器：消费掉，不往下透
                 return interaction.handle_click_scoped(x, y, true);
             }
@@ -147,31 +148,23 @@ pub fn handle_content_click(
     }
     let _ = tabbar_y;
     
-    if let Some((event_type, handler, data, _bounds)) = fixed_binding {
+    if on_fixed_with_handler {
         // 检查交互元素（视口坐标，且只看覆盖层自己的元素）
-        if let Some(result) = interaction.handle_click_scoped(x, y, true) {
-            let should_call_js = matches!(&result, 
+        let result = interaction.handle_click_scoped(x, y, true);
+        let dispatch_tap = match &result {
+            Some(r) => matches!(r,
                 InteractionResult::ButtonClick { .. } |
                 InteractionResult::Toggle { .. } |
                 InteractionResult::Select { .. }
-            );
-            
-            if should_call_js {
-                println!("👆 {} -> {}", event_type, handler);
-                let data_json = serde_json::to_string(&data).unwrap_or("{}".to_string());
-                let call_code = format!("__callPageMethod('{}', {})", handler, data_json);
-                app.eval(&call_code).ok();
+            ),
+            None => true, // 没有交互元素：这是一次普通 tap
+        };
+        if dispatch_tap {
+            if let Some(renderer) = renderer {
+                dispatch_tap_chain(app, renderer, x, y, Some(true), tap_ctx);
             }
-            
-            return Some(result);
         }
-        
-        // 如果没有交互元素，直接调用事件处理
-        println!("👆 {} -> {}", event_type, handler);
-        let data_json = serde_json::to_string(&data).unwrap_or("{}".to_string());
-        let call_code = format!("__callPageMethod('{}', {})", handler, data_json);
-        app.eval(&call_code).ok();
-        return None;
+        return result;
     }
     
     // 检查是否点击在 scroll-view 内部，如果是，需要调整坐标
@@ -261,16 +254,31 @@ pub fn handle_content_click(
         }
     }
     
-    // 检查其他事件绑定 —— 使用冒泡链分发（bindtap 冒泡，catchtap 阻止）
+    // 其余情况：按微信语义的捕获→冒泡链派发 tap
     if let Some(renderer) = renderer {
-        let chain = renderer.hit_test_bubble(x, adjusted_y, "tap");
-        for binding in &chain {
-            println!("👆 {} -> {} (bubble)", binding.event_type, binding.handler);
-            let data_json = serde_json::to_string(&binding.data).unwrap_or("{}".to_string());
-            let call_code = format!("__callPageMethod('{}', {})", binding.handler, data_json);
-            app.eval(&call_code).ok();
-        }
+        dispatch_tap_chain(app, renderer, x, adjusted_y, Some(false), tap_ctx);
     }
     
     None
+}
+
+/// 把一次 tap 交给统一的事件派发出口（捕获→冒泡、catch、mut-bind、完整事件对象）。
+/// `hit_y` 是对应坐标系下的纵坐标（覆盖层用视口坐标，正常流含滚动偏移）。
+fn dispatch_tap_chain(
+    app: &mut MiniApp,
+    renderer: &WxmlRenderer,
+    x: f32,
+    hit_y: f32,
+    scope: Option<bool>,
+    tap_ctx: (u32, u64),
+) {
+    let (identifier, time_ms) = tap_ctx;
+    // tap 的 detail 是点击点坐标（微信语义）
+    let detail = serde_json::json!({ "x": x, "y": hit_y });
+    let hit = super::super::touch::dispatch_to_js(
+        app, renderer, "tap", (x, hit_y), (x, hit_y), scope, identifier, time_ms, detail,
+    );
+    if hit {
+        println!("👆 tap");
+    }
 }

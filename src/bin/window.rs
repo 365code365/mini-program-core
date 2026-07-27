@@ -84,6 +84,24 @@ struct MiniAppWindow {
     next_frame_at: Instant,
     /// 最近一次滚动位置发生变化的时刻（裁剪余量按它自适应）
     last_scroll_at: Option<Instant>,
+    /// 拖动手势仲裁：方向锁定 / 选定滚动目标 / 嵌套传递（见 app_window::gesture）
+    gesture: Option<app_window::gesture::DragGesture>,
+    /// 这次触摸是用来「停住惯性滚动」的：抬手时不该再算一次点击
+    /// （iOS/微信里滑动列表时点一下只是停住，不会激活那一项）
+    tap_stops_fling: bool,
+    /// 触摸序列状态机：把窗口指针事件变成微信语义的
+    /// touchstart/touchmove/touchend/touchcancel/longpress/tap
+    touch: app_window::touch::TouchTracker,
+    /// 按下瞬间的页面滚动位置：用来判断「滚动是否已经接管这次触摸」
+    scroll_pos_at_press: f32,
+    /// 当前页面打开的时刻（事件对象的 `timeStamp` 是「页面打开至今的毫秒数」）
+    page_opened_at: Instant,
+    /// 正在进行的左边缘侧滑返回（跟手位移 + 松手收尾动画）
+    edge_back: Option<app_window::edge_back::EdgeBack>,
+    /// 页面栈里**被覆盖的那些页**离开时留下的视口像素。
+    /// 侧滑时下面那一页要真的显示出来，而它已经不是当前页、渲染器里也没有它了。
+    /// 约定：`back_shots[i]` 对应 `page_stack[i]`（只对被覆盖的页有值）。
+    back_shots: Vec<app_window::edge_back::PageShot>,
     /// 这一帧必须**整帧**重绘，不许被 setData 的增量失效范围收窄。
     ///
     /// 远程图片下载完成属于「内容变了但数据没变」：`setData` 的失效范围算不出它，
@@ -217,6 +235,13 @@ impl MiniAppWindow {
             next_frame_at: now,
             last_scroll_at: None,
             fixed_dirty: true,
+            gesture: None,
+            tap_stops_fling: false,
+            touch: app_window::touch::TouchTracker::new(),
+            scroll_pos_at_press: 0.0,
+            page_opened_at: now,
+            edge_back: None,
+            back_shots: Vec::new(),
             force_full_redraw: false,
             frame_gap_max_ms: 0.0,
             frame_gap_min_ms: f32::MAX,
@@ -273,6 +298,8 @@ impl MiniAppWindow {
         scrolling
             || sv_scroll
             || css_anim
+            // 侧滑返回的收尾动画（推出去/滑回来）要连续出帧
+            || self.edge_back.as_ref().map(|e| e.is_settling()).unwrap_or(false)
             || self.interaction.has_focused_input()
             || self.pull_refreshing // 指示器要持续转
             // 有自动播放的 swiper：即使页面没有 JS 定时器也要按刷新率醒着，
@@ -345,6 +372,13 @@ impl MiniAppWindow {
             self.needs_redraw = true;
             self.fixed_dirty = true;
             self.force_full_redraw = true;
+        }
+        // 长按由帧驱动（同 RedrawRequested）：无头链路也要能测到 longpress
+        if self.touch.is_active() {
+            let clock = self.touch_clock_ms();
+            let outs = self.touch.tick(clock);
+            let (mx, my) = self.mouse_pos;
+            self.dispatch_touch_events(&outs, mx, my);
         }
         if !self.viewport_inside_drawn_band() {
             self.needs_redraw = true;
@@ -505,6 +539,8 @@ impl MiniAppWindow {
         print_js_output(&self.app);
         
         self.page_stack.push(PageInstance { path: path.to_string(), query, wxml_nodes, stylesheet, component_templates });
+        // 事件对象的 timeStamp 以「页面打开」为零点（微信语义）
+        self.page_opened_at = Instant::now();
         // 换页必须重取数据快照：新页面的 onLoad 里可能一次 setData 都没有，
         // 那样缓存里还是上一页的数据。
         self.page_data_dirty = true;
@@ -530,6 +566,8 @@ impl MiniAppWindow {
         // 离开当前页：先给它 onUnload
         self.app.eval("if(__currentPage && __currentPage.onUnload) __currentPage.onUnload()").ok();
         self.page_stack.pop();
+        // 回到的这一页要重新渲染，它离开时留下的那张图用完即弃
+        self.back_shots.pop();
         self.interaction.clear_page_state();
         
         if let Some(page) = self.page_stack.last() {
@@ -541,6 +579,16 @@ impl MiniAppWindow {
                 self.app.eval("__popPage(1)").ok();
             }
             self.app.eval("if(__currentPage && __currentPage.onShow) __currentPage.onShow()").ok();
+            // 自定义组件的实例要重建：往前走的时候 `navigate_to` 调过
+            // `__resetPageComponents()`，把**上一页**的组件实例也一起作废了。
+            // 不重建的话返回后组件模板里全是空值 —— tea-app 从二级页返回首页，
+            // 底部那条 tab（自定义组件）整条消失，正是这个原因。
+            let comps = self.pages.get(&path).map(|i| i.components.clone()).unwrap_or_default();
+            if !comps.is_empty() {
+                let nodes = self.page_stack.last().map(|p| p.wxml_nodes.clone()).unwrap_or_default();
+                self.app.eval("__resetPageComponents()").ok();
+                app_window::component_mount::mount_page_components(&mut self.app, &comps, &nodes);
+            }
             print_js_output(&self.app);
             
             let has_tabbar = self.is_tabbar_page(&path);
@@ -559,6 +607,7 @@ impl MiniAppWindow {
     
     fn switch_tab(&mut self, path: &str) -> Result<(), String> {
         self.page_stack.clear();
+        self.back_shots.clear();
         self.interaction.clear_page_state();
         // 切 tab 会销毁原页面栈（微信语义），逻辑层的栈也要一起清，否则越切越长
         self.app.eval("__resetPageStack()").ok();
@@ -886,12 +935,527 @@ impl MiniAppWindow {
                     if let Some(sheet) = &picker_state {
                         picker_sheet::render(&mut buffer, size.width, size.height, self.scale_factor as f32, sheet, self.text_renderer.as_deref());
                     }
+                    // 左边缘侧滑返回：整帧右移，左边露出上一页。
+                    // 放在最后（覆盖层之上）——被推走的是「整个页面」，页面自己的
+                    // 弹窗、Toast 跟着一起走才对；不然弹窗会诡异地钉在原处。
+                    if let Some(eb) = &self.edge_back {
+                        let off = (eb.offset() * self.scale_factor as f32).round() as u32;
+                        app_window::edge_back::compose(
+                            &mut buffer, size.width, size.height, off,
+                            self.back_shots.last(), eb.progress(),
+                        );
+                    }
                     buffer.present().ok();
                 }
             }
         }
     }
     
+    /// 上屏缓冲的像素尺寸（无头模式下没有窗体，按逻辑尺寸 × 缩放推算）
+    fn viewport_pixels(&self) -> (u32, u32) {
+        if let Some(w) = &self.window {
+            let s = w.inner_size();
+            if s.width > 0 && s.height > 0 {
+                return (s.width, s.height);
+            }
+        }
+        (
+            (LOGICAL_WIDTH as f64 * self.scale_factor) as u32,
+            (LOGICAL_HEIGHT as f64 * self.scale_factor) as u32,
+        )
+    }
+
+    /// 把当前这一帧（页面 + tabBar + fixed 覆盖层）合成到一张离屏像素表。
+    ///
+    /// 侧滑返回时下面那一页必须真的显示出来，而那时它已经不是当前页 ——
+    /// 渲染器、交互表、滚动位置全都换成新页了，没法重新画。所以在**它被覆盖的那一刻**
+    /// 留一张图；用的是 `present_to_buffer` 本身，和真正上屏的合成结果逐像素一致。
+    fn capture_viewport(&self) -> Option<app_window::edge_back::PageShot> {
+        let canvas = self.canvas.as_ref()?;
+        let page = self.page_stack.last()?;
+        let has_tabbar = self.is_tabbar_page(&page.path);
+        let (w, h) = self.viewport_pixels();
+        if w == 0 || h == 0 {
+            return None;
+        }
+        let present_bg = self
+            .renderer
+            .as_ref()
+            .and_then(|r| r.page_style().background)
+            .map(|c| ((c.r as u32) << 16) | ((c.g as u32) << 8) | c.b as u32)
+            .unwrap_or(0xF5F5F5);
+        let mut pixels = vec![present_bg; (w as usize) * (h as usize)];
+        present_to_buffer(
+            &mut pixels, w, h, canvas, self.fixed_canvas.as_ref(), self.tabbar_canvas.as_ref(),
+            (self.scroll.get_position() * self.scale_factor as f32) as i32, has_tabbar,
+            if has_tabbar { (tabbar_height() as f64 * self.scale_factor) as u32 } else { 0 },
+            self.fixed_rows, present_bg,
+        );
+        Some(app_window::edge_back::PageShot { width: w, height: h, pixels })
+    }
+
+    // ── 无头输入：与交互窗体走同一条链路 ──
+    //
+    // 脚本化的输入必须复用真实链路（触摸状态机 + 滚动/交互处理 + 事件派发），
+    // 否则「无头能过、真机不行」——测的就不是同一套东西。
+
+    /// 模拟按下（与交互窗体同一条链路）
+    fn sim_press(&mut self, x: f32, y: f32) {
+        self.mouse_pos = (x, y);
+        self.on_pointer_press(x, y);
+    }
+
+    /// 模拟移动
+    fn sim_move(&mut self, x: f32, y: f32) {
+        self.on_pointer_move(x, y);
+    }
+
+    /// 模拟抬起
+    fn sim_release(&mut self, x: f32, y: f32) {
+        self.mouse_pos = (x, y);
+        self.on_pointer_release(x, y);
+    }
+
+    /// 指针按下：交互窗体与无头模拟共用这一条链路（此前两边各写一套，
+    /// 于是「无头能过、真机不一样」）。
+    fn on_pointer_press(&mut self, x: f32, y: f32) {
+        let ts = self.touch_clock_ms();
+        let _ = ts;
+
+            self.click_start_pos = self.mouse_pos;
+            self.click_start_time = Instant::now();
+            
+            // picker 面板在最上层，先于弹窗/页面吃事件
+            if self.handle_picker_sheet_press(x, y) { return; }
+            if self.modal.as_ref().map(|m| m.visible).unwrap_or(false) { self.handle_modal_press(x, y); return; }
+            if self.loading.as_ref().map(|l| l.visible).unwrap_or(false) { return; }
+            
+            let has_tabbar = self.page_stack.last().map(|p| self.is_tabbar_page(&p.path)).unwrap_or(false);
+            let tabbar_y = if has_tabbar { (LOGICAL_HEIGHT - tabbar_height()) as f32 } else { LOGICAL_HEIGHT as f32 };
+            if has_tabbar && y >= tabbar_y { return; }
+
+            // 惯性滚动中按下：先把它停住，并且**这一下不算点击** ——
+            // iOS/微信里滑动的列表点一下只是停住，不会激活那一项。
+            self.tap_stops_fling = self.stop_running_flings();
+            // 触摸序列先起来：`touchstart` 要在宿主决定怎么处理这次按下**之前**
+            // 就派发出去（微信语义），页面自己实现的手势才拿得到起点。
+            self.scroll_pos_at_press = self.scroll.get_position();
+            let clock = self.touch_clock_ms();
+            let outs = self.touch.press(x, y, clock);
+            self.dispatch_touch_events(&outs, x, y);
+
+            let actual_y = y + self.scroll.get_position();
+            // 落在 `position: fixed` 覆盖层上（弹窗/遮罩）：按压与拖动都不允许穿透。
+            // 覆盖层内部自己的可交互元素（fixed 的滚动区、按钮）由下面的
+            // hit_test 分支处理 —— 它本来就先查 fixed 元素。
+            let on_fixed_layer = self
+                .renderer
+                .as_ref()
+                .map(|r| r.fixed_layer_hit(x, y))
+                .unwrap_or(false);
+            
+            // 输入框内点击
+            if let Some(focused) = &self.interaction.focused_input {
+                let b = focused.bounds;
+                if (x >= b.x && x <= b.x + b.width && y >= b.y - self.scroll.get_position() && y <= b.y + b.height - self.scroll.get_position()) ||
+                   (x >= b.x && x <= b.x + b.width && actual_y >= b.y && actual_y <= b.y + b.height) {
+                    if let Some(tr) = &self.text_renderer {
+                        let sf = self.scale_factor as f32;
+                        let cw: Vec<f32> = focused.value.chars().map(|c| tr.measure_text(&c.to_string(), 16.0 * sf)).collect();
+                        let cp = mini_render::ui::interaction::calculate_cursor_position(&focused.value, &cw, (x - b.x) * sf, 12.0 * sf, focused.text_offset);
+                        self.interaction.prepare_text_selection(cp);
+                        self.needs_redraw = true;
+                        if let Some(w) = &self.window { w.request_redraw(); }
+                        return;
+                    }
+                }
+            }
+            
+            // 交互元素
+            // 覆盖层之上：只允许命中覆盖层自己的元素（is_fixed），
+            // 下层页面的元素一律不参与，避免「弹窗弹着还能按到底下的商品」
+            let hit = if on_fixed_layer {
+                self.interaction.hit_test(x, y).filter(|el| el.is_fixed).cloned()
+            } else {
+                self.interaction.hit_test(x, y).or_else(|| self.interaction.hit_test(x, actual_y)).cloned()
+            };
+            if let Some(el) = hit {
+                use mini_render::ui::interaction::InteractionType;
+                // 任何可点元素都进入按压态（`:active` / `hover-class` 靠它生效），
+                // 滚动区域除外 —— 那是拖动不是按压
+                if !el.disabled && el.interaction_type != InteractionType::ScrollArea {
+                    self.interaction.set_button_pressed(el.id.clone(), el.bounds);
+                    self.needs_redraw = true;
+                    self.fixed_dirty = true; // 按压的可能是覆盖层里的元素
+                }
+                match el.interaction_type {
+                    InteractionType::Slider if !el.disabled => {
+                        let ty = if el.is_fixed { y } else { actual_y };
+                        if let Some(r) = self.interaction.handle_click(x, ty) {
+                            handle_interaction_result(&r, self.window.as_ref(), self.renderer.as_ref(), &mut self.app, &mut self.clipboard, self.scroll.get_position(), self.scale_factor);
+                            self.needs_redraw = true;
+                            if let Some(w) = &self.window { w.request_redraw(); }
+                        }
+                        return;
+                    }
+                    InteractionType::Button if !el.disabled => {
+                        self.interaction.set_button_pressed(el.id.clone(), el.bounds);
+                        self.needs_redraw = true;
+                        if let Some(w) = &self.window { w.request_redraw(); }
+                    }
+                    _ => {}
+                }
+            }
+
+            // ── 拖动的归属**不在按下时决定** ──
+            //
+            // 微信/浏览器都是等第一次明显位移、按主方向定：横向 scroll-view 里竖着划
+            // 应该滚页面，纵向列表里横着划则谁也不动。按下就把手势交给命中的容器
+            // （旧实现）会让横滑卡片吃掉整页的纵向滑动。
+            let candidate = self.scroll_candidate_at(x, y, on_fixed_layer);
+            let catch_move = self
+                .renderer
+                .as_ref()
+                .map(|r| {
+                    let hy = if on_fixed_layer { y } else { actual_y };
+                    r.has_catch_for(x, hy, "touchmove")
+                })
+                .unwrap_or(false);
+            let page_scrollable = !on_fixed_layer
+                && !self.interaction.is_dragging_slider()
+                && self.scroll.get_max_scroll() > 0.5;
+            // 左边缘侧滑返回：起点在触发区、栈里还有上一页、且没盖着覆盖层。
+            // 栈底（tab 首页）没有这个手势 —— 微信里在首页往右划什么也不会发生。
+            let allow_edge_back = app_window::edge_back::EdgeBack::at_edge(x)
+                && self.page_stack.len() > 1
+                && !on_fixed_layer
+                && self.edge_back.is_none();
+            self.gesture = Some(
+                app_window::gesture::DragGesture::new((x, y), candidate, catch_move, page_scrollable)
+                    .allow_edge_back(allow_edge_back),
+            );
+    }
+
+    /// 按下点处最内层的可滚区域（id + 它的滚动轴），供方向锁定决策
+    fn scroll_candidate_at(
+        &self,
+        x: f32,
+        y: f32,
+        on_fixed_layer: bool,
+    ) -> Option<(String, app_window::gesture::Axis)> {
+        use mini_render::ui::scroll_controller::ScrollDirection;
+        let actual_y = y + self.scroll.get_position();
+        // 要的是**最内层的可滚区域**，不是最上层的元素：卡片/按钮盖在 scroll-view 上面时
+        // 普通命中测试返回的是卡片，于是真正装内容的 scroll-view 永远得不到手势。
+        let el = if on_fixed_layer {
+            self.interaction.hit_test_scroll_area(x, y, true).cloned()
+        } else {
+            self.interaction
+                .hit_test_scroll_area(x, actual_y, false)
+                .or_else(|| self.interaction.hit_test_scroll_area(x, y, false))
+                .cloned()
+        }?;
+        let axis = match self.interaction.get_scroll_controller(&el.id).map(|c| c.get_direction()) {
+            Some(ScrollDirection::Horizontal) => app_window::gesture::Axis::Horizontal,
+            Some(ScrollDirection::Vertical) => app_window::gesture::Axis::Vertical,
+            // 控制器还没建出来时按元素声明的方向
+            None if el.is_horizontal => app_window::gesture::Axis::Horizontal,
+            None => app_window::gesture::Axis::Vertical,
+        };
+        Some((el.id, axis))
+    }
+
+    /// 指针抬起
+    fn on_pointer_release(&mut self, x: f32, y: f32) {
+
+            // Released
+            // picker 面板在最上层，先于弹窗/页面吃事件
+            if self.handle_picker_sheet_release(x, y) { return; }
+            if self.modal.as_ref().map(|m| m.visible && m.pressed_button.is_some()).unwrap_or(false) {
+                self.handle_modal_release(x, y);
+                return;
+            }
+            
+            self.interaction.clear_button_pressed();
+            self.fixed_dirty = true;
+            let was_sel = self.interaction.is_dragging_selection();
+            self.interaction.end_text_selection();
+            if was_sel { self.needs_redraw = true; if let Some(w) = &self.window { w.request_redraw(); } return; }
+            
+            if let Some(id) = self.interaction.dragging_scroll_area.take() {
+                if let Some(c) = self.interaction.get_scroll_controller_mut(&id) { c.end_drag(); }
+                self.needs_redraw = true;
+                if let Some(w) = &self.window { w.request_redraw(); }
+            }
+            
+            if let Some(r) = self.interaction.handle_mouse_release() {
+                handle_interaction_result(&r, self.window.as_ref(), self.renderer.as_ref(), &mut self.app, &mut self.clipboard, self.scroll.get_position(), self.scale_factor);
+            }
+            
+            let anim = self.scroll.end_drag();
+            // 侧滑返回：松手进收尾动画（推到底真返回 / 不够阈值滑回去），
+            // 由 tick_edge_back 逐帧推进
+            if let Some(eb) = &mut self.edge_back { eb.release(); }
+            self.gesture = None;
+            // 触摸序列收尾：`touchend` 照常派发；tap 只在「没移动过、没被滚动接管、
+            // 也不是用来停惯性」时才有 —— **不再有 300ms 上限**
+            // （微信里按住两秒再松手同样是一次 tap，旧实现按久一点就点不动，
+            // 手上就是「点了没反应」）。
+            let clock = self.touch_clock_ms();
+            let outs = self.touch.release(x, y, clock);
+            self.touch.finish();
+            self.dispatch_touch_events(&outs, x, y);
+            let stopped_fling = std::mem::take(&mut self.tap_stops_fling);
+            if outs.contains(&app_window::touch::TouchOut::Tap) && !stopped_fling {
+                self.handle_click(x, y);
+            }
+            
+            self.needs_redraw = true;
+            if let Some(w) = &self.window { w.request_redraw(); }
+            if anim { if let Some(w) = &self.window { w.request_redraw(); } }
+    }
+
+    /// 指针移动：文本选择/滑块等交给交互层，滚动交给手势仲裁，再派发 touchmove。
+    fn on_pointer_move(&mut self, x: f32, y: f32) {
+        self.mouse_pos = (x, y);
+        // 文本选择、滑块拖动这些「非滚动」的拖拽仍由交互层处理；
+        // 滚动不再由它推进（改由手势仲裁决定谁滚、往哪滚）
+        if evt::handle_cursor_moved(
+            x, y, &mut self.interaction, &mut self.scroll, self.text_renderer.as_deref(),
+            self.window.as_ref(), self.renderer.as_ref(), &mut self.app, &mut self.clipboard,
+            self.scale_factor,
+        ) {
+            self.needs_redraw = true;
+        }
+        self.apply_gesture_move(x, y);
+        // 触摸序列：先 `touchmove`，如果这一下已经被滚动接管，再补一次
+        // `touchcancel`（手势竞争的失败方要收到 cancel，页面自己的拖拽才知道收尾）
+        if self.touch.is_active() {
+            let clock = self.touch_clock_ms();
+            let outs = self.touch.move_to(x, y, clock);
+            self.dispatch_touch_events(&outs, x, y);
+            if self.scroll_took_over() {
+                let outs = self.touch.cancel();
+                self.dispatch_touch_events(&outs, x, y);
+            }
+        }
+    }
+
+    /// 停掉正在跑的惯性/回弹（页面与所有 scroll-view）。返回是否真的停了什么。
+    fn stop_running_flings(&mut self) -> bool {
+        let mut stopped = false;
+        if self.scroll.is_animating() {
+            self.scroll.stop();
+            stopped = true;
+        }
+        for c in self.interaction.scroll_controllers.values_mut() {
+            if c.is_animating() {
+                c.stop();
+                stopped = true;
+            }
+        }
+        if stopped {
+            self.needs_redraw = true;
+        }
+        stopped
+    }
+
+    /// 把手势仲裁的结果落到滚动控制器上（方向锁定 + 嵌套传递都在这里生效）
+    fn apply_gesture_move(&mut self, x: f32, y: f32) {
+        use app_window::gesture::{Axis, GestureAction};
+        let ts = self.touch_clock_ms();
+        let Some(mut g) = self.gesture.take() else { return };
+        let before_target = g.target().clone();
+        let mut action = g.on_move(x, y);
+        if before_target != *g.target() && std::env::var("MINI_SCROLL_LOG").is_ok() {
+            eprintln!("🖐 手势归属：{:?} -> {:?}", before_target, g.target());
+        }
+        loop {
+            match action {
+                GestureAction::None => break,
+                GestureAction::BeginArea { ref id, axis } => {
+                    let (sx, sy) = g.start();
+                    // 这个 scroll-view 根本没有滚动控制器（内容不足一屏，压根不用滚）：
+                    // 直接把手势交给页面，否则手指划在它上面时整页都不动 ——
+                    // 「短列表挡住整页滚动」正是这么来的。
+                    let cannot_scroll = self
+                        .interaction
+                        .get_scroll_controller(id)
+                        .map(|c| c.get_max_scroll() <= 0.5)
+                        .unwrap_or(true);
+                    if cannot_scroll {
+                        if std::env::var("MINI_SCROLL_LOG").is_ok() {
+                            let max = self
+                                .interaction
+                                .get_scroll_controller(id)
+                                .map(|c| c.get_max_scroll());
+                            eprintln!("🖐 {} 不可滚（max_scroll={:?}）→ 交给页面", id, max);
+                        }
+                        action = g.handoff_to_page();
+                        continue;
+                    }
+                    if let Some(c) = self.interaction.get_scroll_controller_mut(id) {
+                        // 从**按下点**开始拖：锁定那一刻内容不该跳一下
+                        c.begin_drag(if axis == Axis::Horizontal { sx } else { sy }, ts);
+                        c.update_drag(if axis == Axis::Horizontal { x } else { y }, ts);
+                    }
+                    self.interaction.dragging_scroll_area = Some(id.clone());
+                    self.needs_redraw = true;
+                    break;
+                }
+                GestureAction::UpdateArea { ref id, axis } => {
+                    if let Some(c) = self.interaction.get_scroll_controller_mut(id) {
+                        c.update_drag(if axis == Axis::Horizontal { x } else { y }, ts);
+                    }
+                    // 内层到边界后还在往同一方向推 → 把这次手势交给页面继续
+                    // （手指往下推时内容已经到顶、往上推时已经到底）。
+                    // 不能用「位置没变」判断：控制器有橡皮筋越界，到边界后位置照样在动。
+                    let (_, dy) = g.delta();
+                    let keep_pushing = self
+                        .interaction
+                        .get_scroll_controller(id)
+                        .map(|c| {
+                            c.get_max_scroll() <= 0.5
+                                || (c.is_at_top() && dy > 0.0)
+                                || (c.is_at_bottom() && dy < 0.0)
+                        })
+                        .unwrap_or(true);
+                    self.needs_redraw = true;
+                    if axis == Axis::Vertical && keep_pushing {
+                        if let Some(id) = self.interaction.dragging_scroll_area.take() {
+                            if let Some(c) = self.interaction.get_scroll_controller_mut(&id) {
+                                c.end_drag();
+                            }
+                        }
+                        action = g.handoff_to_page();
+                        continue;
+                    }
+                    break;
+                }
+                GestureAction::BeginPage => {
+                    let (_, ly) = g.last();
+                    self.scroll.begin_drag(ly, ts);
+                    self.scroll.update_drag(y, ts);
+                    // 注意：**页面滚动不置 needs_redraw**。整页内容已经画在长画布上，
+                    // 滚动只是换一条切片上屏；置脏会让每一帧都整页重绘
+                    // （实测首页拖动 3.7ms → 6.5ms，等于把「滚动不重绘」这条优化废掉）。
+                    self.last_scroll_at = Some(Instant::now());
+                    break;
+                }
+                GestureAction::UpdatePage => {
+                    self.scroll.update_drag(y, ts);
+                    self.last_scroll_at = Some(Instant::now());
+                    break;
+                }
+                GestureAction::BeginEdgeBack => {
+                    // 手势升级成侧滑返回：先把可能已经开始的滚动收掉，
+                    // 否则页面会一边被推出去一边继续上下滚。
+                    if let Some(id) = self.interaction.dragging_scroll_area.take() {
+                        if let Some(c) = self.interaction.get_scroll_controller_mut(&id) { c.end_drag(); }
+                    }
+                    self.scroll.end_drag();
+                    let (sx, _) = g.start();
+                    let mut eb = app_window::edge_back::EdgeBack::new(sx, ts, LOGICAL_WIDTH as f32);
+                    eb.on_move(x, ts);
+                    self.edge_back = Some(eb);
+                    // 注意：**不置 needs_redraw**。页面内容一点没变，变的只是上屏时
+                    // 整帧往右挪多少（present 每帧都跑），置脏等于每帧白重画一次整页。
+                    break;
+                }
+                GestureAction::UpdateEdgeBack => {
+                    if let Some(eb) = &mut self.edge_back { eb.on_move(x, ts); }
+                    break;
+                }
+            }
+        }
+        self.gesture = Some(g);
+    }
+
+    /// 事件对象的 `timeStamp`：页面打开到现在的毫秒数（微信语义）
+    fn event_time_ms(&self) -> u64 {
+        self.page_opened_at.elapsed().as_millis() as u64
+    }
+
+    /// 状态机的时钟（进程启动至今毫秒），与 `timeStamp` 分开：
+    /// 换页会重置 `timeStamp`，但触摸序列的计时不能因此错乱。
+    fn touch_clock_ms(&self) -> u64 {
+        self.started_at.elapsed().as_millis() as u64
+    }
+
+    /// 把状态机产出的事件派发给逻辑层。
+    ///
+    /// 覆盖层与正常流是两套坐标：覆盖层用视口坐标且**命中即到此为止**
+    /// （弹窗遮罩之上的触摸不许穿透到下层页面），正常流要加上滚动偏移。
+    fn dispatch_touch_events(&mut self, outs: &[app_window::touch::TouchOut], x: f32, y: f32) {
+        use app_window::touch::TouchOut;
+        if outs.is_empty() {
+            return;
+        }
+        let on_fixed = self
+            .renderer
+            .as_ref()
+            .map(|r| r.fixed_layer_hit(x, y))
+            .unwrap_or(false);
+        let (hit_y, scope) = if on_fixed {
+            (y, Some(true))
+        } else {
+            (y + self.scroll.get_position(), Some(false))
+        };
+        let id = self.touch.identifier();
+        let time_ms = self.event_time_ms();
+        for out in outs {
+            // `tap` 由既有的点击链路处理（它还要管按压态、picker、输入框等）
+            let names: &[&str] = match out {
+                TouchOut::Start => &["touchstart"],
+                TouchOut::Move => &["touchmove"],
+                TouchOut::End => &["touchend"],
+                TouchOut::Cancel => &["touchcancel"],
+                // 微信同时派发新旧两个名字
+                TouchOut::LongPress => &["longpress", "longtap"],
+                TouchOut::Tap => &[],
+            };
+            for name in names {
+                let detail = if *name == "longpress" || *name == "longtap" {
+                    json!({ "x": x, "y": y })
+                } else {
+                    json!({})
+                };
+                let dispatched = match self.renderer.as_ref() {
+                    Some(r) => app_window::touch::dispatch_to_js(
+                        &mut self.app, r, name, (x, hit_y), (x, y), scope, id, time_ms, detail,
+                    ),
+                    None => false,
+                };
+                if dispatched {
+                    print_js_output(&self.app);
+                    // 处理函数里可能 setData / 导航
+                    if self.app.take_data_dirty() {
+                        self.needs_redraw = true;
+                        self.page_data_dirty = true;
+                        self.fixed_dirty = true;
+                    }
+                    if self.pending_navigation.is_none() {
+                        self.pending_navigation = app_window::check_navigation(&mut self.app);
+                    }
+                }
+            }
+        }
+    }
+
+    /// 滚动是否已经接管这次触摸（页面滚动位置变了，或某个 scroll-view 正在被拖）。
+    /// 接管方要给触摸序列发 `touchcancel` —— 与浏览器/Skyline 的手势竞争一致。
+    fn scroll_took_over(&self) -> bool {
+        if (self.scroll.get_position() - self.scroll_pos_at_press).abs() > 0.5 {
+            return true;
+        }
+        self.interaction
+            .dragging_scroll_area
+            .as_ref()
+            .and_then(|id| self.interaction.get_scroll_controller(id))
+            .map(|c| c.is_dragging && c.get_position() > 0.0 || c.is_animating())
+            .unwrap_or(false)
+    }
+
     fn handle_click(&mut self, x: f32, y: f32) {
         if self.picker_sheet.as_ref().map(|s| s.visible).unwrap_or(false) { return; }
         if self.modal.as_ref().map(|m| m.visible).unwrap_or(false) { self.handle_modal_click(x, y); return; }
@@ -911,8 +1475,9 @@ impl MiniAppWindow {
             };
             if let Some(n) = nav { self.pending_navigation = Some(n); if let Some(w) = &self.window { w.request_redraw(); } }
         } else {
+            let tap_ctx = (self.touch.identifier(), self.event_time_ms());
             if let Some(nav) = click::handle_content_click(x, y, &self.scroll, has_tabbar, &mut self.interaction,
-                self.renderer.as_ref(), &mut self.app, self.scale_factor, self.text_renderer.as_deref(), self.window.as_ref(), &mut self.clipboard) {
+                self.renderer.as_ref(), &mut self.app, self.scale_factor, self.text_renderer.as_deref(), self.window.as_ref(), &mut self.clipboard, tap_ctx) {
                 self.pending_navigation = Some(nav);
             }
             self.needs_redraw = true;
@@ -1043,7 +1608,20 @@ impl MiniAppWindow {
     fn process_navigation(&mut self) {
         if let Some(nav) = self.pending_navigation.take() {
             match nav {
-                NavigationRequest::NavigateTo { url } => { let (p, q) = parse_url(&url); self.navigate_to(&p, q).ok(); }
+                NavigationRequest::NavigateTo { url } => {
+                    let (p, q) = parse_url(&url);
+                    // 入栈前给当前页留一张图，侧滑返回时它要出现在新页下面。
+                    // 只在这一条分支做：switchTab/reLaunch 会清栈，redirectTo 是替换，
+                    // 都没有「上一页」可回。
+                    let shot = self.capture_viewport();
+                    if self.navigate_to(&p, q).is_ok() {
+                        if let Some(s) = shot {
+                            self.back_shots.push(s);
+                            // 页面栈上限 10（微信语义），快照跟着裁，免得越走越占内存
+                            if self.back_shots.len() > 10 { self.back_shots.remove(0); }
+                        }
+                    }
+                }
                 NavigationRequest::NavigateBack => { self.navigate_back().ok(); }
                 NavigationRequest::SwitchTab { url } => { let (p, _) = parse_url(&url); self.switch_tab(&p).ok(); }
                 NavigationRequest::RedirectTo { url } => {
@@ -1058,6 +1636,7 @@ impl MiniAppWindow {
                 NavigationRequest::ReLaunch { url } => {
                     let (p, q) = parse_url(&url);
                     self.page_stack.clear();
+                    self.back_shots.clear();
                     self.interaction.clear_page_state();
                     self.app.eval("__resetPageStack()").ok();
                     self.navigate_to(&p, q).ok();
@@ -1081,7 +1660,48 @@ impl MiniAppWindow {
         
         let mut changed = animating;
         for c in self.interaction.scroll_controllers.values_mut() { if c.update(dt) { changed = true; } }
+        if self.tick_edge_back(dt) { changed = true; }
         if changed { if let Some(w) = &self.window { w.request_redraw(); } }
+    }
+
+    /// 推进左边缘侧滑返回的收尾动画；动画结束且判定为「返回」时真的退栈。
+    /// 返回是否还需要继续出帧。
+    fn tick_edge_back(&mut self, dt: f32) -> bool {
+        let Some(eb) = &mut self.edge_back else { return false };
+        if !eb.is_settling() {
+            return false; // 还在跟手，帧由输入事件驱动
+        }
+        match eb.tick(dt) {
+            None => true,
+            Some(commit) => {
+                self.edge_back = None;
+                if commit {
+                    self.navigate_back().ok();
+                    self.update_renderers();
+                }
+                // 收手这一帧必须整帧重绘：位移归零，上屏不再挪，画布内容也换了页
+                self.needs_redraw = true;
+                self.fixed_dirty = true;
+                true
+            }
+        }
+    }
+
+    /// 让所有滚动动画（惯性、边界回弹）走完，最多等 `budget_ms`。
+    ///
+    /// 手势快照必须等这一步：松手瞬间位置多半还在越界区（橡皮筋），
+    /// 直接截图会截到一张回弹中途的图 —— 同一条命令两次跑出来的还不一样。
+    fn settle_scroll_animations(&mut self, budget_ms: u64) {
+        let deadline = Instant::now() + Duration::from_millis(budget_ms);
+        loop {
+            let area_anim = self.interaction.scroll_controllers.values().any(|c| c.is_animating());
+            // 侧滑返回的收尾动画也要等：它跑完才知道这一页是留下还是退栈
+            let back_anim = self.edge_back.as_ref().map(|e| e.is_settling()).unwrap_or(false);
+            if !self.scroll.is_animating() && !area_anim && !back_anim { break; }
+            if Instant::now() >= deadline { break; }
+            self.pump_one_frame();
+            std::thread::sleep(Duration::from_millis(8));
+        }
     }
 }
 
@@ -1139,11 +1759,7 @@ impl ApplicationHandler for MiniAppWindow {
             
             WindowEvent::CursorMoved { position, .. } => {
                 let (x, y) = (position.x as f32 / self.scale_factor as f32, position.y as f32 / self.scale_factor as f32);
-                self.mouse_pos = (x, y);
-                if evt::handle_cursor_moved(x, y, &mut self.interaction, &mut self.scroll, self.text_renderer.as_deref(),
-                    self.window.as_ref(), self.renderer.as_ref(), &mut self.app, &mut self.clipboard, self.scale_factor) {
-                    self.needs_redraw = true;
-                }
+                self.on_pointer_move(x, y);
                 if let Some(w) = &self.window { w.request_redraw(); }
             }
             
@@ -1170,131 +1786,13 @@ impl ApplicationHandler for MiniAppWindow {
             }
             
             WindowEvent::MouseInput { state, button: MouseButton::Left, .. } => {
-                let ts = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as u64;
                 let (x, y) = self.mouse_pos;
-                
                 if state == ElementState::Pressed {
-                    self.click_start_pos = self.mouse_pos;
-                    self.click_start_time = Instant::now();
-                    
-                    // picker 面板在最上层，先于弹窗/页面吃事件
-                    if self.handle_picker_sheet_press(x, y) { return; }
-                    if self.modal.as_ref().map(|m| m.visible).unwrap_or(false) { self.handle_modal_press(x, y); return; }
-                    if self.loading.as_ref().map(|l| l.visible).unwrap_or(false) { return; }
-                    
-                    let has_tabbar = self.page_stack.last().map(|p| self.is_tabbar_page(&p.path)).unwrap_or(false);
-                    let tabbar_y = if has_tabbar { (LOGICAL_HEIGHT - tabbar_height()) as f32 } else { LOGICAL_HEIGHT as f32 };
-                    if has_tabbar && y >= tabbar_y { return; }
-                    
-                    let actual_y = y + self.scroll.get_position();
-                    // 落在 `position: fixed` 覆盖层上（弹窗/遮罩）：按压与拖动都不允许穿透。
-                    // 覆盖层内部自己的可交互元素（fixed 的滚动区、按钮）由下面的
-                    // hit_test 分支处理 —— 它本来就先查 fixed 元素。
-                    let on_fixed_layer = self
-                        .renderer
-                        .as_ref()
-                        .map(|r| r.fixed_layer_hit(x, y))
-                        .unwrap_or(false);
-                    
-                    // 输入框内点击
-                    if let Some(focused) = &self.interaction.focused_input {
-                        let b = focused.bounds;
-                        if (x >= b.x && x <= b.x + b.width && y >= b.y - self.scroll.get_position() && y <= b.y + b.height - self.scroll.get_position()) ||
-                           (x >= b.x && x <= b.x + b.width && actual_y >= b.y && actual_y <= b.y + b.height) {
-                            if let Some(tr) = &self.text_renderer {
-                                let sf = self.scale_factor as f32;
-                                let cw: Vec<f32> = focused.value.chars().map(|c| tr.measure_text(&c.to_string(), 16.0 * sf)).collect();
-                                let cp = mini_render::ui::interaction::calculate_cursor_position(&focused.value, &cw, (x - b.x) * sf, 12.0 * sf, focused.text_offset);
-                                self.interaction.prepare_text_selection(cp);
-                                self.needs_redraw = true;
-                                if let Some(w) = &self.window { w.request_redraw(); }
-                                return;
-                            }
-                        }
-                    }
-                    
-                    // 交互元素
-                    // 覆盖层之上：只允许命中覆盖层自己的元素（is_fixed），
-                    // 下层页面的元素一律不参与，避免「弹窗弹着还能按到底下的商品」
-                    let hit = if on_fixed_layer {
-                        self.interaction.hit_test(x, y).filter(|el| el.is_fixed).cloned()
-                    } else {
-                        self.interaction.hit_test(x, y).or_else(|| self.interaction.hit_test(x, actual_y)).cloned()
-                    };
-                    if let Some(el) = hit {
-                        use mini_render::ui::interaction::InteractionType;
-                        // 任何可点元素都进入按压态（`:active` / `hover-class` 靠它生效），
-                        // 滚动区域除外 —— 那是拖动不是按压
-                        if !el.disabled && el.interaction_type != InteractionType::ScrollArea {
-                            self.interaction.set_button_pressed(el.id.clone(), el.bounds);
-                            self.needs_redraw = true;
-                            self.fixed_dirty = true; // 按压的可能是覆盖层里的元素
-                        }
-                        match el.interaction_type {
-                            InteractionType::Slider if !el.disabled => {
-                                let ty = if el.is_fixed { y } else { actual_y };
-                                if let Some(r) = self.interaction.handle_click(x, ty) {
-                                    handle_interaction_result(&r, self.window.as_ref(), self.renderer.as_ref(), &mut self.app, &mut self.clipboard, self.scroll.get_position(), self.scale_factor);
-                                    self.needs_redraw = true;
-                                    if let Some(w) = &self.window { w.request_redraw(); }
-                                }
-                                return;
-                            }
-                            InteractionType::Button if !el.disabled => {
-                                self.interaction.set_button_pressed(el.id.clone(), el.bounds);
-                                self.needs_redraw = true;
-                                if let Some(w) = &self.window { w.request_redraw(); }
-                            }
-                            InteractionType::ScrollArea => {
-                                if let Some(c) = self.interaction.get_scroll_controller_mut(&el.id) {
-                                    // 根据滚动方向使用 x 或 y
-                                    let drag_pos = if el.is_horizontal { x } else { y };
-                                    c.begin_drag(drag_pos, ts);
-                                    self.interaction.dragging_scroll_area = Some(el.id.clone());
-                                    return;
-                                }
-                            }
-                            _ => {}
-                        }
-                    }
-                    
-                    // 覆盖层上按下不能带动页面滚动（微信里弹窗遮罩会锁住页面滚动）
-                    if !self.interaction.is_dragging_slider() && !on_fixed_layer {
-                        self.scroll.begin_drag(y, ts);
-                    }
+                    self.on_pointer_press(x, y);
                 } else {
-                    // Released
-                    // picker 面板在最上层，先于弹窗/页面吃事件
-                    if self.handle_picker_sheet_release(x, y) { return; }
-                    if self.modal.as_ref().map(|m| m.visible && m.pressed_button.is_some()).unwrap_or(false) {
-                        self.handle_modal_release(x, y);
-                        return;
-                    }
-                    
-                    self.interaction.clear_button_pressed();
-                    self.fixed_dirty = true;
-                    let was_sel = self.interaction.is_dragging_selection();
-                    self.interaction.end_text_selection();
-                    if was_sel { self.needs_redraw = true; if let Some(w) = &self.window { w.request_redraw(); } return; }
-                    
-                    if let Some(id) = self.interaction.dragging_scroll_area.take() {
-                        if let Some(c) = self.interaction.get_scroll_controller_mut(&id) { c.end_drag(); }
-                        self.needs_redraw = true;
-                        if let Some(w) = &self.window { w.request_redraw(); }
-                    }
-                    
-                    if let Some(r) = self.interaction.handle_mouse_release() {
-                        handle_interaction_result(&r, self.window.as_ref(), self.renderer.as_ref(), &mut self.app, &mut self.clipboard, self.scroll.get_position(), self.scale_factor);
-                    }
-                    
-                    let anim = self.scroll.end_drag();
-                    let (dx, dy) = ((x - self.click_start_pos.0).abs(), (y - self.click_start_pos.1).abs());
-                    if dx < 10.0 && dy < 10.0 && self.click_start_time.elapsed().as_millis() < 300 { self.handle_click(x, y); }
-                    
-                    self.needs_redraw = true;
-                    if let Some(w) = &self.window { w.request_redraw(); }
-                    if anim { if let Some(w) = &self.window { w.request_redraw(); } }
+                    self.on_pointer_release(x, y);
                 }
+                if let Some(w) = &self.window { w.request_redraw(); }
             }
             
             WindowEvent::RedrawRequested => {
@@ -1329,6 +1827,14 @@ impl ApplicationHandler for MiniAppWindow {
                     self.needs_redraw = true;
                     self.fixed_dirty = true;
                     self.force_full_redraw = true;
+                }
+                // 长按要由帧驱动：手指按住不动时没有任何输入事件进来，
+                // 只在 move/up 里判时间的话那一下永远等不到
+                if self.touch.is_active() {
+                    let clock = self.touch_clock_ms();
+                    let outs = self.touch.tick(clock);
+                    let (mx, my) = self.mouse_pos;
+                    self.dispatch_touch_events(&outs, mx, my);
                 }
                 
                 let mut pull_req: Option<bool> = None;
@@ -1524,7 +2030,7 @@ impl MiniAppWindow {
     /// 自定义 tabBar、fixed 覆盖层、Toast/Modal 外壳、像素合成顺序都与真实运行一致，
     /// 因此产出的 PNG 可以直接和编译出的 H5 截图做像素级对比。
     #[allow(clippy::too_many_arguments)]
-    fn snapshot_all(&mut self, out_dir: &std::path::Path, scale: f64, time: Option<f32>, settle: Option<f32>, only: Option<&str>, scroll: f32, evals: &[String], frames: u32, click: Option<(f32, f32)>, press: Option<(f32, f32)>, drag: Option<app_window::scroll_bench::DragSpec>) -> Result<usize, String> {
+    fn snapshot_all(&mut self, out_dir: &std::path::Path, scale: f64, time: Option<f32>, settle: Option<f32>, only: Option<&str>, scroll: f32, evals: &[String], frames: u32, click: Option<(f32, f32)>, press: Option<(f32, f32)>, drag: Option<app_window::scroll_bench::DragSpec>, touch: Option<(f32, f32, u64)>, swipe: Option<(f32, f32, f32, f32, u32, bool)>) -> Result<usize, String> {
         self.setup_canvas(scale);
         let routes: Vec<String> = match only {
             Some(route) => vec![route.trim_start_matches('/').to_string()],
@@ -1541,6 +2047,7 @@ impl MiniAppWindow {
             let already_loaded = self.page_stack.last().map(|p| p.path == route).unwrap_or(false);
             if !already_loaded {
                 self.page_stack.clear();
+                self.back_shots.clear();
                 self.interaction.clear_page_state();
                 self.navigate_to(&route, HashMap::new())?;
             }
@@ -1673,6 +2180,45 @@ impl MiniAppWindow {
                 self.needs_redraw = true;
                 self.render();
             }
+            // `--touch x,y[,按住ms]`：一次完整触摸序列（与交互窗体同一条链路）。
+            // 按住期间照常出帧，所以 350ms 的长按会真的触发。
+            if let Some((tx, ty, hold_ms)) = touch {
+                self.render(); // 命中测试依赖上一帧注册的绑定
+                self.sim_press(tx, ty);
+                let deadline = Instant::now() + Duration::from_millis(hold_ms);
+                while Instant::now() < deadline {
+                    self.pump_one_frame();
+                    std::thread::sleep(Duration::from_millis(8));
+                }
+                self.pump_one_frame();
+                self.sim_release(tx, ty);
+                for _ in 0..8 {
+                    self.pump_one_frame();
+                    if self.pending_navigation.is_some() { self.process_navigation(); }
+                }
+                self.settle_scroll_animations(600);
+            }
+            // `--swipe x1,y1,x2,y2[,步数]`：按下 → 逐步移动 → 抬起
+            if let Some((x1, y1, x2, y2, steps, hold)) = swipe {
+                self.render();
+                self.sim_press(x1, y1);
+                let steps = steps.max(1);
+                for i in 1..=steps {
+                    let t = i as f32 / steps as f32;
+                    self.sim_move(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t);
+                    self.pump_one_frame();
+                    std::thread::sleep(Duration::from_millis(8));
+                }
+                // `--swipe-hold`：停在终点不抬手，截「手势进行中」的那一帧
+                if !hold {
+                    self.sim_release(x2, y2);
+                    for _ in 0..8 {
+                        self.pump_one_frame();
+                        if self.pending_navigation.is_some() { self.process_navigation(); }
+                    }
+                    self.settle_scroll_animations(600);
+                }
+            }
             // `--drag <每帧像素>x<帧数>`：走与交互窗体同一套鼠标事件模拟一次手指拖动，
             // 逐帧计时。滑动手感只有连续拖动才测得出来（见 app_window::scroll_bench）。
             if let Some(spec) = drag {
@@ -1682,24 +2228,17 @@ impl MiniAppWindow {
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap()
                     .as_millis() as u64;
-                self.mouse_pos = (cx, cy);
-                app_window::events::mouse::handle_mouse_pressed(
-                    cx, cy, &mut self.scroll, &mut self.interaction, ts,
-                );
+                let _ = ts;
+                self.sim_press(cx, cy);
                 let mut frame_ms: Vec<f32> = Vec::with_capacity(spec.frames as usize);
                 let mut worst = (0.0f32, (0.0f32, 0.0f32, 0.0f32));
+                let mut input_total = 0.0f32;
                 for _ in 0..spec.frames {
                     cy -= spec.dy;
                     let t0 = Instant::now();
-                    self.mouse_pos = (cx, cy);
-                    if evt::handle_cursor_moved(
-                        cx, cy, &mut self.interaction, &mut self.scroll,
-                        self.text_renderer.as_deref(), self.window.as_ref(),
-                        self.renderer.as_ref(), &mut self.app, &mut self.clipboard,
-                        self.scale_factor,
-                    ) {
-                        self.needs_redraw = true;
-                    }
+                    self.sim_move(cx, cy);
+                    let input_ms = t0.elapsed().as_secs_f32() * 1000.0;
+                    input_total += input_ms;
                     self.pump_one_frame();
                     let ms = t0.elapsed().as_secs_f32() * 1000.0;
                     if ms > worst.0 {
@@ -1712,9 +2251,14 @@ impl MiniAppWindow {
                         std::thread::sleep(rest);
                     }
                 }
-                app_window::events::mouse::handle_mouse_released(&mut self.scroll, &mut self.interaction);
+                self.sim_release(cx, cy);
+                self.settle_scroll_animations(600);
                 app_window::scroll_bench::report(&route, &frame_ms, self.frame_interval);
                 app_window::scroll_bench::report_worst_parts(worst.0, worst.1);
+                println!(
+                    "   ↳ 其中输入处理（命中/手势/触摸事件派发）平均 {:.2}ms/帧",
+                    input_total / spec.frames.max(1) as f32
+                );
                 if let Some(s) = mini_render::renderer::draw_profile::summary(8) {
                     println!("   ↳ {s}");
                 }
@@ -1774,6 +2318,13 @@ impl MiniAppWindow {
             if let Some(sheet) = &self.picker_sheet {
                 picker_sheet::render(&mut buffer, pw, ph, scale as f32, sheet, self.text_renderer.as_deref());
             }
+            // 侧滑返回进行中：与交互窗体同一段合成（无头也要能截到跟手的那一帧）
+            if let Some(eb) = &self.edge_back {
+                let off = (eb.offset() * scale as f32).round() as u32;
+                app_window::edge_back::compose(
+                    &mut buffer, pw, ph, off, self.back_shots.last(), eb.progress(),
+                );
+            }
 
             let mut rgba = Vec::with_capacity(buffer.len() * 4);
             for px in &buffer {
@@ -1804,6 +2355,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut frames = 0u32;
     let mut click: Option<(f32, f32)> = None;
     let mut press: Option<(f32, f32)> = None;
+    // `--touch x,y[,按住毫秒]` 与 `--swipe x1,y1,x2,y2[,步数]`
+    let mut touch: Option<(f32, f32, u64)> = None;
+    let mut swipe: Option<(f32, f32, f32, f32, u32, bool)> = None;
     let mut route: Option<String> = None;
     let mut drag: Option<app_window::scroll_bench::DragSpec> = None;
     let mut scroll = 0.0f32;
@@ -1829,6 +2383,32 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 });
             }
             "--route" => route = it.next(),
+            "--touch" => {
+                touch = it.next().and_then(|v| {
+                    let p: Vec<&str> = v.split(',').collect();
+                    Some((
+                        p.first()?.trim().parse().ok()?,
+                        p.get(1)?.trim().parse().ok()?,
+                        p.get(2).and_then(|s| s.trim().parse().ok()).unwrap_or(0),
+                    ))
+                });
+            }
+            // `--swipe` 抬手，`--swipe-hold` 停在终点不抬手 —— 后者用来截「手势进行中」
+            // 的那一帧（侧滑返回的跟手位移、越界橡皮筋、按压态），松手之后就看不到了。
+            "--swipe" | "--swipe-hold" => {
+                let hold = arg == "--swipe-hold";
+                swipe = it.next().and_then(|v| {
+                    let p: Vec<&str> = v.split(',').collect();
+                    Some((
+                        p.first()?.trim().parse().ok()?,
+                        p.get(1)?.trim().parse().ok()?,
+                        p.get(2)?.trim().parse().ok()?,
+                        p.get(3)?.trim().parse().ok()?,
+                        p.get(4).and_then(|s| s.trim().parse().ok()).unwrap_or(12),
+                        hold,
+                    ))
+                });
+            }
             "--drag" => drag = it.next().as_deref().and_then(app_window::scroll_bench::parse),
             "--scroll" => scroll = it.next().and_then(|v| v.parse().ok()).unwrap_or(0.0),
             "--eval" => { if let Some(v) = it.next() { evals.push(v); } }
@@ -1842,6 +2422,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("                 轮播自动播放跑起来（要「和真机一样」的画面时用这个）");
                 println!("  --route <页面路径>   --scroll <像素>");
                 println!("  --drag <px>x<帧数>  模拟手指拖动并逐帧计时（滑动手感的可回归测量）");
+                println!("  --touch <x,y[,按住ms]>       完整触摸序列：touchstart→(长按)→touchend/tap");
+                println!("  --swipe <x1,y1,x2,y2[,步数]>  滑动手势：按下→逐步移动→抬起");
+                println!("  --swipe-hold <同上>           同上但停在终点不抬手（截手势进行中的一帧）");
                 println!("  --eval <JS>    可重复；在 --settle 之后依次执行，每段跑完导航");
                 return Ok(());
             }
@@ -1871,7 +2454,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 快照模式：不开窗口，直接把整帧写成 PNG（用于与 H5 做像素对比）
     if let Some(out) = snapshot {
-        let count = window.snapshot_all(&out, scale, anim_time, settle, route.as_deref(), scroll, &evals, frames, click, press, drag)?;
+        let count = window.snapshot_all(&out, scale, anim_time, settle, route.as_deref(), scroll, &evals, frames, click, press, drag, touch, swipe)?;
         println!("\n✅ 快照完成：{} 个页面 -> {}", count, out.display());
         return Ok(());
     }

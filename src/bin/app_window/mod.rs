@@ -15,6 +15,8 @@ pub mod region_data;
 pub mod scroll_bench;
 pub mod component_mount;
 pub mod touch;
+pub mod gesture;
+pub mod edge_back;
 
 pub use config::*;
 pub use navigation::*;

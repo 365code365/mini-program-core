@@ -103,7 +103,8 @@ page.js ────┘  ② 逻辑层：QuickJS 执行 App/Page/Component，set
 MINI_FPS=1 cargo run --release --bin mini-app-window -- sample-app
 # 布局重建分段：「模板求值 / 建树+样式 / 布局 / 换行修正」；并打印每次 setData 的失效范围
 MINI_LAYOUT_LOG=1 cargo run --release --bin mini-app-window -- sample-app
-# 滚动诊断：内容高 / 视口 / 画布高 / 当前位置与上限
+# 滚动诊断：内容高 / 视口 / 画布高 / 当前位置与上限；外加每次拖动的手势归属
+# （🖐 手势归属：Undecided -> Area{id,axis} / Page / EdgeBack / Blocked，以及内层为何交棒给页面）
 MINI_SCROLL_LOG=1 cargo run --release --bin mini-app-window -- sample-app
 # 关掉 setData 的增量失效（一律整帧）：用于逐像素对照验证，见 tools/damage-check.sh
 MINI_NO_DAMAGE=1 cargo run --release --bin mini-app-window -- sample-app
@@ -189,6 +190,57 @@ cargo run --release --bin mini-app-window -- sample-app --snapshot target/t \
 ```
 
 > 有一条不变量必须守住：**上屏用的滚动偏移，必须等于画布上那条带被绘制时的偏移**。页面画布只画「视口 ± 裁剪余量」，偏移变了却没重画，上屏就会取到没画过的区域 —— 表现为滑动时一片空白、停下来内容才出现。所以帧循环里按位置比对来决定重绘，而不是依赖每条输入路径都记得置脏标记（漏一处就会露白）。
+
+### 触控与事件按 Skyline 对齐
+
+从「能点」到「像小程序」差的是四层东西，这一轮四层都补上了。
+
+**1. 绑定语法是通用解析，不是属性名白名单。** 从前引擎按固定属性名认事件（只有 `bindtap`/`catchtap`/`bindchange`…），于是 `bindtouchstart`、`bind:tap`、`catchtouchmove`（遮罩锁滚动的标准写法）、`capture-bind:`、`mut-bind:` 全部被无声忽略 —— 自定义手势、事件捕获、互斥绑定统统没有。现在按**长前缀优先**解析 `capture-catch:` / `capture-bind:` / `mut-bind:` / `catch:` / `bind:`（冒号可省），事件名任意（自定义组件的 `bind:myEvent`、uni-app 的 `bind:__l` 都走同一条），`data-*` 共享给同一节点上的每条绑定。继续枚举属性名是没有尽头的，所以拒绝白名单。
+
+**2. 传播顺序在一处收口。** `dispatch_chain(x, y, event_type, scope)` 一次给出按序要调用的绑定：捕获阶段由外向内 → 冒泡阶段由内向外，`catch*` 触发后终止（含自己），`capture-catch:` 在捕获阶段就掐断整条链，`mut-bind:` 同组只触发最内层那条而 `bind` 照旧。层级用**包围盒面积升序**近似（子节点面积必然不大于父节点）—— 给 `RenderNode` 与整条绘制递归加 depth 参数改动面太大，而面积法就是现网一直在用的判据。
+
+**3. 触摸序列是真的序列。** 宿主的指针事件先进一个纯逻辑状态机（`TouchTracker`），再翻成微信语义：`touchstart` 在宿主决定怎么处理这次按下**之前**就派发（页面自己实现的手势才拿得到起点）；移动超过 10px 的 slop 取消 tap 与 longpress；按住 350ms 发一次 `longpress`；被滚动接管的那一刻补一次 `touchcancel`（手势竞争的失败方要能收尾）。事件对象由 Rust 侧构造后交给 `__dispatchEvent`：`type`/`timeStamp`（页面打开至今）/`target`/`currentTarget`/`detail`/`touches`/`changedTouches`，`touchend` 与 `touchcancel` 的 `touches` 为空。
+
+- `target` 取命中点上**最内层的绑定**（不限事件类型），`currentTarget` 是挂处理函数的那个节点。列表项常见写法是 `bindtap` 只写在外层容器上、行号靠 `e.target.dataset.id` 取 —— 用链首当 target 的话页面永远拿到容器的 dataset，表现是「点哪一行都当第一行」。
+- **tap 没有时长上限**。旧实现要求 `elapsed < 300ms` 才算点击，按住一会儿再松手就点不动了；微信里按住两秒松手同样是一次 tap。
+- 惯性滚动中按下：那一下只是**停住**，不算点击（iOS/微信一致）。
+
+**4. 手势仲裁：方向锁定 + 嵌套传递。** 归属**不在按下时决定**，而是等第一次明显位移（4px）按主方向锁定：
+
+| 场景 | 旧行为 | 现在 |
+|------|--------|------|
+| 横向 `scroll-view`（首页那排卡片）里竖着划 | 被横向容器吃掉，什么都不动 | 页面滚动 |
+| 纵向列表里横着划 | 页面跟着上下跳 | 谁也不动 |
+| 内层列表滚到底继续上划 | 卡住 | 交棒给页面继续滚 |
+| 内层内容不足一屏（`max_scroll == 0`） | 短列表挡住整页滚动 | 直接交给页面 |
+| 遮罩上写 `catchtouchmove` | 照样滚 | 锁住 |
+
+嵌套传递的判据是「到边界且仍朝该方向推，**或** `max_scroll <= 0.5`」。曾经用「位置没变」判断，但控制器有橡皮筋越界 —— 到边界后位置照样在动，短列表那个场景实测失效。手势候选取的是命中点上**最内层的 `scroll-view`**（`hit_test_scroll_area`），不是最上层的元素：卡片、按钮盖在 `scroll-view` 上面时普通命中测试返回的是卡片，于是真正装内容的容器永远得不到手势。
+
+**5. 左边缘侧滑返回。** 起点落在最左 20px 且栈里还有上一页时，往右划升级成宿主级手势：位移 1:1 跟手，上一页在下面按视差（`(1-进度)·屏宽/3`）露出来并轻微压暗，交界处有投影；松手时位移过 35% 屏宽或速度过 320px/s 就 `navigateBack`，否则滑回去、页面状态一点不变。栈底（tab 首页）没有这个手势，弹窗/picker 弹着时也不开。判定与收尾动画是纯逻辑，合成是一段像素搬运（`copy_within` + 逐行填充），两者都能离开窗体单测。
+
+- 下面那一页必须真的显示出来，而那时它已经不是当前页 —— 渲染器、交互表、滚动位置全换了新页，没法重新画。所以在**它被覆盖的那一刻**用 `present_to_buffer` 留一张视口图（与真正上屏的合成结果逐像素一致），返回时用完即弃。
+- 合成放在所有覆盖层**之上**：被推走的是「整个页面」，页面自己的弹窗、Toast 要跟着一起走，否则弹窗会诡异地钉在原处。
+
+> 这一轮踩到最贵的一个坑：**页面滚动分支不能置 `needs_redraw`**（侧滑跟手同理）。整页内容已经画在长画布上，滚动只是换一条切片上屏；置脏等于把「滚动不重绘」那条优化整个废掉（实测首页拖动 3.7ms → 6.5ms）。`scroll-view` 内滚动仍要置脏 —— 它的内容是按自身偏移画进整页画布的，没有独立切片。
+
+> 另一条：无头输入与交互窗体必须**统一到同一组入口**（`on_pointer_press/move/release`）。此前两套逻辑并存，结果无头链路驱动的是 `scroll-view`、真机驱动的是页面滚动 —— 无头全绿而手上不对，测的根本不是同一套东西。
+
+无头验证这些语义：
+
+```bash
+# 一次完整触摸序列（按住 600ms 会真的触发 longpress，因为按住期间照常出帧）
+mini-app-window sample-app --route pages/index/index --touch 180,300,600 --snapshot target/t
+# 滑动手势：按下 → 逐步移动 → 抬起（惯性/回弹会走完再截图，所以两次跑结果一致）
+mini-app-window sample-app --route pages/index/index --swipe 200,500,200,60,20 --snapshot target/t
+# 停在终点不抬手：用来截「手势进行中」的那一帧（侧滑跟手的位移、视差、投影）
+mini-app-window sample-app --eval "wx.navigateTo({url:'/pages/detail/detail'})" \
+    --swipe-hold 5,400,160,400,20 --snapshot target/t
+```
+
+侧滑返回与 `wx.navigateBack()` 的结果是逐字节一致的（同一条退栈路径），这也是它的回归判据。
+
+> 顺带修掉两个既有 bug：① `navigate_back` 没有重建上一页的自定义组件实例（往前走时 `__resetPageComponents()` 把它一起作废了），于是从二级页返回首页，底部那条自定义 tabBar 整条消失 —— 现在返回时按页面 json 的 `usingComponents` 重新挂载，「返回首页」与「直接进首页」的快照逐字节一致。② 静态渲染路径（画廊/离屏/双端对比）画固定层时忘了置 `registering_fixed`，覆盖层里的事件绑定会以**内容坐标**混进正常流那张表，页面一滚就停在旧位置反过来挡住真正的元素。
 
 ### setData 只重绘变化的那一块
 

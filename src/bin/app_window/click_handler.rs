@@ -90,6 +90,7 @@ pub fn detect_modal_button(x: f32, y: f32, layout: &ModalLayout, show_cancel: bo
 }
 
 /// 处理内容区域点击
+#[allow(clippy::too_many_arguments)]
 pub fn handle_content_click(
     x: f32, y: f32,
     scroll: &ScrollController,
@@ -101,6 +102,8 @@ pub fn handle_content_click(
     text_renderer: Option<&TextRenderer>,
     window: Option<&Arc<Window>>,
     clipboard: &mut Option<arboard::Clipboard>,
+    // 本次 tap 所属触点的标识与页面时间戳（写进事件对象）
+    tap_ctx: (u32, u64),
 ) -> Option<NavigationRequest> {
     let scroll_pos = scroll.get_position();
     
@@ -111,6 +114,7 @@ pub fn handle_content_click(
         app,
         scale_factor,
         text_renderer,
+        tap_ctx,
     ) {
         handle_interaction_result(
             &result,

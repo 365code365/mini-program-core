@@ -315,16 +315,12 @@ pub fn handle_cursor_moved(
             );
         }
         needs_redraw = true;
-    } else if let Some(id) = interaction.dragging_scroll_area.clone() {
-        if let Some(controller) = interaction.get_scroll_controller_mut(&id) {
-            // 根据滚动方向使用 x 或 y
-            use mini_render::ui::scroll_controller::ScrollDirection;
-            let drag_pos = if controller.get_direction() == ScrollDirection::Horizontal { x } else { y };
-            controller.update_drag(drag_pos, timestamp);
-        }
-    } else if scroll.is_dragging {
-        scroll.update_drag(y, timestamp);
     }
+    // 注：**滚动不在这里推进**。谁滚、往哪滚由手势仲裁决定
+    // （方向锁定 / 嵌套传递 / catchtouchmove 锁滚动，见 app_window::gesture），
+    // 这里再推一次会和它打架（一次移动被应用两遍）。
+    let _ = timestamp;
+    let _ = scroll;
     
     needs_redraw
 }

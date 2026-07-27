@@ -233,7 +233,15 @@ impl WxmlRenderer {
     /// 为可用空间对其子树单独重排，最后按视口把整棵子树钉到目标位置——这样 top:0;bottom:0
     /// 的全屏遮罩才会是视口高、其居中的对话框才落在可见区内。
     pub(super) fn draw_fixed_layer(&mut self, canvas: &mut Canvas, taffy: &mut Tree, roots: &[RenderNode], viewport_h: f32) {
+        // `registering_fixed` 必须置上：覆盖层里的事件绑定要标成 `is_fixed`，
+        // 否则它们会以**内容坐标**混进正常流那张表里。页面一滚，遮罩/弹窗的绑定
+        // 就停在内容里的旧位置，反而挡住那块位置上真正的元素 —— 点击落到弹窗的
+        // 处理函数上。宿主那条路径（render_fixed_elements）一直是置上的，
+        // 这条静态路径（画廊、离屏渲染、双端对比）漏了。
+        let prev = self.registering_fixed;
+        self.registering_fixed = true;
         self.draw_fixed_layer_inner(canvas, taffy, roots, viewport_h, None);
+        self.registering_fixed = prev;
     }
 
     /// fixed 覆盖层绘制。`interaction` 为 Some 时同时注册交互元素与命中区（宿主运行态），

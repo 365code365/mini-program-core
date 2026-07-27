@@ -239,6 +239,72 @@ pub fn event_json(
     .to_string()
 }
 
+/// 把一个事件按**捕获→冒泡**链派发给逻辑层，返回是否至少命中一条绑定。
+///
+/// 所有输入路径（触摸序列、点击、长按）都走这一个出口：传播语义、事件对象、
+/// `target` 与 `currentTarget` 的区分只在这里实现一次。
+/// 此前 tap 有两条各自为政的派发代码（覆盖层分支只取链首、正常流分支只发 dataset），
+/// 覆盖层里根本不冒泡。
+#[allow(clippy::too_many_arguments)]
+pub fn dispatch_to_js(
+    app: &mut mini_render::runtime::MiniApp,
+    renderer: &mini_render::renderer::WxmlRenderer,
+    event_type: &str,
+    hit: (f32, f32),
+    point: (f32, f32),
+    scope: Option<bool>,
+    identifier: u32,
+    time_ms: u64,
+    detail: serde_json::Value,
+) -> bool {
+    let chain = renderer.dispatch_chain(hit.0, hit.1, event_type, scope);
+    if chain.is_empty() {
+        return false;
+    }
+    // `target` 是**真正被摸到的最内层节点**，与事件类型无关：
+    // `touchend` 只绑在外层容器上时，target 仍应是里面那个列表项。
+    let empty = HashMap::new();
+    let innermost = renderer
+        .innermost_binding_at(hit.0, hit.1, scope)
+        .or_else(|| {
+            chain
+                .iter()
+                .find(|b| b.phase == mini_render::renderer::components::EventPhase::Bubble)
+                .or_else(|| chain.last())
+                .cloned()
+        });
+    let (t_id, t_data, t_left, t_top) = match &innermost {
+        Some(b) => (b.id.clone(), b.data.clone(), b.bounds.x, b.bounds.y),
+        None => (String::new(), empty.clone(), 0.0, 0.0),
+    };
+    for b in &chain {
+        let target = NodeInfo {
+            id: &t_id,
+            dataset: &t_data,
+            offset_left: t_left,
+            offset_top: t_top,
+        };
+        let current = NodeInfo {
+            id: &b.id,
+            dataset: &b.data,
+            offset_left: b.bounds.x,
+            offset_top: b.bounds.y,
+        };
+        let json = event_json(
+            event_type,
+            &target,
+            &current,
+            point,
+            identifier,
+            time_ms,
+            detail.clone(),
+        );
+        let handler = serde_json::to_string(&b.handler).unwrap_or_else(|_| "''".into());
+        app.eval(&format!("__dispatchEvent({handler}, {json})")).ok();
+    }
+    true
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

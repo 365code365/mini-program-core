@@ -514,6 +514,15 @@ impl ScrollController {
         self.is_bouncing = false;
         self.idle_after_wheel = 0.0;
     }
+    /// 立刻停住惯性/回弹，位置保持不变。
+    ///
+    /// 惯性滚动中手指按下时要用：iOS/微信里那一下只是「停住」，
+    /// 不该继续减速、也不该算成一次点击。
+    pub fn stop(&mut self) {
+        let pos = self.position;
+        self.set_position(pos);
+    }
+
     pub fn get_max_scroll(&self) -> f32 { self.max_scroll }
     /// 越界待回弹也算「在动」：宿主要继续出帧，回弹才有机会开始
     pub fn is_animating(&self) -> bool {
