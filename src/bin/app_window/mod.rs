@@ -17,6 +17,9 @@ pub mod component_mount;
 pub mod touch;
 pub mod gesture;
 pub mod edge_back;
+pub mod pointer_input;
+pub mod touch_dispatch;
+pub mod edge_back_host;
 
 pub use config::*;
 pub use navigation::*;

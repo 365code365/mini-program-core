@@ -1117,6 +1117,11 @@ mini-render/
 │   ├── ffi.rs                  # C FFI (mr_*)
 │   ├── event.rs                # 事件系统
 │   ├── bin/                    # mini-app / mini-app-window / mini-launcher / mini-devserver
+│   │   └── app_window/         # 窗体宿主：导航 / tabBar / picker / 覆盖层 / 输入层
+│   │       ├── touch.rs        #   触摸状态机与微信语义的事件对象（纯逻辑）
+│   │       ├── gesture.rs      #   拖动归属仲裁：方向锁定 / 嵌套传递（纯逻辑）
+│   │       ├── edge_back.rs    #   左边缘侧滑返回：判定 + 上一页合成（纯逻辑）
+│   │       └── pointer_input.rs#   把上面三者接到宿主状态（窗体与无头共用同一条链路）
 │   ├── js/                     # QuickJS runtime / api（App/Page/Component）/ bridge
 │   ├── parser/                 # wxml / wxss（选择器引擎）/ expr / template
 │   ├── renderer/               # wxml_renderer/*（布局/绘制/动画/命中/覆盖层）+ components/*
