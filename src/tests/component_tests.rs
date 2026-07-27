@@ -447,12 +447,12 @@ fn test_event_extraction() {
     let events = extract_events(&node);
     assert_eq!(events.len(), 1);
     
-    let (event_type, handler, data, is_catch) = &events[0];
-    assert_eq!(event_type, "tap");
-    assert_eq!(handler, "onTap");
-    assert_eq!(data.get("id"), Some(&"123".to_string()));
-    assert_eq!(data.get("name"), Some(&"test".to_string()));
-    assert_eq!(*is_catch, false);
+    let e = &events[0];
+    assert_eq!(e.event_type, "tap");
+    assert_eq!(e.handler, "onTap");
+    assert_eq!(e.data.get("id"), Some(&"123".to_string()));
+    assert_eq!(e.data.get("name"), Some(&"test".to_string()));
+    assert!(!e.is_catch);
 }
 
 /// 测试颜色解析

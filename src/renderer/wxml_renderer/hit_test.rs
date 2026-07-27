@@ -9,6 +9,7 @@
 //! 事件绑定表里找不到它。
 
 use super::*;
+use crate::renderer::components::EventPhase;
 
 impl WxmlRenderer {
     /// 本帧登记的 picker（宿主据此把点击变成选择面板）
@@ -58,8 +59,8 @@ impl WxmlRenderer {
         let change_handler = node
             .events
             .iter()
-            .find(|(et, ..)| et == "change")
-            .map(|(_, h, ..)| h.clone());
+            .find(|e| e.event_type == "change")
+            .map(|e| e.handler.clone());
 
         PickerBinding {
             id: id.to_string(),
@@ -179,6 +180,77 @@ impl WxmlRenderer {
             .cloned()
             .collect();
         Self::bubble_chain(&mut matched)
+    }
+
+    /// 按微信语义排好序的**派发链**：先捕获（由外向内）再冒泡（由内向外）。
+    ///
+    /// - `catch*` / `capture-catch:*`：触发后终止后续传播（含它自己）
+    /// - `mut-bind:*`：互斥绑定，一条触发后其余 mut-bind 不再触发，但 `bind`/`catch` 照旧
+    /// - `scope`：`Some(true)` 只看 `position:fixed` 覆盖层，`Some(false)` 只看正常流，
+    ///   `None` 两者都看（覆盖层的坐标系是视口，正常流含滚动偏移，所以调用方通常要分开问）
+    ///
+    /// 调用方只需按顺序逐条调用返回的绑定即可 —— 传播语义全在这里收口，
+    /// 免得每个输入路径各写一遍（此前 fixed 分支只取了链首一条，等于覆盖层内不冒泡）。
+    pub fn dispatch_chain(
+        &self,
+        x: f32,
+        y: f32,
+        event_type: &str,
+        scope: Option<bool>,
+    ) -> Vec<EventBinding> {
+        let p = crate::Point::new(x, y);
+        let mut matched: Vec<EventBinding> = self
+            .event_bindings
+            .iter()
+            .filter(|b| {
+                scope.map(|s| b.is_fixed == s).unwrap_or(true)
+                    && b.event_type == event_type
+                    && b.bounds.contains(&p)
+            })
+            .cloned()
+            .collect();
+        // 面积升序 ≈ 由内向外（子节点面积必然不大于父节点）
+        matched.sort_by(|a, b| {
+            let area_a = a.bounds.width * a.bounds.height;
+            let area_b = b.bounds.width * b.bounds.height;
+            area_a.partial_cmp(&area_b).unwrap_or(std::cmp::Ordering::Equal)
+        });
+
+        let mut chain = Vec::new();
+        // ── 捕获阶段：由外向内 ──
+        for b in matched.iter().filter(|b| b.phase == EventPhase::Capture).rev() {
+            let stop = b.is_catch;
+            chain.push(b.clone());
+            if stop {
+                return chain;
+            }
+        }
+        // ── 冒泡阶段：由内向外 ──
+        let mut mut_fired = false;
+        for b in matched.iter().filter(|b| b.phase == EventPhase::Bubble) {
+            if b.mut_bind {
+                if mut_fired {
+                    continue;
+                }
+                mut_fired = true;
+            }
+            let stop = b.is_catch;
+            chain.push(b.clone());
+            if stop {
+                break;
+            }
+        }
+        chain
+    }
+
+    /// 命中点上是否存在该事件的 `catch` 绑定（含捕获阶段）。
+    ///
+    /// 手势层要用它：遮罩上的 `catchtouchmove` 就是「不许滚动下层页面」的标准写法。
+    pub fn has_catch_for(&self, x: f32, y: f32, event_type: &str) -> bool {
+        let p = crate::Point::new(x, y);
+        self.event_bindings
+            .iter()
+            .any(|b| b.is_catch && b.event_type == event_type && b.bounds.contains(&p))
     }
 
     pub(super) fn bubble_chain(matched: &mut Vec<EventBinding>) -> Vec<EventBinding> {

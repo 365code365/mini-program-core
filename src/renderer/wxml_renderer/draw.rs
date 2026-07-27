@@ -213,13 +213,16 @@ impl WxmlRenderer {
             }
         }
 
-        for (et, h, d, is_catch) in &node.events {
+        for e in &node.events {
             self.event_bindings.push(EventBinding { 
-                event_type: et.clone(), 
-                handler: h.clone(), 
-                data: d.clone(), 
+                event_type: e.event_type.clone(), 
+                handler: e.handler.clone(), 
+                id: node.attrs.get("id").cloned().unwrap_or_default(), 
+                data: e.data.clone(), 
                 bounds: logical_bounds,
-                is_catch: *is_catch,
+                is_catch: e.is_catch,
+                phase: e.phase,
+                mut_bind: e.mut_bind,
                 is_fixed: self.registering_fixed,
             });
         }
@@ -253,13 +256,16 @@ impl WxmlRenderer {
             }
         }
 
-        for (et, h, d, is_catch) in &node.events {
+        for e in &node.events {
             self.event_bindings.push(EventBinding { 
-                event_type: et.clone(), 
-                handler: h.clone(), 
-                data: d.clone(), 
+                event_type: e.event_type.clone(), 
+                handler: e.handler.clone(), 
+                id: node.attrs.get("id").cloned().unwrap_or_default(), 
+                data: e.data.clone(), 
                 bounds: logical_bounds,
-                is_catch: *is_catch,
+                is_catch: e.is_catch,
+                phase: e.phase,
+                mut_bind: e.mut_bind,
                 is_fixed: self.registering_fixed,
             });
         }

@@ -805,37 +805,8 @@ impl MiniAppApi {
                         }
                     }
                     eventData = eventData || {};
-                    
-                    // 转换 dataset 中的值
-                    var dataset = {};
-                    for (var key in eventData) {
-                        if (eventData.hasOwnProperty(key)) {
-                            var val = eventData[key];
-                            if (typeof val === 'string') {
-                                // 尝试解析 JSON 对象/数组（单引号格式）
-                                // 模板引擎将双引号替换为单引号以避免 HTML 属性冲突
-                                if ((val.startsWith('{') && val.endsWith('}')) || 
-                                    (val.startsWith('[') && val.endsWith(']'))) {
-                                    try {
-                                        // 将单引号替换回双引号后解析
-                                        var jsonStr = val.replace(/'/g, '"');
-                                        dataset[key] = JSON.parse(jsonStr);
-                                    } catch (e) {
-                                        dataset[key] = val;
-                                    }
-                                }
-                                // 尝试转换为数字
-                                else if (/^-?\d+(\.\d+)?$/.test(val)) {
-                                    dataset[key] = parseFloat(val);
-                                } else {
-                                    dataset[key] = val;
-                                }
-                            } else {
-                                dataset[key] = val;
-                            }
-                        }
-                    }
-                    
+                    // dataset 的字面量还原与触摸链路共用一份实现（见 __coerceDataset）
+                    var dataset = __coerceDataset(eventData);
                     var targetInfo = { id: '', offsetLeft: 0, offsetTop: 0, dataset: dataset };
                     var event = {
                         type: 'tap',
@@ -854,6 +825,51 @@ impl MiniAppApi {
                     return true;
                 }
                 return false;
+            }
+
+            /// 派发一个**原生侧拼好的完整事件对象**（touchstart/touchmove/touchend/
+            /// touchcancel/longpress/tap 都走这里）。
+            ///
+            /// 与 `__callPageMethod` 的分工：那个是「只有 dataset、事件对象由 JS 兜」的
+            /// 老入口（picker、交互组件回调仍在用）；触摸链路的事件对象必须由原生构造 ——
+            /// `touches` / `changedTouches` 的坐标、`target` 与 `currentTarget` 的区分
+            /// 只有渲染层知道。
+            function __dispatchEvent(handlerName, event) {
+                if (!handlerName) { return false; }
+                event = event || {};
+                if (event.target) { event.target.dataset = __coerceDataset(event.target.dataset); }
+                if (event.currentTarget) { event.currentTarget.dataset = __coerceDataset(event.currentTarget.dataset); }
+                event.detail = event.detail || {};
+                event.touches = event.touches || [];
+                event.changedTouches = event.changedTouches || [];
+                try {
+                    return __dispatchHandler(handlerName, event);
+                } catch (e) {
+                    __native_print('[Error] ' + handlerName + ': ' + (e && e.message ? e.message : e));
+                    return false;
+                }
+            }
+
+            /// `data-*` 都是字符串，微信会按字面量还原成数字/对象/数组。
+            /// 列表项常写 `data-id="12"`，页面里直接和数字比较 —— 不还原就永远不相等。
+            function __coerceDataset(raw) {
+                var out = {};
+                if (!raw) { return out; }
+                for (var key in raw) {
+                    if (!raw.hasOwnProperty(key)) { continue; }
+                    var val = raw[key];
+                    if (typeof val !== 'string') { out[key] = val; continue; }
+                    if ((val.charAt(0) === '{' && val.charAt(val.length - 1) === '}') ||
+                        (val.charAt(0) === '[' && val.charAt(val.length - 1) === ']')) {
+                        try { out[key] = JSON.parse(val.replace(/'/g, '"')); }
+                        catch (e) { out[key] = val; }
+                    } else if (/^-?\d+(\.\d+)?$/.test(val)) {
+                        out[key] = parseFloat(val);
+                    } else {
+                        out[key] = val;
+                    }
+                }
+                return out;
             }
 
             /// 页面或其组件实例上是否存在该处理函数

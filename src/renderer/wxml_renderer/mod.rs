@@ -25,10 +25,16 @@ use crate::renderer::components::{
 pub struct EventBinding {
     pub event_type: String,
     pub handler: String,
+    /// 节点的 `id` 属性（事件对象里的 `target.id` / `currentTarget.id`）
+    pub id: String,
     pub data: HashMap<String, String>,
     pub bounds: GeoRect,
-    /// 是否是 catch 事件（阻止冒泡）
+    /// 是否是 catch 事件（阻止继续传播）
     pub is_catch: bool,
+    /// 传播阶段（捕获先于冒泡）
+    pub phase: crate::renderer::components::EventPhase,
+    /// `mut-bind:*`：互斥绑定，同一次传播里只触发最内层那一条
+    pub mut_bind: bool,
     /// 是否来自 `position: fixed` 覆盖层。
     /// 覆盖层的坐标是视口坐标（不含滚动偏移），而且它在页面之上 ——
     /// 命中判定必须先只看覆盖层，命中就到此为止，否则点击会穿透到下层。
