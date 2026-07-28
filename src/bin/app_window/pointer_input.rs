@@ -50,7 +50,24 @@ impl crate::MiniAppWindow {
             
             let has_tabbar = self.page_stack.last().map(|p| self.is_tabbar_page(&p.path)).unwrap_or(false);
             let tabbar_y = if has_tabbar { (LOGICAL_HEIGHT - tabbar_height()) as f32 } else { LOGICAL_HEIGHT as f32 };
-            if has_tabbar && y >= tabbar_y { return; }
+            if has_tabbar && y >= tabbar_y {
+                // tabBar 不属于页面：不建手势、不滚页面、不去命中页面里的元素。
+                //
+                // 但**触摸序列必须照常起来**。从前这里直接 `return`，`self.touch.press()`
+                // 根本没执行，于是抬手时 `touch.release()` 产不出 `Tap`，
+                // `on_pointer_release` 里那句 `if Tap { self.handle_click(..) }` 也就不会走
+                // —— 真机上 tabBar 完全点不动（sample-app / news-app 都是 app.json 里
+                // 声明 tabBar 的页面，命中这条；tea-app 的 tabBar 是页面内的自定义组件，
+                // `is_tabbar_page` 为假，所以那边一直正常，看着像只有这两个 app 有问题）。
+                //
+                // 这条 bug 无头测不出来：`--click` 直接调 `handle_click`，绕过了整个
+                // 指针层。tabBar 的点击回归必须用 `--touch`（走 press/release）才测得到。
+                self.scroll_pos_at_press = self.scroll.get_position();
+                let clock = self.touch_clock_ms();
+                let outs = self.touch.press(x, y, clock);
+                self.dispatch_touch_events(&outs, x, y);
+                return;
+            }
 
             // 惯性滚动中按下：先把它停住，并且**这一下不算点击** ——
             // iOS/微信里滑动的列表点一下只是停住，不会激活那一项。

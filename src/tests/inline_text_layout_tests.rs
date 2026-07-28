@@ -84,3 +84,94 @@ fn box_sizing_content_box_adds_padding_to_width() {
     assert!((bw - 120.0).abs() < 0.6 && (bh - 40.0).abs() < 0.6, "border-box 应就是 120x40，实为 {bw}x{bh}");
     assert!((cw - 140.0).abs() < 0.6 && (ch - 60.0).abs() < 0.6, "content-box 应是 140x60，实为 {cw}x{ch}");
 }
+
+// ============ min-content 不得大于 max-content ============
+
+fn probe_measure(text: &str, font_px: f32, max_line: f32, min_unit: f32) -> f32 {
+    use crate::renderer::components::{measure_text_node, TextMeasure};
+    use taffy::style::AvailableSpace;
+    let tm = TextMeasure {
+        text: text.to_string(),
+        font_px,
+        letter_spacing_px: 0.0,
+        line_height_px: font_px * 1.2,
+        pad_l: 0.0,
+        pad_r: 0.0,
+        pad_t: 0.0,
+        pad_b: 0.0,
+        nowrap: true, // 只关心宽度，别让行数估算掺进来
+        bold: false,
+        min_lines: 1,
+        max_line_width: max_line,
+        min_unit_width: min_unit,
+        font_family: None,
+    };
+    measure_text_node(
+        taffy::geometry::Size { width: None, height: None },
+        taffy::geometry::Size {
+            width: AvailableSpace::Definite(400.0),
+            height: AvailableSpace::MaxContent,
+        },
+        &tm,
+        None,
+    )
+    .width
+}
+
+/// 窄字符（`+` `−` `:` `¥`）的文本盒不能被「最小内容宽」的 1em 底顶宽。
+///
+/// `min_unit_width` 末尾垫了 `max(font_px)`（断行按整字切，可用宽再小也要放得下一个字），
+/// 但窄字符的 advance 比 1em 小得多 —— 宋体的 `+` 在 36px 下只有 24。取用方不夹一次，
+/// 单个 `+` 的盒子就被顶成 36：盒子被 `justify-content:center` 居中了，
+/// 里面的字形却偏左 3px，圆形按钮里的加号看着没对准圆心。
+#[test]
+fn narrow_glyph_box_is_not_inflated_by_one_em_floor() {
+    // 宋体 `+` 在 36px 下的真实数值：advance 24.01（取整 25），而 1em = 36
+    let w = probe_measure("+", 36.0, 25.0, 36.0);
+    assert!(
+        (w - 25.0).abs() < 0.01,
+        "单个 `+` 的盒宽应等于它的 max-content 25，不该被 1em 底顶到 36，实际 {w}"
+    );
+}
+
+/// 一般文本（max-content 大于 1em）不受影响：底仍然生效
+#[test]
+fn wide_text_still_keeps_min_content_floor() {
+    // 可用宽 400 足够，取 max-content
+    let w = probe_measure("一段比较长的文字", 28.0, 224.0, 28.0);
+    assert!((w - 224.0).abs() < 0.01, "放得下时应取 max-content，实际 {w}");
+}
+
+/// MinContent 询问下也不能超过 max-content（祖先的自动最小尺寸靠它）
+#[test]
+fn min_content_query_never_exceeds_max_content() {
+    use crate::renderer::components::{measure_text_node, TextMeasure};
+    use taffy::style::AvailableSpace;
+    let tm = TextMeasure {
+        text: "+".into(),
+        font_px: 36.0,
+        letter_spacing_px: 0.0,
+        line_height_px: 43.0,
+        pad_l: 0.0,
+        pad_r: 0.0,
+        pad_t: 0.0,
+        pad_b: 0.0,
+        nowrap: true,
+        bold: false,
+        min_lines: 1,
+        max_line_width: 25.0,
+        min_unit_width: 36.0,
+        font_family: None,
+    };
+    let w = measure_text_node(
+        taffy::geometry::Size { width: None, height: None },
+        taffy::geometry::Size {
+            width: AvailableSpace::MinContent,
+            height: AvailableSpace::MaxContent,
+        },
+        &tm,
+        None,
+    )
+    .width;
+    assert!(w <= 25.0 + 0.01, "min-content 不能大于 max-content（25），实际 {w}");
+}
