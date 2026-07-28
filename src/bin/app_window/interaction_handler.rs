@@ -176,6 +176,41 @@ fn dispatch_input_event(
     true
 }
 
+/// 把 `<image>` 的 `bindload` / `binderror` 派发到逻辑层（微信语义）。
+///
+/// `load` 的 `detail` 是图片**原始**像素尺寸 `{width, height}`，`error` 是 `{errMsg}`。
+/// 走 `__dispatchEvent` 而不是 `__callPageMethod`：既带上组件归属（组件模板里的
+/// `bindload` 要发给组件实例），`detail` 也不会被 dataset 的字面量还原改掉类型。
+pub fn dispatch_image_event(
+    app: &mut MiniApp,
+    e: &mini_render::renderer::ImageEvent,
+    time_ms: u64,
+) {
+    use mini_render::renderer::ImageEventDetail;
+    let node = serde_json::json!({ "id": e.id, "dataset": e.data });
+    let detail = match e.detail {
+        ImageEventDetail::Load { width, height } => {
+            serde_json::json!({ "width": width, "height": height })
+        }
+        ImageEventDetail::Error => serde_json::json!({ "errMsg": "GET_IMAGE_FAILED" }),
+    };
+    let event = serde_json::json!({
+        "type": e.event_type,
+        "timeStamp": time_ms,
+        "target": node,
+        "currentTarget": node,
+        "detail": detail,
+        "touches": [],
+        "changedTouches": [],
+    });
+    let handler = serde_json::to_string(&e.handler).unwrap_or_else(|_| "''".into());
+    let owner = serde_json::to_string(&e.owner).unwrap_or_else(|_| "''".into());
+    let r = app.eval(&format!("__dispatchEvent({handler}, {event}, {owner})"));
+    if mini_render::renderer::components::image_net::log_enabled() {
+        eprintln!("🖼 ⚑ 派发 {} -> {} 结果={:?}", e.event_type, e.handler, r);
+    }
+}
+
 /// 检查并获取导航请求
 pub fn check_navigation(app: &mut MiniApp) -> Option<super::navigation::NavigationRequest> {
     use super::navigation::NavigationRequest;

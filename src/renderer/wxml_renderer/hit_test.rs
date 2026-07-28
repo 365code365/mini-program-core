@@ -103,6 +103,55 @@ impl WxmlRenderer {
         format!("{}_{}_{}", node.tag, bounds.x as i32, bounds.y as i32)
     }
 
+    /// `<image bindload>` / `<image binderror>`：图片有结论时排一条事件给宿主派发。
+    ///
+    /// 微信里图片一加载完就发 `bindload`，很多页面靠它驱动后续动作 ——
+    /// tea-app 启动页就是「背景图 load 之后才开始 5 秒倒计时」，引擎不发这个事件时
+    /// 只能等页面自己的 3 秒兜底定时器，用户会先干看 3 秒不动的「5s」。
+    ///
+    /// 每个 `(组件, src)` 只发一次：src 换了才会再发（与微信一致，也避免每帧刷事件）。
+    /// 换页会新建渲染器，记录随之清空 —— 新的页面实例重新加载图片、重新发 load。
+    fn queue_image_load_event(&mut self, node: &RenderNode, component_id: &str) {
+        let Some(src) = node.attrs.get("src") else { return };
+        if src.trim().is_empty() {
+            return;
+        }
+        let state = crate::renderer::components::probe_load(src);
+        let want = match state {
+            crate::renderer::components::ImageLoad::Pending => return,
+            crate::renderer::components::ImageLoad::Ready { .. } => "load",
+            crate::renderer::components::ImageLoad::Failed => "error",
+        };
+        // 节点上真的绑了这个事件才继续（省掉无谓的去重表增长）
+        let Some(bind) = node.events.iter().find(|e| e.event_type == want) else { return };
+        let key = (component_id.to_string(), src.clone(), want);
+        if !self.image_events_sent.insert(key) {
+            return;
+        }
+        if crate::renderer::components::image_net::log_enabled() {
+            eprintln!("🖼 ⚑ bind{want} -> {} src={src}", bind.handler);
+        }
+        let detail = match state {
+            crate::renderer::components::ImageLoad::Ready { width, height } => {
+                ImageEventDetail::Load { width, height }
+            }
+            _ => ImageEventDetail::Error,
+        };
+        self.image_events.push(ImageEvent {
+            event_type: want,
+            handler: bind.handler.clone(),
+            owner: bind.owner.clone(),
+            id: node.attrs.get("id").cloned().unwrap_or_default(),
+            data: bind.data.clone(),
+            detail,
+        });
+    }
+
+    /// 取走本帧攒下的图片加载事件，交给宿主派发到逻辑层
+    pub fn take_image_events(&mut self) -> Vec<ImageEvent> {
+        std::mem::take(&mut self.image_events)
+    }
+
     /// 把一个节点上的 `bind*` / `catch*` 全部登记进本帧的事件绑定表。
     ///
     /// 六个绘制/登记入口（正常流、离屏缓存、覆盖层、scroll-view 子树…）此前各写了一份
@@ -112,6 +161,9 @@ impl WxmlRenderer {
             return;
         }
         let component_id = Self::get_component_id(node, &bounds);
+        if node.tag == "image" {
+            self.queue_image_load_event(node, &component_id);
+        }
         let id = node.attrs.get("id").cloned().unwrap_or_default();
         let is_fixed = self.registering_fixed;
         for e in &node.events {

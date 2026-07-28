@@ -69,6 +69,27 @@ pub fn has_pending() -> bool {
     *pending().lock().unwrap() > 0
 }
 
+/// 一张远程图当前的结论。**只查表**，不会因此发起下载 ——
+/// 给 `<image bindload>` / `<image binderror>` 判定用。
+pub enum Peek<T> {
+    /// 表里没有，或还在下载中
+    Pending,
+    Ready(Arc<T>),
+    /// 已经放弃重试（真正的失败，可以发 `binderror` 了）
+    Failed,
+}
+
+/// 只查表看一张远程图的结论（不发起下载）
+pub fn peek<T: 'static + Send + Sync>(url: &str) -> Peek<T> {
+    let map = states::<T>().lock().unwrap();
+    match map.get(url) {
+        Some(RemoteState::Ready(v)) => Peek::Ready(v.clone()),
+        // 还在退避重试窗口里就先不下结论：微信也是重试完才发 error
+        Some(RemoteState::Failed { tries, .. }) if *tries >= MAX_TRIES => Peek::Failed,
+        _ => Peek::Pending,
+    }
+}
+
 /// 查表拿一张远程图；没有就发起后台下载并返回 None（本帧画占位）。
 ///
 /// `decode` 在**后台线程**里执行（解码大图同样很贵，不能放回渲染线程）。

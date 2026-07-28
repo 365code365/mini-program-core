@@ -11,7 +11,7 @@ pub mod compose;
 /// 绘制耗时按组件类型归因（`MINI_DRAW_LOG=1`）
 pub mod draw_profile;
 
-pub use wxml_renderer::{WxmlRenderer, EventBinding, PickerBinding, FramePlan, VIEWPORT_CULL_MARGIN_PX};
+pub use wxml_renderer::{WxmlRenderer, EventBinding, PickerBinding, FramePlan, ImageEvent, ImageEventDetail, VIEWPORT_CULL_MARGIN_PX};
 pub use vdom_diff::{Patch, diff_forest, is_structural};
 pub use style_resolver::StyleResolver;
 pub use components::{RenderNode, NodeStyle, ComponentRegistry};

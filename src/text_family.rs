@@ -9,9 +9,16 @@
 //! 都不存在时用通用族（serif / sans-serif / monospace）兜底，
 //! 通用族也认不出来就回退到系统默认字体（即保持旧行为）。
 //!
-//! 每个字族一份 `TextRenderer`（自带字形缓存），按「规范化后的字体栈字符串」缓存，
-//! 所以同一条 `font-family` 只解析、只加载一次。缺字形时按 CJK 回退链继续找
-//! （Times New Roman 没有汉字，浏览器也是逐字回退的）。
+//! 缓存分两层，**都是必须的**：
+//! - 按「规范化后的字体栈字符串」缓存解析结果，省掉重复的字族匹配；
+//! - 按**解析出来的字体文件路径**缓存 `TextRenderer`，因为不同的字体栈经常落到
+//!   同一个文件上。tea-app 就有三条不同的栈（`"Source Han Serif SC",…`、
+//!   `"Songti SC",…`、`"Yunxiu Serif",…`）全部解析到 `Songti.ttc` —— 那是个
+//!   **63.8MB** 的 ttc，解析一次要 1.5~2.4s。只有栈级缓存时它会被解析三遍，
+//!   而且全都发生在**第一帧的建树阶段**：启动页实测「建树+样式 3093ms」，
+//!   首屏三秒不出帧，页面里靠 `bindload` 驱动的倒计时看起来像根本没启动。
+//!
+//! 缺字形时按 CJK 回退链继续找（Times New Roman 没有汉字，浏览器也是逐字回退的）。
 
 use crate::text::TextRenderer;
 use std::collections::HashMap;
@@ -20,6 +27,34 @@ use std::sync::{Arc, Mutex, OnceLock};
 fn registry() -> &'static Mutex<HashMap<String, Option<Arc<TextRenderer>>>> {
     static REG: OnceLock<Mutex<HashMap<String, Option<Arc<TextRenderer>>>>> = OnceLock::new();
     REG.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+/// 字体**文件**级缓存：路径 → 渲染器。多条字体栈落到同一个文件时共享一份。
+fn by_path() -> &'static Mutex<HashMap<&'static str, Option<Arc<TextRenderer>>>> {
+    static REG: OnceLock<Mutex<HashMap<&'static str, Option<Arc<TextRenderer>>>>> = OnceLock::new();
+    REG.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+/// 加载一个字体文件（同一个文件只解析一次）。`None` = 这个文件加载失败。
+fn renderer_for_path(path: &'static str) -> Option<Arc<TextRenderer>> {
+    if let Ok(cache) = by_path().lock() {
+        if let Some(hit) = cache.get(path) {
+            return hit.clone();
+        }
+    }
+    let loaded = match TextRenderer::from_file_with_fallback(path) {
+        Ok(r) => Some(Arc::new(r)),
+        Err(e) => {
+            if std::env::var_os("MINI_FONT_LOG").is_some() {
+                eprintln!("🔤 字体 {path} 加载失败: {e}");
+            }
+            None
+        }
+    };
+    if let Ok(mut cache) = by_path().lock() {
+        cache.insert(path, loaded.clone());
+    }
+    loaded
 }
 
 /// 按 CSS `font-family` 取渲染器。返回 `None` 表示「用默认系统字体」。
@@ -74,18 +109,11 @@ fn load_family_stack(list: &str) -> Option<Arc<TextRenderer>> {
             if !std::path::Path::new(path).exists() {
                 continue;
             }
-            match TextRenderer::from_file_with_fallback(path) {
-                Ok(r) => {
-                    if std::env::var_os("MINI_FONT_LOG").is_some() {
-                        eprintln!("🔤 font-family `{}` -> {}", item.trim(), path);
-                    }
-                    return Some(Arc::new(r));
+            if let Some(r) = renderer_for_path(path) {
+                if std::env::var_os("MINI_FONT_LOG").is_some() {
+                    eprintln!("🔤 font-family `{}` -> {}", item.trim(), path);
                 }
-                Err(e) => {
-                    if std::env::var_os("MINI_FONT_LOG").is_some() {
-                        eprintln!("🔤 字体 {path} 加载失败: {e}");
-                    }
-                }
+                return Some(r);
             }
         }
     }

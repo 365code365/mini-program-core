@@ -799,6 +799,17 @@ impl MiniAppWindow {
             }
         }
         
+        // `<image bindload>` / `<image binderror>`：图片有结论了就派发到逻辑层。
+        // 必须在这里做（每条渲染路径的共同出口），只在事件循环里做的话
+        // 快照/无窗口路径会漏掉。
+        let img_events = self.renderer.as_mut().map(|r| r.take_image_events()).unwrap_or_default();
+        if !img_events.is_empty() {
+            let time_ms = self.event_time_ms();
+            for e in img_events {
+                app_window::dispatch_image_event(&mut self.app, &e, time_ms);
+            }
+        }
+
         let t_page_done = Instant::now();
         // 局部重绘帧里 fixed 覆盖层与 tabBar 不会变，直接沿用上一帧的画布 ——
         // 除非覆盖层自己带动画（那时 animation_damage_rect 会拒绝走局部路径）。

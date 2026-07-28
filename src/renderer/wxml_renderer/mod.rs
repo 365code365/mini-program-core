@@ -21,6 +21,30 @@ use crate::renderer::components::{
     build_base_style, Tree, TextMeasure, measure_text_node, draw_background,
 };
 
+/// `<image>` 加载事件的 `detail`（与微信一致）
+#[derive(Debug, Clone, Copy)]
+pub enum ImageEventDetail {
+    /// `bindload`：`{ width, height }` 是图片的**原始**像素尺寸
+    Load { width: u32, height: u32 },
+    /// `binderror`：`{ errMsg }`
+    Error,
+}
+
+/// 一条待派发的 `<image>` 加载事件
+#[derive(Debug, Clone)]
+pub struct ImageEvent {
+    /// `"load"` 或 `"error"`
+    pub event_type: &'static str,
+    pub handler: String,
+    /// 声明它的自定义组件标签（页面模板里是空串）
+    pub owner: String,
+    /// 节点的 `id` 属性
+    pub id: String,
+    /// 节点的 `data-*`
+    pub data: std::collections::HashMap<String, String>,
+    pub detail: ImageEventDetail,
+}
+
 #[derive(Debug, Clone)]
 pub struct EventBinding {
     pub event_type: String,
@@ -136,6 +160,10 @@ pub struct WxmlRenderer {
     screen_width: f32,
     screen_height: f32,
     event_bindings: Vec<EventBinding>,
+    /// 本帧攒下的 `<image>` 加载事件，由宿主 `take_image_events()` 取走派发
+    image_events: Vec<ImageEvent>,
+    /// 已经发过的 `(组件 id, src, 事件名)`，保证每张图只发一次 load/error
+    image_events_sent: std::collections::HashSet<(String, String, &'static str)>,
     text_renderer: Option<std::sync::Arc<TextRenderer>>,
     scale_factor: f32,
     cache: Option<CachedLayout>,
@@ -207,6 +235,8 @@ impl WxmlRenderer {
             screen_width,
             screen_height,
             event_bindings: Vec::new(),
+            image_events: Vec::new(),
+            image_events_sent: Default::default(),
             text_renderer,
             scale_factor,
             cache: None,

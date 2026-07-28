@@ -16,7 +16,7 @@ mod checkbox;
 mod radio;
 mod slider;
 mod input;
-mod image;
+pub mod image;
 mod video;
 mod canvas;
 mod swiper;
@@ -35,7 +35,7 @@ pub use checkbox::CheckboxComponent;
 pub use radio::RadioComponent;
 pub use slider::SliderComponent;
 pub use input::InputComponent;
-pub use image::{ImageComponent, is_animated, animation_total_ms};
+pub use image::{ImageComponent, is_animated, animation_total_ms, probe_load, ImageLoad};
 pub mod image_net;
 pub use video::VideoComponent;
 pub use video::{

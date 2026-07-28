@@ -121,6 +121,12 @@ impl TextRenderer {
         };
         let regular_ratio = ink_ratio(regular);
         let regular_advance = regular.metrics(PROBE, PROBE_SIZE).advance_width;
+        let log = std::env::var_os("MINI_FONT_LOG").is_some();
+        // 连续几个字面都比常规更细：字体集合是按粗细排的，再往后只会更细。
+        // 这个早停不是可选的优化 —— macOS 的 `Songti.ttc` 有 63.8MB、5 个字面，
+        // 而且第 0 个就是最黑的那个，探完全部只会得到 `None`：白解析 5 遍 ≈ 1.37s，
+        // 全都发生在**第一帧的建树阶段**（启动页首帧因此要 3 秒才出来）。
+        let mut lighter_in_a_row = 0;
         for index in 1..6u32 {
             let settings = FontSettings { scale: 40.0, collection_index: index, ..Default::default() };
             let Ok(candidate) = Font::from_bytes(font_data, settings) else { break };
@@ -128,14 +134,32 @@ impl TextRenderer {
                 continue;
             }
             let advance = candidate.metrics(PROBE, PROBE_SIZE).advance_width;
+            let ratio = ink_ratio(&candidate);
+            if log {
+                eprintln!(
+                    "🔤   字面 #{index}：字宽 {advance:.2}（常规 {regular_advance:.2}）\
+                     墨占比 {ratio:.3}（常规 {regular_ratio:.3}）"
+                );
+            }
             // 粗体字面应与常规字面等宽（同一字族的等宽 CJK），否则可能是压缩/斜体字面
             if (advance - regular_advance).abs() > 0.6 {
                 continue;
             }
             // 命中第一个「明显更黑且等宽」的字面即返回：继续扫描只会把同一个
-            // 22MB 字体集合反复解析，白白拖慢启动
-            if ink_ratio(&candidate) > regular_ratio * 1.25 {
+            // 字体集合反复解析，白白拖慢启动
+            if ratio > regular_ratio * 1.25 {
                 return Some(candidate);
+            }
+            if ratio < regular_ratio {
+                lighter_in_a_row += 1;
+                if lighter_in_a_row >= 2 {
+                    if log {
+                        eprintln!("🔤   连续 2 个字面都比常规更细，认定本集合无更粗字面，停止探测");
+                    }
+                    break;
+                }
+            } else {
+                lighter_in_a_row = 0;
             }
         }
         None
@@ -251,9 +275,22 @@ impl TextRenderer {
     /// 与 `from_file` 的区别就是这两条回退 —— 直接用 `from_file` 的话，
     /// 宋体没有的符号、西文字体没有的汉字都会画成豆腐块。
     pub fn from_file_with_fallback(path: &str) -> Result<Self, String> {
+        let log = std::env::var_os("MINI_FONT_LOG").is_some();
+        let t0 = std::time::Instant::now();
         let data = std::fs::read(path).map_err(|e| format!("读取字体 {path} 失败: {e}"))?;
+        let t_read = t0.elapsed();
         let mut r = Self::from_bytes(&data)?;
+        let t_parse = t0.elapsed();
         r.bold_font = Self::detect_bold_face(&data, &r.main_font);
+        if log {
+            eprintln!(
+                "🔤 加载 {path}（{:.1}MB）：读盘 {:.0}ms 解析常规字面 {:.0}ms 探测粗体字面 {:.0}ms",
+                data.len() as f32 / 1048576.0,
+                t_read.as_secs_f32() * 1000.0,
+                (t_parse - t_read).as_secs_f32() * 1000.0,
+                (t0.elapsed() - t_parse).as_secs_f32() * 1000.0,
+            );
+        }
         // 只在该字体缺汉字时才挂回退（宋体自带汉字，不必多占一份）
         if !r.main_has_glyph('国') {
             r.fallback = shared_fonts();
