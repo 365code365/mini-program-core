@@ -224,15 +224,19 @@ impl crate::MiniAppWindow {
                     if over_fixed && std::env::var("MINI_SCROLL_LOG").is_ok() {
                         eprintln!("🖱 ({x},{y}) 落在 fixed 覆盖层上 → 页面滚动被锁");
                     }
-                    if super::handle_mouse_wheel_gated(
+                    let out = super::handle_mouse_wheel_gated(
                         delta,
                         (*x, *y),
                         &mut self.interaction,
                         &mut self.scroll,
                         sf,
                         over_fixed,
-                    ) {
+                    );
+                    if out.redraw {
                         self.needs_redraw = true;
+                    }
+                    if out.fixed_dirty {
+                        self.fixed_dirty = true;
                     }
                     self.pump_one_frame();
                     std::thread::sleep(Duration::from_millis(8));
@@ -242,6 +246,7 @@ impl crate::MiniAppWindow {
                 for c in self.interaction.scroll_controllers.values_mut() {
                     c.end_wheel_gesture();
                 }
+                self.fixed_dirty = true;
                 self.settle_scroll_animations(2000);
             }
         }

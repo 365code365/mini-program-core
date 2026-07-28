@@ -1306,9 +1306,14 @@ impl ApplicationHandler for MiniAppWindow {
                     .as_ref()
                     .map(|r| r.fixed_layer_hit(self.mouse_pos.0, self.mouse_pos.1))
                     .unwrap_or(false);
-                if evt::handle_mouse_wheel_gated(delta, self.mouse_pos, &mut self.interaction, &mut self.scroll, self.scale_factor, over_fixed) {
+                let out = evt::handle_mouse_wheel_gated(delta, self.mouse_pos, &mut self.interaction, &mut self.scroll, self.scale_factor, over_fixed);
+                if out.redraw {
                     self.needs_redraw = true;
                     self.last_scroll_at = Some(Instant::now());
+                }
+                // 滚的是覆盖层里的 scroll-view：覆盖层画布得重画，否则位置动了画面不动
+                if out.fixed_dirty {
+                    self.fixed_dirty = true;
                 }
                 // 触控板抬手/取消：越界立即回弹（鼠标滚轮没有这个阶段，由控制器的静默计时兜底）
                 if matches!(phase, winit::event::TouchPhase::Ended | winit::event::TouchPhase::Cancelled) {
@@ -1316,6 +1321,7 @@ impl ApplicationHandler for MiniAppWindow {
                     for c in self.interaction.scroll_controllers.values_mut() {
                         c.end_wheel_gesture();
                     }
+                    self.fixed_dirty = true;
                 }
                 if let Some(w) = &self.window { w.request_redraw(); }
             }

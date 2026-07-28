@@ -65,7 +65,27 @@ fn can_take(c: &ScrollController, delta: f32) -> bool {
     }
 }
 
-/// 处理一次滚轮/触控板事件。返回是否需要重绘。
+/// 一次滚轮事件的处理结果
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct Outcome {
+    /// 需要重绘
+    pub redraw: bool,
+    /// 滚动的是**覆盖层里**的 scroll-view，固定层画布得跟着重画。
+    ///
+    /// 覆盖层是按 `fixed_dirty` 门控重绘的（钉在视口上，滚动页面时重画纯属浪费）。
+    /// 滚动它内部的 scroll-view 却是实打实改了它的像素 —— 不置这个标记的话，
+    /// 控制器位置动了、屏幕上一动不动（协议弹窗用触控板滚不动就是这个原因；
+    /// 拖动路径在按下时顺手置了这个标记，所以手势能滚）。
+    pub fixed_dirty: bool,
+}
+
+impl Outcome {
+    fn page(redraw: bool) -> Self {
+        Self { redraw, fixed_dirty: false }
+    }
+}
+
+/// 处理一次滚轮/触控板事件。
 ///
 /// `lock_page_scroll` 为真时（光标停在弹窗遮罩上）不落到页面滚动，
 /// 但覆盖层内部自己的 scroll-view 照常可滚 —— 与微信一致。
@@ -76,14 +96,14 @@ pub fn handle(
     page_scroll: &mut ScrollController,
     scale_factor: f64,
     lock_page_scroll: bool,
-) -> bool {
+) -> Outcome {
     let d = WheelDelta::parse(delta, scale_factor);
     if d.x.abs() < 0.1 && d.y.abs() < 0.1 {
-        return false;
+        return Outcome::default();
     }
     let (horizontal, step) = d.dominant();
     if step.abs() < 0.1 {
-        return false;
+        return Outcome::default();
     }
 
     let (x, y) = mouse_pos;
@@ -91,19 +111,22 @@ pub fn handle(
     let actual_y = y + page_scroll.get_position();
 
     // 由内到外找第一个「轴匹配且吃得下」的滚动区：先覆盖层，再正常流
-    let target = pick_target(interaction, x, y, true, horizontal, step)
-        .or_else(|| pick_target(interaction, x, actual_y, false, horizontal, step));
+    let mut in_fixed = true;
+    let target = pick_target(interaction, x, y, true, horizontal, step).or_else(|| {
+        in_fixed = false;
+        pick_target(interaction, x, actual_y, false, horizontal, step)
+    });
 
     if let Some(id) = target {
         if let Some(c) = interaction.get_scroll_controller_mut(&id) {
             c.handle_scroll(step, d.precise);
-            return true;
+            return Outcome { redraw: true, fixed_dirty: in_fixed };
         }
     }
 
     // 没人接：横向位移不该驱动页面（页面只有纵向滚动）
     if horizontal || lock_page_scroll {
-        return false;
+        return Outcome::default();
     }
     let before = page_scroll.get_position();
     page_scroll.handle_scroll(step, d.precise);
@@ -112,7 +135,7 @@ pub fn handle(
     // —— 滑动过程一片空白，停下后被别的原因触发一次重绘内容才出现。
     //
     // 位置没变也算处理过：内容不足一屏时页面仍允许越界橡皮筋，那一下也要出帧。
-    (page_scroll.get_position() - before).abs() > 0.001 || page_scroll.is_animating()
+    Outcome::page((page_scroll.get_position() - before).abs() > 0.001 || page_scroll.is_animating())
 }
 
 /// 在一个坐标系里由内到外挑接管者
@@ -125,6 +148,18 @@ fn pick_target(
     step: f32,
 ) -> Option<String> {
     let log = std::env::var("MINI_SCROLL_LOG").is_ok();
+    if log {
+        let ids: Vec<String> = interaction
+            .scroll_areas_at(x, y, fixed)
+            .map(|a| format!("{}{}", a.id, if a.is_horizontal { "(横)" } else { "(纵)" }))
+            .collect();
+        eprintln!(
+            "🖱 ({x},{y}) {}作用域候选滚动区 {:?}（本次主轴={}）",
+            if fixed { "覆盖层" } else { "正常流" },
+            ids,
+            if horizontal { "横" } else { "纵" }
+        );
+    }
     for area in interaction.scroll_areas_at(x, y, fixed) {
         if area.is_horizontal != horizontal {
             continue; // 轴不匹配：纵向滑动不该驱动横向列表，反之亦然
@@ -193,8 +228,9 @@ mod tests {
         im.register_element(area("page_wrap", 0.0, 667.0, false, 667.0)); // content == viewport
         let mut page = ScrollController::new(1400.0, 667.0);
 
-        let redraw = handle(wheel_down(60.0), (187.0, 300.0), &mut im, &mut page, 2.0, false);
-        assert!(redraw);
+        let out = handle(wheel_down(60.0), (187.0, 300.0), &mut im, &mut page, 2.0, false);
+        assert!(out.redraw);
+        assert!(!out.fixed_dirty, "滚的是页面，覆盖层不用重画");
         assert!(
             (page.get_position() - 60.0).abs() < 0.01,
             "页面应当滚动 60px，实际 {}",
@@ -286,11 +322,14 @@ mod tests {
         let mut sheet = area("sheet_body", 100.0, 400.0, false, 900.0);
         sheet.is_fixed = true;
         im.register_element(sheet);
-        handle(wheel_down(60.0), (187.0, 300.0), &mut im, &mut page, 2.0, true);
+        let out = handle(wheel_down(60.0), (187.0, 300.0), &mut im, &mut page, 2.0, true);
         assert!(
             im.get_scroll_controller("sheet_body").map(|c| c.get_position()).unwrap_or(0.0) > 50.0,
             "覆盖层内部的 scroll-view 仍应可滚"
         );
         assert_eq!(page.get_position(), 0.0, "页面仍然锁住");
+        // 覆盖层的像素真的变了，必须让固定层画布重画 ——
+        // 少了这个标记就是「控制器位置动了、屏幕一动不动」（协议弹窗滚不动）
+        assert!(out.fixed_dirty, "滚覆盖层内的 scroll-view 要标记固定层重画");
     }
 }

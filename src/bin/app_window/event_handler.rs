@@ -355,7 +355,7 @@ pub fn handle_mouse_wheel_gated(
     scroll: &mut mini_render::ui::ScrollController,
     scale_factor: f64,
     lock_page_scroll: bool,
-) -> bool {
+) -> wheel::Outcome {
     wheel::handle(delta, mouse_pos, interaction, scroll, scale_factor, lock_page_scroll)
 }
 
