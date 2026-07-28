@@ -242,6 +242,10 @@ pub struct ImageComponent;
 impl ImageComponent {
     pub fn build(node: &WxmlNode, ctx: &mut ComponentContext) -> Option<RenderNode> {
         let (mut ts, mut ns) = build_base_style(node, ctx);
+        // 替换元素：作者写死的尺寸就是它的最小尺寸，别被兄弟压没。
+        // 必须在合成默认尺寸**之前**调用 —— CSS 语义里「指定尺寸」只算作者写的那个，
+        // 引擎给 textarea 之类补的默认高度不算，那种情况仍应允许被父级压缩。
+        super::pin_replaced_min_size(&mut ts);
         let events = extract_events(node);
         let attrs = node.attributes.clone();
         let sf = ctx.scale_factor;
@@ -268,18 +272,6 @@ impl ImageComponent {
         }
         if !has_custom_height {
             ts.size.height = length(default_height * sf);
-        }
-        // 图片是**替换元素**：有固有尺寸，`min-width:auto` 因此解析成
-        // 「指定尺寸与固有尺寸中较小的那个」，而不是 0。少了这一步，图片在一行里
-        // 会被兄弟一路压到 0 —— AI 选茶推荐页的商品卡一行放
-        // [图 99px | flex:1 中间栏 | 按钮 88px]，中间栏内含长标题时把图片压成 **0**，
-        // 整张商品图消失（实测 `🖼 ▢ 占位 0x236`），按钮也被挤出卡片。
-        // 非替换元素（空 `<view>`）不能这么做：它们的内容尺寸是 0，本来就该可压。
-        if dim_is_auto(ts.min_size.width) {
-            ts.min_size.width = ts.size.width;
-        }
-        if dim_is_auto(ts.min_size.height) {
-            ts.min_size.height = ts.size.height;
         }
         
         // 注意：不再强制设置默认背景色。

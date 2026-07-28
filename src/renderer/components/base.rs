@@ -1874,3 +1874,24 @@ fn add_round_rect_with_radii(path: &mut Path, x: f32, y: f32, w: f32, h: f32, ra
 
     path.close();
 }
+
+/// 把**替换元素**（image / input / textarea / canvas / video）的最小尺寸钉在它的确定尺寸上。
+///
+/// CSS 里替换元素有**固有尺寸**，所以 `min-width:auto` / `min-height:auto` 解析成
+/// 「指定尺寸与固有尺寸中较小的那个」，而不是 0。少了这一步，它们在一行里会被兄弟
+/// 一路压没：AI 选茶推荐页的商品卡一行放 `[图 99px | flex:1 中间栏 | 按钮 88px]`，
+/// 中间栏内含长标题时把商品图压成 **0**（整张图消失，实测 `🖼 ▢ 占位 0x236`），
+/// 按钮也被挤出卡片；表单页里的 textarea 同样会被压矮一截。
+///
+/// **不能对非替换元素这么做。** 空的 `<view>` 内容尺寸就是 0，本来就该可压 ——
+/// 音乐播放器那个 4px 高的进度条里塞了个 13px 的圆把手，靠的正是「可压」把它压回
+/// 轨道高度。一刀切给所有定尺寸叶子加最小尺寸，把手就会撑成整圆顶出轨道
+/// （实测 gallery 从 1 张变化扩散到 14 张）。所以这条规则按**元素类型**给。
+pub fn pin_replaced_min_size(ts: &mut Style) {
+    if dim_is_auto(ts.min_size.width) && dim_length(ts.size.width).is_some() {
+        ts.min_size.width = ts.size.width;
+    }
+    if dim_is_auto(ts.min_size.height) && dim_length(ts.size.height).is_some() {
+        ts.min_size.height = ts.size.height;
+    }
+}

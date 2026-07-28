@@ -969,6 +969,10 @@ pub struct VideoComponent;
 impl VideoComponent {
     pub fn build(node: &WxmlNode, ctx: &mut ComponentContext) -> Option<RenderNode> {
         let (mut ts, mut ns) = build_base_style(node, ctx);
+        // 替换元素：作者写死的尺寸就是它的最小尺寸，别被兄弟压没。
+        // 必须在合成默认尺寸**之前**调用 —— CSS 语义里「指定尺寸」只算作者写的那个，
+        // 引擎给 textarea 之类补的默认高度不算，那种情况仍应允许被父级压缩。
+        super::pin_replaced_min_size(&mut ts);
         let events = extract_events(node);
         let attrs = node.attributes.clone();
         let sf = ctx.scale_factor;
