@@ -287,6 +287,18 @@ impl WxmlRenderer {
             let new_layout = match taffy.layout(*id) { Ok(l) => *l, Err(_) => continue };
             let w = new_layout.size.width;
             let h = new_layout.size.height;
+            if std::env::var("MINI_FIXED_LOG").is_ok() {
+                eprintln!(
+                    "📌 fixed 子树 目标 {:.0}x{:.0} → 实测 {:.0}x{:.0}（逻辑）\
+                     insets l={:?} r={:?} t={:?} b={:?}",
+                    target_w / sf, target_h / sf, w / sf, h / sf,
+                    st.fixed_left.map(|v| v / sf), st.fixed_right.map(|v| v / sf),
+                    st.fixed_top.map(|v| v / sf), st.fixed_bottom.map(|v| v / sf),
+                );
+                if let Some(node) = find_node(roots, *id) {
+                    Self::dump_scroll_subtree(taffy, node, sf, 0.0, 1);
+                }
+            }
 
             let pinned_x = if let Some(left) = st.fixed_left {
                 left

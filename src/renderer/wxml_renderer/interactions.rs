@@ -57,7 +57,7 @@ impl WxmlRenderer {
     
     /// `MINI_SCROLL_LOG=1 MINI_SCROLL_TREE=1`：打印滚动容器子树的逻辑几何，
     /// 用来定位「内容明明超出去了，可滚上限却是 0」这类问题出在哪一层。
-    fn dump_scroll_subtree(taffy: &Tree, node: &RenderNode, sf: f32, oy: f32, depth: usize) {
+    pub(super) fn dump_scroll_subtree(taffy: &Tree, node: &RenderNode, sf: f32, oy: f32, depth: usize) {
         if depth > 6 {
             return;
         }
@@ -65,12 +65,14 @@ impl WxmlRenderer {
         let y = oy + l.location.y;
         let class = node.attrs.get("class").map(|s| s.as_str()).unwrap_or("");
         eprintln!(
-            "   {}{} .{} y={:.0} h={:.0}",
+            "   {}{} .{} y={:.0} h={:.0} x={:.0} w={:.0}",
             "  ".repeat(depth),
             node.tag,
             class,
             y / sf,
-            l.size.height / sf
+            l.size.height / sf,
+            l.location.x / sf,
+            l.size.width / sf
         );
         for c in &node.children {
             Self::dump_scroll_subtree(taffy, c, sf, y, depth + 1);

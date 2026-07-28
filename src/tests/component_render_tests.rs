@@ -39,7 +39,7 @@ fn test_view_and_text() {
 #[test]
 fn test_block_text_wraps_to_multiple_lines() {
     // display:block 的长文本应按容器宽度换行，盒子高度随行数增长（CSS 语义）。
-    // 回归测试第二遍布局修正 correct_wrapped_text_heights。
+    // 回归测试第二遍布局修正 correct_overflow（原 correct_wrapped_text_heights）。
     let css = ".box{ width:200px; } .t{ display:block; font-size:16px; line-height:24px; }";
     let long = "这是一段很长的中文文本用来验证在固定宽度容器内能够正确地自动换行到多行而不是被压缩成一行显示";
     let wxml = format!(r#"<view class="box"><text class="t">{}</text></view>"#, long);

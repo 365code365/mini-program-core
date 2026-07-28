@@ -8,7 +8,7 @@
 
 use super::*;
 // taffy 0.12 的尺寸值是位压缩结构，读值走这几个封装（见 components::base）
-use crate::renderer::components::{dim_is_auto, dim_percent, lpa_length};
+use crate::renderer::components::dim_is_auto;
 
 impl WxmlRenderer {
     /// 需要时重建布局树，并返回这次数据变化的重绘范围（见 [`FramePlan`]）。
@@ -83,7 +83,7 @@ impl WxmlRenderer {
         self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT);
         let t_layout1 = std::time::Instant::now();
         // 第二遍：按实际宽度修正换行文本高度、按实际包含块高度修正绝对定位高度，再重新布局
-        let mut need_relayout = self.correct_wrapped_text_heights(&mut taffy, &render_nodes);
+        let mut need_relayout = self.correct_overflow(&mut taffy, &render_nodes);
         need_relayout |= self.correct_absolute_heights(&mut taffy, &render_nodes, viewport_h);
         if need_relayout {
             self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT);
@@ -163,7 +163,7 @@ impl WxmlRenderer {
             &child_ids,
         ).unwrap();
         self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT);
-        let mut need_relayout = self.correct_wrapped_text_heights(&mut taffy, &render_nodes);
+        let mut need_relayout = self.correct_overflow(&mut taffy, &render_nodes);
         need_relayout |= self.correct_absolute_heights(
             &mut taffy,
             &render_nodes,
@@ -198,116 +198,6 @@ impl WxmlRenderer {
                 },
             },
         );
-    }
-
-    /// 第二遍布局修正之二：**绝对定位元素的包含块高度塌成 0 时按视口折算**。
-    ///
-    /// CSS 规则：`position:absolute` 的包含块是最近的定位祖先，没有则是初始包含块（视口）。
-    /// 建树期已经处理了「一个定位祖先都没有」的情况，但还有一类同样常见：
-    /// 定位祖先存在，而它的**使用高度是 0** —— 典型就是整屏铺底的写法
-    ///
-    /// ```text
-    /// .page { flex: 1; position: relative }        /* 子节点全是绝对定位 → 没有在流内容 → 高 0 */
-    /// .background { position: absolute; inset: 0; width: 100%; height: 100% }
-    /// ```
-    ///
-    /// 微信/Skyline 里页面根节点就是视口高，所以 `.page` 是满屏的；我们的布局根是
-    /// `height: auto`（内容高驱动滚动），于是这类页面整屏都塌掉：闪屏页的背景图不见了、
-    /// 文案全挤在顶部。这里在**布局之后**用实际使用高度判断，塌成 0 就退回视口高度。
-    ///
-    /// 放在布局之后而不是建树期，是因为「包含块的使用高度」只有布局算完才知道。
-    pub(super) fn correct_absolute_heights(&self, taffy: &mut Tree, nodes: &[RenderNode], viewport_h: f32) -> bool {
-        let mut changed = false;
-        self.fix_abs_in(taffy, nodes, viewport_h, &mut changed);
-        changed
-    }
-
-    fn fix_abs_in(&self, taffy: &mut Tree, nodes: &[RenderNode], cb_h: f32, changed: &mut bool) {
-        for node in nodes {
-            // 该节点作为「包含块」时的高度：自己是定位元素且有实际高度才换参照物，
-            // 高度为 0 说明它自己也没被撑开，继续沿用上层的参照物（最终是视口）。
-            let used_h = taffy.layout(node.taffy_node).map(|l| l.size.height).unwrap_or(0.0);
-            let child_cb = if node.style.is_positioned && used_h > 1.0 { used_h } else { cb_h };
-
-            for child in &node.children {
-                let Ok(st) = taffy.style(child.taffy_node).cloned() else { continue };
-                if st.position != Position::Absolute {
-                    continue;
-                }
-                // taffy 0.12 起这些尺寸值是位压缩结构、不能 match，用读值判据代替
-                let target = if let Some(p) = dim_percent(st.size.height) {
-                    // `height: 50%` → 按包含块折算
-                    Some(child_cb * p)
-                } else if dim_is_auto(st.size.height) {
-                    // `top/bottom` 都给了而高度 auto：高度 = 包含块高 - top - bottom
-                    match (lpa_length(st.inset.top), lpa_length(st.inset.bottom)) {
-                        (Some(t), Some(b)) => Some((child_cb - t - b).max(0.0)),
-                        _ => None,
-                    }
-                } else {
-                    None
-                };
-                if let Some(h) = target {
-                    let cur = taffy.layout(child.taffy_node).map(|l| l.size.height).unwrap_or(0.0);
-                    if (cur - h).abs() > 0.5 && h > 0.5 {
-                        let mut st2 = st.clone();
-                        st2.size.height = length(h);
-                        taffy.set_style(child.taffy_node, st2).ok();
-                        *changed = true;
-                    }
-                }
-            }
-            self.fix_abs_in(taffy, &node.children, child_cb, changed);
-        }
-    }
-
-    pub(super) fn correct_wrapped_text_heights(&self, taffy: &mut Tree, nodes: &[RenderNode]) -> bool {
-        let default_tr = match self.text_renderer.as_deref() { Some(t) => t, None => return false };
-        let sf = self.scale_factor;
-        let mut changed = false;
-        for node in nodes {
-            if node.tag == "text" && !node.text.is_empty() {
-                let should_wrap = !matches!(node.style.white_space, WhiteSpace::NoWrap | WhiteSpace::Pre);
-                if should_wrap {
-                    // 与建树/绘制端同一族字体，否则「按 A 字体定的盒子」用 B 字体数行数
-                    let family = crate::text_family::renderer_for_family(node.style.font_family.as_deref());
-                    let tr = family.as_deref().unwrap_or(default_tr);
-                    if let Ok(layout) = taffy.layout(node.taffy_node) {
-                        let box_w = layout.size.width;
-                        let box_h = layout.size.height;
-                        let pl = node.style.padding_left * sf;
-                        let pr = node.style.padding_right * sf;
-                        let pt = node.style.padding_top * sf;
-                        let pb = node.style.padding_bottom * sf;
-                        let avail = (box_w - pl - pr).max(1.0);
-                        let size = node.style.font_size * sf;
-                        let ls = node.style.letter_spacing * sf;
-                        let line_height = node.style.line_height.map(|lh| lh * sf)
-                            .unwrap_or_else(|| tr.natural_line_height_for(&node.text, size)).max(size);
-                        let bold = matches!(
-                            node.style.font_weight,
-                            crate::renderer::components::FontWeight::Bold | crate::renderer::components::FontWeight::W600
-                                | crate::renderer::components::FontWeight::W700 | crate::renderer::components::FontWeight::W800
-                                | crate::renderer::components::FontWeight::W900
-                        ) && tr.has_bold_face();
-                        let lines = count_wrapped_lines(tr, &node.text, avail, size, ls, bold);
-                        let needed_h = lines as f32 * line_height + pt + pb;
-                        if needed_h > box_h + 0.5 {
-                            if let Ok(mut st) = taffy.style(node.taffy_node).cloned() {
-                                st.size.height = length(needed_h);
-                                st.min_size.height = length(needed_h);
-                                taffy.set_style(node.taffy_node, st).ok();
-                                changed = true;
-                            }
-                        }
-                    }
-                }
-            }
-            if self.correct_wrapped_text_heights(taffy, &node.children) {
-                changed = true;
-            }
-        }
-        changed
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -579,7 +469,7 @@ impl WxmlRenderer {
 
 /// 按与 text.rs 绘制一致的贪心算法统计文本在给定可用宽度下的换行行数。
 /// 用于第二遍布局修正文本盒子高度（含 `\n` 硬换行）。
-fn count_wrapped_lines(tr: &TextRenderer, text: &str, max_width: f32, size: f32, letter_spacing: f32, bold: bool) -> usize {
+pub(super) fn count_wrapped_lines(tr: &TextRenderer, text: &str, max_width: f32, size: f32, letter_spacing: f32, bold: bool) -> usize {
     if max_width <= 0.0 {
         return text.split('\n').count().max(1);
     }

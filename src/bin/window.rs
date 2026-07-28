@@ -609,12 +609,26 @@ impl MiniAppWindow {
     }
     
     fn switch_tab(&mut self, path: &str) -> Result<(), String> {
+        self.unload_current_page();
         self.page_stack.clear();
         self.back_shots.clear();
         self.interaction.clear_page_state();
         // 切 tab 会销毁原页面栈（微信语义），逻辑层的栈也要一起清，否则越切越长
         self.app.eval("__resetPageStack()").ok();
         self.navigate_to(path.trim_start_matches('/'), HashMap::new())
+    }
+
+    /// 销毁页面之前派发 `onUnload`（`switchTab` / `reLaunch` / `redirectTo` 都会销毁页面）。
+    ///
+    /// 漏掉这一步的后果很具体：页面在 `onUnload` 里 `clearTimeout`/`clearInterval` 的定时器
+    /// 会继续跑。tea-app 启动页就是这个写法（`onUnload(){ this.stopTimers() }`），
+    /// 它有一个守护定时器兜底跳首页 —— 不派发 `onUnload` 的话，用户已经翻到别的页面了，
+    /// 这个定时器还会把他 `switchTab` 拽回首页。`redirectTo` 早就做了这一步，
+    /// `switchTab` / `reLaunch` 漏了。
+    fn unload_current_page(&mut self) {
+        self.app
+            .eval("if(__currentPage && __currentPage.onUnload) __currentPage.onUnload()")
+            .ok();
     }
     
     fn setup_canvas(&mut self, scale_factor: f64) {
@@ -1133,6 +1147,7 @@ impl MiniAppWindow {
                 }
                 NavigationRequest::ReLaunch { url } => {
                     let (p, q) = parse_url(&url);
+                    self.unload_current_page();
                     self.page_stack.clear();
                     self.back_shots.clear();
                     self.interaction.clear_page_state();
@@ -1566,6 +1581,10 @@ impl MiniAppWindow {
             // 依赖「首次进入」的逻辑（如只弹一次的新人券）会被吃掉，两端数据就不一致了。
             let already_loaded = self.page_stack.last().map(|p| p.path == route).unwrap_or(false);
             if !already_loaded {
+                // 与 switchTab/reLaunch 一致：销毁上一页前派发 onUnload，
+                // 否则上一页的定时器会继续跑，几秒后把路由顶掉
+                // （启动页的守护定时器会 switchTab 回首页，快照就截错了页）
+                self.unload_current_page();
                 self.page_stack.clear();
                 self.back_shots.clear();
                 self.interaction.clear_page_state();
@@ -1777,7 +1796,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             // `--swipe-hold` 停在终点不抬手 —— 用来截「手势进行中」的那一帧
             // （侧滑返回的跟手位移、越界橡皮筋、按压态），松手之后就看不到了。
             "--press" | "--click" | "--touch" | "--swipe" | "--swipe-hold" | "--drag"
-            | "--type" | "--key" | "--wait" => {
+            | "--type" | "--key" | "--wait" | "--wheel" | "--wheel-lines" => {
                 match app_window::headless_script::parse(&arg, it.next()) {
                     Some(a) => actions.push(a),
                     None => eprintln!("⚠️  {} 的参数无法解析，已忽略", arg),
@@ -1799,6 +1818,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("  --type <文本>   往当前焦点输入框逐字符输入（先 --click 到输入框上）");
                 println!("  --key <按键>    enter/backspace/delete/escape/left/right/home/end/selectall");
                 println!("  --wait <秒>     空转等待，期间照常出帧");
+                println!("  --wheel <x,y,dx,dy[,步数]>    触控板双指滑动（dy>0 = 内容上走）");
+                println!("  --wheel-lines <同上>          普通滚轮（行滚动，非精密）");
                 println!("  上面这些动作按**书写顺序**执行，可重复：");
                 println!("    --click 25,520 --type 1212121 --click 313,520");
                 println!("  --eval <JS>    可重复；在 --settle 之后依次执行，每段跑完导航");

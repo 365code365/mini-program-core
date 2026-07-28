@@ -9,7 +9,7 @@ use mini_render::runtime::UiEvent;
 use mini_render::ui::interaction::InteractionType;
 
 use super::{NavigationRequest, ui_overlay::{ToastState, LoadingState, ModalState}};
-use super::events::{keyboard, ime};
+use super::events::{keyboard, ime, wheel};
 use super::interaction_handler::{handle_interaction_result, print_js_output};
 
 /// 处理 UI 事件（Toast/Loading/Modal）
@@ -344,18 +344,9 @@ pub fn handle_cursor_moved(
     needs_redraw
 }
 
-/// 处理鼠标滚轮
-pub fn handle_mouse_wheel(
-    delta: MouseScrollDelta,
-    mouse_pos: (f32, f32),
-    interaction: &mut mini_render::ui::interaction::InteractionManager,
-    scroll: &mut mini_render::ui::ScrollController,
-    scale_factor: f64,
-) -> bool {
-    handle_mouse_wheel_gated(delta, mouse_pos, interaction, scroll, scale_factor, false)
-}
-
-/// 同上，`lock_page_scroll` 为真时不滚动页面（指针停在 fixed 覆盖层上，
+/// 处理鼠标滚轮 / 触控板双指滑动（实现见 `events::wheel`）。
+///
+/// `lock_page_scroll` 为真时不滚动页面（指针停在 fixed 覆盖层上，
 /// 例如弹窗遮罩 —— 微信里这种情况页面是锁住的），覆盖层内部的 scroll-view 仍可滚。
 pub fn handle_mouse_wheel_gated(
     delta: MouseScrollDelta,
@@ -365,62 +356,6 @@ pub fn handle_mouse_wheel_gated(
     scale_factor: f64,
     lock_page_scroll: bool,
 ) -> bool {
-    let (delta_x, delta_y, is_precise) = match delta {
-        MouseScrollDelta::LineDelta(x, y) => (-x * 20.0, -y * 20.0, false),
-        MouseScrollDelta::PixelDelta(pos) => (
-            -pos.x as f32 / scale_factor as f32,
-            -pos.y as f32 / scale_factor as f32,
-            true
-        ),
-    };
-    
-    if delta_x.abs() < 0.1 && delta_y.abs() < 0.1 {
-        return false;
-    }
-    
-    let x = mouse_pos.0;
-    let y = mouse_pos.1;
-    let actual_y = y + scroll.get_position();
-    
-    let mut handled_by_scrollview = false;
-    let mut needs_redraw = false;
-    
-    // 先看覆盖层里的滚动区（视口坐标），再看正常流里的（内容坐标）。
-    //
-    // 必须用 `hit_test_scroll_area`：从前是「全局 hit_test 拿最上层元素，再看它是不是
-    // 滚动区」—— 滚动区里只要盖着一张卡片或按钮，返回的就是那张卡片，于是滚轮永远
-    // 落到页面上，横向卡片列表用滚轮推不动。
-    let mut scroll_area_id = interaction
-        .hit_test_scroll_area(x, y, true)
-        .map(|e| (e.id.clone(), e.is_horizontal));
-    if scroll_area_id.is_none() {
-        scroll_area_id = interaction
-            .hit_test_scroll_area(x, actual_y, false)
-            .map(|e| (e.id.clone(), e.is_horizontal));
-    }
-    
-    if let Some((id, is_horizontal)) = scroll_area_id {
-        if let Some(controller) = interaction.get_scroll_controller_mut(&id) {
-            // 根据滚动方向使用 delta_x 或 delta_y
-            let delta = if is_horizontal { delta_x } else { delta_y };
-            if delta.abs() > 0.1 {
-                controller.handle_scroll(delta, is_precise);
-                handled_by_scrollview = true;
-                needs_redraw = true;
-            }
-        }
-    }
-    
-    if !handled_by_scrollview && delta_y.abs() > 0.1 && !lock_page_scroll {
-        let before = scroll.get_position();
-        scroll.handle_scroll(delta_y, is_precise);
-        // 页面滚动同样要请求重绘。缺了这一句时只有「命中页面内 scroll-view」才会重绘，
-        // 页面级滚动只改了滚动位置：上屏按新偏移取画布，而画布上还是上一帧那条带
-        // —— 滑动过程一片空白，停下后被别的原因触发一次重绘内容才出现。
-        if (scroll.get_position() - before).abs() > 0.001 {
-            needs_redraw = true;
-        }
-    }
-    
-    needs_redraw
+    wheel::handle(delta, mouse_pos, interaction, scroll, scale_factor, lock_page_scroll)
 }
+

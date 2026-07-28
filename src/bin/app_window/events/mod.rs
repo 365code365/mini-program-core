@@ -3,6 +3,7 @@
 pub mod mouse;
 pub mod keyboard;
 pub mod ime;
+pub mod wheel;
 
 pub use mouse::*;
 pub use keyboard::*;

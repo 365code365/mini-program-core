@@ -355,6 +355,9 @@ impl ImageComponent {
         // 尝试加载并绘制图片
         if !src.is_empty() {
             if let Some(img_data) = load_image(src) {
+                if super::image_net::log_enabled() {
+                    eprintln!("🖼 ✓ 画出 {:.0}x{:.0} src={:?}", w, h, src);
+                }
                 // 绘制图片（透明度通过背景色已经处理）
                 // 走带缩放缓存的绘制：动画页面每帧重绘时不再重复重采样
                 canvas.draw_image_cached(

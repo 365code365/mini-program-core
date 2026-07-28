@@ -31,6 +31,9 @@ pub enum Action {
     Key(String),
     /// 空转等待若干秒，期间照常出帧
     Wait(f32),
+    /// 触控板双指滑动 / 滚轮：光标停在 (x, y)，每步滚 (dx, dy) 逻辑像素。
+    /// `dy > 0` = 内容向上走（滚动位置变大），与手指上滑一致。
+    Wheel { x: f32, y: f32, dx: f32, dy: f32, steps: u32, precise: bool },
 }
 
 /// 解析一个命令行开关。返回 `None` 表示这不是动作类开关。
@@ -65,6 +68,17 @@ pub fn parse(flag: &str, value: Option<String>) -> Option<Action> {
         "--type" => Some(Action::Type(value?)),
         "--key" => Some(Action::Key(value?.to_ascii_lowercase())),
         "--wait" => Some(Action::Wait(value?.trim().parse().ok()?)),
+        "--wheel" | "--wheel-lines" => {
+            let v = nums(&value?);
+            Some(Action::Wheel {
+                x: *v.first()?,
+                y: *v.get(1)?,
+                dx: v.get(2).copied().unwrap_or(0.0),
+                dy: *v.get(3)?,
+                steps: v.get(4).map(|f| (*f as u32).max(1)).unwrap_or(1),
+                precise: flag == "--wheel",
+            })
+        }
         _ => None,
     }
 }
@@ -185,6 +199,50 @@ impl crate::MiniAppWindow {
                     self.pump_one_frame();
                     std::thread::sleep(Duration::from_millis(8));
                 }
+            }
+            // 走与交互窗体完全相同的 `MouseWheel` 分支（含覆盖层锁页面、主轴锁定、
+            // 嵌套传递），所以触控板手感的回归可以无头复跑
+            Action::Wheel { x, y, dx, dy, steps, precise } => {
+                use winit::event::MouseScrollDelta;
+                self.mouse_pos = (*x, *y);
+                let sf = self.scale_factor;
+                for _ in 0..*steps {
+                    // winit 给的是物理像素、且方向与内容相反（手指上滑 → deltaY 为负）
+                    let delta = if *precise {
+                        MouseScrollDelta::PixelDelta(winit::dpi::PhysicalPosition::new(
+                            (-*dx * sf as f32) as f64,
+                            (-*dy * sf as f32) as f64,
+                        ))
+                    } else {
+                        MouseScrollDelta::LineDelta(-*dx / 20.0, -*dy / 20.0)
+                    };
+                    let over_fixed = self
+                        .renderer
+                        .as_ref()
+                        .map(|r| r.fixed_layer_hit(*x, *y))
+                        .unwrap_or(false);
+                    if over_fixed && std::env::var("MINI_SCROLL_LOG").is_ok() {
+                        eprintln!("🖱 ({x},{y}) 落在 fixed 覆盖层上 → 页面滚动被锁");
+                    }
+                    if super::handle_mouse_wheel_gated(
+                        delta,
+                        (*x, *y),
+                        &mut self.interaction,
+                        &mut self.scroll,
+                        sf,
+                        over_fixed,
+                    ) {
+                        self.needs_redraw = true;
+                    }
+                    self.pump_one_frame();
+                    std::thread::sleep(Duration::from_millis(8));
+                }
+                // 触控板抬手（`TouchPhase::Ended`）：越界立即回弹
+                self.scroll.end_wheel_gesture();
+                for c in self.interaction.scroll_controllers.values_mut() {
+                    c.end_wheel_gesture();
+                }
+                self.settle_scroll_animations(2000);
             }
         }
     }

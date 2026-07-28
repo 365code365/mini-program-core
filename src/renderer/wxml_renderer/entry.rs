@@ -124,7 +124,7 @@ impl WxmlRenderer {
         ).unwrap();
         
         self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT);
-        let mut need_relayout = self.correct_wrapped_text_heights(&mut taffy, &render_nodes);
+        let mut need_relayout = self.correct_overflow(&mut taffy, &render_nodes);
         need_relayout |= self.correct_absolute_heights(
             &mut taffy,
             &render_nodes,

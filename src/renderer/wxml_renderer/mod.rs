@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use taffy::prelude::*;
 
 use crate::renderer::components::{
-    RenderNode, NodeStyle, ComponentContext, InheritedText, TextAlign, WhiteSpace,
+    RenderNode, NodeStyle, ComponentContext, InheritedText, TextAlign,
     ViewComponent, TextComponent, ButtonComponent, IconComponent,
     ProgressComponent, SwitchComponent, CheckboxComponent, RadioComponent,
     SliderComponent, InputComponent, ImageComponent, VideoComponent,
@@ -185,10 +185,12 @@ mod hit_test;
 mod interactions;
 mod invalidate;
 pub use invalidate::FramePlan;
-mod layout;
+pub(super) mod layout;
 mod page_style;
 pub use page_style::PageStyle;
 mod pressed;
+/// 第二遍布局修正：按实际几何收拾溢出（文本换行、绝对定位高度、滚动容器）
+mod reflow;
 
 impl WxmlRenderer {
     pub fn new(stylesheet: StyleSheet, screen_width: f32, screen_height: f32) -> Self {

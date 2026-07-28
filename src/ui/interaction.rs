@@ -326,7 +326,21 @@ impl InteractionManager {
     /// 卡片、按钮盖在 scroll-view 上面时它返回的是卡片，于是整页只会走页面滚动，
     /// 真正装着内容的 scroll-view 一动不动。
     pub fn hit_test_scroll_area(&self, x: f32, y: f32, fixed: bool) -> Option<&InteractiveElement> {
-        self.elements
+        self.scroll_areas_at(x, y, fixed).next()
+    }
+
+    /// 命中点上的所有可滚区域，**由内到外**（面积从小到大）。
+    ///
+    /// 嵌套滚动传递需要整条链：内层不可滚、或已经推到边界时要接着问外层，
+    /// 最后才落到页面上（浏览器/微信的 scroll chaining）。
+    pub fn scroll_areas_at(
+        &self,
+        x: f32,
+        y: f32,
+        fixed: bool,
+    ) -> impl Iterator<Item = &InteractiveElement> {
+        let mut hits: Vec<&InteractiveElement> = self
+            .elements
             .iter()
             .filter(|e| {
                 e.is_fixed == fixed
@@ -337,11 +351,13 @@ impl InteractionManager {
                     && y >= e.bounds.y
                     && y <= e.bounds.y + e.bounds.height
             })
-            .min_by(|a, b| {
-                let area_a = a.bounds.width * a.bounds.height;
-                let area_b = b.bounds.width * b.bounds.height;
-                area_a.partial_cmp(&area_b).unwrap_or(std::cmp::Ordering::Equal)
-            })
+            .collect();
+        hits.sort_by(|a, b| {
+            let area_a = a.bounds.width * a.bounds.height;
+            let area_b = b.bounds.width * b.bounds.height;
+            area_a.partial_cmp(&area_b).unwrap_or(std::cmp::Ordering::Equal)
+        });
+        hits.into_iter()
     }
 
     /// `area` 范围内所有**选中**的 `kind` 元素的 `value`，按文档顺序。
