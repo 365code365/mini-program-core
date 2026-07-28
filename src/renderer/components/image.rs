@@ -269,6 +269,18 @@ impl ImageComponent {
         if !has_custom_height {
             ts.size.height = length(default_height * sf);
         }
+        // 图片是**替换元素**：有固有尺寸，`min-width:auto` 因此解析成
+        // 「指定尺寸与固有尺寸中较小的那个」，而不是 0。少了这一步，图片在一行里
+        // 会被兄弟一路压到 0 —— AI 选茶推荐页的商品卡一行放
+        // [图 99px | flex:1 中间栏 | 按钮 88px]，中间栏内含长标题时把图片压成 **0**，
+        // 整张商品图消失（实测 `🖼 ▢ 占位 0x236`），按钮也被挤出卡片。
+        // 非替换元素（空 `<view>`）不能这么做：它们的内容尺寸是 0，本来就该可压。
+        if dim_is_auto(ts.min_size.width) {
+            ts.min_size.width = ts.size.width;
+        }
+        if dim_is_auto(ts.min_size.height) {
+            ts.min_size.height = ts.size.height;
+        }
         
         // 注意：不再强制设置默认背景色。
         // 透明 PNG（如图标）不应有不透明底色；仅当 CSS 显式设置 background-color

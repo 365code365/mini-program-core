@@ -8,7 +8,7 @@
 
 use super::*;
 // taffy 0.12 的尺寸值是位压缩结构，读值走这几个封装（见 components::base）
-use crate::renderer::components::{dim_is_auto, dim_length};
+use crate::renderer::components::dim_is_auto;
 
 impl WxmlRenderer {
     /// 需要时重建布局树，并返回这次数据变化的重绘范围（见 [`FramePlan`]）。
@@ -185,27 +185,23 @@ impl WxmlRenderer {
     /// 宽度解析换行与高度；其它叶子沿用各自 Style 里的显式尺寸（known dimensions）。
     pub(super) fn compute_with_text(&self, taffy: &mut Tree, root: NodeId, available: Size<AvailableSpace>) {
         let tr = self.text_renderer.as_deref();
-        // taffy 0.12 的度量回调多了一个 `&Style` 参数（叶子自己的样式）。文本度量用不到它
-        // （换行只取决于「已知尺寸 + 可用宽度」），但**其它叶子必须用它**：
+        // taffy 0.12 的度量回调多了一个 `&Style` 参数（叶子自己的样式），
+        // 文本度量用不到它 —— 换行只取决于「已知尺寸 + 可用宽度」。
         //
-        // taffy 问「你的内在尺寸是多少」时 `known` 是 None。这里从前一律回答 0，
-        // 于是 `<image>` / `<input>` / `<canvas>` 这些叶子的内容最小尺寸都是 0，
-        // flex 项的自动最小尺寸（`min-width:auto`）也就跟着是 0 —— 它们在一行里
-        // **可以被兄弟压成 0**。AI 选茶推荐页的商品卡就是这样：
-        // 一行放 [图 99px | flex:1 中间栏 | 按钮 88px]，中间栏的长标题一撑，
-        // 商品图被压成 0（实测 `🖼 ▢ 占位 0x236`，整张图不见）、按钮被挤出卡片。
-        //
-        // 浏览器对替换元素（img/input/canvas）的 `min-width:auto` 解析成**指定尺寸**，
-        // 所以写了 `width:198rpx` 的图片不会被压窄。这里照同一条规则：
-        // 没有度量上下文的叶子，把自己样式里的确定尺寸当作内在尺寸回答。
+        // 其余叶子回答 0：非替换元素（空的 `<view>` 等）的内容尺寸本来就是 0，
+        // 所以 `min-height:auto` 允许它们被压缩 —— 音乐播放器那个 4px 高的进度条里
+        // 塞一个 13px 的圆把手，就是靠这条被压回去的。
+        // **替换元素**（image/canvas/video/input）不一样：它们有固有尺寸，
+        // 由各自的 `build` 显式写上 `min_size`（见 `ImageComponent::build`），
+        // 不靠这里兜——否则「所有定尺寸叶子都不可压」会误伤前者。
         let _ = taffy.compute_layout_with_measure(
             root,
             available,
-            |known, avail, _id, ctx: Option<&mut TextMeasure>, style: &taffy::Style| match ctx {
+            |known, avail, _id, ctx: Option<&mut TextMeasure>, _style| match ctx {
                 Some(tm) => measure_text_node(known, avail, tm, tr),
                 None => Size {
-                    width: known.width.or_else(|| dim_length(style.size.width)).unwrap_or(0.0),
-                    height: known.height.or_else(|| dim_length(style.size.height)).unwrap_or(0.0),
+                    width: known.width.unwrap_or(0.0),
+                    height: known.height.unwrap_or(0.0),
                 },
             },
         );
