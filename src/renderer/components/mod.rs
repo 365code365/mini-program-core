@@ -35,7 +35,9 @@ pub use checkbox::CheckboxComponent;
 pub use radio::RadioComponent;
 pub use slider::SliderComponent;
 pub use input::InputComponent;
-pub use image::{ImageComponent, is_animated, animation_total_ms, probe_load, ImageLoad};
+pub use image::{ImageComponent, is_animated, animation_total_ms};
+mod image_state;
+pub use image_state::{probe_load, ImageLoad};
 pub mod image_net;
 pub use video::VideoComponent;
 pub use video::{

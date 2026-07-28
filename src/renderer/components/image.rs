@@ -31,19 +31,19 @@ use std::sync::{Arc, Mutex, OnceLock};
 use std::io::Read;
 
 /// 图片缓存数据
-struct ImageData {
+pub(super) struct ImageData {
     /// RGBA 数据。用 Arc 共享：`load_image` 每帧都会被调用，
     /// 以前每次都把整张解码后的位图深拷贝一份（一张 1500x1000 的图就是 6MB memcpy/帧/张）。
     data: Arc<Vec<u8>>,
-    width: u32,
-    height: u32,
+    pub(super) width: u32,
+    pub(super) height: u32,
     /// 动图当前帧序号（静态图恒为 0）。缩放缓存 key 要带上它，
     /// 否则 GIF 会一直复用第一帧的重采样结果。
     frame_index: u32,
 }
 
 /// 动图（GIF）解码结果：逐帧 RGBA + 每帧展示时长
-struct AnimatedImage {
+pub(super) struct AnimatedImage {
     /// 每帧 (RGBA 数据, 该帧持续毫秒)
     frames: Vec<(Arc<Vec<u8>>, u32)>,
     width: u32,
@@ -55,6 +55,9 @@ struct AnimatedImage {
 }
 
 impl AnimatedImage {
+    pub(super) fn width(&self) -> u32 { self.width }
+    pub(super) fn height(&self) -> u32 { self.height }
+
     /// 按「距首次加载的经过时间」取当前帧下标（循环播放）
     fn current_index(&self) -> usize {
         if self.frames.len() <= 1 {
@@ -78,11 +81,11 @@ static IMAGE_CACHE: OnceLock<Arc<Mutex<HashMap<String, Option<Arc<ImageData>>>>>
 /// 全局动图缓存（GIF 多帧）
 static ANIM_CACHE: OnceLock<Arc<Mutex<HashMap<String, Arc<AnimatedImage>>>>> = OnceLock::new();
 
-fn get_image_cache() -> &'static Arc<Mutex<HashMap<String, Option<Arc<ImageData>>>>> {
+pub(super) fn get_image_cache() -> &'static Arc<Mutex<HashMap<String, Option<Arc<ImageData>>>>> {
     IMAGE_CACHE.get_or_init(|| Arc::new(Mutex::new(HashMap::new())))
 }
 
-fn get_anim_cache() -> &'static Arc<Mutex<HashMap<String, Arc<AnimatedImage>>>> {
+pub(super) fn get_anim_cache() -> &'static Arc<Mutex<HashMap<String, Arc<AnimatedImage>>>> {
     ANIM_CACHE.get_or_init(|| Arc::new(Mutex::new(HashMap::new())))
 }
 
@@ -139,51 +142,6 @@ fn decode_animated_gif(bytes: &[u8]) -> Option<AnimatedImage> {
         total_ms: total_ms.max(1),
         started: std::time::Instant::now(),
     })
-}
-
-/// 一个 `<image>` 当前的加载结论，给 `bindload` / `binderror` 用。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ImageLoad {
-    /// 还没有结论（本地图还没被绘制过、远程图还在下载或退避重试中）
-    Pending,
-    /// 已就绪，带**原始**像素尺寸（微信 `bindload` 的 `detail` 就是这两个字段）
-    Ready { width: u32, height: u32 },
-    /// 确定失败
-    Failed,
-}
-
-/// 探测一个 src 的加载结论：**只查缓存**，不读盘、不发起下载。
-///
-/// 为什么必须「只查表」：这个函数是给事件派发用的，每帧对每个 `<image>` 都要问一次。
-/// 顺手触发加载的话，视口外被裁掉、本来不该加载的图会被它拖下来。
-pub fn probe_load(src: &str) -> ImageLoad {
-    if src.trim().is_empty() {
-        return ImageLoad::Pending;
-    }
-    // 动图：解码完就进这张表
-    if let Ok(cache) = get_anim_cache().lock() {
-        if let Some(anim) = cache.get(src) {
-            return ImageLoad::Ready { width: anim.width, height: anim.height };
-        }
-    }
-    // 静态图缓存：`Some(None)` 是「解码/读盘失败」的记录
-    if let Ok(cache) = get_image_cache().lock() {
-        match cache.get(src) {
-            Some(Some(d)) => return ImageLoad::Ready { width: d.width, height: d.height },
-            Some(None) => return ImageLoad::Failed,
-            None => {}
-        }
-    }
-    if src.starts_with("http://") || src.starts_with("https://") {
-        return match super::image_net::peek::<ImageData>(src) {
-            super::image_net::Peek::Ready(d) => {
-                ImageLoad::Ready { width: d.width, height: d.height }
-            }
-            super::image_net::Peek::Failed => ImageLoad::Failed,
-            super::image_net::Peek::Pending => ImageLoad::Pending,
-        };
-    }
-    ImageLoad::Pending
 }
 
 /// 加载图片（支持网络URL和本地文件；GIF 动图按时间取当前帧）
