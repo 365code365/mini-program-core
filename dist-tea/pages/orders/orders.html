@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/orders/orders</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./orders.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view page" id="" style="--status-bar-height:;">
+    <div class="wx-view tabs"></div>
+    <div class="wx-scroll-view scroll" style="overflow-y:auto" data-scrolltolower="">
+      <div class="wx-view" style="height:12px"></div>
+    </div>
+  </div>
+  <div class="wx-wxs"></div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/orders/orders";
+window.__PAGE_PULL_DOWN__ = false;
+window.__WXML__ = [{"a":{"change:eA":"{{uV.sA}}","change:eS":"{{uV.sS}}","class":"{{['page', i]}}","eA":"{{$eA[g]}}","eS":"{{$eS[g]}}","hidden":"{{virtualHostHidden || false}}","id":"{{g}}","style":"{{'--status-bar-height:' + h + ';' + (virtualHostStyle || '')}}"},"c":[{"a":{"class":"tabs"},"c":[{"a":{"bindtap":"{{t.d}}","class":"{{['tab', t.c]}}","wx:for":"{{a}}","wx:for-item":"t","wx:key":"b"},"c":[{"t":"tx","x":"{{t.a}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindscrolltolower":"{{f}}","class":"scroll","enable-flex":"true","enhanced":"true","scroll-y":"true"},"c":[{"a":{"class":"empty","wx:if":"{{b}}"},"c":[{"a":{"class":"empty-t"},"c":[{"t":"tx","x":"暂无订单"}],"n":"text","t":"el"},{"a":{"bindtap":"{{c}}","class":"empty-btn"},"c":[{"a":{"class":"empty-btn-t"},"c":[{"t":"tx","x":"去商城逛逛"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{o.h}}","class":"order","wx:for":"{{d}}","wx:for-item":"o","wx:key":"g"},"c":[{"a":{"class":"order-head"},"c":[{"a":{"class":"order-no"},"c":[{"t":"tx","x":"订单号 {{o.a}}"}],"n":"text","t":"el"},{"a":{"class":"{{['status', o.c]}}"},"c":[{"t":"tx","x":"{{o.b}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"goods","wx:for":"{{o.d}}","wx:for-item":"it","wx:key":"e"},"c":[{"a":{"class":"goods-img","mode":"aspectFill","src":"{{it.a}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"goods-name"},"c":[{"t":"tx","x":"{{it.b}}"}],"n":"text","t":"el"},{"a":{"class":"goods-right"},"c":[{"a":{"class":"goods-price"},"c":[{"t":"tx","x":"¥{{it.c}}"}],"n":"text","t":"el"},{"a":{"class":"goods-qty"},"c":[{"t":"tx","x":"× {{it.d}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"order-foot"},"c":[{"a":{"class":"foot-t"},"c":[{"t":"tx","x":"共 {{o.e}} 件 · 实付 ¥{{o.f}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"nomore","wx:if":"{{e}}"},"c":[{"a":{"class":"nomore-t"},"c":[{"t":"tx","x":"— 没有更多了 —"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"style":"height:24rpx"},"c":[],"n":"view","t":"el"}],"n":"scroll-view","t":"el"}],"n":"view","t":"el"},{"a":{"module":"uV","src":"/common/uniView.wxs"},"c":[],"n":"wxs","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./orders.js"></script>
+</body>
+</html>

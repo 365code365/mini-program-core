@@ -1,0 +1,160 @@
+/* 由 subscribe.wxss 编译 */
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+/* 字体栈第一位必须是 App.uvue 里 loadFontFace 注册过的 family，否则安卓机没有本机宋体，
+   会整站掉到系统黑体。Yunxiu Serif = Noto Serif SC Regular(正文)，Source Han Serif SC = Heavy(标题)。 */
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.tabs {
+  flex-direction: row;
+  justify-content: center;
+  padding: 8px 0;
+  background-color: #ffffff;
+}
+.tab {
+  font-size: 15px;
+  color: #82786c;
+  margin: 0 20px;
+  padding-bottom: 6px;
+}
+.tab-on {
+  color: #4a3020;
+  font-weight: bold;
+  border-bottom: 2px solid #c5a46d;
+}
+.scroll {
+  flex: 1;
+}
+.intro {
+  padding: 8px 16px;
+}
+.intro-t {
+  font-size: 13px;
+  color: #7a746a;
+  line-height: 20px;
+}
+.empty {
+  align-items: center;
+  padding-top: 70px;
+}
+.empty-t {
+  font-size: 13px;
+  color: #82786c;
+}
+.card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  margin: 8px 12px 0;
+  overflow: hidden;
+}
+.cover {
+  width: 100%;
+}
+.body {
+  padding: 12px;
+}
+.name {
+  font-size: 16px;
+  font-weight: bold;
+  color: #4a3020;
+}
+.desc {
+  font-size: 12px;
+  color: #8a8478;
+  margin-top: 4px;
+}
+.specs {
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin-top: 7px;
+}
+.spec {
+  font-size: 11px;
+  color: #a87536;
+  background-color: rgba(199, 154, 82, 0.12);
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin: 0 6px 4px 0;
+}
+.bottom {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+.price-wrap {
+  flex-direction: row;
+  align-items: baseline;
+}
+.price {
+  font-size: 20px;
+  font-weight: bold;
+  color: #a87536;
+}
+.price-unit {
+  font-size: 11px;
+  color: #82786c;
+}
+.btn {
+  background-color: #a87536;
+  border-radius: 20px;
+  padding: 8px 20px;
+}
+.btn-off {
+  background-color: #c4bdb0;
+}
+.btn-t {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: bold;
+}
+.mine-card {
+  background-color: #ffffff;
+  border-radius: 10px;
+  margin: 8px 12px 0;
+  padding: 12px;
+}
+.mine-head {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+.mine-name {
+  font-size: 15px;
+  font-weight: bold;
+  color: #4a3020;
+}
+.mine-status {
+  font-size: 11px;
+  color: #a87536;
+  background-color: rgba(199, 154, 82, 0.12);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.mine-row {
+  flex-direction: row;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+.mk {
+  font-size: 12px;
+  color: #82786c;
+}
+.mv {
+  font-size: 12px;
+  color: #3a2c18;
+}
+.mine-cancel {
+  align-self: flex-end;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 20px;
+  padding: 5px 14px;
+  margin-top: 6px;
+}
+.mine-cancel-t {
+  font-size: 12px;
+  color: #4a3020;
+}

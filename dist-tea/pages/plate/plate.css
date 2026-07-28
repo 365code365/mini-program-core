@@ -1,0 +1,131 @@
+/* 由 plate.wxss 编译 */
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+/* 字体栈第一位必须是 App.uvue 里 loadFontFace 注册过的 family，否则安卓机没有本机宋体，
+   会整站掉到系统黑体。Yunxiu Serif = Noto Serif SC Regular(正文)，Source Han Serif SC = Heavy(标题)。 */
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.head {
+  padding: 18px 16px 14px;
+}
+.h-name {
+  font-size: 20px;
+  font-weight: bold;
+  color: #4a3020;
+}
+.h-sub {
+  font-size: 12px;
+  color: #82786c;
+  margin-top: 6px;
+}
+.h-tag {
+  align-self: flex-start;
+  margin-top: 9px;
+  background-color: rgba(199, 154, 82, 0.14);
+  border-radius: 4px;
+  padding: 3px 8px;
+}
+.h-tag-done {
+  background-color: rgba(47, 79, 79, 0.12);
+}
+.h-tag-t {
+  font-size: 11px;
+  color: #a87536;
+}
+.preview {
+  background-color: #f7f0e1;
+  border: 1px solid #e3d8c0;
+  border-radius: 10px;
+  margin: 0 16px;
+  padding: 18px 14px;
+  align-items: center;
+}
+.pv-h {
+  font-size: 11px;
+  color: #9a8458;
+  letter-spacing: 1px;
+}
+.pv-line {
+  width: 28px;
+  height: 1px;
+  background-color: #a87536;
+  margin: 8px 0;
+}
+.pv-name {
+  font-size: 19px;
+  font-weight: bold;
+  color: #3a2c18;
+}
+.pv-msg {
+  font-size: 12px;
+  color: #7a6a47;
+  margin-top: 7px;
+  line-height: 19px;
+  text-align: center;
+}
+.form {
+  background-color: #ffffff;
+  border-radius: 10px;
+  margin: 14px 16px 0;
+  padding: 4px 14px 14px;
+}
+.field {
+  margin-top: 14px;
+}
+.f-label {
+  font-size: 13px;
+  color: #4a3020;
+  font-weight: bold;
+}
+.req {
+  color: #c0392b;
+}
+.f-input {
+  height: 42px;
+  font-size: 15px;
+  color: #2d251e;
+  border-bottom: 1px solid rgba(112, 83, 48, 0.11);
+}
+.f-area {
+  height: 70px;
+  font-size: 14px;
+  color: #2d251e;
+  border-bottom: 1px solid rgba(112, 83, 48, 0.11);
+  padding: 6px 0;
+  width: 100%;
+}
+.ph {
+  color: #c4bfb4;
+}
+.f-count {
+  font-size: 10px;
+  color: #82786c;
+  align-self: flex-end;
+  margin-top: 4px;
+}
+.tip {
+  font-size: 11px;
+  color: #82786c;
+  line-height: 18px;
+  margin: 12px 18px 0;
+}
+.submit {
+  background-color: #a87536;
+  border-radius: 22px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  margin: 18px 16px 0;
+}
+.submit-off {
+  opacity: 0.6;
+}
+.submit-t {
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}

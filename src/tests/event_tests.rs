@@ -152,3 +152,83 @@ fn test_different_event_types_not_mixed() {
     assert!(chain.iter().all(|b| b.event_type == "tap"));
     assert!(chain.iter().any(|b| b.handler == "onTap"));
 }
+
+// ============ 输入框事件的 JS 语义 ============
+
+/// `e.detail.value` **必须是字符串**（微信语义），哪怕内容全是数字。
+///
+/// 从前输入事件走 `__callPageMethod` + dataset：dataset 会按字面量还原类型
+/// （`data-id="12"` → 数字 12），于是输入 `1212121` 到页面里变成 number，
+/// `e.detail.value.trim()` 直接 `TypeError: not a function`。
+#[test]
+fn input_detail_value_stays_a_string() {
+    let mut app = crate::runtime::MiniApp::new(375, 667).expect("create MiniApp");
+    app.init().expect("init");
+    app.load_script(
+        r#"Page({
+            data: {},
+            onInput: function (e) {
+                this.kind = typeof e.detail.value;
+                this.text = e.detail.value;
+                this.trimmed = e.detail.value.trim();
+                this.cursor = e.detail.cursor;
+                this.evType = e.type;
+            }
+        });"#,
+    )
+    .unwrap();
+    app.eval(
+        r#"__dispatchEvent('onInput', {
+            type: 'input',
+            target: { id: '', dataset: {}, offsetLeft: 25, offsetTop: 520 },
+            currentTarget: { id: '', dataset: {}, offsetLeft: 25, offsetTop: 520 },
+            detail: { value: '1212121', cursor: 7, keyCode: 0 }
+        })"#,
+    )
+    .unwrap();
+    assert_eq!(app.eval("__currentPage.kind").unwrap(), "string");
+    assert_eq!(app.eval("__currentPage.text").unwrap(), "1212121");
+    assert_eq!(app.eval("__currentPage.trimmed").unwrap(), "1212121");
+    assert_eq!(app.eval("__currentPage.cursor").unwrap(), "7");
+    assert_eq!(app.eval("__currentPage.evType").unwrap(), "input");
+}
+
+/// `data-*` 仍然要按字面量还原（列表项 `data-id="12"` 与数字比较）
+#[test]
+fn dataset_is_still_coerced_while_detail_is_not() {
+    let mut app = crate::runtime::MiniApp::new(375, 667).expect("create MiniApp");
+    app.init().expect("init");
+    app.load_script(
+        r#"Page({
+            data: {},
+            onTap: function (e) {
+                this.idKind = typeof e.currentTarget.dataset.id;
+                this.detailKind = typeof e.detail.value;
+            }
+        });"#,
+    )
+    .unwrap();
+    app.eval(
+        r#"__dispatchEvent('onTap', {
+            type: 'tap',
+            target: { id: 'a', dataset: { id: '12' } },
+            currentTarget: { id: 'a', dataset: { id: '12' } },
+            detail: { value: '12' }
+        })"#,
+    )
+    .unwrap();
+    assert_eq!(app.eval("__currentPage.idKind").unwrap(), "number", "dataset 该还原成数字");
+    assert_eq!(app.eval("__currentPage.detailKind").unwrap(), "string", "detail 不该被还原");
+}
+
+/// 没给 `timeStamp` 时由 JS 侧补上（宿主的输入事件不带页面时钟）
+#[test]
+fn dispatch_event_fills_missing_timestamp() {
+    let mut app = crate::runtime::MiniApp::new(375, 667).expect("create MiniApp");
+    app.init().expect("init");
+    app.load_script(r#"Page({ data: {}, onBlur: function (e) { this.ts = e.timeStamp; } });"#)
+        .unwrap();
+    app.eval(r#"__dispatchEvent('onBlur', { type: 'blur', detail: { value: 'x' } })"#).unwrap();
+    assert_eq!(app.eval("typeof __currentPage.ts").unwrap(), "number");
+    assert!(app.eval("__currentPage.ts > 0").unwrap() == "true");
+}

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/garden/garden</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./garden.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-scroll-view page" id="" style="--status-bar-height:;overflow-y:auto">
+    <div class="wx-view live-wrap">
+      <img class="wx-image live" style="height:auto" src="">
+      <div class="wx-view badge">
+        <div class="wx-view bdot"></div>
+        <span class="wx-text badge-t">LIVE 直播中</span>
+      </div>
+      <span class="wx-text tag">公共摄像头 · 无云台</span>
+    </div>
+    <span class="wx-text tip">画面来源：凤凰山坪坑口主茶园 · HLS 实时直播</span>
+    <span class="wx-text sec">实时环境（气象站采集）</span>
+    <div class="wx-view env">
+      <div class="wx-view env-item">
+        <span class="wx-text env-v"></span>
+        <span class="wx-text env-k">温度</span>
+      </div>
+      <div class="wx-view env-item">
+        <span class="wx-text env-v"></span>
+        <span class="wx-text env-k">湿度</span>
+      </div>
+      <div class="wx-view env-item">
+        <span class="wx-text env-v"></span>
+        <span class="wx-text env-k">光照</span>
+      </div>
+      <div class="wx-view env-item">
+        <span class="wx-text env-v"></span>
+        <span class="wx-text env-k">海拔</span>
+      </div>
+    </div>
+    <span class="wx-text tip"></span>
+  </div>
+  <div class="wx-wxs"></div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/garden/garden";
+window.__PAGE_PULL_DOWN__ = false;
+window.__WXML__ = [{"a":{"change:eA":"{{uV.sA}}","change:eS":"{{uV.sS}}","class":"{{['page', k]}}","eA":"{{$eA[i]}}","eS":"{{$eS[i]}}","enable-flex":"true","enhanced":"true","hidden":"{{virtualHostHidden || false}}","id":"{{i}}","scroll-y":"true","style":"{{'--status-bar-height:' + j + ';' + (virtualHostStyle || '')}}"},"c":[{"a":{"class":"live-wrap"},"c":[{"a":{"autoplay":"{{true}}","class":"live-video","controls":"{{true}}","src":"{{b}}","wx:if":"{{a}}"},"c":[],"n":"video","t":"el"},{"a":{"class":"live","mode":"widthFix","src":"{{c}}","wx:else":""},"c":[],"n":"image","t":"el"},{"a":{"class":"badge"},"c":[{"a":{"class":"bdot"},"c":[],"n":"view","t":"el"},{"a":{"class":"badge-t"},"c":[{"t":"tx","x":"LIVE 直播中"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"tag"},"c":[{"t":"tx","x":"公共摄像头 · 无云台"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"tip"},"c":[{"t":"tx","x":"画面来源：凤凰山坪坑口主茶园 · HLS 实时直播"}],"n":"text","t":"el"},{"a":{"class":"sec"},"c":[{"t":"tx","x":"实时环境（气象站采集）"}],"n":"text","t":"el"},{"a":{"class":"env"},"c":[{"a":{"class":"env-item"},"c":[{"a":{"class":"env-v"},"c":[{"t":"tx","x":"{{d}}"}],"n":"text","t":"el"},{"a":{"class":"env-k"},"c":[{"t":"tx","x":"温度"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"env-item"},"c":[{"a":{"class":"env-v"},"c":[{"t":"tx","x":"{{e}}"}],"n":"text","t":"el"},{"a":{"class":"env-k"},"c":[{"t":"tx","x":"湿度"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"env-item"},"c":[{"a":{"class":"env-v"},"c":[{"t":"tx","x":"{{f}}"}],"n":"text","t":"el"},{"a":{"class":"env-k"},"c":[{"t":"tx","x":"光照"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"env-item"},"c":[{"a":{"class":"env-v"},"c":[{"t":"tx","x":"{{g}}"}],"n":"text","t":"el"},{"a":{"class":"env-k"},"c":[{"t":"tx","x":"海拔"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"tip"},"c":[{"t":"tx","x":"{{h}}"}],"n":"text","t":"el"}],"n":"scroll-view","t":"el"},{"a":{"module":"uV","src":"/common/uniView.wxs"},"c":[],"n":"wxs","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./garden.js"></script>
+</body>
+</html>

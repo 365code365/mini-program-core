@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/cart/cart</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./cart.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view page" id="" style="--status-bar-height:;">
+    <div class="wx-scroll-view scroll" style="overflow-y:auto">
+      <div class="wx-view cart-ph"></div>
+    </div>
+    <div class="wx-tab-bar" data-:__l="__l"></div>
+  </div>
+  <div class="wx-wxs"></div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/cart/cart";
+window.__PAGE_PULL_DOWN__ = false;
+window.__WXML__ = [{"a":{"change:eA":"{{uV.sA}}","change:eS":"{{uV.sS}}","class":"{{['page', q]}}","eA":"{{$eA[o]}}","eS":"{{$eS[o]}}","hidden":"{{virtualHostHidden || false}}","id":"{{o}}","style":"{{'--status-bar-height:' + p + ';' + (virtualHostStyle || '')}}"},"c":[{"a":{"class":"empty","wx:if":"{{a}}"},"c":[{"a":{"class":"empty-ic","src":"{{b}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"empty-t"},"c":[{"t":"tx","x":"购物车还是空的"}],"n":"text","t":"el"},{"a":{"bindtap":"{{c}}","class":"empty-btn"},"c":[{"a":{"class":"empty-btn-t"},"c":[{"t":"tx","x":"去商城逛逛"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"scroll","enable-flex":"true","enhanced":"true","scroll-y":"true","wx:else":""},"c":[{"a":{"class":"item","wx:for":"{{d}}","wx:for-item":"c","wx:key":"k"},"c":[{"a":{"bindtap":"{{c.b}}","class":"{{['cb', c.a]}}"},"c":[{"a":{"class":"cb-t","src":"{{e}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"},{"a":{"class":"item-img","mode":"aspectFill","src":"{{c.c}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"item-info"},"c":[{"a":{"class":"item-top"},"c":[{"a":{"class":"item-name"},"c":[{"t":"tx","x":"{{c.d}}"}],"n":"text","t":"el"},{"a":{"bindtap":"{{c.e}}","class":"item-del"},"c":[{"t":"tx","x":"删除"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"invalid","wx:if":"{{c.f}}"},"c":[{"t":"tx","x":"该商品已失效"}],"n":"text","t":"el"},{"a":{"class":"item-bottom"},"c":[{"a":{"class":"price"},"c":[{"t":"tx","x":"¥{{c.g}}"}],"n":"text","t":"el"},{"a":{"class":"stepper"},"c":[{"a":{"bindtap":"{{c.h}}","class":"step-btn"},"c":[{"t":"tx","x":"−"}],"n":"text","t":"el"},{"a":{"class":"step-n"},"c":[{"t":"tx","x":"{{c.i}}"}],"n":"text","t":"el"},{"a":{"bindtap":"{{c.j}}","class":"step-btn"},"c":[{"t":"tx","x":"+"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"cart-ph"},"c":[],"n":"view","t":"el"}],"n":"scroll-view","t":"el"},{"a":{"class":"bar","wx:if":"{{f}}"},"c":[{"a":{"bindtap":"{{i}}","class":"all"},"c":[{"a":{"class":"{{['cb', h]}}"},"c":[{"a":{"class":"cb-t","src":"{{g}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"},{"a":{"class":"all-t"},"c":[{"t":"tx","x":"全选"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"bar-right"},"c":[{"a":{"class":"total-box"},"c":[{"a":{"class":"total-label"},"c":[{"t":"tx","x":"合计"}],"n":"text","t":"el"},{"a":{"class":"total"},"c":[{"t":"tx","x":"¥{{j}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{m}}","class":"{{['btn', l]}}"},"c":[{"a":{"class":"btn-t"},"c":[{"t":"tx","x":"去结算({{k}})"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bind:__l":"__l","u-i":"58d4657a-0","u-p":"{{n||''}}"},"c":[],"n":"tab-bar","t":"el"}],"n":"view","t":"el"},{"a":{"module":"uV","src":"/common/uniView.wxs"},"c":[],"n":"wxs","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./cart.js"></script>
+</body>
+</html>

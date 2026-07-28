@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/checkin/checkin</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./checkin.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view page" id="" style="--status-bar-height:;">
+    <div class="wx-view card">
+      <span class="wx-text card-k">已连续签到</span>
+      <span class="wx-text card-v"> <span class="wx-text card-unit">天</span></span>
+      <span class="wx-text card-tip">每日 +10 积分，连续 7 天额外 +50 积分</span>
+    </div>
+    <div class="wx-view days"></div>
+    <div class="wx-view btn" data-tap="">
+      <span class="wx-text btn-t"></span>
+    </div>
+  </div>
+  <div class="wx-wxs"></div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/checkin/checkin";
+window.__PAGE_PULL_DOWN__ = false;
+window.__WXML__ = [{"a":{"change:eA":"{{uV.sA}}","change:eS":"{{uV.sS}}","class":"{{['page', h]}}","eA":"{{$eA[f]}}","eS":"{{$eS[f]}}","hidden":"{{virtualHostHidden || false}}","id":"{{f}}","style":"{{'--status-bar-height:' + g + ';' + (virtualHostStyle || '')}}"},"c":[{"a":{"class":"card"},"c":[{"a":{"class":"card-k"},"c":[{"t":"tx","x":"已连续签到"}],"n":"text","t":"el"},{"a":{"class":"card-v"},"c":[{"t":"tx","x":"{{a}} "},{"a":{"class":"card-unit"},"c":[{"t":"tx","x":"天"}],"n":"text","t":"el"}],"n":"text","t":"el"},{"a":{"class":"card-tip"},"c":[{"t":"tx","x":"每日 +10 积分，连续 7 天额外 +50 积分"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"days"},"c":[{"a":{"class":"{{['day', d.g]}}","wx:for":"{{b}}","wx:for-item":"d","wx:key":"f"},"c":[{"a":{"class":"{{['day-ic', d.d]}}"},"c":[{"a":{"class":"day-ic-img","src":"{{d.b}}","wx:if":"{{d.a}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"day-ic-t","wx:else":""},"c":[{"t":"tx","x":"{{d.c}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"day-label"},"c":[{"t":"tx","x":"第{{d.e}}天"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{e}}","class":"{{['btn', d]}}"},"c":[{"a":{"class":"btn-t"},"c":[{"t":"tx","x":"{{c}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"module":"uV","src":"/common/uniView.wxs"},"c":[],"n":"wxs","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./checkin.js"></script>
+</body>
+</html>

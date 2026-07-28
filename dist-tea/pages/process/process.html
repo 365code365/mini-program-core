@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/process/process</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./process.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-scroll-view page" id="" style="--status-bar-height:;overflow-y:auto">
+    <div class="wx-view head-wrap">
+      <img class="wx-image head-img" style="object-fit:cover" src="">
+      <div class="wx-view head-mask">
+        <span class="wx-text head-t">古法制茶 · 匠心十道</span>
+        <span class="wx-text head-sub">TEA CRAFT · 精湛工艺，匠心制作</span>
+      </div>
+    </div>
+    <div class="wx-view timeline"></div>
+    <span class="wx-text tip">每一道工序均录入溯源档案，可在「我的茶园」查看</span>
+    <div class="wx-view" style="height:16px"></div>
+  </div>
+  <div class="wx-wxs"></div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/process/process";
+window.__PAGE_PULL_DOWN__ = false;
+window.__WXML__ = [{"a":{"change:eA":"{{uV.sA}}","change:eS":"{{uV.sS}}","class":"{{['page', e]}}","eA":"{{$eA[c]}}","eS":"{{$eS[c]}}","enable-flex":"true","enhanced":"true","hidden":"{{virtualHostHidden || false}}","id":"{{c}}","scroll-y":"true","style":"{{'--status-bar-height:' + d + ';' + (virtualHostStyle || '')}}"},"c":[{"a":{"class":"head-wrap"},"c":[{"a":{"class":"head-img","mode":"aspectFill","src":"{{a}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"head-mask"},"c":[{"a":{"class":"head-t"},"c":[{"t":"tx","x":"古法制茶 · 匠心十道"}],"n":"text","t":"el"},{"a":{"class":"head-sub"},"c":[{"t":"tx","x":"TEA CRAFT · 精湛工艺，匠心制作"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"timeline"},"c":[{"a":{"class":"node","wx:for":"{{b}}","wx:for-item":"s","wx:key":"d"},"c":[{"a":{"class":"num"},"c":[{"a":{"class":"num-t"},"c":[{"t":"tx","x":"{{s.a}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"node-body"},"c":[{"a":{"class":"node-title"},"c":[{"t":"tx","x":"{{s.b}}"}],"n":"text","t":"el"},{"a":{"class":"node-desc"},"c":[{"t":"tx","x":"{{s.c}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"tip"},"c":[{"t":"tx","x":"每一道工序均录入溯源档案，可在「我的茶园」查看"}],"n":"text","t":"el"},{"a":{"style":"height:32rpx"},"c":[],"n":"view","t":"el"}],"n":"scroll-view","t":"el"},{"a":{"module":"uV","src":"/common/uniView.wxs"},"c":[],"n":"wxs","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./process.js"></script>
+</body>
+</html>

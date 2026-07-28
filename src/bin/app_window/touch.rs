@@ -300,7 +300,10 @@ pub fn dispatch_to_js(
             detail.clone(),
         );
         let handler = serde_json::to_string(&b.handler).unwrap_or_else(|_| "''".into());
-        app.eval(&format!("__dispatchEvent({handler}, {json})")).ok();
+        // 第三个实参是「声明这条绑定的组件标签」：组件模板里的绑定要送给组件实例，
+        // 不能因为页面上恰好有同名方法就打到页面上
+        let owner = serde_json::to_string(&b.owner).unwrap_or_else(|_| "''".into());
+        app.eval(&format!("__dispatchEvent({handler}, {json}, {owner})")).ok();
     }
     true
 }

@@ -385,24 +385,18 @@ pub fn handle_mouse_wheel_gated(
     let mut handled_by_scrollview = false;
     let mut needs_redraw = false;
     
-    // 首先检查 fixed 元素
-    let mut scroll_area_id = if let Some(element) = interaction.hit_test(x, y) {
-        if element.is_fixed && element.interaction_type == InteractionType::ScrollArea {
-            Some((element.id.clone(), element.is_horizontal))
-        } else {
-            None
-        }
-    } else {
-        None
-    };
-    
-    // 检查普通元素
+    // 先看覆盖层里的滚动区（视口坐标），再看正常流里的（内容坐标）。
+    //
+    // 必须用 `hit_test_scroll_area`：从前是「全局 hit_test 拿最上层元素，再看它是不是
+    // 滚动区」—— 滚动区里只要盖着一张卡片或按钮，返回的就是那张卡片，于是滚轮永远
+    // 落到页面上，横向卡片列表用滚轮推不动。
+    let mut scroll_area_id = interaction
+        .hit_test_scroll_area(x, y, true)
+        .map(|e| (e.id.clone(), e.is_horizontal));
     if scroll_area_id.is_none() {
-        if let Some(element) = interaction.hit_test(x, actual_y) {
-            if !element.is_fixed && element.interaction_type == InteractionType::ScrollArea {
-                scroll_area_id = Some((element.id.clone(), element.is_horizontal));
-            }
-        }
+        scroll_area_id = interaction
+            .hit_test_scroll_area(x, actual_y, false)
+            .map(|e| (e.id.clone(), e.is_horizontal));
     }
     
     if let Some((id, is_horizontal)) = scroll_area_id {

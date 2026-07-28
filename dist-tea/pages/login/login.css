@@ -1,0 +1,244 @@
+/* 由 login.wxss 编译 */
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+/* 字体栈第一位必须是 App.uvue 里 loadFontFace 注册过的 family，否则安卓机没有本机宋体，
+   会整站掉到系统黑体。Yunxiu Serif = Noto Serif SC Regular(正文)，Source Han Serif SC = Heavy(标题)。 */
+.page {
+  flex: 1;
+  background-color: #536254;
+  padding: 0 24px;
+  align-items: center;
+}
+.brand {
+  align-items: center;
+  margin-top: 80px;
+}
+.brand-cn {
+  font-size: 26px;
+  font-weight: bold;
+  color: #ffffff;
+  letter-spacing: 3px;
+  font-family: "Source Han Serif SC", "Yunxiu Serif", "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+}
+.brand-en {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 2px;
+  margin-top: 6px;
+  font-family: "Playfair Display", "Times New Roman", serif;
+}
+.brand-sub {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.75);
+  margin-top: 10px;
+}
+.card {
+  width: 100%;
+  background-color: #ffffff;
+  border-radius: 14px;
+  padding: 20px 18px;
+  margin-top: 36px;
+}
+.tabs {
+  flex-direction: row;
+  margin-bottom: 8px;
+}
+.tab {
+  font-size: 14px;
+  color: #82786c;
+  margin-right: 20px;
+  padding-bottom: 6px;
+}
+.tab-on {
+  color: #4a3020;
+  font-weight: bold;
+  border-bottom: 2px solid #a87536;
+}
+.field {
+  margin-top: 14px;
+}
+.f-label {
+  font-size: 12px;
+  color: #82786c;
+}
+.f-input {
+  height: 40px;
+  font-size: 15px;
+  color: #2d251e;
+  border-bottom: 1px solid rgba(112, 83, 48, 0.11);
+}
+.ph {
+  color: #c4bfb4;
+}
+.code-row {
+  flex-direction: row;
+  align-items: center;
+}
+.f-input-code {
+  flex: 1;
+}
+.code-btn {
+  background-color: rgba(168, 117, 54, 0.12);
+  border-radius: 18px;
+  padding: 7px 12px;
+  margin-left: 8px;
+}
+.code-btn-off {
+  opacity: 0.5;
+}
+.code-btn-t {
+  font-size: 12px;
+  color: #a87536;
+}
+.submit {
+  background-color: #a87536;
+  border-radius: 22px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 28px;
+}
+.submit-off {
+  opacity: 0.6;
+}
+.submit-t {
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+.skip {
+  align-items: center;
+  margin-top: 14px;
+}
+.skip-t {
+  font-size: 13px;
+  color: #82786c;
+}
+.or-row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  margin-top: 20px;
+}
+.or-line {
+  flex: 1;
+  height: 1px;
+  background-color: rgba(112, 83, 48, 0.11);
+}
+.or-t {
+  font-size: 11px;
+  color: #82786c;
+  margin: 0 10px;
+}
+.wx-btn {
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  background-color: #07c160;
+  border-radius: 22px;
+  height: 44px;
+  margin-top: 14px;
+  border: none;
+}
+.wx-btn::after {
+  border: none;
+}
+.wx-btn-t {
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+.agree-row {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  margin-top: 24px;
+  padding: 0 8px;
+}
+.cb-wrap {
+  padding: 3px;
+  margin-right: 4px;
+}
+.cb {
+  width: 15px;
+  height: 15px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  align-items: center;
+  justify-content: center;
+}
+.cb-on {
+  background-color: #a87536;
+  border-color: #a87536;
+}
+.cb-t {
+  width: 10px;
+  height: 10px;
+}
+.agree {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+}
+.agree-link {
+  font-size: 11px;
+  color: #c5a46d;
+}
+.mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  align-items: center;
+  justify-content: center;
+  padding: 0 24px;
+}
+.sheet {
+  width: 100%;
+  height: 78%;
+  background-color: #ffffff;
+  border-radius: 12px;
+  flex-direction: column;
+}
+.sheet-head {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+.sheet-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #4a3020;
+}
+.sheet-x {
+  width: 18px;
+  height: 18px;
+}
+.sheet-body {
+  flex: 1;
+  padding: 14px 16px;
+}
+.ag-text {
+  font-size: 13px;
+  color: #5a5248;
+  line-height: 22px;
+}
+.sheet-ok {
+  background-color: #a87536;
+  border-radius: 22px;
+  margin: 4px 16px 16px;
+  padding: 11px 0;
+  align-items: center;
+}
+.sheet-ok-t {
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: bold;
+}

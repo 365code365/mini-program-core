@@ -1,0 +1,123 @@
+/* 由 orders.wxss 编译 */
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+/* 字体栈第一位必须是 App.uvue 里 loadFontFace 注册过的 family，否则安卓机没有本机宋体，
+   会整站掉到系统黑体。Yunxiu Serif = Noto Serif SC Regular(正文)，Source Han Serif SC = Heavy(标题)。 */
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.tabs {
+  flex-direction: row;
+  justify-content: space-between;
+  background-color: #f7f3ec;
+  padding: 8px 12px;
+}
+.tab {
+  font-size: 13px;
+  color: #82786c;
+  padding-bottom: 5px;
+}
+.tab-on {
+  color: #4a3020;
+  font-weight: bold;
+  border-bottom: 2px solid #c5a46d;
+}
+.scroll {
+  flex: 1;
+}
+.empty {
+  align-items: center;
+  padding-top: 80px;
+}
+.empty-t {
+  font-size: 14px;
+  color: #82786c;
+}
+.empty-btn {
+  background-color: #a87536;
+  border-radius: 20px;
+  padding: 8px 20px;
+  margin-top: 12px;
+}
+.empty-btn-t {
+  color: #ffffff;
+  font-size: 13px;
+}
+.order {
+  background-color: #ffffff;
+  border-radius: 10px;
+  margin: 10px 12px 0;
+  padding: 10px;
+}
+.order-head {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 7px;
+}
+.order-no {
+  font-size: 11px;
+  color: #82786c;
+}
+.status {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+.status-gold {
+  background-color: rgba(199, 154, 82, 0.15);
+  color: #a87536;
+}
+.status-muted {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: #82786c;
+}
+.goods {
+  flex-direction: row;
+  align-items: center;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 7px 0;
+}
+.goods-img {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+}
+.goods-name {
+  flex: 1;
+  font-size: 14px;
+  color: #4a3020;
+  margin-left: 8px;
+}
+.goods-right {
+  align-items: flex-end;
+}
+.goods-price {
+  font-size: 14px;
+  color: #4a3020;
+}
+.goods-qty {
+  font-size: 11px;
+  color: #82786c;
+}
+.order-foot {
+  flex-direction: row;
+  justify-content: flex-end;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  padding-top: 7px;
+}
+.foot-t {
+  font-size: 14px;
+  color: #a87536;
+  font-weight: bold;
+}
+.nomore {
+  align-items: center;
+  padding: 12px 0;
+}
+.nomore-t {
+  font-size: 11px;
+  color: #82786c;
+}

@@ -52,22 +52,63 @@ impl WxmlRenderer {
             }
         }
         
-        // 记录事件绑定
-        for e in &node.events {
-            self.event_bindings.push(EventBinding {
-                event_type: e.event_type.clone(),
-                handler: e.handler.clone(),
-                id: node.attrs.get("id").cloned().unwrap_or_default(),
-                data: e.data.clone(),
-                bounds: logical_bounds,
-                is_catch: e.is_catch,
-                phase: e.phase,
-                mut_bind: e.mut_bind,
-                is_fixed: self.registering_fixed,
-            });
-        }
+        self.push_event_bindings(node, logical_bounds);
     }
     
+    /// `MINI_SCROLL_LOG=1 MINI_SCROLL_TREE=1`：打印滚动容器子树的逻辑几何，
+    /// 用来定位「内容明明超出去了，可滚上限却是 0」这类问题出在哪一层。
+    fn dump_scroll_subtree(taffy: &Tree, node: &RenderNode, sf: f32, oy: f32, depth: usize) {
+        if depth > 6 {
+            return;
+        }
+        let Ok(l) = taffy.layout(node.taffy_node) else { return };
+        let y = oy + l.location.y;
+        let class = node.attrs.get("class").map(|s| s.as_str()).unwrap_or("");
+        eprintln!(
+            "   {}{} .{} y={:.0} h={:.0}",
+            "  ".repeat(depth),
+            node.tag,
+            class,
+            y / sf,
+            l.size.height / sf
+        );
+        for c in &node.children {
+            Self::dump_scroll_subtree(taffy, c, sf, y, depth + 1);
+        }
+    }
+
+    /// 把 `node` 子树的溢出范围并进 `(max_right, max_bottom)`（物理像素，
+    /// 相对滚动容器的内容原点）。
+    ///
+    /// `ox/oy` 是 `node` 父节点的原点。裁剪自己的子树（overflow 非 visible、
+    /// scroll-view / swiper）只算它自己的盒子；`position: fixed` 的子树完全跳过。
+    fn accumulate_scroll_overflow(
+        taffy: &Tree,
+        node: &RenderNode,
+        ox: f32,
+        oy: f32,
+        max_right: &mut f32,
+        max_bottom: &mut f32,
+    ) {
+        if node.style.is_fixed {
+            return;
+        }
+        let Ok(layout) = taffy.layout(node.taffy_node) else { return };
+        let x = ox + layout.location.x;
+        let y = oy + layout.location.y;
+        *max_right = max_right.max(x + layout.size.width);
+        *max_bottom = max_bottom.max(y + layout.size.height);
+
+        let clips = node.style.overflow != crate::renderer::components::Overflow::Visible
+            || matches!(node.tag.as_str(), "scroll-view" | "swiper");
+        if clips {
+            return;
+        }
+        for child in &node.children {
+            Self::accumulate_scroll_overflow(taffy, child, x, y, max_right, max_bottom);
+        }
+    }
+
     pub(super) fn register_interactive_element(
         &mut self, 
         original_node: &RenderNode, 
@@ -100,27 +141,48 @@ impl WxmlRenderer {
                     .map(|s| s == "true" || s == "{{true}}")
                     .unwrap_or(false);
                 
-                let mut content_height = 0.0;
-                let mut content_width = 0.0;
-                
-                // 计算内容尺寸：所有子节点的边界最大值
+                // 可滚内容尺寸 = 子树的**溢出并集**，不是直接子节点的盒子并集。
+                //
+                // 只看直接子节点是不够的：uni-app 的页面结构是
+                // `<scroll-view class="page">` 里放一个 `flex:1` 的容器，
+                // 那个容器的高度**等于视口**（它就是用来吃掉剩余空间的），
+                // 真正超出去的是它里面的内容。于是算出来 content == viewport、
+                // `max_scroll == 0`，手势被判成「这个 scroll-view 不可滚」交给页面，
+                // 而页面本身也只有几像素可滚 —— 表现就是整页划不动、底部内容
+                // 永远压在固定输入条/tabBar 底下看不到。
+                //
+                // 与 CSS 的可滚溢出区一致：子元素自己裁剪（overflow 非 visible、
+                // 或本身就是滚动容器）时不再往里看，`position: fixed` 的子树钉在
+                // 视口上、不属于滚动内容。
+                let mut content_height = 0.0f32;
+                let mut content_width = 0.0f32;
                 for child in original_node.children.iter() {
-                    if let Ok(layout) = taffy.layout(child.taffy_node) {
-                        let bottom = layout.location.y + layout.size.height;
-                        let right = layout.location.x + layout.size.width;
-                        if bottom > content_height {
-                            content_height = bottom;
-                        }
-                        if right > content_width {
-                            content_width = right;
-                        }
-                    }
+                    Self::accumulate_scroll_overflow(
+                        taffy,
+                        child,
+                        0.0,
+                        0.0,
+                        &mut content_width,
+                        &mut content_height,
+                    );
                 }
                 
                 // 转换为逻辑像素
                 let logical_content_height = content_height / self.scale_factor;
                 let logical_content_width = content_width / self.scale_factor;
-                
+
+                if std::env::var("MINI_SCROLL_LOG").is_ok() {
+                    eprintln!(
+                        "📦 scroll-view {} 视口 {:.1} 内容 {:.1}",
+                        id, bounds.height, logical_content_height
+                    );
+                    if std::env::var("MINI_SCROLL_TREE").is_ok() {
+                        for child in original_node.children.iter() {
+                            Self::dump_scroll_subtree(taffy, child, self.scale_factor, 0.0, 1);
+                        }
+                    }
+                }
+
                 interaction.register_element(InteractiveElement {
                     interaction_type: InteractionType::ScrollArea,
                     id,

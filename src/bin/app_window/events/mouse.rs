@@ -151,18 +151,8 @@ pub fn handle_content_click(
     if on_fixed_with_handler {
         // 检查交互元素（视口坐标，且只看覆盖层自己的元素）
         let result = interaction.handle_click_scoped(x, y, true);
-        let dispatch_tap = match &result {
-            Some(r) => matches!(r,
-                InteractionResult::ButtonClick { .. } |
-                InteractionResult::Toggle { .. } |
-                InteractionResult::Select { .. }
-            ),
-            None => true, // 没有交互元素：这是一次普通 tap
-        };
-        if dispatch_tap {
-            if let Some(renderer) = renderer {
-                dispatch_tap_chain(app, renderer, x, y, Some(true), tap_ctx);
-            }
+        if let Some(renderer) = renderer {
+            dispatch_component_events(app, renderer, interaction, x, y, Some(true), tap_ctx, result.as_ref());
         }
         return result;
     }
@@ -228,22 +218,8 @@ pub fn handle_content_click(
             }
         }
         
-        let should_call_js = matches!(&result,
-            InteractionResult::ButtonClick { .. } |
-            InteractionResult::Toggle { .. } |
-            InteractionResult::Select { .. } |
-            InteractionResult::Focus { .. }
-        );
-        
-        if should_call_js {
-            if let Some(renderer) = renderer {
-                if let Some(binding) = renderer.hit_test(x, adjusted_y) {
-                    println!("👆 {} -> {}", binding.event_type, binding.handler);
-                    let data_json = serde_json::to_string(&binding.data).unwrap_or("{}".to_string());
-                    let call_code = format!("__callPageMethod('{}', {})", binding.handler, data_json);
-                    app.eval(&call_code).ok();
-                }
-            }
+        if let Some(renderer) = renderer {
+            dispatch_component_events(app, renderer, interaction, x, adjusted_y, Some(false), tap_ctx, Some(&result));
         }
         
         return Some(result);
@@ -260,6 +236,82 @@ pub fn handle_content_click(
     }
     
     None
+}
+
+/// 命中了一个有状态的组件（开关/勾选/按钮/输入框）之后，把该发的事件发出去。
+///
+/// 从前这里是「`renderer.hit_test` 取该点最上层的**任意一条**绑定，
+/// 用 `__callPageMethod(handler, dataset)` 调一下」，三处硬伤：
+///   - 不分事件类型：点一下普通输入框会拿它的 `bindinput` 当 tap 调用，
+///     `e.detail.value` 是 undefined，页面里 `.trim()` 直接抛异常；
+///   - 不冒泡、事件对象是 dataset 拼的（没有 touches、target/currentTarget 不分）；
+///   - 不带组件归属：组件模板里的绑定会打到页面的同名方法上。
+///
+/// 现在按微信语义分开发：`change`（勾选/开关/单选）走 change 链，
+/// tap 走统一的 tap 链，两者都可能同时发生（把开关包在带 bindtap 的 view 里就是）。
+/// 输入框的 focus/input/blur/confirm 不在这里 —— 由 `interaction_handler` 负责。
+#[allow(clippy::too_many_arguments)]
+fn dispatch_component_events(
+    app: &mut MiniApp,
+    renderer: &WxmlRenderer,
+    interaction: &InteractionManager,
+    x: f32,
+    hit_y: f32,
+    scope: Option<bool>,
+    tap_ctx: (u32, u64),
+    result: Option<&InteractionResult>,
+) {
+    let (identifier, time_ms) = tap_ctx;
+    let mut dispatch_change = |app: &mut MiniApp, detail: serde_json::Value| {
+        super::super::touch::dispatch_to_js(
+            app, renderer, "change", (x, hit_y), (x, hit_y), scope, identifier, time_ms, detail,
+        );
+    };
+    match result {
+        Some(InteractionResult::Toggle { checked, .. }) => {
+            // 在 `checkbox-group` 里：detail.value 是组内选中项的 value 数组（微信语义）；
+            // 单独的 `<switch>`：detail.value 是布尔开关状态。
+            let detail = match group_values(renderer, interaction, x, hit_y, scope, "checkbox-group") {
+                Some(values) => serde_json::json!({ "value": values }),
+                None => serde_json::json!({ "value": checked }),
+            };
+            dispatch_change(app, detail);
+            dispatch_tap_chain(app, renderer, x, hit_y, scope, tap_ctx);
+        }
+        Some(InteractionResult::Select { value, .. }) => {
+            dispatch_change(app, serde_json::json!({ "value": value }));
+            dispatch_tap_chain(app, renderer, x, hit_y, scope, tap_ctx);
+        }
+        Some(InteractionResult::SliderChange { value, .. }) => {
+            dispatch_change(app, serde_json::json!({ "value": value }));
+        }
+        // 输入框的焦点事件由 interaction_handler 派发（它才有输入框的当前文本）
+        Some(InteractionResult::Focus { .. }) => {}
+        // 按钮、以及「点在没有状态的地方」：都是一次普通 tap
+        _ => dispatch_tap_chain(app, renderer, x, hit_y, scope, tap_ctx),
+    }
+}
+
+/// 命中点所在的 `checkbox-group` / `radio-group` 里，当前选中项的 value 集合。
+/// 不在这类组里返回 `None`（那就是单独的 switch/checkbox，走布尔语义）。
+fn group_values(
+    renderer: &WxmlRenderer,
+    interaction: &InteractionManager,
+    x: f32,
+    hit_y: f32,
+    scope: Option<bool>,
+    group_tag: &str,
+) -> Option<Vec<String>> {
+    let group = renderer
+        .dispatch_chain(x, hit_y, "change", scope)
+        .into_iter()
+        .find(|b| b.tag == group_tag)?;
+    let kind = if group_tag == "checkbox-group" {
+        InteractionType::Checkbox
+    } else {
+        InteractionType::Radio
+    };
+    Some(interaction.checked_values_in(&group.bounds, kind))
 }
 
 /// 把一次 tap 交给统一的事件派发出口（捕获→冒泡、catch、mut-bind、完整事件对象）。

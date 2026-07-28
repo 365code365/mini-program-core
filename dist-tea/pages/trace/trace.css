@@ -1,0 +1,218 @@
+/* 由 trace.wxss 编译 */
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+/* 字体栈第一位必须是 App.uvue 里 loadFontFace 注册过的 family，否则安卓机没有本机宋体，
+   会整站掉到系统黑体。Yunxiu Serif = Noto Serif SC Regular(正文)，Source Han Serif SC = Heavy(标题)。 */
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.head {
+  background-color: #536254;
+  border-radius: 12px;
+  margin: 12px;
+  padding: 16px;
+}
+.tag {
+  background-color: rgba(199, 154, 82, 0.25);
+  color: #f0d9a8;
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  align-self: flex-start;
+}
+.name {
+  font-size: 20px;
+  font-weight: bold;
+  color: #ffffff;
+  margin-top: 8px;
+}
+.batch {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 3px;
+}
+.env {
+  flex-direction: row;
+  margin-top: 14px;
+}
+.env-item {
+  flex: 1;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 9px 0;
+  align-items: center;
+  margin: 0 3px;
+}
+.env-v {
+  font-size: 15px;
+  font-weight: bold;
+  color: #ffffff;
+}
+.env-k {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 3px;
+}
+.env-src {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 8px;
+}
+.sec {
+  font-size: 16px;
+  font-weight: bold;
+  color: #4a3020;
+  margin: 8px 16px;
+}
+.timeline {
+  padding: 0 16px;
+}
+.node {
+  flex-direction: row;
+  padding-bottom: 16px;
+}
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 6px;
+  border: 2px solid #c5a46d;
+  background-color: #f7f3ec;
+  margin-right: 12px;
+  margin-top: 3px;
+}
+.node-body {
+  flex: 1;
+}
+.node-date {
+  font-size: 11px;
+  color: #a87536;
+}
+.node-title {
+  font-size: 15px;
+  font-weight: bold;
+  color: #4a3020;
+  margin-top: 2px;
+}
+.node-desc {
+  font-size: 12px;
+  color: #8a8478;
+  margin-top: 2px;
+}
+.report {
+  flex-direction: row;
+  align-items: center;
+  background-color: #ffffff;
+  border-radius: 10px;
+  margin: 0 12px;
+  padding: 12px;
+}
+.report-ic {
+  width: 24px;
+  height: 24px;
+}
+.report-info {
+  flex: 1;
+  margin-left: 8px;
+}
+.report-t {
+  font-size: 14px;
+  font-weight: bold;
+  color: #4a3020;
+}
+.report-sub {
+  font-size: 11px;
+  color: #82786c;
+  margin-top: 2px;
+}
+.report-arrow {
+  font-size: 12px;
+  color: #a87536;
+}
+.mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  justify-content: flex-end;
+}
+.sheet {
+  background-color: #ffffff;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  max-height: 82%;
+}
+.sheet-head {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+.sheet-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #4a3020;
+}
+.sheet-x {
+  width: 18px;
+  height: 18px;
+}
+.sheet-body {
+  padding: 14px;
+}
+.ok {
+  flex-direction: row;
+  align-items: center;
+  background-color: rgba(47, 79, 79, 0.05);
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+.ok-ic {
+  width: 28px;
+  height: 28px;
+  border-radius: 14px;
+  background-color: #536254;
+  align-items: center;
+  justify-content: center;
+}
+.ok-t {
+  width: 16px;
+  height: 16px;
+}
+.ok-info {
+  margin-left: 8px;
+}
+.ok-h {
+  font-size: 14px;
+  font-weight: bold;
+  color: #536254;
+}
+.ok-sub {
+  font-size: 11px;
+  color: #82786c;
+  margin-top: 2px;
+}
+.rrow {
+  flex-direction: row;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+.rk {
+  font-size: 13px;
+  color: #82786c;
+}
+.rv {
+  font-size: 13px;
+  color: #3a2c18;
+}
+.rnote {
+  font-size: 10px;
+  color: #b3ad9f;
+  margin-top: 8px;
+}

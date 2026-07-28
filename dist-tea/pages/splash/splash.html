@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/splash/splash</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./splash.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view page" id="" style="--status-bar-height:;">
+    <img class="wx-image background" style="object-fit:cover" src="" data-error="" data-load="">
+    <div class="wx-view wash"></div>
+    <div class="wx-view overlay">
+      <div class="wx-view head">
+        <div class="wx-view brand-wrap">
+          <span class="wx-text brand">凤凰云岫</span>
+          <span class="wx-text brand-en">PHOENIX YUNXIU</span>
+        </div>
+        <span class="wx-text title title-first">你心中的云岫，</span>
+        <span class="wx-text title">是一杯怎样的茶？</span>
+        <span class="wx-text subtitle">5秒，看见凤凰天池的云与山。</span>
+      </div>
+      <div class="wx-view mid" data-tap="">
+        <div class="wx-view play">
+          <img class="wx-image play-icon" style="object-fit:fill" src="">
+        </div>
+        <div class="wx-view sec">
+          <span class="wx-text sec-text">s</span>
+        </div>
+      </div>
+      <div class="wx-view foot">
+        <div class="wx-view enter" data-tap="">
+          <span class="wx-text enter-text">进入首页</span>
+        </div>
+        <div class="wx-view progress">
+          <div class="wx-view progress-on"></div>
+          <div class="wx-view progress-dot"></div>
+          <div class="wx-view progress-dot"></div>
+          <div class="wx-view progress-dot"></div>
+          <div class="wx-view progress-dot"></div>
+          <div class="wx-view progress-dot"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="wx-wxs"></div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/splash/splash";
+window.__PAGE_PULL_DOWN__ = false;
+window.__WXML__ = [{"a":{"change:eA":"{{uV.sA}}","change:eS":"{{uV.sS}}","class":"{{['page', k]}}","eA":"{{$eA[i]}}","eS":"{{$eS[i]}}","hidden":"{{virtualHostHidden || false}}","id":"{{i}}","style":"{{'--status-bar-height:' + j + ';' + (virtualHostStyle || '')}}"},"c":[{"a":{"binderror":"{{c}}","bindload":"{{b}}","class":"background","mode":"aspectFill","src":"{{a}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"wash"},"c":[],"n":"view","t":"el"},{"a":{"class":"overlay","style":"{{h}}"},"c":[{"a":{"class":"head"},"c":[{"a":{"class":"brand-wrap"},"c":[{"a":{"class":"brand"},"c":[{"t":"tx","x":"凤凰云岫"}],"n":"text","t":"el"},{"a":{"class":"brand-en"},"c":[{"t":"tx","x":"PHOENIX YUNXIU"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"title title-first"},"c":[{"t":"tx","x":"你心中的云岫，"}],"n":"text","t":"el"},{"a":{"class":"title"},"c":[{"t":"tx","x":"是一杯怎样的茶？"}],"n":"text","t":"el"},{"a":{"class":"subtitle"},"c":[{"t":"tx","x":"5秒，看见凤凰天池的云与山。"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{f}}","class":"mid"},"c":[{"a":{"class":"play"},"c":[{"a":{"class":"play-icon","src":"{{d}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"},{"a":{"class":"sec"},"c":[{"a":{"class":"sec-text"},"c":[{"t":"tx","x":"{{e}}s"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"foot"},"c":[{"a":{"bindtap":"{{g}}","class":"enter"},"c":[{"a":{"class":"enter-text"},"c":[{"t":"tx","x":"进入首页"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"progress"},"c":[{"a":{"class":"progress-on"},"c":[],"n":"view","t":"el"},{"a":{"class":"progress-dot"},"c":[],"n":"view","t":"el"},{"a":{"class":"progress-dot"},"c":[],"n":"view","t":"el"},{"a":{"class":"progress-dot"},"c":[],"n":"view","t":"el"},{"a":{"class":"progress-dot"},"c":[],"n":"view","t":"el"},{"a":{"class":"progress-dot"},"c":[],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"module":"uV","src":"/common/uniView.wxs"},"c":[],"n":"wxs","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./splash.js"></script>
+</body>
+</html>

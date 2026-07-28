@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/cart/order-success</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./order-success.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view page" id="" style="--status-bar-height:;">
+    <div class="wx-view check">
+      <img class="wx-image check-t" style="object-fit:fill" src="">
+    </div>
+    <span class="wx-text title">下单成功</span>
+    <span class="wx-text sub">订单已提交，我们将尽快为您发货</span>
+    <div class="wx-view btns">
+      <div class="wx-view btn-line" data-tap="">
+        <span class="wx-text btn-line-t">查看订单</span>
+      </div>
+      <div class="wx-view btn-fill" data-tap="">
+        <span class="wx-text btn-fill-t">继续逛逛</span>
+      </div>
+    </div>
+  </div>
+  <div class="wx-wxs"></div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/cart/order-success";
+window.__PAGE_PULL_DOWN__ = false;
+window.__WXML__ = [{"a":{"change:eA":"{{uV.sA}}","change:eS":"{{uV.sS}}","class":"{{['page', f]}}","eA":"{{$eA[d]}}","eS":"{{$eS[d]}}","hidden":"{{virtualHostHidden || false}}","id":"{{d}}","style":"{{'--status-bar-height:' + e + ';' + (virtualHostStyle || '')}}"},"c":[{"a":{"class":"check"},"c":[{"a":{"class":"check-t","src":"{{a}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"},{"a":{"class":"title"},"c":[{"t":"tx","x":"下单成功"}],"n":"text","t":"el"},{"a":{"class":"sub"},"c":[{"t":"tx","x":"订单已提交，我们将尽快为您发货"}],"n":"text","t":"el"},{"a":{"class":"btns"},"c":[{"a":{"bindtap":"{{b}}","class":"btn-line"},"c":[{"a":{"class":"btn-line-t"},"c":[{"t":"tx","x":"查看订单"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{c}}","class":"btn-fill"},"c":[{"a":{"class":"btn-fill-t"},"c":[{"t":"tx","x":"继续逛逛"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"module":"uV","src":"/common/uniView.wxs"},"c":[],"n":"wxs","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./order-success.js"></script>
+</body>
+</html>

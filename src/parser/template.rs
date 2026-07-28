@@ -16,6 +16,16 @@ pub type ComponentTemplates = HashMap<String, Vec<WxmlNode>>;
 /// 用 `$` 开头是因为 WXML 表达式里不会出现这样的标识符，不会和页面字段撞名。
 pub const COMPONENT_DATA_KEY: &str = "$comp";
 
+/// 展开自定义组件时打在子树上的归属标记（属性名，值是组件标签名）。
+///
+/// 事件必须知道自己是**哪个组件模板**里声明的：组件模板里的 `bindtap="{{item.e}}"`
+/// 绑的是组件实例的方法，而 uni-app 给每个组件/页面各自生成 `e0_0`、`e1_1` 这种
+/// 短名字 —— 页面和组件很容易撞名。只按名字在页面上先找一遍的话，点底部导航会
+/// 执行到**页面**的同名方法上（tea-app 上的表现：点任何一个 tab 都跳到 AI 结果页）。
+///
+/// 不用 `data-` 前缀：那会进 `dataset`，页面里就能看见这个内部标记。
+pub const COMPONENT_OWNER_ATTR: &str = "__comp";
+
 /// 模板引擎
 pub struct TemplateEngine;
 
@@ -191,7 +201,26 @@ impl TemplateEngine {
             obj.insert(COMPONENT_DATA_KEY.to_string(), all.clone());
         }
         host.children = Self::render_nodes(tpl, &scope, comps);
+        // 打归属标记：这棵子树里的事件属于本组件实例，不属于页面。
+        // 嵌套组件在上面那行已经展开并打过自己的标记，这里不覆盖（内层优先）。
+        for child in &mut host.children {
+            Self::stamp_owner(child, &node.tag_name);
+        }
         out.push(host);
+    }
+
+    /// 递归给组件子树打归属标记（已有标记的分支整支跳过 —— 那是内层组件的）
+    fn stamp_owner(node: &mut WxmlNode, tag: &str) {
+        if node.node_type != WxmlNodeType::Element {
+            return;
+        }
+        if node.attributes.contains_key(COMPONENT_OWNER_ATTR) {
+            return;
+        }
+        node.attributes.insert(COMPONENT_OWNER_ATTR.to_string(), tag.to_string());
+        for child in &mut node.children {
+            Self::stamp_owner(child, tag);
+        }
     }
     
     /// 渲染 wx:for 循环

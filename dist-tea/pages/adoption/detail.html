@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/adoption/detail</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./detail.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view page" id="" style="--status-bar-height:;">
+    <div class="wx-scroll-view scroll" style="overflow-y:auto">
+      <div class="wx-view cover-wrap">
+        <img class="wx-image cover" style="height:auto" src="">
+        <div class="wx-view monitor" data-tap="">
+          <img class="wx-image monitor-ic" style="object-fit:fill" src="">
+          <span class="wx-text monitor-t">实时监控</span>
+        </div>
+      </div>
+      <div class="wx-view body">
+        <div class="wx-view tags">
+          <span class="wx-text tag tag-gold"></span>
+          <span class="wx-text tag tag-muted"></span>
+        </div>
+        <span class="wx-text name"></span>
+        <div class="wx-view stats">
+          <div class="wx-view stat">
+            <span class="wx-text stat-v">m</span>
+            <span class="wx-text stat-k">海拔</span>
+          </div>
+          <div class="wx-view stat">
+            <span class="wx-text stat-v">年</span>
+            <span class="wx-text stat-k">平均树龄</span>
+          </div>
+          <div class="wx-view stat">
+            <span class="wx-text stat-v">亩</span>
+            <span class="wx-text stat-k">种植面积</span>
+          </div>
+        </div>
+        <span class="wx-text sec">单份认养权益</span>
+        <div class="wx-view benefits"></div>
+        <span class="wx-text sec">选择认养份额</span>
+        <div class="wx-view picker">
+          <span class="wx-text picker-t">认养份额（剩余  份）</span>
+          <div class="wx-view stepper">
+            <span class="wx-text step-btn" data-tap="">−</span>
+            <span class="wx-text step-n"></span>
+            <span class="wx-text step-btn" data-tap="">+</span>
+          </div>
+        </div>
+      </div>
+      <div class="wx-view" style="height:80px"></div>
+    </div>
+    <div class="wx-view bar">
+      <div class="wx-view bar-left">
+        <span class="wx-text bar-label">合计</span>
+        <span class="wx-text bar-total">¥</span>
+      </div>
+      <div class="wx-view btn" data-tap="">
+        <span class="wx-text btn-t">立即认养</span>
+      </div>
+    </div>
+  </div>
+  <div class="wx-wxs"></div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/adoption/detail";
+window.__PAGE_PULL_DOWN__ = false;
+window.__WXML__ = [{"a":{"change:eA":"{{uV.sA}}","change:eS":"{{uV.sS}}","class":"{{['page', v]}}","eA":"{{$eA[s]}}","eS":"{{$eS[s]}}","hidden":"{{virtualHostHidden || false}}","id":"{{s}}","style":"{{'--status-bar-height:' + t + ';' + (virtualHostStyle || '')}}"},"c":[{"a":{"class":"scroll","enable-flex":"true","enhanced":"true","scroll-y":"true"},"c":[{"a":{"class":"cover-wrap"},"c":[{"a":{"class":"cover","mode":"widthFix","src":"{{a}}"},"c":[],"n":"image","t":"el"},{"a":{"bindtap":"{{c}}","class":"monitor"},"c":[{"a":{"class":"monitor-ic","src":"{{b}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"monitor-t"},"c":[{"t":"tx","x":"实时监控"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"body"},"c":[{"a":{"class":"tags"},"c":[{"a":{"class":"tag tag-gold"},"c":[{"t":"tx","x":"{{d}}"}],"n":"text","t":"el"},{"a":{"class":"tag tag-muted"},"c":[{"t":"tx","x":"{{e}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"name"},"c":[{"t":"tx","x":"{{f}}"}],"n":"text","t":"el"},{"a":{"class":"stats"},"c":[{"a":{"class":"stat"},"c":[{"a":{"class":"stat-v"},"c":[{"t":"tx","x":"{{g}}m"}],"n":"text","t":"el"},{"a":{"class":"stat-k"},"c":[{"t":"tx","x":"海拔"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"stat"},"c":[{"a":{"class":"stat-v"},"c":[{"t":"tx","x":"{{h}}年"}],"n":"text","t":"el"},{"a":{"class":"stat-k"},"c":[{"t":"tx","x":"平均树龄"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"stat"},"c":[{"a":{"class":"stat-v"},"c":[{"t":"tx","x":"{{i}}亩"}],"n":"text","t":"el"},{"a":{"class":"stat-k"},"c":[{"t":"tx","x":"种植面积"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"sec"},"c":[{"t":"tx","x":"单份认养权益"}],"n":"text","t":"el"},{"a":{"class":"benefits"},"c":[{"a":{"class":"ben","wx:for":"{{j}}","wx:for-item":"b","wx:key":"b"},"c":[{"a":{"class":"ben-dot","src":"{{k}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"ben-t"},"c":[{"t":"tx","x":"{{b.a}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"sec"},"c":[{"t":"tx","x":"选择认养份额"}],"n":"text","t":"el"},{"a":{"class":"picker"},"c":[{"a":{"class":"picker-t"},"c":[{"t":"tx","x":"认养份额（剩余 {{l}} 份）"}],"n":"text","t":"el"},{"a":{"class":"stepper"},"c":[{"a":{"bindtap":"{{m}}","class":"step-btn"},"c":[{"t":"tx","x":"−"}],"n":"text","t":"el"},{"a":{"class":"step-n"},"c":[{"t":"tx","x":"{{n}}"}],"n":"text","t":"el"},{"a":{"bindtap":"{{o}}","class":"step-btn"},"c":[{"t":"tx","x":"+"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"style":"height:160rpx"},"c":[],"n":"view","t":"el"}],"n":"scroll-view","t":"el"},{"a":{"class":"bar"},"c":[{"a":{"class":"bar-left"},"c":[{"a":{"class":"bar-label"},"c":[{"t":"tx","x":"合计"}],"n":"text","t":"el"},{"a":{"class":"bar-total"},"c":[{"t":"tx","x":"¥{{p}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"btn-disabled","wx:if":"{{q}}"},"c":[{"a":{"class":"btn-t"},"c":[{"t":"tx","x":"已售罄"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{r}}","class":"btn","wx:else":""},"c":[{"a":{"class":"btn-t"},"c":[{"t":"tx","x":"立即认养"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"module":"uV","src":"/common/uniView.wxs"},"c":[],"n":"wxs","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./detail.js"></script>
+</body>
+</html>

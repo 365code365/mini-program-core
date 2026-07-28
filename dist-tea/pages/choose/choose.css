@@ -1,0 +1,294 @@
+/* 由 choose.wxss 编译 */
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+/* 字体栈第一位必须是 App.uvue 里 loadFontFace 注册过的 family，否则安卓机没有本机宋体，
+   会整站掉到系统黑体。Yunxiu Serif = Noto Serif SC Regular(正文)，Source Han Serif SC = Heavy(标题)。 */
+.root {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.hero-name, .direction-title, .direction-name {
+  font-family: "Source Han Serif SC", "Yunxiu Serif", "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+}
+.nav {
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+}
+.nav-title {
+  color: #4a3020;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  font-family: "Source Han Serif SC", "Yunxiu Serif", "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+}
+.hero {
+  margin: 4px 12px 0;
+  height: 125px;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  background-color: #e6ddce;
+}
+.hero-image {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+.hero-wash {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 74%;
+  background-color: rgba(247, 243, 235, 0.9);
+}
+.hero-body {
+  position: absolute;
+  left: 17px;
+  top: 20px;
+  right: 110px;
+}
+.hero-top {
+  flex-direction: row;
+  align-items: center;
+}
+.hero-mark {
+  width: 33px;
+  height: 33px;
+  border-radius: 17.500px;
+  border: 1px solid #b48f57;
+  background-color: rgba(255, 251, 244, 0.6);
+  align-items: center;
+  justify-content: center;
+  margin-right: 9px;
+}
+.hero-mark-icon {
+  width: 19px;
+  height: 19px;
+}
+.hero-name {
+  color: #7a5a2c;
+  font-size: 23px;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+.hero-desc {
+  color: #5c5044;
+  font-size: 11.500px;
+  line-height: 19px;
+  margin-top: 2px;
+}
+.hero-desc-first {
+  margin-top: 11px;
+}
+.chat-area {
+  padding: 15px 12px 0;
+}
+.bubble-row {
+  flex-direction: row;
+  align-items: flex-start;
+}
+.bot-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 19px;
+  background-color: #c4a879;
+  align-items: center;
+  justify-content: center;
+}
+.bot-icon {
+  width: 20px;
+  height: 20px;
+}
+.bubble-wrap {
+  margin-left: 9px;
+  flex: 1;
+}
+.bubble {
+  align-self: flex-start;
+  background-color: #ffffff;
+  border-radius: 3px 13px 13px 13px;
+  padding: 12px 14px;
+  box-shadow: 0 4px 12px rgba(83, 60, 33, 0.06);
+}
+.bubble-text {
+  color: #473d33;
+  font-size: 14px;
+  line-height: 20px;
+}
+.bubble-time {
+  color: #aaa094;
+  font-size: 9px;
+  margin-top: 5px;
+  margin-left: 3px;
+}
+.quick-grid {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  margin-top: 15px;
+}
+.quick {
+  width: 112px;
+  height: 42px;
+  border-radius: 22px;
+  border: 1px solid rgba(161, 124, 72, 0.24);
+  background-color: rgba(255, 255, 255, 0.6);
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 9px;
+}
+.quick-icon {
+  width: 15px;
+  height: 15px;
+}
+.quick-text {
+  color: #554a40;
+  font-size: 11.500px;
+  margin-left: 5px;
+}
+.direction-card {
+  margin-top: 6px;
+  padding: 13px 11px;
+  border-radius: 12px;
+  background-color: rgba(255, 255, 255, 0.5);
+}
+.direction-head {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+.direction-head-left {
+  flex-direction: row;
+  align-items: center;
+}
+.direction-head-icon {
+  width: 16px;
+  height: 16px;
+  margin-right: 5px;
+}
+.direction-title {
+  color: #4a3020;
+  font-size: 14.500px;
+  font-weight: 900;
+}
+.change {
+  color: #9a7a4f;
+  font-size: 10.500px;
+}
+.directions {
+  flex-direction: row;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+.direction {
+  width: 105px;
+  height: 125px;
+  border-radius: 9px;
+  overflow: hidden;
+  position: relative;
+  background-color: #ece5da;
+}
+.direction-bg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+.direction-wash {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  height: 64px;
+  background-color: rgba(249, 246, 240, 0.82);
+}
+.direction-copy {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  right: 7px;
+}
+.direction-name {
+  color: #4a3020;
+  font-size: 14px;
+  font-weight: 900;
+}
+.direction-desc {
+  color: #675c50;
+  font-size: 9.500px;
+  line-height: 14px;
+  margin-top: 4px;
+}
+.direction-arrow {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 11.500px;
+  background-color: rgba(255, 255, 255, 0.92);
+  align-items: center;
+  justify-content: center;
+}
+.direction-arrow-text {
+  color: #5c3920;
+  font-size: 15px;
+  margin-top: -1.500px;
+}
+.composer {
+  position: fixed;
+  left: 11px;
+  right: 11px;
+  height: 42px;
+  border-radius: 22px;
+  background-color: #ffffff;
+  border: 1px solid rgba(149, 112, 64, 0.17);
+  padding-left: 14px;
+  padding-right: 5px;
+  flex-direction: row;
+  align-items: center;
+  z-index: 30;
+  box-shadow: 0 3px 10px rgba(83, 60, 33, 0.08);
+}
+.composer-input {
+  flex: 1;
+  height: 36px;
+  color: #2d251e;
+  font-size: 12px;
+}
+.mic {
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+}
+.mic-icon {
+  font-size: 15px;
+}
+.send {
+  width: 32px;
+  height: 32px;
+  border-radius: 17px;
+  background-color: #a77d48;
+  align-items: center;
+  justify-content: center;
+  margin-left: 2px;
+}
+.send-icon {
+  width: 15px;
+  height: 15px;
+}
+.bottom-space {
+  height: calc(120px + env(safe-area-inset-bottom));
+}

@@ -1,0 +1,122 @@
+/* 由 search.wxss 编译 */
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+/* 字体栈第一位必须是 App.uvue 里 loadFontFace 注册过的 family，否则安卓机没有本机宋体，
+   会整站掉到系统黑体。Yunxiu Serif = Noto Serif SC Regular(正文)，Source Han Serif SC = Heavy(标题)。 */
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.search {
+  flex-direction: row;
+  align-items: center;
+  margin: 8px 16px;
+  padding: 8px 14px;
+  background-color: rgba(0, 0, 0, 0.06);
+  border-radius: 20px;
+}
+.sicon {
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+}
+.sinput {
+  flex: 1;
+  height: 24px;
+  line-height: 24px;
+  font-size: 14px;
+}
+.sclear {
+  width: 14px;
+  height: 14px;
+}
+.scroll {
+  flex: 1;
+}
+.hot {
+  padding: 8px 16px;
+}
+.hot-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #4a3020;
+}
+.hot-tags {
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.hot-tag {
+  font-size: 13px;
+  color: #7a746a;
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 6px 14px;
+  border-radius: 20px;
+  margin: 0 8px 8px 0;
+}
+.empty {
+  align-items: center;
+  padding-top: 60px;
+}
+.empty-t {
+  font-size: 14px;
+  color: #82786c;
+}
+.sec {
+  font-size: 14px;
+  font-weight: bold;
+  color: #4a3020;
+  margin: 8px 16px 6px;
+}
+.g {
+  flex-direction: row;
+  background-color: #ffffff;
+  border-radius: 10px;
+  margin: 0 12px 8px;
+  padding: 8px;
+}
+.g-img {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+}
+.g-info {
+  flex: 1;
+  margin-left: 8px;
+  justify-content: center;
+}
+.g-name {
+  font-size: 14px;
+  font-weight: bold;
+  color: #4a3020;
+}
+.grid {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  padding: 0 12px;
+}
+.cell {
+  width: 167.500px;
+  background-color: #ffffff;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+}
+.cell-img {
+  width: 100%;
+}
+.cell-name {
+  font-size: 13px;
+  font-weight: bold;
+  color: #4a3020;
+  margin: 6px 8px 0;
+}
+.price {
+  font-size: 15px;
+  font-weight: bold;
+  color: #a87536;
+  margin: 4px 8px 0;
+}

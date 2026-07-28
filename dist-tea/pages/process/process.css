@@ -1,0 +1,78 @@
+/* 由 process.wxss 编译 */
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+/* 字体栈第一位必须是 App.uvue 里 loadFontFace 注册过的 family，否则安卓机没有本机宋体，
+   会整站掉到系统黑体。Yunxiu Serif = Noto Serif SC Regular(正文)，Source Han Serif SC = Heavy(标题)。 */
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.head-wrap {
+  position: relative;
+  margin: 12px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.head-img {
+  width: 100%;
+  height: 150px;
+}
+.head-mask {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 14px;
+  background-color: rgba(0, 0, 0, 0.35);
+}
+.head-t {
+  font-size: 18px;
+  font-weight: bold;
+  color: #ffffff;
+}
+.head-sub {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 3px;
+  font-family: "Playfair Display", "Times New Roman", serif;
+}
+.timeline {
+  padding: 8px 16px;
+}
+.node {
+  flex-direction: row;
+  padding-bottom: 14px;
+}
+.num {
+  width: 28px;
+  height: 28px;
+  border-radius: 14px;
+  background-color: #a87536;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10px;
+}
+.num-t {
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: bold;
+}
+.node-body {
+  flex: 1;
+}
+.node-title {
+  font-size: 15px;
+  font-weight: bold;
+  color: #4a3020;
+}
+.node-desc {
+  font-size: 12px;
+  color: #8a8478;
+  margin-top: 2px;
+}
+.tip {
+  font-size: 11px;
+  color: #b3ad9f;
+  text-align: center;
+}

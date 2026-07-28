@@ -106,6 +106,8 @@ MINI_LAYOUT_LOG=1 cargo run --release --bin mini-app-window -- sample-app
 # 滚动诊断：内容高 / 视口 / 画布高 / 当前位置与上限；外加每次拖动的手势归属
 # （🖐 手势归属：Undecided -> Area{id,axis} / Page / EdgeBack / Blocked，以及内层为何交棒给页面）
 MINI_SCROLL_LOG=1 cargo run --release --bin mini-app-window -- sample-app
+# 加上滚动容器的子树几何：定位「内容明明超出去了、可滚上限却是 0」出在哪一层
+MINI_SCROLL_LOG=1 MINI_SCROLL_TREE=1 ./run.sh tea-app
 # 关掉 setData 的增量失效（一律整帧）：用于逐像素对照验证，见 tools/damage-check.sh
 MINI_NO_DAMAGE=1 cargo run --release --bin mini-app-window -- sample-app
 # 网络请求日志（方法 / URL / 状态码 / 耗时）与 storage 读写日志
@@ -158,6 +160,10 @@ MINI_FONT_LOG=1 MINI_IMG_LOG=1 ./run.sh tea-app
 - **手势结束回弹**：触控板给 `TouchPhase::Ended`（winit 把 macOS 的动量阶段也映射进来），据此立刻回弹；鼠标滚轮没有抬手事件，由控制器的静默计时兜底。
 - **拖拽与滚轮同一套语义**：滚轮/触控板维护一个"未夹紧"的累计位置，再经同一个橡皮筋映射成显示位置，所以两种输入的手感一致。
 - **内容变短要收回位置**：换页或列表收起后如果位置还停在原处，会停在画布之外的空白上，而且因为"不越界"永远不会触发回弹。
+
+- **回弹是带初速度的临界阻尼弹簧**，不是固定时长的缓动：`x(t) = (x₀ + (v₀ + ω·x₀)·t)·e^(−ω·t)`（ω=20，落位约 0.35~0.45s，单调收敛不振荡，与 iOS `UIScrollView` 的橡皮筋归位一致）。松手速度先经橡皮筋斜率 `0.55·(1−r/d)²` 衰减 —— 测到的是**手指**速度，而越界区里手指走 1px 内容只走 slope 个 px。
+- **惯性撞到边界不当场停死**：把剩余动量交给弹簧，先冲出去一点再弹回来。从前是 `clamp` + 速度清零，于是**只有「手指拖过界再松手」才有回弹**，甩一下滑到底是「咔」一下停住 —— 这正是「不像微信那么顺」的来源。实测 `pages/mine/mine` 甩动：改前直接停在 `317.0/317.0`，改后冲到 `342.2` 再精确落回 `317.0`。低速挨到边界（<60px/s）不做过冲，否则「轻轻推到底」会多抖一下。
+- **`scroll-view` 的可滚内容是子树的溢出并集**，不是直接子节点盒子的并集。uni-app 的页面结构是 `<scroll-view class="page">` 里放一个 `flex:1` 的容器，那个容器的高度**等于视口**（它就是用来吃掉剩余空间的），真正超出去的是它里面的内容 —— 只看直接子节点会算出 `content == viewport`、`max_scroll == 0`，手势被判成「这个容器不可滚」交给页面，表现是整页划不动。语义与 CSS 的可滚溢出区一致：自己裁剪的子树（`overflow` 非 visible、嵌套滚动容器）不再往里看，`position: fixed` 子树不计入。
 
 窗体在拿到第一帧的真实内容高之前，滚动上限是 0（不是某个写死的常数）—— 否则内容不足一屏的页面在首帧前就能被拉出几百像素空白。
 
@@ -226,7 +232,15 @@ cargo run --release --bin mini-app-window -- sample-app --snapshot target/t \
 
 > 另一条：无头输入与交互窗体必须**统一到同一组入口**（`on_pointer_press/move/release`）。此前两套逻辑并存，结果无头链路驱动的是 `scroll-view`、真机驱动的是页面滚动 —— 无头全绿而手上不对，测的根本不是同一套东西。
 
-无头验证这些语义：
+**6. 事件要送给「声明它的那个组件」，不是碰巧同名的页面。** `bindtap` 写在自定义组件的模板里，绑的就是**组件实例**的方法（微信语义，绝不会打到页面上）。而 uni-app 给页面和每个组件**各自**生成 `e0_0`、`e1_1` 这种短名字，撞名是常态 —— tea-app 的 `pages/choose/choose` 和它用的 `tab-bar` 组件都有 `e0_0`…`e4_4`，于是「无条件先查页面」会让点任何一个底部 tab 都执行到页面的同名方法（实测：五个 tab 全都跳到 AI 结果页）。现在模板引擎展开组件时给子树打归属标记，标记随事件绑定传到宿主，派发时作为 `__dispatchEvent(handler, event, ownerTag)` 的第三个实参，JS 侧优先在该组件实例上找。
+
+**7. 有状态组件按事件类型分开发。** 命中开关/勾选/按钮/输入框之后，旧实现是「取该点最上层的**任意一条**绑定，用 `__callPageMethod(handler, dataset)` 调一下」：不分事件类型（点一下普通输入框会拿它的 `bindinput` 当 tap 调用）、不冒泡、事件对象是 dataset 拼的。现在 `change` 走 change 链、tap 走统一的 tap 链，两者可同时发生（把开关包在带 `bindtap` 的 view 里就是）。`checkbox-group` 的 `detail.value` 是**组内选中项的 value 数组**（页面里就是 `e.detail.value.indexOf(...)` 这么用的，发个布尔值过去直接 `TypeError`）。
+
+**8. `e.detail.value` 永远是字符串。** 输入事件原来走 `__callPageMethod(handler, {value})`，而那条入口会对整包数据做 dataset 的字面量还原（`data-id="12"` → 数字 12，这对 dataset 是对的）—— 于是输入 `1212121` 到页面里变成 number，`e.detail.value.trim()` 直接 `TypeError: not a function`。现在原生侧构造完整事件对象走 `__dispatchEvent`，`detail` 不参与类型还原：`input` → `{value, cursor, keyCode}`、`focus` → `{value, height}`、`blur`/`confirm` → `{value}`；`bindfocus` 此前根本没派发过，一并补上。绑定按**焦点输入框的组件 id** 精确匹配 —— 从前是「遍历绑定表取第一条 `event_type=="input"` 就 break」，一个页面有两个输入框时所有输入都打到第一个。
+
+> 还有一个只在特定帧才犯的命中 bug：`handle_click_scoped(fixed_only)` 写成「全局命中之后再判 `is_fixed`」。元素表里覆盖层的元素排在**前面**（正常流每帧重建、追加在后），而命中从后往前找 —— 于是先撞上正常流的元素、再被过滤掉，返回 `None`。表现是覆盖层里的输入框点不出焦点、开关拨不动，而且只在「这一帧没重绘覆盖层」时才犯，偶发得像随机失灵。按压分支、滚轮命中滚动区的分支是同一个反模式，一并改掉。
+
+无头验证这些语义（手势与输入按**书写顺序**执行，所以多步交互可以脚本化）：
 
 ```bash
 # 一次完整触摸序列（按住 600ms 会真的触发 longpress，因为按住期间照常出帧）
@@ -236,6 +250,9 @@ mini-app-window sample-app --route pages/index/index --swipe 200,500,200,60,20 -
 # 停在终点不抬手：用来截「手势进行中」的那一帧（侧滑跟手的位移、视差、投影）
 mini-app-window sample-app --eval "wx.navigateTo({url:'/pages/detail/detail'})" \
     --swipe-hold 5,400,160,400,20 --snapshot target/t
+# 多步：点输入框 → 逐字符打字（走真机键盘链路）→ 点发送按钮 → 等一下再截图
+mini-app-window sample/tea-app --route pages/choose/choose --settle 0.8 --time 2 \
+    --click 100,537 --type 1212121 --click 344,538 --wait 0.5 --snapshot target/t
 ```
 
 侧滑返回与 `wx.navigateBack()` 的结果是逐字节一致的（同一条退栈路径），这也是它的回归判据。

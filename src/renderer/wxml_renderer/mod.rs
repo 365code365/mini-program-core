@@ -25,8 +25,20 @@ use crate::renderer::components::{
 pub struct EventBinding {
     pub event_type: String,
     pub handler: String,
-    /// 节点的 `id` 属性（事件对象里的 `target.id` / `currentTarget.id`）
+    /// 声明这条绑定的标签名（`view` / `checkbox-group` / `input` …）。
+    /// 事件语义与标签有关：`checkbox-group` 的 `change` 要发**组内选中项数组**，
+    /// 而 `switch` 的 `change` 是个布尔值。
+    pub tag: String,
+    /// 节点的 `id` 属性（事件对象里的 `target.id` / `currentTarget.id`）。
+    /// 没写 `id` 的节点这里是空串 —— 微信里 `e.target.id` 也确实是空串。
     pub id: String,
+    /// 引擎内部句柄，与 `get_component_id` 一致（有 `id` 属性用它，否则 `tag_x_y`）。
+    ///
+    /// 存在的理由：宿主侧的输入框状态（焦点/文本）是按这个句柄索引的
+    /// （`InteractionResult::Input*` 里的 `id`），而 `id` 属性绝大多数节点是空的。
+    /// 没有它就只能「取第一条 event_type=="input" 的绑定」，一个页面有两个输入框时
+    /// 所有输入都会打到第一个。
+    pub component_id: String,
     pub data: HashMap<String, String>,
     pub bounds: GeoRect,
     /// 是否是 catch 事件（阻止继续传播）
@@ -35,6 +47,9 @@ pub struct EventBinding {
     pub phase: crate::renderer::components::EventPhase,
     /// `mut-bind:*`：互斥绑定，同一次传播里只触发最内层那一条
     pub mut_bind: bool,
+    /// 声明这条绑定的自定义组件标签名（页面模板里声明的是空串）。
+    /// 派发时优先送给该组件实例 —— 组件与页面的方法很容易同名。
+    pub owner: String,
     /// 是否来自 `position: fixed` 覆盖层。
     /// 覆盖层的坐标是视口坐标（不含滚动偏移），而且它在页面之上 ——
     /// 命中判定必须先只看覆盖层，命中就到此为止，否则点击会穿透到下层。

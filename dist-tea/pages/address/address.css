@@ -1,0 +1,285 @@
+/* 由 address.wxss 编译 */
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+/* 字体栈第一位必须是 App.uvue 里 loadFontFace 注册过的 family，否则安卓机没有本机宋体，
+   会整站掉到系统黑体。Yunxiu Serif = Noto Serif SC Regular(正文)，Source Han Serif SC = Heavy(标题)。 */
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.scroll {
+  flex: 1;
+}
+.empty {
+  align-items: center;
+  padding-top: 80px;
+}
+.empty-t {
+  font-size: 14px;
+  color: #82786c;
+}
+.sel-hint {
+  padding: 10px 16px 0;
+}
+.sel-hint-t {
+  font-size: 13px;
+  color: #82786c;
+}
+.addr-pick {
+  font-size: 12px;
+  color: #a87536;
+  margin-left: auto;
+}
+.addr {
+  background-color: #ffffff;
+  border-radius: 10px;
+  margin: 10px 12px 0;
+  padding: 12px;
+}
+.addr-top {
+  flex-direction: row;
+  align-items: center;
+}
+.addr-name {
+  font-size: 14px;
+  font-weight: bold;
+  color: #4a3020;
+}
+.addr-phone {
+  font-size: 14px;
+  color: #7a746a;
+  margin-left: 8px;
+}
+.addr-def {
+  font-size: 9px;
+  color: #a87536;
+  background-color: rgba(199, 154, 82, 0.15);
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: 8px;
+}
+.addr-detail {
+  font-size: 13px;
+  color: #5a5248;
+  margin-top: 6px;
+}
+.addr-actions {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  margin-top: 9px;
+  padding-top: 9px;
+}
+.addr-set {
+  flex-direction: row;
+  align-items: center;
+}
+.addr-set-t {
+  font-size: 12px;
+  color: #7a746a;
+  margin-left: 6px;
+}
+.addr-ops {
+  flex-direction: row;
+}
+.op {
+  font-size: 12px;
+  color: #7a746a;
+  margin-left: 16px;
+}
+.op-del {
+  font-size: 12px;
+  color: #c0392b;
+  margin-left: 16px;
+}
+.cb {
+  width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  align-items: center;
+  justify-content: center;
+}
+.cb-on {
+  background-color: #a87536;
+  border-color: #a87536;
+}
+.cb-t {
+  width: 10px;
+  height: 10px;
+}
+.bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ffffff;
+  padding: 10px 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+.btn {
+  background-color: #a87536;
+  border-radius: 22px;
+  padding: 12px 0;
+  align-items: center;
+}
+.btn-t {
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: bold;
+}
+.mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  justify-content: flex-end;
+}
+.sheet {
+  background-color: #ffffff;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  padding: 14px;
+}
+.sheet-head {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+.sheet-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #4a3020;
+}
+.sheet-x {
+  width: 18px;
+  height: 18px;
+}
+.label {
+  font-size: 12px;
+  color: #82786c;
+  margin-top: 8px;
+}
+.input {
+  background-color: #faf9f6;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  height: 40px;
+  line-height: 40px;
+  padding: 0 12px;
+  font-size: 14px;
+  margin-top: 4px;
+}
+.picker-field {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #faf9f6;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  height: 40px;
+  padding: 0 12px;
+  margin-top: 4px;
+}
+.picker-val {
+  font-size: 14px;
+  color: #4a3020;
+  flex: 1;
+}
+.picker-ph {
+  color: #82786c;
+}
+.picker-arrow {
+  width: 15px;
+  height: 15px;
+  opacity: 0.6;
+}
+.region-mask {
+  z-index: 50;
+}
+.region-sheet {
+  height: 70%;
+}
+.rg-tabs {
+  flex-direction: row;
+  flex-wrap: wrap;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  margin-top: 6px;
+}
+.rg-tab {
+  padding: 8px 4px;
+  margin-right: 16px;
+  border-bottom: 2px solid transparent;
+}
+.rg-tab-on {
+  border-bottom-color: #a87536;
+}
+.rg-tab-t {
+  font-size: 14px;
+  color: #7a746a;
+}
+.rg-tab-t-on {
+  color: #a87536;
+  font-weight: bold;
+}
+.rg-list {
+  flex: 1;
+  margin-top: 4px;
+}
+.rg-loading {
+  padding: 20px 0;
+  align-items: center;
+}
+.rg-loading-t {
+  font-size: 13px;
+  color: #82786c;
+}
+.rg-item {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 4px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+}
+.rg-item-t {
+  font-size: 14px;
+  color: #4a3020;
+}
+.rg-item-t-on {
+  color: #a87536;
+  font-weight: bold;
+}
+.rg-item-ck {
+  width: 16px;
+  height: 16px;
+}
+.textarea {
+  background-color: #faf9f6;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 14px;
+  height: 70px;
+  margin-top: 4px;
+}
+.def-row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+}
+.def-t {
+  font-size: 14px;
+  color: #5a5248;
+}
+.sheet-ok {
+  background-color: #a87536;
+  border-radius: 22px;
+  padding: 11px 0;
+  align-items: center;
+  margin-top: 8px;
+}

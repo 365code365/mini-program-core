@@ -1,0 +1,254 @@
+/* 由 coupons.wxss 编译 */
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+/* 字体栈第一位必须是 App.uvue 里 loadFontFace 注册过的 family，否则安卓机没有本机宋体，
+   会整站掉到系统黑体。Yunxiu Serif = Noto Serif SC Regular(正文)，Source Han Serif SC = Heavy(标题)。 */
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.tabs {
+  flex-direction: row;
+  justify-content: center;
+  padding: 8px 0;
+}
+.tab {
+  font-size: 14px;
+  color: #82786c;
+  margin: 0 16px;
+  padding-bottom: 5px;
+}
+.tab-on {
+  color: #4a3020;
+  font-weight: bold;
+  border-bottom: 2px solid #c5a46d;
+}
+.scroll {
+  flex: 1;
+}
+.empty {
+  align-items: center;
+  padding-top: 70px;
+}
+.empty-t {
+  font-size: 13px;
+  color: #82786c;
+}
+.redeem {
+  background-color: rgba(199, 154, 82, 0.12);
+  border-radius: 8px;
+  margin: 8px 12px 0;
+  padding: 10px 12px;
+}
+.redeem-t {
+  font-size: 12px;
+  color: #a87536;
+}
+.coupon {
+  flex-direction: row;
+  background-color: #ffffff;
+  border-radius: 10px;
+  margin: 8px 12px 0;
+  overflow: hidden;
+}
+.coupon-left {
+  width: 100px;
+  background-color: #a87536;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 0;
+}
+.coupon-amt {
+  font-size: 22px;
+  font-weight: bold;
+  color: #ffffff;
+}
+.coupon-cond {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.85);
+  margin-top: 3px;
+}
+.coupon-right {
+  flex: 1;
+  padding: 12px;
+  justify-content: center;
+}
+.coupon-name {
+  font-size: 14px;
+  font-weight: bold;
+  color: #4a3020;
+}
+.coupon-exp {
+  font-size: 11px;
+  color: #82786c;
+  margin-top: 4px;
+}
+.tasting {
+  flex-direction: row;
+  align-items: center;
+  background-color: #ffffff;
+  border-radius: 10px;
+  margin: 8px 12px 0;
+  padding: 12px;
+}
+.tasting-ic {
+  width: 28px;
+  height: 28px;
+}
+.tasting-info {
+  flex: 1;
+  margin-left: 8px;
+}
+.tasting-name {
+  font-size: 14px;
+  font-weight: bold;
+  color: #4a3020;
+}
+.tasting-desc {
+  font-size: 11px;
+  color: #82786c;
+  margin-top: 2px;
+}
+.tasting-btn {
+  background-color: #a87536;
+  border-radius: 20px;
+  padding: 6px 12px;
+}
+.tasting-btn-t {
+  color: #ffffff;
+  font-size: 11px;
+}
+.tasting-use {
+  background-color: #ffffff;
+  border: 1px solid #a87536;
+  margin-right: 6px;
+}
+.tasting-use .tasting-btn-t {
+  color: #a87536;
+}
+.sl-list {
+  max-height: 260px;
+  margin-top: 8px;
+}
+.sl-row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+.sl-left {
+  flex: 1;
+}
+.sl-uid {
+  font-size: 13px;
+  color: #4a3020;
+}
+.sl-time {
+  font-size: 11px;
+  color: #82786c;
+  margin-top: 2px;
+}
+.sl-right {
+  align-items: flex-end;
+}
+.sl-status {
+  font-size: 12px;
+  color: #82786c;
+}
+.sl-done {
+  color: #a87536;
+  font-weight: bold;
+}
+.mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  align-items: center;
+  justify-content: center;
+  padding: 0 32px;
+}
+.dialog {
+  width: 100%;
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 20px 18px;
+}
+.dialog-t {
+  font-size: 16px;
+  font-weight: bold;
+  color: #4a3020;
+  text-align: center;
+}
+.dialog-sub {
+  font-size: 12px;
+  color: #82786c;
+  margin-top: 6px;
+  text-align: center;
+}
+.code-box {
+  background-color: #faf6ee;
+  border: 1px dashed #c5a46d;
+  border-radius: 8px;
+  padding: 12px;
+  align-items: center;
+  margin-top: 12px;
+}
+.code-val {
+  font-size: 20px;
+  font-weight: bold;
+  color: #a87536;
+  letter-spacing: 2px;
+}
+.share-msg {
+  background-color: #f7f5f0;
+  border-radius: 8px;
+  padding: 9px 10px;
+  font-size: 12px;
+  color: #5a5248;
+  height: 65px;
+  margin-top: 10px;
+}
+.redeem-input {
+  background-color: #faf9f6;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  height: 44px;
+  line-height: 44px;
+  padding: 0 12px;
+  font-size: 14px;
+  margin-top: 12px;
+}
+.ph {
+  color: #c4bfb4;
+}
+.dialog-btns {
+  flex-direction: row;
+  margin-top: 14px;
+}
+.d-btn {
+  flex: 1;
+  border-radius: 22px;
+  padding: 10px 0;
+  align-items: center;
+}
+.d-line {
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  margin-right: 8px;
+}
+.d-line-t {
+  color: #4a3020;
+  font-size: 14px;
+}
+.d-fill {
+  background-color: #a87536;
+}
+.d-fill-t {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: bold;
+}

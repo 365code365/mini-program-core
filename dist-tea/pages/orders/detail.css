@@ -1,0 +1,278 @@
+/* 由 detail.wxss 编译 */
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+/* 字体栈第一位必须是 App.uvue 里 loadFontFace 注册过的 family，否则安卓机没有本机宋体，
+   会整站掉到系统黑体。Yunxiu Serif = Noto Serif SC Regular(正文)，Source Han Serif SC = Heavy(标题)。 */
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.scroll {
+  flex: 1;
+}
+.status-bar {
+  background-color: #536254;
+  padding: 16px;
+}
+.status-t {
+  font-size: 20px;
+  font-weight: bold;
+  color: #ffffff;
+}
+.status-hint {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.75);
+  margin-top: 4px;
+}
+.addr {
+  flex-direction: row;
+  align-items: center;
+  background-color: #ffffff;
+  border-radius: 10px;
+  margin: 10px 12px 0;
+  padding: 12px;
+}
+.addr-pin {
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+}
+.addr-info {
+  flex: 1;
+}
+.addr-name {
+  font-size: 14px;
+  font-weight: bold;
+  color: #4a3020;
+}
+.addr-detail {
+  font-size: 12px;
+  color: #8a8478;
+  margin-top: 3px;
+}
+.card {
+  background-color: #ffffff;
+  border-radius: 10px;
+  margin: 10px 12px 0;
+  padding: 12px;
+}
+.goods {
+  flex-direction: row;
+  align-items: center;
+  padding: 5px 0;
+}
+.goods-img {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+}
+.goods-name {
+  flex: 1;
+  font-size: 14px;
+  color: #4a3020;
+  margin-left: 8px;
+}
+.goods-right {
+  align-items: flex-end;
+}
+.goods-price {
+  font-size: 14px;
+  color: #4a3020;
+}
+.goods-qty {
+  font-size: 11px;
+  color: #82786c;
+}
+.foot {
+  flex-direction: row;
+  justify-content: flex-end;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  padding-top: 7px;
+}
+.foot-t {
+  font-size: 14px;
+  color: #a87536;
+  font-weight: bold;
+}
+.kv {
+  flex-direction: row;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+.k {
+  font-size: 13px;
+  color: #82786c;
+}
+.v {
+  font-size: 13px;
+  color: #3a2c18;
+}
+.bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  flex-direction: row;
+  justify-content: flex-end;
+  background-color: #ffffff;
+  padding: 10px 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+.btn-line {
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 22px;
+  padding: 9px 20px;
+  margin-left: 8px;
+}
+.btn-line-t {
+  color: #4a3020;
+  font-size: 14px;
+}
+.btn-fill {
+  background-color: #a87536;
+  border-radius: 22px;
+  padding: 9px 20px;
+  margin-left: 8px;
+}
+.btn-fill-t {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: bold;
+}
+.mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  justify-content: flex-end;
+}
+.sheet {
+  background-color: #ffffff;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  padding: 14px;
+  max-height: 76%;
+}
+.sheet-head {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+.sheet-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #4a3020;
+}
+.sheet-x {
+  width: 18px;
+  height: 18px;
+}
+.rf-label {
+  font-size: 12px;
+  color: #82786c;
+  margin-top: 10px;
+}
+.rf-reasons {
+  margin-top: 4px;
+}
+.rf-reason {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+.rf-reason-t {
+  font-size: 14px;
+  color: #5a5248;
+}
+.rf-on {
+  color: #a87536;
+  font-weight: bold;
+}
+.cb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  align-items: center;
+  justify-content: center;
+}
+.cb-on {
+  background-color: #a87536;
+  border-color: #a87536;
+}
+.cb-t {
+  width: 11px;
+  height: 11px;
+}
+.rf-textarea {
+  background-color: #faf9f6;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 14px;
+  height: 70px;
+  margin-top: 5px;
+}
+.rf-ok {
+  background-color: #a87536;
+  border-radius: 22px;
+  padding: 11px 0;
+  align-items: center;
+  margin-top: 12px;
+}
+.rf-off {
+  opacity: 0.5;
+}
+.rf-ok-t {
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: bold;
+}
+.ex-head {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #faf8f4;
+  border-radius: 6px;
+  padding: 10px;
+  margin-top: 8px;
+}
+.ex-name {
+  font-size: 14px;
+  font-weight: bold;
+  color: #4a3020;
+}
+.ex-no {
+  font-size: 12px;
+  color: #82786c;
+}
+.ex-list {
+  margin-top: 8px;
+  max-height: 240px;
+}
+.ex-node {
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+.ex-ctx {
+  font-size: 13px;
+  color: #3a2c18;
+}
+.ex-time {
+  font-size: 11px;
+  color: #82786c;
+  margin-top: 3px;
+}
+.ex-empty {
+  padding: 25px 0;
+  align-items: center;
+}
+.ex-empty-t {
+  font-size: 13px;
+  color: #82786c;
+}

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/checkout/checkout</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./checkout.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view page" id="" style="--status-bar-height:;">
+    <div class="wx-scroll-view scroll" style="overflow-y:auto">
+      <div class="wx-view card">
+        <span class="wx-text g-name"></span>
+        <span class="wx-text g-meta"> · 海拔m · 认养周期 1 年</span>
+        <div class="wx-view line"></div>
+        <div class="wx-view kv">
+          <span class="wx-text k">认养份额</span>
+          <span class="wx-text v">¥ × </span>
+        </div>
+      </div>
+      <div class="wx-view card">
+        <div class="wx-view agree" data-tap="">
+          <div class="wx-view cb">
+            <img class="wx-image cb-t" style="object-fit:fill" src="">
+          </div>
+          <span class="wx-text agree-t">我已阅读并同意<span class="wx-text link" data-tap="">《》</span>，了解认养份额、产茶量及发货安排。</span>
+        </div>
+      </div>
+      <div class="wx-view card">
+        <span class="wx-text pay-title">支付方式（余额优先，不足部分微信支付）</span>
+        <div class="wx-view pay-row" data-tap="">
+          <span class="wx-text pay-t">账户余额（可用 ¥）</span>
+          <div class="wx-view cb">
+            <img class="wx-image cb-t" style="object-fit:fill" src="">
+          </div>
+        </div>
+        <div class="wx-view line"></div>
+        <div class="wx-view pay-row" data-tap="">
+          <div class="wx-view pay-left">
+            <span class="wx-text pay-t">微信支付</span>
+          </div>
+          <div class="wx-view cb">
+            <img class="wx-image cb-t" style="object-fit:fill" src="">
+          </div>
+        </div>
+      </div>
+      <div class="wx-view card">
+        <div class="wx-view kv">
+          <span class="wx-text k">订单金额</span>
+          <span class="wx-text v">¥</span>
+        </div>
+        <div class="wx-view line"></div>
+        <div class="wx-view kv">
+          <span class="wx-text k-strong">实付金额</span>
+          <span class="wx-text v-gold">¥</span>
+        </div>
+      </div>
+      <div class="wx-view" style="height:80px"></div>
+    </div>
+    <div class="wx-view bar">
+      <div class="wx-view bar-left">
+        <span class="wx-text bar-label">实付</span>
+        <span class="wx-text bar-total">¥</span>
+      </div>
+      <div class="wx-view btn" data-tap="">
+        <span class="wx-text btn-t"></span>
+      </div>
+    </div>
+  </div>
+  <div class="wx-wxs"></div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/checkout/checkout";
+window.__PAGE_PULL_DOWN__ = false;
+window.__WXML__ = [{"a":{"change:eA":"{{uV.sA}}","change:eS":"{{uV.sS}}","class":"{{['page', T]}}","eA":"{{$eA[R]}}","eS":"{{$eS[R]}}","hidden":"{{virtualHostHidden || false}}","id":"{{R}}","style":"{{'--status-bar-height:' + S + ';' + (virtualHostStyle || '')}}"},"c":[{"a":{"class":"scroll","enable-flex":"true","enhanced":"true","scroll-y":"true"},"c":[{"a":{"class":"card"},"c":[{"a":{"class":"g-name"},"c":[{"t":"tx","x":"{{a}}"}],"n":"text","t":"el"},{"a":{"class":"g-meta"},"c":[{"t":"tx","x":"{{b}} · 海拔{{c}}m · 认养周期 1 年"}],"n":"text","t":"el"},{"a":{"class":"line"},"c":[],"n":"view","t":"el"},{"a":{"class":"kv"},"c":[{"a":{"class":"k"},"c":[{"t":"tx","x":"认养份额"}],"n":"text","t":"el"},{"a":{"class":"v"},"c":[{"t":"tx","x":"¥{{d}} × {{e}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card"},"c":[{"a":{"bindtap":"{{j}}","class":"agree"},"c":[{"a":{"class":"{{['cb', g]}}"},"c":[{"a":{"class":"cb-t","src":"{{f}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"},{"a":{"class":"agree-t"},"c":[{"t":"tx","x":"我已阅读并同意"},{"a":{"catchtap":"{{i}}","class":"link"},"c":[{"t":"tx","x":"《{{h}}》"}],"n":"text","t":"el"},{"t":"tx","x":"，了解认养份额、产茶量及发货安排。"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card"},"c":[{"a":{"class":"pay-title"},"c":[{"t":"tx","x":"支付方式（余额优先，不足部分微信支付）"}],"n":"text","t":"el"},{"a":{"bindtap":"{{n}}","class":"pay-row"},"c":[{"a":{"class":"pay-t"},"c":[{"t":"tx","x":"账户余额（可用 ¥{{k}}）"}],"n":"text","t":"el"},{"a":{"class":"{{['cb', m]}}"},"c":[{"a":{"class":"cb-t","src":"{{l}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"line"},"c":[],"n":"view","t":"el"},{"a":{"bindtap":"{{s}}","class":"pay-row"},"c":[{"a":{"class":"pay-left"},"c":[{"a":{"class":"pay-t"},"c":[{"t":"tx","x":"微信支付"}],"n":"text","t":"el"},{"a":{"class":"pay-hint","wx:if":"{{o}}"},"c":[{"t":"tx","x":"（余额不足，需微信支付 ¥{{p}}）"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"{{['cb', r]}}"},"c":[{"a":{"class":"cb-t","src":"{{q}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card"},"c":[{"a":{"class":"kv"},"c":[{"a":{"class":"k"},"c":[{"t":"tx","x":"订单金额"}],"n":"text","t":"el"},{"a":{"class":"v"},"c":[{"t":"tx","x":"¥{{t}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"kv","wx:if":"{{v}}"},"c":[{"a":{"class":"k"},"c":[{"t":"tx","x":"首单立减"}],"n":"text","t":"el"},{"a":{"class":"v-red"},"c":[{"t":"tx","x":"- ¥{{w}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"kv","wx:if":"{{x}}"},"c":[{"a":{"class":"k"},"c":[{"t":"tx","x":"余额支付"}],"n":"text","t":"el"},{"a":{"class":"v"},"c":[{"t":"tx","x":"¥{{y}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"kv","wx:if":"{{z}}"},"c":[{"a":{"class":"k"},"c":[{"t":"tx","x":"微信支付"}],"n":"text","t":"el"},{"a":{"class":"v"},"c":[{"t":"tx","x":"¥{{A}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"line"},"c":[],"n":"view","t":"el"},{"a":{"class":"kv"},"c":[{"a":{"class":"k-strong"},"c":[{"t":"tx","x":"实付金额"}],"n":"text","t":"el"},{"a":{"class":"v-gold"},"c":[{"t":"tx","x":"¥{{B}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"style":"height:160rpx"},"c":[],"n":"view","t":"el"}],"n":"scroll-view","t":"el"},{"a":{"class":"bar"},"c":[{"a":{"class":"bar-left"},"c":[{"a":{"class":"bar-label"},"c":[{"t":"tx","x":"实付"}],"n":"text","t":"el"},{"a":{"class":"bar-total"},"c":[{"t":"tx","x":"¥{{C}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{F}}","class":"{{['btn', E]}}"},"c":[{"a":{"class":"btn-t"},"c":[{"t":"tx","x":"{{D}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{Q}}","class":"mask","wx:if":"{{G}}"},"c":[{"a":{"catchtap":"{{P}}","class":"sheet"},"c":[{"a":{"class":"sheet-head"},"c":[{"a":{"class":"sheet-title"},"c":[{"t":"tx","x":"{{H}}"}],"n":"text","t":"el"},{"a":{"bindtap":"{{J}}","class":"sheet-x","src":"{{I}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"},{"a":{"class":"sheet-body","enable-flex":"true","enhanced":"true","scroll-y":"true"},"c":[{"a":{"nodes":"{{L}}","wx:if":"{{K}}"},"c":[],"n":"rich-text","t":"el"},{"a":{"class":"ag-p","wx:elif":"{{M}}"},"c":[{"t":"tx","x":"{{N}}"}],"n":"text","t":"el"},{"a":{"wx:else":""},"c":[{"a":{"class":"ag-h"},"c":[{"t":"tx","x":"一、认养标的"}],"n":"text","t":"el"},{"a":{"class":"ag-p"},"c":[{"t":"tx","x":"1 份认养份额 = 1 棵茶树年产量（约 500g 干茶），认养周期自支付成功起 1 年。"}],"n":"text","t":"el"},{"a":{"class":"ag-h"},"c":[{"t":"tx","x":"二、产茶量与发货"}],"n":"text","t":"el"},{"a":{"class":"ag-p"},"c":[{"t":"tx","x":"约定产量为预估值，乙方据实加工，茶叶成熟后按份额发货至指定地址。"}],"n":"text","t":"el"},{"a":{"class":"ag-h"},"c":[{"t":"tx","x":"三、挂牌服务"}],"n":"text","t":"el"},{"a":{"class":"ag-p"},"c":[{"t":"tx","x":"乙方 7 个工作日内于认养茶树挂牌并上传 3 张实拍照片。"}],"n":"text","t":"el"},{"a":{"class":"ag-h"},"c":[{"t":"tx","x":"四、退款与风险"}],"n":"text","t":"el"},{"a":{"class":"ag-p"},"c":[{"t":"tx","x":"挂牌完成前可全额退款；完成后因标的唯一性原则上不退。不可抗力双方协商处理。"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"scroll-view","t":"el"},{"a":{"class":"sheet-foot"},"c":[{"a":{"bindtap":"{{O}}","class":"sheet-ok"},"c":[{"a":{"class":"btn-t"},"c":[{"t":"tx","x":"我已阅读并同意"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"module":"uV","src":"/common/uniView.wxs"},"c":[],"n":"wxs","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./checkout.js"></script>
+</body>
+</html>

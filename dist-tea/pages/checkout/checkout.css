@@ -1,0 +1,212 @@
+/* 由 checkout.wxss 编译 */
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+/* 字体栈第一位必须是 App.uvue 里 loadFontFace 注册过的 family，否则安卓机没有本机宋体，
+   会整站掉到系统黑体。Yunxiu Serif = Noto Serif SC Regular(正文)，Source Han Serif SC = Heavy(标题)。 */
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.scroll {
+  flex: 1;
+}
+.card {
+  background-color: #ffffff;
+  border-radius: 10px;
+  margin: 12px 12px 0;
+  padding: 14px;
+}
+.g-name {
+  font-size: 16px;
+  font-weight: bold;
+  color: #4a3020;
+}
+.g-meta {
+  font-size: 12px;
+  color: #8a8478;
+  margin-top: 4px;
+}
+.line {
+  height: 1px;
+  background-color: rgba(0, 0, 0, 0.08);
+  margin: 10px 0;
+}
+.kv {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 0;
+}
+.k {
+  font-size: 14px;
+  color: #5a5248;
+}
+.k-strong {
+  font-size: 14px;
+  color: #4a3020;
+}
+.v {
+  font-size: 14px;
+  color: #4a3020;
+}
+.v-red {
+  font-size: 14px;
+  color: #c0392b;
+}
+.v-gold {
+  font-size: 18px;
+  font-weight: bold;
+  color: #a87536;
+}
+.agree {
+  flex-direction: row;
+  align-items: flex-start;
+}
+.cb {
+  width: 19px;
+  height: 19px;
+  border-radius: 9.500px;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+}
+.cb-on {
+  background-color: #a87536;
+  border-color: #a87536;
+}
+.cb-t {
+  width: 12px;
+  height: 12px;
+}
+.agree-t {
+  flex: 1;
+  font-size: 14px;
+  color: #5a5248;
+  margin-left: 8px;
+  line-height: 21px;
+}
+.link {
+  color: #a87536;
+}
+.pay-title {
+  font-size: 11px;
+  color: #82786c;
+}
+.pay-row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+}
+.pay-left {
+  flex-direction: column;
+  flex: 1;
+}
+.pay-t {
+  font-size: 14px;
+  color: #5a5248;
+}
+.pay-hint {
+  font-size: 11px;
+  color: #a87536;
+  margin-top: 3px;
+}
+.pay-v {
+  font-size: 14px;
+  color: #4a3020;
+}
+.bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #ffffff;
+  padding: 10px 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+.bar-left {
+  flex-direction: column;
+}
+.bar-label {
+  font-size: 11px;
+  color: #82786c;
+}
+.bar-total {
+  font-size: 22px;
+  font-weight: bold;
+  color: #a87536;
+}
+.btn {
+  background-color: #a87536;
+  border-radius: 22px;
+  padding: 11px 32px;
+}
+.btn-off {
+  opacity: 0.4;
+}
+.btn-t {
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: bold;
+}
+.mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  justify-content: flex-end;
+}
+.sheet {
+  background-color: #ffffff;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  max-height: 80%;
+}
+.sheet-head {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+.sheet-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #4a3020;
+}
+.sheet-x {
+  width: 18px;
+  height: 18px;
+}
+.sheet-body {
+  padding: 14px;
+  max-height: 350px;
+}
+.ag-h {
+  font-size: 14px;
+  font-weight: bold;
+  color: #4a3020;
+  margin-top: 8px;
+}
+.ag-p {
+  font-size: 13px;
+  color: #5a5248;
+  line-height: 21px;
+  margin-top: 4px;
+}
+.sheet-foot {
+  padding: 12px 14px;
+}
+.sheet-ok {
+  background-color: #a87536;
+  border-radius: 22px;
+  padding: 11px 0;
+  align-items: center;
+}

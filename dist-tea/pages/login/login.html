@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/login/login</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./login.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view page" id="" style="--status-bar-height:;">
+    <div class="wx-view brand">
+      <span class="wx-text brand-cn">凤凰云岫</span>
+      <span class="wx-text brand-en">PHOENIX YUNXIU</span>
+      <span class="wx-text brand-sub">凤凰山古树认养 · 数字化生态平台</span>
+    </div>
+    <div class="wx-view card">
+      <div class="wx-view tabs">
+        <span class="wx-text tab" data-tap="">手机验证码</span>
+        <span class="wx-text tab" data-tap="">账号登录</span>
+      </div>
+      <div class="wx-view">
+        <div class="wx-view field">
+          <span class="wx-text f-label">手机号</span>
+          <input class="wx-input f-input" type="number" value="" placeholder="请输入手机号" data-input="">
+        </div>
+        <div class="wx-view field">
+          <span class="wx-text f-label">验证码</span>
+          <div class="wx-view code-row">
+            <input class="wx-input f-input f-input-code" type="number" value="" placeholder="短信验证码" data-input="">
+            <div class="wx-view code-btn" data-tap="">
+              <span class="wx-text code-btn-t"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="wx-view submit" data-tap="">
+        <span class="wx-text submit-t"></span>
+      </div>
+      <div class="wx-view or-row">
+        <div class="wx-view or-line"></div>
+        <span class="wx-text or-t">微信快捷登录</span>
+        <div class="wx-view or-line"></div>
+      </div>
+      <button class="wx-button wx-btn wx-button-default" data-getphonenumber="">
+        <span class="wx-text wx-btn-t">微信一键登录</span>
+      </button>
+      <div class="wx-view skip" data-tap="">
+        <span class="wx-text skip-t">先逛逛 ›</span>
+      </div>
+    </div>
+    <div class="wx-view agree-row">
+      <div class="wx-view cb-wrap" data-tap="">
+        <div class="wx-view cb"></div>
+      </div>
+      <span class="wx-text agree">登录即代表同意</span>
+      <span class="wx-text agree-link" data-tap="">《用户协议》</span>
+      <span class="wx-text agree">与</span>
+      <span class="wx-text agree-link" data-tap="">《隐私政策》</span>
+    </div>
+  </div>
+  <div class="wx-wxs"></div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/login/login";
+window.__PAGE_PULL_DOWN__ = false;
+window.__WXML__ = [{"a":{"change:eA":"{{uV.sA}}","change:eS":"{{uV.sS}}","class":"{{['page', M]}}","eA":"{{$eA[K]}}","eS":"{{$eS[K]}}","hidden":"{{virtualHostHidden || false}}","id":"{{K}}","style":"{{'--status-bar-height:' + L + ';' + (virtualHostStyle || '')}}"},"c":[{"a":{"class":"brand"},"c":[{"a":{"class":"brand-cn"},"c":[{"t":"tx","x":"凤凰云岫"}],"n":"text","t":"el"},{"a":{"class":"brand-en"},"c":[{"t":"tx","x":"PHOENIX YUNXIU"}],"n":"text","t":"el"},{"a":{"class":"brand-sub"},"c":[{"t":"tx","x":"凤凰山古树认养 · 数字化生态平台"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card"},"c":[{"a":{"class":"tabs"},"c":[{"a":{"bindtap":"{{b}}","class":"{{['tab', a]}}"},"c":[{"t":"tx","x":"手机验证码"}],"n":"text","t":"el"},{"a":{"bindtap":"{{d}}","class":"{{['tab', c]}}"},"c":[{"t":"tx","x":"账号登录"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"wx:if":"{{e}}"},"c":[{"a":{"class":"field"},"c":[{"a":{"class":"f-label"},"c":[{"t":"tx","x":"账号"}],"n":"text","t":"el"},{"a":{"bindinput":"{{g}}","class":"f-input","placeholder":"手机号 / 账号","placeholder-class":"ph","type":"text","value":"{{f}}"},"c":[],"n":"input","t":"el"}],"n":"view","t":"el"},{"a":{"class":"field"},"c":[{"a":{"class":"f-label"},"c":[{"t":"tx","x":"密码"}],"n":"text","t":"el"},{"a":{"bindinput":"{{i}}","class":"f-input","placeholder":"请输入密码","placeholder-class":"ph","type":"password","value":"{{h}}"},"c":[],"n":"input","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"wx:else":""},"c":[{"a":{"class":"field"},"c":[{"a":{"class":"f-label"},"c":[{"t":"tx","x":"手机号"}],"n":"text","t":"el"},{"a":{"bindinput":"{{k}}","class":"f-input","placeholder":"请输入手机号","placeholder-class":"ph","type":"number","value":"{{j}}"},"c":[],"n":"input","t":"el"}],"n":"view","t":"el"},{"a":{"class":"field"},"c":[{"a":{"class":"f-label"},"c":[{"t":"tx","x":"验证码"}],"n":"text","t":"el"},{"a":{"class":"code-row"},"c":[{"a":{"bindinput":"{{m}}","class":"f-input f-input-code","placeholder":"短信验证码","placeholder-class":"ph","type":"number","value":"{{l}}"},"c":[],"n":"input","t":"el"},{"a":{"bindtap":"{{p}}","class":"{{['code-btn', o]}}"},"c":[{"a":{"class":"code-btn-t"},"c":[{"t":"tx","x":"{{n}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{s}}","class":"{{['submit', r]}}"},"c":[{"a":{"class":"submit-t"},"c":[{"t":"tx","x":"{{q}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"or-row"},"c":[{"a":{"class":"or-line"},"c":[],"n":"view","t":"el"},{"a":{"class":"or-t"},"c":[{"t":"tx","x":"微信快捷登录"}],"n":"text","t":"el"},{"a":{"class":"or-line"},"c":[],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindgetphonenumber":"{{t}}","class":"wx-btn","open-type":"getPhoneNumber"},"c":[{"a":{"class":"wx-btn-t"},"c":[{"t":"tx","x":"微信一键登录"}],"n":"text","t":"el"}],"n":"button","t":"el"},{"a":{"bindtap":"{{v}}","class":"skip"},"c":[{"a":{"class":"skip-t"},"c":[{"t":"tx","x":"先逛逛 ›"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"agree-row"},"c":[{"a":{"bindtap":"{{z}}","class":"cb-wrap"},"c":[{"a":{"class":"{{['cb', y]}}"},"c":[{"a":{"class":"cb-t","src":"{{x}}","wx:if":"{{w}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"agree"},"c":[{"t":"tx","x":"登录即代表同意"}],"n":"text","t":"el"},{"a":{"bindtap":"{{A}}","class":"agree-link"},"c":[{"t":"tx","x":"《用户协议》"}],"n":"text","t":"el"},{"a":{"class":"agree"},"c":[{"t":"tx","x":"与"}],"n":"text","t":"el"},{"a":{"bindtap":"{{B}}","class":"agree-link"},"c":[{"t":"tx","x":"《隐私政策》"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{J}}","class":"mask","wx:if":"{{C}}"},"c":[{"a":{"catchtap":"{{I}}","class":"sheet"},"c":[{"a":{"class":"sheet-head"},"c":[{"a":{"class":"sheet-title"},"c":[{"t":"tx","x":"{{D}}"}],"n":"text","t":"el"},{"a":{"bindtap":"{{F}}","class":"sheet-x","src":"{{E}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"},{"a":{"class":"sheet-body","enable-flex":"true","enhanced":"true","scroll-y":"true"},"c":[{"a":{"class":"ag-text"},"c":[{"t":"tx","x":"{{G}}"}],"n":"text","t":"el"}],"n":"scroll-view","t":"el"},{"a":{"bindtap":"{{H}}","class":"sheet-ok"},"c":[{"a":{"class":"sheet-ok-t"},"c":[{"t":"tx","x":"我已阅读并同意"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"module":"uV","src":"/common/uniView.wxs"},"c":[],"n":"wxs","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./login.js"></script>
+</body>
+</html>

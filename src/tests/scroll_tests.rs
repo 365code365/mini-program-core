@@ -288,3 +288,104 @@ fn test_pull_down_refresh_hold_and_release() {
     }
     assert!(c.top_gap() < 0.5, "刷新结束应归位，实际 gap {}", c.top_gap());
 }
+
+// ============ 回弹手感（对齐 iOS/微信） ============
+
+/// 甩一下滑到底：**不该当场停死**，而是冲出边界一点再弹回来。
+///
+/// 从前惯性到边界是 `clamp` + `velocity = 0`，只有「手指拖过界再松手」才有回弹，
+/// 手上的感觉就是滑到底「咔」一下停住。
+#[test]
+fn fling_into_bottom_overshoots_then_springs_back() {
+    let mut c = ScrollController::new(1000.0, 400.0); // max 600
+    c.set_position(500.0);
+    c.begin_drag(300.0, 0);
+    c.update_drag(200.0, 16); // 快速上移 100px → 高速往下滚
+    assert!(c.end_drag(), "应进入惯性");
+
+    let mut max_pos = c.get_position();
+    let mut frames = 0;
+    while c.update(1.0 / 60.0) && frames < 180 {
+        max_pos = max_pos.max(c.get_position());
+        frames += 1;
+    }
+    assert!(max_pos > 600.5, "惯性撞底应冲出边界（实际最大 {max_pos}）");
+    assert!(max_pos < 600.0 + 400.0, "过冲不该超过一个视口");
+    assert!(
+        (c.get_position() - 600.0).abs() < 0.5,
+        "最终必须落在底部边界，实际 {}",
+        c.get_position()
+    );
+    assert!(!c.is_animating());
+}
+
+/// 慢慢挨到底不该有过冲（否则「轻轻推到底」会多抖一下）
+#[test]
+fn slow_arrival_at_bottom_does_not_overshoot() {
+    let mut c = ScrollController::new(1000.0, 400.0); // max 600
+    c.set_position(595.0);
+    c.begin_drag(300.0, 0);
+    // 40ms 走 6px ≈ 150px/s 手指速度，×0.8 采样系数 → 120px/s
+    c.update_drag(294.0, 40);
+    c.end_drag();
+    let mut max_pos = c.get_position();
+    let mut frames = 0;
+    while c.update(1.0 / 60.0) && frames < 180 {
+        max_pos = max_pos.max(c.get_position());
+        frames += 1;
+    }
+    assert!(max_pos <= 600.0 + 3.0, "低速到边界不该明显过冲（实际 {max_pos}）");
+    assert!((c.get_position() - 600.0).abs() < 0.5);
+}
+
+/// 回弹是**单调**回到边界的（临界阻尼，不来回振荡）。
+/// 过阻尼/欠阻尼都会让画面在边界附近来回抖，那正是「不像微信」的地方。
+#[test]
+fn bounce_is_critically_damped_no_oscillation() {
+    let mut c = ScrollController::new(1000.0, 400.0); // max 600
+    c.set_position(600.0);
+    c.begin_drag(300.0, 0);
+    c.update_drag(200.0, 200); // 慢慢往外拉 100px（速度低，几乎无初速度）
+    let start = c.get_position();
+    assert!(start > 600.0, "应处于越界状态");
+    c.end_drag();
+
+    let mut prev = c.get_position();
+    let mut crossed = 0;
+    let mut frames = 0;
+    while c.update(1.0 / 60.0) && frames < 180 {
+        let p = c.get_position();
+        // 一旦低于目标就是过冲到另一侧
+        if p < 600.0 - 0.5 {
+            crossed += 1;
+        }
+        assert!(p <= prev + 0.01, "回弹过程应单调收敛: {prev} -> {p}");
+        prev = p;
+        frames += 1;
+    }
+    assert_eq!(crossed, 0, "临界阻尼不该冲到边界另一侧");
+    assert!((c.get_position() - 600.0).abs() < 0.5);
+    // 落位时长在 iOS 橡皮筋的量级（不超过 0.7s）
+    assert!(frames as f32 / 60.0 < 0.7, "回弹耗时 {}s 偏长", frames as f32 / 60.0);
+}
+
+/// 惯性撞底仍然要发一次 ReachBottom（触底加载不能因为改回弹而丢）
+#[test]
+fn fling_into_bottom_still_fires_reach_bottom_once() {
+    let mut c = ScrollController::new(1000.0, 400.0);
+    c.set_position(500.0);
+    c.begin_drag(300.0, 0);
+    c.update_drag(200.0, 16);
+    c.end_drag();
+    let mut hits = 0;
+    for _ in 0..240 {
+        let (animating, ev) = c.update_with_events(1.0 / 60.0);
+        if ev == Some(crate::ui::scroll_controller::ScrollEvent::ReachBottom) {
+            hits += 1;
+        }
+        if !animating {
+            break;
+        }
+    }
+    assert_eq!(hits, 1, "触底事件应恰好一次");
+}

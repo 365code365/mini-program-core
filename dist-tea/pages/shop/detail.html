@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/shop/detail</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./detail.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view page" id="" style="--status-bar-height:;">
+    <div class="wx-scroll-view scroll" style="overflow-y:auto">
+      <div class="wx-view cover-wrap">
+        <div class="wx-swiper cover-swiper" data-autoplay="false" data-interval="5000" data-circular="true" data-dots="false" data-change=""></div>
+        <div class="wx-view cover-wash"></div>
+        <div class="wx-view cover-copy">
+          <span class="wx-text cover-title"></span>
+          <span class="wx-text cover-sub"></span>
+        </div>
+      </div>
+      <div class="wx-view body">
+        <span class="wx-text name"></span>
+        <span class="wx-text subtitle"></span>
+        <div class="wx-view price-row">
+          <span class="wx-text price">¥</span>
+          <span class="wx-text sales">已售 </span>
+        </div>
+      </div>
+      <div class="wx-view guide-card">
+        <div class="wx-view guide-row">
+          <img class="wx-image guide-icon" style="object-fit:fill" src="">
+          <div class="wx-view guide-copy">
+            <span class="wx-text guide-title">适合谁</span>
+            <span class="wx-text guide-text"></span>
+          </div>
+        </div>
+        <div class="wx-view guide-row">
+          <img class="wx-image guide-icon" style="object-fit:fill" src="">
+          <div class="wx-view guide-copy">
+            <span class="wx-text guide-title">为什么推荐</span>
+            <span class="wx-text guide-text"></span>
+          </div>
+        </div>
+        <div class="wx-view guide-row">
+          <img class="wx-image guide-icon" style="object-fit:fill" src="">
+          <div class="wx-view guide-copy">
+            <span class="wx-text guide-title">口感关键词</span>
+            <span class="wx-text guide-text"></span>
+          </div>
+        </div>
+        <div class="wx-view guide-row">
+          <img class="wx-image guide-icon" style="object-fit:fill" src="">
+          <div class="wx-view guide-copy">
+            <span class="wx-text guide-title">不适合谁</span>
+            <span class="wx-text guide-text"></span>
+          </div>
+        </div>
+        <div class="wx-view guide-row">
+          <img class="wx-image guide-icon" style="object-fit:fill" src="">
+          <div class="wx-view guide-copy">
+            <div class="wx-view guide-head">
+              <span class="wx-text guide-title">冲泡建议</span>
+              <span class="wx-text guide-more" data-tap="">查看详情 ›</span>
+            </div>
+            <span class="wx-text guide-text"></span>
+          </div>
+        </div>
+      </div>
+      <div class="wx-view origin-card" data-tap="">
+        <img class="wx-image origin-image" style="object-fit:cover" src="">
+        <div class="wx-view origin-wash"></div>
+        <div class="wx-view origin-copy">
+          <span class="wx-text origin-title">产区与选茶说明</span>
+          <span class="wx-text origin-text">本品精选凤凰核心产区茶青，涵盖三款代表香型：鸭屎香、蜜兰香、芝兰香。</span>
+          <span class="wx-text origin-text">帮助您建立对不同香型的感知与偏好，找到属于自己的那一杯凤凰单枞。</span>
+        </div>
+      </div>
+      <div class="wx-view qty">
+        <span class="wx-text qty-t">数量</span>
+        <div class="wx-view stepper">
+          <span class="wx-text step-btn" data-tap="">−</span>
+          <span class="wx-text step-n"></span>
+          <span class="wx-text step-btn" data-tap="">+</span>
+        </div>
+      </div>
+      <div class="wx-view intro">
+        <span class="wx-text sec">商品详情</span>
+        <div class="wx-rich-text intro-rich"></div>
+      </div>
+      <div class="wx-view bar-space"></div>
+    </div>
+    <div class="wx-view bar">
+      <div class="wx-view consult" data-tap="">
+        <img class="wx-image consult-icon" style="object-fit:fill" src="">
+        <span class="wx-text consult-text">咨询</span>
+      </div>
+      <div class="wx-view btn-line" data-tap="">
+        <span class="wx-text btn-line-t">加入购物车</span>
+      </div>
+      <div class="wx-view btn-fill" data-tap="">
+        <span class="wx-text btn-fill-t">立即购买</span>
+      </div>
+    </div>
+  </div>
+  <div class="wx-wxs"></div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/shop/detail";
+window.__PAGE_PULL_DOWN__ = false;
+window.__WXML__ = [{"a":{"change:eA":"{{uV.sA}}","change:eS":"{{uV.sS}}","class":"{{['page', S]}}","eA":"{{$eA[Q]}}","eS":"{{$eS[Q]}}","hidden":"{{virtualHostHidden || false}}","id":"{{Q}}","style":"{{'--status-bar-height:' + R + ';' + (virtualHostStyle || '')}}"},"c":[{"a":{"class":"scroll","enable-flex":"true","enhanced":"true","scroll-y":"true"},"c":[{"a":{"class":"cover-wrap"},"c":[{"a":{"bindchange":"{{d}}","circular":"{{c}}","class":"cover-swiper","current":"{{b}}"},"c":[{"a":{"wx:for":"{{a}}","wx:for-item":"img","wx:key":"b"},"c":[{"a":{"class":"cover","mode":"aspectFill","src":"{{img.a}}"},"c":[],"n":"image","t":"el"}],"n":"swiper-item","t":"el"}],"n":"swiper","t":"el"},{"a":{"class":"cover-wash"},"c":[],"n":"view","t":"el"},{"a":{"class":"cover-copy"},"c":[{"a":{"class":"cover-title"},"c":[{"t":"tx","x":"{{e}}"}],"n":"text","t":"el"},{"a":{"class":"cover-sub"},"c":[{"t":"tx","x":"{{f}}"}],"n":"text","t":"el"},{"a":{"class":"cover-pill","wx:if":"{{g}}"},"c":[{"a":{"class":"cover-pill-t"},"c":[{"t":"tx","x":"{{h}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"cover-dots","wx:if":"{{i}}"},"c":[{"a":{"class":"{{['cdot', img.b]}}","wx:for":"{{j}}","wx:for-item":"img","wx:key":"a"},"c":[],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"body"},"c":[{"a":{"class":"name"},"c":[{"t":"tx","x":"{{k}}"}],"n":"text","t":"el"},{"a":{"class":"subtitle"},"c":[{"t":"tx","x":"{{l}}"}],"n":"text","t":"el"},{"a":{"class":"price-row"},"c":[{"a":{"class":"price"},"c":[{"t":"tx","x":"¥{{m}}"}],"n":"text","t":"el"},{"a":{"class":"ot","wx:if":"{{n}}"},"c":[{"t":"tx","x":"¥{{o}}"}],"n":"text","t":"el"},{"a":{"class":"vip","wx:if":"{{p}}"},"c":[{"t":"tx","x":"会员价 ¥{{q}}"}],"n":"text","t":"el"},{"a":{"class":"sales"},"c":[{"t":"tx","x":"已售 {{r}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"guide-card"},"c":[{"a":{"class":"guide-row"},"c":[{"a":{"class":"guide-icon","src":"{{s}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"guide-copy"},"c":[{"a":{"class":"guide-title"},"c":[{"t":"tx","x":"适合谁"}],"n":"text","t":"el"},{"a":{"class":"guide-text"},"c":[{"t":"tx","x":"{{t}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"guide-row"},"c":[{"a":{"class":"guide-icon","src":"{{v}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"guide-copy"},"c":[{"a":{"class":"guide-title"},"c":[{"t":"tx","x":"为什么推荐"}],"n":"text","t":"el"},{"a":{"class":"guide-text"},"c":[{"t":"tx","x":"{{w}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"guide-row"},"c":[{"a":{"class":"guide-icon","src":"{{x}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"guide-copy"},"c":[{"a":{"class":"guide-title"},"c":[{"t":"tx","x":"口感关键词"}],"n":"text","t":"el"},{"a":{"class":"guide-text"},"c":[{"t":"tx","x":"{{y}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"guide-row"},"c":[{"a":{"class":"guide-icon","src":"{{z}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"guide-copy"},"c":[{"a":{"class":"guide-title"},"c":[{"t":"tx","x":"不适合谁"}],"n":"text","t":"el"},{"a":{"class":"guide-text"},"c":[{"t":"tx","x":"{{A}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"guide-row"},"c":[{"a":{"class":"guide-icon","src":"{{B}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"guide-copy"},"c":[{"a":{"class":"guide-head"},"c":[{"a":{"class":"guide-title"},"c":[{"t":"tx","x":"冲泡建议"}],"n":"text","t":"el"},{"a":{"bindtap":"{{C}}","class":"guide-more"},"c":[{"t":"tx","x":"查看详情 ›"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"guide-text"},"c":[{"t":"tx","x":"{{D}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{F}}","class":"origin-card"},"c":[{"a":{"class":"origin-image","mode":"aspectFill","src":"{{E}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"origin-wash"},"c":[],"n":"view","t":"el"},{"a":{"class":"origin-copy"},"c":[{"a":{"class":"origin-title"},"c":[{"t":"tx","x":"产区与选茶说明"}],"n":"text","t":"el"},{"a":{"class":"origin-text"},"c":[{"t":"tx","x":"本品精选凤凰核心产区茶青，涵盖三款代表香型：鸭屎香、蜜兰香、芝兰香。"}],"n":"text","t":"el"},{"a":{"class":"origin-text"},"c":[{"t":"tx","x":"帮助您建立对不同香型的感知与偏好，找到属于自己的那一杯凤凰单枞。"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"spec","wx:for":"{{G}}","wx:for-item":"g","wx:key":"c"},"c":[{"a":{"class":"spec-name"},"c":[{"t":"tx","x":"{{g.a}}"}],"n":"text","t":"el"},{"a":{"class":"spec-vals"},"c":[{"a":{"bindtap":"{{v.d}}","class":"{{['chip', v.c]}}","wx:for":"{{g.b}}","wx:for-item":"v","wx:key":"b"},"c":[{"t":"tx","x":"{{v.a}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"qty"},"c":[{"a":{"class":"qty-t"},"c":[{"t":"tx","x":"数量{{H}}"}],"n":"text","t":"el"},{"a":{"class":"stepper"},"c":[{"a":{"bindtap":"{{I}}","class":"step-btn"},"c":[{"t":"tx","x":"−"}],"n":"text","t":"el"},{"a":{"class":"step-n"},"c":[{"t":"tx","x":"{{J}}"}],"n":"text","t":"el"},{"a":{"bindtap":"{{K}}","class":"step-btn"},"c":[{"t":"tx","x":"+"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"intro"},"c":[{"a":{"class":"sec"},"c":[{"t":"tx","x":"商品详情"}],"n":"text","t":"el"},{"a":{"class":"intro-rich","nodes":"{{L}}"},"c":[],"n":"rich-text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"bar-space"},"c":[],"n":"view","t":"el"}],"n":"scroll-view","t":"el"},{"a":{"class":"bar"},"c":[{"a":{"bindtap":"{{N}}","class":"consult"},"c":[{"a":{"class":"consult-icon","src":"{{M}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"consult-text"},"c":[{"t":"tx","x":"咨询"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{O}}","class":"btn-line"},"c":[{"a":{"class":"btn-line-t"},"c":[{"t":"tx","x":"加入购物车"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{P}}","class":"btn-fill"},"c":[{"a":{"class":"btn-fill-t"},"c":[{"t":"tx","x":"立即购买"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"module":"uV","src":"/common/uniView.wxs"},"c":[],"n":"wxs","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./detail.js"></script>
+</body>
+</html>

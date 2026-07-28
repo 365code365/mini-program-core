@@ -1,0 +1,130 @@
+/* 由 recharge.wxss 编译 */
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+/* 字体栈第一位必须是 App.uvue 里 loadFontFace 注册过的 family，否则安卓机没有本机宋体，
+   会整站掉到系统黑体。Yunxiu Serif = Noto Serif SC Regular(正文)，Source Han Serif SC = Heavy(标题)。 */
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.balance {
+  background-color: #536254;
+  border-radius: 12px;
+  margin: 12px;
+  padding: 16px;
+}
+.balance-k {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.75);
+}
+.balance-v {
+  font-size: 28px;
+  font-weight: bold;
+  color: #ffffff;
+  margin-top: 4px;
+}
+.sec {
+  font-size: 16px;
+  font-weight: bold;
+  color: #4a3020;
+  margin: 8px 16px;
+}
+.grid {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  padding: 0 12px;
+}
+.cell {
+  width: 109px;
+  background-color: #ffffff;
+  border-radius: 10px;
+  padding: 16px 0;
+  align-items: center;
+  margin-bottom: 10px;
+  border: 1px solid #ffffff;
+}
+.cell-on {
+  background-color: rgba(199, 154, 82, 0.1);
+  border-color: #c5a46d;
+}
+.cell-amt {
+  font-size: 20px;
+  font-weight: bold;
+  color: #4a3020;
+}
+.cell-bonus {
+  font-size: 10px;
+  color: #a87536;
+  margin-top: 4px;
+}
+.tip {
+  font-size: 11px;
+  color: #82786c;
+  margin: 0 16px;
+}
+.custom-box {
+  flex-direction: row;
+  align-items: center;
+  background-color: #ffffff;
+  border-radius: 10px;
+  margin: 0 12px 4px;
+  padding: 4px 14px;
+  border: 1px solid #c5a46d;
+}
+.custom-cny {
+  font-size: 20px;
+  font-weight: bold;
+  color: #4a3020;
+  margin-right: 6px;
+}
+.custom-input {
+  flex: 1;
+  height: 44px;
+  font-size: 20px;
+  font-weight: bold;
+  color: #4a3020;
+}
+.custom-ph {
+  color: #82786c;
+  font-size: 14px;
+  font-weight: normal;
+}
+.bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #ffffff;
+  padding: 10px 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+.bar-left {
+  flex-direction: column;
+}
+.bar-label {
+  font-size: 11px;
+  color: #82786c;
+}
+.bar-total {
+  font-size: 22px;
+  font-weight: bold;
+  color: #a87536;
+}
+.btn {
+  background-color: #a87536;
+  border-radius: 22px;
+  padding: 11px 28px;
+}
+.btn-off {
+  opacity: 0.5;
+}
+.btn-t {
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: bold;
+}

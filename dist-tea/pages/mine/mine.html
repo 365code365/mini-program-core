@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/mine/mine</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./mine.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;padding-bottom:50px;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view root" id="" style="--status-bar-height:;">
+    <div class="wx-scroll-view page" style="overflow-y:auto">
+      <div class="wx-view nav">
+        <span class="wx-text nav-title">我的</span>
+      </div>
+      <div class="wx-view profile-card" data-tap="">
+        <img class="wx-image profile-bg" style="object-fit:cover" src="">
+        <div class="wx-view profile-tone"></div>
+        <div class="wx-view avatar">
+          <img class="wx-image avatar-img" style="object-fit:fill" src="">
+        </div>
+        <div class="wx-view profile-copy">
+          <span class="wx-text profile-name"></span>
+          <span class="wx-text profile-sub"></span>
+          <div class="wx-view level">
+            <span class="wx-text level-text">茶友等级：</span>
+          </div>
+        </div>
+        <span class="wx-text profile-arrow">›</span>
+      </div>
+      <div class="wx-view orders">
+        <div class="wx-view orders-head" data-tap="">
+          <span class="wx-text orders-title">我的订单</span>
+          <span class="wx-text orders-all">查看全部订单 ›</span>
+        </div>
+        <div class="wx-view order-types"></div>
+      </div>
+      <div class="wx-view services">
+        <div class="wx-view service" data-tap="">
+          <img class="wx-image service-icon" style="object-fit:fill" src="">
+          <span class="wx-text service-name">收藏</span>
+          <span class="wx-text service-arrow">›</span>
+        </div>
+        <div class="wx-view service" data-tap="">
+          <img class="wx-image service-icon" style="object-fit:fill" src="">
+          <span class="wx-text service-name">收货地址</span>
+          <span class="wx-text service-arrow">›</span>
+        </div>
+        <div class="wx-view service" data-tap="">
+          <img class="wx-image service-icon" style="object-fit:fill" src="">
+          <span class="wx-text service-name">联系客服</span>
+          <span class="wx-text service-arrow">›</span>
+        </div>
+        <div class="wx-view service" data-tap="">
+          <img class="wx-image service-icon" style="object-fit:fill" src="">
+          <span class="wx-text service-name">预约到店品鉴</span>
+          <span class="wx-text service-arrow">›</span>
+        </div>
+        <div class="wx-view service" data-tap="">
+          <img class="wx-image service-icon" style="object-fit:fill" src="">
+          <span class="wx-text service-name">企业茶礼咨询</span>
+          <span class="wx-text service-arrow">›</span>
+        </div>
+        <div class="wx-view service" data-tap="">
+          <img class="wx-image service-icon" style="object-fit:fill" src="">
+          <span class="wx-text service-name">品牌内容订阅</span>
+          <span class="wx-text service-arrow">›</span>
+        </div>
+      </div>
+      <div class="wx-view dual-row">
+        <div class="wx-view dual-card" data-tap="">
+          <div class="wx-view dual-copy">
+            <span class="wx-text dual-title">选茶顾问服务</span>
+            <span class="wx-text dual-desc">专业茶顾问为您推荐合适的好茶</span>
+            <div class="wx-view dual-btn">
+              <span class="wx-text dual-btn-text">立即咨询 ›</span>
+            </div>
+          </div>
+        </div>
+        <div class="wx-view dual-card" data-tap="">
+          <div class="wx-view dual-copy">
+            <span class="wx-text dual-title">最近浏览</span>
+            <span class="wx-text dual-desc">暂无浏览记录</span>
+            <div class="wx-view dual-btn">
+              <span class="wx-text dual-btn-text">去选茶 ›</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="wx-view promise-bar"></div>
+      <div class="wx-view mine-cards">
+        <div class="wx-view mcard" data-tap="">
+          <img class="wx-image mcard-bg" style="object-fit:cover" src="">
+          <div class="wx-view mcard-wash"></div>
+          <div class="wx-view mcard-copy">
+            <span class="wx-text mcard-title">选茶顾问服务</span>
+            <span class="wx-text mcard-sub">专业茶顾问为您推荐合适的好茶</span>
+            <div class="wx-view mcard-btn">
+              <span class="wx-text mcard-btn-t">立即咨询 ›</span>
+            </div>
+          </div>
+        </div>
+        <div class="wx-view mcard" data-tap="">
+          <img class="wx-image mcard-bg" style="object-fit:cover" src="">
+          <div class="wx-view mcard-wash"></div>
+          <div class="wx-view mcard-copy">
+            <span class="wx-text mcard-title">最近浏览</span>
+            <span class="wx-text mcard-sub">暂无浏览记录</span>
+            <div class="wx-view mcard-btn">
+              <span class="wx-text mcard-btn-t">去选茶 ›</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="wx-view mtrust">
+        <div class="wx-view mtrust-item">
+          <img class="wx-image mtrust-icon" style="object-fit:fill" src="">
+          <div class="wx-view mtrust-copy">
+            <span class="wx-text mtrust-t">正品保证</span>
+            <span class="wx-text mtrust-s">源头原产地</span>
+          </div>
+        </div>
+        <div class="wx-view mtrust-item">
+          <img class="wx-image mtrust-icon" style="object-fit:fill" src="">
+          <div class="wx-view mtrust-copy">
+            <span class="wx-text mtrust-t">安心包装</span>
+            <span class="wx-text mtrust-s">专业防护</span>
+          </div>
+        </div>
+        <div class="wx-view mtrust-item">
+          <img class="wx-image mtrust-icon" style="object-fit:fill" src="">
+          <div class="wx-view mtrust-copy">
+            <span class="wx-text mtrust-t">售后无忧</span>
+            <span class="wx-text mtrust-s">贴心服务</span>
+          </div>
+        </div>
+      </div>
+      <span class="wx-text footer">凤凰云岫 · 有品牌温度的选茶小程序</span>
+      <div class="wx-view bottom-space"></div>
+    </div>
+    <div class="wx-tab-bar" data-:__l="__l"></div>
+  </div>
+  <div class="wx-wxs"></div>
+</div>
+<nav class="wx-tabbar" style="background:#fffdf9"><a class="wx-tabbar-item" href="../../pages/index/index.html" style="color:#7d7469"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg><span class="wx-tabbar-text">首页</span></a><a class="wx-tabbar-item" href="../../pages/choose/choose.html" style="color:#7d7469"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span class="wx-tabbar-text">选茶</span></a><a class="wx-tabbar-item" href="../../pages/gift/gift.html" style="color:#7d7469"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.2 12h11l1.8-8H6"/></svg><span class="wx-tabbar-text">茶礼</span></a><a class="wx-tabbar-item" href="../../pages/origin/origin.html" style="color:#7d7469"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-6.5 8-6.5s8 2.5 8 6.5"/></svg><span class="wx-tabbar-text">初心</span></a><a class="wx-tabbar-item" href="../../pages/mine/mine.html" style="color:#a8793e"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-6.5 8-6.5s8 2.5 8 6.5"/></svg><span class="wx-tabbar-text">我的</span></a></nav>
+<script>
+window.__PAGE_ROUTE__ = "pages/mine/mine";
+window.__PAGE_PULL_DOWN__ = false;
+window.__WXML__ = [{"a":{"change:eA":"{{uV.sA}}","change:eS":"{{uV.sS}}","class":"{{['root', ab]}}","eA":"{{$eA[Z]}}","eS":"{{$eS[Z]}}","hidden":"{{virtualHostHidden || false}}","id":"{{Z}}","style":"{{'--status-bar-height:' + aa + ';' + (virtualHostStyle || '')}}"},"c":[{"a":{"class":"page","enable-flex":"true","enhanced":"true","scroll-y":"true"},"c":[{"a":{"class":"nav","style":"{{a}}"},"c":[{"a":{"class":"nav-title"},"c":[{"t":"tx","x":"我的"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{g}}","class":"profile-card"},"c":[{"a":{"class":"profile-bg","mode":"aspectFill","src":"{{b}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"profile-tone"},"c":[],"n":"view","t":"el"},{"a":{"class":"avatar"},"c":[{"a":{"class":"avatar-img","src":"{{c}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"},{"a":{"class":"profile-copy"},"c":[{"a":{"class":"profile-name"},"c":[{"t":"tx","x":"{{d}}"}],"n":"text","t":"el"},{"a":{"class":"profile-sub"},"c":[{"t":"tx","x":"{{e}}"}],"n":"text","t":"el"},{"a":{"class":"level"},"c":[{"a":{"class":"level-text"},"c":[{"t":"tx","x":"茶友等级：{{f}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"profile-arrow"},"c":[{"t":"tx","x":"›"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"orders"},"c":[{"a":{"bindtap":"{{h}}","class":"orders-head"},"c":[{"a":{"class":"orders-title"},"c":[{"t":"tx","x":"我的订单"}],"n":"text","t":"el"},{"a":{"class":"orders-all"},"c":[{"t":"tx","x":"查看全部订单 ›"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"order-types"},"c":[{"a":{"bindtap":"{{item.d}}","class":"order-type","wx:for":"{{i}}","wx:for-item":"item","wx:key":"c"},"c":[{"a":{"class":"order-icon","src":"{{item.a}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"order-label"},"c":[{"t":"tx","x":"{{item.b}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"services"},"c":[{"a":{"bindtap":"{{k}}","class":"service"},"c":[{"a":{"class":"service-icon","src":"{{j}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"service-name"},"c":[{"t":"tx","x":"收藏"}],"n":"text","t":"el"},{"a":{"class":"service-arrow"},"c":[{"t":"tx","x":"›"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{m}}","class":"service"},"c":[{"a":{"class":"service-icon","src":"{{l}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"service-name"},"c":[{"t":"tx","x":"收货地址"}],"n":"text","t":"el"},{"a":{"class":"service-arrow"},"c":[{"t":"tx","x":"›"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{o}}","class":"service"},"c":[{"a":{"class":"service-icon","src":"{{n}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"service-name"},"c":[{"t":"tx","x":"联系客服"}],"n":"text","t":"el"},{"a":{"class":"service-arrow"},"c":[{"t":"tx","x":"›"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{q}}","class":"service"},"c":[{"a":{"class":"service-icon","src":"{{p}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"service-name"},"c":[{"t":"tx","x":"预约到店品鉴"}],"n":"text","t":"el"},{"a":{"class":"service-arrow"},"c":[{"t":"tx","x":"›"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{s}}","class":"service"},"c":[{"a":{"class":"service-icon","src":"{{r}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"service-name"},"c":[{"t":"tx","x":"企业茶礼咨询"}],"n":"text","t":"el"},{"a":{"class":"service-arrow"},"c":[{"t":"tx","x":"›"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{v}}","class":"service"},"c":[{"a":{"class":"service-icon","src":"{{t}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"service-name"},"c":[{"t":"tx","x":"品牌内容订阅"}],"n":"text","t":"el"},{"a":{"class":"service-arrow"},"c":[{"t":"tx","x":"›"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"dual-row"},"c":[{"a":{"bindtap":"{{w}}","class":"dual-card"},"c":[{"a":{"class":"dual-copy"},"c":[{"a":{"class":"dual-title"},"c":[{"t":"tx","x":"选茶顾问服务"}],"n":"text","t":"el"},{"a":{"class":"dual-desc"},"c":[{"t":"tx","x":"专业茶顾问为您推荐合适的好茶"}],"n":"text","t":"el"},{"a":{"class":"dual-btn"},"c":[{"a":{"class":"dual-btn-text"},"c":[{"t":"tx","x":"立即咨询 ›"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{x}}","class":"dual-card"},"c":[{"a":{"class":"dual-copy"},"c":[{"a":{"class":"dual-title"},"c":[{"t":"tx","x":"最近浏览"}],"n":"text","t":"el"},{"a":{"class":"dual-desc"},"c":[{"t":"tx","x":"暂无浏览记录"}],"n":"text","t":"el"},{"a":{"class":"dual-btn"},"c":[{"a":{"class":"dual-btn-text"},"c":[{"t":"tx","x":"去选茶 ›"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"promise-bar"},"c":[{"a":{"class":"promise-item","wx:for":"{{y}}","wx:for-item":"item","wx:key":"d"},"c":[{"a":{"class":"promise-icon","src":"{{item.a}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"promise-copy"},"c":[{"a":{"class":"promise-name"},"c":[{"t":"tx","x":"{{item.b}}"}],"n":"text","t":"el"},{"a":{"class":"promise-desc"},"c":[{"t":"tx","x":"{{item.c}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"mine-cards"},"c":[{"a":{"bindtap":"{{A}}","class":"mcard"},"c":[{"a":{"class":"mcard-bg","mode":"aspectFill","src":"{{z}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"mcard-wash"},"c":[],"n":"view","t":"el"},{"a":{"class":"mcard-copy"},"c":[{"a":{"class":"mcard-title"},"c":[{"t":"tx","x":"选茶顾问服务"}],"n":"text","t":"el"},{"a":{"class":"mcard-sub"},"c":[{"t":"tx","x":"专业茶顾问为您推荐合适的好茶"}],"n":"text","t":"el"},{"a":{"class":"mcard-btn"},"c":[{"a":{"class":"mcard-btn-t"},"c":[{"t":"tx","x":"立即咨询 ›"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{C}}","class":"mcard"},"c":[{"a":{"class":"mcard-bg","mode":"aspectFill","src":"{{B}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"mcard-wash"},"c":[],"n":"view","t":"el"},{"a":{"class":"mcard-copy"},"c":[{"a":{"class":"mcard-title"},"c":[{"t":"tx","x":"最近浏览"}],"n":"text","t":"el"},{"a":{"class":"mcard-sub"},"c":[{"t":"tx","x":"暂无浏览记录"}],"n":"text","t":"el"},{"a":{"class":"mcard-btn"},"c":[{"a":{"class":"mcard-btn-t"},"c":[{"t":"tx","x":"去选茶 ›"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"mtrust"},"c":[{"a":{"class":"mtrust-item"},"c":[{"a":{"class":"mtrust-icon","src":"{{D}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"mtrust-copy"},"c":[{"a":{"class":"mtrust-t"},"c":[{"t":"tx","x":"正品保证"}],"n":"text","t":"el"},{"a":{"class":"mtrust-s"},"c":[{"t":"tx","x":"源头原产地"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"mtrust-item"},"c":[{"a":{"class":"mtrust-icon","src":"{{E}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"mtrust-copy"},"c":[{"a":{"class":"mtrust-t"},"c":[{"t":"tx","x":"安心包装"}],"n":"text","t":"el"},{"a":{"class":"mtrust-s"},"c":[{"t":"tx","x":"专业防护"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"mtrust-item"},"c":[{"a":{"class":"mtrust-icon","src":"{{F}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"mtrust-copy"},"c":[{"a":{"class":"mtrust-t"},"c":[{"t":"tx","x":"售后无忧"}],"n":"text","t":"el"},{"a":{"class":"mtrust-s"},"c":[{"t":"tx","x":"贴心服务"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"asset-row","wx:if":"{{G}}"},"c":[{"a":{"bindtap":"{{I}}","class":"asset"},"c":[{"a":{"class":"asset-value"},"c":[{"t":"tx","x":"{{H}}"}],"n":"text","t":"el"},{"a":{"class":"asset-label"},"c":[{"t":"tx","x":"优惠券"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{K}}","class":"asset"},"c":[{"a":{"class":"asset-value"},"c":[{"t":"tx","x":"{{J}}"}],"n":"text","t":"el"},{"a":{"class":"asset-label"},"c":[{"t":"tx","x":"积分"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{M}}","class":"asset"},"c":[{"a":{"class":"asset-value"},"c":[{"t":"tx","x":"{{L}}"}],"n":"text","t":"el"},{"a":{"class":"asset-label"},"c":[{"t":"tx","x":"余额"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{O}}","class":"logout","wx:if":"{{N}}"},"c":[{"a":{"class":"logout-text"},"c":[{"t":"tx","x":"退出登录"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"footer"},"c":[{"t":"tx","x":"凤凰云岫 · 有品牌温度的选茶小程序"}],"n":"text","t":"el"},{"a":{"class":"bottom-space"},"c":[],"n":"view","t":"el"}],"n":"scroll-view","t":"el"},{"a":{"bindtap":"{{X}}","class":"mask","wx:if":"{{P}}"},"c":[{"a":{"catchtap":"{{W}}","class":"dialog"},"c":[{"a":{"class":"dialog-title"},"c":[{"t":"tx","x":"{{Q}}"}],"n":"text","t":"el"},{"a":{"class":"dialog-sub"},"c":[{"t":"tx","x":"{{R}}"}],"n":"text","t":"el"},{"a":{"class":"qr"},"c":[{"a":{"class":"qr-real","mode":"aspectFit","src":"{{T}}","wx:if":"{{S}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"qr-empty","wx:else":""},"c":[{"a":{"class":"qr-icon","src":"{{U}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"qr-text"},"c":[{"t":"tx","x":"企业微信二维码配置后展示"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"qr-tip"},"c":[{"t":"tx","x":"长按识别添加 · AI 推荐与茶礼咨询均可承接"}],"n":"text","t":"el"},{"a":{"bindtap":"{{V}}","class":"dialog-btn"},"c":[{"a":{"class":"dialog-btn-text"},"c":[{"t":"tx","x":"我知道了"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bind:__l":"__l","u-i":"5eaef163-0","u-p":"{{Y||''}}"},"c":[],"n":"tab-bar","t":"el"}],"n":"view","t":"el"},{"a":{"module":"uV","src":"/common/uniView.wxs"},"c":[],"n":"wxs","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./mine.js"></script>
+</body>
+</html>

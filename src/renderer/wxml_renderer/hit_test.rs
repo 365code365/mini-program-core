@@ -103,8 +103,47 @@ impl WxmlRenderer {
         format!("{}_{}_{}", node.tag, bounds.x as i32, bounds.y as i32)
     }
 
+    /// 把一个节点上的 `bind*` / `catch*` 全部登记进本帧的事件绑定表。
+    ///
+    /// 六个绘制/登记入口（正常流、离屏缓存、覆盖层、scroll-view 子树…）此前各写了一份
+    /// 完全一样的字段拷贝，加字段要改六处。收敛到这里之后 `component_id` 只算一次。
+    pub(super) fn push_event_bindings(&mut self, node: &RenderNode, bounds: GeoRect) {
+        if node.events.is_empty() {
+            return;
+        }
+        let component_id = Self::get_component_id(node, &bounds);
+        let id = node.attrs.get("id").cloned().unwrap_or_default();
+        let is_fixed = self.registering_fixed;
+        for e in &node.events {
+            self.event_bindings.push(EventBinding {
+                event_type: e.event_type.clone(),
+                handler: e.handler.clone(),
+                tag: node.tag.clone(),
+                id: id.clone(),
+                component_id: component_id.clone(),
+                data: e.data.clone(),
+                bounds,
+                is_catch: e.is_catch,
+                phase: e.phase,
+                mut_bind: e.mut_bind,
+                owner: e.owner.clone(),
+                is_fixed,
+            });
+        }
+    }
+
     pub fn get_event_bindings(&self) -> &[EventBinding] { 
         &self.event_bindings 
+    }
+
+    /// 找某个具体组件（按 `component_id`）上的某类事件绑定。
+    ///
+    /// 输入框事件必须这样精确匹配：宿主只知道「焦点在 `input_25_520`」，
+    /// 而输入框极少写 `id` 属性，靠 `id` 属性或「表里第一条 input 绑定」都会串台。
+    pub fn binding_for(&self, component_id: &str, event_type: &str) -> Option<&EventBinding> {
+        self.event_bindings
+            .iter()
+            .find(|b| b.event_type == event_type && b.component_id == component_id)
     }
 
     pub fn hit_test(&self, x: f32, y: f32) -> Option<&EventBinding> {

@@ -1,0 +1,87 @@
+/* 由 points.wxss 编译 */
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+/* 字体栈第一位必须是 App.uvue 里 loadFontFace 注册过的 family，否则安卓机没有本机宋体，
+   会整站掉到系统黑体。Yunxiu Serif = Noto Serif SC Regular(正文)，Source Han Serif SC = Heavy(标题)。 */
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.head {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #a87536;
+  border-radius: 12px;
+  margin: 12px;
+  padding: 14px;
+}
+.head-left {
+  flex-direction: column;
+}
+.head-k {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.8);
+}
+.head-v {
+  font-size: 28px;
+  font-weight: bold;
+  color: #ffffff;
+}
+.head-tip {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.8);
+}
+.grid {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  padding: 0 12px;
+}
+.cell {
+  width: 167.500px;
+  background-color: #ffffff;
+  border-radius: 10px;
+  padding: 12px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.cell-ic {
+  width: 48px;
+  height: 48px;
+  border-radius: 24px;
+  background-color: #f3efe7;
+  align-items: center;
+  justify-content: center;
+}
+.cell-emoji {
+  width: 24px;
+  height: 24px;
+}
+.cell-name {
+  font-size: 13px;
+  color: #4a3020;
+  margin-top: 6px;
+}
+.cell-cost {
+  font-size: 13px;
+  font-weight: bold;
+  color: #a87536;
+  margin-top: 3px;
+}
+.cell-btn {
+  background-color: #a87536;
+  border-radius: 20px;
+  padding: 6px 0;
+  align-items: center;
+  margin-top: 8px;
+  width: 100%;
+}
+.cell-btn-off {
+  opacity: 0.4;
+}
+.cell-btn-t {
+  color: #ffffff;
+  font-size: 11px;
+}

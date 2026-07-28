@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/search/search</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./search.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view page" id="" style="--status-bar-height:;">
+    <div class="wx-view search">
+      <img class="wx-image sicon" style="object-fit:fill" src="">
+      <input class="wx-input sinput" type="text" value="" placeholder="搜索茶园、好茶、香型…" data-input="" data-confirm="">
+    </div>
+    <div class="wx-scroll-view scroll" style="overflow-y:auto">
+      <div class="wx-view"></div>
+    </div>
+  </div>
+  <div class="wx-wxs"></div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/search/search";
+window.__PAGE_PULL_DOWN__ = false;
+window.__WXML__ = [{"a":{"change:eA":"{{uV.sA}}","change:eS":"{{uV.sS}}","class":"{{['page', t]}}","eA":"{{$eA[r]}}","eS":"{{$eS[r]}}","hidden":"{{virtualHostHidden || false}}","id":"{{r}}","style":"{{'--status-bar-height:' + s + ';' + (virtualHostStyle || '')}}"},"c":[{"a":{"class":"search"},"c":[{"a":{"class":"sicon","src":"{{a}}"},"c":[],"n":"image","t":"el"},{"a":{"bindconfirm":"{{b}}","bindinput":"{{d}}","class":"sinput","confirm-type":"search","placeholder":"搜索茶园、好茶、香型…","value":"{{c}}"},"c":[],"n":"input","t":"el"},{"a":{"bindtap":"{{g}}","class":"sclear","src":"{{f}}","wx:if":"{{e}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"},{"a":{"class":"scroll","enable-flex":"true","enhanced":"true","scroll-y":"true"},"c":[{"a":{"class":"hot","wx:if":"{{h}}"},"c":[{"a":{"class":"hot-title"},"c":[{"t":"tx","x":"热门搜索"}],"n":"text","t":"el"},{"a":{"class":"hot-tags"},"c":[{"a":{"bindtap":"{{h.c}}","class":"hot-tag","wx:for":"{{i}}","wx:for-item":"h","wx:key":"b"},"c":[{"t":"tx","x":"{{h.a}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"wx:else":""},"c":[{"a":{"class":"empty","wx:if":"{{j}}"},"c":[{"a":{"class":"empty-t"},"c":[{"t":"tx","x":"没有找到「{{k}}」相关结果"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"wx:if":"{{l}}"},"c":[{"a":{"class":"sec"},"c":[{"t":"tx","x":"茶园认养（{{m}}）"}],"n":"text","t":"el"},{"a":{"bindtap":"{{g.e}}","class":"g","wx:for":"{{n}}","wx:for-item":"g","wx:key":"d"},"c":[{"a":{"class":"g-img","mode":"aspectFill","src":"{{g.a}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"g-info"},"c":[{"a":{"class":"g-name"},"c":[{"t":"tx","x":"{{g.b}}"}],"n":"text","t":"el"},{"a":{"class":"price"},"c":[{"t":"tx","x":"¥{{g.c}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"wx:if":"{{o}}"},"c":[{"a":{"class":"sec"},"c":[{"t":"tx","x":"好茶商品（{{p}}）"}],"n":"text","t":"el"},{"a":{"class":"grid"},"c":[{"a":{"bindtap":"{{p.f}}","class":"cell","wx:for":"{{q}}","wx:for-item":"p","wx:key":"e"},"c":[{"a":{"class":"cell-img","mode":"widthFix","src":"{{p.a}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"cell-name"},"c":[{"t":"tx","x":"{{p.b}}"}],"n":"text","t":"el"},{"a":{"class":"price","wx:if":"{{p.c}}"},"c":[{"t":"tx","x":"¥{{p.d}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"scroll-view","t":"el"}],"n":"view","t":"el"},{"a":{"module":"uV","src":"/common/uniView.wxs"},"c":[],"n":"wxs","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./search.js"></script>
+</body>
+</html>

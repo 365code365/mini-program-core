@@ -1,0 +1,181 @@
+/* 由 detail.wxss 编译 */
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+/* 字体栈第一位必须是 App.uvue 里 loadFontFace 注册过的 family，否则安卓机没有本机宋体，
+   会整站掉到系统黑体。Yunxiu Serif = Noto Serif SC Regular(正文)，Source Han Serif SC = Heavy(标题)。 */
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.scroll {
+  flex: 1;
+}
+.cover-wrap {
+  position: relative;
+}
+.cover {
+  width: 100%;
+}
+.monitor {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  flex-direction: row;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.55);
+  border-radius: 20px;
+  padding: 5px 12px;
+}
+.monitor-ic {
+  width: 15px;
+  height: 15px;
+  margin-right: 4px;
+}
+.monitor-t {
+  color: #ffffff;
+  font-size: 12px;
+}
+.body {
+  padding: 14px 16px;
+}
+.tags {
+  flex-direction: row;
+}
+.tag {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  margin-right: 6px;
+}
+.tag-gold {
+  background-color: rgba(199, 154, 82, 0.18);
+  color: #a87536;
+}
+.tag-muted {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: #8a8478;
+}
+.name {
+  font-size: 24px;
+  font-weight: bold;
+  color: #4a3020;
+  margin-top: 8px;
+}
+.stats {
+  flex-direction: row;
+  background-color: #ffffff;
+  border-radius: 10px;
+  padding: 12px 0;
+  margin-top: 12px;
+}
+.stat {
+  flex: 1;
+  align-items: center;
+}
+.stat-v {
+  font-size: 18px;
+  font-weight: bold;
+  color: #4a3020;
+}
+.stat-k {
+  font-size: 11px;
+  color: #82786c;
+  margin-top: 3px;
+}
+.sec {
+  font-size: 16px;
+  font-weight: bold;
+  color: #4a3020;
+  margin: 18px 0 8px;
+}
+.benefits {
+  background-color: #ffffff;
+  border-radius: 10px;
+  padding: 12px;
+}
+.ben {
+  flex-direction: row;
+  align-items: center;
+  padding: 5px 0;
+}
+.ben-dot {
+  width: 12px;
+  height: 12px;
+  margin-right: 7px;
+}
+.ben-t {
+  font-size: 14px;
+  color: #5a5248;
+}
+.picker {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #ffffff;
+  border-radius: 10px;
+  padding: 14px 12px;
+}
+.picker-t {
+  font-size: 14px;
+  color: #5a5248;
+}
+.stepper {
+  flex-direction: row;
+  align-items: center;
+}
+.step-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 14px;
+  text-align: center;
+  line-height: 26px;
+  font-size: 18px;
+  color: #4a3020;
+}
+.step-n {
+  width: 32px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+}
+.bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #ffffff;
+  padding: 10px 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+.bar-left {
+  flex-direction: column;
+}
+.bar-label {
+  font-size: 11px;
+  color: #82786c;
+}
+.bar-total {
+  font-size: 22px;
+  font-weight: bold;
+  color: #a87536;
+}
+.btn {
+  background-color: #a87536;
+  border-radius: 22px;
+  padding: 11px 30px;
+}
+.btn-disabled {
+  background-color: #c4bdb0;
+  border-radius: 22px;
+  padding: 11px 30px;
+}
+.btn-t {
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: bold;
+}

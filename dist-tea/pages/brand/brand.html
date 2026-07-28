@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/brand/brand</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./brand.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-scroll-view page" id="" style="--status-bar-height:;overflow-y:auto">
+    <div class="wx-view back" data-tap="">
+      <span class="wx-text back-arrow">‹</span>
+    </div>
+    <div class="wx-view head-wrap">
+      <img class="wx-image head-img" style="object-fit:cover" src="">
+      <div class="wx-view head-mask">
+        <span class="wx-text brand-cn">凤凰云岫</span>
+        <span class="wx-text brand-en">PHOENIX YUNXIU</span>
+        <span class="wx-text brand-slogan">从工夫茶里长出来的品牌</span>
+      </div>
+    </div>
+    <div class="wx-view block">
+      <span class="wx-text sec">品牌故事</span>
+      <span class="wx-text p">凤凰云岫源自潮州凤凰山高山古树单枞茶。我们守护一片片百年茶园，以传统十道工艺古法制茶，让每一棵古树都拥有专属的数字身份。从认养、生长、采摘到加工，全程可溯，只为把一杯看得见的高山好茶，交到懂茶的人手中。</span>
+    </div>
+    <div class="wx-view block">
+      <span class="wx-text sec">核心价值</span>
+      <div class="wx-view values">
+        <div class="wx-view value">
+          <img class="wx-image value-ic" style="object-fit:fill" src="">
+          <span class="wx-text value-t">高山古树</span>
+          <span class="wx-text value-d">凤凰山核心产区</span>
+        </div>
+        <div class="wx-view value">
+          <img class="wx-image value-ic" style="object-fit:fill" src="">
+          <span class="wx-text value-t">有机生态</span>
+          <span class="wx-text value-d">绿色防控种植</span>
+        </div>
+        <div class="wx-view value">
+          <img class="wx-image value-ic" style="object-fit:fill" src="">
+          <span class="wx-text value-t">全程溯源</span>
+          <span class="wx-text value-d">从茶园到茶杯</span>
+        </div>
+      </div>
+    </div>
+    <div class="wx-view cta">
+      <span class="wx-text cta-t">认养一棵树，拥有一片茶园</span>
+      <span class="wx-text cta-sub">专属木牌 · 数字认养证 · 终身溯源</span>
+      <div class="wx-view cta-btn" data-tap="">
+        <span class="wx-text cta-btn-t">立即认养</span>
+      </div>
+    </div>
+    <div class="wx-view" style="height:16px"></div>
+  </div>
+  <div class="wx-wxs"></div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/brand/brand";
+window.__PAGE_PULL_DOWN__ = false;
+window.__WXML__ = [{"a":{"change:eA":"{{uV.sA}}","change:eS":"{{uV.sS}}","class":"{{['page', i]}}","eA":"{{$eA[g]}}","eS":"{{$eS[g]}}","enable-flex":"true","enhanced":"true","hidden":"{{virtualHostHidden || false}}","id":"{{g}}","scroll-y":"true","style":"{{'--status-bar-height:' + h + ';' + (virtualHostStyle || '')}}"},"c":[{"a":{"bindtap":"{{a}}","class":"back"},"c":[{"a":{"class":"back-arrow"},"c":[{"t":"tx","x":"‹"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"head-wrap"},"c":[{"a":{"class":"head-img","mode":"aspectFill","src":"{{b}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"head-mask"},"c":[{"a":{"class":"brand-cn"},"c":[{"t":"tx","x":"凤凰云岫"}],"n":"text","t":"el"},{"a":{"class":"brand-en"},"c":[{"t":"tx","x":"PHOENIX YUNXIU"}],"n":"text","t":"el"},{"a":{"class":"brand-slogan"},"c":[{"t":"tx","x":"从工夫茶里长出来的品牌"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"block"},"c":[{"a":{"class":"sec"},"c":[{"t":"tx","x":"品牌故事"}],"n":"text","t":"el"},{"a":{"class":"p"},"c":[{"t":"tx","x":"凤凰云岫源自潮州凤凰山高山古树单枞茶。我们守护一片片百年茶园，以传统十道工艺古法制茶，让每一棵古树都拥有专属的数字身份。从认养、生长、采摘到加工，全程可溯，只为把一杯看得见的高山好茶，交到懂茶的人手中。"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"block"},"c":[{"a":{"class":"sec"},"c":[{"t":"tx","x":"核心价值"}],"n":"text","t":"el"},{"a":{"class":"values"},"c":[{"a":{"class":"value"},"c":[{"a":{"class":"value-ic","src":"{{c}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"value-t"},"c":[{"t":"tx","x":"高山古树"}],"n":"text","t":"el"},{"a":{"class":"value-d"},"c":[{"t":"tx","x":"凤凰山核心产区"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"value"},"c":[{"a":{"class":"value-ic","src":"{{d}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"value-t"},"c":[{"t":"tx","x":"有机生态"}],"n":"text","t":"el"},{"a":{"class":"value-d"},"c":[{"t":"tx","x":"绿色防控种植"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"value"},"c":[{"a":{"class":"value-ic","src":"{{e}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"value-t"},"c":[{"t":"tx","x":"全程溯源"}],"n":"text","t":"el"},{"a":{"class":"value-d"},"c":[{"t":"tx","x":"从茶园到茶杯"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"cta"},"c":[{"a":{"class":"cta-t"},"c":[{"t":"tx","x":"认养一棵树，拥有一片茶园"}],"n":"text","t":"el"},{"a":{"class":"cta-sub"},"c":[{"t":"tx","x":"专属木牌 · 数字认养证 · 终身溯源"}],"n":"text","t":"el"},{"a":{"bindtap":"{{f}}","class":"cta-btn"},"c":[{"a":{"class":"cta-btn-t"},"c":[{"t":"tx","x":"立即认养"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"style":"height:32rpx"},"c":[],"n":"view","t":"el"}],"n":"scroll-view","t":"el"},{"a":{"module":"uV","src":"/common/uniView.wxs"},"c":[],"n":"wxs","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./brand.js"></script>
+</body>
+</html>

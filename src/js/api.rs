@@ -834,16 +834,20 @@ impl MiniAppApi {
             /// 老入口（picker、交互组件回调仍在用）；触摸链路的事件对象必须由原生构造 ——
             /// `touches` / `changedTouches` 的坐标、`target` 与 `currentTarget` 的区分
             /// 只有渲染层知道。
-            function __dispatchEvent(handlerName, event) {
+            function __dispatchEvent(handlerName, event, ownerTag) {
                 if (!handlerName) { return false; }
                 event = event || {};
                 if (event.target) { event.target.dataset = __coerceDataset(event.target.dataset); }
                 if (event.currentTarget) { event.currentTarget.dataset = __coerceDataset(event.currentTarget.dataset); }
+                if (typeof event.timeStamp !== 'number') { event.timeStamp = Date.now(); }
+                // `detail` 由原生按事件类型拼好，**不过** `__coerceDataset` ——
+                // 输入框的 `detail.value` 必须保持字符串（微信语义），
+                // 走 dataset 的字面量还原会把 "1212121" 变成数字。
                 event.detail = event.detail || {};
                 event.touches = event.touches || [];
                 event.changedTouches = event.changedTouches || [];
                 try {
-                    return __dispatchHandler(handlerName, event);
+                    return __dispatchHandler(handlerName, event, ownerTag);
                 } catch (e) {
                     __native_print('[Error] ' + handlerName + ': ' + (e && e.message ? e.message : e));
                     return false;
@@ -939,11 +943,26 @@ impl MiniAppApi {
                 return JSON.stringify(out);
             }
 
-            /// 把事件派发到「持有该处理函数的对象」：先找页面，再找页面内的组件实例。
-            /// 组件模板里的 `bindtap="{{item.e}}"` 绑的是**组件**的方法，
-            /// 只在页面上找的话点了没反应（底部导航点不动就是这个原因）。
-            function __dispatchHandler(name, event) {
+            /// 把事件派发到「持有该处理函数的对象」。
+            ///
+            /// `ownerTag` 是**声明这条绑定的组件标签**（渲染层给出，见
+            /// `COMPONENT_OWNER_ATTR`）。有它就先在该组件实例上找 —— 这是微信语义：
+            /// 组件模板里的 `bindtap` 绑的是组件自己的方法，绝不会打到页面上。
+            /// uni-app 给页面和每个组件各自生成 `e0_0`、`e1_1` 这种短名字，撞名是常态；
+            /// 从前无条件先查页面，于是点底部导航执行的是**页面**的同名方法
+            /// （tea-app 上的表现：点任何一个 tab 都跳到 AI 结果页）。
+            ///
+            /// 找不到时再退回「页面 → 任意组件实例」的老顺序：框架产物偶尔把方法
+            /// 挂在别处，宁可派发出去也别静默丢事件。
+            function __dispatchHandler(name, event, ownerTag) {
                 if (!name) { return false; }
+                if (ownerTag && __pageComponents.hasOwnProperty(ownerTag)) {
+                    var owner = __componentInstances[__pageComponents[ownerTag]];
+                    if (owner && typeof owner[name] === 'function') {
+                        owner[name](event);
+                        return true;
+                    }
+                }
                 if (__currentPage && typeof __currentPage[name] === 'function') {
                     __currentPage[name](event);
                     return true;

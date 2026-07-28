@@ -1,0 +1,263 @@
+/* 由 origin.wxss 编译 */
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+/* 字体栈第一位必须是 App.uvue 里 loadFontFace 注册过的 family，否则安卓机没有本机宋体，
+   会整站掉到系统黑体。Yunxiu Serif = Noto Serif SC Regular(正文)，Source Han Serif SC = Heavy(标题)。 */
+.root {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.nav-title, .hero-title, .value-word, .origin-title, .standard-title, .standard-name, .connect-title, .connect-name {
+  font-family: "Source Han Serif SC", "Yunxiu Serif", "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+}
+.nav-en {
+  font-family: "Playfair Display", "Times New Roman", serif;
+}
+.nav {
+  height: 54px;
+  align-items: center;
+  justify-content: center;
+}
+.nav-title {
+  color: #4a3020;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 3px;
+}
+.nav-en {
+  color: #9b7b51;
+  font-size: 7.500px;
+  letter-spacing: 2.500px;
+  margin-top: 1.500px;
+}
+.hero {
+  margin: 2px 12px 0;
+  height: 164px;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  background-color: #e6ddce;
+}
+.hero-image {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+.hero-wash {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 72%;
+  background-color: rgba(247, 243, 235, 0.86);
+}
+.hero-copy {
+  position: absolute;
+  left: 17px;
+  top: 22px;
+  right: 100px;
+}
+.hero-title {
+  color: #4a3020;
+  font-size: 20px;
+  line-height: 27px;
+  font-weight: 900;
+}
+.hero-text {
+  color: #6d6257;
+  font-size: 10.500px;
+  line-height: 17px;
+  margin-top: 3px;
+}
+.hero-text-first {
+  margin-top: 11px;
+}
+.values {
+  flex-direction: row;
+  margin: 11px 10px 0;
+  padding: 15px 2px;
+  border-radius: 11px;
+  background-color: rgba(255, 255, 255, 0.6);
+}
+.value {
+  flex: 1;
+  align-items: center;
+}
+.value-word {
+  color: #6f5330;
+  font-size: 17px;
+  font-weight: 900;
+}
+.value-l1 {
+  color: #5c4936;
+  font-size: 8.500px;
+  margin-top: 7px;
+}
+.value-l2 {
+  color: #82786c;
+  font-size: 7.500px;
+  margin-top: 1.500px;
+}
+.origin-card {
+  margin: 11px 12px 0;
+  height: 120px;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  background-color: #e6ddce;
+}
+.origin-image {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+.origin-wash {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 78%;
+  background-color: rgba(247, 243, 235, 0.82);
+}
+.origin-copy {
+  position: absolute;
+  left: 15px;
+  top: 17px;
+  right: 60px;
+}
+.origin-title {
+  color: #4a3020;
+  font-size: 15px;
+  font-weight: 900;
+}
+.origin-text {
+  color: #6d6257;
+  font-size: 9.500px;
+  line-height: 15.500px;
+  margin-top: 4px;
+}
+.origin-text-first {
+  margin-top: 7px;
+}
+.origin-arrow {
+  position: absolute;
+  right: 15px;
+  top: 48px;
+  color: #9b7b51;
+  font-size: 24px;
+}
+.standard-card {
+  margin: 11px 12px 0;
+  padding: 15px 10px;
+  border-radius: 12px;
+  background-color: rgba(255, 255, 255, 0.6);
+}
+.standard-title {
+  color: #4a3020;
+  font-size: 15.500px;
+  font-weight: 900;
+}
+.standards {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+.standard {
+  width: 163px;
+  min-height: 54px;
+  flex-direction: row;
+  align-items: center;
+  padding: 8px 4px;
+}
+.standard-icon-ring {
+  width: 33px;
+  height: 33px;
+  border-radius: 17px;
+  border: 1px solid rgba(168, 124, 61, 0.32);
+  align-items: center;
+  justify-content: center;
+}
+.standard-icon {
+  width: 18px;
+  height: 18px;
+}
+.standard-copy {
+  flex: 1;
+  margin-left: 7px;
+}
+.standard-name {
+  color: #5b4936;
+  font-size: 11.500px;
+  font-weight: 900;
+}
+.standard-desc {
+  color: #82786c;
+  font-size: 8px;
+  line-height: 12px;
+  margin-top: 2px;
+}
+.connect {
+  margin: 11px 12px 0;
+}
+.connect-title {
+  color: #4a3020;
+  font-size: 15.500px;
+  font-weight: 900;
+}
+.connect-row {
+  flex-direction: row;
+  justify-content: space-between;
+  margin-top: 9px;
+}
+.connect-card {
+  width: 165px;
+  height: 104px;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  background-color: #ddd5c7;
+}
+.connect-image {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+.connect-shade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 59px;
+  background-color: rgba(43, 31, 20, 0.5);
+}
+.connect-copy {
+  position: absolute;
+  left: 11px;
+  right: 8px;
+  bottom: 10px;
+}
+.connect-name {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 900;
+}
+.connect-sub {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 9px;
+  margin-top: 2.500px;
+}
+.bottom-space {
+  height: calc(82px + env(safe-area-inset-bottom));
+}

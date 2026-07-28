@@ -1,0 +1,404 @@
+/* 由 index.wxss 编译 */
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+/* 字体栈第一位必须是 App.uvue 里 loadFontFace 注册过的 family，否则安卓机没有本机宋体，
+   会整站掉到系统黑体。Yunxiu Serif = Noto Serif SC Regular(正文)，Source Han Serif SC = Heavy(标题)。 */
+.root, .page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.nav {
+  height: 46px;
+  align-items: center;
+  justify-content: center;
+}
+.brand {
+  align-items: center;
+  justify-content: center;
+}
+.brand-cn {
+  color: #4a3020;
+  font-size: 20px;
+  line-height: 23px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  font-family: "Source Han Serif SC", "Yunxiu Serif", "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+}
+
+/* 原 6px 折算到真机不足 6px，英文品牌行几乎糊成一条线，放大并加深 */
+.brand-en {
+  color: #7a6144;
+  font-size: 10px;
+  letter-spacing: 2px;
+  margin-top: 3px;
+  font-family: "Playfair Display", "Times New Roman", serif;
+}
+.content {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+.hero {
+  height: 198px;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  background-color: #ddd5c7;
+}
+.hero-image {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* 文案压在茶山实拍图上，原来 34% 遮罩时深棕字最暗处对比度只有 4.3，山影处基本糊掉。
+   文案带用 55% 平铺保证可读，下方再用同色渐变淡出，避免出现一条硬边。 */
+.hero-wash {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  height: 102.500px;
+  background-color: rgba(249, 245, 238, 0.55);
+}
+.hero-wash-fade {
+  position: absolute;
+  left: 0;
+  top: 102.500px;
+  right: 0;
+  height: 65px;
+  background-image: linear-gradient(to bottom, rgba(249, 245, 238, 0.55), rgba(249, 245, 238, 0));
+}
+.hero-copy {
+  position: absolute;
+  left: 17px;
+  top: 20px;
+  right: 17px;
+}
+.hero-title {
+  color: #2e1f12;
+  font-size: 19px;
+  line-height: 26px;
+  font-weight: 900;
+  letter-spacing: 0.500px;
+  font-family: "Source Han Serif SC", "Yunxiu Serif", "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+}
+
+/* 字号维持 11px：再放大就会顶到居中的播放键，可读性靠遮罩与更深的字色解决 */
+.hero-sub {
+  color: #4a3826;
+  font-size: 11px;
+  margin-top: 8px;
+}
+
+/* 遮罩加强后底色变浅，半透明白的圆盘会和背景糊在一起，改成浅褐圆盘托住白色播放键 */
+.play {
+  position: absolute;
+  left: 50%;
+  top: 77px;
+  margin-left: -22px;
+  width: 44px;
+  height: 44px;
+  border-radius: 23px;
+  border: 1.500px solid rgba(255, 255, 255, 0.92);
+  background-color: rgba(58, 42, 26, 0.42);
+  align-items: center;
+  justify-content: center;
+}
+
+/* 原来用 ▶(U+25B6) 文字字形，品牌宋体里没有这个码位，真机会掉到系统 emoji 字体
+   渲染成蓝色方块表情，所以换成和其它图标同规格的 96x96 白色 PNG。 */
+.play-icon {
+  width: 18px;
+  height: 18px;
+}
+.badge {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 10px;
+  background-color: rgba(43, 31, 20, 0.4);
+  align-items: center;
+  justify-content: center;
+}
+.badge-text {
+  color: #ffffff;
+  font-size: 9.500px;
+}
+.dots {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 12px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 3.500px;
+  background-color: rgba(255, 255, 255, 0.55);
+  margin-left: 2.500px;
+  margin-right: 2.500px;
+}
+.dot-on {
+  width: 13px;
+  background-color: #cba15a;
+}
+.entry-row {
+  flex-direction: row;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+.entry {
+  width: 170px;
+  height: 64px;
+  border-radius: 9px;
+  flex-direction: row;
+  align-items: center;
+  padding-left: 13px;
+  padding-right: 10px;
+}
+.entry-gold {
+  background-color: #b28f57;
+}
+.entry-red {
+  background-color: #9d4b39;
+}
+.entry-icon {
+  width: 31px;
+  height: 31px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  align-items: center;
+  justify-content: center;
+}
+.entry-icon-img {
+  width: 17px;
+  height: 17px;
+}
+.entry-copy {
+  flex: 1;
+  margin-left: 9px;
+}
+.entry-title {
+  font-size: 16px;
+  font-weight: 900;
+  font-family: "Source Han Serif SC", "Yunxiu Serif", "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+}
+.entry-title-light {
+  color: #ffffff;
+}
+.entry-sub {
+  font-size: 9px;
+  margin-top: 3px;
+}
+.entry-sub-light {
+  color: rgba(255, 255, 255, 0.86);
+}
+.entry-arrow {
+  font-size: 15px;
+}
+.entry-arrow-light {
+  color: rgba(255, 255, 255, 0.9);
+}
+.block {
+  margin-top: 13px;
+  padding: 13px 11px;
+  border-radius: 11px;
+  background-color: rgba(255, 255, 255, 0.5);
+}
+.block-head {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+.block-title {
+  color: #4a3020;
+  font-size: 16.500px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  font-family: "Source Han Serif SC", "Yunxiu Serif", "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+}
+.block-all {
+  color: #82786c;
+  font-size: 10.500px;
+}
+.rec-row {
+  flex-direction: row;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+.rec-card {
+  width: 159px;
+  height: 113px;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  background-color: #ece5da;
+}
+.rec-image {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+.rec-wash {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 62%;
+  background-color: rgba(248, 245, 239, 0.8);
+}
+.rec-copy {
+  position: absolute;
+  left: 12px;
+  top: 11px;
+  right: 6px;
+}
+.rec-name {
+  color: #4a3020;
+  font-size: 16px;
+  font-weight: 900;
+  font-family: "Source Han Serif SC", "Yunxiu Serif", "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+}
+.rec-sub {
+  color: #675c50;
+  font-size: 9px;
+  margin-top: 3px;
+}
+.rec-arrow {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  width: 20px;
+  height: 20px;
+  border-radius: 10.500px;
+  border: 1px solid #9c7747;
+  align-items: center;
+  justify-content: center;
+}
+.rec-arrow-text {
+  color: #806039;
+  font-size: 14px;
+  margin-top: -1.500px;
+}
+.why {
+  margin-top: 11px;
+  padding: 15px 10px;
+  border-radius: 11px;
+  background-color: rgba(255, 255, 255, 0.5);
+}
+.why-title {
+  color: #4a3020;
+  font-size: 15px;
+  font-weight: 900;
+  font-family: "Source Han Serif SC", "Yunxiu Serif", "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+}
+.why-grid {
+  flex-direction: row;
+  justify-content: space-between;
+  margin-top: 11px;
+}
+.why-item {
+  flex: 1;
+  align-items: center;
+}
+.why-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 20px;
+  border: 1px solid rgba(168, 124, 61, 0.34);
+  align-items: center;
+  justify-content: center;
+}
+.why-icon-img {
+  width: 20px;
+  height: 20px;
+}
+.why-name {
+  color: #5c4936;
+  font-size: 10.500px;
+  font-weight: 900;
+  margin-top: 6px;
+}
+.why-desc {
+  color: #82786c;
+  font-size: 8px;
+  line-height: 12px;
+  text-align: center;
+  margin-top: 2.500px;
+}
+.feature-row {
+  flex-direction: row;
+  justify-content: space-between;
+  margin-top: 11px;
+}
+.feature {
+  width: 170px;
+  height: 116px;
+  border-radius: 9px;
+  overflow: hidden;
+  position: relative;
+  background-color: #eae3d8;
+}
+.feature-image {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+.feature-wash {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 66%;
+  background-color: rgba(247, 243, 235, 0.82);
+}
+.feature-copy {
+  position: absolute;
+  left: 12px;
+  top: 11px;
+  right: 7px;
+  bottom: 11px;
+}
+.feature-eyebrow {
+  color: #9b7b51;
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+.feature-title {
+  color: #4a3020;
+  font-size: 14px;
+  line-height: 19px;
+  font-weight: 900;
+  margin-top: 4px;
+  font-family: "Source Han Serif SC", "Yunxiu Serif", "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+}
+.feature-btn {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 25px;
+  padding: 0 11px;
+  border-radius: 13px;
+  border: 1px solid rgba(139, 105, 58, 0.4);
+  align-items: center;
+  justify-content: center;
+}
+.feature-btn-text {
+  color: #886537;
+  font-size: 9.500px;
+}
+.bottom-space {
+  height: calc(82px + env(safe-area-inset-bottom));
+}

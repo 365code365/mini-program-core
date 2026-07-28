@@ -1,0 +1,166 @@
+/* 由 success.wxss 编译 */
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+/* 字体栈第一位必须是 App.uvue 里 loadFontFace 注册过的 family，否则安卓机没有本机宋体，
+   会整站掉到系统黑体。Yunxiu Serif = Noto Serif SC Regular(正文)，Source Han Serif SC = Heavy(标题)。 */
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.top {
+  background-color: #536254;
+  align-items: center;
+  padding: 40px 0 30px;
+}
+.check {
+  width: 60px;
+  height: 60px;
+  border-radius: 30px;
+  background-color: rgba(255, 255, 255, 0.15);
+  align-items: center;
+  justify-content: center;
+}
+.check-t {
+  width: 36px;
+  height: 36px;
+}
+.title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #ffffff;
+  margin-top: 12px;
+}
+.sub {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 4px;
+}
+.cert {
+  background-color: #fbf8f1;
+  border: 1px solid rgba(199, 154, 82, 0.3);
+  border-radius: 12px;
+  margin: -20px 12px 0;
+  padding: 16px;
+}
+.cert-head {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px dashed rgba(199, 154, 82, 0.3);
+  padding-bottom: 10px;
+}
+.cert-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #a87536;
+}
+.cert-no {
+  font-size: 11px;
+  color: #82786c;
+}
+.cert-body {
+  padding-top: 10px;
+}
+.kv {
+  flex-direction: row;
+  justify-content: space-between;
+  padding: 3px 0;
+}
+.k {
+  font-size: 13px;
+  color: #9a8c70;
+}
+.v {
+  font-size: 13px;
+  color: #3a2c18;
+}
+.hash {
+  background-color: rgba(47, 79, 79, 0.05);
+  border-radius: 6px;
+  padding: 7px;
+  margin-top: 10px;
+}
+.hash-t {
+  font-size: 10px;
+  color: #536254;
+}
+.cert-png {
+  width: 100%;
+  border-radius: 6px;
+  margin-top: 10px;
+}
+.cert-tip {
+  font-size: 10px;
+  color: #82786c;
+  text-align: center;
+  margin-top: 5px;
+}
+.sec {
+  font-size: 16px;
+  font-weight: bold;
+  color: #4a3020;
+  margin: 16px 12px 8px;
+}
+.form {
+  background-color: #ffffff;
+  border-radius: 10px;
+  margin: 0 12px;
+  padding: 12px;
+}
+.label {
+  font-size: 12px;
+  color: #82786c;
+  margin-top: 4px;
+}
+.input {
+  background-color: #faf9f6;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  height: 40px;
+  line-height: 40px;
+  padding: 0 12px;
+  font-size: 14px;
+  margin-top: 5px;
+}
+.textarea {
+  background-color: #faf9f6;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 14px;
+  height: 70px;
+  margin-top: 5px;
+}
+.btn {
+  background-color: #a87536;
+  border-radius: 22px;
+  padding: 12px 0;
+  align-items: center;
+  margin-top: 14px;
+}
+.btn-off {
+  opacity: 0.4;
+}
+.btn-t {
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: bold;
+}
+.done {
+  background-color: #ffffff;
+  border-radius: 10px;
+  margin: 0 12px;
+  padding: 20px 12px;
+  align-items: center;
+}
+.done-t {
+  font-size: 15px;
+  color: #4a3020;
+}
+.done-sub {
+  font-size: 12px;
+  color: #82786c;
+  margin-top: 5px;
+  text-align: center;
+}

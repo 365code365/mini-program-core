@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/shop/list</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./list.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view root" id="" style="--status-bar-height:;">
+    <div class="wx-scroll-view page" style="overflow-y:auto" data-scrolltolower="">
+      <div class="wx-view grid"></div>
+      <div class="wx-view bottom-space"></div>
+    </div>
+    <div class="wx-tab-bar" data-:__l="__l"></div>
+  </div>
+  <div class="wx-wxs"></div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/shop/list";
+window.__PAGE_PULL_DOWN__ = false;
+window.__WXML__ = [{"a":{"change:eA":"{{uV.sA}}","change:eS":"{{uV.sS}}","class":"{{['root', j]}}","eA":"{{$eA[h]}}","eS":"{{$eS[h]}}","hidden":"{{virtualHostHidden || false}}","id":"{{h}}","style":"{{'--status-bar-height:' + i + ';' + (virtualHostStyle || '')}}"},"c":[{"a":{"bindscrolltolower":"{{f}}","class":"page","enable-flex":"true","enhanced":"true","scroll-y":"true"},"c":[{"a":{"class":"grid","wx:if":"{{a}}"},"c":[{"a":{"class":"cell sk","wx:for":"{{b}}","wx:for-item":"n","wx:key":"a"},"c":[{"a":{"class":"sk-img"},"c":[],"n":"view","t":"el"},{"a":{"class":"cell-body"},"c":[{"a":{"class":"sk-line"},"c":[],"n":"view","t":"el"},{"a":{"class":"sk-line short"},"c":[],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"grid","wx:else":""},"c":[{"a":{"class":"cell","wx:for":"{{c}}","wx:for-item":"p","wx:key":"k"},"c":[{"a":{"bindtap":"{{p.b}}","class":"cell-img","mode":"widthFix","src":"{{p.a}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"cell-body"},"c":[{"a":{"bindtap":"{{p.d}}","class":"cell-name"},"c":[{"t":"tx","x":"{{p.c}}"}],"n":"text","t":"el"},{"a":{"class":"cell-desc"},"c":[{"t":"tx","x":"已售 {{p.e}}{{p.f}}"}],"n":"text","t":"el"},{"a":{"class":"cell-bottom"},"c":[{"a":{"class":"price-wrap"},"c":[{"a":{"class":"price"},"c":[{"t":"tx","x":"¥{{p.g}}"}],"n":"text","t":"el"},{"a":{"class":"ot","wx:if":"{{p.h}}"},"c":[{"t":"tx","x":"¥{{p.i}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{p.j}}","class":"add"},"c":[{"a":{"class":"add-t"},"c":[{"t":"tx","x":"+"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"empty","wx:if":"{{d}}"},"c":[{"a":{"class":"empty-t"},"c":[{"t":"tx","x":"暂无商品"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"nomore","wx:if":"{{e}}"},"c":[{"a":{"class":"nomore-t"},"c":[{"t":"tx","x":"— 没有更多了 —"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"bottom-space"},"c":[],"n":"view","t":"el"}],"n":"scroll-view","t":"el"},{"a":{"bind:__l":"__l","u-i":"92913a4a-0","u-p":"{{g||''}}"},"c":[],"n":"tab-bar","t":"el"}],"n":"view","t":"el"},{"a":{"module":"uV","src":"/common/uniView.wxs"},"c":[],"n":"wxs","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./list.js"></script>
+</body>
+</html>

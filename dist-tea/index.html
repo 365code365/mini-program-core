@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mini App · HTML 工程</title>
+<style>
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,system-ui,"PingFang SC",sans-serif;background:#1c1f26;color:#e8eaed;display:flex;min-height:100vh;}
+  aside{width:260px;flex-shrink:0;padding:24px 18px;border-right:1px solid #2c313c;overflow:auto;}
+  aside h1{font-size:16px;margin:0 0 4px;color:#9ecbff;}
+  aside p{font-size:12px;color:#8b93a3;margin:0 0 18px;}
+  .nav-item{display:block;width:100%;text-align:left;margin:4px 0;padding:9px 12px;border:0;border-radius:8px;background:#252a34;color:#cfd6e4;font-size:13px;cursor:pointer;transition:.15s;}
+  .nav-item:hover{background:#2f3644;}
+  .nav-item.active{background:#07c160;color:#fff;}
+  main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;}
+  .phone{width:390px;height:800px;background:#000;border-radius:44px;padding:12px;box-shadow:0 30px 80px rgba(0,0,0,.55);}
+  .phone iframe{width:100%;height:100%;border:0;border-radius:32px;background:#fff;}
+  .hint{margin-top:16px;font-size:12px;color:#6b7280;max-width:390px;text-align:center;line-height:1.6;}
+</style>
+</head>
+<body>
+<aside>
+  <h1>Mini App · HTML 工程</h1>
+  <p>共 35 个页面 · 点击预览</p>
+  <button class="nav-item" data-src="pages/splash/splash.html">pages/splash/splash</button>
+<button class="nav-item" data-src="pages/index/index.html">pages/index/index</button>
+<button class="nav-item" data-src="pages/choose/choose.html">pages/choose/choose</button>
+<button class="nav-item" data-src="pages/gift/gift.html">pages/gift/gift</button>
+<button class="nav-item" data-src="pages/origin/origin.html">pages/origin/origin</button>
+<button class="nav-item" data-src="pages/mine/mine.html">pages/mine/mine</button>
+<button class="nav-item" data-src="pages/ai-result/ai-result.html">pages/ai-result/ai-result</button>
+<button class="nav-item" data-src="pages/recommend/recommend.html">pages/recommend/recommend</button>
+<button class="nav-item" data-src="pages/category/category.html">pages/category/category</button>
+<button class="nav-item" data-src="pages/cart/cart.html">pages/cart/cart</button>
+<button class="nav-item" data-src="pages/adoption/list.html">pages/adoption/list</button>
+<button class="nav-item" data-src="pages/adoption/detail.html">pages/adoption/detail</button>
+<button class="nav-item" data-src="pages/checkout/checkout.html">pages/checkout/checkout</button>
+<button class="nav-item" data-src="pages/checkout/success.html">pages/checkout/success</button>
+<button class="nav-item" data-src="pages/shop/list.html">pages/shop/list</button>
+<button class="nav-item" data-src="pages/shop/detail.html">pages/shop/detail</button>
+<button class="nav-item" data-src="pages/cart/checkout.html">pages/cart/checkout</button>
+<button class="nav-item" data-src="pages/cart/order-success.html">pages/cart/order-success</button>
+<button class="nav-item" data-src="pages/orders/orders.html">pages/orders/orders</button>
+<button class="nav-item" data-src="pages/orders/detail.html">pages/orders/detail</button>
+<button class="nav-item" data-src="pages/my-garden/my-garden.html">pages/my-garden/my-garden</button>
+<button class="nav-item" data-src="pages/plate/plate.html">pages/plate/plate</button>
+<button class="nav-item" data-src="pages/trace/trace.html">pages/trace/trace</button>
+<button class="nav-item" data-src="pages/garden/garden.html">pages/garden/garden</button>
+<button class="nav-item" data-src="pages/process/process.html">pages/process/process</button>
+<button class="nav-item" data-src="pages/tea-king/tea-king.html">pages/tea-king/tea-king</button>
+<button class="nav-item" data-src="pages/brand/brand.html">pages/brand/brand</button>
+<button class="nav-item" data-src="pages/search/search.html">pages/search/search</button>
+<button class="nav-item" data-src="pages/recharge/recharge.html">pages/recharge/recharge</button>
+<button class="nav-item" data-src="pages/checkin/checkin.html">pages/checkin/checkin</button>
+<button class="nav-item" data-src="pages/coupons/coupons.html">pages/coupons/coupons</button>
+<button class="nav-item" data-src="pages/points/points.html">pages/points/points</button>
+<button class="nav-item" data-src="pages/address/address.html">pages/address/address</button>
+<button class="nav-item" data-src="pages/login/login.html">pages/login/login</button>
+<button class="nav-item" data-src="pages/subscribe/subscribe.html">pages/subscribe/subscribe</button>
+
+</aside>
+<main>
+  <div class="phone"><iframe id="preview" src="pages/splash/splash.html"></iframe></div>
+  <div class="hint">结构化 HTML 工程：common/ 公共资源 · pages/ 各页面(html·css·js) · assets/ 静态资源。<br>页面内支持事件、setData 响应式重渲染、model 双向绑定与 wx 跳转。</div>
+</main>
+<script>
+  var frame=document.getElementById('preview');
+  var items=[].slice.call(document.querySelectorAll('.nav-item'));
+  function activate(el){items.forEach(function(i){i.classList.remove('active');});el.classList.add('active');frame.src=el.getAttribute('data-src');}
+  items.forEach(function(el){el.addEventListener('click',function(){activate(el);});});
+  if(items[0])items[0].classList.add('active');
+</script>
+</body>
+</html>

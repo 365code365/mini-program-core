@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/tea-king/tea-king</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./tea-king.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-scroll-view page" id="" style="--status-bar-height:;overflow-y:auto">
+    <div class="wx-view banner">
+      <span class="wx-text banner-gold">金奖</span>
+      <span class="wx-text banner-t">茶王甄选 · 限量珍藏</span>
+      <span class="wx-text banner-sub">斗茶赛获奖名丛，稀缺产量，藏品级单丛</span>
+    </div>
+    <div class="wx-view list"></div>
+    <div class="wx-view" style="height:12px"></div>
+  </div>
+  <div class="wx-wxs"></div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/tea-king/tea-king";
+window.__PAGE_PULL_DOWN__ = false;
+window.__WXML__ = [{"a":{"change:eA":"{{uV.sA}}","change:eS":"{{uV.sS}}","class":"{{['page', e]}}","eA":"{{$eA[c]}}","eS":"{{$eS[c]}}","enable-flex":"true","enhanced":"true","hidden":"{{virtualHostHidden || false}}","id":"{{c}}","scroll-y":"true","style":"{{'--status-bar-height:' + d + ';' + (virtualHostStyle || '')}}"},"c":[{"a":{"class":"banner"},"c":[{"a":{"class":"banner-gold"},"c":[{"t":"tx","x":"金奖"}],"n":"text","t":"el"},{"a":{"class":"banner-t"},"c":[{"t":"tx","x":"茶王甄选 · 限量珍藏"}],"n":"text","t":"el"},{"a":{"class":"banner-sub"},"c":[{"t":"tx","x":"斗茶赛获奖名丛，稀缺产量，藏品级单丛"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"list"},"c":[{"a":{"bindtap":"{{c.g}}","class":"card","wx:for":"{{a}}","wx:for-item":"c","wx:key":"f"},"c":[{"a":{"class":"card-img","mode":"aspectFill","src":"{{c.a}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"card-info"},"c":[{"a":{"class":"award"},"c":[{"a":{"class":"award-ic","src":"{{b}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"award-t"},"c":[{"t":"tx","x":"{{c.b}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"name"},"c":[{"t":"tx","x":"{{c.c}}"}],"n":"text","t":"el"},{"a":{"class":"desc"},"c":[{"t":"tx","x":"{{c.d}}"}],"n":"text","t":"el"},{"a":{"class":"bottom"},"c":[{"a":{"class":"price"},"c":[{"t":"tx","x":"¥{{c.e}}"}],"n":"text","t":"el"},{"a":{"class":"buy"},"c":[{"a":{"class":"buy-t"},"c":[{"t":"tx","x":"点击选购"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"style":"height:24rpx"},"c":[],"n":"view","t":"el"}],"n":"scroll-view","t":"el"},{"a":{"module":"uV","src":"/common/uniView.wxs"},"c":[],"n":"wxs","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./tea-king.js"></script>
+</body>
+</html>

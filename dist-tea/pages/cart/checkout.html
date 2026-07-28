@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/cart/checkout</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./checkout.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view page" id="" style="--status-bar-height:;">
+    <div class="wx-scroll-view scroll" style="overflow-y:auto">
+      <div class="wx-view addr" data-tap="">
+        <img class="wx-image addr-pin" style="object-fit:fill" src="">
+        <span class="wx-text addr-empty">请选择收货地址</span>
+        <span class="wx-text addr-arrow">›</span>
+      </div>
+      <div class="wx-view card"></div>
+      <div class="wx-view card">
+        <div class="wx-view row" data-tap="">
+          <span class="wx-text row-t">优惠券</span>
+          <div class="wx-view coupon-right">
+            <span class="wx-text coupon-val"></span>
+            <span class="wx-text addr-arrow">›</span>
+          </div>
+        </div>
+      </div>
+      <div class="wx-view card">
+        <div class="wx-view row" data-tap="">
+          <span class="wx-text row-t">余额支付（可用 ¥）</span>
+          <div class="wx-view cb">
+            <img class="wx-image cb-t" style="object-fit:fill" src="">
+          </div>
+        </div>
+        <div class="wx-view line"></div>
+        <div class="wx-view row" data-tap="">
+          <span class="wx-text row-t">微信支付</span>
+          <div class="wx-view cb">
+            <img class="wx-image cb-t" style="object-fit:fill" src="">
+          </div>
+        </div>
+      </div>
+      <div class="wx-view card">
+        <div class="wx-view kv">
+          <span class="wx-text k">商品金额</span>
+          <span class="wx-text v">¥</span>
+        </div>
+        <div class="wx-view kv">
+          <span class="wx-text k">运费</span>
+          <span class="wx-text v-muted"></span>
+        </div>
+        <div class="wx-view line"></div>
+        <div class="wx-view kv">
+          <span class="wx-text k-strong">实付</span>
+          <span class="wx-text v-gold">¥</span>
+        </div>
+      </div>
+      <div class="wx-view" style="height:80px"></div>
+    </div>
+    <div class="wx-view bar">
+      <div class="wx-view bar-left">
+        <span class="wx-text bar-label">实付</span>
+        <span class="wx-text bar-total">¥</span>
+      </div>
+      <div class="wx-view btn" data-tap="">
+        <span class="wx-text btn-t"></span>
+      </div>
+    </div>
+  </div>
+  <div class="wx-wxs"></div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/cart/checkout";
+window.__PAGE_PULL_DOWN__ = false;
+window.__WXML__ = [{"a":{"change:eA":"{{uV.sA}}","change:eS":"{{uV.sS}}","class":"{{['page', P]}}","eA":"{{$eA[N]}}","eS":"{{$eS[N]}}","hidden":"{{virtualHostHidden || false}}","id":"{{N}}","style":"{{'--status-bar-height:' + O + ';' + (virtualHostStyle || '')}}"},"c":[{"a":{"class":"scroll","enable-flex":"true","enhanced":"true","scroll-y":"true"},"c":[{"a":{"bindtap":"{{g}}","class":"addr"},"c":[{"a":{"class":"addr-pin","src":"{{a}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"addr-info","wx:if":"{{b}}"},"c":[{"a":{"class":"addr-name"},"c":[{"t":"tx","x":"{{c}} {{d}}"}],"n":"text","t":"el"},{"a":{"class":"addr-detail"},"c":[{"t":"tx","x":"{{e}} {{f}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"addr-empty","wx:else":""},"c":[{"t":"tx","x":"请选择收货地址"}],"n":"text","t":"el"},{"a":{"class":"addr-arrow"},"c":[{"t":"tx","x":"›"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card"},"c":[{"a":{"class":"goods","wx:for":"{{h}}","wx:for-item":"c","wx:key":"e"},"c":[{"a":{"class":"goods-img","mode":"aspectFill","src":"{{c.a}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"goods-info"},"c":[{"a":{"class":"goods-name"},"c":[{"t":"tx","x":"{{c.b}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"goods-right"},"c":[{"a":{"class":"goods-price"},"c":[{"t":"tx","x":"¥{{c.c}}"}],"n":"text","t":"el"},{"a":{"class":"goods-qty"},"c":[{"t":"tx","x":"× {{c.d}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card"},"c":[{"a":{"bindtap":"{{k}}","class":"row"},"c":[{"a":{"class":"row-t"},"c":[{"t":"tx","x":"优惠券"}],"n":"text","t":"el"},{"a":{"class":"coupon-right"},"c":[{"a":{"class":"{{['coupon-val', j]}}"},"c":[{"t":"tx","x":"{{i}}"}],"n":"text","t":"el"},{"a":{"class":"addr-arrow"},"c":[{"t":"tx","x":"›"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card"},"c":[{"a":{"bindtap":"{{o}}","class":"row"},"c":[{"a":{"class":"row-t"},"c":[{"t":"tx","x":"余额支付（可用 ¥{{l}}）"}],"n":"text","t":"el"},{"a":{"class":"{{['cb', n]}}"},"c":[{"a":{"class":"cb-t","src":"{{m}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"line"},"c":[],"n":"view","t":"el"},{"a":{"bindtap":"{{r}}","class":"row"},"c":[{"a":{"class":"row-t"},"c":[{"t":"tx","x":"微信支付"}],"n":"text","t":"el"},{"a":{"class":"{{['cb', q]}}"},"c":[{"a":{"class":"cb-t","src":"{{p}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card"},"c":[{"a":{"class":"kv"},"c":[{"a":{"class":"k"},"c":[{"t":"tx","x":"商品金额"}],"n":"text","t":"el"},{"a":{"class":"v"},"c":[{"t":"tx","x":"¥{{s}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"kv","wx:if":"{{t}}"},"c":[{"a":{"class":"k"},"c":[{"t":"tx","x":"优惠券"}],"n":"text","t":"el"},{"a":{"class":"v-red"},"c":[{"t":"tx","x":"- ¥{{v}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"kv"},"c":[{"a":{"class":"k"},"c":[{"t":"tx","x":"运费"}],"n":"text","t":"el"},{"a":{"class":"v-muted"},"c":[{"t":"tx","x":"{{w}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"line"},"c":[],"n":"view","t":"el"},{"a":{"class":"kv"},"c":[{"a":{"class":"k-strong"},"c":[{"t":"tx","x":"实付"}],"n":"text","t":"el"},{"a":{"class":"v-gold"},"c":[{"t":"tx","x":"¥{{x}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"style":"height:160rpx"},"c":[],"n":"view","t":"el"}],"n":"scroll-view","t":"el"},{"a":{"class":"bar"},"c":[{"a":{"class":"bar-left"},"c":[{"a":{"class":"bar-label"},"c":[{"t":"tx","x":"实付"}],"n":"text","t":"el"},{"a":{"class":"bar-total"},"c":[{"t":"tx","x":"¥{{y}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{B}}","class":"{{['btn', A]}}"},"c":[{"a":{"class":"btn-t"},"c":[{"t":"tx","x":"{{z}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{M}}","class":"mask","wx:if":"{{C}}"},"c":[{"a":{"catchtap":"{{L}}","class":"sheet"},"c":[{"a":{"class":"sheet-head"},"c":[{"a":{"class":"sheet-title"},"c":[{"t":"tx","x":"选择优惠券"}],"n":"text","t":"el"},{"a":{"bindtap":"{{E}}","class":"sheet-x","src":"{{D}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"},{"a":{"class":"cp-list","enable-flex":"true","enhanced":"true","scroll-y":"true"},"c":[{"a":{"bindtap":"{{H}}","class":"cp none"},"c":[{"a":{"class":"cp-none-t"},"c":[{"t":"tx","x":"不使用优惠券"}],"n":"text","t":"el"},{"a":{"class":"{{['cb', G]}}"},"c":[{"a":{"class":"cb-t","src":"{{F}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{c.g}}","class":"cp","wx:for":"{{I}}","wx:for-item":"c","wx:key":"f"},"c":[{"a":{"class":"cp-left"},"c":[{"a":{"class":"cp-money"},"c":[{"t":"tx","x":"¥{{c.a}}"}],"n":"text","t":"el"},{"a":{"class":"cp-cond"},"c":[{"t":"tx","x":"{{c.b}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"cp-mid"},"c":[{"a":{"class":"cp-name"},"c":[{"t":"tx","x":"{{c.c}}"}],"n":"text","t":"el"},{"a":{"class":"cp-exp"},"c":[{"t":"tx","x":"至 {{c.d}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"{{['cb', c.e]}}"},"c":[{"a":{"class":"cb-t","src":"{{J}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"cp-empty","wx:if":"{{K}}"},"c":[{"a":{"class":"cp-empty-t"},"c":[{"t":"tx","x":"暂无可用优惠券"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"scroll-view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"module":"uV","src":"/common/uniView.wxs"},"c":[],"n":"wxs","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./checkout.js"></script>
+</body>
+</html>

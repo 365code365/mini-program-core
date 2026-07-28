@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/recharge/recharge</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./recharge.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view page" id="" style="--status-bar-height:;">
+    <div class="wx-view balance">
+      <span class="wx-text balance-k">当前余额</span>
+      <span class="wx-text balance-v">¥</span>
+    </div>
+    <span class="wx-text sec">选择充值金额</span>
+    <div class="wx-view grid">
+      <div class="wx-view cell" data-tap="">
+        <span class="wx-text cell-amt">自定义</span>
+        <span class="wx-text cell-bonus">输入金额</span>
+      </div>
+    </div>
+    <span class="wx-text tip">充值金额仅可用于平台消费，不支持提现。</span>
+    <div class="wx-view bar">
+      <div class="wx-view bar-left">
+        <span class="wx-text bar-label">实付</span>
+        <span class="wx-text bar-total">¥</span>
+      </div>
+      <div class="wx-view btn" data-tap="">
+        <span class="wx-text btn-t"></span>
+      </div>
+    </div>
+  </div>
+  <div class="wx-wxs"></div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/recharge/recharge";
+window.__PAGE_PULL_DOWN__ = false;
+window.__WXML__ = [{"a":{"change:eA":"{{uV.sA}}","change:eS":"{{uV.sS}}","class":"{{['page', n]}}","eA":"{{$eA[l]}}","eS":"{{$eS[l]}}","hidden":"{{virtualHostHidden || false}}","id":"{{l}}","style":"{{'--status-bar-height:' + m + ';' + (virtualHostStyle || '')}}"},"c":[{"a":{"class":"balance"},"c":[{"a":{"class":"balance-k"},"c":[{"t":"tx","x":"当前余额"}],"n":"text","t":"el"},{"a":{"class":"balance-v"},"c":[{"t":"tx","x":"¥{{a}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"sec"},"c":[{"t":"tx","x":"选择充值金额"}],"n":"text","t":"el"},{"a":{"class":"grid"},"c":[{"a":{"bindtap":"{{p.f}}","class":"{{['cell', p.e]}}","wx:for":"{{b}}","wx:for-item":"p","wx:key":"d"},"c":[{"a":{"class":"cell-amt"},"c":[{"t":"tx","x":"¥{{p.a}}"}],"n":"text","t":"el"},{"a":{"class":"cell-bonus","wx:if":"{{p.b}}"},"c":[{"t":"tx","x":"赠 ¥{{p.c}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{d}}","class":"{{['cell', c]}}"},"c":[{"a":{"class":"cell-amt"},"c":[{"t":"tx","x":"自定义"}],"n":"text","t":"el"},{"a":{"class":"cell-bonus"},"c":[{"t":"tx","x":"输入金额"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"custom-box","wx:if":"{{e}}"},"c":[{"a":{"class":"custom-cny"},"c":[{"t":"tx","x":"¥"}],"n":"text","t":"el"},{"a":{"bindinput":"{{g}}","class":"custom-input","placeholder":"请输入充值金额","placeholder-class":"custom-ph","type":"number","value":"{{f}}"},"c":[],"n":"input","t":"el"}],"n":"view","t":"el"},{"a":{"class":"tip"},"c":[{"t":"tx","x":"充值金额仅可用于平台消费，不支持提现。"}],"n":"text","t":"el"},{"a":{"class":"bar"},"c":[{"a":{"class":"bar-left"},"c":[{"a":{"class":"bar-label"},"c":[{"t":"tx","x":"实付"}],"n":"text","t":"el"},{"a":{"class":"bar-total"},"c":[{"t":"tx","x":"¥{{h}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{k}}","class":"{{['btn', j]}}"},"c":[{"a":{"class":"btn-t"},"c":[{"t":"tx","x":"{{i}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"module":"uV","src":"/common/uniView.wxs"},"c":[],"n":"wxs","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./recharge.js"></script>
+</body>
+</html>

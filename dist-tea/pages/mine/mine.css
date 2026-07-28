@@ -1,0 +1,440 @@
+/* 由 mine.wxss 编译 */
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+/* 字体栈第一位必须是 App.uvue 里 loadFontFace 注册过的 family，否则安卓机没有本机宋体，
+   会整站掉到系统黑体。Yunxiu Serif = Noto Serif SC Regular(正文)，Source Han Serif SC = Heavy(标题)。 */
+.root, .page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.nav-title, .profile-name, .orders-title, .dialog-title {
+  font-family: "Source Han Serif SC", "Yunxiu Serif", "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+}
+.nav {
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+}
+.nav-title {
+  color: #4a3020;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 3px;
+}
+.profile-card {
+  margin: 0 12px;
+  height: 100px;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  background-color: #b7935e;
+  flex-direction: row;
+  align-items: center;
+  padding: 0 14px;
+}
+.profile-bg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.28;
+}
+.profile-tone {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(150, 116, 66, 0.72);
+}
+.avatar {
+  width: 58px;
+  height: 58px;
+  border-radius: 30px;
+  background-color: rgba(255, 250, 243, 0.9);
+  border: 1.500px solid rgba(255, 255, 255, 0.6);
+  align-items: center;
+  justify-content: center;
+}
+.avatar-img {
+  width: 28px;
+  height: 28px;
+}
+.profile-copy {
+  flex: 1;
+  margin-left: 12px;
+}
+.profile-name {
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 900;
+}
+.profile-sub {
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 10px;
+  margin-top: 4px;
+}
+.level {
+  align-self: flex-start;
+  margin-top: 7px;
+  height: 21px;
+  padding: 0 9px;
+  border-radius: 11px;
+  background-color: rgba(255, 255, 255, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  align-items: center;
+  justify-content: center;
+}
+.level-text {
+  color: #fff4df;
+  font-size: 9px;
+}
+.profile-arrow {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 20px;
+}
+.orders {
+  margin: 10px 12px 0;
+  border-radius: 12px;
+  background-color: #ffffff;
+  padding: 12px 11px;
+  box-shadow: 0 4px 12px rgba(76, 52, 29, 0.06);
+}
+.orders-head {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+.orders-title {
+  color: #4a3020;
+  font-size: 13.500px;
+  font-weight: 900;
+}
+.orders-all {
+  color: #82786c;
+  font-size: 9.500px;
+}
+.order-types {
+  flex-direction: row;
+  margin-top: 12px;
+}
+.order-type {
+  flex: 1;
+  align-items: center;
+}
+.order-icon {
+  width: 22px;
+  height: 22px;
+}
+.order-label {
+  color: #62564b;
+  font-size: 10px;
+  margin-top: 4px;
+}
+.services {
+  margin: 10px 12px 0;
+  border-radius: 12px;
+  background-color: #ffffff;
+  padding: 2px 11px;
+}
+.service {
+  min-height: 44px;
+  flex-direction: row;
+  align-items: center;
+  border-bottom: 1px solid rgba(90, 66, 40, 0.06);
+}
+.service-icon {
+  width: 19px;
+  height: 19px;
+}
+.service-name {
+  flex: 1;
+  color: #56493d;
+  font-size: 12.500px;
+  margin-left: 9px;
+}
+.service-arrow {
+  color: #a59a8e;
+  font-size: 16px;
+}
+.dual-row {
+  flex-direction: row;
+  justify-content: space-between;
+  margin: 10px 12px 0;
+}
+.dual-card {
+  width: 171px;
+  height: 110px;
+  border-radius: 11px;
+  background-color: #f0e7d9;
+  overflow: hidden;
+}
+.dual-copy {
+  padding: 12px;
+}
+.dual-title {
+  color: #4a3020;
+  font-size: 13.500px;
+  font-weight: 900;
+  font-family: "Source Han Serif SC", "Yunxiu Serif", "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+}
+.dual-desc {
+  color: #82786c;
+  font-size: 9px;
+  line-height: 14px;
+  margin-top: 4px;
+}
+.dual-btn {
+  align-self: flex-start;
+  margin-top: 8px;
+  height: 24px;
+  padding: 0 11px;
+  border-radius: 12.500px;
+  border: 1px solid rgba(139, 105, 58, 0.4);
+  align-items: center;
+  justify-content: center;
+}
+.dual-btn-text {
+  color: #886537;
+  font-size: 9px;
+}
+.promise-bar {
+  flex-direction: row;
+  margin: 10px 12px 0;
+  padding: 11px 0;
+  border-radius: 11px;
+  background-color: rgba(255, 255, 255, 0.6);
+}
+.promise-item {
+  flex: 1;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+.promise-icon {
+  width: 20px;
+  height: 20px;
+}
+.promise-copy {
+  margin-left: 5px;
+}
+.promise-name {
+  color: #5c4936;
+  font-size: 10px;
+  font-weight: 900;
+}
+.promise-desc {
+  color: #82786c;
+  font-size: 7.500px;
+  margin-top: 1px;
+}
+.asset-row {
+  flex-direction: row;
+  margin: 10px 12px 0;
+  padding: 12px 0;
+  border-radius: 11px;
+  background-color: #eee4d6;
+}
+.asset {
+  flex: 1;
+  align-items: center;
+}
+.asset-value {
+  color: #875f34;
+  font-size: 15px;
+  font-weight: 900;
+}
+.asset-label {
+  color: #82786c;
+  font-size: 9.500px;
+  margin-top: 2.500px;
+}
+.logout {
+  margin: 10px 12px 0;
+  height: 38px;
+  border-radius: 19px;
+  border: 1px solid rgba(142, 104, 57, 0.2);
+  align-items: center;
+  justify-content: center;
+}
+.logout-text {
+  color: #896941;
+  font-size: 11.500px;
+}
+.footer {
+  text-align: center;
+  color: #aaa094;
+  font-size: 9px;
+  margin-top: 14px;
+}
+.mine-cards {
+  flex-direction: row;
+  justify-content: space-between;
+  margin: 10px 12px 0;
+}
+.mcard {
+  width: 168px;
+  height: 105px;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  background-color: #e9e1d5;
+}
+.mcard-bg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+.mcard-wash {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(245, 240, 231, 0.62);
+}
+.mcard-copy {
+  position: absolute;
+  left: 11px;
+  top: 11px;
+  right: 9px;
+  bottom: 10px;
+}
+.mcard-title {
+  color: #4a3020;
+  font-size: 14px;
+  font-weight: 900;
+  font-family: "Source Han Serif SC", "Yunxiu Serif", "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+}
+.mcard-sub {
+  color: #6d6053;
+  font-size: 9px;
+  line-height: 13.500px;
+  margin-top: 4px;
+}
+.mcard-btn {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 24px;
+  padding-left: 10px;
+  padding-right: 10px;
+  border-radius: 12.500px;
+  border: 1px solid rgba(139, 105, 58, 0.42);
+  align-items: center;
+  justify-content: center;
+}
+.mcard-btn-t {
+  color: #886537;
+  font-size: 9.500px;
+}
+.mtrust {
+  flex-direction: row;
+  margin: 10px 12px 0;
+  padding: 11px 0;
+  border-radius: 10px;
+  background-color: rgba(255, 255, 255, 0.6);
+}
+.mtrust-item {
+  flex: 1;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+.mtrust-icon {
+  width: 17px;
+  height: 17px;
+}
+.mtrust-copy {
+  margin-left: 6px;
+}
+.mtrust-t {
+  color: #5f5040;
+  font-size: 10px;
+  font-weight: 900;
+}
+.mtrust-s {
+  color: #82786c;
+  font-size: 7.500px;
+  margin-top: 1px;
+}
+.bottom-space {
+  height: calc(82px + env(safe-area-inset-bottom));
+}
+.mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 1000;
+  background-color: rgba(0, 0, 0, 0.46);
+  align-items: center;
+  justify-content: center;
+  padding: 0 30px;
+}
+.dialog {
+  width: 100%;
+  border-radius: 13px;
+  background-color: #ffffff;
+  padding: 19px 16px;
+  align-items: center;
+}
+.dialog-title {
+  color: #4a3020;
+  font-size: 15.500px;
+  font-weight: 900;
+}
+.dialog-sub {
+  color: #82786c;
+  font-size: 10px;
+  margin-top: 4px;
+  text-align: center;
+}
+.qr {
+  width: 140px;
+  height: 140px;
+  border: 1px dashed rgba(164, 125, 73, 0.4);
+  border-radius: 9px;
+  margin-top: 12px;
+  align-items: center;
+  justify-content: center;
+}
+.qr-real {
+  width: 130px;
+  height: 130px;
+}
+.qr-empty {
+  align-items: center;
+}
+.qr-icon {
+  width: 35px;
+  height: 35px;
+}
+.qr-text {
+  color: #82786c;
+  font-size: 9.500px;
+  margin-top: 6px;
+}
+.qr-tip {
+  color: #82786c;
+  font-size: 9px;
+  margin-top: 7px;
+}
+.dialog-btn {
+  width: 100%;
+  height: 36px;
+  border-radius: 18px;
+  background-color: #a87536;
+  margin-top: 12px;
+  align-items: center;
+  justify-content: center;
+}
+.dialog-btn-text {
+  color: #ffffff;
+  font-size: 12px;
+}

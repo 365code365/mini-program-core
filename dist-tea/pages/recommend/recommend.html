@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/recommend/recommend</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./recommend.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-scroll-view page" id="" style="--status-bar-height:;overflow-y:auto">
+    <div class="wx-view tabs"></div>
+    <div class="wx-view bottom-space"></div>
+  </div>
+  <div class="wx-wxs"></div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/recommend/recommend";
+window.__PAGE_PULL_DOWN__ = false;
+window.__WXML__ = [{"a":{"change:eA":"{{uV.sA}}","change:eS":"{{uV.sS}}","class":"{{['page', l]}}","eA":"{{$eA[j]}}","eS":"{{$eS[j]}}","enable-flex":"true","enhanced":"true","hidden":"{{virtualHostHidden || false}}","id":"{{j}}","scroll-y":"true","show-scrollbar":"{{false}}","style":"{{'--status-bar-height:' + k + ';' + (virtualHostStyle || '')}}"},"c":[{"a":{"class":"tabs"},"c":[{"a":{"bindtap":"{{t.f}}","class":"{{['tab', t.d]}}","wx:for":"{{a}}","wx:for-item":"t","wx:key":"e"},"c":[{"a":{"class":"tab-icon","src":"{{t.a}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"{{['tab-text', t.c]}}"},"c":[{"t":"tx","x":"{{t.b}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"section","wx:if":"{{b}}"},"c":[{"a":{"class":"banner"},"c":[{"a":{"class":"banner-img","mode":"aspectFill","src":"{{c}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"banner-wash"},"c":[],"n":"view","t":"el"},{"a":{"class":"banner-copy"},"c":[{"a":{"class":"banner-title"},"c":[{"t":"tx","x":"茶王系列"}],"n":"text","t":"el"},{"a":{"class":"banner-sub"},"c":[{"t":"tx","x":"核心产区 · 匠心之作"}],"n":"text","t":"el"},{"a":{"class":"banner-line"},"c":[],"n":"view","t":"el"},{"a":{"class":"banner-tag"},"c":[{"t":"tx","x":"臻选核心高山茶区，成就巅峰之味"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"empty","wx:if":"{{d}}"},"c":[{"a":{"class":"empty-text"},"c":[{"t":"tx","x":"当前暂无在售茶王系列"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"grid","wx:else":""},"c":[{"a":{"bindtap":"{{item.h}}","class":"pcard","wx:for":"{{e}}","wx:for-item":"item","wx:key":"g"},"c":[{"a":{"class":"pimg-wrap"},"c":[{"a":{"class":"pimg","mode":"aspectFill","src":"{{item.a}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"pbadge"},"c":[{"a":{"class":"pbadge-t"},"c":[{"t":"tx","x":"适合送礼"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"pname"},"c":[{"t":"tx","x":"{{item.b}}"}],"n":"text","t":"el"},{"a":{"class":"pdesc"},"c":[{"t":"tx","x":"{{item.c}}"}],"n":"text","t":"el"},{"a":{"class":"prow"},"c":[{"a":{"class":"pprice"},"c":[{"t":"tx","x":"¥{{item.d}}"}],"n":"text","t":"el"},{"a":{"class":"punit","wx:if":"{{item.e}}"},"c":[{"t":"tx","x":"/ {{item.f}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"pbtn"},"c":[{"a":{"class":"pbtn-t"},"c":[{"t":"tx","x":"查看详情 ›"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"section","wx:if":"{{f}}"},"c":[{"a":{"class":"banner"},"c":[{"a":{"class":"banner-img","mode":"aspectFill","src":"{{g}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"banner-wash"},"c":[],"n":"view","t":"el"},{"a":{"class":"banner-copy"},"c":[{"a":{"class":"banner-title"},"c":[{"t":"tx","x":"品鉴装"}],"n":"text","t":"el"},{"a":{"class":"banner-sub"},"c":[{"t":"tx","x":"尝遍好茶 · 找到心头所好"}],"n":"text","t":"el"},{"a":{"class":"banner-line"},"c":[],"n":"view","t":"el"},{"a":{"class":"banner-tag"},"c":[{"t":"tx","x":"多款茶样随心品鉴，轻松开启好茶之旅"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"empty","wx:if":"{{h}}"},"c":[{"a":{"class":"empty-text"},"c":[{"t":"tx","x":"当前暂无在售品鉴装"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"grid","wx:else":""},"c":[{"a":{"bindtap":"{{item.h}}","class":"pcard","wx:for":"{{i}}","wx:for-item":"item","wx:key":"g"},"c":[{"a":{"class":"pimg-wrap"},"c":[{"a":{"class":"pimg","mode":"aspectFill","src":"{{item.a}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"pbadge badge-newbie"},"c":[{"a":{"class":"pbadge-t"},"c":[{"t":"tx","x":"适合新手"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"pname"},"c":[{"t":"tx","x":"{{item.b}}"}],"n":"text","t":"el"},{"a":{"class":"pdesc"},"c":[{"t":"tx","x":"{{item.c}}"}],"n":"text","t":"el"},{"a":{"class":"prow"},"c":[{"a":{"class":"pprice"},"c":[{"t":"tx","x":"¥{{item.d}}"}],"n":"text","t":"el"},{"a":{"class":"punit","wx:if":"{{item.e}}"},"c":[{"t":"tx","x":"/ {{item.f}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"pbtn"},"c":[{"a":{"class":"pbtn-t"},"c":[{"t":"tx","x":"查看详情 ›"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"bottom-space"},"c":[],"n":"view","t":"el"}],"n":"scroll-view","t":"el"},{"a":{"module":"uV","src":"/common/uniView.wxs"},"c":[],"n":"wxs","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./recommend.js"></script>
+</body>
+</html>

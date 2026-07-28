@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/checkout/success</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./success.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-scroll-view page" id="" style="--status-bar-height:;overflow-y:auto">
+    <div class="wx-view top">
+      <div class="wx-view check">
+        <img class="wx-image check-t" style="object-fit:fill" src="">
+      </div>
+      <span class="wx-text title">认养成功</span>
+      <span class="wx-text sub">您已成为「」的茶园主</span>
+    </div>
+    <div class="wx-view cert">
+      <div class="wx-view cert-head">
+        <span class="wx-text cert-title">数字认养证</span>
+        <span class="wx-text cert-no">编号 </span>
+      </div>
+      <div class="wx-view cert-body">
+        <div class="wx-view kv">
+          <span class="wx-text k">认养茶园</span>
+          <span class="wx-text v"></span>
+        </div>
+        <div class="wx-view kv">
+          <span class="wx-text k">认养份额</span>
+          <span class="wx-text v"> 份（约 g/年）</span>
+        </div>
+        <div class="wx-view kv">
+          <span class="wx-text k">认养周期</span>
+          <span class="wx-text v">1 年</span>
+        </div>
+        <div class="wx-view kv">
+          <span class="wx-text k">订单编号</span>
+          <span class="wx-text v"></span>
+        </div>
+      </div>
+      <div class="wx-view hash">
+        <span class="wx-text hash-t">区块链哈希：0x…（已存证）</span>
+      </div>
+    </div>
+    <span class="wx-text sec">填写挂牌信息</span>
+    <div class="wx-view done">
+      <span class="wx-text done-t">挂牌信息已提交</span>
+      <span class="wx-text done-sub">基地将在 7 日内完成挂牌并上传 3 张实拍照片</span>
+      <div class="wx-view btn" data-tap="">
+        <span class="wx-text btn-t">前往我的茶园</span>
+      </div>
+    </div>
+    <div class="wx-view" style="height:20px"></div>
+  </div>
+  <div class="wx-wxs"></div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/checkout/success";
+window.__PAGE_PULL_DOWN__ = false;
+window.__WXML__ = [{"a":{"change:eA":"{{uV.sA}}","change:eS":"{{uV.sS}}","class":"{{['page', x]}}","eA":"{{$eA[v]}}","eS":"{{$eS[v]}}","enable-flex":"true","enhanced":"true","hidden":"{{virtualHostHidden || false}}","id":"{{v}}","scroll-y":"true","style":"{{'--status-bar-height:' + w + ';' + (virtualHostStyle || '')}}"},"c":[{"a":{"class":"top"},"c":[{"a":{"class":"check"},"c":[{"a":{"class":"check-t","src":"{{a}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"},{"a":{"class":"title"},"c":[{"t":"tx","x":"认养成功"}],"n":"text","t":"el"},{"a":{"class":"sub"},"c":[{"t":"tx","x":"您已成为「{{b}}」的茶园主"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"cert"},"c":[{"a":{"class":"cert-head"},"c":[{"a":{"class":"cert-title"},"c":[{"t":"tx","x":"数字认养证"}],"n":"text","t":"el"},{"a":{"class":"cert-no"},"c":[{"t":"tx","x":"编号 {{c}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"cert-body"},"c":[{"a":{"class":"kv"},"c":[{"a":{"class":"k"},"c":[{"t":"tx","x":"认养茶园"}],"n":"text","t":"el"},{"a":{"class":"v"},"c":[{"t":"tx","x":"{{d}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"kv"},"c":[{"a":{"class":"k"},"c":[{"t":"tx","x":"认养份额"}],"n":"text","t":"el"},{"a":{"class":"v"},"c":[{"t":"tx","x":"{{e}} 份（约 {{f}}g/年）"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"kv"},"c":[{"a":{"class":"k"},"c":[{"t":"tx","x":"认养周期"}],"n":"text","t":"el"},{"a":{"class":"v"},"c":[{"t":"tx","x":"1 年"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"kv"},"c":[{"a":{"class":"k"},"c":[{"t":"tx","x":"订单编号"}],"n":"text","t":"el"},{"a":{"class":"v"},"c":[{"t":"tx","x":"{{g}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"hash"},"c":[{"a":{"class":"hash-t"},"c":[{"t":"tx","x":"区块链哈希：0x{{h}}…（已存证）"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{k}}","class":"cert-png","mode":"widthFix","src":"{{j}}","wx:if":"{{i}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"cert-tip","wx:if":"{{l}}"},"c":[{"t":"tx","x":"点击放大 · 可长按保存数字认养证"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"sec"},"c":[{"t":"tx","x":"填写挂牌信息"}],"n":"text","t":"el"},{"a":{"class":"form","wx:if":"{{m}}"},"c":[{"a":{"class":"label"},"c":[{"t":"tx","x":"挂牌昵称"}],"n":"text","t":"el"},{"a":{"bindinput":"{{o}}","class":"input","placeholder":"将刻于您的专属木牌","value":"{{n}}"},"c":[],"n":"input","t":"el"},{"a":{"class":"label"},"c":[{"t":"tx","x":"寄语"}],"n":"text","t":"el"},{"a":{"wx:if":"{{r0}}"},"c":[{"a":{"bindinput":"{{q}}","class":"textarea","placeholder":"留一句话，与这棵树一同生长","value":"{{p}}"},"c":[],"n":"textarea","t":"el"}],"n":"block","t":"el"},{"a":{"bindtap":"{{s}}","class":"{{['btn', r]}}"},"c":[{"a":{"class":"btn-t"},"c":[{"t":"tx","x":"提交挂牌信息"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"done","wx:else":""},"c":[{"a":{"class":"done-t"},"c":[{"t":"tx","x":"挂牌信息已提交"}],"n":"text","t":"el"},{"a":{"class":"done-sub"},"c":[{"t":"tx","x":"基地将在 7 日内完成挂牌并上传 3 张实拍照片"}],"n":"text","t":"el"},{"a":{"bindtap":"{{t}}","class":"btn"},"c":[{"a":{"class":"btn-t"},"c":[{"t":"tx","x":"前往我的茶园"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"style":"height:40rpx"},"c":[],"n":"view","t":"el"}],"n":"scroll-view","t":"el"},{"a":{"module":"uV","src":"/common/uniView.wxs"},"c":[],"n":"wxs","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./success.js"></script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/orders/detail</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./detail.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view page" id="" style="--status-bar-height:;">
+    <div class="wx-scroll-view scroll" style="overflow-y:auto">
+      <div class="wx-view status-bar">
+        <span class="wx-text status-t"></span>
+        <span class="wx-text status-hint"></span>
+      </div>
+      <div class="wx-view card">
+        <div class="wx-view foot">
+          <span class="wx-text foot-t">共  件 · 实付 ¥</span>
+        </div>
+      </div>
+      <div class="wx-view card">
+        <div class="wx-view kv">
+          <span class="wx-text k">订单编号</span>
+          <span class="wx-text v"></span>
+        </div>
+        <div class="wx-view kv">
+          <span class="wx-text k">下单时间</span>
+          <span class="wx-text v"></span>
+        </div>
+        <div class="wx-view kv">
+          <span class="wx-text k">订单状态</span>
+          <span class="wx-text v"></span>
+        </div>
+      </div>
+      <div class="wx-view" style="height:80px"></div>
+    </div>
+    <div class="wx-view bar">
+      <div class="wx-view btn-line" data-tap="">
+        <span class="wx-text btn-line-t">再次购买</span>
+      </div>
+    </div>
+  </div>
+  <div class="wx-wxs"></div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/orders/detail";
+window.__PAGE_PULL_DOWN__ = false;
+window.__WXML__ = [{"a":{"change:eA":"{{uV.sA}}","change:eS":"{{uV.sS}}","class":"{{['page', V]}}","eA":"{{$eA[T]}}","eS":"{{$eS[T]}}","hidden":"{{virtualHostHidden || false}}","id":"{{T}}","style":"{{'--status-bar-height:' + U + ';' + (virtualHostStyle || '')}}"},"c":[{"a":{"class":"scroll","enable-flex":"true","enhanced":"true","scroll-y":"true"},"c":[{"a":{"class":"status-bar"},"c":[{"a":{"class":"status-t"},"c":[{"t":"tx","x":"{{a}}"}],"n":"text","t":"el"},{"a":{"class":"status-hint"},"c":[{"t":"tx","x":"{{b}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"addr","wx:if":"{{c}}"},"c":[{"a":{"class":"addr-pin","src":"{{d}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"addr-info"},"c":[{"a":{"class":"addr-name"},"c":[{"t":"tx","x":"{{e}} {{f}}"}],"n":"text","t":"el"},{"a":{"class":"addr-detail"},"c":[{"t":"tx","x":"{{g}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card"},"c":[{"a":{"class":"goods","wx:for":"{{h}}","wx:for-item":"it","wx:key":"e"},"c":[{"a":{"class":"goods-img","mode":"aspectFill","src":"{{it.a}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"goods-name"},"c":[{"t":"tx","x":"{{it.b}}"}],"n":"text","t":"el"},{"a":{"class":"goods-right"},"c":[{"a":{"class":"goods-price"},"c":[{"t":"tx","x":"¥{{it.c}}"}],"n":"text","t":"el"},{"a":{"class":"goods-qty"},"c":[{"t":"tx","x":"× {{it.d}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"foot"},"c":[{"a":{"class":"foot-t"},"c":[{"t":"tx","x":"共 {{i}} 件 · 实付 ¥{{j}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card"},"c":[{"a":{"class":"kv"},"c":[{"a":{"class":"k"},"c":[{"t":"tx","x":"订单编号"}],"n":"text","t":"el"},{"a":{"class":"v"},"c":[{"t":"tx","x":"{{k}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"kv"},"c":[{"a":{"class":"k"},"c":[{"t":"tx","x":"下单时间"}],"n":"text","t":"el"},{"a":{"class":"v"},"c":[{"t":"tx","x":"{{l}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"kv"},"c":[{"a":{"class":"k"},"c":[{"t":"tx","x":"订单状态"}],"n":"text","t":"el"},{"a":{"class":"v"},"c":[{"t":"tx","x":"{{m}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"style":"height:160rpx"},"c":[],"n":"view","t":"el"}],"n":"scroll-view","t":"el"},{"a":{"class":"bar"},"c":[{"a":{"bindtap":"{{o}}","class":"btn-line","wx:if":"{{n}}"},"c":[{"a":{"class":"btn-line-t"},"c":[{"t":"tx","x":"取消订单"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{q}}","class":"btn-line","wx:if":"{{p}}"},"c":[{"a":{"class":"btn-line-t"},"c":[{"t":"tx","x":"查看物流"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{s}}","class":"btn-line","wx:if":"{{r}}"},"c":[{"a":{"class":"btn-line-t"},"c":[{"t":"tx","x":"申请退款"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{v}}","class":"btn-fill","wx:if":"{{t}}"},"c":[{"a":{"class":"btn-fill-t"},"c":[{"t":"tx","x":"确认收货"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{w}}","class":"btn-line"},"c":[{"a":{"class":"btn-line-t"},"c":[{"t":"tx","x":"再次购买"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{I}}","class":"mask","wx:if":"{{x}}"},"c":[{"a":{"catchtap":"{{H}}","class":"sheet"},"c":[{"a":{"class":"sheet-head"},"c":[{"a":{"class":"sheet-title"},"c":[{"t":"tx","x":"申请退款"}],"n":"text","t":"el"},{"a":{"bindtap":"{{z}}","class":"sheet-x","src":"{{y}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"},{"a":{"class":"rf-label"},"c":[{"t":"tx","x":"退款原因"}],"n":"text","t":"el"},{"a":{"class":"rf-reasons"},"c":[{"a":{"bindtap":"{{r.e}}","class":"rf-reason","wx:for":"{{A}}","wx:for-item":"r","wx:key":"d"},"c":[{"a":{"class":"{{['rf-reason-t', r.b]}}"},"c":[{"t":"tx","x":"{{r.a}}"}],"n":"text","t":"el"},{"a":{"class":"{{['cb', r.c]}}"},"c":[{"a":{"class":"cb-t","src":"{{B}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"rf-label"},"c":[{"t":"tx","x":"补充说明"}],"n":"text","t":"el"},{"a":{"wx:if":"{{r0}}"},"c":[{"a":{"bindinput":"{{D}}","class":"rf-textarea","placeholder":"选填，描述具体问题","value":"{{C}}"},"c":[],"n":"textarea","t":"el"}],"n":"block","t":"el"},{"a":{"bindtap":"{{G}}","class":"{{['rf-ok', F]}}"},"c":[{"a":{"class":"rf-ok-t"},"c":[{"t":"tx","x":"{{E}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{S}}","class":"mask","wx:if":"{{J}}"},"c":[{"a":{"catchtap":"{{R}}","class":"sheet"},"c":[{"a":{"class":"sheet-head"},"c":[{"a":{"class":"sheet-title"},"c":[{"t":"tx","x":"物流信息"}],"n":"text","t":"el"},{"a":{"bindtap":"{{L}}","class":"sheet-x","src":"{{K}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"},{"a":{"class":"ex-head"},"c":[{"a":{"class":"ex-name"},"c":[{"t":"tx","x":"{{M}}"}],"n":"text","t":"el"},{"a":{"class":"ex-no"},"c":[{"t":"tx","x":"{{N}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"ex-list","enable-flex":"true","enhanced":"true","scroll-y":"true"},"c":[{"a":{"class":"ex-node","wx:for":"{{O}}","wx:for-item":"t","wx:key":"c"},"c":[{"a":{"class":"ex-ctx"},"c":[{"t":"tx","x":"{{t.a}}"}],"n":"text","t":"el"},{"a":{"class":"ex-time"},"c":[{"t":"tx","x":"{{t.b}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"ex-empty","wx:if":"{{P}}"},"c":[{"a":{"class":"ex-empty-t"},"c":[{"t":"tx","x":"{{Q}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"scroll-view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"module":"uV","src":"/common/uniView.wxs"},"c":[],"n":"wxs","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./detail.js"></script>
+</body>
+</html>

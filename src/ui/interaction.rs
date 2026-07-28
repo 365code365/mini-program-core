@@ -344,6 +344,28 @@ impl InteractionManager {
             })
     }
 
+    /// `area` 范围内所有**选中**的 `kind` 元素的 `value`，按文档顺序。
+    ///
+    /// 微信里 `checkbox-group` / `radio-group` 的 `change` 事件
+    /// `detail.value` 就是这个集合（多选是数组），而不是被点那一个的开关状态。
+    /// 组的成员用「中心点落在组的包围盒内」界定 —— 渲染层没有回传父子关系，
+    /// 而组本身就是一个把成员包住的盒子。
+    pub fn checked_values_in(&self, area: &Rect, kind: InteractionType) -> Vec<String> {
+        self.elements
+            .iter()
+            .filter(|e| e.interaction_type == kind)
+            .filter(|e| {
+                let c = crate::Point::new(
+                    e.bounds.x + e.bounds.width / 2.0,
+                    e.bounds.y + e.bounds.height / 2.0,
+                );
+                area.contains(&c)
+            })
+            .filter(|e| self.states.get(&e.id).map(|s| s.checked).unwrap_or(e.checked))
+            .map(|e| e.value.clone())
+            .collect()
+    }
+
     /// 只在正常流的元素里做命中测试（坐标是内容坐标，即已加上页面滚动量）
     pub fn hit_test_flow(&self, x: f32, y: f32) -> Option<&InteractiveElement> {
         self.elements.iter().rev().find(|e| {
@@ -361,8 +383,13 @@ impl InteractionManager {
     /// 同上。`fixed_only` 为真时只考虑 `position: fixed` 覆盖层里的元素 ——
     /// 弹窗弹着的时候，点击不该让下层页面的输入框获得焦点、开关被拨动。
     pub fn handle_click_scoped(&mut self, x: f32, y: f32, fixed_only: bool) -> Option<InteractionResult> {
+        // 必须用 `hit_test_fixed`，不能「先全局 hit_test 再判 is_fixed」——
+        // 元素表里覆盖层的元素排在**前面**（正常流每帧重建、追加在后），而 `hit_test`
+        // 是从后往前找，于是先撞上正常流的元素、再被 `is_fixed` 过滤掉，结果返回 None。
+        // 表现就是：覆盖层里的输入框点不出焦点、开关拨不动 —— 而且只在「这一帧没重绘
+        // 覆盖层」时才犯（重绘那一帧覆盖层元素刚好被追加到最后），所以偶发得像随机失灵。
         let element = if fixed_only {
-            self.hit_test(x, y).filter(|e| e.is_fixed)?.clone()
+            self.hit_test_fixed(x, y)?.clone()
         } else {
             self.hit_test(x, y)?.clone()
         };
@@ -476,6 +503,7 @@ impl InteractionManager {
                     bounds: element.bounds,
                     click_x,
                     is_fixed: element.is_fixed,
+                    value: current_value,
                 })
             }
             InteractionType::Button => {
@@ -979,7 +1007,9 @@ pub enum InteractionResult {
     Select { id: String, value: String },
     SliderChange { id: String, value: i32 },
     SliderEnd { id: String },
-    Focus { id: String, bounds: Rect, click_x: f32, is_fixed: bool },
+    /// 输入框获得焦点。`value` 是聚焦瞬间的文本，微信的 `bindfocus` 事件
+    /// `detail` 里带的就是它（`{ value, height }`）。
+    Focus { id: String, bounds: Rect, click_x: f32, is_fixed: bool, value: String },
     InputChange { id: String, value: String },
     InputBlur { id: String, value: String },
     InputConfirm { id: String, value: String }, // 按下回车/完成键

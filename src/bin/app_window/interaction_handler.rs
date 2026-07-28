@@ -29,8 +29,9 @@ pub fn handle_interaction_result(
         InteractionResult::SliderEnd { id } => {
             println!("🎚️ Slider {} released", id);
         }
-        InteractionResult::Focus { id, bounds, click_x: _, is_fixed } => {
+        InteractionResult::Focus { id, bounds, click_x: _, is_fixed, value } => {
             println!("📝 Focus: {} at ({:.0}, {:.0}, {:.0}x{:.0}) fixed={}", id, bounds.x, bounds.y, bounds.width, bounds.height, is_fixed);
+            dispatch_input_event(app, renderer, id, "focus", value);
             if let Some(window) = window {
                 window.set_ime_allowed(true);
                 let sf = scale_factor;
@@ -63,54 +64,21 @@ pub fn handle_interaction_result(
         }
         InteractionResult::InputChange { id, value } => {
             println!("📝 Input {}: {}", id, value);
-            if let Some(renderer) = renderer {
-                for binding in renderer.get_event_bindings() {
-                    if binding.event_type == "input" {
-                        let mut event_data = binding.data.clone();
-                        event_data.insert("value".to_string(), value.clone());
-                        let data_json = serde_json::to_string(&event_data).unwrap_or("{}".to_string());
-                        let call_code = format!("__callPageMethod('{}', {})", binding.handler, data_json);
-                        app.eval(&call_code).ok();
-                        break;
-                    }
-                }
-            }
+            dispatch_input_event(app, renderer, id, "input", value);
         }
         InteractionResult::InputBlur { id, value } => {
             println!("📝 Blur {}: {}", id, value);
             if let Some(window) = window {
                 window.set_ime_allowed(false);
             }
-            if let Some(renderer) = renderer {
-                for binding in renderer.get_event_bindings() {
-                    if binding.event_type == "blur" {
-                        let mut event_data = binding.data.clone();
-                        event_data.insert("value".to_string(), value.clone());
-                        let data_json = serde_json::to_string(&event_data).unwrap_or("{}".to_string());
-                        let call_code = format!("__callPageMethod('{}', {})", binding.handler, data_json);
-                        app.eval(&call_code).ok();
-                        break;
-                    }
-                }
-            }
+            dispatch_input_event(app, renderer, id, "blur", value);
         }
         InteractionResult::InputConfirm { id, value } => {
             println!("📝 Confirm {}: {}", id, value);
             if let Some(window) = window {
                 window.set_ime_allowed(false);
             }
-            if let Some(renderer) = renderer {
-                for binding in renderer.get_event_bindings() {
-                    if binding.event_type == "confirm" {
-                        let mut event_data = binding.data.clone();
-                        event_data.insert("value".to_string(), value.clone());
-                        let data_json = serde_json::to_string(&event_data).unwrap_or("{}".to_string());
-                        let call_code = format!("__callPageMethod('{}', {})", binding.handler, data_json);
-                        app.eval(&call_code).ok();
-                        break;
-                    }
-                }
-            }
+            dispatch_input_event(app, renderer, id, "confirm", value);
         }
         InteractionResult::ButtonClick { id, bounds: _ } => {
             println!("🔘 Button clicked: {}", id);
@@ -136,6 +104,76 @@ pub fn handle_interaction_result(
             }
         }
     }
+}
+
+/// 把输入框事件（focus / input / blur / confirm）按微信语义派发给逻辑层。
+///
+/// 两个必须这样做的理由：
+///
+/// 1. **`detail.value` 一定是字符串。** 旧实现把值塞进 dataset 再走
+///    `__callPageMethod`，而 dataset 会按字面量还原类型（`data-id="12"` → 数字 12），
+///    于是输入 `1212121` 到了页面里变成数字，`e.detail.value.trim()` 直接
+///    `TypeError: not a function`。微信里 `e.detail.value` 永远是字符串。
+/// 2. **绑定按组件精确匹配。** 旧实现遍历绑定表取第一条 `event_type=="input"` 就 break，
+///    一个页面有两个输入框时所有输入都打到第一个。
+///
+/// 返回是否真的派发出去（没有对应 `bind*` 时为 false）。
+fn dispatch_input_event(
+    app: &mut MiniApp,
+    renderer: Option<&WxmlRenderer>,
+    component_id: &str,
+    event_type: &str,
+    value: &str,
+) -> bool {
+    let Some(renderer) = renderer else { return false };
+    let binding = match renderer.binding_for(component_id, event_type) {
+        Some(b) => b,
+        // 兜底：滚动后重算出来的 `component_id` 可能与聚焦那一刻不同（id 含坐标）。
+        // 此时若全页只有唯一一条该类绑定，仍按它派发；有多条则宁可不发，避免串台。
+        None => {
+            let mut it = renderer
+                .get_event_bindings()
+                .iter()
+                .filter(|b| b.event_type == event_type);
+            match (it.next(), it.next()) {
+                (Some(only), None) => only,
+                _ => return false,
+            }
+        }
+    };
+
+    let node = serde_json::json!({
+        "id": binding.id,
+        "dataset": binding.data,
+        "offsetLeft": binding.bounds.x,
+        "offsetTop": binding.bounds.y,
+    });
+    // 微信的 detail：input 是 `{value, cursor, keyCode}`，focus 是 `{value, height}`，
+    // blur / confirm 是 `{value}`。
+    let mut detail = serde_json::json!({ "value": value });
+    match event_type {
+        "input" => {
+            detail["cursor"] = serde_json::json!(value.chars().count());
+            detail["keyCode"] = serde_json::json!(0);
+        }
+        "focus" => {
+            // 软键盘高度：桌面宿主没有软键盘，微信在无键盘时也给 0
+            detail["height"] = serde_json::json!(0);
+        }
+        _ => {}
+    }
+    let event = serde_json::json!({
+        "type": event_type,
+        "target": node,
+        "currentTarget": node,
+        "detail": detail,
+        "touches": [],
+        "changedTouches": [],
+    });
+    let handler = serde_json::to_string(&binding.handler).unwrap_or_else(|_| "''".into());
+    let owner = serde_json::to_string(&binding.owner).unwrap_or_else(|_| "''".into());
+    app.eval(&format!("__dispatchEvent({handler}, {event}, {owner})")).ok();
+    true
 }
 
 /// 检查并获取导航请求

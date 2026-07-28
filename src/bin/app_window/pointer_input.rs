@@ -93,7 +93,8 @@ impl crate::MiniAppWindow {
             // 覆盖层之上：只允许命中覆盖层自己的元素（is_fixed），
             // 下层页面的元素一律不参与，避免「弹窗弹着还能按到底下的商品」
             let hit = if on_fixed_layer {
-                self.interaction.hit_test(x, y).filter(|el| el.is_fixed).cloned()
+                // 只在覆盖层自己的元素里找（不能全局 hit_test 再过滤 —— 见 hit_test_fixed）
+                self.interaction.hit_test_fixed(x, y).cloned()
             } else {
                 self.interaction.hit_test(x, y).or_else(|| self.interaction.hit_test(x, actual_y)).cloned()
             };

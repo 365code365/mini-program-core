@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/category/category</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./category.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view root" id="" style="--status-bar-height:;">
+    <div class="wx-scroll-view page" style="overflow-y:auto">
+      <div class="wx-view header">
+        <img class="wx-image header-mountain" style="object-fit:cover" src="">
+        <div class="wx-view back" data-tap="">
+          <span class="wx-text back-icon">‹</span>
+        </div>
+        <div class="wx-view brand">
+          <span class="wx-text brand-cn">产区选茶</span>
+          <span class="wx-text brand-en">SELECT BY ORIGIN</span>
+        </div>
+        <div class="wx-view search">
+          <img class="wx-image search-icon" style="object-fit:fill" src="">
+          <input class="wx-input search-input" type="text" placeholder="搜索产区 / 香型 / 价位" data-confirm="">
+        </div>
+      </div>
+      <div class="wx-view catalog">
+        <div class="wx-view side-nav"></div>
+        <div class="wx-view card-list"></div>
+      </div>
+      <div class="wx-view trust"></div>
+      <div class="wx-view tabbar-space"></div>
+    </div>
+    <div class="wx-tab-bar" data-:__l="__l"></div>
+  </div>
+  <div class="wx-wxs"></div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/category/category";
+window.__PAGE_PULL_DOWN__ = false;
+window.__WXML__ = [{"a":{"change:eA":"{{uV.sA}}","change:eS":"{{uV.sS}}","class":"{{['root', m]}}","eA":"{{$eA[k]}}","eS":"{{$eS[k]}}","hidden":"{{virtualHostHidden || false}}","id":"{{k}}","style":"{{'--status-bar-height:' + l + ';' + (virtualHostStyle || '')}}"},"c":[{"a":{"class":"page","enable-flex":"true","enhanced":"true","scroll-y":"true","show-scrollbar":"{{false}}"},"c":[{"a":{"class":"header","style":"{{f}}"},"c":[{"a":{"class":"header-mountain","mode":"aspectFill","src":"{{a}}"},"c":[],"n":"image","t":"el"},{"a":{"bindtap":"{{c}}","class":"back","style":"{{b}}"},"c":[{"a":{"class":"back-icon"},"c":[{"t":"tx","x":"‹"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"brand"},"c":[{"a":{"class":"brand-cn"},"c":[{"t":"tx","x":"产区选茶"}],"n":"text","t":"el"},{"a":{"class":"brand-en"},"c":[{"t":"tx","x":"SELECT BY ORIGIN"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"search"},"c":[{"a":{"class":"search-icon","src":"{{d}}"},"c":[],"n":"image","t":"el"},{"a":{"bindconfirm":"{{e}}","class":"search-input","placeholder":"搜索产区 / 香型 / 价位"},"c":[],"n":"input","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"catalog"},"c":[{"a":{"class":"side-nav"},"c":[{"a":{"bindtap":"{{item.g}}","class":"{{['side-item', item.f]}}","wx:for":"{{g}}","wx:for-item":"item","wx:key":"e"},"c":[{"a":{"class":"side-line","wx:if":"{{item.a}}"},"c":[],"n":"view","t":"el"},{"a":{"class":"side-icon","src":"{{item.b}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"{{['side-text', item.d]}}"},"c":[{"t":"tx","x":"{{item.c}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card-list"},"c":[{"a":{"bindtap":"{{card.e}}","class":"tea-card","wx:for":"{{h}}","wx:for-item":"card","wx:key":"d"},"c":[{"a":{"class":"tea-image","mode":"aspectFill","src":"{{card.a}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"tea-wash"},"c":[],"n":"view","t":"el"},{"a":{"class":"tea-fade"},"c":[],"n":"view","t":"el"},{"a":{"class":"tea-copy"},"c":[{"a":{"class":"tea-name"},"c":[{"t":"tx","x":"{{card.b}}"}],"n":"text","t":"el"},{"a":{"class":"tea-sub"},"c":[{"t":"tx","x":"{{card.c}}"}],"n":"text","t":"el"},{"a":{"class":"tea-arrow"},"c":[{"a":{"class":"tea-arrow-text"},"c":[{"t":"tx","x":"›"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"trust"},"c":[{"a":{"class":"trust-item","wx:for":"{{i}}","wx:for-item":"item","wx:key":"d"},"c":[{"a":{"class":"trust-icon","src":"{{item.a}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"trust-title"},"c":[{"t":"tx","x":"{{item.b}}"}],"n":"text","t":"el"},{"a":{"class":"trust-sub"},"c":[{"t":"tx","x":"{{item.c}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"tabbar-space"},"c":[],"n":"view","t":"el"}],"n":"scroll-view","t":"el"},{"a":{"bind:__l":"__l","u-i":"0e3c3803-0","u-p":"{{j||''}}"},"c":[],"n":"tab-bar","t":"el"}],"n":"view","t":"el"},{"a":{"module":"uV","src":"/common/uniView.wxs"},"c":[],"n":"wxs","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./category.js"></script>
+</body>
+</html>

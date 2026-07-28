@@ -1,0 +1,134 @@
+/* 由 brand.wxss 编译 */
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+/* 字体栈第一位必须是 App.uvue 里 loadFontFace 注册过的 family，否则安卓机没有本机宋体，
+   会整站掉到系统黑体。Yunxiu Serif = Noto Serif SC Regular(正文)，Source Han Serif SC = Heavy(标题)。 */
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.back {
+  position: absolute;
+  left: 12px;
+  top: 40px;
+  z-index: 10;
+  width: 32px;
+  height: 32px;
+  border-radius: 16px;
+  background-color: rgba(0, 0, 0, 0.3);
+  align-items: center;
+  justify-content: center;
+}
+.back-arrow {
+  font-size: 20px;
+  color: #ffffff;
+  margin-top: -2px;
+}
+.head-wrap {
+  position: relative;
+}
+.head-img {
+  width: 100%;
+  height: 220px;
+}
+.head-mask {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+  align-items: center;
+  justify-content: center;
+}
+.brand-cn, .sec {
+  font-family: "Source Han Serif SC", "Yunxiu Serif", "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+}
+.brand-cn {
+  font-size: 32px;
+  font-weight: bold;
+  color: #ffffff;
+  letter-spacing: 6px;
+}
+.brand-en {
+  font-size: 13px;
+  color: #e7d2a6;
+  letter-spacing: 5px;
+  margin-top: 4px;
+  font-family: "Playfair Display", "Times New Roman", serif;
+}
+.brand-slogan {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 8px;
+}
+.block {
+  padding: 14px 16px 0;
+}
+.sec {
+  font-size: 16px;
+  font-weight: bold;
+  color: #4a3020;
+}
+.p {
+  font-size: 14px;
+  color: #5a5248;
+  line-height: 23px;
+  margin-top: 6px;
+}
+.values {
+  flex-direction: row;
+  margin-top: 6px;
+}
+.value {
+  flex: 1;
+  background-color: #ffffff;
+  border-radius: 10px;
+  padding: 12px 0;
+  align-items: center;
+  margin: 0 4px;
+}
+.value-ic {
+  width: 24px;
+  height: 24px;
+}
+.value-t {
+  font-size: 13px;
+  font-weight: bold;
+  color: #4a3020;
+  margin-top: 6px;
+}
+.value-d {
+  font-size: 10px;
+  color: #82786c;
+  margin-top: 3px;
+}
+.cta {
+  background-color: #536254;
+  border-radius: 12px;
+  margin: 16px 12px 0;
+  padding: 20px;
+  align-items: center;
+}
+.cta-t {
+  font-size: 17px;
+  font-weight: bold;
+  color: #ffffff;
+}
+.cta-sub {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 4px;
+}
+.cta-btn {
+  background-color: #a87536;
+  border-radius: 22px;
+  padding: 10px 28px;
+  margin-top: 14px;
+}
+.cta-btn-t {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: bold;
+}

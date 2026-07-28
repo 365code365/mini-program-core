@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/coupons/coupons</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./coupons.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view page" id="" style="--status-bar-height:;">
+    <div class="wx-view tabs"></div>
+    <div class="wx-scroll-view scroll" style="overflow-y:auto">
+      <div class="wx-view"></div>
+      <div class="wx-view" style="height:12px"></div>
+    </div>
+  </div>
+  <div class="wx-wxs"></div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/coupons/coupons";
+window.__PAGE_PULL_DOWN__ = false;
+window.__WXML__ = [{"a":{"change:eA":"{{uV.sA}}","change:eS":"{{uV.sS}}","class":"{{['page', H]}}","eA":"{{$eA[F]}}","eS":"{{$eS[F]}}","hidden":"{{virtualHostHidden || false}}","id":"{{F}}","style":"{{'--status-bar-height:' + G + ';' + (virtualHostStyle || '')}}"},"c":[{"a":{"class":"tabs"},"c":[{"a":{"bindtap":"{{t.d}}","class":"{{['tab', t.c]}}","wx:for":"{{a}}","wx:for-item":"t","wx:key":"b"},"c":[{"t":"tx","x":"{{t.a}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"scroll","enable-flex":"true","enhanced":"true","scroll-y":"true"},"c":[{"a":{"wx:if":"{{b}}"},"c":[{"a":{"bindtap":"{{c}}","class":"redeem"},"c":[{"a":{"class":"redeem-t"},"c":[{"t":"tx","x":"收到好友的分享口令？点此领取 ›"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{d}}","class":"redeem"},"c":[{"a":{"class":"redeem-t"},"c":[{"t":"tx","x":"我的拉新记录 · 邀请有礼 ›"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"empty","wx:if":"{{e}}"},"c":[{"a":{"class":"empty-t"},"c":[{"t":"tx","x":"暂无品鉴券"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"tasting","wx:for":"{{f}}","wx:for-item":"c","wx:key":"f"},"c":[{"a":{"class":"tasting-ic","src":"{{g}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"tasting-info"},"c":[{"a":{"class":"tasting-name"},"c":[{"t":"tx","x":"{{c.a}}"}],"n":"text","t":"el"},{"a":{"class":"tasting-desc"},"c":[{"t":"tx","x":"{{c.b}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{c.d}}","class":"tasting-btn tasting-use","wx:if":"{{c.c}}"},"c":[{"a":{"class":"tasting-btn-t"},"c":[{"t":"tx","x":"核销"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{c.e}}","class":"tasting-btn"},"c":[{"a":{"class":"tasting-btn-t"},"c":[{"t":"tx","x":"生成分享"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"wx:else":""},"c":[{"a":{"class":"empty","wx:if":"{{h}}"},"c":[{"a":{"class":"empty-t"},"c":[{"t":"tx","x":"暂无优惠券"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"coupon","wx:for":"{{i}}","wx:for-item":"c","wx:key":"e"},"c":[{"a":{"class":"coupon-left"},"c":[{"a":{"class":"coupon-amt"},"c":[{"t":"tx","x":"¥{{c.a}}"}],"n":"text","t":"el"},{"a":{"class":"coupon-cond"},"c":[{"t":"tx","x":"{{c.b}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"coupon-right"},"c":[{"a":{"class":"coupon-name"},"c":[{"t":"tx","x":"{{c.c}}"}],"n":"text","t":"el"},{"a":{"class":"coupon-exp"},"c":[{"t":"tx","x":"有效期至 {{c.d}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"style":"height:24rpx"},"c":[],"n":"view","t":"el"}],"n":"scroll-view","t":"el"},{"a":{"bindtap":"{{p}}","class":"mask","wx:if":"{{j}}"},"c":[{"a":{"catchtap":"{{o}}","class":"dialog"},"c":[{"a":{"class":"dialog-t"},"c":[{"t":"tx","x":"分享品鉴券"}],"n":"text","t":"el"},{"a":{"class":"dialog-sub"},"c":[{"t":"tx","x":"把下面这段口令发给好友，TA 在卡券中心输入即可领取"}],"n":"text","t":"el"},{"a":{"class":"code-box"},"c":[{"a":{"class":"code-val"},"c":[{"t":"tx","x":"{{k}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"share-msg","disabled":"","value":"{{l}}"},"c":[],"n":"textarea","t":"el"},{"a":{"class":"dialog-btns"},"c":[{"a":{"bindtap":"{{m}}","class":"d-btn d-line"},"c":[{"a":{"class":"d-line-t"},"c":[{"t":"tx","x":"关闭"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{n}}","class":"d-btn d-fill"},"c":[{"a":{"class":"d-fill-t"},"c":[{"t":"tx","x":"复制口令"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{y}}","class":"mask","wx:if":"{{q}}"},"c":[{"a":{"catchtap":"{{x}}","class":"dialog"},"c":[{"a":{"class":"dialog-t"},"c":[{"t":"tx","x":"凭口令领取品鉴券"}],"n":"text","t":"el"},{"a":{"bindinput":"{{s}}","class":"redeem-input","placeholder":"粘贴 / 输入分享口令，如 SHARE-41","placeholder-class":"ph","value":"{{r}}"},"c":[],"n":"input","t":"el"},{"a":{"class":"dialog-btns"},"c":[{"a":{"bindtap":"{{t}}","class":"d-btn d-line"},"c":[{"a":{"class":"d-line-t"},"c":[{"t":"tx","x":"取消"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{w}}","class":"d-btn d-fill"},"c":[{"a":{"class":"d-fill-t"},"c":[{"t":"tx","x":"{{v}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{E}}","class":"mask","wx:if":"{{z}}"},"c":[{"a":{"catchtap":"{{D}}","class":"dialog"},"c":[{"a":{"class":"dialog-t"},"c":[{"t":"tx","x":"我的拉新记录"}],"n":"text","t":"el"},{"a":{"class":"dialog-sub"},"c":[{"t":"tx","x":"好友凭你的口令领取并完成首单后，你将获得积分奖励"}],"n":"text","t":"el"},{"a":{"class":"sl-list","enable-flex":"true","enhanced":"true","scroll-y":"true"},"c":[{"a":{"class":"sl-row","wx:for":"{{A}}","wx:for-item":"r","wx:key":"e"},"c":[{"a":{"class":"sl-left"},"c":[{"a":{"class":"sl-uid"},"c":[{"t":"tx","x":"好友 UID {{r.a}}"}],"n":"text","t":"el"},{"a":{"class":"sl-time"},"c":[{"t":"tx","x":"{{r.b}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"sl-right"},"c":[{"a":{"class":"{{['sl-status', r.d]}}"},"c":[{"t":"tx","x":"{{r.c}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"empty","wx:if":"{{B}}"},"c":[{"a":{"class":"empty-t"},"c":[{"t":"tx","x":"还没有拉新记录，去分享品鉴券吧"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"scroll-view","t":"el"},{"a":{"class":"dialog-btns"},"c":[{"a":{"bindtap":"{{C}}","class":"d-btn d-fill"},"c":[{"a":{"class":"d-fill-t"},"c":[{"t":"tx","x":"我知道了"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"module":"uV","src":"/common/uniView.wxs"},"c":[],"n":"wxs","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./coupons.js"></script>
+</body>
+</html>

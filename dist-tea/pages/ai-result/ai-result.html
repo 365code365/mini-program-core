@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/ai-result/ai-result</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./ai-result.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-scroll-view page" id="" style="--status-bar-height:;overflow-y:auto">
+    <div class="wx-view summary-card">
+      <div class="wx-view summary-icon">
+        <img class="wx-image summary-img" style="object-fit:fill" src="">
+      </div>
+      <div class="wx-view summary-copy">
+        <span class="wx-text summary-label">根据你的需求</span>
+        <span class="wx-text summary"></span>
+      </div>
+    </div>
+    <div class="wx-view results"></div>
+    <div class="wx-view advice">
+      <div class="wx-view advice-head">
+        <img class="wx-image advice-leaf" style="object-fit:fill" src="">
+        <span class="wx-text advice-title">选茶建议</span>
+      </div>
+      <div class="wx-view tips"></div>
+    </div>
+    <div class="wx-view chat-more" data-tap="">
+      <img class="wx-image chat-more-icon" style="object-fit:fill" src="">
+      <span class="wx-text chat-more-text">有任何疑问，随时找我聊茶。</span>
+    </div>
+    <div class="wx-view bottom-space"></div>
+  </div>
+  <div class="wx-wxs"></div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/ai-result/ai-result";
+window.__PAGE_PULL_DOWN__ = false;
+window.__WXML__ = [{"a":{"change:eA":"{{uV.sA}}","change:eS":"{{uV.sS}}","class":"{{['page', r]}}","eA":"{{$eA[p]}}","eS":"{{$eS[p]}}","enable-flex":"true","enhanced":"true","hidden":"{{virtualHostHidden || false}}","id":"{{p}}","scroll-y":"true","style":"{{'--status-bar-height:' + q + ';' + (virtualHostStyle || '')}}"},"c":[{"a":{"class":"summary-card"},"c":[{"a":{"class":"summary-icon"},"c":[{"a":{"class":"summary-img","src":"{{a}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"},{"a":{"class":"summary-copy"},"c":[{"a":{"class":"summary-label"},"c":[{"t":"tx","x":"根据你的需求"}],"n":"text","t":"el"},{"a":{"class":"summary"},"c":[{"t":"tx","x":"{{b}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"loading","wx:if":"{{c}}"},"c":[{"a":{"class":"loading-dot"},"c":[],"n":"view","t":"el"},{"a":{"class":"loading-text"},"c":[{"t":"tx","x":"正在从当前在售好茶中认真筛选…"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"empty","wx:elif":"{{d}}"},"c":[{"a":{"class":"empty-title"},"c":[{"t":"tx","x":"暂时没有匹配到合适商品"}],"n":"text","t":"el"},{"a":{"class":"empty-desc"},"c":[{"t":"tx","x":"可以换一种需求描述，或请人工选茶师帮你挑选。"}],"n":"text","t":"el"},{"a":{"bindtap":"{{e}}","class":"retry"},"c":[{"a":{"class":"retry-text"},"c":[{"t":"tx","x":"重新推荐"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"results","wx:else":""},"c":[{"a":{"class":"product","wx:for":"{{f}}","wx:for-item":"item","wx:key":"l"},"c":[{"a":{"class":"main-row"},"c":[{"a":{"class":"product-image","mode":"aspectFill","src":"{{item.a}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"product-mid"},"c":[{"a":{"class":"name-row"},"c":[{"a":{"class":"product-name"},"c":[{"t":"tx","x":"{{item.b}}"}],"n":"text","t":"el"},{"a":{"class":"rank"},"c":[{"a":{"class":"rank-t"},"c":[{"t":"tx","x":"{{item.c}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"product-sub"},"c":[{"t":"tx","x":"{{item.d}}"}],"n":"text","t":"el"},{"a":{"class":"detail-row"},"c":[{"a":{"class":"detail-icon","src":"{{g}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"detail-copy"},"c":[{"a":{"class":"detail-title"},"c":[{"t":"tx","x":"适合谁"}],"n":"text","t":"el"},{"a":{"class":"detail-text"},"c":[{"t":"tx","x":"{{item.e}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"detail-row"},"c":[{"a":{"class":"detail-icon","src":"{{h}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"detail-copy"},"c":[{"a":{"class":"detail-title"},"c":[{"t":"tx","x":"为什么推荐"}],"n":"text","t":"el"},{"a":{"class":"detail-text"},"c":[{"t":"tx","x":"{{item.f}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"detail-row"},"c":[{"a":{"class":"detail-icon","src":"{{i}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"detail-copy"},"c":[{"a":{"class":"detail-title"},"c":[{"t":"tx","x":"不一定适合谁"}],"n":"text","t":"el"},{"a":{"class":"detail-text"},"c":[{"t":"tx","x":"{{item.g}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"actions"},"c":[{"a":{"bindtap":"{{item.h}}","class":"primary-btn"},"c":[{"a":{"class":"primary-text"},"c":[{"t":"tx","x":"查看商品 ›"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{item.i}}","class":"ghost-btn"},"c":[{"a":{"class":"ghost-text"},"c":[{"t":"tx","x":"咨询选茶师"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"tags","wx:if":"{{item.j}}"},"c":[{"a":{"class":"taste-label"},"c":[{"t":"tx","x":"口感关键词"}],"n":"text","t":"el"},{"a":{"class":"tag","wx:for":"{{item.k}}","wx:for-item":"tag","wx:key":"b"},"c":[{"t":"tx","x":"{{tag.a}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"advice"},"c":[{"a":{"class":"advice-head"},"c":[{"a":{"class":"advice-leaf","src":"{{j}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"advice-title"},"c":[{"t":"tx","x":"选茶建议"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"tips"},"c":[{"a":{"class":"tip","wx:for":"{{k}}","wx:for-item":"item","wx:key":"d"},"c":[{"a":{"class":"tip-icon","src":"{{item.a}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"tip-title"},"c":[{"t":"tx","x":"{{item.b}}"}],"n":"text","t":"el"},{"a":{"class":"tip-desc"},"c":[{"t":"tx","x":"{{item.c}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"skill-tip","wx:if":"{{l}}"},"c":[{"t":"tx","x":"本次推荐已应用：{{m}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{o}}","class":"chat-more"},"c":[{"a":{"class":"chat-more-icon","src":"{{n}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"chat-more-text"},"c":[{"t":"tx","x":"有任何疑问，随时找我聊茶。"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"bottom-space"},"c":[],"n":"view","t":"el"}],"n":"scroll-view","t":"el"},{"a":{"module":"uV","src":"/common/uniView.wxs"},"c":[],"n":"wxs","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./ai-result.js"></script>
+</body>
+</html>

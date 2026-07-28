@@ -238,3 +238,94 @@ fn test_page_switch_clears_state() {
     assert!(!im.has_focused_input());
     assert!(im.scroll_controllers.is_empty());
 }
+
+/// 覆盖层里的输入框，即使**正常流有元素压在同一个坐标上**也必须能聚焦。
+///
+/// 元素表的顺序是「覆盖层的在前、正常流的在后」（正常流每帧重建并追加），
+/// 而命中是从后往前找。从前 `handle_click_scoped(fixed_only)` 写成
+/// 「全局 hit_test 之后再判 is_fixed」，于是先撞上正常流那个元素、再被过滤掉，
+/// 返回 None —— 底部固定输入条点不出焦点、固定层里的开关拨不动。
+#[test]
+fn fixed_scope_click_ignores_flow_element_on_top() {
+    let mut im = InteractionManager::new();
+    // 覆盖层里的输入框（视口坐标）先注册
+    let mut input = elem(InteractionType::Input, "input_25_520", 25.0, 520.0, 272.0, 36.0);
+    input.is_fixed = true;
+    im.register_element(input);
+    // 正常流里恰好压在同一片区域的可点元素后注册
+    im.register_element(elem(InteractionType::Checkbox, "flow_card", 0.0, 500.0, 375.0, 80.0));
+
+    let r = im.handle_click_scoped(100.0, 537.0, true);
+    match r {
+        Some(InteractionResult::Focus { ref id, .. }) => assert_eq!(id, "input_25_520"),
+        other => panic!("覆盖层输入框应当获得焦点，实际是 {other:?}"),
+    }
+    assert!(im.has_focused_input());
+}
+
+/// 同一坐标上「正常流」的作用域不该被覆盖层元素抢走
+#[test]
+fn flow_scope_click_ignores_fixed_element() {
+    let mut im = InteractionManager::new();
+    let mut fixed = elem(InteractionType::Checkbox, "fixed_cb", 0.0, 500.0, 375.0, 80.0);
+    fixed.is_fixed = true;
+    im.register_element(fixed);
+    im.register_element(elem(InteractionType::Switch, "flow_sw", 0.0, 500.0, 375.0, 80.0));
+
+    let r = im.handle_click(100.0, 537.0);
+    match r {
+        Some(InteractionResult::Toggle { ref id, .. }) => assert_eq!(id, "flow_sw"),
+        other => panic!("正常流的开关应当被拨动，实际是 {other:?}"),
+    }
+}
+
+/// 滚动区里盖着一张卡片时，滚轮仍应交给滚动区（而不是被卡片挡掉）
+#[test]
+fn scroll_area_hit_ignores_cards_on_top() {
+    let mut im = InteractionManager::new();
+    let mut area = elem(InteractionType::ScrollArea, "sv", 0.0, 100.0, 375.0, 200.0);
+    area.is_horizontal = true;
+    area.content_width = 900.0;
+    area.viewport_width = 375.0;
+    im.register_element(area);
+    // 卡片压在滚动区上面
+    im.register_element(elem(InteractionType::Checkbox, "card", 10.0, 120.0, 150.0, 150.0));
+
+    let hit = im.hit_test_scroll_area(60.0, 180.0, false).expect("应命中滚动区");
+    assert_eq!(hit.id, "sv");
+    assert!(hit.is_horizontal);
+}
+
+/// `checkbox-group` 的 `change` 事件要发**组内选中项的 value 数组**（微信语义），
+/// 不是被点那一个的开关状态。页面里 `e.detail.value.indexOf(...)` 就是这么用的，
+/// 发个布尔值过去直接 `TypeError: not a function`。
+#[test]
+fn checked_values_in_group_are_collected_in_document_order() {
+    let mut im = InteractionManager::new();
+    let mut mk = |id: &str, value: &str, x: f32, checked: bool| {
+        let mut e = elem(InteractionType::Checkbox, id, x, 100.0, 40.0, 40.0);
+        e.value = value.to_string();
+        e.checked = checked;
+        im.register_element(e);
+    };
+    mk("cb_read", "reading", 10.0, true);
+    mk("cb_sport", "sport", 120.0, false);
+    mk("cb_music", "music", 230.0, true);
+    // 组外的那个不该被算进来
+    let mut outside = elem(InteractionType::Checkbox, "cb_other", 10.0, 400.0, 40.0, 40.0);
+    outside.value = "other".into();
+    outside.checked = true;
+    im.register_element(outside);
+
+    let group = Rect::new(0.0, 90.0, 375.0, 60.0);
+    let vals = im.checked_values_in(&group, InteractionType::Checkbox);
+    assert_eq!(vals, vec!["reading".to_string(), "music".to_string()]);
+
+    // 点一下 sport：状态以 states 为准，顺序仍按文档顺序
+    im.handle_click(140.0, 120.0);
+    let vals = im.checked_values_in(&group, InteractionType::Checkbox);
+    assert_eq!(
+        vals,
+        vec!["reading".to_string(), "sport".to_string(), "music".to_string()]
+    );
+}

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/subscribe/subscribe</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./subscribe.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view page" id="" style="--status-bar-height:;">
+    <div class="wx-view tabs">
+      <span class="wx-text tab" data-tap="">订阅套餐</span>
+      <span class="wx-text tab" data-tap="">我的订阅</span>
+    </div>
+    <div class="wx-scroll-view scroll" style="overflow-y:auto">
+      <div class="wx-view" style="height:12px"></div>
+    </div>
+  </div>
+  <div class="wx-wxs"></div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/subscribe/subscribe";
+window.__PAGE_PULL_DOWN__ = false;
+window.__WXML__ = [{"a":{"change:eA":"{{uV.sA}}","change:eS":"{{uV.sS}}","class":"{{['page', l]}}","eA":"{{$eA[j]}}","eS":"{{$eS[j]}}","hidden":"{{virtualHostHidden || false}}","id":"{{j}}","style":"{{'--status-bar-height:' + k + ';' + (virtualHostStyle || '')}}"},"c":[{"a":{"class":"tabs"},"c":[{"a":{"bindtap":"{{b}}","class":"{{['tab', a]}}"},"c":[{"t":"tx","x":"订阅套餐"}],"n":"text","t":"el"},{"a":{"bindtap":"{{d}}","class":"{{['tab', c]}}"},"c":[{"t":"tx","x":"我的订阅"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"scroll","enable-flex":"true","enhanced":"true","scroll-y":"true","wx:if":"{{e}}"},"c":[{"a":{"class":"intro"},"c":[{"a":{"class":"intro-t"},"c":[{"t":"tx","x":"高山泉水 · 按周期送达，省心不断供。一次订阅，定期配送当季好水好茶。"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"empty","wx:if":"{{f}}"},"c":[{"a":{"class":"empty-t"},"c":[{"t":"tx","x":"暂无订阅套餐"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card","wx:for":"{{g}}","wx:for-item":"p","wx:key":"l"},"c":[{"a":{"class":"cover","mode":"widthFix","src":"{{p.a}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"body"},"c":[{"a":{"class":"name"},"c":[{"t":"tx","x":"{{p.b}}"}],"n":"text","t":"el"},{"a":{"class":"desc"},"c":[{"t":"tx","x":"{{p.c}}"}],"n":"text","t":"el"},{"a":{"class":"specs"},"c":[{"a":{"class":"spec"},"c":[{"t":"tx","x":"共 {{p.d}} 期"}],"n":"text","t":"el"},{"a":{"class":"spec"},"c":[{"t":"tx","x":"每 {{p.e}} 天配送"}],"n":"text","t":"el"},{"a":{"class":"spec","wx:if":"{{p.f}}"},"c":[{"t":"tx","x":"{{p.g}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"bottom"},"c":[{"a":{"class":"price-wrap"},"c":[{"a":{"class":"price"},"c":[{"t":"tx","x":"¥{{p.h}}"}],"n":"text","t":"el"},{"a":{"class":"price-unit"},"c":[{"t":"tx","x":"/期"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{p.k}}","class":"{{['btn', p.j]}}"},"c":[{"a":{"class":"btn-t"},"c":[{"t":"tx","x":"{{p.i}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"style":"height:24rpx"},"c":[],"n":"view","t":"el"}],"n":"scroll-view","t":"el"},{"a":{"class":"scroll","enable-flex":"true","enhanced":"true","scroll-y":"true","wx:else":""},"c":[{"a":{"class":"empty","wx:if":"{{h}}"},"c":[{"a":{"class":"empty-t"},"c":[{"t":"tx","x":"还没有订阅记录"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"mine-card","wx:for":"{{i}}","wx:for-item":"m","wx:key":"i"},"c":[{"a":{"class":"mine-head"},"c":[{"a":{"class":"mine-name"},"c":[{"t":"tx","x":"{{m.a}}"}],"n":"text","t":"el"},{"a":{"class":"mine-status"},"c":[{"t":"tx","x":"{{m.b}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"mine-row"},"c":[{"a":{"class":"mk"},"c":[{"t":"tx","x":"订单号"}],"n":"text","t":"el"},{"a":{"class":"mv"},"c":[{"t":"tx","x":"{{m.c}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"mine-row"},"c":[{"a":{"class":"mk"},"c":[{"t":"tx","x":"配送进度"}],"n":"text","t":"el"},{"a":{"class":"mv"},"c":[{"t":"tx","x":"{{m.d}} / {{m.e}} 期"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"mine-row"},"c":[{"a":{"class":"mk"},"c":[{"t":"tx","x":"下次配送"}],"n":"text","t":"el"},{"a":{"class":"mv"},"c":[{"t":"tx","x":"{{m.f}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{m.h}}","class":"mine-cancel","wx:if":"{{m.g}}"},"c":[{"a":{"class":"mine-cancel-t"},"c":[{"t":"tx","x":"取消订阅"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"style":"height:24rpx"},"c":[],"n":"view","t":"el"}],"n":"scroll-view","t":"el"}],"n":"view","t":"el"},{"a":{"module":"uV","src":"/common/uniView.wxs"},"c":[],"n":"wxs","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./subscribe.js"></script>
+</body>
+</html>

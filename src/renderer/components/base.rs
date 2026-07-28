@@ -684,6 +684,9 @@ pub struct EventBind {
     pub phase: EventPhase,
     /// `mut-bind:*`：互斥绑定，一条触发后其它 mut-bind 不再触发（`bind`/`catch` 不受影响）
     pub mut_bind: bool,
+    /// 声明这条绑定的自定义组件标签名（页面模板里声明的是空串）。
+    /// 派发时据此把事件送给**组件实例**，见 `parser::template::COMPONENT_OWNER_ATTR`。
+    pub owner: String,
 }
 
 /// 解析事件属性名 → (事件名, 是否 catch, 阶段, 是否互斥绑定)。
@@ -737,6 +740,10 @@ pub fn extract_events(node: &WxmlNode) -> Vec<EventBind> {
             }
         }
     }
+    let owner = node
+        .get_attr(crate::parser::template::COMPONENT_OWNER_ATTR)
+        .unwrap_or("")
+        .to_string();
     for (attr, handler) in &node.attributes {
         let Some((event_type, is_catch, phase, mut_bind)) = parse_event_attr(attr) else {
             continue;
@@ -751,6 +758,7 @@ pub fn extract_events(node: &WxmlNode) -> Vec<EventBind> {
             is_catch,
             phase,
             mut_bind,
+            owner: owner.clone(),
         });
     }
     // 属性表是 HashMap，顺序不定；排序让绑定顺序稳定（快照/测试要可复现）

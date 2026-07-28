@@ -1,0 +1,277 @@
+/* 由 checkout.wxss 编译 */
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+/* 字体栈第一位必须是 App.uvue 里 loadFontFace 注册过的 family，否则安卓机没有本机宋体，
+   会整站掉到系统黑体。Yunxiu Serif = Noto Serif SC Regular(正文)，Source Han Serif SC = Heavy(标题)。 */
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.scroll {
+  flex: 1;
+}
+.addr {
+  flex-direction: row;
+  align-items: center;
+  background-color: #ffffff;
+  border-radius: 10px;
+  margin: 12px 12px 0;
+  padding: 14px;
+}
+.addr-pin {
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+}
+.addr-info {
+  flex: 1;
+}
+.addr-name {
+  font-size: 14px;
+  font-weight: bold;
+  color: #4a3020;
+}
+.addr-detail {
+  font-size: 12px;
+  color: #8a8478;
+  margin-top: 3px;
+}
+.addr-empty {
+  flex: 1;
+  font-size: 14px;
+  color: #82786c;
+}
+.addr-arrow {
+  font-size: 18px;
+  color: #c4bdb0;
+}
+.card {
+  background-color: #ffffff;
+  border-radius: 10px;
+  margin: 10px 12px 0;
+  padding: 12px;
+}
+.goods {
+  flex-direction: row;
+  align-items: center;
+  padding: 5px 0;
+}
+.goods-img {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+}
+.goods-info {
+  flex: 1;
+  margin-left: 8px;
+}
+.goods-name {
+  font-size: 14px;
+  color: #4a3020;
+}
+.goods-right {
+  align-items: flex-end;
+}
+.goods-price {
+  font-size: 14px;
+  color: #4a3020;
+}
+.goods-qty {
+  font-size: 11px;
+  color: #82786c;
+}
+.row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 0;
+}
+.row-t {
+  font-size: 14px;
+  color: #5a5248;
+}
+.coupon-right {
+  flex-direction: row;
+  align-items: center;
+}
+.coupon-val {
+  font-size: 13px;
+  color: #82786c;
+  margin-right: 4px;
+}
+.coupon-on {
+  color: #a87536;
+  font-weight: bold;
+}
+.cb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  align-items: center;
+  justify-content: center;
+}
+.cb-on {
+  background-color: #a87536;
+  border-color: #a87536;
+}
+.cb-t {
+  width: 11px;
+  height: 11px;
+}
+.line {
+  height: 1px;
+  background-color: rgba(0, 0, 0, 0.06);
+}
+.kv {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+.k {
+  font-size: 14px;
+  color: #5a5248;
+}
+.k-strong {
+  font-size: 14px;
+  color: #4a3020;
+}
+.v {
+  font-size: 14px;
+  color: #4a3020;
+}
+.v-muted {
+  font-size: 14px;
+  color: #82786c;
+}
+.v-red {
+  font-size: 14px;
+  color: #c0392b;
+}
+.v-gold {
+  font-size: 18px;
+  font-weight: bold;
+  color: #a87536;
+}
+.bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #ffffff;
+  padding: 10px 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+.bar-left {
+  flex-direction: column;
+}
+.bar-label {
+  font-size: 11px;
+  color: #82786c;
+}
+.bar-total {
+  font-size: 22px;
+  font-weight: bold;
+  color: #a87536;
+}
+.btn {
+  background-color: #a87536;
+  border-radius: 22px;
+  padding: 11px 32px;
+}
+.btn-off {
+  opacity: 0.5;
+}
+.btn-t {
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: bold;
+}
+.mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  justify-content: flex-end;
+}
+.sheet {
+  background-color: #ffffff;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  padding: 14px;
+  max-height: 70%;
+}
+.sheet-head {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+.sheet-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #4a3020;
+}
+.sheet-x {
+  width: 18px;
+  height: 18px;
+}
+.cp-list {
+  margin-top: 8px;
+}
+.cp {
+  flex-direction: row;
+  align-items: center;
+  background-color: #faf8f4;
+  border-radius: 8px;
+  padding: 11px 10px;
+  margin-bottom: 8px;
+}
+.cp.none {
+  justify-content: space-between;
+}
+.cp-none-t {
+  font-size: 14px;
+  color: #5a5248;
+}
+.cp-left {
+  width: 90px;
+  align-items: center;
+}
+.cp-money {
+  font-size: 20px;
+  font-weight: bold;
+  color: #a87536;
+}
+.cp-cond {
+  font-size: 10px;
+  color: #82786c;
+  margin-top: 2px;
+}
+.cp-mid {
+  flex: 1;
+  margin-left: 8px;
+}
+.cp-name {
+  font-size: 14px;
+  color: #4a3020;
+}
+.cp-exp {
+  font-size: 11px;
+  color: #82786c;
+  margin-top: 3px;
+}
+.cp-empty {
+  padding: 20px 0;
+  align-items: center;
+}
+.cp-empty-t {
+  font-size: 13px;
+  color: #82786c;
+}

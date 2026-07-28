@@ -1185,6 +1185,44 @@ impl MiniAppWindow {
             std::thread::sleep(Duration::from_millis(8));
         }
     }
+
+    /// `--drag <每帧像素>x<帧数>`：走与交互窗体同一套鼠标事件模拟一次手指拖动，
+    /// 逐帧计时。滑动手感只有连续拖动才测得出来（见 app_window::scroll_bench）。
+    pub(crate) fn run_drag_bench(&mut self, spec: &app_window::scroll_bench::DragSpec, route: &str) {
+        let (cx, mut cy) = (LOGICAL_WIDTH as f32 / 2.0, LOGICAL_HEIGHT as f32 * 0.75);
+        self.sim_press(cx, cy);
+        let mut frame_ms: Vec<f32> = Vec::with_capacity(spec.frames as usize);
+        let mut worst = (0.0f32, (0.0f32, 0.0f32, 0.0f32));
+        let mut input_total = 0.0f32;
+        for _ in 0..spec.frames {
+            cy -= spec.dy;
+            let t0 = Instant::now();
+            self.sim_move(cx, cy);
+            input_total += t0.elapsed().as_secs_f32() * 1000.0;
+            self.pump_one_frame();
+            let ms = t0.elapsed().as_secs_f32() * 1000.0;
+            if ms > worst.0 {
+                worst = (ms, self.render_parts);
+            }
+            frame_ms.push(ms);
+            // 按刷新率节流，模拟真实拖动的采样节奏
+            let spent = t0.elapsed();
+            if let Some(rest) = self.frame_interval.checked_sub(spent) {
+                std::thread::sleep(rest);
+            }
+        }
+        self.sim_release(cx, cy);
+        self.settle_scroll_animations(2000);
+        app_window::scroll_bench::report(route, &frame_ms, self.frame_interval);
+        app_window::scroll_bench::report_worst_parts(worst.0, worst.1);
+        println!(
+            "   ↳ 其中输入处理（命中/手势/触摸事件派发）平均 {:.2}ms/帧",
+            input_total / spec.frames.max(1) as f32
+        );
+        if let Some(s) = mini_render::renderer::draw_profile::summary(8) {
+            println!("   ↳ {s}");
+        }
+    }
 }
 
 
@@ -1512,7 +1550,7 @@ impl MiniAppWindow {
     /// 自定义 tabBar、fixed 覆盖层、Toast/Modal 外壳、像素合成顺序都与真实运行一致，
     /// 因此产出的 PNG 可以直接和编译出的 H5 截图做像素级对比。
     #[allow(clippy::too_many_arguments)]
-    fn snapshot_all(&mut self, out_dir: &std::path::Path, scale: f64, time: Option<f32>, settle: Option<f32>, only: Option<&str>, scroll: f32, evals: &[String], frames: u32, click: Option<(f32, f32)>, press: Option<(f32, f32)>, drag: Option<app_window::scroll_bench::DragSpec>, touch: Option<(f32, f32, u64)>, swipe: Option<(f32, f32, f32, f32, u32, bool)>) -> Result<usize, String> {
+    fn snapshot_all(&mut self, out_dir: &std::path::Path, scale: f64, time: Option<f32>, settle: Option<f32>, only: Option<&str>, scroll: f32, evals: &[String], frames: u32, actions: &[app_window::headless_script::Action]) -> Result<usize, String> {
         self.setup_canvas(scale);
         let routes: Vec<String> = match only {
             Some(route) => vec![route.trim_start_matches('/').to_string()],
@@ -1605,7 +1643,7 @@ impl MiniAppWindow {
                 evt::process_ui_events(&mut self.app, &mut self.toast, &mut self.loading, &mut self.modal, &mut pull_req);
                 self.apply_pull_down_request(pull_req);
             }
-            let anim_deadline = Instant::now() + Duration::from_millis(600);
+            let anim_deadline = Instant::now() + Duration::from_millis(2000);
             while self.scroll.is_animating() && Instant::now() < anim_deadline {
                 self.update_scroll();
                 self.app.update().ok();
@@ -1624,127 +1662,10 @@ impl MiniAppWindow {
                     std::thread::sleep(Duration::from_millis(8));
                 }
             }
-            // `--click x,y`：走**与交互窗体完全相同的点击链路**（命中测试、覆盖层拦截、
-            // 事件冒泡、导航），用于脚本化验证「弹窗不穿透」这类交互语义。
-            // `--press x,y`：只按下不松手，用于验证按压态样式与过渡
-            if let Some((px, py)) = press {
-                self.render(); // 命中测试依赖上一帧的交互元素注册
-                let ts = Instant::now().elapsed().as_millis() as u64;
-                app_window::events::mouse::handle_mouse_pressed(
-                    px,
-                    py,
-                    &mut self.scroll,
-                    &mut self.interaction,
-                    ts,
-                );
-                self.needs_redraw = true;
-                self.render();
-            }
-            if let Some((cx, cy)) = click {
-                // 命中测试依赖上一帧注册的事件绑定，先确保出过一帧
-                // （真实窗体里也不可能在首帧之前点击）
-                self.render();
-                self.handle_click(cx, cy);
-                // 点击引发的导航**可能是延后一个微任务的**：框架型产物（uni-app）的事件
-                // 代理对冒泡事件走 `nextTick(invoke)`，所以处理函数在下一次 pump 才真正执行。
-                // 从前这里「拿不到导航就立刻 break」，等于只泵了一次 —— 点底部导航在快照
-                // 工具里永远换不了页（交互窗体反而正常，因为它每帧都 pump）。
-                for _ in 0..8 {
-                    self.app.update().ok();
-                    if self.pending_navigation.is_none() {
-                        self.pending_navigation = app_window::check_navigation(&mut self.app);
-                    }
-                    if self.pending_navigation.is_some() {
-                        self.process_navigation();
-                    }
-                }
-                print_js_output(&self.app);
-                self.needs_redraw = true;
-                self.render();
-            }
-            // `--touch x,y[,按住ms]`：一次完整触摸序列（与交互窗体同一条链路）。
-            // 按住期间照常出帧，所以 350ms 的长按会真的触发。
-            if let Some((tx, ty, hold_ms)) = touch {
-                self.render(); // 命中测试依赖上一帧注册的绑定
-                self.sim_press(tx, ty);
-                let deadline = Instant::now() + Duration::from_millis(hold_ms);
-                while Instant::now() < deadline {
-                    self.pump_one_frame();
-                    std::thread::sleep(Duration::from_millis(8));
-                }
-                self.pump_one_frame();
-                self.sim_release(tx, ty);
-                for _ in 0..8 {
-                    self.pump_one_frame();
-                    if self.pending_navigation.is_some() { self.process_navigation(); }
-                }
-                self.settle_scroll_animations(600);
-            }
-            // `--swipe x1,y1,x2,y2[,步数]`：按下 → 逐步移动 → 抬起
-            if let Some((x1, y1, x2, y2, steps, hold)) = swipe {
-                self.render();
-                self.sim_press(x1, y1);
-                let steps = steps.max(1);
-                for i in 1..=steps {
-                    let t = i as f32 / steps as f32;
-                    self.sim_move(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t);
-                    self.pump_one_frame();
-                    std::thread::sleep(Duration::from_millis(8));
-                }
-                // `--swipe-hold`：停在终点不抬手，截「手势进行中」的那一帧
-                if !hold {
-                    self.sim_release(x2, y2);
-                    for _ in 0..8 {
-                        self.pump_one_frame();
-                        if self.pending_navigation.is_some() { self.process_navigation(); }
-                    }
-                    self.settle_scroll_animations(600);
-                }
-            }
-            // `--drag <每帧像素>x<帧数>`：走与交互窗体同一套鼠标事件模拟一次手指拖动，
-            // 逐帧计时。滑动手感只有连续拖动才测得出来（见 app_window::scroll_bench）。
-            if let Some(spec) = drag {
-                self.render(); // 命中测试依赖上一帧注册的交互区域
-                let (cx, mut cy) = (LOGICAL_WIDTH as f32 / 2.0, LOGICAL_HEIGHT as f32 * 0.75);
-                let ts = std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis() as u64;
-                let _ = ts;
-                self.sim_press(cx, cy);
-                let mut frame_ms: Vec<f32> = Vec::with_capacity(spec.frames as usize);
-                let mut worst = (0.0f32, (0.0f32, 0.0f32, 0.0f32));
-                let mut input_total = 0.0f32;
-                for _ in 0..spec.frames {
-                    cy -= spec.dy;
-                    let t0 = Instant::now();
-                    self.sim_move(cx, cy);
-                    let input_ms = t0.elapsed().as_secs_f32() * 1000.0;
-                    input_total += input_ms;
-                    self.pump_one_frame();
-                    let ms = t0.elapsed().as_secs_f32() * 1000.0;
-                    if ms > worst.0 {
-                        worst = (ms, self.render_parts);
-                    }
-                    frame_ms.push(ms);
-                    // 按刷新率节流，模拟真实拖动的采样节奏
-                    let spent = t0.elapsed();
-                    if let Some(rest) = self.frame_interval.checked_sub(spent) {
-                        std::thread::sleep(rest);
-                    }
-                }
-                self.sim_release(cx, cy);
-                self.settle_scroll_animations(600);
-                app_window::scroll_bench::report(&route, &frame_ms, self.frame_interval);
-                app_window::scroll_bench::report_worst_parts(worst.0, worst.1);
-                println!(
-                    "   ↳ 其中输入处理（命中/手势/触摸事件派发）平均 {:.2}ms/帧",
-                    input_total / spec.frames.max(1) as f32
-                );
-                if let Some(s) = mini_render::renderer::draw_profile::summary(8) {
-                    println!("   ↳ {s}");
-                }
-            }
+            // 手势/输入动作：按命令行**书写顺序**依次执行（见 app_window::headless_script）。
+            // 每一步都走与交互窗体完全相同的入口，所以「点输入框 → 打字 → 点发送」
+            // 这类多步交互在无头模式下也能如实复现。
+            self.run_actions(actions, &route);
             // `--frames N`：按刷新率跑 N 个**与交互窗体同一套闸门/损伤区逻辑**的帧再截图。
             // 局部重绘这类只在连续出帧时才暴露的问题（比如某个动画元素被漏出损伤区而静止），
             // 只有这样才测得到 —— 单帧快照永远走整帧重绘，看不出来。
@@ -1835,15 +1756,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut anim_time: Option<f32> = None;
     let mut settle: Option<f32> = None;
     let mut frames = 0u32;
-    let mut click: Option<(f32, f32)> = None;
-    let mut press: Option<(f32, f32)> = None;
-    // `--touch x,y[,按住毫秒]` 与 `--swipe x1,y1,x2,y2[,步数]`
-    let mut touch: Option<(f32, f32, u64)> = None;
-    let mut swipe: Option<(f32, f32, f32, f32, u32, bool)> = None;
     let mut route: Option<String> = None;
-    let mut drag: Option<app_window::scroll_bench::DragSpec> = None;
     let mut scroll = 0.0f32;
     let mut evals: Vec<String> = Vec::new();
+    // 手势与输入按**书写顺序**入队（见 app_window::headless_script）
+    let mut actions: Vec<app_window::headless_script::Action> = Vec::new();
     let mut it = args.into_iter();
     while let Some(arg) = it.next() {
         match arg.as_str() {
@@ -1852,48 +1769,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "--time" => anim_time = it.next().and_then(|v| v.parse().ok()),
             "--settle" => settle = it.next().and_then(|v| v.parse().ok()),
             "--frames" => frames = it.next().and_then(|v| v.parse().ok()).unwrap_or(0),
-            "--press" => {
-                press = it.next().and_then(|v| {
-                    let (a, b) = v.split_once(',')?;
-                    Some((a.trim().parse().ok()?, b.trim().parse().ok()?))
-                });
-            }
-            "--click" => {
-                click = it.next().and_then(|v| {
-                    let (a, b) = v.split_once(',')?;
-                    Some((a.trim().parse().ok()?, b.trim().parse().ok()?))
-                });
-            }
             "--route" => route = it.next(),
-            "--touch" => {
-                touch = it.next().and_then(|v| {
-                    let p: Vec<&str> = v.split(',').collect();
-                    Some((
-                        p.first()?.trim().parse().ok()?,
-                        p.get(1)?.trim().parse().ok()?,
-                        p.get(2).and_then(|s| s.trim().parse().ok()).unwrap_or(0),
-                    ))
-                });
-            }
-            // `--swipe` 抬手，`--swipe-hold` 停在终点不抬手 —— 后者用来截「手势进行中」
-            // 的那一帧（侧滑返回的跟手位移、越界橡皮筋、按压态），松手之后就看不到了。
-            "--swipe" | "--swipe-hold" => {
-                let hold = arg == "--swipe-hold";
-                swipe = it.next().and_then(|v| {
-                    let p: Vec<&str> = v.split(',').collect();
-                    Some((
-                        p.first()?.trim().parse().ok()?,
-                        p.get(1)?.trim().parse().ok()?,
-                        p.get(2)?.trim().parse().ok()?,
-                        p.get(3)?.trim().parse().ok()?,
-                        p.get(4).and_then(|s| s.trim().parse().ok()).unwrap_or(12),
-                        hold,
-                    ))
-                });
-            }
-            "--drag" => drag = it.next().as_deref().and_then(app_window::scroll_bench::parse),
             "--scroll" => scroll = it.next().and_then(|v| v.parse().ok()).unwrap_or(0.0),
             "--eval" => { if let Some(v) = it.next() { evals.push(v); } }
+            // `--press` / `--click` / `--touch` / `--swipe[-hold]` / `--drag` / `--type` /
+            // `--key` / `--wait`：都是动作，谁写在前面谁先执行。
+            // `--swipe-hold` 停在终点不抬手 —— 用来截「手势进行中」的那一帧
+            // （侧滑返回的跟手位移、越界橡皮筋、按压态），松手之后就看不到了。
+            "--press" | "--click" | "--touch" | "--swipe" | "--swipe-hold" | "--drag"
+            | "--type" | "--key" | "--wait" => {
+                match app_window::headless_script::parse(&arg, it.next()) {
+                    Some(a) => actions.push(a),
+                    None => eprintln!("⚠️  {} 的参数无法解析，已忽略", arg),
+                }
+            }
             "--help" | "-h" => {
                 println!("用法: mini-app-window <小程序目录> [--snapshot <输出目录>] [--scale 2]");
                 println!("  --time <秒>    动画时钟位置（CSS @keyframes 求值到该时刻，不消耗真实时间）");
@@ -1907,6 +1796,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("  --touch <x,y[,按住ms]>       完整触摸序列：touchstart→(长按)→touchend/tap");
                 println!("  --swipe <x1,y1,x2,y2[,步数]>  滑动手势：按下→逐步移动→抬起");
                 println!("  --swipe-hold <同上>           同上但停在终点不抬手（截手势进行中的一帧）");
+                println!("  --type <文本>   往当前焦点输入框逐字符输入（先 --click 到输入框上）");
+                println!("  --key <按键>    enter/backspace/delete/escape/left/right/home/end/selectall");
+                println!("  --wait <秒>     空转等待，期间照常出帧");
+                println!("  上面这些动作按**书写顺序**执行，可重复：");
+                println!("    --click 25,520 --type 1212121 --click 313,520");
                 println!("  --eval <JS>    可重复；在 --settle 之后依次执行，每段跑完导航");
                 return Ok(());
             }
@@ -1936,7 +1830,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 快照模式：不开窗口，直接把整帧写成 PNG（用于与 H5 做像素对比）
     if let Some(out) = snapshot {
-        let count = window.snapshot_all(&out, scale, anim_time, settle, route.as_deref(), scroll, &evals, frames, click, press, drag, touch, swipe)?;
+        let count = window.snapshot_all(&out, scale, anim_time, settle, route.as_deref(), scroll, &evals, frames, &actions)?;
         println!("\n✅ 快照完成：{} 个页面 -> {}", count, out.display());
         return Ok(());
     }

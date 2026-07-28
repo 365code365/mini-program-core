@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/trace/trace</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./trace.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-scroll-view page" id="" style="--status-bar-height:;overflow-y:auto">
+    <div class="wx-view head">
+      <span class="wx-text tag"></span>
+      <span class="wx-text name"></span>
+      <span class="wx-text batch">批次号 </span>
+      <div class="wx-view env">
+        <div class="wx-view env-item">
+          <span class="wx-text env-v"></span>
+          <span class="wx-text env-k">温度</span>
+        </div>
+        <div class="wx-view env-item">
+          <span class="wx-text env-v"></span>
+          <span class="wx-text env-k">湿度</span>
+        </div>
+        <div class="wx-view env-item">
+          <span class="wx-text env-v"></span>
+          <span class="wx-text env-k">光照</span>
+        </div>
+      </div>
+      <span class="wx-text env-src">环境数据来源：凤凰山气象站 · 实时采集</span>
+    </div>
+    <span class="wx-text sec">一园一品一码 · 全流程</span>
+    <div class="wx-view timeline"></div>
+    <div class="wx-view report" data-tap="">
+      <img class="wx-image report-ic" style="object-fit:fill" src="">
+      <div class="wx-view report-info">
+        <span class="wx-text report-t">SGS 质检报告</span>
+        <span class="wx-text report-sub"> · 农残检测合格</span>
+      </div>
+      <span class="wx-text report-arrow">查看 ›</span>
+    </div>
+    <div class="wx-view" style="height:20px"></div>
+  </div>
+  <div class="wx-wxs"></div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/trace/trace";
+window.__PAGE_PULL_DOWN__ = false;
+window.__WXML__ = [{"a":{"change:eA":"{{uV.sA}}","change:eS":"{{uV.sS}}","class":"{{['page', t]}}","eA":"{{$eA[r]}}","eS":"{{$eS[r]}}","enable-flex":"true","enhanced":"true","hidden":"{{virtualHostHidden || false}}","id":"{{r}}","scroll-y":"true","style":"{{'--status-bar-height:' + s + ';' + (virtualHostStyle || '')}}"},"c":[{"a":{"class":"head"},"c":[{"a":{"class":"tag"},"c":[{"t":"tx","x":"{{a}}"}],"n":"text","t":"el"},{"a":{"class":"name"},"c":[{"t":"tx","x":"{{b}}"}],"n":"text","t":"el"},{"a":{"class":"batch"},"c":[{"t":"tx","x":"批次号 {{c}}"}],"n":"text","t":"el"},{"a":{"class":"env"},"c":[{"a":{"class":"env-item"},"c":[{"a":{"class":"env-v"},"c":[{"t":"tx","x":"{{d}}"}],"n":"text","t":"el"},{"a":{"class":"env-k"},"c":[{"t":"tx","x":"温度"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"env-item"},"c":[{"a":{"class":"env-v"},"c":[{"t":"tx","x":"{{e}}"}],"n":"text","t":"el"},{"a":{"class":"env-k"},"c":[{"t":"tx","x":"湿度"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"env-item"},"c":[{"a":{"class":"env-v"},"c":[{"t":"tx","x":"{{f}}"}],"n":"text","t":"el"},{"a":{"class":"env-k"},"c":[{"t":"tx","x":"光照"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"env-src"},"c":[{"t":"tx","x":"环境数据来源：凤凰山气象站 · 实时采集"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"sec"},"c":[{"t":"tx","x":"一园一品一码 · 全流程"}],"n":"text","t":"el"},{"a":{"class":"timeline"},"c":[{"a":{"class":"node","wx:for":"{{g}}","wx:for-item":"e","wx:key":"d"},"c":[{"a":{"class":"dot"},"c":[],"n":"view","t":"el"},{"a":{"class":"node-body"},"c":[{"a":{"class":"node-date"},"c":[{"t":"tx","x":"{{e.a}}"}],"n":"text","t":"el"},{"a":{"class":"node-title"},"c":[{"t":"tx","x":"{{e.b}}"}],"n":"text","t":"el"},{"a":{"class":"node-desc"},"c":[{"t":"tx","x":"{{e.c}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{j}}","class":"report"},"c":[{"a":{"class":"report-ic","src":"{{h}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"report-info"},"c":[{"a":{"class":"report-t"},"c":[{"t":"tx","x":"SGS 质检报告"}],"n":"text","t":"el"},{"a":{"class":"report-sub"},"c":[{"t":"tx","x":"{{i}} · 农残检测合格"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"report-arrow"},"c":[{"t":"tx","x":"查看 ›"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"style":"height:40rpx"},"c":[],"n":"view","t":"el"},{"a":{"bindtap":"{{q}}","class":"mask","wx:if":"{{k}}"},"c":[{"a":{"catchtap":"{{p}}","class":"sheet"},"c":[{"a":{"class":"sheet-head"},"c":[{"a":{"class":"sheet-title"},"c":[{"t":"tx","x":"SGS 质检报告"}],"n":"text","t":"el"},{"a":{"bindtap":"{{m}}","class":"sheet-x","src":"{{l}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"},{"a":{"class":"sheet-body"},"c":[{"a":{"class":"ok"},"c":[{"a":{"class":"ok-ic"},"c":[{"a":{"class":"ok-t","src":"{{n}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"},{"a":{"class":"ok-info"},"c":[{"a":{"class":"ok-h"},"c":[{"t":"tx","x":"检测合格"}],"n":"text","t":"el"},{"a":{"class":"ok-sub"},"c":[{"t":"tx","x":"所检项目符合国家标准"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"rrow","wx:for":"{{o}}","wx:for-item":"r","wx:key":"c"},"c":[{"a":{"class":"rk"},"c":[{"t":"tx","x":"{{r.a}}"}],"n":"text","t":"el"},{"a":{"class":"rv"},"c":[{"t":"tx","x":"{{r.b}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"rnote"},"c":[{"t":"tx","x":"本报告为演示数据，正式报告以 SGS 官方 PDF 为准。"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"scroll-view","t":"el"},{"a":{"module":"uV","src":"/common/uniView.wxs"},"c":[],"n":"wxs","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./trace.js"></script>
+</body>
+</html>

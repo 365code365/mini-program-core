@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/address/address</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./address.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view page" id="" style="--status-bar-height:;">
+    <div class="wx-scroll-view scroll" style="overflow-y:auto">
+      <div class="wx-view" style="height:80px"></div>
+    </div>
+    <div class="wx-view bar">
+      <div class="wx-view btn" data-tap="">
+        <span class="wx-text btn-t">+ 新增收货地址</span>
+      </div>
+    </div>
+  </div>
+  <div class="wx-wxs"></div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/address/address";
+window.__PAGE_PULL_DOWN__ = false;
+window.__WXML__ = [{"a":{"change:eA":"{{uV.sA}}","change:eS":"{{uV.sS}}","class":"{{['page', Z]}}","eA":"{{$eA[X]}}","eS":"{{$eS[X]}}","hidden":"{{virtualHostHidden || false}}","id":"{{X}}","style":"{{'--status-bar-height:' + Y + ';' + (virtualHostStyle || '')}}"},"c":[{"a":{"class":"scroll","enable-flex":"true","enhanced":"true","scroll-y":"true"},"c":[{"a":{"class":"sel-hint","wx:if":"{{a}}"},"c":[{"a":{"class":"sel-hint-t"},"c":[{"t":"tx","x":"请选择收货地址"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"empty","wx:if":"{{b}}"},"c":[{"a":{"class":"empty-t"},"c":[{"t":"tx","x":"还没有收货地址"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"addr","wx:for":"{{c}}","wx:for-item":"a","wx:key":"k"},"c":[{"a":{"bindtap":"{{a.f}}","class":"addr-tap"},"c":[{"a":{"class":"addr-top"},"c":[{"a":{"class":"addr-name"},"c":[{"t":"tx","x":"{{a.a}}"}],"n":"text","t":"el"},{"a":{"class":"addr-phone"},"c":[{"t":"tx","x":"{{a.b}}"}],"n":"text","t":"el"},{"a":{"class":"addr-def","wx:if":"{{a.c}}"},"c":[{"t":"tx","x":"默认"}],"n":"text","t":"el"},{"a":{"class":"addr-pick","wx:if":"{{d}}"},"c":[{"t":"tx","x":"选择 ›"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"addr-detail"},"c":[{"t":"tx","x":"{{a.d}} {{a.e}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"addr-actions"},"c":[{"a":{"bindtap":"{{a.h}}","class":"addr-set"},"c":[{"a":{"class":"{{['cb', a.g]}}"},"c":[{"a":{"class":"cb-t","src":"{{e}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"},{"a":{"class":"addr-set-t"},"c":[{"t":"tx","x":"设为默认"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"addr-ops"},"c":[{"a":{"bindtap":"{{a.i}}","class":"op"},"c":[{"t":"tx","x":"编辑"}],"n":"text","t":"el"},{"a":{"bindtap":"{{a.j}}","class":"op-del"},"c":[{"t":"tx","x":"删除"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"style":"height:160rpx"},"c":[],"n":"view","t":"el"}],"n":"scroll-view","t":"el"},{"a":{"class":"bar"},"c":[{"a":{"bindtap":"{{f}}","class":"btn"},"c":[{"a":{"class":"btn-t"},"c":[{"t":"tx","x":"+ 新增收货地址"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{B}}","class":"mask","wx:if":"{{g}}"},"c":[{"a":{"catchtap":"{{A}}","class":"sheet"},"c":[{"a":{"class":"sheet-head"},"c":[{"a":{"class":"sheet-title"},"c":[{"t":"tx","x":"{{h}}"}],"n":"text","t":"el"},{"a":{"bindtap":"{{j}}","class":"sheet-x","src":"{{i}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"},{"a":{"class":"label"},"c":[{"t":"tx","x":"收货人"}],"n":"text","t":"el"},{"a":{"bindinput":"{{l}}","class":"input","placeholder":"请输入姓名","value":"{{k}}"},"c":[],"n":"input","t":"el"},{"a":{"class":"label"},"c":[{"t":"tx","x":"手机号"}],"n":"text","t":"el"},{"a":{"bindinput":"{{n}}","class":"input","placeholder":"请输入手机号","type":"number","value":"{{m}}"},"c":[],"n":"input","t":"el"},{"a":{"class":"label"},"c":[{"t":"tx","x":"所在地区"}],"n":"text","t":"el"},{"a":{"bindtap":"{{r}}","class":"picker-field"},"c":[{"a":{"class":"{{['picker-val', p]}}"},"c":[{"t":"tx","x":"{{o}}"}],"n":"text","t":"el"},{"a":{"class":"picker-arrow","src":"{{q}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"},{"a":{"class":"label"},"c":[{"t":"tx","x":"详细地址"}],"n":"text","t":"el"},{"a":{"wx:if":"{{r0}}"},"c":[{"a":{"bindinput":"{{t}}","class":"textarea","placeholder":"街道、门牌号等","value":"{{s}}"},"c":[],"n":"textarea","t":"el"}],"n":"block","t":"el"},{"a":{"bindtap":"{{x}}","class":"def-row"},"c":[{"a":{"class":"def-t"},"c":[{"t":"tx","x":"设为默认地址"}],"n":"text","t":"el"},{"a":{"class":"{{['cb', w]}}"},"c":[{"a":{"class":"cb-t","src":"{{v}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{z}}","class":"sheet-ok"},"c":[{"a":{"class":"btn-t"},"c":[{"t":"tx","x":"{{y}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{W}}","class":"mask region-mask","wx:if":"{{C}}"},"c":[{"a":{"catchtap":"{{V}}","class":"sheet region-sheet"},"c":[{"a":{"class":"sheet-head"},"c":[{"a":{"class":"sheet-title"},"c":[{"t":"tx","x":"选择地区"}],"n":"text","t":"el"},{"a":{"bindtap":"{{E}}","class":"sheet-x","src":"{{D}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"},{"a":{"class":"rg-tabs"},"c":[{"a":{"bindtap":"{{I}}","class":"{{['rg-tab', H]}}"},"c":[{"a":{"class":"{{['rg-tab-t', G]}}"},"c":[{"t":"tx","x":"{{F}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{N}}","class":"{{['rg-tab', M]}}","wx:if":"{{J}}"},"c":[{"a":{"class":"{{['rg-tab-t', L]}}"},"c":[{"t":"tx","x":"{{K}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{S}}","class":"{{['rg-tab', R]}}","wx:if":"{{O}}"},"c":[{"a":{"class":"{{['rg-tab-t', Q]}}"},"c":[{"t":"tx","x":"{{P}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"rg-list","enable-flex":"true","enhanced":"true","scroll-y":"true"},"c":[{"a":{"class":"rg-loading","wx:if":"{{T}}"},"c":[{"a":{"class":"rg-loading-t"},"c":[{"t":"tx","x":"加载中…"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{name.f}}","class":"rg-item","wx:for":"{{U}}","wx:for-item":"name","wx:key":"e"},"c":[{"a":{"class":"{{['rg-item-t', name.b]}}"},"c":[{"t":"tx","x":"{{name.a}}"}],"n":"text","t":"el"},{"a":{"class":"rg-item-ck","src":"{{name.d}}","wx:if":"{{name.c}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"}],"n":"scroll-view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"module":"uV","src":"/common/uniView.wxs"},"c":[],"n":"wxs","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./address.js"></script>
+</body>
+</html>

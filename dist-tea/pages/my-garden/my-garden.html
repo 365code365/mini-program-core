@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/my-garden/my-garden</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./my-garden.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-scroll-view page" id="" style="--status-bar-height:;overflow-y:auto">
+    <div class="wx-view" style="height:12px"></div>
+  </div>
+  <div class="wx-wxs"></div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/my-garden/my-garden";
+window.__PAGE_PULL_DOWN__ = false;
+window.__WXML__ = [{"a":{"change:eA":"{{uV.sA}}","change:eS":"{{uV.sS}}","class":"{{['page', g]}}","eA":"{{$eA[e]}}","eS":"{{$eS[e]}}","enable-flex":"true","enhanced":"true","hidden":"{{virtualHostHidden || false}}","id":"{{e}}","scroll-y":"true","style":"{{'--status-bar-height:' + f + ';' + (virtualHostStyle || '')}}"},"c":[{"a":{"class":"card","wx:if":"{{a}}"},"c":[{"a":{"class":"sk-cover"},"c":[],"n":"view","t":"el"},{"a":{"class":"body"},"c":[{"a":{"class":"sk-line"},"c":[],"n":"view","t":"el"},{"a":{"class":"sk-line short"},"c":[],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"empty","wx:if":"{{b}}"},"c":[{"a":{"class":"empty-t"},"c":[{"t":"tx","x":"还没有认养的茶园"}],"n":"text","t":"el"},{"a":{"bindtap":"{{c}}","class":"empty-btn"},"c":[{"a":{"class":"empty-btn-t"},"c":[{"t":"tx","x":"去认养一棵古树"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card","wx:for":"{{d}}","wx:for-item":"g","wx:key":"q"},"c":[{"a":{"bindtap":"{{g.c}}","class":"cover-wrap"},"c":[{"a":{"class":"cover","mode":"widthFix","src":"{{g.a}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"tag"},"c":[{"t":"tx","x":"{{g.b}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"body"},"c":[{"a":{"class":"name"},"c":[{"t":"tx","x":"{{g.d}}"}],"n":"text","t":"el"},{"a":{"class":"grid"},"c":[{"a":{"class":"meta"},"c":[{"t":"tx","x":"认养份额：{{g.e}} 份"}],"n":"text","t":"el"},{"a":{"class":"meta"},"c":[{"t":"tx","x":"认养周期：{{g.f}}"}],"n":"text","t":"el"},{"a":{"class":"meta"},"c":[{"t":"tx","x":"溯源批次：{{g.g}}"}],"n":"text","t":"el"},{"a":{"bindtap":"{{g.i}}","class":"meta meta-link"},"c":[{"t":"tx","x":"挂牌：{{g.h}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"plaque","wx:if":"{{g.j}}"},"c":[{"a":{"class":"plaque-h"},"c":[{"t":"tx","x":"凤凰云岫 · 我的挂牌"}],"n":"text","t":"el"},{"a":{"class":"plaque-name"},"c":[{"t":"tx","x":"「{{g.k}}」"}],"n":"text","t":"el"},{"a":{"class":"plaque-msg"},"c":[{"t":"tx","x":"{{g.l}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"actions"},"c":[{"a":{"bindtap":"{{g.m}}","class":"act"},"c":[{"a":{"class":"act-t"},"c":[{"t":"tx","x":"查看溯源"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{g.n}}","class":"act"},"c":[{"a":{"class":"act-t"},"c":[{"t":"tx","x":"实时监控"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{g.p}}","class":"act act-gold","wx:if":"{{g.o}}"},"c":[{"a":{"class":"act-t-gold"},"c":[{"t":"tx","x":"认养证"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"style":"height:24rpx"},"c":[],"n":"view","t":"el"}],"n":"scroll-view","t":"el"},{"a":{"module":"uV","src":"/common/uniView.wxs"},"c":[],"n":"wxs","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./my-garden.js"></script>
+</body>
+</html>

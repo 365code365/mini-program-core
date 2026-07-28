@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/adoption/list</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./list.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-scroll-view page" id="" style="--status-bar-height:;overflow-y:auto">
+    <div class="wx-view intro">
+      <span class="wx-text intro-t">认养一棵凤凰山古树，拥有一片专属茶园。</span>
+      <span class="wx-text intro-t">1 份 = 1 棵茶树年产量（约 500g 干茶），认养周期 1 年。</span>
+    </div>
+    <div class="wx-view filters">
+      <span class="wx-text fil" data-tap="">全部</span>
+      <span class="wx-text fil" data-tap="">古树</span>
+      <span class="wx-text fil" data-tap="">台地</span>
+    </div>
+    <div class="wx-view list"></div>
+    <div class="wx-view" style="height:12px"></div>
+  </div>
+  <div class="wx-wxs"></div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/adoption/list";
+window.__PAGE_PULL_DOWN__ = false;
+window.__WXML__ = [{"a":{"change:eA":"{{uV.sA}}","change:eS":"{{uV.sS}}","class":"{{['page', j]}}","eA":"{{$eA[h]}}","eS":"{{$eS[h]}}","enable-flex":"true","enhanced":"true","hidden":"{{virtualHostHidden || false}}","id":"{{h}}","scroll-y":"true","style":"{{'--status-bar-height:' + i + ';' + (virtualHostStyle || '')}}"},"c":[{"a":{"class":"intro"},"c":[{"a":{"class":"intro-t"},"c":[{"t":"tx","x":"认养一棵凤凰山古树，拥有一片专属茶园。"}],"n":"text","t":"el"},{"a":{"class":"intro-t"},"c":[{"t":"tx","x":"1 份 = 1 棵茶树年产量（约 500g 干茶），认养周期 1 年。"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"filters"},"c":[{"a":{"bindtap":"{{b}}","class":"{{['fil', a]}}"},"c":[{"t":"tx","x":"全部"}],"n":"text","t":"el"},{"a":{"bindtap":"{{d}}","class":"{{['fil', c]}}"},"c":[{"t":"tx","x":"古树"}],"n":"text","t":"el"},{"a":{"bindtap":"{{f}}","class":"{{['fil', e]}}"},"c":[{"t":"tx","x":"台地"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"list"},"c":[{"a":{"bindtap":"{{g.j}}","class":"card","wx:for":"{{g}}","wx:for-item":"g","wx:key":"i"},"c":[{"a":{"class":"cover-wrap"},"c":[{"a":{"class":"cover","mode":"widthFix","src":"{{g.a}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"soldout","wx:if":"{{g.b}}"},"c":[{"a":{"class":"soldout-t"},"c":[{"t":"tx","x":"已售罄"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"info"},"c":[{"a":{"class":"meta"},"c":[{"t":"tx","x":"{{g.c}} · 海拔{{g.d}}m · 树龄{{g.e}}年 · {{g.f}}亩"}],"n":"text","t":"el"},{"a":{"class":"info-bottom"},"c":[{"a":{"class":"price-wrap"},"c":[{"a":{"class":"price"},"c":[{"t":"tx","x":"¥{{g.g}}"}],"n":"text","t":"el"},{"a":{"class":"price-unit"},"c":[{"t":"tx","x":"/份"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"left"},"c":[{"t":"tx","x":"{{g.h}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"style":"height:24rpx"},"c":[],"n":"view","t":"el"}],"n":"scroll-view","t":"el"},{"a":{"module":"uV","src":"/common/uniView.wxs"},"c":[],"n":"wxs","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./list.js"></script>
+</body>
+</html>

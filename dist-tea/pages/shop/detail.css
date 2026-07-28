@@ -1,0 +1,347 @@
+/* 由 detail.wxss 编译 */
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+/* 字体栈第一位必须是 App.uvue 里 loadFontFace 注册过的 family，否则安卓机没有本机宋体，
+   会整站掉到系统黑体。Yunxiu Serif = Noto Serif SC Regular(正文)，Source Han Serif SC = Heavy(标题)。 */
+.page, .scroll {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.cover-wrap {
+  position: relative;
+  width: 100%;
+  height: 260px;
+  background-color: #efe9df;
+}
+
+/* .wx-swiper 默认高度只有 150px，必须显式撑到与 cover-wrap 等高 */
+.cover-swiper {
+  width: 100%;
+  height: 260px;
+}
+.cover {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+.cover-wash {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 110px;
+  background-color: rgba(247, 243, 236, 0.55);
+}
+.cover-copy {
+  position: absolute;
+  left: 17px;
+  right: 17px;
+  bottom: 17px;
+}
+.cover-title {
+  color: #33261a;
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: 0.500px;
+  font-family: "Source Han Serif SC", "Yunxiu Serif", "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+}
+.cover-sub {
+  color: #5c4e3f;
+  font-size: 10.500px;
+  margin-top: 4px;
+}
+.cover-pill {
+  align-self: flex-start;
+  height: 21px;
+  padding-left: 8px;
+  padding-right: 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(120, 92, 55, 0.34);
+  background-color: rgba(255, 253, 248, 0.6);
+  align-items: center;
+  justify-content: center;
+  margin-top: 7px;
+}
+.cover-pill-t {
+  color: #6d5942;
+  font-size: 9px;
+}
+.cover-dots {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 6px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+.cdot {
+  width: 5px;
+  height: 5px;
+  border-radius: 3px;
+  background-color: rgba(120, 95, 60, 0.28);
+  margin-left: 2.500px;
+  margin-right: 2.500px;
+}
+.cdot-on {
+  width: 11px;
+  background-color: #a8834e;
+}
+.body {
+  padding: 14px 16px;
+  background-color: #ffffff;
+}
+.name, .origin-title, .sec {
+  font-family: "Source Han Serif SC", "Yunxiu Serif", "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+}
+.name {
+  font-size: 19.500px;
+  font-weight: 900;
+  color: #4a3020;
+}
+.subtitle {
+  color: #82786c;
+  font-size: 10.500px;
+  margin-top: 3.500px;
+}
+.price-row {
+  flex-direction: row;
+  align-items: baseline;
+  margin-top: 8px;
+}
+.price {
+  font-size: 23px;
+  font-weight: 900;
+  color: #a87536;
+}
+.ot {
+  font-size: 12.500px;
+  color: #82786c;
+  margin-left: 7px;
+  text-decoration: line-through;
+}
+.vip {
+  font-size: 10px;
+  color: #9a6735;
+  background-color: #f4ecdf;
+  border-radius: 9px;
+  padding: 3px 8px;
+  margin-left: 8px;
+}
+.sales {
+  font-size: 11px;
+  color: #82786c;
+  margin-left: 10px;
+}
+.guide-card {
+  margin: 10px 12px;
+  padding: 5px 12px 13px;
+  border-radius: 11px;
+  background-color: #faf6ee;
+  border: 1px solid rgba(150, 116, 66, 0.12);
+}
+.guide-row {
+  flex-direction: row;
+  align-items: flex-start;
+  padding-top: 12px;
+}
+.guide-icon {
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+}
+.guide-copy {
+  flex: 1;
+  margin-left: 8px;
+}
+.guide-head {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+.guide-more {
+  color: #9a7b54;
+  font-size: 9.500px;
+}
+.guide-title {
+  color: #574432;
+  font-size: 12px;
+  font-weight: 900;
+  font-family: "Source Han Serif SC", "Yunxiu Serif", "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+}
+.guide-text {
+  color: #7c7367;
+  font-size: 10px;
+  line-height: 16px;
+  margin-top: 3px;
+}
+.spec {
+  padding: 10px 16px 0;
+  background-color: #ffffff;
+}
+.spec-name {
+  font-size: 12.500px;
+  color: #5a5248;
+  font-weight: 900;
+}
+.spec-vals {
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.chip {
+  font-size: 12px;
+  color: #5a5248;
+  background-color: #f0ece3;
+  padding: 6px 13px;
+  border-radius: 6px;
+  margin: 0 7px 7px 0;
+  border: 1px solid #f0ece3;
+}
+.chip-on {
+  color: #a87536;
+  background-color: rgba(199, 154, 82, 0.12);
+  border-color: #a87536;
+}
+.qty {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background-color: #ffffff;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  margin-top: 1px;
+}
+.qty-t {
+  font-size: 13px;
+  color: #5a5248;
+}
+.stepper {
+  flex-direction: row;
+  align-items: center;
+}
+.step-btn {
+  width: 27px;
+  height: 27px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 14px;
+  text-align: center;
+  line-height: 25px;
+  font-size: 17px;
+}
+.step-n {
+  width: 32px;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 900;
+}
+.origin-card {
+  height: 119px;
+  margin: 10px 12px;
+  border-radius: 11px;
+  overflow: hidden;
+  position: relative;
+  background-color: #f6f1e7;
+  border: 1px solid rgba(150, 116, 66, 0.12);
+}
+.origin-image {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.26;
+}
+.origin-wash {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 62%;
+  background-color: rgba(248, 244, 236, 0.72);
+}
+.origin-copy {
+  position: absolute;
+  left: 14px;
+  right: 12px;
+  top: 15px;
+}
+.origin-title {
+  color: #3d2e1e;
+  font-size: 14.500px;
+  font-weight: 900;
+}
+.origin-text {
+  color: #6f6559;
+  font-size: 9.500px;
+  line-height: 15.500px;
+  margin-top: 6px;
+}
+.intro {
+  padding: 12.500px 16px;
+  background-color: #ffffff;
+}
+.sec {
+  font-size: 15px;
+  font-weight: 900;
+  color: #4a3020;
+}
+.intro-rich {
+  margin-top: 6px;
+}
+.bar-space {
+  height: calc(75px + env(safe-area-inset-bottom));
+}
+.bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  flex-direction: row;
+  align-items: center;
+  background-color: #ffffff;
+  padding: 8px 11px calc(8px + env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+.consult {
+  width: 41px;
+  align-items: center;
+  justify-content: center;
+  margin-right: 6px;
+}
+.consult-icon {
+  width: 19px;
+  height: 19px;
+}
+.consult-text {
+  color: #82663f;
+  font-size: 9px;
+  margin-top: 1.500px;
+}
+.btn-line, .btn-fill {
+  flex: 1;
+  height: 40px;
+  border-radius: 7px;
+  align-items: center;
+  justify-content: center;
+}
+.btn-line {
+  border: 1px solid rgba(150, 116, 66, 0.5);
+  margin-right: 6px;
+}
+.btn-fill {
+  background-color: #9d4b39;
+}
+.btn-line-t {
+  color: #a87536;
+  font-size: 12.500px;
+  font-weight: 900;
+}
+.btn-fill-t {
+  color: #ffffff;
+  font-size: 12.500px;
+  font-weight: 900;
+}

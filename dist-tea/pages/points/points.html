@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/points/points</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./points.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-scroll-view page" id="" style="--status-bar-height:;overflow-y:auto">
+    <div class="wx-view head">
+      <div class="wx-view head-left">
+        <span class="wx-text head-k">我的积分</span>
+        <span class="wx-text head-v"></span>
+      </div>
+      <span class="wx-text head-tip">消费 1 元 = 1 积分</span>
+    </div>
+    <div class="wx-view grid"></div>
+    <div class="wx-view" style="height:12px"></div>
+  </div>
+  <div class="wx-wxs"></div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/points/points";
+window.__PAGE_PULL_DOWN__ = false;
+window.__WXML__ = [{"a":{"change:eA":"{{uV.sA}}","change:eS":"{{uV.sS}}","class":"{{['page', e]}}","eA":"{{$eA[c]}}","eS":"{{$eS[c]}}","enable-flex":"true","enhanced":"true","hidden":"{{virtualHostHidden || false}}","id":"{{c}}","scroll-y":"true","style":"{{'--status-bar-height:' + d + ';' + (virtualHostStyle || '')}}"},"c":[{"a":{"class":"head"},"c":[{"a":{"class":"head-left"},"c":[{"a":{"class":"head-k"},"c":[{"t":"tx","x":"我的积分"}],"n":"text","t":"el"},{"a":{"class":"head-v"},"c":[{"t":"tx","x":"{{a}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"head-tip"},"c":[{"t":"tx","x":"消费 1 元 = 1 积分"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"grid"},"c":[{"a":{"class":"cell","wx:for":"{{b}}","wx:for-item":"it","wx:key":"g"},"c":[{"a":{"class":"cell-ic"},"c":[{"a":{"class":"cell-emoji","src":"{{it.a}}"},"c":[],"n":"image","t":"el"}],"n":"view","t":"el"},{"a":{"class":"cell-name"},"c":[{"t":"tx","x":"{{it.b}}"}],"n":"text","t":"el"},{"a":{"class":"cell-cost"},"c":[{"t":"tx","x":"{{it.c}} 积分"}],"n":"text","t":"el"},{"a":{"bindtap":"{{it.f}}","class":"{{['cell-btn', it.e]}}"},"c":[{"a":{"class":"cell-btn-t"},"c":[{"t":"tx","x":"{{it.d}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"style":"height:24rpx"},"c":[],"n":"view","t":"el"}],"n":"scroll-view","t":"el"},{"a":{"module":"uV","src":"/common/uniView.wxs"},"c":[],"n":"wxs","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./points.js"></script>
+</body>
+</html>

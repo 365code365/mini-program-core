@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/plate/plate</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./plate.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-scroll-view page" id="" style="--status-bar-height:;overflow-y:auto">
+    <div class="wx-view head">
+      <span class="wx-text h-name"></span>
+      <span class="wx-text h-sub">为你认养的古树取一个挂牌名，留下专属寄语</span>
+      <div class="wx-view h-tag">
+        <span class="wx-text h-tag-t"></span>
+      </div>
+    </div>
+    <div class="wx-view preview">
+      <span class="wx-text pv-h">凤凰云岫 · 古树挂牌</span>
+      <div class="wx-view pv-line"></div>
+      <span class="wx-text pv-name">「」</span>
+      <span class="wx-text pv-msg"></span>
+    </div>
+    <div class="wx-view form">
+      <div class="wx-view field">
+        <span class="wx-text f-label">挂牌名 <span class="wx-text req">*</span></span>
+        <input class="wx-input f-input" type="text" value="" placeholder="如：阿宾的古树 / 一棵老枞" data-input="">
+        <span class="wx-text f-count">/12</span>
+      </div>
+      <div class="wx-view field">
+        <span class="wx-text f-label">挂牌寄语</span>
+        <span class="wx-text f-count">/60</span>
+      </div>
+    </div>
+    <span class="wx-text tip">挂牌信息提交后将由茶园完成实体挂牌并上传实拍照片，可在「我的茶园」查看进度。挂牌完成后不可修改。</span>
+    <div class="wx-view submit" data-tap="">
+      <span class="wx-text submit-t"></span>
+    </div>
+    <div class="wx-view" style="height:16px"></div>
+  </div>
+  <div class="wx-wxs"></div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/plate/plate";
+window.__PAGE_PULL_DOWN__ = false;
+window.__WXML__ = [{"a":{"change:eA":"{{uV.sA}}","change:eS":"{{uV.sS}}","class":"{{['page', q]}}","eA":"{{$eA[o]}}","eS":"{{$eS[o]}}","enable-flex":"true","enhanced":"true","hidden":"{{virtualHostHidden || false}}","id":"{{o}}","scroll-y":"true","style":"{{'--status-bar-height:' + p + ';' + (virtualHostStyle || '')}}"},"c":[{"a":{"class":"head"},"c":[{"a":{"class":"h-name"},"c":[{"t":"tx","x":"{{a}}"}],"n":"text","t":"el"},{"a":{"class":"h-sub"},"c":[{"t":"tx","x":"为你认养的古树取一个挂牌名，留下专属寄语"}],"n":"text","t":"el"},{"a":{"class":"{{['h-tag', c]}}"},"c":[{"a":{"class":"h-tag-t"},"c":[{"t":"tx","x":"{{b}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"preview"},"c":[{"a":{"class":"pv-h"},"c":[{"t":"tx","x":"凤凰云岫 · 古树挂牌"}],"n":"text","t":"el"},{"a":{"class":"pv-line"},"c":[],"n":"view","t":"el"},{"a":{"class":"pv-name"},"c":[{"t":"tx","x":"「{{d}}」"}],"n":"text","t":"el"},{"a":{"class":"pv-msg"},"c":[{"t":"tx","x":"{{e}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"form"},"c":[{"a":{"class":"field"},"c":[{"a":{"class":"f-label"},"c":[{"t":"tx","x":"挂牌名 "},{"a":{"class":"req"},"c":[{"t":"tx","x":"*"}],"n":"text","t":"el"}],"n":"text","t":"el"},{"a":{"bindinput":"{{g}}","class":"f-input","maxlength":"12","placeholder":"如：阿宾的古树 / 一棵老枞","placeholder-class":"ph","type":"text","value":"{{f}}"},"c":[],"n":"input","t":"el"},{"a":{"class":"f-count"},"c":[{"t":"tx","x":"{{h}}/12"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"field"},"c":[{"a":{"class":"f-label"},"c":[{"t":"tx","x":"挂牌寄语"}],"n":"text","t":"el"},{"a":{"wx:if":"{{r0}}"},"c":[{"a":{"bindinput":"{{j}}","class":"f-area","maxlength":"60","placeholder":"写下你与这棵古树的故事或祝愿（选填）","placeholder-class":"ph","value":"{{i}}"},"c":[],"n":"textarea","t":"el"}],"n":"block","t":"el"},{"a":{"class":"f-count"},"c":[{"t":"tx","x":"{{k}}/60"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"tip"},"c":[{"t":"tx","x":"挂牌信息提交后将由茶园完成实体挂牌并上传实拍照片，可在「我的茶园」查看进度。挂牌完成后不可修改。"}],"n":"text","t":"el"},{"a":{"bindtap":"{{n}}","class":"{{['submit', m]}}"},"c":[{"a":{"class":"submit-t"},"c":[{"t":"tx","x":"{{l}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"style":"height:32rpx"},"c":[],"n":"view","t":"el"}],"n":"scroll-view","t":"el"},{"a":{"module":"uV","src":"/common/uniView.wxs"},"c":[],"n":"wxs","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./plate.js"></script>
+</body>
+</html>

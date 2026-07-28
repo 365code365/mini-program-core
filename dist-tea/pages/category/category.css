@@ -1,0 +1,239 @@
+/* 由 category.wxss 编译 */
+@import "../../uvue.wxss";
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+/* 字体栈第一位必须是 App.uvue 里 loadFontFace 注册过的 family，否则安卓机没有本机宋体，
+   会整站掉到系统黑体。Yunxiu Serif = Noto Serif SC Regular(正文)，Source Han Serif SC = Heavy(标题)。 */
+.root {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.brand-cn, .tea-name {
+  font-family: "Source Han Serif SC", "Yunxiu Serif", "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+}
+.brand-en {
+  font-family: "Playfair Display", "Times New Roman", serif;
+}
+.header {
+  padding-left: 17px;
+  padding-right: 17px;
+  padding-bottom: 11px;
+  position: relative;
+  overflow: hidden;
+}
+.header-mountain {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  width: 100%;
+  height: 115px;
+  opacity: 0.1;
+}
+.back {
+  position: absolute;
+  left: 11px;
+  z-index: 2;
+  width: 29px;
+  height: 29px;
+  border-radius: 15px;
+  border: 1px solid rgba(139, 108, 68, 0.22);
+  background-color: rgba(255, 255, 255, 0.6);
+  align-items: center;
+  justify-content: center;
+}
+.back-icon {
+  color: #4a3020;
+  font-size: 21.500px;
+  line-height: 24px;
+  margin-top: -2.500px;
+}
+.brand {
+  position: relative;
+  z-index: 1;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 14px;
+}
+.brand-cn {
+  font-size: 21.500px;
+  font-weight: 900;
+  color: #4a3020;
+  letter-spacing: 4px;
+  font-family: "Source Han Serif SC", "Yunxiu Serif", "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+}
+.brand-en {
+  font-size: 7px;
+  color: #8d795c;
+  letter-spacing: 2.500px;
+  margin-top: 1.500px;
+  font-family: "Playfair Display", "Times New Roman", serif;
+}
+.search {
+  position: relative;
+  z-index: 1;
+  height: 36px;
+  border-radius: 18.500px;
+  border: 1px solid rgba(166, 136, 94, 0.22);
+  background-color: rgba(255, 255, 255, 0.5);
+  flex-direction: row;
+  align-items: center;
+  padding: 0 12px;
+}
+.search-icon {
+  width: 17px;
+  height: 17px;
+  margin-right: 7px;
+}
+.search-input {
+  flex: 1;
+  color: #2d251e;
+  font-size: 12px;
+}
+.catalog {
+  flex-direction: row;
+  align-items: flex-start;
+  padding-left: 4px;
+  padding-right: 5px;
+}
+.side-nav {
+  width: 89px;
+  min-height: 348px;
+  border-radius: 0 6px 6px 0;
+  background-color: rgba(255, 255, 255, 0.5);
+  overflow: hidden;
+}
+.side-item {
+  height: 56px;
+  flex-direction: row;
+  align-items: center;
+  padding-left: 11.500px;
+  position: relative;
+}
+.side-item-on {
+  background-color: #f1e8dc;
+}
+.side-line {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3.500px;
+  background-color: #9d7645;
+}
+.side-icon {
+  width: 17px;
+  height: 17px;
+  margin-right: 5px;
+}
+.side-text {
+  color: #655e55;
+  font-size: 11.500px;
+}
+.side-text-on {
+  color: #896637;
+  font-weight: 900;
+}
+.card-list {
+  flex: 1;
+  margin-left: 9px;
+}
+.tea-card {
+  height: 81px;
+  border-radius: 8.500px;
+  overflow: hidden;
+  position: relative;
+  background-color: #eae4da;
+  margin-bottom: 6px;
+  border: 1px solid rgba(158, 127, 83, 0.1);
+}
+.tea-image {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+.tea-wash {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 57%;
+  background-color: #f8f5ef;
+}
+.tea-fade {
+  position: absolute;
+  left: 57%;
+  top: 0;
+  bottom: 0;
+  width: 20%;
+  background-color: rgba(248, 245, 239, 0.55);
+}
+.tea-copy {
+  position: absolute;
+  left: 18px;
+  top: 11px;
+  right: 6px;
+}
+.tea-name {
+  color: #2d2924;
+  font-size: 18.500px;
+  line-height: 22.500px;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+.tea-sub {
+  color: #696259;
+  font-size: 10px;
+  margin-top: 2px;
+}
+.tea-arrow {
+  width: 19px;
+  height: 19px;
+  border-radius: 10px;
+  border: 1px solid #ad8c5d;
+  align-items: center;
+  justify-content: center;
+  margin-top: 5.500px;
+}
+.tea-arrow-text {
+  color: #967446;
+  font-size: 11.500px;
+}
+.trust {
+  margin: 28px 12px 0 45px;
+  height: 66px;
+  border: 1px solid rgba(158, 127, 83, 0.12);
+  border-radius: 9px;
+  background-color: rgba(255, 255, 255, 0.46);
+  flex-direction: row;
+  align-items: center;
+  padding: 0;
+}
+.trust-item {
+  flex: 1;
+  height: 47px;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid rgba(141, 120, 90, 0.1);
+}
+.trust-icon {
+  width: 19px;
+  height: 19px;
+}
+.trust-title {
+  color: #6e5c43;
+  font-size: 9.500px;
+  margin-top: 2.500px;
+}
+.trust-sub {
+  color: #82786c;
+  font-size: 7.500px;
+  margin-top: 0.500px;
+}
+.tabbar-space {
+  height: calc(82px + env(safe-area-inset-bottom));
+}

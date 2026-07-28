@@ -20,6 +20,7 @@ pub mod edge_back;
 pub mod pointer_input;
 pub mod touch_dispatch;
 pub mod edge_back_host;
+pub mod headless_script;
 
 pub use config::*;
 pub use navigation::*;

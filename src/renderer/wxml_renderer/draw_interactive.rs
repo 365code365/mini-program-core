@@ -301,20 +301,7 @@ impl WxmlRenderer {
             }
         }
 
-        // 记录事件绑定
-        for e in &node.events {
-            self.event_bindings.push(EventBinding { 
-                event_type: e.event_type.clone(), 
-                handler: e.handler.clone(), 
-                id: node.attrs.get("id").cloned().unwrap_or_default(), 
-                data: e.data.clone(), 
-                bounds: logical_bounds,
-                is_catch: e.is_catch,
-                phase: e.phase,
-                mut_bind: e.mut_bind,
-                is_fixed: self.registering_fixed,
-            });
-        }
+        self.push_event_bindings(node, logical_bounds);
     }
     
     /// 渲染子节点到离屏缓存（不处理交互状态，纯渲染）
@@ -689,19 +676,7 @@ impl WxmlRenderer {
             }
         }
 
-        for e in &node.events {
-            self.event_bindings.push(EventBinding { 
-                event_type: e.event_type.clone(), 
-                handler: e.handler.clone(), 
-                id: node.attrs.get("id").cloned().unwrap_or_default(), 
-                data: e.data.clone(), 
-                bounds: logical_bounds,
-                is_catch: e.is_catch,
-                phase: e.phase,
-                mut_bind: e.mut_bind,
-                is_fixed: self.registering_fixed,
-            });
-        }
+        self.push_event_bindings(node, logical_bounds);
     }
     
 }
