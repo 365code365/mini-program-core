@@ -129,20 +129,20 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
     c: common_vendor.t($data.g.altitude),
     d: common_vendor.t($options.money($data.g.pricePerShare)),
     e: common_vendor.t($data.shares),
-    f: common_assets._imports_0$5,
+    f: common_assets._imports_0$6,
     g: common_vendor.n($data.agreed ? "cb-on" : ""),
     h: common_vendor.t($data.agreeName),
     i: common_vendor.o(($event) => $data.showAgree = true, "b9"),
     j: common_vendor.o(($event) => $data.agreed = !$data.agreed, "39"),
     k: common_vendor.t($options.money($data.balance)),
-    l: common_assets._imports_0$5,
+    l: common_assets._imports_0$6,
     m: common_vendor.n($data.useBalance ? "cb-on" : ""),
     n: common_vendor.o(($event) => $data.useBalance = true, "6b"),
     o: $data.useBalance && $options.wechatPay > 0
   }, $data.useBalance && $options.wechatPay > 0 ? {
     p: common_vendor.t($options.money($options.wechatPay))
   } : {}, {
-    q: common_assets._imports_0$5,
+    q: common_assets._imports_0$6,
     r: common_vendor.n(!$data.useBalance ? "cb-on" : ""),
     s: common_vendor.o(($event) => $data.useBalance = false, "a1"),
     t: common_vendor.t($options.money($options.subtotal)),
@@ -186,3 +186,4 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
 }
 const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render]]);
 wx.createPage(MiniProgramPage);
+//# sourceMappingURL=../../../.sourcemap/mp-weixin/pages/checkout/checkout.js.map

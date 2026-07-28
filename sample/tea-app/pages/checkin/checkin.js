@@ -43,7 +43,7 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
       return common_vendor.e({
         a: i < $data.signed
       }, i < $data.signed ? {
-        b: common_assets._imports_0$5
+        b: common_assets._imports_0$6
       } : {
         c: common_vendor.t(i == 6 ? "+50" : "+10")
       }, {
@@ -63,3 +63,4 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
 }
 const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render]]);
 wx.createPage(MiniProgramPage);
+//# sourceMappingURL=../../../.sourcemap/mp-weixin/pages/checkin/checkin.js.map

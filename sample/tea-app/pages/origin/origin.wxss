@@ -18,7 +18,7 @@
   font-family: "Playfair Display", "Times New Roman", serif;
 }
 .nav {
-  height: 108rpx;
+  padding-bottom: 16rpx;
   align-items: center;
   justify-content: center;
 }

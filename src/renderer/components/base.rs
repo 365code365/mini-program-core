@@ -438,15 +438,35 @@ pub fn measure_text_node(
     let pad_h = tm.pad_t + tm.pad_b;
     let content_w = tm.max_line_width + pad_w;
 
+    // min-content 按定义不可能大于 max-content，这里必须夹一次：
+    // `min_unit_width` 垫了「至少一个 em」的底（断行按整字切，可用宽再小也要放得下
+    // 一个字），而窄字符的 advance 比 1em 小得多 —— 宋体的 `+` 在 36px 下只有 24。
+    // 不夹的话单个 `+` 的文本盒被下限撑到 36：盒子被 `justify-content:center`
+    // 居中了，里面的字形却偏左 3px，圆形按钮里的加号看着没对准圆心
+    // （商城列表的 `.add` 就是这么歪的）。
+    let min_w = (tm.min_unit_width + pad_w).min(content_w);
+
     // 解析可用宽度 → 内容区宽
     let box_w = match known.width {
         Some(w) => w,
         None => match available.width {
-            AvailableSpace::Definite(w) => w.min(content_w).max(tm.min_unit_width + pad_w),
+            AvailableSpace::Definite(w) => w.min(content_w).max(min_w),
             AvailableSpace::MaxContent => content_w,
-            AvailableSpace::MinContent => tm.min_unit_width + pad_w,
+            AvailableSpace::MinContent => min_w,
         },
     };
+    // 诊断：`MINI_TEXT_PROBE=<原文>` 打印这段文字的盒宽是怎么定出来的。
+    // 度量是热路径，环境变量只读一次（`min-content` 意外大于 `max-content` 这类问题
+    // 光看渲染结果是看不出来的 —— 圆按钮里的加号偏左就是它查出来的）。
+    {
+        static PROBE: std::sync::OnceLock<Option<String>> = std::sync::OnceLock::new();
+        if PROBE.get_or_init(|| std::env::var("MINI_TEXT_PROBE").ok()).as_deref() == Some(&tm.text) {
+            eprintln!(
+                "🔎 度量 {:?}: known={:?} avail={:?} → box_w={:.2}（max_line={:.2} min_unit={:.2} pad={:.2} font_px={:.1}）",
+                tm.text, known.width, available.width, box_w, tm.max_line_width, tm.min_unit_width, pad_w, tm.font_px
+            );
+        }
+    }
     let inner_w = (box_w - pad_w).max(1.0);
 
     // 行数：nowrap 只按显式换行；否则按内容宽/可用宽估算，再取真实度量
@@ -505,6 +525,13 @@ pub fn min_unit_width(
     if !word.is_empty() {
         widest = widest.max(measure(&word));
     }
+    // 垫一个「至少一个 em」的底：断行是按整字/整词切的，可用宽再小也不该把盒子
+    // 压到放不下一个字（步进器 `- 1 +`、单字标签靠这条撑住，去掉会让 sample
+    // 购物车页的双端差异从 1.5% 崩到 10.1%）。
+    //
+    // 注意这个底**可能超过 max-content**（宋体 `+` 在 36px 下 advance 只有 24），
+    // 而 min-content 按定义不可能大于 max-content —— 所以取用方必须夹一次，
+    // 见 `measure_text_node` 里的 `min(content_w)`。
     widest.max(font_px)
 }
 

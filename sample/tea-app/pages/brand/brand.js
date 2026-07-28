@@ -10,10 +10,10 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
   "raw js";
   return {
     a: common_vendor.o((...args) => $options.goBack && $options.goBack(...args), "d0"),
-    b: common_assets._imports_0$13,
+    b: common_assets._imports_0$14,
     c: common_assets._imports_1$2,
     d: common_assets._imports_2$1,
-    e: common_assets._imports_3,
+    e: common_assets._imports_0$2,
     f: common_vendor.o(($event) => $options.nav("/pages/adoption/list"), "b5"),
     g: common_vendor.sei(common_vendor.gei(_ctx, ""), "scroll-view"),
     h: `${_ctx.u_s_b_h}px`,
@@ -22,3 +22,4 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
 }
 const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render]]);
 wx.createPage(MiniProgramPage);
+//# sourceMappingURL=../../../.sourcemap/mp-weixin/pages/brand/brand.js.map

@@ -39,3 +39,4 @@ function takePickedAddress() {
 exports.PickedAddress = PickedAddress;
 exports.setPickedAddress = setPickedAddress;
 exports.takePickedAddress = takePickedAddress;
+//# sourceMappingURL=../../.sourcemap/mp-weixin/store/selection.js.map

@@ -33,6 +33,7 @@
     "pages/coupons/coupons",
     "pages/points/points",
     "pages/address/address",
+    "pages/consult/consult",
     "pages/login/login",
     "pages/subscribe/subscribe"
   ],

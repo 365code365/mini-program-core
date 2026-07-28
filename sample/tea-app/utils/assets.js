@@ -74,3 +74,4 @@ function refreshAssets() {
 }
 exports.assetUrl = assetUrl;
 exports.refreshAssets = refreshAssets;
+//# sourceMappingURL=../../.sourcemap/mp-weixin/utils/assets.js.map

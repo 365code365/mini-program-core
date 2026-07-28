@@ -176,3 +176,4 @@ function initStore() {
   }
 }
 exports.initStore = initStore;
+//# sourceMappingURL=../../.sourcemap/mp-weixin/store/index.js.map

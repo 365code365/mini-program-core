@@ -1,6 +1,7 @@
 "use strict";
 const common_vendor = require("../../common/vendor.js");
 const api_ai = require("../../api/ai.js");
+const api_consult = require("../../api/consult.js");
 const utils_assets = require("../../utils/assets.js");
 const common_assets = require("../../common/assets.js");
 class Tip extends common_vendor.UTS.UTSType {
@@ -75,20 +76,106 @@ const _sfc_main = common_vendor.defineComponent({
         new Tip({ title: "好茶也需好节奏", desc: "慢慢喝、多感受\n茶会更懂你", icon: "/static/icons/star-d.png" })
       ],
       requestBody: new common_vendor.UTSJSONObject({}),
-      products: []
+      products: [],
+      // 思考过程：先用用户提交的意图占位，服务端返回识别结果后覆盖
+      showThink: true,
+      askText: "",
+      reIntent: "self",
+      reLevel: "normal",
+      reTaste: "unknown",
+      reBudget: "middle"
     };
   },
+  computed: {
+    /** 需求标签。文案与服务端 TeaAiServiceImpl 的 levelLabel/tasteLabel/budgetLabel 保持一致 */
+    chips() {
+      const out = [];
+      out.push("场景：" + this.intentLabel);
+      out.push(this.levelLabel);
+      out.push(this.tasteLabel);
+      out.push(this.budgetLabel);
+      return out;
+    },
+    intentLabel() {
+      if (this.reIntent == "gift")
+        return "送礼";
+      if (this.reIntent == "business")
+        return "企业采购";
+      return "自己喝";
+    },
+    levelLabel() {
+      if (this.reLevel == "newbie")
+        return "第一次喝单枞";
+      if (this.reLevel == "advanced")
+        return "想体验更高水准";
+      return "已有日常饮茶习惯";
+    },
+    tasteLabel() {
+      if (this.reTaste == "aroma")
+        return "偏好清晰花香";
+      if (this.reTaste == "sweet")
+        return "偏好蜜甜回甘";
+      if (this.reTaste == "thick")
+        return "偏好醇厚山韵";
+      if (this.reTaste == "roast")
+        return "偏好焙火熟香";
+      return "口感平衡";
+    },
+    budgetLabel() {
+      if (this.reBudget == "low")
+        return "预算友好";
+      if (this.reBudget == "high")
+        return "更重视品质";
+      return "预算适中";
+    },
+    /** 多款推荐理由完全相同时返回该理由，否则返回空串（各款分别展示） */
+    sharedReason() {
+      if (this.products.length < 2)
+        return "";
+      const first = this.products[0].reason;
+      if (first.length == 0)
+        return "";
+      for (let i = 1; i < this.products.length; i++) {
+        if (this.products[i].reason != first)
+          return "";
+      }
+      return first;
+    }
+  },
   onLoad() {
+    var _a;
     const cached = common_vendor.index.getStorageSync("yunxiu_ai_request");
-    if (cached != null)
+    if (cached != null) {
       this.requestBody = cached;
+      this.applyIntent(this.requestBody);
+      this.askText = (_a = this.requestBody.getString("text")) !== null && _a !== void 0 ? _a : "";
+    }
     this.load();
   },
   methods: {
+    toggleThink() {
+      this.showThink = !this.showThink;
+    },
+    /** 意图四要素：请求体与响应体字段同名，复用同一段读取 */
+    applyIntent(src) {
+      const intent = src.getString("intent");
+      const level = src.getString("level");
+      const taste = src.getString("taste");
+      const budget = src.getString("budget");
+      if (intent != null && intent.length > 0)
+        this.reIntent = intent;
+      if (level != null && level.length > 0)
+        this.reLevel = level;
+      if (taste != null && taste.length > 0)
+        this.reTaste = taste;
+      if (budget != null && budget.length > 0)
+        this.reBudget = budget;
+    },
     load() {
       this.loading = true;
       api_ai.recommendTea(this.requestBody).then((data) => {
         var _a, _b, _c, _d, _f, _g, _h, _j, _k, _l, _m, _o;
+        this.applyIntent(data);
         this.summary = (_a = data.getString("summary")) !== null && _a !== void 0 ? _a : "为你筛选了以下合适好茶";
         this.consultantText = (_b = data.getString("consultantText")) !== null && _b !== void 0 ? _b : this.consultantText;
         this.skillName = (_c = data.getString("skillName")) !== null && _c !== void 0 ? _c : "";
@@ -135,7 +222,7 @@ const _sfc_main = common_vendor.defineComponent({
       common_vendor.index.navigateTo({ url: "/pages/shop/detail?id=" + id });
     },
     consult() {
-      common_vendor.index.showModal(new common_vendor.UTSJSONObject({ title: "咨询选茶师", content: this.consultantText, showCancel: false }));
+      api_consult.openConsult("consult", "ai_result", 0);
     }
   }
 });
@@ -144,11 +231,55 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
   return common_vendor.e({
     a: common_assets._imports_5,
     b: common_vendor.t($data.summary),
-    c: $data.loading
+    c: common_assets._imports_2$1,
+    d: common_vendor.t($data.showThink ? "收起" : "展开"),
+    e: common_vendor.o((...args) => $options.toggleThink && $options.toggleThink(...args), "55"),
+    f: $data.showThink
+  }, $data.showThink ? common_vendor.e({
+    g: $data.askText.length > 0
+  }, $data.askText.length > 0 ? {
+    h: common_vendor.t($data.askText)
+  } : {}, {
+    i: common_vendor.f($options.chips, (item, i, i0) => {
+      return {
+        a: common_vendor.t(item),
+        b: i
+      };
+    }),
+    j: common_vendor.n($data.loading ? "dot-doing" : "dot-done"),
+    k: common_vendor.t($data.skillName.length > 0 ? $data.skillName : "默认选茶规则"),
+    l: common_vendor.n($data.loading ? "dot-wait" : "dot-done"),
+    m: $data.loading
+  }, $data.loading ? {} : $data.products.length == 0 ? {} : {
+    o: common_vendor.t($data.products.length)
+  }, {
+    n: $data.products.length == 0,
+    p: $options.sharedReason.length > 0
+  }, $options.sharedReason.length > 0 ? {
+    q: common_vendor.t($options.sharedReason)
+  } : {}, {
+    r: common_vendor.f($data.products, (item, i, i0) => {
+      return common_vendor.e({
+        a: common_vendor.t(i + 1)
+      }, $options.sharedReason.length > 0 ? {
+        b: common_vendor.t(item.name)
+      } : {
+        c: common_vendor.t(item.name),
+        d: common_vendor.t(item.reason.length > 0 ? item.reason : "与你的需求关键词匹配度最高")
+      }, {
+        e: i
+      });
+    }),
+    s: $options.sharedReason.length > 0,
+    t: !$data.loading && $data.products.length > 0
+  }, !$data.loading && $data.products.length > 0 ? {
+    v: common_vendor.t($data.products[0].notFor)
+  } : {}) : {}, {
+    w: $data.loading
   }, $data.loading ? {} : $data.products.length == 0 ? {
-    e: common_vendor.o((...args) => $options.retry && $options.retry(...args), "56")
+    y: common_vendor.o((...args) => $options.retry && $options.retry(...args), "89")
   } : {
-    f: common_vendor.f($data.products, (item, i, i0) => {
+    z: common_vendor.f($data.products, (item, i, i0) => {
       return common_vendor.e({
         a: $options.imgFor(item, i),
         b: common_vendor.t(item.name),
@@ -171,13 +302,13 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
         l: i
       });
     }),
-    g: common_assets._imports_0$2,
-    h: common_assets._imports_2$1,
-    i: common_assets._imports_3$1
+    A: common_assets._imports_0$3,
+    B: common_assets._imports_2$1,
+    C: common_assets._imports_3
   }, {
-    d: $data.products.length == 0,
-    j: common_assets._imports_2$1,
-    k: common_vendor.f($data.tips, (item, i, i0) => {
+    x: $data.products.length == 0,
+    D: common_assets._imports_2$1,
+    E: common_vendor.f($data.tips, (item, i, i0) => {
       return {
         a: item.icon,
         b: common_vendor.t(item.title),
@@ -185,16 +316,17 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
         d: i
       };
     }),
-    l: $data.skillName.length > 0
+    F: $data.skillName.length > 0
   }, $data.skillName.length > 0 ? {
-    m: common_vendor.t($data.skillName)
+    G: common_vendor.t($data.skillName)
   } : {}, {
-    n: common_assets._imports_5,
-    o: common_vendor.o((...args) => $options.consult && $options.consult(...args), "fb"),
-    p: common_vendor.sei(common_vendor.gei(_ctx, ""), "scroll-view"),
-    q: `${_ctx.u_s_b_h}px`,
-    r: common_vendor.pvhc(_ctx.$scope.data.virtualHostClass)
+    H: common_assets._imports_5,
+    I: common_vendor.o((...args) => $options.consult && $options.consult(...args), "0d"),
+    J: common_vendor.sei(common_vendor.gei(_ctx, ""), "scroll-view"),
+    K: `${_ctx.u_s_b_h}px`,
+    L: common_vendor.pvhc(_ctx.$scope.data.virtualHostClass)
   });
 }
 const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render]]);
 wx.createPage(MiniProgramPage);
+//# sourceMappingURL=../../../.sourcemap/mp-weixin/pages/ai-result/ai-result.js.map

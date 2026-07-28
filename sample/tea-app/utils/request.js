@@ -90,3 +90,4 @@ exports.get = get;
 exports.getPublic = getPublic;
 exports.post = post;
 exports.postPublic = postPublic;
+//# sourceMappingURL=../../.sourcemap/mp-weixin/utils/request.js.map

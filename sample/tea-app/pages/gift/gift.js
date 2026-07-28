@@ -1,6 +1,7 @@
 "use strict";
 const common_vendor = require("../../common/vendor.js");
 const utils_assets = require("../../utils/assets.js");
+const api_consult = require("../../api/consult.js");
 const common_assets = require("../../common/assets.js");
 class GiftType extends common_vendor.UTS.UTSType {
   static get$UTSMetadata$() {
@@ -51,11 +52,14 @@ const _sfc_main = common_vendor.defineComponent({
     openGift(keyword) {
       common_vendor.index.navigateTo({ url: "/pages/shop/list?keyword=" + encodeURIComponent(keyword) });
     },
-    consult() {
-      common_vendor.index.showModal(new common_vendor.UTSJSONObject({ title: "茶礼顾问", content: "请通过企业微信客服告诉我们送礼对象、数量和预算，我们会提供一对一建议。", showCancel: false }));
+    consultGift() {
+      api_consult.openConsult("gift", "gift", 0);
+    },
+    consultEnterprise() {
+      api_consult.openConsult("enterprise", "gift", 0);
     },
     reserve() {
-      common_vendor.index.showModal(new common_vendor.UTSJSONObject({ title: "预约到店品鉴", content: "预约功能正在接入，当前可先联系企业微信客服登记时间。", showCancel: false }));
+      api_consult.openConsult("appointment", "gift", 0);
     }
   }
 });
@@ -82,17 +86,17 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
       };
     }),
     d: common_assets._imports_5,
-    e: common_vendor.o((...args) => $options.consult && $options.consult(...args), "c5"),
-    f: common_vendor.o(($event) => $options.openGift("礼盒"), "81"),
+    e: common_vendor.o((...args) => $options.consultGift && $options.consultGift(...args), "b7"),
+    f: common_vendor.o(($event) => $options.openGift("礼盒"), "ae"),
     g: $data.imgKing,
-    h: common_vendor.o(($event) => $options.openGift("茶王"), "94"),
+    h: common_vendor.o(($event) => $options.openGift("茶王"), "2c"),
     i: $data.imgTasting,
-    j: common_vendor.o(($event) => $options.openGift("品鉴"), "17"),
+    j: common_vendor.o(($event) => $options.openGift("品鉴"), "4f"),
     k: common_assets._imports_5$1,
     l: common_assets._imports_2$2,
     m: common_assets._imports_2$1,
-    n: common_vendor.o((...args) => $options.consult && $options.consult(...args), "9a"),
-    o: common_vendor.o((...args) => $options.reserve && $options.reserve(...args), "e9"),
+    n: common_vendor.o((...args) => $options.consultEnterprise && $options.consultEnterprise(...args), "03"),
+    o: common_vendor.o((...args) => $options.reserve && $options.reserve(...args), "29"),
     p: common_vendor.p({
       current: 2
     }),
@@ -103,3 +107,4 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
 }
 const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render]]);
 wx.createPage(MiniProgramPage);
+//# sourceMappingURL=../../../.sourcemap/mp-weixin/pages/gift/gift.js.map

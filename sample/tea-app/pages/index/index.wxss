@@ -8,7 +8,7 @@
   background-color: #f7f3ec;
 }
 .nav {
-  height: 92rpx;
+  padding-bottom: 12rpx;
   align-items: center;
   justify-content: center;
 }

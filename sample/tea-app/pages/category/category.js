@@ -166,10 +166,10 @@ if (!Math) {
 function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
   "raw js";
   return {
-    a: common_assets._imports_0$3,
+    a: common_assets._imports_0$4,
     b: common_vendor.s("top:" + ($data.statusBarH + 22) + "px"),
     c: common_vendor.o((...args) => $options.goBack && $options.goBack(...args), "6a"),
-    d: common_assets._imports_0$4,
+    d: common_assets._imports_0$5,
     e: common_vendor.o((...args) => $options.onSearch && $options.onSearch(...args), "5d"),
     f: common_vendor.s("padding-top:" + ($data.statusBarH + 22) + "px"),
     g: common_vendor.f($data.menu, (item, i, i0) => {
@@ -211,3 +211,4 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
 }
 const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render]]);
 wx.createPage(MiniProgramPage);
+//# sourceMappingURL=../../../.sourcemap/mp-weixin/pages/category/category.js.map

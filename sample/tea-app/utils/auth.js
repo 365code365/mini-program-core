@@ -25,3 +25,4 @@ exports.getToken = getToken;
 exports.isLogin = isLogin;
 exports.setToken = setToken;
 exports.setUser = setUser;
+//# sourceMappingURL=../../.sourcemap/mp-weixin/utils/auth.js.map

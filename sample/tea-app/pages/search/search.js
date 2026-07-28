@@ -75,7 +75,7 @@ const _sfc_main = common_vendor.defineComponent({
 function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
   "raw js";
   return common_vendor.e({
-    a: common_assets._imports_0$4,
+    a: common_assets._imports_0$5,
     b: common_vendor.o((...args) => $options.doSearch && $options.doSearch(...args), "fb"),
     c: $data.q,
     d: common_vendor.o(($event) => $data.q = $event.detail.value, "6a"),
@@ -134,3 +134,4 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
 }
 const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render]]);
 wx.createPage(MiniProgramPage);
+//# sourceMappingURL=../../../.sourcemap/mp-weixin/pages/search/search.js.map

@@ -15,3 +15,4 @@ exports.TIMEOUT = TIMEOUT;
 exports.TOKEN_HEADER = TOKEN_HEADER;
 exports.TOKEN_KEY = TOKEN_KEY;
 exports.USER_KEY = USER_KEY;
+//# sourceMappingURL=../../.sourcemap/mp-weixin/config/env.js.map
