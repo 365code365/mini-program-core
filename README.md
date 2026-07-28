@@ -446,7 +446,13 @@ HTML 目标产出结构化工程（`common/base.css` + 每页 html/css/js + 运�
 - `Dimension` / `LengthPercentage(Auto)` 从枚举变成包着 `CompactLength` 的**不透明结构**（tag 压进 f32 低位），**不能再 `match`**。读值收敛成四个封装：`dim_is_auto` / `dim_length` / `dim_percent` / `lpa_length`（`components/base.rs`）。
 - 对齐类（`AlignItems`/`AlignSelf`/`AlignContent`/`JustifyContent`）也变成结构 + 关联常量：`FlexStart` → `FLEX_START`。
 - 度量闭包多了第五个参数 `&Style`。
-- **唯一需要改行为的地方**：靠内容定宽的行内文本要 `flex-shrink: 0`。taffy 0.12 开始严格执行 flex 项的自动最小宽度（`min-width:auto` = min-content），而本引擎把行内 `<text>` 建成定宽叶子（min-content 等于整行宽），于是「一行里几段文本加起来略超容器」时收缩量会落到文本上 —— 文字被压窄、绘制期折行、溢出容器。也试过让文本真正可压（挂度量上下文 + `max_size` 封顶），那样确实与 Chrome 完全一致，但**首页双端差异从 4.1% 涨到 13.0%**：我们的字形度量与 Chrome 差那 1px，就足以让标题误折行。宁可溢出一处，不要整页排版跳掉。
+- **`<text>` 一律走文字度量，不再建成「定宽叶子」**（这条推翻了一个早先的决定，过程值得留着）。taffy 0.12 起严格执行 flex 项的自动最小宽度（`min-width:auto` = min-content）。引擎一度只让 `display:block` / 居中 / 右对齐的文本挂度量上下文，其余 `<text>` 建成 `size.width = max-content` + `flex-shrink: 0` 的定宽叶子 —— 因为第一次尝试「让文本真正可压」时**首页双端差异从 4.1% 涨到 13.0%**（度量差 1px 就让标题误折行）。
+
+  定宽叶子的代价后来才暴露：taffy 对定宽叶子的 **min-content 就等于 max-content**，而这个值会一路冒到祖先的自动最小尺寸上。AI 选茶推荐页的商品卡一行放 `[图 99px | flex:1 中间栏 | 按钮 88px]`，中间栏因为内含一句长标题被判定「最少也要 282px」——于是 99px 的商品图被压成 **0**（整张图不见，实测 `🖼 ▢ 占位 0x236`）、88px 的操作按钮被压到 52px 并推到卡片外（x=396，卡片右边界 363）。`min_size.width` 救不了：它只是自身的下限，不会降低祖先看到的 min-content。
+
+  现在改回「宽度没被 CSS 写死就走度量路径」。第一次失败缺的那块拼图是**第二遍布局修正**（`reflow.rs::fix_text_box`，按实际拿到的盒宽重算行数补高度）—— 有了它，文本被压窄之后行高会跟着对上，误折行不再连锁破坏整页。实测：sample **4.66% → 4.65%**、news **6.48% → 6.41%**（hot 页改进 0.52），tea-app 的商品图/按钮恢复正常。代价是「一行里几段文本本来靠不可压顶住」的地方现在会按 CSS 折行（gallery 的优惠券弹窗券名多折一行）—— 那才是浏览器的行为。
+
+- **没有度量上下文的叶子要用自己的样式尺寸回答内在尺寸**。taffy 问内在尺寸时 `known` 是 None，这里从前一律回答 0，于是 `<image>` / `<input>` / `<canvas>` 的自动最小尺寸都是 0，在一行里**可以被兄弟压成 0**。浏览器对替换元素的 `min-width:auto` 解析成**指定尺寸**，所以写了 `width:198rpx` 的图片不会被压窄；现在照同一条规则回答。
 - 收益：同一台机器、同一条 `--drag 8x60`，商城首页拖动的单帧成本从 **3.87ms 降到 1.9ms**（p95 8.61ms → 2.1ms）。
 
 顺带用上了两个 0.12 才有的东西，以及一条被否决的尝试：
