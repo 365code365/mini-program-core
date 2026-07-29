@@ -285,7 +285,7 @@ impl VideoPlayer {
         }
         #[cfg(not(feature = "h264"))]
         {
-            let _ = (&sps, &pps, &sample_offsets, &timestamps, &sync_samples);
+            let _ = (&sps, &pps, &sync_samples, &sample_sizes, &chunk_offsets);
             println!("ℹ️  本构建未启用 h264 特性，<video> 不解码画面帧（交给宿主播放器）");
             Err("h264 decoding disabled in this build".to_string())
         }

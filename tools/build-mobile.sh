@@ -107,7 +107,7 @@ build_ios() {
     rm -rf "$hdr"
     mkdir -p "$hdr"
     cp include/mini_render.h "$hdr/"
-    cp sdk/ios/module.modulemap "$hdr/"
+    cp sdk/ios/ffi-headers/module.modulemap "$hdr/"
     local out=sdk/ios/MiniRender.xcframework
     rm -rf "$out"
     xcodebuild -create-xcframework \

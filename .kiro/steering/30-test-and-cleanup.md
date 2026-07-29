@@ -34,9 +34,10 @@ bash tools/snapshot-all.sh sample/news-app target/fin2_news   --settle 0 --time 
 跑一轮回归多出几十个目录，实测涨到过 **26GB**（364 个临时目录 + 12GB 的 debug 构建）。
 
 ```bash
-bash tools/clean-target.sh          # 清测试产物 + target/debug，保留 release（不用重编）
-bash tools/clean-target.sh --all    # 连 cargo 缓存一起清（下次全量重编）
-bash tools/clean-target.sh --dry    # 先看会删什么
+bash tools/clean-target.sh            # 清测试产物 + target/debug，保留 release（不用重编）
+bash tools/clean-target.sh --targets  # 再清交叉编译目标目录（iOS/Android，约 6GB）
+bash tools/clean-target.sh --all      # 连 cargo 缓存一起清（下次全量重编）
+bash tools/clean-target.sh --dry      # 先看会删什么
 ```
 
 规则：
@@ -46,6 +47,8 @@ bash tools/clean-target.sh --dry    # 先看会删什么
   它们一条 `snapshot-all.sh` 就能重新生成，不值得长期占盘。
 - 临时对比图落在 `target/` 下，**不要**写进 `doc/`、`sample/` 或仓库根目录。
 - `target/debug` 永远可以删：所有脚本都跑 `--release`。
+- 编过移动端库之后跑一次 `--targets`：那几个交叉编译目录一共约 6GB，
+  而产物已经拷进 `sdk/` 了，中间件留着没用。
 
 ## 两个坑（踩过，会让你误判成回归）
 

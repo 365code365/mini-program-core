@@ -1,0 +1,7 @@
+# 构建产物：由 tools/build-mobile.sh 生成，不进仓库（arm64 的 .so 34MB，
+# XCFramework 358MB）。发版时上传到 Maven / SPM release 或 CI artifact。
+android/src/main/jniLibs/
+android/build/
+android/.gradle/
+ios/MiniRender.xcframework/
+ios/.build/

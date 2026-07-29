@@ -2,6 +2,7 @@
 # 清理 target/：测试产物会无限堆积，实测能涨到 26GB。
 #
 #   bash tools/clean-target.sh          # 清测试产物 + debug 构建（保留 release，不用重编）
+#   bash tools/clean-target.sh --targets # 再清交叉编译目标目录（iOS/Android，~6GB）
 #   bash tools/clean-target.sh --all    # 连 cargo 构建缓存一起清（下次要全量重编）
 #   bash tools/clean-target.sh --dry    # 只看会删什么
 #
@@ -47,6 +48,14 @@ echo "🧹 清掉 ${#victims[@]} 项测试产物"
 if [ -d target/debug ]; then
     rm -rf target/debug
     echo "🧹 清掉 target/debug（所有脚本都用 --release）"
+fi
+
+# 交叉编译目标目录：移动端库不常编，产物已经拷进 sdk/，这里的中间件可以放心删
+if [ "$MODE" = "--targets" ] || [ "$MODE" = "--all" ]; then
+    for d in target/*-apple-ios* target/*-linux-android* target/*-linux-androideabi \
+             target/*-pc-windows-* target/*-unknown-*; do
+        [ -d "$d" ] && rm -rf "$d" && echo "🧹 清掉 $d"
+    done
 fi
 
 if [ "$MODE" = "--all" ]; then
