@@ -800,10 +800,49 @@ impl MiniAppApi {
                 return __currentPage;
             }
             
+            // ==================== App 级监听型 API ====================
+            //
+            // `wx.onError` / `wx.onUnhandledRejection` / `wx.onPageNotFound` /
+            // `wx.onThemeChange` 是真实的微信 API，与 `App({onError})` **并存**
+            // （微信里两边都会收到）。必须真的实现，不能靠「未实现 API 探针」返回
+            // undefined 兜着：框架的包装层自己就是个函数、能通过
+            // `typeof uni.onError === 'function'` 的能力探测，进去之后执行的是
+            // `wx[name].apply(wx, args)` —— 底下缺了就是
+            // `TypeError: cannot read property 'apply' of undefined`，
+            // **整个 app 脚本中断、一个页面都出不来**（tea-app 换新版编译产物后就是这样）。
+            var __appHooks = {};
+            function __makeAppHook(name) {
+                wx['on' + name] = function (cb) {
+                    if (typeof cb !== 'function') { return; }
+                    (__appHooks['on' + name] = __appHooks['on' + name] || []).push(cb);
+                };
+                wx['off' + name] = function (cb) {
+                    var list = __appHooks['on' + name];
+                    if (!list) { return; }
+                    if (cb === undefined) { __appHooks['on' + name] = []; return; }
+                    var i = list.indexOf(cb);
+                    if (i >= 0) { list.splice(i, 1); }
+                };
+            }
+            __makeAppHook('Error');
+            __makeAppHook('UnhandledRejection');
+            __makeAppHook('PageNotFound');
+            __makeAppHook('ThemeChange');
+            __makeAppHook('AppShow');
+            __makeAppHook('AppHide');
+
             // ==================== 完整生命周期分发 ====================
             // App 级生命周期：onLaunch/onShow/onHide/onError/onPageNotFound/
             //                 onUnhandledRejection/onThemeChange
             function __dispatchApp(name, arg) {
+                // `App({onError})` 之外，还有用 `wx.onError(cb)` 注册的监听者（微信里两者并存）
+                var extra = __appHooks[name];
+                if (extra) {
+                    for (var i = 0; i < extra.length; i++) {
+                        try { extra[i](arg); }
+                        catch (e) { __native_print('[wx.' + name + '] ' + e.message); }
+                    }
+                }
                 if (__app && typeof __app[name] === 'function') {
                     try { return __app[name](arg); }
                     catch (e) { __native_print('[App.' + name + '] ' + e.message); }
@@ -1050,9 +1089,14 @@ impl MiniAppApi {
                 options.success && options.success();
             };
             
+            // `redirectTo` 是**替换**当前页（栈深不变、退不回来），
+            // `reLaunch` 是**清空整个栈**再开。宿主两条分支都实现了
+            // （window.rs::process_navigation），这里以前却分别发成
+            // 'navigateTo' / 'switchTab'，结果 redirectTo 变成入栈（还能退回本该关掉的页），
+            // reLaunch 走 switchTab（目标不是 tab 页时直接失败、返回栈也没清）。
             wx.redirectTo = function(options) {
                 __pendingNavigation = {
-                    type: 'navigateTo',
+                    type: 'redirectTo',
                     url: options.url
                 };
                 __native_print('[Navigate] redirectTo: ' + options.url);
@@ -1061,7 +1105,7 @@ impl MiniAppApi {
             
             wx.reLaunch = function(options) {
                 __pendingNavigation = {
-                    type: 'switchTab',
+                    type: 'reLaunch',
                     url: options.url
                 };
                 __native_print('[Navigate] reLaunch: ' + options.url);

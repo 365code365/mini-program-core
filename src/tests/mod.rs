@@ -21,3 +21,7 @@ pub mod gif_tests;
 pub mod network_tests;
 pub mod inline_text_layout_tests;
 pub mod nested_style_tests;
+pub mod wx_api_tests;
+pub mod component_attr_tests;
+pub mod image_event_tests;
+pub mod wxss_feature_tests;

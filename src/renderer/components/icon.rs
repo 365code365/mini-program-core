@@ -1,24 +1,20 @@
 //! icon 组件 - 图标
-//! 
-//! 支持完整的 CSS 样式，同时保留微信默认样式作为 fallback
-//! 微信官方图标类型：
-//! - success: 成功（绿色对勾）
-//! - success_no_circle: 成功无圆圈
-//! - info: 信息（蓝色）
-//! - warn: 警告（红色）
-//! - waiting: 等待（蓝色）
-//! - cancel: 取消（红色X）
-//! - download: 下载
-//! - search: 搜索
-//! - clear: 清除
-//! 
-//! CSS 支持：
-//! - width/height: 自定义尺寸（覆盖 size 属性）
-//! - color: 自定义颜色（覆盖 color 属性）
-//! - opacity: 透明度
-//! - box-shadow: 阴影
+//!
+//! 图形数据全部来自 WeUI（见 `icon_data.rs`），也就是微信 `<icon>` 自己用的那套
+//! 字形；这里只负责「把字形放进组件盒」和样式解析。
+//!
+//! 微信官方 type：success / success_no_circle / info / warn / waiting / cancel /
+//! download / search / clear。其余（close / back / arrow_* / plus / minus /
+//! star / heart / chat / *_no_circle）是引擎扩展，仍尽量取 WeUI 的同名字形。
+//!
+//! 属性与 CSS：
+//! - `size`：图标边长（px，默认 23），CSS 的 width/height 优先；
+//! - `color`：WXML 属性优先于 CSS `color`，都没有时用微信默认色；
+//! - 支持 opacity、box-shadow。
 
 use super::base::*;
+use super::icon_data::{icon_default_color, icon_glyph, IconGlyph};
+use super::svg_path::{append_svg_path, Xf};
 use crate::parser::wxml::WxmlNode;
 use crate::{Canvas, Color, Paint, PaintStyle, Path};
 use taffy::prelude::*;
@@ -31,16 +27,16 @@ impl IconComponent {
         let events = extract_events(node);
         let attrs = node.attributes.clone();
         let sf = ctx.scale_factor;
-        
+
         let icon_type = node.get_attr("type").unwrap_or("success");
-        let icon_size = node.get_attr("size").and_then(|s| s.parse::<f32>().ok()).unwrap_or(23.0);
-        let icon_color = node.get_attr("color").and_then(|c| parse_color_str(c));
-        
-        // 检查 CSS 是否定义了尺寸
-        let has_custom_size = !dim_is_auto(ts.size.width) || 
-                              !dim_is_auto(ts.size.height);
-        
-        // 只在 CSS 没有定义尺寸时使用 size 属性
+        let icon_size = node
+            .get_attr("size")
+            .and_then(|s| s.trim().parse::<f32>().ok())
+            .unwrap_or(23.0);
+        let icon_color = node.get_attr("color").and_then(parse_color_str);
+
+        // CSS 定了尺寸就听 CSS 的，否则用 size 属性
+        let has_custom_size = !dim_is_auto(ts.size.width) || !dim_is_auto(ts.size.height);
         if !has_custom_size {
             let size = icon_size * sf;
             ts.size = Size { width: length(size), height: length(size) };
@@ -49,33 +45,18 @@ impl IconComponent {
         // 否则同列的兄弟节点一有溢出就会把图标压扁。
         ts.flex_shrink = 0.0;
         ts.flex_grow = 0.0;
-        
-        // 颜色优先级：WXML color 属性 > CSS color > 默认颜色
+
+        // 颜色优先级：WXML color 属性 > CSS color > 微信默认色
         if let Some(color) = icon_color {
-            // WXML 属性颜色优先
             ns.text_color = Some(color);
         } else if ns.text_color.is_none() {
-            // 没有 CSS 颜色时使用默认颜色
-            let default_color = match icon_type {
-                "success" | "success_no_circle" => Color::from_hex(0x09BB07),
-                "info" | "info_circle" => Color::from_hex(0x10AEFF),
-                "warn" => Color::from_hex(0xF76260),
-                "waiting" | "waiting_circle" => Color::from_hex(0x10AEFF),
-                "cancel" | "clear" => Color::from_hex(0xF43530),
-                "download" => Color::from_hex(0x09BB07),
-                "search" => Color::from_hex(0xB2B2B2),
-                "back" | "arrow_left" | "arrow-left" | "arrow" | "arrow_right" | "arrow-right"
-                | "arrow_up" | "arrow-up" | "arrow_down" | "arrow-down"
-                | "plus" | "minus" => Color::from_hex(0xC8C8CD),
-                _ => Color::from_hex(0x09BB07),
-            };
-            ns.text_color = Some(default_color);
+            ns.text_color = Some(Color::from_hex(icon_default_color(icon_type)));
         }
-        
+
         ns.font_size = icon_size;
-        
+
         let tn = ctx.taffy.new_leaf(ts).unwrap();
-        
+
         Some(RenderNode {
             tag: "icon".into(),
             text: icon_type.into(),
@@ -86,416 +67,132 @@ impl IconComponent {
             events,
         })
     }
-    
+
     pub fn draw(node: &RenderNode, canvas: &mut Canvas, x: f32, y: f32, w: f32, h: f32, _sf: f32) {
         let style = &node.style;
-        
-        // 绘制盒子阴影
+
         if let Some(shadow) = &style.box_shadow {
             draw_box_shadow(canvas, shadow, x, y, w, h, 0.0);
         }
-        
-        // 应用透明度
-        let apply_opacity = |color: Color| -> Color {
-            if style.opacity < 1.0 {
-                Color::new(color.r, color.g, color.b, (color.a as f32 * style.opacity) as u8)
-            } else {
-                color
-            }
-        };
-        
-        let color = apply_opacity(style.text_color.unwrap_or(Color::from_hex(0x09BB07)));
+
         let icon_type = node.text.as_str();
-        let cx = x + w / 2.0;
-        let cy = y + h / 2.0;
-        let r = w.min(h) / 2.0;
-        // 线条粗细根据图标大小调整
-        let stroke_width = (r * 0.12).max(2.0);
-        
-        match icon_type {
-            "success" => Self::draw_success(canvas, cx, cy, r, color, true, stroke_width),
-            "success_no_circle" => Self::draw_success(canvas, cx, cy, r, color, false, stroke_width),
-            "info" | "info_circle" => Self::draw_info(canvas, cx, cy, r, color, stroke_width),
-            "warn" => Self::draw_warn(canvas, cx, cy, r, color, stroke_width),
-            "waiting" | "waiting_circle" => Self::draw_waiting(canvas, cx, cy, r, color, stroke_width),
-            "cancel" | "clear" => Self::draw_cancel(canvas, cx, cy, r, color, stroke_width),
-            // ── 无圆底变体：只画标记本身，便于放进已有的彩色圆/胶囊里 ──
-            // （success/info/warn/waiting 自带实心圆底，若再放进彩色圆并把 color 设为白色，
-            //   白圆会盖住底色、白色标记也看不见，视觉上只剩一个圆环）
-            "close" | "cancel_no_circle" => {
-                Self::draw_thick_x(canvas, cx, cy, r * 0.62, color, stroke_width * 1.5)
-            }
-            "info_no_circle" => Self::draw_info_mark(canvas, cx, cy, r, color),
-            "warn_no_circle" => Self::draw_warn_mark(canvas, cx, cy, r, color),
-            "waiting_no_circle" | "clock" => Self::draw_clock_mark(canvas, cx, cy, r, color, stroke_width),
-            "download" => Self::draw_download(canvas, cx, cy, r, color, stroke_width),
-            "search" => Self::draw_search(canvas, cx, cy, r, color, stroke_width),
-            "circle" => Self::draw_circle_icon(canvas, cx, cy, r, color, stroke_width),
-            "star" => Self::draw_star(canvas, cx, cy, r, color, true, stroke_width),
-            "star-o" | "star_o" => Self::draw_star(canvas, cx, cy, r, color, false, stroke_width),
-            "heart" => Self::draw_heart(canvas, cx, cy, r, color),
-            // ── 箭头/尖角：返回按钮与列表右侧箭头用（此前只能拿 ">" 之类的字符凑） ──
-            "back" | "arrow_left" | "arrow-left" => Self::draw_chevron(canvas, cx, cy, r, color, stroke_width * 1.2, 180.0),
-            "arrow" | "arrow_right" | "arrow-right" => Self::draw_chevron(canvas, cx, cy, r, color, stroke_width * 1.2, 0.0),
-            "arrow_up" | "arrow-up" => Self::draw_chevron(canvas, cx, cy, r, color, stroke_width * 1.2, -90.0),
-            "arrow_down" | "arrow-down" => Self::draw_chevron(canvas, cx, cy, r, color, stroke_width * 1.2, 90.0),
-            "plus" => Self::draw_plus(canvas, cx, cy, r, color, stroke_width * 1.2),
-            "minus" => Self::draw_minus(canvas, cx, cy, r, color, stroke_width * 1.2),
-            _ => Self::draw_success(canvas, cx, cy, r, color, true, stroke_width),
+        let Some(glyph) = icon_glyph(icon_type) else {
+            // 微信对未知 type 不画东西
+            return;
+        };
+        if w <= 0.0 || h <= 0.0 {
+            return;
         }
-    }
-    
-    /// 绘制尖角箭头（`>` 形），`rotate_deg` 决定朝向：0=右、180=左、-90=上、90=下
-    fn draw_chevron(canvas: &mut Canvas, cx: f32, cy: f32, r: f32, color: Color, stroke_width: f32, rotate_deg: f32) {
-        let rad = rotate_deg.to_radians();
-        let (sin, cos) = (rad.sin(), rad.cos());
-        // 以朝右的 `>` 为基准，三个端点绕中心旋转
-        let arm = r * 0.55;
-        let pts = [(-arm * 0.6, -arm), (arm * 0.5, 0.0), (-arm * 0.6, arm)];
-        let mut paint = Paint::new().with_color(color).with_style(PaintStyle::Stroke).with_anti_alias(true);
-        paint.stroke_width = stroke_width;
+
+        let base = style
+            .text_color
+            .unwrap_or_else(|| Color::from_hex(icon_default_color(icon_type)));
+        let color = if style.opacity < 1.0 {
+            Color::new(base.r, base.g, base.b, (base.a as f32 * style.opacity) as u8)
+        } else {
+            base
+        };
+
         let mut path = Path::new();
-        for (i, (px, py)) in pts.iter().enumerate() {
-            let rx = cx + px * cos - py * sin;
-            let ry = cy + px * sin + py * cos;
-            if i == 0 { path.move_to(rx, ry); } else { path.line_to(rx, ry); }
-        }
-        canvas.draw_path(&path, &paint);
-    }
-
-    /// 绘制加号
-    fn draw_plus(canvas: &mut Canvas, cx: f32, cy: f32, r: f32, color: Color, stroke_width: f32) {
-        let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill).with_anti_alias(true);
-        let half = r * 0.62;
-        let t = stroke_width / 2.0;
-        canvas.fill_round_rect(cx - half, cy - t, half * 2.0, t * 2.0, t, color);
-        canvas.fill_round_rect(cx - t, cy - half, t * 2.0, half * 2.0, t, color);
-        let _ = paint;
-    }
-
-    /// 绘制减号
-    fn draw_minus(canvas: &mut Canvas, cx: f32, cy: f32, r: f32, color: Color, stroke_width: f32) {
-        let half = r * 0.62;
-        let t = stroke_width / 2.0;
-        canvas.fill_round_rect(cx - half, cy - t, half * 2.0, t * 2.0, t, color);
-    }
-
-    /// 绘制五角星（filled=true 实心，否则描边）
-    fn draw_star(canvas: &mut Canvas, cx: f32, cy: f32, r: f32, color: Color, filled: bool, stroke_width: f32) {
-        use std::f32::consts::PI;
-        let outer = r;
-        let inner = r * 0.42;
-        let mut path = Path::new();
-        for i in 0..10 {
-            let ang = -PI / 2.0 + i as f32 * PI / 5.0; // 从正上方开始
-            let rad = if i % 2 == 0 { outer } else { inner };
-            let px = cx + rad * ang.cos();
-            let py = cy + rad * ang.sin();
-            if i == 0 { path.move_to(px, py); } else { path.line_to(px, py); }
-        }
-        path.close();
-        let style = if filled { PaintStyle::Fill } else { PaintStyle::Stroke };
-        let mut paint = Paint::new().with_color(color).with_style(style).with_anti_alias(true);
-        paint.stroke_width = stroke_width;
-        canvas.draw_path(&path, &paint);
-    }
-    
-    /// 绘制爱心
-    fn draw_heart(canvas: &mut Canvas, cx: f32, cy: f32, r: f32, color: Color) {
-        let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill).with_anti_alias(true);
-        // 两个圆 + 一个三角近似爱心
-        let cr = r * 0.5;
-        canvas.draw_circle(cx - cr * 0.6, cy - cr * 0.35, cr, &paint);
-        canvas.draw_circle(cx + cr * 0.6, cy - cr * 0.35, cr, &paint);
-        let mut tri = Path::new();
-        tri.move_to(cx - r * 0.92, cy - r * 0.05);
-        tri.line_to(cx + r * 0.92, cy - r * 0.05);
-        tri.line_to(cx, cy + r * 0.9);
-        tri.close();
-        canvas.draw_path(&tri, &paint);
-    }
-    
-    /// 绘制空心圆圈图标
-    fn draw_circle_icon(canvas: &mut Canvas, cx: f32, cy: f32, r: f32, color: Color, stroke_width: f32) {
-        // 绘制空心圆圈
+        append_svg_path(glyph.d, &fit_transform(&glyph, x, y, w, h), &mut path);
+        // even-odd 填充：子路径反向绕出来的洞（对勾/叉/指针）保持透明，
+        // 与微信的 mask 效果一致 —— 放在有色背景上会透出背景色。
         let paint = Paint::new()
             .with_color(color)
-            .with_style(PaintStyle::Stroke)
+            .with_style(PaintStyle::Fill)
             .with_anti_alias(true);
-        canvas.draw_circle(cx, cy, r - stroke_width, &paint);
+        canvas.draw_path(&path, &paint);
     }
-    
-    fn draw_success(canvas: &mut Canvas, cx: f32, cy: f32, r: f32, color: Color, with_circle: bool, stroke_width: f32) {
-        if with_circle {
-            // 绘制圆形背景 - 使用抗锯齿
-            let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill).with_anti_alias(true);
-            canvas.draw_circle(cx, cy, r, &paint);
-            
-            // 绘制白色对勾
-            Self::draw_thick_check(canvas, cx, cy, r, Color::WHITE, stroke_width * 1.2);
-        } else {
-            // 只绘制对勾
-            Self::draw_thick_check(canvas, cx, cy, r * 0.9, color, stroke_width * 1.5);
+}
+
+/// 把字形视图盒按 `xMidYMid meet`（等比缩放取小 + 居中）放进组件盒，
+/// 需要时先按 `glyph.rot` 转向。
+fn fit_transform(glyph: &IconGlyph, x: f32, y: f32, w: f32, h: f32) -> Xf {
+    // 第一步：旋转，并把结果平移回第一象限（转 90° 时 (x,y) -> (vh - y, x)）
+    let spin = match glyph.rot as i32 {
+        90 => Xf::rotate(90.0).then(&Xf::translate(glyph.vh, 0.0)),
+        180 => Xf::rotate(180.0).then(&Xf::translate(glyph.vw, glyph.vh)),
+        270 => Xf::rotate(-90.0).then(&Xf::translate(0.0, glyph.vw)),
+        _ => Xf::IDENTITY,
+    };
+    // 第二步：等比缩放 + 居中
+    let (vw, vh) = glyph.view_size();
+    let s = (w / vw).min(h / vh);
+    let ox = x + (w - vw * s) / 2.0;
+    let oy = y + (h - vh * s) / 2.0;
+    spin.then(&Xf::scale_translate(s, s, ox, oy))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::renderer::components::icon_data::ICON_TYPES;
+
+    fn glyph_ink(icon_type: &str, x: f32, y: f32, w: f32, h: f32) -> (f32, f32, f32, f32) {
+        let g = icon_glyph(icon_type).unwrap();
+        let mut p = Path::new();
+        append_svg_path(g.d, &fit_transform(&g, x, y, w, h), &mut p);
+        let (mut x0, mut y0, mut x1, mut y1) = (f32::MAX, f32::MAX, f32::MIN, f32::MIN);
+        for c in p.flatten(0.1) {
+            for pt in c {
+                x0 = x0.min(pt.x);
+                y0 = y0.min(pt.y);
+                x1 = x1.max(pt.x);
+                y1 = y1.max(pt.y);
+            }
+        }
+        (x0, y0, x1, y1)
+    }
+
+    #[test]
+    fn square_glyph_fills_box_and_stays_centered() {
+        // 23px 盒子里 success 的圆直径应为 23 * 5/6 ≈ 19.17（WeUI 字面自带留白）
+        let (x0, y0, x1, y1) = glyph_ink("success", 10.0, 20.0, 23.0, 23.0);
+        let d = ((x1 - x0) + (y1 - y0)) / 2.0;
+        assert!((d - 23.0 * 5.0 / 6.0).abs() < 0.2, "直径 {d}");
+        assert!(((x0 + x1) / 2.0 - 21.5).abs() < 0.1, "水平中心 {}", (x0 + x1) / 2.0);
+        assert!(((y0 + y1) / 2.0 - 31.5).abs() < 0.1, "垂直中心 {}", (y0 + y1) / 2.0);
+    }
+
+    #[test]
+    fn non_square_glyph_keeps_ratio_and_centers() {
+        // 12x24 的右箭头放进 24x24 的盒子：等比缩放取 min(24/12, 24/24) = 1，
+        // 视图盒被摆在 x ∈ [6, 18]（居中），墨迹只能落在这一段里，不会被横向拉宽。
+        // 注意 WeUI 的箭头字形本身在 12 宽的盒里偏右，所以校验的是视图盒的落位，
+        // 不是墨迹的中心。
+        let (x0, y0, x1, y1) = glyph_ink("arrow_right", 0.0, 0.0, 24.0, 24.0);
+        assert!(x0 >= 6.0 && x1 <= 18.0, "水平范围 {x0}..{x1} 应落在居中的 [6,18] 视图盒内");
+        assert!(y0 >= 5.0 && y1 <= 19.0, "竖直范围 {y0}..{y1}"); // 字形本身上下有留白
+        assert!(x1 - x0 <= 12.0, "宽度 {}", x1 - x0);
+    }
+
+    #[test]
+    fn rotated_arrow_spans_horizontally() {
+        // 向下箭头旋转后应变成「宽 > 高」
+        let (x0, y0, x1, y1) = glyph_ink("arrow_down", 0.0, 0.0, 24.0, 24.0);
+        assert!(x1 - x0 > y1 - y0, "旋转后 {}x{}", x1 - x0, y1 - y0);
+    }
+
+    #[test]
+    fn all_types_render_inside_the_box() {
+        for t in ICON_TYPES {
+            let (x0, y0, x1, y1) = glyph_ink(t, 5.0, 7.0, 40.0, 40.0);
+            assert!(x0 >= 4.9 && x1 <= 45.1, "{t} 水平越界 {x0}..{x1}");
+            assert!(y0 >= 6.9 && y1 <= 47.1, "{t} 垂直越界 {y0}..{y1}");
         }
     }
-    
-    /// 绘制粗对勾（使用填充多边形）
-    fn draw_thick_check(canvas: &mut Canvas, cx: f32, cy: f32, r: f32, color: Color, thickness: f32) {
-        let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill).with_anti_alias(true);
-        
-        // 对勾的三个关键点
-        let p1 = (cx - r * 0.35, cy);           // 左端点
-        let p2 = (cx - r * 0.05, cy + r * 0.3); // 拐点
-        let p3 = (cx + r * 0.35, cy - r * 0.25); // 右端点
-        
-        let half = thickness / 2.0;
-        
-        // 绘制第一段（左到中）
-        let angle1 = ((p2.1 - p1.1) / (p2.0 - p1.0)).atan();
-        let dx1 = half * angle1.sin();
-        let dy1 = half * angle1.cos();
-        
-        let mut seg1 = Path::new();
-        seg1.move_to(p1.0 - dx1, p1.1 + dy1);
-        seg1.line_to(p1.0 + dx1, p1.1 - dy1);
-        seg1.line_to(p2.0 + dx1, p2.1 - dy1);
-        seg1.line_to(p2.0 - dx1, p2.1 + dy1);
-        seg1.close();
-        canvas.draw_path(&seg1, &paint);
-        
-        // 绘制第二段（中到右）
-        let angle2 = ((p3.1 - p2.1) / (p3.0 - p2.0)).atan();
-        let dx2 = half * angle2.sin();
-        let dy2 = half * angle2.cos();
-        
-        let mut seg2 = Path::new();
-        seg2.move_to(p2.0 - dx2, p2.1 + dy2);
-        seg2.line_to(p2.0 + dx2, p2.1 - dy2);
-        seg2.line_to(p3.0 + dx2, p3.1 - dy2);
-        seg2.line_to(p3.0 - dx2, p3.1 + dy2);
-        seg2.close();
-        canvas.draw_path(&seg2, &paint);
-        
-        // 绘制拐点圆形，使连接更平滑
-        canvas.draw_circle(p2.0, p2.1, half, &paint);
-    }
-    
-    /// 「i」标记（无圆底）：点 + 竖条，颜色取 color
-    fn draw_info_mark(canvas: &mut Canvas, cx: f32, cy: f32, r: f32, color: Color) {
-        let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill).with_anti_alias(true);
-        canvas.draw_circle(cx, cy - r * 0.52, r * 0.17, &paint);
-        let bar_w = r * 0.26;
-        let mut bar = Path::new();
-        bar.add_round_rect(cx - bar_w / 2.0, cy - r * 0.18, bar_w, r * 0.78, bar_w / 2.0);
-        canvas.draw_path(&bar, &paint);
-    }
 
-    /// 「!」标记（无圆底）：竖条 + 点
-    fn draw_warn_mark(canvas: &mut Canvas, cx: f32, cy: f32, r: f32, color: Color) {
-        let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill).with_anti_alias(true);
-        let bar_w = r * 0.26;
-        let mut bar = Path::new();
-        bar.add_round_rect(cx - bar_w / 2.0, cy - r * 0.78, bar_w, r * 0.86, bar_w / 2.0);
-        canvas.draw_path(&bar, &paint);
-        canvas.draw_circle(cx, cy + r * 0.56, r * 0.17, &paint);
-    }
-
-    /// 时钟标记（无圆底）：圆环 + 指针
-    fn draw_clock_mark(canvas: &mut Canvas, cx: f32, cy: f32, r: f32, color: Color, stroke_width: f32) {
-        let ring = stroke_width.max(1.5);
-        let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill).with_anti_alias(true);
-        // 圆环：外圆挖内圆
-        let mut path = Path::new();
-        path.add_circle(cx, cy, r * 0.92);
-        path.add_circle(cx, cy, (r * 0.92 - ring).max(0.5));
-        canvas.draw_path(&path, &paint);
-        // 指针
-        let mut v = Path::new();
-        v.add_round_rect(cx - ring / 2.0, cy - r * 0.52, ring, r * 0.56, ring / 2.0);
-        canvas.draw_path(&v, &paint);
-        let mut h = Path::new();
-        h.add_round_rect(cx - ring / 2.0, cy - ring / 2.0, r * 0.44, ring, ring / 2.0);
-        canvas.draw_path(&h, &paint);
-    }
-
-    fn draw_info(canvas: &mut Canvas, cx: f32, cy: f32, r: f32, color: Color, _stroke_width: f32) {
-        let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill).with_anti_alias(true);
-        
-        // 绘制圆形背景
-        canvas.draw_circle(cx, cy, r, &paint);
-        
-        // 绘制白色 "i"
-        let white = Paint::new().with_color(Color::WHITE).with_style(PaintStyle::Fill).with_anti_alias(true);
-        
-        // 点
-        canvas.draw_circle(cx, cy - r * 0.35, r * 0.14, &white);
-        
-        // 竖线 - 圆角矩形
-        let bar_w = r * 0.18;
-        let bar_h = r * 0.55;
-        let bar_x = cx - bar_w / 2.0;
-        let bar_y = cy - r * 0.05;
-        
-        let mut bar = Path::new();
-        bar.add_round_rect(bar_x, bar_y, bar_w, bar_h, bar_w / 2.0);
-        canvas.draw_path(&bar, &white);
-    }
-    
-    fn draw_warn(canvas: &mut Canvas, cx: f32, cy: f32, r: f32, color: Color, _stroke_width: f32) {
-        let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill).with_anti_alias(true);
-        
-        // 绘制圆形背景
-        canvas.draw_circle(cx, cy, r, &paint);
-        
-        // 绘制白色 "!"
-        let white = Paint::new().with_color(Color::WHITE).with_style(PaintStyle::Fill).with_anti_alias(true);
-        
-        // 竖线 - 圆角矩形
-        let bar_w = r * 0.18;
-        let bar_h = r * 0.55;
-        let bar_x = cx - bar_w / 2.0;
-        let bar_y = cy - r * 0.5;
-        
-        let mut bar = Path::new();
-        bar.add_round_rect(bar_x, bar_y, bar_w, bar_h, bar_w / 2.0);
-        canvas.draw_path(&bar, &white);
-        
-        // 点
-        canvas.draw_circle(cx, cy + r * 0.38, r * 0.14, &white);
-    }
-    
-    fn draw_waiting(canvas: &mut Canvas, cx: f32, cy: f32, r: f32, color: Color, stroke_width: f32) {
-        let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill).with_anti_alias(true);
-        
-        // 绘制圆形背景
-        canvas.draw_circle(cx, cy, r, &paint);
-        
-        // 绘制白色时钟指针
-        let white = Paint::new().with_color(Color::WHITE).with_style(PaintStyle::Fill).with_anti_alias(true);
-        let line_w = stroke_width * 1.2;
-        
-        // 垂直指针（12点方向）
-        let mut v_line = Path::new();
-        v_line.add_round_rect(cx - line_w / 2.0, cy - r * 0.45, line_w, r * 0.45, line_w / 2.0);
-        canvas.draw_path(&v_line, &white);
-        
-        // 水平指针（3点方向）
-        let mut h_line = Path::new();
-        h_line.add_round_rect(cx, cy - line_w / 2.0, r * 0.32, line_w, line_w / 2.0);
-        canvas.draw_path(&h_line, &white);
-        
-        // 中心圆点
-        canvas.draw_circle(cx, cy, line_w * 0.8, &white);
-    }
-    
-    fn draw_cancel(canvas: &mut Canvas, cx: f32, cy: f32, r: f32, color: Color, stroke_width: f32) {
-        let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill).with_anti_alias(true);
-        
-        // 绘制圆形背景
-        canvas.draw_circle(cx, cy, r, &paint);
-        
-        // 绘制白色 X
-        Self::draw_thick_x(canvas, cx, cy, r * 0.35, Color::WHITE, stroke_width * 1.3);
-    }
-    
-    /// 绘制粗 X
-    fn draw_thick_x(canvas: &mut Canvas, cx: f32, cy: f32, offset: f32, color: Color, thickness: f32) {
-        let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill).with_anti_alias(true);
-        let half = thickness / 2.0;
-        
-        // 左上到右下
-        let mut line1 = Path::new();
-        line1.move_to(cx - offset - half, cy - offset);
-        line1.line_to(cx - offset, cy - offset - half);
-        line1.line_to(cx + offset + half, cy + offset);
-        line1.line_to(cx + offset, cy + offset + half);
-        line1.close();
-        canvas.draw_path(&line1, &paint);
-        
-        // 右上到左下
-        let mut line2 = Path::new();
-        line2.move_to(cx + offset, cy - offset - half);
-        line2.line_to(cx + offset + half, cy - offset);
-        line2.line_to(cx - offset, cy + offset + half);
-        line2.line_to(cx - offset - half, cy + offset);
-        line2.close();
-        canvas.draw_path(&line2, &paint);
-    }
-    
-    fn draw_download(canvas: &mut Canvas, cx: f32, cy: f32, r: f32, color: Color, stroke_width: f32) {
-        let stroke_paint = Paint::new().with_color(color).with_style(PaintStyle::Fill).with_anti_alias(true);
-        
-        // 外圆
-        canvas.draw_circle(cx, cy, r, &stroke_paint);
-        
-        // 内圆（挖空）
-        let inner_r = r - stroke_width * 1.2;
-        let bg_paint = Paint::new().with_color(Color::WHITE).with_style(PaintStyle::Fill).with_anti_alias(true);
-        canvas.draw_circle(cx, cy, inner_r, &bg_paint);
-        
-        // 绘制下载箭头
-        let arrow_w = stroke_width * 1.2;
-        
-        // 垂直线
-        let mut v_line = Path::new();
-        v_line.add_round_rect(cx - arrow_w / 2.0, cy - r * 0.4, arrow_w, r * 0.5, arrow_w / 2.0);
-        canvas.draw_path(&v_line, &stroke_paint);
-        
-        // 箭头三角形
-        let mut arrow = Path::new();
-        arrow.move_to(cx, cy + r * 0.35);
-        arrow.line_to(cx - r * 0.28, cy);
-        arrow.line_to(cx + r * 0.28, cy);
-        arrow.close();
-        canvas.draw_path(&arrow, &stroke_paint);
-        
-        // 底部横线
-        let mut h_line = Path::new();
-        h_line.add_round_rect(cx - r * 0.35, cy + r * 0.45, r * 0.7, arrow_w, arrow_w / 2.0);
-        canvas.draw_path(&h_line, &stroke_paint);
-    }
-    
-    fn draw_search(canvas: &mut Canvas, cx: f32, cy: f32, r: f32, color: Color, stroke_width: f32) {
-        let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill).with_anti_alias(true);
-        
-        // 放大镜参数
-        let lens_r = r * 0.45;
-        let lens_cx = cx - r * 0.12;
-        let lens_cy = cy - r * 0.12;
-        let ring_width = stroke_width * 1.5;
-        
-        // 绘制放大镜圆环（外圆 - 内圆）
-        canvas.draw_circle(lens_cx, lens_cy, lens_r, &paint);
-        
-        let bg_paint = Paint::new().with_color(Color::WHITE).with_style(PaintStyle::Fill).with_anti_alias(true);
-        canvas.draw_circle(lens_cx, lens_cy, lens_r - ring_width, &bg_paint);
-        
-        // 绘制手柄
-        let handle_len = r * 0.45;
-        let handle_w = ring_width;
-        let angle = std::f32::consts::PI / 4.0; // 45度
-        
-        let start_x = lens_cx + lens_r * 0.7;
-        let start_y = lens_cy + lens_r * 0.7;
-        
-        let cos_a = angle.cos();
-        let sin_a = angle.sin();
-        let half_w = handle_w / 2.0;
-        
-        let mut handle = Path::new();
-        handle.move_to(start_x - half_w * cos_a, start_y + half_w * sin_a);
-        handle.line_to(start_x + half_w * cos_a, start_y - half_w * sin_a);
-        handle.line_to(start_x + handle_len * sin_a + half_w * cos_a, start_y + handle_len * cos_a - half_w * sin_a);
-        handle.line_to(start_x + handle_len * sin_a - half_w * cos_a, start_y + handle_len * cos_a + half_w * sin_a);
-        handle.close();
-        canvas.draw_path(&handle, &paint);
-        
-        // 手柄末端圆角
-        canvas.draw_circle(
-            start_x + handle_len * sin_a, 
-            start_y + handle_len * cos_a, 
-            half_w,
-            &paint
-        );
+    #[test]
+    fn zero_sized_box_draws_nothing() {
+        // 布局还没算出尺寸时不能崩
+        let g = icon_glyph("success").unwrap();
+        let xf = fit_transform(&g, 0.0, 0.0, 0.0, 0.0);
+        let mut p = Path::new();
+        append_svg_path(g.d, &xf, &mut p);
+        for c in p.flatten(0.2) {
+            for pt in c {
+                assert!(pt.x.is_finite() && pt.y.is_finite());
+            }
+        }
     }
 }

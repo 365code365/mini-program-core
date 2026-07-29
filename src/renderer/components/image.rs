@@ -22,6 +22,7 @@
 //! - object-fit: 图片填充模式（可覆盖 mode 属性）
 
 use super::base::*;
+use super::image_cache::ByteLru;
 use crate::parser::wxml::WxmlNode;
 use crate::text::TextRenderer;
 use crate::{Canvas, Color, Paint, PaintStyle, Path, Rect as GeoRect};
@@ -76,31 +77,79 @@ impl AnimatedImage {
     }
 }
 
-/// 全局图片缓存
-static IMAGE_CACHE: OnceLock<Arc<Mutex<HashMap<String, Option<Arc<ImageData>>>>>> = OnceLock::new();
-/// 全局动图缓存（GIF 多帧）
-static ANIM_CACHE: OnceLock<Arc<Mutex<HashMap<String, Arc<AnimatedImage>>>>> = OnceLock::new();
+/// 全局图片缓存（**按字节封顶 + LRU**，见 `image_cache.rs`）。
+///
+/// 以前是无上限的 `HashMap`：解码后的 RGBA 一张 1200×1200 就 5.5MB，长列表滚一遍
+/// 几十张全留着，换页也不释放（进程级缓存）。手机上就是被系统杀掉。
+static IMAGE_CACHE: OnceLock<Arc<Mutex<ByteLru<Option<Arc<ImageData>>>>>> = OnceLock::new();
+/// 全局动图缓存（GIF 多帧）。一段动图是「帧数 × 单帧 RGBA」，比静态图更吃内存，
+/// 所以同样封顶，预算取解码图预算的一半。
+static ANIM_CACHE: OnceLock<Arc<Mutex<ByteLru<Arc<AnimatedImage>>>>> = OnceLock::new();
 
-pub(super) fn get_image_cache() -> &'static Arc<Mutex<HashMap<String, Option<Arc<ImageData>>>>> {
-    IMAGE_CACHE.get_or_init(|| Arc::new(Mutex::new(HashMap::new())))
+pub(super) fn get_image_cache() -> &'static Arc<Mutex<ByteLru<Option<Arc<ImageData>>>>> {
+    IMAGE_CACHE.get_or_init(|| Arc::new(Mutex::new(ByteLru::new(super::image_cache::budget_bytes()))))
 }
 
-pub(super) fn get_anim_cache() -> &'static Arc<Mutex<HashMap<String, Arc<AnimatedImage>>>> {
-    ANIM_CACHE.get_or_init(|| Arc::new(Mutex::new(HashMap::new())))
+pub(super) fn get_anim_cache() -> &'static Arc<Mutex<ByteLru<Arc<AnimatedImage>>>> {
+    ANIM_CACHE
+        .get_or_init(|| Arc::new(Mutex::new(ByteLru::new(super::image_cache::budget_bytes() / 2))))
+}
+
+/// 解码后一张图占多少字节（RGBA）
+fn image_bytes(d: &Option<Arc<ImageData>>) -> usize {
+    match d {
+        // 失败记录只占一个 key，但要给个非零值，免得几万条失败记录白占内存
+        None => 64,
+        Some(img) => img.data.len() + 64,
+    }
+}
+
+fn anim_bytes(a: &AnimatedImage) -> usize {
+    a.frames.iter().map(|(f, _)| f.len()).sum::<usize>() + 128
+}
+
+/// 图片缓存现状（诊断/内存报告用）
+pub fn image_cache_report() -> String {
+    let budget = super::image_cache::budget_bytes();
+    let (n1, b1, e1) = get_image_cache()
+        .lock()
+        .map(|c| (c.len(), c.bytes(), c.evicted()))
+        .unwrap_or((0, 0, 0));
+    let (n2, b2, e2) = get_anim_cache()
+        .lock()
+        .map(|c| (c.len(), c.bytes(), c.evicted()))
+        .unwrap_or((0, 0, 0));
+    format!(
+        "静态图 {n1} 张 / {:.1}MB（逐出 {e1}），动图 {n2} 段 / {:.1}MB（逐出 {e2}），预算 {:.0}MB + {:.0}MB",
+        b1 as f32 / 1048576.0,
+        b2 as f32 / 1048576.0,
+        budget as f32 / 1048576.0,
+        budget as f32 / 2097152.0,
+    )
+}
+
+/// 清空图片缓存（切换小程序、收到系统内存告警时调用）
+pub fn clear_image_caches() {
+    if let Ok(mut c) = get_image_cache().lock() {
+        c.clear();
+    }
+    if let Ok(mut c) = get_anim_cache().lock() {
+        c.clear();
+    }
 }
 
 /// 该资源是否为多帧动图（GIF）。
 pub fn is_animated(src: &str) -> bool {
     get_anim_cache()
         .lock()
-        .map(|cache| cache.get(src).map(|a| a.frames.len() > 1).unwrap_or(false))
+        .map(|cache| cache.peek(src).map(|a| a.frames.len() > 1).unwrap_or(false))
         .unwrap_or(false)
 }
 
 /// 已缓存动图的一轮播放时长（毫秒）；非动图返回 None。
 pub fn animation_total_ms(src: &str) -> Option<u32> {
     let cache = get_anim_cache().lock().ok()?;
-    cache.get(src).filter(|a| a.frames.len() > 1).map(|a| a.total_ms)
+    cache.peek(src).filter(|a| a.frames.len() > 1).map(|a| a.total_ms)
 }
 
 /// 尝试把字节解码为多帧动图；单帧或非 GIF 返回 None。
@@ -149,7 +198,7 @@ fn load_image(src: &str) -> Option<Arc<ImageData>> {
     // 动图：命中后按经过时间取帧，实现循环播放
     {
         let cache = get_anim_cache();
-        if let Ok(cache_guard) = cache.lock() {
+        if let Ok(mut cache_guard) = cache.lock() {
             if let Some(anim) = cache_guard.get(src) {
                 let index = anim.current_index();
                 let (frame, _) = &anim.frames[index];
@@ -166,7 +215,7 @@ fn load_image(src: &str) -> Option<Arc<ImageData>> {
     // 检查缓存
     {
         let cache = get_image_cache();
-        let cache_guard = cache.lock().ok()?;
+        let mut cache_guard = cache.lock().ok()?;
         if let Some(cached) = cache_guard.get(src) {
             return cached.clone();
         }
@@ -190,7 +239,8 @@ fn load_image(src: &str) -> Option<Arc<ImageData>> {
     {
         let cache = get_image_cache();
         if let Ok(mut cache_guard) = cache.lock() {
-            cache_guard.insert(src.to_string(), result.clone());
+            let bytes = image_bytes(&result);
+            cache_guard.insert(src.to_string(), result.clone(), bytes);
         }
     }
 
@@ -214,7 +264,8 @@ fn decode_with_animation(src: &str, bytes: &[u8]) -> Option<ImageData> {
             frame_index: 0,
         };
         if let Ok(mut cache) = get_anim_cache().lock() {
-            cache.insert(src.to_string(), Arc::new(anim));
+            let bytes = anim_bytes(&anim);
+            cache.insert(src.to_string(), Arc::new(anim), bytes);
         }
         return Some(first);
     }

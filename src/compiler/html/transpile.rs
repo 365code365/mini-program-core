@@ -283,53 +283,11 @@ fn container_suffix_html(node: &WxmlNode) -> Option<String> {
 
 /// `<icon>` 的矢量图形（内联 SVG）。
 ///
-/// 之前用文字字形（✓ / i / ! / … / ✕）近似，`waiting` 这类实际是时钟的图标会明显走形，
-/// 与原生渲染器自绘的矢量图标不一致。这里改为与原生同构的 SVG：圆底用 currentColor，
-/// 内部标记用白色，尺寸由外层 width/height 控制。
+/// 图形数据与原生渲染器共用 `icon_data` 那张 WeUI 字形表 —— 以前两边各写一套
+/// 近似图形（这边圆 + 白描边、那边圆 + 填充多边形），对勾比例/叉号粗细都对不上，
+/// 而且都不像微信。共用一张表之后，HTML 参考图和原生渲染在几何上同源。
 fn icon_svg(icon_type: &str) -> String {
-    // 统一 24x24 视图盒，圆心 (12,12) 半径 12
-    let circle = "<circle cx=\"12\" cy=\"12\" r=\"12\" fill=\"currentColor\"/>";
-    let body = match icon_type {
-        "success" => format!(
-            "{circle}<path d=\"M5.8 12.4 10 16.4 18.2 7.6\" fill=\"none\" stroke=\"#fff\" stroke-width=\"2.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
-        ),
-        "success_no_circle" => "<path d=\"M3.5 12.5 9 18 20.5 5.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>".to_string(),
-        "info" | "info_circle" => format!(
-            "{circle}<circle cx=\"12\" cy=\"7.6\" r=\"1.7\" fill=\"#fff\"/><rect x=\"10.9\" y=\"10.8\" width=\"2.2\" height=\"7\" rx=\"1.1\" fill=\"#fff\"/>"
-        ),
-        "warn" => format!(
-            "{circle}<rect x=\"10.9\" y=\"5.4\" width=\"2.2\" height=\"7.2\" rx=\"1.1\" fill=\"#fff\"/><circle cx=\"12\" cy=\"16.6\" r=\"1.7\" fill=\"#fff\"/>"
-        ),
-        // waiting：微信为时钟表盘（时针+分针）
-        "waiting" | "waiting_circle" => format!(
-            "{circle}<rect x=\"10.9\" y=\"6.2\" width=\"2.2\" height=\"6.6\" rx=\"1.1\" fill=\"#fff\"/><rect x=\"12\" y=\"10.9\" width=\"5.2\" height=\"2.2\" rx=\"1.1\" fill=\"#fff\"/><circle cx=\"12\" cy=\"12\" r=\"1.6\" fill=\"#fff\"/>"
-        ),
-        "info_no_circle" => "<circle cx=\"12\" cy=\"5.6\" r=\"2\" fill=\"currentColor\"/><rect x=\"10.4\" y=\"9.8\" width=\"3.2\" height=\"9.4\" rx=\"1.6\" fill=\"currentColor\"/>".to_string(),
-        "warn_no_circle" => "<rect x=\"10.4\" y=\"3\" width=\"3.2\" height=\"11.2\" rx=\"1.6\" fill=\"currentColor\"/><circle cx=\"12\" cy=\"18.8\" r=\"2\" fill=\"currentColor\"/>".to_string(),
-        "waiting_no_circle" | "clock" => "<circle cx=\"12\" cy=\"12\" r=\"10.4\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\"/><path d=\"M12 5.6V12h5.2\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\"/>".to_string(),
-        // 纯叉号（无圆底），与原生 draw_thick_x 对应
-        "close" | "cancel_no_circle" => "<path d=\"M5 5 19 19M19 5 5 19\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.6\" stroke-linecap=\"round\"/>".to_string(),
-        "cancel" | "clear" => format!(
-            "{circle}<path d=\"M7.6 7.6 16.4 16.4M16.4 7.6 7.6 16.4\" fill=\"none\" stroke=\"#fff\" stroke-width=\"2.6\" stroke-linecap=\"round\"/>"
-        ),
-        "download" => "<circle cx=\"12\" cy=\"12\" r=\"10.8\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\"/><path d=\"M12 6v7\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\"/><path d=\"M8 12.4 12 16.6 16 12.4Z\" fill=\"currentColor\"/><rect x=\"7\" y=\"17.4\" width=\"10\" height=\"2.2\" rx=\"1.1\" fill=\"currentColor\"/>".to_string(),
-        "search" => "<circle cx=\"10.4\" cy=\"10.4\" r=\"6.4\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\"/><path d=\"M15.2 15.2 21 21\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\"/>".to_string(),
-        "circle" => "<circle cx=\"12\" cy=\"12\" r=\"10.8\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\"/>".to_string(),
-        // ── 箭头 / 加减号：返回按钮与列表右侧尖角（与原生 draw_chevron 同构） ──
-        "back" | "arrow_left" | "arrow-left" => "<path d=\"M15.5 4 7.5 12 15.5 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>".to_string(),
-        "arrow" | "arrow_right" | "arrow-right" => "<path d=\"M8.5 4 16.5 12 8.5 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>".to_string(),
-        "arrow_up" | "arrow-up" => "<path d=\"M4 15.5 12 7.5 20 15.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>".to_string(),
-        "arrow_down" | "arrow-down" => "<path d=\"M4 8.5 12 16.5 20 8.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>".to_string(),
-        "plus" => "<path d=\"M12 4.5V19.5M4.5 12H19.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.8\" stroke-linecap=\"round\"/>".to_string(),
-        "minus" => "<path d=\"M4.5 12H19.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.8\" stroke-linecap=\"round\"/>".to_string(),
-        "star" => "<path d=\"M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z\" fill=\"currentColor\"/>".to_string(),
-        "star-o" | "star_o" => "<path d=\"M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\"/>".to_string(),
-        "heart" => "<path d=\"M12 21C6 16.5 2.6 13.4 2.6 9.6 2.6 6.5 5 4.2 8 4.2c1.8 0 3.2.9 4 2.2.8-1.3 2.2-2.2 4-2.2 3 0 5.4 2.3 5.4 5.4 0 3.8-3.4 6.9-9.4 11.4Z\" fill=\"currentColor\"/>".to_string(),
-        _ => format!(
-            "{circle}<path d=\"M5.8 12.4 10 16.4 18.2 7.6\" fill=\"none\" stroke=\"#fff\" stroke-width=\"2.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
-        ),
-    };
-    format!("<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\">{body}</svg>")
+    crate::renderer::components::icon_data::icon_svg_markup(icon_type)
 }
 
 /// 生成 switch/progress/rich-text 的内部 HTML
@@ -693,7 +651,22 @@ fn emit_pretty(node: &WxmlNode, depth: usize, out: &mut String) {
 }
 
 /// 基础样式：CSS reset + 常见默认（贴近小程序默认盒模型）+ 内置 icon 图标。
-pub fn base_css() -> &'static str {
+pub fn base_css() -> String {
+    format!("{}{}", BASE_CSS, icon_color_css())
+}
+
+/// 内置图标的默认颜色规则：从 `icon_data::icon_default_color` 生成，
+/// 免得 CSS 和原生渲染器各写一份颜色表（以前 `circle` 一边 #ccc 一边绿色）。
+fn icon_color_css() -> String {
+    use crate::renderer::components::icon_data::{icon_default_color, ICON_TYPES};
+    let mut s = String::from("\n/* 内置图标默认色（由 icon_data 生成）*/\n");
+    for t in ICON_TYPES {
+        s.push_str(&format!(".wxicon-{}{{color:#{:06x};}}\n", t, icon_default_color(t)));
+    }
+    s
+}
+
+const BASE_CSS: &str = {
     r#"
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 @keyframes wxspin{to{transform:rotate(360deg);}}
@@ -808,24 +781,12 @@ body{font-size:16px;color:#333;font-family:-apple-system,system-ui,"PingFang SC"
 .wx-canvas{display:block;}
 .wx-audio{display:block;width:100%;}
 
-/* 内置矢量图标：内联 SVG（见 icon_svg），圆底取 currentColor，尺寸由 size 属性决定，
-   与原生渲染器自绘的矢量图标一一对应（含 waiting 时钟表盘）。*/
+/* 内置矢量图标：内联 SVG，图形数据取自 WeUI（见 icon_data.rs），单色 + even-odd 挖洞。
+   默认色规则由 icon_color_css() 生成，追加在这段常量后面。*/
 .wxicon{display:inline-flex;align-items:center;justify-content:center;width:23px;height:23px;flex:none;font-style:normal;line-height:0;vertical-align:middle;}
 .wxicon>svg{width:100%;height:100%;display:block;}
-.wxicon-success{color:#09bb07;}
-.wxicon-success_no_circle{color:#09bb07;}
-.wxicon-info,.wxicon-info_circle{color:#10aeff;}
-.wxicon-warn{color:#f76260;}
-.wxicon-waiting,.wxicon-waiting_circle{color:#10aeff;}
-.wxicon-cancel{color:#f43530;}
-.wxicon-download{color:#09bb07;}
-.wxicon-search{color:#b2b2b2;}
-.wxicon-clear{color:#f43530;}
-.wxicon-circle{color:#ccc;}
-.wxicon-close,.wxicon-cancel_no_circle,.wxicon-info_no_circle,.wxicon-warn_no_circle,.wxicon-waiting_no_circle,.wxicon-clock{color:currentColor;}
-.wxicon-back,.wxicon-arrow,.wxicon-arrow_left,.wxicon-arrow_right,.wxicon-arrow_up,.wxicon-arrow_down,.wxicon-plus,.wxicon-minus{color:#c8c8cd;}
 "#
-}
+};
 
 /// 生成一个自包含的静态 HTML 文档（用于静态导出）。
 pub fn make_html_doc(title: &str, css: &str, body_html: &str, width_px: u32) -> String {

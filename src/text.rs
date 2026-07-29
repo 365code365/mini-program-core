@@ -72,8 +72,15 @@ pub fn shared_fonts() -> Option<Arc<TextRenderer>> {
 pub struct TextRenderer {
     /// 主字体（中文/英文）
     main_font: Font,
-    /// 主字体的粗体字面（若字体集合内提供），用于替代描边式 faux-bold
-    bold_font: Option<Font>,
+    /// 主字体的粗体字面（若字体集合内提供），用于替代描边式 faux-bold。
+    ///
+    /// **懒加载**：解析一个 CJK 字面在 fontdue 里要 200~380MB（见
+    /// `doc/引擎测试说明.md` 的内存分项），而这一份只有真的要画粗体时才用得上。
+    /// 以前在加载阶段就探测，等于开机先付一份内存，还会让「常规 + 探测候选」
+    /// 两份字体同时在内存里（启动峰值因此接近翻倍）。
+    bold_font: OnceLock<Option<Font>>,
+    /// 粗体字面的来源字体文件；`None` 表示这份渲染器没有可探测的文件（如内嵌字节）
+    bold_src: Option<String>,
     /// Emoji 字体
     emoji_font: Option<Font>,
     /// 符号字体（✕ ✓ ★ 等主字体缺失的字形）。
@@ -98,7 +105,8 @@ impl TextRenderer {
             .map_err(|e| e.to_string())?;
         Ok(Self { 
             main_font: font,
-            bold_font: None,
+            bold_font: OnceLock::new(),
+            bold_src: None,
             emoji_font: None,
             symbol_font: OnceLock::new(),
             fallback: None,
@@ -214,16 +222,73 @@ impl TextRenderer {
             .as_ref()
     }
 
+    /// 字形位图缓存的字节预算。默认 24MB：实测 1200 个不同汉字 ≈ 8.7MB，
+    /// 一个中文应用把常用字全走一遍再乘几个字号也就在这个量级。
+    /// 可用 `MINI_GLYPH_CACHE_MB` 覆盖。
+    fn glyph_cache_budget() -> usize {
+        static BUDGET: OnceLock<usize> = OnceLock::new();
+        *BUDGET.get_or_init(|| {
+            let mb = std::env::var("MINI_GLYPH_CACHE_MB")
+                .ok()
+                .and_then(|v| v.trim().parse::<usize>().ok())
+                .filter(|v| *v > 0)
+                .unwrap_or(24);
+            mb * 1024 * 1024
+        })
+    }
+
+    /// 超预算就整表清空。
+    ///
+    /// 不做 LRU 是有意的：字形位图小而多（几万条），维护访问顺序的开销比重新
+    /// 光栅化还贵，而清空之后下一屏只会重新栅格化**当前可见**的那些字。
+    fn trim_glyph_cache(
+        cache: &mut HashMap<(char, u32, bool), (Metrics, Vec<u8>)>,
+        incoming: usize,
+    ) {
+        // 每 256 条才真的去累加一次：这个函数在每次缓存未命中时都会被调用，
+        // 每次都扫全表的话（到顶时几千条）比光栅化本身还贵。
+        if cache.len() % 256 != 0 {
+            return;
+        }
+        // 粗估：位图字节 + 键值与 Metrics 的固定开销
+        const PER_ENTRY_OVERHEAD: usize = 64;
+        let used: usize = cache.values().map(|(_, b)| b.len() + PER_ENTRY_OVERHEAD).sum();
+        if used + incoming <= Self::glyph_cache_budget() {
+            return;
+        }
+        if std::env::var_os("MINI_FONT_LOG").is_some() {
+            eprintln!(
+                "🔤 字形缓存到顶（{:.1}MB / {} 条），清空重来",
+                used as f32 / 1048576.0,
+                cache.len()
+            );
+        }
+        cache.clear();
+    }
+
+    /// 真实粗体字面（首次调用时才解析，见字段注释）。
+    fn bold_face(&self) -> Option<&Font> {
+        self.bold_font
+            .get_or_init(|| {
+                let path = self.bold_src.as_ref()?;
+                // 重新读一次字体文件：读盘走系统页缓存（实测 20ms 级），
+                // 比一直把 20~60MB 字节留在内存里划算。
+                let data = std::fs::read(path).ok()?;
+                Self::detect_bold_face(&data, &self.main_font)
+            })
+            .as_ref()
+    }
+
     /// 是否有真实粗体字面可用（无则调用方回退 faux-bold）。
     pub fn has_bold_face(&self) -> bool {
-        self.bold_font.is_some()
+        self.bold_face().is_some()
     }
 
     /// 按字重选择字体：粗体优先用真实粗体字面（主字体集合内的 W6 等），
     /// 该字面缺字形时回退到常规选择链。
     fn font_for_weight(&self, ch: char, bold: bool) -> &Font {
         if bold {
-            if let Some(font) = &self.bold_font {
+            if let Some(font) = self.bold_face() {
                 if font.lookup_glyph_index(ch) != 0 {
                     return font;
                 }
@@ -281,14 +346,14 @@ impl TextRenderer {
         let t_read = t0.elapsed();
         let mut r = Self::from_bytes(&data)?;
         let t_parse = t0.elapsed();
-        r.bold_font = Self::detect_bold_face(&data, &r.main_font);
+        // 粗体字面留到第一次真的要画粗体时再探测（见 `bold_font` 字段注释）
+        r.bold_src = Some(path.to_string());
         if log {
             eprintln!(
-                "🔤 加载 {path}（{:.1}MB）：读盘 {:.0}ms 解析常规字面 {:.0}ms 探测粗体字面 {:.0}ms",
+                "🔤 加载 {path}（{:.1}MB）：读盘 {:.0}ms 解析常规字面 {:.0}ms（粗体字面懒加载）",
                 data.len() as f32 / 1048576.0,
                 t_read.as_secs_f32() * 1000.0,
                 (t_parse - t_read).as_secs_f32() * 1000.0,
-                (t0.elapsed() - t_parse).as_secs_f32() * 1000.0,
             );
         }
         // 只在该字体缺汉字时才挂回退（宋体自带汉字，不必多占一份）
@@ -324,10 +389,8 @@ impl TextRenderer {
             match Self::from_bytes(&data) {
                 Ok(mut r) => {
                     println!("✅ Main font: {}", path);
-                    r.bold_font = Self::detect_bold_face(&data, &r.main_font);
-                    if r.bold_font.is_some() {
-                        println!("✅ Bold face: {}", path);
-                    }
+                    // 粗体字面懒加载：多数页面首屏并不需要它，而它要多占一份完整字体
+                    r.bold_src = Some((*path).to_string());
                     renderer = Some(r);
                     break;
                 }
@@ -417,7 +480,7 @@ impl TextRenderer {
 
     /// 渲染文本到画布（带字间距 + 字重）。bold 为真且存在真实粗体字面时用该字面绘制。
     pub fn draw_text_weighted(&self, canvas: &mut Canvas, text: &str, x: f32, y: f32, size: f32, letter_spacing: f32, bold: bool, paint: &Paint) {
-        let bold = bold && self.bold_font.is_some();
+        let bold = bold && self.has_bold_face();
         let mut cursor_x = x;
         let size_key = (size * 10.0) as u32; // 将 size 转换为整数 key，保留1位小数精度
         
@@ -462,8 +525,9 @@ impl TextRenderer {
                 
                 let (metrics, bitmap) = font.rasterize(ch, size);
                 
-                // 存入缓存
+                // 存入缓存（封顶，见 glyph_cache_budget）
                 let mut cache = self.cache.lock().unwrap();
+                Self::trim_glyph_cache(&mut cache, bitmap.len());
                 cache.insert((ch, size_key, bold), (metrics.clone(), bitmap.clone()));
                 (metrics, bitmap)
             };
@@ -525,7 +589,7 @@ impl TextRenderer {
     /// 带 letter-spacing 的标题盒子凭空高出一行（tea-app 首页
     /// `.brand-cn` 正是如此，把同一行的 `.brand-en` 挤出定高导航栏而整行消失）。
     pub fn measure_text_weighted(&self, text: &str, size: f32, letter_spacing: f32, bold: bool) -> f32 {
-        let bold = bold && self.bold_font.is_some();
+        let bold = bold && self.has_bold_face();
         let mut width = 0.0;
         for ch in text.chars() {
             if crate::emoji::is_zero_width(ch) {
@@ -550,7 +614,7 @@ impl TextRenderer {
         if let Some(advance) = Self::emoji_advance(ch, size) {
             return advance;
         }
-        let bold = bold && self.bold_font.is_some();
+        let bold = bold && self.has_bold_face();
         self.font_for_weight(ch, bold).metrics(ch, size).advance_width
     }
     

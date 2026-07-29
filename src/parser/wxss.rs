@@ -235,10 +235,10 @@ impl StyleSheet {
                 }
             }
         }
-        if vars.is_empty() {
-            return;
-        }
-        
+        // 注意：**不能**在 `vars` 为空时提前返回。`var(--x, 兜底值)` 的兜底值也要生效，
+        // 而这种写法完全可能出现在一个 `--x` 都没声明的样式表里（变量在别的 wxss 里、
+        // 或者本来就只想用兜底值）。以前提前返回时，这些属性会以字面量
+        // `"var(--x, #ff0000)"` 留在样式里 —— 等于这条声明整个丢掉。
         for rule in &mut self.rules {
             let names: Vec<String> = rule.properties.keys().cloned().collect();
             for name in names {
@@ -626,6 +626,51 @@ fn compound_matches_desc(c: &Compound, d: &ElementDesc) -> bool {
 /// 于是 `.btn:active{background:orange}` 这类规则永远生效，元素看起来一直是按下态。
 /// `:hover` / `:focus` 在触屏语义下不成立，一律不匹配（要按压反馈就用
 /// `:active` 或小程序的 `hover-class`）。
+/// `:nth-child()` 的求值。`n1` 是 1 起算的位置。
+///
+/// 以前只认纯数字和 odd/even，`2n` / `3n+1` / `-n+3` 这些都落到「解析失败 → 放行」，
+/// 于是斑马纹样式**每一行都命中**（看着像样式没生效，其实是全中了）。
+fn nth_matches(arg: &str, n1: usize) -> bool {
+    let s: String = arg.trim().to_ascii_lowercase();
+    let (a, b) = match s.as_str() {
+        "odd" => (2i64, 1i64),
+        "even" => (2, 0),
+        _ => match parse_an_plus_b(&s) {
+            Some(v) => v,
+            // 真解析不出来时放行，避免整条规则失效（与未知伪类的处理一致）
+            None => return true,
+        },
+    };
+    let n1 = n1 as i64;
+    if a == 0 {
+        return n1 == b;
+    }
+    // 是否存在非负整数 n 使 a·n + b == n1
+    let diff = n1 - b;
+    diff % a == 0 && diff / a >= 0
+}
+
+/// 解析 `An+B`：支持 `2n`、`2n+1`、`n`、`-n+3`、`+3n-1`、`5`
+fn parse_an_plus_b(s: &str) -> Option<(i64, i64)> {
+    let s: String = s.chars().filter(|c| !c.is_whitespace()).collect();
+    if s.is_empty() {
+        return None;
+    }
+    match s.find('n') {
+        Some(pos) => {
+            let a = match &s[..pos] {
+                "" | "+" => 1,
+                "-" => -1,
+                other => other.parse().ok()?,
+            };
+            let rest = &s[pos + 1..];
+            let b = if rest.is_empty() { 0 } else { rest.parse().ok()? };
+            Some((a, b))
+        }
+        None => s.parse().ok().map(|b| (0, b)),
+    }
+}
+
 fn matches_pseudo(p: &str, t: &MatchTarget) -> bool {
     let idx = t.sibling_index;
     let cnt = t.sibling_count.max(1);
@@ -637,13 +682,9 @@ fn matches_pseudo(p: &str, t: &MatchTarget) -> bool {
         "hover" | "focus" | "focus-within" | "focus-visible" | "visited" | "target" => false,
         _ => {
             if let Some(arg) = p.strip_prefix("nth-child(").and_then(|s| s.strip_suffix(")")) {
-                let arg = arg.trim();
-                let n1 = idx + 1;
-                match arg {
-                    "odd" => n1 % 2 == 1,
-                    "even" => n1 % 2 == 0,
-                    _ => arg.parse::<usize>().map(|k| n1 == k).unwrap_or(true),
-                }
+                nth_matches(arg, idx + 1)
+            } else if let Some(arg) = p.strip_prefix("nth-last-child(").and_then(|s| s.strip_suffix(")")) {
+                nth_matches(arg, cnt - idx.min(cnt - 1))
             } else {
                 true // 其它未知伪类/伪元素：放行，避免整条规则失效
             }

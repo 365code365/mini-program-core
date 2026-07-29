@@ -30,13 +30,14 @@ pub fn probe_load(src: &str) -> ImageLoad {
     }
     // 动图：解码完就进这张表
     if let Ok(cache) = get_anim_cache().lock() {
-        if let Some(anim) = cache.get(src) {
+        // 用 peek：探测每帧都会跑一遍，让它参与 LRU 排序没有意义
+        if let Some(anim) = cache.peek(src) {
             return ImageLoad::Ready { width: anim.width(), height: anim.height() };
         }
     }
     // 静态图缓存：`Some(None)` 是「解码/读盘失败」的记录
     if let Ok(cache) = get_image_cache().lock() {
-        match cache.get(src) {
+        match cache.peek(src) {
             Some(Some(d)) => return ImageLoad::Ready { width: d.width, height: d.height },
             Some(None) => return ImageLoad::Failed,
             None => {}

@@ -75,6 +75,12 @@ impl SwiperStateManager {
         }
     }
     
+    /// 当前登记了哪些 swiper（测试与诊断用；正常渲染路径不需要）
+    pub fn debug_keys(&self) -> Vec<String> {
+        let mut k: Vec<String> = self.states.keys().cloned().collect();
+        k.sort();
+        k
+    }
     /// 是否存在开启了自动播放且多于一屏的 swiper
     pub fn any_autoplay(&self) -> bool {
         self.states.values().any(|s| s.autoplay && s.total > 1)

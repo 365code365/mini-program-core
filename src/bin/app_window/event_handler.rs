@@ -359,3 +359,70 @@ pub fn handle_mouse_wheel_gated(
     wheel::handle(delta, mouse_pos, interaction, scroll, scale_factor, lock_page_scroll)
 }
 
+
+#[cfg(test)]
+mod tests {
+    use mini_render::runtime::MiniApp;
+
+    fn app_with_page(page_body: &str) -> MiniApp {
+        let mut app = MiniApp::new(375, 667).expect("MiniApp");
+        app.init().expect("init");
+        app.load_script(&format!("Page({{ {page_body} }});")).expect("Page");
+        app
+    }
+
+    fn get(app: &MiniApp, expr: &str) -> String {
+        app.eval(expr).unwrap_or_default()
+    }
+
+    /// `onPageScroll` 的宿主入口以前根本没人调，导致「滚到一定位置显示回到顶部」
+    /// 这类写法在引擎里完全不生效。这条测试守住入口本身。
+    #[test]
+    fn page_scroll_is_dispatched_with_scroll_top() {
+        let mut app = app_with_page(
+            "data: { last: -1 }, onPageScroll: function (e) { globalThis.__last = e.scrollTop; }",
+        );
+        super::dispatch_page_scroll(&mut app, 128.5);
+        assert_eq!(get(&app, "String(globalThis.__last)"), "128.5");
+    }
+
+    #[test]
+    fn page_scroll_without_handler_is_a_noop() {
+        // 没定义 onPageScroll 的页面不能因为派发而报错（每帧都会走这条路）
+        let mut app = app_with_page("data: {}");
+        super::dispatch_page_scroll(&mut app, 10.0);
+        super::dispatch_page_scroll(&mut app, 20.0);
+        assert_eq!(get(&app, "typeof __currentPage.onPageScroll"), "undefined");
+    }
+
+    #[test]
+    fn reach_bottom_event_calls_the_page_handler_once_per_event() {
+        let mut app = app_with_page(
+            "data: {}, onReachBottom: function () { globalThis.__hits = (globalThis.__hits || 0) + 1; }",
+        );
+        super::handle_scroll_event(
+            mini_render::ui::scroll_controller::ScrollEvent::ReachBottom,
+            &mut app,
+        );
+        assert_eq!(get(&app, "String(globalThis.__hits)"), "1");
+        super::handle_scroll_event(
+            mini_render::ui::scroll_controller::ScrollEvent::ReachBottom,
+            &mut app,
+        );
+        assert_eq!(get(&app, "String(globalThis.__hits)"), "2", "每来一次事件回调一次");
+    }
+
+    #[test]
+    fn reach_top_does_not_trigger_pull_down_refresh() {
+        // 下拉刷新由「下拉到位并松手」驱动，不是滚动到顶就触发 ——
+        // 否则任意一次滚到顶部都会刷新一遍
+        let mut app = app_with_page(
+            "data: {}, onPullDownRefresh: function () { globalThis.__pull = true; }",
+        );
+        super::handle_scroll_event(
+            mini_render::ui::scroll_controller::ScrollEvent::ReachTop,
+            &mut app,
+        );
+        assert_eq!(get(&app, "String(globalThis.__pull)"), "undefined");
+    }
+}

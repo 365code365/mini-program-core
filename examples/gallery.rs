@@ -22,6 +22,7 @@ include!("gallery_parts/canvas_video.rs");
 include!("gallery_parts/news.rs");
 include!("gallery_parts/business.rs");
 include!("gallery_parts/anim.rs");
+include!("gallery_parts/icons.rs");
 
 fn main() {
     std::fs::create_dir_all("doc/gallery").ok();
@@ -91,6 +92,8 @@ fn main() {
     transform_showcase();
     form_controls();
     emoji_text();
+    // 内置图标总览（<icon> 的回归基线）
+    icon_showcase();
 
-    println!("完成，共 64 张场景图（含 4 个城市天气、4 帧 GIF、4 帧 CSS 动画、4 张资讯页、12 张商业场景）。");
+    println!("完成，共 65 张场景图（含 4 个城市天气、4 帧 GIF、4 帧 CSS 动画、4 张资讯页、12 张商业场景、1 张图标总览）。");
 }

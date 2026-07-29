@@ -52,7 +52,16 @@ impl CompileTarget for HtmlTarget {
             format!("/* 由 app.wxss 编译 */\n{}", wxss_to_css(&app.app_wxss)),
         ));
         files.push(EmittedFile::text("common/app.js", app.app_js.clone()));
-        files.push(EmittedFile::text("common/runtime.js", RUNTIME_JS));
+        // 内置图标表（编译期从 icon_data 那张 WeUI 字形表生成）拼在运行时前面，
+        // 保证运行时动态创建的 <icon> 与编译期静态输出的完全一样。
+        files.push(EmittedFile::text(
+            "common/runtime.js",
+            format!(
+                "{}\n{}",
+                crate::renderer::components::icon_data::icon_svg_js_table(),
+                RUNTIME_JS
+            ),
+        ));
 
         // ── 静态资源 ──
         collect_assets(Path::new(&app.root).join("assets").as_path(), "assets", &mut files);

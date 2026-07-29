@@ -300,36 +300,11 @@ pub const RUNTIME_JS: &str = r####"/* mini-render 响应式运行时（导出 HT
     var label = el.parentNode && el.parentNode.querySelector(".wx-slider-value");
     if (label) label.textContent = (Math.round(val) === val ? val : val.toFixed(1));
   }
-  // 与编译期 icon_svg 保持一致的矢量图标（圆底 currentColor + 白色标记）
+  // 内置图标：直接查编译期生成的 __WXICON 表（数据源同原生渲染器，见 icon_data.rs）。
+  // 以前这里手抄了一份和编译期并行的 switch，改一处漏一处。
   function iconSvg(t) {
-    var circle = '<circle cx="12" cy="12" r="12" fill="currentColor"/>';
-    var check = '<path d="M5.8 12.4 10 16.4 18.2 7.6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>';
-    var body;
-    switch (t) {
-      case "success_no_circle": body = '<path d="M3.5 12.5 9 18 20.5 5.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>'; break;
-      case "back": case "arrow_left": case "arrow-left": body = '<path d="M15.5 4 7.5 12 15.5 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>'; break;
-      case "arrow": case "arrow_right": case "arrow-right": body = '<path d="M8.5 4 16.5 12 8.5 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>'; break;
-      case "arrow_up": case "arrow-up": body = '<path d="M4 15.5 12 7.5 20 15.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>'; break;
-      case "arrow_down": case "arrow-down": body = '<path d="M4 8.5 12 16.5 20 8.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>'; break;
-      case "plus": body = '<path d="M12 4.5V19.5M4.5 12H19.5" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/>'; break;
-      case "minus": body = '<path d="M4.5 12H19.5" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/>'; break;
-      case "info": case "info_circle": body = circle + '<circle cx="12" cy="7.6" r="1.7" fill="#fff"/><rect x="10.9" y="10.8" width="2.2" height="7" rx="1.1" fill="#fff"/>'; break;
-      case "warn": body = circle + '<rect x="10.9" y="5.4" width="2.2" height="7.2" rx="1.1" fill="#fff"/><circle cx="12" cy="16.6" r="1.7" fill="#fff"/>'; break;
-      case "waiting": case "waiting_circle": body = circle + '<rect x="10.9" y="6.2" width="2.2" height="6.6" rx="1.1" fill="#fff"/><rect x="12" y="10.9" width="5.2" height="2.2" rx="1.1" fill="#fff"/><circle cx="12" cy="12" r="1.6" fill="#fff"/>'; break;
-      case "info_no_circle": body = '<circle cx="12" cy="5.6" r="2" fill="currentColor"/><rect x="10.4" y="9.8" width="3.2" height="9.4" rx="1.6" fill="currentColor"/>'; break;
-      case "warn_no_circle": body = '<rect x="10.4" y="3" width="3.2" height="11.2" rx="1.6" fill="currentColor"/><circle cx="12" cy="18.8" r="2" fill="currentColor"/>'; break;
-      case "waiting_no_circle": case "clock": body = '<circle cx="12" cy="12" r="10.4" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 5.6V12h5.2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>'; break;
-      case "close": case "cancel_no_circle": body = '<path d="M5 5 19 19M19 5 5 19" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>'; break;
-      case "cancel": case "clear": body = circle + '<path d="M7.6 7.6 16.4 16.4M16.4 7.6 7.6 16.4" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>'; break;
-      case "download": body = '<circle cx="12" cy="12" r="10.8" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 6v7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M8 12.4 12 16.6 16 12.4Z" fill="currentColor"/><rect x="7" y="17.4" width="10" height="2.2" rx="1.1" fill="currentColor"/>'; break;
-      case "search": body = '<circle cx="10.4" cy="10.4" r="6.4" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15.2 15.2 21 21" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>'; break;
-      case "circle": body = '<circle cx="12" cy="12" r="10.8" fill="none" stroke="currentColor" stroke-width="2.2"/>'; break;
-      case "star": body = '<path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="currentColor"/>'; break;
-      case "star-o": case "star_o": body = '<path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>'; break;
-      case "heart": body = '<path d="M12 21C6 16.5 2.6 13.4 2.6 9.6 2.6 6.5 5 4.2 8 4.2c1.8 0 3.2.9 4 2.2.8-1.3 2.2-2.2 4-2.2 3 0 5.4 2.3 5.4 5.4 0 3.8-3.4 6.9-9.4 11.4Z" fill="currentColor"/>'; break;
-      default: body = circle + check;
-    }
-    return '<svg viewBox="0 0 24 24" aria-hidden="true">' + body + "</svg>";
+    if (typeof __WXICON !== "undefined" && __WXICON[t]) return __WXICON[t];
+    return "";
   }
   function renderRich(v) {
     if (v == null) return "";
