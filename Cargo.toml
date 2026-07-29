@@ -10,23 +10,41 @@ name = "mini_render"
 # rlib: Rust 库(供 Rust 项目依赖)
 crate-type = ["cdylib", "staticlib", "rlib"]
 
+# ── 特性开关 ──
+#
+# 移动端（iOS / Android / 鸿蒙）把引擎当 **动态库/静态库** 用，宿主自己有窗口、
+# 自己接触摸和输入法，所以**不能**把桌面那套窗口与设备依赖编进去：
+# - `winit` 在 android 目标上必须选一个 activity 后端特性，否则直接编译失败；
+# - `arboard`（剪贴板）只支持 X11/macOS/Windows；
+# - `rodio`（音频设备）在移动端要走 oboe/AAudio，宿主用系统播放器更合适。
+#
+# 所以这些都放在 `desktop` / `audio` 后面，移动端用 `--no-default-features` 构建。
+[features]
+default = ["desktop", "audio"]
+# 桌面宿主（自带窗口、上屏、剪贴板）
+desktop = ["winit", "softbuffer", "arboard"]
+# 内置音频播放（video 组件的声音）
+audio = ["rodio"]
+
 [dependencies]
 image = "0.25"
 fontdue = "0.9"
 rquickjs = { version = "0.12", features = ["classes", "properties"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-winit = "0.30"
-softbuffer = "0.4"
 taffy = "0.12"
-arboard = "3"
 ureq = "3.3"
 once_cell = "1.21"
-# 音频解码和播放
+# 音频解码（纯解码，无设备依赖，移动端也留着）
 symphonia = { version = "0.6", features = ["isomp4", "aac", "mp3"] }
-rodio = "0.22"
 # H.264 解码 (纯 Rust)
 openh264 = "0.9"
+
+# ── 桌面专用（可选）──
+winit = { version = "0.30", optional = true }
+softbuffer = { version = "0.4", optional = true }
+arboard = { version = "3", optional = true }
+rodio = { version = "0.22", optional = true }
 
 [build-dependencies]
 cbindgen = "0.29"
@@ -46,22 +64,27 @@ lto = "thin"  # 轻量级 LTO，比 fat 快
 [[bin]]
 name = "mini-app"
 path = "src/bin/main.rs"
+required-features = ["desktop"]
 
 [[bin]]
 name = "mini-app-window"
 path = "src/bin/window.rs"
+required-features = ["desktop"]
 
 [[bin]]
 name = "mini-launcher"
 path = "src/bin/launcher.rs"
+required-features = ["desktop"]
 
 [[bin]]
 name = "mini-devserver"
 path = "src/bin/devserver.rs"
+required-features = ["desktop"]
 
 [[bin]]
 name = "mini-compiler"
 path = "src/bin/compiler.rs"
+required-features = ["desktop"]
 
 [dev-dependencies]
 # 只给 examples/_font_probe.rs 用：量「惰性解析字体」的内存基线

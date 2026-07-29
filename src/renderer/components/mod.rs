@@ -21,6 +21,7 @@ mod input;
 pub mod image;
 mod image_cache;
 mod video;
+pub mod video_audio;
 mod canvas;
 mod swiper;
 mod rich_text;

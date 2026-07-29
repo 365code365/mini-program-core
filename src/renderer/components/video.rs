@@ -20,11 +20,8 @@ use std::time::Instant;
 use std::path::PathBuf;
 use std::fs::File;
 
-// 音频播放
-// rodio 0.22：`Sink` 改名 `Player`，`OutputStream::try_default()` 换成
-// 「设备 sink 构建器 + mixer」两段式；`Source` 的 span/声道/采样率也换了类型。
-use rodio::stream::MixerDeviceSink;
-use rodio::{ChannelCount, Player, SampleRate, Source};
+// 音频设备层拆到 video_audio.rs（移动端按 `audio` 特性关掉，见该文件注释）
+use super::video_audio;
 use symphonia::core::codecs::audio::AudioDecoderOptions;
 use symphonia::core::codecs::CodecParameters;
 use symphonia::core::formats::FormatOptions;
@@ -35,10 +32,6 @@ use symphonia::core::formats::probe::Hint;
 // H.264 解码
 use openh264::decoder::Decoder as H264Decoder;
 
-// 音频播放器 (thread_local 因为 OutputStream 不是 Send)
-thread_local! {
-    static AUDIO_STREAM: std::cell::RefCell<Option<(MixerDeviceSink, Player)>> = std::cell::RefCell::new(None);
-}
 
 /// 视频帧数据
 pub struct VideoFrame {
@@ -584,135 +577,39 @@ impl VideoPlayer {
         Self::stop_audio_static();
     }
     
-    /// 开始播放音频
+    /// 开始播放音频（设备层在 video_audio.rs，移动端按 `audio` 特性关掉）
     fn start_audio(&self) {
         if self.muted { return; }
-        
         let audio_buffer = match &self.audio_buffer {
             Some(ab) => ab,
             None => return,
         };
-        
-        Self::stop_audio_static();
-        
-        // 计算跳过的样本数
+        video_audio::stop();
+        // 从当前帧的时间戳开始播：前面那段样本要跳过
         let skip_time = self.frames.get(self.current_frame)
             .map(|f| f.timestamp)
             .unwrap_or(0.0);
-        let skip_samples = (skip_time * audio_buffer.sample_rate as f64 * audio_buffer.channels as f64) as usize;
-        
-        // 创建音频源
-        let samples: Vec<f32> = if skip_samples < audio_buffer.samples.len() {
-            audio_buffer.samples[skip_samples..].to_vec()
+        let skip = (skip_time * audio_buffer.sample_rate as f64 * audio_buffer.channels as f64) as usize;
+        let samples: Vec<f32> = if skip < audio_buffer.samples.len() {
+            audio_buffer.samples[skip..].to_vec()
         } else {
             audio_buffer.samples.clone()
         };
-        
-        let sample_rate = audio_buffer.sample_rate;
-        let channels = audio_buffer.channels;
-        
-        match rodio::stream::DeviceSinkBuilder::open_default_sink() {
-            Ok(mut device) => {
-                // rodio 0.22 在 DeviceSink 析构时会打一行提示，正常停播也会触发 ——
-                // 对宿主日志来说是纯噪声，关掉。
-                device.log_on_drop(false);
-                let player = Player::connect_new(device.mixer());
-                let source = SamplesSource::new(samples, sample_rate, channels);
-                player.append(source);
-                player.play();
-                AUDIO_STREAM.with(|cell| {
-                    *cell.borrow_mut() = Some((device, player));
-                });
-                println!("🔊 Audio playback started");
-            }
-            Err(e) => println!("❌ Audio output error: {:?}", e),
-        }
+        video_audio::play(samples, audio_buffer.sample_rate, audio_buffer.channels);
     }
-    
     fn stop_audio_static() {
-        AUDIO_STREAM.with(|cell| {
-            if let Some((_, ref player)) = *cell.borrow() {
-                player.stop();
-            }
-            *cell.borrow_mut() = None;
-        });
+        video_audio::stop();
     }
-    
     fn restart_audio(&self) {
-        Self::stop_audio_static();
-        
-        let audio_buffer = match &self.audio_buffer {
-            Some(ab) => ab,
-            None => return,
-        };
-        
-        let samples = audio_buffer.samples.clone();
-        let sample_rate = audio_buffer.sample_rate;
-        let channels = audio_buffer.channels;
-        
-        if let Ok(mut device) = rodio::stream::DeviceSinkBuilder::open_default_sink() {
-            device.log_on_drop(false);
-            let player = Player::connect_new(device.mixer());
-            let source = SamplesSource::new(samples, sample_rate, channels);
-            player.append(source);
-            player.play();
-            AUDIO_STREAM.with(|cell| {
-                *cell.borrow_mut() = Some((device, player));
-            });
-        }
+        video_audio::stop();
+        let Some(audio_buffer) = &self.audio_buffer else { return };
+        video_audio::play(
+            audio_buffer.samples.clone(),
+            audio_buffer.sample_rate,
+            audio_buffer.channels,
+        );
     }
 }
-
-/// 自定义音频源，用于播放解码后的样本
-struct SamplesSource {
-    samples: Vec<f32>,
-    position: usize,
-    sample_rate: u32,
-    channels: u16,
-}
-
-impl SamplesSource {
-    fn new(samples: Vec<f32>, sample_rate: u32, channels: u16) -> Self {
-        Self { samples, position: 0, sample_rate, channels }
-    }
-}
-
-impl Iterator for SamplesSource {
-    type Item = f32;
-    
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.position < self.samples.len() {
-            let sample = self.samples[self.position];
-            self.position += 1;
-            Some(sample)
-        } else {
-            None
-        }
-    }
-}
-
-impl Source for SamplesSource {
-    // rodio 0.22：`current_frame_len` 改名 `current_span_len`（"frame" 一词让给
-    // 「同一时刻各声道的一组样本」这个含义），声道数与采样率也换成了非零类型。
-    fn current_span_len(&self) -> Option<usize> {
-        Some(self.samples.len() - self.position)
-    }
-    fn channels(&self) -> ChannelCount {
-        ChannelCount::new(self.channels).unwrap_or(ChannelCount::new(2).unwrap())
-    }
-    fn sample_rate(&self) -> SampleRate {
-        SampleRate::new(self.sample_rate).unwrap_or(SampleRate::new(44100).unwrap())
-    }
-    
-    fn total_duration(&self) -> Option<std::time::Duration> {
-        let total_samples = self.samples.len() / self.channels as usize;
-        Some(std::time::Duration::from_secs_f64(
-            total_samples as f64 / self.sample_rate as f64
-        ))
-    }
-}
-
-
 /// 全局视频播放器缓存
 static VIDEO_PLAYERS: OnceLock<Arc<Mutex<HashMap<String, VideoPlayer>>>> = OnceLock::new();
 
