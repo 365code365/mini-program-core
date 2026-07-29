@@ -1,7 +1,7 @@
 //! UI 覆盖层模块 - Toast/Loading/Modal 的状态和渲染
 
-use mini_render::{Canvas, Color, Paint};
-use mini_render::text::TextRenderer;
+use crate::{Canvas, Color, Paint};
+use crate::text::TextRenderer;
 use std::time::Instant;
 
 /// Toast 状态

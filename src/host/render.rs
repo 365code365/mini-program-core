@@ -1,6 +1,6 @@
 //! 渲染相关逻辑
 
-use mini_render::Canvas;
+use crate::Canvas;
 
 /// 覆盖层画布上「真的画了东西」的物理行区间（含端点），全透明时返回 None。
 ///
@@ -164,7 +164,7 @@ pub fn render_pull_indicator(
     progress: f32,
     phase: f32,
 ) {
-    use mini_render::{Color, Paint};
+    use crate::{Color, Paint};
 
     let gap_px = (gap_logical * scale).round() as u32;
     if gap_px < 8 || buffer_width == 0 {

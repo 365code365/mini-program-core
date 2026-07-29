@@ -1,0 +1,7 @@
+// 打进 XCFramework 的 Headers/ 目录里，Swift 才能 `import MiniRenderFFI`。
+// 由 tools/build-mobile.sh 拷进去，不要手工改名（Package.swift 的 binaryTarget
+// 名字必须与这里的 module 名一致）。
+module MiniRenderFFI {
+    header "mini_render.h"
+    export *
+}

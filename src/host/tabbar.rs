@@ -1,9 +1,9 @@
 //! TabBar 相关逻辑
 
-use mini_render::parser::wxml::WxmlNode;
-use mini_render::parser::wxss::StyleSheet;
-use mini_render::{Canvas, Color, Paint, PaintStyle, Rect};
-use mini_render::text::TextRenderer;
+use crate::parser::wxml::WxmlNode;
+use crate::parser::wxss::StyleSheet;
+use crate::{Canvas, Color, Paint, PaintStyle, Rect};
+use crate::text::TextRenderer;
 use super::config::TabBarConfig;
 
 /// 原生 tabBar 默认高度（逻辑像素）。微信原生 tabBar 为 50px；

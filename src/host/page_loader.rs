@@ -3,9 +3,9 @@
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use mini_render::parser::{WxmlParser, WxssParser};
-use mini_render::parser::wxml::WxmlNode;
-use mini_render::parser::wxss::StyleSheet;
+use crate::parser::{WxmlParser, WxssParser};
+use crate::parser::wxml::WxmlNode;
+use crate::parser::wxss::StyleSheet;
 use super::navigation::PageInfo;
 
 /// 自定义 TabBar 数据
@@ -22,7 +22,7 @@ static mut APP_PATH: Option<PathBuf> = None;
 
 /// 设置小程序目录路径（同时登记到引擎，供图片等包内资源路径解析）
 pub fn set_app_path(path: PathBuf) {
-    mini_render::assets::set_app_root(path.clone());
+    crate::assets::set_app_root(path.clone());
     unsafe {
         APP_PATH = Some(path);
     }
@@ -94,7 +94,7 @@ fn load_page(app_path: &Path, page_path: &str) -> Option<PageInfo> {
         .unwrap_or_else(app_enables_pull_down_refresh);
 
     // 页面 json 的 `usingComponents`：自定义组件三件套（含组件自己再声明的组件）
-    let components = mini_render::using_components::load_page_components(app_path, page_path);
+    let components = crate::using_components::load_page_components(app_path, page_path);
     if !components.is_empty() {
         println!(
             "🧩 {} 使用 {} 个自定义组件: {}",
@@ -189,7 +189,7 @@ pub fn load_custom_tabbar_with_app_wxss(app_wxss: &str) -> Result<Option<CustomT
     
     // 执行组件 JS 取 data 快照：iconType 这类字段只存在于组件里，app.json 没有
     let app_js = load_app_js();
-    let data = mini_render::compiler::snapshot_component_data(&app_js, &js)
+    let data = crate::compiler::snapshot_component_data(&app_js, &js)
         .unwrap_or_else(|| serde_json::json!({}));
 
     Ok(Some(CustomTabBar {
@@ -206,63 +206,63 @@ fn load_builtin_pages() -> HashMap<String, PageInfo> {
     
     pages.insert("pages/index/index".to_string(), PageInfo {
         path: "pages/index/index".to_string(),
-        wxml: include_str!("../../../sample/sample-app/pages/index/index.wxml").to_string(),
-        wxss: include_str!("../../../sample/sample-app/pages/index/index.wxss").to_string(),
-        js: include_str!("../../../sample/sample-app/pages/index/index.js").to_string(),
+        wxml: include_str!("../../sample/sample-app/pages/index/index.wxml").to_string(),
+        wxss: include_str!("../../sample/sample-app/pages/index/index.wxss").to_string(),
+        js: include_str!("../../sample/sample-app/pages/index/index.js").to_string(),
         enable_pull_down_refresh: false,
         components: Vec::new(),
     });
     
     pages.insert("pages/category/category".to_string(), PageInfo {
         path: "pages/category/category".to_string(),
-        wxml: include_str!("../../../sample/sample-app/pages/category/category.wxml").to_string(),
-        wxss: include_str!("../../../sample/sample-app/pages/category/category.wxss").to_string(),
-        js: include_str!("../../../sample/sample-app/pages/category/category.js").to_string(),
+        wxml: include_str!("../../sample/sample-app/pages/category/category.wxml").to_string(),
+        wxss: include_str!("../../sample/sample-app/pages/category/category.wxss").to_string(),
+        js: include_str!("../../sample/sample-app/pages/category/category.js").to_string(),
         enable_pull_down_refresh: false,
         components: Vec::new(),
     });
     
     pages.insert("pages/cart/cart".to_string(), PageInfo {
         path: "pages/cart/cart".to_string(),
-        wxml: include_str!("../../../sample/sample-app/pages/cart/cart.wxml").to_string(),
-        wxss: include_str!("../../../sample/sample-app/pages/cart/cart.wxss").to_string(),
-        js: include_str!("../../../sample/sample-app/pages/cart/cart.js").to_string(),
+        wxml: include_str!("../../sample/sample-app/pages/cart/cart.wxml").to_string(),
+        wxss: include_str!("../../sample/sample-app/pages/cart/cart.wxss").to_string(),
+        js: include_str!("../../sample/sample-app/pages/cart/cart.js").to_string(),
         enable_pull_down_refresh: false,
         components: Vec::new(),
     });
     
     pages.insert("pages/profile/profile".to_string(), PageInfo {
         path: "pages/profile/profile".to_string(),
-        wxml: include_str!("../../../sample/sample-app/pages/profile/profile.wxml").to_string(),
-        wxss: include_str!("../../../sample/sample-app/pages/profile/profile.wxss").to_string(),
-        js: include_str!("../../../sample/sample-app/pages/profile/profile.js").to_string(),
+        wxml: include_str!("../../sample/sample-app/pages/profile/profile.wxml").to_string(),
+        wxss: include_str!("../../sample/sample-app/pages/profile/profile.wxss").to_string(),
+        js: include_str!("../../sample/sample-app/pages/profile/profile.js").to_string(),
         enable_pull_down_refresh: false,
         components: Vec::new(),
     });
     
     pages.insert("pages/detail/detail".to_string(), PageInfo {
         path: "pages/detail/detail".to_string(),
-        wxml: include_str!("../../../sample/sample-app/pages/detail/detail.wxml").to_string(),
-        wxss: include_str!("../../../sample/sample-app/pages/detail/detail.wxss").to_string(),
-        js: include_str!("../../../sample/sample-app/pages/detail/detail.js").to_string(),
+        wxml: include_str!("../../sample/sample-app/pages/detail/detail.wxml").to_string(),
+        wxss: include_str!("../../sample/sample-app/pages/detail/detail.wxss").to_string(),
+        js: include_str!("../../sample/sample-app/pages/detail/detail.js").to_string(),
         enable_pull_down_refresh: false,
         components: Vec::new(),
     });
     
     pages.insert("pages/canvas/canvas".to_string(), PageInfo {
         path: "pages/canvas/canvas".to_string(),
-        wxml: include_str!("../../../sample/sample-app/pages/canvas/canvas.wxml").to_string(),
-        wxss: include_str!("../../../sample/sample-app/pages/canvas/canvas.wxss").to_string(),
-        js: include_str!("../../../sample/sample-app/pages/canvas/canvas.js").to_string(),
+        wxml: include_str!("../../sample/sample-app/pages/canvas/canvas.wxml").to_string(),
+        wxss: include_str!("../../sample/sample-app/pages/canvas/canvas.wxss").to_string(),
+        js: include_str!("../../sample/sample-app/pages/canvas/canvas.js").to_string(),
         enable_pull_down_refresh: false,
         components: Vec::new(),
     });
     
     pages.insert("pages/components/components".to_string(), PageInfo {
         path: "pages/components/components".to_string(),
-        wxml: include_str!("../../../sample/sample-app/pages/components/components.wxml").to_string(),
-        wxss: include_str!("../../../sample/sample-app/pages/components/components.wxss").to_string(),
-        js: include_str!("../../../sample/sample-app/pages/components/components.js").to_string(),
+        wxml: include_str!("../../sample/sample-app/pages/components/components.wxml").to_string(),
+        wxss: include_str!("../../sample/sample-app/pages/components/components.wxss").to_string(),
+        js: include_str!("../../sample/sample-app/pages/components/components.js").to_string(),
         enable_pull_down_refresh: false,
         components: Vec::new(),
     });

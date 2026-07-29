@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  库本身不声明任何权限：小程序要联网时由**业务工程**声明 INTERNET，
+  这样宿主能自己决定权限清单，也便于应用商店审核说明。
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" />

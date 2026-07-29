@@ -247,8 +247,8 @@ pub fn event_json(
 /// 覆盖层里根本不冒泡。
 #[allow(clippy::too_many_arguments)]
 pub fn dispatch_to_js(
-    app: &mut mini_render::runtime::MiniApp,
-    renderer: &mini_render::renderer::WxmlRenderer,
+    app: &mut crate::runtime::MiniApp,
+    renderer: &crate::renderer::WxmlRenderer,
     event_type: &str,
     hit: (f32, f32),
     point: (f32, f32),
@@ -269,7 +269,7 @@ pub fn dispatch_to_js(
         .or_else(|| {
             chain
                 .iter()
-                .find(|b| b.phase == mini_render::renderer::components::EventPhase::Bubble)
+                .find(|b| b.phase == crate::renderer::components::EventPhase::Bubble)
                 .or_else(|| chain.last())
                 .cloned()
         });

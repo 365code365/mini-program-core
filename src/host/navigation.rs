@@ -1,10 +1,10 @@
 //! 页面导航逻辑
 
 use std::collections::HashMap;
-use mini_render::parser::wxml::WxmlNode;
-use mini_render::parser::wxss::StyleSheet;
-use mini_render::parser::template::ComponentTemplates;
-use mini_render::using_components::ComponentSource;
+use crate::parser::wxml::WxmlNode;
+use crate::parser::wxss::StyleSheet;
+use crate::parser::template::ComponentTemplates;
+use crate::using_components::ComponentSource;
 
 /// 页面信息
 pub struct PageInfo {
@@ -72,7 +72,7 @@ pub fn remove_manual_tabbar(nodes: &[WxmlNode]) -> Vec<WxmlNode> {
     return nodes.to_vec();
     #[allow(unreachable_code)]
     {
-    use mini_render::parser::wxml::WxmlNodeType;
+    use crate::parser::wxml::WxmlNodeType;
     
     fn filter_node(node: &WxmlNode) -> Option<WxmlNode> {
         if node.node_type != WxmlNodeType::Element {

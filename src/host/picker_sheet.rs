@@ -7,8 +7,8 @@
 //! 面板画在 present 之后的 buffer 上（与 Toast/Modal 同一层机制），
 //! 因此不参与页面的损伤区重绘，也不会被页面裁剪。
 
-use mini_render::{Canvas, Color, Paint};
-use mini_render::text::TextRenderer;
+use crate::{Canvas, Color, Paint};
+use crate::text::TextRenderer;
 use std::time::Instant;
 
 use super::{LOGICAL_WIDTH, LOGICAL_HEIGHT};
@@ -418,7 +418,7 @@ fn draw_text(
 
 // ────────────────────────────── 由 <picker> 构造面板 ──────────────────────────────
 
-use mini_render::renderer::PickerBinding;
+use crate::renderer::PickerBinding;
 
 /// 从页面里的一个 `<picker>` 造出面板状态。
 ///

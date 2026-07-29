@@ -1,10 +1,10 @@
 //! 鼠标事件处理
 
-use mini_render::ui::interaction::{InteractionManager, InteractionResult, InteractionType};
-use mini_render::renderer::WxmlRenderer;
-use mini_render::runtime::MiniApp;
-use mini_render::ui::scroll_controller::ScrollController;
-use super::super::tabbar::tabbar_height;
+use crate::ui::interaction::{InteractionManager, InteractionResult, InteractionType};
+use crate::renderer::WxmlRenderer;
+use crate::runtime::MiniApp;
+use crate::ui::scroll_controller::ScrollController;
+use super::tabbar::tabbar_height;
 
 pub const LOGICAL_HEIGHT: u32 = 667;
 
@@ -122,7 +122,7 @@ pub fn handle_content_click(
     renderer: Option<&WxmlRenderer>,
     app: &mut MiniApp,
     scale_factor: f64,
-    text_renderer: Option<&mini_render::text::TextRenderer>,
+    text_renderer: Option<&crate::text::TextRenderer>,
     // tap_ctx: 本次 tap 所属触点的标识与页面时间戳（写进事件对象）
     tap_ctx: (u32, u64),
 ) -> Option<InteractionResult> {
@@ -191,7 +191,7 @@ pub fn handle_content_click(
                         char_widths.push(width);
                     }
                     
-                    use mini_render::ui::interaction::calculate_cursor_position;
+                    use crate::ui::interaction::calculate_cursor_position;
                     let cursor_pos = calculate_cursor_position(&focused.value, &char_widths, click_x_physical, padding_left, text_offset);
                     
                     if let Some(input) = &mut interaction.focused_input {
@@ -263,7 +263,7 @@ fn dispatch_component_events(
 ) {
     let (identifier, time_ms) = tap_ctx;
     let mut dispatch_change = |app: &mut MiniApp, detail: serde_json::Value| {
-        super::super::touch::dispatch_to_js(
+        super::touch::dispatch_to_js(
             app, renderer, "change", (x, hit_y), (x, hit_y), scope, identifier, time_ms, detail,
         );
     };
@@ -327,10 +327,68 @@ fn dispatch_tap_chain(
     let (identifier, time_ms) = tap_ctx;
     // tap 的 detail 是点击点坐标（微信语义）
     let detail = serde_json::json!({ "x": x, "y": hit_y });
-    let hit = super::super::touch::dispatch_to_js(
+    let hit = super::touch::dispatch_to_js(
         app, renderer, "tap", (x, hit_y), (x, hit_y), scope, identifier, time_ms, detail,
     );
     if hit {
         println!("👆 tap");
     }
+}
+
+pub fn dispatch_input_event(
+    app: &mut MiniApp,
+    renderer: Option<&WxmlRenderer>,
+    component_id: &str,
+    event_type: &str,
+    value: &str,
+) -> bool {
+    let Some(renderer) = renderer else { return false };
+    let binding = match renderer.binding_for(component_id, event_type) {
+        Some(b) => b,
+        // 兜底：滚动后重算出来的 `component_id` 可能与聚焦那一刻不同（id 含坐标）。
+        // 此时若全页只有唯一一条该类绑定，仍按它派发；有多条则宁可不发，避免串台。
+        None => {
+            let mut it = renderer
+                .get_event_bindings()
+                .iter()
+                .filter(|b| b.event_type == event_type);
+            match (it.next(), it.next()) {
+                (Some(only), None) => only,
+                _ => return false,
+            }
+        }
+    };
+
+    let node = serde_json::json!({
+        "id": binding.id,
+        "dataset": binding.data,
+        "offsetLeft": binding.bounds.x,
+        "offsetTop": binding.bounds.y,
+    });
+    // 微信的 detail：input 是 `{value, cursor, keyCode}`，focus 是 `{value, height}`，
+    // blur / confirm 是 `{value}`。
+    let mut detail = serde_json::json!({ "value": value });
+    match event_type {
+        "input" => {
+            detail["cursor"] = serde_json::json!(value.chars().count());
+            detail["keyCode"] = serde_json::json!(0);
+        }
+        "focus" => {
+            // 软键盘高度：桌面宿主没有软键盘，微信在无键盘时也给 0
+            detail["height"] = serde_json::json!(0);
+        }
+        _ => {}
+    }
+    let event = serde_json::json!({
+        "type": event_type,
+        "target": node,
+        "currentTarget": node,
+        "detail": detail,
+        "touches": [],
+        "changedTouches": [],
+    });
+    let handler = serde_json::to_string(&binding.handler).unwrap_or_else(|_| "''".into());
+    let owner = serde_json::to_string(&binding.owner).unwrap_or_else(|_| "''".into());
+    app.eval(&format!("__dispatchEvent({handler}, {event}, {owner})")).ok();
+    true
 }

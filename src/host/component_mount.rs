@@ -5,9 +5,9 @@
 //! 首次 `setData` 的。不建实例的话组件模板里全是空值 ——
 //! 表现就是「底部导航整条空白，图标和文字都没有」。
 
-use mini_render::parser::wxml::{WxmlNode, WxmlNodeType};
-use mini_render::runtime::MiniApp;
-use mini_render::using_components::ComponentSource;
+use crate::parser::wxml::{WxmlNode, WxmlNodeType};
+use crate::runtime::MiniApp;
+use crate::using_components::ComponentSource;
 
 /// 挂载页面声明的全部自定义组件。
 pub fn mount_page_components(app: &mut MiniApp, comps: &[ComponentSource], page_nodes: &[WxmlNode]) {
@@ -119,7 +119,7 @@ fn js_str(s: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use mini_render::parser::wxml::WxmlParser;
+    use crate::parser::wxml::WxmlParser;
 
     fn nodes(src: &str) -> Vec<WxmlNode> {
         WxmlParser::new(src).parse().unwrap_or_default()

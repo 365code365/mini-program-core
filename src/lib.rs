@@ -60,9 +60,21 @@ pub mod compiler;
 // Yoga 布局引擎
 pub mod layout;
 
-// FFI 导出
+/// 宿主层：把小程序跑起来所需的、与平台无关的那部分（页面栈、覆盖层、
+/// 触摸状态机、像素合成…）。桌面窗体与移动端 SDK 共用这一份。
+pub mod host;
+
+// FFI 导出：画布级（mr_canvas_* / mr_path_*）
 mod ffi;
 pub use ffi::*;
+
+/// FFI 导出：**App 级**（mr_app_*）—— 移动端 SDK 用的就是这套
+mod ffi_app;
+pub use ffi_app::*;
+
+/// Android 的 JNI 入口（只在 android 目标编译）
+#[cfg(target_os = "android")]
+mod ffi_jni;
 
 // 单元测试
 #[cfg(test)]

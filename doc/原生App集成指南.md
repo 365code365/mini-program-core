@@ -1,11 +1,110 @@
 # 把 mini-render 集成进原生 App
 
-目标：让你的 App 能像微信一样「打开一个小程序包 → 渲染 → 用户可以正常操作」。
+**先看这一节就够了**：SDK 已经封好，Android / iOS 各三行代码。
+后面几节是原理与自定义（想自己控制帧循环、或者接鸿蒙/桌面时再看）。
 
-本文分三部分：
-- **一、宿主要做的九件事**（每条都给现有入口 + 踩过的坑）
-- **二、需要新增的 App 级 C ABI**（现在只有画布级 ABI，这块是缺的）
-- **三、各平台的具体步骤与限制**
+---
+
+## 极简集成（推荐）
+
+### 1. 编库
+
+```bash
+bash tools/build-mobile.sh android   # → sdk/android/jniLibs/<abi>/libmini_render.so
+bash tools/build-mobile.sh ios       # → sdk/ios/MiniRender.xcframework
+bash tools/build-mobile.sh check     # 只做交叉编译检查
+```
+
+> 两个构建参数缺一个都编不过，脚本里已经带好：`--no-default-features`
+> （关掉 winit/剪贴板/声卡这些移动端不该编进去的桌面依赖）、`--features bindgen`
+> （`rquickjs-sys` 没有为 iOS/Android 预生成 C 绑定，要现场生成）。
+
+### 2. Android（Kotlin）
+
+把 `sdk/android/*.kt` 拷进工程，`jniLibs` 放到 `src/main/jniLibs/`：
+
+```kotlin
+class MiniActivity : AppCompatActivity() {
+    private lateinit var mini: MiniProgramView
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        mini = MiniProgramView(this)
+        setContentView(mini)
+        mini.open(File(filesDir, "my-mini-app"))     // 解包后的小程序目录
+    }
+
+    override fun onBackPressed() {
+        if (!mini.goBack()) super.onBackPressed()     // 页面栈空了才退出
+    }
+
+    override fun onResume()  { super.onResume();  mini.onHostResume() }
+    override fun onPause()   { super.onPause();   mini.onHostPause() }
+    override fun onTrimMemory(level: Int) { super.onTrimMemory(level); mini.onHostTrimMemory() }
+    override fun onDestroy() { super.onDestroy(); mini.close() }
+}
+```
+
+### 3. iOS（Swift）
+
+把 `MiniRender.xcframework` 拖进工程，`sdk/ios/MiniProgramView.swift` 拷进来：
+
+```swift
+let mini = MiniProgramView(frame: view.bounds)
+view.addSubview(mini)
+mini.open(appDir: unpackedDir)                  // 解包后的小程序目录
+
+// 返回按钮 / 侧滑：
+if !mini.goBack() { navigationController?.popViewController(animated: true) }
+```
+
+前后台与内存告警 `MiniProgramView` 自己监听了系统通知，不用管。
+
+### 这两个 View 替你做了什么
+
+| 事情 | 说明 |
+|---|---|
+| 专用渲染线程 | 引擎不是线程安全的（逻辑层是 QuickJS），所有调用都排到同一条线程 |
+| 尺寸与 dpr | 按 View 的 `bounds` × `density`/`scale` 算，`rpx` 由引擎自己换算 |
+| 触摸 | `onTouchEvent` / `touchesXxx` → 引擎的**指针三段**，含历史点/`coalescedTouches`（不抽稀） |
+| 出帧 | 只在引擎回报「有新画面」时才上屏；静止时不出帧（不耗电） |
+| 沙盒目录 | 自动指到 `filesDir` / `Caches`，storage 与图片磁盘缓存才生效 |
+| 生命周期 | 前后台切换、内存告警转发 |
+
+### 产物体积（实测 arm64）
+
+| 项 | 大小 |
+|---|---|
+| `libmini_render.so`（未 strip） | 41.3 MB |
+| strip 之后 | 34.9 MB |
+
+偏大，两个已知原因，都还没优化：
+- `page_loader.rs` 里用 `include_str!` 把 sample-app 的页面源码当兜底内置进去了 ——
+  正式 SDK 该去掉；
+- openh264 / symphonia（视频与音频解码）整个链进来了，移动端本该交给系统硬解。
+  `--no-default-features` 只关掉了音频**设备**，解码器还在。
+
+要压体积的话按这两条来，另外 release 加 `strip = true` 和 `panic = "abort"` 还能再省一些。
+
+### 只有两件事必须由你决定
+
+1. **小程序包从哪来**：下载、校验、解包到沙盒目录（引擎按目录读，不解析 `.wxapkg`，
+   也不做签名校验 —— 分包、灰度、完整性都属于宿主的事）。
+2. **原生层组件谁承载**：`<web-view>` / `<video>` / `<map>` 在微信里是原生组件层
+   （层级最高，只有 `cover-view` 能盖住）。引擎只负责算位置与参数，控件由你用
+   `WKWebView` / `android.webkit.WebView` / ArkUI `Web()` 放上去。
+   **不建议把 wry 编进引擎**，原因见第一节第 7 条。
+
+### 怎么确认没接错
+
+```bash
+bash tools/sdk-parity.sh              # SDK 那条路 vs 桌面窗体，逐像素对比
+```
+
+SDK 用的宿主（`mini_render::host::MiniEngine`）与桌面窗体共用 `host::` 下的页面
+加载、覆盖层、触摸状态机、像素合成，只有帧调度各自实现。这个脚本把每个页面用
+SDK 那条路渲染出来和桌面基线逐像素比 —— 当前 **sample-app 15/15、news-app 6/6
+完全一致**。哪天两条路开始分叉，它会先叫。
 
 ---
 
@@ -238,57 +337,45 @@ mini_render::memory_report();
 
 ---
 
-## 二、需要新增的 App 级 C ABI
+## 二、App 级 C ABI（已实现）
 
-**现状**：`include/mini_render.h` 只有**画布级** ABI（`mr_canvas_*` / `mr_path_*`），
-够用来在别的语言里画图形，但**不足以打开一个小程序**。
-Rust 侧的 App 级能力（`MiniApp`、`WxmlRenderer`、事件注入、路由）都还没有 C 导出。
+实现在 `src/ffi_app.rs`，声明在 `include/mini_render.h`。Kotlin 走
+`src/ffi_jni.rs`（`jni` crate，只在 android 目标编译），Swift 直接调 C。
 
-所以非 Rust 宿主目前有两条路：
-
-- **A. Rust 薄壳（推荐）**：在 Rust 里写一层 `#[no_mangle] extern "C"`，把下面这套 ABI 导出来。
-  参考 `src/bin/window.rs` 把每帧逻辑封成 `mini_app_pump`。
-- **B. UniFFI / cbindgen 自动生成**：适合想同时出 Swift/Kotlin 绑定的场景。
-
-建议的 ABI（**尚未实现**，作为待办；命名沿用 `mr_` 前缀）：
+整套只有十几个函数，没有回调注册：
 
 ```c
-typedef struct MiniApp MiniApp;
+typedef struct MRApp MRApp;
 
-// 生命周期
-MiniApp* mr_app_create(const char* app_dir, const char* data_dir,
+MRApp*   mr_app_create(const char* app_dir, const char* data_dir,
                        uint32_t width, uint32_t height, float dpr);
-void     mr_app_destroy(MiniApp*);
-bool     mr_app_launch(MiniApp*, const char* route /* NULL = app.json 首页 */);
+void     mr_app_destroy(MRApp*);
+int      mr_app_launch(MRApp*, const char* route);   // NULL = app.json 首页
+int      mr_app_navigate(MRApp*, const char* url);   // 深链
 
-// 每帧：驱动逻辑层 + 渲染，返回是否有新画面；dirty 为脏矩形（可为 NULL）
-typedef struct { int32_t x, y, w, h; } MRRect;
-bool     mr_app_pump(MiniApp*, double timestamp_ms, MRRect* dirty_out);
-size_t   mr_app_pixels(MiniApp*, uint8_t* out, size_t len);  // RGBA8
+int      mr_app_pump(MRApp*, uint64_t now_ms);       // 1 = 有新画面
+void     mr_app_pixel_size(MRApp*, uint32_t* w, uint32_t* h);
+size_t   mr_app_pixels(MRApp*, uint8_t* out, size_t len);   // RGBA8
 
-// 事件（逻辑坐标）
-void     mr_app_pointer_down(MiniApp*, float x, float y);
-void     mr_app_pointer_move(MiniApp*, float x, float y);
-void     mr_app_pointer_up(MiniApp*, float x, float y);
-void     mr_app_pointer_cancel(MiniApp*);
-void     mr_app_wheel(MiniApp*, float x, float y, float dx, float dy);
-void     mr_app_text_input(MiniApp*, const char* utf8);
-void     mr_app_key(MiniApp*, const char* key);   // "enter"/"backspace"/...
+void     mr_app_pointer_down(MRApp*, float x, float y);
+void     mr_app_pointer_move(MRApp*, float x, float y);
+void     mr_app_pointer_up(MRApp*, float x, float y);
+void     mr_app_pointer_cancel(MRApp*);
+void     mr_app_wheel(MRApp*, float delta_y, int precise);
+void     mr_app_text_input(MRApp*, const char* utf8);
+void     mr_app_key(MRApp*, const char* name);
 
-// 路由与生命周期
-bool     mr_app_navigate_back(MiniApp*);          // false = 栈空，宿主该退出小程序
-void     mr_app_on_show(MiniApp*);
-void     mr_app_on_hide(MiniApp*);
-void     mr_app_trim_memory(MiniApp*);
-
-// 宿主回调
-typedef void (*mr_native_view_cb)(const char* kind, const char* node_id,
-                                  const char* payload_json, void* ud);
-void     mr_app_set_native_view_cb(MiniApp*, mr_native_view_cb, void* ud);
-
-typedef void (*mr_log_cb)(int level, const char* msg, void* ud);
-void     mr_app_set_log_cb(MiniApp*, mr_log_cb, void* ud);
+int      mr_app_back(MRApp*);            // 0 = 栈空，宿主该关掉小程序
+uint32_t mr_app_page_depth(MRApp*);
+void     mr_app_on_show(MRApp*);
+void     mr_app_on_hide(MRApp*);
+void     mr_app_trim_memory(MRApp*);
+const char* mr_app_last_error(MRApp*);
+const char* mr_version(void);
 ```
+
+**还没有的**：原生层组件的回调（`web-view`/`video` 的摆放，第 7 条那个
+`mr_native_view_cb`）、日志回调、损伤矩形（`mr_app_pump` 目前每帧整帧重绘）。
 
 线程约定：**所有 `mr_app_*` 必须在同一个线程调用**（QuickJS 不是线程安全的）。
 网络下载在引擎内部的后台线程，结果按帧取回，宿主不用管。

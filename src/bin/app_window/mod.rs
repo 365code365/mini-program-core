@@ -1,38 +1,33 @@
-//! 窗口模块 - 将事件处理逻辑拆分成独立模块
+//! 桌面窗体的私有模块：**只放 winit/softbuffer 相关的适配层**。
+//!
+//! 与平台无关的宿主逻辑已经搬进 lib 的 `mini_render::host`（移动端 SDK 要用同一份，
+//! 见那里的模块注释）。这里把它们原样重新导出，所以窗体代码的引用路径不变。
 
-pub mod config;
-pub mod navigation;
-pub mod tabbar;
 pub mod events;
-pub mod render;
 pub mod interaction_handler;
-pub mod ui_overlay;
-pub mod page_loader;
 pub mod click_handler;
 pub mod event_handler;
-pub mod picker_sheet;
-pub mod region_data;
 pub mod scroll_bench;
-pub mod component_mount;
-pub mod touch;
-pub mod gesture;
-pub mod edge_back;
 pub mod pointer_input;
 pub mod touch_dispatch;
 pub mod edge_back_host;
 pub mod headless_script;
 
-pub use config::*;
-pub use navigation::*;
-pub use tabbar::*;
-pub use render::*;
-pub use interaction_handler::*;
-pub use ui_overlay::{ToastState, LoadingState, ModalState, render_ui_overlay};
-pub use page_loader::{CustomTabBar, load_all_pages, load_custom_tabbar, load_custom_tabbar_with_app_wxss};
+// ── 从 lib 的宿主层重新导出（同一份实现）──
+pub use mini_render::host::{
+    component_mount, config, edge_back, gesture, navigation, page_loader, picker_sheet,
+    region_data, render, tabbar, touch, ui_overlay,
+};
+pub use mini_render::host::{
+    load_all_pages, load_custom_tabbar, load_custom_tabbar_with_app_wxss, render_ui_overlay,
+    CustomTabBar, LoadingState, ModalState, ToastState, CONTENT_HEIGHT, LOGICAL_HEIGHT,
+    LOGICAL_WIDTH,
+};
+pub use mini_render::host::config::*;
+pub use mini_render::host::navigation::*;
+pub use mini_render::host::render::*;
+pub use mini_render::host::tabbar::*;
+
 pub use click_handler::*;
 pub use event_handler::*;
-
-// 常量
-pub const LOGICAL_WIDTH: u32 = 375;
-pub const LOGICAL_HEIGHT: u32 = 667;
-pub const CONTENT_HEIGHT: u32 = 1500;
+pub use interaction_handler::*;
