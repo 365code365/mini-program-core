@@ -19,6 +19,14 @@ page.js ───┘        （逻辑层是 QuickJS：App / Page / Component / C
 | 绘制 | 自研 2D 光栅器：扫描线 even-odd 填充 + 4× 超采样、圆角贝塞尔逼近、fontdue 字形、Apple `sbix` 彩色 emoji、双线性图片采样、渐变/阴影/裁剪栈 |
 | 另有 | 内置编译器，可把同一份小程序源码编译成 HTML 工程（用作双端一致性的参照） |
 
+下面四张是引擎自己渲染的输出（纯 WXML + WXSS + 数据，375×667 @2x）：
+
+| | | | |
+|:---:|:---:|:---:|:---:|
+| <img src="doc/gallery/28_ecommerce_home.png" width="180"/><br/>电商首页 | <img src="doc/gallery/36_news_feed.png" width="180"/><br/>资讯信息流 | <img src="doc/gallery/42_food_order.png" width="180"/><br/>外卖点餐 | <img src="doc/gallery/60_form_controls.png" width="180"/><br/>表单控件 |
+
+全部 65 张见 [`doc/场景画廊.md`](doc/场景画廊.md) —— 它们同时是逐字节可复现的回归基线。
+
 ---
 
 ## 目录
@@ -56,7 +64,11 @@ cargo build --release
 常用动作参数（按书写顺序执行，可重复）：`--touch x,y` / `--swipe x1,y1,x2,y2`
 / `--drag px×帧数` / `--type 文本` / `--key enter` / `--wheel` / `--wait 秒` / `--frames N`。
 完整列表 `--help`；诊断开关（`MINI_SCROLL_LOG` / `MINI_FPS` / `MINI_FONT_LOG` …）见
-[`doc/引擎测试说明.md`](doc/引擎测试说明.md)。
+[`doc/引擎测试说明.md`](doc/引擎测试说明.md) 与
+[`doc/架构与实现原理.md`](doc/架构与实现原理.md#帧成本是怎么压下来的)。
+
+示例小程序清单、浏览器实时预览（`mini-devserver`）、编译成 HTML 工程、以及把引擎当库用的
+Rust / C 代码示例，见 [`doc/示例与调试.md`](doc/示例与调试.md)。
 
 ---
 
@@ -263,7 +275,8 @@ doc/                 文档与场景图
 `tools/sdk-parity.sh` 逐像素守着这条边界（当前 sample 15/15、news 6/6 一致）。
 
 工程约定：单个 `.rs` 超过 500 行就拆（例外要在文件头写理由），见
-[`.kiro/steering/`](.kiro/steering/)。
+[`.kiro/steering/`](.kiro/steering/)。各模块的职责与渲染器内部的分工见
+[`doc/架构与实现原理.md`](doc/架构与实现原理.md#分层结构)。
 
 ---
 
@@ -271,12 +284,15 @@ doc/                 文档与场景图
 
 | 文档 | 内容 |
 |---|---|
+| [`doc/架构与实现原理.md`](doc/架构与实现原理.md) | 一帧是怎么画出来的、分层与模块划分、帧成本怎么压下来、局部重绘、滚动手感与触控对齐、依赖版本与 taffy 适配 |
+| [`doc/示例与调试.md`](doc/示例与调试.md) | 示例小程序清单、`examples/` 各示例、浏览器预览、编译成 HTML、视频/Canvas、Rust/C/移动端代码示例 |
+| [`doc/场景画廊.md`](doc/场景画廊.md) | 65 张真实渲染（同时是回归基线），以及素材怎么生成 |
+| [`doc/踩坑记录.md`](doc/踩坑记录.md) | 12 类「曾经错在哪」：现象 → 根因 → 现在的做法 → 回归判据 |
 | [`doc/引擎测试说明.md`](doc/引擎测试说明.md) | 能力矩阵、T1~T9 逐项测试清单与判据、内存分项实测、已知差距 13 条 |
 | [`doc/原生App集成指南.md`](doc/原生App集成指南.md) | 极简集成、宿主九件事、C ABI、iOS/Android/鸿蒙步骤、验收清单 |
 | [`doc/触控对齐测试报告.md`](doc/触控对齐测试报告.md) | 滑动/点击/长按/手势与微信的逐项对照实测 |
 | [`doc/实现组件说明.md`](doc/实现组件说明.md) | 组件实现状态明细 |
 | [`sdk/README.md`](sdk/README.md) | SDK 三行接入与三条必须知道的约定 |
-| [`doc/gallery/`](doc/gallery/) | 65 张场景图（确定性渲染，回归基线） |
 
 ## 已知的最大待办
 

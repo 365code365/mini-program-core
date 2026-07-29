@@ -52,8 +52,10 @@ fi
 
 # 交叉编译目标目录：移动端库不常编，产物已经拷进 sdk/，这里的中间件可以放心删
 if [ "$MODE" = "--targets" ] || [ "$MODE" = "--all" ]; then
-    for d in target/*-apple-ios* target/*-linux-android* target/*-linux-androideabi \
-             target/*-pc-windows-* target/*-unknown-*; do
+    # 含 *-apple-darwin：scripts/build-macos.sh 出通用库时按 triple 分目录编，
+    # 各约 800MB，而宿主构建走的是 target/release，删掉不影响日常开发
+    for d in target/*-apple-ios* target/*-apple-darwin* target/*-linux-android* \
+             target/*-linux-androideabi target/*-pc-windows-* target/*-unknown-*; do
         [ -d "$d" ] && rm -rf "$d" && echo "🧹 清掉 $d"
     done
 fi
