@@ -30,6 +30,7 @@ use symphonia::core::meta::MetadataOptions;
 use symphonia::core::formats::probe::Hint;
 
 // H.264 解码
+#[cfg(feature = "h264")]
 use openh264::decoder::Decoder as H264Decoder;
 
 
@@ -173,111 +174,121 @@ impl VideoPlayer {
         // 获取 SPS/PPS
         let (sps, pps) = self.extract_sps_pps_manual(path)?;
         
-        // 创建 H.264 解码器
-        let mut decoder = H264Decoder::new()
-            .map_err(|e| format!("H264 decoder init error: {:?}", e))?;
-        
-        // 构建样本偏移表
-        let sample_offsets = self.build_sample_offsets(&sample_sizes, &chunk_offsets, &sample_to_chunk);
-        
-        // 计算每个样本的时间戳
-        let timestamps = self.build_timestamps(&sample_durations, timescale);
-        
-        // 解码帧
-        let start_time = Instant::now();
-        let mut decoded_count = 0;
-        let mut skipped_count = 0;
-        
-        use openh264::nal_units;
-        use openh264::formats::YUVSource;
-        
-        // openh264 要求「逐个 NAL 单元」喂给 decode（见其文档 nal_units 示例）。
-        // 之前把整个 access unit（SPS+PPS+slice 拼接）一次性传入，解码器只处理了
-        // 第一个 NAL，导致 782 帧仅解出约 7 个关键帧。改为用 nal_units 拆分逐个解码。
-        
-        // 先喂入 SPS/PPS 参数集
+        // ── H.264 解码（`h264` 特性）──
+        //
+        // 关掉这个特性时不解帧：移动端本该把播放交给系统播放器（硬解、省电、
+        // 遵守音频焦点），而且 `openh264-sys2` 在 iOS **模拟器**目标上直接
+        // 编不过（它的 build.rs 不认 target_env = "sim"）。
+        // 关掉后 `<video>` 仍然参与布局与命中，只是没有画面帧。
+        #[cfg(feature = "h264")]
         {
-            let mut init = Vec::new();
-            init.extend_from_slice(&[0, 0, 0, 1]);
-            init.extend_from_slice(&sps);
-            init.extend_from_slice(&[0, 0, 0, 1]);
-            init.extend_from_slice(&pps);
-            for nal in nal_units(&init) {
-                let _ = decoder.decode(nal);
-            }
-        }
+            // 创建 H.264 解码器
+            let mut decoder = H264Decoder::new()
+                .map_err(|e| format!("H264 decoder init error: {:?}", e))?;
         
-        for (sample_idx, &(offset, size)) in sample_offsets.iter().enumerate() {
-            if offset as usize + size as usize > data.len() {
-                continue;
+            // 构建样本偏移表
+            let sample_offsets = self.build_sample_offsets(&sample_sizes, &chunk_offsets, &sample_to_chunk);
+        
+            // 计算每个样本的时间戳
+            let timestamps = self.build_timestamps(&sample_durations, timescale);
+        
+            // 解码帧
+            let start_time = Instant::now();
+            let mut decoded_count = 0;
+            let mut skipped_count = 0;
+        
+            use openh264::nal_units;
+            use openh264::formats::YUVSource;
+        
+            // openh264 要求「逐个 NAL 单元」喂给 decode（见其文档 nal_units 示例）。
+            // 之前把整个 access unit（SPS+PPS+slice 拼接）一次性传入，解码器只处理了
+            // 第一个 NAL，导致 782 帧仅解出约 7 个关键帧。改为用 nal_units 拆分逐个解码。
+        
+            // 先喂入 SPS/PPS 参数集
+            {
+                let mut init = Vec::new();
+                init.extend_from_slice(&[0, 0, 0, 1]);
+                init.extend_from_slice(&sps);
+                init.extend_from_slice(&[0, 0, 0, 1]);
+                init.extend_from_slice(&pps);
+                for nal in nal_units(&init) {
+                    let _ = decoder.decode(nal);
+                }
             }
+        
+            for (sample_idx, &(offset, size)) in sample_offsets.iter().enumerate() {
+                if offset as usize + size as usize > data.len() {
+                    continue;
+                }
             
-            let sample_data = &data[offset as usize..(offset as usize + size as usize)];
-            let timestamp = timestamps.get(sample_idx).copied().unwrap_or(0.0);
-            let is_idr = sync_samples.contains(&((sample_idx + 1) as u32));
+                let sample_data = &data[offset as usize..(offset as usize + size as usize)];
+                let timestamp = timestamps.get(sample_idx).copied().unwrap_or(0.0);
+                let is_idr = sync_samples.contains(&((sample_idx + 1) as u32));
             
-            // 构建该样本的 Annex-B 流（仅关键帧前重置参数集）
-            let mut nal_data = Vec::new();
-            if is_idr {
-                nal_data.extend_from_slice(&[0, 0, 0, 1]);
-                nal_data.extend_from_slice(&sps);
-                nal_data.extend_from_slice(&[0, 0, 0, 1]);
-                nal_data.extend_from_slice(&pps);
-            }
-            let mut off = 0;
-            while off + 4 <= sample_data.len() {
-                let nal_size = u32::from_be_bytes([
-                    sample_data[off], sample_data[off+1], sample_data[off+2], sample_data[off+3]
-                ]) as usize;
-                off += 4;
-                if off + nal_size <= sample_data.len() {
+                // 构建该样本的 Annex-B 流（仅关键帧前重置参数集）
+                let mut nal_data = Vec::new();
+                if is_idr {
                     nal_data.extend_from_slice(&[0, 0, 0, 1]);
-                    nal_data.extend_from_slice(&sample_data[off..off + nal_size]);
-                    off += nal_size;
+                    nal_data.extend_from_slice(&sps);
+                    nal_data.extend_from_slice(&[0, 0, 0, 1]);
+                    nal_data.extend_from_slice(&pps);
+                }
+                let mut off = 0;
+                while off + 4 <= sample_data.len() {
+                    let nal_size = u32::from_be_bytes([
+                        sample_data[off], sample_data[off+1], sample_data[off+2], sample_data[off+3]
+                    ]) as usize;
+                    off += 4;
+                    if off + nal_size <= sample_data.len() {
+                        nal_data.extend_from_slice(&[0, 0, 0, 1]);
+                        nal_data.extend_from_slice(&sample_data[off..off + nal_size]);
+                        off += nal_size;
+                    } else {
+                        break;
+                    }
+                }
+            
+                // 逐 NAL 解码，取本样本解出的（最后一个）画面帧
+                let mut got: Option<(Vec<u8>, u32, u32)> = None;
+                for nal in nal_units(&nal_data) {
+                    if let Ok(Some(yuv)) = decoder.decode(nal) {
+                        let (fw, fh) = yuv.dimensions();
+                        got = Some((self.yuv_to_rgba(&yuv), fw as u32, fh as u32));
+                    }
+                }
+            
+                if let Some((rgba, fw, fh)) = got {
+                    self.frames.push(VideoFrame { data: rgba, width: fw, height: fh, timestamp });
+                    decoded_count += 1;
                 } else {
+                    skipped_count += 1;
+                }
+            
+                if decoded_count >= 3600 {
+                    println!("   ⚠️ Reached max frame limit");
                     break;
                 }
             }
-            
-            // 逐 NAL 解码，取本样本解出的（最后一个）画面帧
-            let mut got: Option<(Vec<u8>, u32, u32)> = None;
-            for nal in nal_units(&nal_data) {
-                if let Ok(Some(yuv)) = decoder.decode(nal) {
-                    let (fw, fh) = yuv.dimensions();
-                    got = Some((self.yuv_to_rgba(&yuv), fw as u32, fh as u32));
-                }
+            // 用解码得到的真实尺寸修正整体宽高（tkhd 解析可能不准）
+            if let Some(f) = self.frames.first() {
+                self.width = f.width;
+                self.height = f.height;
             }
-            
-            if let Some((rgba, fw, fh)) = got {
-                self.frames.push(VideoFrame { data: rgba, width: fw, height: fh, timestamp });
-                decoded_count += 1;
-            } else {
-                skipped_count += 1;
+            let decode_time = start_time.elapsed();
+            if self.frames.is_empty() {
+                return Err(format!("No frames decoded (skipped {})", skipped_count));
             }
-            
-            if decoded_count >= 3600 {
-                println!("   ⚠️ Reached max frame limit");
-                break;
-            }
-        }
-        
-        // 用解码得到的真实尺寸修正整体宽高（tkhd 解析可能不准）
-        if let Some(f) = self.frames.first() {
-            self.width = f.width;
-            self.height = f.height;
-        }
-        
-        let decode_time = start_time.elapsed();
-        
-        if !self.frames.is_empty() {
             self.is_loaded = true;
-            println!("✅ Video loaded: {} frames decoded, {} skipped ({:.1}s)", 
+            println!("✅ Video loaded: {} frames decoded, {} skipped ({:.1}s)",
                 decoded_count, skipped_count, decode_time.as_secs_f64());
-        } else {
-            return Err(format!("No frames decoded (skipped {})", skipped_count));
+            return Ok(());
         }
-        
-        Ok(())
+        #[cfg(not(feature = "h264"))]
+        {
+            let _ = (&sps, &pps, &sample_offsets, &timestamps, &sync_samples);
+            println!("ℹ️  本构建未启用 h264 特性，<video> 不解码画面帧（交给宿主播放器）");
+            Err("h264 decoding disabled in this build".to_string())
+        }
     }
     
     /// 构建样本偏移表
@@ -400,6 +411,7 @@ impl VideoPlayer {
     }
     
     /// YUV 转 RGBA
+    #[cfg(feature = "h264")]
     fn yuv_to_rgba(&self, yuv: &openh264::decoder::DecodedYUV) -> Vec<u8> {
         use openh264::formats::YUVSource;
         
