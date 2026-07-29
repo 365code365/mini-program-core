@@ -37,7 +37,8 @@ pub use switch::SwitchComponent;
 pub use checkbox::CheckboxComponent;
 pub use radio::RadioComponent;
 pub use slider::SliderComponent;
-pub use input::InputComponent;
+pub use input::{InputComponent, cursor_blink_visible, blink_visible_at, cursor_blink_interval_ms,
+    reset_cursor_blink, last_caret_rect};
 pub use image::{ImageComponent, is_animated, animation_total_ms, image_cache_report, clear_image_caches, image_cache_budget_mb};
 mod image_state;
 pub use image_state::{probe_load, ImageLoad};

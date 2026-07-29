@@ -113,6 +113,11 @@ struct MiniAppWindow {
     /// fixed 覆盖层需要重绘（数据变化 / 按压态变化 / 换页 / 画布重建）。
     /// 滚动不影响它 —— 覆盖层是钉在视口上的，重画纯属浪费。
     fixed_dirty: bool,
+    /// 上一帧画出来的光标处于「显示」还是「隐藏」的半个周期。
+    /// 相位一翻转就要安排重绘，否则画面停在最后一次绘制那一帧 —— 光标不闪。
+    /// 尤其是输入框在 `position:fixed` 覆盖层里时：那层画布只在标脏时才重画，
+    /// 光标会被烤死在覆盖层画布上（tea-app 的搜索条就是这种）。
+    caret_visible: bool,
     /// 帧间隔抖动统计：本统计窗口内最大/最小帧间隔（ms）
     frame_gap_max_ms: f32,
     frame_gap_min_ms: f32,
@@ -236,7 +241,7 @@ impl MiniAppWindow {
             started_at: now,
             next_frame_at: now,
             last_scroll_at: None,
-            fixed_dirty: true,
+            fixed_dirty: true, caret_visible: true,
             gesture: None,
             tap_stops_fling: false,
             touch: app_window::touch::TouchTracker::new(),
@@ -321,6 +326,44 @@ impl MiniAppWindow {
             || mini_render::renderer::components::has_playing_video()
     }
 
+    /// 光标闪烁的驱动：相位一翻转就安排一次重绘（含 fixed 覆盖层）。
+    ///
+    /// 只在**翻转的那一帧**标脏，不是每帧都标 —— 覆盖层重画一次要走一遍
+    /// `render_fixed_elements`，按刷新率重画纯属浪费（一秒不到两次就够了）。
+    fn caret_blink_tick(&mut self) {
+        if !self.interaction.has_focused_input() {
+            return;
+        }
+        let now_visible = mini_render::renderer::components::cursor_blink_visible();
+        if now_visible != self.caret_visible {
+            self.caret_visible = now_visible;
+            self.needs_redraw = true;
+            // 输入框可能在覆盖层里，那层得跟着重画
+            self.fixed_dirty = true;
+        }
+    }
+
+    /// 告诉系统输入法「光标在哪」，候选词面板才会贴着光标弹出来。
+    ///
+    /// 不设的话 macOS/Windows 会把候选面板摆在一个默认位置（实测离输入框很远，
+    /// 中文输入时候选条飘在输入框下面老远的地方）。
+    fn sync_ime_cursor_area(&self) {
+        let (Some(window), Some(input)) = (self.window.as_ref(), self.interaction.focused_input.as_ref())
+        else { return };
+        let sf = self.scale_factor as f32;
+        // 光标矩形是绘制期记下的（页面画布的设备像素坐标）；拿不到就退回输入框整体
+        let (x, y, w, h) = match mini_render::renderer::components::last_caret_rect() {
+            Some((cx, cy, cw, ch)) => (cx / sf, cy / sf, cw.max(1.0) / sf, ch / sf),
+            None => (input.bounds.x, input.bounds.y, input.bounds.width, input.bounds.height),
+        };
+        // 覆盖层钉在视口上，不减滚动；正常流的元素是内容坐标，要减
+        let y = if input.is_fixed { y } else { y - self.scroll.get_position() };
+        window.set_ime_cursor_area(
+            winit::dpi::LogicalPosition::new(x as f64, y as f64),
+            winit::dpi::LogicalSize::new(w as f64, h as f64),
+        );
+    }
+
     /// 按闸门决定这一帧要不要重绘，以及走整帧还是损伤区。
     ///
     /// - `structural`：数据/滚动/交互引起的变化，必须整帧重绘。
@@ -334,6 +377,8 @@ impl MiniAppWindow {
         let damage = if structural { None } else { self.animation_damage_rect() };
         self.render_with_damage(damage);
         self.needs_redraw = false;
+        // 光标位置是绘制期记下的，所以放在这一帧画完之后同步给输入法
+        self.sync_ime_cursor_area();
     }
 
     /// 跑一帧「逻辑 + 渲染 + 上屏」，与交互窗体 `RedrawRequested` 走同一套闸门。
@@ -386,6 +431,7 @@ impl MiniAppWindow {
         if !self.viewport_inside_drawn_band() {
             self.needs_redraw = true;
         }
+        self.caret_blink_tick();
         // 页面滚动不进 structural（理由见 RedrawRequested 里的同名判断）
         let sv_scroll = self.interaction.scroll_controllers.values().any(|c| c.is_animating() || c.is_dragging);
         let css_anim = self.renderer.as_ref().map(|r| r.has_active_animations()).unwrap_or(false);
@@ -1435,6 +1481,7 @@ impl ApplicationHandler for MiniAppWindow {
                 // 于是滚动的每一帧都整条带重画（6~7ms），刚好卡在 144Hz 的 6.9ms 预算边缘，
                 // 时不时超一点就丢帧 —— 这正是「滑动像抖动、高刷没体现」的根因。
                 // scroll-view 内滚动仍要重画：它的内容是按自身偏移画进整页画布的，没有独立切片。
+                self.caret_blink_tick();
                 let sv_scroll = self.interaction.scroll_controllers.values().any(|c| c.is_animating() || c.is_dragging);
                 let css_anim = self.renderer.as_ref().map(|r| r.has_active_animations()).unwrap_or(false);
                 let t_logic = frame_begin.elapsed();

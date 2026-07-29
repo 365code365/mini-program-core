@@ -21,7 +21,10 @@ pub struct FocusedInput {
     pub selection_start: Option<usize>, // 选择起始位置
     pub selection_end: Option<usize>,   // 选择结束位置
     pub is_password: bool,
-    pub bounds: Rect, // 输入框位置
+    pub bounds: Rect, // 输入框位置（**逻辑**坐标，页面内容坐标系）
+    /// 是否在 `position:fixed` 覆盖层里。宿主定位输入法候选框时要据此决定
+    /// 要不要减掉页面滚动量。
+    pub is_fixed: bool,
     pub text_offset: f32, // 文本滚动偏移（物理像素）
     pub maxlength: i32, // 最大输入长度，-1 为不限制
     pub input_type: String, // 输入类型：text/number/idcard/digit
@@ -498,6 +501,8 @@ impl InteractionManager {
                     });
                 }
                 
+                // 一聚焦就让光标立刻可见，并从这一刻开始数闪烁拍子（微信行为）
+                crate::renderer::components::reset_cursor_blink();
                 self.focused_input = Some(FocusedInput {
                     id: element.id.clone(),
                     value: current_value.clone(),
@@ -506,6 +511,7 @@ impl InteractionManager {
                     selection_end: None,
                     is_password: false,
                     bounds: element.bounds,
+                    is_fixed: element.is_fixed,
                     text_offset: 0.0, // 初始偏移为0，会在渲染时更新
                     maxlength: 140, // 默认值，会在外部更新
                     input_type: "text".to_string(), // 默认值，会在外部更新

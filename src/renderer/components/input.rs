@@ -49,7 +49,7 @@ use crate::text::TextRenderer;
 use crate::{Canvas, Color, Paint, PaintStyle, Path, Rect as GeoRect};
 use taffy::prelude::*;
 use std::time::Instant;
-use std::sync::OnceLock;
+use std::sync::{Mutex, OnceLock};
 
 /// 光标闪烁周期（毫秒）
 const CURSOR_BLINK_INTERVAL_MS: u64 = 530;
@@ -57,18 +57,70 @@ const CURSOR_BLINK_INTERVAL_MS: u64 = 530;
 /// 默认最大输入长度
 const DEFAULT_MAXLENGTH: i32 = 140;
 
-/// 获取程序启动时间（用于计算光标闪烁）
-static START_TIME: OnceLock<Instant> = OnceLock::new();
+/// 闪烁相位的零点。
+///
+/// **不能用进程启动时间**：那样点进输入框的瞬间光标可能正好处在「隐藏」的半个周期里，
+/// 用户会看到「点了没反应」。微信是一聚焦就立刻显示光标，然后从那一刻开始数拍子，
+/// 所以这里在每次聚焦时把零点重置（见 [`reset_cursor_blink`]）。
+static BLINK_ORIGIN: OnceLock<Mutex<Instant>> = OnceLock::new();
 
-fn get_start_time() -> &'static Instant {
-    START_TIME.get_or_init(Instant::now)
+fn blink_origin() -> &'static Mutex<Instant> {
+    BLINK_ORIGIN.get_or_init(|| Mutex::new(Instant::now()))
 }
 
-/// 判断光标是否应该显示（闪烁效果）
+/// 聚焦时重置闪烁相位：光标立刻可见，并从此刻开始数半个周期。
+pub fn reset_cursor_blink() {
+    if let Ok(mut o) = blink_origin().lock() {
+        *o = Instant::now();
+    }
+}
+
+/// 当前这一拍光标该不该显示。
+///
+/// 宿主也要用它：光标闪烁得靠宿主在**相位翻转时**安排一次重绘，
+/// 否则画面停在最后一次绘制的那一帧 —— 表现就是「光标不会跳」。
+/// 尤其是输入框在 `position:fixed` 覆盖层里时，那层画布只在标脏时才重画。
+pub fn cursor_blink_visible() -> bool {
+    let elapsed = blink_origin()
+        .lock()
+        .map(|o| o.elapsed().as_millis() as u64)
+        .unwrap_or(0);
+    blink_visible_at(elapsed)
+}
+
+/// 距相位零点 `elapsed_ms` 毫秒时光标是否可见（纯函数，便于测试）。
+/// 每个周期的前半段显示。
+pub fn blink_visible_at(elapsed_ms: u64) -> bool {
+    (elapsed_ms / CURSOR_BLINK_INTERVAL_MS) % 2 == 0
+}
+
+/// 闪烁半周期（毫秒）
+pub fn cursor_blink_interval_ms() -> u64 {
+    CURSOR_BLINK_INTERVAL_MS
+}
+
 fn should_show_cursor() -> bool {
-    let elapsed = get_start_time().elapsed().as_millis() as u64;
-    // 每个周期的前半段显示光标
-    (elapsed / CURSOR_BLINK_INTERVAL_MS) % 2 == 0
+    cursor_blink_visible()
+}
+
+/// 最近一次画光标的矩形（页面画布的设备像素坐标：x, y, w, h）。
+///
+/// 给宿主定位输入法候选框用（`set_ime_cursor_area`）：不告诉系统光标在哪，
+/// macOS/Windows 会把候选词面板摆到一个默认位置 —— 看起来就是「离输入框很远」。
+static LAST_CARET: OnceLock<Mutex<Option<(f32, f32, f32, f32)>>> = OnceLock::new();
+
+fn last_caret_slot() -> &'static Mutex<Option<(f32, f32, f32, f32)>> {
+    LAST_CARET.get_or_init(|| Mutex::new(None))
+}
+
+pub fn last_caret_rect() -> Option<(f32, f32, f32, f32)> {
+    last_caret_slot().lock().ok().and_then(|c| *c)
+}
+
+fn set_last_caret_rect(rect: Option<(f32, f32, f32, f32)>) {
+    if let Ok(mut c) = last_caret_slot().lock() {
+        *c = rect;
+    }
 }
 
 /// 输入类型
@@ -442,8 +494,14 @@ impl InputComponent {
         
         // 计算文本位置
         let font_size = style.font_size * sf;
-        let padding_left = 12.0 * sf; // 默认左边距
-        let padding_right = 12.0 * sf; // 默认右边距
+        // 用元素**实际**的内边距，不是写死的 12px。
+        //
+        // 布局（taffy）用的是 `style.padding`（页面没写时 build 期给 8/12 的默认值），
+        // 而这里以前写死 12 —— 页面自己设了 `padding-left` 时两边就对不上：
+        // 盒子按 CSS 排版，文字/占位符/光标却固定缩进 12px，看起来「输入提示离左边太远（或太近）」。
+        // HTML 端的 `.wx-input` 是 `padding:0` + 外层盒子的 padding，只有按实际值取才对得齐。
+        let padding_left = style.padding_left * sf;
+        let padding_right = style.padding_right * sf;
         let text_x = x + padding_left;
         
         // 根据 text-align 和 vertical-align 计算位置
@@ -517,22 +575,32 @@ impl InputComponent {
                 tr.draw_text(canvas, &node.text, final_x, text_y, font_size, &paint);
             }
             
-            // 绘制光标（只在没有选中或选中范围为空时显示，带闪烁效果）
-            if focused && selection.map(|(s, e)| s == e).unwrap_or(true) && should_show_cursor() {
+            // ───────────────── 光标 ─────────────────
+            //
+            // 只在没有选中（或选中范围为空）时显示，按 CURSOR_BLINK_INTERVAL_MS 闪烁。
+            //
+            // 几何按微信/iOS 对齐，以前是「1 设备像素的描边线段，高度正好等于字号」：
+            // - 1 设备像素在 2x 屏上只有半个逻辑像素，细到几乎看不见（也就更看不出闪烁）；
+            //   微信的光标是 **2 逻辑像素**宽，两端带圆角；
+            // - 高度取字号会显得比文字矮一截，微信是略高于字面（约 1.15em）并垂直居中。
+            if focused && selection.map(|(s, e)| s == e).unwrap_or(true) {
                 let cursor_text: String = node.text.chars().take(cursor_pos).collect();
-                
                 let cursor_x = text_x + tr.measure_text(&cursor_text, font_size) + text_offset;
-                let cursor_y1 = y + (h - font_size) / 2.0;
-                let cursor_y2 = cursor_y1 + font_size;
-                
-                let cursor_paint = Paint::new()
-                    .with_color(Color::from_hex(0x07C160))
-                    .with_style(PaintStyle::Stroke);
-                
-                let mut cursor_path = Path::new();
-                cursor_path.move_to(cursor_x, cursor_y1);
-                cursor_path.line_to(cursor_x, cursor_y2);
-                canvas.draw_path(&cursor_path, &cursor_paint);
+                let caret_w = (2.0 * sf).max(2.0);
+                let caret_h = font_size * 1.15;
+                let caret_x = cursor_x - caret_w / 2.0;
+                let caret_y = y + (h - caret_h) / 2.0;
+                // 位置每帧都记（不管这一拍显不显示）：输入法候选框要靠它定位
+                set_last_caret_rect(Some((caret_x, caret_y, caret_w, caret_h)));
+                if should_show_cursor() {
+                    let paint = Paint::new()
+                        .with_color(Color::from_hex(0x07C160))
+                        .with_style(PaintStyle::Fill)
+                        .with_anti_alias(true);
+                    let mut path = Path::new();
+                    path.add_round_rect(caret_x, caret_y, caret_w, caret_h, caret_w / 2.0);
+                    canvas.draw_path(&path, &paint);
+                }
             }
             
             // 恢复裁剪区域

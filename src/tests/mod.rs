@@ -26,3 +26,4 @@ pub mod component_attr_tests;
 pub mod image_event_tests;
 pub mod wxss_feature_tests;
 pub mod memory_tests;
+pub mod input_caret_tests;
