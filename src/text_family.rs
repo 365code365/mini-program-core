@@ -29,17 +29,45 @@ fn registry() -> &'static Mutex<HashMap<String, Option<Arc<TextRenderer>>>> {
     REG.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
-/// 字体**文件**级缓存：路径 → 渲染器。多条字体栈落到同一个文件时共享一份。
-fn by_path() -> &'static Mutex<HashMap<&'static str, Option<Arc<TextRenderer>>>> {
-    static REG: OnceLock<Mutex<HashMap<&'static str, Option<Arc<TextRenderer>>>>> = OnceLock::new();
+/// 字体**文件**级缓存：路径 → (渲染器, 最近使用序号)。
+/// 多条字体栈落到同一个文件时共享一份。
+///
+/// **必须封顶**：一个解析好的 CJK 字面在 fontdue 里要 150~300MB
+/// （见 `doc/引擎测试说明.md` 的内存分项），所以「声明了几种字体就常驻几百 MB」
+/// 是站不住的。这里只保留最近用到的若干个文件，超了按最久未用逐出。
+/// 逐出只是从表里去掉，正在用它的节点手上还有 `Arc`，那一帧照常画完。
+type PathCache = HashMap<&'static str, (Option<Arc<TextRenderer>>, u64)>;
+
+fn by_path() -> &'static Mutex<PathCache> {
+    static REG: OnceLock<Mutex<PathCache>> = OnceLock::new();
     REG.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+/// 同时保留多少个**自定义**字体文件（系统主字体是另一份进程级单例，不在此列）。
+/// 可用 `MINI_FONT_CACHE_MAX` 覆盖。
+fn max_cached_fonts() -> usize {
+    static MAX: OnceLock<usize> = OnceLock::new();
+    *MAX.get_or_init(|| {
+        std::env::var("MINI_FONT_CACHE_MAX")
+            .ok()
+            .and_then(|v| v.trim().parse::<usize>().ok())
+            .filter(|v| *v > 0)
+            .unwrap_or(2)
+    })
+}
+
+fn next_tick() -> u64 {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static TICK: AtomicU64 = AtomicU64::new(0);
+    TICK.fetch_add(1, Ordering::Relaxed)
 }
 
 /// 加载一个字体文件（同一个文件只解析一次）。`None` = 这个文件加载失败。
 fn renderer_for_path(path: &'static str) -> Option<Arc<TextRenderer>> {
-    if let Ok(cache) = by_path().lock() {
-        if let Some(hit) = cache.get(path) {
-            return hit.clone();
+    if let Ok(mut cache) = by_path().lock() {
+        if let Some(hit) = cache.get_mut(path) {
+            hit.1 = next_tick();
+            return hit.0.clone();
         }
     }
     let loaded = match TextRenderer::from_file_with_fallback(path) {
@@ -52,9 +80,58 @@ fn renderer_for_path(path: &'static str) -> Option<Arc<TextRenderer>> {
         }
     };
     if let Ok(mut cache) = by_path().lock() {
-        cache.insert(path, loaded.clone());
+        cache.insert(path, (loaded.clone(), next_tick()));
+        evict_beyond_cap(&mut cache);
     }
     loaded
+}
+
+/// 只统计**真的解析成功**的条目：加载失败的记录几乎不占内存，
+/// 留着还能避免反复去读一个不存在/坏掉的文件。
+fn evict_beyond_cap(cache: &mut PathCache) {
+    let cap = max_cached_fonts();
+    loop {
+        let loaded: Vec<(&'static str, u64)> = cache
+            .iter()
+            .filter(|(_, (r, _))| r.is_some())
+            .map(|(p, (_, t))| (*p, *t))
+            .collect();
+        if loaded.len() <= cap {
+            return;
+        }
+        let Some((oldest, _)) = loaded.iter().min_by_key(|(_, t)| *t).copied() else { return };
+        cache.remove(oldest);
+        if std::env::var_os("MINI_FONT_LOG").is_some() {
+            eprintln!("🔤 自定义字体缓存超过 {cap} 个，逐出 {oldest}");
+        }
+    }
+}
+
+/// 已加载的自定义字体文件（诊断用）
+pub fn loaded_font_files() -> Vec<&'static str> {
+    let mut v: Vec<&'static str> = by_path()
+        .lock()
+        .map(|c| {
+            c.iter()
+                .filter(|(_, (r, _))| r.is_some())
+                .map(|(p, _)| *p)
+                .collect()
+        })
+        .unwrap_or_default();
+    v.sort_unstable();
+    v
+}
+
+/// 释放自定义字体缓存（宿主收到系统内存告警、或切换小程序时调用）。
+///
+/// 不动系统主字体：它是所有文字的兜底，放掉下一帧就要重新解析 300MB。
+pub fn clear_caches() {
+    if let Ok(mut c) = by_path().lock() {
+        c.clear();
+    }
+    if let Ok(mut r) = registry().lock() {
+        r.clear();
+    }
 }
 
 /// 按 CSS `font-family` 取渲染器。返回 `None` 表示「用默认系统字体」。

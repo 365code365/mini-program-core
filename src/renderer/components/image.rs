@@ -128,6 +128,11 @@ pub fn image_cache_report() -> String {
     )
 }
 
+/// 图片缓存的字节预算（MB，诊断/测试用）
+pub fn image_cache_budget_mb() -> usize {
+    super::image_cache::budget_bytes() / (1024 * 1024)
+}
+
 /// 清空图片缓存（切换小程序、收到系统内存告警时调用）
 pub fn clear_image_caches() {
     if let Ok(mut c) = get_image_cache().lock() {

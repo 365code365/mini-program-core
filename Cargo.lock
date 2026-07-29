@@ -1406,6 +1406,7 @@ dependencies = [
  "softbuffer",
  "symphonia 0.6.0",
  "taffy",
+ "ttf-parser 0.25.1",
  "ureq",
  "winit",
 ]

@@ -62,3 +62,7 @@ path = "src/bin/devserver.rs"
 [[bin]]
 name = "mini-compiler"
 path = "src/bin/compiler.rs"
+
+[dev-dependencies]
+# 只给 examples/_font_probe.rs 用：量「惰性解析字体」的内存基线
+ttf-parser = "0.25"

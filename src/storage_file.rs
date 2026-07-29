@@ -4,7 +4,9 @@
 //! 一个进程内的 HashMap，于是每次启动都是空的 —— 任何「首次进入拉数据存起来、
 //! 之后走缓存」的应用都永远停在首次分支，缓存逻辑等于从没被执行过。
 //!
-//! 存放位置刻意放在 `target/mini-storage/<小程序名>.json`：
+//! 存放位置是 `<数据目录>/mini-storage/<小程序名>.json`：
+//! - 数据目录由宿主用 [`crate::data_dir::set_data_dir`] 指定（App 沙盒），
+//!   开发期不设置时回落到仓库的 `target/`；
 //! - 按小程序分文件，互不干扰（微信也是按 appid 隔离）
 //! - **不写进 `sample/`** —— 示例小程序是双端一致性的基准输入，不能被运行时产物污染
 
@@ -19,9 +21,7 @@ fn storage_path() -> Option<PathBuf> {
         .and_then(|s| s.to_str())
         .unwrap_or("unknown")
         .to_string();
-    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("target")
-        .join("mini-storage");
+    let dir = crate::data_dir::subdir("mini-storage");
     Some(dir.join(format!("{}.json", name)))
 }
 

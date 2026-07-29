@@ -25,3 +25,4 @@ pub mod wx_api_tests;
 pub mod component_attr_tests;
 pub mod image_event_tests;
 pub mod wxss_feature_tests;
+pub mod memory_tests;
