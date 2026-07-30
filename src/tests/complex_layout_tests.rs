@@ -13,9 +13,9 @@ fn test_left_right_split_layout() {
     
     // 左侧分类导航 - 固定宽度
     let category_nav = taffy.new_leaf(Style {
-        size: Size { width: length(180.0), height: auto() },
-        min_size: Size { width: length(180.0), height: auto() },
-        max_size: Size { width: length(180.0), height: auto() },
+        size: Size { width: length(180.0_f32), height: auto() },
+        min_size: Size { width: length(180.0_f32), height: auto() },
+        max_size: Size { width: length(180.0_f32), height: auto() },
         ..Default::default()
     }).unwrap();
     
@@ -29,7 +29,7 @@ fn test_left_right_split_layout() {
     // 主内容区 - 横向布局
     let main_content = taffy.new_with_children(
         Style {
-            size: Size { width: length(750.0), height: length(1000.0) },
+            size: Size { width: length(750.0_f32), height: length(1000.0_f32) },
             flex_direction: FlexDirection::Row,
             ..Default::default()
         },
@@ -58,28 +58,28 @@ fn test_category_item_layout() {
     
     // 分类名称
     let category_name = taffy.new_leaf(Style {
-        size: Size { width: auto(), height: length(26.0) },
+        size: Size { width: auto(), height: length(26.0_f32) },
         ..Default::default()
     }).unwrap();
     
     // 角标
     let badge = taffy.new_leaf(Style {
-        size: Size { width: length(32.0), height: length(32.0) },
+        size: Size { width: length(32.0_f32), height: length(32.0_f32) },
         ..Default::default()
     }).unwrap();
     
     // 分类项 - 横向布局，两端对齐
     let category_item = taffy.new_with_children(
         Style {
-            size: Size { width: length(180.0), height: auto() },
+            size: Size { width: length(180.0_f32), height: auto() },
             flex_direction: FlexDirection::Row,
             justify_content: Some(JustifyContent::SPACE_BETWEEN),
             align_items: Some(AlignItems::CENTER),
             padding: Rect {
-                top: length(28.0),
-                right: length(16.0),
-                bottom: length(28.0),
-                left: length(16.0),
+                top: length(28.0_f32),
+                right: length(16.0_f32),
+                bottom: length(28.0_f32),
+                left: length(16.0_f32),
             },
             ..Default::default()
         },
@@ -100,7 +100,7 @@ fn test_category_item_layout() {
     assert_eq!(badge_layout.location.x, expected_badge_x, "badge should be at right");
     
     // 两者垂直居中
-    let item_content_height = item_layout.size.height - 28.0 * 2.0;
+    let _item_content_height = item_layout.size.height - 28.0 * 2.0;
     assert!(name_layout.location.y >= 28.0, "name should be below top padding");
     assert!(badge_layout.location.y >= 28.0, "badge should be below top padding");
 }
@@ -116,47 +116,47 @@ fn test_product_item_layout() {
     
     // 商品图片 - 固定大小
     let product_image = taffy.new_leaf(Style {
-        size: Size { width: length(140.0), height: length(140.0) },
-        min_size: Size { width: length(140.0), height: length(140.0) },
+        size: Size { width: length(140.0_f32), height: length(140.0_f32) },
+        min_size: Size { width: length(140.0_f32), height: length(140.0_f32) },
         ..Default::default()
     }).unwrap();
     
     // 商品名称
     let product_name = taffy.new_leaf(Style {
-        size: Size { width: percent(1.0), height: auto() },
-        min_size: Size { width: auto(), height: length(28.0) },
+        size: Size { width: percent(1.0_f32), height: auto() },
+        min_size: Size { width: auto(), height: length(28.0_f32) },
         ..Default::default()
     }).unwrap();
     
     // 商品描述
     let product_desc = taffy.new_leaf(Style {
-        size: Size { width: percent(1.0), height: auto() },
-        min_size: Size { width: auto(), height: length(24.0) },
-        margin: Rect { top: length(8.0), ..Rect::zero() },
+        size: Size { width: percent(1.0_f32), height: auto() },
+        min_size: Size { width: auto(), height: length(24.0_f32) },
+        margin: Rect { top: length(8.0_f32), ..Rect::zero() },
         ..Default::default()
     }).unwrap();
     
     // 价格
     let product_price = taffy.new_leaf(Style {
-        size: Size { width: auto(), height: length(32.0) },
+        size: Size { width: auto(), height: length(32.0_f32) },
         ..Default::default()
     }).unwrap();
     
     // 减号按钮
     let minus_btn = taffy.new_leaf(Style {
-        size: Size { width: length(48.0), height: length(48.0) },
+        size: Size { width: length(48.0_f32), height: length(48.0_f32) },
         ..Default::default()
     }).unwrap();
     
     // 数量
     let quantity = taffy.new_leaf(Style {
-        size: Size { width: length(48.0), height: length(28.0) },
+        size: Size { width: length(48.0_f32), height: length(28.0_f32) },
         ..Default::default()
     }).unwrap();
     
     // 加号按钮
     let plus_btn = taffy.new_leaf(Style {
-        size: Size { width: length(48.0), height: length(48.0) },
+        size: Size { width: length(48.0_f32), height: length(48.0_f32) },
         ..Default::default()
     }).unwrap();
     
@@ -176,7 +176,7 @@ fn test_product_item_layout() {
             flex_direction: FlexDirection::Row,
             justify_content: Some(JustifyContent::SPACE_BETWEEN),
             align_items: Some(AlignItems::CENTER),
-            margin: Rect { top: length(16.0), ..Rect::zero() },
+            margin: Rect { top: length(16.0_f32), ..Rect::zero() },
             ..Default::default()
         },
         &[product_price, quantity_control],
@@ -187,7 +187,7 @@ fn test_product_item_layout() {
         Style {
             flex_grow: 1.0,
             flex_direction: FlexDirection::Column,
-            margin: Rect { left: length(20.0), ..Rect::zero() },
+            margin: Rect { left: length(20.0_f32), ..Rect::zero() },
             ..Default::default()
         },
         &[product_name, product_desc, product_bottom],
@@ -196,13 +196,13 @@ fn test_product_item_layout() {
     // 商品项 - 横向布局
     let product_item = taffy.new_with_children(
         Style {
-            size: Size { width: length(570.0), height: auto() },
+            size: Size { width: length(570.0_f32), height: auto() },
             flex_direction: FlexDirection::Row,
             padding: Rect {
-                top: length(24.0),
-                right: length(24.0),
-                bottom: length(24.0),
-                left: length(24.0),
+                top: length(24.0_f32),
+                right: length(24.0_f32),
+                bottom: length(24.0_f32),
+                left: length(24.0_f32),
             },
             ..Default::default()
         },
@@ -241,20 +241,20 @@ fn test_cart_bar_layout() {
     
     // 购物车图标
     let cart_icon = taffy.new_leaf(Style {
-        size: Size { width: length(80.0), height: length(80.0) },
+        size: Size { width: length(80.0_f32), height: length(80.0_f32) },
         ..Default::default()
     }).unwrap();
     
     // 总价
     let cart_total = taffy.new_leaf(Style {
-        size: Size { width: auto(), height: length(32.0) },
+        size: Size { width: auto(), height: length(32.0_f32) },
         ..Default::default()
     }).unwrap();
     
     // 配送费提示
     let cart_tip = taffy.new_leaf(Style {
-        size: Size { width: auto(), height: length(22.0) },
-        margin: Rect { top: length(4.0), ..Rect::zero() },
+        size: Size { width: auto(), height: length(22.0_f32) },
+        margin: Rect { top: length(4.0_f32), ..Rect::zero() },
         ..Default::default()
     }).unwrap();
     
@@ -262,7 +262,7 @@ fn test_cart_bar_layout() {
     let cart_info = taffy.new_with_children(
         Style {
             flex_direction: FlexDirection::Column,
-            margin: Rect { left: length(16.0), ..Rect::zero() },
+            margin: Rect { left: length(16.0_f32), ..Rect::zero() },
             ..Default::default()
         },
         &[cart_total, cart_tip],
@@ -281,21 +281,21 @@ fn test_cart_bar_layout() {
     
     // 结算按钮
     let cart_right = taffy.new_leaf(Style {
-        size: Size { width: length(200.0), height: length(72.0) },
+        size: Size { width: length(200.0_f32), height: length(72.0_f32) },
         ..Default::default()
     }).unwrap();
     
     // 购物车栏 - 横向布局
     let cart_bar = taffy.new_with_children(
         Style {
-            size: Size { width: length(750.0), height: length(100.0) },
+            size: Size { width: length(750.0_f32), height: length(100.0_f32) },
             flex_direction: FlexDirection::Row,
             align_items: Some(AlignItems::CENTER),
             padding: Rect {
-                top: length(0.0),
-                right: length(24.0),
-                bottom: length(0.0),
-                left: length(24.0),
+                top: length(0.0_f32),
+                right: length(24.0_f32),
+                bottom: length(0.0_f32),
+                left: length(24.0_f32),
             },
             ..Default::default()
         },
@@ -329,32 +329,32 @@ fn test_cart_popup_item_layout() {
     // 商品名称 - flex: 1
     let item_name = taffy.new_leaf(Style {
         flex_grow: 1.0,
-        size: Size { width: auto(), height: length(28.0) },
+        size: Size { width: auto(), height: length(28.0_f32) },
         ..Default::default()
     }).unwrap();
     
     // 价格
     let item_price = taffy.new_leaf(Style {
-        size: Size { width: auto(), height: length(28.0) },
-        margin: Rect { right: length(24.0), ..Rect::zero() },
+        size: Size { width: auto(), height: length(28.0_f32) },
+        margin: Rect { right: length(24.0_f32), ..Rect::zero() },
         ..Default::default()
     }).unwrap();
     
     // 减号
     let minus = taffy.new_leaf(Style {
-        size: Size { width: length(48.0), height: length(48.0) },
+        size: Size { width: length(48.0_f32), height: length(48.0_f32) },
         ..Default::default()
     }).unwrap();
     
     // 数量
     let qty = taffy.new_leaf(Style {
-        size: Size { width: length(48.0), height: length(28.0) },
+        size: Size { width: length(48.0_f32), height: length(28.0_f32) },
         ..Default::default()
     }).unwrap();
     
     // 加号
     let plus = taffy.new_leaf(Style {
-        size: Size { width: length(48.0), height: length(48.0) },
+        size: Size { width: length(48.0_f32), height: length(48.0_f32) },
         ..Default::default()
     }).unwrap();
     
@@ -371,14 +371,14 @@ fn test_cart_popup_item_layout() {
     // 弹窗项 - 横向布局
     let popup_item = taffy.new_with_children(
         Style {
-            size: Size { width: length(750.0), height: auto() },
+            size: Size { width: length(750.0_f32), height: auto() },
             flex_direction: FlexDirection::Row,
             align_items: Some(AlignItems::CENTER),
             padding: Rect {
-                top: length(24.0),
-                right: length(24.0),
-                bottom: length(24.0),
-                left: length(24.0),
+                top: length(24.0_f32),
+                right: length(24.0_f32),
+                bottom: length(24.0_f32),
+                left: length(24.0_f32),
             },
             ..Default::default()
         },
@@ -409,19 +409,19 @@ fn test_nested_flex_layout() {
     
     // 第三层：两个并排的按钮
     let btn1 = taffy.new_leaf(Style {
-        size: Size { width: length(48.0), height: length(48.0) },
+        size: Size { width: length(48.0_f32), height: length(48.0_f32) },
         ..Default::default()
     }).unwrap();
     
     let btn2 = taffy.new_leaf(Style {
-        size: Size { width: length(48.0), height: length(48.0) },
+        size: Size { width: length(48.0_f32), height: length(48.0_f32) },
         ..Default::default()
     }).unwrap();
     
     let btn_row = taffy.new_with_children(
         Style {
             flex_direction: FlexDirection::Row,
-            gap: Size { width: length(8.0), height: length(0.0) },
+            gap: Size { width: length(8.0_f32), height: length(0.0_f32) },
             ..Default::default()
         },
         &[btn1, btn2],
@@ -430,7 +430,7 @@ fn test_nested_flex_layout() {
     // 第二层：文字 + 按钮行
     let text = taffy.new_leaf(Style {
         flex_grow: 1.0,
-        size: Size { width: auto(), height: length(28.0) },
+        size: Size { width: auto(), height: length(28.0_f32) },
         ..Default::default()
     }).unwrap();
     
@@ -439,7 +439,7 @@ fn test_nested_flex_layout() {
             flex_direction: FlexDirection::Row,
             align_items: Some(AlignItems::CENTER),
             justify_content: Some(JustifyContent::SPACE_BETWEEN),
-            size: Size { width: length(300.0), height: auto() },
+            size: Size { width: length(300.0_f32), height: auto() },
             ..Default::default()
         },
         &[text, btn_row],
@@ -447,14 +447,14 @@ fn test_nested_flex_layout() {
     
     // 第一层：多行
     let row2 = taffy.new_leaf(Style {
-        size: Size { width: length(300.0), height: length(50.0) },
+        size: Size { width: length(300.0_f32), height: length(50.0_f32) },
         ..Default::default()
     }).unwrap();
     
     let container = taffy.new_with_children(
         Style {
             flex_direction: FlexDirection::Column,
-            size: Size { width: length(300.0), height: auto() },
+            size: Size { width: length(300.0_f32), height: auto() },
             ..Default::default()
         },
         &[row, row2],
@@ -462,7 +462,7 @@ fn test_nested_flex_layout() {
     
     taffy.compute_layout(container, Size::MAX_CONTENT).unwrap();
     
-    let row_layout = taffy.layout(row).unwrap();
+    let _row_layout = taffy.layout(row).unwrap();
     let text_layout = taffy.layout(text).unwrap();
     let btn_row_layout = taffy.layout(btn_row).unwrap();
     let btn1_layout = taffy.layout(btn1).unwrap();
@@ -487,9 +487,9 @@ fn test_min_max_width_constraints() {
     
     // 有 min-width 约束的元素
     let constrained = taffy.new_leaf(Style {
-        size: Size { width: auto(), height: length(50.0) },
-        min_size: Size { width: length(100.0), height: auto() },
-        max_size: Size { width: length(200.0), height: auto() },
+        size: Size { width: auto(), height: length(50.0_f32) },
+        min_size: Size { width: length(100.0_f32), height: auto() },
+        max_size: Size { width: length(200.0_f32), height: auto() },
         flex_grow: 1.0,
         ..Default::default()
     }).unwrap();
@@ -497,7 +497,7 @@ fn test_min_max_width_constraints() {
     // 小容器 - 元素应该使用 min-width
     let small_container = taffy.new_with_children(
         Style {
-            size: Size { width: length(50.0), height: length(100.0) },
+            size: Size { width: length(50.0_f32), height: length(100.0_f32) },
             flex_direction: FlexDirection::Row,
             ..Default::default()
         },
@@ -517,14 +517,14 @@ fn test_overflow_hidden() {
     
     // 超出容器的子元素
     let child = taffy.new_leaf(Style {
-        size: Size { width: length(200.0), height: length(200.0) },
+        size: Size { width: length(200.0_f32), height: length(200.0_f32) },
         ..Default::default()
     }).unwrap();
     
     // 有 overflow: hidden 的容器
     let container = taffy.new_with_children(
         Style {
-            size: Size { width: length(100.0), height: length(100.0) },
+            size: Size { width: length(100.0_f32), height: length(100.0_f32) },
             overflow: taffy::Point {
                 x: taffy::style::Overflow::Hidden,
                 y: taffy::style::Overflow::Hidden,
@@ -558,20 +558,20 @@ fn test_align_self_override() {
     
     // 普通子元素（继承 align-items: center）
     let child1 = taffy.new_leaf(Style {
-        size: Size { width: length(50.0), height: length(30.0) },
+        size: Size { width: length(50.0_f32), height: length(30.0_f32) },
         ..Default::default()
     }).unwrap();
     
     // 有 align-self 的子元素
     let child2 = taffy.new_leaf(Style {
-        size: Size { width: length(50.0), height: length(30.0) },
+        size: Size { width: length(50.0_f32), height: length(30.0_f32) },
         align_self: Some(AlignSelf::FLEX_END),
         ..Default::default()
     }).unwrap();
     
     let container = taffy.new_with_children(
         Style {
-            size: Size { width: length(200.0), height: length(100.0) },
+            size: Size { width: length(200.0_f32), height: length(100.0_f32) },
             flex_direction: FlexDirection::Row,
             align_items: Some(AlignItems::CENTER),
             ..Default::default()
@@ -598,14 +598,14 @@ fn test_flex_shrink() {
     
     // 不收缩的元素
     let no_shrink = taffy.new_leaf(Style {
-        size: Size { width: length(100.0), height: length(50.0) },
+        size: Size { width: length(100.0_f32), height: length(50.0_f32) },
         flex_shrink: 0.0,
         ..Default::default()
     }).unwrap();
     
     // 可收缩的元素
     let shrinkable = taffy.new_leaf(Style {
-        size: Size { width: length(200.0), height: length(50.0) },
+        size: Size { width: length(200.0_f32), height: length(50.0_f32) },
         flex_shrink: 1.0,
         ..Default::default()
     }).unwrap();
@@ -613,7 +613,7 @@ fn test_flex_shrink() {
     // 容器宽度不足以容纳两个元素
     let container = taffy.new_with_children(
         Style {
-            size: Size { width: length(200.0), height: length(100.0) },
+            size: Size { width: length(200.0_f32), height: length(100.0_f32) },
             flex_direction: FlexDirection::Row,
             ..Default::default()
         },
@@ -639,15 +639,15 @@ fn test_flex_basis() {
     
     // 使用 flex-basis 而不是 width
     let child = taffy.new_leaf(Style {
-        flex_basis: length(150.0),
+        flex_basis: length(150.0_f32),
         flex_grow: 0.0,
-        size: Size { width: length(100.0), height: length(50.0) }, // width 应该被忽略
+        size: Size { width: length(100.0_f32), height: length(50.0_f32) }, // width 应该被忽略
         ..Default::default()
     }).unwrap();
     
     let container = taffy.new_with_children(
         Style {
-            size: Size { width: length(300.0), height: length(100.0) },
+            size: Size { width: length(300.0_f32), height: length(100.0_f32) },
             flex_direction: FlexDirection::Row,
             ..Default::default()
         },

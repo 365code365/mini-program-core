@@ -236,7 +236,7 @@ impl WxmlRenderer {
         if dim_length(st.min_size.height) == Some(0.0) {
             return; // 已经解除过，别重复触发 relayout
         }
-        st.min_size.height = length(0.0);
+        st.min_size.height = length(0.0_f32);
         taffy.set_style(node.taffy_node, st).ok();
         *changed = true;
     }

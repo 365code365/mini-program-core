@@ -183,8 +183,7 @@ mod tests {
         for py in 0..20i32 {
             let fy = py as f32 + 0.5;
             let t = (fy - h / 2.0) / h + 0.5;
-            let mut c = sample_stops(&g.stops, t);
-            c.a = c.a;
+            let c = sample_stops(&g.stops, t);
             for px in 0..40i32 {
                 slow.set_pixel(px, py, c);
             }

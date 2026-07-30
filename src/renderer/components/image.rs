@@ -27,9 +27,7 @@ use crate::parser::wxml::WxmlNode;
 use crate::text::TextRenderer;
 use crate::{Canvas, Color, Paint, PaintStyle, Path, Rect as GeoRect};
 use taffy::prelude::*;
-use std::collections::HashMap;
 use std::sync::{Arc, Mutex, OnceLock};
-use std::io::Read;
 
 /// 图片缓存数据
 pub(super) struct ImageData {
@@ -458,7 +456,7 @@ impl ImageComponent {
         x: f32, y: f32, w: f32, h: f32,
         has_radius: bool,
         uniform_radius: bool,
-        radius: f32,
+        _radius: f32,
         radius_tl: f32, radius_tr: f32, radius_br: f32, radius_bl: f32,
     ) {
         if style.border_width > 0.0 {

@@ -217,7 +217,7 @@ impl SwiperComponent {
         ts.flex_direction = if vertical { FlexDirection::Column } else { FlexDirection::Row };
         ts.flex_wrap = FlexWrap::NoWrap;
         if dim_is_auto(ts.size.width) {
-            ts.size.width = percent(1.0);
+            ts.size.width = percent(1.0_f32);
         }
         if dim_is_auto(ts.size.height) {
             ts.size.height = length(Self::DEFAULT_HEIGHT * sf);
@@ -392,9 +392,9 @@ impl SwiperItemComponent {
         
         // 对齐 HTML `.wx-swiper-item{flex:0 0 100%;height:100%}`：
         // 每个 item 占满一屏且不参与收缩，整行由 swiper 横向偏移呈现
-        ts.size.width = percent(1.0);
-        ts.min_size.width = percent(1.0);
-        ts.size.height = percent(1.0);
+        ts.size.width = percent(1.0_f32);
+        ts.min_size.width = percent(1.0_f32);
+        ts.size.height = percent(1.0_f32);
         ts.flex_shrink = 0.0;
         ts.flex_grow = 0.0;
         ts.flex_direction = FlexDirection::Column;

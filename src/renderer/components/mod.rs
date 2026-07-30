@@ -57,7 +57,6 @@ pub use checkbox_group::{CheckboxGroupComponent, RadioGroupComponent};
 
 use crate::parser::wxml::WxmlNode;
 use crate::parser::wxss::StyleSheet;
-use taffy::prelude::*;
 
 /// 组件注册表
 pub struct ComponentRegistry {

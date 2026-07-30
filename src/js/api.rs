@@ -2,20 +2,15 @@
 
 use super::JsRuntime;
 use std::sync::{Arc, Mutex};
-use std::collections::HashMap;
 
 /// 小程序 API
 pub struct MiniAppApi {
     runtime: Arc<Mutex<JsRuntime>>,
-    storage: Arc<Mutex<HashMap<String, String>>>,
 }
 
 impl MiniAppApi {
     pub fn new(runtime: Arc<Mutex<JsRuntime>>) -> Self {
-        Self {
-            runtime,
-            storage: Arc::new(Mutex::new(HashMap::new())),
-        }
+        Self { runtime }
     }
     
     /// 初始化所有 API

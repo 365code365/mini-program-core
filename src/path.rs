@@ -222,11 +222,6 @@ impl Path {
         self
     }
     
-    /// 添加圆弧（通过两点和半径）
-    pub fn arc_to(&mut self, x1: f32, y1: f32, x2: f32, y2: f32, radius: f32) -> &mut Self {
-        // 简化实现：使用二次贝塞尔曲线近似
-        self.quad_to(x1, y1, x2, y2)
-    }
 
     pub fn commands(&self) -> &[PathCommand] {
         &self.commands

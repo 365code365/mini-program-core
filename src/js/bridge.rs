@@ -1,7 +1,6 @@
 //! JS 与 Native 桥接层
 
 use super::JsRuntime;
-use crate::ui::ComponentTree;
 use crate::event::{Event, Touch};
 use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
@@ -9,7 +8,6 @@ use std::collections::HashMap;
 /// JS 桥接器
 pub struct JsBridge {
     runtime: Arc<Mutex<JsRuntime>>,
-    component_tree: Arc<Mutex<ComponentTree>>,
     storage: Arc<Mutex<HashMap<String, String>>>,
     event_queue: Arc<Mutex<Vec<BridgeEvent>>>,
     /// 逻辑层调用过 `setData`（宿主每帧取走一次，决定要不要重绘）
@@ -44,7 +42,6 @@ impl JsBridge {
     pub fn new(runtime: Arc<Mutex<JsRuntime>>) -> Self {
         Self {
             runtime,
-            component_tree: Arc::new(Mutex::new(ComponentTree::new())),
             storage: Arc::new(Mutex::new(HashMap::new())),
             event_queue: Arc::new(Mutex::new(Vec::new())),
             data_dirty: Arc::new(std::sync::atomic::AtomicBool::new(false)),
@@ -325,13 +322,4 @@ impl JsBridge {
         Ok(())
     }
     
-    /// 获取组件树
-    pub fn component_tree(&self) -> Arc<Mutex<ComponentTree>> {
-        self.component_tree.clone()
-    }
-    
-    /// 获取存储
-    pub fn storage(&self) -> Arc<Mutex<HashMap<String, String>>> {
-        self.storage.clone()
-    }
 }

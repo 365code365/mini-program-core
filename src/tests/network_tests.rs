@@ -54,7 +54,7 @@ fn unsupported_scheme_goes_to_fail() {
 /// 这一条最容易实现错（很多人会把它当失败），所以单独钉住。
 #[test]
 fn http_error_status_still_calls_success() {
-    let mut app = new_app();
+    let app = new_app();
     app.load_script(
         r#"
         var __s = { ok: 0, fail: 0, code: 0 };
@@ -76,7 +76,7 @@ fn http_error_status_still_calls_success() {
 
 #[test]
 fn json_body_is_parsed_by_default_and_kept_raw_when_invalid() {
-    let mut app = new_app();
+    let app = new_app();
     app.load_script(
         r#"
         var __a = null, __b = null;
@@ -97,7 +97,7 @@ fn json_body_is_parsed_by_default_and_kept_raw_when_invalid() {
 
 #[test]
 fn response_headers_are_exposed() {
-    let mut app = new_app();
+    let app = new_app();
     app.load_script(
         r#"
         var __ct = '';
@@ -111,7 +111,7 @@ fn response_headers_are_exposed() {
 
 #[test]
 fn abort_suppresses_success_but_still_completes() {
-    let mut app = new_app();
+    let app = new_app();
     app.load_script(
         r#"
         var __t = { ok: 0, done: 0, msg: '' };
@@ -133,7 +133,7 @@ fn abort_suppresses_success_but_still_completes() {
 /// GET 的 `data` 要拼进 query string（微信语义），而不是塞进请求体
 #[test]
 fn get_data_is_encoded_into_query() {
-    let mut app = new_app();
+    let app = new_app();
     app.load_script(
         r#"
         var __url = '';

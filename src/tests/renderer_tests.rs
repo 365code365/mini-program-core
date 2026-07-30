@@ -54,8 +54,9 @@ fn test_basic_render() {
     
     renderer.render(&mut canvas, &nodes, &data);
     
-    // 验证事件绑定数量
-    assert!(renderer.event_count() >= 0);
+    // 模板里没有任何 bind*，就不该登记事件绑定
+    // （原来写的是 `event_count() >= 0`，usize 恒真，等于没测）
+    assert_eq!(renderer.event_count(), 0, "没有 bind* 的模板不该登记事件绑定");
 }
 
 /// 测试数据绑定渲染

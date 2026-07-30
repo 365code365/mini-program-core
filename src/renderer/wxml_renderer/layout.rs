@@ -236,7 +236,7 @@ impl WxmlRenderer {
             };
             // 居中/右对齐的文本撑满可用宽度，绘制时再按对齐做偏移（否则无法居中）
             let width_dim: Dimension = if matches!(inherited.align, TextAlign::Center | TextAlign::Right) {
-                percent(1.0)
+                percent(1.0_f32)
             } else {
                 // 取整到整像素即可（换行判定另有亚像素容差），不额外加宽
                 length(tw.ceil())
@@ -374,7 +374,7 @@ impl WxmlRenderer {
                         ts.flex_direction = if vertical { FlexDirection::Column } else { FlexDirection::Row };
                         ts.flex_wrap = FlexWrap::NoWrap;
                         if dim_is_auto(ts.size.width) {
-                            ts.size.width = percent(1.0);
+                            ts.size.width = percent(1.0_f32);
                         }
                         if dim_is_auto(ts.size.height) {
                             ts.size.height = length(SwiperComponent::DEFAULT_HEIGHT * ctx.scale_factor);
@@ -382,8 +382,8 @@ impl WxmlRenderer {
                         // 每个 item 占满一屏且不收缩（对齐 HTML .wx-swiper-item{flex:0 0 100%}）
                         for child in &children {
                             if let Ok(mut style) = ctx.taffy.style(child.taffy_node).cloned() {
-                                style.size = taffy::geometry::Size { width: percent(1.0), height: percent(1.0) };
-                                style.min_size.width = percent(1.0);
+                                style.size = taffy::geometry::Size { width: percent(1.0_f32), height: percent(1.0_f32) };
+                                style.min_size.width = percent(1.0_f32);
                                 style.flex_shrink = 0.0;
                                 style.flex_grow = 0.0;
                                 ctx.taffy.set_style(child.taffy_node, style).ok();

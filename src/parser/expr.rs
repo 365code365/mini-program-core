@@ -249,6 +249,10 @@ enum Expr {
     Ternary(Box<Expr>, Box<Expr>, Box<Expr>),
     Member(Box<Expr>, String),
     Index(Box<Expr>, Box<Expr>),
+    /// 函数调用：**解析得下来但不求值**（求值恒为 `null`）。微信的 WXML 里也只有
+    /// wxs 模块能调用函数，模板表达式里写 `{{ f(x) }}` 同样拿不到结果 —— 保留这个
+    /// 变体是为了不让解析在这种写法上整条失败（否则整个属性值都没了）。
+    #[allow(dead_code)]
     Call(Box<Expr>, Vec<Expr>),
 }
 

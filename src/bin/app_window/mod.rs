@@ -15,19 +15,17 @@ pub mod headless_script;
 
 // ── 从 lib 的宿主层重新导出（同一份实现）──
 pub use mini_render::host::{
-    component_mount, config, edge_back, gesture, navigation, page_loader, picker_sheet,
-    region_data, render, tabbar, touch, ui_overlay,
+    component_mount, edge_back, gesture, navigation, page_loader, picker_sheet, render, touch,
+    ui_overlay,
 };
 pub use mini_render::host::{
-    load_all_pages, load_custom_tabbar, load_custom_tabbar_with_app_wxss, render_ui_overlay,
-    CustomTabBar, LoadingState, ModalState, ToastState, CONTENT_HEIGHT, LOGICAL_HEIGHT,
-    LOGICAL_WIDTH,
+    load_all_pages, load_custom_tabbar_with_app_wxss, CustomTabBar, CONTENT_HEIGHT,
+    LOGICAL_HEIGHT, LOGICAL_WIDTH,
 };
 pub use mini_render::host::config::*;
 pub use mini_render::host::navigation::*;
 pub use mini_render::host::render::*;
 pub use mini_render::host::tabbar::*;
 
-pub use click_handler::*;
 pub use event_handler::*;
 pub use interaction_handler::*;

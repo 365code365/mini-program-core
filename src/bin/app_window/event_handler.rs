@@ -6,7 +6,6 @@ use winit::event::{ElementState, MouseScrollDelta};
 use winit::window::Window;
 
 use mini_render::runtime::UiEvent;
-use mini_render::ui::interaction::InteractionType;
 
 use super::{NavigationRequest, ui_overlay::{ToastState, LoadingState, ModalState}};
 use super::events::{keyboard, ime, wheel};

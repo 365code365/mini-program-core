@@ -103,7 +103,7 @@ fn show_modal_defaults_and_result_callback() {
 
 #[test]
 fn show_modal_cancel_result_is_mirrored() {
-    let mut app = new_app();
+    let app = new_app();
     app.load_script(
         "var __r = null; wx.showModal({ title:'t', success: function(x){ __r = x; } }); __handleModalResult(false);",
     )
@@ -126,7 +126,7 @@ fn pull_down_refresh_apis_produce_events() {
 
 #[test]
 fn storage_sync_roundtrip_keeps_types() {
-    let mut app = new_app();
+    let app = new_app();
     app.load_script(
         r#"
         wx.setStorageSync('s', 'text');
@@ -150,7 +150,7 @@ fn storage_sync_roundtrip_keeps_types() {
 /// 保持与微信一致，把责任留在小程序侧。
 #[test]
 fn missing_storage_key_returns_empty_string_like_wechat() {
-    let mut app = new_app();
+    let app = new_app();
     app.load_script("var __v = wx.getStorageSync('never-set');").unwrap();
     assert_eq!(get(&app, "typeof __v"), "string");
     assert_eq!(get(&app, "String(__v.length)"), "0");
@@ -158,7 +158,7 @@ fn missing_storage_key_returns_empty_string_like_wechat() {
 
 #[test]
 fn storage_remove_and_clear() {
-    let mut app = new_app();
+    let app = new_app();
     app.load_script(
         r#"
         wx.setStorageSync('a', 1); wx.setStorageSync('b', 2);
@@ -178,7 +178,7 @@ fn storage_remove_and_clear() {
 
 #[test]
 fn async_storage_wraps_the_sync_version() {
-    let mut app = new_app();
+    let app = new_app();
     app.load_script(
         r#"
         var __got = null, __done = 0;
@@ -250,7 +250,7 @@ fn system_info_reports_the_render_size() {
 
 #[test]
 fn create_animation_exports_ordered_actions() {
-    let mut app = new_app();
+    let app = new_app();
     app.load_script(
         r#"
         var a = wx.createAnimation({ duration: 300, timingFunction: 'ease' });

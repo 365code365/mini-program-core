@@ -91,8 +91,6 @@ struct ContextState {
 }
 
 impl Canvas2DContext {
-    /// 单位矩阵
-    const IDENTITY: [f32; 6] = [1.0, 0.0, 0.0, 1.0, 0.0, 0.0];
 
     /// 用当前矩阵变换一个点
     fn tp(&self, x: f32, y: f32) -> (f32, f32) {
@@ -658,7 +656,12 @@ impl LinearGradient {
 /// 径向渐变
 #[derive(Clone)]
 pub struct RadialGradient {
+    /// 内圆圆心。**目前不参与求值**：实现按「同心圆」处理，只用外圆的圆心与半径
+    /// （`createRadialGradient` 的实际用法几乎都是同心的）。留着两个字段是为了
+    /// 接口与 canvas 规范一致，等真要支持偏心渐变时不用改调用方。
+    #[allow(dead_code)]
     x0: f32,
+    #[allow(dead_code)]
     y0: f32,
     r0: f32,
     x1: f32,

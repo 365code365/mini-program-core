@@ -86,31 +86,6 @@ pub fn handle_mouse_pressed(
     false
 }
 
-/// 鼠标释放事件处理
-pub fn handle_mouse_released(
-    scroll: &mut ScrollController,
-    interaction: &mut InteractionManager,
-) -> bool {
-    // 清除按钮按下状态
-    interaction.clear_button_pressed();
-    
-    // 结束滑块拖动
-    if let Some(_result) = interaction.handle_mouse_release() {
-        // 结果会在外部处理
-    }
-    
-    // 结束 ScrollArea 拖动
-    if let Some(id) = &interaction.dragging_scroll_area.clone() {
-        if let Some(controller) = interaction.get_scroll_controller_mut(id) {
-            controller.end_drag();
-        }
-        interaction.dragging_scroll_area = None;
-        return true; // 触发重绘
-    }
-    
-    scroll.end_drag()
-}
-
 /// 处理内容区域点击
 #[allow(clippy::too_many_arguments)]
 pub fn handle_content_click(
@@ -262,7 +237,7 @@ fn dispatch_component_events(
     result: Option<&InteractionResult>,
 ) {
     let (identifier, time_ms) = tap_ctx;
-    let mut dispatch_change = |app: &mut MiniApp, detail: serde_json::Value| {
+    let dispatch_change = |app: &mut MiniApp, detail: serde_json::Value| {
         super::touch::dispatch_to_js(
             app, renderer, "change", (x, hit_y), (x, hit_y), scope, identifier, time_ms, detail,
         );

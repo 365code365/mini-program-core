@@ -17,25 +17,31 @@ pub struct CustomTabBar {
     pub js_code: String,
 }
 
-/// 小程序目录路径（全局状态）
-static mut APP_PATH: Option<PathBuf> = None;
+/// 小程序目录路径（全局状态）。
+///
+/// 从前是 `static mut` + `unsafe`：取它的共享引用在新版 Rust 里已经是警告
+/// （形式上的未定义行为），而宿主换小程序时这个值是跨线程写的。访问模式是
+/// 「启动写一次、之后到处读」，所以 `RwLock` 就够用，读路径不会互相阻塞。
+static APP_PATH: std::sync::RwLock<Option<PathBuf>> = std::sync::RwLock::new(None);
 
 /// 设置小程序目录路径（同时登记到引擎，供图片等包内资源路径解析）
 pub fn set_app_path(path: PathBuf) {
     crate::assets::set_app_root(path.clone());
-    unsafe {
-        APP_PATH = Some(path);
+    if let Ok(mut g) = APP_PATH.write() {
+        *g = Some(path);
     }
 }
 
 /// 获取小程序目录路径
 pub fn get_app_path() -> PathBuf {
-    unsafe {
-        APP_PATH.clone().unwrap_or_else(|| {
+    APP_PATH
+        .read()
+        .ok()
+        .and_then(|g| g.clone())
+        .unwrap_or_else(|| {
             // 默认使用 sample-app
             PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("sample-app")
         })
-    }
 }
 
 /// 从文件系统加载所有页面

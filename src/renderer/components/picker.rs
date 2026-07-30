@@ -85,7 +85,7 @@ pub struct PickerComponent;
 
 impl PickerComponent {
     pub fn build(node: &WxmlNode, ctx: &mut ComponentContext) -> Option<RenderNode> {
-        let (ts, mut ns) = build_base_style(node, ctx);
+        let (ts, ns) = build_base_style(node, ctx);
         let events = extract_events(node);
         let mut attrs = node.attributes.clone();
         // 有元素子节点时标记：绘制期只作容器（绘制路径的浅拷贝不带 children）

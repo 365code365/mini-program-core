@@ -221,11 +221,6 @@ fn candidates_for(name: &str) -> &'static [&'static str] {
     const PINGFANG: &[&str] = &["/System/Library/Fonts/PingFang.ttc"];
     const HIRAGINO: &[&str] = &["/System/Library/Fonts/Hiragino Sans GB.ttc"];
     const HEITI: &[&str] = &["/System/Library/Fonts/STHeiti Light.ttc"];
-    const ARIAL: &[&str] = &[
-        "/System/Library/Fonts/Supplemental/Arial.ttf",
-        "/Library/Fonts/Arial.ttf",
-    ];
-    const HELVETICA: &[&str] = &["/System/Library/Fonts/Helvetica.ttc"];
     const KAITI: &[&str] = &["/System/Library/Fonts/Supplemental/Kaiti.ttc"];
     const NONE: &[&str] = &[];
 

@@ -12,7 +12,6 @@ use crate::parser::wxml::{WxmlNode, WxmlNodeType};
 use crate::parser::wxss::{StyleSheet, WxssParser};
 use crate::renderer::components::*;
 use crate::{Canvas, Color};
-use taffy::prelude::*;
 
 fn node_of(attrs: &[(&str, &str)]) -> WxmlNode {
     WxmlNode {

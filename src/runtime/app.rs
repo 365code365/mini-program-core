@@ -1,8 +1,7 @@
 //! 小程序应用
 
-use crate::{Canvas, Color};
 use crate::js::{JsRuntime, MiniAppApi, JsBridge, BridgeEvent};
-use crate::event::{Event, TouchEvent, Touch, TapEvent};
+use crate::event::Event;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use std::collections::HashMap;
@@ -27,7 +26,6 @@ pub struct MiniApp {
     runtime: Arc<Mutex<JsRuntime>>,
     bridge: Arc<JsBridge>,
     api: MiniAppApi,
-    canvas: Canvas,
     width: u32,
     height: u32,
     running: bool,
@@ -52,7 +50,6 @@ impl MiniApp {
             runtime,
             bridge,
             api,
-            canvas: Canvas::new(width, height),
             width,
             height,
             running: false,
@@ -364,85 +361,10 @@ impl MiniApp {
         std::mem::take(&mut self.ui_events)
     }
     
-    /// 渲染
-    pub fn render(&mut self) {
-        // 清空画布
-        self.canvas.clear(Color::WHITE);
-        
-        // 渲染组件树
-        let tree = self.bridge.component_tree();
-        let tree = tree.lock().unwrap();
-        tree.render(&mut self.canvas);
-    }
     
-    /// 处理触摸事件
-    pub fn on_touch(&mut self, x: f32, y: f32, touch_type: &str) -> Result<(), String> {
-        let touch = Touch::new(0, x, y);
-        let touch_event = TouchEvent {
-            touches: vec![touch.clone()],
-            changed_touches: vec![touch],
-            timestamp: std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_millis() as u64,
-        };
-        
-        let event = match touch_type {
-            "start" => Event::TouchStart(touch_event),
-            "move" => Event::TouchMove(touch_event),
-            "end" => Event::TouchEnd(touch_event),
-            "cancel" => Event::TouchCancel(touch_event),
-            _ => return Ok(()),
-        };
-        
-        // 分发给组件树
-        {
-            let tree = self.bridge.component_tree();
-            let mut tree = tree.lock().unwrap();
-            tree.dispatch_event(&event);
-        }
-        
-        // 分发给 JS
-        self.bridge.dispatch_event(&event)?;
-        
-        Ok(())
-    }
     
-    /// 处理点击事件
-    pub fn on_tap(&mut self, x: f32, y: f32) -> Result<(), String> {
-        let tap = TapEvent {
-            x,
-            y,
-            timestamp: std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_millis() as u64,
-        };
-        
-        let event = Event::Tap(tap);
-        
-        // 分发给组件树
-        {
-            let tree = self.bridge.component_tree();
-            let mut tree = tree.lock().unwrap();
-            tree.dispatch_event(&event);
-        }
-        
-        // 分发给 JS
-        self.bridge.dispatch_event(&event)?;
-        
-        Ok(())
-    }
     
-    /// 获取画布像素数据
-    pub fn pixels(&self) -> &Canvas {
-        &self.canvas
-    }
     
-    /// 获取画布 RGBA 数据
-    pub fn to_rgba(&self) -> Vec<u8> {
-        self.canvas.to_rgba()
-    }
     
     pub fn width(&self) -> u32 {
         self.width
@@ -452,9 +374,6 @@ impl MiniApp {
         self.height
     }
     
-    pub fn is_running(&self) -> bool {
-        self.running
-    }
     
     /// 执行 JS 代码
     pub fn eval(&self, code: &str) -> Result<String, String> {

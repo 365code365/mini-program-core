@@ -17,7 +17,7 @@
 use crate::host::{
     component_mount, load_all_pages, page_loader, remove_manual_tabbar, tabbar_height,
     ui_overlay::{self, LoadingState, ModalState, ToastState},
-    AppConfig, PageInstance, CONTENT_HEIGHT, LOGICAL_HEIGHT, LOGICAL_WIDTH,
+    AppConfig, PageInstance, CONTENT_HEIGHT,
 };
 use crate::parser::{WxmlParser, WxssParser};
 use crate::renderer::WxmlRenderer;
@@ -199,8 +199,7 @@ impl MiniEngine {
         let info = self
             .pages
             .get(&path)
-            .ok_or_else(|| format!("页面不存在: {path}"))?
-            .clone();
+            .ok_or_else(|| format!("页面不存在: {path}"))?;
         let nodes = remove_manual_tabbar(
             &WxmlParser::new(&info.wxml)
                 .parse()

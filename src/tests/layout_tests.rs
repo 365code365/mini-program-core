@@ -10,24 +10,24 @@ fn test_flex_column_layout() {
     
     // 创建三个子节点
     let child1 = taffy.new_leaf(Style {
-        size: Size { width: length(100.0), height: length(50.0) },
+        size: Size { width: length(100.0_f32), height: length(50.0_f32) },
         ..Default::default()
     }).unwrap();
     
     let child2 = taffy.new_leaf(Style {
-        size: Size { width: length(100.0), height: length(50.0) },
+        size: Size { width: length(100.0_f32), height: length(50.0_f32) },
         ..Default::default()
     }).unwrap();
     
     let child3 = taffy.new_leaf(Style {
-        size: Size { width: length(100.0), height: length(50.0) },
+        size: Size { width: length(100.0_f32), height: length(50.0_f32) },
         ..Default::default()
     }).unwrap();
     
     // 创建父容器（列布局）
     let root = taffy.new_with_children(
         Style {
-            size: Size { width: length(200.0), height: auto() },
+            size: Size { width: length(200.0_f32), height: auto() },
             flex_direction: FlexDirection::Column,
             ..Default::default()
         },
@@ -52,18 +52,18 @@ fn test_flex_row_layout() {
     let mut taffy: TaffyTree<()> = TaffyTree::new();
     
     let child1 = taffy.new_leaf(Style {
-        size: Size { width: length(50.0), height: length(100.0) },
+        size: Size { width: length(50.0_f32), height: length(100.0_f32) },
         ..Default::default()
     }).unwrap();
     
     let child2 = taffy.new_leaf(Style {
-        size: Size { width: length(50.0), height: length(100.0) },
+        size: Size { width: length(50.0_f32), height: length(100.0_f32) },
         ..Default::default()
     }).unwrap();
     
     let root = taffy.new_with_children(
         Style {
-            size: Size { width: length(200.0), height: length(100.0) },
+            size: Size { width: length(200.0_f32), height: length(100.0_f32) },
             flex_direction: FlexDirection::Row,
             ..Default::default()
         },
@@ -85,13 +85,13 @@ fn test_justify_content_center() {
     let mut taffy: TaffyTree<()> = TaffyTree::new();
     
     let child = taffy.new_leaf(Style {
-        size: Size { width: length(50.0), height: length(50.0) },
+        size: Size { width: length(50.0_f32), height: length(50.0_f32) },
         ..Default::default()
     }).unwrap();
     
     let root = taffy.new_with_children(
         Style {
-            size: Size { width: length(200.0), height: length(100.0) },
+            size: Size { width: length(200.0_f32), height: length(100.0_f32) },
             flex_direction: FlexDirection::Row,
             justify_content: Some(JustifyContent::CENTER),
             ..Default::default()
@@ -111,18 +111,18 @@ fn test_justify_content_space_between() {
     let mut taffy: TaffyTree<()> = TaffyTree::new();
     
     let child1 = taffy.new_leaf(Style {
-        size: Size { width: length(50.0), height: length(50.0) },
+        size: Size { width: length(50.0_f32), height: length(50.0_f32) },
         ..Default::default()
     }).unwrap();
     
     let child2 = taffy.new_leaf(Style {
-        size: Size { width: length(50.0), height: length(50.0) },
+        size: Size { width: length(50.0_f32), height: length(50.0_f32) },
         ..Default::default()
     }).unwrap();
     
     let root = taffy.new_with_children(
         Style {
-            size: Size { width: length(200.0), height: length(100.0) },
+            size: Size { width: length(200.0_f32), height: length(100.0_f32) },
             flex_direction: FlexDirection::Row,
             justify_content: Some(JustifyContent::SPACE_BETWEEN),
             ..Default::default()
@@ -145,13 +145,13 @@ fn test_align_items_center() {
     let mut taffy: TaffyTree<()> = TaffyTree::new();
     
     let child = taffy.new_leaf(Style {
-        size: Size { width: length(50.0), height: length(30.0) },
+        size: Size { width: length(50.0_f32), height: length(30.0_f32) },
         ..Default::default()
     }).unwrap();
     
     let root = taffy.new_with_children(
         Style {
-            size: Size { width: length(200.0), height: length(100.0) },
+            size: Size { width: length(200.0_f32), height: length(100.0_f32) },
             flex_direction: FlexDirection::Row,
             align_items: Some(AlignItems::CENTER),
             ..Default::default()
@@ -172,19 +172,19 @@ fn test_flex_grow() {
     
     let child1 = taffy.new_leaf(Style {
         flex_grow: 1.0,
-        size: Size { width: auto(), height: length(50.0) },
+        size: Size { width: auto(), height: length(50.0_f32) },
         ..Default::default()
     }).unwrap();
     
     let child2 = taffy.new_leaf(Style {
         flex_grow: 2.0,
-        size: Size { width: auto(), height: length(50.0) },
+        size: Size { width: auto(), height: length(50.0_f32) },
         ..Default::default()
     }).unwrap();
     
     let root = taffy.new_with_children(
         Style {
-            size: Size { width: length(300.0), height: length(100.0) },
+            size: Size { width: length(300.0_f32), height: length(100.0_f32) },
             flex_direction: FlexDirection::Row,
             ..Default::default()
         },
@@ -206,18 +206,18 @@ fn test_padding() {
     let mut taffy: TaffyTree<()> = TaffyTree::new();
     
     let child = taffy.new_leaf(Style {
-        size: Size { width: length(50.0), height: length(50.0) },
+        size: Size { width: length(50.0_f32), height: length(50.0_f32) },
         ..Default::default()
     }).unwrap();
     
     let root = taffy.new_with_children(
         Style {
-            size: Size { width: length(200.0), height: length(100.0) },
+            size: Size { width: length(200.0_f32), height: length(100.0_f32) },
             padding: Rect {
-                top: length(10.0),
-                right: length(10.0),
-                bottom: length(10.0),
-                left: length(10.0),
+                top: length(10.0_f32),
+                right: length(10.0_f32),
+                bottom: length(10.0_f32),
+                left: length(10.0_f32),
             },
             ..Default::default()
         },
@@ -237,19 +237,19 @@ fn test_margin() {
     let mut taffy: TaffyTree<()> = TaffyTree::new();
     
     let child = taffy.new_leaf(Style {
-        size: Size { width: length(50.0), height: length(50.0) },
+        size: Size { width: length(50.0_f32), height: length(50.0_f32) },
         margin: Rect {
-            top: length(20.0),
-            right: length(0.0),
-            bottom: length(0.0),
-            left: length(20.0),
+            top: length(20.0_f32),
+            right: length(0.0_f32),
+            bottom: length(0.0_f32),
+            left: length(20.0_f32),
         },
         ..Default::default()
     }).unwrap();
     
     let root = taffy.new_with_children(
         Style {
-            size: Size { width: length(200.0), height: length(100.0) },
+            size: Size { width: length(200.0_f32), height: length(100.0_f32) },
             ..Default::default()
         },
         &[child],
@@ -268,23 +268,23 @@ fn test_flex_wrap() {
     let mut taffy: TaffyTree<()> = TaffyTree::new();
     
     let child1 = taffy.new_leaf(Style {
-        size: Size { width: length(80.0), height: length(50.0) },
+        size: Size { width: length(80.0_f32), height: length(50.0_f32) },
         ..Default::default()
     }).unwrap();
     
     let child2 = taffy.new_leaf(Style {
-        size: Size { width: length(80.0), height: length(50.0) },
+        size: Size { width: length(80.0_f32), height: length(50.0_f32) },
         ..Default::default()
     }).unwrap();
     
     let child3 = taffy.new_leaf(Style {
-        size: Size { width: length(80.0), height: length(50.0) },
+        size: Size { width: length(80.0_f32), height: length(50.0_f32) },
         ..Default::default()
     }).unwrap();
     
     let root = taffy.new_with_children(
         Style {
-            size: Size { width: length(200.0), height: auto() },
+            size: Size { width: length(200.0_f32), height: auto() },
             flex_direction: FlexDirection::Row,
             flex_wrap: FlexWrap::Wrap,
             ..Default::default()
@@ -311,20 +311,20 @@ fn test_gap() {
     let mut taffy: TaffyTree<()> = TaffyTree::new();
     
     let child1 = taffy.new_leaf(Style {
-        size: Size { width: length(50.0), height: length(50.0) },
+        size: Size { width: length(50.0_f32), height: length(50.0_f32) },
         ..Default::default()
     }).unwrap();
     
     let child2 = taffy.new_leaf(Style {
-        size: Size { width: length(50.0), height: length(50.0) },
+        size: Size { width: length(50.0_f32), height: length(50.0_f32) },
         ..Default::default()
     }).unwrap();
     
     let root = taffy.new_with_children(
         Style {
-            size: Size { width: length(200.0), height: length(100.0) },
+            size: Size { width: length(200.0_f32), height: length(100.0_f32) },
             flex_direction: FlexDirection::Row,
-            gap: Size { width: length(20.0), height: length(0.0) },
+            gap: Size { width: length(20.0_f32), height: length(0.0_f32) },
             ..Default::default()
         },
         &[child1, child2],
@@ -346,7 +346,7 @@ fn test_absolute_position() {
     
     let child = taffy.new_leaf(Style {
         position: Position::Absolute,
-        size: Size { width: length(50.0), height: length(50.0) },
+        size: Size { width: length(50.0_f32), height: length(50.0_f32) },
         inset: Rect {
             top: LengthPercentageAuto::length(10.0),
             right: LengthPercentageAuto::auto(),
@@ -358,7 +358,7 @@ fn test_absolute_position() {
     
     let root = taffy.new_with_children(
         Style {
-            size: Size { width: length(200.0), height: length(200.0) },
+            size: Size { width: length(200.0_f32), height: length(200.0_f32) },
             ..Default::default()
         },
         &[child],
@@ -377,13 +377,13 @@ fn test_percent_width() {
     let mut taffy: TaffyTree<()> = TaffyTree::new();
     
     let child = taffy.new_leaf(Style {
-        size: Size { width: percent(0.5), height: length(50.0) },
+        size: Size { width: percent(0.5_f32), height: length(50.0_f32) },
         ..Default::default()
     }).unwrap();
     
     let root = taffy.new_with_children(
         Style {
-            size: Size { width: length(200.0), height: length(100.0) },
+            size: Size { width: length(200.0_f32), height: length(100.0_f32) },
             ..Default::default()
         },
         &[child],
@@ -402,19 +402,19 @@ fn test_nested_layout() {
     
     // 内层子节点
     let inner_child1 = taffy.new_leaf(Style {
-        size: Size { width: length(30.0), height: length(30.0) },
+        size: Size { width: length(30.0_f32), height: length(30.0_f32) },
         ..Default::default()
     }).unwrap();
     
     let inner_child2 = taffy.new_leaf(Style {
-        size: Size { width: length(30.0), height: length(30.0) },
+        size: Size { width: length(30.0_f32), height: length(30.0_f32) },
         ..Default::default()
     }).unwrap();
     
     // 内层容器（行布局）
     let inner_container = taffy.new_with_children(
         Style {
-            size: Size { width: length(100.0), height: length(50.0) },
+            size: Size { width: length(100.0_f32), height: length(50.0_f32) },
             flex_direction: FlexDirection::Row,
             justify_content: Some(JustifyContent::SPACE_BETWEEN),
             ..Default::default()
@@ -425,7 +425,7 @@ fn test_nested_layout() {
     // 外层容器
     let root = taffy.new_with_children(
         Style {
-            size: Size { width: length(200.0), height: length(200.0) },
+            size: Size { width: length(200.0_f32), height: length(200.0_f32) },
             flex_direction: FlexDirection::Column,
             align_items: Some(AlignItems::CENTER),
             ..Default::default()
@@ -457,28 +457,28 @@ fn test_list_item_layout() {
     
     // list-img: 固定大小
     let list_img = taffy.new_leaf(Style {
-        size: Size { width: length(140.0), height: length(140.0) },
+        size: Size { width: length(140.0_f32), height: length(140.0_f32) },
         ..Default::default()
     }).unwrap();
     
     // list-info 的子元素（三个 text）
     let list_name = taffy.new_leaf(Style {
         size: Size { width: Dimension::percent(1.0), height: auto() },
-        min_size: Size { width: auto(), height: length(42.0) },
+        min_size: Size { width: auto(), height: length(42.0_f32) },
         ..Default::default()
     }).unwrap();
     
     let list_desc = taffy.new_leaf(Style {
         size: Size { width: Dimension::percent(1.0), height: auto() },
-        min_size: Size { width: auto(), height: length(36.0) },
-        margin: Rect { top: length(8.0), ..Rect::zero() },
+        min_size: Size { width: auto(), height: length(36.0_f32) },
+        margin: Rect { top: length(8.0_f32), ..Rect::zero() },
         ..Default::default()
     }).unwrap();
     
     let list_price = taffy.new_leaf(Style {
         size: Size { width: Dimension::percent(1.0), height: auto() },
-        min_size: Size { width: auto(), height: length(45.0) },
-        margin: Rect { top: length(8.0), ..Rect::zero() },
+        min_size: Size { width: auto(), height: length(45.0_f32) },
+        margin: Rect { top: length(8.0_f32), ..Rect::zero() },
         ..Default::default()
     }).unwrap();
     
@@ -487,7 +487,7 @@ fn test_list_item_layout() {
         Style {
             flex_grow: 1.0,
             flex_direction: FlexDirection::Column,
-            margin: Rect { left: length(16.0), ..Rect::zero() },
+            margin: Rect { left: length(16.0_f32), ..Rect::zero() },
             ..Default::default()
         },
         &[list_name, list_desc, list_price],
@@ -495,17 +495,17 @@ fn test_list_item_layout() {
     
     // list-btn: 固定大小
     let list_btn = taffy.new_leaf(Style {
-        size: Size { width: length(79.0), height: length(42.0) },
+        size: Size { width: length(79.0_f32), height: length(42.0_f32) },
         ..Default::default()
     }).unwrap();
     
     // list-item: flex-direction: row, align-items: center
     let list_item = taffy.new_with_children(
         Style {
-            size: Size { width: length(702.0), height: auto() },
+            size: Size { width: length(702.0_f32), height: auto() },
             flex_direction: FlexDirection::Row,
             align_items: Some(AlignItems::CENTER),
-            padding: Rect { top: length(16.0), bottom: length(16.0), ..Rect::zero() },
+            padding: Rect { top: length(16.0_f32), bottom: length(16.0_f32), ..Rect::zero() },
             ..Default::default()
         },
         &[list_img, list_info, list_btn],
@@ -546,7 +546,7 @@ fn test_absolute_with_padding() {
     // 创建 absolute 定位的子元素（badge）
     let badge = taffy.new_leaf(Style {
         position: Position::Absolute,
-        size: Size { width: length(50.0), height: length(20.0) },
+        size: Size { width: length(50.0_f32), height: length(20.0_f32) },
         inset: Rect {
             top: LengthPercentageAuto::length(0.0),
             right: LengthPercentageAuto::auto(),
@@ -558,7 +558,7 @@ fn test_absolute_with_padding() {
     
     // 创建普通子元素
     let content = taffy.new_leaf(Style {
-        size: Size { width: length(100.0), height: length(100.0) },
+        size: Size { width: length(100.0_f32), height: length(100.0_f32) },
         ..Default::default()
     }).unwrap();
     
@@ -566,12 +566,12 @@ fn test_absolute_with_padding() {
     let card = taffy.new_with_children(
         Style {
             position: Position::Relative,
-            size: Size { width: length(200.0), height: length(200.0) },
+            size: Size { width: length(200.0_f32), height: length(200.0_f32) },
             padding: Rect {
-                top: length(10.0),
-                right: length(10.0),
-                bottom: length(10.0),
-                left: length(10.0),
+                top: length(10.0_f32),
+                right: length(10.0_f32),
+                bottom: length(10.0_f32),
+                left: length(10.0_f32),
             },
             ..Default::default()
         },

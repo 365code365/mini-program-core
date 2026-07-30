@@ -1,8 +1,6 @@
 //! Canvas 画布模块 - 核心渲染接口
 
 use crate::{Color, Paint, PaintStyle, Path, Point, Rect};
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex, OnceLock};
 
 /// 画布状态
 #[derive(Clone)]
@@ -82,13 +80,6 @@ fn downscale_area(src: &[u8], sw: u32, sh: u32, dw: u32, dh: u32) -> Vec<u8> {
 fn scaled_image_cache(
 ) -> &'static std::sync::Mutex<std::collections::HashMap<String, std::sync::Arc<Vec<Color>>>> {
     SCALED_IMAGE_CACHE.get_or_init(|| std::sync::Mutex::new(std::collections::HashMap::new()))
-}
-
-/// 清空图片缩放缓存（切换小程序 / 内存压力时调用）
-pub fn clear_scaled_image_cache() {
-    if let Ok(mut g) = scaled_image_cache().lock() {
-        g.clear();
-    }
 }
 
 impl Canvas {

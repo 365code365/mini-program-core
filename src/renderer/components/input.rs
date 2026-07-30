@@ -146,30 +146,6 @@ impl InputType {
         }
     }
     
-    /// 验证输入字符是否符合类型要求
-    pub fn validate_char(&self, c: char) -> bool {
-        match self {
-            Self::Number => c.is_ascii_digit() || c == '-',
-            Self::Digit => c.is_ascii_digit() || c == '.',
-            Self::IdCard => c.is_ascii_digit() || c == 'X' || c == 'x',
-            _ => true,
-        }
-    }
-    
-    /// 验证完整输入是否符合类型要求
-    pub fn validate_input(&self, input: &str) -> bool {
-        match self {
-            Self::Number => input.chars().all(|c| c.is_ascii_digit() || c == '-'),
-            Self::Digit => {
-                let dot_count = input.chars().filter(|&c| c == '.').count();
-                dot_count <= 1 && input.chars().all(|c| c.is_ascii_digit() || c == '.')
-            }
-            Self::IdCard => {
-                input.len() <= 18 && input.chars().all(|c| c.is_ascii_digit() || c == 'X' || c == 'x')
-            }
-            _ => true,
-        }
-    }
 }
 
 /// 确认按钮类型
@@ -307,7 +283,7 @@ impl InputComponent {
         if !has_custom_width {
             // 如果设置了 flex-grow，不设置固定宽度
             if ts.flex_grow == 0.0 {
-                ts.size.width = percent(1.0);
+                ts.size.width = percent(1.0_f32);
             }
         }
         
@@ -609,27 +585,6 @@ impl InputComponent {
     }
 }
 
-/// 获取输入框的 maxlength 属性
-pub fn get_maxlength(attrs: &std::collections::HashMap<String, String>) -> i32 {
-    attrs.get("maxlength")
-        .and_then(|s| s.parse::<i32>().ok())
-        .unwrap_or(DEFAULT_MAXLENGTH)
-}
 
-/// 获取输入框的 type 属性
-pub fn get_input_type(attrs: &std::collections::HashMap<String, String>) -> InputType {
-    attrs.get("type")
-        .map(|s| InputType::from_str(s))
-        .unwrap_or(InputType::Text)
-}
 
-/// 检查输入框是否为密码类型
-pub fn is_password(attrs: &std::collections::HashMap<String, String>) -> bool {
-    attrs.get("password").map(|s| s == "true" || s == "{{true}}").unwrap_or(false)
-        || get_input_type(attrs) == InputType::SafePassword
-}
 
-/// 检查输入框是否禁用
-pub fn is_disabled(attrs: &std::collections::HashMap<String, String>) -> bool {
-    attrs.get("disabled").map(|s| s == "true" || s == "{{true}}").unwrap_or(false)
-}

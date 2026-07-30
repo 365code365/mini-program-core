@@ -109,9 +109,6 @@ impl<V> ByteLru<V> {
         self.map.len()
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.map.is_empty()
-    }
 
     pub fn evicted(&self) -> u64 {
         self.evicted
@@ -196,7 +193,7 @@ mod tests {
         c.insert("a".into(), 1, 100);
         c.clear();
         assert_eq!(c.bytes(), 0);
-        assert!(c.is_empty());
+        assert_eq!(c.len(), 0);
     }
 
     #[test]

@@ -13,8 +13,8 @@ pub fn handle_interaction_result(
     renderer: Option<&WxmlRenderer>,
     app: &mut MiniApp,
     clipboard: &mut Option<arboard::Clipboard>,
-    scroll_position: f32,
-    scale_factor: f64,
+    _scroll_position: f32,
+    _scale_factor: f64,
 ) {
     match result {
         InteractionResult::Toggle { id, checked } => {

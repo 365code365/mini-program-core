@@ -7,6 +7,3 @@ pub mod ime;
 pub mod wheel;
 
 pub use mini_render::host::tap as mouse;
-pub use mini_render::host::tap::*;
-pub use keyboard::*;
-pub use ime::*;

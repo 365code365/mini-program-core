@@ -5,7 +5,6 @@
 //! 2. 显示小程序列表供用户选择
 //! 3. 点击后加载并运行选中的小程序
 
-use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::num::NonZeroU32;
@@ -22,7 +21,6 @@ use mini_render::{Canvas, Color, Paint, PaintStyle, Rect};
 use mini_render::text::TextRenderer;
 use mini_render::parser::{WxmlParser, WxssParser};
 use mini_render::parser::wxml::WxmlNode;
-use mini_render::parser::wxss::StyleSheet;
 use mini_render::runtime::MiniApp;
 use mini_render::ui::ScrollController;
 
@@ -37,20 +35,6 @@ struct MiniAppInfo {
     description: String,
 }
 
-/// 页面信息
-struct PageInfo {
-    path: String,
-    wxml: String,
-    wxss: String,
-    js: String,
-}
-
-/// 自定义 TabBar
-struct CustomTabBar {
-    wxml_nodes: Vec<WxmlNode>,
-    stylesheet: StyleSheet,
-}
-
 /// 启动器状态
 enum LauncherState {
     /// 显示小程序列表
@@ -60,20 +44,17 @@ enum LauncherState {
 }
 
 /// 运行中的小程序
+/// 启动器只做「选中哪个小程序」+ 首页预览，真正的多页运行交给 `mini-app-window`。
+/// 所以这里只留首页的渲染所需状态 —— 页面表、样式表、自定义 tabBar 从前是存了不用的。
 struct RunningApp {
     #[allow(dead_code)]
     app_path: PathBuf,
-    pages: HashMap<String, PageInfo>,
-    current_page: String,
     wxml_nodes: Vec<WxmlNode>,
-    stylesheet: StyleSheet,
     mini_app: MiniApp,
     page_data: serde_json::Value,
     renderer: mini_render::renderer::WxmlRenderer,
     interaction: mini_render::ui::interaction::InteractionManager,
     scroll: ScrollController,
-    #[allow(dead_code)]
-    custom_tabbar: Option<CustomTabBar>,
 }
 
 /// 应用程序
@@ -671,56 +652,31 @@ fn load_mini_app(app_path: &Path, scale_factor: f32) -> Result<RunningApp, Strin
     let app_json: serde_json::Value = serde_json::from_str(&app_json_content)
         .map_err(|e| format!("解析 app.json 失败: {}", e))?;
     
-    // 获取页面列表
-    let pages = app_json.get("pages")
+    // 获取首页（启动器只预览首页）
+    let first_page = app_json
+        .get("pages")
         .and_then(|p| p.as_array())
-        .ok_or("app.json 中没有 pages 字段")?;
-    
-    // 加载所有页面
-    let mut page_map = HashMap::new();
-    for page_path in pages {
-        if let Some(page_str) = page_path.as_str() {
-            let page_dir = app_path.join(page_str);
-            
-            let wxml_path = page_dir.with_extension("wxml");
-            let wxss_path = page_dir.with_extension("wxss");
-            let js_path = page_dir.with_extension("js");
-            
-            let wxml = fs::read_to_string(&wxml_path).unwrap_or_default();
-            let wxss = fs::read_to_string(&wxss_path).unwrap_or_default();
-            let js = fs::read_to_string(&js_path).unwrap_or_default();
-            
-            page_map.insert(page_str.to_string(), PageInfo {
-                path: page_str.to_string(),
-                wxml,
-                wxss,
-                js,
-            });
-        }
-    }
-    
-    // 获取首页
-    let first_page = pages.first()
+        .and_then(|pages| pages.first())
         .and_then(|p| p.as_str())
-        .ok_or("没有找到首页")?
-        .to_string();
-    
-    let page_info = page_map.get(&first_page)
-        .ok_or("首页不存在")?;
+        .ok_or("app.json 中没有 pages 字段")?;
+    let page_dir = app_path.join(first_page);
+    let page_wxml = fs::read_to_string(page_dir.with_extension("wxml")).unwrap_or_default();
+    let page_wxss = fs::read_to_string(page_dir.with_extension("wxss")).unwrap_or_default();
+    let page_js = fs::read_to_string(page_dir.with_extension("js")).unwrap_or_default();
     
     // 解析 WXML
-    let mut wxml_parser = WxmlParser::new(&page_info.wxml);
+    let mut wxml_parser = WxmlParser::new(&page_wxml);
     let wxml_nodes = wxml_parser.parse()
         .map_err(|e| format!("解析 WXML 失败: {}", e))?;
     
     // 解析 WXSS
-    let mut wxss_parser = WxssParser::new(&page_info.wxss);
+    let mut wxss_parser = WxssParser::new(&page_wxss);
     let stylesheet = wxss_parser.parse()
         .map_err(|e| format!("解析 WXSS 失败: {}", e))?;
     
     // 创建渲染器
     let renderer = mini_render::renderer::WxmlRenderer::new_with_scale(
-        stylesheet.clone(),
+        stylesheet,
         WINDOW_WIDTH as f32,
         WINDOW_HEIGHT as f32,
         scale_factor,
@@ -738,7 +694,7 @@ fn load_mini_app(app_path: &Path, scale_factor: f32) -> Result<RunningApp, Strin
     let _ = mini_app.load_script(&app_js);
     
     // 执行页面 JS
-    let _ = mini_app.load_script(&page_info.js);
+    let _ = mini_app.load_script(&page_js);
     
     // 获取页面数据
     let page_data = mini_app.eval("__getPageData()")
@@ -748,46 +704,14 @@ fn load_mini_app(app_path: &Path, scale_factor: f32) -> Result<RunningApp, Strin
     // 创建交互管理器
     let interaction = mini_render::ui::interaction::InteractionManager::new();
     
-    // 加载自定义 TabBar
-    let custom_tabbar = load_custom_tabbar_from_path(app_path);
-    
     Ok(RunningApp {
         app_path: app_path.to_path_buf(),
-        pages: page_map,
-        current_page: first_page,
         wxml_nodes,
-        stylesheet,
         mini_app,
         page_data,
         renderer,
         interaction,
         scroll: ScrollController::new(WINDOW_HEIGHT as f32, WINDOW_HEIGHT as f32),
-        custom_tabbar,
-    })
-}
-
-/// 从路径加载自定义 TabBar
-fn load_custom_tabbar_from_path(app_path: &Path) -> Option<CustomTabBar> {
-    let tabbar_dir = app_path.join("custom-tab-bar");
-    if !tabbar_dir.exists() {
-        return None;
-    }
-    
-    let wxml_path = tabbar_dir.join("index.wxml");
-    let wxss_path = tabbar_dir.join("index.wxss");
-    
-    let wxml = fs::read_to_string(&wxml_path).ok()?;
-    let wxss = fs::read_to_string(&wxss_path).ok()?;
-    
-    let mut wxml_parser = WxmlParser::new(&wxml);
-    let wxml_nodes = wxml_parser.parse().ok()?;
-    
-    let mut wxss_parser = WxssParser::new(&wxss);
-    let stylesheet = wxss_parser.parse().ok()?;
-    
-    Some(CustomTabBar {
-        wxml_nodes,
-        stylesheet,
     })
 }
 

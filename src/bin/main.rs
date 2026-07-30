@@ -1,7 +1,7 @@
 //! Mini App 运行时主程序
 
 use mini_render::runtime::MiniApp;
-use mini_render::parser::{WxmlParser, WxssParser, TemplateEngine};
+use mini_render::parser::{WxmlParser, WxssParser};
 use mini_render::renderer::WxmlRenderer;
 use mini_render::{Canvas, Color};
 use serde_json::json;

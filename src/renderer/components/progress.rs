@@ -63,7 +63,7 @@ impl ProgressComponent {
         
         // 默认宽度 100%
         if dim_is_auto(ts.size.width) {
-            ts.size.width = percent(1.0);
+            ts.size.width = percent(1.0_f32);
         }
         
         ts.flex_direction = FlexDirection::Row;

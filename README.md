@@ -205,7 +205,7 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }
 
 ```bash
 rm -rf target/mini-storage                 # ① 必做，见下
-cargo test --release                       # ② lib 474 + bin 9
+cargo test --release                       # ② lib 464 + bin 9
 bash tools/damage-check.sh                 # ③ 增量重绘 == 整帧重绘（逐字节）
 cargo run --release --example gallery      # ④ 65 张场景图
 bash tools/tab-click-check.sh              # ⑤ 三个 app 的 tabBar 点击

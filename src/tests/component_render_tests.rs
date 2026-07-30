@@ -241,8 +241,8 @@ fn test_button_variants() {
         </view>
     "#;
     let r = render_ok("", wxml, json!({}));
-    // button 会注册为交互元素，不强求事件绑定
-    assert!(r.event_count() >= 0);
+    // button 会注册为交互元素，但没写 bind* 就不该有事件绑定
+    assert_eq!(r.event_count(), 0, "没写 bind* 的 button 不该登记事件绑定");
 }
 
 #[test]

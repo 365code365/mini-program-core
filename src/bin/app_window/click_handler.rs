@@ -17,22 +17,14 @@ use super::{
 use super::events::mouse;
 use super::interaction_handler::{handle_interaction_result, check_navigation, print_js_output};
 
-/// Modal 点击处理结果
-pub enum ModalClickResult {
-    /// 按下了按钮
-    ButtonPressed(String),
-    /// 释放了按钮，需要执行回调
-    ButtonReleased { button: String, should_callback: bool },
-    /// 没有点击到按钮
-    None,
-}
 
 /// 计算 Modal 布局参数
+///
+/// 只暴露命中判定真正要用的量：垂直位置由 `button_y` 一个数决定，
+/// 弹窗自身的 y / 高度只是算它的中间量（留字段没人读，反而像还有别的用途）。
 pub struct ModalLayout {
     pub modal_x: f32,
-    pub modal_y: f32,
     pub modal_width: f32,
-    pub modal_height: f32,
     pub button_y: f32,
     pub button_height: f32,
 }
@@ -62,9 +54,7 @@ pub fn calculate_modal_layout(modal: &ModalState, sf: f32, text_renderer: Option
     
     ModalLayout {
         modal_x,
-        modal_y,
         modal_width: modal_width / sf,
-        modal_height: modal_height / sf,
         button_y,
         button_height: button_height / sf,
     }

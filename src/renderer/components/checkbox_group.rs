@@ -26,7 +26,7 @@ impl CheckboxGroupComponent {
         })
     }
     
-    pub fn draw(node: &RenderNode, canvas: &mut Canvas, x: f32, y: f32, w: f32, h: f32, sf: f32) {
+    pub fn draw(node: &RenderNode, canvas: &mut Canvas, x: f32, y: f32, w: f32, h: f32, _sf: f32) {
         // checkbox-group 本身不渲染，只作为容器
         // 背景绘制（如果有）
         draw_background(canvas, &node.style, x, y, w, h);
@@ -55,7 +55,7 @@ impl RadioGroupComponent {
         })
     }
     
-    pub fn draw(node: &RenderNode, canvas: &mut Canvas, x: f32, y: f32, w: f32, h: f32, sf: f32) {
+    pub fn draw(node: &RenderNode, canvas: &mut Canvas, x: f32, y: f32, w: f32, h: f32, _sf: f32) {
         // radio-group 本身不渲染，只作为容器
         // 背景绘制（如果有）
         draw_background(canvas, &node.style, x, y, w, h);

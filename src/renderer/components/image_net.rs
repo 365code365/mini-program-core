@@ -244,15 +244,13 @@ mod tests {
     use super::*;
 
     #[derive(Debug)]
-    struct Dummy(usize);
+    struct Dummy;
 
     #[test]
     fn first_call_returns_none_and_marks_pending() {
         // 用一个必然失败的地址：重点是**立刻返回**，不阻塞调用方
         let started = Instant::now();
-        let got = get_or_fetch::<Dummy, _>("https://no-such-host-abc.invalid/a.png", |b| {
-            Some(Dummy(b.len()))
-        });
+        let got = get_or_fetch::<Dummy, _>("https://no-such-host-abc.invalid/a.png", |_| Some(Dummy));
         assert!(got.is_none(), "首次调用必须立刻返回 None（本帧画占位）");
         assert!(
             started.elapsed() < Duration::from_millis(200),
@@ -290,7 +288,7 @@ mod tests {
     #[test]
     fn failure_is_retried_not_cached_forever() {
         let url = "https://no-such-host-def.invalid/b.png";
-        get_or_fetch::<Dummy, _>(url, |b| Some(Dummy(b.len())));
+        get_or_fetch::<Dummy, _>(url, |_| Some(Dummy));
         for _ in 0..100 {
             if !has_pending() {
                 break;
