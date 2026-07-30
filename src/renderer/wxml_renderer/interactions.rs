@@ -111,7 +111,7 @@ impl WxmlRenderer {
         *max_bottom = max_bottom.max(y + layout.size.height);
 
         let clips = node.style.overflow != crate::renderer::components::Overflow::Visible
-            || matches!(node.tag.as_str(), "scroll-view" | "swiper");
+            || crate::renderer::components::spec_for(node.tag.as_str()).clips;
         if clips {
             return;
         }

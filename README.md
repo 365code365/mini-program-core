@@ -406,7 +406,7 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }
 
 ```bash
 rm -rf target/mini-storage                 # ① 必做，见下
-cargo test --release                       # ② lib 471 + bin 9
+cargo test --release                       # ② lib 473 + bin 9
 bash tools/damage-check.sh                 # ③ 增量重绘 == 整帧重绘（逐字节）
 cargo run --release --example gallery      # ④ 65 张场景图
 bash tools/tab-click-check.sh              # ⑤ 三个 app 的 tabBar 点击
@@ -466,7 +466,11 @@ src/
 ├── compiler/html/   编译成 HTML 工程（双端对比的参照实现）
 ├── ffi_app.rs       App 级 C ABI（mr_app_*）
 ├── ffi_jni.rs       Android JNI 入口
-└── bin/             桌面宿主：window.rs（winit 适配）+ app_window/（事件适配）
+└── bin/             桌面宿主
+    ├── window.rs      只剩 struct + new() + main()（从前 1877 行装了四件事）
+    └── app_window/    按职责分片：winit_app（winit 适配）/ frame（出帧闸门）/
+                       frame_render（合成上屏）/ page_host（页面栈路由）/
+                       scroll_host / tabbar_host / overlay_host / headless_run
 
 sdk/                 Android（AAR）/ iOS（XCFramework + SPM + CocoaPods）
 tools/               构建与回归脚本

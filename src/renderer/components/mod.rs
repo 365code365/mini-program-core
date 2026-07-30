@@ -26,6 +26,8 @@ mod canvas;
 mod swiper;
 mod rich_text;
 mod picker;
+/// 标签 → 组件行为的唯一登记点（build / draw / 叶子 / 绘制归因）
+pub mod registry;
 mod checkbox_group;
 
 pub use base::*;
@@ -54,6 +56,7 @@ pub use swiper::{SwiperComponent, SwiperItemComponent, SWIPER_MANAGER, swiper_ne
 pub use rich_text::RichTextComponent;
 pub use picker::{PickerComponent, PickerViewComponent, PickerViewColumnComponent, PickerMode, PICKER_MANAGER};
 pub use checkbox_group::{CheckboxGroupComponent, RadioGroupComponent};
+pub use registry::{spec_for, DrawCtx, TagSpec};
 
 
 // 这里曾经有个 `ComponentRegistry::build_component`：**第二份**「标签 → 组件」分派表，

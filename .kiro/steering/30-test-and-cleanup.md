@@ -50,8 +50,17 @@ picker 弹面板、Modal 按钮按压/命中、按压态、长按、手势归属
 **测试产物不清会无限堆积**：每个截图/对比工具都往 `target/<自己起的名字>` 里写，
 跑一轮回归多出几十个目录，实测涨到过 **26GB**（364 个临时目录 + 12GB 的 debug 构建）。
 
+**清 storage 要清两处。** 桌面写 `target/mini-storage/`，而 SDK（`examples/sdk_parity.rs`）
+写 `target/sdk-parity/mini-storage/`。只清桌面那处的下场：news-app 的「已读 N 篇」在 SDK 侧
+一轮轮攒下去，下次 `sdk-parity` 冒出 0.07% 的差异，位置还正好在文字上 —— 看着像渲染改坏了，
+实际是测试数据。`tools/sdk-parity.sh` 已经两处都清，别再手写单独一处。
+
+**基线目录用 `target/baseline_*` 命名**：`clean-target.sh` 对这个前缀留白名单。
+本轮踩了两次 —— 交互基线写在 `target/_ia`，回归后清理带走，下次对比只能报「基线缺图」，
+而重新生成的基线已经是改动**之后**的了，参照物就永远丢了。
+
 ```bash
-bash tools/clean-target.sh            # 清测试产物 + target/debug，保留 release（不用重编）
+bash tools/clean-target.sh            # 清测试产物 + target/debug，保留 release 与 baseline_*
 bash tools/clean-target.sh --targets  # 再清交叉编译目标目录（iOS/Android，约 6GB）
 bash tools/clean-target.sh --all      # 连 cargo 缓存一起清（下次全量重编）
 bash tools/clean-target.sh --dry      # 先看会删什么

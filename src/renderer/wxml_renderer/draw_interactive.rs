@@ -73,137 +73,20 @@ impl WxmlRenderer {
         } else {
             None
         };
-        if let Some(state) = interaction.get_state(&component_id) {
-            match node.tag.as_str() {
-                // switch 的配色由组件自己按进度求值（轨道关态是微信的浅灰，不是纯白）
-                "switch" => {
-                    node_to_draw.style.custom_data = switch_progress.unwrap_or(if state.checked { 1.0 } else { 0.0 });
-                }
-                "checkbox" => {
-                    node_to_draw.style.custom_data = if state.checked { 1.0 } else { 0.0 };
-                    // 更新颜色
-                    let checkbox_color = node.attrs.get("color")
-                        .and_then(|c| crate::renderer::components::parse_color_str(c))
-                        .unwrap_or(Color::from_hex(0x09BB07));
-                    if state.checked {
-                        node_to_draw.style.background_color = Some(checkbox_color);
-                        node_to_draw.style.border_color = Some(checkbox_color);
-                    } else {
-                        node_to_draw.style.background_color = Some(Color::WHITE);
-                        node_to_draw.style.border_color = Some(Color::from_hex(0xD1D1D1));
-                    }
-                }
-                "radio" => {
-                    node_to_draw.style.custom_data = if state.checked { 1.0 } else { 0.0 };
-                    // 更新颜色
-                    let radio_color = node.attrs.get("color")
-                        .and_then(|c| crate::renderer::components::parse_color_str(c))
-                        .unwrap_or(Color::from_hex(0x09BB07));
-                    if state.checked {
-                        node_to_draw.style.background_color = Some(radio_color);
-                        node_to_draw.style.border_color = Some(radio_color);
-                    } else {
-                        node_to_draw.style.background_color = Some(Color::WHITE);
-                        node_to_draw.style.border_color = Some(Color::from_hex(0xD1D1D1));
-                    }
-                }
-                "slider" => {
-                    if let Ok(v) = state.value.parse::<f32>() {
-                        node_to_draw.style.custom_data = v / 100.0;
-                        if !node_to_draw.text.is_empty() {
-                            node_to_draw.text = format!("{}", v as i32);
-                        }
-                    }
-                }
-                "input" | "textarea" => {
-                    // 获取 placeholder
-                    let placeholder = node.attrs.get("placeholder").cloned().unwrap_or_default();
-                    
-                    // 检查是否聚焦
-                    let is_focused = interaction.focused_input.as_ref()
-                        .map(|f| f.id == component_id)
-                        .unwrap_or(false);
-                    
-                    if state.value.is_empty() && !is_focused {
-                        // 没有输入值且未聚焦时显示 placeholder
-                        node_to_draw.text = placeholder;
-                        node_to_draw.style.text_color = Some(Color::from_hex(0xBFBFBF));
-                    } else {
-                        // 有输入值或聚焦时显示实际值（聚焦时即使为空也不显示 placeholder）
-                        node_to_draw.text = state.value.clone();
-                        node_to_draw.style.text_color = Some(Color::BLACK);
-                    }
-                }
-                _ => {}
-            }
-        } else if matches!(node.tag.as_str(), "input" | "textarea") {
-            // 输入框但还没有交互状态，显示 placeholder 或初始值
-            let placeholder = node.attrs.get("placeholder").cloned().unwrap_or_default();
-            let initial_value = Self::input_value_attr(node);
-            
-            if initial_value.is_empty() {
-                node_to_draw.text = placeholder;
-                node_to_draw.style.text_color = Some(Color::from_hex(0xBFBFBF));
-            } else {
-                node_to_draw.text = initial_value;
-            }
-        }
+        // 交互状态落到本帧节点上（三条绘制路径同一份实现，见 interactive.rs）
+        Self::apply_interaction_state(
+            node, &mut node_to_draw, interaction, &component_id, switch_progress,
+        );
         
         // 注册交互元素
         self.register_interactive_element(node, &node_to_draw, &logical_bounds, interaction, taffy, false);
 
         // 绘制组件 - 特殊处理 input 和 button 组件
         match node.tag.as_str() {
-                "input" | "textarea" => {
-                    let focused = interaction.focused_input.as_ref()
-                        .map(|f| f.id == component_id)
-                        .unwrap_or(false);
-                    let (cursor_pos, selection) = if focused {
-                        let f = interaction.focused_input.as_ref().unwrap();
-                        (f.cursor_pos, f.get_selection_range())
-                    } else {
-                        (0, None)
-                    };
-                    InputComponent::draw_with_selection(
-                        &node_to_draw, canvas, self.text_renderer.as_deref(), 
-                        x, y, w, h, sf, focused, cursor_pos, selection
-                    );
-                    
-                    // 更新 text_offset（用于点击位置计算）
-                    if focused {
-                        if let Some(tr) = self.text_renderer.as_deref() {
-                            let font_size = node_to_draw.style.font_size * sf;
-                            let padding_left = 12.0 * sf;
-                            let padding_right = 12.0 * sf;
-                            let available_width = w - padding_left - padding_right;
-                            
-                            let text_width = tr.measure_text(&node_to_draw.text, font_size);
-                            let mut text_offset = 0.0;
-                        if text_width > available_width {
-                            let cursor_text: String = node_to_draw.text.chars().take(cursor_pos).collect();
-                            let cursor_x_in_text = tr.measure_text(&cursor_text, font_size);
-                            
-                            if cursor_x_in_text > available_width {
-                                text_offset = available_width - cursor_x_in_text - font_size;
-                            }
-                        }
-                        
-                        if let Some(input) = &mut interaction.focused_input {
-                            input.text_offset = text_offset;
-                        }
-                    }
-                }
-            }
-            "button" => {
-                let pressed = interaction.is_button_pressed(&component_id);
-                ButtonComponent::draw_with_state(
-                    &node_to_draw, canvas, self.text_renderer.as_deref(),
-                    x, y, w, h, sf, pressed
-                );
-            }
-            _ => {
-                self.draw_component(canvas, &node_to_draw, x, y, w, h, sf);
-            }
+            "input" | "textarea" | "button" => self.draw_interactive_component(
+                canvas, node, &node_to_draw, interaction, &component_id, x, y, w, h, sf,
+            ),
+            _ => self.draw_component(canvas, &node_to_draw, x, y, w, h, sf),
         }
         
         // 绘制子节点
@@ -331,46 +214,8 @@ impl WxmlRenderer {
             node_to_draw.style.text_color = Some(text_color);
         }
         
-        // 应用交互状态
-        if let Some(state) = interaction.get_state(&component_id) {
-            match node.tag.as_str() {
-                "checkbox" | "switch" => {
-                    node_to_draw.style.custom_data = if state.checked { 1.0 } else { 0.0 };
-                    let checkbox_color = node.attrs.get("color")
-                        .and_then(|c| crate::renderer::components::parse_color_str(c))
-                        .unwrap_or(Color::from_hex(0x09BB07));
-                    if state.checked {
-                        node_to_draw.style.background_color = Some(checkbox_color);
-                        node_to_draw.style.border_color = Some(checkbox_color);
-                    } else {
-                        node_to_draw.style.background_color = Some(Color::WHITE);
-                        node_to_draw.style.border_color = Some(Color::from_hex(0xD1D1D1));
-                    }
-                }
-                "radio" => {
-                    node_to_draw.style.custom_data = if state.checked { 1.0 } else { 0.0 };
-                    let radio_color = node.attrs.get("color")
-                        .and_then(|c| crate::renderer::components::parse_color_str(c))
-                        .unwrap_or(Color::from_hex(0x09BB07));
-                    if state.checked {
-                        node_to_draw.style.background_color = Some(radio_color);
-                        node_to_draw.style.border_color = Some(radio_color);
-                    } else {
-                        node_to_draw.style.background_color = Some(Color::WHITE);
-                        node_to_draw.style.border_color = Some(Color::from_hex(0xD1D1D1));
-                    }
-                }
-                "slider" => {
-                    if let Ok(v) = state.value.parse::<f32>() {
-                        node_to_draw.style.custom_data = v / 100.0;
-                        if !node_to_draw.text.is_empty() {
-                            node_to_draw.text = format!("{}", v as i32);
-                        }
-                    }
-                }
-                _ => {}
-            }
-        }
+        // 应用交互状态（与另外两条绘制路径同一份实现，见 interactive.rs）
+        Self::apply_interaction_state(node, &mut node_to_draw, interaction, &component_id, None);
         
         // 绘制组件
         self.draw_component(canvas, &node_to_draw, x, y, w, h, sf);
@@ -441,8 +286,8 @@ impl WxmlRenderer {
         let has_pressed_variant = node.style.pressed_style.is_some();
         let needs_modification = node.style.text_color.is_none() 
             || has_pressed_variant
-            || matches!(node.tag.as_str(), "checkbox" | "switch" | "radio" | "slider" | "input" | "textarea")
-            && interaction.get_state(&component_id).is_some();
+            || crate::renderer::components::spec_for(node.tag.as_str()).stateful
+                && interaction.get_state(&component_id).is_some();
         
         let switch_progress = if node.tag == "switch" {
             interaction
@@ -464,64 +309,10 @@ impl WxmlRenderer {
                 self.apply_pressed_style(&mut modified, interaction, &component_id);
             }
             
-            // 应用交互状态
-            if let Some(state) = interaction.get_state(&component_id) {
-                match node.tag.as_str() {
-                    // switch 的配色由组件自己按进度求值（轨道关态是微信的浅灰，不是纯白）
-                    "switch" => {
-                        modified.style.custom_data = switch_progress.unwrap_or(if state.checked { 1.0 } else { 0.0 });
-                    }
-                    "checkbox" => {
-                        modified.style.custom_data = if state.checked { 1.0 } else { 0.0 };
-                        let checkbox_color = node.attrs.get("color")
-                            .and_then(|c| crate::renderer::components::parse_color_str(c))
-                            .unwrap_or(Color::from_hex(0x09BB07));
-                        if state.checked {
-                            modified.style.background_color = Some(checkbox_color);
-                            modified.style.border_color = Some(checkbox_color);
-                        } else {
-                            modified.style.background_color = Some(Color::WHITE);
-                            modified.style.border_color = Some(Color::from_hex(0xD1D1D1));
-                        }
-                    }
-                    "radio" => {
-                        modified.style.custom_data = if state.checked { 1.0 } else { 0.0 };
-                        let radio_color = node.attrs.get("color")
-                            .and_then(|c| crate::renderer::components::parse_color_str(c))
-                            .unwrap_or(Color::from_hex(0x09BB07));
-                        if state.checked {
-                            modified.style.background_color = Some(radio_color);
-                            modified.style.border_color = Some(radio_color);
-                        } else {
-                            modified.style.background_color = Some(Color::WHITE);
-                            modified.style.border_color = Some(Color::from_hex(0xD1D1D1));
-                        }
-                    }
-                    "slider" => {
-                        if let Ok(v) = state.value.parse::<f32>() {
-                            modified.style.custom_data = v / 100.0;
-                            if !modified.text.is_empty() {
-                                modified.text = format!("{}", v as i32);
-                            }
-                        }
-                    }
-                    "input" | "textarea" => {
-                        let placeholder = node.attrs.get("placeholder").cloned().unwrap_or_default();
-                        let is_focused = interaction.focused_input.as_ref()
-                            .map(|f| f.id == component_id)
-                            .unwrap_or(false);
-                        
-                        if state.value.is_empty() && !is_focused {
-                            modified.text = placeholder;
-                            modified.style.text_color = Some(Color::from_hex(0xBFBFBF));
-                        } else {
-                            modified.text = state.value.clone();
-                            modified.style.text_color = Some(Color::BLACK);
-                        }
-                    }
-                    _ => {}
-                }
-            }
+            // 应用交互状态（唯一一份实现，见 interactive.rs）
+            Self::apply_interaction_state(
+                node, &mut modified, interaction, &component_id, switch_progress,
+            );
             std::borrow::Cow::Owned(modified)
         } else if matches!(node.tag.as_str(), "input" | "textarea") {
             // 输入框但还没有交互状态，显示 placeholder 或初始值
@@ -545,57 +336,10 @@ impl WxmlRenderer {
 
         // 绘制组件 - 特殊处理 input、button 和有点击事件的 view 组件
         match node.tag.as_str() {
-                "input" | "textarea" => {
-                    let focused = interaction.focused_input.as_ref()
-                        .map(|f| f.id == component_id)
-                        .unwrap_or(false);
-                    let (cursor_pos, selection) = if focused {
-                        let f = interaction.focused_input.as_ref().unwrap();
-                        (f.cursor_pos, f.get_selection_range())
-                    } else {
-                        (0, None)
-                    };
-                    InputComponent::draw_with_selection(
-                        &node_to_draw, canvas, self.text_renderer.as_deref(), 
-                        x, y, w, h, sf, focused, cursor_pos, selection
-                    );
-                    
-                    // 更新 text_offset（用于点击位置计算）
-                    if focused {
-                        if let Some(tr) = self.text_renderer.as_deref() {
-                            let font_size = node_to_draw.style.font_size * sf;
-                            let padding_left = 12.0 * sf;
-                            let padding_right = 12.0 * sf;
-                            let available_width = w - padding_left - padding_right;
-                            
-                            let text_width = tr.measure_text(&node_to_draw.text, font_size);
-                            let mut text_offset = 0.0;
-                            
-                            if text_width > available_width {
-                                let cursor_text: String = node_to_draw.text.chars().take(cursor_pos).collect();
-                                let cursor_x_in_text = tr.measure_text(&cursor_text, font_size);
-                                
-                                if cursor_x_in_text > available_width {
-                                    text_offset = available_width - cursor_x_in_text - font_size;
-                                }
-                            }
-                            
-                            if let Some(input) = &mut interaction.focused_input {
-                                input.text_offset = text_offset;
-                            }
-                        }
-                    }
-                }
-                "button" => {
-                let pressed = interaction.is_button_pressed(&component_id);
-                ButtonComponent::draw_with_state(
-                    &node_to_draw, canvas, self.text_renderer.as_deref(),
-                    x, y, w, h, sf, pressed
-                );
-            }
-            _ => {
-                self.draw_component(canvas, &node_to_draw, x, y, w, h, sf);
-            }
+            "input" | "textarea" | "button" => self.draw_interactive_component(
+                canvas, node, &node_to_draw, interaction, &component_id, x, y, w, h, sf,
+            ),
+            _ => self.draw_component(canvas, &node_to_draw, x, y, w, h, sf),
         }
         
         if Self::draws_children(node) {

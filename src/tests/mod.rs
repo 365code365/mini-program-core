@@ -29,3 +29,5 @@ pub mod memory_tests;
 pub mod input_caret_tests;
 /// 移动端 SDK（MiniEngine）的指针链路：手势仲裁 / tabBar / picker / Modal
 pub mod engine_input_tests;
+/// scroll-view 离屏缓存里的有状态组件（占位符 / 开关进度）
+pub mod scroll_cache_state_tests;

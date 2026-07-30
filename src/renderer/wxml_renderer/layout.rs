@@ -282,29 +282,8 @@ impl WxmlRenderer {
             has_positioned_ancestor: positioned_ancestor,
         };
         
-        let mut render_node = match tag {
-            "text" => TextComponent::build(node, &mut ctx),
-            "button" => ButtonComponent::build(node, &mut ctx),
-            "icon" => IconComponent::build(node, &mut ctx),
-            "progress" => ProgressComponent::build(node, &mut ctx),
-            "switch" => SwitchComponent::build(node, &mut ctx),
-            "checkbox" => CheckboxComponent::build(node, &mut ctx),
-            "checkbox-group" => CheckboxGroupComponent::build(node, &mut ctx),
-            "radio" => RadioComponent::build(node, &mut ctx),
-            "radio-group" => RadioGroupComponent::build(node, &mut ctx),
-            "slider" => SliderComponent::build(node, &mut ctx),
-            "input" | "textarea" => InputComponent::build(node, &mut ctx),
-            "image" => ImageComponent::build(node, &mut ctx),
-            "video" => VideoComponent::build(node, &mut ctx),
-            "canvas" => CanvasComponent::build(node, &mut ctx),
-            "swiper" => SwiperComponent::build(node, &mut ctx),
-            "swiper-item" => SwiperItemComponent::build(node, &mut ctx),
-            "rich-text" => RichTextComponent::build(node, &mut ctx),
-            "picker" => PickerComponent::build(node, &mut ctx),
-            "picker-view" => PickerViewComponent::build(node, &mut ctx),
-            "picker-view-column" => PickerViewColumnComponent::build(node, &mut ctx),
-            _ => ViewComponent::build(node, &mut ctx),
-        };
+        // 建树分派：标签 → 组件在 components::registry 那张表里（唯一登记点）
+        let mut render_node = (crate::renderer::components::spec_for(tag).build)(node, &mut ctx);
         
         // `<button>` 在微信里是普通容器：里面写 `<text class="…">` 时，那段文字的
         // 颜色/字号/字重由它自己的 CSS 说的算。一律当叶子会把子树整个吞掉、
@@ -456,14 +435,12 @@ impl WxmlRenderer {
         !Self::is_leaf_component(&node.tag) || !node.children.is_empty()
     }
 
+    /// 是否是叶子组件（自己把内容合成掉，渲染器不再遍历子节点）。
+    ///
+    /// 清单在 `components::registry` 那张表里 —— 从前这里另写了一份 13 个标签的
+    /// `matches!`，与 build / draw 的分派各自维护，漏一处就会「子节点画两遍」。
     pub(super) fn is_leaf_component(tag: &str) -> bool {
-        // rich-text / picker 不再是叶子：rich-text 自建带样式的文本片段子树；
-        // picker 渲染其子元素（触发视图，如“当前选择：xxx”）而非合成占位 UI。
-        matches!(tag, 
-            "text" | "button" | "icon" | "progress" | "switch" | 
-            "checkbox" | "radio" | "slider" | "input" | "textarea" | "image" | "video" | "canvas" |
-            "picker-view-column"
-        )
+        crate::renderer::components::spec_for(tag).leaf
     }
     
     pub(super) fn measure_text(&self, text: &str, size: f32) -> f32 {

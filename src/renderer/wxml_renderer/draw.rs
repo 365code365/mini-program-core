@@ -152,42 +152,24 @@ impl WxmlRenderer {
     }
 
     pub(super) fn draw_component(&self, canvas: &mut Canvas, node: &RenderNode, x: f32, y: f32, w: f32, h: f32, sf: f32) {
+        // 标签 → 绘制实现与耗时归因分类都来自同一张表（components::registry）。
+        // 从前这里是两个各自维护的 match：一个 19 条分派、一个 10 条归因名 ——
+        // 加组件时漏掉归因那条，它的耗时就悄悄落进「其它」。
+        let spec = crate::renderer::components::spec_for(node.tag.as_str());
         // 绘制耗时按组件类型归因（`MINI_DRAW_LOG=1`）：一帧 8ms 里到底是图片重采样贵、
         // 还是上百个文字光栅化贵，只有摊开才知道该优化哪里。关掉时零开销。
-        let _t = crate::renderer::draw_profile::Timer::start(match node.tag.as_str() {
-            "#text" | "text" => "text",
-            "image" => "image",
-            "view" | "" => "view",
-            "scroll-view" => "scroll-view",
-            "swiper" => "swiper",
-            "button" => "button",
-            "input" | "textarea" => "input",
-            "canvas" => "canvas",
-            "video" => "video",
-            _ => "其它",
-        });
-        match node.tag.as_str() {
-            "#text" | "text" => TextComponent::draw(node, canvas, self.text_renderer.as_deref(), x, y, w, h, sf),
-            "button" => ButtonComponent::draw(node, canvas, self.text_renderer.as_deref(), x, y, w, h, sf),
-            "icon" => IconComponent::draw(node, canvas, x, y, w, h, sf),
-            "progress" => ProgressComponent::draw(node, canvas, self.text_renderer.as_deref(), x, y, w, h, sf),
-            "switch" => SwitchComponent::draw(node, canvas, x, y, w, h, sf),
-            "checkbox" => CheckboxComponent::draw(node, canvas, x, y, w, h, sf),
-            "checkbox-group" => CheckboxGroupComponent::draw(node, canvas, x, y, w, h, sf),
-            "radio" => RadioComponent::draw(node, canvas, x, y, w, h, sf),
-            "radio-group" => RadioGroupComponent::draw(node, canvas, x, y, w, h, sf),
-            "slider" => SliderComponent::draw(node, canvas, self.text_renderer.as_deref(), x, y, w, h, sf),
-            "input" | "textarea" => InputComponent::draw(node, canvas, self.text_renderer.as_deref(), x, y, w, h, sf),
-            "image" => ImageComponent::draw(node, canvas, self.text_renderer.as_deref(), x, y, w, h, sf),
-            "video" => VideoComponent::draw(node, canvas, self.text_renderer.as_deref(), x, y, w, h, sf),
-            "canvas" => CanvasComponent::draw(node, canvas, x, y, w, h, sf),
-            // swiper 的背景由通用路径绘制；子项与指示点见 draw_swiper_container
-            "swiper" => draw_background(canvas, &node.style, x, y, w, h),
-            "rich-text" => RichTextComponent::draw(node, canvas, self.text_renderer.as_deref(), x, y, w, h, sf),
-            "picker" => PickerComponent::draw(node, canvas, self.text_renderer.as_deref(), x, y, w, h, sf),
-            "picker-view" => PickerViewComponent::draw(node, canvas, self.text_renderer.as_deref(), x, y, w, h, sf),
-            _ => ViewComponent::draw(node, canvas, x, y, w, h, sf),
-        }
+        let _t = crate::renderer::draw_profile::Timer::start(spec.profile);
+        let mut ctx = crate::renderer::components::DrawCtx {
+            node,
+            canvas,
+            text: self.text_renderer.as_deref(),
+            x,
+            y,
+            w,
+            h,
+            sf,
+        };
+        (spec.draw)(&mut ctx);
     }
     
     pub(super) fn draw(&mut self, canvas: &mut Canvas, taffy: &Tree, node: &RenderNode, ox: f32, oy: f32) {

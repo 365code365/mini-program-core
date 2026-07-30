@@ -12,6 +12,23 @@ pub mod pointer_input;
 pub mod touch_dispatch;
 pub mod edge_back_host;
 pub mod headless_script;
+// ── 窗体本体按职责拆成的几片（都是 `impl crate::MiniAppWindow`）──
+/// winit 事件 → 窗体调用的适配层（唯一认识 winit 类型的地方）
+pub mod winit_app;
+/// 出帧闸门与帧内推进
+pub mod frame;
+/// 整帧渲染与上屏合成
+pub mod frame_render;
+/// 页面栈、路由与画布/渲染器重建
+pub mod page_host;
+/// 滚动与下拉刷新的宿主侧
+pub mod scroll_host;
+/// tabBar 的归属判定与绘制
+pub mod tabbar_host;
+/// 覆盖层交互入口（Modal / picker / 点击分流）
+pub mod overlay_host;
+/// 无头运行：整帧快照与拖动基准
+pub mod headless_run;
 
 // ── 从 lib 的宿主层重新导出（同一份实现）──
 pub use mini_render::host::{

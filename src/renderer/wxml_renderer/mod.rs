@@ -11,13 +11,7 @@ use std::collections::HashMap;
 use taffy::prelude::*;
 
 use crate::renderer::components::{
-    RenderNode, NodeStyle, ComponentContext, InheritedText, TextAlign,
-    ViewComponent, TextComponent, ButtonComponent, IconComponent,
-    ProgressComponent, SwitchComponent, CheckboxComponent, RadioComponent,
-    SliderComponent, InputComponent, ImageComponent, VideoComponent,
-    CanvasComponent, SwiperComponent, SwiperItemComponent, RichTextComponent,
-    PickerComponent, PickerViewComponent, PickerViewColumnComponent,
-    CheckboxGroupComponent, RadioGroupComponent,
+    RenderNode, NodeStyle, ComponentContext, InheritedText, TextAlign, ButtonComponent, InputComponent, SwiperComponent,
     build_base_style, Tree, TextMeasure, measure_text_node, draw_background,
 };
 
@@ -211,6 +205,8 @@ mod entry;
 mod fixed_layer;
 mod hit_test;
 mod interactions;
+/// 有状态组件的状态落地与带交互的绘制（唯一一份，三条绘制路径共用）
+mod interactive;
 mod invalidate;
 pub use invalidate::FramePlan;
 pub(super) mod layout;

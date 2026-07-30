@@ -21,6 +21,10 @@ before=$(du -sk target | awk '{print $1}')
 keep_dir() {
     case "$1" in
         debug|release|package|tmp|doc|CACHEDIR.TAG|.rustc_info.json|.cargo-lock) return 0 ;;
+        # 回归基线：`baseline_*` 是**要留的**。它们不是一次性产物，而是
+        # 「改动前后逐像素对比」的参照物；被清掉之后对比只会报「基线缺图」，
+        # 而重新生成的基线已经是改动之后的了 —— 等于永远失去了参照。
+        baseline_*) return 0 ;;
         # 交叉编译目标：aarch64-apple-ios / aarch64-linux-android / x86_64-pc-windows-msvc …
         *-apple-*|*-linux-*|*-pc-windows-*|*-unknown-*) return 0 ;;
         *) return 1 ;;

@@ -3,8 +3,12 @@
 # 两者都绕过**指针层与覆盖层**（picker 面板、Modal 按钮、按压态、手势仲裁）。
 # 重构这两层时，这里是唯一的判据。
 #
-#   bash tools/interaction-check.sh <输出目录>          # 出图 + 跑行为断言
-#   bash tools/interaction-check.sh <目录A> <目录B>     # 出图到 A 并与 B 逐像素比
+#   bash tools/interaction-check.sh                         # 出图到 target/baseline_ia
+#   bash tools/interaction-check.sh <目录A> <目录B>          # 出图到 A 并与基线 B 逐像素比
+#
+# 基线放在 `target/baseline_*` 下：`clean-target.sh` 对这个前缀留了白名单，
+# 不会被回归后的清理带走 —— 被带走的话下一次对比只能报「基线缺图」，
+# 而重新生成的基线已经是改动**之后**的了，参照物就永远丢了（这轮踩了两次）。
 #
 # ## 哪些能比像素、哪些不能
 # 拖动惯性与 CSS/面板的入场动画按**真实时间**推进，同一条命令跑两次结果本来就不同
@@ -14,7 +18,7 @@
 #   · 手势归属这类**时间相关**的行为改用日志断言（MINI_SCROLL_LOG），比像素稳。
 set -u
 cd "$(dirname "$0")/.."
-OUT="${1:-target/_ia}"
+OUT="${1:-target/baseline_ia}"
 CMP="${2:-}"
 BIN=./target/release/mini-app-window
 [ -x "$BIN" ] || { echo "先 cargo build --release"; exit 1; }
