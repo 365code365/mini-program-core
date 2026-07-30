@@ -10,9 +10,16 @@
 //! **与平台无关的宿主逻辑**沉到 `crate::host`（页面加载、页面栈、覆盖层、触摸
 //! 状态机、像素合成都在那里），窗体和本引擎共用同一份，避免行为分叉。
 //!
-//! ## 与桌面窗体的差异（v1 已知范围）
-//! 每帧走**整帧重绘**，没有接桌面那套损伤区/局部重绘；picker 面板与侧滑返回
-//! 也还没接进来。像素一致性由 `tools/sdk-parity.sh` 对照桌面基线守着。
+//! ## 与桌面窗体的差异（当前已知范围）
+//! 每帧走**整帧重绘**，没有接桌面那套损伤区/局部重绘；**左边缘侧滑返回**还没接
+//! （它要给被覆盖的页留一张视口图，属于宿主侧的帧管理）。
+//!
+//! 指针输入、手势仲裁、picker 面板、Modal 命中现在与桌面**共用同一份**
+//! （`host::input` / `host::picker_sheet` / `host::ui_overlay`）。这条边界有两道守卫：
+//! 静态像素由 `tools/sdk-parity.sh` 对照桌面基线，输入行为由
+//! `src/tests/engine_input_tests.rs` 直接驱动本引擎（手势归属、tabBar、picker、Modal）。
+//! 只靠像素守不住输入 —— 它们分叉过一次而没人发现：本引擎的指针层曾是简化版
+//! （无方向锁定、无嵌套交接、无 picker），静态截图一模一样，手上完全不是一回事。
 
 use crate::host::{
     component_mount, load_all_pages, page_loader, remove_manual_tabbar, tabbar_height,
@@ -47,6 +54,14 @@ pub struct MiniEngine {
     pub(crate) interaction: InteractionManager,
     pub(crate) scroll: ScrollController,
     pub(crate) touch: crate::host::touch::TouchTracker,
+    /// 拖动手势仲裁（方向锁定 / 嵌套传递 / catchtouchmove），与桌面窗体同一份实现
+    pub(crate) gesture: Option<crate::host::gesture::DragGesture>,
+    /// `<picker>` 弹出的底部面板（微信里是原生浮层）
+    pub(crate) picker_sheet: Option<crate::host::picker_sheet::PickerSheetState>,
+    /// 按下瞬间的页面滚动位置：用来判断「滚动是否已经接管这次触摸」
+    pub(crate) scroll_pos_at_press: f32,
+    /// 这次触摸是用来「停住惯性滚动」的：抬手时不该再算一次点击
+    pub(crate) tap_stops_fling: bool,
     pub(crate) toast: Option<ToastState>,
     pub(crate) loading: Option<LoadingState>,
     pub(crate) modal: Option<ModalState>,
@@ -130,6 +145,10 @@ impl MiniEngine {
             interaction: InteractionManager::new(),
             scroll: ScrollController::new(vp, vp),
             touch: crate::host::touch::TouchTracker::new(),
+            gesture: None,
+            picker_sheet: None,
+            scroll_pos_at_press: 0.0,
+            tap_stops_fling: false,
             toast: None,
             loading: None,
             modal: None,
@@ -169,6 +188,34 @@ impl MiniEngine {
 
     pub fn current_route(&self) -> String {
         self.page_stack.last().map(|p| p.path.clone()).unwrap_or_default()
+    }
+
+    /// 当前页面的滚动位置（逻辑像素）。宿主用它做「返回时恢复位置」之类的事，
+    /// 也是无头测试判断「这一划到底滚没滚」的唯一手段。
+    pub fn scroll_position(&self) -> f32 {
+        self.scroll.get_position()
+    }
+
+    /// 直接把页面滚到某个位置（深链进来要落到某一屏、或恢复上次的位置）
+    pub fn scroll_to(&mut self, y: f32) {
+        self.scroll.set_position(y);
+        self.needs_redraw = true;
+    }
+
+    /// 当前是否有 `<picker>` 的底部面板 / `wx.showModal` 的弹窗盖着。
+    ///
+    /// 宿主的返回键要看它：微信里弹窗盖着时按返回是**关弹窗**，不是退页面。
+    pub fn picker_sheet_open(&self) -> bool {
+        self.picker_sheet.as_ref().map(|s| s.visible && !s.closing).unwrap_or(false)
+    }
+
+    pub fn modal_open(&self) -> bool {
+        self.modal.as_ref().map(|m| m.visible).unwrap_or(false)
+    }
+
+    /// 在逻辑层执行一段 JS（宿主的深链参数注入、无头测试的断言都要用）
+    pub fn eval(&self, code: &str) -> Result<String, String> {
+        self.app.eval(code)
     }
 
     pub fn page_depth(&self) -> usize {
@@ -326,6 +373,13 @@ impl MiniEngine {
             if let Some((x, y)) = self.touch.pos() {
                 self.dispatch_touch(&outs, x, y);
             }
+        }
+        // picker 面板的入场/退场动画按帧推进，走完就回收
+        if self.picker_sheet.as_ref().map(|s| s.animating()).unwrap_or(false) {
+            self.needs_redraw = true;
+        }
+        if crate::host::picker_sheet::reap(&mut self.picker_sheet) {
+            self.needs_redraw = true;
         }
         self.caret_tick();
         if !self.needs_redraw && !self.interaction.has_focused_input() {
@@ -486,6 +540,17 @@ impl MiniEngine {
             &self.modal,
             self.text.as_deref(),
         );
+        // picker 面板画在最上层（与桌面窗体同一份绘制）
+        if let Some(sheet) = &self.picker_sheet {
+            crate::host::picker_sheet::render(
+                &mut self.compose[..],
+                pw,
+                ph,
+                self.dpr,
+                sheet,
+                self.text.as_deref(),
+            );
+        }
         // u32(0xRRGGBB) → RGBA8
         if self.rgba.len() != n * 4 {
             self.rgba = vec![255u8; n * 4];

@@ -13,8 +13,8 @@ use super::events::mouse;
 use super::interaction_handler::{handle_interaction_result, check_navigation, print_js_output};
 
 
-// Modal 的布局与按钮命中已经搬进 `mini_render::host::ui_overlay`（与移动端 SDK 共用）
-pub use mini_render::host::ui_overlay::{modal_button_at, modal_layout, ModalLayout};
+// Modal 的布局与按钮命中在 `mini_render::host::ui_overlay`（与移动端 SDK 共用），
+// tabBar 命中在 `mini_render::host::tabbar::nav_at` —— 这里只剩内容区点击的胶水。
 
 /// 处理内容区域点击
 #[allow(clippy::too_many_arguments)]

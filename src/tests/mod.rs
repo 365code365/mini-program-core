@@ -27,3 +27,5 @@ pub mod image_event_tests;
 pub mod wxss_feature_tests;
 pub mod memory_tests;
 pub mod input_caret_tests;
+/// 移动端 SDK（MiniEngine）的指针链路：手势仲裁 / tabBar / picker / Modal
+pub mod engine_input_tests;

@@ -1025,6 +1025,11 @@ impl MiniAppWindow {
         }
     }
     
+    /// 视口的逻辑尺寸（弹窗等覆盖层的居中算式要用）
+    fn viewport_logical(&self) -> (f32, f32) {
+        (LOGICAL_WIDTH as f32, LOGICAL_HEIGHT as f32)
+    }
+
     fn handle_click(&mut self, x: f32, y: f32) {
         if self.picker_sheet.as_ref().map(|s| s.visible).unwrap_or(false) { return; }
         if self.modal.as_ref().map(|m| m.visible).unwrap_or(false) { self.handle_modal_click(x, y); return; }
@@ -1037,11 +1042,12 @@ impl MiniAppWindow {
         let tabbar_y = if has_tabbar { (LOGICAL_HEIGHT - tabbar_height()) as f32 } else { LOGICAL_HEIGHT as f32 };
         
         if has_tabbar && y >= tabbar_y {
-            let nav = if self.is_custom_tabbar() {
-                click::handle_custom_tabbar_click(x, y - tabbar_y, self.tabbar_renderer.as_ref(), &page.path)
-            } else {
-                self.app_config.tab_bar.as_ref().and_then(|tb| click::handle_native_tabbar_click_wrapper(x, tb, &page.path))
-            };
+            let nav = app_window::tabbar::nav_at(
+                x, y - tabbar_y,
+                if self.is_custom_tabbar() { self.tabbar_renderer.as_ref() } else { None },
+                self.app_config.tab_bar.as_ref(),
+                &page.path,
+            );
             if let Some(n) = nav { self.pending_navigation = Some(n); if let Some(w) = &self.window { w.request_redraw(); } }
         } else {
             let tap_ctx = (self.touch.identifier(), self.event_time_ms());
@@ -1054,30 +1060,22 @@ impl MiniAppWindow {
     }
     
     fn handle_modal_press(&mut self, x: f32, y: f32) -> bool {
-        let modal = match &self.modal { Some(m) if m.visible => m, _ => return false };
-        let layout = click::calculate_modal_layout(modal, self.scale_factor as f32, self.text_renderer.as_deref());
-        if let Some(btn) = click::detect_modal_button(x, y, &layout, modal.show_cancel) {
-            if let Some(m) = &mut self.modal { m.pressed_button = Some(btn); }
+        let vp = self.viewport_logical();
+        let sf = self.scale_factor as f32;
+        let Self { modal, text_renderer, .. } = self;
+        let consumed = ui_overlay::modal_press(modal, vp, sf, text_renderer.as_deref(), x, y);
+        if consumed {
             self.needs_redraw = true;
             if let Some(w) = &self.window { w.request_redraw(); }
-            return true;
         }
-        false
+        consumed
     }
     
     fn handle_modal_release(&mut self, x: f32, y: f32) {
-        let pressed = self.modal.as_ref().and_then(|m| m.pressed_button.clone());
-        if let Some(m) = &mut self.modal { m.pressed_button = None; }
-        let modal = match &self.modal { Some(m) if m.visible => m, _ => return };
-        let layout = click::calculate_modal_layout(modal, self.scale_factor as f32, self.text_renderer.as_deref());
-        if let Some(btn) = click::detect_modal_button(x, y, &layout, modal.show_cancel) {
-            if pressed.as_deref() == Some(&btn) {
-                let code = if btn == "cancel" { "if(__modalCallback) __modalCallback({ confirm: false, cancel: true })" }
-                           else { "if(__modalCallback) __modalCallback({ confirm: true, cancel: false })" };
-                self.app.eval(code).ok();
-                self.modal = None;
-            }
-        }
+        let vp = self.viewport_logical();
+        let sf = self.scale_factor as f32;
+        let Self { modal, app, text_renderer, .. } = self;
+        ui_overlay::modal_release(modal, app, vp, sf, text_renderer.as_deref(), x, y);
         self.needs_redraw = true;
         if let Some(w) = &self.window { w.request_redraw(); }
     }
@@ -1086,94 +1084,45 @@ impl MiniAppWindow {
 
     /// 点击落在某个 `<picker>` 上时弹出底部选择面板。返回是否弹出了面板。
     fn open_picker_if_hit(&mut self, x: f32, y: f32) -> bool {
-        let scroll = self.scroll.get_position();
-        let on_fixed_layer = self.renderer.as_ref().map(|r| r.fixed_layer_hit(x, y)).unwrap_or(false);
-        let binding = self.renderer.as_ref().and_then(|r| {
-            // 覆盖层上的 picker 用视口坐标；正常流的用内容坐标（y + 滚动量）
-            r.picker_hit(x, y, true)
-                .or_else(|| if on_fixed_layer { None } else { r.picker_hit(x, y + scroll, false) })
-                .cloned()
-        });
-        let Some(binding) = binding else {
-            if std::env::var("MINI_PICKER_LOG").is_ok() {
-                if let Some(r) = &self.renderer {
-                    eprintln!("PICKER miss @({},{}) scroll={} regions={:?}", x, y, scroll,
-                        r.picker_regions().iter().map(|p| (p.id.clone(), p.bounds)).collect::<Vec<_>>());
-                }
-            }
-            return false;
-        };
-        println!("👆 picker -> 打开选择面板 mode={}", binding.mode);
-        let sheet = picker_sheet::build(&binding);
-        self.picker_sheet = Some(sheet);
-        self.needs_redraw = true;
-        if let Some(w) = &self.window { w.request_redraw(); }
-        true
+        let sheet = picker_sheet::open_if_hit(
+            self.renderer.as_ref(), self.scroll.get_position(), x, y,
+        );
+        let opened = sheet.is_some();
+        if opened {
+            self.picker_sheet = sheet;
+            self.needs_redraw = true;
+            if let Some(w) = &self.window { w.request_redraw(); }
+        }
+        opened
     }
 
     /// 面板可见时的按下：记录按压的头部按钮以给出反馈。返回是否消费了事件。
     fn handle_picker_sheet_press(&mut self, x: f32, y: f32) -> bool {
-        let Some(sheet) = &mut self.picker_sheet else { return false };
-        if !sheet.visible { return false; }
-        let hit = picker_sheet::hit_test(sheet, x, y);
-        sheet.pressed = match hit {
-            picker_sheet::SheetHit::Cancel | picker_sheet::SheetHit::Confirm => Some(hit),
-            _ => None,
-        };
-        self.needs_redraw = true;
-        if let Some(w) = &self.window { w.request_redraw(); }
-        true
+        let consumed = picker_sheet::on_press(&mut self.picker_sheet, x, y);
+        if consumed {
+            self.needs_redraw = true;
+            if let Some(w) = &self.window { w.request_redraw(); }
+        }
+        consumed
     }
 
     /// 面板可见时的抬手：确定/取消/选项滚动/点遮罩关闭。返回是否消费了事件。
     fn handle_picker_sheet_release(&mut self, x: f32, y: f32) -> bool {
-        let Some(sheet) = &mut self.picker_sheet else { return false };
-        if !sheet.visible { return false; }
-        sheet.pressed = None;
-        // 退场动画进行中时，只吞事件不再响应
-        if sheet.closing {
-            return true;
+        let consumed = picker_sheet::on_release(&mut self.picker_sheet, &mut self.app, x, y);
+        if consumed {
+            self.needs_redraw = true;
+            if let Some(w) = &self.window { w.request_redraw(); }
         }
-        let hit = picker_sheet::hit_test(sheet, x, y);
-        match hit {
-            picker_sheet::SheetHit::Confirm => {
-                let value = sheet.change_value();
-                let handler = sheet.handler.clone();
-                let labels = sheet.picked_labels().join(" ");
-                sheet.begin_close();
-                if let Some(handler) = handler {
-                    // `__callPageMethod` 的第二个参数就是 dataset，事件对象里 `detail` 直接指向它。
-                    // 多包一层 `{detail:{...}}` 会让页面拿到 `e.detail.detail.value`，
-                    // 于是 `e.detail.value` 是 undefined —— 选了「选项二」按确定却没反应就是这个。
-                    let payload = serde_json::json!({ "value": value });
-                    println!("👆 picker 确定 -> {} value={} ({})", handler, value, labels);
-                    let code = format!("__callPageMethod('{}', {})", handler, payload);
-                    self.app.eval(&code).ok();
-                }
-            }
-            picker_sheet::SheetHit::Cancel | picker_sheet::SheetHit::Mask => {
-                sheet.begin_close();
-            }
-            picker_sheet::SheetHit::Item { col, delta } => {
-                sheet.move_selection(col, delta);
-                if delta != 0 {
-                    picker_sheet::relink_region(sheet, col);
-                }
-            }
-        }
-        self.needs_redraw = true;
-        if let Some(w) = &self.window { w.request_redraw(); }
-        true
+        consumed
     }
 
     /// 退场动画走完后丢弃面板
     fn reap_picker_sheet(&mut self) {
-        if self.picker_sheet.as_ref().map(|s| s.finished_closing()).unwrap_or(false) {
-            self.picker_sheet = None;
+        if picker_sheet::reap(&mut self.picker_sheet) {
             self.needs_redraw = true;
         }
     }
-    
+
     fn process_navigation(&mut self) {
         if let Some(nav) = self.pending_navigation.take() {
             match nav {

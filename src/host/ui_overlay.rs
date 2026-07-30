@@ -591,12 +591,15 @@ pub fn modal_release(
     let show_cancel = m.show_cancel;
     if let Some(btn) = modal_button_at(x, y, &layout, show_cancel) {
         if pressed.as_deref() == Some(btn.as_str()) {
-            let code = if btn == "cancel" {
-                "if(__modalCallback) __modalCallback({ confirm: false, cancel: true })"
-            } else {
-                "if(__modalCallback) __modalCallback({ confirm: true, cancel: false })"
-            };
-            app.eval(code).ok();
+            // 必须走 JS 侧的 `__handleModalResult(confirm)`：它负责调 success/complete
+            // 并清掉 `__modalVisible/__modalConfig/__modalCallback`。
+            //
+            // 桌面窗体从前写的是 `__modalCallback({confirm:...})` —— 而
+            // `__modalCallback` 存的是 `wx.showModal` 的 **options 对象**，
+            // 当函数调直接 TypeError，于是 success 回调一次都没执行过
+            // （点「确定」只是弹窗消失，业务什么也没发生）。
+            let confirm = if btn == "cancel" { "false" } else { "true" };
+            app.eval(&format!("__handleModalResult({confirm})")).ok();
             *modal = None;
         }
     }

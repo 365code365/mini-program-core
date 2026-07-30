@@ -4,7 +4,7 @@ inclusion: always
 
 # 测试与回归：怎么证明改动没坏东西，以及跑完必须清理
 
-## 每次改动后必须跑的六项
+## 每次改动后必须跑的七项
 
 ```bash
 . "$HOME/.cargo/env"
@@ -14,8 +14,9 @@ cargo test --release                       # ② 单测
 bash tools/damage-check.sh                 # ③ 增量重绘 == 整帧重绘（逐字节）
 cargo run --release --example gallery      # ④ 65 张场景图
 bash tools/tab-click-check.sh              # ⑤ 三个 app 的 tabBar 点击（必须 --touch）
-bash tools/sdk-parity.sh                   # ⑥ 移动端 SDK 与桌面窗体逐像素一致
-bash tools/clean-target.sh                 # ⑦ 收尾清理（见下）
+bash tools/sdk-parity.sh                   # ⑥ 移动端 SDK 与桌面窗体逐像素一致（静态页）
+bash tools/interaction-check.sh target/_ia # ⑦ 指针层与覆盖层（picker/Modal/按压/手势）
+bash tools/clean-target.sh                 # ⑧ 收尾清理（见下）
 ```
 
 涉及渲染/样式/布局时，再加逐页快照 + 双端对比：
@@ -27,6 +28,22 @@ bash tools/snapshot-all.sh sample/news-app target/fin2_news   --settle 0 --time 
 ```
 
 判据与逐项清单见 `doc/引擎测试说明.md`。
+
+## 改指针层 / 覆盖层时的两条额外要求
+
+**① 静态像素守不住输入。** `snapshot-all` 只出静态页、`damage-check` 只走 `--eval`，
+两者都绕过指针链路。`bash tools/interaction-check.sh <目录> [基线目录]` 是唯一的判据：
+picker 弹面板、Modal 按钮按压/命中、按压态、长按、手势归属。它自带**空转守卫** ——
+坐标落空一像素，面板就没弹出来，快照退化成普通页面、前后自然一致，于是「全绿但没测到」
+（`damage-check` 第一版就这么空转过）。守卫要求「弹出 vs 没弹出」至少差 20% 像素。
+
+**② 时间相关的场景不要比像素。** 拖动惯性、面板入场动画、每秒 setData 的倒计时都按
+墙上时钟走：同一个二进制跑两次 `--drag 8x30` 实测差 **24%** 像素。所以能比像素的场景
+一律「等动画落定 + 避开倒计时页面」，手势归属这类改用 `MINI_SCROLL_LOG` 的日志断言。
+
+**③ SDK 的输入要单独测。** 桌面窗体与 `MiniEngine` 共用 `host::input`，但共用是靠
+`src/tests/engine_input_tests.rs` 守着的（直接驱动引擎跑手势/tabBar/picker/Modal）。
+这两条链路分叉过一次而没人发现：引擎那份是简化版，静态截图一模一样。
 
 ## 跑完必须清 target/
 
