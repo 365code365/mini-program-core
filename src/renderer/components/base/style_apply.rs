@@ -1,0 +1,791 @@
+//! 声明落地：取值换算、声明排序、build_base_style 与逐属性应用
+//!
+//! 由 `base/mod.rs` 组合。**纯搬迁**：从 1925 行的 base.rs 按职责切开，一行代码没改。
+use super::*;
+
+/// 将 StyleValue 转换为像素值
+/// 定位偏移所在的轴（决定百分比在「相对视口」场景下参照宽还是高）
+
+#[derive(Clone, Copy, PartialEq)]
+pub enum Axis {
+    Horizontal,
+    Vertical,
+}
+
+/// 写入一条 `top/right/bottom/left`。
+///
+/// - 百分比 → `LengthPercentageAuto::Percent`，由布局引擎按包含块解析（CSS 语义）
+/// - `auto` → `LengthPercentageAuto::auto()`
+/// - 其它长度 → 像素
+///
+/// 同时记录一份「相对视口」的像素值给 `position:fixed` 的固定层使用。
+fn set_inset(
+    value: &StyleValue,
+    ctx: &ComponentContext,
+    sf: f32,
+    axis: Axis,
+    slot: &mut LengthPercentageAuto,
+    fixed_slot: &mut Option<f32>,
+) {
+    let viewport = if axis == Axis::Horizontal { ctx.screen_width } else { ctx.screen_height };
+    match value {
+        StyleValue::Auto => {
+            *slot = LengthPercentageAuto::auto();
+            *fixed_slot = None;
+        }
+        StyleValue::Length(n, LengthUnit::Percent) => {
+            *slot = LengthPercentageAuto::percent(*n / 100.0);
+            *fixed_slot = Some(*n / 100.0 * viewport * sf);
+        }
+        _ => {
+            let px = match value {
+                StyleValue::Number(n) => Some(*n),
+                other => to_px(other, ctx.screen_width, viewport),
+            };
+            if let Some(px) = px {
+                *slot = LengthPercentageAuto::length(px * sf);
+                *fixed_slot = Some(px * sf);
+            }
+        }
+    }
+}
+
+pub fn to_px(v: &StyleValue, screen_width: f32, screen_height: f32) -> Option<f32> {
+    match v {
+        StyleValue::Length(n, u) => Some(match u {
+            LengthUnit::Px => *n,
+            LengthUnit::Rpx => rpx_to_px(*n, screen_width),
+            LengthUnit::Percent => *n / 100.0 * screen_width,
+            LengthUnit::Em | LengthUnit::Rem => *n * 16.0,
+            LengthUnit::Vw => *n / 100.0 * screen_width,
+            LengthUnit::Vh => *n / 100.0 * screen_height,
+        }),
+        StyleValue::Number(n) => Some(*n),
+        _ => None,
+    }
+}
+
+/// 将 StyleValue 转换为 Dimension
+pub fn to_dimension(v: &StyleValue, screen_width: f32, screen_height: f32, sf: f32) -> Option<Dimension> {
+    match v {
+        StyleValue::Auto => Some(Dimension::auto()),
+        StyleValue::Length(n, LengthUnit::Percent) => Some(percent(*n / 100.0)),
+        _ => to_px(v, screen_width, screen_height).map(|px| length(px * sf)),
+    }
+}
+
+/// 一条声明的落地优先序：**简写在前，细项在后**。
+///
+/// 级联把所有中选规则合并成一张 map，简写与细项的先后关系在这一步就丢了。
+/// 于是 `.dot{border:2rpx solid #ccc}` + `.dot.on{border-color:#FF6B35}` 两条规则
+/// 合并后，map 里同时躺着 `border` 和 `border-color` —— 谁后落地谁赢。
+/// map 的遍历顺序在 Rust 里是随机的（每进程一个 hash 种子），
+/// 所以同一份源码**每次运行渲染结果都可能不同**（那个圆点时橙时灰）。
+///
+/// 真正的 CSS 模型是解析期就把简写展开成细项，这里用更小的改动达到同样效果：
+/// 按「简写 → 方向细项 → 单属性细项」的固定档位排序，档位内按属性名排序，
+/// 保证细项永远覆盖简写，且结果与运行次数无关。
+fn declaration_order(name: &str) -> u8 {
+    match name {
+        // 全能简写
+        "font" | "background" | "border" | "border-radius" | "margin" | "padding"
+        | "flex" | "transition" | "animation" | "grid-area" | "inset" => 0,
+        // 方向/边简写（仍是简写，但比 `border` 更具体）
+        "border-top" | "border-right" | "border-bottom" | "border-left"
+        | "border-width" | "border-color" | "border-style"
+        | "margin-block" | "margin-inline" | "padding-block" | "padding-inline"
+        | "background-position" | "background-size" | "flex-flow" => 1,
+        // 其余都是细项
+        _ => 2,
+    }
+}
+
+/// 把级联后的声明按确定性顺序取出（见 [`declaration_order`]）
+fn sorted_declarations(css: &HashMap<String, StyleValue>) -> Vec<(&str, &StyleValue)> {
+    let mut out: Vec<(&str, &StyleValue)> = css.iter().map(|(k, v)| (k.as_str(), v)).collect();
+    out.sort_by(|a, b| declaration_order(a.0).cmp(&declaration_order(b.0)).then(a.0.cmp(b.0)));
+    out
+}
+
+/// 构建基础 Taffy 样式
+pub fn build_base_style(
+    node: &WxmlNode,
+    ctx: &mut ComponentContext,
+) -> (Style, NodeStyle) {
+    let classes = get_classes(node);
+    let id = node.get_attr("id");
+    // 构建「祖先链 + 当前元素」，支持 #id、[attr]、*、后代/子选择器
+    let mut chain = ctx.ancestors.clone();
+    // 属性表只有 `[attr]` 选择器用得到；没有这类规则就别带 —— 它会随祖先链克隆被深拷很多遍
+    static EMPTY_ATTRS: std::sync::OnceLock<HashMap<String, String>> = std::sync::OnceLock::new();
+    let desc_attrs = if ctx.stylesheet.has_attr_selectors() {
+        &node.attributes
+    } else {
+        EMPTY_ATTRS.get_or_init(HashMap::new)
+    };
+    chain.push(ElementDesc::new(&node.tag_name, id, &classes, desc_attrs)
+        .with_position(ctx.sibling_index, ctx.sibling_count));
+    let css = ctx.stylesheet.get_styles_chain(&chain);
+    
+    // 先用继承的文本样式做默认值，再用 CSS/内联覆盖（CSS 继承语义）
+    let mut ns = NodeStyle {
+        font_size: ctx.inherited.font_size,
+        text_color: ctx.inherited.color,
+        font_weight: ctx.inherited.weight,
+        text_align: ctx.inherited.align,
+        line_height: ctx.inherited.line_height,
+        letter_spacing: ctx.inherited.letter_spacing,
+        font_family: ctx.inherited.font_family.clone(),
+        opacity: 1.0,
+        ..Default::default()
+    };
+    
+    // 默认样式：flex 布局，列方向
+    let mut ts = Style { 
+        display: Display::Flex, 
+        flex_direction: FlexDirection::Column,
+        ..Default::default() 
+    };
+
+    // 应用类样式（顺序见 `declaration_order`：简写必须先落地）
+    for (name, value) in sorted_declarations(&css) {
+        apply_style_property(name, value, &mut ts, &mut ns, ctx);
+    }
+
+    // 应用内联样式
+    if let Some(style_str) = node.get_attr("style") {
+        for part in style_str.split(';') {
+            let part = part.trim();
+            if part.is_empty() { continue; }
+            
+            if let Some(colon_pos) = part.find(':') {
+                let name = part[..colon_pos].trim();
+                let value_str = part[colon_pos + 1..].trim();
+                let value = parse_inline_value(value_str);
+                apply_style_property(name, &value, &mut ts, &mut ns, ctx);
+            }
+        }
+    }
+    
+    // 无单位 line-height 在所有声明落地后统一按最终字号换算
+    if let Some(scale) = ns.line_height_scale {
+        ns.line_height = Some(ns.font_size * scale);
+    }
+
+    // ── 绝对定位的包含块修正（CSS 语义）──
+    //
+    // `position:absolute` 的包含块是「最近的定位祖先」，一个都没有时是**初始包含块**
+    // （视口）。布局引擎只会按父节点解析百分比，于是
+    // `.background{position:absolute;left:0;top:0;width:100%;height:100%}` 挂在
+    // 一个 auto 高度的父 view 下时，高度会塌成 0 —— 整屏铺底的背景图就此消失。
+    //
+    // 没有定位祖先时，这里把百分比尺寸按视口折算成确定像素，等价于把包含块换成视口。
+    // 只修**高度**：宽度按父节点解析本来就是对的（父节点通常就是整宽），
+    // 而且元素的 left/top 偏移仍然是相对父节点的 —— 把宽度也换成视口宽会让
+    // 「窄父节点里的绝对定位元素」既变宽又不移位，反而画错（实测 canvas/组件页
+    // 与 H5 的差异从 5.4%/3.8% 恶化到 12.5%/10.2%）。
+    // 高度不一样：父节点高度是 auto 时百分比没有参照物，会直接塌成 0。
+    if ts.position == Position::Absolute && !ctx.has_positioned_ancestor {
+        if let Some(p) = dim_percent(ts.size.height) {
+            ts.size.height = Dimension::length(ctx.screen_height * ctx.scale_factor * p);
+        }
+    }
+
+    // ── 按压态样式 ──
+    // 同一条祖先链，把目标元素标记为 pressed 并补上 `hover-class` 的类名，
+    // 再取一次 CSS 声明 —— `:active` 与小程序的 `hover-class` 因此走同一条路径。
+    // 只覆盖绘制类属性（taffy 布局结果丢弃）：按压不触发重新布局，
+    // 这是刻意的取舍，按一下就重排整页在纯软件光栅上代价太高。
+    let hover_class = node
+        .get_attr("hover-class")
+        .filter(|s| !s.trim().is_empty() && s.trim() != "none")
+        .map(|s| s.to_string());
+    if ctx.stylesheet.has_active_rules() || hover_class.is_some() {
+        let mut pressed_chain = chain;
+        if let Some(last) = pressed_chain.last_mut() {
+            last.pressed = true;
+            if let Some(hc) = &hover_class {
+                for c in hc.split_whitespace() {
+                    last.classes.push(c.to_string());
+                }
+            }
+        }
+        let pressed_css = ctx.stylesheet.get_styles_chain(&pressed_chain);
+        let mut pressed_ns = ns.clone();
+        let mut throwaway_ts = ts.clone();
+        for (name, value) in sorted_declarations(&pressed_css) {
+            apply_style_property(name, value, &mut throwaway_ts, &mut pressed_ns, ctx);
+        }
+        // 内联 style 优先级高于类样式，按压态同样要重放一遍
+        if let Some(style_str) = node.get_attr("style") {
+            for part in style_str.split(';') {
+                let part = part.trim();
+                if part.is_empty() { continue; }
+                if let Some(colon_pos) = part.find(':') {
+                    let name = part[..colon_pos].trim();
+                    let value = parse_inline_value(part[colon_pos + 1..].trim());
+                    apply_style_property(name, &value, &mut throwaway_ts, &mut pressed_ns, ctx);
+                }
+            }
+        }
+        if let Some(scale) = pressed_ns.line_height_scale {
+            pressed_ns.line_height = Some(pressed_ns.font_size * scale);
+        }
+        pressed_ns.pressed_style = None; // 不递归
+        ns.pressed_style = Some(Box::new(pressed_ns));
+    }
+    
+    (ts, ns)
+}
+
+/// 解析盒模型简写（margin/padding），返回 [top, right, bottom, left]（像素，未乘 sf）。
+///
+/// 支持 CSS 1-4 值语法：
+/// - 1 值：四边相同
+/// - 2 值：上下 / 左右
+/// - 3 值：上 / 左右 / 下
+/// - 4 值：上 / 右 / 下 / 左
+///
+/// 之前只处理单值，`padding: 10rpx 20rpx` 这类会被静默丢弃。
+fn box_sides_px(value: &StyleValue, ctx: &ComponentContext) -> Option<[f32; 4]> {
+    match value {
+        StyleValue::String(s) => {
+            let vals: Vec<f32> = s
+                .split_whitespace()
+                .filter_map(|p| to_px(&parse_inline_value(p), ctx.screen_width, ctx.screen_height))
+                .collect();
+            match vals.len() {
+                1 => Some([vals[0], vals[0], vals[0], vals[0]]),
+                2 => Some([vals[0], vals[1], vals[0], vals[1]]),
+                3 => Some([vals[0], vals[1], vals[2], vals[1]]),
+                4 => Some([vals[0], vals[1], vals[2], vals[3]]),
+                _ => None,
+            }
+        }
+        _ => to_px(value, ctx.screen_width, ctx.screen_height).map(|v| [v, v, v, v]),
+    }
+}
+
+/// 解析内联样式值
+fn parse_inline_value(value: &str) -> StyleValue {
+    let value = value.trim();
+    if value == "auto" { return StyleValue::Auto; }
+    if value.ends_with("rpx") {
+        if let Ok(n) = value.trim_end_matches("rpx").parse() { return StyleValue::Length(n, LengthUnit::Rpx); }
+    }
+    if value.ends_with("px") {
+        if let Ok(n) = value.trim_end_matches("px").parse() { return StyleValue::Length(n, LengthUnit::Px); }
+    }
+    if value.ends_with("%") {
+        if let Ok(n) = value.trim_end_matches("%").parse() { return StyleValue::Length(n, LengthUnit::Percent); }
+    }
+    if let Ok(n) = value.parse() { return StyleValue::Number(n); }
+    
+    // Color
+    if value.starts_with('#') || value.starts_with("rgb") {
+        if let Some(c) = parse_color_str(value) { return StyleValue::Color(c); }
+    }
+    
+    StyleValue::String(value.to_string())
+}
+
+/// 从 StyleValue 解析颜色（Color 直取，String 解析）
+fn color_value(v: &StyleValue) -> Option<Color> {
+    match v {
+        StyleValue::Color(c) => Some(*c),
+        StyleValue::String(s) => parse_color_str(s),
+        _ => None,
+    }
+}
+
+/// 应用单个样式属性
+fn apply_style_property(
+    name: &str,
+    value: &StyleValue,
+    ts: &mut Style,
+    ns: &mut NodeStyle,
+    ctx: &mut ComponentContext
+) {
+    let sf = ctx.scale_factor;
+    match name {
+            "width" => if let Some(v) = to_dimension(value, ctx.screen_width, ctx.screen_height, sf) { ts.size.width = v; }
+            "height" => if let Some(v) = to_dimension(value, ctx.screen_width, ctx.screen_height, sf) { ts.size.height = v; }
+            "min-width" => if let Some(v) = to_dimension(value, ctx.screen_width, ctx.screen_height, sf) { ts.min_size.width = v; }
+            "min-height" => if let Some(v) = to_dimension(value, ctx.screen_width, ctx.screen_height, sf) { ts.min_size.height = v; }
+            "max-width" => if let Some(v) = to_dimension(value, ctx.screen_width, ctx.screen_height, sf) { ts.max_size.width = v; }
+            "max-height" => if let Some(v) = to_dimension(value, ctx.screen_width, ctx.screen_height, sf) { ts.max_size.height = v; }
+            "padding" => if let Some([t, r, b, l]) = box_sides_px(value, ctx) {
+                ts.padding = Rect {
+                    top: length(t * sf), right: length(r * sf),
+                    bottom: length(b * sf), left: length(l * sf),
+                };
+                ns.padding_top = t; ns.padding_right = r; ns.padding_bottom = b; ns.padding_left = l;
+            }
+            "padding-top" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.padding.top = length(v * sf); ns.padding_top = v; }
+            "padding-right" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.padding.right = length(v * sf); ns.padding_right = v; }
+            "padding-bottom" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.padding.bottom = length(v * sf); ns.padding_bottom = v; }
+            "padding-left" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.padding.left = length(v * sf); ns.padding_left = v; }
+            "margin" => {
+                if matches!(value, StyleValue::Auto) {
+                    // margin: auto -> 居中
+                    ts.margin = Rect { top: auto(), right: auto(), bottom: auto(), left: auto() };
+                } else if let Some([t, r, b, l]) = box_sides_px(value, ctx) {
+                    ts.margin = Rect {
+                        top: length(t * sf), right: length(r * sf),
+                        bottom: length(b * sf), left: length(l * sf),
+                    };
+                }
+            }
+            "margin-top" => if matches!(value, StyleValue::Auto) { ts.margin.top = auto(); } else if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.margin.top = length(v * sf); }
+            "margin-right" => if matches!(value, StyleValue::Auto) { ts.margin.right = auto(); } else if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.margin.right = length(v * sf); }
+            "margin-bottom" => if matches!(value, StyleValue::Auto) { ts.margin.bottom = auto(); } else if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.margin.bottom = length(v * sf); }
+            "margin-left" => if matches!(value, StyleValue::Auto) { ts.margin.left = auto(); } else if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.margin.left = length(v * sf); }
+            "display" => if let StyleValue::String(s) = value {
+                match s.as_str() {
+                    "none" => ts.display = Display::None,
+                    "block" => {
+                        ts.display = Display::Block;
+                        ns.is_block = true;
+                    }
+                    "flex" => ts.display = Display::Flex,
+                    "grid" => ts.display = Display::Grid,
+                    _ => ts.display = Display::Flex,
+                };
+            }
+            // `box-sizing`：决定 width/height 算的是内容盒还是边框盒。
+            //
+            // 从前这条属性被整条忽略（布局引擎里没有这个概念），于是写
+            // `box-sizing: content-box` 的元素会比浏览器窄一圈内边距 + 边框。
+            // 两端的缺省都是 `border-box`（编译出的 H5 里有 `*{box-sizing:border-box}`，
+            // 布局引擎的缺省也是它），所以只有显式写 content-box 的地方会变。
+            "box-sizing" => if let StyleValue::String(s) = value {
+                ts.box_sizing = match s.as_str() {
+                    "content-box" => BoxSizing::ContentBox,
+                    _ => BoxSizing::BorderBox,
+                };
+            }
+            "flex-direction" => if let StyleValue::String(s) = value {
+                ts.flex_direction = match s.as_str() {
+                    "row" => FlexDirection::Row,
+                    "row-reverse" => FlexDirection::RowReverse,
+                    "column-reverse" => FlexDirection::ColumnReverse,
+                    "column" => FlexDirection::Column,
+                    _ => FlexDirection::Column,
+                };
+            }
+            "flex-wrap" => if let StyleValue::String(s) = value {
+                ts.flex_wrap = match s.as_str() {
+                    "wrap" => FlexWrap::Wrap,
+                    "wrap-reverse" => FlexWrap::WrapReverse,
+                    _ => FlexWrap::NoWrap,
+                };
+            }
+            "flex-grow" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.flex_grow = v; }
+            "flex" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { 
+                ts.flex_grow = v;
+                // flex: <number> implies flex-grow: <number>, flex-shrink: 1, flex-basis: 0
+                ts.flex_shrink = 1.0;
+                ts.flex_basis = Dimension::length(0.0);
+            }
+            "flex-shrink" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.flex_shrink = v; }
+            "flex-basis" => if let Some(v) = to_dimension(value, ctx.screen_width, ctx.screen_height, sf) { ts.flex_basis = v; }
+            "justify-content" => if let StyleValue::String(s) = value {
+                ts.justify_content = Some(match s.as_str() {
+                    "center" => JustifyContent::CENTER,
+                    "space-between" => JustifyContent::SPACE_BETWEEN,
+                    "space-around" => JustifyContent::SPACE_AROUND,
+                    "space-evenly" => JustifyContent::SPACE_EVENLY,
+                    "flex-end" | "end" => JustifyContent::FLEX_END,
+                    "flex-start" | "start" => JustifyContent::FLEX_START,
+                    _ => JustifyContent::FLEX_START,
+                });
+            }
+            "align-items" => if let StyleValue::String(s) = value {
+                let align = match s.as_str() {
+                    "center" => AlignItems::CENTER,
+                    "flex-end" | "end" => AlignItems::FLEX_END,
+                    "flex-start" | "start" => AlignItems::FLEX_START,
+                    "stretch" => AlignItems::STRETCH,
+                    "baseline" => AlignItems::BASELINE,
+                    _ => AlignItems::FLEX_START,
+                };
+                ts.align_items = Some(align);
+            }
+            "align-self" => if let StyleValue::String(s) = value {
+                ts.align_self = Some(match s.as_str() {
+                    "center" => AlignSelf::CENTER,
+                    "flex-end" | "end" => AlignSelf::FLEX_END,
+                    "flex-start" | "start" => AlignSelf::FLEX_START,
+                    "stretch" => AlignSelf::STRETCH,
+                    "baseline" => AlignSelf::BASELINE,
+                    _ => AlignSelf::START,
+                });
+            }
+            "align-content" => if let StyleValue::String(s) = value {
+                ts.align_content = Some(match s.as_str() {
+                    "center" => AlignContent::CENTER,
+                    "flex-end" | "end" => AlignContent::FLEX_END,
+                    "flex-start" | "start" => AlignContent::FLEX_START,
+                    "stretch" => AlignContent::STRETCH,
+                    "space-between" => AlignContent::SPACE_BETWEEN,
+                    "space-around" => AlignContent::SPACE_AROUND,
+                    "space-evenly" => AlignContent::SPACE_EVENLY,
+                    _ => AlignContent::FLEX_START,
+                });
+            }
+            "gap" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { 
+                let sv = v * sf;
+                ts.gap = Size { width: length(sv), height: length(sv) }; 
+            }
+            "row-gap" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.gap.height = length(v * sf); }
+            "column-gap" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ts.gap.width = length(v * sf); }
+            "background-color" | "background" | "background-image" => {
+                match value {
+                    StyleValue::Color(c) => ns.background_color = Some(*c),
+                    StyleValue::String(s) if s.contains("linear-gradient(") => {
+                        if let Some(g) = parse_linear_gradient(s) {
+                            // 兜底纯色（渐变未绘制处使用）取首个停靠点
+                            ns.background_color = g.stops.first().map(|(_, c)| *c);
+                            ns.background_gradient = Some(g);
+                        }
+                    }
+                    StyleValue::String(s) => {
+                        if let Some(c) = parse_color_str(s) { ns.background_color = Some(c); }
+                    }
+                    _ => {}
+                }
+            }
+            "color" => {
+                if let StyleValue::Color(c) = value { 
+                    ns.text_color = Some(*c); 
+                } else if let StyleValue::String(s) = value {
+                    if let Some(c) = parse_color_str(s) {
+                        ns.text_color = Some(c);
+                    }
+                }
+            }
+            "border-color" => {
+                if let StyleValue::Color(c) = value { 
+                    ns.border_color = Some(*c); 
+                } else if let StyleValue::String(s) = value {
+                    if let Some(c) = parse_color_str(s) {
+                        ns.border_color = Some(c);
+                    }
+                }
+            }
+            "border-width" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ns.border_width = v * sf; }
+            "border-radius" => {
+                // 支持 border-radius 简写：1-4 个值
+                if let StyleValue::String(s) = value {
+                    let parts: Vec<&str> = s.split_whitespace().collect();
+                    let values: Vec<f32> = parts.iter()
+                        .filter_map(|p| {
+                            let sv = parse_inline_value(p);
+                            to_px(&sv, ctx.screen_width, ctx.screen_height)
+                        })
+                        .map(|v| v * sf)
+                        .collect();
+                    
+                    match values.len() {
+                        1 => {
+                            ns.border_radius = values[0];
+                        }
+                        2 => {
+                            // top-left/bottom-right, top-right/bottom-left
+                            ns.border_radius_tl = Some(values[0]);
+                            ns.border_radius_br = Some(values[0]);
+                            ns.border_radius_tr = Some(values[1]);
+                            ns.border_radius_bl = Some(values[1]);
+                        }
+                        3 => {
+                            // top-left, top-right/bottom-left, bottom-right
+                            ns.border_radius_tl = Some(values[0]);
+                            ns.border_radius_tr = Some(values[1]);
+                            ns.border_radius_bl = Some(values[1]);
+                            ns.border_radius_br = Some(values[2]);
+                        }
+                        4 => {
+                            // top-left, top-right, bottom-right, bottom-left
+                            ns.border_radius_tl = Some(values[0]);
+                            ns.border_radius_tr = Some(values[1]);
+                            ns.border_radius_br = Some(values[2]);
+                            ns.border_radius_bl = Some(values[3]);
+                        }
+                        _ => {}
+                    }
+                } else if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) {
+                    ns.border_radius = v * sf;
+                }
+            }
+            "border-top-left-radius" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ns.border_radius_tl = Some(v * sf); }
+            "border-top-right-radius" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ns.border_radius_tr = Some(v * sf); }
+            "border-bottom-right-radius" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ns.border_radius_br = Some(v * sf); }
+            "border-bottom-left-radius" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ns.border_radius_bl = Some(v * sf); }
+            "border" => {
+                // border: 1px solid #000
+                if let StyleValue::String(s) = value {
+                    parse_border_shorthand(s, ns, ctx.screen_width, sf);
+                }
+            }
+            "border-top" | "border-right" | "border-bottom" | "border-left" => {
+                if let StyleValue::String(s) = value {
+                    let (w, c) = parse_border_side(s, ctx.screen_width, sf);
+                    match name {
+                        "border-top" => { if let Some(w) = w { ns.border_top_width = w; } ns.border_top_color = c.or(ns.border_top_color); }
+                        "border-right" => { if let Some(w) = w { ns.border_right_width = w; } ns.border_right_color = c.or(ns.border_right_color); }
+                        "border-bottom" => { if let Some(w) = w { ns.border_bottom_width = w; } ns.border_bottom_color = c.or(ns.border_bottom_color); }
+                        _ => { if let Some(w) = w { ns.border_left_width = w; } ns.border_left_color = c.or(ns.border_left_color); }
+                    }
+                }
+            }
+            "border-top-width" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ns.border_top_width = v * sf; }
+            "border-right-width" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ns.border_right_width = v * sf; }
+            "border-bottom-width" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ns.border_bottom_width = v * sf; }
+            "border-left-width" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ns.border_left_width = v * sf; }
+            "border-top-color" => { if let Some(c) = color_value(value) { ns.border_top_color = Some(c); } }
+            "border-right-color" => { if let Some(c) = color_value(value) { ns.border_right_color = Some(c); } }
+            "border-bottom-color" => { if let Some(c) = color_value(value) { ns.border_bottom_color = Some(c); } }
+            "border-left-color" => { if let Some(c) = color_value(value) { ns.border_left_color = Some(c); } }
+            "font-size" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ns.font_size = v; }
+            "font-weight" => {
+                // 数字字重（400/700）与关键字（normal/bold）都要支持
+                let text = match value {
+                    StyleValue::String(s) => s.clone(),
+                    StyleValue::Number(n) => format!("{}", *n as i32),
+                    StyleValue::Length(v, _) => format!("{}", *v as i32),
+                    _ => String::new(),
+                };
+                ns.font_weight = match text.as_str() {
+                    "100" => FontWeight::W100,
+                    "200" => FontWeight::W200,
+                    "300" | "light" => FontWeight::W300,
+                    "400" | "normal" => FontWeight::Normal,
+                    "500" | "medium" => FontWeight::W500,
+                    "600" | "semibold" => FontWeight::W600,
+                    "700" | "bold" => FontWeight::Bold,
+                    "800" => FontWeight::W800,
+                    "900" | "black" => FontWeight::W900,
+                    _ => FontWeight::Normal,
+                };
+            }
+            "text-align" => if let StyleValue::String(s) = value {
+                ns.text_align = match s.as_str() {
+                    "center" => TextAlign::Center,
+                    "right" => TextAlign::Right,
+                    "justify" => TextAlign::Justify,
+                    _ => TextAlign::Left,
+                };
+            }
+            "text-decoration" | "text-decoration-line" => if let StyleValue::String(s) = value {
+                ns.text_decoration = match s.as_str() {
+                    "underline" => TextDecoration::Underline,
+                    "line-through" => TextDecoration::LineThrough,
+                    "overline" => TextDecoration::Overline,
+                    _ => TextDecoration::None,
+                };
+            }
+            "line-height" => {
+                // 顺序很关键：无单位值是「倍数」，必须先判数字。
+                // 之前先走 to_px，`line-height:1.9` 被当成 1.9 像素，行距直接被压成一条线。
+                if let StyleValue::Number(n) = value {
+                    ns.line_height_scale = Some(*n);
+                    ns.line_height = None;
+                } else if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) {
+                    ns.line_height = Some(v);
+                    ns.line_height_scale = None;
+                }
+            }
+            "letter-spacing" => if let Some(v) = to_px(value, ctx.screen_width, ctx.screen_height) { ns.letter_spacing = v; }
+            // 字体栈原样留到绘制/度量期解析（见 `text_family::renderer_for_family`）：
+            // 哪个字族可用取决于本机装了什么字体，样式解析期不该下这个判断。
+            "font-family" => {
+                if let StyleValue::String(s) = value {
+                    let v = s.trim();
+                    if !v.is_empty() && v != "inherit" {
+                        ns.font_family = Some(std::sync::Arc::from(v));
+                    }
+                }
+            }
+            "white-space" => if let StyleValue::String(s) = value {
+                ns.white_space = match s.as_str() {
+                    "nowrap" => WhiteSpace::NoWrap,
+                    "pre" => WhiteSpace::Pre,
+                    "pre-wrap" => WhiteSpace::PreWrap,
+                    "pre-line" => WhiteSpace::PreLine,
+                    _ => WhiteSpace::Normal,
+                };
+            }
+            "text-overflow" => if let StyleValue::String(s) = value {
+                ns.text_overflow = match s.as_str() {
+                    "ellipsis" => TextOverflow::Ellipsis,
+                    _ => TextOverflow::Clip,
+                };
+            }
+            "overflow" | "overflow-x" | "overflow-y" => if let StyleValue::String(s) = value {
+                ns.overflow = match s.as_str() {
+                    "hidden" => Overflow::Hidden,
+                    "scroll" => Overflow::Scroll,
+                    "auto" => Overflow::Auto,
+                    _ => Overflow::Visible,
+                };
+                let taffy_overflow = match s.as_str() {
+                    "hidden" | "scroll" | "auto" => taffy::style::Overflow::Hidden,
+                    _ => taffy::style::Overflow::Visible,
+                };
+                ts.overflow.x = taffy_overflow;
+                ts.overflow.y = taffy_overflow;
+            }
+            "vertical-align" => if let StyleValue::String(s) = value {
+                ns.vertical_align = match s.as_str() {
+                    "top" => VerticalAlign::Top,
+                    "middle" => VerticalAlign::Middle,
+                    "bottom" => VerticalAlign::Bottom,
+                    _ => VerticalAlign::Baseline,
+                };
+            }
+            "word-break" => if let StyleValue::String(s) = value {
+                ns.word_break = match s.as_str() {
+                    "break-all" => WordBreak::BreakAll,
+                    "keep-all" => WordBreak::KeepAll,
+                    "break-word" => WordBreak::BreakWord,
+                    _ => WordBreak::Normal,
+                };
+            }
+            "z-index" => if let Some(n) = unitless_number(value) { ns.z_index = n as i32; }
+            "opacity" => if let Some(n) = unitless_number(value) { ns.opacity = n.clamp(0.0, 1.0); }
+            "box-shadow" => if let StyleValue::String(s) = value {
+                if let Some(shadow) = parse_box_shadow(s, ctx.screen_width) {
+                    ns.box_shadow = Some(shadow);
+                }
+            }
+            "transform" => if let StyleValue::String(s) = value {
+                // 用带单位换算的解析：rpx 位移必须按 750 设计宽折算，否则位移量翻倍
+                if let Some(transform) = crate::renderer::anim::parse_transform_px(s, ctx.screen_width, sf) {
+                    ns.transform = Some(transform);
+                } else if let Some(transform) = parse_transform(s) {
+                    ns.transform = Some(transform);
+                }
+            }
+            // ── CSS 动画：animation 简写 + 各分项 ──
+            // transition 简写：只取时长/延迟/缓动，属性列表忽略（在常态↔按压态之间整体插值）
+            "transition" => if let StyleValue::String(s) = value {
+                ns.transition = parse_transition_shorthand(s);
+            }
+            "transition-duration" => if let StyleValue::String(s) = value {
+                let mut t = ns.transition.unwrap_or_default();
+                t.duration = parse_css_time(s.split(',').next().unwrap_or("0"));
+                ns.transition = Some(t);
+            }
+            "transition-delay" => if let StyleValue::String(s) = value {
+                let mut t = ns.transition.unwrap_or_default();
+                t.delay = parse_css_time(s.split(',').next().unwrap_or("0"));
+                ns.transition = Some(t);
+            }
+            "transition-timing-function" => if let StyleValue::String(s) = value {
+                let mut t = ns.transition.unwrap_or_default();
+                t.curve = parse_timing_function(s.split(',').next().unwrap_or("ease"));
+                ns.transition = Some(t);
+            }
+            "animation" => if let StyleValue::String(s) = value {
+                ns.animation = crate::renderer::anim::AnimationSpec::parse_shorthand(s);
+            }
+            "animation-name" => if let StyleValue::String(s) = value {
+                let name = s.trim().split(',').next().unwrap_or("").trim().to_string();
+                if name.is_empty() || name == "none" {
+                    ns.animation = None;
+                } else {
+                    let mut spec = ns.animation.clone().unwrap_or_default();
+                    spec.name = name;
+                    ns.animation = Some(spec);
+                }
+            }
+            "animation-duration" | "animation-delay" => {
+                let text = match value {
+                    StyleValue::String(s) => s.clone(),
+                    StyleValue::Length(v, _) => format!("{}s", v),
+                    StyleValue::Number(n) => format!("{}s", n),
+                    _ => String::new(),
+                };
+                if let Some(secs) = crate::renderer::anim::parse_time(text.split(',').next().unwrap_or("")) {
+                    let mut spec = ns.animation.clone().unwrap_or_default();
+                    if name == "animation-duration" { spec.duration = secs; } else { spec.delay = secs; }
+                    ns.animation = Some(spec);
+                }
+            }
+            "animation-timing-function" => if let StyleValue::String(s) = value {
+                if let Some(timing) = crate::renderer::anim::Timing::parse(s.split(',').next().unwrap_or("").trim()) {
+                    let mut spec = ns.animation.clone().unwrap_or_default();
+                    spec.timing = timing;
+                    ns.animation = Some(spec);
+                }
+            }
+            "animation-iteration-count" => {
+                let mut spec = ns.animation.clone().unwrap_or_default();
+                spec.iterations = match value {
+                    StyleValue::Number(n) => *n,
+                    StyleValue::String(s) if s.trim() == "infinite" => f32::INFINITY,
+                    StyleValue::String(s) => s.trim().parse().unwrap_or(1.0),
+                    _ => 1.0,
+                };
+                ns.animation = Some(spec);
+            }
+            "animation-direction" => if let StyleValue::String(s) = value {
+                use crate::renderer::anim::Direction;
+                let mut spec = ns.animation.clone().unwrap_or_default();
+                spec.direction = match s.trim() {
+                    "reverse" => Direction::Reverse,
+                    "alternate" => Direction::Alternate,
+                    "alternate-reverse" => Direction::AlternateReverse,
+                    _ => Direction::Normal,
+                };
+                ns.animation = Some(spec);
+            }
+            "animation-fill-mode" => if let StyleValue::String(s) = value {
+                use crate::renderer::anim::FillMode;
+                let mut spec = ns.animation.clone().unwrap_or_default();
+                spec.fill = match s.trim() {
+                    "forwards" => FillMode::Forwards,
+                    "backwards" => FillMode::Backwards,
+                    "both" => FillMode::Both,
+                    _ => FillMode::None,
+                };
+                ns.animation = Some(spec);
+            }
+            "position" => if let StyleValue::String(s) = value {
+                match s.as_str() {
+                    "absolute" => {
+                        ts.position = Position::Absolute;
+                        ns.is_positioned = true;
+                    }
+                    "fixed" => {
+                        // fixed 定位：使用 absolute 让 Taffy 处理，但标记为 fixed
+                        ts.position = Position::Absolute;
+                        ns.is_fixed = true;
+                        ns.is_positioned = true;
+                    }
+                    "relative" => {
+                        ts.position = Position::Relative;
+                        ns.is_positioned = true;
+                    }
+                    _ => ts.position = Position::Relative,
+                };
+            }
+            // ── 定位偏移 top/right/bottom/left ──
+            //
+            // 百分比必须交给布局引擎按「包含块」解析，不能在这里换算成像素：
+            // `to_px` 对百分比一律乘屏幕宽度，于是居中老写法
+            // `left:50%; top:50%; margin:-44rpx` 里的 `top:50%` 变成 187.5px，
+            // 元素被推到父容器下方（视频页封面上的播放按钮就这样被裁掉一半）。
+            // `position:fixed` 另算：固定层用 ns.fixed_* 的像素值，
+            // 相对视口解析（水平轴用视口宽、垂直轴用视口高）。
+            "top" => set_inset(value, ctx, sf, Axis::Vertical, &mut ts.inset.top, &mut ns.fixed_top),
+            "left" => set_inset(value, ctx, sf, Axis::Horizontal, &mut ts.inset.left, &mut ns.fixed_left),
+            "right" => set_inset(value, ctx, sf, Axis::Horizontal, &mut ts.inset.right, &mut ns.fixed_right),
+            "bottom" => set_inset(value, ctx, sf, Axis::Vertical, &mut ts.inset.bottom, &mut ns.fixed_bottom),
+            _ => {}
+    }
+}
+
+// 线性渐变的绘制搬到了 `components::gradient`（那里有轴对齐快路径与一致性测试），
+// 这里重新导出以保持 `use super::base::*` 的调用点不变。
+pub use crate::renderer::components::gradient::draw_linear_gradient;

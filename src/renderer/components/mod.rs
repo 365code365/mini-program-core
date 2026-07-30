@@ -55,66 +55,12 @@ pub use rich_text::RichTextComponent;
 pub use picker::{PickerComponent, PickerViewComponent, PickerViewColumnComponent, PickerMode, PICKER_MANAGER};
 pub use checkbox_group::{CheckboxGroupComponent, RadioGroupComponent};
 
-use crate::parser::wxml::WxmlNode;
-use crate::parser::wxss::StyleSheet;
 
-/// 组件注册表
-pub struct ComponentRegistry {
-    scale_factor: f32,
-    screen_width: f32,
-    screen_height: f32,
-}
+// 这里曾经有个 `ComponentRegistry::build_component`：**第二份**「标签 → 组件」分派表，
+// 21 条 match 分支，与 `wxml_renderer::layout.rs` 里那份逐条重复。
+//
+// 它是死代码，而且是**会骗人**的死代码：新增组件的人很容易在这里加一条分支，
+// 然后发现页面上什么都没变 —— 真正生效的是 layout.rs 那份。它建的 `ComponentContext`
+// 里 `ancestors` / `inherited` / `sibling_index` 全是默认值，本来也没法参与
+// 样式继承与 `:nth-child`，注定只能是个摆设。所以整块删掉，让分派只有一处。
 
-impl ComponentRegistry {
-    pub fn new(scale_factor: f32, screen_width: f32, screen_height: f32) -> Self {
-        Self { scale_factor, screen_width, screen_height }
-    }
-    
-    /// 根据标签名构建组件
-    pub fn build_component(
-        &self,
-        node: &WxmlNode,
-        stylesheet: &StyleSheet,
-        taffy: &mut Tree,
-    ) -> Option<RenderNode> {
-        let tag = node.tag_name.as_str();
-        let mut ctx = ComponentContext {
-            scale_factor: self.scale_factor,
-            screen_width: self.screen_width,
-            screen_height: self.screen_height,
-            stylesheet,
-            taffy,
-            ancestors: Vec::new(),
-            inherited: Default::default(),
-            sibling_index: 0,
-            sibling_count: 1,
-            has_positioned_ancestor: false,
-        };
-        
-        match tag {
-            "view" | "block" | "scroll-view" => ViewComponent::build(node, &mut ctx),
-            "text" => TextComponent::build(node, &mut ctx),
-            "button" => ButtonComponent::build(node, &mut ctx),
-            "icon" => IconComponent::build(node, &mut ctx),
-            "progress" => ProgressComponent::build(node, &mut ctx),
-            "switch" => SwitchComponent::build(node, &mut ctx),
-            "checkbox" => CheckboxComponent::build(node, &mut ctx),
-            "checkbox-group" => CheckboxGroupComponent::build(node, &mut ctx),
-            "radio" => RadioComponent::build(node, &mut ctx),
-            "radio-group" => RadioGroupComponent::build(node, &mut ctx),
-            "slider" => SliderComponent::build(node, &mut ctx),
-            "input" | "textarea" => InputComponent::build(node, &mut ctx),
-            "image" => ImageComponent::build(node, &mut ctx),
-            "video" => VideoComponent::build(node, &mut ctx),
-            "canvas" => CanvasComponent::build(node, &mut ctx),
-            "swiper" => SwiperComponent::build(node, &mut ctx),
-            "swiper-item" => SwiperItemComponent::build(node, &mut ctx),
-            "rich-text" => RichTextComponent::build(node, &mut ctx),
-            "picker" => PickerComponent::build(node, &mut ctx),
-            "picker-view" => PickerViewComponent::build(node, &mut ctx),
-            "picker-view-column" => PickerViewColumnComponent::build(node, &mut ctx),
-            // 默认作为 view 处理
-            _ => ViewComponent::build(node, &mut ctx),
-        }
-    }
-}

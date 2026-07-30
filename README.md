@@ -454,11 +454,13 @@ bash tools/clean-target.sh --dry      # 先看会删什么
 src/
 ├── parser/          WXML / WXSS / 模板与表达式引擎
 ├── renderer/        渲染器
-│   ├── components/  22 个组件的建树与绘制（含 WeUI 图标字形表、SVG 路径解析）
+│   ├── components/  24 个标签的建树与绘制（含 WeUI 图标字形表、SVG 路径解析）
+│   │   └── base/      公共底座：类型 / 文本度量 / 换行 / 事件属性 / 样式落地 / 盒子绘制
 │   └── wxml_renderer/  布局缓存 / 绘制调度 / 命中测试 / 动画 / 局部重绘失效
 ├── host/            **宿主层（平台无关）**：页面栈、覆盖层、触摸状态机、像素合成
 │   └── engine.rs      MiniEngine —— 移动端 SDK 的核心
-├── js/              QuickJS 绑定与 wx.* 实现
+├── js/              QuickJS 绑定；`prelude/*.js` 是按域拆分的逻辑层前置代码
+│                    （module / console / storage / ui / route / device / network …）
 ├── runtime/         MiniApp（逻辑层驱动、定时器、桥事件）
 ├── ui/              交互管理、滚动控制器
 ├── compiler/html/   编译成 HTML 工程（双端对比的参照实现）

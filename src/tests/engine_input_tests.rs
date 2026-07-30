@@ -9,10 +9,14 @@
 
 use crate::host::MiniEngine;
 
-fn engine(route: &str) -> MiniEngine {
+/// `slot` 用来给每个用例分一个**独立的 storage 目录**。
+///
+/// 别图省事共用一个：`wx.setStorageSync` 是写穿到磁盘的，测试并行跑时会互相读到
+/// 对方写的购物车/设置，页面内容随之变化 —— 表现是「单独跑必过、全量跑偶发失败」。
+fn engine_in(route: &str, slot: &str) -> MiniEngine {
     let root = crate::app_dir::resolve("sample-app");
-    let data = crate::data_dir::subdir("engine-input-tests");
-    // 每个用例一个实例：storage 落在专用目录里，互不影响
+    let data = crate::data_dir::subdir(&format!("engine-input-tests/{slot}"));
+    std::fs::remove_dir_all(&data).ok();
     let mut e = MiniEngine::new(
         &root.to_string_lossy(),
         Some(&data.to_string_lossy()),
@@ -41,7 +45,7 @@ fn swipe(e: &mut MiniEngine, from: (f32, f32), to: (f32, f32), steps: u32) {
 
 #[test]
 fn 纵向拖动能滚起页面() {
-    let mut e = engine("pages/index/index");
+    let mut e = engine_in("pages/index/index", "drag-v");
     assert_eq!(e.scroll_position(), 0.0, "初始应在顶部");
     // 手指上滑 240px：页面应该跟着滚下去（不是 0，也不该超过内容上限）
     swipe(&mut e, (180.0, 500.0), (180.0, 260.0), 8);
@@ -53,7 +57,7 @@ fn 纵向拖动能滚起页面() {
 fn 横向卡片上竖着划交给页面滚动() {
     // 首页那排横滑卡片：竖着划不该被它吃掉（微信/浏览器的方向锁定语义）。
     // 旧的 SDK 实现里 scroll-view 一旦命中就无条件接管，于是这一划什么都不动。
-    let mut e = engine("pages/index/index");
+    let mut e = engine_in("pages/index/index", "lock-v");
     // y=300 附近是首页的横向卡片区；竖向位移足够跨过 4px 的方向锁定阈值
     swipe(&mut e, (180.0, 330.0), (180.0, 130.0), 8);
     let pos = e.scroll_position();
@@ -62,7 +66,7 @@ fn 横向卡片上竖着划交给页面滚动() {
 
 #[test]
 fn 横向拖动不该让页面上下跳() {
-    let mut e = engine("pages/index/index");
+    let mut e = engine_in("pages/index/index", "drag-h");
     swipe(&mut e, (300.0, 330.0), (60.0, 330.0), 8);
     let pos = e.scroll_position();
     assert!(pos.abs() < 0.5, "纯横向拖动不该改变页面滚动位置，实际 {pos}");
@@ -70,7 +74,7 @@ fn 横向拖动不该让页面上下跳() {
 
 #[test]
 fn 惯性滚动中按一下只停住不算点击() {
-    let mut e = engine("pages/index/index");
+    let mut e = engine_in("pages/index/index", "fling");
     // 甩一把让页面进入惯性
     swipe(&mut e, (180.0, 560.0), (180.0, 160.0), 4);
     let route_before = e.current_route();
@@ -85,7 +89,7 @@ fn 惯性滚动中按一下只停住不算点击() {
 fn 点底部tabbar能切页() {
     // sample-app 用的是自定义 tabBar（页面内组件），旧实现只按 app.json 的 list
     // 平均分栏算下标、完全不看组件的事件绑定 —— 手机上点 tabBar 没反应就是这条。
-    let mut e = engine("pages/index/index");
+    let mut e = engine_in("pages/index/index", "tabbar");
     let h = 667.0 - crate::host::tabbar_height() as f32;
     // 第二格（分类）：375/4 = 93.75，中心 ~141
     e.pointer_down(141.0, h + 25.0);
@@ -102,7 +106,7 @@ fn 点底部tabbar能切页() {
 
 #[test]
 fn 点picker会弹出底部面板并能确定() {
-    let mut e = engine("pages/showcase/showcase");
+    let mut e = engine_in("pages/showcase/showcase", "picker");
     // picker 在内容坐标 y≈834（用 MINI_PICKER_LOG 量过），滚到 300 后落在视口 534
     e.scroll_to(300.0);
     e.pump(0);
@@ -121,7 +125,7 @@ fn 点picker会弹出底部面板并能确定() {
 
 #[test]
 fn 弹窗按钮按下与抬手落在同一个按钮才回调() {
-    let mut e = engine("pages/profile/profile");
+    let mut e = engine_in("pages/profile/profile", "modal");
     // 先声明再赋值：QuickJS 里给未声明的变量赋值会 ReferenceError，
     // 回调里那一行会整条中断（表现就是「回调没跑」）
     e.eval("var __modalResult = 'none';").ok();

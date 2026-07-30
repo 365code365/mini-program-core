@@ -10,4 +10,4 @@ pub mod compose;
 pub mod draw_profile;
 
 pub use wxml_renderer::{WxmlRenderer, EventBinding, PickerBinding, FramePlan, ImageEvent, ImageEventDetail, VIEWPORT_CULL_MARGIN_PX};
-pub use components::{RenderNode, NodeStyle, ComponentRegistry};
+pub use components::{RenderNode, NodeStyle};
