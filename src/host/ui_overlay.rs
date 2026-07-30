@@ -476,3 +476,128 @@ fn draw_text_direct(
         }
     }
 }
+
+// ───────────────────────── Modal 的命中与按钮回调 ─────────────────────────
+//
+// 这一段从桌面窗体（`bin/app_window/click_handler.rs`）搬进来：它只依赖弹窗自身的
+// 尺寸算式与视口大小，和窗口系统无关。移动端 SDK 从前自己写了一版**粗糙的**判定
+// （「按下就算命中、抬手时按 x 是否过屏幕中线决定确定/取消」），于是单按钮弹窗在
+// 手机上点左半边会当成取消、点遮罩也会误触发回调。现在两端共用同一份。
+
+/// Modal 的命中判定用得到的几何量（逻辑像素）
+pub struct ModalLayout {
+    pub modal_x: f32,
+    pub modal_width: f32,
+    pub button_y: f32,
+    pub button_height: f32,
+}
+
+/// 按弹窗内容算出布局。`(vw, vh)` 是视口逻辑尺寸 —— 桌面固定 375×667，
+/// 移动端由宿主给（写死常量的话平板/折叠屏上弹窗按钮的命中区会整体错位）。
+pub fn modal_layout(
+    modal: &ModalState,
+    (vw, vh): (f32, f32),
+    sf: f32,
+    text_renderer: Option<&TextRenderer>,
+) -> ModalLayout {
+    let modal_width = 280.0 * sf;
+    let modal_padding = 24.0 * sf;
+    let title_font_size = 17.0 * sf;
+    let content_font_size = 14.0 * sf;
+    let button_height = 50.0 * sf;
+    let gap = 16.0 * sf;
+
+    let title_line_height = title_font_size * 1.4;
+    let content_max_width = modal_width - modal_padding * 2.0;
+    let content_lines = if let Some(tr) = text_renderer {
+        let text_width = tr.measure_text(&modal.content, content_font_size);
+        ((text_width / content_max_width).ceil() as i32).max(1)
+    } else {
+        1
+    };
+    let content_line_height = content_font_size * 1.6 * content_lines as f32;
+    let modal_height =
+        modal_padding + title_line_height + gap + content_line_height + gap + button_height;
+
+    let modal_x = (vw * sf - modal_width) / 2.0 / sf;
+    let modal_y = (vh * sf - modal_height) / 2.0 / sf;
+    ModalLayout {
+        modal_x,
+        modal_width: modal_width / sf,
+        button_y: modal_y + (modal_height - button_height) / sf,
+        button_height: button_height / sf,
+    }
+}
+
+/// 这个点落在哪个按钮上（`"cancel"` / `"confirm"`），没落在按钮上返回 `None`
+pub fn modal_button_at(x: f32, y: f32, layout: &ModalLayout, show_cancel: bool) -> Option<String> {
+    if y < layout.button_y || y > layout.button_y + layout.button_height {
+        return None;
+    }
+    if x < layout.modal_x || x > layout.modal_x + layout.modal_width {
+        return None;
+    }
+    if show_cancel && x < layout.modal_x + layout.modal_width / 2.0 {
+        Some("cancel".to_string())
+    } else {
+        Some("confirm".to_string())
+    }
+}
+
+/// 弹窗可见时的按下：命中按钮就记下按压态（给出反馈）。返回是否消费了这次按下。
+pub fn modal_press(
+    modal: &mut Option<ModalState>,
+    (vw, vh): (f32, f32),
+    sf: f32,
+    text_renderer: Option<&TextRenderer>,
+    x: f32,
+    y: f32,
+) -> bool {
+    let Some(m) = modal.as_ref().filter(|m| m.visible) else {
+        return false;
+    };
+    let layout = modal_layout(m, (vw, vh), sf, text_renderer);
+    let show_cancel = m.show_cancel;
+    match modal_button_at(x, y, &layout, show_cancel) {
+        Some(btn) => {
+            if let Some(m) = modal.as_mut() {
+                m.pressed_button = Some(btn);
+            }
+            true
+        }
+        None => false,
+    }
+}
+
+/// 弹窗可见时的抬手：**按下与抬起落在同一个按钮**才回调逻辑层并关闭
+/// （与系统弹窗一致：按下后滑开再松手不算点击）。
+pub fn modal_release(
+    modal: &mut Option<ModalState>,
+    app: &mut crate::runtime::MiniApp,
+    (vw, vh): (f32, f32),
+    sf: f32,
+    text_renderer: Option<&TextRenderer>,
+    x: f32,
+    y: f32,
+) {
+    let pressed = modal.as_ref().and_then(|m| m.pressed_button.clone());
+    if let Some(m) = modal.as_mut() {
+        m.pressed_button = None;
+    }
+    let Some(m) = modal.as_ref().filter(|m| m.visible) else {
+        return;
+    };
+    let layout = modal_layout(m, (vw, vh), sf, text_renderer);
+    let show_cancel = m.show_cancel;
+    if let Some(btn) = modal_button_at(x, y, &layout, show_cancel) {
+        if pressed.as_deref() == Some(btn.as_str()) {
+            let code = if btn == "cancel" {
+                "if(__modalCallback) __modalCallback({ confirm: false, cancel: true })"
+            } else {
+                "if(__modalCallback) __modalCallback({ confirm: true, cancel: false })"
+            };
+            app.eval(code).ok();
+            *modal = None;
+        }
+    }
+}

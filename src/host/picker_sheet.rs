@@ -762,3 +762,114 @@ mod tests {
         assert_eq!(s.change_value(), serde_json::json!(1));
     }
 }
+
+// ───────────────────── 面板的输入处理（两端共用） ─────────────────────
+//
+// 从桌面窗体搬进来：弹面板、按下反馈、确定/取消/滚选/点遮罩关闭，全是纯状态迁移，
+// 与窗口系统无关。移动端 SDK 从前**完全没接** picker —— 点一下 `<picker>` 什么都不
+// 发生（`engine.rs` 的模块注释里那句「picker 面板还没接进来」就是指这个）。
+
+/// 点击落在某个 `<picker>` 上时构造面板状态。返回 `None` 表示这一点不是 picker。
+///
+/// 覆盖层上的 picker 用**视口**坐标，正常流的用内容坐标（y + 滚动量）——
+/// 两套坐标混用会出现「弹窗里的 picker 点不开 / 页面滚过之后点空气能弹出面板」。
+pub fn open_if_hit(
+    renderer: Option<&crate::renderer::WxmlRenderer>,
+    scroll_pos: f32,
+    x: f32,
+    y: f32,
+) -> Option<PickerSheetState> {
+    let on_fixed_layer = renderer.map(|r| r.fixed_layer_hit(x, y)).unwrap_or(false);
+    let binding = renderer.and_then(|r| {
+        r.picker_hit(x, y, true)
+            .or_else(|| {
+                if on_fixed_layer {
+                    None
+                } else {
+                    r.picker_hit(x, y + scroll_pos, false)
+                }
+            })
+            .cloned()
+    });
+    let Some(binding) = binding else {
+        if std::env::var("MINI_PICKER_LOG").is_ok() {
+            if let Some(r) = renderer {
+                eprintln!(
+                    "PICKER miss @({x},{y}) scroll={scroll_pos} regions={:?}",
+                    r.picker_regions()
+                        .iter()
+                        .map(|p| (p.id.clone(), p.bounds))
+                        .collect::<Vec<_>>()
+                );
+            }
+        }
+        return None;
+    };
+    if std::env::var("MINI_PICKER_LOG").is_ok() {
+        eprintln!("👆 picker -> 打开选择面板 mode={}", binding.mode);
+    }
+    Some(build(&binding))
+}
+
+/// 面板可见时的按下：记录按压的头部按钮以给出反馈。返回是否消费了事件。
+pub fn on_press(sheet: &mut Option<PickerSheetState>, x: f32, y: f32) -> bool {
+    let Some(sheet) = sheet.as_mut().filter(|s| s.visible) else {
+        return false;
+    };
+    let hit = hit_test(sheet, x, y);
+    sheet.pressed = match hit {
+        SheetHit::Cancel | SheetHit::Confirm => Some(hit),
+        _ => None,
+    };
+    true
+}
+
+/// 面板可见时的抬手：确定 / 取消 / 选项滚动 / 点遮罩关闭。返回是否消费了事件。
+pub fn on_release(
+    sheet: &mut Option<PickerSheetState>,
+    app: &mut crate::runtime::MiniApp,
+    x: f32,
+    y: f32,
+) -> bool {
+    let Some(sheet) = sheet.as_mut().filter(|s| s.visible) else {
+        return false;
+    };
+    sheet.pressed = None;
+    // 退场动画进行中时，只吞事件不再响应
+    if sheet.closing {
+        return true;
+    }
+    match hit_test(sheet, x, y) {
+        SheetHit::Confirm => {
+            let value = sheet.change_value();
+            let handler = sheet.handler.clone();
+            let labels = sheet.picked_labels().join(" ");
+            sheet.begin_close();
+            if let Some(handler) = handler {
+                // `__callPageMethod` 的第二个参数就是 dataset，事件对象里 `detail` 直接指向它。
+                // 多包一层 `{detail:{...}}` 会让页面拿到 `e.detail.detail.value`，
+                // 于是 `e.detail.value` 是 undefined —— 选了「选项二」按确定却没反应就是这个。
+                let payload = serde_json::json!({ "value": value });
+                println!("👆 picker 确定 -> {handler} value={value} ({labels})");
+                app.eval(&format!("__callPageMethod('{handler}', {payload})")).ok();
+            }
+        }
+        SheetHit::Cancel | SheetHit::Mask => sheet.begin_close(),
+        SheetHit::Item { col, delta } => {
+            sheet.move_selection(col, delta);
+            if delta != 0 {
+                relink_region(sheet, col);
+            }
+        }
+    }
+    true
+}
+
+/// 退场动画走完后丢弃面板。返回是否真的丢了（宿主据此标脏重绘）。
+pub fn reap(sheet: &mut Option<PickerSheetState>) -> bool {
+    if sheet.as_ref().map(|s| s.finished_closing()).unwrap_or(false) {
+        *sheet = None;
+        return true;
+    }
+    false
+}

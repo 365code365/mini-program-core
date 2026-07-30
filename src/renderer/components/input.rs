@@ -103,24 +103,28 @@ fn should_show_cursor() -> bool {
     cursor_blink_visible()
 }
 
-/// 最近一次画光标的矩形（页面画布的设备像素坐标：x, y, w, h）。
-///
-/// 给宿主定位输入法候选框用（`set_ime_cursor_area`）：不告诉系统光标在哪，
-/// macOS/Windows 会把候选词面板摆到一个默认位置 —— 看起来就是「离输入框很远」。
-static LAST_CARET: OnceLock<Mutex<Option<(f32, f32, f32, f32)>>> = OnceLock::new();
-
-fn last_caret_slot() -> &'static Mutex<Option<(f32, f32, f32, f32)>> {
-    LAST_CARET.get_or_init(|| Mutex::new(None))
+// 最近一次画光标的矩形（页面画布的设备像素坐标：x, y, w, h）。
+//
+// 给宿主定位输入法候选框用（`set_ime_cursor_area`）：不告诉系统光标在哪，
+// macOS/Windows 会把候选词面板摆到一个默认位置 —— 看起来就是「离输入框很远」。
+//
+// **按线程存**：它是「刚画完那一笔」的回带信息，读的人就是画的人（桌面的渲染线程、
+// SDK 每个引擎实例自己的渲染线程）。从前是进程级 `static` + `Mutex`，于是并行跑的
+// 测试互相覆盖 —— `input_caret_tests` 偶发失败就是这个原因（单独跑必过，全量跑
+// 每两三次挂一次），而这种「回归本身不稳」比失败更麻烦。
+thread_local! {
+    static LAST_CARET: std::cell::Cell<Option<(f32, f32, f32, f32)>> =
+        const { std::cell::Cell::new(None) };
 }
 
+/// 最近一次画光标的矩形（设备像素：x, y, w, h），供宿主摆输入法候选框
+
 pub fn last_caret_rect() -> Option<(f32, f32, f32, f32)> {
-    last_caret_slot().lock().ok().and_then(|c| *c)
+    LAST_CARET.with(|c| c.get())
 }
 
 fn set_last_caret_rect(rect: Option<(f32, f32, f32, f32)>) {
-    if let Ok(mut c) = last_caret_slot().lock() {
-        *c = rect;
-    }
+    LAST_CARET.with(|c| c.set(rect));
 }
 
 /// 输入类型

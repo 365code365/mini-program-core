@@ -20,6 +20,8 @@ mod engine_input;
 pub mod config;
 pub mod edge_back;
 pub mod gesture;
+/// 指针输入的平台无关核心（触摸派发 / 手势仲裁 / 惯性收尾），窗体与 SDK 共用
+pub mod input;
 pub mod navigation;
 pub mod page_loader;
 pub mod picker_sheet;

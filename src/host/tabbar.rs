@@ -118,3 +118,36 @@ pub fn handle_native_tabbar_click(
     }
     None
 }
+
+/// 点在底部 tabBar 上时给出路由请求（自定义 tabBar 与原生配置两种都管）。
+///
+/// `y_in_bar` 是相对 tabBar 顶边的坐标（自定义 tabBar 是一棵独立渲染的组件树，
+/// 它的命中要用组件自己的坐标系）。
+///
+/// 两端共用的理由：移动端 SDK 从前只按 `app.json` 的 `list` 平均分栏算下标，
+/// **自定义 tabBar 完全没命中逻辑** —— tea-app / uni-app 那种页面内组件式 tabBar
+/// 在手机上点了没反应，而桌面一直是好的（`tools/tab-click-check.sh` 只测桌面）。
+pub fn nav_at(
+    x: f32,
+    y_in_bar: f32,
+    custom: Option<&crate::renderer::WxmlRenderer>,
+    native: Option<&TabBarConfig>,
+    current_path: &str,
+) -> Option<super::navigation::NavigationRequest> {
+    use super::navigation::NavigationRequest;
+    // 自定义 tabBar：由组件自己的事件绑定决定去哪
+    if let Some(renderer) = custom {
+        if let Some(binding) = renderer.hit_test(x, y_in_bar) {
+            if let (Some(_idx), Some(path)) = (binding.data.get("index"), binding.data.get("path")) {
+                if path != current_path {
+                    println!("👆 TabBar -> {path}");
+                    return Some(NavigationRequest::SwitchTab { url: path.clone() });
+                }
+            }
+        }
+        return None;
+    }
+    // 原生 tabBar：按 list 平均分栏
+    let target = handle_native_tabbar_click(native?, x, current_path)?;
+    Some(NavigationRequest::SwitchTab { url: target })
+}

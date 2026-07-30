@@ -14,6 +14,7 @@
 use super::*;
 use crate::app_window;
 use crate::app_window::event_handler as evt;
+use mini_render::host::input;
 use std::time::Instant;
 
 impl crate::MiniAppWindow {
@@ -143,62 +144,18 @@ impl crate::MiniAppWindow {
                 }
             }
 
-            // ── 拖动的归属**不在按下时决定** ──
-            //
-            // 微信/浏览器都是等第一次明显位移、按主方向定：横向 scroll-view 里竖着划
-            // 应该滚页面，纵向列表里横着划则谁也不动。按下就把手势交给命中的容器
-            // （旧实现）会让横滑卡片吃掉整页的纵向滑动。
-            let candidate = self.scroll_candidate_at(x, y, on_fixed_layer);
-            let catch_move = self
-                .renderer
-                .as_ref()
-                .map(|r| {
-                    let hy = if on_fixed_layer { y } else { actual_y };
-                    r.has_catch_for(x, hy, "touchmove")
-                })
-                .unwrap_or(false);
-            let page_scrollable = !on_fixed_layer
-                && !self.interaction.is_dragging_slider()
-                && self.scroll.get_max_scroll() > 0.5;
-            // 左边缘侧滑返回：起点在触发区、栈里还有上一页、且没盖着覆盖层。
-            // 栈底（tab 首页）没有这个手势 —— 微信里在首页往右划什么也不会发生。
-            let allow_edge_back = app_window::edge_back::EdgeBack::at_edge(x)
-                && self.page_stack.len() > 1
-                && !on_fixed_layer
-                && self.edge_back.is_none();
-            self.gesture = Some(
-                app_window::gesture::DragGesture::new((x, y), candidate, catch_move, page_scrollable)
-                    .allow_edge_back(allow_edge_back),
-            );
-    }
-
-    /// 按下点处最内层的可滚区域（id + 它的滚动轴），供方向锁定决策
-    pub(crate) fn scroll_candidate_at(
-        &self,
-        x: f32,
-        y: f32,
-        on_fixed_layer: bool,
-    ) -> Option<(String, app_window::gesture::Axis)> {
-        use mini_render::ui::scroll_controller::ScrollDirection;
-        let actual_y = y + self.scroll.get_position();
-        // 要的是**最内层的可滚区域**，不是最上层的元素：卡片/按钮盖在 scroll-view 上面时
-        // 普通命中测试返回的是卡片，于是真正装内容的 scroll-view 永远得不到手势。
-        let el = if on_fixed_layer {
-            self.interaction.hit_test_scroll_area(x, y, true).cloned()
-        } else {
-            self.interaction
-                .hit_test_scroll_area(x, actual_y, false)
-                .or_else(|| self.interaction.hit_test_scroll_area(x, y, false))
-                .cloned()
-        }?;
-        let axis = match self.interaction.get_scroll_controller(&el.id).map(|c| c.get_direction()) {
-            Some(ScrollDirection::Horizontal) => app_window::gesture::Axis::Horizontal,
-            Some(ScrollDirection::Vertical) => app_window::gesture::Axis::Vertical,
-            // 控制器还没建出来时按元素声明的方向
-            None if el.is_horizontal => app_window::gesture::Axis::Horizontal,
-            None => app_window::gesture::Axis::Vertical,
-        };
-        Some((el.id, axis))
+            // 拖动的归属**不在按下时决定**，等第一次明显位移再按主方向锁定
+            // （判定与移动端 SDK 共用 host::input::begin_gesture）
+            self.gesture = Some(input::begin_gesture(
+                &self.interaction,
+                &self.scroll,
+                self.renderer.as_ref(),
+                x,
+                y,
+                on_fixed_layer,
+                self.page_stack.len(),
+                self.edge_back.is_some(),
+            ));
     }
 
     /// 指针抬起
@@ -212,27 +169,27 @@ impl crate::MiniAppWindow {
                 return;
             }
             
-            self.interaction.clear_button_pressed();
             self.fixed_dirty = true;
             let was_sel = self.interaction.is_dragging_selection();
             self.interaction.end_text_selection();
-            if was_sel { self.needs_redraw = true; if let Some(w) = &self.window { w.request_redraw(); } return; }
-            
-            if let Some(id) = self.interaction.dragging_scroll_area.take() {
-                if let Some(c) = self.interaction.get_scroll_controller_mut(&id) { c.end_drag(); }
+            if was_sel {
+                self.interaction.clear_button_pressed();
                 self.needs_redraw = true;
                 if let Some(w) = &self.window { w.request_redraw(); }
+                return;
             }
-            
+
             if let Some(r) = self.interaction.handle_mouse_release() {
                 handle_interaction_result(&r, self.window.as_ref(), self.renderer.as_ref(), &mut self.app, &mut self.clipboard, self.scroll.get_position(), self.scale_factor);
             }
-            
-            let anim = self.scroll.end_drag();
-            // 侧滑返回：松手进收尾动画（推到底真返回 / 不够阈值滑回去），
-            // 由 tick_edge_back 逐帧推进
-            if let Some(eb) = &mut self.edge_back { eb.release(); }
-            self.gesture = None;
+
+            // 拖动收尾（按压态 / scroll-view / 页面 / 侧滑）与 SDK 共用 host::input
+            let anim = input::end_drags(
+                &mut self.interaction,
+                &mut self.scroll,
+                &mut self.edge_back,
+                &mut self.gesture,
+            );
             // 触摸序列收尾：`touchend` 照常派发；tap 只在「没移动过、没被滚动接管、
             // 也不是用来停惯性」时才有 —— **不再有 300ms 上限**
             // （微信里按住两秒再松手同样是一次 tap，旧实现按久一点就点不动，
@@ -279,131 +236,33 @@ impl crate::MiniAppWindow {
 
     /// 停掉正在跑的惯性/回弹（页面与所有 scroll-view）。返回是否真的停了什么。
     pub(crate) fn stop_running_flings(&mut self) -> bool {
-        let mut stopped = false;
-        if self.scroll.is_animating() {
-            self.scroll.stop();
-            stopped = true;
-        }
-        for c in self.interaction.scroll_controllers.values_mut() {
-            if c.is_animating() {
-                c.stop();
-                stopped = true;
-            }
-        }
+        let stopped = input::stop_running_flings(&mut self.scroll, &mut self.interaction);
         if stopped {
             self.needs_redraw = true;
         }
         stopped
     }
 
-    /// 把手势仲裁的结果落到滚动控制器上（方向锁定 + 嵌套传递都在这里生效）
+    /// 把手势仲裁的结果落到滚动控制器上（算法在 host::input，两端共用）
     pub(crate) fn apply_gesture_move(&mut self, x: f32, y: f32) {
-        use app_window::gesture::{Axis, GestureAction};
         let ts = self.touch_clock_ms();
-        let Some(mut g) = self.gesture.take() else { return };
-        let before_target = g.target().clone();
-        let mut action = g.on_move(x, y);
-        if before_target != *g.target() && std::env::var("MINI_SCROLL_LOG").is_ok() {
-            eprintln!("🖐 手势归属：{:?} -> {:?}", before_target, g.target());
+        let eff = input::apply_gesture_move(
+            &mut self.gesture,
+            &mut self.interaction,
+            &mut self.scroll,
+            &mut self.edge_back,
+            LOGICAL_WIDTH as f32,
+            x,
+            y,
+            ts,
+        );
+        if eff.needs_redraw {
+            self.needs_redraw = true;
         }
-        loop {
-            match action {
-                GestureAction::None => break,
-                GestureAction::BeginArea { ref id, axis } => {
-                    let (sx, sy) = g.start();
-                    // 这个 scroll-view 根本没有滚动控制器（内容不足一屏，压根不用滚）：
-                    // 直接把手势交给页面，否则手指划在它上面时整页都不动 ——
-                    // 「短列表挡住整页滚动」正是这么来的。
-                    let cannot_scroll = self
-                        .interaction
-                        .get_scroll_controller(id)
-                        .map(|c| c.get_max_scroll() <= 0.5)
-                        .unwrap_or(true);
-                    if cannot_scroll {
-                        if std::env::var("MINI_SCROLL_LOG").is_ok() {
-                            let max = self
-                                .interaction
-                                .get_scroll_controller(id)
-                                .map(|c| c.get_max_scroll());
-                            eprintln!("🖐 {} 不可滚（max_scroll={:?}）→ 交给页面", id, max);
-                        }
-                        action = g.handoff_to_page();
-                        continue;
-                    }
-                    if let Some(c) = self.interaction.get_scroll_controller_mut(id) {
-                        // 从**按下点**开始拖：锁定那一刻内容不该跳一下
-                        c.begin_drag(if axis == Axis::Horizontal { sx } else { sy }, ts);
-                        c.update_drag(if axis == Axis::Horizontal { x } else { y }, ts);
-                    }
-                    self.interaction.dragging_scroll_area = Some(id.clone());
-                    self.needs_redraw = true;
-                    break;
-                }
-                GestureAction::UpdateArea { ref id, axis } => {
-                    if let Some(c) = self.interaction.get_scroll_controller_mut(id) {
-                        c.update_drag(if axis == Axis::Horizontal { x } else { y }, ts);
-                    }
-                    // 内层到边界后还在往同一方向推 → 把这次手势交给页面继续
-                    // （手指往下推时内容已经到顶、往上推时已经到底）。
-                    // 不能用「位置没变」判断：控制器有橡皮筋越界，到边界后位置照样在动。
-                    let (_, dy) = g.delta();
-                    let keep_pushing = self
-                        .interaction
-                        .get_scroll_controller(id)
-                        .map(|c| {
-                            c.get_max_scroll() <= 0.5
-                                || (c.is_at_top() && dy > 0.0)
-                                || (c.is_at_bottom() && dy < 0.0)
-                        })
-                        .unwrap_or(true);
-                    self.needs_redraw = true;
-                    if axis == Axis::Vertical && keep_pushing {
-                        if let Some(id) = self.interaction.dragging_scroll_area.take() {
-                            if let Some(c) = self.interaction.get_scroll_controller_mut(&id) {
-                                c.end_drag();
-                            }
-                        }
-                        action = g.handoff_to_page();
-                        continue;
-                    }
-                    break;
-                }
-                GestureAction::BeginPage => {
-                    let (_, ly) = g.last();
-                    self.scroll.begin_drag(ly, ts);
-                    self.scroll.update_drag(y, ts);
-                    // 注意：**页面滚动不置 needs_redraw**。整页内容已经画在长画布上，
-                    // 滚动只是换一条切片上屏；置脏会让每一帧都整页重绘
-                    // （实测首页拖动 3.7ms → 6.5ms，等于把「滚动不重绘」这条优化废掉）。
-                    self.last_scroll_at = Some(Instant::now());
-                    break;
-                }
-                GestureAction::UpdatePage => {
-                    self.scroll.update_drag(y, ts);
-                    self.last_scroll_at = Some(Instant::now());
-                    break;
-                }
-                GestureAction::BeginEdgeBack => {
-                    // 手势升级成侧滑返回：先把可能已经开始的滚动收掉，
-                    // 否则页面会一边被推出去一边继续上下滚。
-                    if let Some(id) = self.interaction.dragging_scroll_area.take() {
-                        if let Some(c) = self.interaction.get_scroll_controller_mut(&id) { c.end_drag(); }
-                    }
-                    self.scroll.end_drag();
-                    let (sx, _) = g.start();
-                    let mut eb = app_window::edge_back::EdgeBack::new(sx, ts, LOGICAL_WIDTH as f32);
-                    eb.on_move(x, ts);
-                    self.edge_back = Some(eb);
-                    // 注意：**不置 needs_redraw**。页面内容一点没变，变的只是上屏时
-                    // 整帧往右挪多少（present 每帧都跑），置脏等于每帧白重画一次整页。
-                    break;
-                }
-                GestureAction::UpdateEdgeBack => {
-                    if let Some(eb) = &mut self.edge_back { eb.on_move(x, ts); }
-                    break;
-                }
-            }
+        if eff.page_scrolled {
+            // 页面滚动**不置 needs_redraw**（见 GestureEffect 的注释），只记时刻：
+            // 裁剪余量按「最近是否在滚」自适应
+            self.last_scroll_at = Some(Instant::now());
         }
-        self.gesture = Some(g);
     }
 }

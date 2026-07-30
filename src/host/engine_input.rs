@@ -8,6 +8,7 @@
 
 use super::engine::MiniEngine;
 use super::navigation::{parse_url, NavigationRequest};
+use crate::host::input;
 use crate::host::touch::TouchOut;
 use crate::ui::interaction::KeyInput;
 use std::collections::HashMap;
@@ -200,57 +201,34 @@ impl MiniEngine {
 
     // ───────────────────────── 内部：派发 ─────────────────────────
 
-    /// 与桌面窗体 `dispatch_touch_events` 同一套语义：
-    /// 覆盖层用视口坐标且命中即止（弹窗之上的触摸不许穿透），正常流要加滚动偏移。
+    /// 触摸派发：与桌面窗体走同一份 [`crate::host::input::dispatch_touch_sequence`]，
+    /// 这里只补「派发之后引擎要做什么」（取 setData 脏标记）。
     pub(crate) fn dispatch_touch(&mut self, outs: &[TouchOut], x: f32, y: f32) {
-        if outs.is_empty() {
-            return;
-        }
-        let on_fixed = self
-            .renderer
-            .as_ref()
-            .map(|r| r.fixed_layer_hit(x, y))
-            .unwrap_or(false);
-        let (hit_y, scope) = if on_fixed {
-            (y, Some(true))
-        } else {
-            (y + self.scroll.get_position(), Some(false))
-        };
         let id = self.touch.identifier();
         let time_ms = self.mono_ms();
-        let mut dirty = false;
-        for out in outs {
-            // `tap` 走点击链路（那边还要管按压态、picker、输入框）
-            let names: &[&str] = match out {
-                TouchOut::Start => &["touchstart"],
-                TouchOut::Move => &["touchmove"],
-                TouchOut::End => &["touchend"],
-                TouchOut::Cancel => &["touchcancel"],
-                // 微信同时派发新旧两个名字
-                TouchOut::LongPress => &["longpress", "longtap"],
-                TouchOut::Tap => &[],
-            };
-            for name in names {
-                let detail = if *name == "longpress" || *name == "longtap" {
-                    serde_json::json!({ "x": x, "y": y })
-                } else {
-                    serde_json::json!({})
-                };
-                let sent = match self.renderer.as_ref() {
-                    Some(r) => crate::host::touch::dispatch_to_js(
-                        &mut self.app, r, name, (x, hit_y), (x, y), scope, id, time_ms, detail,
-                    ),
-                    None => false,
-                };
-                if sent {
-                    dirty = true;
+        let scroll_pos = self.scroll.get_position();
+        let Self {
+            app,
+            renderer,
+            page_data_dirty,
+            needs_redraw,
+            ..
+        } = self;
+        input::dispatch_touch_sequence(
+            app,
+            renderer.as_ref(),
+            outs,
+            (x, y),
+            scroll_pos,
+            id,
+            time_ms,
+            |app| {
+                if app.take_data_dirty() {
+                    *page_data_dirty = true;
+                    *needs_redraw = true;
                 }
-            }
-        }
-        if dirty && self.app.take_data_dirty() {
-            self.page_data_dirty = true;
-            self.needs_redraw = true;
-        }
+            },
+        );
     }
 
     fn handle_click(&mut self, x: f32, y: f32) {

@@ -1,15 +1,11 @@
-//! 把触摸状态机产出的事件派发给逻辑层，并判断「滚动是否已经接管这次触摸」。
+//! 桌面窗体侧的触摸派发胶水：只负责「时钟」与「派发之后宿主要做什么」。
 //!
-//! 事件对象由 **Rust 侧**构造后交给 `__dispatchEvent`，而不是在 JS 里拼：
-//! `touches` 的坐标、`target` 与 `currentTarget` 的区分只有渲染层知道
-//! （谁被摸到、谁挂着处理函数，是两棵不同的节点）。
-//!
-//! 覆盖层与正常流是两套坐标，所以派发也要分开问：覆盖层用视口坐标且命中即止
-//! （弹窗遮罩之上的触摸不许穿透），正常流要加上页面滚动偏移。
+//! 派发本身（覆盖层 vs 正常流的两套坐标、事件名映射、longpress 的双名字）在
+//! [`mini_render::host::input::dispatch_touch_sequence`] —— 与移动端 SDK 同一份。
 
 use crate::app_window;
 use crate::print_js_output;
-use serde_json::json;
+use mini_render::host::input;
 
 impl crate::MiniAppWindow {
     /// 事件对象的 `timeStamp`：页面打开到现在的毫秒数（微信语义）
@@ -23,77 +19,52 @@ impl crate::MiniAppWindow {
         self.started_at.elapsed().as_millis() as u64
     }
 
-    /// 把状态机产出的事件派发给逻辑层。
-    ///
-    /// 覆盖层与正常流是两套坐标：覆盖层用视口坐标且**命中即到此为止**
-    /// （弹窗遮罩之上的触摸不许穿透到下层页面），正常流要加上滚动偏移。
-    pub(crate) fn dispatch_touch_events(&mut self, outs: &[app_window::touch::TouchOut], x: f32, y: f32) {
-        use app_window::touch::TouchOut;
-        if outs.is_empty() {
-            return;
-        }
-        let on_fixed = self
-            .renderer
-            .as_ref()
-            .map(|r| r.fixed_layer_hit(x, y))
-            .unwrap_or(false);
-        let (hit_y, scope) = if on_fixed {
-            (y, Some(true))
-        } else {
-            (y + self.scroll.get_position(), Some(false))
-        };
+    /// 把状态机产出的事件派发给逻辑层，并在**每次**派发之后取一次脏标记与导航请求
+    /// （挪到批次外面的话，同一批事件里第二个处理函数的导航会盖掉第一个）。
+    pub(crate) fn dispatch_touch_events(
+        &mut self,
+        outs: &[app_window::touch::TouchOut],
+        x: f32,
+        y: f32,
+    ) {
         let id = self.touch.identifier();
         let time_ms = self.event_time_ms();
-        for out in outs {
-            // `tap` 由既有的点击链路处理（它还要管按压态、picker、输入框等）
-            let names: &[&str] = match out {
-                TouchOut::Start => &["touchstart"],
-                TouchOut::Move => &["touchmove"],
-                TouchOut::End => &["touchend"],
-                TouchOut::Cancel => &["touchcancel"],
-                // 微信同时派发新旧两个名字
-                TouchOut::LongPress => &["longpress", "longtap"],
-                TouchOut::Tap => &[],
-            };
-            for name in names {
-                let detail = if *name == "longpress" || *name == "longtap" {
-                    json!({ "x": x, "y": y })
-                } else {
-                    json!({})
-                };
-                let dispatched = match self.renderer.as_ref() {
-                    Some(r) => app_window::touch::dispatch_to_js(
-                        &mut self.app, r, name, (x, hit_y), (x, y), scope, id, time_ms, detail,
-                    ),
-                    None => false,
-                };
-                if dispatched {
-                    print_js_output(&self.app);
-                    // 处理函数里可能 setData / 导航
-                    if self.app.take_data_dirty() {
-                        self.needs_redraw = true;
-                        self.page_data_dirty = true;
-                        self.fixed_dirty = true;
-                    }
-                    if self.pending_navigation.is_none() {
-                        self.pending_navigation = app_window::check_navigation(&mut self.app);
-                    }
+        let scroll_pos = self.scroll.get_position();
+        // 逐字段借出：`app` 要可变借给派发，其余字段在回调里更新
+        let Self {
+            app,
+            renderer,
+            needs_redraw,
+            page_data_dirty,
+            fixed_dirty,
+            pending_navigation,
+            ..
+        } = self;
+        input::dispatch_touch_sequence(
+            app,
+            renderer.as_ref(),
+            outs,
+            (x, y),
+            scroll_pos,
+            id,
+            time_ms,
+            |app| {
+                print_js_output(app);
+                // 处理函数里可能 setData / 导航
+                if app.take_data_dirty() {
+                    *needs_redraw = true;
+                    *page_data_dirty = true;
+                    *fixed_dirty = true;
                 }
-            }
-        }
+                if pending_navigation.is_none() {
+                    *pending_navigation = app_window::check_navigation(app);
+                }
+            },
+        );
     }
 
-    /// 滚动是否已经接管这次触摸（页面滚动位置变了，或某个 scroll-view 正在被拖）。
-    /// 接管方要给触摸序列发 `touchcancel` —— 与浏览器/Skyline 的手势竞争一致。
+    /// 滚动是否已经接管这次触摸 —— 接管方要给触摸序列补一次 `touchcancel`
     pub(crate) fn scroll_took_over(&self) -> bool {
-        if (self.scroll.get_position() - self.scroll_pos_at_press).abs() > 0.5 {
-            return true;
-        }
-        self.interaction
-            .dragging_scroll_area
-            .as_ref()
-            .and_then(|id| self.interaction.get_scroll_controller(id))
-            .map(|c| c.is_dragging && c.get_position() > 0.0 || c.is_animating())
-            .unwrap_or(false)
+        input::scroll_took_over(&self.scroll, &self.interaction, self.scroll_pos_at_press)
     }
 }
