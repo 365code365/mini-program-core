@@ -15,6 +15,13 @@
 //! - 桌面：应用自己的配置/缓存目录
 //!
 //! 没设置时回落到开发期的老行为（仓库的 `target/`），所以现有脚本与测试不受影响。
+//!
+//! ## 已知限制：这是**进程级**设置
+//! 一个进程只有一个数据目录，所以同一进程里跑两个 [`crate::host::MiniEngine`]（比如
+//! 宿主想同时预热两个小程序）会共用同一份 storage 与图片缓存 —— 两个小程序的
+//! storage 靠文件名（`<小程序名>.json`）隔离，但沙盒隔离要靠宿主自己给不同目录做不到。
+//! 要真正支持多实例，得把它变成引擎的实例状态（`storage_file` / `image_net` 都要跟着改）。
+//! 现网用法是「一个 App 一个容器」，所以先留着；测试里因此不能假设它在跑测期间不变。
 
 use std::path::{Path, PathBuf};
 use std::sync::{OnceLock, RwLock};
@@ -45,7 +52,12 @@ pub fn data_dir() -> PathBuf {
 
 /// 数据目录下的一个子目录（不存在则创建）。
 pub fn subdir(name: &str) -> PathBuf {
-    let dir = data_dir().join(name);
+    subdir_in(&data_dir(), name)
+}
+
+/// 指定根目录下的子目录 —— 与全局状态无关的那一半，可以确定性地测。
+fn subdir_in(root: &Path, name: &str) -> PathBuf {
+    let dir = root.join(name);
     std::fs::create_dir_all(&dir).ok();
     dir
 }
@@ -62,9 +74,18 @@ mod tests {
     }
 
     #[test]
-    fn subdir_is_under_data_dir() {
-        let s = subdir("mini-storage");
-        assert!(s.starts_with(data_dir()));
+    fn subdir_is_under_the_given_root() {
+        // 只测与全局无关的那一半。
+        //
+        // 从前写的是 `subdir("x").starts_with(data_dir())` —— 读了两次全局：
+        // 一次在 `subdir()` 里、一次在断言里。而 `MiniEngine::new()` 会调
+        // `set_data_dir()`，并行跑测试时这两次读之间全局就可能被改掉。
+        // 实测 40 轮里挂 5 次，报的却是「路径不在数据目录下」，看着像功能坏了。
+        let root = std::env::temp_dir().join("mini-render-data-dir-test");
+        let s = subdir_in(&root, "mini-storage");
+        assert!(s.starts_with(&root), "{} 应在 {} 下", s.display(), root.display());
         assert!(s.ends_with("mini-storage"));
+        assert!(s.is_dir(), "子目录应被创建出来");
+        std::fs::remove_dir_all(&root).ok();
     }
 }
