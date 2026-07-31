@@ -149,3 +149,86 @@ fn prelude_目录里没有孤儿文件() {
         "这些 prelude 文件没写进 api.rs 的 PRELUDE 表，永远不会被执行：{missing:?}"
     );
 }
+
+// ─────────── 导出 HTML 工程的运行时 JS：同一类「分片别掉队」的约束 ───────────
+
+#[test]
+fn html_运行时分片没有孤儿文件() {
+    // `RUNTIME_JS` 是 `concat!(include_str!(…))` 拼出来的一个 IIFE。往 runtime/ 放了
+    // 新的 .js 却忘了写进 concat!，症状是导出的页面**整段脚本静默少一块**（比如 picker
+    // 打不开），而编译一切正常。
+    let decl = include_str!("../compiler/html/runtime.rs");
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/compiler/html/runtime");
+    let mut files: Vec<String> = std::fs::read_dir(&dir)
+        .expect("读 runtime 目录")
+        .flatten()
+        .map(|e| e.file_name().to_string_lossy().to_string())
+        .filter(|n| n.ends_with(".js"))
+        .collect();
+    files.sort();
+    assert!(files.len() >= 5, "分片数不对：{files:?}");
+    let missing: Vec<_> = files
+        .iter()
+        .filter(|n| !decl.contains(n.as_str()))
+        .collect();
+    assert!(missing.is_empty(), "这些分片没写进 concat!，导出时会丢：{missing:?}");
+}
+
+#[test]
+fn html_运行时按文件名顺序拼接且一片不少() {
+    // 直接拿「目录里按文件名排序拼出来的文本」跟 `RUNTIME_JS` 比：
+    // 少一片、顺序错、或者 concat! 里漏写，都会在这里现形。分片名带 01..09 前缀，
+    // 所以字典序就是执行顺序。
+    //
+    // （不去数括号：JS 里 `/'/g`、`/"/g` 这种正则字面量会把简易扫描器带进字符串态，
+    //  按那个思路写出来的检查会误报。）
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/compiler/html/runtime");
+    let mut files: Vec<_> = std::fs::read_dir(&dir)
+        .expect("读 runtime 目录")
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| p.extension().and_then(|x| x.to_str()) == Some("js"))
+        .collect();
+    files.sort();
+    let joined: String = files
+        .iter()
+        .map(|p| std::fs::read_to_string(p).expect("读分片"))
+        .collect();
+    let js = crate::compiler::html::RUNTIME_JS;
+    assert_eq!(
+        joined.len(),
+        js.len(),
+        "拼接长度不一致：目录 {} 字节 vs RUNTIME_JS {} 字节（漏片或多片）",
+        joined.len(),
+        js.len()
+    );
+    assert!(joined == js, "拼接内容与 RUNTIME_JS 不一致（顺序错位？）");
+    assert!(js.trim_end().ends_with("})();"), "整段应当是一个 IIFE，结尾不对");
+}
+
+// ─────────── 导出产物必须可复现 ───────────
+
+#[test]
+fn 同一份wxml转出的html必须逐字节可复现() {
+    // `WxmlNode::attributes` 是 HashMap，每个实例的哈希种子都不一样。以前 transpile
+    // 直接遍历它，于是**同一个二进制连跑两次**，导出的 5 个页面里 `data-ds-*` 的先后
+    // 就会变 —— 导出产物没法做逐字节回归。修法见 `WxmlNode::attrs_sorted`。
+    //
+    // 这里解析两遍拿到两棵独立的树（两套 HashMap、两个种子），转出来必须一模一样。
+    let wxml = r#"<view class="row" data-index="0" data-path="pages/a/a" data-kind="tab"
+                        bindtap="onTap" data-id="7" data-name="x" data-flag="1">
+                     <text data-a="1" data-b="2" data-c="3" bindlongpress="onLong">命中</text>
+                   </view>"#;
+    let data = serde_json::json!({});
+    let mut outs = std::collections::HashSet::new();
+    for _ in 0..8 {
+        let nodes = crate::parser::wxml::WxmlParser::new(wxml).parse().expect("解析 WXML");
+        outs.insert(crate::compiler::html::wxml_to_html(&nodes, &data));
+    }
+    assert_eq!(
+        outs.len(),
+        1,
+        "同一份 WXML 转出了 {} 种不同的 HTML —— 属性遍历顺序又跟哈希种子绑上了",
+        outs.len()
+    );
+}

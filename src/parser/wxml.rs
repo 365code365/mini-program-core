@@ -41,6 +41,20 @@ impl WxmlNode {
         }
     }
     
+    /// 按属性名排序遍历属性。
+    ///
+    /// **凡是遍历顺序会被输出看见的地方都必须用这个**，别直接 `for … in &node.attributes`：
+    /// `attributes` 是 `HashMap`，每个进程的哈希种子不同，遍历顺序就不同。后果是导出的
+    /// HTML 工程**不可复现** —— 同一个二进制连跑两次，`data-ds-*` 的先后会变，实测有
+    /// 5 个页面文件在两次编译间不一致，于是没法用「逐字节比」去校验导出产物有没有回归。
+    ///
+    /// 往 `HashMap`/`serde_json::Map` 里插入的场景不受影响（那些本身与顺序无关）。
+    pub fn attrs_sorted(&self) -> Vec<(&String, &String)> {
+        let mut v: Vec<_> = self.attributes.iter().collect();
+        v.sort_by(|a, b| a.0.cmp(b.0));
+        v
+    }
+
     pub fn get_attr(&self, name: &str) -> Option<&str> {
         self.attributes.get(name).map(|s| s.as_str())
     }

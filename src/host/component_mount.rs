@@ -50,7 +50,8 @@ fn props_expr_for(nodes: &[WxmlNode], tag: &str) -> String {
         None => return "{}".to_string(),
     };
     let mut parts: Vec<String> = Vec::new();
-    for (key, value) in &node.attributes {
+    // 排序遍历：这里拼出的是给 JS 的属性字面量，顺序进了输出就该稳定
+    for (key, value) in node.attrs_sorted() {
         if !is_property_attr(key) {
             continue;
         }

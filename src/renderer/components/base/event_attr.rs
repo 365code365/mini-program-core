@@ -89,7 +89,8 @@ pub fn extract_events(node: &WxmlNode) -> Vec<EventBind> {
         .get_attr(crate::parser::template::COMPONENT_OWNER_ATTR)
         .unwrap_or("")
         .to_string();
-    for (attr, handler) in &node.attributes {
+    // 排序遍历：事件列表的先后会进派发顺序，别让它随进程变
+    for (attr, handler) in node.attrs_sorted() {
         let Some((event_type, is_catch, phase, mut_bind)) = parse_event_attr(attr) else {
             continue;
         };

@@ -424,7 +424,7 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }
 
 ```bash
 rm -rf target/mini-storage                 # ① 必做，见下
-cargo test --release                       # ② lib 479 + bin 9
+cargo test --release                       # ② lib 483 + bin 9
 bash tools/damage-check.sh                 # ③ 增量重绘 == 整帧重绘（逐字节）
 cargo run --release --example gallery      # ④ 65 张场景图
 bash tools/tab-click-check.sh              # ⑤ 三个 app 的 tabBar 点击
@@ -471,19 +471,25 @@ bash tools/clean-target.sh --dry      # 先看会删什么
 ```
 src/
 ├── parser/          WXML / 模板与表达式引擎
+│   ├── expr/        表达式 5 片：分词 / 递归下降解析 / 求值 / JS 值语义（真值·类型转换）
 │   └── wxss/        WXSS：`parser`（文本→规则）+ `selector`（选择器引擎）+ 样式表查询
 ├── renderer/        渲染器
 │   ├── components/  24 个标签的建树与绘制（含 WeUI 图标字形表、SVG 路径解析）
 │   │   ├── registry.rs  **标签 → 组件行为的唯一登记点**（build/draw/叶子/归因/状态/裁剪）
-│   │   └── base/      公共底座：类型 / 文本度量 / 换行 / 事件属性 / 样式落地 / 盒子绘制
+│   │   ├── base/      公共底座：类型 / 文本度量 / 换行 / 事件属性 / 样式落地 / 盒子绘制
+│   │   ├── canvas/    canvas 2D 上下文 7 片：状态 / 图形 / 路径 / 文字 / 渐变 / 上下文管理器
+│   │   └── video/     视频 5 片：MP4 容器 / H.264 解码 / 音轨 / 播放状态机
 │   └── wxml_renderer/  布局缓存 / 绘制调度 / 命中测试 / 动画 / 局部重绘失效
 ├── host/            **宿主层（平台无关）**：页面栈、覆盖层、触摸状态机、像素合成
+│   ├── picker_sheet/  底部选择面板 5 片：状态与几何 / 构造 / 绘制 / 省市区联动 / 指针闭环
 │   └── engine.rs      MiniEngine —— 移动端 SDK 的核心
 ├── js/              QuickJS 绑定；`prelude/*.js` 是按域拆分的逻辑层前置代码
 │                    （module / console / storage / ui / route / device / network …）
 ├── runtime/         MiniApp（逻辑层驱动、定时器、桥事件）
-├── ui/              交互管理、滚动控制器
+├── ui/              交互管理（`interaction/` 6 片：元素表 / 命中 / 输入编辑 / 指针 / 动画）、滚动控制器
 ├── compiler/html/   编译成 HTML 工程（双端对比的参照实现）
+│                    `transpile/` 4 片（CSS / 标签 / 组件内部结构 / 输出），
+│                    `runtime/*.js` 是浏览器端响应式运行时（9 片，按序 include_str! 拼接）
 ├── ffi_app.rs       App 级 C ABI（mr_app_*）
 ├── ffi_jni.rs       Android JNI 入口
 └── bin/             桌面宿主
