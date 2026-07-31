@@ -31,3 +31,5 @@ pub mod input_caret_tests;
 pub mod engine_input_tests;
 /// scroll-view 离屏缓存里的有状态组件（占位符 / 开关进度）
 pub mod scroll_cache_state_tests;
+/// JS ↔ Rust 桥的契约：两层的函数名必须对得上
+pub mod native_bridge_contract_tests;

@@ -30,7 +30,10 @@ fn main() {
     let data = mini_render::data_dir::subdir("sdk-parity");
     let mut ok = 0usize;
     for route in &routes {
-        // 每个页面单开一个实例，避免上一页的状态影响（与逐页快照的语义一致）
+        // 每个页面单开一个实例，避免上一页的状态影响（与逐页快照的语义一致）。
+        // swiper / picker / canvas 的状态是**进程级**的，新实例前要清一次 ——
+        // 否则详情页的图片轮播会继承上一页轮播的页码与自动播放时钟（实测偶发 72% 差异）。
+        mini_render::renderer::components::reset_shared_component_state();
         let mut engine = match MiniEngine::new(
             &root.to_string_lossy(),
             Some(&data.to_string_lossy()),
@@ -50,10 +53,10 @@ fn main() {
             eprintln!("⚠️  {route} 打开失败: {e}");
             continue;
         }
-        // 与桌面 `--settle 0` 的快照对齐：**只跑一帧**。
-        // 多跑几帧会让页面里的 `setTimeout` 有机会触发（sample-app 首页那个
-        // 「新人专享礼包」延时浮层就是这样冒出来的，一张图 93% 都不一样），
-        // 那不是渲染分叉，是两边等的时间不同。
+        // 与桌面 `--settle 0` 的快照对齐：**只跑一帧**，时钟停在 1ms。
+        // 多跑一帧就会让页面里的 `setTimeout` 够到（sample-app 首页那个「新人专享礼包」
+        // 延时浮层就是这样冒出来的，一张图 93.9% 都不一样）—— 那不是渲染分叉，
+        // 是两边等的时间不同。
         engine.pump(1);
         let (w, h) = engine.pixel_size();
         let dir = std::path::Path::new(&out).join(route);

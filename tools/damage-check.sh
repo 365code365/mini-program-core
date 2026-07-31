@@ -1,6 +1,10 @@
 #!/bin/bash
 # 「setData 增量重绘」对照验证：同一次 setData 分别走增量路径与强制整帧路径，
 # 截图必须逐字节一致。少画一块的代价是残留脏像素，所以这道校验是增量失效的前提。
+# 快照回归统一用**固定日期**：有页面用 `new Date()` 高亮当天（news-app 的签到日历），
+# 不固定的话基线跨天就失效。想临时换：`MINI_FAKE_NOW=2025-01-01 bash tools/damage-check.sh`
+export MINI_FAKE_NOW="${MINI_FAKE_NOW:-2024-03-15}"
+
 cd "$(dirname "$0")/.."
 pkill -9 mini-app-window 2>/dev/null
 

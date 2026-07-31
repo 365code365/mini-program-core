@@ -80,6 +80,11 @@ impl JsBridge {
         // setData 的脏标记走原生回调：宿主每帧取走一次决定要不要重绘。
         // 从前这里是 JS 侧 `__print_buffer.push('[PageUpdate] ' + JSON.stringify(data))`，
         // 没有任何消费方 —— 每次 setData 白付一次全量序列化，还把日志刷成一片。
+        // 可注入的固定时钟：`MINI_FAKE_NOW=<epoch 毫秒>` 或 ISO 日期（`2024-03-15`）。
+        // 只为**快照回归**服务 —— 有些页面用 `new Date()` 高亮当天（news-app 的签到
+        // 日历），基线跨天就失效。不设时返回 0，JS 侧原样使用系统 Date。
+        rt.register_function("__native_fake_now", move |_| fake_now_ms().to_string())?;
+
         let dirty = self.data_dirty.clone();
         rt.register_function("__native_page_update", move |_| {
             dirty.store(true, std::sync::atomic::Ordering::Relaxed);
@@ -322,4 +327,42 @@ impl JsBridge {
         Ok(())
     }
     
+}
+
+/// `MINI_FAKE_NOW` 解析成 epoch 毫秒；没设或解析不了返回 0（= 不启用）。
+///
+/// 支持两种写法：纯数字（epoch 毫秒）与 `YYYY-MM-DD`（按当地时间的零点）。
+/// 后者是给人用的 —— 基线脚本里写 `2024-03-15` 比写 1710432000000 可读得多。
+fn fake_now_ms() -> u64 {
+    let Ok(raw) = std::env::var("MINI_FAKE_NOW") else { return 0 };
+    let raw = raw.trim();
+    if raw.is_empty() {
+        return 0;
+    }
+    if let Ok(ms) = raw.parse::<u64>() {
+        return ms;
+    }
+    // YYYY-MM-DD → 当地零点。自己算天数：只为测试固定日期，不值得引入 chrono。
+    let parts: Vec<&str> = raw.split('-').collect();
+    if parts.len() != 3 {
+        eprintln!("⚠️ MINI_FAKE_NOW 认不出：{raw}（要 epoch 毫秒或 YYYY-MM-DD）");
+        return 0;
+    }
+    let (Ok(y), Ok(m), Ok(d)) = (
+        parts[0].parse::<i64>(),
+        parts[1].parse::<i64>(),
+        parts[2].parse::<i64>(),
+    ) else {
+        eprintln!("⚠️ MINI_FAKE_NOW 认不出：{raw}");
+        return 0;
+    };
+    // 民用历法转天数（Howard Hinnant 的 days_from_civil）
+    let y_adj = if m <= 2 { y - 1 } else { y };
+    let era = if y_adj >= 0 { y_adj } else { y_adj - 399 } / 400;
+    let yoe = y_adj - era * 400;
+    let mp = (m + 9) % 12;
+    let doy = (153 * mp + 2) / 5 + d - 1;
+    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    let days = era * 146_097 + doe - 719_468;
+    (days.max(0) as u64) * 86_400_000
 }

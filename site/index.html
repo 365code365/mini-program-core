@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mini-render — 用 Rust 从零写的小程序渲染引擎</title>
+<meta name="description" content="自绘的小程序渲染引擎：不基于 WebView、不映射系统原生控件、不依赖 Skia。给它一份微信小程序源码和一块可写的像素缓冲，它把界面画出来、把交互跑起来。">
+<meta name="theme-color" content="#0a0c10">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/style.css">
+<script>
+  /* 提前打标记：有 JS 才启用入场动画，避免内容先显示再被隐藏的闪烁。
+     没有 JS 时所有内容默认可见。 */
+  document.documentElement.className += ' js-anim';
+</script>
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="mini-render — 用 Rust 从零写的小程序渲染引擎">
+<meta property="og:description" content="小程序源码进，像素出。中间没有浏览器内核、没有系统控件、没有第三方图形库。">
+<meta property="og:image" content="https://365code365.github.io/mini-program-core/assets/shots/28_ecommerce_home.webp">
+<meta name="twitter:card" content="summary">
+</head>
+<body>
+<a class="skip" href="#main">跳到正文</a>
+
+<header class="site-head">
+  <div class="wrap head-inner">
+    <a class="brand" href="#top">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-name">mini-render</span>
+    </a>
+    <nav class="head-nav" aria-label="页面导航">
+      <a href="#pipeline">渲染管线</a>
+      <a href="#gallery">场景</a>
+      <a href="#perf">实测</a>
+      <a href="#start">快速开始</a>
+      <a href="#scope">能力边界</a>
+      <a href="#docs">文档</a>
+    </nav>
+    <a class="btn btn-ghost head-cta" href="https://github.com/365code365/mini-program-core">
+      <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-2.91-.88-2.91-2.9 0-.83.3-1.51.79-2.04-.08-.2-.35-.99.08-2.06 0 0 .65-.2 2.12.79a5.9 5.9 0 0 1 1.61-.22c.55 0 1.1.07 1.61.22 1.47-1 2.12-.79 2.12-.79.43 1.07.16 1.86.08 2.06.49.53.79 1.2.79 2.04 0 2.03-1.14 2.7-2.92 2.9.29.26.55.75.55 1.52 0 1.07-.01 1.95-.01 2.22 0 .21.15.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+      GitHub
+    </a>
+  </div>
+</header>
+
+<main id="main">
+  <span id="top"></span>
+
+  <!-- ─────────────────────────  HERO  ───────────────────────── -->
+  <section class="hero">
+    <div class="hero-glow" aria-hidden="true"></div>
+    <div class="wrap hero-inner">
+      <div class="hero-copy">
+        <p class="eyebrow">Rust · 自绘 · 无 WebView</p>
+        <h1>小程序源码进，<br><span class="grad">像素出</span>。</h1>
+        <p class="lede">
+          一个用 Rust 从零实现的小程序渲染引擎。给它一份微信小程序源码
+          （WXML / WXSS / JS / app.json）和一块可写的像素缓冲，它把界面画出来、把交互跑起来。
+          中间<strong>没有浏览器内核、没有系统控件、没有第三方图形库</strong>。
+        </p>
+        <ul class="hero-nots">
+          <li>不基于 WebView</li>
+          <li>不映射系统原生控件</li>
+          <li>不依赖 Skia</li>
+        </ul>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#start">30 秒跑起来</a>
+          <a class="btn btn-ghost" href="https://github.com/365code365/mini-program-core">看源码</a>
+        </div>
+        <p class="hero-foot">对齐目标是微信 <strong>Skyline</strong> —— 同样原生渲染，同样没有 DOM。</p>
+      </div>
+
+      <div class="hero-shots" aria-label="引擎渲染输出示例">
+        <figure class="phone phone-side">
+          <div class="phone-screen">
+            <img src="assets/shots/36_news_feed.webp" width="500" height="1150" alt="引擎渲染的资讯信息流页面" loading="eager" decoding="async">
+          </div>
+          <figcaption>资讯信息流</figcaption>
+        </figure>
+        <figure class="phone phone-main">
+          <div class="phone-screen">
+            <img src="assets/shots/28_ecommerce_home.webp" width="500" height="1450" alt="引擎渲染的电商首页，含轮播、限时秒杀倒计时与推荐流" loading="eager" decoding="async">
+          </div>
+          <figcaption>电商首页</figcaption>
+        </figure>
+        <figure class="phone phone-side">
+          <div class="phone-screen">
+            <img src="assets/shots/60_form_controls.webp" width="500" height="1127" alt="引擎渲染的表单控件页面" loading="eager" decoding="async">
+          </div>
+          <figcaption>表单控件</figcaption>
+        </figure>
+      </div>
+    </div>
+
+    <div class="wrap">
+      <dl class="stats">
+        <div><dt>商城首页整帧</dt><dd>6.1<small>ms</small></dd><p>750×1334 物理像素，纯 CPU</p></div>
+        <div><dt>与 Chrome 差异</dt><dd>4.55<small>%</small></dd><p>同源码 15 页逐像素比</p></div>
+        <div><dt>组件标签</dt><dd>24<small>个</small></dd><p>另有 39 个 wx.* API</p></div>
+        <div><dt>回归基线</dt><dd>65<small>张</small></dd><p>固定时钟下逐字节可复现</p></div>
+        <div><dt>单元测试</dt><dd>485<small>条</small></dd><p>lib 476 + bin 9，警告 0</p></div>
+        <div><dt>unsafe</dt><dd>0<small>处</small></dd><p>除 FFI 边界外全库没有</p></div>
+      </dl>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────  为什么自绘  ───────────────────────── -->
+  <section class="band" id="why">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="eyebrow">为什么自绘</p>
+        <h2>WebView 的痛点不在能不能渲染，<br>而在你<span class="grad">控制不了</span></h2>
+        <p class="sec-lede">
+          内核版本随系统走、同一份 CSS 在不同 Android 上排版不同、首屏要等内核起来、
+          滚动与手势的手感由内核决定、想插一层原生能力就要架桥。
+          自绘把这些变成自己的代码：布局与绘制各端只有一份，帧调度、手势仲裁、内存上限全在手里。
+        </p>
+      </header>
+
+      <div class="table-scroll">
+        <table class="cmp">
+          <caption class="sr-only">与常见跨端渲染方案的对比</caption>
+          <thead>
+            <tr><th scope="col">方案</th><th scope="col">它的做法</th><th scope="col">本引擎</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">小程序 WebView 渲染层</th>
+              <td>WXML → DOM，交给浏览器内核排版绘制</td>
+              <td><span class="tag no">不用</span> DOM 与浏览器内核</td>
+            </tr>
+            <tr>
+              <th scope="row">React Native / Weex</th>
+              <td>JS 描述 → 映射成系统原生控件</td>
+              <td><span class="tag no">不映射</span> 系统控件，不受各端控件差异摆布</td>
+            </tr>
+            <tr>
+              <th scope="row">Flutter</th>
+              <td>Dart + Skia 自绘</td>
+              <td><span class="tag near">思路最近</span> 但这里是 Rust + 自研光栅器，无 Skia</td>
+            </tr>
+            <tr>
+              <th scope="row">Electron / Tauri</th>
+              <td>打包或复用一个浏览器</td>
+              <td><span class="tag no">不打包</span> 浏览器，产物 34MB 级</td>
+            </tr>
+            <tr>
+              <th scope="row">微信 Skyline</th>
+              <td>原生渲染 + 自绘组件</td>
+              <td><span class="tag yes">对齐目标</span> 语义、手感、事件模型都按它对</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="note">
+        代价也很实：CSS 覆盖面要自己一条一条补，性能靠 CPU 省着花。各端剩余差异只来自系统字体 ——
+        要彻底消掉就把字体一起打包（<code>assets/</code> 里放了 Noto Sans SC）。
+      </p>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────  管线  ───────────────────────── -->
+  <section class="band alt" id="pipeline">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="eyebrow">渲染管线</p>
+        <h2>一帧是怎么画出来的</h2>
+        <p class="sec-lede">
+          八步，每步都能单独打开诊断日志。逻辑层与渲染层之间只有<strong>数据快照</strong>这一条通道
+          （<code>setData</code> → <code>Arc&lt;Value&gt;</code>）—— 没有 DOM、没有虚拟节点 diff、没有 GC 压力。
+        </p>
+      </header>
+
+      <ol class="steps">
+        <li>
+          <span class="step-no">01</span>
+          <h3>解析</h3>
+          <p>WXML → 节点树，WXSS → 样式表。手写解析器；CSS 选择器引擎在<strong>解析期就编译</strong>好，含标签 / 类 / #id / <code>*</code> / 属性 / 后代 / 子代与特异性排序。</p>
+        </li>
+        <li>
+          <span class="step-no">02</span>
+          <h3>逻辑层</h3>
+          <p>跑 <code>App</code> / <code>Page</code> / <code>Component</code>，<code>setData</code> 产出数据快照。QuickJS 运行时：CommonJS 模块、<code>Promise</code> / <code>async</code>、定时器、微任务每帧 pump。</p>
+        </li>
+        <li>
+          <span class="step-no">03</span>
+          <h3>模板求值</h3>
+          <p><code>{{ }}</code> 表达式 + <code>wx:if</code> / <code>wx:for</code> 展开成渲染节点树。<code>class</code> / <code>style</code> 绑定到数组或对象时按 CSS 语义拼接。</p>
+        </li>
+        <li>
+          <span class="step-no">04</span>
+          <h3>样式计算</h3>
+          <p>命中的 CSS 加内联 <code>style</code> 合成计算样式。带继承语义（<code>color</code> / <code>font-size</code> / <code>line-height</code> …），简写与细项按固定档位排序落地。</p>
+        </li>
+        <li>
+          <span class="step-no">05</span>
+          <h3>布局</h3>
+          <p>taffy 求解 Flexbox 盒模型。<strong>文本节点挂自定义度量函数</strong>，换行与 min/max-content 由真实字形宽度决定；布局后有第二遍 <code>reflow</code> 收拾算完才知道的溢出。</p>
+        </li>
+        <li>
+          <span class="step-no">06</span>
+          <h3>绘制</h3>
+          <p>自研 2D 光栅器：扫描线 + even-odd 填充、4× 超采样抗锯齿、圆角三次贝塞尔逼近、多字体回退、Apple <code>sbix</code> 彩色 emoji、两级图片过滤、渐变、掩膜化 <code>box-shadow</code>、裁剪栈。</p>
+        </li>
+        <li>
+          <span class="step-no">06′</span>
+          <h3>动画</h3>
+          <p><code>@keyframes</code> / <code>transition</code> / <code>wx.createAnimation</code> 在<strong>绘制期</strong>按全局时钟求值。<code>transform</code> / <code>opacity</code> / 颜色只影响绘制不触发重排 → 动画帧成本≈静态帧。</p>
+        </li>
+        <li>
+          <span class="step-no">07</span>
+          <h3>分层合成</h3>
+          <p>正常流 → tabBar → <code>position:fixed</code> 覆盖层，层叠顺序与浏览器一致（全屏遮罩能压暗 tabBar）。覆盖层用视口坐标、独立画布、按需重绘。</p>
+        </li>
+        <li>
+          <span class="step-no">08</span>
+          <h3>上屏</h3>
+          <p>贴到窗口、交给宿主 View、或直接存 PNG。桌面走 softbuffer，移动端把 RGBA 交给宿主，无头模式 <code>save_png</code> —— 同一份代码，五个平台。</p>
+        </li>
+      </ol>
+
+      <div class="flow" aria-hidden="true">
+        <span>小程序目录</span><i></i><span>解析</span><i></i><span>逻辑层</span><i></i><span>布局</span><i></i><span>光栅化</span><i></i><span>合成</span><i></i><span class="flow-out">RGBA 缓冲</span>
+      </div>
+      <p class="note center">
+        产物是一个普通的 Rust 库（<code>cdylib</code> / <code>staticlib</code> / <code>rlib</code>）。
+        落地条件只有一条：<strong>给我一块可写的像素缓冲</strong> ——
+        所以 Android、iOS、Windows、macOS、Linux 跑同一份代码，没有屏幕的 CI 里也能直接出 PNG。
+      </p>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────  画廊  ───────────────────────── -->
+  <section class="band" id="gallery">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="eyebrow">场景画廊</p>
+        <h2>这些都是引擎自己画的</h2>
+        <p class="sec-lede">
+          纯 WXML + WXSS + 数据，375×667 @2x，无浏览器参与。它们同时是<strong>逐字节可复现的回归基线</strong> ——
+          任何渲染改动先看这 65 张有没有变。指到卡片上可以看整页。
+        </p>
+      </header>
+
+      <div class="shots">
+        <a class="shot" href="https://github.com/365code365/mini-program-core/blob/main/doc/gallery/28_ecommerce_home.png">
+          <span class="phone-screen"><img src="assets/shots/28_ecommerce_home.webp" width="500" height="1450" alt="电商首页：搜索栏、轮播图、金刚区、限时秒杀倒计时与商品推荐流" loading="lazy" decoding="async"></span>
+          <span class="shot-cap"><b>电商首页</b>轮播 + 每秒倒计时 + 骨架动画</span>
+        </a>
+        <a class="shot" href="https://github.com/365code365/mini-program-core/blob/main/doc/gallery/36_news_feed.png">
+          <span class="phone-screen"><img src="assets/shots/36_news_feed.webp" width="500" height="1150" alt="资讯信息流：顶部频道横滑与图文列表" loading="lazy" decoding="async"></span>
+          <span class="shot-cap"><b>资讯信息流</b>频道横滑，纵向惯性滚动</span>
+        </a>
+        <a class="shot" href="https://github.com/365code365/mini-program-core/blob/main/doc/gallery/03_product_detail.png">
+          <span class="phone-screen"><img src="assets/shots/03_product_detail.webp" width="500" height="957" alt="商品详情页：主图、价格、规格与底部操作栏" loading="lazy" decoding="async"></span>
+          <span class="shot-cap"><b>商品详情</b>固定底栏与滚动内容分层</span>
+        </a>
+        <a class="shot" href="https://github.com/365code365/mini-program-core/blob/main/doc/gallery/41_live_shopping.png">
+          <span class="phone-screen"><img src="assets/shots/41_live_shopping.webp" width="500" height="890" alt="直播带货页面：视频区、弹幕与商品卡" loading="lazy" decoding="async"></span>
+          <span class="shot-cap"><b>直播带货</b>视频层 + 覆盖层叠加</span>
+        </a>
+        <a class="shot" href="https://github.com/365code365/mini-program-core/blob/main/doc/gallery/51_health_dashboard.png">
+          <span class="phone-screen"><img src="assets/shots/51_health_dashboard.webp" width="500" height="960" alt="健康数据看板：环形进度、柱状图与指标卡" loading="lazy" decoding="async"></span>
+          <span class="shot-cap"><b>健康看板</b>渐变、环形进度、阴影</span>
+        </a>
+        <a class="shot" href="https://github.com/365code365/mini-program-core/blob/main/doc/gallery/60_form_controls.png">
+          <span class="phone-screen"><img src="assets/shots/60_form_controls.webp" width="500" height="1127" alt="表单控件合集：输入框、开关、滑块、复选与单选" loading="lazy" decoding="async"></span>
+          <span class="shot-cap"><b>表单控件</b>switch / slider / checkbox / radio</span>
+        </a>
+        <a class="shot" href="https://github.com/365code365/mini-program-core/blob/main/doc/gallery/25_picker.png">
+          <span class="phone-screen"><img src="assets/shots/25_picker.webp" width="500" height="890" alt="picker 底部选择面板" loading="lazy" decoding="async"></span>
+          <span class="shot-cap"><b>Picker 面板</b>底部弹层，宿主层实现</span>
+        </a>
+        <a class="shot" href="https://github.com/365code365/mini-program-core/blob/main/doc/gallery/30_tabbar.png">
+          <span class="phone-screen"><img src="assets/shots/30_tabbar.webp" width="500" height="890" alt="带底部 tabBar 的页面，图标与选中态" loading="lazy" decoding="async"></span>
+          <span class="shot-cap"><b>tabBar</b>独立层，遮罩能压暗它</span>
+        </a>
+        <a class="shot" href="https://github.com/365code365/mini-program-core/blob/main/doc/gallery/29_coupon_popup.png">
+          <span class="phone-screen"><img src="assets/shots/29_coupon_popup.webp" width="500" height="890" alt="优惠券弹层，含锯齿票券边缘" loading="lazy" decoding="async"></span>
+          <span class="shot-cap"><b>优惠券弹层</b>圆角挖洞与渐变票面</span>
+        </a>
+        <a class="shot" href="https://github.com/365code365/mini-program-core/blob/main/doc/gallery/37_news_article.png">
+          <span class="phone-screen"><img src="assets/shots/37_news_article.webp" width="500" height="1236" alt="资讯正文页：长文排版与评论区" loading="lazy" decoding="async"></span>
+          <span class="shot-cap"><b>资讯正文</b>字号即时生效，长文换行</span>
+        </a>
+        <a class="shot" href="https://github.com/365code365/mini-program-core/blob/main/doc/gallery/48_checkin.png">
+          <span class="phone-screen"><img src="assets/shots/48_checkin.webp" width="500" height="956" alt="签到页面：日历网格与连续签到奖励" loading="lazy" decoding="async"></span>
+          <span class="shot-cap"><b>签到日历</b>网格布局与状态态样式</span>
+        </a>
+        <a class="shot" href="https://github.com/365code365/mini-program-core/blob/main/doc/gallery/65_icon_showcase.png">
+          <span class="phone-screen"><img src="assets/shots/65_icon_showcase.webp" width="500" height="1222" alt="WeUI 图标合集展示" loading="lazy" decoding="async"></span>
+          <span class="shot-cap"><b>WeUI 图标</b>官方矢量数据，非近似描边</span>
+        </a>
+        <a class="shot" href="https://github.com/365code365/mini-program-core/blob/main/doc/gallery/19_modal.png">
+          <span class="phone-screen"><img src="assets/shots/19_modal.webp" width="500" height="890" alt="模态对话框与半透明遮罩" loading="lazy" decoding="async"></span>
+          <span class="shot-cap"><b>模态对话框</b>showModal，按压态配对</span>
+        </a>
+        <a class="shot" href="https://github.com/365code365/mini-program-core/blob/main/doc/gallery/32_input_events.png">
+          <span class="phone-screen"><img src="assets/shots/32_input_events.webp" width="500" height="910" alt="输入事件页面：输入框、焦点与事件日志" loading="lazy" decoding="async"></span>
+          <span class="shot-cap"><b>输入事件</b>focus / input / blur / confirm</span>
+        </a>
+        <a class="shot" href="https://github.com/365code365/mini-program-core/blob/main/doc/gallery/39_news_mine.png">
+          <span class="phone-screen"><img src="assets/shots/39_news_mine.webp" width="500" height="946" alt="个人中心页面：头像、数据统计与设置列表" loading="lazy" decoding="async"></span>
+          <span class="shot-cap"><b>个人中心</b>收藏与已读跨启动持久化</span>
+        </a>
+      </div>
+
+      <p class="note center">
+        全部 65 张与素材生成方式见
+        <a href="https://github.com/365code365/mini-program-core/blob/main/doc/%E5%9C%BA%E6%99%AF%E7%94%BB%E5%BB%8A.md">场景画廊文档</a>。
+      </p>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────  实测  ───────────────────────── -->
+  <section class="band alt" id="perf">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="eyebrow">实测数字</p>
+        <h2>优化前 → 现在</h2>
+        <p class="sec-lede">
+          375×667 @2x（750×1334 物理像素），CPU 逐像素写出。
+          这些数字是<strong>回归判据</strong>，不是宣传语。
+        </p>
+      </header>
+
+      <div class="bars">
+        <div class="bar-row">
+          <div class="bar-label">商城首页整帧<small>轮播 + 每秒倒计时 + 骨架动画</small></div>
+          <div class="bar-track"><span class="bar-before" style="--w:100%">49.6 ms</span><span class="bar-after" style="--w:12.3%">6.1 ms</span></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">一次 <code>setData</code> 的重建<small>新旧渲染树并行比对</small></div>
+          <div class="bar-track"><span class="bar-before" style="--w:64.5%">32 ms</span><span class="bar-after" style="--w:8.1%">4 ms</span></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">首帧建树 + 样式<small>三条中文字体栈的应用</small></div>
+          <div class="bar-track"><span class="bar-before" style="--w:100%">3093 ms</span><span class="bar-after" style="--w:30.9%">955 ms</span></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">拖动单帧<small>tea-app 首页，60 帧平均</small></div>
+          <div class="bar-track"><span class="bar-before" style="--w:100%">7.17 ms</span><span class="bar-after" style="--w:52.2%">3.74 ms</span></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">远程图片二次打开<small>磁盘缓存命中</small></div>
+          <div class="bar-track"><span class="bar-before" style="--w:100%">6132 ms</span><span class="bar-after" style="--w:2%">11 ms</span></div>
+        </div>
+      </div>
+
+      <div class="grid-3 facts">
+        <article class="card">
+          <h3>稳态帧稳得住</h3>
+          <p>144Hz 屏（节拍 6.94ms）上商城首页的帧间隔从 <b>6.9~25ms 抖动</b> 收到 <b>6.7~7.2ms</b>；最慢一帧从 17.9ms 降到 <b>11.4ms</b>。</p>
+        </article>
+        <article class="card">
+          <h3>只重绘变化的那一块</h3>
+          <p>首页秒杀倒计时的失效范围是 <b>45×33 像素</b>，不是整屏。拿不准就退回整帧 —— 少画一块留下脏像素，比多画一次严重得多。</p>
+        </article>
+        <article class="card">
+          <h3>滚动不重绘</h3>
+          <p>页面画布是整页高的、用内容坐标，滚动只是取不同切片上屏，每帧 <b>2~3ms</b>。只有滚出已绘制条带那一刻才补画一次。</p>
+        </article>
+      </div>
+
+      <div class="split">
+        <div>
+          <h3 class="mini-head">双端一致性</h3>
+          <p class="note">同一份源码：一边原生渲染，一边编译成 HTML 用 Chrome 截图，逐像素比。剩余差异集中在粗体字形与亚像素文本位置。</p>
+          <table class="kv">
+            <tbody>
+              <tr><th scope="row"><code>sample-app</code> 商城<small>15 页</small></th><td><b>4.55%</b> 变化像素</td></tr>
+              <tr><th scope="row"><code>news-app</code> 资讯<small>6 页</small></th><td><b>6.33%</b> 变化像素</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <h3 class="mini-head">跑得起来的真实工程</h3>
+          <p class="note">不是 demo 级的自造样板。</p>
+          <table class="kv">
+            <tbody>
+              <tr><th scope="row"><code>tea-app</code><small>36 页</small></th><td><b>uni-app</b> 编译到 mp-weixin 的产物：259KB Vue 3 运行时 + 60 个 CommonJS 模块</td></tr>
+              <tr><th scope="row"><code>real-sample</code><small>8 页</small></th><td>微信官方 demo</td></tr>
+              <tr><th scope="row"><code>sample-app</code><small>15 页</small></th><td>商城闭环：购物车 → 下单 → 订单 / 物流，跨页状态走 storage</td></tr>
+              <tr><th scope="row"><code>news-app</code><small>6 页</small></th><td>资讯闭环：频道横滑、字号即时生效、评论、收藏持久化</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────  取舍  ───────────────────────── -->
+  <section class="band" id="tradeoffs">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="eyebrow">关键取舍</p>
+        <h2>为什么这么写</h2>
+        <p class="sec-lede">每一条背后都有踩过的坑，反面教材都记在踩坑记录里。</p>
+      </header>
+
+      <div class="grid-3">
+        <article class="card num" data-n="1">
+          <h3>文本度量驱动布局，不估算宽度</h3>
+          <p>度量上下文挂到 taffy 叶子上，真实字形参与布局，「定宽容器内换行」与「收缩容器被内容撑开」两种语义同时成立。</p>
+          <p class="bad">曾给每个文本盒 +4px「保险余量」，结果所有按内容定宽的徽标都比浏览器宽一圈。</p>
+        </article>
+        <article class="card num" data-n="2">
+          <h3>动画只重绘不重排</h3>
+          <p><code>@keyframes</code> 里改 <code>width</code> / <code>height</code> 这类会引发重排的属性不生效，改 <code>transform</code> / <code>opacity</code> / 颜色都生效。换来的是动画帧和静态帧一样便宜。</p>
+        </article>
+        <article class="card num" data-n="3">
+          <h3>滚动手感按 iOS / 微信那套做</h3>
+          <p>橡皮筋衰减 <code>1 - 1/(x·0.55/d + 1)</code>；回弹是带初速度的<strong>临界阻尼弹簧</strong>，不是固定时长缓动；惯性撞边界不当场停死，把动量交给弹簧。</p>
+        </article>
+        <article class="card num" data-n="4">
+          <h3>手势归属不在按下时决定</h3>
+          <p>等第一次明显位移（4px）按主方向锁定，再按「到边界仍在推」交棒给外层。横向卡片列表里竖着划该滚页面，纵向列表里横着划谁也不动。</p>
+        </article>
+        <article class="card num" data-n="5">
+          <h3>宿主层沉进 lib，两端共用</h3>
+          <p>页面栈、覆盖层、触摸状态机、手势仲裁、picker 面板、像素合成都在 <code>src/host/</code>，只有帧调度各自实现。逐像素脚本 + 输入行为测试双重守着。</p>
+        </article>
+        <article class="card num" data-n="6">
+          <h3>不引入 GPU，不做元素级位图缓存</h3>
+          <p>定位就是「给我一块像素缓冲我就能画」。抗锯齿也没换成子采样 —— 实测与 Chrome 的差异反而从 4.7% 涨到 5.3%。</p>
+        </article>
+      </div>
+      <p class="note center">
+        全部八条与 12 类踩坑记录见
+        <a href="https://github.com/365code365/mini-program-core/blob/main/doc/%E8%B8%A9%E5%9D%91%E8%AE%B0%E5%BD%95.md">踩坑记录</a>
+        与 <a href="https://github.com/365code365/mini-program-core/blob/main/doc/%E6%9E%B6%E6%9E%84%E4%B8%8E%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86.md">架构与实现原理</a>。
+      </p>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────  快速开始  ───────────────────────── -->
+  <section class="band alt" id="start">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="eyebrow">上手</p>
+        <h2>30 秒跑起来</h2>
+        <p class="sec-lede">桌面只要 Rust 工具链。集成进 App 只用<strong>一个 View</strong>。</p>
+      </header>
+
+      <div class="tabs" data-tabs>
+        <div class="tablist" role="tablist" aria-label="快速开始方式">
+          <button role="tab" id="tab-desktop" aria-controls="panel-desktop" aria-selected="true">桌面</button>
+          <button role="tab" id="tab-headless" aria-controls="panel-headless" aria-selected="false" tabindex="-1">无头出图</button>
+          <button role="tab" id="tab-android" aria-controls="panel-android" aria-selected="false" tabindex="-1">Android</button>
+          <button role="tab" id="tab-ios" aria-controls="panel-ios" aria-selected="false" tabindex="-1">iOS</button>
+        </div>
+
+        <div class="tabpanel" role="tabpanel" id="panel-desktop" aria-labelledby="tab-desktop" tabindex="0">
+          <pre><code># 需要 Rust（https://rustup.rs）
+cargo build --release
+
+# 交互式选一个示例小程序
+./target/release/mini-launcher
+
+# 或直接指定
+./target/release/mini-app-window sample-app
+./target/release/mini-app-window sample/tea-app --route pages/index/index</code></pre>
+        </div>
+
+        <div class="tabpanel" role="tabpanel" id="panel-headless" aria-labelledby="tab-headless" tabindex="0" hidden>
+          <pre><code># 没有窗口也能出图（CI / 回归用）
+./target/release/mini-app-window sample-app --route pages/index/index \
+    --settle 0 --time 2 --snapshot target/shot
+
+# 动作参数按书写顺序执行，可重复
+#   --touch x,y   --swipe x1,y1,x2,y2   --drag px×帧数
+#   --type 文本    --key enter          --wheel
+#   --wait 秒      --frames N</code></pre>
+        </div>
+
+        <div class="tabpanel" role="tabpanel" id="panel-android" aria-labelledby="tab-android" tabindex="0" hidden>
+          <pre><code>// 1) 编库 → jniLibs，再 publishToMavenLocal
+//    bash tools/build-mobile.sh android
+//    cd sdk/android &amp;&amp; ./gradlew publishToMavenLocal
+
+val mini = MiniProgramView(this)
+setContentView(mini)
+mini.open(File(filesDir, "my-mini-app"))   // 解包后的小程序目录
+
+override fun onBackPressed() {
+    if (!mini.goBack()) super.onBackPressed()   // 页面栈空了才退出
+}
+override fun onResume() { super.onResume(); mini.onHostResume() }
+override fun onPause()  { super.onPause();  mini.onHostPause() }</code></pre>
+        </div>
+
+        <div class="tabpanel" role="tabpanel" id="panel-ios" aria-labelledby="tab-ios" tabindex="0" hidden>
+          <pre><code>// 1) 编库 → sdk/ios/MiniRender.xcframework（设备 + 模拟器）
+//    bash tools/build-mobile.sh ios
+
+let mini = MiniProgramView(frame: view.bounds)
+view.addSubview(mini)
+mini.open(appDir: unpackedDir)
+
+if !mini.goBack() { navigationController?.popViewController(animated: true) }</code></pre>
+        </div>
+      </div>
+
+      <div class="grid-2 gap-lg">
+        <article class="card">
+          <h3>View 内部已经包好的</h3>
+          <ul class="ticks">
+            <li>专用渲染线程（引擎不是线程安全的）</li>
+            <li>尺寸与 dpr 换算</li>
+            <li>触摸三段，含历史点 / <code>coalescedTouches</code>，不抽稀</li>
+            <li>按需出帧，静止不耗电</li>
+            <li>沙盒目录、生命周期与内存告警</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>只有两件事必须你决定</h3>
+          <ol class="ol">
+            <li><b>小程序包从哪来</b> —— 下载 / 校验 / 解包到沙盒。引擎按<strong>目录</strong>读，不解析 <code>.wxapkg</code>、不做签名校验。</li>
+            <li><b>原生层组件谁承载</b> —— <code>&lt;web-view&gt;</code> / <code>&lt;map&gt;</code> 在微信里是原生组件层。引擎算位置与参数，控件由你用 <code>WKWebView</code> / <code>android.webkit.WebView</code> / ArkUI <code>Web()</code> 放上去。</li>
+          </ol>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────  能力边界  ───────────────────────── -->
+  <section class="band" id="scope">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="eyebrow">能力边界</p>
+        <h2>能做什么，明确不做什么</h2>
+        <p class="sec-lede">「明确不做」不是没排期，是取舍。</p>
+      </header>
+
+      <div class="grid-2 gap-lg">
+        <article class="card panel-yes">
+          <h3><span class="dot ok" aria-hidden="true"></span>已实现</h3>
+          <ul class="ticks">
+            <li><b>24 个组件标签</b>：容器 / 文本媒体 / 表单三类，含 <code>swiper</code>、<code>scroll-view</code>、<code>picker-view</code></li>
+            <li><b>事件</b>：六种绑定前缀与完整捕获-冒泡链；触摸序列按微信语义产出（slop 取消 tap、350ms longpress、被滚动接管补 <code>touchcancel</code>）</li>
+            <li><b>模板</b>：<code>wx:if</code> / <code>wx:for</code> / <code>block</code>、表达式引擎、<code>class</code> / <code>style</code> 绑定、自定义组件（样式隔离 + 独立数据作用域）</li>
+            <li><b>样式</b>：选择器与特异性层叠、继承、<code>@import</code>、CSS 变量、<code>rpx</code>、<code>calc()</code>、渐变、阴影、<code>transform</code> / <code>transition</code> / <code>@keyframes</code></li>
+            <li><b>39 个 <code>wx.*</code></b>：<code>request</code>（含 <code>abort</code>）、storage 全套且跨启动持久化、Toast / Loading / Modal、五个路由 API、设备信息全套</li>
+            <li><b>生命周期</b>：三级共 28 个钩子（App 7 / Page 13 / Component 5 + <code>pageLifetimes</code> 3）</li>
+            <li><b>交互</b>：惯性滚动与临界阻尼回弹、手势仲裁、侧滑返回、下拉刷新、picker 面板、局部重绘</li>
+            <li><b>媒体</b>：Canvas 2D 完整上下文、<code>&lt;video&gt;</code>（MP4 解复用 + H.264 软解 + 音频）</li>
+          </ul>
+        </article>
+
+        <article class="card panel-no">
+          <h3><span class="dot no" aria-hidden="true"></span>明确不做</h3>
+          <table class="kv">
+            <tbody>
+              <tr><th scope="row">GPU 渲染</th><td>纯 CPU 才能在无 GPU 环境（CI、嵌入式）里出图</td></tr>
+              <tr><th scope="row">解析 <code>.wxapkg</code> / 签名校验</th><td>分包、灰度、完整性属于宿主的事，引擎按目录读</td></tr>
+              <tr><th scope="row">把 <code>&lt;web-view&gt;</code> / <code>&lt;map&gt;</code> 编进引擎</th><td>微信里它们是原生组件层，位置由引擎算、控件由宿主放</td></tr>
+              <tr><th scope="row">远程字体 <code>wx.loadFontFace</code></th><td>字体来自系统。API 存在并回调 <code>success</code>，但不真的下载</td></tr>
+              <tr><th scope="row">迁就偏离微信语义的写法</th><td>对齐目标只有 Skyline 一个</td></tr>
+            </tbody>
+          </table>
+          <h3 class="mt">还缺的 13 条</h3>
+          <p class="note"><code>wx:key</code> 的复用语义、<code>template</code> / <code>slot</code> / <code>wxs</code>、<code>scroll-view</code> 的滚动事件、<code>&lt;video&gt;</code> 的播放事件、<code>wx.login</code> 等云能力、移动端 SDK 的左边缘侧滑返回 —— 每条都写了影响。</p>
+        </article>
+      </div>
+
+      <div class="grid-2 gap-lg mt-lg">
+        <article class="card">
+          <h3>适合</h3>
+          <ul class="ticks">
+            <li>自家 App 想内嵌小程序容器，又不想背 WebView 的版本差异与首屏成本</li>
+            <li>要求渲染结果<strong>可控且可复现</strong>：同一套字体下各端输出逐像素相同</li>
+            <li>无屏环境批量出图：营销长图、服务端渲染卡片、UI 回归基线</li>
+            <li>想把一份小程序源码同时输出成 H5（内置编译器）</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>不适合</h3>
+          <ul class="crosses">
+            <li>需要完整 Web 生态（任意 CSS、第三方 H5 SDK、<code>&lt;iframe&gt;</code>）—— 那就该用 WebView</li>
+            <li>重度 3D / 大量滤镜 —— 纯 CPU 光栅撑不住</li>
+            <li>期望零适配跑通任意线上小程序 —— 还有 13 条已知差距</li>
+            <li>内存极紧的设备 —— 字体后端换完之前峰值偏高</li>
+          </ul>
+        </article>
+      </div>
+
+      <aside class="callout">
+        <h3>最大的已知短板：内存</h3>
+        <p>
+          实测峰值 600MB~1GB，其中 <b>98% 是字体</b> —— fontdue 加载时把字体里全部 29352 个字形几何预展开
+          （一个 CJK 字面约 300MB）。缓存已按字节封顶（图片 64MB / 字形 24MB，LRU），
+          也有 <code>trim_memory()</code> 给宿主在内存告警时调用。真正压峰值要换惰性字体后端，
+          预计每字面 300MB → 约 23MB —— 这会改变每个字形的抗锯齿，需要单独一轮重定基线。
+        </p>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────  技术栈  ───────────────────────── -->
+  <section class="band alt" id="stack">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="eyebrow">技术栈</p>
+        <h2>依赖很少，而且都跟到稳定版</h2>
+        <p class="sec-lede">
+          工程规模 <b>148 个 <code>.rs</code> / 约 4.9 万行</b>（含 28 个测试文件），单文件超 500 行就拆。
+          除 FFI 边界外全库<strong>没有 <code>unsafe</code></strong>，也没有 <code>static mut</code>。
+        </p>
+      </header>
+
+      <ul class="deps">
+        <li><b>taffy</b><span>0.12</span><i>Flexbox / block 布局求解</i></li>
+        <li><b>rquickjs</b><span>0.12</span><i>QuickJS 绑定，逻辑层运行时</i></li>
+        <li><b>fontdue</b><span>0.9</span><i>字形光栅化</i></li>
+        <li><b>image</b><span>0.25</span><i>PNG / JPEG / GIF 逐帧 / WebP 解码</i></li>
+        <li><b>ureq</b><span>3.3</span><i><code>wx.request</code> 与远程图片</i></li>
+        <li><b>symphonia</b><span>0.6</span><i>音频解复用与解码</i></li>
+        <li><b>openh264</b><span>0.9</span><i>H.264 软解（可选）</i></li>
+        <li><b>winit + softbuffer</b><span>0.30 / 0.4</span><i>桌面窗口与软件帧缓冲（可选）</i></li>
+        <li><b>rodio</b><span>0.22</span><i>桌面音频播放（可选）</i></li>
+        <li><b>jni</b><span>0.21</span><i>Android JNI 入口</i></li>
+      </ul>
+
+      <div class="grid-3 mt-lg">
+        <article class="card">
+          <h3>产物体积<small>arm64 实测</small></h3>
+          <table class="kv"><tbody>
+            <tr><th scope="row">Android <code>.so</code> strip 后</th><td>34.4 MB</td></tr>
+            <tr><th scope="row">iOS 静态库 <code>.a</code></th><td>184 MB<small>链进 App 后被死代码消除大幅缩减</small></td></tr>
+          </tbody></table>
+        </article>
+        <article class="card">
+          <h3>回归规模<small>每次改动都要全绿</small></h3>
+          <table class="kv"><tbody>
+            <tr><th scope="row">单元测试</th><td>lib 476 + bin 9</td></tr>
+            <tr><th scope="row">场景画廊</th><td>65 张，逐字节可复现</td></tr>
+            <tr><th scope="row">局部重绘校验</th><td>5 个场景逐字节相同</td></tr>
+            <tr><th scope="row">SDK 与桌面</th><td>sample 15/15、news 6/6 逐像素相同</td></tr>
+            <tr><th scope="row">编译警告</th><td>0</td></tr>
+          </tbody></table>
+        </article>
+        <article class="card">
+          <h3>最大的三件待办</h3>
+          <ol class="ol">
+            <li><b>内存峰值</b> —— 换惰性字体后端</li>
+            <li><b><code>setData</code> 仍整棵重建布局树</b> —— 要做增量树打补丁，基础设施已就位</li>
+            <li><b>移动端左边缘侧滑返回</b> —— 要在页面被覆盖那刻留一张视口图</li>
+          </ol>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────  文档  ───────────────────────── -->
+  <section class="band" id="docs">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="eyebrow">文档</p>
+        <h2>写得比代码还细的那部分</h2>
+      </header>
+
+      <div class="docs-grid">
+        <a class="doc" href="https://github.com/365code365/mini-program-core/blob/main/doc/%E6%9E%B6%E6%9E%84%E4%B8%8E%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86.md">
+          <h3>架构与实现原理</h3>
+          <p>一帧怎么画出来、分层与模块划分、帧成本怎么压下来、局部重绘、滚动手感与触控对齐、taffy 适配</p>
+        </a>
+        <a class="doc" href="https://github.com/365code365/mini-program-core/blob/main/doc/%E5%BC%95%E6%93%8E%E6%B5%8B%E8%AF%95%E8%AF%B4%E6%98%8E.md">
+          <h3>引擎测试说明</h3>
+          <p>能力矩阵、T1~T9 逐项测试清单与判据、内存分项实测、已知差距 13 条</p>
+        </a>
+        <a class="doc" href="https://github.com/365code365/mini-program-core/blob/main/doc/%E5%8E%9F%E7%94%9FApp%E9%9B%86%E6%88%90%E6%8C%87%E5%8D%97.md">
+          <h3>原生 App 集成指南</h3>
+          <p>极简集成、宿主九件事、C ABI、iOS / Android / 鸿蒙步骤、验收清单</p>
+        </a>
+        <a class="doc" href="https://github.com/365code365/mini-program-core/blob/main/doc/%E8%B8%A9%E5%9D%91%E8%AE%B0%E5%BD%95.md">
+          <h3>踩坑记录</h3>
+          <p>12 类「曾经错在哪」：现象 → 根因 → 现在的做法 → 回归判据</p>
+        </a>
+        <a class="doc" href="https://github.com/365code365/mini-program-core/blob/main/doc/%E5%9C%BA%E6%99%AF%E7%94%BB%E5%BB%8A.md">
+          <h3>场景画廊</h3>
+          <p>65 张真实渲染（同时是回归基线），以及素材怎么生成</p>
+        </a>
+        <a class="doc" href="https://github.com/365code365/mini-program-core/blob/main/doc/%E7%A4%BA%E4%BE%8B%E4%B8%8E%E8%B0%83%E8%AF%95.md">
+          <h3>示例与调试</h3>
+          <p>示例小程序清单、浏览器实时预览、编译成 HTML、Rust / C / 移动端代码示例</p>
+        </a>
+        <a class="doc" href="https://github.com/365code365/mini-program-core/blob/main/doc/%E8%A7%A6%E6%8E%A7%E5%AF%B9%E9%BD%90%E6%B5%8B%E8%AF%95%E6%8A%A5%E5%91%8A.md">
+          <h3>触控对齐测试报告</h3>
+          <p>滑动 / 点击 / 长按 / 手势与微信的逐项对照实测</p>
+        </a>
+        <a class="doc" href="https://github.com/365code365/mini-program-core/blob/main/sdk/README.md">
+          <h3>SDK 说明</h3>
+          <p>三行接入，以及三条必须知道的约定</p>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────  CTA  ───────────────────────── -->
+  <section class="cta">
+    <div class="wrap cta-inner">
+      <h2>给我一块可写的像素缓冲，<br>剩下的交给引擎。</h2>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="https://github.com/365code365/mini-program-core">
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-2.91-.88-2.91-2.9 0-.83.3-1.51.79-2.04-.08-.2-.35-.99.08-2.06 0 0 .65-.2 2.12.79a5.9 5.9 0 0 1 1.61-.22c.55 0 1.1.07 1.61.22 1.47-1 2.12-.79 2.12-.79.43 1.07.16 1.86.08 2.06.49.53.79 1.2.79 2.04 0 2.03-1.14 2.7-2.92 2.9.29.26.55.75.55 1.52 0 1.07-.01 1.95-.01 2.22 0 .21.15.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+          365code365/mini-program-core
+        </a>
+        <a class="btn btn-ghost" href="#start">先跑一遍</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap foot-inner">
+    <p><b>mini-render</b> · MIT 许可</p>
+    <p>内置图标矢量数据来自腾讯开源的 <a href="https://github.com/Tencent/weui">WeUI</a>（MIT）。</p>
+    <p class="foot-links">
+      <a href="https://github.com/365code365/mini-program-core">仓库</a>
+      <a href="https://github.com/365code365/mini-program-core/blob/main/README.md">README</a>
+      <a href="https://github.com/365code365/mini-program-core/issues">Issues</a>
+    </p>
+  </div>
+</footer>
+
+<script src="assets/app.js" defer></script>
+</body>
+</html>

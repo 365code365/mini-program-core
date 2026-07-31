@@ -17,6 +17,10 @@
 #     （首页秒杀倒计时会让任何真实等待的快照都差几十个像素）；
 #   · 手势归属这类**时间相关**的行为改用日志断言（MINI_SCROLL_LOG），比像素稳。
 set -u
+# 快照回归统一用**固定日期**：有页面用 `new Date()` 高亮当天（news-app 的签到日历），
+# 不固定的话基线跨天就失效 —— 会在日历那一格上冒出 0.1~0.8% 的差异，看着像渲染坏了。
+# 想临时换日期：`MINI_FAKE_NOW=2025-01-01 bash tools/xxx.sh`
+export MINI_FAKE_NOW="${MINI_FAKE_NOW:-2024-03-15}"
 cd "$(dirname "$0")/.."
 OUT="${1:-target/baseline_ia}"
 CMP="${2:-}"

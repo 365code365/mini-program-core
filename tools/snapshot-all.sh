@@ -9,6 +9,10 @@
 # `target/mini-storage/<app>.json`，下次启动被读回来，页面内容就和基线不一样了
 # （曾让 sample 的购物车页从 1.51% 假崩到 10.05%）。
 set -u
+# 快照回归统一用**固定日期**：有页面用 `new Date()` 高亮当天（news-app 的签到日历），
+# 不固定的话基线跨天就失效 —— 会在日历那一格上冒出 0.1~0.8% 的差异，看着像渲染坏了。
+# 想临时换日期：`MINI_FAKE_NOW=2025-01-01 bash tools/xxx.sh`
+export MINI_FAKE_NOW="${MINI_FAKE_NOW:-2024-03-15}"
 BIN=./target/release/mini-app-window
 APP="${1:?用法: snapshot-all.sh <app> <输出目录>}"
 OUT="${2:?用法: snapshot-all.sh <app> <输出目录>}"

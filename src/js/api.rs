@@ -43,6 +43,9 @@ const PRELUDE: &[Prelude] = prelude![
     // 直接 JSON.stringify 只会得到 `{}` —— 屏幕上只有 `JS Exception: {}`，
     // 跑第三方编译产物时等于没有报错信息。
     "console" => "console.js",
+    // 可注入的固定时钟（`MINI_FAKE_NOW`）：必须在任何页面逻辑之前替换掉 `Date`，
+    // 否则页面在 onLoad 里算出来的「今天」还是真实日期
+    "fake-clock" => "fake-clock.js",
     // 所有 `wx.xxx = ...` 的落点，必须先存在
     "wx-object" => "wx-object.js",
     // 定时器：只登记，真正的到点由宿主每帧驱动（逻辑层不占线程）

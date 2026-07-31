@@ -76,6 +76,32 @@ fn main() {
     let has_bold = sys.has_bold_face();
     s.mark(&format!("首次用到粗体字面（存在={has_bold}）"));
 
+    // 2.5) **对照**：仓库自带的单字面 SourceHanSansSC-Regular.otf。
+    //
+    // 系统字体是 `.ttc` **集合**（Hiragino Sans GB 里有多个字面），而 fontdue 会把用到的
+    // 每个字面的全部字形几何预展开 —— 上面那几百 MB 就是这么来的。
+    //
+    // 实测结论（别再猜）：**代价跟字形数量成正比，跟文件大小无关**。16.5MB 的
+    // Source Han Sans（约 6.5 万字形）要 +405MB，比 2.9 万字形的系统字体（+303MB）更贵。
+    // 所以「内置单字面字体省内存」是错的；内置字体只该为了**跨端逐像素一致**而做。
+    // 单字面 TTF 只有一份要展开，宿主想压峰值时可以把它一起打包、用
+    // `TextRenderer::from_file()` 顶替系统字体。这一行就是那条路的代价。
+    {
+        let bundled = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/SourceHanSansSC-Regular.otf");
+        if std::path::Path::new(bundled).exists() {
+            match mini_render::text::TextRenderer::from_file(bundled) {
+                Ok(r) => {
+                    // 真的用一下：只 new 出来不画的话，字形几何是不是已经展开看不出来
+                    let w = r.measure_text("中文西文 Mixed 12345", 16.0);
+                    s.mark("对照：内置单字面 SourceHanSansSC-Regular.otf");
+                    println!("      （度量一行文字得到宽度 {w:.1}px，确认字体真的可用）");
+                    std::hint::black_box(&r);
+                }
+                Err(e) => println!("      ⚠️ 内置字体加载失败，跳过对照：{e}"),
+            }
+        }
+    }
+
     // 3) 一个大字体集合（宋体 63.8MB，tea-app 的字体栈会落到它）
     let songti = "/System/Library/Fonts/Supplemental/Songti.ttc";
     if std::path::Path::new(songti).exists() {

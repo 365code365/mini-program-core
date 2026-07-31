@@ -1,10 +1,16 @@
-# Simple workflow for deploying static content to GitHub Pages
+# 把 site/ 里手写的落地页发到 GitHub Pages。
+#
+# 只上传 site/，不是整个仓库：仓库里带着 139MB 字体和 39MB 示例小程序，
+# 全量上传既慢又会把源码树当网站发出去，而且根目录没有 index.html。
 name: Deploy static content to Pages
 
 on:
-  # Runs on pushes targeting the default branch
+  # 只有站点相关文件变了才发，改 Rust 代码不用白跑一轮
   push:
     branches: ["main"]
+    paths:
+      - "site/**"
+      - ".github/workflows/static.yml"
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -36,8 +42,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload entire repository
-          path: '.'
+          # 只发落地页目录
+          path: './site'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
