@@ -1,0 +1,94 @@
+# 打 tag 就产出移动端依赖包，并挂到 GitHub Release 上。
+#
+#   git tag v0.1.0 && git push origin v0.1.0
+#
+# 为什么走 CI 而不是本地传：本地编需要 NDK + Xcode，且 iOS 那份产物 344MB，
+# 手工传容易漏架构、漏校验和。CI 里每次 tag 都从同一份源码重编，产物可追溯。
+name: release-mobile
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:          # 也可以在 Actions 页面手动跑（不发 Release，只留 artifact）
+
+permissions:
+  contents: write             # 创建 Release 需要
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
+      # ubuntu runner 自带 NDK，位置在 ANDROID_NDK_LATEST_HOME
+      - name: 编 .so（三个 ABI）
+        run: |
+          export ANDROID_NDK_HOME="${ANDROID_NDK_LATEST_HOME:?runner 没有 NDK}"
+          bash tools/build-mobile.sh android
+      - name: 打包
+        run: bash tools/package-mobile.sh "${GITHUB_REF_NAME#v}"
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: dist/mini-render-android-*.zip
+          if-no-files-found: error
+
+  ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim
+      - name: 编 XCFramework（真机 + 模拟器）
+        run: bash tools/build-mobile.sh ios
+      - name: 打包
+        run: bash tools/package-mobile.sh "${GITHUB_REF_NAME#v}"
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios
+          path: dist/mini-render-ios-*.zip
+          if-no-files-found: error
+
+  release:
+    needs: [android, ios]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: 生成校验和
+        run: |
+          cd dist
+          sha256sum mini-render-*.zip > SHA256SUMS
+          cat SHA256SUMS
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/mini-render-*.zip
+            dist/SHA256SUMS
+          generate_release_notes: true
+          body: |
+            移动端依赖包（由本仓库 `tools/build-mobile.sh` + `tools/package-mobile.sh` 产出）。
+
+            | 附件 | 内容 |
+            |---|---|
+            | `mini-render-android-*.zip` | `arm64-v8a` / `armeabi-v7a` / `x86_64` 的 `libmini_render.so`（已 strip）+ Kotlin 的 `MiniProgramView` / `MiniEngine` + Gradle 模块 |
+            | `mini-render-ios-*.zip` | `MiniRender.xcframework`（真机 arm64 + 模拟器 arm64）+ C 头与 `module.modulemap` + `Package.swift` + `MiniRender.podspec` + Swift 的 `MiniProgramView` |
+
+            下载后先核对校验和：
+
+            ```bash
+            shasum -a 256 -c SHA256SUMS
+            ```
+
+            接入方式见 [README](https://github.com/365code365/mini-program-core#prebuilt-mobile-packages)
+            与 [`sdk/README.md`](https://github.com/365code365/mini-program-core/blob/main/sdk/README.md)。

@@ -189,13 +189,14 @@ impl VideoPlayer {
         }
         #[cfg(not(feature = "h264"))]
         {
-            let _ = (&sps, &pps, &sync_samples, &sample_sizes, &chunk_offsets);
+            let _ = (&sps, &pps, &sync_samples, &sample_sizes, &chunk_offsets, &sample_to_chunk);
             println!("ℹ️  本构建未启用 h264 特性，<video> 不解码画面帧（交给宿主播放器）");
             Err("h264 decoding disabled in this build".to_string())
         }
     }
 
     /// 构建样本偏移表
+    #[cfg(feature = "h264")]
     pub(super) fn build_sample_offsets(&self, sample_sizes: &[u32], chunk_offsets: &[u64], sample_to_chunk: &[(u32, u32, u32)]) -> Vec<(u64, u32)> {
         let mut result = Vec::new();
         let mut sample_idx = 0;
@@ -231,6 +232,7 @@ impl VideoPlayer {
     }
 
     /// 构建时间戳表
+    #[cfg(feature = "h264")]
     pub(super) fn build_timestamps(&self, sample_durations: &[(u32, u32)], timescale: u32) -> Vec<f64> {
         let mut timestamps = Vec::new();
         let mut current_time = 0u64;

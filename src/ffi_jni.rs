@@ -123,7 +123,7 @@ pub extern "system" fn Java_dev_minirender_MiniEngine_nativePixels(
         return 0;
     }
     // 直接锁住数组内存写进去，避免多一次中间拷贝
-    let mut elems = match unsafe { env.get_array_elements(&out, jni::objects::ReleaseMode::CopyBack) }
+    let elems = match unsafe { env.get_array_elements(&out, jni::objects::ReleaseMode::CopyBack) }
     {
         Ok(e) => e,
         Err(_) => return 0,

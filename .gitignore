@@ -1,2 +1,5 @@
 /target/
 /.idea/
+# 发布包：由 tools/package-mobile.sh 生成（android zip 约 35MB、ios zip 数百 MB），
+# 走 GitHub Release 附件，不进仓库
+/dist/
