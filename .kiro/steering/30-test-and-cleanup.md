@@ -19,6 +19,18 @@ bash tools/interaction-check.sh target/_ia # ⑦ 指针层与覆盖层（picker/
 bash tools/clean-target.sh                 # ⑧ 收尾清理（见下）
 ```
 
+改 `site/`（GitHub Pages 落地页）时另外两条：
+
+```bash
+python3 tools/site-i18n-check.py           # 中英键对齐、无残留中文、两语言结构一致（CI 也跑）
+python3 tools/site-render-check.py         # 真开 headless Chrome：默认英文 / ?lang=zh 切中文
+```
+
+页面是「英文写在 HTML 里 + 中文放 `assets/i18n.js` 的表」。**别改成两个 HTML 文件** ——
+那样每改一处版式要改两遍，迟早漂。加文案就加 `data-i18n` 键，两边同时给。
+截窄屏别直接开 390px 窗口：Chrome headless 有最小窗口宽度，截出来是被裁的宽版面，
+要套一层 390px 的 iframe 外壳（`examples/compare.rs` 截 375px 页面用的也是这招）。
+
 涉及渲染/样式/布局时，再加逐页快照 + 双端对比：
 
 ```bash

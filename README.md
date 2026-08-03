@@ -18,6 +18,10 @@ no browser involved):
 All 65 are in [`doc/场景画廊.md`](doc/场景画廊.md) — they double as byte-reproducible regression
 baselines.
 
+Landing page: **<https://365code365.github.io/mini-program-core/>** (English by default;
+the header has an EN / 中文 switch, or link straight to
+[`?lang=zh`](https://365code365.github.io/mini-program-core/?lang=zh)).
+
 > Documentation under `doc/` is written in Chinese. This README is the English entry point;
 > [README.zh-CN.md](README.zh-CN.md) is the Chinese original and the two are kept in sync.
 
@@ -526,6 +530,17 @@ bash tools/sdk-parity.sh                   # ⑥ mobile SDK vs desktop window, p
 bash tools/interaction-check.sh target/_ia # ⑦ pointer and overlay layers (picker/Modal/press/gesture)
 bash tools/clean-target.sh                 # ⑧ cleanup (mandatory, see below)
 ```
+
+For changes under `site/` (the GitHub Pages landing page):
+
+```bash
+python3 tools/site-i18n-check.py    # EN/ZH keys aligned, no leftover Chinese, same structure
+python3 tools/site-render-check.py  # real headless Chrome: English by default, ?lang=zh switches
+```
+
+The page keeps **one copy of the markup**: English lives in the HTML, Chinese in
+`site/assets/i18n.js`. The first check also runs in the Pages workflow, because a missing key
+leaves that one paragraph silently in English and the page still loads fine.
 
 For rendering changes, add per-page snapshots and a comparison against the HTML reference:
 

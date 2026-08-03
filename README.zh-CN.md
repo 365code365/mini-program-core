@@ -15,6 +15,9 @@
 
 全部 65 张见 [`doc/场景画廊.md`](doc/场景画廊.md) —— 它们同时是逐字节可复现的回归基线。
 
+落地页：**<https://365code365.github.io/mini-program-core/?lang=zh>**
+（站点默认英文，头部有 EN / 中文 切换，带 `?lang=zh` 直接进中文）。
+
 ---
 
 ## 目录
@@ -470,6 +473,16 @@ bash tools/sdk-parity.sh                   # ⑥ 移动端 SDK 与桌面窗体�
 bash tools/interaction-check.sh target/_ia # ⑦ 指针层与覆盖层（picker/Modal/按压/手势）
 bash tools/clean-target.sh                 # ⑧ 清理（必做，见下）
 ```
+
+改 `site/`（GitHub Pages 落地页）时：
+
+```bash
+python3 tools/site-i18n-check.py    # 中英键对齐、无残留中文、两语言结构一致
+python3 tools/site-render-check.py  # 真开 headless Chrome：默认英文、?lang=zh 切中文
+```
+
+页面**只有一份版式**：英文写在 HTML 里，中文在 `site/assets/i18n.js` 的表里。
+第一个检查在 Pages 工作流里也会跑 —— 少一个键的症状是那一段静默留在英文，页面照样能打开。
 
 涉及渲染的改动再加逐页快照 + 与 HTML 参照实现对比：
 

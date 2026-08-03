@@ -145,9 +145,38 @@ b, strong { color: #fff; font-weight: 650; }
 .btn-ghost:hover { background: var(--surface-2); border-color: rgba(255, 255, 255, .25); }
 .head-cta { padding: 7px 15px; font-size: 14px; flex: none; }
 
+/* 语言切换：默认英文，中文由 assets/i18n.js 换文案（结构只有一份） */
+.lang-switch {
+  display: flex; gap: 2px; flex: none; margin-left: 10px; padding: 2px;
+  background: var(--surface); border: 1px solid var(--line-2); border-radius: 999px;
+}
+.lang-switch button {
+  font: inherit; font-size: 13px; font-weight: 600; line-height: 1;
+  color: var(--dim); background: none; border: 0; cursor: pointer;
+  padding: 6px 11px; border-radius: 999px;
+  transition: color .18s, background .18s;
+}
+.lang-switch button:hover { color: #fff; }
+.lang-switch button[aria-pressed="true"] { color: #fff; background: var(--surface-2); }
+.lang-switch button:focus-visible { outline: 2px solid var(--acc); outline-offset: 1px; }
+
 @media (max-width: 900px) {
   .head-nav { display: none; }
-  .head-cta { margin-left: auto; }
+  .lang-switch { margin-left: auto; }
+  .head-cta { margin-left: 10px; }
+}
+@media (max-width: 560px) {
+  /* 头部三件东西（品牌 / 语言 / GitHub）在 390px 上会挤出屏幕：
+     24px 的 gap 与内边距先收一收 */
+  .head-inner { gap: 12px; }
+  .lang-switch { margin-left: auto; padding: 1px; }
+  .lang-switch button { padding: 6px 9px; }
+  .head-cta { margin-left: 0; padding: 7px 12px; }
+}
+@media (max-width: 430px) {
+  /* 再窄就优先保住语言切换：GitHub 只留图标（链接语义由 aria-label 兜着） */
+  .cta-label { display: none; }
+  .head-cta { padding: 8px 10px; }
 }
 
 /* ─────────────  Hero  ───────────── */

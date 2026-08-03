@@ -74,30 +74,40 @@
   });
 
   /* ── 每段代码加一个复制按钮 ── */
+  /* 文案走 i18n（assets/i18n.js）：默认英文，切中文时靠 mr:langchange 事件回来重写。 */
+  var T = function (key, fallback) {
+    return (window.I18N && window.I18N.t(key)) || fallback;
+  };
+  var copyBtns = [];
   document.querySelectorAll('.tabpanel').forEach(function (panel) {
     var code = panel.querySelector('pre code');
     if (!code || !navigator.clipboard) return;
-
     var btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'copy';
-    btn.textContent = '复制';
-    btn.setAttribute('aria-label', '复制这段代码');
-
+    btn.textContent = T('ui.copy', 'Copy');
+    btn.setAttribute('aria-label', T('ui.copyAria', 'Copy this snippet'));
     btn.addEventListener('click', function () {
       navigator.clipboard.writeText(code.textContent).then(function () {
-        btn.textContent = '已复制';
+        btn.textContent = T('ui.copied', 'Copied');
         btn.classList.add('done');
         setTimeout(function () {
-          btn.textContent = '复制';
+          btn.textContent = T('ui.copy', 'Copy');
           btn.classList.remove('done');
         }, 1600);
       }, function () {
-        btn.textContent = '复制失败';
-        setTimeout(function () { btn.textContent = '复制'; }, 1600);
+        btn.textContent = T('ui.copyFail', 'Copy failed');
+        setTimeout(function () { btn.textContent = T('ui.copy', 'Copy'); }, 1600);
       });
     });
-
     panel.appendChild(btn);
+    copyBtns.push(btn);
+  });
+  /* 切语言时把已经生成的按钮也换掉（正在显示「已复制」的那个不动，1.6s 后自己回位） */
+  document.addEventListener('mr:langchange', function () {
+    copyBtns.forEach(function (btn) {
+      if (!btn.classList.contains('done')) btn.textContent = T('ui.copy', 'Copy');
+      btn.setAttribute('aria-label', T('ui.copyAria', 'Copy this snippet'));
+    });
   });
 })();

@@ -37,6 +37,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      # 页面是「英文写在 HTML 里 + 中文放 i18n 表」，键漂了就会有一段静默留在英文，
+      # 页面照样能打开、没人会发现 —— 所以发布前先对一遍键
+      - name: 检查中英文案对齐
+        run: python3 tools/site-i18n-check.py
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
