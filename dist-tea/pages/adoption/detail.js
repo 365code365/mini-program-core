@@ -62,7 +62,7 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
   "raw js";
   return common_vendor.e({
     a: $data.g.cover,
-    b: common_assets._imports_0$7,
+    b: common_assets._imports_0$8,
     c: common_vendor.o(($event) => $options.nav("/pages/garden/garden"), "7d"),
     d: common_vendor.t($data.g.variety),
     e: common_vendor.t($data.g.location),
@@ -93,3 +93,4 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
 }
 const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render]]);
 wx.createPage(MiniProgramPage);
+//# sourceMappingURL=../../../.sourcemap/mp-weixin/pages/adoption/detail.js.map

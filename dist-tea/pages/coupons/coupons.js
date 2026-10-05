@@ -201,7 +201,7 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
         f: i
       });
     }),
-    g: common_assets._imports_0$14
+    g: common_assets._imports_0$15
   }) : common_vendor.e({
     h: $data.coupons.length == 0 && !$data.loading
   }, $data.coupons.length == 0 && !$data.loading ? {} : {}, {
@@ -258,3 +258,4 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
 }
 const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render]]);
 wx.createPage(MiniProgramPage);
+//# sourceMappingURL=../../../.sourcemap/mp-weixin/pages/coupons/coupons.js.map

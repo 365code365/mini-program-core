@@ -113,6 +113,9 @@ impl MiniEngine {
     /// 手指移动
     pub fn pointer_move(&mut self, x: f32, y: f32) {
         let now = self.mono_ms();
+        if self.interaction.update_press_position(x, y, y + self.scroll.get_position()) {
+            self.needs_redraw = true;
+        }
         // 顺序要紧：**手势推进不能挂在「触摸序列还活着」上**。滚动接管的那一刻我们会
         // 补一次 touchcancel，状态机随即不活跃；要是先判 is_active 再往下走，
         // 后面所有移动都不会再滚 —— 一次 240px 的拖动只滚了第一步的 30px。

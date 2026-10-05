@@ -211,6 +211,9 @@ impl crate::MiniAppWindow {
     /// 指针移动：文本选择/滑块等交给交互层，滚动交给手势仲裁，再派发 touchmove。
     pub(crate) fn on_pointer_move(&mut self, x: f32, y: f32) {
         self.mouse_pos = (x, y);
+        if self.interaction.update_press_position(x, y, y + self.scroll.get_position()) {
+            self.needs_redraw = true;
+        }
         // 文本选择、滑块拖动这些「非滚动」的拖拽仍由交互层处理；
         // 滚动不再由它推进（改由手势仲裁决定谁滚、往哪滚）
         if evt::handle_cursor_moved(

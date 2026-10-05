@@ -295,7 +295,7 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
       });
     }),
     d: $data.selectMode,
-    e: common_assets._imports_0$5,
+    e: common_assets._imports_0$6,
     f: common_vendor.o((...args) => $options.openNew && $options.openNew(...args), "33"),
     g: $data.editing
   }, $data.editing ? {
@@ -312,7 +312,7 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
     r: common_vendor.o((...args) => $options.openRegion && $options.openRegion(...args), "2c"),
     s: $data.fDetail,
     t: common_vendor.o(($event) => $data.fDetail = $event.detail.value, "c7"),
-    v: common_assets._imports_0$5,
+    v: common_assets._imports_0$6,
     w: common_vendor.n($data.fDef ? "cb-on" : ""),
     x: common_vendor.o(($event) => $data.fDef = !$data.fDef, "75"),
     y: common_vendor.t($data.saving ? "保存中…" : "保存"),
@@ -350,7 +350,7 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
         b: common_vendor.n(name == $options.curPickedName ? "rg-item-t-on" : ""),
         c: name == $options.curPickedName
       }, name == $options.curPickedName ? {
-        d: common_assets._imports_3$2
+        d: common_assets._imports_3$1
       } : {}, {
         e: i,
         f: common_vendor.o(($event) => $options.pickIdx(i), i)
@@ -366,3 +366,4 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
 }
 const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render]]);
 wx.createPage(MiniProgramPage);
+//# sourceMappingURL=../../../.sourcemap/mp-weixin/pages/address/address.js.map

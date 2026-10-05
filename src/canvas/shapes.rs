@@ -84,25 +84,42 @@ impl Canvas {
             return;
         }
         // 内部实心（中间整宽条 + 上下去角条），避开四角
-        self.fill_rect(&Rect::new(x, y + r, w, h - 2.0 * r), &color);
-        self.fill_rect(&Rect::new(x + r, y, w - 2.0 * r, r), &color);
-        self.fill_rect(&Rect::new(x + r, y + h - r, w - 2.0 * r, r), &color);
-        // 四角抗锯齿（仅各自 r×r 的角区，不与内部重叠）
-        let (tx, ty) = self.translation;
-        let corners = [
-            (x + r, y + r, x, y),                 // 左上：角区 [x, x+r]
-            (x + w - r, y + r, x + w - r, y),      // 右上
-            (x + w - r, y + h - r, x + w - r, y + h - r), // 右下
-            (x + r, y + h - r, x, y + h - r),      // 左下
+        let strips = [
+            Rect::new(x, y + r, w, h - 2.0 * r),
+            Rect::new(x + r, y, w - 2.0 * r, r),
+            Rect::new(x + r, y + h - r, w - 2.0 * r, r),
         ];
-        for &(cx, cy, bx, by) in &corners {
+        for s in &strips {
+            self.fill_rect(s, &color);
+        }
+        // 四角抗锯齿。每个像素只能混合一次：角区按 floor/ceil 取整后会和矩形条、
+        // 以及上下（左右）相对的角区各重叠一行/一列 —— 不透明色画两遍看不出来，
+        // 半透明底色（`rgba(…,.12)` 的胶囊按钮）就会在拼接处多出一条更深的线。
+        // 所以角区只管矩形条之外的那一角：边界与 `fill_rect` 的取整完全一致，
+        // 矩形条与四个角区正好不重不漏。
+        let (tx, ty) = self.translation;
+        let (left_edge, right_edge) = ((x + tx + r).floor() as i32, (x + tx + w - r).floor() as i32);
+        let (top_edge, bottom_edge) = ((y + ty + r).floor() as i32, (y + ty + h - r).floor() as i32);
+        let corners = [
+            (x + r, y + r, x, y, false, false),                         // 左上：角区 [x, x+r]
+            (x + w - r, y + r, x + w - r, y, true, false),              // 右上
+            (x + w - r, y + h - r, x + w - r, y + h - r, true, true),   // 右下
+            (x + r, y + h - r, x, y + h - r, false, true),              // 左下
+        ];
+        for &(cx, cy, bx, by, right, bottom) in &corners {
             let x0 = (bx + tx).floor() as i32;
             let y0 = (by + ty).floor() as i32;
             let x1 = (bx + tx + r).ceil() as i32;
             let y1 = (by + ty + r).ceil() as i32;
             let (ccx, ccy) = (cx + tx, cy + ty);
             for py in y0..y1 {
+                if (bottom && py < bottom_edge) || (!bottom && py >= top_edge) {
+                    continue;
+                }
                 for px in x0..x1 {
+                    if (right && px < right_edge) || (!right && px >= left_edge) {
+                        continue;
+                    }
                     let dx = px as f32 + 0.5 - ccx;
                     let dy = py as f32 + 0.5 - ccy;
                     let d = (dx * dx + dy * dy).sqrt();

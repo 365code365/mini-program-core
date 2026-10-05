@@ -183,23 +183,156 @@ impl InteractionManager {
         self.dragging_slider.is_some()
     }
 
+    /// 登记一个元素的点击态计时（每帧绘制时刷新；没登记的按按钮默认 20/70）
+    pub fn note_hover(&mut self, id: String, spec: HoverSpec) {
+        self.hover_specs.insert(id, spec);
+    }
+
     /// 设置按钮按下状态。同时登记过渡起始时刻，`transition` 才能从常态平滑到按压态。
+    ///
+    /// 点击态不在按下瞬间出现：微信按钮默认等 `hover-start-time`（20ms），
+    /// 并且父节点上写了 hover-class 的也会一起亮，除非命中的元素带
+    /// `hover-stop-propagation`。
     pub fn set_button_pressed(&mut self, id: String, bounds: Rect) {
-        if self.pressed_button.as_ref().map(|b| b.id != id).unwrap_or(true) {
-            self.transitions.insert(id.clone(), crate::renderer::anim::now_secs());
+        if self
+            .press_feedback
+            .as_ref()
+            .map(|p| p.hit_id == id && p.hide_at.is_none())
+            .unwrap_or(false)
+        {
+            return;
         }
-        self.pressed_button = Some(PressedButton { id, bounds });
+        let spec = self.hover_specs.get(&id).copied().unwrap_or(HoverSpec {
+            start_ms: 20,
+            stay_ms: 70,
+            stop: false,
+        });
+        let ids = self.hover_chain(&id);
+        for hid in &ids {
+            self.transitions.insert(hid.clone(), crate::renderer::anim::now_secs());
+        }
+        self.pressed_button = Some(PressedButton { id: id.clone(), bounds });
+        self.press_feedback = Some(PressFeedback {
+            hit_id: id,
+            ids,
+            show_at: std::time::Instant::now() + std::time::Duration::from_millis(spec.start_ms),
+            hide_at: None,
+            stay_ms: spec.stay_ms,
+        });
     }
 
-    /// 清除按钮按下状态（松手），并登记回弹到常态的过渡起始时刻
+    /// 从外到内，点落在哪些「有点击态」的元素上，截到命中的那个为止。
+    /// 链上有 `hover-stop-propagation` 时，更外层的祖先不再进入点击态。
+    fn hover_chain(&self, hit_id: &str) -> Vec<String> {
+        let Some((hx, hy, hw, hh, fixed)) = self
+            .elements
+            .iter()
+            .rev()
+            .find(|e| e.id == hit_id)
+            .map(|e| (e.bounds.x, e.bounds.y, e.bounds.width, e.bounds.height, e.is_fixed))
+        else {
+            return vec![hit_id.to_string()];
+        };
+        let (x, y) = (hx + hw * 0.5, hy + hh * 0.5);
+        let mut chain: Vec<&InteractiveElement> = self
+            .elements
+            .iter()
+            .filter(|e| {
+                e.is_fixed == fixed
+                    && self.hover_specs.contains_key(&e.id)
+                    && x >= e.bounds.x
+                    && x <= e.bounds.x + e.bounds.width
+                    && y >= e.bounds.y
+                    && y <= e.bounds.y + e.bounds.height
+            })
+            .collect();
+        if let Some(i) = chain.iter().rposition(|e| e.id == hit_id) {
+            chain.truncate(i + 1);
+        } else {
+            return vec![hit_id.to_string()];
+        }
+        if let Some(i) = chain.iter().rposition(|e| self.hover_specs.get(&e.id).map(|s| s.stop).unwrap_or(false))
+        {
+            chain.drain(..i);
+        }
+        chain.into_iter().map(|e| e.id.clone()).collect()
+    }
+
+    /// 手指移出某个元素就去掉它的点击态（微信：移出即取消，不等松手）
+    pub fn update_press_position(&mut self, x: f32, y_viewport: f32, y_content: f32) -> bool {
+        let Some(feedback) = &mut self.press_feedback else { return false };
+        if feedback.hide_at.is_some() {
+            return false;
+        }
+        let ids = feedback.ids.clone();
+        let keep: Vec<String> = ids
+            .into_iter()
+            .filter(|id| {
+                self.elements.iter().rev().find(|e| e.id == *id).map(|e| {
+                    let y = if e.is_fixed { y_viewport } else { y_content };
+                    x >= e.bounds.x
+                        && x <= e.bounds.x + e.bounds.width
+                        && y >= e.bounds.y
+                        && y <= e.bounds.y + e.bounds.height
+                }).unwrap_or(false)
+            })
+            .collect();
+        let Some(feedback) = &mut self.press_feedback else { return false };
+        let changed = keep.len() != feedback.ids.len();
+        feedback.ids = keep;
+        if self.press_feedback.as_ref().map(|p| p.ids.is_empty()).unwrap_or(false) {
+            self.press_feedback = None;
+            self.pressed_button = None;
+        }
+        changed
+    }
+
+    /// 清除按钮按下状态（松手）。还没到出现时间就直接取消；否则再保留 `hover-stay-time`。
     pub fn clear_button_pressed(&mut self) {
-        if let Some(b) = self.pressed_button.take() {
-            self.transitions.insert(b.id, crate::renderer::anim::now_secs());
+        let (show_at, ids, stay) = {
+            let Some(feedback) = self.press_feedback.as_ref() else {
+                self.pressed_button = None;
+                return;
+            };
+            (feedback.show_at, feedback.ids.clone(), feedback.stay_ms)
+        };
+        let now = std::time::Instant::now();
+        if now < show_at {
+            self.press_feedback = None;
+            self.pressed_button = None;
+            return;
+        }
+        for id in ids {
+            self.transitions.insert(id, crate::renderer::anim::now_secs());
+        }
+        if let Some(feedback) = self.press_feedback.as_mut() {
+            feedback.hide_at = Some(now + std::time::Duration::from_millis(stay));
+        }
+        self.pressed_button = None;
+    }
+
+    /// 检查按钮是否处于点击态（含出现延迟和松手后的停留）
+    pub fn is_button_pressed(&self, id: &str) -> bool {
+        let Some(feedback) = &self.press_feedback else { return false };
+        if !feedback.ids.iter().any(|i| i == id) {
+            return false;
+        }
+        let now = std::time::Instant::now();
+        match feedback.hide_at {
+            Some(hide) => now < hide,
+            None => now >= feedback.show_at,
         }
     }
 
-    /// 检查按钮是否被按下
-    pub fn is_button_pressed(&self, id: &str) -> bool {
-        self.pressed_button.as_ref().map(|b| b.id == id).unwrap_or(false)
+    /// 点击态还在「等出现」或「松手后停留」：宿主要继续出帧，否则那一下永远画不出来
+    pub fn press_feedback_pending(&self) -> bool {
+        let Some(feedback) = &self.press_feedback else { return false };
+        let now = std::time::Instant::now();
+        // 多留一帧的时间，跨过 show_at / hide_at 的那一帧才画得到终态
+        let slop = std::time::Duration::from_millis(40);
+        match feedback.hide_at {
+            Some(hide) => now < hide + slop,
+            None => now < feedback.show_at + slop,
+        }
     }
 }

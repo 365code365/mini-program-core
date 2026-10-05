@@ -46,6 +46,111 @@
   margin-top: 2.500px;
   font-weight: 900;
 }
+
+/* 思考过程卡片 */
+.think {
+  margin: 0 12px 10px;
+  padding: 11px 11px 4px;
+  border-radius: 11px;
+  background-color: #ffffff;
+  border: 1px solid rgba(135, 101, 58, 0.12);
+}
+.think-head {
+  flex-direction: row;
+  align-items: center;
+}
+.think-icon {
+  width: 15px;
+  height: 15px;
+  margin-right: 5px;
+}
+.think-title {
+  flex: 1;
+  color: #4a3020;
+  font-size: 13.500px;
+  font-weight: 900;
+  font-family: "Source Han Serif SC", "Yunxiu Serif", "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+}
+.think-toggle {
+  color: #9a7b54;
+  font-size: 10.500px;
+}
+.think-body {
+  margin-top: 4px;
+}
+.step {
+  flex-direction: row;
+  align-items: flex-start;
+  padding-top: 10px;
+  padding-bottom: 3px;
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 4.500px;
+  margin-top: 5px;
+  margin-right: 8px;
+  background-color: rgba(120, 95, 60, 0.22);
+}
+.dot-done {
+  background-color: #a87536;
+}
+.dot-doing {
+  background-color: #c79a52;
+}
+.dot-wait {
+  background-color: rgba(120, 95, 60, 0.22);
+}
+.step-copy {
+  flex: 1;
+}
+.step-name {
+  color: #5b4936;
+  font-size: 12px;
+  font-weight: 900;
+}
+.step-text {
+  color: #82796d;
+  font-size: 10.500px;
+  line-height: 16px;
+  margin-top: 3px;
+}
+.step-caveat {
+  color: #9a7b54;
+}
+.chips {
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin-top: 5px;
+}
+.chip {
+  color: #896739;
+  font-size: 10px;
+  background-color: #f5eee3;
+  border-radius: 10px;
+  padding: 3px 7px;
+  margin-right: 5px;
+  margin-bottom: 4px;
+}
+.rank-line {
+  flex-direction: row;
+  align-items: flex-start;
+  margin-top: 5px;
+}
+.rank-no {
+  color: #94703d;
+  font-size: 10px;
+  background-color: #f0e6d5;
+  border-radius: 8px;
+  padding: 2px 6px;
+  margin-right: 6px;
+}
+.rank-why {
+  flex: 1;
+  color: #82796d;
+  font-size: 10.500px;
+  line-height: 16px;
+}
 .loading, .empty {
   align-items: center;
   padding: 60px 20px;

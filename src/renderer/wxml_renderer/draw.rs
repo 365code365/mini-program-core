@@ -158,6 +158,63 @@ impl WxmlRenderer {
         }
     }
 
+    /// `opacity < 1` 时先把子树画进透明离屏，再按这个透明度贴回去。
+    ///
+    /// 这样背景、文字、图片一起变淡，和 CSS / 微信一致。逐个颜色乘 alpha 做不到：
+    /// 子节点（按钮里的 `<text>`）根本看不到父节点的 opacity。
+    /// `draw` 用平移后的原点再走一遍原来的绘制函数；绑定坐标用 `binding_shift` 换回页面坐标。
+    pub(super) fn paint_opacity_group(
+        &mut self,
+        canvas: &mut Canvas,
+        x: f32,
+        y: f32,
+        w: f32,
+        h: f32,
+        opacity: f32,
+        shadow: Option<&crate::renderer::components::BoxShadow>,
+        mut draw: impl FnMut(&mut Self, &mut Canvas, f32, f32),
+    ) {
+        let mut pad = 2.0f32;
+        if let Some(s) = shadow {
+            pad = pad.max(s.blur + s.spread + s.offset_x.abs().max(s.offset_y.abs()) + 2.0);
+        }
+        let tw = (w + pad * 2.0).ceil() as u32;
+        let th = (h + pad * 2.0).ceil() as u32;
+        if tw == 0 || th == 0 || tw > 4096 || th > 4096 {
+            // 大到不值得离屏：退回逐颜色乘 alpha，同时别再进组合成（否则递归）
+            let was = self.bypass_opacity_group;
+            self.bypass_opacity_group = true;
+            draw(self, canvas, 0.0, 0.0);
+            self.bypass_opacity_group = was;
+            return;
+        }
+        let mut off = Canvas::new(tw, th);
+        off.clear(Color::new(0, 0, 0, 0));
+        let was_off = self.drawing_offscreen;
+        let was_flat = self.flattening_opacity;
+        let was_shift = self.binding_shift;
+        let sf = self.scale_factor.max(0.001);
+        self.drawing_offscreen = true;
+        self.flattening_opacity = true;
+        self.binding_shift = (was_shift.0 + (x - pad) / sf, was_shift.1 + (y - pad) / sf);
+        draw(self, &mut off, pad - x, pad - y);
+        self.drawing_offscreen = was_off;
+        self.flattening_opacity = was_flat;
+        self.binding_shift = was_shift;
+        canvas.blend_pixels_opacity((x - pad) as i32, (y - pad) as i32, off.pixels(), tw as usize, opacity);
+    }
+
+    /// 像素盒换成逻辑坐标，并加上离屏绘制的页面偏移（平时偏移是 0）
+    pub(super) fn page_bounds(&self, x: f32, y: f32, w: f32, h: f32) -> GeoRect {
+        let sf = self.scale_factor.max(0.001);
+        GeoRect::new(
+            x / sf + self.binding_shift.0,
+            y / sf + self.binding_shift.1,
+            w / sf,
+            h / sf,
+        )
+    }
+
     pub(super) fn draw_component(&self, canvas: &mut Canvas, node: &RenderNode, x: f32, y: f32, w: f32, h: f32, sf: f32) {
         // 标签 → 绘制实现与耗时归因分类都来自同一张表（components::registry）。
         // 从前这里是两个各自维护的 match：一个 19 条分派、一个 10 条归因名 ——
@@ -189,7 +246,7 @@ impl WxmlRenderer {
         let y = oy + layout.location.y;
         let w = layout.size.width;
         let h = layout.size.height;
-        let logical_bounds = GeoRect::new(x / sf, y / sf, w / sf, h / sf);
+        let logical_bounds = self.page_bounds(x, y, w, h);
 
         self.draw_component(canvas, node, x, y, w, h, sf);
         
@@ -215,7 +272,7 @@ impl WxmlRenderer {
         let y = oy + layout.location.y;
         let w = layout.size.width;
         let h = layout.size.height;
-        let logical_bounds = GeoRect::new(x / sf, y / sf, w / sf, h / sf);
+        let logical_bounds = self.page_bounds(x, y, w, h);
 
         let text_color = node.style.text_color.unwrap_or(inherited_color);
         let mut node_with_color = Self::shallow_for_draw(node);

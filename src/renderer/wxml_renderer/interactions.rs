@@ -39,7 +39,7 @@ impl WxmlRenderer {
             return;
         }
         
-        let logical_bounds = GeoRect::new(x / sf, y / sf, w / sf, h / sf);
+        let logical_bounds = self.page_bounds(x, y, w, h);
         let text_color = node.style.text_color.unwrap_or(inherited_color);
         
         // 注册交互元素
@@ -134,6 +134,31 @@ impl WxmlRenderer {
             .unwrap_or(false);
         
         let id = Self::get_component_id(original_node, bounds);
+        // 点击态计时：按钮默认按下 20ms 后出现、松手再留 70ms；普通 view 是 50/400。
+        // 属性 `hover-start-time` / `hover-stay-time` / `hover-stop-propagation` 覆盖默认值。
+        if original_node.style.pressed_style.is_some() {
+            let button = original_node.tag == "button";
+            let ms = |name: &str, default: u64| -> u64 {
+                original_node
+                    .attrs
+                    .get(name)
+                    .and_then(|s| s.parse().ok())
+                    .unwrap_or(default)
+            };
+            let stop = original_node
+                .attrs
+                .get("hover-stop-propagation")
+                .map(|s| s == "true" || s == "{{true}}")
+                .unwrap_or(false);
+            interaction.note_hover(
+                id.clone(),
+                crate::ui::interaction::HoverSpec {
+                    start_ms: ms("hover-start-time", if button { 20 } else { 50 }),
+                    stay_ms: ms("hover-stay-time", if button { 70 } else { 400 }),
+                    stop,
+                },
+            );
+        }
         // 覆盖层子树里的元素统统算 fixed：坐标是视口坐标，而且它们在页面之上。
         // 只看 `style.is_fixed` 的话只有子树根算 fixed，里面的按钮会被当成正常流元素。
         let is_fixed = is_in_fixed_container || original_node.style.is_fixed || self.registering_fixed;

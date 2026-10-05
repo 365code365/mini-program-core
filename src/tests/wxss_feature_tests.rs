@@ -301,3 +301,17 @@ fn stylesheet_without_active_rules_reports_false() {
     assert!(!ss.has_active_rules());
     assert!(!ss.has_attr_selectors());
 }
+
+#[test]
+fn button_hover_fades_without_replacing_a_custom_background() {
+    // 内置 `.button-hover` 插在最前：页面 `.wx-btn` 的背景胜出，透明度仍然是 0.7
+    let mut ss = parse(".wx-btn { background-color: #07c160; }");
+    ss.ensure_button_hover();
+    let down = ElementDesc::new("button", None, &["wx-btn", "button-hover"], &no_attrs());
+    let styles = ss.get_styles_chain(&[down]);
+    assert_eq!(color_of(&styles, "background-color"), "#07c160");
+    match styles.get("opacity") {
+        Some(StyleValue::Number(n)) => assert!((n - 0.7).abs() < 0.01, "opacity {n}"),
+        other => panic!("按下应有 opacity 0.7，实际 {other:?}"),
+    }
+}

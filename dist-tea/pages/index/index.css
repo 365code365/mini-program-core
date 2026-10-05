@@ -9,7 +9,7 @@
   background-color: #f7f3ec;
 }
 .nav {
-  height: 46px;
+  padding-bottom: 6px;
   align-items: center;
   justify-content: center;
 }

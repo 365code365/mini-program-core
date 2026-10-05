@@ -8,7 +8,7 @@ const _sfc_main = common_vendor.defineComponent({ data() {
 function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
   "raw js";
   return {
-    a: common_assets._imports_0$11,
+    a: common_assets._imports_0$12,
     b: common_vendor.f($data.steps, (s, i, i0) => {
       return {
         a: common_vendor.t(s.date),
@@ -24,3 +24,4 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
 }
 const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render]]);
 wx.createPage(MiniProgramPage);
+//# sourceMappingURL=../../../.sourcemap/mp-weixin/pages/process/process.js.map

@@ -216,6 +216,7 @@ impl ApplicationHandler for crate::MiniAppWindow {
                 let structural = self.needs_redraw
                     || mini_render::renderer::components::has_playing_video()
                     || self.interaction.has_focused_input()
+                    || self.interaction.press_feedback_pending()
                     || swiper_frame;
                 // 整帧重绘的归因统计（MINI_FPS=1 时每秒汇总）。
                 // 「为什么这一帧又整屏重画了」如果只能靠猜，性能问题就没法收敛。

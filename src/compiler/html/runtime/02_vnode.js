@@ -91,6 +91,7 @@
     var v = { t: "el", tag: htmlTag, attrs: attrs };
     applyElAttrs(tag, a, scope, attrs, v);
     applyEvents(a, scope, attrs);
+    applyHover(tag, a, scope, attrs);
 
     if (isVoid) return v;
     var inner = customInner(tag, a, scope);
@@ -146,6 +147,21 @@
     if (a["name"] && /^(input|textarea|checkbox|radio|switch|slider|picker)$/.test(tag)) attrs["name"] = interp(a["name"], scope);
   }
 
+  // 微信点击态：button 默认 button-hover（20ms 后出现，松手再留 70ms）；
+  // 普通元素默认没有，写了 hover-class 才有（50ms / 400ms）。"none" 关掉。
+  function applyHover(tag, a, scope, attrs) {
+    if (truthy(evalWhole(a["disabled"], scope))) return;
+    var raw = a["hover-class"];
+    var hc = raw != null ? String(interp(raw, scope) || "").trim() : (tag === "button" ? "button-hover" : "");
+    if (!hc || hc === "none") return;
+    attrs["data-hover-class"] = hc;
+    var start = a["hover-start-time"] != null ? String(interp(a["hover-start-time"], scope) || "").trim() : "";
+    var stay = a["hover-stay-time"] != null ? String(interp(a["hover-stay-time"], scope) || "").trim() : "";
+    attrs["data-hover-start"] = start || (tag === "button" ? "20" : "50");
+    attrs["data-hover-stay"] = stay || (tag === "button" ? "70" : "400");
+    if (truthy(evalWhole(a["hover-stop-propagation"], scope))) attrs["data-hover-stop"] = "1";
+  }
+
   function applyEvents(a, scope, attrs) {
     for (var k in a) {
       var ev = k.indexOf("bind") === 0 ? k.slice(4) : (k.indexOf("catch") === 0 ? k.slice(5) : null);
@@ -160,8 +176,6 @@
         attrs["data-model"] = m ? m[1].trim() : a[k2];
       }
     }
-    // hover-class：按压反馈的类名（由 bindHoverClass 在按住时加上）
-    if (a["hover-class"]) attrs["data-hover-class"] = interp(a["hover-class"], scope);
     // animation：wx.createAnimation 的 export 载荷，载荷变化时由 patchAttrs 触发重播
     if (a["animation"]) {
       var av = evalWhole(a["animation"], scope);

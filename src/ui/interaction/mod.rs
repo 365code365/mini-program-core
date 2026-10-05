@@ -182,6 +182,28 @@ pub struct InteractiveElement {
     pub is_fixed: bool,
 }
 
+/// 一个元素的点击态计时（毫秒）
+#[derive(Clone, Copy, Debug)]
+pub struct HoverSpec {
+    pub start_ms: u64,
+    pub stay_ms: u64,
+    /// `hover-stop-propagation`：祖先不再进入点击态
+    pub stop: bool,
+}
+
+/// 这一次按住产生的点击态
+#[derive(Clone, Debug)]
+struct PressFeedback {
+    /// 命中的那个元素（祖先在 `ids` 里，且排在它前面）
+    hit_id: String,
+    ids: Vec<String>,
+    /// 点击态开始显示的时刻
+    show_at: std::time::Instant,
+    /// 松手后点击态消失的时刻；按住期间是 None
+    hide_at: Option<std::time::Instant>,
+    stay_ms: u64,
+}
+
 /// 按下的按钮
 #[derive(Clone, Debug)]
 pub struct PressedButton {
@@ -213,6 +235,10 @@ pub struct InteractionManager {
     pub dragging_scroll_area: Option<String>,
     /// 按下的按钮
     pub pressed_button: Option<PressedButton>,
+    /// 点击态（hover-class）的出现/保留计时。微信默认按钮按下 20ms 后出现，松手后再留 70ms
+    press_feedback: Option<PressFeedback>,
+    /// 每个可点元素的 hover 计时（登记时写入）
+    hover_specs: HashMap<String, HoverSpec>,
     /// 点击动画
     pub click_animations: Vec<ClickAnimation>,
     /// 当前页面的交互元素
@@ -243,6 +269,8 @@ impl InteractionManager {
             focused_input: None,
             dragging_slider: None,
             pressed_button: None,
+            press_feedback: None,
+            hover_specs: HashMap::new(),
             click_animations: Vec::new(),
             elements: Vec::new(),
             scroll_controllers: HashMap::new(),

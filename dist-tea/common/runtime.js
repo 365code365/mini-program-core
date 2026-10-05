@@ -1,3 +1,58 @@
+/* 内置图标：数据源 WeUI (Tencent, MIT) */
+var __WXICON = {
+  "success": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm-1.177-7.86l-2.765-2.767L7 12.431l3.119 3.121a1 1 0 001.414 0l5.952-5.95-1.062-1.062-5.6 5.6z"/></svg>',
+  "success_no_circle": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M8.657 18.435L3 12.778l1.414-1.414 4.95 4.95L20.678 5l1.414 1.414-12.02 12.021a1 1 0 01-1.415 0z"/></svg>',
+  "success-no-circle": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M8.657 18.435L3 12.778l1.414-1.414 4.95 4.95L20.678 5l1.414 1.414-12.02 12.021a1 1 0 01-1.415 0z"/></svg>',
+  "success_circle": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm0-1.2a8.8 8.8 0 100-17.6 8.8 8.8 0 000 17.6zm-1.172-6.242l5.809-5.808.848.849-5.95 5.95a1 1 0 01-1.414 0L7 12.426l.849-.849 2.98 2.98z"/></svg>',
+  "success-circle": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm0-1.2a8.8 8.8 0 100-17.6 8.8 8.8 0 000 17.6zm-1.172-6.242l5.809-5.808.848.849-5.95 5.95a1 1 0 01-1.414 0L7 12.426l.849-.849 2.98 2.98z"/></svg>',
+  "info": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm-.75-12v7h1.5v-7h-1.5zM12 9a1 1 0 100-2 1 1 0 000 2z"/></svg>',
+  "info_circle": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm0-1.2a8.8 8.8 0 100-17.6 8.8 8.8 0 000 17.6zM11.4 10h1.2v7h-1.2v-7zm.6-1a1 1 0 110-2 1 1 0 010 2z"/></svg>',
+  "info-circle": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm0-1.2a8.8 8.8 0 100-17.6 8.8 8.8 0 000 17.6zM11.4 10h1.2v7h-1.2v-7zm.6-1a1 1 0 110-2 1 1 0 010 2z"/></svg>',
+  "warn": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm-.763-15.864l.11 7.596h1.305l.11-7.596h-1.525zm.759 10.967c.512 0 .902-.383.902-.882 0-.5-.39-.882-.902-.882a.878.878 0 00-.896.882c0 .499.396.882.896.882z"/></svg>',
+  "waiting": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M12.75 11.38V6h-1.5v6l4.243 4.243 1.06-1.06-3.803-3.804zM12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>',
+  "waiting_circle": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M12.6 11.503l3.891 3.891-.848.849L11.4 12V6h1.2v5.503zM12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm0-1.2a8.8 8.8 0 100-17.6 8.8 8.8 0 000 17.6z"/></svg>',
+  "waiting-circle": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M12.6 11.503l3.891 3.891-.848.849L11.4 12V6h1.2v5.503zM12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm0-1.2a8.8 8.8 0 100-17.6 8.8 8.8 0 000 17.6z"/></svg>',
+  "waiting_no_circle": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M12.6 11.503l3.891 3.891-.848.849L11.4 12V6h1.2v5.503zM12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm0-1.2a8.8 8.8 0 100-17.6 8.8 8.8 0 000 17.6z"/></svg>',
+  "clock": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M12.6 11.503l3.891 3.891-.848.849L11.4 12V6h1.2v5.503zM12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm0-1.2a8.8 8.8 0 100-17.6 8.8 8.8 0 000 17.6z"/></svg>',
+  "time": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M12.6 11.503l3.891 3.891-.848.849L11.4 12V6h1.2v5.503zM12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm0-1.2a8.8 8.8 0 100-17.6 8.8 8.8 0 000 17.6z"/></svg>',
+  "cancel": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm0-1.2a8.8 8.8 0 100-17.6 8.8 8.8 0 000 17.6zM12.849 12l3.11 3.111-.848.849L12 12.849l-3.111 3.11-.849-.848L11.151 12l-3.11-3.111.848-.849L12 11.151l3.111-3.11.849.848L12.849 12z"/></svg>',
+  "clear": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M13.06 12l3.006-3.005-1.06-1.06L12 10.938 8.995 7.934l-1.06 1.06L10.938 12l-3.005 3.005 1.06 1.06L12 13.062l3.005 3.005 1.06-1.06L13.062 12zM12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>',
+  "download": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M11.25 12.04l-1.72-1.72-1.06 1.06 2.828 2.83a1 1 0 001.414-.001l2.828-2.828-1.06-1.061-1.73 1.73V7h-1.5v5.04zm0-5.04V2h1.5v5h6.251c.55 0 .999.446.999.996v13.008a.998.998 0 01-.996.996H4.996A.998.998 0 014 21.004V7.996A1 1 0 014.999 7h6.251z"/></svg>',
+  "search": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M16.31 15.561l4.114 4.115-.848.848-4.123-4.123a7 7 0 11.857-.84zM16.8 11a5.8 5.8 0 10-11.6 0 5.8 5.8 0 0011.6 0z"/></svg>',
+  "circle": '<svg viewBox="0 0 1000 1000" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M500 916.667C269.881 916.667 83.333 730.119 83.333 500 83.333 269.881 269.881 83.333 500 83.333c230.119 0 416.667 186.548 416.667 416.667 0 230.119-186.548 416.667-416.667 416.667zm0-50c202.504 0 366.667-164.163 366.667-366.667 0-202.504-164.163-366.667-366.667-366.667-202.504 0-366.667 164.163-366.667 366.667 0 202.504 164.163 366.667 366.667 366.667z"/></svg>',
+  "close": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M12 10.586l5.657-5.657 1.414 1.414L13.414 12l5.657 5.657-1.414 1.414L12 13.414l-5.657 5.657-1.414-1.414L10.586 12 4.929 6.343 6.343 4.93z"/></svg>',
+  "cancel_no_circle": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M12 10.586l5.657-5.657 1.414 1.414L13.414 12l5.657 5.657-1.414 1.414L12 13.414l-5.657 5.657-1.414-1.414L10.586 12 4.929 6.343 6.343 4.93z"/></svg>',
+  "cancel-no-circle": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M12 10.586l5.657-5.657 1.414 1.414L13.414 12l5.657 5.657-1.414 1.414L12 13.414l-5.657 5.657-1.414-1.414L10.586 12 4.929 6.343 6.343 4.93z"/></svg>',
+  "back": '<svg viewBox="0 0 12 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M3.343 12l7.071 7.071L9 20.485l-7.778-7.778a1 1 0 010-1.414L9 3.515l1.414 1.414L3.344 12z"/></svg>',
+  "arrow_left": '<svg viewBox="0 0 12 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M3.343 12l7.071 7.071L9 20.485l-7.778-7.778a1 1 0 010-1.414L9 3.515l1.414 1.414L3.344 12z"/></svg>',
+  "arrow-left": '<svg viewBox="0 0 12 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M3.343 12l7.071 7.071L9 20.485l-7.778-7.778a1 1 0 010-1.414L9 3.515l1.414 1.414L3.344 12z"/></svg>',
+  "arrow": '<svg viewBox="0 0 12 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M10.157 12.711L4.5 18.368l-1.414-1.414 4.95-4.95-4.95-4.95L4.5 5.64l5.657 5.657a1 1 0 010 1.414z"/></svg>',
+  "arrow_right": '<svg viewBox="0 0 12 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M10.157 12.711L4.5 18.368l-1.414-1.414 4.95-4.95-4.95-4.95L4.5 5.64l5.657 5.657a1 1 0 010 1.414z"/></svg>',
+  "arrow-right": '<svg viewBox="0 0 12 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M10.157 12.711L4.5 18.368l-1.414-1.414 4.95-4.95-4.95-4.95L4.5 5.64l5.657 5.657a1 1 0 010 1.414z"/></svg>',
+  "arrow_up": '<svg viewBox="0 0 24 12" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><g transform="translate(0 12) rotate(-90)"><path d="M10.157 12.711L4.5 18.368l-1.414-1.414 4.95-4.95-4.95-4.95L4.5 5.64l5.657 5.657a1 1 0 010 1.414z"/></g></svg>',
+  "arrow-up": '<svg viewBox="0 0 24 12" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><g transform="translate(0 12) rotate(-90)"><path d="M10.157 12.711L4.5 18.368l-1.414-1.414 4.95-4.95-4.95-4.95L4.5 5.64l5.657 5.657a1 1 0 010 1.414z"/></g></svg>',
+  "arrow_down": '<svg viewBox="0 0 24 12" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><g transform="translate(24 0) rotate(90)"><path d="M10.157 12.711L4.5 18.368l-1.414-1.414 4.95-4.95-4.95-4.95L4.5 5.64l5.657 5.657a1 1 0 010 1.414z"/></g></svg>',
+  "arrow-down": '<svg viewBox="0 0 24 12" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><g transform="translate(24 0) rotate(90)"><path d="M10.157 12.711L4.5 18.368l-1.414-1.414 4.95-4.95-4.95-4.95L4.5 5.64l5.657 5.657a1 1 0 010 1.414z"/></g></svg>',
+  "plus": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M11 11V4h2v7h7v2h-7v7h-2v-7H4v-2h7z"/></svg>',
+  "add": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M11 11V4h2v7h7v2h-7v7h-2v-7H4v-2h7z"/></svg>',
+  "minus": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M4 11h16v2H4z"/></svg>',
+  "star": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M12 18.5l-4.672 2.456a1 1 0 01-1.451-1.054l.892-5.202-3.78-3.685a1 1 0 01.555-1.706l5.223-.759 2.336-4.733a1 1 0 011.794 0l2.336 4.733 5.223.76a1 1 0 01.555 1.705L17.23 14.7l.892 5.202a1 1 0 01-1.45 1.054L12 18.5z"/></svg>',
+  "star-o": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M15.941 14.28l3.942-3.841-5.447-.792L12 4.711 9.564 9.647l-5.447.792L8.06 14.28l-.93 5.425L12 17.144l4.872 2.562-.93-5.425zM12 18.5l-4.672 2.456a1 1 0 01-1.451-1.054l.892-5.202-3.78-3.685a1 1 0 01.555-1.706l5.223-.759 2.336-4.733a1 1 0 011.794 0l2.336 4.733 5.223.76a1 1 0 01.555 1.705L17.23 14.7l.892 5.202a1 1 0 01-1.45 1.054L12 18.5z"/></svg>',
+  "star_o": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M15.941 14.28l3.942-3.841-5.447-.792L12 4.711 9.564 9.647l-5.447.792L8.06 14.28l-.93 5.425L12 17.144l4.872 2.562-.93-5.425zM12 18.5l-4.672 2.456a1 1 0 01-1.451-1.054l.892-5.202-3.78-3.685a1 1 0 01.555-1.706l5.223-.759 2.336-4.733a1 1 0 011.794 0l2.336 4.733 5.223.76a1 1 0 01.555 1.705L17.23 14.7l.892 5.202a1 1 0 01-1.45 1.054L12 18.5z"/></svg>',
+  "heart": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M4.536 5.778a5 5 0 017.07 0c.183.183.42.41.708.682.288-.272.524-.499.707-.682a5 5 0 017.125 7.016L13.02 19.92a1 1 0 01-1.414 0L4.48 12.795a5 5 0 01.055-7.017z"/></svg>',
+  "like": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M4.536 5.778a5 5 0 017.07 0c.183.183.42.41.708.682.288-.272.524-.499.707-.682a5 5 0 017.125 7.016L13.02 19.92a1 1 0 01-1.414 0L4.48 12.795a5 5 0 01.055-7.017z"/></svg>',
+  "heart-o": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M19.285 12.645a3.8 3.8 0 00-5.416-5.332c-.192.192-.436.427-.732.707l-.823.775-.823-.775c-.297-.28-.54-.515-.733-.707a3.8 3.8 0 00-5.374 0c-1.468 1.469-1.485 3.844-.054 5.32l6.984 6.984 6.97-6.972zm-14.75-6.18a5 5 0 017.072 0c.182.182.418.41.707.682.288-.272.524-.5.707-.683a5 5 0 017.125 7.017l-7.125 7.126a1 1 0 01-1.414 0L4.48 13.48a5 5 0 01.055-7.017z"/></svg>',
+  "heart_o": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M19.285 12.645a3.8 3.8 0 00-5.416-5.332c-.192.192-.436.427-.732.707l-.823.775-.823-.775c-.297-.28-.54-.515-.733-.707a3.8 3.8 0 00-5.374 0c-1.468 1.469-1.485 3.844-.054 5.32l6.984 6.984 6.97-6.972zm-14.75-6.18a5 5 0 017.072 0c.182.182.418.41.707.682.288-.272.524-.5.707-.683a5 5 0 017.125 7.017l-7.125 7.126a1 1 0 01-1.414 0L4.48 13.48a5 5 0 01.055-7.017z"/></svg>',
+  "chat": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M11 19l-2.293 2.293A1 1 0 017 20.586V19H3.5A1.5 1.5 0 012 17.5v-12A1.5 1.5 0 013.5 4h17A1.5 1.5 0 0122 5.5v12a1.5 1.5 0 01-1.5 1.5H11z"/></svg>',
+  "comment": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M11 19l-2.293 2.293A1 1 0 017 20.586V19H3.5A1.5 1.5 0 012 17.5v-12A1.5 1.5 0 013.5 4h17A1.5 1.5 0 0122 5.5v12a1.5 1.5 0 01-1.5 1.5H11z"/></svg>',
+  "chat-o": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M10.503 17.8H20.5a.3.3 0 00.3-.3v-12a.3.3 0 00-.3-.3h-17a.3.3 0 00-.3.3v12a.3.3 0 00.3.3h4.7v2.303l2.303-2.303zM11 19l-2.293 2.293A1 1 0 017 20.586V19H3.5A1.5 1.5 0 012 17.5v-12A1.5 1.5 0 013.5 4h17A1.5 1.5 0 0122 5.5v12a1.5 1.5 0 01-1.5 1.5H11z"/></svg>',
+  "chat_o": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M10.503 17.8H20.5a.3.3 0 00.3-.3v-12a.3.3 0 00-.3-.3h-17a.3.3 0 00-.3.3v12a.3.3 0 00.3.3h4.7v2.303l2.303-2.303zM11 19l-2.293 2.293A1 1 0 017 20.586V19H3.5A1.5 1.5 0 012 17.5v-12A1.5 1.5 0 013.5 4h17A1.5 1.5 0 0122 5.5v12a1.5 1.5 0 01-1.5 1.5H11z"/></svg>',
+  "info_no_circle": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M9.9 9.2h4.2V21H9.9zM12 7.3a2.4 2.4 0 100-4.8 2.4 2.4 0 000 4.8z"/></svg>',
+  "info-no-circle": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M9.9 9.2h4.2V21H9.9zM12 7.3a2.4 2.4 0 100-4.8 2.4 2.4 0 000 4.8z"/></svg>',
+  "warn_no_circle": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M9.9 3h4.2v11.8H9.9zM12 21.6a2.4 2.4 0 100-4.8 2.4 2.4 0 000 4.8z"/></svg>',
+  "warn-no-circle": '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M9.9 3h4.2v11.8H9.9zM12 21.6a2.4 2.4 0 100-4.8 2.4 2.4 0 000 4.8z"/></svg>'
+};
+
 /* mini-render 响应式运行时（导出 HTML 工程） */
 (function () {
   "use strict";
@@ -141,6 +196,7 @@
     var v = { t: "el", tag: htmlTag, attrs: attrs };
     applyElAttrs(tag, a, scope, attrs, v);
     applyEvents(a, scope, attrs);
+    applyHover(tag, a, scope, attrs);
 
     if (isVoid) return v;
     var inner = customInner(tag, a, scope);
@@ -196,6 +252,21 @@
     if (a["name"] && /^(input|textarea|checkbox|radio|switch|slider|picker)$/.test(tag)) attrs["name"] = interp(a["name"], scope);
   }
 
+  // 微信点击态：button 默认 button-hover（20ms 后出现，松手再留 70ms）；
+  // 普通元素默认没有，写了 hover-class 才有（50ms / 400ms）。"none" 关掉。
+  function applyHover(tag, a, scope, attrs) {
+    if (truthy(evalWhole(a["disabled"], scope))) return;
+    var raw = a["hover-class"];
+    var hc = raw != null ? String(interp(raw, scope) || "").trim() : (tag === "button" ? "button-hover" : "");
+    if (!hc || hc === "none") return;
+    attrs["data-hover-class"] = hc;
+    var start = a["hover-start-time"] != null ? String(interp(a["hover-start-time"], scope) || "").trim() : "";
+    var stay = a["hover-stay-time"] != null ? String(interp(a["hover-stay-time"], scope) || "").trim() : "";
+    attrs["data-hover-start"] = start || (tag === "button" ? "20" : "50");
+    attrs["data-hover-stay"] = stay || (tag === "button" ? "70" : "400");
+    if (truthy(evalWhole(a["hover-stop-propagation"], scope))) attrs["data-hover-stop"] = "1";
+  }
+
   function applyEvents(a, scope, attrs) {
     for (var k in a) {
       var ev = k.indexOf("bind") === 0 ? k.slice(4) : (k.indexOf("catch") === 0 ? k.slice(5) : null);
@@ -210,8 +281,6 @@
         attrs["data-model"] = m ? m[1].trim() : a[k2];
       }
     }
-    // hover-class：按压反馈的类名（由 bindHoverClass 在按住时加上）
-    if (a["hover-class"]) attrs["data-hover-class"] = interp(a["hover-class"], scope);
     // animation：wx.createAnimation 的 export 载荷，载荷变化时由 patchAttrs 触发重播
     if (a["animation"]) {
       var av = evalWhole(a["animation"], scope);
@@ -287,36 +356,11 @@
     var label = el.parentNode && el.parentNode.querySelector(".wx-slider-value");
     if (label) label.textContent = (Math.round(val) === val ? val : val.toFixed(1));
   }
-  // 与编译期 icon_svg 保持一致的矢量图标（圆底 currentColor + 白色标记）
+  // 内置图标：直接查编译期生成的 __WXICON 表（数据源同原生渲染器，见 icon_data.rs）。
+  // 以前这里手抄了一份和编译期并行的 switch，改一处漏一处。
   function iconSvg(t) {
-    var circle = '<circle cx="12" cy="12" r="12" fill="currentColor"/>';
-    var check = '<path d="M5.8 12.4 10 16.4 18.2 7.6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>';
-    var body;
-    switch (t) {
-      case "success_no_circle": body = '<path d="M3.5 12.5 9 18 20.5 5.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>'; break;
-      case "back": case "arrow_left": case "arrow-left": body = '<path d="M15.5 4 7.5 12 15.5 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>'; break;
-      case "arrow": case "arrow_right": case "arrow-right": body = '<path d="M8.5 4 16.5 12 8.5 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>'; break;
-      case "arrow_up": case "arrow-up": body = '<path d="M4 15.5 12 7.5 20 15.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>'; break;
-      case "arrow_down": case "arrow-down": body = '<path d="M4 8.5 12 16.5 20 8.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>'; break;
-      case "plus": body = '<path d="M12 4.5V19.5M4.5 12H19.5" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/>'; break;
-      case "minus": body = '<path d="M4.5 12H19.5" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/>'; break;
-      case "info": case "info_circle": body = circle + '<circle cx="12" cy="7.6" r="1.7" fill="#fff"/><rect x="10.9" y="10.8" width="2.2" height="7" rx="1.1" fill="#fff"/>'; break;
-      case "warn": body = circle + '<rect x="10.9" y="5.4" width="2.2" height="7.2" rx="1.1" fill="#fff"/><circle cx="12" cy="16.6" r="1.7" fill="#fff"/>'; break;
-      case "waiting": case "waiting_circle": body = circle + '<rect x="10.9" y="6.2" width="2.2" height="6.6" rx="1.1" fill="#fff"/><rect x="12" y="10.9" width="5.2" height="2.2" rx="1.1" fill="#fff"/><circle cx="12" cy="12" r="1.6" fill="#fff"/>'; break;
-      case "info_no_circle": body = '<circle cx="12" cy="5.6" r="2" fill="currentColor"/><rect x="10.4" y="9.8" width="3.2" height="9.4" rx="1.6" fill="currentColor"/>'; break;
-      case "warn_no_circle": body = '<rect x="10.4" y="3" width="3.2" height="11.2" rx="1.6" fill="currentColor"/><circle cx="12" cy="18.8" r="2" fill="currentColor"/>'; break;
-      case "waiting_no_circle": case "clock": body = '<circle cx="12" cy="12" r="10.4" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 5.6V12h5.2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>'; break;
-      case "close": case "cancel_no_circle": body = '<path d="M5 5 19 19M19 5 5 19" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>'; break;
-      case "cancel": case "clear": body = circle + '<path d="M7.6 7.6 16.4 16.4M16.4 7.6 7.6 16.4" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>'; break;
-      case "download": body = '<circle cx="12" cy="12" r="10.8" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 6v7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M8 12.4 12 16.6 16 12.4Z" fill="currentColor"/><rect x="7" y="17.4" width="10" height="2.2" rx="1.1" fill="currentColor"/>'; break;
-      case "search": body = '<circle cx="10.4" cy="10.4" r="6.4" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15.2 15.2 21 21" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>'; break;
-      case "circle": body = '<circle cx="12" cy="12" r="10.8" fill="none" stroke="currentColor" stroke-width="2.2"/>'; break;
-      case "star": body = '<path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="currentColor"/>'; break;
-      case "star-o": case "star_o": body = '<path d="M12 1.6 15.2 8.6 22.8 9.5 17.2 14.6 18.7 22 12 18.3 5.3 22 6.8 14.6 1.2 9.5 8.8 8.6Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>'; break;
-      case "heart": body = '<path d="M12 21C6 16.5 2.6 13.4 2.6 9.6 2.6 6.5 5 4.2 8 4.2c1.8 0 3.2.9 4 2.2.8-1.3 2.2-2.2 4-2.2 3 0 5.4 2.3 5.4 5.4 0 3.8-3.4 6.9-9.4 11.4Z" fill="currentColor"/>'; break;
-      default: body = circle + check;
-    }
-    return '<svg viewBox="0 0 24 24" aria-hidden="true">' + body + "</svg>";
+    if (typeof __WXICON !== "undefined" && __WXICON[t]) return __WXICON[t];
+    return "";
   }
   function renderRich(v) {
     if (v == null) return "";
@@ -799,28 +843,109 @@
     return api;
   }
 
-  // ───────── hover-class：按住时加类，松手/移出时去掉（小程序官方按压反馈） ─────────
+  // ───────── hover-class：与微信同一套计时 ─────────
+  // 按下等 data-hover-start 毫秒才加类；松手后再留 data-hover-stay 毫秒。
+  // 手指移出元素立刻取消。hover-stop-propagation 挡住更外层的祖先。
   function bindHoverClass() {
-    var active = null;
-    function on(e) {
-      var el = e.target.closest && e.target.closest("[data-hover-class]");
-      if (!el) return;
-      off();
-      var cls = el.getAttribute("data-hover-class");
-      if (!cls) return;
-      el.classList.add.apply(el.classList, cls.split(/\s+/));
-      active = { el: el, cls: cls };
+    var pending = [];
+    var holding = false;
+    var fromTouch = false;
+
+    function classesOf(el) {
+      return (el.getAttribute("data-hover-class") || "").split(/\s+/).filter(Boolean);
     }
-    function off() {
-      if (!active) return;
-      active.el.classList.remove.apply(active.el.classList, active.cls.split(/\s+/));
-      active = null;
+    function show(el) {
+      if (el.__hoverOn) return;
+      var cls = classesOf(el);
+      if (!cls.length) return;
+      el.classList.add.apply(el.classList, cls);
+      el.__hoverOn = cls;
     }
-    document.addEventListener("touchstart", on, { passive: true });
-    document.addEventListener("mousedown", on);
-    ["touchend", "touchcancel", "mouseup", "mouseleave"].forEach(function (n) {
-      document.addEventListener(n, off, { passive: true });
-    });
+    function hide(el) {
+      if (!el || !el.__hoverOn) return;
+      el.classList.remove.apply(el.classList, el.__hoverOn);
+      el.__hoverOn = null;
+    }
+    function chain(target) {
+      var list = [];
+      var el = target && target.closest && target.closest("[data-hover-class]");
+      while (el) {
+        var blocked = el.hasAttribute("disabled") || el.classList.contains("wx-button-disabled");
+        if (!blocked) list.push(el);
+        if (blocked || el.getAttribute("data-hover-stop") === "1") break;
+        el = el.parentElement && el.parentElement.closest("[data-hover-class]");
+      }
+      return list;
+    }
+    function pointOf(e) {
+      var t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]) || e;
+      return { x: t.clientX, y: t.clientY };
+    }
+    function inside(el, p) {
+      var r = el.getBoundingClientRect();
+      return p.x >= r.left && p.x <= r.right && p.y >= r.top && p.y <= r.bottom;
+    }
+    function reset() {
+      pending.forEach(function (item) {
+        if (item.timer) clearTimeout(item.timer);
+        hide(item.el);
+      });
+      pending = [];
+      holding = false;
+    }
+    function onDown(e) {
+      if (e.type === "mousedown" && fromTouch) return;
+      if (e.type === "touchstart") fromTouch = true;
+      reset();
+      var list = chain(e.target);
+      if (!list.length) return;
+      holding = true;
+      list.forEach(function (el) {
+        var start = parseInt(el.getAttribute("data-hover-start"), 10);
+        var stay = parseInt(el.getAttribute("data-hover-stay"), 10);
+        if (isNaN(start)) start = 50;
+        if (isNaN(stay)) stay = 400;
+        var item = { el: el, stay: stay, shown: false, timer: null };
+        item.timer = setTimeout(function () {
+          item.timer = null;
+          if (!holding) return;
+          item.shown = true;
+          show(el);
+        }, start);
+        pending.push(item);
+      });
+    }
+    function onMove(e) {
+      if (!holding) return;
+      var p = pointOf(e);
+      pending = pending.filter(function (item) {
+        if (inside(item.el, p)) return true;
+        if (item.timer) clearTimeout(item.timer);
+        hide(item.el);
+        return false;
+      });
+    }
+    function onUp(e) {
+      if (e.type === "mouseup" && fromTouch) return;
+      if (e.type === "touchend" || e.type === "touchcancel") {
+        setTimeout(function () { fromTouch = false; }, 700);
+      }
+      if (!holding) return;
+      holding = false;
+      pending.forEach(function (item) {
+        if (item.timer) clearTimeout(item.timer);
+        if (!item.shown) { hide(item.el); return; }
+        setTimeout(function () { hide(item.el); }, item.stay);
+      });
+      pending = [];
+    }
+    document.addEventListener("touchstart", onDown, { passive: true });
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("touchmove", onMove, { passive: true });
+    document.addEventListener("mousemove", function (e) { if (!fromTouch) onMove(e); });
+    document.addEventListener("touchend", onUp, { passive: true });
+    document.addEventListener("touchcancel", onUp, { passive: true });
+    document.addEventListener("mouseup", onUp);
   }
 
   var pullDown = (function () {

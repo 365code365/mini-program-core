@@ -14,7 +14,7 @@ const _sfc_main = common_vendor.defineComponent({
 function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
   "raw js";
   return {
-    a: common_assets._imports_0$5,
+    a: common_assets._imports_0$6,
     b: common_vendor.o((...args) => $options.toOrders && $options.toOrders(...args), "94"),
     c: common_vendor.o((...args) => $options.toShop && $options.toShop(...args), "4a"),
     d: common_vendor.sei(common_vendor.gei(_ctx, ""), "view"),
@@ -24,3 +24,4 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
 }
 const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render]]);
 wx.createPage(MiniProgramPage);
+//# sourceMappingURL=../../../.sourcemap/mp-weixin/pages/cart/order-success.js.map

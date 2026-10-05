@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pages/consult/consult</title>
+  <link rel="stylesheet" href="../../common/base.css">
+  <link rel="stylesheet" href="../../common/app.css">
+  <link rel="stylesheet" href="./consult.css">
+  <style>
+    #app{width:375px;min-height:100vh;margin:0 auto;background:#f5f6f8;position:relative;overflow:hidden;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="wx-view page" id="" style="--status-bar-height:;">
+    <div class="wx-scroll-view scroll" style="overflow-y:auto">
+      <div class="wx-view intro">
+        <span class="wx-text intro-title"></span>
+        <div class="wx-view intro-line"></div>
+        <span class="wx-text intro-sub"></span>
+      </div>
+      <div class="wx-view card">
+        <span class="wx-text label">怎么称呼你</span>
+        <input class="wx-input input" type="text" value="" placeholder="填写称呼，方便选茶师称呼你" data-input="">
+        <span class="wx-text label">手机号</span>
+        <input class="wx-input input" type="text" value="" placeholder="手机号，方便尽快联系你" data-input="">
+        <span class="wx-text label">微信号（选填）</span>
+        <input class="wx-input input" type="text" value="" placeholder="加微信沟通更方便，与手机号至少填一个" data-input="">
+        <span class="wx-text label">需求描述（选填）</span>
+      </div>
+      <div class="wx-view assure">
+        <img class="wx-image assure-icon" style="object-fit:fill" src="">
+        <span class="wx-text assure-t">信息仅用于选茶师与你联系，不会对外泄露。提交后也可在「我的 - 联系客服」添加企业微信更快沟通。</span>
+      </div>
+      <div class="wx-view submit" data-tap="">
+        <span class="wx-text submit-t"></span>
+      </div>
+      <div class="wx-view bottom-space"></div>
+    </div>
+  </div>
+  <div class="wx-wxs"></div>
+</div>
+
+<script>
+window.__PAGE_ROUTE__ = "pages/consult/consult";
+window.__PAGE_PULL_DOWN__ = false;
+window.__WXML__ = [{"a":{"change:eA":"{{uV.sA}}","change:eS":"{{uV.sS}}","class":"{{['page', D]}}","eA":"{{$eA[B]}}","eS":"{{$eS[B]}}","hidden":"{{virtualHostHidden || false}}","id":"{{B}}","style":"{{'--status-bar-height:' + C + ';' + (virtualHostStyle || '')}}"},"c":[{"a":{"class":"scroll","enable-flex":"true","enhanced":"true","scroll-y":"true"},"c":[{"a":{"class":"intro"},"c":[{"a":{"class":"intro-title"},"c":[{"t":"tx","x":"{{a}}"}],"n":"text","t":"el"},{"a":{"class":"intro-line"},"c":[],"n":"view","t":"el"},{"a":{"class":"intro-sub"},"c":[{"t":"tx","x":"{{b}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"card"},"c":[{"a":{"class":"label"},"c":[{"t":"tx","x":"怎么称呼你"}],"n":"text","t":"el"},{"a":{"bindinput":"{{d}}","class":"input","placeholder":"填写称呼，方便选茶师称呼你","value":"{{c}}"},"c":[],"n":"input","t":"el"},{"a":{"class":"label"},"c":[{"t":"tx","x":"手机号"}],"n":"text","t":"el"},{"a":{"bindinput":"{{f}}","class":"input","placeholder":"手机号，方便尽快联系你","value":"{{e}}"},"c":[],"n":"input","t":"el"},{"a":{"class":"label"},"c":[{"t":"tx","x":"微信号（选填）"}],"n":"text","t":"el"},{"a":{"bindinput":"{{h}}","class":"input","placeholder":"加微信沟通更方便，与手机号至少填一个","value":"{{g}}"},"c":[],"n":"input","t":"el"},{"a":{"wx:if":"{{i}}"},"c":[{"a":{"class":"label"},"c":[{"t":"tx","x":"期望到店日期"}],"n":"text","t":"el"},{"a":{"class":"chips"},"c":[{"a":{"bindtap":"{{d.g}}","class":"{{['chip', d.f]}}","wx:for":"{{j}}","wx:for-item":"d","wx:key":"e"},"c":[{"a":{"class":"{{['chip-t', d.b]}}"},"c":[{"t":"tx","x":"{{d.a}}"}],"n":"text","t":"el"},{"a":{"class":"{{['chip-sub', d.d]}}"},"c":[{"t":"tx","x":"{{d.c}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"label"},"c":[{"t":"tx","x":"期望时段"}],"n":"text","t":"el"},{"a":{"class":"chips"},"c":[{"a":{"bindtap":"{{t.g}}","class":"{{['chip', t.f]}}","wx:for":"{{k}}","wx:for-item":"t","wx:key":"e"},"c":[{"a":{"class":"{{['chip-t', t.b]}}"},"c":[{"t":"tx","x":"{{t.a}}"}],"n":"text","t":"el"},{"a":{"class":"{{['chip-sub', t.d]}}"},"c":[{"t":"tx","x":"{{t.c}}"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"wx:if":"{{l}}"},"c":[{"a":{"class":"label"},"c":[{"t":"tx","x":"企业名称"}],"n":"text","t":"el"},{"a":{"bindinput":"{{n}}","class":"input","placeholder":"公司 / 单位名称","value":"{{m}}"},"c":[],"n":"input","t":"el"}],"n":"view","t":"el"},{"a":{"wx:if":"{{o}}"},"c":[{"a":{"class":"label"},"c":[{"t":"tx","x":"预算区间（选填）"}],"n":"text","t":"el"},{"a":{"bindinput":"{{q}}","class":"input","placeholder":"如 300-800 元 / 份","value":"{{p}}"},"c":[],"n":"input","t":"el"},{"a":{"class":"label"},"c":[{"t":"tx","x":"数量 / 规模（选填）"}],"n":"text","t":"el"},{"a":{"bindinput":"{{s}}","class":"input","placeholder":"如 50 份 / 200 人","value":"{{r}}"},"c":[],"n":"input","t":"el"}],"n":"view","t":"el"},{"a":{"class":"label"},"c":[{"t":"tx","x":"需求描述（选填）"}],"n":"text","t":"el"},{"a":{"wx:if":"{{r0}}"},"c":[{"a":{"bindinput":"{{w}}","class":"textarea","placeholder":"{{t}}","value":"{{v}}"},"c":[],"n":"textarea","t":"el"}],"n":"block","t":"el"}],"n":"view","t":"el"},{"a":{"class":"assure"},"c":[{"a":{"class":"assure-icon","src":"{{x}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"assure-t"},"c":[{"t":"tx","x":"信息仅用于选茶师与你联系，不会对外泄露。提交后也可在「我的 - 联系客服」添加企业微信更快沟通。"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"{{A}}","class":"{{['submit', z]}}"},"c":[{"a":{"class":"submit-t"},"c":[{"t":"tx","x":"{{y}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"bottom-space"},"c":[],"n":"view","t":"el"}],"n":"scroll-view","t":"el"}],"n":"view","t":"el"},{"a":{"module":"uV","src":"/common/uniView.wxs"},"c":[],"n":"wxs","t":"el"}];
+</script>
+<script src="../../common/runtime.js"></script>
+<script src="../../common/app.js"></script>
+<script src="./consult.js"></script>
+</body>
+</html>

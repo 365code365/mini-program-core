@@ -211,13 +211,15 @@ impl ButtonComponent {
         w: f32, 
         h: f32, 
         sf: f32,
-        pressed: bool,
+        _pressed: bool,
     ) {
         let style = &node.style;
-        let disabled = node.attrs.get("disabled")
+        // 点击态不再在这里另外压暗、盖一层黑。微信的按压就是 `hover-class`
+        // （默认 `button-hover`：整颗按钮 opacity 0.7），由按压样式和组合成负责。
+        let _disabled = node.attrs.get("disabled")
             .map(|s| s == "true" || s == "{{true}}")
             .unwrap_or(false);
-        
+
         // 获取圆角值（支持四个角独立设置），并按盒子尺寸夹紧（含 border-radius:50% 情况）
         let [radius_tl, radius_tr, radius_br, radius_bl] = get_border_radii_clamped(style, w, h);
         let has_radius = radius_tl > 0.0 || radius_tr > 0.0 || radius_br > 0.0 || radius_bl > 0.0;
@@ -228,16 +230,7 @@ impl ButtonComponent {
             draw_box_shadow(canvas, shadow, x, y, w, h, style.border_radius);
         }
         
-        // 获取背景色，按下时变暗
-        let bg = if let Some(bg) = style.background_color {
-            if pressed && !disabled {
-                Self::darken_color(bg, 0.1)
-            } else {
-                bg
-            }
-        } else {
-            Color::WHITE
-        };
+        let bg = style.background_color.unwrap_or(Color::WHITE);
         
         // 应用透明度
         let bg = if style.opacity < 1.0 {
@@ -263,11 +256,7 @@ impl ButtonComponent {
         // 绘制边框
         if style.border_width > 0.0 {
             if let Some(bc) = style.border_color {
-                let border_color = if pressed && !disabled {
-                    Self::darken_color(bc, 0.1)
-                } else {
-                    bc
-                };
+                let border_color = bc;
                 let paint = Paint::new().with_color(border_color).with_style(PaintStyle::Stroke);
                 if has_radius {
                     let mut path = Path::new();
@@ -280,24 +269,6 @@ impl ButtonComponent {
                 } else {
                     canvas.draw_rect(&GeoRect::new(x, y, w, h), &paint);
                 }
-            }
-        }
-        
-        // 按下时绘制半透明遮罩
-        if pressed && !disabled {
-            let overlay = Paint::new()
-                .with_color(Color::new(0, 0, 0, 25))
-                .with_style(PaintStyle::Fill);
-            if has_radius {
-                let mut path = Path::new();
-                if uniform_radius {
-                    path.add_round_rect(x, y, w, h, radius_tl);
-                } else {
-                    path.add_round_rect_varying(x, y, w, h, radius_tl, radius_tr, radius_br, radius_bl);
-                }
-                canvas.draw_path(&path, &overlay);
-            } else {
-                canvas.draw_rect(&GeoRect::new(x, y, w, h), &overlay);
             }
         }
         
@@ -320,16 +291,5 @@ impl ButtonComponent {
             let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill);
             tr.draw_text(canvas, &node.text, tx, ty, size, &paint);
         }
-    }
-    
-    /// 使颜色变暗
-    fn darken_color(color: Color, amount: f32) -> Color {
-        let factor = 1.0 - amount;
-        Color::new(
-            (color.r as f32 * factor) as u8,
-            (color.g as f32 * factor) as u8,
-            (color.b as f32 * factor) as u8,
-            color.a,
-        )
     }
 }

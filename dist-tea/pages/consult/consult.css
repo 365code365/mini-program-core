@@ -1,0 +1,141 @@
+/* 由 consult.wxss 编译 */
+:host{display:flex;flex-direction:column}
+/* 凤凰云岫设计令牌：参考稿的暖米白、茶褐、低饱和金与书卷感排版 */
+/* 字体栈第一位必须是 App.uvue 里 loadFontFace 注册过的 family，否则安卓机没有本机宋体，
+   会整站掉到系统黑体。Yunxiu Serif = Noto Serif SC Regular(正文)，Source Han Serif SC = Heavy(标题)。 */
+.page {
+  flex: 1;
+  background-color: #f7f3ec;
+}
+.scroll {
+  flex: 1;
+}
+.intro-title, .submit-t {
+  font-family: "Source Han Serif SC", "Yunxiu Serif", "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+}
+.intro {
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 16px 16px 6px;
+}
+.intro-title {
+  color: #4a3020;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 26px;
+}
+.intro-line {
+  width: 24px;
+  height: 2px;
+  background-color: #a87536;
+  border-radius: 1px;
+  margin-top: 8px;
+}
+.intro-sub {
+  color: #82786c;
+  font-size: 11.500px;
+  line-height: 18px;
+  margin-top: 8px;
+}
+.card {
+  background-color: #ffffff;
+  border-radius: 11px;
+  margin: 10px 12px 0;
+  padding: 4px 12px 14px;
+}
+.label {
+  color: #82786c;
+  font-size: 12px;
+  margin-top: 11px;
+}
+.input {
+  background-color: #faf9f6;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  height: 41px;
+  line-height: 41px;
+  padding: 0 12px;
+  font-size: 14px;
+  margin-top: 5px;
+  color: #2d251e;
+}
+.textarea {
+  background-color: #faf9f6;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 14px;
+  height: 80px;
+  margin-top: 5px;
+  color: #2d251e;
+  width: 100%;
+  box-sizing: border-box;
+}
+.chips {
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin-top: 5px;
+}
+.chip {
+  flex-direction: column;
+  min-width: 75px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  background-color: #faf6ef;
+  border: 1px solid rgba(139, 105, 58, 0.22);
+  align-items: center;
+  margin-right: 9px;
+  margin-bottom: 3px;
+}
+.chip-on {
+  background-color: #f3e6d0;
+  border-color: #a87536;
+}
+.chip-t {
+  color: #6b5c48;
+  font-size: 12.500px;
+}
+.chip-sub {
+  color: #82786c;
+  font-size: 9px;
+  margin-top: 2px;
+}
+.chip-t-on {
+  color: #a87536;
+}
+.assure {
+  flex-direction: row;
+  align-items: flex-start;
+  margin: 10px 16px 0;
+}
+.assure-icon {
+  width: 15px;
+  height: 15px;
+  margin-top: 1px;
+  margin-right: 6px;
+}
+.assure-t {
+  flex: 1;
+  color: #82786c;
+  font-size: 10px;
+  line-height: 15px;
+}
+.submit {
+  margin: 15px 12px 0;
+  height: 46px;
+  border-radius: 23px;
+  background-color: #a87536;
+  align-items: center;
+  justify-content: center;
+}
+.submit-off {
+  opacity: 0.6;
+}
+.submit-t {
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 900;
+}
+.bottom-space {
+  height: calc(30px + env(safe-area-inset-bottom));
+}

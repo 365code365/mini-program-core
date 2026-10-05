@@ -190,6 +190,9 @@ pub(super) fn build_open_tag(node: &WxmlNode) -> (String, &'static str, bool) {
         _ => {}
     }
 
+    // hover-class：button 默认 button-hover；"none" 关掉。计时与原生端同一套默认值。
+    push_hover_attrs(node, &mut attrs);
+
     // 事件：bindX / catchX → data-<event>；dataset → data-ds-*
     // 排序遍历：HashMap 的随机顺序会让导出的 HTML 每次编译都不一样（见 attrs_sorted）
     for (k, v) in node.attrs_sorted() {
@@ -207,4 +210,37 @@ pub(super) fn build_open_tag(node: &WxmlNode) -> (String, &'static str, bool) {
     }
 
     (format!("<{}{}>", tag, attrs), tag, void)
+}
+
+/// 把 `hover-class` / 出现与停留时间写进 `data-hover-*`，供运行时加类。
+fn push_hover_attrs(node: &WxmlNode, attrs: &mut String) {
+    let explicit = node.get_attr("hover-class").map(str::trim);
+    let class = match explicit {
+        Some("none") => return,
+        Some("") | None if node.tag_name == "button" => "button-hover",
+        Some("") | None => return,
+        Some(s) => s,
+    };
+    if is_truthy(node.get_attr("disabled")) {
+        return;
+    }
+    let (start_default, stay_default) = if node.tag_name == "button" {
+        ("20", "70")
+    } else {
+        ("50", "400")
+    };
+    let start = node
+        .get_attr("hover-start-time")
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or(start_default);
+    let stay = node
+        .get_attr("hover-stay-time")
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or(stay_default);
+    attrs.push_str(&format!(" data-hover-class=\"{}\"", escape_attr(class)));
+    attrs.push_str(&format!(" data-hover-start=\"{}\"", escape_attr(start)));
+    attrs.push_str(&format!(" data-hover-stay=\"{}\"", escape_attr(stay)));
+    if is_truthy(node.get_attr("hover-stop-propagation")) {
+        attrs.push_str(" data-hover-stop=\"1\"");
+    }
 }

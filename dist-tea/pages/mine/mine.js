@@ -5,6 +5,7 @@ const api_auth = require("../../api/auth.js");
 const utils_auth = require("../../utils/auth.js");
 const api_mappers = require("../../api/mappers.js");
 const utils_assets = require("../../utils/assets.js");
+const api_consult = require("../../api/consult.js");
 const common_assets = require("../../common/assets.js");
 class OrderType extends common_vendor.UTS.UTSType {
   static get$UTSMetadata$() {
@@ -130,10 +131,10 @@ const _sfc_main = common_vendor.defineComponent({
       common_vendor.index.showToast({ title: "收藏页正在接入", icon: "none" });
     },
     reserve() {
-      common_vendor.index.showModal(new common_vendor.UTSJSONObject({ title: "预约到店品鉴", content: "请先联系客服登记到店人数和时间，我们会为你准备合适茶样。", showCancel: false }));
+      api_consult.openConsult("appointment", "mine", 0);
     },
-    goGift() {
-      common_vendor.index.switchTab({ url: "/pages/gift/gift" });
+    consultEnterprise() {
+      api_consult.openConsult("enterprise", "mine", 0);
     },
     goChoose() {
       common_vendor.index.switchTab({ url: "/pages/choose/choose" });
@@ -187,11 +188,11 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
     p: common_assets._imports_2$1,
     q: common_vendor.o((...args) => $options.reserve && $options.reserve(...args), "04"),
     r: common_assets._imports_5$1,
-    s: common_vendor.o((...args) => $options.goGift && $options.goGift(...args), "92"),
+    s: common_vendor.o((...args) => $options.consultEnterprise && $options.consultEnterprise(...args), "a6"),
     t: common_assets._imports_1$2,
-    v: common_vendor.o((...args) => $options.goOrigin && $options.goOrigin(...args), "c9"),
-    w: common_vendor.o((...args) => $options.openService && $options.openService(...args), "6f"),
-    x: common_vendor.o((...args) => $options.goChoose && $options.goChoose(...args), "a9"),
+    v: common_vendor.o((...args) => $options.goOrigin && $options.goOrigin(...args), "a2"),
+    w: common_vendor.o((...args) => $options.openService && $options.openService(...args), "cc"),
+    x: common_vendor.o((...args) => $options.goChoose && $options.goChoose(...args), "bc"),
     y: common_vendor.f($data.promises, (item, i, i0) => {
       return {
         a: item.icon,
@@ -201,24 +202,24 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
       };
     }),
     z: $data.imgConsult,
-    A: common_vendor.o((...args) => $options.openService && $options.openService(...args), "04"),
+    A: common_vendor.o((...args) => $options.openService && $options.openService(...args), "68"),
     B: $data.imgRecent,
-    C: common_vendor.o((...args) => $options.goChoose && $options.goChoose(...args), "16"),
-    D: common_assets._imports_3,
+    C: common_vendor.o((...args) => $options.goChoose && $options.goChoose(...args), "3c"),
+    D: common_assets._imports_0$2,
     E: common_assets._imports_5$1,
     F: common_assets._imports_2$3,
     G: $data.logged
   }, $data.logged ? {
     H: common_vendor.t($data.user.coupons),
-    I: common_vendor.o(($event) => $options.nav("/pages/coupons/coupons"), "4e"),
+    I: common_vendor.o(($event) => $options.nav("/pages/coupons/coupons"), "3d"),
     J: common_vendor.t($data.user.integral),
-    K: common_vendor.o(($event) => $options.nav("/pages/points/points"), "08"),
+    K: common_vendor.o(($event) => $options.nav("/pages/points/points"), "ff"),
     L: common_vendor.t($data.user.balance),
-    M: common_vendor.o(($event) => $options.nav("/pages/recharge/recharge"), "db")
+    M: common_vendor.o(($event) => $options.nav("/pages/recharge/recharge"), "47")
   } : {}, {
     N: $data.logged
   }, $data.logged ? {
-    O: common_vendor.o((...args) => $options.doLogout && $options.doLogout(...args), "2b")
+    O: common_vendor.o((...args) => $options.doLogout && $options.doLogout(...args), "e4")
   } : {}, {
     P: $data.showService
   }, $data.showService ? common_vendor.e({
@@ -230,9 +231,9 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
   } : {
     U: common_assets._imports_5
   }, {
-    V: common_vendor.o(($event) => $data.showService = false, "a0"),
-    W: common_vendor.o((...args) => $options.noop && $options.noop(...args), "fd"),
-    X: common_vendor.o(($event) => $data.showService = false, "be")
+    V: common_vendor.o(($event) => $data.showService = false, "d8"),
+    W: common_vendor.o((...args) => $options.noop && $options.noop(...args), "b7"),
+    X: common_vendor.o(($event) => $data.showService = false, "76")
   }) : {}, {
     Y: common_vendor.p({
       current: 4
@@ -244,3 +245,4 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
 }
 const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render]]);
 wx.createPage(MiniProgramPage);
+//# sourceMappingURL=../../../.sourcemap/mp-weixin/pages/mine/mine.js.map

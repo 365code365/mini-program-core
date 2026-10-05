@@ -71,7 +71,7 @@ const _sfc_main = common_vendor.defineComponent({
 function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
   "raw js";
   return common_vendor.e({
-    a: common_assets._imports_0$5,
+    a: common_assets._imports_0$6,
     b: common_vendor.t($data.g.name),
     c: common_vendor.t($data.certNo),
     d: common_vendor.t($data.g.name),
@@ -104,3 +104,4 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
 }
 const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render]]);
 wx.createPage(MiniProgramPage);
+//# sourceMappingURL=../../../.sourcemap/mp-weixin/pages/checkout/success.js.map

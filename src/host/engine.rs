@@ -396,6 +396,9 @@ impl MiniEngine {
             self.needs_redraw = true;
         }
         self.caret_tick();
+        if self.interaction.press_feedback_pending() {
+            self.needs_redraw = true;
+        }
         let scroll_moved = std::mem::take(&mut self.scroll_moved);
         if self.needs_redraw || self.interaction.has_focused_input() {
             self.render();

@@ -100,6 +100,43 @@ impl Canvas {
         }
     }
 
+    /// 把一整块像素按统一透明度合成到 (dst_x, dst_y)。
+    ///
+    /// `opacity` 乘在源像素自己的 alpha 上再混合 —— CSS 里 `opacity` 作用的是
+    /// **整棵子树合成之后**的结果，而不是每个颜色各乘一次。
+    pub fn blend_pixels_opacity(&mut self, dst_x: i32, dst_y: i32, src: &[Color], src_width: usize, opacity: f32) {
+        if src_width == 0 || opacity <= 0.0 {
+            return;
+        }
+        let opacity = opacity.clamp(0.0, 1.0);
+        let (bx0, bx1, by0, by1) = self.draw_bounds();
+        let rows = src.len() / src_width;
+        let width = self.width as usize;
+        for row in 0..rows {
+            let dy = dst_y + row as i32;
+            if dy < by0 || dy >= by1 {
+                continue;
+            }
+            let start = bx0.max(dst_x);
+            let end = bx1.min(dst_x + src_width as i32);
+            if end <= start {
+                continue;
+            }
+            let src_off = (start - dst_x) as usize;
+            let base = dy as usize * width + start as usize;
+            let line = &src[row * src_width + src_off..row * src_width + src_off + (end - start) as usize];
+            for (i, color) in line.iter().enumerate() {
+                let a = (color.a as f32 * opacity).round() as u8;
+                if a == 0 {
+                    continue;
+                }
+                let src = Color::new(color.r, color.g, color.b, a);
+                let idx = base + i;
+                self.pixels[idx] = if a == 255 { src } else { src.blend(&self.pixels[idx]) };
+            }
+        }
+    }
+
     /// 把一整块像素按行合成到 (dst_x, dst_y)（尊重画布边界与当前裁剪矩形）。
     ///
     /// 大面积拷贝**必须**走这里而不是逐像素 `set_pixel`：后者每个像素都要重做

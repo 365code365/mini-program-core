@@ -32,6 +32,7 @@ impl crate::MiniAppWindow {
             // 侧滑返回的收尾动画（推出去/滑回来）要连续出帧
             || self.edge_back.as_ref().map(|e| e.is_settling()).unwrap_or(false)
             || self.interaction.has_focused_input()
+            || self.interaction.press_feedback_pending()
             || self.pull_refreshing // 指示器要持续转
             // 有自动播放的 swiper：即使页面没有 JS 定时器也要按刷新率醒着，
             // 否则到点该翻页时没人来推进它的状态
@@ -173,6 +174,7 @@ impl crate::MiniAppWindow {
         let structural = self.needs_redraw
             || mini_render::renderer::components::has_playing_video()
             || self.interaction.has_focused_input()
+            || self.interaction.press_feedback_pending()
             || mini_render::renderer::components::swiper_needs_frame();
         self.render_frame_if_needed(structural, css_anim);
     }

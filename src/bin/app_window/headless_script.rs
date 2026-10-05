@@ -106,7 +106,12 @@ impl crate::MiniAppWindow {
                     ts,
                 );
                 self.needs_redraw = true;
-                self.render();
+                // 等过 hover-start-time，截到的才是微信的点击态而不是按下瞬间
+                let deadline = Instant::now() + Duration::from_millis(40);
+                while Instant::now() < deadline {
+                    self.pump_one_frame();
+                    std::thread::sleep(Duration::from_millis(8));
+                }
             }
             Action::Click(x, y) => {
                 self.handle_click(*x, *y);

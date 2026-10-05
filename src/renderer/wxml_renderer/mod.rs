@@ -178,6 +178,13 @@ pub struct WxmlRenderer {
     /// 正在往 transform 离屏画布上绘制：此时坐标是画布局部坐标，
     /// 与屏幕/滚动空间无关，视口裁剪必须停用（否则整棵子树会被误剔除）。
     drawing_offscreen: bool,
+    /// 正在把 `opacity < 1` 的子树画进离屏缓冲（组合成）。
+    /// 这一层自己的绘制用完全不透明，整体透明度在贴回时乘一次。
+    flattening_opacity: bool,
+    /// 离屏缓冲装不下时，退回「逐颜色乘 alpha」而不要再进组合成（否则递归）
+    bypass_opacity_group: bool,
+    /// 离屏绘制期间，事件绑定与命中盒要加回的逻辑偏移（让登记坐标仍是页面坐标）
+    binding_shift: (f32, f32),
     /// 本帧「有动画在跑」的节点包围盒（物理像素，画布坐标）。
     ///
     /// 宿主用它做损伤区重绘：一个 `infinite` 的小徽标不该逼着整屏每帧重新光栅化
@@ -224,7 +231,9 @@ impl WxmlRenderer {
     pub fn new_with_scale(stylesheet: StyleSheet, screen_width: f32, screen_height: f32, scale_factor: f32) -> Self {
         // 共享进程内唯一的字体实例：避免每次创建渲染器都重新加载上百 MB 字体
         let text_renderer = crate::text::shared_fonts();
-        
+        let mut stylesheet = stylesheet;
+        stylesheet.ensure_button_hover();
+
         Self { 
             stylesheet, 
             component_templates: Default::default(),
@@ -243,6 +252,9 @@ impl WxmlRenderer {
             anim_marks: 0,
             anim_time: None,
             drawing_offscreen: false,
+            flattening_opacity: false,
+            bypass_opacity_group: false,
+            binding_shift: (0.0, 0.0),
             animated_bounds: Vec::new(),
             damage_clip: None,
             js_animations: HashMap::new(),

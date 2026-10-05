@@ -175,6 +175,20 @@ impl StyleSheet {
         self.rules.iter().any(|r| r.selector.contains('['))
     }
 
+    /// 微信 `<button>` 的默认点击态。文档写明 `button-hover` 是
+    /// `{ background-color: rgba(0,0,0,.1); opacity: 0.7 }`。
+    ///
+    /// 插在样式表**最前面**：页面自己的 `.button-hover` 或 `.wx-btn` 同特异性时
+    /// 因书写顺序更靠后而胜出（自定义背景的按钮按下仍是原来的颜色，只变透明）。
+    pub fn ensure_button_hover(&mut self) {
+        let builtin = WxssParser::new(
+            ".button-hover{background-color:rgba(0,0,0,0.1);opacity:0.7;}",
+        )
+        .parse()
+        .unwrap_or_else(|_| StyleSheet::new());
+        self.prepend_rules(builtin);
+    }
+
     /// 将 `other`（通常是被 @import 的样式表）的规则并入本表前部，
     /// 使本表（局部）规则在同特异性时因书写顺序更靠后而胜出。
     pub fn prepend_rules(&mut self, other: StyleSheet) {

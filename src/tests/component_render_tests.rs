@@ -128,13 +128,23 @@ fn test_button_type_size_classes() {
     assert!(html.contains("wx-button-mini"), "mini class: {}", html);
     assert!(html.contains("wx-button-default"), "default class for typeless button: {}", html);
     assert!(html.contains("data-tap=\"a\""), "tap event mapped: {}", html);
+    assert!(html.contains("data-hover-class=\"button-hover\""), "button 默认点击态: {}", html);
+    assert!(html.contains("data-hover-start=\"20\""), "button 默认 20ms 后出现点击态: {}", html);
+    assert!(html.contains("data-hover-stay=\"70\""), "button 松手后再留 70ms: {}", html);
+    let view = WxmlParser::new(r#"<view hover-class="pressed" hover-stop-propagation="true">点</view><view>无</view>"#).parse().unwrap();
+    let view_html = wxml_to_html(&view, &json!({}));
+    assert!(view_html.contains("data-hover-class=\"pressed\""), "自定义 hover-class: {}", view_html);
+    assert!(view_html.contains("data-hover-start=\"50\""), "view 默认 50ms: {}", view_html);
+    assert!(view_html.contains("data-hover-stay=\"400\""), "view 默认停留 400ms: {}", view_html);
+    assert!(view_html.contains("data-hover-stop=\"1\""), "hover-stop-propagation: {}", view_html);
+    assert_eq!(view_html.matches("data-hover-class").count(), 1, "没写 hover-class 的 view 没有点击态");
     // 基础样式包含按钮盒模型与交互反馈
     let b = base_css();
     assert!(b.contains(".wx-button-primary"), "base css has primary");
     assert!(b.contains("cursor:pointer"), "base css has pointer cursor");
     // 按压反馈只在 button 上（普通 view 被点不该整体变半透明，否则点遮罩关弹窗会闪一下，
     // 而原生端并没有这个效果）
-    assert!(b.contains(".wx-button:active"), "base css has button active feedback");
+    assert!(b.contains(".button-hover"), "base css has wechat button-hover");
     assert!(!b.contains("[data-tap]:active"), "普通可点元素不应有整体变透明的按压反馈");
 }
 

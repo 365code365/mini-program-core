@@ -38,6 +38,7 @@ if (!Math) {
   "./pages/coupons/coupons.js";
   "./pages/points/points.js";
   "./pages/address/address.js";
+  "./pages/consult/consult.js";
   "./pages/login/login.js";
   "./pages/subscribe/subscribe.js";
 }
@@ -51,10 +52,10 @@ function loadBrandFont(family, file, weight, retry) {
     source: 'url("' + config_env.FONT_BASE + "/" + file + "?v=" + config_env.FONT_VER + '")',
     desc: { weight },
     success: () => {
-      console.log("[font] loaded " + family + " " + weight);
+      common_vendor.index.__f__("log", "at App.uvue:29", "[font] loaded " + family + " " + weight);
     },
     fail: (e) => {
-      console.log("[font] load fail " + family + " " + weight + " errCode=" + e.errCode + " " + e.errMsg);
+      common_vendor.index.__f__("log", "at App.uvue:31", "[font] load fail " + family + " " + weight + " errCode=" + e.errCode + " " + e.errMsg);
       if (retry) {
         setTimeout(() => {
           loadBrandFont(family, file, weight, false);
@@ -70,13 +71,13 @@ const _sfc_main = common_vendor.defineComponent({
     loadBrandFont(FONT_BODY_CN, "NotoSerifSC-Regular.woff", "400", true);
     loadBrandFont(FONT_TITLE_CN, "SourceHanSerifSC-Heavy.woff", "900", true);
     loadBrandFont(FONT_LATIN, "PlayfairDisplay-Regular.woff", "400", true);
-    console.log("凤凰云岫 App Launch");
+    common_vendor.index.__f__("log", "at App.uvue:49", "凤凰云岫 App Launch");
   },
   onShow: function() {
-    console.log("App Show");
+    common_vendor.index.__f__("log", "at App.uvue:52", "App Show");
   },
   onHide: function() {
-    console.log("App Hide");
+    common_vendor.index.__f__("log", "at App.uvue:55", "App Hide");
   }
 });
 function createApp() {
@@ -87,3 +88,4 @@ function createApp() {
 }
 createApp().app.mount("#app");
 exports.createApp = createApp;
+//# sourceMappingURL=../.sourcemap/mp-weixin/app.js.map

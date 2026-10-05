@@ -85,6 +85,8 @@ impl InteractionManager {
         self.scroll_controllers.clear();
         self.dragging_scroll_area = None;
         self.pressed_button = None;
+        self.press_feedback = None;
+        self.hover_specs.clear();
         self.click_animations.clear();
         self.elements.clear();
         self.is_selecting_text = false;

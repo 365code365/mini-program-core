@@ -205,8 +205,9 @@ body{font-size:16px;color:#333;font-family:-apple-system,system-ui,"PingFang SC"
    而原生端没有这个效果 —— 既是两端不一致，观感上也就是用户说的"闪烁"。 */
 
 /* ── button：还原微信默认按钮盒模型（页面样式只需覆盖颜色等即可保持一致） ── */
-.wx-button{position:relative;box-sizing:border-box;display:flex;align-items:center;justify-content:center;min-height:46px;padding:0 14px;font-size:17px;line-height:1.35;text-align:center;border:0;border-radius:5px;background:#f7f7f7;color:#000;cursor:pointer;transition:opacity .12s ease;overflow:hidden;}
-.wx-button:active{opacity:.85;}
+.wx-button{position:relative;box-sizing:border-box;display:flex;align-items:center;justify-content:center;min-height:46px;padding:0 14px;font-size:17px;line-height:1.35;text-align:center;border:0;border-radius:5px;background:#f7f7f7;color:#000;cursor:pointer;overflow:hidden;}
+/* 微信默认点击态。写在类型色之前：primary/warn 以及页面自己的类会盖住这层背景，只留下 opacity。 */
+.button-hover{opacity:.7;background-color:rgba(0,0,0,.1);}
 .wx-button-primary{background:#07c160;color:#fff;}
 .wx-button-warn{background:#fa5151;color:#fff;}
 .wx-button-plain{background:transparent;border:1px solid currentColor;}

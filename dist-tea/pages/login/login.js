@@ -233,7 +233,7 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
     v: common_vendor.o((...args) => $options.skip && $options.skip(...args), "d8"),
     w: $data.agreed
   }, $data.agreed ? {
-    x: common_assets._imports_0$5
+    x: common_assets._imports_0$6
   } : {}, {
     y: common_vendor.n($data.agreed ? "cb-on" : ""),
     z: common_vendor.o(($event) => $data.agreed = !$data.agreed, "fd"),
@@ -256,3 +256,4 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
 }
 const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render]]);
 wx.createPage(MiniProgramPage);
+//# sourceMappingURL=../../../.sourcemap/mp-weixin/pages/login/login.js.map

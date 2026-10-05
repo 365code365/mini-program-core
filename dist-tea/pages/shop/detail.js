@@ -295,13 +295,13 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
     q: common_vendor.t($data.vipPrice)
   } : {}, {
     r: common_vendor.t($data.p.sales),
-    s: common_assets._imports_0$2,
+    s: common_assets._imports_0$3,
     t: common_vendor.t($data.suited),
     v: common_assets._imports_2$1,
     w: common_vendor.t($data.reason),
     x: common_assets._imports_2$3,
     y: common_vendor.t($options.tasteLine),
-    z: common_assets._imports_3$1,
+    z: common_assets._imports_3,
     A: common_vendor.t($data.notFor),
     B: common_assets._imports_4,
     C: common_vendor.o((...args) => $options.showBrew && $options.showBrew(...args), "7f"),
@@ -338,3 +338,4 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
 }
 const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render]]);
 wx.createPage(MiniProgramPage);
+//# sourceMappingURL=../../../.sourcemap/mp-weixin/pages/shop/detail.js.map

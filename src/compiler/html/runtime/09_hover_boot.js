@@ -1,25 +1,106 @@
-  // ───────── hover-class：按住时加类，松手/移出时去掉（小程序官方按压反馈） ─────────
+  // ───────── hover-class：与微信同一套计时 ─────────
+  // 按下等 data-hover-start 毫秒才加类；松手后再留 data-hover-stay 毫秒。
+  // 手指移出元素立刻取消。hover-stop-propagation 挡住更外层的祖先。
   function bindHoverClass() {
-    var active = null;
-    function on(e) {
-      var el = e.target.closest && e.target.closest("[data-hover-class]");
-      if (!el) return;
-      off();
-      var cls = el.getAttribute("data-hover-class");
-      if (!cls) return;
-      el.classList.add.apply(el.classList, cls.split(/\s+/));
-      active = { el: el, cls: cls };
+    var pending = [];
+    var holding = false;
+    var fromTouch = false;
+
+    function classesOf(el) {
+      return (el.getAttribute("data-hover-class") || "").split(/\s+/).filter(Boolean);
     }
-    function off() {
-      if (!active) return;
-      active.el.classList.remove.apply(active.el.classList, active.cls.split(/\s+/));
-      active = null;
+    function show(el) {
+      if (el.__hoverOn) return;
+      var cls = classesOf(el);
+      if (!cls.length) return;
+      el.classList.add.apply(el.classList, cls);
+      el.__hoverOn = cls;
     }
-    document.addEventListener("touchstart", on, { passive: true });
-    document.addEventListener("mousedown", on);
-    ["touchend", "touchcancel", "mouseup", "mouseleave"].forEach(function (n) {
-      document.addEventListener(n, off, { passive: true });
-    });
+    function hide(el) {
+      if (!el || !el.__hoverOn) return;
+      el.classList.remove.apply(el.classList, el.__hoverOn);
+      el.__hoverOn = null;
+    }
+    function chain(target) {
+      var list = [];
+      var el = target && target.closest && target.closest("[data-hover-class]");
+      while (el) {
+        var blocked = el.hasAttribute("disabled") || el.classList.contains("wx-button-disabled");
+        if (!blocked) list.push(el);
+        if (blocked || el.getAttribute("data-hover-stop") === "1") break;
+        el = el.parentElement && el.parentElement.closest("[data-hover-class]");
+      }
+      return list;
+    }
+    function pointOf(e) {
+      var t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]) || e;
+      return { x: t.clientX, y: t.clientY };
+    }
+    function inside(el, p) {
+      var r = el.getBoundingClientRect();
+      return p.x >= r.left && p.x <= r.right && p.y >= r.top && p.y <= r.bottom;
+    }
+    function reset() {
+      pending.forEach(function (item) {
+        if (item.timer) clearTimeout(item.timer);
+        hide(item.el);
+      });
+      pending = [];
+      holding = false;
+    }
+    function onDown(e) {
+      if (e.type === "mousedown" && fromTouch) return;
+      if (e.type === "touchstart") fromTouch = true;
+      reset();
+      var list = chain(e.target);
+      if (!list.length) return;
+      holding = true;
+      list.forEach(function (el) {
+        var start = parseInt(el.getAttribute("data-hover-start"), 10);
+        var stay = parseInt(el.getAttribute("data-hover-stay"), 10);
+        if (isNaN(start)) start = 50;
+        if (isNaN(stay)) stay = 400;
+        var item = { el: el, stay: stay, shown: false, timer: null };
+        item.timer = setTimeout(function () {
+          item.timer = null;
+          if (!holding) return;
+          item.shown = true;
+          show(el);
+        }, start);
+        pending.push(item);
+      });
+    }
+    function onMove(e) {
+      if (!holding) return;
+      var p = pointOf(e);
+      pending = pending.filter(function (item) {
+        if (inside(item.el, p)) return true;
+        if (item.timer) clearTimeout(item.timer);
+        hide(item.el);
+        return false;
+      });
+    }
+    function onUp(e) {
+      if (e.type === "mouseup" && fromTouch) return;
+      if (e.type === "touchend" || e.type === "touchcancel") {
+        setTimeout(function () { fromTouch = false; }, 700);
+      }
+      if (!holding) return;
+      holding = false;
+      pending.forEach(function (item) {
+        if (item.timer) clearTimeout(item.timer);
+        if (!item.shown) { hide(item.el); return; }
+        setTimeout(function () { hide(item.el); }, item.stay);
+      });
+      pending = [];
+    }
+    document.addEventListener("touchstart", onDown, { passive: true });
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("touchmove", onMove, { passive: true });
+    document.addEventListener("mousemove", function (e) { if (!fromTouch) onMove(e); });
+    document.addEventListener("touchend", onUp, { passive: true });
+    document.addEventListener("touchcancel", onUp, { passive: true });
+    document.addEventListener("mouseup", onUp);
   }
 
   var pullDown = (function () {

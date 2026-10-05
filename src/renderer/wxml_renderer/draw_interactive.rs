@@ -58,7 +58,7 @@ impl WxmlRenderer {
             return;
         }
         
-        let logical_bounds = GeoRect::new(x / sf, y / sf, w / sf, h / sf);
+        let logical_bounds = self.page_bounds(x, y, w, h);
         
         let component_id = Self::get_component_id(node, &logical_bounds);
         
@@ -77,7 +77,23 @@ impl WxmlRenderer {
         Self::apply_interaction_state(
             node, &mut node_to_draw, interaction, &component_id, switch_progress,
         );
-        
+        if self.flattening_opacity {
+            self.flattening_opacity = false;
+            node_to_draw.style.opacity = 1.0;
+        } else if !self.drawing_offscreen
+            && !self.bypass_opacity_group
+            && node_to_draw.style.opacity < 0.999
+        {
+            let op = node_to_draw.style.opacity;
+            let shadow = node_to_draw.style.box_shadow.clone();
+            self.paint_opacity_group(canvas, x, y, w, h, op, shadow.as_ref(), |r, c, dx, dy| {
+                r.draw_with_interaction(
+                    c, taffy, node, ox + dx, oy + dy, interaction, scroll_offset, viewport_height,
+                );
+            });
+            return;
+        }
+
         // 注册交互元素
         self.register_interactive_element(node, &node_to_draw, &logical_bounds, interaction, taffy, false);
 
@@ -207,7 +223,7 @@ impl WxmlRenderer {
         let w = layout.size.width;
         let h = layout.size.height;
         
-        let logical_bounds = GeoRect::new(x / sf, y / sf, w / sf, h / sf);
+        let logical_bounds = self.page_bounds(x, y, w, h);
         let component_id = Self::get_component_id(node, &logical_bounds);
         
         let text_color = node.style.text_color.unwrap_or(inherited_color);
@@ -276,7 +292,7 @@ impl WxmlRenderer {
             return;
         }
 
-        let logical_bounds = GeoRect::new(x / sf, y / sf, w / sf, h / sf);
+        let logical_bounds = self.page_bounds(x, y, w, h);
 
         let text_color = node.style.text_color.unwrap_or(inherited_color);
         let component_id = Self::get_component_id(node, &logical_bounds);
@@ -332,6 +348,26 @@ impl WxmlRenderer {
         } else {
             std::borrow::Cow::Borrowed(node)
         };
+        let mut node_to_draw = node_to_draw;
+        if self.flattening_opacity {
+            self.flattening_opacity = false;
+            let mut owned = node_to_draw.into_owned();
+            owned.style.opacity = 1.0;
+            node_to_draw = std::borrow::Cow::Owned(owned);
+        } else if !self.drawing_offscreen
+            && !self.bypass_opacity_group
+            && node_to_draw.style.opacity < 0.999
+        {
+            let op = node_to_draw.style.opacity;
+            let shadow = node_to_draw.style.box_shadow.clone();
+            self.paint_opacity_group(canvas, x, y, w, h, op, shadow.as_ref(), |r, c, dx, dy| {
+                r.draw_child_with_interaction(
+                    c, taffy, node, ox + dx, oy + dy, text_color, interaction,
+                    scroll_offset, viewport_height,
+                );
+            });
+            return;
+        }
 
         // 注册交互元素（包括 scroll-view）
         self.register_interactive_element(node, &node_to_draw, &logical_bounds, interaction, taffy, false);

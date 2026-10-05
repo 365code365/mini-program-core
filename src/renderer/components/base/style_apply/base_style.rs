@@ -92,10 +92,14 @@ pub fn build_base_style(
     // 再取一次 CSS 声明 —— `:active` 与小程序的 `hover-class` 因此走同一条路径。
     // 只覆盖绘制类属性（taffy 布局结果丢弃）：按压不触发重新布局，
     // 这是刻意的取舍，按一下就重排整页在纯软件光栅上代价太高。
-    let hover_class = node
-        .get_attr("hover-class")
-        .filter(|s| !s.trim().is_empty() && s.trim() != "none")
-        .map(|s| s.to_string());
+    // `<button>` 没写 hover-class 时默认就是 `button-hover`（微信文档）；
+    // `hover-class="none"` 显式关掉点击态。普通 view 默认没有点击态。
+    let hover_class = match node.get_attr("hover-class").map(str::trim) {
+        Some("none") => None,
+        Some(s) if !s.is_empty() => Some(s.to_string()),
+        _ if node.tag_name == "button" => Some("button-hover".to_string()),
+        _ => None,
+    };
     if ctx.stylesheet.has_active_rules() || hover_class.is_some() {
         let mut pressed_chain = chain;
         if let Some(last) = pressed_chain.last_mut() {
