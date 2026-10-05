@@ -20,7 +20,7 @@
 //! 2 处 `rasterize`。难的是它会改变每个字形的抗锯齿，65 张画廊 + 21 页整帧 + 7 张交互
 //! 快照的基线全都要重定，所以是单独一轮的活，不能混在别的改动里。
 
-use crate::{Canvas, Color, Paint};
+use crate::{Canvas, Paint};
 use fontdue::{Font, FontSettings, Metrics};
 use std::path::Path;
 use std::collections::HashMap;
@@ -110,8 +110,9 @@ pub struct TextRenderer {
     /// 西文字体没有汉字、宋体没有某些符号，逐字回退到它，行为与浏览器一致。
     fallback: Option<Arc<TextRenderer>>,
     /// 简单的字形缓存 (char, size_u32, bold) -> (Metrics, Bitmap)
-    /// 使用 Mutex 实现内部可变性，因为 draw 方法是 &self
-    cache: Arc<Mutex<HashMap<(char, u32, bool), (Metrics, Vec<u8>)>>>,
+    /// 使用 Mutex 实现内部可变性，因为 draw 方法是 &self。
+    /// 位图用 Arc 共享：命中时只加引用计数，不必每帧每字深拷贝一份。
+    cache: Arc<Mutex<HashMap<(char, u32, bool), (Metrics, Arc<[u8]>)>>>,
 }
 
 impl TextRenderer {
@@ -262,7 +263,7 @@ impl TextRenderer {
     /// 不做 LRU 是有意的：字形位图小而多（几万条），维护访问顺序的开销比重新
     /// 光栅化还贵，而清空之后下一屏只会重新栅格化**当前可见**的那些字。
     fn trim_glyph_cache(
-        cache: &mut HashMap<(char, u32, bool), (Metrics, Vec<u8>)>,
+        cache: &mut HashMap<(char, u32, bool), (Metrics, Arc<[u8]>)>,
         incoming: usize,
     ) {
         // 每 256 条才真的去累加一次：这个函数在每次缓存未命中时都会被调用，
@@ -503,6 +504,9 @@ impl TextRenderer {
         let bold = bold && self.has_bold_face();
         let mut cursor_x = x;
         let size_key = (size * 10.0) as u32; // 将 size 转换为整数 key，保留1位小数精度
+        // 覆盖率 → alpha（线性，不做 gamma）。覆盖率 0 查出来是 0，即「不画」
+        let alpha_lut: [u8; 256] =
+            std::array::from_fn(|c| (paint.color.a as f32 * (c as f32 / 255.0)) as u8);
         
         // 批量获取锁，避免循环中频繁锁竞争
         // 注意：这里为了简化，我们会在需要时获取锁。更好的做法可能是先收集所有需要的 glyph，然后一次性 rasterize。
@@ -544,11 +548,12 @@ impl TextRenderer {
                 let font = self.font_for_weight(ch, bold);
                 
                 let (metrics, bitmap) = font.rasterize(ch, size);
+                let bitmap: Arc<[u8]> = bitmap.into();
                 
                 // 存入缓存（封顶，见 glyph_cache_budget）
                 let mut cache = self.cache.lock().unwrap();
                 Self::trim_glyph_cache(&mut cache, bitmap.len());
-                cache.insert((ch, size_key, bold), (metrics.clone(), bitmap.clone()));
+                cache.insert((ch, size_key, bold), (metrics, bitmap.clone()));
                 (metrics, bitmap)
             };
             
@@ -559,29 +564,10 @@ impl TextRenderer {
 
             let glyph_x = cursor_x + metrics.xmin as f32;
             let glyph_y = y - metrics.height as f32 - metrics.ymin as f32;
-
-            for gy in 0..metrics.height {
-                for gx in 0..metrics.width {
-                    let coverage = bitmap[gy * metrics.width + gx] as f32 / 255.0;
-                    
-                    if coverage > 0.001 {
-                        let px = (glyph_x + gx as f32).round() as i32;
-                        let py = (glyph_y + gy as f32).round() as i32;
-
-                        if px >= 0 && py >= 0 && px < canvas.width() as i32 && py < canvas.height() as i32 {
-                            // 优化：移除 gamma 校正，直接使用 linear alpha
-                            // let gamma_coverage = coverage.powf(0.8);
-                            let alpha = (paint.color.a as f32 * coverage) as u8;
-                            
-                            if alpha > 0 {
-                                let color = Color::new(paint.color.r, paint.color.g, paint.color.b, alpha);
-                                
-                                canvas.set_pixel(px, py, color);
-                            }
-                        }
-                    }
-                }
-            }
+            // 每列/每行的落点只取决于 gx/gy，提到像素循环外各算一次
+            let cols: Vec<i32> = (0..metrics.width).map(|gx| (glyph_x + gx as f32).round() as i32).collect();
+            let rows: Vec<i32> = (0..metrics.height).map(|gy| (glyph_y + gy as f32).round() as i32).collect();
+            canvas.blend_coverage(&cols, &rows, &bitmap, &alpha_lut, paint.color);
 
             cursor_x += metrics.advance_width + letter_spacing;
         }

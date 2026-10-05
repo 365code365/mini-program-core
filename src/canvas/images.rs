@@ -278,7 +278,8 @@ impl Canvas {
                 for row in 0..dst_h {
                     let src_row = (row * dst_w) as usize;
                     let slice = &pixels[src_row..src_row + dst_w as usize];
-                    self.blend_row(base_x, base_y + row as i32, slice, bounds);
+                    // 照片中间的行整行不透明，直接内存拷贝
+                    self.blend_row_opaque_fast(base_x, base_y + row as i32, slice, bounds);
                 }
             }
             None => self.draw_image(img_data, img_w, img_h, x, y, w, h, mode, radius),

@@ -73,6 +73,11 @@ struct MiniAppWindow {
     last_animated_bounds: Vec<GeoRect>,
     /// fixed 覆盖层里是否有动画（有的话不能走局部重绘）
     fixed_layer_animates: bool,
+    /// 各 scroll-view 在上一次画进页面画布时的滚动位置。
+    /// 位置变了的那几个就是这一帧的损伤区（见 `scroll_area_damage_rect`）。
+    drawn_area_positions: HashMap<String, f32>,
+    /// 触控板手势与 macOS 惯性阶段的区分（见 `events::wheel::MomentumFilter`）
+    wheel_filter: app_window::events::wheel::MomentumFilter,
     /// 覆盖层上一次产生的事件绑定与遮挡区域。
     /// 事件绑定每帧清空重建，而覆盖层可能跳过重绘 —— 跳过的帧要靠这份缓存补回来，
     /// 否则弹窗在那些帧里点击会穿透到下层。
@@ -236,6 +241,8 @@ impl MiniAppWindow {
             fps_worst_render_parts: (0.0, 0.0, 0.0),
             last_animated_bounds: Vec::new(),
             fixed_layer_animates: false,
+            drawn_area_positions: HashMap::new(),
+            wheel_filter: Default::default(),
             cached_fixed_bindings: Vec::new(),
             cached_fixed_regions: Vec::new(),
             started_at: now,

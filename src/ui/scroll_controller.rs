@@ -57,6 +57,8 @@ pub struct ScrollController {
     wheel_raw: f32,
     /// 越界且没有新滚动事件的累计时长（秒）：滚轮没有「抬手」事件，靠它判定手势结束
     idle_after_wheel: f32,
+    /// 触控板手势的 (累计位移, 时刻) 采样，抬手时据此算出惯性初速度
+    wheel_samples: Vec<(f32, std::time::Instant)>,
     /// 顶部 inset（等价 iOS 的 contentInset.top）：下拉刷新期间把内容按住不归位，
     /// 露出的这段空间给刷新指示器。回弹目标随之变成 `-top_inset`。
     top_inset: f32,
@@ -106,6 +108,7 @@ impl ScrollController {
             viewport_size: viewport_size.max(1.0),
             wheel_raw: 0.0,
             idle_after_wheel: 0.0,
+            wheel_samples: Vec::new(),
             top_inset: 0.0,
             max_over_top: 0.0,
             pull_triggered: false,
@@ -459,6 +462,14 @@ impl ScrollController {
 
         // 触控板一次事件就是一次真实位移；滚轮是脉冲，放大到接近一"格"的观感
         let step = if is_precise { delta } else { delta * 2.0 };
+        if is_precise {
+            let now = std::time::Instant::now();
+            let total = self.wheel_samples.last().map(|s| s.0).unwrap_or(0.0) + step;
+            self.wheel_samples.retain(|(_, t)| now.duration_since(*t).as_millis() < 100);
+            self.wheel_samples.push((total, now));
+        } else {
+            self.wheel_samples.clear();
+        }
         // 越界方向上先把累计位置对齐到当前显示位置，避免来回切换方向时跳变
         if self.wheel_raw > self.min_bound() && self.wheel_raw < self.max_scroll {
             self.wheel_raw = self.position;
@@ -473,15 +484,44 @@ impl ScrollController {
         self.max_over_top = self.max_over_top.max(self.top_overscroll());
     }
 
-    /// 触控板手势结束（`TouchPhase::Ended`）：越界则回弹
+    /// 触控板手势结束（`TouchPhase::Ended`）：越界则回弹，否则按抬手前的速度进入惯性。
+    ///
+    /// 惯性由这里自己跑（与手指拖动松手同一套减速），宿主应当丢弃系统随后送来的
+    /// 惯性滚轮事件：macOS 的惯性是按桌面大窗口调的，在手机大小的视口里一甩就是好几屏。
     pub fn end_wheel_gesture(&mut self) -> bool {
         self.wheel_raw = self.position;
         self.settle_pull_gesture();
+        let velocity = self.wheel_release_velocity();
+        self.wheel_samples.clear();
         if self.is_out_of_bounds() {
             self.start_bounce();
             return true;
         }
+        if velocity.abs() > 50.0 {
+            self.velocity = velocity;
+            self.is_decelerating = true;
+            return true;
+        }
         false
+    }
+
+    /// 抬手前 100ms 内的触控板平均速度（px/s），与拖动松手同样打 0.8 折
+    fn wheel_release_velocity(&self) -> f32 {
+        let now = std::time::Instant::now();
+        let recent: Vec<&(f32, std::time::Instant)> = self
+            .wheel_samples
+            .iter()
+            .filter(|(_, t)| now.duration_since(*t).as_millis() < 100)
+            .collect();
+        let (Some(first), Some(last)) = (recent.first(), recent.last()) else { return 0.0 };
+        if recent.len() < 2 {
+            return 0.0;
+        }
+        let dt = last.1.duration_since(first.1).as_secs_f32();
+        if dt < 0.008 {
+            return 0.0;
+        }
+        (last.0 - first.0) / dt * 0.8
     }
 
     /// 顶部边界。下拉刷新期间 `top_inset > 0`，内容被按住在露出指示器的位置。
@@ -585,6 +625,7 @@ impl ScrollController {
         self.is_decelerating = false;
         self.is_bouncing = false;
         self.idle_after_wheel = 0.0;
+        self.wheel_samples.clear();
     }
     /// 立刻停住惯性/回弹，位置保持不变。
     ///

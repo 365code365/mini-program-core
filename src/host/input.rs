@@ -36,6 +36,11 @@ pub struct GestureEffect {
     /// 切片上屏。置脏会让每帧都整页重绘（实测首页拖动 3.7ms → 6.5ms，等于把
     /// 「滚动不重绘」那条优化整个废掉）。
     pub page_scrolled: bool,
+    /// 这一步只是推动了正在拖的 `scroll-view`（`needs_redraw` 同时为真）。
+    ///
+    /// 能做局部重绘的宿主（桌面窗体）据此只重画位置变了的那个 scroll-view，
+    /// 而不是整条带 —— 其余像素一点没变。
+    pub area_scrolled: bool,
 }
 
 /// 把触摸状态机产出的事件派发给逻辑层。
@@ -284,7 +289,9 @@ pub fn apply_gesture_move(
                     })
                     .unwrap_or(true);
                 eff.needs_redraw = true;
+                eff.area_scrolled = true;
                 if axis == Axis::Vertical && keep_pushing {
+                    eff.area_scrolled = false;
                     if let Some(id) = interaction.dragging_scroll_area.take() {
                         if let Some(c) = interaction.get_scroll_controller_mut(&id) {
                             c.end_drag();

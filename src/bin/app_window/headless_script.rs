@@ -206,7 +206,9 @@ impl crate::MiniAppWindow {
                 use winit::event::MouseScrollDelta;
                 self.mouse_pos = (*x, *y);
                 let sf = self.scale_factor;
+                let mut frame_ms: Vec<f32> = Vec::with_capacity(*steps as usize);
                 for _ in 0..*steps {
+                    let t0 = Instant::now();
                     // winit 给的是物理像素、且方向与内容相反（手指上滑 → deltaY 为负）
                     let delta = if *precise {
                         MouseScrollDelta::PixelDelta(winit::dpi::PhysicalPosition::new(
@@ -232,14 +234,24 @@ impl crate::MiniAppWindow {
                         sf,
                         over_fixed,
                     );
-                    if out.redraw {
+                    if out.redraw && !out.area_scrolled {
                         self.needs_redraw = true;
+                    }
+                    if out.redraw || out.page_scrolled {
+                        self.last_scroll_at = Some(Instant::now());
                     }
                     if out.fixed_dirty {
                         self.fixed_dirty = true;
                     }
                     self.pump_one_frame();
+                    frame_ms.push(t0.elapsed().as_secs_f32() * 1000.0);
                     std::thread::sleep(Duration::from_millis(8));
+                }
+                if *steps > 1 {
+                    super::scroll_bench::report(&format!("{route} --wheel"), &frame_ms, self.frame_interval);
+                    if let Some(s) = mini_render::renderer::draw_profile::summary(8) {
+                        println!("   ↳ {s}");
+                    }
                 }
                 // 触控板抬手（`TouchPhase::Ended`）：越界立即回弹
                 self.scroll.end_wheel_gesture();

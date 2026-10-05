@@ -190,6 +190,32 @@ impl Canvas {
         }
     }
 
+    /// 按 8 位覆盖率位图合成单色（字形走这里）。
+    ///
+    /// `cols[gx]` / `rows[gy]` 是位图每列/每行落在画布上的坐标，`coverage` 按
+    /// `cols.len()` 行主序排列，`alpha_lut` 把覆盖率换成写入的 alpha（0 表示不画）。
+    /// 与逐像素 `set_pixel` 结果一致，但边界/裁剪按行判一次，裁剪区外的行整行跳过。
+    pub fn blend_coverage(&mut self, cols: &[i32], rows: &[i32], coverage: &[u8], alpha_lut: &[u8; 256], color: Color) {
+        let (bx0, bx1, by0, by1) = self.draw_bounds();
+        let w = cols.len();
+        let width = self.width as usize;
+        for (gy, &py) in rows.iter().enumerate() {
+            if py < by0 || py >= by1 {
+                continue;
+            }
+            let base = py as usize * width;
+            for (&px, &c) in cols.iter().zip(&coverage[gy * w..(gy + 1) * w]) {
+                let a = alpha_lut[c as usize];
+                if a == 0 || px < bx0 || px >= bx1 {
+                    continue;
+                }
+                let idx = base + px as usize;
+                let src = Color::new(color.r, color.g, color.b, a);
+                self.pixels[idx] = if a == 255 { src } else { src.blend(&self.pixels[idx]) };
+            }
+        }
+    }
+
     /// 单行合成，带「整行不透明 → 直接内存拷贝」的快路径。
     pub(super) fn blend_row_opaque_fast(&mut self, dst_x: i32, dst_y: i32, src: &[Color], bounds: (i32, i32, i32, i32)) {
         let (bx0, bx1, by0, by1) = bounds;
@@ -204,11 +230,16 @@ impl Canvas {
         let src_off = (start - dst_x) as usize;
         let len = (end - start) as usize;
         let src_slice = &src[src_off..src_off + len];
-        // 常见情况：整行都是不透明像素（离屏缓存里的页面背景就是这样），
+        // 首尾全透明的像素本来就不写（图片缩放缓存块比目标宽 1px，最后一列总是空的），
+        // 去掉它们再判「整段不透明」，否则这条快路径几乎永远走不到。
+        let Some(first) = src_slice.iter().position(|c| c.a != 0) else { return };
+        let last = src_slice.iter().rposition(|c| c.a != 0).unwrap_or(first);
+        let opaque = &src_slice[first..=last];
+        // 常见情况：整行都是不透明像素（离屏缓存里的页面背景、照片中间的行），
         // 这时逐像素判 alpha 纯属浪费，直接整段拷贝。
-        if src_slice.iter().all(|c| c.a == 255) {
-            let row = dst_y as usize * self.width as usize + start as usize;
-            self.pixels[row..row + len].copy_from_slice(src_slice);
+        if opaque.iter().all(|c| c.a == 255) {
+            let row = dst_y as usize * self.width as usize + start as usize + first;
+            self.pixels[row..row + opaque.len()].copy_from_slice(opaque);
             return;
         }
         self.blend_row(dst_x, dst_y, src, bounds);

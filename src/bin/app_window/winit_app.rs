@@ -68,6 +68,15 @@ impl ApplicationHandler for crate::MiniAppWindow {
             }
             
             WindowEvent::MouseWheel { delta, phase, .. } => {
+                use app_window::events::wheel::WheelStep;
+                let step = self.wheel_filter.classify(phase, Instant::now());
+                if step == WheelStep::Ignore {
+                    return;
+                }
+                // 手指重新放上触控板：和触摸一样，先停住还在跑的惯性
+                if step == WheelStep::FingerDown && self.stop_running_flings() {
+                    if let Some(w) = &self.window { w.request_redraw(); }
+                }
                 // 指针停在 fixed 覆盖层（弹窗遮罩）上时锁住页面滚动，与微信一致；
                 // 覆盖层内部自己的 scroll-view 仍然可滚（下面按元素命中处理）
                 let over_fixed = self
@@ -76,16 +85,19 @@ impl ApplicationHandler for crate::MiniAppWindow {
                     .map(|r| r.fixed_layer_hit(self.mouse_pos.0, self.mouse_pos.1))
                     .unwrap_or(false);
                 let out = evt::handle_mouse_wheel_gated(delta, self.mouse_pos, &mut self.interaction, &mut self.scroll, self.scale_factor, over_fixed);
-                if out.redraw {
+                if out.redraw && !out.area_scrolled {
                     self.needs_redraw = true;
+                }
+                if out.redraw || out.page_scrolled {
                     self.last_scroll_at = Some(Instant::now());
                 }
                 // 滚的是覆盖层里的 scroll-view：覆盖层画布得重画，否则位置动了画面不动
                 if out.fixed_dirty {
                     self.fixed_dirty = true;
                 }
-                // 触控板抬手/取消：越界立即回弹（鼠标滚轮没有这个阶段，由控制器的静默计时兜底）
-                if matches!(phase, winit::event::TouchPhase::Ended | winit::event::TouchPhase::Cancelled) {
+                // 触控板抬手/取消：越界立即回弹，否则进入控制器自己的惯性
+                // （鼠标滚轮没有这个阶段，由控制器的静默计时兜底）
+                if step == WheelStep::FingerUp {
                     if self.scroll.end_wheel_gesture() { self.needs_redraw = true; }
                     for c in self.interaction.scroll_controllers.values_mut() {
                         c.end_wheel_gesture();
@@ -192,7 +204,9 @@ impl ApplicationHandler for crate::MiniAppWindow {
                 // 从前把 `self.scroll.is_animating()||is_dragging` 也算进 structural，
                 // 于是滚动的每一帧都整条带重画（6~7ms），刚好卡在 144Hz 的 6.9ms 预算边缘，
                 // 时不时超一点就丢帧 —— 这正是「滑动像抖动、高刷没体现」的根因。
-                // scroll-view 内滚动仍要重画：它的内容是按自身偏移画进整页画布的，没有独立切片。
+                // scroll-view 内滚动仍要重画（它的内容是按自身偏移画进整页画布的，没有独立切片），
+                // 但只重画位置变了的那个 scroll-view 的盒子 —— 由 render_frame_if_needed 按
+                // 位置变化求出损伤区，所以也不进 structural。
                 self.caret_blink_tick();
                 let sv_scroll = self.interaction.scroll_controllers.values().any(|c| c.is_animating() || c.is_dragging);
                 let css_anim = self.renderer.as_ref().map(|r| r.has_active_animations()).unwrap_or(false);
@@ -201,7 +215,6 @@ impl ApplicationHandler for crate::MiniAppWindow {
                 let swiper_frame = mini_render::renderer::components::swiper_needs_frame();
                 let structural = self.needs_redraw
                     || mini_render::renderer::components::has_playing_video()
-                    || sv_scroll
                     || self.interaction.has_focused_input()
                     || swiper_frame;
                 // 整帧重绘的归因统计（MINI_FPS=1 时每秒汇总）。

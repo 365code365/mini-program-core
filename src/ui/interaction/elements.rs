@@ -66,6 +66,16 @@ impl InteractionManager {
         self.scroll_controllers.get_mut(id)
     }
 
+    /// 本帧登记的 scroll-view 盒子：`(逻辑包围盒, 是否在 fixed 覆盖层里)`。
+    /// 正常流的是内容坐标，覆盖层的是视口坐标。
+    pub fn scroll_area_bounds(&self, id: &str) -> Option<(Rect, bool)> {
+        self.elements
+            .iter()
+            .rev()
+            .find(|e| e.interaction_type == InteractionType::ScrollArea && e.id == id)
+            .map(|e| (e.bounds, e.is_fixed))
+    }
+
     /// 页面切换时清除状态
     pub fn clear_page_state(&mut self) {
         self.states.clear();

@@ -198,6 +198,10 @@ impl crate::MiniAppWindow {
             r.restore_fixed_bindings(&b, &g);
         }
         let t_fixed_done = Instant::now();
+        self.drawn_area_positions.clear();
+        for (id, c) in &self.interaction.scroll_controllers {
+            self.drawn_area_positions.insert(id.clone(), c.get_position());
+        }
         
         if has_tabbar && damage.is_none() {
             if self.is_custom_tabbar() { self.render_custom_tabbar(&current_path); }

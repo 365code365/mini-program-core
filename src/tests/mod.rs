@@ -29,6 +29,8 @@ pub mod memory_tests;
 pub mod input_caret_tests;
 /// 移动端 SDK（MiniEngine）的指针链路：手势仲裁 / tabBar / picker / Modal
 pub mod engine_input_tests;
+/// 移动端 SDK 的出帧：页面画布按内容扩容、条带内滚动只重新合成
+pub mod engine_render_tests;
 /// scroll-view 离屏缓存里的有状态组件（占位符 / 开关进度）
 pub mod scroll_cache_state_tests;
 /// JS ↔ Rust 桥的契约：两层的函数名必须对得上

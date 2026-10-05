@@ -15,7 +15,65 @@
 
 use mini_render::ui::interaction::InteractionManager;
 use mini_render::ui::scroll_controller::ScrollController;
-use winit::event::MouseScrollDelta;
+use winit::event::{MouseScrollDelta, TouchPhase};
+
+/// 抬手后多久之内开始的那一轮事件算作系统惯性
+const MOMENTUM_START_WINDOW: std::time::Duration = std::time::Duration::from_millis(80);
+
+/// 这次滚轮事件该怎么处理
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WheelStep {
+    /// 照常滚动
+    Apply,
+    /// 手指刚放上触控板：先停住正在跑的惯性，再照常滚动
+    FingerDown,
+    /// 手指离开触控板：交给控制器自己的惯性（`end_wheel_gesture`）
+    FingerUp,
+    /// 系统惯性阶段的事件：丢弃
+    Ignore,
+}
+
+/// 区分「手指在触控板上」与「macOS 的惯性阶段」。
+///
+/// winit 把两段都报成 `Started → Moved… → Ended`，分不出来；但惯性阶段总是紧跟在
+/// 抬手之后开始。惯性改由滚动控制器自己跑（与拖动松手同一套减速），系统那一段整轮丢掉 ——
+/// 从前它被 1:1 累加上去，双指一甩在手机大小的视口里能滑出好几屏。
+#[derive(Debug, Default)]
+pub struct MomentumFilter {
+    lifted_at: Option<std::time::Instant>,
+    in_momentum: bool,
+}
+
+impl MomentumFilter {
+    pub fn classify(&mut self, phase: TouchPhase, now: std::time::Instant) -> WheelStep {
+        match phase {
+            TouchPhase::Started => {
+                let after_lift = self
+                    .lifted_at
+                    .take()
+                    .map(|t| now.duration_since(t) < MOMENTUM_START_WINDOW)
+                    .unwrap_or(false);
+                if after_lift {
+                    self.in_momentum = true;
+                    WheelStep::Ignore
+                } else {
+                    self.in_momentum = false;
+                    WheelStep::FingerDown
+                }
+            }
+            TouchPhase::Moved if self.in_momentum => WheelStep::Ignore,
+            TouchPhase::Moved => WheelStep::Apply,
+            TouchPhase::Ended | TouchPhase::Cancelled if self.in_momentum => {
+                self.in_momentum = false;
+                WheelStep::Ignore
+            }
+            TouchPhase::Ended | TouchPhase::Cancelled => {
+                self.lifted_at = Some(now);
+                WheelStep::FingerUp
+            }
+        }
+    }
+}
 
 /// 一次滚轮/触控板事件的位移（逻辑像素）与来源
 struct WheelDelta {
@@ -68,8 +126,17 @@ fn can_take(c: &ScrollController, delta: f32) -> bool {
 /// 一次滚轮事件的处理结果
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct Outcome {
-    /// 需要重绘
+    /// 需要重绘（滚的是 scroll-view：它的内容是按自身偏移画进页面画布的）
     pub redraw: bool,
+    /// 页面滚动位置变了（含内容不足一屏时的越界橡皮筋）。
+    ///
+    /// 这**不**需要重绘：页面画布用内容坐标，上屏按新偏移取切片即可；
+    /// 滑出已绘制条带时由宿主的 `viewport_inside_drawn_band` 兜底重画。
+    /// 拖动路径早就是这样（`GestureEffect::page_scrolled`），滚轮路径从前却置了
+    /// `redraw` —— 触控板双指滑动的每个事件都整条带重新光栅化。
+    pub page_scrolled: bool,
+    /// 滚的是**正常流**里的 scroll-view（`redraw` 同时为真）：宿主可以只重画它那一块
+    pub area_scrolled: bool,
     /// 滚动的是**覆盖层里**的 scroll-view，固定层画布得跟着重画。
     ///
     /// 覆盖层是按 `fixed_dirty` 门控重绘的（钉在视口上，滚动页面时重画纯属浪费）。
@@ -80,8 +147,8 @@ pub struct Outcome {
 }
 
 impl Outcome {
-    fn page(redraw: bool) -> Self {
-        Self { redraw, fixed_dirty: false }
+    fn page(scrolled: bool) -> Self {
+        Self { page_scrolled: scrolled, ..Self::default() }
     }
 }
 
@@ -120,7 +187,12 @@ pub fn handle(
     if let Some(id) = target {
         if let Some(c) = interaction.get_scroll_controller_mut(&id) {
             c.handle_scroll(step, d.precise);
-            return Outcome { redraw: true, fixed_dirty: in_fixed };
+            return Outcome {
+                redraw: true,
+                fixed_dirty: in_fixed,
+                page_scrolled: false,
+                area_scrolled: !in_fixed,
+            };
         }
     }
 
@@ -130,10 +202,6 @@ pub fn handle(
     }
     let before = page_scroll.get_position();
     page_scroll.handle_scroll(step, d.precise);
-    // 页面滚动同样要请求重绘。缺了这一句时只有「命中页面内 scroll-view」才会重绘，
-    // 页面级滚动只改了滚动位置：上屏按新偏移取画布，而画布上还是上一帧那条带
-    // —— 滑动过程一片空白，停下后被别的原因触发一次重绘内容才出现。
-    //
     // 位置没变也算处理过：内容不足一屏时页面仍允许越界橡皮筋，那一下也要出帧。
     Outcome::page((page_scroll.get_position() - before).abs() > 0.001 || page_scroll.is_animating())
 }
@@ -208,6 +276,36 @@ mod tests {
         }
     }
 
+    /// 抬手后紧跟着的那一轮是系统惯性，整轮丢弃；之后真正的新手势照常处理
+    #[test]
+    fn momentum_phase_after_lift_is_ignored() {
+        use std::time::{Duration, Instant};
+        let mut f = MomentumFilter::default();
+        let t0 = Instant::now();
+        assert_eq!(f.classify(TouchPhase::Started, t0), WheelStep::FingerDown);
+        assert_eq!(f.classify(TouchPhase::Moved, t0), WheelStep::Apply);
+        assert_eq!(f.classify(TouchPhase::Ended, t0), WheelStep::FingerUp);
+        let t1 = t0 + Duration::from_millis(10);
+        assert_eq!(f.classify(TouchPhase::Started, t1), WheelStep::Ignore);
+        assert_eq!(f.classify(TouchPhase::Moved, t1), WheelStep::Ignore);
+        assert_eq!(f.classify(TouchPhase::Ended, t1), WheelStep::Ignore);
+        let t2 = t1 + Duration::from_millis(500);
+        assert_eq!(f.classify(TouchPhase::Started, t2), WheelStep::FingerDown);
+        assert_eq!(f.classify(TouchPhase::Moved, t2), WheelStep::Apply);
+    }
+
+    /// 两次手势隔得够久，第二次不能被当成惯性吞掉
+    #[test]
+    fn separate_gestures_are_not_momentum() {
+        use std::time::{Duration, Instant};
+        let mut f = MomentumFilter::default();
+        let t0 = Instant::now();
+        f.classify(TouchPhase::Started, t0);
+        f.classify(TouchPhase::Ended, t0);
+        let t1 = t0 + Duration::from_millis(300);
+        assert_eq!(f.classify(TouchPhase::Started, t1), WheelStep::FingerDown);
+    }
+
     /// 触控板：dy>0 表示内容向上走（滚动位置变大）
     fn wheel_down(px: f32) -> MouseScrollDelta {
         MouseScrollDelta::PixelDelta(PhysicalPosition::new(0.0, -(px as f64) * 2.0))
@@ -229,7 +327,8 @@ mod tests {
         let mut page = ScrollController::new(1400.0, 667.0);
 
         let out = handle(wheel_down(60.0), (187.0, 300.0), &mut im, &mut page, 2.0, false);
-        assert!(out.redraw);
+        assert!(out.page_scrolled);
+        assert!(!out.redraw, "页面滚动只换上屏切片，不该触发整帧重绘");
         assert!(!out.fixed_dirty, "滚的是页面，覆盖层不用重画");
         assert!(
             (page.get_position() - 60.0).abs() < 0.01,

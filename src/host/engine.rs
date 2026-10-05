@@ -11,7 +11,8 @@
 //! 状态机、像素合成都在那里），窗体和本引擎共用同一份，避免行为分叉。
 //!
 //! ## 与桌面窗体的差异（当前已知范围）
-//! 每帧走**整帧重绘**，没有接桌面那套损伤区/局部重绘；**左边缘侧滑返回**还没接
+//! 页面滚动与桌面一样只换上屏切片（视口滑出已绘制条带才重画），但其余重绘都是
+//! 整条带重画，没有接桌面那套动画/scroll-view 损伤区；**左边缘侧滑返回**还没接
 //! （它要给被覆盖的页留一张视口图，属于宿主侧的帧管理）。
 //!
 //! 指针输入、手势仲裁、picker 面板、Modal 命中现在与桌面**共用同一份**
@@ -72,6 +73,10 @@ pub struct MiniEngine {
     pub(crate) page_data: serde_json::Value,
     pub(crate) page_data_dirty: bool,
     pub(crate) needs_redraw: bool,
+    /// 页面滚动位置变了。只要视口还落在 `drawn_band` 内，这一帧只需重新合成，不必重画。
+    pub(crate) scroll_moved: bool,
+    /// 页面画布上最近一次整帧重绘真正画过的行区间（设备像素，已夹到画布内）
+    drawn_band: Option<(f32, f32)>,
     pub(crate) caret_visible: bool,
     /// 固定的动画时钟（仅测试用，见 set_animation_time）
     pub(crate) anim_time: Option<f32>,
@@ -158,6 +163,8 @@ impl MiniEngine {
             page_data: serde_json::json!({}),
             page_data_dirty: true,
             needs_redraw: true,
+            scroll_moved: false,
+            drawn_band: None,
             caret_visible: true,
             anim_time: None,
             fixed_rows: None,
@@ -199,7 +206,7 @@ impl MiniEngine {
     /// 直接把页面滚到某个位置（深链进来要落到某一屏、或恢复上次的位置）
     pub fn scroll_to(&mut self, y: f32) {
         self.scroll.set_position(y);
-        self.needs_redraw = true;
+        self.scroll_moved = true;
     }
 
     /// 当前是否有 `<picker>` 的底部面板 / `wx.showModal` 的弹窗盖着。
@@ -349,7 +356,14 @@ impl MiniEngine {
         // 滚动推进（惯性/回弹），到底事件回调页面
         let (moved, event) = self.scroll.update_with_events(dt);
         if moved {
-            self.needs_redraw = true;
+            self.scroll_moved = true;
+        }
+        // scroll-view 的惯性与回弹（与桌面 `update_scroll` 一致）：
+        // 不推进的话甩一下列表，松手就停在原地。
+        for c in self.interaction.scroll_controllers.values_mut() {
+            if c.update(dt) {
+                self.needs_redraw = true;
+            }
         }
         if let Some(crate::ui::scroll_controller::ScrollEvent::ReachBottom) = event {
             self.app
@@ -382,12 +396,60 @@ impl MiniEngine {
             self.needs_redraw = true;
         }
         self.caret_tick();
-        if !self.needs_redraw && !self.interaction.has_focused_input() {
+        let scroll_moved = std::mem::take(&mut self.scroll_moved);
+        if self.needs_redraw || self.interaction.has_focused_input() {
+            self.render();
+        } else if scroll_moved {
+            // 页面画布用内容坐标：视口还在已绘制条带内时，滚动只是换一段切片上屏
+            if self.viewport_inside_drawn_band() {
+                self.compose_current();
+            } else {
+                self.render();
+            }
+        } else {
             return false;
         }
-        self.render();
         self.needs_redraw = false;
         true
+    }
+
+    /// 本帧上屏要用的那段页面画布是否已经画过
+    fn viewport_inside_drawn_band(&self) -> bool {
+        let Some((band_top, band_bottom)) = self.drawn_band else { return false };
+        let top = (self.scroll.get_position() * self.dpr).max(0.0);
+        let bottom = (self.scroll.get_position() * self.dpr + self.viewport_height() * self.dpr)
+            .min(self.canvas.height() as f32);
+        top >= band_top - 0.01 && bottom <= band_bottom + 0.01
+    }
+
+    fn page_background(&self) -> Color {
+        self.renderer
+            .as_ref()
+            .and_then(|r| r.page_style().background)
+            .unwrap_or(Color::from_hex(0xF5F5F5))
+    }
+
+    /// 不重画任何画布，只按当前滚动位置重新合成一帧
+    fn compose_current(&mut self) {
+        let has_tabbar = self.is_tabbar_page(&self.current_route());
+        let bg = self.page_background();
+        self.compose_frame(has_tabbar, bg);
+    }
+
+    /// 只清理并重画「视口 ± 裁剪余量」这条带（渲染器的视口裁剪用的是同一个余量），
+    /// 返回内容高度。整页画布可能上万像素高，全量 clear 是纯浪费。
+    fn render_page_band(&mut self, scroll: f32, vp: f32, bg: Color) -> f32 {
+        let margin = crate::renderer::VIEWPORT_CULL_MARGIN_PX;
+        let band_y0 = (scroll * self.dpr - margin).floor() as i32;
+        let band_y1 = (scroll * self.dpr + vp * self.dpr + margin).ceil() as i32;
+        self.canvas.clear_band(band_y0, band_y1, bg);
+        let Self { renderer, canvas, page_stack, page_data, interaction, .. } = self;
+        let (Some(r), Some(page)) = (renderer.as_mut(), page_stack.last()) else { return 0.0 };
+        let content_h =
+            r.render_with_scroll_and_viewport(canvas, &page.wxml_nodes, page_data, interaction, scroll, vp);
+        let canvas_h = self.canvas.height() as f32;
+        self.drawn_band = Some(((band_y0 as f32).max(0.0), (band_y1 as f32).min(canvas_h)));
+        content_h
     }
 
     fn caret_tick(&mut self) {
@@ -448,42 +510,26 @@ impl MiniEngine {
                 .unwrap_or(serde_json::json!({}));
             self.page_data_dirty = false;
         }
-        let nodes = self
-            .page_stack
-            .last()
-            .map(|p| p.wxml_nodes.clone())
-            .unwrap_or_default();
-        let data = self.page_data.clone();
         let has_tabbar = self.is_tabbar_page(&route);
         let vp = self.viewport_height();
-        let bg = self
-            .renderer
-            .as_ref()
-            .and_then(|r| r.page_style().background)
-            .unwrap_or(Color::from_hex(0xF5F5F5));
-        self.canvas.clear(bg);
-        self.fixed_canvas.clear(Color::new(0, 0, 0, 0));
-        let scroll = self.scroll.get_position();
-        let mut content_h = 0.0;
-        if let Some(r) = &mut self.renderer {
-            content_h = r.render_with_scroll_and_viewport(
-                &mut self.canvas,
-                &nodes,
-                &data,
-                &mut self.interaction,
-                scroll,
-                vp,
-            );
-            r.render_fixed_elements(
-                &mut self.fixed_canvas,
-                &nodes,
-                &data,
-                &mut self.interaction,
-                vp,
-            );
-        }
+        let bg = self.page_background();
+        let content_h = self.render_page_band(self.scroll.get_position(), vp, bg);
         if content_h > 1.0 {
             self.scroll.update_content_height(content_h, vp);
+            // 画布按内容高度分配（与桌面窗体一致）：固定高度的画布装不下长页面，
+            // 滚到画布之外的部分上屏时只剩一片底色。
+            let required = (content_h * self.dpr).ceil() as u32;
+            if required > 0 && required != self.canvas.height() {
+                self.canvas = Canvas::new(self.canvas.width(), required);
+                self.render_page_band(self.scroll.get_position(), vp, bg);
+            }
+        }
+        self.fixed_canvas.clear(Color::new(0, 0, 0, 0));
+        {
+            let Self { renderer, fixed_canvas, page_stack, page_data, interaction, .. } = self;
+            if let (Some(r), Some(page)) = (renderer.as_mut(), page_stack.last()) {
+                r.render_fixed_elements(fixed_canvas, &page.wxml_nodes, page_data, interaction, vp);
+            }
         }
         // 自定义 tabBar
         if has_tabbar {
@@ -555,12 +601,8 @@ impl MiniEngine {
         if self.rgba.len() != n * 4 {
             self.rgba = vec![255u8; n * 4];
         }
-        for (i, px) in self.compose.iter().enumerate() {
-            let o = i * 4;
-            self.rgba[o] = ((px >> 16) & 0xFF) as u8;
-            self.rgba[o + 1] = ((px >> 8) & 0xFF) as u8;
-            self.rgba[o + 2] = (px & 0xFF) as u8;
-            self.rgba[o + 3] = 255;
+        for (dst, px) in self.rgba.chunks_exact_mut(4).zip(&self.compose) {
+            dst.copy_from_slice(&[(px >> 16) as u8, (px >> 8) as u8, *px as u8, 255]);
         }
     }
 

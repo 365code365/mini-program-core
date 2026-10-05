@@ -256,7 +256,8 @@ impl crate::MiniAppWindow {
             y,
             ts,
         );
-        if eff.needs_redraw {
+        // 只推动了 scroll-view：不置整帧重绘，出帧闸门按位置变化只重画那一块
+        if eff.needs_redraw && !eff.area_scrolled {
             self.needs_redraw = true;
         }
         if eff.page_scrolled {

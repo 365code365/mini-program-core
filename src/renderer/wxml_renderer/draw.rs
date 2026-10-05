@@ -52,29 +52,36 @@ impl WxmlRenderer {
         if x + w < -MARGIN || x > canvas_w + MARGIN {
             return true;
         }
-        // 局部重绘帧：离损伤区太远的子树连遍历都不必要。
-        //
-        // 从前只按视口裁剪，于是一个 45x33 的倒计时损伤区，也要把视口内
-        // 六百来个节点全部走一遍、各自发起绘制，最后才在像素级被裁掉 ——
-        // 白付约 3ms。整帧预算只有 6.94ms，这一笔是掉帧的直接原因之一。
-        //
-        // 余量沿用视口裁剪的同一个值：阴影、溢出的绝对定位子节点可能画到
-        // 布局盒之外，判据必须比盒子宽松（`tools/damage-check.sh` 逐像素校验这一点）。
-        if let Some(d) = self.damage_clip {
-            if x + w < d.x - MARGIN
-                || x > d.x + d.width + MARGIN
-                || y + h < d.y - MARGIN
-                || y > d.y + d.height + MARGIN
-            {
-                return true;
-            }
-        }
         if viewport_height <= 0.0 {
             return false;
         }
         let visible_top = scroll_offset * self.scale_factor - MARGIN;
         let visible_bottom = scroll_offset * self.scale_factor + viewport_height + MARGIN;
         y + h < visible_top || y > visible_bottom
+    }
+
+    /// 局部重绘帧里，这个盒子离损伤区太远、画了也会被像素级裁掉。
+    ///
+    /// 只用来**跳过绘制**，不能用来剪掉整棵子树：事件绑定与交互元素每帧清空重建，
+    /// 子树不遍历就不登记，损伤区帧之后远处的元素就点不动了（直到下一次整帧）。
+    ///
+    /// 余量沿用视口裁剪的同一个值：阴影、溢出的绝对定位子节点可能画到
+    /// 布局盒之外，判据必须比盒子宽松（`tools/damage-check.sh` 逐像素校验这一点）。
+    pub(super) fn outside_damage(&self, x: f32, y: f32, w: f32, h: f32) -> bool {
+        const MARGIN: f32 = VIEWPORT_CULL_MARGIN_PX;
+        // 离屏合成时坐标是离屏画布的局部坐标，与损伤区不在同一坐标系
+        if self.drawing_offscreen {
+            return false;
+        }
+        match self.damage_clip {
+            Some(d) => {
+                x + w < d.x - MARGIN
+                    || x > d.x + d.width + MARGIN
+                    || y + h < d.y - MARGIN
+                    || y > d.y + d.height + MARGIN
+            }
+            None => false,
+        }
     }
 
     /// 绘制 swiper 容器：裁剪到自身盒子 → 整行按当前页横向偏移 → 逐项走普通绘制 → 指示点。

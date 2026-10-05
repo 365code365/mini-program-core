@@ -82,11 +82,13 @@ impl WxmlRenderer {
         self.register_interactive_element(node, &node_to_draw, &logical_bounds, interaction, taffy, false);
 
         // 绘制组件 - 特殊处理 input 和 button 组件
-        match node.tag.as_str() {
-            "input" | "textarea" | "button" => self.draw_interactive_component(
-                canvas, node, &node_to_draw, interaction, &component_id, x, y, w, h, sf,
-            ),
-            _ => self.draw_component(canvas, &node_to_draw, x, y, w, h, sf),
+        if !self.outside_damage(x, y, w, h) {
+            match node.tag.as_str() {
+                "input" | "textarea" | "button" => self.draw_interactive_component(
+                    canvas, node, &node_to_draw, interaction, &component_id, x, y, w, h, sf,
+                ),
+                _ => self.draw_component(canvas, &node_to_draw, x, y, w, h, sf),
+            }
         }
         
         // 绘制子节点
@@ -335,11 +337,13 @@ impl WxmlRenderer {
         self.register_interactive_element(node, &node_to_draw, &logical_bounds, interaction, taffy, false);
 
         // 绘制组件 - 特殊处理 input、button 和有点击事件的 view 组件
-        match node.tag.as_str() {
-            "input" | "textarea" | "button" => self.draw_interactive_component(
-                canvas, node, &node_to_draw, interaction, &component_id, x, y, w, h, sf,
-            ),
-            _ => self.draw_component(canvas, &node_to_draw, x, y, w, h, sf),
+        if !self.outside_damage(x, y, w, h) {
+            match node.tag.as_str() {
+                "input" | "textarea" | "button" => self.draw_interactive_component(
+                    canvas, node, &node_to_draw, interaction, &component_id, x, y, w, h, sf,
+                ),
+                _ => self.draw_component(canvas, &node_to_draw, x, y, w, h, sf),
+            }
         }
         
         if Self::draws_children(node) {

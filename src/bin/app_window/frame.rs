@@ -6,6 +6,16 @@
 use super::*;
 use crate::*;
 
+/// scroll-view 滚动带来的重绘范围
+pub(crate) enum AreaDamage {
+    /// 没有 scroll-view 动过
+    Nothing,
+    /// 只需重画这块（物理像素，页面画布坐标）
+    Rect(GeoRect),
+    /// 动的是覆盖层里的、或本帧不知道位置的：只能整帧
+    Full,
+}
+
 impl crate::MiniAppWindow {
     /// 是否存在持续动画/需要连续帧的状态（滚动、惯性、视频、光标闪烁、定时器、弹层等）。
     /// 用于决定事件循环是「按刷新率连续出帧」还是「空闲休眠（0 CPU）」。
@@ -83,11 +93,24 @@ impl crate::MiniAppWindow {
     /// - `css_anim`：只有 CSS/JS 动画在跑，走损伤区：只清并只画动画元素的包围盒。
     ///   一个 `infinite` 的小徽标不该逼着整屏每帧重新光栅化 ——
     ///   浏览器靠图层合成避免这件事，这里用裁剪矩形达到同样效果。
+    /// - 正常流的 scroll-view 滚了：它的盒子就是损伤区（再并上动画的损伤区）。
     pub(crate) fn render_frame_if_needed(&mut self, structural: bool, css_anim: bool) {
-        if !(structural || css_anim) {
+        let area = if structural { AreaDamage::Nothing } else { self.scroll_area_damage() };
+        if !(structural || css_anim) && matches!(area, AreaDamage::Nothing) {
             return;
         }
-        let damage = if structural { None } else { self.animation_damage_rect() };
+        let damage = if structural {
+            None
+        } else {
+            match area {
+                AreaDamage::Full => None,
+                AreaDamage::Rect(r) if css_anim => {
+                    self.animation_damage_rect().map(|a| Self::union_of(a, r))
+                }
+                AreaDamage::Rect(r) => Some(r),
+                AreaDamage::Nothing => self.animation_damage_rect(),
+            }
+        };
         self.render_with_damage(damage);
         self.needs_redraw = false;
         // 光标位置是绘制期记下的，所以放在这一帧画完之后同步给输入法
@@ -145,12 +168,10 @@ impl crate::MiniAppWindow {
             self.needs_redraw = true;
         }
         self.caret_blink_tick();
-        // 页面滚动不进 structural（理由见 RedrawRequested 里的同名判断）
-        let sv_scroll = self.interaction.scroll_controllers.values().any(|c| c.is_animating() || c.is_dragging);
+        // 页面滚动与 scroll-view 滚动都不进 structural（理由见 RedrawRequested 里的同名判断）
         let css_anim = self.renderer.as_ref().map(|r| r.has_active_animations()).unwrap_or(false);
         let structural = self.needs_redraw
             || mini_render::renderer::components::has_playing_video()
-            || sv_scroll
             || self.interaction.has_focused_input()
             || mini_render::renderer::components::swiper_needs_frame();
         self.render_frame_if_needed(structural, css_anim);
@@ -185,6 +206,44 @@ impl crate::MiniAppWindow {
             return None;
         }
         Some(GeoRect::new(x0, y0, x1 - x0, y1 - y0))
+    }
+
+    /// 相对上一次画出时，哪些 scroll-view 的滚动位置变了。
+    ///
+    /// scroll-view 的内容是按自身偏移画进页面画布的，它一动就得重画 ——
+    /// 但只需要重画**它自己的盒子**，外面的像素一点没变。从前拖动/甩动内层列表时
+    /// 每帧整条带（视口 ± 400px）重新光栅化，分类页那种左右两栏都是列表的页面
+    /// 滑动时每帧 7ms 以上。
+    pub(crate) fn scroll_area_damage(&self) -> AreaDamage {
+        let sf = self.scale_factor as f32;
+        let mut acc: Option<GeoRect> = None;
+        let mut any_moved = false;
+        for (id, c) in &self.interaction.scroll_controllers {
+            let pos = c.get_position();
+            let moved = self
+                .drawn_area_positions
+                .get(id)
+                .map(|p| (p - pos).abs() > 0.001)
+                .unwrap_or(true);
+            if !moved {
+                continue;
+            }
+            any_moved = true;
+            // 覆盖层里的要连覆盖层一起重画；本帧没登记（滚出视口了）的不知道画在哪
+            let Some((b, false)) = self.interaction.scroll_area_bounds(id) else {
+                return AreaDamage::Full;
+            };
+            let r = GeoRect::new(b.x * sf, b.y * sf, b.width * sf, b.height * sf);
+            acc = Some(match acc {
+                Some(a) => Self::union_of(a, r),
+                None => r,
+            });
+        }
+        // `MINI_NO_DAMAGE=1`：一律整帧，用来做「局部重绘 vs 整帧重绘逐像素一致」对照
+        if any_moved && self.no_damage {
+            return AreaDamage::Full;
+        }
+        acc.map(AreaDamage::Rect).unwrap_or(AreaDamage::Nothing)
     }
 
     /// 最近是否发生过滚动（用于决定裁剪余量留多大）

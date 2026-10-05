@@ -136,9 +136,8 @@ impl MiniEngine {
             self.needs_redraw = true;
         }
         if eff.page_scrolled {
-            // 页面滚动只换上屏切片，不重绘（见 GestureEffect 注释）；
-            // 但 SDK 目前每帧整帧重绘，所以这里仍要出帧
-            self.needs_redraw = true;
+            // 页面滚动只换上屏切片，不重绘（见 GestureEffect 注释）
+            self.scroll_moved = true;
         }
         // 被滚动接管的那一刻补一次 touchcancel（手势竞争的失败方要能收尾）
         if self.touch.is_active()
@@ -204,7 +203,7 @@ impl MiniEngine {
     /// 滚轮 / 触控板（桌面与带鼠标的平板）
     pub fn wheel(&mut self, delta_y: f32, precise: bool) {
         self.scroll.handle_scroll(delta_y, precise);
-        self.needs_redraw = true;
+        self.scroll_moved = true;
     }
 
     /// 往当前聚焦的输入框送文字（输入法提交的整串也走这里）

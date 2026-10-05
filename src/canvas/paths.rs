@@ -59,25 +59,48 @@ impl Canvas {
             // 逐像素扫过去的话，662 像素宽的卡片每行有 650+ 个像素算出覆盖率 0，
             // 白付 8 次区间比较。实测这一项占 tea-app 分类页滑动帧的一半以上
             // （354ms/606ms）。改成按区间遍历后输出不变（覆盖率为 0 的像素本来就不写）。
+            //
+            // 边表按上端排序、逐行维护「活动边」：从前每条子扫描线都把所有轮廓的
+            // 所有边扫一遍（圆角环展平后上百条边 × 4 条子扫描线 × 每行），
+            // 而真正跨过这一行的通常只有四五条。行列范围也先与裁剪区求交 ——
+            // 损伤区帧里一个高卡片的边框环大部分行都在裁剪区外，算完覆盖率再被
+            // `set_pixel` 丢掉是白算。两项都不改变任何像素的结果。
             const SUB_SAMPLES: usize = 4;
+            let mut edges: Vec<(Point, Point, f32, f32)> = Vec::new();
+            for contour in contours {
+                for i in 0..contour.len() {
+                    let p0 = contour[i];
+                    let p1 = contour[(i + 1) % contour.len()];
+                    // 水平边与任何扫描线都不满足下面的相交条件
+                    if p0.y != p1.y {
+                        edges.push((p0, p1, p0.y.min(p1.y), p0.y.max(p1.y)));
+                    }
+                }
+            }
+            edges.sort_by(|a, b| a.2.partial_cmp(&b.2).unwrap_or(std::cmp::Ordering::Equal));
+            let (bx0, bx1, by0, by1) = self.draw_bounds();
+            let mut next_edge = 0usize;
+            let mut active: Vec<usize> = Vec::new();
             let mut all_intersections: Vec<Vec<f32>> = vec![Vec::new(); SUB_SAMPLES];
             let mut segments: Vec<(f32, f32)> = Vec::new();
-            for y in y0..=y1 {
+            for y in y0.max(by0)..=y1.min(by1 - 1) {
+                let (row_top, row_bottom) = (y as f32, y as f32 + 1.0);
+                while next_edge < edges.len() && edges[next_edge].2 < row_bottom {
+                    active.push(next_edge);
+                    next_edge += 1;
+                }
+                active.retain(|&i| edges[i].3 > row_top);
                 segments.clear();
                 for (sub, intersections) in all_intersections.iter_mut().enumerate() {
                     intersections.clear();
                     let scan_y = y as f32 + (sub as f32 + 0.5) / SUB_SAMPLES as f32;
 
-                    for contour in contours {
-                        for i in 0..contour.len() {
-                            let p0 = &contour[i];
-                            let p1 = &contour[(i + 1) % contour.len()];
-
-                            if (p0.y <= scan_y && p1.y > scan_y) || (p1.y <= scan_y && p0.y > scan_y) {
-                                let t = (scan_y - p0.y) / (p1.y - p0.y);
-                                let x = p0.x + t * (p1.x - p0.x);
-                                intersections.push(x);
-                            }
+                    for &i in &active {
+                        let (p0, p1, _, _) = &edges[i];
+                        if (p0.y <= scan_y && p1.y > scan_y) || (p1.y <= scan_y && p0.y > scan_y) {
+                            let t = (scan_y - p0.y) / (p1.y - p0.y);
+                            let x = p0.x + t * (p1.x - p0.x);
+                            intersections.push(x);
                         }
                     }
 
@@ -104,8 +127,8 @@ impl Canvas {
                 }
 
                 for (seg_l, seg_r) in merged {
-                    let sx0 = (seg_l - 1.0).floor() as i32;
-                    let sx1 = (seg_r + 1.0).ceil() as i32;
+                    let sx0 = ((seg_l - 1.0).floor() as i32).max(bx0);
+                    let sx1 = ((seg_r + 1.0).ceil() as i32).min(bx1 - 1);
                     for x in sx0..=sx1 {
                         let px = x as f32;
                         let mut coverage = 0.0;
