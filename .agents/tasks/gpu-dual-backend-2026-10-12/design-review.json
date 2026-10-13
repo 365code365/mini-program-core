@@ -1,0 +1,167 @@
+{
+  "verdict": "CHANGES_REQUESTED",
+  "findings": [
+    {
+      "id": 1,
+      "severity": "HIGH",
+      "title": "增量镜像（§4.3）在所有逐字节判据里都没被真正比对过，gpu-parity 会全绿但没测到",
+      "location": "§4.3, §7.2, §11, §13.2, §13.3, A1.4",
+      "fix": "无头 --backend gpu 建一个常驻 GpuCompositor，每次 pump_one_frame/render 之后都 compose_offscreen；新增 MINI_GPU_VERIFY=1 逐帧读回并与 cpu::compose 比较（不一致退出码 5）；gpu-parity 加连续帧检查（damage 用例 --frames 30、R1/news 拖动 8x120、S1 拖动 8x300、interaction-check），按校验帧数防空转；gpu/tests.rs 加 200 步序列对拍；SDK 在 attach_offscreen_for_test 下重跑 engine_input_tests"
+    },
+    {
+      "id": 2,
+      "severity": "MEDIUM",
+      "title": "图层整体替换或尺寸变化（setup_canvas / ScaleFactorChanged）时代数撞车，surface 也不重新 configure",
+      "location": "§4.1, §4.2, §5.4, §7.1",
+      "fix": "gen 取自进程级 AtomicU64；PageCanvas 游标改为 (gen, seq)，不匹配时 ops_since 返回 None；present 发现尺寸变化就 reconfigure surface 并重建直通/离屏纹理；补单测"
+    },
+    {
+      "id": 3,
+      "severity": "MEDIUM",
+      "title": "DirtyOp::Rect 从浮点到整数像素的取整规则没定",
+      "location": "§4.2, §4.3",
+      "fix": "用与 clear_area 相同的 floor/ceil 加夹取算出 IRect，抽成共用函数；DirtyOp::Rect 只存 IRect；单测断言 clear_area 改到的像素 ⊆ IRect"
+    },
+    {
+      "id": 4,
+      "severity": "MEDIUM",
+      "title": "Timeout/Occluded 跳过的帧没人补，屏幕停在旧画面；FFI 没定义跳帧时的返回位",
+      "location": "§5.4, §9, §8.2",
+      "fix": "桌面：Skipped 时置 present_pending 并 request_redraw，处理 WindowEvent::Occluded(false)；SDK：新增 MR_FRAME_PENDING=8，下一次 pump 强制 compose_current；新增故障注入 timeout@N 并写用例"
+    },
+    {
+      "id": 5,
+      "severity": "MEDIUM",
+      "title": "Android：detach 引起的 BACKEND_CHANGED 与粘性回退移除 SurfaceView 冲突，切一次后台 GPU 就永久没了",
+      "location": "§8.2, §8.4, §6.5",
+      "fix": "BACKEND_CHANGED 只在引擎自己引起变化时置位（宿主主动 attach/detach 不置位）；Kotlin 在 surfaceDestroyed 时只切到 BitmapLayer，surfaceCreated 时重新挂载；补 FFI 单测"
+    },
+    {
+      "id": 6,
+      "severity": "MEDIUM",
+      "title": "lost@N 调 device.destroy() 不会同步触发丢失回调（wgpu-core 要等 poll）；致命错误归类没定优先级",
+      "location": "§10, §5.7, §9, §6.4",
+      "fix": "destroy() 之后立刻 poll(PollType::Poll)，每帧 submit 之后也 poll(Poll)；归类优先级定为 lost > Validation > SurfaceLost；用例断言原因串含「设备丢失」"
+    },
+    {
+      "id": 7,
+      "severity": "MEDIUM",
+      "title": "启动自检：Auto 的性能结论来自单次采样，测试帧尺寸没定，直通帧可能用到随时间变化的覆盖层",
+      "location": "§6.3",
+      "fix": "测试帧用宿主实际尺寸；直通帧只放 Modal；预热 2 次、采 7 次取中位数；Auto 要求 GPU 主线程 ≤ 0.8×CPU 且 GPU 完成 < 4.0ms；样本全部写进日志"
+    },
+    {
+      "id": 8,
+      "severity": "MEDIUM",
+      "title": "真正上屏（swapchain、色彩空间）的正确性没有验收项",
+      "location": "§5.4, §17, A1.4, D2.x",
+      "fix": "加 A1.10：screencapture 截两个后端的窗口，pixdiff --tol 2 差异占比为 0，不过就用 as_hal 设置 colorspace 后重测；加 D2.6：模拟器/真机截图，同一判据"
+    },
+    {
+      "id": 9,
+      "severity": "MEDIUM",
+      "title": "iOS 的 Package.swift / podspec 都没链 Metal / QuartzCore；A2.6 只构建 library，测不出来",
+      "location": "§1, §8.3, §15, A2.6",
+      "fix": "modulemap 加 link framework，Package.swift 加 linkedFramework，podspec 加 frameworks；加 A2.7：用 examples/demo.c 链出 iOS 模拟器可执行文件；A2.2 加 readelf NEEDED 检查"
+    },
+    {
+      "id": 10,
+      "severity": "MEDIUM",
+      "title": "SDK 的 pump 计时算不算 acquire 等待没定，D2.3 和 SDK MINI_FPS 判不了",
+      "location": "§6.6, D2.3",
+      "fix": "FrameStats 分开记 pump_ms / acquire_ms / work_ms；D2.3 比较 work_ms 的 p99 和最慢一帧，帧间隔峰值要求 GPU ≤ CPU"
+    },
+    {
+      "id": 11,
+      "severity": "MEDIUM",
+      "title": "A1.5 的「第 120 帧」有故障计数器和 JSON 帧号两套口径，判不了",
+      "location": "§10, §12.1, A1.5",
+      "fix": "每帧 JSON 记录加 phase / gpu_frame / presented；按 gpu_frame 改写 A1.5"
+    },
+    {
+      "id": 12,
+      "severity": "MEDIUM",
+      "title": "A1.6 的窗口判据没有最慢一帧，只测 S1，也没固定显示器刷新率",
+      "location": "A1.6, §12.1",
+      "fix": "S1 和 R1 都测，合成帧最慢 ≤ 6.9ms、p99 ≤ 1.0ms、composite_interval_peak ≤ 7.2ms，R1 的 GPU 帧间隔峰值 ≤ CPU；记录 display_hz，不是 144Hz 时退出码 3"
+    },
+    {
+      "id": 13,
+      "severity": "MEDIUM",
+      "title": "P4 没有可判定的验收项",
+      "location": "§14 P4",
+      "fix": "定立项条件（图元占最慢帧 ≥ 30% 且该帧 > 6.94ms）和验收模板（最慢一帧降 ≥ 30%、CPU ≤ +5%、阈值 = 实测最大 × 1.5 且包围盒在图元矩形内、CPU 降级行为写进 README 并打日志）"
+    },
+    {
+      "id": 14,
+      "severity": "MEDIUM",
+      "title": "测试里的故障注入走进程级环境变量，和并行 cargo test 竞态",
+      "location": "§13.2, §10, fault.rs",
+      "fix": "环境变量只在宿主入口读一次，以 Option<FaultSpec> 传给 GpuCompositor::new 和 attach_offscreen_for_test；测试显式传参，不调 set_var"
+    },
+    {
+      "id": 15,
+      "severity": "MEDIUM",
+      "title": "判定缓存键里的「引擎版本」没定义；CARGO_PKG_VERSION 一直是 0.1.0，拒绝记录永远不会失效",
+      "location": "§6.4",
+      "fix": "ENGINE_KEY = 包版本 + WGSL 的 const FNV 哈希 + SELFTEST_REV；debug 构建不写缓存"
+    },
+    {
+      "id": 16,
+      "severity": "MEDIUM",
+      "title": "脚本要 grep 的日志串前后不一致（「运行中回退」「合成模式」前缀、CPU 选定行都没定义）",
+      "location": "§6.5, §6.6, §7.2, §13.3, A0.3, A1.5",
+      "fix": "在 §6.6 列出精确的日志格式表，diag.rs 里做成格式化函数并加单测，gpu-parity 只 grep 这些固定前缀"
+    },
+    {
+      "id": 17,
+      "severity": "NIT",
+      "title": "rgba_for_host 遇到随时间变化的覆盖层时不是「屏上那一帧」",
+      "location": "§7.3, §16-10",
+      "fix": "文档改成「画布内容一致；随时间变化的覆盖层可能差一个相位」"
+    },
+    {
+      "id": 18,
+      "severity": "NIT",
+      "title": "iOS 13+ 上「内存 < 2GiB 走 CPU」这条规则不会触发",
+      "location": "§6.2",
+      "fix": "写明 iOS 由自检决定，或者换成 supportsFamily 之类可判定的条件"
+    },
+    {
+      "id": 19,
+      "severity": "NIT",
+      "title": "报告里的 Vulkan ≥ 1.1 门槛被去掉了，§16 没记",
+      "location": "§6.2, §16",
+      "fix": "在 §16 补上理由（API ≥ 29 已覆盖），或者加 downlevel 能力检查"
+    },
+    {
+      "id": 20,
+      "severity": "NIT",
+      "title": "attach_surface 在 iOS 主线程上同步初始化，耗时没有上限",
+      "location": "§8.2, §8.3",
+      "fix": "记录 attach 耗时，真机实测后定上限（初定 150ms），超过就把自检推迟到第一次 pump_ex"
+    },
+    {
+      "id": 21,
+      "severity": "NIT",
+      "title": "D2.4 的体积检查不需要真机，却排在 P2.3 之后",
+      "location": "§14 P2.3, D2.4",
+      "fix": "挪成 A2.8 在本机测，作为 P2.3 合入的前提"
+    },
+    {
+      "id": 22,
+      "severity": "NIT",
+      "title": "wgpu 的传递依赖只靠 Cargo.lock 锁定",
+      "location": "§1",
+      "fix": "写明 Cargo.lock 已入库、锁定的传递依赖版本，cargo update 单独提交"
+    },
+    {
+      "id": 23,
+      "severity": "NIT",
+      "title": "A1.6 里 compose_p99 ≤ 0.30ms 这个绝对值没写来源",
+      "location": "A1.6",
+      "fix": "注明估算依据，或者只用相对判据，等 P0 基线出来后再补绝对值"
+    }
+  ],
+  "reviewDoc": "/Users/shengye/pojects/mini/mini-program-core/.agents/tasks/gpu-dual-backend-2026-10-12/design-review.md"
+}
