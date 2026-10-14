@@ -14,10 +14,166 @@
 //! 合成序列原来在四个宿主调用点各抄了一份（桌面上屏、无头快照、侧滑留图、SDK）。
 //! 把它们收拢成「构造 `FrameLayers` → 调 `cpu::compose`」时，字段只是把原来的实参
 //! 原样装进来，宿主怎么算（截断方式、f32/f64、相位时钟）都不变，逐字节可证。
+//!
+//! ## 后端选择（纯函数，与 GPU 无关）
+//! - [`pref`]：偏好从哪来（`--backend` / `MINI_BACKEND` / FFI 整数）、谁说了算；
+//!   宿主入口一次性读进程环境（[`HostEnv`]），之后只传值；
+//! - [`select`]：机型分级与适配器门槛，只吃数据结构，单测不需要 GPU；
+//! - [`verdict`]：「这个驱动上次出过问题」的判定缓存；
+//! - [`fault`]：`MINI_GPU_FAULT` 的语法；
+//! - [`diag`]：被脚本 grep 的日志行，全部由这里的格式化函数产出。
+//!
+//! 现在还没有 GPU 合成器，偏好不是 `cpu` 时一律落到 CPU，并说清原因
+//! （没编进 `gpu` feature 时是「未编译 GPU 支持」）。
 pub mod cpu;
+pub mod diag;
+pub mod fault;
 pub mod layer;
+pub mod pref;
+pub mod select;
+pub mod verdict;
 
+pub use fault::FaultSpec;
 pub use layer::{color_bytes, DirtyOp, LayerCanvas, PageCanvas, PAGE_LOG_CAP};
+pub use pref::{EnvValue, HostEnv, HostKind, PrefSource};
+pub use select::{AdapterFacts, DeviceInfo, Platform, GPU_COMPILED};
+
+/// 后端偏好：宿主 / 命令行 / 环境变量给的「想用什么」。实际用了什么见 [`BackendKind`]。
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum BackendPref {
+    /// 由机型分级、适配器门槛与启动自检决定
+    Auto,
+    Cpu,
+    /// 强制 GPU：放行机型分级里的软规则，但软件适配器、能力不足、自检不一致仍会落到 CPU
+    Gpu,
+}
+
+impl BackendPref {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            BackendPref::Auto => "auto",
+            BackendPref::Cpu => "cpu",
+            BackendPref::Gpu => "gpu",
+        }
+    }
+
+    /// C ABI 里的整数（`MR_BACKEND_AUTO/CPU/GPU`）
+    pub fn code(self) -> i32 {
+        match self {
+            BackendPref::Auto => 0,
+            BackendPref::Cpu => 1,
+            BackendPref::Gpu => 2,
+        }
+    }
+}
+
+/// 实际在用的后端
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum BackendKind {
+    Cpu,
+    Gpu,
+}
+
+impl BackendKind {
+    pub fn label(self) -> &'static str {
+        match self {
+            BackendKind::Cpu => "CPU",
+            BackendKind::Gpu => "GPU",
+        }
+    }
+
+    /// C ABI 里的整数：1 = CPU、2 = GPU（与 `MR_BACKEND_CPU/GPU` 同值）
+    pub fn code(self) -> i32 {
+        match self {
+            BackendKind::Cpu => 1,
+            BackendKind::Gpu => 2,
+        }
+    }
+}
+
+/// 一次后端选择的结论：偏好（及其来源）、实际后端、为什么、适配器描述。
+///
+/// `reason` 是给人看的一句话，也是 SDK `mr_app_backend_reason` 的返回值。日志行与
+/// `MINI_FPS` 标签都由 [`diag`] 从这几个字段拼出来，所以这里的写法约定是：
+/// - GPU：`reason` 为「自动选择」/「强制指定」，`adapter` 为 `Metal · Apple M3 Pro` 这种；
+/// - CPU 且偏好就是 cpu：`reason` 为「偏好 cpu（来源）」，标签只写 `[后端 CPU]`；
+/// - CPU 但偏好不是 cpu：`reason` 就是挡住 GPU 的那条规则，标签带上它；
+///   回退时以「回退：」开头（见 [`BackendStatus::fell_back`]）。
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct BackendStatus {
+    pub pref: BackendPref,
+    pub source: PrefSource,
+    pub active: BackendKind,
+    pub reason: String,
+    pub adapter: Option<String>,
+}
+
+impl BackendStatus {
+    /// 结论是 CPU
+    pub fn cpu(pref: BackendPref, source: PrefSource, reason: impl Into<String>) -> Self {
+        Self { pref, source, active: BackendKind::Cpu, reason: reason.into(), adapter: None }
+    }
+
+    /// 偏好就是 cpu：原因写明偏好来自哪里，排查「为什么不是 GPU」时一眼能看出该改哪
+    pub fn preferred_cpu(source: PrefSource) -> Self {
+        let reason = format!("偏好 cpu（{}）", source.label());
+        Self::cpu(BackendPref::Cpu, source, reason)
+    }
+
+    /// 结论是 GPU。`adapter` 形如 `Metal · Apple M3 Pro`
+    pub fn gpu(pref: BackendPref, source: PrefSource, adapter: impl Into<String>) -> Self {
+        let reason = if pref == BackendPref::Gpu { "强制指定" } else { "自动选择" };
+        Self {
+            pref,
+            source,
+            active: BackendKind::Gpu,
+            reason: reason.to_string(),
+            adapter: Some(adapter.into()),
+        }
+    }
+
+    /// GPU 选上之后又失败了：回到 CPU，原因以「回退：」开头（标签据此显示回退原因）
+    pub fn fell_back(&self, why: &str) -> Self {
+        Self::cpu(self.pref, self.source, format!("{}{why}", diag::FALLBACK_REASON_HEAD))
+    }
+}
+
+/// 宿主挂上来的原生 surface 是哪一种（C ABI 的 `MR_SURFACE_*`）
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum SurfaceKind {
+    /// `CAMetalLayer*`（iOS / macOS）
+    MetalLayer,
+    /// `ANativeWindow*`（Android）
+    AndroidWindow,
+}
+
+impl SurfaceKind {
+    /// `MR_SURFACE_METAL_LAYER = 1`、`MR_SURFACE_ANDROID_WINDOW = 2`；其它值 `None`
+    pub fn from_code(code: i32) -> Option<Self> {
+        match code {
+            1 => Some(SurfaceKind::MetalLayer),
+            2 => Some(SurfaceKind::AndroidWindow),
+            _ => None,
+        }
+    }
+
+    pub fn code(self) -> i32 {
+        match self {
+            SurfaceKind::MetalLayer => 1,
+            SurfaceKind::AndroidWindow => 2,
+        }
+    }
+
+    /// 当前编译目标认不认这种 surface：Apple 目标只认 Metal 层，Android 只认
+    /// `ANativeWindow`。其它目标（含鸿蒙）一种都不认 —— 宿主传上来就当参数错误，
+    /// 而不是悄悄接下一个永远用不上的指针。
+    pub fn supported_on_target(self) -> bool {
+        match self {
+            SurfaceKind::MetalLayer => cfg!(target_vendor = "apple"),
+            SurfaceKind::AndroidWindow => cfg!(target_os = "android"),
+        }
+    }
+}
 
 use crate::host::edge_back::PageShot;
 use crate::host::picker_sheet::PickerSheetState;

@@ -31,6 +31,10 @@ h264 = ["openh264"]
 # 交叉编译用：rquickjs-sys 只为少数目标预生成了 C 绑定（没有 iOS/Android/鸿蒙），
 # 打开它改为在构建时用 libclang 现场生成。移动端构建必须带上。
 bindgen = ["rquickjs/bindgen"]
+# GPU 合成后端（开发中）。现在是**空壳**：只用来让 `--backend gpu` / `--backend-probe` /
+# `mr_app_attach_surface` 区分「没编进来」与「编进来了」，不带任何依赖、不含 GPU 代码。
+# 依赖（wgpu 等）在 GPU 合成器落地那一步再加。CPU 后端永远可用，关掉它照常编译与回归。
+gpu = []
 
 [dependencies]
 image = "0.25"
