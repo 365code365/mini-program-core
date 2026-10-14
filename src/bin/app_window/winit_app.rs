@@ -254,37 +254,13 @@ impl ApplicationHandler for crate::MiniAppWindow {
                 // 时点要从**帧开始**算：从 present 之后算的话，每帧会多出一整个
                 // 渲染耗时（16.7ms 节拍变成 21ms，只剩 46FPS）。
                 if self.is_animating() {
-                    // 固定节拍：下一帧时点是「上一个时点 + 一个刷新周期」的累加，
-                    // 不是「本帧开始 + 一个周期」。后者每帧都把 sleep 的过冲（macOS 上
-                    // 约 0.5~2ms）算进新的起点，节拍会越走越偏且忽快忽慢 ——
-                    // 平均帧率看着达标，实际帧间隔在抖，这正是「高刷没体现出来」的手感。
-                    let now = Instant::now();
-                    let mut target = self.next_frame_at + self.frame_interval;
-                    // 落后超过一整帧（大重绘、系统抢占）就重新对齐，避免追帧追出一串挤压帧。
-                    // 对齐到「现在」而不是「现在 + 一个周期」：一帧干了 10ms 活本来就已经
-                    // 超预算了，再补睡 6.9ms 会把帧间隔顶到 17ms —— 手上感觉到的顿挫是
-                    // **帧间隔**，不是干活时间，白睡的这一下等于把一次超时放大成两帧。
-                    if target <= now {
-                        target = now;
-                    }
-                    self.next_frame_at = target;
-                    // 只睡到「还差一个自旋余量」，剩下的用让出时间片的忙等把边缘对准；
-                    // sleep 的分辨率不足以稳定命中 6.9ms 的节拍。
-                    const SPIN_MARGIN: Duration = Duration::from_micros(900);
-                    if let Some(coarse) = target.checked_sub(SPIN_MARGIN) {
-                        let now = Instant::now();
-                        if coarse > now {
-                            std::thread::sleep(coarse - now);
-                        }
-                    }
-                    while Instant::now() < target {
-                        std::hint::spin_loop();
-                    }
+                    // 固定节拍 + sleep 到差 0.9ms 再自旋（算法与理由见 app_window::pacer）
+                    self.pacer.wait_next(self.frame_interval);
                     if let Some(w) = &self.window {
                         w.request_redraw();
                     }
                 } else {
-                    self.next_frame_at = Instant::now();
+                    self.pacer.reset(Instant::now());
                 }
                 if self.fps_log {
                     let ms = work_ms;

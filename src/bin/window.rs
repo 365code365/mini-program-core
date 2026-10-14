@@ -86,8 +86,8 @@ struct MiniAppWindow {
     cached_fixed_regions: Vec<GeoRect>,
     /// 进程启动时刻：用作与帧无关的动画相位时钟
     started_at: Instant,
-    /// 下一帧的目标时点（固定节拍累加，不受单帧耗时抖动影响）
-    next_frame_at: Instant,
+    /// 帧节拍器：下一帧的目标时点（固定节拍累加，不受单帧耗时抖动影响）
+    pacer: app_window::pacer::Pacer,
     /// 最近一次滚动位置发生变化的时刻（裁剪余量按它自适应）
     last_scroll_at: Option<Instant>,
     /// 拖动手势仲裁：方向锁定 / 选定滚动目标 / 嵌套传递（见 app_window::gesture）
@@ -250,7 +250,7 @@ impl MiniAppWindow {
             cached_fixed_bindings: Vec::new(),
             cached_fixed_regions: Vec::new(),
             started_at: now,
-            next_frame_at: now,
+            pacer: app_window::pacer::Pacer::new(now),
             last_scroll_at: None,
             fixed_dirty: true, caret_visible: true,
             gesture: None,

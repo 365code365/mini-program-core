@@ -16,6 +16,8 @@ pub mod headless_script;
 pub mod backend_host;
 /// `MINI_FPS=1` 每秒那一行的格式（带后端标签）
 pub mod fps_report;
+/// 帧节拍器（sleep + 自旋），交互窗体与 `--bench` 共用
+pub mod pacer;
 // ── 窗体本体按职责拆成的几片（都是 `impl crate::MiniAppWindow`）──
 /// winit 事件 → 窗体调用的适配层（唯一认识 winit 类型的地方）
 pub mod winit_app;

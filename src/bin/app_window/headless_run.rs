@@ -194,53 +194,12 @@ impl crate::MiniAppWindow {
                 (LOGICAL_HEIGHT as f64 * scale) as u32,
             );
             let mut buffer = vec![0u32; (pw * ph) as usize];
-            let present_bg = self
-                .renderer
-                .as_ref()
-                .and_then(|r| r.page_style().background)
-                .map(|c| ((c.r as u32) << 16) | ((c.g as u32) << 8) | c.b as u32)
-                .unwrap_or(0xF5F5F5);
             // 导航之后当前页可能已不是入口 route
             let route = self.page_stack.last().map(|p| p.path.clone()).unwrap_or(route);
             let has_tabbar = self.is_tabbar_page(&route);
             // setup_canvas 在本函数开头就建好了页面画布，之后只会按内容高度重新分配，
             // 不会变回 None，所以这里恒为 Some。合成序列与交互窗体同一份（compositor::cpu）。
-            if let Some(canvas) = &self.canvas {
-                let gap = self.scroll.top_gap();
-                let layers = FrameLayers {
-                    width: pw,
-                    height: ph,
-                    scale: scale as f32,
-                    page: canvas,
-                    scroll_px: (self.scroll.get_position() * scale as f32) as i32,
-                    page_bg: present_bg,
-                    has_tabbar,
-                    tabbar: self.tabbar_canvas.as_ref(),
-                    tabbar_px: if has_tabbar { (tabbar_height() as f64 * scale) as u32 } else { 0 },
-                    fixed: self.fixed_canvas.as_ref(),
-                    fixed_rows: self.fixed_rows,
-                    // 快照的指示器相位固定，图才确定
-                    pull: (gap > 0.5 || self.pull_refreshing).then(|| PullState {
-                        gap_logical: gap,
-                        refreshing: self.pull_refreshing,
-                        progress: self.scroll.pull_progress(),
-                        phase: 0.25,
-                    }),
-                    overlays: OverlayRefs {
-                        last_frame: self.last_frame,
-                        toast: &self.toast,
-                        loading: &self.loading,
-                        modal: &self.modal,
-                        picker: self.picker_sheet.as_ref(),
-                        text: self.text_renderer.as_deref(),
-                    },
-                    // 侧滑返回进行中：无头也要能截到跟手的那一帧
-                    edge_back: self.edge_back.as_ref().map(|eb| EdgeBackFrame {
-                        offset_px: (eb.offset() * scale as f32).round() as u32,
-                        shot: self.back_shots.last(),
-                        progress: eb.progress(),
-                    }),
-                };
+            if let Some(layers) = self.headless_layers(scale, has_tabbar) {
                 compositor::cpu::compose(&mut buffer, &layers);
             }
 
@@ -257,5 +216,58 @@ impl crate::MiniAppWindow {
             written += 1;
         }
         Ok(written)
+    }
+
+    /// 无头合成这一帧要用的图层（快照与 `--bench` 的逐帧合成共用这一份构造）。
+    /// 页面画布还没建出来时为 `None`。
+    ///
+    /// 与交互窗体 `present()` 的区别只有一处：下拉指示器的相位固定成 0.25，快照图才确定。
+    pub(crate) fn headless_layers(&self, scale: f64, has_tabbar: bool) -> Option<FrameLayers<'_>> {
+        let canvas = self.canvas.as_ref()?;
+        let (pw, ph) = (
+            (LOGICAL_WIDTH as f64 * scale) as u32,
+            (LOGICAL_HEIGHT as f64 * scale) as u32,
+        );
+        let present_bg = self
+            .renderer
+            .as_ref()
+            .and_then(|r| r.page_style().background)
+            .map(|c| ((c.r as u32) << 16) | ((c.g as u32) << 8) | c.b as u32)
+            .unwrap_or(0xF5F5F5);
+        let gap = self.scroll.top_gap();
+        Some(FrameLayers {
+            width: pw,
+            height: ph,
+            scale: scale as f32,
+            page: canvas,
+            scroll_px: (self.scroll.get_position() * scale as f32) as i32,
+            page_bg: present_bg,
+            has_tabbar,
+            tabbar: self.tabbar_canvas.as_ref(),
+            tabbar_px: if has_tabbar { (tabbar_height() as f64 * scale) as u32 } else { 0 },
+            fixed: self.fixed_canvas.as_ref(),
+            fixed_rows: self.fixed_rows,
+            // 快照的指示器相位固定，图才确定
+            pull: (gap > 0.5 || self.pull_refreshing).then(|| PullState {
+                gap_logical: gap,
+                refreshing: self.pull_refreshing,
+                progress: self.scroll.pull_progress(),
+                phase: 0.25,
+            }),
+            overlays: OverlayRefs {
+                last_frame: self.last_frame,
+                toast: &self.toast,
+                loading: &self.loading,
+                modal: &self.modal,
+                picker: self.picker_sheet.as_ref(),
+                text: self.text_renderer.as_deref(),
+            },
+            // 侧滑返回进行中：无头也要能截到跟手的那一帧
+            edge_back: self.edge_back.as_ref().map(|eb| EdgeBackFrame {
+                offset_px: (eb.offset() * scale as f32).round() as u32,
+                shot: self.back_shots.last(),
+                progress: eb.progress(),
+            }),
+        })
     }
 }
