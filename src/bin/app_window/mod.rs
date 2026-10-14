@@ -40,8 +40,9 @@ pub use mini_render::host::{
     LOGICAL_HEIGHT, LOGICAL_WIDTH,
 };
 pub use mini_render::host::config::*;
+// 合成层（四个合成调用点共用 compositor::cpu）
+pub use mini_render::compositor::{self, EdgeBackFrame, FrameLayers, OverlayRefs, PullState};
 pub use mini_render::host::navigation::*;
-pub use mini_render::host::render::*;
 pub use mini_render::host::tabbar::*;
 
 pub use event_handler::*;

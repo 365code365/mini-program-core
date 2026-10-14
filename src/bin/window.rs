@@ -3,7 +3,7 @@
 mod app_window;
 
 use app_window::*;
-use app_window::ui_overlay::{ToastState, LoadingState, ModalState, render_ui_overlay};
+use app_window::ui_overlay::{ToastState, LoadingState, ModalState};
 use app_window::event_handler as evt;
 use app_window::click_handler as click;
 

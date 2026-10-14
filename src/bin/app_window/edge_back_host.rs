@@ -5,7 +5,7 @@
 //!
 //! - **留图**：侧滑时下面那一页要真的显示出来，而那时它已经不是当前页 ——
 //!   渲染器、交互表、滚动位置全换成新页了，没法重新画。所以在它被覆盖的那一刻
-//!   用 `present_to_buffer` 合成一张，和真正上屏的结果逐像素一致。
+//!   用上屏同一份合成器（`compositor::cpu`，不带覆盖层）合成一张，和真正上屏的结果逐像素一致。
 //! - **收尾**：动画跑完且判定为「返回」时真的退栈（与 `wx.navigateBack()` 同一条路径）。
 
 use super::*;
@@ -30,7 +30,7 @@ impl crate::MiniAppWindow {
     ///
     /// 侧滑返回时下面那一页必须真的显示出来，而那时它已经不是当前页 ——
     /// 渲染器、交互表、滚动位置全都换成新页了，没法重新画。所以在**它被覆盖的那一刻**
-    /// 留一张图；用的是 `present_to_buffer` 本身，和真正上屏的合成结果逐像素一致。
+    /// 留一张图；用的是上屏同一份合成器 `compositor::cpu::compose`，和真正上屏的合成结果逐像素一致。
     pub(crate) fn capture_viewport(&self) -> Option<app_window::edge_back::PageShot> {
         let canvas = self.canvas.as_ref()?;
         let page = self.page_stack.last()?;
@@ -46,12 +46,25 @@ impl crate::MiniAppWindow {
             .map(|c| ((c.r as u32) << 16) | ((c.g as u32) << 8) | c.b as u32)
             .unwrap_or(0xF5F5F5);
         let mut pixels = vec![present_bg; (w as usize) * (h as usize)];
-        present_to_buffer(
-            &mut pixels, w, h, canvas, self.fixed_canvas.as_ref(), self.tabbar_canvas.as_ref(),
-            (self.scroll.get_position() * self.scale_factor as f32) as i32, has_tabbar,
-            if has_tabbar { (tabbar_height() as f64 * self.scale_factor) as u32 } else { 0 },
-            self.fixed_rows, present_bg,
-        );
+        // 只要「页面 + tabBar + fixed」：下拉指示器、弹窗、picker、侧滑都给空，
+        // cpu::compose 跳过这些层，结果与只调 present_to_buffer 逐字节相同
+        let layers = FrameLayers {
+            width: w,
+            height: h,
+            scale: self.scale_factor as f32,
+            page: canvas,
+            scroll_px: (self.scroll.get_position() * self.scale_factor as f32) as i32,
+            page_bg: present_bg,
+            has_tabbar,
+            tabbar: self.tabbar_canvas.as_ref(),
+            tabbar_px: if has_tabbar { (tabbar_height() as f64 * self.scale_factor) as u32 } else { 0 },
+            fixed: self.fixed_canvas.as_ref(),
+            fixed_rows: self.fixed_rows,
+            pull: None,
+            overlays: OverlayRefs::none(self.last_frame),
+            edge_back: None,
+        };
+        compositor::cpu::compose(&mut pixels, &layers);
         Some(app_window::edge_back::PageShot { width: w, height: h, pixels })
     }
 

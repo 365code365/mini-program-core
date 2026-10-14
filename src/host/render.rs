@@ -164,11 +164,59 @@ pub fn render_pull_indicator(
     progress: f32,
     phase: f32,
 ) {
+    let Some(layer) = pull_indicator_band(
+        buffer_width,
+        buffer_height,
+        scale,
+        gap_logical,
+        refreshing,
+        progress,
+        phase,
+    ) else {
+        return;
+    };
+    let band = layer.height();
+    // 合成到窗口缓冲（缓冲是不透明 RGB，按 alpha 手动混合）
+    let pixels = layer.pixels();
+    for y in 0..band {
+        let row = (y * buffer_width) as usize;
+        for x in 0..buffer_width as usize {
+            let c = pixels[row + x];
+            if c.a == 0 {
+                continue;
+            }
+            let dst = buffer[row + x];
+            let (dr, dg, db) = ((dst >> 16) & 0xFF, (dst >> 8) & 0xFF, dst & 0xFF);
+            let a = c.a as u32;
+            let inv = 255 - a;
+            let r = (c.r as u32 * a + dr * inv) / 255;
+            let g = (c.g as u32 * a + dg * inv) / 255;
+            let b = (c.b as u32 * a + db * inv) / 255;
+            buffer[row + x] = (r << 16) | (g << 8) | b;
+        }
+    }
+}
+
+/// 下拉刷新指示器那一条带：宽 = 输出宽，高 = 顶部露出的空白（夹到输出高度内），
+/// 透明底上画三个点。空白不足 8 像素或输出宽为 0 时返回 `None`（不画）。
+///
+/// 从 [`render_pull_indicator`] 拆出来的前半段：混合方式由合成后端决定
+/// （CPU 由 `render_pull_indicator` 混进缓冲；以后的 GPU 合成器把这条带当纹理上传、
+/// 在着色器里做同一套整数混合），三点本身只画这一份，两个后端不会分叉。
+pub fn pull_indicator_band(
+    buffer_width: u32,
+    buffer_height: u32,
+    scale: f32,
+    gap_logical: f32,
+    refreshing: bool,
+    progress: f32,
+    phase: f32,
+) -> Option<Canvas> {
     use crate::{Color, Paint};
 
     let gap_px = (gap_logical * scale).round() as u32;
     if gap_px < 8 || buffer_width == 0 {
-        return;
+        return None;
     }
     let band = gap_px.min(buffer_height);
     let mut layer = Canvas::new(buffer_width, band);
@@ -202,24 +250,5 @@ pub fn render_pull_indicator(
             .with_anti_alias(true);
         layer.draw_circle(cx + (i as f32 - 1.0) * spacing, cy, dot_r, &paint);
     }
-
-    // 合成到窗口缓冲（缓冲是不透明 RGB，按 alpha 手动混合）
-    let pixels = layer.pixels();
-    for y in 0..band {
-        let row = (y * buffer_width) as usize;
-        for x in 0..buffer_width as usize {
-            let c = pixels[row + x];
-            if c.a == 0 {
-                continue;
-            }
-            let dst = buffer[row + x];
-            let (dr, dg, db) = ((dst >> 16) & 0xFF, (dst >> 8) & 0xFF, dst & 0xFF);
-            let a = c.a as u32;
-            let inv = 255 - a;
-            let r = (c.r as u32 * a + dr * inv) / 255;
-            let g = (c.g as u32 * a + dg * inv) / 255;
-            let b = (c.b as u32 * a + db * inv) / 255;
-            buffer[row + x] = (r << 16) | (g << 8) | b;
-        }
-    }
+    Some(layer)
 }

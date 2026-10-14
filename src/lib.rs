@@ -60,6 +60,9 @@ pub mod compiler;
 /// 宿主层：把小程序跑起来所需的、与平台无关的那部分（页面栈、覆盖层、
 /// 触摸状态机、像素合成…）。桌面窗体与移动端 SDK 共用这一份。
 pub mod host;
+/// 合成层：本帧各图层（页面 / tabBar / fixed / 覆盖层）→ 输出缓冲。
+/// CPU 合成器是参考实现；移动端构建（`--no-default-features`）同样编进来。
+pub mod compositor;
 
 // FFI 导出：画布级（mr_canvas_* / mr_path_*）
 mod ffi;

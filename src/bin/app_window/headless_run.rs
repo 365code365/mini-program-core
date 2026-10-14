@@ -202,36 +202,45 @@ impl crate::MiniAppWindow {
             // 导航之后当前页可能已不是入口 route
             let route = self.page_stack.last().map(|p| p.path.clone()).unwrap_or(route);
             let has_tabbar = self.is_tabbar_page(&route);
+            // setup_canvas 在本函数开头就建好了页面画布，之后只会按内容高度重新分配，
+            // 不会变回 None，所以这里恒为 Some。合成序列与交互窗体同一份（compositor::cpu）。
             if let Some(canvas) = &self.canvas {
-                present_to_buffer(
-                    &mut buffer, pw, ph, canvas,
-                    self.fixed_canvas.as_ref(), self.tabbar_canvas.as_ref(),
-                    (self.scroll.get_position() * scale as f32) as i32, has_tabbar,
-                    if has_tabbar { (tabbar_height() as f64 * scale) as u32 } else { 0 },
-                    self.fixed_rows,
-                    present_bg,
-                );
-            }
-            let gap = self.scroll.top_gap();
-            if gap > 0.5 || self.pull_refreshing {
-                app_window::render::render_pull_indicator(
-                    &mut buffer, pw, ph, scale as f32,
-                    gap, self.pull_refreshing, self.scroll.pull_progress(), 0.25,
-                );
-            }
-            render_ui_overlay(
-                &mut buffer, pw, ph, scale as f32, self.last_frame,
-                &self.toast, &self.loading, &self.modal, self.text_renderer.as_deref(),
-            );
-            if let Some(sheet) = &self.picker_sheet {
-                picker_sheet::render(&mut buffer, pw, ph, scale as f32, sheet, self.text_renderer.as_deref());
-            }
-            // 侧滑返回进行中：与交互窗体同一段合成（无头也要能截到跟手的那一帧）
-            if let Some(eb) = &self.edge_back {
-                let off = (eb.offset() * scale as f32).round() as u32;
-                app_window::edge_back::compose(
-                    &mut buffer, pw, ph, off, self.back_shots.last(), eb.progress(),
-                );
+                let gap = self.scroll.top_gap();
+                let layers = FrameLayers {
+                    width: pw,
+                    height: ph,
+                    scale: scale as f32,
+                    page: canvas,
+                    scroll_px: (self.scroll.get_position() * scale as f32) as i32,
+                    page_bg: present_bg,
+                    has_tabbar,
+                    tabbar: self.tabbar_canvas.as_ref(),
+                    tabbar_px: if has_tabbar { (tabbar_height() as f64 * scale) as u32 } else { 0 },
+                    fixed: self.fixed_canvas.as_ref(),
+                    fixed_rows: self.fixed_rows,
+                    // 快照的指示器相位固定，图才确定
+                    pull: (gap > 0.5 || self.pull_refreshing).then(|| PullState {
+                        gap_logical: gap,
+                        refreshing: self.pull_refreshing,
+                        progress: self.scroll.pull_progress(),
+                        phase: 0.25,
+                    }),
+                    overlays: OverlayRefs {
+                        last_frame: self.last_frame,
+                        toast: &self.toast,
+                        loading: &self.loading,
+                        modal: &self.modal,
+                        picker: self.picker_sheet.as_ref(),
+                        text: self.text_renderer.as_deref(),
+                    },
+                    // 侧滑返回进行中：无头也要能截到跟手的那一帧
+                    edge_back: self.edge_back.as_ref().map(|eb| EdgeBackFrame {
+                        offset_px: (eb.offset() * scale as f32).round() as u32,
+                        shot: self.back_shots.last(),
+                        progress: eb.progress(),
+                    }),
+                };
+                compositor::cpu::compose(&mut buffer, &layers);
             }
 
             let mut rgba = Vec::with_capacity(buffer.len() * 4);

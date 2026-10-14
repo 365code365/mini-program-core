@@ -6,7 +6,8 @@
 //! 「什么时候只重新合成、什么时候整条带重画」的判断都在这里：视口还落在
 //! `drawn_band` 内时滚动只换上屏切片（`compose_current`），滑出才重画。
 use super::engine::MiniEngine;
-use crate::host::{tabbar_height, ui_overlay};
+use crate::compositor::{cpu, FrameLayers, OverlayRefs};
+use crate::host::tabbar_height;
 use crate::{Canvas, Color};
 
 impl MiniEngine {
@@ -206,41 +207,32 @@ impl MiniEngine {
             self.compose = vec![0u32; n];
         }
         let bg_u32 = ((bg.r as u32) << 16) | ((bg.g as u32) << 8) | bg.b as u32;
-        crate::host::present_to_buffer(
-            &mut self.compose[..],
-            pw,
-            ph,
-            &self.canvas,
-            Some(&self.fixed_canvas),
-            if has_tabbar { Some(&self.tabbar_canvas) } else { None },
-            (self.scroll.get_position() * self.dpr) as i32,
+        // 合成序列与桌面窗体同一份（compositor::cpu）。SDK 没有下拉指示器与侧滑返回这两层
+        let layers = FrameLayers {
+            width: pw,
+            height: ph,
+            scale: self.dpr,
+            page: &self.canvas,
+            scroll_px: (self.scroll.get_position() * self.dpr) as i32,
+            page_bg: bg_u32,
             has_tabbar,
-            if has_tabbar { (tabbar_height() as f32 * self.dpr) as u32 } else { 0 },
-            self.fixed_rows,
-            bg_u32,
-        );
-        ui_overlay::render_ui_overlay(
-            &mut self.compose[..],
-            pw,
-            ph,
-            self.dpr,
-            std::time::Instant::now(),
-            &self.toast,
-            &self.loading,
-            &self.modal,
-            self.text.as_deref(),
-        );
-        // picker 面板画在最上层（与桌面窗体同一份绘制）
-        if let Some(sheet) = &self.picker_sheet {
-            crate::host::picker_sheet::render(
-                &mut self.compose[..],
-                pw,
-                ph,
-                self.dpr,
-                sheet,
-                self.text.as_deref(),
-            );
-        }
+            tabbar: if has_tabbar { Some(&self.tabbar_canvas) } else { None },
+            tabbar_px: if has_tabbar { (tabbar_height() as f32 * self.dpr) as u32 } else { 0 },
+            fixed: Some(&self.fixed_canvas),
+            fixed_rows: self.fixed_rows,
+            pull: None,
+            overlays: OverlayRefs {
+                last_frame: std::time::Instant::now(),
+                toast: &self.toast,
+                loading: &self.loading,
+                modal: &self.modal,
+                // picker 面板画在最上层（与桌面窗体同一份绘制）
+                picker: self.picker_sheet.as_ref(),
+                text: self.text.as_deref(),
+            },
+            edge_back: None,
+        };
+        cpu::compose(&mut self.compose[..], &layers);
         // u32(0xRRGGBB) → RGBA8
         if self.rgba.len() != n * 4 {
             self.rgba = vec![255u8; n * 4];

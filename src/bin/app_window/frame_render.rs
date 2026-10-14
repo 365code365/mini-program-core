@@ -261,37 +261,44 @@ impl crate::MiniAppWindow {
                     self.surface_size = Some((size.width, size.height));
                 }
                 if let Ok(mut buffer) = surface.buffer_mut() {
-                    present_to_buffer(&mut buffer, size.width, size.height, canvas, self.fixed_canvas.as_ref(), self.tabbar_canvas.as_ref(),
-                        (self.scroll.get_position() * self.scale_factor as f32) as i32, has_tabbar,
-                        if has_tabbar { (tabbar_height() as f64 * self.scale_factor) as u32 } else { 0 },
-                        self.fixed_rows, present_bg);
-                    // 下拉刷新指示器画在页面之上、Toast/Modal 之下
+                    // 合成顺序（页面 → 下拉指示器 → Toast/Modal → picker → 侧滑返回）
+                    // 收在 compositor::cpu 里，与无头快照、SDK 同一份
                     let gap = self.scroll.top_gap();
-                    if gap > 0.5 || self.pull_refreshing {
-                        app_window::render::render_pull_indicator(
-                            &mut buffer, size.width, size.height, self.scale_factor as f32,
-                            gap, self.pull_refreshing, self.scroll.pull_progress(),
+                    let layers = FrameLayers {
+                        width: size.width,
+                        height: size.height,
+                        scale: self.scale_factor as f32,
+                        page: canvas,
+                        scroll_px: (self.scroll.get_position() * self.scale_factor as f32) as i32,
+                        page_bg: present_bg,
+                        has_tabbar,
+                        tabbar: self.tabbar_canvas.as_ref(),
+                        tabbar_px: if has_tabbar { (tabbar_height() as f64 * self.scale_factor) as u32 } else { 0 },
+                        fixed: self.fixed_canvas.as_ref(),
+                        fixed_rows: self.fixed_rows,
+                        pull: (gap > 0.5 || self.pull_refreshing).then(|| PullState {
+                            gap_logical: gap,
+                            refreshing: self.pull_refreshing,
+                            progress: self.scroll.pull_progress(),
                             // 相位要用「进程启动至今」的时钟：last_frame 每帧都会被重置，
                             // 拿它算 elapsed 恒为 0，三点看起来是静止的。
-                            (self.started_at.elapsed().as_secs_f32() * 1.1).fract(),
-                        );
-                    }
-                    render_ui_overlay(&mut buffer, size.width, size.height, self.scale_factor as f32, self.last_frame,
-                        &toast_state, &loading_state, &modal_state, self.text_renderer.as_deref());
-                    // picker 面板在所有覆盖层之上
-                    if let Some(sheet) = &picker_state {
-                        picker_sheet::render(&mut buffer, size.width, size.height, self.scale_factor as f32, sheet, self.text_renderer.as_deref());
-                    }
-                    // 左边缘侧滑返回：整帧右移，左边露出上一页。
-                    // 放在最后（覆盖层之上）——被推走的是「整个页面」，页面自己的
-                    // 弹窗、Toast 跟着一起走才对；不然弹窗会诡异地钉在原处。
-                    if let Some(eb) = &self.edge_back {
-                        let off = (eb.offset() * self.scale_factor as f32).round() as u32;
-                        app_window::edge_back::compose(
-                            &mut buffer, size.width, size.height, off,
-                            self.back_shots.last(), eb.progress(),
-                        );
-                    }
+                            phase: (self.started_at.elapsed().as_secs_f32() * 1.1).fract(),
+                        }),
+                        overlays: OverlayRefs {
+                            last_frame: self.last_frame,
+                            toast: &toast_state,
+                            loading: &loading_state,
+                            modal: &modal_state,
+                            picker: picker_state.as_ref(),
+                            text: self.text_renderer.as_deref(),
+                        },
+                        edge_back: self.edge_back.as_ref().map(|eb| EdgeBackFrame {
+                            offset_px: (eb.offset() * self.scale_factor as f32).round() as u32,
+                            shot: self.back_shots.last(),
+                            progress: eb.progress(),
+                        }),
+                    };
+                    compositor::cpu::compose(&mut buffer, &layers);
                     buffer.present().ok();
                 }
             }
