@@ -340,6 +340,21 @@ Common action flags (executed in the order written, repeatable): `--touch x,y` /
 [`doc/引擎测试说明.md`](doc/引擎测试说明.md) and
 [`doc/架构与实现原理.md`](doc/架构与实现原理.md#帧成本是怎么压下来的).
 
+Rendering backend switches. The CPU rasterizer is the reference implementation and is always
+available; **the GPU backend is still in development**, so today every choice ends up on CPU and
+the log says why:
+
+| Switch | Meaning |
+|---|---|
+| `--backend auto\|cpu\|gpu` | Backend preference, case-insensitive, beats `MINI_BACKEND`. The interactive window defaults to `auto`, headless runs (`--snapshot` and everything on top of it) to `cpu`. Any other value exits with code 2 |
+| `MINI_BACKEND=auto\|cpu\|gpu` | Same preference from the environment. In the SDK it overrides the host's `mr_app_set_backend` (it is a diagnostic switch). The regression scripts export `cpu` |
+| `--backend-probe` | Run the interactive-window selection once and exit: 0 = GPU usable, 3 = no usable GPU, 4 = built without the `gpu` cargo feature |
+
+The chosen backend is logged once at startup (`🎨 渲染后端：CPU — 未编译 GPU 支持` when built
+without `--features gpu`). Every `MINI_FPS=1` line and every `--drag` report starts with a backend
+tag, e.g. `📊 [后端 CPU] …`. The `gpu` cargo feature is currently an empty placeholder with no
+dependencies.
+
 The list of sample mini-programs, live browser preview (`mini-devserver`), compiling to an HTML
 project, and Rust / C examples of using the engine as a library are in
 [`doc/示例与调试.md`](doc/示例与调试.md).

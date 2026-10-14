@@ -291,17 +291,17 @@ impl ApplicationHandler for crate::MiniAppWindow {
                     self.fps_frames += 1;
                     self.fps_worst_ms = self.fps_worst_ms.max(ms);
                     if self.fps_window_start.elapsed().as_secs_f32() >= 1.0 {
-                        let (l, r, p) = self.fps_worst_parts;
-                        let (rp, rf, rt) = self.fps_worst_render_parts;
-                        println!(
-                            "📊 {} 帧/秒，帧间隔 {:.1}~{:.1}ms，最慢一帧 {:.1}ms（逻辑 {:.1} 渲染 {:.1}[页面 {:.1} 覆盖层 {:.1} tabBar {:.1}] 上屏 {:.1}）{}",
-                            self.fps_frames,
-                            if self.frame_gap_min_ms == f32::MAX { 0.0 } else { self.frame_gap_min_ms },
-                            self.frame_gap_max_ms,
-                            self.fps_worst_ms,
-                            l, r, rp, rf, rt, p,
-                            if self.is_animating() { "（动画中）" } else { "" }
-                        );
+                        // 行首带后端标签（`📊 [后端 CPU] …`），格式化与单测在 fps_report.rs
+                        let window = app_window::fps_report::FpsWindow {
+                            frames: self.fps_frames,
+                            gap_min_ms: self.frame_gap_min_ms,
+                            gap_max_ms: self.frame_gap_max_ms,
+                            worst_ms: self.fps_worst_ms,
+                            worst_parts: self.fps_worst_parts,
+                            worst_render_parts: self.fps_worst_render_parts,
+                            animating: self.is_animating(),
+                        };
+                        println!("{}", app_window::fps_report::fps_line(&self.backend, &window));
                         let g = self.gate_counts;
                         if g != (0, 0, 0, 0, 0) {
                             println!(

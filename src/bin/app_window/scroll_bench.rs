@@ -36,9 +36,12 @@ pub fn parse(arg: &str) -> Option<DragSpec> {
 }
 
 /// 打印分位数报告。`budget` 是一帧的预算（刷新率倒数）。
-pub fn report(label: &str, frame_ms: &[f32], budget: Duration) {
+///
+/// `tag` 是后端标签（`[后端 CPU]`，见 `compositor::diag::backend_tag`）：同一个拖动用例
+/// 以后要在两个后端上各跑一遍对比，报告行不写后端就分不清哪行是哪个后端的数字。
+pub fn report(tag: &str, label: &str, frame_ms: &[f32], budget: Duration) {
     if frame_ms.is_empty() {
-        println!("🖐  {label}：没有采到帧");
+        println!("🖐  {tag} {label}：没有采到帧");
         return;
     }
     let budget_ms = budget.as_secs_f32() * 1000.0;
@@ -48,7 +51,7 @@ pub fn report(label: &str, frame_ms: &[f32], budget: Duration) {
     let avg: f32 = frame_ms.iter().sum::<f32>() / frame_ms.len() as f32;
     let over = frame_ms.iter().filter(|ms| **ms > budget_ms).count();
     println!(
-        "🖐  {label}：{} 帧，单帧耗时 平均 {:.2}ms  p50 {:.2}ms  p95 {:.2}ms  最慢 {:.2}ms；\
+        "🖐  {tag} {label}：{} 帧，单帧耗时 平均 {:.2}ms  p50 {:.2}ms  p95 {:.2}ms  最慢 {:.2}ms；\
          超预算({:.2}ms) {} 帧 = {:.0}%",
         frame_ms.len(),
         avg,

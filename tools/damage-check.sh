@@ -4,6 +4,10 @@
 # 快照回归统一用**固定日期**：有页面用 `new Date()` 高亮当天（news-app 的签到日历），
 # 不固定的话基线跨天就失效。想临时换：`MINI_FAKE_NOW=2025-01-01 bash tools/damage-check.sh`
 export MINI_FAKE_NOW="${MINI_FAKE_NOW:-2024-03-15}"
+# 渲染后端统一用 **CPU**：逐字节基线以 CPU 后端为准（GPU 的抗锯齿与混合随驱动变化，做不了逐字节基线）。
+# 无头本来就默认 cpu，这里再显式写一次是双保险：交互窗体默认 auto，哪天无头的默认值被改了，
+# 基线会悄悄跑成另一个后端而没人发现。想让同一套脚本测 GPU：`MINI_BACKEND=gpu bash tools/xxx.sh`
+export MINI_BACKEND="${MINI_BACKEND:-cpu}"
 
 cd "$(dirname "$0")/.."
 pkill -9 mini-app-window 2>/dev/null

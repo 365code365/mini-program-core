@@ -34,7 +34,8 @@ impl crate::MiniAppWindow {
         }
         self.sim_release(cx, cy);
         self.settle_scroll_animations(2000);
-        app_window::scroll_bench::report(route, &frame_ms, self.frame_interval);
+        let tag = compositor::diag::backend_tag(&self.backend);
+        app_window::scroll_bench::report(&tag, route, &frame_ms, self.frame_interval);
         app_window::scroll_bench::report_worst_parts(worst.0, worst.1);
         println!(
             "   ↳ 其中输入处理（命中/手势/触摸事件派发）平均 {:.2}ms/帧",

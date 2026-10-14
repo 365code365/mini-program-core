@@ -150,10 +150,13 @@ struct MiniAppWindow {
     /// `MINI_NO_DAMAGE=1`：关掉 setData 的增量失效，一律整帧重绘。
     /// 用于逐像素对照验证「局部重绘和整帧重绘结果一致」。
     no_damage: bool,
+    /// 渲染后端的结论（`main` 里按 `--backend` / `MINI_BACKEND` 选定）。
+    /// 现在只有 CPU 合成器，它决定 `MINI_FPS` 行与 `--drag` 报告里的后端标签。
+    backend: compositor::BackendStatus,
 }
 
 impl MiniAppWindow {
-    fn new(app_path: Option<std::path::PathBuf>) -> Result<Self, String> {
+    fn new(app_path: Option<std::path::PathBuf>, backend: compositor::BackendStatus) -> Result<Self, String> {
         // 登记小程序根目录：页面/组件加载与包内资源（图片）解析都依赖它
         page_loader::set_app_path(
             app_path.unwrap_or_else(|| {
@@ -271,6 +274,7 @@ impl MiniAppWindow {
             surface_size: None,
             gate_counts: (0, 0, 0, 0, 0),
             no_damage: std::env::var("MINI_NO_DAMAGE").is_ok(),
+            backend,
         };
         
         window.navigate_to(&first_page, HashMap::new())?;
@@ -320,9 +324,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut evals: Vec<String> = Vec::new();
     // 手势与输入按**书写顺序**入队（见 app_window::headless_script）
     let mut actions: Vec<app_window::headless_script::Action> = Vec::new();
+    let mut backend_cli: Option<compositor::BackendPref> = None;
+    let mut backend_probe = false;
     let mut it = args.into_iter();
     while let Some(arg) = it.next() {
         match arg.as_str() {
+            // 值不对直接以退出码 2 结束（见 app_window::backend_host）
+            "--backend" => backend_cli = Some(app_window::backend_host::parse_backend_arg(it.next())),
+            "--backend-probe" => backend_probe = true,
             "--snapshot" => snapshot = it.next().map(std::path::PathBuf::from),
             "--scale" => scale = it.next().and_then(|v| v.parse().ok()).unwrap_or(2.0),
             "--time" => anim_time = it.next().and_then(|v| v.parse().ok()),
@@ -363,6 +372,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("  上面这些动作按**书写顺序**执行，可重复：");
                 println!("    --click 25,520 --type 1212121 --click 313,520");
                 println!("  --eval <JS>    可重复；在 --settle 之后依次执行，每段跑完导航");
+                println!("  --backend <auto|cpu|gpu>  渲染后端偏好（不区分大小写，压过 MINI_BACKEND）。");
+                println!("                 交互窗体默认 auto，无头默认 cpu。GPU 后端还在开发中，现在一律落到 CPU");
+                println!("  --backend-probe  按交互窗体的规则选一次后端就退出：0 GPU 可用 / 3 不可用 / 4 没编进 gpu feature");
                 return Ok(());
             }
             other => {
@@ -383,11 +395,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
+    // 后端相关的环境变量（MINI_BACKEND / MINI_GPU_FAULT / MINI_GPU_VERIFY …）只在这里读一次，
+    // 之后只传解析好的值（v2 修订 R14）
+    let host_env = compositor::HostEnv::from_process();
+    if backend_probe {
+        std::process::exit(app_window::backend_host::probe(backend_cli, &host_env));
+    }
+    // 无头（快照及其上的所有动作）默认 cpu：逐字节判据以 CPU 为准；交互窗体默认 auto
+    let host_kind = if snapshot.is_some() {
+        compositor::HostKind::Headless
+    } else {
+        compositor::HostKind::Interactive
+    };
+    let backend = app_window::backend_host::choose(host_kind, backend_cli, &host_env);
+
     if app_path.is_none() {
         println!("📂 使用内置 sample-app");
     }
 
-    let mut window = MiniAppWindow::new(app_path)?;
+    let mut window = MiniAppWindow::new(app_path, backend)?;
 
     // 快照模式：不开窗口，直接把整帧写成 PNG（用于与 H5 做像素对比）
     if let Some(out) = snapshot {

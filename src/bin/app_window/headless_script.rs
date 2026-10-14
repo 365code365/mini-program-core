@@ -253,7 +253,8 @@ impl crate::MiniAppWindow {
                     std::thread::sleep(Duration::from_millis(8));
                 }
                 if *steps > 1 {
-                    super::scroll_bench::report(&format!("{route} --wheel"), &frame_ms, self.frame_interval);
+                    let tag = mini_render::compositor::diag::backend_tag(&self.backend);
+                    super::scroll_bench::report(&tag, &format!("{route} --wheel"), &frame_ms, self.frame_interval);
                     if let Some(s) = mini_render::renderer::draw_profile::summary(8) {
                         println!("   ↳ {s}");
                     }

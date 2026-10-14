@@ -12,6 +12,10 @@ pub mod pointer_input;
 pub mod touch_dispatch;
 pub mod edge_back_host;
 pub mod headless_script;
+/// `--backend` / `MINI_BACKEND` / `--backend-probe`（选择本身在 lib 的 compositor 里）
+pub mod backend_host;
+/// `MINI_FPS=1` 每秒那一行的格式（带后端标签）
+pub mod fps_report;
 // ── 窗体本体按职责拆成的几片（都是 `impl crate::MiniAppWindow`）──
 /// winit 事件 → 窗体调用的适配层（唯一认识 winit 类型的地方）
 pub mod winit_app;

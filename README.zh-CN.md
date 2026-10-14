@@ -292,6 +292,19 @@ cargo build --release
 [`doc/引擎测试说明.md`](doc/引擎测试说明.md) 与
 [`doc/架构与实现原理.md`](doc/架构与实现原理.md#帧成本是怎么压下来的)。
 
+渲染后端开关。CPU 光栅是参考实现、永远可用；**GPU 后端还在开发中**，现在不管怎么选都会落到
+CPU，日志里写明原因：
+
+| 开关 | 作用 |
+|---|---|
+| `--backend auto\|cpu\|gpu` | 后端偏好，不区分大小写，压过 `MINI_BACKEND`。交互窗体默认 `auto`，无头（`--snapshot` 及其上的所有动作）默认 `cpu`。其它取值以退出码 2 结束 |
+| `MINI_BACKEND=auto\|cpu\|gpu` | 同上，从环境变量给。SDK 里它压过宿主的 `mr_app_set_backend`（它是诊断开关）。回归脚本都 export 成 `cpu` |
+| `--backend-probe` | 按交互窗体的规则选一次后端就退出：0 = GPU 可用，3 = 没有可用的 GPU，4 = 没编进 `gpu` feature |
+
+启动时打一行选定结果（没带 `--features gpu` 编译时是 `🎨 渲染后端：CPU — 未编译 GPU 支持`）；
+`MINI_FPS=1` 的每秒那行和 `--drag` 的报告行都以后端标签开头，如 `📊 [后端 CPU] …`。
+`gpu` 这个 cargo feature 目前是不带任何依赖的空壳。
+
 示例小程序清单、浏览器实时预览（`mini-devserver`）、编译成 HTML 工程、以及把引擎当库用的
 Rust / C 代码示例，见 [`doc/示例与调试.md`](doc/示例与调试.md)。
 
