@@ -60,6 +60,7 @@ impl crate::MiniAppWindow {
         }
         let ct = match &self.custom_tabbar { Some(ct) => ct, None => return };
         if let (Some(c), Some(r)) = (&mut self.tabbar_canvas, &mut self.tabbar_renderer) {
+            let c = c.write();
             c.clear(Color::WHITE);
             r.render(c, &ct.wxml_nodes, &data);
         }
@@ -68,7 +69,7 @@ impl crate::MiniAppWindow {
     pub(crate) fn render_native_tabbar(&mut self, current_path: &str) {
         let tb = match &self.app_config.tab_bar { Some(tb) => tb.clone(), None => return };
         if let (Some(c), Some(tr)) = (&mut self.tabbar_canvas, self.text_renderer.as_deref()) {
-            render_native_tabbar(c, tr, &tb, current_path, self.scale_factor);
+            render_native_tabbar(c.write(), tr, &tb, current_path, self.scale_factor);
         }
     }
 }

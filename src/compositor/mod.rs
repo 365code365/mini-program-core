@@ -7,18 +7,22 @@
 //! `.agents/tasks/gpu-dual-backend-2026-10-12/design.md` §2）。
 //!
 //! 现在只有 CPU 合成器 [`cpu::compose`]：它是参考实现，永远可用。
+//! 图层画布（[`PageCanvas`] / [`LayerCanvas`]）记录「哪块被写过」，给以后按脏区上传的
+//! 合成后端用；CPU 合成器不读这些记账。
 //!
 //! ## 为什么字段与 `present_to_buffer` 的参数一一对应
 //! 合成序列原来在四个宿主调用点各抄了一份（桌面上屏、无头快照、侧滑留图、SDK）。
 //! 把它们收拢成「构造 `FrameLayers` → 调 `cpu::compose`」时，字段只是把原来的实参
 //! 原样装进来，宿主怎么算（截断方式、f32/f64、相位时钟）都不变，逐字节可证。
 pub mod cpu;
+pub mod layer;
+
+pub use layer::{color_bytes, DirtyOp, LayerCanvas, PageCanvas, PAGE_LOG_CAP};
 
 use crate::host::edge_back::PageShot;
 use crate::host::picker_sheet::PickerSheetState;
 use crate::host::ui_overlay::{LoadingState, ModalState, ToastState};
 use crate::text::TextRenderer;
-use crate::Canvas;
 use std::time::Instant;
 
 /// 本帧要合成的全部图层（只读引用 + 覆盖层状态）
@@ -29,7 +33,7 @@ pub struct FrameLayers<'a> {
     /// 设备像素比（覆盖层、下拉指示器按它缩放）
     pub scale: f32,
     /// 页面画布（内容坐标，整页高）
-    pub page: &'a Canvas,
+    pub page: &'a PageCanvas,
     /// 页面滚动偏移（设备像素）。由宿主按 `(scroll * scale) as i32` 截断，这里不再取整
     pub scroll_px: i32,
     /// 画布之外区域的填充色（0xRRGGBB，取 `page { background-color }`）
@@ -37,11 +41,11 @@ pub struct FrameLayers<'a> {
     /// 当前页是否是 tabBar 页。与 `tabbar` 分开：`present_to_buffer` 在 tabBar 页上
     /// 即使画布缺失也会扣掉 `tabbar_px` 的高度
     pub has_tabbar: bool,
-    pub tabbar: Option<&'a Canvas>,
+    pub tabbar: Option<&'a LayerCanvas>,
     /// tabBar 占用的设备像素高度（非 tabBar 页为 0）
     pub tabbar_px: u32,
     /// fixed 覆盖层画布（与视口同大）
-    pub fixed: Option<&'a Canvas>,
+    pub fixed: Option<&'a LayerCanvas>,
     /// fixed 覆盖层真正画过的行区间（含端点）；`None` 表示整层透明、跳过
     pub fixed_rows: Option<(u32, u32)>,
     /// 下拉刷新指示器。宿主只在「顶部露出空白 > 0.5 或正在刷新」时给 `Some`

@@ -147,9 +147,9 @@ impl crate::MiniAppWindow {
     pub(crate) fn setup_canvas(&mut self, scale_factor: f64) {
         self.scale_factor = scale_factor;
         let (pw, ph) = ((LOGICAL_WIDTH as f64 * scale_factor) as u32, (CONTENT_HEIGHT as f64 * scale_factor) as u32);
-        self.canvas = Some(Canvas::new(pw, ph));
-        self.tabbar_canvas = Some(Canvas::new(pw, (tabbar_height() as f64 * scale_factor) as u32));
-        self.fixed_canvas = Some(Canvas::new(pw, (LOGICAL_HEIGHT as f64 * scale_factor) as u32));
+        self.canvas = Some(PageCanvas::new(Canvas::new(pw, ph)));
+        self.tabbar_canvas = Some(LayerCanvas::new(Canvas::new(pw, (tabbar_height() as f64 * scale_factor) as u32)));
+        self.fixed_canvas = Some(LayerCanvas::new(Canvas::new(pw, (LOGICAL_HEIGHT as f64 * scale_factor) as u32)));
         // 共享进程内唯一字体实例（加载一次约 0.9s，若每次切页都重载会造成明显卡顿）
         self.text_renderer = mini_render::text::shared_fonts();
     }

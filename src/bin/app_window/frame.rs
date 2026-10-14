@@ -267,7 +267,7 @@ impl crate::MiniAppWindow {
             .unwrap_or(false);
         let viewport = (LOGICAL_HEIGHT - if has_tabbar { tabbar_height() } else { 0 }) as f32;
         let top = (self.scroll.get_position() * sf).max(0.0);
-        let bottom = (self.scroll.get_position() * sf + viewport * sf).min(canvas.height() as f32);
+        let bottom = (self.scroll.get_position() * sf + viewport * sf).min(canvas.read().height() as f32);
         top >= band_top - 0.01 && bottom <= band_bottom + 0.01
     }
 }

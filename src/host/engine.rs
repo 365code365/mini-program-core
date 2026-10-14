@@ -28,6 +28,7 @@
 //! - `engine_ui.rs`：Toast / Loading / Modal 状态与覆盖层查询；
 //! - `engine_input.rs`：指针 / 键盘输入与逻辑层发起的路由。
 
+use crate::compositor::{LayerCanvas, PageCanvas};
 use crate::host::{
     component_mount, load_all_pages, page_loader, remove_manual_tabbar, tabbar_height,
     ui_overlay::{LoadingState, ModalState, ToastState},
@@ -54,9 +55,10 @@ pub struct MiniEngine {
     pub(crate) renderer: Option<WxmlRenderer>,
     pub(crate) tabbar_renderer: Option<WxmlRenderer>,
     pub(crate) text: Option<Arc<TextRenderer>>,
-    pub(crate) canvas: Canvas,
-    pub(crate) fixed_canvas: Canvas,
-    pub(crate) tabbar_canvas: Canvas,
+    /// 三块画布的写入都要经过 `write*()`：声明写了哪块，给以后按脏区上传的合成后端用
+    pub(crate) canvas: PageCanvas,
+    pub(crate) fixed_canvas: LayerCanvas,
+    pub(crate) tabbar_canvas: LayerCanvas,
 
     pub(crate) interaction: InteractionManager,
     pub(crate) scroll: ScrollController,
@@ -150,9 +152,9 @@ impl MiniEngine {
             renderer: None,
             tabbar_renderer: None,
             text: crate::text::shared_fonts(),
-            canvas: Canvas::new(px(width), px(CONTENT_HEIGHT.max(height))),
-            fixed_canvas: Canvas::new(px(width), px(height)),
-            tabbar_canvas: Canvas::new(px(width), px(tabbar_height()).max(1)),
+            canvas: PageCanvas::new(Canvas::new(px(width), px(CONTENT_HEIGHT.max(height)))),
+            fixed_canvas: LayerCanvas::new(Canvas::new(px(width), px(height))),
+            tabbar_canvas: LayerCanvas::new(Canvas::new(px(width), px(tabbar_height()).max(1))),
             interaction: InteractionManager::new(),
             scroll: ScrollController::new(vp, vp),
             touch: crate::host::touch::TouchTracker::new(),

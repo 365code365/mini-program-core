@@ -35,7 +35,7 @@ fn 长页面滚到下面不该空白() {
 
     let dpr = 2.0;
     let vp = e.viewport_height();
-    let canvas = &e.canvas;
+    let canvas = e.canvas.read();
     let (y0, y1) = ((pos * dpr) as u32, ((pos + vp) * dpr) as u32);
     assert!(
         canvas.height() >= y1,

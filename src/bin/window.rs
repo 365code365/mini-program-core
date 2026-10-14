@@ -30,9 +30,10 @@ struct MiniAppWindow {
     window: Option<Arc<Window>>,
     surface: Option<softbuffer::Surface<Arc<Window>, Arc<Window>>>,
     app: MiniApp,
-    canvas: Option<Canvas>,
-    tabbar_canvas: Option<Canvas>,
-    fixed_canvas: Option<Canvas>,
+    /// 三块画布的写入都要经过 `write*()`：声明写了哪块，给以后按脏区上传的合成后端用
+    canvas: Option<PageCanvas>,
+    tabbar_canvas: Option<LayerCanvas>,
+    fixed_canvas: Option<LayerCanvas>,
     renderer: Option<WxmlRenderer>,
     tabbar_renderer: Option<WxmlRenderer>,
     text_renderer: Option<std::sync::Arc<TextRenderer>>,

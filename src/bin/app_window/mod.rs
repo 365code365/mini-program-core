@@ -41,7 +41,9 @@ pub use mini_render::host::{
 };
 pub use mini_render::host::config::*;
 // 合成层（四个合成调用点共用 compositor::cpu）
-pub use mini_render::compositor::{self, EdgeBackFrame, FrameLayers, OverlayRefs, PullState};
+pub use mini_render::compositor::{
+    self, EdgeBackFrame, FrameLayers, LayerCanvas, OverlayRefs, PageCanvas, PullState,
+};
 pub use mini_render::host::navigation::*;
 pub use mini_render::host::tabbar::*;
 

@@ -117,10 +117,19 @@ impl crate::MiniAppWindow {
             .unwrap_or(Color::from_hex(0xF5F5F5));
         let mut content_height = 0.0f32;
         if let Some(canvas) = &mut self.canvas {
-            match &damage {
-                Some(rect) => canvas.clear_area(rect, page_bg),
-                None => canvas.clear_band(band_y0, band_y1, page_bg),
-            }
+            // 先声明这一帧写的是哪块（以后的 GPU 镜像按它补传），再清屏 + 画
+            let canvas = match &damage {
+                Some(rect) => {
+                    let c = canvas.write_rect(*rect);
+                    c.clear_area(rect, page_bg);
+                    c
+                }
+                None => {
+                    let c = canvas.write_band(band_y0, band_y1);
+                    c.clear_band(band_y0, band_y1, page_bg);
+                    c
+                }
+            };
             if let Some(renderer) = &mut self.renderer {
                 renderer.set_damage_clip(damage);
                 content_height = renderer.render_with_scroll_and_viewport(canvas, &page.wxml_nodes, &page_data, &mut self.interaction, scroll_offset, viewport_height);
@@ -143,10 +152,17 @@ impl crate::MiniAppWindow {
         if content_height > 0.0 {
             self.scroll.update_content_height(content_height, viewport_height);
             let required_height = (content_height * self.scale_factor as f32).ceil() as u32;
-            if self.canvas.as_ref().map(|c| c.height()).unwrap_or(0) != required_height && required_height > 0 {
-                self.canvas = Some(Canvas::new((LOGICAL_WIDTH as f64 * self.scale_factor) as u32, required_height));
+            if self.canvas.as_ref().map(|c| c.read().height()).unwrap_or(0) != required_height && required_height > 0 {
+                let fresh = Canvas::new((LOGICAL_WIDTH as f64 * self.scale_factor) as u32, required_height);
+                // 高度变了：换一块新画布（换代数，以后的 GPU 镜像据此整体作废）
+                if let Some(pc) = &mut self.canvas {
+                    pc.replace(fresh);
+                } else {
+                    self.canvas = Some(PageCanvas::new(fresh));
+                }
                 if let Some(page) = self.page_stack.last() {
                     if let (Some(canvas), Some(renderer)) = (&mut self.canvas, &mut self.renderer) {
+                        let canvas = canvas.write_band(band_y0, band_y1);
                         canvas.clear_band(band_y0, band_y1, page_bg);
                         renderer.render_with_scroll_and_viewport(canvas, &page.wxml_nodes, &page_data, &mut self.interaction, scroll_offset, viewport_height);
                     }
@@ -175,6 +191,7 @@ impl crate::MiniAppWindow {
                     // 在两趟之间清零，才能分辨「动画在页面里」还是「在 fixed 覆盖层里」
                     let page_anim = r.has_active_animations();
                     r.set_animations_active(false);
+                    let fc = fc.write();
                     fc.clear(Color::new(0, 0, 0, 0));
                     r.render_fixed_elements(fc, &page.wxml_nodes, &page_data, &mut self.interaction, viewport_height);
                     let fixed_anim = r.has_active_animations();
@@ -189,7 +206,7 @@ impl crate::MiniAppWindow {
                 }
                 // 覆盖层内容变了才重算它占用的行区间（上屏据此只合成这几行）
                 if let Some(fc) = &self.fixed_canvas {
-                    self.fixed_rows = app_window::render::opaque_row_span(fc);
+                    self.fixed_rows = app_window::render::opaque_row_span(fc.read());
                 }
             }
         } else if let Some(r) = &mut self.renderer {
@@ -212,7 +229,7 @@ impl crate::MiniAppWindow {
         // 否则滚动出旧条带时 viewport_inside_drawn_band 会误判「画过了」，
         // 上屏取到没画过的区域，也就是滑动时露白。
         if damage.is_none() {
-            let canvas_h = self.canvas.as_ref().map(|c| c.height() as f32).unwrap_or(0.0);
+            let canvas_h = self.canvas.as_ref().map(|c| c.read().height() as f32).unwrap_or(0.0);
             self.drawn_band = Some((
                 (band_y0 as f32).max(0.0),
                 (band_y1 as f32).min(canvas_h),
@@ -227,7 +244,7 @@ impl crate::MiniAppWindow {
             eprintln!(
                 "📐 {} 内容高 {:.1} 视口 {:.1} 画布高 {} 滚动 {:.1}/{:.1}",
                 current_path, content_height, viewport_height,
-                self.canvas.as_ref().map(|c| c.height()).unwrap_or(0),
+                self.canvas.as_ref().map(|c| c.read().height()).unwrap_or(0),
                 self.scroll.get_position(), self.scroll.get_max_scroll()
             );
         }

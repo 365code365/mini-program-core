@@ -17,7 +17,7 @@
 //! **不初始化输出缓冲**：tabBar 画布比 `tabbar_px` 矮时，那几行 `present_to_buffer`
 //! 不写，保留缓冲原值。原来各调用点的初值各不相同（softbuffer 借出的缓冲、快照的 0、
 //! 侧滑留图的页面底色），这里不能替它们决定。
-use super::FrameLayers;
+use super::{FrameLayers, LayerCanvas};
 use crate::host::render::{present_to_buffer, render_pull_indicator};
 use crate::host::{edge_back, picker_sheet, ui_overlay};
 
@@ -28,9 +28,9 @@ pub fn compose(buf: &mut [u32], layers: &FrameLayers<'_>) {
         buf,
         w,
         h,
-        layers.page,
-        layers.fixed,
-        layers.tabbar,
+        layers.page.read(),
+        layers.fixed.map(LayerCanvas::read),
+        layers.tabbar.map(LayerCanvas::read),
         layers.scroll_px,
         layers.has_tabbar,
         layers.tabbar_px,

@@ -98,7 +98,7 @@ impl MiniEngine {
         let Some((band_top, band_bottom)) = self.drawn_band else { return false };
         let top = (self.scroll.get_position() * self.dpr).max(0.0);
         let bottom = (self.scroll.get_position() * self.dpr + self.viewport_height() * self.dpr)
-            .min(self.canvas.height() as f32);
+            .min(self.canvas.read().height() as f32);
         top >= band_top - 0.01 && bottom <= band_bottom + 0.01
     }
 
@@ -122,12 +122,14 @@ impl MiniEngine {
         let margin = crate::renderer::VIEWPORT_CULL_MARGIN_PX;
         let band_y0 = (scroll * self.dpr - margin).floor() as i32;
         let band_y1 = (scroll * self.dpr + vp * self.dpr + margin).ceil() as i32;
-        self.canvas.clear_band(band_y0, band_y1, bg);
         let Self { renderer, canvas, page_stack, page_data, interaction, .. } = self;
+        // 声明这一帧写的是哪条带（以后的 GPU 镜像按它补传），再清屏 + 画
+        let canvas = canvas.write_band(band_y0, band_y1);
+        canvas.clear_band(band_y0, band_y1, bg);
         let (Some(r), Some(page)) = (renderer.as_mut(), page_stack.last()) else { return 0.0 };
         let content_h =
             r.render_with_scroll_and_viewport(canvas, &page.wxml_nodes, page_data, interaction, scroll, vp);
-        let canvas_h = self.canvas.height() as f32;
+        let canvas_h = self.canvas.read().height() as f32;
         self.drawn_band = Some(((band_y0 as f32).max(0.0), (band_y1 as f32).min(canvas_h)));
         content_h
     }
@@ -164,14 +166,16 @@ impl MiniEngine {
             // 画布按内容高度分配（与桌面窗体一致）：固定高度的画布装不下长页面，
             // 滚到画布之外的部分上屏时只剩一片底色。
             let required = (content_h * self.dpr).ceil() as u32;
-            if required > 0 && required != self.canvas.height() {
-                self.canvas = Canvas::new(self.canvas.width(), required);
+            if required > 0 && required != self.canvas.read().height() {
+                let width = self.canvas.read().width();
+                self.canvas.replace(Canvas::new(width, required));
                 self.render_page_band(self.scroll.get_position(), vp, bg);
             }
         }
-        self.fixed_canvas.clear(Color::new(0, 0, 0, 0));
         {
             let Self { renderer, fixed_canvas, page_stack, page_data, interaction, .. } = self;
+            let fixed_canvas = fixed_canvas.write();
+            fixed_canvas.clear(Color::new(0, 0, 0, 0));
             if let (Some(r), Some(page)) = (renderer.as_mut(), page_stack.last()) {
                 r.render_fixed_elements(fixed_canvas, &page.wxml_nodes, page_data, interaction, vp);
             }
@@ -186,17 +190,18 @@ impl MiniEngine {
             // 三个字段各自可变/不可变借用，互不重叠
             if let (Some(ct), Some(tr)) = (self.custom_tabbar.as_ref(), self.tabbar_renderer.as_mut())
             {
-                self.tabbar_canvas.clear(Color::new(0, 0, 0, 0));
+                let tabbar_canvas = self.tabbar_canvas.write();
+                tabbar_canvas.clear(Color::new(0, 0, 0, 0));
                 let mut d = ct.data.clone();
                 if let Some(idx) = selected {
                     d["selected"] = serde_json::json!(idx);
                 }
-                tr.render(&mut self.tabbar_canvas, &ct.wxml_nodes, &d);
+                tr.render(tabbar_canvas, &ct.wxml_nodes, &d);
             }
         }
         // 覆盖层真正画过的行区间：`present_to_buffer` 只合成这几行，
         // 传 None 会**整层跳过** —— 底部吸底操作栏、弹窗遮罩就全丢了。
-        self.fixed_rows = crate::host::render::opaque_row_span(&self.fixed_canvas);
+        self.fixed_rows = crate::host::render::opaque_row_span(self.fixed_canvas.read());
         self.compose_frame(has_tabbar, bg);
     }
 
