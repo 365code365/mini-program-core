@@ -284,14 +284,15 @@ impl Canvas {
 
     /// 只清理一个矩形区域（其余像素保持原样）。用于损伤区局部重绘：
     /// 不能按整行清，否则会把矩形左右两侧的内容一起抹掉（裁剪会阻止它们被重画）。
+    ///
+    /// 取整走共用的 [`crate::pixel_rect`]：凡是要记账「这次改写了哪块像素」的地方都用它，
+    /// 与这里清掉的范围差不了一像素。
     pub fn clear_area(&mut self, rect: &Rect, color: Color) {
-        let x0 = rect.x.floor().clamp(0.0, self.width as f32) as usize;
-        let x1 = rect.right().ceil().clamp(0.0, self.width as f32) as usize;
-        let y0 = rect.y.floor().clamp(0.0, self.height as f32) as usize;
-        let y1 = rect.bottom().ceil().clamp(0.0, self.height as f32) as usize;
-        if x1 <= x0 || y1 <= y0 {
+        let r = crate::pixel_rect(*rect, self.width, self.height);
+        if r.is_empty() {
             return;
         }
+        let (x0, x1, y0, y1) = (r.x0 as usize, r.x1 as usize, r.y0 as usize, r.y1 as usize);
         let width = self.width as usize;
         for y in y0..y1 {
             self.pixels[y * width + x0..y * width + x1].fill(color);

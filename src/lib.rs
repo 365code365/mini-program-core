@@ -31,7 +31,7 @@ pub mod using_components;
 
 pub use canvas::Canvas;
 pub use color::Color;
-pub use geometry::{Point, Rect, Size};
+pub use geometry::{pixel_rect, IRect, Point, Rect, Size};
 pub use paint::{Paint, PaintStyle};
 pub use path::Path;
 pub use text::TextRenderer;
