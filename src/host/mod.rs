@@ -16,7 +16,11 @@
 pub mod component_mount;
 /// 平台无关的引擎实例（移动端 SDK 的核心）
 pub mod engine;
+/// 出帧：pump → 按需重画 → 合成（从 engine.rs 拆出）
+mod engine_frame;
 mod engine_input;
+/// 覆盖层状态：Toast/Loading/Modal 指令落地与查询（从 engine.rs 拆出）
+mod engine_ui;
 pub mod config;
 pub mod edge_back;
 pub mod gesture;

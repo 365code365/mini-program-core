@@ -21,19 +21,25 @@
 //! `src/tests/engine_input_tests.rs` 直接驱动本引擎（手势归属、tabBar、picker、Modal）。
 //! 只靠像素守不住输入 —— 它们分叉过一次而没人发现：本引擎的指针层曾是简化版
 //! （无方向锁定、无嵌套交接、无 picker），静态截图一模一样，手上完全不是一回事。
+//!
+//! ## 文件划分（都是 `impl MiniEngine`）
+//! - 本文件：结构体、构造、页面路由与生命周期；
+//! - `engine_frame.rs`：出帧（`pump` / `render` / 合成）；
+//! - `engine_ui.rs`：Toast / Loading / Modal 状态与覆盖层查询；
+//! - `engine_input.rs`：指针 / 键盘输入与逻辑层发起的路由。
 
 use crate::host::{
     component_mount, load_all_pages, page_loader, remove_manual_tabbar, tabbar_height,
-    ui_overlay::{self, LoadingState, ModalState, ToastState},
+    ui_overlay::{LoadingState, ModalState, ToastState},
     AppConfig, PageInstance, CONTENT_HEIGHT,
 };
 use crate::parser::{WxmlParser, WxssParser};
 use crate::renderer::WxmlRenderer;
-use crate::runtime::{MiniApp, UiEvent};
+use crate::runtime::MiniApp;
 use crate::text::TextRenderer;
 use crate::ui::interaction::InteractionManager;
 use crate::ui::ScrollController;
-use crate::{Canvas, Color};
+use crate::Canvas;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -76,17 +82,17 @@ pub struct MiniEngine {
     /// 页面滚动位置变了。只要视口还落在 `drawn_band` 内，这一帧只需重新合成，不必重画。
     pub(crate) scroll_moved: bool,
     /// 页面画布上最近一次整帧重绘真正画过的行区间（设备像素，已夹到画布内）
-    drawn_band: Option<(f32, f32)>,
+    pub(super) drawn_band: Option<(f32, f32)>,
     pub(crate) caret_visible: bool,
     /// 固定的动画时钟（仅测试用，见 set_animation_time）
     pub(crate) anim_time: Option<f32>,
     /// fixed 覆盖层实际画过的行区间（设备像素）
-    fixed_rows: Option<(u32, u32)>,
+    pub(super) fixed_rows: Option<(u32, u32)>,
     /// 合成缓冲（0xRRGGBB）与交给宿主的 RGBA
-    compose: Vec<u32>,
-    rgba: Vec<u8>,
+    pub(super) compose: Vec<u32>,
+    pub(super) rgba: Vec<u8>,
     started_ms: u64,
-    last_pump_ms: u64,
+    pub(super) last_pump_ms: u64,
     page_opened_ms: u64,
 }
 
@@ -209,17 +215,6 @@ impl MiniEngine {
         self.scroll_moved = true;
     }
 
-    /// 当前是否有 `<picker>` 的底部面板 / `wx.showModal` 的弹窗盖着。
-    ///
-    /// 宿主的返回键要看它：微信里弹窗盖着时按返回是**关弹窗**，不是退页面。
-    pub fn picker_sheet_open(&self) -> bool {
-        self.picker_sheet.as_ref().map(|s| s.visible && !s.closing).unwrap_or(false)
-    }
-
-    pub fn modal_open(&self) -> bool {
-        self.modal.as_ref().map(|m| m.visible).unwrap_or(false)
-    }
-
     /// 在逻辑层执行一段 JS（宿主的深链参数注入、无头测试的断言都要用）
     pub fn eval(&self, code: &str) -> Result<String, String> {
         self.app.eval(code)
@@ -332,293 +327,6 @@ impl MiniEngine {
             }
             self.tabbar_renderer = Some(tr);
         }
-    }
-
-    /// 跑一帧：逻辑层 → 事件 → 渲染 → 合成。返回是否产出了新画面。
-    ///
-    /// `now_ms` 用宿主的单调时钟（iOS `CACurrentMediaTime`、Android
-    /// `System.nanoTime`）。传 0 表示让引擎自己取。
-    pub fn pump(&mut self, now_ms: u64) -> bool {
-        let now = if now_ms > 0 { now_ms } else { self.mono_ms() };
-        let dt = if self.last_pump_ms == 0 {
-            0.016
-        } else {
-            ((now.saturating_sub(self.last_pump_ms)) as f32 / 1000.0).clamp(0.001, 0.1)
-        };
-        self.last_pump_ms = now;
-
-        self.app.update().ok();
-        if self.app.take_data_dirty() {
-            self.page_data_dirty = true;
-            self.needs_redraw = true;
-        }
-        self.drain_ui_events();
-        // 滚动推进（惯性/回弹），到底事件回调页面
-        let (moved, event) = self.scroll.update_with_events(dt);
-        if moved {
-            self.scroll_moved = true;
-        }
-        // scroll-view 的惯性与回弹（与桌面 `update_scroll` 一致）：
-        // 不推进的话甩一下列表，松手就停在原地。
-        for c in self.interaction.scroll_controllers.values_mut() {
-            if c.update(dt) {
-                self.needs_redraw = true;
-            }
-        }
-        if let Some(crate::ui::scroll_controller::ScrollEvent::ReachBottom) = event {
-            self.app
-                .eval("if(__currentPage&&__currentPage.onReachBottom)__currentPage.onReachBottom()")
-                .ok();
-        }
-        // 逻辑层发起的路由
-        if let Some(nav) = self.take_navigation() {
-            self.apply_navigation(nav);
-        }
-        if crate::renderer::components::advance_due_swipers() {
-            self.needs_redraw = true;
-        }
-        if self.app.take_network_dirty() || crate::renderer::components::image_net::take_dirty() {
-            self.page_data_dirty = true;
-            self.needs_redraw = true;
-        }
-        // 长按由帧驱动
-        if self.touch.is_active() {
-            let outs = self.touch.tick(now);
-            if let Some((x, y)) = self.touch.pos() {
-                self.dispatch_touch(&outs, x, y);
-            }
-        }
-        // picker 面板的入场/退场动画按帧推进，走完就回收
-        if self.picker_sheet.as_ref().map(|s| s.animating()).unwrap_or(false) {
-            self.needs_redraw = true;
-        }
-        if crate::host::picker_sheet::reap(&mut self.picker_sheet) {
-            self.needs_redraw = true;
-        }
-        self.caret_tick();
-        if self.interaction.press_feedback_pending() {
-            self.needs_redraw = true;
-        }
-        let scroll_moved = std::mem::take(&mut self.scroll_moved);
-        if self.needs_redraw || self.interaction.has_focused_input() {
-            self.render();
-        } else if scroll_moved {
-            // 页面画布用内容坐标：视口还在已绘制条带内时，滚动只是换一段切片上屏
-            if self.viewport_inside_drawn_band() {
-                self.compose_current();
-            } else {
-                self.render();
-            }
-        } else {
-            return false;
-        }
-        self.needs_redraw = false;
-        true
-    }
-
-    /// 本帧上屏要用的那段页面画布是否已经画过
-    fn viewport_inside_drawn_band(&self) -> bool {
-        let Some((band_top, band_bottom)) = self.drawn_band else { return false };
-        let top = (self.scroll.get_position() * self.dpr).max(0.0);
-        let bottom = (self.scroll.get_position() * self.dpr + self.viewport_height() * self.dpr)
-            .min(self.canvas.height() as f32);
-        top >= band_top - 0.01 && bottom <= band_bottom + 0.01
-    }
-
-    fn page_background(&self) -> Color {
-        self.renderer
-            .as_ref()
-            .and_then(|r| r.page_style().background)
-            .unwrap_or(Color::from_hex(0xF5F5F5))
-    }
-
-    /// 不重画任何画布，只按当前滚动位置重新合成一帧
-    fn compose_current(&mut self) {
-        let has_tabbar = self.is_tabbar_page(&self.current_route());
-        let bg = self.page_background();
-        self.compose_frame(has_tabbar, bg);
-    }
-
-    /// 只清理并重画「视口 ± 裁剪余量」这条带（渲染器的视口裁剪用的是同一个余量），
-    /// 返回内容高度。整页画布可能上万像素高，全量 clear 是纯浪费。
-    fn render_page_band(&mut self, scroll: f32, vp: f32, bg: Color) -> f32 {
-        let margin = crate::renderer::VIEWPORT_CULL_MARGIN_PX;
-        let band_y0 = (scroll * self.dpr - margin).floor() as i32;
-        let band_y1 = (scroll * self.dpr + vp * self.dpr + margin).ceil() as i32;
-        self.canvas.clear_band(band_y0, band_y1, bg);
-        let Self { renderer, canvas, page_stack, page_data, interaction, .. } = self;
-        let (Some(r), Some(page)) = (renderer.as_mut(), page_stack.last()) else { return 0.0 };
-        let content_h =
-            r.render_with_scroll_and_viewport(canvas, &page.wxml_nodes, page_data, interaction, scroll, vp);
-        let canvas_h = self.canvas.height() as f32;
-        self.drawn_band = Some(((band_y0 as f32).max(0.0), (band_y1 as f32).min(canvas_h)));
-        content_h
-    }
-
-    fn caret_tick(&mut self) {
-        if !self.interaction.has_focused_input() {
-            return;
-        }
-        let vis = crate::renderer::components::cursor_blink_visible();
-        if vis != self.caret_visible {
-            self.caret_visible = vis;
-            self.needs_redraw = true;
-        }
-    }
-
-    fn drain_ui_events(&mut self) {
-        for e in self.app.drain_ui_events() {
-            match e {
-                UiEvent::ShowToast { title, icon, duration } => {
-                    self.toast = Some(ToastState {
-                        title,
-                        icon,
-                        visible: true,
-                        start_time: std::time::Instant::now(),
-                        duration_ms: duration,
-                    });
-                }
-                UiEvent::HideToast => self.toast = None,
-                UiEvent::ShowLoading { title } => {
-                    self.loading = Some(LoadingState { title, visible: true })
-                }
-                UiEvent::HideLoading => self.loading = None,
-                UiEvent::ShowModal { title, content, show_cancel, cancel_text, confirm_text } => {
-                    self.modal = Some(ModalState {
-                        title,
-                        content,
-                        show_cancel,
-                        cancel_text,
-                        confirm_text,
-                        visible: true,
-                        pressed_button: None,
-                    });
-                }
-                UiEvent::HideModal => self.modal = None,
-                UiEvent::StartPullDownRefresh | UiEvent::StopPullDownRefresh => {}
-            }
-            self.needs_redraw = true;
-        }
-    }
-
-    /// 渲染 + 合成到内部缓冲
-    pub(crate) fn render(&mut self) {
-        let Some(page) = self.page_stack.last() else { return };
-        let route = page.path.clone();
-        if self.page_data_dirty {
-            self.page_data = self
-                .app
-                .eval("__getRenderData()")
-                .map(|s| serde_json::from_str(&s).unwrap_or(serde_json::json!({})))
-                .unwrap_or(serde_json::json!({}));
-            self.page_data_dirty = false;
-        }
-        let has_tabbar = self.is_tabbar_page(&route);
-        let vp = self.viewport_height();
-        let bg = self.page_background();
-        let content_h = self.render_page_band(self.scroll.get_position(), vp, bg);
-        if content_h > 1.0 {
-            self.scroll.update_content_height(content_h, vp);
-            // 画布按内容高度分配（与桌面窗体一致）：固定高度的画布装不下长页面，
-            // 滚到画布之外的部分上屏时只剩一片底色。
-            let required = (content_h * self.dpr).ceil() as u32;
-            if required > 0 && required != self.canvas.height() {
-                self.canvas = Canvas::new(self.canvas.width(), required);
-                self.render_page_band(self.scroll.get_position(), vp, bg);
-            }
-        }
-        self.fixed_canvas.clear(Color::new(0, 0, 0, 0));
-        {
-            let Self { renderer, fixed_canvas, page_stack, page_data, interaction, .. } = self;
-            if let (Some(r), Some(page)) = (renderer.as_mut(), page_stack.last()) {
-                r.render_fixed_elements(fixed_canvas, &page.wxml_nodes, page_data, interaction, vp);
-            }
-        }
-        // 自定义 tabBar
-        if has_tabbar {
-            let selected = self
-                .config
-                .tab_bar
-                .as_ref()
-                .and_then(|tb| tb.list.iter().position(|i| i.page_path == route));
-            // 三个字段各自可变/不可变借用，互不重叠
-            if let (Some(ct), Some(tr)) = (self.custom_tabbar.as_ref(), self.tabbar_renderer.as_mut())
-            {
-                self.tabbar_canvas.clear(Color::new(0, 0, 0, 0));
-                let mut d = ct.data.clone();
-                if let Some(idx) = selected {
-                    d["selected"] = serde_json::json!(idx);
-                }
-                tr.render(&mut self.tabbar_canvas, &ct.wxml_nodes, &d);
-            }
-        }
-        // 覆盖层真正画过的行区间：`present_to_buffer` 只合成这几行，
-        // 传 None 会**整层跳过** —— 底部吸底操作栏、弹窗遮罩就全丢了。
-        self.fixed_rows = crate::host::render::opaque_row_span(&self.fixed_canvas);
-        self.compose_frame(has_tabbar, bg);
-    }
-
-    fn compose_frame(&mut self, has_tabbar: bool, bg: Color) {
-        let (pw, ph) = ((self.width as f32 * self.dpr) as u32, (self.height as f32 * self.dpr) as u32);
-        let n = (pw as usize) * (ph as usize);
-        if self.compose.len() != n {
-            self.compose = vec![0u32; n];
-        }
-        let bg_u32 = ((bg.r as u32) << 16) | ((bg.g as u32) << 8) | bg.b as u32;
-        crate::host::present_to_buffer(
-            &mut self.compose[..],
-            pw,
-            ph,
-            &self.canvas,
-            Some(&self.fixed_canvas),
-            if has_tabbar { Some(&self.tabbar_canvas) } else { None },
-            (self.scroll.get_position() * self.dpr) as i32,
-            has_tabbar,
-            if has_tabbar { (tabbar_height() as f32 * self.dpr) as u32 } else { 0 },
-            self.fixed_rows,
-            bg_u32,
-        );
-        ui_overlay::render_ui_overlay(
-            &mut self.compose[..],
-            pw,
-            ph,
-            self.dpr,
-            std::time::Instant::now(),
-            &self.toast,
-            &self.loading,
-            &self.modal,
-            self.text.as_deref(),
-        );
-        // picker 面板画在最上层（与桌面窗体同一份绘制）
-        if let Some(sheet) = &self.picker_sheet {
-            crate::host::picker_sheet::render(
-                &mut self.compose[..],
-                pw,
-                ph,
-                self.dpr,
-                sheet,
-                self.text.as_deref(),
-            );
-        }
-        // u32(0xRRGGBB) → RGBA8
-        if self.rgba.len() != n * 4 {
-            self.rgba = vec![255u8; n * 4];
-        }
-        for (dst, px) in self.rgba.chunks_exact_mut(4).zip(&self.compose) {
-            dst.copy_from_slice(&[(px >> 16) as u8, (px >> 8) as u8, *px as u8, 255]);
-        }
-    }
-
-    /// 当前帧的 RGBA8 像素（宽 = 逻辑宽 × dpr）
-    pub fn rgba(&self) -> &[u8] {
-        &self.rgba
-    }
-
-    pub fn pixel_size(&self) -> (u32, u32) {
-        (
-            (self.width as f32 * self.dpr) as u32,
-            (self.height as f32 * self.dpr) as u32,
-        )
     }
 
     /// 固定 CSS 动画时钟（秒）。**只给确定性测试用**：正常运行时动画由真实时间驱动，
