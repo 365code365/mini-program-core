@@ -166,6 +166,56 @@ void   mr_app_trim_memory(MRApp* app); // 系统内存告警时调用
 const char* mr_app_last_error(MRApp* app); // 无错误时返回 NULL
 const char* mr_version(void);
 
+
+// ============ 渲染后端（CPU 参考实现 + GPU 可选） ============
+//
+// 只增不改：上面的 mr_app_* 签名与语义一个都没变（mr_app_pump 仍只返回 0 / 1）。
+// 这些符号**有没有 gpu feature 都导出**；不调它们的宿主永远是 CPU，与以前逐字节一致。
+//
+// 现状：GPU 后端还在开发中。没编进 gpu feature 时 attach 返回 1、原因串含「未编译」；
+// 编进来了（目前是空壳）也只能是 CPU，原因串说明「GPU 合成器还在开发中」。
+// mr_app_pump_ex 目前只会返回 0 或 MR_FRAME_NEW。
+//
+// 挂了 surface 之后的用法（GPU 落地后生效）：
+//   int f = mr_app_pump_ex(app, now_ms);
+//   if (f & MR_FRAME_BACKEND_CHANGED) { /* 按 mr_app_backend(app) 切换显示路径 */ }
+//   if ((f & MR_FRAME_NEW) && !(f & MR_FRAME_PRESENTED)) mr_app_pixels(app, buf, len);
+
+// 后端偏好 / 实际后端
+#define MR_BACKEND_AUTO 0
+#define MR_BACKEND_CPU  1
+#define MR_BACKEND_GPU  2
+// surface 种类
+#define MR_SURFACE_METAL_LAYER     1   /* CAMetalLayer*（iOS / macOS） */
+#define MR_SURFACE_ANDROID_WINDOW  2   /* ANativeWindow* */
+// mr_app_pump_ex 的返回位
+#define MR_FRAME_NEW              1    /* 有新画面 */
+#define MR_FRAME_PRESENTED        2    /* 已由引擎画到挂载的 surface 上，宿主不要再取像素显示 */
+#define MR_FRAME_BACKEND_CHANGED  4    /* 实际后端被引擎改了（回退 / set_backend 后重新选择），宿主要立刻切换显示路径；
+                                          宿主自己 attach / detach 不置这一位 */
+#define MR_FRAME_PENDING          8    /* 本次没上屏（surface 暂时取不到），下一次 pump_ex 会强制重新合成 */
+
+// 设偏好。成功 1；pref 不在 0..=2 返回 0（写 last_error）。
+// 环境变量 MINI_BACKEND 设了的话以它为准（诊断开关压过宿主配置）。
+int  mr_app_set_backend(MRApp* app, int pref);
+// 机型分级用，挂 surface 之前调用。0 表示未知；low_ram 非 0 即真。
+void mr_app_set_device_info(MRApp* app, uint64_t total_mem_bytes, int low_ram, uint32_t os_api);
+// 挂 surface（不带宽高：引擎按 mr_app_pixel_size 配置，宿主把层 / SurfaceView 设成同样大）。
+// 返回挂载后的实际后端：2 = GPU 生效；1 = 仍是 CPU（原因见 mr_app_backend_reason）；
+// 0 = 参数错误（app / native 为空、kind 不认识或当前目标不支持：iOS 上传 2、Android 上传 1）。
+// 所有权：CAMetalLayer* 由调用方持有，必须活到 detach / destroy 返回；
+//         ANativeWindow* 由引擎在挂载时自己 acquire、卸载时 release。重复 attach 等于先 detach。
+int  mr_app_attach_surface(MRApp* app, int kind, void* native);
+// surface 将被销毁 / 进后台前调用；之后是 CPU
+void mr_app_detach_surface(MRApp* app);
+// 实际后端：1 / 2；app 为空返回 0
+int  mr_app_backend(MRApp* app);
+// UTF-8；到下一次对同一 app 调用任何 mr_app_* 之前有效；app 为空返回 NULL
+const char* mr_app_backend_reason(MRApp* app);
+// 跑一帧，返回 MR_FRAME_* 的按位或。
+// mr_app_pump(app, t) == ((mr_app_pump_ex(app, t) & MR_FRAME_NEW) ? 1 : 0)
+int  mr_app_pump_ex(MRApp* app, uint64_t now_ms);
+
 #ifdef __cplusplus
 }
 #endif

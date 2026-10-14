@@ -377,6 +377,62 @@ const char* mr_version(void);
 **还没有的**：原生层组件的回调（`web-view`/`video` 的摆放，第 7 条那个
 `mr_native_view_cb`）、日志回调、损伤矩形（`mr_app_pump` 目前每帧整帧重绘）。
 
+### 渲染后端（只增不改）
+
+实现在 `src/ffi_backend.rs`，声明在 `include/mini_render.h` 末尾。引擎的内容永远由 CPU 光栅；
+后端只决定「谁把各图层合成上屏」。**GPU 后端还在开发中**：现在这组函数都已导出、参数校验
+与返回值语义都按最终版本做好，但实际后端永远是 CPU。上面那 20 个函数的签名与语义一个没改，
+**不调这组函数的宿主行为与以前逐字节一致**。
+
+```c
+#define MR_BACKEND_AUTO 0
+#define MR_BACKEND_CPU  1
+#define MR_BACKEND_GPU  2
+#define MR_SURFACE_METAL_LAYER     1   /* CAMetalLayer*（iOS / macOS） */
+#define MR_SURFACE_ANDROID_WINDOW  2   /* ANativeWindow* */
+#define MR_FRAME_NEW              1    /* 有新画面 */
+#define MR_FRAME_PRESENTED        2    /* 引擎已画到 surface 上，宿主不要再取像素 */
+#define MR_FRAME_BACKEND_CHANGED  4    /* 实际后端被引擎改了，立刻切换显示路径 */
+#define MR_FRAME_PENDING          8    /* 本次没上屏，下一次 pump_ex 会补 */
+
+int  mr_app_set_backend(MRApp*, int pref);                 // 1 成功；pref 不在 0..=2 返回 0
+void mr_app_set_device_info(MRApp*, uint64_t total_mem_bytes, int low_ram, uint32_t os_api);
+int  mr_app_attach_surface(MRApp*, int kind, void* native); // 2 GPU / 1 CPU / 0 参数错误
+void mr_app_detach_surface(MRApp*);
+int  mr_app_backend(MRApp*);                               // 1 CPU / 2 GPU；app 为空返回 0
+const char* mr_app_backend_reason(MRApp*);                 // 到下一次调用 mr_app_* 之前有效
+int  mr_app_pump_ex(MRApp*, uint64_t now_ms);              // MR_FRAME_* 的按位或
+```
+
+- **符号集合不随构建变化**：有没有 `gpu` feature 都导出这 7 个函数，宿主不用为两种构建写两套链接。
+- **默认 CPU**：C ABI 的默认偏好是 `cpu`，老调用方从不挂 surface，行为与以前完全一样。
+- **优先级**：环境变量 `MINI_BACKEND` > `mr_app_set_backend` > 默认 `cpu`。`MINI_BACKEND` 是诊断
+  开关，用途是不改宿主代码也能强制某个后端；它压过宿主配置时引擎会打一行
+  `MINI_BACKEND=cpu 覆盖宿主配置 gpu`。Android 用 `android.system.Os.setenv("MINI_BACKEND", "cpu", true)`，
+  iOS 用 Xcode scheme 或 `setenv`，都要在创建引擎**之前**设（引擎只在创建时读一次）。
+- **`mr_app_pump` 不变**：仍只返回 0 / 1，且 `mr_app_pump(app, t) == ((mr_app_pump_ex(app, t) & MR_FRAME_NEW) ? 1 : 0)`。
+  挂了 surface 就改用 `pump_ex`：带 `MR_FRAME_NEW` 且**不带** `MR_FRAME_PRESENTED` 时才走 `mr_app_pixels`。
+- **`MR_FRAME_BACKEND_CHANGED` 只在引擎自己改了后端时置位**（运行中回退、`set_backend` 之后重新选择）；
+  宿主自己 attach / detach 不置位 —— 宿主自己知道。
+- **attach 不带宽高**：引擎按 `mr_app_pixel_size` 配置，宿主把层或 `SurfaceView` 的缓冲设成同样大
+  （iOS 设 `drawableSize`，Android 调 `holder.setFixedSize`）。`kind` 必须是当前目标支持的那种
+  （iOS 传 2、Android 传 1 都算参数错误）。
+- **所有权**：`CAMetalLayer*` 由调用方持有，必须活到 `mr_app_detach_surface` 或 `mr_app_destroy` 返回；
+  `ANativeWindow*` 由引擎自己 acquire / release，调用方手里的引用照常自己释放。
+- **原因串**：`mr_app_backend_reason` 说明「为什么是这个后端」。没编进 `gpu` feature 时含「未编译」；
+  编进来了但没挂 surface 是「未挂载 surface（宿主需调用 mr_app_attach_surface）」；
+  现阶段门槛都过了也是「GPU 合成器还在开发中」。
+- **后台**：GPU 落地后，iOS 不允许后台提交 GPU 命令，进后台时停掉 `pump` 会从「建议」变成**必须**。
+- **`MINI_FPS=1`**：SDK 也会每秒打一行 `📊 [后端 CPU] N 帧/秒（pump M 次），pump 最慢 … p99 …，工作 …，等 surface …，帧间隔峰值 …`
+  （进 stderr；Android 改走 logcat 要等移动端 GPU 接线那一步）。
+
+Kotlin 侧对应的 JNI（`src/ffi_jni.rs`，老的 `native*` 一个没动）：`nativeSetBackend(h, pref): Boolean`、
+`nativeSetDeviceInfo(h, totalMem: Long, lowRam: Boolean, api: Int)`、`nativeAttachSurface(h, surface: Surface): Int`、
+`nativeDetachSurface(h)`、`nativeBackend(h): Int`、`nativeBackendReason(h): String`、`nativePumpEx(h, nowMs): Int`。
+现在 `nativeAttachSurface` 不调 `ANativeWindow_fromSurface`（.so 也不链接 libandroid），没编 gpu 时直接返回 1。
+Kotlin / Swift 的 `MiniProgramView` 暂未接这组接口。新的 Kotlin 配老的 `.so` 会在调用新方法时抛
+`UnsatisfiedLinkError`，两者在 AAR 里一起发布，不要单独升级。
+
 线程约定：**所有 `mr_app_*` 必须在同一个线程调用**（QuickJS 不是线程安全的）。
 网络下载在引擎内部的后台线程，结果按帧取回，宿主不用管。
 

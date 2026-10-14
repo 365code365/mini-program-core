@@ -1,6 +1,7 @@
-//! [`MiniEngine`] 的出帧：`pump` 推进一帧 → 按需重画页面条带 / 覆盖层 / tabBar → 合成。
+//! [`MiniEngine`] 的出帧：推进一帧 → 按需重画页面条带 / 覆盖层 / tabBar → 合成。
 //!
-//! 从 `engine.rs` 按职责拆出来的一片（`impl MiniEngine`）。**纯搬迁**，一行逻辑没改；
+//! 从 `engine.rs` 按职责拆出来的一片（`impl MiniEngine`）。拆分本身是纯搬迁；
+//! 之后唯一的改动是 `pump` 的外壳挪去了 `engine_backend.rs`（加帧标志位与统计），
 //! 判据是 `tools/sdk-parity.sh` 与 sample / news 逐页快照逐字节不变。
 //!
 //! 「什么时候只重新合成、什么时候整条带重画」的判断都在这里：视口还落在
@@ -11,11 +12,11 @@ use crate::host::tabbar_height;
 use crate::{Canvas, Color};
 
 impl MiniEngine {
-    /// 跑一帧：逻辑层 → 事件 → 渲染 → 合成。返回是否产出了新画面。
+    /// 一帧的本体（逻辑层 → 事件 → 渲染 → 合成），返回是否产出了新画面。
     ///
-    /// `now_ms` 用宿主的单调时钟（iOS `CACurrentMediaTime`、Android
-    /// `System.nanoTime`）。传 0 表示让引擎自己取。
-    pub fn pump(&mut self, now_ms: u64) -> bool {
+    /// 对外的入口是 `engine_backend.rs` 的 `pump` / `pump_ex`：它们在这外面套了
+    /// 帧标志位与 `MINI_FPS` 统计，这里的逻辑与拆分前的 `pump` 一行不差。
+    pub(super) fn pump_frame(&mut self, now_ms: u64) -> bool {
         let now = if now_ms > 0 { now_ms } else { self.mono_ms() };
         let dt = if self.last_pump_ms == 0 {
             0.016

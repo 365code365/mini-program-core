@@ -18,10 +18,11 @@
 #![cfg(target_os = "android")]
 
 use crate::ffi_app::*;
-use jni::objects::{JByteArray, JClass, JString};
-use jni::sys::{jboolean, jfloat, jint, jlong};
+use crate::ffi_backend::*;
+use jni::objects::{JByteArray, JClass, JObject, JString};
+use jni::sys::{jboolean, jfloat, jint, jlong, jstring};
 use jni::JNIEnv;
-use std::ffi::CString;
+use std::ffi::{CStr, CString};
 
 fn cstring(env: &mut JNIEnv, s: &JString) -> Option<CString> {
     if s.is_null() {
@@ -199,4 +200,104 @@ pub extern "system" fn Java_dev_minirender_MiniEngine_nativeLifecycle(
         1 => mr_app_on_hide(app),
         _ => mr_app_trim_memory(app),
     }
+}
+
+// ───────────────────────────── 渲染后端（设计 §8.4）─────────────────────────────
+//
+// 老的 JNI 函数一个没动；下面这些只是把 `ffi_backend` 的 C ABI 转一下。
+// 新的 Kotlin 配老的 .so 会在调用新方法时抛 UnsatisfiedLinkError —— 两者在 AAR 里
+// 一起发布，不单独升级。
+
+/// `pref`: 0 auto / 1 cpu / 2 gpu。越界返回 false
+#[no_mangle]
+pub extern "system" fn Java_dev_minirender_MiniEngine_nativeSetBackend(
+    _env: JNIEnv,
+    _class: JClass,
+    h: jlong,
+    pref: jint,
+) -> jboolean {
+    (mr_app_set_backend(h as *mut MRApp, pref) != 0) as jboolean
+}
+
+/// 机型分级用：`ActivityManager.MemoryInfo.totalMem`、`isLowRamDevice`、`Build.VERSION.SDK_INT`
+#[no_mangle]
+pub extern "system" fn Java_dev_minirender_MiniEngine_nativeSetDeviceInfo(
+    _env: JNIEnv,
+    _class: JClass,
+    h: jlong,
+    total_mem: jlong,
+    low_ram: jboolean,
+    api: jint,
+) {
+    mr_app_set_device_info(h as *mut MRApp, total_mem.max(0) as u64, (low_ram != 0) as i32, api.max(0) as u32);
+}
+
+/// 挂 `SurfaceView` 的 surface。返回实际后端：2 GPU / 1 CPU / 0 参数错误。
+///
+/// 现在**不调** `ANativeWindow_fromSurface`、也不链接 libandroid：没编 gpu 时实际后端
+/// 只能是 CPU，直接返回 1；编了 gpu（目前是空壳）时只把种类记给引擎，原因串照实说
+/// 「GPU 合成器还在开发中」。移动端 GPU 接线时这里换成
+/// `fromSurface`（+1）→ `mr_app_attach_surface`（引擎内部再 acquire）→ `release`（−1）。
+#[no_mangle]
+pub extern "system" fn Java_dev_minirender_MiniEngine_nativeAttachSurface(
+    _env: JNIEnv,
+    _class: JClass,
+    h: jlong,
+    surface: JObject,
+) -> jint {
+    let app = h as *mut MRApp;
+    if app.is_null() || surface.is_null() {
+        return 0;
+    }
+    #[cfg(not(feature = "gpu"))]
+    let code = MR_BACKEND_CPU;
+    #[cfg(feature = "gpu")]
+    let code = attach_kind_only(app, crate::compositor::SurfaceKind::AndroidWindow);
+    code
+}
+
+/// `surfaceDestroyed` 里**同步**调用：返回之后引擎不再碰这块 surface
+#[no_mangle]
+pub extern "system" fn Java_dev_minirender_MiniEngine_nativeDetachSurface(
+    _env: JNIEnv,
+    _class: JClass,
+    h: jlong,
+) {
+    mr_app_detach_surface(h as *mut MRApp);
+}
+
+/// 实际后端：1 CPU / 2 GPU；句柄为空返回 0
+#[no_mangle]
+pub extern "system" fn Java_dev_minirender_MiniEngine_nativeBackend(
+    _env: JNIEnv,
+    _class: JClass,
+    h: jlong,
+) -> jint {
+    mr_app_backend(h as *mut MRApp)
+}
+
+/// 实际后端的原因；句柄为空返回 null
+#[no_mangle]
+pub extern "system" fn Java_dev_minirender_MiniEngine_nativeBackendReason(
+    env: JNIEnv,
+    _class: JClass,
+    h: jlong,
+) -> jstring {
+    let p = mr_app_backend_reason(h as *mut MRApp);
+    if p.is_null() {
+        return std::ptr::null_mut();
+    }
+    let text = unsafe { CStr::from_ptr(p) }.to_string_lossy().into_owned();
+    env.new_string(text).map(|s| s.into_raw()).unwrap_or(std::ptr::null_mut())
+}
+
+/// 跑一帧，返回 `MR_FRAME_*` 的按位或（`nativePump` 照旧只返回 Boolean）
+#[no_mangle]
+pub extern "system" fn Java_dev_minirender_MiniEngine_nativePumpEx(
+    _env: JNIEnv,
+    _class: JClass,
+    h: jlong,
+    now_ms: jlong,
+) -> jint {
+    mr_app_pump_ex(h as *mut MRApp, now_ms.max(0) as u64)
 }

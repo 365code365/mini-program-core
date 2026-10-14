@@ -72,6 +72,11 @@ pub use ffi::*;
 mod ffi_app;
 pub use ffi_app::*;
 
+/// FFI 导出：渲染后端（mr_app_set_backend / attach_surface / pump_ex …）。
+/// 有没有 `gpu` feature 都导出同一组符号
+mod ffi_backend;
+pub use ffi_backend::*;
+
 /// Android 的 JNI 入口（只在 android 目标编译）
 #[cfg(target_os = "android")]
 mod ffi_jni;

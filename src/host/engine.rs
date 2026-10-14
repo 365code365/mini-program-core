@@ -26,9 +26,16 @@
 //! - 本文件：结构体、构造、页面路由与生命周期；
 //! - `engine_frame.rs`：出帧（`pump` / `render` / 合成）；
 //! - `engine_ui.rs`：Toast / Loading / Modal 状态与覆盖层查询；
-//! - `engine_input.rs`：指针 / 键盘输入与逻辑层发起的路由。
+//! - `engine_input.rs`：指针 / 键盘输入与逻辑层发起的路由；
+//! - `engine_backend.rs`：后端选择、surface 挂卸、带标志位的 `pump_ex`；
+//! - `engine_stats.rs`：`MINI_FPS` 的每秒统计。
 
-use crate::compositor::{LayerCanvas, PageCanvas};
+use super::engine_backend::select_backend;
+use super::engine_stats::FrameStats;
+use crate::compositor::{
+    diag, BackendPref, BackendStatus, DeviceInfo, HostEnv, HostKind, LayerCanvas, PageCanvas,
+    SurfaceKind,
+};
 use crate::host::{
     component_mount, load_all_pages, page_loader, remove_manual_tabbar, tabbar_height,
     ui_overlay::{LoadingState, ModalState, ToastState},
@@ -96,11 +103,29 @@ pub struct MiniEngine {
     started_ms: u64,
     pub(super) last_pump_ms: u64,
     page_opened_ms: u64,
+
+    // ── 后端选择（见 engine_backend.rs）。现在只有 CPU 合成器，这些字段决定
+    //    `mr_app_backend*` 报什么、`MINI_FPS` 的标签写什么 ──
+    /// 创建时读一次的环境变量（`MINI_BACKEND` / `MINI_GPU_*` / `MINI_FPS`，R14）
+    pub(super) env: HostEnv,
+    /// 宿主给的偏好（`mr_app_set_backend`）；没给是 `None`
+    pub(super) host_pref: Option<BackendPref>,
+    pub(super) backend: BackendStatus,
+    /// 宿主报的机型信息（机型分级用）
+    pub(crate) device_info: DeviceInfo,
+    /// 宿主挂上来的 surface 种类（只记种类，指针不收）
+    pub(super) surface: Option<SurfaceKind>,
+    /// 实际后端被**引擎自己**改了，下一次 `pump_ex` 要带 `FRAME_BACKEND_CHANGED`
+    pub(super) backend_changed: bool,
+    /// `MINI_FPS` 的每秒统计
+    pub(super) stats: FrameStats,
 }
 
 impl MiniEngine {
     /// 创建实例。`app_dir` 是解包后的小程序目录，`data_dir` 是宿主沙盒里可写的目录
     /// （storage 与图片磁盘缓存落在这里；不传的话缓存会**静默失效**）。
+    ///
+    /// 这里是 SDK 的宿主入口：后端相关的环境变量在这里读一次（R14），之后只传值。
     pub fn new(
         app_dir: &str,
         data_dir: Option<&str>,
@@ -108,6 +133,24 @@ impl MiniEngine {
         height: u32,
         dpr: f32,
     ) -> Result<Self, String> {
+        Self::new_with_env(app_dir, data_dir, width, height, dpr, HostEnv::from_process())
+    }
+
+    /// 同 [`new`](Self::new)，但环境变量由调用方给（测试用这个，不碰进程环境）
+    pub fn new_with_env(
+        app_dir: &str,
+        data_dir: Option<&str>,
+        width: u32,
+        height: u32,
+        dpr: f32,
+        env: HostEnv,
+    ) -> Result<Self, String> {
+        for w in env.warnings(HostKind::Sdk) {
+            diag::emit(&w);
+        }
+        let device_info = DeviceInfo::default();
+        let backend = select_backend(&env, None, &device_info, None);
+        diag::emit(&diag::selected(&backend));
         if let Some(d) = data_dir {
             crate::data_dir::set_data_dir(d);
         }
@@ -181,6 +224,13 @@ impl MiniEngine {
             started_ms: 0,
             last_pump_ms: 0,
             page_opened_ms: 0,
+            stats: FrameStats::new(env.fps),
+            env,
+            host_pref: None,
+            backend,
+            device_info,
+            surface: None,
+            backend_changed: false,
         })
     }
 

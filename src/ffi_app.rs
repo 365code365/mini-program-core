@@ -26,12 +26,21 @@
 //! 是 `逻辑尺寸 × dpr`，用 [`mr_app_pixel_size`] 问。
 
 use crate::host::MiniEngine;
-use std::ffi::{c_char, c_int, CStr};
+use std::ffi::{c_char, c_int, CStr, CString};
 
 /// 引擎实例句柄
 pub struct MRApp {
-    engine: MiniEngine,
-    last_error: String,
+    pub(crate) engine: MiniEngine,
+    pub(crate) last_error: String,
+    /// `mr_app_backend_reason` 交出去的那块 C 字符串（见 `ffi_backend.rs`）：
+    /// 要活到下一次对同一 app 调用 `mr_app_*` 之前，所以挂在句柄上而不是临时值
+    pub(crate) backend_reason: CString,
+}
+
+impl MRApp {
+    pub(crate) fn new(engine: MiniEngine) -> Self {
+        Self { engine, last_error: String::new(), backend_reason: CString::default() }
+    }
 }
 
 fn cstr(p: *const c_char) -> Option<String> {
@@ -59,7 +68,7 @@ pub extern "C" fn mr_app_create(
     let Some(dir) = cstr(app_dir) else { return std::ptr::null_mut() };
     let data = cstr(data_dir);
     match MiniEngine::new(&dir, data.as_deref(), width, height, dpr) {
-        Ok(engine) => Box::into_raw(Box::new(MRApp { engine, last_error: String::new() })),
+        Ok(engine) => Box::into_raw(Box::new(MRApp::new(engine))),
         Err(e) => {
             eprintln!("❌ mr_app_create 失败: {e}");
             std::ptr::null_mut()
