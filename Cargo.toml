@@ -20,7 +20,9 @@ crate-type = ["cdylib", "staticlib", "rlib"]
 #
 # 所以这些都放在 `desktop` / `audio` 后面，移动端用 `--no-default-features` 构建。
 [features]
-default = ["desktop", "audio", "h264"]
+# 默认同时编进 CPU 与 GPU 两个后端，运行时选（交互窗体 auto；无头与回归脚本 cpu）。
+# 只要 CPU：`cargo build --release --no-default-features --features desktop,audio,h264`
+default = ["desktop", "audio", "h264", "gpu"]
 # 桌面宿主（自带窗口、上屏、剪贴板）
 desktop = ["winit", "softbuffer", "arboard"]
 # 内置音频播放（video 组件的声音）

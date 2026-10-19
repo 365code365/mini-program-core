@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # GPU 合成与 CPU 合成**逐字节**对拍（设计 §13.3；v2 修订 R1、R16）。GPU 后端的决定性判据。
 #
-#   cargo build --release --features gpu && cargo build --release --features gpu --examples
+#   cargo build --release && cargo build --release --examples   # gpu 在默认 feature 里
 #   bash tools/gpu-parity.sh
 #
 # 判据：下面每一项的差异像素数都必须是 0（P1 阈值 = 0，写在 doc/引擎测试说明.md）。
@@ -18,12 +18,12 @@ cd "$(dirname "$0")/.."
 export MINI_FAKE_NOW="${MINI_FAKE_NOW:-2024-03-15}"
 BIN=./target/release/mini-app-window
 OUT=target/_gp
-[ -x "$BIN" ] || { echo "先 cargo build --release --features gpu"; exit 1; }
+[ -x "$BIN" ] || { echo "先 cargo build --release"; exit 1; }
 
 "$BIN" --backend-probe >/dev/null 2>&1
 case $? in
     0) ;;
-    4) echo "❌ 未编译 gpu feature：cargo build --release --features gpu"; exit 4 ;;
+    4) echo "❌ 这次构建关掉了 gpu feature（--no-default-features）：用默认 feature 重新 cargo build --release"; exit 4 ;;
     *) echo "⚠️ GPU 未测：没有可用适配器（软件适配器不算）"; exit 3 ;;
 esac
 
@@ -100,8 +100,8 @@ dm spec pages/detail/detail          '__callPageMethod("onOpenSpec",{})'
 dm tab  pages/category/category      '__callPageMethod("onSelectCategory",{"index":2})'
 
 echo "### 连续拖动（逐帧校验：滚动、跨条带、增量镜像）"
-cargo run --release --features gpu --example backend_bench -- --gen-only "$OUT/apps" >/dev/null 2>&1 \
-    || bad "生成夹具失败（cargo build --release --features gpu --examples）"
+cargo run --release --example backend_bench -- --gen-only "$OUT/apps" >/dev/null 2>&1 \
+    || bad "生成夹具失败（cargo build --release --examples）"
 within drag_r1 120 sample-app --route pages/index/index --settle 2 \
     --eval 'getCurrentPages()[0].setData({showCoupon:false})' --drag 8x120
 within drag_news 120 sample/news-app --route pages/home/home --settle 2 --drag 8x120

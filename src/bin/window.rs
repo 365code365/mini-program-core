@@ -385,7 +385,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("    --click 25,520 --type 1212121 --click 313,520");
                 println!("  --eval <JS>    可重复；在 --settle 之后依次执行，每段跑完导航");
                 println!("  --backend <auto|cpu|gpu>  渲染后端偏好（不区分大小写，压过 MINI_BACKEND）。");
-                println!("                 交互窗体默认 auto，无头默认 cpu。GPU 需 cargo build --features gpu，不可用时一律回退 CPU");
+                println!("                 交互窗体默认 auto，无头默认 cpu。GPU 默认编进来，不可用时一律回退 CPU");
                 println!("  --backend-probe  按交互窗体的规则选一次后端就退出：0 GPU 可用 / 3 不可用 / 4 没编进 gpu feature");
                 println!("  --bench <out.json>  逐帧记录性能写 JSON。配 --snapshot 是无头（每帧额外合成一次），");
                 println!("                 不配是窗口（认 --route，settle → --eval → 拖动/空转，真实上屏，跑完退出）");

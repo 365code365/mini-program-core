@@ -341,7 +341,7 @@ Common action flags (executed in the order written, repeatable): `--touch x,y` /
 [`doc/架构与实现原理.md`](doc/架构与实现原理.md#帧成本是怎么压下来的).
 
 Rendering backend switches. **The CPU rasterizer is the reference implementation and is always
-available.** The GPU backend (wgpu, `cargo build --release --features gpu`) is an optional
+available.** The GPU backend (wgpu, built by default; CPU-only: `cargo build --release --no-default-features --features desktop,audio,h264`) is an optional
 **compositor**: content is still rasterized on the CPU; the GPU mirrors the page / tabBar / fixed
 layers as textures (uploading only damaged rows), reproduces the CPU blend arithmetic in an
 integer shader and presents directly. Its output is **byte-identical** to the CPU for the same
@@ -365,7 +365,7 @@ cost (GPU main-thread time ≤ 0.8 × CPU composite, GPU completion < 4ms). Self
 repeated device loss are remembered per driver in a verdict cache.
 
 The chosen backend is logged once at startup (`🎨 渲染后端：GPU（Metal · Apple M3 Pro）— 自动选择`,
-or `🎨 渲染后端：CPU — 未编译 GPU 支持` without `--features gpu`). Every `MINI_FPS=1` line and every
+or `🎨 渲染后端：CPU — 未编译 GPU 支持` without the gpu feature). Every `MINI_FPS=1` line and every
 `--drag` report starts with a backend tag, e.g. `📊 [后端 GPU · Metal · Apple M3 Pro] …`. In GPU
 mode the window presents through a `Fifo` swapchain (vsync-paced) and the sleep + spin pacer is off.
 

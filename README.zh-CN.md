@@ -292,7 +292,7 @@ cargo build --release
 [`doc/引擎测试说明.md`](doc/引擎测试说明.md) 与
 [`doc/架构与实现原理.md`](doc/架构与实现原理.md#帧成本是怎么压下来的)。
 
-渲染后端开关。**CPU 光栅是参考实现、永远可用**；GPU 后端（wgpu，`cargo build --release --features gpu`）
+渲染后端开关。**CPU 光栅是参考实现、永远可用**；GPU 后端（wgpu，默认编进来；只要 CPU 用 `cargo build --release --no-default-features --features desktop,audio,h264`）
 是可选的**合成器**：内容仍由 CPU 光栅化，GPU 只把页面 / tabBar / fixed 覆盖层当纹理镜像（按脏区增量上传），
 用整数着色器复刻 CPU 的合成算术后直接上屏。同一帧与 CPU **逐字节一致**（`tools/gpu-parity.sh` 守着）。
 GPU 初始化失败、自检不一致、运行中设备丢失或 surface 无法恢复，一律当帧回退 CPU，不黑屏、不崩，日志写明原因：
@@ -310,7 +310,7 @@ GPU 初始化失败、自检不一致、运行中设备丢失或 surface 无法�
 启动自检用一张固定测试帧比较 GPU 与 CPU 输出（必须逐字节一致），并比一次稳态成本（GPU 主线程 ≤ 0.8 × CPU 合成、GPU 完成 < 4ms）。
 自检不一致或设备丢失两次会记进判定缓存（`target/gpu/verdict.json` / 移动端沙盒），同一驱动下次直接走 CPU。
 
-启动时打一行选定结果（`🎨 渲染后端：GPU（Metal · Apple M3 Pro）— 自动选择`；没带 `--features gpu` 编译时是
+启动时打一行选定结果（`🎨 渲染后端：GPU（Metal · Apple M3 Pro）— 自动选择`；不带 gpu feature 编译时是
 `🎨 渲染后端：CPU — 未编译 GPU 支持`）；`MINI_FPS=1` 的每秒那行和 `--drag` 的报告行都以后端标签开头，
 如 `📊 [后端 GPU · Metal · Apple M3 Pro] …` / `📊 [后端 CPU（回退：设备丢失…）] …`。
 GPU 模式下窗口用 `Fifo` 交换链按 vsync 出帧，自己的 sleep + 自旋节拍器关掉。
