@@ -374,7 +374,7 @@ cargo run --release --example backend_bench -- --backends cpu --runs 5 --mode bo
 scene × backend × scale 5 times with `MINI_FAKE_NOW=2024-03-15` and a fresh `target/mini-storage`,
 applies the anti-idle guards and writes medians to `<out>/report.md` / `report.json`. It exits
 with 3 when something requested was not measured (GPU unavailable, or the display is not 144Hz in
-windowed mode). The CPU baseline lives in [`doc/引擎测试说明.md`](doc/引擎测试说明.md#渲染后端基准).
+windowed mode). The CPU baseline lives in [`doc/引擎测试说明.md`](doc/引擎测试说明.md#五之三渲染后端基准).
 
 The list of sample mini-programs, live browser preview (`mini-devserver`), compiling to an HTML
 project, and Rust / C examples of using the engine as a library are in

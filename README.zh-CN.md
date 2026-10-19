@@ -322,7 +322,7 @@ cargo run --release --example backend_bench -- --backends cpu --runs 5 --mode bo
 `backend_bench` 把夹具小程序生成到 `<out>/apps/`（不进 `sample/`），每个「场景 × 后端 × 缩放」
 以 `MINI_FAKE_NOW=2024-03-15`、清空的 `target/mini-storage` 跑 5 次，过防空转守卫，按中位数
 写 `<out>/report.md` / `report.json`。有要求的部分没测到（GPU 不可用、窗口模式显示器不是 144Hz）
-时退出码 3。CPU 基线见 [`doc/引擎测试说明.md`](doc/引擎测试说明.md#渲染后端基准)。
+时退出码 3。CPU 基线见 [`doc/引擎测试说明.md`](doc/引擎测试说明.md#五之三渲染后端基准)。
 
 示例小程序清单、浏览器实时预览（`mini-devserver`）、编译成 HTML 工程、以及把引擎当库用的
 Rust / C 代码示例，见 [`doc/示例与调试.md`](doc/示例与调试.md)。
