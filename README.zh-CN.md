@@ -305,6 +305,25 @@ CPU，日志里写明原因：
 `MINI_FPS=1` 的每秒那行和 `--drag` 的报告行都以后端标签开头，如 `📊 [后端 CPU] …`。
 `gpu` 这个 cargo feature 目前是不带任何依赖的空壳。
 
+渲染性能基准。关于后端的性能结论一律引用它的输出，不引用零散的 `--drag`：
+
+| 开关 | 作用 |
+|---|---|
+| `--bench <out.json>` | 逐帧记录并写 JSON。无头（同时给了 `--snapshot`）：`--drag` / `--frames` 的每一帧在 `pump_one_frame` 之后额外合成一次（CPU：`cpu::compose` 进 `Vec<u32>`）并计时。窗口（没给 `--snapshot`）：正常开窗、认 `--route`，按 settle → `--eval` → 逐帧拖动或空转推进，帧照常真实上屏，跑完写 JSON 并退出。每帧带 `phase` / `gpu_frame` / `presented`，顶层记后端、`hz`、`display_hz`（窗口模式）、缩放与提交号。写不进去退出码 1 |
+| `--hz <30~360>` | `--bench` 的节拍（默认 144，与交互窗体同一个 sleep + 自旋节拍器）。越界退出码 2 |
+| `--bench-shot <png>` | 只在无头下：存第一帧 drive 的合成图 |
+
+```bash
+cargo build --release && cargo build --release --examples
+cargo run --release --example backend_bench -- --backends cpu --runs 5 --mode both
+#   [--scenes all|S1,S3,…] [--out target/_bench] [--gen-only <dir>]
+```
+
+`backend_bench` 把夹具小程序生成到 `<out>/apps/`（不进 `sample/`），每个「场景 × 后端 × 缩放」
+以 `MINI_FAKE_NOW=2024-03-15`、清空的 `target/mini-storage` 跑 5 次，过防空转守卫，按中位数
+写 `<out>/report.md` / `report.json`。有要求的部分没测到（GPU 不可用、窗口模式显示器不是 144Hz）
+时退出码 3。CPU 基线见 [`doc/引擎测试说明.md`](doc/引擎测试说明.md#渲染后端基准)。
+
 示例小程序清单、浏览器实时预览（`mini-devserver`）、编译成 HTML 工程、以及把引擎当库用的
 Rust / C 代码示例，见 [`doc/示例与调试.md`](doc/示例与调试.md)。
 

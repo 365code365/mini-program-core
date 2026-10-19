@@ -10,6 +10,11 @@ impl crate::MiniAppWindow {
     /// `--drag <每帧像素>x<帧数>`：走与交互窗体同一套鼠标事件模拟一次手指拖动，
     /// 逐帧计时。滑动手感只有连续拖动才测得出来（见 app_window::scroll_bench）。
     pub(crate) fn run_drag_bench(&mut self, spec: &app_window::scroll_bench::DragSpec, route: &str) {
+        // --bench：逐帧额外合成、按 --hz 走节拍器、写进 JSON（见 app_window::bench_drive）
+        if self.bench.is_some() {
+            self.bench_drag(spec, route);
+            return;
+        }
         let (cx, mut cy) = (LOGICAL_WIDTH as f32 / 2.0, LOGICAL_HEIGHT as f32 * 0.75);
         self.sim_press(cx, cy);
         let mut frame_ms: Vec<f32> = Vec::with_capacity(spec.frames as usize);
@@ -175,9 +180,16 @@ impl crate::MiniAppWindow {
             // `--frames N`：按刷新率跑 N 个**与交互窗体同一套闸门/损伤区逻辑**的帧再截图。
             // 局部重绘这类只在连续出帧时才暴露的问题（比如某个动画元素被漏出损伤区而静止），
             // 只有这样才测得到 —— 单帧快照永远走整帧重绘，看不出来。
-            for _ in 0..frames {
-                self.pump_one_frame();
-                std::thread::sleep(self.frame_interval);
+            // frames == 0 时不进基准分支：bench_frames 会重取滚动探针，
+            // 把前面 --drag 记下的起止位置覆盖成同一个值，守卫就会误判「没滚动」
+            if self.bench.is_some() && frames > 0 {
+                // --bench：每帧之后额外合成一次并计时，节拍按 --hz（见 app_window::bench_drive）
+                self.bench_frames(frames);
+            } else {
+                for _ in 0..frames {
+                    self.pump_one_frame();
+                    std::thread::sleep(self.frame_interval);
+                }
             }
             { let mut pull_req: Option<bool> = None;
                         evt::process_ui_events(&mut self.app, &mut self.toast, &mut self.loading, &mut self.modal, &mut pull_req);

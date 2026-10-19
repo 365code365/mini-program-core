@@ -17,12 +17,14 @@ impl ApplicationHandler for crate::MiniAppWindow {
             .with_title("Mini App").with_inner_size(winit::dpi::LogicalSize::new(LOGICAL_WIDTH, LOGICAL_HEIGHT)).with_resizable(false)).unwrap());
         window.set_ime_allowed(true);
         // 依据显示器刷新率设定每帧间隔，适配 60/120/144Hz 等高刷屏
-        let millihertz = window.current_monitor()
+        let monitor_mhz = window.current_monitor()
             .and_then(|m| m.refresh_rate_millihertz())
-            .filter(|&hz| hz > 0)
-            .unwrap_or(60_000);
+            .filter(|&hz| hz > 0);
+        let millihertz = monitor_mhz.unwrap_or(60_000);
         self.frame_interval = Duration::from_secs_f64(1000.0 / millihertz as f64);
         println!("🖥️  显示器刷新率: {:.1}Hz -> 每帧 {:.2}ms", millihertz as f64 / 1000.0, self.frame_interval.as_secs_f64() * 1000.0);
+        // --bench：记下显示器刷新率（取不到就是 null，不拿 60 冒充），节拍改按 --hz
+        self.bench_on_window(monitor_mhz, window.scale_factor());
         self.setup_canvas(window.scale_factor());
         self.update_renderers();
         let ctx = softbuffer::Context::new(window.clone()).unwrap();
@@ -119,6 +121,10 @@ impl ApplicationHandler for crate::MiniAppWindow {
             
             WindowEvent::RedrawRequested => {
                 let frame_begin = Instant::now();
+                // --bench：定下这一帧的阶段并执行它的输入（eval / 拖动一步），见 app_window::bench_drive
+                if self.bench.is_some() {
+                    self.bench_frame_begin(frame_begin);
+                }
                 if self.fps_log {
                     if let Some(prev) = self.last_frame_begin {
                         let gap = (frame_begin - prev).as_secs_f32() * 1000.0;
@@ -232,6 +238,12 @@ impl ApplicationHandler for crate::MiniAppWindow {
                 self.render_frame_if_needed(structural, css_anim);
                 let t_render = frame_begin.elapsed();
                 self.present();
+                let t_presented = frame_begin.elapsed();
+                // --bench：记这一帧；drive 跑满就写 JSON 并退出事件循环
+                if self.bench.is_some() && self.bench_frame_end(frame_begin, t_logic, t_render, t_presented) {
+                    event_loop.exit();
+                    return;
+                }
                 if self.fps_log {
                     let total = frame_begin.elapsed();
                     if total.as_secs_f32() * 1000.0 > self.fps_worst_ms {
@@ -253,7 +265,8 @@ impl ApplicationHandler for crate::MiniAppWindow {
                 // 不限速会以 2~4 倍刷新率空转，白烧一个核画没人看得见的帧。
                 // 时点要从**帧开始**算：从 present 之后算的话，每帧会多出一整个
                 // 渲染耗时（16.7ms 节拍变成 21ms，只剩 46FPS）。
-                if self.is_animating() {
+                // --bench 期间每帧都续订：settle 阶段的静态页没有动画，不续订的话脚本就停住了
+                if self.is_animating() || self.bench.is_some() {
                     // 固定节拍 + sleep 到差 0.9ms 再自旋（算法与理由见 app_window::pacer）
                     self.pacer.wait_next(self.frame_interval);
                     if let Some(w) = &self.window {

@@ -153,6 +153,8 @@ struct MiniAppWindow {
     /// 渲染后端的结论（`main` 里按 `--backend` / `MINI_BACKEND` 选定）。
     /// 现在只有 CPU 合成器，它决定 `MINI_FPS` 行与 `--drag` 报告里的后端标签。
     backend: compositor::BackendStatus,
+    /// `--bench`：逐帧记录的性能基准（见 app_window::bench_run）。不给就是 None，那些代码一行都不走
+    bench: Option<app_window::bench_run::BenchDriver>,
 }
 
 impl MiniAppWindow {
@@ -275,6 +277,7 @@ impl MiniAppWindow {
             gate_counts: (0, 0, 0, 0, 0),
             no_damage: std::env::var("MINI_NO_DAMAGE").is_ok(),
             backend,
+            bench: None,
         };
         
         window.navigate_to(&first_page, HashMap::new())?;
@@ -326,12 +329,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut actions: Vec<app_window::headless_script::Action> = Vec::new();
     let mut backend_cli: Option<compositor::BackendPref> = None;
     let mut backend_probe = false;
+    let (mut bench_out, mut bench_shot) = (None, None);
+    let mut hz = app_window::bench_run::DEFAULT_HZ;
     let mut it = args.into_iter();
     while let Some(arg) = it.next() {
         match arg.as_str() {
             // 值不对直接以退出码 2 结束（见 app_window::backend_host）
             "--backend" => backend_cli = Some(app_window::backend_host::parse_backend_arg(it.next())),
             "--backend-probe" => backend_probe = true,
+            // 值不对直接退出：--hz 越界 2，--bench 的目录建不出来 1（见 app_window::bench_run）
+            "--bench" => bench_out = Some(app_window::bench_run::out_arg_or_exit(it.next())),
+            "--bench-shot" => bench_shot = it.next().map(std::path::PathBuf::from),
+            "--hz" => hz = app_window::bench_run::hz_arg_or_exit(it.next()),
             "--snapshot" => snapshot = it.next().map(std::path::PathBuf::from),
             "--scale" => scale = it.next().and_then(|v| v.parse().ok()).unwrap_or(2.0),
             "--time" => anim_time = it.next().and_then(|v| v.parse().ok()),
@@ -375,6 +384,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("  --backend <auto|cpu|gpu>  渲染后端偏好（不区分大小写，压过 MINI_BACKEND）。");
                 println!("                 交互窗体默认 auto，无头默认 cpu。GPU 后端还在开发中，现在一律落到 CPU");
                 println!("  --backend-probe  按交互窗体的规则选一次后端就退出：0 GPU 可用 / 3 不可用 / 4 没编进 gpu feature");
+                println!("  --bench <out.json>  逐帧记录性能写 JSON。配 --snapshot 是无头（每帧额外合成一次），");
+                println!("                 不配是窗口（认 --route，settle → --eval → 拖动/空转，真实上屏，跑完退出）");
+                println!("  --hz <30~360>  --bench 的节拍（默认 144）   --bench-shot <png>  无头时存第一帧 drive 的合成图");
                 return Ok(());
             }
             other => {
@@ -413,12 +425,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("📂 使用内置 sample-app");
     }
 
+    let app_label = app_path.as_ref().map(|p| p.display().to_string()).unwrap_or_else(|| "sample-app".into());
     let mut window = MiniAppWindow::new(app_path, backend)?;
+    if let Some(out) = bench_out {
+        use app_window::headless_script::Action;
+        let drag = actions.iter().find_map(|a| if let Action::Drag(d) = a { Some(*d) } else { None });
+        let scene = app_window::bench_run::BenchScene {
+            app: app_label, route: route.clone(), settle, drag, frames, evals: evals.clone(), scale,
+        };
+        window.bench_setup(out, bench_shot, hz, snapshot.is_none(), scene)?;
+    }
 
     // 快照模式：不开窗口，直接把整帧写成 PNG（用于与 H5 做像素对比）
     if let Some(out) = snapshot {
         let count = window.snapshot_all(&out, scale, anim_time, settle, route.as_deref(), scroll, &evals, frames, &actions)?;
         println!("\n✅ 快照完成：{} 个页面 -> {}", count, out.display());
+        window.bench_finish_headless();
         return Ok(());
     }
     

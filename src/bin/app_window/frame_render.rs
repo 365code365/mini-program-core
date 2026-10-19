@@ -263,6 +263,8 @@ impl crate::MiniAppWindow {
             .and_then(|r| r.page_style().background)
             .map(|c| ((c.r as u32) << 16) | ((c.g as u32) << 8) | c.b as u32)
             .unwrap_or(0xF5F5F5);
+        // （合成耗时, 上屏是否成功），给 --bench 记账；没走到合成就是 None
+        let mut bench_note: Option<(f32, bool)> = None;
         
         if let (Some(window), Some(surface)) = (&self.window, &mut self.surface) {
             let size = window.inner_size();
@@ -315,10 +317,16 @@ impl crate::MiniAppWindow {
                             progress: eb.progress(),
                         }),
                     };
+                    let t_compose = Instant::now();
                     compositor::cpu::compose(&mut buffer, &layers);
-                    buffer.present().ok();
+                    let compose_ms = t_compose.elapsed().as_secs_f32() * 1000.0;
+                    let presented = buffer.present().is_ok();
+                    bench_note = Some((compose_ms, presented));
                 }
             }
+        }
+        if let Some((compose_ms, presented)) = bench_note {
+            self.bench_note_present(compose_ms, presented);
         }
     }
 }

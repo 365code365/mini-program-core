@@ -18,6 +18,10 @@ pub mod backend_host;
 pub mod fps_report;
 /// 帧节拍器（sleep + 自旋），交互窗体与 `--bench` 共用
 pub mod pacer;
+/// `--bench` / `--hz`：逐帧记录与 JSON（只记录，汇总在 examples/backend_bench）
+pub mod bench_run;
+/// 把基准接到窗体上：无头逐帧合成、窗口模式的脚本推进
+pub mod bench_drive;
 // ── 窗体本体按职责拆成的几片（都是 `impl crate::MiniAppWindow`）──
 /// winit 事件 → 窗体调用的适配层（唯一认识 winit 类型的地方）
 pub mod winit_app;

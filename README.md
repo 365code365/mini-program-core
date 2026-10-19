@@ -355,6 +355,27 @@ without `--features gpu`). Every `MINI_FPS=1` line and every `--drag` report sta
 tag, e.g. `📊 [后端 CPU] …`. The `gpu` cargo feature is currently an empty placeholder with no
 dependencies.
 
+Rendering benchmark. Every performance claim about the backends cites its output, not ad-hoc
+`--drag` runs:
+
+| Switch | Meaning |
+|---|---|
+| `--bench <out.json>` | Record every frame and write JSON. Headless (together with `--snapshot`): every `--drag` / `--frames` frame is composited once more after `pump_one_frame` (CPU: `cpu::compose` into a `Vec<u32>`) and timed. Windowed (no `--snapshot`): opens the window, honours `--route`, runs settle → `--eval` → drag or idle frames with real presentation, writes the JSON and exits. Per-frame fields include `phase` / `gpu_frame` / `presented`; the top level records the backend, `hz`, `display_hz` (windowed), scale and commit. Exit code 1 if the JSON cannot be written |
+| `--hz <30~360>` | Pacing for `--bench` (default 144; same sleep + spin pacer as the interactive window). Out of range exits with code 2 |
+| `--bench-shot <png>` | Headless only: save the composite of the first drive frame |
+
+```bash
+cargo build --release && cargo build --release --examples
+cargo run --release --example backend_bench -- --backends cpu --runs 5 --mode both
+#   [--scenes all|S1,S3,…] [--out target/_bench] [--gen-only <dir>]
+```
+
+`backend_bench` generates the fixture app under `<out>/apps/` (never under `sample/`), runs each
+scene × backend × scale 5 times with `MINI_FAKE_NOW=2024-03-15` and a fresh `target/mini-storage`,
+applies the anti-idle guards and writes medians to `<out>/report.md` / `report.json`. It exits
+with 3 when something requested was not measured (GPU unavailable, or the display is not 144Hz in
+windowed mode). The CPU baseline lives in [`doc/引擎测试说明.md`](doc/引擎测试说明.md#渲染后端基准).
+
 The list of sample mini-programs, live browser preview (`mini-devserver`), compiling to an HTML
 project, and Rust / C examples of using the engine as a library are in
 [`doc/示例与调试.md`](doc/示例与调试.md).
