@@ -380,8 +380,8 @@ const char* mr_version(void);
 ### 渲染后端（只增不改）
 
 实现在 `src/ffi_backend.rs`，声明在 `include/mini_render.h` 末尾。引擎的内容永远由 CPU 光栅；
-后端只决定「谁把各图层合成上屏」。**GPU 后端还在开发中**：现在这组函数都已导出、参数校验
-与返回值语义都按最终版本做好，但实际后端永远是 CPU。上面那 20 个函数的签名与语义一个没改，
+后端只决定「谁把各图层合成上屏」。GPU 合成器（`compositor::gpu`）已在**桌面窗体与无头**落地、与 CPU 逐字节一致；**SDK 的 surface 上屏（CAMetalLayer / ANativeWindow）还没接**：这组函数都已导出、参数校验
+与返回值语义都按最终版本做好，但 SDK 的实际后端现在永远是 CPU。上面那 20 个函数的签名与语义一个没改，
 **不调这组函数的宿主行为与以前逐字节一致**。
 
 ```c
@@ -421,7 +421,7 @@ int  mr_app_pump_ex(MRApp*, uint64_t now_ms);              // MR_FRAME_* 的按�
   `ANativeWindow*` 由引擎自己 acquire / release，调用方手里的引用照常自己释放。
 - **原因串**：`mr_app_backend_reason` 说明「为什么是这个后端」。没编进 `gpu` feature 时含「未编译」；
   编进来了但没挂 surface 是「未挂载 surface（宿主需调用 mr_app_attach_surface）」；
-  现阶段门槛都过了也是「GPU 合成器还在开发中」。
+  现阶段门槛都过了也是「SDK 的 GPU 上屏还没接入」。
 - **后台**：GPU 落地后，iOS 不允许后台提交 GPU 命令，进后台时停掉 `pump` 会从「建议」变成**必须**。
 - **`MINI_FPS=1`**：SDK 也会每秒打一行 `📊 [后端 CPU] N 帧/秒（pump M 次），pump 最慢 … p99 …，工作 …，等 surface …，帧间隔峰值 …`
   （进 stderr；Android 改走 logcat 要等移动端 GPU 接线那一步）。

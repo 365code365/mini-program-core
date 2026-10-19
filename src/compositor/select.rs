@@ -24,8 +24,8 @@ pub const GPU_COMPILED: bool = cfg!(feature = "gpu");
 pub const REASON_NOT_COMPILED: &str = "未编译 GPU 支持";
 /// SDK：偏好不是 cpu，但宿主还没挂 surface
 pub const REASON_NO_SURFACE: &str = "未挂载 surface（宿主需调用 mr_app_attach_surface）";
-/// 编进了 `gpu` feature、门槛也都过了，但 GPU 合成器还没实现（`gpu = []` 目前是空壳）
-pub const REASON_GPU_PENDING: &str = "GPU 合成器还在开发中（feature gpu 目前不含实现）";
+/// SDK：编进了 `gpu` feature、门槛也都过了，但 SDK 的 surface 上屏还没接（桌面宿主不走这里，它在 `pre_gpu` 之后自己建 GpuCompositor）
+pub const REASON_GPU_PENDING: &str = "SDK 的 GPU 上屏还没接入（桌面窗体与无头已可用，见 compositor::gpu）";
 
 /// Android 的 Auto 门槛：Android 10（API 29）起要求 64 位设备支持 Vulkan 1.1，
 /// 所以有了这一条就不必再单独查 Vulkan 版本（#19）

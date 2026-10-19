@@ -141,30 +141,38 @@ impl crate::MiniAppWindow {
             b.buf = vec![0u32; (pw * ph) as usize];
         }
         let has_tabbar = self.page_stack.last().map(|p| self.is_tabbar_page(&p.path)).unwrap_or(false);
+        // GPU 后端：pump_one_frame 末尾已经合成过（并等 GPU 做完），账在 gpu.last 里，这里不再合成。
+        // 「合成」记的是编码 + 提交占主线程的时间；work 含等 GPU 完成（设计 §12.3）
+        let gpu = if self.gpu.active() { self.gpu.last_frame() } else { None };
         let tc = Instant::now();
-        let presented = match self.headless_layers(scale, has_tabbar) {
-            Some(layers) => {
-                compositor::cpu::compose(&mut b.buf, &layers);
-                true
-            }
-            None => false,
+        let (presented, compose_ms) = match gpu {
+            Some(g) => (true, g.encode_ms),
+            None => match self.headless_layers(scale, has_tabbar) {
+                Some(layers) => {
+                    compositor::cpu::compose(&mut b.buf, &layers);
+                    (true, ms(tc.elapsed()))
+                }
+                None => (false, 0.0),
+            },
         };
-        let compose = tc.elapsed();
         let work = t0.elapsed();
         let (rp, rf, rt) = self.render_parts;
         let render_ms = rp + rf + rt;
+        let gpu_part = gpu.map(|g| g.encode_ms + g.gpu_done_ms.unwrap_or(0.0)).unwrap_or(0.0);
         let mut s = FrameSample {
             phase: Phase::Drive,
             work_ms: ms(work),
             // render_parts 从 render_with_damage 里取数据之后才开始计，
             // 取数据（`__getRenderData()` 往返）因此落在逻辑段，与窗口模式的分法一致
-            logic_ms: (ms(t_pumped) - render_ms).max(0.0),
+            logic_ms: (ms(t_pumped) - render_ms - gpu_part).max(0.0),
             render_ms,
             render_parts: self.render_parts,
-            compose_ms: ms(compose),
+            compose_ms,
             interval_ms: interval,
             rerastered: cursor != self.page_cursor(),
             presented,
+            gpu,
+            gpu_active: gpu.is_some(),
             ..FrameSample::default()
         };
         self.fill_frame_state(&mut s);
@@ -240,9 +248,16 @@ impl crate::MiniAppWindow {
         let Some(mut b) = self.bench.take() else { return false };
         let interval = b.interval_since(begin);
         let (compose_ms, presented) = b.present_note.take().unwrap_or((0.0, false));
+        // GPU 上屏：work 不含等 vsync（acquire 单独记成 vsync_wait_ms，设计 §12.3）。
+        // 只认**这一帧**真的由 GPU 上屏了的账：跳过的帧（surface 暂时取不到）last 已被清空
+        let gpu = if self.gpu.active() && presented { self.gpu.last_frame() } else { None };
+        let gpu_active = self.gpu.active();
+        let vsync = gpu.map(|g| g.acquire_ms).unwrap_or(0.0);
         let mut s = FrameSample {
+            gpu,
+            gpu_active,
             phase: b.current,
-            work_ms: ms(t_presented),
+            work_ms: (ms(t_presented) - vsync).max(0.0),
             logic_ms: ms(t_logic),
             render_ms: ms(t_render.saturating_sub(t_logic)),
             render_parts: self.render_parts,

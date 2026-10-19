@@ -22,6 +22,8 @@ pub mod pacer;
 pub mod bench_run;
 /// 把基准接到窗体上：无头逐帧合成、窗口模式的脚本推进
 pub mod bench_drive;
+/// 接 GPU 合成器：无头常驻离屏 + 逐帧校验、窗口 surface 上屏与当帧回退（feature `gpu`）
+pub mod gpu_host;
 // ── 窗体本体按职责拆成的几片（都是 `impl crate::MiniAppWindow`）──
 /// winit 事件 → 窗体调用的适配层（唯一认识 winit 类型的地方）
 pub mod winit_app;

@@ -340,20 +340,34 @@ Common action flags (executed in the order written, repeatable): `--touch x,y` /
 [`doc/引擎测试说明.md`](doc/引擎测试说明.md) and
 [`doc/架构与实现原理.md`](doc/架构与实现原理.md#帧成本是怎么压下来的).
 
-Rendering backend switches. The CPU rasterizer is the reference implementation and is always
-available; **the GPU backend is still in development**, so today every choice ends up on CPU and
-the log says why:
+Rendering backend switches. **The CPU rasterizer is the reference implementation and is always
+available.** The GPU backend (wgpu, `cargo build --release --features gpu`) is an optional
+**compositor**: content is still rasterized on the CPU; the GPU mirrors the page / tabBar / fixed
+layers as textures (uploading only damaged rows), reproduces the CPU blend arithmetic in an
+integer shader and presents directly. Its output is **byte-identical** to the CPU for the same
+frame (guarded by `tools/gpu-parity.sh`). Init failure, self-test mismatch, device loss or an
+unrecoverable surface all fall back to CPU within the same frame — no black screen, no crash —
+and the log says why:
 
 | Switch | Meaning |
 |---|---|
 | `--backend auto\|cpu\|gpu` | Backend preference, case-insensitive, beats `MINI_BACKEND`. The interactive window defaults to `auto`, headless runs (`--snapshot` and everything on top of it) to `cpu`. Any other value exits with code 2 |
 | `MINI_BACKEND=auto\|cpu\|gpu` | Same preference from the environment. In the SDK it overrides the host's `mr_app_set_backend` (it is a diagnostic switch). The regression scripts export `cpu` |
-| `--backend-probe` | Run the interactive-window selection once and exit: 0 = GPU usable, 3 = no usable GPU, 4 = built without the `gpu` cargo feature |
+| `--backend-probe` | Run the interactive-window selection once (with gpu compiled in it really opens a device and runs the self-test) and exit: 0 = GPU usable, 3 = no usable GPU, 4 = built without the `gpu` cargo feature |
+| `MINI_GPU_LOG=1` | Verbose GPU log: init time, self-test samples, surface format, per-frame composite mode (layered / passthrough) and upload bytes |
+| `MINI_GPU_VERIFY=1` | Headless: read back every GPU frame and compare it byte-for-byte with the CPU composite of the same layers; exits with code 5 on mismatch |
+| `MINI_GPU_FAULT=init\|selftest\|tint\|lost@N\|surface-lost@N\|timeout@N` | Fault injection for the fallback paths |
 
-The chosen backend is logged once at startup (`🎨 渲染后端：CPU — 未编译 GPU 支持` when built
-without `--features gpu`). Every `MINI_FPS=1` line and every `--drag` report starts with a backend
-tag, e.g. `📊 [后端 CPU] …`. The `gpu` cargo feature is currently an empty placeholder with no
-dependencies.
+How `auto` decides: the adapter must be an integrated or discrete GPU (software adapters such as
+llvmpipe never count), on Metal / Vulkan / DX12 (GLES only when `gpu` is forced); a start-up
+self-test composites a fixed frame on both backends (must be byte-identical) and compares steady
+cost (GPU main-thread time ≤ 0.8 × CPU composite, GPU completion < 4ms). Self-test mismatches and
+repeated device loss are remembered per driver in a verdict cache.
+
+The chosen backend is logged once at startup (`🎨 渲染后端：GPU（Metal · Apple M3 Pro）— 自动选择`,
+or `🎨 渲染后端：CPU — 未编译 GPU 支持` without `--features gpu`). Every `MINI_FPS=1` line and every
+`--drag` report starts with a backend tag, e.g. `📊 [后端 GPU · Metal · Apple M3 Pro] …`. In GPU
+mode the window presents through a `Fifo` swapchain (vsync-paced) and the sleep + spin pacer is off.
 
 Rendering benchmark. Every performance claim about the backends cites its output, not ad-hoc
 `--drag` runs:

@@ -31,10 +31,11 @@ h264 = ["openh264"]
 # 交叉编译用：rquickjs-sys 只为少数目标预生成了 C 绑定（没有 iOS/Android/鸿蒙），
 # 打开它改为在构建时用 libclang 现场生成。移动端构建必须带上。
 bindgen = ["rquickjs/bindgen"]
-# GPU 合成后端（开发中）。现在是**空壳**：只用来让 `--backend gpu` / `--backend-probe` /
-# `mr_app_attach_surface` 区分「没编进来」与「编进来了」，不带任何依赖、不含 GPU 代码。
-# 依赖（wgpu 等）在 GPU 合成器落地那一步再加。CPU 后端永远可用，关掉它照常编译与回归。
-gpu = []
+# GPU 合成后端（wgpu）：页面 / tabBar / fixed 覆盖层作为纹理镜像、按脏区上传，
+# 用整数着色器复刻 CPU 的合成算术后直接上屏（设计见 .agents/tasks/gpu-dual-backend-2026-10-12/）。
+# 内容仍由 CPU 光栅化。**CPU 后端是参考实现、永远可用**：关掉这个 feature 照常编译、照常过全部回归；
+# 开了也只在偏好 auto / gpu 且门槛、自检都过了时才用，任何失败一律回退 CPU。
+gpu = ["dep:wgpu", "dep:pollster"]
 
 [dependencies]
 image = "0.25"
@@ -55,6 +56,14 @@ winit = { version = "0.30", optional = true }
 softbuffer = { version = "0.4", optional = true }
 arboard = { version = "3", optional = true }
 rodio = { version = "0.22", optional = true }
+# ── GPU 合成后端（可选，feature `gpu`）──
+# 版本锁死：wgpu 大约一季度一个破坏性大版本，升级要单独立项并重跑全部 GPU 判据。
+# 传递依赖由入库的 Cargo.lock 锁定，`cargo update` 只能单独提交。
+# 只开用得到的后端：wgpu 内部按目标门控（metal 只在 Apple、vulkan/gles 只在 Windows/Linux/Android、
+# dx12 只在 Windows 生效），所以一条声明覆盖全部平台；不开 webgpu（没有浏览器目标）。
+wgpu = { version = "=30.0.1", optional = true, default-features = false, features = ["std", "wgsl", "metal", "vulkan", "gles", "dx12"] }
+# request_adapter / request_device / map_async 都是 future，宿主是同步的：用最小的 block_on
+pollster = { version = "=1.0.1", optional = true }
 
 # ── Android 专用：JNI 入口（只在 android 目标编译，其它平台一行代码都不带）──
 [target.'cfg(target_os = "android")'.dependencies]

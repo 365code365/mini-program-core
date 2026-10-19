@@ -32,6 +32,8 @@ pub mod layer;
 pub mod pref;
 pub mod select;
 pub mod verdict;
+#[cfg(feature = "gpu")]
+pub mod gpu;
 
 pub use fault::FaultSpec;
 pub use layer::{color_bytes, DirtyOp, LayerCanvas, PageCanvas, PAGE_LOG_CAP};

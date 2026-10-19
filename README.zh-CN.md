@@ -292,18 +292,28 @@ cargo build --release
 [`doc/引擎测试说明.md`](doc/引擎测试说明.md) 与
 [`doc/架构与实现原理.md`](doc/架构与实现原理.md#帧成本是怎么压下来的)。
 
-渲染后端开关。CPU 光栅是参考实现、永远可用；**GPU 后端还在开发中**，现在不管怎么选都会落到
-CPU，日志里写明原因：
+渲染后端开关。**CPU 光栅是参考实现、永远可用**；GPU 后端（wgpu，`cargo build --release --features gpu`）
+是可选的**合成器**：内容仍由 CPU 光栅化，GPU 只把页面 / tabBar / fixed 覆盖层当纹理镜像（按脏区增量上传），
+用整数着色器复刻 CPU 的合成算术后直接上屏。同一帧与 CPU **逐字节一致**（`tools/gpu-parity.sh` 守着）。
+GPU 初始化失败、自检不一致、运行中设备丢失或 surface 无法恢复，一律当帧回退 CPU，不黑屏、不崩，日志写明原因：
 
 | 开关 | 作用 |
 |---|---|
 | `--backend auto\|cpu\|gpu` | 后端偏好，不区分大小写，压过 `MINI_BACKEND`。交互窗体默认 `auto`，无头（`--snapshot` 及其上的所有动作）默认 `cpu`。其它取值以退出码 2 结束 |
 | `MINI_BACKEND=auto\|cpu\|gpu` | 同上，从环境变量给。SDK 里它压过宿主的 `mr_app_set_backend`（它是诊断开关）。回归脚本都 export 成 `cpu` |
-| `--backend-probe` | 按交互窗体的规则选一次后端就退出：0 = GPU 可用，3 = 没有可用的 GPU，4 = 没编进 `gpu` feature |
+| `--backend-probe` | 按交互窗体的规则选一次后端（编了 gpu 时真的建设备并跑自检）就退出：0 = GPU 可用，3 = 没有可用的 GPU，4 = 没编进 `gpu` feature |
+| `MINI_GPU_LOG=1` | GPU 详细日志：初始化耗时、自检样本、surface 格式、每帧合成模式（分层 / 直通）与上传字节数 |
+| `MINI_GPU_VERIFY=1` | 无头每帧把 GPU 读回与同一帧的 CPU 合成逐字节比较，不一致以退出码 5 结束 |
+| `MINI_GPU_FAULT=init\|selftest\|tint\|lost@N\|surface-lost@N\|timeout@N` | 故障注入，用来测回退：建设备后失败 / 自检判不一致 / 着色器 R+1 / 第 N 帧设备丢失 / 第 N 帧 surface 丢失 / 第 N 帧 acquire 超时 |
 
-启动时打一行选定结果（没带 `--features gpu` 编译时是 `🎨 渲染后端：CPU — 未编译 GPU 支持`）；
-`MINI_FPS=1` 的每秒那行和 `--drag` 的报告行都以后端标签开头，如 `📊 [后端 CPU] …`。
-`gpu` 这个 cargo feature 目前是不带任何依赖的空壳。
+`auto` 怎么选：适配器必须是集显或独显（llvmpipe 这类软件适配器一律不算），后端是 Metal / Vulkan / DX12（GLES 只在强制 `gpu` 时用）；
+启动自检用一张固定测试帧比较 GPU 与 CPU 输出（必须逐字节一致），并比一次稳态成本（GPU 主线程 ≤ 0.8 × CPU 合成、GPU 完成 < 4ms）。
+自检不一致或设备丢失两次会记进判定缓存（`target/gpu/verdict.json` / 移动端沙盒），同一驱动下次直接走 CPU。
+
+启动时打一行选定结果（`🎨 渲染后端：GPU（Metal · Apple M3 Pro）— 自动选择`；没带 `--features gpu` 编译时是
+`🎨 渲染后端：CPU — 未编译 GPU 支持`）；`MINI_FPS=1` 的每秒那行和 `--drag` 的报告行都以后端标签开头，
+如 `📊 [后端 GPU · Metal · Apple M3 Pro] …` / `📊 [后端 CPU（回退：设备丢失…）] …`。
+GPU 模式下窗口用 `Fifo` 交换链按 vsync 出帧，自己的 sleep + 自旋节拍器关掉。
 
 渲染性能基准。关于后端的性能结论一律引用它的输出，不引用零散的 `--drag`：
 

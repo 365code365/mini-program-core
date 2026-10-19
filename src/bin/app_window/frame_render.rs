@@ -251,72 +251,56 @@ impl crate::MiniAppWindow {
     }
 
     pub(crate) fn present(&mut self) {
-        let canvas = match &self.canvas { Some(c) => c, None => return };
-        let page = match self.page_stack.last() { Some(p) => p, None => return };
-        let has_tabbar = self.is_tabbar_page(&page.path);
         let (toast_state, loading_state, modal_state) = (self.toast.clone(), self.loading.clone(), self.modal.clone());
         let picker_state = self.picker_sheet.clone();
-        // 画布之外的填充色同样取 page 底色，避免露出突兀的灰边
-        let present_bg = self
-            .renderer
-            .as_ref()
-            .and_then(|r| r.page_style().background)
-            .map(|c| ((c.r as u32) << 16) | ((c.g as u32) << 8) | c.b as u32)
-            .unwrap_or(0xF5F5F5);
+        let Some(window) = self.window.clone() else { return };
+        let size = window.inner_size();
+        let (Some(w), Some(h)) = (NonZeroU32::new(size.width), NonZeroU32::new(size.height)) else { return };
+        // GPU 后端：合成器自己画到窗口 surface 上。失败就当帧回退：建 softbuffer，
+        // 往下同一帧走 CPU 上屏 —— 不留空帧、不黑屏（见 app_window::gpu_host）
+        #[cfg(feature = "gpu")]
+        if let Some(mut comp) = self.gpu.comp.take() {
+            use mini_render::compositor::gpu::PresentOutcome;
+            let outcome = self
+                .present_layers(size.width, size.height, &toast_state, &loading_state, &modal_state, picker_state.as_ref())
+                .map(|l| comp.present(&l));
+            self.gpu.comp = Some(comp);
+            match outcome {
+                None => return,
+                Some(Ok(PresentOutcome::Presented(st))) => {
+                    self.gpu.last = Some(st);
+                    self.gpu.present_pending = false;
+                    self.bench_note_present(st.encode_ms, true);
+                    return;
+                }
+                Some(Ok(PresentOutcome::Skipped(_))) => {
+                    // 屏上保留上一帧；补一帧，否则停在旧画面直到下一次输入（v2 修订 R4）
+                    self.gpu.last = None;
+                    self.gpu.present_pending = true;
+                    window.request_redraw();
+                    self.bench_note_present(0.0, false);
+                    return;
+                }
+                Some(Err(e)) => self.gpu_fallback_to_softbuffer(&e.to_string()),
+            }
+        }
         // （合成耗时, 上屏是否成功），给 --bench 记账；没走到合成就是 None
         let mut bench_note: Option<(f32, bool)> = None;
-        
-        if let (Some(window), Some(surface)) = (&self.window, &mut self.surface) {
-            let size = window.inner_size();
-            if let (Some(w), Some(h)) = (NonZeroU32::new(size.width), NonZeroU32::new(size.height)) {
-                // 只在尺寸真的变了才 resize：每帧都调等于让 softbuffer 反复确认
-                // 平台侧后备缓冲的配置，是白付的开销。
-                //
-                // 注：这**不是**偶发 30~50ms 上屏停顿的原因（改前改后都有）。
-                // 那个停顿发生在 `buffer_mut()`/`present()` 内部，即 macOS 合成器侧，
-                // 与本引擎的光栅化无关（同一帧的「渲染」一直稳定在 2~3ms）。
-                if self.surface_size != Some((size.width, size.height)) {
-                    surface.resize(w, h).ok();
-                    self.surface_size = Some((size.width, size.height));
-                }
-                if let Ok(mut buffer) = surface.buffer_mut() {
-                    // 合成顺序（页面 → 下拉指示器 → Toast/Modal → picker → 侧滑返回）
-                    // 收在 compositor::cpu 里，与无头快照、SDK 同一份
-                    let gap = self.scroll.top_gap();
-                    let layers = FrameLayers {
-                        width: size.width,
-                        height: size.height,
-                        scale: self.scale_factor as f32,
-                        page: canvas,
-                        scroll_px: (self.scroll.get_position() * self.scale_factor as f32) as i32,
-                        page_bg: present_bg,
-                        has_tabbar,
-                        tabbar: self.tabbar_canvas.as_ref(),
-                        tabbar_px: if has_tabbar { (tabbar_height() as f64 * self.scale_factor) as u32 } else { 0 },
-                        fixed: self.fixed_canvas.as_ref(),
-                        fixed_rows: self.fixed_rows,
-                        pull: (gap > 0.5 || self.pull_refreshing).then(|| PullState {
-                            gap_logical: gap,
-                            refreshing: self.pull_refreshing,
-                            progress: self.scroll.pull_progress(),
-                            // 相位要用「进程启动至今」的时钟：last_frame 每帧都会被重置，
-                            // 拿它算 elapsed 恒为 0，三点看起来是静止的。
-                            phase: (self.started_at.elapsed().as_secs_f32() * 1.1).fract(),
-                        }),
-                        overlays: OverlayRefs {
-                            last_frame: self.last_frame,
-                            toast: &toast_state,
-                            loading: &loading_state,
-                            modal: &modal_state,
-                            picker: picker_state.as_ref(),
-                            text: self.text_renderer.as_deref(),
-                        },
-                        edge_back: self.edge_back.as_ref().map(|eb| EdgeBackFrame {
-                            offset_px: (eb.offset() * self.scale_factor as f32).round() as u32,
-                            shot: self.back_shots.last(),
-                            progress: eb.progress(),
-                        }),
-                    };
+        if let Some(mut surface) = self.surface.take() {
+            // 只在尺寸真的变了才 resize：每帧都调等于让 softbuffer 反复确认
+            // 平台侧后备缓冲的配置，是白付的开销。
+            //
+            // 注：这**不是**偶发 30~50ms 上屏停顿的原因（改前改后都有）。
+            // 那个停顿发生在 `buffer_mut()`/`present()` 内部，即 macOS 合成器侧，
+            // 与本引擎的光栅化无关（同一帧的「渲染」一直稳定在 2~3ms）。
+            if self.surface_size != Some((size.width, size.height)) {
+                surface.resize(w, h).ok();
+                self.surface_size = Some((size.width, size.height));
+            }
+            if let Ok(mut buffer) = surface.buffer_mut() {
+                // 合成顺序（页面 → 下拉指示器 → Toast/Modal → picker → 侧滑返回）
+                // 收在 compositor::cpu 里，与无头快照、SDK 同一份
+                if let Some(layers) = self.present_layers(size.width, size.height, &toast_state, &loading_state, &modal_state, picker_state.as_ref()) {
                     let t_compose = Instant::now();
                     compositor::cpu::compose(&mut buffer, &layers);
                     let compose_ms = t_compose.elapsed().as_secs_f32() * 1000.0;
@@ -324,9 +308,67 @@ impl crate::MiniAppWindow {
                     bench_note = Some((compose_ms, presented));
                 }
             }
+            self.surface = Some(surface);
         }
         if let Some((compose_ms, presented)) = bench_note {
             self.bench_note_present(compose_ms, presented);
         }
+    }
+
+    /// 交互窗体这一帧的图层（CPU 与 GPU 上屏共用这一份构造）。页面画布或页面栈为空时为 None
+    fn present_layers<'a>(
+        &'a self,
+        width: u32,
+        height: u32,
+        toast: &'a Option<ToastState>,
+        loading: &'a Option<LoadingState>,
+        modal: &'a Option<ModalState>,
+        picker: Option<&'a mini_render::host::picker_sheet::PickerSheetState>,
+    ) -> Option<FrameLayers<'a>> {
+        let canvas = self.canvas.as_ref()?;
+        let page = self.page_stack.last()?;
+        let has_tabbar = self.is_tabbar_page(&page.path);
+        // 画布之外的填充色同样取 page 底色，避免露出突兀的灰边
+        let present_bg = self
+            .renderer
+            .as_ref()
+            .and_then(|r| r.page_style().background)
+            .map(|c| ((c.r as u32) << 16) | ((c.g as u32) << 8) | c.b as u32)
+            .unwrap_or(0xF5F5F5);
+        let gap = self.scroll.top_gap();
+        Some(FrameLayers {
+            width,
+            height,
+            scale: self.scale_factor as f32,
+            page: canvas,
+            scroll_px: (self.scroll.get_position() * self.scale_factor as f32) as i32,
+            page_bg: present_bg,
+            has_tabbar,
+            tabbar: self.tabbar_canvas.as_ref(),
+            tabbar_px: if has_tabbar { (tabbar_height() as f64 * self.scale_factor) as u32 } else { 0 },
+            fixed: self.fixed_canvas.as_ref(),
+            fixed_rows: self.fixed_rows,
+            pull: (gap > 0.5 || self.pull_refreshing).then(|| PullState {
+                gap_logical: gap,
+                refreshing: self.pull_refreshing,
+                progress: self.scroll.pull_progress(),
+                // 相位要用「进程启动至今」的时钟：last_frame 每帧都会被重置，
+                // 拿它算 elapsed 恒为 0，三点看起来是静止的。
+                phase: (self.started_at.elapsed().as_secs_f32() * 1.1).fract(),
+            }),
+            overlays: OverlayRefs {
+                last_frame: self.last_frame,
+                toast,
+                loading,
+                modal,
+                picker,
+                text: self.text_renderer.as_deref(),
+            },
+            edge_back: self.edge_back.as_ref().map(|eb| EdgeBackFrame {
+                offset_px: (eb.offset() * self.scale_factor as f32).round() as u32,
+                shot: self.back_shots.last(),
+                progress: eb.progress(),
+            }),
+        })
     }
 }

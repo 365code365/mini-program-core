@@ -155,6 +155,8 @@ struct MiniAppWindow {
     backend: compositor::BackendStatus,
     /// `--bench`：逐帧记录的性能基准（见 app_window::bench_run）。不给就是 None，那些代码一行都不走
     bench: Option<app_window::bench_run::BenchDriver>,
+    /// GPU 合成器与它的待建请求（见 app_window::gpu_host）。没编 gpu feature 时恒为空
+    gpu: app_window::gpu_host::GpuSlot,
 }
 
 impl MiniAppWindow {
@@ -278,6 +280,7 @@ impl MiniAppWindow {
             no_damage: std::env::var("MINI_NO_DAMAGE").is_ok(),
             backend,
             bench: None,
+            gpu: Default::default(),
         };
         
         window.navigate_to(&first_page, HashMap::new())?;
@@ -382,7 +385,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("    --click 25,520 --type 1212121 --click 313,520");
                 println!("  --eval <JS>    可重复；在 --settle 之后依次执行，每段跑完导航");
                 println!("  --backend <auto|cpu|gpu>  渲染后端偏好（不区分大小写，压过 MINI_BACKEND）。");
-                println!("                 交互窗体默认 auto，无头默认 cpu。GPU 后端还在开发中，现在一律落到 CPU");
+                println!("                 交互窗体默认 auto，无头默认 cpu。GPU 需 cargo build --features gpu，不可用时一律回退 CPU");
                 println!("  --backend-probe  按交互窗体的规则选一次后端就退出：0 GPU 可用 / 3 不可用 / 4 没编进 gpu feature");
                 println!("  --bench <out.json>  逐帧记录性能写 JSON。配 --snapshot 是无头（每帧额外合成一次），");
                 println!("                 不配是窗口（认 --route，settle → --eval → 拖动/空转，真实上屏，跑完退出）");
@@ -419,7 +422,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         compositor::HostKind::Interactive
     };
-    let backend = app_window::backend_host::choose(host_kind, backend_cli, &host_env);
+    // 不碰 GPU 就能定的先定；要试 GPU 的，等拿到窗口（交互）或画布尺寸（无头）再建合成器
+    let (backend, pending_gpu) = app_window::backend_host::choose(host_kind, backend_cli, &host_env);
 
     if app_path.is_none() {
         println!("📂 使用内置 sample-app");
@@ -427,6 +431,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let app_label = app_path.as_ref().map(|p| p.display().to_string()).unwrap_or_else(|| "sample-app".into());
     let mut window = MiniAppWindow::new(app_path, backend)?;
+    window.gpu = app_window::gpu_host::GpuSlot::new(pending_gpu, &host_env);
+    // 无头基准要量「GPU 完成」时间：每帧合成后等 GPU 做完
+    window.gpu.wait_frames = bench_out.is_some() && snapshot.is_some();
     if let Some(out) = bench_out {
         use app_window::headless_script::Action;
         let drag = actions.iter().find_map(|a| if let Action::Drag(d) = a { Some(*d) } else { None });
@@ -440,6 +447,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(out) = snapshot {
         let count = window.snapshot_all(&out, scale, anim_time, settle, route.as_deref(), scroll, &evals, frames, &actions)?;
         println!("\n✅ 快照完成：{} 个页面 -> {}", count, out.display());
+        window.gpu_finish_headless();
         window.bench_finish_headless();
         return Ok(());
     }

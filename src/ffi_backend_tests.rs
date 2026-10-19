@@ -163,7 +163,7 @@ fn attach_with_the_empty_gpu_feature_is_still_cpu() {
     assert!(reason(app).contains("未挂载 surface"), "{}", reason(app));
     assert_eq!(mr_app_attach_surface(app, kind, fake_native(&mut x)), MR_BACKEND_CPU);
     let r = reason(app);
-    assert!(r.contains("开发中") && !r.contains("未编译"), "{r}");
+    assert!(r.contains("还没接入") && !r.contains("未编译"), "{r}");
     mr_app_destroy(app);
 }
 

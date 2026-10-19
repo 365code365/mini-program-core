@@ -59,6 +59,8 @@ impl crate::MiniAppWindow {
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn snapshot_all(&mut self, out_dir: &std::path::Path, scale: f64, time: Option<f32>, settle: Option<f32>, only: Option<&str>, scroll: f32, evals: &[String], frames: u32, actions: &[app_window::headless_script::Action]) -> Result<usize, String> {
         self.setup_canvas(scale);
+        // 偏好不是 cpu 时建常驻离屏 GPU 合成器（失败就是 CPU，并已打回退日志）
+        self.gpu_open_offscreen(scale);
         let routes: Vec<String> = match only {
             Some(route) => vec![route.trim_start_matches('/').to_string()],
             None => self.app_config.pages.clone(),
@@ -205,20 +207,26 @@ impl crate::MiniAppWindow {
                 (LOGICAL_WIDTH as f64 * scale) as u32,
                 (LOGICAL_HEIGHT as f64 * scale) as u32,
             );
-            let mut buffer = vec![0u32; (pw * ph) as usize];
             // 导航之后当前页可能已不是入口 route
             let route = self.page_stack.last().map(|p| p.path.clone()).unwrap_or(route);
             let has_tabbar = self.is_tabbar_page(&route);
-            // setup_canvas 在本函数开头就建好了页面画布，之后只会按内容高度重新分配，
-            // 不会变回 None，所以这里恒为 Some。合成序列与交互窗体同一份（compositor::cpu）。
-            if let Some(layers) = self.headless_layers(scale, has_tabbar) {
-                compositor::cpu::compose(&mut buffer, &layers);
-            }
-
-            let mut rgba = Vec::with_capacity(buffer.len() * 4);
-            for px in &buffer {
-                rgba.extend_from_slice(&[((px >> 16) & 0xFF) as u8, ((px >> 8) & 0xFF) as u8, (px & 0xFF) as u8, 255]);
-            }
+            // GPU 后端：PNG 必须是 GPU 的读回，才代表 GPU 的输出；GPU 不在（或这一帧回退了）走 CPU
+            let rgba = match self.gpu_snapshot_rgba(scale, has_tabbar) {
+                Some(px) => px,
+                None => {
+                    let mut buffer = vec![0u32; (pw * ph) as usize];
+                    // setup_canvas 在本函数开头就建好了页面画布，之后只会按内容高度重新分配，
+                    // 不会变回 None，所以这里恒为 Some。合成序列与交互窗体同一份（compositor::cpu）。
+                    if let Some(layers) = self.headless_layers(scale, has_tabbar) {
+                        compositor::cpu::compose(&mut buffer, &layers);
+                    }
+                    let mut rgba = Vec::with_capacity(buffer.len() * 4);
+                    for px in &buffer {
+                        rgba.extend_from_slice(&[((px >> 16) & 0xFF) as u8, ((px >> 8) & 0xFF) as u8, (px & 0xFF) as u8, 255]);
+                    }
+                    rgba
+                }
+            };
             let dir = out_dir.join(&route);
             std::fs::create_dir_all(&dir).map_err(|e| format!("创建 {:?} 失败: {}", dir, e))?;
             let file = dir.join("rust.png");

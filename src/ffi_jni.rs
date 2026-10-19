@@ -236,7 +236,7 @@ pub extern "system" fn Java_dev_minirender_MiniEngine_nativeSetDeviceInfo(
 ///
 /// 现在**不调** `ANativeWindow_fromSurface`、也不链接 libandroid：没编 gpu 时实际后端
 /// 只能是 CPU，直接返回 1；编了 gpu（目前是空壳）时只把种类记给引擎，原因串照实说
-/// 「GPU 合成器还在开发中」。移动端 GPU 接线时这里换成
+/// 「SDK 的 GPU 上屏还没接入」。移动端 GPU 接线时这里换成
 /// `fromSurface`（+1）→ `mr_app_attach_surface`（引擎内部再 acquire）→ `release`（−1）。
 #[no_mangle]
 pub extern "system" fn Java_dev_minirender_MiniEngine_nativeAttachSurface(

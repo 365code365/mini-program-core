@@ -27,8 +27,12 @@ impl ApplicationHandler for crate::MiniAppWindow {
         self.bench_on_window(monitor_mhz, window.scale_factor());
         self.setup_canvas(window.scale_factor());
         self.update_renderers();
-        let ctx = softbuffer::Context::new(window.clone()).unwrap();
-        self.surface = Some(softbuffer::Surface::new(&ctx, window.clone()).unwrap());
+        // 先试 GPU（偏好不是 cpu 且编进了 gpu feature 时）；成功就**不建** softbuffer ——
+        // 提前建会往视图上多挂一个子层，可能盖在 Metal 层上面。失败才照旧建 softbuffer
+        if !self.gpu_open_window(&window) {
+            let ctx = softbuffer::Context::new(window.clone()).unwrap();
+            self.surface = Some(softbuffer::Surface::new(&ctx, window.clone()).unwrap());
+        }
         self.window = Some(window);
         self.render();
         self.present();
@@ -38,6 +42,11 @@ impl ApplicationHandler for crate::MiniAppWindow {
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
         match event {
             WindowEvent::CloseRequested => event_loop.exit(),
+            // 被遮挡期间 GPU 上屏会跳帧（Occluded）；露出来时补一帧，不然停在旧画面（v2 修订 R4）
+            WindowEvent::Occluded(false) => {
+                self.needs_redraw = true;
+                if let Some(w) = &self.window { w.request_redraw(); }
+            }
             WindowEvent::ModifiersChanged(m) => self.modifiers = m.state(),
             
             WindowEvent::KeyboardInput { event, .. } => {
@@ -266,9 +275,15 @@ impl ApplicationHandler for crate::MiniAppWindow {
                 // 时点要从**帧开始**算：从 present 之后算的话，每帧会多出一整个
                 // 渲染耗时（16.7ms 节拍变成 21ms，只剩 46FPS）。
                 // --bench 期间每帧都续订：settle 阶段的静态页没有动画，不续订的话脚本就停住了
-                if self.is_animating() || self.bench.is_some() {
-                    // 固定节拍 + sleep 到差 0.9ms 再自旋（算法与理由见 app_window::pacer）
-                    self.pacer.wait_next(self.frame_interval);
+                if self.is_animating() || self.bench.is_some() || self.gpu.present_pending {
+                    // CPU（softbuffer 不阻塞 vsync）：固定节拍 + sleep 到差 0.9ms 再自旋
+                    // （算法与理由见 app_window::pacer）。GPU 用 Fifo，acquire 本身就按 vsync 阻塞，
+                    // 再叠一层节拍器两者会打架（每帧多等一个周期，帧率减半），所以 GPU 模式下跳过
+                    // 但上一帧被跳过（窗口被遮挡 / 最小化时 acquire 立刻返回 Occluded）时 Fifo 不阻塞，
+                    // 不限速就会以每帧几十微秒空转、烧满一个核 —— 实测被遮挡 0.5 秒空转了两万帧
+                    if !self.gpu.active() || self.gpu.present_pending {
+                        self.pacer.wait_next(self.frame_interval);
+                    }
                     if let Some(w) = &self.window {
                         w.request_redraw();
                     }

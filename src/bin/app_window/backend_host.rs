@@ -33,24 +33,42 @@ pub fn parse_backend_arg(v: Option<String>) -> BackendPref {
     }
 }
 
-/// 按宿主种类选一次后端，打一行选择日志（不受 `MINI_GPU_LOG` 控制：每次选定都要看得见）
-pub fn choose(kind: HostKind, cli: Option<BackendPref>, env: &HostEnv) -> BackendStatus {
+/// 不碰 GPU 的门槛都过了、还要去建 GPU 合成器（建在哪取决于宿主：窗口 surface 或离屏）
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct PendingGpu {
+    pub pref: BackendPref,
+    pub source: mini_render::compositor::PrefSource,
+}
+
+/// 按宿主种类选一次后端。两段式：
+/// - 不碰 GPU 就能下结论（偏好 cpu、没编进 gpu feature……）：打一行选择日志，返回 `(结论, None)`；
+/// - 否则返回 `(暂定 CPU, Some(待建 GPU))`，由宿主建合成器（窗口要等 `resumed` 拿到窗口），
+///   建完（或回退）再打那一行选择日志。日志不受 `MINI_GPU_LOG` 控制：每次选定都要看得见。
+pub fn choose(kind: HostKind, cli: Option<BackendPref>, env: &HostEnv) -> (BackendStatus, Option<PendingGpu>) {
     for w in env.warnings(kind) {
         diag::emit(&w);
     }
     let r = pref::resolve(kind, cli, env, None);
     // 桌面不需要机型信息（§6.2：桌面只看适配器）；窗口本身就是 surface
     let device = DeviceInfo::default();
-    let status = select::decide(&SelectInput {
+    let input = SelectInput {
         pref: r.pref,
         source: r.source,
         platform: Platform::current(),
         device: &device,
         gpu_compiled: select::GPU_COMPILED,
         has_surface: true,
-    });
-    diag::emit(&diag::selected(&status));
-    status
+    };
+    match select::pre_gpu(&input) {
+        Err(status) => {
+            diag::emit(&diag::selected(&status));
+            (status, None)
+        }
+        Ok(()) => (
+            BackendStatus::cpu(r.pref, r.source, "GPU 合成器初始化中"),
+            Some(PendingGpu { pref: r.pref, source: r.source }),
+        ),
+    }
 }
 
 /// probe 的退出码：脚本据此区分「没编进来」「编了但没有可用的 GPU」「GPU 可用」
@@ -64,9 +82,14 @@ pub fn probe_exit_code(status: &BackendStatus, gpu_compiled: bool) -> i32 {
     }
 }
 
-/// `--backend-probe`：按交互窗体的规则做一次选择（不开窗、不加载小程序），返回退出码
+/// `--backend-probe`：按交互窗体的规则做一次选择（不开窗、不加载小程序），返回退出码。
+/// 编了 gpu 时真的建一次离屏合成器并跑自检 —— 「门槛过了」不等于「GPU 能用」
 pub fn probe(cli: Option<BackendPref>, env: &HostEnv) -> i32 {
-    let status = choose(HostKind::Probe, cli, env);
+    let (status, pending) = choose(HostKind::Probe, cli, env);
+    let status = match pending {
+        Some(p) => super::gpu_host::probe_offscreen(p, env).unwrap_or(status),
+        None => status,
+    };
     probe_exit_code(&status, select::GPU_COMPILED)
 }
 
@@ -88,12 +111,16 @@ mod tests {
     #[test]
     fn headless_defaults_to_cpu_interactive_to_auto() {
         let env = HostEnv::default();
-        let s = choose(HostKind::Headless, None, &env);
+        let (s, pending) = choose(HostKind::Headless, None, &env);
         assert_eq!((s.pref, s.active), (BackendPref::Cpu, BackendKind::Cpu));
+        assert_eq!(pending, None, "无头默认 cpu：不去建 GPU");
         assert_eq!(diag::backend_tag(&s), "[后端 CPU]");
-        let s = choose(HostKind::Interactive, None, &env);
+        let (s, pending) = choose(HostKind::Interactive, None, &env);
         assert_eq!((s.pref, s.active), (BackendPref::Auto, BackendKind::Cpu));
-        if !select::GPU_COMPILED {
+        if select::GPU_COMPILED {
+            assert!(pending.is_some(), "编了 gpu：交互窗体 auto 要去建 GPU 合成器");
+        } else {
+            assert_eq!(pending, None);
             assert_eq!(diag::selected(&s), "🎨 渲染后端：CPU — 未编译 GPU 支持");
             assert_eq!(diag::backend_tag(&s), "[后端 CPU（未编译 GPU 支持）]");
         }

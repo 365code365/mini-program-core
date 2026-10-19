@@ -135,6 +135,10 @@ pub struct FrameSample {
     pub modal_visible: bool,
     /// 页面滚动位置（逻辑像素）
     pub scroll_y: f32,
+    /// 这一帧由 GPU 合成时的账（帧号、完成时间、上传量、是否直通、等 vsync）；CPU 帧为 None
+    pub gpu: Option<super::gpu_host::LastGpuFrame>,
+    /// 这一帧结束时实际后端是不是 GPU（surface 暂时取不到而跳过的帧也算 GPU，只是 gpu 为 None）
+    pub gpu_active: bool,
 }
 
 /// 滚动位置快照：drive 开始与结束各取一次，守卫据此算「实际滚了多远」
@@ -314,14 +318,17 @@ impl BenchDriver {
     }
 }
 
-fn frame_json(i: usize, f: &FrameSample, backend: &str) -> Value {
+fn frame_json(i: usize, f: &FrameSample, _run_backend: &str) -> Value {
     let (rp, rf, rt) = f.render_parts;
+    // 后端按帧记：运行中回退（lost@N）之后的帧是 cpu，守卫与 A1.5 判据靠它
+    let backend = if f.gpu_active { "gpu" } else { "cpu" };
+    let g = f.gpu;
     json!({
         "i": i,
         "phase": f.phase.as_str(),
         "backend": backend,
-        // 从选定 GPU 那一帧起计，与 MINI_GPU_FAULT 的 N 同一个计数器；CPU 没有
-        "gpu_frame": Value::Null,
+        // 从选定 GPU 那一帧起计，与 MINI_GPU_FAULT 的 N 同一个计数器；CPU 帧没有
+        "gpu_frame": g.map(|g| g.gpu_frame),
         "presented": f.presented,
         "work_ms": f.work_ms,
         "logic_ms": f.logic_ms,
@@ -330,11 +337,11 @@ fn frame_json(i: usize, f: &FrameSample, backend: &str) -> Value {
         "render_fixed_ms": rf,
         "render_tabbar_ms": rt,
         "compose_cpu_ms": f.compose_ms,
-        // 以下三项只有 GPU 后端有：CPU 不上传纹理、不等 GPU、不等垂直同步
-        "gpu_done_ms": Value::Null,
-        "vsync_wait_ms": Value::Null,
-        "upload_bytes": Value::Null,
-        "passthrough": Value::Null,
+        // 以下几项只有 GPU 帧有：CPU 不上传纹理、不等 GPU、不等垂直同步
+        "gpu_done_ms": g.and_then(|g| g.gpu_done_ms),
+        "vsync_wait_ms": g.map(|g| g.acquire_ms),
+        "upload_bytes": g.map(|g| g.upload_bytes),
+        "passthrough": g.map(|g| g.passthrough),
         "interval_ms": f.interval_ms,
         "rerastered": f.rerastered,
         "animating": f.animating,

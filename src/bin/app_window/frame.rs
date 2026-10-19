@@ -177,6 +177,10 @@ impl crate::MiniAppWindow {
             || self.interaction.press_feedback_pending()
             || mini_render::renderer::components::swiper_needs_frame();
         self.render_frame_if_needed(structural, css_anim);
+        // GPU 后端：每帧都合成一次（不只是截图那一帧），增量镜像才在每一帧真实发生；
+        // MINI_GPU_VERIFY 下逐帧读回对拍（见 app_window::gpu_host）。CPU 后端这里什么都不做
+        let wait = self.gpu.wait_frames;
+        self.gpu_headless_frame(wait);
     }
 
     /// 上一帧动画元素包围盒的并集，作为本帧的损伤区。
