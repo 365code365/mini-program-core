@@ -5,3 +5,6 @@
 /dist/
 # tools/ 里的检查脚本互相 import，会生成字节码缓存
 __pycache__/
+
+# 本地 git worktree（并行开发用的工作区，不是仓库内容；误提交会变成一个指向旧提交的子模块指针）
+.worktrees/
