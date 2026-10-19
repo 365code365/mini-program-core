@@ -22,8 +22,29 @@ impl WxmlRenderer {
         let viewport_changed = self.current_viewport != viewport;
         
         if let Some(cache) = &self.cache {
-            if cache.data == *data && !viewport_changed {
+            // 整棵 JSON 的比较只做一次（下面两个分支都要用）
+            let same_data = cache.data == *data;
+            if same_data && !viewport_changed {
                 return FramePlan::Unchanged; // Cache hit!
+            }
+            // 只有滚动偏移变了：布局树原样复用，**但这一帧仍按整帧重画**。
+            //
+            // 参与布局的只有视口高（页面根的 min-height、绝对定位包含块的折算），
+            // 滚动偏移一个字节都不进建树 / 样式 / taffy（`build_tree`、`compute_with_text`、
+            // reflow 都只借 `&self`，没有副作用）。从前把 (偏移, 高) 整个当缓存键：
+            // 页面上有 CSS 动画时每一帧都带着新偏移来问布局，于是滚动期间**每帧**整页重建
+            // （sample-app 首页 14ms/帧：模板 1 + 建树样式 4 + 布局 6.6 + 换行修正 2.2）。
+            //
+            // 为什么不顺手返回 Unchanged、让动画帧走局部重绘：绘制期的视口裁剪按**当前**
+            // 偏移剪子树，而已绘制条带是按画它那一刻的偏移算的。偏移变了之后只重画动画
+            // 损伤区，条带里落在新裁剪窗外的那部分会被清成底色却没人重画 —— 往回滚时露白。
+            // 所以这里只省掉重建，重画范围与以前完全一样（整帧 + scroll-view 缓存作废），
+            // 像素逐字节不变；「滚动中只补画新露出的条带」是另一项优化，要单独证明。
+            let height_changed = self.current_viewport.map(|v| v.1) != viewport.map(|v| v.1);
+            if same_data && !height_changed {
+                self.current_viewport = viewport;
+                self.scroll_cache.mark_all_dirty();
+                return FramePlan::Full;
             }
         }
         

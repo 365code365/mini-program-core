@@ -23,7 +23,14 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
-const BIN: &str = "target/release/mini-app-window";
+const DEFAULT_BIN: &str = "target/release/mini-app-window";
+
+/// 被测二进制。`MINI_BENCH_BIN=<路径>` 可以换成别的构建做 A/B：
+/// 同一台机器、同一时段交替跑改动前后两个二进制，才排除得了「机器当时热不热」的漂移
+/// （实测同一二进制隔半小时再跑，S1 的 p50 能差 4 倍）
+fn bin() -> String {
+    std::env::var("MINI_BENCH_BIN").ok().filter(|s| !s.is_empty()).unwrap_or_else(|| DEFAULT_BIN.into())
+}
 const TIMEOUT: Duration = Duration::from_secs(60);
 const EXIT_FAILED: i32 = 1;
 const EXIT_UNTESTED: i32 = 3;
@@ -113,7 +120,7 @@ struct RunSpec<'a> {
 fn run_child(apps: &Path, spec: &RunSpec<'_>) -> Result<Value, String> {
     let _ = std::fs::remove_dir_all("target/mini-storage");
     let s = spec.scene;
-    let mut cmd = Command::new(BIN);
+    let mut cmd = Command::new(bin());
     cmd.arg(s.app_path(apps))
         .args(["--route", s.route, "--settle", &s.settle.to_string(), "--scale", &spec.scale.to_string()])
         .args(s.drive.args())
@@ -132,7 +139,7 @@ fn run_child(apps: &Path, spec: &RunSpec<'_>) -> Result<Value, String> {
     }
     let log = std::fs::File::create(&spec.log).map_err(|e| format!("建日志 {} 失败：{e}", spec.log.display()))?;
     let err = log.try_clone().map_err(|e| e.to_string())?;
-    let mut child = cmd.stdout(Stdio::from(log)).stderr(Stdio::from(err)).spawn().map_err(|e| format!("拉起 {BIN} 失败：{e}"))?;
+    let mut child = cmd.stdout(Stdio::from(log)).stderr(Stdio::from(err)).spawn().map_err(|e| format!("拉起 {} 失败：{e}", bin()))?;
     let t0 = Instant::now();
     let status = loop {
         if let Some(st) = child.try_wait().map_err(|e| e.to_string())? {
@@ -188,7 +195,7 @@ fn guard(scene: &Scene, backend: &str, run: &Value, m: &RunMetrics) -> Result<()
 
 /// `--backend-probe` 的退出码：0 GPU 可用 / 3 不可用 / 4 没编进来
 fn probe_gpu() -> i32 {
-    Command::new(BIN).arg("--backend-probe").stdout(Stdio::null()).stderr(Stdio::null()).status().ok().and_then(|s| s.code()).unwrap_or(4)
+    Command::new(bin()).arg("--backend-probe").stdout(Stdio::null()).stderr(Stdio::null()).status().ok().and_then(|s| s.code()).unwrap_or(4)
 }
 
 fn machine() -> String {
@@ -206,8 +213,8 @@ fn main() {
         println!("✅ 夹具 -> {}", dir.display());
         return;
     }
-    if !Path::new(BIN).exists() {
-        usage_exit(&format!("{BIN} 不存在：先 cargo build --release"));
+    if !Path::new(&bin()).exists() {
+        usage_exit(&format!("{} 不存在：先 cargo build --release", bin()));
     }
     let apps = args.out.join("apps");
     let (runs_dir, shots, tmp) = (args.out.join("runs"), args.out.join("shots"), args.out.join("tmp"));
