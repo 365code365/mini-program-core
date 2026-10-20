@@ -52,7 +52,8 @@ the header has an EN / 中文 switch, or link straight to
 ### What it is, and what it is not
 
 In one line: **mini-program source in, pixels out**. Nothing in between — no browser engine, no
-platform widgets, no third-party graphics library.
+platform widgets, no third-party 2D graphics library (the optional GPU backend uses wgpu only to
+composite layers, never to draw content).
 
 ```
 input                       engine (pure Rust library)                output
@@ -109,7 +110,7 @@ Eight stages, each with its own diagnostic switch (`MINI_*`, listed in the
 | ⑥ | **Paint** | Layer by layer into an RGBA canvas | In-house 2D rasterizer: scanline + even-odd fill, 4× supersampled anti-aliasing, rounded corners via cubic Bézier (K = 0.5523), fontdue glyphs with multi-font fallback, Apple `sbix` color emoji, two-tier image filtering (bilinear + area), linear/radial gradients, masked `box-shadow`, clip stack |
 | ⑥' | **Animation** | `@keyframes` / `transition` / `wx.createAnimation` | Evaluated **at paint time** against a global clock: `transform` / `opacity` / colors affect painting only and never trigger reflow → an animated frame costs about the same as a static one |
 | ⑦ | **Composition** | Normal flow → tabBar → `position: fixed` overlay | Stacking order matches the browser (a full-screen scrim dims the tabBar too); the overlay uses viewport coordinates, its own canvas, and repaints on demand |
-| ⑧ | **Present** | Blit to a window / hand to the host / save a PNG | Desktop uses softbuffer; mobile hands the RGBA to a host View; headless calls `save_png` directly |
+| ⑧ | **Present** | Blit to a window / hand to the host / save a PNG | The desktop window defaults to GPU composition (wgpu composites the layers as textures and presents), falling back to softbuffer when unavailable; mobile hands the RGBA to a host View; headless composites on the CPU by default and calls `save_png` directly |
 
 Between the logic layer and the render layer there is exactly one channel — the **data snapshot**
 (`setData` → `Arc<Value>`). No DOM, no virtual-node diffing, no GC pressure.
@@ -146,8 +147,16 @@ These are the "why is it written this way" answers. Every mistake behind them is
    touch state machine, gesture arbitration, picker sheet and pixel composition all live in
    `src/host/`; only frame scheduling is per-platform. The two paths are guarded by
    `tools/sdk-parity.sh` (per-pixel) and `src/tests/engine_input_tests.rs` (input behaviour).
-8. **No GPU, no per-element bitmap cache.** The premise is "give me a pixel buffer and I will
-   draw"; the complexity of bitmap caching against animation and the clip stack is not worth it.
+8. **Content is rasterized only on the CPU; the GPU only composites; no per-element bitmap
+   cache.** The premise is still "give me a pixel buffer and I will draw": the CPU rasterizer is
+   the single pixel reference, so CI and embedded targets with no GPU produce the same image. The
+   optional GPU backend (feature `gpu`) only composites the page / tabBar / fixed layers as
+   textures and presents them, reproducing the CPU blend arithmetic in an integer shader; the
+   output is **byte-identical** to the CPU for the same frame, and any failure falls back to the
+   CPU within that frame (wired into the desktop window and headless runs so far; the mobile SDK
+   still uses the CPU). GPU rasterizers such as vello or Skia were not used: they bring their own
+   anti-aliasing and font stack, which would make "byte-identical to the CPU" impossible to check.
+   The complexity of bitmap caching against animation and the clip stack is not worth it.
    Anti-aliasing was not switched to subsampling either — measured against Chrome the difference
    went *up*, from 4.7% to 5.3%.
 
@@ -226,7 +235,7 @@ What remains is concentrated in bold glyph shapes and subpixel text positioning.
 
 | Not doing | Why |
 |---|---|
-| GPU rendering | The premise is "a pixel buffer is enough"; only pure CPU can produce images where there is no GPU (CI, embedded) |
+| GPU rasterization | The GPU only composites and presents (see [design decision 8](#eight-design-decisions-that-matter)); content is always drawn by the CPU, so the CPU stays the single pixel reference and environments with no GPU (CI, embedded) produce the same image |
 | Parsing `.wxapkg` / signature checks | Subpackages, staged rollout and integrity belong to the host; the engine reads a **directory** |
 | Compiling `<web-view>` / `<map>` into the engine | In WeChat these are native-layer components. The engine computes position and parameters; the host places the widget with `WKWebView` / `android.webkit.WebView` / ArkUI `Web()` ([rationale](doc/原生App集成指南.md)) |
 | Remote fonts via `wx.loadFontFace` | Fonts come from the system. The API exists and calls back `success` (otherwise it would stall the framework's `onLaunch`), but nothing is downloaded |
@@ -282,7 +291,8 @@ interaction snapshots all need new baselines. That makes it its own round of wor
 **Poor fit**
 
 - You need the full web platform (arbitrary CSS, third-party H5 SDKs, `<iframe>`) — use a WebView;
-- Heavy 3D or lots of filters — CPU rasterization will not hold up; use a GPU stack;
+- Heavy 3D or lots of filters — content is rasterized on the CPU (the GPU backend only
+  composites), which will not hold up; use a stack that draws on the GPU;
 - You expect "any production mini-program runs with zero adaptation" — there are still 13 known
   gaps, and complex apps need item-by-item verification;
 - Severely memory-constrained devices — the peak is high until the font backend is swapped.
@@ -290,7 +300,8 @@ interaction snapshots all need new baselines. That makes it its own round of wor
 ### Stack and dependencies
 
 Dependencies track current stable releases (`winit` excepted: 0.31 is beta-only, so the stable line
-is still 0.30).
+is still 0.30; `wgpu` is different again: it ships a breaking major version roughly every quarter,
+so it is pinned exactly, and upgrading is its own task that reruns every GPU check).
 
 | Dependency | Version | Purpose |
 |---|---|---|
@@ -301,14 +312,17 @@ is still 0.30).
 | [ureq](https://github.com/algesten/ureq) | 3.3 | `wx.request` and remote images (must use `http_status_as_error(false)` — in WeChat 4xx/5xx still go to `success`) |
 | [symphonia](https://github.com/pdeljanov/Symphonia) | 0.6 | Audio demux and decode (AAC / MP3 / MP4) |
 | [openh264](https://github.com/ralfbiedert/openh264-rs) | 0.9 | H.264 software decode (optional feature `h264`) |
-| [winit](https://github.com/rust-windowing/winit) + [softbuffer](https://github.com/rust-windowing/softbuffer) | 0.30 / 0.4 | Desktop window and software framebuffer (optional feature `desktop`) |
+| [winit](https://github.com/rust-windowing/winit) + [softbuffer](https://github.com/rust-windowing/softbuffer) | 0.30 / 0.4 | Desktop window and software framebuffer (optional feature `desktop`; also the present path when the GPU is unavailable) |
+| [wgpu](https://github.com/gfx-rs/wgpu) + [pollster](https://github.com/zesterer/pollster) | =30.0.1 / =1.0.1 | GPU compositing backend: Metal / Vulkan / DX12 / GLES (optional feature `gpu`) |
 | [rodio](https://github.com/RustAudio/rodio) | 0.22 | Desktop audio playback (optional feature `audio`) |
 | [jni](https://github.com/jni-rs/jni-rs) | 0.21 | Android JNI entry (compiled only for android targets) |
 
 Project size: **240 `.rs` files / ~53k lines** (29 of them test files). Any single file over 500
 lines gets split (exceptions must state the reason in the file header). Outside the FFI boundary
-(`extern "C"`) the whole library has **no `unsafe`** and no `static mut`: global state always goes
-through `RwLock` / `OnceLock` / `thread_local`.
+(`extern "C"`), `unsafe` appears only in **4 spots in `src/compositor/`** (three that view pixel
+slices as bytes, one that creates a wgpu surface from a native window pointer), each with a
+`SAFETY` note. There is no `static mut`: global state always goes through `RwLock` / `OnceLock` /
+`thread_local`.
 
 ---
 
@@ -361,7 +375,7 @@ and the log says why:
 How `auto` decides: the adapter must be an integrated or discrete GPU (software adapters such as
 llvmpipe never count), on Metal / Vulkan / DX12 (GLES only when `gpu` is forced); a start-up
 self-test composites a fixed frame on both backends (must be byte-identical) and compares steady
-cost (GPU main-thread time ≤ 0.8 × CPU composite, GPU completion < 4ms). Self-test mismatches and
+cost (GPU main-thread time ≤ 1ms, GPU completion < 4ms; not compared against CPU composite time, which excludes the CPU present cost). Self-test mismatches and
 repeated device loss are remembered per driver in a verdict cache.
 
 The chosen backend is logged once at startup (`🎨 渲染后端：GPU（Metal · Apple M3 Pro）— 自动选择`,
@@ -425,6 +439,7 @@ Feature flags:
 | `desktop` | ✅ | Desktop window (winit + softbuffer + clipboard) |
 | `audio` | ✅ | Built-in audio playback (sound for `<video>`) |
 | `h264` | ✅ | Built-in H.264 software decode. **Turn it off on mobile**: the system player's hardware decode is cheaper on battery, and openh264 does not build for the iOS simulator target |
+| `gpu` | ✅ | GPU compositing backend (wgpu), chosen at runtime, falls back to the CPU on any failure. Mobile builds leave it out: GPU presentation in the SDK is not wired up yet |
 | `bindgen` | ❌ | Turn on when cross-compiling |
 
 ### 2. Package it as a dependency (recommended)

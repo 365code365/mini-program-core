@@ -6,9 +6,15 @@
 //! fixed 层同时有 a=0 / a=255 / 半透明像素、带一条下拉指示器；再加一帧只放 Modal 的直通帧
 //! （不放随时间变化的 Toast / Loading，否则 CPU 与 GPU 两次合成之间相位会变）。
 //!
-//! Auto 还要比一次稳态成本：预热 2 次、采样 7 次取中位数。GPU 主线程时间（编码 + 提交）
-//! ≤ 0.8 × CPU 合成时间，且 GPU 完成时间 < 4ms（120Hz 一帧的一半）才用 GPU。
-//! 主线程时间是 GPU 真正替宿主省下的部分，所以用它和 CPU 比；完成时间只做上限检查。
+//! Auto 还要量一次稳态成本：预热 2 次、采样 7 次取中位数。GPU 主线程时间（编码 + 提交）
+//! ≤ 1ms，且 GPU 完成时间 < 4ms（120Hz 一帧的一半）才用 GPU。弱显卡会卡在完成时间上。
+//!
+//! **为什么不和 CPU 合成时间比**：最早的规则是「GPU 主线程 ≤ 0.8 × CPU 合成」，但自检里
+//! CPU 那一侧只是合成进内存（约 0.5ms），量不到 softbuffer 上屏 —— 窗口模式下 CPU 每帧
+//! 上屏实测 3~8ms（`MINI_FPS` 的「上屏」段），这才是 GPU 省掉的大头。拿不含上屏的 CPU
+//! 去比，恰好在 GPU 最有用的机器上把它判掉：M3 Pro 窗口启动时测得 GPU 主线程 0.467ms、
+//! CPU 0.473ms，被 0.8 倍那条拒了，而同一台机器窗口基准里 GPU p50 0.37ms、CPU 3.06ms。
+//! CPU 样本仍然采、仍然写进 `MINI_GPU_LOG`，只是不再参与判定。
 use super::readback::{cpu_rgba, first_mismatch};
 use super::GpuCompositor;
 use crate::compositor::{cpu, FrameLayers, LayerCanvas, OverlayRefs, PageCanvas, PullState};
@@ -17,12 +23,12 @@ use crate::{Canvas, Color};
 use std::time::Instant;
 
 /// 自检逻辑的版本：改了自检就 +1，判定缓存里旧的「自检不一致」记录随之失效（v2 修订 R15）
-pub const SELFTEST_REV: u32 = 1;
+pub const SELFTEST_REV: u32 = 2;
 
 const WARMUP: usize = 2;
 const SAMPLES: usize = 7;
-/// Auto 要求 GPU 主线程时间 ≤ 这个倍数 × CPU 合成时间
-pub const AUTO_MAX_MAIN_RATIO: f32 = 0.8;
+/// Auto 要求 GPU 主线程时间（编码 + 提交）≤ 这个值（ms）：144Hz 一帧 6.94ms 的约 1/7
+pub const AUTO_MAX_MAIN_MS: f32 = 1.0;
 /// Auto 要求 GPU 完成时间 < 这个值（ms）
 pub const AUTO_MAX_DONE_MS: f32 = 4.0;
 
@@ -54,9 +60,9 @@ impl Report {
 
     /// Auto 的性能结论：`Some(原因)` 表示不该用 GPU
     pub fn auto_rejection(&self) -> Option<String> {
-        let (g, d, c) = (self.gpu_main_ms(), self.gpu_done_ms(), self.cpu_ms());
-        if g > AUTO_MAX_MAIN_RATIO * c {
-            return Some(format!("自检：GPU 主线程 {g:.3}ms > {AUTO_MAX_MAIN_RATIO}×CPU {c:.3}ms"));
+        let (g, d) = (self.gpu_main_ms(), self.gpu_done_ms());
+        if g > AUTO_MAX_MAIN_MS {
+            return Some(format!("自检：GPU 主线程 {g:.3}ms > {AUTO_MAX_MAIN_MS}ms"));
         }
         if d >= AUTO_MAX_DONE_MS {
             return Some(format!("自检：GPU 完成 {d:.3}ms ≥ {AUTO_MAX_DONE_MS}ms"));
@@ -195,4 +201,35 @@ pub fn run(comp: &mut GpuCompositor, w: u32, h: u32, force_mismatch: bool) -> Re
     }
     comp.selftesting = false;
     report
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn report(samples: &[(f32, f32, f32)]) -> Report {
+        Report { mismatch: None, samples: samples.to_vec() }
+    }
+
+    /// 回归：M3 Pro 窗口启动时的实测样本（GPU 主线程 ≈ CPU 合成）不能再被判掉
+    #[test]
+    fn gpu_about_as_fast_as_in_memory_cpu_compose_is_accepted() {
+        let r = report(&[(0.467, 0.9, 0.473); 7]);
+        assert_eq!(r.auto_rejection(), None);
+    }
+
+    #[test]
+    fn slow_main_thread_or_slow_gpu_is_rejected() {
+        let r = report(&[(1.2, 0.9, 5.0); 7]);
+        assert!(r.auto_rejection().unwrap().contains("主线程"), "主线程超 1ms 要拒（不管 CPU 多慢）");
+        let r = report(&[(0.2, 4.5, 0.5); 7]);
+        assert!(r.auto_rejection().unwrap().contains("完成"), "GPU 完成 ≥ 4ms 要拒（弱显卡）");
+    }
+
+    #[test]
+    fn decision_uses_the_median_not_one_outlier() {
+        let mut s = vec![(0.2, 0.6, 0.5); 6];
+        s.push((9.0, 30.0, 0.5));
+        assert_eq!(report(&s).auto_rejection(), None);
+    }
 }

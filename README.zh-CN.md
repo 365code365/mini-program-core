@@ -44,7 +44,8 @@
 
 ### 它是什么、不是什么
 
-一句话：**小程序源码进，像素出**。中间没有浏览器内核、没有系统控件、没有第三方图形库。
+一句话：**小程序源码进，像素出**。中间没有浏览器内核、没有系统控件、没有第三方 2D 图形库
+（可选的 GPU 后端只拿 wgpu 做图层合成，不画内容）。
 
 ```
 输入                        引擎（纯 Rust 库）                     输出
@@ -95,7 +96,7 @@ my-mini-app/                                                    ┌────�
 | ⑥ | **绘制** | 逐层画进 RGBA 画布 | 自研 2D 光栅器：扫描线 + even-odd 填充、4× 超采样抗锯齿、圆角三次贝塞尔逼近（K=0.5523）、fontdue 字形 + 多字体回退、Apple `sbix` 彩色 emoji、图片双线性 + 面积两级过滤、线性/径向渐变、掩膜化 `box-shadow`、裁剪栈 |
 | ⑥' | **动画** | `@keyframes` / `transition` / `wx.createAnimation` | 在**绘制期**按全局时钟求值：`transform`/`opacity`/颜色只影响绘制，不触发重排 → 动画帧成本≈静态帧 |
 | ⑦ | **分层合成** | 正常流 → tabBar → `position:fixed` 覆盖层 | 与浏览器层叠顺序一致（全屏遮罩能压暗 tabBar）；覆盖层用视口坐标、独立画布、按需重绘 |
-| ⑧ | **上屏** | 贴到窗口 / 交给宿主 / 存 PNG | 桌面走 softbuffer；移动端把 RGBA 交给宿主 View；无头模式直接 `save_png` |
+| ⑧ | **上屏** | 贴到窗口 / 交给宿主 / 存 PNG | 桌面窗体默认走 GPU 合成（wgpu 把图层当纹理合成上屏），不可用时回退 softbuffer；移动端把 RGBA 交给宿主 View；无头模式默认 CPU 合成后直接 `save_png` |
 
 逻辑层与渲染层之间只有**数据快照**这一条通道（`setData` → `Arc<Value>`），没有 DOM、没有
 虚拟节点 diff、没有 GC 压力。
@@ -121,9 +122,13 @@ my-mini-app/                                                    ┌────�
 7. **宿主层沉进 lib，桌面与移动端共用一份。** 页面栈、覆盖层、触摸状态机、手势仲裁、
    picker 面板、像素合成都在 `src/host/`，只有帧调度各自实现。两条链路由
    `tools/sdk-parity.sh`（逐像素）+ `src/tests/engine_input_tests.rs`（输入行为）双重守着。
-8. **不引入 GPU、不做元素级位图缓存。** 定位就是「给我一块像素缓冲我就能画」；位图缓存与
-   动画/裁剪栈的交互复杂度不值当。抗锯齿也没换成子采样 —— 实测与 Chrome 的差异反而从
-   4.7% 涨到 5.3%。
+8. **内容只在 CPU 上光栅化，GPU 只做合成；不做元素级位图缓存。** 定位仍是「给我一块像素缓冲
+   我就能画」：CPU 光栅器是唯一的像素参考，没有 GPU 的 CI、嵌入式照样出同一张图。可选的 GPU 后端
+   （feature `gpu`）只把页面 / tabBar / fixed 三个图层当纹理合成上屏，用整数着色器复刻 CPU 的合成
+   算术，同一帧与 CPU **逐字节一致**，任何失败当帧回退 CPU（目前接进了桌面窗体与无头，移动端 SDK
+   仍走 CPU）。没用 vello / Skia 这类 GPU 光栅库：它们自带抗锯齿与字体栈，「与 CPU 逐字节一致」
+   就无从判定。位图缓存与动画/裁剪栈的交互复杂度不值当。抗锯齿也没换成子采样 —— 实测与 Chrome
+   的差异反而从 4.7% 涨到 5.3%。
 
 ### 现在到什么程度了（实测）
 
@@ -191,7 +196,7 @@ my-mini-app/                                                    ┌────�
 
 | 不做 | 原因 |
 |---|---|
-| GPU 渲染 | 定位是「有像素缓冲就能画」；纯 CPU 才能在无 GPU 环境（CI、嵌入式）里出图 |
+| GPU 光栅化 | GPU 只做合成上屏（见[设计取舍第 8 条](#八个关键设计取舍)）；内容一律由 CPU 画，CPU 才能当唯一的像素参考，无 GPU 环境（CI、嵌入式）也出同一张图 |
 | 解析 `.wxapkg` / 签名校验 | 分包、灰度、完整性属于宿主的事；引擎按**目录**读 |
 | 把 `<web-view>` / `<map>` 编进引擎 | 微信里它们是原生组件层。引擎算位置与参数，控件由宿主用 `WKWebView` / `android.webkit.WebView` / ArkUI `Web()` 放上去（[理由](doc/原生App集成指南.md)） |
 | 远程字体 `wx.loadFontFace` | 字体来自系统。API 存在且回调 `success`（否则会打断框架的 `onLaunch`），但不真的下载 |
@@ -238,13 +243,14 @@ my-mini-app/                                                    ┌────�
 **不适合**
 
 - 需要完整 Web 生态（任意 CSS 特性、第三方 H5 SDK、`<iframe>`）—— 那就该用 WebView；
-- 重度 3D / 大量滤镜 —— 纯 CPU 光栅撑不住，该上 GPU 方案；
+- 重度 3D / 大量滤镜 —— 内容光栅化在 CPU 上（GPU 后端只管合成），撑不住，该上 GPU 绘制的方案；
 - 期望「零适配跑通任意线上小程序」—— 还有 13 条已知差距，复杂应用需要逐项验证；
 - 内存极紧的设备 —— 字体后端换完之前峰值偏高。
 
 ### 技术栈与依赖
 
-依赖都跟到当前稳定版（`winit` 例外：最新的 0.31 只有 beta，稳定线仍是 0.30）。
+依赖都跟到当前稳定版（`winit` 例外：最新的 0.31 只有 beta，稳定线仍是 0.30；`wgpu` 另算：
+大约一季度一个破坏性大版本，所以锁死版本，升级单独立项并重跑全部 GPU 判据）。
 
 | 依赖 | 版本 | 用途 |
 |---|---|---|
@@ -255,12 +261,14 @@ my-mini-app/                                                    ┌────�
 | [ureq](https://github.com/algesten/ureq) | 3.3 | `wx.request` 与远程图片（必须 `http_status_as_error(false)`，微信里 4xx/5xx 也走 `success`） |
 | [symphonia](https://github.com/pdeljanov/Symphonia) | 0.6 | 音频解复用与解码（AAC / MP3 / MP4） |
 | [openh264](https://github.com/ralfbiedert/openh264-rs) | 0.9 | H.264 软解（可选特性 `h264`） |
-| [winit](https://github.com/rust-windowing/winit) + [softbuffer](https://github.com/rust-windowing/softbuffer) | 0.30 / 0.4 | 桌面窗口与软件帧缓冲（可选特性 `desktop`） |
+| [winit](https://github.com/rust-windowing/winit) + [softbuffer](https://github.com/rust-windowing/softbuffer) | 0.30 / 0.4 | 桌面窗口与软件帧缓冲（可选特性 `desktop`；也是 GPU 不可用时的上屏回退） |
+| [wgpu](https://github.com/gfx-rs/wgpu) + [pollster](https://github.com/zesterer/pollster) | =30.0.1 / =1.0.1 | GPU 合成后端：Metal / Vulkan / DX12 / GLES（可选特性 `gpu`） |
 | [rodio](https://github.com/RustAudio/rodio) | 0.22 | 桌面音频播放（可选特性 `audio`） |
 | [jni](https://github.com/jni-rs/jni-rs) | 0.21 | Android JNI 入口（只在 android 目标编译） |
 
 工程规模：**240 个 `.rs` 文件 / 约 5.3 万行**（含 29 个测试文件），单文件超 500 行就拆
-（例外要在文件头写理由）。除 FFI 边界（`extern "C"`）外全库**没有 `unsafe`**，也没有 `static mut`：
+（例外要在文件头写理由）。除 FFI 边界（`extern "C"`）外，`unsafe` 只出现在 **`src/compositor/` 的 4 处**
+（3 处把像素切片按字节看，1 处用原生窗口指针建 wgpu surface），每处都带 `SAFETY` 注释。没有 `static mut`：
 全局状态一律走 `RwLock` / `OnceLock` / `thread_local`。
 
 ---
@@ -307,7 +315,7 @@ GPU 初始化失败、自检不一致、运行中设备丢失或 surface 无法�
 | `MINI_GPU_FAULT=init\|selftest\|tint\|lost@N\|surface-lost@N\|timeout@N` | 故障注入，用来测回退：建设备后失败 / 自检判不一致 / 着色器 R+1 / 第 N 帧设备丢失 / 第 N 帧 surface 丢失 / 第 N 帧 acquire 超时 |
 
 `auto` 怎么选：适配器必须是集显或独显（llvmpipe 这类软件适配器一律不算），后端是 Metal / Vulkan / DX12（GLES 只在强制 `gpu` 时用）；
-启动自检用一张固定测试帧比较 GPU 与 CPU 输出（必须逐字节一致），并比一次稳态成本（GPU 主线程 ≤ 0.8 × CPU 合成、GPU 完成 < 4ms）。
+启动自检用一张固定测试帧比较 GPU 与 CPU 输出（必须逐字节一致），并比一次稳态成本（GPU 主线程 ≤ 1ms、GPU 完成 < 4ms；不和 CPU 合成时间比，因为自检量不到 CPU 的上屏开销）。
 自检不一致或设备丢失两次会记进判定缓存（`target/gpu/verdict.json` / 移动端沙盒），同一驱动下次直接走 CPU。
 
 启动时打一行选定结果（`🎨 渲染后端：GPU（Metal · Apple M3 Pro）— 自动选择`；不带 gpu feature 编译时是
@@ -367,6 +375,7 @@ bash tools/build-mobile.sh check     # 只做交叉编译检查
 | `desktop` | ✅ | 桌面窗体（winit + softbuffer + 剪贴板） |
 | `audio` | ✅ | 内置音频播放（`<video>` 的声音） |
 | `h264` | ✅ | 内置 H.264 软解。**移动端建议关掉**：交给系统播放器硬解更省电，且 openh264 在 iOS 模拟器目标上编不过 |
+| `gpu` | ✅ | GPU 合成后端（wgpu），运行时选、失败回退 CPU。移动端构建不带它：SDK 的 GPU 上屏还没接入 |
 | `bindgen` | ❌ | 交叉编译时打开 |
 
 ### 2. 打成依赖（推荐）
