@@ -382,6 +382,9 @@ The chosen backend is logged once at startup (`🎨 渲染后端：GPU（Metal �
 or `🎨 渲染后端：CPU — 未编译 GPU 支持` without the gpu feature). Every `MINI_FPS=1` line and every
 `--drag` report starts with a backend tag, e.g. `📊 [后端 GPU · Metal · Apple M3 Pro] …`. In GPU
 mode the window presents through a `Fifo` swapchain (vsync-paced) and the sleep + spin pacer is off.
+Because acquiring the next drawable blocks until vsync, the GPU `MINI_FPS` line excludes that wait
+from "最慢一帧" and "上屏" and shows it separately, e.g. `上屏 0.4[等 vsync 7.9]`. To spot dropped
+frames, read the frame interval (`帧间隔`), which is wall-clock and has nothing subtracted.
 
 Rendering benchmark. Every performance claim about the backends cites its output, not ad-hoc
 `--drag` runs:

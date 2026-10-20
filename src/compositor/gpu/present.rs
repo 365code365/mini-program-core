@@ -156,13 +156,17 @@ impl GpuCompositor {
                 s.surface.configure(&self.gpu.device, &s.config);
             }
         }
-        // 先 poll 再看健康旗标，然后才 acquire：设备丢失后 acquire 只会报 Validation，
-        // 而丢失回调要在 poll 里才触发 —— 顺序反了，回退原因就会被误报成「校验错误」
+        // 先把这一帧的纹理传好（直通帧还要先 CPU 合成整帧），**再** acquire。
+        //
+        // 顺序反过来（先 acquire 再上传）时：Fifo 的 acquire 阻塞到下一个 vsync 才放出 drawable，
+        // 这时离再下一个 vsync 只剩一个周期（120Hz 8.3ms），直通帧的 CPU 合成 + 4MB 上传
+        // （1~10ms）全压在这段里，赶不上就掉帧；实测「弹 Toast + setData」场景 360 帧掉 18 帧，
+        // acquire 最长等了 58ms。先准备再等，等 vsync 的那段时间就不是白等。
+        //
+        // prepare 里也会先 poll 再查健康旗标：设备丢失后 acquire 只会报 Validation，
+        // 而丢失回调要在 poll 里才触发 —— 顺序反了，回退原因会被误报成「校验错误」
         // （优先级：设备丢失 > 校验错误 > surface 丢失，v2 修订 R6）
-        self.gpu.poll_now();
-        if let Some(e) = self.gpu.health.fatal() {
-            return Err(e);
-        }
+        let prep = self.prepare(l)?;
         let Some(s) = self.surface.as_mut() else { return Err(GpuError::SurfaceLost("没有挂载 surface".into())) };
         let t_acq = Instant::now();
         let injected = match self.fault {
@@ -205,7 +209,7 @@ impl GpuCompositor {
         let acquire_ms = t_acq.elapsed().as_secs_f32() * 1000.0;
         let view_format = s.view_format;
         let view = frame.texture.create_view(&wgpu::TextureViewDescriptor { format: Some(view_format), ..Default::default() });
-        let mut stats = self.render_into(l, &view, view_format)?;
+        let mut stats = self.draw_submit(prep, &view, view_format)?;
         self.gpu.queue.present(frame);
         stats.acquire_ms = acquire_ms;
         Ok(PresentOutcome::Presented(stats))

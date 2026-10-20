@@ -246,27 +246,32 @@ impl ApplicationHandler for crate::MiniAppWindow {
                 }
                 self.render_frame_if_needed(structural, css_anim);
                 let t_render = frame_begin.elapsed();
+                self.gpu.clear_last();
                 self.present();
                 let t_presented = frame_begin.elapsed();
+                // GPU（Fifo）在 acquire 里阻塞到 vsync：那是在等，不是在干活。
+                // 「最慢一帧」与「上屏」都扣掉它，单独显示（见 fps_report::FpsWindow::worst_vsync_ms）
+                let vsync_wait = self.gpu.vsync_wait();
                 // --bench：记这一帧；drive 跑满就写 JSON 并退出事件循环
                 if self.bench.is_some() && self.bench_frame_end(frame_begin, t_logic, t_render, t_presented) {
                     event_loop.exit();
                     return;
                 }
                 if self.fps_log {
-                    let total = frame_begin.elapsed();
+                    let total = frame_begin.elapsed().saturating_sub(vsync_wait);
                     if total.as_secs_f32() * 1000.0 > self.fps_worst_ms {
                         self.fps_worst_parts = (
                             t_logic.as_secs_f32() * 1000.0,
                             (t_render - t_logic).as_secs_f32() * 1000.0,
-                            (total - t_render).as_secs_f32() * 1000.0,
+                            total.saturating_sub(t_render).as_secs_f32() * 1000.0,
                         );
                         self.fps_worst_render_parts = self.render_parts;
+                        self.fps_worst_vsync = self.gpu.active().then(|| vsync_wait.as_secs_f32() * 1000.0);
                     }
                 }
                 self.last_present = Instant::now();
-                // 本帧真正花在「逻辑 + 渲染 + 上屏」上的时间（不含为限速而睡的时间）
-                let work_ms = frame_begin.elapsed().as_secs_f32() * 1000.0;
+                // 本帧真正花在「逻辑 + 渲染 + 上屏」上的时间（不含为限速而睡的时间，也不含等 vsync）
+                let work_ms = frame_begin.elapsed().saturating_sub(vsync_wait).as_secs_f32() * 1000.0;
                 // 动画期间自己续订下一帧：只靠 about_to_wait 的定时唤醒时，
                 // 每个周期要多绕一次事件循环，实测在 144Hz 屏上只能跑到 ~47FPS
                 // （单帧渲染其实只要 4ms）。
@@ -303,6 +308,7 @@ impl ApplicationHandler for crate::MiniAppWindow {
                             worst_ms: self.fps_worst_ms,
                             worst_parts: self.fps_worst_parts,
                             worst_render_parts: self.fps_worst_render_parts,
+                            worst_vsync_ms: self.fps_worst_vsync,
                             animating: self.is_animating(),
                         };
                         println!("{}", app_window::fps_report::fps_line(&self.backend, &window));
@@ -319,6 +325,7 @@ impl ApplicationHandler for crate::MiniAppWindow {
                         self.fps_worst_ms = 0.0;
                         self.fps_worst_parts = (0.0, 0.0, 0.0);
                         self.fps_worst_render_parts = (0.0, 0.0, 0.0);
+                        self.fps_worst_vsync = None;
                         self.frame_gap_max_ms = 0.0;
                         self.frame_gap_min_ms = f32::MAX;
                     }

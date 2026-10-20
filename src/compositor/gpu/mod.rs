@@ -91,6 +91,13 @@ pub enum PresentOutcome {
     Skipped(&'static str),
 }
 
+/// [`GpuCompositor::prepare`] 的结果：纹理已同步，等着画进目标
+struct Prepared {
+    upload_bytes: u64,
+    pass_why: Option<&'static str>,
+    ms: f32,
+}
+
 /// 有 surface 时的上屏状态
 struct SurfaceState {
     surface: wgpu::Surface<'static>,
@@ -265,6 +272,16 @@ impl GpuCompositor {
 
     /// 把这一帧编码进 `target`（格式 `format`）并提交。故障注入、致命错误检查都在这里
     fn render_into(&mut self, l: &FrameLayers<'_>, target: &wgpu::TextureView, format: wgpu::TextureFormat) -> Result<GpuFrameStats, GpuError> {
+        let prep = self.prepare(l)?;
+        self.draw_submit(prep, target, format)
+    }
+
+    /// 第一步：同步图层纹理（含直通帧的 CPU 合成与整帧上传）、写 uniform。**不需要 drawable**。
+    ///
+    /// 与 [`draw_submit`](Self::draw_submit) 分开，是为了让上屏路径先做完这些、再去 acquire：
+    /// Fifo 的 acquire 会阻塞到 vsync，等回来再做的话，这些活（直通帧要 1~10ms）全部压在
+    /// 「拿到 drawable → 下一个 vsync」那几毫秒里，赶不上就掉一帧（见 present.rs）
+    fn prepare(&mut self, l: &FrameLayers<'_>) -> Result<Prepared, GpuError> {
         self.gpu.poll_now();
         if let Some(e) = self.gpu.health.fatal() {
             return Err(e);
@@ -274,6 +291,13 @@ impl GpuCompositor {
         self.last_pass = pass_why.is_some();
         let u = self.uniforms(l, pass_why.is_some());
         self.gpu.queue.write_buffer(&self.pipe.uniforms, 0, u.bytes());
+        Ok(Prepared { upload_bytes, pass_why, ms: t0.elapsed().as_secs_f32() * 1000.0 })
+    }
+
+    /// 第二步：画进 `target`（drawable 或离屏目标）并提交。故障注入、致命错误检查也在这里
+    fn draw_submit(&mut self, prep: Prepared, target: &wgpu::TextureView, format: wgpu::TextureFormat) -> Result<GpuFrameStats, GpuError> {
+        let Prepared { upload_bytes, pass_why, ms: prep_ms } = prep;
+        let t0 = Instant::now();
         let ph = &self.pipe.ph2d.view;
         fn view_of<'a>(t: &'a Option<Tex>, ph: &'a wgpu::TextureView) -> &'a wgpu::TextureView {
             t.as_ref().map(|t| &t.view).unwrap_or(ph)
@@ -306,7 +330,7 @@ impl GpuCompositor {
             pass.draw(0..3, 0..1);
         }
         self.gpu.queue.submit([enc.finish()]);
-        let encode_ms = t0.elapsed().as_secs_f32() * 1000.0;
+        let encode_ms = prep_ms + t0.elapsed().as_secs_f32() * 1000.0;
         self.gpu_frame += 1;
         if self.log {
             let line = match pass_why {

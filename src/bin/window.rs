@@ -135,6 +135,8 @@ struct MiniAppWindow {
     pull_refreshing: bool,
     /// 最慢一帧对应的 render 内部分段
     fps_worst_render_parts: (f32, f32, f32),
+    /// 最慢那一帧在 GPU acquire 里等 vsync 的时间（CPU 上屏为 None，见 fps_report）
+    fps_worst_vsync: Option<f32>,
     /// 当前页面数据快照。逻辑层 setData 之后才重新取，避免每帧一次全量 JSON 往返。
     page_data: std::sync::Arc<serde_json::Value>,
     page_data_dirty: bool,
@@ -247,6 +249,7 @@ impl MiniAppWindow {
             fps_worst_parts: (0.0, 0.0, 0.0),
             render_parts: (0.0, 0.0, 0.0),
             fps_worst_render_parts: (0.0, 0.0, 0.0),
+            fps_worst_vsync: None,
             last_animated_bounds: Vec::new(),
             fixed_layer_animates: false,
             drawn_area_positions: HashMap::new(),

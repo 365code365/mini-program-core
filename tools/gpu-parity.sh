@@ -20,7 +20,9 @@ BIN=./target/release/mini-app-window
 OUT=target/_gp
 [ -x "$BIN" ] || { echo "先 cargo build --release"; exit 1; }
 
-"$BIN" --backend-probe >/dev/null 2>&1
+# 强制 gpu 去探：这里问的是「有没有可用的 GPU」。按 Auto 探的话还要过性能门槛（GPU 完成 < 4ms），
+# 机器忙时（别的会话在编译）会被判掉，整轮误报「没有可用适配器」
+"$BIN" --backend gpu --backend-probe >/dev/null 2>&1
 case $? in
     0) ;;
     4) echo "❌ 这次构建关掉了 gpu feature（--no-default-features）：用默认 feature 重新 cargo build --release"; exit 4 ;;

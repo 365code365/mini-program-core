@@ -70,6 +70,22 @@ impl GpuSlot {
         }
     }
 
+    /// 窗口每帧上屏前清掉上一帧的账：这一帧要是没走到 GPU 上屏（没画布、被跳过），
+    /// 读到的不能是上一帧的 acquire 等待
+    pub fn clear_last(&mut self) {
+        #[cfg(feature = "gpu")]
+        {
+            self.last = None;
+        }
+    }
+
+    /// 这一帧在 acquire 里等 vsync 的时间（没走 GPU 上屏时为 0）
+    pub fn vsync_wait(&self) -> std::time::Duration {
+        self.last_frame()
+            .map(|g| std::time::Duration::from_secs_f32(g.acquire_ms.max(0.0) / 1000.0))
+            .unwrap_or_default()
+    }
+
     /// 当前是否由 GPU 合成
     pub fn active(&self) -> bool {
         #[cfg(feature = "gpu")]

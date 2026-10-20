@@ -193,9 +193,10 @@ fn guard(scene: &Scene, backend: &str, run: &Value, m: &RunMetrics) -> Result<()
     Ok(())
 }
 
-/// `--backend-probe` 的退出码：0 GPU 可用 / 3 不可用 / 4 没编进来
+/// `--backend-probe` 的退出码：0 GPU 可用 / 3 不可用 / 4 没编进来。
+/// 强制 gpu 去探：问的是「有没有可用的 GPU」，不该被 Auto 的性能门槛（机器忙时会超）误判
 fn probe_gpu() -> i32 {
-    Command::new(bin()).arg("--backend-probe").stdout(Stdio::null()).stderr(Stdio::null()).status().ok().and_then(|s| s.code()).unwrap_or(4)
+    Command::new(bin()).args(["--backend", "gpu", "--backend-probe"]).stdout(Stdio::null()).stderr(Stdio::null()).status().ok().and_then(|s| s.code()).unwrap_or(4)
 }
 
 fn machine() -> String {
