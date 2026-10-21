@@ -9,6 +9,8 @@ mod path;
 pub mod text;
 /// `font-family` → 具体字体（按字体栈解析 + 每族一份渲染器）
 pub mod text_family;
+/// `@font-face` / `wx.loadFontFace` 登记的字族（TTF / OTF）
+pub mod text_faces;
 // 彩色 Emoji 位图字形（Apple sbix）
 pub mod emoji;
 // 小程序资源根目录（图片等相对路径解析）
@@ -25,6 +27,21 @@ pub mod data_dir;
 
 /// `wx.setStorageSync` 的跨启动落盘
 pub mod storage_file;
+
+/// `wxfile://` 虚拟路径（downloadFile 的产物、USER_DATA_PATH）→ 数据目录下的沙盒
+pub mod wxfile;
+
+/// `wx.setClipboardData` / `getClipboardData`（引擎里一份，桌面窗体可同步系统剪贴板）
+pub mod clipboard;
+
+/// `wx.connectSocket`：每条连接一个线程，事件每帧取回
+pub mod websocket;
+
+/// `wx.getFileSystemManager()`：路径权限（USER_DATA_PATH 可写）与文件操作、unzip、图片信息
+pub mod wxfs;
+
+/// `wx.createInnerAudioContext()`：解码、按时钟走的播放位置、事件
+pub mod audio_ctx;
 
 /// 页面 json 的 `usingComponents`：自定义组件三件套加载与样式作用域
 pub mod using_components;
@@ -77,9 +94,17 @@ pub use ffi_app::*;
 mod ffi_backend;
 pub use ffi_backend::*;
 
+/// FFI 导出：嵌入宿主（Flutter 插件 / 原生 View）用的 C ABI：创建选项、改尺寸、安全区、
+/// 像素直写、事件队列、hostCall 回包、原生组件事件。只增不改，老接口一个没动
+mod ffi_embed;
+pub use ffi_embed::*;
+
 /// Android 的 JNI 入口（只在 android 目标编译）
 #[cfg(target_os = "android")]
 mod ffi_jni;
+/// Android 的 JNI 入口：嵌入宿主那组新接口 + Bitmap / ANativeWindow 两条像素出口
+#[cfg(target_os = "android")]
+mod ffi_jni_embed;
 
 // 单元测试
 #[cfg(test)]

@@ -20,9 +20,30 @@ pub mod engine;
 pub mod engine_backend;
 /// 出帧：pump → 按需重画 → 合成（从 engine.rs 拆出）
 mod engine_frame;
+/// 这一帧重画多少（只合成 / 局部 / 补条带 / 整帧）与整帧归因
+pub mod engine_damage;
 mod engine_input;
+/// 宿主浮层先吃指针（picker / 全屏视频 / Modal / Loading …）
+mod engine_overlay_input;
+/// 左边缘侧滑返回：留图、收尾动画、合成参数
+mod engine_edge_back;
 /// SDK 的 `MINI_FPS` 统计（FrameStats）
 pub mod engine_stats;
+/// 创建选项（系统信息、安全区、宿主 API、原生组件）
+pub mod engine_options;
+/// 引擎 → 宿主的事件队列（页面、导航栏、输入框、原生组件、hostCall、日志）
+pub mod engine_events;
+/// 宿主原生组件被引擎自己画的层（picker / 弹窗 / fixed / tabBar）挡住多少
+mod native_occlusion;
+/// 像素出口：RGBA / BGRA、带行跨度直写平台缓冲
+pub mod engine_pixels;
+/// 尺寸 / 像素比 / 安全区变化
+mod engine_resize;
+/// 生命周期（前后台 / 内存告警）、动画时钟与引擎时钟
+mod engine_life;
+/// SDK 的 GPU 上屏（原生 surface → GpuCompositor）
+#[cfg(feature = "gpu")]
+mod engine_gpu;
 /// 覆盖层状态：Toast/Loading/Modal 指令落地与查询（从 engine.rs 拆出）
 mod engine_ui;
 pub mod config;
@@ -36,10 +57,32 @@ pub mod picker_sheet;
 pub mod region_data;
 pub mod render;
 pub mod tabbar;
+/// 原生 tabBar 的运行时 API（setTabBarBadge / RedDot / Item / Style / show / hide）
+pub mod tabbar_api;
 /// 点击命中与事件派发（tap / change 的链路）
 pub mod tap;
 pub mod touch;
+/// scroll-view 事件、`wx.pageScrollTo`、`onPageScroll`（SDK 与桌面共用）
+pub mod scroll_view;
+/// swiper 的 change / transition / animationfinish 派发（SDK 与桌面共用）
+pub mod swiper;
+/// slider 拖动的 changing / change 派发（SDK 与桌面共用）
+pub mod slider_input;
+/// 组件自己的事件（不冒泡）派发给逻辑层
+mod own_events;
+/// `<form>` 的提交与重置（form-type 按钮）
+pub mod form;
+/// 点击之后内置组件的行为：form 提交 / 重置、navigator 跳转、label 转发
+mod builtin_tap;
+/// `<video>` 的 VideoContext 命令、组件事件与点击播放（SDK 与桌面共用）
+pub mod video;
+/// `wx.createSelectorQuery` 与 ScrollViewContext（SDK 与桌面共用）
+pub mod selector_query;
+/// `wx.createIntersectionObserver`（SDK 与桌面共用）
+pub mod observers;
 pub mod ui_overlay;
+/// wx.setBackgroundColor（帧底色）与 wx.hideKeyboard（输入框失焦）
+pub mod window_api;
 
 pub use config::*;
 pub use navigation::*;
@@ -47,6 +90,8 @@ pub use page_loader::{load_all_pages, load_custom_tabbar, load_custom_tabbar_wit
 pub use render::*;
 pub use tabbar::*;
 pub use engine::MiniEngine;
+pub use engine_options::{EngineOptions, SafeAreaInsets};
+pub use engine_pixels::PixelFormat;
 pub use ui_overlay::{render_ui_overlay, LoadingState, ModalState, ToastState};
 
 /// 逻辑视口宽（pt/dp）。小程序的设计基准是 750rpx 对应这个宽度。

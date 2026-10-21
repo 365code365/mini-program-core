@@ -16,6 +16,8 @@ impl ApplicationHandler for crate::MiniAppWindow {
         let window = Arc::new(event_loop.create_window(WindowAttributes::default()
             .with_title("Mini App").with_inner_size(winit::dpi::LogicalSize::new(LOGICAL_WIDTH, LOGICAL_HEIGHT)).with_resizable(false)).unwrap());
         window.set_ime_allowed(true);
+        // 交互窗体：wx.setClipboardData / getClipboardData 走系统剪贴板（无头与测试不碰它）
+        mini_render::clipboard::use_system(true);
         // 依据显示器刷新率设定每帧间隔，适配 60/120/144Hz 等高刷屏
         let monitor_mhz = window.current_monitor()
             .and_then(|m| m.refresh_rate_millihertz())
@@ -164,6 +166,8 @@ impl ApplicationHandler for crate::MiniAppWindow {
                     self.needs_redraw = true;
                     self.fixed_dirty = true;
                     self.force_full_redraw = true;
+                    // scroll-view 的离屏缓存也要作废：数据没变它就一直「干净」，贴回去的还是占位图（G-1）
+                    if let Some(r) = self.renderer.as_mut() { r.invalidate_offscreen_caches(); }
                 }
                 // 长按要由帧驱动：手指按住不动时没有任何输入事件进来，
                 // 只在 move/up 里判时间的话那一下永远等不到

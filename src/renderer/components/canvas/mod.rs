@@ -46,6 +46,8 @@ pub struct Canvas2DContext {
     current_path: Vec<PathCommand>,
     /// 状态栈
     state_stack: Vec<ContextState>,
+    /// 渐变 / 图案源、阴影、合成模式（`fx2d`）
+    fx: fx2d::Fx,
 }
 
 /// Canvas 文本渲染用的全局字体（懒加载系统字体）
@@ -88,6 +90,7 @@ struct ContextState {
     text_baseline: TextBaseline,
     global_alpha: f32,
     transform: [f32; 6],
+    fx: fx2d::Fx,
 }
 
 // ── `Canvas2DContext` 的方法按职责分片（都是 `impl Canvas2DContext`）──
@@ -99,13 +102,28 @@ mod draw2d;
 mod path2d;
 /// 文字与渐变
 mod text2d;
+/// 渐变 / 图案填充、阴影、合成模式（走覆盖率蒙版）
+pub mod fx2d;
+/// 2D 新接口补的那几条：setTransform、ellipse / arcTo、putImageData、像素读回、精确量宽
+mod extra2d;
 
 /// 渐变对象（线性 / 径向）
 mod gradient;
 /// 画布上下文管理器与命令回放
 mod manager;
+/// 一条 JSON 指令的解释执行（旧接口与 type="2d" 共用）
+mod commands;
 pub use gradient::{LinearGradient, RadialGradient};
-pub use manager::{ensure_canvas_context, execute_canvas_draw, CanvasContextManager, CANVAS_MANAGER};
+pub use manager::{ensure_canvas_context, execute_canvas_draw, take_canvas_dirty, CanvasContextManager, CANVAS_MANAGER};
+pub use extra2d::measure_text as canvas_measure_text;
+
+/// 画布在管理器里的键：旧接口按 `canvas-id`，`type="2d"` 按 `2d#<id>`（逻辑层 Canvas 节点用同一个键）
+pub fn canvas_key(attrs: &HashMap<String, String>) -> Option<String> {
+    if attrs.get("type").map(|s| s.trim()) == Some("2d") {
+        return attrs.get("id").filter(|s| !s.is_empty()).map(|id| format!("2d#{id}"));
+    }
+    attrs.get("canvas-id").filter(|s| !s.is_empty()).cloned()
+}
 
 impl CanvasComponent {
     pub fn build(node: &WxmlNode, ctx: &mut ComponentContext) -> Option<RenderNode> {
@@ -117,8 +135,9 @@ impl CanvasComponent {
         let events = extract_events(node);
         let attrs = node.attributes.clone();
         
-        // 设置默认背景色为白色
-        if ns.background_color.is_none() {
+        // 旧接口的画布默认白底（沿用既有基线）；`type="2d"` 与浏览器 / 微信一致是透明的
+        let is_2d = node.get_attr("type").map(|s| s.trim() == "2d").unwrap_or(false);
+        if ns.background_color.is_none() && !is_2d {
             ns.background_color = Some(Color::WHITE);
         }
         
@@ -140,8 +159,8 @@ impl CanvasComponent {
         // 绘制背景
         draw_background(canvas, &node.style, x, y, w, h);
         
-        // 获取 canvas-id
-        let canvas_id = node.attrs.get("canvas-id").cloned().unwrap_or_default();
+        // 管理器里的键：`canvas-id`，或 `type="2d"` 的 `2d#<id>`
+        let canvas_id = canvas_key(&node.attrs).unwrap_or_default();
         
         // 从全局管理器获取绘制内容并复制到主 canvas
         if !canvas_id.is_empty() {
@@ -149,6 +168,9 @@ impl CanvasComponent {
                 // 先让后备缓冲与元素实际尺寸/设备像素比一致（必要时重建并重放指令），
                 // 之后就能 1:1 拷贝：canvas 内容是原生分辨率，不做任何放大。
                 let dpr = if sf.is_finite() && sf > 0.0 { sf } else { 1.0 };
+                if std::env::var("MINI_CANVAS_LOG").is_ok() {
+                    eprintln!("[Canvas] draw {canvas_id} at ({x:?},{y:?}) {w:?}x{h:?} dpr={dpr:?}");
+                }
                 manager.sync_backing(
                     &canvas_id,
                     (w / dpr).round().max(0.0) as u32,

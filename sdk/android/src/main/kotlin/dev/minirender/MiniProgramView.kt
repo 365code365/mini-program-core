@@ -194,7 +194,11 @@ class MiniProgramView @JvmOverloads constructor(
         requestFrame()
     }
 
-    /** 功能键：enter / backspace / delete / left / right / home / end / selectall */
+    /**
+     * 功能键：enter / newline / backspace / delete / left / right / up / down / home / end、
+     * shift+… 扩展选区、word-left / word-right、doc-start / doc-end、delete-word-back、
+     * selectall / copy / cut / undo / redo / escape。回车也可以 sendText("\n")（textarea 换行）
+     */
     fun sendKey(name: String) {
         post { if (handle != 0L) MiniEngine.nativeKey(handle, name) }
         requestFrame()

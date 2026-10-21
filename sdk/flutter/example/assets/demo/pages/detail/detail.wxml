@@ -1,0 +1,9 @@
+<!-- 静态页：没有定时器与动画（MINI_AUTODUMP 拿这一页与屏幕截图逐像素对，画面得是定的） -->
+<view class="card">
+  <text class="title">详情页</text>
+  <view class="kv"><text class="kv-k">来自（query.from）</text><text class="kv-v">{{from}}</text></view>
+  <view class="kv"><text class="kv-k">完整 query</text><text class="kv-v">{{query}}</text></view>
+  <view class="kv"><text class="kv-k">页面栈深度</text><text class="kv-v">{{depth}}</text></view>
+  <view class="btn" bindtap="rename">wx.setNavigationBarTitle</view>
+  <view class="btn" bindtap="goBack">wx.navigateBack</view>
+</view>

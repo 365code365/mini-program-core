@@ -141,6 +141,24 @@ impl WxmlParser {
         }
         
         self.expect('>')?;
+
+        // `<wxs>` 的内容是 JS，不是 WXML：`for (i = 0; i < n; i++)` 里的 `<` 按标签解析会
+        // 直接报「Empty tag name」，整页都没了。按原始文本读到 `</wxs>` 为止，存成唯一的
+        // 文本子节点（模板展开时整个 wxs 节点不渲染，脚本原文留给 wxs 模块支持用）。
+        if tag_name == "wxs" {
+            let body = self.read_raw_until("</wxs");
+            if !body.trim().is_empty() {
+                node.children.push(WxmlNode::new_text(&body));
+            }
+            if self.starts_with("</wxs") {
+                for _ in 0.."</wxs".len() {
+                    self.advance();
+                }
+                self.skip_whitespace();
+                self.expect('>')?;
+            }
+            return Ok(Some(node));
+        }
         
         // 解析子节点
         node.children = self.parse()?;
@@ -251,6 +269,16 @@ impl WxmlParser {
         }
     }
     
+    /// 原样读到 `end` 出现之前（不含 `end`）；没有 `end` 就读到结尾
+    fn read_raw_until(&mut self, end: &str) -> String {
+        let mut text = String::new();
+        while self.pos < self.input.len() && !self.starts_with(end) {
+            text.push(self.current_char());
+            self.advance();
+        }
+        text
+    }
+
     fn parse_comment(&mut self) {
         // Skip <!--
         for _ in 0..4 {

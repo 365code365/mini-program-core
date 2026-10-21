@@ -36,12 +36,10 @@ impl crate::MiniAppWindow {
         }
         if self.page_data_dirty {
             self.fixed_dirty = true;
-            self.page_data = std::sync::Arc::new(
-                self.app
-                    .eval("__getRenderData()")
-                    .map(|s| serde_json::from_str(&s).unwrap_or(json!({})))
-                    .unwrap_or(json!({})),
-            );
+            // 取数据顺带对账组件实例（每处使用一个实例），与 SDK 引擎共用一个入口
+            let empty = Default::default();
+            let (nodes, tpls) = self.page_stack.last().map_or((&[][..], &empty), |p| (&p.wxml_nodes[..], &p.component_templates));
+            self.page_data = std::sync::Arc::new(app_window::component_mount::render_data(&self.app, nodes, tpls));
             self.page_data_dirty = false;
         }
         // Arc 克隆：只加引用计数，不复制整棵 JSON（渲染期同时要可变借用 canvas/renderer）
@@ -110,11 +108,7 @@ impl crate::MiniAppWindow {
         } };
         // 页面底色以 `page { background-color }` 为准（微信语义），拿不到才退回默认灰。
         // 写死 #F5F5F5 会让在 page 上定义暖色底的应用整体色调都不对。
-        let page_bg = self
-            .renderer
-            .as_ref()
-            .and_then(|r| r.page_style().background)
-            .unwrap_or(Color::from_hex(0xF5F5F5));
+        let page_bg = mini_render::host::window_api::background(self.renderer.as_ref().and_then(|r| r.page_style().background));
         let mut content_height = 0.0f32;
         if let Some(canvas) = &mut self.canvas {
             // 先声明这一帧写的是哪块（以后的 GPU 镜像按它补传），再清屏 + 画
@@ -329,12 +323,7 @@ impl crate::MiniAppWindow {
         let page = self.page_stack.last()?;
         let has_tabbar = self.is_tabbar_page(&page.path);
         // 画布之外的填充色同样取 page 底色，避免露出突兀的灰边
-        let present_bg = self
-            .renderer
-            .as_ref()
-            .and_then(|r| r.page_style().background)
-            .map(|c| ((c.r as u32) << 16) | ((c.g as u32) << 8) | c.b as u32)
-            .unwrap_or(0xF5F5F5);
+        let present_bg = mini_render::host::window_api::background_rgb(self.renderer.as_ref().and_then(|r| r.page_style().background));
         let gap = self.scroll.top_gap();
         Some(FrameLayers {
             width,
@@ -357,7 +346,7 @@ impl crate::MiniAppWindow {
                 phase: (self.started_at.elapsed().as_secs_f32() * 1.1).fract(),
             }),
             overlays: OverlayRefs {
-                last_frame: self.last_frame,
+                anim_secs: self.overlay_clock(),
                 toast,
                 loading,
                 modal,

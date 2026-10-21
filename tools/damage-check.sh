@@ -10,7 +10,8 @@ export MINI_FAKE_NOW="${MINI_FAKE_NOW:-2024-03-15}"
 export MINI_BACKEND="${MINI_BACKEND:-cpu}"
 
 cd "$(dirname "$0")/.."
-pkill -9 mini-app-window 2>/dev/null
+# 不再 `pkill -9 mini-app-window`：那会把**别的会话 / 别的脚本**正在跑的快照进程一起杀掉
+# （对方只看到「跑挂了」，查半天查不到原因）。超时只杀自己起的那个进程，见 snap()。
 
 snap() { # route eval outdir [env]
   local route="$1" ev="$2" out="$3" extra="$4"
@@ -22,9 +23,11 @@ snap() { # route eval outdir [env]
     MINI_LAYOUT_LOG=1 ./target/release/mini-app-window sample-app \
       --route "$route" --time 2 --eval "$ev" --snapshot "$out" > "/tmp/$(basename "$out").log" 2>&1 &
   fi
-  local P=$!
-  sleep 9
+  local P=$! i=0
+  # 等它自己出图退出，最多 9s。从前是死等 `sleep 9`：10 次快照固定 90s，而一次快照实际 1~3s
+  while kill -0 $P 2>/dev/null && [ $i -lt 90 ]; do sleep 0.1; i=$((i+1)); done
   kill -0 $P 2>/dev/null && kill -9 $P
+  wait $P 2>/dev/null
 }
 
 FAIL=0

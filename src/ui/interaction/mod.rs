@@ -28,6 +28,22 @@ pub struct FocusedInput {
     pub text_offset: f32, // 文本滚动偏移（物理像素）
     pub maxlength: i32, // 最大输入长度，-1 为不限制
     pub input_type: String, // 输入类型：text/number/idcard/digit
+    /// `<textarea>`：`\n` 是合法字符、↑↓ 按行走、Home/End 到**当前行**首尾
+    pub multiline: bool,
+    /// 键盘右下角按钮（`confirm-type`）。input 默认 `done`；textarea 默认 `return`，
+    /// 即回车就是换行、不触发 `bindconfirm`（微信 textarea 文档的语义）
+    pub confirm_type: String,
+    /// `confirm-hold`：按确认后保持聚焦、键盘不收
+    pub confirm_hold: bool,
+    /// 光标正好在软换行处时，画在**上一行行尾**而不是下一行行首。
+    ///
+    /// 同一个字符下标在软换行处对应两个位置（上一行末 / 下一行首），只靠下标分不出来：
+    /// 不记这一位的话，在折行的那一行按 End，光标会跳到下一行开头去。
+    pub caret_upstream: bool,
+    /// 连续 ↑↓ 时保持的目标横坐标（设备像素）：从长行经过短行再到长行，光标要回到原来那一列
+    pub goal_x: Option<f32>,
+    /// 撤销 / 重做
+    pub history: EditHistory,
 }
 
 impl FocusedInput {
@@ -79,7 +95,16 @@ impl FocusedInput {
     }
     
     /// 验证字符是否符合输入类型要求
+    ///
+    /// 控制字符一律不收：字体里没有它们的字形，画出来就是豆腐块（`\r`、`\t`、退格码……）。
+    /// `\n` 只有多行输入框收 —— 单行 input 里出现换行同样是豆腐块。
     pub fn validate_char(&self, c: char) -> bool {
+        if c == '\n' {
+            return self.multiline;
+        }
+        if c.is_control() {
+            return false;
+        }
         match self.input_type.as_str() {
             "number" => c.is_ascii_digit() || c == '-',
             "digit" => c.is_ascii_digit() || c == '.',
@@ -138,15 +163,6 @@ pub fn calculate_cursor_position(text: &str, char_widths: &[f32], click_x: f32, 
 
     // 点击在所有字符之后，光标在末尾
     text.chars().count()
-}
-
-/// 拖动中的滑块
-#[derive(Clone, Debug)]
-pub struct DraggingSlider {
-    pub id: String,
-    pub bounds: Rect,
-    pub min: f32,
-    pub max: f32,
 }
 
 /// 交互组件类型
@@ -223,14 +239,28 @@ pub struct ClickAnimation {
 pub struct InteractionManager {
     /// 组件状态
     pub states: HashMap<String, ComponentState>,
-    /// 状态切换时刻（秒，全局动画时钟），用于 switch 滑块等状态过渡动画
+    /// 按压态的过渡起点（秒，全局动画时钟）：按下 / 松手时写，`:active` / `hover-class`
+    /// 的 `transition` 插值从这里起算。
     pub transitions: HashMap<String, f32>,
+    /// switch / checkbox **真正被拨动**的时刻（秒，全局动画时钟），只有切换路径写。
+    ///
+    /// 不能与 `transitions` 共用一张表：按下任何可点元素都会往 `transitions` 写
+    /// 「按压起点」，switch 的滑块要是也读它，就把每次按下都当成一次拨动 ——
+    /// 拨过一次之后再按（哪怕只是从开关上开始拖页面），滑块先跳回对面再滑回来，
+    /// 轨道颜色也跟着闪成半截主色。
+    pub toggled_at: HashMap<String, f32>,
     /// 聚焦的输入框
     pub focused_input: Option<FocusedInput>,
     /// 拖动中的滑块
     pub dragging_slider: Option<DraggingSlider>,
+    /// 本页的 slider（每帧登记：数值属性 + 轨道几何），见 slider.rs
+    sliders: HashMap<String, SliderSpec>,
+    /// 写入 slider 交互状态时 WXML 里的 `value`：页面 setData 改了它，交互状态就作废（受控）
+    slider_origin: HashMap<String, f64>,
     /// 滚动控制器集合
     pub scroll_controllers: HashMap<String, ScrollController>,
+    /// 每个 scroll-view 的受控属性与事件状态（键同 `scroll_controllers`）
+    pub scroll_views: HashMap<String, crate::ui::scroll_view_state::ScrollViewState>,
     /// 正在拖动的滚动区域 ID
     pub dragging_scroll_area: Option<String>,
     /// 按下的按钮
@@ -247,6 +277,12 @@ pub struct InteractionManager {
     pub is_selecting_text: bool,
     /// 选择起始位置（用于拖动选择）
     pub selection_anchor: Option<usize>,
+    /// 每个 textarea 最近一次绘制的折行结果（键是组件 id）。
+    ///
+    /// ↑↓ / Home / End 要按**看到的**行走，点击要按看到的行定位光标，而折行只有绘制端
+    /// 知道（要量字宽）。所以绘制时写回这里，编辑时读 —— 与单行输入框回写 `text_offset`
+    /// 同一个路子。没聚焦的也记：第一次点进去就要按行定位，那时还没有 `FocusedInput`。
+    pub text_layouts: HashMap<String, TextLayout>,
 }
 
 // ── 按职责切开的几片（都是 `impl InteractionManager`）──
@@ -260,39 +296,80 @@ mod hit;
 mod input_edit;
 /// 指针交互（点击 / 滑块 / 按压态）
 mod pointer;
+/// 滑块：登记、拖动、点按跳转、受控值
+mod slider;
+/// 撤销 / 重做栈
+mod edit_history;
+/// `FocusedInput` 的构造与区间编辑
+mod focused_edit;
+/// 按键名 → [`KeyInput`]（SDK 的 `key()` 与无头 `--key` 共用一张表）
+mod key_names;
+/// 视觉行：折行结果、按行移动光标、点击定位、按词移动
+pub mod text_lines;
+
+pub use edit_history::{EditHistory, EditKind};
+pub use slider::{DraggingSlider, SliderSpec};
+pub use key_names::KEY_NAMES;
+pub use text_lines::{TextLayout, TextLine};
 
 impl InteractionManager {
     pub fn new() -> Self {
         Self {
             states: HashMap::new(),
             transitions: HashMap::new(),
+            toggled_at: HashMap::new(),
             focused_input: None,
             dragging_slider: None,
+            sliders: HashMap::new(),
+            slider_origin: HashMap::new(),
             pressed_button: None,
             press_feedback: None,
             hover_specs: HashMap::new(),
             click_animations: Vec::new(),
             elements: Vec::new(),
             scroll_controllers: HashMap::new(),
+            scroll_views: HashMap::new(),
             dragging_scroll_area: None,
             is_selecting_text: false,
             selection_anchor: None,
+            text_layouts: HashMap::new(),
         }
+    }
+
+    /// 绘制端写回一个 textarea 的折行结果。
+    ///
+    /// 没有 `id` 属性的组件，id 里含坐标（滚动后会变），表就会越记越多 ——
+    /// 超过上限整表清掉重来：下一帧画到的那几个会立刻记回来。
+    pub fn record_text_layout(&mut self, id: &str, layout: TextLayout) {
+        const CAP: usize = 64;
+        if self.text_layouts.len() >= CAP && !self.text_layouts.contains_key(id) {
+            self.text_layouts.clear();
+        }
+        self.text_layouts.insert(id.to_string(), layout);
     }
 }
 
 
 /// 键盘输入类型
-#[derive(Debug, Clone)]
+///
+/// 与平台无关的**编辑意图**：桌面窗体按键码 + 修饰键翻译成它（mac 用 ⌥/⌘、其它平台用 Ctrl，
+/// 见 `bin/app_window/events/keyboard.rs`），SDK 按键名翻译（[`KeyInput::from_name`]）。
+#[derive(Debug, Clone, PartialEq)]
 pub enum KeyInput {
     Char(char),
     Backspace,
     Delete,
     Left,
     Right,
+    /// 到**当前行**行首（单行 input 就是全文开头）
     Home,
+    /// 到当前行行尾
     End,
+    /// 回车 / 键盘右下角按钮：input 触发 confirm；textarea 在 `confirm-type="return"`
+    /// （默认）时换行，否则同样触发 confirm
     Enter,
+    /// 只换行（Shift+Enter）：textarea 无论 `confirm-type` 都换行；单行 input 等同 Enter
+    Newline,
     Escape,
     SelectAll,      // Ctrl+A
     Copy,           // Ctrl+C
@@ -302,6 +379,28 @@ pub enum KeyInput {
     ShiftRight,     // Shift+Right
     ShiftHome,      // Shift+Home
     ShiftEnd,       // Shift+End
+    /// 上一行 / 下一行（单行 input：到开头 / 结尾，与浏览器一致）
+    Up,
+    Down,
+    ShiftUp,
+    ShiftDown,
+    /// 按词移动（mac ⌥←→、其它平台 Ctrl+←→）
+    WordLeft,
+    WordRight,
+    ShiftWordLeft,
+    ShiftWordRight,
+    /// 全文开头 / 结尾（mac ⌘↑↓、其它平台 Ctrl+Home/End）
+    DocStart,
+    DocEnd,
+    ShiftDocStart,
+    ShiftDocEnd,
+    /// 删到词首 / 词尾（⌥⌫ / Ctrl+⌫、⌥⌦ / Ctrl+⌦）
+    DeleteWordBack,
+    DeleteWordForward,
+    /// 删到行首（mac ⌘⌫）
+    DeleteLineBack,
+    Undo,
+    Redo,
 }
 
 /// 交互结果
@@ -309,14 +408,16 @@ pub enum KeyInput {
 pub enum InteractionResult {
     Toggle { id: String, checked: bool },
     Select { id: String, value: String },
-    SliderChange { id: String, value: i32 },
-    SliderEnd { id: String },
+    /// 点按 slider 跳到了新值（拖动不走这里：由手势仲裁推进，见 interaction/slider.rs）
+    SliderChange { id: String, value: f64 },
     /// 输入框获得焦点。`value` 是聚焦瞬间的文本，微信的 `bindfocus` 事件
     /// `detail` 里带的就是它（`{ value, height }`）。
     Focus { id: String, bounds: Rect, click_x: f32, is_fixed: bool, value: String },
     InputChange { id: String, value: String },
     InputBlur { id: String, value: String },
-    InputConfirm { id: String, value: String }, // 按下回车/完成键
+    /// 按下回车/完成键。`keep_focus` 是 `confirm-hold`：为真时输入框仍聚焦，
+    /// 宿主**不要**收键盘、不要关输入法
+    InputConfirm { id: String, value: String, keep_focus: bool },
     ButtonClick { id: String, bounds: Rect },
     CopyText { text: String },
     CutText { text: String, id: String, value: String },

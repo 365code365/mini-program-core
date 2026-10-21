@@ -57,6 +57,12 @@ impl WxmlRenderer {
         self.anim_time.unwrap_or_else(crate::renderer::anim::now_secs)
     }
 
+    /// 这一刻的动画时钟（秒）。宿主自己画的动画（提示框里的转圈）跟它走，
+    /// `set_animation_time` 定住时快照里的转角也定住，像素才可比
+    pub fn animation_clock(&self) -> f32 {
+        self.animation_time()
+    }
+
     /// 取（并缓存）动画名对应的时间轴
     pub(super) fn timeline_for(&mut self, name: &str) -> Option<&crate::renderer::anim::Timeline> {
         if !self.timelines.contains_key(name) {

@@ -1,17 +1,19 @@
 //! 窗口事件处理模块
 
 use std::sync::Arc;
-use std::time::Instant;
 use winit::event::{ElementState, MouseScrollDelta};
 use winit::window::Window;
 
 use mini_render::runtime::UiEvent;
 
-use super::{NavigationRequest, ui_overlay::{ToastState, LoadingState, ModalState}};
+use super::{NavigationRequest, ui_overlay::{self, ToastState, LoadingState, ModalState}};
 use super::events::{keyboard, ime, wheel};
 use super::interaction_handler::{handle_interaction_result, print_js_output};
 
-/// 处理 UI 事件（Toast/Loading/Modal）
+/// 处理 UI 事件（Toast/Loading/Modal、下拉刷新）。
+///
+/// 提示框与弹窗怎么落到状态上由 `ui_overlay::apply_feedback_event` 决定（与 SDK 同一份：
+/// Toast 与 Loading 共用一个槽位、hide 的「混用」）；这里只剩下拉刷新是窗体自己的事。
 pub fn process_ui_events(
     app: &mut mini_render::runtime::MiniApp,
     toast: &mut Option<ToastState>,
@@ -20,65 +22,12 @@ pub fn process_ui_events(
     pull_down: &mut Option<bool>,
 ) -> bool {
     let events = app.drain_ui_events();
-    let mut needs_redraw = false;
-    
+    let needs_redraw = !events.is_empty();
     for event in events {
-        match event {
-            UiEvent::ShowToast { title, icon, duration } => {
-                *toast = Some(ToastState {
-                    title,
-                    icon,
-                    visible: true,
-                    start_time: Instant::now(),
-                    duration_ms: duration,
-                });
-                needs_redraw = true;
-            }
-            UiEvent::HideToast => {
-                if let Some(t) = toast {
-                    t.visible = false;
-                }
-                needs_redraw = true;
-            }
-            UiEvent::ShowLoading { title } => {
-                *loading = Some(LoadingState {
-                    title,
-                    visible: true,
-                });
-                needs_redraw = true;
-            }
-            UiEvent::HideLoading => {
-                if let Some(l) = loading {
-                    l.visible = false;
-                }
-                needs_redraw = true;
-            }
-            UiEvent::ShowModal { title, content, show_cancel, cancel_text, confirm_text } => {
-                *modal = Some(ModalState {
-                    title,
-                    content,
-                    show_cancel,
-                    cancel_text,
-                    confirm_text,
-                    visible: true,
-                    pressed_button: None,
-                });
-                needs_redraw = true;
-            }
-            UiEvent::HideModal => {
-                if let Some(m) = modal {
-                    m.visible = false;
-                }
-                needs_redraw = true;
-            }
-            UiEvent::StartPullDownRefresh => {
-                *pull_down = Some(true);
-                needs_redraw = true;
-            }
-            UiEvent::StopPullDownRefresh => {
-                *pull_down = Some(false);
-                needs_redraw = true;
-            }
+        match ui_overlay::apply_feedback_event(event, toast, loading, modal) {
+            Some(UiEvent::StartPullDownRefresh) => *pull_down = Some(true),
+            Some(UiEvent::StopPullDownRefresh) => *pull_down = Some(false),
+            _ => {}
         }
     }
     needs_redraw
@@ -320,25 +269,15 @@ pub fn handle_cursor_moved(
                 needs_redraw = true;
             }
         }
-    } else if interaction.is_dragging_slider() {
-        if let Some(result) = interaction.handle_mouse_move(x, y + scroll.get_position()) {
-            handle_interaction_result(
-                &result,
-                window,
-                renderer,
-                app,
-                clipboard,
-                scroll.get_position(),
-                scale_factor,
-            );
-        }
-        needs_redraw = true;
     }
+    // 注：slider 拖动也不在这里推进 —— 与 SDK 共用手势仲裁（横向锁定才交给滑块），
+    // 见 `pointer_input::apply_gesture_move` 的 `slider_changed`。
     // 注：**滚动不在这里推进**。谁滚、往哪滚由手势仲裁决定
     // （方向锁定 / 嵌套传递 / catchtouchmove 锁滚动，见 app_window::gesture），
     // 这里再推一次会和它打架（一次移动被应用两遍）。
     let _ = timestamp;
     let _ = scroll;
+    let _ = (y, window, renderer, app, clipboard);
     
     needs_redraw
 }

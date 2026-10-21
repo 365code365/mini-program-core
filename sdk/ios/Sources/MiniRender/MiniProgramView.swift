@@ -204,7 +204,9 @@ public final class MiniProgramView: UIView {
         mr_app_text_input(h, text)
     }
 
-    /// 功能键：enter / backspace / delete / left / right / home / end / selectall
+    /// 功能键：enter / newline / backspace / delete / left / right / up / down / home / end、
+    /// shift+… 扩展选区、word-left / word-right、doc-start / doc-end、delete-word-back、
+    /// selectall / copy / cut / undo / redo / escape。回车也可以 sendText("\n")（textarea 换行）
     public func sendKey(_ name: String) {
         guard let h = handle else { return }
         mr_app_key(h, name)

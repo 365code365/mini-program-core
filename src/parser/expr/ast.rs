@@ -11,7 +11,7 @@ pub(super) enum Expr {
     Null,
     Ident(String),
     Array(Vec<Expr>),
-    Object(Vec<(String, Expr)>),
+    Object(Vec<ObjEntry>),
     Not(Box<Expr>),
     Neg(Box<Expr>),
     Pos(Box<Expr>),
@@ -21,11 +21,18 @@ pub(super) enum Expr {
     Ternary(Box<Expr>, Box<Expr>, Box<Expr>),
     Member(Box<Expr>, String),
     Index(Box<Expr>, Box<Expr>),
-    /// 函数调用：**解析得下来但不求值**（求值恒为 `null`）。微信的 WXML 里也只有
-    /// wxs 模块能调用函数，模板表达式里写 `{{ f(x) }}` 同样拿不到结果 —— 保留这个
-    /// 变体是为了不让解析在这种写法上整条失败（否则整个属性值都没了）。
-    #[allow(dead_code)]
+    /// 函数调用。微信的 WXML 里只有 wxs 模块的函数能调用（`{{m.f(x)}}`，见 `wxs.rs`），
+    /// 其余 `{{ f(x) }}` 拿不到结果、求值为 `null` —— 这种写法照样要解析得下来，
+    /// 否则整个属性值都没了。
     Call(Box<Expr>, Vec<Expr>),
+}
+
+/// 对象字面量的一项。`<template data>` 的三种写法都靠它：显式 `a: 1`、
+/// 简写 `foo`（= `foo: foo`）、展开 `...obj`（后写的同名键覆盖先写的，JS 语义）。
+#[derive(Debug, Clone)]
+pub(super) enum ObjEntry {
+    Prop(String, Expr),
+    Spread(Expr),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -254,22 +261,31 @@ impl Parser {
             }
             Tok::LBrace => {
                 let mut props = Vec::new();
-                if self.cur() != &Tok::RBrace {
-                    loop {
-                        // key 可以是 ident 或字符串
-                        let key = match self.advance() {
-                            Tok::Ident(k) => k,
-                            Tok::Str(k) => k,
+                // 允许尾逗号 `{a: 1,}`（JS 合法）
+                while self.cur() != &Tok::RBrace {
+                    if self.cur() == &Tok::Spread {
+                        self.advance();
+                        props.push(ObjEntry::Spread(self.parse_ternary()?));
+                    } else {
+                        // key 可以是 ident 或字符串；只有 ident 能写简写
+                        let (key, can_shorthand) = match self.advance() {
+                            Tok::Ident(k) => (k, true),
+                            Tok::Str(k) => (k, false),
                             other => return Err(format!("expected object key, got {:?}", other)),
                         };
-                        self.expect(&Tok::Colon)?;
-                        let val = self.parse_ternary()?;
-                        props.push((key, val));
-                        if self.cur() == &Tok::Comma {
+                        if self.cur() == &Tok::Colon {
                             self.advance();
+                            props.push(ObjEntry::Prop(key, self.parse_ternary()?));
+                        } else if can_shorthand {
+                            props.push(ObjEntry::Prop(key.clone(), Expr::Ident(key)));
                         } else {
-                            break;
+                            return Err(format!("expected ':' after object key {key:?}"));
                         }
+                    }
+                    if self.cur() == &Tok::Comma {
+                        self.advance();
+                    } else {
+                        break;
                     }
                 }
                 self.expect(&Tok::RBrace)?;

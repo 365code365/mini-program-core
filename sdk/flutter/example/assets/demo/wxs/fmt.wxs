@@ -1,0 +1,25 @@
+// 外部 wxs 模块（<wxs src="/wxs/fmt.wxs" module="fmt"/>）：在渲染层执行的格式化函数。
+// wxs 里没有 new Date() 与正则字面量，用 getDate() / getRegExp()。
+var price = function (fen) {
+  var yuan = (fen / 100).toFixed(2);
+  return '¥' + yuan;
+};
+
+var pad = function (n) {
+  return n < 10 ? '0' + n : '' + n;
+};
+
+var date = function (ts) {
+  var d = getDate(ts);
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+};
+
+var maskPhone = function (s) {
+  return s.replace(getRegExp('(\\d{3})\\d{4}(\\d{4})'), '$1****$2');
+};
+
+module.exports = {
+  price: price,
+  date: date,
+  maskPhone: maskPhone
+};

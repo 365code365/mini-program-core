@@ -1,0 +1,27 @@
+.cond { margin-top: 12rpx; padding: 18rpx; border-radius: 8rpx; color: #ffffff; }
+.cond-a { background-color: #07c160; }
+.cond-b { background-color: #10aeff; }
+.cond-c { background-color: #e64340; }
+.goods { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; padding: 14rpx 0; border-bottom: 1rpx solid #f0f0f0; }
+.g-name { flex: 1; font-size: 28rpx; }
+.g-price { color: #e64340; font-weight: bold; }
+.g-tags { display: flex; flex-direction: row; width: 100%; margin-top: 6rpx; }
+.g-tag { margin-right: 10rpx; padding: 2rpx 10rpx; font-size: 20rpx; color: #fa9d3b; border: 1rpx solid #fa9d3b; border-radius: 6rpx; }
+.inline { display: flex; flex-direction: row; align-items: center; }
+.dot { width: 48rpx; height: 48rpx; line-height: 48rpx; text-align: center; color: #ffffff; background-color: #576b95; border-radius: 24rpx; }
+.sep { margin: 0 12rpx; color: #999999; }
+.kitem { display: flex; flex-direction: row; justify-content: space-between; align-items: center; padding: 10rpx 0; border-bottom: 1rpx solid #f0f0f0; }
+.user { display: flex; flex-direction: row; align-items: center; padding: 16rpx 0; border-bottom: 1rpx solid #f0f0f0; }
+.avatar { width: 80rpx; height: 80rpx; margin-right: 20rpx; border-radius: 40rpx; }
+.user-body { flex: 1; display: flex; flex-direction: column; }
+.user-name { font-size: 28rpx; font-weight: bold; }
+.user-sub { margin-top: 4rpx; font-size: 22rpx; color: #999999; }
+.vip { padding: 2rpx 12rpx; font-size: 20rpx; color: #8a5a00; background-color: #ffd666; border-radius: 6rpx; }
+.tpl { margin-top: 12rpx; padding: 16rpx; border-radius: 8rpx; font-size: 26rpx; }
+.tpl-a { color: #07c160; background-color: #e8f8ee; }
+.tpl-b { color: #10aeff; background-color: #e6f4ff; }
+.entries-inner { background-color: #fafafa; border-radius: 8rpx; }
+.footer { margin-top: 8rpx; padding: 16rpx; text-align: center; font-size: 24rpx; color: #999999; background-color: #fafafa; border-radius: 8rpx; }
+.footer-sub { margin-top: 4rpx; font-size: 20rpx; color: #b2b2b2; }
+.bind-demo { margin-top: 16rpx; padding: 18rpx; text-align: center; background-color: #f2f2f2; border-radius: 8rpx; }
+.hl { background-color: #8a5cf5; }

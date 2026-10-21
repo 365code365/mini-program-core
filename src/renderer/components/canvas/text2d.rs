@@ -25,6 +25,13 @@ impl Canvas2DContext {
             _ => y, // alphabetic/ideographic
         };
         let (px, py) = self.tp(ax, ay);
+        if !self.fx.trivial(false) {
+            let text = text.to_string();
+            return self.paint_with_fx(false, |mask| {
+                let paint = Paint::new().with_color(Color::WHITE).with_style(PaintStyle::Fill);
+                tr.draw_text(mask, &text, px, py, size, &paint);
+            });
+        }
         let color = self.apply_alpha(self.fill_style);
         if let Ok(mut canvas) = self.canvas.lock() {
             let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill);
@@ -35,10 +42,12 @@ impl Canvas2DContext {
     /// 描边文本（本实现以填充近似）
     pub fn stroke_text(&mut self, text: &str, x: f32, y: f32) {
         // 保存 fill，用 stroke 颜色画文本
-        let saved = self.fill_style;
+        let saved = (self.fill_style, self.fx.fill.clone());
         self.fill_style = self.stroke_style;
+        self.fx.fill = self.fx.stroke.clone();
         self.fill_text(text, x, y);
-        self.fill_style = saved;
+        self.fill_style = saved.0;
+        self.fx.fill = saved.1;
     }
 
     /// 创建线性渐变

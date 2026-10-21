@@ -2,6 +2,8 @@
   // swiper 的 wrap/dots 已由 vnode 生成；这里只“一次性”为每个 swiper 绑定滚动/自动播放，
   // 并直接操作 dot 的 active 类（不写入 vnode.attrs，故 patch 不会覆盖）。
   function initWidgets() {
+    // scroll-view 的受控位置（scroll-top / scroll-left / scroll-into-view），见 08f_scroll.js
+    if (typeof syncScrollViews === "function") syncScrollViews();
     document.querySelectorAll(".wx-radio-group").forEach(function (g, gi) {
       var name = "wxradio_" + gi;
       g.querySelectorAll(".wx-radio").forEach(function (r) { r.name = name; });

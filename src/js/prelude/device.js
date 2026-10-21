@@ -3,7 +3,20 @@
             // 字段要给全：`safeArea` / `safeAreaInsets` / `statusBarHeight` 这些是
             // 布局算式的输入（刘海屏留白、吸底栏高度），应用普遍直接点进去取值。
             // 少一个字段就是一个 `cannot read property 'bottom' of undefined`。
+            //
+            // 宿主（移动端 SDK / Flutter 插件）会在 app.js 之前写入 `__hostSystemInfo`：
+            // 真实的屏幕尺寸、像素比、安全区、平台。没写时（桌面窗体、无头快照）
+            // 就是下面这份 375×667 的默认值，与从前一致。
             wx.getSystemInfoSync = function() {
+                var info = __defaultSystemInfo();
+                if (typeof __hostSystemInfo === 'object' && __hostSystemInfo) {
+                    // 深拷贝：页面拿到对象后改字段（常见于框架做适配），不能污染下一次调用
+                    var host = JSON.parse(JSON.stringify(__hostSystemInfo));
+                    for (var k in host) { info[k] = host[k]; }
+                }
+                return info;
+            };
+            function __defaultSystemInfo() {
                 var w = 375, h = 667, statusBar = 20;
                 return {
                     platform: 'devtools',
@@ -34,7 +47,30 @@
                     deviceOrientation: 'portrait',
                     benchmarkLevel: 1
                 };
+            }
+            // 窗口尺寸变化（转屏、分屏、折叠屏）：宿主调 mr_app_resize 后由引擎派发
+            var __windowResizeListeners = [];
+            wx.onWindowResize = function(cb) {
+                if (typeof cb === 'function') __windowResizeListeners.push(cb);
             };
+            wx.offWindowResize = function(cb) {
+                __windowResizeListeners = cb
+                    ? __windowResizeListeners.filter(function(f) { return f !== cb; })
+                    : [];
+            };
+            function __dispatchWindowResize() {
+                var i = wx.getSystemInfoSync();
+                var res = { size: { windowWidth: i.windowWidth, windowHeight: i.windowHeight,
+                                    screenWidth: i.screenWidth, screenHeight: i.screenHeight },
+                            deviceOrientation: i.deviceOrientation };
+                var page = (typeof __currentPage === 'object' && __currentPage) ? __currentPage : null;
+                if (page && typeof page.onResize === 'function') {
+                    try { page.onResize(res); } catch (e) { console.error(e); }
+                }
+                __windowResizeListeners.slice().forEach(function(cb) {
+                    try { cb(res); } catch (e) { console.error(e); }
+                });
+            }
             // 新版拆分出来的几个查询接口，字段取自同一份系统信息
             wx.getWindowInfo = function() {
                 var i = wx.getSystemInfoSync();
@@ -55,14 +91,21 @@
                 return { SDKVersion: i.SDKVersion, version: i.version, language: i.language,
                          theme: i.theme, fontSizeSetting: i.fontSizeSetting };
             };
+            // 宿主在 __hostSystemInfo 里给了 systemSetting / appAuthorizeSetting 就以它为准
+            // （真实的蓝牙 / 定位开关与授权状态只有宿主知道），没给时是下面这份默认值
+            function __hostOverride(key, base) {
+                var h = (typeof __hostSystemInfo === 'object' && __hostSystemInfo) ? __hostSystemInfo[key] : null;
+                if (h && typeof h === 'object') { for (var k in h) base[k] = h[k]; }
+                return base;
+            }
             wx.getSystemSetting = function() {
-                return { bluetoothEnabled: false, locationEnabled: false, wifiEnabled: true,
-                         deviceOrientation: 'portrait' };
+                return __hostOverride('systemSetting', { bluetoothEnabled: false, locationEnabled: false, wifiEnabled: true,
+                         deviceOrientation: wx.getSystemInfoSync().deviceOrientation });
             };
             wx.getAppAuthorizeSetting = function() {
-                return { albumAuthorized: 'authorized', cameraAuthorized: 'authorized',
+                return __hostOverride('appAuthorizeSetting', { albumAuthorized: 'authorized', cameraAuthorized: 'authorized',
                          locationAuthorized: 'authorized', microphoneAuthorized: 'authorized',
-                         notificationAuthorized: 'authorized' };
+                         notificationAuthorized: 'authorized' });
             };
             
             wx.getSystemInfo = function(options) {

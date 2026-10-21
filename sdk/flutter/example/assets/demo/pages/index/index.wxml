@@ -1,0 +1,43 @@
+<import src="/templates/entry.wxml"/>
+
+<view class="hero">
+  <text class="hero-title">mini_render 能力演示</text>
+  <text class="hero-sub">同一份小程序源码，由 Rust 引擎直接画成原生画面；导航栏、键盘、原生组件与宿主能力由 Flutter 承接。</text>
+  <view class="hero-stats">
+    <view class="stat">
+      <view class="stat-num">{{pageCount}}</view>
+      <view class="stat-label">演示页</view>
+    </view>
+    <view class="stat">
+      <view class="stat-num">{{platform}}</view>
+      <view class="stat-label">平台</view>
+    </view>
+    <view class="stat">
+      <view class="stat-num">{{theme}}</view>
+      <view class="stat-label">主题</view>
+    </view>
+  </view>
+</view>
+
+<view class="card">
+  <text class="title">屏幕与安全区</text>
+  <text class="desc">{{screen}}</text>
+</view>
+
+<view class="card">
+  <text class="title">快速体验</text>
+  <view class="btns">
+    <view class="btn-s" bindtap="toast">Toast</view>
+    <view class="btn-s" bindtap="sheet">ActionSheet</view>
+    <view class="btn-s" bindtap="modal">Modal</view>
+    <view class="btn-o" bindtap="toTab" data-url="/pages/components/components">组件 ›</view>
+    <view class="btn-o" bindtap="toTab" data-url="/pages/apis/apis">接口 ›</view>
+  </view>
+  <view class="result" wx:if="{{quick}}"><text>{{quick}}</text></view>
+</view>
+
+<block wx:for="{{groups}}" wx:key="key">
+  <template is="group" data="{{...item}}"/>
+</block>
+
+<include src="/templates/footer.wxml"/>

@@ -5,7 +5,6 @@ use super::{cpu_rgba, first_mismatch, open, GpuCompositor, OpenOptions};
 use crate::compositor::select::{SelectInput, GPU_COMPILED};
 use crate::compositor::{cpu, BackendPref, DeviceInfo, FrameLayers, LayerCanvas, OverlayRefs, PageCanvas, Platform, PrefSource, PullState};
 use crate::{Canvas, Color, Rect};
-use std::time::Instant;
 
 fn open_for_test(w: u32, h: u32) -> Option<GpuCompositor> {
     open_with_fault(w, h, None)
@@ -105,7 +104,7 @@ fn random_layer_configs_match_cpu_byte_for_byte() {
             fixed: (rng.u(3) != 0).then_some(&fixed),
             fixed_rows: (rng.u(4) != 0).then(|| (rows, (rows + rng.u(h)).min(h + 5))),
             pull: (rng.u(3) == 0).then(|| PullState { gap_logical: rng.u(80) as f32, refreshing: rng.u(2) == 0, progress: 0.7, phase: 0.25 }),
-            overlays: OverlayRefs::none(Instant::now()),
+            overlays: OverlayRefs::none(),
             edge_back: None,
         };
         check(&mut comp, &l, &format!("配置 #{case}"));
@@ -169,7 +168,7 @@ fn incremental_mirror_200_steps_match_cpu() {
             fixed: None,
             fixed_rows: None,
             pull: None,
-            overlays: OverlayRefs::none(Instant::now()),
+            overlays: OverlayRefs::none(),
             edge_back: None,
         };
         check(&mut comp, &l, &format!("第 {step} 步"));
@@ -190,7 +189,7 @@ fn tint_fault_is_detected() {
     let l = FrameLayers {
         width: w, height: h, scale: 2.0, page: &page, scroll_px: 0, page_bg: 0, has_tabbar: false,
         tabbar: None, tabbar_px: 0, fixed: None, fixed_rows: None, pull: None,
-        overlays: OverlayRefs::none(Instant::now()), edge_back: None,
+        overlays: OverlayRefs::none(), edge_back: None,
     };
     comp.compose_offscreen(&l, true).unwrap();
     let gpu = comp.read_back().unwrap();
@@ -210,7 +209,7 @@ fn lost_fault_surfaces_as_device_lost() {
     let l = FrameLayers {
         width: w, height: h, scale: 2.0, page: &page, scroll_px: 0, page_bg: 0, has_tabbar: false,
         tabbar: None, tabbar_px: 0, fixed: None, fixed_rows: None, pull: None,
-        overlays: OverlayRefs::none(Instant::now()), edge_back: None,
+        overlays: OverlayRefs::none(), edge_back: None,
     };
     assert!(comp.compose_offscreen(&l, true).is_ok(), "第 1 帧正常");
     let second = comp.compose_offscreen(&l, true);

@@ -85,11 +85,17 @@ pub fn build(binding: &PickerBinding) -> PickerSheetState {
         columns,
         selected,
         handler: binding.change_handler.clone(),
+        column_handler: binding.column_handler.clone(),
+        cancel_handler: binding.cancel_handler.clone(),
+        header_text: binding.header_text.clone(),
+        column_changes: Vec::new(),
         visible: true,
         pressed: None,
         anim_from: Instant::now(),
         closing: false,
         date_fields,
+        viewport: (LOGICAL_WIDTH as f32, LOGICAL_HEIGHT as f32),
+        wheel: WheelState::default(),
     }
 }
 

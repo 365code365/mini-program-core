@@ -149,7 +149,9 @@ pub fn load_app_source(root: &str) -> Result<AppSource, String> {
     let mut pages = Vec::new();
     for route in &page_routes {
         let prefix = format!("{}/{}", root, route);
-        let wxml_src = match std::fs::read_to_string(format!("{}.wxml", prefix)) {
+        // 与原生端同一个加载函数：import/include 在读文件时解析，H5 拿到的是同一棵树
+        let wxml_path = format!("{}.wxml", prefix);
+        let wxml_src = match crate::parser::wxml_file::read_expanded(Path::new(root), Path::new(&wxml_path)) {
             Ok(s) => s,
             Err(_) => { eprintln!("  跳过 {}（无 wxml）", route); continue; }
         };
@@ -184,7 +186,7 @@ pub fn load_app_source(root: &str) -> Result<AppSource, String> {
 /// 加载 `custom-tab-bar/` 组件（不存在则返回 None）。
 fn load_custom_tab_bar(root: &str, app_js: &str) -> Option<TabBarSource> {
     let dir = Path::new(root).join("custom-tab-bar");
-    let wxml_src = std::fs::read_to_string(dir.join("index.wxml")).ok()?;
+    let wxml_src = crate::parser::wxml_file::read_expanded(Path::new(root), &dir.join("index.wxml")).ok()?;
     let wxss = std::fs::read_to_string(dir.join("index.wxss")).unwrap_or_default();
     let js = std::fs::read_to_string(dir.join("index.js")).unwrap_or_default();
     let wxml = WxmlParser::new(&wxml_src).parse().ok()?;

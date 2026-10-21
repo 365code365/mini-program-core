@@ -1,0 +1,34 @@
+.kf-row { display: flex; flex-direction: row; justify-content: space-between; padding: 16rpx 0; }
+.kf-cell { display: flex; flex-direction: column; align-items: center; width: 120rpx; }
+.kf-name { margin-top: 16rpx; font-size: 20rpx; color: #999999; }
+.spin, .pulse, .breathe, .bounce, .hue { width: 64rpx; height: 64rpx; border-radius: 12rpx; background-color: #07c160; }
+.spin { animation: spin 2s linear infinite; }
+.pulse { background-color: #10aeff; border-radius: 32rpx; animation: pulse 1.2s ease-in-out infinite alternate; }
+.breathe { background-color: #fa9d3b; animation: breathe 1.6s ease-in-out infinite alternate; }
+.bounce { background-color: #e64340; border-radius: 32rpx; animation: bounce 0.8s ease-in-out infinite alternate; }
+.hue { animation: hue 3s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes pulse { from { transform: scale(0.6); } to { transform: scale(1.1); } }
+@keyframes breathe { from { opacity: 1; } to { opacity: 0.15; } }
+@keyframes bounce { from { transform: translateY(-16rpx); } to { transform: translateY(16rpx); } }
+@keyframes hue {
+  0% { background-color: #07c160; }
+  33% { background-color: #10aeff; }
+  66% { background-color: #8a5cf5; }
+  100% { background-color: #07c160; }
+}
+.loader { display: flex; flex-direction: row; justify-content: center; padding: 16rpx 0; }
+.ld { width: 20rpx; height: 20rpx; margin: 0 10rpx; border-radius: 10rpx; background-color: #576b95; animation: blink 1s ease-in-out infinite; }
+.ld2 { animation-delay: 0.2s; }
+.ld3 { animation-delay: 0.4s; }
+@keyframes blink { 0% { opacity: 0.2; } 50% { opacity: 1; } 100% { opacity: 0.2; } }
+
+.tr-row { display: flex; flex-direction: row; justify-content: space-between; }
+.tr { width: 300rpx; padding: 36rpx 0; text-align: center; font-size: 24rpx; border-radius: 12rpx; transition: all 0.35s ease; }
+.tr1 { color: #ffffff; background-color: #10aeff; }
+.tr1:active { transform: scale(1.12); background-color: #0a8fd4; }
+.tr2 { color: #333333; background-color: #f2f2f2; }
+.tr2-on { color: #ffffff; background-color: #8a5cf5; transform: rotate(-6deg); }
+
+.stage { height: 220rpx; display: flex; flex-direction: row; align-items: center; padding-left: 40rpx; background-color: #f7f7f7; border-radius: 8rpx; }
+.ball { width: 100rpx; height: 100rpx; border-radius: 20rpx; background-color: #07c160; }

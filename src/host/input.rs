@@ -41,6 +41,8 @@ pub struct GestureEffect {
     /// 能做局部重绘的宿主（桌面窗体）据此只重画位置变了的那个 scroll-view，
     /// 而不是整条带 —— 其余像素一点没变。
     pub area_scrolled: bool,
+    /// 正在拖的 slider 换了值：宿主要派发 `changing`（[`super::slider_input::dispatch_changing`]）
+    pub slider_changed: bool,
 }
 
 /// 把触摸状态机产出的事件派发给逻辑层。
@@ -180,6 +182,10 @@ pub fn scroll_took_over(
     if (scroll.get_position() - scroll_pos_at_press).abs() > 0.5 {
         return true;
     }
+    // swiper 接手了这次拖动：与滚动接管一样补 touchcancel、不再算点击
+    if crate::renderer::components::swiper_is_dragging() {
+        return true;
+    }
     interaction
         .dragging_scroll_area
         .as_ref()
@@ -217,8 +223,29 @@ pub fn begin_gesture(
     // 栈底（tab 首页）没有这个手势 —— 微信里在首页往右划什么也不会发生。
     let allow_edge_back =
         EdgeBack::at_edge(x) && stack_depth > 1 && !on_fixed_layer && !edge_back_busy;
+    // swiper：起点下最内层的那个；比命中的 scroll-view 小（在它里面）就算更内层
+    let swiper = renderer.and_then(|r| {
+        let hy = if on_fixed_layer { y } else { y + scroll_pos };
+        r.swiper_at(x, hy, on_fixed_layer).map(|s| {
+            let area = s.bounds.width * s.bounds.height;
+            let inner = candidate
+                .as_ref()
+                .and_then(|(id, _)| interaction.scroll_area_bounds(id))
+                .map(|(b, _)| area < b.width * b.height)
+                .unwrap_or(true);
+            ((s.id.clone(), if s.vertical { Axis::Vertical } else { Axis::Horizontal }), inner)
+        })
+    });
+    let (swiper, swiper_inner) = match swiper {
+        Some((s, inner)) => (Some(s), inner),
+        None => (None, false),
+    };
+    // slider：起点下最上层的元素就是它（覆盖层用视口坐标，正常流用内容坐标）
+    let slider = interaction.slider_at(x, if on_fixed_layer { y } else { y + scroll_pos }, on_fixed_layer);
     DragGesture::new((x, y), candidate, catch_move, page_scrollable)
         .allow_edge_back(allow_edge_back)
+        .with_swiper(swiper, swiper_inner)
+        .with_slider(slider)
 }
 
 /// 把手势仲裁的结果落到滚动控制器/侧滑返回上（方向锁定 + 嵌套传递都在这里生效）。
@@ -251,10 +278,13 @@ pub fn apply_gesture_move(
                 // 这个 scroll-view 根本没有滚动控制器（内容不足一屏，压根不用滚）：
                 // 直接把手势交给页面，否则手指划在它上面时整页都不动 ——
                 // 「短列表挡住整页滚动」正是这么来的。
-                let cannot_scroll = interaction
-                    .get_scroll_controller(id)
-                    .map(|c| c.get_max_scroll() <= 0.5)
-                    .unwrap_or(true);
+                // 开了自定义下拉刷新的 scroll-view 例外：内容再短也要能被拉下来（拉的是它的刷新区）
+                let refresher = interaction.scroll_views.get(id).map(|s| s.refresher_enabled).unwrap_or(false);
+                let cannot_scroll = !(refresher && axis == Axis::Vertical)
+                    && interaction
+                        .get_scroll_controller(id)
+                        .map(|c| c.get_max_scroll() <= 0.5)
+                        .unwrap_or(true);
                 if cannot_scroll {
                     if log {
                         let max = interaction.get_scroll_controller(id).map(|c| c.get_max_scroll());
@@ -280,12 +310,18 @@ pub fn apply_gesture_move(
                 // （手指往下推时内容已经到顶、往上推时已经到底）。
                 // 不能用「位置没变」判断：控制器有橡皮筋越界，到边界后位置照样在动。
                 let (_, dy) = g.delta();
+                // 开了自定义下拉刷新：到顶后往下拉是在拉它自己的刷新区，不交给页面
+                let refresher = interaction.scroll_views.get(id).map(|s| s.refresher_enabled).unwrap_or(false);
                 let keep_pushing = interaction
                     .get_scroll_controller(id)
                     .map(|c| {
-                        c.get_max_scroll() <= 0.5
-                            || (c.is_at_top() && dy > 0.0)
-                            || (c.is_at_bottom() && dy < 0.0)
+                        if refresher {
+                            c.is_at_bottom() && dy < 0.0 && c.get_max_scroll() > 0.5
+                        } else {
+                            c.get_max_scroll() <= 0.5
+                                || (c.is_at_top() && dy > 0.0)
+                                || (c.is_at_bottom() && dy < 0.0)
+                        }
                     })
                     .unwrap_or(true);
                 eff.needs_redraw = true;
@@ -337,6 +373,31 @@ pub fn apply_gesture_move(
                 }
                 break;
             }
+            // swiper 跟手：从按下点开始拖（锁定那一刻内容不跳），松手在 end_drags 里吸附 / 翻页
+            GestureAction::BeginSwiper { ref id, axis } => {
+                let (sx, sy) = g.start();
+                crate::renderer::components::swiper_drag_begin(id, if axis == Axis::Horizontal { sx } else { sy });
+                crate::renderer::components::swiper_drag_update(id, if axis == Axis::Horizontal { x } else { y });
+                eff.needs_redraw = true;
+                break;
+            }
+            GestureAction::UpdateSwiper { ref id, axis } => {
+                crate::renderer::components::swiper_drag_update(id, if axis == Axis::Horizontal { x } else { y });
+                eff.needs_redraw = true;
+                break;
+            }
+            // slider 跟手：值变了才重画、才发 changing（吸附到 step 后多数移动不换值）
+            GestureAction::BeginSlider { ref id } => {
+                let (sx, _) = g.start();
+                eff.slider_changed = interaction.begin_slider_drag(id, sx, x).is_some();
+                eff.needs_redraw = eff.slider_changed;
+                break;
+            }
+            GestureAction::UpdateSlider { .. } => {
+                eff.slider_changed = interaction.drag_slider_to(x).is_some();
+                eff.needs_redraw = eff.slider_changed;
+                break;
+            }
         }
     }
     *gesture = Some(g);
@@ -353,6 +414,9 @@ pub fn end_drags(
     gesture: &mut Option<DragGesture>,
 ) -> bool {
     interaction.clear_button_pressed();
+    if let Some(crate::host::gesture::GestureTarget::Swiper { id, .. }) = gesture.as_ref().map(|g| g.target().clone()) {
+        crate::renderer::components::swiper_drag_end(&id);
+    }
     if let Some(id) = interaction.dragging_scroll_area.take() {
         if let Some(c) = interaction.get_scroll_controller_mut(&id) {
             c.end_drag();

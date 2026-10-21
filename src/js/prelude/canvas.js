@@ -1,11 +1,25 @@
+            function __oldGradient(kind, args) {
+                var g = { __stops: [], __grad: { kind: kind, args: args } };
+                g.addColorStop = function(offset, color) { g.__stops.push([Number(offset), String(color)]); g.__stops.sort(function(p, q) { return p[0] - q[0]; }); };
+                return g;
+            }
+            function __oldStyleCmd(which, v) {
+                if (v && typeof v === 'object' && v.__grad) return { type: 'set' + which + 'Gradient', kind: v.__grad.kind, args: v.__grad.args, stops: v.__stops };
+                return { type: 'set' + which + 'Style', color: v };
+            }
             var __canvasContexts = {};
             
             wx.createCanvasContext = function(canvasId, component) {
                 var ctx = {
                     _canvasId: canvasId,
                     _commands: [],
-                    setFillStyle: function(color) { this._commands.push({ type: 'setFillStyle', color: color }); return this; },
-                    setStrokeStyle: function(color) { this._commands.push({ type: 'setStrokeStyle', color: color }); return this; },
+                    // 渐变对象（createLinearGradient / createCircularGradient）与 type=2d 同一种指令
+                    setFillStyle: function(color) { this._commands.push(__oldStyleCmd('Fill', color)); return this; },
+                    setStrokeStyle: function(color) { this._commands.push(__oldStyleCmd('Stroke', color)); return this; },
+                    setShadow: function(x, y, blur, color) { this._commands.push({ type: 'setShadow', offsetX: x || 0, offsetY: y || 0, blur: blur || 0, color: color || '#000000' }); return this; },
+                    createLinearGradient: function(x0, y0, x1, y1) { return __oldGradient('linear', [x0, y0, x1, y1]); },
+                    createCircularGradient: function(x, y, r) { return __oldGradient('radial', [x, y, 0, x, y, r]); },
+                    setGlobalCompositeOperation: function(op) { this._commands.push({ type: 'setComposite', op: String(op) }); return this; },
                     setLineWidth: function(width) { this._commands.push({ type: 'setLineWidth', width: width }); return this; },
                     setLineCap: function(cap) { this._commands.push({ type: 'setLineCap', cap: cap }); return this; },
                     setLineJoin: function(join) { this._commands.push({ type: 'setLineJoin', join: join }); return this; },

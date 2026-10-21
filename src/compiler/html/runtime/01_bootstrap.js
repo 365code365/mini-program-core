@@ -24,11 +24,14 @@
 
   // ───────── 表达式 & 插值 ─────────
   var exprCache = {};
+  // 当前 WXML 文件里的 wxs 模块（模块名 → 导出对象），由 02_vnode.js 进出作用域时切换。
+  // 套在数据作用域**里面**：模块名压过同名数据字段（与原生 parser::expr::wxs 一致）
+  var curWxs = null, NO_WXS = {};
   function evalExpr(code, scope) {
     try {
       var fn = exprCache[code];
-      if (!fn) { fn = new Function("$s", "with($s){return (" + code + ");}"); exprCache[code] = fn; }
-      return fn(scope || {});
+      if (!fn) { fn = new Function("$s", "$w", "with($s){with($w){return (" + code + ");}}"); exprCache[code] = fn; }
+      return fn(scope || {}, curWxs || NO_WXS);
     } catch (e) { return undefined; }
   }
   function interp(str, scope) {

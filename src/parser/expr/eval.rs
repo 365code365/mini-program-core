@@ -1,7 +1,7 @@
 //! 求值：成员/下标取值、二元运算、比较与相等语义
 //!
 //! `expr_new` 的一片。**纯搬迁**：从 759 行按职责切开，一行逻辑没改。
-use super::ast::{BinOp, Expr};
+use super::ast::{BinOp, Expr, ObjEntry};
 use super::js_value::{is_truthy, num, to_js_string, to_number};
 use super::*;
 
@@ -11,12 +11,21 @@ pub(super) fn eval(e: &Expr, data: &Value) -> Value {
         Expr::Str(s) => Value::String(s.clone()),
         Expr::Bool(b) => Value::Bool(*b),
         Expr::Null => Value::Null,
-        Expr::Ident(id) => data.get(id.as_str()).cloned().unwrap_or(Value::Null),
+        Expr::Ident(id) => match super::wxs::module_value(id) {
+            // 当前文件里的 wxs 模块：`{{m.PI}}` 取导出的常量
+            Some(v) => v,
+            None => data.get(id.as_str()).cloned().unwrap_or(Value::Null),
+        },
         Expr::Array(items) => Value::Array(items.iter().map(|i| eval(i, data)).collect()),
         Expr::Object(props) => {
             let mut map = serde_json::Map::new();
-            for (k, v) in props {
-                map.insert(k.clone(), eval(v, data));
+            for p in props {
+                match p {
+                    ObjEntry::Prop(k, v) => {
+                        map.insert(k.clone(), eval(v, data));
+                    }
+                    ObjEntry::Spread(x) => spread_into(&mut map, eval(x, data)),
+                }
             }
             Value::Object(map)
         }
@@ -44,8 +53,59 @@ pub(super) fn eval(e: &Expr, data: &Value) -> Value {
             let i = eval(idx, data);
             index(&base, &i)
         }
-        // {{ }} 里的函数调用主要用于 WXS 模块，尚未接入，先返回 Null 保证不崩
-        Expr::Call(_, _) => Value::Null,
+        // `{{ }}` 里只有 wxs 模块的函数能调用（微信同样如此）：`m.f(x)` / `m.a.f(x)` / `m['f'](x)`。
+        // 其余写法（数据里的函数、链式调用的结果再调用）求值为 null，与从前一样不崩
+        Expr::Call(callee, args) => match callee_path(callee) {
+            Some((root, path)) => {
+                let argv: Vec<Value> = args.iter().map(|a| eval(a, data)).collect();
+                super::wxs::call(&root, &path, &argv).unwrap_or(Value::Null)
+            }
+            None => Value::Null,
+        },
+    }
+}
+
+/// 被调用的表达式拆成「根名字 + 成员路径」：`m.a.f` → (`m`, [`a`,`f`])；
+/// 不是从一个名字出发的成员链（比如 `(a || b).f`）返回 None
+fn callee_path(e: &Expr) -> Option<(String, Vec<String>)> {
+    match e {
+        Expr::Member(obj, key) => {
+            let (root, mut path) = match obj.as_ref() {
+                Expr::Ident(id) => (id.clone(), Vec::new()),
+                other => callee_path(other)?,
+            };
+            path.push(key.clone());
+            Some((root, path))
+        }
+        Expr::Index(obj, idx) => {
+            let Expr::Str(key) = idx.as_ref() else { return None };
+            let (root, mut path) = match obj.as_ref() {
+                Expr::Ident(id) => (id.clone(), Vec::new()),
+                other => callee_path(other)?,
+            };
+            path.push(key.clone());
+            Some((root, path))
+        }
+        _ => None,
+    }
+}
+
+/// `{...x}`：按 JS 语义把 `x` 的自有键并进来（同名后写的赢）。数组/字符串展开成
+/// 下标键，`null`/数字/布尔什么都不加。
+fn spread_into(map: &mut serde_json::Map<String, Value>, v: Value) {
+    match v {
+        Value::Object(m) => map.extend(m),
+        Value::Array(a) => {
+            for (i, item) in a.into_iter().enumerate() {
+                map.insert(i.to_string(), item);
+            }
+        }
+        Value::String(s) => {
+            for (i, c) in s.chars().enumerate() {
+                map.insert(i.to_string(), Value::String(c.to_string()));
+            }
+        }
+        _ => {}
     }
 }
 

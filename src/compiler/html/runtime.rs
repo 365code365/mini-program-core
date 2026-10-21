@@ -34,6 +34,16 @@ pub const RUNTIME_JS: &str = concat!(
     include_str!("runtime/07_components.js"),
     // 页面跳转与 wx.* API、下拉刷新、createAnimation 构造
     include_str!("runtime/08_wx_api.js"),
+    // <video> 的组件事件与 wx.createVideoContext（要在启动之前挂上：onLoad 里就可能用）
+    include_str!("runtime/08b_media.js"),
+    // SelectorQuery / IntersectionObserver / nextTick（字段与原生端一致）
+    include_str!("runtime/08c_query.js"),
+    // showActionSheet / previewImage / tabBar 运行时 API / 剪贴板 / 振动 / 文件上传下载
+    include_str!("runtime/08d_system.js"),
+    // WebSocket / FileSystemManager / InnerAudioContext / canIUse / 胶囊 / 网络状态 / 背景色 / 图片信息
+    include_str!("runtime/08e_io.js"),
+    // scroll-view 的 bindscroll / scrolltoupper / scrolltolower 与受控位置
+    include_str!("runtime/08f_scroll.js"),
     // hover-class 按压反馈与启动
     include_str!("runtime/09_hover_boot.js"),
 );

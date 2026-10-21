@@ -1,0 +1,18 @@
+<view class="card">
+  <text class="title">旧接口：canvas-id + wx.createCanvasContext</text>
+  <canvas canvas-id="poster" class="cv"></canvas>
+  <view class="btns">
+    <view class="btn-s" bindtap="drawPoster">重画</view>
+  </view>
+  <text class="hint">矩形、圆弧、贝塞尔、文字、drawImage、save / restore、translate / rotate</text>
+</view>
+
+<view class="card">
+  <text class="title">新接口：type="2d"（SelectorQuery 拿 node）</text>
+  <canvas type="2d" id="chart" class="cv"></canvas>
+  <view class="btns">
+    <view class="btn-s" bindtap="shuffle">换一组数据</view>
+    <view class="btn-o" bindtap="animate">画个动画</view>
+  </view>
+  <text class="hint">canvas.width = CSS 宽 × dpr，再 ctx.scale(dpr, dpr)；改 width 会清空画布</text>
+</view>

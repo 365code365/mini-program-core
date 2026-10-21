@@ -61,6 +61,9 @@ impl WxmlRenderer {
             .iter()
             .find(|e| e.event_type == "change")
             .map(|e| e.handler.clone());
+        let handler_of = |ev: &str| node.events.iter().find(|e| e.event_type == ev).map(|e| e.handler.clone());
+        let column_handler = handler_of("columnchange");
+        let cancel_handler = handler_of("cancel");
 
         PickerBinding {
             id: id.to_string(),
@@ -68,6 +71,9 @@ impl WxmlRenderer {
             mode,
             range,
             multi_range,
+            column_handler,
+            cancel_handler,
+            header_text: node.attrs.get("header-text").map(|s| s.trim().to_string()).unwrap_or_default(),
             value: node.attrs.get("value").cloned().unwrap_or_default(),
             fields: node.attrs.get("fields").cloned().unwrap_or_default(),
             start: node.attrs.get("start").cloned().unwrap_or_default(),
@@ -98,6 +104,11 @@ impl WxmlRenderer {
             if !id.is_empty() {
                 return id.clone();
             }
+        }
+        // 带 wx:key 的列表项里的元素：身份跟着 key 走（列表重排、前面插入一项时，
+        // 输入框的内容、开关的选中、scroll-view 的偏移跟着项走，而不是留在原坐标上）
+        if let Some(k) = node.attrs.get(crate::parser::template::KEYED_ID_ATTR) {
+            return format!("{}#{}", node.tag, k);
         }
         // 用整数格式化：`{:.0}` 走浮点转十进制，逐节点逐帧调用时开销不可忽略
         format!("{}_{}_{}", node.tag, bounds.x as i32, bounds.y as i32)

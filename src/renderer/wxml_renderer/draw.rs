@@ -84,60 +84,6 @@ impl WxmlRenderer {
         }
     }
 
-    /// 绘制 swiper 容器：裁剪到自身盒子 → 整行按当前页横向偏移 → 逐项走普通绘制 → 指示点。
-    ///
-    /// 只有"当前页在哪儿"是 swiper 特有的，item 内容（图片、浮层、flex、动画、
-    /// 绝对定位）全部复用通用绘制路径，不再自成一套。
-    pub(super) fn draw_swiper_container(
-        &mut self,
-        canvas: &mut Canvas,
-        taffy: &Tree,
-        node: &RenderNode,
-        x: f32,
-        y: f32,
-        w: f32,
-        h: f32,
-        interaction: &mut InteractionManager,
-        kind: DrawKind,
-    ) {
-        let sf = self.scale_factor;
-        draw_background(canvas, &node.style, x, y, w, h);
-        if node.children.is_empty() || w <= 0.0 || h <= 0.0 {
-            return;
-        }
-        let current = SwiperComponent::current_index(node, x, y);
-        // 换页是滑过去的（与微信一致）：拿到 prev→current 之间的浮点页号。
-        // 只有滑动进行中才要求继续出帧 —— 从前是「有多于一项就每帧重绘」，
-        // 而 swiper 平时根本不动，等于让带轮播的页面永远整屏重绘。
-        let (page_pos, sliding) = SwiperComponent::slide_position(node, x, y)
-            .unwrap_or((current as f32, false));
-        if sliding {
-            self.mark_animating();
-        }
-
-        canvas.save();
-        canvas.clip_rect(GeoRect::new(x, y, w, h));
-        // 子项在 taffy 里排成一行/一列（每项一屏），整体沿主轴移动 page_pos 屏
-        let vertical = SwiperComponent::is_vertical(node);
-        let (dx, dy) = if vertical {
-            (0.0, -page_pos * h)
-        } else {
-            (-page_pos * w, 0.0)
-        };
-        // 滑动中要画相邻两页（否则中间过程一侧是空白）；静止时只画当前页 ——
-        // 非当前页被裁剪后完全不可见，逐帧重采样它们的图片纯属浪费。
-        let first = page_pos.floor().max(0.0) as usize;
-        let last = if sliding { page_pos.ceil().max(0.0) as usize } else { first };
-        for idx in first..=last.min(node.children.len().saturating_sub(1)) {
-            if let Some(child) = node.children.get(idx) {
-                self.dispatch_draw(canvas, taffy, child, x + dx, y + dy, interaction, kind);
-            }
-        }
-        canvas.restore();
-
-        SwiperComponent::draw_indicators(node, canvas, x, y, w, h, sf, current);
-    }
-
     /// 分发到对应的绘制路径（顶层节点 / 子节点两套上下文）
     pub(super) fn dispatch_draw(
         &mut self,
@@ -249,6 +195,23 @@ impl WxmlRenderer {
         let logical_bounds = self.page_bounds(x, y, w, h);
 
         self.draw_component(canvas, node, x, y, w, h, sf);
+        // swiper：与带交互的路径同一套分页（G-13：从前这里把每一项都排开画出来）
+        if node.tag == "swiper" {
+            let text_color = node.style.text_color.unwrap_or(Color::BLACK);
+            self.draw_swiper_plain(canvas, taffy, node, (x, y, w, h), |r, c, child, ox, oy| {
+                r.draw_with_color(c, taffy, child, ox, oy, text_color)
+            });
+            self.push_event_bindings(node, logical_bounds);
+            return;
+        }
+        if node.tag == "picker-view" {
+            let text_color = node.style.text_color.unwrap_or(Color::BLACK);
+            self.draw_picker_view_with(canvas, taffy, node, (x, y, w, h), false, |r, c, item, ox, oy| {
+                r.draw_with_color(c, taffy, item, ox, oy, text_color)
+            });
+            self.push_event_bindings(node, logical_bounds);
+            return;
+        }
         
         if Self::draws_children(node) {
             let text_color = node.style.text_color.unwrap_or(Color::BLACK);
@@ -281,6 +244,20 @@ impl WxmlRenderer {
         }
 
         self.draw_component(canvas, &node_with_color, x, y, w, h, sf);
+        if node.tag == "swiper" {
+            self.draw_swiper_plain(canvas, taffy, node, (x, y, w, h), |r, c, child, ox, oy| {
+                r.draw_with_color(c, taffy, child, ox, oy, text_color)
+            });
+            self.push_event_bindings(node, logical_bounds);
+            return;
+        }
+        if node.tag == "picker-view" {
+            self.draw_picker_view_with(canvas, taffy, node, (x, y, w, h), false, |r, c, item, ox, oy| {
+                r.draw_with_color(c, taffy, item, ox, oy, text_color)
+            });
+            self.push_event_bindings(node, logical_bounds);
+            return;
+        }
         
         if Self::draws_children(node) {
             for child in &node.children { 

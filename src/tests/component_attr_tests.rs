@@ -362,6 +362,26 @@ fn slider_reads_range_and_block_attrs() {
 }
 
 #[test]
+fn slider_ignores_active_rules_and_css_colors() {
+    // 样式表里只要有一条 `:active` 规则，每个节点都会带一份按压态样式（建树期算好）。
+    // slider 要是也带，按住时整份样式被换掉 —— 轨道色、滑块直径都丢，拖动全程滑块隐形。
+    // 颜色只认属性：CSS 的 color / background-color（含祖先继承下来的 color）不改轨道。
+    let sheet = css(".btn:active { background-color: #06ad56; } slider { color: #ff0000; background-color: #00ff00; }");
+    let node = node_of("slider", &[("active-color", "#fa9d3b"), ("value", "40"), ("block-size", "40")]);
+    let (rn, _) = build("slider", &node, &sheet);
+    assert!(rn.style.pressed_style.is_none(), "slider 不该带按压态样式");
+    assert_eq!(rn.style.text_color, Some(crate::Color::from_hex(0xFA9D3B)), "已选部分只认 active-color");
+    assert_eq!(rn.style.background_color, Some(crate::Color::from_hex(0xE9E9E9)), "轨道底色只认属性，默认 #e9e9e9");
+    assert_eq!(rn.style.border_width, 28.0, "block-size 夹到 12~28");
+    assert!((rn.style.custom_data - 0.4).abs() < 1e-6);
+    // selected-color / color 是 activeColor / backgroundColor 的旧名
+    let old = node_of("slider", &[("selected-color", "#123456"), ("color", "#654321")]);
+    let (rn, _) = build("slider", &old, &css(""));
+    assert_eq!(rn.style.text_color, Some(crate::Color::from_hex(0x123456)));
+    assert_eq!(rn.style.background_color, Some(crate::Color::from_hex(0x654321)));
+}
+
+#[test]
 fn switch_supports_checkbox_shape() {
     let sw = build_simple("switch", &[("checked", "true")]);
     assert_eq!(sw.attrs.get("checked").map(String::as_str), Some("true"));

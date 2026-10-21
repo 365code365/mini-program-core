@@ -33,9 +33,27 @@ pub const PREFIX_FPS: &str = "📊 [后端 ";
 /// 回退的原因串以它开头（[`BackendStatus::fell_back`]），标签据此显示回退原因
 pub const FALLBACK_REASON_HEAD: &str = "回退：";
 
-/// 打一行后端日志
+/// 打一行后端日志（桌面 / iOS 进 stderr，Android 进 logcat）
 pub fn emit(line: &str) {
+    #[cfg(target_os = "android")]
+    android_log(line);
+    #[cfg(not(target_os = "android"))]
     eprintln!("{line}");
+}
+
+/// Android 应用的 stderr 没人读（不进 logcat）：后端选择、回退原因、`MINI_FPS` 这几行是
+/// 排查的第一手段，必须在 `adb logcat -s mini-render` 里看得到
+#[cfg(target_os = "android")]
+fn android_log(line: &str) {
+    use std::ffi::{c_char, c_int, CString};
+    #[link(name = "log")]
+    extern "C" {
+        fn __android_log_write(prio: c_int, tag: *const c_char, text: *const c_char) -> c_int;
+    }
+    const ANDROID_LOG_INFO: c_int = 4;
+    let text = CString::new(line.replace('\0', "")).unwrap_or_default();
+    // SAFETY: 两个指针都是以 NUL 结尾、在调用期间有效的 C 串
+    unsafe { __android_log_write(ANDROID_LOG_INFO, c"mini-render".as_ptr(), text.as_ptr()) };
 }
 
 /// 选定（或回退后定下）后端的那一行：

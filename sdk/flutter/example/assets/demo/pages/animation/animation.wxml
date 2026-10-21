@@ -1,0 +1,39 @@
+<view class="card">
+  <text class="title">@keyframes 动画</text>
+  <view class="kf-row">
+    <view class="kf-cell"><view class="spin"></view><text class="kf-name">rotate</text></view>
+    <view class="kf-cell"><view class="pulse"></view><text class="kf-name">scale</text></view>
+    <view class="kf-cell"><view class="breathe"></view><text class="kf-name">opacity</text></view>
+    <view class="kf-cell"><view class="bounce"></view><text class="kf-name">translate</text></view>
+    <view class="kf-cell"><view class="hue"></view><text class="kf-name">color</text></view>
+  </view>
+  <view class="loader">
+    <view class="ld ld1"></view><view class="ld ld2"></view><view class="ld ld3"></view>
+  </view>
+  <text class="hint">animation-delay 错开三个点；alternate / infinite / ease-in-out</text>
+</view>
+
+<view class="card">
+  <text class="title">transition（按住看过渡）</text>
+  <view class="tr-row">
+    <view class="tr tr1"><text>按住：放大</text></view>
+    <view class="tr tr2" hover-class="tr2-on"><text>hover-class：变色旋转</text></view>
+  </view>
+  <text class="hint">本引擎的 transition 作用在常态 ↔ 按压态（:active / hover-class）之间；setData 改 class 是直接跳到终态</text>
+</view>
+
+<view class="card">
+  <text class="title">wx.createAnimation</text>
+  <view class="stage">
+    <view class="ball" animation="{{anim}}"></view>
+  </view>
+  <view class="btns">
+    <view class="btn-s" bindtap="move">平移</view>
+    <view class="btn-s" bindtap="rotate">旋转</view>
+    <view class="btn-s" bindtap="scale">缩放</view>
+    <view class="btn-s" bindtap="combo">组合三步</view>
+    <view class="btn-s" bindtap="fade">透明 + 变色</view>
+    <view class="btn-o" bindtap="reset">复位</view>
+  </view>
+  <text class="hint">链式写一步的目标值，step() 定格一步，export() 的结果 setData 给节点的 animation 属性</text>
+</view>

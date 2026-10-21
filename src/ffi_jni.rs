@@ -232,15 +232,17 @@ pub extern "system" fn Java_dev_minirender_MiniEngine_nativeSetDeviceInfo(
     mr_app_set_device_info(h as *mut MRApp, total_mem.max(0) as u64, (low_ram != 0) as i32, api.max(0) as u32);
 }
 
-/// 挂 `SurfaceView` 的 surface。返回实际后端：2 GPU / 1 CPU / 0 参数错误。
+/// 挂一块 Surface 给 GPU 合成器（`SurfaceView` 的 surface、Flutter 的
+/// `SurfaceProducer.getSurface()`）。返回实际后端：2 GPU / 1 CPU / 0 参数错误。
 ///
-/// 现在**不调** `ANativeWindow_fromSurface`、也不链接 libandroid：没编 gpu 时实际后端
-/// 只能是 CPU，直接返回 1；编了 gpu（目前是空壳）时只把种类记给引擎，原因串照实说
-/// 「SDK 的 GPU 上屏还没接入」。移动端 GPU 接线时这里换成
-/// `fromSurface`（+1）→ `mr_app_attach_surface`（引擎内部再 acquire）→ `release`（−1）。
+/// 编了 gpu：`ANativeWindow_fromSurface`（+1）→ `mr_app_attach_surface`（引擎自己再
+/// acquire 一份，卸载 / destroy 时还）→ `ANativeWindow_release`（−1，还掉本函数这份）。
+/// 引擎按偏好 / 门槛 / 自检决定用不用。返回 1 时引擎照样留着 window（宿主之后改偏好可能
+/// 再试），但这块 Surface 可能已被 GPU 连过：**宿主要 CPU 直写就换一块新的**。
+/// 没编 gpu：不碰 Surface，直接返回 1。
 #[no_mangle]
 pub extern "system" fn Java_dev_minirender_MiniEngine_nativeAttachSurface(
-    _env: JNIEnv,
+    env: JNIEnv,
     _class: JClass,
     h: jlong,
     surface: JObject,
@@ -250,19 +252,35 @@ pub extern "system" fn Java_dev_minirender_MiniEngine_nativeAttachSurface(
         return 0;
     }
     #[cfg(not(feature = "gpu"))]
-    let code = MR_BACKEND_CPU;
+    {
+        let _ = env;
+        MR_BACKEND_CPU
+    }
     #[cfg(feature = "gpu")]
-    let code = attach_kind_only(app, crate::compositor::SurfaceKind::AndroidWindow);
-    code
+    {
+        use crate::ffi_jni_embed::{ANativeWindow_fromSurface, ANativeWindow_release};
+        // SAFETY: surface 是 android.view.Surface，env 在本次调用内有效；fromSurface 自带 +1
+        let win = unsafe { ANativeWindow_fromSurface(env.get_raw(), surface.as_raw()) };
+        if win.is_null() {
+            // SAFETY: app 非空且是 create 交出去的句柄；JNI 调用在宿主的引擎线程上
+            unsafe { (*app).last_error = "nativeAttachSurface: ANativeWindow_fromSurface 返回空".into() };
+            return 0;
+        }
+        let code = mr_app_attach_surface(app, MR_SURFACE_ANDROID_WINDOW, win);
+        // SAFETY: 还掉 fromSurface 的那份；引擎要用的话已经自己 acquire 过
+        unsafe { ANativeWindow_release(win) };
+        code
+    }
 }
 
-/// `surfaceDestroyed` 里**同步**调用：返回之后引擎不再碰这块 surface
+/// `surfaceDestroyed` / `onSurfaceCleanup` 里**同步**调用：返回之后引擎不再碰这块 surface
 #[no_mangle]
 pub extern "system" fn Java_dev_minirender_MiniEngine_nativeDetachSurface(
     _env: JNIEnv,
     _class: JClass,
     h: jlong,
 ) {
+    // 先放合成器、再还引擎 acquire 的 window，都在 mr_app_detach_surface 里
     mr_app_detach_surface(h as *mut MRApp);
 }
 

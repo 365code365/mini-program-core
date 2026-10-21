@@ -1,0 +1,4 @@
+.stack { display: flex; flex-direction: column; margin-top: 8rpx; padding: 12rpx 16rpx; background-color: #f7f7f7; border-radius: 8rpx; }
+.stack-item { font-size: 24rpx; line-height: 1.7; color: #576b95; }
+.log { display: flex; flex-direction: column; min-height: 80rpx; padding: 12rpx 16rpx; background-color: #1f1f1f; border-radius: 8rpx; }
+.log-line { font-size: 22rpx; line-height: 1.7; color: #9fe6b8; }

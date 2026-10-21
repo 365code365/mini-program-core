@@ -18,13 +18,28 @@
 
   // ───────── 渲染为 VNode 树 ─────────
   // VNode: { t:'el', tag, attrs:{}, children:[], value?, checked?, innerHTML? } | { t:'tx', text }
+  // 页面根（模板作用域栈为空）进来时先立一个根作用域；其余递归调用沿用栈顶。
   function renderNodesV(nodes, scope) {
+    if (tplFrames.length) return renderListV(nodes, scope);
+    tplBudget = TPL_MAX_EXPANSIONS;
+    return inFrame({ t: tplTableOf(nodes), r: scope, d: 0, w: wxsOf(nodes) }, function () { return renderListV(nodes, scope); });
+  }
+  // 进一个作用域帧：模板表与 wxs 模块一起切换，出来时恢复
+  function inFrame(fr, body) {
+    var savedW = curWxs;
+    tplFrames.push(fr);
+    curWxs = fr.w;
+    try { return body(); } finally { tplFrames.pop(); curWxs = savedW; }
+  }
+  function renderListV(nodes, scope) {
     var out = [], branch = false;
     for (var i = 0; i < nodes.length; i++) {
       var node = nodes[i];
       // 文本节点：与原生渲染器一致地去掉首尾空白（WXML 缩进换行不应产生可见空行；
       // 数据里的 \n 由 .wx-text{white-space:pre-line} 保留为换行）
       if (node.t === "tx") { out.push({ t: "tx", text: interp(node.x, scope).replace(/^[\s\u3000]+|[\s\u3000]+$/g, "") }); branch = false; continue; }
+      // 模板定义 / import / wxs：编译期的东西，不出节点，也不打断 if/else 链
+      if (isDeclV(node)) continue;
       var a = node.a || {};
       if ("wx:for" in a) { renderForV(node, scope, out); branch = false; continue; }
       if ("wx:if" in a) { var c = !!evalWhole(a["wx:if"], scope); branch = c; if (c) pushEl(out, node, scope); continue; }
@@ -36,12 +51,138 @@
   }
   function pushEl(out, node, scope) {
     var tag = node.n;
-    if (tag === "block" || tag === "template" || tag === "import" || tag === "include") {
-      var kids = renderNodesV(node.c || [], scope);
+    if (tag === "block") {
+      var kids = renderListV(node.c || [], scope);
       for (var i = 0; i < kids.length; i++) out.push(kids[i]);
       return;
     }
+    // 有 name 的是定义，不渲染；有 is 的查表展开
+    if (tag === "template") { if (!("name" in (node.a || {}))) renderTemplateV(out, node, scope); return; }
+    if (tag === "include") { renderIncludeV(out, node); return; }
+    if (tag === "import" || tag === "wxs") return;
     out.push(vnodeEl(node, scope));
+  }
+
+  // ───────── 模板片段 / include ─────────
+  // 与原生 parser/template/{scope,fragment}.rs 同一套规则。编译期（parser::wxml_file）已经把
+  // include 的文件内容放进 include 节点的子节点、把被 import 文件的模板挂在 import 节点下、
+  // 把 <template name> 上提到各自文件顶层 —— 这里只按「作用域根」建表、查表展开。
+  //  · 模板只看得见 data 传入的对象（官方 wxml/template.html）；
+  //  · include 的内容只认数据根（页面 data 或所在模板的 data），不认 wx:for 的 item/index
+  //    （glass-easel 语义，Skyline 只支持 glass-easel）；
+  //  · import 不传递：只收 import 节点的直接 <template name> 子节点。
+  var TPL_MAX_DEPTH = 16, TPL_MAX_EXPANSIONS = 50000;
+  var tplFrames = [], tplBudget = 0, tplWarned = {};
+  var tplCache = typeof WeakMap === "function" ? new WeakMap() : null;
+  function isDeclV(n) {
+    if (n.t !== "el") return false;
+    return (n.n === "template" && n.a && ("name" in n.a)) || n.n === "import" || n.n === "wxs";
+  }
+  function tplName(n) {
+    return (n && n.t === "el" && n.n === "template" && n.a && n.a.name != null) ? String(n.a.name).trim() : null;
+  }
+  function tplTableOf(list) {
+    var hit = tplCache && tplCache.get(list);
+    if (hit) return hit;
+    var t = Object.create(null), i, j, k, n, kids;
+    for (i = 0; i < list.length; i++) {
+      n = list[i];
+      if (n.t !== "el" || n.n !== "import") continue;
+      kids = n.c || [];
+      // 后写的 import 覆盖先写的
+      for (j = 0; j < kids.length; j++) { k = tplName(kids[j]); if (k != null) t[k] = { b: kids[j].c || [], f: kids }; }
+    }
+    // 本文件的定义覆盖 import 进来的
+    for (i = 0; i < list.length; i++) { k = tplName(list[i]); if (k != null) t[k] = { b: list[i].c || [], f: list }; }
+    if (tplCache) tplCache.set(list, t);
+    return t;
+  }
+  function tplWarn(msg) { if (!tplWarned[msg]) { tplWarned[msg] = 1; if (window.console) console.warn(msg); } }
+  // data="{{ … }}" 的花括号里是对象字面量的内容：{{...item, a: 1}}、{{a, b}}、{{a: x}}
+  function tplData(raw, scope) {
+    var m = raw == null ? null : /^\s*\{\{([\s\S]*)\}\}\s*$/.exec("" + raw);
+    var body = m ? m[1].trim() : "";
+    if (!body) return {};
+    var v = evalExpr("{" + body + "}", scope);
+    if (v == null || typeof v !== "object") v = evalExpr(body, scope);
+    return (v != null && typeof v === "object") ? v : {};
+  }
+  function renderTemplateV(out, node, scope) {
+    var a = node.a || {}, fr = tplFrames[tplFrames.length - 1];
+    var name = String(interp(a.is, scope) || "").trim();
+    if (!name || !fr) return;
+    var def = fr.t[name];
+    if (!def) { tplWarn('<template is="' + name + '">：当前文件里没有这个模板，什么都不渲染'); return; }
+    if (fr.d >= TPL_MAX_DEPTH || tplBudget <= 0) { tplWarn('<template is="' + name + '">：嵌套过深或展开过多，已截断'); return; }
+    tplBudget--;
+    var data = tplData(a.data, scope);
+    // 模板里只能用定义模板的文件里的 wxs 模块
+    var kids = inFrame({ t: tplTableOf(def.f), r: data, d: fr.d + 1, w: wxsOf(def.f) }, function () { return renderListV(def.b, data); });
+    for (var i = 0; i < kids.length; i++) out.push(kids[i]);
+  }
+  function renderIncludeV(out, node) {
+    var kids = node.c || [], fr = tplFrames[tplFrames.length - 1];
+    if (!kids.length || !fr) return;
+    // 被引入文件自己的模板优先，其次仍能用引入方的
+    var own = tplTableOf(kids), t = fr.t, k;
+    if (Object.keys(own).length) {
+      t = Object.create(null);
+      for (k in fr.t) t[k] = fr.t[k];
+      for (k in own) t[k] = own[k];
+    }
+    // 被引入文件的内容用它自己文件里的 wxs 模块（include 不传递模块）
+    var v = inFrame({ t: t, r: fr.r, d: fr.d, w: wxsOf(kids) }, function () { return renderListV(kids, fr.r); });
+    for (var i = 0; i < v.length; i++) out.push(v[i]);
+  }
+
+  // ───────── wxs 模块 ─────────
+  // 与原生 parser::template::wxs_scope + js/prelude/wxs.js 同一套规则：模块只在定义它的文件里可见
+  // （不进 include / import 的子节点）；src 与 require 的文件编译期已打包进 <wxs> 的子文本
+  // （带 __wxs_bundle 标记），内联且不 require 别人的现包一个。模块按包内容做单例。
+  var wxsCache = typeof WeakMap === "function" ? new WeakMap() : null, wxsMods = {};
+  function wxsOf(list) {
+    var hit = wxsCache && wxsCache.get(list);
+    if (hit !== undefined) return hit;
+    var m = null;
+    (function walk(ns) {
+      for (var i = 0; i < ns.length; i++) {
+        var n = ns[i];
+        if (!n || n.t !== "el") continue;
+        if (n.n === "wxs") {
+          var name = n.a && n.a.module ? String(n.a.module).trim() : "";
+          if (!name || (m && name in m)) continue;
+          var text = (n.c || []).map(function (c) { return c.t === "tx" ? c.x : ""; }).join("");
+          var bundle;
+          if (n.a && ("__wxs_bundle" in n.a)) { try { bundle = JSON.parse(text); } catch (e) { bundle = null; } }
+          else { var f = {}; f["inline:" + name] = text; bundle = { entry: "inline:" + name, files: f }; }
+          (m || (m = {}))[name] = wxsLoad(bundle, text);
+        } else if (n.n !== "include" && n.n !== "import") walk(n.c || []);
+      }
+    })(list);
+    if (wxsCache) wxsCache.set(list, m);
+    return m;
+  }
+  function wxsLoad(bundle, key) {
+    if (wxsMods.hasOwnProperty(key)) return wxsMods[key];
+    var files = (bundle && bundle.files) || {}, cache = {};
+    function resolve(from, rel) {
+      var base = String(from).split("#")[0].split("/"); base.pop();
+      String(rel).split("/").forEach(function (p) { if (p === "" || p === ".") return; if (p === "..") { if (base.length > 1) base.pop(); return; } base.push(p); });
+      var out = base.join("/"); return out.charAt(0) === "/" ? out : "/" + out;
+    }
+    function getDate() { var a = arguments; if (!a.length) return new Date(); if (a.length === 1) return new Date(a[0]); return new Date(a[0], a[1], a.length > 2 ? a[2] : 1, a[3] || 0, a[4] || 0, a[5] || 0, a[6] || 0); }
+    function getRegExp(p, f) { return new RegExp(p, f || ""); }
+    function load(path) {
+      if (cache.hasOwnProperty(path)) return cache[path].exports;
+      var code = files[path];
+      if (code === undefined) throw new Error("找不到 wxs 模块 " + path);
+      var mod = { exports: {} }; cache[path] = mod;
+      new Function("module", "exports", "require", "getDate", "getRegExp", code)(mod, mod.exports, function (r) { return load(resolve(path, r)); }, getDate, getRegExp);
+      return mod.exports;
+    }
+    var exp;
+    try { exp = bundle ? load(bundle.entry) : {}; } catch (e) { tplWarn("[wxs] " + (bundle && bundle.entry) + ": " + e.message); exp = {}; }
+    return (wxsMods[key] = exp == null ? {} : exp);
   }
   function renderForV(node, scope, out) {
     var a = node.a;
@@ -128,8 +269,27 @@
       if (a["value"] != null) v.value = interp(a["value"], scope);
     }
     else if (tag === "navigator") { if (a["url"]) attrs["href"] = "#" + interp(a["url"], scope); }
-    else if (tag === "video") { if (a["src"]) attrs["src"] = interp(a["src"], scope); if (a["poster"]) attrs["poster"] = interp(a["poster"], scope); attrs["controls"] = "controls"; attrs["playsinline"] = "playsinline"; }
-    else if (tag === "audio") { if (a["src"]) attrs["src"] = interp(a["src"], scope); attrs["controls"] = "controls"; }
+    else if (tag === "scroll-view") {
+      // 受控位置与阈值交给运行时（08f_scroll.js）：浏览器的 overflow:auto 自己滚，事件与受控值另接
+      ["scroll-top", "scroll-left", "scroll-into-view", "upper-threshold", "lower-threshold", "scroll-with-animation"].forEach(function (k) {
+        if (a[k] != null) attrs["data-sv-" + k] = "" + interp(a[k], scope);
+      });
+    }
+    else if (tag === "video") {
+      // 包内绝对路径同图片一样要换成相对路径（file:// 打开导出工程时 `/assets/x.mp4` 指到磁盘根上）
+      if (a["src"]) attrs["src"] = assetUrl(interp(a["src"], scope));
+      if (a["poster"]) attrs["poster"] = assetUrl(interp(a["poster"], scope));
+      // 布尔属性与原生端同一套：写了且不是 false 就算开
+      var vflag = function (k, dflt) { if (a[k] == null) return dflt; var s = String(interp(a[k], scope)).trim(); return s !== "false" && s !== "0"; };
+      if (vflag("controls", true)) attrs["controls"] = "controls";
+      if (vflag("autoplay", false)) attrs["autoplay"] = "autoplay";
+      if (vflag("loop", false)) attrs["loop"] = "loop";
+      if (vflag("muted", false)) attrs["muted"] = "muted";
+      var of = a["object-fit"] ? interp(a["object-fit"], scope) : "";
+      if (of === "fill" || of === "cover") { var vs = attrs["style"] ? attrs["style"].replace(/;?\s*$/, ";") : ""; attrs["style"] = vs + "object-fit:" + of; }
+      attrs["playsinline"] = "playsinline";
+    }
+    else if (tag === "audio") { if (a["src"]) attrs["src"] = assetUrl(interp(a["src"], scope)); attrs["controls"] = "controls"; }
     else if (tag === "canvas") { if (a["canvas-id"]) attrs["data-canvas-id"] = interp(a["canvas-id"], scope); }
     else if (tag === "button" && a["form-type"]) { attrs["data-form-type"] = interp(a["form-type"], scope); }
     else if (tag === "picker") {
@@ -144,7 +304,7 @@
       if (a["end"]) attrs["data-picker-end"] = interp(a["end"], scope);
       if (truthy(evalWhole(a["disabled"], scope))) attrs["data-picker-disabled"] = "1";
     }
-    if (a["name"] && /^(input|textarea|checkbox|radio|switch|slider|picker)$/.test(tag)) attrs["name"] = interp(a["name"], scope);
+    if (a["name"] && /^(input|textarea|checkbox|radio|switch|slider|picker|checkbox-group|radio-group)$/.test(tag)) attrs["name"] = interp(a["name"], scope);
   }
 
   // 微信点击态：button 默认 button-hover（20ms 后出现，松手再留 70ms）；

@@ -1,0 +1,7 @@
+.dc { margin-top: 16rpx; padding: 20rpx; background-color: #fafafa; border-left: 8rpx solid #07c160; border-radius: 8rpx; }
+.dc-head { display: flex; flex-direction: row; align-items: center; }
+.dc-title { flex: 1; }
+.dc-tag { margin-left: 12rpx; padding: 2rpx 12rpx; font-size: 20rpx; color: #ffffff; border-radius: 6rpx; }
+.dc-fold { margin-left: 16rpx; font-size: 22rpx; color: #576b95; }
+.dc-body { margin-top: 12rpx; }
+.dc-foot { margin-top: 12rpx; }

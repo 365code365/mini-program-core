@@ -51,20 +51,37 @@
   }
   function call(fn, ev) { var h = pageInst && pageInst[fn]; if (typeof h === "function") { try { h.call(pageInst, ev); } catch (err) { console.error(fn, err); } } }
 
+  // 表单字段的值，类型与原生端（host/form.rs）一致：name 写在 checkbox-group / radio-group 上，
+  // 前者给选中项 value 的数组、后者给选中项的 value（没选是空串）；switch 布尔、slider 数字、
+  // picker 与它 bindchange 的 detail.value 同型。单个 checkbox / radio 上的 name 不算字段（微信语义）。
+  function pickerFormValue(el) {
+    var mode = el.getAttribute("data-picker-mode") || "selector", raw = el.getAttribute("data-picker-value") || "";
+    if (mode === "multiSelector" || mode === "region") { try { var a = JSON.parse(raw); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+    if (mode === "time" || mode === "date") return raw;
+    return parseInt(raw, 10) || 0;
+  }
   function collectForm(form) {
     var v = {};
     form.querySelectorAll("[name]").forEach(function (el) {
       var n = el.getAttribute("name"); if (!n) return;
-      if (el.type === "checkbox" || el.type === "radio") { if (el.checked) { if (el.type === "checkbox") { (v[n] = v[n] || []).push(el.value); } else v[n] = el.value; } }
-      else if (el.classList && el.classList.contains("wx-switch")) v[n] = el.classList.contains("wx-switch-on");
+      var cl = el.classList || { contains: function () { return false; } };
+      if (cl.contains("wx-checkbox-group")) { var arr = []; el.querySelectorAll(".wx-checkbox:checked").forEach(function (c) { arr.push(c.value); }); v[n] = arr; }
+      else if (cl.contains("wx-radio-group")) { var r = el.querySelector(".wx-radio:checked"); v[n] = r ? r.value : ""; }
+      else if (el.type === "checkbox" || el.type === "radio") return;
+      else if (cl.contains("wx-switch")) v[n] = cl.contains("wx-switch-on");
+      else if (el.hasAttribute("data-picker-mode")) v[n] = pickerFormValue(el);
+      else if (cl.contains("wx-slider")) v[n] = Number(el.value);
       else if ("value" in el) v[n] = el.value;
     });
     return v;
   }
+  // 重置：输入框清空、勾选与开关取消、滑块回到 min（与原生端一致）；picker 不留状态、不动
   function resetForm(form) {
     form.querySelectorAll("input,textarea").forEach(function (el) {
       if (el.type === "checkbox" || el.type === "radio") el.checked = false;
+      else if (el.classList && el.classList.contains("wx-slider")) { el.value = el.min || "0"; if (typeof refreshSlider === "function") refreshSlider(el); }
       else el.value = "";
     });
+    form.querySelectorAll(".wx-switch").forEach(function (sw) { sw.classList.remove("wx-switch-on"); });
   }
 

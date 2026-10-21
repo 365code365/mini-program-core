@@ -14,6 +14,8 @@ pub(super) enum Tok {
     AndAnd, OrOr, Not,
     Question, Colon,
     Dot, Comma,
+    /// `...`：对象展开（`<template data="{{...item, a: 1}}">`）
+    Spread,
     LParen, RParen,
     LBracket, RBracket,
     LBrace, RBrace,
@@ -60,6 +62,7 @@ impl Lexer {
                 '%' => { toks.push(Tok::Percent); self.pos += 1; }
                 '?' => { toks.push(Tok::Question); self.pos += 1; }
                 ':' => { toks.push(Tok::Colon); self.pos += 1; }
+                '.' if self.peek(1) == '.' && self.peek(2) == '.' => { toks.push(Tok::Spread); self.pos += 3; }
                 '.' => { toks.push(Tok::Dot); self.pos += 1; }
                 ',' => { toks.push(Tok::Comma); self.pos += 1; }
                 '(' => { toks.push(Tok::LParen); self.pos += 1; }

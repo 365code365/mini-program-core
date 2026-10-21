@@ -47,6 +47,15 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 taffy = "0.12"
 ureq = "3.3"
+# wx.connectSocket：WebSocket 协议本身（握手、分帧、掩码、ping/pong）。
+# 只开 handshake，TLS 自己接（下面两条与 ureq 用的是同一份 rustls / 根证书，不多编一套）
+tungstenite = { version = "=0.30.0", default-features = false, features = ["handshake"] }
+rustls = { version = "=0.23.42", default-features = false, features = ["ring", "std", "tls12"] }
+webpki-roots = "=1.0.9"
+# 桥上只有字符串：二进制（WebSocket 帧、文件内容、音频）按 base64 过桥。与 ureq 用的是同一份
+base64 = "=0.22.1"
+# FileSystemManager.unzip 的 deflate 解压（ureq 的 gzip 用的就是它，不多编一份）
+flate2 = "=1.1.9"
 once_cell = "1.21"
 # 音频解码（纯解码，无设备依赖，移动端也留着）
 symphonia = { version = "0.6", features = ["isomp4", "aac", "mp3"] }
@@ -82,9 +91,24 @@ debug = false  # 减少调试信息生成时间
 [profile.dev.package."*"]
 opt-level = 2  # 依赖库用优化编译，运行更快
 
-# release 模式优化
+# release = 日常开发与**全部回归脚本**用的这一档：不做 LTO、开增量。
+#
+# 为什么不做 LTO：thin LTO 要给**每个最终二进制**把整张依赖图（wgpu / naga / QuickJS / openh264…）
+# 的位码重新优化、重新生成一遍机器码。这个仓库一次 `--all-targets` 要出 5 个 bin、20 个 example、
+# 22 个集成测试、lib 测试与 cdylib/staticlib —— 五十来个二进制各做一遍。2026-10-21 同一台机器、
+# 同一份源码背靠背实测（负载 22~38，交换区已满）：改了引擎之后 `cargo build --release --all-targets`
+# thin LTO **2905s**（单个二进制的 LTO 链接 4~11 分钟），关掉 LTO + 增量 **19~22s**；
+# 后者从零（含全部依赖）编完 457s。
+# 像素不受影响：Rust 不做 fast-math、不自动融合 FMA —— gallery 65 张两种编法**逐字节相同**，
+# 跑完 65 个场景的耗时也分不出差别（4.4~5.7s 对 5.0~5.3s）。
+#
+# 发给宿主的库（移动端 SDK、桌面分发）仍要 thin LTO（体积更小、跨 crate 内联拿满）：
+# tools/build-mobile.sh 与 scripts/build-*.sh 用环境变量
+# `CARGO_PROFILE_RELEASE_LTO=thin CARGO_PROFILE_RELEASE_INCREMENTAL=false` 打开。
+# 交叉编译目标各有自己的 target/<triple>/release 目录，与这里的开发构建互不干扰、不会来回全量重编。
 [profile.release]
-lto = "thin"  # 轻量级 LTO，比 fat 快
+lto = false
+incremental = true
 
 [[bin]]
 name = "mini-app"

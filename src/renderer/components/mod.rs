@@ -26,6 +26,8 @@ mod canvas;
 mod swiper;
 mod rich_text;
 mod picker;
+/// `<picker-view>` 内嵌滚轮：每列的位置、跟手 / 吸附、change / pickstart / pickend
+pub mod picker_view;
 /// 标签 → 组件行为的唯一登记点（build / draw / 叶子 / 绘制归因）
 pub mod registry;
 mod checkbox_group;
@@ -39,20 +41,30 @@ pub use progress::ProgressComponent;
 pub use switch::SwitchComponent;
 pub use checkbox::CheckboxComponent;
 pub use radio::RadioComponent;
-pub use slider::SliderComponent;
+pub use slider::{SliderComponent, SliderAttrs, slider_track_span, SLIDER_VALUE_WIDTH};
 pub use input::{InputComponent, cursor_blink_visible, blink_visible_at, cursor_blink_interval_ms,
-    reset_cursor_blink, last_caret_rect};
-pub use image::{ImageComponent, is_animated, animation_total_ms, image_cache_report, clear_image_caches, image_cache_budget_mb};
+    reset_cursor_blink, last_caret_rect, layout_textarea_lines};
+pub use image::{ImageComponent, is_animated, animated_frame, animation_total_ms, image_cache_report, clear_image_caches, image_cache_budget_mb, image_rgba};
 mod image_state;
 pub use image_state::{probe_load, ImageLoad};
 pub mod image_net;
 pub use video::VideoComponent;
 pub use video::{
+    set_host_owns_video,
     has_playing_video, get_or_create_player, get_video_frame, get_video_progress,
     toggle_video_play, is_video_playing,
+    clear_fullscreen, draw_fullscreen, fullscreen_tap, fullscreen_video, video_command, video_events_pending,
+    video_poll_events, video_position, VideoCommand, clear_danmu, progress_track, send_danmu,
 };
-pub use canvas::{CanvasComponent, Canvas2DContext, CanvasContextManager, LinearGradient, RadialGradient, execute_canvas_draw, ensure_canvas_context};
-pub use swiper::{SwiperComponent, SwiperItemComponent, SWIPER_MANAGER, swiper_needs_frame, has_autoplay_swiper, advance_due_swipers};
+pub use canvas::{CanvasComponent, Canvas2DContext, CanvasContextManager, LinearGradient, RadialGradient, execute_canvas_draw, ensure_canvas_context, take_canvas_dirty, canvas_key, canvas_measure_text};
+// 单测直接看画布后备缓冲：页面合成结果依赖进程级的 CANVAS_DIRTY，并行的别的用例 pump 时
+// 可能先把它取走，拿页面像素断言会偶发失败
+// 读像素 / 导出的同步桥（js::bridge_io）与单测要直接摸管理器
+pub(crate) use canvas::CANVAS_MANAGER;
+pub use swiper::{SwiperComponent, SwiperItemComponent, SwiperConfig, SWIPER_MANAGER, swiper_needs_frame, has_autoplay_swiper, advance_due_swipers,
+    swiper_is_dragging, take_swiper_events, swiper_drag_begin, swiper_drag_update, swiper_drag_end, swiper_set_clock, swiper_clock_ms, swiper_pages,
+    swiper_layout_params, Easing as SwiperEasing, SwiperStateManager};
+pub use swiper::effects as swiper_effects;
 pub use rich_text::RichTextComponent;
 pub use picker::{PickerComponent, PickerViewComponent, PickerViewColumnComponent, PickerMode, PICKER_MANAGER};
 pub use checkbox_group::{CheckboxGroupComponent, RadioGroupComponent};

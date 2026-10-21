@@ -1,0 +1,30 @@
+<view class="nav" style="padding-top: {{statusBar}}px;">
+  <view class="nav-bar" style="height: {{navHeight}}px;">
+    <view class="nav-back" bindtap="back" hover-class="nav-back-on"><icon type="back" size="18" color="#ffffff"/></view>
+    <text class="nav-title">自定义导航栏</text>
+    <view class="nav-back"></view>
+  </view>
+</view>
+
+<view class="hero" style="padding-top: {{statusBar + navHeight + 20}}px;">
+  <text class="hero-title">navigationStyle: custom</text>
+  <text class="hero-sub">宿主不画导航栏，画面从屏幕最顶上开始。页面自己用 statusBarHeight 留出状态栏（这里是 {{statusBar}}px），再画一条标题栏和返回键。</text>
+</view>
+
+<view class="card">
+  <text class="title">与安全区相关的值</text>
+  <view class="kv"><text class="kv-k">statusBarHeight</text><text class="kv-v">{{statusBar}}px</text></view>
+  <view class="kv"><text class="kv-k">safeArea.top / bottom</text><text class="kv-v">{{safeTop}} / {{safeBottom}}</text></view>
+  <view class="kv"><text class="kv-k">windowHeight</text><text class="kv-v">{{windowHeight}}px</text></view>
+  <text class="hint">底部这条按钮栏用了 padding-bottom: env(safe-area-inset-bottom)，有手势条的机型会自动垫高</text>
+</view>
+
+<view class="card" wx:for="{{rows}}" wx:key="*this">
+  <text class="desc">第 {{item}} 段内容：往上滚，顶部的自定义导航栏是 position: fixed，一直盖在内容上面。</text>
+</view>
+
+<view class="spacer"></view>
+<view class="bottom-bar">
+  <view class="bb-btn" bindtap="back"><text>返回上一页</text></view>
+  <view class="bb-btn bb-main" bindtap="toast"><text>主按钮</text></view>
+</view>

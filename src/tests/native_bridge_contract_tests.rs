@@ -46,9 +46,9 @@ fn referenced_in_js() -> HashSet<String> {
     out
 }
 
-/// `bridge.rs` 里 `register_function("__native_x", …)` 注册的名字
+/// `bridge.rs`（与拆出去的 `bridge_io.rs`）里 `register_function("__native_x", …)` 注册的名字
 fn registered_in_rust() -> HashSet<String> {
-    let src = include_str!("../js/bridge.rs");
+    let src = concat!(include_str!("../js/bridge.rs"), include_str!("../js/bridge_io.rs"));
     let mut out = HashSet::new();
     let mut rest = src;
     while let Some(i) = rest.find("register_function(\"") {

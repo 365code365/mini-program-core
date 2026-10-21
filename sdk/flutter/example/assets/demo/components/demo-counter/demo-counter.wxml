@@ -1,0 +1,11 @@
+<view class="counter">
+  <text class="label">{{label}}</text>
+  <view class="ops">
+    <view class="op {{atMin ? 'op-off' : ''}}" bindtap="dec">−</view>
+    <text class="num">{{value}}</text>
+    <view class="op {{atMax ? 'op-off' : ''}}" bindtap="inc">+</view>
+  </view>
+</view>
+<view class="logs">
+  <text class="log" wx:for="{{logs}}">· {{item}}</text>
+</view>

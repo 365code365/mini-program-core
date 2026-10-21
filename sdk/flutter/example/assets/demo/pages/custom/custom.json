@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "自定义组件",
+  "usingComponents": {
+    "demo-card": "/components/demo-card/demo-card",
+    "demo-counter": "/components/demo-counter/demo-counter"
+  }
+}

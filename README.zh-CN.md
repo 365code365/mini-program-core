@@ -148,8 +148,8 @@ my-mini-app/                                                    ┌────�
 
 | 示例 | 页数 | 与 Chrome 的变化像素比 |
 |---|---|---|
-| `sample-app`（商城） | 15 | **4.55%** |
-| `news-app`（资讯） | 6 | **6.33%** |
+| `sample-app`（商城） | 15 | **4.57%** |
+| `news-app`（资讯） | 6 | **6.34%** |
 
 剩余差异集中在粗体字形与亚像素文本位置。这个数字是**回归判据**，不是宣传语 ——
 任何渲染改动都要先看它有没有变坏。
@@ -167,7 +167,7 @@ my-mini-app/                                                    ┌────�
 
 | 判据 | 规模 |
 |---|---|
-| 单元测试 | lib **483** + bin **9**；其中宿主纯逻辑 41 条（手势仲裁 13 / 侧滑返回 12 / picker 面板 10 / 触摸状态机 6）、SDK 指针链路 7 条 |
+| 单元测试 | lib **774** + bin **26** + 端到端集成测试 **72**（22 个文件）；其中宿主纯逻辑 41 条（手势仲裁 13 / 侧滑返回 12 / picker 面板 10 / 触摸状态机 6）、SDK 指针链路 7 条 |
 | 场景画廊 | **65** 张，固定动画时钟下逐字节可复现 |
 | 局部重绘校验 | 增量重绘 vs 强制整帧，5 个场景**逐字节相同** |
 | SDK 与桌面一致性 | sample 15/15、news 6/6 **逐像素相同** |
@@ -178,33 +178,48 @@ my-mini-app/                                                    ┌────�
 
 **已实现**（详表见[支持范围](#支持范围)）：
 
-- **24 个组件标签**（容器 / 文本媒体 / 表单三类，含 `swiper`、`scroll-view`、`picker-view`）；
+- **26 个组件标签**（容器 / 文本媒体 / 表单三类，含 `swiper`、`scroll-view`、`picker-view`，以及按官方行为实现的 `navigator` / `label`）；
 - **事件**：六种绑定前缀（`bind` / `catch` / `capture-bind` / `capture-catch` / `mut-bind` / `bind:`）
   与完整的捕获-冒泡链，触摸序列按微信语义产出（slop 取消 tap、350ms longpress、被滚动接管补 `touchcancel`）；
 - **模板**：`wx:if` / `wx:elif` / `wx:else` / `wx:for`、`block`、表达式引擎、`class`/`style` 绑定、
-  页面 json 的 `usingComponents`（自定义组件含样式隔离与独立数据作用域）；
+  `template` / `import` / `include`、`wxs` 模块（QuickJS 执行）、`wx:key`（组件实例与交互状态跟着 key 走）、
+  `usingComponents` 自定义组件（每处使用一个实例、样式隔离、独立数据作用域、具名 / 默认 / 动态 `<slot>`、`virtualHost`、
+  `triggerEvent` 的 `bubbles` / `composed` / `capturePhase`、`wx://form-field` 系列 behavior、`selectComponent`）；
 - **样式**：选择器与特异性层叠、继承、`@import`、CSS 变量、`rpx`、`calc()`、渐变、阴影、
-  `transform` / `transition` / `@keyframes`；
-- **API**：39 个 `wx.*`（`request` 含 `abort`、storage 全套且跨启动持久化、Toast/Loading/Modal、
-  五个路由 API、设备信息全套、`createAnimation`、`createCanvasContext`）；
+  `transform` / `transition` / `@keyframes`、`@media`（宽高 / 方向 / 宽高比 / 深浅色）、`@font-face`（TTF / OTF）；
+- **组件行为**：`scroll-view` 的受控位置、滚动 / 触底事件与自定义下拉刷新；`swiper` 的跟手拖动、衔接、
+  一屏多项、前后边距、Skyline 的 `direction` / `indicator-type` / `layout-type` 与 change / transition / animationfinish；
+  `form` 的 submit / reset；`picker` 的 columnchange / cancel / `header-text`；`picker-view` 内嵌滚轮；
+  `<video>` 的播放事件、全屏、封面、弹幕；`<canvas type="2d">`（渐变 / 图案 / 阴影 / 合成模式 / 像素读回）；
+- **API**：120 余个 `wx.*`（`request` 含 `abort`、`connectSocket`、`downloadFile` / `uploadFile` 与 `FileSystemManager`（`wxfile://` 沙盒）、
+  `InnerAudioContext` / 背景音频、storage 全套且跨启动持久化、
+  Toast / Loading / Modal / ActionSheet、`previewImage`、五个路由 API、`pageScrollTo`、`createSelectorQuery`、
+  `createIntersectionObserver`、`nextTick`、`createVideoContext`、tabBar 运行时 API、剪贴板、振动、`loadFontFace`、
+  设备信息全套、网络状态、胶囊位置、`canIUse`、`getImageInfo` / `compressImage`、`canvasToTempFilePath`、`createAnimation`、
+  `createCanvasContext`）。`login` / `chooseImage` / `getLocation` / 存相册 / 录音等 30 个宿主能力：
+  宿主在创建选项 `hostApis` 里点名就交给宿主，没点名的立刻 `fail` 并写明原因（不再是 `undefined`）；
 - **生命周期**：三级共 28 个钩子（App 7 / Page 13 / Component 5 + `pageLifetimes` 3），
   页面 `onShow/onHide/onResize` 会联动页面内组件；
-- **交互**：惯性滚动与临界阻尼回弹、手势仲裁、侧滑返回、下拉刷新、picker 底部面板、局部重绘；
+- **交互**：惯性滚动与临界阻尼回弹、手势仲裁、左边缘侧滑返回（桌面与移动端 SDK）、下拉刷新、picker 底部面板、局部重绘；
 - **媒体**：Canvas 2D（完整 2D 上下文 + 设备分辨率后备缓冲）、`<video>`（MP4 解复用 + H.264 软解 + 音频）。
 
 **明确不做**（不是没排期，是取舍）：
 
 | 不做 | 原因 |
 |---|---|
-| GPU 光栅化 | GPU 只做合成上屏（见[设计取舍第 8 条](#八个关键设计取舍)）；内容一律由 CPU 画，CPU 才能当唯一的像素参考，无 GPU 环境（CI、嵌入式）也出同一张图 |
-| 解析 `.wxapkg` / 签名校验 | 分包、灰度、完整性属于宿主的事；引擎按**目录**读 |
-| 把 `<web-view>` / `<map>` 编进引擎 | 微信里它们是原生组件层。引擎算位置与参数，控件由宿主用 `WKWebView` / `android.webkit.WebView` / ArkUI `Web()` 放上去（[理由](doc/原生App集成指南.md)） |
-| 远程字体 `wx.loadFontFace` | 字体来自系统。API 存在且回调 `success`（否则会打断框架的 `onLaunch`），但不真的下载 |
-| 迁就偏离微信语义的写法 | 对齐目标只有 Skyline 一个。写法与微信不一致时，按微信来 |
+| GPU 光栅化 | GPU 只做合成上屏（见[设计取舍第 8 条](#八个关键设计取舍)）；内容一律由 CPU 画，CPU 才能当唯一的像素参考，无 GPU 环境（CI、嵌入式）也出同一张图。要做就是一套与 CPU 并行的第二光栅器（每种图元、文字、渐变、阴影各一遍），这一轮没有做 |
+| 解析 `.wxapkg` / 签名校验 | `.wxapkg` 是微信编译后的私有格式（模板已编成 `$gwx` 函数），签名是微信的私钥体系；分包、灰度、完整性属于宿主的事，引擎按**目录**读源码 |
+| 把 `<web-view>` / `<map>` 编进引擎 | **Skyline 自己就不渲染 `web-view`**（官方组件支持表：「暂不考虑」，该页面要切回 WebView 渲染）；`map` 在 Skyline 里是同层渲染的原生组件。引擎算位置与参数，控件由宿主用 `WKWebView` / `android.webkit.WebView` / ArkUI `Web()` 放上去（[理由](doc/原生App集成指南.md)） |
+| 迁就偏离微信语义的写法 | 对齐目标只有 Skyline 一个。写法与微信不一致时，按微信来。这是原则，不是一个能「实现」的功能（反着做就违背了对齐目标） |
 
-**还缺的**（13 条，每条都写了影响，见 [`doc/引擎测试说明.md`](doc/引擎测试说明.md) 第六节）：
-`wx:key` 的复用语义、`template` / `slot` / `wxs`、`scroll-view` 的滚动事件、
-`<video>` 的播放事件、`wx.login` 等云能力 API、移动端 SDK 的左边缘侧滑返回。
+（远程字体从前在这张表里；现在 `wx.loadFontFace` 与 `@font-face` 都真的加载 TTF / OTF，WOFF 明确 `fail`，与 Skyline 一致。）
+
+**还缺的**（原来的 12 条里 4 条已关、其余做了大半，每条都写了影响，见 [`doc/引擎测试说明.md`](doc/引擎测试说明.md) 第六节）：
+这一轮（T23~T29）补了 WebSocket / 文件系统 / 音频等 API、组件事件冒泡与 `virtualHost` / 动态 slot、`navigator` / `label`、
+`picker-view` 滚动、swiper 的 Skyline 属性、canvas 2d 的渐变阴影与像素读回、video 封面与弹幕；`@supports` / `@container` / `@layer`
+查证 Skyline 本身就不支持，两端都整块跳过。还开着的：`wx:key` 参与增量失效与 WXS 响应事件（G-2）、H5 导出的自定义组件（G-2c）、
+scroll-view 的滚动条与 Skyline 的 `sticky` / `grid-view` / 嵌套滚动（G-4）、离屏 scroll-view 的受控值（G-5）、video 的拖动进度 /
+画中画（G-6）、swiper 的 worklet 回调（G-7）、canvas 的虚线与 clip（G-9）、未注册标签的兜底语义（G-12）。
 
 **最大的已知短板是内存**：峰值 600MB~1GB，几乎全是字体。`cargo run --release --example mem_report`
 的实测分项（RSS 增量，macOS）：
@@ -244,7 +259,7 @@ my-mini-app/                                                    ┌────�
 
 - 需要完整 Web 生态（任意 CSS 特性、第三方 H5 SDK、`<iframe>`）—— 那就该用 WebView；
 - 重度 3D / 大量滤镜 —— 内容光栅化在 CPU 上（GPU 后端只管合成），撑不住，该上 GPU 绘制的方案；
-- 期望「零适配跑通任意线上小程序」—— 还有 13 条已知差距，复杂应用需要逐项验证；
+- 期望「零适配跑通任意线上小程序」—— 还有一批已知差距（见上），复杂应用需要逐项验证；
 - 内存极紧的设备 —— 字体后端换完之前峰值偏高。
 
 ### 技术栈与依赖
@@ -259,6 +274,9 @@ my-mini-app/                                                    ┌────�
 | [fontdue](https://github.com/mooman219/fontdue) | 0.9 | 字形光栅化 |
 | [image](https://github.com/image-rs/image) | 0.25 | 图片解码（PNG / JPEG / GIF 逐帧 / WebP 等，走 image 的默认解码器集） |
 | [ureq](https://github.com/algesten/ureq) | 3.3 | `wx.request` 与远程图片（必须 `http_status_as_error(false)`，微信里 4xx/5xx 也走 `success`） |
+| [tungstenite](https://github.com/snapview/tungstenite-rs) | =0.30.0 | `wx.connectSocket` 的 WebSocket 协议（只开 handshake；TLS 走下面同一份 rustls） |
+| [rustls](https://github.com/rustls/rustls) + [webpki-roots](https://github.com/rustls/webpki-roots) | =0.23.42 / =1.0.9 | `wss://` 的 TLS 与根证书（与 ureq 用的是同一份，不多编一套） |
+| [base64](https://github.com/marshallpierce/rust-base64) / [flate2](https://github.com/rust-lang/flate2-rs) | =0.22.1 / =1.1.9 | 二进制过桥（WebSocket 帧、文件、像素）/ `FileSystemManager.unzip` 的 deflate（都是 ureq 已带的） |
 | [symphonia](https://github.com/pdeljanov/Symphonia) | 0.6 | 音频解复用与解码（AAC / MP3 / MP4） |
 | [openh264](https://github.com/ralfbiedert/openh264-rs) | 0.9 | H.264 软解（可选特性 `h264`） |
 | [winit](https://github.com/rust-windowing/winit) + [softbuffer](https://github.com/rust-windowing/softbuffer) | 0.30 / 0.4 | 桌面窗口与软件帧缓冲（可选特性 `desktop`；也是 GPU 不可用时的上屏回退） |
@@ -296,7 +314,8 @@ cargo build --release
 
 常用动作参数（按书写顺序执行，可重复）：`--touch x,y` / `--swipe x1,y1,x2,y2`
 / `--drag px×帧数` / `--type 文本` / `--key enter` / `--wheel` / `--wait 秒` / `--frames N`。
-完整列表 `--help`；诊断开关（`MINI_SCROLL_LOG` / `MINI_FPS` / `MINI_FONT_LOG` …）见
+完整列表 `--help`；诊断开关（`MINI_SCROLL_LOG` / `MINI_FPS` / `MINI_FONT_LOG` / `MINI_SLIDER_LOG` …，移动端 SDK 另有
+`MINI_DAMAGE_LOG` 每帧重画多少、`MINI_NO_DAMAGE` 关掉局部重画做对照，见集成指南）见
 [`doc/引擎测试说明.md`](doc/引擎测试说明.md) 与
 [`doc/架构与实现原理.md`](doc/架构与实现原理.md#帧成本是怎么压下来的)。
 
@@ -377,7 +396,7 @@ bash tools/build-mobile.sh check     # 只做交叉编译检查
 | `desktop` | ✅ | 桌面窗体（winit + softbuffer + 剪贴板） |
 | `audio` | ✅ | 内置音频播放（`<video>` 的声音） |
 | `h264` | ✅ | 内置 H.264 软解。**移动端建议关掉**：交给系统播放器硬解更省电，且 openh264 在 iOS 模拟器目标上编不过 |
-| `gpu` | ✅ | GPU 合成后端（wgpu），运行时选、失败回退 CPU。移动端构建不带它：SDK 的 GPU 上屏还没接入 |
+| `gpu` | ✅ | GPU 合成后端（wgpu），运行时选、失败回退 CPU。Android 库默认带（`mr_app_attach_surface` 交 `ANativeWindow` 即可 GPU 上屏，SDK 默认偏好仍是 cpu；`ANDROID_GPU=0` 关掉）；iOS 库暂不带 |
 | `bindgen` | ❌ | 交叉编译时打开 |
 
 ### 2. 打成依赖（推荐）
@@ -500,25 +519,35 @@ Android 在 ubuntu runner 上编、iOS 在 macOS runner 上编，然后把两个
 | 类别 | 已支持 |
 |---|---|
 | 组件（24 个标签） | 容器：view / block / scroll-view / swiper / swiper-item<br/>文本与媒体：text / rich-text / icon / image / video / canvas<br/>表单：button / input / textarea / switch / slider / progress / checkbox / checkbox-group / radio / radio-group / picker / picker-view / picker-view-column |
-| 事件 | touchstart/move/end/cancel、longpress/longtap、tap、change、focus/input/blur/confirm、image 的 load/error、页面 onPageScroll / onReachBottom / onPullDownRefresh；六种绑定前缀（bind / catch / capture-bind / capture-catch / mut-bind / bind:）与捕获-冒泡完整链路 |
-| WXML | wx:for / wx:if / elif / else / for-item / for-index、block、表达式引擎、class 与 style 绑定、自定义组件（usingComponents） |
-| WXSS | 标签/类/id/属性/伪类选择器、后代与子代组合器、特异性层叠、`:first/last/only-child`、`:nth-child(An+B)`、`:active`、`@import`、`@keyframes`、CSS 变量、rpx、渐变、阴影、transform、transition/animation |
-| wx.\* | request（含 abort）、storage 全套、showToast/showLoading/showModal、下拉刷新、createAnimation、createCanvasContext、设备信息全套、五个路由 API、App 级监听（onError 等） |
-| 交互 | 惯性滚动与临界阻尼回弹、手势仲裁（主轴锁定 / 内外层交接）、侧滑返回、下拉刷新、picker 面板、局部重绘（损伤区） |
+| 事件 | touchstart/move/end/cancel、longpress/longtap、tap、change、focus/input/blur/confirm、image 的 load/error、scroll-view 的 scroll / scrolltoupper / scrolltolower / refresher*、swiper 的 change / transition / animationfinish、form 的 submit / reset、picker 的 columnchange / cancel、video 的 play / pause / ended / timeupdate / loadedmetadata / seekcomplete / fullscreenchange / error、页面 onPageScroll / onReachBottom / onPullDownRefresh；六种绑定前缀（bind / catch / capture-bind / capture-catch / mut-bind / bind:）与捕获-冒泡完整链路 |
+| WXML | wx:for / wx:if / elif / else / for-item / for-index / wx:key、block、表达式引擎（含展开与对象简写）、class 与 style 绑定、template / import / include、wxs 模块（`<wxs src>` / 内联 / require）、自定义组件（usingComponents，每处一个实例、具名与默认 slot） |
+| WXSS | 标签/类/id/属性/伪类选择器、后代与子代组合器、特异性层叠、`:first/last/only-child`、`:nth-child(An+B)`、`:active`、`@import`、`@keyframes`、`@media`、`@font-face`、CSS 变量、rpx、渐变、阴影、transform、transition/animation |
+| wx.\*（120 余个） | request（含 abort）、connectSocket、downloadFile / uploadFile、FileSystemManager、InnerAudioContext / 背景音频、canIUse、网络状态、胶囊位置、getImageInfo / compressImage、canvasToTempFilePath、storage 全套、showToast / showLoading / showModal / showActionSheet、previewImage、下拉刷新、pageScrollTo、createSelectorQuery / createIntersectionObserver / nextTick、createVideoContext、createAnimation、createCanvasContext 与 canvas 2d 节点、tabBar 运行时 API、剪贴板、振动、loadFontFace、导航栏 API、设备信息全套、五个路由 API、App 级监听（onError 等）；login / chooseImage 等宿主能力经 hostApis 交给宿主 |
+| 交互 | 惯性滚动与临界阻尼回弹、手势仲裁（主轴锁定 / 内外层交接）、左边缘侧滑返回（桌面与移动端 SDK）、下拉刷新、picker 面板、操作菜单、图片预览、全屏视频、局部重绘（损伤区） |
 
 **图标**用的是 WeUI 官方矢量数据（`success` 是实心圆挖出对勾形的洞，不是白色描边对勾）。
 
-已知差距（`wx:key` / `template` / `slot` / `wxs`、`scroll-view` 的滚动事件、
-`video` 的播放事件、`wx.login` 等未实现 API…）列在
-[`doc/引擎测试说明.md` 第六节](doc/引擎测试说明.md)，共 13 条，每条都写了影响。
+已知差距（`wx:key` 不参与增量失效、H5 导出不支持自定义组件、scroll-view 的 Skyline 专有布局组件…）列在
+[`doc/引擎测试说明.md` 第六节](doc/引擎测试说明.md)，每条都写了影响。
 
 ---
 
 ## 测试与回归
 
+一条命令跑完下面全部（含逐页快照与 H5 对比），每步计时，汇总在 `target/_regress/summary.txt`。
+改了引擎之后约 4 分钟：编全部目标 ~20s、各项检查 ~200s。为此 `release` 关了 LTO、开了增量
+（thin LTO 要给五十来个二进制各重新优化一遍：2905s 对 20s，gallery 输出逐字节相同）；
+发出去的移动端库由 `tools/build-mobile.sh` 开回 thin LTO。
+
+```bash
+bash tools/regress.sh            # 加 --no-h5 跳过 H5 对比
+```
+
+逐条手跑：
+
 ```bash
 rm -rf target/mini-storage                 # ① 必做，见下
-cargo test --release                       # ② lib 483 + bin 9
+cargo test --release                       # ② lib 774 + bin 26 + 集成 72
 bash tools/damage-check.sh                 # ③ 增量重绘 == 整帧重绘（逐字节）
 cargo run --release --example gallery      # ④ 65 张场景图
 bash tools/tab-click-check.sh              # ⑤ 三个 app 的 tabBar 点击
@@ -545,7 +574,7 @@ bash tools/snapshot-all.sh sample-app target/fin2_sample --settle 0 --time 2
 python3 tools/pixdiff.py a.png b.png       # 差异占比 + 包围盒
 ```
 
-当前基线：sample-app **4.55%**、news-app **6.33%**（与编译出的 HTML 对比的变化像素比）。
+当前基线：sample-app **4.57%**、news-app **6.34%**（与编译出的 HTML 对比的变化像素比）。
 
 ### 两条硬规则
 
@@ -585,7 +614,7 @@ src/
 │   │   └── video/     视频 5 片：MP4 容器 / H.264 解码 / 音轨 / 播放状态机
 │   └── wxml_renderer/  布局缓存 / 绘制调度 / 命中测试 / 动画 / 局部重绘失效
 ├── host/            **宿主层（平台无关）**：页面栈、覆盖层、触摸状态机、像素合成
-│   ├── picker_sheet/  底部选择面板 5 片：状态与几何 / 构造 / 绘制 / 省市区联动 / 指针闭环
+│   ├── picker_sheet/  底部选择面板 6 片：状态与几何 / 构造 / 绘制 / 省市区联动 / 指针闭环 / 滚轮拖动（跟手、甩动、吸附）
 │   └── engine.rs      MiniEngine —— 移动端 SDK 的核心
 ├── js/              QuickJS 绑定；`prelude/*.js` 是按域拆分的逻辑层前置代码
 │                    （module / console / storage / ui / route / device / network …）
@@ -626,7 +655,7 @@ doc/                 文档与场景图
 | [`doc/示例与调试.md`](doc/示例与调试.md) | 示例小程序清单、`examples/` 各示例、浏览器预览、编译成 HTML、视频/Canvas、Rust/C/移动端代码示例 |
 | [`doc/场景画廊.md`](doc/场景画廊.md) | 65 张真实渲染（同时是回归基线），以及素材怎么生成 |
 | [`doc/踩坑记录.md`](doc/踩坑记录.md) | 13 类「曾经错在哪」：现象 → 根因 → 现在的做法 → 回归判据 |
-| [`doc/引擎测试说明.md`](doc/引擎测试说明.md) | 能力矩阵、T1~T9 逐项测试清单与判据、内存分项实测、已知差距 13 条 |
+| [`doc/引擎测试说明.md`](doc/引擎测试说明.md) | 能力矩阵、T1~T29 逐项测试清单与判据、内存分项实测、已知差距 |
 | [`doc/原生App集成指南.md`](doc/原生App集成指南.md) | 极简集成、宿主九件事、C ABI、iOS/Android/鸿蒙步骤、验收清单 |
 | [`doc/触控对齐测试报告.md`](doc/触控对齐测试报告.md) | 滑动/点击/长按/手势与微信的逐项对照实测 |
 | [`doc/实现组件说明.md`](doc/实现组件说明.md) | 组件实现状态明细 |

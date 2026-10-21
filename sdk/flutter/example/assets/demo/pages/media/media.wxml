@@ -1,0 +1,37 @@
+<view class="card">
+  <text class="title">image 的 mode（同一张 3:2 的图）</text>
+  <view class="modes">
+    <view class="mode" wx:for="{{modes}}" wx:key="*this">
+      <image class="mode-img" src="/images/coffee.jpg" mode="{{item}}"/>
+      <text class="mode-name">{{item}}</text>
+    </view>
+  </view>
+  <text class="label">widthFix：宽度固定、高度按比例</text>
+  <image class="wfix" src="/images/banner.jpg" mode="widthFix"/>
+  <text class="label">heightFix：高度固定、宽度按比例</text>
+  <image class="hfix" src="/images/coffee.jpg" mode="heightFix"/>
+</view>
+
+<view class="card">
+  <text class="title">GIF 动图与 load / error 事件</text>
+  <view class="gif-row">
+    <image class="gif" src="/images/loading.gif" bindload="onLoadImg" data-name="loading.gif"/>
+    <image class="gif" src="/images/not-exist.png" binderror="onErrImg" data-name="not-exist.png"/>
+    <image class="gif round" src="/images/avatar.jpg" mode="aspectFill" bindload="onLoadImg" data-name="avatar.jpg"/>
+  </view>
+  <view class="result"><text>{{imgLog}}</text></view>
+</view>
+
+<view class="card">
+  <text class="title">wx.previewImage（点图看大图，左右滑切换）</text>
+  <view class="thumbs">
+    <image wx:for="{{gallery}}" wx:key="*this" class="thumb" src="{{item}}" mode="aspectFill" data-index="{{index}}" bindtap="preview"/>
+  </view>
+</view>
+
+<view class="card">
+  <text class="title">video（宿主承载）</text>
+  <text class="desc">Flutter 示例在 nativeComponents 里点名了 video：画面由宿主的控件盖在这块区域上，引擎不解码；宿主播放器的事件经 sendNativeViewEvent 派发到下面这些 bind 上。</text>
+  <video id="v2" class="video" src="{{videoSrc}}" controls="{{true}}" bindplay="onVideo" bindpause="onVideo" bindtimeupdate="onTime" bindended="onVideo" binderror="onVideo"></video>
+  <view class="result"><text>{{videoLog}}</text></view>
+</view>

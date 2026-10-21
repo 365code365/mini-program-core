@@ -52,8 +52,12 @@ impl Preview {
     fn load_page(&mut self, path: &str, query: &HashMap<String, String>) -> Result<(), String> {
         let prefix = format!("{}/{}", self.app_root, path);
         let js = std::fs::read_to_string(format!("{}.js", prefix)).unwrap_or_default();
-        let wxml_src = std::fs::read_to_string(format!("{}.wxml", prefix))
-            .map_err(|_| format!("未找到页面 WXML: {}.wxml", prefix))?;
+        let wxml_path = format!("{}.wxml", prefix);
+        let wxml_src = mini_render::parser::wxml_file::read_expanded(
+            std::path::Path::new(&self.app_root),
+            std::path::Path::new(&wxml_path),
+        )
+        .map_err(|_| format!("未找到页面 WXML: {}.wxml", prefix))?;
         let wxss_src = std::fs::read_to_string(format!("{}.wxss", prefix)).unwrap_or_default();
         if !js.is_empty() {
             self.app.load_script(&js)?;

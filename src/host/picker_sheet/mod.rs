@@ -33,10 +33,16 @@ mod pointer;
 mod render;
 /// 省市区联动
 mod region;
+/// 滚轮列的拖动、惯性与回正
+mod wheel;
+/// 面板弹着时跟上页面数据（multiSelector 多列联动）
+mod sync;
+pub use sync::sync_columns;
 pub use build::build;
-pub use pointer::{hit_test, on_press, on_release, open_if_hit, reap};
+pub use pointer::{hit_test, on_cancel, on_move, on_press, on_release, open_if_hit, reap, SheetMove};
 pub use region::relink_region;
 pub use render::render;
+pub use wheel::WheelState;
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum SheetMode {
@@ -69,6 +75,13 @@ pub struct PickerSheetState {
     pub selected: Vec<usize>,
     /// `bindchange` 处理函数名
     pub handler: Option<String>,
+    /// `bindcolumnchange` / `bindcancel` 处理函数名
+    pub column_handler: Option<String>,
+    pub cancel_handler: Option<String>,
+    /// `header-text`：头部中间的标题（空串不画）
+    pub header_text: String,
+    /// 还没派发的列变化 (列, 新下标)：multiSelector 每列落定一次记一条（见 `pointer::on_release`）
+    pub column_changes: Vec<(usize, usize)>,
     pub visible: bool,
     pub pressed: Option<SheetHit>,
     /// 动画起点：入场从这时开始算，退场时重置
@@ -77,6 +90,11 @@ pub struct PickerSheetState {
     pub closing: bool,
     /// `date` 模式的年月日范围（用于换月后重算天数）
     pub date_fields: DateFields,
+    /// 弹出时的逻辑视口（宽, 高）。面板贴着视口底边、头部按宽度左右分「取消 / 确定」。
+    /// 从前写死 375×667：别的尺寸上面板画在半空、按钮点不准（桌面窗体就是 375×667，不受影响）。
+    pub viewport: (f32, f32),
+    /// 滚轮列的拖动 / 回正（见 `wheel.rs`）。静止时每列就停在 `selected` 上
+    pub wheel: WheelState,
 }
 
 /// `date` 模式显示到哪一级
@@ -100,14 +118,20 @@ impl PickerSheetState {
         }
     }
 
-    /// 动画是否还在进行（宿主据此续帧）
+    /// 还有动画在走（面板入场/退场，或某列滚轮在回正），宿主据此续帧
     pub fn animating(&self) -> bool {
+        self.slide_animating() || self.wheel_animating(Instant::now())
+    }
+
+    /// 面板整体的入场/退场位移是否还在走
+    fn slide_animating(&self) -> bool {
         self.anim_from.elapsed().as_secs_f32() < ANIM_SECS
     }
 
-    /// 退场动画是否已经走完，可以丢弃了
+    /// 退场动画是否已经走完，可以丢弃了。
+    /// 只看面板位移：滚轮回正是面板里的事，面板都滑出去了没必要等它。
     pub fn finished_closing(&self) -> bool {
-        self.closing && !self.animating()
+        self.closing && !self.slide_animating()
     }
 
     pub fn begin_close(&mut self) {
@@ -118,7 +142,7 @@ impl PickerSheetState {
         }
     }
 
-    /// 把某一列的选中项移动 delta 行（点击非中心行 / 滚轮）
+    /// 把某一列的选中项移动 delta 行（点击非中心行 / 拖动松手后的落点）
     pub fn move_selection(&mut self, col: usize, delta: i32) {
         let Some(items) = self.columns.get(col) else { return };
         if items.is_empty() {
@@ -126,8 +150,13 @@ impl PickerSheetState {
         }
         let cur = self.selected.get(col).copied().unwrap_or(0) as i32;
         let next = (cur + delta).clamp(0, items.len() as i32 - 1) as usize;
+        let changed = self.selected.get(col).map(|s| *s != next).unwrap_or(false);
         if let Some(slot) = self.selected.get_mut(col) {
             *slot = next;
+        }
+        // multiSelector：某一列换了值就要发 bindcolumnchange（页面据此改后面几列的选项）
+        if changed && self.mode == SheetMode::MultiSelector {
+            self.column_changes.push((col, next));
         }
         // multiSelector 的联动（bindcolumnchange）与 date 的天数重算
         if self.mode == SheetMode::Date {
@@ -233,5 +262,15 @@ pub fn days_in_month(year: i32, month: u32) -> u32 {
 
 /// 面板在视口里的顶边（含动画位移）
 pub fn sheet_top(state: &PickerSheetState) -> f32 {
-    LOGICAL_HEIGHT as f32 - SHEET_H + state.slide_offset()
+    state.viewport.1 - SHEET_H + state.slide_offset()
+}
+
+/// 遮罩不透明度低于这个值就不画（入场第一帧 / 退场最后一帧）
+pub const MASK_VISIBLE_MIN: f32 = 0.002;
+
+/// 遮罩的不透明度：随面板滑入从 0 淡到 0.5，退场反过来。
+/// 绘制与「宿主原生组件被遮罩压暗多少」（`host::native_occlusion`）共用这一份。
+pub fn mask_alpha(state: &PickerSheetState) -> f32 {
+    let slide_ratio = 1.0 - state.slide_offset() / SHEET_H;
+    0.5 * slide_ratio.clamp(0.0, 1.0)
 }

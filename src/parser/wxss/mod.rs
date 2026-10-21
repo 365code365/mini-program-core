@@ -16,7 +16,13 @@ use crate::Color;
 mod parser;
 /// CSS 选择器引擎（分词 / 解析 / 特异性 / 匹配）
 mod selector;
+/// `calc()` 静态求值与 `env(safe-area-inset-*)`（安全区由宿主经 thread_local 给）
+mod calc_env;
+/// `@media` 条件在解析期求值（屏宽 / 屏高 / 方向 / 深浅色）
+mod media;
+pub use media::media_matches;
 
+pub use calc_env::{env_context, set_env_context, EnvContext};
 pub use parser::WxssParser;
 // 选择器的内部类型/函数都是 `pub(super)`：同一个 `wxss` 模块下的几片互相可见，
 // 对外不暴露（外面只需要 `StyleSheet` / `StyleRule` / `WxssParser`）。
@@ -93,6 +99,15 @@ pub struct StyleSheet {
     pub imports: Vec<String>,
     /// `@keyframes` 动画时间轴（原生端由渲染器按帧求值）
     pub keyframes: Vec<KeyframesRule>,
+    /// `@font-face`（解析时已交给 `text_faces` 登记；这里留一份给诊断与测试）
+    pub font_faces: Vec<FontFace>,
+}
+
+/// 一条 `@font-face`：字族名与第一个 `url(...)` 来源
+#[derive(Debug, Clone, PartialEq)]
+pub struct FontFace {
+    pub family: String,
+    pub src: String,
 }
 
 // ============================ 选择器模型 ============================
@@ -153,7 +168,7 @@ impl ElementDesc {
 
 impl StyleSheet {
     pub fn new() -> Self {
-        Self { rules: Vec::new(), imports: Vec::new(), keyframes: Vec::new() }
+        Self { rules: Vec::new(), imports: Vec::new(), keyframes: Vec::new(), font_faces: Vec::new() }
     }
 
     /// 按名字查关键帧时间轴（后定义的同名规则覆盖先定义的，与 CSS 一致）
@@ -182,7 +197,8 @@ impl StyleSheet {
     /// 因书写顺序更靠后而胜出（自定义背景的按钮按下仍是原来的颜色，只变透明）。
     pub fn ensure_button_hover(&mut self) {
         let builtin = WxssParser::new(
-            ".button-hover{background-color:rgba(0,0,0,0.1);opacity:0.7;}",
+            // navigator 的默认 navigator-hover 与 button-hover 同值（官方 component/navigator.html）
+            ".button-hover{background-color:rgba(0,0,0,0.1);opacity:0.7;}.navigator-hover{background-color:rgba(0,0,0,0.1);opacity:0.7;}",
         )
         .parse()
         .unwrap_or_else(|_| StyleSheet::new());

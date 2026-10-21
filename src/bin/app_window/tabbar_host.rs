@@ -21,6 +21,10 @@ impl crate::MiniAppWindow {
         if tb.custom && self.custom_tabbar.is_none() {
             return false; // 小程序自己画，宿主完全不参与
         }
+        // `wx.hideTabBar()` 之后按「不是 tabBar 页」排版与命中（与 SDK 同一个开关）
+        if mini_render::host::tabbar_api::hidden() {
+            return false;
+        }
         tb.list.iter().any(|item| item.page_path == path)
     }
 

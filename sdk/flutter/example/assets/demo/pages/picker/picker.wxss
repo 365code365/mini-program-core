@@ -1,0 +1,5 @@
+.pick { display: flex; flex-direction: row; align-items: center; padding: 22rpx 0; border-bottom: 1rpx solid #f0f0f0; }
+.pick-k { width: 120rpx; color: #666666; }
+.pick-v { flex: 1; color: #333333; }
+.log { display: flex; flex-direction: column; min-height: 80rpx; padding: 12rpx 16rpx; background-color: #1f1f1f; border-radius: 8rpx; }
+.log-line { font-size: 22rpx; line-height: 1.7; color: #9fe6b8; }

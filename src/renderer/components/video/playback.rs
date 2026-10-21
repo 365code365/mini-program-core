@@ -1,7 +1,7 @@
 //! 播放状态机：按时间轴取当前帧、播放/暂停
 //!
-//! `VideoPlayer` 的一片，由 `video/mod.rs` 组合。**纯搬迁**：从 1064 行的
-//! components/video.rs 按职责切开，一行逻辑没改。
+//! `VideoPlayer` 的一片，由 `video/mod.rs` 组合。从 1064 行的 components/video.rs 按职责
+//! 切开时是纯搬迁；之后加了倍速（`rate`）与「播到末尾」标记（`ended`），见 control.rs。
 use super::*;
 
 impl VideoPlayer {
@@ -23,6 +23,10 @@ impl VideoPlayer {
             load_error: None,
             muted: false,
             audio_buffer: None,
+            rate: 1.0,
+            seek_pos: 0.0,
+            ended: false,
+            reported: Default::default(),
         }
     }
 
@@ -34,7 +38,7 @@ impl VideoPlayer {
         
         if self.is_playing {
             if let Some(start_time) = self.play_start_time {
-                let elapsed = start_time.elapsed().as_secs_f64();
+                let elapsed = start_time.elapsed().as_secs_f64() * self.rate;
                 let start_timestamp = self.frames.get(self.play_start_frame)
                     .map(|f| f.timestamp)
                     .unwrap_or(0.0);
@@ -58,10 +62,14 @@ impl VideoPlayer {
                         self.current_frame = 0;
                         self.play_start_frame = 0;
                         self.play_start_time = Some(Instant::now());
-                        self.restart_audio();
+                        if (self.rate - 1.0).abs() < 1e-6 {
+                            self.restart_audio();
+                        }
                     } else {
                         self.current_frame = self.frames.len() - 1;
                         self.is_playing = false;
+                        self.play_start_time = None;
+                        self.ended = true;
                         Self::stop_audio_static();
                     }
                 }
@@ -75,9 +83,13 @@ impl VideoPlayer {
     pub fn play(&mut self) {
         if self.is_loaded && !self.is_playing {
             self.is_playing = true;
+            self.ended = false;
             self.play_start_time = Some(Instant::now());
             self.play_start_frame = self.current_frame;
-            self.start_audio();
+            // 倍速时不放声音：内置音频是整段样本直出，变不了速
+            if (self.rate - 1.0).abs() < 1e-6 {
+                self.start_audio();
+            }
         }
     }
 

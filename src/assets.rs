@@ -24,7 +24,12 @@ pub fn app_root() -> Option<PathBuf> {
 /// 把小程序内路径解析成存在的真实文件路径。
 ///
 /// 顺序：小程序根目录 → 根目录下 `assets/` → 进程工作目录 → 内置 sample-app（兜底）。
+/// `wxfile://` 开头的走 `wxfile::to_path`（数据目录下的沙盒）。
 pub fn resolve(path: &str) -> Option<PathBuf> {
+    // 下载 / 选图的产物：`wxfile://tmp/…`、`wxfile://usr/…`（见 src/wxfile.rs）
+    if path.starts_with(crate::wxfile::SCHEME) {
+        return crate::wxfile::to_path(path).filter(|p| p.is_file());
+    }
     let trimmed = path.trim_start_matches('/');
     let mut candidates: Vec<PathBuf> = Vec::new();
 

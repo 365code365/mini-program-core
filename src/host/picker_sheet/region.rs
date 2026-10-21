@@ -63,12 +63,18 @@ mod tests {
             columns,
             selected,
             handler: Some("onChange".into()),
+            column_handler: None,
+            cancel_handler: None,
+            header_text: String::new(),
+            column_changes: Vec::new(),
             visible: true,
             pressed: None,
             // 起点放到过去 → slide_offset 归零，面板完全展开，命中坐标稳定
             anim_from: Instant::now() - std::time::Duration::from_secs(1),
             closing: false,
             date_fields: DateFields::Day,
+            viewport: (LOGICAL_WIDTH as f32, LOGICAL_HEIGHT as f32),
+            wheel: WheelState::default(),
         }
     }
 

@@ -1,0 +1,99 @@
+<import src="/templates/entry.wxml"/>
+<wxs src="/wxs/fmt.wxs" module="fmt"/>
+<wxs module="inline">
+  // 内联 wxs 模块：渲染层里跑的小函数
+  var level = function (score) {
+    if (score >= 90) return 'A';
+    if (score >= 75) return 'B';
+    return 'C';
+  };
+  module.exports = { level: level };
+</wxs>
+
+<!-- 页面内定义的模板 -->
+<template name="user">
+  <view class="user">
+    <image class="avatar" src="{{avatar}}" mode="aspectFill"/>
+    <view class="user-body">
+      <text class="user-name">{{name}}</text>
+      <text class="user-sub">{{city}} · {{fmt.maskPhone(phone)}}</text>
+    </view>
+    <text class="vip" wx:if="{{vip}}">VIP</text>
+  </view>
+</template>
+<template name="tplA"><view class="tpl tpl-a"><text>动态 is：这是模板 tplA</text></view></template>
+<template name="tplB"><view class="tpl tpl-b"><text>动态 is：这是模板 tplB</text></view></template>
+
+<view class="card">
+  <text class="title">wx:if / wx:elif / wx:else</text>
+  <view class="btns"><view class="btn-s" bindtap="nextScore">换一个分数（{{score}}）</view></view>
+  <view class="cond cond-a" wx:if="{{score >= 90}}"><text>优秀（score ≥ 90）</text></view>
+  <view class="cond cond-b" wx:elif="{{score >= 60}}"><text>及格（60 ≤ score ＜ 90）</text></view>
+  <view class="cond cond-c" wx:else><text>不及格（score ＜ 60）</text></view>
+  <text class="hint">内联 wxs 算等级：{{inline.level(score)}}；三元表达式：{{score >= 60 ? '通过' : '未通过'}}</text>
+</view>
+
+<view class="card">
+  <text class="title">wx:for（数组、嵌套、对象、block）</text>
+  <view class="goods" wx:for="{{goods}}" wx:for-item="g" wx:for-index="gi" wx:key="id">
+    <text class="g-name">{{gi + 1}}. {{g.name}}</text>
+    <text class="g-price">{{fmt.price(g.fen)}}</text>
+    <view class="g-tags">
+      <text class="g-tag" wx:for="{{g.tags}}" wx:key="*this">{{item}}</text>
+    </view>
+  </view>
+  <text class="label">遍历对象（微信里 index 是键名、按声明顺序）</text>
+  <view class="kv" wx:for="{{spec}}" wx:key="*this"><text class="kv-k">{{index}}</text><text class="kv-v">{{item}}</text></view>
+  <text class="label">block 不产生节点，只做分组</text>
+  <view class="inline">
+    <block wx:for="{{[1, 2, 3]}}" wx:key="*this">
+      <text class="dot">{{item}}</text><text class="sep" wx:if="{{index < 2}}">→</text>
+    </block>
+  </view>
+</view>
+
+<view class="card">
+  <text class="title">wx:key：重排时状态跟着项走</text>
+  <view class="kitem" wx:for="{{keyed}}" wx:key="id">
+    <text>{{item.name}}</text>
+    <switch checked="{{item.on}}"/>
+  </view>
+  <view class="btns">
+    <view class="btn-s" bindtap="shuffle">打乱顺序</view>
+    <view class="btn-o" bindtap="addItem">头部插一项</view>
+  </view>
+  <text class="hint">先手动拨几个开关再打乱：有 wx:key 时开关状态跟着对应的项移动</text>
+</view>
+
+<view class="card">
+  <text class="title">template / import / include</text>
+  <template is="user" data="{{...user}}"/>
+  <template is="user" data="{{name: '匿名用户', city: '未知', phone: '13800000000', avatar: '/images/avatar.jpg', vip: false}}"/>
+  <template is="{{tpl}}"/>
+  <view class="btns"><view class="btn-o" bindtap="switchTpl">切换 is（{{tpl}}）</view></view>
+  <text class="label">import 进来的模板（templates/entry.wxml）</text>
+  <view class="entries-inner">
+    <template is="entry" data="{{name: '从 import 的模板生成', desc: 'data 传对象字面量', url: '/pages/detail/detail?from=wxml', icon: 'T', color: '#8a5cf5'}}"/>
+  </view>
+  <text class="label">include 进来的片段（templates/footer.wxml）</text>
+  <include src="/templates/footer.wxml"/>
+</view>
+
+<view class="card">
+  <text class="title">wxs 模块（/wxs/fmt.wxs）</text>
+  <view class="kv"><text class="kv-k">fmt.price(12990)</text><text class="kv-v">{{fmt.price(12990)}}</text></view>
+  <view class="kv"><text class="kv-k">fmt.date(now)</text><text class="kv-v">{{fmt.date(now)}}</text></view>
+  <view class="kv"><text class="kv-k">fmt.maskPhone</text><text class="kv-v">{{fmt.maskPhone('13912345678')}}</text></view>
+</view>
+
+<view class="card">
+  <text class="title">数据绑定表达式</text>
+  <view class="kv"><text class="kv-k">算术</text><text class="kv-v">{{a}} + {{b}} × 2 = {{a + b * 2}}</text></view>
+  <view class="kv"><text class="kv-k">字符串拼接</text><text class="kv-v">{{'Hello, ' + user.name}}</text></view>
+  <view class="kv"><text class="kv-k">成员 / 下标</text><text class="kv-v">{{goods[1].name}} / {{goods[0].tags[0]}}</text></view>
+  <view class="kv"><text class="kv-k">逻辑非</text><text class="kv-v">{{!user.vip ? '普通用户' : '会员'}}</text></view>
+  <view class="kv"><text class="kv-k">数组长度</text><text class="kv-v">{{goods.length}} 件</text></view>
+  <view class="bind-demo {{highlight ? 'hl' : ''}}" style="color: {{highlight ? '#ffffff' : '#333333'}};" bindtap="toggleHl">
+    <text>class 与 style 都能绑定（点我切换）</text>
+  </view>
+</view>

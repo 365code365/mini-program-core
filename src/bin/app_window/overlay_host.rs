@@ -12,10 +12,23 @@ impl crate::MiniAppWindow {
         (LOGICAL_WIDTH as f32, LOGICAL_HEIGHT as f32)
     }
 
+    /// 提示框里转圈的时钟：跟页面的 CSS 动画同一个（`--time` 定住时快照逐字节可比）
+    pub(crate) fn overlay_clock(&self) -> f32 {
+        self.renderer
+            .as_ref()
+            .map(|r| r.animation_clock())
+            .unwrap_or_else(mini_render::renderer::anim::now_secs)
+    }
+
+    /// 提示框带 `mask: true`：透明蒙层挡住页面（不带 mask 的 Toast / Loading 可以点穿）
+    pub(crate) fn tip_blocks_input(&self) -> bool {
+        ui_overlay::tip_blocks_input(&self.toast, &self.loading)
+    }
+
     pub(crate) fn handle_click(&mut self, x: f32, y: f32) {
         if self.picker_sheet.as_ref().map(|s| s.visible).unwrap_or(false) { return; }
+        if self.tip_blocks_input() { return; }
         if self.modal.as_ref().map(|m| m.visible).unwrap_or(false) { self.handle_modal_click(x, y); return; }
-        if self.loading.as_ref().map(|l| l.visible).unwrap_or(false) { return; }
         // 点在 picker 上：弹出选择面板，不再走普通内容点击
         if self.open_picker_if_hit(x, y) { return; }
         
@@ -80,7 +93,11 @@ impl crate::MiniAppWindow {
 
     /// 面板可见时的按下：记录按压的头部按钮以给出反馈。返回是否消费了事件。
     pub(crate) fn handle_picker_sheet_press(&mut self, x: f32, y: f32) -> bool {
-        let consumed = picker_sheet::on_press(&mut self.picker_sheet, x, y);
+        // 操作菜单 / 图片预览、全屏视频盖住整个页面：这串触摸归它们（抬手时处理）
+        let vp = (LOGICAL_WIDTH as f32, LOGICAL_HEIGHT as f32);
+        let consumed = picker_sheet::on_press(&mut self.picker_sheet, x, y)
+            || mini_render::host::ui_overlay::sheet_overlay_press(vp, x, y)
+            || mini_render::renderer::components::fullscreen_video().is_some();
         if consumed {
             self.needs_redraw = true;
             if let Some(w) = &self.window { w.request_redraw(); }
@@ -88,9 +105,33 @@ impl crate::MiniAppWindow {
         consumed
     }
 
+    /// 面板可见时的移动：滚轮跟手。返回是否消费了事件（面板弹着就一律吞掉）。
+    pub(crate) fn handle_picker_sheet_move(&mut self, x: f32, y: f32) -> bool {
+        match picker_sheet::on_move(&mut self.picker_sheet, x, y) {
+            picker_sheet::SheetMove::NotOpen => {
+                if mini_render::host::ui_overlay::sheet_overlay_move(x) {
+                    self.needs_redraw = true;
+                    if let Some(w) = &self.window { w.request_redraw(); }
+                    return true;
+                }
+                mini_render::renderer::components::fullscreen_video().is_some()
+            }
+            picker_sheet::SheetMove::Idle => true,
+            picker_sheet::SheetMove::Moved => {
+                self.needs_redraw = true;
+                if let Some(w) = &self.window { w.request_redraw(); }
+                true
+            }
+        }
+    }
+
     /// 面板可见时的抬手：确定/取消/选项滚动/点遮罩关闭。返回是否消费了事件。
     pub(crate) fn handle_picker_sheet_release(&mut self, x: f32, y: f32) -> bool {
-        let consumed = picker_sheet::on_release(&mut self.picker_sheet, &mut self.app, x, y);
+        // 全屏视频：左上角退出，别处切换播放 / 暂停（事件下一帧由 host::video::tick 发）
+        let vp = (LOGICAL_WIDTH as f32, LOGICAL_HEIGHT as f32);
+        let consumed = picker_sheet::on_release(&mut self.picker_sheet, &mut self.app, x, y)
+            || mini_render::host::ui_overlay::sheet_overlay_release(&mut self.app, vp, x, y)
+            || mini_render::renderer::components::fullscreen_tap(x, y);
         if consumed {
             self.needs_redraw = true;
             if let Some(w) = &self.window { w.request_redraw(); }

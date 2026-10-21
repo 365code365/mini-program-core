@@ -43,8 +43,9 @@ shot() { # 名字, 之后是 mini-app-window 的参数
 rm -rf "$OUT"
 echo "### 交互快照 -> ${OUT} （都等动画落定，避开倒计时页面）"
 # 坐标不是猜的：picker 区域用 MINI_PICKER_LOG 量过（内容坐标 y=834，scroll 300 → 视口 534），
-# Modal 按钮位置由 host::ui_overlay::modal_layout 的算式得出（居中 280 宽，按钮条高 50，
-# 单行内容时 button_y≈360）—— 坐标一旦落空，下面的「空转守卫」会当场报错。
+# Modal 按钮位置由 host::ui_overlay::geometry::modal_geom 得出（WeUI 2.x：居中 320 宽，
+# 按钮条高 56，单标题单行内容时按钮条 y≈369~425，确定在右半边 x>187）—— 坐标一旦落空，
+# 下面的「空转守卫」会当场报错。
 PICKER_TAP="--touch 180,540,50"
 MODAL_EVAL="wx.showModal({title:'提示',content:'确认退出登录？',success(){}})"
 # picker：点在 selector 上 → 底部面板弹出；等 0.6s 让入场位移动画走完
@@ -63,6 +64,16 @@ shot press_hold     sample-app --route pages/profile/profile --settle 0 --time 2
     --swipe-hold 180,300,180,300,2
 # 长按：600ms 触发 longpress（触摸状态机 + 帧驱动的 tick）
 shot longpress      sample-app --route pages/profile/profile --settle 0 --time 2 --touch 180,300,600
+# slider：showcase 的「音量」滑块（scroll 300 时圆点在视口 171,480；轨道 121.5..203.5，见
+# renderer/components/slider.rs 的 slider_track_span）。抓着圆点横拖 24px：60 → 89。
+#   · 按住不放的那一帧：滑块必须画出来（按压态样式曾把 slider 借用的颜色/直径字段整份换掉，
+#     拖动全程滑块是隐形的，只剩数值在跳）；
+#   · 松手：bindchange 回写 volume，标题变成「音量 89」。
+SLIDER_DRAG="171,480,195,480,8"
+shot slider_hold    sample-app --route pages/showcase/showcase --settle 0 --time 2 --scroll 300 \
+    --swipe-hold $SLIDER_DRAG
+shot slider_drag    sample-app --route pages/showcase/showcase --settle 0 --time 2 --scroll 300 \
+    --swipe $SLIDER_DRAG --wait 0.3
 n=$(find "$OUT" -name '*.png' 2>/dev/null | wc -l | tr -d ' ')
 echo "共 $n 张"
 
@@ -93,6 +104,32 @@ guard picker_面板真的弹出 "$OUT/_plain/pages/showcase/showcase/rust.png" \
 # 按下确定 vs 抬手关闭：一个有弹窗一个没有，至少差 10%
 guard modal_按钮真的命中 "$OUT/modal_press/pages/profile/profile/rust.png" \
     "$OUT/modal_confirm/pages/profile/profile/rust.png" 10
+# slider 只比被操作的那一块（`--box`，2x 像素）：这一页有按墙上时钟走的 GIF，整页比较会被它淹没
+box_pct() { # 图A, 图B, 矩形 → 差异百分比
+    local pct
+    pct=$(python3 tools/pixdiff.py "$1" "$2" --box "$3" 2>/dev/null | tail -1 \
+        | sed -n 's/.*(\([0-9.]*\)%).*/\1/p')
+    echo "${pct:-0}"
+}
+guard_box() { # 名字, 图A, 图B, 矩形, 最小, 最大
+    local name="$1" pct
+    pct=$(box_pct "$2" "$3" "$4")
+    if awk -v p="$pct" -v lo="$5" -v hi="$6" 'BEGIN{exit !(p>=lo && p<=hi)}'; then
+        printf '  ✓ %-22s 区域差异 %s%% ∈ [%s, %s]\n' "$name" "$pct" "$5" "$6"
+    else
+        printf '  ✗ %-22s 区域差异 %s%%（应在 [%s, %s]）\n' "$name" "$pct" "$5" "$6"
+        fail=1
+    fi
+}
+SC=pages/showcase/showcase/rust.png
+SLIDER_BOX=230,935,540,1000   # 轨道 + 圆点 + 数值（实测：拖 24px 后差 11.7%）
+TITLE_BOX=230,880,540,925     # 标题「音量 N」（实测：60→89 差 2.8%）
+# 圆点真的挪了（拖动推进了值）
+guard_box slider_拖动推进了值 "$OUT/_plain/$SC" "$OUT/slider_hold/$SC" "$SLIDER_BOX" 5 100
+# 按住的那一帧与松手后**逐像素一致**：滑块在拖动中是画出来的（隐形时这里差一整条轨道）
+guard_box slider_拖动中画得出来 "$OUT/slider_hold/$SC" "$OUT/slider_drag/$SC" "$SLIDER_BOX" 0 0
+# 标题只在松手后变：changing 不改页面，change 回写了 volume
+guard_box slider_松手才发change "$OUT/slider_hold/$SC" "$OUT/slider_drag/$SC" "$TITLE_BOX" 1 100
 
 echo "### 手势归属断言（时间相关，比日志不比像素）"
 expect_log() { # 名字, 期望的正则, 之后是参数
@@ -111,6 +148,13 @@ expect_log() { # 名字, 期望的正则, 之后是参数
 # 首页那排横向卡片上竖着划：不该被横向容器吃掉，应交给页面
 expect_log 横滑卡片上竖划走页面 '🖐 手势归属：.*-> Page' \
     sample-app --route pages/index/index --settle 0 --drag 8x12 --snapshot target/_ia_probe
+# slider 上横拖归滑块、竖划归页面（从前一按到滑块整次触摸就被吃掉，手指落在那一行整页滚不动）
+expect_log slider上横拖归滑块 '🖐 手势归属：Undecided -> Slider' \
+    sample-app --route pages/showcase/showcase --settle 0 --time 2 --scroll 300 \
+    --swipe $SLIDER_DRAG --snapshot target/_ia_probe
+expect_log slider上竖划走页面 '🖐 手势归属：Undecided -> Page' \
+    sample-app --route pages/showcase/showcase --settle 0 --time 2 --scroll 300 \
+    --swipe 171,480,171,300,8 --snapshot target/_ia_probe
 # 纵向长列表拖动：页面滚动真的发生（位置 > 0）
 expect_log 长列表能滚起来 '滚动位置 *[1-9]|position=[1-9]|-> Page' \
     sample/news-app --route pages/home/home --settle 0 --drag 10x20 --snapshot target/_ia_probe

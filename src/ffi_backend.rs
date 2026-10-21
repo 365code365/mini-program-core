@@ -7,9 +7,12 @@
 //!   宿主不用为两种构建写两套链接。没编 gpu 时它们如实报「CPU」与原因。
 //! - 不调这些新函数的宿主永远是 CPU，与以前逐字节一致（`tools/sdk-parity.sh` 守着）。
 //!
-//! 现在还没有 GPU 合成器：`mr_app_attach_surface` 校验参数后只记下 surface 的种类，
-//! 指针既不解引用也不保留，返回 1（CPU）；`mr_app_pump_ex` 只会返回 0 或
-//! `MR_FRAME_NEW`。线程约定与其它 `mr_app_*` 相同：同一个线程调用。
+//! 编了 `gpu` 时 `mr_app_attach_surface` 把原生指针交给引擎（engine_gpu.rs）：门槛与自检
+//! 都过了就由 GPU 直接上屏，`mr_app_pump_ex` 带 `MR_FRAME_PRESENTED`。所有权照头文件：
+//! `ANativeWindow*` 挂载时 acquire、卸载 / destroy 时（放掉合成器之后）release；
+//! `CAMetalLayer*` 由调用方持有到 detach / destroy 返回。没编 `gpu` 时只记种类、不碰指针，
+//! 返回 1（CPU）。另有 `ffi_embed` 的两位提示位 WANTS_MORE / EVENTS，与后端无关。
+//! 线程约定与其它 `mr_app_*` 相同：同一个线程调用。
 use crate::compositor::{pref, DeviceInfo, SurfaceKind};
 use crate::ffi_app::MRApp;
 use crate::host::engine_backend;
@@ -81,7 +84,23 @@ pub extern "C" fn mr_app_attach_surface(app: *mut MRApp, kind: c_int, native: *m
         a.last_error = "mr_app_attach_surface: native 为空".into();
         return 0;
     }
-    // 没有 GPU 合成器：指针不解引用、不保留（Android 也不 acquire），只记种类
+    #[cfg(feature = "gpu")]
+    {
+        // 重复 attach 等于先 detach：先放掉旧合成器（它还连着旧 window），再还旧引用
+        a.engine.detach_native_surface();
+        #[cfg(target_os = "android")]
+        {
+            crate::ffi_jni_embed::release_gpu_window(a);
+            if k == SurfaceKind::AndroidWindow {
+                // SAFETY: 调用方给的是有效的 ANativeWindow*；这份引用到 detach / destroy 才还
+                unsafe { crate::ffi_jni_embed::ANativeWindow_acquire(native) };
+                a.gpu_window = native as usize;
+            }
+        }
+        a.engine.attach_native_surface(k, native).code()
+    }
+    // 没编 GPU：指针不解引用、不保留，只记种类
+    #[cfg(not(feature = "gpu"))]
     a.engine.attach_surface(k).code()
 }
 
@@ -90,6 +109,9 @@ pub extern "C" fn mr_app_attach_surface(app: *mut MRApp, kind: c_int, native: *m
 pub extern "C" fn mr_app_detach_surface(app: *mut MRApp) {
     if let Some(a) = app_mut(app) {
         a.engine.detach_surface();
+        // 合成器已放掉，这时才还挂载时 acquire 的 window
+        #[cfg(target_os = "android")]
+        crate::ffi_jni_embed::release_gpu_window(a);
     }
 }
 
@@ -115,15 +137,6 @@ pub extern "C" fn mr_app_backend_reason(app: *mut MRApp) -> *const c_char {
 #[no_mangle]
 pub extern "C" fn mr_app_pump_ex(app: *mut MRApp, now_ms: u64) -> c_int {
     app_mut(app).map(|a| a.engine.pump_ex(now_ms) as c_int).unwrap_or(0)
-}
-
-/// JNI 那层（编了 gpu 时）用：只记「挂了一块这种 surface」，不经过原生指针。
-///
-/// 现阶段 JNI 不调 `ANativeWindow_fromSurface`（不链接 libandroid），手里没有
-/// `ANativeWindow*` 可传；移动端 GPU 接线时这里换成 fromSurface → attach → release。
-#[cfg(all(feature = "gpu", target_os = "android"))]
-pub(crate) fn attach_kind_only(app: *mut MRApp, kind: SurfaceKind) -> c_int {
-    app_mut(app).map(|a| a.engine.attach_surface(kind).code()).unwrap_or(0)
 }
 
 #[cfg(test)]

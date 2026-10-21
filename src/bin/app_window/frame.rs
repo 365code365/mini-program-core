@@ -40,6 +40,9 @@ impl crate::MiniAppWindow {
             || self.app.has_active_timers()
             // 有请求在飞：必须继续出帧，否则响应回来了没人去取（页面永远停在加载态）
             || self.app.has_pending_network()
+            // 逻辑层发了、还没办完的：画布指令、页面还没布局时留下的 SelectorQuery
+            // （与 SDK 的 wants_next_frame 同一个判据，见 MiniApp::has_pending_host_work）
+            || self.app.has_pending_host_work()
             // 有远程图片在下载：同理，下完要有一帧把它画出来
             || mini_render::renderer::components::image_net::has_pending()
             || self.toast.as_ref().map(|t| t.visible).unwrap_or(false)
@@ -47,7 +50,31 @@ impl crate::MiniAppWindow {
             || self.modal.as_ref().map(|m| m.visible).unwrap_or(false)
             // picker 面板入场/退场动画期间要连续出帧
             || self.picker_sheet.as_ref().map(|s| s.animating()).unwrap_or(false)
+            // 操作菜单 / 图片预览的入场、退场与拖动
+            || mini_render::host::ui_overlay::sheet_overlay_animating()
             || mini_render::renderer::components::has_playing_video()
+            // 看得见的动图：醒着等它换帧（多数帧问下来不用重画，见 render_frame_if_needed）
+            || self.renderer.as_ref().map(|r| {
+                let (y0, y1) = self.gif_window();
+                r.has_animated_images(y0, y1)
+            }).unwrap_or(false)
+    }
+
+    /// 渲染器视口裁剪的纵向窗口（物理像素，页面画布坐标）：一趟绘制只走到这里面的节点
+    fn gif_window(&self) -> (f32, f32) {
+        let sf = self.scale_factor as f32;
+        let has_tabbar = self.page_stack.last().map(|p| self.is_tabbar_page(&p.path)).unwrap_or(false);
+        let vp = (LOGICAL_HEIGHT - if has_tabbar { tabbar_height() } else { 0 }) as f32 * sf;
+        let top = self.scroll.get_position() * sf;
+        let m = mini_render::renderer::VIEWPORT_CULL_MARGIN_PX;
+        (top - m, top + vp + m)
+    }
+
+    /// 窗里换了帧的动图并成一块（`wxml_renderer/animated_image.rs`）
+    pub(crate) fn animated_image_damage(&self) -> Option<GeoRect> {
+        let (y0, y1) = self.gif_window();
+        let r = self.renderer.as_ref()?;
+        r.animated_images_due(y0, y1).into_iter().reduce(Self::union_of)
     }
 
     /// 光标闪烁的驱动：相位一翻转就安排一次重绘（含 fixed 覆盖层）。
@@ -97,19 +124,26 @@ impl crate::MiniAppWindow {
     /// - 正常流的 scroll-view 滚了：它的盒子就是损伤区（再并上动画的损伤区）。
     pub(crate) fn render_frame_if_needed(&mut self, structural: bool, css_anim: bool) {
         let area = if structural { AreaDamage::Nothing } else { self.scroll_area_damage() };
-        if !(structural || css_anim) && matches!(area, AreaDamage::Nothing) {
+        // 换了帧的动图：只重画它们自己那块（从前不算「在动」，静止页面上的 GIF 一动不动）
+        let gif = if structural { None } else { self.animated_image_damage() };
+        if !(structural || css_anim || gif.is_some()) && matches!(area, AreaDamage::Nothing) {
             return;
         }
         let damage = if structural {
             None
         } else {
-            match area {
+            let d = match area {
                 AreaDamage::Full => None,
                 AreaDamage::Rect(r) if css_anim => {
                     self.animation_damage_rect().map(|a| Self::union_of(a, r))
                 }
                 AreaDamage::Rect(r) => Some(r),
-                AreaDamage::Nothing => self.animation_damage_rect(),
+                AreaDamage::Nothing if css_anim => self.animation_damage_rect(),
+                AreaDamage::Nothing => gif,
+            };
+            match (d, gif) {
+                (Some(d), Some(g)) => Some(Self::union_of(d, g)),
+                (d, _) => d,
             }
         };
         self.render_with_damage(damage);
@@ -157,6 +191,8 @@ impl crate::MiniAppWindow {
             self.needs_redraw = true;
             self.fixed_dirty = true;
             self.force_full_redraw = true;
+            // scroll-view 的离屏缓存也要作废：数据没变它就一直「干净」，贴回去的还是占位图（G-1）
+            if let Some(r) = self.renderer.as_mut() { r.invalidate_offscreen_caches(); }
         }
         // 长按由帧驱动（同 RedrawRequested）：无头链路也要能测到 longpress
         if self.touch.is_active() {

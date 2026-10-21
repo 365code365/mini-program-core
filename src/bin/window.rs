@@ -379,8 +379,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("  --touch <x,y[,按住ms]>       完整触摸序列：touchstart→(长按)→touchend/tap");
                 println!("  --swipe <x1,y1,x2,y2[,步数]>  滑动手势：按下→逐步移动→抬起");
                 println!("  --swipe-hold <同上>           同上但停在终点不抬手（截手势进行中的一帧）");
-                println!("  --type <文本>   往当前焦点输入框逐字符输入（先 --click 到输入框上）");
-                println!("  --key <按键>    enter/backspace/delete/escape/left/right/home/end/selectall");
+                println!("  --type <文本>   往当前焦点输入框逐字符输入（先 --click 到输入框上；$'a\\nb' 里的换行 = 回车）");
+                println!("  --key <按键>    {}", mini_render::ui::interaction::KEY_NAMES.join("/"));
                 println!("  --wait <秒>     空转等待，期间照常出帧");
                 println!("  --wheel <x,y,dx,dy[,步数]>    触控板双指滑动（dy>0 = 内容上走）");
                 println!("  --wheel-lines <同上>          普通滚轮（行滚动，非精密）");

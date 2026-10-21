@@ -63,6 +63,38 @@ impl crate::MiniAppWindow {
         );
     }
 
+    /// 拖着的 slider 换了值：派发 `changing`（派发本身与 SDK 共用 `host::slider_input`）
+    pub(crate) fn dispatch_slider_changing(&mut self) {
+        let (id, time_ms) = (self.touch.identifier(), self.event_time_ms());
+        mini_render::host::slider_input::dispatch_changing(
+            &mut self.app, self.renderer.as_ref(), &self.interaction, id, time_ms,
+        );
+        self.after_slider_event();
+    }
+
+    /// 松手 / 取消：结束 slider 拖动（拖过就发 `change`）。返回这次触摸是不是一次滑块拖动。
+    pub(crate) fn finish_slider_drag(&mut self) -> bool {
+        let (id, time_ms) = (self.touch.identifier(), self.event_time_ms());
+        let dragged = mini_render::host::slider_input::finish(
+            &mut self.app, self.renderer.as_ref(), &mut self.interaction, id, time_ms,
+        );
+        self.after_slider_event();
+        dragged
+    }
+
+    /// 处理函数里可能 setData / 导航（与 `dispatch_touch_events` 的回调同一套收尾）
+    fn after_slider_event(&mut self) {
+        print_js_output(&self.app);
+        if self.app.take_data_dirty() {
+            self.needs_redraw = true;
+            self.page_data_dirty = true;
+            self.fixed_dirty = true;
+        }
+        if self.pending_navigation.is_none() {
+            self.pending_navigation = app_window::check_navigation(&mut self.app);
+        }
+    }
+
     /// 滚动是否已经接管这次触摸 —— 接管方要给触摸序列补一次 `touchcancel`
     pub(crate) fn scroll_took_over(&self) -> bool {
         input::scroll_took_over(&self.scroll, &self.interaction, self.scroll_pos_at_press)

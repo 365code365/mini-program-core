@@ -69,7 +69,9 @@ fn collect(
         }
         seen.push(module_path.clone());
 
-        let wxml = std::fs::read_to_string(base.with_extension("wxml")).unwrap_or_default();
+        // 组件 WXML 里的 import/include 相对组件自己的目录解析
+        let wxml = crate::parser::wxml_file::read_expanded(app_root, &base.with_extension("wxml"))
+            .unwrap_or_default();
         if wxml.trim().is_empty() {
             // 没有模板的「纯逻辑组件」没什么可渲染的，跳过（但仍算已见，避免重复尝试）
             continue;
@@ -100,7 +102,8 @@ fn read_using_components(json_path: &Path) -> Option<HashMap<String, String>> {
 }
 
 /// `/abs/path` 相对小程序根，其余相对声明它的文件所在目录。
-fn resolve_component_path(app_root: &Path, owner_dir: &Path, rel: &str) -> PathBuf {
+/// WXML 的 `<import src>` / `<include src>` 也是同一套规则（`parser::wxml_file`）。
+pub(crate) fn resolve_component_path(app_root: &Path, owner_dir: &Path, rel: &str) -> PathBuf {
     let rel = rel.trim();
     let joined = if let Some(abs) = rel.strip_prefix('/') {
         app_root.join(abs)
@@ -111,7 +114,7 @@ fn resolve_component_path(app_root: &Path, owner_dir: &Path, rel: &str) -> PathB
 }
 
 /// 去掉路径里的 `.` 与 `..`（组件路径普遍写成 `../../components/x/x`）
-fn normalize(path: &Path) -> PathBuf {
+pub(crate) fn normalize(path: &Path) -> PathBuf {
     let mut out = PathBuf::new();
     for part in path.components() {
         match part {

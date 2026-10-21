@@ -4,6 +4,13 @@
 //! 除了「默认值」那条走真正的 `mr_app_create`，其余用 [`HostEnv`] 显式给环境建实例：
 //! 开发者 shell 里设着的 `MINI_BACKEND` 不该让用例时过时不过（R14：测试不读进程环境）。
 use super::*;
+
+/// 合成相关的四位（NEW / PRESENTED / BACKEND_CHANGED / PENDING）。
+/// `ffi_embed` 加的 WANTS_MORE / EVENTS 是给宿主排帧与取事件用的提示位，与后端无关，
+/// 这组用例只断言合成那四位。
+fn backend_bits(f: c_int) -> c_int {
+    f & (MR_FRAME_NEW | MR_FRAME_PRESENTED | MR_FRAME_BACKEND_CHANGED | MR_FRAME_PENDING)
+}
 use crate::compositor::{BackendPref, EnvValue, HostEnv};
 use crate::ffi_app::*;
 use crate::host::MiniEngine;
@@ -54,7 +61,8 @@ fn supported_kind() -> Option<c_int> {
     }
 }
 
-/// 一个非空、但永远不会被解引用的「原生 surface」（现在 attach 不碰指针）
+/// 一个非空、但不能被解引用的「原生 surface」。编了 gpu 时只能在偏好 cpu（或参数错误、
+/// 没编 gpu）的路径上传它：偏好 auto/gpu 时引擎会真的拿它去建 surface
 fn fake_native(slot: &mut u64) -> *mut c_void {
     (slot as *mut u64).cast()
 }
@@ -84,7 +92,7 @@ fn constants_match_the_header() {
 
 #[test]
 fn default_is_cpu_and_first_frame_is_just_new() {
-    // 走真正的 mr_app_create（读进程环境）：现在没有 GPU 合成器，不管环境怎么设都是 CPU
+    // 走真正的 mr_app_create（读进程环境）：没挂 surface，不管环境怎么设都是 CPU
     let Some(dir) = sample_dir() else { return };
     let dir = CString::new(dir).unwrap();
     let data = CString::new(data_dir("default")).unwrap();
@@ -93,13 +101,13 @@ fn default_is_cpu_and_first_frame_is_just_new() {
     assert_eq!(mr_app_launch(app, std::ptr::null()), 1);
     assert_eq!(mr_app_backend(app), MR_BACKEND_CPU, "C ABI 默认 CPU");
     assert!(!reason(app).is_empty());
-    assert_eq!(mr_app_pump_ex(app, 1), MR_FRAME_NEW, "首帧只该是 NEW");
+    assert_eq!(backend_bits(mr_app_pump_ex(app, 1)), MR_FRAME_NEW, "首帧只该是 NEW");
     // CPU：只会是 0 或 NEW，从不出现 PRESENTED / BACKEND_CHANGED / PENDING
     for i in 0..30u64 {
         if i % 7 == 0 {
             mr_app_on_show(app); // 逼一帧重画，确保循环里真的出过帧
         }
-        let f = mr_app_pump_ex(app, 2 + i * 16);
+        let f = backend_bits(mr_app_pump_ex(app, 2 + i * 16));
         assert!(f == 0 || f == MR_FRAME_NEW, "第 {i} 帧标志位 {f}");
         assert_eq!(f & MR_FRAME_PRESENTED, 0);
     }
@@ -144,26 +152,31 @@ fn attach_without_gpu_feature_stays_cpu_and_says_not_compiled() {
         assert_eq!(mr_app_backend(app), MR_BACKEND_CPU);
     }
     // attach → detach → attach：宿主主动的挂卸不带 BACKEND_CHANGED（R5），CPU 下也从不 PRESENTED
-    assert_eq!(mr_app_pump_ex(app, 1), MR_FRAME_NEW);
+    assert_eq!(backend_bits(mr_app_pump_ex(app, 1)), MR_FRAME_NEW);
     mr_app_detach_surface(app);
-    assert_eq!(mr_app_pump_ex(app, 17) & !MR_FRAME_NEW, 0);
+    assert_eq!(backend_bits(mr_app_pump_ex(app, 17)) & !MR_FRAME_NEW, 0);
     assert_eq!(mr_app_attach_surface(app, kind, fake_native(&mut x)), MR_BACKEND_CPU);
-    assert_eq!(mr_app_pump_ex(app, 33) & !MR_FRAME_NEW, 0);
+    assert_eq!(backend_bits(mr_app_pump_ex(app, 33)) & !MR_FRAME_NEW, 0);
     mr_app_destroy(app);
 }
 
 #[cfg(feature = "gpu")]
 #[test]
-fn attach_with_the_empty_gpu_feature_is_still_cpu() {
-    // `gpu = []` 目前不含实现：门槛都过了也只能是 CPU，原因要说清楚不是「未编译」
-    let Some(app) = app_with("gpu-pending", HostEnv::default()) else { return };
+fn attach_with_gpu_compiled_but_cpu_pref_never_touches_the_pointer() {
+    // 编了 gpu：attach 会把指针交给引擎去建 GPU 合成器 —— 所以这里**只能**在偏好 cpu 时
+    // 传假指针（门槛第一关就拦下，指针连看都不看）。真 surface 的上屏 / 回退 / 重挂在
+    // tests/embed_gpu.rs（macOS 上现建 CAMetalLayer）。
+    let Some(app) = app_with("gpu-cpu-pref", HostEnv::default()) else { return };
     let Some(kind) = supported_kind() else { return mr_app_destroy(app) };
     let mut x = 0u64;
-    assert_eq!(mr_app_set_backend(app, MR_BACKEND_GPU), 1);
-    assert!(reason(app).contains("未挂载 surface"), "{}", reason(app));
     assert_eq!(mr_app_attach_surface(app, kind, fake_native(&mut x)), MR_BACKEND_CPU);
-    let r = reason(app);
-    assert!(r.contains("还没接入") && !r.contains("未编译"), "{r}");
+    assert!(reason(app).contains("偏好 cpu"), "{}", reason(app));
+    assert_eq!(backend_bits(mr_app_pump_ex(app, 1)), MR_FRAME_NEW, "CPU 出帧只带 NEW");
+    // 先卸再改偏好：没挂 surface 时偏好 gpu 也只是「未挂载」，不会去碰任何指针
+    mr_app_detach_surface(app);
+    assert_eq!(mr_app_set_backend(app, MR_BACKEND_GPU), 1);
+    assert_eq!(mr_app_backend(app), MR_BACKEND_CPU);
+    assert!(reason(app).contains("未挂载 surface"), "{}", reason(app));
     mr_app_destroy(app);
 }
 
@@ -194,7 +207,7 @@ fn pump_agrees_with_pump_ex_new_bit() {
             assert_eq!(mr_app_pump_ex(app, t) & MR_FRAME_NEW, MR_FRAME_NEW);
         }
         t += 16;
-        let (a, b) = (mr_app_pump(app, t), mr_app_pump_ex(app, t + 8));
+        let (a, b) = (mr_app_pump(app, t), backend_bits(mr_app_pump_ex(app, t + 8)));
         assert!(a == 0 || a == 1, "mr_app_pump 只返回 0/1，实际 {a}");
         assert!(b == 0 || b == MR_FRAME_NEW, "CPU 下 pump_ex 只返回 0/NEW，实际 {b}");
     }

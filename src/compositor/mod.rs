@@ -181,7 +181,6 @@ use crate::host::edge_back::PageShot;
 use crate::host::picker_sheet::PickerSheetState;
 use crate::host::ui_overlay::{LoadingState, ModalState, ToastState};
 use crate::text::TextRenderer;
-use std::time::Instant;
 
 /// 本帧要合成的全部图层（只读引用 + 覆盖层状态）
 pub struct FrameLayers<'a> {
@@ -228,8 +227,10 @@ pub struct PullState {
 
 /// 直接画进输出缓冲的覆盖层（Toast / Loading / Modal、picker 面板）
 pub struct OverlayRefs<'a> {
-    /// Loading 动画的时钟基准（与 `render_ui_overlay` 的同名参数一致）
-    pub last_frame: Instant,
+    /// 提示框里转圈的时钟（秒，与 `render_ui_overlay` 的同名参数一致）：交互时是进程动画时钟，
+    /// 快照 / 测试是定住的值。从前这里传的是「这一帧开始的时刻」，转角按它的 elapsed 算、恒为 0，
+    /// 圈根本不转
+    pub anim_secs: f32,
     pub toast: &'a Option<ToastState>,
     pub loading: &'a Option<LoadingState>,
     pub modal: &'a Option<ModalState>,
@@ -239,8 +240,8 @@ pub struct OverlayRefs<'a> {
 
 impl OverlayRefs<'static> {
     /// 没有任何覆盖层。侧滑留图要的是「页面 + tabBar + fixed」那一张，不带弹窗。
-    pub fn none(last_frame: Instant) -> Self {
-        Self { last_frame, toast: &None, loading: &None, modal: &None, picker: None, text: None }
+    pub fn none() -> Self {
+        Self { anim_secs: 0.0, toast: &None, loading: &None, modal: &None, picker: None, text: None }
     }
 }
 

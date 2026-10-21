@@ -1,0 +1,74 @@
+@import "shared.wxss";
+
+/* 单位 */
+.bar { margin-top: 10rpx; padding: 8rpx 12rpx; font-size: 22rpx; color: #ffffff; background-color: #10aeff; border-radius: 6rpx; }
+.calc { width: calc(300rpx + 100rpx); background-color: #8a5cf5; }
+
+/* 九宫格 */
+.grid { display: flex; flex-direction: row; flex-wrap: wrap; }
+.cell { width: 31%; margin: 0 1.1% 12rpx 1.1%; height: 80rpx; line-height: 80rpx; text-align: center; color: #ffffff; background-color: #576b95; border-radius: 8rpx; }
+.cell:nth-child(odd) { background-color: #07c160; }
+
+/* 定位 */
+.stage { position: relative; height: 220rpx; background-color: #f7f7f7; border-radius: 8rpx; }
+.layer { position: absolute; width: 180rpx; height: 120rpx; line-height: 120rpx; text-align: center; color: #ffffff; border-radius: 12rpx; }
+.l1 { left: 30rpx; top: 30rpx; z-index: 1; background-color: #07c160; }
+.l2 { left: 140rpx; top: 60rpx; z-index: 3; background-color: #10aeff; }
+.l3 { left: 250rpx; top: 90rpx; z-index: 2; background-color: #fa9d3b; }
+.badge { position: absolute; right: 24rpx; top: 24rpx; padding: 4rpx 14rpx; font-size: 22rpx; color: #ffffff; background-color: #fa5151; border-radius: 20rpx; }
+
+/* 背景与盒子 */
+.swatches { display: flex; flex-direction: row; justify-content: space-between; margin-top: 16rpx; }
+.sw { width: 140rpx; height: 140rpx; display: flex; align-items: center; justify-content: center; font-size: 22rpx; color: #ffffff; border-radius: 16rpx; }
+.g1 { background: linear-gradient(135deg, #07c160, #10aeff); }
+.g2 { background: linear-gradient(90deg, #e64340, #fa9d3b, #ffc300); }
+.shadow { color: #333333; background-color: #ffffff; box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.18); }
+.round { background-color: #8a5cf5; border-radius: 70rpx; }
+.corner { background-color: #576b95; border-radius: 0 48rpx 0 48rpx; }
+.border { color: #07c160; background-color: #ffffff; border: 3rpx dashed #07c160; }
+.o50 { background-color: #e64340; opacity: 0.5; }
+.rgba { color: #333333; background-color: rgba(16, 174, 255, 0.25); }
+
+/* transform */
+.tf-row { display: flex; flex-direction: row; justify-content: space-around; padding: 30rpx 0; }
+.tf { width: 120rpx; height: 120rpx; line-height: 120rpx; text-align: center; font-size: 22rpx; color: #ffffff; border-radius: 12rpx; }
+.t-rotate { background-color: #07c160; transform: rotate(20deg); }
+.t-scale { background-color: #10aeff; transform: scale(0.8); }
+.t-skew { background-color: #fa9d3b; transform: skewX(-12deg); }
+.t-move { background-color: #e64340; transform: translate(10rpx, 20rpx); }
+
+/* 选择器 */
+.zebra { padding: 12rpx 16rpx; font-size: 24rpx; }
+.zebra:nth-child(2n) { background-color: #f2f7ff; }
+.pills { display: flex; flex-direction: row; margin-top: 16rpx; }
+.pill { margin-right: 12rpx; padding: 8rpx 16rpx; font-size: 22rpx; color: #666666; background-color: #f2f2f2; border-radius: 24rpx; }
+.pill[data-state="on"] { color: #ffffff; background-color: #07c160; }
+.pill:last-child { border: 2rpx solid #fa9d3b; }
+.parent { margin-top: 16rpx; }
+.parent .child { padding: 10rpx 16rpx; margin-top: 8rpx; font-size: 24rpx; background-color: #f7f7f7; }
+.parent > .child { color: #ffffff; background-color: #576b95; }
+
+/* 变量 / @media / 安全区 */
+.vars { margin-top: 10rpx; padding: 12rpx 16rpx; font-size: 24rpx; color: #ffffff; background-color: var(--brand); border-radius: 8rpx; }
+.fallback { background-color: var(--not-defined, #8a5cf5); }
+.media-box { margin-top: 10rpx; padding: 12rpx 16rpx; font-size: 24rpx; color: #ffffff; background-color: #fa9d3b; border-radius: 8rpx; }
+@media (min-width: 400px) {
+  .media-box { background-color: #10aeff; }
+}
+.theme-box { margin-top: 10rpx; padding: 12rpx 16rpx; font-size: 24rpx; color: #333333; background-color: #eeeeee; border-radius: 8rpx; }
+@media (prefers-color-scheme: dark) {
+  .theme-box { color: #ffffff; background-color: #1f1f1f; }
+}
+.safe { margin-top: 10rpx; padding: 12rpx 16rpx; padding-bottom: env(safe-area-inset-bottom); font-size: 24rpx; background-color: #e8f8ee; border-radius: 8rpx; }
+
+/* 文字 */
+.type-row { display: flex; flex-direction: row; justify-content: space-between; padding: 10rpx 0; }
+.va { align-items: baseline; justify-content: flex-start; }
+.t-light { font-weight: 300; }
+.t-bold { font-weight: bold; }
+.t-under { text-decoration: underline; }
+.t-line { text-decoration: line-through; }
+.t-over { text-decoration: overline; }
+.t-big { font-size: 56rpx; margin-right: 12rpx; }
+.t-small { font-size: 22rpx; color: #888888; }
+.t-break { margin-top: 10rpx; font-size: 24rpx; word-break: break-all; color: #555555; }

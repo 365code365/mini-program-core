@@ -1,0 +1,39 @@
+<view class="card">
+  <text class="title">落盘验证</text>
+  <view class="visits">
+    <text class="visits-num">{{visits}}</text>
+    <text class="visits-label">本页累计打开次数（storage 里的 demo:visits，关掉 App 再开还在）</text>
+  </view>
+</view>
+
+<view class="card">
+  <text class="title">同步接口</text>
+  <view class="field"><text class="f-k">key</text><input class="f-v" value="{{key}}" placeholder="键" bindinput="onKey"/></view>
+  <view class="field"><text class="f-k">value</text><input class="f-v" value="{{value}}" placeholder="值（字符串）" bindinput="onValue"/></view>
+  <view class="btns">
+    <view class="btn-s" bindtap="set">setStorageSync</view>
+    <view class="btn-s" bindtap="get">getStorageSync</view>
+    <view class="btn-o" bindtap="remove">removeStorageSync</view>
+    <view class="btn-o" bindtap="clearAll">clearStorageSync</view>
+  </view>
+  <view class="result"><text>{{syncResult}}</text></view>
+</view>
+
+<view class="card">
+  <text class="title">异步接口与类型往返</text>
+  <view class="btns">
+    <view class="btn-s" bindtap="setObj">setStorage(对象)</view>
+    <view class="btn-s" bindtap="getObj">getStorage</view>
+    <view class="btn-o" bindtap="getMissing">读不存在的 key</view>
+    <view class="btn-o" bindtap="removeObj">removeStorage</view>
+  </view>
+  <view class="result"><text>{{asyncResult}}</text></view>
+</view>
+
+<view class="card">
+  <text class="title">getStorageInfoSync</text>
+  <view class="kv"><text class="kv-k">已用 / 上限</text><text class="kv-v">{{info.currentSize}} KB / {{info.limitSize}} KB</text></view>
+  <view class="keys">
+    <text class="key" wx:for="{{info.keys}}" wx:key="*this">{{item}}</text>
+  </view>
+</view>

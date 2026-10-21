@@ -1,0 +1,20 @@
+<!-- 被 <import> 的模板文件：只导出 template，页面用 <template is="..."> 实例化 -->
+<template name="entry">
+  <view class="entry" hover-class="entry-hover" data-url="{{url}}" bindtap="go">
+    <view class="entry-icon" style="background-color: {{color}};">{{icon}}</view>
+    <view class="entry-body">
+      <text class="entry-name">{{name}}</text>
+      <text class="entry-desc">{{desc}}</text>
+    </view>
+    <icon type="arrow" size="14" color="#c8c8cd"/>
+  </view>
+</template>
+
+<template name="group">
+  <view class="section-title">{{title}}</view>
+  <view class="entries">
+    <block wx:for="{{items}}" wx:key="url">
+      <template is="entry" data="{{...item}}"/>
+    </block>
+  </view>
+</template>

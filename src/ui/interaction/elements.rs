@@ -1,7 +1,7 @@
 //! 交互元素表与组件状态：每帧重建的元素登记、勾选/输入状态、滚动控制器索引
 //!
-//! `InteractionManager` 的一片，由 `interaction/mod.rs` 组合。**纯搬迁**：从 1041 行的
-//! interaction.rs 按职责切开，一行逻辑没改。
+//! `InteractionManager` 的一片，由 `interaction/mod.rs` 组合。从 1041 行的 interaction.rs
+//! 按职责切开时是纯搬迁；之后 `clear_page_state` 多了一步「收掉全屏视频 / 操作菜单 / 图片预览」。
 use super::*;
 
 impl InteractionManager {
@@ -46,6 +46,11 @@ impl InteractionManager {
         self.elements.push(element);
     }
 
+    /// 本帧登记的交互元素（文档顺序；测试与诊断用）
+    pub fn elements(&self) -> &[InteractiveElement] {
+        &self.elements
+    }
+
     /// 获取组件状态
     pub fn get_state(&self, id: &str) -> Option<&ComponentState> {
         self.states.get(id)
@@ -78,11 +83,22 @@ impl InteractionManager {
 
     /// 页面切换时清除状态
     pub fn clear_page_state(&mut self) {
+        // 全屏视频、操作菜单、图片预览属于离开的那一页：不收掉的话新页面一直被它们盖着、点击全被吃掉
+        crate::renderer::components::clear_fullscreen();
+        crate::host::ui_overlay::clear_sheet_overlays();
+        // setBackgroundColor 只对当前页面生效
+        crate::host::window_api::clear();
+        crate::renderer::components::picker_view::clear();
+        crate::renderer::components::clear_danmu();
         self.states.clear();
         self.transitions.clear();
+        self.toggled_at.clear();
         self.focused_input = None;
         self.dragging_slider = None;
+        self.sliders.clear();
+        self.slider_origin.clear();
         self.scroll_controllers.clear();
+        self.scroll_views.clear();
         self.dragging_scroll_area = None;
         self.pressed_button = None;
         self.press_feedback = None;
@@ -91,5 +107,6 @@ impl InteractionManager {
         self.elements.clear();
         self.is_selecting_text = false;
         self.selection_anchor = None;
+        self.text_layouts.clear();
     }
 }

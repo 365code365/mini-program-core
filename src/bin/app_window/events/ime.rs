@@ -1,6 +1,6 @@
 //! IME 输入处理
 
-use mini_render::ui::interaction::{InteractionManager, InteractionResult, KeyInput};
+use mini_render::ui::interaction::{InteractionManager, InteractionResult};
 use winit::event::Ime;
 
 /// 处理 IME 事件
@@ -12,13 +12,9 @@ pub fn handle_ime_event(
     
     match ime {
         Ime::Commit(text) => {
-            if interaction.has_focused_input() {
-                for c in text.chars() {
-                    if let Some(result) = interaction.handle_key_input(KeyInput::Char(c)) {
-                        results.push(result);
-                    }
-                }
-            }
+            // 与 SDK 的 `text_input` 同一个入口：换行归一、控制字符过滤（从前这里一个都不滤，
+            // 与按键那条路径的 `is_control` 过滤不一致）
+            results.extend(interaction.insert_text(&text));
         }
         Ime::Preedit(text, cursor) => {
             if !text.is_empty() {

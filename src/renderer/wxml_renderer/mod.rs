@@ -100,6 +100,12 @@ pub struct PickerBinding {
     pub end: String,
     /// `bindchange` / `bind:change` 的处理函数名
     pub change_handler: Option<String>,
+    /// `bindcolumnchange`（multiSelector 某一列滚动后）的处理函数名
+    pub column_handler: Option<String>,
+    /// `bindcancel`（取消 / 点遮罩收起）的处理函数名
+    pub cancel_handler: Option<String>,
+    /// `header-text`：面板头部「取消」「确定」之间的标题（官方 component/picker.html）
+    pub header_text: String,
     pub disabled: bool,
     pub is_fixed: bool,
 }
@@ -190,6 +196,12 @@ pub struct WxmlRenderer {
     /// 宿主用它做损伤区重绘：一个 `infinite` 的小徽标不该逼着整屏每帧重新光栅化
     /// （浏览器是靠图层合成避免这件事的）。
     animated_bounds: Vec<GeoRect>,
+    /// 页面画布上各张动图画的是第几帧（跨帧保留，见 animated_image.rs）
+    gif_marks: Vec<animated_image::AnimatedImageMark>,
+    /// 这一趟走到的动图（趟末并进 `gif_marks`）
+    gif_pass: Vec<animated_image::AnimatedImageMark>,
+    /// 这一趟走的纵向窗口（物理像素，页面画布坐标）
+    gif_window: (f32, f32),
     /// 本帧只重绘这个矩形（其余像素保持上一帧）。None 表示整条带都画。
     damage_clip: Option<GeoRect>,
     /// `wx.createAnimation` 载荷指纹 -> 播放起始时刻（秒）
@@ -202,15 +214,51 @@ pub struct WxmlRenderer {
     fixed_hit_regions: Vec<GeoRect>,
     /// 本帧登记的 `<picker>`（宿主据此弹出原生选择面板）
     picker_regions: Vec<PickerBinding>,
+    /// 本帧登记的输入框属性（宿主据此弹对应类型的软键盘，见 host_regions.rs）
+    input_regions: Vec<InputRegion>,
+    /// 本帧画到的、由宿主承载的原生组件
+    native_regions: Vec<NativeRegion>,
+    /// 宿主承载的原生组件标签（创建选项 `nativeComponents`）
+    native_tags: Vec<String>,
+    /// 本帧画到的 scroll-view（属性、阈值、下拉刷新配置，见 scroll_views.rs）
+    scroll_views: Vec<ScrollViewInfo>,
+    /// 本帧画到的 swiper 盒子（手势仲裁的候选，见 swiper_draw.rs）
+    swiper_regions: Vec<SwiperRegion>,
 }
 
 
+/// 动图（GIF）换帧才重画：画布上是第几帧、哪几张该换了
+mod animated_image;
 mod animation;
 mod draw;
 mod draw_interactive;
 mod entry;
 mod fixed_layer;
 mod hit_test;
+/// 交给宿主的区域：输入框属性、原生组件摆放
+mod host_regions;
+pub use host_regions::{InputRegion, NativeRegion};
+/// `<scroll-view>` 的属性、受控位置与下拉刷新配置
+pub mod scroll_views;
+/// scroll-view 下拉刷新的默认样式（背景 + 三个点）
+mod refresher;
+/// 按选择器找节点与位置（`wx.pageScrollTo({selector})`、SelectorQuery）
+mod query;
+pub use query::QueryHit;
+/// `<form>`：form-type 按钮所在的表单与表单里的控件（提交 / 重置）
+mod form;
+pub use form::{FormAction, FormControl, FormField, FormHit};
+/// `<navigator>` 的跳转与 `<label>` 的控件转发（点击命中，走布局树）
+mod builtin_hits;
+pub use builtin_hits::NavigatorHit;
+/// swiper 的分页绘制（三条绘制路径共用）与手势候选登记
+mod swiper_draw;
+/// `<picker-view>` 的分列偏移绘制、遮罩与指示条、列的手势候选
+mod picker_view_draw;
+pub use swiper_draw::SwiperRegion;
+/// 有 swiper 的顶层 scroll-view 不走离屏缓存
+mod scroll_live;
+pub use scroll_views::{RefresherConfig, ScrollViewInfo};
 mod interactions;
 /// 有状态组件的状态落地与带交互的绘制（唯一一份，三条绘制路径共用）
 mod interactive;
@@ -256,11 +304,19 @@ impl WxmlRenderer {
             bypass_opacity_group: false,
             binding_shift: (0.0, 0.0),
             animated_bounds: Vec::new(),
+            gif_marks: Vec::new(),
+            gif_pass: Vec::new(),
+            gif_window: (f32::NEG_INFINITY, f32::INFINITY),
             damage_clip: None,
             js_animations: HashMap::new(),
             registering_fixed: false,
             fixed_hit_regions: Vec::new(),
             picker_regions: Vec::new(),
+            input_regions: Vec::new(),
+            native_regions: Vec::new(),
+            native_tags: Vec::new(),
+            scroll_views: Vec::new(),
+            swiper_regions: Vec::new(),
         }
     }
 

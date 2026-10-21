@@ -1,0 +1,84 @@
+<view class="card">
+  <text class="title">单位：rpx / px / % / vw</text>
+  <view class="bar" style="width: 600rpx;"><text>600rpx（随屏宽缩放）</text></view>
+  <view class="bar" style="width: 200px;"><text>200px（固定）</text></view>
+  <view class="bar" style="width: 50%;"><text>50%</text></view>
+  <view class="bar" style="width: 40vw;"><text>40vw</text></view>
+  <view class="bar calc"><text>calc(300rpx + 100rpx)</text></view>
+</view>
+
+<view class="card">
+  <text class="title">九宫格（flex-wrap + 百分比宽度）</text>
+  <view class="grid">
+    <view class="cell" wx:for="{{cells}}" wx:key="*this">{{item}}</view>
+  </view>
+</view>
+
+<view class="card">
+  <text class="title">定位：relative / absolute / z-index</text>
+  <view class="stage">
+    <view class="layer l1">z 1</view>
+    <view class="layer l2">z 3</view>
+    <view class="layer l3">z 2</view>
+    <view class="badge">99+</view>
+  </view>
+  <text class="hint">position: fixed 的例子见「节点与滚动」页右下角的回顶按钮</text>
+</view>
+
+<view class="card">
+  <text class="title">背景、圆角、阴影、透明度</text>
+  <view class="swatches">
+    <view class="sw g1"><text>linear</text></view>
+    <view class="sw g2"><text>多色标</text></view>
+    <view class="sw shadow"><text>shadow</text></view>
+    <view class="sw round"><text>圆形</text></view>
+  </view>
+  <view class="swatches">
+    <view class="sw corner"><text>单角圆角</text></view>
+    <view class="sw border"><text>虚线框</text></view>
+    <view class="sw o50"><text>opacity .5</text></view>
+    <view class="sw rgba"><text>rgba 底</text></view>
+  </view>
+</view>
+
+<view class="card">
+  <text class="title">transform（2D）</text>
+  <view class="tf-row">
+    <view class="tf t-rotate">rotate</view>
+    <view class="tf t-scale">scale</view>
+    <view class="tf t-skew">skew</view>
+    <view class="tf t-move">translate</view>
+  </view>
+</view>
+
+<view class="card">
+  <text class="title">选择器</text>
+  <view class="zebra" wx:for="{{rows}}" wx:key="*this"><text>:nth-child(2n) 斑马纹 · 第 {{item}} 行</text></view>
+  <view class="pills">
+    <view class="pill" data-state="on"><text>[data-state="on"]</text></view>
+    <view class="pill" data-state="off"><text>off</text></view>
+    <view class="pill"><text>first / last</text></view>
+  </view>
+  <view class="parent">
+    <view class="child"><text>.parent > .child（子代）</text></view>
+    <view><view class="child"><text>.parent .child（后代，不是子代）</text></view></view>
+  </view>
+</view>
+
+<view class="card">
+  <text class="title">CSS 变量 · @media · 安全区</text>
+  <view class="vars"><text>var(--brand) 来自 app.wxss 的 page</text></view>
+  <view class="vars fallback"><text>var(--未定义, #8a5cf5) 用兜底值</text></view>
+  <text class="hint">本引擎的 CSS 变量按整张样式表取值（后声明的覆盖先声明的），不按元素作用域层层覆盖</text>
+  <view class="media-box"><text class="media-text">@media：屏宽 ≥ 400px 时这块是蓝的，否则是橙的（当前 {{width}}px）</text></view>
+  <view class="theme-box"><text>@media (prefers-color-scheme: dark)：深色模式下这块变黑</text></view>
+  <view class="safe"><text>padding-bottom: env(safe-area-inset-bottom)（当前 {{safeBottom}}px）</text></view>
+</view>
+
+<view class="card">
+  <text class="title">文字排版</text>
+  <view class="type-row"><text class="t-light">font-weight 300</text><text class="t-normal">400</text><text class="t-bold">bold</text></view>
+  <view class="type-row"><text class="t-under">underline</text><text class="t-line">line-through</text><text class="t-over">overline</text></view>
+  <view class="type-row va"><text class="t-big">大</text><text class="t-small">vertical-align / baseline 对齐</text></view>
+  <text class="t-break">word-break: break-all —— averyveryverylongwordwithoutanyspacesthatmustbreak</text>
+</view>

@@ -267,8 +267,13 @@ longpress / longtap / tap`，并做手势仲裁（主轴锁定、内外层滚动
 
 ### 7. 原生层组件（`web-view` / `video` / `map` / `camera`）
 
-微信里这些是**原生组件层**，层级最高，只有 `cover-view` / `cover-image` 能盖在上面。
-引擎的做法应当一致：**引擎只算位置与参数，实际控件由宿主创建**。
+早期微信里这些是**原生组件层**，层级最高，只有 `cover-view` / `cover-image` 能盖在上面；
+同层渲染之后它们插在渲染树里，按层叠顺序被普通节点、picker 面板、弹窗正常盖住。
+引擎的做法：**引擎只算位置、参数与遮挡，实际控件由宿主创建**。
+
+引擎画面是一整块不透明的纹理，控件只能摆在它上面，所以「被谁盖住」由引擎算好随
+`nativeViews` 事件交给宿主（`clip` / `holes` / `mask`，见第二部分的事件表），宿主照着裁。
+不裁的话 picker 面板一弹，视频就压在面板和遮罩上面。
 
 ```c
 // 引擎 → 宿主：原生层组件的摆放（待新增，见第二部分）
@@ -306,9 +311,9 @@ typedef void (*mini_native_view_cb)(
 | 网络 | `wx.request` 已实现（后台线程 + 按帧取回，支持 abort） | iOS 配 ATS / Android `network_security_config` / 鸿蒙 `ohos.permission.INTERNET`；域名白名单由宿主管 |
 | 图片磁盘缓存 | `<数据目录>/mini-imgcache` | 同 storage，靠 `set_data_dir` |
 | 字体 | 走系统字体路径 | **各平台字体路径不同**，见第三部分「字体」 |
-| 剪贴板 | 桌面用 `arboard` | 移动端要接系统剪贴板 |
+| 剪贴板 | 引擎里存一份；桌面窗体同步系统剪贴板（`arboard`） | 移动端收 `clipboard` 宿主事件写系统剪贴板；`getClipboardData` 要读系统剪贴板就在 `hostApis` 里点名 |
 | 音视频 | 内置 symphonia + rodio + openh264 解码 | 移动端建议改用系统播放器（省电、省内存、走硬解） |
-| 定位/支付/登录等 | **未实现**（`wx.login`、`requestPayment`、`getLocation`…） | 未实现的 API 保持 `undefined`，框架能正确降级；要用就得新增实现 |
+| 定位/支付/登录等 | 引擎做不了，默认立刻 `fail`（`wx.login`、`requestPayment`、`getLocation`、`chooseImage`…） | 宿主在 `hostApis` 里点名就交给宿主（`hostCall` → `mr_app_host_reply`） |
 
 ### 9. 生命周期与内存
 
@@ -374,15 +379,17 @@ const char* mr_app_last_error(MRApp*);
 const char* mr_version(void);
 ```
 
-**还没有的**：原生层组件的回调（`web-view`/`video` 的摆放，第 7 条那个
-`mr_native_view_cb`）、日志回调、损伤矩形（`mr_app_pump` 目前每帧整帧重绘）。
+**还没有的**：损伤矩形（`mr_app_pump` 目前每次出帧都整条带重画）、输入法组字（只能提交整段文字）。
+原生组件摆放、日志、软键盘、导航栏这些「引擎 → 宿主」的通知走下面的事件队列（不是回调）。
 
 ### 渲染后端（只增不改）
 
 实现在 `src/ffi_backend.rs`，声明在 `include/mini_render.h` 末尾。引擎的内容永远由 CPU 光栅；
-后端只决定「谁把各图层合成上屏」。GPU 合成器（`compositor::gpu`）已在**桌面窗体与无头**落地、与 CPU 逐字节一致；**SDK 的 surface 上屏（CAMetalLayer / ANativeWindow）还没接**：这组函数都已导出、参数校验
-与返回值语义都按最终版本做好，但 SDK 的实际后端现在永远是 CPU。上面那 20 个函数的签名与语义一个没改，
-**不调这组函数的宿主行为与以前逐字节一致**。
+后端只决定「谁把各图层合成上屏」。GPU 合成器（`compositor::gpu`）与 CPU 逐字节一致（启动自检守着），
+桌面窗体、无头、**SDK 的 surface 上屏**共用同一份（SDK 侧接线在 `src/host/engine_gpu.rs`）。
+Android 的库默认编进 `gpu`（`build-mobile.sh`，`ANDROID_GPU=0` 关掉，arm64 实测 +5.1MB：36.3→41.4MB）；
+iOS 的库暂不编（Flutter 的 iOS 外部纹理是 CVPixelBuffer，用不上 CAMetalLayer）。
+上面那 20 个函数的签名与语义一个没改，**不调这组函数、或偏好保持 cpu 的宿主，行为与以前逐字节一致**。
 
 ```c
 #define MR_BACKEND_AUTO 0
@@ -420,21 +427,165 @@ int  mr_app_pump_ex(MRApp*, uint64_t now_ms);              // MR_FRAME_* 的按�
 - **所有权**：`CAMetalLayer*` 由调用方持有，必须活到 `mr_app_detach_surface` 或 `mr_app_destroy` 返回；
   `ANativeWindow*` 由引擎自己 acquire / release，调用方手里的引用照常自己释放。
 - **原因串**：`mr_app_backend_reason` 说明「为什么是这个后端」。没编进 `gpu` feature 时含「未编译」；
-  编进来了但没挂 surface 是「未挂载 surface（宿主需调用 mr_app_attach_surface）」；
-  现阶段门槛都过了也是「SDK 的 GPU 上屏还没接入」。
-- **后台**：GPU 落地后，iOS 不允许后台提交 GPU 命令，进后台时停掉 `pump` 会从「建议」变成**必须**。
+  编进来了但没挂 surface 是「未挂载 surface（宿主需调用 mr_app_attach_surface）」；GPU 在用时是
+  「强制指定」/「自动选择」；回退后以「回退：」开头；回退过的实例再挂是「本实例 GPU 已失败过：…」。
+- **挂着 surface 时改偏好 / 机型信息**：引擎当场重新选。改成 cpu 会放掉合成器，改回 auto / gpu 会重建
+  （含自检，几十毫秒）；两种情况下一次 `pump_ex` 都带 `MR_FRAME_BACKEND_CHANGED`。
+- **回退是粘性的**：运行中设备丢失 / surface 丢失 / 校验错误当帧改走 CPU（这一帧照样出来），本实例
+  之后再挂 surface 也不再试 GPU。没失败过时宿主主动的 detach / attach 照常再试。
+- **GPU 帧也能取像素**：`mr_app_pixels*` 会用同一组图层补一次 CPU 合成（与屏上逐字节相同），截图、
+  调试 dump 都能用；只是每帧都取就把 GPU 省下的合成又做了一遍。
+- **Fifo 上屏**：GPU 在 acquire 时按 vsync 阻塞，`pump_ex` 要放在专用线程上（SDK 的约定本来就是）。
+- **后台**：iOS 不允许后台提交 GPU 命令，进后台时停掉 `pump` 是**必须**的；Android 在 Surface 销毁前
+  同步 `mr_app_detach_surface`。
 - **`MINI_FPS=1`**：SDK 也会每秒打一行 `📊 [后端 CPU] N 帧/秒（pump M 次），pump 最慢 … p99 …，工作 …，等 surface …，帧间隔峰值 …`
-  （进 stderr；Android 改走 logcat 要等移动端 GPU 接线那一步）。
+  （桌面 / iOS 进 stderr，Android 进 logcat，tag `mini-render`；后端选择与回退那几行同样）。
+- **`MINI_DAMAGE_LOG=1`**：每产出一帧打一行它重画了多少 —— `只合成`（滚动只换切片）/ `局部 宽x高@(x,y)`
+  （CSS 动画、setData 失效范围、scroll-view 的盒子）/ `补条带`（滑出已绘制条带，只补新露出那截）/
+  `整帧·原因`（结构 / 数据 / 动画 / 媒体 / 滚动区）。滑动掉帧时先看它：一串 `整帧` 就说明是谁逼的。
+  `MINI_NO_DAMAGE=1` 关掉局部重画、一律整帧，用来对照「局部和整帧画出来是否一样」
+  （判据是 `tests/sdk_damage_equivalence.rs` 的逐帧逐字节比对）。
+  这几个开关在 `MiniEngine` 创建时读一次：Android 要在 `nativeCreateEx` 之前 `Os.setenv`。
+  SDK 不做 `MINI_GPU_VERIFY` 的逐帧对拍（surface 读不回来），GPU 正确性靠启动自检与 `tools/gpu-parity.sh`。
 
 Kotlin 侧对应的 JNI（`src/ffi_jni.rs`，老的 `native*` 一个没动）：`nativeSetBackend(h, pref): Boolean`、
 `nativeSetDeviceInfo(h, totalMem: Long, lowRam: Boolean, api: Int)`、`nativeAttachSurface(h, surface: Surface): Int`、
 `nativeDetachSurface(h)`、`nativeBackend(h): Int`、`nativeBackendReason(h): String`、`nativePumpEx(h, nowMs): Int`。
-现在 `nativeAttachSurface` 不调 `ANativeWindow_fromSurface`（.so 也不链接 libandroid），没编 gpu 时直接返回 1。
-Kotlin / Swift 的 `MiniProgramView` 暂未接这组接口。新的 Kotlin 配老的 `.so` 会在调用新方法时抛
+`nativeAttachSurface` 内部 `ANativeWindow_fromSurface` → `mr_app_attach_surface`（引擎 acquire 自己那份）→
+release；没编 gpu 时不碰 Surface、直接返回 1。返回 1 时那块 Surface 可能已被 GPU 连过，要 CPU 直写就换一块新的。
+Flutter 插件已接这组接口（见下一节）；原生 `MiniProgramView`（Kotlin / Swift）暂未接。新的 Kotlin 配老的 `.so` 会在调用新方法时抛
 `UnsatisfiedLinkError`，两者在 AAR 里一起发布，不要单独升级。
 
 线程约定：**所有 `mr_app_*` 必须在同一个线程调用**（QuickJS 不是线程安全的）。
 网络下载在引擎内部的后台线程，结果按帧取回，宿主不用管。
+
+### 嵌入宿主接口（Flutter 插件 / 原生 View 用，只增不改）
+
+实现在 `src/ffi_embed.rs`（Android 绑定在 `src/ffi_jni_embed.rs`），声明在 `include/mini_render.h` 末尾。
+不调这组函数的宿主行为与从前一致（`tools/sdk-parity.sh` 15/15、6/6 守着）。
+
+| 函数 | 解决什么 |
+|---|---|
+| `mr_app_create_ex(..., options_json)` | 系统信息、安全区、宿主 API、原生组件要在 `app.js` 执行**之前**就位（`onLaunch` 里读 `getSystemInfoSync`、用 `typeof` 探测能力是常态） |
+| `mr_app_resize(w, h, dpr)` | 转屏、分屏、外层约束变化。从前尺寸创建后定死 |
+| `mr_app_set_safe_area(t, r, b, l)` | `wx.getSystemInfoSync` 的 `safeArea` / `statusBarHeight` 与 WXSS 的 `env(safe-area-inset-*)` 取真值（从前写死 0 / 20） |
+| `mr_app_pixels_into(dst, len, stride, format)` | 带行跨度、RGBA / BGRA 直写平台缓冲。Flutter 在 iOS 只认 32BGRA；省掉一次整帧拷贝 |
+| `mr_app_poll_event()` | 事件队列（下表），取到 NULL 为止 |
+| `mr_app_host_reply(id, ok, json)` | 回 `hostCall`：宿主实现的 `wx.*` |
+| `mr_app_native_view_event(key, name, detail)` | 宿主承载的原生组件回传事件（`bindended` 之类） |
+| `mr_app_eval(code)` | 在逻辑层执行 JS（深链参数注入、集成测试） |
+
+`mr_app_pump_ex` 多了两位**提示位**（与后端无关）：
+
+- `MR_FRAME_WANTS_MORE = 16`：引擎还有活要干 —— 滚动 / 惯性、scroll-view、CSS 动画、swiper、
+  JS 定时器、网络请求与远程图片在飞、Toast（要到时收起）、picker 动画、聚焦的输入框（光标闪烁）、
+  **按住不动的手指**（长按靠帧驱动）。宿主在下一个 vsync 再 pump；没有这一位就停掉 vsync，
+  等下一个输入事件 —— 静止页面零耗电。从前没有这个信号：只在「有新画面」时续帧的宿主
+  （原生 Android View 就是）会让 `setTimeout` / 网络回包在静止页面上停住。
+- `MR_FRAME_EVENTS = 32`：事件队列非空。
+
+事件（每条一个 JSON 对象，坐标都是**视口逻辑坐标**、已减滚动）：
+
+| `type` | 何时 | 字段 |
+|---|---|---|
+| `page` | 当前页或栈深变了 | `route` `depth` `isTabBar` `window`（app.json `window` ← 页面 json ← 运行时导航栏改动） |
+| `navigationBar` | `wx.setNavigationBarTitle/Color`、`show/hideNavigationBarLoading` | `title` / `frontColor` / `backgroundColor` / `loading` |
+| `inputFocus` | 输入框聚焦 | `id` `tag` `value` `inputType` `password` `maxlength` `confirmType` `confirmHold` `placeholder` `rect` |
+| `inputBlur` | 失焦 / 确认 | `id` `value` |
+| `nativeViews` | 原生组件的摆放或遮挡变了（滚动、picker 面板滑入滑出时逐帧，静止不发） | `views[]`：`key` `tag` `x` `y` `width` `height` `fixed` `attrs` `clip` `holes` `mask` |
+| `hostCall` | 调了宿主实现的 `wx.*` | `id` `api` `args` |
+| `clipboard` | `wx.setClipboardData`（宿主写系统剪贴板） | `data` |
+| `vibrate` | `wx.vibrateShort` / `vibrateLong` | `duration`（`short` / `long`）`style` |
+| `log` | 逻辑层 `console.*` | `text` |
+
+`nativeViews` 的遮挡三项（引擎自己画的 picker 面板、弹窗、Toast / Loading、`position:fixed` 元素、
+tabBar 本该盖在原生组件上面，而控件摆在引擎画面之上，所以由宿主照着裁）：
+
+| 字段 | 含义 | 宿主怎么做 |
+|---|---|---|
+| `clip` `{x,y,width,height}` | 控件还露在外面的矩形 | 控件仍按 `x/y/width/height` **完整尺寸**摆（别缩放），只在 `clip` 里画、收触摸。宽或高为 0 = 整个被挡住：控件**留着别销毁**（播放进度、地图状态在里面） |
+| `holes` `[{x,y,width,height}]` | `clip` 里还被盖着的块（居中的弹窗盒子、Toast、fixed 元素） | 挖掉；落在里面的触摸交给引擎 |
+| `mask` | 盖在控件上的半透明黑遮罩的不透明度（picker 面板 0→0.5 渐显、showModal 0.5） | 在控件上叠一层这个不透明度的黑色；`> 0` 时控件不收触摸（遮罩吃掉触摸，点遮罩是关面板） |
+
+横跨控件整个宽度、压住一条边的盖板（底部 picker 面板、吸底栏、tabBar）直接缩进 `clip`，
+一个矩形裁剪就够；只有压在中间的才进 `holes`。已知取舍：WXML 自己写的 `position:fixed`
+半透明遮罩按**不透明**算（与「点击不穿透」同一份包围盒），正常流里的视频在它下面整个被裁掉；
+scroll-view 的裁剪还不在 `clip` 里。实现与判据见 `src/host/native_occlusion.rs`、
+`tests/embed_native_occlusion.rs`。
+
+导航栏由宿主画：引擎不画导航栏（微信里它是原生外壳），`navigationStyle: custom` 的页面除外。
+
+创建选项：
+
+```json
+{
+  "systemInfo": {"platform": "android", "model": "Pixel 8", "language": "zh_CN"},
+  "safeArea": {"top": 24, "right": 0, "bottom": 16, "left": 0},
+  "hostApis": ["chooseImage", "getLocation", "setClipboardData"],
+  "nativeComponents": ["video", "map", "web-view"]
+}
+```
+
+- `hostApis` 点名的装进 `wx`（调用 → `hostCall` 事件 → 宿主 `mr_app_host_reply`）。没点名的分两种：
+  微信里**总是存在**的宿主能力（`login` / `getUserProfile` / `getUserInfo` / `requestPayment` / `scanCode` /
+  `getLocation` / `chooseLocation` / `chooseImage` / `chooseMedia` / `chooseVideo` / `chooseMessageFile` /
+  `makePhoneCall` / `authorize`）是引擎的默认实现：**立刻 `fail`**，errMsg 写明「当前宿主未实现」——
+  框架包装层（`uni.getLocation → wx.getLocation`）拿到 undefined 会直接 TypeError，马上失败的函数页面的
+  fail 分支接得住；其余没点名的仍是 `undefined`（给一个永远不回的假函数比 undefined 更糟）。
+- 剪贴板与振动不用点名：`wx.setClipboardData` 发宿主事件 `{type:'clipboard', data}`（宿主写系统剪贴板），
+  `wx.vibrateShort/Long` 发 `{type:'vibrate', duration, style}`。真实的系统设置 / 授权状态放在
+  `systemInfo.systemSetting` / `systemInfo.appAuthorizeSetting` 里，`wx.getSystemSetting()` /
+  `wx.getAppAuthorizeSetting()` 逐项覆盖默认值。
+- `nativeComponents` 里的标签引擎只报位置、属性与遮挡，不自己画（只留一块底色，video 是黑底）；`video` 连解码都不做。
+- **一个进程同一时刻只能有一个实例**（小程序根目录、数据目录、tabBar 高度、网络回包队列都是进程级的）。
+  宿主要保证上一个 destroy 之后再建下一个。
+
+---
+
+## Flutter（`sdk/flutter`）
+
+插件名 `mini_render`，Android 与 iOS。画面走 `Texture`（不是平台视图）：
+
+- **线程**：引擎跑在原生侧的专用线程上，vsync 用这条线程上的 Choreographer / CADisplayLink。
+  不能让 Dart 同步调引擎：Flutter 3.29 起 Dart 就跑在平台主线程上；也不能交给 Dart 的
+  isolate（不保证一直在同一条系统线程上，而引擎有线程本地状态）。
+- **Android 上屏**：`SurfaceProducer`。先试引擎直接 `ANativeWindow_lock` 写进 Surface（零中间拷贝）；
+  锁不上（API 29+ 底层是 `ImageReader(PRIVATE, GPU_SAMPLED)`，不保证能被 CPU 锁）就换一块新的
+  SurfaceProducer，改走 Bitmap + `lockHardwareCanvas`（Flutter 自己的平台视图就这么画）。
+  被 CPU 连过的 Surface 销毁前不能再给 GPU 生产者用，所以必须换新的（纹理 id 会变，Dart 侧自动跟上）。
+- **Android GPU 上屏（可选）**：`MiniProgramController(backend: MiniBackend.auto / gpu)` 时 Surface 先交给引擎的
+  GPU 合成器（`nativeAttachSurface`，wgpu Vulkan / GLES），引擎自己上屏，插件只在 `FRAME_PRESENTED` 时通知 Flutter
+  取帧。没选上（门槛 / 自检）或运行中回退（`FRAME_BACKEND_CHANGED`）就换一块新的 SurfaceProducer 走上面的 CPU 路。
+  默认 `MiniBackend.cpu`。实际后端与原因在 `controller.activeBackend`。
+- **iOS 上屏**：`FlutterTexture.copyPixelBuffer`，IOSurface 支撑的 32BGRA CVPixelBuffer 池（3 张），
+  始终交出最新一张。`backend` 在 iOS 上不起作用（恒为 CPU）。
+- **输入**：`Listener` 只送指针三段、只认第一根手指，并用 `EagerGestureRecognizer` 立刻赢下手势竞技场
+  （否则外层 PageView / 侧滑返回会一起响应）。原生组件盖在画面上、按 `clip` / `holes` / `mask` 裁剪：
+  露出的部分触摸归控件，被面板 / 弹窗盖住的部分归引擎。控件的 Widget 结构不随遮挡变，面板开合不会重建播放器。
+- **软键盘**：`inputFocus` → `TextInput.attach`（按 `type` / `password` / `confirm-type` 选键盘），
+  输入法给的文本与上次按码点差分成 backspace + 整串文字；键盘弹起时不缩画面，而是像微信
+  `adjust-position` 那样整体上移露出输入框（`MiniProgramScaffold` 已设 `resizeToAvoidBottomInset: false`）。
+- **安全区**：按视图与屏幕刘海 / 底部横条真正重叠的部分算（放在 AppBar 下面时上边是 0）。
+- **尺寸**：引擎是整数逻辑尺寸；纹理按 `pixelWidth / dpr` 摆、最近邻采样 —— 一个设备像素对一个纹理像素。
+
+```bash
+bash tools/build-android-abi.sh            # 只编 arm64-v8a（调试用；发版用 build-mobile.sh android）
+cd sdk/flutter/example && flutter run       # 例子：内置一个演示小程序
+# 用仓库里的示例小程序：
+adb push sample/sample-app /sdcard/Android/data/dev.minirender.mini_render_example/files/
+```
+
+验收（模拟器 / 真机上跑，判据可判定）：
+
+1. 像素：`--dart-define=MINI_AUTODUMP=1` 打开例子，3 秒后引擎把当前帧存成 `engine_frame.png`、
+   日志打出纹理位置；与 `adb exec-out screencap -p` 裁出的同一块逐像素比（`tools/pixdiff.py`），
+   差异为 0 才说明纹理没被拉伸、颜色通道没反。一条命令：`BUILD=1 bash tools/flutter-android-check.sh`；
+   `BACKEND=gpu` 再跑一次：GPU 上屏时存帧是同一组图层的 CPU 合成，差异为 0 就是 GPU 输出在真机链路上逐字节对。
+2. 输入：tabBar 每个 tab 都能点通；横划小程序里的轮播时外层页面不动；输入框弹出数字键盘、
+   输入能进去、确认能收键盘。
+3. 静止省电：静止页面上 `MR_FRAME_WANTS_MORE` 为 0 时 vsync 停掉；有 `setInterval` 的页面照常走。
+4. Android 13+：Flutter 3.41.7 的 SurfaceProducer 有每帧泄漏一个文件描述符的问题
+   （flutter#188161）。持续出帧的页面挂 30 分钟，`/proc/<pid>/fd` 的数量要稳定。
 
 ---
 

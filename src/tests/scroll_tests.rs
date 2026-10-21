@@ -389,3 +389,57 @@ fn fling_into_bottom_still_fires_reach_bottom_once() {
     }
     assert_eq!(hits, 1, "触底事件应恰好一次");
 }
+
+// ============ 程序滚动（scroll-with-animation / wx.pageScrollTo 的 duration）与 bounces ============
+
+#[test]
+fn animate_to_按时长缓动到目标_手指按下就停() {
+    let mut c = ScrollController::new(2000.0, 500.0);
+    c.animate_to(600.0, 0.3);
+    assert!(c.is_animating() && c.is_tweening());
+    c.update(0.15);
+    let mid = c.get_position();
+    assert!((mid - 300.0).abs() < 1.0, "ease-in-out 在一半时间走一半：{mid}");
+    c.update(0.2);
+    assert!((c.get_position() - 600.0).abs() < 1e-3);
+    assert!(!c.is_animating(), "走完不再要帧");
+    // 目标夹在可滚范围里；时长 0 直接跳
+    c.animate_to(99999.0, 0.0);
+    assert!((c.get_position() - 1500.0).abs() < 1e-3);
+    // 半路按下：停在当前位置
+    c.animate_to(0.0, 0.3);
+    c.update(0.1);
+    let at = c.get_position();
+    c.begin_drag(100.0, 0);
+    assert!(!c.is_tweening());
+    c.update(0.1);
+    assert!((c.get_position() - at).abs() < 1e-3);
+}
+
+#[test]
+fn animate_to_滚到底也算触底() {
+    let mut c = ScrollController::new(1000.0, 500.0);
+    c.animate_to(500.0, 0.1);
+    let mut ev = None;
+    for _ in 0..20 {
+        let (_, e) = c.update_with_events(0.016);
+        if e.is_some() {
+            ev = e;
+        }
+    }
+    assert_eq!(ev, Some(ScrollEvent::ReachBottom));
+}
+
+#[test]
+fn bounces_关掉时拖过边界硬夹住() {
+    let mut c = ScrollController::new(1000.0, 500.0);
+    c.set_bounces(false);
+    c.begin_drag(100.0, 0);
+    c.update_drag(400.0, 16);
+    assert_eq!(c.get_position(), 0.0, "顶部不出橡皮筋");
+    c.end_drag();
+    let mut c = ScrollController::new(1000.0, 500.0);
+    c.begin_drag(100.0, 0);
+    c.update_drag(400.0, 16);
+    assert!(c.get_position() < 0.0, "默认有橡皮筋");
+}

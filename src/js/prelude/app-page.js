@@ -53,10 +53,17 @@
             }
             
             // 通用 setData 实现（页面与组件共用）
+            // setData 序号：每次 setData 记下「这个实例的哪些根字段在第几次被设过」。
+            // 宿主用它判断受控属性有没有被**设置**（哪怕值没变）—— scroll-view 的
+            // `refresher-triggered` 一直是 false、刷新完再 setData 一次 false，也要把指示器收起来
+            var __setDataSeq = 0;
             function __applySetData(instance, newData, callback) {
                 if (newData) {
+                    __setDataSeq++;
+                    var seen = instance.__setKeys || (instance.__setKeys = {});
                     for (var key in newData) {
                         if (!newData.hasOwnProperty(key)) { continue; }
+                        seen[String(key).split(/[.\[]/)[0]] = __setDataSeq;
                         if (key.indexOf('.') >= 0 || key.indexOf('[') >= 0) {
                             __setByPath(instance.data, key, newData[key]);
                         } else {
@@ -71,6 +78,17 @@
                     try { callback(); } catch (e) { __native_print('[setData.cb] ' + e.message); }
                 }
             }
+
+            /// 序号 `seq` 之后，`ownerKey`（空串 = 当前页面，否则组件实例键）有没有 setData 过 `keys` 里任一字段
+            function __setSince(ownerKey, keys, seq) {
+                var inst = ownerKey ? (typeof __compState === 'function' ? __compState().map[ownerKey] : null) : __currentPage;
+                var seen = inst && inst.__setKeys;
+                if (!seen) { return 0; }
+                for (var i = 0; i < keys.length; i++) {
+                    if ((seen[keys[i]] || 0) > seq) { return 1; }
+                }
+                return 0;
+            }
             
             function Page(config) {
                 // 创建页面实例
@@ -84,9 +102,12 @@
                         __applySetData(this, newData, callback);
                     },
                     
-                    // 官方 API：selectComponent 等（占位，待渲染层接入组件树后完善）
-                    selectComponent: function() { return null; },
-                    selectAllComponents: function() { return []; }
+                    // 官方 API：在页面自己模板里的组件实例中按 `#id` / `.cls` / 标签找（component-tree.js）
+                    selectComponent: function(sel) { return __selectComponentsFrom(__compStateOf(this), '', sel, false); },
+                    selectAllComponents: function(sel) { return __selectComponentsFrom(__compStateOf(this), '', sel, true); },
+                    // 官方实例方法：等价于 wx.createSelectorQuery().in(this) / wx.createIntersectionObserver(this, opt)（query.js）
+                    createSelectorQuery: function() { return wx.createSelectorQuery().in(this); },
+                    createIntersectionObserver: function(opt) { return wx.createIntersectionObserver(this, opt); }
                 };
                 
                 // 复制所有方法/字段到页面实例

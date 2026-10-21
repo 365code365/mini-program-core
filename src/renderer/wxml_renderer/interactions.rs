@@ -154,7 +154,8 @@ impl WxmlRenderer {
                 id.clone(),
                 crate::ui::interaction::HoverSpec {
                     start_ms: ms("hover-start-time", if button { 20 } else { 50 }),
-                    stay_ms: ms("hover-stay-time", if button { 70 } else { 400 }),
+                    // navigator 默认松手后留 600ms（官方 component/navigator.html）
+                    stay_ms: ms("hover-stay-time", if button { 70 } else if original_node.tag == "navigator" { 600 } else { 400 }),
                     stop,
                 },
             );
@@ -169,13 +170,14 @@ impl WxmlRenderer {
             let binding = Self::build_picker_binding(original_node, bounds, &id, disabled, is_fixed);
             self.picker_regions.push(binding);
         }
+        // 输入框属性与宿主承载的原生组件（见 host_regions.rs）
+        self.register_host_regions(original_node, bounds, &id, is_fixed);
         
         match original_node.tag.as_str() {
             "scroll-view" => {
-                // 检查是否是横向滚动
-                let scroll_x = original_node.attrs.get("scroll-x")
-                    .map(|s| s == "true" || s == "{{true}}")
-                    .unwrap_or(false);
+                // 滚动方向：`scroll-x` / `scroll-y` 都没写就不能滚（官方默认都是 false）；
+                // 不带值的写法（`<scroll-view scroll-y>`）也算开（见 scroll_views.rs）
+                let (scroll_x, scrollable) = super::scroll_views::scroll_axes(&original_node.attrs);
                 
                 // 可滚内容尺寸 = 子树的**溢出并集**，不是直接子节点的盒子并集。
                 //
@@ -219,22 +221,29 @@ impl WxmlRenderer {
                     }
                 }
 
-                interaction.register_element(InteractiveElement {
-                    interaction_type: InteractionType::ScrollArea,
-                    id,
-                    bounds: *bounds,
-                    checked: false,
-                    value: String::new(),
-                    disabled,
-                    min: 0.0,
-                    max: 0.0,
-                    content_height: logical_content_height,
-                    viewport_height: bounds.height,
-                    content_width: logical_content_width,
-                    viewport_width: bounds.width,
-                    is_horizontal: scroll_x,
-                    is_fixed,
-                });
+                if scrollable {
+                    interaction.register_element(InteractiveElement {
+                        interaction_type: InteractionType::ScrollArea,
+                        id: id.clone(),
+                        bounds: *bounds,
+                        checked: false,
+                        value: String::new(),
+                        disabled,
+                        min: 0.0,
+                        max: 0.0,
+                        content_height: logical_content_height,
+                        viewport_height: bounds.height,
+                        content_width: logical_content_width,
+                        viewport_width: bounds.width,
+                        is_horizontal: scroll_x,
+                        is_fixed,
+                    });
+                }
+                // 属性、阈值、下拉刷新，并把受控位置落到控制器上（scroll_views.rs）
+                self.register_scroll_view(
+                    original_node, taffy, &id, bounds,
+                    (logical_content_width, logical_content_height), is_fixed, interaction,
+                );
             }
             "checkbox" => {
                 interaction.register_element(InteractiveElement {
@@ -291,17 +300,25 @@ impl WxmlRenderer {
                 });
             }
             "slider" => {
-                let min = original_node.attrs.get("min").and_then(|s| s.parse().ok()).unwrap_or(0.0);
-                let max = original_node.attrs.get("max").and_then(|s| s.parse().ok()).unwrap_or(100.0);
+                use crate::renderer::components::{slider_track_span, SliderAttrs, SLIDER_VALUE_WIDTH};
+                // 轨道几何与绘制同一份算式（逻辑坐标）：指针按它换算值，滑块才跟得上手指
+                let a = SliderAttrs::from_attrs(&original_node.attrs);
+                let value_w = if a.show_value { SLIDER_VALUE_WIDTH } else { 0.0 };
+                let (track_x, track_w) = slider_track_span(bounds.x, bounds.width, a.block_size, value_w);
+                interaction.note_slider(
+                    id.clone(),
+                    crate::ui::interaction::SliderSpec { attrs: a, bounds: *bounds, track_x, track_w, is_fixed },
+                );
+                let value = interaction.slider_value(&id, a.value).unwrap_or(a.value);
                 interaction.register_element(InteractiveElement {
                     interaction_type: InteractionType::Slider,
                     id,
                     bounds: *bounds,
                     checked: false,
-                    value: format!("{}", (drawn_node.style.custom_data * 100.0) as i32),
+                    value: SliderAttrs::format(value),
                     disabled,
-                    min,
-                    max,
+                    min: a.min as f32,
+                    max: a.max as f32,
                     content_height: 0.0,
                     viewport_height: 0.0,
                     content_width: 0.0,

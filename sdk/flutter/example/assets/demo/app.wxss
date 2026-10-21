@@ -1,0 +1,36 @@
+/* 全局样式：每个页面自动带上。.card / .title / .btn / .row 是 perf 页（性能基准场景）在用的，别改。
+   page 上故意不写 color：本引擎里祖先的 CSS color 会顶掉 progress / slider 的 active-color 与
+   icon 的默认色（微信里不会），写了这些组件就全变成文字色。 */
+page { background-color: #f5f5f5; font-size: 28rpx; --brand: #07c160; --brand-dark: #06ad56; --sub: #888888; }
+.card { margin: 20rpx; padding: 24rpx; background-color: #ffffff; border-radius: 16rpx; }
+.title { font-size: 32rpx; font-weight: bold; margin-bottom: 16rpx; }
+.btn { margin-top: 16rpx; padding: 18rpx; background-color: #07c160; color: #ffffff; border-radius: 12rpx; text-align: center; }
+.btn:active { background-color: #06ad56; }
+.row { display: flex; flex-direction: row; justify-content: space-between; padding: 16rpx 0; border-bottom: 1rpx solid #eeeeee; }
+
+/* 以下是演示页共用的。
+   注意：会超过一行的文字一律包在 <text> 里 —— 本引擎里 <view>文字</view> 这种「裸文本」按单行排，
+   不换行；省略号（text-overflow）也要写在 <text> 自己身上。 */
+.desc { font-size: 24rpx; color: var(--sub); line-height: 1.6; }
+.hint { margin-top: 8rpx; font-size: 22rpx; color: #b2b2b2; }
+.btns { display: flex; flex-direction: row; flex-wrap: wrap; margin-top: 4rpx; }
+.btn-s { margin: 12rpx 16rpx 0 0; padding: 12rpx 24rpx; font-size: 26rpx; color: #ffffff; background-color: var(--brand); border-radius: 10rpx; }
+.btn-s:active { background-color: var(--brand-dark); }
+.btn-o { margin: 12rpx 16rpx 0 0; padding: 10rpx 22rpx; font-size: 26rpx; color: var(--brand); background-color: #ffffff; border: 2rpx solid var(--brand); border-radius: 10rpx; }
+.btn-o:active { background-color: #e8f8ee; }
+.result { margin-top: 16rpx; padding: 16rpx; font-size: 24rpx; line-height: 1.6; color: #555555; background-color: #f7f7f7; border-radius: 8rpx; word-break: break-all; }
+.kv { display: flex; flex-direction: row; justify-content: space-between; padding: 10rpx 0; font-size: 26rpx; }
+.kv-k { color: var(--sub); }
+.kv-v { color: #333333; max-width: 440rpx; text-align: right; }
+.label { margin: 20rpx 0 8rpx 0; font-size: 26rpx; color: #576b95; }
+
+/* 导航中心的条目（templates/entry.wxml） */
+.section-title { margin: 32rpx 32rpx 8rpx 32rpx; font-size: 26rpx; color: var(--sub); }
+.entries { margin: 0 20rpx; background-color: #ffffff; border-radius: 16rpx; }
+.entry { display: flex; flex-direction: row; align-items: center; padding: 24rpx; border-bottom: 1rpx solid #f0f0f0; }
+.entry:last-child { border-bottom: 0; }
+.entry-hover { background-color: #f2f2f2; }
+.entry-icon { width: 72rpx; height: 72rpx; margin-right: 24rpx; border-radius: 16rpx; color: #ffffff; font-size: 30rpx; font-weight: bold; text-align: center; line-height: 72rpx; }
+.entry-body { flex: 1; display: flex; flex-direction: column; margin-right: 12rpx; }
+.entry-name { font-size: 30rpx; color: #222222; }
+.entry-desc { margin-top: 4rpx; font-size: 22rpx; color: #999999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

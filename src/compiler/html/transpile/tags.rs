@@ -218,6 +218,7 @@ fn push_hover_attrs(node: &WxmlNode, attrs: &mut String) {
     let class = match explicit {
         Some("none") => return,
         Some("") | None if node.tag_name == "button" => "button-hover",
+        Some("") | None if node.tag_name == "navigator" => "navigator-hover",
         Some("") | None => return,
         Some(s) => s,
     };
@@ -226,6 +227,8 @@ fn push_hover_attrs(node: &WxmlNode, attrs: &mut String) {
     }
     let (start_default, stay_default) = if node.tag_name == "button" {
         ("20", "70")
+    } else if node.tag_name == "navigator" {
+        ("50", "600")
     } else {
         ("50", "400")
     };

@@ -1,0 +1,2 @@
+/* 被 wxss.wxss 用 @import 引入：相当于写在那个文件的开头，后面同名规则会覆盖这里 */
+.card { border: 1rpx solid #eef0f3; }

@@ -3,6 +3,8 @@
 # 在 Linux 主机执行；交叉编译到 aarch64 需安装对应 gcc 工具链
 set -euo pipefail
 cd "$(dirname "$0")/.."
+# 发出去的库要 thin LTO（Cargo.toml 的 release 为了开发构建快关掉了它，见那里的注释）
+export CARGO_PROFILE_RELEASE_LTO=thin CARGO_PROFILE_RELEASE_INCREMENTAL=false
 
 TARGET="${1:-$(rustc -vV | sed -n 's/host: //p')}"
 

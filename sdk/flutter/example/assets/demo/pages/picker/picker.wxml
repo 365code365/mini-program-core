@@ -1,0 +1,47 @@
+<view class="card">
+  <text class="title">selector + range-key</text>
+  <picker mode="selector" range="{{cities}}" range-key="name" value="{{cityIndex}}" bindchange="onCity" bindcancel="onCancel">
+    <view class="pick"><text class="pick-k">城市</text><text class="pick-v">{{cities[cityIndex].name}}</text><icon type="arrow" size="12" color="#c8c8cd"/></view>
+  </picker>
+</view>
+
+<view class="card">
+  <text class="title">mode="multiSelector"（列联动）</text>
+  <picker mode="multiSelector" range="{{multiRange}}" value="{{multiIndex}}" bindchange="onMulti" bindcolumnchange="onColumn" bindcancel="onCancel">
+    <view class="pick"><text class="pick-k">分类</text><text class="pick-v">{{multiRange[0][multiIndex[0]]}} / {{multiRange[1][multiIndex[1]]}}</text><icon type="arrow" size="12" color="#c8c8cd"/></view>
+  </picker>
+  <text class="hint">滚第一列，第二列跟着换（bindcolumnchange 里 setData 改 range[1]）</text>
+</view>
+
+<view class="card">
+  <text class="title">mode="time" / "date"</text>
+  <picker mode="time" value="{{time}}" start="08:00" end="22:00" bindchange="onTime">
+    <view class="pick"><text class="pick-k">时间</text><text class="pick-v">{{time}}</text><icon type="arrow" size="12" color="#c8c8cd"/></view>
+  </picker>
+  <picker mode="date" value="{{date}}" start="2020-01-01" end="2030-12-31" bindchange="onDate">
+    <view class="pick"><text class="pick-k">日期</text><text class="pick-v">{{date}}</text><icon type="arrow" size="12" color="#c8c8cd"/></view>
+  </picker>
+  <picker mode="date" fields="month" value="{{month}}" bindchange="onMonth">
+    <view class="pick"><text class="pick-k">年月</text><text class="pick-v">{{month}}</text><icon type="arrow" size="12" color="#c8c8cd"/></view>
+  </picker>
+</view>
+
+<view class="card">
+  <text class="title">mode="region"</text>
+  <picker mode="region" value="{{region}}" bindchange="onRegion">
+    <view class="pick"><text class="pick-k">地区</text><text class="pick-v">{{region[0]}} {{region[1]}} {{region[2]}}</text><icon type="arrow" size="12" color="#c8c8cd"/></view>
+  </picker>
+</view>
+
+<view class="card">
+  <text class="title">默认触发视图（不写子节点）</text>
+  <picker mode="selector" range="{{['小杯', '中杯', '大杯']}}" value="{{cup}}" bindchange="onCup"></picker>
+</view>
+
+<view class="card">
+  <text class="title">事件记录</text>
+  <view class="log">
+    <text class="log-line" wx:for="{{log}}">{{item}}</text>
+  </view>
+  <text class="hint">取消（点「取消」或遮罩）发 bindcancel；e.detail.value 的类型与微信一致：selector 是 number，multiSelector 是 number 数组，time / date 是字符串</text>
+</view>

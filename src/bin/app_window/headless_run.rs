@@ -248,12 +248,7 @@ impl crate::MiniAppWindow {
             (LOGICAL_WIDTH as f64 * scale) as u32,
             (LOGICAL_HEIGHT as f64 * scale) as u32,
         );
-        let present_bg = self
-            .renderer
-            .as_ref()
-            .and_then(|r| r.page_style().background)
-            .map(|c| ((c.r as u32) << 16) | ((c.g as u32) << 8) | c.b as u32)
-            .unwrap_or(0xF5F5F5);
+        let present_bg = mini_render::host::window_api::background_rgb(self.renderer.as_ref().and_then(|r| r.page_style().background));
         let gap = self.scroll.top_gap();
         Some(FrameLayers {
             width: pw,
@@ -275,7 +270,8 @@ impl crate::MiniAppWindow {
                 phase: 0.25,
             }),
             overlays: OverlayRefs {
-                last_frame: self.last_frame,
+                // `--time` 给了就是定住的那个时刻（转圈的转角跟着定住）
+                anim_secs: self.overlay_clock(),
                 toast: &self.toast,
                 loading: &self.loading,
                 modal: &self.modal,

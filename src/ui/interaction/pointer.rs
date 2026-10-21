@@ -36,8 +36,9 @@ impl InteractionManager {
                     value: element.value.clone(),
                 });
                 // 记录切换时刻：switch 的滑块靠它做缓动位移（微信是 0.3s 左右的滑动，
-                // 直接跳变会没有"拨动开关"的手感）
-                self.transitions.insert(element.id.clone(), crate::renderer::anim::now_secs());
+                // 直接跳变会没有"拨动开关"的手感）。写 `toggled_at` 而不是按压用的
+                // `transitions`，原因见字段注释。
+                self.toggled_at.insert(element.id.clone(), crate::renderer::anim::now_secs());
                 
                 Some(InteractionResult::Toggle {
                     id: element.id,
@@ -70,27 +71,10 @@ impl InteractionManager {
                     value: element.value,
                 })
             }
-            InteractionType::Slider => {
-                let progress = ((x - element.bounds.x) / element.bounds.width).clamp(0.0, 1.0);
-                let value = element.min + progress * (element.max - element.min);
-                
-                self.states.insert(element.id.clone(), ComponentState {
-                    checked: false,
-                    value: format!("{}", value as i32),
-                });
-                
-                self.dragging_slider = Some(DraggingSlider {
-                    id: element.id.clone(),
-                    bounds: element.bounds,
-                    min: element.min,
-                    max: element.max,
-                });
-                
-                Some(InteractionResult::SliderChange {
-                    id: element.id,
-                    value: value as i32,
-                })
-            }
+            // 点按 = 跳到手指处。**不在这里开始拖动**：这条路径是抬手之后的 tap，
+            // 从前在这里再把 `dragging_slider` 置上，松手之后滑块就一直「拖着」——
+            // 桌面上鼠标悬停也会带着滑块走，下一次触摸还会因此滚不动页面。
+            InteractionType::Slider => self.tap_slider(&element, x),
             InteractionType::Input => {
                 // 获取当前值（如果没有状态，使用空字符串而不是 element.value）
                 let current_value = self.states.get(&element.id)
@@ -114,19 +98,21 @@ impl InteractionManager {
                 
                 // 一聚焦就让光标立刻可见，并从这一刻开始数闪烁拍子（微信行为）
                 crate::renderer::components::reset_cursor_blink();
-                self.focused_input = Some(FocusedInput {
-                    id: element.id.clone(),
-                    value: current_value.clone(),
-                    cursor_pos: current_value.chars().count(),
-                    selection_start: None,
-                    selection_end: None,
-                    is_password: false,
-                    bounds: element.bounds,
-                    is_fixed: element.is_fixed,
-                    text_offset: 0.0, // 初始偏移为0，会在渲染时更新
-                    maxlength: 140, // 默认值，会在外部更新
-                    input_type: "text".to_string(), // 默认值，会在外部更新
-                });
+                // maxlength / type / 多行等属性由宿主随后按渲染器登记的属性补齐
+                // （`host::tap::prepare_focused_input`）。
+                let mut focused = FocusedInput::new(
+                    element.id.clone(),
+                    current_value.clone(),
+                    element.bounds,
+                    element.is_fixed,
+                );
+                // 在已聚焦的输入框里再点一下只是挪光标：撤销栈要留着，
+                // 否则「点一下改个字再 ⌘Z」就撤不回点之前打的那些字
+                if let Some(prev) = self.focused_input.take().filter(|f| f.id == element.id) {
+                    focused.history = prev.history;
+                    focused.history.break_merge();
+                }
+                self.focused_input = Some(focused);
 
                 // 记录点击位置用于后续计算光标位置
                 let click_x = x - element.bounds.x;
@@ -149,38 +135,6 @@ impl InteractionManager {
             InteractionType::View => None,
             InteractionType::ScrollArea => None,
         }
-    }
-
-    /// 处理鼠标移动（用于滑块拖动）
-    pub fn handle_mouse_move(&mut self, x: f32, _y: f32) -> Option<InteractionResult> {
-        if let Some(ref slider) = self.dragging_slider {
-            let progress = ((x - slider.bounds.x) / slider.bounds.width).clamp(0.0, 1.0);
-            let value = slider.min + progress * (slider.max - slider.min);
-            
-            self.states.insert(slider.id.clone(), ComponentState {
-                checked: false,
-                value: format!("{}", value as i32),
-            });
-            
-            return Some(InteractionResult::SliderChange {
-                id: slider.id.clone(),
-                value: value as i32,
-            });
-        }
-        None
-    }
-
-    /// 处理鼠标释放
-    pub fn handle_mouse_release(&mut self) -> Option<InteractionResult> {
-        if let Some(slider) = self.dragging_slider.take() {
-            return Some(InteractionResult::SliderEnd { id: slider.id });
-        }
-        None
-    }
-
-    /// 是否正在拖动滑块
-    pub fn is_dragging_slider(&self) -> bool {
-        self.dragging_slider.is_some()
     }
 
     /// 登记一个元素的点击态计时（每帧绘制时刷新；没登记的按按钮默认 20/70）

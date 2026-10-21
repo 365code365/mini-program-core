@@ -1,8 +1,23 @@
+            // 相对路径（`../detail/detail?id=1`、`detail?id=1`）按**当前页面**所在目录解析（微信语义）；
+            // 以 `/` 开头的是从小程序根算起。宿主只认根路径，所以在这里先解析好
+            function __resolveRoute(url) {
+                url = String(url == null ? '' : url);
+                if (!url || url.charAt(0) === '/') return url;
+                var page = (typeof __currentPage === 'object' && __currentPage) ? __currentPage : null;
+                var base = page && (page.route || page.__route__) ? String(page.route || page.__route__) : '';
+                var q = url.indexOf('?'), path = q >= 0 ? url.slice(0, q) : url, query = q >= 0 ? url.slice(q) : '';
+                var parts = base.split('/'); parts.pop();
+                path.split('/').forEach(function(seg) {
+                    if (seg === '..') parts.pop();
+                    else if (seg !== '.' && seg !== '') parts.push(seg);
+                });
+                return '/' + parts.join('/') + query;
+            }
             // 导航 API
             wx.navigateTo = function(options) {
                 __pendingNavigation = {
                     type: 'navigateTo',
-                    url: options.url
+                    url: __resolveRoute(options.url)
                 };
                 __native_print('[Navigate] navigateTo: ' + options.url);
                 options.success && options.success();
@@ -24,7 +39,7 @@
             wx.switchTab = function(options) {
                 __pendingNavigation = {
                     type: 'switchTab',
-                    url: options.url
+                    url: __resolveRoute(options.url)
                 };
                 __native_print('[Navigate] switchTab: ' + options.url);
                 options.success && options.success();
@@ -38,7 +53,7 @@
             wx.redirectTo = function(options) {
                 __pendingNavigation = {
                     type: 'redirectTo',
-                    url: options.url
+                    url: __resolveRoute(options.url)
                 };
                 __native_print('[Navigate] redirectTo: ' + options.url);
                 options.success && options.success();
@@ -47,8 +62,28 @@
             wx.reLaunch = function(options) {
                 __pendingNavigation = {
                     type: 'reLaunch',
-                    url: options.url
+                    url: __resolveRoute(options.url)
                 };
                 __native_print('[Navigate] reLaunch: ' + options.url);
                 options.success && options.success();
+            };
+
+            // <navigator> 被点了（host::builtin_tap）：按 open-type 走对应的路由 API
+            globalThis.__navigatorTap = function(openType, url, delta, mpJson) {
+                switch (openType) {
+                    case 'redirect': return wx.redirectTo({ url: url });
+                    case 'switchTab': return wx.switchTab({ url: url });
+                    case 'reLaunch': return wx.reLaunch({ url: url });
+                    case 'navigateBack': return wx.navigateBack({ delta: delta || 1 });
+                    case 'exit': return; // 退出小程序：宿主的事，引擎里什么也不做
+                    case 'miniProgram': {
+                        var mp = {};
+                        try { mp = JSON.parse(mpJson || '{}'); } catch (e) {}
+                        var extra = mp['extra-data'];
+                        try { extra = extra ? JSON.parse(extra) : undefined; } catch (e) {}
+                        return wx.navigateToMiniProgram({ appId: mp['app-id'], path: mp.path, extraData: extra,
+                                                          envVersion: mp.version || 'release', shortLink: mp['short-link'] });
+                    }
+                    default: return wx.navigateTo({ url: url });
+                }
             };

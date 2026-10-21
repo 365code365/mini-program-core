@@ -166,18 +166,9 @@ pub fn run(comp: &mut GpuCompositor, w: u32, h: u32, force_mismatch: bool) -> Re
     comp.selftesting = true;
     let mut report = Report::default();
     let (page, tab, fixed, tab_h) = test_canvases(w, h);
-    let modal = Some(ModalState {
-        title: "自检".into(),
-        content: "直通帧".into(),
-        show_cancel: true,
-        cancel_text: "取消".into(),
-        confirm_text: "确定".into(),
-        visible: true,
-        pressed_button: None,
-    });
-    let now = Instant::now();
+    let modal = Some(ModalState::new("自检", "直通帧"));
     let result = (|| -> Result<(), String> {
-        let plain = layers(w, h, &page, &tab, &fixed, tab_h, OverlayRefs::none(now));
+        let plain = layers(w, h, &page, &tab, &fixed, tab_h, OverlayRefs::none());
         for i in 0..WARMUP + SAMPLES {
             // 第一次（首次上传）与最后一次（稳态、没有新上传）都比像素
             let check = i == 0 || i == WARMUP + SAMPLES - 1;
@@ -189,7 +180,7 @@ pub fn run(comp: &mut GpuCompositor, w: u32, h: u32, force_mismatch: bool) -> Re
                 report.samples.push((g, d, c));
             }
         }
-        let mut with_modal = layers(w, h, &page, &tab, &fixed, tab_h, OverlayRefs::none(now));
+        let mut with_modal = layers(w, h, &page, &tab, &fixed, tab_h, OverlayRefs::none());
         with_modal.overlays.modal = &modal;
         let (bad, ..) = one(comp, &with_modal, true)?;
         bad.map_or(Ok(()), Err)

@@ -11,6 +11,7 @@
 //! - 三元：`cond ? a : b`
 //! - 成员/索引：`a.b.c`、`a[i]`、`a.b[i].c`、数组/字符串 `.length`
 //! - 字面量：数字、字符串、`true/false/null/undefined`、数组 `[..]`、对象 `{..}`
+//!   （对象支持展开 `...x` 与简写 `{foo}`，`<template data>` 要用）
 //! - 分组：`( .. )`
 
 use serde_json::{Number, Value};
@@ -24,6 +25,8 @@ mod eval;
 mod js_value;
 /// 词法
 mod lexer;
+/// `{{m.f(x)}}`：调用当前文件里的 wxs 模块（宿主、模块代码表、作用域）
+pub mod wxs;
 
-// 对外 API：只有这四个，其余都是片内细节
-pub use js_value::{eval_str, eval_to_display, is_truthy, render_value};
+// 对外 API：只有这五个，其余都是片内细节
+pub use js_value::{eval_object_body, eval_str, eval_to_display, is_truthy, render_value};

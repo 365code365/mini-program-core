@@ -18,7 +18,7 @@
 
 <meta property="og:type" content="website">
 <meta property="og:title" content="mini-render — a mini-program rendering engine written from scratch in Rust">
-<meta property="og:description" content="Mini-program source in, pixels out. No browser engine, no platform widgets, no third-party graphics library in between.">
+<meta property="og:description" content="Mini-program source in, pixels out. No browser engine, no platform widgets, no third-party 2D graphics library in between.">
 <meta property="og:image" content="https://365code365.github.io/mini-program-core/assets/shots/28_ecommerce_home.webp">
 <meta name="twitter:card" content="summary">
 </head>
@@ -64,7 +64,7 @@
           A mini-program rendering engine written from scratch in Rust. Hand it a WeChat
           mini-program source tree (WXML / WXSS / JS / app.json) and a writable pixel buffer,
           and it draws the UI and runs the interactions. In between there is
-          <strong>no browser engine, no platform widgets, no third-party graphics library</strong>.
+          <strong>no browser engine, no platform widgets, no third-party 2D graphics library</strong>.
         </p>
         <ul class="hero-nots">
           <li data-i18n="hero.not1">No WebView</li>
@@ -103,10 +103,10 @@
     <div class="wrap">
       <dl class="stats">
         <div><dt data-i18n="stat.1.k">Shop home, full frame</dt><dd>6.1<small>ms</small></dd><p data-i18n="stat.1.v">750×1334 physical pixels, pure CPU</p></div>
-        <div><dt data-i18n="stat.2.k">Difference vs Chrome</dt><dd>4.55<small>%</small></dd><p data-i18n="stat.2.v">15 pages of the same source, per pixel</p></div>
-        <div><dt data-i18n="stat.3.k">Component tags</dt><dd>24<small></small></dd><p data-i18n="stat.3.v">plus 39 wx.* APIs</p></div>
+        <div><dt data-i18n="stat.2.k">Difference vs Chrome</dt><dd>4.57<small>%</small></dd><p data-i18n="stat.2.v">15 pages of the same source, per pixel</p></div>
+        <div><dt data-i18n="stat.3.k">Component tags</dt><dd>24<small></small></dd><p data-i18n="stat.3.v">plus 72 wx.* APIs</p></div>
         <div><dt data-i18n="stat.4.k">Regression baselines</dt><dd>65<small></small></dd><p data-i18n="stat.4.v">byte-reproducible under a fixed clock</p></div>
-        <div><dt data-i18n="stat.5.k">Unit tests</dt><dd>492<small></small></dd><p data-i18n="stat.5.v">lib 483 + bin 9, zero warnings</p></div>
+        <div><dt data-i18n="stat.5.k">Automated tests</dt><dd>872<small></small></dd><p data-i18n="stat.5.v">lib 774 + bin 26 + 72 end-to-end, zero warnings</p></div>
         <div><dt data-i18n="stat.6.k">unsafe</dt><dd>0<small></small></dd><p data-i18n="stat.6.v">none outside the FFI boundary</p></div>
       </dl>
     </div>
@@ -231,7 +231,7 @@
         <li>
           <span class="step-no">08</span>
           <h3 data-i18n="pipe.9.h">Present</h3>
-          <p data-i18n="pipe.9.p">Blit to a window, hand to a host View, or save a PNG. Desktop uses softbuffer, mobile hands the RGBA to the host, headless calls <code>save_png</code> — one codebase, five platforms.</p>
+          <p data-i18n="pipe.9.p">Blit to a window, hand to a host View, or save a PNG. The desktop window composites on the GPU by default (wgpu takes the layers as textures and presents them) and falls back to softbuffer; mobile hands the RGBA to the host; headless composites on the CPU and calls <code>save_png</code> — one codebase, five platforms.</p>
         </li>
       </ol>
 
@@ -387,8 +387,8 @@
           <p class="note" data-i18n="perf.cons.p">Same source: native rendering on one side, compiled to HTML and screenshotted in Chrome on the other, compared per pixel. What remains is concentrated in bold glyph shapes and subpixel text positioning.</p>
           <table class="kv">
             <tbody>
-              <tr><th scope="row" data-i18n="perf.cons.r1k"><code>sample-app</code> shop<small>15 pages</small></th><td data-i18n="perf.cons.r1v"><b>4.55%</b> changed pixels</td></tr>
-              <tr><th scope="row" data-i18n="perf.cons.r2k"><code>news-app</code> news<small>6 pages</small></th><td data-i18n="perf.cons.r2v"><b>6.33%</b> changed pixels</td></tr>
+              <tr><th scope="row" data-i18n="perf.cons.r1k"><code>sample-app</code> shop<small>15 pages</small></th><td data-i18n="perf.cons.r1v"><b>4.57%</b> changed pixels</td></tr>
+              <tr><th scope="row" data-i18n="perf.cons.r2k"><code>news-app</code> news<small>6 pages</small></th><td data-i18n="perf.cons.r2v"><b>6.34%</b> changed pixels</td></tr>
             </tbody>
           </table>
         </div>
@@ -440,8 +440,8 @@
           <p data-i18n="trade.5.p">Page stack, overlays, touch state machine, gesture arbitration, picker sheet and pixel composition all live in <code>src/host/</code>; only frame scheduling is per-platform. A per-pixel script plus input-behaviour tests guard it from both sides.</p>
         </article>
         <article class="card num" data-n="6">
-          <h3 data-i18n="trade.6.h">No GPU, no per-element bitmap cache</h3>
-          <p data-i18n="trade.6.p">The premise is "give me a pixel buffer and I will draw". Anti-aliasing was not switched to subsampling either — measured against Chrome the difference went up, from 4.7% to 5.3%.</p>
+          <h3 data-i18n="trade.6.h">The CPU draws, the GPU only composites</h3>
+          <p data-i18n="trade.6.p">The CPU rasterizer is the single pixel reference, so CI and embedded boxes with no GPU produce the same image. The optional GPU backend only composites the page / tabBar / fixed layers as textures, <strong>byte-identical</strong> to the CPU for the same frame, and falls back to the CPU on any failure. No vello / Skia (their own anti-aliasing would make that unverifiable), no per-element bitmap cache. Anti-aliasing was not switched to subsampling either — measured against Chrome the difference went up, from 4.7% to 5.3%.</p>
         </article>
       </div>
       <p class="note center" data-i18n="trade.note">
@@ -556,14 +556,16 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
         <article class="card panel-yes">
           <h3 data-i18n="scope.yes.h"><span class="dot ok" aria-hidden="true"></span>Implemented</h3>
           <ul class="ticks">
-            <li data-i18n="scope.yes.1"><b>24 component tags</b>: containers / text and media / form controls, including <code>swiper</code>, <code>scroll-view</code>, <code>picker-view</code></li>
+            <li data-i18n="scope.yes.1"><b>26 component tags</b>: containers, text and media, and forms, including <code>swiper</code>, <code>scroll-view</code>, <code>picker-view</code>, plus <code>navigator</code> / <code>label</code> with their official tap behavior</li>
             <li data-i18n="scope.yes.2"><b>Events</b>: six binding prefixes with the full capture-bubble chain; touch sequences follow WeChat semantics (slop cancels tap, 350ms longpress, a <code>touchcancel</code> is synthesized when scrolling takes over)</li>
-            <li data-i18n="scope.yes.3"><b>Templates</b>: <code>wx:if</code> / <code>wx:for</code> / <code>block</code>, the expression engine, <code>class</code> / <code>style</code> bindings, custom components (style isolation + their own data scope)</li>
-            <li data-i18n="scope.yes.4"><b>Styles</b>: selectors with specificity cascade, inheritance, <code>@import</code>, CSS variables, <code>rpx</code>, <code>calc()</code>, gradients, shadows, <code>transform</code> / <code>transition</code> / <code>@keyframes</code></li>
-            <li data-i18n="scope.yes.5"><b>39 <code>wx.*</code> APIs</b>: <code>request</code> (with <code>abort</code>), the full storage set persisted across launches, Toast / Loading / Modal, five routing APIs, the full device-info set</li>
+            <li data-i18n="scope.yes.3"><b>Templates</b>: <code>wx:if</code> / <code>wx:for</code> / <code>wx:key</code> / <code>block</code>, the expression engine, <code>template</code> / <code>import</code> / <code>include</code>, <code>wxs</code> modules, custom components (one instance per use site, style isolation, named, default and dynamic <code>&lt;slot&gt;</code>, <code>virtualHost</code>, bubbling <code>triggerEvent</code>, <code>wx://form-field</code> behaviors)</li>
+            <li data-i18n="scope.yes.4"><b>Styles</b>: selectors with specificity cascade, inheritance, <code>@import</code>, CSS variables, <code>rpx</code>, <code>calc()</code>, gradients, shadows, <code>transform</code> / <code>transition</code> / <code>@keyframes</code>, <code>@media</code> (size, orientation, dark mode), <code>@font-face</code></li>
+            <li data-i18n="scope.yes.5"><b>120+ <code>wx.*</code> APIs</b>: <code>request</code>, <code>connectSocket</code>, <code>downloadFile</code> / <code>uploadFile</code> and <code>FileSystemManager</code>, <code>InnerAudioContext</code>, storage persisted across launches, Toast / Modal / ActionSheet, <code>previewImage</code>, routing, <code>createSelectorQuery</code>, <code>createIntersectionObserver</code>, <code>createVideoContext</code>, the tabBar APIs, clipboard, <code>canIUse</code>, network status, <code>loadFontFace</code>; 30 host capabilities such as <code>login</code> go to the host through <code>hostApis</code></li>
             <li data-i18n="scope.yes.6"><b>Lifecycles</b>: 28 hooks across three levels (App 7 / Page 13 / Component 5 + <code>pageLifetimes</code> 3)</li>
-            <li data-i18n="scope.yes.7"><b>Interaction</b>: inertial scrolling with critically damped bounce, gesture arbitration, edge-swipe back, pull-to-refresh, picker sheet, partial repaint</li>
-            <li data-i18n="scope.yes.8"><b>Media</b>: a complete Canvas 2D context, <code>&lt;video&gt;</code> (MP4 demux + H.264 software decode + audio)</li>
+            <li data-i18n="scope.yes.7"><b>Interaction</b>: inertial scrolling with critically damped bounce, gesture arbitration, edge-swipe back (desktop and mobile SDK), pull-to-refresh, picker sheet, action sheet, image preview, partial repaint</li>
+            <li data-i18n="scope.yes.8"><b>Media</b>: a Canvas 2D context plus <code>&lt;canvas type="2d"&gt;</code> with gradients, patterns, shadows, composite modes and pixel readback; <code>&lt;video&gt;</code> (MP4 demux + H.264 software decode + audio, playback events, <code>VideoContext</code>, fullscreen, poster, danmu)</li>
+            <li data-i18n="scope.yes.9"><b>Dual backend</b>: CPU rasterization + optional GPU compositing (wgpu). Enabled only after a start-up self-test is byte-identical to the CPU, forceable with <code>--backend</code> / <code>MINI_BACKEND</code>, falls back to the CPU on any failure. Wired into the desktop window and headless; the mobile SDK still uses the CPU</li>
+            <li data-i18n="scope.yes.10"><b>Component behavior</b>: <code>scroll-view</code> controlled position, events, custom pull-to-refresh, <code>reverse</code> and <code>padding</code>; <code>swiper</code> drag, circular mode, margins and Skyline's <code>direction</code> / <code>indicator-type</code> / <code>layout-type</code>; <code>form</code> submit / reset; <code>picker</code> column linkage and <code>header-text</code>; the inline <code>picker-view</code> wheel</li>
           </ul>
         </article>
 
@@ -571,15 +573,14 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
           <h3 data-i18n="scope.no.h"><span class="dot no" aria-hidden="true"></span>Deliberately not</h3>
           <table class="kv">
             <tbody>
-              <tr><th scope="row" data-i18n="scope.no.r1k">GPU rendering</th><td data-i18n="scope.no.r1v">Only pure CPU can produce images where there is no GPU (CI, embedded)</td></tr>
-              <tr><th scope="row" data-i18n="scope.no.r2k">Parsing <code>.wxapkg</code> / signature checks</th><td data-i18n="scope.no.r2v">Subpackages, staged rollout and integrity belong to the host; the engine reads a directory</td></tr>
-              <tr><th scope="row" data-i18n="scope.no.r3k">Compiling <code>&lt;web-view&gt;</code> / <code>&lt;map&gt;</code> into the engine</th><td data-i18n="scope.no.r3v">In WeChat these are native-layer components: the engine computes position, the host places the widget</td></tr>
-              <tr><th scope="row" data-i18n="scope.no.r4k">Remote fonts via <code>wx.loadFontFace</code></th><td data-i18n="scope.no.r4v">Fonts come from the system. The API exists and calls back <code>success</code>, but nothing is downloaded</td></tr>
-              <tr><th scope="row" data-i18n="scope.no.r5k">Accommodating code that deviates from WeChat semantics</th><td data-i18n="scope.no.r5v">Skyline is the only alignment target</td></tr>
+              <tr><th scope="row" data-i18n="scope.no.r1k">Drawing content on the GPU (vello / Skia style)</th><td data-i18n="scope.no.r1v">The GPU backend that exists only composites layers the CPU already drew. Content is always drawn by the CPU, so it stays the single pixel reference and places with no GPU (CI, embedded) produce the same image. Drawing on the GPU would mean a second rasterizer next to the CPU one; not done in this round</td></tr>
+              <tr><th scope="row" data-i18n="scope.no.r2k">Parsing <code>.wxapkg</code> / signature checks</th><td data-i18n="scope.no.r2v"><code>.wxapkg</code> is WeChat's private compiled format and the signature is WeChat's key system; subpackages, staged rollout and integrity belong to the host, and the engine reads a source directory</td></tr>
+              <tr><th scope="row" data-i18n="scope.no.r3k">Compiling <code>&lt;web-view&gt;</code> / <code>&lt;map&gt;</code> into the engine</th><td data-i18n="scope.no.r3v">Skyline itself does not render <code>web-view</code> (its component table says "not planned"; such a page falls back to the WebView renderer), and <code>map</code> is a same-layer native component in Skyline: the engine computes position, the host places the widget</td></tr>
+              <tr><th scope="row" data-i18n="scope.no.r5k">Accommodating code that deviates from WeChat semantics</th><td data-i18n="scope.no.r5v">Skyline is the only alignment target. This is a principle, not a feature that can be implemented</td></tr>
             </tbody>
           </table>
-          <h3 class="mt" data-i18n="scope.miss.h">13 items still missing</h3>
-          <p class="note" data-i18n="scope.miss.p"><code>wx:key</code> reuse semantics, <code>template</code> / <code>slot</code> / <code>wxs</code>, <code>scroll-view</code> scroll events, <code>&lt;video&gt;</code> playback events, cloud APIs such as <code>wx.login</code>, edge-swipe back in the mobile SDK — each one is written up with its impact.</p>
+          <h3 class="mt" data-i18n="scope.miss.h">Still open</h3>
+          <p class="note" data-i18n="scope.miss.p">This round added WebSocket / file-system / audio APIs, component event bubbling with <code>virtualHost</code> and dynamic slots, <code>navigator</code> / <code>label</code>, <code>picker-view</code> scrolling, Skyline's swiper attributes, canvas 2d gradients, shadows and pixel readback, and video poster and danmu. <code>@supports</code> / <code>@container</code> / <code>@layer</code> are unsupported in Skyline itself, so both ends skip them. Still open: <code>wx:key</code> in incremental invalidation and WXS event handlers, custom components in the H5 export, Skyline's <code>sticky</code> / <code>grid-view</code> / nested scrolling, scrollbars, video progress dragging, swiper worklet callbacks, canvas dashed lines and <code>clip</code> — each with its impact.</p>
         </article>
       </div>
 
@@ -597,8 +598,8 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
           <h3 data-i18n="scope.unfit.h">Poor fit</h3>
           <ul class="crosses">
             <li data-i18n="scope.unfit.1">You need the full web platform (arbitrary CSS, third-party H5 SDKs, <code>&lt;iframe&gt;</code>) — use a WebView</li>
-            <li data-i18n="scope.unfit.2">Heavy 3D or lots of filters — CPU rasterization will not hold up</li>
-            <li data-i18n="scope.unfit.3">You expect any production mini-program to run with zero adaptation — there are still 13 known gaps</li>
+            <li data-i18n="scope.unfit.2">Heavy 3D or lots of filters — content is rasterized on the CPU (the GPU only composites), which will not hold up</li>
+            <li data-i18n="scope.unfit.3">You expect any production mini-program to run with zero adaptation — there are still known gaps</li>
             <li data-i18n="scope.unfit.4">Severely memory-constrained devices — the peak is high until the font backend is swapped</li>
           </ul>
         </article>
@@ -629,8 +630,9 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
         <h2 data-i18n="stack.h2">Few dependencies, all on current stable</h2>
         <p class="sec-lede" data-i18n="stack.lede">
           Project size <b>240 <code>.rs</code> files / ~53k lines</b> (29 of them test files); any file
-          over 500 lines gets split. Outside the FFI boundary the whole library has
-          <strong>no <code>unsafe</code></strong> and no <code>static mut</code>.
+          over 500 lines gets split. Outside the FFI boundary, <code>unsafe</code> appears only in
+          <strong>4 spots in the compositor</strong> (viewing pixel slices as bytes, creating a surface
+          from a native window pointer), each with a SAFETY note; there is no <code>static mut</code>.
         </p>
       </header>
 
@@ -640,9 +642,13 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
         <li><b>fontdue</b><span>0.9</span><i data-i18n="dep.fontdue">Glyph rasterization</i></li>
         <li><b>image</b><span>0.25</span><i data-i18n="dep.image">PNG / JPEG / GIF frames / WebP decoding</i></li>
         <li><b>ureq</b><span>3.3</span><i data-i18n="dep.ureq"><code>wx.request</code> and remote images</i></li>
+        <li><b>tungstenite</b><span>=0.30.0</span><i data-i18n="dep.tungstenite"><code>wx.connectSocket</code>: the WebSocket protocol (TLS from the same rustls)</i></li>
+        <li><b>rustls + webpki-roots</b><span>=0.23.42 / =1.0.9</span><i data-i18n="dep.rustls">TLS and root certificates for <code>wss://</code>, shared with ureq</i></li>
+        <li><b>base64 / flate2</b><span>=0.22.1 / =1.1.9</span><i data-i18n="dep.base64">Binary data across the bridge / deflate for <code>unzip</code></i></li>
         <li><b>symphonia</b><span>0.6</span><i data-i18n="dep.symphonia">Audio demux and decode</i></li>
         <li><b>openh264</b><span>0.9</span><i data-i18n="dep.openh264">H.264 software decode (optional)</i></li>
-        <li><b>winit + softbuffer</b><span>0.30 / 0.4</span><i data-i18n="dep.winit">Desktop window and software framebuffer (optional)</i></li>
+        <li><b>winit + softbuffer</b><span>0.30 / 0.4</span><i data-i18n="dep.winit">Desktop window and software framebuffer, also the fallback when the GPU is unavailable (optional)</i></li>
+        <li><b>wgpu + pollster</b><span>=30.0.1 / =1.0.1</span><i data-i18n="dep.wgpu">GPU compositing backend: Metal / Vulkan / DX12 / GLES (optional, pinned exactly)</i></li>
         <li><b>rodio</b><span>0.22</span><i data-i18n="dep.rodio">Desktop audio playback (optional)</i></li>
         <li><b>jni</b><span>0.21</span><i data-i18n="dep.jni">Android JNI entry</i></li>
       </ul>
@@ -658,11 +664,12 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
         <article class="card">
           <h3 data-i18n="stack.reg.h">Regression suite<small>all green on every change</small></h3>
           <table class="kv"><tbody>
-            <tr><th scope="row" data-i18n="stack.reg.r1k">Unit tests</th><td data-i18n="stack.reg.r1v">lib 483 + bin 9</td></tr>
+            <tr><th scope="row" data-i18n="stack.reg.r1k">Unit tests</th><td data-i18n="stack.reg.r1v">lib 774 + bin 26 + 72 end-to-end</td></tr>
             <tr><th scope="row" data-i18n="stack.reg.r2k">Scene gallery</th><td data-i18n="stack.reg.r2v">65 images, byte-reproducible</td></tr>
             <tr><th scope="row" data-i18n="stack.reg.r3k">Partial-repaint check</th><td data-i18n="stack.reg.r3v">5 scenes, byte-identical</td></tr>
             <tr><th scope="row" data-i18n="stack.reg.r4k">SDK vs desktop</th><td data-i18n="stack.reg.r4v">sample 15/15, news 6/6 pixel-identical</td></tr>
             <tr><th scope="row" data-i18n="stack.reg.r5k">Compiler warnings</th><td>0</td></tr>
+            <tr><th scope="row" data-i18n="stack.reg.r6k">Full run</th><td data-i18n="stack.reg.r6v"><code>bash tools/regress.sh</code>, about 4 min after an engine change</td></tr>
           </tbody></table>
         </article>
         <article class="card">
@@ -670,7 +677,7 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
           <ol class="ol">
             <li data-i18n="stack.todo.1"><b>Memory peak</b> — swap in a lazy font backend</li>
             <li data-i18n="stack.todo.2"><b><code>setData</code> still rebuilds the whole layout tree</b> — needs incremental tree patching; the infrastructure is in place</li>
-            <li data-i18n="stack.todo.3"><b>Edge-swipe back on mobile</b> — needs a viewport snapshot the moment a page gets covered</li>
+            <li data-i18n="stack.todo.3"><b>Custom components in the H5 export</b> — the cross-check against Chrome only covers pages without them</li>
           </ol>
         </article>
       </div>
@@ -693,7 +700,7 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
         </a>
         <a class="doc" href="https://github.com/365code365/mini-program-core/blob/main/doc/%E5%BC%95%E6%93%8E%E6%B5%8B%E8%AF%95%E8%AF%B4%E6%98%8E.md">
           <h3 data-i18n="docs.2.h">Engine test guide</h3>
-          <p data-i18n="docs.2.p">Capability matrix, T1–T9 checklists and criteria, measured memory breakdown, 13 known gaps</p>
+          <p data-i18n="docs.2.p">Capability matrix, T1–T29 checklists and criteria, measured memory breakdown, known gaps</p>
         </a>
         <a class="doc" href="https://github.com/365code365/mini-program-core/blob/main/doc/%E5%8E%9F%E7%94%9FApp%E9%9B%86%E6%88%90%E6%8C%87%E5%8D%97.md">
           <h3 data-i18n="docs.3.h">Native app integration guide</h3>

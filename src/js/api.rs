@@ -48,6 +48,8 @@ const PRELUDE: &[Prelude] = prelude![
     "fake-clock" => "fake-clock.js",
     // 所有 `wx.xxx = ...` 的落点，必须先存在
     "wx-object" => "wx-object.js",
+    // base64 / UTF-8 编解码（QuickJS 没有 btoa / TextEncoder）：二进制过桥都靠它，socket / fs 之前
+    "codec" => "codec.js",
     // 定时器：只登记，真正的到点由宿主每帧驱动（逻辑层不占线程）
     "timer" => "timer.js",
     // storage 全套：写操作**写穿到磁盘**，所以「首次拉取存起来、之后走缓存」的
@@ -57,6 +59,13 @@ const PRELUDE: &[Prelude] = prelude![
     "ui" => "ui.js",
     // `wx.createCanvasContext`：把 2D 指令录下来交给原生光栅化
     "canvas" => "canvas.js",
+    // `wx.createVideoContext`：命令经 `__native_host_request('video')` 交给宿主（host::video）
+    "media" => "media.js",
+    // SelectorQuery / IntersectionObserver / nextTick：查询与相交计算由宿主按布局树做
+    // （host::selector_query / host::observers），结果异步回调
+    "query" => "query.js",
+    // `<canvas type="2d">` 的 Canvas 节点与属性式 2D 上下文（经 SelectorQuery 的 node() 拿到）
+    "canvas2d" => "canvas2d.js",
     // App / Page 注册、`setData` 的数据路径（`a.b.c` / `list[0].x`）、页面栈。
     // 这里也桥了 `wx.createPage/createComponent/createApp` —— uni-app / Taro 走的是
     // 那三个，只认 `Page()` 的话页面永远注册不上，屏幕上只剩一张静态骨架。
@@ -80,8 +89,28 @@ const PRELUDE: &[Prelude] = prelude![
     // `wx.request`（含 `RequestTask.abort()`）/ `downloadFile` / `loadFontFace`：
     // 回调式、非阻塞，响应由宿主每帧取回后调 `__resolveRequest`
     "network" => "network.js",
+    // 导航栏 API 与宿主实现的 `wx.*`（hostCall）：意图经 `__native_host_event` 交给宿主外壳。
+    // 要早于 api-probe：探针包住 wx 之后再加的属性照样可见，但放这里语义更清楚
+    "host" => "host.js",
+    // 剪贴板、振动、操作菜单、图片预览，与「要宿主才能做」的能力（登录、选图、定位…）的默认实现：
+    // 宿主在 hostApis 里点名的由 __installHostApis 换成真的，没点名的立刻 fail（而不是 undefined）
+    "system" => "system.js",
+    // 原生 tabBar 的运行时 API（角标、红点、改项、改样式、显隐），由 host::tabbar_api 落地
+    "tabbar" => "tabbar.js",
+    // WebSocket（SocketTask 与旧式全局 API），连接在原生线程（src/websocket.rs）
+    "socket" => "socket.js",
+    // FileSystemManager 与旧式 saveFile / getFileInfo：路径权限与文件操作在 src/wxfs
+    "fs" => "fs.js",
+    // InnerAudioContext / 背景音频 / 旧式 AudioContext / RecorderManager（录音交给宿主）
+    "audio" => "audio.js",
+    // 网络状态、胶囊、canIUse、更新、账号、分享菜单、屏幕、背景色、电量、键盘、日志、图片信息
+    "app-info" => "app-info.js",
     // `Component()` / `Behavior()` 与组件实例工厂（properties / observers / triggerEvent）
     "component" => "component.js",
+    // 组件实例树：每处使用一个实例，宿主每帧对账（建实例 / 改属性触发 observer / detached）
+    "component-tree" => "component-tree.js",
+    // wxs 模块：模板表达式 `{{m.f(x)}}` 由渲染层经 `parser::expr::wxs` 的宿主调到这里
+    "wxs" => "wxs.js",
     // **最后**：给 `wx` 装未实现 API 的探针。关键是仍然返回 `undefined` ——
     // 框架普遍用 `typeof wx.xxx === 'function'` 做能力探测，返回假函数会让它们
     // 走进不存在的分支。

@@ -1,0 +1,4 @@
+.slot-h { font-size: 28rpx; font-weight: bold; color: #10aeff; }
+.slot-body { font-size: 26rpx; line-height: 1.7; color: #555555; }
+/* 与组件里的 .label 同名：样式隔离下互不影响 */
+.label { color: #e64340; }

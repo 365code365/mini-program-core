@@ -63,7 +63,12 @@ pub struct TagSpec {
     pub draw: fn(&mut DrawCtx),
 }
 
-/// 未登记标签的兜底：按 `view` 处理（微信里未知标签也是块级容器）
+/// 未登记标签的兜底：按 `view` 处理（容器，子节点照常渲染）。
+///
+/// 微信侧能查到的只有框架层：glass-easel 把找不到组件定义的标签建成**同名原生节点**
+/// （子节点保留，不丢弃）；Skyline 后端如何排版未知原生节点没有文档。自定义组件的宿主
+/// 节点、`navigator` / `form` / `label` 这些没单独登记的官方组件也都走这里 —— 想改成
+/// 「丢弃」之类的行为，得先有真机证据并列全内置组件表（见测试说明 G-12）。
 const FALLBACK: TagSpec = TagSpec {
     tags: &[],
     profile: "其它",
@@ -280,12 +285,14 @@ pub const TAGS: &[TagSpec] = &[
         stateful: false,
         clips: false,
         build: |n, c| PickerViewComponent::build(n, c),
-        draw: |d| PickerViewComponent::draw(d.node, d.canvas, d.text, d.x, d.y, d.w, d.h, d.sf),
+        // 什么都不画：背景、各列（按滚轮位置偏移）、遮罩与指示条由 `draw_picker_view_with` 画
+        draw: |_| {},
     },
     TagSpec {
         tags: &["picker-view-column"],
         profile: "其它",
-        leaf: true,
+        // 列是容器：项（`<view>` 一行一个）要照常建树、布局，绘制时整列按滚轮位置偏移
+        leaf: false,
         stateful: false,
         clips: false,
         build: |n, c| PickerViewColumnComponent::build(n, c),

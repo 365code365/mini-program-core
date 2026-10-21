@@ -44,6 +44,9 @@ impl Canvas2DContext {
     /// 填充矩形
     pub fn fill_rect(&mut self, x: f32, y: f32, width: f32, height: f32) {
         let path = self.rect_path(x, y, width, height);
+        if !self.fx.trivial(false) {
+            return self.fx_path(&path, None);
+        }
         let color = self.apply_alpha(self.fill_style);
         if let Ok(mut canvas) = self.canvas.lock() {
             let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill).with_anti_alias(true);
@@ -56,6 +59,9 @@ impl Canvas2DContext {
         let path = self.rect_path(x, y, width, height);
         let color = self.apply_alpha(self.stroke_style);
         let lw = self.line_width * self.avg_scale();
+        if !self.fx.trivial(true) {
+            return self.fx_path(&path, Some(lw));
+        }
         if let Ok(mut canvas) = self.canvas.lock() {
             let paint = Paint::new().with_color(color).with_style(PaintStyle::Stroke)
                 .with_stroke_width(lw).with_anti_alias(true);
@@ -108,6 +114,9 @@ impl Canvas2DContext {
     /// 填充当前路径
     pub fn fill(&mut self) {
         let path = self.build_path();
+        if !self.fx.trivial(false) {
+            return self.fx_path(&path, None);
+        }
         if let Ok(mut canvas) = self.canvas.lock() {
             let paint = Paint::new()
                 .with_color(self.apply_alpha(self.fill_style))
@@ -121,6 +130,9 @@ impl Canvas2DContext {
     pub fn stroke(&mut self) {
         let path = self.build_path();
         let lw = self.line_width * self.avg_scale();
+        if !self.fx.trivial(true) {
+            return self.fx_path(&path, Some(lw));
+        }
         if let Ok(mut canvas) = self.canvas.lock() {
             let paint = Paint::new()
                 .with_color(self.apply_alpha(self.stroke_style))
@@ -131,10 +143,27 @@ impl Canvas2DContext {
         }
     }
 
+    /// 走 fx 蒙版画一条路径：`stroke` 给线宽时是描边，否则填充
+    fn fx_path(&mut self, path: &Path, stroke: Option<f32>) {
+        let (cap, join) = (self.line_cap, self.line_join);
+        self.paint_with_fx(stroke.is_some(), |mask| {
+            let mut paint = Paint::new().with_color(Color::WHITE).with_anti_alias(true);
+            paint = match stroke {
+                Some(lw) => paint.with_style(PaintStyle::Stroke).with_stroke_width(lw),
+                None => paint.with_style(PaintStyle::Fill),
+            };
+            paint.stroke_cap = cap;
+            paint.stroke_join = join;
+            mask.draw_path(path, &paint);
+        });
+    }
+
     /// 绘制图片（支持目标位置与目标尺寸；旋转/斜切按轴对齐近似）
     pub fn draw_image(&mut self, src: &str, dx: f32, dy: f32, dw: f32, dh: f32) {
         // 加载图片
-        let bytes = std::fs::read(src).ok()
+        // 包内路径 / `wxfile://` 走与 `<image>` 同一套解析（G-16：从前按进程工作目录读，宿主里一张都读不到）
+        let bytes = crate::assets::resolve(src).and_then(|p| std::fs::read(p).ok())
+            .or_else(|| std::fs::read(src).ok())
             .or_else(|| std::fs::read(src.trim_start_matches('/')).ok());
         let bytes = match bytes { Some(b) => b, None => return };
         let img = match image::load_from_memory(&bytes) { Ok(i) => i, Err(_) => return };

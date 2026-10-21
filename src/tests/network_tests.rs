@@ -50,6 +50,23 @@ fn unsupported_scheme_goes_to_fail() {
     );
 }
 
+/// 响应按实例取回：别的实例先 `update()` 也拿不走我的。
+/// 从前队列是进程级的、谁先 update 谁取走全部，上面那条测试在全量并行里偶发失败（fail 计数为 0）
+#[test]
+fn responses_are_delivered_to_the_instance_that_sent_them() {
+    let mut mine = new_app();
+    let mut other = new_app();
+    for app in [&mine, &other] {
+        app.load_script("var __n = { fail: 0 };").unwrap();
+    }
+    mine.load_script("wx.request({ url: 'ftp://example.com/x', fail: function () { __n.fail++; } });").unwrap();
+    other.update().unwrap();
+    assert_eq!(get(&other, "String(__n.fail)"), "0", "别的实例不该收到我的响应");
+    assert!(mine.has_pending_network(), "我的失败结果还在队列里，宿主要续一帧");
+    mine.update().unwrap();
+    assert_eq!(get(&mine, "String(__n.fail)"), "1");
+}
+
 /// 4xx / 5xx 在微信里**仍然走 success**，只是 statusCode 不是 2xx。
 /// 这一条最容易实现错（很多人会把它当失败），所以单独钉住。
 #[test]

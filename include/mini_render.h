@@ -152,7 +152,9 @@ void   mr_app_pointer_up(MRApp* app, float x, float y);
 void   mr_app_pointer_cancel(MRApp* app);
 void   mr_app_wheel(MRApp* app, float delta_y, int precise);
 void   mr_app_text_input(MRApp* app, const char* utf8);
-// enter / backspace / delete / left / right / home / end / selectall / escape
+// enter / newline / backspace / delete / left / right / up / down / home / end / shift+<方向|home|end> /
+// word-left / word-right / doc-start / doc-end / delete-word-back / selectall / copy / cut / undo / redo / escape
+// 回车也可以作为 mr_app_text_input("\n") 送：textarea 换行（confirm-type=return 时），input 触发 confirm
 void   mr_app_key(MRApp* app, const char* name);
 
 // 返回 0 表示页面栈只剩一页，宿主该关掉小程序
@@ -172,11 +174,17 @@ const char* mr_version(void);
 // 只增不改：上面的 mr_app_* 签名与语义一个都没变（mr_app_pump 仍只返回 0 / 1）。
 // 这些符号**有没有 gpu feature 都导出**；不调它们的宿主永远是 CPU，与以前逐字节一致。
 //
-// 现状：GPU 后端还在开发中。没编进 gpu feature 时 attach 返回 1、原因串含「未编译」；
-// 编进来了（目前是空壳）也只能是 CPU，原因串说明「GPU 合成器还在开发中」。
-// mr_app_pump_ex 目前只会返回 0 或 MR_FRAME_NEW。
+// 现状：没编进 gpu feature 时 attach 返回 1、原因串含「未编译」。编进来了（桌面默认、
+// Android 的 build-mobile.sh 默认；iOS 库暂不编）：偏好 auto / gpu 且门槛与启动自检都过了，
+// attach 返回 2，之后由引擎直接画到 surface 上（pump_ex 带 MR_FRAME_PRESENTED）。偏好 cpu
+// （默认）时根本不碰 surface。运行中设备丢失 / surface 丢失当帧回退 CPU，带
+// MR_FRAME_BACKEND_CHANGED，且本实例之后不再试 GPU。
+// CPU 下合成那四位（NEW / PRESENTED / BACKEND_CHANGED / PENDING）只会出现 0 或 MR_FRAME_NEW；
+// 另有两位与后端无关的提示位 MR_FRAME_WANTS_MORE / MR_FRAME_EVENTS（见下面「嵌入宿主」）。
+// GPU 上屏的帧也能取像素（mr_app_pixels* 会补一次同图层的 CPU 合成，与屏上逐字节相同），
+// 只是要多花一次 CPU 合成的时间 —— 每帧都取就失去了 GPU 的意义。
 //
-// 挂了 surface 之后的用法（GPU 落地后生效）：
+// 挂了 surface 之后的用法：
 //   int f = mr_app_pump_ex(app, now_ms);
 //   if (f & MR_FRAME_BACKEND_CHANGED) { /* 按 mr_app_backend(app) 切换显示路径 */ }
 //   if ((f & MR_FRAME_NEW) && !(f & MR_FRAME_PRESENTED)) mr_app_pixels(app, buf, len);
@@ -215,6 +223,56 @@ const char* mr_app_backend_reason(MRApp* app);
 // 跑一帧，返回 MR_FRAME_* 的按位或。
 // mr_app_pump(app, t) == ((mr_app_pump_ex(app, t) & MR_FRAME_NEW) ? 1 : 0)
 int  mr_app_pump_ex(MRApp* app, uint64_t now_ms);
+
+// ─────────────────────── 嵌入宿主（Flutter 插件 / 原生 View）───────────────────────
+//
+// 只增不改：上面的函数签名与语义都没变；不调这些新函数的宿主行为与从前一致。
+// 线程约定同上（同一条线程）。
+//
+// mr_app_pump_ex 的两位提示位（与后端无关）：
+//   MR_FRAME_WANTS_MORE  引擎还有活要干（动画 / 惯性 / 定时器 / 请求在飞 / 按住的手指 …），
+//                        下一个 vsync 再 pump；没有这一位时可以停掉 vsync，等输入事件再 pump
+//   MR_FRAME_EVENTS      事件队列非空，mr_app_poll_event 取到 NULL 为止
+#define MR_FRAME_WANTS_MORE 16
+#define MR_FRAME_EVENTS     32
+
+// 带选项创建。options_json 可为 NULL（= mr_app_create）。格式错 / 失败返回 NULL。
+//   {"systemInfo":{"platform":"ios","model":"…"},          // 合并进 wx.getSystemInfoSync
+//    "safeArea":{"top":47,"right":0,"bottom":34,"left":0},  // 逻辑像素；env(safe-area-inset-*) 取它
+//    "hostApis":["chooseImage","getLocation"],              // 宿主实现的 wx.*（经 hostCall 事件）
+//    "nativeComponents":["video","map","web-view"]}         // 宿主用原生控件承载，引擎只报位置与遮挡
+MRApp* mr_app_create_ex(const char* app_dir, const char* data_dir,
+                        uint32_t width, uint32_t height, float dpr,
+                        const char* options_json);
+
+// 改尺寸（逻辑像素）与像素比。变了返回 1，并已出好新尺寸的一帧；没变返回 0。
+int mr_app_resize(MRApp* app, uint32_t width, uint32_t height, float dpr);
+// 安全区（逻辑像素）。变了返回 1：系统信息、env(safe-area-inset-*) 随之更新。
+int mr_app_set_safe_area(MRApp* app, float top, float right, float bottom, float left);
+
+// 把当前帧写进宿主缓冲：stride = 每行字节数（≥ 宽×4），format = MR_PIXEL_*。
+// 返回写到的最远字节（stride×(高−1) + 宽×4）；参数不对返回 0 且不写。
+// iOS / macOS 的 CVPixelBuffer（32BGRA）用 BGRA，Android 的 Bitmap / ANativeWindow 用 RGBA。
+#define MR_PIXEL_RGBA8 0
+#define MR_PIXEL_BGRA8 1
+size_t mr_app_pixels_into(MRApp* app, uint8_t* dst, size_t len, uint32_t stride, int format);
+
+// 引擎 → 宿主的事件（UTF-8 JSON），没有了返回 NULL。指针活到下一次对同一 app 调用 mr_app_*。
+// type：page / navigationBar / inputFocus / inputBlur / nativeViews / hostCall / log
+// 字段见 doc/原生App集成指南.md「事件队列」；坐标都是视口逻辑坐标。
+const char* mr_app_poll_event(MRApp* app);
+
+// 回 hostCall：ok 非 0 走 success、否则 fail；result_json 是回调拿到的 res（NULL = {}）。
+// id 不认识（重复回 / 页面已换）返回 0。
+int mr_app_host_reply(MRApp* app, uint32_t id, int ok, const char* result_json);
+
+// 宿主承载的原生组件发生了事件：key 取自 nativeViews 事件，name 如 "ended" / "timeupdate"，
+// 派发给节点上的 bind<name>；detail_json 是事件 detail（NULL = {}）。找到绑定返回 1。
+int mr_app_native_view_event(MRApp* app, const char* key, const char* name, const char* detail_json);
+
+// 在逻辑层执行一段 JS，返回结果的字符串形式；抛异常返回 NULL（原因见 mr_app_last_error）。
+// 指针活到下一次对同一 app 调用 mr_app_*。注入深链参数、集成测试断言页面数据用。
+const char* mr_app_eval(MRApp* app, const char* code);
 
 #ifdef __cplusplus
 }

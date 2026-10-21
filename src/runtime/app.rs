@@ -7,13 +7,30 @@ use std::time::Instant;
 use std::collections::HashMap;
 
 /// UI 事件（用于通知窗口显示 Toast/Loading/Modal）
+///
+/// Toast 与 Loading 在微信里是**同一个提示框**（官方：「wx.showLoading 和 wx.showToast
+/// 同时只能显示一个」，hide 两个接口默认可以互相关掉，`noConflict: true` 才各管各的）。
+/// 这份「一个槽位」的规则落在 `host::ui_overlay::apply_feedback_event`，两个宿主共用。
 #[derive(Debug, Clone)]
 pub enum UiEvent {
-    ShowToast { title: String, icon: String, duration: u32 },
-    HideToast,
-    ShowLoading { title: String },
-    HideLoading,
-    ShowModal { title: String, content: String, show_cancel: bool, cancel_text: String, confirm_text: String },
+    /// `icon`：success / error / loading / none（逻辑层已把非法值归成 success）；
+    /// `image`：自定义图标路径，非空时优先于 icon；`mask`：透明蒙层，挡住页面触摸
+    ShowToast { title: String, icon: String, duration: u32, mask: bool, image: String },
+    /// `no_conflict`：只关 Toast，不连带关掉 Loading
+    HideToast { no_conflict: bool },
+    ShowLoading { title: String, mask: bool },
+    /// `no_conflict`：只关 Loading，不连带关掉 Toast
+    HideLoading { no_conflict: bool },
+    /// 颜色是逻辑层校验过的 16 进制串（缺省 #000000 / #576B95）
+    ShowModal {
+        title: String,
+        content: String,
+        show_cancel: bool,
+        cancel_text: String,
+        confirm_text: String,
+        cancel_color: String,
+        confirm_color: String,
+    },
     HideModal,
     /// `wx.startPullDownRefresh()`：由逻辑层主动进入下拉刷新态
     StartPullDownRefresh,
@@ -32,6 +49,10 @@ pub struct MiniApp {
     last_frame: Instant,
     timers: HashMap<u32, TimerState>,
     ui_events: Vec<UiEvent>,
+    /// `wx.pageScrollTo` 的请求（JSON 对象），宿主每帧取走
+    page_scroll_requests: Vec<serde_json::Value>,
+    /// 通用宿主请求 (种类, 参数)，按发生顺序；宿主按种类取走（见 `take_host_requests`）
+    host_requests: Vec<(String, serde_json::Value)>,
 }
 
 struct TimerState {
@@ -56,6 +77,8 @@ impl MiniApp {
             last_frame: Instant::now(),
             timers: HashMap::new(),
             ui_events: Vec::new(),
+            page_scroll_requests: Vec::new(),
+            host_requests: Vec::new(),
         })
     }
     
@@ -68,6 +91,8 @@ impl MiniApp {
         // 再初始化 API（使用 native 函数）
         println!("  Initializing API...");
         self.api.init().map_err(|e| format!("API init failed: {}", e))?;
+        // 本线程上的渲染层从此能调 wxs 模块（`{{m.f(x)}}`）；渲染与逻辑层同线程
+        crate::parser::expr::wxs::set_host(Some(std::rc::Rc::new(super::wxs_host::AppWxsHost::new(&self.runtime))));
         
         println!("Mini App Engine initialized");
         Ok(())
@@ -215,6 +240,8 @@ impl MiniApp {
         // 取回已完成的网络响应并回调 JS。放在这里（而不是各宿主里）是为了让
         // 窗体、devserver、快照、launcher 都自动拿到网络能力。
         self.process_network_responses()?;
+        self.process_font_loads();
+        self.process_io_events();
         
         // 泵出微任务队列（Promise / async 回调），确保异步链得以推进
         self.pump_jobs();
@@ -224,7 +251,7 @@ impl MiniApp {
 
     /// 把后台线程完成的 HTTP 响应喂回 JS 的 `__resolveRequest`
     fn process_network_responses(&mut self) -> Result<(), String> {
-        let done = crate::net::take_completed();
+        let done = crate::net::take_completed(self.bridge.net_owner());
         if done.is_empty() {
             return Ok(());
         }
@@ -262,9 +289,44 @@ impl MiniApp {
         Ok(())
     }
 
-    /// 是否有网络请求在飞或刚回来（宿主据此决定要不要继续出帧等回调）
+    /// `wx.loadFontFace` 有结论了：回给逻辑层（id 为 0 的是 `@font-face` 自己登记的，不回调）
+    fn process_font_loads(&mut self) {
+        for (id, family, r) in crate::text_faces::take_completed() {
+            if id == 0 {
+                continue;
+            }
+            let err = match &r {
+                Ok(()) => String::new(),
+                Err(e) => e.clone(),
+            };
+            let js = format!(
+                "__resolveFontFace({id}, {}, {}, {})",
+                r.is_ok(),
+                serde_json::to_string(&family).unwrap_or_default(),
+                serde_json::to_string(&err).unwrap_or_default()
+            );
+            self.eval(&js).ok();
+        }
+    }
+
+    /// 是否有网络请求在飞或刚回来（宿主据此决定要不要继续出帧等回调）。
+    /// 下载中的字体也算（下完要有一帧去回调、重排）
     pub fn has_pending_network(&self) -> bool {
-        crate::net::has_pending()
+        crate::net::has_pending(self.bridge.net_owner()) || crate::text_faces::has_pending() || self.has_pending_io()
+    }
+
+    /// 逻辑层交给宿主、还没办完的活，宿主据此续帧：
+    /// - 桥上的事件（画布指令、宿主请求、定时器登记…）要等下一次 `update()` 才处理。
+    ///   帧中间跑的 JS（SelectorQuery 回调、tap 处理函数）发的指令都落在这里；
+    /// - `selectorQuery` / `scrollView` 在页面还没布局时被留到下一帧（见 `host::selector_query`）。
+    ///
+    /// 不续的话：`onReady` 里 `createSelectorQuery().exec()` 拿 canvas 节点，进页面那一帧
+    /// 还没布局、留到下一帧 —— 而宿主看「没动画」就停了 vsync，`type="2d"` 画布一直空白，
+    /// 依赖它的按钮也全成了空操作（`if (!this.canvas) return`）。
+    /// 别的种类每帧都被取空，不算进来：没人取的种类会让宿主一直空转
+    pub fn has_pending_host_work(&self) -> bool {
+        self.bridge.has_pending_events()
+            || self.host_requests.iter().any(|(k, _)| k == "selectorQuery" || k == "scrollView")
     }
 
     /// 取走「网络响应导致需要重绘」的标记
@@ -318,30 +380,49 @@ impl MiniApp {
                 BridgeEvent::ClearTimer(id) => {
                     self.timers.remove(&id);
                 }
-                BridgeEvent::ShowToast { title, icon, duration, .. } => {
+                BridgeEvent::ShowToast { title, icon, duration, mask, image } => {
                     println!("[Toast] {} ({})", title, icon);
-                    self.ui_events.push(UiEvent::ShowToast { title, icon, duration });
+                    self.ui_events.push(UiEvent::ShowToast { title, icon, duration, mask, image });
                 }
-                BridgeEvent::HideToast => {
-                    self.ui_events.push(UiEvent::HideToast);
+                BridgeEvent::HideToast { no_conflict } => {
+                    self.ui_events.push(UiEvent::HideToast { no_conflict });
                 }
-                BridgeEvent::ShowLoading { title, .. } => {
+                BridgeEvent::ShowLoading { title, mask } => {
                     println!("[Loading] {}", title);
-                    self.ui_events.push(UiEvent::ShowLoading { title });
+                    self.ui_events.push(UiEvent::ShowLoading { title, mask });
                 }
-                BridgeEvent::HideLoading => {
+                BridgeEvent::HideLoading { no_conflict } => {
                     println!("[HideLoading]");
-                    self.ui_events.push(UiEvent::HideLoading);
+                    self.ui_events.push(UiEvent::HideLoading { no_conflict });
                 }
-                BridgeEvent::ShowModal { title, content, show_cancel, cancel_text, confirm_text } => {
+                BridgeEvent::ShowModal { title, content, show_cancel, cancel_text, confirm_text, cancel_color, confirm_color } => {
                     println!("[Modal] {}: {}", title, content);
-                    self.ui_events.push(UiEvent::ShowModal { title, content, show_cancel, cancel_text, confirm_text });
+                    self.ui_events.push(UiEvent::ShowModal {
+                        title,
+                        content,
+                        show_cancel,
+                        cancel_text,
+                        confirm_text,
+                        cancel_color,
+                        confirm_color,
+                    });
                 }
                 BridgeEvent::StartPullDownRefresh => {
                     self.ui_events.push(UiEvent::StartPullDownRefresh);
                 }
                 BridgeEvent::StopPullDownRefresh => {
                     self.ui_events.push(UiEvent::StopPullDownRefresh);
+                }
+                // 不进 UiEvent：两个宿主都通过 `host::scroll_view::apply_page_scroll` 取，
+                // 免得各自的 UiEvent 分发再多一个分支
+                BridgeEvent::PageScrollTo(json) => {
+                    if let Ok(v) = serde_json::from_str(&json) {
+                        self.page_scroll_requests.push(v);
+                    }
+                }
+                BridgeEvent::HostRequest { kind, json } => {
+                    let v = serde_json::from_str(&json).unwrap_or(serde_json::Value::Null);
+                    self.host_requests.push((kind, v));
                 }
                 BridgeEvent::NavigateTo(url) => {
                     println!("[Navigate] {}", url);
@@ -360,6 +441,26 @@ impl MiniApp {
     pub fn drain_ui_events(&mut self) -> Vec<UiEvent> {
         std::mem::take(&mut self.ui_events)
     }
+
+    /// 把一条宿主请求放回队列（这一帧还答不了，比如页面还没布局）
+    pub fn push_host_request(&mut self, kind: &str, v: serde_json::Value) {
+        self.host_requests.push((kind.to_string(), v));
+    }
+
+    /// 取走某一种宿主请求（按发生顺序），别的种类留着给各自的处理方
+    pub fn take_host_requests(&mut self, kind: &str) -> Vec<serde_json::Value> {
+        if !self.host_requests.iter().any(|(k, _)| k == kind) {
+            return Vec::new();
+        }
+        let (mine, rest): (Vec<_>, Vec<_>) = std::mem::take(&mut self.host_requests).into_iter().partition(|(k, _)| k == kind);
+        self.host_requests = rest;
+        mine.into_iter().map(|(_, v)| v).collect()
+    }
+
+    /// 取走 `wx.pageScrollTo` 的请求（`{scrollTop, selector, offsetTop, duration}`）
+    pub fn take_page_scroll_requests(&mut self) -> Vec<serde_json::Value> {
+        std::mem::take(&mut self.page_scroll_requests)
+    }
     
     
     
@@ -373,7 +474,40 @@ impl MiniApp {
     pub fn height(&self) -> u32 {
         self.height
     }
-    
+
+    /// 宿主改了尺寸（`MiniEngine::resize`）。只是记账：逻辑层看到的尺寸走 `__hostSystemInfo`
+    pub fn set_size(&mut self, width: u32, height: u32) {
+        self.width = width;
+        self.height = height;
+    }
+
+    /// 取走逻辑层交给宿主外壳的事件（导航栏、hostCall；JSON 串，按发生顺序）
+    pub fn take_host_events(&self) -> Vec<String> {
+        self.bridge.take_host_events()
+    }
+
+    /// 把宿主实现的 API 装进 `wx`（`app.js` 执行之前调）
+    pub fn install_host_apis(&self, names: &[String]) {
+        if names.is_empty() {
+            return;
+        }
+        let list = serde_json::to_string(names).unwrap_or_else(|_| "[]".into());
+        if let Err(e) = self.eval(&format!("__installHostApis({list})")) {
+            eprintln!("⚠️  安装宿主 API 失败: {e}");
+        }
+    }
+
+    /// 宿主回 hostCall 的结果。`result_json` 是交给回调的 res（对象），解析不了的原样包成 `{data}`。
+    /// 返回 false 表示 id 不认识（已经回过、或页面早就换了）。
+    pub fn resolve_host_call(&self, id: u32, ok: bool, result_json: &str) -> bool {
+        let code = format!(
+            "__resolveHostCall({id}, {ok}, {})",
+            serde_json::Value::String(result_json.to_string())
+        );
+        let r = self.eval(&code);
+        self.pump_jobs();
+        matches!(r.as_deref(), Ok("true"))
+    }
     
     /// 执行 JS 代码
     pub fn eval(&self, code: &str) -> Result<String, String> {

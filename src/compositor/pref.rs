@@ -128,6 +128,10 @@ pub struct HostEnv {
     pub gpu_log: bool,
     /// `MINI_FPS`：每秒一行帧统计（只看是否设置，与桌面窗体同一语义）
     pub fps: bool,
+    /// `MINI_NO_DAMAGE`：SDK 关掉局部重画、一律整帧（与桌面窗体同一语义，逐像素对照用）
+    pub no_damage: bool,
+    /// `MINI_DAMAGE_LOG`：SDK 每一帧重画了多少（局部矩形 / 补条带 / 整帧原因）打一行
+    pub damage_log: bool,
 }
 
 impl HostEnv {
@@ -159,6 +163,8 @@ impl HostEnv {
             gpu_verify: get("MINI_GPU_VERIFY").is_some(),
             gpu_log: get("MINI_GPU_LOG").is_some(),
             fps: get("MINI_FPS").is_some(),
+            no_damage: get("MINI_NO_DAMAGE").is_some(),
+            damage_log: get("MINI_DAMAGE_LOG").is_some(),
         }
     }
 

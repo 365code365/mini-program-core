@@ -8,6 +8,8 @@
 #      生成绑定，且需裁剪桌面端依赖(winit/softbuffer/rodio/openh264/arboard)。
 set -euo pipefail
 cd "$(dirname "$0")/.."
+# 发出去的库要 thin LTO（Cargo.toml 的 release 为了开发构建快关掉了它，见那里的注释）
+export CARGO_PROFILE_RELEASE_LTO=thin CARGO_PROFILE_RELEASE_INCREMENTAL=false
 
 LIB="libmini_render.a"
 

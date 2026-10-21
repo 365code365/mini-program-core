@@ -524,7 +524,8 @@ fn copy_external_rust_png(dir: &Path, route: &str, output: &Path) -> Result<(), 
 
 fn render_rust_page(app: &AppSource, page: &PageSource, output: &Path) -> Result<(), String> {
     let source_path = Path::new(&app.root).join(format!("{}.wxml", page.route));
-    let wxml = fs::read_to_string(&source_path)
+    // 与页面加载同一个函数：import/include 在读文件时解析（否则 template 页在这里画成空白）
+    let wxml = mini_render::parser::wxml_file::read_expanded(Path::new(&app.root), &source_path)
         .map_err(|error| format!("读取 {} 失败: {error}", source_path.display()))?;
     let asset_root = Path::new(&app.root).join("assets");
     let asset_prefix = format!("{}/", path_text(&asset_root));

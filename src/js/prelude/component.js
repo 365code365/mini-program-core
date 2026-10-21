@@ -17,6 +17,18 @@
                 };
                 function mergeOne(src) {
                     if (!src) { return; }
+                    // 内置 behavior（官方 custom-component/behaviors.html「内置 behaviors」）：
+                    // wx://form-field 让组件当表单控件（有 name / value 两个属性，form 提交时收它的 value），
+                    // wx://form-field-group 让 form 收组件内部的控件，wx://form-field-button 让组件里的
+                    // form-type 按钮能提交 / 重置外层 form。后两个只是标记，交给渲染层（$copt）
+                    if (typeof src === 'string') {
+                        (result.builtin = result.builtin || []).push(src);
+                        if (src === 'wx://form-field') {
+                            if (!result.properties.name) { result.properties.name = { type: String, value: '' }; }
+                            if (!result.properties.value) { result.properties.value = { type: null, value: null }; }
+                        }
+                        return;
+                    }
                     if (src.behaviors) {
                         for (var i = 0; i < src.behaviors.length; i++) { mergeOne(src.behaviors[i]); }
                     }
@@ -151,23 +163,29 @@
                 return null;
             }
             
-            // 创建组件实例（供渲染层调用）
-            function __createComponentInstance(path, initialProps) {
+            // 创建组件实例（供渲染层调用）。
+            //
+            // `meta` 是这处使用的身份（实例键、标签、归属、宿主 id/class/dataset、宿主上的事件绑定），
+            // 由 `__reconcileComponents` 给出；必须在跑生命周期**之前**挂上 —— uni-app 在 attached
+            // 里就 `triggerEvent('__l')` 找父级建立 Vue 父子关系，那时还不知道发给谁就丢了。
+            //
+            // 顺序按 glass-easel（component.ts）：data 先是各属性的默认值 → created →
+            // 写入使用方传来的属性（触发 observer / observers）→ attached → ready。
+            // 所以 created 里看到的是默认值，与微信一致。
+            function __createComponentInstance(path, initialProps, meta) {
                 var entry = __componentDefs[path];
                 if (!entry) { return null; }
                 var merged = entry.merged;
                 var id = '__ci_' + (++__componentSeq);
                 
+                // 每个实例一份**深拷贝**：同一个组件现在会建出很多实例，共用定义里的
+                // 数组/对象的话，一个实例 push 进去，其余实例的列表跟着变
                 var data = {};
                 for (var pk in merged.properties) {
-                    if (merged.properties.hasOwnProperty(pk)) { data[pk] = __propDefault(merged.properties[pk]); }
+                    if (merged.properties.hasOwnProperty(pk)) { data[pk] = __propSpec(merged.properties[pk]).dflt(); }
                 }
                 for (var dk in merged.data) {
-                    if (merged.data.hasOwnProperty(dk)) { data[dk] = merged.data[dk]; }
-                }
-                initialProps = initialProps || {};
-                for (var ik in initialProps) {
-                    if (initialProps.hasOwnProperty(ik)) { data[ik] = initialProps[ik]; }
+                    if (merged.data.hasOwnProperty(dk)) { data[dk] = __compDeepCopy(merged.data[dk]); }
                 }
                 
                 var instance = {
@@ -175,61 +193,99 @@
                     id: id,
                     data: data,
                     properties: data,
+                    dataset: {},
                     __isComponent: true,
                     __observers: merged.observers,
+                    __rawProps: {},
                     setData: function(newData, callback) {
-                        __applySetData(this, newData, callback);
-                        __runObservers(this, newData);
+                        __compSetData(this, newData, callback);
                     },
                     triggerEvent: function(name, detail, options) {
                         __triggerComponentEvent(this, name, detail, options);
                     },
-                    selectComponent: function() { return null; },
-                    selectAllComponents: function() { return []; }
+                    selectComponent: function(sel) { return __selectComponentsFrom(this.__tree, this.__key, sel, false); },
+                    selectAllComponents: function(sel) { return __selectComponentsFrom(this.__tree, this.__key, sel, true); },
+                    selectOwnerComponent: function() { return __ownerOf(this); },
+                    createSelectorQuery: function() { return wx.createSelectorQuery().in(this); },
+                    createIntersectionObserver: function(opt) { return wx.createIntersectionObserver(this, opt); }
                 };
+                if (meta) { __compApplyMeta(instance, meta); }
                 
                 for (var mk in merged.methods) {
                     if (merged.methods.hasOwnProperty(mk)) { instance[mk] = merged.methods[mk].bind(instance); }
                 }
                 
                 __componentInstances[id] = instance;
+                if (meta && meta.tree) { meta.tree.map[meta.key] = instance; }
                 
                 var lc = merged.lifetimes;
                 if (typeof lc.created === 'function') { try { lc.created.call(instance); } catch (e) { __native_print('[Component.created] ' + e.message); } }
+                __compApplyProps(instance, initialProps || {});
                 if (typeof lc.attached === 'function') { try { lc.attached.call(instance); } catch (e) { __native_print('[Component.attached] ' + e.message); } }
                 if (typeof lc.ready === 'function') { try { lc.ready.call(instance); } catch (e) { __native_print('[Component.ready] ' + e.message); } }
                 
                 return instance;
             }
             
-            // 属性变化触发 observers
-            function __runObservers(instance, changed) {
-                if (!instance.__observers || !changed) { return; }
-                for (var key in changed) {
-                    if (!changed.hasOwnProperty(key)) { continue; }
-                    var field = key.split('.')[0].split('[')[0];
-                    var obs = instance.__observers[key] || instance.__observers[field];
-                    if (typeof obs === 'function') {
-                        try { obs.call(instance, changed[key]); } catch (e) { __native_print('[observer] ' + e.message); }
+            // 组件 triggerEvent -> **使用方**模板里的绑定（组件标签上的 `bind:x` / `catch:x`，冒泡时还有它的祖先）。
+            //
+            // 派发给使用方（页面，或外层组件实例 —— 组件写在另一个组件模板里时），且只找它：
+            // 自定义事件不像触摸事件那样「找不到就随便找个同名方法」，那会打到发事件的组件自己身上。
+            // `detail` 原样传引用（不经 JSON）：uni-app 的 `__l` 靠处理函数往 detail 上回写父级 vm。
+            //
+            // 选项（官方 custom-component/events.html 与 glass-easel）：
+            // - `bubbles`：沿使用方模板里的祖先冒泡（`catch:x` 截断）；
+            // - `composed`：可以穿过组件边界 —— 使用方是组件时，接着从**使用方的宿主**往外，派给使用方的使用方；
+            // - `capturePhase`：先走一遍捕获（`capture-bind:x` / `capture-catch:x`，由外向内）。
+            // 每一层的 `target` 都是该层看到的宿主节点（跨边界时重定向），`currentTarget` 是绑定所在节点。
+            // 取舍：穿过边界时走的是「使用方宿主在它的使用方模板里的祖先」，不进入外层组件模板的内部节点
+            // （slot 内容在外层组件内部的那段 composed 路径没有）。
+            function __triggerComponentEvent(instance, name, detail, options) {
+                options = options || {};
+                var path = [];   // 由内向外：{ frame, owner, target }
+                var level = instance, guard = 0;
+                while (level && guard++ < 32) {
+                    var chain = level.__chain;
+                    if (!chain || !chain.length) {
+                        // 没有冒泡路径（老接口、单测直接建的实例）：只有宿主上的绑定
+                        var hs = (level.__events && level.__events[name]) || [];
+                        var legacy = __componentEventHandlers[level.id + ':' + name];
+                        if (!hs.length && legacy) hs = [legacy];
+                        chain = [{ id: level.__hostId || '', dataset: level.dataset || {},
+                                   ev: hs.length ? (function() { var e = {}; e[name] = hs.map(function(h) { return [h, 'b']; }); return e; })() : {} }];
+                    }
+                    var owner = __ownerOf(level);
+                    var tgt = { id: chain[0].id || '', dataset: __coerceDataset(chain[0].dataset || {}) };
+                    var frames = options.bubbles ? chain : chain.slice(0, 1);
+                    for (var i = 0; i < frames.length; i++) path.push({ frame: frames[i], owner: owner, target: tgt });
+                    if (!options.composed || !owner || !owner.__isComponent) break;
+                    level = owner;
+                }
+                var stopped = false, mutDone = false;
+                function fire(p, flags) {
+                    var list = (p.frame.ev && p.frame.ev[name]) || [];
+                    var cur = { id: p.frame.id || '', dataset: __coerceDataset(p.frame.dataset || {}) };
+                    for (var j = 0; j < list.length; j++) {
+                        var h = list[j][0], fl = list[j][1];
+                        if (flags.indexOf(fl) < 0) continue;
+                        if (fl === 'm') { if (mutDone) continue; mutDone = true; }
+                        if (fl === 'c' || fl === 'X') stopped = true;
+                        var fn = p.owner && p.owner[h];
+                        if (typeof fn !== 'function') {
+                            __native_print('[triggerEvent] ' + name + ': 使用方没有方法 ' + h);
+                            continue;
+                        }
+                        var event = { type: name, timeStamp: Date.now(), detail: detail === undefined ? {} : detail,
+                                      target: p.target, currentTarget: cur, mark: {}, touches: [], changedTouches: [] };
+                        try { fn.call(p.owner, event); }
+                        catch (e) { __native_print('[triggerEvent] ' + h + ': ' + e.message); }
                     }
                 }
-            }
-            
-            // 组件 triggerEvent -> 宿主页面绑定的处理器
-            function __triggerComponentEvent(instance, name, detail, options) {
-                var key = instance.id + ':' + name;
-                var handlerName = __componentEventHandlers[key];
-                if (handlerName && __currentPage && typeof __currentPage[handlerName] === 'function') {
-                    var event = {
-                        type: name,
-                        timeStamp: Date.now(),
-                        detail: detail || {},
-                        target: { id: instance.id, dataset: {} },
-                        currentTarget: { id: instance.id, dataset: {} }
-                    };
-                    try { __currentPage[handlerName](event); }
-                    catch (e) { __native_print('[triggerEvent] ' + e.message); }
+                if (options.capturePhase) {
+                    for (var c = path.length - 1; c >= 0 && !stopped; c--) fire(path[c], 'CX');
                 }
+                // 宿主自己是事件目标：没走捕获阶段时，它身上的 capture-bind 也在这里触发（与从前一致）
+                for (var b = 0; b < path.length && !stopped; b++) fire(path[b], b === 0 && !options.capturePhase ? 'CXbcm' : 'bcm');
             }
             
             // 渲染层登记组件事件绑定
@@ -238,11 +294,14 @@
             }
             
             // ==================== 组件生命周期补全 ====================
-            // 页面 show/hide/resize 联动所有组件的 pageLifetimes
+            // 页面 show/hide/resize 联动全部组件实例的 pageLifetimes。
+            // 挂在**别的页面**实例树上的跳过：出栈页面留下的实例（SDK 返回时不走 detached）
+            // 不该再收到当前页的 show。不在任何树上的（直接 `__createComponentInstance` 建的）照发
             function __dispatchAllComponentsPageLifetime(name, arg) {
                 for (var id in __componentInstances) {
                     if (!__componentInstances.hasOwnProperty(id)) { continue; }
                     var inst = __componentInstances[id];
+                    if (inst.__tree && inst.__tree.page && inst.__tree.page !== __currentPage) { continue; }
                     var entry = __componentDefs[inst.is];
                     if (!entry) { continue; }
                     var pl = entry.merged.pageLifetimes;
@@ -263,6 +322,7 @@
                     catch (e) { __native_print('[Component.detached] ' + e.message); }
                 }
                 delete __componentInstances[id];
+                if (inst.__tree && inst.__tree.map[inst.__key] === inst) { delete inst.__tree.map[inst.__key]; }
             }
             
             // 组件在节点树中被移动：触发 moved 生命周期
@@ -276,11 +336,24 @@
                 }
             }
             
-            // 页面卸载时回收其全部组件实例
+            // 页面卸载时回收**这一页**的全部组件实例（内层先于外层）。
+            // 只认当前页实例树上的（和不在任何树上的老式实例）：从前是把全局表里的实例一锅端，
+            // 栈里下面那页的组件也跟着 detached 了 —— 返回时它们的 data 已经没了
             function __detachAllComponents() {
+                var st = __compState();
                 var ids = [];
+                for (var o = st.order.length - 1; o >= 0; o--) {
+                    var x = st.map[st.order[o]];
+                    if (x) { ids.push(x.id); }
+                }
                 for (var id in __componentInstances) {
-                    if (__componentInstances.hasOwnProperty(id)) { ids.push(id); }
+                    if (!__componentInstances.hasOwnProperty(id) || ids.indexOf(id) >= 0) { continue; }
+                    var t = __componentInstances[id].__tree;
+                    if (!t || t === st) { ids.push(id); }
                 }
                 for (var i = 0; i < ids.length; i++) { __detachComponentInstance(ids[i]); }
+                var st = __compState();
+                st.map = {};
+                st.order = [];
+                __pageComponents = {};
             }

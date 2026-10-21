@@ -1,0 +1,31 @@
+<view class="card">
+  <text class="title">当前页</text>
+  <view class="kv"><text class="kv-k">route</text><text class="kv-v">{{route}}</text></view>
+  <view class="kv"><text class="kv-k">onLoad(query)</text><text class="kv-v">{{query}}</text></view>
+  <view class="kv"><text class="kv-k">页面栈深度</text><text class="kv-v">{{depth}}</text></view>
+  <view class="stack">
+    <text class="stack-item" wx:for="{{stack}}" wx:key="index">{{index + 1}}. {{item}}</text>
+  </view>
+</view>
+
+<view class="card">
+  <text class="title">路由 API</text>
+  <view class="btns">
+    <view class="btn-s" bindtap="navTo">navigateTo 详情</view>
+    <view class="btn-s" bindtap="navSelf">navigateTo 自己（栈 +1）</view>
+    <view class="btn-s" bindtap="redirect">redirectTo 详情（替换）</view>
+    <view class="btn-o" bindtap="back">navigateBack</view>
+    <view class="btn-o" bindtap="back2">navigateBack delta=2</view>
+    <view class="btn-o" bindtap="switchTab">switchTab 到「接口」</view>
+    <view class="btn-o" bindtap="relaunch">reLaunch 首页</view>
+  </view>
+  <text class="hint">也可以用宿主的返回键 / 导航栏返回箭头；页面栈只剩一页时返回交给宿主（关闭小程序）</text>
+</view>
+
+<view class="card">
+  <text class="title">生命周期流水（存在 globalData 里，返回后也看得到）</text>
+  <view class="log">
+    <text class="log-line" wx:for="{{log}}">{{item}}</text>
+  </view>
+  <view class="btns"><view class="btn-o" bindtap="clearLog">清空</view></view>
+</view>

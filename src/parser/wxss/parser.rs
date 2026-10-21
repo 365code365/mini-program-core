@@ -3,6 +3,9 @@
 //! 从 1453 行的 wxss.rs 拆出来（**纯搬迁**）。选择器怎么解析见 `selector.rs`。
 use super::*;
 
+/// `@import` / `@keyframes` / `@media` / `@font-face` / 跳过未知 at-rule
+mod at_rules;
+
 pub struct WxssParser {
     input: Vec<char>,
     pos: usize,
@@ -24,159 +27,42 @@ impl WxssParser {
     
     pub fn parse(&mut self) -> Result<StyleSheet, String> {
         let mut stylesheet = StyleSheet::new();
-        
+        self.parse_into(&mut stylesheet)?;
+        // 解析 var() 自定义属性引用（`@media` 块里的规则已经并进来了，一起解析）
+        stylesheet.resolve_variables();
+        Ok(stylesheet)
+    }
+
+    /// 把规则依书写顺序追加进 `stylesheet`。`@media` 成立时块里的规则就地并进来
+    /// （书写顺序决定层叠，不能挪到最后）
+    pub(super) fn parse_into(&mut self, stylesheet: &mut StyleSheet) -> Result<(), String> {
         while self.pos < self.input.len() {
             self.skip_whitespace_and_comments();
-            
             if self.pos >= self.input.len() {
                 break;
             }
-            
             // at-rule
             if self.current_char() == '@' {
                 if let Some(import) = self.try_parse_import() {
                     stylesheet.imports.push(import);
                 } else if let Some(rule) = self.try_parse_keyframes() {
                     stylesheet.keyframes.push(rule);
+                } else if self.try_parse_media(stylesheet)? {
+                    // 已并进 stylesheet（条件不成立时整块丢掉）
+                } else if let Some(face) = self.try_parse_font_face() {
+                    stylesheet.font_faces.push(face);
                 } else {
                     self.skip_at_rule();
                 }
                 continue;
             }
-            
             if let Some(rule) = self.parse_rule()? {
                 stylesheet.rules.push(rule);
             }
         }
-        
-        // 解析 var() 自定义属性引用
-        stylesheet.resolve_variables();
-        
-        Ok(stylesheet)
+        Ok(())
     }
     
-    /// 尝试解析 @import "path"; / @import url("path");
-    fn try_parse_import(&mut self) -> Option<String> {
-        let start = self.pos;
-        // 读取 at-rule 名
-        if !self.starts_with("@import") {
-            return None;
-        }
-        self.pos += "@import".len();
-        self.skip_whitespace();
-        
-        // 可选 url(
-        let mut used_url = false;
-        if self.starts_with("url(") {
-            self.pos += 4;
-            used_url = true;
-            self.skip_whitespace();
-        }
-        
-        let quote = self.current_char();
-        if quote != '"' && quote != '\'' {
-            // 非预期格式，回退
-            self.pos = start;
-            return None;
-        }
-        self.advance();
-        let mut path = String::new();
-        while self.pos < self.input.len() && self.current_char() != quote {
-            path.push(self.current_char());
-            self.advance();
-        }
-        if self.pos < self.input.len() { self.advance(); } // 关闭引号
-        
-        if used_url {
-            self.skip_whitespace();
-            if self.current_char() == ')' { self.advance(); }
-        }
-        // 跳到分号
-        while self.pos < self.input.len() && self.current_char() != ';' && self.current_char() != '\n' {
-            self.advance();
-        }
-        if self.current_char() == ';' { self.advance(); }
-        
-        Some(path)
-    }
-    
-    /// 尝试解析 `@keyframes name { 0% {...} 50%,80% {...} to {...} }`
-    /// （同时兼容 `@-webkit-keyframes`）。失败时回退到 `skip_at_rule`。
-    fn try_parse_keyframes(&mut self) -> Option<KeyframesRule> {
-        let start = self.pos;
-        let prefixes = ["@keyframes", "@-webkit-keyframes", "@-moz-keyframes"];
-        let matched = prefixes.iter().find(|p| self.starts_with(p))?;
-        self.pos += matched.len();
-        self.skip_whitespace_and_comments();
-
-        // 动画名
-        let mut name = String::new();
-        while self.pos < self.input.len() {
-            let c = self.current_char();
-            if c.is_whitespace() || c == '{' {
-                break;
-            }
-            name.push(c);
-            self.advance();
-        }
-        self.skip_whitespace_and_comments();
-        if name.is_empty() || self.current_char() != '{' {
-            self.pos = start;
-            return None;
-        }
-        self.advance(); // 吃掉 '{'
-
-        let mut steps: Vec<KeyframeStep> = Vec::new();
-        loop {
-            self.skip_whitespace_and_comments();
-            if self.pos >= self.input.len() {
-                break;
-            }
-            if self.current_char() == '}' {
-                self.advance();
-                break;
-            }
-            // 关键帧选择器（可能是 `0%, 100%` 这种多值）
-            let selector = self.parse_selector();
-            if self.current_char() != '{' {
-                // 结构异常：整条规则放弃，交给通用跳过逻辑
-                self.pos = start;
-                return None;
-            }
-            self.advance();
-            let properties = self.parse_properties().ok()?;
-            self.skip_whitespace_and_comments();
-            if self.current_char() == '}' {
-                self.advance();
-            }
-
-            for part in selector.split(',') {
-                if let Some(offset) = parse_keyframe_offset(part.trim()) {
-                    steps.push(KeyframeStep { offset, properties: properties.clone() });
-                }
-            }
-        }
-
-        steps.sort_by(|a, b| a.offset.partial_cmp(&b.offset).unwrap_or(std::cmp::Ordering::Equal));
-        Some(KeyframesRule { name, steps })
-    }
-
-    fn skip_at_rule(&mut self) {
-        while self.pos < self.input.len() && self.current_char() != ';' && self.current_char() != '{' {
-            self.advance();
-        }
-        if self.current_char() == '{' {
-            let mut depth = 1;
-            self.advance();
-            while self.pos < self.input.len() && depth > 0 {
-                if self.current_char() == '{' { depth += 1; }
-                if self.current_char() == '}' { depth -= 1; }
-                self.advance();
-            }
-        } else {
-            self.advance();
-        }
-    }
     
     fn parse_rule(&mut self) -> Result<Option<StyleRule>, String> {
         self.skip_whitespace_and_comments();
@@ -312,6 +198,13 @@ impl WxssParser {
             }
             return StyleValue::String(value.to_string());
         }
+
+        // 单独的 `env(safe-area-inset-*)`：宿主给了非零安全区才折成长度（见 calc_env.rs）
+        if value.starts_with("env(") || value.starts_with("constant(") {
+            if let Some(v) = Self::eval_env(value) {
+                return v;
+            }
+        }
         
         // 颜色值
         if value.starts_with('#') {
@@ -434,67 +327,9 @@ impl WxssParser {
         None
     }
     
-    /// 静态求值 calc()：仅支持同单位（或无单位）的加减法。
-    /// 混合单位（如 100% - 20px）无法静态解析，返回 None（由调用方回退为字符串）。
-    fn eval_calc(value: &str) -> Option<StyleValue> {
-        let inner = value.trim().strip_prefix("calc(")?.strip_suffix(')')?.trim();
-        let tokens: Vec<&str> = inner.split_whitespace().collect();
-        if tokens.is_empty() {
-            return None;
-        }
-        
-        let mut acc: Option<f32> = None;
-        let mut unit: Option<LengthUnit> = None;
-        let mut op = '+';
-        
-        for (i, tok) in tokens.iter().enumerate() {
-            if i % 2 == 1 {
-                // 运算符位置：仅支持 + / -
-                if *tok == "+" || *tok == "-" {
-                    op = tok.chars().next().unwrap();
-                } else {
-                    return None; // 乘除或混合暂不支持
-                }
-                continue;
-            }
-            // 操作数
-            let (n, u) = if let Some((n, u)) = Self::parse_length(tok) {
-                (n, Some(u))
-            } else if let Ok(n) = (*tok).parse::<f32>() {
-                (n, None)
-            } else if tok.starts_with("env(") {
-                // `env(safe-area-inset-*)` 记 0：渲染视口是 375×667 的无刘海机型，
-                // 四边都没有安全区内缩（对比用的 Chrome 视口同样返回 0）。
-                //
-                // 从前整条 calc 因为这个 token 解析失败而被**丢弃**，属性等于没写 ——
-                // `height: calc(164rpx + env(safe-area-inset-bottom))` 这种写法
-                // （uni-app 产物里自定义 tabBar 的标准高度）在浏览器里算出 82px，
-                // 在我们这里退成 auto，高度全靠内容撑。
-                (0.0, None)
-            } else {
-                return None;
-            };
-            if let Some(u) = u {
-                match unit {
-                    None => unit = Some(u),
-                    Some(existing) if existing != u => return None, // 单位不一致
-                    _ => {}
-                }
-            }
-            acc = Some(match acc {
-                None => n,
-                Some(a) => if op == '+' { a + n } else { a - n },
-            });
-        }
-        
-        let a = acc?;
-        Some(match unit {
-            Some(u) => StyleValue::Length(a, u),
-            None => StyleValue::Number(a),
-        })
-    }
+    // `eval_calc`（calc 静态求值）与安全区 `env()` 在 calc_env.rs
     
-    fn parse_length(value: &str) -> Option<(f32, LengthUnit)> {
+    pub(super) fn parse_length(value: &str) -> Option<(f32, LengthUnit)> {
         let value = value.trim();
         
         let units = [

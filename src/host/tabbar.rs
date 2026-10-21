@@ -45,7 +45,7 @@ pub fn parse_color(s: &str) -> Option<Color> {
     }
 }
 
-/// 渲染原生 TabBar
+/// 渲染原生 TabBar（375 宽的桌面窗体用；其它宽度用 [`render_native_tabbar_w`]）
 pub fn render_native_tabbar(
     canvas: &mut Canvas,
     text_renderer: &TextRenderer,
@@ -53,9 +53,24 @@ pub fn render_native_tabbar(
     current_path: &str,
     scale_factor: f64,
 ) {
+    render_native_tabbar_w(canvas, text_renderer, tab_bar, current_path, scale_factor, LOGICAL_WIDTH as f32)
+}
+
+/// 渲染原生 TabBar，按给定逻辑宽度平均分栏（移动端 SDK 的视口宽不是 375）
+pub fn render_native_tabbar_w(
+    canvas: &mut Canvas,
+    text_renderer: &TextRenderer,
+    tab_bar: &TabBarConfig,
+    current_path: &str,
+    scale_factor: f64,
+    logical_width: f32,
+) {
     let sf = scale_factor as f32;
-    let width = LOGICAL_WIDTH as f32 * sf;
+    let width = logical_width * sf;
     let _height = tabbar_height() as f32 * sf;
+    // 运行时 API 改过的文字 / 颜色（setTabBarItem / setTabBarStyle，见 tabbar_api）
+    let effective = super::tabbar_api::effective(tab_bar);
+    let tab_bar = &effective;
     
     // 背景色
     let bg_color = parse_color(&tab_bar.background_color).unwrap_or(Color::WHITE);
@@ -94,7 +109,34 @@ pub fn render_native_tabbar(
         let label_width = text_renderer.measure_text(&item.text, label_size);
         let label_x = x + (item_width - label_width) / 2.0;
         text_renderer.draw_text(canvas, &item.text, label_x, label_y + label_size, label_size, &label_paint);
+
+        // 角标 / 红点（setTabBarBadge / showTabBarRedDot）：贴在图标右上角
+        if let Some(mark) = super::tabbar_api::mark(i) {
+            let icon_right = x + (item_width + icon_size) / 2.0;
+            draw_mark(canvas, text_renderer, &mark, icon_right, icon_y, sf);
+        }
     }
+}
+
+/// 微信的角标：红底白字的胶囊，最小是正圆（18px 高）；红点是 8px 的实心圆
+fn draw_mark(canvas: &mut Canvas, tr: &TextRenderer, mark: &super::tabbar_api::Mark, icon_right: f32, icon_top: f32, sf: f32) {
+    let red = Paint::new().with_color(Color::from_hex(0xFA5151)).with_style(PaintStyle::Fill).with_anti_alias(true);
+    if mark.dot {
+        let r = 4.0 * sf;
+        canvas.draw_circle(icon_right, icon_top + r, r, &red);
+        return;
+    }
+    let text = mark.badge.as_deref().unwrap_or("");
+    let h = 18.0 * sf;
+    let size = 12.0 * sf;
+    let tw = tr.measure_text(text, size);
+    let w = (tw + 10.0 * sf).max(h);
+    let (left, top) = (icon_right - w / 2.0 + 4.0 * sf, icon_top - 4.0 * sf);
+    let mut path = crate::Path::new();
+    path.add_round_rect(left, top, w, h, h / 2.0);
+    canvas.draw_path(&path, &red);
+    let white = Paint::new().with_color(Color::WHITE).with_style(PaintStyle::Fill);
+    tr.draw_text(canvas, text, left + (w - tw) / 2.0, top + h / 2.0 + size * 0.36, size, &white);
 }
 
 /// 处理原生 TabBar 点击，返回目标路径（如果需要切换）
@@ -103,10 +145,20 @@ pub fn handle_native_tabbar_click(
     x: f32,
     current_path: &str,
 ) -> Option<String> {
+    handle_native_tabbar_click_w(tab_bar, x, current_path, LOGICAL_WIDTH as f32)
+}
+
+/// 同上，按给定逻辑宽度分栏
+pub fn handle_native_tabbar_click_w(
+    tab_bar: &TabBarConfig,
+    x: f32,
+    current_path: &str,
+    logical_width: f32,
+) -> Option<String> {
     let item_count = tab_bar.list.len();
     if item_count == 0 { return None; }
     
-    let item_width = LOGICAL_WIDTH as f32 / item_count as f32;
+    let item_width = logical_width / item_count as f32;
     let clicked_index = (x / item_width) as usize;
     
     if clicked_index < item_count {
@@ -134,6 +186,18 @@ pub fn nav_at(
     native: Option<&TabBarConfig>,
     current_path: &str,
 ) -> Option<super::navigation::NavigationRequest> {
+    nav_at_w(x, y_in_bar, custom, native, current_path, LOGICAL_WIDTH as f32)
+}
+
+/// 同 [`nav_at`]，原生 tabBar 按给定逻辑宽度分栏
+pub fn nav_at_w(
+    x: f32,
+    y_in_bar: f32,
+    custom: Option<&crate::renderer::WxmlRenderer>,
+    native: Option<&TabBarConfig>,
+    current_path: &str,
+    logical_width: f32,
+) -> Option<super::navigation::NavigationRequest> {
     use super::navigation::NavigationRequest;
     // 自定义 tabBar：由组件自己的事件绑定决定去哪
     if let Some(renderer) = custom {
@@ -148,6 +212,6 @@ pub fn nav_at(
         return None;
     }
     // 原生 tabBar：按 list 平均分栏
-    let target = handle_native_tabbar_click(native?, x, current_path)?;
+    let target = handle_native_tabbar_click_w(native?, x, current_path, logical_width)?;
     Some(NavigationRequest::SwitchTab { url: target })
 }

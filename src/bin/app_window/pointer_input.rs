@@ -46,8 +46,9 @@ impl crate::MiniAppWindow {
             
             // picker 面板在最上层，先于弹窗/页面吃事件
             if self.handle_picker_sheet_press(x, y) { return; }
+            // 带蒙层的提示框浮在 Modal 之上，连弹窗按钮也挡住
+            if self.tip_blocks_input() { return; }
             if self.modal.as_ref().map(|m| m.visible).unwrap_or(false) { self.handle_modal_press(x, y); return; }
-            if self.loading.as_ref().map(|l| l.visible).unwrap_or(false) { return; }
             
             let has_tabbar = self.page_stack.last().map(|p| self.is_tabbar_page(&p.path)).unwrap_or(false);
             let tabbar_y = if has_tabbar { (LOGICAL_HEIGHT - tabbar_height()) as f32 } else { LOGICAL_HEIGHT as f32 };
@@ -125,16 +126,9 @@ impl crate::MiniAppWindow {
                     self.needs_redraw = true;
                     self.fixed_dirty = true; // 按压的可能是覆盖层里的元素
                 }
+                // slider 不在按下时抢走触摸：横向锁定才交给它（手势仲裁，与 SDK 同一份），
+                // 竖着划照样滚页面；点一下走 tap（跳到手指处）
                 match el.interaction_type {
-                    InteractionType::Slider if !el.disabled => {
-                        let ty = if el.is_fixed { y } else { actual_y };
-                        if let Some(r) = self.interaction.handle_click(x, ty) {
-                            handle_interaction_result(&r, self.window.as_ref(), self.renderer.as_ref(), &mut self.app, &mut self.clipboard, self.scroll.get_position(), self.scale_factor);
-                            self.needs_redraw = true;
-                            if let Some(w) = &self.window { w.request_redraw(); }
-                        }
-                        return;
-                    }
                     InteractionType::Button if !el.disabled => {
                         self.interaction.set_button_pressed(el.id.clone(), el.bounds);
                         self.needs_redraw = true;
@@ -179,9 +173,8 @@ impl crate::MiniAppWindow {
                 return;
             }
 
-            if let Some(r) = self.interaction.handle_mouse_release() {
-                handle_interaction_result(&r, self.window.as_ref(), self.renderer.as_ref(), &mut self.app, &mut self.clipboard, self.scroll.get_position(), self.scale_factor);
-            }
+            // 拖过 slider：松手发 change，并且这一下不再算 tap（见 host::slider_input::finish）
+            let slider_dragged = self.finish_slider_drag();
 
             // 拖动收尾（按压态 / scroll-view / 页面 / 侧滑）与 SDK 共用 host::input
             let anim = input::end_drags(
@@ -199,7 +192,7 @@ impl crate::MiniAppWindow {
             self.touch.finish();
             self.dispatch_touch_events(&outs, x, y);
             let stopped_fling = std::mem::take(&mut self.tap_stops_fling);
-            if outs.contains(&app_window::touch::TouchOut::Tap) && !stopped_fling {
+            if outs.contains(&app_window::touch::TouchOut::Tap) && !stopped_fling && !slider_dragged {
                 self.handle_click(x, y);
             }
             
@@ -211,6 +204,8 @@ impl crate::MiniAppWindow {
     /// 指针移动：文本选择/滑块等交给交互层，滚动交给手势仲裁，再派发 touchmove。
     pub(crate) fn on_pointer_move(&mut self, x: f32, y: f32) {
         self.mouse_pos = (x, y);
+        // picker 面板在最上层：弹着时拖动归滚轮，不漏给页面
+        if self.handle_picker_sheet_move(x, y) { return; }
         if self.interaction.update_press_position(x, y, y + self.scroll.get_position()) {
             self.needs_redraw = true;
         }
@@ -262,6 +257,10 @@ impl crate::MiniAppWindow {
         // 只推动了 scroll-view：不置整帧重绘，出帧闸门按位置变化只重画那一块
         if eff.needs_redraw && !eff.area_scrolled {
             self.needs_redraw = true;
+        }
+        // 拖着的 slider 换了值：发 changing
+        if eff.slider_changed {
+            self.dispatch_slider_changing();
         }
         if eff.page_scrolled {
             // 页面滚动**不置 needs_redraw**（见 GestureEffect 的注释），只记时刻：

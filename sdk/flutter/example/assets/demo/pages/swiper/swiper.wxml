@@ -1,0 +1,63 @@
+<view class="card">
+  <text class="title">自动播放 + 衔接 + 指示点</text>
+  <swiper class="banner" autoplay="{{true}}" circular="{{true}}" interval="3000" duration="500" indicator-dots="{{true}}"
+    indicator-color="rgba(255,255,255,0.5)" indicator-active-color="#ffffff" bindchange="onBanner">
+    <swiper-item wx:for="{{banners}}" wx:key="src">
+      <image class="banner-img" src="{{item.src}}" mode="aspectFill"/>
+      <view class="banner-cap"><text>{{item.title}}</text></view>
+    </swiper-item>
+  </swiper>
+  <text class="hint">bindchange：current={{bannerCurrent}}，source="{{bannerSource}}"（autoplay / touch）</text>
+</view>
+
+<view class="card">
+  <text class="title">受控 current + easing-function</text>
+  <swiper class="cards" current="{{current}}" duration="{{duration}}" easing-function="easeInOutCubic" bindchange="onCtrl" bindanimationfinish="onFinish">
+    <swiper-item wx:for="{{colors}}" wx:key="*this">
+      <view class="slide" style="background-color: {{item}};">第 {{index + 1}} 页</view>
+    </swiper-item>
+  </swiper>
+  <view class="btns">
+    <view class="btn-s" bindtap="prev">上一页</view>
+    <view class="btn-s" bindtap="next">下一页</view>
+    <view class="btn-o" bindtap="jump">跳到第 1 页</view>
+    <view class="btn-o" bindtap="toggleDuration">duration {{duration}}ms</view>
+  </view>
+  <text class="hint">页面改 current 时 change 的 source 是空串；animationfinish {{finishCount}} 次</text>
+</view>
+
+<view class="card">
+  <text class="title">previous-margin / next-margin（露出两侧）</text>
+  <swiper class="peek" previous-margin="60rpx" next-margin="60rpx" circular="{{true}}">
+    <swiper-item wx:for="{{products}}" wx:key="name">
+      <view class="peek-item">
+        <image class="peek-img" src="{{item.src}}" mode="aspectFill"/>
+        <text class="peek-name">{{item.name}}</text>
+      </view>
+    </swiper-item>
+  </swiper>
+</view>
+
+<view class="card">
+  <text class="title">display-multiple-items="3"</text>
+  <swiper class="multi" display-multiple-items="3">
+    <swiper-item wx:for="{{products}}" wx:key="name">
+      <view class="multi-item">
+        <image class="multi-img" src="{{item.src}}" mode="aspectFill"/>
+        <text class="multi-name">{{item.name}}</text>
+      </view>
+    </swiper-item>
+  </swiper>
+</view>
+
+<view class="card">
+  <text class="title">vertical（竖向公告栏）</text>
+  <view class="notice">
+    <text class="notice-tag">公告</text>
+    <swiper class="notice-swiper" vertical="{{true}}" autoplay="{{true}}" circular="{{true}}" interval="2000">
+      <swiper-item wx:for="{{notices}}" wx:key="*this">
+        <text class="notice-text">{{item}}</text>
+      </swiper-item>
+    </swiper>
+  </view>
+</view>

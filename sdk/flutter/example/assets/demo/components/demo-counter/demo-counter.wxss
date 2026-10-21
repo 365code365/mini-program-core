@@ -1,0 +1,10 @@
+/* 组件样式只作用在组件自己的模板上（样式隔离）：页面里同名的 .label 不受影响 */
+.counter { display: flex; flex-direction: row; justify-content: space-between; align-items: center; padding: 16rpx 0; }
+.label { font-size: 28rpx; color: #576b95; }
+.ops { display: flex; flex-direction: row; align-items: center; }
+.op { width: 60rpx; height: 60rpx; line-height: 60rpx; text-align: center; font-size: 36rpx; color: #ffffff; background-color: #07c160; border-radius: 30rpx; }
+.op:active { background-color: #06ad56; }
+.op-off { background-color: #c8c8cd; }
+.num { width: 90rpx; text-align: center; font-size: 32rpx; font-weight: bold; }
+.logs { display: flex; flex-direction: column; padding: 4rpx 0 12rpx 0; }
+.log { font-size: 22rpx; color: #999999; line-height: 1.6; }

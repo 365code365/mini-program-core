@@ -1,0 +1,5 @@
+<!-- 被 <include> 的片段：原样插进引用处（include 看得到页面 data，但看不到外层 wx:for 的变量） -->
+<view class="footer">
+  <view>mini_render · 原生渲染的小程序引擎</view>
+  <view class="footer-sub">这段页脚来自 templates/footer.wxml（include）</view>
+</view>

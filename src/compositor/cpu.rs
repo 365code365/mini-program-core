@@ -4,7 +4,9 @@
 //!
 //! 1. 页面 → tabBar → fixed 覆盖层（`present_to_buffer`）
 //! 2. 下拉刷新指示器：画在页面之上、Toast/Modal 之下
-//! 3. Toast / Loading / Modal
+//! 2½. 全屏视频（没有全屏时什么也不写，见 `components::video::fullscreen`），
+//!    然后图片预览与操作菜单（`ui_overlay::render_sheet_overlays`，同样没弹着就不写）
+//! 3. Modal（连同遮罩），其上是 Toast / Loading 提示框
 //! 4. picker 面板：在所有覆盖层之上
 //! 5. 左边缘侧滑返回：整帧右移、左边露出上一页。放在最后 —— 被推走的是「整个页面」，
 //!    页面自己的弹窗、Toast 跟着一起走才对，不然弹窗会诡异地钉在原处
@@ -49,13 +51,17 @@ pub fn compose(buf: &mut [u32], layers: &FrameLayers<'_>) {
             p.phase,
         );
     }
+    // 全屏视频（VideoContext.requestFullScreen）：盖住页面各层，Toast / Modal / picker 仍在它上面
+    crate::renderer::components::draw_fullscreen(buf, w, h, layers.scale);
     let o = &layers.overlays;
+    // 图片预览（wx.previewImage）与操作菜单（wx.showActionSheet）：没有弹着时什么也不写
+    ui_overlay::render_sheet_overlays(buf, w, h, layers.scale, o.text);
     ui_overlay::render_ui_overlay(
         buf,
         w,
         h,
         layers.scale,
-        o.last_frame,
+        o.anim_secs,
         o.toast,
         o.loading,
         o.modal,

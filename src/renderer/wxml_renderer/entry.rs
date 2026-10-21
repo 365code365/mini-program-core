@@ -46,8 +46,12 @@ impl WxmlRenderer {
         self.animations_active = false;
         self.anim_marks = 0;
         self.animated_bounds.clear();
+        self.begin_animated_image_pass(scroll_offset, viewport_height * self.scale_factor);
         self.event_bindings.clear();
         self.picker_regions.retain(|p| p.is_fixed);
+        self.retain_fixed_host_regions();
+        self.scroll_views.retain(|s| s.is_fixed);
+        self.swiper_regions.retain(|s| s.is_fixed);
         // 正常流的交互元素每帧重建（滚动控制器另存在 scroll_controllers 里，不受影响）。
         // 覆盖层的元素保留 —— 它可能整帧都不重绘，由 render_fixed_elements 单独重建。
         interaction.retain_only_fixed_elements();
@@ -72,6 +76,7 @@ impl WxmlRenderer {
             if damaged.is_some() {
                 canvas.restore();
             }
+            self.finish_animated_image_pass();
             // 用完即清：下一帧由宿主重新设置（不清的话整帧重绘会被上一帧的损伤区裁掉）
             self.damage_clip = None;
             self.cache = Some(cache);

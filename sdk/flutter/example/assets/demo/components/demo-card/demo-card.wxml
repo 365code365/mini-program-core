@@ -1,0 +1,9 @@
+<view class="dc" style="border-left-color: {{accent}};">
+  <view class="dc-head" bindtap="toggle">
+    <view class="dc-title"><slot name="header"></slot></view>
+    <text class="dc-tag" wx:if="{{tag}}" style="background-color: {{accent}};">{{tag}}</text>
+    <text class="dc-fold">{{folded ? '展开' : '收起'}}</text>
+  </view>
+  <view class="dc-body" wx:if="{{!folded}}"><slot></slot></view>
+  <view class="dc-foot"><slot name="footer"></slot></view>
+</view>

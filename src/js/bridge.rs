@@ -12,7 +12,15 @@ pub struct JsBridge {
     event_queue: Arc<Mutex<Vec<BridgeEvent>>>,
     /// 逻辑层调用过 `setData`（宿主每帧取走一次，决定要不要重绘）
     data_dirty: Arc<std::sync::atomic::AtomicBool>,
+    /// 交给宿主外壳的事件（导航栏、hostCall），JSON 串。**每个实例一份**，不是进程级：
+    /// 进程里同时有两个引擎（测试并行跑）时互不串台。没人取时按 [`HOST_EVENT_CAP`] 丢最旧的。
+    host_events: Arc<Mutex<std::collections::VecDeque<String>>>,
+    /// 网络请求的归属号：响应按它取回，不会被同进程里别的实例 `update()` 取走（见 `net.rs` 的 DONE）
+    net_owner: u64,
 }
+
+/// 宿主事件队列上限：桌面窗体不消费这些事件，不封顶就是一条慢慢涨的内存
+pub const HOST_EVENT_CAP: usize = 256;
 
 /// 桥接事件
 #[derive(Debug, Clone)]
@@ -20,22 +28,42 @@ pub enum BridgeEvent {
     ConsoleLog(String),
     ConsoleError(String),
     ConsoleWarn(String),
-    ShowToast { title: String, icon: String, duration: u32, mask: bool },
-    HideToast,
+    ShowToast { title: String, icon: String, duration: u32, mask: bool, image: String },
+    HideToast { no_conflict: bool },
     ShowLoading { title: String, mask: bool },
-    HideLoading,
-    ShowModal { title: String, content: String, show_cancel: bool, cancel_text: String, confirm_text: String },
+    HideLoading { no_conflict: bool },
+    ShowModal {
+        title: String,
+        content: String,
+        show_cancel: bool,
+        cancel_text: String,
+        confirm_text: String,
+        cancel_color: String,
+        confirm_color: String,
+    },
     NavigateTo(String),
     NavigateBack(u32),
     SetTimer { id: u32, delay: u32, repeat: bool },
     ClearTimer(u32),
     StartPullDownRefresh,
     StopPullDownRefresh,
+    /// `wx.pageScrollTo` 的请求（JSON：scrollTop / selector / offsetTop / duration）
+    PageScrollTo(String),
+    /// 要宿主（布局树 / 组件状态）来办的请求：`kind` 是请求种类（`video` / `selectorQuery` …），
+    /// `json` 是参数。宿主每帧按种类取走（`MiniApp::take_host_requests`），新 API 不必再加变体
+    HostRequest { kind: String, json: String },
     CanvasDraw { canvas_id: String, commands: String },
     StorageSet { key: String, value: String },
     StorageGet { key: String },
     StorageRemove { key: String },
     StorageClear,
+}
+
+impl Drop for JsBridge {
+    /// 实例没了：它没取的网络响应丢掉，迟到的也不再入队
+    fn drop(&mut self) {
+        crate::net::forget_owner(self.net_owner);
+    }
 }
 
 impl JsBridge {
@@ -45,7 +73,19 @@ impl JsBridge {
             storage: Arc::new(Mutex::new(HashMap::new())),
             event_queue: Arc::new(Mutex::new(Vec::new())),
             data_dirty: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            host_events: Arc::new(Mutex::new(std::collections::VecDeque::new())),
+            net_owner: crate::net::new_owner(),
         }
+    }
+
+    /// 本实例的网络归属号（`MiniApp::update` 按它取回自己的响应）
+    pub fn net_owner(&self) -> u64 {
+        self.net_owner
+    }
+
+    /// 取走逻辑层交给宿主外壳的事件（JSON 串，按发生顺序）
+    pub fn take_host_events(&self) -> Vec<String> {
+        self.host_events.lock().unwrap().drain(..).collect()
     }
 
     /// 取走「逻辑层改过数据」标记（读后清零）。宿主用它决定本帧是否重绘：
@@ -66,6 +106,8 @@ impl JsBridge {
         self.register_ui_functions().map_err(|e| format!("ui: {}", e))?;
         println!("    register_network_functions...");
         self.register_network_functions().map_err(|e| format!("network: {}", e))?;
+        self.register_host_functions().map_err(|e| format!("host: {}", e))?;
+        super::bridge_io::register(&self.runtime.lock().unwrap(), self.event_queue.clone()).map_err(|e| format!("io: {}", e))?;
         Ok(())
     }
     
@@ -120,16 +162,61 @@ impl JsBridge {
         Ok(())
     }
     
+    /// `__native_host_event(json)`：导航栏意图、hostCall 等交给宿主外壳的事件。
+    ///
+    /// 闭环里**只锁自己的队列**：原生函数是在 `runtime` 锁内被调用的，
+    /// 这里再去锁 runtime 或 eval 会死锁。
+    fn register_host_functions(&self) -> Result<(), String> {
+        let q = self.host_events.clone();
+        let rt = self.runtime.lock().unwrap();
+        rt.register_function("__native_host_event", move |args| {
+            if let Some(json) = args.first() {
+                let mut q = q.lock().unwrap();
+                if q.len() >= HOST_EVENT_CAP {
+                    q.pop_front();
+                }
+                q.push_back(json.clone());
+            }
+            "undefined".to_string()
+        })?;
+        Ok(())
+    }
+
     /// `wx.request` 的原生入口：立刻返回，结果由宿主每帧取回喂给 `__resolveRequest`
     fn register_network_functions(&self) -> Result<(), String> {
         let rt = self.runtime.lock().unwrap();
+        let owner = self.net_owner;
         rt.register_function("__native_request", move |args| {
             // (id, method, url, headersJson, body, timeoutMs)
             if args.len() >= 5 {
                 let id: u32 = args[0].parse().unwrap_or(0);
                 let timeout: u64 = args.get(5).and_then(|s| s.parse().ok()).unwrap_or(0);
-                crate::net::submit(id, &args[1], &args[2], &args[3], &args[4], timeout);
+                crate::net::submit(owner, id, &args[1], &args[2], &args[3], &args[4], timeout);
             }
+            "undefined".to_string()
+        })?;
+        // downloadFile：(id, url, headersJson, filePath, timeoutMs)，结果同样经 __resolveRequest 回填
+        rt.register_function("__native_download", move |args| {
+            let a = |i: usize| args.get(i).cloned().unwrap_or_default();
+            crate::net::submit_download(owner, a(0).parse().unwrap_or(0), &a(1), &a(2), &a(3), a(4).parse().unwrap_or(0));
+            "undefined".to_string()
+        })?;
+        // uploadFile：(id, url, filePath, name, headersJson, formDataJson, timeoutMs)
+        rt.register_function("__native_upload", move |args| {
+            let a = |i: usize| args.get(i).cloned().unwrap_or_default();
+            crate::net::submit_upload(owner, a(0).parse().unwrap_or(0), &a(1), &a(2), &a(3), &a(4), &a(5), a(6).parse().unwrap_or(0));
+            "undefined".to_string()
+        })?;
+        // 剪贴板：引擎里存一份，桌面窗体打开 use_system 后同步系统剪贴板（src/clipboard.rs）
+        rt.register_function("__native_clipboard_set", move |args| {
+            crate::clipboard::set(args.first().map(|s| s.as_str()).unwrap_or(""));
+            "undefined".to_string()
+        })?;
+        rt.register_function("__native_clipboard_get", move |_args| crate::clipboard::get())?;
+        // wx.loadFontFace：(id, family, src)。结果排队，MiniApp::update 每帧回 __resolveFontFace
+        rt.register_function("__native_load_font", move |args| {
+            let a = |i: usize| args.get(i).cloned().unwrap_or_default();
+            crate::text_faces::load(a(0).parse().unwrap_or(0), &a(1), &a(2));
             "undefined".to_string()
         })?;
         Ok(())
@@ -193,20 +280,23 @@ impl JsBridge {
         let queue = self.event_queue.clone();
         let rt = self.runtime.lock().unwrap();
         
-        // showToast
+        // showToast(title, icon, duration, mask, image)：参数校验与缺省值在 prelude/ui.js
         let q = queue.clone();
         rt.register_function("__native_show_toast", move |args| {
             let title = args.get(0).cloned().unwrap_or_default();
             let icon = args.get(1).cloned().unwrap_or_else(|| "success".to_string());
             let duration: u32 = args.get(2).and_then(|s| s.parse().ok()).unwrap_or(1500);
             let mask = args.get(3).map(|s| s == "true").unwrap_or(false);
-            q.lock().unwrap().push(BridgeEvent::ShowToast { title, icon, duration, mask });
+            let image = args.get(4).cloned().unwrap_or_default();
+            q.lock().unwrap().push(BridgeEvent::ShowToast { title, icon, duration, mask, image });
             "undefined".to_string()
         })?;
         
+        // hideToast(noConflict) / hideLoading(noConflict)：默认两者互相能关（微信的「混用」）
         let q = queue.clone();
-        rt.register_function("__native_hide_toast", move |_args| {
-            q.lock().unwrap().push(BridgeEvent::HideToast);
+        rt.register_function("__native_hide_toast", move |args| {
+            let no_conflict = args.first().map(|s| s == "true").unwrap_or(false);
+            q.lock().unwrap().push(BridgeEvent::HideToast { no_conflict });
             "undefined".to_string()
         })?;
         
@@ -220,8 +310,9 @@ impl JsBridge {
         })?;
         
         let q = queue.clone();
-        rt.register_function("__native_hide_loading", move |_args| {
-            q.lock().unwrap().push(BridgeEvent::HideLoading);
+        rt.register_function("__native_hide_loading", move |args| {
+            let no_conflict = args.first().map(|s| s == "true").unwrap_or(false);
+            q.lock().unwrap().push(BridgeEvent::HideLoading { no_conflict });
             "undefined".to_string()
         })?;
 
@@ -236,6 +327,20 @@ impl JsBridge {
             q.lock().unwrap().push(BridgeEvent::StopPullDownRefresh);
             "undefined".to_string()
         })?;
+        // pageScrollTo：位置换算（selector）与滚动动画由宿主做，见 host::scroll_view
+        let q = queue.clone();
+        rt.register_function("__native_page_scroll_to", move |args| {
+            q.lock().unwrap().push(BridgeEvent::PageScrollTo(args.first().cloned().unwrap_or_default()));
+            "undefined".to_string()
+        })?;
+        // 通用的宿主请求：`__native_host_request(kind, json)`（VideoContext、SelectorQuery …）
+        let q = queue.clone();
+        rt.register_function("__native_host_request", move |args| {
+            let kind = args.first().cloned().unwrap_or_default();
+            let json = args.get(1).cloned().unwrap_or_default();
+            q.lock().unwrap().push(BridgeEvent::HostRequest { kind, json });
+            "undefined".to_string()
+        })?;
         
         // showModal
         let q = queue.clone();
@@ -245,7 +350,18 @@ impl JsBridge {
             let show_cancel = args.get(2).map(|s| s == "true").unwrap_or(true);
             let cancel_text = args.get(3).cloned().unwrap_or_else(|| "取消".to_string());
             let confirm_text = args.get(4).cloned().unwrap_or_else(|| "确定".to_string());
-            q.lock().unwrap().push(BridgeEvent::ShowModal { title, content, show_cancel, cancel_text, confirm_text });
+            // 微信缺省：取消 #000000、确定 #576B95
+            let cancel_color = args.get(5).cloned().unwrap_or_else(|| "#000000".to_string());
+            let confirm_color = args.get(6).cloned().unwrap_or_else(|| "#576B95".to_string());
+            q.lock().unwrap().push(BridgeEvent::ShowModal {
+                title,
+                content,
+                show_cancel,
+                cancel_text,
+                confirm_text,
+                cancel_color,
+                confirm_color,
+            });
             "undefined".to_string()
         })?;
         
@@ -261,6 +377,11 @@ impl JsBridge {
         Ok(())
     }
     
+    /// 队列里还有没处理的事件（下一次 `MiniApp::update` 才会处理）
+    pub fn has_pending_events(&self) -> bool {
+        !self.event_queue.lock().unwrap().is_empty()
+    }
+
     /// 获取并清空事件队列
     pub fn drain_events(&self) -> Vec<BridgeEvent> {
         let mut queue = self.event_queue.lock().unwrap();

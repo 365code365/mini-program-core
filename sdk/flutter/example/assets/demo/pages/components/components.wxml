@@ -1,0 +1,14 @@
+<import src="/templates/entry.wxml"/>
+
+<view class="banner">
+  <text class="banner-title">内置组件</text>
+  <text class="banner-sub">引擎登记了 24 个标签：容器、文本、媒体、表单、选择器、画布……没登记的按 view 兜底</text>
+  <view class="icons">
+    <icon wx:for="{{icons}}" wx:key="*this" type="{{item}}" size="26" color="#ffffff" class="icon-cell"/>
+  </view>
+</view>
+
+<block wx:for="{{groups}}" wx:key="key">
+  <template is="group" data="{{...item}}"/>
+</block>
+<view class="tail"></view>

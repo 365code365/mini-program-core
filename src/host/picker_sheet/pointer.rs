@@ -1,6 +1,7 @@
-//! 面板的指针闭环：命中即打开、按下选中滚轮、抬起提交、动画收尾
+//! 面板的指针闭环：命中即打开、按下 / 拖动滚轮、抬起提交、动画收尾
 //!
-//! `picker_sheet` 的一片。**纯搬迁**：从 875 行按职责切开，一行逻辑没改。
+//! `picker_sheet` 的一片（从 875 行按职责切开）。拖动本身的算式在 `wheel.rs`，
+//! 这里只做分派：按在滚轮上 → 交给滚轮；滚轮没消费的抬手 → 照旧按「点哪一行」处理。
 use super::*;
 
 /// 逻辑视口坐标 -> 面板上的可按对象
@@ -11,14 +12,14 @@ pub fn hit_test(state: &PickerSheetState, x: f32, y: f32) -> SheetHit {
     }
     if y < top + HEADER_H {
         // 头部：左半「取消」右半「确定」，中间空白不响应（按微信是两个独立按钮）
-        return if x < LOGICAL_WIDTH as f32 / 2.0 {
+        return if x < state.viewport.0 / 2.0 {
             SheetHit::Cancel
         } else {
             SheetHit::Confirm
         };
     }
     let cols = state.columns.len().max(1);
-    let col_w = LOGICAL_WIDTH as f32 / cols as f32;
+    let col_w = state.viewport.0 / cols as f32;
     let col = ((x / col_w) as usize).min(cols - 1);
     let wheel_top = top + HEADER_H;
     let center_row = VISIBLE_ROWS / 2;
@@ -70,16 +71,61 @@ pub fn open_if_hit(
     Some(build(&binding))
 }
 
-/// 面板可见时的按下：记录按压的头部按钮以给出反馈。返回是否消费了事件。
+/// 面板可见时的按下：记录按压的头部按钮以给出反馈；按在滚轮上就让那一列准备跟手。
+/// 返回是否消费了事件。
 pub fn on_press(sheet: &mut Option<PickerSheetState>, x: f32, y: f32) -> bool {
     let Some(sheet) = sheet.as_mut().filter(|s| s.visible) else {
         return false;
     };
     let hit = hit_test(sheet, x, y);
     sheet.pressed = match hit {
-        SheetHit::Cancel | SheetHit::Confirm => Some(hit),
+        SheetHit::Cancel | SheetHit::Confirm => Some(hit.clone()),
         _ => None,
     };
+    match hit {
+        SheetHit::Item { col, .. } if !sheet.closing => sheet.wheel_press(col, y, Instant::now()),
+        // 按在头部 / 遮罩上：上一次没收尾的拖动（理论上不会有）作废
+        _ => sheet.wheel_cancel(Instant::now()),
+    }
+    true
+}
+
+/// [`on_move`] 的结果
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum SheetMove {
+    /// 没有可见的面板：事件归页面
+    NotOpen,
+    /// 面板吃掉了事件，但画面没变（没按在滚轮上、还没过拖动阈值、或只是鼠标悬停）
+    Idle,
+    /// 滚轮跟手动了：要重画
+    Moved,
+}
+
+/// 面板可见时的移动：按在滚轮上的那一列跟着手指上下走。
+///
+/// 面板可见时**一律吞掉**移动（返回 `Idle` / `Moved`）：面板与遮罩盖住整屏，
+/// 拖动不能漏到底下去滚页面。列在按下时就定了，横向漂移不换列（与微信一致）。
+pub fn on_move(sheet: &mut Option<PickerSheetState>, _x: f32, y: f32) -> SheetMove {
+    let Some(sheet) = sheet.as_mut().filter(|s| s.visible) else {
+        return SheetMove::NotOpen;
+    };
+    if sheet.closing {
+        return SheetMove::Idle;
+    }
+    if sheet.wheel_move(y, Instant::now()) {
+        SheetMove::Moved
+    } else {
+        SheetMove::Idle
+    }
+}
+
+/// 手势被系统打断（来电、系统返回手势接管）：滚轮就近落行。返回是否消费了事件。
+pub fn on_cancel(sheet: &mut Option<PickerSheetState>) -> bool {
+    let Some(sheet) = sheet.as_mut().filter(|s| s.visible) else {
+        return false;
+    };
+    sheet.pressed = None;
+    sheet.wheel_cancel(Instant::now());
     true
 }
 
@@ -96,6 +142,12 @@ pub fn on_release(
     sheet.pressed = None;
     // 退场动画进行中时，只吞事件不再响应
     if sheet.closing {
+        sheet.wheel_cancel(Instant::now());
+        return true;
+    }
+    // 拖过（松手按速度甩出去再吸附）或按住停下了回正：这一下不再当成「点某一行」
+    if sheet.wheel_release(y, Instant::now()) {
+        flush_column_changes(sheet, app);
         return true;
     }
     match hit_test(sheet, x, y) {
@@ -113,15 +165,39 @@ pub fn on_release(
                 app.eval(&format!("__callPageMethod('{handler}', {payload})")).ok();
             }
         }
-        SheetHit::Cancel | SheetHit::Mask => sheet.begin_close(),
+        SheetHit::Cancel | SheetHit::Mask => {
+            sheet.begin_close();
+            // bindcancel：取消、点遮罩收起都算（微信语义）
+            if let Some(h) = sheet.cancel_handler.clone() {
+                app.eval(&format!("__callPageMethod({}, {{}})", js_str(&h))).ok();
+            }
+        }
         SheetHit::Item { col, delta } => {
+            // 点选是直接跳到那一行（不做滚动动画）；这一列要是还在回正，先掐掉，
+            // 否则动画走完那一下会从旧落点跳回来
+            sheet.wheel_stop(col);
             sheet.move_selection(col, delta);
             if delta != 0 {
                 relink_region(sheet, col);
             }
         }
     }
+    flush_column_changes(sheet, app);
     true
+}
+
+/// 把这次抬手里落定的列变化发给页面：`bindcolumnchange` 的 `detail = {column, value}`，都是数字
+fn flush_column_changes(sheet: &mut PickerSheetState, app: &mut crate::runtime::MiniApp) {
+    let changes = std::mem::take(&mut sheet.column_changes);
+    let Some(h) = sheet.column_handler.clone() else { return };
+    for (column, value) in changes {
+        let payload = serde_json::json!({ "column": column, "value": value });
+        app.eval(&format!("__callPageMethod({}, {payload})", js_str(&h))).ok();
+    }
+}
+
+fn js_str(s: &str) -> String {
+    serde_json::to_string(s).unwrap_or_else(|_| "''".into())
 }
 
 /// 退场动画走完后丢弃面板。返回是否真的丢了（宿主据此标脏重绘）。

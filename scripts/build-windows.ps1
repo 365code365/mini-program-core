@@ -2,6 +2,9 @@
 # 在 Windows 主机执行（需安装 Visual Studio 生成工具 / MSVC）
 $ErrorActionPreference = "Stop"
 Set-Location (Join-Path $PSScriptRoot "..")
+# 发出去的库要 thin LTO（Cargo.toml 的 release 为了开发构建快关掉了它，见那里的注释）
+$env:CARGO_PROFILE_RELEASE_LTO = "thin"
+$env:CARGO_PROFILE_RELEASE_INCREMENTAL = "false"
 
 $target = "x86_64-pc-windows-msvc"
 Write-Host "==> 目标: $target"

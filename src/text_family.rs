@@ -62,6 +62,13 @@ fn next_tick() -> u64 {
     TICK.fetch_add(1, Ordering::Relaxed)
 }
 
+/// 字体栈的解析结果作废（登记了新字族之后：之前落到兜底字体的栈要重新解析）
+pub(crate) fn forget_resolved_stacks() {
+    if let Ok(mut r) = registry().lock() {
+        r.clear();
+    }
+}
+
 /// 加载一个字体文件（同一个文件只解析一次）。`None` = 这个文件加载失败。
 fn renderer_for_path(path: &'static str) -> Option<Arc<TextRenderer>> {
     if let Ok(mut cache) = by_path().lock() {
@@ -175,6 +182,12 @@ fn load_family_stack(list: &str) -> Option<Arc<TextRenderer>> {
         if name.is_empty() {
             continue;
         }
+        // `@font-face` / `wx.loadFontFace` 登记的字族优先（见 text_faces.rs）
+        if let Some(path) = crate::text_faces::face_path(&name) {
+            if let Some(r) = renderer_for_path(path) {
+                return Some(r);
+            }
+        }
         // 系统 UI 字体就是我们的默认主字体，没必要另开一份
         if matches!(
             name.as_str(),
@@ -199,8 +212,8 @@ fn load_family_stack(list: &str) -> Option<Arc<TextRenderer>> {
 
 /// 字族名 → 候选字体文件（按优先级）。认不出的名字返回空表，交给栈里的下一项。
 ///
-/// 只列 macOS 自带的字体：小程序没有 `@font-face` 的本地字体，
-/// 远程字体（`wx.loadFontFace`）本引擎不支持，所以「本机有没有」就是唯一判据。
+/// 只列 macOS 自带的字体。`@font-face` / `wx.loadFontFace` 登记的字族不走这里，
+/// 在 [`load_family_stack`] 里先查 `text_faces` 的登记表。
 fn candidates_for(name: &str) -> &'static [&'static str] {
     const SONGTI: &[&str] = &[
         "/System/Library/Fonts/Supplemental/Songti.ttc",

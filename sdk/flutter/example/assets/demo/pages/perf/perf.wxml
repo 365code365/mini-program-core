@@ -1,0 +1,37 @@
+<view class="card">
+  <view class="title">屏幕与安全区</view>
+  <view>{{screen}}</view>
+</view>
+<view class="card">
+  <view class="title">定时器（静止页面也要走）</view>
+  <view>已运行 {{seconds}} 秒</view>
+  <view class="spin"></view>
+</view>
+<view class="card">
+  <view class="title">输入框（type=number）</view>
+  <input class="ipt" type="number" maxlength="11" placeholder="输入手机号" confirm-type="done" bindinput="onInput" bindconfirm="onConfirm"/>
+  <view>输入：{{phone}} {{confirmed}}</view>
+</view>
+<view class="card">
+  <view class="title">宿主能力（hostApis）</view>
+  <view class="btn" bindtap="onPick">wx.chooseImage</view>
+  <view>{{picked}}</view>
+</view>
+<view class="card">
+  <view class="title">选择器</view>
+  <picker mode="selector" range="{{fruits}}" value="{{fruitIndex}}" bindchange="onPick2">
+    <view class="row"><text>水果</text><text>{{fruits[fruitIndex]}}</text></view>
+  </picker>
+</view>
+<view class="card">
+  <view class="title">原生组件（宿主承载的 video）</view>
+  <video id="v1" class="video" src="https://vjs.zencdn.net/v/oceans.mp4" bindended="onEnded"></video>
+  <view>{{videoState}}</view>
+</view>
+<view class="card">
+  <view class="btn" bindtap="toDetail">navigateTo 详情页</view>
+</view>
+<view class="card">
+  <view class="title">长列表</view>
+  <view wx:for="{{items}}" wx:key="*this" class="row"><text>第 {{item}} 行</text><text>›</text></view>
+</view>

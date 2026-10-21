@@ -18,6 +18,9 @@ pub struct PageInfo {
     pub enable_pull_down_refresh: bool,
     /// 页面 json `usingComponents` 声明的自定义组件（三件套源码）
     pub components: Vec<ComponentSource>,
+    /// 页面 json 原样（`navigationBarTitleText` 等窗口配置）。宿主画导航栏要用，
+    /// 与 app.json 的 `window` 合并后放进页面事件。没有页面 json 时是 `Null`。
+    pub window: serde_json::Value,
 }
 
 /// 页面栈中的页面实例

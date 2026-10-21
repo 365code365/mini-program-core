@@ -188,6 +188,8 @@
       pageInst.route = window.__PAGE_ROUTE__;
       pageInst.setData = function (patch, cb) { setData(patch, cb); };
       pageInst.selectComponent = function () { return null; };
+      pageInst.createSelectorQuery = function () { return wx.createSelectorQuery(); };
+      pageInst.createIntersectionObserver = function (opt) { return wx.createIntersectionObserver(pageInst, opt); };
       var q = parseQuery();
       // 先按初始 data 挂载 DOM，再跑生命周期——这样 onLoad 里 wx.createCanvasContext
       // 等依赖真实节点的调用能拿到已存在的元素（canvas 绘制才生效）。

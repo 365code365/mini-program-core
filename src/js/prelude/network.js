@@ -96,37 +96,87 @@
                 return true;
             }
 
-            // downloadFile：本引擎没有可写的临时文件系统，直接把 URL 当
-            // tempFilePath 回去 —— <image src> 支持远程 URL，绝大多数用法（下载图片
-            // 后拿去显示）因此仍然成立。真正需要落盘的场景要另做，不假装支持。
+            // downloadFile / uploadFile（官方 api/network/download、upload）：原生线程收发，
+            // 结果与 wx.request 走同一条回填路径（__resolveRequest），只是 success 的形状不同。
+            // 下载的文件落在 `wxfile://tmp/…`（真实位置见 src/wxfile.rs），能直接给 <image src>、uploadFile 用；
+            // 给了 `filePath`（`wxfile://usr/…`）就存到那里。上传按 multipart/form-data 发 `filePath` 指向的文件
+            // （`wxfile://` 或包内路径）与 `formData`，回包 `data` 是字符串（微信语义）。
+            wx.env = wx.env || { USER_DATA_PATH: 'wxfile://usr' };
+            function __fileTask(kind, options, shape) {
+                var id = ++__requestSeq;
+                var task = {
+                    id: id, aborted: false, dataType: kind === 'downloadFile' ? 'json' : 'text',
+                    success: function(r) {
+                        var res = shape(r);
+                        res.errMsg = kind + ':ok';
+                        options.success && options.success(res);
+                        options.complete && options.complete(res);
+                    },
+                    fail: function(r) { options.fail && options.fail(r); options.complete && options.complete(r); },
+                    complete: null,
+                    abort: function() { this.aborted = true; }
+                };
+                __requestTasks[id] = task;
+                return { id: id, api: {
+                    abort: function() { task.abort(); },
+                    onProgressUpdate: function() {}, offProgressUpdate: function() {},
+                    onHeadersReceived: function() {}, offHeadersReceived: function() {}
+                } };
+            }
             wx.downloadFile = function(options) {
                 options = options || {};
-                var url = options.url || '';
-                return wx.request({
-                    url: url,
-                    method: 'GET',
-                    dataType: 'text',
-                    success: function(res) {
-                        options.success && options.success({
-                            tempFilePath: url,
-                            filePath: url,
-                            statusCode: res.statusCode,
-                            errMsg: 'downloadFile:ok'
-                        });
-                    },
-                    fail: options.fail,
-                    complete: options.complete
+                var t = __fileTask('downloadFile', options, function(r) {
+                    var d = (r.data && typeof r.data === 'object') ? r.data : {};
+                    var out = { statusCode: r.statusCode, header: r.header };
+                    if (d.filePath) out.filePath = d.filePath; else out.tempFilePath = d.tempFilePath;
+                    return out;
                 });
+                if (typeof __native_download === 'function') {
+                    __native_download(String(t.id), String(options.url || ''), JSON.stringify(options.header || {}),
+                                      String(options.filePath || ''), String(options.timeout || 0));
+                } else {
+                    __resolveRequest(t.id, 0, '{}', '', 'downloadFile:fail 原生网络桥未注册');
+                }
+                return t.api;
+            };
+            wx.uploadFile = function(options) {
+                options = options || {};
+                var t = __fileTask('uploadFile', options, function(r) {
+                    return { data: typeof r.data === 'string' ? r.data : JSON.stringify(r.data), statusCode: r.statusCode, header: r.header };
+                });
+                if (typeof __native_upload === 'function') {
+                    __native_upload(String(t.id), String(options.url || ''), String(options.filePath || ''), String(options.name || 'file'),
+                                    JSON.stringify(options.header || {}), JSON.stringify(options.formData || {}), String(options.timeout || 0));
+                } else {
+                    __resolveRequest(t.id, 0, '{}', '', 'uploadFile:fail 原生网络桥未注册');
+                }
+                return t.api;
             };
 
-            // 动态字体：本引擎的字体来自系统（见 text.rs 的字体发现），不支持按 URL
-            // 远程加载。这里必须**存在且回调 success** —— 应用普遍在 onLaunch 里连着
-            // 加载好几个字体，抛异常会把整个 onLaunch 打断（框架的响应式层就此起不来，
-            // 页面只剩静态骨架）。降级为「用系统字体渲染」，比整个应用起不来好得多。
+            // 动态字体（官方 api/ui/font/wx.loadFontFace）：`source` 是 `url("https://…")`、包内路径或
+            // `wxfile://`。原生登记字族（src/text_faces.rs：只认 TTF / OTF，WOFF 明确 fail），远程的先下载；
+            // 有结论后宿主回 __resolveFontFace，页面随之按新字体重排。
+            // 回调形状：success / fail 都是 `{status, errMsg}`（status 为 'loaded' / 'error'）
+            var __fontSeq = 0, __fontTasks = {};
             wx.loadFontFace = function(options) {
                 options = options || {};
-                var family = options.family || '';
-                __native_print('[loadFontFace] 忽略远程字体 ' + family + '（改用系统字体）');
-                options.success && options.success({ status: 'loaded' });
-                options.complete && options.complete({ status: 'loaded' });
+                var id = ++__fontSeq, task = { o: options }, promise;
+                if (!options.success && !options.fail && !options.complete) {
+                    promise = new Promise(function(resolve, reject) { task.resolve = resolve; task.reject = reject; });
+                }
+                __fontTasks[id] = task;
+                var src = String(options.source || '');
+                var m = /url\(\s*['"]?([^'")]+)['"]?\s*\)/.exec(src);
+                if (m) src = m[1];
+                __native_load_font(String(id), String(options.family || ''), src.trim());
+                return promise;
+            };
+            globalThis.__resolveFontFace = function(id, ok, family, err) {
+                var t = __fontTasks[id];
+                if (!t) return;
+                delete __fontTasks[id];
+                var res = ok ? { status: 'loaded', errMsg: 'loadFontFace:ok' } : { status: 'error', errMsg: 'loadFontFace:fail ' + err };
+                if (ok) { t.o.success && t.o.success(res); t.resolve && t.resolve(res); }
+                else { t.o.fail && t.o.fail(res); t.reject && t.reject(res); }
+                t.o.complete && t.o.complete(res);
             };

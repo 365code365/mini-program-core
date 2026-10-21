@@ -153,7 +153,12 @@ pub fn open(instance: wgpu::Instance, adapter: wgpu::Adapter, needs: GpuNeeds) -
 pub fn request_adapter(instance: &wgpu::Instance, compatible: Option<&wgpu::Surface<'_>>) -> Result<wgpu::Adapter, String> {
     let opts = wgpu::RequestAdapterOptions {
         power_preference: if cfg!(any(target_os = "ios", target_os = "android")) {
-            wgpu::PowerPreference::None
+            // 移动端不能用 None（设计稿原写 None）：wgpu 30 在 None 时**不排序**，按后端顺序取
+            // 第一个。Vulkan 是软件实现时（Android 模拟器的 SwiftShader、部分低端机）就选中它、
+            // 跳过 GLES 上的真 GPU，随后被「软件适配器」门槛挡掉，整条 GPU 路就没了。
+            // LowPower 按「集成 > 独显 > 其它 > 虚拟 > CPU」排，软件适配器永远排最后；
+            // 手机只有集成 GPU，Vulkan 与 GLES 同类型时保持后端顺序（Vulkan 在前）。
+            wgpu::PowerPreference::LowPower
         } else {
             wgpu::PowerPreference::HighPerformance
         },

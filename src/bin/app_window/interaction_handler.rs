@@ -26,9 +26,6 @@ pub fn handle_interaction_result(
         InteractionResult::SliderChange { id, value } => {
             println!("🎚️ Slider {}: {}", id, value);
         }
-        InteractionResult::SliderEnd { id } => {
-            println!("🎚️ Slider {} released", id);
-        }
         InteractionResult::Focus { id, bounds, click_x: _, is_fixed, value } => {
             println!("📝 Focus: {} at ({:.0}, {:.0}, {:.0}x{:.0}) fixed={}", id, bounds.x, bounds.y, bounds.width, bounds.height, is_fixed);
             mini_render::host::tap::dispatch_input_event(app, renderer, id, "focus", value);
@@ -54,9 +51,10 @@ pub fn handle_interaction_result(
             }
             mini_render::host::tap::dispatch_input_event(app, renderer, id, "blur", value);
         }
-        InteractionResult::InputConfirm { id, value } => {
+        InteractionResult::InputConfirm { id, value, keep_focus } => {
             println!("📝 Confirm {}: {}", id, value);
-            if let Some(window) = window {
+            // `confirm-hold`：输入框还聚焦着，输入法也要留着
+            if let (Some(window), false) = (window, *keep_focus) {
                 window.set_ime_allowed(false);
             }
             mini_render::host::tap::dispatch_input_event(app, renderer, id, "confirm", value);
@@ -83,6 +81,8 @@ pub fn handle_interaction_result(
                     println!("✅ Cut to clipboard");
                 }
             }
+            // 剪切改了值：与打字一样要发 bindinput（以前漏了，页面上的字数统计不跟着变）
+            mini_render::host::tap::dispatch_input_event(app, renderer, id, "input", value);
         }
     }
 }

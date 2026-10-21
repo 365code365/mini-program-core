@@ -1,30 +1,16 @@
 //! H.264 解码与像素转换：拆样本、取 SPS/PPS、YUV→RGBA
 //!
-//! `VideoPlayer` 的一片，由 `video/mod.rs` 组合。**纯搬迁**：从 1064 行的
-//! components/video.rs 按职责切开，一行逻辑没改。
+//! `VideoPlayer` 的一片，由 `video/mod.rs` 组合。从 1064 行的 components/video.rs 按职责
+//! 切开时是纯搬迁；之后文件路径改走 `assets::resolve`（见 `load`）。
 use super::mp4::parse_mp4_video_track;
 use super::*;
 
 impl VideoPlayer {
     /// 加载视频
     pub fn load(&mut self) -> Result<(), String> {
-        // 尝试多个可能的路径
-        let paths_to_try = vec![
-            self.src.clone(),
-            self.src.trim_start_matches('/').to_string(),
-            crate::app_dir::default_app().join(self.src.trim_start_matches('/')).to_string_lossy().to_string(),
-            crate::app_dir::default_app().to_string_lossy().to_string() + "/" + self.src.trim_start_matches('/'),
-        ];
-        
-        let mut actual_path = None;
-        for path in &paths_to_try {
-            if std::path::Path::new(path).exists() {
-                actual_path = Some(PathBuf::from(path));
-                break;
-            }
-        }
-        
-        let path = actual_path.ok_or_else(|| format!("Cannot find video: {}", self.src))?;
+        // 与图片同一套解析（`assets::resolve`：当前小程序根目录优先）。从前这里写死了
+        // sample-app 作为根，别的小程序（news-app、宿主嵌入的包）里的视频全都找不到
+        let path = crate::assets::resolve(&self.src).ok_or_else(|| format!("Cannot find video: {}", self.src))?;
         self.file_path = Some(path.clone());
         
         println!("🎬 Loading video: {}", path.display());

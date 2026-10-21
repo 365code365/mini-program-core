@@ -25,12 +25,19 @@
 //! ## 文件划分（都是 `impl MiniEngine`）
 //! - 本文件：结构体、构造、页面路由与生命周期；
 //! - `engine_frame.rs`：出帧（`pump` / `render` / 合成）；
+//! - `engine_damage.rs`：这一帧重画多少（只合成 / 局部 / 补条带 / 整帧）与整帧归因；
 //! - `engine_ui.rs`：Toast / Loading / Modal 状态与覆盖层查询；
 //! - `engine_input.rs`：指针 / 键盘输入与逻辑层发起的路由；
 //! - `engine_backend.rs`：后端选择、surface 挂卸、带标志位的 `pump_ex`；
-//! - `engine_stats.rs`：`MINI_FPS` 的每秒统计。
+//! - `engine_stats.rs`：`MINI_FPS` 的每秒统计；
+//! - `engine_options.rs`：创建选项（系统信息、安全区、宿主 API、原生组件）；
+//! - `engine_events.rs`：引擎 → 宿主的事件队列（页面、导航栏、输入框、hostCall、日志）；
+//! - `engine_pixels.rs`：像素出口（RGBA / BGRA、带行跨度直写平台缓冲）；
+//! - `engine_resize.rs`：尺寸 / 像素比 / 安全区变化。
 
 use super::engine_backend::select_backend;
+use super::engine_events::HostEvents;
+use super::engine_options::{self, EngineOptions};
 use super::engine_stats::FrameStats;
 use crate::compositor::{
     diag, BackendPref, BackendStatus, DeviceInfo, HostEnv, HostKind, LayerCanvas, PageCanvas,
@@ -50,6 +57,7 @@ use crate::ui::ScrollController;
 use crate::Canvas;
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::Instant;
 
 pub struct MiniEngine {
     pub(crate) app: MiniApp,
@@ -74,6 +82,12 @@ pub struct MiniEngine {
     pub(crate) gesture: Option<crate::host::gesture::DragGesture>,
     /// `<picker>` 弹出的底部面板（微信里是原生浮层）
     pub(crate) picker_sheet: Option<crate::host::picker_sheet::PickerSheetState>,
+    /// 左边缘侧滑返回进行中（与桌面窗体同一份 `host::edge_back`，见 engine_edge_back.rs）
+    pub(crate) edge_back: Option<crate::host::edge_back::EdgeBack>,
+    /// 页面栈上每一页被盖住那一刻的视口图（侧滑返回时露出来的就是它），与 page_stack 底下几层对齐
+    pub(crate) back_shots: Vec<crate::host::edge_back::PageShot>,
+    /// 侧滑收尾动画上一次推进的时刻
+    pub(crate) edge_back_tick: Option<std::time::Instant>,
     /// 按下瞬间的页面滚动位置：用来判断「滚动是否已经接管这次触摸」
     pub(crate) scroll_pos_at_press: f32,
     /// 这次触摸是用来「停住惯性滚动」的：抬手时不该再算一次点击
@@ -100,11 +114,42 @@ pub struct MiniEngine {
     /// 合成缓冲（0xRRGGBB）与交给宿主的 RGBA
     pub(super) compose: Vec<u32>,
     pub(super) rgba: Vec<u8>,
-    started_ms: u64,
+    /// `rgba` 落后于 `compose`：只在有人要 RGBA 时才转换（`pixels_into` 直接读 compose）
+    pub(super) rgba_stale: bool,
+    /// 引擎自己的单调时钟原点（宿主从不给时间时用）
+    pub(super) clock_origin: Instant,
+    /// 宿主最近一次给的时间戳与收到它的时刻。触摸、长按、事件 timeStamp 全部用
+    /// 这一个时钟 —— 从前按下用墙上时钟、长按计时用宿主时钟，两者差几个数量级，
+    /// 宿主一传 `now_ms` 长按就永远触发不了。
+    pub(super) host_clock: Option<(u64, Instant)>,
     pub(super) last_pump_ms: u64,
     page_opened_ms: u64,
+    /// 创建选项（安全区、宿主 API、原生组件；见 engine_options.rs）
+    pub(crate) opts: EngineOptions,
+    /// app.json 的 `window`（原样保留，页面事件里与页面 json 合并后交给宿主画导航栏）
+    pub(crate) app_window: serde_json::Value,
+    /// 引擎 → 宿主的事件队列（见 engine_events.rs）
+    pub(crate) events: HostEvents,
+    /// 这一帧已由 GPU 画到 surface 上（`pump_ex` 带 PRESENTED，宿主不取像素）
+    pub(super) frame_presented: bool,
+    /// surface 暂时取不到，下一次 pump 补一帧（`pump_ex` 带 PENDING）
+    pub(super) present_pending: bool,
+    /// SDK 的 GPU 合成器（宿主挂了原生 surface、门槛与自检都过了才有，见 engine_gpu.rs）
+    #[cfg(feature = "gpu")]
+    pub(crate) gpu: Option<Box<crate::compositor::gpu::GpuCompositor>>,
+    /// 本实例 GPU 运行中失败过（粘性回退的原因）
+    #[cfg(feature = "gpu")]
+    pub(crate) gpu_failed: Option<String>,
+    /// 宿主挂上来的原生 surface（种类 + 指针地址）。存地址而不是裸指针：裸指针会让
+    /// `MiniEngine` 失去 `Send`；这里也从不解引用它，只在 `set_backend` / `set_device_info`
+    /// 改了选择输入时拿它重建合成器。指针活到 detach 由宿主保证。
+    #[cfg(feature = "gpu")]
+    pub(crate) native_surface: Option<(crate::compositor::SurfaceKind, usize)>,
+    /// 上一帧由 GPU 上屏、没做 CPU 合成：有人取像素时按这组参数（有无 tabBar、页面底色）补一次
+    #[cfg(feature = "gpu")]
+    pub(crate) cpu_frame_pending: Option<(bool, crate::Color)>,
 
-    // ── 后端选择（见 engine_backend.rs）。现在只有 CPU 合成器，这些字段决定
+    // ── 后端选择（见 engine_backend.rs / engine_gpu.rs）。这些字段决定用哪个合成器、
     //    `mr_app_backend*` 报什么、`MINI_FPS` 的标签写什么 ──
     /// 创建时读一次的环境变量（`MINI_BACKEND` / `MINI_GPU_*` / `MINI_FPS`，R14）
     pub(super) env: HostEnv,
@@ -119,6 +164,8 @@ pub struct MiniEngine {
     pub(super) backend_changed: bool,
     /// `MINI_FPS` 的每秒统计
     pub(super) stats: FrameStats,
+    /// 局部重画的跨帧状态与本帧的活儿归类（见 engine_damage.rs）
+    pub(crate) dmg: super::engine_damage::DamageState,
 }
 
 impl MiniEngine {
@@ -145,6 +192,20 @@ impl MiniEngine {
         dpr: f32,
         env: HostEnv,
     ) -> Result<Self, String> {
+        Self::new_with_options(app_dir, data_dir, width, height, dpr, env, EngineOptions::default())
+    }
+
+    /// 带创建选项（`mr_app_create_ex`）：系统信息与宿主 API 必须在 `app.js` 执行**之前**装好，
+    /// 因为 `onLaunch` 里读系统信息、用 `typeof` 探测能力是常态。
+    pub fn new_with_options(
+        app_dir: &str,
+        data_dir: Option<&str>,
+        width: u32,
+        height: u32,
+        dpr: f32,
+        env: HostEnv,
+        opts: EngineOptions,
+    ) -> Result<Self, String> {
         for w in env.warnings(HostKind::Sdk) {
             diag::emit(&w);
         }
@@ -160,14 +221,23 @@ impl MiniEngine {
 
         let mut app = MiniApp::new(width, height)?;
         app.init()?;
+        engine_options::install_system_info(&app, &engine_options::system_info(width, height, dpr, &opts));
+        app.install_host_apis(&opts.host_apis);
+        // 之后解析的样式表（自定义 tabBar、页面）看到宿主给的安全区
+        Self::apply_env_context(&opts, width, height);
         // 先把包内所有 .js 注册成 CommonJS 模块：uni-app / TS 产物第一行就 require
         // 一个几百 KB 的 vendor 包，不预注册直接失败。
         let root = page_loader::get_app_path();
         app.register_all_modules(&root).ok();
         app.load_module_script("app", &page_loader::load_app_js())?;
 
-        let config: AppConfig = serde_json::from_str(&page_loader::load_app_json())
-            .map_err(|e| format!("app.json 解析失败: {e}"))?;
+        let app_json = page_loader::load_app_json();
+        let config: AppConfig =
+            serde_json::from_str(&app_json).map_err(|e| format!("app.json 解析失败: {e}"))?;
+        let app_window = serde_json::from_str::<serde_json::Value>(&app_json)
+            .ok()
+            .and_then(|v| v.get("window").cloned())
+            .unwrap_or(serde_json::Value::Null);
         let app_wxss = page_loader::load_app_wxss();
         let custom_tabbar = if config.tab_bar.as_ref().map(|t| t.custom).unwrap_or(false) {
             crate::host::load_custom_tabbar_with_app_wxss(&app_wxss)?
@@ -203,6 +273,9 @@ impl MiniEngine {
             touch: crate::host::touch::TouchTracker::new(),
             gesture: None,
             picker_sheet: None,
+            edge_back: None,
+            back_shots: Vec::new(),
+            edge_back_tick: None,
             scroll_pos_at_press: 0.0,
             tap_stops_fling: false,
             toast: None,
@@ -221,10 +294,30 @@ impl MiniEngine {
             fixed_rows: None,
             compose: Vec::new(),
             rgba: Vec::new(),
-            started_ms: 0,
+            rgba_stale: false,
+            clock_origin: Instant::now(),
+            host_clock: None,
             last_pump_ms: 0,
             page_opened_ms: 0,
+            opts,
+            app_window,
+            events: HostEvents::default(),
+            frame_presented: false,
+            present_pending: false,
+            #[cfg(feature = "gpu")]
+            gpu: None,
+            #[cfg(feature = "gpu")]
+            gpu_failed: None,
+            #[cfg(feature = "gpu")]
+            native_surface: None,
+            #[cfg(feature = "gpu")]
+            cpu_frame_pending: None,
             stats: FrameStats::new(env.fps),
+            dmg: super::engine_damage::DamageState {
+                no_damage: env.no_damage,
+                log: env.damage_log,
+                ..Default::default()
+            },
             env,
             host_pref: None,
             backend,
@@ -243,12 +336,12 @@ impl MiniEngine {
             .unwrap_or_else(|| "pages/index/index".to_string())
     }
 
-    /// 打开一个页面（不传就开首页）
+    /// 打开一个页面（不传就开首页）。可以带 query（`pages/x/x?id=1`）：深链冷启动直接落到
+    /// 带参数的页面，参数进 `onLoad(query)`。从前 query 被当成路径的一部分，「页面不存在」。
     pub fn launch(&mut self, route: Option<&str>) -> Result<(), String> {
-        let route = route
-            .map(|r| r.trim_start_matches('/').to_string())
-            .unwrap_or_else(|| self.home_route());
-        self.navigate_to(&route, HashMap::new())
+        let route = route.map(str::to_string).unwrap_or_else(|| self.home_route());
+        let (path, query) = crate::host::navigation::parse_url(&route);
+        self.navigate_to(&path, query)
     }
 
     pub fn current_route(&self) -> String {
@@ -277,7 +370,9 @@ impl MiniEngine {
     }
 
     pub(crate) fn is_tabbar_page(&self, path: &str) -> bool {
-        self.config
+        // `wx.hideTabBar()` 之后按「不是 tabBar 页」排版与命中（host::tabbar_api）
+        !crate::host::tabbar_api::hidden()
+            && self.config
             .tab_bar
             .as_ref()
             .map(|tb| tb.list.iter().any(|i| i.page_path == path))
@@ -306,20 +401,7 @@ impl MiniEngine {
                 .parse()
                 .map_err(|e| format!("WXML 解析失败: {e}"))?,
         );
-        let mut templates = crate::parser::template::ComponentTemplates::new();
-        let mut comp_wxss = String::new();
-        for c in &info.components {
-            if let Ok(n) = WxmlParser::new(&c.wxml).parse() {
-                templates.insert(c.tag.clone(), n);
-                comp_wxss.push('\n');
-                comp_wxss.push_str(&c.wxss);
-            }
-        }
-        // app.wxss 在前、页面在后：同特异性时页面样式因书写顺序更靠后而胜出
-        let merged = format!("{}\n{}\n{}", self.app_wxss, info.wxss, comp_wxss);
-        let stylesheet = WxssParser::new(&merged)
-            .parse()
-            .map_err(|e| format!("WXSS 解析失败: {e}"))?;
+        let (templates, stylesheet) = self.page_styles(info)?;
 
         self.app.eval("__resetPageComponents()").ok();
         self.app
@@ -354,7 +436,37 @@ impl MiniEngine {
         Ok(())
     }
 
+    /// 页面的组件模板与合并后的样式表（app.wxss → 页面 → 组件）。
+    ///
+    /// 换页时用；安全区 / 屏宽变了（`env()` 与 rpx 在解析期求值）也要对栈上每一页重来一遍。
+    pub(crate) fn page_styles(
+        &self,
+        info: &crate::host::PageInfo,
+    ) -> Result<(crate::parser::template::ComponentTemplates, crate::parser::wxss::StyleSheet), String> {
+        let mut templates = crate::parser::template::ComponentTemplates::new();
+        let mut comp_wxss = String::new();
+        for c in &info.components {
+            if let Ok(n) = WxmlParser::new(&c.wxml).parse() {
+                templates.insert(c.tag.clone(), n);
+                comp_wxss.push('\n');
+                comp_wxss.push_str(&c.wxss);
+            }
+        }
+        // app.wxss 在前、页面在后：同特异性时页面样式因书写顺序更靠后而胜出。
+        // 解析前把本实例的安全区放进本线程（`env(safe-area-inset-*)` 在解析期求值）
+        Self::apply_env_context(&self.opts, self.width, self.height);
+        let merged = format!("{}\n{}\n{}", self.app_wxss, info.wxss, comp_wxss);
+        let stylesheet = WxssParser::new(&merged)
+            .parse()
+            .map_err(|e| format!("WXSS 解析失败: {e}"))?;
+        Ok((templates, stylesheet))
+    }
+
     pub(crate) fn update_renderers(&mut self) {
+        // 宿主承载的 `<video>`：引擎不解码不画（见 components::video）
+        crate::renderer::components::set_host_owns_video(
+            self.opts.native_components.iter().any(|t| t == "video"),
+        );
         let Some(page) = self.page_stack.last() else { return };
         let mut r = WxmlRenderer::new_with_scale(
             page.stylesheet.clone(),
@@ -363,6 +475,7 @@ impl MiniEngine {
             self.dpr,
         );
         r.set_component_templates(page.component_templates.clone());
+        r.set_native_components(&self.opts.native_components);
         if let Some(t) = self.anim_time {
             r.set_animation_time(t);
         }
@@ -379,41 +492,5 @@ impl MiniEngine {
             }
             self.tabbar_renderer = Some(tr);
         }
-    }
-
-    /// 固定 CSS 动画时钟（秒）。**只给确定性测试用**：正常运行时动画由真实时间驱动，
-    /// 而快照对比需要把 `@keyframes` 求值到同一个时刻，否则两次跑的相位不同、
-    /// 逐像素对比永远对不上（桌面侧对应 `--time` 参数）。
-    pub fn set_animation_time(&mut self, seconds: f32) {
-        self.anim_time = Some(seconds);
-        if let Some(r) = &mut self.renderer {
-            r.set_animation_time(seconds);
-        }
-        if let Some(r) = &mut self.tabbar_renderer {
-            r.set_animation_time(seconds);
-        }
-        self.needs_redraw = true;
-    }
-
-    pub fn on_show(&mut self) {
-        self.app.eval("__dispatchApp('onShow')").ok();
-        self.needs_redraw = true;
-    }
-
-    pub fn on_hide(&mut self) {
-        self.app.eval("__dispatchApp('onHide')").ok();
-    }
-
-    pub fn trim_memory(&mut self) {
-        crate::trim_memory();
-    }
-
-    pub(crate) fn mono_ms(&self) -> u64 {
-        use std::time::{SystemTime, UNIX_EPOCH};
-        SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map(|d| d.as_millis() as u64)
-            .unwrap_or(0)
-            .saturating_sub(self.started_ms)
     }
 }

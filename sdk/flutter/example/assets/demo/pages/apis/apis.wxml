@@ -1,0 +1,19 @@
+<import src="/templates/entry.wxml"/>
+
+<view class="banner">
+  <text class="banner-title">wx.* 接口</text>
+  <text class="banner-sub">界面、路由、缓存、网络、节点查询都由引擎自己实现；登录、支付、扫码这类要宿主出力的，看「宿主」tab</text>
+</view>
+
+<block wx:for="{{groups}}" wx:key="key">
+  <template is="group" data="{{...item}}"/>
+</block>
+
+<view class="card">
+  <text class="title">能力探测</text>
+  <text class="desc">没实现的 API 保持 undefined（不给假函数），框架用 typeof 探测时能正确降级：</text>
+  <view class="probe" wx:for="{{probes}}" wx:key="name">
+    <text class="probe-name">wx.{{item.name}}</text>
+    <text class="{{item.ok ? 'probe-ok' : 'probe-no'}}">{{item.ok ? 'function' : 'undefined'}}</text>
+  </view>
+</view>

@@ -74,11 +74,15 @@
     var confirm = document.createElement("div"); confirm.className = "wxpk-confirm"; confirm.textContent = "确定";
     head.appendChild(cancel); head.appendChild(confirm);
     var colsWrap = document.createElement("div"); colsWrap.className = "wxpk-cols";
-    var colEls = st.cols.map(function (items, ci) {
-      var c = document.createElement("div"); c.className = "wxpk-col";
+    function fillCol(c, items) {
+      c.innerHTML = "";
       var top = document.createElement("div"); top.className = "wxpk-col-pad"; c.appendChild(top);
       items.forEach(function (label) { var it = document.createElement("div"); it.className = "wxpk-item"; it.textContent = label; c.appendChild(it); });
       var bot = document.createElement("div"); bot.className = "wxpk-col-pad"; c.appendChild(bot);
+    }
+    var colEls = st.cols.map(function (items, ci) {
+      var c = document.createElement("div"); c.className = "wxpk-col";
+      fillCol(c, items);
       colsWrap.appendChild(c);
       return c;
     });
@@ -94,8 +98,43 @@
       mask.classList.remove("show"); sheet.classList.remove("show");
       setTimeout(function () { if (mask.parentNode) mask.parentNode.removeChild(mask); if (sheet.parentNode) sheet.parentNode.removeChild(sheet); }, 240);
     }
-    mask.addEventListener("click", close);
-    cancel.addEventListener("click", close);
+    // multiSelector：某一列停稳且值变了 → bindcolumnchange（detail.column / value 都是数字，与原生端一致）。
+    // 页面在回调里 setData 改 range，面板要立刻换上新选项：重渲染后 picker 元素上的
+    // data-picker-range 已是新值，按列对比、变了的列整列重填并把选中夹回范围。
+    var lastSel = st.sel.slice();
+    function relink() {
+      if (!el.isConnected) return;
+      var nr; try { nr = JSON.parse(el.getAttribute("data-picker-range") || "[]"); } catch (e) { return; }
+      var rk = el.getAttribute("data-picker-rangekey");
+      (nr || []).forEach(function (col, ci) {
+        var labels = pkColLabels(col, rk);
+        if (!colEls[ci] || JSON.stringify(labels) === JSON.stringify(st.cols[ci])) return;
+        st.cols[ci] = labels;
+        var keep = Math.min(nearestIdx(colEls[ci], labels.length), Math.max(labels.length - 1, 0));
+        fillCol(colEls[ci], labels);
+        colEls[ci].scrollTop = keep * ITEM_H;
+        lastSel[ci] = keep;
+      });
+    }
+    if (mode === "multiSelector") {
+      colEls.forEach(function (c, ci) {
+        var timer = 0;
+        c.addEventListener("scroll", function () {
+          clearTimeout(timer);
+          timer = setTimeout(function () {
+            var idx = nearestIdx(c, st.cols[ci].length);
+            if (idx === lastSel[ci]) return;
+            lastSel[ci] = idx;
+            var h = el.getAttribute("data-columnchange");
+            if (h) { call(h, evObj(el, { column: ci, value: idx })); setTimeout(relink, 0); }
+          }, 120);
+        });
+      });
+    }
+    // bindcancel：「取消」与点遮罩收起都算
+    function cancelClose() { var h = el.getAttribute("data-cancel"); if (h) call(h, evObj(el, {})); close(); }
+    mask.addEventListener("click", cancelClose);
+    cancel.addEventListener("click", cancelClose);
     confirm.addEventListener("click", function () {
       var sel = colEls.map(function (c, i) { return nearestIdx(c, st.cols[i].length); });
       var handler = el.getAttribute("data-change");
@@ -110,19 +149,20 @@
       if (!e.target.closest) return;
       var sw = e.target.closest(".wx-switch");
       if (sw) { sw.classList.toggle("wx-switch-on"); var f = sw.getAttribute("data-change"); if (f) call(f, evObj(sw, { value: sw.classList.contains("wx-switch-on") })); }
-      // form-type 按钮：提交 / 重置所在表单
-      var fbtn = e.target.closest("[data-form-type]");
-      if (fbtn) {
-        var ft = fbtn.getAttribute("data-form-type"), form = fbtn.closest(".wx-form");
-        if (form) {
-          if (ft === "submit") { var sf = form.getAttribute("data-submit"); if (sf) call(sf, { detail: { value: collectForm(form) } }); }
-          else if (ft === "reset") { resetForm(form); var rf = form.getAttribute("data-reset"); if (rf) call(rf, { detail: {} }); }
-        }
-      }
       var pk = e.target.closest("[data-picker-mode]");
       if (pk) { if (!pk.getAttribute("data-picker-disabled")) showPicker(pk); return; }
       var tapEl = e.target.closest("[data-tap]");
       if (tapEl) call(tapEl.getAttribute("data-tap"), evObj(tapEl, {}));
+      // form-type 按钮：按钮自己的 bindtap 先发，再提交 / 重置所在表单（与原生端同序）。
+      // detail = {value, formId: ''}（官方 component/form.html）
+      var fbtn = e.target.closest("[data-form-type]");
+      if (fbtn && !fbtn.classList.contains("wx-button-disabled")) {
+        var ft = fbtn.getAttribute("data-form-type"), form = fbtn.closest(".wx-form");
+        if (form) {
+          if (ft === "submit") { var sf = form.getAttribute("data-submit"); if (sf) call(sf, evObj(form, { value: collectForm(form), formId: "" })); }
+          else if (ft === "reset") { resetForm(form); var rf = form.getAttribute("data-reset"); if (rf) call(rf, evObj(form, {})); }
+        }
+      }
     });
     document.addEventListener("input", function (e) {
       var el = e.target; if (!el.getAttribute) return;
@@ -130,11 +170,12 @@
       var model = el.getAttribute("data-model");
       if (model) { if (composing) { setByPath(pageInst.data, model, val); } else { var p = {}; p[model] = val; setData(p); } }
       var inp = el.getAttribute("data-input"); if (inp) call(inp, evObj(el, { value: val }));
+      // slider：拖动中（range 的 input）只发 bindchanging，松手（range 的 change）才发 bindchange —— 微信语义。
+      // 从前 input 里就调 bindchange（拖一下回调几十次），写了 bindchange 的滑块 bindchanging 永远不发。
       if (el.classList && el.classList.contains("wx-slider")) {
         refreshSlider(el);
         var slWrap = el.closest ? el.closest(".wx-slider-wrap") : null;
-        var sc = (slWrap && (slWrap.getAttribute("data-change") || slWrap.getAttribute("data-changing")))
-          || el.getAttribute("data-change") || el.getAttribute("data-changing");
+        var sc = (slWrap && slWrap.getAttribute("data-changing")) || el.getAttribute("data-changing");
         if (sc) call(sc, evObj(slWrap || el, { value: Number(val) }));
       }
     });
@@ -144,7 +185,13 @@
       if (cg) { var f = cg.getAttribute("data-change"); if (f) { var vals = []; cg.querySelectorAll(".wx-checkbox:checked").forEach(function (c) { vals.push(c.value); }); call(f, { detail: { value: vals } }); } }
       var rg = el.closest(".wx-radio-group");
       if (rg) { var f2 = rg.getAttribute("data-change"); if (f2) { var c = rg.querySelector(".wx-radio:checked"); call(f2, { detail: { value: c ? c.value : "" } }); } }
-      if (el.getAttribute) { var cf = el.getAttribute("data-confirm"); if (cf) call(cf, evObj(el, { value: el.value })); var ch = el.getAttribute("data-change"); if (ch && !(el.classList && el.classList.contains("wx-slider"))) call(ch, evObj(el, { value: el.value })); }
+      if (el.classList && el.classList.contains("wx-slider")) {
+        var sw = el.closest(".wx-slider-wrap");
+        var sch = (sw && sw.getAttribute("data-change")) || el.getAttribute("data-change");
+        if (sch) call(sch, evObj(sw || el, { value: Number(el.value) }));
+        return;
+      }
+      if (el.getAttribute) { var cf = el.getAttribute("data-confirm"); if (cf) call(cf, evObj(el, { value: el.value })); var ch = el.getAttribute("data-change"); if (ch) call(ch, evObj(el, { value: el.value })); }
     });
     document.addEventListener("compositionstart", function () { composing = true; });
     document.addEventListener("compositionend", function (e) { composing = false; var el = e.target; if (el.getAttribute && el.getAttribute("data-model")) { var p = {}; p[el.getAttribute("data-model")] = el.value; setData(p); } });

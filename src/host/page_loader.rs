@@ -76,14 +76,15 @@ pub fn load_all_pages() -> HashMap<String, PageInfo> {
 }
 
 /// 加载单个页面
-fn load_page(app_path: &Path, page_path: &str) -> Option<PageInfo> {
+pub(crate) fn load_page(app_path: &Path, page_path: &str) -> Option<PageInfo> {
     let base_path = app_path.join(page_path);
     
     let wxml_path = base_path.with_extension("wxml");
     let wxss_path = base_path.with_extension("wxss");
     let js_path = base_path.with_extension("js");
     
-    let wxml = fs::read_to_string(&wxml_path).unwrap_or_default();
+    // import/include 只能在知道文件路径的这一刻解析（节点不带来源路径）
+    let wxml = crate::parser::wxml_file::read_expanded(app_path, &wxml_path).unwrap_or_default();
     let wxss = fs::read_to_string(&wxss_path).unwrap_or_default();
     let js = fs::read_to_string(&js_path).unwrap_or_default();
     
@@ -94,8 +95,9 @@ fn load_page(app_path: &Path, page_path: &str) -> Option<PageInfo> {
     
     // 页面 json 的 enablePullDownRefresh 优先，缺省回落到 app.json 的 window 配置
     let page_json = fs::read_to_string(base_path.with_extension("json")).unwrap_or_default();
-    let enable_pull_down_refresh = serde_json::from_str::<serde_json::Value>(&page_json)
-        .ok()
+    let page_json_value = serde_json::from_str::<serde_json::Value>(&page_json).ok();
+    let enable_pull_down_refresh = page_json_value
+        .as_ref()
         .and_then(|v| v.get("enablePullDownRefresh").and_then(|b| b.as_bool()))
         .unwrap_or_else(app_enables_pull_down_refresh);
 
@@ -117,6 +119,7 @@ fn load_page(app_path: &Path, page_path: &str) -> Option<PageInfo> {
         js,
         enable_pull_down_refresh,
         components,
+        window: page_json_value.unwrap_or(serde_json::Value::Null),
     })
 }
 
@@ -181,7 +184,7 @@ pub fn load_custom_tabbar_with_app_wxss(app_wxss: &str) -> Result<Option<CustomT
     let wxss_path = tabbar_dir.join("index.wxss");
     let js_path = tabbar_dir.join("index.js");
     
-    let wxml = fs::read_to_string(&wxml_path)
+    let wxml = crate::parser::wxml_file::read_expanded(&app_path, &wxml_path)
         .map_err(|e| format!("读取 custom-tab-bar/index.wxml 失败: {}", e))?;
     let wxss = fs::read_to_string(&wxss_path).unwrap_or_default();
     let js = fs::read_to_string(&js_path).unwrap_or_default();
@@ -217,6 +220,7 @@ fn load_builtin_pages() -> HashMap<String, PageInfo> {
         js: include_str!("../../sample/sample-app/pages/index/index.js").to_string(),
         enable_pull_down_refresh: false,
         components: Vec::new(),
+        window: serde_json::Value::Null,
     });
     
     pages.insert("pages/category/category".to_string(), PageInfo {
@@ -226,6 +230,7 @@ fn load_builtin_pages() -> HashMap<String, PageInfo> {
         js: include_str!("../../sample/sample-app/pages/category/category.js").to_string(),
         enable_pull_down_refresh: false,
         components: Vec::new(),
+        window: serde_json::Value::Null,
     });
     
     pages.insert("pages/cart/cart".to_string(), PageInfo {
@@ -235,6 +240,7 @@ fn load_builtin_pages() -> HashMap<String, PageInfo> {
         js: include_str!("../../sample/sample-app/pages/cart/cart.js").to_string(),
         enable_pull_down_refresh: false,
         components: Vec::new(),
+        window: serde_json::Value::Null,
     });
     
     pages.insert("pages/profile/profile".to_string(), PageInfo {
@@ -244,6 +250,7 @@ fn load_builtin_pages() -> HashMap<String, PageInfo> {
         js: include_str!("../../sample/sample-app/pages/profile/profile.js").to_string(),
         enable_pull_down_refresh: false,
         components: Vec::new(),
+        window: serde_json::Value::Null,
     });
     
     pages.insert("pages/detail/detail".to_string(), PageInfo {
@@ -253,6 +260,7 @@ fn load_builtin_pages() -> HashMap<String, PageInfo> {
         js: include_str!("../../sample/sample-app/pages/detail/detail.js").to_string(),
         enable_pull_down_refresh: false,
         components: Vec::new(),
+        window: serde_json::Value::Null,
     });
     
     pages.insert("pages/canvas/canvas".to_string(), PageInfo {
@@ -262,6 +270,7 @@ fn load_builtin_pages() -> HashMap<String, PageInfo> {
         js: include_str!("../../sample/sample-app/pages/canvas/canvas.js").to_string(),
         enable_pull_down_refresh: false,
         components: Vec::new(),
+        window: serde_json::Value::Null,
     });
     
     pages.insert("pages/components/components".to_string(), PageInfo {
@@ -271,6 +280,7 @@ fn load_builtin_pages() -> HashMap<String, PageInfo> {
         js: include_str!("../../sample/sample-app/pages/components/components.js").to_string(),
         enable_pull_down_refresh: false,
         components: Vec::new(),
+        window: serde_json::Value::Null,
     });
     
     pages

@@ -191,3 +191,19 @@ impl WxmlRenderer {
         }
     }
 }
+
+/// 缓存整体作废的两个入口（从 animation.rs 搬来：那个文件超了 500 行）
+impl WxmlRenderer {
+    /// scroll-view 的离屏缓存全部作废（布局不动）。远程图片下完、canvas 画过时用：
+    /// 数据没变，布局报 Unchanged，缓存也就一直「干净」—— 宿主照常重画，scroll-view 却只是
+    /// 把缓存里那张还画着占位图的旧内容贴回去，滑一下（缓存被别的原因作废）才出图（G-1）
+    pub fn invalidate_offscreen_caches(&mut self) {
+        self.scroll_cache.mark_all_dirty();
+    }
+
+    /// 布局缓存作废，下一帧整棵树重建重排。字体换了（`@font-face` / `wx.loadFontFace` 下完）时用：
+    /// 数据没变，失效分析会以为什么都不用动，可文字宽度已经变了
+    pub fn invalidate_layout(&mut self) {
+        self.cache = None;
+    }
+}

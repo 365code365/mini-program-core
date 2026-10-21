@@ -1,11 +1,11 @@
 //! [`MiniEngine`] 的后端选择与带标志位的出帧（设计 §7.3、§8.2；v2 修订 R4、R5、R10）。
 //!
-//! 现在还没有 GPU 合成器，所以这里的一切最终都落到 CPU：
-//! - [`pump_ex`](MiniEngine::pump_ex) 只会返回 `0` 或 [`FRAME_NEW`]。`PRESENTED`
-//!   （引擎已画到 surface 上）与 `PENDING`（本次没上屏、下次补）都要有 surface 才可能出现；
-//! - `BACKEND_CHANGED` 只在**引擎自己**引起实际后端变化时置位（R5：回退、`set_backend`
-//!   之后重新选择）。宿主主动 attach / detach 不置位 —— 宿主自己知道。CPU 下实际后端
-//!   永远是 CPU，所以它也不会出现，但判断照样按这个规矩写，GPU 接进来时不用再改语义。
+//! - 没挂原生 surface（或没编 `gpu`）时一切落到 CPU，[`pump_ex`](MiniEngine::pump_ex)
+//!   的合成位只会是 `0` 或 [`FRAME_NEW`]；
+//! - 挂了原生 surface 且门槛 / 自检都过了，合成交给 GPU（engine_gpu.rs）：`PRESENTED`
+//!   （引擎已画到 surface 上，宿主不取像素）与 `PENDING`（本次没上屏、下次补）只在这时出现；
+//! - `BACKEND_CHANGED` 只在**引擎自己**引起实际后端变化时置位（R5：回退、`set_backend` /
+//!   `set_device_info` 之后重新选择）。宿主主动 attach / detach 不置位 —— 宿主自己知道。
 //!
 //! 老接口 `pump` 就是 `pump_ex & FRAME_NEW`，写 `== 1` 的 C 调用方照旧拿到 0 / 1。
 use super::engine::MiniEngine;
@@ -16,12 +16,17 @@ use std::time::Instant;
 
 /// 有新画面
 pub const FRAME_NEW: u32 = 1;
-/// 已由引擎画到挂载的 surface 上，宿主不要再取像素显示（要有 GPU 合成器才会出现）
+/// 已由引擎画到挂载的 surface 上，宿主不要再取像素显示（GPU 合成器上屏了才会出现）
 pub const FRAME_PRESENTED: u32 = 2;
 /// 实际后端与上一次 pump 不同（只在引擎自己引起变化时置位），宿主要立刻切换显示路径
 pub const FRAME_BACKEND_CHANGED: u32 = 4;
 /// 本次没上屏（surface 暂时取不到），下一次 pump 会强制重新合成（要有 GPU 合成器才会出现）
 pub const FRAME_PENDING: u32 = 8;
+/// 引擎还有活要干（动画、惯性、定时器、请求在飞、按住的手指…）：宿主在下一个 vsync
+/// 再 pump 一次。没有这一位时宿主可以停掉 vsync，等输入事件再 pump（见 `wants_next_frame`）
+pub const FRAME_WANTS_MORE: u32 = 16;
+/// 事件队列里有东西（`mr_app_poll_event` 取到 NULL 为止）
+pub const FRAME_EVENTS: u32 = 32;
 
 /// SDK 的一次后端选择：偏好按「`MINI_BACKEND` > 宿主配置 > cpu」，再过不碰 GPU 的门槛
 pub(crate) fn select_backend(
@@ -64,11 +69,12 @@ impl MiniEngine {
         self.reselect_backend(true);
     }
 
-    /// 宿主挂上了一块 surface。返回挂载后的实际后端。
-    ///
-    /// 只记种类、不收指针：现在没有 GPU 合成器，指针既不解引用也不保留
-    /// （Android 也就不需要 `ANativeWindow_acquire`）。重复调用等于先卸再挂。
+    /// 宿主挂上了一块 surface，但只给种类、不给原生指针（没编 `gpu` 时 FFI 走这里）。
+    /// 没有指针就没有东西可上屏，结论只会是 CPU。要 GPU 用
+    /// `attach_native_surface`（engine_gpu.rs）。重复调用等于先卸再挂。
     pub fn attach_surface(&mut self, kind: SurfaceKind) -> BackendKind {
+        #[cfg(feature = "gpu")]
+        self.detach_native_surface();
         self.surface = Some(kind);
         self.reselect_backend(false);
         self.backend.active
@@ -76,6 +82,8 @@ impl MiniEngine {
 
     /// surface 要销毁了 / 进后台。之后是 CPU。
     pub fn detach_surface(&mut self) {
+        #[cfg(feature = "gpu")]
+        self.detach_native_surface();
         self.surface = None;
         self.reselect_backend(false);
     }
@@ -83,6 +91,11 @@ impl MiniEngine {
     /// 重新选一次；结论变了打一行日志。`engine_caused` 为真且实际后端变了时，
     /// 下一次 `pump_ex` 带上 [`FRAME_BACKEND_CHANGED`]。
     fn reselect_backend(&mut self, engine_caused: bool) {
+        // 挂着原生 surface：要能建 / 放 GPU 合成器，走 engine_gpu 那一份
+        #[cfg(feature = "gpu")]
+        if self.refresh_native_backend(engine_caused) {
+            return;
+        }
         let next = select_backend(&self.env, self.host_pref, &self.device_info, self.surface);
         if next == self.backend {
             return;
@@ -98,13 +111,27 @@ impl MiniEngine {
     pub fn pump_ex(&mut self, now_ms: u64) -> u32 {
         // 不开 MINI_FPS 时连时钟都不取：pump 是每个 vsync 都要调的热路径
         let begin = self.stats.enabled().then(Instant::now);
+        self.frame_presented = false;
         let produced = self.pump_frame(now_ms);
         let mut flags = if produced { FRAME_NEW } else { 0 };
+        if self.frame_presented {
+            flags |= FRAME_PRESENTED;
+        }
+        if self.present_pending {
+            flags |= FRAME_PENDING;
+        }
         if std::mem::take(&mut self.backend_changed) {
             flags |= FRAME_BACKEND_CHANGED;
         }
+        self.sync_host_events();
+        if self.wants_next_frame() {
+            flags |= FRAME_WANTS_MORE;
+        }
+        if !self.events.is_empty() {
+            flags |= FRAME_EVENTS;
+        }
         if let Some(begin) = begin {
-            // CPU 后端没有 surface 可等：acquire 恒为 0，工作时间 = pump 时间
+            // acquire 等待没有单独计（GPU 上屏时算在 pump 时间里），工作时间 = pump 时间
             let pump_ms = begin.elapsed().as_secs_f32() * 1000.0;
             if let Some(sum) = self.stats.record(begin, pump_ms, 0.0, produced) {
                 diag::emit(&engine_stats::fps_line(&self.backend, &sum));

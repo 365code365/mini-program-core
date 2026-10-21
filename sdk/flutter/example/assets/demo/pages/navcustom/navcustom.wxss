@@ -1,0 +1,13 @@
+.nav { position: fixed; left: 0; top: 0; right: 0; z-index: 10; background: linear-gradient(90deg, #8a5cf5, #10aeff); }
+.nav-bar { display: flex; flex-direction: row; align-items: center; justify-content: space-between; padding: 0 8px; }
+.nav-back { width: 40px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 16px; }
+.nav-back-on { background-color: rgba(255, 255, 255, 0.25); }
+.nav-title { font-size: 17px; font-weight: bold; color: #ffffff; }
+/* 顶部留出状态栏 + 标题栏的高度（fixed 的导航栏不占位） */
+.hero { display: flex; flex-direction: column; padding: 0 32rpx 40rpx 32rpx; background: linear-gradient(180deg, #10aeff, #f5f5f5); }
+.hero-title { font-size: 40rpx; font-weight: bold; color: #ffffff; }
+.hero-sub { margin-top: 12rpx; font-size: 24rpx; line-height: 1.7; color: #ffffff; }
+.spacer { height: 160rpx; }
+.bottom-bar { position: fixed; left: 0; right: 0; bottom: 0; display: flex; flex-direction: row; padding: 16rpx 24rpx; padding-bottom: env(safe-area-inset-bottom); background-color: #ffffff; border-top: 1rpx solid #eeeeee; }
+.bb-btn { flex: 1; margin: 0 8rpx 16rpx 8rpx; padding: 20rpx 0; text-align: center; font-size: 28rpx; color: #333333; background-color: #f2f2f2; border-radius: 40rpx; }
+.bb-main { color: #ffffff; background-color: #07c160; }

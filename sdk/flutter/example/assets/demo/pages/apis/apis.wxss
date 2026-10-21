@@ -1,0 +1,7 @@
+.banner { display: flex; flex-direction: column; padding: 36rpx 32rpx; background: linear-gradient(135deg, #fa9d3b, #e64340); color: #ffffff; }
+.banner-title { font-size: 38rpx; font-weight: bold; }
+.banner-sub { margin-top: 10rpx; font-size: 24rpx; line-height: 1.6; opacity: 0.9; }
+.probe { display: flex; flex-direction: row; justify-content: space-between; padding: 12rpx 0; border-bottom: 1rpx solid #f0f0f0; font-size: 26rpx; }
+.probe:last-child { border-bottom: 0; }
+.probe-ok { color: #07c160; }
+.probe-no { color: #b2b2b2; }

@@ -57,6 +57,9 @@ impl WxmlRenderer {
                 DrawKind::Top { scroll_offset, viewport_height });
             return;
         }
+        if node.tag == "picker-view" {
+            return self.draw_picker_view_interactive(canvas, taffy, node, (x, y, w, h), interaction, DrawKind::Top { scroll_offset, viewport_height });
+        }
         
         let logical_bounds = self.page_bounds(x, y, w, h);
         
@@ -98,6 +101,7 @@ impl WxmlRenderer {
         self.register_interactive_element(node, &node_to_draw, &logical_bounds, interaction, taffy, false);
 
         // 绘制组件 - 特殊处理 input 和 button 组件
+        let gif = Self::animated_image_frame(node);
         if !self.outside_damage(x, y, w, h) {
             match node.tag.as_str() {
                 "input" | "textarea" | "button" => self.draw_interactive_component(
@@ -106,7 +110,17 @@ impl WxmlRenderer {
                 _ => self.draw_component(canvas, &node_to_draw, x, y, w, h, sf),
             }
         }
+        self.note_animated_image(node, gif, (x, y, w, h));
         
+        // 顶层 scroll-view 里有 swiper：不走离屏缓存，按嵌套 scroll-view 那条路逐帧画可见子节点
+        // （见 scroll_live.rs —— 缓存里的 swiper 换页、拖动时整块缓存要每帧重画，代价是整段内容高）
+        // picker-view 同理：滚轮一拖，缓存整块要重画；动图也是（缓存里的 GIF 不换帧，见 animated_image.rs）
+        if node.tag == "scroll-view" && (Self::subtree_has_tag(node, "swiper") || Self::subtree_has_tag(node, "picker-view") || Self::subtree_has_animated_image(node)) {
+            self.draw_scroll_view_live(canvas, taffy, node, (x, y, w, h), &component_id, interaction, scroll_offset, viewport_height);
+            self.push_event_bindings(node, logical_bounds);
+            return;
+        }
+
         // 绘制子节点
         if Self::draws_children(node) {
             let is_scroll_view = node.tag == "scroll-view";
@@ -156,6 +170,8 @@ impl WxmlRenderer {
                     for child in &node.children {
                         self.draw_child_to_cache(&mut temp_canvas, taffy, child, 0.0, 0.0, text_color, interaction);
                     }
+                    // 动图是这一趟才解码出来的：再要一帧，下一趟改走逐帧画（见 animated_image.rs）
+                    if Self::subtree_has_animated_image(node) { self.mark_animating(); }
                     
                     // 将临时 Canvas 的内容复制到缓存
                     if let Some(cache) = self.scroll_cache.get_mut(&component_id) {
@@ -170,8 +186,19 @@ impl WxmlRenderer {
                 canvas.save();
                 canvas.clip_rect(GeoRect::new(x, y, w, h));
                 
+                // 顶部被拉下来（橡皮筋 / 下拉刷新）时内容整体下移：缓存从第 0 行贴到 y + 空白处，
+                // 空白里画刷新区域。从前负的偏移被当成 0，拉的时候内容纹丝不动
+                let gap = (-scroll_position * sf).max(0.0);
                 if let Some(cache) = self.scroll_cache.get(&component_id) {
-                    cache.blit_to(canvas, scroll_position, x, y, sf);
+                    cache.blit_to(canvas, scroll_position.max(0.0), x, y + gap, sf);
+                }
+                if gap > 0.0 {
+                    self.draw_refresher_gap(canvas, node, &component_id, interaction, (x, y, w), gap);
+                    // 自定义刷新节点（`slot="refresher"`）在内容上方，不在缓存里：直接画
+                    let text_color = node.style.text_color.unwrap_or(Color::BLACK);
+                    for child in node.children.iter().filter(|c| c.attrs.get("slot").map(|s| s == "refresher").unwrap_or(false)) {
+                        self.draw_child_to_cache(canvas, taffy, child, x, y + gap, text_color, interaction);
+                    }
                 }
                 
                 canvas.restore();
@@ -291,6 +318,10 @@ impl WxmlRenderer {
                 DrawKind::Child { inherited: inherited_color, scroll_offset, viewport_height });
             return;
         }
+        if node.tag == "picker-view" {
+            let kind = DrawKind::Child { inherited: inherited_color, scroll_offset, viewport_height };
+            return self.draw_picker_view_interactive(canvas, taffy, node, (x, y, w, h), interaction, kind);
+        }
 
         let logical_bounds = self.page_bounds(x, y, w, h);
 
@@ -373,6 +404,7 @@ impl WxmlRenderer {
         self.register_interactive_element(node, &node_to_draw, &logical_bounds, interaction, taffy, false);
 
         // 绘制组件 - 特殊处理 input、button 和有点击事件的 view 组件
+        let gif = Self::animated_image_frame(node);
         if !self.outside_damage(x, y, w, h) {
             match node.tag.as_str() {
                 "input" | "textarea" | "button" => self.draw_interactive_component(
@@ -381,6 +413,7 @@ impl WxmlRenderer {
                 _ => self.draw_component(canvas, &node_to_draw, x, y, w, h, sf),
             }
         }
+        self.note_animated_image(node, gif, (x, y, w, h));
         
         if Self::draws_children(node) {
             let is_scroll_view = node.tag == "scroll-view";
@@ -389,15 +422,21 @@ impl WxmlRenderer {
             let mut child_offset_y = 0.0;
             let scroll_position: f32;
             
-            // 检查是否是横向滚动
-            let is_horizontal_scroll = is_scroll_view && node.attrs.get("scroll-x")
-                .map(|s| s == "true" || s == "{{true}}")
-                .unwrap_or(false);
+            // 检查是否是横向滚动（与登记、布局同一个判定）
+            let is_horizontal_scroll = is_scroll_view && super::scroll_views::scroll_axes(&node.attrs).0;
             
             // 对于 overflow: hidden 的容器，应用裁剪
             if has_overflow_hidden || is_scroll_view {
                 canvas.save();
                 canvas.clip_rect(GeoRect::new(x, y, w, h));
+            }
+            // 顶部被拉下来时露出的空白：铺下拉刷新的背景与默认指示器（子节点随后画在它上面）
+            if is_scroll_view && !is_horizontal_scroll {
+                if let Some(pos) = interaction.get_scroll_controller(&component_id).map(|c| c.get_position()) {
+                    if pos < 0.0 {
+                        self.draw_refresher_gap(canvas, node, &component_id, interaction, (x, y, w), -pos * sf);
+                    }
+                }
             }
             
             if is_scroll_view {

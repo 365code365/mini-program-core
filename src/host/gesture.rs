@@ -35,6 +35,10 @@ pub enum GestureTarget {
     Page,
     /// 某个 scroll-view
     Area { id: String, axis: Axis },
+    /// 某个 swiper（跟手拖动，松手吸附 / 翻页）
+    Swiper { id: String, axis: Axis },
+    /// 某个 slider（横向跟手，松手发 change）
+    Slider { id: String },
     /// 左边缘侧滑返回（宿主级手势，不交给页面）
     EdgeBack,
 }
@@ -52,6 +56,12 @@ pub enum GestureAction {
     /// 开始/继续左边缘侧滑返回
     BeginEdgeBack,
     UpdateEdgeBack,
+    /// 开始/继续拖 swiper（从按下点开始）
+    BeginSwiper { id: String, axis: Axis },
+    UpdateSwiper { id: String, axis: Axis },
+    /// 开始/继续拖 slider（开始时从按下点判断是不是抓在圆点上）
+    BeginSlider { id: String },
+    UpdateSlider { id: String },
 }
 
 /// 一次拖动手势的状态
@@ -69,6 +79,10 @@ pub struct DragGesture {
     page_scrollable: bool,
     /// 起点落在左边缘触发区，且当前页可以返回（栈里还有上一页）
     edge_back: bool,
+    /// 命中的最内层 swiper（id, 它的滑动轴, 是否比 `candidate` 更内层）
+    swiper: Option<(String, Axis, bool)>,
+    /// 起点下最上层的元素是一个 slider
+    slider: Option<String>,
 }
 
 impl DragGesture {
@@ -87,7 +101,25 @@ impl DragGesture {
             catch_move,
             page_scrollable,
             edge_back: false,
+            swiper: None,
+            slider: None,
         }
+    }
+
+    /// 起点落在 slider 上：横向锁定时由它接手（竖着划照样滚页面，点一下走 tap）。
+    ///
+    /// 优先级高于 `catchtouchmove`：弹窗遮罩上写 `catchtouchmove` 锁页面滚动是标准写法，
+    /// 弹窗里的滑块不能因此拖不动（微信里 slider 的拖动是组件自己的，与冒泡无关）。
+    pub fn with_slider(mut self, slider: Option<String>) -> Self {
+        self.slider = slider;
+        self
+    }
+
+    /// 起点下有 swiper：方向与它一致时由它接手。`inner` 表示它比命中的 scroll-view 更内层
+    /// （swiper 在纵向列表里、列表横划交给 swiper；横向 scroll-view 里的 swiper 也是 swiper 先拿）
+    pub fn with_swiper(mut self, swiper: Option<(String, Axis)>, inner: bool) -> Self {
+        self.swiper = swiper.map(|(id, axis)| (id, axis, inner));
+        self
     }
 
     /// 允许这次手势升级成「左边缘侧滑返回」（起点在触发区且能返回时由宿主打开）
@@ -116,6 +148,11 @@ impl DragGesture {
                 id: id.clone(),
                 axis: *axis,
             },
+            GestureTarget::Swiper { id, axis } => GestureAction::UpdateSwiper {
+                id: id.clone(),
+                axis: *axis,
+            },
+            GestureTarget::Slider { id } => GestureAction::UpdateSlider { id: id.clone() },
             GestureTarget::Undecided => {
                 let (dx, dy) = (x - self.start.0, y - self.start.1);
                 if dx.abs().max(dy.abs()) < DIRECTION_LOCK_SLOP {
@@ -133,10 +170,23 @@ impl DragGesture {
                     self.target = GestureTarget::EdgeBack;
                     return GestureAction::BeginEdgeBack;
                 }
+                // slider 横着拖：跟手（它是最内层、也是最上层的那个元素）
+                if let (Some(id), Axis::Horizontal) = (&self.slider, axis) {
+                    self.target = GestureTarget::Slider { id: id.clone() };
+                    return GestureAction::BeginSlider { id: id.clone() };
+                }
                 // `catchtouchmove`：这次手势不许滚任何东西（遮罩锁滚动的标准写法）
                 if self.catch_move {
                     self.target = GestureTarget::Blocked;
                     return GestureAction::None;
+                }
+                // swiper 方向一致、且它在更内层（或没有同方向的滚动区域）：由它接手
+                if let Some((id, sw_axis, inner)) = &self.swiper {
+                    let area_same_axis = self.candidate.as_ref().map(|(_, a)| *a == axis).unwrap_or(false);
+                    if *sw_axis == axis && (*inner || !area_same_axis) {
+                        self.target = GestureTarget::Swiper { id: id.clone(), axis };
+                        return GestureAction::BeginSwiper { id: id.clone(), axis };
+                    }
                 }
                 // 命中的滚动区域**方向一致**才由它接手；不一致就往外找页面
                 if let Some((id, area_axis)) = &self.candidate {
@@ -319,6 +369,27 @@ mod tests {
         );
     }
 
+    /// 纵向列表里的 swiper：横划给 swiper，竖划仍滚列表
+    #[test]
+    fn swiper_takes_its_axis_inside_vertical_list() {
+        let sw = Some(("sw".to_string(), Axis::Horizontal));
+        let mut g = DragGesture::new((100.0, 100.0), vertical_area(), false, true).with_swiper(sw.clone(), true);
+        assert_eq!(g.on_move(60.0, 101.0), GestureAction::BeginSwiper { id: "sw".into(), axis: Axis::Horizontal });
+        assert_eq!(g.on_move(40.0, 101.0), GestureAction::UpdateSwiper { id: "sw".into(), axis: Axis::Horizontal });
+        let mut g = DragGesture::new((100.0, 100.0), vertical_area(), false, true).with_swiper(sw, true);
+        assert_eq!(g.on_move(101.0, 140.0), GestureAction::BeginArea { id: "list".into(), axis: Axis::Vertical });
+    }
+
+    /// 侧滑返回仍然优先于 swiper；swiper 在横向 scroll-view **外层**时横划给 scroll-view
+    #[test]
+    fn edge_back_and_inner_area_win_over_swiper() {
+        let sw = Some(("sw".to_string(), Axis::Horizontal));
+        let mut g = DragGesture::new((6.0, 300.0), None, false, true).allow_edge_back(true).with_swiper(sw.clone(), true);
+        assert_eq!(g.on_move(40.0, 301.0), GestureAction::BeginEdgeBack);
+        let mut g = DragGesture::new((100.0, 100.0), horizontal_area(), false, true).with_swiper(sw, false);
+        assert_eq!(g.on_move(60.0, 101.0), GestureAction::BeginArea { id: "row".into(), axis: Axis::Horizontal });
+    }
+
     /// 横向区域不参与纵向嵌套传递；页面不可滚时也不传递
     #[test]
     fn handoff_requires_vertical_area_and_scrollable_page() {
@@ -329,5 +400,21 @@ mod tests {
         let mut g2 = DragGesture::new((100.0, 100.0), vertical_area(), false, false);
         g2.on_move(100.0, 140.0);
         assert_eq!(g2.handoff_to_page(), GestureAction::None);
+    }
+    /// slider 上横着拖 → 交给滑块（哪怕外面是横向 swiper、哪怕遮罩上写了 catchtouchmove）
+    #[test]
+    fn horizontal_drag_on_slider_goes_to_slider() {
+        let mut g = DragGesture::new((100.0, 100.0), horizontal_area(), true, true)
+            .with_swiper(Some(("sw".into(), Axis::Horizontal)), true)
+            .with_slider(Some("sl".into()));
+        assert_eq!(g.on_move(110.0, 101.0), GestureAction::BeginSlider { id: "sl".into() });
+        assert_eq!(g.on_move(140.0, 103.0), GestureAction::UpdateSlider { id: "sl".into() });
+    }
+    /// slider 上竖着划 → 照样滚页面（从前一按到滑块整次触摸就被吃掉）
+    #[test]
+    fn vertical_drag_on_slider_scrolls_page() {
+        let mut g = DragGesture::new((100.0, 100.0), None, false, true).with_slider(Some("sl".into()));
+        assert_eq!(g.on_move(101.0, 140.0), GestureAction::BeginPage);
+        assert_eq!(g.on_move(101.0, 180.0), GestureAction::UpdatePage);
     }
 }

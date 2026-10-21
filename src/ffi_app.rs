@@ -35,15 +35,41 @@ pub struct MRApp {
     /// `mr_app_backend_reason` 交出去的那块 C 字符串（见 `ffi_backend.rs`）：
     /// 要活到下一次对同一 app 调用 `mr_app_*` 之前，所以挂在句柄上而不是临时值
     pub(crate) backend_reason: CString,
+    /// `mr_app_poll_event` 交出去的那条事件（见 `ffi_embed.rs`），同样活到下一次调用
+    pub(crate) event_buf: CString,
+    /// `mr_app_eval` 的结果，同上
+    pub(crate) eval_buf: CString,
+    /// Android：CPU 直写用的 `ANativeWindow*`（`ffi_jni_embed.rs`，0 = 没挂）与上次设的几何
+    #[cfg(target_os = "android")]
+    pub(crate) cpu_window: usize,
+    #[cfg(target_os = "android")]
+    pub(crate) cpu_window_size: (u32, u32),
+    /// Android：交给 GPU 合成器的 `ANativeWindow*`（0 = 没挂）。头文件的承诺是「引擎挂载时
+    /// 自己 acquire、卸载时 release」：这就是那份引用，`mr_app_attach_surface` 里 acquire，
+    /// 卸载 / 重挂 / destroy 时**先**放掉合成器、再 release
+    #[cfg(target_os = "android")]
+    pub(crate) gpu_window: usize,
 }
 
 impl MRApp {
     pub(crate) fn new(engine: MiniEngine) -> Self {
-        Self { engine, last_error: String::new(), backend_reason: CString::default() }
+        Self {
+            engine,
+            last_error: String::new(),
+            backend_reason: CString::default(),
+            event_buf: CString::default(),
+            eval_buf: CString::default(),
+            #[cfg(target_os = "android")]
+            cpu_window: 0,
+            #[cfg(target_os = "android")]
+            cpu_window_size: (0, 0),
+            #[cfg(target_os = "android")]
+            gpu_window: 0,
+        }
     }
 }
 
-fn cstr(p: *const c_char) -> Option<String> {
+pub(crate) fn cstr(p: *const c_char) -> Option<String> {
     if p.is_null() {
         return None;
     }
@@ -79,7 +105,17 @@ pub extern "C" fn mr_app_create(
 #[no_mangle]
 pub extern "C" fn mr_app_destroy(app: *mut MRApp) {
     if !app.is_null() {
-        unsafe { drop(Box::from_raw(app)) };
+        #[allow(unused_mut)] // 只有 Android 要改它
+        let mut a = unsafe { Box::from_raw(app) };
+        // Android：挂着的 ANativeWindow 引用要还（不还会让 Surface 永远不被回收）。
+        // GPU 那块要先让引擎放掉合成器（它的 swapchain 还连着这块 window），再还引用
+        #[cfg(target_os = "android")]
+        {
+            crate::ffi_jni_embed::release_cpu_window(&mut a);
+            a.engine.detach_surface();
+            crate::ffi_jni_embed::release_gpu_window(&mut a);
+        }
+        drop(a);
     }
 }
 
@@ -202,8 +238,10 @@ pub extern "C" fn mr_app_text_input(app: *mut MRApp, text: *const c_char) {
     })
 }
 
-/// 功能键：`enter` / `backspace` / `delete` / `left` / `right` / `home` / `end` /
-/// `selectall` / `escape`
+/// 功能键，名字表见 `ui::interaction::KEY_NAMES`：`enter` `newline` `backspace` `delete`
+/// `left` `right` `up` `down` `home` `end`、`shift+…` 扩展选区、`word-left` / `word-right`、
+/// `doc-start` / `doc-end`、`delete-word-back`、`selectall` `copy` `cut` `undo` `redo` `escape`。
+/// 回车也可以作为 `mr_app_text_input("\n")` 送（textarea 换行、input 触发 confirm）。
 #[no_mangle]
 pub extern "C" fn mr_app_key(app: *mut MRApp, name: *const c_char) {
     with_app!(app, (), |a| {

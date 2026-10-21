@@ -15,10 +15,20 @@
 #                           「couldn't read .../bindings/aarch64-apple-ios.rs」。
 #   IPHONEOS_DEPLOYMENT_TARGET  rustc 默认按 iOS 10 链接，而 C 依赖（QuickJS/openh264）
 #                           是按 SDK 新版本编的，两边不一致会缺 `___chkstk_darwin`。
+#
+# Android 另外编进 `gpu`（wgpu 的 Vulkan / GLES）：`nativeAttachSurface` 交上来的
+# ANativeWindow 由 GPU 合成器直接上屏。SDK 默认偏好仍是 cpu，宿主不选 auto/gpu 就不碰 GPU。
+# `ANDROID_GPU=0` 可以编一份不带 GPU 的（体积小几 MB，`nativeAttachSurface` 恒返回 CPU）。
+# iOS 暂不编 gpu：Flutter 的 iOS 外部纹理是 CVPixelBuffer，不是 CAMetalLayer，用不上。
 set -eu
 cd "$(dirname "$0")/.."
 MODE="${1:-check}"
 FLAGS=(--release --lib --no-default-features --features bindgen)
+if [ "${ANDROID_GPU:-1}" = 0 ]; then
+    ANDROID_FLAGS=("${FLAGS[@]}")
+else
+    ANDROID_FLAGS=(--release --lib --no-default-features --features bindgen,gpu)
+fi
 export IPHONEOS_DEPLOYMENT_TARGET="${IPHONEOS_DEPLOYMENT_TARGET:-13.0}"
 
 # ─────────────────────────────── Android ───────────────────────────────
@@ -62,9 +72,12 @@ android_target() {
     rustup target add "$target" >/dev/null 2>&1 || true
     echo "▶ $target ($abi)"
     if [ "$MODE" = check ]; then
-        cargo check "${FLAGS[@]}" --target "$target"
+        cargo check "${ANDROID_FLAGS[@]}" --target "$target"
     else
-        cargo build "${FLAGS[@]}" --target "$target"
+        # 发出去的库要 thin LTO（Cargo.toml 的 release 为了开发构建快关掉了它，见那里的注释）。
+        # 写在函数体里而不是脚本开头：tools/build-android-abi.sh 只 eval 这个函数
+        CARGO_PROFILE_RELEASE_LTO=thin CARGO_PROFILE_RELEASE_INCREMENTAL=false \
+            cargo build "${ANDROID_FLAGS[@]}" --target "$target"
         # 放进 Gradle 库模块的 jniLibs，publishToMavenLocal 时打进 AAR
         local dst="sdk/android/src/main/jniLibs/$abi"
         mkdir -p "$dst"
@@ -93,7 +106,9 @@ ios_target() {
     if [ "$MODE" = check ]; then
         cargo check "${FLAGS[@]}" --target "$target"
     else
-        cargo build "${FLAGS[@]}" --target "$target"
+        # 发出去的库要 thin LTO（同 android_target）
+        CARGO_PROFILE_RELEASE_LTO=thin CARGO_PROFILE_RELEASE_INCREMENTAL=false \
+            cargo build "${FLAGS[@]}" --target "$target"
     fi
 }
 
@@ -114,8 +129,12 @@ build_ios() {
         -library target/aarch64-apple-ios/release/libmini_render.a     -headers "$hdr" \
         -library target/aarch64-apple-ios-sim/release/libmini_render.a -headers "$hdr" \
         -output "$out"
+    # Flutter 插件（sdk/flutter）的 podspec 用同一份：CocoaPods 的 vendored 路径不能越出
+    # podspec 所在目录，所以放一个软链过去（已在 sdk/flutter/.gitignore 里）
+    ln -sfn ../../ios/MiniRender.xcframework sdk/flutter/ios/MiniRender.xcframework
     echo "✅ $out"
     echo "   Swift 里 import MiniRenderFFI；SPM 用 sdk/ios/Package.swift，CocoaPods 用 MiniRender.podspec"
+    echo "   Flutter 插件：sdk/flutter/ios/MiniRender.xcframework 已软链到这里"
 }
 
 case "$MODE" in

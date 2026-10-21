@@ -7,8 +7,6 @@
 //! 数据没变（滚动、动画帧、按压）就直接复用上一次的树。
 
 use super::*;
-// taffy 0.12 的尺寸值是位压缩结构，读值走这几个封装（见 components::base）
-use crate::renderer::components::dim_is_auto;
 
 impl WxmlRenderer {
     /// 需要时重建布局树，并返回这次数据变化的重绘范围（见 [`FramePlan`]）。
@@ -289,6 +287,10 @@ impl WxmlRenderer {
         
         if node.node_type != WxmlNodeType::Element { return None; }
 
+        // virtualHost 组件模板的第一层节点：补回被虚化掉的宿主那几层祖先（见 VIRTUAL_HOST_ATTR）
+        let vhost_chain = virtual_host_chain(node, ancestors);
+        let ancestors = vhost_chain.as_deref().unwrap_or(ancestors);
+
         let tag = node.tag_name.as_str();
         let mut ctx = ComponentContext {
             scale_factor: sf,
@@ -356,7 +358,10 @@ impl WxmlRenderer {
 
                 let mut children = vec![];
                 for (sib_ci, c) in node.children.iter().enumerate() {
-                    if let Some(cr) = self.build_tree(ctx.taffy, c, &child_ancestors, &child_inherited, sib_ci, node.children.len(), child_positioned) { 
+                    // slot 内容不吃组件的作用域样式（见 `slot_content_ancestors`）
+                    let slot_chain = crate::parser::TemplateEngine::slot_content_ancestors(c, &child_ancestors);
+                    let child_ancestors = slot_chain.as_deref().unwrap_or(&child_ancestors);
+                    if let Some(cr) = self.build_tree(ctx.taffy, c, child_ancestors, &child_inherited, sib_ci, node.children.len(), child_positioned) { 
                         children.push(cr); 
                     }
                 }
@@ -368,27 +373,12 @@ impl WxmlRenderer {
                     // 这里重新算了一遍基础样式，会覆盖组件 build 里设的布局，
                     // 所以需要容器语义的组件必须在这里再补一次（swiper / swiper-item）。
                     if tag == "swiper" {
-                        let vertical = node.get_attr("vertical")
-                            .map(|v| v == "true" || v == "{{true}}")
-                            .unwrap_or(false);
-                        ts.flex_direction = if vertical { FlexDirection::Column } else { FlexDirection::Row };
-                        ts.flex_wrap = FlexWrap::NoWrap;
-                        if dim_is_auto(ts.size.width) {
-                            ts.size.width = percent(1.0_f32);
-                        }
-                        if dim_is_auto(ts.size.height) {
-                            ts.size.height = length(SwiperComponent::DEFAULT_HEIGHT * ctx.scale_factor);
-                        }
-                        // 每个 item 占满一屏且不收缩（对齐 HTML .wx-swiper-item{flex:0 0 100%}）
-                        for child in &children {
-                            if let Ok(mut style) = ctx.taffy.style(child.taffy_node).cloned() {
-                                style.size = taffy::geometry::Size { width: percent(1.0_f32), height: percent(1.0_f32) };
-                                style.min_size.width = percent(1.0_f32);
-                                style.flex_shrink = 0.0;
-                                style.flex_grow = 0.0;
-                                ctx.taffy.set_style(child.taffy_node, style).ok();
-                            }
-                        }
+                        // 方向、一屏几项、两侧边距与 item 尺寸（见 swiper_draw.rs）
+                        self.apply_swiper_container_layout(node, &mut ts, &children, &mut ctx);
+                    }
+                    if tag == "picker-view" {
+                        // 各列横排平分、撑满高度；列里的项照常纵向排（绘制时整列按滚轮位置偏移）
+                        Self::apply_picker_view_layout(&mut ts, &children, &mut ctx);
                     }
                     
                     // 对于 scroll-view，使用 Overflow::Visible 让子节点能够正确布局
@@ -404,11 +394,11 @@ impl WxmlRenderer {
                     if tag == "scroll-view" {
                         ts.overflow.x = taffy::style::Overflow::Visible;
                         ts.overflow.y = taffy::style::Overflow::Visible;
+                        super::scroll_views::apply_padding_attr(&node.attributes, &mut ts, ctx.scale_factor);
 
-                        // 检查是否是横向滚动
-                        let scroll_x = node.get_attr("scroll-x")
-                            .map(|s| s == "true" || s == "{{true}}")
-                            .unwrap_or(false);
+                        // 横向滚动（与登记、绘制同一个判定，见 scroll_views::scroll_axes）
+                        let (scroll_x, _) = super::scroll_views::scroll_axes(&node.attributes);
+                        super::scroll_views::place_refresher_slot(node, &children, ctx.taffy);
 
                         if scroll_x {
                             // 横向滚动：子元素横向排列
@@ -491,4 +481,12 @@ pub(super) fn count_wrapped_lines(tr: &TextRenderer, text: &str, max_width: f32,
         lines += crate::renderer::components::wrap_paragraph_lines(&chars, max_width, measure).len();
     }
     lines.max(1)
+}
+
+/// virtualHost 组件模板的第一层节点：祖先链补上被虚化掉的宿主（由外向内）。不是这种节点给 None
+fn virtual_host_chain(node: &WxmlNode, ancestors: &[ElementDesc]) -> Option<Vec<ElementDesc>> {
+    let tags = node.get_attr(crate::parser::template::VIRTUAL_HOST_ATTR)?;
+    let mut v = ancestors.to_vec();
+    v.extend(tags.split_whitespace().map(|t| ElementDesc::new(t, None, &[], &HashMap::new())));
+    Some(v)
 }

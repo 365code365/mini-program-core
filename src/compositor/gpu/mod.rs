@@ -181,6 +181,11 @@ impl GpuCompositor {
             Some("picker")
         } else if l.edge_back.is_some() {
             Some("侧滑返回")
+        } else if crate::renderer::components::fullscreen_video().is_some() {
+            // 全屏视频画在 CPU 合成那一步（与 Modal 同理，整帧直通）
+            Some("全屏视频")
+        } else if crate::host::ui_overlay::sheet_overlay_visible() {
+            Some("操作菜单 / 图片预览")
         } else {
             None
         };

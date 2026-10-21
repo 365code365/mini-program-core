@@ -102,12 +102,23 @@ fn rewrite_selector_tokens(sel: &str) -> String {
 }
 
 /// 扫描整段 CSS，只在「选择器位置」改写标签选择器；声明块、@media 条件、@keyframes 内容保持原样。
+///
+/// `@supports` / `@container` / `@layer` 整块丢掉：Skyline 的 WXSS 不支持这三种 at-rule（官方
+/// 「Skyline WXSS 样式支持与差异」的模块表里没有它们，媒体查询也只支持 DarkMode），原生端解析时
+/// 整块跳过（`parser/wxss/parser`）。浏览器会认它们，不丢的话 H5 导出与原生端（以及 Skyline）分叉。
 fn rewrite_tag_selectors(css: &str) -> String {
     let mut out = String::with_capacity(css.len() + 64);
     let mut sel = String::new();
     let mut in_block = false;
     let mut depth = 0i32;
+    // 正在丢弃的 at-rule 块（@supports / @container / @layer）
+    let mut skipping = false;
     for c in css.chars() {
+        if skipping {
+            if c == '{' { depth += 1; }
+            else if c == '}' { depth -= 1; if depth == 0 { skipping = false; } }
+            continue;
+        }
         if in_block {
             out.push(c);
             if c == '{' { depth += 1; }
@@ -119,7 +130,10 @@ fn rewrite_tag_selectors(css: &str) -> String {
             '{' => {
                 let trimmed = sel.trim_start();
                 let low = trimmed.to_ascii_lowercase();
-                if low.starts_with("@media") || low.starts_with("@supports") || low.starts_with("@container") {
+                if low.starts_with("@supports") || low.starts_with("@container") || low.starts_with("@layer") {
+                    skipping = true;
+                    depth = 1;
+                } else if low.starts_with("@media") {
                     // 分组 at-rule：条件原样输出，内部仍是规则（继续在选择器模式）
                     out.push_str(&sel);
                     out.push('{');
@@ -208,6 +222,7 @@ body{font-size:16px;color:#333;font-family:-apple-system,system-ui,"PingFang SC"
 .wx-button{position:relative;box-sizing:border-box;display:flex;align-items:center;justify-content:center;min-height:46px;padding:0 14px;font-size:17px;line-height:1.35;text-align:center;border:0;border-radius:5px;background:#f7f7f7;color:#000;cursor:pointer;overflow:hidden;}
 /* 微信默认点击态。写在类型色之前：primary/warn 以及页面自己的类会盖住这层背景，只留下 opacity。 */
 .button-hover{opacity:.7;background-color:rgba(0,0,0,.1);}
+.navigator-hover{opacity:.7;background-color:rgba(0,0,0,.1);}
 .wx-button-primary{background:#07c160;color:#fff;}
 .wx-button-warn{background:#fa5151;color:#fff;}
 .wx-button-plain{background:transparent;border:1px solid currentColor;}
@@ -225,7 +240,7 @@ body{font-size:16px;color:#333;font-family:-apple-system,system-ui,"PingFang SC"
 .wx-swiper-wrap{position:relative;}
 .wx-swiper-dots{position:absolute;left:0;right:0;bottom:8px;display:flex;flex-direction:row;justify-content:center;gap:6px;pointer-events:none;}
 .wx-swiper-dot{width:7px;height:7px;border-radius:50%;background:rgba(0,0,0,.3);transition:background .2s;}
-.wx-swiper-dot.active{background:#fff;box-shadow:0 0 2px rgba(0,0,0,.4);}
+.wx-swiper-dot.active{background:#000;}
 
 /* ── checkbox / radio：自绘微信风格（圆角方框 / 圆形，选中填充微信绿 + 白勾）── */
 .wx-checkbox,.wx-radio{-webkit-appearance:none;appearance:none;width:22px;height:22px;margin:0;flex:none;cursor:pointer;box-sizing:border-box;border:1px solid #cfcfcf;background:#fff;transition:background .15s,border-color .15s;vertical-align:middle;}
@@ -308,4 +323,20 @@ pub fn make_html_doc(title: &str, css: &str, body_html: &str, width_px: u32) -> 
         css = css,
         body = body_html,
     )
+}
+
+#[cfg(test)]
+mod at_rule_tests {
+    use super::rewrite_tag_selectors;
+
+    /// Skyline 不支持的三种 at-rule 整块丢掉（与原生端解析一致），@media 照旧保留
+    #[test]
+    fn drops_supports_container_and_layer_blocks() {
+        let css = ".a{color:red}@supports (display:grid){.b{color:blue}}@container (min-width:1px){.c{x:y}}\
+                   @layer base{.d{color:green}}@media (prefers-color-scheme: dark){.e{color:#fff}}.f{color:#000}";
+        let out = rewrite_tag_selectors(css);
+        assert!(out.contains(".a{color:red}") && out.contains(".f{color:#000}"), "{out}");
+        assert!(!out.contains(".b") && !out.contains(".c") && !out.contains(".d"), "{out}");
+        assert!(out.contains("@media (prefers-color-scheme: dark){.e{color:#fff}}"), "{out}");
+    }
 }

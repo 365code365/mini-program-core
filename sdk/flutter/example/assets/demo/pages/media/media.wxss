@@ -1,0 +1,12 @@
+.modes { display: flex; flex-direction: row; justify-content: space-between; }
+.mode { display: flex; flex-direction: column; align-items: center; }
+.mode-img { width: 190rpx; height: 190rpx; background-color: #eef1f6; }
+.mode-name { margin-top: 8rpx; font-size: 22rpx; color: #888888; }
+.wfix { width: 100%; border-radius: 8rpx; }
+.hfix { height: 160rpx; border-radius: 8rpx; }
+.gif-row { display: flex; flex-direction: row; justify-content: space-around; align-items: center; }
+.gif { width: 140rpx; height: 140rpx; background-color: #f2f2f2; }
+.round { border-radius: 70rpx; }
+.thumbs { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-between; }
+.thumb { width: 200rpx; height: 200rpx; margin-bottom: 14rpx; border-radius: 10rpx; }
+.video { width: 100%; height: 360rpx; margin-top: 16rpx; }

@@ -39,12 +39,7 @@ impl crate::MiniAppWindow {
         if w == 0 || h == 0 {
             return None;
         }
-        let present_bg = self
-            .renderer
-            .as_ref()
-            .and_then(|r| r.page_style().background)
-            .map(|c| ((c.r as u32) << 16) | ((c.g as u32) << 8) | c.b as u32)
-            .unwrap_or(0xF5F5F5);
+        let present_bg = mini_render::host::window_api::background_rgb(self.renderer.as_ref().and_then(|r| r.page_style().background));
         let mut pixels = vec![present_bg; (w as usize) * (h as usize)];
         // 只要「页面 + tabBar + fixed」：下拉指示器、弹窗、picker、侧滑都给空，
         // cpu::compose 跳过这些层，结果与只调 present_to_buffer 逐字节相同
@@ -61,7 +56,7 @@ impl crate::MiniAppWindow {
             fixed: self.fixed_canvas.as_ref(),
             fixed_rows: self.fixed_rows,
             pull: None,
-            overlays: OverlayRefs::none(self.last_frame),
+            overlays: OverlayRefs::none(),
             edge_back: None,
         };
         compositor::cpu::compose(&mut pixels, &layers);

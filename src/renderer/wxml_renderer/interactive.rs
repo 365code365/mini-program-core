@@ -66,10 +66,13 @@ impl WxmlRenderer {
                     checked_palette(node, target, state.checked);
                 }
                 "slider" => {
-                    if let Ok(v) = state.value.parse::<f32>() {
-                        target.style.custom_data = v / 100.0;
+                    // 进度按 min/max 换算（从前是 `v / 100`：min=1 max=5 的滑块一碰就跳到最左），
+                    // 页面已经 setData 改过 value 时交互状态作废（受控，见 interaction/slider.rs）
+                    let a = crate::renderer::components::SliderAttrs::from_attrs(&node.attrs);
+                    if let Some(v) = interaction.slider_value(component_id, a.value) {
+                        target.style.custom_data = a.progress(v);
                         if !target.text.is_empty() {
-                            target.text = format!("{}", v as i32);
+                            target.text = crate::renderer::components::SliderAttrs::format(v);
                         }
                     }
                 }
@@ -125,7 +128,33 @@ impl WxmlRenderer {
         sf: f32,
     ) {
         match node.tag.as_str() {
-            "input" | "textarea" => {
+            "textarea" => {
+                let f = interaction.focused_input.as_ref().filter(|f| f.id == component_id);
+                let (focused, cursor_pos, selection, upstream) = match f {
+                    Some(f) => (true, f.cursor_pos, f.get_selection_range(), f.caret_upstream),
+                    None => (false, 0, None, false),
+                };
+                let layout = InputComponent::draw_textarea(
+                    target,
+                    canvas,
+                    self.text_renderer.as_deref(),
+                    x,
+                    y,
+                    w,
+                    h,
+                    sf,
+                    focused,
+                    cursor_pos,
+                    selection,
+                    upstream,
+                );
+                // 回写折行结果：↑↓ / Home / End 与点击定位光标都按看到的行走（没聚焦的也记，
+                // 第一次点进去就要用）
+                if let Some(layout) = layout {
+                    interaction.record_text_layout(component_id, layout);
+                }
+            }
+            "input" => {
                 let focused = interaction
                     .focused_input
                     .as_ref()

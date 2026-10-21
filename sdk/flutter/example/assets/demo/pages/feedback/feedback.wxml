@@ -1,0 +1,46 @@
+<view class="card">
+  <text class="title">Toast / Loading</text>
+  <view class="btns">
+    <view class="btn-s" bindtap="toastSuccess">success</view>
+    <view class="btn-s" bindtap="toastNone">纯文字</view>
+    <view class="btn-s" bindtap="toastLong">3 秒 + mask</view>
+    <view class="btn-o" bindtap="hideToast">hideToast</view>
+  </view>
+  <view class="btns">
+    <view class="btn-s" bindtap="loading">showLoading 2 秒</view>
+    <view class="btn-o" bindtap="loadingMask">带 mask（期间点不动页面）</view>
+  </view>
+  <text class="hint">Toast / Loading / Modal / ActionSheet 都画在引擎自己的表面上，宿主不需要实现</text>
+</view>
+
+<view class="card">
+  <text class="title">Modal</text>
+  <view class="btns">
+    <view class="btn-s" bindtap="modal">确定 + 取消</view>
+    <view class="btn-s" bindtap="modalSingle">只有确定</view>
+    <view class="btn-o" bindtap="modalCustom">自定义按钮文字</view>
+    <view class="btn-o" bindtap="modalChain">连弹两个</view>
+  </view>
+  <view class="result" wx:if="{{modalResult}}"><text>{{modalResult}}</text></view>
+</view>
+
+<view class="card">
+  <text class="title">ActionSheet</text>
+  <view class="btns">
+    <view class="btn-s" bindtap="sheet">普通</view>
+    <view class="btn-s" bindtap="sheetAlert">带标题 + 红色</view>
+    <view class="btn-o" bindtap="sheetTooMany">7 项（超限 fail）</view>
+    <view class="btn-o" bindtap="sheetPromise">Promise 写法</view>
+  </view>
+  <view class="result" wx:if="{{sheetResult}}"><text>{{sheetResult}}</text></view>
+</view>
+
+<view class="card">
+  <text class="title">导航栏（宿主画，引擎只发意图）</text>
+  <view class="btns">
+    <view class="btn-s" bindtap="setTitle">setNavigationBarTitle</view>
+    <view class="btn-s" bindtap="setColor">setNavigationBarColor</view>
+    <view class="btn-o" bindtap="barLoading">{{barLoading ? 'hide' : 'show'}}NavigationBarLoading</view>
+  </view>
+  <text class="hint">换页再回来，导航栏按页面配置复原</text>
+</view>

@@ -35,6 +35,7 @@ impl Canvas2DContext {
             transform: [dpr, 0.0, 0.0, dpr, 0.0, 0.0],
             current_path: Vec::new(),
             state_stack: Vec::new(),
+            fx: fx2d::Fx::default(),
         }
     }
 
@@ -56,6 +57,7 @@ impl Canvas2DContext {
             text_baseline: self.text_baseline,
             global_alpha: self.global_alpha,
             transform: self.transform,
+            fx: self.fx.clone(),
         });
     }
 
@@ -70,6 +72,7 @@ impl Canvas2DContext {
             self.text_baseline = state.text_baseline;
             self.global_alpha = state.global_alpha;
             self.transform = state.transform;
+            self.fx = state.fx;
         }
     }
 
@@ -79,6 +82,7 @@ impl Canvas2DContext {
     pub fn set_fill_style(&mut self, color: &str) {
         if let Some(c) = parse_color_str(color) {
             self.fill_style = c;
+            self.fx.fill = None;
         }
     }
 
@@ -86,6 +90,7 @@ impl Canvas2DContext {
     pub fn set_stroke_style(&mut self, color: &str) {
         if let Some(c) = parse_color_str(color) {
             self.stroke_style = c;
+            self.fx.stroke = None;
         }
     }
 

@@ -24,8 +24,9 @@ pub const GPU_COMPILED: bool = cfg!(feature = "gpu");
 pub const REASON_NOT_COMPILED: &str = "未编译 GPU 支持";
 /// SDK：偏好不是 cpu，但宿主还没挂 surface
 pub const REASON_NO_SURFACE: &str = "未挂载 surface（宿主需调用 mr_app_attach_surface）";
-/// SDK：编进了 `gpu` feature、门槛也都过了，但 SDK 的 surface 上屏还没接（桌面宿主不走这里，它在 `pre_gpu` 之后自己建 GpuCompositor）
-pub const REASON_GPU_PENDING: &str = "SDK 的 GPU 上屏还没接入（桌面窗体与无头已可用，见 compositor::gpu）";
+/// SDK：门槛都过了，但宿主只给了 surface 种类、没给原生指针（`MiniEngine::attach_surface`），
+/// 没有东西可上屏。给了指针的走 `attach_native_surface`，在 `pre_gpu` 之后自己建 GpuCompositor
+pub const REASON_GPU_PENDING: &str = "只挂了 surface 种类、没有原生指针，GPU 无从上屏（用 attach_native_surface）";
 
 /// Android 的 Auto 门槛：Android 10（API 29）起要求 64 位设备支持 Vulkan 1.1，
 /// 所以有了这一条就不必再单独查 Vulkan 版本（#19）
@@ -286,8 +287,9 @@ pub fn pre_gpu(input: &SelectInput<'_>) -> Result<(), BackendStatus> {
     Ok(())
 }
 
-/// 现阶段的整段选择：门槛都过了也只能是 CPU —— 还没有 GPU 合成器可试。
-/// 以后接上 GPU 时，宿主在 [`pre_gpu`] 返回 `Ok` 之后去建设备、过 [`adapter_gate`] 与自检。
+/// 不建 GPU 的整段选择（手里没有原生 surface 指针时用）：门槛都过了也只能是 CPU。
+/// 有指针的宿主在 [`pre_gpu`] 返回 `Ok` 之后去建设备、过 [`adapter_gate`] 与自检
+/// （桌面窗体、SDK 的 `attach_native_surface`）。
 pub fn decide(input: &SelectInput<'_>) -> BackendStatus {
     match pre_gpu(input) {
         Err(status) => status,

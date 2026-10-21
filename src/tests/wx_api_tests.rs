@@ -34,7 +34,7 @@ fn show_toast_carries_title_icon_and_duration() {
         .unwrap();
     let evs = ui_events(&mut app);
     match evs.first() {
-        Some(UiEvent::ShowToast { title, icon, duration }) => {
+        Some(UiEvent::ShowToast { title, icon, duration, .. }) => {
             assert_eq!(title, "已保存");
             assert_eq!(icon, "success");
             assert_eq!(*duration, 800);
@@ -65,9 +65,9 @@ fn hide_toast_and_loading_produce_events() {
     )
     .unwrap();
     let evs = ui_events(&mut app);
-    assert!(matches!(evs.first(), Some(UiEvent::ShowLoading { title }) if title == "加载中"));
-    assert!(evs.iter().any(|e| matches!(e, UiEvent::HideLoading)));
-    assert!(evs.iter().any(|e| matches!(e, UiEvent::HideToast)));
+    assert!(matches!(evs.first(), Some(UiEvent::ShowLoading { title, .. }) if title == "加载中"));
+    assert!(evs.iter().any(|e| matches!(e, UiEvent::HideLoading { .. })));
+    assert!(evs.iter().any(|e| matches!(e, UiEvent::HideToast { .. })));
 }
 
 #[test]
@@ -85,12 +85,14 @@ fn show_modal_defaults_and_result_callback() {
     )
     .unwrap();
     match ui_events(&mut app).first() {
-        Some(UiEvent::ShowModal { title, content, show_cancel, cancel_text, confirm_text }) => {
+        Some(UiEvent::ShowModal { title, content, show_cancel, cancel_text, confirm_text, cancel_color, confirm_color }) => {
             assert_eq!(title, "提示");
             assert_eq!(content, "确定删除？");
             assert!(*show_cancel, "showCancel 缺省为 true");
             assert_eq!(cancel_text, "取消");
             assert_eq!(confirm_text, "确定");
+            assert_eq!(cancel_color, "#000000", "cancelColor 缺省 #000000");
+            assert_eq!(confirm_color, "#576B95", "confirmColor 缺省 #576B95");
         }
         other => panic!("应产出 ShowModal，实际 {:?}", other),
     }
@@ -120,6 +122,137 @@ fn pull_down_refresh_apis_produce_events() {
     let evs = ui_events(&mut app);
     assert!(evs.iter().any(|e| matches!(e, UiEvent::StartPullDownRefresh)));
     assert!(evs.iter().any(|e| matches!(e, UiEvent::StopPullDownRefresh)));
+}
+
+// ── 提示框 / 弹窗与微信对齐的那几条（官方 api/ui/interaction/*）──
+
+#[test]
+fn toast_的_icon_非法值按_success_mask_与_image_透传() {
+    let mut app = new_app();
+    app.load_script("wx.showToast({ title: 'a', icon: 'fail', mask: true, image: '/img/x.png' });").unwrap();
+    match ui_events(&mut app).first() {
+        Some(UiEvent::ShowToast { icon, mask, image, .. }) => {
+            assert_eq!(icon, "success", "合法值只有 success/error/loading/none");
+            assert!(*mask);
+            assert_eq!(image, "/img/x.png");
+        }
+        other => panic!("实际 {:?}", other),
+    }
+}
+
+#[test]
+fn 提示框回调带_err_msg_没回调时返回_promise() {
+    let mut app = new_app();
+    app.load_script(
+        r#"
+        var __r = {};
+        wx.showToast({ title: 'a', success: function (r) { __r.toast = r.errMsg; } });
+        wx.showLoading({ title: 'b', complete: function (r) { __r.loading = r.errMsg; } });
+        __r.promise = typeof wx.hideLoading().then;
+        "#,
+    )
+    .unwrap();
+    assert_eq!(get(&app, "__r.toast"), "showToast:ok");
+    assert_eq!(get(&app, "__r.loading"), "showLoading:ok");
+    assert_eq!(get(&app, "__r.promise"), "function");
+    let _ = ui_events(&mut app);
+}
+
+#[test]
+fn 标题不是字符串时_fail_且什么也不弹() {
+    let mut app = new_app();
+    app.load_script("var __e = ''; wx.showLoading({ fail: function (r) { __e = r.errMsg; } });").unwrap();
+    assert_eq!(get(&app, "__e"), "showLoading:fail parameter error: parameter.title should be String instead of Undefined;");
+    assert!(ui_events(&mut app).iter().all(|e| !matches!(e, UiEvent::ShowLoading { .. })));
+}
+
+#[test]
+fn hide_默认混用_no_conflict_只关自己_空槽位_fail() {
+    let mut app = new_app();
+    app.load_script(
+        r#"
+        var __h = [];
+        function rec(r) { __h.push(r.errMsg); }
+        wx.showLoading({ title: 'x' });
+        wx.hideToast({ success: rec, fail: rec });              // 混用：关掉 Loading
+        wx.hideLoading({ success: rec, fail: rec });            // 已经空了
+        wx.showLoading({ title: 'y' });
+        wx.hideToast({ noConflict: true, success: rec, fail: rec }); // 不碰 Loading
+        wx.hideLoading({ noConflict: true, success: rec, fail: rec });
+        "#,
+    )
+    .unwrap();
+    assert_eq!(
+        get(&app, "__h.join('|')"),
+        "hideToast:ok|hideLoading:fail:toast can't be found|hideToast:fail:toast can't be found|hideLoading:ok"
+    );
+    let evs = ui_events(&mut app);
+    assert!(evs.iter().any(|e| matches!(e, UiEvent::HideToast { no_conflict: false })));
+    assert!(evs.iter().any(|e| matches!(e, UiEvent::HideLoading { no_conflict: true })));
+}
+
+#[test]
+fn toast_到时只收自己_不会误关后来的_loading() {
+    let mut app = new_app();
+    // showToast 的计时器在 showLoading 时被清掉：计时器跑完也不该发 HideToast
+    app.load_script("wx.showToast({ title: 'a', duration: 1 }); wx.showLoading({ title: 'b' });").unwrap();
+    let _ = ui_events(&mut app);
+    std::thread::sleep(std::time::Duration::from_millis(20));
+    let evs = ui_events(&mut app);
+    assert!(evs.iter().all(|e| !matches!(e, UiEvent::HideToast { .. })), "{:?}", evs);
+}
+
+#[test]
+fn modal_颜色与按钮文字长度() {
+    let mut app = new_app();
+    app.load_script(
+        r#"
+        var __e = '';
+        wx.showModal({ title: 't', confirmText: '我知道了啊', fail: function (r) { __e = r.errMsg; } });
+        wx.showModal({ title: 't', cancelColor: '#ff0000', confirmColor: 'red' });
+        "#,
+    )
+    .unwrap();
+    assert_eq!(get(&app, "__e"), "showModal:fail confirmText length should not larger than 4 Chinese characters");
+    let evs = ui_events(&mut app);
+    let modals: Vec<_> = evs.iter().filter(|e| matches!(e, UiEvent::ShowModal { .. })).collect();
+    assert_eq!(modals.len(), 1, "超长的那个不弹");
+    match modals[0] {
+        UiEvent::ShowModal { cancel_color, confirm_color, .. } => {
+            assert_eq!(cancel_color, "#ff0000");
+            assert_eq!(confirm_color, "#576B95", "不是 16 进制串就用缺省");
+        }
+        _ => unreachable!(),
+    }
+}
+
+#[test]
+fn modal_连弹两个_第二个的回调照样执行() {
+    let app = new_app();
+    app.load_script(
+        r#"
+        var __done = '';
+        wx.showModal({ title: '1', success: function (r) {
+            if (r.confirm) wx.showModal({ title: '2', success: function (r2) { __done = r2.errMsg; } });
+        } });
+        __handleModalResult(true);
+        __handleModalResult(true);
+        "#,
+    )
+    .unwrap();
+    assert_eq!(get(&app, "__done"), "showModal:ok");
+}
+
+#[test]
+fn modal_没回调时返回_promise() {
+    let app = new_app();
+    app.load_script(
+        "var __p = ''; wx.showModal({ title: 't' }).then(function (r) { __p = r.errMsg + ' ' + r.confirm; }); __handleModalResult(false);",
+    )
+    .unwrap();
+    // Promise 的回调在微任务里跑：再 eval 一次让队列排空
+    app.eval("1").ok();
+    assert_eq!(get(&app, "__p"), "showModal:ok false");
 }
 
 // ───────────────────────────── 存储类 ─────────────────────────────
@@ -297,20 +430,30 @@ fn canvas_context_draw_reaches_the_bridge() {
 // ─────────────────── 未实现 API 的探针语义 ───────────────────
 
 /// 框架层普遍用 `typeof wx.X === 'function'` 做能力探测（uni-app、Taro 都是）。
-/// 所以未实现的 API 必须**保持 undefined**：给个 no-op 函数会让框架以为能力存在，
+/// 所以引擎根本没有的 API 必须**保持 undefined**：给个永远不回调的 no-op 会让框架以为能力存在，
 /// 后面走进去拿不到回调，反而更难查。
+///
+/// 例外是微信里**总是存在**的宿主能力（login / chooseImage / getLocation …）：它们是函数，
+/// 宿主没在 `hostApis` 里接管时**立刻 fail** 并写明原因（system.js）—— 回调一定会来，
+/// 页面的 fail 分支接得住；而 undefined 会让 `uni.login → wx.login` 这类包装层直接 TypeError。
 #[test]
 fn unimplemented_apis_stay_undefined_for_capability_probes() {
     let app = new_app();
-    for name in ["login", "getUserProfile", "requestPayment", "chooseImage", "getLocation"] {
+    // 蓝牙 / UDP / iBeacon：引擎与宿主契约里都没有，保持 undefined
+    for name in ["startBluetoothDevicesDiscovery", "createUDPSocket", "startBeaconDiscovery"] {
         assert_eq!(
             get(&app, &format!("typeof wx.{name}")),
             "undefined",
             "wx.{name} 未实现时必须是 undefined，不能是假函数"
         );
     }
+    for name in ["login", "getUserProfile", "requestPayment", "chooseImage", "getLocation"] {
+        assert_eq!(get(&app, &format!("typeof wx.{name}")), "function", "wx.{name} 是会立刻 fail 的默认实现");
+        assert_eq!(get(&app, &format!("String(wx.{name}.__default)")), "true", "wx.{name} 没被宿主接管");
+    }
     // 已实现的必须是函数
-    for name in ["request", "showToast", "setStorageSync", "navigateTo", "getSystemInfoSync"] {
+    for name in ["request", "showToast", "setStorageSync", "navigateTo", "getSystemInfoSync",
+                 "connectSocket", "createInnerAudioContext", "getFileSystemManager", "canIUse", "getMenuButtonBoundingClientRect"] {
         assert_eq!(get(&app, &format!("typeof wx.{name}")), "function", "wx.{name}");
     }
 }

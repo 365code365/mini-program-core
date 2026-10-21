@@ -157,16 +157,15 @@ impl crate::MiniAppWindow {
                     eprintln!("⚠️  --type \"{text}\"：当前没有聚焦的输入框（先 --click 到输入框上）");
                     return;
                 }
-                // 逐字符走真机那条链路：每个字符都产出一次 InputChange，
-                // 于是 `bindinput` 的触发次数与真机一致（微信是每输入一个字符一次）。
+                // 逐字符送：每个字符都产出一次 InputChange，于是 `bindinput` 的触发次数与真机一致
+                // （微信是每输入一个字符一次）。走的是输入法 / SDK 那条入口（`insert_text`），
+                // 所以 `--type $'a\nb'` 里的换行与真机回车同义：textarea 换行、input 触发 confirm。
                 for ch in text.chars() {
-                    let buf = ch.to_string();
-                    let results = super::events::keyboard::handle_text_input(
-                        &buf,
-                        false,
-                        &mut self.interaction,
-                    );
+                    let results = self.interaction.insert_text(&ch.to_string());
                     self.apply_interaction_results(results);
+                    if !self.interaction.has_focused_input() {
+                        break;
+                    }
                 }
                 self.pump_pending_navigation(8);
                 super::print_js_output(&self.app);
@@ -174,21 +173,11 @@ impl crate::MiniAppWindow {
                 self.render();
             }
             Action::Key(name) => {
-                use mini_render::ui::interaction::KeyInput;
-                let key = match name.as_str() {
-                    "enter" | "confirm" => KeyInput::Enter,
-                    "backspace" => KeyInput::Backspace,
-                    "delete" => KeyInput::Delete,
-                    "escape" | "esc" => KeyInput::Escape,
-                    "left" => KeyInput::Left,
-                    "right" => KeyInput::Right,
-                    "home" => KeyInput::Home,
-                    "end" => KeyInput::End,
-                    "selectall" => KeyInput::SelectAll,
-                    other => {
-                        eprintln!("⚠️  --key {other}：不认识的按键");
-                        return;
-                    }
+                use mini_render::ui::interaction::{KeyInput, KEY_NAMES};
+                // 与 SDK 的 `key()` 同一张表（ui::interaction::key_names）
+                let Some(key) = KeyInput::from_name(name) else {
+                    eprintln!("⚠️  --key {name}：不认识的按键（可用：{}）", KEY_NAMES.join(" "));
+                    return;
                 };
                 if let Some(r) = self.interaction.handle_key_input(key) {
                     self.apply_interaction_results(vec![r]);

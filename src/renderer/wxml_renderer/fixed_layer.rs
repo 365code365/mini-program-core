@@ -26,12 +26,17 @@ impl WxmlRenderer {
         // 使用已缓存的视口信息，不重新计算布局
         self.update_layout_if_needed(nodes, data, self.current_viewport);
         interaction.clear_fixed_elements();
+        // 覆盖层上次登记的绑定先丢掉再重新登记。平时页面那一趟会先清空整张绑定表，
+        // 但宿主可以只重画覆盖层、不动页面（覆盖层自己在动画、只有它的数据变了）——
+        // 不丢的话每重画一次覆盖层，它的点击处理就多叠一份（一次点击回调好几次）
+        self.event_bindings.retain(|b| !b.is_fixed);
         
         if let Some(mut cache) = self.cache.take() {
             let viewport_h = canvas.height() as f32;
             let roots = std::mem::take(&mut cache.render_nodes);
             self.registering_fixed = true;
             self.fixed_hit_regions.clear();
+            self.clear_fixed_host_regions();
             self.draw_fixed_layer_inner(canvas, &mut cache.taffy, &roots, viewport_h, Some(interaction));
             self.registering_fixed = false;
             cache.render_nodes = roots;

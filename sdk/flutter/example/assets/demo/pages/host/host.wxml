@@ -1,0 +1,57 @@
+<view class="card">
+  <text class="title">宿主能力（hostApis）</text>
+  <text class="desc">这些 API 引擎自己做不了。宿主在创建选项 hostApis 里点名的，调用会经 hostCall 事件交给 Flutter，回包走 success / fail；没点名的（这里的 chooseMedia、chooseLocation）立刻 fail，errMsg 说明原因。</text>
+  <view class="btns">
+    <view class="btn-s" wx:for="{{hostApis}}" wx:key="*this" data-api="{{item}}" bindtap="callHost">{{item}}</view>
+    <view class="btn-o" data-api="chooseMedia" bindtap="callHost">chooseMedia</view>
+    <view class="btn-o" data-api="chooseLocation" bindtap="callHost">chooseLocation</view>
+  </view>
+  <view class="result"><text>{{hostResult}}</text></view>
+</view>
+
+<view class="card">
+  <text class="title">宿主承载的原生组件（map）</text>
+  <text class="desc">nativeComponents 里点名的标签由宿主用自己的控件盖在画面上，引擎每帧报位置与被遮挡的区域；宿主回传的事件派发到节点自己的 bind 上。</text>
+  <map id="map1" class="map" latitude="{{lat}}" longitude="{{lng}}" scale="14" bindmarkertap="onMarker"></map>
+  <view class="result"><text>{{mapResult}}</text></view>
+</view>
+
+<view class="card">
+  <text class="title">剪贴板与振动</text>
+  <view class="btns">
+    <view class="btn-s" bindtap="copy">setClipboardData</view>
+    <view class="btn-s" bindtap="paste">getClipboardData</view>
+    <view class="btn-o" bindtap="vibShort">vibrateShort</view>
+    <view class="btn-o" bindtap="vibLong">vibrateLong</view>
+  </view>
+  <text class="hint">复制会弹「内容已复制」并发 clipboard 事件，宿主据此写系统剪贴板；振动发 vibrate 事件，宿主转成触感反馈。</text>
+  <view class="result" wx:if="{{clipResult}}"><text>{{clipResult}}</text></view>
+</view>
+
+<view class="card">
+  <text class="title">tabBar 运行时接口</text>
+  <view class="btns">
+    <view class="btn-s" bindtap="badge">setTabBarBadge</view>
+    <view class="btn-o" bindtap="unbadge">removeTabBarBadge</view>
+    <view class="btn-s" bindtap="dot">showTabBarRedDot</view>
+    <view class="btn-o" bindtap="undot">hideTabBarRedDot</view>
+    <view class="btn-s" bindtap="toggleStyle">setTabBarStyle</view>
+    <view class="btn-s" bindtap="toggleItem">setTabBarItem</view>
+    <view class="btn-o" bindtap="toggleBar">{{barHidden ? 'showTabBar' : 'hideTabBar'}}</view>
+  </view>
+  <view class="result" wx:if="{{tabResult}}"><text>{{tabResult}}</text></view>
+</view>
+
+<view class="card">
+  <text class="title">生命周期（切到后台再回来试试）</text>
+  <view class="kv"><text class="kv-k">App.onShow / onHide 次数</text><text class="kv-v">{{appShow}} / {{appHide}}</text></view>
+  <view class="kv"><text class="kv-k">本页 onShow 次数</text><text class="kv-v">{{pageShow}}</text></view>
+  <view class="log">
+    <text class="log-line" wx:for="{{lifecycle}}">{{item}}</text>
+  </view>
+</view>
+
+<view class="card">
+  <text class="title">系统信息</text>
+  <view class="kv" wx:for="{{sys}}" wx:key="k"><text class="kv-k">{{item.k}}</text><text class="kv-v">{{item.v}}</text></view>
+</view>

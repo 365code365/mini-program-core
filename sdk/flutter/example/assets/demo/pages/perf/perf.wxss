@@ -1,0 +1,5 @@
+.spin { width: 60rpx; height: 60rpx; margin-top: 16rpx; background-color: #07c160; border-radius: 8rpx;
+  animation: spin 2s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.ipt { height: 80rpx; padding: 0 16rpx; border: 1rpx solid #dddddd; border-radius: 8rpx; background-color: #fafafa; }
+.video { width: 100%; height: 360rpx; }

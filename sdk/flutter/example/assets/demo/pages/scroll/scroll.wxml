@@ -1,0 +1,47 @@
+<view class="card">
+  <text class="title">横向 scroll-view + scroll-into-view</text>
+  <scroll-view class="tabs" scroll-x="{{true}}" scroll-into-view="{{tabInto}}" scroll-with-animation="{{true}}">
+    <view class="tabs-inner">
+      <view wx:for="{{tabs}}" wx:key="*this" id="tab{{index}}" class="tab {{index === tabIndex ? 'tab-on' : ''}}" data-index="{{index}}" bindtap="pickTab">{{item}}</view>
+    </view>
+  </scroll-view>
+  <text class="hint">点后面的分类，横条会把它滑进视野；在横条上竖着划，手势交给页面</text>
+</view>
+
+<view class="card">
+  <text class="title">纵向 scroll-view：事件与受控位置</text>
+  <scroll-view class="box" scroll-y="{{true}}" scroll-top="{{top}}" scroll-into-view="{{into}}" scroll-with-animation="{{true}}"
+    lower-threshold="60" bindscroll="onScroll" bindscrolltolower="onLower" bindscrolltoupper="onUpper">
+    <view wx:for="{{rows}}" wx:key="id" id="r{{item.id}}" class="item {{item.id % 10 === 0 ? 'item-mark' : ''}}">
+      <text>第 {{item.id}} 条</text><text class="item-sub">{{item.id % 10 === 0 ? '锚点 #r' + item.id : ''}}</text>
+    </view>
+  </scroll-view>
+  <view class="btns">
+    <view class="btn-s" bindtap="toTop">scroll-top = 0</view>
+    <view class="btn-s" bindtap="toTen">scroll-into-view #r10</view>
+    <view class="btn-o" bindtap="toTwenty">#r20</view>
+  </view>
+  <view class="result"><text>{{scrollInfo}}</text></view>
+</view>
+
+<view class="card">
+  <text class="title">自定义下拉刷新（refresher）</text>
+  <scroll-view class="box" scroll-y="{{true}}" refresher-enabled="{{true}}" refresher-triggered="{{refreshing}}"
+    refresher-default-style="black" refresher-background="#eef1f6"
+    bindrefresherpulling="onPulling" bindrefresherrefresh="onRefresh" bindrefresherrestore="onRestore" bindrefresherabort="onAbort">
+    <view wx:for="{{news}}" wx:key="id" class="item"><text>{{item.text}}</text></view>
+  </scroll-view>
+  <view class="result"><text>{{refreshInfo}}</text></view>
+</view>
+
+<view class="card">
+  <text class="title">ScrollViewContext（SelectorQuery.node）</text>
+  <scroll-view id="sv3" class="box small" scroll-y="{{true}}" enhanced="{{true}}" bounces="{{false}}">
+    <view wx:for="{{ctxRows}}" wx:key="id" id="s{{item.id}}" class="item {{item.id === 25 ? 'item-mark' : ''}}"><text>enhanced + bounces=false · 第 {{item.id}} 行</text></view>
+  </scroll-view>
+  <view class="btns">
+    <view class="btn-s" bindtap="ctxTo">scrollTo({ top: 300 })</view>
+    <view class="btn-s" bindtap="ctxInto">scrollIntoView('#s25')</view>
+    <view class="btn-o" bindtap="ctxTop">回顶</view>
+  </view>
+</view>

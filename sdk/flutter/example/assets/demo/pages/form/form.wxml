@@ -1,0 +1,82 @@
+<view class="card">
+  <text class="title">button</text>
+  <button type="primary">primary</button>
+  <button class="gap" type="default">default</button>
+  <button class="gap" type="warn">warn</button>
+  <view class="btn-row">
+    <button type="primary" size="mini">mini</button>
+    <button type="primary" size="mini" plain="{{true}}">plain</button>
+    <button type="warn" size="mini" plain="{{true}}">warn plain</button>
+    <button type="primary" size="mini" disabled="{{true}}">disabled</button>
+  </view>
+  <button class="gap" type="default" bindtap="onButton">点我（bindtap）</button>
+  <text class="hint">{{buttonTip}}</text>
+</view>
+
+<view class="card">
+  <text class="title">input：键盘类型与事件</text>
+  <view class="field"><text class="f-k">文本</text><input class="f-v" placeholder="type=text，输入时实时回显" bindinput="onInput" data-field="text"/></view>
+  <view class="field"><text class="f-k">数字</text><input class="f-v" type="number" maxlength="6" placeholder="type=number，最多 6 位" bindinput="onInput" data-field="number"/></view>
+  <view class="field"><text class="f-k">小数</text><input class="f-v" type="digit" placeholder="type=digit" bindinput="onInput" data-field="digit"/></view>
+  <view class="field"><text class="f-k">身份证</text><input class="f-v" type="idcard" maxlength="18" placeholder="type=idcard" bindinput="onInput" data-field="idcard"/></view>
+  <view class="field"><text class="f-k">密码</text><input class="f-v" password="{{true}}" placeholder="password" bindinput="onInput" data-field="password"/></view>
+  <view class="field"><text class="f-k">搜索</text><input class="f-v" confirm-type="search" placeholder="回车键显示「搜索」" placeholder-style="color:#10aeff" bindfocus="onFocus" bindblur="onBlur" bindconfirm="onConfirm"/></view>
+  <view class="field"><text class="f-k">禁用</text><input class="f-v" disabled="{{true}}" value="disabled 不能输入"/></view>
+  <view class="result"><text>{{inputLog}}</text></view>
+</view>
+
+<view class="card">
+  <text class="title">textarea</text>
+  <textarea class="ta" maxlength="140" placeholder="多行输入，最多 140 字" bindinput="onTextarea"></textarea>
+  <text class="hint">已输入 {{taLen}} / 140</text>
+</view>
+
+<view class="card">
+  <text class="title">switch / checkbox / radio / slider</text>
+  <view class="line"><text>switch</text><switch checked="{{true}}" bindchange="onSwitch"/></view>
+  <view class="line"><text>switch type=checkbox</text><switch type="checkbox" color="#fa9d3b" bindchange="onSwitch"/></view>
+  <view class="line"><text>disabled</text><switch checked="{{true}}" disabled="{{true}}"/></view>
+  <text class="label">checkbox-group（change 是选中值数组）</text>
+  <checkbox-group bindchange="onCheck">
+    <view class="opts">
+      <view class="opt" wx:for="{{fruits}}" wx:key="value"><checkbox value="{{item.value}}" checked="{{item.checked}}"/><text>{{item.name}}</text></view>
+    </view>
+  </checkbox-group>
+  <text class="label">radio-group（互斥）</text>
+  <radio-group bindchange="onRadio">
+    <view class="opts">
+      <view class="opt" wx:for="{{sizes}}" wx:key="*this"><radio value="{{item}}" checked="{{item === 'M'}}" color="#10aeff"/><text>{{item}}</text></view>
+    </view>
+  </radio-group>
+  <text class="label">slider（拖动结束发 change）</text>
+  <slider min="0" max="100" value="{{volume}}" show-value="{{true}}" active-color="#07c160" block-size="24" bindchange="onSlider"/>
+  <slider min="10" max="60" value="30" show-value="{{true}}" active-color="#fa9d3b" block-color="#fa9d3b" block-size="18"/>
+  <view class="result"><text>{{choiceLog}}</text></view>
+</view>
+
+<view class="card">
+  <text class="title">form：submit / reset</text>
+  <form bindsubmit="onSubmit" bindreset="onReset">
+    <view class="field"><text class="f-k">昵称</text><input class="f-v" name="nickname" placeholder="name=nickname"/></view>
+    <view class="line"><text>接收通知</text><switch name="notify" checked="{{true}}"/></view>
+    <view class="line"><text>满意度</text><slider class="f-slider" name="score" min="1" max="5" value="4" show-value="{{true}}"/></view>
+    <checkbox-group name="tags">
+      <view class="opts">
+        <view class="opt"><checkbox value="ui" checked="{{true}}"/><text>UI</text></view>
+        <view class="opt"><checkbox value="perf"/><text>性能</text></view>
+        <view class="opt"><checkbox value="api"/><text>API</text></view>
+      </view>
+    </checkbox-group>
+    <radio-group name="gender">
+      <view class="opts">
+        <view class="opt"><radio value="f"/><text>女</text></view>
+        <view class="opt"><radio value="m"/><text>男</text></view>
+      </view>
+    </radio-group>
+    <view class="btn-row">
+      <button type="primary" size="mini" form-type="submit">提交</button>
+      <button type="default" size="mini" form-type="reset">重置</button>
+    </view>
+  </form>
+  <view class="result"><text>{{formResult}}</text></view>
+</view>

@@ -6,6 +6,32 @@ inclusion: always
 
 ## 每次改动后必须跑的七项
 
+**一条命令跑完**（下面七项 + 逐页快照 + H5 双端对比，每步计时，汇总在 `target/_regress/summary.txt`）：
+
+```bash
+bash tools/regress.sh            # 全量：改了引擎之后约 4 分钟（编译 ~20s + 各项 ~200s）
+bash tools/regress.sh --no-h5    # 不起 headless Chrome
+```
+
+跑完自己清掉快照与对比图，只留日志。**迭代中别每次都全量**：先跑相关的
+`cargo test --release --lib <过滤词>` / `--test <文件名>`，收尾再全量一次。
+
+耗时去哪了（2026-10-21 同一份源码背靠背实测，别凭感觉优化）：
+
+- **thin LTO 是大头**：它给每个最终二进制把整张依赖图重新优化一遍，而 `--all-targets` 有五十来个二进制。
+  改了引擎之后编全部目标：thin LTO **2905s**，关掉 LTO + 增量 **19~22s**；gallery 65 张两种编法逐字节相同。
+  所以 `Cargo.toml` 的 release 已关 LTO、开增量，发出去的库由 `tools/build-mobile.sh`（及 `scripts/build-*`）
+  用环境变量开回 thin LTO。**别为了「release 就该 LTO」把它改回去。**
+- 别的会话占着 target 锁（`Blocking waiting for file lock`）、内存吃紧时换页（`sysctl vm.swapusage`，
+  见过 23G/24.5G），会把任何构建再拖慢几倍：开跑前看一眼。
+- `damage-check` 从前每张快照死等 9s（10 张 90s），已改成等进程退出；它也不再 `pkill` 别人的快照进程。
+- 轮询后台任务用短间隔（≤3 分钟），不要 `sleep` 半小时。
+- **别在 shell 里 `export CARGO_*`**：agent 的 shell 跨调用保留环境，一条 `export CARGO_TARGET_DIR=…`
+  会让之后的 cargo 都编到别处，而工具脚本还在用 `target/release` 里的旧二进制 —— 测试全绿、gallery 却是旧代码画的。
+  临时换目录 / 参数一律 `env VAR=… cargo …` 只作用于那一条。`tools/regress.sh` 开头会清掉这几个变量。
+
+逐条手跑：
+
 ```bash
 . "$HOME/.cargo/env"
 rm -rf target/mini-storage                 # ① 必做，见下方「两个坑」
@@ -118,4 +144,4 @@ bash tools/clean-target.sh --dry      # 先看会删什么
 不要只说"看起来没问题"。给出：
 
 - `python3 tools/pixdiff.py a.png b.png` 的差异占比 **与包围盒**（包围盒决定是真回归还是时钟噪声）；
-- 或 `compare` 报告里的整体百分比（当前基线：sample **4.55%**、news **6.33%**）。
+- 或 `compare` 报告里的整体百分比（当前基线：sample **4.57%**、news **6.34%**）。

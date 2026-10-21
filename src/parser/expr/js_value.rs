@@ -17,6 +17,28 @@ pub fn eval_str(expr: &str, data: &Value) -> Value {
     }
 }
 
+/// 求值**对象字面量的内容**（不带外层花括号），恒返回对象。
+///
+/// 给 `<template data="{{ … }}">` 用：微信规定这里的绑定必须是对象，花括号里写的就是
+/// 对象的各项 —— `...item`、`a: 1, b: x`、简写 `foo, bar`，可以混写。整体按
+/// `{ <内容> }` 解析；解析不了时（比如多包了一层 `{{ {a: 1} }}`）再按普通表达式求一次，
+/// 结果不是对象就给空对象。
+pub fn eval_object_body(body: &str, data: &Value) -> Value {
+    let body = body.trim();
+    if body.is_empty() {
+        return Value::Object(Default::default());
+    }
+    if let Ok(ast) = parse(&format!("{{{body}}}")) {
+        if let v @ Value::Object(_) = eval(&ast, data) {
+            return v;
+        }
+    }
+    match eval_str(body, data) {
+        v @ Value::Object(_) => v,
+        _ => Value::Object(Default::default()),
+    }
+}
+
 /// 求值并按 WXML 文本/属性输出规则转成字符串。
 /// `null`/`undefined` 输出空串，对象/数组输出单引号 JSON（兼容属性内嵌）。
 pub fn eval_to_display(expr: &str, data: &Value) -> String {
@@ -149,6 +171,20 @@ mod tests {
         // 验证多运算符组合不会被旧实现的“找到第一个运算符就截断”破坏
         assert_eq!(ev("a > b && c > e", &d), json!(false));
         assert_eq!(ev("a < b && c > e", &d), json!(true));
+    }
+
+    #[test]
+    fn test_object_spread_and_shorthand() {
+        let d = json!({"o": {"a": 1, "b": 2}, "x": "X", "arr": ["p", "q"]});
+        assert_eq!(ev("{...o, b: 3, x}", &d), json!({"a": 1, "b": 3.0, "x": "X"}));
+        assert_eq!(ev("{b: 0, ...o}", &d), json!({"a": 1, "b": 2}), "后写的展开覆盖先写的键");
+        assert_eq!(ev("{...missing, ...arr, k: 1,}", &d), json!({"0": "p", "1": "q", "k": 1.0}));
+        // `<template data>` 的内容不带外层花括号
+        assert_eq!(eval_object_body("...o, c: x", &d), json!({"a": 1, "b": 2, "c": "X"}));
+        assert_eq!(eval_object_body(" x ", &d), json!({"x": "X"}), "单个标识符是简写，不是取值");
+        assert_eq!(eval_object_body("{a: 1}", &d), json!({"a": 1.0}), "多包一层也认");
+        assert_eq!(eval_object_body("", &d), json!({}));
+        assert_eq!(eval_object_body("1 +", &d), json!({}), "写错了给空对象");
     }
 
     #[test]

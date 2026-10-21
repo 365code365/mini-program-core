@@ -1,0 +1,30 @@
+<view class="card">
+  <text class="title">wx.request</text>
+  <text class="desc">请求走引擎自己的网络线程（不经宿主）。演示用的是公共回显服务 {{base}}，网络不通时会走 fail。</text>
+  <view class="btns">
+    <view class="btn-s" bindtap="get">GET + query</view>
+    <view class="btn-s" bindtap="post">POST JSON</view>
+    <view class="btn-o" bindtap="status404">404（仍走 success）</view>
+    <view class="btn-o" bindtap="abort">发出后立刻 abort</view>
+  </view>
+  <view class="result"><text>{{reqResult}}</text></view>
+</view>
+
+<view class="card">
+  <text class="title">downloadFile → image</text>
+  <view class="btns">
+    <view class="btn-s" bindtap="download">下载一张 PNG</view>
+    <view class="btn-o" bindtap="upload">uploadFile 传回去</view>
+  </view>
+  <view class="dl-row">
+    <image class="dl-img" wx:if="{{tempFile}}" src="{{tempFile}}" mode="aspectFit"/>
+    <view class="dl-empty" wx:else><text>还没下载</text></view>
+    <text class="dl-info">{{dlResult}}</text>
+  </view>
+</view>
+
+<view class="card">
+  <text class="title">远程图片（image 直接给 https）</text>
+  <image class="remote" src="{{remoteImg}}" mode="aspectFill" bindload="onRemoteLoad" binderror="onRemoteErr"/>
+  <text class="hint">{{remoteInfo}}</text>
+</view>

@@ -70,57 +70,37 @@ fn test_switch_toggle() {
     assert!(im.get_state("sw").unwrap().checked);
 }
 
+/// 按下开关（还没松手 / 只是从开关上开始拖页面）不能被当成一次拨动。
+/// 从前按压起点与拨动时刻共用 `transitions`：拨过一次之后再按，滑块先跳回对面再滑回来。
 #[test]
-fn test_slider_drag() {
+fn test_switch_press_does_not_restart_toggle_slide() {
     let mut im = InteractionManager::new();
-    // slider 宽 100，min 0，max 100
-    im.register_element(elem(InteractionType::Slider, "sl", 0.0, 0.0, 100.0, 20.0));
+    let sw = elem(InteractionType::Switch, "sw", 0.0, 0.0, 60.0, 30.0);
+    let bounds = sw.bounds;
+    im.register_element(sw);
 
-    // 点击中点 -> ~50
-    let r = im.handle_click(50.0, 10.0);
-    match r {
-        Some(InteractionResult::SliderChange { value, .. }) => {
-            assert!((value - 50).abs() <= 1, "点击中点值应约 50，实际 {}", value);
-        }
-        _ => panic!("expected SliderChange"),
-    }
-    assert!(im.is_dragging_slider());
+    // 没拨过：按下不该凭空产生拨动时刻
+    im.set_button_pressed("sw".into(), bounds);
+    im.clear_button_pressed();
+    assert!(!im.toggled_at.contains_key("sw"), "按压不该登记拨动时刻");
 
-    // 拖动到 75%
-    let r = im.handle_mouse_move(75.0, 10.0);
-    match r {
-        Some(InteractionResult::SliderChange { value, .. }) => {
-            assert!((value - 75).abs() <= 1, "拖到 75%，实际 {}", value);
-        }
-        _ => panic!("expected SliderChange on move"),
-    }
+    im.handle_click(30.0, 15.0);
+    let toggled = *im.toggled_at.get("sw").expect("拨动要登记时刻，滑块靠它做缓动");
 
-    // 释放
-    let r = im.handle_mouse_release();
-    assert!(matches!(r, Some(InteractionResult::SliderEnd { .. })));
-    assert!(!im.is_dragging_slider());
+    // 拨过之后再按：拨动时刻保持不变，状态也不变
+    std::thread::sleep(std::time::Duration::from_millis(5));
+    im.set_button_pressed("sw".into(), bounds);
+    assert_eq!(im.toggled_at.get("sw").copied(), Some(toggled), "按下改写了拨动时刻");
+    std::thread::sleep(std::time::Duration::from_millis(30));
+    im.clear_button_pressed();
+    assert_eq!(im.toggled_at.get("sw").copied(), Some(toggled), "松手改写了拨动时刻");
+    assert!(im.get_state("sw").unwrap().checked);
+
+    im.clear_page_state();
+    assert!(im.toggled_at.is_empty(), "换页要清掉拨动时刻");
 }
 
-#[test]
-fn test_slider_clamp() {
-    let mut im = InteractionManager::new();
-    im.register_element(elem(InteractionType::Slider, "sl", 0.0, 0.0, 100.0, 20.0));
-    im.handle_click(50.0, 10.0);
-    // 拖到超出右边界 -> 应被 clamp 到 100
-    let r = im.handle_mouse_move(999.0, 10.0);
-    if let Some(InteractionResult::SliderChange { value, .. }) = r {
-        assert_eq!(value, 100);
-    } else {
-        panic!("expected clamp to max");
-    }
-    // 拖到超出左边界 -> 0
-    let r = im.handle_mouse_move(-50.0, 10.0);
-    if let Some(InteractionResult::SliderChange { value, .. }) = r {
-        assert_eq!(value, 0);
-    } else {
-        panic!("expected clamp to min");
-    }
-}
+// slider 的用例在 slider_interaction_tests.rs（拖动经手势仲裁推进，不再是 handle_mouse_move）
 
 #[test]
 fn test_input_typing_and_edit() {

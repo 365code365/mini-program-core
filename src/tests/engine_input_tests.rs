@@ -123,6 +123,87 @@ fn 点picker会弹出底部面板并能确定() {
     assert_eq!(e.current_route(), route, "面板弹着时点击不该穿透到页面");
 }
 
+/// 打开 showcase 页那个 selector 的面板，并等入场动画走完（命中坐标随面板位移变化）
+fn open_picker(slot: &str) -> MiniEngine {
+    let mut e = engine_in("pages/showcase/showcase", slot);
+    e.scroll_to(300.0);
+    e.pump(0);
+    e.pointer_down(180.0, 540.0);
+    e.pointer_up(180.0, 540.0);
+    e.pump(0);
+    assert!(e.picker_sheet_open(), "点在 <picker> 上应弹出底部面板");
+    // 入场位移按墙上时钟走 0.22s
+    std::thread::sleep(std::time::Duration::from_millis(300));
+    e.pump(0);
+    e
+}
+
+/// 面板第一列：(选中下标, 项数)
+fn picker_col0(e: &MiniEngine) -> (usize, usize) {
+    let s = e.picker_sheet.as_ref().expect("面板应该还在");
+    (s.selected[0], s.columns[0].len())
+}
+
+#[test]
+fn picker面板上下拖动能换选项且不漏给页面() {
+    // 375×667 视口：面板顶 667-265=402，滚轮从 447 开始，中心行 535..579
+    let mut e = open_picker("picker-drag");
+    let (before, n) = picker_col0(&e);
+    assert!(n >= 2, "这个 picker 至少要有两项才测得了拖动");
+    let scroll_before = e.scroll_position();
+    // 往还有项的那一头拖一行：手指上推 = 往后面的项走
+    let dir: f32 = if before + 1 < n { -1.0 } else { 1.0 };
+    let y0 = 557.0;
+    let row = crate::host::picker_sheet::ITEM_H;
+    let slop = crate::host::touch::TOUCH_SLOP;
+    e.pointer_down(180.0, y0);
+    // 第一步跨过拖动阈值（滚轮在这里锚定），之后匀速走满一行
+    let anchor = y0 + dir * (slop + 1.0);
+    e.pointer_move(180.0, anchor);
+    for i in 1..=4 {
+        e.pointer_move(180.0, anchor + dir * row * i as f32 / 4.0);
+        e.pump(0);
+    }
+    assert!(e.picker_sheet.as_ref().unwrap().wheel_dragging(), "滚轮应进入拖动");
+    // 停住再松手：速度窗口（100ms）里没有位移，不带惯性，正好落一行
+    std::thread::sleep(std::time::Duration::from_millis(150));
+    e.pointer_up(180.0, anchor + dir * row);
+    e.pump(0);
+    let (after, _) = picker_col0(&e);
+    let expect = if dir < 0.0 { before + 1 } else { before - 1 };
+    assert_eq!(after, expect, "拖一行应换到相邻项（之前 {before}，共 {n} 项）");
+    assert!(e.picker_sheet_open(), "拖动松手不该关掉面板");
+    assert_eq!(e.scroll_position(), scroll_before, "面板上的拖动不该滚动底下的页面");
+}
+
+#[test]
+fn picker面板快速一甩会继续滑并吸附到整行() {
+    let mut e = open_picker("picker-fling");
+    let (before, n) = picker_col0(&e);
+    // 往还有余量的那一头甩
+    let dir: f32 = if before + 1 < n { -1.0 } else { 1.0 };
+    let y0 = 557.0;
+    e.pointer_down(180.0, y0);
+    for i in 1..=6 {
+        e.pointer_move(180.0, y0 + dir * 20.0 * i as f32);
+        std::thread::sleep(std::time::Duration::from_millis(8));
+    }
+    e.pointer_up(180.0, y0 + dir * 120.0);
+    e.pump(0);
+    let (after, _) = picker_col0(&e);
+    if dir < 0.0 {
+        assert!(after > before, "上推应往后面的项走：{before} -> {after}");
+    } else {
+        assert!(after < before, "下拉应往前面的项走：{before} -> {after}");
+    }
+    // 回正动画要续帧，走完停在整行上
+    assert!(e.picker_sheet.as_ref().unwrap().animating(), "松手后应有回正动画在走");
+    std::thread::sleep(std::time::Duration::from_millis(900));
+    e.pump(0);
+    let s = e.picker_sheet.as_ref().unwrap();
+    assert_eq!(s.column_pos(0, std::time::Instant::now()), s.selected[0] as f32);
+}
+
 #[test]
 fn 弹窗按钮按下与抬手落在同一个按钮才回调() {
     let mut e = engine_in("pages/profile/profile", "modal");
@@ -148,4 +229,89 @@ fn 弹窗按钮按下与抬手落在同一个按钮才回调() {
         got.contains("true"),
         "点确定应触发 success(confirm:true)，实际 __modalResult = {got:?}"
     );
+}
+
+// ───────────────────────────── 键盘：textarea 换行与快捷键 ─────────────────────────────
+//
+// 「SDK 里 textarea 按回车出豆腐块」就是这条链路：宿主把回车作为 `text_input("\n")` 送进来，
+// 引擎原样塞进值里、单行画出。这里直接驱动 `MiniEngine`，与 Flutter / 原生宿主走同一个入口。
+
+/// 取空事件队列（JSON）
+fn drain_events(e: &mut MiniEngine) -> Vec<serde_json::Value> {
+    std::iter::from_fn(|| e.poll_event()).filter_map(|s| serde_json::from_str(&s).ok()).collect()
+}
+
+/// 滚到 showcase 页的 textarea（「备注」）并点进去，清空原有内容
+fn focus_textarea(slot: &str) -> MiniEngine {
+    use crate::ui::interaction::InteractionType;
+    let mut e = engine_in("pages/showcase/showcase", slot);
+    for step in 0..16 {
+        e.scroll_to(step as f32 * 150.0);
+        e.pump(0);
+        let pos = e.scroll_position();
+        let r = e.renderer.as_ref();
+        let hit = e.interaction.elements().iter().find(|el| {
+            el.interaction_type == InteractionType::Input
+                && !el.is_fixed
+                && r.and_then(|r| r.input_region(&el.id)).is_some_and(|r| r.tag == "textarea")
+                && el.bounds.y - pos > 40.0
+                && el.bounds.y + el.bounds.height - pos < 540.0
+        });
+        if let Some(b) = hit.map(|el| el.bounds) {
+            let (x, y) = (b.x + 20.0, b.y - pos + b.height / 2.0);
+            e.pointer_down(x, y);
+            e.pointer_up(x, y);
+            e.pump(0);
+            let f = e.interaction.focused_input.as_ref().expect("点 textarea 应聚焦");
+            assert!(f.multiline, "textarea 聚焦后应按多行编辑");
+            assert_eq!(f.confirm_type, "return", "textarea 默认 confirm-type 是 return");
+            e.key("selectall");
+            e.key("backspace");
+            return e;
+        }
+    }
+    panic!("showcase 页上没找到 textarea");
+}
+
+#[test]
+fn sdk里textarea回车是换行而且不收键盘() {
+    let mut e = focus_textarea("ta-newline");
+    let focus = drain_events(&mut e).into_iter().find(|v| v["type"] == "inputFocus").expect("应发 inputFocus");
+    assert_eq!(focus["tag"], "textarea");
+    assert_eq!(focus["confirmType"], "return", "宿主据此把右下角设成换行键");
+    assert!(focus["cursor"].is_u64(), "inputFocus 要带光标位置：{focus}");
+
+    e.text_input("ab");
+    e.text_input("\n"); // 宿主的回车
+    e.text_input("cd");
+    e.pump(0);
+    assert_eq!(e.interaction.focused_input.as_ref().unwrap().value, "ab\ncd");
+    assert!(
+        !drain_events(&mut e).iter().any(|v| v["type"] == "inputBlur"),
+        "textarea 换行不该收键盘"
+    );
+    let note = e.eval("JSON.stringify(getCurrentPages()[0].data.note)").unwrap_or_default();
+    assert_eq!(note, r#""ab\ncd""#, "bindinput 拿到的值里有真正的换行");
+}
+
+#[test]
+fn sdk的快捷键按名字都能用() {
+    let mut e = focus_textarea("ta-keys");
+    e.text_input("one\ntwo");
+    e.key("up");
+    e.key("home");
+    e.key("shift+end");
+    e.key("cut"); // 剪掉第一行
+    assert_eq!(e.interaction.focused_input.as_ref().unwrap().value, "\ntwo");
+    let clip = drain_events(&mut e).into_iter().find(|v| v["type"] == "clipboard");
+    assert_eq!(clip.map(|v| v["data"].clone()), Some(serde_json::json!("one")), "剪切要让宿主写系统剪贴板");
+    let note = e.eval("getCurrentPages()[0].data.note").unwrap_or_default();
+    assert_eq!(note, "\ntwo", "剪切也是一次 bindinput");
+    e.key("undo");
+    assert_eq!(e.interaction.focused_input.as_ref().unwrap().value, "one\ntwo");
+    e.key("doc-end");
+    e.key("delete-word-back");
+    assert_eq!(e.interaction.focused_input.as_ref().unwrap().value, "one\n");
+    e.key("escape");
+    assert!(e.interaction.focused_input.is_none());
 }

@@ -98,6 +98,8 @@ pub fn build_base_style(
         Some("none") => None,
         Some(s) if !s.is_empty() => Some(s.to_string()),
         _ if node.tag_name == "button" => Some("button-hover".to_string()),
+        // <navigator> 的 hover-class 默认是 navigator-hover（官方 component/navigator.html）
+        _ if node.tag_name == "navigator" => Some("navigator-hover".to_string()),
         _ => None,
     };
     if ctx.stylesheet.has_active_rules() || hover_class.is_some() {

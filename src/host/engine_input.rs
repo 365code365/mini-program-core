@@ -10,7 +10,6 @@ use super::engine::MiniEngine;
 use super::navigation::{parse_url, NavigationRequest};
 use crate::host::input;
 use crate::host::picker_sheet;
-use crate::host::ui_overlay;
 use crate::host::touch::TouchOut;
 use crate::ui::interaction::KeyInput;
 use std::collections::HashMap;
@@ -23,21 +22,8 @@ impl MiniEngine {
     /// 直接 `scroll.begin_drag()` 把位移全给页面，于是横向卡片列表吞掉整页纵滑、
     /// 内层列表滚到底也不交棒、`catchtouchmove` 的遮罩锁不住页面。
     pub fn pointer_down(&mut self, x: f32, y: f32) {
-        // picker 面板在最上层，先于弹窗/页面吃事件
-        if picker_sheet::on_press(&mut self.picker_sheet, x, y) {
-            self.needs_redraw = true;
-            return;
-        }
-        if self.modal.as_ref().map(|m| m.visible).unwrap_or(false) {
-            let vp = self.viewport_logical();
-            let sf = self.dpr;
-            let Self { modal, text, .. } = self;
-            if ui_overlay::modal_press(modal, vp, sf, text.as_deref(), x, y) {
-                self.needs_redraw = true;
-            }
-            return;
-        }
-        if self.loading.as_ref().map(|l| l.visible).unwrap_or(false) {
+        // 宿主浮层（picker 面板、全屏视频、带蒙层的提示框、Modal）先吃，见 engine_overlay_input.rs
+        if self.overlay_pointer_down(x, y) {
             return;
         }
 
@@ -83,16 +69,10 @@ impl MiniEngine {
         };
         if let Some(el) = hit {
             use crate::ui::interaction::InteractionType;
+            // slider 不在按下时抢走触摸：横向锁定才交给它（手势仲裁），竖着划照样滚页面
             if !el.disabled && el.interaction_type != InteractionType::ScrollArea {
                 self.interaction.set_button_pressed(el.id.clone(), el.bounds);
                 self.needs_redraw = true;
-            }
-            if el.interaction_type == InteractionType::Slider && !el.disabled {
-                let ty = if el.is_fixed { y } else { actual_y };
-                if let Some(r) = self.interaction.handle_click(x, ty) {
-                    self.apply_interaction(r);
-                }
-                return;
             }
         }
 
@@ -104,14 +84,18 @@ impl MiniEngine {
             y,
             on_fixed,
             self.page_stack.len(),
-            // 侧滑返回还没接（要给被覆盖的页留视口图），先不开
-            true,
+            // 侧滑返回（engine_edge_back.rs）：上一次的还在收尾时不再起新的
+            self.edge_back.is_some(),
         ));
-        self.needs_redraw = true;
+        // 建手势本身不改任何像素：按压态、停惯性、touchstart 里的 setData 上面各自标过脏。
+        // 从前这里无条件 `needs_redraw` —— 每一次按下都整帧重画一次，滑动的第一帧必卡
     }
 
     /// 手指移动
     pub fn pointer_move(&mut self, x: f32, y: f32) {
+        if self.overlay_pointer_move(x, y) {
+            return;
+        }
         let now = self.mono_ms();
         if self.interaction.update_press_position(x, y, y + self.scroll.get_position()) {
             self.needs_redraw = true;
@@ -124,23 +108,34 @@ impl MiniEngine {
             self.dispatch_touch(&outs, x, y);
         }
         // 手势仲裁决定这次位移归谁：内层 scroll-view / 页面 / 谁也不动
-        let mut edge_back = None;
         let eff = input::apply_gesture_move(
             &mut self.gesture,
             &mut self.interaction,
             &mut self.scroll,
-            &mut edge_back,
+            &mut self.edge_back,
             self.width as f32,
             x,
             y,
             now,
         );
-        if eff.needs_redraw {
+        // 只推动了 scroll-view：不置整帧，出帧时按位置变化只重画它自己的盒子（engine_damage）
+        if eff.needs_redraw && !eff.area_scrolled {
             self.needs_redraw = true;
+        }
+        if eff.slider_changed {
+            let (tid, t) = (self.touch.identifier(), self.mono_ms());
+            crate::host::slider_input::dispatch_changing(&mut self.app, self.renderer.as_ref(), &self.interaction, tid, t);
+            if self.app.take_data_dirty() {
+                self.page_data_dirty = true;
+            }
         }
         if eff.page_scrolled {
             // 页面滚动只换上屏切片，不重绘（见 GestureEffect 注释）
             self.scroll_moved = true;
+        }
+        // 侧滑返回跟手：页面一个像素不变，只是上屏时整帧右移，重新合成就够
+        if self.edge_back.is_some() {
+            self.dmg.compose_dirty = true;
         }
         // 被滚动接管的那一刻补一次 touchcancel（手势竞争的失败方要能收尾）
         if self.touch.is_active()
@@ -153,28 +148,29 @@ impl MiniEngine {
 
     /// 手指抬起
     pub fn pointer_up(&mut self, x: f32, y: f32) {
-        if picker_sheet::on_release(&mut self.picker_sheet, &mut self.app, x, y) {
-            self.page_data_dirty = true;
-            self.needs_redraw = true;
-            return;
-        }
-        if self.modal.as_ref().map(|m| m.visible).unwrap_or(false) {
-            let vp = self.viewport_logical();
-            let sf = self.dpr;
-            let Self { modal, app, text, .. } = self;
-            ui_overlay::modal_release(modal, app, vp, sf, text.as_deref(), x, y);
-            self.needs_redraw = true;
+        if self.overlay_pointer_up(x, y) {
             return;
         }
 
+        // 松手要重画的只有按压态（`:active` / `hover-class` 要褪掉）与 scroll-view 拖拽收尾。
+        // 从前这里无条件 `needs_redraw`：每一次滑动松手都整帧重画，正好砸在惯性的第一帧上
+        // 正在拖的 swiper 松手要起吸附 / 翻页动画：动画由绘制推进，这一帧不画它就停在半路
+        let had_press = self.interaction.pressed_button.is_some()
+            || self.interaction.dragging_scroll_area.is_some()
+            || self.interaction.dragging_slider.is_some()
+            || crate::renderer::components::swiper_is_dragging();
         let now = self.mono_ms();
-        if let Some(r) = self.interaction.handle_mouse_release() {
-            self.apply_interaction(r);
+        // 拖过 slider：松手发 change，并且这一下不再算 tap（见 slider_input::finish）
+        let slider_dragged = crate::host::slider_input::finish(
+            &mut self.app, self.renderer.as_ref(), &mut self.interaction, self.touch.identifier(), now,
+        );
+        if self.app.take_data_dirty() {
+            self.page_data_dirty = true;
         }
         input::end_drags(
             &mut self.interaction,
             &mut self.scroll,
-            &mut None,
+            &mut self.edge_back,
             &mut self.gesture,
         );
         let outs = self.touch.release(x, y, now);
@@ -182,22 +178,35 @@ impl MiniEngine {
         self.dispatch_touch(&outs, x, y);
         // tap 只在「没被判成滑动、没被滚动接管、也不是用来停惯性」时才有
         let stopped_fling = std::mem::take(&mut self.tap_stops_fling);
-        if outs.contains(&TouchOut::Tap) && !stopped_fling {
+        if outs.contains(&TouchOut::Tap) && !stopped_fling && !slider_dragged {
             self.handle_click(x, y);
         }
-        self.needs_redraw = true;
+        if had_press {
+            self.needs_redraw = true;
+        }
     }
 
     /// 手势被系统打断（来电、返回手势接管…）
     pub fn pointer_cancel(&mut self) {
+        // 与按下/抬起对称：面板弹着时这串触摸根本没进页面的状态机
+        if picker_sheet::on_cancel(&mut self.picker_sheet) {
+            self.dmg.compose_dirty = true;
+            return;
+        }
         let outs = self.touch.cancel();
         if let Some((x, y)) = self.touch.start_pos() {
             self.dispatch_touch(&outs, x, y);
         }
+        // 拖到一半被打断：值已经变了，照样发 change 让页面知道
+        let (tid, now) = (self.touch.identifier(), self.mono_ms());
+        crate::host::slider_input::finish(&mut self.app, self.renderer.as_ref(), &mut self.interaction, tid, now);
+        if self.app.take_data_dirty() {
+            self.page_data_dirty = true;
+        }
         input::end_drags(
             &mut self.interaction,
             &mut self.scroll,
-            &mut None,
+            &mut self.edge_back,
             &mut self.gesture,
         );
         self.touch.finish();
@@ -209,33 +218,28 @@ impl MiniEngine {
         self.scroll_moved = true;
     }
 
-    /// 往当前聚焦的输入框送文字（输入法提交的整串也走这里）
+    /// 往当前聚焦的输入框送文字（输入法提交的整串也走这里）。
+    ///
+    /// 整串恰好是一个换行（`"\n"` / `"\r\n"`）时当作回车键：textarea 换行、input 触发 confirm ——
+    /// iOS 的 `insertText("\n")`、Android 硬件键盘与 Flutter 多行输入的回车都是这样送进来的。
+    /// 其余控制字符丢掉（画出来是豆腐块），多行里的换行保留。
     pub fn text_input(&mut self, text: &str) {
         if !self.interaction.has_focused_input() {
             return;
         }
-        for c in text.chars() {
-            if let Some(r) = self.interaction.handle_key_input(KeyInput::Char(c)) {
-                self.apply_interaction(r);
-            }
+        for r in self.interaction.insert_text(text) {
+            self.apply_interaction(r);
         }
         self.needs_redraw = true;
     }
 
-    /// 功能键：`enter` / `backspace` / `delete` / `left` / `right` / `home` /
-    /// `end` / `selectall` / `escape`
+    /// 功能键，名字见 [`crate::ui::interaction::KEY_NAMES`]：`enter` `newline` `backspace`
+    /// `delete` `left` `right` `up` `down` `home` `end`、`shift+…` 扩展选区、`word-left` /
+    /// `word-right`、`doc-start` / `doc-end`、`delete-word-back`、`selectall` `copy` `cut`
+    /// `undo` `redo` `escape`。不认识的名字忽略。
     pub fn key(&mut self, name: &str) {
-        let input = match name {
-            "enter" | "confirm" => KeyInput::Enter,
-            "backspace" => KeyInput::Backspace,
-            "delete" => KeyInput::Delete,
-            "left" => KeyInput::Left,
-            "right" => KeyInput::Right,
-            "home" => KeyInput::Home,
-            "end" => KeyInput::End,
-            "selectall" => KeyInput::SelectAll,
-            "escape" => KeyInput::Escape,
-            _ => return,
+        let Some(input) = KeyInput::from_name(name) else {
+            return;
         };
         if let Some(r) = self.interaction.handle_key_input(input) {
             self.apply_interaction(r);
@@ -262,6 +266,8 @@ impl MiniEngine {
             .eval("if(__currentPage&&__currentPage.onUnload)__currentPage.onUnload()")
             .ok();
         self.page_stack.pop();
+        // 回到的这一页要重新渲染，它离开时留下的那张图用完即弃
+        self.back_shots.pop();
         self.app.eval("__popPage(1)").ok();
         self.app.eval("if(__currentPage&&__currentPage.onShow)__currentPage.onShow()").ok();
         self.interaction.clear_page_state();
@@ -294,7 +300,11 @@ impl MiniEngine {
         match nav {
             NavigationRequest::NavigateTo { url } => {
                 let (p, q) = parse_url(&url);
-                self.navigate_to(&p, q).ok();
+                // 当前页要被盖住了：留一张图，侧滑返回时露出来的就是它
+                self.capture_back_shot();
+                if self.navigate_to(&p, q).is_err() {
+                    self.back_shots.pop();
+                }
             }
             NavigationRequest::NavigateBack => {
                 self.back();
@@ -326,6 +336,8 @@ impl MiniEngine {
             .eval("if(__currentPage&&__currentPage.onUnload)__currentPage.onUnload()")
             .ok();
         self.page_stack.clear();
+        self.back_shots.clear();
+        self.edge_back = None;
         self.app.eval("__resetPageStack()").ok();
         self.interaction.clear_page_state();
         self.navigate_to(path, HashMap::new()).ok();
@@ -334,7 +346,12 @@ impl MiniEngine {
     /// 主动跳页（宿主侧的深链：扫码进来直接落到某个页面）
     pub fn navigate(&mut self, url: &str) -> Result<(), String> {
         let (p, q) = parse_url(url);
-        self.navigate_to(&p, q)
+        self.capture_back_shot();
+        let r = self.navigate_to(&p, q);
+        if r.is_err() {
+            self.back_shots.pop();
+        }
+        r
     }
 
     // ───────────────────────── 内部：派发 ─────────────────────────
@@ -349,9 +366,10 @@ impl MiniEngine {
             app,
             renderer,
             page_data_dirty,
-            needs_redraw,
             ..
         } = self;
+        // touchmove 里 setData（跟手的拖拽条、滑块）每一步都会走到这里：只标数据脏，
+        // 重画多大交给失效分析，不再每一步整帧
         input::dispatch_touch_sequence(
             app,
             renderer.as_ref(),
@@ -363,7 +381,6 @@ impl MiniEngine {
             |app| {
                 if app.take_data_dirty() {
                     *page_data_dirty = true;
-                    *needs_redraw = true;
                 }
             },
         );
@@ -376,13 +393,14 @@ impl MiniEngine {
         if self.modal.as_ref().map(|m| m.visible).unwrap_or(false) {
             return;
         }
-        if self.loading.as_ref().map(|l| l.visible).unwrap_or(false) {
+        if self.tip_blocks_input() {
             return;
         }
         // 点在 `<picker>` 上：弹面板，不再走普通内容点击
-        if let Some(sheet) =
+        if let Some(mut sheet) =
             picker_sheet::open_if_hit(self.renderer.as_ref(), self.scroll.get_position(), x, y)
         {
+            sheet.viewport = (self.width as f32, self.height as f32);
             self.picker_sheet = Some(sheet);
             self.needs_redraw = true;
             return;
@@ -398,7 +416,14 @@ impl MiniEngine {
                 None
             };
             if let Some(nav) =
-                crate::host::tabbar::nav_at(x, y - tabbar_y, custom, self.config.tab_bar.as_ref(), &route)
+                crate::host::tabbar::nav_at_w(
+                    x,
+                    y - tabbar_y,
+                    custom,
+                    self.config.tab_bar.as_ref(),
+                    &route,
+                    self.width as f32,
+                )
             {
                 self.apply_navigation(nav);
             }
@@ -435,15 +460,30 @@ impl MiniEngine {
 
     fn apply_interaction(&mut self, res: crate::ui::interaction::InteractionResult) {
         use crate::ui::interaction::InteractionResult as R;
+        // 复制 / 剪切：引擎里存一份，再发 `clipboard` 事件让宿主写系统剪贴板
+        // （与 `wx.setClipboardData` 同一条事件）。从前这两种结果在这里直接丢掉，
+        // 剪切还会让值变了却不发 `bindinput`。
+        if let R::CopyText { text } | R::CutText { text, .. } = &res {
+            self.emit_clipboard(text);
+        }
         let (id, kind, value) = match &res {
             R::Focus { id, value, .. } => (id.clone(), "focus", value.clone()),
-            R::InputChange { id, value } => (id.clone(), "input", value.clone()),
+            R::InputChange { id, value } | R::CutText { id, value, .. } => (id.clone(), "input", value.clone()),
             R::InputBlur { id, value } => (id.clone(), "blur", value.clone()),
-            R::InputConfirm { id, value } => (id.clone(), "confirm", value.clone()),
+            R::InputConfirm { id, value, .. } => (id.clone(), "confirm", value.clone()),
             _ => return,
         };
         if kind == "focus" {
             crate::renderer::components::reset_cursor_blink();
+        }
+        // 告诉宿主弹 / 收软键盘（事件队列，见 engine_events.rs）。
+        // `confirm-hold` 的确认不收键盘：输入框还聚焦着
+        match &res {
+            R::Focus { id, value, bounds, is_fixed, .. } => self.emit_input_focus(id, value, *bounds, *is_fixed),
+            R::InputBlur { id, value } | R::InputConfirm { id, value, keep_focus: false } => {
+                self.emit_input_blur(id, value)
+            }
+            _ => {}
         }
         // 与桌面窗体同一条派发（`host::tap::dispatch_input_event`）
         let r = self.renderer.take();

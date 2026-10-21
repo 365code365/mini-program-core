@@ -1,0 +1,43 @@
+<view class="card">
+  <text class="title">SelectorQuery</text>
+  <view id="box" class="box" data-kind="demo" data-n="{{3}}"><text>#box</text></view>
+  <view class="chips">
+    <view class="chip" wx:for="{{[1, 2, 3, 4]}}" wx:key="*this" style="width: {{item * 60}}rpx;"><text>.chip</text></view>
+  </view>
+  <view class="btns">
+    <view class="btn-s" bindtap="measure">boundingClientRect</view>
+    <view class="btn-s" bindtap="measureAll">selectAll</view>
+    <view class="btn-s" bindtap="viewport">selectViewport</view>
+    <view class="btn-o" bindtap="fields">fields</view>
+  </view>
+  <view class="result"><text>{{queryResult}}</text></view>
+</view>
+
+<view class="card">
+  <text class="title">wx.nextTick</text>
+  <view class="btns"><view class="btn-s" bindtap="tick">看执行顺序</view></view>
+  <view class="result" wx:if="{{tickResult}}"><text>{{tickResult}}</text></view>
+</view>
+
+<view class="card">
+  <text class="title">wx.pageScrollTo / onPageScroll / onReachBottom</text>
+  <view class="btns">
+    <view class="btn-s" bindtap="toTarget">滚到 #target（selector）</view>
+    <view class="btn-s" bindtap="toBottom">scrollTop: 99999</view>
+  </view>
+  <text class="hint">右下角的悬浮按钮是 position: fixed（不随页面滚动，点它不会穿透到下面的内容）</text>
+</view>
+
+<view class="card io {{ioVisible ? 'io-on' : ''}}">
+  <text class="title">IntersectionObserver</text>
+  <text>#target {{ioVisible ? '在' : '不在'}}视口里（intersectionRatio {{ioRatio}}）</text>
+</view>
+
+<view class="filler" wx:for="{{fillers}}" wx:key="*this"><text>占位内容 {{item}} —— 往下滚，看上面那张卡片的状态</text></view>
+
+<view id="target" class="target"><text>#target：滚到这里时 IntersectionObserver 回调</text></view>
+
+<view class="filler" wx:for="{{more}}" wx:key="*this"><text>触底加载的第 {{item}} 条</text></view>
+<view class="bottom"><text>{{bottomTip}}</text></view>
+
+<view class="fab" bindtap="toTop" wx:if="{{scrollTop > 200}}"><text class="fab-arrow">↑</text><text class="fab-num">{{scrollTop}}</text></view>

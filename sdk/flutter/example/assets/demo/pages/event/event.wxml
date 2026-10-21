@@ -1,0 +1,44 @@
+<view class="card">
+  <text class="title">冒泡、catch 与捕获</text>
+  <view class="layer outer" data-name="outer" bindtap="onTap" capture-bind:tap="onCapture">
+    <text class="layer-name">outer（bindtap + capture-bind:tap）</text>
+    <view class="layer middle" data-name="middle" bindtap="onTap">
+      <text class="layer-name">middle（bindtap）</text>
+      <view class="layer inner" data-name="inner" bindtap="onTap"><text>inner：点我，事件一路冒泡</text></view>
+    </view>
+    <view class="layer middle" data-name="catcher" catchtap="onTap">
+      <text class="layer-name">catcher（catchtap 截断）</text>
+      <view class="layer inner" data-name="inner2" bindtap="onTap"><text>inner2：冒到 catcher 就停</text></view>
+    </view>
+  </view>
+  <view class="result"><text>{{tapPath || '点上面的方块'}}</text></view>
+</view>
+
+<view class="card">
+  <text class="title">长按与 dataset</text>
+  <view class="press-box" bindlongpress="onLongPress" bindtap="onShortTap" data-id="{{42}}" data-name="商品" data-on="{{true}}" hover-class="press-on">
+    <text>短按 tap / 长按 longpress（350ms）</text>
+  </view>
+  <view class="result"><text>{{pressInfo}}</text></view>
+</view>
+
+<view class="card">
+  <text class="title">触摸事件 + catchtouchmove</text>
+  <view class="pad" bindtouchstart="onTouchStart" catchtouchmove="onTouchMove" bindtouchend="onTouchEnd" bindtouchcancel="onTouchEnd">
+    <view class="finger" wx:if="{{touching}}" style="left: {{fx - 20}}px; top: {{fy - 20}}px;"></view>
+    <text class="pad-tip">在这块区域里拖动</text>
+  </view>
+  <view class="result"><text>{{touchInfo}}</text></view>
+</view>
+
+<view class="card">
+  <text class="title">hover-class 的时间参数</text>
+  <view class="hover-row">
+    <view class="hv" hover-class="hv-on" hover-start-time="0" hover-stay-time="0"><text>立即 / 不停留</text></view>
+    <view class="hv" hover-class="hv-on" hover-start-time="300" hover-stay-time="800"><text>延迟 300 / 停留 800</text></view>
+  </view>
+  <view class="hv-parent" hover-class="hv-on">
+    <text>父节点也有 hover-class</text>
+    <view class="hv hv-child" hover-class="hv-on2" hover-stop-propagation="{{true}}"><text>子节点 hover-stop-propagation：按这里父节点不变色</text></view>
+  </view>
+</view>

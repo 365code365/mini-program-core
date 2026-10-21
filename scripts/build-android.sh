@@ -11,6 +11,8 @@
 #      bindgen 特性并裁剪桌面依赖后，移动端才能成功交叉编译。
 set -euo pipefail
 cd "$(dirname "$0")/.."
+# 发出去的库要 thin LTO（Cargo.toml 的 release 为了开发构建快关掉了它，见那里的注释）
+export CARGO_PROFILE_RELEASE_LTO=thin CARGO_PROFILE_RELEASE_INCREMENTAL=false
 
 if ! command -v cargo-ndk >/dev/null 2>&1; then
   echo "缺少 cargo-ndk，请先执行: cargo install cargo-ndk" >&2

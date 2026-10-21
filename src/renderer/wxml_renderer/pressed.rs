@@ -20,7 +20,8 @@ impl WxmlRenderer {
     ) -> f32 {
         const TOGGLE_DURATION: f32 = 0.3;
         let target = if checked { 1.0 } else { 0.0 };
-        let Some(started) = interaction.transitions.get(id).copied() else { return target };
+        // 只认「真正拨动」的时刻；按压起点（`transitions`）不算，否则按一下就假拨一次
+        let Some(started) = interaction.toggled_at.get(id).copied() else { return target };
         let elapsed = self.animation_time() - started;
         if elapsed < 0.0 || elapsed >= TOGGLE_DURATION {
             return target;

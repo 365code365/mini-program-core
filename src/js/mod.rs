@@ -31,6 +31,8 @@ mod runtime;
 mod api;
 /// JS ↔ Rust 桥：原生函数入口与事件队列
 mod bridge;
+/// WebSocket / 文件系统 / 音频 / 图片信息这组同步桥入口（从 bridge.rs 拆出）
+mod bridge_io;
 
 pub use runtime::JsRuntime;
 pub use api::MiniAppApi;

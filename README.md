@@ -179,8 +179,8 @@ screenshotted in Chrome on the other, compared per pixel):
 
 | Sample | Pages | Changed-pixel ratio vs Chrome |
 |---|---|---|
-| `sample-app` (shop) | 15 | **4.55%** |
-| `news-app` (news) | 6 | **6.33%** |
+| `sample-app` (shop) | 15 | **4.57%** |
+| `news-app` (news) | 6 | **6.34%** |
 
 What remains is concentrated in bold glyph shapes and subpixel text positioning. That number is a
 **regression criterion, not a marketing line** — every rendering change is checked against it first.
@@ -199,7 +199,7 @@ What remains is concentrated in bold glyph shapes and subpixel text positioning.
 
 | Criterion | Size |
 |---|---|
-| Unit tests | lib **483** + bin **9**; including 41 pure host-logic cases (gesture arbitration 13 / edge-swipe back 12 / picker sheet 10 / touch state machine 6) and 7 SDK pointer-path cases |
+| Unit tests | lib **774** + bin **26** + **72** end-to-end integration tests (22 files); including 41 pure host-logic cases (gesture arbitration 13 / edge-swipe back 12 / picker sheet 10 / touch state machine 6) and 7 SDK pointer-path cases |
 | Scene gallery | **65** images, byte-reproducible under a fixed animation clock |
 | Partial-repaint check | Incremental repaint vs forced full frame, **byte-identical** across 5 scenes |
 | SDK vs desktop | sample 15/15, news 6/6 **pixel-identical** |
@@ -217,17 +217,35 @@ What remains is concentrated in bold glyph shapes and subpixel text positioning.
   semantics (slop cancels tap, 350 ms longpress, a `touchcancel` is synthesized when scrolling
   takes over);
 - **Templates**: `wx:if` / `wx:elif` / `wx:else` / `wx:for`, `block`, the expression engine,
-  `class`/`style` bindings, and `usingComponents` from page JSON (custom components with style
-  isolation and their own data scope);
+  `class`/`style` bindings, `template` / `import` / `include`, `wxs` modules (run in QuickJS),
+  `wx:key` (component instances and interaction state follow the key), and `usingComponents`
+  custom components (one instance per use site, style isolation, their own data scope, named,
+  default and dynamic `<slot>`, `virtualHost`, `triggerEvent` with `bubbles` / `composed` /
+  `capturePhase`, the `wx://form-field` behaviors, `selectComponent`);
 - **Styles**: selectors with specificity cascade, inheritance, `@import`, CSS variables, `rpx`,
-  `calc()`, gradients, shadows, `transform` / `transition` / `@keyframes`;
-- **APIs**: 39 `wx.*` entries (`request` with `abort`, the full storage set persisted across
-  launches, Toast/Loading/Modal, five routing APIs, the full device-info set, `createAnimation`,
-  `createCanvasContext`);
+  `calc()`, gradients, shadows, `transform` / `transition` / `@keyframes`, `@media` (width /
+  height / orientation / aspect ratio / color scheme), `@font-face` (TTF / OTF);
+- **Component behavior**: `scroll-view` controlled position, scroll / edge events and custom
+  pull-to-refresh; `swiper` drag, circular mode, multiple items per screen, previous/next margins,
+  Skyline's `direction` / `indicator-type` / `layout-type` and change / transition /
+  animationfinish; `form` submit / reset; `picker` columnchange / cancel / `header-text`; the
+  inline `picker-view` wheel; `navigator` and `label` with their official tap behavior; `<video>`
+  playback events, fullscreen, poster and danmu; `<canvas type="2d">` (gradients, patterns,
+  shadows, composite modes, pixel readback);
+- **APIs**: 120+ `wx.*` entries (`request` with `abort`, `connectSocket`, `downloadFile` /
+  `uploadFile` and `FileSystemManager` over a `wxfile://` sandbox, `InnerAudioContext` and
+  background audio, the full storage set persisted across launches, Toast / Loading / Modal /
+  ActionSheet, `previewImage`, five routing APIs, `pageScrollTo`, `createSelectorQuery`,
+  `createIntersectionObserver`, `nextTick`, `createVideoContext`, the tabBar runtime APIs,
+  clipboard, vibration, `loadFontFace`, the full device-info set, network status, the menu-button
+  rect, `canIUse`, `getImageInfo` / `compressImage`, `canvasToTempFilePath`, `createAnimation`,
+  `createCanvasContext`). For 30 host capabilities such as `login` / `chooseImage` /
+  `getLocation` / saving to the album / recording: if the host names them in the `hostApis` creation option they go to the host,
+  otherwise they `fail` immediately with the reason (they are no longer `undefined`);
 - **Lifecycles**: 28 hooks across three levels (App 7 / Page 13 / Component 5 + `pageLifetimes` 3);
   page `onShow`/`onHide`/`onResize` cascade to the components inside the page;
-- **Interaction**: inertial scrolling with critically damped bounce, gesture arbitration, edge-swipe
-  back, pull-to-refresh, the picker bottom sheet, partial repaint;
+- **Interaction**: inertial scrolling with critically damped bounce, gesture arbitration, left-edge
+  swipe back (desktop and mobile SDK), pull-to-refresh, the picker bottom sheet, partial repaint;
 - **Media**: Canvas 2D (a complete 2D context plus a device-resolution backing buffer), `<video>`
   (MP4 demux + H.264 software decode + audio).
 
@@ -235,16 +253,25 @@ What remains is concentrated in bold glyph shapes and subpixel text positioning.
 
 | Not doing | Why |
 |---|---|
-| GPU rasterization | The GPU only composites and presents (see [design decision 8](#eight-design-decisions-that-matter)); content is always drawn by the CPU, so the CPU stays the single pixel reference and environments with no GPU (CI, embedded) produce the same image |
-| Parsing `.wxapkg` / signature checks | Subpackages, staged rollout and integrity belong to the host; the engine reads a **directory** |
-| Compiling `<web-view>` / `<map>` into the engine | In WeChat these are native-layer components. The engine computes position and parameters; the host places the widget with `WKWebView` / `android.webkit.WebView` / ArkUI `Web()` ([rationale](doc/原生App集成指南.md)) |
-| Remote fonts via `wx.loadFontFace` | Fonts come from the system. The API exists and calls back `success` (otherwise it would stall the framework's `onLaunch`), but nothing is downloaded |
-| Accommodating code that deviates from WeChat semantics | Skyline is the only alignment target. Where usage disagrees with WeChat, WeChat wins |
+| GPU rasterization | The GPU only composites and presents (see [design decision 8](#eight-design-decisions-that-matter)); content is always drawn by the CPU, so the CPU stays the single pixel reference and environments with no GPU (CI, embedded) produce the same image. Doing it means a second rasterizer next to the CPU one (every primitive, text, gradients, shadows); not done in this round |
+| Parsing `.wxapkg` / signature checks | `.wxapkg` is WeChat's private compiled format (templates are already compiled into `$gwx` functions) and the signature belongs to WeChat's key system; subpackages, staged rollout and integrity belong to the host; the engine reads a source **directory** |
+| Compiling `<web-view>` / `<map>` into the engine | **Skyline itself does not render `web-view`** (official component table: "not planned"; such a page has to fall back to the WebView renderer), and `map` is a same-layer native component in Skyline. The engine computes position and parameters; the host places the widget with `WKWebView` / `android.webkit.WebView` / ArkUI `Web()` ([rationale](doc/原生App集成指南.md)) |
+| Accommodating code that deviates from WeChat semantics | Skyline is the only alignment target. Where usage disagrees with WeChat, WeChat wins. This is a principle, not a feature that can be "implemented" (doing the opposite would break the alignment target) |
 
-**Still missing** (13 items, each with its impact, in section 6 of
-[`doc/引擎测试说明.md`](doc/引擎测试说明.md)): `wx:key` reuse semantics, `template` / `slot` /
-`wxs`, `scroll-view` scroll events, `<video>` playback events, cloud APIs such as `wx.login`, and
-edge-swipe back in the mobile SDK.
+(Remote fonts used to be in this table. `wx.loadFontFace` and `@font-face` now really load TTF /
+OTF and reject WOFF explicitly, matching Skyline.)
+
+**Still missing** (of the earlier 12 items, 4 are closed and the rest are mostly done; each has
+its impact in section 6 of [`doc/引擎测试说明.md`](doc/引擎测试说明.md)). This round (T23–T29)
+added WebSocket / file-system / audio APIs, component event bubbling with `virtualHost` and dynamic
+slots, `navigator` / `label`, `picker-view` scrolling, Skyline's swiper attributes, gradients,
+shadows and pixel readback in canvas 2d, and video poster and danmu. `@supports` / `@container` /
+`@layer` turned out to be unsupported in Skyline itself, so both ends now skip them whole. Still open:
+`wx:key` in incremental invalidation and WXS event handlers (G-2), custom components in the H5
+export (G-2c), scrollbars and Skyline's `sticky` / `grid-view` / nested scrolling in `scroll-view`
+(G-4), controlled values of off-screen scroll-views (G-5), progress dragging and picture-in-picture
+in video (G-6), worklet callbacks in swiper (G-7), dashed lines and `clip` in canvas (G-9), and the
+fallback semantics of unknown tags (G-12).
 
 **The biggest known weakness is memory**: a 600 MB–1 GB peak, almost entirely fonts. Measured
 breakdown from `cargo run --release --example mem_report` (RSS delta, macOS):
@@ -293,8 +320,8 @@ interaction snapshots all need new baselines. That makes it its own round of wor
 - You need the full web platform (arbitrary CSS, third-party H5 SDKs, `<iframe>`) — use a WebView;
 - Heavy 3D or lots of filters — content is rasterized on the CPU (the GPU backend only
   composites), which will not hold up; use a stack that draws on the GPU;
-- You expect "any production mini-program runs with zero adaptation" — there are still 13 known
-  gaps, and complex apps need item-by-item verification;
+- You expect "any production mini-program runs with zero adaptation" — there are still known
+  gaps (see above), and complex apps need item-by-item verification;
 - Severely memory-constrained devices — the peak is high until the font backend is swapped.
 
 ### Stack and dependencies
@@ -310,6 +337,9 @@ so it is pinned exactly, and upgrading is its own task that reruns every GPU che
 | [fontdue](https://github.com/mooman219/fontdue) | 0.9 | Glyph rasterization |
 | [image](https://github.com/image-rs/image) | 0.25 | Image decoding (PNG / JPEG / GIF frames / WebP …, the crate's default decoder set) |
 | [ureq](https://github.com/algesten/ureq) | 3.3 | `wx.request` and remote images (must use `http_status_as_error(false)` — in WeChat 4xx/5xx still go to `success`) |
+| [tungstenite](https://github.com/snapview/tungstenite-rs) | =0.30.0 | The WebSocket protocol behind `wx.connectSocket` (handshake only; TLS comes from the same rustls below) |
+| [rustls](https://github.com/rustls/rustls) + [webpki-roots](https://github.com/rustls/webpki-roots) | =0.23.42 / =1.0.9 | TLS and root certificates for `wss://` (the same copies ureq already uses) |
+| [base64](https://github.com/marshallpierce/rust-base64) / [flate2](https://github.com/rust-lang/flate2-rs) | =0.22.1 / =1.1.9 | Binary data across the bridge (WebSocket frames, files, pixels) / deflate for `FileSystemManager.unzip` (both already pulled in by ureq) |
 | [symphonia](https://github.com/pdeljanov/Symphonia) | 0.6 | Audio demux and decode (AAC / MP3 / MP4) |
 | [openh264](https://github.com/ralfbiedert/openh264-rs) | 0.9 | H.264 software decode (optional feature `h264`) |
 | [winit](https://github.com/rust-windowing/winit) + [softbuffer](https://github.com/rust-windowing/softbuffer) | 0.30 / 0.4 | Desktop window and software framebuffer (optional feature `desktop`; also the present path when the GPU is unavailable) |
@@ -350,7 +380,9 @@ Headless image output (for CI / regression):
 Common action flags (executed in the order written, repeatable): `--touch x,y` /
 `--swipe x1,y1,x2,y2` / `--drag px×frames` / `--type text` / `--key enter` / `--wheel` /
 `--wait seconds` / `--frames N`. Full list via `--help`. Diagnostic switches
-(`MINI_SCROLL_LOG` / `MINI_FPS` / `MINI_FONT_LOG` …) are documented in
+(`MINI_SCROLL_LOG` / `MINI_FPS` / `MINI_FONT_LOG` / `MINI_SLIDER_LOG` …; the mobile SDK also has `MINI_DAMAGE_LOG`, one
+line per frame saying how much was repainted, and `MINI_NO_DAMAGE`, which turns partial repaint off
+for comparison, see the integration guide) are documented in
 [`doc/引擎测试说明.md`](doc/引擎测试说明.md) and
 [`doc/架构与实现原理.md`](doc/架构与实现原理.md#帧成本是怎么压下来的).
 
@@ -442,7 +474,7 @@ Feature flags:
 | `desktop` | ✅ | Desktop window (winit + softbuffer + clipboard) |
 | `audio` | ✅ | Built-in audio playback (sound for `<video>`) |
 | `h264` | ✅ | Built-in H.264 software decode. **Turn it off on mobile**: the system player's hardware decode is cheaper on battery, and openh264 does not build for the iOS simulator target |
-| `gpu` | ✅ | GPU compositing backend (wgpu), chosen at runtime, falls back to the CPU on any failure. Mobile builds leave it out: GPU presentation in the SDK is not wired up yet |
+| `gpu` | ✅ | GPU compositing backend (wgpu), chosen at runtime, falls back to the CPU on any failure. The Android library ships with it (hand an `ANativeWindow` to `mr_app_attach_surface` for GPU presentation; the SDK's default preference is still cpu; `ANDROID_GPU=0` leaves it out). The iOS library leaves it out for now |
 | `bindgen` | ❌ | Turn on when cross-compiling |
 
 ### 2. Package it as a dependency (recommended)
@@ -571,26 +603,38 @@ target. `<video>` still takes part in layout and hit testing, it just produces n
 | Category | Supported |
 |---|---|
 | Components (24 tags) | Containers: view / block / scroll-view / swiper / swiper-item<br/>Text and media: text / rich-text / icon / image / video / canvas<br/>Forms: button / input / textarea / switch / slider / progress / checkbox / checkbox-group / radio / radio-group / picker / picker-view / picker-view-column |
-| Events | touchstart/move/end/cancel, longpress/longtap, tap, change, focus/input/blur/confirm, image load/error, page onPageScroll / onReachBottom / onPullDownRefresh; six binding prefixes (bind / catch / capture-bind / capture-catch / mut-bind / bind:) with the full capture-bubble chain |
-| WXML | wx:for / wx:if / elif / else / for-item / for-index, block, expression engine, class and style bindings, custom components (usingComponents) |
-| WXSS | tag / class / id / attribute / pseudo-class selectors, descendant and child combinators, specificity cascade, `:first/last/only-child`, `:nth-child(An+B)`, `:active`, `@import`, `@keyframes`, CSS variables, rpx, gradients, shadows, transform, transition/animation |
-| wx.\* | request (with abort), the full storage set, showToast/showLoading/showModal, pull-to-refresh, createAnimation, createCanvasContext, the full device-info set, five routing APIs, app-level listeners (onError etc.) |
-| Interaction | Inertial scrolling with critically damped bounce, gesture arbitration (axis lock / inner-outer handoff), edge-swipe back, pull-to-refresh, picker sheet, partial repaint (damage regions) |
+| Events | touchstart/move/end/cancel, longpress/longtap, tap, change, focus/input/blur/confirm, image load/error, scroll-view scroll / scrolltoupper / scrolltolower / refresher*, swiper change / transition / animationfinish, form submit / reset, picker columnchange / cancel, video play / pause / ended / timeupdate / loadedmetadata / seekcomplete / fullscreenchange / error, page onPageScroll / onReachBottom / onPullDownRefresh; six binding prefixes (bind / catch / capture-bind / capture-catch / mut-bind / bind:) with the full capture-bubble chain |
+| WXML | wx:for / wx:if / elif / else / for-item / for-index / wx:key, block, expression engine (with spread and shorthand properties), class and style bindings, template / import / include, wxs modules (`<wxs src>` / inline / require), custom components (usingComponents: one instance per use site, named and default slots) |
+| WXSS | tag / class / id / attribute / pseudo-class selectors, descendant and child combinators, specificity cascade, `:first/last/only-child`, `:nth-child(An+B)`, `:active`, `@import`, `@keyframes`, `@media`, `@font-face`, CSS variables, rpx, gradients, shadows, transform, transition/animation |
+| wx.\* (72) | request (with abort), downloadFile / uploadFile, the full storage set, showToast / showLoading / showModal / showActionSheet, previewImage, pull-to-refresh, pageScrollTo, createSelectorQuery / createIntersectionObserver / nextTick, createVideoContext, createAnimation, createCanvasContext and canvas 2d nodes, the tabBar runtime APIs, clipboard, vibration, loadFontFace, navigation-bar APIs, the full device-info set, five routing APIs, app-level listeners (onError etc.); host capabilities such as login / chooseImage go to the host via hostApis |
+| Interaction | Inertial scrolling with critically damped bounce, gesture arbitration (axis lock / inner-outer handoff), left-edge swipe back (desktop and mobile SDK), pull-to-refresh, picker sheet, action sheet, image preview, fullscreen video, partial repaint (damage regions) |
 
 **Icons** use WeUI's official vector data (`success` is a filled circle with a check-shaped hole
 punched out, not a white-stroked check).
 
-Known gaps (`wx:key` / `template` / `slot` / `wxs`, `scroll-view` scroll events, `video` playback
-events, unimplemented APIs such as `wx.login` …) are listed in
-[section 6 of `doc/引擎测试说明.md`](doc/引擎测试说明.md) — 13 items, each with its impact.
+Known gaps (`wx:key` does not feed incremental invalidation, the H5 export does not support custom
+components, Skyline-only layout components in `scroll-view`, …) are listed in
+[section 6 of `doc/引擎测试说明.md`](doc/引擎测试说明.md), each with its impact.
 
 ---
 
 ## Testing and regression
 
+One command runs everything below (plus per-page snapshots and the H5 comparison), times each
+step and writes a summary to `target/_regress/summary.txt`. After an engine change it takes about
+4 minutes: ~20 s to rebuild all targets, ~200 s for the checks. The `release` profile has LTO off
+and incremental on for this reason (thin LTO re-optimised every one of ~50 binaries: 2905 s vs 20 s,
+byte-identical gallery output); the shipped mobile libraries turn thin LTO back on in `tools/build-mobile.sh`.
+
+```bash
+bash tools/regress.sh            # add --no-h5 to skip the H5 comparison
+```
+
+Step by step:
+
 ```bash
 rm -rf target/mini-storage                 # ① mandatory, see below
-cargo test --release                       # ② lib 483 + bin 9
+cargo test --release                       # ② lib 774 + bin 26 + integration 72
 bash tools/damage-check.sh                 # ③ incremental repaint == full frame (byte-identical)
 cargo run --release --example gallery      # ④ 65 scene images
 bash tools/tab-click-check.sh              # ⑤ tabBar clicks across three apps
@@ -618,7 +662,7 @@ bash tools/snapshot-all.sh sample-app target/fin2_sample --settle 0 --time 2
 python3 tools/pixdiff.py a.png b.png       # changed ratio + bounding box
 ```
 
-Current baselines: sample-app **4.55%**, news-app **6.33%** (changed-pixel ratio against the
+Current baselines: sample-app **4.57%**, news-app **6.34%** (changed-pixel ratio against the
 compiled HTML).
 
 ### Two hard rules
@@ -661,7 +705,7 @@ src/
 │   │   └── video/     video in 5 pieces: MP4 container / H.264 decode / audio track / playback state machine
 │   └── wxml_renderer/  layout cache / paint scheduling / hit testing / animation / partial-repaint invalidation
 ├── host/            **host layer (platform-agnostic)**: page stack, overlays, touch state machine, pixel composition
-│   ├── picker_sheet/  bottom picker sheet in 5 pieces: state and geometry / build / paint / region cascade / pointer loop
+│   ├── picker_sheet/  bottom picker sheet in 6 pieces: state and geometry / build / paint / region cascade / pointer loop / wheel drag (follow, fling, snap)
 │   └── engine.rs      MiniEngine — the core of the mobile SDK
 ├── js/              QuickJS bindings; `prelude/*.js` is the logic-layer prelude split by domain
 │                    (module / console / storage / ui / route / device / network …)
@@ -705,7 +749,7 @@ All documents under `doc/` are in Chinese.
 | [`doc/示例与调试.md`](doc/示例与调试.md) | Sample mini-programs, each `examples/` target, browser preview, compiling to HTML, video/Canvas, Rust/C/mobile code samples |
 | [`doc/场景画廊.md`](doc/场景画廊.md) | 65 real renders (also the regression baselines) and how the assets are generated |
 | [`doc/踩坑记录.md`](doc/踩坑记录.md) | 13 classes of "what was once wrong": symptom → root cause → current approach → regression criterion |
-| [`doc/引擎测试说明.md`](doc/引擎测试说明.md) | Capability matrix, T1–T9 test checklists and criteria, measured memory breakdown, 13 known gaps |
+| [`doc/引擎测试说明.md`](doc/引擎测试说明.md) | Capability matrix, T1–T29 test checklists and criteria, measured memory breakdown, known gaps |
 | [`doc/原生App集成指南.md`](doc/原生App集成指南.md) | Minimal integration, the host's nine jobs, C ABI, iOS/Android/HarmonyOS steps, acceptance checklist |
 | [`doc/触控对齐测试报告.md`](doc/触控对齐测试报告.md) | Item-by-item measurements of swipe/tap/longpress/gesture against WeChat |
 | [`doc/实现组件说明.md`](doc/实现组件说明.md) | Per-component implementation status |

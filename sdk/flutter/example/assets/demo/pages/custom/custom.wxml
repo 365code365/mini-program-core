@@ -1,0 +1,32 @@
+<view class="card">
+  <text class="title">具名 slot（multipleSlots）</text>
+  <demo-card tag="header / 默认 / footer" accent="#10aeff" bind:fold="onFold">
+    <text slot="header" class="slot-h">卡片标题来自页面（slot="header"）</text>
+    <text class="slot-body">这一段是默认 slot 的内容。它写在页面里，用的是页面的样式（.slot-body），组件自己的样式碰不到它。点标题栏能收起，组件 triggerEvent('fold') 告诉页面。</text>
+    <view slot="footer" class="btns">
+      <view class="btn-o" bindtap="footerTap">页面里的按钮（在 footer slot 中）</view>
+    </view>
+  </demo-card>
+  <text class="hint">{{foldTip}}</text>
+</view>
+
+<view class="card">
+  <text class="title">properties / observers / triggerEvent / behaviors</text>
+  <demo-counter id="c1" label="数量（max 5）" value="{{count}}" max="{{5}}" bind:change="onCount"/>
+  <demo-counter id="c2" label="步长 2（max 20）" value="{{count2}}" step="{{2}}" max="{{20}}" bind:change="onCount2"/>
+  <view class="kv"><text class="kv-k">页面 data 里的值</text><text class="kv-v">count={{count}}，count2={{count2}}</text></view>
+  <view class="btns">
+    <view class="btn-s" bindtap="resetByMethod">selectComponent('#c1').reset()</view>
+    <view class="btn-o" bindtap="setFromPage">页面 setData 改成 3</view>
+  </view>
+  <text class="hint">「−」「+」变灰是组件里 observers 监听 'value, max' 算出来的；下面的灰字是 behaviors 混进来的 log()</text>
+</view>
+
+<view class="card">
+  <text class="title">挂载与卸载（lifetimes）</text>
+  <view class="btns">
+    <view class="btn-s" bindtap="toggleExtra">{{showExtra ? '卸载组件（wx:if=false）' : '挂载组件（wx:if=true）'}}</view>
+  </view>
+  <demo-counter wx:if="{{showExtra}}" label="临时组件" value="{{extra}}" bind:change="onExtra"/>
+  <text class="hint">卸载时组件的 detached 会往控制台打一行</text>
+</view>

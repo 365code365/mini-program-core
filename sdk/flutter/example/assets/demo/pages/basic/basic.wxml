@@ -1,0 +1,70 @@
+<view class="card">
+  <text class="title">view：flex 布局</text>
+  <view class="flex-row">
+    <view class="fbox c1">1</view>
+    <view class="fbox c2">2</view>
+    <view class="fbox c3 grow">flex: 1</view>
+  </view>
+  <text class="label">justify-content: space-around / align-items: flex-end</text>
+  <view class="flex-row around end">
+    <view class="fbox c1 h1">A</view>
+    <view class="fbox c2 h2">B</view>
+    <view class="fbox c3 h3">C</view>
+  </view>
+  <text class="label">flex-wrap: wrap + gap</text>
+  <view class="wrap">
+    <view class="chip" wx:for="{{chips}}" wx:key="*this">{{item}}</view>
+  </view>
+</view>
+
+<view class="card">
+  <text class="title">hover-class 按压态</text>
+  <view class="press" hover-class="press-on" hover-stay-time="300">按住我（hover-class，松手后保持 300ms）</view>
+  <view class="press active-demo">按住我（WXSS :active）</view>
+</view>
+
+<view class="card">
+  <text class="title">text：嵌套样式</text>
+  <text class="para">普通文字、<text class="b">粗体</text>、<text class="red">彩色</text>、<text class="u">下划线</text>、<text class="s">删除线</text>、<text class="big">大号</text>、<text class="ls">字间距</text>，长句会在中文字符之间自然换行，英文 words are wrapped at spaces.</text>
+  <text class="label">单行省略（text-overflow: ellipsis）</text>
+  <text class="ellipsis">这是一段很长很长的标题文字，超出一行的部分用省略号代替，常用于商品名与列表摘要</text>
+  <text class="label">行高 1.8 / 居中 / 右对齐</text>
+  <text class="lh">line-height: 1.8 让多行文字更疏朗。小程序里正文常用 1.6 ~ 1.8 倍行高，标题用 1.2 ~ 1.4 倍。</text>
+  <view class="align-c"><text>text-align: center</text></view>
+  <view class="align-r"><text>text-align: right</text></view>
+</view>
+
+<view class="card">
+  <text class="title">rich-text</text>
+  <rich-text class="rich" nodes="{{nodes}}"></rich-text>
+  <text class="hint">nodes 用节点数组：b / strong 加粗，attrs.style 里的 color / font-size / font-weight 生效</text>
+</view>
+
+<view class="card">
+  <text class="title">icon（WeUI 字形）</text>
+  <view class="icon-grid">
+    <view class="icon-item" wx:for="{{icons}}" wx:key="*this">
+      <icon type="{{item}}" size="28"/>
+      <text class="icon-name">{{item}}</text>
+    </view>
+  </view>
+  <text class="label">size 与 color</text>
+  <view class="flex-row center-items">
+    <icon type="success" size="16"/>
+    <icon type="success" size="24" color="#10aeff"/>
+    <icon type="success" size="32" color="#fa9d3b"/>
+    <icon type="success" size="40" color="#e64340"/>
+    <icon type="heart" size="40" color="#e64340"/>
+  </view>
+</view>
+
+<view class="card">
+  <text class="title">progress</text>
+  <progress percent="{{percent}}" show-info="{{true}}" stroke-width="4"/>
+  <progress class="gap" percent="{{percent}}" active-color="#10aeff" background-color="#e6f4ff" stroke-width="10"/>
+  <progress class="gap" percent="{{100 - percent}}" active-color="#fa9d3b" show-info="{{true}}" stroke-width="6"/>
+  <view class="btns">
+    <view class="btn-s" bindtap="dec">-10</view>
+    <view class="btn-s" bindtap="inc">+10</view>
+  </view>
+</view>

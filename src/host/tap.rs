@@ -49,14 +49,7 @@ pub fn handle_mouse_pressed(
         }
         
         match element.interaction_type {
-            InteractionType::Slider => {
-                if !element.disabled {
-                    if let Some(_result) = interaction.handle_click(x, actual_y) {
-                        return true;
-                    }
-                }
-                return true;
-            }
+            // slider 按下不做任何事：拖动交给手势仲裁（横向锁定才归它），点一下走 tap
             InteractionType::Button => {
                 if !element.disabled {
                     interaction.set_button_pressed(element.id.clone(), element.bounds);
@@ -116,8 +109,20 @@ pub fn handle_content_click(
         if renderer.fixed_layer_hit(x, y) {
             on_fixed_with_handler = !renderer.dispatch_chain(x, y, "tap", Some(true)).is_empty();
             if !on_fixed_with_handler {
-                // 落在覆盖层上但这一点没有处理器：消费掉，不往下透
-                return interaction.handle_click_scoped(x, y, true);
+                // 落在覆盖层上但这一点没有处理器：消费掉，不往下透（弹窗里的 form-type 按钮照样提交）
+                let result = interaction.handle_click_scoped(x, y, true);
+                if let Some(r) = &result {
+                    prepare_focused_input(interaction, Some(renderer), text_renderer, scale_factor, x, y, r);
+                }
+                // 表单提交 / navigator 跳转 / label 转发（label 转发出来的结果当作这次点击的结果）
+                if let Some(r) = super::builtin_tap::after_click(app, renderer, interaction, result.as_ref(), x, y, Some(true), tap_ctx) {
+                    prepare_focused_input(interaction, Some(renderer), text_renderer, scale_factor, x, y, &r);
+                    return Some(r);
+                }
+                if result.is_none() {
+                    super::video::on_tap(renderer, interaction, x, y, true);
+                }
+                return result;
             }
         }
     }
@@ -126,8 +131,15 @@ pub fn handle_content_click(
     if on_fixed_with_handler {
         // 检查交互元素（视口坐标，且只看覆盖层自己的元素）
         let result = interaction.handle_click_scoped(x, y, true);
+        if let Some(r) = &result {
+            prepare_focused_input(interaction, renderer, text_renderer, scale_factor, x, y, r);
+        }
         if let Some(renderer) = renderer {
             dispatch_component_events(app, renderer, interaction, x, y, Some(true), tap_ctx, result.as_ref());
+            if let Some(r) = super::builtin_tap::after_click(app, renderer, interaction, result.as_ref(), x, y, Some(true), tap_ctx) {
+                prepare_focused_input(interaction, Some(renderer), text_renderer, scale_factor, x, y, &r);
+                return Some(r);
+            }
         }
         return result;
     }
@@ -147,54 +159,12 @@ pub fn handle_content_click(
     
     // 使用交互管理器处理点击
     if let Some(result) = interaction.handle_click(x, adjusted_y) {
-        // 处理输入框光标位置
-        if let InteractionResult::Focus { click_x, .. } = &result {
-            if let Some(focused) = &interaction.focused_input {
-                if let Some(tr) = text_renderer {
-                    // click_x 是逻辑坐标（相对于输入框左边缘）
-                    // 需要转换为物理坐标来匹配 measure_text 的结果
-                    let sf = scale_factor as f32;
-                    let font_size = 16.0 * sf;
-                    let padding_left = 12.0 * sf;
-                    let click_x_physical = *click_x * sf;
-                    let text_offset = focused.text_offset;
-                    
-                    let mut char_widths = Vec::new();
-                    for c in focused.value.chars() {
-                        let char_str = c.to_string();
-                        let width = tr.measure_text(&char_str, font_size);
-                        char_widths.push(width);
-                    }
-                    
-                    use crate::ui::interaction::calculate_cursor_position;
-                    let cursor_pos = calculate_cursor_position(&focused.value, &char_widths, click_x_physical, padding_left, text_offset);
-                    
-                    if let Some(input) = &mut interaction.focused_input {
-                        input.cursor_pos = cursor_pos;
-                    }
-                }
-            }
-            
-            // 设置输入框的 maxlength 和 input_type
-            if let Some(renderer) = renderer {
-                if let Some(binding) = renderer.hit_test(x, adjusted_y) {
-                    if let Some(input) = &mut interaction.focused_input {
-                        // 从 binding.data 或渲染节点获取属性
-                        if let Some(maxlength_str) = binding.data.get("maxlength") {
-                            if let Ok(maxlength) = maxlength_str.parse::<i32>() {
-                                input.maxlength = maxlength;
-                            }
-                        }
-                        if let Some(input_type) = binding.data.get("type") {
-                            input.input_type = input_type.clone();
-                        }
-                    }
-                }
-            }
-        }
+        prepare_focused_input(interaction, renderer, text_renderer, scale_factor, x, adjusted_y, &result);
         
         if let Some(renderer) = renderer {
             dispatch_component_events(app, renderer, interaction, x, adjusted_y, Some(false), tap_ctx, Some(&result));
+            // 按钮的 bindtap 先发，再提交 / 重置所在表单
+            super::builtin_tap::after_click(app, renderer, interaction, Some(&result), x, adjusted_y, Some(false), tap_ctx);
         }
         
         return Some(result);
@@ -208,9 +178,79 @@ pub fn handle_content_click(
     // 其余情况：按微信语义的捕获→冒泡链派发 tap
     if let Some(renderer) = renderer {
         dispatch_tap_chain(app, renderer, x, adjusted_y, Some(false), tap_ctx);
+        if let Some(r) = super::builtin_tap::after_click(app, renderer, interaction, None, x, adjusted_y, Some(false), tap_ctx) {
+            prepare_focused_input(interaction, Some(renderer), text_renderer, scale_factor, x, adjusted_y, &r);
+            return Some(r);
+        }
+        // 点在 <video> 上：暂停着就起播（play / pause 事件下一帧由 host::video::tick 发）
+        super::video::on_tap(renderer, interaction, x, adjusted_y, false);
     }
     
     None
+}
+
+/// 刚聚焦的输入框：按渲染器登记的属性补齐编辑参数，并把光标放到点中的位置。
+///
+/// `hit_y` 是交给 `handle_click` 的那个纵坐标（与 `Focus.bounds` 同一坐标系）。
+/// 正常流与覆盖层两条路径都要走这里 —— 从前只有正常流做了，弹窗里的输入框
+/// maxlength / type 全不生效、光标也总在末尾。
+#[allow(clippy::too_many_arguments)]
+fn prepare_focused_input(
+    interaction: &mut InteractionManager,
+    renderer: Option<&WxmlRenderer>,
+    text_renderer: Option<&crate::text::TextRenderer>,
+    scale_factor: f64,
+    x: f32,
+    hit_y: f32,
+    result: &InteractionResult,
+) {
+    let InteractionResult::Focus { id, bounds, click_x, .. } = result else { return };
+    let sf = scale_factor as f32;
+    let region = renderer.and_then(|r| r.input_region(id));
+    // 兜底：老路径是从命中的事件绑定上带的 `data` 里取 maxlength / type
+    let binding = renderer.and_then(|r| r.hit_test(x, hit_y));
+    let attr = |k: &str| -> Option<String> {
+        region
+            .and_then(|r| r.attrs.get(k))
+            .or_else(|| binding.and_then(|b| b.data.get(k)))
+            .cloned()
+    };
+    let truthy = |k: &str| attr(k).map(|v| v.is_empty() || v == "true" || v == "{{true}}").unwrap_or(false);
+    let layout = interaction.text_layouts.get(id.as_str()).cloned();
+    let Some(input) = interaction.focused_input.as_mut() else { return };
+    if let Some(r) = region {
+        input.multiline = r.tag == "textarea";
+    }
+    if let Some(ml) = attr("maxlength").and_then(|s| s.parse::<i32>().ok()) {
+        input.maxlength = ml;
+    }
+    if let Some(t) = attr("type") {
+        input.input_type = t;
+    }
+    // textarea 的右下角默认是「换行」（`return`），input 默认是「完成」
+    input.confirm_type = attr("confirm-type")
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| if input.multiline { "return" } else { "done" }.to_string());
+    input.confirm_hold = truthy("confirm-hold");
+
+    if input.multiline {
+        // 按上一帧画出来的折行定位（画的是占位符、或者值已经变了就不能用，光标留在末尾）
+        if let Some(l) = layout.filter(|l| l.text == input.value) {
+            let (pos, up) = l.hit(*click_x * sf, (hit_y - bounds.y) * sf);
+            input.cursor_pos = pos;
+            input.caret_upstream = up;
+        }
+        return;
+    }
+    if let Some(tr) = text_renderer {
+        // click_x 是逻辑坐标（相对于输入框左边缘）
+        // 需要转换为物理坐标来匹配 measure_text 的结果
+        let font_size = 16.0 * sf;
+        let padding_left = 12.0 * sf;
+        let char_widths: Vec<f32> = input.value.chars().map(|c| tr.measure_text(&c.to_string(), font_size)).collect();
+        use crate::ui::interaction::calculate_cursor_position;
+        input.cursor_pos = calculate_cursor_position(&input.value, &char_widths, *click_x * sf, padding_left, input.text_offset);
+    }
 }
 
 /// 命中了一个有状态的组件（开关/勾选/按钮/输入框）之后，把该发的事件发出去。
@@ -226,7 +266,7 @@ pub fn handle_content_click(
 /// tap 走统一的 tap 链，两者都可能同时发生（把开关包在带 bindtap 的 view 里就是）。
 /// 输入框的 focus/input/blur/confirm 不在这里 —— 由 `interaction_handler` 负责。
 #[allow(clippy::too_many_arguments)]
-fn dispatch_component_events(
+pub(super) fn dispatch_component_events(
     app: &mut MiniApp,
     renderer: &WxmlRenderer,
     interaction: &InteractionManager,
@@ -257,8 +297,10 @@ fn dispatch_component_events(
             dispatch_change(app, serde_json::json!({ "value": value }));
             dispatch_tap_chain(app, renderer, x, hit_y, scope, tap_ctx);
         }
+        // 点按 slider：跳到手指处发一次 change（detail.value 是 number），再照常冒泡 tap
         Some(InteractionResult::SliderChange { value, .. }) => {
-            dispatch_change(app, serde_json::json!({ "value": value }));
+            dispatch_change(app, serde_json::json!({ "value": super::form::number(*value) }));
+            dispatch_tap_chain(app, renderer, x, hit_y, scope, tap_ctx);
         }
         // 输入框的焦点事件由 interaction_handler 派发（它才有输入框的当前文本）
         Some(InteractionResult::Focus { .. }) => {}

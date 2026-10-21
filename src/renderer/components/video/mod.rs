@@ -78,17 +78,37 @@ pub struct VideoPlayer {
     pub muted: bool,
     // 音频数据
     audio_buffer: Option<AudioBuffer>,
+    /// 倍速（`VideoContext.playbackRate`，0.5 ~ 2.0）
+    pub rate: f64,
+    /// 没有画面帧可对时的播放位置（秒）：seek 落点 / 暂停处
+    pub seek_pos: f64,
+    /// 播到末尾停下了（不是用户暂停）：再 play 从头开始，事件发 `ended` 而不是 `pause`
+    pub ended: bool,
+    /// 已经报给逻辑层的状态（事件按它做差，见 control.rs）
+    reported: control::Reported,
 }
 
 // ── `VideoPlayer` 的实现按职责分片 ──
 /// 音轨解码与播放
 mod audio;
+/// 封面、弹幕、进度轨道几何（G-6）
+mod extras;
+pub use extras::{clear_danmu, progress_track, send_danmu};
 /// H.264 解码与像素转换
 mod decode;
 /// MP4 容器解析
 mod mp4;
 /// 播放状态机
 mod playback;
+/// VideoContext 命令、组件事件、全屏状态
+mod control;
+pub use control::{
+    clear_fullscreen, fullscreen_video, video_command, video_events_pending, video_poll_events, video_position,
+    VideoCommand,
+};
+/// 全屏画面（画在所有页面层之上）与全屏时的点击
+mod fullscreen;
+pub use fullscreen::{draw_fullscreen, fullscreen_tap};
 
 /// 全局视频播放器缓存
 static VIDEO_PLAYERS: OnceLock<Arc<Mutex<HashMap<String, VideoPlayer>>>> = OnceLock::new();
@@ -124,6 +144,25 @@ pub fn get_or_create_player(src: &str, autoplay: bool, loop_play: bool) -> bool 
         }
     }
     true
+}
+
+/// 每次建树时同步属性：`muted` / `loop` 随 setData 变；`initial-time` 只在第一次（还没动过）时生效
+fn set_player_options(src: &str, muted: bool, loop_play: bool, initial_time: f64) {
+    let Ok(mut players) = get_video_players().lock() else { return };
+    let Some(p) = players.get_mut(src) else { return };
+    p.loop_play = loop_play;
+    if p.muted != muted {
+        p.muted = muted;
+        if muted {
+            VideoPlayer::stop_audio_static();
+        } else if p.is_playing {
+            p.start_audio();
+        }
+    }
+    if initial_time > 0.0 && !p.is_playing && p.current_frame == 0 && p.seek_pos == 0.0 && !p.ended {
+        p.seek_pos = initial_time;
+        p.current_frame = p.frames.iter().rposition(|f| f.timestamp <= initial_time + 1e-6).unwrap_or(0);
+    }
 }
 
 /// 获取视频当前帧
@@ -193,6 +232,23 @@ pub fn has_playing_video() -> bool {
     false
 }
 
+thread_local! {
+    /// `<video>` 由宿主的原生播放器承载（创建选项 `nativeComponents` 含 `video`）。
+    /// 这时引擎既不解码也不画画面，只留一块黑底（宿主的播放器盖在上面）——
+    /// 两边各解一份是白烧电，内置的软解在手机上也远不如系统硬解。
+    /// thread_local：引擎实例只在一条线程上跑，并行的测试 / 另一个实例互不影响。
+    static HOST_OWNS_VIDEO: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+/// 宿主是否接管 `<video>`（`MiniEngine` 换页重建渲染器时设）
+pub fn set_host_owns_video(on: bool) {
+    HOST_OWNS_VIDEO.with(|c| c.set(on));
+}
+
+fn host_owns_video() -> bool {
+    HOST_OWNS_VIDEO.with(|c| c.get())
+}
+
 pub struct VideoComponent;
 
 impl VideoComponent {
@@ -207,8 +263,16 @@ impl VideoComponent {
         let sf = ctx.scale_factor;
         
         let src = node.get_attr("src").unwrap_or("");
-        let autoplay = node.get_attr("autoplay").map(|v| v == "true" || v == "{{true}}").unwrap_or(false);
-        let loop_play = node.get_attr("loop").map(|v| v == "true" || v == "{{true}}").unwrap_or(false);
+        // 布尔属性：写了且不是 false 就是真（`<video autoplay>` 不带值也算开）
+        let flag = |k: &str| {
+            node.get_attr(k)
+                .map(|v| !matches!(v.trim(), "false" | "{{false}}" | "0"))
+                .unwrap_or(false)
+        };
+        let autoplay = flag("autoplay");
+        let loop_play = flag("loop");
+        let muted = flag("muted");
+        let initial_time = node.get_attr("initial-time").and_then(|v| v.trim().parse::<f64>().ok()).unwrap_or(0.0);
         
         let default_width = 300.0;
         let default_height = 225.0;
@@ -225,8 +289,9 @@ impl VideoComponent {
         
         let tn = ctx.taffy.new_leaf(ts).unwrap();
         
-        if !src.is_empty() {
+        if !src.is_empty() && !host_owns_video() {
             get_or_create_player(src, autoplay, loop_play);
+            set_player_options(src, muted, loop_play, initial_time);
         }
         
         Some(RenderNode {
@@ -263,14 +328,28 @@ impl VideoComponent {
             canvas.draw_rect(&GeoRect::new(x, y, w, h), &bg_paint);
         }
         
+        if host_owns_video() {
+            return; // 宿主的播放器盖在这块黑底上
+        }
         if !src.is_empty() {
             if let Some((frame_data, frame_w, frame_h)) = get_video_frame(src) {
-                canvas.draw_image(&frame_data, frame_w, frame_h, x, y, w, h, "aspectFit", radius);
+                // `object-fit`：contain（默认）/ fill / cover，对应图片的三种缩放模式
+                let mode = match node.attrs.get("object-fit").map(|s| s.trim()) {
+                    Some("fill") => "scaleToFill",
+                    Some("cover") => "aspectFill",
+                    _ => "aspectFit",
+                };
+                // 还没开始播：`poster` 盖在第一帧上
+                if !Self::draw_poster(node, canvas, x, y, w, h) {
+                    canvas.draw_image(&frame_data, frame_w, frame_h, x, y, w, h, mode, radius);
+                }
+                Self::draw_danmu(node, canvas, text_renderer, x, y, w, sf);
                 Self::draw_controls(canvas, text_renderer, src, x, y, w, h, sf);
                 return;
             }
         }
-        
+        // 还没解出画面（远程 / 加载中）：有封面先画封面，播放键照常
+        Self::draw_poster(node, canvas, x, y, w, h);
         Self::draw_placeholder(canvas, x, y, w, h, sf);
     }
     

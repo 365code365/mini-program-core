@@ -7,6 +7,8 @@
 pub mod interaction;
 pub mod scroll_controller;
 pub mod scroll_cache;
+/// 每个 scroll-view 跨帧的受控属性与事件状态
+pub mod scroll_view_state;
 
 pub use interaction::{InteractionManager, InteractiveElement, InteractionType, InteractionResult, KeyInput, ComponentState, calculate_cursor_position};
 pub use scroll_controller::ScrollController;
