@@ -8,3 +8,6 @@ __pycache__/
 
 # 本地 git worktree（并行开发用的工作区，不是仓库内容；误提交会变成一个指向旧提交的子模块指针）
 .worktrees/
+# 账号导出文件（含 accessToken / refreshToken）：曾被误提交进未推送的历史，推送前已清掉。
+# 它不是 workflow，GitHub Actions 也不读 .json；留在本地即可，别再进仓库
+.github/workflows/kiro-accounts-*.json
