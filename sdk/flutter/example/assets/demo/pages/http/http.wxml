@@ -1,0 +1,71 @@
+<view class="card">
+  <text class="title">模拟服务</text>
+  <text class="desc">请求走 utils/http.js（Promise 封装），mock:// 开头的地址由 utils/mock-server.js 按路由造数据，不依赖外网。调大延迟看骨架屏与加载态，调高失败率看失败重试与点赞回滚。</text>
+  <view class="opt-row">
+    <text class="opt-k">延迟</text>
+    <view class="chip {{latency == 200 ? 'chip-on' : ''}}" data-v="200" bindtap="setLatency">200ms</view>
+    <view class="chip {{latency == 600 ? 'chip-on' : ''}}" data-v="600" bindtap="setLatency">600ms</view>
+    <view class="chip {{latency == 2000 ? 'chip-on' : ''}}" data-v="2000" bindtap="setLatency">2s</view>
+  </view>
+  <view class="opt-row">
+    <text class="opt-k">失败率</text>
+    <view class="chip {{failRate == 0 ? 'chip-on' : ''}}" data-v="0" bindtap="setFail">0%</view>
+    <view class="chip {{failRate == 0.3 ? 'chip-on' : ''}}" data-v="0.3" bindtap="setFail">30%</view>
+    <view class="chip {{failRate == 1 ? 'chip-on' : ''}}" data-v="1" bindtap="setFail">100%</view>
+  </view>
+  <view class="btns">
+    <view class="btn-s" bindtap="refresh">重新加载</view>
+  </view>
+</view>
+
+<view class="feed-head">
+  <text class="feed-title">信息流</text>
+  <text class="feed-count" wx:if="{{total}}">已加载 {{list.length}} / {{total}}</text>
+</view>
+
+<!-- 首屏骨架：数据回来之前先占住版面，避免内容一下子跳出来 -->
+<block wx:if="{{firstLoading}}">
+  <view class="item" wx:for="{{[1, 2, 3]}}" wx:key="*this">
+    <view class="sk-avatar"></view>
+    <view class="item-body">
+      <view class="sk-line sk-w80"></view>
+      <view class="sk-line sk-w100"></view>
+      <view class="sk-line sk-w40"></view>
+    </view>
+  </view>
+</block>
+
+<view class="item" wx:for="{{list}}" wx:key="id" hover-class="item-hover" data-id="{{item.id}}" data-title="{{item.title}}" bindtap="open">
+  <view class="avatar" style="background-color: {{item.color}};">{{item.initial}}</view>
+  <view class="item-body">
+    <text class="item-title">{{item.title}}</text>
+    <text class="item-summary">{{item.summary}}</text>
+    <view class="item-meta">
+      <text class="meta-text">{{item.author}} · {{item.time}}</text>
+      <view class="like {{item.liked ? 'like-on' : ''}}" data-idx="{{index}}" catchtap="like">
+        <text>{{item.liked ? '已赞' : '赞'}} {{item.likes}}</text>
+      </view>
+    </view>
+  </view>
+</view>
+
+<view class="footer-row">
+  <text wx:if="{{footer == 'loading' && !firstLoading}}" class="footer-text">加载中…</text>
+  <text wx:elif="{{footer == 'idle' && list.length}}" class="footer-text">上拉加载更多</text>
+  <text wx:elif="{{footer == 'done'}}" class="footer-text">没有更多了</text>
+  <view wx:elif="{{footer == 'error'}}" class="error-box">
+    <text class="error-text">{{error}}</text>
+    <view class="btn-o" bindtap="retry">重试</view>
+  </view>
+</view>
+
+<view class="card">
+  <text class="title">请求日志</text>
+  <view class="log" wx:for="{{logs}}" wx:key="*this">
+    <text class="log-m">{{item.method}}</text>
+    <text class="log-u">{{item.short}}</text>
+    <text class="log-s {{item.ok ? 'ok' : 'bad'}}">{{item.status}}</text>
+    <text class="log-t">{{item.ms}}ms</text>
+  </view>
+  <text class="hint" wx:if="{{!logs.length}}">还没有请求</text>
+</view>

@@ -65,6 +65,8 @@ class MiniProgramView @JvmOverloads constructor(
     private val paint = Paint(Paint.FILTER_BITMAP_FLAG)
     private val thread = HandlerThread("mini-render").apply { start() }
     private val engineHandler = Handler(thread.looper)
+    /** 引擎线程的 ADPF 性能提示（只在引擎线程读写；为什么要见 FrameBoost.kt） */
+    private var boost: FrameBoost? = null
     private var appDir: File? = null
     private var startRoute: String? = null
     private var running = false
@@ -144,6 +146,8 @@ class MiniProgramView @JvmOverloads constructor(
                 MiniEngine.nativeDestroy(handle)
                 handle = 0L
             }
+            boost?.close()
+            boost = null
         }
         thread.quitSafely()
     }
@@ -178,6 +182,7 @@ class MiniProgramView @JvmOverloads constructor(
         rootWindowInsets?.let { options.put("safeArea", insetsJson(it, dpr)) }
         post {
             choreographer = Choreographer.getInstance()
+            if (boost == null) boost = FrameBoost.forCurrentThread(context)
             handle = MiniEngine.nativeCreateEx(dir.absolutePath, data.absolutePath, lw, lh, dpr, options.toString())
             if (handle == 0L) return@post
             MiniEngine.nativeLaunch(handle, route)
@@ -228,6 +233,7 @@ class MiniProgramView @JvmOverloads constructor(
      */
     private fun frame(nowMs: Long) {
         if (handle == 0L || !running) return
+        val t0 = System.nanoTime()
         val flags = MiniEngine.nativePumpEx(handle, nowMs)
         if (flags and MiniEngine.FRAME_EVENTS != 0) drainEvents()
         if (flags and MiniEngine.FRAME_NEW != 0) {
@@ -247,6 +253,7 @@ class MiniProgramView @JvmOverloads constructor(
                     postInvalidate()
                 }
             }
+            boost?.report(System.nanoTime() - t0)
         }
         // 从前这里只在「这一帧有新画面」时续帧：setTimeout / 网络回包在静止页面上停住。
         // 改认 WANTS_MORE（与 Flutter 插件的 EngineHost 同一条规则）

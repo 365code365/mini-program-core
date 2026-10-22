@@ -33,7 +33,9 @@ impl MiniEngine {
 
     pub fn on_show(&mut self) {
         self.app.eval("__dispatchApp('onShow')").ok();
-        self.mark_full();
+        // 回前台只要重新合成出一帧：画布一直在（进后台不释放），onShow 里的 setData 走自己的失效分析。
+        // 从前这里 `mark_full`：每次从桌面回来都整页重画，一加 PLY110 上那一帧 39ms（画 23ms + 整张重传）
+        self.dmg.compose_dirty = true;
     }
 
     pub fn on_hide(&mut self) {

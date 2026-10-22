@@ -217,6 +217,29 @@ pub fn page_scroll(app: &mut MiniApp, pos: f32, last_sent: &mut f32) -> bool {
     true
 }
 
+impl super::engine::MiniEngine {
+    /// 当前页面定义了 `onPageScroll`：没定义就不派发（每页问一次逻辑层，结果按页记住）。
+    ///
+    /// 与微信一致（官方文档：「请只在需要的时候才在 page 中定义此方法，不要定义空方法」——
+    /// 没定义时渲染层根本不往逻辑层发滚动事件）。从前每滚一帧都 `eval` 一段派发脚本：
+    /// 一加 PLY110 上快甩时 QuickJS 光解析这段就占引擎线程 7%，页面根本没有这个回调
+    pub(super) fn page_wants_scroll_events(&mut self) -> bool {
+        let key = (self.page_stack.len(), self.page_opened_ms, self.current_route());
+        if let Some((k, v)) = &self.page_scroll_handler {
+            if *k == key {
+                return *v;
+            }
+        }
+        let v = self
+            .app
+            .eval("(typeof __currentPage === 'object' && __currentPage && typeof __currentPage.onPageScroll === 'function') ? 1 : 0")
+            .map(|r| r.trim() == "1")
+            .unwrap_or(true);
+        self.page_scroll_handler = Some((key, v));
+        v
+    }
+}
+
 /// `InteractionManager::scroll_views` 里给页面 `onPageScroll` 记「上次报的位置」用的键。
 /// 组件 id 不会是这个（NUL 开头），换页时随 `clear_page_state` 一起清
 const PAGE_KEY: &str = "\u{0}page";
@@ -280,10 +303,11 @@ impl super::engine::MiniEngine {
             redraw = true;
         }
         let pos = self.scroll.get_position();
+        let wants = self.page_wants_scroll_events();
         let st = self.interaction.scroll_views.entry(PAGE_KEY.to_string()).or_default();
         let mut last = if st.tracked { st.reported_pos } else { 0.0 };
         st.tracked = true;
-        if page_scroll(&mut self.app, pos, &mut last) {
+        if wants && page_scroll(&mut self.app, pos, &mut last) {
             self.scroll_moved = true;
         }
         self.interaction.scroll_views.entry(PAGE_KEY.to_string()).or_default().reported_pos = last;

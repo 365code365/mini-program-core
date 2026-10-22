@@ -4,6 +4,16 @@ inclusion: always
 
 # 测试与回归：怎么证明改动没坏东西，以及跑完必须清理
 
+## 节奏：先定向速测，全量放后台
+
+用户要求（2026-10）：**测试要快**。先只测发现问题的那一处（定向单测、`damage-check`、真机
+`bash tools/android-jank.sh <场景> [install]`，一个场景几十秒），先把发现的问题解决；
+全量回归最后用 `bash tools/regress-async.sh <标签>` 放后台跑，结果落 `target/test_batches/<时间>-<标签>/`
+（`run.log` 每行带时刻、`status`、`summary.txt`，`index.tsv` 是所有批次的时间线，`clean-target.sh` 不删）。
+后台批次跑的就是工作区本身：它在跑的时候别改 Rust 源码。
+
+真机构建与安装**一条一条串着跑**：引擎库、`flutter build apk`、装包同时跑时 gradle 会打进旧库，量的是上一版。
+
 ## 每次改动后必须跑的七项
 
 **一条命令跑完**（下面七项 + 逐页快照 + H5 双端对比，每步计时，汇总在 `target/_regress/summary.txt`）：

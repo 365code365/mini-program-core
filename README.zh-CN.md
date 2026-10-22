@@ -316,7 +316,7 @@ cargo build --release
 / `--drag px×帧数` / `--type 文本` / `--key enter` / `--wheel` / `--wait 秒` / `--frames N`。
 完整列表 `--help`；诊断开关（`MINI_SCROLL_LOG` / `MINI_FPS` / `MINI_FONT_LOG` / `MINI_SLIDER_LOG` …，移动端 SDK 另有
 `MINI_DAMAGE_LOG` 每帧重画多少（GPU 上屏时行尾带准备 / CPU 合成 / 等 surface / 上传量）、`MINI_NO_DAMAGE` 关掉局部重画做对照、
-`MINI_NO_RESAMPLE` 关掉页面拖动的按事件时间重采样做对照；Flutter 插件在 Android 上读
+`MINI_NO_RESAMPLE` 关掉页面拖动的按事件时间重采样做对照、`MINI_PACE` 打每帧交帧时刻（配 `tools/pace-check.py` 看屏上每个 vsync 是哪一帧）、`MINI_CPU_PIN=0` 不把 Android 上的引擎线程绑大核；Flutter 插件在 Android 上读
 `adb shell setprop debug.mini.fps 1` / `debug.mini.damage_log 1` 这类系统属性，不用重新打包，见集成指南）见
 [`doc/引擎测试说明.md`](doc/引擎测试说明.md) 与
 [`doc/架构与实现原理.md`](doc/架构与实现原理.md#帧成本是怎么压下来的)。

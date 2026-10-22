@@ -450,7 +450,24 @@ int  mr_app_pump_ex(MRApp*, uint64_t now_ms);              // MR_FRAME_* 的按�
   CPU 合成覆盖层那一截的时间，c 是等 surface，d 是这一帧上传的字节数。
   这几个开关在 `MiniEngine` 创建时读一次：Android 要在 `nativeCreateEx` 之前 `Os.setenv`。
   Flutter 插件替你做了：`adb shell setprop debug.mini.fps 1`（还有 `damage_log` / `no_damage` / `scroll_log` /
-  `layout_log` / `backend` / `no_resample`），重开小程序生效，不用重新打包；用完 `setprop debug.mini.fps ""` 关掉。
+  `layout_log` / `backend` / `no_resample` / `cpu_pin`），重开小程序生效，不用重新打包；用完 `setprop debug.mini.fps ""` 关掉。
+- **屏上实际的帧**：Flutter 插件在 Android 上默认把引擎画到自己的 SurfaceView（`androidSurfaceView: true`，
+  平台视图 hybrid composition），系统合成器直接取引擎交的每一帧；`false` 退回外部纹理（屏上那一帧要看 Flutter
+  自己这一帧有没有按时出，主线程一忙就重复一张）。判据用 SurfaceFlinger：
+  `adb shell "dumpsys SurfaceFlinger --latency '<层名>'"`（层名在 `dumpsys SurfaceFlinger --list` 里找
+  `SurfaceView[包名/…](BLAST)`），每行第二列是上屏时刻，相邻两行隔了一个以上的显示器周期就是屏上重复了一张。
+  外部纹理那条路的诊断：`setprop debug.mini.pace 1`（引擎 `🎞E` / 宿主 `🎞` / Flutter `🎞F` 三路），
+  `python3 tools/pace-check.py pace.log` 算出每个 vsync 屏上是哪一帧。
+- **引擎线程**：Android 上 `nativeCreateEx` 把调用它的线程（引擎线程）绑到大核（排除最慢一簇，`MINI_CPU_PIN=0` 关），
+  宿主再给这条线程开一个 ADPF 会话（`FrameBoost.kt`，目标为刷新周期的一半）。所以**引擎必须在一条专用线程上创建与驱动**，
+  别在 UI 线程上建。回桌面 Surface 被收走时合成器只放 surface，回来挂新 surface 不重开设备（约 25ms）。
+- **动画按宿主帧时间取样**：`pump(now_ms)` 给的是 vsync 时刻（Choreographer 的 frameTimeNanos、CADisplayLink）时，
+  操作菜单 / picker / `@keyframes` 这一帧都按它取样（`frame_clock.rs`）。传 0 就退回墙上时钟 —— 宿主别传「此刻」，
+  画的时刻相对 vsync 忽早忽晚，动画会抖。
+- **真机采样**：示例 App 的清单带 `<profileable android:shell="true"/>`，release 包也能
+  `adb shell simpleperf record --app <包名> -g --duration 9 -o /data/local/tmp/perf.data`；符号用
+  `target/aarch64-linux-android/release/libmini_render.so`（jniLibs 里那份是 strip 过的），simpleperf 报的
+  `[+偏移]` 直接按 `llvm-nm -n` 的地址找。
 - **慢拖跟手**：移动事件带时间戳（Flutter 插件自动带；原生宿主用 `mr_app_pointer_move_at` / `nativePointerMoveAt`，
   时间与 `pump` 的 `now_ms` 同一个单调时钟）时，引擎按「这一帧 − (一帧 + 5ms)」那个时刻插值手指位置来摆页面，
   不按到达顺序：事件过两道线程才到引擎线程，一帧到几个是碰运气，按到达走慢拖会一顿一顿。代价是多约一帧的跟手延迟；

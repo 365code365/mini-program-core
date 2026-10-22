@@ -126,6 +126,8 @@ pub struct MiniEngine {
     pub(super) last_pump_ms: u64,
     /// 宿主帧时间 → `Instant` 的锚点（`frame_clock`：动画按 vsync 取样，不按画的那一刻）
     pub(super) frame_anchor: crate::frame_clock::Anchor,
+    /// 当前页面有没有 `onPageScroll`（按 (栈深, 打开时刻, 路由) 记住，见 scroll_view.rs）
+    pub(super) page_scroll_handler: Option<((usize, u64, String), bool)>,
     pub(super) page_opened_ms: u64,
     /// 创建选项（安全区、宿主 API、原生组件；见 engine_options.rs）
     pub(crate) opts: EngineOptions,
@@ -148,6 +150,9 @@ pub struct MiniEngine {
     /// SDK 的 GPU 合成器（宿主挂了原生 surface、门槛与自检都过了才有，见 engine_gpu.rs）
     #[cfg(feature = "gpu")]
     pub(crate) gpu: Option<Box<crate::compositor::gpu::GpuCompositor>>,
+    /// surface 被收走时留下的合成器（只放了 surface，设备 / 管线还在），下次挂载直接复用（engine_gpu.rs）
+    #[cfg(feature = "gpu")]
+    pub(crate) gpu_parked: Option<Box<crate::compositor::gpu::GpuCompositor>>,
     /// 本实例 GPU 运行中失败过（粘性回退的原因）
     #[cfg(feature = "gpu")]
     pub(crate) gpu_failed: Option<String>,
@@ -312,6 +317,7 @@ impl MiniEngine {
             host_clock: None,
             last_pump_ms: 0,
             frame_anchor: Default::default(),
+            page_scroll_handler: None,
             page_opened_ms: 0,
             opts,
             capsule: Default::default(),
@@ -324,6 +330,8 @@ impl MiniEngine {
             present_pending: false,
             #[cfg(feature = "gpu")]
             gpu: None,
+            #[cfg(feature = "gpu")]
+            gpu_parked: None,
             #[cfg(feature = "gpu")]
             gpu_failed: None,
             #[cfg(feature = "gpu")]

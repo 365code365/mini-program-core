@@ -141,6 +141,10 @@ pub struct GpuCompositor {
     /// 最近一个直通帧里取 CPU 结果的行区间与遮罩表、CPU 合成花的时间（passthrough.rs）
     pass_band: PassBand,
     pass_compose_ms: f32,
+    /// 操作菜单面板缓存纹理、它是哪一张（`SheetRaster::id`），以及这一帧的贴法（顶边行, 起, 止）
+    sheet_tex: Option<Tex>,
+    sheet_tex_id: Option<u64>,
+    sheet_frame: Option<(i32, u32, u32)>,
     /// 直通帧一律整帧合成、整帧上传（`MINI_GPU_VERIFY` 拿 [`last_passthrough`](Self::last_passthrough)
     /// 当参照时要整帧真值；平时只合成覆盖层那一截，见 passthrough.rs）
     pub full_reference: bool,
@@ -175,6 +179,9 @@ impl GpuCompositor {
             pass_scratch: Vec::new(),
             pass_band: PassBand::default(),
             pass_compose_ms: 0.0,
+            sheet_tex: None,
+            sheet_tex_id: None,
+            sheet_frame: None,
             full_reference: false,
             offscreen: None,
             surface: None,
@@ -313,6 +320,7 @@ impl GpuCompositor {
             wgpu::BindGroupEntry { binding: 5, resource: wgpu::BindingResource::TextureView(view_of(&self.pass, ph)) },
             wgpu::BindGroupEntry { binding: 6, resource: wgpu::BindingResource::TextureView(view_of(&self.top.tex, ph)) },
             wgpu::BindGroupEntry { binding: 7, resource: wgpu::BindingResource::TextureView(view_of(&self.shot_tex, ph)) },
+            wgpu::BindGroupEntry { binding: 8, resource: wgpu::BindingResource::TextureView(view_of(&self.sheet_tex, ph)) },
         ];
         let bind = self.gpu.device.create_bind_group(&wgpu::BindGroupDescriptor { label: Some("合成"), layout: &self.pipe.layout, entries: &entries });
         let pipeline = self.pipe.for_format(&self.gpu.device, format).clone();

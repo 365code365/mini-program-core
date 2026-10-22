@@ -107,18 +107,35 @@ pub(super) fn fill_rrect_aa(
     buf: &mut [u32],
     w: u32,
     h: u32,
-    (x, y, rw, rh): (f32, f32, f32, f32),
+    rect: (f32, f32, f32, f32),
     r: f32,
     rgb: u32,
     alpha: f32,
     corners: [bool; 4],
 ) {
+    fill_rrect_aa_rows(buf, w, h, rect, r, rgb, alpha, corners, (0, h));
+}
+
+/// [`fill_rrect_aa`]，只写 `rows` 那几行 [a, b)（操作菜单的 GPU 图层：CPU 只画顶边圆角那几行，
+/// 见 `action_sheet::layer`）。每一行的结果与整块画时逐字节相同 —— 只是循环范围收窄
+#[allow(clippy::too_many_arguments)]
+pub(super) fn fill_rrect_aa_rows(
+    buf: &mut [u32],
+    w: u32,
+    h: u32,
+    (x, y, rw, rh): (f32, f32, f32, f32),
+    r: f32,
+    rgb: u32,
+    alpha: f32,
+    corners: [bool; 4],
+    rows: (u32, u32),
+) {
     if rw <= 0.0 || rh <= 0.0 {
         return;
     }
     let r = r.min(rw / 2.0).min(rh / 2.0).max(0.0);
-    let (x0, y0) = ((x.floor() as i32).max(0), (y.floor() as i32).max(0));
-    let (x1, y1) = (((x + rw).ceil() as i32).min(w as i32), ((y + rh).ceil() as i32).min(h as i32));
+    let (x0, y0) = ((x.floor() as i32).max(0), (y.floor() as i32).max(0).max(rows.0 as i32));
+    let (x1, y1) = (((x + rw).ceil() as i32).min(w as i32), ((y + rh).ceil() as i32).min(h as i32).min(rows.1 as i32));
     // 整行完全落在矩形里、又不在圆角那几行的像素，覆盖率恒为 1：这一段整段处理，
     // 只有左右两头那一两个像素按覆盖率算。ActionSheet 的白底是大半屏，从前每一帧
     // 逐像素算一遍覆盖率与圆角判断，一加 PLY110 上光这一步就几毫秒（结果逐字节不变）

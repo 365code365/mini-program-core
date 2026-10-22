@@ -13,6 +13,8 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
+/// 取锁一律 `unwrap_or_else(into_inner)`：一个用例 panic 会把锁毒掉，`unwrap()` 的话后面每个用例
+/// 都在取锁那一行失败 —— 一次 `css_无限动画逐帧出新画面` 的偶发失败（只在多线程跑时出现）报成 9 个失败
 static SERIAL: Mutex<()> = Mutex::new(());
 
 /// 写一个只有一页（`pages/p/p`）的小程序；`extra` 是额外的 (相对路径, 内容)
@@ -69,7 +71,7 @@ const NEW: u32 = 1;
 
 #[test]
 fn 静止页面上_settimeout_不靠触摸也能按时触发() {
-    let _g = SERIAL.lock().unwrap();
+    let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
     let root = fixture(
         "timer",
         "<view>{{n}}</view>",
@@ -107,7 +109,7 @@ fn 静止页面上_settimeout_不靠触摸也能按时触发() {
 
 #[test]
 fn css_无限动画逐帧出新画面() {
-    let _g = SERIAL.lock().unwrap();
+    let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
     let root = fixture(
         "anim",
         r#"<view class="box"></view>"#,
@@ -137,7 +139,7 @@ fn css_无限动画逐帧出新画面() {
 
 #[test]
 fn 系统信息与安全区来自宿主() {
-    let _g = SERIAL.lock().unwrap();
+    let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
     let root = fixture(
         "sysinfo",
         r#"<view class="bar"></view>"#,
@@ -181,7 +183,7 @@ fn 系统信息与安全区来自宿主() {
 
 #[test]
 fn 宿主实现的_api_往返() {
-    let _g = SERIAL.lock().unwrap();
+    let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
     let root = fixture(
         "hostcall",
         r#"<view>{{n}}</view>"#,
@@ -219,7 +221,7 @@ fn 宿主实现的_api_往返() {
 
 #[test]
 fn 页面与导航栏事件() {
-    let _g = SERIAL.lock().unwrap();
+    let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
     let root = fixture(
         "navbar",
         "<view>页</view>",
@@ -256,7 +258,7 @@ fn 页面与导航栏事件() {
 
 #[test]
 fn 输入框聚焦事件带键盘类型与位置() {
-    let _g = SERIAL.lock().unwrap();
+    let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
     let root = fixture(
         "input",
         r#"<view style="height:100px"></view><input class="i" type="number" maxlength="6" confirm-type="search" placeholder="手机号" bindconfirm="onC"/>"#,
@@ -293,7 +295,7 @@ fn 输入框聚焦事件带键盘类型与位置() {
 
 #[test]
 fn 宿主时钟下长按照样触发() {
-    let _g = SERIAL.lock().unwrap();
+    let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
     let root = fixture(
         "longpress",
         r#"<view class="b" bindlongpress="onL">按住</view>"#,
@@ -320,7 +322,7 @@ fn 宿主时钟下长按照样触发() {
 
 #[test]
 fn 原生组件只报位置不自己画_事件回传() {
-    let _g = SERIAL.lock().unwrap();
+    let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
     let root = fixture(
         "native",
         r#"<view style="height:300px"></view><video id="v" src="https://example.invalid/a.mp4" style="width:200px;height:100px" bindended="onEnd"></video><view style="height:2000px"></view>"#,
@@ -356,7 +358,7 @@ fn 原生组件只报位置不自己画_事件回传() {
 
 #[test]
 fn 改尺寸后布局按新宽度_并派发_onresize() {
-    let _g = SERIAL.lock().unwrap();
+    let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
     let root = fixture(
         "resize",
         r#"<view class="half"></view>"#,
@@ -383,7 +385,7 @@ fn 改尺寸后布局按新宽度_并派发_onresize() {
 
 #[test]
 fn 冷启动深链带_query() {
-    let _g = SERIAL.lock().unwrap();
+    let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
     let root = fixture("launchq", "<view>{{x}}</view>", "", "Page({data:{x:''}, onLoad(q){ this.setData({x: q.x}); }});", "{}", &[]);
     let data = root.join("_data");
     let mut e = MiniEngine::new_with_options(
@@ -403,7 +405,7 @@ fn 冷启动深链带_query() {
 
 #[test]
 fn picker_面板贴着真实视口底边() {
-    let _g = SERIAL.lock().unwrap();
+    let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
     let root = fixture(
         "picker",
         r#"<picker mode="selector" range="{{items}}" value="0" bindchange="onP"><view class="p">选</view></picker>"#,

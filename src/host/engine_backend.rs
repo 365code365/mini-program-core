@@ -135,6 +135,8 @@ impl MiniEngine {
             let top = crate::host::ui_overlay::action_sheet::last_drawn_top().unwrap_or(-1.0);
             diag::emit(&format!("🎞E {} {:.2} {:.2}", self.last_pump_ms, self.scroll.get_position(), top));
         }
+        // 这一帧的时刻只在这一帧里有效（两帧之间的输入按此刻记起点，见 frame_clock::set）
+        crate::frame_clock::set(None);
         if let Some(begin) = begin {
             // acquire 等待没有单独计（GPU 上屏时算在 pump 时间里），工作时间 = pump 时间
             let pump_ms = begin.elapsed().as_secs_f32() * 1000.0;

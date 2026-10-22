@@ -1,0 +1,38 @@
+.opt-row { display: flex; flex-direction: row; align-items: center; margin-top: 16rpx; }
+.opt-k { width: 100rpx; font-size: 26rpx; color: #576b95; }
+.chip { margin-right: 16rpx; padding: 8rpx 22rpx; font-size: 24rpx; color: #555555; background-color: #f2f2f2; border-radius: 28rpx; }
+.chip-on { color: #ffffff; background-color: #07c160; }
+
+.feed-head { display: flex; flex-direction: row; justify-content: space-between; align-items: center; margin: 28rpx 32rpx 8rpx 32rpx; }
+.feed-title { font-size: 30rpx; font-weight: bold; color: #333333; }
+.feed-count { font-size: 22rpx; color: #888888; }
+
+.item { display: flex; flex-direction: row; margin: 16rpx 20rpx 0 20rpx; padding: 24rpx; background-color: #ffffff; border-radius: 16rpx; }
+.item-hover { background-color: #f3f3f3; }
+.avatar { width: 80rpx; height: 80rpx; line-height: 80rpx; border-radius: 40rpx; text-align: center; font-size: 32rpx; color: #ffffff; }
+.item-body { flex: 1; margin-left: 20rpx; display: flex; flex-direction: column; }
+.item-title { font-size: 30rpx; font-weight: bold; color: #222222; line-height: 1.4; }
+.item-summary { margin-top: 8rpx; font-size: 24rpx; color: #666666; line-height: 1.6; }
+.item-meta { display: flex; flex-direction: row; justify-content: space-between; align-items: center; margin-top: 12rpx; }
+.meta-text { font-size: 22rpx; color: #999999; }
+.like { padding: 6rpx 20rpx; font-size: 22rpx; color: #576b95; border: 2rpx solid #d9d9d9; border-radius: 24rpx; }
+.like-on { color: #ffffff; background-color: #fa5151; border-color: #fa5151; }
+
+.sk-avatar { width: 80rpx; height: 80rpx; border-radius: 40rpx; background-color: #eeeeee; }
+.sk-line { height: 26rpx; margin-bottom: 14rpx; background-color: #eeeeee; border-radius: 6rpx; }
+.sk-w100 { width: 100%; }
+.sk-w80 { width: 80%; }
+.sk-w40 { width: 40%; }
+
+.footer-row { padding: 28rpx 0; text-align: center; }
+.footer-text { font-size: 24rpx; color: #999999; }
+.error-box { display: flex; flex-direction: column; align-items: center; }
+.error-text { margin-bottom: 12rpx; font-size: 24rpx; color: #fa5151; }
+
+.log { display: flex; flex-direction: row; align-items: center; padding: 10rpx 0; border-bottom: 1rpx solid #f0f0f0; font-size: 22rpx; }
+.log-m { width: 80rpx; color: #576b95; font-weight: bold; }
+.log-u { flex: 1; color: #555555; }
+.log-s { width: 80rpx; text-align: right; }
+.log-t { width: 110rpx; text-align: right; color: #999999; }
+.ok { color: #07c160; }
+.bad { color: #fa5151; }

@@ -42,6 +42,10 @@ pub(crate) struct DragResampler {
     last_pump: u64,
     /// 这一次 `pointer_move` 是 `pointer_move_at` 转进来的（带时间戳，不要清采样）
     timed: bool,
+    /// 这一次移动的事件时间（ms）：手势推进（含松手速度的采样）按它记，不按到达时刻。
+    /// 事件过两道线程才到，常常几个一批地到：按到达时刻算，最后 100ms 里的采样挤在 1ms 内，
+    /// 松手速度就是真实速度的十几倍（一加真机慢拖 2.3px/帧，松手惯性第一帧 44.5px）
+    event_ms: Option<u64>,
 }
 
 impl DragResampler {
@@ -128,10 +132,12 @@ impl MiniEngine {
     /// Android 是 `MotionEvent.getEventTime()` / `SystemClock.uptimeMillis`，
     /// iOS 是 `UITouch.timestamp` / `CACurrentMediaTime`）。页面拖动按它重采样，见文件头。
     pub fn pointer_move_at(&mut self, x: f32, y: f32, t_ms: f64) {
-        self.resample.timed = true;
-        self.pointer_move(x, y);
-        let page_drag = self.scroll.is_dragging && self.interaction.dragging_scroll_area.is_none() && !self.env.no_resample;
         let same_clock = t_ms > 0.0 && (t_ms - self.mono_ms() as f64).abs() < SAME_CLOCK_MS;
+        self.resample.timed = true;
+        self.resample.event_ms = (same_clock && !self.env.no_resample).then_some(t_ms.max(0.0) as u64);
+        self.pointer_move(x, y);
+        self.resample.event_ms = None;
+        let page_drag = self.scroll.is_dragging && self.interaction.dragging_scroll_area.is_none() && !self.env.no_resample;
         if !(page_drag && same_clock) {
             self.resample.clear();
             return;
@@ -144,6 +150,11 @@ impl MiniEngine {
             ));
         }
         self.resample.push(t_ms, y - self.nav_height());
+    }
+
+    /// 手势推进用的时刻：带时间戳的移动用事件时间，否则 `now`（到达时刻）
+    pub(super) fn gesture_clock(&self, now: u64) -> u64 {
+        self.resample.event_ms.unwrap_or(now)
     }
 
     /// `pointer_move` 开头调：不带时间戳的移动（别的宿主、测试）清掉采样，退回逐事件

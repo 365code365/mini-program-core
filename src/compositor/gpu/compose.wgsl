@@ -25,6 +25,8 @@ struct U {
     eb_dim: f32,
     // 直通帧（mode 1）：[pass_y0, pass_y1) 行取 CPU 合成结果；区间外自己合成，lut_on 时再查表压暗
     pass_y0: u32, pass_y1: u32, lut_on: u32,
+    // 操作菜单面板缓存：直通帧里 [sheet_y0, sheet_y1) 行取 sheet_tex 第 y - sheet_top 行
+    sheet_on: u32, sheet_top: i32, sheet_y0: u32, sheet_y1: u32,
     // 交界阴影各列的压暗系数（第 i 个 = 离交界 i 列，贴着边缘最深）
     eb_shadow_f: array<vec4f, 4>,
     // 覆盖层遮罩的 256 项压暗表（4 项一个字，小端）
@@ -43,6 +45,8 @@ struct U {
 @group(0) @binding(6) var top_band: texture_2d<u32>;
 // 转场 / 侧滑的另一页留图（与直通帧同一种字节序：B,G,R,0）
 @group(0) @binding(7) var eb_shot: texture_2d<u32>;
+// 操作菜单面板缓存（host::ui_overlay::sheet_raster，同一种字节序）：面板画一次，每帧只在这里挪
+@group(0) @binding(8) var sheet_tex: texture_2d<u32>;
 
 const SLICE_ROWS: u32 = 1024u;
 
@@ -166,6 +170,10 @@ fn fs(@builtin(position) pos: vec4f) -> @location(0) vec4f {
     var rgb = vec3<u32>(0u);
     if (u.mode == 1u && y >= u.pass_y0 && y < u.pass_y1) {
         let p = textureLoad(pass_frame, vec2<u32>(x, y), 0);
+        rgb = vec3<u32>(p.z, p.y, p.x);
+    } else if (u.mode == 1u && u.sheet_on == 1u && y >= u.sheet_y0 && y < u.sheet_y1) {
+        // 面板正文是不透明的：整行取缓存，底下的页面、遮罩都不用算
+        let p = textureLoad(sheet_tex, vec2<u32>(x, u32(i32(y) - u.sheet_top)), 0);
         rgb = vec3<u32>(p.z, p.y, p.x);
     } else {
         if (u.eb_mode != 0u) {

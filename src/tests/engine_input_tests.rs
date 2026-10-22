@@ -315,3 +315,44 @@ fn sdk的快捷键按名字都能用() {
     e.key("escape");
     assert!(e.interaction.focused_input.is_none());
 }
+
+/// 慢拖之后松手：移动事件几个一批地到（经 Dart → 平台线程 → 引擎线程转过来），松手惯性的速度
+/// 要按**事件时间**算。从前按到达时刻：一批事件挤在 1ms 里，速度算成真实值的十几倍，
+/// 一加真机慢拖每帧 2.3px、松手第一帧却跳了 44.5px（engine_resample.rs）
+#[test]
+fn 带时间戳的慢拖_事件一批到_松手惯性按真实速度() {
+    let mut e = engine_in("pages/detail/detail", "drag-burst");
+    let mut t = 1_000u64;
+    e.pump(t);
+    // 手指每 8ms 上移 2px（250px/s）。前 30 帧事件按时到；之后主线程卡了 120ms，
+    // 这段时间里的 15 个事件在松手前一刻一起到（到达时刻挤在同一毫秒里）
+    e.pointer_down(180.0, 500.0);
+    let mut y = 500.0f32;
+    let mut ev = t as f64;
+    for _ in 0..30 {
+        ev += 8.0;
+        y -= 2.0;
+        e.pointer_move_at(180.0, y, ev);
+        t += 8;
+        e.pump(t);
+    }
+    for _ in 0..15 {
+        t += 8;
+        e.pump(t);
+    }
+    // 屏上最后一帧的位置（之后的事件还没出帧）
+    let shown = e.scroll_position();
+    for _ in 0..15 {
+        ev += 8.0;
+        y -= 2.0;
+        e.pointer_move_at(180.0, y, ev);
+        // 一批事件实际铺在一两毫秒里（真机上的样子；全挤在同一毫秒的话旧算法算出 0 速度，测不出来）
+        std::thread::sleep(std::time::Duration::from_micros(150));
+    }
+    e.pointer_up(180.0, y);
+    t += 8;
+    e.pump(t);
+    let first = e.scroll_position() - shown;
+    // 250px/s × 0.8（release 系数）≈ 200px/s，一帧 8ms 约 1.6px；按到达时刻算会是几十 px
+    assert!(first.abs() < 6.0, "松手第一帧走了 {first:.1}px（应与拖动时的每帧位移同一量级）");
+}

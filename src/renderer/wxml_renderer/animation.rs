@@ -381,8 +381,8 @@ impl WxmlRenderer {
             return true;
         }
 
-        let mut offscreen = Canvas::new(tw, th);
-        offscreen.clear(Color::TRANSPARENT);
+        // 离屏只画贴回去时会被采到的那一块（见 compose::offscreen_for）
+        let mut offscreen = crate::renderer::compose::offscreen_for(canvas, (tw, th), (x - pad, y - pad), (x + w / 2.0, y + h / 2.0), &transform);
         // 变换后的子树坐标与屏幕不再一一对应：命中区与事件绑定用一次性容器承接，
         // 不污染真实的交互命中表（旋转/缩放子树内的点击是已知限制）。
         let mut scratch = InteractionManager::new();
@@ -475,8 +475,8 @@ impl WxmlRenderer {
             self.draw_with_color(canvas, taffy, &resolved, ox, oy, inherited);
             return true;
         }
-        let mut offscreen = Canvas::new(tw, th);
-        offscreen.clear(Color::TRANSPARENT);
+        // 离屏只画贴回去时会被采到的那一块（见 compose::offscreen_for）
+        let mut offscreen = crate::renderer::compose::offscreen_for(canvas, (tw, th), (x - pad, y - pad), (x + w / 2.0, y + h / 2.0), &transform);
         let bindings_before = self.event_bindings.len();
         self.draw_with_color(
             &mut offscreen,

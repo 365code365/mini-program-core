@@ -120,6 +120,8 @@ impl MiniEngine {
             self.dispatch_touch(&outs, x, y);
         }
         // 手势仲裁决定这次位移归谁：内层 scroll-view / 页面 / 谁也不动
+        // 松手速度按事件时间采样（engine_resample.rs）：事件常常几个一批地到
+        let gesture_now = self.gesture_clock(now);
         let eff = input::apply_gesture_move(
             &mut self.gesture,
             &mut self.interaction,
@@ -128,7 +130,7 @@ impl MiniEngine {
             self.width as f32,
             x,
             y,
-            now,
+            gesture_now,
         );
         // 只推动了 scroll-view：不置整帧，出帧时按位置变化只重画它自己的盒子（engine_damage）
         if eff.needs_redraw && !eff.area_scrolled {

@@ -24,6 +24,7 @@ internal object DiagProps {
         "backend" to "MINI_BACKEND",
         "no_resample" to "MINI_NO_RESAMPLE",
         "pace" to "MINI_PACE",
+        "cpu_pin" to "MINI_CPU_PIN",
     )
 
     /** `debug.mini.fps` 开着：宿主这边也每秒打一行上屏耗时（[EngineHost.present]） */

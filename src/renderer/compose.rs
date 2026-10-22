@@ -68,6 +68,49 @@ fn transformed_bounds(
     (min_x, min_y, max_x, max_y)
 }
 
+/// 给 transform 子树开一张透明离屏，并裁到 [`source_clip`] 那一块。
+/// 补条带只要一条时，旋转 / 缩放的元素不必整块光栅化；采不到的像素画了也白画，结果逐字节不变
+pub fn offscreen_for(dst: &Canvas, size: (u32, u32), src_pos: (f32, f32), center: (f32, f32), t: &Transform) -> Canvas {
+    let mut off = Canvas::new(size.0, size.1);
+    off.clear(Color::TRANSPARENT);
+    if let Some(r) = source_clip(dst, size.0 as f32, size.1 as f32, src_pos, center, t) {
+        off.clip_rect(r);
+    }
+    off
+}
+
+/// [`blit_transformed`] 贴回目标时，目标裁剪区里的像素只会采到源画布的哪一块（源画布坐标，含双线性的 2px 余量）。
+/// 离屏子树据此只画这一块：补条带只要一条时，带 transform 的元素不必整块光栅化。
+/// 返回 None 表示要整块（裁剪区就是整个画布、或矩阵退化）
+pub fn source_clip(dst: &Canvas, src_w: f32, src_h: f32, src_pos: (f32, f32), center: (f32, f32), t: &Transform) -> Option<crate::Rect> {
+    let (bx0, bx1, by0, by1) = dst.draw_bounds();
+    if bx0 <= 0 && by0 <= 0 && bx1 >= dst.width() as i32 && by1 >= dst.height() as i32 {
+        return None;
+    }
+    let (a, b, c, d) = linear_matrix(t);
+    let det = a * d - b * c;
+    if det.abs() < 1e-6 {
+        return None;
+    }
+    let (ia, ib, ic, id) = (d / det, -b / det, -c / det, a / det);
+    let inv = |px: f32, py: f32| {
+        let dx = px - center.0 - t.translate_x;
+        let dy = py - center.1 - t.translate_y;
+        (center.0 + ia * dx + ib * dy - src_pos.0, center.1 + ic * dx + id * dy - src_pos.1)
+    };
+    let pts = [inv(bx0 as f32, by0 as f32), inv(bx1 as f32, by0 as f32), inv(bx0 as f32, by1 as f32), inv(bx1 as f32, by1 as f32)];
+    let (mut x0, mut y0, mut x1, mut y1) = (f32::MAX, f32::MAX, f32::MIN, f32::MIN);
+    for (x, y) in pts {
+        x0 = x0.min(x);
+        y0 = y0.min(y);
+        x1 = x1.max(x);
+        y1 = y1.max(y);
+    }
+    let (x0, y0) = ((x0 - 2.0).floor().max(0.0), (y0 - 2.0).floor().max(0.0));
+    let (x1, y1) = ((x1 + 2.0).ceil().min(src_w), (y1 + 2.0).ceil().min(src_h));
+    Some(crate::Rect::new(x0, y0, (x1 - x0).max(0.0), (y1 - y0).max(0.0)))
+}
+
 /// 把 `src` 按 transform 合成到 `dst`。
 ///
 /// - `src_pos`：`src` 左上角在目标画布中的（未变换）位置
@@ -92,15 +135,20 @@ pub fn blit_transformed(
     let (src_w, src_h) = (src.width() as f32, src.height() as f32);
     let (min_x, min_y, max_x, max_y) = transformed_bounds(src_w, src_h, src_pos, center, t);
 
-    let x0 = min_x.floor().max(0.0) as i32;
-    let y0 = min_y.floor().max(0.0) as i32;
-    let x1 = (max_x.ceil() as i32).min(dst.width() as i32);
-    let y1 = (max_y.ceil() as i32).min(dst.height() as i32);
+    // 只走目标裁剪区里的像素：区外的 `set_pixel` 本来就一个不写（结果逐字节不变）。
+    // 局部重画（补条带）的裁剪区只有一条，带 transform 的元素（WXSS 页那几个旋转 / 缩放的方块）
+    // 却要整块逐像素逆变换 + 双线性采样 —— 一加 PLY110 上补一条带 11~20ms，滑到那一屏每次都掉帧
+    let (bx0, bx1, by0, by1) = dst.draw_bounds();
+    let x0 = (min_x.floor().max(0.0) as i32).max(bx0);
+    let y0 = (min_y.floor().max(0.0) as i32).max(by0);
+    let x1 = (max_x.ceil() as i32).min(dst.width() as i32).min(bx1);
+    let y1 = (max_y.ceil() as i32).min(dst.height() as i32).min(by1);
     if x1 <= x0 || y1 <= y0 {
         return;
     }
 
-    let src_pixels = src.pixels().to_vec();
+    // 不拷贝：源画布与目标不是同一块，借用就够（从前每次 to_vec 一整张离屏）
+    let src_pixels = src.pixels();
     let sw = src.width() as i32;
     let sh = src.height() as i32;
 
@@ -114,7 +162,7 @@ pub fn blit_transformed(
             if ux < -0.5 || uy < -0.5 || ux > src_w + 0.5 || uy > src_h + 0.5 {
                 continue;
             }
-            if let Some(color) = sample_bilinear(&src_pixels, sw, sh, ux - 0.5, uy - 0.5) {
+            if let Some(color) = sample_bilinear(src_pixels, sw, sh, ux - 0.5, uy - 0.5) {
                 let alpha = (color.a as f32 * opacity).round().clamp(0.0, 255.0) as u8;
                 if alpha > 0 {
                     dst.set_pixel(px, py, Color::new(color.r, color.g, color.b, alpha));

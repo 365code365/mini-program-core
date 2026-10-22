@@ -39,6 +39,8 @@ const groups = [
     key: 'page',
     title: '页面形态',
     items: [
+      { name: '模拟 HTTP · 信息流', desc: 'Promise 封装 · 骨架屏 · 触底分页 · 点赞乐观更新 · 失败重试', url: '/pages/http/http', icon: '流', color: '#10aeff' },
+      { name: '模拟 HTTP · 仪表盘', desc: '4 个接口并发 · 分块加载 / 失败 · 柱状图 · 真实网络对照', url: '/pages/dashboard/dashboard', icon: '仪', color: '#8a5cf5' },
       { name: '自定义导航栏', desc: 'navigationStyle: custom · 状态栏高度 · 安全区', url: '/pages/navcustom/navcustom', icon: '导', color: '#ff6a00' },
       { name: '综合场景（性能基准）', desc: '长列表 + CSS 动画 + 每秒 setData + 原生 video', url: '/pages/perf/perf', icon: '综', color: '#e64340' },
       { name: '详情页（静态）', desc: '带 query 打开 · 改标题 · 返回', url: '/pages/detail/detail?from=index', icon: '详', color: '#1aad19' }

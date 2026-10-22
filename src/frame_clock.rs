@@ -27,8 +27,16 @@ pub fn now() -> Instant {
     FRAME.with(|f| f.get()).unwrap_or_else(Instant::now)
 }
 
-/// 设置 / 清除本线程的帧时刻（SDK 每次 pump 开头调）
+/// 设置 / 清除本线程的帧时刻（SDK 每次 pump 开头设、结尾清）。
+///
+/// 结尾要清：两帧之间进来的触摸（`:active` 过渡、picker 弹出）记的起点是「此刻」，
+/// 留着上一帧的时刻的话，静止了十秒再点一下，起点就是十秒前、过渡直接走完。
+/// 设的时候顺手把 CSS 动画时钟的起点钉在不晚于它的地方（`anim::now_secs` 按它减，
+/// 起点比帧时刻还晚的话差是负的、截成 0，动画就定住了）
 pub fn set(at: Option<Instant>) {
+    if let Some(t) = at {
+        crate::renderer::anim::pin_origin(t);
+    }
     FRAME.with(|f| f.set(at));
 }
 

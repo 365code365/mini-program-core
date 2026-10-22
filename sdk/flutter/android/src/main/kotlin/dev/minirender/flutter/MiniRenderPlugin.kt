@@ -109,6 +109,7 @@ class MiniRenderPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         // `adb shell setprop debug.mini.fps 1` 这类诊断开关：引擎创建时读环境，必须在这之前设好
         DiagProps.apply()
         val h = EngineHost(
+            binding.applicationContext,
             binding.textureRegistry,
             onEvents = { channel.invokeMethod("events", it) },
             onTexture = { channel.invokeMethod("texture", it) },

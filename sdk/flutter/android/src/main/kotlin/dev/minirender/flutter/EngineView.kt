@@ -64,6 +64,9 @@ internal class EngineView(context: Context, private val hostOf: () -> EngineHost
         surfaceView?.holder?.removeCallback(callback)
         frame.removeAllViews()
         val sv = SurfaceView(frame.context)
+        // 没用 setSurfaceLifecycle(SURFACE_LIFECYCLE_FOLLOWS_ATTACHMENT)：一加 PLY110（ColorOS，Android 16）
+        // 上试过，回桌面照样 surfaceDestroyed（平台视图跟着 Activity 停了）。回来那 0.5s 的空白改在引擎侧解决：
+        // 合成器只换 surface，不重开设备、不重跑自检、不整页重画（engine_gpu.rs `detach_native_surface`）
         sv.holder.addCallback(callback)
         fixed?.let { (w, h) -> sv.holder.setFixedSize(w, h) }
         frame.addView(sv, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))

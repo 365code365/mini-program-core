@@ -142,6 +142,31 @@ impl GpuCompositor {
         Ok(())
     }
 
+    /// 放掉 surface（它引用着宿主的原生窗口），设备、管线、层纹理都留着：宿主回桌面时
+    /// Surface 被系统收走，回来再 [`reattach_surface`](Self::reattach_surface) 就不用重开设备、重跑自检
+    pub fn detach_surface(&mut self) {
+        self.surface = None;
+    }
+
+    /// 用原来的设备挂一块新 surface。层纹理清掉、下一帧整张重传（宿主不在时 CPU 画布可能变了，
+    /// 镜像按增量同步的账已经对不上）；页面不用重画 —— CPU 画布一直在。
+    ///
+    /// 为什么要：一加 PLY110 上回桌面再回来，从 surfaceCreated 到第一帧上屏 **520ms**
+    /// （重开 Vulkan 设备 + 管线 + 自检 ≈ 490ms，再整页重画 21ms），这段时间那块 SurfaceView 是空的
+    pub fn reattach_surface(&mut self, spec: SurfaceSpec, w: u32, h: u32) -> Result<(), String> {
+        let surface = match spec {
+            SurfaceSpec::Target(t) => self.gpu.instance.create_surface(t).map_err(|e| format!("创建 surface 失败：{e}"))?,
+            // SAFETY: 调用方（FFI 宿主）保证原生指针有效且活到 detach / destroy
+            SurfaceSpec::Unsafe(t) => unsafe { self.gpu.instance.create_surface_unsafe(t) }.map_err(|e| format!("创建 surface 失败：{e}"))?,
+        };
+        if !self.gpu.adapter.is_surface_supported(&surface) {
+            return Err("原来的适配器不支持这块新 surface".into());
+        }
+        self.attach_surface(surface, w, h)?;
+        self.reset_mirrors();
+        Ok(())
+    }
+
     pub fn has_surface(&self) -> bool {
         self.surface.is_some()
     }

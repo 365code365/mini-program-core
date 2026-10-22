@@ -23,6 +23,8 @@
     "pages/query/query",
     "pages/navcustom/navcustom",
     "pages/perf/perf",
+    "pages/http/http",
+    "pages/dashboard/dashboard",
     "pages/detail/detail"
   ],
   "window": {

@@ -29,6 +29,8 @@ struct Viewport {
     w: u32,
     h: u32,
     dpr: f32,
+    /// `--start <pt>`：先慢拖这么多再开始量（复杂元素在页面下半截时用，例如 WXSS 页的 transform 区）
+    start: f32,
 }
 
 struct Frame {
@@ -83,7 +85,7 @@ fn report(label: &str, frames: &[Frame], budget_ms: f32) {
     );
 }
 
-fn run_once(app: &str, route: &str, hz: f32, vp: Viewport) -> (Vec<Frame>, Vec<Frame>, Vec<Frame>) {
+fn run_once(app: &str, route: &str, hz: f32, vp: Viewport) -> (Vec<Frame>, Vec<Frame>, Vec<Frame>, Vec<Frame>) {
     let data = mini_render::data_dir::subdir("sdk-scroll-bench");
     std::fs::remove_dir_all(&data).ok();
     mini_render::renderer::components::reset_shared_component_state();
@@ -136,6 +138,30 @@ fn run_once(app: &str, route: &str, hz: f32, vp: Viewport) -> (Vec<Frame>, Vec<F
             kind: if flags & FRAME_NEW != 0 { e.last_frame_kind().label() } else { "空转" },
         }
     };
+    if vp.start > 0.0 {
+        let mut left = vp.start;
+        while left > 0.0 {
+            let d = left.min(600.0);
+            e.pointer_down(200.0, 700.0);
+            for i in 1..=(d / 10.0) as i32 {
+                t += step_ms;
+                e.pointer_move(200.0, 700.0 - 10.0 * i as f32);
+                frame(&mut e, t);
+            }
+            for _ in 0..3 {
+                t += step_ms;
+                frame(&mut e, t);
+            }
+            e.pointer_up(200.0, 700.0 - d);
+            left -= d;
+        }
+        for _ in 0..300 {
+            t += step_ms;
+            if frame(&mut e, t).kind == "空转" && !e.wants_next_frame() {
+                break;
+            }
+        }
+    }
     // 下拉：停在顶上往下拉 300pt 再松手回弹（橡皮筋越界 + 回弹，真机上「往下滑到顶」天天发生）
     let mut pull = Vec::new();
     e.pointer_down(200.0, 200.0);
@@ -179,19 +205,38 @@ fn run_once(app: &str, route: &str, hz: f32, vp: Viewport) -> (Vec<Frame>, Vec<F
             break;
         }
     }
-    (pull, drag, fling)
+    // 拖回顶上：手指每帧往下 10pt，页面往回滚、条带从上面补（首页头图那截渐变 + 半透明文字最贵）
+    let mut back = Vec::new();
+    e.pointer_down(200.0, 100.0);
+    for i in 1..=70 {
+        t += step_ms;
+        e.pointer_move(200.0, 100.0 + 10.0 * i as f32);
+        back.push(frame(&mut e, t));
+    }
+    e.pointer_up(200.0, 800.0);
+    for _ in 0..60 {
+        t += step_ms;
+        let f = frame(&mut e, t);
+        let idle = f.kind == "空转";
+        back.push(f);
+        if idle && !e.wants_next_frame() {
+            break;
+        }
+    }
+    (pull, drag, fling, back)
 }
 
 fn main() {
     let mut pos = Vec::new();
     let mut hz = 60.0f32;
     let mut rounds = 1usize;
-    let mut vp = Viewport { w: W, h: H, dpr: DPR };
+    let mut vp = Viewport { w: W, h: H, dpr: DPR, start: 0.0 };
     let mut args = std::env::args().skip(1);
     while let Some(a) = args.next() {
         match a.as_str() {
             "--hz" => hz = args.next().and_then(|v| v.parse().ok()).unwrap_or(hz),
             "--rounds" => rounds = args.next().and_then(|v| v.parse().ok()).unwrap_or(rounds),
+            "--start" => vp.start = args.next().and_then(|v| v.parse().ok()).unwrap_or(0.0),
             "--dpr" => vp.dpr = args.next().and_then(|v| v.parse().ok()).unwrap_or(vp.dpr),
             "--size" => {
                 if let Some((w, h)) = args.next().as_deref().and_then(|s| s.split_once('x')) {
@@ -212,10 +257,11 @@ fn main() {
     println!("SDK 滚动基准：{} {route}  {}×{} @{}（{}×{} 像素）  {hz}Hz 预算 {budget:.1}ms",
         root.display(), vp.w, vp.h, vp.dpr, (vp.w as f32 * vp.dpr) as u32, (vp.h as f32 * vp.dpr) as u32);
     for r in 1..=rounds {
-        let (pull, drag, fling) = run_once(&root.to_string_lossy(), &route, hz, vp);
+        let (pull, drag, fling, back) = run_once(&root.to_string_lossy(), &route, hz, vp);
         println!("第 {r} 轮");
         report("下拉", &pull, budget);
         report("拖动", &drag, budget);
         report("惯性", &fling, budget);
+        report("拖回顶", &back, budget);
     }
 }

@@ -135,6 +135,24 @@ pub fn overlay_reach(layers: &FrameLayers<'_>) -> Option<((u32, u32), (u32, u32)
     Some((r, b))
 }
 
+/// 操作菜单是这一帧唯一的覆盖层、而且面板缓存在：GPU 可以把面板当纹理挪（见 `ui_overlay::sheet_raster`）。
+/// 返回 `(顶边整像素行, 圆角行数, 缓存行数, 缓存 id)`。要在 [`overlay_reach`] 之后调（它定住这一帧的位置）
+pub fn sheet_layer(layers: &FrameLayers<'_>) -> Option<(i32, u32, u32, u64)> {
+    let o = &layers.overlays;
+    let others = layers.pull.is_some()
+        || layers.edge_back.is_some()
+        || crate::renderer::components::fullscreen_video().is_some()
+        || o.picker.is_some()
+        || o.modal.is_some()
+        || o.toast.is_some()
+        || o.loading.is_some()
+        || ui_overlay::image_preview::visible();
+    if others {
+        return None;
+    }
+    ui_overlay::action_sheet::gpu_layer()
+}
+
 /// 导航栏画布的前 `rows` 行按 alpha 叠进缓冲（导航栏底色不透明时就是整行拷贝），只写 `win` 那几行
 fn paint_top_band(buf: &mut [u32], w: u32, h: u32, rows: u32, band: &crate::Canvas, win: (u32, u32)) {
     let draw_w = (w as usize).min(band.width() as usize);

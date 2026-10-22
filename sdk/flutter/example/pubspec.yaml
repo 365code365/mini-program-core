@@ -68,10 +68,12 @@ flutter:
     - assets/demo/pages/canvas/
     - assets/demo/pages/components/
     - assets/demo/pages/custom/
+    - assets/demo/pages/dashboard/
     - assets/demo/pages/detail/
     - assets/demo/pages/event/
     - assets/demo/pages/feedback/
     - assets/demo/pages/form/
+    - assets/demo/pages/http/
     - assets/demo/pages/host/
     - assets/demo/pages/index/
     - assets/demo/pages/media/

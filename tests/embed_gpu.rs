@@ -209,3 +209,38 @@ fn 默认偏好_cpu_不碰_surface() {
     assert!(f & FRAME_NEW != 0 && f & (FRAME_PRESENTED | FRAME_PENDING) == 0, "{f:#x}");
     e.detach_surface();
 }
+
+/// 回桌面再回来（Android 上 Surface 被系统收走、回来给一块新的）：
+/// 合成器只换 surface、不重开设备不跑自检，页面也不整页重画 —— 一加 PLY110 上从前这一段是 520ms 空白
+#[test]
+fn 卸了换新_surface_复用合成器且不整页重画() {
+    let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let mut e = engine("reattach", HostEnv::default());
+    let first = Layer::new();
+    if !attach_gpu(&mut e, &first) {
+        return;
+    }
+    let mut t = 0u64;
+    pump_presented(&mut e, &mut t);
+    e.scroll_to(150.0);
+    pump_presented(&mut e, &mut t);
+    let before = e.rgba().to_vec();
+
+    // 卸下：CPU 出口只重新合成，不整页重画；像素与 GPU 那一帧相同
+    e.detach_surface();
+    drop(first);
+    t += 16;
+    let f = e.pump_ex(t);
+    assert!(f & FRAME_NEW != 0, "卸载后要出一帧 CPU 画面：{f:#x}");
+    assert_eq!(e.last_frame_kind().label(), "只合成", "卸 surface 不该整页重画");
+    assert!(e.rgba() == before.as_slice(), "卸载后 CPU 合成的像素与 GPU 那一帧不同");
+
+    // 换一块新的 surface 挂回来：仍是 GPU，第一帧只合成（镜像整张重传，页面不重画）
+    let second = Layer::new();
+    assert!(attach_gpu(&mut e, &second), "换新 surface 应仍是 GPU：{}", e.backend().reason);
+    let f = pump_presented(&mut e, &mut t);
+    assert_eq!(f & FRAME_BACKEND_CHANGED, 0, "{f:#x}");
+    assert_eq!(e.last_frame_kind().label(), "只合成", "复用合成器后第一帧不该整页重画");
+    assert!(e.rgba() == before.as_slice(), "复用合成器后画面变了");
+    e.detach_surface();
+}

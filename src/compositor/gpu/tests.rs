@@ -307,11 +307,14 @@ fn overlay_band_passthrough_matches_cpu_byte_for_byte() {
         start_time: std::time::Instant::now(),
         duration_ms: 1500,
     };
-    let cases: [(Option<ToastState>, Option<LoadingState>, Option<ModalState>); 4] = [
+    let cases: [(Option<ToastState>, Option<LoadingState>, Option<ModalState>); 6] = [
         (None, None, Some(ModalState::new("标题", "内容"))),
         (Some(toast("success")), None, None),
         (None, Some(LoadingState { title: String::new(), mask: true, visible: true }), None),
         (Some(toast("error")), None, Some(ModalState::new("a", "b"))),
+        // 只有操作菜单：面板正文走缓存纹理（静止 / 入场途中两种位置）
+        (None, None, None),
+        (None, None, None),
     ];
     for (case, (t, lo, m)) in cases.iter().enumerate() {
         for k in 0..4 {
@@ -334,20 +337,24 @@ fn overlay_band_passthrough_matches_cpu_byte_for_byte() {
                 top: (k != 3).then(|| TopBand { rows: 30, canvas: &band }),
             };
             // 前两个配置叠一个已经定格的操作菜单（只合成顶边那几行底图，其余行白底盖掉）
-            let sheet = case < 2;
+            let sheet = case < 2 || case >= 4;
             if sheet {
-                crate::host::ui_overlay::action_sheet::open_at(800, false);
+                crate::host::ui_overlay::action_sheet::open_at(if case == 5 { 120 } else { 800 }, false);
             } else {
                 crate::host::ui_overlay::action_sheet::clear();
             }
+            // GPU 与 CPU 两次合成按同一刻画（入场途中的面板按时间挪）
+            crate::frame_clock::set(Some(std::time::Instant::now()));
             let st = comp.compose_offscreen(&l, true).unwrap_or_else(|e| panic!("覆盖层 #{case}.{k}：GPU 合成失败 {e}"));
             assert!(st.passthrough, "覆盖层 #{case}.{k} 应当是直通帧");
             let pb = comp.pass_band;
             assert!(pb.y1 > pb.y0 && pb.y1 - pb.y0 < h * 3 / 4, "覆盖层 #{case}.{k} 应当只传覆盖层那几行，实际 {}..{}", pb.y0, pb.y1);
             assert_eq!(pb.lut.is_some(), m.is_some() || sheet, "覆盖层 #{case}.{k}：只有 Modal / 操作菜单带遮罩");
+            assert_eq!(comp.sheet_frame.is_some(), case >= 4, "覆盖层 #{case}.{k}：只有操作菜单一层时面板走缓存纹理");
             let gpu = comp.read_back().unwrap();
             let mut buf = vec![0u32; (w * h) as usize];
             cpu::compose(&mut buf, &l);
+            crate::frame_clock::set(None);
             if let Some((x, y, c, g)) = first_mismatch(&cpu_rgba(&buf), &gpu, w) {
                 panic!("覆盖层 #{case}.{k}：@{x},{y} CPU #{c:06x} / GPU #{g:06x}");
             }

@@ -1,4 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <!-- 小程序的 wx.request / 远程图片 / 宿主承载的 <video> 都要联网。
          debug 清单里那条只管 debug 包，release 包少了它就全部断网 -->
     <uses-permission android:name="android.permission.INTERNET"/>
@@ -6,6 +7,9 @@
         android:label="mini_render_example"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- release 包也能用 simpleperf 抓引擎线程的调用栈（只对 adb shell 开放，不影响安全）。
+             用法见 doc/原生App集成指南.md 的「真机采样」 -->
+        <profileable android:shell="true" tools:targetApi="29" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -36,6 +36,10 @@ impl GpuCompositor {
         let t0 = std::time::Instant::now();
         // 覆盖层只占一截：CPU 也只合成那一截（逐帧校验要整帧参照时除外）
         let reach = if self.full_reference { None } else { cpu::overlay_reach(l) };
+        self.sheet_frame = None;
+        if let Some(layer) = reach.and_then(|_| cpu::sheet_layer(l)) {
+            return self.sync_sheet_layer(l, layer, t0);
+        }
         let small = |r: (u32, u32)| ((r.1 - r.0) as f32) < l.height as f32 * WHOLE_FRAME_RATIO;
         let buf = &mut self.pass_scratch;
         let whole_frame = |buf: &mut Vec<u32>| {
@@ -72,5 +76,42 @@ impl GpuCompositor {
         let bytes = unsafe { std::slice::from_raw_parts(self.pass_scratch.as_ptr().cast::<u8>(), n * 4) };
         let sent = self.pass.as_ref().map(|t| t.upload_rows(&self.gpu.queue, bytes, l.width, y0, y1 - y0, l.width)).unwrap_or(0);
         (sent, whole)
+    }
+
+    /// 操作菜单是唯一的覆盖层：面板正文从缓存纹理贴（只在缓存换了时上传），CPU 只合成顶边圆角那几行
+    /// （页面 + 压暗 + 圆角混白），其余行着色器合成再查表压暗。弹出 / 收起的每一帧只传几十行
+    fn sync_sheet_layer(&mut self, l: &FrameLayers<'_>, (top, corner, rows, id): (i32, u32, u32, u64), t0: std::time::Instant) -> (u64, bool) {
+        let (w, h) = (l.width as usize, l.height as i32);
+        let y0 = top.clamp(0, h) as u32;
+        let y1 = (top + corner as i32).clamp(0, h) as u32;
+        let buf = &mut self.pass_scratch;
+        buf[y0 as usize * w..y1 as usize * w].fill(0);
+        crate::host::ui_overlay::action_sheet::set_panel_on_gpu(true);
+        let fp = cpu::compose_rows(buf, l, (y0, y1));
+        crate::host::ui_overlay::action_sheet::set_panel_on_gpu(false);
+        self.pass_compose_ms = t0.elapsed().as_secs_f32() * 1000.0;
+        self.pass_band = PassBand { y0, y1, lut: fp.lut };
+        let mut sent = 0u64;
+        if self.sheet_tex_id != Some(id) {
+            let (dev, queue) = (&self.gpu.device, &self.gpu.queue);
+            let tex = &mut self.sheet_tex;
+            sent += crate::host::ui_overlay::action_sheet::with_raster_pixels(|pw, ph, px| {
+                Tex::ensure(tex, dev, "操作菜单面板", pw, ph);
+                // SAFETY: u32 切片按字节看（小端：B,G,R,0），与直通帧同一种布局
+                let bytes = unsafe { std::slice::from_raw_parts(px.as_ptr().cast::<u8>(), px.len() * 4) };
+                tex.as_ref().map(|t| t.upload_rows(queue, bytes, pw, 0, ph, pw)).unwrap_or(0)
+            })
+            .unwrap_or(0);
+            self.sheet_tex_id = Some(id);
+        }
+        self.sheet_frame = Some((top, y1, (top + rows as i32).clamp(0, h) as u32));
+        if y1 > y0 {
+            Tex::ensure(&mut self.pass, &self.gpu.device, "直通帧", l.width, l.height);
+            let n = w * l.height as usize;
+            // SAFETY: 同上
+            let bytes = unsafe { std::slice::from_raw_parts(self.pass_scratch.as_ptr().cast::<u8>(), n * 4) };
+            sent += self.pass.as_ref().map(|t| t.upload_rows(&self.gpu.queue, bytes, l.width, y0, y1 - y0, l.width)).unwrap_or(0);
+        }
+        (sent, false)
     }
 }

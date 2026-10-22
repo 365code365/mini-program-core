@@ -136,6 +136,17 @@ impl WxmlRenderer {
         }
         let mut off = Canvas::new(tw, th);
         off.clear(Color::new(0, 0, 0, 0));
+        // 离屏只画贴回去时落在目标裁剪区里的那一块（目标裁剪区换算到离屏坐标）。贴回去本来就只贴
+        // 裁剪区里的像素（`blend_pixels_opacity` 按 draw_bounds 裁），裁剪区里的像素与整块画逐字节相同
+        // （局部重画靠的就是这一条）。从前离屏整块画：补条带只要一百多行，首页头图里那段
+        // `opacity: 0.9` 的两行字照样整块光栅化，一加上一条带 10~16ms
+        let (ox, oy) = ((x - pad) as i32, (y - pad) as i32);
+        let (bx0, bx1, by0, by1) = canvas.draw_bounds();
+        let (cx0, cy0) = ((bx0 - ox).clamp(0, tw as i32), (by0 - oy).clamp(0, th as i32));
+        let (cx1, cy1) = ((bx1 - ox).clamp(cx0, tw as i32), (by1 - oy).clamp(cy0, th as i32));
+        if (cx0, cy0, cx1, cy1) != (0, 0, tw as i32, th as i32) {
+            off.clip_rect(GeoRect::new(cx0 as f32, cy0 as f32, (cx1 - cx0) as f32, (cy1 - cy0) as f32));
+        }
         let was_off = self.drawing_offscreen;
         let was_flat = self.flattening_opacity;
         let was_shift = self.binding_shift;

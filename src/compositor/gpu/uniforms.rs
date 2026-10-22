@@ -73,6 +73,10 @@ impl GpuCompositor {
             pass_y0: self.pass_band.y0,
             pass_y1: self.pass_band.y1,
             lut_on: (passthrough && self.pass_band.lut.is_some()) as u32,
+            sheet_on: (passthrough && self.sheet_frame.is_some()) as u32,
+            sheet_top: self.sheet_frame.map(|s| s.0).unwrap_or(0),
+            sheet_y0: self.sheet_frame.map(|s| s.1).unwrap_or(0),
+            sheet_y1: self.sheet_frame.map(|s| s.2).unwrap_or(0),
             eb_shadow_f,
             lut: self.pass_band.lut.as_ref().map(pipeline::pack_lut).unwrap_or([0; 64]),
         }

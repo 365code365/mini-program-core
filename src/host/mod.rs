@@ -70,6 +70,8 @@ mod engine_gpu;
 /// 覆盖层状态：Toast/Loading/Modal 指令落地与查询（从 engine.rs 拆出）
 mod engine_ui;
 pub mod config;
+/// Android：引擎线程绑大核（`MINI_CPU_PIN=0` 关掉，理由见文件头）
+pub mod cpu_affinity;
 pub mod edge_back;
 pub mod gesture;
 /// 指针输入的平台无关核心（触摸派发 / 手势仲裁 / 惯性收尾），窗体与 SDK 共用

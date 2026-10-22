@@ -1,7 +1,7 @@
 # mini_render（Flutter 插件）
 
 在 Flutter 里打开微信小程序。引擎是仓库根目录的 mini-render（Rust 自绘，对标 Skyline），
-跑在原生侧的专用线程上，画面经 `Texture` 上屏（Android：SurfaceProducer；iOS：CVPixelBuffer）。
+跑在原生侧的专用线程上。Android 默认画到引擎自己的 SurfaceView（平台视图，系统合成器直接上屏，不经过 Flutter 的帧；`androidSurfaceView: false` 退回 `Texture`）；iOS 经 `Texture` 上屏（CVPixelBuffer）。
 
 ```dart
 final c = MiniProgramController(

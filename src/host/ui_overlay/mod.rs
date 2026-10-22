@@ -21,6 +21,7 @@ mod geometry;
 mod icons;
 mod modal;
 mod modal_hit;
+mod sheet_raster;
 mod tip;
 /// `wx.showActionSheet` 的底部操作菜单（状态在线程局部，SDK 与桌面共用）
 pub mod action_sheet;
@@ -87,7 +88,7 @@ pub fn overlay_reach(
     if image_preview::visible() {
         return (Footprint::full(), Footprint::full());
     }
-    let (mut rows, mut base) = action_sheet::reach(h, sf);
+    let (mut rows, mut base) = action_sheet::reach(w, h, sf, text_renderer);
     let vp = (w as f32 / sf, h as f32 / sf);
     // Modal / 提示框不是满宽：盒子那几行左右两边是压暗的页面，整段都要底图
     if let Some(m) = shown(modal, |m| m.visible) {

@@ -23,7 +23,7 @@ use crate::{Canvas, Color};
 use std::time::Instant;
 
 /// 自检逻辑的版本：改了自检就 +1，判定缓存里旧的「自检不一致」记录随之失效（v2 修订 R15）
-pub const SELFTEST_REV: u32 = 3;
+pub const SELFTEST_REV: u32 = 4;
 
 const WARMUP: usize = 2;
 const SAMPLES: usize = 7;
@@ -201,6 +201,14 @@ pub fn run(comp: &mut GpuCompositor, w: u32, h: u32, force_mismatch: bool) -> Re
         let (bad, ..) = one(comp, &with_modal, true)?;
         if let Some(b) = bad {
             return Err(b);
+        }
+        // 只有操作菜单：面板正文从缓存纹理贴（`sheet_tex`），圆角行与压暗走直通区间 / 查表
+        let mut sheet = layers(w, h, &page, &tab, &fixed, tab_h, OverlayRefs::none());
+        // 下拉指示器会让这一帧退回整帧直通（测不到面板缓存那条路）
+        sheet.pull = None;
+        let (bad, ..) = crate::host::ui_overlay::action_sheet::with_selftest_sheet(|| one(comp, &sheet, true))?;
+        if let Some(b) = bad {
+            return Err(format!("{b}（操作菜单面板缓存）"));
         }
         // 导航栏 + 转场 / 侧滑（两种方向）：着色器里的平移、压暗、阴影与 CPU 逐字节一致才用 GPU。
         // 压暗是 `u32(f32(c) * f)`：有的驱动在这里用半精度（relaxed precision）就会差一个 LSB

@@ -88,6 +88,8 @@ pub extern "system" fn Java_dev_minirender_MiniEngine_nativeCreateEx(
     let Some(dir) = cstring(&mut env, &app_dir) else { return 0 };
     let data = cstring(&mut env, &data_dir);
     let opts = cstring(&mut env, &options);
+    // 宿主在引擎线程上建引擎：此后这条线程只给引擎用，就在这里把它绑到大核
+    crate::compositor::diag::emit(&crate::host::cpu_affinity::pin_current_thread());
     mr_app_create_ex(
         dir.as_ptr(),
         data.as_ref().map(|d| d.as_ptr()).unwrap_or(std::ptr::null()),

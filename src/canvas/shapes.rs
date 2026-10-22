@@ -106,11 +106,15 @@ impl Canvas {
             (x + w - r, y + h - r, x + w - r, y + h - r, true, true),   // 右下
             (x + r, y + h - r, x, y + h - r, false, true),              // 左下
         ];
+        // 角区只走裁剪区里的那几行：区外 `set_pixel` 本来就不写（逐字节不变）。
+        // 补条带的裁剪区只有一条，大圆角（`border-radius: 50%` 的圆、胶囊）却要逐像素开方 ——
+        // 一加 PLY110 上 WXSS 页补条带的热点第一名就是这里（19%）
+        let (bx0, bx1, by0, by1) = self.draw_bounds();
         for &(cx, cy, bx, by, right, bottom) in &corners {
-            let x0 = (bx + tx).floor() as i32;
-            let y0 = (by + ty).floor() as i32;
-            let x1 = (bx + tx + r).ceil() as i32;
-            let y1 = (by + ty + r).ceil() as i32;
+            let x0 = ((bx + tx).floor() as i32).max(bx0);
+            let y0 = ((by + ty).floor() as i32).max(by0);
+            let x1 = ((bx + tx + r).ceil() as i32).min(bx1);
+            let y1 = ((by + ty + r).ceil() as i32).min(by1);
             let (ccx, ccy) = (cx + tx, cy + ty);
             for py in y0..y1 {
                 if (bottom && py < bottom_edge) || (!bottom && py >= top_edge) {

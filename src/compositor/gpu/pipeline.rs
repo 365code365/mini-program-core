@@ -4,8 +4,8 @@ use std::collections::HashMap;
 /// 着色器源码（编进二进制；它的哈希进判定缓存键，改着色器就会重新评估驱动）
 pub const WGSL: &str = include_str!("compose.wgsl");
 
-/// 与 `compose.wgsl` 的 `struct U` 逐字段对应：32 个 4 字节标量 + 16 个 f32 的阴影系数 + 64 个 u32 的
-/// 压暗表 = 448 字节（两个数组分别在 128、192 字节处开始，满足 uniform 里 vec4 数组 16 字节对齐）
+/// 与 `compose.wgsl` 的 `struct U` 逐字段对应：36 个 4 字节标量 + 16 个 f32 的阴影系数 + 64 个 u32 的
+/// 压暗表 = 464 字节（两个数组分别在 144、208 字节处开始，满足 uniform 里 vec4 数组 16 字节对齐）
 #[repr(C)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Uniforms {
@@ -46,12 +46,18 @@ pub struct Uniforms {
     pub pass_y0: u32,
     pub pass_y1: u32,
     pub lut_on: u32,
+    /// 操作菜单面板缓存（`sheet_tex`）：直通帧里 [sheet_y0, sheet_y1) 行取纹理第 `y - sheet_top` 行
+    /// （顶边圆角那几行在直通区间里，由 CPU 混好）。sheet_on = 0 时不用
+    pub sheet_on: u32,
+    pub sheet_top: i32,
+    pub sheet_y0: u32,
+    pub sheet_y1: u32,
     pub eb_shadow_f: [f32; 16],
     /// 256 项压暗表，4 项一个 u32（小端：第 c 项在第 c/4 个字的第 c%4 个字节）
     pub lut: [u32; 64],
 }
 
-pub const UNIFORM_BYTES: usize = 448;
+pub const UNIFORM_BYTES: usize = 464;
 const _: () = assert!(std::mem::size_of::<Uniforms>() == UNIFORM_BYTES);
 
 /// 256 项字节表 → 64 个 u32（与 `compose.wgsl` 的 `lut_at` 对应）
@@ -168,9 +174,10 @@ impl Pipeline {
                 tex_entry(3, d2),
                 tex_entry(4, d2),
                 tex_entry(5, d2),
-                // 导航栏画布、转场 / 侧滑的留图
+                // 导航栏画布、转场 / 侧滑的留图、操作菜单面板缓存
                 tex_entry(6, d2),
                 tex_entry(7, d2),
+                tex_entry(8, d2),
             ],
         });
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {

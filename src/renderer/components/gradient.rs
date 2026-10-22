@@ -102,6 +102,7 @@ pub fn draw_linear_gradient(
         row_cache = Some(row);
     }
 
+    let mut row_buf: Vec<Color> = Vec::new();
     for py in y0..y1 {
         let fy = py as f32 + 0.5;
         if plain_row(py) {
@@ -117,6 +118,24 @@ pub fn draw_linear_gradient(
                 canvas.blend_pixels(x0, py, row, row.len());
                 continue;
             }
+        }
+        if plain_row(py) {
+            // 斜向渐变的无圆角行：颜色照旧逐像素算（同一个算式），但整行算好一次贴上去 ——
+            // 从前每个像素一次 `set_pixel`（越界、裁剪矩形逐个判），一加 PLY110 上首页 135° 头图
+            // 补一条带光这里就占引擎线程 15%。覆盖率在这些行恒为 1（`opacity * 1.0` 与 `opacity` 相同），
+            // `blend_pixels` 按行裁剪、a=0 跳过、a=255 直写、其余混合，与 `set_pixel` 逐像素同一套规则
+            let row = &mut row_buf;
+            row.clear();
+            for px in x0..x1 {
+                let fx = px as f32 + 0.5;
+                let proj = (fx - cx) * dx + (fy - cy) * dy;
+                let t = if full > 0.0 { proj / full + 0.5 } else { 0.5 };
+                let mut c = color_at(t);
+                c.a = (c.a as f32 * opacity * 1.0) as u8;
+                row.push(c);
+            }
+            canvas.blend_pixels(x0, py, row, row.len());
+            continue;
         }
         for px in x0..x1 {
             let fx = px as f32 + 0.5;

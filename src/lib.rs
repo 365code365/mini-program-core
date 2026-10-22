@@ -9,6 +9,7 @@ mod path;
 pub mod text;
 /// `font-family` → 具体字体（按字体栈解析 + 每族一份渲染器）
 pub mod text_family;
+pub mod text_system;
 /// `@font-face` / `wx.loadFontFace` 登记的字族（TTF / OTF）
 pub mod text_faces;
 // 彩色 Emoji 位图字形（Apple sbix）

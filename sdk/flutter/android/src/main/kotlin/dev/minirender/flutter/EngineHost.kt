@@ -1,5 +1,6 @@
 package dev.minirender.flutter
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.os.Handler
 import android.os.HandlerThread
@@ -7,6 +8,7 @@ import android.os.Looper
 import android.util.Log
 import android.view.Choreographer
 import android.view.Surface
+import dev.minirender.FrameBoost
 import dev.minirender.MiniEngine
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -41,6 +43,8 @@ import java.util.concurrent.TimeUnit
  *    连过、不能再给 GPU 生产者用，所以换一块新的 SurfaceProducer（纹理 id 会变，通知 Dart）。
  */
 internal class EngineHost(
+    /** 只用来开 ADPF 性能提示会话（[FrameBoost]） */
+    private val context: Context,
     private val textures: TextureRegistry,
     private val onEvents: (List<String>) -> Unit,
     private val onTexture: (Map<String, Any>) -> Unit,
@@ -59,6 +63,8 @@ internal class EngineHost(
     // ── 只在引擎线程读写 ──
     private var handle = 0L
     private var choreographer: Choreographer? = null
+    /** 引擎线程的性能提示（为什么要见 FrameBoost.kt：复杂页面的补条带在小核上要 5~11ms） */
+    private var boost: FrameBoost? = null
     private var frameScheduled = false
     private var running = true
     private var surface: Surface? = null
@@ -100,6 +106,7 @@ internal class EngineHost(
         val p = if (viewMode) null else newProducer()
         engine.post {
             choreographer = Choreographer.getInstance()
+            boost = FrameBoost.forCurrentThread(context)
             val h = MiniEngine.nativeCreateEx(appDir, dataDir, width, height, dpr, options)
             if (h != 0L) {
                 // 机型信息要在挂 surface 之前给（Auto 的机型分级要用）
@@ -264,6 +271,7 @@ internal class EngineHost(
 
     private fun tick(frameTimeNanos: Long) {
         if (handle == 0L) return
+        val t0 = System.nanoTime()
         val f = MiniEngine.nativePumpEx(handle, frameTimeNanos / 1_000_000)
         if (DiagProps.pace && f and (MiniEngine.FRAME_PRESENTED or MiniEngine.FRAME_NEW) != 0) {
             Log.i(TAG, "🎞 ${frameTimeNanos / 1000} ${System.nanoTime() / 1000}")
@@ -282,6 +290,7 @@ internal class EngineHost(
             if (f and MiniEngine.FRAME_NEW != 0) needsPresent = true
             if (needsPresent) present()
         }
+        if (f and (MiniEngine.FRAME_NEW or MiniEngine.FRAME_PRESENTED) != 0) boost?.report(System.nanoTime() - t0)
         if (f and MiniEngine.FRAME_EVENTS != 0) drainEvents()
         if (f and MiniEngine.FRAME_WANTS_MORE != 0) requestFrame()
     }
@@ -558,6 +567,8 @@ internal class EngineHost(
             detach()
             if (handle != 0L) MiniEngine.nativeDestroy(handle)
             handle = 0L
+            boost?.close()
+            boost = null
             bitmap?.recycle()
             bitmap = null
         }

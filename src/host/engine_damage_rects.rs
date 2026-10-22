@@ -18,8 +18,12 @@ pub(super) fn union(a: Option<GeoRect>, b: GeoRect) -> Option<GeoRect> {
 }
 
 /// 滚动中裁剪窗里没画的行攒到这么多（物理像素）就顺手补上，不等视口真滑出条带。
-/// 等到滑出再补，一次就是 400 多行（余量那么宽）—— 滑动里每隔一百多 pt 一个尖峰
-pub(super) const EAGER_STRIP_PX: f32 = VIEWPORT_CULL_MARGIN_PX / 4.0;
+/// 等到滑出再补，一次就是 400 多行（余量那么宽）—— 滑动里每隔一百多 pt 一个尖峰。
+///
+/// 从前是余量的 1/4（100 行）。一加 PLY110 上补一条的耗时随行数线性涨（首页渐变头图那截每行约
+/// 0.08~0.1ms），100~190 行一条就是 7~16ms，快甩时每五六帧一次掉帧。改成 1/16（25 行）：每帧补的
+/// 行数接近这一帧滚过的行数，耗时摊到每一帧（一帧 2~3ms）
+pub(super) const EAGER_STRIP_PX: f32 = VIEWPORT_CULL_MARGIN_PX / 16.0;
 
 /// 一帧最多分几趟画（每一趟都要把裁剪窗里的节点树走一遍，只是窗外不画）
 pub(super) const MAX_PASSES: usize = 4;

@@ -46,11 +46,17 @@ impl MiniEngine {
         self.backend.active
     }
 
-    /// 卸 surface：先放掉 GPU 合成器（它持有 surface），之后宿主才能释放原生对象
+    /// 卸 surface：先放掉合成器手里的 surface，之后宿主才能释放原生对象。
+    ///
+    /// 合成器本身（设备、管线）停到 `gpu_parked`，下次挂载直接复用（[`reattach_parked`](Self::reattach_parked)）。
+    /// 也不整页重画：CPU 画布一直是全的（GPU 只是拿它们合成），CPU 出口要的只是重新合成一次。
+    /// 从前这里 `mark_full`：回桌面再回来那一帧整页重画 15ms（一加 PLY110），白画
     pub fn detach_native_surface(&mut self) {
         self.native_surface = None;
-        if self.gpu.take().is_some() {
-            self.mark_full();
+        if let Some(mut comp) = self.gpu.take() {
+            comp.detach_surface();
+            self.gpu_parked = Some(comp);
+            self.dmg.compose_dirty = true;
         }
     }
 
@@ -80,7 +86,10 @@ impl MiniEngine {
             (Ok(()), Some(why)) => BackendStatus::cpu(r.pref, r.source, why),
             (Ok(()), None) => match self.gpu.as_ref() {
                 Some(comp) => BackendStatus::gpu(r.pref, r.source, comp.facts().describe()),
-                None => self.open_gpu(kind, addr, input),
+                None => match self.reattach_parked(kind, addr) {
+                    Some(comp_facts) => BackendStatus::gpu(r.pref, r.source, comp_facts),
+                    None => self.open_gpu(kind, addr, input),
+                },
             },
         };
         if next != self.backend {
@@ -93,30 +102,35 @@ impl MiniEngine {
         true
     }
 
+    /// 停着的合成器挂上新 surface（门槛已过）。成功时 `self.gpu` 有值，返回适配器描述；
+    /// 失败（新 surface 这个适配器不支持之类）放掉它，调用方照常重开
+    fn reattach_parked(&mut self, kind: SurfaceKind, addr: usize) -> Option<String> {
+        let mut comp = self.gpu_parked.take()?;
+        let ptr = NonNull::new(addr as *mut c_void)?;
+        let spec = surface_spec(kind, ptr).ok()?;
+        let (pw, ph) = self.pixel_size();
+        let t0 = std::time::Instant::now();
+        if let Err(why) = comp.reattach_surface(spec, pw, ph) {
+            diag::emit(&format!("🎨 GPU 合成器复用失败（{why}），重开"));
+            return None;
+        }
+        diag::emit(&format!("🎨 GPU 合成器复用：只换 surface（{:.1}ms，不重开设备、不重跑自检）", t0.elapsed().as_secs_f32() * 1000.0));
+        let facts = comp.facts().describe();
+        self.gpu = Some(comp);
+        // 镜像清空了，下一帧整张重传；页面不用重画
+        self.dmg.compose_dirty = true;
+        Some(facts)
+    }
+
     /// 建合成器（门槛已过）。成功时 `self.gpu` 有值；返回结论
     fn open_gpu(&mut self, kind: SurfaceKind, addr: usize, select: SelectInput<'_>) -> BackendStatus {
         let (pref, source) = (select.pref, select.source);
         let Some(ptr) = NonNull::new(addr as *mut c_void) else {
             return BackendStatus::cpu(pref, source, select::REASON_NO_SURFACE);
         };
-        let spec = match kind {
-            SurfaceKind::AndroidWindow => SurfaceSpec::Unsafe(gpu::wgpu::SurfaceTargetUnsafe::RawHandle {
-                raw_display_handle: Some(gpu::wgpu::rwh::RawDisplayHandle::Android(
-                    gpu::wgpu::rwh::AndroidDisplayHandle::new(),
-                )),
-                raw_window_handle: gpu::wgpu::rwh::RawWindowHandle::AndroidNdk(
-                    gpu::wgpu::rwh::AndroidNdkWindowHandle::new(ptr),
-                ),
-            }),
-            #[cfg(any(target_os = "ios", target_os = "macos"))]
-            SurfaceKind::MetalLayer => {
-                SurfaceSpec::Unsafe(gpu::wgpu::SurfaceTargetUnsafe::CoreAnimationLayer(ptr.as_ptr()))
-            }
-            // FFI 层已按目标拦过（supported_on_target），走到这里只可能是 Rust 侧直接调用
-            #[cfg(not(any(target_os = "ios", target_os = "macos")))]
-            SurfaceKind::MetalLayer => {
-                return BackendStatus::cpu(pref, source, "当前编译目标不支持 CAMetalLayer");
-            }
+        let spec = match surface_spec(kind, ptr) {
+            Ok(spec) => spec,
+            Err(why) => return BackendStatus::cpu(pref, source, why),
         };
         let (pw, ph) = self.pixel_size();
         let opts = OpenOptions {
@@ -141,6 +155,7 @@ impl MiniEngine {
     }
 
     fn drop_gpu(&mut self) {
+        self.gpu_parked = None;
         if self.gpu.take().is_some() {
             self.mark_full();
         }
@@ -160,10 +175,34 @@ impl MiniEngine {
     pub(super) fn gpu_fell_back(&mut self, why: &str, frame: u32) {
         diag::emit(&diag::runtime_fallback(why, frame));
         self.gpu = None;
+        self.gpu_parked = None;
         self.backend = self.backend.fell_back(why);
         self.gpu_failed = Some(format!("本实例 GPU 已失败过：{why}"));
         self.backend_changed = true;
     }
+}
+
+/// 宿主给的原生指针 → wgpu 的 surface 目标
+fn surface_spec(kind: SurfaceKind, ptr: NonNull<c_void>) -> Result<SurfaceSpec, &'static str> {
+    Ok(match kind {
+        SurfaceKind::AndroidWindow => SurfaceSpec::Unsafe(gpu::wgpu::SurfaceTargetUnsafe::RawHandle {
+            raw_display_handle: Some(gpu::wgpu::rwh::RawDisplayHandle::Android(
+                gpu::wgpu::rwh::AndroidDisplayHandle::new(),
+            )),
+            raw_window_handle: gpu::wgpu::rwh::RawWindowHandle::AndroidNdk(
+                gpu::wgpu::rwh::AndroidNdkWindowHandle::new(ptr),
+            ),
+        }),
+        #[cfg(any(target_os = "ios", target_os = "macos"))]
+        SurfaceKind::MetalLayer => {
+            SurfaceSpec::Unsafe(gpu::wgpu::SurfaceTargetUnsafe::CoreAnimationLayer(ptr.as_ptr()))
+        }
+        // FFI 层已按目标拦过（supported_on_target），走到这里只可能是 Rust 侧直接调用
+        #[cfg(not(any(target_os = "ios", target_os = "macos")))]
+        SurfaceKind::MetalLayer => {
+            return Err("当前编译目标不支持 CAMetalLayer");
+        }
+    })
 }
 
 /// 合成这一帧：有 GPU 合成器就试 GPU。写成自由函数而不是方法：调用方手里的 `layers`

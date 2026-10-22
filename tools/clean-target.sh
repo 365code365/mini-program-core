@@ -25,6 +25,8 @@ keep_dir() {
         # 「改动前后逐像素对比」的参照物；被清掉之后对比只会报「基线缺图」，
         # 而重新生成的基线已经是改动之后的了 —— 等于永远失去了参照。
         baseline_*) return 0 ;;
+        # 异步全量回归的批次记录（tools/regress-async.sh）：回溯优化过程用的时间线，只有日志，很小
+        test_batches) return 0 ;;
         # 交叉编译目标：aarch64-apple-ios / aarch64-linux-android / x86_64-pc-windows-msvc …
         *-apple-*|*-linux-*|*-pc-windows-*|*-unknown-*) return 0 ;;
         *) return 1 ;;
