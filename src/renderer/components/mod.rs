@@ -42,7 +42,7 @@ pub use switch::SwitchComponent;
 pub use checkbox::CheckboxComponent;
 pub use radio::RadioComponent;
 pub use slider::{SliderComponent, SliderAttrs, slider_track_span, SLIDER_VALUE_WIDTH};
-pub use input::{InputComponent, cursor_blink_visible, blink_visible_at, cursor_blink_interval_ms,
+pub use input::{InputComponent, is_password_input, masked_value, cursor_blink_visible, blink_visible_at, cursor_blink_interval_ms,
     reset_cursor_blink, last_caret_rect, layout_textarea_lines};
 pub use image::{ImageComponent, is_animated, animated_frame, animation_total_ms, image_cache_report, clear_image_caches, image_cache_budget_mb, image_rgba};
 mod image_state;

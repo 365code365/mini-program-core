@@ -57,7 +57,7 @@ impl crate::MiniAppWindow {
             fixed_rows: self.fixed_rows,
             pull: None,
             overlays: OverlayRefs::none(),
-            edge_back: None,
+            edge_back: None, top: None,
         };
         compositor::cpu::compose(&mut pixels, &layers);
         Some(app_window::edge_back::PageShot { width: w, height: h, pixels })

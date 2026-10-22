@@ -186,11 +186,13 @@ final class EngineHost: NSObject {
         return p
     }
 
-    /// 写一张 BGRA 的 CVPixelBuffer（Flutter 的外部纹理只认 32BGRA / NV12）交给纹理
-    private func present() {
-        guard let h = handle, pixelW > 0, pixelH > 0, let pool = bufferPool() else { return }
+    /// 写一张 BGRA 的 CVPixelBuffer（Flutter 的外部纹理只认 32BGRA / NV12）交给纹理。
+    /// `notify: false`：只换上新帧，由调用方决定什么时候 `textureFrameAvailable`（改尺寸时用，见 resize）
+    @discardableResult
+    private func present(notify: Bool = true) -> Bool {
+        guard let h = handle, pixelW > 0, pixelH > 0, let pool = bufferPool() else { return false }
         var pb: CVPixelBuffer?
-        guard CVPixelBufferPoolCreatePixelBuffer(nil, pool, &pb) == kCVReturnSuccess, let buffer = pb else { return }
+        guard CVPixelBufferPoolCreatePixelBuffer(nil, pool, &pb) == kCVReturnSuccess, let buffer = pb else { return false }
         CVPixelBufferLockBaseAddress(buffer, [])
         let stride = CVPixelBufferGetBytesPerRow(buffer)
         var written = 0
@@ -199,11 +201,14 @@ final class EngineHost: NSObject {
                                          UInt32(stride), Int32(MR_PIXEL_BGRA8))
         }
         CVPixelBufferUnlockBaseAddress(buffer, [])
-        guard written > 0 else { return }
+        guard written > 0 else { return false }
         texture.update(buffer)
         needsPresent = false
-        let id = textureId
-        DispatchQueue.main.async { [weak self] in self?.textures.textureFrameAvailable(id) }
+        if notify {
+            let id = textureId
+            DispatchQueue.main.async { [weak self] in self?.textures.textureFrameAvailable(id) }
+        }
+        return true
     }
 
     private func drainEvents() {
@@ -275,10 +280,19 @@ final class EngineHost: NSObject {
                     return
                 }
                 updatePixelSize()
+                // 新尺寸的那一帧先写好、先回尺寸给 Dart，再告诉 Flutter 有新帧：Dart 按新尺寸
+                // 重建 Texture 的那一帧取到的就是新画面。从前是回尺寸、下一个 vsync 才画 ——
+                // 中间那一帧旧画面被拉伸到新尺寸（切换导航栏样式时整页先放大一下再弹回来，
+                // 2026-10-22 Android 模拟器上录屏看到的，iOS 同一个时序）
                 needsPresent = true
-                requestFrame()
+                let presented = present(notify: false)
+                if !presented { requestFrame() }
                 let info = textureInfo()
-                DispatchQueue.main.async { result(info) }
+                let id = textureId
+                DispatchQueue.main.async { [weak self] in
+                    result(info)
+                    if presented { self?.textures.textureFrameAvailable(id) }
+                }
             }
         case "safeArea":
             let (t, r, b, l) = (f("top"), f("right"), f("bottom"), f("left"))

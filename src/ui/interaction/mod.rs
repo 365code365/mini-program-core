@@ -236,6 +236,16 @@ pub struct ClickAnimation {
 }
 
 /// 交互管理器
+/// 一页被盖住 / tab 页切走时留着的交互状态（[`InteractionManager::take_page_state`]）
+pub struct PageUiState {
+    states: HashMap<String, ComponentState>,
+    toggled_at: HashMap<String, f32>,
+    sliders: HashMap<String, SliderSpec>,
+    slider_origin: HashMap<String, f64>,
+    scroll_controllers: HashMap<String, ScrollController>,
+    scroll_views: HashMap<String, crate::ui::scroll_view_state::ScrollViewState>,
+}
+
 pub struct InteractionManager {
     /// 组件状态
     pub states: HashMap<String, ComponentState>,

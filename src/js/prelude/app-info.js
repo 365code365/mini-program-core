@@ -24,12 +24,14 @@
             };
 
             // ---------- 胶囊按钮（api/ui/menu/wx.getMenuButtonBoundingClientRect）----------
-            // 微信 iOS 的胶囊：87×32，距右 7、距状态栏底 4。宿主有真值时给 __hostSystemInfo.menuButton
+            // 微信的胶囊：87×32，距右 7；距状态栏底 iOS 4、Android 8（48 高的导航栏里上下居中）。
+            // 与引擎画胶囊的 `host::capsule::rect` 是同一条公式。宿主有真值时给 __hostSystemInfo.menuButton
             wx.getMenuButtonBoundingClientRect = function() {
                 var mb = __hostField('menuButton');
                 if (mb && typeof mb === 'object') return JSON.parse(JSON.stringify(mb));
                 var i = wx.getSystemInfoSync();
-                var top = (i.statusBarHeight || 20) + 4, right = i.windowWidth - 7;
+                var gap = String(i.platform).toLowerCase() === 'android' ? 8 : 4;
+                var top = (i.statusBarHeight || 20) + gap, right = i.windowWidth - 7;
                 return { width: 87, height: 32, top: top, bottom: top + 32, left: right - 87, right: right };
             };
 

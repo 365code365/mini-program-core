@@ -236,6 +236,23 @@
       var w = (wx.getSystemInfoSync().windowWidth || 375), top = 20 + 4, right = w - 7;
       return { width: 87, height: 32, top: top, bottom: top + 32, left: right - 87, right: right };
     };
+    // 胶囊点击（custom 页面由编译器静态写出 [data-wx-capsule]，见 compiler/html/capsule.rs）。
+    // 先派发可取消的 `wx-menu-button` 事件（detail: {action, about}）：嵌入页面要自己处理就 preventDefault；
+    // 没人拦时的默认：「•••」弹关于，「⊙」返回（与原生 SDK 的默认一致：菜单 = 查看关于、关闭 = 返回宿主）
+    document.addEventListener("click", function (e) {
+      var t = e.target && e.target.closest ? e.target.closest("[data-wx-capsule] [data-act]") : null;
+      if (!t) return;
+      var action = t.getAttribute("data-act"), about = window.__APP_ABOUT__ || {};
+      var ev = new CustomEvent("wx-menu-button", { cancelable: true, detail: { action: action, about: about } });
+      if (!window.dispatchEvent(ev)) return;
+      if (action === "close") { history.back(); return; }
+      var lines = [];
+      if (about.description) lines.push(about.description);
+      lines.push("AppID：" + (about.appId || "未设置"));
+      lines.push("入口：" + (about.entryPage || "") + "（共 " + (about.pageCount || 0) + " 页）");
+      lines.push("引擎：" + (about.engine || ""));
+      wx.showModal({ title: about.name ? "关于" + about.name : "关于小程序", content: lines.join("\n"), showCancel: false });
+    });
     var comps = ["view", "block", "scroll-view", "swiper", "swiper-item", "text", "rich-text", "icon", "image", "video", "canvas", "button", "input",
       "textarea", "switch", "slider", "progress", "checkbox", "checkbox-group", "radio", "radio-group", "picker", "picker-view", "picker-view-column", "form", "navigator", "label", "map"];
     wx.canIUse = function (schema) {

@@ -283,7 +283,9 @@ impl crate::MiniAppWindow {
                 offset_px: (eb.offset() * scale as f32).round() as u32,
                 shot: self.back_shots.last(),
                 progress: eb.progress(),
+                shot_on_top: false,
             }),
+            top: None,
         })
     }
 }

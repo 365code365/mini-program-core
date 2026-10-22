@@ -141,7 +141,7 @@ fn layers<'a>(
         fixed_rows: Some((h / 4, h * 3 / 4)),
         pull: Some(PullState { gap_logical: 40.0, refreshing: false, progress: 0.8, phase: 0.25 }),
         overlays,
-        edge_back: None,
+        edge_back: None, top: None,
     }
 }
 

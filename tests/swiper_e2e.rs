@@ -175,3 +175,50 @@ fn 衔接_自动播放_受控_current() {
     assert!(e.ev().contains("change:1:number:"), "{}", e.ev());
     assert_eq!(e.px(100, 100), (0, 255, 0));
 }
+
+/// 页面运行时改 `duration`：下一次翻页就按新时长走。`duration` 只是**滑动动画时长**，
+/// 没写 `autoplay` 的 swiper 不会自己翻页（与微信一致；自动切换的间隔是 `interval`）。
+#[test]
+fn 运行时改_duration_下一次翻页按新时长_没有_autoplay_不自动翻() {
+    let _g = SERIAL.lock().unwrap_or_else(|p| p.into_inner());
+    let fx = fixture("duration", &swiper(r#"current="{{cur}}" duration="{{dur}}""#));
+    let mut e = E::new(&fx);
+    e.e.eval("__currentPage.setData({ dur: 500 })").unwrap();
+    e.frames(2);
+    // 500ms：35 帧（560ms）内走完
+    e.clear();
+    e.e.eval("__currentPage.setData({ cur: 1 })").unwrap();
+    e.frames(35);
+    assert!(e.ev().contains("finish:1"), "500ms 应已走完：{}", e.ev());
+    // 改成 1200ms 再翻：同样 35 帧还在半路，再 45 帧（共 ~1.3s）才走完
+    e.e.eval("__currentPage.setData({ dur: 1200 })").unwrap();
+    e.frames(2);
+    e.clear();
+    e.e.eval("__currentPage.setData({ cur: 2 })").unwrap();
+    e.frames(35);
+    assert!(e.ev().contains("change:2:number:"), "{}", e.ev());
+    assert!(!e.ev().contains("finish:2"), "1200ms 不该 560ms 就走完：{}", e.ev());
+    e.frames(45);
+    assert!(e.ev().contains("finish:2"), "1200ms 应已走完：{}", e.ev());
+    assert_eq!(e.px(100, 100), (0, 0, 255));
+    // 没有 autoplay：等 8 秒也不翻
+    e.clear();
+    e.frames(500);
+    assert!(e.ev().is_empty(), "没写 autoplay 不该自己翻页：{}", e.ev());
+}
+
+/// 运行时打开 `autoplay`：从打开那一刻起算 `interval`，不是一打开就立刻翻
+/// （微信的 autoplay 观察者是重新排一次定时器）
+#[test]
+fn 运行时打开_autoplay_从打开时起算_interval() {
+    let _g = SERIAL.lock().unwrap_or_else(|p| p.into_inner());
+    let fx = fixture("autoplay-on", &swiper(r#"autoplay="{{other === 1}}" interval="1000" duration="300""#));
+    let mut e = E::new(&fx);
+    e.frames(200);
+    assert!(e.ev().is_empty(), "没开 autoplay：{}", e.ev());
+    e.e.eval("__currentPage.setData({ other: 1 })").unwrap();
+    e.frames(30);
+    assert!(!e.ev().contains("autoplay"), "刚打开 480ms 不该翻：{}", e.ev());
+    e.frames(40);
+    assert!(e.ev().contains("change:1:number:autoplay"), "打开后 ~1.1s 应翻一页：{}", e.ev());
+}

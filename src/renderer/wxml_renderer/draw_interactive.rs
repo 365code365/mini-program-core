@@ -373,7 +373,7 @@ impl WxmlRenderer {
                 modified.text = placeholder;
                 modified.style.text_color = Some(Color::from_hex(0xBFBFBF));
             } else {
-                modified.text = initial_value;
+                modified.text = Self::input_display_text(node, &initial_value);
             }
             std::borrow::Cow::Owned(modified)
         } else {

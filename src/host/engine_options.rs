@@ -46,6 +46,15 @@ pub struct EngineOptions {
     /// 由宿主用原生控件承载的组件标签（`video` / `map` / `web-view` / `camera` …）。
     /// 引擎只算位置并发 `nativeViews` 事件，不自己画也不自己解码。
     pub native_components: Vec<String>,
+    /// 引擎在 `navigationStyle: custom` 的页面上画右上角胶囊（`"menuButton": true`），
+    /// 点击发 `menuButton` 事件。默认关；普通页面的胶囊在宿主的导航栏里（见 `capsule.rs`）
+    pub menu_button: bool,
+    /// 引擎在普通页面（非 custom）顶上画默认导航栏（`"navigationBar": true`，见 `navbar.rs`）：
+    /// 宿主把引擎画面铺满整屏（顶到状态栏），不再自己画导航栏。默认关（桌面窗体与老宿主不变）
+    pub navigation_bar: bool,
+    /// 页面转场动画（`"routeAnimation": true`）：navigateTo 新页从右边滑入、返回时当前页向右
+    /// 滑出，300ms（见 `route_anim.rs`）。默认关：无头测试与老宿主照旧「一换就到」
+    pub route_animation: bool,
 }
 
 impl EngineOptions {
@@ -68,7 +77,20 @@ impl EngineOptions {
             safe_area: o.get("safeArea").and_then(SafeAreaInsets::from_json),
             host_apis: strings("hostApis"),
             native_components: strings("nativeComponents"),
+            menu_button: o.get("menuButton").and_then(|v| v.as_bool()).unwrap_or(false),
+            navigation_bar: o.get("navigationBar").and_then(|v| v.as_bool()).unwrap_or(false),
+            route_animation: o.get("routeAnimation").and_then(|v| v.as_bool()).unwrap_or(false),
         })
+    }
+
+    /// 状态栏高度（逻辑像素）：宿主给了安全区取 `top`，否则按无刘海机型的 20
+    pub fn status_bar_height(&self) -> f32 {
+        self.safe_area.map(|s| s.top).unwrap_or(20.0)
+    }
+
+    /// 宿主报的平台（`systemInfo.platform`，缺省 `devtools`）
+    pub fn platform(&self) -> &str {
+        self.system_info.get("platform").and_then(|v| v.as_str()).unwrap_or("devtools")
     }
 }
 
@@ -139,9 +161,17 @@ mod tests {
     fn 宿主给的安全区与字段生效() {
         let o = EngineOptions::from_json(
             r#"{"safeArea":{"top":47,"bottom":34},"systemInfo":{"platform":"ios","model":"iPhone 15"},
-                "hostApis":["chooseImage"],"nativeComponents":["video","map"]}"#,
+                "hostApis":["chooseImage"],"nativeComponents":["video","map"],"menuButton":true}"#,
         )
         .unwrap();
+        assert!(o.menu_button);
+        let d = EngineOptions::from_json("{}").unwrap();
+        assert!(!d.menu_button, "胶囊默认不画");
+        assert!(!d.navigation_bar && !d.route_animation, "导航栏与转场默认关");
+        assert_eq!((o.status_bar_height(), o.platform()), (47.0, "ios"));
+        assert_eq!((d.status_bar_height(), d.platform()), (20.0, "devtools"));
+        let n = EngineOptions::from_json(r#"{"navigationBar":true,"routeAnimation":true}"#).unwrap();
+        assert!(n.navigation_bar && n.route_animation);
         let v = system_info(393, 852, 3.0, &o);
         assert_eq!(v["statusBarHeight"], json!(47.0));
         assert_eq!(v["safeArea"]["bottom"], json!(818.0));

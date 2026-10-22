@@ -95,6 +95,12 @@ impl CheckboxComponent {
         
         ns.custom_data = if checked { 1.0 } else { 0.0 };
         
+        // 按压态样式在 build_base_style 里就算好了（页面样式表里只要有一条 `:active` 规则，
+        // 每个节点都会带一份），那时上面这些组件自己填的字段还没填。按住时整份样式被换成它：
+        // 借来存「画多大」的 border_width 变成 0、选中配色变成 None —— 手指按下到抬起之间
+        // 勾选框整个**看不见**，抬手才出现新状态（看着像「先消失再勾上」）。微信的 checkbox /
+        // radio / switch 没有点击态，与 slider 同样丢掉（见 slider.rs）。
+        ns.pressed_style = None;
         let tn = ctx.taffy.new_leaf(ts).unwrap();
         
         Some(RenderNode {

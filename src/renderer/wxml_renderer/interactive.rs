@@ -88,8 +88,8 @@ impl WxmlRenderer {
                         target.text = placeholder;
                         target.style.text_color = Some(Color::from_hex(0xBFBFBF));
                     } else {
-                        // 有值或已聚焦：显示实际值（聚焦时即使为空也不显示占位符）
-                        target.text = state.value.clone();
+                        // 有值或已聚焦：显示实际值（聚焦时即使为空也不显示占位符；密码框画圆点）
+                        target.text = Self::input_display_text(node, &state.value);
                         target.style.text_color = Some(Color::BLACK);
                     }
                 }
@@ -103,8 +103,21 @@ impl WxmlRenderer {
                 target.text = placeholder;
                 target.style.text_color = Some(Color::from_hex(0xBFBFBF));
             } else {
-                target.text = initial_value;
+                target.text = Self::input_display_text(node, &initial_value);
             }
+        }
+    }
+
+    /// 输入框里画的文字：密码框换成圆点（判定见 `components::is_password_input`）。
+    ///
+    /// 交互态与初始值两条路都要过这一道：从前只有建树期判断了 password，用户一打字，
+    /// 交互态就把明文写进本帧节点，密码框里看得见输入的字。
+    pub(super) fn input_display_text(node: &RenderNode, value: &str) -> String {
+        let attr = |k: &str| node.attrs.get(k).map(String::as_str);
+        if node.tag == "input" && crate::renderer::components::is_password_input(attr("password"), attr("type")) {
+            crate::renderer::components::masked_value(value)
+        } else {
+            value.to_string()
         }
     }
 

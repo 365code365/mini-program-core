@@ -224,6 +224,7 @@ fn prepare_focused_input(
     if let Some(ml) = attr("maxlength").and_then(|s| s.parse::<i32>().ok()) {
         input.maxlength = ml;
     }
+    input.is_password = crate::renderer::components::is_password_input(attr("password").as_deref(), attr("type").as_deref());
     if let Some(t) = attr("type") {
         input.input_type = t;
     }
@@ -247,7 +248,12 @@ fn prepare_focused_input(
         // 需要转换为物理坐标来匹配 measure_text 的结果
         let font_size = 16.0 * sf;
         let padding_left = 12.0 * sf;
-        let char_widths: Vec<f32> = input.value.chars().map(|c| tr.measure_text(&c.to_string(), font_size)).collect();
+        // 密码框画的是圆点：按圆点的宽度找光标，否则点在第 3 个点上光标会落到别处
+        let char_widths: Vec<f32> = input
+            .value
+            .chars()
+            .map(|c| tr.measure_text(&(if input.is_password { '•' } else { c }).to_string(), font_size))
+            .collect();
         use crate::ui::interaction::calculate_cursor_position;
         input.cursor_pos = calculate_cursor_position(&input.value, &char_widths, *click_x * sf, padding_left, input.text_offset);
     }

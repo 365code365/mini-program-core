@@ -39,6 +39,8 @@ pub mod scroll_host;
 pub mod tabbar_host;
 /// 覆盖层交互入口（Modal / picker / 点击分流）
 pub mod overlay_host;
+/// 右上角胶囊（custom 导航栏的页面）：「•••」查看关于、「⊙」返回宿主
+pub mod capsule_host;
 /// 无头运行：整帧快照与拖动基准
 pub mod headless_run;
 

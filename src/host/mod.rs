@@ -23,8 +23,26 @@ mod engine_frame;
 /// 这一帧重画多少（只合成 / 局部 / 补条带 / 整帧）与整帧归因
 pub mod engine_damage;
 mod engine_input;
+/// 路由：返回（与逻辑层页面栈按层数对齐）、逻辑层发起的跳转、宿主深链
+mod engine_nav;
+/// 进入页面：解析、样式、页面 js 与生命周期、渲染器
+mod engine_page;
+/// 被盖住的页留视图、返回时放回、tab 页切走时留实例（SDK 一侧）
+mod engine_keep;
+/// 页面视图的留存（SDK 与桌面共用）：滚动、渲染器、交互状态
+pub mod page_keep;
+/// 页面转场（navigateTo 滑入 / 返回滑出）
+pub mod route_anim;
+/// 默认导航栏：几何、画法、命中（引擎画，`navigationBar` 选项）
+pub mod navbar;
+/// 导航栏的显隐、重画与指针（`MiniEngine` 的一片）
+mod engine_navbar;
 /// 宿主浮层先吃指针（picker / 全屏视频 / Modal / Loading …）
 mod engine_overlay_input;
+/// 右上角胶囊：几何、画法、命中（`navigationStyle: custom` 的页面上由引擎画）
+pub mod capsule;
+/// 胶囊的显隐、配色与指针（`MiniEngine` 的一片）
+mod engine_capsule;
 /// 左边缘侧滑返回：留图、收尾动画、合成参数
 mod engine_edge_back;
 /// SDK 的 `MINI_FPS` 统计（FrameStats）

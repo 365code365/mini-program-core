@@ -127,6 +127,8 @@ impl ApplicationHandler for crate::MiniAppWindow {
                 } else {
                     self.on_pointer_release(x, y);
                 }
+                // 点了胶囊的「⊙」：返回宿主 = 关掉这个窗口
+                if std::mem::take(&mut self.capsule.exit_requested) { event_loop.exit(); return; }
                 if let Some(w) = &self.window { w.request_redraw(); }
             }
             

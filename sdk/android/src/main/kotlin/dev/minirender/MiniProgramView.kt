@@ -1,14 +1,22 @@
 package dev.minirender
 
+import android.app.Activity
+import android.app.AlertDialog
 import android.content.Context
+import android.content.ContextWrapper
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
+import android.os.Looper
 import android.util.AttributeSet
+import android.view.Choreographer
 import android.view.MotionEvent
 import android.view.View
+import android.view.WindowInsets
+import org.json.JSONObject
 import java.io.File
 import java.nio.ByteBuffer
 
@@ -35,6 +43,16 @@ import java.nio.ByteBuffer
  * ## 为什么触摸要送三段而不是"点击"
  * 引擎内部有触摸状态机，`touchstart/touchmove/touchend/longpress/tap` 都由它产出。
  * 宿主自己合成"点击"会绕过状态机 —— 那类 bug 在自动化测试里全绿、真机上却点不动。
+ *
+ * ## 右上角胶囊
+ * `navigationStyle: custom` 的页面由引擎画胶囊（位置 = `wx.getMenuButtonBoundingClientRect()`，
+ * 所以视图要铺到状态栏下面，窗口 insets 会自动交给引擎）。两个口子留给宿主：
+ * ```kotlin
+ * view.onAbout = { about -> /* 「•••」查看关于：打开自己的关于页 */ }
+ * view.onClose = { /* 「⊙」返回宿主：finish() / 弹回上一个 Fragment */ }
+ * ```
+ * 不设时的默认：`onAbout` 弹一个展示小程序信息的 `AlertDialog`，`onClose` 结束所在的 Activity。
+ * 普通页面的导航栏是宿主画的，胶囊也由宿主放进自己的导航栏。
  */
 class MiniProgramView @JvmOverloads constructor(
     context: Context,
@@ -50,6 +68,30 @@ class MiniProgramView @JvmOverloads constructor(
     private var appDir: File? = null
     private var startRoute: String? = null
     private var running = false
+    private val main = Handler(Looper.getMainLooper())
+    // ── 只在引擎线程读写 ──
+    private var choreographer: Choreographer? = null
+    private var frameScheduled = false
+    private val frameCallback = Choreographer.FrameCallback { t ->
+        frameScheduled = false
+        frame(t / 1_000_000)
+    }
+
+    /** 引擎在 custom 导航栏的页面上画右上角胶囊（`open` 之前设） */
+    var menuButton = true
+
+    /** 胶囊「•••」：查看关于（主线程回调）。null = 默认弹 AlertDialog */
+    var onAbout: ((MiniProgramAbout) -> Unit)? = null
+
+    /** 胶囊「⊙」：返回宿主（主线程回调）。null = 默认结束所在的 Activity */
+    var onClose: (() -> Unit)? = null
+
+    /** 引擎发来的每一条事件（主线程回调；`page` / `navigationBar` / `inputFocus` / `app` / `menuButton` …） */
+    var onEvent: ((JSONObject) -> Unit)? = null
+
+    /** 小程序的关于信息（启动后第一帧到；主线程读） */
+    var about: MiniProgramAbout? = null
+        private set
 
     /** 打开一个解包后的小程序目录。可指定起始页（深链）。 */
     fun open(dir: File, route: String? = null) {
@@ -125,22 +167,70 @@ class MiniProgramView @JvmOverloads constructor(
         // 数据目录必须给：storage 与图片磁盘缓存都落在这里，不给会静默失效
         val data = File(context.filesDir, "mini-render").apply { mkdirs() }
         val route = startRoute
+        // 选项要在 app.js 执行前就位：onLaunch 里读 getSystemInfoSync（状态栏高度、胶囊位置）是常态
+        val options = JSONObject()
+            .put("systemInfo", JSONObject()
+                .put("platform", "android")
+                .put("brand", Build.BRAND)
+                .put("model", Build.MODEL)
+                .put("system", "Android ${Build.VERSION.RELEASE}"))
+            .put("menuButton", menuButton)
+        rootWindowInsets?.let { options.put("safeArea", insetsJson(it, dpr)) }
         post {
-            handle = MiniEngine.nativeCreate(dir.absolutePath, data.absolutePath, lw, lh, dpr)
+            choreographer = Choreographer.getInstance()
+            handle = MiniEngine.nativeCreateEx(dir.absolutePath, data.absolutePath, lw, lh, dpr, options.toString())
             if (handle == 0L) return@post
             MiniEngine.nativeLaunch(handle, route)
             running = true
-            frame()
+            frame(System.nanoTime() / 1_000_000)
         }
     }
 
-    private fun requestFrame() = post { frame() }
+    /** 刘海 / 状态栏 / 导航条（逻辑像素）：`statusBarHeight`、胶囊位置与 `env(safe-area-inset-*)` 都按它算 */
+    override fun onApplyWindowInsets(insets: WindowInsets): WindowInsets {
+        val o = insetsJson(insets, resources.displayMetrics.density)
+        post {
+            if (handle != 0L) {
+                MiniEngine.nativeSetSafeArea(
+                    handle,
+                    o.getDouble("top").toFloat(), o.getDouble("right").toFloat(),
+                    o.getDouble("bottom").toFloat(), o.getDouble("left").toFloat(),
+                )
+                scheduleFrame()
+            }
+        }
+        return super.onApplyWindowInsets(insets)
+    }
 
-    /** 一帧：pump → 有变化就把像素搬进 Bitmap → 请求 UI 线程重绘 */
-    private fun frame() {
+    @Suppress("DEPRECATION")
+    private fun insetsJson(i: WindowInsets, dpr: Float): JSONObject {
+        val (t, r, b, l) = if (Build.VERSION.SDK_INT >= 30) {
+            val s = i.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
+            listOf(s.top, s.right, s.bottom, s.left)
+        } else {
+            listOf(i.systemWindowInsetTop, i.systemWindowInsetRight, i.systemWindowInsetBottom, i.systemWindowInsetLeft)
+        }
+        return JSONObject().put("top", t / dpr).put("right", r / dpr).put("bottom", b / dpr).put("left", l / dpr)
+    }
+
+    private fun requestFrame() = post { scheduleFrame() }
+
+    /** 引擎线程：挂到下一个 vsync（同一帧只挂一次） */
+    private fun scheduleFrame() {
+        if (frameScheduled || !running || handle == 0L) return
+        frameScheduled = true
+        choreographer?.postFrameCallback(frameCallback)
+    }
+
+    /**
+     * 一帧：pump → 有变化就把像素搬进 Bitmap → 请求 UI 线程重绘；有事件就取完；
+     * 引擎说还有活（动画 / 定时器 / 请求在飞 / 按住的手指）就挂下一个 vsync，否则停下等输入。
+     */
+    private fun frame(nowMs: Long) {
         if (handle == 0L || !running) return
-        val changed = MiniEngine.nativePump(handle, System.nanoTime() / 1_000_000)
-        if (changed) {
+        val flags = MiniEngine.nativePumpEx(handle, nowMs)
+        if (flags and MiniEngine.FRAME_EVENTS != 0) drainEvents()
+        if (flags and MiniEngine.FRAME_NEW != 0) {
             val size = MiniEngine.nativePixelSize(handle)
             val w = (size ushr 32).toInt()
             val h = (size and 0xFFFFFFFFL).toInt()
@@ -158,8 +248,48 @@ class MiniProgramView @JvmOverloads constructor(
                 }
             }
         }
-        // 还有动画/滚动/定时器时继续按刷新率出帧；静止时下一帧由事件触发
-        if (changed) engineHandler.post { frame() }
+        // 从前这里只在「这一帧有新画面」时续帧：setTimeout / 网络回包在静止页面上停住。
+        // 改认 WANTS_MORE（与 Flutter 插件的 EngineHost 同一条规则）
+        if (flags and MiniEngine.FRAME_WANTS_MORE != 0) scheduleFrame()
+    }
+
+    /** 引擎线程：取完事件队列，交到主线程分发 */
+    private fun drainEvents() {
+        val list = ArrayList<String>()
+        while (true) list.add(MiniEngine.nativePollEvent(handle) ?: break)
+        if (list.isNotEmpty()) main.post { list.forEach(::dispatchEvent) }
+    }
+
+    /** 主线程：胶囊的两个动作交给宿主（没设回调就走默认） */
+    private fun dispatchEvent(raw: String) {
+        val ev = runCatching { JSONObject(raw) }.getOrNull() ?: return
+        onEvent?.invoke(ev)
+        when (ev.optString("type")) {
+            "app" -> about = MiniProgramAbout.fromJson(ev.optJSONObject("about"))
+            "menuButton" -> when (ev.optString("action")) {
+                "menu" -> showAbout()
+                "close" -> requestClose()
+            }
+        }
+    }
+
+    private fun showAbout() {
+        val a = about ?: MiniProgramAbout.fromJson(null)
+        onAbout?.let { it(a); return }
+        AlertDialog.Builder(context)
+            .setTitle(a.dialogTitle)
+            .setMessage(a.dialogMessage)
+            .setPositiveButton("确定", null)
+            .show()
+    }
+
+    private fun requestClose() {
+        onClose?.let { it(); return }
+        var c: Context? = context
+        while (c is ContextWrapper) {
+            if (c is Activity) { c.finish(); return }
+            c = c.baseContext
+        }
     }
 
     override fun onDraw(canvas: Canvas) {

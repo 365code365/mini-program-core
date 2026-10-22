@@ -75,8 +75,11 @@ android_target() {
         cargo check "${ANDROID_FLAGS[@]}" --target "$target"
     else
         # 发出去的库要 thin LTO（Cargo.toml 的 release 为了开发构建快关掉了它，见那里的注释）。
-        # 写在函数体里而不是脚本开头：tools/build-android-abi.sh 只 eval 这个函数
-        CARGO_PROFILE_RELEASE_LTO=thin CARGO_PROFILE_RELEASE_INCREMENTAL=false \
+        # 写在函数体里而不是脚本开头：tools/build-android-abi.sh 只 eval 这个函数。
+        # MOBILE_LTO=false：真机调试用（build-android-abi.sh 的默认）—— 改一行引擎重编从几分钟降到几十秒
+        local lto="${MOBILE_LTO:-thin}" incr=false
+        [ "$lto" = false ] && incr=true
+        CARGO_PROFILE_RELEASE_LTO="$lto" CARGO_PROFILE_RELEASE_INCREMENTAL="$incr" \
             cargo build "${ANDROID_FLAGS[@]}" --target "$target"
         # 放进 Gradle 库模块的 jniLibs，publishToMavenLocal 时打进 AAR
         local dst="sdk/android/src/main/jniLibs/$abi"

@@ -11,6 +11,7 @@ Page({
     colors: ['#07c160', '#10aeff', '#fa9d3b', '#e64340', '#8a5cf5'],
     current: 0,
     duration: 500,
+    autoplay: false,
     finishCount: 0,
     products: [
       { name: '咖啡', src: '/images/coffee.jpg' },
@@ -26,8 +27,9 @@ Page({
     this.setData({ bannerCurrent: e.detail.current, bannerSource: e.detail.source });
   },
   onCtrl(e) {
-    // 用户手指拖动翻页时把受控值同步回来，否则下次 setData 会被拽回去
-    if (e.detail.source === 'touch') this.setData({ current: e.detail.current });
+    // 手指拖动 / 自动播放翻页时把受控值同步回来，否则下一页会从旧值算、或被拽回去。
+    // 页面自己改 current 引起的 change（source 为空串）不回写，免得 setData 循环
+    if (e.detail.source) this.setData({ current: e.detail.current });
   },
   onFinish() {
     this.setData({ finishCount: this.data.finishCount + 1 });
@@ -44,5 +46,8 @@ Page({
   },
   toggleDuration() {
     this.setData({ duration: this.data.duration === 500 ? 1200 : 500 });
+  },
+  toggleAutoplay() {
+    this.setData({ autoplay: !this.data.autoplay });
   }
 });

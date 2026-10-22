@@ -211,9 +211,75 @@ pub fn compose(
     }
 }
 
+/// [`compose`] 的另一半：缓冲里是**下面**那一页（已经合成好的这一帧），`top` 是盖在上面、
+/// 正在右移 `offset_px` 退场的那一页的图。返回转场用：上一页已经恢复成当前页、照常出帧，
+/// 刚离开的那页只剩一张图。视差、压暗、阴影与 [`compose`] 同一套，两种转场看起来是同一个动作。
+///
+/// 没有图（尺寸不一致）时上面那一截填暗底 —— 与 [`compose`] 没有上一页时一致。
+pub fn compose_shot_over(
+    buffer: &mut [u32],
+    width: u32,
+    height: u32,
+    offset_px: u32,
+    top: Option<&PageShot>,
+    progress: f32,
+) {
+    let w = width as usize;
+    let off = (offset_px as usize).min(w);
+    if w == 0 {
+        return;
+    }
+    let shot = top.filter(|s| s.width == width && s.height == height);
+    let par = parallax(width as f32, progress) as usize;
+    let dim_factor = 1.0 - 0.22 * (1.0 - progress.clamp(0.0, 1.0));
+    let shadow = (SHADOW_WIDTH as usize).min(off);
+    for y in 0..height as usize {
+        let row_start = y * w;
+        if row_start + w > buffer.len() {
+            break;
+        }
+        let row = &mut buffer[row_start..row_start + w];
+        // 左边露出的一条：下面那一页按视差左移、压暗。从左往右写，读的下标 x + par ≥ x
+        // 还没被写过（par ≥ 0），所以能原地做
+        for x in 0..off {
+            row[x] = dim(row[(x + par).min(w - 1)], dim_factor);
+        }
+        // 右边：上面那一页的图整体右移 off
+        for x in off..w {
+            row[x] = match shot {
+                Some(s) => s.pixels[row_start + x - off],
+                None => 0x00_00_00,
+            };
+        }
+        for i in 0..shadow {
+            let x = off - 1 - i;
+            let t = 1.0 - i as f32 / shadow as f32;
+            row[x] = dim(row[x], 1.0 - 0.45 * t);
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// 返回转场：上面那页的图右移、左边是缓冲里的下一页（视差 + 压暗），与 compose 互为镜像
+    #[test]
+    fn compose_shot_over_slides_shot_right_over_live_page() {
+        let (w, h) = (32u32, 2u32);
+        let mut buf = vec![0x00FF00u32; (w * h) as usize];
+        let top: Vec<u32> = (0..(w * h)).map(|i| 0x010000 * (i % w + 1)).collect();
+        let shot = PageShot { width: w, height: h, pixels: top.clone() };
+        compose_shot_over(&mut buf, w, h, 20, Some(&shot), 1.0);
+        assert_eq!(buf[20], top[0], "图右移 20 列");
+        assert_eq!(buf[31], top[11]);
+        assert_eq!(buf[0], 0x00FF00, "进度 1 时下面那页不压暗、不视差");
+        assert!(buf[19] & 0xFF00 < 0xFF00, "交界处有阴影");
+        // 位移 0：整帧就是图（转场第一帧）
+        let mut buf = vec![0x00FF00u32; (w * h) as usize];
+        compose_shot_over(&mut buf, w, h, 0, Some(&shot), 0.0);
+        assert_eq!(buf, top);
+    }
 
     #[test]
     fn only_left_edge_starts_the_gesture() {

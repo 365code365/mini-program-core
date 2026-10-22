@@ -39,11 +39,17 @@ impl MiniEngine {
             }
             return true;
         }
-        false
+        // 右上角胶囊（只在 custom 导航栏的页面上有）：压在页面与 fixed 元素之上，
+        // 在上面这些浮层之下 —— Modal 弹着时它被遮罩盖住，点不到
+        self.capsule_down(x, y)
     }
 
     /// 移动：浮层吃掉了返回 true
     pub(super) fn overlay_pointer_move(&mut self, x: f32, y: f32) -> bool {
+        // 按在胶囊上的这串触摸：只更新按压态，不滚页面
+        if self.capsule_move(x, y) {
+            return true;
+        }
         // picker 面板弹着：拖动归滚轮，一点都不能漏到底下的页面
         match picker_sheet::on_move(&mut self.picker_sheet, x, y) {
             picker_sheet::SheetMove::NotOpen => {}
@@ -62,6 +68,9 @@ impl MiniEngine {
 
     /// 抬起：浮层吃掉了返回 true
     pub(super) fn overlay_pointer_up(&mut self, x: f32, y: f32) -> bool {
+        if self.capsule_up(x, y) {
+            return true;
+        }
         // 面板 / 弹窗的回调里有 setData 的话，下一次 pump 照常取到数据脏
         if picker_sheet::on_release(&mut self.picker_sheet, &mut self.app, x, y) {
             self.page_data_dirty = true;

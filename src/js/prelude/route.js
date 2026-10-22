@@ -30,8 +30,10 @@
                     type: 'navigateBack',
                     delta: delta
                 };
-                // 逻辑层页面栈出栈（native 侧应配合使用实例复用而非重新加载页面 JS）
-                __popPage(delta);
+                // 逻辑层页面栈出栈，并给关掉的每一页派发 onUnload；宿主收到请求后按记下的层数
+                // 退自己的栈（host::navigation::take_logic_popped），不再出栈、也不再派发。
+                // 它复用上一页的实例，不重新加载页面 JS
+                __popPage(delta, true);
                 __native_print('[Navigate] navigateBack');
                 options.success && options.success();
             };

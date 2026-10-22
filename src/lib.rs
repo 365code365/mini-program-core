@@ -74,6 +74,9 @@ pub mod renderer;
 // 多端编译器框架（HTML / 未来 Android、iOS ...）
 pub mod compiler;
 
+/// 「关于小程序」的信息（胶囊「•••」展示的内容；桌面、SDK、H5 共用）
+pub mod app_about;
+
 /// 宿主层：把小程序跑起来所需的、与平台无关的那部分（页面栈、覆盖层、
 /// 触摸状态机、像素合成…）。桌面窗体与移动端 SDK 共用这一份。
 pub mod host;

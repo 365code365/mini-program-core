@@ -54,7 +54,7 @@ impl crate::MiniAppWindow {
         app_window::component_mount::mount_page_components(&mut self.app, &page_info.components, &wxml_nodes);
         print_js_output(&self.app);
         
-        self.page_stack.push(PageInstance { path: path.to_string(), query, wxml_nodes, stylesheet, component_templates });
+        self.page_stack.push(PageInstance { path: path.to_string(), query, wxml_nodes, stylesheet, component_templates, saved_scroll: None });
         // 事件对象的 timeStamp 以「页面打开」为零点（微信语义）
         self.page_opened_at = Instant::now();
         // 换页必须重取数据快照：新页面的 onLoad 里可能一次 setData 都没有，
@@ -78,21 +78,25 @@ impl crate::MiniAppWindow {
     /// 滚动位置、已填表单）全部丢失，而且会重复触发"仅首次进入"的逻辑。
     /// 正确做法是让逻辑层出栈、恢复原实例，只补一次 `onShow`。
     pub(crate) fn navigate_back(&mut self) -> Result<(), String> {
+        // 先取走 wx.navigateBack 记下的层数（栈只剩一页、什么都不做时也要取走）。
+        // 大于 0：逻辑层已经自己出栈并派发过 onUnload（`delta` 也由此生效），这里只退宿主的栈；
+        // 0：返回键 / 侧滑发起的，宿主退一层，逻辑层补 onUnload + 出栈。从前这里先拿
+        // `__currentPage` 派 onUnload（前一种情况下它已经是要回去的那页），出栈与否又按
+        // 路由比（同一页面连开两层时会漏）。见 host::navigation::take_logic_popped
+        let logic_popped = take_logic_popped(&self.app);
         if self.page_stack.len() <= 1 { return Ok(()); }
-        // 离开当前页：先给它 onUnload
-        self.app.eval("if(__currentPage && __currentPage.onUnload) __currentPage.onUnload()").ok();
-        self.page_stack.pop();
-        // 回到的这一页要重新渲染，它离开时留下的那张图用完即弃
-        self.back_shots.pop();
+        for _ in 0..logic_popped.max(1) {
+            if self.page_stack.len() <= 1 { break; }
+            self.page_stack.pop();
+            // 回到的这一页要重新渲染，它离开时留下的那张图用完即弃
+            self.back_shots.pop();
+        }
         self.interaction.clear_page_state();
         
         if let Some(page) = self.page_stack.last() {
             let path = page.path.clone();
-            // 逻辑层出栈并恢复上一页实例（wx.navigateBack 触发时 JS 已自行出栈，
-            // 这里用当前路由校验：不一致才补一次出栈，避免重复 pop）
-            let current_route = self.app.eval("(__currentPage && __currentPage.route) || ''").unwrap_or_default();
-            if current_route.trim_matches('"') != path {
-                self.app.eval("__popPage(1)").ok();
+            if logic_popped == 0 {
+                pop_logic_page(&self.app);
             }
             self.app.eval("if(__currentPage && __currentPage.onShow) __currentPage.onShow()").ok();
             // 自定义组件的实例要重建：往前走的时候 `navigate_to` 调过
@@ -108,10 +112,9 @@ impl crate::MiniAppWindow {
             print_js_output(&self.app);
             
             let has_tabbar = self.is_tabbar_page(&path);
-            self.scroll = { let vp = (LOGICAL_HEIGHT - if has_tabbar { tabbar_height() } else { 0 }) as f32;
-                // 初始内容高 = 视口高（max_scroll 为 0）：真实内容高要等第一帧渲染后才知道。
-                // 从前这里塞的是写死的 1500，于是内容不足一屏的页面在首帧前也能拉出 800+ 像素空白。
-                ScrollController::new(vp, vp) };
+            // 回到离开时的滚动位置（与 SDK 同一份 PageInstance::restored_scroll；从前一律回顶部）
+            let vp = (LOGICAL_HEIGHT - if has_tabbar { tabbar_height() } else { 0 }) as f32;
+            self.scroll = self.page_stack.last().map(|p| p.restored_scroll(vp)).unwrap_or_else(|| ScrollController::new(vp, vp));
             println!("↩️  返回: {}", path);
         }
         // 恢复的是上一页实例，数据快照要重取（返回后可能一次 setData 都没有）
@@ -174,6 +177,10 @@ impl crate::MiniAppWindow {
                     // 只在这一条分支做：switchTab/reLaunch 会清栈，redirectTo 是替换，
                     // 都没有「上一页」可回。
                     let shot = self.capture_viewport();
+                    // 再记下它的滚动：返回时停回原处
+                    let vp = self.scroll.get_max_scroll() + (LOGICAL_HEIGHT - if self.page_stack.last().map(|p| self.is_tabbar_page(&p.path)).unwrap_or(false) { tabbar_height() } else { 0 }) as f32;
+                    let pos = self.scroll.get_position();
+                    if let Some(top) = self.page_stack.last_mut() { top.saved_scroll = Some((pos, vp)); }
                     if self.navigate_to(&p, q).is_ok() {
                         if let Some(s) = shot {
                             self.back_shots.push(s);
@@ -191,15 +198,18 @@ impl crate::MiniAppWindow {
                     self.page_stack.pop();
                     self.app.eval("__popPage(1)").ok();
                     self.interaction.clear_page_state();
+                    self.renderer = None;
                     self.navigate_to(&p, q).ok();
                 }
                 NavigationRequest::ReLaunch { url } => {
                     let (p, q) = parse_url(&url);
-                    self.unload_current_page();
+                    // 栈上每一页与留着的 tab 页全部 onUnload（host::page_keep）
+                    mini_render::host::page_keep::relaunch_js(&self.app);
                     self.page_stack.clear();
                     self.back_shots.clear();
+                    self.keep.clear();
                     self.interaction.clear_page_state();
-                    self.app.eval("__resetPageStack()").ok();
+                    self.renderer = None;
                     self.navigate_to(&p, q).ok();
                 }
             }

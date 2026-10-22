@@ -131,7 +131,10 @@ pub(super) fn build_open_tag(node: &WxmlNode) -> (String, &'static str, bool) {
             }
         }
         "input" => {
-            let ty = if node.get_attr("password").map(|v| v == "true").unwrap_or(false) {
+            // `type="safe-password"` 也是密码框（与原生端 components::is_password_input 一致）
+            let ty = if node.get_attr("password").map(|v| v == "true").unwrap_or(false)
+                || node.get_attr("type") == Some("safe-password")
+            {
                 "password".to_string()
             } else {
                 match node.get_attr("type").unwrap_or("text") {

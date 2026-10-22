@@ -159,6 +159,10 @@ struct MiniAppWindow {
     bench: Option<app_window::bench_run::BenchDriver>,
     /// GPU 合成器与它的待建请求（见 app_window::gpu_host）。没编 gpu feature 时恒为空
     gpu: app_window::gpu_host::GpuSlot,
+    /// 右上角胶囊（见 app_window::capsule_host）
+    capsule: app_window::capsule_host::DesktopCapsule,
+    /// 被盖住的页与切走的 tab 页留着的视图（与 SDK 同一份 `host::page_keep`，见 page_host.rs）
+    keep: mini_render::host::page_keep::Keep,
 }
 
 impl MiniAppWindow {
@@ -284,6 +288,8 @@ impl MiniAppWindow {
             backend,
             bench: None,
             gpu: Default::default(),
+            capsule: app_window::capsule_host::DesktopCapsule::new(),
+            keep: Default::default(),
         };
         
         window.navigate_to(&first_page, HashMap::new())?;

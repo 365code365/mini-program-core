@@ -49,6 +49,8 @@ impl crate::MiniAppWindow {
             // 带蒙层的提示框浮在 Modal 之上，连弹窗按钮也挡住
             if self.tip_blocks_input() { return; }
             if self.modal.as_ref().map(|m| m.visible).unwrap_or(false) { self.handle_modal_press(x, y); return; }
+            // 右上角胶囊（custom 导航栏的页面）：在 Modal 之下、页面与 tabBar 之上，按下整串归它
+            if self.capsule_press(x, y) { return; }
             
             let has_tabbar = self.page_stack.last().map(|p| self.is_tabbar_page(&p.path)).unwrap_or(false);
             let tabbar_y = if has_tabbar { (LOGICAL_HEIGHT - tabbar_height()) as f32 } else { LOGICAL_HEIGHT as f32 };
@@ -156,6 +158,8 @@ impl crate::MiniAppWindow {
     pub(crate) fn on_pointer_release(&mut self, x: f32, y: f32) {
 
             // Released
+            // 按在胶囊上的这串（capsule_host.rs）
+            if self.capsule_release(x, y) { return; }
             // picker 面板在最上层，先于弹窗/页面吃事件
             if self.handle_picker_sheet_release(x, y) { return; }
             if self.modal.as_ref().map(|m| m.visible && m.pressed_button.is_some()).unwrap_or(false) {
@@ -204,6 +208,8 @@ impl crate::MiniAppWindow {
     /// 指针移动：文本选择/滑块等交给交互层，滚动交给手势仲裁，再派发 touchmove。
     pub(crate) fn on_pointer_move(&mut self, x: f32, y: f32) {
         self.mouse_pos = (x, y);
+        // 按在胶囊上的这串：只更新按压态，不滚页面
+        if self.capsule_move(x, y) { return; }
         // picker 面板在最上层：弹着时拖动归滚轮，不漏给页面
         if self.handle_picker_sheet_move(x, y) { return; }
         if self.interaction.update_press_position(x, y, y + self.scroll.get_position()) {

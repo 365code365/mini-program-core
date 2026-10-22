@@ -165,7 +165,7 @@ void main() {
   testWidgets('页面事件驱动导航栏与返回键；hostCall 调宿主再回包', (t) async {
     final n = FakeNative()..install();
     var asked = <String, dynamic>{};
-    final c = MiniProgramController(appDir: '/app', hostApis: {
+    final c = MiniProgramController(appDir: '/app', navigationBar: false, hostApis: {
       'chooseImage': (a) async {
         asked = a;
         return {'tempFilePaths': ['/x.jpg']};
@@ -364,6 +364,141 @@ void main() {
     await t.pump();
     expect(keySeq(n), ['key:backspace', 'key:selectall']);
     input.close();
+    await c.dispose();
+  });
+
+  testWidgets('胶囊：默认让引擎画（create 的选项带 menuButton: true）', (t) async {
+    final n = FakeNative()..install();
+    final c = await pumpView(t, n);
+    final opts = jsonDecode((n.named('create').single.arguments as Map)['options'] as String) as Map;
+    expect(opts['menuButton'], true);
+    expect(MiniMenuButtonAction.parse('menu'), MiniMenuButtonAction.menu);
+    expect(MiniMenuButtonAction.parse('close'), MiniMenuButtonAction.close);
+    expect(MiniMenuButtonAction.parse('不认识'), isNull);
+    await c.dispose();
+  });
+
+  testWidgets('胶囊：普通页面画在导航栏右侧，点左半 onMenu、右半 onExit；custom 页面导航栏不画、引擎报的照样接上', (t) async {
+    final n = FakeNative()..install();
+    final c = MiniProgramController(appDir: '/app', navigationBar: false);
+    addTearDown(c.dispose);
+    var menus = 0, exits = 0;
+    await t.pumpWidget(MaterialApp(
+      home: MiniProgramScaffold(controller: c, onMenu: () => menus++, onExit: () => exits++),
+    ));
+    await t.pump();
+    await t.pump();
+    await n.emit([
+      {
+        'type': 'page', 'route': 'pages/a/a', 'depth': 1, 'isTabBar': false,
+        'window': {'navigationBarTitleText': '甲', 'navigationBarTextStyle': 'white', 'navigationBarBackgroundColor': '#07c160'},
+      },
+    ]);
+    await t.pump();
+    // 启动后第一帧的 app 事件：关于信息（「•••」展示它）
+    await n.emit([
+      {
+        'type': 'app',
+        'about': {'name': '示例', 'appId': '', 'description': '', 'entryPage': 'pages/a/a', 'pageCount': 3, 'engine': 'mini-render 0.1.0'},
+      },
+    ]);
+    await t.pump();
+    expect(c.about.value?.dialogTitle, '关于示例');
+    expect(c.about.value?.dialogMessage, 'AppID：未设置\n入口：pages/a/a（共 3 页）\n引擎：mini-render 0.1.0');
+    final capsule = find.byType(MiniCapsule);
+    expect(capsule, findsOneWidget);
+    expect(find.descendant(of: find.byType(AppBar), matching: capsule), findsOneWidget);
+    expect(t.widget<MiniCapsule>(capsule).dark, isTrue, reason: '白色导航栏文字配深色胶囊');
+    expect(t.getSize(capsule), const Size(87, 32));
+    // 距右 7
+    final appBarRight = t.getRect(find.byType(AppBar)).right;
+    expect(appBarRight - t.getRect(capsule).right, closeTo(7, 0.01));
+    final r = t.getRect(capsule);
+    await t.tapAt(Offset(r.left + 20, r.center.dy));
+    await t.pump();
+    expect((menus, exits), (1, 0));
+    await t.tapAt(Offset(r.right - 20, r.center.dy));
+    await t.pump();
+    expect((menus, exits), (1, 1));
+
+    // custom 页面：没有 AppBar，胶囊在引擎画面里，点击由引擎事件报上来
+    await n.emit([
+      {'type': 'page', 'route': 'pages/b/b', 'depth': 2, 'isTabBar': false, 'window': {'navigationStyle': 'custom'}},
+    ]);
+    await t.pump();
+    expect(find.byType(AppBar), findsNothing);
+    expect(find.byType(MiniCapsule), findsNothing);
+    await n.emit([
+      {'type': 'menuButton', 'action': 'close'},
+    ]);
+    await t.pump();
+    expect(exits, 2);
+    await c.dispose();
+  });
+
+  testWidgets('胶囊「⊙」默认返回宿主：小程序叠了两页也是整个关掉，不是退一页', (t) async {
+    final n = FakeNative()..install();
+    final c = MiniProgramController(appDir: '/app');
+    addTearDown(c.dispose);
+    await t.pumpWidget(MaterialApp(
+      home: Builder(
+        builder: (ctx) => TextButton(
+          onPressed: () => Navigator.of(ctx).push(MaterialPageRoute(builder: (_) => MiniProgramScaffold(controller: c))),
+          child: const Text('宿主首页'),
+        ),
+      ),
+    ));
+    await t.tap(find.text('宿主首页'));
+    await t.pumpAndSettle();
+    await t.pump();
+    await n.emit([
+      {'type': 'page', 'route': 'pages/b/b', 'depth': 2, 'isTabBar': false, 'window': {'navigationStyle': 'custom'}},
+    ]);
+    // 先让 PopScope 按栈深 2 重建（真机上 page 事件早就到了）；同一批里一起发的话还是旧的 canPop
+    await t.pump();
+    await n.emit([
+      {'type': 'menuButton', 'action': 'close'},
+    ]);
+    await t.pumpAndSettle();
+    expect(find.byType(MiniProgramScaffold), findsNothing, reason: '整个小程序页面关掉了');
+    expect(find.text('宿主首页'), findsOneWidget);
+    expect(n.named('back'), isEmpty, reason: '不能被 PopScope 拦成小程序内的返回（真机上踩过）');
+    await c.dispose();
+  });
+
+  testWidgets('导航栏默认由引擎画：不画 AppBar、选项带 navigationBar / routeAnimation，切 custom 页画面不改尺寸', (t) async {
+    final n = FakeNative()..install();
+    final c = MiniProgramController(appDir: '/app');
+    addTearDown(c.dispose);
+    await t.pumpWidget(MaterialApp(home: MiniProgramScaffold(controller: c)));
+    await t.pump();
+    await t.pump();
+    final opts = jsonDecode((n.named('create').single.arguments as Map)['options'] as String) as Map;
+    expect((opts['navigationBar'], opts['routeAnimation']), (true, true));
+    final size0 = t.getSize(find.byType(MiniProgramView));
+    for (final w in [<String, Object?>{'navigationBarTitleText': '甲'}, <String, Object?>{'navigationStyle': 'custom'}]) {
+      await n.emit([
+        {'type': 'page', 'route': 'pages/a/a', 'depth': 2, 'isTabBar': false, 'window': w},
+      ]);
+      await t.pump();
+      await t.pump();
+      expect(find.byType(AppBar), findsNothing);
+      expect(t.getSize(find.byType(MiniProgramView)), size0, reason: '普通页 ↔ custom 页画面尺寸不变');
+    }
+    expect(n.named('resize'), isEmpty, reason: '切页不再改引擎尺寸（从前一切就 resize：进 custom 页拉伸、返回时跳）');
+    await c.dispose();
+  });
+
+  testWidgets('胶囊：控制器关掉 menuButton 时两处都不画', (t) async {
+    final n = FakeNative()..install();
+    final c = MiniProgramController(appDir: '/app', menuButton: false);
+    addTearDown(c.dispose);
+    await t.pumpWidget(MaterialApp(home: MiniProgramScaffold(controller: c)));
+    await t.pump();
+    await t.pump();
+    expect(find.byType(MiniCapsule), findsNothing);
+    final opts = jsonDecode((n.named('create').single.arguments as Map)['options'] as String) as Map;
+    expect(opts['menuButton'], false);
     await c.dispose();
   });
 

@@ -29,6 +29,7 @@ impl MiniEngine {
             return false;
         }
         let width_changed = width != self.width;
+        let only_height = !width_changed && (dpr - self.dpr).abs() < 1e-6;
         self.pointer_cancel();
         crate::host::input::stop_running_flings(&mut self.scroll, &mut self.interaction);
         let keep_scroll = self.scroll.get_position();
@@ -36,6 +37,7 @@ impl MiniEngine {
         self.width = width;
         self.height = height;
         self.dpr = dpr;
+        self.refit_back_shots(only_height);
         self.app.set_size(width, height);
         if let Some(sheet) = &mut self.picker_sheet {
             sheet.viewport = (width as f32, height as f32);
@@ -66,8 +68,12 @@ impl MiniEngine {
 
     /// 把系统信息重新装进逻辑层；`notify` 时派发窗口尺寸变化
     fn sync_system_info(&mut self, notify: bool) {
-        let info = engine_options::system_info(self.width, self.height, self.dpr, &self.opts);
+        // windowHeight 按这一页（有引擎画的导航栏时减掉它，engine_navbar.rs）
+        let info = self.page_system_info();
         engine_options::install_system_info(&self.app, &info);
+        self.forget_window_height();
+        // 转场按旧尺寸留的图对不上了：直接收手
+        self.route.finish();
         if notify {
             self.app.eval("__dispatchWindowResize()").ok();
             self.app.pump_jobs();
@@ -87,6 +93,17 @@ impl MiniEngine {
                 Err(e) => eprintln!("⚠️  重新解析 {path} 的样式失败: {e}"),
             }
         }
+        // 留着的 tab 页同样重来；被盖住 / 切走的页留的渲染器是按旧尺寸建的，丢掉（回来时新建）
+        let tabs: Vec<String> = self.keep.tabs.keys().cloned().collect();
+        for path in tabs {
+            let Some(info) = self.pages.get(&path) else { continue };
+            if let Ok((_, sheet)) = self.page_styles(info) {
+                if let Some((page, _)) = self.keep.tabs.get_mut(&path) {
+                    page.stylesheet = sheet;
+                }
+            }
+        }
+        self.keep.forget_renderers();
         Self::apply_env_context(&self.opts, self.width, self.height);
         if self.custom_tabbar.is_some() {
             if let Ok(Some(ct)) = crate::host::load_custom_tabbar_with_app_wxss(&self.app_wxss) {
@@ -113,6 +130,8 @@ impl MiniEngine {
         self.canvas.replace(Canvas::new(px(self.width), px(CONTENT_HEIGHT.max(self.height))));
         self.fixed_canvas = LayerCanvas::new(Canvas::new(px(self.width), px(self.height)));
         self.tabbar_canvas = LayerCanvas::new(Canvas::new(px(self.width), px(tabbar_height()).max(1)));
+        // 被盖住 / 切走的页留的渲染器按旧尺寸建的（屏高进 `100vh` 与 fixed 视口）：回来时新建
+        self.keep.forget_renderers();
         self.update_renderers();
         self.drawn_band = None;
         self.fixed_rows = None;
@@ -140,5 +159,75 @@ impl MiniEngine {
             }
         }
         moved
+    }
+}
+
+impl MiniEngine {
+    /// 侧滑返回留的那几张上一页图跟着改尺寸。
+    ///
+    /// 只有高度变了（宽与像素比没变）时按**底边对齐**改高：在 Flutter 里高度变化来自顶上的
+    /// AppBar 显隐（普通页 ↔ `navigationStyle: custom` 页），上一页在屏幕上正好是下面那一截。
+    /// 多出来的顶上那条填那一页的导航栏颜色（宿主的 AppBar 就是这个色），少了就从顶上裁掉。
+    /// 不处理的话 `edge_back::compose` 见尺寸对不上就整条画暗底：进了 custom 页再侧滑，左边一片黑。
+    /// 宽或像素比变了（转屏）旧图对不上任何位置，丢掉（侧滑时露暗底，与从前一样）。
+    fn refit_back_shots(&mut self, only_height: bool) {
+        let (w, h) = self.pixel_size();
+        for i in 0..self.back_shots.len() {
+            let fill = self.page_stack.get(i).and_then(|p| self.nav_bar_rgb(&p.path));
+            let shot = &mut self.back_shots[i];
+            if shot.pixels.is_empty() || (shot.width, shot.height) == (w, h) {
+                continue;
+            }
+            if !only_height || shot.width != w {
+                shot.pixels.clear();
+                (shot.width, shot.height) = (0, 0);
+                continue;
+            }
+            *shot = refit_bottom(shot, h, fill);
+        }
+    }
+
+    /// 某一页导航栏的背景色（app.json 的 window ← 页面 json）。0xRRGGBB
+    fn nav_bar_rgb(&self, route: &str) -> Option<u32> {
+        let page = self.pages.get(route).and_then(|p| p.window.get("navigationBarBackgroundColor"));
+        let hex = page.or_else(|| self.app_window.get("navigationBarBackgroundColor"))?.as_str()?;
+        let hex = hex.strip_prefix('#')?;
+        let hex: String = if hex.len() == 3 { hex.chars().flat_map(|c| [c, c]).collect() } else { hex.to_string() };
+        u32::from_str_radix(hex.get(..6)?, 16).ok()
+    }
+}
+
+/// 底边对齐改高：`h` 比原图高就在顶上补 `fill`（没给就重复原图第一行），矮就从顶上裁
+fn refit_bottom(shot: &crate::host::edge_back::PageShot, h: u32, fill: Option<u32>) -> crate::host::edge_back::PageShot {
+    let w = shot.width as usize;
+    let (old_h, new_h) = (shot.height as usize, h as usize);
+    let mut pixels = Vec::with_capacity(w * new_h);
+    if new_h >= old_h {
+        let pad = new_h - old_h;
+        match fill {
+            Some(c) => pixels.resize(w * pad, c),
+            None => (0..pad).for_each(|_| pixels.extend_from_slice(&shot.pixels[..w])),
+        }
+        pixels.extend_from_slice(&shot.pixels);
+    } else {
+        pixels.extend_from_slice(&shot.pixels[(old_h - new_h) * w..]);
+    }
+    crate::host::edge_back::PageShot { width: shot.width, height: h, pixels }
+}
+
+#[cfg(test)]
+mod refit_tests {
+    use super::refit_bottom;
+    use crate::host::edge_back::PageShot;
+
+    #[test]
+    fn 变高顶上补导航栏色_变矮从顶上裁_都是底边对齐() {
+        let shot = PageShot { width: 2, height: 2, pixels: vec![1, 2, 3, 4] };
+        let tall = refit_bottom(&shot, 4, Some(9));
+        assert_eq!((tall.height, tall.pixels), (4, vec![9, 9, 9, 9, 1, 2, 3, 4]));
+        let tall = refit_bottom(&shot, 3, None);
+        assert_eq!(tall.pixels, vec![1, 2, 1, 2, 3, 4], "没给颜色：重复第一行");
+        let short = refit_bottom(&shot, 1, Some(9));
+        assert_eq!((short.height, short.pixels), (1, vec![3, 4]));
     }
 }

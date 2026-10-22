@@ -260,7 +260,8 @@ internal class EngineHost(
         if (f and MiniEngine.FRAME_WANTS_MORE != 0) requestFrame()
     }
 
-    private fun present() {
+    /** `notifyFlutter = false`：只写进 Surface，等别处触发的 Flutter 帧来取（改尺寸时用，见 resize） */
+    private fun present(notifyFlutter: Boolean = true) {
         val s = surface ?: return
         if (!s.isValid) return
         when (mode) {
@@ -270,7 +271,7 @@ internal class EngineHost(
                 val r = MiniEngine.nativeBlitToWindow(handle)
                 if (r == 1) {
                     needsPresent = false
-                    scheduleFlutterFrame()
+                    if (notifyFlutter) scheduleFlutterFrame()
                     return
                 }
                 Log.w(TAG, "CPU 直写 Surface 失败（$r），改走 Bitmap + lockHardwareCanvas")
@@ -294,7 +295,7 @@ internal class EngineHost(
                     s.unlockCanvasAndPost(canvas)
                 }
                 needsPresent = false
-                scheduleFlutterFrame()
+                if (notifyFlutter) scheduleFlutterFrame()
             }
         }
     }
@@ -369,24 +370,40 @@ internal class EngineHost(
             }
             "resize" -> {
                 val (w, h, dpr) = Triple(i("width"), i("height"), f("dpr"))
+                val asked = System.nanoTime()
                 engine.post {
+                    val t0 = System.nanoTime()
                     if (handle == 0L || !MiniEngine.nativeResize(handle, w, h, dpr)) {
                         main.post { result.success(null) }
                         return@post
                     }
+                    val t1 = System.nanoTime()
                     updatePixelSize()
-                    // GPU 模式：引擎下一帧整帧合成，合成器按新尺寸自己 reconfigure
+                    Log.i(TAG, "resize ${w}x$h：排队 ${(t0 - asked) / 1_000_000}ms，重排 ${(t1 - t0) / 1_000_000}ms")
                     main.post {
                         val p = producer ?: return@post result.success(null)
                         p.setSize(pixelW, pixelH)
                         val s = p.surface
-                        engine.post { attach(s) }
-                        result.success(textureInfo(p))
+                        engine.post {
+                            attach(s)
+                            // 新尺寸的那一帧**先**写进 Surface（不通知 Flutter），再把新尺寸回给 Dart：
+                            // Dart 按新尺寸重建 Texture 的那一帧取到的就是新画面。
+                            // 从前是先回尺寸、下一个 vsync 才画 —— 中间那一帧旧画面被拉伸到新尺寸，
+                            // 切换导航栏样式（AppBar 出现 / 消失）时整页先放大一下再弹回来。
+                            // GPU 模式：引擎下一帧整帧合成，合成器按新尺寸自己 reconfigure（照旧）
+                            if (mode != Present.GPU) present(notifyFlutter = false)
+                            main.post { result.success(textureInfo(p)) }
+                        }
                     }
                 }
             }
             "safeArea" -> {
-                run { MiniEngine.nativeSetSafeArea(it, f("top"), f("right"), f("bottom"), f("left")) }
+                run {
+                    val t0 = System.nanoTime()
+                    if (MiniEngine.nativeSetSafeArea(it, f("top"), f("right"), f("bottom"), f("left"))) {
+                        Log.i(TAG, "safeArea top=${f("top")}：重排 ${(System.nanoTime() - t0) / 1_000_000}ms")
+                    }
+                }
                 result.success(null)
             }
             "lifecycle" -> {

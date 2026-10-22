@@ -161,6 +161,69 @@ class MiniNativeView {
   bool get hidden => clip.isEmpty;
 }
 
+/// 点了右上角胶囊的哪一半（引擎事件 `menuButton` 的 `action`）
+enum MiniMenuButtonAction {
+  /// 左半「•••」：查看关于（展示什么由宿主决定，信息见 [MiniProgramController.about]）
+  menu,
+
+  /// 右半「⊙」：返回宿主
+  close;
+
+  static MiniMenuButtonAction? parse(Object? s) => switch (s) {
+        'menu' => menu,
+        'close' => close,
+        _ => null,
+      };
+}
+
+/// 小程序的「关于」信息：引擎启动后第一帧的 `app` 事件带上来（字段见引擎的 `src/app_about.rs`）
+@immutable
+class MiniAbout {
+  const MiniAbout({
+    required this.name,
+    required this.appId,
+    required this.description,
+    required this.entryPage,
+    required this.pageCount,
+    required this.engine,
+  });
+
+  factory MiniAbout.fromJson(Map<String, dynamic> j) => MiniAbout(
+        name: j['name'] as String? ?? '',
+        appId: j['appId'] as String? ?? '',
+        description: j['description'] as String? ?? '',
+        entryPage: j['entryPage'] as String? ?? '',
+        pageCount: (j['pageCount'] as num?)?.toInt() ?? 0,
+        engine: j['engine'] as String? ?? '',
+      );
+
+  /// `project.config.json` 的 `projectname`，没有就是 app.json 的导航栏标题 / 目录名
+  final String name;
+
+  /// 没设置（或开发者工具的游客 `touristappid`）时为空
+  final String appId;
+
+  /// 开发者工具写的默认描述不算
+  final String description;
+  final String entryPage;
+
+  /// 主包 + 分包的页面数
+  final int pageCount;
+
+  /// `mini-render 0.1.0`
+  final String engine;
+
+  /// 演示用的弹框标题与正文（与桌面窗体、H5、原生 SDK 的同一份）
+  String get dialogTitle => name.isEmpty ? '关于小程序' : '关于$name';
+
+  String get dialogMessage => [
+        if (description.isNotEmpty) description,
+        'AppID：${appId.isEmpty ? '未设置' : appId}',
+        '入口：$entryPage（共 $pageCount 页）',
+        '引擎：$engine',
+      ].join('\n');
+}
+
 /// 小程序调用了宿主实现的 `wx.*`
 class MiniHostCall {
   const MiniHostCall({required this.id, required this.api, required this.args});

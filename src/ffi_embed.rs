@@ -44,9 +44,13 @@ fn app_mut<'a>(app: *mut MRApp) -> Option<&'a mut MRApp> {
 ///   "systemInfo": {"platform": "android", "model": "Pixel 8", "language": "zh_CN"},
 ///   "safeArea": {"top": 24, "right": 0, "bottom": 16, "left": 0},
 ///   "hostApis": ["chooseImage", "getLocation", "setClipboardData"],
-///   "nativeComponents": ["video", "map", "web-view"]
+///   "nativeComponents": ["video", "map", "web-view"],
+///   "menuButton": true
 /// }
 /// ```
+///
+/// `menuButton`：`navigationStyle: custom` 的页面上由引擎画右上角胶囊（位置 =
+/// `wx.getMenuButtonBoundingClientRect()`），点击发 `menuButton` 事件。默认关。
 #[no_mangle]
 pub extern "C" fn mr_app_create_ex(
     app_dir: *const c_char,

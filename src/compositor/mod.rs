@@ -209,8 +209,19 @@ pub struct FrameLayers<'a> {
     pub pull: Option<PullState>,
     /// Toast / Loading / Modal 与 picker 面板
     pub overlays: OverlayRefs<'a>,
-    /// 左边缘侧滑返回进行中（只有桌面窗体有这一层）
+    /// 左边缘侧滑返回 / 页面转场进行中（整帧平移、露出另一页）
     pub edge_back: Option<EdgeBackFrame<'a>>,
+    /// 顶部宿主外壳（引擎画的导航栏，`navigationBar` 选项）。`Some` 时页面与 fixed 层整体
+    /// 下移 `rows` 行，这几行由导航栏画布盖住；`None`（桌面窗体、custom 导航栏的页面）
+    /// 与从前逐字节相同
+    pub top: Option<TopBand<'a>>,
+}
+
+/// 顶部宿主外壳那一条（导航栏 + 状态栏底色）
+pub struct TopBand<'a> {
+    /// 占用的设备像素行数（`导航栏逻辑高 × scale` 取整）
+    pub rows: u32,
+    pub canvas: &'a LayerCanvas,
 }
 
 /// 下拉刷新指示器的参数（与 `render_pull_indicator` 的参数一一对应）
@@ -253,4 +264,7 @@ pub struct EdgeBackFrame<'a> {
     pub shot: Option<&'a PageShot>,
     /// 0~1 的推出进度
     pub progress: f32,
+    /// 图在上面：缓冲里的是**下面**那一页（返回转场：上一页已经恢复、正在被盖着的那张是
+    /// 刚离开的页面留下的图）。false 是侧滑与进入转场：缓冲里的是上面那一页
+    pub shot_on_top: bool,
 }

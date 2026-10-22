@@ -45,12 +45,16 @@ pub fn present_to_buffer(
     fixed_rows: Option<(u32, u32)>,
     // 画布之外区域的填充色（取 `page { background-color }`）
     page_bg: u32,
+    // 顶部宿主外壳（引擎画的导航栏）占的行数：页面与 fixed 层整体下移这么多行，
+    // 这几行本函数不写（由调用方盖上导航栏）。0 时与从前逐字节相同
+    top_px: u32,
 ) {
     let pixels = canvas.pixels();
     let canvas_width = canvas.width();
     let canvas_height = canvas.height();
     
     let content_area_height = buffer_height - if has_tabbar { tabbar_physical_height } else { 0 };
+    let top_px = top_px.min(content_area_height);
     
     // 画布之外（内容不足一屏、或回弹露出的部分）用页面底色填，
     // 写死浅灰会在暖色底的应用上露出一条突兀的灰边
@@ -59,8 +63,8 @@ pub fn present_to_buffer(
     let copy_width = buffer_width.min(canvas_width) as usize;
     
     // 渲染主内容
-    for dst_y in 0..content_area_height {
-        let src_y = dst_y as i32 + scroll_offset;
+    for dst_y in top_px..content_area_height {
+        let src_y = (dst_y - top_px) as i32 + scroll_offset;
         let dst_row_start = (dst_y * buffer_width) as usize;
         
         if src_y >= 0 && src_y < canvas_height as i32 {
@@ -118,12 +122,13 @@ pub fn present_to_buffer(
         let fixed_width = fixed_canvas.width() as usize;
         let fixed_height = fixed_canvas.height();
         
-        let y_end = buffer_height.min(fixed_height).min(row1 + 1);
+        // fixed 画布是页面视口坐标（导航栏下沿为 0 行）：第 y 行落到缓冲的 y + top_px 行
+        let y_end = buffer_height.saturating_sub(top_px).min(fixed_height).min(row1 + 1);
         let draw_w = (buffer_width as usize).min(fixed_width);
         
         for y in row0..y_end {
             let src_row = (y as usize) * fixed_width;
-            let dst_row = (y * buffer_width) as usize;
+            let dst_row = ((y + top_px) * buffer_width) as usize;
             
             let src = &fixed_pixels[src_row..src_row + draw_w];
             let dst = &mut buffer[dst_row..dst_row + draw_w];

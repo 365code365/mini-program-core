@@ -496,6 +496,8 @@ Flutter 插件已接这组接口（见下一节）；原生 `MiniProgramView`（
 | `hostCall` | 调了宿主实现的 `wx.*` | `id` `api` `args` |
 | `clipboard` | `wx.setClipboardData`（宿主写系统剪贴板） | `data` |
 | `vibrate` | `wx.vibrateShort` / `vibrateLong` | `duration`（`short` / `long`）`style` |
+| `app` | 启动后第一帧（只发一次） | `about`：`name` `appId` `description` `entryPage` `pageCount` `engine` |
+| `menuButton` | 点了引擎画的右上角胶囊（创建选项 `menuButton: true`、`navigationStyle: custom` 的页面） | `action`：`menu`（左半 •••，查看关于）/ `close`（右半 ⊙，返回宿主） |
 | `log` | 逻辑层 `console.*` | `text` |
 
 `nativeViews` 的遮挡三项（引擎自己画的 picker 面板、弹窗、Toast / Loading、`position:fixed` 元素、
@@ -515,6 +517,32 @@ scroll-view 的裁剪还不在 `clip` 里。实现与判据见 `src/host/native_
 
 导航栏由宿主画：引擎不画导航栏（微信里它是原生外壳），`navigationStyle: custom` 的页面除外。
 
+**右上角胶囊**（微信的「•••」菜单 +「⊙」关闭）分两处：
+
+- `navigationStyle: custom` 的页面没有宿主导航栏，画面顶到状态栏下面：创建选项给 `"menuButton": true`，
+  引擎把胶囊画在画面里，位置就是这一页 `wx.getMenuButtonBoundingClientRect()` 返回的矩形
+  （默认 87×32、距右 7、`statusBarHeight + 4`；宿主在 `systemInfo.menuButton` 给了真机的值就用它）。
+  它压在页面与 `position:fixed` 元素之上、Toast / Modal / picker 之下；按下整串触摸归它（不漏到下面的页面），
+  抬手还在按下的那一半里才发 `menuButton` 事件，滑出去松手不算。`navigationBarTextStyle: white` 用半透明黑底白图标，
+  否则半透明白底黑图标；`wx.setNavigationBarColor` 改了前景色下一帧跟着换。
+- 普通页面的胶囊画在**宿主自己的导航栏**右侧（Flutter 插件的 `MiniProgramScaffold` 已经这样做，几何与配色同上）。
+- 语义：「•••」= **查看关于**，「⊙」= **返回宿主**。引擎只发事件，做什么由宿主定。关于信息在启动后第一帧的
+  `app` 事件里（`about`：`name` / `appId` / `description` / `entryPage` / `pageCount` / `engine`，取自
+  project.config.json 与 app.json，见 `src/app_about.rs`），没开胶囊也发。
+- 现成的宿主都留了口子、带了默认实现（演示用）：
+
+  | 宿主 | 「•••」查看关于 | 「⊙」返回宿主 |
+  |---|---|---|
+  | iOS `MiniProgramView` | `onAbout: (MiniProgramAbout) -> Void`；不设时弹 `UIAlertController` | `onClose`；不设时 pop（在导航栈里）或 dismiss 所在的控制器 |
+  | Android `MiniProgramView` | `onAbout: (MiniProgramAbout) -> Unit`；不设时弹 `AlertDialog` | `onClose`；不设时 `finish()` 所在的 Activity |
+  | Flutter `MiniProgramScaffold` | `onMenu`（信息在 `controller.about`）；不设时什么也不做，`example/` 弹关于框 | `onExit`；不设时 `Navigator.pop` 关掉整个小程序页面（不管小程序里叠了几页；小程序是根页面时退出 App） |
+  | 桌面窗体 | 弹「关于…」Modal | 关窗口（无头模式只打日志） |
+  | H5 导出 | 先派发可取消的 `wx-menu-button` 事件（`detail: {action, about}`），没人拦就 `wx.showModal` 关于 | 同上，默认 `history.back()` |
+
+  iOS / Android 的视图还改成了 `create_ex`（带 `menuButton` 与安全区，`menuButton` 属性在 `open` 之前设）+ `pump_ex` 取事件，
+  `onEvent` 能拿到每一条原始事件。要让胶囊落在状态栏下面，视图得铺到状态栏下（安全区会自动交给引擎）。
+- 实现与判据见 `src/host/capsule.rs`、`tests/menu_button_e2e.rs`、`doc/引擎测试说明.md` T30。
+
 创建选项：
 
 ```json
@@ -522,7 +550,8 @@ scroll-view 的裁剪还不在 `clip` 里。实现与判据见 `src/host/native_
   "systemInfo": {"platform": "android", "model": "Pixel 8", "language": "zh_CN"},
   "safeArea": {"top": 24, "right": 0, "bottom": 16, "left": 0},
   "hostApis": ["chooseImage", "getLocation", "setClipboardData"],
-  "nativeComponents": ["video", "map", "web-view"]
+  "nativeComponents": ["video", "map", "web-view"],
+  "menuButton": true
 }
 ```
 

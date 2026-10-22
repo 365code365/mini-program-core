@@ -152,6 +152,23 @@ impl InputType {
     
 }
 
+/// 是不是密码框：`password="true"` / `{{true}}`，或 `type="safe-password"`。
+///
+/// 建树（初始值）与交互态（打字之后）两处都按它画圆点 —— 从前只有建树那处判断，
+/// 一打字就由交互态把明文直接写进节点，密码框里看得见输入的字。
+///
+/// 空串**不**算真：裸写的 `password` 与绑定到 undefined 的 `password="{{x}}"` 解析出来都是
+/// 空串，分不开；后者在微信里是假，按真处理的话普通输入框会变成一排圆点。
+pub fn is_password_input(password: Option<&str>, input_type: Option<&str>) -> bool {
+    let attr = password.map(str::trim).map(|s| s == "true" || s == "{{true}}");
+    attr.unwrap_or(false) || input_type.map(InputType::from_str) == Some(InputType::SafePassword)
+}
+
+/// 密码框里显示的文字：每个字符一个圆点（光标、选区按字符下标算，一一对应）
+pub fn masked_value(value: &str) -> String {
+    "•".repeat(value.chars().count())
+}
+
 /// 确认按钮类型
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ConfirmType {
@@ -250,9 +267,7 @@ impl InputComponent {
             .or_else(|| node.get_attr("model:value"))
             .unwrap_or("");
         let placeholder = node.get_attr("placeholder").unwrap_or("");
-        let input_type = InputType::from_str(node.get_attr("type").unwrap_or("text"));
-        let password = node.get_attr("password").map(|s| s == "true" || s == "{{true}}").unwrap_or(false)
-            || input_type == InputType::SafePassword;
+        let password = is_password_input(node.get_attr("password"), node.get_attr("type"));
         let disabled = node.get_attr("disabled").map(|s| s == "true" || s == "{{true}}").unwrap_or(false);
         let _maxlength = node.get_attr("maxlength")
             .and_then(|s| s.parse::<i32>().ok())
@@ -340,7 +355,7 @@ impl InputComponent {
         let display_text = if value.is_empty() {
             placeholder.to_string()
         } else if password {
-            "•".repeat(value.chars().count())
+            masked_value(value)
         } else {
             value.to_string()
         };

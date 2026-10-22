@@ -240,7 +240,8 @@ int  mr_app_pump_ex(MRApp* app, uint64_t now_ms);
 //   {"systemInfo":{"platform":"ios","model":"…"},          // 合并进 wx.getSystemInfoSync
 //    "safeArea":{"top":47,"right":0,"bottom":34,"left":0},  // 逻辑像素；env(safe-area-inset-*) 取它
 //    "hostApis":["chooseImage","getLocation"],              // 宿主实现的 wx.*（经 hostCall 事件）
-//    "nativeComponents":["video","map","web-view"]}         // 宿主用原生控件承载，引擎只报位置与遮挡
+//    "nativeComponents":["video","map","web-view"],         // 宿主用原生控件承载，引擎只报位置与遮挡
+//    "menuButton":true}                                     // custom 导航栏的页面由引擎画右上角胶囊（默认关）
 MRApp* mr_app_create_ex(const char* app_dir, const char* data_dir,
                         uint32_t width, uint32_t height, float dpr,
                         const char* options_json);
@@ -258,7 +259,9 @@ int mr_app_set_safe_area(MRApp* app, float top, float right, float bottom, float
 size_t mr_app_pixels_into(MRApp* app, uint8_t* dst, size_t len, uint32_t stride, int format);
 
 // 引擎 → 宿主的事件（UTF-8 JSON），没有了返回 NULL。指针活到下一次对同一 app 调用 mr_app_*。
-// type：page / navigationBar / inputFocus / inputBlur / nativeViews / hostCall / log
+// type：page / navigationBar / inputFocus / inputBlur / nativeViews / hostCall / clipboard /
+//       vibrate / app（启动后一次：about 关于信息）/
+//       menuButton（点了胶囊：action = "menu" 查看关于 / "close" 返回宿主）/ log
 // 字段见 doc/原生App集成指南.md「事件队列」；坐标都是视口逻辑坐标。
 const char* mr_app_poll_event(MRApp* app);
 

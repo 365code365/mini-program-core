@@ -74,6 +74,9 @@ shot slider_hold    sample-app --route pages/showcase/showcase --settle 0 --time
     --swipe-hold $SLIDER_DRAG
 shot slider_drag    sample-app --route pages/showcase/showcase --settle 0 --time 2 --scroll 300 \
     --swipe $SLIDER_DRAG --wait 0.3
+# 右上角胶囊（showcase 是 custom 导航栏）：位置 281,24 87×32（= getMenuButtonBoundingClientRect），
+# 左半「•••」弹关于（Modal），见 app_window/capsule_host.rs
+shot capsule_about  sample-app --route pages/showcase/showcase --settle 0 --time 2 --touch 300,40 --wait 0.3
 n=$(find "$OUT" -name '*.png' 2>/dev/null | wc -l | tr -d ' ')
 echo "共 $n 张"
 
@@ -104,6 +107,11 @@ guard picker_面板真的弹出 "$OUT/_plain/pages/showcase/showcase/rust.png" \
 # 按下确定 vs 抬手关闭：一个有弹窗一个没有，至少差 10%
 guard modal_按钮真的命中 "$OUT/modal_press/pages/profile/profile/rust.png" \
     "$OUT/modal_confirm/pages/profile/profile/rust.png" 10
+# 点胶囊左半：关于弹窗 + 遮罩盖住整页（_plain 滚了 300，所以另拍一张不滚的作对照）
+rm -rf target/mini-storage
+"$BIN" sample-app --route pages/showcase/showcase --settle 0 --time 2 --snapshot "$OUT/_plain_top" >/dev/null 2>&1
+guard capsule_关于真的弹出 "$OUT/_plain_top/pages/showcase/showcase/rust.png" \
+    "$OUT/capsule_about/pages/showcase/showcase/rust.png" 20
 # slider 只比被操作的那一块（`--box`，2x 像素）：这一页有按墙上时钟走的 GIF，整页比较会被它淹没
 box_pct() { # 图A, 图B, 矩形 → 差异百分比
     local pct
@@ -158,6 +166,19 @@ expect_log slider上竖划走页面 '🖐 手势归属：Undecided -> Page' \
 # 纵向长列表拖动：页面滚动真的发生（位置 > 0）
 expect_log 长列表能滚起来 '滚动位置 *[1-9]|position=[1-9]|-> Page' \
     sample/news-app --route pages/home/home --settle 0 --drag 10x20 --snapshot target/_ia_probe
+# 胶囊右半「⊙」= 返回宿主（无头模式只记日志；交互窗体关窗口）
+expect_log 胶囊右半是返回宿主 '胶囊 close：返回宿主' \
+    sample-app --route pages/showcase/showcase --settle 0 --time 2 --touch 350,40 --snapshot target/_ia_probe
+# 按在胶囊上滑出去再松手：什么也不发（与原生按钮一致）。先做对照：同样是 --swipe，
+# 只在胶囊里挪一点再松手要触发 —— 不然下面那条「没触发」可能只是根本没按到胶囊
+expect_log 胶囊里挪一点照样算点 '胶囊 menu：查看关于' \
+    sample-app --route pages/showcase/showcase --settle 0 --time 2 --swipe 300,40,304,42,3 --snapshot target/_ia_probe
+if MINI_SCROLL_LOG=1 "$BIN" sample-app --route pages/showcase/showcase --settle 0 --time 2 \
+    --swipe 300,40,200,200,6 --snapshot target/_ia_probe 2>&1 | grep -q '胶囊 '; then
+    printf '  ✗ %-26s 滑出胶囊松手不该触发\n' 胶囊滑出去不算点; fail=1
+else
+    printf '  ✓ %-26s 没有触发\n' 胶囊滑出去不算点
+fi
 rm -rf target/mini-storage target/_ia_probe
 
 if [ -n "$CMP" ]; then

@@ -7,13 +7,13 @@
 //! 露出一条视频 —— 所以只留一份。
 //!
 //! ## 数值从哪来
-//! 微信的提示框与对话框是客户端原生控件，视觉规范与 WeUI 2.x（微信 8.0 那一版设计语言）一致，
-//! 下面的常量逐条取自 WeUI v2.4.4 的 `weui-toast.less` / `weui-dialog.less`（iOS 皮肤）
-//! 与浅色主题变量：
-//! - 提示框：带图标 136×136、圆角 12、底色 BG-4 `#4C4C4C`、图标 40 + 下间距 16、
-//!   标题 17px 行高 1.4；纯文字 14px、上下内边距 12、宽度随文字在 152~216 之间；
+//! 微信的提示框与对话框是客户端原生控件，视觉规范跟 WeUI（微信设计团队的组件库）走：
+//! - 提示框取 WeUI 当前版（master）的 `weui-toast.less`：`min-width: 132px`、
+//!   `max-width: 320px`、内边距 `28px 20px`、圆角 8、底色 BG-4 `#4C4C4C`、图标 40 + 下间距 16、
+//!   **文字 14px** 行高 1.4；纯文字（`.weui-toast_text`）内边距 `12px 20px`、宽度随文字；
 //!   盒子中心在视口 **40%** 高处（`top: 40%; transform: translate(-50%, -50%)`）。
-//! - 对话框：视口宽 ≥ 352 时宽 320，否则左右各留 16；圆角 12；标题区 `32 24 16`、
+//!   从前按 v2.4.4 画的是 136 方块 + 17px 标题，和现在的微信比字明显偏大。
+//! - 对话框（WeUI v2.4.4 的 `weui-dialog.less`，iOS 皮肤）：视口宽 ≥ 352 时宽 320，否则左右各留 16；圆角 12；标题区 `32 24 16`、
 //!   17px 粗体；内容 17px 行高 1.4、底边距 32、颜色 FG-1；没有标题时内容当主文字
 //!   （粗体、FG-0、`min-height: 40`、上内边距 32）；按钮条高 56。
 //!
@@ -49,21 +49,22 @@ impl TipIcon {
     }
 }
 
-pub const TIP_RADIUS: f32 = 12.0;
+pub const TIP_RADIUS: f32 = 8.0;
 pub const TIP_BG: u32 = 0x4C4C4C;
 /// rgba(255,255,255,0.9) 压在 #4C4C4C 上的结果；Loading 的圈 WeUI 直接写的就是 #EDEDED
 pub const TIP_FG: u32 = 0xEDEDED;
-const TIP_BOX: f32 = 136.0;
+/// 带图标时的最小宽（`min-width: 132px`）；两种提示框共用最大宽 320
+const TIP_MIN_W: f32 = 132.0;
+const TIP_MAX_W: f32 = 320.0;
 pub const TIP_ICON: f32 = 40.0;
 const TIP_ICON_GAP: f32 = 16.0;
-const TIP_FONT: f32 = 17.0;
-const TIP_PAD_X: f32 = 12.0;
+/// 两种提示框的文字都是 14px（`.weui-toast__content`）
+const TIP_FONT: f32 = 14.0;
+const TIP_PAD_X: f32 = 20.0;
+const TIP_PAD_Y: f32 = 28.0;
 /// 带图标时标题最多 7 个汉字（官方文档）
 const TIP_MAX_CHARS: f32 = 7.0;
-const TEXT_TIP_FONT: f32 = 14.0;
 const TEXT_TIP_PAD_Y: f32 = 12.0;
-const TEXT_TIP_MIN_W: f32 = 152.0;
-const TEXT_TIP_MAX_W: f32 = 216.0;
 const TEXT_TIP_MAX_LINES: usize = 2;
 const LINE: f32 = 1.4;
 /// 盒子中心在视口高度的这个比例上
@@ -91,25 +92,26 @@ pub struct TipBox {
 pub fn tip_box(title: &str, icon: &TipIcon, (vw, vh): (f32, f32), tr: Option<&TextRenderer>) -> TipBox {
     let cx = vw / 2.0;
     let cy = vh * TIP_CENTER_Y;
+    let (font, line_h) = (TIP_FONT, TIP_FONT * LINE);
+    let max_box_w = TIP_MAX_W.min(vw - 32.0).max(font + TIP_PAD_X * 2.0);
     if *icon == TipIcon::None {
-        let (font, line_h) = (TEXT_TIP_FONT, TEXT_TIP_FONT * LINE);
-        let max_w = (TEXT_TIP_MAX_W.min(vw - 32.0) - TIP_PAD_X * 2.0).max(font);
-        let lines = wrap_lines(tr, title, font, max_w, TEXT_TIP_MAX_LINES, false);
+        // 纯文字：宽度随文字（没有最小宽），最多两行
+        let lines = wrap_lines(tr, title, font, max_box_w - TIP_PAD_X * 2.0, TEXT_TIP_MAX_LINES, false);
         let widest = lines.iter().map(|l| text_width(tr, l, font, false)).fold(0.0, f32::max);
-        let w = (widest + TIP_PAD_X * 2.0).clamp(TEXT_TIP_MIN_W.min(vw - 32.0), TEXT_TIP_MAX_W.min(vw - 32.0));
+        let w = (widest + TIP_PAD_X * 2.0).min(max_box_w);
         let h = TEXT_TIP_PAD_Y * 2.0 + lines.len() as f32 * line_h;
         let (x, y) = (cx - w / 2.0, cy - h / 2.0);
         return TipBox { x, y, w, h, icon: None, lines, font, line_h, text_top: y + TEXT_TIP_PAD_Y, center_x: cx };
     }
-    let (font, line_h) = (TIP_FONT, TIP_FONT * LINE);
-    let (w, h) = (TIP_BOX, TIP_BOX);
-    let (x, y) = (cx - w / 2.0, cy - h / 2.0);
-    // 一行，放不下就截「…」。136 减去两边 12 只有 112，装不下 7 个 17px 的汉字（119）——
-    // 文档说的是「最多显示 7 个汉字」，按 7 个字放宽
-    let max_w = (w - TIP_PAD_X * 2.0).max(font * TIP_MAX_CHARS);
-    let lines = if title.is_empty() { Vec::new() } else { wrap_lines(tr, title, font, max_w, 1, false) };
+    // 带图标：标题一行，超过 7 个汉字宽（文档：「最多显示 7 个汉字长度」）截「…」；
+    // 盒子宽 = max(132, 标题 + 两边 20)，高 = 上下 28 + 图标 40 + 间距 16 + 一行
+    let lines = if title.is_empty() { Vec::new() } else { wrap_lines(tr, title, font, font * TIP_MAX_CHARS, 1, false) };
+    let widest = lines.iter().map(|l| text_width(tr, l, font, false)).fold(0.0, f32::max);
+    let w = (widest + TIP_PAD_X * 2.0).max(TIP_MIN_W).min(max_box_w.max(TIP_MIN_W));
     let content_h = TIP_ICON + if lines.is_empty() { 0.0 } else { TIP_ICON_GAP + line_h };
-    let top = y + (h - content_h) / 2.0;
+    let h = TIP_PAD_Y * 2.0 + content_h;
+    let (x, y) = (cx - w / 2.0, cy - h / 2.0);
+    let top = y + TIP_PAD_Y;
     TipBox {
         x,
         y,
@@ -211,16 +213,18 @@ mod tests {
     }
 
     #[test]
-    fn 带图标的提示框是_136_方块_中心在_40_高处() {
+    fn 带图标的提示框最小宽_132_文字_14px_中心在_40_高处() {
         let b = tip_box("操作成功", &TipIcon::Success, (375.0, 667.0), None);
-        assert_eq!((b.w, b.h), (136.0, 136.0));
+        // 4 个字 56 + 两边 20 不到最小宽；高 = 28 + 40 + 16 + 一行 19.6 + 28
+        assert_eq!(b.w, 132.0);
+        assert!((b.h - 131.6).abs() < 0.01, "h = {}", b.h);
+        assert_eq!(b.font, 14.0);
         assert!((b.x + b.w / 2.0 - 187.5).abs() < 0.01);
         assert!((b.y + b.h / 2.0 - 667.0 * 0.4).abs() < 0.01);
         let (ix, iy, s) = b.icon.unwrap();
         assert_eq!(s, 40.0);
         assert!((ix - (187.5 - 20.0)).abs() < 0.01);
-        // 图标 40 + 16 + 一行 23.8 在 136 里垂直居中
-        assert!((iy - (b.y + (136.0 - 79.8) / 2.0)).abs() < 0.01);
+        assert!((iy - (b.y + 28.0)).abs() < 0.01);
         assert!((b.text_top - (iy + 56.0)).abs() < 0.01);
     }
 
@@ -229,22 +233,27 @@ mod tests {
         let b = tip_box("这是一个特别特别长的标题", &TipIcon::Success, (375.0, 667.0), None);
         assert_eq!(b.lines.len(), 1);
         assert!(b.lines[0].ends_with('…'), "{:?}", b.lines);
-        // 7 个汉字正好放得下（文档：最多显示 7 个汉字长度）
+        // 7 个汉字正好放得下（文档：最多显示 7 个汉字长度），盒子随之放宽到 98 + 40
         let b = tip_box("处理中请稍候啊", &TipIcon::Loading, (375.0, 667.0), None);
         assert_eq!(b.lines, vec!["处理中请稍候啊".to_string()]);
+        assert_eq!(b.w, 7.0 * 14.0 + 40.0);
     }
 
     #[test]
     fn 纯文字提示框随文字变宽_最多两行() {
         let short = tip_box("已复制", &TipIcon::None, (375.0, 667.0), None);
-        assert_eq!(short.w, 152.0, "短文字取最小宽");
+        assert_eq!(short.w, 3.0 * 14.0 + 40.0, "没有最小宽：文字 + 两边 20");
         assert!((short.h - (24.0 + 19.6)).abs() < 0.01);
-        let long = tip_box("这是一条只有文字的提示，文字长了会换行显示，再长就截断了", &TipIcon::None, (375.0, 667.0), None);
-        // 216 - 24 = 192 放得下 13 个 14px 的字：宽 13×14 + 24
-        assert_eq!(long.w, 13.0 * 14.0 + 24.0);
+        let long = tip_box(&"很长的文字提示".repeat(10), &TipIcon::None, (375.0, 667.0), None);
+        // 最大宽 320，减两边 20 放得下 20 个 14px 的字
+        assert_eq!(long.w, 320.0);
         assert_eq!(long.lines.len(), 2);
         assert!(long.lines[1].ends_with('…'));
         assert!(long.icon.is_none());
+        // 窄屏左右各留 16：盒子最宽 288，文字区 248 放 17 个字，盒子收到文字宽
+        let narrow = tip_box(&"很长的文字提示".repeat(10), &TipIcon::None, (320.0, 568.0), None);
+        assert_eq!(narrow.w, 17.0 * 14.0 + 40.0);
+        assert!(narrow.w <= 288.0);
     }
 
     #[test]

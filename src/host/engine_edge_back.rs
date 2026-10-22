@@ -18,18 +18,24 @@ const MAX_SHOTS: usize = 10;
 impl MiniEngine {
     /// 当前页将被新页盖住：留一张视口图（`navigateTo` 之前调）
     pub(super) fn capture_back_shot(&mut self) {
+        // 还没合成过（一打开就跳页）：没有图，侧滑时露出暗底（与桌面一致）
+        let shot = self.snapshot_frame().unwrap_or(PageShot { width: 0, height: 0, pixels: Vec::new() });
+        self.back_shots.push(shot);
+        if self.back_shots.len() > MAX_SHOTS {
+            self.back_shots.remove(0);
+        }
+    }
+
+    /// 上一次合成好的整帧（含导航栏、tabBar、浮层）。还没合成过时为 None。
+    /// 留图（侧滑）与返回转场（离开的那页）都用它
+    pub(super) fn snapshot_frame(&mut self) -> Option<PageShot> {
         #[cfg(feature = "gpu")]
         self.sync_cpu_frame();
         let (w, h) = self.pixel_size();
         if self.compose.len() != (w as usize) * (h as usize) || self.compose.is_empty() {
-            // 还没合成过（一打开就跳页）：没有图，侧滑时露出暗底（与桌面一致）
-            self.back_shots.push(PageShot { width: 0, height: 0, pixels: Vec::new() });
-        } else {
-            self.back_shots.push(PageShot { width: w, height: h, pixels: self.compose.clone() });
+            return None;
         }
-        if self.back_shots.len() > MAX_SHOTS {
-            self.back_shots.remove(0);
-        }
+        Some(PageShot { width: w, height: h, pixels: self.compose.clone() })
     }
 
     /// 推进松手后的收尾动画；判定为「返回」且动画走完时退栈。返回是否还在动（要续帧 / 重新合成）
@@ -52,7 +58,8 @@ impl MiniEngine {
                 self.edge_back = None;
                 self.edge_back_tick = None;
                 if commit {
-                    self.back();
+                    // 页面已经跟着手指滑出去了：不再转场
+                    self.back_with(false);
                 }
                 // 收手这一帧整帧：位移归零，画布内容也可能换了页
                 self.needs_redraw = true;
@@ -72,6 +79,20 @@ impl MiniEngine {
             offset_px: (eb.offset() * dpr).round().max(0.0) as u32,
             shot: back_shots.last().filter(|s| !s.pixels.is_empty()),
             progress: eb.progress(),
+            shot_on_top: false,
         })
+    }
+
+    /// 本帧上屏时当前页整帧右移了多少（视口逻辑像素，没有侧滑为 0）。
+    ///
+    /// 宿主承载的原生组件（`nativeViews`）不在引擎画面里，`edge_back::compose` 搬像素时
+    /// 搬不到它们，只能把这段位移报给宿主让它自己挪。取整必须与上面 `edge_back_frame`
+    /// 的 `offset_px` 一致（设备像素整数，合成器再夹到帧宽），否则控件和引擎画面之间
+    /// 会错开半个像素的缝。
+    pub(super) fn edge_back_shift(&self) -> f32 {
+        let Some(eb) = self.edge_back.as_ref() else { return 0.0 };
+        let (pw, _) = self.pixel_size();
+        let px = ((eb.offset() * self.dpr).round().max(0.0) as u32).min(pw);
+        px as f32 / self.dpr
     }
 }

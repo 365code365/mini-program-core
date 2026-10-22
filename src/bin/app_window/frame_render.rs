@@ -25,6 +25,8 @@ impl crate::MiniAppWindow {
     pub(crate) fn render_with_damage(&mut self, damage: Option<GeoRect>) {
         // 调用方给的动画损伤区（可能会被下面并上 setData 的失效范围，先留一份原值）
         let anim_damage_in = damage;
+        // 导航栏前景色改了（胶囊换配色）：这里是所有渲染路径的共同入口，无头快照也走得到
+        self.capsule_sync_host_events();
         // 页面数据只在逻辑层 setData 之后才会变，所以只有脏了才做这趟
         // 「JS 侧 JSON.stringify 整份 data → Rust 侧反序列化」往返。
         // 从前每帧都做一次：动画帧里白付一次全量序列化。
@@ -178,6 +180,8 @@ impl crate::MiniAppWindow {
         let t_page_done = Instant::now();
         // 局部重绘帧里 fixed 覆盖层与 tabBar 不会变，直接沿用上一帧的画布 ——
         // 除非覆盖层自己带动画（那时 animation_damage_rect 会拒绝走局部路径）。
+        // 右上角胶囊画在 fixed 层最上面（custom 导航栏的页面；见 capsule_host.rs）
+        let capsule = self.capsule_paint();
         if damage.is_none() && (self.fixed_dirty || self.fixed_layer_animates) {
             self.fixed_dirty = false;
             if let Some(page) = self.page_stack.last() {
@@ -197,6 +201,10 @@ impl crate::MiniAppWindow {
                     // 不缓存的话那些帧里弹窗没有任何绑定，点击会直接穿到下层页面。
                     self.cached_fixed_bindings = r.fixed_event_bindings();
                     self.cached_fixed_regions = r.fixed_hit_regions().to_vec();
+                    if let Some((rect, dark, pressed)) = capsule {
+                        fc.reset_clip();
+                        mini_render::host::capsule::draw(fc, rect, sf, dark, pressed);
+                    }
                 }
                 // 覆盖层内容变了才重算它占用的行区间（上屏据此只合成这几行）
                 if let Some(fc) = &self.fixed_canvas {
@@ -357,7 +365,9 @@ impl crate::MiniAppWindow {
                 offset_px: (eb.offset() * self.scale_factor as f32).round() as u32,
                 shot: self.back_shots.last(),
                 progress: eb.progress(),
+                shot_on_top: false,
             }),
+            top: None,
         })
     }
 }

@@ -31,6 +31,9 @@ class MiniProgramController {
     this.nativeComponents = const [],
     this.systemInfo = const {},
     this.backend = MiniBackend.cpu,
+    this.menuButton = true,
+    this.navigationBar = true,
+    this.routeAnimation = true,
   });
 
   /// 解包后的小程序目录（含 `app.json`）
@@ -55,6 +58,21 @@ class MiniProgramController {
   /// 渲染后端偏好。默认 [MiniBackend.cpu]；Android 选 auto / gpu 才会试 GPU 上屏
   final MiniBackend backend;
 
+  /// 右上角胶囊（微信的「•••」+「⊙」）。`navigationStyle: custom` 的页面由引擎画在画面里，
+  /// 普通页面由 [MiniProgramScaffold] 画在导航栏右侧；点击都从 [menuButtonTaps] 出来。
+  /// 关掉后两处都不画
+  final bool menuButton;
+
+  /// 导航栏由引擎画（默认）：画面铺满整屏、顶到状态栏，普通页面顶上是引擎画的导航栏
+  /// （标题 / 颜色 / 返回键 / loading / 胶囊），custom 页面没有。切页时**画面尺寸不变** ——
+  /// 从前由 [MiniProgramScaffold] 用 AppBar 画，普通页 ↔ custom 页一切换 AppBar 就要出现 / 消失、
+  /// 画面跟着改尺寸重排：进 custom 页先拉伸一下、返回时跳一下，`onLoad` 读到的 `windowHeight` 也不对。
+  /// false = 旧做法（宿主自己画导航栏，[MiniProgramScaffold] 用 AppBar）
+  final bool navigationBar;
+
+  /// 页面转场（默认开）：navigateTo 新页从右边滑入、返回时当前页向右滑出，300ms（与微信一致）
+  final bool routeAnimation;
+
   static const MethodChannel _channel = MethodChannel('dev.minirender/engine');
   static MiniProgramController? _active;
   static bool _initialized = false;
@@ -77,11 +95,24 @@ class MiniProgramController {
   /// 实际在用的后端（建好之前是 null；GPU 运行中回退时会变）
   final ValueNotifier<MiniBackendStatus?> activeBackend = ValueNotifier(null);
 
+  /// 小程序的关于信息（启动后第一帧到；胶囊「•••」展示它）
+  final ValueNotifier<MiniAbout?> about = ValueNotifier(null);
+
   final StreamController<String> _logs = StreamController.broadcast();
   final StreamController<Map<String, dynamic>> _events = StreamController.broadcast();
+  final StreamController<MiniMenuButtonAction> _menuTaps = StreamController.broadcast();
 
   /// 小程序的 `console.*` 输出
   Stream<String> get logs => _logs.stream;
+
+  /// 点了右上角胶囊（引擎画的那个与导航栏里的那个都从这里出来）
+  Stream<MiniMenuButtonAction> get menuButtonTaps => _menuTaps.stream;
+
+  /// 宿主自己画的胶囊被点了（如放在原生导航栏里）：送进 [menuButtonTaps]，
+  /// 与引擎画的那个走同一条路，监听的一方不用分两处
+  void handleMenuButton(MiniMenuButtonAction action) {
+    if (!_menuTaps.isClosed) _menuTaps.add(action);
+  }
 
   /// 全部原始事件（JSON 对象）
   Stream<Map<String, dynamic>> get events => _events.stream;
@@ -136,6 +167,9 @@ class MiniProgramController {
       'safeArea': {'top': safeArea[0], 'right': safeArea[1], 'bottom': safeArea[2], 'left': safeArea[3]},
       'hostApis': hostApis.keys.toList(),
       'nativeComponents': nativeComponents,
+      'menuButton': menuButton,
+      'navigationBar': navigationBar,
+      'routeAnimation': routeAnimation,
     };
     final Map<String, Object?>? r;
     try {
@@ -245,6 +279,7 @@ class MiniProgramController {
     if (_created) await _channel.invokeMethod<void>('dispose');
     await _logs.close();
     await _events.close();
+    await _menuTaps.close();
   }
 
   // ───────────────────────── 原生 → Dart ─────────────────────────
@@ -295,6 +330,12 @@ class MiniProgramController {
         ];
       case 'hostCall':
         _onHostCall(MiniHostCall.fromJson(ev));
+      case 'menuButton':
+        final a = MiniMenuButtonAction.parse(ev['action']);
+        if (a != null) handleMenuButton(a);
+      case 'app':
+        final a = ev['about'];
+        if (a is Map) about.value = MiniAbout.fromJson(a.cast<String, dynamic>());
       case 'log':
         if (!_logs.isClosed) _logs.add('${ev['text']}');
     }

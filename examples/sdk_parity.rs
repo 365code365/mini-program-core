@@ -34,12 +34,17 @@ fn main() {
         // swiper / picker / canvas 的状态是**进程级**的，新实例前要清一次 ——
         // 否则详情页的图片轮播会继承上一页轮播的页码与自动播放时钟（实测偶发 72% 差异）。
         mini_render::renderer::components::reset_shared_component_state();
-        let mut engine = match MiniEngine::new(
+        // 胶囊打开：桌面窗体在 custom 导航栏的页面上画胶囊，SDK 这边也要画才对得上
+        // （移动端宿主 —— Flutter / iOS / Android 的 MiniProgramView —— 默认都开着它）
+        let opts = mini_render::host::EngineOptions { menu_button: true, ..Default::default() };
+        let mut engine = match MiniEngine::new_with_options(
             &root.to_string_lossy(),
             Some(&data.to_string_lossy()),
             375,
             667,
             2.0,
+            mini_render::compositor::HostEnv::from_process(),
+            opts,
         ) {
             Ok(e) => e,
             Err(e) => {

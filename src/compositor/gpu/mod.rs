@@ -181,6 +181,10 @@ impl GpuCompositor {
             Some("picker")
         } else if l.edge_back.is_some() {
             Some("侧滑返回")
+        } else if l.top.is_some() {
+            // 引擎画的导航栏：页面与 fixed 层要整体下移，着色器还没有这一段 → 整帧直通
+            // （CPU 合成的结果原样上屏，逐字节正确；代价是每帧一次整帧上传）
+            Some("导航栏")
         } else if crate::renderer::components::fullscreen_video().is_some() {
             // 全屏视频画在 CPU 合成那一步（与 Modal 同理，整帧直通）
             Some("全屏视频")

@@ -46,6 +46,8 @@ pub struct PageSource {
     pub data: JsonValue,
     /// 页面 json 的 `enablePullDownRefresh`（缺省继承 app.json 的 `window`）
     pub enable_pull_down_refresh: bool,
+    /// 窗口配置：app.json 的 `window` ← 页面 json（`navigationStyle` / `navigationBarTextStyle` …）
+    pub window: JsonValue,
 }
 
 /// 自定义 tabBar 组件源码（`custom-tab-bar/`）。
@@ -175,7 +177,18 @@ pub fn load_app_source(root: &str) -> Result<AppSource, String> {
                     .unwrap_or(false)
             });
 
-        pages.push(PageSource { route: route.clone(), wxml, wxss, js, data, enable_pull_down_refresh });
+        // 窗口配置：app.json 的 window ← 页面 json（组件声明不算窗口配置）
+        let mut window = config.get("window").and_then(|w| w.as_object()).cloned().unwrap_or_default();
+        if let Ok(JsonValue::Object(p)) = serde_json::from_str::<JsonValue>(&page_json) {
+            for (k, v) in p {
+                if k != "usingComponents" && k != "componentGenerics" {
+                    window.insert(k, v);
+                }
+            }
+        }
+        let window = JsonValue::Object(window);
+
+        pages.push(PageSource { route: route.clone(), wxml, wxss, js, data, enable_pull_down_refresh, window });
     }
 
     let custom_tab_bar = load_custom_tab_bar(root, &app_js);

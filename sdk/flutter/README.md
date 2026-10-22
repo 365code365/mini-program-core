@@ -10,9 +10,11 @@ final c = MiniProgramController(
   nativeComponents: const ['video'],           // 由宿主用原生控件承载的组件
 );
 Navigator.push(context, MaterialPageRoute(
-  builder: (_) => MiniProgramScaffold(         // 导航栏 + 返回键 + 画面
+  builder: (_) => MiniProgramScaffold(         // 导航栏 + 返回键 + 右上角胶囊 + 画面
     controller: c,
     nativeViewBuilder: (context, view, c) => view.tag == 'video' ? MyPlayer(view.attrs['src']) : null,
+    onMenu: () => showMyShareSheet(),           // 胶囊「•••」：弹什么由宿主决定（不给就什么也不做）
+    onExit: () => Navigator.pop(context),      // 胶囊「⊙」/ 只剩一页时的返回（不给就关掉这个页面）
   ),
 ));
 // 关掉时：c.dispose()
@@ -21,7 +23,15 @@ Navigator.push(context, MaterialPageRoute(
 先编引擎库：`bash tools/build-mobile.sh android`（或只编一个 ABI：`bash tools/build-android-abi.sh`）、
 `bash tools/build-mobile.sh ios`。例子在 `example/`。
 
+导航栏默认由引擎画（`MiniProgramController(navigationBar: true)`，带转场 `routeAnimation`）：画面铺满整屏，普通页 ↔ `navigationStyle: custom` 页切换不改尺寸，不会拉伸、跳动；`navigationBar: false` 回到用 AppBar 画导航栏的旧做法。
+
 原生组件按引擎报的遮挡裁剪（picker 面板、弹窗、fixed 元素、tabBar 盖在视频上面，与微信同层渲染一致），
 `nativeViewBuilder` 只管造控件，不用自己处理层级。
+
+右上角胶囊（「•••」+「⊙」，87×32、距右 7）：普通页面画在导航栏右侧（`MiniCapsule`），
+`navigationStyle: custom` 的页面由引擎画在画面里，位置就是 `wx.getMenuButtonBoundingClientRect()`。
+「•••」是查看关于、「⊙」是返回宿主：两处的点击都从 `controller.menuButtonTaps` 出来，
+`MiniProgramScaffold` 接成 `onMenu` / `onExit`（`onExit` 不给时直接关掉整个小程序页面，小程序里叠了几页都一样；关于信息在 `controller.about`，
+`example/` 里弹了一个关于框）。导航栏文字白色时是深色胶囊（白图标）。`MiniProgramController(menuButton: false)` 两处都不画。
 
 约定、事件、限制与验收见 [`doc/原生App集成指南.md`](../../doc/原生App集成指南.md) 的「Flutter」一节。

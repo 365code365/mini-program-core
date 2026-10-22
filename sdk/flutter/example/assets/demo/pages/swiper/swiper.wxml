@@ -12,7 +12,7 @@
 
 <view class="card">
   <text class="title">受控 current + easing-function</text>
-  <swiper class="cards" current="{{current}}" duration="{{duration}}" easing-function="easeInOutCubic" bindchange="onCtrl" bindanimationfinish="onFinish">
+  <swiper class="cards" current="{{current}}" duration="{{duration}}" autoplay="{{autoplay}}" interval="2000" easing-function="easeInOutCubic" bindchange="onCtrl" bindanimationfinish="onFinish">
     <swiper-item wx:for="{{colors}}" wx:key="*this">
       <view class="slide" style="background-color: {{item}};">第 {{index + 1}} 页</view>
     </swiper-item>
@@ -22,8 +22,9 @@
     <view class="btn-s" bindtap="next">下一页</view>
     <view class="btn-o" bindtap="jump">跳到第 1 页</view>
     <view class="btn-o" bindtap="toggleDuration">duration {{duration}}ms</view>
+    <view class="btn-o" bindtap="toggleAutoplay">自动播放 {{autoplay ? '开' : '关'}}</view>
   </view>
-  <text class="hint">页面改 current 时 change 的 source 是空串；animationfinish {{finishCount}} 次</text>
+  <text class="hint">duration 是滑动动画时长，不会让它自己翻页；自动切换要开 autoplay（每 interval=2000ms 一页）。页面改 current 时 change 的 source 是空串；animationfinish {{finishCount}} 次</text>
 </view>
 
 <view class="card">

@@ -81,6 +81,41 @@ impl InteractionManager {
             .map(|e| (e.bounds, e.is_fixed))
     }
 
+    /// 页面被盖住 / tab 页切走：把这一页**要留着**的交互状态拿走（scroll-view 位置与受控状态、
+    /// switch / checkbox 这类组件状态、slider 的值），其余照 [`clear_page_state`](Self::clear_page_state) 清掉。
+    /// 回来时 [`restore_page_state`](Self::restore_page_state) 原样放回 —— 微信里返回上一页，
+    /// 里面的横向列表还停在原来的位置
+    pub fn take_page_state(&mut self) -> PageUiState {
+        let s = PageUiState {
+            states: std::mem::take(&mut self.states),
+            toggled_at: std::mem::take(&mut self.toggled_at),
+            sliders: std::mem::take(&mut self.sliders),
+            slider_origin: std::mem::take(&mut self.slider_origin),
+            scroll_controllers: std::mem::take(&mut self.scroll_controllers),
+            scroll_views: std::mem::take(&mut self.scroll_views),
+        };
+        self.clear_page_state();
+        s
+    }
+
+    /// 回到那一页：先清掉离开的那页的，再放回 [`take_page_state`](Self::take_page_state) 拿走的
+    pub fn restore_page_state(&mut self, s: PageUiState) {
+        self.clear_page_state();
+        // 惯性 / 回弹停在离开那一刻的位置：回来时不该接着滑
+        let mut controllers = s.scroll_controllers;
+        for c in controllers.values_mut() {
+            if c.is_animating() {
+                c.stop();
+            }
+        }
+        self.states = s.states;
+        self.toggled_at = s.toggled_at;
+        self.sliders = s.sliders;
+        self.slider_origin = s.slider_origin;
+        self.scroll_controllers = controllers;
+        self.scroll_views = s.scroll_views;
+    }
+
     /// 页面切换时清除状态
     pub fn clear_page_state(&mut self) {
         // 全屏视频、操作菜单、图片预览属于离开的那一页：不收掉的话新页面一直被它们盖着、点击全被吃掉

@@ -224,6 +224,11 @@ impl SwiperStateManager {
             s
         });
         st.total = cfg.total;
+        // 运行时打开 autoplay：从这一刻起算 interval（微信的 autoplay 观察者是重排一次定时器）。
+        // 不重置的话 last_flip 还停在上次翻页 / 建状态那会儿，一打开就立刻翻一页
+        if cfg.autoplay && !st.autoplay {
+            st.last_flip = now;
+        }
         st.autoplay = cfg.autoplay;
         st.autoplay_interval = cfg.interval.max(1);
         st.circular = cfg.circular;

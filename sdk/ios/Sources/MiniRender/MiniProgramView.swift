@@ -28,7 +28,28 @@ import MiniRenderFFI
 /// ## 为什么触摸要送三段而不是"点击"
 /// 引擎内部有触摸状态机，`touchstart/touchmove/touchend/longpress/tap` 都由它产出。
 /// 宿主自己合成"点击"会绕过状态机 —— 那类问题在自动化测试里全绿、真机上却点不动。
+///
+/// ## 右上角胶囊
+/// `navigationStyle: custom` 的页面由引擎画胶囊（位置 = `wx.getMenuButtonBoundingClientRect()`，
+/// 所以视图要铺到状态栏下面，安全区会自动交给引擎）。两个口子留给宿主：
+/// ```swift
+/// view.onAbout = { about in /* 「•••」查看关于：推自己的关于页 */ }
+/// view.onClose = { /* 「⊙」返回宿主：pop / dismiss 自己的页面 */ }
+/// ```
+/// 不设时的默认：`onAbout` 弹一个展示小程序信息的 `UIAlertController`，`onClose` 把视图所在的
+/// 控制器 pop（在导航栈里）或 dismiss。普通页面的导航栏是宿主画的，胶囊也由宿主放进自己的导航栏。
 public final class MiniProgramView: UIView {
+
+    /// 引擎在 custom 导航栏的页面上画右上角胶囊（`open` 之前设）
+    public var menuButton = true
+    /// 胶囊「•••」：查看关于。nil = 默认弹框
+    public var onAbout: ((MiniProgramAbout) -> Void)?
+    /// 胶囊「⊙」：返回宿主。nil = 默认 pop / dismiss 所在的控制器
+    public var onClose: (() -> Void)?
+    /// 引擎发来的每一条事件（JSON 对象；`page` / `navigationBar` / `inputFocus` / `app` / `menuButton` …）
+    public var onEvent: (([String: Any]) -> Void)?
+    /// 小程序的关于信息（启动后第一帧到）
+    public private(set) var about: MiniProgramAbout?
 
     private var handle: OpaquePointer?
     private var link: CADisplayLink?
@@ -103,15 +124,35 @@ public final class MiniProgramView: UIView {
             .appendingPathComponent("mini-render")
         try? FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
         let dpr = Float(window?.screen.scale ?? UIScreen.main.scale)
-        handle = mr_app_create(
+        // 选项要在 app.js 执行前就位：onLaunch 里读 getSystemInfoSync（状态栏高度、胶囊位置）是常态
+        let insets = safeAreaInsets
+        let options: [String: Any] = [
+            "systemInfo": [
+                "platform": "ios",
+                "model": UIDevice.current.model,
+                "system": "iOS \(UIDevice.current.systemVersion)",
+            ],
+            "safeArea": ["top": insets.top, "right": insets.right, "bottom": insets.bottom, "left": insets.left],
+            "menuButton": menuButton,
+        ]
+        let json = (try? JSONSerialization.data(withJSONObject: options)).flatMap { String(data: $0, encoding: .utf8) }
+        handle = mr_app_create_ex(
             dir.path, data.path,
-            UInt32(bounds.width), UInt32(bounds.height), dpr)
+            UInt32(bounds.width), UInt32(bounds.height), dpr, json)
         guard let h = handle else {
             NSLog("❌ mini-render 创建失败")
             return
         }
         mr_app_launch(h, startRoute)
         start()
+    }
+
+    /// 刘海 / 灵动岛 / 底部横条：`statusBarHeight`、胶囊位置与 `env(safe-area-inset-*)` 都按它算
+    public override func safeAreaInsetsDidChange() {
+        super.safeAreaInsetsDidChange()
+        guard let h = handle else { return }
+        let i = safeAreaInsets
+        mr_app_set_safe_area(h, Float(i.top), Float(i.right), Float(i.bottom), Float(i.left))
     }
 
     // ───────────────────────── 出帧 ─────────────────────────
@@ -131,7 +172,9 @@ public final class MiniProgramView: UIView {
     @objc private func tick() {
         guard let h = handle else { return }
         let now = UInt64(CACurrentMediaTime() * 1000)
-        guard mr_app_pump(h, now) != 0 else { return }   // 没变化就不上屏
+        let flags = mr_app_pump_ex(h, now)
+        if flags & Int32(MR_FRAME_EVENTS) != 0 { drainEvents() }
+        guard flags & Int32(MR_FRAME_NEW) != 0 else { return }   // 没变化就不上屏
         var w: UInt32 = 0, hh: UInt32 = 0
         mr_app_pixel_size(h, &w, &hh)
         let need = Int(w) * Int(hh) * 4
@@ -161,6 +204,59 @@ public final class MiniProgramView: UIView {
                 imageLayer.contents = image
             }
         }
+    }
+
+    // ───────────────────────── 事件 ─────────────────────────
+
+    /// 取完引擎的事件队列（取到 NULL 为止），胶囊的两个动作交给宿主
+    private func drainEvents() {
+        guard let h = handle else { return }
+        while let p = mr_app_poll_event(h) {
+            guard let data = String(cString: p).data(using: .utf8),
+                  let ev = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { continue }
+            onEvent?(ev)
+            switch ev["type"] as? String {
+            case "app":
+                if let a = ev["about"] as? [String: Any] { about = MiniProgramAbout(json: a) }
+            case "menuButton":
+                switch MiniMenuButtonAction(rawValue: ev["action"] as? String ?? "") {
+                case .menu: showAbout()
+                case .close: requestClose()
+                case nil: break
+                }
+            default: break
+            }
+        }
+    }
+
+    /// 「•••」：宿主给了 onAbout 就交给它，否则弹框展示（演示用）
+    private func showAbout() {
+        let a = about ?? MiniProgramAbout(json: [:])
+        if let cb = onAbout { cb(a); return }
+        let alert = UIAlertController(title: a.dialogTitle, message: a.dialogMessage, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "确定", style: .default))
+        hostController?.present(alert, animated: true)
+    }
+
+    /// 「⊙」：宿主给了 onClose 就交给它，否则 pop（在导航栈里）或 dismiss 所在的控制器
+    private func requestClose() {
+        if let cb = onClose { cb(); return }
+        guard let vc = hostController else { return }
+        if let nav = vc.navigationController, nav.viewControllers.count > 1, nav.topViewController === vc {
+            nav.popViewController(animated: true)
+        } else {
+            vc.dismiss(animated: true)
+        }
+    }
+
+    /// 视图所在的控制器（顺着响应链找）
+    private var hostController: UIViewController? {
+        var r: UIResponder? = self
+        while let next = r?.next {
+            if let vc = next as? UIViewController { return vc }
+            r = next
+        }
+        return nil
     }
 
     // ───────────────────────── 输入 ─────────────────────────

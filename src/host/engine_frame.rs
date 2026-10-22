@@ -103,6 +103,14 @@ impl MiniEngine {
         if self.tick_edge_back() {
             self.dmg.compose_dirty = true;
         }
+        // 页面转场（route_anim.rs）：位移变了只要重新合成，页面一个像素不用重画
+        if self.route.tick(now) != crate::host::route_anim::Tick::Idle {
+            self.dmg.compose_dirty = true;
+        }
+        // 导航栏的标题 / 颜色 / loading 转圈 / 按压态变了（engine_navbar.rs）：重画那一小条再合成
+        if self.nav_needs_paint() {
+            self.dmg.compose_dirty = true;
+        }
         // 长按由帧驱动
         if self.touch.is_active() {
             let outs = self.touch.tick(now);
@@ -288,6 +296,16 @@ impl MiniEngine {
 
     /// 重画 fixed 覆盖层，并记下它的动画标记、事件绑定与遮挡区域（跳过它的帧要补回来）
     fn render_fixed_layer(&mut self, vp: f32) {
+        // fixed 层是页面视口坐标：引擎画了导航栏时它比画面矮一截（engine_navbar.rs）
+        self.ensure_fixed_canvas();
+        // 右上角胶囊画在这一层的最上面（为什么放这里见 capsule.rs）。有引擎画的导航栏时
+        // 胶囊在导航栏画布里（paint_nav），这里不画
+        let capsule = if self.nav_rows() > 0 {
+            None
+        } else {
+            self.capsule_spec().map(|(r, dark)| (r, dark, self.capsule_pressed()))
+        };
+        let dpr = self.dpr;
         let Self { renderer, fixed_canvas, page_stack, page_data, interaction, dmg, .. } = self;
         let fixed_canvas = fixed_canvas.write();
         fixed_canvas.clear(Color::new(0, 0, 0, 0));
@@ -300,7 +318,16 @@ impl MiniEngine {
             dmg.cached_fixed_bindings = r.fixed_event_bindings();
             dmg.cached_fixed_regions = r.fixed_hit_regions().to_vec();
         }
-        dmg.fixed_dirty = false;
+        let had_capsule = capsule.is_some();
+        if let Some((rect, dark, pressed)) = capsule {
+            fixed_canvas.reset_clip();
+            crate::host::capsule::draw(fixed_canvas, rect, dpr, dark, pressed);
+        }
+        // 有导航栏时胶囊的「已画」由 paint_nav 记（换前景色会让导航栏的签名变，必然重画）
+        if had_capsule || self.nav_rows() == 0 {
+            self.capsule_painted();
+        }
+        self.dmg.fixed_dirty = false;
         // 覆盖层真正画过的行区间：`present_to_buffer` 只合成这几行，
         // 传 None 会**整层跳过** —— 底部吸底操作栏、弹窗遮罩就全丢了。
         self.fixed_rows = crate::host::render::opaque_row_span(self.fixed_canvas.read());
@@ -344,7 +371,10 @@ impl MiniEngine {
             self.compose = vec![0u32; n];
         }
         let bg_u32 = ((bg.r as u32) << 16) | ((bg.g as u32) << 8) | bg.b as u32;
-        // 合成序列与桌面窗体同一份（compositor::cpu）。SDK 没有下拉指示器与侧滑返回这两层
+        // 引擎画的导航栏（engine_navbar.rs）：内容变了才重画它那块小画布
+        self.paint_nav();
+        let top_rows = self.nav_rows();
+        // 合成序列与桌面窗体同一份（compositor::cpu）。SDK 没有下拉指示器这一层
         let layers = FrameLayers {
             width: pw,
             height: ph,
@@ -367,7 +397,12 @@ impl MiniEngine {
                 picker: self.picker_sheet.as_ref(),
                 text: self.text.as_deref(),
             },
-            edge_back: Self::edge_back_frame(&self.edge_back, &self.back_shots, self.dpr),
+            // 页面转场优先于侧滑（转场期间不接受触摸，两者不会同时有）
+            edge_back: self
+                .route
+                .frame(&self.back_shots, pw)
+                .or_else(|| Self::edge_back_frame(&self.edge_back, &self.back_shots, self.dpr)),
+            top: self.nav.band(top_rows),
         };
         // GPU 上屏（宿主挂了原生 surface 时）：画到 surface 上就不做 CPU 合成
         #[cfg(feature = "gpu")]
@@ -440,6 +475,11 @@ impl MiniEngine {
             || self.animated_images_visible()
             // surface 这次没取到：宿主不续帧的话 PENDING 那一帧永远补不上
             || self.present_pending
+            // 导航栏前景色在这一帧末尾才改：胶囊换配色要再来一帧
+            || self.capsule_wants_frame()
+            // 页面转场在走、引擎画的导航栏在转圈或还欠一次重画
+            || self.route.active()
+            || self.nav_wants_frame()
     }
 
     pub fn pixel_size(&self) -> (u32, u32) {

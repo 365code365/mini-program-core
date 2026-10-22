@@ -7,6 +7,7 @@
 /// ```
 library;
 
+export 'src/capsule.dart' show MiniCapsule, CapsulePainter;
 export 'src/controller.dart' show MiniProgramController;
 export 'src/events.dart';
 export 'src/scaffold.dart' show MiniProgramScaffold;

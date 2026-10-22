@@ -253,6 +253,22 @@ class _MiniPageState extends State<MiniAppPage> {
     }
   }
 
+  /// 胶囊的「•••」：查看关于。SDK 只留了口子（`onMenu`），展示什么由宿主定；
+  /// 示例弹一个关于框（信息来自引擎的 `app` 事件，见 `controller.about`）。
+  /// 「⊙」不用接：`onExit` 不给时默认关掉整个小程序页面，回到打开小程序的那一页
+  void _showAbout() {
+    if (!mounted) return;
+    final a = _c.about.value;
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(a?.dialogTitle ?? '关于小程序'),
+        content: Text(a?.dialogMessage ?? '小程序还在加载'),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('确定'))],
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _c.dispose();
@@ -263,6 +279,7 @@ class _MiniPageState extends State<MiniAppPage> {
   Widget build(BuildContext context) {
     return MiniProgramScaffold(
       controller: _c,
+      onMenu: _showAbout,
       nativeViewBuilder: (context, view, c) {
         switch (view.tag) {
           // video_player 出画面（系统硬解），事件按微信 <video> 的形状回传，见 host_video.dart

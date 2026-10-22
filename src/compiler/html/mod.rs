@@ -15,6 +15,8 @@
 
 mod transpile;
 mod runtime;
+/// 右上角胶囊（custom 导航栏的页面静态写进 HTML）
+mod capsule;
 
 pub use transpile::{
     base_css, convert_rpx, make_html_doc, wxml_to_html, wxml_to_html_pretty, wxss_to_css,
@@ -90,6 +92,9 @@ impl CompileTarget for HtmlTarget {
             }
         }
 
+        // 关于信息（胶囊「•••」默认弹它；三端同一份，见 app_about.rs）
+        let about = crate::app_about::about(Path::new(&app.root), &app.config);
+
         // ── 逐页面 ──
         let mut nav_items = String::new();
         for page in &app.pages {
@@ -124,7 +129,9 @@ impl CompileTarget for HtmlTarget {
             // 供 runtime 响应式重渲染的 WXML AST
             let ast = nodes_to_json(&page.wxml);
             let tabbar_css = is_tab && use_custom_tab_bar;
-            let html = build_page_html(&page.route, leaf, &rel, &body, &ast, has_js, &tabbar_html, is_tab, tabbar_css, page.enable_pull_down_refresh);
+            // 胶囊与 tabBar 一样钉在视口上，跟在它后面
+            let chrome = format!("{tabbar_html}{}", capsule::capsule_html(&page.window));
+            let html = build_page_html(&page.route, leaf, &rel, &body, &ast, has_js, &chrome, is_tab, tabbar_css, page.enable_pull_down_refresh, &about);
             files.push(EmittedFile::text(format!("{}/{}.html", dir, leaf), html));
 
             nav_items.push_str(&format!(
@@ -264,7 +271,9 @@ fn tabbar_icon(idx: usize, text: &str) -> &'static str {
 }
 
 /// 生成单个页面的 HTML（分离引用 base.css / app.css / <page>.css + 内嵌 AST + runtime + tabBar）
-fn build_page_html(route: &str, leaf: &str, rel: &str, body: &str, ast: &JsonValue, has_js: bool, tabbar: &str, is_tab: bool, tabbar_css: bool, enable_pull_down: bool) -> String {
+/// `tabbar`：钉在视口上的外壳部件（tabBar、custom 页面的右上角胶囊）
+#[allow(clippy::too_many_arguments)]
+fn build_page_html(route: &str, leaf: &str, rel: &str, body: &str, ast: &JsonValue, has_js: bool, tabbar: &str, is_tab: bool, tabbar_css: bool, enable_pull_down: bool, about: &JsonValue) -> String {
     let logic = if has_js {
         format!("<script src=\"./{}.js\"></script>\n", leaf)
     } else {
@@ -298,6 +307,7 @@ fn build_page_html(route: &str, leaf: &str, rel: &str, body: &str, ast: &JsonVal
 <script>
 window.__PAGE_ROUTE__ = {route_json};
 window.__PAGE_PULL_DOWN__ = {pull_down};
+window.__APP_ABOUT__ = {about};
 window.__WXML__ = {ast};
 </script>
 <script src=\"{rel}common/runtime.js\"></script>
@@ -309,6 +319,7 @@ window.__WXML__ = {ast};
         tabbar_link = tabbar_link,
         route_json = serde_json::to_string(route).unwrap(),
         pull_down = enable_pull_down,
+        about = serde_json::to_string(about).unwrap(),
         ast = serde_json::to_string(ast).unwrap(),
         logic = logic,
     )

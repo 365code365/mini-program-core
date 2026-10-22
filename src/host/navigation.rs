@@ -31,6 +31,24 @@ pub struct PageInstance {
     pub stylesheet: StyleSheet,
     /// 自定义组件模板（标签名 → 组件 WXML），渲染时按标签展开
     pub component_templates: ComponentTemplates,
+    /// 被新页盖住那一刻的页面滚动（位置, 内容高）。返回时按它恢复（微信里上一页的实例一直活着，
+    /// 滚到哪就停在哪）。从前返回一律回到顶部
+    pub saved_scroll: Option<(f32, f32)>,
+}
+
+impl PageInstance {
+    /// 返回到这一页时的滚动控制器：有存过的位置就恢复（内容高先按存下的给，`max_scroll` 才不会把位置夹成 0；
+    /// 第一帧渲染出真实内容高后照常更新），否则从顶上开始
+    pub fn restored_scroll(&self, viewport: f32) -> crate::ui::ScrollController {
+        match self.saved_scroll {
+            Some((pos, content)) => {
+                let mut s = crate::ui::ScrollController::new(content.max(viewport), viewport);
+                s.set_position(pos);
+                s
+            }
+            None => crate::ui::ScrollController::new(viewport, viewport),
+        }
+    }
 }
 
 /// 导航请求类型
@@ -43,6 +61,33 @@ pub enum NavigationRequest {
     RedirectTo { url: String },
     /// 关闭所有页面再打开目标页
     ReLaunch { url: String },
+}
+
+/// 取走「`wx.navigateBack` 已经替宿主出过几层逻辑层的栈」，并清零。
+///
+/// 宿主每次处理返回都先调它（哪怕自己的栈只剩一页、什么都不做，也要取走，免得留到下一次）：
+/// - 大于 0：这次返回是 `wx.navigateBack({ delta })` 发起的，逻辑层已经出过栈并派发了
+///   onUnload，宿主只退自己的栈这么多层，**不要**再 [`pop_logic_page`]；
+/// - 等于 0：宿主自己发起的（系统返回键、侧滑），宿主退一层，再 [`pop_logic_page`]。
+///
+/// 从前 SDK 不分这两种，一律再 `__popPage(1)`：从详情页 `wx.navigateBack()` 回来，逻辑层
+/// 连退两层，回到的页面拿着**上上一页**的 data 渲染 —— 模板里的值全空、点什么都没反应
+/// （方法也是上上一页的）。桌面窗体按「当前路由对不对得上」来防重复出栈，同一页面连开
+/// 两层时会漏；而两边都拿出栈之后的 `__currentPage` 派发 onUnload，派给了要回去的那一页。
+///
+/// 不按两边栈的层数对齐：桌面 `--route` 启动时逻辑层多压了一个首页，层数本来就不相等。
+pub fn take_logic_popped(app: &crate::runtime::MiniApp) -> usize {
+    app.eval("typeof __takeLogicPopped==='function'?__takeLogicPopped():0")
+        .ok()
+        .and_then(|s| s.trim().parse().ok())
+        .unwrap_or(0)
+}
+
+/// 宿主发起的返回：逻辑层的当前页派发 onUnload，再出一层（复用上一页的实例，不重载它的 js）。
+/// 逻辑层只剩一页时不动（`__popPage` 本来就不出最后一页，onUnload 也不该派给留下的那页）
+pub fn pop_logic_page(app: &crate::runtime::MiniApp) {
+    app.eval("if(__pageStack.length>1){if(__currentPage&&__currentPage.onUnload)__currentPage.onUnload();__popPage(1);}")
+        .ok();
 }
 
 /// 解析 URL，返回路径和查询参数

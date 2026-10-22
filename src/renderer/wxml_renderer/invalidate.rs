@@ -201,6 +201,12 @@ impl WxmlRenderer {
         self.scroll_cache.mark_all_dirty();
     }
 
+    /// 离屏缓存整个丢掉（不只是标脏）：页面被盖住 / tab 页切走时宿主留着这个渲染器，
+    /// scroll-view 的整段内容位图（宽 × 内容高 × 4 字节）在那段时间里只是白占内存，回来时重画
+    pub fn drop_offscreen_caches(&mut self) {
+        self.scroll_cache.clear();
+    }
+
     /// 布局缓存作废，下一帧整棵树重建重排。字体换了（`@font-face` / `wx.loadFontFace` 下完）时用：
     /// 数据没变，失效分析会以为什么都不用动，可文字宽度已经变了
     pub fn invalidate_layout(&mut self) {

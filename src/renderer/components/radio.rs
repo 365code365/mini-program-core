@@ -90,6 +90,10 @@ impl RadioComponent {
         ns.border_radius = ns.border_width / 2.0;
         ns.custom_data = if checked { 1.0 } else { 0.0 };
         
+        // 按压态样式是建树前半段（build_base_style）的快照，上面借来存「画多大」的 border_width、
+        // 选中配色都不在里面：按住时整个单选框看不见。微信的 radio 没有点击态，丢掉
+        // （同 checkbox.rs / slider.rs）。
+        ns.pressed_style = None;
         let tn = ctx.taffy.new_leaf(ts).unwrap();
         
         Some(RenderNode {

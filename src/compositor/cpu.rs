@@ -38,7 +38,13 @@ pub fn compose(buf: &mut [u32], layers: &FrameLayers<'_>) {
         layers.tabbar_px,
         layers.fixed_rows,
         layers.page_bg,
+        layers.top.as_ref().map(|t| t.rows).unwrap_or(0),
     );
+    // 顶部宿主外壳（导航栏）：盖在页面与 fixed 层之上、所有浮层之下 —— Modal / picker 的遮罩
+    // 连导航栏一起压暗（与微信一致：弹窗是盖住整个窗口的）
+    if let Some(t) = &layers.top {
+        paint_top_band(buf, w, h, t.rows, t.canvas.read());
+    }
     if let Some(p) = layers.pull {
         render_pull_indicator(
             buf,
@@ -71,6 +77,35 @@ pub fn compose(buf: &mut [u32], layers: &FrameLayers<'_>) {
         picker_sheet::render(buf, w, h, layers.scale, sheet, o.text);
     }
     if let Some(eb) = &layers.edge_back {
-        edge_back::compose(buf, w, h, eb.offset_px, eb.shot, eb.progress);
+        if eb.shot_on_top {
+            edge_back::compose_shot_over(buf, w, h, eb.offset_px, eb.shot, eb.progress);
+        } else {
+            edge_back::compose(buf, w, h, eb.offset_px, eb.shot, eb.progress);
+        }
+    }
+}
+
+/// 导航栏画布的前 `rows` 行按 alpha 叠进缓冲（导航栏底色不透明时就是整行拷贝）
+fn paint_top_band(buf: &mut [u32], w: u32, h: u32, rows: u32, band: &crate::Canvas) {
+    let draw_w = (w as usize).min(band.width() as usize);
+    let src_w = band.width() as usize;
+    let px = band.pixels();
+    for y in 0..rows.min(h).min(band.height()) as usize {
+        let src = &px[y * src_w..y * src_w + draw_w];
+        let dst = &mut buf[y * w as usize..y * w as usize + draw_w];
+        for (d, c) in dst.iter_mut().zip(src) {
+            match c.a {
+                0 => {}
+                255 => *d = ((c.r as u32) << 16) | ((c.g as u32) << 8) | c.b as u32,
+                a => {
+                    let (a, inv) = (a as u32, 255 - a as u32);
+                    let p = *d;
+                    let r = (c.r as u32 * a + ((p >> 16) & 0xFF) * inv) / 255;
+                    let g = (c.g as u32 * a + ((p >> 8) & 0xFF) * inv) / 255;
+                    let b = (c.b as u32 * a + (p & 0xFF) * inv) / 255;
+                    *d = (r << 16) | (g << 8) | b;
+                }
+            }
+        }
     }
 }

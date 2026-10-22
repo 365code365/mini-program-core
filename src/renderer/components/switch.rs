@@ -19,13 +19,17 @@ use crate::parser::wxml::WxmlNode;
 use crate::{Canvas, Color, Paint, PaintStyle, Path};
 use taffy::prelude::*;
 
-/// 微信 switch 默认轨道尺寸（weui：52x32，1px 边框，滑块 30）
+/// 微信 switch 默认轨道尺寸（weui：52x32，内边距 2，滑块 28）
 pub const SWITCH_WIDTH: f32 = 52.0;
 pub const SWITCH_HEIGHT: f32 = 32.0;
-/// 关态轨道底色 / 边框色
-const TRACK_OFF: u32 = 0xDFDFDF;
-/// 关态内部填充（weui 用一个略小的白色胶囊盖住轨道，开启时缩到 0）
-const TRACK_INNER: u32 = 0xFDFDFD;
+/// 关态轨道：WeUI 的 `--weui-FG-3` = `rgba(0,0,0,.1)`（压在白底上是 #E6E6E6）
+const TRACK_OFF_ALPHA: u8 = 26;
+/// 滑块与轨道之间的内边距（`padding: 2px`）
+const KNOB_INSET: f32 = 2.0;
+/// 滑块投影 `0 2px 3px 0 rgba(0,0,0,.06)`
+const KNOB_SHADOW_ALPHA: u8 = 15;
+/// disabled 的整体透明度（与 H5 导出的 `.wx-switch-disabled` 同值）
+const DISABLED_OPACITY: f32 = 0.45;
 /// switch 默认开启色（微信文档默认值）
 const DEFAULT_ON: u32 = 0x04BE02;
 
@@ -46,9 +50,7 @@ impl SwitchComponent {
                               !dim_is_auto(ts.size.height);
         let has_custom_radius = ns.border_radius > 0.0;
         
-        // 微信（weui）官方 switch 度量：轨道 52x32、1px 边框、滑块直径 30。
-        // 之前用的 51x31 + 直径 27 让滑块在轨道里"缩了一圈"，缺少微信那种
-        // 滑块几乎填满轨道的贴合感。
+        // 微信（weui）官方 switch 度量：轨道 52x32、内边距 2、滑块直径 28（见 draw_switch）
         let (default_width, default_height) = if switch_type == "checkbox" {
             (24.0, 24.0)
         } else {
@@ -78,6 +80,10 @@ impl SwitchComponent {
         
         let text = switch_type.to_string();
         
+        // 按压态样式是建树前半段（build_base_style）的快照，上面填的选中进度、圆角都不在里面：
+        // 按住一个开着的开关，它会先跳成关、抬手再拨。微信的 switch 没有点击态，丢掉
+        // （同 checkbox.rs / slider.rs）。
+        ns.pressed_style = None;
         let tn = ctx.taffy.new_leaf(ts).unwrap();
         
         Some(RenderNode {
@@ -112,9 +118,16 @@ impl SwitchComponent {
         }
     }
     
-    /// 按微信（weui）结构绘制开关：
-    /// 轨道（关态浅灰边框 + 内部白色胶囊，开态整体填充主色）+ 带投影的白色滑块。
+    /// 按微信当前的开关画（WeUI master 的 `weui-switch.less`，微信 7.0 起的新版组件样式）：
+    /// 52×32 实心轨道（关 = FG-3 `rgba(0,0,0,.1)`，开 = `color`）、**没有边框也没有内层白胶囊**，
+    /// 内边距 2 里一个 28 的白色滑块，投影 `0 2px 3px rgba(0,0,0,.06)`，开启时右移 20。
+    ///
+    /// 从前画的是 WeUI 1.x 那一版（1px 灰边 + 内层 #FDFDFD 白胶囊 + 30 的滑块、投影 `.4`）：
+    /// 关态看起来是「白底细灰框」，和现在微信的实心浅灰轨道差得最明显。
+    ///
     /// `progress` 为 0..1 的开启进度，点击后由交互层按缓动推进，形成滑动手感。
+    /// disabled 是**整体**半透明（CSS `opacity` 的语义）：先画进离屏再按透明度贴回 ——
+    /// 逐个颜色乘 alpha 的话，半透明的滑块会透出底下的绿色轨道。
     fn draw_switch(
         canvas: &mut Canvas,
         style: &NodeStyle,
@@ -124,65 +137,77 @@ impl SwitchComponent {
         x: f32, y: f32, w: f32, h: f32,
         sf: f32,
     ) {
-        let base_opacity = style.opacity * if disabled { 0.45 } else { 1.0 };
-        let apply_opacity = |color: Color| -> Color {
-            if base_opacity < 1.0 {
-                Color::new(color.r, color.g, color.b, (color.a as f32 * base_opacity) as u8)
-            } else {
-                color
-            }
-        };
+        let opacity = style.opacity * if disabled { DISABLED_OPACITY } else { 1.0 };
+        if opacity >= 0.999 {
+            Self::paint_switch(canvas, style, progress, on_color, x, y, w, h, sf);
+            return;
+        }
+        // 整组透明：投影往下、往外各多 2+3 像素，离屏留够边
+        let pad = (6.0 * sf).ceil();
+        let (ox, oy) = ((x - pad).floor(), (y - pad).floor());
+        let (tw, th) = ((w + pad * 2.0).ceil() as u32 + 1, (h + pad * 2.0).ceil() as u32 + 1);
+        if tw == 0 || th == 0 || tw > 2048 || th > 2048 {
+            return;
+        }
+        let mut off = Canvas::new(tw, th);
+        off.clear(Color::new(0, 0, 0, 0));
+        Self::paint_switch(&mut off, style, progress, on_color, x - ox, y - oy, w, h, sf);
+        canvas.blend_pixels_opacity(ox as i32, oy as i32, off.pixels(), tw as usize, opacity);
+    }
+
+    /// 不带透明度地画一个开关（轨道 + 滑块），见 [`Self::draw_switch`]
+    #[allow(clippy::too_many_arguments)]
+    fn paint_switch(
+        canvas: &mut Canvas,
+        style: &NodeStyle,
+        progress: f32,
+        on_color: Color,
+        x: f32, y: f32, w: f32, h: f32,
+        sf: f32,
+    ) {
         let lerp = |a: u8, b: u8| -> u8 {
             (a as f32 + (b as f32 - a as f32) * progress).round().clamp(0.0, 255.0) as u8
         };
-        
         let radius = if style.border_radius > 0.0 { style.border_radius.min(h / 2.0) } else { h / 2.0 };
-        let fill_round = |canvas: &mut Canvas, rx: f32, ry: f32, rw: f32, rh: f32, r: f32, color: Color| {
-            if rw <= 0.0 || rh <= 0.0 { return; }
-            let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill).with_anti_alias(true);
-            let mut path = Path::new();
-            path.add_round_rect(rx, ry, rw, rh, r.min(rw / 2.0).min(rh / 2.0));
-            canvas.draw_path(&path, &paint);
-        };
-        
-        // 轨道：CSS 指定过背景就尊重 CSS，否则关态浅灰 → 开态主色渐变
-        let off_track = Color::from_hex(TRACK_OFF);
+        // 轨道：CSS 指定过背景就尊重 CSS，否则关态 FG-3 → 开态主色（颜色与透明度一起插值）
+        let off_track = Color::new(0, 0, 0, TRACK_OFF_ALPHA);
         let track = style.background_color.unwrap_or_else(|| {
-            Color::new(lerp(off_track.r, on_color.r), lerp(off_track.g, on_color.g), lerp(off_track.b, on_color.b), 255)
+            Color::new(
+                lerp(off_track.r, on_color.r),
+                lerp(off_track.g, on_color.g),
+                lerp(off_track.b, on_color.b),
+                lerp(off_track.a, on_color.a),
+            )
         });
-        fill_round(canvas, x, y, w, h, radius, apply_opacity(track));
-        
-        // 关态内部白色胶囊（weui 的 ::before，开启时 scale 到 0）
-        if style.background_color.is_none() {
-            let shrink = (1.0 - progress).clamp(0.0, 1.0);
-            if shrink > 0.01 {
-                let border = 1.0 * sf;
-                let (iw, ih) = ((w - border * 2.0) * shrink, (h - border * 2.0) * shrink);
-                let ix = x + (w - iw) / 2.0;
-                let iy = y + (h - ih) / 2.0;
-                fill_round(canvas, ix, iy, iw, ih, ih / 2.0, apply_opacity(Color::from_hex(TRACK_INNER)));
-            }
+        if w > 0.0 && h > 0.0 {
+            let paint = Paint::new().with_color(track).with_style(PaintStyle::Fill).with_anti_alias(true);
+            let mut path = Path::new();
+            path.add_round_rect(x, y, w, h, radius.min(w / 2.0));
+            canvas.draw_path(&path, &paint);
         }
-        
-        // 滑块：直径 = 轨道高 - 2*边框，左右各留 1px（微信是几乎填满轨道的）
-        let inset = 1.0 * sf;
-        let knob_radius = (h - inset * 2.0) / 2.0;
-        let knob_y = y + h / 2.0;
-        let left_x = x + inset + knob_radius;
-        let right_x = x + w - inset - knob_radius;
-        let knob_x = left_x + (right_x - left_x) * progress;
-        
-        // 投影：0 1px 3px rgba(0,0,0,.4) 的近似（三层递减不透明度的圆）
-        for (i, alpha) in [(3.0, 26u8), (2.0, 34), (1.0, 44)] {
-            let paint = Paint::new()
-                .with_color(Color::new(0, 0, 0, (alpha as f32 * base_opacity) as u8))
-                .with_style(PaintStyle::Fill)
-                .with_anti_alias(true);
-            canvas.draw_circle(knob_x, knob_y + 1.0 * sf, knob_radius + i * sf * 0.5, &paint);
-        }
-        
-        let knob_paint = Paint::new().with_color(apply_opacity(Color::WHITE)).with_style(PaintStyle::Fill).with_anti_alias(true);
-        canvas.draw_circle(knob_x, knob_y, knob_radius, &knob_paint);
+
+        // 滑块：轨道内边距 2，直径 = 轨道高 - 4（52×32 时 28，行程 20）
+        let inset = KNOB_INSET * sf;
+        let d = (h - inset * 2.0).max(0.0);
+        let left = x + inset;
+        let right = x + w - inset - d;
+        let kx = left + (right - left) * progress;
+        let ky = y + inset;
+        crate::renderer::components::shadow::draw_outer_shadow(
+            canvas,
+            Color::new(0, 0, 0, KNOB_SHADOW_ALPHA),
+            0.0,
+            2.0 * sf,
+            3.0 * sf,
+            0.0,
+            kx,
+            ky,
+            d,
+            d,
+            d / 2.0,
+        );
+        let knob_paint = Paint::new().with_color(Color::WHITE).with_style(PaintStyle::Fill).with_anti_alias(true);
+        canvas.draw_circle(kx + d / 2.0, ky + d / 2.0, d / 2.0, &knob_paint);
     }
     
     fn draw_checkbox(canvas: &mut Canvas, style: &NodeStyle, checked: bool, x: f32, y: f32, w: f32, h: f32, _sf: f32) {

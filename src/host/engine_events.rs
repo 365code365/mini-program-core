@@ -11,9 +11,11 @@
 //! | `hostCall` | 调了宿主实现的 `wx.*` | `id` `api` `args` |
 //! | `clipboard` | `wx.setClipboardData`、输入框里 `copy` / `cut`（宿主写系统剪贴板） | `data` |
 //! | `vibrate` | `wx.vibrateShort` / `vibrateLong` | `duration`（`short` / `long`）`style` |
+//! | `app` | 启动后第一帧（只发一次） | `about`：`name` `appId` `description` `entryPage` `pageCount` `engine`（见 `app_about.rs`） |
+//! | `menuButton` | 点了引擎画的右上角胶囊（选项 `menuButton`，custom 导航栏的页面；见 engine_capsule.rs） | `action`：`menu`（•••，查看关于）/ `close`（⊙，返回宿主） |
 //! | `log` | 逻辑层 `console.*` | `text` |
 //!
-//! 坐标一律是**视口逻辑坐标**（左上原点，已减滚动）。
+//! 坐标一律是**视口逻辑坐标**（左上原点，已减滚动；`nativeViews` 在侧滑返回时还加上了整帧右移）。
 //!
 //! ## 为什么是轮询而不是回调
 //! C ABI 一直是「没有回调注册」：回调意味着要约定在哪条线程上回、回调里能不能再调引擎。
@@ -37,6 +39,8 @@ pub struct HostEvents {
     focused: Option<String>,
     /// 上一次报的原生组件摆放（变了才发，免得滚动静止时每帧刷一条）
     last_native: Option<String>,
+    /// `app` 事件（关于信息）发过了：启动后只发一次
+    app_sent: bool,
 }
 
 impl HostEvents {
@@ -72,11 +76,26 @@ impl MiniEngine {
 
     /// 每次 pump 末尾：把逻辑层与引擎这一帧产生的事件收拢进队列
     pub(super) fn sync_host_events(&mut self) {
+        self.sync_app_event();
         self.sync_nav_slots();
         self.drain_js_host_events();
         self.drain_js_logs();
         self.sync_page_event();
+        // 换到有 / 没有导航栏的页面：逻辑层的 windowHeight 跟着变（engine_navbar.rs）
+        self.sync_window_height();
         self.sync_native_views();
+    }
+
+    /// 启动后第一帧：小程序的关于信息（胶囊「•••」由宿主展示，见 `app_about.rs`）
+    fn sync_app_event(&mut self) {
+        if self.events.app_sent || self.page_stack.is_empty() {
+            return;
+        }
+        self.events.app_sent = true;
+        let root = super::page_loader::get_app_path();
+        let app_json = serde_json::from_str::<Value>(&super::page_loader::load_app_json()).unwrap_or(Value::Null);
+        let about = crate::app_about::about(&root, &app_json);
+        self.events.push(json!({ "type": "app", "about": about }));
     }
 
     /// 导航栏改动按页面栈层对齐：换页（同层换了路由）清空，出栈截断
@@ -103,6 +122,10 @@ impl MiniEngine {
                             slot.1.insert(k.clone(), val.clone());
                         }
                     }
+                }
+                // 前景色决定胶囊用深色还是浅色那套
+                if v.get("frontColor").is_some() {
+                    self.capsule_restyle();
                 }
             }
             self.events.push_raw(raw);
@@ -190,7 +213,8 @@ impl MiniEngine {
         let region = self.renderer.as_ref().and_then(|r| r.input_region(id)).cloned();
         let attr = |k: &str| region.as_ref().and_then(|r| r.attrs.get(k)).cloned();
         let truthy = |k: &str| attr(k).map(|v| v == "true" || v == "{{true}}" || v.is_empty()).unwrap_or(false);
-        let y = if is_fixed { bounds.y } else { bounds.y - self.scroll.get_position() };
+        // 画面坐标：引擎画了导航栏时页面视口在它下面（宿主按这个矩形算键盘顶起多少）
+        let y = self.nav_height() + if is_fixed { bounds.y } else { bounds.y - self.scroll.get_position() };
         let tag = region.as_ref().map(|r| r.tag.clone()).unwrap_or_else(|| "input".into());
         // 点中位置的光标（字符下标）。宿主的输入法要从这里开始编辑，
         // 而不是假设光标在末尾 —— 否则在文字中间点一下再打字，字会落到别处
@@ -237,16 +261,22 @@ impl MiniEngine {
         }
         let scroll = self.scroll.get_position();
         let vw = self.width as f32;
+        // 报给宿主的是**画面坐标**：引擎画了导航栏时页面视口整体在它下面（engine_navbar.rs）
+        let top = self.nav_height();
         // 正常流画在 tabBar 之上的那一截；fixed 覆盖层盖满整个视口（含 tabBar，见 present_to_buffer）
-        let flow_area = crate::Rect::new(0.0, 0.0, vw, self.viewport_height());
-        let fixed_area = crate::Rect::new(0.0, 0.0, vw, self.height as f32);
+        let flow_area = crate::Rect::new(0.0, top, vw, self.viewport_height());
+        let fixed_area = crate::Rect::new(0.0, top, vw, self.page_window_height());
+        // 侧滑返回 / 页面转场时整帧平移（合成最后一步搬像素）：控件不在那张图里，
+        // 不报这段位移它就停在原处，盖在露出来的另一页上。返回转场时活的是下面那一页：
+        // 它按视差左移、右边被离开的那页盖住（可见区右沿 = 那页的左沿）
+        let (dx, visible_right) = self.route.live_shift(vw).unwrap_or((self.edge_back_shift(), vw));
         let regions = self.renderer.as_ref().map(|r| r.native_regions()).unwrap_or(&[]);
         let covers = if regions.is_empty() { Default::default() } else { self.native_covers() };
         let rect = |r: &crate::Rect| json!({ "x": r.x, "y": r.y, "width": r.width, "height": r.height });
         let views: Vec<Value> = regions
             .iter()
             .filter_map(|n| {
-                let y = if n.is_fixed { n.bounds.y } else { n.bounds.y - scroll };
+                let y = top + if n.is_fixed { n.bounds.y } else { n.bounds.y - scroll };
                 let b = &n.bounds;
                 let view = crate::Rect::new(b.x, y, b.width, b.height);
                 let area = if n.is_fixed { fixed_area } else { flow_area };
@@ -255,10 +285,11 @@ impl MiniEngine {
                 if !view.intersects(&area) {
                     return None;
                 }
-                let vis = covers.visibility(view, area, n.is_fixed);
+                // 遮挡在平移之前算：覆盖层也跟着整帧一起挪，相对关系不变
+                let vis = covers.visibility(view, area, n.is_fixed).shifted(dx, visible_right);
                 Some(json!({
                     "key": n.key, "tag": n.tag,
-                    "x": b.x, "y": y, "width": b.width, "height": b.height,
+                    "x": b.x + dx, "y": y, "width": b.width, "height": b.height,
                     "fixed": n.is_fixed, "attrs": n.attrs,
                     "clip": rect(&vis.clip),
                     "holes": vis.holes.iter().map(rect).collect::<Vec<_>>(),

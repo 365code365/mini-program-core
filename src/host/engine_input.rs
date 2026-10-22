@@ -7,12 +7,10 @@
 //! （这个仓库踩过一次，见 `doc/引擎测试说明.md` T2-6）。
 
 use super::engine::MiniEngine;
-use super::navigation::{parse_url, NavigationRequest};
 use crate::host::input;
 use crate::host::picker_sheet;
 use crate::host::touch::TouchOut;
 use crate::ui::interaction::KeyInput;
-use std::collections::HashMap;
 
 impl MiniEngine {
     /// 手指按下（逻辑坐标，左上原点）。
@@ -22,17 +20,26 @@ impl MiniEngine {
     /// 直接 `scroll.begin_drag()` 把位移全给页面，于是横向卡片列表吞掉整页纵滑、
     /// 内层列表滚到底也不交棒、`catchtouchmove` 的遮罩锁不住页面。
     pub fn pointer_down(&mut self, x: f32, y: f32) {
+        // 页面转场中：这串触摸整串吞掉（微信同样在转场里不响应点击，route_anim.rs）
+        if self.route.swallow_down() {
+            return;
+        }
         // 宿主浮层（picker 面板、全屏视频、带蒙层的提示框、Modal）先吃，见 engine_overlay_input.rs
         if self.overlay_pointer_down(x, y) {
             return;
         }
+        // 引擎画的导航栏（返回键）：画面坐标，之后一律换成页面视口坐标（engine_navbar.rs）
+        if self.nav_pointer_down(x, y) {
+            return;
+        }
+        let y = y - self.nav_height();
 
         let now = self.mono_ms();
         let has_tabbar = self.is_tabbar_page(&self.current_route());
         let tabbar_y = if has_tabbar {
-            self.height as f32 - crate::host::tabbar_height() as f32
+            self.page_window_height() - crate::host::tabbar_height() as f32
         } else {
-            self.height as f32
+            self.page_window_height()
         };
         if has_tabbar && y >= tabbar_y {
             // tabBar 不属于页面：不建手势、不滚页面、不命中页面里的元素。
@@ -93,9 +100,10 @@ impl MiniEngine {
 
     /// 手指移动
     pub fn pointer_move(&mut self, x: f32, y: f32) {
-        if self.overlay_pointer_move(x, y) {
+        if self.route.swallowing() || self.overlay_pointer_move(x, y) || self.nav_pointer_move(x, y) {
             return;
         }
+        let y = y - self.nav_height();
         let now = self.mono_ms();
         if self.interaction.update_press_position(x, y, y + self.scroll.get_position()) {
             self.needs_redraw = true;
@@ -148,9 +156,10 @@ impl MiniEngine {
 
     /// 手指抬起
     pub fn pointer_up(&mut self, x: f32, y: f32) {
-        if self.overlay_pointer_up(x, y) {
+        if self.route.swallow_end() || self.overlay_pointer_up(x, y) || self.nav_pointer_up(x, y) {
             return;
         }
+        let y = y - self.nav_height();
 
         // 松手要重画的只有按压态（`:active` / `hover-class` 要褪掉）与 scroll-view 拖拽收尾。
         // 从前这里无条件 `needs_redraw`：每一次滑动松手都整帧重画，正好砸在惯性的第一帧上
@@ -188,6 +197,8 @@ impl MiniEngine {
 
     /// 手势被系统打断（来电、返回手势接管…）
     pub fn pointer_cancel(&mut self) {
+        if self.route.swallow_end() || self.nav_pointer_cancel() { return; } // 转场中 / 导航栏上的那串
+        if self.capsule_cancel() { return; } // 按在胶囊上的那串（engine_capsule.rs）
         // 与按下/抬起对称：面板弹着时这串触摸根本没进页面的状态机
         if picker_sheet::on_cancel(&mut self.picker_sheet) {
             self.dmg.compose_dirty = true;
@@ -247,112 +258,6 @@ impl MiniEngine {
         self.needs_redraw = true;
     }
 
-    /// 系统返回键 / 侧滑返回。
-    ///
-    /// 返回 `false` 表示**页面栈已经只剩一页**，宿主该关掉这个小程序
-    /// （Android 的 `onBackPressed` 要在这时才调 `finish()`）。
-    pub fn back(&mut self) -> bool {
-        if self.page_stack.len() <= 1 {
-            return false;
-        }
-        self.pop_page();
-        true
-    }
-
-    pub(crate) fn pop_page(&mut self) {
-        // 离开当前页：先 onUnload，再让逻辑层出栈（**不重载**上一页的 js，
-        // 否则用户在上一页的筛选/表单/滚动位置全丢，还会重复触发「仅首次进入」的逻辑）
-        self.app
-            .eval("if(__currentPage&&__currentPage.onUnload)__currentPage.onUnload()")
-            .ok();
-        self.page_stack.pop();
-        // 回到的这一页要重新渲染，它离开时留下的那张图用完即弃
-        self.back_shots.pop();
-        self.app.eval("__popPage(1)").ok();
-        self.app.eval("if(__currentPage&&__currentPage.onShow)__currentPage.onShow()").ok();
-        self.interaction.clear_page_state();
-        let vp = self.viewport_height();
-        self.scroll = crate::ui::ScrollController::new(vp, vp);
-        self.page_data_dirty = true;
-        self.update_renderers();
-        self.needs_redraw = true;
-    }
-
-    /// 取一次逻辑层挂起的路由请求
-    pub(crate) fn take_navigation(&mut self) -> Option<NavigationRequest> {
-        let raw = self.app.eval("JSON.stringify(__pendingNavigation||null)").ok()?;
-        let v: serde_json::Value = serde_json::from_str(&raw).ok()?;
-        let obj = v.as_object()?;
-        let kind = obj.get("type")?.as_str()?.to_string();
-        let url = obj.get("url").and_then(|u| u.as_str()).unwrap_or("").to_string();
-        self.app.eval("__pendingNavigation=null").ok();
-        Some(match kind.as_str() {
-            "navigateTo" => NavigationRequest::NavigateTo { url },
-            "navigateBack" => NavigationRequest::NavigateBack,
-            "switchTab" => NavigationRequest::SwitchTab { url },
-            "redirectTo" => NavigationRequest::RedirectTo { url },
-            "reLaunch" => NavigationRequest::ReLaunch { url },
-            _ => return None,
-        })
-    }
-
-    pub(crate) fn apply_navigation(&mut self, nav: NavigationRequest) {
-        match nav {
-            NavigationRequest::NavigateTo { url } => {
-                let (p, q) = parse_url(&url);
-                // 当前页要被盖住了：留一张图，侧滑返回时露出来的就是它
-                self.capture_back_shot();
-                if self.navigate_to(&p, q).is_err() {
-                    self.back_shots.pop();
-                }
-            }
-            NavigationRequest::NavigateBack => {
-                self.back();
-            }
-            NavigationRequest::SwitchTab { url } => {
-                let (p, _) = parse_url(&url);
-                self.reset_stack_and_open(&p);
-            }
-            NavigationRequest::RedirectTo { url } => {
-                // 替换当前页：栈深不变
-                let (p, q) = parse_url(&url);
-                self.app
-                    .eval("if(__currentPage&&__currentPage.onUnload)__currentPage.onUnload()")
-                    .ok();
-                self.page_stack.pop();
-                self.app.eval("__popPage(1)").ok();
-                self.interaction.clear_page_state();
-                self.navigate_to(&p, q).ok();
-            }
-            NavigationRequest::ReLaunch { url } => {
-                let (p, _) = parse_url(&url);
-                self.reset_stack_and_open(&p);
-            }
-        }
-    }
-
-    fn reset_stack_and_open(&mut self, path: &str) {
-        self.app
-            .eval("if(__currentPage&&__currentPage.onUnload)__currentPage.onUnload()")
-            .ok();
-        self.page_stack.clear();
-        self.back_shots.clear();
-        self.edge_back = None;
-        self.app.eval("__resetPageStack()").ok();
-        self.interaction.clear_page_state();
-        self.navigate_to(path, HashMap::new()).ok();
-    }
-
-    /// 主动跳页（宿主侧的深链：扫码进来直接落到某个页面）
-    pub fn navigate(&mut self, url: &str) -> Result<(), String> {
-        let (p, q) = parse_url(url);
-        self.capture_back_shot();
-        let r = self.navigate_to(&p, q);
-        if r.is_err() {
-            self.back_shots.pop();
-        }
-        r
-    }
 
     // ───────────────────────── 内部：派发 ─────────────────────────
 
@@ -407,7 +312,8 @@ impl MiniEngine {
         }
         let route = self.current_route();
         let has_tabbar = self.is_tabbar_page(&route);
-        let tabbar_y = self.height as f32 - crate::host::tabbar_height() as f32;
+        // 页面视口坐标（导航栏下沿为 0）
+        let tabbar_y = self.page_window_height() - crate::host::tabbar_height() as f32;
         // 底部 tabBar 命中优先（它盖在页面之上）：自定义组件式与原生配置式都要认
         if has_tabbar && y >= tabbar_y {
             let custom = if self.custom_tabbar.is_some() {

@@ -70,6 +70,29 @@ impl Covers {
     }
 }
 
+impl Visibility {
+    /// 侧滑返回：`edge_back::compose` 在**所有层合成完之后**把整帧右移 `dx`（页面、tabBar、
+    /// fixed、Toast / 弹窗 / picker 一起走），所以遮挡的相对关系不变，只是整体平移；
+    /// 推出屏幕右沿（`screen_w`）的部分裁掉。推到底时 `clip` 为空但照报 ——
+    /// 手势可能取消、滑回来，控件不能被收掉重建（视频进度会丢）。
+    pub fn shifted(self, dx: f32, screen_w: f32) -> Self {
+        if dx == 0.0 {
+            return self;
+        }
+        let moved = Rect::new(self.clip.x + dx, self.clip.y, self.clip.width, self.clip.height);
+        let screen = Rect::new(0.0, moved.y, screen_w, moved.height);
+        let Some(clip) = intersect(&moved, &screen) else {
+            return Visibility { clip: Rect::new(moved.x, moved.y, 0.0, 0.0), holes: Vec::new(), mask: self.mask };
+        };
+        let holes = self
+            .holes
+            .iter()
+            .filter_map(|h| intersect(&Rect::new(h.x + dx, h.y, h.width, h.height), &clip))
+            .collect();
+        Visibility { clip, holes, mask: self.mask }
+    }
+}
+
 fn intersect(a: &Rect, b: &Rect) -> Option<Rect> {
     let x0 = a.x.max(b.x);
     let y0 = a.y.max(b.y);
@@ -149,8 +172,18 @@ impl MiniEngine {
                 keep *= 1.0 - a;
             }
         }
+        // fixed 子树的区域是页面视口坐标：引擎画了导航栏时整体在它下面（画面坐标要加回去）
+        let top = self.nav_height();
         if let Some(r) = self.renderer.as_ref() {
-            covers.over_flow.extend_from_slice(r.fixed_hit_regions());
+            covers.over_flow.extend(r.fixed_hit_regions().iter().map(|f| Rect::new(f.x, f.y + top, f.width, f.height)));
+        }
+        // 引擎画的导航栏压在所有原生组件之上（与微信一致：视频滚到导航栏底下就被它挡住）
+        if top > 0.0 {
+            covers.over_all.push(Rect::new(0.0, 0.0, self.width as f32, top));
+        }
+        // 右上角胶囊画在 fixed 层最上面：正常流与 fixed 层里的原生组件都被它压着
+        if let Some(r) = self.menu_button_rect() {
+            covers.over_all.push(r);
         }
         covers.mask = 1.0 - keep;
         covers

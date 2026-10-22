@@ -150,18 +150,98 @@
             function __resetPageStack() {
                 __pageStack = [];
                 __currentPage = null;
+                __logicPopped = 0;
                 return true;
             }
-            // 页面出栈（供 navigateBack 使用）
-            function __popPage(delta) {
+            // wx.navigateBack 已经替宿主出过、宿主还没认领的层数
+            var __logicPopped = 0;
+            // 宿主处理「返回」时调：取走上面那个层数并清零（0 = 这次返回是宿主自己发起的）
+            function __takeLogicPopped() {
+                var n = __logicPopped;
+                __logicPopped = 0;
+                return n;
+            }
+            // 页面出栈（供 navigateBack 使用）。`byApi` 为真表示是 wx.navigateBack 发起的：
+            // 给关掉的每一页派发 onUnload，并记下替宿主出了几层（__takeLogicPopped 取走）。
+            // 宿主据此只退自己的栈、不再出逻辑层的栈、不再派发 onUnload —— 从前两边各出一次，
+            // 回到的页面拿着上上一页的 data 渲染；onUnload 也派给了出栈之后的 __currentPage，
+            // 那是要回去的那一页。宿主发起的返回（返回键、侧滑）由宿主先派发、再 __popPage(1)。
+            function __popPage(delta, byApi) {
                 delta = delta || 1;
                 for (var i = 0; i < delta && __pageStack.length > 1; i++) {
-                    __pageStack.pop();
+                    var gone = __pageStack.pop();
+                    if (!byApi) continue;
+                    __logicPopped++;
+                    if (gone && typeof gone.onUnload === 'function') {
+                        try { gone.onUnload(); } catch (e) { __native_print('[Page.onUnload] ' + e.message); }
+                    }
                 }
                 __currentPage = __pageStack[__pageStack.length - 1] || null;
                 return __currentPage;
             }
             
+            // 切走的 tab 页实例（路由 → 实例）。微信里 tab 页建一次就一直在：切回来不再 onLoad，
+            // 只有 onHide / onShow，页面里的数据原样（host::page_keep 留着它的视图）
+            var __tabPages = {};
+            // 宿主的 switchTab：从栈顶往下，非 tab 页 onUnload（含组件 detached），tab 页留进
+            // __tabPages（它在栈顶时先 onHide；在栈底被盖着的，盖住它时已经 onHide 过）。
+            // 目标 tab 页留过实例：放回栈底、onShow，返回 true —— 宿主不再加载它的 js；
+            // 没留过返回 false，宿主照常加载（Page() 会入栈）
+            function __switchTabTo(route, tabRoutes) {
+                var top = __pageStack[__pageStack.length - 1];
+                for (var i = __pageStack.length - 1; i >= 0; i--) {
+                    var p = __pageStack[i];
+                    // __dispatchPage 按 __currentPage 派发（组件的 pageLifetimes 也按它筛）
+                    __currentPage = p;
+                    if (tabRoutes.indexOf(p.route) >= 0) {
+                        if (p === top) __dispatchPage('onHide');
+                        __tabPages[p.route] = p;
+                    } else {
+                        __dispatchPage('onUnload');
+                    }
+                }
+                __pageStack = [];
+                __currentPage = null;
+                __logicPopped = 0;
+                var kept = __tabPages[route];
+                if (!kept) return false;
+                delete __tabPages[route];
+                __pageStack.push(kept);
+                __currentPage = kept;
+                __dispatchPage('onShow');
+                return true;
+            }
+            // 宿主没有这个 tab 页的视图（只能重新加载）：逻辑层也别留它的实例
+            function __dropTab(route) {
+                if (__tabPages[route]) {
+                    var p = __tabPages[route];
+                    delete __tabPages[route];
+                    var cur = __currentPage;
+                    __currentPage = p;
+                    __dispatchPage('onUnload');
+                    __currentPage = cur;
+                }
+                __pageStack = [];
+                __currentPage = null;
+            }
+            // 宿主的 reLaunch：栈上每一页（从顶往下）与留着的 tab 页全部 onUnload
+            function __reLaunchAll() {
+                for (var i = __pageStack.length - 1; i >= 0; i--) {
+                    __currentPage = __pageStack[i];
+                    __dispatchPage('onUnload');
+                }
+                for (var r in __tabPages) {
+                    if (!__tabPages.hasOwnProperty(r)) continue;
+                    __currentPage = __tabPages[r];
+                    __dispatchPage('onUnload');
+                }
+                __tabPages = {};
+                __pageStack = [];
+                __currentPage = null;
+                __logicPopped = 0;
+                return true;
+            }
+
             // native 在加载页面 JS 前可设置将要创建页面的路由
             var __pendingRoute = '';
             // 本次页面 js 是否已经建出页面实例。用来区分「用 Component 定义页面」
