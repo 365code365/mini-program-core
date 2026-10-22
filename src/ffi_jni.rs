@@ -152,6 +152,19 @@ pub extern "system" fn Java_dev_minirender_MiniEngine_nativePointer(
     }
 }
 
+/// 带事件时间的移动（`tMs`：`MotionEvent.getEventTime()` 那个钟，见 `mr_app_pointer_move_at`）
+#[no_mangle]
+pub extern "system" fn Java_dev_minirender_MiniEngine_nativePointerMoveAt(
+    _env: JNIEnv,
+    _class: JClass,
+    h: jlong,
+    x: jfloat,
+    y: jfloat,
+    t_ms: jni::sys::jdouble,
+) {
+    mr_app_pointer_move_at(h as *mut MRApp, x, y, t_ms);
+}
+
 #[no_mangle]
 pub extern "system" fn Java_dev_minirender_MiniEngine_nativeTextInput(
     mut env: JNIEnv,

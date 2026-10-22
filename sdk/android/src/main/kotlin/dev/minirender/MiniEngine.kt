@@ -44,6 +44,11 @@ object MiniEngine {
     external fun nativePixels(handle: Long, out: ByteArray): Int
     /** phase: 0 按下 / 1 移动 / 2 抬起 / 3 取消 */
     external fun nativePointer(handle: Long, phase: Int, x: Float, y: Float)
+    /**
+     * 带事件时间的移动。`tMs` 是 `MotionEvent.getEventTime()` 那个钟（`SystemClock.uptimeMillis`，
+     * 与 `nativePumpEx` 的 Choreographer 帧时间同一个单调时钟）。页面拖动按它重采样，消掉慢拖抖动
+     */
+    external fun nativePointerMoveAt(handle: Long, x: Float, y: Float, tMs: Double)
     external fun nativeTextInput(handle: Long, text: String)
     /** 按键名表见 MiniProgramView.sendKey（与引擎 KEY_NAMES 一致） */
     external fun nativeKey(handle: Long, name: String)

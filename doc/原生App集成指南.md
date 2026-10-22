@@ -445,7 +445,17 @@ int  mr_app_pump_ex(MRApp*, uint64_t now_ms);              // MR_FRAME_* 的按�
   `整帧·原因`（结构 / 数据 / 动画 / 媒体 / 滚动区）。滑动掉帧时先看它：一串 `整帧` 就说明是谁逼的。
   `MINI_NO_DAMAGE=1` 关掉局部重画、一律整帧，用来对照「局部和整帧画出来是否一样」
   （判据是 `tests/sdk_damage_equivalence.rs` 的逐帧逐字节比对）。
+  `整帧·结构` 那一行末尾带 `← 源码文件:行号`（是哪一行要的整页重画，`MiniEngine::mark_full`），每行末尾是这一帧画 + 合成的毫秒数；
+  GPU 上屏时中间还有 `GPU 准备 a（CPU 合成 b）等 c 传 dKB`：b 是直通帧（Toast / Modal / 操作菜单 / picker）里
+  CPU 合成覆盖层那一截的时间，c 是等 surface，d 是这一帧上传的字节数。
   这几个开关在 `MiniEngine` 创建时读一次：Android 要在 `nativeCreateEx` 之前 `Os.setenv`。
+  Flutter 插件替你做了：`adb shell setprop debug.mini.fps 1`（还有 `damage_log` / `no_damage` / `scroll_log` /
+  `layout_log` / `backend` / `no_resample`），重开小程序生效，不用重新打包；用完 `setprop debug.mini.fps ""` 关掉。
+- **慢拖跟手**：移动事件带时间戳（Flutter 插件自动带；原生宿主用 `mr_app_pointer_move_at` / `nativePointerMoveAt`，
+  时间与 `pump` 的 `now_ms` 同一个单调时钟）时，引擎按「这一帧 − (一帧 + 5ms)」那个时刻插值手指位置来摆页面，
+  不按到达顺序：事件过两道线程才到引擎线程，一帧到几个是碰运气，按到达走慢拖会一顿一顿。代价是多约一帧的跟手延迟；
+  `MINI_NO_RESAMPLE=1` 关掉做对照。
+  开着 `MINI_FPS` 时 Android 直写 Surface 还会每秒打一行 `📤 [直写] … 等缓冲 / 写像素 / 提交`（引擎的 📊 行不含上屏）。
   SDK 不做 `MINI_GPU_VERIFY` 的逐帧对拍（surface 读不回来），GPU 正确性靠启动自检与 `tools/gpu-parity.sh`。
 
 Kotlin 侧对应的 JNI（`src/ffi_jni.rs`，老的 `native*` 一个没动）：`nativeSetBackend(h, pref): Boolean`、
@@ -488,7 +498,7 @@ Flutter 插件已接这组接口（见下一节）；原生 `MiniProgramView`（
 
 | `type` | 何时 | 字段 |
 |---|---|---|
-| `page` | 当前页或栈深变了 | `route` `depth` `isTabBar` `window`（app.json `window` ← 页面 json ← 运行时导航栏改动） |
+| `page` | 当前页或栈深变了 | `route` `depth` `isTabBar` `window`（app.json `window` ← 页面 json ← 运行时导航栏改动）；tabBar 页另带 `tabBarBackgroundColor`（含 `setTabBarStyle` 改过的，宿主给系统导航栏那一截填色用） |
 | `navigationBar` | `wx.setNavigationBarTitle/Color`、`show/hideNavigationBarLoading` | `title` / `frontColor` / `backgroundColor` / `loading` |
 | `inputFocus` | 输入框聚焦 | `id` `tag` `value` `inputType` `password` `maxlength` `confirmType` `confirmHold` `placeholder` `rect` |
 | `inputBlur` | 失焦 / 确认 | `id` `value` |

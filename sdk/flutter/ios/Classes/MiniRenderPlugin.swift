@@ -76,11 +76,24 @@ public class MiniRenderPlugin: NSObject, FlutterPlugin {
             width: (a["width"] as? NSNumber)?.intValue ?? 1,
             height: (a["height"] as? NSNumber)?.intValue ?? 1,
             dpr: (a["dpr"] as? NSNumber)?.floatValue ?? 1,
-            options: (a["options"] as? String) ?? "{}",
+            options: Self.withDeviceFields((a["options"] as? String) ?? "{}"),
             result: result,
             onFailed: { [weak self, weak h] in
                 if let self, let h, self.host === h { self.host = nil }
             }
         )
+    }
+
+    /// 系统信息里宿主没给的设备字段在这里补（与原生 MiniProgramView 同一组）。不补的话
+    /// `wx.getSystemInfoSync().system` 落到逻辑层的缺省 `iOS 15.0`，与真机版本对不上。宿主给了的不覆盖
+    static func withDeviceFields(_ options: String) -> String {
+        guard let data = options.data(using: .utf8),
+              var o = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { return options }
+        var si = o["systemInfo"] as? [String: Any] ?? [:]
+        if si["system"] == nil { si["system"] = "iOS \(UIDevice.current.systemVersion)" }
+        if si["model"] == nil { si["model"] = UIDevice.current.model }
+        o["systemInfo"] = si
+        guard let out = try? JSONSerialization.data(withJSONObject: o) else { return options }
+        return String(data: out, encoding: .utf8) ?? options
     }
 }

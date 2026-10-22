@@ -211,6 +211,14 @@ pub extern "C" fn mr_app_pointer_move(app: *mut MRApp, x: f32, y: f32) {
     with_app!(app, (), |a| a.engine.pointer_move(x, y))
 }
 
+/// 带事件时间的移动（`t_ms`：宿主单调时钟的毫秒，与 `mr_app_pump` 的 `now_ms` 同一个钟 ——
+/// Android `MotionEvent.getEventTime()`，iOS `UITouch.timestamp × 1000`）。页面拖动按它重采样，
+/// 消掉「一帧收到两个移动、下一帧一个也没收到」造成的慢拖抖动；钟对不上时退回逐事件
+#[no_mangle]
+pub extern "C" fn mr_app_pointer_move_at(app: *mut MRApp, x: f32, y: f32, t_ms: f64) {
+    with_app!(app, (), |a| a.engine.pointer_move_at(x, y, t_ms))
+}
+
 #[no_mangle]
 pub extern "C" fn mr_app_pointer_up(app: *mut MRApp, x: f32, y: f32) {
     with_app!(app, (), |a| a.engine.pointer_up(x, y))

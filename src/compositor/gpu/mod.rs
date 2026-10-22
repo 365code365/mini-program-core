@@ -6,14 +6,18 @@
 //! 同一份 `FrameLayers`，输出与 CPU **逐字节相同** —— 这是判据，不是愿望：启动自检、
 //! `MINI_GPU_VERIFY=1` 的逐帧对拍、`tools/gpu-parity.sh` 三道守着。
 //!
-//! Toast / Loading / Modal、picker 面板、侧滑返回是直接画进输出缓冲、混合时读目标像素的
-//! （还带浮点），这些帧走**直通**：CPU 合成整帧、整块上传、着色器原样输出（§5.3）。
+//! Toast / Loading / Modal、操作菜单、picker 面板是直接画进输出缓冲、混合时读目标像素的
+//! （还带浮点），这些帧走**直通**：CPU 合成整帧，但只上传覆盖层画过的那几行，其余行着色器
+//! 自己合成、按遮罩表压暗（`passthrough.rs`，§5.3 的收窄）。说不清画了哪里的（图片预览、
+//! 全屏视频、侧滑叠覆盖层）才整帧上传、原样输出。
 //! 判断故意从宽（状态 `Some` 就算，不看 visible）：误判成直通永远是对的。
 //!
 //! 合成器只拿到图层的只读引用，拿不到布局 / 命中 / 事件 / 动画时钟 ——
 //! 「后端只管画」是类型层面保证的。
 pub mod device;
 mod mirror;
+mod passthrough;
+mod uniforms;
 pub mod pipeline;
 mod readback;
 pub mod selftest;
@@ -26,10 +30,11 @@ compile_error!("GPU 合成器按小端字节序上传 u32 像素（直通帧）�
 /// 宿主（桌面二进制）要用 wgpu 的类型构造窗口 surface
 pub use wgpu;
 
-use super::{cpu, FaultSpec, FrameLayers, LayerCanvas};
+use super::{FaultSpec, FrameLayers, LayerCanvas};
 use device::Gpu;
 use mirror::PageMirror;
-use pipeline::{Pipeline, Tex, Uniforms};
+use passthrough::PassBand;
+use pipeline::{Pipeline, Tex};
 use std::time::Instant;
 
 /// 判定缓存键里的「引擎版本」：包版本 + 着色器源码哈希 + 自检逻辑版本（v2 修订 R15）
@@ -81,6 +86,11 @@ pub struct GpuFrameStats {
     pub passthrough: bool,
     /// 从选定 GPU 起的帧号（与 `MINI_GPU_FAULT` 的 N 同一个计数器）
     pub gpu_frame: u32,
+    /// 其中准备阶段（同步纹理、写 uniform）的时间，与准备阶段里直通帧 CPU 合成的时间
+    pub prepare_ms: f32,
+    pub pass_compose_ms: f32,
+    /// `queue.present` 本身（交换链满了时驱动可能在这里等）
+    pub present_ms: f32,
 }
 
 /// 上屏结果
@@ -120,9 +130,20 @@ pub struct GpuCompositor {
     page: Option<PageMirror>,
     tabbar: LayerSlot,
     fixed: LayerSlot,
+    /// 引擎画的导航栏画布
+    top: LayerSlot,
+    /// 转场 / 侧滑的另一页留图，及它是哪一张（`PageShot::id`）
+    shot_tex: Option<Tex>,
+    shot_id: Option<u64>,
     pull: Option<Tex>,
     pass: Option<Tex>,
     pass_scratch: Vec<u32>,
+    /// 最近一个直通帧里取 CPU 结果的行区间与遮罩表、CPU 合成花的时间（passthrough.rs）
+    pass_band: PassBand,
+    pass_compose_ms: f32,
+    /// 直通帧一律整帧合成、整帧上传（`MINI_GPU_VERIFY` 拿 [`last_passthrough`](Self::last_passthrough)
+    /// 当参照时要整帧真值；平时只合成覆盖层那一截，见 passthrough.rs）
+    pub full_reference: bool,
     offscreen: Option<(wgpu::Texture, u32, u32)>,
     surface: Option<SurfaceState>,
     fault: Option<FaultSpec>,
@@ -146,9 +167,15 @@ impl GpuCompositor {
             page: None,
             tabbar: LayerSlot::default(),
             fixed: LayerSlot::default(),
+            top: LayerSlot::default(),
+            shot_tex: None,
+            shot_id: None,
             pull: None,
             pass: None,
             pass_scratch: Vec::new(),
+            pass_band: PassBand::default(),
+            pass_compose_ms: 0.0,
+            full_reference: false,
             offscreen: None,
             surface: None,
             fault,
@@ -171,6 +198,9 @@ impl GpuCompositor {
     /// 同步本帧要用的图层纹理；返回（上传字节数, 是否直通, 直通原因）
     fn sync_layers(&mut self, l: &FrameLayers<'_>) -> (u64, Option<&'static str>) {
         let o = &l.overlays;
+        // 导航栏（页面整体下移 + 叠导航栏画布）与转场 / 侧滑（整帧平移 + 压暗 + 阴影）在着色器里做：
+        // 从前这两样都走直通 —— 引擎画导航栏的宿主（Flutter）**每一帧**都是 CPU 合成 + 整帧上传，
+        // GPU 比 CPU 还慢（一加 PLY110 滑动只合成帧平均 7.2ms，CPU 2.8ms）
         let pass_why = if o.modal.is_some() {
             Some("Modal")
         } else if o.toast.is_some() {
@@ -179,12 +209,6 @@ impl GpuCompositor {
             Some("Loading")
         } else if o.picker.is_some() {
             Some("picker")
-        } else if l.edge_back.is_some() {
-            Some("侧滑返回")
-        } else if l.top.is_some() {
-            // 引擎画的导航栏：页面与 fixed 层要整体下移，着色器还没有这一段 → 整帧直通
-            // （CPU 合成的结果原样上屏，逐字节正确；代价是每帧一次整帧上传）
-            Some("导航栏")
         } else if crate::renderer::components::fullscreen_video().is_some() {
             // 全屏视频画在 CPU 合成那一步（与 Modal 同理，整帧直通）
             Some("全屏视频")
@@ -193,20 +217,17 @@ impl GpuCompositor {
         } else {
             None
         };
-        let (dev, queue) = (&self.gpu.device, &self.gpu.queue);
-        if let Some(_why) = pass_why {
-            // 与快照一致：输出缓冲初值 0（tabBar 画布比 tabbar_px 矮时那几行保留初值）
-            let n = (l.width * l.height) as usize;
-            self.pass_scratch.clear();
-            self.pass_scratch.resize(n, 0);
-            cpu::compose(&mut self.pass_scratch, l);
-            Tex::ensure(&mut self.pass, dev, "直通帧", l.width, l.height);
-            // SAFETY: u32 切片按字节看（小端：B,G,R,0），长度 ×4，生命周期跟随 scratch
-            let bytes = unsafe { std::slice::from_raw_parts(self.pass_scratch.as_ptr().cast::<u8>(), n * 4) };
-            let sent = self.pass.as_ref().map(|t| t.upload_rows(queue, bytes, l.width, 0, l.height, l.width)).unwrap_or(0);
-            return (sent, pass_why);
-        }
         let mut sent = 0u64;
+        if pass_why.is_some() {
+            // 直通帧：CPU 合成整帧，但只传覆盖层画过的那几行（passthrough.rs）；
+            // 说不清画了哪里的才整帧上传，那时其余图层也用不上，不必同步
+            let (bytes, whole) = self.sync_pass(l);
+            if whole {
+                return (bytes, pass_why);
+            }
+            sent += bytes;
+        }
+        let (dev, queue) = (&self.gpu.device, &self.gpu.queue);
         // 页面：宽度或代数变了就重建镜像（尺寸可能变了，旧内容一律作废）
         let canvas = l.page.read();
         let rebuild = self.page.as_ref().is_none_or(|m| m.width != canvas.width() || m.cursor.0 != l.page.gen());
@@ -227,6 +248,17 @@ impl GpuCompositor {
         }
         sent += sync_layer(&mut self.tabbar, dev, queue, "tabBar", l.tabbar, None);
         sent += sync_layer(&mut self.fixed, dev, queue, "fixed", l.fixed, l.fixed_rows);
+        sent += sync_layer(&mut self.top, dev, queue, "导航栏", l.top.as_ref().map(|t| t.canvas), None);
+        // 转场 / 侧滑的另一页：一张图一次转场只传一次（按 PageShot::id 认）
+        if let Some(s) = l.edge_back.as_ref().and_then(|e| e.shot).filter(|s| s.width == l.width && s.height == l.height) {
+            if self.shot_id != Some(s.id) && s.pixels.len() == (s.width * s.height) as usize {
+                Tex::ensure(&mut self.shot_tex, dev, "转场留图", s.width, s.height);
+                // SAFETY: u32 切片按字节看（小端：B,G,R,0），与直通帧同一种布局
+                let bytes = unsafe { std::slice::from_raw_parts(s.pixels.as_ptr().cast::<u8>(), s.pixels.len() * 4) };
+                sent += self.shot_tex.as_ref().map(|t| t.upload_rows(queue, bytes, s.width, 0, s.height, s.width)).unwrap_or(0);
+                self.shot_id = Some(s.id);
+            }
+        }
         if let Some(p) = l.pull {
             if let Some(band) = crate::host::render::pull_indicator_band(
                 l.width, l.height, l.scale, p.gap_logical, p.refreshing, p.progress, p.phase,
@@ -236,47 +268,7 @@ impl GpuCompositor {
                 sent += self.pull.as_ref().map(|t| t.upload_rows(queue, bytes, band.width(), 0, band.height(), band.width())).unwrap_or(0);
             }
         }
-        (sent, None)
-    }
-
-    fn uniforms(&self, l: &FrameLayers<'_>, passthrough: bool) -> Uniforms {
-        let canvas = l.page.read();
-        let tab = l.tabbar.map(LayerCanvas::read);
-        let fix = l.fixed.map(LayerCanvas::read);
-        let (row0, row_end) = match (fix, l.fixed_rows) {
-            (Some(fc), Some((a, b))) => (a, l.height.min(fc.height()).min(b.saturating_add(1))),
-            _ => (0, 0),
-        };
-        let pull_rows = l
-            .pull
-            .and_then(|p| {
-                let gap_px = (p.gap_logical * l.scale).round() as u32;
-                (gap_px >= 8 && l.width > 0).then(|| gap_px.min(l.height))
-            })
-            .unwrap_or(0);
-        let tint = self.fault == Some(FaultSpec::Tint) && !self.selftesting;
-        Uniforms {
-            width: l.width,
-            height: l.height,
-            content_h: l.height - if l.has_tabbar { l.tabbar_px.min(l.height) } else { 0 },
-            scroll_px: l.scroll_px,
-            canvas_w: canvas.width(),
-            canvas_h: canvas.height(),
-            ring_rows: self.page.as_ref().map(|m| m.ring_rows).unwrap_or(1),
-            page_bg: l.page_bg,
-            has_tabbar: l.has_tabbar as u32,
-            tabbar_on: tab.is_some() as u32,
-            tabbar_px: l.tabbar_px,
-            tabbar_w: tab.map(|t| t.width()).unwrap_or(0),
-            tabbar_h: tab.map(|t| t.height()).unwrap_or(0),
-            fixed_on: (row_end > row0) as u32,
-            fixed_row0: row0,
-            fixed_row_end: row_end,
-            fixed_w: fix.map(|f| f.width()).unwrap_or(0),
-            pull_rows,
-            mode: passthrough as u32,
-            fault_tint: tint as u32,
-        }
+        (sent, pass_why)
     }
 
     /// 把这一帧编码进 `target`（格式 `format`）并提交。故障注入、致命错误检查都在这里
@@ -319,6 +311,8 @@ impl GpuCompositor {
             wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::TextureView(view_of(&self.fixed.tex, ph)) },
             wgpu::BindGroupEntry { binding: 4, resource: wgpu::BindingResource::TextureView(view_of(&self.pull, ph)) },
             wgpu::BindGroupEntry { binding: 5, resource: wgpu::BindingResource::TextureView(view_of(&self.pass, ph)) },
+            wgpu::BindGroupEntry { binding: 6, resource: wgpu::BindingResource::TextureView(view_of(&self.top.tex, ph)) },
+            wgpu::BindGroupEntry { binding: 7, resource: wgpu::BindingResource::TextureView(view_of(&self.shot_tex, ph)) },
         ];
         let bind = self.gpu.device.create_bind_group(&wgpu::BindGroupDescriptor { label: Some("合成"), layout: &self.pipe.layout, entries: &entries });
         let pipeline = self.pipe.for_format(&self.gpu.device, format).clone();
@@ -360,7 +354,15 @@ impl GpuCompositor {
         if let Some(e) = self.gpu.health.fatal() {
             return Err(e);
         }
-        Ok(GpuFrameStats { encode_ms, upload_bytes, passthrough: pass_why.is_some(), gpu_frame: self.gpu_frame, ..Default::default() })
+        Ok(GpuFrameStats {
+            encode_ms,
+            upload_bytes,
+            passthrough: pass_why.is_some(),
+            gpu_frame: self.gpu_frame,
+            prepare_ms: prep_ms,
+            pass_compose_ms: if pass_why.is_some() { self.pass_compose_ms } else { 0.0 },
+            ..Default::default()
+        })
     }
 
     /// 合成到离屏目标（无头 / 自检 / 测试）。`wait` 为真时等 GPU 做完并记完成时间
@@ -409,6 +411,8 @@ impl GpuCompositor {
         self.pass = None;
         self.pass_scratch = Vec::new();
         self.offscreen = None;
+        self.shot_tex = None;
+        self.shot_id = None;
     }
 }
 

@@ -278,6 +278,26 @@ impl InteractionManager {
         }
     }
 
+    /// 被滚动 / swiper 接管：点击态立刻撤掉，不走 `hover-stay-time`（微信同样在页面一动就不再显示点击态）。
+    /// 从前只有「手指移出元素」才撤 —— 拖页面时内容跟着手指走，手指永远在那一行里，
+    /// 整个拖动过程那一行都亮着；松手后还要再亮 70ms，正好压在惯性的头几帧上
+    pub fn cancel_press(&mut self) {
+        self.press_feedback = None;
+        self.pressed_button = None;
+    }
+
+    /// 这一刻画成点击态的元素（含过了 `hover-start-time`、还在 `hover-stay-time` 里的）。
+    /// 宿主比对前后两帧：变了就只重画这几个元素，不必整页重画
+    pub fn pressed_visual(&self) -> Vec<String> {
+        let Some(feedback) = &self.press_feedback else { return Vec::new() };
+        feedback.ids.iter().filter(|id| self.is_button_pressed(id)).cloned().collect()
+    }
+
+    /// 元素的包围盒（逻辑像素；正常流是内容坐标，覆盖层是视口坐标）与它是不是覆盖层里的
+    pub fn element_bounds(&self, id: &str) -> Option<(Rect, bool)> {
+        self.elements.iter().rev().find(|e| e.id == id).map(|e| (e.bounds, e.is_fixed))
+    }
+
     /// 点击态还在「等出现」或「松手后停留」：宿主要继续出帧，否则那一下永远画不出来
     pub fn press_feedback_pending(&self) -> bool {
         let Some(feedback) = &self.press_feedback else { return false };

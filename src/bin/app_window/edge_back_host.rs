@@ -60,7 +60,7 @@ impl crate::MiniAppWindow {
             edge_back: None, top: None,
         };
         compositor::cpu::compose(&mut pixels, &layers);
-        Some(app_window::edge_back::PageShot { width: w, height: h, pixels })
+        Some(app_window::edge_back::PageShot::new(w, h, pixels))
     }
 
     // ── 无头输入：与交互窗体走同一条链路 ──

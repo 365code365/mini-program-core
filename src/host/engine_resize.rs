@@ -15,7 +15,7 @@
 use super::engine::MiniEngine;
 use super::engine_options::{self, SafeAreaInsets};
 use crate::compositor::LayerCanvas;
-use crate::host::{tabbar_height, CONTENT_HEIGHT};
+use crate::host::CONTENT_HEIGHT;
 use crate::renderer::WxmlRenderer;
 use crate::Canvas;
 
@@ -129,7 +129,9 @@ impl MiniEngine {
         let px = |v: u32| (v as f32 * dpr) as u32;
         self.canvas.replace(Canvas::new(px(self.width), px(CONTENT_HEIGHT.max(self.height))));
         self.fixed_canvas = LayerCanvas::new(Canvas::new(px(self.width), px(self.height)));
-        self.tabbar_canvas = LayerCanvas::new(Canvas::new(px(self.width), px(tabbar_height()).max(1)));
+        // tabBar 高含底部安全区（engine.rs::tabbar_logical_height）：set_safe_area 也走这里
+        let tab_px = ((self.tabbar_h() * dpr) as u32).max(1);
+        self.tabbar_canvas = LayerCanvas::new(Canvas::new(px(self.width), tab_px));
         // 被盖住 / 切走的页留的渲染器按旧尺寸建的（屏高进 `100vh` 与 fixed 视口）：回来时新建
         self.keep.forget_renderers();
         self.update_renderers();
@@ -139,7 +141,7 @@ impl MiniEngine {
         self.rgba.clear();
         self.rgba_stale = true;
         self.page_data_dirty = true;
-        self.needs_redraw = true;
+        self.mark_full();
     }
 }
 
@@ -212,7 +214,7 @@ fn refit_bottom(shot: &crate::host::edge_back::PageShot, h: u32, fill: Option<u3
     } else {
         pixels.extend_from_slice(&shot.pixels[(old_h - new_h) * w..]);
     }
-    crate::host::edge_back::PageShot { width: shot.width, height: h, pixels }
+    crate::host::edge_back::PageShot::new(shot.width, h, pixels)
 }
 
 #[cfg(test)]
@@ -222,7 +224,7 @@ mod refit_tests {
 
     #[test]
     fn 变高顶上补导航栏色_变矮从顶上裁_都是底边对齐() {
-        let shot = PageShot { width: 2, height: 2, pixels: vec![1, 2, 3, 4] };
+        let shot = PageShot::new(2, 2, vec![1, 2, 3, 4]);
         let tall = refit_bottom(&shot, 4, Some(9));
         assert_eq!((tall.height, tall.pixels), (4, vec![9, 9, 9, 9, 1, 2, 3, 4]));
         let tall = refit_bottom(&shot, 3, None);

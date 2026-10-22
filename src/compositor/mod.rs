@@ -28,6 +28,7 @@
 pub mod cpu;
 pub mod diag;
 pub mod fault;
+pub mod footprint;
 pub mod layer;
 pub mod pref;
 pub mod select;
@@ -36,6 +37,7 @@ pub mod verdict;
 pub mod gpu;
 
 pub use fault::FaultSpec;
+pub use footprint::Footprint;
 pub use layer::{color_bytes, DirtyOp, LayerCanvas, PageCanvas, PAGE_LOG_CAP};
 pub use pref::{EnvValue, HostEnv, HostKind, PrefSource};
 pub use select::{AdapterFacts, DeviceInfo, Platform, GPU_COMPILED};

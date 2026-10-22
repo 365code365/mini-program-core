@@ -212,7 +212,7 @@ mod imp {
             let verify = self.gpu.env.gpu_verify;
             let result = match self.headless_layers(scale, has_tabbar) {
                 None => Ok(None),
-                Some(layers) => comp.compose_offscreen(&layers, wait || verify).and_then(|st| {
+                Some(layers) => { comp.full_reference = verify; comp.compose_offscreen(&layers, wait || verify) }.and_then(|st| {
                     if verify {
                         let gpu_px = comp.read_back()?;
                         verify_or_exit(&comp, &layers, &gpu_px, self.gpu.verified + 1);
@@ -241,7 +241,7 @@ mod imp {
             let verify = self.gpu.env.gpu_verify;
             let result = match self.headless_layers(scale, has_tabbar) {
                 None => return { self.gpu.comp = Some(comp); None },
-                Some(layers) => comp.compose_offscreen(&layers, true).and_then(|_| comp.read_back()).map(|px| {
+                Some(layers) => { comp.full_reference = verify; comp.compose_offscreen(&layers, true) }.and_then(|_| comp.read_back()).map(|px| {
                     if verify {
                         verify_or_exit(&comp, &layers, &px, self.gpu.verified + 1);
                     }

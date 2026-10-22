@@ -50,7 +50,7 @@ impl MiniEngine {
             self.update_renderers();
         }
         self.page_data_dirty = true;
-        self.needs_redraw = true;
+        self.mark_full();
         self.dmg.fixed_dirty = true;
         self.drawn_band = None;
     }

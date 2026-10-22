@@ -57,7 +57,10 @@ impl Canvas {
 
     /// 当前有效绘制区间（画布边界 ∩ 裁剪矩形），返回 (x0, x1, y0, y1)。
     /// 逐像素循环时把它提到循环外算一次，能省掉每个像素 8 次比较和多次浮点截断。
-    pub(super) fn draw_bounds(&self) -> (i32, i32, i32, i32) {
+    ///
+    /// 组件的逐像素画法（渐变、阴影…）也用它把循环范围收窄到裁剪区：局部重画的裁剪区常常
+    /// 只有一条，元素却有大半屏，逐个像素算完再被 `set_pixel` 拒掉，白算几十万次
+    pub fn draw_bounds(&self) -> (i32, i32, i32, i32) {
         let (mut x0, mut y0) = (0i32, 0i32);
         let (mut x1, mut y1) = (self.width as i32, self.height as i32);
         if let Some(clip) = &self.clip_rect {

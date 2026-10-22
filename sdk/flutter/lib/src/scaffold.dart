@@ -112,6 +112,9 @@ class _MiniProgramScaffoldState extends State<MiniProgramScaffold> {
       builder: (context, page, _) {
         final canGoBack = (page?.depth ?? 0) > 1;
         final fg = page?.lightForeground == true ? Colors.white : Colors.black;
+        final pageBg = MiniProgramScaffold._color(page?.window['backgroundColor'] as String?) ?? Colors.white;
+        // Android 系统导航栏那一截（view.dart `_reservedBottom`）的底色：tabBar 页接 tabBar 的底色
+        final navAreaBg = MiniProgramScaffold._color(page?.tabBarBackgroundColor) ?? pageBg;
         final actions = widget.actions ??
             (controller.menuButton
                 ? [
@@ -160,8 +163,15 @@ class _MiniProgramScaffoldState extends State<MiniProgramScaffold> {
           },
           child: AnnotatedRegion<SystemUiOverlayStyle>(
             // 引擎画导航栏时状态栏压在引擎画面上：图标颜色跟 navigationBarTextStyle 走（AppBar 本来替我们做了这件事）
-            value: (page?.lightForeground == true ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark)
-                .copyWith(statusBarColor: const Color(0x00000000)),
+            value: (page?.lightForeground == true ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark).copyWith(
+              statusBarColor: const Color(0x00000000),
+              // Android 导航键压在留出来的那一截上：关掉系统的半透明灰罩（三键导航默认加），
+              // 让它就是 navAreaBg 的颜色（微信安卓的导航键底也是跟着页面走的纯色），图标按底色深浅反色
+              systemNavigationBarColor: const Color(0x00000000),
+              systemNavigationBarContrastEnforced: false,
+              systemNavigationBarIconBrightness:
+                  navAreaBg.computeLuminance() > 0.5 ? Brightness.dark : Brightness.light,
+            ),
             child: Scaffold(
               appBar: bar,
               // 键盘弹起时不缩画面（缩的话键盘动画每一帧都要重建引擎布局），
@@ -170,7 +180,8 @@ class _MiniProgramScaffoldState extends State<MiniProgramScaffold> {
               body: MiniProgramView(
                 controller: controller,
                 nativeViewBuilder: widget.nativeViewBuilder,
-                backgroundColor: MiniProgramScaffold._color(page?.window['backgroundColor'] as String?) ?? Colors.white,
+                backgroundColor: pageBg,
+                navigationBarAreaColor: navAreaBg,
               ),
             ),
           ),

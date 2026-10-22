@@ -4,8 +4,9 @@
 //! 内容 FG-1 rgba(0,0,0,0.5)、分隔线 rgba(0,0,0,0.1) 的 0.5px 细线、按下 #ECECEC；
 //! 两个按钮都是 17px 粗体，颜色是 `cancelColor`（缺省 #000000）/ `confirmColor`（缺省 #576B95）。
 use super::draw::{dim, draw_text_line, fill_rrect_aa, ALL_CORNERS};
-use super::geometry::{modal_geom, MODAL_FOOTER_H, MODAL_RADIUS};
+use super::geometry::{modal_geom, ModalGeom, MODAL_FOOTER_H, MODAL_RADIUS};
 use super::ModalState;
+use crate::compositor::Footprint;
 use crate::text::TextRenderer;
 use crate::Color;
 
@@ -20,9 +21,19 @@ fn rgb(c: Color) -> u32 {
     ((c.r as u32) << 16) | ((c.g as u32) << 8) | c.b as u32
 }
 
-pub(super) fn render_modal(buf: &mut [u32], w: u32, h: u32, sf: f32, m: &ModalState, tr: Option<&TextRenderer>) {
-    dim(buf, MASK_KEEP);
+/// 返回这一帧写了哪些像素：整屏遮罩 + 盒子那几行（所有笔画都在盒子里）
+/// `rows`：遮罩只压这几行（GPU 直通帧只合成覆盖层那一截；盒子总在 `overlay_reach` 之内）
+pub(super) fn render_modal(buf: &mut [u32], w: u32, h: u32, sf: f32, m: &ModalState, tr: Option<&TextRenderer>, rows: (u32, u32)) -> Footprint {
+    let mut fp = Footprint::NONE;
+    fp.dim(&dim(buf, w, rows, MASK_KEEP));
     let g = modal_geom(m, (w as f32 / sf, h as f32 / sf), tr);
+    let p = |v: f32| v * sf;
+    fp.touch(p(g.y), p(g.y + g.h), h);
+    draw_box(buf, w, h, sf, m, tr, &g);
+    fp
+}
+
+fn draw_box(buf: &mut [u32], w: u32, h: u32, sf: f32, m: &ModalState, tr: Option<&TextRenderer>, g: &ModalGeom) {
     let p = |v: f32| v * sf;
     fill_rrect_aa(buf, w, h, (p(g.x), p(g.y), p(g.w), p(g.h)), p(MODAL_RADIUS), 0xFFFFFF, 1.0, ALL_CORNERS);
 

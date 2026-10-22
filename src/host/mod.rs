@@ -20,6 +20,11 @@ pub mod engine;
 pub mod engine_backend;
 /// 出帧：pump → 按需重画 → 合成（从 engine.rs 拆出）
 mod engine_frame;
+mod engine_press;
+mod engine_resample;
+mod engine_wants;
+mod frame_laps;
+mod engine_damage_rects;
 /// 这一帧重画多少（只合成 / 局部 / 补条带 / 整帧）与整帧归因
 pub mod engine_damage;
 mod engine_input;

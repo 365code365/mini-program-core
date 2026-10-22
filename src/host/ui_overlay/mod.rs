@@ -9,6 +9,7 @@
 //!
 //! 视觉对齐微信 8.0 的原生控件（WeUI 2.x），数值与出处写在 `geometry.rs` 的文件头。
 
+use crate::compositor::Footprint;
 use crate::runtime::UiEvent;
 use crate::text::TextRenderer;
 use crate::Color;
@@ -62,10 +63,46 @@ pub fn sheet_overlay_release(app: &mut crate::runtime::MiniApp, vp: (f32, f32), 
     action_sheet::on_release(app, vp, x, y) || image_preview::on_release(x)
 }
 
-/// 合成：图片预览盖在页面上，操作菜单在它上面
-pub fn render_sheet_overlays(buf: &mut [u32], w: u32, h: u32, sf: f32, text: Option<&TextRenderer>) {
+/// 合成：图片预览盖在页面上，操作菜单在它上面。返回这一帧写了哪些像素
+/// （图片预览是整屏黑底 + 缩放的图，按整帧算）
+pub fn render_sheet_overlays(buf: &mut [u32], w: u32, h: u32, sf: f32, text: Option<&TextRenderer>, rows: (u32, u32)) -> Footprint {
+    let mut fp = if image_preview::visible() { Footprint::full() } else { Footprint::NONE };
     image_preview::render(buf, w, h, sf, text);
-    action_sheet::render(buf, w, h, sf, text);
+    fp.then(action_sheet::render(buf, w, h, sf, text, rows));
+    fp
+}
+
+/// 本帧这几层覆盖层（图片预览除外）会画到哪几行、其中哪几行要先有底图（见 `action_sheet::reach`）。
+/// 图片预览弹着时返回整帧
+#[allow(clippy::too_many_arguments)]
+pub fn overlay_reach(
+    w: u32,
+    h: u32,
+    sf: f32,
+    toast: &Option<ToastState>,
+    loading: &Option<LoadingState>,
+    modal: &Option<ModalState>,
+    text_renderer: Option<&TextRenderer>,
+) -> (Footprint, Footprint) {
+    if image_preview::visible() {
+        return (Footprint::full(), Footprint::full());
+    }
+    let (mut rows, mut base) = action_sheet::reach(h, sf);
+    let vp = (w as f32 / sf, h as f32 / sf);
+    // Modal / 提示框不是满宽：盒子那几行左右两边是压暗的页面，整段都要底图
+    if let Some(m) = shown(modal, |m| m.visible) {
+        let g = modal_geom(m, vp, text_renderer);
+        rows.touch(g.y * sf, (g.y + g.h) * sf, h);
+        // Modal 的遮罩画在操作菜单之后，要连菜单的白底一起压暗：遮罩只压「底图行」的话
+        // 白底那几行就漏压了。这时不省（底图行 = 全部覆盖层行）
+        base = rows;
+    }
+    if let Some((title, icon)) = current_tip(toast, loading) {
+        let b = tip_box(title, &icon, vp, text_renderer);
+        rows.touch(b.y * sf, (b.y + b.h) * sf, h);
+        base.touch(b.y * sf, (b.y + b.h) * sf, h);
+    }
+    (rows, base)
 }
 
 pub use geometry::{modal_geom, tip_box, ModalGeom, TipBox, TipIcon};
@@ -276,17 +313,20 @@ pub fn render_ui_overlay(
     loading: &Option<LoadingState>,
     modal: &Option<ModalState>,
     text_renderer: Option<&TextRenderer>,
-) {
+    rows: (u32, u32),
+) -> Footprint {
+    let mut fp = Footprint::NONE;
     if let Some(m) = shown(modal, |m| m.visible) {
-        modal::render_modal(buffer, width, height, sf, m, text_renderer);
+        fp.then(modal::render_modal(buffer, width, height, sf, m, text_renderer, rows));
     }
     if let Some((title, icon)) = current_tip(toast, loading) {
         let step = spinner_step(anim_secs);
         if icon == TipIcon::Loading {
             DRAWN_STEP.with(|s| s.set(Some(step)));
         }
-        tip::render_tip(buffer, width, height, sf, title, &icon, step, text_renderer);
+        fp.then(tip::render_tip(buffer, width, height, sf, title, &icon, step, text_renderer));
     }
+    fp
 }
 
 #[cfg(test)]
@@ -352,7 +392,7 @@ mod tests {
         let (w, h) = (750u32, 1334u32);
         let mut buf = vec![0xF5F5F5u32; (w * h) as usize];
         assert!(tip_needs_recompose(0.10, &t, &l));
-        render_ui_overlay(&mut buf, w, h, 2.0, 0.10, &t, &l, &m, None);
+        render_ui_overlay(&mut buf, w, h, 2.0, 0.10, &t, &l, &m, None, (0, h));
         assert!(!tip_needs_recompose(0.105, &t, &l), "还在第 6 步");
         assert!(tip_needs_recompose(0.12, &t, &l), "到第 7 步了");
         // 收起之后不再要帧

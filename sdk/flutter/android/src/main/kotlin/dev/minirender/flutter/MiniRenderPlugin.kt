@@ -8,6 +8,7 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import dev.minirender.MiniEngine
 import java.io.File
+import org.json.JSONObject
 
 /**
  * Flutter 插件入口：通道 `dev.minirender/engine`。
@@ -69,6 +70,22 @@ class MiniRenderPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         return EngineHost.DeviceInfo(mem.totalMem, am?.isLowRamDevice ?: false, Build.VERSION.SDK_INT)
     }
 
+    /**
+     * 系统信息里宿主没给的设备字段在这里补（与原生 MiniProgramView 同一组）。Dart 拿不到
+     * Android 版本号（`Platform.operatingSystemVersion` 是内核串），不补的话 `wx.getSystemInfoSync().system`
+     * 落到逻辑层的缺省 `iOS 15.0` —— 真机首页显示「android iOS 15.0」。宿主给了的不覆盖。
+     */
+    private fun withDeviceFields(options: String): String = try {
+        val o = JSONObject(options)
+        val si = o.optJSONObject("systemInfo") ?: JSONObject().also { o.put("systemInfo", it) }
+        if (!si.has("system")) si.put("system", "Android ${Build.VERSION.RELEASE}")
+        if (!si.has("brand")) si.put("brand", Build.BRAND)
+        if (!si.has("model")) si.put("model", Build.MODEL)
+        o.toString()
+    } catch (e: org.json.JSONException) {
+        options
+    }
+
     private fun create(call: MethodCall, result: MethodChannel.Result) {
         if (host != null) {
             result.error("ALREADY_RUNNING", "同一进程同时只能有一个小程序（先 dispose 上一个）", null)
@@ -82,6 +99,8 @@ class MiniRenderPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         // 数据目录必须给：storage 与图片磁盘缓存都落在这里，不给会静默失效
         val dataDir = call.argument<String>("dataDir")
             ?: File(binding.applicationContext.filesDir, "mini-render").apply { mkdirs() }.absolutePath
+        // `adb shell setprop debug.mini.fps 1` 这类诊断开关：引擎创建时读环境，必须在这之前设好
+        DiagProps.apply()
         val h = EngineHost(
             binding.textureRegistry,
             onEvents = { channel.invokeMethod("events", it) },
@@ -95,9 +114,9 @@ class MiniRenderPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             width = (call.argument<Number>("width") ?: 1).toInt(),
             height = (call.argument<Number>("height") ?: 1).toInt(),
             dpr = (call.argument<Number>("dpr") ?: 1).toFloat(),
-            options = call.argument<String>("options") ?: "{}",
-            // 0 auto / 1 cpu / 2 gpu（MiniEngine.BACKEND_*）；默认 cpu，与原生 SDK 一致
-            backend = (call.argument<Number>("backend") ?: MiniEngine.BACKEND_CPU).toInt(),
+            options = withDeviceFields(call.argument<String>("options") ?: "{}"),
+            // 0 auto / 1 cpu / 2 gpu（MiniEngine.BACKEND_*）；默认 auto：有 GPU 就用 GPU，不行回退 CPU
+            backend = (call.argument<Number>("backend") ?: MiniEngine.BACKEND_AUTO).toInt(),
             device = deviceInfo(),
             result = result,
             onFailed = { if (host === h) host = null },

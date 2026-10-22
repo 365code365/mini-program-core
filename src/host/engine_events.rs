@@ -197,13 +197,18 @@ impl MiniEngine {
             return;
         }
         let is_tab = self.is_tabbar_page(&sig.0);
-        let ev = json!({
+        let mut ev = json!({
             "type": "page",
             "route": sig.0,
             "depth": sig.1,
             "isTabBar": is_tab,
             "window": self.page_window(),
         });
+        // tabBar 页带上 tabBar 底色（含 setTabBarStyle 改过的）：宿主在 Android 系统导航键那条
+        // （不交给引擎画，见 Flutter 插件 view.dart）填这个色，与上面的 tabBar 连成一片
+        if let Some(tb) = self.config.tab_bar.as_ref().filter(|_| is_tab) {
+            ev["tabBarBackgroundColor"] = json!(crate::host::tabbar_api::effective(tb).background_color);
+        }
         self.events.last_page = Some(sig);
         self.events.push(ev);
     }

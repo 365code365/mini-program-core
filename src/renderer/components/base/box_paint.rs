@@ -186,10 +186,13 @@ pub fn stroke_round_rect_ring_sides(
         (radii[3] - bw).max(0.0),
     ];
     let (cx, cy) = (x + w / 2.0, y + h / 2.0);
-    let x0 = x.floor() as i32;
-    let y0 = y.floor() as i32;
-    let x1 = (x + w).ceil() as i32;
-    let y1 = (y + h).ceil() as i32;
+    // 只算画布裁剪区里的像素（区外 set_pixel 本来就不写）：局部重画只裁一条，
+    // 一张带圆角边框的大卡片却要整张逐像素求两次距离场（gradient.rs 同一个问题）
+    let (cx0, cx1, cy0, cy1) = canvas.draw_bounds();
+    let x0 = (x.floor() as i32).max(cx0);
+    let y0 = (y.floor() as i32).max(cy0);
+    let x1 = ((x + w).ceil() as i32).min(cx1);
+    let y1 = ((y + h).ceil() as i32).min(cy1);
 
     for py in y0..y1 {
         for px in x0..x1 {

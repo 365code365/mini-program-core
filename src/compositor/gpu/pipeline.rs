@@ -4,9 +4,10 @@ use std::collections::HashMap;
 /// 着色器源码（编进二进制；它的哈希进判定缓存键，改着色器就会重新评估驱动）
 pub const WGSL: &str = include_str!("compose.wgsl");
 
-/// 与 `compose.wgsl` 的 `struct U` 逐字段对应（20 个 4 字节标量 = 80 字节，是 16 的倍数）
+/// 与 `compose.wgsl` 的 `struct U` 逐字段对应：32 个 4 字节标量 + 16 个 f32 的阴影系数 + 64 个 u32 的
+/// 压暗表 = 448 字节（两个数组分别在 128、192 字节处开始，满足 uniform 里 vec4 数组 16 字节对齐）
 #[repr(C)]
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Uniforms {
     pub width: u32,
     pub height: u32,
@@ -28,14 +29,40 @@ pub struct Uniforms {
     pub pull_rows: u32,
     pub mode: u32,
     pub fault_tint: u32,
+    /// 引擎画的导航栏：页面与 fixed 层下移的行数（已夹到内容区内）
+    pub top_px: u32,
+    /// 导航栏画布叠上去的行数（`min(rows, 输出高, 画布高)`）与宽
+    pub top_rows: u32,
+    pub top_w: u32,
+    /// 0 没有转场；1 整帧右移、左边露出留图；2 留图在上面右移、左边露出缓冲里那页
+    pub eb_mode: u32,
+    pub eb_off: u32,
+    pub eb_par: u32,
+    pub eb_shadow: u32,
+    pub eb_has_shot: u32,
+    pub eb_dim: f32,
+    /// 直通帧（`mode == 1`）里取 CPU 合成结果的行区间 [pass_y0, pass_y1)；区间外着色器自己合成，
+    /// `lut_on` 时再按 `lut` 压暗（覆盖层的遮罩，见 `compositor::footprint`）。整帧直通是 [0, height)
+    pub pass_y0: u32,
+    pub pass_y1: u32,
+    pub lut_on: u32,
+    pub eb_shadow_f: [f32; 16],
+    /// 256 项压暗表，4 项一个 u32（小端：第 c 项在第 c/4 个字的第 c%4 个字节）
+    pub lut: [u32; 64],
 }
 
-const _: () = assert!(std::mem::size_of::<Uniforms>() == 80);
+pub const UNIFORM_BYTES: usize = 448;
+const _: () = assert!(std::mem::size_of::<Uniforms>() == UNIFORM_BYTES);
+
+/// 256 项字节表 → 64 个 u32（与 `compose.wgsl` 的 `lut_at` 对应）
+pub fn pack_lut(lut: &[u8; 256]) -> [u32; 64] {
+    std::array::from_fn(|i| u32::from_le_bytes([lut[i * 4], lut[i * 4 + 1], lut[i * 4 + 2], lut[i * 4 + 3]]))
+}
 
 impl Uniforms {
     pub fn bytes(&self) -> &[u8] {
-        // SAFETY: #[repr(C)] 的 20 个 u32/i32，没有填充字节（上面的 const 断言守着尺寸）
-        unsafe { std::slice::from_raw_parts((self as *const Self).cast::<u8>(), 80) }
+        // SAFETY: #[repr(C)]，全是 4 字节标量，没有填充字节（上面的 const 断言守着尺寸）
+        unsafe { std::slice::from_raw_parts((self as *const Self).cast::<u8>(), UNIFORM_BYTES) }
     }
 }
 
@@ -141,6 +168,9 @@ impl Pipeline {
                 tex_entry(3, d2),
                 tex_entry(4, d2),
                 tex_entry(5, d2),
+                // 导航栏画布、转场 / 侧滑的留图
+                tex_entry(6, d2),
+                tex_entry(7, d2),
             ],
         });
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -150,7 +180,7 @@ impl Pipeline {
         });
         let uniforms = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("合成 uniform"),
-            size: 80,
+            size: UNIFORM_BYTES as u64,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });

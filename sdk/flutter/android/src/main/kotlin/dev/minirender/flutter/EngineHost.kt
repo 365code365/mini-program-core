@@ -268,7 +268,9 @@ internal class EngineHost(
             // 引擎自己画到 Surface 上了（tick 只在 FRAME_PRESENTED 时通知 Flutter）
             Present.GPU -> needsPresent = false
             Present.WINDOW -> {
+                val t0 = if (DiagProps.fps) System.nanoTime() else 0L
                 val r = MiniEngine.nativeBlitToWindow(handle)
+                if (t0 != 0L) blitStats.record((System.nanoTime() - t0) / 1e6f)
                 if (r == 1) {
                     needsPresent = false
                     if (notifyFlutter) scheduleFlutterFrame()
@@ -296,6 +298,23 @@ internal class EngineHost(
                 }
                 needsPresent = false
                 if (notifyFlutter) scheduleFlutterFrame()
+            }
+        }
+    }
+
+    /** `debug.mini.fps`：每秒一行「上屏」耗时（`ANativeWindow_lock` 等空闲缓冲 + 写像素），引擎的 📊 行不含它 */
+    private val blitStats = object {
+        var start = 0L
+        var n = 0
+        var max = 0f
+        var sum = 0f
+        fun record(ms: Float) {
+            val now = System.nanoTime()
+            if (start == 0L) start = now
+            n++; sum += ms; if (ms > max) max = ms
+            if (now - start >= 1_000_000_000L) {
+                Log.i(TAG, "📤 上屏 $n 次，平均 ${"%.1f".format(sum / n)}ms 最慢 ${"%.1f".format(max)}ms")
+                start = now; n = 0; sum = 0f; max = 0f
             }
         }
     }
@@ -344,7 +363,16 @@ internal class EngineHost(
         fun i(k: String) = (call.argument<Number>(k) ?: 0).toInt()
         when (call.method) {
             "pointer" -> {
-                run { MiniEngine.nativePointer(it, i("phase"), f("x"), f("y")) }
+                val phase = i("phase")
+                // 移动带事件时间（Dart PointerEvent.timeStamp，安卓上就是 MotionEvent.getEventTime()）：
+                // 引擎按它重采样页面拖动。经 MethodChannel 再转引擎线程，一帧到几个移动是碰运气，
+                // 按到达时刻走就是慢拖时的一顿一顿（engine_resample.rs）
+                val t = call.argument<Number>("t")?.toDouble()
+                if (phase == 1 && t != null) {
+                    run { MiniEngine.nativePointerMoveAt(it, f("x"), f("y"), t) }
+                } else {
+                    run { MiniEngine.nativePointer(it, phase, f("x"), f("y")) }
+                }
                 result.success(null)
             }
             "wheel" -> {

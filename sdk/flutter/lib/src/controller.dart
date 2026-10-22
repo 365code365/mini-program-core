@@ -30,7 +30,7 @@ class MiniProgramController {
     this.hostApis = const {},
     this.nativeComponents = const [],
     this.systemInfo = const {},
-    this.backend = MiniBackend.cpu,
+    this.backend = MiniBackend.auto,
     this.menuButton = true,
     this.navigationBar = true,
     this.routeAnimation = true,
@@ -55,7 +55,9 @@ class MiniProgramController {
   /// 安全区、平台、语言、主题由插件自动给，这里给了会覆盖。
   final Map<String, Object?> systemInfo;
 
-  /// 渲染后端偏好。默认 [MiniBackend.cpu]；Android 选 auto / gpu 才会试 GPU 上屏
+  /// 渲染后端偏好。默认 [MiniBackend.auto]：设备有可用的 GPU（启动自检逐字节一致）就用 GPU，
+  /// 否则 / 运行中出错就回退 CPU。要强制软件渲染传 [MiniBackend.cpu]。
+  /// iOS 的 Flutter 外部纹理是 CVPixelBuffer，没有可上屏的 Metal 层，那边恒走 CPU
   final MiniBackend backend;
 
   /// 右上角胶囊（微信的「•••」+「⊙」）。`navigationStyle: custom` 的页面由引擎画在画面里，
@@ -226,9 +228,12 @@ class MiniProgramController {
 
   /// 指针三段：0 按下 / 1 移动 / 2 抬起 / 3 取消（视口逻辑坐标）。
   /// **别在宿主侧合成「点击」**：tap / longpress 都由引擎的触摸状态机产出。
-  void pointer(int phase, double x, double y) {
+  ///
+  /// [timeMs]：事件自己的时间（`PointerEvent.timeStamp` 的毫秒）。给了的话，引擎按它重采样页面拖动
+  /// （过 MethodChannel 再转引擎线程，一帧收到几个移动是碰运气，按到达时刻走慢拖会一顿一顿）。
+  void pointer(int phase, double x, double y, {double? timeMs}) {
     if (!_created || _disposed) return;
-    _channel.invokeMethod<void>('pointer', {'phase': phase, 'x': x, 'y': y});
+    _channel.invokeMethod<void>('pointer', {'phase': phase, 'x': x, 'y': y, if (timeMs != null) 't': timeMs});
   }
 
   void wheel(double dy, {bool precise = true}) {

@@ -146,7 +146,7 @@ mod tests {
     use super::*;
 
     fn shot(c: u32) -> PageShot {
-        PageShot { width: 4, height: 1, pixels: vec![c; 4] }
+        PageShot::new(4, 1, vec![c; 4])
     }
 
     #[test]

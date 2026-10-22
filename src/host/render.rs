@@ -48,6 +48,9 @@ pub fn present_to_buffer(
     // 顶部宿主外壳（引擎画的导航栏）占的行数：页面与 fixed 层整体下移这么多行，
     // 这几行本函数不写（由调用方盖上导航栏）。0 时与从前逐字节相同
     top_px: u32,
+    // 只写缓冲的这几行 [a, b)（GPU 直通帧只要覆盖层那一截，见 `compositor::cpu::compose_rows`）。
+    // (0, 高) 时与从前逐字节相同
+    rows: (u32, u32),
 ) {
     let pixels = canvas.pixels();
     let canvas_width = canvas.width();
@@ -63,7 +66,7 @@ pub fn present_to_buffer(
     let copy_width = buffer_width.min(canvas_width) as usize;
     
     // 渲染主内容
-    for dst_y in top_px..content_area_height {
+    for dst_y in top_px.max(rows.0)..content_area_height.min(rows.1) {
         let src_y = (dst_y - top_px) as i32 + scroll_offset;
         let dst_row_start = (dst_y * buffer_width) as usize;
         
@@ -101,7 +104,8 @@ pub fn present_to_buffer(
             
             for y in 0..draw_h {
                 let dst_y = content_area_height + y;
-                if dst_y >= buffer_height { break; }
+                if dst_y >= buffer_height.min(rows.1) { break; }
+                if dst_y < rows.0 { continue; }
                 let src_row = (y as usize) * tabbar_width;
                 let dst_row = (dst_y * buffer_width) as usize;
                 
@@ -127,6 +131,9 @@ pub fn present_to_buffer(
         let draw_w = (buffer_width as usize).min(fixed_width);
         
         for y in row0..y_end {
+            if y + top_px < rows.0 || y + top_px >= rows.1 {
+                continue;
+            }
             let src_row = (y as usize) * fixed_width;
             let dst_row = ((y + top_px) * buffer_width) as usize;
             

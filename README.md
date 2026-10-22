@@ -381,8 +381,10 @@ Common action flags (executed in the order written, repeatable): `--touch x,y` /
 `--swipe x1,y1,x2,y2` / `--drag px×frames` / `--type text` / `--key enter` / `--wheel` /
 `--wait seconds` / `--frames N`. Full list via `--help`. Diagnostic switches
 (`MINI_SCROLL_LOG` / `MINI_FPS` / `MINI_FONT_LOG` / `MINI_SLIDER_LOG` …; the mobile SDK also has `MINI_DAMAGE_LOG`, one
-line per frame saying how much was repainted, and `MINI_NO_DAMAGE`, which turns partial repaint off
-for comparison, see the integration guide) are documented in
+line per frame saying how much was repainted (with prepare / CPU compose / surface wait / upload size
+appended when the GPU presents), `MINI_NO_DAMAGE`, which turns partial repaint off
+for comparison, and `MINI_NO_RESAMPLE`, which turns off resampling page drags by event time; on Android the Flutter plugin picks them up from system properties such as
+`adb shell setprop debug.mini.fps 1` / `debug.mini.damage_log 1`, no rebuild needed, see the integration guide) are documented in
 [`doc/引擎测试说明.md`](doc/引擎测试说明.md) and
 [`doc/架构与实现原理.md`](doc/架构与实现原理.md#帧成本是怎么压下来的).
 

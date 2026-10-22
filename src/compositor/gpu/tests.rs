@@ -217,3 +217,141 @@ fn lost_fault_surfaces_as_device_lost() {
     let lost = [second, third].into_iter().any(|r| matches!(r, Err(super::GpuError::DeviceLost(_))));
     assert!(lost, "注入 lost@2 后必须报设备丢失");
 }
+
+/// 导航栏下移 + 转场 / 侧滑在着色器里做（从前这两样整帧直通）：随机位移、进度、两种方向、
+/// 有图 / 没图 / 图尺寸不对，与 CPU 逐字节比。同一张图连用几帧（只传一次）也要对
+#[test]
+fn top_band_and_edge_back_match_cpu_byte_for_byte() {
+    use crate::compositor::{EdgeBackFrame, TopBand};
+    use crate::host::edge_back::PageShot;
+    let (w, h) = (120u32, 200u32);
+    let Some(mut comp) = open_for_test(w, h) else { return };
+    let mut rng = Rng(99);
+    let mut page = Canvas::new(w, 900);
+    noise(&mut page, &mut rng, |r| r.byte());
+    let page = PageCanvas::new(page);
+    let mut tab = Canvas::new(w, 24);
+    noise(&mut tab, &mut rng, |_| 255);
+    let tab = LayerCanvas::new(tab);
+    let mut fixed = Canvas::new(w, h);
+    noise(&mut fixed, &mut rng, |r| [0, 255, r.byte()][r.u(3) as usize]);
+    let fixed = LayerCanvas::new(fixed);
+    let mut band = Canvas::new(w, 30);
+    noise(&mut band, &mut rng, |r| if r.u(4) == 0 { r.byte() } else { 255 });
+    let band = LayerCanvas::new(band);
+    let shot_px = |rng: &mut Rng, n: u32| (0..n).map(|_| u32::from_le_bytes([rng.byte(), rng.byte(), rng.byte(), 0])).collect();
+    let shots = [PageShot::new(w, h, shot_px(&mut rng, w * h)), PageShot::new(w, h, shot_px(&mut rng, w * h)), PageShot::new(w / 2, h, shot_px(&mut rng, w / 2 * h))];
+    for case in 0..60 {
+        let shot = match rng.u(5) {
+            0 => None,
+            1 => Some(&shots[2]),
+            // 同一张图连着几帧：只该上传一次，之后几帧照样对
+            n => Some(&shots[(n as usize / 2) % 2]),
+        };
+        let has_tabbar = rng.u(2) == 0;
+        let rows = rng.u(h);
+        let l = FrameLayers {
+            width: w,
+            height: h,
+            scale: 2.0,
+            page: &page,
+            scroll_px: rng.u(700) as i32 - 30,
+            page_bg: rng.u(0xFF_FFFF),
+            has_tabbar,
+            tabbar: Some(&tab),
+            tabbar_px: if has_tabbar { 20 } else { 0 },
+            fixed: (rng.u(2) == 0).then_some(&fixed),
+            fixed_rows: Some((rows, (rows + rng.u(h)).min(h))),
+            pull: None,
+            overlays: OverlayRefs::none(),
+            edge_back: (rng.u(6) != 0).then(|| EdgeBackFrame {
+                offset_px: [0, 1, 13, 14, 15, w / 2, w - 1, w, w + 9][rng.u(9) as usize],
+                shot,
+                progress: rng.u(1001) as f32 / 1000.0,
+                shot_on_top: rng.u(2) == 0,
+            }),
+            top: (rng.u(4) != 0).then(|| TopBand { rows: [1, 17, 30, 45, h + 3][rng.u(5) as usize], canvas: &band }),
+        };
+        check(&mut comp, &l, &format!("导航栏 + 转场 #{case}"));
+    }
+}
+
+/// 直通帧只传覆盖层那几行、其余行着色器合成再查表压暗（passthrough.rs）：Modal（四舍五入的表）、
+/// Toast / Loading（没有遮罩）、两者叠着（盒子行区间取并集），叠导航栏 / tabBar / fixed，与 CPU 逐字节比。
+/// 同时断言**确实**只传了一部分 —— 否则整帧上传也会「全绿」，测不到着色器那一半
+#[test]
+fn overlay_band_passthrough_matches_cpu_byte_for_byte() {
+    use crate::compositor::TopBand;
+    use crate::host::ui_overlay::{LoadingState, ModalState, ToastState};
+    let (w, h) = (120u32, 480u32);
+    let Some(mut comp) = open_for_test(w, h) else { return };
+    let mut rng = Rng(2026);
+    let mut page = Canvas::new(w, 900);
+    noise(&mut page, &mut rng, |r| r.byte());
+    let page = PageCanvas::new(page);
+    let mut tab = Canvas::new(w, 24);
+    noise(&mut tab, &mut rng, |_| 255);
+    let tab = LayerCanvas::new(tab);
+    let mut fixed = Canvas::new(w, h);
+    noise(&mut fixed, &mut rng, |r| [0, 255, r.byte()][r.u(3) as usize]);
+    let fixed = LayerCanvas::new(fixed);
+    let mut band = Canvas::new(w, 30);
+    noise(&mut band, &mut rng, |_| 255);
+    let band = LayerCanvas::new(band);
+    let toast = |icon: &str| ToastState {
+        title: String::new(),
+        icon: icon.into(),
+        image: String::new(),
+        mask: false,
+        visible: true,
+        start_time: std::time::Instant::now(),
+        duration_ms: 1500,
+    };
+    let cases: [(Option<ToastState>, Option<LoadingState>, Option<ModalState>); 4] = [
+        (None, None, Some(ModalState::new("标题", "内容"))),
+        (Some(toast("success")), None, None),
+        (None, Some(LoadingState { title: String::new(), mask: true, visible: true }), None),
+        (Some(toast("error")), None, Some(ModalState::new("a", "b"))),
+    ];
+    for (case, (t, lo, m)) in cases.iter().enumerate() {
+        for k in 0..4 {
+            let has_tabbar = k % 2 == 0;
+            let l = FrameLayers {
+                width: w,
+                height: h,
+                scale: 1.0,
+                page: &page,
+                scroll_px: rng.u(600) as i32,
+                page_bg: rng.u(0xFF_FFFF),
+                has_tabbar,
+                tabbar: Some(&tab),
+                tabbar_px: if has_tabbar { 20 } else { 0 },
+                fixed: (k < 2).then_some(&fixed),
+                fixed_rows: Some((0, h)),
+                pull: None,
+                overlays: OverlayRefs { anim_secs: 0.4, toast: t, loading: lo, modal: m, picker: None, text: None },
+                edge_back: None,
+                top: (k != 3).then(|| TopBand { rows: 30, canvas: &band }),
+            };
+            // 前两个配置叠一个已经定格的操作菜单（只合成顶边那几行底图，其余行白底盖掉）
+            let sheet = case < 2;
+            if sheet {
+                crate::host::ui_overlay::action_sheet::open_at(800, false);
+            } else {
+                crate::host::ui_overlay::action_sheet::clear();
+            }
+            let st = comp.compose_offscreen(&l, true).unwrap_or_else(|e| panic!("覆盖层 #{case}.{k}：GPU 合成失败 {e}"));
+            assert!(st.passthrough, "覆盖层 #{case}.{k} 应当是直通帧");
+            let pb = comp.pass_band;
+            assert!(pb.y1 > pb.y0 && pb.y1 - pb.y0 < h * 3 / 4, "覆盖层 #{case}.{k} 应当只传覆盖层那几行，实际 {}..{}", pb.y0, pb.y1);
+            assert_eq!(pb.lut.is_some(), m.is_some() || sheet, "覆盖层 #{case}.{k}：只有 Modal / 操作菜单带遮罩");
+            let gpu = comp.read_back().unwrap();
+            let mut buf = vec![0u32; (w * h) as usize];
+            cpu::compose(&mut buf, &l);
+            if let Some((x, y, c, g)) = first_mismatch(&cpu_rgba(&buf), &gpu, w) {
+                panic!("覆盖层 #{case}.{k}：@{x},{y} CPU #{c:06x} / GPU #{g:06x}");
+            }
+        }
+    }
+    crate::host::ui_overlay::action_sheet::clear();
+}

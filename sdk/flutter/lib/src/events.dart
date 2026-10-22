@@ -9,6 +9,7 @@ class MiniPage {
     required this.depth,
     required this.isTabBar,
     required this.window,
+    this.tabBarBackgroundColor,
   });
 
   factory MiniPage.fromJson(Map<String, dynamic> j) => MiniPage(
@@ -16,6 +17,7 @@ class MiniPage {
         depth: (j['depth'] as num?)?.toInt() ?? 0,
         isTabBar: j['isTabBar'] == true,
         window: (j['window'] as Map?)?.cast<String, dynamic>() ?? const {},
+        tabBarBackgroundColor: j['tabBarBackgroundColor'] as String?,
       );
 
   /// `pages/index/index`
@@ -24,6 +26,9 @@ class MiniPage {
   /// 页面栈深度；`> 1` 时系统返回键应交给小程序
   final int depth;
   final bool isTabBar;
+
+  /// tabBar 页的 tabBar 底色（`#rrggbb`，含 `setTabBarStyle` 改过的）；非 tabBar 页为 null
+  final String? tabBarBackgroundColor;
 
   /// app.json 的 `window` ← 页面 json ← `wx.setNavigationBarTitle/Color` 合并后的窗口配置
   final Map<String, dynamic> window;

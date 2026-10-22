@@ -148,6 +148,9 @@ size_t mr_app_pixels(MRApp* app, uint8_t* out, size_t len);
 // 输入：必须送完整三段，不要在宿主侧自己合成"点击"
 void   mr_app_pointer_down(MRApp* app, float x, float y);
 void   mr_app_pointer_move(MRApp* app, float x, float y);
+// 带事件时间的移动：t_ms 与 mr_app_pump 的 now_ms 同一个单调时钟（Android MotionEvent.getEventTime()、
+// iOS UITouch.timestamp*1000）。页面拖动按它重采样，消掉慢拖时的一顿一顿；钟对不上时退回逐事件
+void   mr_app_pointer_move_at(MRApp* app, float x, float y, double t_ms);
 void   mr_app_pointer_up(MRApp* app, float x, float y);
 void   mr_app_pointer_cancel(MRApp* app);
 void   mr_app_wheel(MRApp* app, float delta_y, int precise);

@@ -301,14 +301,18 @@ class MiniProgramView @JvmOverloads constructor(
         val dpr = resources.displayMetrics.density
         fun send(phase: Int, x: Float, y: Float) =
             post { if (handle != 0L) MiniEngine.nativePointer(handle, phase, x / dpr, y / dpr) }
+        // 移动带上事件时间（uptimeMillis，与 pump 用的 nanoTime / Choreographer 帧时间同一个单调钟）：
+        // 引擎按它重采样页面拖动，post 到哪一帧不再影响每帧挪多少（慢拖不一顿一顿）
+        fun move(x: Float, y: Float, t: Long) =
+            post { if (handle != 0L) MiniEngine.nativePointerMoveAt(handle, x / dpr, y / dpr, t.toDouble()) }
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> send(0, event.x, event.y)
             MotionEvent.ACTION_MOVE -> {
                 // 历史点也要送：抽稀会让滑动手感变差，也会漏掉快速滑动的方向判定
                 for (i in 0 until event.historySize) {
-                    send(1, event.getHistoricalX(i), event.getHistoricalY(i))
+                    move(event.getHistoricalX(i), event.getHistoricalY(i), event.getHistoricalEventTime(i))
                 }
-                send(1, event.x, event.y)
+                move(event.x, event.y, event.eventTime)
             }
             MotionEvent.ACTION_UP -> send(2, event.x, event.y)
             MotionEvent.ACTION_CANCEL -> send(3, 0f, 0f)

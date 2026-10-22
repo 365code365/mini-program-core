@@ -31,6 +31,22 @@ pub struct PageShot {
     pub width: u32,
     pub height: u32,
     pub pixels: Vec<u32>,
+    /// 这张图的编号（进程内唯一，[`PageShot::new`] 发）。GPU 合成器按它判断「这张图传过没有」：
+    /// 一次转场里同一张图每帧都要用，整张 10MB 只该传一次；按地址判会把新图认成旧图
+    /// （上一张释放后，新图可能正好分配在同一个地址）
+    pub id: u64,
+}
+
+impl PageShot {
+    pub fn new(width: u32, height: u32, pixels: Vec<u32>) -> Self {
+        static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+        Self { width, height, pixels, id: NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed) }
+    }
+
+    /// 空图（截不到画面时的占位）
+    pub fn empty() -> Self {
+        Self::new(0, 0, Vec::new())
+    }
 }
 
 /// 松手后的收尾动画
@@ -152,12 +168,61 @@ fn parallax(width: f32, progress: f32) -> f32 {
 }
 
 /// 把 0xRRGGBB 按 `factor`（0~1，越小越暗）压暗
+#[cfg(test)]
 fn dim(color: u32, factor: f32) -> u32 {
-    let f = factor.clamp(0.0, 1.0);
-    let r = (((color >> 16) & 0xFF) as f32 * f) as u32;
-    let g = (((color >> 8) & 0xFF) as f32 * f) as u32;
-    let b = ((color & 0xFF) as f32 * f) as u32;
-    (r << 16) | (g << 8) | b
+    DimLut::new(factor).apply(color)
+}
+
+/// 一个压暗系数下 0..=255 每个分量的结果（与逐像素 `(c as f32 * f) as u32` **逐字节相同**）。
+///
+/// 转场与侧滑每帧要压暗大半屏（1080 宽的屏上一百多万像素），逐像素三次浮点乘法在 120Hz 的
+/// 中端机上就占掉好几毫秒；系数一帧内是常数，查表只剩三次取下标。GPU 合成器的着色器按同一个
+/// 浮点算式出图，CPU 这边结果一个字节都不能变（`compositor::gpu` 的逐字节对拍）
+struct DimLut([u8; 256]);
+
+impl DimLut {
+    fn new(factor: f32) -> Self {
+        let f = factor.clamp(0.0, 1.0);
+        let mut t = [0u8; 256];
+        for (c, v) in t.iter_mut().enumerate() {
+            *v = (c as f32 * f) as u32 as u8;
+        }
+        Self(t)
+    }
+
+    #[inline]
+    fn apply(&self, color: u32) -> u32 {
+        let t = &self.0;
+        ((t[((color >> 16) & 0xFF) as usize] as u32) << 16)
+            | ((t[((color >> 8) & 0xFF) as usize] as u32) << 8)
+            | t[(color & 0xFF) as usize] as u32
+    }
+}
+
+/// 交界阴影那几列各自的压暗表（贴着边缘最深）
+fn shadow_luts(shadow: usize) -> Vec<DimLut> {
+    (0..shadow).map(|i| DimLut::new(shadow_factor(i, shadow))).collect()
+}
+
+/// 离交界第 `i` 列（共 `shadow` 列）的压暗系数
+fn shadow_factor(i: usize, shadow: usize) -> f32 {
+    let t = 1.0 - i as f32 / shadow as f32;
+    (1.0 - 0.45 * t).clamp(0.0, 1.0)
+}
+
+/// GPU 合成器复刻 [`compose`] / [`compose_shot_over`] 要的参数（与这两个函数**同一套算式**）：
+/// `(off, par, dim, shadow, 各列阴影系数)`，系数都已夹到 0~1。着色器按 `u32(f32(c) * f)` 压暗，
+/// 与 [`DimLut`] 的 `(c as f32 * f) as u32` 逐字节相同
+pub fn gpu_params(width: u32, offset_px: u32, progress: f32) -> (u32, u32, f32, u32, [f32; 16]) {
+    let off = offset_px.min(width);
+    let par = parallax(width as f32, progress) as usize as u32;
+    let dim = (1.0 - 0.22 * (1.0 - progress.clamp(0.0, 1.0))).clamp(0.0, 1.0);
+    let shadow = (SHADOW_WIDTH as u32).min(off);
+    let mut f = [1.0f32; 16];
+    for (i, v) in f.iter_mut().enumerate().take(shadow as usize) {
+        *v = shadow_factor(i, shadow as usize);
+    }
+    (off, par, dim, shadow, f)
 }
 
 /// 把已经合成好的这一帧按侧滑位移重排：当前页整体右移 `offset_px`，
@@ -181,8 +246,9 @@ pub fn compose(
     let shot = prev.filter(|s| s.width == width && s.height == height);
     let par = parallax(width as f32, progress) as usize;
     // 压暗随进度收回：刚开始推的时候下面那页最暗，推到底时恢复原色
-    let dim_factor = 1.0 - 0.22 * (1.0 - progress.clamp(0.0, 1.0));
+    let lut = DimLut::new(1.0 - 0.22 * (1.0 - progress.clamp(0.0, 1.0)));
     let shadow = (SHADOW_WIDTH as usize).min(off);
+    let shadow_lut = shadow_luts(shadow);
     for y in 0..height as usize {
         let row_start = y * w;
         if row_start + w > buffer.len() {
@@ -191,22 +257,20 @@ pub fn compose(
         let row = &mut buffer[row_start..row_start + w];
         // 当前页右移（从右往左搬，copy_within 内部是 memmove，重叠也安全）
         row.copy_within(0..w - off, off);
-        // 左侧露出的一条：上一页
-        for x in 0..off {
-            let c = match shot {
-                Some(s) => {
-                    let sx = (x + par).min(w - 1);
-                    s.pixels[row_start + sx]
+        // 左侧露出的一条：上一页（视差：取它 [par, par + off) 那一段，越界的钉在最后一列）
+        match shot {
+            Some(s) => {
+                let src = &s.pixels[row_start..row_start + w];
+                for (x, d) in row[..off].iter_mut().enumerate() {
+                    *d = lut.apply(src[(x + par).min(w - 1)]);
                 }
-                None => 0x00_00_00,
-            };
-            row[x] = dim(c, dim_factor);
+            }
+            None => row[..off].fill(lut.apply(0)),
         }
         // 交界处的投影：当前页的左边缘压在上一页上
-        for i in 0..shadow {
+        for (i, l) in shadow_lut.iter().enumerate() {
             let x = off - 1 - i;
-            let t = 1.0 - i as f32 / shadow as f32; // 贴着边缘最深
-            row[x] = dim(row[x], 1.0 - 0.45 * t);
+            row[x] = l.apply(row[x]);
         }
     }
 }
@@ -231,8 +295,9 @@ pub fn compose_shot_over(
     }
     let shot = top.filter(|s| s.width == width && s.height == height);
     let par = parallax(width as f32, progress) as usize;
-    let dim_factor = 1.0 - 0.22 * (1.0 - progress.clamp(0.0, 1.0));
+    let lut = DimLut::new(1.0 - 0.22 * (1.0 - progress.clamp(0.0, 1.0)));
     let shadow = (SHADOW_WIDTH as usize).min(off);
+    let shadow_lut = shadow_luts(shadow);
     for y in 0..height as usize {
         let row_start = y * w;
         if row_start + w > buffer.len() {
@@ -242,19 +307,16 @@ pub fn compose_shot_over(
         // 左边露出的一条：下面那一页按视差左移、压暗。从左往右写，读的下标 x + par ≥ x
         // 还没被写过（par ≥ 0），所以能原地做
         for x in 0..off {
-            row[x] = dim(row[(x + par).min(w - 1)], dim_factor);
+            row[x] = lut.apply(row[(x + par).min(w - 1)]);
         }
-        // 右边：上面那一页的图整体右移 off
-        for x in off..w {
-            row[x] = match shot {
-                Some(s) => s.pixels[row_start + x - off],
-                None => 0x00_00_00,
-            };
+        // 右边：上面那一页的图整体右移 off（整段拷贝）
+        match shot {
+            Some(s) => row[off..].copy_from_slice(&s.pixels[row_start..row_start + w - off]),
+            None => row[off..].fill(0x00_00_00),
         }
-        for i in 0..shadow {
+        for (i, l) in shadow_lut.iter().enumerate() {
             let x = off - 1 - i;
-            let t = 1.0 - i as f32 / shadow as f32;
-            row[x] = dim(row[x], 1.0 - 0.45 * t);
+            row[x] = l.apply(row[x]);
         }
     }
 }
@@ -269,7 +331,7 @@ mod tests {
         let (w, h) = (32u32, 2u32);
         let mut buf = vec![0x00FF00u32; (w * h) as usize];
         let top: Vec<u32> = (0..(w * h)).map(|i| 0x010000 * (i % w + 1)).collect();
-        let shot = PageShot { width: w, height: h, pixels: top.clone() };
+        let shot = PageShot::new(w, h, top.clone());
         compose_shot_over(&mut buf, w, h, 20, Some(&shot), 1.0);
         assert_eq!(buf[20], top[0], "图右移 20 列");
         assert_eq!(buf[31], top[11]);
@@ -375,7 +437,7 @@ mod tests {
     }
 
     fn shot(width: u32, height: u32, color: u32) -> PageShot {
-        PageShot { width, height, pixels: vec![color; (width * height) as usize] }
+        PageShot::new(width, height, vec![color; (width * height) as usize])
     }
 
     /// 合成：当前页整体右移，左边是上一页

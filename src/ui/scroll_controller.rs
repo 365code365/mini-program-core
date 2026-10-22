@@ -206,6 +206,16 @@ impl ScrollController {
     
     pub fn update_drag(&mut self, y: f32, timestamp: u64) {
         if !self.is_dragging { return; }
+        self.drag_preview(y);
+        self.velocity_samples.push((y, timestamp));
+        // Keep samples from last 100ms
+        self.velocity_samples.retain(|(_, t)| timestamp >= *t && timestamp - *t < 100);
+    }
+
+    /// 只按手指位置摆页面，不记速度采样（`update_drag` 的前一半）。
+    /// SDK 的页面拖动按事件时间重采样后每帧调它（host/engine_resample.rs），速度仍按原始事件算
+    pub fn drag_preview(&mut self, y: f32) {
+        if !self.is_dragging { return; }
         let delta = self.drag_start_pos - y;
         let raw = self.drag_start_scroll + delta;
         if raw < self.min_bound() {
@@ -220,9 +230,6 @@ impl ScrollController {
         };
         self.wheel_raw = self.position;
         self.max_over_top = self.max_over_top.max(self.top_overscroll());
-        self.velocity_samples.push((y, timestamp));
-        // Keep samples from last 100ms
-        self.velocity_samples.retain(|(_, t)| timestamp >= *t && timestamp - *t < 100);
     }
     
     pub fn end_drag(&mut self) -> bool {

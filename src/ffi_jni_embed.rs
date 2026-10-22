@@ -248,11 +248,13 @@ pub extern "system" fn Java_dev_minirender_MiniEngine_nativeBlitToWindow(_env: J
             }
             a.cpu_window_size = (pw, ph);
         }
+        let t0 = std::time::Instant::now();
         let mut buf = ANativeWindowBuffer { width: 0, height: 0, stride: 0, format: 0, bits: std::ptr::null_mut(), reserved: [0; 6] };
         let r = ANativeWindow_lock(win, &mut buf, std::ptr::null_mut());
         if r != 0 || buf.bits.is_null() {
             return if r < 0 { r } else { -2 };
         }
+        let t1 = std::time::Instant::now();
         let stride = (buf.stride.max(0) as u32) * 4;
         let len = stride as usize * buf.height.max(0) as usize;
         let n = if buf.width as u32 == pw && buf.height as u32 == ph && buf.format == WINDOW_FORMAT_RGBA_8888 {
@@ -260,7 +262,9 @@ pub extern "system" fn Java_dev_minirender_MiniEngine_nativeBlitToWindow(_env: J
         } else {
             0
         };
+        let t2 = std::time::Instant::now();
         ANativeWindow_unlockAndPost(win);
+        blit_stats::record(t0, t1, t2);
         if n == 0 {
             -3
         } else {
@@ -334,4 +338,54 @@ pub extern "system" fn Java_dev_minirender_MiniEngine_nativeNativeViewEvent(
         n.as_ptr(),
         d.as_ref().map(|v| v.as_ptr()).unwrap_or(std::ptr::null()),
     ) != 0) as jboolean
+}
+
+/// `MINI_FPS`：上屏三段各自的耗时，每秒一行（等空闲缓冲 / 写像素 / 提交）。
+/// 宿主那边只量得到总数；分不开的话不知道是 CPU 写得慢，还是 Flutter 拿着缓冲不放、在等
+mod blit_stats {
+    use std::cell::RefCell;
+    use std::time::Instant;
+
+    #[derive(Default)]
+    struct S {
+        start: Option<Instant>,
+        n: u32,
+        lock: (f32, f32),
+        write: (f32, f32),
+        post: (f32, f32),
+    }
+
+    thread_local! {
+        static ON: bool = std::env::var_os("MINI_FPS").is_some();
+        static STATS: RefCell<S> = RefCell::new(S::default());
+    }
+
+    fn add(acc: &mut (f32, f32), ms: f32) {
+        acc.0 += ms;
+        acc.1 = acc.1.max(ms);
+    }
+
+    pub(super) fn record(t0: Instant, t1: Instant, t2: Instant) {
+        if !ON.with(|o| *o) {
+            return;
+        }
+        let t3 = Instant::now();
+        let ms = |a: Instant, b: Instant| (b - a).as_secs_f32() * 1000.0;
+        STATS.with(|s| {
+            let mut s = s.borrow_mut();
+            let start = *s.start.get_or_insert(t0);
+            s.n += 1;
+            add(&mut s.lock, ms(t0, t1));
+            add(&mut s.write, ms(t1, t2));
+            add(&mut s.post, ms(t2, t3));
+            if (t3 - start).as_secs_f32() >= 1.0 {
+                let n = s.n as f32;
+                crate::compositor::diag::emit(&format!(
+                    "📤 [直写] {} 次  等缓冲 平均 {:.1} 最慢 {:.1}ms  写像素 平均 {:.1} 最慢 {:.1}ms  提交 平均 {:.1} 最慢 {:.1}ms",
+                    s.n, s.lock.0 / n, s.lock.1, s.write.0 / n, s.write.1, s.post.0 / n, s.post.1
+                ));
+                *s = S { start: Some(t3), ..S::default() };
+            }
+        });
+    }
 }

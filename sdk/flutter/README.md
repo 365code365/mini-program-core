@@ -25,6 +25,11 @@ Navigator.push(context, MaterialPageRoute(
 
 导航栏默认由引擎画（`MiniProgramController(navigationBar: true)`，带转场 `routeAnimation`）：画面铺满整屏，普通页 ↔ `navigationStyle: custom` 页切换不改尺寸，不会拉伸、跳动；`navigationBar: false` 回到用 AppBar 画导航栏的旧做法。
 
+底部的系统导航栏：**Android** 上视图铺到虚拟导航键 / 手势条下面时，那一截不交给引擎（与微信安卓一致，`windowHeight` 不含它），
+由 `MiniProgramView` 填 `navigationBarAreaColor`（`MiniProgramScaffold` 在 tabBar 页给 tabBar 底色、其它页给页面底色），
+并关掉系统的半透明灰罩、导航键图标按底色深浅反色；按在那一截上的触摸不进引擎。页面最底下一截与吸底栏不再被导航键盖住，
+`env(safe-area-inset-bottom)` 在 Android 上是 0。**iOS** 照样铺满 Home 指示条（与微信 iOS 一致），底部安全区交给 `env()` 与原生 tabBar。
+
 原生组件按引擎报的遮挡裁剪（picker 面板、弹窗、fixed 元素、tabBar 盖在视频上面，与微信同层渲染一致），
 `nativeViewBuilder` 只管造控件，不用自己处理层级。
 

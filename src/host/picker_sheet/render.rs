@@ -4,6 +4,7 @@
 //! （拖动 / 回正时停在两行之间）；位置是整数时与从前逐字节一致 —— 静止面板的
 //! 像素基线（interaction-check 的 picker_open）不因拖动支持而变。
 use super::*;
+use crate::compositor::footprint::{self, Footprint};
 
 /// 把面板画到窗口 buffer 上（0xAARRGGBB，A 恒为 FF）
 pub fn render(
@@ -13,21 +14,34 @@ pub fn render(
     sf: f32,
     state: &PickerSheetState,
     text_renderer: Option<&TextRenderer>,
-) {
-    // 遮罩随面板一起淡入，避免「先黑一下再滑上来」
+    rows: (u32, u32),
+) -> Footprint {
+    let mut fp = Footprint::NONE;
+    // 遮罩随面板一起淡入，避免「先黑一下再滑上来」。
+    // 查表（与逐像素 `(c as f32 * keep) as u32` 逐字节相同），表也交给 GPU 在面板外压暗；
+    // `rows` 是只合成的那几行（GPU 直通帧只要面板那一截，面板总在 [`reach`] 之内）
     let mask_alpha = super::mask_alpha(state);
     if mask_alpha > MASK_VISIBLE_MIN {
-        let keep = 1.0 - mask_alpha;
-        for px in buffer.iter_mut() {
-            let v = *px;
-            let r = (((v >> 16) & 0xFF) as f32 * keep) as u32;
-            let g = (((v >> 8) & 0xFF) as f32 * keep) as u32;
-            let b = ((v & 0xFF) as f32 * keep) as u32;
-            *px = 0xFF00_0000 | (r << 16) | (g << 8) | b;
-        }
+        let lut = footprint::lut_trunc(1.0 - mask_alpha);
+        Footprint::apply_lut(buffer, width, rows, &lut, 0xFF00_0000);
+        fp.dim(&lut);
     }
-
     let top = (sheet_top(state) * sf) as i32;
+    // 下面每一笔都落在面板顶边以下
+    fp.touch(top as f32, height as f32, height);
+    draw_sheet(buffer, width, height, sf, state, text_renderer, top);
+    fp
+}
+
+/// 不看时间的最大足迹：面板完全展开时顶边以下（入场 / 退场途中面板只会更低）
+pub fn reach(height: u32, sf: f32, state: &PickerSheetState) -> Footprint {
+    let mut fp = Footprint::NONE;
+    let top = ((state.viewport.1 - SHEET_H) * sf) as i32;
+    fp.touch(top as f32, height as f32, height);
+    fp
+}
+
+fn draw_sheet(buffer: &mut [u32], width: u32, height: u32, sf: f32, state: &PickerSheetState, text_renderer: Option<&TextRenderer>, top: i32) {
     let sheet_h = (SHEET_H * sf).ceil() as i32;
     let sheet_w = width as i32;
     fill_rect(buffer, width, height, 0, top, sheet_w, sheet_h, 0xFFFF_FFFF);

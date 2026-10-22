@@ -41,7 +41,7 @@ pub use sync::sync_columns;
 pub use build::build;
 pub use pointer::{hit_test, on_cancel, on_move, on_press, on_release, open_if_hit, reap, SheetMove};
 pub use region::relink_region;
-pub use render::render;
+pub use render::{reach, render};
 pub use wheel::WheelState;
 
 #[derive(Clone, Copy, PartialEq, Debug)]

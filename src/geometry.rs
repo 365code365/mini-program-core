@@ -120,6 +120,18 @@ pub fn pixel_rect(r: Rect, w: u32, h: u32) -> IRect {
     }
 }
 
+/// 浮点矩形向外扩到整像素（就是 [`pixel_rect`] 那组像素），再换回 `Rect`。
+///
+/// 局部重画是「`clear_area` 清掉这块 → 裁剪到这块重画」两步。清屏按 [`pixel_rect`] 向外取整，
+/// 而 `Canvas::clip_rect` 的下沿 / 右沿是截断的：边落在半个像素上时，最后那一行被清成页面底色、
+/// 却不在裁剪区里、没人重画 —— 屏上一条底色横线。dpr 3 加上松手惯性的小数滚动位置，补条带的
+/// 边几乎每帧都落在小数上，快速滑动时一直闪（荣耀 Android 15 真机录屏，绿按钮中间一条白线）。
+/// 两步都用扩过的矩形，就落在同一组像素上
+pub fn snap_out(r: Rect, w: u32, h: u32) -> Rect {
+    let p = pixel_rect(r, w, h);
+    Rect::new(p.x0 as f32, p.y0 as f32, p.x1.saturating_sub(p.x0) as f32, p.y1.saturating_sub(p.y0) as f32)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -149,6 +161,14 @@ mod tests {
             c.clear(base);
             c.clear_area(&r, ink);
             let p = pixel_rect(r, w, h);
+            // snap_out 换回来的矩形：整数边、覆盖的还是同一组像素（清屏与裁剪重画对得上）
+            let s = snap_out(r, w, h);
+            assert_eq!((s.x.fract(), s.y.fract(), s.right().fract(), s.bottom().fract()), (0.0, 0.0, 0.0, 0.0));
+            if p.is_empty() {
+                assert!(pixel_rect(s, w, h).is_empty(), "snap_out({r:?}) = {s:?} 空矩形变成非空");
+            } else {
+                assert_eq!(pixel_rect(s, w, h), p, "snap_out({r:?}) = {s:?} 改了覆盖范围");
+            }
             for y in 0..h {
                 for x in 0..w {
                     if c.get_pixel(x, y) != base {

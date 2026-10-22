@@ -1,7 +1,8 @@
 //! 提示框（`wx.showToast` / `wx.showLoading`）的绘制。几何在 `geometry.rs`，图标在 `icons.rs`。
 use super::draw::{draw_text_line, fill_rrect_aa, ALL_CORNERS};
-use super::geometry::{tip_box, TipIcon, TIP_BG, TIP_FG, TIP_RADIUS};
+use super::geometry::{tip_box, TipBox, TipIcon, TIP_BG, TIP_FG, TIP_RADIUS};
 use super::icons::{self, Glyph};
+use crate::compositor::Footprint;
 use crate::text::TextRenderer;
 
 /// 转圈的环宽（WeUI 在提示框里把 `.weui-primary-loading` 的环宽改成 4px）
@@ -17,8 +18,18 @@ pub(super) fn render_tip(
     icon: &TipIcon,
     step: u32,
     tr: Option<&TextRenderer>,
-) {
+) -> Footprint {
     let b = tip_box(title, icon, (w as f32 / sf, h as f32 / sf), tr);
+    let p = |v: f32| v * sf;
+    // 提示框没有可见的遮罩（`mask: true` 只挡触摸），所有笔画都在盒子里
+    let mut fp = Footprint::NONE;
+    fp.touch(p(b.y), p(b.y + b.h), h);
+    draw_box(buf, w, h, sf, &b, icon, step, tr);
+    fp
+}
+
+#[allow(clippy::too_many_arguments)]
+fn draw_box(buf: &mut [u32], w: u32, h: u32, sf: f32, b: &TipBox, icon: &TipIcon, step: u32, tr: Option<&TextRenderer>) {
     let p = |v: f32| v * sf;
     fill_rrect_aa(buf, w, h, (p(b.x), p(b.y), p(b.w), p(b.h)), p(TIP_RADIUS), TIP_BG, 1.0, ALL_CORNERS);
     if let Some((ix, iy, s)) = b.icon {

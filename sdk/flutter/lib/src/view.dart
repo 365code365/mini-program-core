@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' show PlatformDispatcher;
 
-import 'package:flutter/foundation.dart' show listEquals;
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, listEquals;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 
@@ -34,6 +34,7 @@ class MiniProgramView extends StatefulWidget {
     required this.controller,
     this.nativeViewBuilder,
     this.backgroundColor = const Color(0xFFFFFFFF),
+    this.navigationBarAreaColor,
     this.placeholder,
     this.onError,
   });
@@ -43,6 +44,10 @@ class MiniProgramView extends StatefulWidget {
 
   /// 画面没铺满的那一两个像素（逻辑尺寸取整）与加载前的底色
   final Color backgroundColor;
+
+  /// Android 上视图铺到系统导航栏下面时，那一截不交给引擎画、填这个色（缺省同 [backgroundColor]）。
+  /// [MiniProgramScaffold] 在 tabBar 页给 tabBar 底色、其它页给页面底色，与上面的画面连成一片
+  final Color? navigationBarAreaColor;
 
   /// 引擎第一帧出来之前显示的东西
   final Widget? placeholder;
@@ -64,6 +69,16 @@ class _MiniProgramViewState extends State<MiniProgramView> with WidgetsBindingOb
 
   /// 视图底边到屏幕底边的距离（键盘从屏幕底部升起，算遮挡要用）
   double _gapToScreenBottom = 0;
+
+  /// 底部留给 Android 系统导航栏（三键 / 手势条）的那一截，不交给引擎画。
+  ///
+  /// 微信安卓的小程序窗口不伸到虚拟导航键下面（`windowHeight` 不含它）。Android 15 起应用一律
+  /// edge-to-edge，视图铺到屏幕底边：不留的话页面最底下一截、吸底的操作栏都压在导航键下面
+  /// （荣耀三键导航实测底部 38 被盖住），而样例页大多没写 `env(safe-area-inset-bottom)`。
+  /// iOS 不留：Home 指示条只是一条细线，与微信 iOS 一样画面铺到底，底部安全区交给 `env()` 与 tabBar。
+  double _reservedBottom = 0;
+
+  static bool get _reservesNavigationBar => defaultTargetPlatform == TargetPlatform.android;
 
   MiniProgramController get _c => widget.controller;
 
@@ -121,17 +136,24 @@ class _MiniProgramViewState extends State<MiniProgramView> with WidgetsBindingOb
     final box = _box.currentContext?.findRenderObject() as RenderBox?;
     if (box == null || !box.hasSize) return;
     final mq = MediaQuery.of(context);
-    final size = box.size;
     final dpr = mq.devicePixelRatio;
     final origin = box.localToGlobal(Offset.zero);
     final screen = mq.size;
     final pad = mq.viewPadding;
-    _gapToScreenBottom = math.max(0, screen.height - (origin.dy + size.height));
+    _gapToScreenBottom = math.max(0, screen.height - (origin.dy + box.size.height));
+    // 视图与系统导航栏真正重叠的那一截。用 View 上未经裁剪的值：祖先去掉了 MediaQuery 的底部
+    // padding、视图却照样铺到屏幕底边时，读 `pad` 会得到 0
+    final viewPad = MediaQueryData.fromView(View.of(context)).viewPadding;
+    final navOverlap = math.max(0.0, (origin.dy + box.size.height) - (screen.height - viewPad.bottom));
+    final reserve = _reservesNavigationBar ? navOverlap : 0.0;
+    if ((reserve - _reservedBottom).abs() > 0.5) setState(() => _reservedBottom = reserve);
+    // 交给引擎的是去掉那一截之后的尺寸（不随换页变：切页照样不 resize）
+    final size = Size(box.size.width, math.max(1.0, box.size.height - reserve));
     // 只算视图与屏幕刘海 / 底部横条真正重叠的那部分（放在 AppBar 下面时上边是 0）
     final insets = [
       math.max(0.0, pad.top - origin.dy),
       math.max(0.0, (origin.dx + size.width) - (screen.width - pad.right)),
-      math.max(0.0, (origin.dy + size.height) - (screen.height - pad.bottom)),
+      reserve > 0 ? 0.0 : math.max(0.0, (origin.dy + size.height) - (screen.height - pad.bottom)),
       math.max(0.0, pad.left - origin.dx),
     ];
     if (_size == null) {
@@ -198,13 +220,16 @@ class _MiniProgramViewState extends State<MiniProgramView> with WidgetsBindingOb
 
   void _down(PointerDownEvent e) {
     if (_pointer != null) return; // 只认第一根手指：引擎的触摸状态机是单指的
+    // 按在留给系统导航栏的那一截上（手势导航时这条收得到触摸）：不属于小程序
+    if (_reservedBottom > 0 && e.localPosition.dy >= (_size?.height ?? double.infinity)) return;
     _pointer = e.pointer;
     _c.pointer(0, e.localPosition.dx, e.localPosition.dy);
   }
 
   void _move(PointerMoveEvent e) {
     if (e.pointer != _pointer) return;
-    _c.pointer(1, e.localPosition.dx, e.localPosition.dy);
+    // 带上事件时间：安卓上 timeStamp 就是 MotionEvent.getEventTime()，与引擎 pump 的帧时间同一个钟
+    _c.pointer(1, e.localPosition.dx, e.localPosition.dy, timeMs: e.timeStamp.inMicroseconds / 1000.0);
   }
 
   void _up(PointerUpEvent e) {
@@ -264,6 +289,16 @@ class _MiniProgramViewState extends State<MiniProgramView> with WidgetsBindingOb
                     child: _frame(context),
                   ),
                 ),
+                if (_reservedBottom > 0)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    height: _reservedBottom,
+                    child: IgnorePointer(
+                      child: ColoredBox(color: widget.navigationBarAreaColor ?? widget.backgroundColor),
+                    ),
+                  ),
                 if (widget.nativeViewBuilder != null) _nativeViews(),
               ],
             ),

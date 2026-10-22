@@ -114,6 +114,9 @@ impl crate::MiniAppWindow {
         let mut content_height = 0.0f32;
         if let Some(canvas) = &mut self.canvas {
             // 先声明这一帧写的是哪块（以后的 GPU 镜像按它补传），再清屏 + 画
+            // 清屏与裁剪落在同一组整像素上（mini_render::snap_out：边在半像素上时清屏多一行、
+            // 裁剪少一行，那一行变成底色没人重画）
+            let damage = damage.map(|r| mini_render::snap_out(r, canvas.read().width(), canvas.read().height()));
             let canvas = match &damage {
                 Some(rect) => {
                     let c = canvas.write_rect(*rect);

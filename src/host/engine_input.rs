@@ -37,7 +37,7 @@ impl MiniEngine {
         let now = self.mono_ms();
         let has_tabbar = self.is_tabbar_page(&self.current_route());
         let tabbar_y = if has_tabbar {
-            self.page_window_height() - crate::host::tabbar_height() as f32
+            self.page_window_height() - self.tabbar_h()
         } else {
             self.page_window_height()
         };
@@ -50,10 +50,13 @@ impl MiniEngine {
             return;
         }
 
+        self.resample_release();
         // 惯性滚动中按下：先停住，并且**这一下不算点击**（iOS/微信一致）
         self.tap_stops_fling = input::stop_running_flings(&mut self.scroll, &mut self.interaction);
         if self.tap_stops_fling {
-            self.needs_redraw = true;
+            // 停住只是位置不再变：按当前位置重新合成就够（停住的 scroll-view 由 engine_damage
+            // 按位置比出来）。从前这里整页重画 —— 惯性里按一下接着拖，按下那一帧就卡
+            self.dmg.compose_dirty = true;
         }
         self.scroll_pos_at_press = self.scroll.get_position();
         let outs = self.touch.press(x, y, now);
@@ -78,8 +81,8 @@ impl MiniEngine {
             use crate::ui::interaction::InteractionType;
             // slider 不在按下时抢走触摸：横向锁定才交给它（手势仲裁），竖着划照样滚页面
             if !el.disabled && el.interaction_type != InteractionType::ScrollArea {
+                // 点击态要等 hover-start-time 才出现，出现那一帧只重画这个元素（engine_press.rs）
                 self.interaction.set_button_pressed(el.id.clone(), el.bounds);
-                self.needs_redraw = true;
             }
         }
 
@@ -100,14 +103,15 @@ impl MiniEngine {
 
     /// 手指移动
     pub fn pointer_move(&mut self, x: f32, y: f32) {
+        // 不带时间戳的移动：不重采样（`pointer_move_at` 转进来的除外，engine_resample.rs）
+        self.resample_untimed_move();
         if self.route.swallowing() || self.overlay_pointer_move(x, y) || self.nav_pointer_move(x, y) {
             return;
         }
         let y = y - self.nav_height();
         let now = self.mono_ms();
-        if self.interaction.update_press_position(x, y, y + self.scroll.get_position()) {
-            self.needs_redraw = true;
-        }
+        // 移出元素就撤点击态；重画只画它自己（engine_press.rs 下一帧比对出来）
+        self.interaction.update_press_position(x, y, y + self.scroll.get_position());
         // 顺序要紧：**手势推进不能挂在「触摸序列还活着」上**。滚动接管的那一刻我们会
         // 补一次 touchcancel，状态机随即不活跃；要是先判 is_active 再往下走，
         // 后面所有移动都不会再滚 —— 一次 240px 的拖动只滚了第一步的 30px。
@@ -128,7 +132,7 @@ impl MiniEngine {
         );
         // 只推动了 scroll-view：不置整帧，出帧时按位置变化只重画它自己的盒子（engine_damage）
         if eff.needs_redraw && !eff.area_scrolled {
-            self.needs_redraw = true;
+            self.mark_full();
         }
         if eff.slider_changed {
             let (tid, t) = (self.touch.identifier(), self.mono_ms());
@@ -151,6 +155,8 @@ impl MiniEngine {
         {
             let outs = self.touch.cancel();
             self.dispatch_touch(&outs, x, y);
+            // 页面动了，这一下不再是点击：点击态立刻撤（不等手指移出元素，也不留 hover-stay-time）
+            self.interaction.cancel_press();
         }
     }
 
@@ -164,8 +170,8 @@ impl MiniEngine {
         // 松手要重画的只有按压态（`:active` / `hover-class` 要褪掉）与 scroll-view 拖拽收尾。
         // 从前这里无条件 `needs_redraw`：每一次滑动松手都整帧重画，正好砸在惯性的第一帧上
         // 正在拖的 swiper 松手要起吸附 / 翻页动画：动画由绘制推进，这一帧不画它就停在半路
-        let had_press = self.interaction.pressed_button.is_some()
-            || self.interaction.dragging_scroll_area.is_some()
+        // 点击态褪去不在这里整页重画：engine_press.rs 在它真正褪掉的那一帧只重画那个元素
+        let had_press = self.interaction.dragging_scroll_area.is_some()
             || self.interaction.dragging_slider.is_some()
             || crate::renderer::components::swiper_is_dragging();
         let now = self.mono_ms();
@@ -176,6 +182,8 @@ impl MiniEngine {
         if self.app.take_data_dirty() {
             self.page_data_dirty = true;
         }
+        // 页面停在屏上那一帧的位置再松手（重采样落后手指约一帧，见 engine_resample.rs）
+        self.resample_release();
         input::end_drags(
             &mut self.interaction,
             &mut self.scroll,
@@ -191,7 +199,7 @@ impl MiniEngine {
             self.handle_click(x, y);
         }
         if had_press {
-            self.needs_redraw = true;
+            self.mark_full();
         }
     }
 
@@ -214,6 +222,8 @@ impl MiniEngine {
         if self.app.take_data_dirty() {
             self.page_data_dirty = true;
         }
+        // 页面停在屏上那一帧的位置再松手（重采样落后手指约一帧，见 engine_resample.rs）
+        self.resample_release();
         input::end_drags(
             &mut self.interaction,
             &mut self.scroll,
@@ -241,7 +251,7 @@ impl MiniEngine {
         for r in self.interaction.insert_text(text) {
             self.apply_interaction(r);
         }
-        self.needs_redraw = true;
+        self.mark_full();
     }
 
     /// 功能键，名字见 [`crate::ui::interaction::KEY_NAMES`]：`enter` `newline` `backspace`
@@ -255,7 +265,7 @@ impl MiniEngine {
         if let Some(r) = self.interaction.handle_key_input(input) {
             self.apply_interaction(r);
         }
-        self.needs_redraw = true;
+        self.mark_full();
     }
 
 
@@ -307,13 +317,13 @@ impl MiniEngine {
         {
             sheet.viewport = (self.width as f32, self.height as f32);
             self.picker_sheet = Some(sheet);
-            self.needs_redraw = true;
+            self.mark_full();
             return;
         }
         let route = self.current_route();
         let has_tabbar = self.is_tabbar_page(&route);
         // 页面视口坐标（导航栏下沿为 0）
-        let tabbar_y = self.page_window_height() - crate::host::tabbar_height() as f32;
+        let tabbar_y = self.page_window_height() - self.tabbar_h();
         // 底部 tabBar 命中优先（它盖在页面之上）：自定义组件式与原生配置式都要认
         if has_tabbar && y >= tabbar_y {
             let custom = if self.custom_tabbar.is_some() {
@@ -350,13 +360,35 @@ impl MiniEngine {
             text.as_deref(),
             tap_ctx,
         );
+        // 整页重画只留给「组件自己的画法变了」的点击：开关 / 单选 / 滑块 / 输入框聚焦。
+        // 普通 bindtap 不用：处理函数里的 setData 走失效分析（只画变了的那块），点击态由
+        // engine_press.rs 只重画那个元素，弹 ActionSheet / Modal 只重新合成。从前每一下点击都整页重画，
+        // 一加 PLY110 上点「ActionSheet」先卡两帧整页（37~41ms）面板才开始往上滑
+        let redraw = match &result {
+            Some(crate::ui::interaction::InteractionResult::ButtonClick { .. }) | None => {
+                // 引擎自己画的 <video>：点一下起播 / 暂停 / 拖进度，控制条的样子变了却没有 setData
+                !self.interaction.click_animations.is_empty() || self.tap_on_engine_video(x, y, scroll)
+            }
+            Some(_) => true,
+        };
         if let Some(res) = result {
             self.apply_interaction(res);
         }
         if self.app.take_data_dirty() {
             self.page_data_dirty = true;
         }
-        self.needs_redraw = true;
+        if redraw {
+            self.mark_full();
+        }
+    }
+
+    /// 点在引擎自己画的 `<video>` 上（宿主承载的不算：那是宿主的控件）
+    fn tap_on_engine_video(&self, x: f32, y: f32, scroll: f32) -> bool {
+        let Some(r) = self.renderer.as_ref().filter(|r| !r.is_host_native("video")) else { return false };
+        r.query_selector("video", true, &self.interaction).iter().any(|v| {
+            let y = if v.is_fixed { y } else { y + scroll };
+            v.rect.contains(&crate::Point::new(x, y))
+        })
     }
 
     /// 视口的逻辑尺寸（弹窗等覆盖层的居中算式要用）
@@ -397,7 +429,7 @@ impl MiniEngine {
         self.renderer = r;
         if self.app.take_data_dirty() {
             self.page_data_dirty = true;
-            self.needs_redraw = true;
+            self.mark_full();
         }
     }
 }

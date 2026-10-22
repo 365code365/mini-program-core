@@ -19,7 +19,7 @@ impl MiniEngine {
     /// 当前页将被新页盖住：留一张视口图（`navigateTo` 之前调）
     pub(super) fn capture_back_shot(&mut self) {
         // 还没合成过（一打开就跳页）：没有图，侧滑时露出暗底（与桌面一致）
-        let shot = self.snapshot_frame().unwrap_or(PageShot { width: 0, height: 0, pixels: Vec::new() });
+        let shot = self.snapshot_frame().unwrap_or(PageShot::empty());
         self.back_shots.push(shot);
         if self.back_shots.len() > MAX_SHOTS {
             self.back_shots.remove(0);
@@ -35,7 +35,7 @@ impl MiniEngine {
         if self.compose.len() != (w as usize) * (h as usize) || self.compose.is_empty() {
             return None;
         }
-        Some(PageShot { width: w, height: h, pixels: self.compose.clone() })
+        Some(PageShot::new(w, h, self.compose.clone()))
     }
 
     /// 推进松手后的收尾动画；判定为「返回」且动画走完时退栈。返回是否还在动（要续帧 / 重新合成）
@@ -62,7 +62,7 @@ impl MiniEngine {
                     self.back_with(false);
                 }
                 // 收手这一帧整帧：位移归零，画布内容也可能换了页
-                self.needs_redraw = true;
+                self.mark_full();
                 true
             }
         }

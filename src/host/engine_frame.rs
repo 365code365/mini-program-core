@@ -9,7 +9,6 @@
 use super::engine::MiniEngine;
 use super::engine_damage::{PagePass, RenderScope};
 use crate::compositor::{cpu, FrameLayers, OverlayRefs};
-use crate::host::tabbar_height;
 use crate::{Canvas, Color};
 
 impl MiniEngine {
@@ -48,7 +47,8 @@ impl MiniEngine {
         }
         // 滚动推进（惯性/回弹），到底事件回调页面
         let (moved, event) = self.scroll.update_with_events(dt);
-        if moved {
+        // 页面在拖：按事件时间重采样的手指位置摆页面（engine_resample.rs）
+        if moved | self.resample_page_drag(now) {
             self.scroll_moved = true;
         }
         // scroll-view 的惯性与回弹（与桌面 `update_scroll` 一致）：
@@ -59,7 +59,7 @@ impl MiniEngine {
         }
         // scroll-view 的事件、wx.pageScrollTo、onPageScroll（与桌面共用 host::scroll_view）
         if self.tick_scroll_views(now) {
-            self.needs_redraw = true;
+            self.mark_full();
         }
         if let Some(crate::ui::scroll_controller::ScrollEvent::ReachBottom) = event {
             self.app
@@ -71,12 +71,12 @@ impl MiniEngine {
             self.apply_navigation(nav);
         }
         if crate::renderer::components::advance_due_swipers() {
-            self.needs_redraw = true;
+            self.mark_full();
         }
         // 画布被画过（旧接口的 draw()、type="2d" 的上下文）：像素在页面绘制时拷进去，要重画
         // （scroll-view 里的 canvas 在离屏缓存里，缓存也要作废）
         if crate::renderer::components::take_canvas_dirty() {
-            self.needs_redraw = true;
+            self.mark_full();
             if let Some(r) = self.renderer.as_mut() {
                 r.invalidate_offscreen_caches();
             }
@@ -86,12 +86,12 @@ impl MiniEngine {
             for r in [self.renderer.as_mut(), self.tabbar_renderer.as_mut()].into_iter().flatten() {
                 r.invalidate_layout();
             }
-            self.needs_redraw = true;
+            self.mark_full();
         }
         let image_arrived = crate::renderer::components::image_net::take_dirty();
         if self.app.take_network_dirty() || image_arrived {
             self.page_data_dirty = true;
-            self.needs_redraw = true;
+            self.mark_full();
             // scroll-view 的离屏缓存也要作废：数据没变它就一直「干净」，贴回去的还是占位图（G-1）
             if image_arrived {
                 for r in [self.renderer.as_mut(), self.tabbar_renderer.as_mut()].into_iter().flatten() {
@@ -129,9 +129,9 @@ impl MiniEngine {
             self.dmg.compose_dirty = true;
         }
         self.caret_tick();
-        if self.interaction.press_feedback_pending() {
-            self.needs_redraw = true;
-        }
+        // 点击态出现 / 褪去：只重画那几个元素（engine_press.rs）。从前这里是「点击态还在等出现 /
+        // 停留，就每一帧整页重画」—— 一次滑动在按下与松手各卡五六帧
+        self.sync_press_visual();
         // 与桌面窗体的出帧闸门对齐：CSS / JS 动画、swiper 翻页的滑动过程、播放中的视频
         // 都要逐帧重画。从前 SDK 只认 needs_redraw，于是 `@keyframes` 只画出第一帧、
         // swiper 自动翻页没有 300ms 的滑动（直接跳过去）。
@@ -194,7 +194,7 @@ impl MiniEngine {
         let vis = crate::renderer::components::cursor_blink_visible();
         if vis != self.caret_visible {
             self.caret_visible = vis;
-            self.needs_redraw = true;
+            self.mark_full();
         }
     }
 
@@ -219,14 +219,23 @@ impl MiniEngine {
     pub(super) fn render_scoped(&mut self, scope: RenderScope) {
         let Some(page) = self.page_stack.last() else { return };
         let route = page.path.clone();
+        // `MINI_DAMAGE_LOG`：各段耗时接在 🩹 行尾（frame_laps.rs）
+        let mut laps = super::frame_laps::Laps::new(self.dmg.log);
         self.refresh_page_data();
+        laps.lap("数据");
         let has_tabbar = self.is_tabbar_page(&route);
         let vp = self.viewport_height();
         let bg = self.page_background();
         let scroll = self.scroll.get_position();
         match scope.page {
             PagePass::Band => {
+                // 先布局、按内容高把画布分好，再画。从前先在旧画布上画一遍、发现高度不对再换画布
+                // 重画一遍 —— 进页面 / 返回的第一帧画两次（一加上 40~50ms 里将近一半）。
+                // 之后的绘制命中同一份布局缓存（同一组数据、偏移、视口高）
+                self.presize_canvas(scroll, vp);
+                laps.lap("布局");
                 let content_h = self.render_page_band(scroll, vp, bg);
+                laps.lap("画");
                 if content_h > 1.0 {
                     self.scroll.update_content_height(content_h, vp);
                     // 画布按内容高度分配（与桌面窗体一致）：固定高度的画布装不下长页面，
@@ -236,6 +245,7 @@ impl MiniEngine {
                         let width = self.canvas.read().width();
                         self.canvas.replace(Canvas::new(width, required));
                         self.render_page_band(scroll, vp, bg);
+                        laps.lap("改高重画");
                     }
                 }
                 self.after_page_pass(true, scroll);
@@ -246,6 +256,10 @@ impl MiniEngine {
                     // 一块一趟：每一趟都完整走一遍裁剪窗里的节点树（事件绑定、动画标记照常
                     // 重建），只有落在这块里的像素被清掉重画
                     for &rect in rects {
+                        // 清屏与裁剪落在同一组整像素上（geometry::snap_out：从前边在半像素上时
+                        // 多清一行底色、没人重画，快速滑动时一条横线）
+                        let (cw, ch) = (canvas.read().width(), canvas.read().height());
+                        let rect = crate::geometry::snap_out(rect, cw, ch);
                         // 声明只写了这块（GPU 镜像按它补传），再清 + 裁剪着画
                         let canvas = canvas.write_rect(rect);
                         canvas.clear_area(&rect, bg);
@@ -253,12 +267,14 @@ impl MiniEngine {
                         r.render_with_scroll_and_viewport(canvas, &page.wxml_nodes, page_data, interaction, scroll, vp);
                     }
                 }
+                laps.lap("画");
                 self.after_page_pass(anim_complete, scroll);
             }
             PagePass::Skip => {}
         }
         if scope.fixed {
             self.render_fixed_layer(vp);
+            laps.lap("覆盖层");
         } else if scope.page != PagePass::Skip {
             // 页面那一趟清空了全部事件绑定：把覆盖层上次登记的补回来，否则弹窗点不动
             if let Some(r) = self.renderer.as_mut() {
@@ -267,8 +283,25 @@ impl MiniEngine {
         }
         if scope.tabbar && has_tabbar {
             self.render_tabbar(&route);
+            laps.lap("tabBar");
         }
         self.compose_frame(has_tabbar, bg);
+        laps.lap("合成");
+        if let Some(n) = laps.finish() {
+            self.dmg.gpu_note = Some(n + self.dmg.gpu_note.as_deref().unwrap_or(""));
+        }
+    }
+
+    /// 整条带重画之前：布局（结果进缓存）并按内容高换好画布。高度对的话什么也不做
+    fn presize_canvas(&mut self, scroll: f32, vp: f32) {
+        let (Some(r), Some(page)) = (self.renderer.as_mut(), self.page_stack.last()) else { return };
+        r.plan_frame(&page.wxml_nodes, &self.page_data, Some((scroll, vp)));
+        let Some(content_h) = r.cached_content_height().filter(|h| *h > 1.0) else { return };
+        let required = (content_h * self.dpr).ceil() as u32;
+        if required > 0 && required != self.canvas.read().height() {
+            let width = self.canvas.read().width();
+            self.canvas.replace(Canvas::new(width, required));
+        }
     }
 
     /// 页面画布画完之后：动画包围盒、页面动画标记、scroll-view 位置、布局偏移的记账
@@ -372,7 +405,12 @@ impl MiniEngine {
         }
         let bg_u32 = ((bg.r as u32) << 16) | ((bg.g as u32) << 8) | bg.b as u32;
         // 引擎画的导航栏（engine_navbar.rs）：内容变了才重画它那块小画布
+        let mut laps = super::frame_laps::Laps::new(self.dmg.log);
         self.paint_nav();
+        laps.lap("导航栏");
+        // 只有 GPU 上屏时接在 🩹 行尾（CPU 合成的帧由 render_scoped 的「合成」那一段计进去）
+        #[cfg_attr(not(feature = "gpu"), allow(unused_variables))]
+        let nav_note = laps.finish();
         let top_rows = self.nav_rows();
         // 合成序列与桌面窗体同一份（compositor::cpu）。SDK 没有下拉指示器这一层
         let layers = FrameLayers {
@@ -384,7 +422,7 @@ impl MiniEngine {
             page_bg: bg_u32,
             has_tabbar,
             tabbar: if has_tabbar { Some(&self.tabbar_canvas) } else { None },
-            tabbar_px: if has_tabbar { (tabbar_height() as f32 * self.dpr) as u32 } else { 0 },
+            tabbar_px: if has_tabbar { ((self.tabbar_h() * self.dpr) as u32).max(1) } else { 0 },
             fixed: Some(&self.fixed_canvas),
             fixed_rows: self.fixed_rows,
             pull: None,
@@ -407,7 +445,22 @@ impl MiniEngine {
         // GPU 上屏（宿主挂了原生 surface 时）：画到 surface 上就不做 CPU 合成
         #[cfg(feature = "gpu")]
         match super::engine_gpu::present_on(&mut self.gpu, &layers) {
-            Ok(super::engine_gpu::GpuFrame::Presented) => {
+            Ok(super::engine_gpu::GpuFrame::Presented(st)) => {
+                // `MINI_DAMAGE_LOG`：🩹 行尾带上 GPU 这一帧的账（准备 / 其中 CPU 合成 / 等 surface / 上传）
+                if self.dmg.log {
+                    self.dmg.gpu_note = Some(format!(
+                        "  GPU 准备 {:.1}（CPU 合成 {:.1}）等 {:.1} 编码 {:.1} 提交 {:.1} 传 {}KB",
+                        st.prepare_ms,
+                        st.pass_compose_ms,
+                        st.acquire_ms,
+                        st.encode_ms - st.prepare_ms,
+                        st.present_ms,
+                        st.upload_bytes / 1024
+                    ));
+                    if let (Some(n), Some(g)) = (&nav_note, self.dmg.gpu_note.as_mut()) {
+                        g.insert_str(0, n);
+                    }
+                }
                 self.frame_presented = true;
                 self.present_pending = false;
                 // 合成缓冲没更新：`mr_app_pixels*` 要像素时再补（engine_gpu::sync_cpu_frame）
@@ -434,52 +487,6 @@ impl MiniEngine {
         // RGBA 不在这里转：要的人（`rgba()` / `mr_app_pixels`）再转，
         // `pixels_into` 直接从合成缓冲写进平台缓冲（见 engine_pixels.rs）
         self.rgba_stale = true;
-    }
-
-    /// 宿主是否该在下一个 vsync 再 pump 一次（`MR_FRAME_WANTS_MORE`）。
-    ///
-    /// 与桌面窗体 `is_animating` 同一组条件：滚动 / 惯性、scroll-view、CSS 动画、
-    /// swiper 自动播放、JS 定时器、网络请求与远程图片在飞、逻辑层没办完的宿主活
-    /// （画布指令、没答的 SelectorQuery）、Toast（要到时收起）、Loading（圈在转）、
-    /// picker 面板动画、播放中的视频、看得见的动图、聚焦的输入框（光标闪烁），外加**按住不动的手指**
-    /// （长按靠帧驱动，手指不动就没有输入事件进来）。
-    ///
-    /// 返回 false 时宿主可以停掉 vsync 回调，等下一个输入事件再 pump —— 静止页面零耗电。
-    /// 从前没有这个信号：Android 的 View 只在 `pump` 返回「有新画面」时续帧，
-    /// `setTimeout` / `wx.request` 回包 / swiper 自动播放在静止页面上全部停住。
-    pub fn wants_next_frame(&self) -> bool {
-        use crate::renderer::components as c;
-        self.scroll.is_animating()
-            || self.scroll.is_dragging
-            || self.interaction.scroll_controllers.values().any(|c| c.is_animating() || c.is_dragging)
-            || self.renderer.as_ref().map(|r| r.has_active_animations()).unwrap_or(false)
-            || self.tabbar_renderer.as_ref().map(|r| r.has_active_animations()).unwrap_or(false)
-            || self.interaction.has_focused_input()
-            || self.interaction.press_feedback_pending()
-            || self.touch.is_active()
-            || c::has_autoplay_swiper()
-            || c::swiper_needs_frame()
-            || self.app.has_active_timers()
-            || self.app.has_pending_network()
-            // 逻辑层发了、还没办完的：画布指令、没答的 SelectorQuery（type="2d" 画布靠它拿节点）
-            || self.app.has_pending_host_work()
-            || c::image_net::has_pending()
-            || self.toast.as_ref().map(|t| t.visible).unwrap_or(false)
-            // Loading 的圈要一直转（`wx.showLoading` 没有时长，等逻辑层 hideLoading）
-            || crate::host::ui_overlay::tip_spinning(&self.toast, &self.loading)
-            || self.picker_sheet.as_ref().map(|s| s.animating()).unwrap_or(false)
-            || crate::host::ui_overlay::sheet_overlay_animating()
-            || self.edge_back.as_ref().map(|e| e.is_settling()).unwrap_or(false)
-            || c::has_playing_video()
-            // 看得见的动图：醒着等它换帧（多数帧问下来不用重画，见 engine_damage::plan_redraw）
-            || self.animated_images_visible()
-            // surface 这次没取到：宿主不续帧的话 PENDING 那一帧永远补不上
-            || self.present_pending
-            // 导航栏前景色在这一帧末尾才改：胶囊换配色要再来一帧
-            || self.capsule_wants_frame()
-            // 页面转场在走、引擎画的导航栏在转圈或还欠一次重画
-            || self.route.active()
-            || self.nav_wants_frame()
     }
 
     pub fn pixel_size(&self) -> (u32, u32) {

@@ -21,8 +21,15 @@ const W: u32 = 375;
 const H: u32 = 667;
 const DPR: f32 = 2.0;
 
+/// 小程序根目录与组件共享状态是进程级的：用例串行跑，各用各的夹具目录
+static SERIAL: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
 fn fixture() -> PathBuf {
-    let root = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("sdk-damage-equivalence");
+    fixture_in("sdk-damage-equivalence")
+}
+
+fn fixture_in(dir: &str) -> PathBuf {
+    let root = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join(dir);
     std::fs::remove_dir_all(&root).ok();
     let page_wxml = r#"<view class="hd">顶部 {{count}}</view>
 <view class="spin"></view>
@@ -68,6 +75,10 @@ Page({ data: { count: 0, rows: n(30), inner: n(12) } });";
 }
 
 fn engine(root: &PathBuf, no_damage: bool) -> MiniEngine {
+    engine_at(root, no_damage, DPR)
+}
+
+fn engine_at(root: &PathBuf, no_damage: bool, dpr: f32) -> MiniEngine {
     let data = root.join("_data");
     // `MINI_DAMAGE_LOG=1 cargo test --test sdk_damage_equivalence -- --nocapture`：
     // 局部那一侧每帧打一行做了什么（不一致时先看是哪一种帧）
@@ -78,7 +89,7 @@ fn engine(root: &PathBuf, no_damage: bool) -> MiniEngine {
         Some(&data.to_string_lossy()),
         W,
         H,
-        DPR,
+        dpr,
         env,
         EngineOptions::default(),
     )
@@ -140,12 +151,21 @@ impl Pair {
         let pb = self.b.rgba();
         if pa.as_slice() != pb {
             let diff = pa.chunks_exact(4).zip(pb.chunks_exact(4)).position(|(x, y)| x != y).unwrap_or(0);
-            let (x, y) = (diff as u32 % (W * 2), diff as u32 / (W * 2));
+            let pw = self.a.pixel_size().0;
+            let (x, y) = (diff as u32 % pw, diff as u32 / pw);
+            // 哪几行不一样（横线 = 一两行整行不一样；残留 = 一大块）
+            let row = (pw * 4) as usize;
+            let rows: Vec<usize> = (0..pa.len() / row).filter(|&r| pa[r * row..(r + 1) * row] != pb[r * row..(r + 1) * row]).collect();
+            let px = |v: &[u8]| (v[diff * 4], v[diff * 4 + 1], v[diff * 4 + 2]);
             panic!(
-                "第 {} 帧（{what}，局部那边做的是「{}」，滚动 {}）：合成结果不一致，第一个差异像素在 ({x},{y})",
+                "第 {} 帧（{what}，局部那边做的是「{}」，滚动 {}）：合成结果不一致，第一个差异像素在 ({x},{y})：\
+                 局部 {:?} / 整帧 {:?}；不一致的行（屏幕设备像素）{:?}",
                 self.frame,
                 if fa == 0 { "没出帧" } else { self.a.last_frame_kind().label() },
                 self.a.scroll_position(),
+                px(&pa),
+                px(pb),
+                &rows[..rows.len().min(12)],
             );
         }
     }
@@ -153,6 +173,7 @@ impl Pair {
 
 #[test]
 fn 局部重画与整帧重画逐帧逐字节一致() {
+    let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
     let root = fixture();
     mini_render::renderer::components::reset_shared_component_state();
     let mut p = Pair {
@@ -245,4 +266,38 @@ fn 局部重画与整帧重画逐帧逐字节一致() {
     assert!(band >= 3, "补条带只有 {band} 帧");
     assert!(compose >= 1 || damage > 0, "只合成 {compose} 帧");
     assert!(full * 4 < p.kinds.len(), "整帧占了 {full}/{} 帧：局部重画基本没生效", p.kinds.len());
+}
+
+/// 真机上的情形：dpr 3、滚动位置带小数（松手惯性每帧走的不是整数）。条带边、补画的那几截
+/// 都落在半个像素上。从前清屏（`clear_area`：上沿向下取整、下沿向上取整）比裁剪着重画
+/// （`Canvas::clip_rect` 下沿截断）多清一行：那一行变成页面底色，快速往回滑时屏上一条横线
+/// （荣耀 Android 15 真机录屏：绿按钮中间一条白线）。上面那个用例 dpr 2 + 整数滚动，边永远落在整像素上，测不出来
+#[test]
+fn dpr_3_小数滚动位置_补条带不留底色横线() {
+    let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let root = fixture_in("sdk-damage-equivalence-dpr3");
+    mini_render::renderer::components::reset_shared_component_state();
+    let mut p = Pair {
+        a: engine_at(&root, false, 3.0),
+        b: engine_at(&root, true, 3.0),
+        t: 1,
+        frame: 0,
+        kinds: Vec::new(),
+        idle_while_ref_drew: 0,
+    };
+    p.step("首屏");
+    // 往下：一帧 23.37（×3 = 70.11 设备像素），窗边每帧都落在小数上
+    for i in 1..=50 {
+        let y = i as f32 * 23.37;
+        p.both(|e| e.scroll_to(y));
+        p.step("小数往下滚");
+    }
+    // 快速往回（补的是上面那一截，横线出在那一截的下沿）
+    for i in (0..30).rev() {
+        let y = i as f32 * 38.61 + 0.37;
+        p.both(|e| e.scroll_to(y));
+        p.step("小数往回滚");
+    }
+    let band = p.kinds.iter().filter(|k| **k == FrameKind::Band).count();
+    assert!(band >= 3, "补条带只有 {band} 帧，测试没走到要测的路径（{:?}）", p.kinds);
 }

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show debugDefaultTargetPlatformOverride;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -101,10 +102,14 @@ void main() {
     await c.dispose();
   });
 
-  testWidgets('后端偏好默认 cpu', (t) async {
+  testWidgets('后端偏好默认 auto（有 GPU 就用 GPU）', (t) async {
     final n = FakeNative()..install();
-    final c = await pumpView(t, n);
-    expect((n.named('create').single.arguments as Map)['backend'], MiniBackend.cpu.code);
+    final c = MiniProgramController(appDir: '/app');
+    addTearDown(c.dispose);
+    await t.pumpWidget(MaterialApp(home: SizedBox(width: 300, height: 500, child: MiniProgramView(controller: c))));
+    await t.pump();
+    await t.pump();
+    expect((n.named('create').single.arguments as Map)['backend'], MiniBackend.auto.code);
     await c.dispose();
   });
 
@@ -510,5 +515,57 @@ void main() {
     await t.sendEventToBinding(p.scroll(const Offset(0, 40)));
     expect(n.named('wheel').single.arguments['dy'], 40.0);
     await c.dispose();
+  });
+
+  /// 荣耀 Android 15 三键导航：1080×2412 @3，导航键占底部 114 物理像素（38）
+  Future<MiniProgramController> pumpFullScreen(WidgetTester t, FakeNative n) async {
+    t.view.physicalSize = const Size(1080, 2412);
+    t.view.devicePixelRatio = 3;
+    t.view.viewPadding = const FakeViewPadding(top: 114, bottom: 114);
+    t.view.padding = const FakeViewPadding(top: 114, bottom: 114);
+    addTearDown(t.view.reset);
+    final c = MiniProgramController(appDir: '/app');
+    addTearDown(c.dispose);
+    await t.pumpWidget(MaterialApp(
+      home: MiniProgramView(controller: c, navigationBarAreaColor: const Color(0xFFABCDEF)),
+    ));
+    await t.pump();
+    await t.pump();
+    return c;
+  }
+
+  testWidgets('Android：系统导航栏那一截不交给引擎（微信安卓的窗口不含虚拟键），填给定的颜色、触摸不进引擎', (t) async {
+    final n = FakeNative()..install();
+    final c = await pumpFullScreen(t, n);
+    final create = n.named('create').single.arguments as Map;
+    expect(create['height'], 804 - 38, reason: '页面最底下一截与吸底栏不再压在导航键下面');
+    final opts = jsonDecode(create['options'] as String) as Map;
+    expect((opts['safeArea'] as Map)['bottom'], 0, reason: '那一截已经让出去了，不再按安全区算第二次');
+    expect((opts['safeArea'] as Map)['top'], 38);
+    final strip = find.byWidgetPredicate((w) => w is ColoredBox && w.color == const Color(0xFFABCDEF));
+    expect(strip, findsOneWidget);
+    expect(t.getSize(strip), const Size(360, 38));
+    // 按在那一截上（手势导航时收得到）：不发 pointer；上面一点照常发
+    await t.tapAt(const Offset(100, 804 - 10));
+    expect(n.named('pointer'), isEmpty);
+    await t.tapAt(const Offset(100, 804 - 50));
+    expect(n.named('pointer').map((m) => m.arguments['phase']), [0, 2]);
+    await c.dispose();
+  });
+
+  testWidgets('iOS：Home 指示条下面照样铺满（与微信 iOS 一致），底部安全区交给引擎', (t) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    try {
+      final n = FakeNative()..install();
+      final c = await pumpFullScreen(t, n);
+      final create = n.named('create').single.arguments as Map;
+      expect(create['height'], 804);
+      final opts = jsonDecode(create['options'] as String) as Map;
+      expect((opts['safeArea'] as Map)['bottom'], 38);
+      expect(find.byWidgetPredicate((w) => w is ColoredBox && w.color == const Color(0xFFABCDEF)), findsNothing);
+      await c.dispose();
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
   });
 }

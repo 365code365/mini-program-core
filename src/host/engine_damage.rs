@@ -26,6 +26,7 @@
 //! 判据是 `tests/sdk_damage_equivalence.rs`：同一串输入喂给开 / 关局部重画的两个引擎，
 //! 每一帧的合成结果逐字节相同。
 use super::engine::MiniEngine;
+use super::engine_damage_rects::{clamp_rect, merge_rects, union, EAGER_STRIP_PX};
 use crate::renderer::{EventBinding, FramePlan, VIEWPORT_CULL_MARGIN_PX};
 use crate::Rect as GeoRect;
 use std::collections::HashMap;
@@ -116,6 +117,16 @@ pub(crate) struct DamageState {
     pub(crate) layout_scroll: Option<f32>,
     /// tabBar 画布上画的是哪个页面的选中态
     pub(crate) tabbar_route: Option<String>,
+    /// 页面画布上画成点击态的那几个元素（`engine_press.rs` 每帧比对，变了才重画它们自己）
+    pub(crate) press_drawn: Vec<String>,
+    /// 这一帧额外要重画的页面画布区域（物理像素，画布坐标）：点击态变了的元素
+    pub(crate) extra: Option<GeoRect>,
+    /// 覆盖层里的元素点击态变了：覆盖层要重画
+    pub(crate) press_fixed: bool,
+    /// 这一帧第一个要整页重画的源码位置（`MINI_DAMAGE_LOG`，见 `engine_press.rs::mark_full`）
+    pub(crate) full_why: Option<&'static std::panic::Location<'static>>,
+    /// 这一帧 GPU 上屏的账（只在 `log` 时填，接在 🩹 行尾）
+    pub(crate) gpu_note: Option<String>,
 }
 
 /// 这一帧页面画布要画多少
@@ -148,61 +159,6 @@ enum AreaDamage {
     Nothing,
     Rect(GeoRect),
     Full,
-}
-
-fn union(a: Option<GeoRect>, b: GeoRect) -> Option<GeoRect> {
-    if b.width <= 0.0 || b.height <= 0.0 {
-        return a;
-    }
-    Some(match a {
-        None => b,
-        Some(a) => {
-            let (x0, y0) = (a.x.min(b.x), a.y.min(b.y));
-            let (x1, y1) = ((a.x + a.width).max(b.x + b.width), (a.y + a.height).max(b.y + b.height));
-            GeoRect::new(x0, y0, x1 - x0, y1 - y0)
-        }
-    })
-}
-
-/// 滚动中裁剪窗里没画的行攒到这么多（物理像素）就顺手补上，不等视口真滑出条带。
-/// 等到滑出再补，一次就是 400 多行（余量那么宽）—— 滑动里每隔一百多 pt 一个尖峰
-const EAGER_STRIP_PX: f32 = VIEWPORT_CULL_MARGIN_PX / 4.0;
-
-/// 一帧最多分几趟画（每一趟都要把裁剪窗里的节点树走一遍，只是窗外不画）
-const MAX_PASSES: usize = 4;
-
-/// 损伤区合并：两块并起来不比分开大多少（≤ 1.5 倍）就并；最后剩不超过 [`MAX_PASSES`] 块。
-/// 不并的话一个滑出条带的帧（补条带 + 两个动画节点）要分三趟，并太狠又把半屏拖进来。
-fn merge_rects(mut rects: Vec<GeoRect>) -> Vec<GeoRect> {
-    let area = |r: &GeoRect| r.width * r.height;
-    loop {
-        let n = rects.len();
-        // 找「并起来多出的面积」最小的一对
-        let mut best: Option<(usize, usize, f32)> = None;
-        for i in 0..n {
-            for j in i + 1..n {
-                let u = union(Some(rects[i]), rects[j]).unwrap_or(rects[i]);
-                let waste = area(&u) - area(&rects[i]) - area(&rects[j]);
-                if best.map(|b| waste < b.2).unwrap_or(true) {
-                    best = Some((i, j, waste));
-                }
-            }
-        }
-        let Some((i, j, waste)) = best else { return rects };
-        let u = union(Some(rects[i]), rects[j]).unwrap_or(rects[i]);
-        if n <= MAX_PASSES && area(&u) > 1.5 * (area(&rects[i]) + area(&rects[j])) && waste > 0.0 {
-            return rects;
-        }
-        rects[i] = u;
-        rects.swap_remove(j);
-    }
-}
-
-/// `r` 夹进 `[x0,x1)×[y0,y1)`；夹完是空的返回 None
-fn clamp_rect(r: GeoRect, x0: f32, x1: f32, y0: f32, y1: f32) -> Option<GeoRect> {
-    let (a, b) = (r.x.max(x0), (r.x + r.width).min(x1));
-    let (c, d) = (r.y.max(y0), (r.y + r.height).min(y1));
-    (b > a && d > c).then(|| GeoRect::new(a, c, b - a, d - c))
 }
 
 impl MiniEngine {
@@ -271,6 +227,7 @@ impl MiniEngine {
             self.plan_redraw(tabbar_anim, media, recompose)
         };
         self.dmg.last_kind = kind;
+        let mut log_line = None;
         if self.dmg.log && kind != FrameKind::Idle {
             let r = match &scope.page {
                 PagePass::Rects { rects, .. } => rects
@@ -281,20 +238,33 @@ impl MiniEngine {
                 _ => String::new(),
             };
             let band = self.drawn_band.map(|(a, b)| format!(" 条带 {a:.0}..{b:.0}")).unwrap_or_default();
-            crate::compositor::diag::emit(&format!(
-                "🩹 [SDK] {}{r}{}{}  滚动 {:.1}{band}",
-                kind.label(),
-                if scope.fixed && kind != FrameKind::Compose { " +覆盖层" } else { "" },
-                if scope.tabbar && kind != FrameKind::Compose { " +tabBar" } else { "" },
-                self.scroll.get_position(),
+            let why = match (kind, self.dmg.full_why) {
+                (FrameKind::Full(FullReason::Structural), Some(l)) => format!(" ← {}:{}", l.file(), l.line()),
+                _ => String::new(),
+            };
+            log_line = Some((
+                std::time::Instant::now(),
+                format!(
+                    "🩹 [SDK] {}{r}{}{}  滚动 {:.1}{band}{why}",
+                    kind.label(),
+                    if scope.fixed && kind != FrameKind::Compose { " +覆盖层" } else { "" },
+                    if scope.tabbar && kind != FrameKind::Compose { " +tabBar" } else { "" },
+                    self.scroll.get_position(),
+                ),
             ));
         }
+        self.dmg.full_why = None;
         match kind {
             FrameKind::Idle => return false,
             FrameKind::Compose => self.compose_current(),
             _ => self.render_scoped(scope),
         }
         self.needs_redraw = false;
+        // 画完再打：带上这一帧画 + 合成花了多久（真机上哪种帧慢，一眼看得出来）
+        if let Some((t0, line)) = log_line {
+            let gpu = self.dmg.gpu_note.take().unwrap_or_default();
+            crate::compositor::diag::emit(&format!("{line}{gpu}  {:.1}ms", t0.elapsed().as_secs_f32() * 1000.0));
+        }
         true
     }
 
@@ -307,7 +277,8 @@ impl MiniEngine {
         }
         let sv_moved = !matches!(self.scroll_area_damage(), AreaDamage::Nothing);
         let gif = !self.animated_images_due().is_empty();
-        if other_work || self.page_data_dirty || self.dmg.page_animates || self.dmg.fixed_layer_animates || sv_moved || gif {
+        let press = self.dmg.extra.take().is_some() | std::mem::take(&mut self.dmg.press_fixed);
+        if other_work || press || self.page_data_dirty || self.dmg.page_animates || self.dmg.fixed_layer_animates || sv_moved || gif {
             return full;
         }
         if !recompose {
@@ -329,6 +300,9 @@ impl MiniEngine {
         let full = |reason: FullReason, fixed: bool, tabbar: bool| {
             (FrameKind::Full(reason), RenderScope { page: PagePass::Band, fixed, tabbar })
         };
+        // 点击态变了的元素（engine_press.rs）：这一帧一定消费掉，整帧的路径里它们本来就画到了
+        let press_rect = self.dmg.extra.take();
+        let press_fixed = std::mem::take(&mut self.dmg.press_fixed);
         if self.needs_redraw {
             return full(FullReason::Structural, true, true);
         }
@@ -337,7 +311,7 @@ impl MiniEngine {
             // 页面说自己在动却没记下包围盒（动画节点画在离屏画布里）：不知道画在哪，只能整帧。
             // 这一帧要是还有 setData，没走失效分析，覆盖层与 tabBar 也一起重画
             let data = self.page_data_dirty;
-            let fixed = self.dmg.fixed_dirty || self.dmg.fixed_layer_animates || data;
+            let fixed = self.dmg.fixed_dirty || self.dmg.fixed_layer_animates || data || press_fixed;
             return full(FullReason::Animation, fixed, tabbar || data);
         }
         if media {
@@ -350,9 +324,13 @@ impl MiniEngine {
         let gifs = self.animated_images_due();
         let mut page_work = page_anim || !gifs.is_empty();
         let mut reason = None;
-        // 一次性的变化（setData / scroll-view）合成一块；动画节点各自一块 ——
+        // 一次性的变化（setData / scroll-view / 点击态）合成一块；动画节点各自一块 ——
         // 页面顶上一个转圈、中间一个呼吸灯，并成一块就是大半屏
         let mut once = None;
+        if let Some(r) = press_rect {
+            page_work = true;
+            once = union(once, r);
+        }
         if self.page_data_dirty {
             page_work = true;
             self.dmg.fixed_dirty = true;
@@ -375,6 +353,10 @@ impl MiniEngine {
                 page_work = true;
                 reason = reason.or(Some(FullReason::ScrollView));
             }
+        }
+        // 覆盖层里的点击态变了（engine_press.rs）：放在 setData 的失效分析之后，不被它改写
+        if press_fixed {
+            self.dmg.fixed_dirty = true;
         }
         let fixed = self.dmg.fixed_dirty || self.dmg.fixed_layer_animates;
         if let Some(r) = reason {

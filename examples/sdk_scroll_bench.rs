@@ -19,9 +19,17 @@ use mini_render::host::engine_backend::FRAME_NEW;
 use mini_render::host::{EngineOptions, MiniEngine, PixelFormat};
 use std::time::Instant;
 
+/// 缺省视口（`--size 360x785 --dpr 3` 改成一加 PLY110 那种 1080×2354 / 480dpi）
 const W: u32 = 411;
 const H: u32 = 786;
 const DPR: f32 = 2.625;
+
+#[derive(Clone, Copy)]
+struct Viewport {
+    w: u32,
+    h: u32,
+    dpr: f32,
+}
 
 struct Frame {
     pump_ms: f32,
@@ -75,17 +83,27 @@ fn report(label: &str, frames: &[Frame], budget_ms: f32) {
     );
 }
 
-fn run_once(app: &str, route: &str, hz: f32) -> (Vec<Frame>, Vec<Frame>) {
+fn run_once(app: &str, route: &str, hz: f32, vp: Viewport) -> (Vec<Frame>, Vec<Frame>, Vec<Frame>) {
     let data = mini_render::data_dir::subdir("sdk-scroll-bench");
     std::fs::remove_dir_all(&data).ok();
     mini_render::renderer::components::reset_shared_component_state();
-    let opts = EngineOptions { native_components: vec!["video".into()], ..Default::default() };
+    // 与 Flutter 宿主同一组选项（引擎画导航栏 + 转场 + 胶囊，安全区按真机）：从前只开了原生组件，
+    // 导航栏那条路径（坐标换算、导航栏重画）基准里根本没走到
+    // `BENCH_NO_NAV=1` / `BENCH_NO_CAPSULE=1`：单独关掉一项，看合成成本是谁带来的
+    let opts = EngineOptions {
+        native_components: vec!["video".into()],
+        navigation_bar: std::env::var_os("BENCH_NO_NAV").is_none(),
+        route_animation: true,
+        menu_button: std::env::var_os("BENCH_NO_CAPSULE").is_none(),
+        safe_area: Some(mini_render::host::SafeAreaInsets { top: 40.0, right: 0.0, bottom: 0.0, left: 0.0 }),
+        ..Default::default()
+    };
     let mut e = MiniEngine::new_with_options(
         app,
         Some(&data.to_string_lossy()),
-        W,
-        H,
-        DPR,
+        vp.w,
+        vp.h,
+        vp.dpr,
         HostEnv::from_process(),
         opts,
     )
@@ -118,6 +136,24 @@ fn run_once(app: &str, route: &str, hz: f32) -> (Vec<Frame>, Vec<Frame>) {
             kind: if flags & FRAME_NEW != 0 { e.last_frame_kind().label() } else { "空转" },
         }
     };
+    // 下拉：停在顶上往下拉 300pt 再松手回弹（橡皮筋越界 + 回弹，真机上「往下滑到顶」天天发生）
+    let mut pull = Vec::new();
+    e.pointer_down(200.0, 200.0);
+    for i in 1..=30 {
+        t += step_ms;
+        e.pointer_move(200.0, 200.0 + 10.0 * i as f32);
+        pull.push(frame(&mut e, t));
+    }
+    e.pointer_up(200.0, 500.0);
+    for _ in 0..120 {
+        t += step_ms;
+        let f = frame(&mut e, t);
+        let idle = f.kind == "空转";
+        pull.push(f);
+        if idle && !e.wants_next_frame() {
+            break;
+        }
+    }
     // 拖动：手指从 y=650 匀速上推 500pt（每帧 10pt），与真机「慢慢往上滑」同一种手势
     let mut drag = Vec::new();
     e.pointer_down(200.0, 650.0);
@@ -143,32 +179,42 @@ fn run_once(app: &str, route: &str, hz: f32) -> (Vec<Frame>, Vec<Frame>) {
             break;
         }
     }
-    (drag, fling)
+    (pull, drag, fling)
 }
 
 fn main() {
     let mut pos = Vec::new();
     let mut hz = 60.0f32;
     let mut rounds = 1usize;
+    let mut vp = Viewport { w: W, h: H, dpr: DPR };
     let mut args = std::env::args().skip(1);
     while let Some(a) = args.next() {
         match a.as_str() {
             "--hz" => hz = args.next().and_then(|v| v.parse().ok()).unwrap_or(hz),
             "--rounds" => rounds = args.next().and_then(|v| v.parse().ok()).unwrap_or(rounds),
+            "--dpr" => vp.dpr = args.next().and_then(|v| v.parse().ok()).unwrap_or(vp.dpr),
+            "--size" => {
+                if let Some((w, h)) = args.next().as_deref().and_then(|s| s.split_once('x')) {
+                    vp.w = w.parse().unwrap_or(vp.w);
+                    vp.h = h.parse().unwrap_or(vp.h);
+                }
+            }
             _ => pos.push(a),
         }
     }
+
     let app = pos.first().cloned().unwrap_or_else(|| "sdk/flutter/example/assets/demo".into());
     // 内置示例的首页改成了导航中心（tabBar 页），原来的「长列表 + 动画 + 定时器 + video」
     // 场景原样搬到了 pages/perf/perf
     let route = pos.get(1).cloned().unwrap_or_else(|| "pages/perf/perf".into());
     let root = mini_render::app_dir::resolve(&app);
     let budget = 1000.0 / hz;
-    println!("SDK 滚动基准：{} {route}  {W}×{H} @{DPR}（{}×{} 像素）  {hz}Hz 预算 {budget:.1}ms",
-        root.display(), (W as f32 * DPR) as u32, (H as f32 * DPR) as u32);
+    println!("SDK 滚动基准：{} {route}  {}×{} @{}（{}×{} 像素）  {hz}Hz 预算 {budget:.1}ms",
+        root.display(), vp.w, vp.h, vp.dpr, (vp.w as f32 * vp.dpr) as u32, (vp.h as f32 * vp.dpr) as u32);
     for r in 1..=rounds {
-        let (drag, fling) = run_once(&root.to_string_lossy(), &route, hz);
+        let (pull, drag, fling) = run_once(&root.to_string_lossy(), &route, hz, vp);
         println!("第 {r} 轮");
+        report("下拉", &pull, budget);
         report("拖动", &drag, budget);
         report("惯性", &fling, budget);
     }

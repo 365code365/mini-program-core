@@ -132,6 +132,8 @@ pub struct HostEnv {
     pub no_damage: bool,
     /// `MINI_DAMAGE_LOG`：SDK 每一帧重画了多少（局部矩形 / 补条带 / 整帧原因）打一行
     pub damage_log: bool,
+    /// `MINI_NO_RESAMPLE`：SDK 的页面拖动不按事件时间重采样，按到达顺序逐事件走（对照 / 排查用）
+    pub no_resample: bool,
 }
 
 impl HostEnv {
@@ -165,6 +167,7 @@ impl HostEnv {
             fps: get("MINI_FPS").is_some(),
             no_damage: get("MINI_NO_DAMAGE").is_some(),
             damage_log: get("MINI_DAMAGE_LOG").is_some(),
+            no_resample: get("MINI_NO_RESAMPLE").is_some(),
         }
     }
 

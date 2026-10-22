@@ -84,13 +84,15 @@ pub(super) fn blend(dst: &mut u32, rgb: u32, a: f32) {
         | mix(s & 0xFF, d & 0xFF);
 }
 
-/// 整个缓冲按 `keep` 压暗（遮罩 rgba(0,0,0,1-keep)）
-pub(super) fn dim(buf: &mut [u32], keep: f32) {
-    for p in buf.iter_mut() {
-        let (r, g, b) = ((*p >> 16) & 0xFF, (*p >> 8) & 0xFF, *p & 0xFF);
-        let k = |v: u32| ((v as f32) * keep + 0.5) as u32;
-        *p = (k(r) << 16) | (k(g) << 8) | k(b);
-    }
+/// 缓冲的 `rows` 那几行按 `keep` 压暗（遮罩 rgba(0,0,0,1-keep)；整屏遮罩传 (0, 高)）。
+///
+/// 查表（与逐像素 `(v as f32 * keep + 0.5) as u32` 逐字节相同）：Modal / 提示框的遮罩每帧盖满整屏，
+/// 1080×2354 两百多万像素逐个三次浮点乘加，在一加 PLY110 上一帧要好几毫秒
+/// 返回用的那张表（GPU 在覆盖层行区间外按它压暗，见 `compositor::footprint`）
+pub(super) fn dim(buf: &mut [u32], w: u32, rows: (u32, u32), keep: f32) -> [u8; 256] {
+    let lut = crate::compositor::footprint::lut_round(keep);
+    crate::compositor::Footprint::apply_lut(buf, w, rows, &lut, 0);
+    lut
 }
 
 /// 一维区间 [a, b) 落在像素 [p, p+1) 里的长度
@@ -117,9 +119,32 @@ pub(super) fn fill_rrect_aa(
     let r = r.min(rw / 2.0).min(rh / 2.0).max(0.0);
     let (x0, y0) = ((x.floor() as i32).max(0), (y.floor() as i32).max(0));
     let (x1, y1) = (((x + rw).ceil() as i32).min(w as i32), ((y + rh).ceil() as i32).min(h as i32));
+    // 整行完全落在矩形里、又不在圆角那几行的像素，覆盖率恒为 1：这一段整段处理，
+    // 只有左右两头那一两个像素按覆盖率算。ActionSheet 的白底是大半屏，从前每一帧
+    // 逐像素算一遍覆盖率与圆角判断，一加 PLY110 上光这一步就几毫秒（结果逐字节不变）
+    let (ix0, ix1) = ((x.ceil() as i32).max(x0), ((x + rw).floor() as i32).min(x1));
     for py in y0..y1 {
         let cy_cov = span_cov(py as f32, y, y + rh);
         let fy = py as f32 + 0.5;
+        let plain = cy_cov >= 1.0 && fy >= y + r && fy <= y + rh - r && ix1 > ix0;
+        if plain {
+            let row = (py as u32 * w) as usize;
+            for px in (x0..ix0).chain(ix1..x1) {
+                let cov = span_cov(px as f32, x, x + rw);
+                if cov > 0.0 {
+                    blend(&mut buf[row + px as usize], rgb, cov * alpha);
+                }
+            }
+            let span = &mut buf[row + ix0 as usize..row + ix1 as usize];
+            if alpha >= 1.0 {
+                span.fill(rgb & 0x00FF_FFFF);
+            } else {
+                for d in span.iter_mut() {
+                    blend(d, rgb, alpha);
+                }
+            }
+            continue;
+        }
         for px in x0..x1 {
             let mut cov = cy_cov * span_cov(px as f32, x, x + rw);
             let fx = px as f32 + 0.5;

@@ -27,7 +27,7 @@ use std::ptr::NonNull;
 pub(crate) enum GpuFrame {
     /// 没有 GPU 合成器：走 CPU
     NotActive,
-    Presented,
+    Presented(gpu::GpuFrameStats),
     /// surface 暂时取不到：屏上保留上一帧，下一次 pump 补
     Skipped,
 }
@@ -50,7 +50,7 @@ impl MiniEngine {
     pub fn detach_native_surface(&mut self) {
         self.native_surface = None;
         if self.gpu.take().is_some() {
-            self.needs_redraw = true;
+            self.mark_full();
         }
     }
 
@@ -133,7 +133,7 @@ impl MiniEngine {
             Ok((comp, status)) => {
                 self.gpu = Some(Box::new(comp));
                 // 换了上屏方式：下一帧整帧合成（GPU 镜像是空的）
-                self.needs_redraw = true;
+                self.mark_full();
                 status
             }
             Err(status) => status,
@@ -142,7 +142,7 @@ impl MiniEngine {
 
     fn drop_gpu(&mut self) {
         if self.gpu.take().is_some() {
-            self.needs_redraw = true;
+            self.mark_full();
         }
     }
 
@@ -174,7 +174,7 @@ pub(super) fn present_on(
 ) -> Result<GpuFrame, (String, u32)> {
     let Some(comp) = gpu.as_mut() else { return Ok(GpuFrame::NotActive) };
     match comp.present(layers) {
-        Ok(PresentOutcome::Presented(_)) => Ok(GpuFrame::Presented),
+        Ok(PresentOutcome::Presented(st)) => Ok(GpuFrame::Presented(st)),
         Ok(PresentOutcome::Skipped(_)) => Ok(GpuFrame::Skipped),
         Err(e) => Err((e.to_string(), comp.gpu_frame())),
     }

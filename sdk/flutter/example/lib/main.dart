@@ -121,9 +121,10 @@ class MiniAppPage extends StatefulWidget {
 }
 
 class _MiniPageState extends State<MiniAppPage> {
-  static const _backendName = String.fromEnvironment('MINI_BACKEND', defaultValue: 'cpu');
+  // 缺省 auto：有 GPU 就用 GPU（`--dart-define=MINI_BACKEND=cpu` 强制软件渲染）
+  static const _backendName = String.fromEnvironment('MINI_BACKEND', defaultValue: 'auto');
   static final _backend =
-      MiniBackend.values.firstWhere((b) => b.name == _backendName, orElse: () => MiniBackend.cpu);
+      MiniBackend.values.firstWhere((b) => b.name == _backendName, orElse: () => MiniBackend.auto);
 
   late final MiniProgramController _c = MiniProgramController(
     appDir: widget.appDir,

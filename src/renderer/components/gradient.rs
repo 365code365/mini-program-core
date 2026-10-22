@@ -62,10 +62,18 @@ pub fn draw_linear_gradient(
         }
     };
 
-    let x0 = x.floor() as i32;
-    let y0 = y.floor() as i32;
-    let x1 = (x + w).ceil() as i32;
-    let y1 = (y + h).ceil() as i32;
+    // 只走画布裁剪区里的像素：区外的 `set_pixel` / `fill_span` / `blend_pixels` 本来就一个不写。
+    // 局部重画（补条带、动画损伤区）的裁剪区常常只有一条，一个大半屏的斜向渐变（首页横幅）
+    // 却要逐像素算完再被拒掉 —— 一加 PLY110 上一趟 10~17ms，滑到横幅附近每次补条带都掉帧。
+    // 平移（`translate`）只作用在 `fill_rect` 那几条路上，这里的坐标本来就是画布坐标
+    let (cx0, cx1, cy0, cy1) = canvas.draw_bounds();
+    let x0 = (x.floor() as i32).max(cx0);
+    let y0 = (y.floor() as i32).max(cy0);
+    let x1 = ((x + w).ceil() as i32).min(cx1);
+    let y1 = ((y + h).ceil() as i32).min(cy1);
+    if x1 <= x0 || y1 <= y0 {
+        return;
+    }
 
     // 圆角只影响顶部/底部各一段行；这两段之外的行没有圆角衰减，可以整行处理
     let top_band = y + tl.max(tr);

@@ -23,14 +23,18 @@ use crate::{Canvas, Color};
 use std::time::Instant;
 
 /// 自检逻辑的版本：改了自检就 +1，判定缓存里旧的「自检不一致」记录随之失效（v2 修订 R15）
-pub const SELFTEST_REV: u32 = 2;
+pub const SELFTEST_REV: u32 = 3;
 
 const WARMUP: usize = 2;
 const SAMPLES: usize = 7;
-/// Auto 要求 GPU 主线程时间（编码 + 提交）≤ 这个值（ms）：144Hz 一帧 6.94ms 的约 1/7
-pub const AUTO_MAX_MAIN_MS: f32 = 1.0;
-/// Auto 要求 GPU 完成时间 < 这个值（ms）
-pub const AUTO_MAX_DONE_MS: f32 = 4.0;
+/// Auto 要求 GPU 主线程时间（编码 + 提交）≤ 这个值（ms）。
+///
+/// 只挡「明显不行」的：有真 GPU 就优先用 GPU（用户定的规则）。从前是 1ms / 4ms，一加 PLY110
+/// （Adreno 810）的离屏自检「GPU 完成」量到 4.6ms 就被判掉 —— 那个数含离屏读回的等待，
+/// 上屏时并不在关键路径上；而 CPU 合成 + 写 Surface 每帧要 3~5ms 主线程时间，GPU 只要零点几毫秒
+pub const AUTO_MAX_MAIN_MS: f32 = 4.0;
+/// Auto 要求 GPU 完成时间 < 这个值（ms）：60Hz 一帧。超过它的 GPU 合成一帧都赶不上
+pub const AUTO_MAX_DONE_MS: f32 = 16.0;
 
 #[derive(Clone, Debug, Default)]
 pub struct Report {
@@ -116,6 +120,18 @@ pub fn test_canvases(w: u32, h: u32) -> (PageCanvas, LayerCanvas, LayerCanvas, u
     (PageCanvas::new(page), LayerCanvas::new(tab), LayerCanvas::new(fixed), tab_h)
 }
 
+/// 导航栏画布（含半透明像素）与一张转场留图
+fn edge_canvases(w: u32, h: u32) -> (LayerCanvas, crate::host::edge_back::PageShot) {
+    let mut rng = Lcg(0xED6E_BA2C);
+    let mut band = Canvas::new(w, (h / 8).max(1));
+    for (i, p) in band.pixels_mut().iter_mut().enumerate() {
+        let a = if i % 5 == 0 { rng.next() } else { 255 };
+        *p = Color::new(rng.next(), rng.next(), rng.next(), a);
+    }
+    let pixels = (0..w * h).map(|_| u32::from_le_bytes([rng.next(), rng.next(), rng.next(), 0])).collect();
+    (LayerCanvas::new(band), crate::host::edge_back::PageShot::new(w, h, pixels))
+}
+
 fn layers<'a>(
     w: u32,
     h: u32,
@@ -183,7 +199,22 @@ pub fn run(comp: &mut GpuCompositor, w: u32, h: u32, force_mismatch: bool) -> Re
         let mut with_modal = layers(w, h, &page, &tab, &fixed, tab_h, OverlayRefs::none());
         with_modal.overlays.modal = &modal;
         let (bad, ..) = one(comp, &with_modal, true)?;
-        bad.map_or(Ok(()), Err)
+        if let Some(b) = bad {
+            return Err(b);
+        }
+        // 导航栏 + 转场 / 侧滑（两种方向）：着色器里的平移、压暗、阴影与 CPU 逐字节一致才用 GPU。
+        // 压暗是 `u32(f32(c) * f)`：有的驱动在这里用半精度（relaxed precision）就会差一个 LSB
+        let (band, shot) = edge_canvases(w, h);
+        for (offset, on_top) in [(w / 3, false), (w / 2 + 7, true), (0, true)] {
+            let mut l = layers(w, h, &page, &tab, &fixed, tab_h, OverlayRefs::none());
+            l.top = Some(crate::compositor::TopBand { rows: (h / 9).max(1), canvas: &band });
+            l.edge_back = Some(crate::compositor::EdgeBackFrame { offset_px: offset, shot: Some(&shot), progress: 0.37, shot_on_top: on_top });
+            let (bad, ..) = one(comp, &l, true)?;
+            if let Some(b) = bad {
+                return Err(format!("{b}（导航栏 + 转场，位移 {offset}）"));
+            }
+        }
+        Ok(())
     })();
     if let Err(e) = result {
         report.mismatch = Some(e);
@@ -211,10 +242,17 @@ mod tests {
 
     #[test]
     fn slow_main_thread_or_slow_gpu_is_rejected() {
-        let r = report(&[(1.2, 0.9, 5.0); 7]);
-        assert!(r.auto_rejection().unwrap().contains("主线程"), "主线程超 1ms 要拒（不管 CPU 多慢）");
-        let r = report(&[(0.2, 4.5, 0.5); 7]);
-        assert!(r.auto_rejection().unwrap().contains("完成"), "GPU 完成 ≥ 4ms 要拒（弱显卡）");
+        let r = report(&[(4.5, 0.9, 5.0); 7]);
+        assert!(r.auto_rejection().unwrap().contains("主线程"), "主线程超 4ms 要拒（不管 CPU 多慢）");
+        let r = report(&[(0.2, 17.0, 0.5); 7]);
+        assert!(r.auto_rejection().unwrap().contains("完成"), "GPU 完成 ≥ 16ms 要拒（一帧都赶不上）");
+    }
+
+    /// 回归：一加 PLY110（Adreno 810）实测样本，从前被「完成 ≥ 4ms」判掉，有 GPU 却一直走 CPU
+    #[test]
+    fn mid_range_android_gpu_is_accepted() {
+        let r = report(&[(0.6, 4.6, 2.0); 7]);
+        assert_eq!(r.auto_rejection(), None);
     }
 
     #[test]

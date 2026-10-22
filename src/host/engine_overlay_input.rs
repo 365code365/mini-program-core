@@ -86,7 +86,7 @@ impl MiniEngine {
         // 全屏视频：左上角退出，别处切换播放 / 暂停（事件下一帧由 host::video::tick 发）
         if crate::renderer::components::fullscreen_tap(x, y) {
             self.dmg.compose_dirty = true;
-            self.needs_redraw = true;
+            self.mark_full();
             return true;
         }
         if self.modal.as_ref().map(|m| m.visible).unwrap_or(false) {

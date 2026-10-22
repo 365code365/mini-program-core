@@ -86,6 +86,12 @@ impl WxmlRenderer {
         0.0
     }
     
+    /// 布局缓存里的内容高度（逻辑像素）；还没布局过时 None。
+    /// 宿主先 [`plan_frame`](Self::plan_frame) 再取它，就能在画之前按内容高把画布分好
+    pub fn cached_content_height(&self) -> Option<f32> {
+        self.cache.as_ref().map(|c| c.content_height)
+    }
+
     /// 兼容旧接口
     pub fn render(&mut self, canvas: &mut Canvas, nodes: &[WxmlNode], data: &JsonValue) {
         self.render_with_shell(canvas, nodes, data, |_| {});

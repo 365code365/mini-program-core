@@ -210,7 +210,9 @@ impl GpuCompositor {
         let view_format = s.view_format;
         let view = frame.texture.create_view(&wgpu::TextureViewDescriptor { format: Some(view_format), ..Default::default() });
         let mut stats = self.draw_submit(prep, &view, view_format)?;
+        let t_present = Instant::now();
         self.gpu.queue.present(frame);
+        stats.present_ms = t_present.elapsed().as_secs_f32() * 1000.0;
         stats.acquire_ms = acquire_ms;
         Ok(PresentOutcome::Presented(stats))
     }

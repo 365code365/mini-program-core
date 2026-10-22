@@ -14,7 +14,7 @@ impl MiniEngine {
         if let Some(r) = &mut self.tabbar_renderer {
             r.set_animation_time(seconds);
         }
-        self.needs_redraw = true;
+        self.mark_full();
     }
 
     /// 同 [`set_animation_time`](Self::set_animation_time)，但**不**强制整帧：动画照常按
@@ -33,7 +33,7 @@ impl MiniEngine {
 
     pub fn on_show(&mut self) {
         self.app.eval("__dispatchApp('onShow')").ok();
-        self.needs_redraw = true;
+        self.mark_full();
     }
 
     pub fn on_hide(&mut self) {

@@ -41,4 +41,9 @@ for f in $(find "$BASE" -name rust.png | sort); do
     esac
 done
 echo "一致 $same / 不一致 $diff / 缺图 $miss"
+# 防空转：基线目录不存在 / 还没生成时 find 一张也找不到，「0 不一致」照样会报通过。
+# 踩过：清理之后直接跑，打出 `一致 0 / 不一致 0 / 缺图 0` 和一个绿勾
+if [ "$same" = 0 ]; then
+    echo "❌ 一张也没比到：先生成基线 bash tools/snapshot-all.sh $APP $BASE --settle 0 --time 2"; exit 1
+fi
 [ "$diff" = 0 ] && [ "$miss" = 0 ] && echo "✅ SDK 宿主与桌面像素一致" || exit 1

@@ -63,7 +63,7 @@ impl MiniEngine {
         self.scroll = ScrollController::new(vp, vp);
         self.interaction.clear_page_state();
         self.update_renderers();
-        self.needs_redraw = true;
+        self.mark_full();
         Ok(())
     }
 

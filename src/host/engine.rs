@@ -79,6 +79,8 @@ pub struct MiniEngine {
     pub(crate) touch: crate::host::touch::TouchTracker,
     /// 拖动手势仲裁（方向锁定 / 嵌套传递 / catchtouchmove），与桌面窗体同一份实现
     pub(crate) gesture: Option<crate::host::gesture::DragGesture>,
+    /// 页面拖动按事件时间重采样（engine_resample.rs）
+    pub(super) resample: super::engine_resample::DragResampler,
     /// `<picker>` 弹出的底部面板（微信里是原生浮层）
     pub(crate) picker_sheet: Option<crate::host::picker_sheet::PickerSheetState>,
     /// 左边缘侧滑返回进行中（与桌面窗体同一份 `host::edge_back`，见 engine_edge_back.rs）
@@ -262,6 +264,7 @@ impl MiniEngine {
 
         let px = |v: u32| (v as f32 * dpr) as u32;
         let vp = height as f32;
+        let tabbar_px = ((tabbar_logical_height(custom_tabbar.is_some(), &opts) * dpr) as u32).max(1);
         Ok(Self {
             app,
             pages: load_all_pages(),
@@ -274,11 +277,12 @@ impl MiniEngine {
             text: crate::text::shared_fonts(),
             canvas: PageCanvas::new(Canvas::new(px(width), px(CONTENT_HEIGHT.max(height)))),
             fixed_canvas: LayerCanvas::new(Canvas::new(px(width), px(height))),
-            tabbar_canvas: LayerCanvas::new(Canvas::new(px(width), px(tabbar_height()).max(1))),
+            tabbar_canvas: LayerCanvas::new(Canvas::new(px(width), tabbar_px)),
             interaction: InteractionManager::new(),
             scroll: ScrollController::new(vp, vp),
             touch: crate::host::touch::TouchTracker::new(),
             gesture: None,
+            resample: Default::default(),
             picker_sheet: None,
             edge_back: None,
             back_shots: Vec::new(),
@@ -392,7 +396,21 @@ impl MiniEngine {
 
     /// 页面视口高：画面高减引擎画的导航栏（engine_navbar.rs）、再减 tabBar
     pub(crate) fn viewport_height(&self) -> f32 {
-        let tab = if self.is_tabbar_page(&self.current_route()) { tabbar_height() } else { 0 };
-        (self.page_window_height() - tab as f32).max(1.0)
+        let tab = if self.is_tabbar_page(&self.current_route()) { self.tabbar_h() } else { 0.0 };
+        (self.page_window_height() - tab).max(1.0)
     }
+    /// tabBar 占的逻辑高（含底部安全区，见 [`tabbar_logical_height`]）
+    pub(crate) fn tabbar_h(&self) -> f32 {
+        tabbar_logical_height(self.custom_tabbar.is_some(), &self.opts)
+    }
+}
+
+/// tabBar 占的逻辑高。原生（app.json 配置式）tabBar 底下再垫一条底部安全区 —— 微信在有
+/// 底部横条 / 虚拟导航键的机型上就是这样：图标与文字仍在上面那 50px 里，底下那条是 tabBar 底色。
+/// 不垫的话宿主把画面铺到屏幕底边时，tabBar 整条压在系统导航键下面（荣耀三键导航实测：
+/// 导航键占底部 38px，50px 的 tabBar 几乎全被盖住）。
+/// 自定义 tabBar 的高度是按组件 WXSS 实测的，安全区由组件自己写 `env(safe-area-inset-bottom)`，不再加。
+fn tabbar_logical_height(custom: bool, opts: &EngineOptions) -> f32 {
+    let safe_bottom = if custom { 0.0 } else { opts.safe_area.map(|s| s.bottom.max(0.0)).unwrap_or(0.0) };
+    tabbar_height() as f32 + safe_bottom
 }
