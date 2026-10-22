@@ -49,7 +49,8 @@ impl MiniEngine {
             self.edge_back_tick = None;
             return true;
         }
-        let now = std::time::Instant::now();
+        // 按帧时刻推进（frame_clock.rs），收尾动画每帧挪得均匀
+        let now = crate::frame_clock::now();
         let dt = self.edge_back_tick.map(|t| now.duration_since(t).as_secs_f32()).unwrap_or(0.016).min(0.05);
         self.edge_back_tick = Some(now);
         match eb.tick(dt) {

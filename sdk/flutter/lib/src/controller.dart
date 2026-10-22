@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show Platform;
+import 'dart:ui' show FramePhase;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
 import 'events.dart';
@@ -34,6 +36,7 @@ class MiniProgramController {
     this.menuButton = true,
     this.navigationBar = true,
     this.routeAnimation = true,
+    this.androidSurfaceView = true,
   });
 
   /// 解包后的小程序目录（含 `app.json`）
@@ -75,12 +78,23 @@ class MiniProgramController {
   /// 页面转场（默认开）：navigateTo 新页从右边滑入、返回时当前页向右滑出，300ms（与微信一致）
   final bool routeAnimation;
 
+  /// Android：引擎画到自己的 SurfaceView（平台视图，hybrid composition），由系统合成器直接上屏，
+  /// **不经过 Flutter 的帧**（默认）。false = 画进 Flutter 外部纹理（旧做法）。
+  ///
+  /// 外部纹理那条路上，屏上那一帧取决于 Flutter 自己这一帧有没有按时出：主线程一忙，Flutter 这个
+  /// vsync 不出帧，屏上就重复上一张 —— 引擎每帧都按时交了，慢拖、弹菜单照样一顿一顿
+  /// （一加 PLY110 慢拖 3% 的 vsync 这样丢，SurfaceFlinger 量的）。iOS 不受影响（一直是纹理）
+  final bool androidSurfaceView;
+
   static const MethodChannel _channel = MethodChannel('dev.minirender/engine');
   static MiniProgramController? _active;
   static bool _initialized = false;
 
   /// 引擎画面所在的纹理（建好之前是 null；Android 换像素出口时会换一次）
   final ValueNotifier<int?> textureId = ValueNotifier(null);
+
+  /// 引擎画面在独立图层上（Android [androidSurfaceView]）：视图建平台视图，不建 Texture
+  final ValueNotifier<bool> surfaceView = ValueNotifier(false);
 
   /// 引擎画面的物理像素尺寸（= 逻辑尺寸 × dpr 取整）
   final ValueNotifier<Size?> pixelSize = ValueNotifier(null);
@@ -184,6 +198,7 @@ class MiniProgramController {
         'dpr': dpr,
         'options': jsonEncode(options),
         'backend': backend.code,
+        'presentation': androidSurfaceView ? 'view' : 'texture',
       });
     } catch (_) {
       // 失败了要让出「唯一实例」的位置，宿主才能换个目录再建
@@ -203,7 +218,30 @@ class MiniProgramController {
     if (w != null && h != null) pixelSize.value = Size(w, h);
     final id = (r['textureId'] as num?)?.toInt();
     if (id != null) textureId.value = id;
+    if (r['view'] == true) surfaceView.value = true;
     if (r.containsKey('backend')) activeBackend.value = MiniBackendStatus.fromTextureInfo(r);
+    if (r['pace'] == true) _startPaceLog();
+  }
+
+  static bool _paceOn = false;
+
+  /// `adb shell setprop debug.mini.pace 1`：Flutter 每一帧打一行 `🎞F <vsync µs> <光栅开始 µs> <光栅结束 µs>`。
+  ///
+  /// 引擎画进的是 Flutter 的外部纹理，**屏上那一帧是 Flutter 光栅线程取纹理那一刻最新的那张**。
+  /// 两边各跟各的 vsync 出帧：引擎这一帧交得比 Flutter 取纹理晚一点，这个 vsync 就重复上一张，
+  /// 下一个 vsync 一次跳两张 —— 引擎侧的帧耗时、位移全都均匀，屏上照样一顿一顿。
+  /// 与引擎那边的 `🎞` 行（交出时刻）对起来才看得出来（`tools/pace-check.py`）。
+  /// 时间戳与 Android `System.nanoTime` 同一个单调钟（微秒）
+  void _startPaceLog() {
+    if (_paceOn) return;
+    _paceOn = true;
+    SchedulerBinding.instance.addTimingsCallback((timings) {
+      for (final t in timings) {
+        debugPrint('🎞F ${t.timestampInMicroseconds(FramePhase.vsyncStart)} '
+            '${t.timestampInMicroseconds(FramePhase.rasterStart)} '
+            '${t.timestampInMicroseconds(FramePhase.rasterFinish)}');
+      }
+    });
   }
 
   Future<void> _call(String method, [Object? args]) async {

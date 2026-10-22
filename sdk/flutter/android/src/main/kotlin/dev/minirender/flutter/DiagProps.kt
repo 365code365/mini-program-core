@@ -23,10 +23,19 @@ internal object DiagProps {
         "input_log" to "MINI_INPUT_LOG",
         "backend" to "MINI_BACKEND",
         "no_resample" to "MINI_NO_RESAMPLE",
+        "pace" to "MINI_PACE",
     )
 
     /** `debug.mini.fps` 开着：宿主这边也每秒打一行上屏耗时（[EngineHost.present]） */
     @Volatile var fps = false
+        private set
+
+    /**
+     * `debug.mini.pace` 开着：引擎每交出一帧打一行 `🎞 <vsync µs> <交出 µs>`（System.nanoTime 那个钟）。
+     * 与 Dart 侧 `FrameTiming` 的 rasterStart 对起来，就知道 Flutter 每个 vsync 取到的是引擎的哪一帧
+     * （`tools/pace-check.py`）。帧耗时看着都达标、画面照样一顿一顿时，看的就是这个
+     */
+    @Volatile var pace = false
         private set
 
     fun apply() {
@@ -44,6 +53,7 @@ internal object DiagProps {
             if (v.isEmpty()) continue
             Os.setenv(env, v, true)
             if (env == "MINI_FPS") fps = true
+            if (env == "MINI_PACE") pace = true
             Log.i("mini-render", "诊断开关 $env=$v（来自 debug.mini.${m.groupValues[1]}）")
         }
     }

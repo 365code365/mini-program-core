@@ -132,7 +132,7 @@ pub fn render(buf: &mut [u32], w: u32, h: u32, sf: f32, text: Option<&TextRender
         Some(t) => (t, true),
         None => (p.opened, false),
     };
-    let t = (t0.elapsed().as_secs_f32() / FADE_SECS).clamp(0.0, 1.0);
+    let t = (crate::frame_clock::now().saturating_duration_since(t0).as_secs_f32() / FADE_SECS).clamp(0.0, 1.0);
     let alpha = if closing { 1.0 - t } else { t };
     if t >= 1.0 && p.drag.is_none() {
         with(|s| if let Some(x) = s.as_mut() { x.settled = true });

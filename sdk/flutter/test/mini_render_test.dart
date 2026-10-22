@@ -102,6 +102,50 @@ void main() {
     await c.dispose();
   });
 
+  testWidgets('Android 独立图层：create 默认要 view，回了 view=true 就建平台视图、不建纹理，指针照旧送引擎', (t) async {
+    final n = FakeNative()..install();
+    // 原生侧走独立图层时只回尺寸与 view=true（没有 textureId）
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(FakeNative.channel, (call) async {
+      n.calls.add(call);
+      if (call.method == 'create') {
+        final a = call.arguments as Map;
+        final dpr = (a['dpr'] as num).toDouble();
+        return {
+          'view': true,
+          'pixelWidth': ((a['width'] as int) * dpr).floor(),
+          'pixelHeight': ((a['height'] as int) * dpr).floor(),
+          'backend': 2,
+          'backendReason': '自动选择',
+        };
+      }
+      return null;
+    });
+    final c = await pumpView(t, n);
+    expect((n.named('create').single.arguments as Map)['presentation'], 'view');
+    expect(c.surfaceView.value, isTrue);
+    expect(find.byType(Texture), findsNothing);
+    expect(find.byType(PlatformViewLink), findsOneWidget);
+    // 平台视图按物理像素对齐（与纹理同一个尺寸）
+    final dpr = t.view.devicePixelRatio;
+    expect(t.getSize(find.byType(PlatformViewLink)).width, closeTo((393 * dpr).floor() / dpr, 1e-6));
+    // 原生视图不收触摸：Listener 照旧把指针交给引擎
+    await t.tapAt(const Offset(50, 60));
+    expect(n.named('pointer').map((m) => m.arguments['phase']), [0, 2]);
+    await c.dispose();
+  });
+
+  testWidgets('androidSurfaceView: false 走外部纹理', (t) async {
+    final n = FakeNative()..install();
+    final c = MiniProgramController(appDir: '/app', androidSurfaceView: false);
+    addTearDown(c.dispose);
+    await t.pumpWidget(MaterialApp(home: SizedBox(width: 300, height: 500, child: MiniProgramView(controller: c))));
+    await t.pump();
+    await t.pump();
+    expect((n.named('create').single.arguments as Map)['presentation'], 'texture');
+    expect(find.byType(Texture), findsOneWidget);
+    await c.dispose();
+  });
+
   testWidgets('后端偏好默认 auto（有 GPU 就用 GPU）', (t) async {
     final n = FakeNative()..install();
     final c = MiniProgramController(appDir: '/app');

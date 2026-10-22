@@ -134,6 +134,9 @@ pub struct HostEnv {
     pub damage_log: bool,
     /// `MINI_NO_RESAMPLE`：SDK 的页面拖动不按事件时间重采样，按到达顺序逐事件走（对照 / 排查用）
     pub no_resample: bool,
+    /// `MINI_PACE`：SDK 每交出一帧打一行 `🎞E <帧时间 ms> <滚动> <操作菜单顶边>`（出帧节拍诊断，
+    /// 与宿主的 `🎞` / Flutter 的 `🎞F` 对起来看屏上每个 vsync 取到的是哪一帧，`tools/pace-check.py`）
+    pub pace: bool,
 }
 
 impl HostEnv {
@@ -168,6 +171,7 @@ impl HostEnv {
             no_damage: get("MINI_NO_DAMAGE").is_some(),
             damage_log: get("MINI_DAMAGE_LOG").is_some(),
             no_resample: get("MINI_NO_RESAMPLE").is_some(),
+            pace: get("MINI_PACE").is_some(),
         }
     }
 

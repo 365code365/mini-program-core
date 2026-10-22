@@ -44,6 +44,11 @@ internal class EngineHost(
     private val textures: TextureRegistry,
     private val onEvents: (List<String>) -> Unit,
     private val onTexture: (Map<String, Any>) -> Unit,
+    /**
+     * true：画到自己的 SurfaceView（[EngineView]，平台视图），SurfaceFlinger 直接合成，不经过 Flutter 的帧；
+     * false：画到 Flutter 的外部纹理（SurfaceProducer）。为什么默认前者见 EngineView.kt
+     */
+    private val viewMode: Boolean,
 ) {
     private enum class Present { GPU, WINDOW, BITMAP }
 
@@ -69,11 +74,13 @@ internal class EngineHost(
 
     // ── 只在主线程读写 ──
     private var producer: TextureRegistry.SurfaceProducer? = null
+    /** 独立图层模式下的那块视图（Dart 建好平台视图之后才有） */
+    private var view: EngineView? = null
     @Volatile private var disposed = false
 
     private val frameCallback = Choreographer.FrameCallback { frameTimeNanos ->
         frameScheduled = false
-        tick(frameTimeNanos / 1_000_000)
+        tick(frameTimeNanos)
     }
 
     /** 主线程调：建 SurfaceProducer，引擎线程上建引擎、打开首页 */
@@ -90,7 +97,7 @@ internal class EngineHost(
         result: MethodChannel.Result,
         onFailed: () -> Unit,
     ) {
-        val p = newProducer()
+        val p = if (viewMode) null else newProducer()
         engine.post {
             choreographer = Choreographer.getInstance()
             val h = MiniEngine.nativeCreateEx(appDir, dataDir, width, height, dpr, options)
@@ -103,7 +110,7 @@ internal class EngineHost(
             if (h == 0L || !MiniEngine.nativeLaunch(h, route)) {
                 if (h != 0L) MiniEngine.nativeDestroy(h)
                 main.post {
-                    p.release()
+                    p?.release()
                     producer = null
                     onFailed()
                     result.error("CREATE_FAILED", "小程序打不开：$appDir（看 logcat 里的 mini-render 报错）", null)
@@ -116,6 +123,12 @@ internal class EngineHost(
             val (pw, ph) = pixelW to pixelH
             main.post {
                 if (disposed) return@post
+                if (p == null) {
+                    // 独立图层：Surface 等 Dart 建好平台视图（EngineView.surfaceChanged → onViewSurface）
+                    view?.setPixelSize(pw, ph)
+                    result.success(textureInfo(null))
+                    return@post
+                }
                 p.setSize(pw, ph)
                 val s = p.surface
                 engine.post { attach(s) }
@@ -131,13 +144,17 @@ internal class EngineHost(
     @Volatile private var activeBackend = MiniEngine.BACKEND_CPU
     @Volatile private var backendReason = ""
 
-    private fun textureInfo(p: TextureRegistry.SurfaceProducer): Map<String, Any> = mapOf(
-        "textureId" to p.id(),
+    private fun textureInfo(p: TextureRegistry.SurfaceProducer?): Map<String, Any> = listOfNotNull(
+        p?.let { "textureId" to it.id() },
+        // 独立图层：Dart 建平台视图（viewType [MiniRenderPlugin.VIEW_TYPE]）而不是 Texture
+        ("view" to true).takeIf { p == null },
         "pixelWidth" to pixelW,
         "pixelHeight" to pixelH,
         "backend" to activeBackend,
         "backendReason" to backendReason,
-    )
+        // 出帧节拍诊断（DiagProps.pace）：Dart 侧据此打 Flutter 每一帧的取纹理时刻
+        "pace" to DiagProps.pace,
+    ).toMap()
 
     /** 主线程调 */
     private fun newProducer(): TextureRegistry.SurfaceProducer {
@@ -163,6 +180,12 @@ internal class EngineHost(
     /** 主线程调：直写失败后换一块从没被 CPU 连过的 Surface */
     private fun replaceProducer() {
         if (disposed) return
+        if (viewMode) {
+            // 换一块新的 SurfaceView（surfaceChanged 会再挂上），后端变了告诉 Dart
+            view?.newSurface()
+            onTexture(textureInfo(null))
+            return
+        }
         producer?.release()
         val p = newProducer()
         p.setSize(pixelW, pixelH)
@@ -202,7 +225,7 @@ internal class EngineHost(
         if (gpuAttached) {
             Log.i(TAG, "🎨 GPU 上屏：$backendReason")
             // 纹理没换，但实际后端变了：告诉 Dart（create 的返回早于挂载）
-            main.post { if (!disposed) producer?.let { onTexture(textureInfo(it)) } }
+            main.post { if (!disposed && (viewMode || producer != null)) onTexture(textureInfo(producer)) }
             return true
         }
         Log.i(TAG, "GPU 没选上（$backendReason），改走 CPU")
@@ -239,9 +262,12 @@ internal class EngineHost(
         choreographer?.postFrameCallback(frameCallback)
     }
 
-    private fun tick(nowMs: Long) {
+    private fun tick(frameTimeNanos: Long) {
         if (handle == 0L) return
-        val f = MiniEngine.nativePumpEx(handle, nowMs)
+        val f = MiniEngine.nativePumpEx(handle, frameTimeNanos / 1_000_000)
+        if (DiagProps.pace && f and (MiniEngine.FRAME_PRESENTED or MiniEngine.FRAME_NEW) != 0) {
+            Log.i(TAG, "🎞 ${frameTimeNanos / 1000} ${System.nanoTime() / 1000}")
+        }
         if (f and MiniEngine.FRAME_BACKEND_CHANGED != 0 && mode == Present.GPU) {
             // 运行中回退（设备丢失 / surface 丢失…）：引擎这一帧已经改走 CPU 合成
             refreshBackend()
@@ -328,7 +354,11 @@ internal class EngineHost(
     }
 
     /** FlutterJNI 的调用必须在主线程 */
-    private fun scheduleFlutterFrame() = main.post { if (!disposed) producer?.scheduleFrame() }
+    /** 外部纹理：交了新的一帧要让 Flutter 出一帧来取。独立图层不用（SurfaceFlinger 自己取） */
+    private fun scheduleFlutterFrame() {
+        if (viewMode) return
+        main.post { if (!disposed) producer?.scheduleFrame() }
+    }
 
     private fun drainEvents() {
         val list = ArrayList<String>()
@@ -409,6 +439,13 @@ internal class EngineHost(
                     updatePixelSize()
                     Log.i(TAG, "resize ${w}x$h：排队 ${(t0 - asked) / 1_000_000}ms，重排 ${(t1 - t0) / 1_000_000}ms")
                     main.post {
+                        if (viewMode) {
+                            // 缓冲区改尺寸 → surfaceChanged → onViewSurface 再挂一次（同一块 Surface 不重建合成器）
+                            view?.setPixelSize(pixelW, pixelH)
+                            engine.post { needsPresent = true; requestFrame() }
+                            result.success(textureInfo(null))
+                            return@post
+                        }
                         val p = producer ?: return@post result.success(null)
                         p.setSize(pixelW, pixelH)
                         val s = p.surface
@@ -487,6 +524,29 @@ internal class EngineHost(
             }
             else -> result.notImplemented()
         }
+    }
+
+    // ───────────────────────── 独立图层（EngineView，主线程调） ─────────────────────────
+
+    fun bindView(v: EngineView) {
+        view = v
+        if (pixelW > 0 && pixelH > 0) v.setPixelSize(pixelW, pixelH)
+    }
+
+    fun unbindView(v: EngineView) {
+        if (view === v) view = null
+    }
+
+    /** SurfaceView 的 Surface 可用 / 改了尺寸 */
+    fun onViewSurface(s: Surface) {
+        if (disposed) return
+        engine.post { attach(s) }
+    }
+
+    /** SurfaceView 的 Surface 要没了：同步等引擎线程放手 */
+    fun onViewSurfaceGone() {
+        if (disposed) return
+        onEngineSync { detach() }
     }
 
     /** 主线程调：先让引擎线程放手 Surface 并销毁引擎，再放 SurfaceProducer */

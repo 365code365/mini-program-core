@@ -97,7 +97,7 @@ fn draw_sheet(buffer: &mut [u32], width: u32, height: u32, sf: f32, state: &Pick
     fill_rect(buffer, width, height, 0, ind_top + item_h - 1, sheet_w, 1, 0xFFD9_D9D9);
 
     if let Some(tr) = text_renderer {
-        let now = Instant::now();
+        let now = crate::frame_clock::now();
         // 拖动时上下各有一行半露在外面：裁到滚轮区（上不压头部分割线，下到面板底边）
         let wheel_clip = (wheel_top, top + sheet_h);
         for (ci, items) in state.columns.iter().enumerate() {

@@ -51,6 +51,16 @@ thread_local! {
     /// [`reach`] 用的那一刻：紧接着的 [`render`] 按同一刻画（取走即清）。
     /// 动画按墙上时钟走，两次各取 `Instant::now()` 的话面板位置就对不上 reach 算的范围
     static FROZEN: std::cell::Cell<Option<Instant>> = const { std::cell::Cell::new(None) };
+    /// 最近一次画出来的面板顶边（逻辑像素；`MINI_PACE` 诊断用）
+    static LAST_TOP: std::cell::Cell<Option<f32>> = const { std::cell::Cell::new(None) };
+}
+
+/// 最近一次画出来的面板顶边（逻辑像素），没弹着时 None（出帧节拍诊断用）
+pub fn last_drawn_top() -> Option<f32> {
+    if !visible() {
+        return None;
+    }
+    LAST_TOP.with(|c| c.get())
 }
 
 fn with<R>(f: impl FnOnce(&mut Option<ActionSheet>) -> R) -> R {
@@ -116,10 +126,11 @@ pub fn take_requests(app: &mut MiniApp) -> bool {
             .and_then(crate::host::tabbar::parse_color)
             .unwrap_or(Color::BLACK);
         let alert = req.get("alertText").and_then(Value::as_str).unwrap_or("").to_string();
-        with(|s| *s = Some(ActionSheet { id, alert, items, color, opened: Instant::now(), closing: None, pressed: None, settled: false }));
+        with(|s| *s = Some(ActionSheet { id, alert, items, color, opened: crate::frame_clock::now(), closing: None, pressed: None, settled: false }));
         changed = true;
     }
-    let done = with(|s| s.as_ref().and_then(|st| st.closing).map(|t| t.elapsed().as_secs_f32() >= ANIM_SECS).unwrap_or(false));
+    let now = crate::frame_clock::now();
+    let done = with(|s| s.as_ref().and_then(|st| st.closing).map(|t| now.saturating_duration_since(t).as_secs_f32() >= ANIM_SECS).unwrap_or(false));
     if done {
         clear();
         changed = true;
@@ -203,7 +214,7 @@ pub fn on_release(app: &mut MiniApp, vp: (f32, f32), _x: f32, y: f32) -> bool {
 /// `rows`：只合成缓冲的这几行（遮罩只压这几行；面板总在 [`reach`] 之内）
 pub fn render(buf: &mut [u32], w: u32, h: u32, sf: f32, text: Option<&TextRenderer>, rows: (u32, u32)) -> Footprint {
     let mut fp = Footprint::NONE;
-    let now = FROZEN.with(|f| f.take()).unwrap_or_else(Instant::now);
+    let now = FROZEN.with(|f| f.take()).unwrap_or_else(crate::frame_clock::now);
     let Some(st) = with(|s| s.clone()) else { return fp };
     let hidden = hidden_ratio(&st, now);
     let t0 = st.closing.unwrap_or(st.opened);
@@ -221,6 +232,7 @@ pub fn render(buf: &mut [u32], w: u32, h: u32, sf: f32, text: Option<&TextRender
     }
     let sheet_h = sheet_height(&st);
     let top = h as f32 / sf - sheet_h + sheet_h * hidden;
+    LAST_TOP.with(|c| c.set(Some(top)));
     // 下面每一笔都落在面板顶边以下（面板一直伸到屏幕底）
     fp.touch(top * sf, h as f32, h);
     draw_panel(buf, w, h, sf, text, &st, top);
@@ -235,7 +247,7 @@ pub fn render(buf: &mut [u32], w: u32, h: u32, sf: f32, text: Option<&TextRender
 pub fn reach(h: u32, sf: f32) -> (Footprint, Footprint) {
     let (mut rows, mut base) = (Footprint::NONE, Footprint::NONE);
     if let Some(st) = with(|s| s.clone()) {
-        let now = Instant::now();
+        let now = crate::frame_clock::now();
         FROZEN.with(|f| f.set(Some(now)));
         let sheet_h = sheet_height(&st);
         let top = h as f32 / sf - sheet_h + sheet_h * hidden_ratio(&st, now);

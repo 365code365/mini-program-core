@@ -108,7 +108,8 @@ pub enum DateFields {
 impl PickerSheetState {
     /// 面板整体的纵向位移（0 = 完全展开，SHEET_H = 完全收起）
     pub fn slide_offset(&self) -> f32 {
-        let t = (self.anim_from.elapsed().as_secs_f32() / ANIM_SECS).clamp(0.0, 1.0);
+        // 按帧时刻取样（frame_clock.rs）：画的那一刻相对 vsync 忽早忽晚，滑入会一顿一顿
+        let t = (crate::frame_clock::now().saturating_duration_since(self.anim_from).as_secs_f32() / ANIM_SECS).clamp(0.0, 1.0);
         // ease-out cubic：起步快、收尾稳，和微信的弹出手感接近
         let eased = 1.0 - (1.0 - t).powi(3);
         if self.closing {
@@ -120,12 +121,12 @@ impl PickerSheetState {
 
     /// 还有动画在走（面板入场/退场，或某列滚轮在回正），宿主据此续帧
     pub fn animating(&self) -> bool {
-        self.slide_animating() || self.wheel_animating(Instant::now())
+        self.slide_animating() || self.wheel_animating(crate::frame_clock::now())
     }
 
     /// 面板整体的入场/退场位移是否还在走
     fn slide_animating(&self) -> bool {
-        self.anim_from.elapsed().as_secs_f32() < ANIM_SECS
+        crate::frame_clock::now().saturating_duration_since(self.anim_from).as_secs_f32() < ANIM_SECS
     }
 
     /// 退场动画是否已经走完，可以丢弃了。

@@ -1,8 +1,10 @@
 import 'dart:math' as math;
 import 'dart:ui' show PlatformDispatcher;
 
-import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, listEquals;
+import 'package:flutter/foundation.dart' show Factory, TargetPlatform, defaultTargetPlatform, listEquals;
 import 'package:flutter/gestures.dart';
+import 'package:flutter/rendering.dart' show PlatformViewHitTestBehavior;
+import 'package:flutter/services.dart' show AndroidViewController, PlatformViewsService, StandardMessageCodec;
 import 'package:flutter/widgets.dart';
 
 import 'controller.dart';
@@ -311,6 +313,50 @@ class _MiniProgramViewState extends State<MiniProgramView> with WidgetsBindingOb
   /// 引擎画面：纹理按**物理像素**对齐（逻辑尺寸取整后 × dpr），最近邻采样 —— 一个设备像素
   /// 对一个纹理像素，文字不会因为重采样发虚
   Widget _frame(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: _c.surfaceView,
+      builder: (context, onView, _) => onView ? _engineSurface(context) : _texture(context),
+    );
+  }
+
+  /// Android 独立图层（[MiniProgramController.androidSurfaceView]）：引擎自己的 SurfaceView，
+  /// 以 hybrid composition 嵌进来 —— 系统合成器直接取引擎交的每一帧，Flutter 这一帧出没出都不影响它。
+  /// 尺寸与纹理一样按物理像素对齐；触摸不进原生视图（transparent），照旧由外面的 Listener 收
+  Widget _engineSurface(BuildContext context) {
+    return ValueListenableBuilder<Size?>(
+      valueListenable: _c.pixelSize,
+      builder: (context, px, _) {
+        final dpr = MediaQuery.devicePixelRatioOf(context);
+        return Align(
+          alignment: Alignment.topLeft,
+          child: SizedBox(
+            width: px == null ? null : px.width / dpr,
+            height: px == null ? null : px.height / dpr,
+            child: PlatformViewLink(
+              viewType: _engineViewType,
+              surfaceFactory: (context, controller) => AndroidViewSurface(
+                controller: controller as AndroidViewController,
+                gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{},
+                hitTestBehavior: PlatformViewHitTestBehavior.transparent,
+              ),
+              onCreatePlatformView: (params) => PlatformViewsService.initExpensiveAndroidView(
+                id: params.id,
+                viewType: _engineViewType,
+                layoutDirection: TextDirection.ltr,
+                creationParamsCodec: const StandardMessageCodec(),
+              )
+                ..addOnPlatformViewCreatedListener(params.onPlatformViewCreated)
+                ..create(),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  static const _engineViewType = 'dev.minirender/engine-view';
+
+  Widget _texture(BuildContext context) {
     return ValueListenableBuilder<int?>(
       valueListenable: _c.textureId,
       builder: (context, id, _) {

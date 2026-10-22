@@ -18,6 +18,11 @@ import org.json.JSONObject
  * `ALREADY_RUNNING`。热重启后 Dart 先调 `init`，把旧实例清掉。
  */
 class MiniRenderPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
+    companion object {
+        /** 独立图层的平台视图类型（与 Dart 侧 `MiniProgramView` 同一个字符串） */
+        const val VIEW_TYPE = "dev.minirender/engine-view"
+    }
+
     private lateinit var channel: MethodChannel
     private lateinit var binding: FlutterPlugin.FlutterPluginBinding
     private var host: EngineHost? = null
@@ -26,6 +31,8 @@ class MiniRenderPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         binding = flutterPluginBinding
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "dev.minirender/engine")
         channel.setMethodCallHandler(this)
+        // 独立图层上屏（EngineView.kt）：Dart 在 create 回了 view=true 时建这个平台视图
+        flutterPluginBinding.platformViewRegistry.registerViewFactory(VIEW_TYPE, EngineViewFactory { host })
     }
 
     override fun onDetachedFromEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
@@ -105,6 +112,8 @@ class MiniRenderPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             binding.textureRegistry,
             onEvents = { channel.invokeMethod("events", it) },
             onTexture = { channel.invokeMethod("texture", it) },
+            // "view"（缺省）：自己的 SurfaceView，系统直接合成；"texture"：Flutter 外部纹理（旧路）
+            viewMode = call.argument<String>("presentation") != "texture",
         )
         host = h
         h.create(

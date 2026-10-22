@@ -84,6 +84,9 @@ pub mod host;
 /// CPU 合成器是参考实现；移动端构建（`--no-default-features`）同样编进来。
 pub mod compositor;
 
+/// 帧时钟：这一帧按哪个时刻画（SDK 按宿主 vsync 时间，见模块注释）
+pub mod frame_clock;
+
 // FFI 导出：画布级（mr_canvas_* / mr_path_*）
 mod ffi;
 pub use ffi::*;

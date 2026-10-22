@@ -130,6 +130,11 @@ impl MiniEngine {
         if !self.events.is_empty() {
             flags |= FRAME_EVENTS;
         }
+        // 出帧节拍诊断：这一帧按哪个时刻算的、页面 / 操作菜单在哪（`MINI_PACE`，tools/pace-check.py）
+        if self.env.pace && flags & (FRAME_NEW | FRAME_PRESENTED) != 0 {
+            let top = crate::host::ui_overlay::action_sheet::last_drawn_top().unwrap_or(-1.0);
+            diag::emit(&format!("🎞E {} {:.2} {:.2}", self.last_pump_ms, self.scroll.get_position(), top));
+        }
         if let Some(begin) = begin {
             // acquire 等待没有单独计（GPU 上屏时算在 pump 时间里），工作时间 = pump 时间
             let pump_ms = begin.elapsed().as_secs_f32() * 1000.0;

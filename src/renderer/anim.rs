@@ -16,8 +16,12 @@ static CLOCK: OnceLock<Instant> = OnceLock::new();
 
 /// 全局动画时钟（秒）。进程内所有页面共用一个起点，保证同一 `@keyframes`
 /// 在不同组件上的相位一致（浏览器行为亦然）。
+///
+/// 取的是本线程这一帧的时刻（`frame_clock`：SDK 按宿主 vsync 时间，其余照旧是此刻），
+/// 不是画到这个节点的那一刻 —— 同一帧里所有动画同一个相位，帧与帧之间按 vsync 均匀走
 pub fn now_secs() -> f32 {
-    CLOCK.get_or_init(Instant::now).elapsed().as_secs_f32()
+    let origin = *CLOCK.get_or_init(Instant::now);
+    crate::frame_clock::now().saturating_duration_since(origin).as_secs_f32()
 }
 
 /// 缓动函数

@@ -19,7 +19,13 @@ impl MiniEngine {
     pub(super) fn pump_frame(&mut self, now_ms: u64) -> bool {
         // 宿主给了时间就以它为准，并让引擎的时钟（触摸、长按、事件 timeStamp）跟上它
         if now_ms > 0 {
-            self.host_clock = Some((now_ms, std::time::Instant::now()));
+            let wall = std::time::Instant::now();
+            self.host_clock = Some((now_ms, wall));
+            // 这一帧的动画按宿主给的 vsync 时刻取样（frame_clock.rs）：画的时刻相对 vsync 忽早忽晚，
+            // 按画的那一刻取样的话屏上每帧挪的距离忽大忽小
+            crate::frame_clock::set(Some(self.frame_anchor.frame_instant(now_ms, wall)));
+        } else {
+            crate::frame_clock::set(None);
         }
         let now = if now_ms > 0 { now_ms } else { self.mono_ms() };
         let dt = if self.last_pump_ms == 0 {

@@ -25,6 +25,10 @@ const KEEP: usize = 16;
 const EXTRA_MS: f64 = 5.0;
 /// 事件时间与引擎时钟差这么多就认为不是同一个钟
 const SAME_CLOCK_MS: f64 = 1000.0;
+/// 事件晚到时最多往前推多少毫秒（与 Android 系统重采样的 RESAMPLE_MAX_PREDICTION 同值）
+const MAX_PREDICT_MS: f64 = 8.0;
+/// 最后两个采样隔得比这还久：手指停过，不往前推
+const MAX_GAP_MS: f64 = 20.0;
 
 #[derive(Default)]
 pub(crate) struct DragResampler {
@@ -78,8 +82,11 @@ impl DragResampler {
         }
     }
 
-    /// `target` 时刻的手指位置：两采样之间线性插值；早于第一个取第一个，晚于最后一个取最后一个
-    /// （手指停住时不再有移动事件，位置就停在最后一个采样上）
+    /// `target` 时刻的手指位置：两采样之间线性插值；早于第一个取第一个。
+    ///
+    /// 晚于最后一个（这一帧该到的事件还没到）：按最后两个采样的速度往前推，最多推 [`MAX_PREDICT_MS`]。
+    /// 从前直接停在最后一个采样上 —— 事件晚到一帧，这一帧就几乎不动、下一帧补两格
+    /// （一加真机慢拖每帧位移里成对出现的 0.47 / 2.98）。两个采样隔太久（手指停过）不推
     fn at(&self, target: f64) -> Option<f32> {
         let &(t_first, y_first) = self.samples.front()?;
         if target <= t_first {
@@ -91,7 +98,28 @@ impl DragResampler {
                 return Some(y0 + (y1 - y0) * f);
             }
         }
-        self.samples.back().map(|s| s.1)
+        let n = self.samples.len();
+        let (t1, y1) = self.samples[n - 1];
+        if n >= 2 {
+            let (t0, y0) = self.samples[n - 2];
+            let dt = t1 - t0;
+            if dt > 0.5 && dt < MAX_GAP_MS {
+                let ahead = (target - t1).min(MAX_PREDICT_MS);
+                return Some(y1 + (y1 - y0) * (ahead / dt) as f32);
+            }
+        }
+        Some(y1)
+    }
+
+    /// 这一帧要摆的位置：[`at`](Self::at)，但不往回退 —— 前一帧推多了、这一帧的真实采样
+    /// 落在它后面时停一帧，不让页面倒着跳一下（手指真的反向时照常跟）
+    fn next_shown(&self, target: f64) -> Option<f32> {
+        let y = self.at(target)?;
+        let n = self.samples.len();
+        let (Some(prev), true) = (self.shown, n >= 2) else { return Some(y) };
+        let dir = self.samples[n - 1].1 - self.samples[n - 2].1;
+        let step = y - prev;
+        Some(if dir != 0.0 && step != 0.0 && dir.signum() != step.signum() { prev } else { y })
     }
 }
 
@@ -132,7 +160,7 @@ impl MiniEngine {
             return false;
         }
         let target = now as f64 - (self.resample.period() + EXTRA_MS);
-        let Some(y) = self.resample.at(target) else { return false };
+        let Some(y) = self.resample.next_shown(target) else { return false };
         self.scroll.drag_preview(y);
         let pos = self.scroll.get_position();
         self.resample.shown = Some(y);
@@ -163,7 +191,36 @@ mod tests {
         r.push(15.0, 0.0); // 时间倒退：丢掉
         assert_eq!(r.at(0.0), Some(100.0));
         assert_eq!(r.at(15.0), Some(90.0));
-        assert_eq!(r.at(25.0), Some(80.0));
+        // 晚于最后一个：按最后两个的速度往前推（-2px/ms），最多推 8ms
+        assert_eq!(r.at(25.0), Some(70.0));
+        assert_eq!(r.at(60.0), Some(64.0));
+        // 两个采样隔太久（手指停过）：不推
+        r.push(50.0, 79.0);
+        assert_eq!(r.at(55.0), Some(79.0));
+    }
+
+    #[test]
+    fn 事件成对晚到_每帧位移仍然均匀且不倒退() {
+        // 手指匀速 0.2px/ms，事件每 4ms 一个；主线程忙时事件两帧一批地到（真机慢拖的 0.47 / 2.98）
+        let mut r = DragResampler::default();
+        let mut shown = Vec::new();
+        let mut next = 0u64;
+        for k in 4..60u64 {
+            let now = k * 8;
+            r.note_pump(now);
+            // 偶数帧只到了 now−20ms 之前的事件，奇数帧补齐到 now−2ms
+            let arrived = if k % 2 == 0 { now.saturating_sub(20) } else { now.saturating_sub(2) };
+            while next * 4 <= arrived {
+                r.push((next * 4) as f64, (next * 4) as f32 * 0.2);
+                next += 1;
+            }
+            let y = r.next_shown(now as f64 - (r.period() + EXTRA_MS)).unwrap();
+            r.shown = Some(y);
+            shown.push(y);
+        }
+        let steps: Vec<f32> = shown.windows(2).skip(4).map(|w| w[1] - w[0]).collect();
+        assert!(steps.iter().all(|s| *s >= 0.0), "不倒退：{steps:?}");
+        assert!(steps.iter().all(|s| (s - 1.6).abs() < 0.05), "每帧都该挪 1.6px：{steps:?}");
     }
 
     #[test]

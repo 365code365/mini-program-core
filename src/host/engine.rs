@@ -124,6 +124,8 @@ pub struct MiniEngine {
     /// 宿主一传 `now_ms` 长按就永远触发不了。
     pub(super) host_clock: Option<(u64, Instant)>,
     pub(super) last_pump_ms: u64,
+    /// 宿主帧时间 → `Instant` 的锚点（`frame_clock`：动画按 vsync 取样，不按画的那一刻）
+    pub(super) frame_anchor: crate::frame_clock::Anchor,
     pub(super) page_opened_ms: u64,
     /// 创建选项（安全区、宿主 API、原生组件；见 engine_options.rs）
     pub(crate) opts: EngineOptions,
@@ -309,6 +311,7 @@ impl MiniEngine {
             clock_origin: Instant::now(),
             host_clock: None,
             last_pump_ms: 0,
+            frame_anchor: Default::default(),
             page_opened_ms: 0,
             opts,
             capsule: Default::default(),
