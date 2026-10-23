@@ -39,6 +39,8 @@ pub enum GestureTarget {
     Swiper { id: String, axis: Axis },
     /// 某个 slider（横向跟手，松手发 change）
     Slider { id: String },
+    /// 某个 `<video>` 的进度条（横向跟手，松手 seek；`key` 是 `host_feed::video_key`）
+    VideoSeek { key: String },
     /// 左边缘侧滑返回（宿主级手势，不交给页面）
     EdgeBack,
 }
@@ -62,6 +64,9 @@ pub enum GestureAction {
     /// 开始/继续拖 slider（开始时从按下点判断是不是抓在圆点上）
     BeginSlider { id: String },
     UpdateSlider { id: String },
+    /// 开始/继续拖视频的进度条
+    BeginVideoSeek { key: String },
+    UpdateVideoSeek { key: String },
 }
 
 /// 一次拖动手势的状态
@@ -83,6 +88,8 @@ pub struct DragGesture {
     swiper: Option<(String, Axis, bool)>,
     /// 起点下最上层的元素是一个 slider
     slider: Option<String>,
+    /// 起点落在某个 `<video>` 显示着的进度条上
+    video_seek: Option<String>,
 }
 
 impl DragGesture {
@@ -103,7 +110,14 @@ impl DragGesture {
             edge_back: false,
             swiper: None,
             slider: None,
+            video_seek: None,
         }
+    }
+
+    /// 起点落在视频的进度条上：横向锁定时由它接手（与 slider 同理：竖着划照样滚页面，点一下走 tap）
+    pub fn with_video_seek(mut self, key: Option<String>) -> Self {
+        self.video_seek = key;
+        self
     }
 
     /// 起点落在 slider 上：横向锁定时由它接手（竖着划照样滚页面，点一下走 tap）。
@@ -153,6 +167,7 @@ impl DragGesture {
                 axis: *axis,
             },
             GestureTarget::Slider { id } => GestureAction::UpdateSlider { id: id.clone() },
+            GestureTarget::VideoSeek { key } => GestureAction::UpdateVideoSeek { key: key.clone() },
             GestureTarget::Undecided => {
                 let (dx, dy) = (x - self.start.0, y - self.start.1);
                 if dx.abs().max(dy.abs()) < DIRECTION_LOCK_SLOP {
@@ -174,6 +189,11 @@ impl DragGesture {
                 if let (Some(id), Axis::Horizontal) = (&self.slider, axis) {
                     self.target = GestureTarget::Slider { id: id.clone() };
                     return GestureAction::BeginSlider { id: id.clone() };
+                }
+                // 视频的进度条横着拖：同上（它画在视频框里，比外面任何滚动区域都内层）
+                if let (Some(key), Axis::Horizontal) = (&self.video_seek, axis) {
+                    self.target = GestureTarget::VideoSeek { key: key.clone() };
+                    return GestureAction::BeginVideoSeek { key: key.clone() };
                 }
                 // `catchtouchmove`：这次手势不许滚任何东西（遮罩锁滚动的标准写法）
                 if self.catch_move {
@@ -416,5 +436,14 @@ mod tests {
         let mut g = DragGesture::new((100.0, 100.0), None, false, true).with_slider(Some("sl".into()));
         assert_eq!(g.on_move(101.0, 140.0), GestureAction::BeginPage);
         assert_eq!(g.on_move(101.0, 180.0), GestureAction::UpdatePage);
+    }
+    /// 视频进度条：横着拖归它（哪怕外面是横向 scroll-view），竖着划滚页面
+    #[test]
+    fn video_seek_takes_horizontal_only() {
+        let mut g = DragGesture::new((100.0, 100.0), horizontal_area(), false, true).with_video_seek(Some("v".into()));
+        assert_eq!(g.on_move(110.0, 101.0), GestureAction::BeginVideoSeek { key: "v".into() });
+        assert_eq!(g.on_move(150.0, 102.0), GestureAction::UpdateVideoSeek { key: "v".into() });
+        let mut g = DragGesture::new((100.0, 100.0), None, false, true).with_video_seek(Some("v".into()));
+        assert_eq!(g.on_move(101.0, 140.0), GestureAction::BeginPage);
     }
 }

@@ -314,6 +314,9 @@ cargo build --release
 
 常用动作参数（按书写顺序执行，可重复）：`--touch x,y` / `--swipe x1,y1,x2,y2`
 / `--drag px×帧数` / `--type 文本` / `--key enter` / `--wheel` / `--wait 秒` / `--frames N`。
+窗体里 `wx.chooseImage` / `chooseMedia` / `chooseVideo` / `chooseMessageFile` 开系统文件对话框、存相册开「存储为」
+（macOS / Windows）；无头 / 自动化用 `MINI_PICK_FILES=/a.png,/b.jpg` 当作选了这些文件、`MINI_SAVE_DIR=<目录>` 指定存到哪，
+不给时无头一律 `:fail cancel`。
 完整列表 `--help`；诊断开关（`MINI_SCROLL_LOG` / `MINI_FPS` / `MINI_FONT_LOG` / `MINI_SLIDER_LOG` …，移动端 SDK 另有
 `MINI_DAMAGE_LOG` 每帧重画多少（GPU 上屏时行尾带准备 / CPU 合成 / 等 surface / 上传量）、`MINI_NO_DAMAGE` 关掉局部重画做对照、
 `MINI_NO_RESAMPLE` 关掉页面拖动的按事件时间重采样做对照、`MINI_PACE` 打每帧交帧时刻（配 `tools/pace-check.py` 看屏上每个 vsync 是哪一帧）、`MINI_CPU_PIN=0` 不把 Android 上的引擎线程绑大核（只在交互或连续出帧时绑）；Flutter 插件在 Android 上读
@@ -398,7 +401,7 @@ bash tools/build-mobile.sh check     # 只做交叉编译检查
 | `desktop` | ✅ | 桌面窗体（winit + softbuffer + 剪贴板） |
 | `audio` | ✅ | 内置音频播放（`<video>` 的声音） |
 | `h264` | ✅ | 内置 H.264 软解。**移动端建议关掉**：交给系统播放器硬解更省电，且 openh264 在 iOS 模拟器目标上编不过 |
-| `gpu` | ✅ | GPU 合成后端（wgpu），运行时选、失败回退 CPU。Android 库默认带（`mr_app_attach_surface` 交 `ANativeWindow` 即可 GPU 上屏，SDK 默认偏好仍是 cpu；`ANDROID_GPU=0` 关掉）；iOS 库暂不带 |
+| `gpu` | ✅ | GPU 合成后端（wgpu），运行时选、失败回退 CPU。Android 与 iOS 库默认带（原生视图把 `ANativeWindow` / `CAMetalLayer` 交给 `mr_app_attach_surface`，偏好 auto；C ABI 默认偏好仍是 cpu；`ANDROID_GPU=0` / `IOS_GPU=0` 关掉）；Flutter 的 iOS 插件走 CVPixelBuffer 纹理，照旧 CPU |
 | `bindgen` | ❌ | 交叉编译时打开 |
 
 ### 2. 打成依赖（推荐）
@@ -521,10 +524,13 @@ Android 在 ubuntu runner 上编、iOS 在 macOS runner 上编，然后把两个
 | 类别 | 已支持 |
 |---|---|
 | 组件（24 个标签） | 容器：view / block / scroll-view / swiper / swiper-item<br/>文本与媒体：text / rich-text / icon / image / video / canvas<br/>表单：button / input / textarea / switch / slider / progress / checkbox / checkbox-group / radio / radio-group / picker / picker-view / picker-view-column |
+| 补齐的官方组件 | 渲染器：grid-view（对齐网格 / 瀑布流）、cover-image / cover-view、span、movable-area；宿主没接的 map / camera / live-* / web-view / channel-* 画占位<br/>内置组件（WXML + JS，用到才注入，`src/builtin_components`）：movable-view、page-container、match-media、root-portal、page-meta、navigation-bar、draggable-sheet、8 个手势组件、audio、editor（纯文本） |
+| 动画 | `this.animate` / `clearAnimation`（含滚动时间线）、`wx.worklet`（shared / derived / timing / spring / decay / sequence / repeat / delay / Easing）与 `applyAnimatedStyle`：按选择器写节点样式（data 的 `__nodeStyles`） |
+| 触摸 | touchmove / touchend / touchcancel 锁定在 touchstart 的节点上（与微信、DOM 一致），手指移出、节点被挪走都照样收到 |
 | 事件 | touchstart/move/end/cancel、longpress/longtap、tap、change、focus/input/blur/confirm、image 的 load/error、scroll-view 的 scroll / scrolltoupper / scrolltolower / refresher*、swiper 的 change / transition / animationfinish、form 的 submit / reset、picker 的 columnchange / cancel、video 的 play / pause / ended / timeupdate / loadedmetadata / seekcomplete / fullscreenchange / error、页面 onPageScroll / onReachBottom / onPullDownRefresh；六种绑定前缀（bind / catch / capture-bind / capture-catch / mut-bind / bind:）与捕获-冒泡完整链路 |
 | WXML | wx:for / wx:if / elif / else / for-item / for-index / wx:key、block、表达式引擎（含展开与对象简写）、class 与 style 绑定、template / import / include、wxs 模块（`<wxs src>` / 内联 / require）、自定义组件（usingComponents，每处一个实例、具名与默认 slot） |
 | WXSS | 标签/类/id/属性/伪类选择器、后代与子代组合器、特异性层叠、`:first/last/only-child`、`:nth-child(An+B)`、`:active`、`@import`、`@keyframes`、`@media`、`@font-face`、CSS 变量、rpx、渐变、阴影、transform、transition/animation |
-| wx.\*（120 余个） | request（含 abort）、connectSocket、downloadFile / uploadFile、FileSystemManager、InnerAudioContext / 背景音频、canIUse、网络状态、胶囊位置、getImageInfo / compressImage、canvasToTempFilePath、storage 全套、showToast / showLoading / showModal / showActionSheet、previewImage、下拉刷新、pageScrollTo、createSelectorQuery / createIntersectionObserver / nextTick、createVideoContext、createAnimation、createCanvasContext 与 canvas 2d 节点、tabBar 运行时 API、剪贴板、振动、loadFontFace、导航栏 API、设备信息全套、五个路由 API、App 级监听（onError 等）；login / chooseImage 等宿主能力经 hostApis 交给宿主 |
+| wx.\*（官方 503 个都在，要宿主的默认立刻 fail，见集成指南） | TCP / UDP、Worker、WebAudio、EventChannel、路由事件、媒体查询、离屏画布、getRandomValues、request（含 abort）、connectSocket、downloadFile / uploadFile、FileSystemManager、InnerAudioContext / 背景音频、canIUse、网络状态、胶囊位置、getImageInfo / compressImage、canvasToTempFilePath、storage 全套、showToast / showLoading / showModal / showActionSheet、previewImage、下拉刷新、pageScrollTo、createSelectorQuery / createIntersectionObserver / nextTick、createVideoContext、createAnimation、createCanvasContext 与 canvas 2d 节点、tabBar 运行时 API、剪贴板、振动、loadFontFace、导航栏 API、设备信息全套、五个路由 API、App 级监听（onError 等）；login / chooseImage 等宿主能力经 hostApis 交给宿主 |
 | 交互 | 惯性滚动与临界阻尼回弹、手势仲裁（主轴锁定 / 内外层交接）、左边缘侧滑返回（桌面与移动端 SDK）、下拉刷新、picker 面板、操作菜单、图片预览、全屏视频、局部重绘（损伤区） |
 
 **图标**用的是 WeUI 官方矢量数据（`success` 是实心圆挖出对勾形的洞，不是白色描边对勾）。
@@ -657,6 +663,7 @@ doc/                 文档与场景图
 | [`doc/示例与调试.md`](doc/示例与调试.md) | 示例小程序清单、`examples/` 各示例、浏览器预览、编译成 HTML、视频/Canvas、Rust/C/移动端代码示例 |
 | [`doc/场景画廊.md`](doc/场景画廊.md) | 65 张真实渲染（同时是回归基线），以及素材怎么生成 |
 | [`doc/踩坑记录.md`](doc/踩坑记录.md) | 13 类「曾经错在哪」：现象 → 根因 → 现在的做法 → 回归判据 |
+| [`doc/滑动顿挫避坑清单.md`](doc/滑动顿挫避坑清单.md) | 真机滑动「屏上重复帧」的判据、宿主上屏 / 引擎失效 / 量具三层的坑、Flutter 与原生示例的当前数字 |
 | [`doc/引擎测试说明.md`](doc/引擎测试说明.md) | 能力矩阵、T1~T29 逐项测试清单与判据、内存分项实测、已知差距 |
 | [`doc/原生App集成指南.md`](doc/原生App集成指南.md) | 极简集成、宿主九件事、C ABI、iOS/Android/鸿蒙步骤、验收清单 |
 | [`doc/触控对齐测试报告.md`](doc/触控对齐测试报告.md) | 滑动/点击/长按/手势与微信的逐项对照实测 |

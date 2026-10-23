@@ -1,0 +1,1 @@
+<view class="{{enable ? 'rp-on' : 'rp-off'}}"><slot></slot></view>

@@ -1,0 +1,7 @@
+<view class="ds-wrap {{uid}}-w">
+  <!-- catchtouchmove：拖面板时这串竖向位移归面板，页面不跟着滚（微信里 draggable-sheet 自己接住拖动） -->
+  <view class="ds-sheet" style="height:{{size * 100}}%;" animation="{{anim}}"
+        bindtouchstart="_ts" catchtouchmove="_tm" bindtouchend="_te" bindtouchcancel="_te">
+    <slot></slot>
+  </view>
+</view>

@@ -1,0 +1,30 @@
+.grid { margin-top: 16rpx; }
+.cell { border-radius: 12rpx; padding: 12rpx; }
+.cell-t { color: #ffffff; font-size: 24rpx; }
+
+.area { width: 100%; height: 360rpx; margin-top: 16rpx; background-color: #eef3ff; border-radius: 12rpx; }
+.mv { width: 128rpx; height: 128rpx; border-radius: 64rpx; background-color: #1677ff; align-items: center; justify-content: center; }
+.mvh { width: 96rpx; height: 96rpx; border-radius: 12rpx; background-color: #fa9d3b; align-items: center; justify-content: center; }
+.mv-t { color: #ffffff; font-size: 26rpx; }
+
+.pan-zone { position: relative; height: 280rpx; margin-top: 16rpx; background-color: #f2f2f2; border-radius: 12rpx; align-items: center; justify-content: center; }
+.pan-dot { width: 80rpx; height: 80rpx; border-radius: 40rpx; background-color: #07c160; }
+.pan-t { position: absolute; left: 20rpx; bottom: 16rpx; font-size: 22rpx; color: #999999; }
+.gest-row { flex-direction: row; margin-top: 16rpx; }
+.gest-box { width: 200rpx; height: 100rpx; margin-right: 20rpx; border-radius: 12rpx; background-color: #576b95; align-items: center; justify-content: center; }
+.gest-box2 { background-color: #8a5cf5; }
+.gest-t { color: #ffffff; font-size: 26rpx; }
+
+.sheet-box { position: relative; height: 480rpx; margin-top: 16rpx; border-radius: 12rpx; overflow: hidden; background-color: #e8f8ee; }
+.sheet-bg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; align-items: center; padding-top: 40rpx; }
+.sheet-bg-t { font-size: 26rpx; color: #07c160; }
+.sheet { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+.sheet-panel { height: 100%; background-color: #ffffff; border-top-left-radius: 24rpx; border-top-right-radius: 24rpx;
+  align-items: center; box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.12); }
+.sheet-bar { width: 80rpx; height: 8rpx; margin: 16rpx 0; border-radius: 4rpx; background-color: #dddddd; }
+.sheet-t { font-size: 26rpx; color: #333333; }
+
+.anim-row { flex-direction: row; align-items: center; margin-top: 16rpx; }
+.box { width: 96rpx; height: 96rpx; border-radius: 12rpx; background-color: #07c160; }
+.bar-bg { flex: 1; height: 24rpx; margin-left: 32rpx; border-radius: 12rpx; background-color: #eeeeee; }
+.bar { width: 0px; height: 24rpx; border-radius: 12rpx; background-color: #fa9d3b; }

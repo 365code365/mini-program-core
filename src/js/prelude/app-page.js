@@ -121,6 +121,9 @@
                     }
                 }
                 
+                // 路由事件、EventChannel、options、pageRouter、页面级的新方法（route-ext.js / page-ext.js）
+                if (typeof __decoratePage === 'function') __decoratePage(page);
+
                 // 入栈并置为当前页面
                 __pageStack.push(page);
                 __currentPage = page;

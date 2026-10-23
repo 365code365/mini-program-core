@@ -2,5 +2,24 @@
 <!--
   库本身不声明任何权限：小程序要联网时由**业务工程**声明 INTERNET，
   这样宿主能自己决定权限清单，也便于应用商店审核说明。
+  （相机权限同理：宿主没声明 CAMERA 时拍照走系统相机、不用申请；声明了 SDK 才替宿主申请。）
+
+  下面两项是 SDK 自带的选图 / 拍照 / 选文件（MiniProgramView.builtinHostApis）要的，AAR 合并进宿主清单：
+  - MiniMediaActivity：透明的代办 Activity，替 SDK 打开系统选择器、收结果（宿主不用转发 onActivityResult）；
+  - MiniFileProvider：把拍照的输出文件 / 要打开的文档按次授权给系统相机、别的应用（不依赖 androidx）。
 -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <activity
+            android:name="dev.minirender.MiniMediaActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <provider
+            android:name="dev.minirender.MiniFileProvider"
+            android:authorities="${applicationId}.minirender.sdkfiles"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+    </application>
+</manifest>

@@ -123,4 +123,37 @@ object MiniEngine {
     external fun nativeEval(handle: Long, code: String): String?
     /** 宿主承载的原生组件回传事件（`bind<name>`） */
     external fun nativeNativeViewEvent(handle: Long, key: String, name: String, detailJson: String?): Boolean
+    /** 宿主推事件给 `wx.onXxx`（`accelerometerChange` / `locationChange` / `networkStatusChange` …）；返回收到它的监听者个数 */
+    external fun nativeDispatchEvent(handle: Long, name: String, payloadJson: String?): Int
+
+    /**
+     * 同层渲染的 `<video>`（创建选项 `sameLayer: ["video"]`）：解出的一帧交给引擎画进页面，
+     * RGBA、`stride` 字节一行、[data] 是 direct ByteBuffer。**不要句柄、任何线程都可以调**
+     * （帧存在进程级的表里）；调完让引擎线程出一帧。Flutter 插件用它（GLES 从 SurfaceTexture 读回）
+     */
+    external fun nativeVideoFrameRgba(key: String, width: Int, height: Int, stride: Int, data: java.nio.ByteBuffer): Boolean
+
+    /**
+     * 同层渲染的通用组件（创建选项 `sameLayer` 里除 video 以外的标签，如 `map`）：宿主把控件画好的一帧
+     * （RGBA，direct ByteBuffer，尺寸按 `sameLayerViews` 事件的 `box`）交给引擎画进页面。不要句柄、任何线程都可以调；
+     * 调完让引擎线程出一帧。内容变了才交 —— 滚动不用交（画面在引擎画布里跟着页面走）
+     */
+    external fun nativeViewFrameRgba(key: String, width: Int, height: Int, stride: Int, data: java.nio.ByteBuffer): Boolean
+
+    /**
+     * 同上，YUV 4:2:0 三个平面（`ImageReader` 的 `YUV_420_888`，direct ByteBuffer），转 RGBA 在调用线程上做。
+     * 注意：很多机型的硬解码器交给 `ImageReader` 的缓冲 CPU 锁不上，`Image.getPlanes()` 会在系统里直接
+     * abort（一加 PLY110 上踩过），只在确定拿得到 CPU 可读的 YUV 时用（如 MediaCodec 的 ByteBuffer 输出）
+     */
+    external fun nativeVideoFrameYuv(
+        key: String,
+        width: Int,
+        height: Int,
+        y: java.nio.ByteBuffer,
+        yRowStride: Int,
+        u: java.nio.ByteBuffer,
+        v: java.nio.ByteBuffer,
+        uvRowStride: Int,
+        uvPixelStride: Int,
+    ): Boolean
 }

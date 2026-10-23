@@ -167,7 +167,14 @@ impl WxmlRenderer {
     ) -> bool {
         let Ok(l) = taffy.layout(n.taffy_node) else { return false };
         let sf = self.scale_factor;
-        let (x, y) = (origin.0 + l.location.x, origin.1 + l.location.y);
+        // fixed 子树的根：按覆盖层钉住它的原点算（视口坐标）。覆盖层还没画过这一版布局时退回正常流的位置
+        let pinned = (n.style.is_fixed && !in_fixed && self.fixed_origins.0 == self.layout_generation)
+            .then(|| self.fixed_origins.1.get(&n.taffy_node).copied())
+            .flatten();
+        let (x, y) = match pinned {
+            Some((bx, by)) => (bx + l.location.x, by + l.location.y),
+            None => (origin.0 + l.location.x, origin.1 + l.location.y),
+        };
         let fixed = in_fixed || n.style.is_fixed;
         if groups.iter().any(|g| complex_matches(g, n, chain)) {
             let rect = GeoRect::new(x / sf, y / sf, l.size.width / sf, l.size.height / sf);

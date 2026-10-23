@@ -95,10 +95,15 @@ impl MiniEngine {
     }
 
     pub(crate) fn update_renderers(&mut self) {
-        // 宿主承载的 `<video>`：引擎不解码不画（见 components::video）
-        crate::renderer::components::set_host_owns_video(
-            self.opts.native_components.iter().any(|t| t == "video"),
-        );
+        // 宿主承载的 `<video>`：引擎不解码不画（见 components::video）；
+        // 同层渲染的：宿主解码、引擎画（components::video::host_feed），与前者互斥、它优先
+        let overlay = self.opts.overlay_components();
+        crate::renderer::components::set_host_owns_video(overlay.iter().any(|t| t == "video"));
+        crate::renderer::components::host_feed::set_host_feeds_video(self.opts.same_layer_video());
+        // 同层渲染的 `<map>` 这类：换了渲染器，页面上有哪些要重新报（engine_host_views.rs）
+        crate::renderer::components::host_view::set_tags(self.opts.same_layer_views());
+        // 换了渲染器：页面上有哪些视频要重新报（engine_video_feed.rs）
+        self.video_feed.stale = true;
         let Some(page) = self.page_stack.last() else { return };
         // 屏高 = 页面窗口高（`100vh`、fixed 层的视口）：引擎画了导航栏时减掉它
         let mut r = WxmlRenderer::new_with_scale(
@@ -108,7 +113,7 @@ impl MiniEngine {
             self.dpr,
         );
         r.set_component_templates(page.component_templates.clone());
-        r.set_native_components(&self.opts.native_components);
+        r.set_native_components(&overlay);
         if let Some(t) = self.anim_time {
             r.set_animation_time(t);
         }

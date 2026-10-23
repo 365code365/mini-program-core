@@ -32,6 +32,7 @@ pub mod footprint;
 pub mod layer;
 pub mod pref;
 pub mod select;
+pub(crate) mod sheet_base;
 pub mod verdict;
 #[cfg(feature = "gpu")]
 pub mod gpu;

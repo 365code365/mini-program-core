@@ -108,6 +108,7 @@ impl JsBridge {
         self.register_network_functions().map_err(|e| format!("network: {}", e))?;
         self.register_host_functions().map_err(|e| format!("host: {}", e))?;
         super::bridge_io::register(&self.runtime.lock().unwrap(), self.event_queue.clone()).map_err(|e| format!("io: {}", e))?;
+        super::bridge_ext::register(&self.runtime.lock().unwrap(), self.storage.clone()).map_err(|e| format!("ext: {}", e))?;
         Ok(())
     }
     

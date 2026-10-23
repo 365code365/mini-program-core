@@ -48,5 +48,8 @@ impl MiniEngine {
             // 页面转场在走、引擎画的导航栏在转圈或还欠一次重画
             || self.route.active()
             || self.nav_wants_frame()
+            // 报给宿主的滚动速度还不是 0：再出一帧把「停了」报出去（native_motion.rs），
+            // 否则宿主按最后那个速度把视频框一直往前推
+            || self.events.motion.unsettled
     }
 }

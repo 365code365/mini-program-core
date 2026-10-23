@@ -76,29 +76,4 @@
                 return __syncOk(o, 'previewImage');
             };
 
-            // ---------- 要宿主才能做的能力：默认实现 ----------
-            // 登录、支付、扫码、定位、选图……引擎自己做不了。宿主在创建选项 `hostApis` 里点名的，
-            // __installHostApis 会把这里的默认实现换成真的（发 hostCall 给宿主）；没点名的就是下面这个：
-            // **立刻**走 fail（下一轮事件循环），errMsg 写明原因。
-            // 不再是 undefined：微信里这些 API 总是存在，框架包装层（uni.login → wx.login）拿到 undefined
-            // 会直接抛 TypeError；而一个马上失败的函数，页面自己的 fail 分支就能接住。
-            ['login', 'getUserProfile', 'getUserInfo', 'requestPayment', 'scanCode', 'getLocation', 'chooseLocation',
-             'chooseImage', 'chooseMedia', 'chooseVideo', 'chooseMessageFile', 'makePhoneCall', 'authorize',
-             // 相册写入、订阅消息、地址 / 位置 / 联系人、跳转其它小程序、设置页、文档预览：同样只有宿主能做
-             'saveImageToPhotosAlbum', 'saveVideoToPhotosAlbum', 'requestSubscribeMessage', 'chooseAddress', 'openLocation',
-             'navigateToMiniProgram', 'navigateBackMiniProgram', 'openSetting', 'openDocument', 'getShareInfo', 'chooseContact',
-             'addPhoneContact', 'checkSession', 'getWeRunData', 'chooseInvoice', 'openCustomerServiceChat', 'startSoterAuthentication']
-                .forEach(function(name) {
-                    if (typeof wx[name] === 'function') return;
-                    wx[name] = function(o) {
-                        o = o || {};
-                        var bad = { errMsg: name + ':fail 当前宿主未实现（宿主可在创建选项 hostApis 里接管）' };
-                        var promise;
-                        if (!o.success && !o.fail && !o.complete) {
-                            promise = new Promise(function(resolve, reject) { setTimeout(function() { reject(bad); }, 0); });
-                            return promise;
-                        }
-                        setTimeout(function() { o.fail && o.fail(bad); o.complete && o.complete(bad); }, 0);
-                    };
-                    wx[name].__default = true;
-                });
+            // 「要宿主才能做」的能力（登录、支付、扫码、定位、选图、蓝牙……）的默认实现在 host-capabilities.js

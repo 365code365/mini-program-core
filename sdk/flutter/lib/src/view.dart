@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' show PlatformDispatcher;
 
-import 'package:flutter/foundation.dart' show Factory, TargetPlatform, defaultTargetPlatform, listEquals;
+import 'package:flutter/foundation.dart' show Factory, TargetPlatform, defaultTargetPlatform;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart' show PlatformViewHitTestBehavior;
 import 'package:flutter/services.dart' show AndroidViewController, PlatformViewsService, StandardMessageCodec;
@@ -9,6 +9,8 @@ import 'package:flutter/widgets.dart';
 
 import 'controller.dart';
 import 'events.dart';
+import 'same_layer.dart';
+import 'native_layer.dart';
 import 'text_input.dart';
 
 /// 给宿主承载的原生组件（`video` / `map` / `web-view` …）造一个 Widget。
@@ -21,12 +23,14 @@ typedef MiniNativeViewBuilder = Widget? Function(
 
 /// 显示一个小程序。尺寸由外层约束决定（必须是有限的），首次布局后才真正创建引擎。
 ///
-/// - 画面走 `Texture`（不是平台视图）：Android 是 SurfaceProducer，iOS 是 CVPixelBuffer。
+/// - 画面：Android 默认画到引擎自己的 SurfaceView（平台视图，见 [MiniProgramController.androidSurfaceView]），
+///   iOS 与 `androidSurfaceView: false` 走 `Texture`（CVPixelBuffer / SurfaceProducer）。
 /// - 触摸只送**指针三段**、只认第一根手指，并且立刻赢下手势竞技场 —— 否则外层的
 ///   PageView / 侧滑返回会和小程序同时响应。
 /// - 原生组件按引擎报的位置盖在画面上，并按引擎报的遮挡裁掉被 picker 面板、弹窗、
 ///   Toast、fixed 元素、tabBar 盖住的部分（与微信同层渲染的层叠结果一致：面板在视频上面）。
-///   没被盖住的部分触摸归控件，被盖住的部分触摸归引擎。
+///   没被盖住的部分触摸归控件，被盖住的部分触摸归引擎。页面滚动时控件每帧按 vsync 推算位置，
+///   跟着页面走（native_layer.dart）。
 /// - 键盘弹起时**不改尺寸**，而是像微信的 `adjust-position` 那样把画面整体上移，
 ///   让聚焦的输入框露出来（放进 `Scaffold` 时请设 `resizeToAvoidBottomInset: false`，
 ///   否则键盘动画的每一帧都会让引擎重建一次布局）。
@@ -301,7 +305,11 @@ class _MiniProgramViewState extends State<MiniProgramView> with WidgetsBindingOb
                       child: ColoredBox(color: widget.navigationBarAreaColor ?? widget.backgroundColor),
                     ),
                   ),
-                if (widget.nativeViewBuilder != null) _nativeViews(),
+                if (widget.nativeViewBuilder != null)
+                  NativeViewLayer(controller: _c, builder: widget.nativeViewBuilder!),
+                // 同层渲染的组件（sameLayerViews）：离屏画成帧交给引擎，这里不占位置
+                if (widget.nativeViewBuilder != null)
+                  SameLayerHost(controller: _c, builder: widget.nativeViewBuilder!),
               ],
             ),
           ),
@@ -378,85 +386,4 @@ class _MiniProgramViewState extends State<MiniProgramView> with WidgetsBindingOb
       },
     );
   }
-
-  Widget _nativeViews() {
-    return ValueListenableBuilder<List<MiniNativeView>>(
-      valueListenable: _c.nativeViews,
-      builder: (context, views, _) => Stack(
-        children: [
-          for (final v in views)
-            if (widget.nativeViewBuilder!(context, v, _c) case final Widget child)
-              Positioned.fromRect(
-                rect: v.rect,
-                child: KeyedSubtree(key: ValueKey(v.key), child: _Occluded(view: v, child: child)),
-              ),
-        ],
-      ),
-    );
-  }
-}
-
-/// 按引擎报的遮挡摆原生组件：只在 `clip` 里、`holes` 之外画和收触摸，上面叠 `mask` 的黑色。
-///
-/// 引擎画面是一整块不透明纹理，控件只能摆在它上面；引擎自己画的 picker 面板、弹窗、
-/// fixed 元素本该盖住控件，所以由引擎算出被盖住的几何、这里裁掉 —— 裁掉的地方露出的
-/// 就是引擎画面里的那几层。
-///
-/// 三层结构**不随遮挡变**（ClipPath → IgnorePointer → DecoratedBox 一直都在）：
-/// 中间少一层，Flutter 就会把底下的控件当成新的重建，视频播放器被销毁、面板一关进度就没了。
-class _Occluded extends StatelessWidget {
-  const _Occluded({required this.view, required this.child});
-
-  final MiniNativeView view;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final v = view;
-    final origin = v.rect.topLeft;
-    final whole = v.holes.isEmpty && _near(v.clip, v.rect);
-    return ClipPath(
-      clipper: _OcclusionClipper(v.clip.shift(-origin), [for (final h in v.holes) h.shift(-origin)]),
-      // 没被挡就不建裁剪层；命中测试不看 clipBehavior，照样按 clipper 判
-      clipBehavior: whole ? Clip.none : Clip.hardEdge,
-      child: IgnorePointer(
-        // 遮罩盖着时触摸归引擎（点遮罩关面板），不归视频
-        ignoring: v.mask > 0,
-        child: DecoratedBox(
-          position: DecorationPosition.foreground,
-          decoration: BoxDecoration(color: Color.fromRGBO(0, 0, 0, v.mask.clamp(0.0, 1.0))),
-          child: child,
-        ),
-      ),
-    );
-  }
-
-  static bool _near(Rect a, Rect b) =>
-      (a.left - b.left).abs() < 0.01 &&
-      (a.top - b.top).abs() < 0.01 &&
-      (a.right - b.right).abs() < 0.01 &&
-      (a.bottom - b.bottom).abs() < 0.01;
-}
-
-/// 露出的部分 = `clip` 减去 `holes`（控件本地坐标）
-class _OcclusionClipper extends CustomClipper<Path> {
-  _OcclusionClipper(this.clip, this.holes);
-
-  final Rect clip;
-  final List<Rect> holes;
-
-  @override
-  Path getClip(Size size) {
-    final keep = Path()..addRect(clip);
-    if (holes.isEmpty || clip.isEmpty) return keep;
-    final cut = Path();
-    for (final h in holes) {
-      cut.addRect(h);
-    }
-    return Path.combine(PathOperation.difference, keep, cut);
-  }
-
-  @override
-  bool shouldReclip(_OcclusionClipper oldClipper) =>
-      oldClipper.clip != clip || !listEquals(oldClipper.holes, holes);
 }

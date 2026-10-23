@@ -1,0 +1,10 @@
+/* 与微信 <audio controls> 的默认外观一致：左边封面 + 播放键，中间曲名 / 作者，右边时间 */
+.au { display: flex; flex-direction: row; align-items: center; height: 65px; background-color: #fcfcfc; border: 1px solid #e0e0e0; border-radius: 3px; overflow: hidden; }
+.au-poster { position: relative; width: 65px; height: 65px; background-color: #e6e6e6; }
+.au-img { width: 65px; height: 65px; }
+.au-btn { position: absolute; left: 20px; top: 20px; width: 24px; height: 24px; border-radius: 12px; background-color: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; }
+.au-btn-t { font-size: 11px; color: #ffffff; }
+.au-info { flex: 1; display: flex; flex-direction: column; padding: 0 12px; }
+.au-name { font-size: 14px; color: #353535; }
+.au-author { margin-top: 4px; font-size: 12px; color: #888888; }
+.au-time { margin-right: 12px; font-size: 13px; color: #888888; }

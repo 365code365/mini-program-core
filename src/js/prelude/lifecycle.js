@@ -2,8 +2,12 @@
             // App 级生命周期：onLaunch/onShow/onHide/onError/onPageNotFound/
             //                 onUnhandledRejection/onThemeChange
             function __dispatchApp(name, arg) {
-                // `App({onError})` 之外，还有用 `wx.onError(cb)` 注册的监听者（微信里两者并存）
-                var extra = __appHooks[name];
+                // `App({onError})` 之外，还有用 `wx.onError(cb)` 注册的监听者（微信里两者并存）。
+                // App 的 onShow / onHide 对应的监听是 `wx.onAppShow` / `wx.onAppHide`（键名不同）——
+                // 从前按 name 直接取 `__appHooks.onShow`，那两个监听从来没被调过
+                var hookKey = name === 'onShow' ? 'onAppShow' : name === 'onHide' ? 'onAppHide' : name;
+                if (name === 'onShow' && arg === undefined && typeof wx.getEnterOptionsSync === 'function') arg = wx.getEnterOptionsSync();
+                var extra = __appHooks[hookKey];
                 if (extra) {
                     for (var i = 0; i < extra.length; i++) {
                         try { extra[i](arg); }

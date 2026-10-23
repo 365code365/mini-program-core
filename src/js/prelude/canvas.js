@@ -5,6 +5,7 @@
             }
             function __oldStyleCmd(which, v) {
                 if (v && typeof v === 'object' && v.__grad) return { type: 'set' + which + 'Gradient', kind: v.__grad.kind, args: v.__grad.args, stops: v.__stops };
+                if (v && typeof v === 'object' && v.__pattern) return { type: 'set' + which + 'Pattern', src: v.__pattern.src, repetition: v.__pattern.repetition };
                 return { type: 'set' + which + 'Style', color: v };
             }
             var __canvasContexts = {};
@@ -23,7 +24,7 @@
                     setLineWidth: function(width) { this._commands.push({ type: 'setLineWidth', width: width }); return this; },
                     setLineCap: function(cap) { this._commands.push({ type: 'setLineCap', cap: cap }); return this; },
                     setLineJoin: function(join) { this._commands.push({ type: 'setLineJoin', join: join }); return this; },
-                    setFontSize: function(size) { this._commands.push({ type: 'setFontSize', size: size }); return this; },
+                    setFontSize: function(size) { this._fontSize = Number(size) || 10; this._commands.push({ type: 'setFontSize', size: size }); return this; },
                     setTextAlign: function(align) { this._commands.push({ type: 'setTextAlign', align: align }); return this; },
                     setTextBaseline: function(baseline) { this._commands.push({ type: 'setTextBaseline', baseline: baseline }); return this; },
                     setGlobalAlpha: function(alpha) { this._commands.push({ type: 'setGlobalAlpha', alpha: alpha }); return this; },
@@ -52,6 +53,20 @@
                     translate: function(x, y) { this._commands.push({ type: 'translate', x: x, y: y }); return this; },
                     rotate: function(angle) { this._commands.push({ type: 'rotate', angle: angle }); return this; },
                     scale: function(sx, sy) { this._commands.push({ type: 'scale', scaleX: sx, scaleY: sy }); return this; },
+                    // 与 type="2d" 同一套指令（光栅器 canvas/commands.rs）
+                    rect: function(x, y, w, h) { this._commands.push({ type: 'rect', x: x, y: y, width: w, height: h }); return this; },
+                    arcTo: function(x1, y1, x2, y2, r) { this._commands.push({ type: 'arcTo', x1: x1, y1: y1, x2: x2, y2: y2, r: r }); return this; },
+                    clip: function() { this._commands.push({ type: 'clip' }); return this; },
+                    setLineDash: function(pattern, offset) { this._commands.push({ type: 'setLineDash', segments: (pattern || []).map(Number), offset: Number(offset) || 0 }); return this; },
+                    setMiterLimit: function(v) { this._commands.push({ type: 'setMiterLimit', limit: Number(v) }); return this; },
+                    // 旧接口的 setTransform 不受 dpr 预缩放之外的东西影响（pre 按 1）
+                    setTransform: function(a, b, c, d, e, f) { this._commands.push({ type: 'setTransform', a: a, b: b, c: c, d: d, e: e, f: f, pre: [1, 1] }); return this; },
+                    transform: function(a, b, c, d, e, f) { this._commands.push({ type: 'transform', a: a, b: b, c: c, d: d, e: e, f: f }); return this; },
+                    // createPattern(image, repetition)：image 是图片路径；setFillStyle(pattern) 时发 setFillPattern
+                    createPattern: function(image, repetition) { return { __pattern: { src: String(image && image.src || image || ''), repetition: repetition || 'repeat' } }; },
+                    // 同步量宽：按当前字号（setFontSize / font），与画出来的字同一套字体度量
+                    measureText: function(text) { return { width: Number(__native_measure_text(String(this._fontSize || 10), String(text == null ? '' : text))) }; },
+                    setFont: function(f) { var m = /(\d+(?:\.\d+)?)px/.exec(String(f || '')); if (m) { this._fontSize = Number(m[1]); this._commands.push({ type: 'setFontSize', size: this._fontSize }); } return this; },
                     draw: function(reserve, callback) {
                         if (typeof __native_canvas_draw === 'function') {
                             __native_canvas_draw(this._canvasId, JSON.stringify(this._commands));

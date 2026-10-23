@@ -169,7 +169,16 @@ pub fn handle_keyboard_event(
         match action {
             keyboard::DefaultKeyAction::Exit => exit_requested = true,
             keyboard::DefaultKeyAction::NavigateBack => {
-                pending_nav = Some(NavigationRequest::NavigateBack);
+                // 宿主发起的返回先问逻辑层（返回询问 / page-container 先关），与 SDK 的 MiniEngine::back 同一个入口
+                let intercepted = app
+                    .eval("typeof __interceptBack==='function'&&__interceptBack()?1:0")
+                    .map(|s| s.trim() == "1")
+                    .unwrap_or(false);
+                if intercepted {
+                    needs_redraw = true;
+                } else {
+                    pending_nav = Some(NavigationRequest::NavigateBack);
+                }
             }
             keyboard::DefaultKeyAction::BlurInput => {
                 if let Some(result) = interaction.blur_input() {

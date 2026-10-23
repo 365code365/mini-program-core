@@ -19,7 +19,8 @@ pub(super) fn map_tag(node: &WxmlNode) -> (&'static str, String, bool) {
             ("div", style.to_string(), false)
         }
         "text" => ("span", String::new(), false),
-        "image" => {
+        // cover-image 在原生端按 image 画（registry），H5 同样是 <img>
+        "image" | "cover-image" => {
             let mode = node.get_attr("mode").unwrap_or("scaleToFill");
             let fit = match mode {
                 "aspectFit" => "object-fit:contain",
@@ -125,7 +126,7 @@ pub(super) fn build_open_tag(node: &WxmlNode) -> (String, &'static str, bool) {
 
     // 元素特有属性
     match node.tag_name.as_str() {
-        "image" => {
+        "image" | "cover-image" => {
             if let Some(s) = node.get_attr("src") {
                 attrs.push_str(&format!(" src=\"{}\"", escape_attr(s)));
             }

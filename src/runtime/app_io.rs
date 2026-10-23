@@ -11,8 +11,16 @@ impl MiniApp {
         crate::audio_ctx::tick();
         let sockets = crate::websocket::take_events();
         let audio = crate::audio_ctx::take_events();
-        if sockets.is_empty() && audio.is_empty() {
+        let raw = crate::net_socket::take_events();
+        if sockets.is_empty() && audio.is_empty() && raw.is_empty() {
             return;
+        }
+        // TCP / UDP（wx.createTCPSocket / createUDPSocket）
+        for (id, (ty, json)) in raw {
+            let js = format!("__resolveNetSocket({id}, {}, {})", serde_json::Value::String(ty.into()), serde_json::Value::String(json));
+            if let Err(e) = self.eval(&js) {
+                eprintln!("⚠️  TCP / UDP 回调执行失败 (id={id}): {e}");
+            }
         }
         for (id, ev) in sockets {
             let (ty, json) = ev.to_js();
@@ -33,6 +41,6 @@ impl MiniApp {
 
     /// 有连接开着、有音频在播 / 在加载：宿主据此续帧（与「有请求在飞」同一个判据）
     pub(super) fn has_pending_io(&self) -> bool {
-        crate::websocket::has_pending() || crate::audio_ctx::has_pending()
+        crate::websocket::has_pending() || crate::audio_ctx::has_pending() || crate::net_socket::has_pending()
     }
 }

@@ -163,6 +163,8 @@ struct MiniAppWindow {
     capsule: app_window::capsule_host::DesktopCapsule,
     /// 被盖住的页与切走的 tab 页留着的视图（与 SDK 同一份 `host::page_keep`，见 page_host.rs）
     keep: mini_render::host::page_keep::Keep,
+    /// 桌面自己接住的 hostCall：选图 / 选文件 / 存相册（见 app_window::host_calls）
+    host_calls: app_window::host_calls::HostCalls,
 }
 
 impl MiniAppWindow {
@@ -176,6 +178,8 @@ impl MiniAppWindow {
         
         let mut app = MiniApp::new(LOGICAL_WIDTH, LOGICAL_HEIGHT)?;
         app.init()?;
+        // 桌面自己接的宿主能力（文件对话框）：要在 app.js 执行之前装进 wx（与 SDK 的 hostApis 同一时机）
+        app.install_host_apis(&app_window::host_calls::desktop_host_apis());
         
         // 先把小程序目录里所有 .js 注册成 CommonJS 模块，`require('./x.js')` 才解析得到。
         // uni-app / TS 编译出来的小程序会 require 一个几百 KB 的 vendor 包，
@@ -290,6 +294,7 @@ impl MiniAppWindow {
             gpu: Default::default(),
             capsule: app_window::capsule_host::DesktopCapsule::new(),
             keep: Default::default(),
+            host_calls: Default::default(),
         };
         
         window.navigate_to(&first_page, HashMap::new())?;

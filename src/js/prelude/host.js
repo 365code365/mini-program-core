@@ -52,27 +52,68 @@
 
             var __hostCallSeq = 0;
             var __hostCallTasks = {};
+            // 某个宿主 API 可选的两步（host-media.js 填）：
+            // - prepare(args, go, fail)：发 hostCall **之前** —— 按官方默认值补参数、先弹操作菜单问来源；
+            //   准备好了调 go(args)，不发了调 fail(errMsg)（走 fail 回调，宿主那边什么都收不到）
+            // - finish(res, args)：success **之前** —— 回包按官方形状补齐，返回新的 res
+            var __hostCallHooks = {};
+
+            // 宿主点名过的 API 名（含 `MapContext.getCenterLocation` 这种「对象方法」，见 __hostInvoke）
+            var __hostApiSet = {};
+
+            // 发一次 hostCall：options 里的回调留在这边，其余字段作为 args 交给宿主
+            function __hostCall(name, options) {
+                options = options || {};
+                var id = ++__hostCallSeq;
+                // 回调不进 args（宿主那边是 JSON，函数传不过去）
+                var args = {};
+                for (var k in options) {
+                    if (options.hasOwnProperty(k) && typeof options[k] !== 'function') args[k] = options[k];
+                }
+                var task = { name: name, args: args, success: options.success, fail: options.fail, complete: options.complete };
+                var promise;
+                if (!options.success && !options.fail && !options.complete) {
+                    promise = new Promise(function(resolve, reject) { task.resolve = resolve; task.reject = reject; });
+                }
+                __hostCallTasks[id] = task;
+                var send = function(a) {
+                    task.args = a;
+                    __emitHostEvent({ type: 'hostCall', id: id, api: name, args: a });
+                };
+                var hook = __hostCallHooks[name];
+                if (hook && hook.prepare) {
+                    // 失败也走下一轮事件循环：与微信一样，回调不在调用栈里同步发生
+                    var fail = function(errMsg) {
+                        setTimeout(function() { __resolveHostCall(id, false, JSON.stringify({ errMsg: errMsg })); }, 0);
+                    };
+                    try { hook.prepare(args, send, fail); } catch (e) { console.error(e); send(args); }
+                } else {
+                    send(args);
+                }
+                return promise;
+            }
+
+            // 「要宿主才能做」的那一类：宿主点名了就交给宿主，没点名就**立刻 fail**（下一轮事件循环），
+            // errMsg 写明原因。对象方法（`MapContext.getCenterLocation`、`NFCAdapter.startDiscovery`）也走这里，
+            // 宿主在 hostApis 里点的就是这个带点的名字
+            function __hostInvoke(name, options) {
+                if (__hostApiSet[name]) return __hostCall(name, options);
+                options = options || {};
+                var shown = name.indexOf('.') > 0 ? name.slice(name.indexOf('.') + 1) : name;
+                var bad = { errMsg: shown + ':fail 当前宿主未实现（宿主可在创建选项 hostApis 里接管 ' + name + '）' };
+                if (!options.success && !options.fail && !options.complete) {
+                    return new Promise(function(resolve, reject) { setTimeout(function() { reject(bad); }, 0); });
+                }
+                setTimeout(function() { options.fail && options.fail(bad); options.complete && options.complete(bad); }, 0);
+            }
 
             function __installHostApis(names) {
                 (names || []).forEach(function(name) {
                     if (typeof name !== 'string' || !name || name.indexOf('__') === 0) return;
-                    wx[name] = function(options) {
-                        options = options || {};
-                        var id = ++__hostCallSeq;
-                        // 回调不进 args（宿主那边是 JSON，函数传不过去）
-                        var args = {};
-                        for (var k in options) {
-                            if (options.hasOwnProperty(k) && typeof options[k] !== 'function') args[k] = options[k];
-                        }
-                        var task = { name: name, success: options.success, fail: options.fail, complete: options.complete };
-                        var promise;
-                        if (!options.success && !options.fail && !options.complete) {
-                            promise = new Promise(function(resolve, reject) { task.resolve = resolve; task.reject = reject; });
-                        }
-                        __hostCallTasks[id] = task;
-                        __emitHostEvent({ type: 'hostCall', id: id, api: name, args: args });
-                        return promise;
-                    };
+                    __hostApiSet[name] = true;
+                    // 带点的是对象方法，由对应的对象自己经 __hostInvoke 调，不往 wx 上挂
+                    if (name.indexOf('.') >= 0) return;
+                    wx[name] = function(options) { return __hostCall(name, options); };
                 });
             }
 
@@ -85,6 +126,10 @@
                 try { res = JSON.parse(resultJson || '{}'); } catch (e) { res = { data: resultJson }; }
                 if (res === null || typeof res !== 'object' || Array.isArray(res)) res = { data: res };
                 if (!res.errMsg) res.errMsg = task.name + (ok ? ':ok' : ':fail');
+                var hook = __hostCallHooks[task.name];
+                if (ok && hook && hook.finish) {
+                    try { res = hook.finish(res, task.args || {}) || res; } catch (e) { console.error(e); }
+                }
                 if (ok) {
                     task.success && task.success(res);
                     task.resolve && task.resolve(res);

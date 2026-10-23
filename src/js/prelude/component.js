@@ -210,6 +210,8 @@
                     createIntersectionObserver: function(opt) { return wx.createIntersectionObserver(this, opt); }
                 };
                 if (meta) { __compApplyMeta(instance, meta); }
+                // getPageId / router / pageRouter / animate / createMediaQueryObserver …（page-ext.js）
+                if (typeof __decorateComponent === 'function') { __decorateComponent(instance); }
                 
                 for (var mk in merged.methods) {
                     if (merged.methods.hasOwnProperty(mk)) { instance[mk] = merged.methods[mk].bind(instance); }

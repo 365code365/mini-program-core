@@ -33,6 +33,8 @@ mod scope;
 mod wxs_scope;
 /// 展开时记下的绑定信息（`refresher-triggered` 绑定了哪些字段）
 mod bindings;
+/// `this.animate` / applyAnimatedStyle 按选择器写给节点的样式（data 的 `__nodeStyles`）
+mod node_styles;
 pub use bindings::{binding_roots, REFRESHER_KEYS_ATTR};
 #[cfg(test)]
 mod tests;

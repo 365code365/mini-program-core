@@ -1,0 +1,3 @@
+<view wx:if="{{mode === 'catch'}}" class="{{uid}}" style="{{pos}}" bindtouchstart="_ts" catchtouchmove="_tm" bindtouchend="_te" bindtouchcancel="_te"><slot></slot></view>
+<view wx:elif="{{mode === 'bind'}}" class="{{uid}}" style="{{pos}}" bindtouchstart="_ts" bindtouchmove="_tm" bindtouchend="_te" bindtouchcancel="_te"><slot></slot></view>
+<view wx:else class="{{uid}}" style="{{pos}}"><slot></slot></view>

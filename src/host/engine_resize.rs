@@ -54,7 +54,14 @@ impl MiniEngine {
     }
 
     /// 改安全区（逻辑像素）。宿主在拿到系统的 insets 后、以及转屏后调用。
+    ///
+    /// 视频全屏时宿主收起状态栏报来的新值先按住（engine_video_feed.rs）：用了要整页重排样式，退出又排回来
     pub fn set_safe_area(&mut self, insets: SafeAreaInsets) -> bool {
+        if crate::renderer::components::fullscreen_video().is_some() {
+            self.video_feed.held_safe_area = (self.opts.safe_area != Some(insets)).then_some(insets);
+            return false;
+        }
+        self.video_feed.held_safe_area = None;
         if self.opts.safe_area == Some(insets) {
             return false;
         }

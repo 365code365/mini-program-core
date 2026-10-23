@@ -5,6 +5,7 @@
 
 /// 橡皮筋、回弹弹簧、惯性与撞边界
 mod spring;
+pub use spring::INERTIA_DECAY_PER_60HZ_FRAME;
 /// 滚轮 / 触控板
 mod wheel;
 /// 下拉刷新与触底

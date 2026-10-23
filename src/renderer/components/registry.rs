@@ -183,6 +183,30 @@ pub const TAGS: &[TagSpec] = &[
         draw: |d| ImageComponent::draw(d.node, d.canvas, d.text, d.x, d.y, d.w, d.h, d.sf),
     },
     TagSpec {
+        // 微信里 cover-image 是「能盖在原生组件上的图片」；这里没有原生层可盖，按 image 画。
+        // 建完把渲染节点的标签改成 image：图片加载事件、动图帧这些按 `tag == "image"` 认节点
+        // （样式匹配在 build 里已经按 cover-image 做完了，`cover-image { }` 选择器照样生效）
+        tags: &["cover-image"],
+        profile: "image",
+        leaf: true,
+        stateful: false,
+        clips: false,
+        base_style_only: false,
+        build: |n, c| ImageComponent::build(n, c).map(|mut r| { r.tag = "image".to_string(); r }),
+        draw: |d| ImageComponent::draw(d.node, d.canvas, d.text, d.x, d.y, d.w, d.h, d.sf),
+    },
+    TagSpec {
+        // Skyline 的 grid-view：对齐网格 / 瀑布流（见 components::grid_view）
+        tags: &["grid-view"],
+        profile: "view",
+        leaf: false,
+        stateful: false,
+        clips: false,
+        base_style_only: false,
+        build: |n, c| grid_view::build(n, c),
+        draw: |d| ViewComponent::draw(d.node, d.canvas, d.x, d.y, d.w, d.h, d.sf),
+    },
+    TagSpec {
         tags: &["video"],
         profile: "video",
         leaf: true,
@@ -366,8 +390,9 @@ mod tests {
 
     #[test]
     fn 表里覆盖了文档声称的标签数() {
-        // README / 支持范围表写的是 24 个标签；这里多出的两个是内部用的
+        // README / 支持范围表写的是 26 个标签；这里多出的两个是内部用的
         // `#text`（裸文本节点）与 `""`（模板展开的匿名容器）。
-        assert_eq!(registered_tag_count(), 26, "标签数变了就同步一下文档");
+        // （page-container / audio / editor 这些是 WXML 内置组件，见 builtin_components，不在这张表里）
+        assert_eq!(registered_tag_count(), 28, "标签数变了就同步一下文档");
     }
 }

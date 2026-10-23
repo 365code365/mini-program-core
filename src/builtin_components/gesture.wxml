@@ -1,0 +1,1 @@
+<view class="gh" bindtouchstart="_ts" __MOVE__="_tm" bindtouchend="_te" bindtouchcancel="_tc"><slot></slot></view>

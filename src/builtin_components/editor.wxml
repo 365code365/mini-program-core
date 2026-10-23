@@ -1,0 +1,2 @@
+<textarea class="ed-ta" value="{{text}}" placeholder="{{placeholder}}" disabled="{{readOnly}}" maxlength="-1"
+          bindinput="_in" bindfocus="_focus" bindblur="_blur"></textarea>

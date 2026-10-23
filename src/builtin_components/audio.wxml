@@ -1,0 +1,11 @@
+<view wx:if="{{controls}}" class="au">
+  <view class="au-poster" bindtap="_toggle">
+    <image wx:if="{{poster}}" class="au-img" src="{{poster}}" mode="aspectFill"></image>
+    <view class="au-btn"><text class="au-btn-t">{{playing ? '❚❚' : '▶'}}</text></view>
+  </view>
+  <view class="au-info">
+    <text class="au-name">{{name}}</text>
+    <text class="au-author">{{author}}</text>
+  </view>
+  <text class="au-time">{{timeText}}</text>
+</view>

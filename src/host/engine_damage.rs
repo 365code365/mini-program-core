@@ -219,6 +219,10 @@ impl MiniEngine {
     /// `page_anim` / `tabbar_anim`：上一次绘制时页面 / tabBar 里还有 CSS 动画在跑；
     /// `media`：swiper 翻页的滑动过程、引擎自己画的视频（这两样只能整帧）。
     pub(super) fn redraw_as_needed(&mut self, tabbar_anim: bool, media: bool, scroll_moved: bool) -> bool {
+        // 视频全屏：页面这几层看不见，留到退出全屏再画（engine_video_feed.rs）
+        if let Some(produced) = self.fullscreen_frame() {
+            return produced;
+        }
         let compose_dirty = std::mem::take(&mut self.dmg.compose_dirty);
         let recompose = scroll_moved || compose_dirty || self.present_pending;
         let (kind, scope) = if self.dmg.no_damage {

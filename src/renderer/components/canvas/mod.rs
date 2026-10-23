@@ -48,6 +48,13 @@ pub struct Canvas2DContext {
     state_stack: Vec<ContextState>,
     /// 渐变 / 图案源、阴影、合成模式（`fx2d`）
     fx: fx2d::Fx,
+    /// 裁剪区覆盖率蒙版（设备像素，`clip()`；见 clipdash.rs）
+    clip: Option<Arc<Vec<u8>>>,
+    /// 虚线模式（用户坐标长度，已按 HTML 规则把奇数个复制成偶数个）与起点偏移
+    line_dash: Vec<f32>,
+    dash_offset: f32,
+    /// 只记不用：光栅器的斜接没有长度上限
+    miter_limit: f32,
 }
 
 /// Canvas 文本渲染用的全局字体（懒加载系统字体）
@@ -91,9 +98,15 @@ struct ContextState {
     global_alpha: f32,
     transform: [f32; 6],
     fx: fx2d::Fx,
+    clip: Option<Arc<Vec<u8>>>,
+    line_dash: Vec<f32>,
+    dash_offset: f32,
+    miter_limit: f32,
 }
 
 // ── `Canvas2DContext` 的方法按职责分片（都是 `impl Canvas2DContext`）──
+/// 路径裁剪、虚线、miterLimit
+mod clipdash;
 /// 上下文状态、变换、样式
 mod state;
 /// 基本图形与图片

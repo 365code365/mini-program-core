@@ -95,27 +95,40 @@
                 };
             };
 
-            // 录音要麦克风与系统权限，属于「要宿主才能做」的能力：管理器总是存在，
-            // start() 时以 onError 告知（与 system.js 里默认 fail 的那批同一个原则）
+            // 录音要麦克风与系统权限，属于「要宿主才能做」的能力：管理器总是存在。
+            // start / pause / resume / stop 是 hostCall `RecorderManager.start` 等（宿主在 hostApis 里点名这几个带点的名字），
+            // 宿主回 ok 就发 onStart / onPause / onResume，stop 的回包（`{tempFilePath: "file://…", duration, fileSize}`，
+            // 文件由引擎导入 wxfile://tmp）原样交给 onStop；没点名时 onError。
+            // 分片与打断由宿主推事件：`recorderFrameRecorded {frameBuffer(base64), isLastFrame}`、
+            // `recorderInterruptionBegin` / `recorderInterruptionEnd`、`recorderError {errMsg}`
             var __recorder = null;
             wx.getRecorderManager = function() {
                 if (__recorder) return __recorder;
                 var ls = {};
                 var r = {};
+                var fire = function(N, res) { (ls[N] || []).slice().forEach(function(cb) { try { cb(res || {}); } catch (e) { console.error(e); } }); };
                 ['Start', 'Stop', 'Pause', 'Resume', 'Error', 'FrameRecorded', 'InterruptionBegin', 'InterruptionEnd'].forEach(function(N) {
                     ls[N] = [];
                     r['on' + N] = function(cb) { if (typeof cb === 'function') ls[N].push(cb); };
+                    // 宿主推的事件同样送到这里
+                    wx['__onRecorder' + N] = function(p) {
+                        if (N === 'FrameRecorded' && p && typeof p.frameBuffer === 'string') p.frameBuffer = __b64decode(p.frameBuffer);
+                        fire(N, p);
+                    };
                 });
-                var fail = function(op) {
-                    setTimeout(function() {
-                        var res = { errMsg: 'operateRecorder:fail ' + op + ' 当前宿主未实现录音' };
-                        ls.Error.slice().forEach(function(cb) { cb(res); });
-                    }, 0);
+                var op = function(name, ev) {
+                    return function(opt) {
+                        var args = {};
+                        for (var k in (opt || {})) if (typeof opt[k] !== 'function') args[k] = opt[k];
+                        args.success = function(res) { fire(ev, res); };
+                        args.fail = function(res) { fire('Error', { errMsg: 'operateRecorder:fail ' + name + ' ' + String(res.errMsg || '').replace(/^[^:]*:fail\s*/, '') }); };
+                        __hostInvoke('RecorderManager.' + name, args);
+                    };
                 };
-                r.start = function() { fail('start'); };
-                r.pause = function() { fail('pause'); };
-                r.resume = function() { fail('resume'); };
-                r.stop = function() { fail('stop'); };
+                r.start = op('start', 'Start');
+                r.pause = op('pause', 'Pause');
+                r.resume = op('resume', 'Resume');
+                r.stop = op('stop', 'Stop');
                 __recorder = r;
                 return r;
             };

@@ -1,0 +1,82 @@
+<page-meta background-text-style="dark">
+  <navigation-bar title="{{navTitle}}"></navigation-bar>
+</page-meta>
+
+<view class="card">
+  <text class="title">page-container</text>
+  <text class="desc">页面里的「假页」弹层：弹着时按返回键 / 导航栏返回只会先关它，不离开页面。</text>
+  <view class="btns">
+    <view class="btn-s" data-p="bottom" bindtap="openPc">底部弹出</view>
+    <view class="btn-s" data-p="center" bindtap="openPc">居中弹出</view>
+    <view class="btn-s" data-p="right" bindtap="openPc">右侧弹出</view>
+  </view>
+  <view class="result"><text>{{pcText}}</text></view>
+</view>
+
+<page-container show="{{pcShow}}" position="{{pcPos}}" round bind:clickoverlay="closePc"
+                bind:enter="onPcEnter" bind:afterleave="onPcLeave">
+  <view class="pc-body {{pcPos === 'right' ? 'pc-body-right' : ''}}">
+    <text class="pc-title">page-container（{{pcPos}}）</text>
+    <text class="pc-desc">点遮罩、点按钮、按返回键都会关掉它。</text>
+    <view class="btn" bindtap="closePc">关闭</view>
+  </view>
+</page-container>
+
+<view class="card">
+  <text class="title">root-portal</text>
+  <text class="desc">子树脱离页面、相对窗口定位（像 position: fixed）；enable 改成 false 就回到原处正常排版。</text>
+  <view class="btns">
+    <view class="btn-s" bindtap="togglePortal">{{portal ? '收回原处' : '移到窗口顶部'}}</view>
+  </view>
+  <root-portal enable="{{portal}}">
+    <view class="portal {{portal ? 'portal-on' : ''}}"><text class="portal-t">{{portal ? '我在 root-portal 里，盖在页面最上面' : '我在原处（root-portal enable=false）'}}</text></view>
+  </root-portal>
+</view>
+
+<view class="card">
+  <text class="title">match-media</text>
+  <text class="desc">窗口满足条件才渲染子节点（当前窗口宽 {{winW}}px）。</text>
+  <match-media max-width="399"><view class="mm mm-a"><text>max-width 399：手机竖屏看得到我</text></view></match-media>
+  <match-media min-width="400"><view class="mm mm-b"><text>min-width 400：宽屏 / 平板才看得到我</text></view></match-media>
+  <match-media orientation="portrait"><view class="mm mm-c"><text>orientation portrait：竖屏</text></view></match-media>
+</view>
+
+<view class="card">
+  <text class="title">audio（旧版组件）</text>
+  <text class="desc">src 是 JS 合成的 440Hz 正弦波（ArrayBuffer → wx.createBufferURL）。点封面播放 / 暂停，或用 wx.createAudioContext。</text>
+  <audio id="au" src="{{toneSrc}}" controls poster="/images/cake.jpg" name="正弦波 440Hz · 2 秒" author="createBufferURL 合成"
+         bindplay="onAuPlay" bindpause="onAuPause" bindended="onAuEnded" binderror="onAuError"></audio>
+  <view class="btns">
+    <view class="btn-o" bindtap="auPlay">createAudioContext.play</view>
+    <view class="btn-o" bindtap="auPause">pause</view>
+  </view>
+  <view class="result"><text>{{auText}}</text></view>
+</view>
+
+<view class="card">
+  <text class="title">editor</text>
+  <text class="desc">纯文本实现：EditorContext 的 setContents / getContents / insertText / clear 都生效（没有行内样式）。</text>
+  <editor id="ed" class="ed" placeholder="在这里输入…" bindready="onEdReady" bindinput="onEdInput"></editor>
+  <view class="btns">
+    <view class="btn-o" bindtap="edSet">setContents</view>
+    <view class="btn-o" bindtap="edInsert">insertText</view>
+    <view class="btn-o" bindtap="edGet">getContents</view>
+    <view class="btn-o" bindtap="edClear">clear</view>
+  </view>
+  <view class="result"><text>{{edText}}</text></view>
+</view>
+
+<view class="card">
+  <text class="title">原生组件占位 + cover-view / cover-image</text>
+  <text class="desc">宿主没接管的 map / camera / live-player 按官方默认尺寸画占位；cover-view、cover-image 盖在上面。</text>
+  <map class="ph-map">
+    <cover-view class="cv"><cover-image class="cv-img" src="/images/avatar.jpg"></cover-image><text class="cv-t">cover-view 盖在 map 上</text></cover-view>
+  </map>
+  <camera class="ph-cam"></camera>
+  <live-player class="ph-live"></live-player>
+</view>
+
+<view class="card">
+  <text class="title">span</text>
+  <span><text>span 里的</text><text class="span-b">几段文字</text><text>横着排、按基线对齐</text></span>
+</view>

@@ -97,9 +97,13 @@ impl TouchTracker {
         self.active.map(|a| a.pos)
     }
 
-    /// 触点标识（微信事件对象里的 `identifier`）
+    /// 触点标识（微信事件对象里的 `identifier`）。
+    ///
+    /// 抬起后（`finish` 之后）仍是刚结束那串的标识：宿主在 `finish` 之后才派发 touchend / tap，
+    /// 从前这时给 0 —— 事件对象里的 identifier 对不上 touchstart，按标识锁定的触摸目标
+    /// （`wxml_renderer/touch_capture.rs`）也就认不出这是同一串，touchend 按手指位置派到了别的节点上
     pub fn identifier(&self) -> u32 {
-        self.active.map(|a| a.id).unwrap_or(0)
+        self.active.map(|a| a.id).unwrap_or(self.next_id)
     }
 
     /// 手指按下
@@ -263,21 +267,39 @@ pub fn dispatch_to_js(
     }
     // `target` 是**真正被摸到的最内层节点**，与事件类型无关：
     // `touchend` 只绑在外层容器上时，target 仍应是里面那个列表项。
+    let innermost = renderer.innermost_binding_at(hit.0, hit.1, scope);
+    dispatch_chain_to_js(app, &chain, innermost, event_type, point, identifier, time_ms, detail)
+}
+
+/// 按排好的派发链逐条送给逻辑层（[`dispatch_to_js`] 的后半段）。触摸序列锁定了目标时
+/// （`touchmove` / `touchend` 归 touchstart 的节点，见 `wxml_renderer/touch_capture.rs`）直接走这里
+#[allow(clippy::too_many_arguments)]
+pub fn dispatch_chain_to_js(
+    app: &mut crate::runtime::MiniApp,
+    chain: &[crate::renderer::wxml_renderer::EventBinding],
+    innermost: Option<crate::renderer::wxml_renderer::EventBinding>,
+    event_type: &str,
+    point: (f32, f32),
+    identifier: u32,
+    time_ms: u64,
+    detail: serde_json::Value,
+) -> bool {
+    if chain.is_empty() {
+        return false;
+    }
     let empty = HashMap::new();
-    let innermost = renderer
-        .innermost_binding_at(hit.0, hit.1, scope)
-        .or_else(|| {
-            chain
-                .iter()
-                .find(|b| b.phase == crate::renderer::components::EventPhase::Bubble)
-                .or_else(|| chain.last())
-                .cloned()
-        });
+    let innermost = innermost.or_else(|| {
+        chain
+            .iter()
+            .find(|b| b.phase == crate::renderer::components::EventPhase::Bubble)
+            .or_else(|| chain.last())
+            .cloned()
+    });
     let (t_id, t_data, t_left, t_top) = match &innermost {
         Some(b) => (b.id.clone(), b.data.clone(), b.bounds.x, b.bounds.y),
         None => (String::new(), empty.clone(), 0.0, 0.0),
     };
-    for b in &chain {
+    for b in chain {
         let target = NodeInfo {
             id: &t_id,
             dataset: &t_data,

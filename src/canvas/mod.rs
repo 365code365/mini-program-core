@@ -133,6 +133,14 @@ fn zeroed_pixels(n: usize) -> Vec<Color> {
     }
 }
 
+/// 像素当成 `R,G,B,A` 字节写（整行拷贝 RGBA 源数据用）
+pub(crate) fn color_bytes_mut(px: &mut [Color]) -> &mut [u8] {
+    // SAFETY: `Color` 是 #[repr(C)] 的四个 u8，尺寸 4、对齐 1（`zeroed_pixels` 里的 const 断言守着），
+    // 没有填充字节；任何字节值都是合法的 `Color`，所以按字节写不会造出非法值；长度按 4 倍换算不越界，
+    // 生命周期与独占借用都跟着 `px`
+    unsafe { std::slice::from_raw_parts_mut(px.as_mut_ptr().cast::<u8>(), px.len() * 4) }
+}
+
 impl Canvas {
     pub fn new(width: u32, height: u32) -> Self {
         Self {

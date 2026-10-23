@@ -1,11 +1,40 @@
 <view class="card">
-  <text class="title">宿主能力（hostApis）</text>
-  <text class="desc">这些 API 引擎自己做不了。宿主在创建选项 hostApis 里点名的，调用会经 hostCall 事件交给 Flutter，回包走 success / fail；没点名的（这里的 chooseMedia、chooseLocation）立刻 fail，errMsg 说明原因。</text>
+  <text class="title">媒体与文件（插件自带）</text>
+  <text class="desc">选图、拍照、选视频、选文件、存相册、打开文档由插件内置，走系统自己的选择器。选到的文件以 wxfile://tmp/… 交给小程序：image、previewImage、getImageInfo、saveFile、uploadFile 直接能用。手机上两种来源都给时先弹「拍照 / 从手机相册选择」；桌面窗体开系统的文件对话框。</text>
   <view class="btns">
-    <view class="btn-s" wx:for="{{hostApis}}" wx:key="*this" data-api="{{item}}" bindtap="callHost">{{item}}</view>
-    <view class="btn-o" data-api="chooseMedia" bindtap="callHost">chooseMedia</view>
-    <view class="btn-o" data-api="chooseLocation" bindtap="callHost">chooseLocation</view>
+    <view class="btn-s" bindtap="chooseImage">chooseImage</view>
+    <view class="btn-s" bindtap="chooseMedia">chooseMedia</view>
+    <view class="btn-s" bindtap="chooseVideo">chooseVideo</view>
+    <view class="btn-s" bindtap="chooseFile">chooseMessageFile</view>
   </view>
+  <view class="thumbs" wx:if="{{media.length}}">
+    <view class="thumb" wx:for="{{media}}" wx:key="path" data-index="{{index}}" bindtap="preview">
+      <image wx:if="{{item.src}}" class="thumb-img" src="{{item.src}}" mode="aspectFill"></image>
+      <text class="thumb-tag">{{item.kind === 'video' ? '▶ ' : ''}}{{item.label}}</text>
+    </view>
+  </view>
+  <view class="btns" wx:if="{{media.length}}">
+    <view class="btn-o" bindtap="imageInfo">getImageInfo</view>
+    <view class="btn-o" bindtap="saveAlbum">saveImageToPhotosAlbum</view>
+    <view class="btn-o" wx:if="{{hasVideo}}" bindtap="saveVideo">saveVideoToPhotosAlbum</view>
+    <view class="btn-o" bindtap="persist">saveFile</view>
+  </view>
+  <view class="kv" wx:for="{{files}}" wx:key="path" data-index="{{index}}" bindtap="openDoc">
+    <text class="kv-k">{{item.name}}</text>
+    <text class="kv-v">{{item.label}} · openDocument</text>
+  </view>
+  <view class="result"><text>{{mediaResult}}</text></view>
+</view>
+
+<view class="card">
+  <text class="title">宿主能力（hostApis）</text>
+  <text class="desc">这些 API 引擎自己做不了。宿主在创建选项 hostApis 里点名的，调用经 hostCall 事件交给 Flutter，回包走 success / fail；没点名的立刻 fail，errMsg 写明原因。例子的 Flutter 侧给的是演示数据（支付、拨号、定位选点等会弹宿主自己的界面）；桌面窗体没接这一组，点了都是 fail。</text>
+  <block wx:for="{{hostGroups}}" wx:key="name" wx:for-item="g">
+    <text class="label">{{g.name}}</text>
+    <view class="btns">
+      <view class="btn-o" wx:for="{{g.apis}}" wx:key="*this" data-api="{{item}}" bindtap="callHost">{{item}}</view>
+    </view>
+  </block>
   <view class="result"><text>{{hostResult}}</text></view>
 </view>
 

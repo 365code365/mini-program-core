@@ -210,6 +210,9 @@ What remains is concentrated in bold glyph shapes and subpixel text positioning.
 
 **Implemented** (full table in [Feature coverage](#feature-coverage)):
 
+- **All 503 official `wx.*` APIs exist** (host-only ones fail immediately until the host claims them in `hostApis`),
+  plus the Skyline-era components: `grid-view`, `movable-view`, `page-container`, gesture handlers, `draggable-sheet`,
+  `this.animate`, `wx.worklet` and `applyAnimatedStyle` (see `doc/原生App集成指南.md` for the documented degradations);
 - **24 component tags** (containers / text and media / form controls, including `swiper`,
   `scroll-view`, `picker-view`);
 - **Events**: six binding prefixes (`bind` / `catch` / `capture-bind` / `capture-catch` /
@@ -379,7 +382,10 @@ Headless image output (for CI / regression):
 
 Common action flags (executed in the order written, repeatable): `--touch x,y` /
 `--swipe x1,y1,x2,y2` / `--drag px×frames` / `--type text` / `--key enter` / `--wheel` /
-`--wait seconds` / `--frames N`. Full list via `--help`. Diagnostic switches
+`--wait seconds` / `--frames N`. In the window, `wx.chooseImage` / `chooseMedia` / `chooseVideo` /
+`chooseMessageFile` open the system file dialog and saving to the album opens "Save As" (macOS / Windows);
+headless runs use `MINI_PICK_FILES=/a.png,/b.jpg` as the picked files and `MINI_SAVE_DIR=<dir>` as the
+save target, and fail with `:fail cancel` when neither is set. Full list via `--help`. Diagnostic switches
 (`MINI_SCROLL_LOG` / `MINI_FPS` / `MINI_FONT_LOG` / `MINI_SLIDER_LOG` …; the mobile SDK also has `MINI_DAMAGE_LOG`, one
 line per frame saying how much was repainted (with prepare / CPU compose / surface wait / upload size
 appended when the GPU presents), `MINI_NO_DAMAGE`, which turns partial repaint off
@@ -476,7 +482,7 @@ Feature flags:
 | `desktop` | ✅ | Desktop window (winit + softbuffer + clipboard) |
 | `audio` | ✅ | Built-in audio playback (sound for `<video>`) |
 | `h264` | ✅ | Built-in H.264 software decode. **Turn it off on mobile**: the system player's hardware decode is cheaper on battery, and openh264 does not build for the iOS simulator target |
-| `gpu` | ✅ | GPU compositing backend (wgpu), chosen at runtime, falls back to the CPU on any failure. The Android library ships with it (hand an `ANativeWindow` to `mr_app_attach_surface` for GPU presentation; the SDK's default preference is still cpu; `ANDROID_GPU=0` leaves it out). The iOS library leaves it out for now |
+| `gpu` | ✅ | GPU compositing backend (wgpu), chosen at runtime, falls back to the CPU on any failure. The Android and iOS libraries ship with it (the native views hand an `ANativeWindow` / `CAMetalLayer` to `mr_app_attach_surface` and prefer auto; the C ABI default preference is still cpu; `ANDROID_GPU=0` / `IOS_GPU=0` leave it out). The Flutter iOS plugin presents through a CVPixelBuffer texture and stays on the CPU |
 | `bindgen` | ❌ | Turn on when cross-compiling |
 
 ### 2. Package it as a dependency (recommended)
@@ -751,6 +757,7 @@ All documents under `doc/` are in Chinese.
 | [`doc/示例与调试.md`](doc/示例与调试.md) | Sample mini-programs, each `examples/` target, browser preview, compiling to HTML, video/Canvas, Rust/C/mobile code samples |
 | [`doc/场景画廊.md`](doc/场景画廊.md) | 65 real renders (also the regression baselines) and how the assets are generated |
 | [`doc/踩坑记录.md`](doc/踩坑记录.md) | 13 classes of "what was once wrong": symptom → root cause → current approach → regression criterion |
+| [`doc/滑动顿挫避坑清单.md`](doc/滑动顿挫避坑清单.md) | On-device scroll jank ("repeated frames on screen"): the criterion, pitfalls in host presentation / engine invalidation / measurement tooling, current numbers for the Flutter and native examples |
 | [`doc/引擎测试说明.md`](doc/引擎测试说明.md) | Capability matrix, T1–T29 test checklists and criteria, measured memory breakdown, known gaps |
 | [`doc/原生App集成指南.md`](doc/原生App集成指南.md) | Minimal integration, the host's nine jobs, C ABI, iOS/Android/HarmonyOS steps, acceptance checklist |
 | [`doc/触控对齐测试报告.md`](doc/触控对齐测试报告.md) | Item-by-item measurements of swipe/tap/longpress/gesture against WeChat |

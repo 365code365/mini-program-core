@@ -191,6 +191,15 @@ impl WxmlRenderer {
             sf,
         };
         (spec.draw)(&mut ctx);
+        // 同层渲染的原生组件（`<map>` 这类，宿主画好帧交过来）：画在框的背景之上、子节点之下
+        if crate::renderer::components::host_view::is_same_layer(node.tag.as_str()) {
+            crate::renderer::components::host_view::draw(node, ctx.canvas, x, y, w, h);
+        } else if crate::renderer::components::native_placeholder::label_of(node.tag.as_str()).is_some()
+            && !self.is_host_native(node.tag.as_str())
+        {
+            // 宿主没接管的原生组件（map / camera / web-view ...）：画占位，不留一块看不出是什么的空白
+            crate::renderer::components::native_placeholder::draw(node, ctx.canvas, ctx.text, x, y, w, h, sf);
+        }
     }
     
     pub(super) fn draw(&mut self, canvas: &mut Canvas, taffy: &Tree, node: &RenderNode, ox: f32, oy: f32) {

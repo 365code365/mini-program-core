@@ -77,7 +77,7 @@
                     case 'switchTab': return wx.switchTab({ url: url });
                     case 'reLaunch': return wx.reLaunch({ url: url });
                     case 'navigateBack': return wx.navigateBack({ delta: delta || 1 });
-                    case 'exit': return; // 退出小程序：宿主的事，引擎里什么也不做
+                    case 'exit': return __navigatorExit(); // 退出小程序：发宿主事件 exitMiniProgram（route-ext.js）
                     case 'miniProgram': {
                         var mp = {};
                         try { mp = JSON.parse(mpJson || '{}'); } catch (e) {}

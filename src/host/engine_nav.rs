@@ -12,7 +12,19 @@ impl MiniEngine {
     ///
     /// 返回 `false` 表示**页面栈已经只剩一页**，宿主该关掉这个小程序
     /// （Android 的 `onBackPressed` 要在这时才调 `finish()`）。
+    ///
+    /// 视频全屏时先退出全屏（与微信一致：返回键不离开页面），返回 `true`。
+    /// `wx.navigateBack` 不走这里（逻辑层要离开页面就离开，全屏跟着页面收掉）
     pub fn back(&mut self) -> bool {
+        if crate::renderer::components::video_fullscreen::exit() {
+            self.dmg.compose_dirty = true;
+            return true;
+        }
+        // 返回询问（wx.enableAlertBeforeUnload）/ page-container 先关：接住了就当这次返回已处理（宿主别退出小程序）。
+        // 侧滑返回不问（走 back_with）：页面已经跟着手指滑出去了，微信 iOS 也不弹
+        if self.back_intercepted() {
+            return true;
+        }
         self.back_with(self.opts.route_animation)
     }
 
@@ -90,7 +102,7 @@ impl MiniEngine {
                 self.push_page(&p, q).ok();
             }
             NavigationRequest::NavigateBack => {
-                self.back();
+                self.back_with(self.opts.route_animation);
             }
             NavigationRequest::SwitchTab { url } => {
                 let (p, _) = parse_url(&url);

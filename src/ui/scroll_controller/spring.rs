@@ -4,7 +4,16 @@
 
 use super::*;
 
+/// 惯性每个 60Hz 帧剩下的速度比例（按真实 dt 折算：`0.92^(dt·60)`）。
+/// 公开出去是因为宿主承载的原生组件要按同一条衰减曲线外推位置（host/native_motion.rs）
+pub const INERTIA_DECAY_PER_60HZ_FRAME: f32 = 0.92;
+
 impl ScrollController {
+    /// 惯性减速中的速度（逻辑像素 / 秒）。拖动、回弹、程序滚动时为 None —— 那些不是这条衰减曲线
+    pub fn inertia_velocity(&self) -> Option<f32> {
+        (self.is_decelerating && !self.is_bouncing && self.tween.is_none()).then_some(self.velocity)
+    }
+
     pub(super) fn rubber_band(offset: f32, dimension: f32) -> f32 {
         let c = RUBBER_BAND_C;
         let x = offset.abs() / dimension;
@@ -94,7 +103,7 @@ impl ScrollController {
     /// 惯性的一步：指数衰减速度并推进位置（**不夹边界**，边界交给
     /// [`Self::handoff_at_bounds`] 处理）
     pub(super) fn step_deceleration(&mut self, dt: f32) {
-        let deceleration = 0.92_f32.powf(dt * 60.0);
+        let deceleration = INERTIA_DECAY_PER_60HZ_FRAME.powf(dt * 60.0);
         self.velocity *= deceleration;
         self.position += self.velocity * dt;
     }

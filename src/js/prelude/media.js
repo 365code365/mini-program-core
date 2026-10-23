@@ -27,6 +27,11 @@
                     hideStatusBar: noop,
                     requestBackgroundPlayback: noop,
                     exitBackgroundPlayback: noop,
-                    exitPictureInPicture: noop
+                    exitPictureInPicture: noop,
+                    // 投屏（DLNA）：引擎没有投屏协议，交给宿主（宿主事件 videoCasting，command 是方法名）
+                    startCasting: function() { __emitHostEvent({ type: 'videoCasting', id: String(id), command: 'startCasting' }); },
+                    switchCasting: function() { __emitHostEvent({ type: 'videoCasting', id: String(id), command: 'switchCasting' }); },
+                    exitCasting: function() { __emitHostEvent({ type: 'videoCasting', id: String(id), command: 'exitCasting' }); },
+                    reconnectCasting: function() { __emitHostEvent({ type: 'videoCasting', id: String(id), command: 'reconnectCasting' }); }
                 };
             };

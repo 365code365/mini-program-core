@@ -1,13 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show Platform;
-import 'dart:ui' show FramePhase;
+import 'dart:ui' show FramePhase, Offset;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
 import 'events.dart';
+import 'media.dart';
+import 'same_layer.dart' show MiniNativeViewTap;
 
 /// 一个小程序实例。**一个进程同一时刻只能有一个**（引擎的小程序根目录、数据目录、
 /// 网络回包队列都是进程级的）：在上一个 [dispose] 之前再建会报 `ALREADY_RUNNING`。
@@ -16,7 +18,8 @@ import 'events.dart';
 /// ```dart
 /// final c = MiniProgramController(
 ///   appDir: unpackedDir,
-///   hostApis: {'chooseImage': (args) async => {'tempFilePaths': await pick()}},
+///   // 选图 / 选文件 / 存相册插件自带（builtinHostApis），这里只接宿主自己的能力
+///   hostApis: {'login': (args) async => {'code': await myLogin()}},
 ///   nativeComponents: const ['video'],
 /// );
 /// // 放进 MiniProgramScaffold(controller: c) 或 MiniProgramView(controller: c)
@@ -30,6 +33,7 @@ class MiniProgramController {
     this.dataDir,
     this.route,
     this.hostApis = const {},
+    this.builtinHostApis = true,
     this.nativeComponents = const [],
     this.systemInfo = const {},
     this.backend = MiniBackend.auto,
@@ -37,7 +41,41 @@ class MiniProgramController {
     this.navigationBar = true,
     this.routeAnimation = true,
     this.androidSurfaceView = true,
+    this.nativeViewLag = 0,
+    this.sameLayerVideo = true,
+    this.immersiveVideoFullscreen = true,
+    this.sameLayerViews = const [],
   });
+
+  /// [nativeComponents] 里哪些标签走**同层渲染**（Android）：[MiniProgramView.nativeViewBuilder] 造的控件不再盖在
+  /// 画面上，而是离屏画成一帧交给引擎画进页面 —— 滚动时它就是页面里的一块像素，跟页面一起动，不会像盖上去的控件
+  /// 那样一滑就错开、一顿一顿。点击照常到控件（`GestureDetector.onTap`），拖动滚页面。
+  ///
+  /// 只适合纯 Flutter 画的控件（CustomPaint、图片、文字）：平台视图（google_maps_flutter 这类）离屏画不出来，
+  /// 别列进来。`video` 不在这里（见 [sameLayerVideo]）。iOS 上暂时照旧盖在画面上
+  final List<String> sameLayerViews;
+
+  List<String> get _sameLayerTags => defaultTargetPlatform == TargetPlatform.android
+      ? [for (final t in sameLayerViews) if (t != 'video' && nativeComponents.contains(t)) t]
+      : const [];
+
+  /// 视频全屏（控制条的全屏键 / `requestFullScreen`；横屏由引擎把那一层转过来画）时收起状态栏与导航条，
+  /// 退出时恢复成 [SystemUiMode.edgeToEdge]。宿主自己的系统栏模式不是这个就关掉它、听 [videoFullscreen] 自己处理
+  final bool immersiveVideoFullscreen;
+
+  /// 有视频在全屏（引擎的 `videoFullscreen` 事件）
+  final ValueNotifier<bool> videoFullscreen = ValueNotifier(false);
+
+  /// `nativeComponents` 列了 `video` 时，Android 上走**同层渲染**（默认）：插件自带的系统播放器
+  /// （MediaPlayer）解码，帧交给引擎画进页面 —— 滚动时视频就是页面里的一块像素，跟页面一起动；
+  /// 封面、播放键、控制条由引擎画，点击与 `wx.createVideoContext` 的命令交给插件的播放器，
+  /// `bindplay` / `bindtimeupdate` / `bindended` 等照常触发。这时 `video` 不再走 [MiniProgramView.nativeViewBuilder]。
+  ///
+  /// false = 旧做法（宿主用 Flutter 控件盖在画面上，滑动时会与页面错开）。iOS 上暂时总是旧做法（插件还没带播放器）
+  final bool sameLayerVideo;
+
+  bool get _sameLayerVideo =>
+      sameLayerVideo && defaultTargetPlatform == TargetPlatform.android && nativeComponents.contains('video');
 
   /// 解包后的小程序目录（含 `app.json`）
   final String appDir;
@@ -50,6 +88,16 @@ class MiniProgramController {
 
   /// 宿主实现的 `wx.*`：名字会装进小程序的 `wx`，调用转到这里
   final Map<String, MiniHostApi> hostApis;
+
+  /// 插件自带的宿主能力（默认开）：选图 / 选视频 / 选文件 / 存相册 / 打开文档，走系统自己的选择器，
+  /// 见 [MiniBuiltinHostApis]。[hostApis] 里给了同名的用宿主的；关掉后这几个回到「没点名 = 立刻 fail」
+  final bool builtinHostApis;
+
+  /// 装进小程序 `wx` 的宿主 API：宿主给的 + 插件自带的
+  List<String> get _hostApiNames => {
+        ...hostApis.keys,
+        if (builtinHostApis) ...MiniBuiltinHostApis.names,
+      }.toList();
 
   /// 由宿主用原生控件承载的组件标签（见 [MiniProgramView.nativeViewBuilder]）
   final List<String> nativeComponents;
@@ -86,6 +134,16 @@ class MiniProgramController {
   /// （一加 PLY110 慢拖 3% 的 vsync 这样丢，SurfaceFlinger 量的）。iOS 不受影响（一直是纹理）
   final bool androidSurfaceView;
 
+  /// 宿主承载的原生组件（[nativeComponents]）比引擎画面晚上屏几个 vsync。页面滚动时控件按
+  /// 「自己这一帧的 vsync + 这么多帧」推算页面滚到了哪（[MiniNativeMotion.shiftAt]），与引擎画面对齐。
+  ///
+  /// 默认 0：一加 PLY110（90Hz，Android 独立图层，GPU）上甩动截屏校准，0 时 24 张里 22 张视频框与页面
+  /// 差 ≤2 物理像素（均值 0.8），1 时视频框反而跑到页面前面（均值 7.8）—— 控件与引擎画面是同一个 vsync
+  /// 上屏的，晚到的只是事件，而那部分正是按 vsync 推算消掉的。别的机型跟不上 / 跑到前面时用
+  /// `adb shell setprop debug.mini.native_lag <帧数>` 校准（负数写成 `' -2'`；小于 -2 等于关掉推算、
+  /// 只按事件摆），改完重开小程序生效，压过这里的值：视频框落在页面后面就调大，跑到前面就调小
+  final double nativeViewLag;
+
   static const MethodChannel _channel = MethodChannel('dev.minirender/engine');
   static MiniProgramController? _active;
   static bool _initialized = false;
@@ -102,8 +160,23 @@ class MiniProgramController {
   /// 当前页面（导航栏标题、颜色、栈深）
   final ValueNotifier<MiniPage?> page = ValueNotifier(null);
 
-  /// 宿主承载的原生组件在视口里的位置
+  /// 宿主承载的原生组件在视口里的位置（引擎那一帧的；滚动中按 [nativeMotion] 推算此刻的位置）
   final ValueNotifier<List<MiniNativeView>> nativeViews = ValueNotifier(const []);
+
+  /// 走同层渲染的组件（[sameLayerViews]）：键、标签、属性、框的逻辑尺寸（`rect` 的原点是 0）。
+  /// 只在页面结构变了时更新（滚动不更新：画面在引擎里跟着页面走）
+  final ValueNotifier<List<MiniNativeView>> sameLayerViewList = ValueNotifier(const []);
+  /// 点在同层渲染的组件框里（引擎的 `nativeViewTap`，本地逻辑坐标）
+  Stream<MiniNativeViewTap> get nativeViewTaps => _viewTaps.stream;
+  final StreamController<MiniNativeViewTap> _viewTaps = StreamController.broadcast();
+  /// 与 [nativeViews] 同一条事件带的滚动取样（旧版引擎不带时为 null）。
+  /// 先于 [nativeViews] 更新：监听 [nativeViews] 的一方拿到的就是同一帧的取样
+  MiniNativeMotion? get nativeMotion => _nativeMotion;
+  MiniNativeMotion? _nativeMotion;
+
+  /// 实际生效的 [nativeViewLag]：调试属性 `debug.mini.native_lag`（Android）压过构造参数
+  double get effectiveNativeViewLag => _nativeLagOverride ?? nativeViewLag;
+  double? _nativeLagOverride;
 
   /// 当前聚焦的输入框（null = 键盘该收起）
   final ValueNotifier<MiniInputFocus?> focusedInput = ValueNotifier(null);
@@ -181,8 +254,13 @@ class MiniProgramController {
         ...systemInfo,
       },
       'safeArea': {'top': safeArea[0], 'right': safeArea[1], 'bottom': safeArea[2], 'left': safeArea[3]},
-      'hostApis': hostApis.keys.toList(),
-      'nativeComponents': nativeComponents,
+      'hostApis': _hostApiNames,
+      // 同层渲染的视频不再是盖上去的控件（不走 nativeViewBuilder）
+      'nativeComponents': [
+        for (final t in nativeComponents)
+          if (!(t == 'video' && _sameLayerVideo) && !_sameLayerTags.contains(t)) t,
+      ],
+      if (_sameLayerVideo || _sameLayerTags.isNotEmpty) 'sameLayer': [if (_sameLayerVideo) 'video', ..._sameLayerTags],
       'menuButton': menuButton,
       'navigationBar': navigationBar,
       'routeAnimation': routeAnimation,
@@ -221,9 +299,14 @@ class MiniProgramController {
     if (r['view'] == true) surfaceView.value = true;
     if (r.containsKey('backend')) activeBackend.value = MiniBackendStatus.fromTextureInfo(r);
     if (r['pace'] == true) _startPaceLog();
+    final lag = r['nativeLag'];
+    if (lag is num) _nativeLagOverride = lag.toDouble();
   }
 
   static bool _paceOn = false;
+
+  /// `debug.mini.pace` 开着（原生组件那一层据此每帧打一行 `🎞N`，见 native_layer.dart）
+  bool get paceLog => _paceOn;
 
   /// `adb shell setprop debug.mini.pace 1`：Flutter 每一帧打一行 `🎞F <vsync µs> <光栅开始 µs> <光栅结束 µs>`。
   ///
@@ -296,9 +379,23 @@ class MiniProgramController {
   /// 跳到某页（深链）
   Future<void> navigate(String url) => _call('navigate', {'url': url});
 
+  /// 同层渲染的组件画好的一帧（RGBA 不预乘，[width] × [height] 设备像素）：引擎只重画页面上的这一块
+  Future<void> pushViewFrame(String key, int width, int height, Uint8List rgba) =>
+      _call('viewFrame', {'key': key, 'width': width, 'height': height, 'data': rgba});
+
   /// 宿主承载的原生组件发生了事件（派发给节点上的 `bind<name>`）
   Future<void> sendNativeViewEvent(String key, String name, [Map<String, Object?> detail = const {}]) =>
       _call('nativeViewEvent', {'key': key, 'name': name, 'detail': jsonEncode(detail)});
+
+  /// 宿主推事件给小程序的 `wx.onXxx` 监听者：`name` 如 `accelerometerChange`、`locationChange`、
+  /// `bluetoothDeviceFound`、`networkStatusChange`、`themeChange`、`keyboardHeightChange`、
+  /// `contextEvent`（`MapContext.on` / `CameraContext.onCameraFrame` 等对象自己的事件）。
+  /// 返回收到它的监听者个数（0 = 小程序没在听，可以停掉对应的传感器）
+  Future<int> dispatchEvent(String name, [Map<String, Object?> payload = const {}]) async {
+    if (_disposed || !_created) return 0;
+    final n = await _channel.invokeMethod<int>('dispatchEvent', {'name': name, 'payload': jsonEncode(payload)});
+    return n ?? 0;
+  }
 
   /// 进前台 / 进后台 / 内存告警（[MiniProgramView] 已自动转发）
   Future<void> lifecycle(int what) => _call('lifecycle', {'what': what});
@@ -322,6 +419,7 @@ class MiniProgramController {
     if (_created) await _channel.invokeMethod<void>('dispose');
     await _logs.close();
     await _events.close();
+    await _viewTaps.close();
     await _menuTaps.close();
   }
 
@@ -367,12 +465,30 @@ class MiniProgramController {
         // wx.setClipboardData、输入框里的 copy / cut：写系统剪贴板
         Clipboard.setData(ClipboardData(text: '${ev['data'] ?? ''}'));
       case 'nativeViews':
+        _nativeMotion = MiniNativeMotion.fromJson(ev);
         nativeViews.value = [
           for (final v in (ev['views'] as List? ?? const []))
             if (v is Map) MiniNativeView.fromJson(v.cast<String, dynamic>()),
         ];
       case 'hostCall':
         _onHostCall(MiniHostCall.fromJson(ev));
+      case 'sameLayerViews':
+        sameLayerViewList.value = [
+          for (final v in (ev['views'] as List? ?? const []))
+            if (v is Map)
+              MiniNativeView.fromJson({
+                ...v.cast<String, dynamic>(),
+                'x': 0,
+                'y': 0,
+              }),
+        ];
+      case 'nativeViewTap':
+        if (!_viewTaps.isClosed) {
+          _viewTaps.add(MiniNativeViewTap(
+            '${ev['key'] ?? ''}',
+            Offset((ev['x'] as num?)?.toDouble() ?? 0, (ev['y'] as num?)?.toDouble() ?? 0),
+          ));
+        }
       case 'menuButton':
         final a = MiniMenuButtonAction.parse(ev['action']);
         if (a != null) handleMenuButton(a);
@@ -381,18 +497,26 @@ class MiniProgramController {
         if (a is Map) about.value = MiniAbout.fromJson(a.cast<String, dynamic>());
       case 'log':
         if (!_logs.isClosed) _logs.add('${ev['text']}');
+      case 'videoFullscreen':
+        final on = ev['fullScreen'] == true;
+        videoFullscreen.value = on;
+        // 收起时系统报的新安全区引擎按住不用（不重排页面），退出后放出来的还是原来那份
+        if (immersiveVideoFullscreen) {
+          SystemChrome.setEnabledSystemUIMode(on ? SystemUiMode.immersiveSticky : SystemUiMode.edgeToEdge);
+        }
     }
   }
 
   Future<void> _onHostCall(MiniHostCall call) async {
     final api = hostApis[call.api];
+    final builtin = api == null && builtinHostApis && MiniBuiltinHostApis.names.contains(call.api);
     var ok = false;
     Map<String, dynamic> res;
-    if (api == null) {
+    if (api == null && !builtin) {
       res = {'errMsg': '${call.api}:fail 宿主没有实现'};
     } else {
       try {
-        res = await api(call.args);
+        res = api != null ? await api(call.args) : await MiniBuiltinHostApis.handle(call, channel: _channel);
         ok = true;
       } on MiniHostApiError catch (e) {
         res = {...e.extra, 'errMsg': e.errMsg};

@@ -41,6 +41,8 @@ pub mod tabbar_host;
 pub mod overlay_host;
 /// 右上角胶囊（custom 导航栏的页面）：「•••」查看关于、「⊙」返回宿主
 pub mod capsule_host;
+/// 桌面自己接住的宿主能力：选图 / 选视频 / 选文件 / 存相册（文件对话框，或 MINI_PICK_FILES）
+pub mod host_calls;
 /// 无头运行：整帧快照与拖动基准
 pub mod headless_run;
 

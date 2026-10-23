@@ -54,3 +54,8 @@ android {
         minSdk = 24
     }
 }
+dependencies {
+    // FileProvider：系统相机把照片写进插件给的文件、openDocument 把文件交给别的应用（MediaPicker.kt）。
+    // 版本锁死；Flutter 应用本来就带 androidx.core，Gradle 取依赖图里最高的那个
+    implementation("androidx.core:core:1.13.1")
+}

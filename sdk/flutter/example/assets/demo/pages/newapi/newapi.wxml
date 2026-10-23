@@ -1,0 +1,67 @@
+<view class="card">
+  <text class="title">路由：EventChannel / 校验 / 返回询问</text>
+  <text class="desc">navigateTo 带 events，新页面 getOpenerEventChannel() 拿到同一个通道、两边互发；跳到不存在的页面立刻 fail；开了返回询问后按返回先弹确认。</text>
+  <view class="btns">
+    <view class="btn-s" bindtap="openChannel">navigateTo + events</view>
+    <view class="btn-o" bindtap="badRoute">跳到不存在的页面</view>
+    <view class="btn-o" bindtap="toggleAlert">{{alertOn ? '关掉返回询问' : '开启返回询问'}}</view>
+  </view>
+  <view class="result"><text>{{routeText}}</text></view>
+</view>
+
+<view class="card">
+  <text class="title">wx.createWorker</text>
+  <text class="desc">workers/fib.js 在独立的模块作用域里跑，消息双向异步（与页面同一个 JS 线程）。</text>
+  <view class="btns"><view class="btn-s" bindtap="runWorker">让 Worker 算 fib(25)</view></view>
+  <view class="result"><text>{{workerText}}</text></view>
+</view>
+
+<view class="card">
+  <text class="title">UDP / TCP / 本机 IP</text>
+  <text class="desc">createUDPSocket 绑一个端口、给自己发一包；createTCPSocket 连一个没人听的端口，走 onError。</text>
+  <view class="btns">
+    <view class="btn-s" bindtap="udpLoop">UDP 回环</view>
+    <view class="btn-o" bindtap="tcpFail">TCP 连 127.0.0.1:1</view>
+    <view class="btn-o" bindtap="localIp">getLocalIPAddress</view>
+  </view>
+  <view class="result"><text>{{netText}}</text></view>
+</view>
+
+<view class="card">
+  <text class="title">随机数与存储</text>
+  <view class="btns">
+    <view class="btn-s" bindtap="random">getRandomValues</view>
+    <view class="btn-o" bindtap="batchStorage">batchSet / batchGet</view>
+    <view class="btn-o" bindtap="missingKey">getStorage 不存在的 key</view>
+    <view class="btn-o" bindtap="storageInfo">getStorageInfo</view>
+  </view>
+  <view class="result"><text>{{dataText}}</text></view>
+</view>
+
+<view class="card">
+  <text class="title">wx.createWebAudioContext</text>
+  <text class="desc">Oscillator → Gain → destination；decodeAudioData 解 JS 合成的 WAV，再用 BufferSource 播。</text>
+  <view class="btns">
+    <view class="btn-s" bindtap="beep">振荡器 0.5 秒</view>
+    <view class="btn-o" bindtap="decodePlay">decodeAudioData + 播放</view>
+  </view>
+  <view class="result"><text>{{audioText}}</text></view>
+</view>
+
+<view class="card">
+  <text class="title">MediaQueryObserver 与旧版画布</text>
+  <text class="desc">{{mqText}}</text>
+  <canvas canvas-id="legacy" class="legacy"></canvas>
+  <text class="hint">旧版 CanvasContext：clip 只留左半、setLineDash 虚线、measureText 量宽：{{measured}}</text>
+</view>
+
+<view class="card">
+  <text class="title">宿主能力的默认行为</text>
+  <text class="desc">只有宿主能做的接口默认立刻 fail、canIUse 为 false；宿主在 hostApis 里点名就接管（例子的「宿主」tab 接了一批）。</text>
+  <view class="btns">
+    <view class="btn-o" data-api="startBluetoothDevicesDiscovery" bindtap="hostApi">蓝牙</view>
+    <view class="btn-o" data-api="startSoterAuthentication" bindtap="hostApi">生物认证</view>
+    <view class="btn-o" data-api="getWeRunData" bindtap="hostApi">微信运动</view>
+  </view>
+  <view class="result"><text>{{hostText}}</text></view>
+</view>

@@ -14,6 +14,27 @@ inclusion: always
 
 真机构建与安装**一条一条串着跑**：引擎库、`flutter build apk`、装包同时跑时 gradle 会打进旧库，量的是上一版。
 
+## 优化代码时盯住顿挫（硬规矩）
+
+用户反复遇到「滑起来一顿一顿」：**凡是动了上屏、帧调度、失效分析、绘制热路径、宿主视图的改动，都要按顿挫来验**，
+不能只看单测绿、平均帧率达标。先对一遍 `doc/滑动顿挫避坑清单.md`（上屏、帧调度、原生组件、量具各自踩过的坑与当前数字），
+改完给出数字、写回那份清单：
+
+- **判据**：屏上重复帧（`bash tools/android-jank.sh <场景>`，原生示例加 `MINI_APP=native`，量 release 包）+
+  引擎 `>8ms` 的帧；原生组件（地图 / 视频）另量与页面的错位（`python3 tools/android-native-align.py`），
+  两层各自按时上屏也可能错开，SurfaceFlinger 量不出来。数字不许比清单里的回退。
+- **宿主一律走独立图层 + 引擎线程**：Android SurfaceView、iOS CAMetalLayer，后端默认 auto；别在 UI 线程 `onDraw` /
+  主线程 `CADisplayLink` 里上屏，别把原生控件盖在画面上（走同层渲染：`sameLayerVideo` / `sameLayerViews`）。
+- **四份宿主同一套规则**：Flutter `EngineHost.kt` / 原生 Android `EngineSession.kt` / iOS `EngineSession.swift`
+  （Flutter iOS 是纹理那条路），改一边要对照另一边；只改了一边的写进清单。
+- **绘制热路径不分配**：每个节点都走的函数（`draw_component`、`animated_image_frame` 这类）先判再分配，
+  真机的 jemalloc 带锁，桌面量不出来。
+
+原生示例用 `MINI_APP=native bash tools/android-jank.sh <场景>`（`host-slow` 经过同层渲染的地图）；
+Flutter 示例要对照「盖上去」时 `flutter build apk --dart-define=SAME_LAYER_MAP=false`。
+**手机与模拟器都是几个会话共用的**：量之前看前台窗口与 `lastUpdateTime`，被打断的结果（「前台不是示例 App」、
+页面没动、截图是别的 App）重跑，别拿来下结论；功能验证可以先在模拟器上做（`emulator-5554`，CPU 后端）。
+
 ## 每次改动后必须跑的七项
 
 **一条命令跑完**（下面七项 + 逐页快照 + H5 双端对比，每步计时，汇总在 `target/_regress/summary.txt`）：

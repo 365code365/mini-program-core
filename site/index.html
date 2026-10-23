@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>mini-render — a mini-program rendering engine written from scratch in Rust</title>
-<meta name="description" content="A self-rendering mini-program engine: no WebView, no mapping to native platform widgets, no Skia. Hand it a WeChat mini-program source tree and a writable pixel buffer, and it draws the UI and runs the interactions.">
-<meta name="theme-color" content="#0a0c10">
+<meta name="description" content="A self-rendering mini-program engine aligned with WeChat Skyline: no WebView, no native widgets, no Skia. Mini-program source in, pixels out — on desktop, headless CI, Android, iOS and Flutter.">
+<meta name="theme-color" content="#07090d">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/style.css">
 <link rel="alternate" hreflang="en" href="https://365code365.github.io/mini-program-core/">
@@ -18,12 +18,13 @@
 
 <meta property="og:type" content="website">
 <meta property="og:title" content="mini-render — a mini-program rendering engine written from scratch in Rust">
-<meta property="og:description" content="Mini-program source in, pixels out. No browser engine, no platform widgets, no third-party 2D graphics library in between.">
+<meta property="og:description" content="Mini-program source in, pixels out. No browser engine, no platform widgets, no third-party 2D graphics library in between — the CPU draws, the GPU only composites, byte-identical.">
 <meta property="og:image" content="https://365code365.github.io/mini-program-core/assets/shots/28_ecommerce_home.webp">
 <meta name="twitter:card" content="summary">
 </head>
 <body>
 <a class="skip" href="#main" data-i18n="ui.skip">Skip to content</a>
+<div class="scroll-progress" aria-hidden="true"><span></span></div>
 
 <header class="site-head">
   <div class="wrap head-inner">
@@ -33,6 +34,7 @@
     </a>
     <nav class="head-nav" aria-label="Page navigation" data-i18n-aria="nav.aria">
       <a href="#pipeline" data-i18n="nav.pipeline">Pipeline</a>
+      <a href="#device" data-i18n="nav.device">On device</a>
       <a href="#gallery" data-i18n="nav.gallery">Gallery</a>
       <a href="#perf" data-i18n="nav.perf">Measured</a>
       <a href="#start" data-i18n="nav.start">Quick start</a>
@@ -55,16 +57,19 @@
 
   <!-- ─────────────────────────  HERO  ───────────────────────── -->
   <section class="hero">
-    <div class="hero-glow" aria-hidden="true"></div>
+    <div class="hero-glow" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="hero-grid" aria-hidden="true"></div>
     <div class="wrap hero-inner">
       <div class="hero-copy">
-        <p class="eyebrow" data-i18n="hero.eyebrow">Rust · self-rendered · no WebView</p>
-        <h1 data-i18n="hero.h1">Mini-program source in,<br><span class="grad">pixels out</span>.</h1>
+        <p class="eyebrow eyebrow-pill"><span class="pulse-dot" aria-hidden="true"></span><span data-i18n="hero.eyebrow">Rust · self-rendered · aligned with Skyline</span></p>
+        <h1 data-i18n="hero.h1">Mini-program source in,<br> <span class="grad">pixels out</span>.</h1>
         <p class="lede" data-i18n="hero.lede">
           A mini-program rendering engine written from scratch in Rust. Hand it a WeChat
           mini-program source tree (WXML / WXSS / JS / app.json) and a writable pixel buffer,
           and it draws the UI and runs the interactions. In between there is
-          <strong>no browser engine, no platform widgets, no third-party 2D graphics library</strong>.
+          <strong>no browser engine, no platform widgets, no third-party 2D graphics library</strong>
+          — the CPU draws every pixel, and an optional GPU backend only composites the layers,
+          byte-identical to the CPU.
         </p>
         <ul class="hero-nots">
           <li data-i18n="hero.not1">No WebView</li>
@@ -73,41 +78,47 @@
         </ul>
         <div class="hero-actions">
           <a class="btn btn-primary" href="#start" data-i18n="hero.cta1">Run it in 30 seconds</a>
-          <a class="btn btn-ghost" href="https://github.com/365code365/mini-program-core" data-i18n="hero.cta2">Read the source</a>
+          <a class="btn btn-ghost" href="#device" data-i18n="hero.cta2">See it on a phone</a>
         </div>
-        <p class="hero-foot" data-i18n="hero.foot">The alignment target is WeChat <strong>Skyline</strong> — also native rendering, also no DOM.</p>
+        <div class="platforms">
+          <span class="platforms-label" data-i18n="hero.runs">Runs on</span>
+          <ul>
+            <li>Android</li><li>iOS</li><li>Flutter</li><li>macOS</li><li>Windows</li><li>Linux</li><li data-i18n="hero.ci">Headless CI</li>
+          </ul>
+        </div>
       </div>
 
       <div class="hero-shots" aria-label="Screens rendered by the engine" data-i18n-aria="hero.shotsAria">
         <figure class="phone phone-side">
-          <div class="phone-screen">
-            <img src="assets/shots/36_news_feed.webp" width="500" height="1150" alt="News feed page rendered by the engine" data-i18n-alt="hero.alt1" loading="eager" decoding="async">
+          <div class="phone-screen autoscroll" style="--d:14s">
+            <img src="assets/shots/device_http.webp" width="500" height="1090" alt="HTTP feed page of the Flutter demo, screenshot from a OnePlus phone" data-i18n-alt="hero.alt1" loading="eager" decoding="async">
           </div>
-          <figcaption data-i18n="hero.cap1">News feed</figcaption>
+          <figcaption data-i18n="hero.cap1">Real phone · feed</figcaption>
         </figure>
         <figure class="phone phone-main">
-          <div class="phone-screen">
+          <div class="phone-screen autoscroll" style="--d:18s">
             <img src="assets/shots/28_ecommerce_home.webp" width="500" height="1450" alt="E-commerce home rendered by the engine, with a carousel, a flash-sale countdown and a recommendation feed" data-i18n-alt="hero.alt2" loading="eager" decoding="async">
+            <span class="raster" aria-hidden="true"></span>
           </div>
-          <figcaption data-i18n="hero.cap2">E-commerce home</figcaption>
+          <figcaption data-i18n="hero.cap2">Desktop · e-commerce home</figcaption>
         </figure>
         <figure class="phone phone-side">
-          <div class="phone-screen">
-            <img src="assets/shots/60_form_controls.webp" width="500" height="1127" alt="Form controls page rendered by the engine" data-i18n-alt="hero.alt3" loading="eager" decoding="async">
+          <div class="phone-screen autoscroll" style="--d:16s">
+            <img src="assets/shots/device_components.webp" width="500" height="1090" alt="Components tab of the Flutter demo on a OnePlus phone" data-i18n-alt="hero.alt3" loading="eager" decoding="async">
           </div>
-          <figcaption data-i18n="hero.cap3">Form controls</figcaption>
+          <figcaption data-i18n="hero.cap3">Real phone · components</figcaption>
         </figure>
       </div>
     </div>
 
     <div class="wrap">
       <dl class="stats">
-        <div><dt data-i18n="stat.1.k">Shop home, full frame</dt><dd>6.1<small>ms</small></dd><p data-i18n="stat.1.v">750×1334 physical pixels, pure CPU</p></div>
-        <div><dt data-i18n="stat.2.k">Difference vs Chrome</dt><dd>4.57<small>%</small></dd><p data-i18n="stat.2.v">15 pages of the same source, per pixel</p></div>
-        <div><dt data-i18n="stat.3.k">Component tags</dt><dd>24<small></small></dd><p data-i18n="stat.3.v">plus 72 wx.* APIs</p></div>
-        <div><dt data-i18n="stat.4.k">Regression baselines</dt><dd>65<small></small></dd><p data-i18n="stat.4.v">byte-reproducible under a fixed clock</p></div>
-        <div><dt data-i18n="stat.5.k">Automated tests</dt><dd>872<small></small></dd><p data-i18n="stat.5.v">lib 774 + bin 26 + 72 end-to-end, zero warnings</p></div>
-        <div><dt data-i18n="stat.6.k">unsafe</dt><dd>0<small></small></dd><p data-i18n="stat.6.v">none outside the FFI boundary</p></div>
+        <div><dt data-i18n="stat.1.k">Shop home, full frame</dt><dd><span data-count="6.1">6.1</span><small>ms</small></dd><p data-i18n="stat.1.v">750×1334 physical pixels, pure CPU</p></div>
+        <div><dt data-i18n="stat.2.k">Repeated frames, 90 Hz phone</dt><dd><span data-count="2.3">2.3</span><small>%</small></dd><p data-i18n="stat.2.v">list scrolling with setData, down from 11.2%</p></div>
+        <div><dt data-i18n="stat.3.k">GPU vs CPU</dt><dd><span data-count="34">34</span><small>/34</small></dd><p data-i18n="stat.3.v">scenes byte-identical, fallback included</p></div>
+        <div><dt data-i18n="stat.4.k">Difference vs Chrome</dt><dd><span data-count="4.57">4.57</span><small>%</small></dd><p data-i18n="stat.4.v">15 pages of the same source, per pixel</p></div>
+        <div><dt data-i18n="stat.5.k">Automated tests</dt><dd><span data-count="948">948</span><small></small></dd><p data-i18n="stat.5.v">plus 65 byte-reproducible baselines</p></div>
+        <div><dt data-i18n="stat.6.k">wx.* APIs</dt><dd><span data-count="120">120</span><small>+</small></dd><p data-i18n="stat.6.v">26 component tags, 28 lifecycle hooks</p></div>
       </dl>
     </div>
   </section>
@@ -147,12 +158,12 @@
             <tr>
               <th scope="row">Flutter</th>
               <td data-i18n="why.r3.a">Dart + Skia, self-rendered</td>
-              <td data-i18n="why.r3.b"><span class="tag near">Closest</span> but this is Rust + an in-house rasterizer, no Skia</td>
+              <td data-i18n="why.r3.b"><span class="tag near">Closest</span> but this is Rust + an in-house rasterizer, no Skia — and it ships as a Flutter plugin too</td>
             </tr>
             <tr>
               <th scope="row">Electron / Tauri</th>
               <td data-i18n="why.r4.a">Ship or reuse a browser</td>
-              <td data-i18n="why.r4.b"><span class="tag no">No bundled</span> browser; the artifact is ~34MB</td>
+              <td data-i18n="why.r4.b"><span class="tag no">No bundled</span> browser; about 40 MB on arm64, GPU compositor included</td>
             </tr>
             <tr>
               <th scope="row" data-i18n="why.r5.k">WeChat Skyline</th>
@@ -187,63 +198,196 @@
         </p>
       </header>
 
+      <div class="flow" aria-hidden="true">
+        <span data-i18n="flow.1">app directory</span><i style="--k:0"></i><span data-i18n="flow.2">parse</span><i style="--k:1"></i><span data-i18n="flow.3">logic layer</span><i style="--k:2"></i><span data-i18n="flow.4">layout</span><i style="--k:3"></i><span data-i18n="flow.5">rasterize</span><i style="--k:4"></i><span data-i18n="flow.6">compose</span><i style="--k:5"></i><span class="flow-out" data-i18n="flow.7">RGBA buffer</span>
+      </div>
+
       <ol class="steps">
-        <li>
+        <li class="spot">
           <span class="step-no">01</span>
           <h3 data-i18n="pipe.1.h">Parse</h3>
           <p data-i18n="pipe.1.p">WXML → node tree, WXSS → stylesheet. Hand-written parsers; the CSS selector engine is <strong>compiled at parse time</strong> and covers tag / class / #id / <code>*</code> / attribute / descendant / child with specificity ordering.</p>
         </li>
-        <li>
+        <li class="spot">
           <span class="step-no">02</span>
           <h3 data-i18n="pipe.2.h">Logic layer</h3>
           <p data-i18n="pipe.2.p">Runs <code>App</code> / <code>Page</code> / <code>Component</code>; <code>setData</code> produces a data snapshot. QuickJS runtime: CommonJS modules, <code>Promise</code> / <code>async</code>, timers, microtasks pumped every frame.</p>
         </li>
-        <li>
+        <li class="spot">
           <span class="step-no">03</span>
           <h3 data-i18n="pipe.3.h">Template eval</h3>
           <p data-i18n="pipe.3.p"><code>{{ }}</code> expressions plus <code>wx:if</code> / <code>wx:for</code> expanded into a render tree. <code>class</code> / <code>style</code> bound to arrays or objects are joined per CSS semantics.</p>
         </li>
-        <li>
+        <li class="spot">
           <span class="step-no">04</span>
           <h3 data-i18n="pipe.4.h">Style resolution</h3>
-          <p data-i18n="pipe.4.p">Matched CSS plus inline <code>style</code> composed into a computed style, with inheritance semantics (<code>color</code> / <code>font-size</code> / <code>line-height</code> …); shorthands and longhands land in a fixed precedence order.</p>
+          <p data-i18n="pipe.4.p">Matched CSS plus inline <code>style</code> composed into a computed style, with inheritance semantics. Selector matching allocates nothing and the cascade <strong>borrows declarations instead of copying them</strong> — on a phone that is what took a full rebuild after <code>setData</code> from about 7 ms to about 3.5 ms.</p>
         </li>
-        <li>
+        <li class="spot">
           <span class="step-no">05</span>
           <h3 data-i18n="pipe.5.h">Layout</h3>
-          <p data-i18n="pipe.5.p">taffy solves the flexbox box model. <strong>Text nodes carry a custom measure function</strong>, so wrapping and min/max-content come from real glyph widths; a second <code>reflow</code> pass cleans up overflow that is only knowable after layout.</p>
+          <p data-i18n="pipe.5.p">taffy solves the flexbox box model. <strong>Text nodes carry a custom measure function</strong>, so wrapping and min/max-content come from real glyph widths; line counts are memoized per font, so text that did not change is never measured twice.</p>
         </li>
-        <li>
+        <li class="spot">
           <span class="step-no">06</span>
           <h3 data-i18n="pipe.6.h">Paint</h3>
           <p data-i18n="pipe.6.p">In-house 2D rasterizer: scanline + even-odd fill, 4× supersampled anti-aliasing, rounded corners via cubic Bézier, multi-font fallback, Apple <code>sbix</code> color emoji, two-tier image filtering, gradients, masked <code>box-shadow</code>, clip stack.</p>
         </li>
-        <li>
+        <li class="spot">
           <span class="step-no">06′</span>
           <h3 data-i18n="pipe.7.h">Animation</h3>
-          <p data-i18n="pipe.7.p"><code>@keyframes</code> / <code>transition</code> / <code>wx.createAnimation</code> are evaluated <strong>at paint time</strong> against a global clock. <code>transform</code> / <code>opacity</code> / colors affect painting only and never trigger reflow → an animated frame costs about the same as a static one.</p>
+          <p data-i18n="pipe.7.p"><code>@keyframes</code> / <code>transition</code> / <code>wx.createAnimation</code> are evaluated <strong>at paint time</strong> against the vsync clock. <code>transform</code> / <code>opacity</code> / colors affect painting only and never trigger reflow → an animated frame costs about the same as a static one.</p>
         </li>
-        <li>
+        <li class="spot">
           <span class="step-no">07</span>
           <h3 data-i18n="pipe.8.h">Composition</h3>
-          <p data-i18n="pipe.8.p">Normal flow → tabBar → <code>position:fixed</code> overlay, with stacking order matching the browser (a full-screen scrim dims the tabBar too). The overlay uses viewport coordinates, its own canvas, and repaints on demand.</p>
+          <p data-i18n="pipe.8.p">Normal flow → tabBar → <code>position:fixed</code> overlay, stacked like the browser. After <code>setData</code> only the changed region repaints: a list that grows at the bottom repaints from its first change downward, a fixed button appearing repaints only the overlay.</p>
         </li>
-        <li>
+        <li class="spot">
           <span class="step-no">08</span>
           <h3 data-i18n="pipe.9.h">Present</h3>
-          <p data-i18n="pipe.9.p">Blit to a window, hand to a host View, or save a PNG. The desktop window composites on the GPU by default (wgpu takes the layers as textures and presents them) and falls back to softbuffer; mobile hands the RGBA to the host; headless composites on the CPU and calls <code>save_png</code> — one codebase, five platforms.</p>
+          <p data-i18n="pipe.9.p">Blit to a window, hand to a host view, or save a PNG. The desktop window and Android composite on the GPU once the self-test passes (wgpu takes the layers as textures) and fall back to the CPU otherwise; the native iOS view hands its CAMetalLayer to the same compositor (Metal); headless and the Flutter iOS texture composite on the CPU — one codebase, five platforms plus Flutter.</p>
         </li>
       </ol>
 
-      <div class="flow" aria-hidden="true">
-        <span data-i18n="flow.1">app directory</span><i></i><span data-i18n="flow.2">parse</span><i></i><span data-i18n="flow.3">logic layer</span><i></i><span data-i18n="flow.4">layout</span><i></i><span data-i18n="flow.5">rasterize</span><i></i><span data-i18n="flow.6">compose</span><i></i><span class="flow-out" data-i18n="flow.7">RGBA buffer</span>
-      </div>
       <p class="note center" data-i18n="pipe.note">
         The artifact is an ordinary Rust library (<code>cdylib</code> / <code>staticlib</code> /
         <code>rlib</code>) and it asks for one thing:
         <strong>a writable pixel buffer</strong> — so Android, iOS, Windows, macOS and Linux run the
         same code, and a CI box with no screen can emit PNGs directly.
       </p>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────  真机  ───────────────────────── -->
+  <section class="band device-band" id="device">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="eyebrow" data-i18n="dev.eyebrow">On a real phone</p>
+        <h2 data-i18n="dev.h2">Smooth on a 90 Hz phone,<br><span class="grad">measured frame by frame</span></h2>
+        <p class="sec-lede" data-i18n="dev.lede">
+          The same engine runs inside a Flutter plugin and native Android / iOS views. The numbers
+          below come from a OnePlus PLY110 (90 Hz, Adreno 810, Vulkan) running the Flutter release
+          build, judged by the timestamps SurfaceFlinger puts on every frame it shows — not by app logs.
+        </p>
+      </header>
+
+      <div class="device-grid">
+        <div class="device-main">
+          <article class="card strip-card">
+            <h3 data-i18n="dev.strip.h">One second at 90 Hz, scrolling a list that calls setData on every scroll</h3>
+            <div class="strip-row">
+              <span class="strip-label" data-i18n="dev.strip.b">Before</span>
+              <div class="strip" data-frames="90" data-rate="0.112" data-seed="7" role="img" aria-label="Before: 11.2% of frames repeated" data-i18n-aria="dev.strip.ariaB"></div>
+              <b class="strip-val bad-val">11.2%</b>
+            </div>
+            <div class="strip-row">
+              <span class="strip-label" data-i18n="dev.strip.a">Now</span>
+              <div class="strip" data-frames="90" data-rate="0.023" data-seed="3" role="img" aria-label="Now: 2.3% of frames repeated" data-i18n-aria="dev.strip.ariaA"></div>
+              <b class="strip-val good-val">2.3%</b>
+            </div>
+            <p class="note" data-i18n="dev.strip.note">Each cell is one vsync; a red cell is a vsync where the previous image stayed on screen. The red count follows the measured rate (fast flick, then slow drag); where the cells fall is illustrative.</p>
+          </article>
+
+          <div class="metrics">
+            <article class="metric spot">
+              <b class="metric-num">11.2% → 2.3%</b>
+              <h3 data-i18n="dev.m1.h">List scrolling with setData</h3>
+              <p data-i18n="dev.m1.p">The page calls <code>setData</code> from <code>onPageScroll</code> and an IntersectionObserver. Slow drag alone: 6.6% → 2.0%. Frames that repainted the whole page: zero.</p>
+            </article>
+            <article class="metric spot">
+              <b class="metric-num">29 / 300ms</b>
+              <h3 data-i18n="dev.m2.h">Page transitions</h3>
+              <p data-i18n="dev.m2.p">Every 300 ms push or pop shows 29 frames with none repeated; the first step is 0.89–1.00× and the largest 1.08× the median step.</p>
+            </article>
+            <article class="metric spot">
+              <b class="metric-num">550 → 50ms</b>
+              <h3 data-i18n="dev.m3.h">Back from the home screen</h3>
+              <p data-i18n="dev.m3.p">New surface to first frame. The compositor is parked instead of torn down, and the window waits for the engine's first frame before it shows — no black flash.</p>
+            </article>
+            <article class="metric spot">
+              <b class="metric-num">870 → 480ms</b>
+              <h3 data-i18n="dev.m4.h">Cold open</h3>
+              <p data-i18n="dev.m4.p">Engine creation to GPU ready: fonts and the Vulkan compositor warm up in parallel before the engine even exists.</p>
+            </article>
+            <article class="metric spot">
+              <b class="metric-num">8–13 → 0</b>
+              <h3 data-i18n="dev.m5.h">Frames over 8 ms, heavy page</h3>
+              <p data-i18n="dev.m5.p">Slow drag on a gradient-and-transform page. The engine thread sits on the big cores only while you interact or frames keep coming, and is released after 800 ms.</p>
+            </article>
+            <article class="metric spot">
+              <b class="metric-num">7.3 → 3.6ms</b>
+              <h3 data-i18n="dev.m6.h">Layout rebuild after setData</h3>
+              <p data-i18n="dev.m6.p">Typical value among the slowest scroll frames. Found with simpleperf on the phone: selector matching stopped allocating, the cascade borrows instead of copying, containers stop resolving their style twice, line counts are remembered.</p>
+            </article>
+          </div>
+        </div>
+
+        <aside class="device-side">
+          <figure class="phone phone-device">
+            <span class="hz-badge">90 Hz</span>
+            <div class="phone-screen autoscroll" style="--d:15s">
+              <img src="assets/shots/device_wxss.webp" width="500" height="1090" alt="WXSS page of the Flutter demo on a OnePlus phone" data-i18n-alt="dev.alt" loading="lazy" decoding="async">
+            </div>
+            <figcaption data-i18n="dev.cap">Screenshot from the phone</figcaption>
+          </figure>
+          <article class="card">
+            <h3 data-i18n="dev.feat.h">What the mobile hosts get</h3>
+            <ul class="ticks">
+              <li data-i18n="dev.feat.1">On Android the engine draws into its own <code>SurfaceView</code>; the system compositor takes it directly, no Flutter frame in between</li>
+              <li data-i18n="dev.feat.2">GPU compositing on Vulkan once the start-up self-test is byte-identical; CPU fallback on any failure or lost device</li>
+              <li data-i18n="dev.feat.3">Engine-drawn navigation bar and capsule button, 300 ms route transitions, left-edge swipe back</li>
+              <li data-i18n="dev.feat.4">Drags resampled by touch timestamps; animations sampled at the vsync, not when drawing happened</li>
+              <li data-i18n="dev.feat.5">Native components such as <code>&lt;video&gt;</code> are placed and clipped by the engine, so sheets, modals and the tabBar cover them as in WeChat</li>
+              <li data-i18n="dev.feat.6">Idle costs nothing: frames only on demand; GPU textures and image caches are released in the background</li>
+            </ul>
+          </article>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────  双后端  ───────────────────────── -->
+  <section class="band alt" id="backends">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="eyebrow" data-i18n="be.eyebrow">Dual backend</p>
+        <h2 data-i18n="be.h2">Two backends, <span class="grad">one picture</span></h2>
+        <p class="sec-lede" data-i18n="be.lede">
+          The CPU rasterizer draws every pixel and stays the single reference, so a CI box with no
+          GPU produces the same image as a phone. The GPU backend (wgpu: Metal / Vulkan / DX12 / GLES)
+          only composites the page, tabBar and fixed layers as textures, with integer shaders that
+          replicate the CPU's blending arithmetic.
+        </p>
+      </header>
+
+      <div class="twin" aria-hidden="true">
+        <figure class="twin-tile">
+          <div class="phone-screen"><img src="assets/shots/51_health_dashboard.webp" width="500" height="960" alt="" loading="lazy" decoding="async"></div>
+          <figcaption data-i18n="be.t1">CPU: raster + compose</figcaption>
+        </figure>
+        <span class="twin-op">⊕</span>
+        <figure class="twin-tile">
+          <div class="stack3d">
+            <div class="plate plate-page"><img src="assets/shots/51_health_dashboard.webp" width="500" height="960" alt="" loading="lazy" decoding="async"><code>page</code></div>
+            <div class="plate plate-tab"><span class="plate-bar"></span><code>tabBar</code></div>
+            <div class="plate plate-fixed"><span class="plate-fab"></span><code>fixed</code></div>
+          </div>
+          <figcaption data-i18n="be.t2">GPU: compose three textures</figcaption>
+        </figure>
+        <span class="twin-op">=</span>
+        <figure class="twin-tile">
+          <div class="diff-screen"><b>0</b><small data-i18n="be.diff">bytes differ</small></div>
+          <figcaption data-i18n="be.t3">Difference</figcaption>
+        </figure>
+      </div>
+
+      <ul class="ticks be-points">
+        <li data-i18n="be.p1"><b>34 / 34</b> scenes byte-identical in <code>tools/gpu-parity.sh</code>, including a device loss injected mid-run</li>
+        <li data-i18n="be.p2">A start-up self-test must match the CPU byte for byte before the GPU is used; any failure falls back to the CPU on the same frame, with a log line saying why</li>
+        <li data-i18n="be.p3">Automatic on the desktop window, Android and the native iOS view; headless and the Flutter iOS texture use the CPU. Force either with <code>--backend</code> / <code>MINI_BACKEND</code></li>
+        <li data-i18n="be.p4">Overlays (Toast, Modal, action sheet, picker) upload only the rows they cover; scrolling just presents another slice of the page texture</li>
+      </ul>
     </div>
   </section>
 
@@ -259,7 +403,11 @@
           against these 65 first. Point at a card to see the full page.
         </p>
       </header>
+    </div>
 
+    <div class="marquee" aria-hidden="true"><div class="marquee-track"></div></div>
+
+    <div class="wrap">
       <div class="shots">
         <a class="shot" href="https://github.com/365code365/mini-program-core/blob/main/doc/gallery/28_ecommerce_home.png">
           <span class="phone-screen"><img src="assets/shots/28_ecommerce_home.webp" width="500" height="1450" alt="E-commerce home: search bar, carousel, icon grid, flash-sale countdown and product feed" data-i18n-alt="gal.1.alt" loading="lazy" decoding="async"></span>
@@ -338,8 +486,9 @@
         <p class="eyebrow" data-i18n="perf.eyebrow">Measured numbers</p>
         <h2 data-i18n="perf.h2">Before → now</h2>
         <p class="sec-lede" data-i18n="perf.lede">
-          375×667 @2x (750×1334 physical pixels), written pixel by pixel on the CPU.
-          These numbers are a <strong>regression criterion</strong>, not a marketing line.
+          Desktop: 375×667 @2x (750×1334 physical pixels), written pixel by pixel on the CPU; the
+          phone numbers are in the section above. These numbers are a
+          <strong>regression criterion</strong>, not a marketing line.
         </p>
       </header>
 
@@ -351,6 +500,10 @@
         <div class="bar-row">
           <div class="bar-label" data-i18n="perf.b2">Rebuild after one <code>setData</code><small>old and new render trees walked in parallel</small></div>
           <div class="bar-track"><span class="bar-before" style="--w:64.5%">32 ms</span><span class="bar-after" style="--w:8.1%">4 ms</span></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label" data-i18n="perf.b6">List append after <code>onReachBottom</code><small>90 Hz phone; only the rows from the first change down repaint</small></div>
+          <div class="bar-track"><span class="bar-before" style="--w:100%">38 ms</span><span class="bar-after" style="--w:30.3%">≤ 11.5 ms</span></div>
         </div>
         <div class="bar-row">
           <div class="bar-label" data-i18n="perf.b3">First frame, build tree + style<small>app with three Chinese font stacks</small></div>
@@ -367,17 +520,17 @@
       </div>
 
       <div class="grid-3 facts">
-        <article class="card">
+        <article class="card spot">
           <h3 data-i18n="perf.f1.h">Steady frames hold</h3>
           <p data-i18n="perf.f1.p">On a 144 Hz screen (6.94 ms budget) the shop home's frame interval went from <b>6.9–25 ms jitter</b> down to <b>6.7–7.2 ms</b>; the slowest frame from 17.9 ms to <b>11.4 ms</b>.</p>
         </article>
-        <article class="card">
+        <article class="card spot">
           <h3 data-i18n="perf.f2.h">Only the changed region repaints</h3>
-          <p data-i18n="perf.f2.p">The invalidation for the home page's flash-sale countdown is <b>45×33 pixels</b>, not the whole screen. When in doubt it falls back to a full frame — leaving stale pixels is far worse than painting once too often.</p>
+          <p data-i18n="perf.f2.p">The home page's flash-sale countdown invalidates <b>45×33 pixels</b>, not the screen. A growing list repaints from its first change down; a fixed button appearing repaints only the overlay. When in doubt it falls back to a full frame — stale pixels are far worse than one extra paint.</p>
         </article>
-        <article class="card">
+        <article class="card spot">
           <h3 data-i18n="perf.f3.h">Scrolling does not repaint</h3>
-          <p data-i18n="perf.f3.p">The page canvas is full-page height in content coordinates, so scrolling just presents a different slice, <b>2–3 ms</b> per frame. Only the moment you scroll past the painted band does it paint again.</p>
+          <p data-i18n="perf.f3.p">The page canvas is full-page height in content coordinates, so scrolling just presents a different slice, <b>2–3 ms</b> per frame. Only the strip you scroll into gets painted, a little before it shows.</p>
         </article>
       </div>
 
@@ -388,7 +541,7 @@
           <table class="kv">
             <tbody>
               <tr><th scope="row" data-i18n="perf.cons.r1k"><code>sample-app</code> shop<small>15 pages</small></th><td data-i18n="perf.cons.r1v"><b>4.57%</b> changed pixels</td></tr>
-              <tr><th scope="row" data-i18n="perf.cons.r2k"><code>news-app</code> news<small>6 pages</small></th><td data-i18n="perf.cons.r2v"><b>6.34%</b> changed pixels</td></tr>
+              <tr><th scope="row" data-i18n="perf.cons.r2k"><code>news-app</code> news<small>6 pages</small></th><td data-i18n="perf.cons.r2v"><b>6.36%</b> changed pixels</td></tr>
             </tbody>
           </table>
         </div>
@@ -401,6 +554,7 @@
               <tr><th scope="row" data-i18n="perf.real.r2k"><code>real-sample</code><small>8 pages</small></th><td data-i18n="perf.real.r2v">WeChat's official demo</td></tr>
               <tr><th scope="row" data-i18n="perf.real.r3k"><code>sample-app</code><small>15 pages</small></th><td data-i18n="perf.real.r3v">Full shop flow: cart → checkout → orders / shipping, cross-page state in storage</td></tr>
               <tr><th scope="row" data-i18n="perf.real.r4k"><code>news-app</code><small>6 pages</small></th><td data-i18n="perf.real.r4v">Full news flow: channel swiping, live font size, comments, persisted bookmarks</td></tr>
+              <tr><th scope="row" data-i18n="perf.real.r5k">Flutter demo<small>26 pages</small></th><td data-i18n="perf.real.r5v">The capability catalog that ships with the Flutter plugin: components, APIs, a mock HTTP feed, host-provided video</td></tr>
             </tbody>
           </table>
         </div>
@@ -418,34 +572,34 @@
       </header>
 
       <div class="grid-3">
-        <article class="card num" data-n="1">
+        <article class="card num spot" data-n="1">
           <h3 data-i18n="trade.1.h">Text measurement drives layout; widths are never estimated</h3>
           <p data-i18n="trade.1.p">The measure context is attached to taffy leaves so real glyphs participate in layout, letting "wrap at the container width" and "a shrinking container pushed out by its content" hold at the same time.</p>
           <p class="bad" data-i18n="trade.1.bad">A <code>+4px</code> "safety margin" per text box once made every content-sized badge a ring wider than the browser's.</p>
         </article>
-        <article class="card num" data-n="2">
+        <article class="card num spot" data-n="2">
           <h3 data-i18n="trade.2.h">Animation repaints, never reflows</h3>
           <p data-i18n="trade.2.p">Changing <code>width</code> / <code>height</code> in <code>@keyframes</code> has no effect; <code>transform</code> / <code>opacity</code> / colors do. What you buy is an animated frame being as cheap as a static one.</p>
         </article>
-        <article class="card num" data-n="3">
+        <article class="card num spot" data-n="3">
           <h3 data-i18n="trade.3.h">Scroll feel follows iOS / WeChat</h3>
           <p data-i18n="trade.3.p">Rubber-band damping <code>1 - 1/(x·0.55/d + 1)</code>; bounce-back is a <strong>critically damped spring</strong> with initial velocity, not a fixed-duration easing; inertia hitting a boundary does not stop dead, it hands its momentum to the spring.</p>
         </article>
-        <article class="card num" data-n="4">
+        <article class="card num spot" data-n="4">
           <h3 data-i18n="trade.4.h">Gesture ownership is not decided on touch-down</h3>
           <p data-i18n="trade.4.p">It waits for the first meaningful movement (4px), locks to the dominant axis, then hands off to the outer scroller on "still pushing at the boundary". Swiping vertically inside a horizontal card list scrolls the page; swiping horizontally inside a vertical list moves nothing.</p>
         </article>
-        <article class="card num" data-n="5">
-          <h3 data-i18n="trade.5.h">The host layer lives in the lib, shared by both ends</h3>
-          <p data-i18n="trade.5.p">Page stack, overlays, touch state machine, gesture arbitration, picker sheet and pixel composition all live in <code>src/host/</code>; only frame scheduling is per-platform. A per-pixel script plus input-behaviour tests guard it from both sides.</p>
+        <article class="card num spot" data-n="5">
+          <h3 data-i18n="trade.5.h">The host layer lives in the lib, shared by every host</h3>
+          <p data-i18n="trade.5.p">Page stack, route transitions, overlays, touch state machine, gesture arbitration, picker sheet and pixel composition all live in <code>src/host/</code>; only frame scheduling is per-platform. A per-pixel script plus input-behaviour tests guard it from both sides.</p>
         </article>
-        <article class="card num" data-n="6">
+        <article class="card num spot" data-n="6">
           <h3 data-i18n="trade.6.h">The CPU draws, the GPU only composites</h3>
-          <p data-i18n="trade.6.p">The CPU rasterizer is the single pixel reference, so CI and embedded boxes with no GPU produce the same image. The optional GPU backend only composites the page / tabBar / fixed layers as textures, <strong>byte-identical</strong> to the CPU for the same frame, and falls back to the CPU on any failure. No vello / Skia (their own anti-aliasing would make that unverifiable), no per-element bitmap cache. Anti-aliasing was not switched to subsampling either — measured against Chrome the difference went up, from 4.7% to 5.3%.</p>
+          <p data-i18n="trade.6.p">The CPU rasterizer is the single pixel reference, so CI and embedded boxes with no GPU produce the same image. The GPU backend (desktop window and Android) only composites the page / tabBar / fixed layers as textures, <strong>byte-identical</strong> to the CPU for the same frame, and falls back to the CPU on any failure. No vello / Skia: their own anti-aliasing would make that unverifiable.</p>
         </article>
       </div>
       <p class="note center" data-i18n="trade.note">
-        All eight, plus 13 classes of gotchas, are in
+        All eight, and every "what went wrong" story behind them, are in
         <a href="https://github.com/365code365/mini-program-core/blob/main/doc/%E8%B8%A9%E5%9D%91%E8%AE%B0%E5%BD%95.md">the gotchas log</a>
         and <a href="https://github.com/365code365/mini-program-core/blob/main/doc/%E6%9E%B6%E6%9E%84%E4%B8%8E%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86.md">architecture &amp; implementation</a>
         (Chinese).
@@ -459,13 +613,14 @@
       <header class="sec-head">
         <p class="eyebrow" data-i18n="start.eyebrow">Getting started</p>
         <h2 data-i18n="start.h2">Run it in 30 seconds</h2>
-        <p class="sec-lede" data-i18n="start.lede">Desktop needs only the Rust toolchain. Embedding it in an app takes <strong>one View</strong>.</p>
+        <p class="sec-lede" data-i18n="start.lede">Desktop needs only the Rust toolchain. In an app it is <strong>one View</strong> — or one Flutter widget.</p>
       </header>
 
       <div class="tabs" data-tabs>
         <div class="tablist" role="tablist" aria-label="Quick start targets" data-i18n-aria="start.tabsAria">
           <button role="tab" id="tab-desktop" aria-controls="panel-desktop" aria-selected="true" data-i18n="start.tab1">Desktop</button>
           <button role="tab" id="tab-headless" aria-controls="panel-headless" aria-selected="false" tabindex="-1" data-i18n="start.tab2">Headless</button>
+          <button role="tab" id="tab-flutter" aria-controls="panel-flutter" aria-selected="false" tabindex="-1">Flutter</button>
           <button role="tab" id="tab-android" aria-controls="panel-android" aria-selected="false" tabindex="-1">Android</button>
           <button role="tab" id="tab-ios" aria-controls="panel-ios" aria-selected="false" tabindex="-1">iOS</button>
         </div>
@@ -491,6 +646,24 @@ cargo build --release
 #   --touch x,y   --swipe x1,y1,x2,y2   --drag px×frames
 #   --type text    --key enter          --wheel
 #   --wait seconds --frames N</code></pre>
+        </div>
+
+        <div class="tabpanel" role="tabpanel" id="panel-flutter" aria-labelledby="tab-flutter" tabindex="0" hidden>
+          <pre data-i18n="start.code5"><code>// pubspec.yaml: mini_render: { path: &lt;repo&gt;/sdk/flutter }
+// build the engine first: bash tools/build-mobile.sh android   (or ios)
+
+final c = MiniProgramController(
+  appDir: unpackedDir,                        // the unpacked mini-program (has app.json)
+  hostApis: {'chooseImage': (args) async =&gt; {'tempFilePaths': await pick()}},
+  nativeComponents: const ['video'],          // hosted by your own widgets
+);
+Navigator.push(context, MaterialPageRoute(
+  builder: (_) =&gt; MiniProgramScaffold(        // nav bar + back + capsule + engine view
+    controller: c,
+    onMenu: () =&gt; showMyShareSheet(),          // the capsule's "•••"
+    onExit: () =&gt; Navigator.pop(context),      // the capsule's "⊙"
+  ),
+));</code></pre>
         </div>
 
         <div class="tabpanel" role="tabpanel" id="panel-android" aria-labelledby="tab-android" tabindex="0" hidden>
@@ -526,10 +699,11 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
           <h3 data-i18n="start.inc.h">Already handled inside the View</h3>
           <ul class="ticks">
             <li data-i18n="start.inc.1">A dedicated render thread (the engine is not thread-safe)</li>
-            <li data-i18n="start.inc.2">Size and dpr conversion</li>
-            <li data-i18n="start.inc.3">All three touch phases, including historical points / <code>coalescedTouches</code>, nothing dropped</li>
+            <li data-i18n="start.inc.2">Size, dpr and safe-area conversion, system bars on Android</li>
+            <li data-i18n="start.inc.3">All three touch phases with timestamps, including historical points / <code>coalescedTouches</code>, nothing dropped</li>
             <li data-i18n="start.inc.4">On-demand frames; idle costs no battery</li>
             <li data-i18n="start.inc.5">Sandbox directory, lifecycles and memory warnings</li>
+            <li data-i18n="start.inc.6">GPU surface attach / detach, warm-up and CPU fallback</li>
           </ul>
         </article>
         <article class="card">
@@ -562,10 +736,11 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
             <li data-i18n="scope.yes.4"><b>Styles</b>: selectors with specificity cascade, inheritance, <code>@import</code>, CSS variables, <code>rpx</code>, <code>calc()</code>, gradients, shadows, <code>transform</code> / <code>transition</code> / <code>@keyframes</code>, <code>@media</code> (size, orientation, dark mode), <code>@font-face</code></li>
             <li data-i18n="scope.yes.5"><b>120+ <code>wx.*</code> APIs</b>: <code>request</code>, <code>connectSocket</code>, <code>downloadFile</code> / <code>uploadFile</code> and <code>FileSystemManager</code>, <code>InnerAudioContext</code>, storage persisted across launches, Toast / Modal / ActionSheet, <code>previewImage</code>, routing, <code>createSelectorQuery</code>, <code>createIntersectionObserver</code>, <code>createVideoContext</code>, the tabBar APIs, clipboard, <code>canIUse</code>, network status, <code>loadFontFace</code>; 30 host capabilities such as <code>login</code> go to the host through <code>hostApis</code></li>
             <li data-i18n="scope.yes.6"><b>Lifecycles</b>: 28 hooks across three levels (App 7 / Page 13 / Component 5 + <code>pageLifetimes</code> 3)</li>
-            <li data-i18n="scope.yes.7"><b>Interaction</b>: inertial scrolling with critically damped bounce, gesture arbitration, edge-swipe back (desktop and mobile SDK), pull-to-refresh, picker sheet, action sheet, image preview, partial repaint</li>
-            <li data-i18n="scope.yes.8"><b>Media</b>: a Canvas 2D context plus <code>&lt;canvas type="2d"&gt;</code> with gradients, patterns, shadows, composite modes and pixel readback; <code>&lt;video&gt;</code> (MP4 demux + H.264 software decode + audio, playback events, <code>VideoContext</code>, fullscreen, poster, danmu)</li>
-            <li data-i18n="scope.yes.9"><b>Dual backend</b>: CPU rasterization + optional GPU compositing (wgpu). Enabled only after a start-up self-test is byte-identical to the CPU, forceable with <code>--backend</code> / <code>MINI_BACKEND</code>, falls back to the CPU on any failure. Wired into the desktop window and headless; the mobile SDK still uses the CPU</li>
+            <li data-i18n="scope.yes.7"><b>Interaction</b>: inertial scrolling with critically damped bounce, gesture arbitration, 300 ms route transitions, left-edge swipe back, engine-drawn navigation bar and capsule button, pull-to-refresh, picker sheet, action sheet, image preview, partial repaint</li>
+            <li data-i18n="scope.yes.8"><b>Media</b>: a Canvas 2D context plus <code>&lt;canvas type="2d"&gt;</code> with gradients, patterns, shadows, composite modes and pixel readback; <code>&lt;video&gt;</code> (MP4 demux + H.264 software decode + audio, playback events, <code>VideoContext</code>, fullscreen, poster, danmu), or hosted by the app's own player</li>
+            <li data-i18n="scope.yes.9"><b>Dual backend</b>: CPU rasterization + optional GPU compositing (wgpu). Enabled only after a start-up self-test is byte-identical to the CPU, forceable with <code>--backend</code> / <code>MINI_BACKEND</code>, falls back to the CPU on any failure. Wired into the desktop window, headless, the Android SDK and the native iOS view (CAMetalLayer); the Flutter iOS texture composites on the CPU</li>
             <li data-i18n="scope.yes.10"><b>Component behavior</b>: <code>scroll-view</code> controlled position, events, custom pull-to-refresh, <code>reverse</code> and <code>padding</code>; <code>swiper</code> drag, circular mode, margins and Skyline's <code>direction</code> / <code>indicator-type</code> / <code>layout-type</code>; <code>form</code> submit / reset; <code>picker</code> column linkage and <code>header-text</code>; the inline <code>picker-view</code> wheel</li>
+            <li data-i18n="scope.yes.11"><b>Hosts</b>: desktop window and launcher, headless snapshots for CI, a C ABI, native Android and iOS views, and a Flutter plugin (<code>MiniProgramScaffold</code>, <code>hostApis</code>, native components through <code>nativeViewBuilder</code>)</li>
           </ul>
         </article>
 
@@ -580,7 +755,7 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
             </tbody>
           </table>
           <h3 class="mt" data-i18n="scope.miss.h">Still open</h3>
-          <p class="note" data-i18n="scope.miss.p">This round added WebSocket / file-system / audio APIs, component event bubbling with <code>virtualHost</code> and dynamic slots, <code>navigator</code> / <code>label</code>, <code>picker-view</code> scrolling, Skyline's swiper attributes, canvas 2d gradients, shadows and pixel readback, and video poster and danmu. <code>@supports</code> / <code>@container</code> / <code>@layer</code> are unsupported in Skyline itself, so both ends skip them. Still open: <code>wx:key</code> in incremental invalidation and WXS event handlers, custom components in the H5 export, Skyline's <code>sticky</code> / <code>grid-view</code> / nested scrolling, scrollbars, video progress dragging, swiper worklet callbacks, canvas dashed lines and <code>clip</code> — each with its impact.</p>
+          <p class="note" data-i18n="scope.miss.p">Each with its impact written down in the test guide: <code>wx:key</code> in incremental invalidation and WXS event handlers; custom components in the H5 export; scrollbars and Skyline's <code>sticky</code> / <code>grid-view</code> / nested scrolling; dragging video progress and picture-in-picture; swiper worklet callbacks; canvas dashed lines and <code>clip</code>; bare text placed directly in a <code>&lt;view&gt;</code> does not wrap; inherited <code>color</code> overriding progress / slider / icon defaults; per-element CSS variables and <code>grid-template</code>; textarea <code>auto-height</code> and IME composition.</p>
         </article>
       </div>
 
@@ -588,7 +763,7 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
         <article class="card">
           <h3 data-i18n="scope.fit.h">Good fit</h3>
           <ul class="ticks">
-            <li data-i18n="scope.fit.1">You want to embed a mini-program container in your own app without inheriting WebView version drift and first-paint cost</li>
+            <li data-i18n="scope.fit.1">You want to embed a mini-program container in your own app — native or Flutter — without inheriting WebView version drift and first-paint cost</li>
             <li data-i18n="scope.fit.2">You need rendering that is <strong>controllable and reproducible</strong>: with the same fonts, every platform outputs pixel-identical results</li>
             <li data-i18n="scope.fit.3">Batch image generation with no screen: marketing long-images, server-rendered cards, UI regression baselines</li>
             <li data-i18n="scope.fit.4">You want one mini-program source tree to also ship as H5 (built-in compiler)</li>
@@ -608,15 +783,15 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
       <aside class="callout">
         <h3 data-i18n="scope.mem.h">The biggest known weakness: memory</h3>
         <p data-i18n="scope.mem.p">
-          Measured peak 600MB–1GB, of which <b>about 98% is fonts</b> — fontdue expands the geometry
-          of every glyph in a font at load time (the system's primary Chinese face, ~29k glyphs,
-          measured <b>+303MB</b>). The cost scales with glyph count, not file size: the bundled
-          single-face Source Han Sans (~65k glyphs) measured <b>+405MB</b>, i.e. more expensive than
-          the system font, so bundle a font for cross-platform identity, not to save memory. Caches
-          are already byte-capped (images 64MB / glyphs 24MB, LRU) and <code>trim_memory()</code> is
-          there for hosts to call on a memory warning. The only real fix for the peak is a lazy font
-          backend, which changes the anti-aliasing of every glyph and therefore needs its own round
-          of rebaselining.
+          Measured desktop peak 600MB–1GB, of which <b>about 98% is fonts</b> — fontdue expands the
+          geometry of every glyph in a font at load time (the system's primary Chinese face, ~29k
+          glyphs, measured <b>+303MB</b>). On the test phone, after opening four pages, total PSS is
+          <b>332MB</b> with a <b>251MB</b> native heap, most of it the system Chinese font. The cost
+          scales with glyph count, not file size: the bundled single-face Source Han Sans (~65k glyphs)
+          measured <b>+405MB</b>, so bundle a font for cross-platform identity, not to save memory.
+          Caches are byte-capped (LRU) and released in the background, and <code>trim_memory()</code>
+          is there for memory warnings. The real fix for the peak is a lazy font backend, which changes
+          the anti-aliasing of every glyph and therefore needs its own round of rebaselining.
         </p>
       </aside>
     </div>
@@ -629,10 +804,12 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
         <p class="eyebrow" data-i18n="stack.eyebrow">Stack</p>
         <h2 data-i18n="stack.h2">Few dependencies, all on current stable</h2>
         <p class="sec-lede" data-i18n="stack.lede">
-          Project size <b>240 <code>.rs</code> files / ~53k lines</b> (29 of them test files); any file
-          over 500 lines gets split. Outside the FFI boundary, <code>unsafe</code> appears only in
-          <strong>4 spots in the compositor</strong> (viewing pixel slices as bytes, creating a surface
-          from a native window pointer), each with a SAFETY note; there is no <code>static mut</code>.
+          <code>src/</code> is <b>389 <code>.rs</code> files / ~83k lines</b> (47 of them test modules),
+          plus 29 integration-test files; any file over 500 lines gets split. Outside the FFI
+          boundary, <code>unsafe</code> appears in <strong>11 audited spots</strong> — pixel slices
+          viewed as bytes, surfaces created from a native window pointer, two Android system calls
+          (logcat, CPU affinity) and one zeroed canvas allocation — each with a SAFETY note; there is
+          no <code>static mut</code>.
         </p>
       </header>
 
@@ -650,6 +827,7 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
         <li><b>winit + softbuffer</b><span>0.30 / 0.4</span><i data-i18n="dep.winit">Desktop window and software framebuffer, also the fallback when the GPU is unavailable (optional)</i></li>
         <li><b>wgpu + pollster</b><span>=30.0.1 / =1.0.1</span><i data-i18n="dep.wgpu">GPU compositing backend: Metal / Vulkan / DX12 / GLES (optional, pinned exactly)</i></li>
         <li><b>rodio</b><span>0.22</span><i data-i18n="dep.rodio">Desktop audio playback (optional)</i></li>
+        <li><b>arboard</b><span>3</span><i data-i18n="dep.arboard">Desktop clipboard for <code>wx.setClipboardData</code> (optional)</i></li>
         <li><b>jni</b><span>0.21</span><i data-i18n="dep.jni">Android JNI entry</i></li>
       </ul>
 
@@ -657,26 +835,27 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
         <article class="card">
           <h3 data-i18n="stack.size.h">Artifact size<small>measured, arm64</small></h3>
           <table class="kv"><tbody>
-            <tr><th scope="row" data-i18n="stack.size.r1k">Android <code>.so</code>, stripped</th><td>34.4 MB</td></tr>
-            <tr><th scope="row" data-i18n="stack.size.r2k">iOS static library <code>.a</code></th><td data-i18n="stack.size.r2v">184 MB<small>shrinks a lot through dead-code elimination once linked</small></td></tr>
+            <tr><th scope="row" data-i18n="stack.size.r1k">Android <code>.so</code>, stripped, GPU included</th><td>41.4 MB</td></tr>
+            <tr><th scope="row" data-i18n="stack.size.r2k">The same without the GPU backend</th><td>36.3 MB</td></tr>
           </tbody></table>
         </article>
         <article class="card">
           <h3 data-i18n="stack.reg.h">Regression suite<small>all green on every change</small></h3>
           <table class="kv"><tbody>
-            <tr><th scope="row" data-i18n="stack.reg.r1k">Unit tests</th><td data-i18n="stack.reg.r1v">lib 774 + bin 26 + 72 end-to-end</td></tr>
+            <tr><th scope="row" data-i18n="stack.reg.r1k">Rust tests</th><td>948</td></tr>
             <tr><th scope="row" data-i18n="stack.reg.r2k">Scene gallery</th><td data-i18n="stack.reg.r2v">65 images, byte-reproducible</td></tr>
-            <tr><th scope="row" data-i18n="stack.reg.r3k">Partial-repaint check</th><td data-i18n="stack.reg.r3v">5 scenes, byte-identical</td></tr>
+            <tr><th scope="row" data-i18n="stack.reg.r3k">Partial-repaint check</th><td data-i18n="stack.reg.r3v">5 desktop scenes + 12 SDK cases, frame by frame</td></tr>
             <tr><th scope="row" data-i18n="stack.reg.r4k">SDK vs desktop</th><td data-i18n="stack.reg.r4v">sample 15/15, news 6/6 pixel-identical</td></tr>
-            <tr><th scope="row" data-i18n="stack.reg.r5k">Compiler warnings</th><td>0</td></tr>
-            <tr><th scope="row" data-i18n="stack.reg.r6k">Full run</th><td data-i18n="stack.reg.r6v"><code>bash tools/regress.sh</code>, about 4 min after an engine change</td></tr>
+            <tr><th scope="row" data-i18n="stack.reg.r7k">GPU vs CPU</th><td data-i18n="stack.reg.r7v">34/34 byte-identical</td></tr>
+            <tr><th scope="row" data-i18n="stack.reg.r8k">Flutter plugin tests</th><td>22</td></tr>
+            <tr><th scope="row" data-i18n="stack.reg.r6k">Full run</th><td data-i18n="stack.reg.r6v"><code>bash tools/regress-async.sh</code>, 5–8 min, logged into timestamped batches</td></tr>
           </tbody></table>
         </article>
         <article class="card">
           <h3 data-i18n="stack.todo.h">Three biggest TODOs</h3>
           <ol class="ol">
             <li data-i18n="stack.todo.1"><b>Memory peak</b> — swap in a lazy font backend</li>
-            <li data-i18n="stack.todo.2"><b><code>setData</code> still rebuilds the whole layout tree</b> — needs incremental tree patching; the infrastructure is in place</li>
+            <li data-i18n="stack.todo.2"><b><code>setData</code> still rebuilds the whole layout tree</b> — about 3.5 ms on a phone now; patching only the changed subtree would remove it</li>
             <li data-i18n="stack.todo.3"><b>Custom components in the H5 export</b> — the cross-check against Chrome only covers pages without them</li>
           </ol>
         </article>
@@ -694,37 +873,41 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
       </header>
 
       <div class="docs-grid">
-        <a class="doc" href="https://github.com/365code365/mini-program-core/blob/main/doc/%E6%9E%B6%E6%9E%84%E4%B8%8E%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86.md">
+        <a class="doc spot" href="https://github.com/365code365/mini-program-core/blob/main/doc/%E6%9E%B6%E6%9E%84%E4%B8%8E%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86.md">
           <h3 data-i18n="docs.1.h">Architecture &amp; implementation</h3>
           <p data-i18n="docs.1.p">How a frame is drawn, layering and module split, how frame cost was driven down, partial repaint, scroll feel and touch alignment, taffy adaptation</p>
         </a>
-        <a class="doc" href="https://github.com/365code365/mini-program-core/blob/main/doc/%E5%BC%95%E6%93%8E%E6%B5%8B%E8%AF%95%E8%AF%B4%E6%98%8E.md">
+        <a class="doc spot" href="https://github.com/365code365/mini-program-core/blob/main/doc/%E5%BC%95%E6%93%8E%E6%B5%8B%E8%AF%95%E8%AF%B4%E6%98%8E.md">
           <h3 data-i18n="docs.2.h">Engine test guide</h3>
-          <p data-i18n="docs.2.p">Capability matrix, T1–T29 checklists and criteria, measured memory breakdown, known gaps</p>
+          <p data-i18n="docs.2.p">Capability matrix, T1–T30 checklists and criteria (every real-phone round included), measured memory breakdown, known gaps</p>
         </a>
-        <a class="doc" href="https://github.com/365code365/mini-program-core/blob/main/doc/%E5%8E%9F%E7%94%9FApp%E9%9B%86%E6%88%90%E6%8C%87%E5%8D%97.md">
+        <a class="doc spot" href="https://github.com/365code365/mini-program-core/blob/main/doc/%E5%8E%9F%E7%94%9FApp%E9%9B%86%E6%88%90%E6%8C%87%E5%8D%97.md">
           <h3 data-i18n="docs.3.h">Native app integration guide</h3>
-          <p data-i18n="docs.3.p">Minimal integration, the host's nine jobs, C ABI, iOS / Android / HarmonyOS steps, acceptance checklist</p>
+          <p data-i18n="docs.3.p">Minimal integration, the host's jobs, C ABI, GPU surfaces, iOS / Android / HarmonyOS / Flutter steps, acceptance checklist</p>
         </a>
-        <a class="doc" href="https://github.com/365code365/mini-program-core/blob/main/doc/%E8%B8%A9%E5%9D%91%E8%AE%B0%E5%BD%95.md">
+        <a class="doc spot" href="https://github.com/365code365/mini-program-core/blob/main/doc/%E8%B8%A9%E5%9D%91%E8%AE%B0%E5%BD%95.md">
           <h3 data-i18n="docs.4.h">Gotchas log</h3>
-          <p data-i18n="docs.4.p">13 classes of "what was once wrong": symptom → root cause → current approach → regression criterion</p>
+          <p data-i18n="docs.4.p">"What was once wrong": symptom → root cause → current approach → regression criterion</p>
         </a>
-        <a class="doc" href="https://github.com/365code365/mini-program-core/blob/main/doc/%E5%9C%BA%E6%99%AF%E7%94%BB%E5%BB%8A.md">
+        <a class="doc spot" href="https://github.com/365code365/mini-program-core/blob/main/doc/%E5%9C%BA%E6%99%AF%E7%94%BB%E5%BB%8A.md">
           <h3 data-i18n="docs.5.h">Scene gallery</h3>
           <p data-i18n="docs.5.p">65 real renders (also the regression baselines) and how the assets are generated</p>
         </a>
-        <a class="doc" href="https://github.com/365code365/mini-program-core/blob/main/doc/%E7%A4%BA%E4%BE%8B%E4%B8%8E%E8%B0%83%E8%AF%95.md">
+        <a class="doc spot" href="https://github.com/365code365/mini-program-core/blob/main/doc/%E7%A4%BA%E4%BE%8B%E4%B8%8E%E8%B0%83%E8%AF%95.md">
           <h3 data-i18n="docs.6.h">Samples &amp; debugging</h3>
           <p data-i18n="docs.6.p">Sample mini-programs, live browser preview, compiling to HTML, Rust / C / mobile code samples</p>
         </a>
-        <a class="doc" href="https://github.com/365code365/mini-program-core/blob/main/doc/%E8%A7%A6%E6%8E%A7%E5%AF%B9%E9%BD%90%E6%B5%8B%E8%AF%95%E6%8A%A5%E5%91%8A.md">
+        <a class="doc spot" href="https://github.com/365code365/mini-program-core/blob/main/doc/%E8%A7%A6%E6%8E%A7%E5%AF%B9%E9%BD%90%E6%B5%8B%E8%AF%95%E6%8A%A5%E5%91%8A.md">
           <h3 data-i18n="docs.7.h">Touch alignment report</h3>
           <p data-i18n="docs.7.p">Item-by-item measurements of swipe / tap / longpress / gesture against WeChat</p>
         </a>
-        <a class="doc" href="https://github.com/365code365/mini-program-core/blob/main/sdk/README.md">
+        <a class="doc spot" href="https://github.com/365code365/mini-program-core/blob/main/sdk/README.md">
           <h3 data-i18n="docs.8.h">SDK guide</h3>
           <p data-i18n="docs.8.p">Three-line integration and the three conventions you must know</p>
+        </a>
+        <a class="doc spot" href="https://github.com/365code365/mini-program-core/blob/main/sdk/flutter/README.md">
+          <h3 data-i18n="docs.9.h">Flutter plugin</h3>
+          <p data-i18n="docs.9.p"><code>MiniProgramController</code> / <code>MiniProgramScaffold</code>, host APIs, native components, navigation bar and capsule, Android system bars</p>
         </a>
       </div>
     </div>
@@ -732,6 +915,7 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
 
   <!-- ─────────────────────────  CTA  ───────────────────────── -->
   <section class="cta">
+    <div class="cta-ring" aria-hidden="true"></div>
     <div class="wrap cta-inner">
       <h2 data-i18n="cta.h2">Give it a writable pixel buffer,<br>and the engine takes it from there.</h2>
       <div class="hero-actions">

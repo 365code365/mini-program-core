@@ -3,3 +3,5 @@
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 .ipt { height: 80rpx; padding: 0 16rpx; border: 1rpx solid #dddddd; border-radius: 8rpx; background-color: #fafafa; }
 .video { width: 100%; height: 360rpx; }
+.fs-row { display: flex; flex-direction: row; margin: 16rpx -8rpx 0 -8rpx; }
+.fs-btn { flex: 1; margin: 0 8rpx; }

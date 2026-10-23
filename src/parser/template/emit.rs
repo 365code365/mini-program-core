@@ -49,6 +49,10 @@ impl TemplateEngine {
                 new_node.attributes.insert(key.clone(), Self::interpolate_attr(key, value, data));
             }
             Self::stamp_owner(&mut new_node, f.owner);
+            // `this.animate` / applyAnimatedStyle 按选择器写的样式（作用域根 data 的 `__nodeStyles`，node_styles.rs）
+            if let Some(m) = f.root.get("__nodeStyles").and_then(JsonValue::as_object).filter(|m| !m.is_empty()) {
+                super::node_styles::apply(&mut new_node, m);
+            }
             // scroll-view 的 `refresher-triggered` 绑定了哪些字段：展开后只剩求出来的值，
             // 宿主要靠字段名判断「页面有没有 setData 过它」（见 `bindings.rs`）
             if node.tag_name == "scroll-view" {

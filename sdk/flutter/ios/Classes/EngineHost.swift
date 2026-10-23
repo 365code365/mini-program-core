@@ -325,6 +325,17 @@ final class EngineHost: NSObject {
             let (key, name, detail) = (s("key"), s("name"), s("detail"))
             run { _ = mr_app_native_view_event($0, key, name, detail) }
             result(nil)
+        case "dispatchEvent":
+            // 宿主推事件给 wx.onXxx：引擎线程上派发，回监听者个数
+            let (name, payload) = (s("name"), s("payload"))
+            thread.perform { [self] in
+                let n = handle.map { Int(mr_app_dispatch_event($0, name, payload)) } ?? 0
+                // 回调里多半 setData 了：与 run 一样回主线程挂一帧
+                DispatchQueue.main.async { [self] in
+                    requestFrame()
+                    result(n)
+                }
+            }
         case "eval":
             let code = s("code")
             thread.perform { [self] in

@@ -39,6 +39,14 @@ internal object DiagProps {
     @Volatile var pace = false
         private set
 
+    /**
+     * `debug.mini.native_lag <帧数>`：宿主承载的原生组件比引擎画面晚上屏几个 vsync（Dart 的
+     * `MiniProgramController.nativeViewLag`）。不是引擎的环境变量，交给 Dart（textureInfo 的 `nativeLag`），
+     * 真机校准滑动时视频框跟不跟页面用：改完重开小程序生效
+     */
+    @Volatile var nativeLag: Double? = null
+        private set
+
     fun apply() {
         val props = try {
             Runtime.getRuntime().exec(arrayOf("getprop")).inputStream.bufferedReader().use { it.readText() }
@@ -47,10 +55,17 @@ internal object DiagProps {
         }
         // `[debug.mini.fps]: [1]`
         val re = Regex("""^\[debug\.mini\.([a-z_]+)]: \[(.*)]$""")
+        nativeLag = null
         for (line in props.lineSequence()) {
             val m = re.find(line.trim()) ?: continue
-            val env = KEYS[m.groupValues[1]] ?: continue
             val v = m.groupValues[2]
+            if (m.groupValues[1] == "native_lag") {
+                // 负数要写成 `' -9'`（setprop 会把开头的 `-` 当成选项）：先去空白
+                nativeLag = v.trim().toDoubleOrNull()
+                if (nativeLag != null) Log.i("mini-render", "诊断开关 nativeLag=$v（来自 debug.mini.native_lag）")
+                continue
+            }
+            val env = KEYS[m.groupValues[1]] ?: continue
             if (v.isEmpty()) continue
             Os.setenv(env, v, true)
             if (env == "MINI_FPS") fps = true

@@ -178,7 +178,18 @@ impl TemplateEngine {
         cx.pop_chain(pushed);
         cx.swap_path(saved);
         if !cx.collecting() && cx.comp_option(tag, "virtualHost") {
+            // 引擎内置组件（movable-view）的 `__mergeHost`：模板的根节点**就是**这个组件的节点 ——
+            // 标签、使用方写的 class / style / id / data-* 都并到它身上（微信里它是一个原生节点，页面 CSS
+            // 的宽高、背景、子项对齐直接作用在装内容的那一层；分成宿主 + 内层两层的话内层的 flex 对齐就丢了）
+            let mut merge = cx.comp_option(tag, "__mergeHost").then(|| std::mem::take(&mut host.attributes));
             for mut c in host.children {
+                if c.node_type == WxmlNodeType::Element {
+                    if let Some(h) = merge.take() {
+                        Self::merge_host(tag, &h, &mut c);
+                        out.push(c);
+                        continue;
+                    }
+                }
                 if c.node_type == WxmlNodeType::Element {
                     let v = match c.attributes.get(VIRTUAL_HOST_ATTR) {
                         Some(inner) => format!("{tag} {inner}"),
@@ -191,6 +202,30 @@ impl TemplateEngine {
             return;
         }
         out.push(host);
+    }
+
+    /// `__mergeHost`：把宿主的标签与使用方写的 class / style / id / data-* 并到模板根节点上。
+    /// 事件绑定不并：根节点归组件实例（它自己的 touch 处理函数），使用方的 bind 要派给使用方
+    fn merge_host(tag: &str, host: &HashMap<String, String>, c: &mut WxmlNode) {
+        c.tag_name = tag.to_string();
+        let join = |a: Option<&String>, b: Option<&String>, sep: &str| {
+            let (a, b) = (a.map(|s| s.trim()).unwrap_or(""), b.map(|s| s.trim()).unwrap_or(""));
+            match (a.is_empty(), b.is_empty()) {
+                (true, _) => b.to_string(),
+                (_, true) => a.to_string(),
+                _ => format!("{}{sep}{b}", a.trim_end_matches(';')),
+            }
+        };
+        let class = join(host.get("class"), c.attributes.get("class"), " ");
+        // 组件自己的 style（位置）在后：同名属性组件的赢
+        let style = join(host.get("style"), c.attributes.get("style"), ";");
+        c.attributes.insert("class".into(), class);
+        c.attributes.insert("style".into(), style);
+        for (k, v) in host {
+            if k == "id" || k.starts_with("data-") {
+                c.attributes.insert(k.clone(), v.clone());
+            }
+        }
     }
 
     /// 一处使用的对账信息：在**使用方的作用域**里求值（含使用方的 `wx:for` 变量）

@@ -38,6 +38,12 @@ pub mod clipboard;
 /// `wx.connectSocket`：每条连接一个线程，事件每帧取回
 pub mod websocket;
 
+/// `wx.createTCPSocket` / `wx.createUDPSocket` / `wx.getLocalIPAddress`：同 websocket 的线程 + 事件队列模式
+pub mod net_socket;
+
+/// 引擎内置的官方组件（page-container、match-media、root-portal、page-meta、手势组件……）：WXML + JS 实现，页面用到才注入
+pub mod builtin_components;
+
 /// `wx.getFileSystemManager()`：路径权限（USER_DATA_PATH 可写）与文件操作、unzip、图片信息
 pub mod wxfs;
 

@@ -12,7 +12,7 @@
 use super::base::*;
 use crate::parser::wxml::WxmlNode;
 use crate::text::TextRenderer;
-use crate::{Canvas, Color, Paint, PaintStyle, Path, Rect as GeoRect};
+use crate::{Canvas, Color, Paint, Rect as GeoRect};
 use taffy::prelude::*;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, OnceLock};
@@ -93,22 +93,26 @@ pub struct VideoPlayer {
 mod audio;
 /// 封面、弹幕、进度轨道几何（G-6）
 mod extras;
-pub use extras::{clear_danmu, progress_track, send_danmu};
+pub use extras::{clear_danmu, send_danmu};
+pub use chrome::progress_track;
 /// H.264 解码与像素转换
 mod decode;
 /// MP4 容器解析
 mod mp4;
 /// 播放状态机
 mod playback;
-/// VideoContext 命令、组件事件、全屏状态
+/// 内置播放器的 VideoContext 命令与组件事件
 mod control;
-pub use control::{
-    clear_fullscreen, fullscreen_video, video_command, video_events_pending, video_poll_events, video_position,
-    VideoCommand,
-};
-/// 全屏画面（画在所有页面层之上）与全屏时的点击
-mod fullscreen;
-pub use fullscreen::{draw_fullscreen, fullscreen_tap};
+pub use control::{video_command, video_events_pending, video_poll_events, video_position, VideoCommand};
+/// 全屏画面（画在所有页面层之上，横屏时转过来画）与全屏时的触摸
+pub mod fullscreen;
+pub use fullscreen::{clear_fullscreen, draw_fullscreen, fullscreen_video};
+/// 控制条的显隐 / 自动收起 / 拖进度 / 静音，与「视频在哪放」的抽象（两种播放器共用）
+pub mod ui;
+/// 控制条的几何与画法（页面里与全屏共用）
+pub mod chrome;
+/// 同层渲染：宿主解码、帧交给引擎画（创建选项 `sameLayer` 含 `video`）
+pub mod host_feed;
 
 /// 全局视频播放器缓存
 static VIDEO_PLAYERS: OnceLock<Arc<Mutex<HashMap<String, VideoPlayer>>>> = OnceLock::new();
@@ -271,7 +275,8 @@ impl VideoComponent {
         };
         let autoplay = flag("autoplay");
         let loop_play = flag("loop");
-        let muted = flag("muted");
+        // 用户按过控制条的静音键就以它为准（ui.rs）
+        let muted = ui::effective_muted(&host_feed::video_key(&attrs), flag("muted"));
         let initial_time = node.get_attr("initial-time").and_then(|v| v.trim().parse::<f64>().ok()).unwrap_or(0.0);
         
         let default_width = 300.0;
@@ -289,7 +294,8 @@ impl VideoComponent {
         
         let tn = ctx.taffy.new_leaf(ts).unwrap();
         
-        if !src.is_empty() && !host_owns_video() {
+        // 宿主承载（盖控件）与同层渲染（宿主解码、引擎画）时都不建内置播放器
+        if !src.is_empty() && !host_owns_video() && !host_feed::host_feeds_video() {
             get_or_create_player(src, autoplay, loop_play);
             set_player_options(src, muted, loop_play, initial_time);
         }
@@ -304,160 +310,7 @@ impl VideoComponent {
             events,
         })
     }
-    
-    pub fn draw(
-        node: &RenderNode, 
-        canvas: &mut Canvas, 
-        text_renderer: Option<&TextRenderer>,
-        x: f32, y: f32, w: f32, h: f32, sf: f32
-    ) {
-        let style = &node.style;
-        let radius = style.border_radius;
-        let src = &node.text;
-        
-        let bg_paint = Paint::new()
-            .with_color(Color::BLACK)
-            .with_style(PaintStyle::Fill)
-            .with_anti_alias(true);
-        
-        if radius > 0.0 {
-            let mut path = Path::new();
-            path.add_round_rect(x, y, w, h, radius);
-            canvas.draw_path(&path, &bg_paint);
-        } else {
-            canvas.draw_rect(&GeoRect::new(x, y, w, h), &bg_paint);
-        }
-        
-        if host_owns_video() {
-            return; // 宿主的播放器盖在这块黑底上
-        }
-        if !src.is_empty() {
-            if let Some((frame_data, frame_w, frame_h)) = get_video_frame(src) {
-                // `object-fit`：contain（默认）/ fill / cover，对应图片的三种缩放模式
-                let mode = match node.attrs.get("object-fit").map(|s| s.trim()) {
-                    Some("fill") => "scaleToFill",
-                    Some("cover") => "aspectFill",
-                    _ => "aspectFit",
-                };
-                // 还没开始播：`poster` 盖在第一帧上
-                if !Self::draw_poster(node, canvas, x, y, w, h) {
-                    canvas.draw_image(&frame_data, frame_w, frame_h, x, y, w, h, mode, radius);
-                }
-                Self::draw_danmu(node, canvas, text_renderer, x, y, w, sf);
-                Self::draw_controls(canvas, text_renderer, src, x, y, w, h, sf);
-                return;
-            }
-        }
-        // 还没解出画面（远程 / 加载中）：有封面先画封面，播放键照常
-        Self::draw_poster(node, canvas, x, y, w, h);
-        Self::draw_placeholder(canvas, x, y, w, h, sf);
-    }
-    
-    fn draw_placeholder(canvas: &mut Canvas, x: f32, y: f32, w: f32, h: f32, sf: f32) {
-        let cx = x + w / 2.0;
-        let cy = y + h / 2.0;
-        let btn_size = 50.0 * sf;
-        
-        let bg_paint = Paint::new()
-            .with_color(Color::new(0, 0, 0, 128))
-            .with_style(PaintStyle::Fill)
-            .with_anti_alias(true);
-        canvas.draw_circle(cx, cy, btn_size / 2.0, &bg_paint);
-        
-        let tri_size = btn_size * 0.35;
-        let mut path = Path::new();
-        path.move_to(cx - tri_size * 0.4, cy - tri_size * 0.6);
-        path.line_to(cx - tri_size * 0.4, cy + tri_size * 0.6);
-        path.line_to(cx + tri_size * 0.6, cy);
-        path.close();
-        
-        let tri_paint = Paint::new()
-            .with_color(Color::WHITE)
-            .with_style(PaintStyle::Fill)
-            .with_anti_alias(true);
-        canvas.draw_path(&path, &tri_paint);
-    }
-    
-    fn draw_controls(
-        canvas: &mut Canvas, 
-        text_renderer: Option<&TextRenderer>,
-        src: &str,
-        x: f32, y: f32, w: f32, h: f32, sf: f32
-    ) {
-        let bar_height = 36.0 * sf;
-        let bar_y = y + h - bar_height;
-        
-        let bg_paint = Paint::new()
-            .with_color(Color::new(0, 0, 0, 160))
-            .with_style(PaintStyle::Fill);
-        canvas.draw_rect(&GeoRect::new(x, bar_y, w, bar_height), &bg_paint);
-        
-        let is_playing = is_video_playing(src);
-        let btn_size = 24.0 * sf;
-        let btn_x = x + 12.0 * sf;
-        let btn_y = bar_y + (bar_height - btn_size) / 2.0;
-        
-        let btn_paint = Paint::new()
-            .with_color(Color::WHITE)
-            .with_style(PaintStyle::Fill)
-            .with_anti_alias(true);
-        
-        if is_playing {
-            let bar_w = 4.0 * sf;
-            let bar_h = btn_size * 0.6;
-            let gap = 6.0 * sf;
-            canvas.draw_rect(&GeoRect::new(
-                btn_x + (btn_size - gap - bar_w * 2.0) / 2.0,
-                btn_y + (btn_size - bar_h) / 2.0,
-                bar_w, bar_h
-            ), &btn_paint);
-            canvas.draw_rect(&GeoRect::new(
-                btn_x + (btn_size + gap - bar_w * 2.0) / 2.0 + bar_w,
-                btn_y + (btn_size - bar_h) / 2.0,
-                bar_w, bar_h
-            ), &btn_paint);
-        } else {
-            let tri_size = btn_size * 0.5;
-            let mut path = Path::new();
-            let cx = btn_x + btn_size / 2.0;
-            let cy = btn_y + btn_size / 2.0;
-            path.move_to(cx - tri_size * 0.3, cy - tri_size * 0.5);
-            path.line_to(cx - tri_size * 0.3, cy + tri_size * 0.5);
-            path.line_to(cx + tri_size * 0.5, cy);
-            path.close();
-            canvas.draw_path(&path, &btn_paint);
-        }
-        
-        if let Some((current, duration)) = get_video_progress(src) {
-            let progress_x = btn_x + btn_size + 12.0 * sf;
-            let progress_w = w - progress_x - 80.0 * sf - x;
-            let progress_h = 4.0 * sf;
-            let progress_y = bar_y + (bar_height - progress_h) / 2.0;
-            
-            let track_paint = Paint::new()
-                .with_color(Color::new(255, 255, 255, 80))
-                .with_style(PaintStyle::Fill);
-            canvas.draw_rect(&GeoRect::new(progress_x, progress_y, progress_w, progress_h), &track_paint);
-            
-            let progress = if duration > 0.0 { current / duration } else { 0.0 };
-            let fill_paint = Paint::new()
-                .with_color(Color::from_hex(0x07C160))
-                .with_style(PaintStyle::Fill);
-            canvas.draw_rect(&GeoRect::new(progress_x, progress_y, progress_w * progress as f32, progress_h), &fill_paint);
-            
-            if let Some(tr) = text_renderer {
-                let time_text = format!("{} / {}", Self::format_time(current), Self::format_time(duration));
-                let time_x = progress_x + progress_w + 8.0 * sf;
-                let time_y = bar_y + bar_height / 2.0 - 6.0 * sf;
-                let text_paint = Paint::new().with_color(Color::WHITE);
-                tr.draw_text(canvas, &time_text, time_x, time_y, 11.0 * sf, &text_paint);
-            }
-        }
-    }
-    
-    fn format_time(seconds: f64) -> String {
-        let mins = (seconds / 60.0) as u32;
-        let secs = (seconds % 60.0) as u32;
-        format!("{:02}:{:02}", mins, secs)
-    }
 }
+
+/// 画：黑底、画面（内置播放器解出的帧 / 宿主交来的帧）、封面、控制条、中间播放键
+mod draw;

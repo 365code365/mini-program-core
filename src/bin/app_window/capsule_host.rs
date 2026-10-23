@@ -74,7 +74,8 @@ impl crate::MiniAppWindow {
         self.capsule_spec().map(|(r, dark)| (r, dark, pressed))
     }
 
-    /// 逻辑层发给宿主的事件：桌面只关心导航栏前景色（胶囊换配色），其余的桌面本来就不消费
+    /// 逻辑层发给宿主的事件：桌面关心导航栏前景色（胶囊换配色）与 hostCall（选图 / 选文件，
+    /// 交给 host_calls.rs），其余的桌面本来就不消费
     pub(crate) fn capsule_sync_host_events(&mut self) {
         let route = self.page_stack.last().map(|p| p.path.clone()).unwrap_or_default();
         for raw in self.app.take_host_events() {
@@ -84,6 +85,8 @@ impl crate::MiniAppWindow {
                     self.capsule.front = Some((route.clone(), fc.eq_ignore_ascii_case("#ffffff")));
                     self.capsule_repaint();
                 }
+            } else if v["type"] == "hostCall" {
+                self.queue_host_call(v);
             }
         }
     }

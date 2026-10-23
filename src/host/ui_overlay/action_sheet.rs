@@ -19,6 +19,7 @@ use crate::text::TextRenderer;
 use crate::Color;
 use serde_json::Value;
 use std::cell::RefCell;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Instant;
 
 const ITEM_H: f32 = 56.0;
@@ -54,15 +55,21 @@ thread_local! {
     static FROZEN: std::cell::Cell<Option<Instant>> = const { std::cell::Cell::new(None) };
     /// 最近一次画出来的面板顶边（逻辑像素；`MINI_PACE` 诊断用）
     static LAST_TOP: std::cell::Cell<Option<f32>> = const { std::cell::Cell::new(None) };
-    /// 面板缓存（sheet_raster.rs）与画它用的整屏草稿缓冲（留着复用：按一下选项就要重画一次）
+    /// 面板缓存（sheet_raster.rs）。它画在一块整屏画布上，换下一张时画布接着用（按一下选项就要重画一次）
     static RASTER: RefCell<Option<SheetRaster>> = const { RefCell::new(None) };
-    static SCRATCH: RefCell<Vec<u32>> = const { RefCell::new(Vec::new()) };
     /// [`reach`] 算出的这一帧的贴法（GPU 据此把面板缓存当纹理挪，见 [`gpu_layer`]）
     static PLACED: std::cell::Cell<Option<Placement>> = const { std::cell::Cell::new(None) };
-    static NEXT_RASTER: std::cell::Cell<u64> = const { std::cell::Cell::new(1) };
     /// 面板正文这一帧由 GPU 从缓存纹理贴（[`set_panel_on_gpu`]）：CPU 只画 `rows` 里的圆角行
     static PANEL_ON_GPU: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
 }
+
+/// 面板缓存的编号（`SheetRaster::id`）：GPU 合成器认这个号决定要不要重传纹理，所以必须**进程里唯一**。
+///
+/// 从前它是线程局部的、每条线程都从 1 数：GPU 自检在预热线程（`mini-gpu-warm`）上画了一张 1 号缓存
+/// （两项、没有文字），合成器搬到引擎线程后，第一次真弹出来的菜单也是 1 号 —— 合成器以为纹理就是它、
+/// 不传，屏上贴的是自检那张：面板白板没字，底下一截黑（自检的面板矮，越界取样是 0）。
+/// 直到按一下选项（换一张缓存）才变对
+static NEXT_RASTER: AtomicU64 = AtomicU64::new(1);
 
 /// GPU 直通帧把面板缓存当纹理挪时，合成前设 true、合成后设 false：这期间 [`render`] 只写 `rows`
 /// 那几行（圆角），面板其余行由 GPU 贴。平时面板整块画（`rows` 只限定压暗与底图）
@@ -96,8 +103,9 @@ pub fn animating() -> bool {
 pub fn clear() {
     with(|s| *s = None);
     RASTER.with(|r| *r.borrow_mut() = None);
-    SCRATCH.with(|s| *s.borrow_mut() = Vec::new());
     PLACED.with(|p| p.set(None));
+    // CPU 合成器留着的底图（整屏 10MB）：GPU 上屏时 CPU 合成器可能好久都不再被叫到，这里一起放掉
+    crate::compositor::sheet_base::release();
 }
 
 fn sheet_height(st: &ActionSheet) -> f32 {
@@ -231,6 +239,16 @@ pub fn on_release(app: &mut MiniApp, vp: (f32, f32), _x: f32, y: f32) -> bool {
 ///
 /// `rows`：只合成缓冲的这几行（遮罩只压这几行；面板总在 [`reach`] 之内）
 pub fn render(buf: &mut [u32], w: u32, h: u32, sf: f32, text: Option<&TextRenderer>, rows: (u32, u32)) -> Footprint {
+    render_impl(buf, None, w, h, sf, text, rows)
+}
+
+/// [`render`]，但 `rows` 那几行的底图从 `base`（同样大小的缓冲）读：边读边压暗写进 `buf`，再贴面板。
+/// CPU 合成器把底图留着一份时用（`compositor::sheet_base`），结果与「先把底图拼进 `buf` 再 [`render`]」逐字节相同
+pub fn render_over(buf: &mut [u32], base: &[u32], w: u32, h: u32, sf: f32, text: Option<&TextRenderer>, rows: (u32, u32)) -> Footprint {
+    render_impl(buf, Some(base), w, h, sf, text, rows)
+}
+
+fn render_impl(buf: &mut [u32], base: Option<&[u32]>, w: u32, h: u32, sf: f32, text: Option<&TextRenderer>, rows: (u32, u32)) -> Footprint {
     let mut fp = Footprint::NONE;
     let now = FROZEN.with(|f| f.take()).unwrap_or_else(crate::frame_clock::now);
     let Some(st) = with(|s| s.clone()) else { return fp };
@@ -242,11 +260,21 @@ pub fn render(buf: &mut [u32], w: u32, h: u32, sf: f32, text: Option<&TextRender
     // 遮罩：0.6 黑，随面板淡入淡出
     let mask = 0.6 * (1.0 - hidden);
     if mask > 0.002 {
-        // 查表压暗（与逐像素 `(c as f32 * keep) as u32` 逐字节相同）：遮罩每帧要盖满整屏，
-        // 1080×2354 两百多万像素，逐像素三次浮点乘法在一加 PLY110 上一帧要好几毫秒
+        // 按表压暗（与逐像素 `(c as f32 * keep) as u32` 逐字节相同；表写得成乘法时按乘法算，见
+        // `Footprint::apply_lut`）：遮罩每帧要盖满面板以上的整片屏，两百万像素上下
         let lut = footprint::lut_trunc(1.0 - mask);
-        Footprint::apply_lut(buf, w, rows, &lut, 0);
+        match base {
+            Some(src) => Footprint::apply_lut_from(src, buf, w, rows, &lut, 0),
+            None => Footprint::apply_lut(buf, w, rows, &lut, 0),
+        }
         fp.dim(&lut);
+    } else if let Some(src) = base {
+        // 遮罩淡到看不出来了：底图原样拷过去
+        let n = src.len().min(buf.len());
+        let (a, b) = ((rows.0 as usize * w as usize).min(n), (rows.1 as usize * w as usize).min(n));
+        if a < b {
+            buf[a..b].copy_from_slice(&src[a..b]);
+        }
     }
     let sheet_h = sheet_height(&st);
     let top = h as f32 / sf - sheet_h + sheet_h * hidden;
@@ -273,21 +301,22 @@ fn with_raster<R>(
     RASTER.with(|cell| {
         let mut slot = cell.borrow_mut();
         if slot.as_ref().map(|r| &r.key) != Some(&key) {
-            let id = NEXT_RASTER.with(|n| {
-                let v = n.get();
-                n.set(v + 1);
-                v
-            });
+            let t0 = Instant::now();
+            let id = NEXT_RASTER.fetch_add(1, Ordering::Relaxed);
             // 按**完全展开**的位置画：入场第一帧面板还整个在屏幕下面，按那一刻画的话缓存是空的。
             // 展开后贴的位置与画的位置相同，静止的面板与直接画逐字节一致
             let sheet_h = sheet_height(st);
             let open_top = h as f32 / sf - sheet_h;
             let rect = (0.0, open_top * sf, w as f32, (sheet_h + RADIUS) * sf);
-            *slot = Some(SCRATCH.with(|s| {
-                SheetRaster::build(id, key, (w, h), sf, open_top, rect, RADIUS * sf, &mut s.borrow_mut(), |b| {
-                    draw_panel(b, w, h, sf, text, st, open_top)
-                })
+            // 旧缓存的画布接着用（尺寸不对 build 会重新分配）
+            let canvas = slot.take().map(SheetRaster::into_canvas).unwrap_or_default();
+            *slot = Some(SheetRaster::build(id, key, (w, h), sf, open_top, rect, RADIUS * sf, canvas, |b| {
+                draw_panel(b, w, h, sf, text, st, open_top)
             }));
+            // 弹出的第一帧就在画它：`MINI_DAMAGE_LOG` 下记一笔（真机上曾经一张 7.5~10ms）
+            if std::env::var_os("MINI_DAMAGE_LOG").is_some() {
+                crate::compositor::diag::emit(&format!("🧾 操作菜单面板缓存 #{id} 画了 {:.1}ms", t0.elapsed().as_secs_f32() * 1000.0));
+            }
         }
         let r = slot.as_ref()?;
         let p = r.place(top, sf);
@@ -324,6 +353,8 @@ pub(crate) fn with_selftest_sheet<R>(f: impl FnOnce() -> R) -> R {
     };
     with(|s| *s = Some(st));
     let r = f();
+    // 自检拿 CPU 合成当参照时留下的底图（自检可能就跑在引擎线程上）
+    crate::compositor::sheet_base::release();
     with(|s| *s = saved);
     RASTER.with(|c| *c.borrow_mut() = saved_raster);
     PLACED.with(|p| p.set(saved_placed));
@@ -333,7 +364,7 @@ pub(crate) fn with_selftest_sheet<R>(f: impl FnOnce() -> R) -> R {
 
 /// 面板缓存的像素（0x00RRGGBB，`width × rows`，第 0 行是贴法里的 `top_row`）
 pub fn with_raster_pixels<R>(f: impl FnOnce(u32, u32, &[u32]) -> R) -> Option<R> {
-    RASTER.with(|r| r.borrow().as_ref().map(|r| f(r.width, r.rows, &r.pixels)))
+    RASTER.with(|r| r.borrow().as_ref().map(|r| f(r.width, r.rows, r.pixels())))
 }
 
 /// 画之前就给出这一帧的范围（GPU 直通帧据此只合成那一截）：
@@ -429,69 +460,4 @@ pub(crate) fn open_at(ago_ms: u64, closing: bool) {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// GPU 直通帧先按 `reach` 只合成那一截：入场 / 退场任何时刻画出来的都不能超出它，
-    /// 而且分窗画出来的那一截要与整帧画的逐字节相同（遮罩只压了窗口里的行）
-    #[test]
-    fn 面板总在_reach_之内_分窗与整帧逐字节相同() {
-        let (w, h, sf) = (90u32, 500u32, 1.5f32);
-        let base: Vec<u32> = (0..w * h).map(|i| i.wrapping_mul(2_654_435_761) & 0xFF_FFFF).collect();
-        for (ago, closing) in [(0, false), (40, false), (120, false), (500, false), (60, true), (250, true)] {
-            open_at(ago, closing);
-            let (rows, base_rows) = reach(w, h, sf, None);
-            let at = FROZEN.with(|f| f.get()).expect("reach 定住了这一刻");
-            let win = rows.rows.expect("弹着就有范围");
-            let b = base_rows.rows.unwrap_or((win.0, win.0));
-            assert!(b.0 == win.0 && b.1 <= win.1, "{ago}ms：底图行 {b:?} 应在范围 {win:?} 的开头");
-            if win.1 - win.0 > 100 {
-                assert!(b.1 - b.0 < 40, "{ago}ms：白底整行盖住的那些行不该要底图 {b:?} / {win:?}");
-            }
-            // 分窗：只给顶边那几行合成底图、压暗，其余行靠白底整行盖掉；未合成的行先填一个怪色
-            let mut part: Vec<u32> = base.iter().enumerate().map(|(i, &p)| if (i as u32 / w) >= b.0 && (i as u32 / w) < b.1 { p } else { 0x12_3456 }).collect();
-            let fp = render(&mut part, w, h, sf, None, b);
-            assert_eq!(fp.rows, Some(win), "{ago}ms：同一刻画出来的范围就是 reach 给的");
-            // 整帧（同一刻）
-            FROZEN.with(|f| f.set(Some(at)));
-            let mut full = base.clone();
-            render(&mut full, w, h, sf, None, (0, h));
-            let (s, e) = ((win.0 * w) as usize, (win.1 * w) as usize);
-            assert!(part[s..e] == full[s..e], "{ago}ms：分窗与整帧在覆盖层范围里不一致");
-        }
-        clear();
-    }
-
-    /// 面板缓存贴出来的与直接画的逐字节相同（画与贴在同一个位置时：静止的面板、gallery）。
-    /// 按着第一项（没有 alertText）时按压底盖过圆角 —— 缓存要认出那些像素是内容，不能当圆角现混
-    #[test]
-    fn 缓存贴出来与直接画逐字节相同() {
-        for (dpr, alert, pressed) in [(3.0f32, "提示", Some(1)), (2.0, "", Some(0)), (2.55, "", None), (3.0, "", Some(-1))] {
-            let (w, h) = (360u32 * dpr as u32, 700u32 * dpr as u32);
-            let base: Vec<u32> = (0..w * h).map(|i| i.wrapping_mul(2_654_435_761) & 0xFF_FFFF).collect();
-            let t = Instant::now().checked_sub(std::time::Duration::from_millis(900)).unwrap();
-            let st = ActionSheet {
-                id: 7,
-                alert: alert.into(),
-                items: vec!["拍照".into(), "从相册选择".into()],
-                color: Color::BLACK,
-                opened: t,
-                closing: None,
-                pressed,
-                settled: false,
-            };
-            with(|s| *s = Some(st.clone()));
-            RASTER.with(|r| *r.borrow_mut() = None);
-            let mut got = base.clone();
-            render(&mut got, w, h, dpr, None, (0, h));
-            // 直接画（从前的画法）：同一个遮罩表、同一个顶边
-            let mut want = base.clone();
-            Footprint::apply_lut(&mut want, w, (0, h), &footprint::lut_trunc(1.0 - 0.6), 0);
-            let top = h as f32 / dpr - sheet_height(&st);
-            draw_panel(&mut want, w, h, dpr, None, &st, top);
-            let bad = got.iter().zip(&want).position(|(a, b)| a != b);
-            assert!(bad.is_none(), "dpr {dpr} alert {alert:?} pressed {pressed:?}：第一个不同 @{:?}", bad.map(|i| (i as u32 % w, i as u32 / w)));
-        }
-        clear();
-    }
-}
+mod tests;

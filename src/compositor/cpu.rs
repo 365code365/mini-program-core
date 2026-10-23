@@ -28,7 +28,33 @@ use crate::host::{edge_back, picker_sheet, ui_overlay};
 /// 返回覆盖层（第 2½ 步起）写了哪些像素：GPU 直通帧据此只传那几行（见 [`Footprint`]）。
 /// 页面 / tabBar / fixed / 导航栏 / 下拉指示器不算在内 —— 那几层 GPU 自己会合成
 pub fn compose(buf: &mut [u32], layers: &FrameLayers<'_>) -> Footprint {
-    compose_rows(buf, layers, (0, layers.height))
+    // 只弹着操作菜单：白底把屏幕下面那一截整行盖死，那几行不用先合成页面、再压暗（贴面板时整行覆盖）；
+    // 上面那截的底图留一份，各层没变就不再拼（sheet_base.rs）。一加 PLY110 的 CPU 后端上，
+    // 弹出那 0.3s 每帧都是整屏合成 + 整屏压暗
+    match sheet_cover_from(layers) {
+        Some(end) => super::sheet_base::compose(buf, layers, end),
+        None => {
+            super::sheet_base::release();
+            compose_rows(buf, layers, (0, layers.height))
+        }
+    }
+}
+
+/// 操作菜单是这一帧唯一的覆盖层时，面板从第几行起把整行盖死（这一行往下合成页面也会被盖掉）；
+/// 面板整个在屏幕外（入场第一帧、收起最后几帧）时是屏幕高 —— 那一帧照样走底图缓存，
+/// 入场第一帧拼好的底图留给后面几帧（面板缓存也在这一帧画，两样不挤在第一个看得见的帧里）。
+/// 与 GPU 直通帧同一份范围（[`overlay_reach`]：它顺带定住这一帧的时刻，紧接着的合成按同一刻画）；
+/// 逐字节相同由 `action_sheet` 的「分窗与整帧逐字节相同」、`cpu_compose_skips_rows_under_sheet`
+/// 与 `sheet_base` 的逐帧对照守着
+pub(super) fn sheet_cover_from(layers: &FrameLayers<'_>) -> Option<u32> {
+    if !sheet_only(layers) {
+        return None;
+    }
+    let h = layers.height;
+    Some(match overlay_reach(layers) {
+        Some((rows, base)) if rows.1 == h => base.1,
+        _ => h,
+    })
 }
 
 /// 只合成 `rows` 那几行 [a, b)，其余行不写（保留缓冲原值）。(0, 高) 就是 [`compose`]。
@@ -40,6 +66,51 @@ pub fn compose(buf: &mut [u32], layers: &FrameLayers<'_>) -> Footprint {
 /// 只对「每一步都逐行独立」的情形成立：下拉指示器、全屏视频、侧滑会让 [`overlay_reach`]
 /// 返回整帧，这里照常整帧画它们
 pub fn compose_rows(buf: &mut [u32], layers: &FrameLayers<'_>, rows: (u32, u32)) -> Footprint {
+    let (w, h) = (layers.width, layers.height);
+    // 全屏视频把每个像素都写一遍：底下的页面 / 导航栏 / 下拉指示器不用先拼出来（拼了也被盖掉，
+    // 一加上整屏拷一遍页面要好几毫秒，全屏时每来一帧视频都要合成一次）
+    let covered = crate::renderer::components::fullscreen_video().is_some();
+    if !covered {
+        compose_page(buf, layers, rows);
+    }
+    // 全屏视频（控制条的全屏键 / requestFullScreen）：盖住页面各层，Toast / Modal / picker 仍在它上面
+    let o = &layers.overlays;
+    let mut fp = if covered { Footprint::full() } else { Footprint::NONE };
+    crate::renderer::components::draw_fullscreen(buf, w, h, layers.scale, o.text);
+    // 图片预览（wx.previewImage）与操作菜单（wx.showActionSheet）：没有弹着时什么也不写
+    fp.then(ui_overlay::render_sheet_overlays(buf, w, h, layers.scale, o.text, rows));
+    fp.then(ui_overlay::render_ui_overlay(
+        buf,
+        w,
+        h,
+        layers.scale,
+        o.anim_secs,
+        o.toast,
+        o.loading,
+        o.modal,
+        o.text,
+        rows,
+    ));
+    if let Some(sheet) = o.picker {
+        fp.then(picker_sheet::render(buf, w, h, layers.scale, sheet, o.text, rows));
+    }
+    if let Some(eb) = &layers.edge_back {
+        // 侧滑 / 转场把整帧连同覆盖层一起平移：覆盖层画过东西的话行区间就不成立了。
+        // 只有侧滑没有覆盖层时 GPU 着色器自己做（不走直通），这里不用记
+        if !fp.is_none() {
+            fp = Footprint::full();
+        }
+        if eb.shot_on_top {
+            edge_back::compose_shot_over(buf, w, h, eb.offset_px, eb.shot, eb.progress);
+        } else {
+            edge_back::compose(buf, w, h, eb.offset_px, eb.shot, eb.progress);
+        }
+    }
+    fp
+}
+
+/// 第 1、2 步：页面 → tabBar → fixed 覆盖层、顶部导航栏、下拉刷新指示器（从 `compose_rows` 原样搬出）
+pub(super) fn compose_page(buf: &mut [u32], layers: &FrameLayers<'_>, rows: (u32, u32)) {
     let (w, h) = (layers.width, layers.height);
     present_to_buffer(
         buf,
@@ -73,40 +144,6 @@ pub fn compose_rows(buf: &mut [u32], layers: &FrameLayers<'_>, rows: (u32, u32))
             p.phase,
         );
     }
-    // 全屏视频（VideoContext.requestFullScreen）：盖住页面各层，Toast / Modal / picker 仍在它上面
-    let mut fp = if crate::renderer::components::fullscreen_video().is_some() { Footprint::full() } else { Footprint::NONE };
-    crate::renderer::components::draw_fullscreen(buf, w, h, layers.scale);
-    let o = &layers.overlays;
-    // 图片预览（wx.previewImage）与操作菜单（wx.showActionSheet）：没有弹着时什么也不写
-    fp.then(ui_overlay::render_sheet_overlays(buf, w, h, layers.scale, o.text, rows));
-    fp.then(ui_overlay::render_ui_overlay(
-        buf,
-        w,
-        h,
-        layers.scale,
-        o.anim_secs,
-        o.toast,
-        o.loading,
-        o.modal,
-        o.text,
-        rows,
-    ));
-    if let Some(sheet) = o.picker {
-        fp.then(picker_sheet::render(buf, w, h, layers.scale, sheet, o.text, rows));
-    }
-    if let Some(eb) = &layers.edge_back {
-        // 侧滑 / 转场把整帧连同覆盖层一起平移：覆盖层画过东西的话行区间就不成立了。
-        // 只有侧滑没有覆盖层时 GPU 着色器自己做（不走直通），这里不用记
-        if !fp.is_none() {
-            fp = Footprint::full();
-        }
-        if eb.shot_on_top {
-            edge_back::compose_shot_over(buf, w, h, eb.offset_px, eb.shot, eb.progress);
-        } else {
-            edge_back::compose(buf, w, h, eb.offset_px, eb.shot, eb.progress);
-        }
-    }
-    fp
 }
 
 /// 画之前算出的本帧覆盖层范围：`(会写到的行, 其中要先有页面底图的行)`。
@@ -138,6 +175,14 @@ pub fn overlay_reach(layers: &FrameLayers<'_>) -> Option<((u32, u32), (u32, u32)
 /// 操作菜单是这一帧唯一的覆盖层、而且面板缓存在：GPU 可以把面板当纹理挪（见 `ui_overlay::sheet_raster`）。
 /// 返回 `(顶边整像素行, 圆角行数, 缓存行数, 缓存 id)`。要在 [`overlay_reach`] 之后调（它定住这一帧的位置）
 pub fn sheet_layer(layers: &FrameLayers<'_>) -> Option<(i32, u32, u32, u64)> {
+    if !sheet_only(layers) {
+        return None;
+    }
+    ui_overlay::action_sheet::gpu_layer()
+}
+
+/// 这一帧弹着的只有操作菜单（没有别的覆盖层、侧滑、下拉、全屏视频）
+fn sheet_only(layers: &FrameLayers<'_>) -> bool {
     let o = &layers.overlays;
     let others = layers.pull.is_some()
         || layers.edge_back.is_some()
@@ -147,10 +192,7 @@ pub fn sheet_layer(layers: &FrameLayers<'_>) -> Option<(i32, u32, u32, u64)> {
         || o.toast.is_some()
         || o.loading.is_some()
         || ui_overlay::image_preview::visible();
-    if others {
-        return None;
-    }
-    ui_overlay::action_sheet::gpu_layer()
+    !others && ui_overlay::action_sheet::visible()
 }
 
 /// 导航栏画布的前 `rows` 行按 alpha 叠进缓冲（导航栏底色不透明时就是整行拷贝），只写 `win` 那几行
@@ -175,5 +217,71 @@ fn paint_top_band(buf: &mut [u32], w: u32, h: u32, rows: u32, band: &crate::Canv
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::compositor::{OverlayRefs, PageCanvas, TopBand};
+    use crate::host::ui_overlay::action_sheet;
+    use crate::{Canvas, Color};
+
+    fn noise(c: &mut Canvas, seed: u32, alpha: impl Fn(usize) -> u8) {
+        for (i, p) in c.pixels_mut().iter_mut().enumerate() {
+            let v = (i as u32 ^ seed).wrapping_mul(2_654_435_761);
+            *p = Color::new((v >> 8) as u8, (v >> 16) as u8, (v >> 24) as u8, alpha(i));
+        }
+    }
+
+    /// 只弹着操作菜单时，CPU 合成不碰面板白底整行盖死的那几行（页面不拷、不压暗）：入场 / 退场任何时刻
+    /// 都与整帧合成逐字节相同。缓冲先填一个怪色 —— 跳过的行要是没被面板盖满，怪色会漏出来
+    #[test]
+    fn cpu_compose_skips_rows_under_sheet() {
+        let (w, h, sf) = (120u32, 640u32, 2.0f32);
+        let mut page = Canvas::new(w, 1500);
+        noise(&mut page, 0x51, |_| 255);
+        let mut tab = Canvas::new(w, 50);
+        noise(&mut tab, 0x7A, |_| 255);
+        let mut fixed = Canvas::new(w, h);
+        noise(&mut fixed, 0x3C, |i| [0, 255, 128][i % 3]);
+        let mut band = Canvas::new(w, 64);
+        noise(&mut band, 0x9E, |i| if i % 5 == 0 { 90 } else { 255 });
+        let (page, tab, fixed, band) = (PageCanvas::new(page), LayerCanvas::new(tab), LayerCanvas::new(fixed), LayerCanvas::new(band));
+        let layers = FrameLayers {
+            width: w,
+            height: h,
+            scale: sf,
+            page: &page,
+            scroll_px: 300,
+            page_bg: 0x12_34_56,
+            has_tabbar: true,
+            tabbar: Some(&tab),
+            tabbar_px: 50,
+            fixed: Some(&fixed),
+            fixed_rows: Some((100, 560)),
+            pull: None,
+            overlays: OverlayRefs::none(),
+            edge_back: None,
+            top: Some(TopBand { rows: 60, canvas: &band }),
+        };
+        let mut skipped_any = false;
+        for (ago, closing) in [(0, false), (30, false), (120, false), (900, false), (40, true), (200, true)] {
+            action_sheet::open_at(ago, closing);
+            // 两次合成按同一刻画（动画按帧时钟取样）
+            crate::frame_clock::set(Some(std::time::Instant::now()));
+            let end = sheet_cover_from(&layers);
+            skipped_any |= end.is_some_and(|e| e < h);
+            // 两边同一个初值（导航栏半透明的那几行本来就叠在缓冲原值上）
+            let mut got = vec![0x00AB_CDEF; (w * h) as usize];
+            compose(&mut got, &layers);
+            let mut want = vec![0x00AB_CDEF; (w * h) as usize];
+            compose_rows(&mut want, &layers, (0, h));
+            let bad = got.iter().zip(&want).position(|(a, b)| a != b);
+            assert!(bad.is_none(), "{ago}ms{}：跳过的行与整帧合成不同 @{:?}（从第 {end:?} 行起跳过）", if closing { " 收起" } else { "" }, bad.map(|i| (i as u32 % w, i as u32 / w)));
+            crate::frame_clock::set(None);
+        }
+        assert!(skipped_any, "一次都没跳过：测的不是那条路");
+        action_sheet::clear();
     }
 }

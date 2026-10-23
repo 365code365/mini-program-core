@@ -178,6 +178,11 @@ impl WxmlRenderer {
                 // 重排后该节点作为子树根，location 约为 0，直接以钉住点为原点绘制
                 let base_x = pinned_x - new_layout.location.x;
                 let base_y = pinned_y - new_layout.location.y;
+                // SelectorQuery 要报钉住之后的位置（不是它在正常流里那个位置，query.rs）
+                if self.fixed_origins.0 != self.layout_generation {
+                    self.fixed_origins = (self.layout_generation, HashMap::new());
+                }
+                self.fixed_origins.1.insert(*id, (base_x, base_y));
                 // 记录遮挡区域（逻辑坐标）：落在这里的点击不允许穿透到下层
                 if self.registering_fixed && w > 0.0 && h > 0.0 {
                     self.fixed_hit_regions.push(GeoRect::new(

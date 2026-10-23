@@ -22,6 +22,12 @@ pub mod image;
 pub(crate) mod image_cache;
 mod video;
 pub mod video_audio;
+/// 同层渲染的通用原生组件（`sameLayer` 里除 video 以外的标签，如 `<map>`）：宿主画好帧交给引擎画进页面
+pub mod host_view;
+/// 宿主没接管的原生组件（map / camera / web-view ...）的占位与几类标签的默认样式
+pub mod native_placeholder;
+/// `<grid-view>`：对齐网格（taffy Grid）与瀑布流（布局后按最矮列放置）
+pub mod grid_view;
 mod canvas;
 mod swiper;
 mod rich_text;
@@ -49,13 +55,16 @@ mod image_state;
 pub use image_state::{probe_load, ImageLoad};
 pub mod image_net;
 pub use video::VideoComponent;
+pub use video::host_feed;
 pub use video::{
     set_host_owns_video,
     has_playing_video, get_or_create_player, get_video_frame, get_video_progress,
     toggle_video_play, is_video_playing,
-    clear_fullscreen, draw_fullscreen, fullscreen_tap, fullscreen_video, video_command, video_events_pending,
+    clear_fullscreen, draw_fullscreen, fullscreen_video, video_command, video_events_pending,
     video_poll_events, video_position, VideoCommand, clear_danmu, progress_track, send_danmu,
 };
+/// 控制条的状态 / 几何、全屏那一层（两种播放器共用，见 video/ui.rs、chrome.rs、fullscreen.rs）
+pub use video::{chrome as video_chrome, fullscreen as video_fullscreen, ui as video_ui};
 pub use canvas::{CanvasComponent, Canvas2DContext, CanvasContextManager, LinearGradient, RadialGradient, execute_canvas_draw, ensure_canvas_context, take_canvas_dirty, canvas_key, canvas_measure_text};
 // 单测直接看画布后备缓冲：页面合成结果依赖进程级的 CANVAS_DIRTY，并行的别的用例 pump 时
 // 可能先把它取走，拿页面像素断言会偶发失败

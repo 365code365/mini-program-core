@@ -1,0 +1,72 @@
+<view class="card">
+  <text class="title">grid-view（网格 / 瀑布流）</text>
+  <text class="desc">aligned：同一行等高；masonry：按顺序放进最矮的那一列。cross-axis-count、main-axis-gap、cross-axis-gap 都认。</text>
+  <view class="btns">
+    <view class="{{gridType === 'masonry' ? 'btn-s' : 'btn-o'}}" data-t="masonry" bindtap="setGrid">masonry</view>
+    <view class="{{gridType === 'aligned' ? 'btn-s' : 'btn-o'}}" data-t="aligned" bindtap="setGrid">aligned</view>
+    <view class="btn-o" bindtap="nextCols">{{cols}} 列</view>
+  </view>
+  <grid-view class="grid" type="{{gridType}}" cross-axis-count="{{cols}}" cross-axis-gap="8" main-axis-gap="8">
+    <view wx:for="{{cells}}" wx:key="id" class="cell" style="height:{{item.h}}px;background-color:{{item.c}}">
+      <text class="cell-t">#{{item.id}} · {{item.h}}</text>
+    </view>
+  </grid-view>
+</view>
+
+<view class="card">
+  <text class="title">movable-area / movable-view</text>
+  <text class="desc">圆可以往任意方向拖、拖出界松手回弹、甩一下有惯性；方块只能横着拖。x / y 受控：按钮改 data 就移过去。</text>
+  <movable-area class="area" id="area">
+    <movable-view class="mv" direction="all" out-of-bounds inertia x="{{mx}}" y="{{my}}" bindchange="onMove"><text class="mv-t">拖我</text></movable-view>
+    <movable-view class="mvh" direction="horizontal" y="120" bindchange="onMoveH"><text class="mv-t">横</text></movable-view>
+  </movable-area>
+  <view class="btns">
+    <view class="btn-o" bindtap="center">移到中间</view>
+    <view class="btn-o" bindtap="corner">回左上角</view>
+  </view>
+  <view class="result"><text>{{moveText}}</text></view>
+</view>
+
+<view class="card">
+  <text class="title">手势组件 + worklet</text>
+  <text class="desc">pan-gesture-handler 的回调改共享值，applyAnimatedStyle 让圆点跟手；松手 spring 弹回。下面是双击与长按手势。</text>
+  <pan-gesture-handler on-gesture-event="onPan">
+    <view class="pan-zone"><view class="pan-dot"></view><text class="pan-t">在灰色区域里拖</text></view>
+  </pan-gesture-handler>
+  <view class="gest-row">
+    <double-tap-gesture-handler on-gesture-event="onDouble"><view class="gest-box"><text class="gest-t">双击</text></view></double-tap-gesture-handler>
+    <long-press-gesture-handler on-gesture-event="onLong"><view class="gest-box gest-box2"><text class="gest-t">长按</text></view></long-press-gesture-handler>
+  </view>
+  <view class="result"><text>{{gestureText}}</text></view>
+</view>
+
+<view class="card">
+  <text class="title">draggable-sheet</text>
+  <text class="desc">半屏面板：上下拖改高度，snap 开着时松手吸到最近的吸附点（0.2 / 0.5 / 0.9）；按钮调 DraggableSheetContext.scrollTo。</text>
+  <view class="sheet-box">
+    <view class="sheet-bg"><text class="sheet-bg-t">页面内容（面板下面）</text></view>
+    <draggable-sheet id="sheet" class="sheet" initial-child-size="0.4" min-child-size="0.2" max-child-size="0.9"
+                     snap snap-sizes="{{[0.5]}}" bind:sizeupdate="onSheet">
+      <view class="sheet-panel"><view class="sheet-bar"></view><text class="sheet-t">拖我（{{sheetPct}}%）</text></view>
+    </draggable-sheet>
+  </view>
+  <view class="btns">
+    <view class="btn-o" data-s="0.9" bindtap="sheetTo">scrollTo 0.9</view>
+    <view class="btn-o" data-s="0.2" bindtap="sheetTo">scrollTo 0.2</view>
+  </view>
+</view>
+
+<view class="card">
+  <text class="title">this.animate 与 wx.worklet</text>
+  <text class="desc">this.animate 按关键帧改 #box 的颜色、旋转、缩放；进度条宽度跟着共享值走（timing / spring / sequence）。</text>
+  <view class="anim-row">
+    <view id="box" class="box"></view>
+    <view class="bar-bg"><view id="bar" class="bar"></view></view>
+  </view>
+  <view class="btns">
+    <view class="btn-s" bindtap="play">this.animate</view>
+    <view class="btn-s" bindtap="spring">worklet.spring</view>
+    <view class="btn-o" bindtap="reset">clearAnimation</view>
+  </view>
+  <view class="result"><text>{{animText}}</text></view>
+</view>

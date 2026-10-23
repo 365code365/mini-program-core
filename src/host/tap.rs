@@ -121,6 +121,8 @@ pub fn handle_content_click(
                 }
                 if result.is_none() {
                     super::video::on_tap(renderer, interaction, x, y, true);
+                    // 同层渲染的 `<map>` 这类：点击交给宿主（nativeViewTap），它判点到了什么
+                    super::engine_host_views::on_tap(renderer, interaction, x, y, true);
                 }
                 return result;
             }
@@ -182,8 +184,10 @@ pub fn handle_content_click(
             prepare_focused_input(interaction, Some(renderer), text_renderer, scale_factor, x, adjusted_y, &r);
             return Some(r);
         }
-        // 点在 <video> 上：暂停着就起播（play / pause 事件下一帧由 host::video::tick 发）
+        // 点在 <video> 上：控制条的按钮 / 中间的播放键 / 显隐切换（事件下一帧由 host::video::tick 发）
         super::video::on_tap(renderer, interaction, x, adjusted_y, false);
+        // 同层渲染的 `<map>` 这类：点击交给宿主（nativeViewTap），它判点到了什么（标记 → markertap）
+        super::engine_host_views::on_tap(renderer, interaction, x, adjusted_y, false);
     }
     
     None

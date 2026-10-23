@@ -36,6 +36,10 @@ impl Canvas2DContext {
             current_path: Vec::new(),
             state_stack: Vec::new(),
             fx: fx2d::Fx::default(),
+            clip: None,
+            line_dash: Vec::new(),
+            dash_offset: 0.0,
+            miter_limit: 10.0,
         }
     }
 
@@ -58,6 +62,10 @@ impl Canvas2DContext {
             global_alpha: self.global_alpha,
             transform: self.transform,
             fx: self.fx.clone(),
+            clip: self.clip.clone(),
+            line_dash: self.line_dash.clone(),
+            dash_offset: self.dash_offset,
+            miter_limit: self.miter_limit,
         });
     }
 
@@ -73,6 +81,10 @@ impl Canvas2DContext {
             self.global_alpha = state.global_alpha;
             self.transform = state.transform;
             self.fx = state.fx;
+            self.clip = state.clip;
+            self.line_dash = state.line_dash;
+            self.dash_offset = state.dash_offset;
+            self.miter_limit = state.miter_limit;
         }
     }
 

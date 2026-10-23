@@ -6,79 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mini_render/mini_render.dart';
-
-/// 假的原生侧：记下每一次通道调用，`create` 回一个纹理
-class FakeNative {
-  final List<MethodCall> calls = [];
-  static const channel = MethodChannel('dev.minirender/engine');
-
-  void install() {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
-      calls.add(call);
-      switch (call.method) {
-        case 'create':
-          final a = call.arguments as Map;
-          final dpr = (a['dpr'] as num).toDouble();
-          return {
-            'textureId': 7,
-            'pixelWidth': ((a['width'] as int) * dpr).floor(),
-            'pixelHeight': ((a['height'] as int) * dpr).floor(),
-            // 与 Android 插件一致：create 返回时还没挂 surface
-            'backend': 1,
-            'backendReason': '未挂载 surface',
-          };
-        case 'back':
-          return true;
-        case 'paths':
-          return {'files': '/f', 'cache': '/c'};
-      }
-      return null;
-    });
-  }
-
-  Iterable<MethodCall> named(String m) => calls.where((c) => c.method == m);
-
-  /// 原生 → Dart：纹理 / 实际后端变了
-  Future<void> emitTexture(Map<String, Object?> info) async {
-    final data = const StandardMethodCodec().encodeMethodCall(MethodCall('texture', info));
-    await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .handlePlatformMessage(channel.name, data, (_) {});
-  }
-
-  /// 原生 → Dart 的事件
-  Future<void> emit(List<Map<String, Object?>> events) async {
-    final data = const StandardMethodCodec()
-        .encodeMethodCall(MethodCall('events', events.map(jsonEncode).toList()));
-    await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .handlePlatformMessage(channel.name, data, (_) {});
-  }
-}
-
-Future<MiniProgramController> pumpView(
-  WidgetTester t,
-  FakeNative n, {
-  Map<String, MiniHostApi> hostApis = const {},
-  MiniBackend backend = MiniBackend.cpu,
-}) async {
-  final c = MiniProgramController(appDir: '/app', hostApis: hostApis, nativeComponents: const ['video'], backend: backend);
-  addTearDown(c.dispose);
-  await t.pumpWidget(MaterialApp(
-    home: Align(
-      alignment: Alignment.topLeft,
-      child: SizedBox(
-        width: 393.6,
-        height: 500,
-        child: MiniProgramView(
-          controller: c,
-          nativeViewBuilder: (context, v, _) => Container(key: ValueKey('native-${v.key}'), color: Colors.black),
-        ),
-      ),
-    ),
-  ));
-  await t.pump(); // 首帧之后的 post-frame 回调里建引擎
-  await t.pump();
-  return c;
-}
+import 'support/fake_native.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -90,8 +18,11 @@ void main() {
     expect(create['width'], 393, reason: '逻辑宽要取整（引擎是整数逻辑尺寸）');
     expect(create['height'], 500);
     final opts = jsonDecode(create['options'] as String) as Map;
-    expect(opts['hostApis'], ['chooseImage']);
-    expect(opts['nativeComponents'], ['video']);
+    // 宿主给的在前，插件自带的（选图 / 选文件 / 存相册…）跟在后面，同名不重复
+    expect(opts['hostApis'], ['chooseImage', ...MiniBuiltinHostApis.names.where((n) => n != 'chooseImage')]);
+    // Android（测试默认的目标平台）：video 走同层渲染（插件解码、引擎画），不再当成盖上去的控件
+    expect(opts['nativeComponents'], isEmpty);
+    expect(opts['sameLayer'], ['video']);
     expect((opts['safeArea'] as Map).keys, containsAll(['top', 'right', 'bottom', 'left']));
     expect(c.textureId.value, 7);
     expect(find.byType(Texture), findsOneWidget);
@@ -595,6 +526,32 @@ void main() {
     await t.tapAt(const Offset(100, 804 - 50));
     expect(n.named('pointer').map((m) => m.arguments['phase']), [0, 2]);
     await c.dispose();
+  });
+
+  testWidgets('同层渲染的 video：iOS 与 sameLayerVideo: false 时仍是盖上去的控件', (t) async {
+    Future<Map> optionsFor({TargetPlatform? platform, bool sameLayer = true}) async {
+      debugDefaultTargetPlatformOverride = platform;
+      try {
+        final n = FakeNative()..install();
+        final c = MiniProgramController(appDir: '/app', nativeComponents: const ['video', 'map'], sameLayerVideo: sameLayer);
+        await t.pumpWidget(MaterialApp(home: SizedBox(width: 300, height: 400, child: MiniProgramView(controller: c))));
+        await t.pump();
+        await t.pump();
+        final opts = jsonDecode(n.named('create').single.arguments['options'] as String) as Map;
+        await c.dispose();
+        await t.pumpWidget(const SizedBox());
+        return opts;
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    }
+
+    final android = await optionsFor();
+    expect([android['nativeComponents'], android['sameLayer']], [['map'], ['video']]);
+    final ios = await optionsFor(platform: TargetPlatform.iOS);
+    expect([ios['nativeComponents'], ios.containsKey('sameLayer')], [['video', 'map'], false], reason: 'iOS 插件还没带播放器');
+    final off = await optionsFor(sameLayer: false);
+    expect([off['nativeComponents'], off.containsKey('sameLayer')], [['video', 'map'], false]);
   });
 
   testWidgets('iOS：Home 指示条下面照样铺满（与微信 iOS 一致），底部安全区交给引擎', (t) async {

@@ -33,6 +33,8 @@ mod api;
 mod bridge;
 /// WebSocket / 文件系统 / 音频 / 图片信息这组同步桥入口（从 bridge.rs 拆出）
 mod bridge_io;
+/// 随机数、本机 IP、storage 全量键、TCP / UDP、视频信息、离屏画布这组桥入口（与 bridge_io 同一种写法）
+mod bridge_ext;
 
 pub use runtime::JsRuntime;
 pub use api::MiniAppApi;

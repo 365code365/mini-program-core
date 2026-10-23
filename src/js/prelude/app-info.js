@@ -41,7 +41,14 @@
             // 组件看引擎自己画的那张表。更细的段（参数、返回值、属性取值）不逐项核对，按支持算。
             var __CANIUSE_COMPONENTS = ['view', 'block', 'scroll-view', 'swiper', 'swiper-item', 'text', 'rich-text', 'icon', 'image',
                 'video', 'canvas', 'button', 'input', 'textarea', 'switch', 'slider', 'progress', 'checkbox', 'checkbox-group',
-                'radio', 'radio-group', 'picker', 'picker-view', 'picker-view-column', 'form', 'navigator', 'label', 'map'];
+                'radio', 'radio-group', 'picker', 'picker-view', 'picker-view-column', 'form', 'navigator', 'label', 'map',
+                // 渲染器补的（components::registry / grid_view / native_placeholder）与 movable-area（带默认样式的容器）
+                'grid-view', 'list-view', 'cover-view', 'cover-image', 'span', 'movable-area',
+                // 引擎内置组件（builtin_components，页面用到才注入；单测核对这里一个不漏）
+                'page-container', 'match-media', 'root-portal', 'page-meta', 'navigation-bar', 'draggable-sheet',
+                'audio', 'editor', 'movable-view',
+                'tap-gesture-handler', 'double-tap-gesture-handler', 'long-press-gesture-handler', 'pan-gesture-handler',
+                'horizontal-drag-gesture-handler', 'vertical-drag-gesture-handler', 'scale-gesture-handler', 'force-press-gesture-handler'];
             wx.canIUse = function(schema) {
                 var parts = String(schema || '').split('.');
                 var head = parts[0];

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- wx.request / 网络图片 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:label="mini-render 原生示例"
+        android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        <!-- configChanges：转屏 / 分屏 / 深色模式不重建 Activity（重建 = 引擎销毁重开，页面栈全丢），
+             尺寸变了由 MiniProgramView.onSizeChanged 交给引擎 -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|keyboard|uiMode|density"
+            android:windowSoftInputMode="adjustNothing">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <!-- SDK 自带的选图 / 拍照 / 选文件要的两项。示例直接编 SDK 的源码（不经 AAR），SDK 清单合并不进来，
+             所以照 sdk/android/src/main/AndroidManifest.xml 抄一遍；用 AAR 的工程不用写 -->
+        <activity
+            android:name="dev.minirender.MiniMediaActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <provider
+            android:name="dev.minirender.MiniFileProvider"
+            android:authorities="${applicationId}.minirender.sdkfiles"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+    </application>
+</manifest>

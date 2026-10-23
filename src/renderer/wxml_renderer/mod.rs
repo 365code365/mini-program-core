@@ -202,6 +202,13 @@ pub struct WxmlRenderer {
     gif_pass: Vec<animated_image::AnimatedImageMark>,
     /// 这一趟走的纵向窗口（物理像素，页面画布坐标）
     gif_window: (f32, f32),
+    /// 布局树整棵重建过几次（宿主据此知道节点可能变了，见 `layout_generation`）
+    layout_generation: u64,
+    /// 正在进行的那串触摸锁定的派发目标（touch_capture.rs）。派发时只拿得到 `&self`，所以包一层锁
+    touch_capture: std::sync::Mutex<Option<touch_capture::TouchCapture>>,
+    /// fixed 子树根钉在视口上的原点（物理像素）与登记时的布局代数：SelectorQuery 按它报 fixed 节点的位置
+    /// （fixed_layer.rs 登记、query.rs 读；布局重建过就作废）
+    fixed_origins: (u64, HashMap<NodeId, (f32, f32)>),
     /// 本帧只重绘这个矩形（其余像素保持上一帧）。None 表示整条带都画。
     damage_clip: Option<GeoRect>,
     /// `wx.createAnimation` 载荷指纹 -> 播放起始时刻（秒）
@@ -236,6 +243,10 @@ pub struct WxmlRenderer {
 /// 动图（GIF）换帧才重画：画布上是第几帧、哪几张该换了
 mod animated_image;
 mod animation;
+/// `wx.createAnimation()` 的逐步插值（从 animation.rs 拆出）
+mod js_animation;
+/// 触摸序列锁定在 touchstart 的节点上（touchmove / touchend / touchcancel 都归它）
+mod touch_capture;
 mod draw;
 mod draw_interactive;
 mod entry;
@@ -317,6 +328,9 @@ impl WxmlRenderer {
             gif_marks: Vec::new(),
             gif_pass: Vec::new(),
             gif_window: (f32::NEG_INFINITY, f32::INFINITY),
+            layout_generation: 0,
+            touch_capture: std::sync::Mutex::new(None),
+            fixed_origins: (0, HashMap::new()),
             damage_clip: None,
             js_animations: HashMap::new(),
             registering_fixed: false,
@@ -335,5 +349,11 @@ impl WxmlRenderer {
     /// 取走上一次整棵重建的分段耗时（模板 / 建树+样式 / 布局 / 换行修正 / 比对，毫秒）
     pub fn take_rebuild_laps(&mut self) -> Option<[f32; 5]> {
         self.rebuild_laps.take()
+    }
+
+    /// 布局树整棵重建过几次。没变就说明节点（及其属性）都没变 —— 宿主不必每帧遍历树
+    /// 找它关心的节点（同层渲染的视频列表，`host/engine_video_feed.rs`）
+    pub fn layout_generation(&self) -> u64 {
+        self.layout_generation
     }
 }

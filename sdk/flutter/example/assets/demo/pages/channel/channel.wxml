@@ -1,0 +1,7 @@
+<view class="card">
+  <text class="title">getOpenerEventChannel</text>
+  <text class="desc">这一页是「补齐的接口」用 navigateTo({events}) 打开的。打开方的 success 里 emit 过来的消息：</text>
+  <view class="result"><text>{{got}}</text></view>
+  <text class="desc">onLoad 参数：{{query}}</text>
+  <view class="btns"><view class="btn-s" bindtap="reply">emit 回去并返回</view></view>
+</view>

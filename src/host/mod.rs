@@ -27,6 +27,10 @@ mod engine_press;
 mod engine_swiper;
 mod engine_resample;
 mod engine_wants;
+/// 同层渲染的视频与宿主播放器的约定（`videos` / `videoCommand` 事件、回传事件）
+pub mod engine_video_feed;
+/// 同层渲染的通用组件（`<map>` 这类）与宿主的约定（`sameLayerViews` / `nativeViewTap` 事件、回传事件）
+mod engine_host_views;
 mod frame_laps;
 mod engine_damage_rects;
 /// 这一帧重画多少（只合成 / 局部 / 补条带 / 整帧）与整帧归因
@@ -62,6 +66,8 @@ pub mod engine_options;
 pub mod engine_events;
 /// 宿主原生组件被引擎自己画的层（picker / 弹窗 / fixed / tabBar）挡住多少
 mod native_occlusion;
+/// nativeViews 带的滚动取样（宿主按自己那一帧的 vsync 推算控件位置）
+mod native_motion;
 /// 像素出口：RGBA / BGRA、带行跨度直写平台缓冲
 pub mod engine_pixels;
 /// 尺寸 / 像素比 / 安全区变化

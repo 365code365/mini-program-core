@@ -60,7 +60,6 @@ impl WxmlRenderer {
         let rendered = crate::parser::TemplateEngine::render_with_components(nodes, data, &self.component_templates);
         let t_template = std::time::Instant::now();
         let mut taffy = Tree::new();
-        
         let mut render_nodes = Vec::new();
         
         // `page { color / font-size / font-family … }` 是整页的文字基线，要作为
@@ -104,9 +103,9 @@ impl WxmlRenderer {
         // 第二遍：按实际宽度修正换行文本高度、按实际包含块高度修正绝对定位高度，再重新布局
         let mut need_relayout = self.correct_overflow(&mut taffy, &render_nodes);
         need_relayout |= self.correct_absolute_heights(&mut taffy, &render_nodes, viewport_h);
-        if need_relayout {
-            self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT);
-        }
+        if need_relayout { self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT); }
+        // 瀑布流 grid-view：子项高度定了才能按最矮列摆放（components::grid_view），摆完再排一遍
+        if crate::renderer::components::grid_view::masonry_pass(&mut taffy, &render_nodes, self.scale_factor) { self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT); }
         // 注：根节点保持 `height: auto`（内容高驱动滚动）。
         //
         // 曾经试过再补一趟「把根高度换成 max(视口, 内容高) 的确定值」来给百分比高度
@@ -151,6 +150,7 @@ impl WxmlRenderer {
             content_height,
             data: data.clone(),
         });
+        self.layout_generation += 1;
         plan
     }
 
@@ -196,9 +196,8 @@ impl WxmlRenderer {
             &render_nodes,
             self.screen_height * self.scale_factor,
         );
-        if need_relayout {
-            self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT);
-        }
+        if need_relayout { self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT); }
+        if crate::renderer::components::grid_view::masonry_pass(&mut taffy, &render_nodes, self.scale_factor) { self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT); }
         taffy.layout(root).unwrap().size.height / self.scale_factor
     }
     
@@ -261,15 +260,14 @@ impl WxmlRenderer {
                 ),
                 None => self.measure_text(text, fs * sf),
             };
-            // 居中/右对齐的文本撑满可用宽度，绘制时再按对齐做偏移（否则无法居中）
-            let width_dim: Dimension = if matches!(inherited.align, TextAlign::Center | TextAlign::Right) {
-                percent(1.0_f32)
-            } else {
-                // 取整到整像素即可（换行判定另有亚像素容差），不额外加宽
-                length(tw.ceil())
-            };
+            // 居中/右对齐的文本撑满可用宽度，绘制时再按对齐做偏移（否则无法居中）；否则取整到整像素即可
+            // （换行判定另有亚像素容差）。撑满时再垫一个「不小于字宽」：父节点宽度靠内容撑（居中的弹层、
+            // 横排里没写宽的标签）时 100% 没有参照物、按 0 排，`.btn{text-align:center}` 只剩内边距那么宽
+            let fill = matches!(inherited.align, TextAlign::Center | TextAlign::Right);
+            let (width_dim, min_w) = if fill { (percent(1.0_f32), length(tw.ceil())) } else { (length(tw.ceil()), auto()) };
             let tn = taffy.new_leaf(Style {
                 size: Size { width: width_dim, height: length(line_h * sf) },
+                min_size: Size { width: min_w, height: auto() },
                 ..Default::default()
             }).unwrap();
             return Some(RenderNode {
@@ -398,6 +396,7 @@ impl WxmlRenderer {
                         // 各列横排平分、撑满高度；列里的项照常纵向排（绘制时整列按滚轮位置偏移）
                         Self::apply_picker_view_layout(&mut ts, &children, &mut ctx);
                     }
+                    if tag == "grid-view" { crate::renderer::components::grid_view::apply_layout(&node.attributes, &mut ts, ctx.scale_factor, ctx.screen_width); }
                     
                     // 对于 scroll-view，使用 Overflow::Visible 让子节点能够正确布局
                     // 裁剪在渲染时通过 canvas.clip_rect 处理

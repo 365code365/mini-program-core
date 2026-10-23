@@ -46,6 +46,12 @@ pub struct EngineOptions {
     /// 由宿主用原生控件承载的组件标签（`video` / `map` / `web-view` / `camera` …）。
     /// 引擎只算位置并发 `nativeViews` 事件，不自己画也不自己解码。
     pub native_components: Vec<String>,
+    /// 同层渲染的组件标签（`"sameLayer": ["video"]`）：宿主只解码，帧交给引擎画进页面
+    /// （`mr_video_frame_*`），滚动时与页面在同一张图里走，不会像盖上去的控件那样错开。
+    /// 播放命令发 `videoCommand` 事件、页面上有哪些视频发 `videos` 事件；与 `nativeComponents`
+    /// 同时列了的以这里为准。`video` 见 `components::video::host_feed`；别的标签（`map` …）走通用的
+    /// `components::host_view`：宿主按 `sameLayerViews` 事件把控件画进离屏缓冲、帧交给引擎（`mr_native_view_frame_rgba`）
+    pub same_layer: Vec<String>,
     /// 引擎在 `navigationStyle: custom` 的页面上画右上角胶囊（`"menuButton": true`），
     /// 点击发 `menuButton` 事件。默认关；普通页面的胶囊在宿主的导航栏里（见 `capsule.rs`）
     pub menu_button: bool,
@@ -77,6 +83,7 @@ impl EngineOptions {
             safe_area: o.get("safeArea").and_then(SafeAreaInsets::from_json),
             host_apis: strings("hostApis"),
             native_components: strings("nativeComponents"),
+            same_layer: strings("sameLayer"),
             menu_button: o.get("menuButton").and_then(|v| v.as_bool()).unwrap_or(false),
             navigation_bar: o.get("navigationBar").and_then(|v| v.as_bool()).unwrap_or(false),
             route_animation: o.get("routeAnimation").and_then(|v| v.as_bool()).unwrap_or(false),
@@ -86,6 +93,21 @@ impl EngineOptions {
     /// 状态栏高度（逻辑像素）：宿主给了安全区取 `top`，否则按无刘海机型的 20
     pub fn status_bar_height(&self) -> f32 {
         self.safe_area.map(|s| s.top).unwrap_or(20.0)
+    }
+
+    /// `<video>` 走同层渲染（宿主解码、引擎画）
+    pub fn same_layer_video(&self) -> bool {
+        self.same_layer.iter().any(|t| t == "video")
+    }
+
+    /// 走通用同层渲染的标签（`sameLayer` 去掉 video：video 有自己的播放器约定）
+    pub fn same_layer_views(&self) -> Vec<String> {
+        self.same_layer.iter().filter(|t| t.as_str() != "video").cloned().collect()
+    }
+
+    /// 真正由宿主盖控件的标签：`nativeComponents` 去掉同层渲染的那几个
+    pub fn overlay_components(&self) -> Vec<String> {
+        self.native_components.iter().filter(|t| !self.same_layer.contains(t)).cloned().collect()
     }
 
     /// 宿主报的平台（`systemInfo.platform`，缺省 `devtools`）

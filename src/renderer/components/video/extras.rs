@@ -1,4 +1,4 @@
-//! `<video>` 的封面、弹幕、点进度条跳转，以及 `bindprogress` / `bindwaiting`（G-6）。
+//! `<video>` 的封面、弹幕，以及 `bindprogress` / `bindwaiting`（G-6）。
 //!
 //! 依据官方 component/video.html：
 //! - `poster`：视频封面（还没开始播时盖在画面上；`object-fit` 同视频）；
@@ -69,10 +69,11 @@ pub fn video_started(src: &str) -> bool {
 }
 
 impl VideoComponent {
-    /// 封面：`poster` 写了且还没开始播
-    pub(super) fn draw_poster(node: &RenderNode, canvas: &mut Canvas, x: f32, y: f32, w: f32, h: f32) -> bool {
+    /// 封面：`poster` 写了且还没开始播（`started` 由调用方按播放器给：内置的 / 宿主回传的）
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn draw_poster(node: &RenderNode, canvas: &mut Canvas, x: f32, y: f32, w: f32, h: f32, started: bool) -> bool {
         let Some(poster) = node.attrs.get("poster").map(|s| s.trim()).filter(|s| !s.is_empty()) else { return false };
-        if video_started(&node.text) {
+        if started {
             return false;
         }
         let Some((rgba, iw, ih)) = crate::renderer::components::image_rgba(poster) else { return false };
@@ -112,8 +113,3 @@ impl VideoComponent {
     }
 }
 
-/// 控制条进度轨道的横向范围（逻辑 px，相对视频左边）：与 `draw_controls` 同一套算式
-pub fn progress_track(w: f32) -> (f32, f32) {
-    let x0 = 12.0 + 24.0 + 12.0;
-    (x0, (w - x0 - 80.0).max(0.0))
-}

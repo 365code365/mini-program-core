@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mini_render/mini_render.dart';
 
+import 'host_apis.dart';
 import 'host_video.dart';
 
 /// 例子：从 Flutter 打开小程序。
@@ -130,61 +131,23 @@ class _MiniPageState extends State<MiniAppPage> {
     appDir: widget.appDir,
     route: widget.route,
     backend: _backend,
-    // 内置示例里 media / perf 页有 <video>，宿主 tab 有 <map>
+    // 内置示例里 media / perf 页有 <video>，宿主 tab 有 <map>。
+    // video 在 Android 上走同层渲染（插件自带的 MediaPlayer 解码、引擎把帧画进页面，滑动时贴着页面走），
+    // 不经过下面的 nativeViewBuilder；iOS 上仍由 HostVideo 盖在画面上
     nativeComponents: const ['video', 'map'],
-    // 小程序侧的演示见内置示例的「宿主」tab。真实 App 在这里接 image_picker / 定位 / 支付 SDK；
-    // 示例给假数据，requestPayment 与 makePhoneCall 弹一个 Flutter 对话框，表明确实走到了宿主。
-    // 注意：别在这里点名 setClipboardData —— 点名会**替换**引擎自带的实现（弹「内容已复制」、
+    // map 也走同层渲染（Android）：下面 nativeViewBuilder 造的假地图离屏画成帧、引擎画进页面 ——
+    // 滑动时贴着页面走。盖在画面上的话一滑就错开、一顿一顿（两条上屏路，见 doc/滑动顿挫避坑清单.md）
+    // （对照用：`flutter build apk --dart-define=SAME_LAYER_MAP=false` 编一份盖在画面上的）
+    sameLayerViews: const bool.fromEnvironment('SAME_LAYER_MAP', defaultValue: true) ? const ['map'] : const [],
+    // 小程序侧的演示见内置示例的「宿主」tab。
+    // - 选图 / 拍照 / 选视频 / 选文件 / 存相册 / 打开文档：插件自带（builtinHostApis 默认开），
+    //   走系统自己的选择器，这里不用写；
+    // - 其余「要宿主才能做」的（登录、支付、定位、扫码、通讯录……）：host_apis.dart，演示数据 +
+    //   要用户点头的弹 Flutter 自己的界面。真实 App 在那里接自己的账号 / 支付 / 地图 SDK。
+    // 注意：别点名 setClipboardData —— 点名会**替换**引擎自带的实现（弹「内容已复制」、
     // getClipboardData 读回），剪贴板改由下面监听 `clipboard` 事件来写系统剪贴板。
-    hostApis: {
-      'chooseImage': (args) async {
-        final n = (args['count'] as num?)?.toInt() ?? 1;
-        return {
-          'tempFilePaths': [for (var i = 1; i <= n; i++) '/fake/photo_$i.jpg'],
-          'tempFiles': [for (var i = 1; i <= n; i++) {'path': '/fake/photo_$i.jpg', 'size': 102400 * i}],
-        };
-      },
-      'login': (args) async => {'code': 'demo_${DateTime.now().millisecondsSinceEpoch.toRadixString(36)}'},
-      'getUserProfile': (args) async => {
-            'userInfo': {'nickName': 'Flutter 用户', 'avatarUrl': '', 'gender': 0, 'language': 'zh_CN'},
-          },
-      'getLocation': (args) async => {
-            'latitude': 22.5431,
-            'longitude': 114.0579,
-            'speed': 0,
-            'accuracy': 30,
-            'type': '${args['type'] ?? 'wgs84'}',
-          },
-      'scanCode': (args) async => {'result': 'https://example.com/qr/demo', 'scanType': 'QR_CODE', 'charSet': 'UTF-8'},
-      'requestPayment': (args) async {
-        final ok = await _confirm('模拟支付', '小程序请求支付 ¥${((args['total'] as num? ?? 0) / 100).toStringAsFixed(2)}', '支付');
-        if (!ok) throw const MiniHostApiError('requestPayment:fail cancel');
-        return {};
-      },
-      'makePhoneCall': (args) async {
-        final ok = await _confirm('拨打电话', '${args['phoneNumber'] ?? ''}', '呼叫');
-        if (!ok) throw const MiniHostApiError('makePhoneCall:fail cancel');
-        return {};
-      },
-    },
+    hostApis: ExampleHostApis(() => mounted ? context : null).all,
   );
-
-  /// 宿主自己的对话框（宿主能力的「真实感」：小程序调 API → Flutter UI → 结果回小程序）
-  Future<bool> _confirm(String title, String content, String okText) async {
-    if (!mounted) return false;
-    final r = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(title),
-        content: Text(content),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(okText)),
-        ],
-      ),
-    );
-    return r ?? false;
-  }
 
   @override
   void initState() {
@@ -192,7 +155,10 @@ class _MiniPageState extends State<MiniAppPage> {
     _c.logs.listen((l) => debugPrint('[小程序] $l'));
     // 例子里把引擎事件打进日志（logcat 里 grep「[事件]」），排查与自动化验收都靠它
     _c.events.listen((e) {
-      if (e['type'] != 'log') debugPrint('[事件] ${e['type']} ${_brief(e)}');
+      // 滚动中的 nativeViews 每帧一条，不打（主线程上每帧多一行日志，Flutter 的帧就更容易晚，
+      // 视频框跟页面就更容易错开）；停下来那条（速度 0）照打
+      final scrolling = e['type'] == 'nativeViews' && (e['velocity'] as num? ?? 0) != 0;
+      if (e['type'] != 'log' && !scrolling) debugPrint('[事件] ${e['type']} ${_brief(e)}');
       switch (e['type']) {
         // wx.setClipboardData：引擎自己存一份并弹 Toast，宿主负责写系统剪贴板
         case 'clipboard':
@@ -283,7 +249,8 @@ class _MiniPageState extends State<MiniAppPage> {
       onMenu: _showAbout,
       nativeViewBuilder: (context, view, c) {
         switch (view.tag) {
-          // video_player 出画面（系统硬解），事件按微信 <video> 的形状回传，见 host_video.dart
+          // 只有 iOS（或 sameLayerVideo: false）走到这里：video_player 出画面（系统硬解），
+          // 事件按微信 <video> 的形状回传，见 host_video.dart。Android 默认同层渲染，用不到它
           case 'video':
             return HostVideo(view: view, controller: c);
           // 真实 App 在这里放 google_maps_flutter / 高德；示例画一张网格和一个标记

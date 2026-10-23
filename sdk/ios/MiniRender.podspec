@@ -24,4 +24,6 @@ Pod::Spec.new do |s|
 
   # QuickJS / openh264 是 C/C++，需要 C++ 运行时
   s.libraries = 'c++', 'z'
+  # GPU 后端（wgpu 的 Metal，画到视图的 CAMetalLayer）：静态库不带框架依赖
+  s.frameworks = 'Metal', 'QuartzCore', 'CoreGraphics'
 end

@@ -1,7 +1,15 @@
 // 打进 XCFramework 的 Headers/ 目录里，Swift 才能 `import MiniRenderFFI`。
 // 由 tools/build-mobile.sh 拷进去，不要手工改名（Package.swift 的 binaryTarget
 // 名字必须与这里的 module 名一致）。
+//
+// link：静态库自己不带依赖。GPU 后端（wgpu 的 Metal）要 Metal / QuartzCore；
+// `import MiniRenderFFI` 时 Clang 自动链接这几个（直接把 XCFramework 拖进工程时也不用手动加）。
 module MiniRenderFFI {
     header "mini_render.h"
+    link "c++"
+    link "z"
+    link framework "Metal"
+    link framework "QuartzCore"
+    link framework "CoreGraphics"
     export *
 }

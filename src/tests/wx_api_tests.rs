@@ -304,24 +304,62 @@ fn storage_remove_and_clear() {
     )
     .unwrap();
     assert_eq!(get(&app, "__afterRemove"), "|2", "删掉的 key 回空串，另一个保留");
-    assert_eq!(get(&app, "String(__info.keys.length)"), "1");
+    // keys 含「上次会话存下、本次还没读过的」：storage 文件按小程序根目录是进程级的，并行的别的用例
+    // 写过的键也会被读回来，所以只断言这两个键的去留，不断言总数
+    assert_eq!(get(&app, "String(__info.keys.indexOf('b') >= 0 && __info.keys.indexOf('a') < 0)"), "true");
     assert_eq!(get(&app, "String(__info.limitSize)"), "10240", "微信上限 10MB");
     assert_eq!(get(&app, "__afterClear"), "0");
 }
 
 #[test]
 fn async_storage_wraps_the_sync_version() {
-    let app = new_app();
+    // 写入立刻生效（马上 getStorageSync 读得到），回调在下一轮事件循环（与微信一致：不在调用栈里同步回）
+    let mut app = new_app();
     app.load_script(
         r#"
-        var __got = null, __done = 0;
+        var __got = null, __done = 0, __miss = '', __sync = '';
         wx.setStorage({ key: 'k', data: { v: 9 }, success: function () { __done++; } });
+        __sync = JSON.stringify(wx.getStorageSync('k'));
         wx.getStorage({ key: 'k', success: function (r) { __got = r.data; } });
+        wx.getStorage({ key: 'nope', fail: function (r) { __miss = r.errMsg; } });
+        var __syncDone = __done;
         "#,
     )
     .unwrap();
+    assert_eq!(get(&app, "String(__syncDone)"), "0", "回调不能同步发生");
+    assert_eq!(get(&app, "__sync"), r#"{"v":9}"#);
+    // 第一次 update 登记定时器、第二次到点
+    app.update().unwrap();
+    app.update().unwrap();
     assert_eq!(get(&app, "String(__done)"), "1");
     assert_eq!(get(&app, "String(__got.v)"), "9");
+    assert_eq!(get(&app, "__miss"), "getStorage:fail data not found", "键不存在是 fail，不是 success('')");
+}
+
+#[test]
+fn batch_storage_and_info_cover_keys_from_disk() {
+    let mut app = new_app();
+    app.load_script(
+        r#"
+        wx.clearStorageSync();
+        wx.batchSetStorageSync([{ key: 'a', value: 1 }, { key: 'b', value: { x: 2 } }]);
+        var __vals = JSON.stringify(wx.batchGetStorageSync(['b', 'a', 'none']));
+        var __async = '';
+        wx.batchGetStorage({ keyList: ['a'], success: function (r) { __async = JSON.stringify(r.dataList); } });
+        var __info = wx.getStorageInfoSync();
+        "#,
+    )
+    .unwrap();
+    assert_eq!(get(&app, "__vals"), r#"[{"x":2},1,""]"#);
+    assert_eq!(get(&app, "JSON.stringify(__info.keys)"), r#"["a","b"]"#);
+    assert_eq!(get(&app, "String(__info.currentSize)"), "1", "按字节算、向上取整到 KB");
+    app.update().unwrap();
+    app.update().unwrap();
+    assert_eq!(get(&app, "__async"), "[1]");
+    // 原生表里有、JS 读缓存里没有的键（上次会话存下的）也要列出来
+    app.eval("__storage = {}").unwrap();
+    assert_eq!(get(&app, "wx.getStorageInfoSync().keys.length"), "2");
+    app.eval("wx.clearStorageSync()").unwrap();
 }
 
 // ───────────────────────────── 路由类 ─────────────────────────────
@@ -335,6 +373,14 @@ fn navigation_apis_write_pending_navigation() {
         ("wx.reLaunch({url:'/pages/d/d'})", "reLaunch", "/pages/d/d"),
     ] {
         let app = new_app();
+        // 路由先按 app.json 校验（route-ext.js）。这里没有小程序包，而小程序根目录是进程级的 ——
+        // 并行的别的用例设过根目录时读到的是**它的** app.json，/pages/a/a 就成了「页面不存在」。
+        // 所以显式给一份页面表（c 是 tab 页：switchTab 合法、navigateTo 不合法）
+        app.load_script(
+            "__appJsonCache = { known: true, pages: { 'pages/a/a': 1, 'pages/b/b': 1, 'pages/c/c': 1, 'pages/d/d': 1 }, \
+             tabs: { 'pages/c/c': 1 }, entry: 'pages/a/a' };",
+        )
+        .unwrap();
         app.load_script(call).unwrap();
         let got_kind = get(&app, "__pendingNavigation ? __pendingNavigation.type : ''");
         let got_url = get(&app, "__pendingNavigation ? String(__pendingNavigation.url) : ''");
@@ -345,12 +391,13 @@ fn navigation_apis_write_pending_navigation() {
 
 #[test]
 fn navigate_back_defaults_to_delta_one() {
+    // 栈里只有一页时 navigateBack 是 fail（微信：cannot navigate back at first page），先压两页
     let app = new_app();
-    app.load_script("wx.navigateBack();").unwrap();
+    app.load_script("Page({}); Page({}); wx.navigateBack();").unwrap();
     assert_eq!(get(&app, "__pendingNavigation.type"), "navigateBack");
     assert_eq!(get(&app, "String(__pendingNavigation.delta)"), "1");
     let app2 = new_app();
-    app2.load_script("wx.navigateBack({ delta: 3 });").unwrap();
+    app2.load_script("Page({}); Page({}); Page({}); Page({}); wx.navigateBack({ delta: 3 });").unwrap();
     assert_eq!(get(&app2, "String(__pendingNavigation.delta)"), "3");
 }
 
@@ -439,21 +486,25 @@ fn canvas_context_draw_reaches_the_bridge() {
 #[test]
 fn unimplemented_apis_stay_undefined_for_capability_probes() {
     let app = new_app();
-    // 蓝牙 / UDP / iBeacon：引擎与宿主契约里都没有，保持 undefined
-    for name in ["startBluetoothDevicesDiscovery", "createUDPSocket", "startBeaconDiscovery"] {
+    // 微信里根本没有的名字：保持 undefined
+    for name in ["notARealWechatApi", "createBluetoothThing"] {
         assert_eq!(
             get(&app, &format!("typeof wx.{name}")),
             "undefined",
             "wx.{name} 未实现时必须是 undefined，不能是假函数"
         );
     }
-    for name in ["login", "getUserProfile", "requestPayment", "chooseImage", "getLocation"] {
+    // 宿主能力（蓝牙、iBeacon 也在内：宿主可以在 hostApis 里接管）：函数、立刻 fail、canIUse 报 false
+    for name in ["login", "getUserProfile", "requestPayment", "chooseImage", "getLocation",
+                 "startBluetoothDevicesDiscovery", "startBeaconDiscovery", "startAccelerometer"] {
         assert_eq!(get(&app, &format!("typeof wx.{name}")), "function", "wx.{name} 是会立刻 fail 的默认实现");
+        assert_eq!(get(&app, &format!("String(wx.canIUse('{name}'))")), "false", "wx.{name} 宿主没接时 canIUse 为 false");
         assert_eq!(get(&app, &format!("String(wx.{name}.__default)")), "true", "wx.{name} 没被宿主接管");
     }
     // 已实现的必须是函数
     for name in ["request", "showToast", "setStorageSync", "navigateTo", "getSystemInfoSync",
-                 "connectSocket", "createInnerAudioContext", "getFileSystemManager", "canIUse", "getMenuButtonBoundingClientRect"] {
+                 "connectSocket", "createInnerAudioContext", "getFileSystemManager", "canIUse", "getMenuButtonBoundingClientRect",
+                 "createUDPSocket", "createTCPSocket", "getRandomValues", "batchGetStorageSync", "createWorker"] {
         assert_eq!(get(&app, &format!("typeof wx.{name}")), "function", "wx.{name}");
     }
 }

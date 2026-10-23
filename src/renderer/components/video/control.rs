@@ -1,13 +1,12 @@
-//! 程序控制与事件：`VideoContext` 的 play / pause / stop / seek / playbackRate / 全屏，
-//! 以及宿主每帧来取的组件事件（play / pause / ended / timeupdate / loadedmetadata /
-//! seekcomplete / fullscreenchange）。
+//! 内置播放器的程序控制与事件：`VideoContext` 的 play / pause / stop / seek / playbackRate，
+//! 以及宿主每帧来取的组件事件（play / pause / ended / timeupdate / loadedmetadata / seekcomplete）。
+//! 全屏（`fullscreenchange`）与控制条显隐（`controlstoggle`）两种播放器共用，在 fullscreen.rs / ui.rs。
 //!
 //! 依据官方 component/video.html 与 api/media/video/VideoContext.html：
 //! - `timeupdate` 播放中每 250ms 一次，`detail = {currentTime, duration}`（秒）；
 //! - `ended` 播到末尾（`loop` 时不发，与 HTML 媒体元素一致）；
 //! - `loadedmetadata` 的 `detail = {width, height, duration}`；加载失败发 `error`（`{errMsg}`）；
-//! - `seekcomplete` 的 `detail = {position}`；
-//! - `fullscreenchange` 的 `detail = {fullScreen, direction}`，`direction` 是 `vertical` / `horizontal`。
+//! - `seekcomplete` 的 `detail = {position}`。
 //!
 //! 事件按「上次报给逻辑层的状态」做差：播放器自己按墙上时钟走，宿主只管每帧问一次。
 //! `playbackRate` 不等于 1 时不放声音（内置音频是整段样本直出，不能变速不变调）。
@@ -42,22 +41,6 @@ pub enum VideoCommand {
     ExitFullScreen,
     /// `sendDanmu({text, color})`
     SendDanmu(String, String),
-}
-
-thread_local! {
-    /// 正在全屏的视频 (src, direction)。全屏画面画在所有页面层之上（compositor 读它），
-    /// 一个引擎同时只会有一个；thread_local 的理由同 `HOST_OWNS_VIDEO`
-    static FULLSCREEN: std::cell::RefCell<Option<(String, &'static str)>> = const { std::cell::RefCell::new(None) };
-}
-
-/// 正在全屏的视频 (src, direction)
-pub fn fullscreen_video() -> Option<(String, &'static str)> {
-    FULLSCREEN.with(|f| f.borrow().clone())
-}
-
-/// 换页 / 销毁时收掉全屏（不发事件：页面已经没了）
-pub fn clear_fullscreen() {
-    FULLSCREEN.with(|f| *f.borrow_mut() = None);
 }
 
 impl VideoPlayer {
@@ -142,26 +125,8 @@ impl VideoPlayer {
                     self.play();
                 }
             }
-            VideoCommand::RequestFullScreen(dir) => {
-                let direction = match dir {
-                    Some(0) => "vertical",
-                    Some(_) => "horizontal",
-                    None if self.width > self.height => "horizontal",
-                    None => "vertical",
-                };
-                let was = fullscreen_video().map(|(s, _)| s == src).unwrap_or(false);
-                FULLSCREEN.with(|f| *f.borrow_mut() = Some((src.to_string(), direction)));
-                if !was {
-                    self.reported.pending.push(("fullscreenchange", json!({ "fullScreen": true, "direction": direction })));
-                }
-            }
-            VideoCommand::ExitFullScreen => {
-                if let Some((s, direction)) = fullscreen_video().filter(|(s, _)| s == src) {
-                    let _ = s;
-                    clear_fullscreen();
-                    self.reported.pending.push(("fullscreenchange", json!({ "fullScreen": false, "direction": direction })));
-                }
-            }
+            // 全屏是画面那一层的事、两种播放器共用：`host::video` 交给 fullscreen.rs，不到播放器这里
+            VideoCommand::RequestFullScreen(_) | VideoCommand::ExitFullScreen => {}
         }
     }
 

@@ -161,6 +161,8 @@ fn node_fields(r: &WxmlRenderer, im: &InteractionManager, view: PageView, h: &Qu
                 json!({ "kind": "canvas", "id": h.id, "width": h.rect.width, "height": h.rect.height })
             }
             "scroll-view" => json!({ "kind": "scroll-view", "id": h.component_id }),
+            // 引擎内置组件（builtin_components）的实例：DraggableSheetContext 等由组件实例自己提供
+            "draggable-sheet" | "snapshot" | "open-container" => json!({ "kind": h.tag, "id": h.id }),
             _ => Value::Null,
         };
         if node.is_null() {
@@ -173,6 +175,8 @@ fn node_fields(r: &WxmlRenderer, im: &InteractionManager, view: PageView, h: &Qu
         let ctx = match h.tag.as_str() {
             "video" => json!({ "kind": "video", "id": h.id }),
             "canvas" => json!({ "kind": "canvas", "id": h.attrs.get("canvas-id").cloned().unwrap_or_default() }),
+            // 官方 NodesRef.context 还支持这几个：EditorContext（内置组件）、MapContext / LivePlayerContext（宿主）
+            "editor" | "map" | "live-player" => json!({ "kind": h.tag, "id": h.id }),
             _ => Value::Null,
         };
         if ctx.is_null() {

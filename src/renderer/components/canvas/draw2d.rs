@@ -56,7 +56,7 @@ impl Canvas2DContext {
 
     /// 描边矩形
     pub fn stroke_rect(&mut self, x: f32, y: f32, width: f32, height: f32) {
-        let path = self.rect_path(x, y, width, height);
+        let path = self.dashed(self.rect_path(x, y, width, height));
         let color = self.apply_alpha(self.stroke_style);
         let lw = self.line_width * self.avg_scale();
         if !self.fx.trivial(true) {
@@ -126,9 +126,9 @@ impl Canvas2DContext {
         }
     }
 
-    /// 描边当前路径
+    /// 描边当前路径（有虚线时先切段，见 clipdash.rs）
     pub fn stroke(&mut self) {
-        let path = self.build_path();
+        let path = self.dashed(self.build_path());
         let lw = self.line_width * self.avg_scale();
         if !self.fx.trivial(true) {
             return self.fx_path(&path, Some(lw));

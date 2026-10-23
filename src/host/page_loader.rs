@@ -102,7 +102,10 @@ pub(crate) fn load_page(app_path: &Path, page_path: &str) -> Option<PageInfo> {
         .unwrap_or_else(app_enables_pull_down_refresh);
 
     // 页面 json 的 `usingComponents`：自定义组件三件套（含组件自己再声明的组件）
-    let components = crate::using_components::load_page_components(app_path, page_path);
+    let mut components = crate::using_components::load_page_components(app_path, page_path);
+    // 引擎内置的官方组件（page-container、match-media、手势组件……）：页面用到了才加（builtin_components）
+    let builtin = crate::builtin_components::for_page(&wxml, &components);
+    components.extend(builtin);
     if !components.is_empty() {
         println!(
             "🧩 {} 使用 {} 个自定义组件: {}",

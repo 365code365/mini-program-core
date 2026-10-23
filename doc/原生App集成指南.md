@@ -67,7 +67,13 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }
 | 专用渲染线程 | 引擎不是线程安全的（逻辑层是 QuickJS），所有调用都排到同一条线程 |
 | 尺寸与 dpr | 按 View 的 `bounds` × `density`/`scale` 算，`rpx` 由引擎自己换算 |
 | 触摸 | `onTouchEvent` / `touchesXxx` → 引擎的**指针三段**，含历史点/`coalescedTouches`（不抽稀） |
-| 出帧 | 只在引擎回报「有新画面」时才上屏；静止时不出帧（不耗电） |
+| 出帧 | 跟着 vsync，引擎回报还有活（`WANTS_MORE`：动画 / 惯性 / 定时器 / 请求在飞）才续帧；静止时不出帧（不耗电） |
+| 上屏（Android） | 画在视图里的一块 SurfaceView 上，引擎线程直接交给 SurfaceFlinger（不经 UI 线程 `onDraw`）；后端默认 auto：GPU 合成（滚动帧只合成）→ CPU 直写 Surface → Bitmap，失败逐级回退。`backend` 可强制、`activeBackend` / `backendReason` 可查。为什么见 [滑动顿挫避坑清单](滑动顿挫避坑清单.md) |
+| 导航栏（Android） | 默认引擎画（`navigationBar = true`，与 Flutter 插件一致）、页面转场默认开（`routeAnimation`）；`open` 之前可关 |
+| 诊断开关（Android） | `adb shell setprop debug.mini.fps 1`（`damage_log` / `backend` / `cpu_pin` …同 Flutter 插件），重开小程序生效 |
+| 上屏（iOS） | 引擎线程 + `CADisplayLink`（要 120Hz），画面画进自己的 `CAMetalLayer`，后端默认 auto（GPU 合成），失败回退 CPU（`CGImage`）；`backend` / `activeBackend` / `backendReason` |
+| 宿主能力 | `hostApis["login"] = …`（两端都有）：点了名的 `wx.*` 交给宿主、回包走 `MiniHostReply`；Android 另**自带**选图 / 拍照 / 选视频 / 选文件 / 存相册 / 打开文档（`builtinHostApis`，透明的 `MiniMediaActivity` 代办，宿主不用转发 `onActivityResult`；清单要有它与 `MiniFileProvider`，AAR 自带） |
+| 原生组件（Android） | `sameLayerViews["map"] = { MyMap() }`：宿主画、引擎画进页面（同层渲染），滑动时不错开；`<video>` 默认同层渲染（`sameLayerVideo`） |
 | 沙盒目录 | 自动指到 `filesDir` / `Caches`，storage 与图片磁盘缓存才生效 |
 | 生命周期 | 前后台切换、内存告警转发 |
 
@@ -207,10 +213,11 @@ let mut r = mini_render::renderer::WxmlRenderer::new_with_scale(
 let px: Vec<u8> = app.to_rgba();          // 或 canvas.pixels()
 ```
 
-- **iOS**：`CGDataProvider` + `CGImageCreate` → `CALayer.contents`，
-  或直接写 `CVPixelBuffer` / Metal 纹理；
-- **Android**：`Bitmap.copyPixelsFromBuffer` + `Canvas.drawBitmap`，
-  或 `ANativeWindow_lock/unlockAndPost`（避开一次拷贝）；
+- **iOS**：首选把一块 `CAMetalLayer` 交给引擎（`mr_app_attach_surface(MR_SURFACE_METAL_LAYER)`，GPU 合成、滚动只合成）；
+  CPU 退路是 `mr_app_pixels_into(BGRA)` → `CGImage` → `CALayer.contents`（子图层要关掉隐式动画，否则每帧淡入淡出 0.25s）；
+- **Android**：首选自己的 SurfaceView（GPU：`nativeAttachSurface`；CPU：`ANativeWindow_lock` 直写，零中间拷贝）；
+  **别**走 `Bitmap.copyPixelsFromBuffer` + `onDraw`（每帧三次整帧拷贝 + 一次纹理上传，原生示例实测屏上重复 20%，
+  见 [滑动顿挫避坑清单](滑动顿挫避坑清单.md)）；
 - **鸿蒙**：`XComponent` + `OH_NativeWindow`，或 `PixelMap` 喂给 `Image`；
 - **桌面**：仓库用的是 `softbuffer`。
 
@@ -313,7 +320,8 @@ typedef void (*mini_native_view_cb)(
 | 字体 | 走系统字体路径 | **各平台字体路径不同**，见第三部分「字体」 |
 | 剪贴板 | 引擎里存一份；桌面窗体同步系统剪贴板（`arboard`） | 移动端收 `clipboard` 宿主事件写系统剪贴板；`getClipboardData` 要读系统剪贴板就在 `hostApis` 里点名 |
 | 音视频 | 内置 symphonia + rodio + openh264 解码 | 移动端建议改用系统播放器（省电、省内存、走硬解） |
-| 定位/支付/登录等 | 引擎做不了，默认立刻 `fail`（`wx.login`、`requestPayment`、`getLocation`、`chooseImage`…） | 宿主在 `hostApis` 里点名就交给宿主（`hostCall` → `mr_app_host_reply`） |
+| 定位/支付/登录等 | 引擎做不了，默认立刻 `fail`（`wx.login`、`requestPayment`、`getLocation`…） | 宿主在 `hostApis` 里点名就交给宿主（`hostCall` → `mr_app_host_reply`） |
+| 选图/选视频/选文件/存相册/打开文档 | 同上（要系统的选择器）；参数归一、移动端「拍照 / 从手机相册选择」菜单、回包补字段、文件进出沙盒由引擎做 | Flutter 插件**自带**（`builtinHostApis`）；桌面窗体用系统文件对话框；其它宿主点名后按下文「传文件」的约定回包 |
 
 ### 9. 生命周期与内存
 
@@ -388,7 +396,9 @@ const char* mr_version(void);
 后端只决定「谁把各图层合成上屏」。GPU 合成器（`compositor::gpu`）与 CPU 逐字节一致（启动自检守着），
 桌面窗体、无头、**SDK 的 surface 上屏**共用同一份（SDK 侧接线在 `src/host/engine_gpu.rs`）。
 Android 的库默认编进 `gpu`（`build-mobile.sh`，`ANDROID_GPU=0` 关掉，arm64 实测 +5.1MB：36.3→41.4MB）；
-iOS 的库暂不编（Flutter 的 iOS 外部纹理是 CVPixelBuffer，用不上 CAMetalLayer）。
+iOS 的库也编进 gpu（`tools/build-mobile.sh ios`，`IOS_GPU=0` 关），原生 `MiniProgramView` 把自己的 CAMetalLayer 交上来；
+Flutter 的 iOS 外部纹理是 CVPixelBuffer，用不上 CAMetalLayer，那条路照旧 CPU。宿主链接时要带 Metal / QuartzCore /
+CoreGraphics（Package.swift、podspec、module.modulemap 已写上）。
 上面那 20 个函数的签名与语义一个没改，**不调这组函数、或偏好保持 cpu 的宿主，行为与以前逐字节一致**。
 
 ```c
@@ -451,13 +461,15 @@ int  mr_app_pump_ex(MRApp*, uint64_t now_ms);              // MR_FRAME_* 的按�
   GPU 上屏时中间还有 `GPU 准备 a（CPU 合成 b）等 c 传 dKB`：b 是直通帧（Toast / Modal / 操作菜单 / picker）里
   CPU 合成覆盖层那一截的时间，c 是等 surface，d 是这一帧上传的字节数。
   这几个开关在 `MiniEngine` 创建时读一次：Android 要在 `nativeCreateEx` 之前 `Os.setenv`。
-  Flutter 插件替你做了：`adb shell setprop debug.mini.fps 1`（还有 `damage_log` / `no_damage` / `scroll_log` /
+  Flutter 插件与 Android 原生 `MiniProgramView`（`MiniDiag.kt`）替你做了：`adb shell setprop debug.mini.fps 1`（还有 `damage_log` / `no_damage` / `scroll_log` /
   `layout_log` / `backend` / `no_resample` / `cpu_pin`），重开小程序生效，不用重新打包；用完 `setprop debug.mini.fps ""` 关掉。
 - **屏上实际的帧**：Flutter 插件在 Android 上默认把引擎画到自己的 SurfaceView（`androidSurfaceView: true`，
   平台视图 hybrid composition），系统合成器直接取引擎交的每一帧；`false` 退回外部纹理（屏上那一帧要看 Flutter
   自己这一帧有没有按时出，主线程一忙就重复一张）。判据用 SurfaceFlinger：
   `adb shell "dumpsys SurfaceFlinger --latency '<层名>'"`（层名在 `dumpsys SurfaceFlinger --list` 里找
   `SurfaceView[包名/…](BLAST)`），每行第二列是上屏时刻，相邻两行隔了一个以上的显示器周期就是屏上重复了一张。
+  宿主承载的原生组件跟不跟页面：`setprop debug.mini.pace 1` 时 Flutter 每帧另打 `🎞N <vsync> <用的引擎那一帧> <滚动> <速度> <推了多少>`
+  （ColorOS 上日志多了会整段静默，看不到时临时只留这一路），`setprop debug.mini.native_lag <帧数>` 校准推算的帧数。
   外部纹理那条路的诊断：`setprop debug.mini.pace 1`（引擎 `🎞E` / 宿主 `🎞` / Flutter `🎞F` 三路），
   `python3 tools/pace-check.py pace.log` 算出每个 vsync 屏上是哪一帧。
 - **建引擎之前预热**：`mr_warmup` / `MiniEngine.nativeWarmup(宽, 高, dpr, 偏好, 内存, lowRam, api)` 在建引擎之前调，
@@ -489,7 +501,11 @@ Kotlin 侧对应的 JNI（`src/ffi_jni.rs`，老的 `native*` 一个没动）：
 `nativeDetachSurface(h)`、`nativeBackend(h): Int`、`nativeBackendReason(h): String`、`nativePumpEx(h, nowMs): Int`。
 `nativeAttachSurface` 内部 `ANativeWindow_fromSurface` → `mr_app_attach_surface`（引擎 acquire 自己那份）→
 release；没编 gpu 时不碰 Surface、直接返回 1。返回 1 时那块 Surface 可能已被 GPU 连过，要 CPU 直写就换一块新的。
-Flutter 插件已接这组接口（见下一节）；原生 `MiniProgramView`（Kotlin / Swift）暂未接。新的 Kotlin 配老的 `.so` 会在调用新方法时抛
+Flutter 插件与 Android 原生 `MiniProgramView`（`EngineSession.kt`，与插件的 `EngineHost` 同一套上屏规则）都已接这组接口；
+iOS 的 Swift 视图同一套（`sdk/ios/Sources/MiniRender/EngineSession.swift`：引擎线程 + CADisplayLink、`mr_warmup` →
+`set_device_info` → `set_backend(AUTO)` → `prewarm_gpu` → `launch` → `attach_surface(CAMetalLayer)`，首帧前 Metal 层藏着，
+回退时拿掉 Metal 层改 CPU，进后台同步停 DisplayLink；这串 C 调用在 macOS 上由 `tests/ffi_metal_layer.rs` 跑过，
+Swift 本身只在 Mac Catalyst 下 typecheck 过，没上过 iPhone）。新的 Kotlin 配老的 `.so` 会在调用新方法时抛
 `UnsatisfiedLinkError`，两者在 AAR 里一起发布，不要单独升级。
 
 线程约定：**所有 `mr_app_*` 必须在同一个线程调用**（QuickJS 不是线程安全的）。
@@ -528,8 +544,11 @@ Flutter 插件已接这组接口（见下一节）；原生 `MiniProgramView`（
 | `navigationBar` | `wx.setNavigationBarTitle/Color`、`show/hideNavigationBarLoading` | `title` / `frontColor` / `backgroundColor` / `loading` |
 | `inputFocus` | 输入框聚焦 | `id` `tag` `value` `inputType` `password` `maxlength` `confirmType` `confirmHold` `placeholder` `rect` |
 | `inputBlur` | 失焦 / 确认 | `id` `value` |
-| `nativeViews` | 原生组件的摆放或遮挡变了（滚动、picker 面板滑入滑出时逐帧，静止不发） | `views[]`：`key` `tag` `x` `y` `width` `height` `fixed` `attrs` `clip` `holes` `mask` |
-| `hostCall` | 调了宿主实现的 `wx.*` | `id` `api` `args` |
+| `nativeViews` | 原生组件的摆放、遮挡或页面滚动速度变了（滚动、picker 面板滑入滑出时逐帧；停下来那一帧再报一条速度 0；静止不发） | `views[]`：`key` `tag` `x` `y` `width` `height` `fixed` `attrs` `clip` `holes` `mask`；这一帧的滚动取样 `frameTime` `scroll` `velocity` `decay` `period` `dpr`，正常流的可见区 `area`（见下文「滚动时跟住页面」） |
+| `videos` | 同层渲染（创建选项 `sameLayer: ["video"]`）时页面上的视频变了：换页、`wx:if`、属性、框的大小、静音键、进出全屏 | `views[]`：`key`（`id`，没有就是 `src`）`url`（网络地址原样；包内路径已解析成本地文件绝对路径）`attrs`（`muted` 已按控制条的静音键改好；全屏的那个 `object-fit` 换成 `contain`）`box`（读回画面的设备像素 `[宽, 高]`；全屏时是全屏画面的尺寸，横屏宽高对调）。见下文「同层渲染的视频」 |
+| `videoCommand` | 同层渲染的视频被点了（控制条的播放键 / 进度条、中间的播放键）或调了 `wx.createVideoContext` | `key` `command`（`play` / `pause` / `stop` / `seek` / `playbackRate`）`position`（秒）`rate` |
+| `videoFullscreen` | 视频进 / 出全屏（控制条的全屏键、`requestFullScreen`、返回键 / 顶栏返回退出；两种播放器都有） | `fullScreen` `direction`（0 竖屏 / 90 / -90 横屏）`key`。宿主收起 / 放出状态栏与导航条 |
+| `hostCall` | 调了宿主实现的 `wx.*` | `id` `api` `args` `tempDir` `files`（见下文「宿主与小程序之间传文件」） |
 | `clipboard` | `wx.setClipboardData`（宿主写系统剪贴板） | `data` |
 | `vibrate` | `wx.vibrateShort` / `vibrateLong` | `duration`（`short` / `long`）`style` |
 | `app` | 启动后第一帧（只发一次） | `about`：`name` `appId` `description` `entryPage` `pageCount` `engine` |
@@ -550,6 +569,70 @@ tabBar 本该盖在原生组件上面，而控件摆在引擎画面之上，所�
 半透明遮罩按**不透明**算（与「点击不穿透」同一份包围盒），正常流里的视频在它下面整个被裁掉；
 scroll-view 的裁剪还不在 `clip` 里。实现与判据见 `src/host/native_occlusion.rs`、
 `tests/embed_native_occlusion.rs`。
+
+**滚动时跟住页面**：别等 `nativeViews` 到了才挪控件。引擎画面与控件走两条上屏路（Android 上引擎画到自己的
+SurfaceView，系统合成器直接取；控件要经事件队列 → 主线程 → 宿主的下一帧），事件到得忽早忽晚（一加 PLY110 上
+晚 2~4 个 vsync），只按事件挪的话视频框比页面落后、而且每帧落后几个不一样，滑动时就是「抖、不跟着页面走」。
+事件里带了**这一帧的滚动取样**，宿主在**自己每一帧**按这一帧的 vsync 推算页面此刻滚到了哪：
+
+| 字段 | 含义 |
+|---|---|
+| `frameTime` | 这一帧取样用的 vsync 时刻（毫秒，`pump` 传进来的那个宿主时钟；Android 与 `Choreographer` / Flutter 的帧时间同一个单调钟） |
+| `scroll` | 页面滚动位置（逻辑像素，**未取整**）；`views[].y` 是按设备像素截断后的滚动算的（与引擎合成同一个取整） |
+| `velocity` | 滚动速度（逻辑像素 / 毫秒，正 = 内容往上走）。拖动时取最近 40ms 的平均（一帧没挪不报 0），惯性时是滚动控制器的瞬时速度；页面真停了报 0 |
+| `decay` | 惯性的每毫秒衰减率（`v(t) = v·e^(−decay·t)`），拖动时 0 |
+| `period` | vsync 周期估计（毫秒） |
+| `dpr` / `area` | 设备像素比；正常流的可见区（导航栏以下、tabBar 以上，视口逻辑坐标） |
+
+推算（`fixed` 的控件不随页面滚，不推）：`n = round((这一帧 vsync − frameTime) / period + lag)`，`n` 超出 −2~6 就不推（时钟对不上
+或引擎停了）；往后 `n` 帧页面再滚 `Δ = velocity·n·period`（惯性按逐帧离散衰减：`Δ = v·P·d·(1 − dⁿ)/(1 − d)`，`d = e^(−decay·P)`）；
+控件纵向挪 `trunc(scroll·dpr)/dpr − trunc((scroll + Δ)·dpr)/dpr`。`clip` 里贴着控件自己边的那几条边跟着挪、贴着遮挡物的留在原处，
+再裁进 `area`；`holes` 不动。`lag` 是控件比引擎画面晚上屏几个 vsync，一加 PLY110（Flutter 宿主、独立图层）上校准为 0。
+Flutter 插件已经这样做（`native_layer.dart`，`MiniProgramController.nativeViewLag`），自己摆控件的宿主照抄；
+判据与真机数字见 `doc/引擎测试说明.md` 的 T30-23。
+
+**同层渲染的视频（`sameLayer: ["video"]`，Android 默认）**：推算只能把惯性推准，拖动时引擎画面自己每帧挪多少都不匀，
+盖上去的视频照样错开。同层渲染把视频**画进页面**：宿主只解码，每一帧交给引擎，滚动时视频就是页面画布里的一块像素。
+Android 的 `MiniProgramView`（`sameLayerVideo`，默认开）与 Flutter 插件（`sameLayerVideo`）都自带播放器
+（`sdk/android/.../VideoHost.kt`：`MediaPlayer` 硬解带声音，`SurfaceTexture` + GLES 读回 RGBA，见 `GlFrameReader.kt`
+里为什么不用 `ImageReader`）。iOS 还没有：Flutter 仍是盖上去的控件，原生视图是引擎软解。自己接的话：
+
+1. 创建选项 `"sameLayer": ["video"]`（`nativeComponents` 里也列了 `video` 时同层渲染优先，不再报进 `nativeViews`）。
+2. 收 `videos`：按 `key` 建 / 换片源 / 释放播放器，`attrs` 里 `autoplay` `loop` `muted` `initial-time` 照着设。
+3. 每解出一帧，按 `box` 与 `attrs["object-fit"]`（contain 默认 / fill / cover）缩好，调
+   `mr_video_frame_rgba(key, w, h, stride, data)`（任何线程都行；CPU 读得到的 YUV 4:2:0 用 `mr_video_frame_yuv`），
+   再让引擎出一帧。尺寸正好时引擎整行拷贝，对不上（框刚变）才逐像素缩放。
+4. 执行 `videoCommand`；播放器的状态照旧当组件事件回传（`mr_app_native_view_event(key, name, detail)`，与微信同形）：
+   `loadedmetadata {width, height, duration}`、`play`、`pause`、`waiting`、`timeupdate {currentTime, duration}`（250ms 一次）、
+   `seekcomplete {position}`、`ended`、`error {errMsg}`。引擎据此画控制条，再派发给节点的 `bind*`。
+   网络视频 seek 后要缓冲，那段时间播放器的 `isPlaying` 是 false —— 「在不在播」别看它（`VideoHost` 自己记）。
+5. 收 `videoFullscreen`：收起 / 放出状态栏与导航条（`MiniProgramView.immersiveVideoFullscreen`、
+   `MiniProgramController.immersiveVideoFullscreen` 默认做了）。
+
+**同层渲染的其它组件（`sameLayer` 里除 video 以外的标签，典型是 `<map>`）**：宿主**画**它，引擎把那一帧画进页面。
+盖上去的地图与当初的视频同一个病（两条上屏路，一滑就错开、一顿一顿）；画进页面以后滚动时一个像素都不错开，
+宿主一帧都不用重画（只在内容变了时交）。约定：
+1. 创建选项 `"sameLayer": ["map"]`（`nativeComponents` 里也列了时同层渲染优先，不再报进 `nativeViews`）。
+2. 收 `sameLayerViews`（页面结构变了才发，滚动不发）：`views[]` 的 `key`（`id`，没有就是标签名）、`tag`、`attrs`、
+   逻辑 `width` / `height`、设备像素 `box`、`fixed`。按 `key` 建 / 改 / 放自己的离屏控件。
+3. 内容变了就按 `box` 画一帧，调 `mr_native_view_frame_rgba(key, w, h, stride, rgba)`（任何线程；JNI `nativeViewFrameRgba`），
+   再让引擎出一帧：引擎只重画这一块（框的背景照画，帧拉满画在上面，圆角照节点的）。
+4. 收 `nativeViewTap {key, tag, x, y}`（框里的本地逻辑坐标）：自己判点到了什么，照旧 `mr_app_native_view_event` 回传
+   （`markertap {markerId}` → 节点的 `bindmarkertap`）。拖动从框里开始照样滚页面；地图自己的平移 / 缩放手势没有转。
+
+现成的：Android `MiniProgramView.sameLayerViews["map"] = { MyMap() }`（`MiniSameLayerView`：`onDraw` 画进 Canvas、
+`onTap`、`emit`、`invalidate`，示例 `DemoMapView.kt`）；Flutter `MiniProgramController(sameLayerViews: ['map'])`
+（Android：`nativeViewBuilder` 造的控件在一棵离屏渲染树里 build / paint、`toImage` 读回，点击在离屏树上派发，
+`same_layer.dart`；只适合纯 Flutter 画的控件，平台视图离屏画不出来）。iOS 两个视图还没有。判据见 `tests/same_layer_view_e2e.rs`。
+
+控制条、中间的播放键、全屏都在引擎里（与引擎自己的播放器同一套：`video/chrome.rs` 画、`ui.rs` 管状态、`fullscreen.rs`），
+照微信：点画面切换控制条显隐（`bindcontrolstoggle {show}`），播放中 3 秒没碰自动收起，收起后底部一条细进度
+（`show-bottom-progress`）；进度条横着拖跟手、松手 seek 一次，竖着划照样滚页面；`show-play-btn`、`show-progress`
+（没写时宽度大于 240 才有）、`show-mute-btn`、`show-fullscreen-btn`、`show-center-play-btn`、`title`（全屏顶栏）、
+`duration` 都认。全屏方向：`requestFullScreen({direction})` > 节点的 `direction` > 画面宽高比（横的视频横屏 90）。
+横屏是**引擎把全屏那一层转过来画**，不转 Activity（转 Activity 要按横屏宽度整页重排、退出再排回来）；触点按方向换算，
+返回键先退出全屏。全屏期间页面不重画（标记留到退出），只在新帧 / 控制条变了时重新合成；收起状态栏报来的新安全区引擎按住不用。
+还不支持：同层渲染的弹幕（`danmu-list` / `sendDanmu`）、`enable-play-gesture` 双击、亮度音量手势、小窗、投屏。
 
 导航栏由宿主画：引擎不画导航栏（微信里它是原生外壳），`navigationStyle: custom` 的页面除外。
 
@@ -591,17 +674,46 @@ scroll-view 的裁剪还不在 `clip` 里。实现与判据见 `src/host/native_
 }
 ```
 
-- `hostApis` 点名的装进 `wx`（调用 → `hostCall` 事件 → 宿主 `mr_app_host_reply`）。没点名的分两种：
-  微信里**总是存在**的宿主能力（`login` / `getUserProfile` / `getUserInfo` / `requestPayment` / `scanCode` /
-  `getLocation` / `chooseLocation` / `chooseImage` / `chooseMedia` / `chooseVideo` / `chooseMessageFile` /
-  `makePhoneCall` / `authorize`）是引擎的默认实现：**立刻 `fail`**，errMsg 写明「当前宿主未实现」——
-  框架包装层（`uni.getLocation → wx.getLocation`）拿到 undefined 会直接 TypeError，马上失败的函数页面的
-  fail 分支接得住；其余没点名的仍是 `undefined`（给一个永远不回的假函数比 undefined 更糟）。
+- `hostApis` 点名的装进 `wx`（调用 → `hostCall` 事件 → 宿主 `mr_app_host_reply`）。**微信官方的 503 个 `wx.*`
+  全都在**（对照表与实现分层见 `.agents/tasks/wx-gap-2026-10-23/gap.md`）：引擎能做的真做（存储、路由、TCP / UDP、
+  Worker、WebAudio、worklet、canvas …）；要宿主的（`login` / `requestPayment` / `getLocation` / 蓝牙 / NFC / 生物认证 …）
+  默认**立刻 `fail`**，errMsg 写明「当前宿主未实现」，`wx.canIUse` 对它返回 false —— 框架包装层
+  （`uni.getLocation → wx.getLocation`）拿到 undefined 会直接 TypeError，马上失败的函数页面的 fail 分支接得住。
+  宿主在 `hostApis` 里点名哪个就接管哪个。官方名单之外的名字仍是 `undefined`。
+- **宿主承载的对象**（`MapContext` / `CameraContext` / `LivePlayerContext` / `LivePusherContext` / NFC / `VideoDecoder` …）
+  的方法同样走 `hostCall`，名字带点：`MapContext.moveToLocation`，`args.contextId` 是 `createMapContext(id)` 的 id。
+  宿主在 `hostApis` 里点名 `MapContext.moveToLocation` 就交给宿主，没点名的立刻 fail。
+- **宿主往小程序推事件**：`mr_app_dispatch_event(app, name, json)`（JNI `nativeDispatchEvent`、Flutter
+  `controller.dispatchEvent(name, payload)`、iOS / Android 视图同名方法）。`name` 写 `accelerometerChange` 或
+  `onAccelerometerChange` 都行，`json` 原样交给 `wx.onAccelerometerChange` 登记的回调；特殊的几个：
+  `networkStatusChange`（同时更新 `getNetworkType`）、`keyboardHeightChange`、`themeChange`、`error`、
+  `recorderStart` / `recorderStop` / `recorderFrame …`（RecorderManager）、`nfcDiscovered`、
+  `contextEvent`（`{contextId, event, detail}`：地图 / 相机 / 直播控件上的事件派发到节点自己的 bind 上）。返回值是收到它的回调个数。
+- **宿主与小程序之间传文件**（`chooseImage` / `chooseMedia` / `chooseVideo` / `chooseMessageFile` /
+  `saveImageToPhotosAlbum` / `openDocument` 这一类，实现在 `src/runtime/app_host.rs`）：
+  - 小程序只认虚拟路径 `wxfile://tmp/…`，宿主只认真实路径，翻译由引擎做；
+  - `hostCall` 事件带 `tempDir`：宿主可以直接写的临时目录（= 沙盒里的 `wxfile://tmp/`）；
+  - 宿主回包里 **`file://` 开头的字符串**是交给小程序的文件：引擎把它换成 `wxfile://tmp/…`。写在 `tempDir`
+    里的只换名字，别处的拷一份进来（桌面选的是用户自己的照片，不能挪走）。移动端请直接写进 `tempDir`，
+    否则大视频的拷贝发生在引擎线程上。`file://` 后面直接拼绝对路径即可，百分号转义的标准 URI 也认；
+  - `args` 里出现的 `wxfile://` 路径，事件的 `files` 字段给出真实路径（`saveImageToPhotosAlbum({filePath})`
+    要读的文件）；文件不存在的不列；
+  - 引擎画图不读 EXIF 方向：交照片之前按方向摆正（手机竖拍的 JPEG 几乎都是「横着存 + 方向 6」）；
+    HEIC 等引擎解不了的格式转成 JPEG。
+- 这几个 API 宿主点名之后，引擎还替宿主做三件平台无关的事（`js/prelude/host-media.js`）：参数按官方默认值
+  补齐、夹到合法范围；移动端（`platform` 是 android / ios / ohos）`sourceType` 同时有 album 与 camera 时先弹
+  引擎画的「拍照 / 从手机相册选择」菜单，选完把 `sourceType` 收窄成一项再发 `hostCall`（取消 = `<api>:fail cancel`，
+  宿主收不到）；回包按官方形状补齐（`tempFilePaths` ↔ `tempFiles` 互推、`chooseMedia` 的 `type` / `fileType`、
+  `chooseMessageFile` 的 `name` / `type` / `time`）。参数错误（`chooseMessageFile` 不给 `count`、存相册不给
+  `filePath`）直接 fail，不发给宿主。
 - 剪贴板与振动不用点名：`wx.setClipboardData` 发宿主事件 `{type:'clipboard', data}`（宿主写系统剪贴板），
   `wx.vibrateShort/Long` 发 `{type:'vibrate', duration, style}`。真实的系统设置 / 授权状态放在
   `systemInfo.systemSetting` / `systemInfo.appAuthorizeSetting` 里，`wx.getSystemSetting()` /
   `wx.getAppAuthorizeSetting()` 逐项覆盖默认值。
 - `nativeComponents` 里的标签引擎只报位置、属性与遮挡，不自己画（只留一块底色，video 是黑底）；`video` 连解码都不做。
+  **没点名的** `map` / `camera` / `live-player` / `live-pusher` / `voip-room` / `web-view` / `channel-*` 按官方默认尺寸
+  （map 300×150、live-player 300×225、web-view 铺满）画一块浅灰占位并写上组件名（`renderer/components/native_placeholder.rs`），
+  不再是一块看不出是什么的空白。
 - **一个进程同一时刻只能有一个实例**（小程序根目录、数据目录、tabBar 高度、网络回包队列都是进程级的）。
   宿主要保证上一个 destroy 之后再建下一个。
 
@@ -676,7 +788,8 @@ cargo build --release --target aarch64-apple-ios
 # 产物 target/aarch64-apple-ios/release/libmini_render.a → 打成 XCFramework
 ```
 
-- 上屏：`CALayer.contents`（`CGImage`）最省事；追求帧率用 Metal 纹理；
+- 上屏：原生 `MiniProgramView` 默认 GPU（CAMetalLayer），CPU 退路是 `CALayer.contents`（`CGImage`）；
+  ProMotion 机型要 120Hz 除了 `preferredFrameRateRange` 还要 Info.plist 的 `CADisableMinimumFrameDurationOnPhone = YES`；
 - 事件：`UIView` 的 `touchesBegan/Moved/Ended/Cancelled` → 指针三段；
 - 输入法：`UITextField` 隐藏在下面接 IME，把字符送 `mr_app_text_input`；
 - 数据目录：`NSCachesDirectory`（可清理）或 Application Support（要备份的）；
@@ -742,9 +855,10 @@ Linux 上如果要嵌 WebView（`web-view` 组件）才需要 GTK；纯渲染不
 | G-2 | 无 `wx:key` / `template` / `import`/`include` / `slot` / `wxs` | 用这些写法的小程序结构会缺失 —— 上线前先拿目标小程序跑一遍 |
 | G-4/G-5 | `scroll-view` 只读 `scroll-x`，不派发 `bindscroll`/`scrolltolower` | 内层容器驱动的无限列表加载不了下一页（页面级 `onReachBottom` 可用） |
 | G-6 | `video` 只读 `src`/`autoplay`/`loop`，不派发播放事件 | 视频类小程序需要先补 |
-| G-10 | `wx.login` / `requestPayment` / `chooseImage` / `getLocation` 等未实现 | 涉及登录与支付的小程序跑不通，这部分必须宿主 + 引擎一起补 |
+| G-10 | `wx.login` / `requestPayment` / `getLocation` 等要宿主接（选图 / 选文件 / 存相册 Flutter 插件、原生 Android 视图与桌面窗体已自带） | 涉及登录与支付的小程序要宿主在 `hostApis` 里接上自己的 SDK（三个视图都有 `hostApis`）；原生 iOS 视图还没自带选图 / 选文件那一组 |
 | — | `web-view` 组件本身还没有 | 见第 7 条，要连原生层回调一起做 |
 | — | 字体内存 | 见第 9 条，移动端的硬约束 |
+| — | 2026-10 对照补齐时写明的降级 | `snapshot.takeSnapshot` 失败；`editor` 只有纯文本；手势组件单指（scale 恒为 1、force-press 不触发）；`movable-view` 不能双指缩放；`page-meta` 的 page-style / root-font-size 不生效；Worker 与页面同一个 QuickJS；`sticky-*` 不吸顶；WebAudio 只有声源出声（滤波 / 压缩 / 声像节点不改变声音）、`createMediaAudioPlayer` 无声；`wx.router` 的自定义转场不参与（照常用默认转场）；worklet 跑在逻辑线程（共享值改动经一次 setData 上屏） |
 
 ---
 

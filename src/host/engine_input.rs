@@ -184,6 +184,8 @@ impl MiniEngine {
         if self.app.take_data_dirty() {
             self.page_data_dirty = true;
         }
+        // 拖过视频的进度条（end_drags 里 seek）：这一下也不再算 tap
+        let seek_dragged = crate::renderer::components::video_ui::seek_dragging();
         // 页面停在屏上那一帧的位置再松手（重采样落后手指约一帧，见 engine_resample.rs）
         self.resample_release();
         input::end_drags(
@@ -197,7 +199,7 @@ impl MiniEngine {
         self.dispatch_touch(&outs, x, y);
         // tap 只在「没被判成滑动、没被滚动接管、也不是用来停惯性」时才有
         let stopped_fling = std::mem::take(&mut self.tap_stops_fling);
-        if outs.contains(&TouchOut::Tap) && !stopped_fling && !slider_dragged {
+        if outs.contains(&TouchOut::Tap) && !stopped_fling && !slider_dragged && !seek_dragged {
             self.handle_click(x, y);
         }
         if had_press {
@@ -209,6 +211,8 @@ impl MiniEngine {
     pub fn pointer_cancel(&mut self) {
         if self.route.swallow_end() || self.nav_pointer_cancel() { return; } // 转场中 / 导航栏上的那串
         if self.capsule_cancel() { return; } // 按在胶囊上的那串（engine_capsule.rs）
+        // 全屏视频里拖到一半的进度照样落下去
+        crate::renderer::components::video_fullscreen::fullscreen_cancel();
         // 与按下/抬起对称：面板弹着时这串触摸根本没进页面的状态机
         if picker_sheet::on_cancel(&mut self.picker_sheet) {
             self.dmg.compose_dirty = true;
@@ -386,6 +390,10 @@ impl MiniEngine {
 
     /// 点在引擎自己画的 `<video>` 上（宿主承载的不算：那是宿主的控件）
     fn tap_on_engine_video(&self, x: f32, y: f32, scroll: f32) -> bool {
+        // 同层渲染的也不算：命令交给宿主，画面等它回传了状态只重画那个框（engine_video_feed.rs）
+        if crate::renderer::components::host_feed::host_feeds_video() {
+            return false;
+        }
         let Some(r) = self.renderer.as_ref().filter(|r| !r.is_host_native("video")) else { return false };
         r.query_selector("video", true, &self.interaction).iter().any(|v| {
             let y = if v.is_fixed { y } else { y + scroll };

@@ -11,7 +11,9 @@ const groups = [
       { name: '滚动容器', desc: 'scroll-view 横纵 · 锚点 · 触底 · 自定义下拉刷新', url: '/pages/scroll/scroll', icon: '滚', color: '#ff6a00' },
       { name: '媒体', desc: 'image 裁剪模式 · GIF · 事件 · 预览 · 宿主承载的 video', url: '/pages/media/media', icon: '媒', color: '#e64340' },
       { name: '画布', desc: 'canvas 旧接口 · type="2d" · drawImage', url: '/pages/canvas/canvas', icon: '画', color: '#8a5cf5' },
-      { name: '自定义组件', desc: 'properties · observers · 具名 slot · behaviors · triggerEvent', url: '/pages/custom/custom', icon: '定', color: '#1aad19' }
+      { name: '自定义组件', desc: 'properties · observers · 具名 slot · behaviors · triggerEvent', url: '/pages/custom/custom', icon: '定', color: '#1aad19' },
+      { name: 'Skyline 组件与动画', desc: 'grid-view · movable-view · 手势组件 · draggable-sheet · animate · worklet', url: '/pages/skyline/skyline', icon: 'S', color: '#07c160' },
+      { name: '补齐的官方组件', desc: 'page-container · root-portal · match-media · audio · editor · 原生占位', url: '/pages/builtin/builtin', icon: '补', color: '#10aeff' }
     ]
   },
   {
@@ -32,7 +34,8 @@ const groups = [
       { name: '路由与生命周期', desc: 'navigateTo · redirectTo · reLaunch · switchTab · 页面栈', url: '/pages/route/route', icon: '路', color: '#576b95' },
       { name: '数据缓存', desc: 'Storage 同步 / 异步 · 落盘，重开还在', url: '/pages/storage/storage', icon: '存', color: '#fa9d3b' },
       { name: '网络', desc: 'request · abort · downloadFile · uploadFile', url: '/pages/network/network', icon: '网', color: '#10aeff' },
-      { name: '节点与滚动', desc: 'SelectorQuery · IntersectionObserver · pageScrollTo · 触底', url: '/pages/query/query', icon: '查', color: '#8a5cf5' }
+      { name: '节点与滚动', desc: 'SelectorQuery · IntersectionObserver · pageScrollTo · 触底', url: '/pages/query/query', icon: '查', color: '#8a5cf5' },
+      { name: '补齐的接口', desc: 'EventChannel · Worker · UDP / TCP · WebAudio · 批量存储 · 媒体查询', url: '/pages/newapi/newapi', icon: '新', color: '#e64340' }
     ]
   },
   {

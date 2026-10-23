@@ -4,9 +4,40 @@
 //! 好让旧接口（`wx.createCanvasContext` 的 `draw()`）与 `type="2d"` 的追加式日志共用一份。
 use super::*;
 
-/// 执行一条指令（不认识的类型忽略）
+/// 执行一条指令（不认识的类型忽略）。有裁剪区时绘制类指令画完按蒙版混合（clipdash.rs）
 pub(super) fn run_command(ctx: &mut Canvas2DContext, cmd: &serde_json::Value) {
     let cmd_type = cmd.get("type").and_then(|v| v.as_str()).unwrap_or("");
+    let n = |k: &str| cmd.get(k).and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
+    match cmd_type {
+        "clip" => return ctx.clip(),
+        "setLineDash" => {
+            let segs: Vec<f32> = cmd
+                .get("segments")
+                .and_then(|v| v.as_array())
+                .map(|a| a.iter().map(|x| x.as_f64().unwrap_or(-1.0) as f32).collect())
+                .unwrap_or_default();
+            ctx.set_line_dash(&segs);
+            if cmd.get("offset").is_some() {
+                ctx.set_line_dash_offset(n("offset"));
+            }
+            return;
+        }
+        "setLineDashOffset" => return ctx.set_line_dash_offset(n("offset")),
+        "setMiterLimit" => return ctx.set_miter_limit(n("limit")),
+        _ => {}
+    }
+    if ctx.has_clip() && super::clipdash::DRAW_OPS.contains(&cmd_type) {
+        let before = ctx.clip_snapshot();
+        run_inner(ctx, cmd, cmd_type);
+        if let Some(b) = before {
+            ctx.clip_apply(b);
+        }
+    } else {
+        run_inner(ctx, cmd, cmd_type);
+    }
+}
+
+fn run_inner(ctx: &mut Canvas2DContext, cmd: &serde_json::Value, cmd_type: &str) {
     match cmd_type {
         "setFillStyle" => {
             if let Some(color) = cmd.get("color").and_then(|v| v.as_str()) {

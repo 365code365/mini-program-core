@@ -21,7 +21,8 @@ mini-render 是 Rust 自绘的小程序渲染引擎（对标 Skyline）。这个
   s.dependency 'Flutter'
   s.platform = :ios, '13.0'
   s.vendored_frameworks = 'MiniRender.xcframework'
-  s.frameworks = 'CoreVideo', 'QuartzCore'
+  # Photos / PhotosUI / AVFoundation / MobileCoreServices：插件自带的选图、选文件、存相册（Classes/MediaPicker.swift）
+  s.frameworks = 'CoreVideo', 'QuartzCore', 'Photos', 'PhotosUI', 'AVFoundation', 'MobileCoreServices'
   # QuickJS / openh264 是 C/C++，需要 C++ 运行时
   s.libraries = 'c++', 'z'
   # XCFramework 只有 arm64 真机 + arm64 模拟器两片

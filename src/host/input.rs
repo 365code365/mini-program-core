@@ -77,6 +77,10 @@ pub fn dispatch_touch_sequence(
     };
     let mut any = false;
     for out in outs {
+        // touchstart：锁定这串触摸的目标（之后的 move / end / cancel 归它，不按手指当前位置重新命中）
+        if let (TouchOut::Start, Some(r)) = (out, renderer) {
+            r.capture_touch(identifier, x, hit_y, scope);
+        }
         // `tap` 不在这里发：它走点击链路（那边还要管按压态、picker、输入框）
         let names: &[&str] = match out {
             TouchOut::Start => &["touchstart"],
@@ -93,8 +97,11 @@ pub fn dispatch_touch_sequence(
             } else {
                 serde_json::json!({})
             };
-            let sent = match renderer {
-                Some(r) => super::touch::dispatch_to_js(
+            let sent = match (renderer, renderer.and_then(|r| r.captured_touch(identifier, name))) {
+                (_, Some((chain, target))) => {
+                    super::touch::dispatch_chain_to_js(app, &chain, target, name, (x, y), identifier, time_ms, detail)
+                }
+                (Some(r), None) => super::touch::dispatch_to_js(
                     app,
                     r,
                     name,
@@ -105,12 +112,15 @@ pub fn dispatch_touch_sequence(
                     time_ms,
                     detail,
                 ),
-                None => false,
+                (None, None) => false,
             };
             if sent {
                 any = true;
                 after_each(app);
             }
+        }
+        if let (TouchOut::End | TouchOut::Cancel, Some(r)) = (out, renderer) {
+            r.release_touch(identifier);
         }
     }
     any
@@ -241,11 +251,15 @@ pub fn begin_gesture(
         None => (None, false),
     };
     // slider：起点下最上层的元素就是它（覆盖层用视口坐标，正常流用内容坐标）
-    let slider = interaction.slider_at(x, if on_fixed_layer { y } else { y + scroll_pos }, on_fixed_layer);
+    let hy = if on_fixed_layer { y } else { y + scroll_pos };
+    let slider = interaction.slider_at(x, hy, on_fixed_layer);
+    // 视频显示着的进度条（横着拖跟手，host::video::seek_target_at）
+    let video_seek = super::video::seek_target_at(renderer, interaction, x, hy, on_fixed_layer);
     DragGesture::new((x, y), candidate, catch_move, page_scrollable)
         .allow_edge_back(allow_edge_back)
         .with_swiper(swiper, swiper_inner)
         .with_slider(slider)
+        .with_video_seek(video_seek)
 }
 
 /// 把手势仲裁的结果落到滚动控制器/侧滑返回上（方向锁定 + 嵌套传递都在这里生效）。
@@ -398,6 +412,18 @@ pub fn apply_gesture_move(
                 eff.needs_redraw = eff.slider_changed;
                 break;
             }
+            // 视频进度条跟手：圆点与时间跟着变，松手（end_drags）才 seek。同层渲染时只重画那个视频框
+            // （`ui::mark_seq` 变了，engine_damage 按动图那套出局部帧），内置播放器那边整帧
+            GestureAction::BeginVideoSeek { .. } => {
+                let moved = crate::renderer::components::video_ui::seek_begin(x);
+                eff.needs_redraw = moved && !crate::renderer::components::host_feed::host_feeds_video();
+                break;
+            }
+            GestureAction::UpdateVideoSeek { .. } => {
+                let moved = crate::renderer::components::video_ui::seek_update(x);
+                eff.needs_redraw = moved && !crate::renderer::components::host_feed::host_feeds_video();
+                break;
+            }
         }
     }
     *gesture = Some(g);
@@ -414,8 +440,13 @@ pub fn end_drags(
     gesture: &mut Option<DragGesture>,
 ) -> bool {
     interaction.clear_button_pressed();
-    if let Some(crate::host::gesture::GestureTarget::Swiper { id, .. }) = gesture.as_ref().map(|g| g.target().clone()) {
-        crate::renderer::components::swiper_drag_end(&id);
+    match gesture.as_ref().map(|g| g.target().clone()) {
+        Some(crate::host::gesture::GestureTarget::Swiper { id, .. }) => crate::renderer::components::swiper_drag_end(&id),
+        // 拖过视频的进度条：跳到松手的位置（一次）
+        Some(crate::host::gesture::GestureTarget::VideoSeek { .. }) => {
+            crate::renderer::components::video_ui::seek_end();
+        }
+        _ => crate::renderer::components::video_ui::disarm_seek(),
     }
     if let Some(id) = interaction.dragging_scroll_area.take() {
         if let Some(c) = interaction.get_scroll_controller_mut(&id) {

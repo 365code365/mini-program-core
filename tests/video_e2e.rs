@@ -39,6 +39,7 @@ Page({
   onTime(e) { this.rec('timeupdate', e); },
   onSeek(e) { this.rec('seekcomplete', e); },
   onFs(e) { this.rec('fullscreenchange', e); },
+  onToggle(e) { this.rec('controlstoggle', e); },
   onBtn() { this.data.taps++; },
 });
 "#;
@@ -49,7 +50,7 @@ fn fixture(name: &str) -> Fixture {
     let wxml = format!(
         r#"<video id="v" src="/assets/{name}.mp4" style="width:300px;height:200px"
   bindloadedmetadata="onMeta" bindplay="onPlay" bindpause="onPause" bindended="onEnded"
-  bindtimeupdate="onTime" bindseekcomplete="onSeek" bindfullscreenchange="onFs"></video>
+  bindtimeupdate="onTime" bindseekcomplete="onSeek" bindfullscreenchange="onFs" bindcontrolstoggle="onToggle"></video>
 <view style="height:300px;background:#ffffff" bindtap="onBtn">btn</view>"#
     );
     let files = [
@@ -159,14 +160,20 @@ fn pause_seek_rate_and_tap_to_play() {
     let mut e = E::new(&fx);
     e.clear();
 
-    // 暂停着点画面：起播（等同中间的播放按钮）
+    // 暂停着点中间的播放键：起播
     e.tap(150.0, 80.0);
-    assert_eq!(e.events(), vec!["play {}"], "点暂停中的视频应起播");
-    // 播放中点画面不切换；点控制条左侧的播放键才暂停
-    e.tap(150.0, 80.0);
-    assert_eq!(e.events(), vec!["play {}"]);
-    e.tap(12.0, 200.0 - 18.0);
-    assert_eq!(e.events(), vec!["play {}", "pause {}"], "点控制条的播放键暂停");
+    assert_eq!(e.events(), vec!["play {}"], "点中间的播放键应起播");
+    // 播放中点画面：控制条收起（与微信一致，不切播放）
+    e.tap(60.0, 60.0);
+    let hide = r#"controlstoggle {"show":false}"#;
+    let show = r#"controlstoggle {"show":true}"#;
+    assert_eq!(e.events(), vec!["play {}", hide]);
+    // 收起着点控制条那块：先把控制条叫出来，不算点到播放键
+    e.tap(20.0, 200.0 - 18.0);
+    assert_eq!(e.events(), vec!["play {}", hide, show]);
+    // 再点左下角的播放键：暂停
+    e.tap(20.0, 200.0 - 18.0);
+    assert_eq!(e.events(), vec!["play {}", hide, show, "pause {}"], "点控制条的播放键暂停");
     assert_eq!(e.js("__currentPage.data.taps"), 0, "点视频不该冒泡到下面的 view");
 
     e.clear();
@@ -224,13 +231,23 @@ fn fullscreen_covers_page_and_eats_taps() {
         "不给 direction 时按画面宽高比（64×48 是横的）"
     );
     e.wait(32);
-    assert_eq!(probe(&mut e), (0, 0, 0), "全屏画面盖住页面（黑边）");
-    // 全屏时点页面的位置：不穿透
+    // 横屏：画面转过来画，667×375 的画面里 4:3 的视频左右是黑边 —— 也就是屏幕上方 / 下方那几十像素
+    let at = |e: &mut E, x: usize, y: usize| {
+        let (w, _) = e.e.pixel_size();
+        let px = e.e.rgba();
+        let i = ((y * 2) * w as usize + x * 2) * 4;
+        (px[i], px[i + 1], px[i + 2])
+    };
+    assert_eq!(at(&mut e, 100, 640), (0, 0, 0), "全屏画面盖住页面（黑边）");
+    // 全屏时点页面的位置：不穿透（点在画面上：控制条收起）
     e.tap(100.0, 500.0);
     assert_eq!(e.js("__currentPage.data.taps"), 0, "全屏时点击不能落到页面上");
-    assert!(e.events().iter().any(|s| s == "play {}"), "全屏里点画面切换播放：{:?}", e.events());
-    // 左上角退出
-    e.tap(20.0, 20.0);
+    assert!(e.events().iter().any(|s| s == r#"controlstoggle {"show":false}"#), "{:?}", e.events());
+    // 中间的播放键：横屏画面的中心在屏幕 (187.5, 333.5)
+    e.tap(187.5, 333.5);
+    assert!(e.events().iter().any(|s| s == "play {}"), "全屏里点中间的播放键起播：{:?}", e.events());
+    // 顶栏的返回键：画面左上角，横屏（逆时针 90°）时在屏幕右上角
+    e.tap(375.0 - 20.0, 20.0);
     assert!(
         e.events().iter().any(|s| s == r#"fullscreenchange {"direction":"horizontal","fullScreen":false}"#),
         "{:?}",
@@ -241,4 +258,65 @@ fn fullscreen_covers_page_and_eats_taps() {
     assert_eq!(probe(&mut e), (255, 255, 255), "退出全屏后页面回来");
     e.tap(100.0, 500.0);
     assert_eq!(e.js("__currentPage.data.taps"), 1);
+}
+
+#[test]
+fn vertical_fullscreen_seek_drag_and_back_key() {
+    use mini_render::renderer::components::video_chrome::{bar_layout, Flags};
+    let _g = SERIAL.lock().unwrap_or_else(|p| p.into_inner());
+    let fx = fixture("fsv");
+    let mut e = E::new(&fx);
+    e.clear();
+    e.ctx("requestFullScreen({direction: 0})");
+    assert_eq!(e.events(), vec![r#"fullscreenchange {"direction":"vertical","fullScreen":true}"#]);
+    // 竖屏全屏：画面坐标就是屏幕坐标。拖底部控制条上的进度到正中，松手才 seek 一次
+    let flags = { let mut f = Flags::of(&Default::default(), 375.0); f.fullscreen_btn = true; f };
+    let bar = bar_layout(0.0, 0.0, 375.0, 667.0, &flags, 1.0, true, 1.0);
+    let (x0, tw) = bar.track.expect("全屏有进度条");
+    let y = bar.y + bar.h / 2.0;
+    e.e.pointer_down(x0 + 4.0, y);
+    e.wait(16);
+    for i in 1..=5 {
+        e.e.pointer_move(x0 + tw / 2.0 * i as f32 / 5.0, y);
+        e.wait(16);
+    }
+    assert!(e.events().iter().all(|s| !s.starts_with("seekcomplete")), "拖的时候不 seek：{:?}", e.events());
+    e.e.pointer_up(x0 + tw / 2.0, y);
+    e.wait(32);
+    let seeks: Vec<_> = e.events().into_iter().filter(|s| s.starts_with("seekcomplete")).collect();
+    assert_eq!(seeks, vec![r#"seekcomplete {"position":0.5}"#], "松手跳到正中一次");
+    assert!(e.events().iter().all(|s| !s.starts_with("controlstoggle")), "拖进度不算点画面");
+    // 系统返回键：先退出全屏，不离开页面
+    assert!(e.e.back(), "全屏时返回键被吃掉");
+    e.wait(32);
+    assert!(e.events().iter().any(|s| s == r#"fullscreenchange {"direction":"vertical","fullScreen":false}"#), "{:?}", e.events());
+    assert!(!e.e.back(), "退出全屏后再按返回：只剩一页，交给宿主");
+}
+
+#[test]
+fn inline_seek_drag_follows_finger_and_seeks_once() {
+    let _g = SERIAL.lock().unwrap_or_else(|p| p.into_inner());
+    let fx = fixture("drag");
+    let mut e = E::new(&fx);
+    e.clear();
+    let (t0, tw) = mini_render::renderer::components::progress_track(300.0);
+    let y = 200.0 - 20.0;
+    e.e.pointer_down(t0 + 2.0, y);
+    e.wait(16);
+    for i in 1..=6 {
+        e.e.pointer_move(t0 + 2.0 + (tw * 0.75 - 2.0) * i as f32 / 6.0, y + 0.5);
+        e.wait(16);
+    }
+    e.e.pointer_up(t0 + tw * 0.75, y + 0.5);
+    e.wait(32);
+    assert_eq!(e.events(), vec![r#"seekcomplete {"position":0.75}"#], "横着拖进度条：只在松手时 seek 一次，也不切控制条");
+    // 竖着划过进度条：不归它（页面不够长滚不动，但也不能 seek）
+    e.clear();
+    e.e.pointer_down(t0 + 10.0, y);
+    e.wait(16);
+    e.e.pointer_move(t0 + 10.0, y - 60.0);
+    e.wait(16);
+    e.e.pointer_up(t0 + 10.0, y - 60.0);
+    e.wait(32);
+    assert!(e.events().is_empty(), "{:?}", e.events());
 }

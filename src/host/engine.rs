@@ -145,6 +145,8 @@ pub struct MiniEngine {
     pub(crate) app_window: serde_json::Value,
     /// 引擎 → 宿主的事件队列（见 engine_events.rs）
     pub(crate) events: HostEvents,
+    /// 同层渲染的视频：上次报给宿主的列表（engine_video_feed.rs）
+    pub(super) video_feed: super::engine_video_feed::VideoFeedSync,
     /// 这一帧已由 GPU 画到 surface 上（`pump_ex` 带 PRESENTED，宿主不取像素）
     pub(super) frame_presented: bool,
     /// surface 暂时取不到，下一次 pump 补一帧（`pump_ex` 带 PENDING）
@@ -332,6 +334,7 @@ impl MiniEngine {
             keep: Default::default(),
             app_window,
             events: HostEvents::default(),
+            video_feed: Default::default(),
             frame_presented: false,
             present_pending: false,
             #[cfg(feature = "gpu")]

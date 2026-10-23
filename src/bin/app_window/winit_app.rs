@@ -353,6 +353,10 @@ impl ApplicationHandler for crate::MiniAppWindow {
     /// - 有动画：按显示器刷新率安排下一帧（WaitUntil），保证 60/120Hz 平滑且不空转。
     /// - 空闲：Wait 休眠，CPU 占用降为 0，直到下一个输入事件。
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+        // 宿主能力的模态对话框（选图 / 存相册）在这里弹，不在出帧中途（见 host_calls.rs）。
+        // 先取一遍事件：页面在点击回调里调 wx.chooseImage 而这一下没引起重画时，不等下一帧
+        self.capsule_sync_host_events();
+        self.run_host_calls();
         if self.needs_redraw {
             if let Some(w) = &self.window { w.request_redraw(); }
         }

@@ -1,0 +1,2 @@
+/* 脱离文档流、相对窗口定位（官方：类似 CSS 的 fixed position）；不占页面里的位置 */
+.rp-on { position: fixed; left: 0; top: 0; width: 100%; z-index: 1000; }

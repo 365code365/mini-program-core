@@ -6,10 +6,18 @@
 sdk/
 ├── android/
 │   ├── MiniEngine.kt        # JNI 绑定（内部用，别直接调）
-│   ├── MiniProgramView.kt   # ← 集成方只用这个
+│   ├── MiniProgramView.kt   # ← 集成方只用这个（FrameLayout + 一块 SurfaceView）
+│   ├── EngineSession.kt     # 引擎线程、vsync 出帧、GPU → CPU 直写 → Bitmap 三级上屏（内部）
+│   ├── FrameBoost.kt / MiniDiag.kt      # ADPF 性能提示 / `debug.mini.*` 诊断开关（内部）
+│   ├── MiniHostCall.kt / HostCallRouter.kt  # `hostApis`：宿主实现的 wx.*（登录、支付、定位…）
+│   ├── MiniMediaApis.kt / MiniMediaActivity.kt / MiniFileProvider.kt / MediaImport.kt
+│   │                        # 自带的选图 / 拍照 / 选视频 / 选文件 / 存相册 / 打开文档（清单见 src/main/AndroidManifest.xml）
+│   ├── MiniSameLayerView.kt # 同层渲染的组件（`<map>` 这类）：宿主画、引擎画进页面，滑动不错开
+│   ├── example/             # 纯原生示例 App（./gradlew installRelease 量流畅度）
 │   └── jniLibs/<abi>/libmini_render.so   # 由 tools/build-mobile.sh android 产出
 └── ios/
-    ├── MiniProgramView.swift            # ← 集成方只用这个
+    ├── Sources/MiniRender/MiniProgramView.swift   # ← 集成方只用这个（CAMetalLayer，GPU 合成，失败回退 CPU）
+    ├── Sources/MiniRender/EngineSession.swift     # 引擎线程、CADisplayLink、GPU / CPU 上屏（内部）
     ├── module.modulemap                 # 让 Swift 看见 C ABI
     └── MiniRender.xcframework           # 由 tools/build-mobile.sh ios 产出
 ```

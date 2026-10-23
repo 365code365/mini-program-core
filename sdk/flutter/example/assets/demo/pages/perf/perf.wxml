@@ -24,9 +24,15 @@
   </picker>
 </view>
 <view class="card">
-  <view class="title">原生组件（宿主承载的 video）</view>
-  <video id="v1" class="video" src="https://vjs.zencdn.net/v/oceans.mp4" bindended="onEnded"></video>
+  <view class="title">视频（同层渲染：宿主解码，引擎画）</view>
+  <video id="v1" class="video" src="https://vjs.zencdn.net/v/oceans.mp4" title="海洋" show-mute-btn
+    bindloadedmetadata="onMeta" bindplay="onPlay" bindpause="onPause" bindtimeupdate="onTime"
+    bindended="onEnded" bindfullscreenchange="onFullscreen" bindcontrolstoggle="onControls"></video>
   <view>{{videoState}}</view>
+  <view class="fs-row">
+    <view class="btn fs-btn" bindtap="fullLandscape">横屏全屏</view>
+    <view class="btn fs-btn" bindtap="fullPortrait">竖屏全屏</view>
+  </view>
 </view>
 <view class="card">
   <view class="btn" bindtap="toDetail">navigateTo 详情页</view>

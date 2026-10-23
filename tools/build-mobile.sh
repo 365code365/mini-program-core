@@ -16,10 +16,13 @@
 #   IPHONEOS_DEPLOYMENT_TARGET  rustc 默认按 iOS 10 链接，而 C 依赖（QuickJS/openh264）
 #                           是按 SDK 新版本编的，两边不一致会缺 `___chkstk_darwin`。
 #
-# Android 另外编进 `gpu`（wgpu 的 Vulkan / GLES）：`nativeAttachSurface` 交上来的
-# ANativeWindow 由 GPU 合成器直接上屏。SDK 默认偏好仍是 cpu，宿主不选 auto/gpu 就不碰 GPU。
-# `ANDROID_GPU=0` 可以编一份不带 GPU 的（体积小几 MB，`nativeAttachSurface` 恒返回 CPU）。
-# iOS 暂不编 gpu：Flutter 的 iOS 外部纹理是 CVPixelBuffer，不是 CAMetalLayer，用不上。
+# 两端都另外编进 `gpu`：
+# - Android（wgpu 的 Vulkan / GLES）：`nativeAttachSurface` 交上来的 ANativeWindow 由 GPU 合成器直接上屏；
+# - iOS（wgpu 的 Metal）：原生 `MiniProgramView` 把自己的 CAMetalLayer 交给 `mr_app_attach_surface`。
+#   Flutter 的 iOS 外部纹理（CVPixelBuffer）用不上它，照旧 CPU。链接时宿主要带 Metal / QuartzCore
+#   （Package.swift / podspec 已写上）。
+# SDK 默认偏好仍是 cpu，宿主不选 auto/gpu 就不碰 GPU（两个原生视图都选 auto）。
+# `ANDROID_GPU=0` / `IOS_GPU=0` 编一份不带 GPU 的（体积小几 MB，attach 恒返回 CPU）。
 set -eu
 cd "$(dirname "$0")/.."
 MODE="${1:-check}"
@@ -28,6 +31,11 @@ if [ "${ANDROID_GPU:-1}" = 0 ]; then
     ANDROID_FLAGS=("${FLAGS[@]}")
 else
     ANDROID_FLAGS=(--release --lib --no-default-features --features bindgen,gpu)
+fi
+if [ "${IOS_GPU:-1}" = 0 ]; then
+    IOS_FLAGS=("${FLAGS[@]}")
+else
+    IOS_FLAGS=(--release --lib --no-default-features --features bindgen,gpu)
 fi
 export IPHONEOS_DEPLOYMENT_TARGET="${IPHONEOS_DEPLOYMENT_TARGET:-13.0}"
 
@@ -107,11 +115,11 @@ ios_target() {
     rustup target add "$target" >/dev/null 2>&1 || true
     echo "▶ $target"
     if [ "$MODE" = check ]; then
-        cargo check "${FLAGS[@]}" --target "$target"
+        cargo check "${IOS_FLAGS[@]}" --target "$target"
     else
         # 发出去的库要 thin LTO（同 android_target）
         CARGO_PROFILE_RELEASE_LTO=thin CARGO_PROFILE_RELEASE_INCREMENTAL=false \
-            cargo build "${FLAGS[@]}" --target "$target"
+            cargo build "${IOS_FLAGS[@]}" --target "$target"
     fi
 }
 

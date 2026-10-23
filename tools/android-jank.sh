@@ -12,15 +12,26 @@
 #      （不靠 App 内日志：ColorOS 上 App 日志量大了会整段静默）；
 #   ② 引擎：`debug.mini.damage_log` 里超过 8ms 的帧（哪一类、哪一段贵）。
 # 坐标按 1080×2354 的示例首页写死。设备序列号用 ANDROID_SERIAL。
+#
+# `MINI_APP=native`：量纯原生示例（sdk/android/example，MiniProgramView），同一个演示小程序、同一组坐标。
+# APK 用 `cd sdk/android/example && ./gradlew assembleRelease` 出的那份（debug 包是 DEBUGGABLE，量出来偏慢）
 set -u
 cd "$(dirname "$0")/.."
 SERIAL="${ANDROID_SERIAL:-3B669L00NA000000}"
 D(){ "$HOME/Library/Android/sdk/platform-tools/adb" -s "$SERIAL" "$@"; }
 F(){ D shell dumpsys window </dev/null | grep -m1 mCurrentFocus | sed 's/.*\///'; }
-PKG=dev.minirender.mini_render_example
 SC="${1:-wxss-slow}"
 OUT=target/_jank; mkdir -p $OUT
-APK=sdk/flutter/example/build/app/outputs/flutter-apk/app-release.apk
+if [ "${MINI_APP:-flutter}" = native ]; then
+  PKG=dev.minirender.example
+  APK=sdk/android/example/app/build/outputs/apk/release/app-release.apk
+  # 宿主日志（`[事件] page <路由>`）；原生示例一启动就是小程序首页，没有 Flutter 那层入口列表
+  HOSTLOG=mini-example:I; OPEN_TAP=""
+else
+  PKG=dev.minirender.mini_render_example
+  APK=sdk/flutter/example/build/app/outputs/flutter-apk/app-release.apk
+  HOSTLOG=flutter:I; OPEN_TAP="500 400"
+fi
 if [ "${2:-}" = install ]; then
   # APK 里的引擎库必须是刚编的那份：引擎库与 `flutter build apk` 并行跑时，gradle 会把**旧库**合进去，
   # 量出来的是上一版（踩过：两次「对比」其实是同一个库，差异全是噪声）。比可执行段的偏移与大小
@@ -36,7 +47,7 @@ D shell setprop debug.mini.damage_log 1
 D shell am force-stop $PKG
 D shell monkey -p $PKG -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
 for i in $(seq 1 30); do sleep 0.3; F | grep -q "$PKG" && break; done
-sleep 1.3; D shell input tap 500 400; sleep 2.5
+sleep 1.3; [ -n "$OPEN_TAP" ] && D shell input tap $OPEN_TAP; sleep 2.5
 F | grep -q "$PKG" || { echo "⚠ 前台不是示例 App"; D shell setprop debug.mini.damage_log '""'; exit 1; }
 # 子页面：首页先滑到底（位置固定），再点那一行。首页目录（utils/catalog.js）一改，这两个坐标就要跟着改 ——
 # 进没进对页面按 flutter 日志里的 `page <路由>` 判，点歪了直接报错，不会量错页面
@@ -63,15 +74,29 @@ case "$SC" in
   query-*) IN_TAB=675; IN_Y=1410; IN_PAGE=pages/query ;;
   swiper-*) IN_TAB=405; IN_Y=1410; IN_PAGE=pages/swiper ;;
 esac
+# 宿主页（host-*）：地图那一段（同层渲染的 <map>：宿主画、引擎画进页面）。拖动不从地图上开始（盖上去的地图会吃掉触摸）
+case "$SC" in
+  host-*)
+    D shell input tap 945 2270; sleep 1.5
+    for i in 1 2; do D shell input swipe 540 1150 540 350 600; sleep 0.4; done; sleep 1
+    D logcat -d -s $HOSTLOG | grep -q "page pages/host/host" || { echo "⚠ 没进到宿主页"; exit 1; } ;;
+esac
 if [ -n "$IN_TAB" ]; then
   D shell input tap $IN_TAB 2270; sleep 1.5; D shell input tap 540 $IN_Y; sleep 2
-  D logcat -d -s flutter:I | grep -q "page ${IN_PAGE}" || { echo "⚠ 没进到 ${IN_PAGE}"; exit 1; }
+  D logcat -d -s $HOSTLOG | grep -q "page ${IN_PAGE}" || { echo "⚠ 没进到 ${IN_PAGE}"; exit 1; }
 fi
 if [ -n "$GO_Y" ]; then
   for i in 1 2 3; do D shell input swipe 540 1900 540 400 120; sleep 0.5; done; sleep 1.5; D shell input tap 540 $GO_Y; sleep 2
-  D logcat -d -s flutter:I | grep -q "page $GO_PAGE" || { echo "⚠ 没进到 ${GO_PAGE}（首页目录变了？改上面的坐标）"; exit 1; }
+  D logcat -d -s $HOSTLOG | grep -q "page $GO_PAGE" || { echo "⚠ 没进到 ${GO_PAGE}（首页目录变了？改上面的坐标）"; exit 1; }
 fi
-layers() { D shell dumpsys SurfaceFlinger --list </dev/null | grep "SurfaceView\[$PKG" | grep BLAST | sed 's/^RequestedLayerState{//; s/ parentId=.*$//; s/ relativeParentId=.*$//' | tr -d '\r'; }
+# 引擎那一层：SurfaceView 的 BLAST 层；没有 SurfaceView（老的 Bitmap + onDraw 上屏，画在窗口里）就量窗口那一层
+layers() {
+  local all sv
+  all=$(D shell dumpsys SurfaceFlinger --list </dev/null | tr -d '\r')
+  sv=$(echo "$all" | grep "SurfaceView\[$PKG" | grep BLAST)
+  [ -z "$sv" ] && sv=$(echo "$all" | grep -E "^RequestedLayerState\{$PKG/[^ ]+#[0-9]+ parentId")
+  echo "$sv" | sed 's/^RequestedLayerState{//; s/ parentId=.*$//; s/ relativeParentId=.*$//' | grep -v '^$'
+}
 layers > $OUT/layers.txt
 while read -r L; do D shell "dumpsys SurfaceFlinger --latency-clear '$L'" >/dev/null </dev/null; done < $OUT/layers.txt
 D logcat -c
@@ -97,7 +122,7 @@ case "$SC" in
     # 返回点导航栏的返回箭头，不发 KEYCODE_BACK：没有触摸时 ColorOS 把屏降到 60Hz，
     # 退场转场量出来一半是「重复」，可那是系统降频不是引擎慢（真人返回都是点 / 侧滑）
     for k in 1 2; do D shell input tap 540 $ENTER_Y; sleep 1.6; D shell input tap 50 190; sleep 1.2; done
-    D logcat -d -s flutter:I | grep -q "page $GO_PAGE" || echo "⚠ 没进到 ${GO_PAGE}（入口坐标变了？）" ;;
+    D logcat -d -s $HOSTLOG | grep -q "page $GO_PAGE" || echo "⚠ 没进到 ${GO_PAGE}（入口坐标变了？）" ;;
   resume)
     # 回桌面再点图标回来：量回来之后第一秒
     D shell input keyevent KEYCODE_HOME; sleep 1.5
@@ -140,7 +165,7 @@ echo "【${SC}】屏上：${best:-没上屏}"
 D logcat -d -v raw -s mini-render:I > $OUT/log.txt
 # 空档时间线：每个「屏上重复」前后 引擎在干什么（logcat 单调钟与 SurfaceFlinger 同一个钟）。
 # 空档里一行引擎日志都没有 = 引擎那几帧没出画面（没被叫醒 / 没有新内容），不是画得慢
-D logcat -d -v monotonic -s mini-render:I flutter:I > $OUT/log_mono.txt
+D logcat -d -v monotonic -s mini-render:I $HOSTLOG > $OUT/log_mono.txt
 [ -n "${bestgaps:-}" ] && [ -f "$bestgaps" ] && python3 - "$bestgaps" $OUT/log_mono.txt <<'EOF'
 import re, sys
 gaps = [tuple(int(x) for x in l.split()) for l in open(sys.argv[1]) if l.strip()]

@@ -1,0 +1,7 @@
+<view wx:if="{{rendered}}" class="pc-root {{position === 'center' ? 'pc-root-center' : ''}}" style="z-index:{{zIndex}};">
+  <view wx:if="{{overlay}}" class="pc-overlay" style="{{overlayStyle}}" animation="{{maskAnim}}" catchtouchmove="_noop" bindtap="_onOverlay"></view>
+  <view class="pc-panel pc-{{position}} {{round ? 'pc-round-' + position : ''}}" style="{{customStyle}}" animation="{{panelAnim}}"
+        bindtouchstart="_ts" bindtouchmove="_tm" bindtouchend="_te" bindtouchcancel="_te">
+    <slot></slot>
+  </view>
+</view>

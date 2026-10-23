@@ -1,0 +1,12 @@
+.pc-root { position: fixed; left: 0; top: 0; width: 100%; height: 100%; }
+.pc-root-center { display: flex; align-items: center; justify-content: center; }
+.pc-overlay { position: absolute; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); }
+.pc-panel { position: absolute; background-color: #ffffff; overflow: hidden; }
+.pc-bottom { left: 0; right: 0; bottom: 0; }
+.pc-top { left: 0; right: 0; top: 0; }
+.pc-right { top: 0; right: 0; bottom: 0; }
+.pc-center { position: relative; }
+.pc-round-bottom { border-top-left-radius: 20px; border-top-right-radius: 20px; }
+.pc-round-top { border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; }
+.pc-round-right { border-top-left-radius: 20px; border-bottom-left-radius: 20px; }
+.pc-round-center { border-radius: 20px; }

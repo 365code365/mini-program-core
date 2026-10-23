@@ -120,6 +120,7 @@ impl InteractionManager {
     pub fn clear_page_state(&mut self) {
         // 全屏视频、操作菜单、图片预览属于离开的那一页：不收掉的话新页面一直被它们盖着、点击全被吃掉
         crate::renderer::components::clear_fullscreen();
+        crate::renderer::components::video_ui::clear();
         crate::host::ui_overlay::clear_sheet_overlays();
         // setBackgroundColor 只对当前页面生效
         crate::host::window_api::clear();

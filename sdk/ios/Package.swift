@@ -27,6 +27,10 @@ let package = Package(
                 // QuickJS / openh264 需要 C++ 运行时；网络走 ureq，需要系统库
                 .linkedLibrary("c++"),
                 .linkedLibrary("z"),
+                // GPU 后端（wgpu 的 Metal，画到视图的 CAMetalLayer）：静态库不带框架依赖，要宿主链接时带上
+                .linkedFramework("Metal"),
+                .linkedFramework("QuartzCore"),
+                .linkedFramework("CoreGraphics"),
             ]
         ),
     ]

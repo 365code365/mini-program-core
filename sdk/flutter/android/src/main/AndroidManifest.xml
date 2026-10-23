@@ -1,2 +1,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- 插件自带的宿主能力（MediaPicker.kt）：系统相机把照片写进这里给的文件、openDocument 把文件交给别的应用看。
+             子类化的 FileProvider：宿主自己也声明了 androidx 的 FileProvider 时清单合并不冲突 -->
+        <provider
+            android:name="dev.minirender.flutter.MiniRenderFileProvider"
+            android:authorities="${applicationId}.minirender.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/mini_render_file_paths" />
+        </provider>
+    </application>
 </manifest>

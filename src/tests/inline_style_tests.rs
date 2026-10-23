@@ -34,12 +34,8 @@ fn test_inline_style_parsing() {
     assert_eq!(node_style.fixed_bottom, Some(50.0)); // 100rpx = 50px (at 375 width)
     
     // Check width
-    // 宽度仍交给布局引擎按包含块解析（父节点通常就是整宽）：
-    // 只有**高度**的百分比会在无定位祖先时按视口折算，因为父节点 auto 高度时
-    // 百分比没有参照物会塌成 0。
-    if let Some(p) = dim_percent(style.size.width) {
-        assert_eq!(p, 1.0);
-    } else {
-        panic!("Width should be percent, got {:?}", style.size.width);
-    }
+    // `position: fixed` 的包含块永远是视口：百分比宽按视口折成像素（375 × 1.0）。
+    // （absolute 不同：宽度仍交给布局引擎按父节点解析，只有无定位祖先时的高度按视口折算）
+    assert_eq!(dim_percent(style.size.width), None, "fixed 的百分比宽已按视口折算");
+    assert_eq!(style.size.width, taffy::prelude::length(375.0));
 }

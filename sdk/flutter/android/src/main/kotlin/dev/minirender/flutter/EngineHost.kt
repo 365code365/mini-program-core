@@ -10,6 +10,7 @@ import android.view.Choreographer
 import android.view.Surface
 import dev.minirender.FrameBoost
 import dev.minirender.MiniEngine
+import dev.minirender.VideoHost
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.view.TextureRegistry
@@ -173,6 +174,8 @@ internal class EngineHost(
         "backendReason" to backendReason,
         // 出帧节拍诊断（DiagProps.pace）：Dart 侧据此打 Flutter 每一帧的取纹理时刻
         "pace" to DiagProps.pace,
+        // 原生组件比引擎画面晚上屏几个 vsync 的校准值（DiagProps.nativeLag，没设就不带）
+        DiagProps.nativeLag?.let { "nativeLag" to it },
     ).toMap()
 
     /** 主线程调 */
@@ -397,8 +400,21 @@ internal class EngineHost(
     private fun drainEvents() {
         val list = ArrayList<String>()
         while (true) list.add(MiniEngine.nativePollEvent(handle) ?: break)
+        // 同层渲染的视频（`videos` / `videoCommand`）由 SDK 自带的播放器接（sdk/android 的 VideoHost，
+        // 原生示例同一份），照样也交给 Dart（`videoFullscreen` 由 Dart 收起状态栏）
+        for (s in list) if (s.contains("\"type\":\"video")) video().onEvent(s)
         if (list.isNotEmpty()) main.post { if (!disposed) onEvents(list) }
     }
+
+    /** 同层渲染的视频播放器（第一次有 `videos` 事件时才建，没有视频的小程序不多开一条线程）。只在引擎线程上取 */
+    private var videoHost: VideoHost? = null
+
+    private fun video(): VideoHost = videoHost ?: VideoHost(
+        // 播放器事件送回引擎线程派发给 bind*（也更新引擎画的控制条）
+        emit = { key, name, detail -> run { MiniEngine.nativeNativeViewEvent(it, key, name, detail.toString()) } },
+        // 新帧到了：引擎只重画那个视频框
+        onFrame = { engine.post { requestFrame() } },
+    ).also { videoHost = it }
 
     /** 在引擎线程上执行一条命令，之后挂一帧（输入之后引擎要出帧回应） */
     private fun run(block: (Long) -> Unit) = engine.post {
@@ -516,7 +532,10 @@ internal class EngineHost(
                             needsPresent = true
                             requestFrame()
                         }
-                        1 -> running = false // 进后台：停止出帧（继续出帧纯属耗电）
+                        1 -> {
+                            running = false // 进后台：停止出帧（继续出帧纯属耗电）
+                            videoHost?.pauseAll() // 视频也停下（与微信一致）
+                        }
                     }
                 }
                 result.success(null)
@@ -534,6 +553,28 @@ internal class EngineHost(
                 val detail = call.argument<String>("detail")
                 run { MiniEngine.nativeNativeViewEvent(it, key, name, detail) }
                 result.success(null)
+            }
+            "viewFrame" -> {
+                // 同层渲染的组件（Dart 离屏画好的一帧，RGBA）：交给引擎（任何线程都行），引擎线程出一帧只重画那一块
+                val key = call.argument<String>("key") ?: ""
+                val (w, h) = i("width") to i("height")
+                val data = call.argument<ByteArray>("data")
+                if (data != null && w > 0 && h > 0 && data.size >= w * h * 4) {
+                    val buf = java.nio.ByteBuffer.allocateDirect(w * h * 4)
+                    buf.put(data, 0, w * h * 4).rewind()
+                    if (MiniEngine.nativeViewFrameRgba(key, w, h, w * 4, buf)) engine.post { requestFrame() }
+                }
+                result.success(null)
+            }
+            // 宿主推事件给 wx.onXxx（传感器、定位、网络、主题……）：引擎线程上派发，回监听者个数
+            "dispatchEvent" -> {
+                val name = call.argument<String>("name") ?: ""
+                val payload = call.argument<String>("payload")
+                engine.post {
+                    val n = if (handle != 0L) MiniEngine.nativeDispatchEvent(handle, name, payload) else 0
+                    if (handle != 0L) requestFrame()
+                    main.post { result.success(n) }
+                }
             }
             "eval" -> {
                 val code = call.argument<String>("code") ?: ""
@@ -621,6 +662,8 @@ internal class EngineHost(
         disposed = true
         onEngineSync {
             choreographer?.removeFrameCallback(frameCallback)
+            videoHost?.release()
+            videoHost = null
             detach()
             if (handle != 0L) MiniEngine.nativeDestroy(handle)
             handle = 0L

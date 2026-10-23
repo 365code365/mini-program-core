@@ -61,3 +61,7 @@ pub mod wxs_module_tests;
 pub mod wx_key_tests;
 /// swiper 状态机（自动播放、衔接、拖动、受控 current、事件）与三条绘制路径的分页
 pub mod swiper_tests;
+/// `<switch type="checkbox">`：选中态用 color 填底 + 白勾，看得见
+pub mod switch_checkbox_tests;
+/// Skyline 新组件：grid-view（网格 / 瀑布流）、cover-image、未接管原生组件的占位与默认尺寸
+pub mod skyline_component_tests;

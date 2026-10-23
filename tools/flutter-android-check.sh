@@ -7,10 +7,10 @@
 #
 # 做法：例子带 MINI_AUTODUMP 启动时直接打开内置小程序的静态详情页，3 秒后把引擎当前帧
 # 存成 PNG 并在日志里打一行 MINI_DUMP（像素尺寸、导航栏底边）。脚本看到这一行立刻截屏，
-# 按导航栏底边裁出纹理那一块，与引擎帧逐像素比（tools/pixdiff.py）。
+# 裁出纹理那一块（铺满整屏时从 y=0，宿主画 AppBar 时从导航栏底边），与引擎帧逐像素比（tools/pixdiff.py）。
 #
-# 判据：差异像素为 0。不为 0 时先看包围盒 —— 落在状态栏 / 导航栏里说明裁剪位置算错了，
-# 落在页面里才是纹理上屏的问题。
+# 判据：「判据」那一行差异像素为 0（铺满整屏时不算系统状态栏与 debug 包的 DEBUG 角标）。
+# 不为 0 时先看包围盒 —— 落在状态栏 / 导航栏里说明裁剪位置算错了，落在页面里才是纹理上屏的问题。
 #
 # GPU 上屏时（日志 `backend=gpu`）引擎帧是同一组图层的 CPU 合成，屏幕上是 GPU 画的：
 # 差异为 0 就是「GPU 输出与 CPU 逐字节一致」在真机链路上的证据。没选上 GPU 时
@@ -55,12 +55,29 @@ dpr = float(re.search(r'dpr=([\d.]+)', line).group(1))
 top = float(re.search(r'bodyTop=([\d.]+)', line).group(1))
 engine = Image.open(f'{out}/engine.png').convert('RGB')
 screen = Image.open(f'{out}/screen.png').convert('RGB')
-y0 = round(top * dpr)
+# 纹理在屏幕上的位置有两种布局：
+#   · 引擎画导航栏（controller.navigationBar 的默认）：画面铺满整屏，从 y=0 起，状态栏盖在纹理上面；
+#   · 宿主画 AppBar（旧做法）：纹理在 AppBar 下面，从 bodyTop 起。
+# bodyTop 是示例按 AppBar 算的（kToolbarHeight + 状态栏），铺满整屏时照它裁会整张错位
+# （踩过：差异 30%、包围盒整屏，其实页面逐像素一致）。纹理高到放不进 AppBar 下面 = 铺满整屏
+fill = engine.height > screen.height - round(top * dpr)
+y0 = 0 if fill else round(top * dpr)
 crop = screen.crop((0, y0, engine.width, y0 + engine.height))
 crop.save(f'{out}/screen_crop.png')
 engine.save(f'{out}/engine_rgb.png')
-print(f'纹理 {engine.width}x{engine.height} 屏幕上的位置 (0,{y0})')
-r = subprocess.run(['python3', 'tools/pixdiff.py', f'{out}/engine_rgb.png', f'{out}/screen_crop.png'],
-                   capture_output=True, text=True)
-print(r.stdout.strip() or r.stderr.strip())
+print(f'纹理 {engine.width}x{engine.height} 屏幕上的位置 (0,{y0})' + ('（铺满整屏，引擎画导航栏）' if fill else '（AppBar 下面）'))
+def diff(*box):
+    a = ['python3', 'tools/pixdiff.py', f'{out}/engine_rgb.png', f'{out}/screen_crop.png']
+    if box: a += ['--box', ','.join(str(v) for v in box)]
+    r = subprocess.run(a, capture_output=True, text=True)
+    return r.stdout.strip() or r.stderr.strip()
+print('整张：' + diff())
+if fill:
+    # 状态栏（时间 / 图标）是系统画在纹理上面的，不算；debug 包右上角还有 Flutter 的 DEBUG 角标
+    # （实测落在右上 ~23×64 逻辑像素内），这一角从状态栏往下留 72 逻辑像素也不算。判据看这一行
+    sb = round((top - 56) * dpr)
+    corner = round(72 * dpr)
+    w, h = engine.width, engine.height
+    print('判据（状态栏以下、去掉 DEBUG 角标）：'
+          + diff(0, max(sb, corner), w - 1, h - 1) + ' ／ 左侧导航栏：' + diff(0, sb, w - 1 - corner, corner - 1))
 EOF

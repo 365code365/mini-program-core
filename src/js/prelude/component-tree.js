@@ -196,7 +196,9 @@
                 switch (s.type) {
                     case 'S': return (value === null || value === undefined) ? s.dflt() : String(value);
                     case 'N': return isFinite(value) ? Number(value) : s.dflt();
-                    case 'B': return !!value;
+                    // 只写属性名不写值（`<my-comp disabled>`）在微信里是 true；解析器把它记成空串，分不出
+                    // `disabled=""` —— 后者几乎没人写来表示 false，所以空串按 true（原生组件那边也是这么认的）
+                    case 'B': return value === '' ? true : !!value;
                     case 'A': return Array.isArray(value) ? value : s.dflt();
                     case 'O': return typeof value === 'object' ? value : s.dflt();
                     case 'F': return typeof value === 'function' ? value : s.dflt();

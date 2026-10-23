@@ -11,7 +11,8 @@
             //
             // 渐变（线性 / 径向 / 锥形）、图案、阴影、globalCompositeOperation 由原生按覆盖率蒙版合成
             // （canvas/fx2d.rs）；measureText 按画布字体真实量宽；getImageData / toDataURL 先把攒着的指令
-            // 交出去、原生执行完再读像素（同步桥）。取舍：setLineDash 与 clip 没有实现（读写照常、不出效果）。
+            // 交出去、原生执行完再读像素（同步桥）。clip（路径裁剪）与 setLineDash / lineDashOffset 见 canvas/clipdash.rs；
+            // miterLimit 只记不用（光栅器的斜接没有长度上限）。
             var __c2dNodes = {};
             function __c2dColor(v) {
                 if (v && typeof v === 'object' && v.__stops) { return v.__stops.length ? v.__stops[0][1] : '#000000'; }
@@ -68,8 +69,13 @@
                         enumerable: true
                     });
                 });
-                // 这几个原生端不支持，读写照常、不出指令
-                ['miterLimit', 'lineDashOffset', 'imageSmoothingEnabled'].forEach(function(k) { ctx[k] = undefined; });
+                // miterLimit / lineDashOffset 进状态（canvas/clipdash.rs）；imageSmoothingEnabled 读写照常、不出指令
+                var dash = { miterLimit: 10, lineDashOffset: 0 };
+                Object.defineProperty(ctx, 'miterLimit', { enumerable: true, get: function() { return dash.miterLimit; },
+                    set: function(v) { dash.miterLimit = Number(v); push({ type: 'setMiterLimit', limit: Number(v) }); } });
+                Object.defineProperty(ctx, 'lineDashOffset', { enumerable: true, get: function() { return dash.lineDashOffset; },
+                    set: function(v) { dash.lineDashOffset = Number(v) || 0; push({ type: 'setLineDashOffset', offset: dash.lineDashOffset }); } });
+                ctx.imageSmoothingEnabled = true;
                 var pre = function() { return [node._css[0] / (node._w || 1), node._css[1] / (node._h || 1)]; };
                 var simple = {
                     fillRect: function(x, y, w, h) { return { type: 'fillRect', x: x, y: y, width: w, height: h }; },
@@ -122,9 +128,16 @@
                     var src = img && typeof img === 'object' ? (img.src || img._src || '') : String(img || '');
                     return src ? { __pattern: { src: src, repetition: repetition == null ? 'repeat' : String(repetition) } } : null;
                 };
-                ctx.setLineDash = function() {};
-                ctx.getLineDash = function() { return []; };
-                ctx.clip = function() {};
+                var dashList = [];
+                ctx.setLineDash = function(seg) {
+                    seg = (seg || []).map(Number);
+                    if (seg.some(function(s) { return !isFinite(s) || s < 0; })) return;
+                    dashList = seg.length % 2 ? seg.concat(seg) : seg;
+                    push({ type: 'setLineDash', segments: dashList });
+                };
+                ctx.getLineDash = function() { return dashList.slice(); };
+                // clip(path2d?)：给了 Path2D 先把它放进当前路径
+                ctx.clip = function(p) { if (p && p.__cmds) { push({ type: 'beginPath' }); p.__cmds.forEach(push); } push({ type: 'clip' }); };
                 ctx.arcTo = function(x1, y1, x2, y2, r) { push({ type: 'arcTo', x1: x1, y1: y1, x2: x2, y2: y2, r: r }); };
                 ctx.ellipse = function(x, y, rx, ry, rot, s, e, ccw) {
                     push({ type: 'ellipse', x: x, y: y, rx: rx, ry: ry, rotation: rot || 0, sAngle: s, eAngle: e, counterclockwise: !!ccw });

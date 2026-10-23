@@ -17,6 +17,8 @@
 pub mod codec;
 pub mod image;
 mod ops;
+/// `wx.getVideoInfo`：读 MP4 / MOV 的盒子结构
+pub mod video_info;
 pub mod zip;
 
 use std::path::{Component, Path, PathBuf};

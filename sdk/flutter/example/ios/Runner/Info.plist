@@ -66,5 +66,13 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<!-- 插件自带的宿主能力（wx.chooseImage 拍照 / chooseVideo 录像 / saveImageToPhotosAlbum）要的用途说明：
+	     缺了的那一项插件走 fail（不弹相机），而不是让系统把进程杀掉 -->
+	<key>NSCameraUsageDescription</key>
+	<string>小程序要用相机拍照或录像</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>小程序录像时要录声音</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>小程序要把图片或视频存到相册</string>
 </dict>
 </plist>

@@ -48,6 +48,11 @@ pub fn build_base_style(
         ..Default::default() 
     };
 
+    // 标签自带的默认样式（map 300×150、web-view 铺满 ...），落在页面 CSS 之前，页面照样能覆盖
+    for &(name, value) in crate::renderer::components::native_placeholder::ua_declarations(&node.tag_name) {
+        apply_style_property(name, &parse_inline_value(value), &mut ts, &mut ns, ctx);
+    }
+
     // 应用类样式（顺序见 `declaration_order`：简写必须先落地）
     for &(name, value) in &css {
         apply_style_property(name, value, &mut ts, &mut ns, ctx);
@@ -87,6 +92,17 @@ pub fn build_base_style(
     // 与 H5 的差异从 5.4%/3.8% 恶化到 12.5%/10.2%）。
     // 高度不一样：父节点高度是 auto 时百分比没有参照物，会直接塌成 0。
     if ts.position == Position::Absolute && !ctx.has_positioned_ancestor {
+        if let Some(p) = dim_percent(ts.size.height) {
+            ts.size.height = Dimension::length(ctx.screen_height * ctx.scale_factor * p);
+        }
+    }
+    // `position: fixed` 的包含块**永远**是视口（不看祖先）：百分比宽高按视口折算。
+    // 不折算的话写在带内边距的卡片里的 `fixed; width: 100%`（root-portal 的写法）按卡片宽排，
+    // 钉到窗口顶上还缺一截（实测 355 / 375）。顶层的 fixed 父节点就是整页宽，折不折一样
+    if ns.is_fixed {
+        if let Some(p) = dim_percent(ts.size.width) {
+            ts.size.width = Dimension::length(ctx.screen_width * ctx.scale_factor * p);
+        }
         if let Some(p) = dim_percent(ts.size.height) {
             ts.size.height = Dimension::length(ctx.screen_height * ctx.scale_factor * p);
         }

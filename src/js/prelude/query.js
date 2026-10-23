@@ -41,7 +41,8 @@
                     for (var k in d) if (k !== '__node') out[k] = d[k];
                     if (n.kind === 'canvas' && typeof __canvas2dNode === 'function') out.node = __canvas2dNode(n);
                     else if (n.kind === 'scroll-view') out.node = __scrollViewContext(n.id);
-                    else out.node = null;
+                    else if (n.kind === 'snapshot') out.node = __snapshotNode(n.id);
+                    else out.node = __builtinInstance(n.id) || null;
                     d = out;
                 }
                 if (d.__ctx) {
@@ -49,6 +50,9 @@
                     for (var k2 in d) if (k2 !== '__ctx') o2[k2] = d[k2];
                     if (c.kind === 'video') o2.context = wx.createVideoContext(c.id);
                     else if (c.kind === 'canvas') o2.context = wx.createCanvasContext(c.id);
+                    else if (c.kind === 'map') o2.context = wx.createMapContext(c.id);
+                    else if (c.kind === 'live-player') o2.context = wx.createLivePlayerContext(c.id);
+                    else if (c.kind === 'editor') { var ed = __builtinInstance(c.id); o2.context = ed && ed.__editorContext ? ed.__editorContext() : null; }
                     else o2.context = null;
                     d = o2;
                 }
@@ -146,3 +150,20 @@
 
             // 推迟到当前同步代码之后（微任务）。宿主每次 eval 之后都会把微任务跑完
             wx.nextTick = function(fn) { if (typeof fn === 'function') Promise.resolve().then(fn); };
+
+            // 按宿主 id 找当前页里的组件实例（引擎内置组件：draggable-sheet 的 scrollTo、editor 的 EditorContext）
+            function __builtinInstance(id) {
+                if (!id || typeof __selectComponentsFrom !== 'function' || !__currentPage) return null;
+                try { return __selectComponentsFrom(__compStateOf(__currentPage), '', '#' + id, false); } catch (e) { return null; }
+            }
+            // <snapshot> 的 node：takeSnapshot 要截渲染层的像素，引擎还没有这条通道（写明，fail 而不是假成功）
+            function __snapshotNode(id) {
+                return {
+                    takeSnapshot: function(o) {
+                        o = o || {};
+                        var bad = { errMsg: 'takeSnapshot:fail 当前渲染引擎不支持 snapshot 截图' };
+                        if (!o.success && !o.fail && !o.complete) return Promise.reject(bad);
+                        setTimeout(function() { o.fail && o.fail(bad); o.complete && o.complete(bad); }, 0);
+                    }
+                };
+            }

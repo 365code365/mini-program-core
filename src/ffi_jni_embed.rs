@@ -323,6 +323,20 @@ pub extern "system" fn Java_dev_minirender_MiniEngine_nativeHostReply(
     ) != 0) as jboolean
 }
 
+/// 宿主推事件给 `wx.onXxx`（见 `mr_app_dispatch_event`）；返回收到它的监听者个数
+#[no_mangle]
+pub extern "system" fn Java_dev_minirender_MiniEngine_nativeDispatchEvent(
+    mut env: JNIEnv,
+    _class: JClass,
+    h: jlong,
+    name: JString,
+    payload: JString,
+) -> jint {
+    let Some(n) = cstring(&mut env, &name) else { return 0 };
+    let p = cstring(&mut env, &payload);
+    crate::ffi_embed::mr_app_dispatch_event(h as *mut MRApp, n.as_ptr(), p.as_ref().map(|v| v.as_ptr()).unwrap_or(std::ptr::null()))
+}
+
 #[no_mangle]
 pub extern "system" fn Java_dev_minirender_MiniEngine_nativeNativeViewEvent(
     mut env: JNIEnv,
@@ -340,6 +354,78 @@ pub extern "system" fn Java_dev_minirender_MiniEngine_nativeNativeViewEvent(
         n.as_ptr(),
         d.as_ref().map(|v| v.as_ptr()).unwrap_or(std::ptr::null()),
     ) != 0) as jboolean
+}
+
+/// 同层渲染的视频帧（`ImageReader` 的 `YUV_420_888`，三个平面是 direct ByteBuffer）。
+/// 不要句柄：帧存在进程级的表里，宿主在自己的解码线程上调（见 `mr_video_frame_yuv`）
+#[no_mangle]
+#[allow(clippy::too_many_arguments)]
+pub extern "system" fn Java_dev_minirender_MiniEngine_nativeVideoFrameYuv(
+    mut env: JNIEnv,
+    _class: JClass,
+    key: JString,
+    width: jint,
+    height: jint,
+    y: JObject,
+    y_stride: jint,
+    u: JObject,
+    v: JObject,
+    uv_stride: jint,
+    uv_pixel_stride: jint,
+) -> jboolean {
+    let Some(k) = cstring(&mut env, &key) else { return 0 };
+    let addr = |env: &mut JNIEnv, o: JObject| -> *const u8 {
+        let buf = jni::objects::JByteBuffer::from(o);
+        env.get_direct_buffer_address(&buf).map(|p| p as *const u8).unwrap_or(std::ptr::null())
+    };
+    let (yp, up, vp) = (addr(&mut env, y), addr(&mut env, u), addr(&mut env, v));
+    (mr_video_frame_yuv(
+        k.as_ptr(),
+        width.max(0) as u32,
+        height.max(0) as u32,
+        yp,
+        y_stride.max(0) as u32,
+        up,
+        vp,
+        uv_stride.max(0) as u32,
+        uv_pixel_stride.max(1) as u32,
+    ) != 0) as jboolean
+}
+
+/// 同层渲染的视频帧（RGBA，direct ByteBuffer，`stride` 字节一行；插件用 GLES 从 SurfaceTexture 读回来的）。
+/// 不要句柄，任何线程都可以调（见 `mr_video_frame_rgba`）
+#[no_mangle]
+pub extern "system" fn Java_dev_minirender_MiniEngine_nativeVideoFrameRgba(
+    mut env: JNIEnv,
+    _class: JClass,
+    key: JString,
+    width: jint,
+    height: jint,
+    stride: jint,
+    data: JObject,
+) -> jboolean {
+    let Some(k) = cstring(&mut env, &key) else { return 0 };
+    let buf = jni::objects::JByteBuffer::from(data);
+    let Ok(p) = env.get_direct_buffer_address(&buf) else { return 0 };
+    (mr_video_frame_rgba(k.as_ptr(), width.max(0) as u32, height.max(0) as u32, stride.max(0) as u32, p) != 0) as jboolean
+}
+
+/// 同层渲染的通用组件（`<map>` 这类）宿主画好的一帧（RGBA，direct ByteBuffer）。不要句柄，任何线程都可以调
+/// （见 `mr_native_view_frame_rgba`）
+#[no_mangle]
+pub extern "system" fn Java_dev_minirender_MiniEngine_nativeViewFrameRgba(
+    mut env: JNIEnv,
+    _class: JClass,
+    key: JString,
+    width: jint,
+    height: jint,
+    stride: jint,
+    data: JObject,
+) -> jboolean {
+    let Some(k) = cstring(&mut env, &key) else { return 0 };
+    let buf = jni::objects::JByteBuffer::from(data);
+    let Ok(p) = env.get_direct_buffer_address(&buf) else { return 0 };
+    (mr_native_view_frame_rgba(k.as_ptr(), width.max(0) as u32, height.max(0) as u32, stride.max(0) as u32, p) != 0) as jboolean
 }
 
 /// `MINI_FPS`：上屏三段各自的耗时，每秒一行（等空闲缓冲 / 写像素 / 提交）。

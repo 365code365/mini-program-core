@@ -9,6 +9,8 @@ public class MiniRenderPlugin: NSObject, FlutterPlugin {
     private let channel: FlutterMethodChannel
     private let textures: FlutterTextureRegistry
     private var host: EngineHost?
+    /// 插件自带的宿主能力：选图 / 选视频 / 选文件 / 存相册 / 打开文档（MediaPicker.swift）
+    private let picker = MediaPicker()
 
     init(channel: FlutterMethodChannel, textures: FlutterTextureRegistry) {
         self.channel = channel
@@ -40,6 +42,9 @@ public class MiniRenderPlugin: NSObject, FlutterPlugin {
             result(["files": files.path, "cache": cache.path, "external": ""])
         case "create":
             create(call, result: result)
+        // 不碰引擎实例：文件直接写进 hostCall 给的 tempDir
+        case "pickMedia", "pickFiles", "saveToAlbum", "openDocument":
+            picker.handle(call, result: result)
         default:
             if let h = host {
                 h.handle(call, result: result)

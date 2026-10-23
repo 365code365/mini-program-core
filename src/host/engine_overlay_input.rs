@@ -21,8 +21,9 @@ impl MiniEngine {
             self.dmg.compose_dirty = true;
             return true;
         }
-        // 全屏视频盖住整个页面：这串触摸归它（抬手时处理，见 overlay_pointer_up）
-        if crate::renderer::components::fullscreen_video().is_some() {
+        // 全屏视频盖住整个画面：这串触摸归它（拖进度 / 点按钮 / 切换控制条，横屏时先换回画面坐标）
+        let (vw, vh) = (self.width as f32, self.height as f32);
+        if crate::renderer::components::video_fullscreen::fullscreen_press(x, y, vw, vh) {
             return true;
         }
         // 提示框的透明蒙层（`mask: true`）浮在 Modal 之上：连弹窗按钮也点不到。
@@ -63,7 +64,9 @@ impl MiniEngine {
             self.dmg.compose_dirty = true;
             return true;
         }
-        crate::renderer::components::fullscreen_video().is_some()
+        // 全屏视频（拖进度跟手：画在合成那一步，变了由 fullscreen_compose 重新合成）
+        let (vw, vh) = (self.width as f32, self.height as f32);
+        crate::renderer::components::video_fullscreen::fullscreen_move(x, y, vw, vh)
     }
 
     /// 抬起：浮层吃掉了返回 true
@@ -83,10 +86,11 @@ impl MiniEngine {
             self.dmg.compose_dirty = true;
             return true;
         }
-        // 全屏视频：左上角退出，别处切换播放 / 暂停（事件下一帧由 host::video::tick 发）
-        if crate::renderer::components::fullscreen_tap(x, y) {
+        // 全屏视频：顶栏返回 / 控制条按钮 / 拖完进度 / 点画面切换控制条（事件下一帧由 host::video::tick 发）。
+        // 页面一个像素不用动：全屏那一层的版本号变了，下一帧只重新合成（engine_video_feed.rs）
+        let (vw, vh) = (self.width as f32, self.height as f32);
+        if crate::renderer::components::video_fullscreen::fullscreen_release(x, y, vw, vh) {
             self.dmg.compose_dirty = true;
-            self.mark_full();
             return true;
         }
         if self.modal.as_ref().map(|m| m.visible).unwrap_or(false) {

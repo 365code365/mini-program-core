@@ -67,8 +67,10 @@
                     var ff = bi.indexOf('wx://form-field') >= 0, fg = bi.indexOf('wx://form-field-group') >= 0,
                         fb = bi.indexOf('wx://form-field-button') >= 0;
                     if ((o && (o.multipleSlots || o.virtualHost || o.dynamicSlots)) || ff || fg || fb) {
+                        // __mergeHost：引擎内置组件专用（movable-view），模板根节点并入宿主（parser/template/component.rs）
                         opts[inst.__tag] = { multipleSlots: !!(o && o.multipleSlots), virtualHost: !!(o && o.virtualHost),
-                                             dynamicSlots: !!(o && o.dynamicSlots), formField: ff, formFieldGroup: fg, formFieldButton: fb };
+                                             dynamicSlots: !!(o && o.dynamicSlots), formField: ff, formFieldGroup: fg, formFieldButton: fb,
+                                             __mergeHost: !!(o && o.virtualHost && o.__mergeHost) };
                         anyOpt = true;
                     }
                 }

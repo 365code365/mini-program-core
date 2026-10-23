@@ -11,7 +11,9 @@
 //! | `mr_app_pixels_into` | 带行跨度、RGBA / BGRA 直写平台缓冲（省一次整帧拷贝；Apple 只认 BGRA） |
 //! | `mr_app_poll_event` | 引擎 → 宿主：页面、导航栏、软键盘、原生组件摆放、hostCall、日志 |
 //! | `mr_app_host_reply` | 宿主实现的 `wx.*` 回结果 |
+//! | `mr_app_dispatch_event` | 宿主推事件给 `wx.onXxx`（传感器、定位、蓝牙、网络、主题……） |
 //! | `mr_app_native_view_event` | 宿主承载的原生组件（video / map…）回传事件 |
+//! | `mr_video_frame_rgba` / `mr_video_frame_yuv` | 同层渲染的视频：宿主解出的帧交给引擎画进页面（任何线程） |
 //!
 //! `mr_app_pump_ex` 的返回位多了两位：`MR_FRAME_WANTS_MORE`（下一个 vsync 还要 pump）
 //! 与 `MR_FRAME_EVENTS`（队列里有事件）。
@@ -147,6 +149,88 @@ pub extern "C" fn mr_app_native_view_event(
         .and_then(|s| serde_json::from_str(&s).ok())
         .unwrap_or_else(|| serde_json::json!({}));
     a.engine.dispatch_native_view_event(&key, &name, detail) as c_int
+}
+
+/// 同层渲染的 `<video>`（创建选项 `sameLayer` 含 `video`）：宿主解出的一帧，RGBA、`stride` 字节一行。
+/// `key` 取自 `videos` 事件。**任何线程都可以调**（不碰引擎实例，帧存在进程级的表里）；
+/// 调完让引擎线程出一帧（Android 插件：`requestFrame`），引擎只重画这个视频框。收下返回 1
+#[no_mangle]
+pub extern "C" fn mr_video_frame_rgba(key: *const c_char, width: u32, height: u32, stride: u32, data: *const u8) -> c_int {
+    let Some(key) = cstr(key) else { return 0 };
+    if data.is_null() || width == 0 || height == 0 {
+        return 0;
+    }
+    let len = stride as usize * (height as usize - 1) + width as usize * 4;
+    // SAFETY: 宿主保证 data 至少有 stride × (height − 1) + width × 4 个字节，调用期间有效
+    let bytes = unsafe { std::slice::from_raw_parts(data, len) };
+    crate::renderer::components::host_feed::push_rgba(&key, width, height, stride as usize, bytes) as c_int
+}
+
+/// 同层渲染的通用组件（创建选项 `sameLayer` 里除 video 以外的标签，如 `map`）：宿主把控件画好的一帧，
+/// RGBA、`stride` 字节一行，尺寸按 `sameLayerViews` 事件里的 `box`。`key` 取自那个事件。
+/// **任何线程都可以调**（帧存在进程级的表里）；调完让引擎线程出一帧，引擎只重画这个框。
+/// 内容变了才交（滚动不用交：画面在引擎画布里跟着走）。收下返回 1
+#[no_mangle]
+pub extern "C" fn mr_native_view_frame_rgba(key: *const c_char, width: u32, height: u32, stride: u32, data: *const u8) -> c_int {
+    let Some(key) = cstr(key) else { return 0 };
+    if data.is_null() || width == 0 || height == 0 {
+        return 0;
+    }
+    let len = stride as usize * (height as usize - 1) + width as usize * 4;
+    // SAFETY: 宿主保证 data 至少有 stride × (height − 1) + width × 4 个字节，调用期间有效
+    let bytes = unsafe { std::slice::from_raw_parts(data, len) };
+    crate::renderer::components::host_view::push_rgba(&key, width, height, stride as usize, bytes) as c_int
+}
+
+/// 同上，YUV 4:2:0 三个平面（Android `ImageReader` 的 `YUV_420_888`：U / V 交错时 `uv_pixel_stride` 为 2，
+/// `u` / `v` 指向各自的第一个样本）。转 RGBA 在调用线程上做。收下返回 1
+#[no_mangle]
+#[allow(clippy::too_many_arguments)]
+pub extern "C" fn mr_video_frame_yuv(
+    key: *const c_char,
+    width: u32,
+    height: u32,
+    y: *const u8,
+    y_stride: u32,
+    u: *const u8,
+    v: *const u8,
+    uv_stride: u32,
+    uv_pixel_stride: u32,
+) -> c_int {
+    let Some(key) = cstr(key) else { return 0 };
+    if y.is_null() || u.is_null() || v.is_null() || width == 0 || height == 0 {
+        return 0;
+    }
+    let (w, h, ps) = (width as usize, height as usize, uv_pixel_stride.max(1) as usize);
+    let (cw, ch) = (w.div_ceil(2), h.div_ceil(2));
+    let y_len = y_stride as usize * (h - 1) + w;
+    let c_len = uv_stride as usize * (ch - 1) + (cw - 1) * ps + 1;
+    // SAFETY: 宿主保证三个平面按给的步长覆盖整帧（ImageReader 的 Plane 就是这样），调用期间有效
+    let (yp, up, vp) = unsafe {
+        (std::slice::from_raw_parts(y, y_len), std::slice::from_raw_parts(u, c_len), std::slice::from_raw_parts(v, c_len))
+    };
+    let f = crate::renderer::components::host_feed::Yuv420 {
+        width,
+        height,
+        y: yp,
+        y_stride: y_stride as usize,
+        u: up,
+        v: vp,
+        uv_stride: uv_stride as usize,
+        uv_pixel_stride: ps,
+    };
+    crate::renderer::components::host_feed::push_yuv(&key, &f) as c_int
+}
+
+/// 宿主推一个事件给逻辑层的 `wx.onXxx` 监听者：`name` 如 `accelerometerChange` / `locationChange` /
+/// `bluetoothDeviceFound` / `networkStatusChange` / `themeChange` / `contextEvent`（`onXxx` 写法也认），
+/// `payload_json` 是交给回调的 res（NULL 等于 `{}`）。返回收到它的监听者个数（0 = 没人听，可以停掉传感器）
+#[no_mangle]
+pub extern "C" fn mr_app_dispatch_event(app: *mut MRApp, name: *const c_char, payload_json: *const c_char) -> c_int {
+    let Some(a) = app_mut(app) else { return 0 };
+    let Some(name) = cstr(name) else { return 0 };
+    let payload = cstr(payload_json).unwrap_or_else(|| "{}".into());
+    a.engine.dispatch_event(&name, &payload) as c_int
 }
 
 /// 在逻辑层执行一段 JS，返回结果的字符串形式（UTF-8；抛异常时返回 NULL 并写 `last_error`）。

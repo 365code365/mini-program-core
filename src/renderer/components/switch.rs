@@ -106,12 +106,13 @@ impl SwitchComponent {
             draw_box_shadow(canvas, shadow, x, y, w, h, style.border_radius);
         }
         
+        // `color` 对两种形态都生效：switch 是开启轨道色，checkbox 是选中底色
+        let on_color = node.attrs.get("color").and_then(|c| parse_color_str(c))
+            .unwrap_or(Color::from_hex(DEFAULT_ON));
         if switch_type == "checkbox" {
-            Self::draw_checkbox(canvas, style, style.custom_data > 0.5, x, y, w, h, sf);
+            Self::draw_checkbox(canvas, style, style.custom_data > 0.5, on_color, x, y, w, h, sf);
         } else {
             let progress = style.custom_data.clamp(0.0, 1.0);
-            let on_color = node.attrs.get("color").and_then(|c| parse_color_str(c))
-                .unwrap_or(Color::from_hex(DEFAULT_ON));
             let disabled = node.attrs.get("disabled")
                 .map(|s| s == "true" || s == "{{true}}").unwrap_or(false);
             Self::draw_switch(canvas, style, progress, on_color, disabled, x, y, w, h, sf);
@@ -210,7 +211,13 @@ impl SwitchComponent {
         canvas.draw_circle(kx + d / 2.0, ky + d / 2.0, d / 2.0, &knob_paint);
     }
     
-    fn draw_checkbox(canvas: &mut Canvas, style: &NodeStyle, checked: bool, x: f32, y: f32, w: f32, h: f32, _sf: f32) {
+    /// `type="checkbox"` 形态：与 `<checkbox>` 同一套外观（选中 = 色块 + 白勾，未选中 = 白底灰边）。
+    ///
+    /// 选中底色 = CSS `background-color`，没写就用 `color` 属性。从前只有 CSS 写了背景才填底，
+    /// 而交互层并不替 switch 改写背景色（开关配色归组件按进度求值，见 interactive.rs），
+    /// 于是选中后只剩一个白勾压在白卡片上 —— 看着像点了没反应。
+    #[allow(clippy::too_many_arguments)]
+    fn draw_checkbox(canvas: &mut Canvas, style: &NodeStyle, checked: bool, on_color: Color, x: f32, y: f32, w: f32, h: f32, _sf: f32) {
         // 应用透明度
         let apply_opacity = |color: Color| -> Color {
             if style.opacity < 1.0 {
@@ -228,8 +235,9 @@ impl SwitchComponent {
         let uniform_radius = radius_tl == radius_tr && radius_tr == radius_br && radius_br == radius_bl;
         let radius = radius_tl;
         
-        // 绘制背景 - 使用抗锯齿
-        if let Some(bg) = style.background_color {
+        // 绘制背景 - 使用抗锯齿（未选中时背景随后被白底灰边盖住，与原来一致）
+        let fill = if checked { Some(style.background_color.unwrap_or(on_color)) } else { style.background_color };
+        if let Some(bg) = fill {
             let paint = Paint::new().with_color(apply_opacity(bg)).with_style(PaintStyle::Fill).with_anti_alias(true);
             let mut path = Path::new();
             if uniform_radius {

@@ -7,8 +7,11 @@
 //! | `navigationBar` | `wx.setNavigationBarTitle/Color`、导航栏 loading | `title` / `frontColor` / `backgroundColor` / `loading` |
 //! | `inputFocus` | 输入框聚焦（已聚焦时再点一下挪光标也会再发） | `id` `tag` `value` `cursor`（字符下标） `inputType` `password` `maxlength` `confirmType`（textarea 默认 `return`） `confirmHold` `placeholder` `rect` |
 //! | `inputBlur` | 失焦 / 确认（`confirm-hold` 的确认不发） | `id` `value` |
-//! | `nativeViews` | 原生组件的摆放或遮挡变了 | `views[]`：`key` `tag` `x` `y` `width` `height` `attrs` `fixed` `clip` `holes` `mask`（遮挡三项见 `native_occlusion.rs`） |
-//! | `hostCall` | 调了宿主实现的 `wx.*` | `id` `api` `args` |
+//! | `videos` | 同层渲染（`sameLayer` 含 video）时页面上的视频变了（换页、`wx:if`、改了 `src` 等属性、框变了） | `views[]`：`key` `url`（网络地址原样；包内路径已解析成本地文件绝对路径）`attrs` `box`（框的设备像素 `[宽, 高]`：按它与 `object-fit` 缩好再交帧，引擎只拷贝） |
+//! | `videoCommand` | 同层渲染的视频被点了（控制条 / 中间的播放键）或调了 `wx.createVideoContext` | `key` `command`（`play` / `pause` / `stop` / `seek` / `playbackRate`）`position`（秒）`rate`；静音不走命令，看 `videos` 里 `attrs.muted` |
+//! | `videoFullscreen` | 视频进 / 出全屏（控制条的全屏键、`requestFullScreen`、返回键退出；两种播放器都有） | `fullScreen` `direction`（0 竖屏 / 90 / -90 横屏，引擎自己把画面转过来画）`key`。宿主据此收起 / 放出状态栏与导航条 |
+//! | `nativeViews` | 原生组件的摆放、遮挡或页面滚动速度变了 | `views[]`：`key` `tag` `x` `y` `width` `height` `attrs` `fixed` `clip` `holes` `mask`（遮挡三项见 `native_occlusion.rs`）；这一帧的滚动取样 `frameTime`（vsync 毫秒，宿主时钟）`scroll` `velocity`（逻辑像素 / 毫秒）`decay`（惯性的每毫秒衰减率，拖动时 0）`period`（vsync 周期毫秒）`dpr`，以及正常流的可见区 `area`（见 `native_motion.rs`） |
+//! | `hostCall` | 调了宿主实现的 `wx.*` | `id` `api` `args` `tempDir`（宿主可直接写的临时目录）`files`（`args` 里的 `wxfile://` → 真实路径，没有就不带；见 `runtime/app_host.rs`） |
 //! | `clipboard` | `wx.setClipboardData`、输入框里 `copy` / `cut`（宿主写系统剪贴板） | `data` |
 //! | `vibrate` | `wx.vibrateShort` / `vibrateLong` | `duration`（`short` / `long`）`style` |
 //! | `app` | 启动后第一帧（只发一次） | `about`：`name` `appId` `description` `entryPage` `pageCount` `engine`（见 `app_about.rs`） |
@@ -39,6 +42,8 @@ pub struct HostEvents {
     focused: Option<String>,
     /// 上一次报的原生组件摆放（变了才发，免得滚动静止时每帧刷一条）
     last_native: Option<String>,
+    /// 页面滚动的逐帧取样（nativeViews 带的速度，见 native_motion.rs）
+    pub(super) motion: super::native_motion::ScrollMotion,
     /// `app` 事件（关于信息）发过了：启动后只发一次
     app_sent: bool,
 }
@@ -84,6 +89,10 @@ impl MiniEngine {
         // 换到有 / 没有导航栏的页面：逻辑层的 windowHeight 跟着变（engine_navbar.rs）
         self.sync_window_height();
         self.sync_native_views();
+        // 同层渲染的视频：页面上有哪些（`videos`）、要宿主执行的播放命令（`videoCommand`）
+        self.sync_video_feed();
+        // 同层渲染的 `<map>` 这类：页面上有哪些（`sameLayerViews`）、点在了哪（`nativeViewTap`）
+        self.sync_host_views();
     }
 
     /// 启动后第一帧：小程序的关于信息（胶囊「•••」由宿主展示，见 `app_about.rs`）
@@ -259,12 +268,21 @@ impl MiniEngine {
     }
 
     /// 宿主承载的原生组件：摆放或遮挡变了才发（滚动中、picker 面板滑入滑出时每帧都会变，
-    /// 静止时不发）。遮挡（`clip` / `holes` / `mask`）见 `native_occlusion.rs`。
+    /// 静止时不发）。遮挡（`clip` / `holes` / `mask`）见 `native_occlusion.rs`；
+    /// 带的滚动取样（宿主按自己那一帧的 vsync 推位置，别等事件到了才挪）见 `native_motion.rs`。
     fn sync_native_views(&mut self) {
-        if self.opts.native_components.is_empty() {
+        // 没有要盖控件的标签（同层渲染的不算：它们画在引擎画面里）
+        if self.opts.native_components.iter().all(|t| self.opts.same_layer.contains(t)) {
             return;
         }
-        let scroll = self.scroll.get_position();
+        let raw = self.scroll.get_position();
+        // 与合成同一个取整（`compose_frame` 的 `scroll_px` 按设备像素截断）：
+        // 不然控件跟着小数走、画面跟着整数走，滚动时两者之间差 0~1 个设备像素来回闪
+        let scroll = ((raw * self.dpr) as i32) as f32 / self.dpr;
+        // 这一帧的滚动取样（速度要每帧取，不管这一帧发不发事件）
+        let moving = self.scroll.is_dragging || self.scroll.is_animating();
+        let inertia = self.scroll.inertia_velocity().map(|v| v / 1000.0);
+        let motion = self.events.motion.sample(self.last_pump_ms, raw, moving, inertia);
         let vw = self.width as f32;
         // 报给宿主的是**画面坐标**：引擎画了导航栏时页面视口整体在它下面（engine_navbar.rs）
         let top = self.nav_height();
@@ -302,12 +320,24 @@ impl MiniEngine {
                 }))
             })
             .collect();
-        let sig = serde_json::to_string(&views).unwrap_or_default();
+        // 没有控件可摆时速度无意义：不然滚动别处的每一帧都要报一条空列表
+        let velocity = if views.is_empty() { 0.0 } else { motion.velocity };
+        let mut sig = serde_json::to_string(&views).unwrap_or_default();
+        if !views.is_empty() {
+            // 速度变了也要报：停下来那一帧位置没变、速度归零，宿主得知道别再往前推了
+            sig.push_str(&format!("|{raw:.3}|{velocity:.5}"));
+        }
         if self.events.last_native.as_deref() == Some(sig.as_str()) {
             return;
         }
         self.events.last_native = Some(sig);
-        self.events.push(json!({ "type": "nativeViews", "views": views }));
+        self.events.motion.unsettled = velocity != 0.0;
+        self.events.push(json!({
+            "type": "nativeViews", "views": views,
+            "frameTime": motion.frame_ms, "scroll": raw, "velocity": velocity,
+            "period": motion.period_ms, "decay": if velocity != 0.0 { motion.decay } else { 0.0 },
+            "dpr": self.dpr, "area": rect(&flow_area),
+        }));
     }
 
     /// 宿主承载的原生组件发生了事件（视频播完、地图点了标记…）：按节点上的
@@ -319,7 +349,11 @@ impl MiniEngine {
             .and_then(|r| r.native_regions().iter().find(|n| n.key == key))
             .cloned()
         else {
-            return false;
+            // 不是盖上去的控件：可能是同层渲染的 `<map>` 这类，或同层渲染的视频（事件同时更新引擎画控制条用的状态）
+            if self.host_view_event(key, name, &detail) {
+                return true;
+            }
+            return self.video_feed_event(key, name, detail);
         };
         let Some((_, handler, owner, data)) = region.events.iter().find(|e| e.0 == name).cloned() else {
             return false;
@@ -353,5 +387,35 @@ impl MiniEngine {
             self.page_data_dirty = true;
         }
         found
+    }
+
+    /// 宿主推一个事件给逻辑层的 `wx.onXxx` 监听者（传感器、定位变化、蓝牙发现、网络变化、主题切换……）。
+    /// `name` 写 `accelerometerChange` 或 `onAccelerometerChange` 都行；`payload_json` 是交给回调的 res。
+    /// 返回收到它的监听者个数（0 = 没人在听，宿主可以据此停掉传感器）
+    pub fn dispatch_event(&mut self, name: &str, payload_json: &str) -> u32 {
+        let code = format!(
+            "__hostDispatch({}, {})",
+            Value::String(name.to_string()),
+            Value::String(if payload_json.trim().is_empty() { "{}".into() } else { payload_json.to_string() })
+        );
+        let n = self.app.eval(&code).ok().and_then(|s| s.trim().parse::<u32>().ok()).unwrap_or(0);
+        self.app.pump_jobs();
+        if self.app.take_data_dirty() {
+            self.page_data_dirty = true;
+        }
+        n
+    }
+
+    /// 宿主发起的返回（导航栏返回键、系统返回键）先问逻辑层：`wx.enableAlertBeforeUnload` 开着要先确认、
+    /// `page-container` 弹着要先关它。接住了返回 true，这次不退栈
+    pub(crate) fn back_intercepted(&mut self) -> bool {
+        let hit = self.app.eval("typeof __interceptBack==='function'&&__interceptBack()?1:0").map(|s| s.trim() == "1").unwrap_or(false);
+        if hit {
+            self.app.pump_jobs();
+            if self.app.take_data_dirty() {
+                self.page_data_dirty = true;
+            }
+        }
+        hit
     }
 }

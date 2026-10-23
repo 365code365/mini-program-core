@@ -92,6 +92,9 @@ const PRELUDE: &[Prelude] = prelude![
     // 导航栏 API 与宿主实现的 `wx.*`（hostCall）：意图经 `__native_host_event` 交给宿主外壳。
     // 要早于 api-probe：探针包住 wx 之后再加的属性照样可见，但放这里语义更清楚
     "host" => "host.js",
+    // 选图 / 选视频 / 选文件 / 存相册 / 打开文档：宿主点名之后的参数归一、移动端「拍照 / 从相册选」
+    // 的操作菜单、回包按官方形状补齐（host.js 的 __hostCallHooks；没点名的不经过它）
+    "host-media" => "host-media.js",
     // 剪贴板、振动、操作菜单、图片预览，与「要宿主才能做」的能力（登录、选图、定位…）的默认实现：
     // 宿主在 hostApis 里点名的由 __installHostApis 换成真的，没点名的立刻 fail（而不是 undefined）
     "system" => "system.js",
@@ -105,6 +108,29 @@ const PRELUDE: &[Prelude] = prelude![
     "audio" => "audio.js",
     // 网络状态、胶囊、canIUse、更新、账号、分享菜单、屏幕、背景色、电量、键盘、日志、图片信息
     "app-info" => "app-info.js",
+    // ── 对照微信补齐的那批（2026-10，见 .agents/tasks/wx-gap-2026-10-23/gap.md）──
+    // 要宿主才能做的能力：默认立刻 fail（宿主在 hostApis 点名就交给宿主），监听型 wx.onXxx 的统一登记与宿主推事件
+    "host-capabilities" => "host-capabilities.js",
+    // 基础 / 系统 / 随机数 / 隐私 / 广告 / AI：引擎里能真做的就真做（__asyncOk / __asyncFail 也在这里）
+    "base-ext" => "base-ext.js",
+    // 由宿主承载的对象：MapContext / CameraContext / LivePlayer / LivePusher / NFC / MediaRecorder / VideoDecoder …
+    "host-objects" => "host-objects.js",
+    // wx.createTCPSocket / createUDPSocket / getLocalIPAddress（src/net_socket.rs）
+    "net-socket" => "net-socket.js",
+    // 路由：校验、success 时机、EventChannel、路由事件、返回询问、rewriteRoute、exit / restart
+    "route-ext" => "route-ext.js",
+    // 页面 / 组件实例补齐的方法（options、getOpenerEventChannel、router、getPageId …）
+    "page-ext" => "page-ext.js",
+    // 旧版语音 / 背景音频 / 录音、previewMedia、getVideoInfo、createOffscreenCanvas
+    "media-ext" => "media-ext.js",
+    // wx.createWorker、this.createMediaQueryObserver
+    "worker-mq" => "worker-mq.js",
+    // this.animate / clearAnimation：按选择器写节点样式（data 的 __nodeStyles）与共用的帧循环
+    "animate" => "animate.js",
+    // wx.worklet（共享值 / 派生值 / timing / spring / decay / 组合 / Easing）、applyAnimatedStyle、wx.router
+    "worklet" => "worklet.js",
+    // wx.createWebAudioContext（节点图、AudioParam 自动化、decodeAudioData）与 createMediaAudioPlayer
+    "webaudio" => "webaudio.js",
     // `Component()` / `Behavior()` 与组件实例工厂（properties / observers / triggerEvent）
     "component" => "component.js",
     // 组件实例树：每处使用一个实例，宿主每帧对账（建实例 / 改属性触发 observer / detached）

@@ -24,7 +24,7 @@ crate-type = ["cdylib", "staticlib", "rlib"]
 # 只要 CPU：`cargo build --release --no-default-features --features desktop,audio,h264`
 default = ["desktop", "audio", "h264", "gpu"]
 # 桌面宿主（自带窗口、上屏、剪贴板）
-desktop = ["winit", "softbuffer", "arboard"]
+desktop = ["winit", "softbuffer", "arboard", "dep:rfd"]
 # 内置音频播放（video 组件的声音）
 audio = ["rodio"]
 # 内置 H.264 软解（<video> 的画面帧）。移动端建议关掉：交给系统播放器硬解更省电，
@@ -57,6 +57,9 @@ base64 = "=0.22.1"
 # FileSystemManager.unzip 的 deflate 解压（ureq 的 gzip 用的就是它，不多编一份）
 flate2 = "=1.1.9"
 once_cell = "1.21"
+# wx.getRandomValues / UserCryptoManager.getRandomValues：系统的密码学安全随机数。
+# 这个版本本来就在依赖图里（ring → getrandom 0.2），直接用不多编一份
+getrandom = "=0.2.17"
 # 音频解码（纯解码，无设备依赖，移动端也留着）
 symphonia = { version = "0.6", features = ["isomp4", "aac", "mp3"] }
 # H.264 解码 (纯 Rust，可选)
@@ -75,6 +78,13 @@ rodio = { version = "0.22", optional = true }
 wgpu = { version = "=30.0.1", optional = true, default-features = false, features = ["std", "wgsl", "metal", "vulkan", "gles", "dx12"] }
 # request_adapter / request_device / map_async 都是 future，宿主是同步的：用最小的 block_on
 pollster = { version = "=1.0.1", optional = true }
+
+# ── 桌面窗体的文件对话框（wx.chooseImage / chooseMessageFile / saveImageToPhotosAlbum，见
+# src/bin/app_window/host_calls.rs）。只在 macOS / Windows：那两边是系统自带的对话框，依赖
+# （objc2 / windows-sys）本来就在锁文件里；Linux 的 rfd 要么拉 GTK3、要么拉 xdg-portal + async 运行时，
+# 为一个开发用窗体不值得 —— Linux 上用 MINI_PICK_FILES 指定文件。版本锁死、关默认特性。
+[target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
+rfd = { version = "=0.17.2", optional = true, default-features = false }
 
 # ── Android 专用：JNI 入口（只在 android 目标编译，其它平台一行代码都不带）──
 [target.'cfg(target_os = "android")'.dependencies]

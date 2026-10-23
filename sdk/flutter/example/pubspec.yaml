@@ -65,7 +65,9 @@ flutter:
     - assets/demo/pages/animation/
     - assets/demo/pages/apis/
     - assets/demo/pages/basic/
+    - assets/demo/pages/builtin/
     - assets/demo/pages/canvas/
+    - assets/demo/pages/channel/
     - assets/demo/pages/components/
     - assets/demo/pages/custom/
     - assets/demo/pages/dashboard/
@@ -79,17 +81,20 @@ flutter:
     - assets/demo/pages/media/
     - assets/demo/pages/navcustom/
     - assets/demo/pages/network/
+    - assets/demo/pages/newapi/
     - assets/demo/pages/perf/
     - assets/demo/pages/picker/
     - assets/demo/pages/query/
     - assets/demo/pages/route/
     - assets/demo/pages/scroll/
+    - assets/demo/pages/skyline/
     - assets/demo/pages/storage/
     - assets/demo/pages/swiper/
     - assets/demo/pages/wxml/
     - assets/demo/pages/wxss/
     - assets/demo/templates/
     - assets/demo/utils/
+    - assets/demo/workers/
     - assets/demo/wxs/
 
   # To add assets to your application, add an assets section, like this:

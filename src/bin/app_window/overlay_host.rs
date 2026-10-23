@@ -97,7 +97,7 @@ impl crate::MiniAppWindow {
         let vp = (LOGICAL_WIDTH as f32, LOGICAL_HEIGHT as f32);
         let consumed = picker_sheet::on_press(&mut self.picker_sheet, x, y)
             || mini_render::host::ui_overlay::sheet_overlay_press(vp, x, y)
-            || mini_render::renderer::components::fullscreen_video().is_some();
+            || mini_render::renderer::components::video_fullscreen::fullscreen_press(x, y, vp.0, vp.1);
         if consumed {
             self.needs_redraw = true;
             if let Some(w) = &self.window { w.request_redraw(); }
@@ -114,7 +114,13 @@ impl crate::MiniAppWindow {
                     if let Some(w) = &self.window { w.request_redraw(); }
                     return true;
                 }
-                mini_render::renderer::components::fullscreen_video().is_some()
+                // 全屏视频：拖进度跟手（全屏那一层画在合成那一步）
+                let consumed = mini_render::renderer::components::video_fullscreen::fullscreen_move(x, y, LOGICAL_WIDTH as f32, LOGICAL_HEIGHT as f32);
+                if consumed {
+                    self.needs_redraw = true;
+                    if let Some(w) = &self.window { w.request_redraw(); }
+                }
+                consumed
             }
             picker_sheet::SheetMove::Idle => true,
             picker_sheet::SheetMove::Moved => {
@@ -127,11 +133,11 @@ impl crate::MiniAppWindow {
 
     /// 面板可见时的抬手：确定/取消/选项滚动/点遮罩关闭。返回是否消费了事件。
     pub(crate) fn handle_picker_sheet_release(&mut self, x: f32, y: f32) -> bool {
-        // 全屏视频：左上角退出，别处切换播放 / 暂停（事件下一帧由 host::video::tick 发）
+        // 全屏视频：顶栏返回 / 控制条按钮 / 拖完进度 / 点画面切换控制条（事件下一帧由 host::video::tick 发）
         let vp = (LOGICAL_WIDTH as f32, LOGICAL_HEIGHT as f32);
         let consumed = picker_sheet::on_release(&mut self.picker_sheet, &mut self.app, x, y)
             || mini_render::host::ui_overlay::sheet_overlay_release(&mut self.app, vp, x, y)
-            || mini_render::renderer::components::fullscreen_tap(x, y);
+            || mini_render::renderer::components::video_fullscreen::fullscreen_release(x, y, vp.0, vp.1);
         if consumed {
             self.needs_redraw = true;
             if let Some(w) = &self.window { w.request_redraw(); }

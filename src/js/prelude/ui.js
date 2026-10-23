@@ -183,6 +183,27 @@
                     scaleX: function(v) { return record('scaleX', [v === undefined ? 1 : v]); },
                     scaleY: function(v) { return record('scaleY', [v === undefined ? 1 : v]); },
                     skew: function(x, y) { return record('skew', [x || 0, y || 0]); },
+                    skewX: function(v) { return record('skewX', [v || 0]); },
+                    skewY: function(v) { return record('skewY', [v || 0]); },
+                    matrix: function(a, b, c, d, tx, ty) { return record('matrix', [a, b, c, d, tx, ty]); },
+                    // 3D：渲染层是 2D 仿射，按正交投影降级 —— rotateX/Y 压缩成 scaleY/X(cos θ)，Z 方向的平移 / 缩放不出效果
+                    rotateX: function(deg) { return record('rotateX', [deg || 0]); },
+                    rotateY: function(deg) { return record('rotateY', [deg || 0]); },
+                    rotate3d: function(x, y, z, deg) { return record('rotate3d', [x || 0, y || 0, z || 0, deg || 0]); },
+                    translate3d: function(x, y, z) { return record('translate', [x || 0, y || 0]); },
+                    translateZ: function() { return api; },
+                    scale3d: function(sx, sy) { return record('scale', [sx === undefined ? 1 : sx, sy === undefined ? 1 : sy]); },
+                    scaleZ: function() { return api; },
+                    matrix3d: function() {
+                        var m = [].slice.call(arguments);
+                        // 列主序 4×4 取 2D 部分：a=m0 b=m1 c=m4 d=m5 tx=m12 ty=m13
+                        return record('matrix', [m[0], m[1], m[4], m[5], m[12] || 0, m[13] || 0]);
+                    },
+                    // 定位：left / top / right / bottom 是布局属性，渲染层只做绘制期的插值（同 width / height 的取舍：不支持）
+                    left: function(v) { return record('left', [v]); },
+                    top: function(v) { return record('top', [v]); },
+                    right: function(v) { return record('right', [v]); },
+                    bottom: function(v) { return record('bottom', [v]); },
                     // 样式
                     opacity: function(v) { return record('opacity', [v]); },
                     backgroundColor: function(c) { return record('backgroundColor', [c]); },

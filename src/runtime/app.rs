@@ -41,7 +41,8 @@ pub enum UiEvent {
 /// 小程序应用
 pub struct MiniApp {
     runtime: Arc<Mutex<JsRuntime>>,
-    bridge: Arc<JsBridge>,
+    /// app_host.rs 要取宿主事件队列
+    pub(super) bridge: Arc<JsBridge>,
     api: MiniAppApi,
     width: u32,
     height: u32,
@@ -481,34 +482,8 @@ impl MiniApp {
         self.height = height;
     }
 
-    /// 取走逻辑层交给宿主外壳的事件（导航栏、hostCall；JSON 串，按发生顺序）
-    pub fn take_host_events(&self) -> Vec<String> {
-        self.bridge.take_host_events()
-    }
+    // 宿主事件与 hostCall（take_host_events / install_host_apis / resolve_host_call）在 app_host.rs
 
-    /// 把宿主实现的 API 装进 `wx`（`app.js` 执行之前调）
-    pub fn install_host_apis(&self, names: &[String]) {
-        if names.is_empty() {
-            return;
-        }
-        let list = serde_json::to_string(names).unwrap_or_else(|_| "[]".into());
-        if let Err(e) = self.eval(&format!("__installHostApis({list})")) {
-            eprintln!("⚠️  安装宿主 API 失败: {e}");
-        }
-    }
-
-    /// 宿主回 hostCall 的结果。`result_json` 是交给回调的 res（对象），解析不了的原样包成 `{data}`。
-    /// 返回 false 表示 id 不认识（已经回过、或页面早就换了）。
-    pub fn resolve_host_call(&self, id: u32, ok: bool, result_json: &str) -> bool {
-        let code = format!(
-            "__resolveHostCall({id}, {ok}, {})",
-            serde_json::Value::String(result_json.to_string())
-        );
-        let r = self.eval(&code);
-        self.pump_jobs();
-        matches!(r.as_deref(), Ok("true"))
-    }
-    
     /// 执行 JS 代码
     pub fn eval(&self, code: &str) -> Result<String, String> {
         let rt = self.runtime.lock().unwrap();

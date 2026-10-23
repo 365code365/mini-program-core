@@ -144,7 +144,10 @@ fn regular_font(body: &str) -> Option<(String, u32)> {
         }
         let Some(head_end) = after.find('>') else { break };
         let head = &after[..head_end];
-        let text = &after[head_end + 1..];
+        // 文件名前面可能有换行缩进：AOSP 的 fonts.xml 把 `NotoSansCJK-Regular.ttc` 单独写在下一行。
+        // 不跳空白的话这一项读成空、被跳过，退到下一项 `fallbackFor="serif"` 的 NotoSerifCJK ——
+        // Pixel / 模拟器 / 原生 ROM 上整页变成宋体（踩过：模拟器上所有文字都是衬线体）
+        let text = after[head_end + 1..].trim_start();
         let file: String = text.chars().take_while(|c| *c != '<' && !c.is_whitespace()).collect();
         if file.is_empty() {
             continue;
@@ -208,6 +211,35 @@ mod tests {
                 Candidate::new("/system/fonts/SysFont-Regular.ttf", 0, true),
                 Candidate::new("/system/fonts/NotoSansCJKjp-Regular.otc", 2, false),
                 Candidate::new("/system/fonts/SysSans-Hans-Regular.ttf", 0, false),
+            ]
+        );
+    }
+
+    /// AOSP（Android 14 模拟器 `/system/etc/fonts.xml` 原样摘录）：文件名单独一行
+    const AOSP: &str = r#"<familyset>
+    <family name="sans-serif">
+        <font weight="400" style="normal">Roboto-Regular.ttf
+          <axis tag="wght" stylevalue="400" />
+        </font>
+    </family>
+    <family lang="zh-Hans">
+        <font weight="400" style="normal" index="2" postScriptName="NotoSansCJKjp-Regular">
+            NotoSansCJK-Regular.ttc
+        </font>
+        <font weight="400" style="normal" index="2" fallbackFor="serif"
+              postScriptName="NotoSerifCJKjp-Regular">NotoSerifCJK-Regular.ttc
+        </font>
+    </family>
+</familyset>"#;
+
+    #[test]
+    fn aosp_fonts_xml_picks_sans_not_serif_cjk() {
+        let c = parse_fonts_xml(AOSP, "/system/fonts");
+        assert_eq!(
+            c,
+            vec![
+                Candidate::new("/system/fonts/Roboto-Regular.ttf", 0, true),
+                Candidate::new("/system/fonts/NotoSansCJK-Regular.ttc", 2, false),
             ]
         );
     }

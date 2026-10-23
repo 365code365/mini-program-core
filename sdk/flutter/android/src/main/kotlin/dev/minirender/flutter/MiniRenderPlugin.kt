@@ -4,6 +4,8 @@ import android.app.ActivityManager
 import android.content.Context
 import android.os.Build
 import io.flutter.embedding.engine.plugins.FlutterPlugin
+import io.flutter.embedding.engine.plugins.activity.ActivityAware
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import dev.minirender.MiniEngine
@@ -17,7 +19,7 @@ import org.json.JSONObject
  * 进程级的），所以这里只持有一个 [EngineHost]；Dart 侧在上一个 dispose 之前再建会收到
  * `ALREADY_RUNNING`。热重启后 Dart 先调 `init`，把旧实例清掉。
  */
-class MiniRenderPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
+class MiniRenderPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, ActivityAware {
     companion object {
         /** 独立图层的平台视图类型（与 Dart 侧 `MiniProgramView` 同一个字符串） */
         const val VIEW_TYPE = "dev.minirender/engine-view"
@@ -27,8 +29,12 @@ class MiniRenderPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
     private lateinit var binding: FlutterPlugin.FlutterPluginBinding
     private var host: EngineHost? = null
 
+    /** 插件自带的宿主能力：选图 / 选视频 / 选文件 / 存相册 / 打开文档（要 Activity 收选择器的结果） */
+    private lateinit var picker: MediaPicker
+
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         binding = flutterPluginBinding
+        picker = MediaPicker(flutterPluginBinding.applicationContext)
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "dev.minirender/engine")
         channel.setMethodCallHandler(this)
         // 独立图层上屏（EngineView.kt）：Dart 在 create 回了 view=true 时建这个平台视图
@@ -40,6 +46,14 @@ class MiniRenderPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         host?.dispose()
         host = null
     }
+
+    override fun onAttachedToActivity(b: ActivityPluginBinding) = picker.attach(b)
+
+    override fun onDetachedFromActivityForConfigChanges() = picker.detach()
+
+    override fun onReattachedToActivityForConfigChanges(b: ActivityPluginBinding) = picker.attach(b)
+
+    override fun onDetachedFromActivity() = picker.detach()
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
@@ -59,6 +73,8 @@ class MiniRenderPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 )
             }
             "create" -> create(call, result)
+            // 不碰引擎实例：文件直接写进 hostCall 给的 tempDir
+            "pickMedia", "pickFiles", "saveToAlbum", "openDocument" -> picker.handle(call, result)
             else -> {
                 val h = host
                 if (h == null) {

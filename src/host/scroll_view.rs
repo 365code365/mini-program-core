@@ -265,11 +265,13 @@ impl super::engine::MiniEngine {
         if super::picker_sheet::sync_columns(&mut self.picker_sheet, self.renderer.as_ref()) {
             redraw = true;
         }
-        // VideoContext 命令与 video 的组件事件（全屏画在合成那一步，要重新合成）
+        // VideoContext 命令、video 的组件事件、控制条（内置播放器那边变了要重画；同层渲染只重画视频框）
         if super::video::tick(&mut self.app, self.renderer.as_ref(), &self.interaction, now_ms) {
             redraw = true;
             self.dmg.compose_dirty = true;
         }
+        // 全屏那一层（画在合成那一步）：新帧 / 控制条变了只重新合成
+        self.sync_fullscreen(now_ms);
         // SelectorQuery / ScrollViewContext / IntersectionObserver（与桌面共用）
         let vp = self.viewport_height();
         let view = super::selector_query::PageView {

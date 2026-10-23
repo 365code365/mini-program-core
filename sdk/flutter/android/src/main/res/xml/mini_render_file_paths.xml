@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- MiniRenderFileProvider 能交出去的目录：相机的落盘处（cache/mini-render-capture）与
+     引擎的 wxfile 沙盒（默认 dataDir 是 files/mini-render）。别处的文件 openDocument 会先拷进 cache -->
+<paths>
+    <cache-path name="cache" path="." />
+    <files-path name="files" path="." />
+</paths>

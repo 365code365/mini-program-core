@@ -178,7 +178,7 @@ const char* mr_version(void);
 // 这些符号**有没有 gpu feature 都导出**；不调它们的宿主永远是 CPU，与以前逐字节一致。
 //
 // 现状：没编进 gpu feature 时 attach 返回 1、原因串含「未编译」。编进来了（桌面默认、
-// Android 的 build-mobile.sh 默认；iOS 库暂不编）：偏好 auto / gpu 且门槛与启动自检都过了，
+// build-mobile.sh 的 Android 与 iOS 默认）：偏好 auto / gpu 且门槛与启动自检都过了，
 // attach 返回 2，之后由引擎直接画到 surface 上（pump_ex 带 MR_FRAME_PRESENTED）。偏好 cpu
 // （默认）时根本不碰 surface。运行中设备丢失 / surface 丢失当帧回退 CPU，带
 // MR_FRAME_BACKEND_CHANGED，且本实例之后不再试 GPU。
@@ -211,6 +211,14 @@ const char* mr_version(void);
 int  mr_app_set_backend(MRApp* app, int pref);
 // 机型分级用，挂 surface 之前调用。0 表示未知；low_ram 非 0 即真。
 void mr_app_set_device_info(MRApp* app, uint64_t total_mem_bytes, int low_ram, uint32_t os_api);
+// **建引擎之前**调：字体与 GPU 合成器各开一条线程预热，与建引擎、开首页并行。参数与之后的
+// mr_app_create_ex（逻辑宽高、dpr）、mr_app_set_backend、mr_app_set_device_info 一致（宽高 / dpr 不一致时
+// 预热的那份认领不上，挂 surface 时照常现开）；pref 传 -1 表示不指定。返回是否开始预热 GPU
+int  mr_warmup(uint32_t width, uint32_t height, float dpr, int pref,
+               uint64_t total_mem_bytes, int low_ram, uint32_t os_api);
+// surface 来之前先在后台线程上开 GPU（设好偏好与机型信息之后、mr_app_launch 之前调）：
+// 认领 mr_warmup 那份，没有就现开。返回 1 = 开始预热；偏好 cpu / 门槛不过 / 没编 gpu 返回 0
+int  mr_app_prewarm_gpu(MRApp* app);
 // 挂 surface（不带宽高：引擎按 mr_app_pixel_size 配置，宿主把层 / SurfaceView 设成同样大）。
 // 返回挂载后的实际后端：2 = GPU 生效；1 = 仍是 CPU（原因见 mr_app_backend_reason）；
 // 0 = 参数错误（app / native 为空、kind 不认识或当前目标不支持：iOS 上传 2、Android 上传 1）。
@@ -275,6 +283,28 @@ int mr_app_host_reply(MRApp* app, uint32_t id, int ok, const char* result_json);
 // 宿主承载的原生组件发生了事件：key 取自 nativeViews 事件，name 如 "ended" / "timeupdate"，
 // 派发给节点上的 bind<name>；detail_json 是事件 detail（NULL = {}）。找到绑定返回 1。
 int mr_app_native_view_event(MRApp* app, const char* key, const char* name, const char* detail_json);
+
+// 宿主推事件给逻辑层的 wx.onXxx 监听者：name 如 "accelerometerChange" / "locationChange" /
+// "bluetoothDeviceFound" / "networkStatusChange" / "themeChange" / "contextEvent"（"onXxx" 写法也认），
+// payload_json 是交给回调的 res（NULL = {}）。返回收到它的监听者个数（0 = 没人在听）。
+int mr_app_dispatch_event(MRApp* app, const char* name, const char* payload_json);
+
+// 同层渲染的 <video>（创建选项 "sameLayer": ["video"]）：宿主解出的一帧交给引擎画进页面。
+// key 取自 videos 事件；任何线程都可以调（不碰引擎实例），调完让引擎线程出一帧。收下返回 1。
+// 播放器状态照旧用 mr_app_native_view_event 回传（play / pause / timeupdate / ended …），
+// 引擎发来的 videoCommand 事件（play / pause / stop / seek / playbackRate）由宿主执行。
+int mr_video_frame_rgba(const char* key, uint32_t width, uint32_t height, uint32_t stride, const uint8_t* data);
+// YUV 4:2:0 三个平面（Android ImageReader 的 YUV_420_888：U / V 交错时 uv_pixel_stride 为 2）
+int mr_video_frame_yuv(const char* key, uint32_t width, uint32_t height,
+                       const uint8_t* y, uint32_t y_stride,
+                       const uint8_t* u, const uint8_t* v, uint32_t uv_stride, uint32_t uv_pixel_stride);
+
+// 同层渲染的通用组件（"sameLayer" 里除 video 以外的标签，如 "map"）：宿主把控件画好的一帧交给引擎画进页面。
+// 引擎发 sameLayerViews 事件（views[]：key / tag / attrs / width / height / box[设备像素宽, 高] / fixed），
+// 宿主按 box 画（离屏），内容变了才交 —— 滚动不用交，画面在引擎画布里跟着页面走（盖上去的控件做不到这一点）。
+// 点在框里发 nativeViewTap 事件（key / tag / x / y，视图本地逻辑坐标），宿主判点到了什么、照旧
+// mr_app_native_view_event 回传（如 markertap）。任何线程都可以调，调完让引擎线程出一帧。收下返回 1
+int mr_native_view_frame_rgba(const char* key, uint32_t width, uint32_t height, uint32_t stride, const uint8_t* data);
 
 // 在逻辑层执行一段 JS，返回结果的字符串形式；抛异常返回 NULL（原因见 mr_app_last_error）。
 // 指针活到下一次对同一 app 调用 mr_app_*。注入深链参数、集成测试断言页面数据用。

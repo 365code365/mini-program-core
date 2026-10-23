@@ -144,6 +144,9 @@ impl WxmlRenderer {
         if need_relayout {
             self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT);
         }
+        if crate::renderer::components::grid_view::masonry_pass(&mut taffy, &render_nodes, self.scale_factor) {
+            self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT);
+        }
         
         // 正常流：跳过 fixed 子树（顶层与嵌套均由固定层处理）
         for rn in &render_nodes {

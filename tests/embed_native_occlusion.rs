@@ -260,3 +260,104 @@ fn 侧滑返回时原生视频跟着整帧右移() {
     assert!(xs.len() >= 3, "收尾动画期间要逐帧重报：{xs:?}");
     assert!(xs.windows(2).all(|w| w[1] >= w[0]), "一路右移：{xs:?}");
 }
+
+/// 取完队列，返回最后一条 `nativeViews` 整条事件
+fn last_event(e: &mut MiniEngine) -> Option<Value> {
+    let evs: Vec<Value> = std::iter::from_fn(|| e.poll_event())
+        .map(|s| serde_json::from_str(&s).unwrap())
+        .collect();
+    evs.into_iter().rev().find(|v| v["type"] == "nativeViews")
+}
+
+#[test]
+fn 滚动中带速度与_vsync_时刻_停下来再报一次速度为零() {
+    // 宿主按自己那一帧的 vsync 推算控件位置（native_motion.rs）：要拿到这一帧的时刻、滚动、速度、周期；
+    // 停下来那一帧位置没变，也必须再报一条速度 0，否则宿主一直往前推
+    let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let root = fixture(
+        "motion",
+        r#"<view style="height:300px"></view><video id="v" src="https://example.invalid/a.mp4" style="width:200px;height:100px"></video><view style="height:2000px"></view>"#,
+        "",
+        "Page({data:{}});",
+    );
+    let opts = EngineOptions { native_components: vec!["video".into()], ..Default::default() };
+    let mut e = MiniEngine::new_with_options(&root.to_string_lossy(), None, W as u32, H as u32, 3.0, HostEnv::default(), opts)
+        .expect("创建引擎");
+    e.launch(None).expect("打开首页");
+    // 宿主时钟（开机毫秒），60Hz；手指每帧往上拖 10px
+    let mut t = 5_000_000u64;
+    e.pump_ex(t);
+    let still = last_event(&mut e).expect("首帧报摆放");
+    assert_eq!(f(&still, "velocity"), 0.0);
+    let (x, mut y) = (300.0, 600.0);
+    e.pointer_down(x, y);
+    let mut moving = None;
+    for _ in 0..12 {
+        t += 16;
+        y -= 10.0;
+        e.pointer_move(x, y);
+        let flags = e.pump_ex(t);
+        if let Some(m) = last_event(&mut e) {
+            moving = Some(m);
+        }
+        assert!(flags & 16 != 0, "拖着就要帧");
+    }
+    let m = moving.expect("滚动中每帧都报");
+    assert_eq!(m["frameTime"].as_u64(), Some(t), "带的是这一帧的 vsync 时刻");
+    assert!((f(&m, "velocity") - 10.0 / 16.0).abs() < 0.06, "速度 ≈ 10px / 16ms：{m}");
+    assert!((f(&m, "period") - 16.0).abs() < 0.5, "{m}");
+    assert_eq!(f(&m, "dpr"), 3.0);
+    // 正常流的可见区（宿主拿它裁推算后的位置）：这页没有导航栏也没有 tabBar
+    assert!(close(f(&m["area"], "y"), 0.0) && close(f(&m["area"], "height"), H), "{m}");
+    let scroll = f(&m, "scroll");
+    assert!(scroll > 50.0, "页面跟着手指走了：{m}");
+    // 拖着不动的那一帧：页面没挪，速度按窗口平均还在（不能一帧没挪就报 0、宿主停推）
+    t += 16;
+    e.pump_ex(t);
+    let held = last_event(&mut e).expect("速度变了要报");
+    assert!(f(&held, "velocity") > 0.2, "{held}");
+    // 松手（可能带惯性：没带时间戳的移动按到达时刻算松手速度）：滑到停为止，最后一条必须是速度 0
+    e.pointer_up(x, y);
+    let mut stop = None;
+    for _ in 0..600 {
+        t += 16;
+        let flags = e.pump_ex(t);
+        if let Some(s) = last_event(&mut e) {
+            stop = Some(s);
+        }
+        if flags & 16 == 0 {
+            break;
+        }
+    }
+    let stop = stop.expect("停下来要报速度归零");
+    assert_eq!(f(&stop, "velocity"), 0.0, "停下来那一帧要把速度报成 0：{stop}");
+    // 之后真不动了：不再报，也不再要帧（静止页面零耗电）
+    t += 16;
+    let flags = e.pump_ex(t);
+    assert!(last_event(&mut e).is_none());
+    assert_eq!(flags & 16, 0, "停稳之后不该再要帧");
+}
+
+#[test]
+fn 位置按设备像素取整_与画面同一个截断() {
+    // 合成按 `(scroll * dpr) as i32` 截断取切片；控件的 y 用同一个取整，滚动时两者之间不差那零点几个像素
+    let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let root = fixture(
+        "snap",
+        r#"<view style="height:300px"></view><video id="v" src="https://example.invalid/a.mp4" style="width:200px;height:100px"></video><view style="height:2000px"></view>"#,
+        "",
+        "Page({data:{}});",
+    );
+    let opts = EngineOptions { native_components: vec!["video".into()], ..Default::default() };
+    let mut e = MiniEngine::new_with_options(&root.to_string_lossy(), None, W as u32, H as u32, 2.0, HostEnv::default(), opts)
+        .expect("创建引擎");
+    e.launch(None).expect("打开首页");
+    e.pump_ex(1000);
+    last_event(&mut e);
+    e.scroll_to(10.3);
+    e.pump_ex(1016);
+    let m = last_event(&mut e).expect("滚动后重报");
+    // 10.3 × 2 = 20.6 → 20 个设备像素 → 10.0 逻辑像素
+    assert!((f(&m["views"][0], "y") - 290.0).abs() < 1e-3, "{m}");
+    assert!((f(&m, "scroll") - 10.3).abs() < 1e-3, "速度用的是未取整的滚动：{m}");
+}

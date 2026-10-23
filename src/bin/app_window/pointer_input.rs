@@ -179,6 +179,8 @@ impl crate::MiniAppWindow {
 
             // 拖过 slider：松手发 change，并且这一下不再算 tap（见 host::slider_input::finish）
             let slider_dragged = self.finish_slider_drag();
+            // 拖过视频的进度条（end_drags 里 seek）：同理不再算 tap
+            let seek_dragged = mini_render::renderer::components::video_ui::seek_dragging();
 
             // 拖动收尾（按压态 / scroll-view / 页面 / 侧滑）与 SDK 共用 host::input
             let anim = input::end_drags(
@@ -196,7 +198,7 @@ impl crate::MiniAppWindow {
             self.touch.finish();
             self.dispatch_touch_events(&outs, x, y);
             let stopped_fling = std::mem::take(&mut self.tap_stops_fling);
-            if outs.contains(&app_window::touch::TouchOut::Tap) && !stopped_fling && !slider_dragged {
+            if outs.contains(&app_window::touch::TouchOut::Tap) && !stopped_fling && !slider_dragged && !seek_dragged {
                 self.handle_click(x, y);
             }
             
