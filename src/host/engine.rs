@@ -128,6 +128,8 @@ pub struct MiniEngine {
     pub(super) frame_anchor: crate::frame_clock::Anchor,
     /// 当前页面有没有 `onPageScroll`（按 (栈深, 打开时刻, 路由) 记住，见 scroll_view.rs）
     pub(super) page_scroll_handler: Option<((usize, u64, String), bool)>,
+    /// `MINI_DAMAGE_LOG`：重画之前那几段的计时（frame_laps.rs `PumpNotes`）
+    pub(crate) pump_notes: super::frame_laps::PumpNotes,
     pub(super) page_opened_ms: u64,
     /// 创建选项（安全区、宿主 API、原生组件；见 engine_options.rs）
     pub(crate) opts: EngineOptions,
@@ -321,6 +323,7 @@ impl MiniEngine {
             last_pump_ms: 0,
             frame_anchor: Default::default(),
             page_scroll_handler: None,
+            pump_notes: super::frame_laps::PumpNotes::new(env.damage_log),
             page_opened_ms: 0,
             opts,
             capsule: Default::default(),

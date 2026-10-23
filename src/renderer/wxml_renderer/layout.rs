@@ -115,14 +115,15 @@ impl WxmlRenderer {
         //
         // 百分比高度塌成 0 的问题改在建树期解决：绝对定位元素在没有定位祖先时
         // 按视口折算高度（见 `components::base` 里的包含块修正），不动布局结构。
+        let ms = |a: std::time::Instant, b: std::time::Instant| (b - a).as_secs_f32() * 1000.0;
+        let t_fix = std::time::Instant::now();
         if log_timing {
-            let ms = |a: std::time::Instant, b: std::time::Instant| (b - a).as_secs_f32() * 1000.0;
             eprintln!(
-                "⏱  重建布局：模板 {:.1}ms  建树+样式 {:.1}ms  布局一遍 {:.1}ms  换行修正 {:.1}ms",
+                "⏱  重建布局：模板 {:.2}ms  建树+样式 {:.2}ms  布局一遍 {:.2}ms  换行修正 {:.2}ms",
                 ms(t_start, t_template),
                 ms(t_template, t_build),
                 ms(t_build, t_layout1),
-                ms(t_layout1, std::time::Instant::now()),
+                ms(t_layout1, t_fix),
             );
         }
         
@@ -136,6 +137,13 @@ impl WxmlRenderer {
             (Some(old), false) => self.plan_from_diff(old, &render_nodes, &taffy, content_height),
             _ => FramePlan::Full,
         };
+        self.rebuild_laps = Some([
+            ms(t_start, t_template),
+            ms(t_template, t_build),
+            ms(t_build, t_layout1),
+            ms(t_layout1, t_fix),
+            ms(t_fix, std::time::Instant::now()),
+        ]);
         
         self.cache = Some(CachedLayout {
             render_nodes,
@@ -306,7 +314,8 @@ impl WxmlRenderer {
         };
         
         // 建树分派：标签 → 组件在 components::registry 那张表里（唯一登记点）
-        let mut render_node = (crate::renderer::components::spec_for(tag).build)(node, &mut ctx);
+        let spec = crate::renderer::components::spec_for(tag);
+        let mut render_node = (spec.build)(node, &mut ctx);
         
         // `<button>` 在微信里是普通容器：里面写 `<text class="…">` 时，那段文字的
         // 颜色/字号/字重由它自己的 CSS 说的算。一律当叶子会把子树整个吞掉、
@@ -368,7 +377,16 @@ impl WxmlRenderer {
                 
                 if !children.is_empty() {
                     let child_ids: Vec<NodeId> = children.iter().map(|c| c.taffy_node).collect();
-                    let (mut ts, ns) = build_base_style(node, &mut ctx);
+                    // `build` 交出来的就是基础样式原样（view / block / scroll-view / 未登记标签）：
+                    // 直接用，不再把选择器匹配与声明落地重做一遍（见 TagSpec::base_style_only）
+                    let reused = if spec.base_style_only { ctx.taffy.style(rn.taffy_node).ok().cloned() } else { None };
+                    let (mut ts, ns) = match reused {
+                        Some(ts) => (ts, None),
+                        None => {
+                            let (ts, ns) = build_base_style(node, &mut ctx);
+                            (ts, Some(ns))
+                        }
+                    };
                     
                     // 这里重新算了一遍基础样式，会覆盖组件 build 里设的布局，
                     // 所以需要容器语义的组件必须在这里再补一次（swiper / swiper-item）。
@@ -419,8 +437,10 @@ impl WxmlRenderer {
                     
                     rn.taffy_node = new_tn;
                     rn.children = children;
-                    // 更新样式（保留原有样式中已设置的值，但用新样式覆盖）
-                    rn.style = ns;
+                    // 更新样式（保留原有样式中已设置的值，但用新样式覆盖）；复用的那种本来就是它
+                    if let Some(ns) = ns {
+                        rn.style = ns;
+                    }
                 }
             }
         }
@@ -464,23 +484,11 @@ impl WxmlRenderer {
 
 /// 按与 text.rs 绘制一致的贪心算法统计文本在给定可用宽度下的换行行数。
 /// 用于第二遍布局修正文本盒子高度（含 `\n` 硬换行）。
+///
+/// 从前这里是 `components::count_wrapped_text_lines` 的一份逐行相同的拷贝（同样的硬换行切分、
+/// 同样的逐字度量闭包、同样的 `max(1)`）；现在直接用那一份，顺带吃到它的记忆表
 pub(super) fn count_wrapped_lines(tr: &TextRenderer, text: &str, max_width: f32, size: f32, letter_spacing: f32, bold: bool) -> usize {
-    if max_width <= 0.0 {
-        return text.split('\n').count().max(1);
-    }
-    let mut lines = 0usize;
-    for paragraph in text.split('\n') {
-        if paragraph.is_empty() {
-            lines += 1;
-            continue;
-        }
-        let chars: Vec<char> = paragraph.chars().collect();
-        let measure = |s: &[char]| -> f32 {
-            s.iter().map(|c| tr.measure_char_weighted(*c, size, bold) + letter_spacing).sum()
-        };
-        lines += crate::renderer::components::wrap_paragraph_lines(&chars, max_width, measure).len();
-    }
-    lines.max(1)
+    crate::renderer::components::count_wrapped_text_lines(tr, text, max_width, size, letter_spacing, bold)
 }
 
 /// virtualHost 组件模板的第一层节点：祖先链补上被虚化掉的宿主（由外向内）。不是这种节点给 None

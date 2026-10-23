@@ -16,6 +16,9 @@ use crate::Color;
 mod parser;
 /// CSS 选择器引擎（分词 / 解析 / 特异性 / 匹配）
 mod selector;
+/// 级联：命中规则按（特异性，书写顺序）排好，交出声明的借用
+mod cascade;
+pub use cascade::PositionalSubjects;
 /// `calc()` 静态求值与 `env(safe-area-inset-*)`（安全区由宿主经 thread_local 给）
 mod calc_env;
 /// `@media` 条件在解析期求值（屏宽 / 屏高 / 方向 / 深浅色）
@@ -267,38 +270,7 @@ impl StyleSheet {
         self.get_styles_chain(&[desc])
     }
     
-    /// 基于祖先链匹配（chain 从根到目标，最后一个为目标元素）。
-    /// 支持后代 / 子 `>` 组合器；相邻/通用兄弟因无兄弟上下文暂不匹配。
-    pub fn get_styles_chain(&self, chain: &[ElementDesc]) -> HashMap<String, StyleValue> {
-        if chain.is_empty() {
-            return HashMap::new();
-        }
-        // (specificity, order, &properties)
-        let mut matched: Vec<(u32, usize, &HashMap<String, StyleValue>)> = Vec::new();
-        
-        for (order, rule) in self.rules.iter().enumerate() {
-            let mut best: Option<u32> = None;
-            for cs in &rule.compiled {
-                if matches_complex(cs, chain) {
-                    best = Some(best.map_or(cs.specificity, |b| b.max(cs.specificity)));
-                }
-            }
-            if let Some(spec) = best {
-                matched.push((spec, order, &rule.properties));
-            }
-        }
-        
-        // 按 (特异性, 书写顺序) 升序，后者覆盖前者
-        matched.sort_by(|a, b| a.0.cmp(&b.0).then(a.1.cmp(&b.1)));
-        
-        let mut styles = HashMap::new();
-        for (_, _, props) in matched {
-            for (k, v) in props {
-                styles.insert(k.clone(), v.clone());
-            }
-        }
-        styles
-    }
+    // `get_styles_chain` / `cascade_chain`（级联）在 cascade.rs
 }
 
 // ============================ 选择器解析 ============================

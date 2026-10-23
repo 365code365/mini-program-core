@@ -29,9 +29,19 @@ pub(super) fn declaration_order(name: &str) -> u8 {
     }
 }
 
-/// 把级联后的声明按确定性顺序取出（见 [`declaration_order`]）
-pub(super) fn sorted_declarations(css: &HashMap<String, StyleValue>) -> Vec<(&str, &StyleValue)> {
-    let mut out: Vec<(&str, &StyleValue)> = css.iter().map(|(k, v)| (k.as_str(), v)).collect();
-    out.sort_by(|a, b| declaration_order(a.0).cmp(&declaration_order(b.0)).then(a.0.cmp(b.0)));
+/// 把级联后的声明按确定性顺序取出（见 [`declaration_order`]）。输入是 `StyleSheet::cascade_chain`
+/// 的级联序列（借用、同名可重复）。
+///
+/// 稳定排序之后同名的几条仍按级联顺序挨着，留每段最后一条 —— 与从前「依次 insert 进 map（后者覆盖）
+/// 再按同一规则排序」逐项相同，只是不再把每条声明的名字和值拷一份进新 map
+pub(super) fn sorted_cascade<'a>(mut seq: Vec<(&'a str, &'a StyleValue)>) -> Vec<(&'a str, &'a StyleValue)> {
+    seq.sort_by(|a, b| declaration_order(a.0).cmp(&declaration_order(b.0)).then(a.0.cmp(b.0)));
+    let mut out: Vec<(&str, &StyleValue)> = Vec::with_capacity(seq.len());
+    for d in seq {
+        match out.last_mut() {
+            Some(last) if last.0 == d.0 => *last = d,
+            _ => out.push(d),
+        }
+    }
     out
 }

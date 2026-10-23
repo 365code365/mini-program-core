@@ -33,3 +33,38 @@ impl Laps {
         (!self.out.is_empty()).then(|| format!("  〔{} 〕", self.out))
     }
 }
+
+/// 一次 pump 里重画之前那几段（换页留图 / 建页 / 事件回调 / 失效分析）的计时，接在 `⏱ [SDK] pump` 行尾。
+/// 关着日志时 `on` 是假，`start` 不取时钟
+#[derive(Default)]
+pub(crate) struct PumpNotes {
+    on: bool,
+    out: String,
+}
+impl PumpNotes {
+    pub fn new(on: bool) -> Self {
+        Self { on, out: String::new() }
+    }
+    /// 开始计一段（关着日志时 None）
+    pub fn start(&self) -> Option<Instant> {
+        self.on.then(Instant::now)
+    }
+    /// 记下从 `start` 到现在这一段（不到 0.5ms 不记）
+    pub fn add(&mut self, what: &str, t: Option<Instant>) {
+        let Some(t) = t else { return };
+        let ms = t.elapsed().as_secs_f32() * 1000.0;
+        if ms >= 0.5 {
+            let _ = write!(self.out, "；{what} {ms:.1}");
+        }
+    }
+    /// 原样接一段说明（开着日志才记）
+    pub fn note(&mut self, s: &str) {
+        if self.on {
+            self.out.push_str(s);
+        }
+    }
+    /// 取走这一次 pump 记下的（同时清空）
+    pub fn take_line(&mut self) -> String {
+        std::mem::take(&mut self.out)
+    }
+}

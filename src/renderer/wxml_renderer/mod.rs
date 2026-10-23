@@ -227,6 +227,9 @@ pub struct WxmlRenderer {
     /// 画到过的每个 swiper 最近一次的盒子（跨帧留着：局部重画帧里没画到的也在）。
     /// SDK 的 swiper 换页 / 自动播放只重画这块（`host/engine_swiper.rs`）
     swiper_known: HashMap<String, SwiperRegion>,
+    /// 上一次整棵重建各段的耗时（毫秒：模板 / 建树+样式 / 布局 / 换行修正 / 比对），
+    /// 宿主取走接在 `⏱ [SDK] pump` 行尾（`take_rebuild_laps`）。时钟本来就在取，记下来不多花
+    rebuild_laps: Option<[f32; 5]>,
 }
 
 
@@ -266,6 +269,10 @@ mod interactions;
 /// 有状态组件的状态落地与带交互的绘制（唯一一份，三条绘制路径共用）
 mod interactive;
 mod invalidate;
+/// 内容变高（列表追加）时的失效范围：从最高的变化往下整宽重画
+mod invalidate_grow;
+/// 失效分析的孩子配对：fixed 的单独配、内容变高时配不上的两段各走一遍
+mod invalidate_pair;
 pub use invalidate::FramePlan;
 pub(super) mod layout;
 mod page_style;
@@ -321,7 +328,12 @@ impl WxmlRenderer {
             scroll_views: Vec::new(),
             swiper_regions: Vec::new(),
             swiper_known: HashMap::new(),
+            rebuild_laps: None,
         }
     }
 
+    /// 取走上一次整棵重建的分段耗时（模板 / 建树+样式 / 布局 / 换行修正 / 比对，毫秒）
+    pub fn take_rebuild_laps(&mut self) -> Option<[f32; 5]> {
+        self.rebuild_laps.take()
+    }
 }

@@ -24,7 +24,7 @@ mod units;
 
 pub use base_style::build_base_style;
 pub use units::{to_dimension, to_px};
-use order::sorted_declarations;
+use order::sorted_cascade;
 use property::apply_style_property;
 use units::{box_sides_px, color_value, parse_inline_value, set_inset};
 

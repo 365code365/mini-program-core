@@ -111,6 +111,11 @@ impl MiniEngine {
     pub fn pump_ex(&mut self, now_ms: u64) -> u32 {
         // 不开 MINI_FPS 时连时钟都不取：pump 是每个 vsync 都要调的热路径
         let begin = self.stats.enabled().then(Instant::now);
+        // `MINI_DAMAGE_LOG`：整个 pump 慢的时候另打一行 —— 🩹 行只算重画那一段，换页（留图、建页、onLoad）、
+        // 事件回调、失效分析都在它前面，从前看不见
+        let pump_t0 = self.dmg.log.then(Instant::now);
+        // 上一次 pump 没慢到要打 ⏱ 行的话，它记下的不要并进这一次
+        self.pump_notes.take_line();
         self.frame_presented = false;
         // Android：人在操作（按着 / 惯性 / 转场 / 侧滑）时引擎线程在大核上，停了就放开（cpu_affinity.rs）
         let interacting = self.touch.is_active()
@@ -148,6 +153,13 @@ impl MiniEngine {
         }
         // 这一帧的时刻只在这一帧里有效（两帧之间的输入按此刻记起点，见 frame_clock::set）
         crate::frame_clock::set(None);
+        if let Some(t0) = pump_t0 {
+            let ms = t0.elapsed().as_secs_f32() * 1000.0;
+            // 与 🩹 行同一道线（8ms）：90Hz 的周期是 11.1ms，再加上合成 / 上屏就悬了
+            if ms > 8.0 {
+                diag::emit(&format!("⏱ [SDK] pump {ms:.1}ms（含重画前的换页 / 事件回调 / 失效分析{}）", self.pump_notes.take_line()));
+            }
+        }
         if let Some(begin) = begin {
             // acquire 等待没有单独计（GPU 上屏时算在 pump 时间里），工作时间 = pump 时间
             let pump_ms = begin.elapsed().as_secs_f32() * 1000.0;

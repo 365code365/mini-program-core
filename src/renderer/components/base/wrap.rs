@@ -73,8 +73,15 @@ pub fn wrap_paragraph_lines(
 }
 
 /// 统计文本在给定宽度下的换行行数（含显式换行符），供度量使用。
+///
+/// 结果按（文字、宽、字号、字间距、粗细）记在这个字体渲染器上（`text/wrap_memo.rs`）：taffy 一遍排版
+/// 对同一段字要问好几次，setData 之后整棵重建又把没变的字全问一遍
 pub fn count_wrapped_text_lines(tr: &crate::text::TextRenderer, text: &str, max_width: f32, size: f32, ls: f32, bold: bool) -> usize {
     if max_width <= 0.0 { return text.split('\n').count().max(1); }
+    tr.memo_wrapped_lines(text, max_width, size, ls, bold, || count_wrapped_text_lines_uncached(tr, text, max_width, size, ls, bold))
+}
+
+fn count_wrapped_text_lines_uncached(tr: &crate::text::TextRenderer, text: &str, max_width: f32, size: f32, ls: f32, bold: bool) -> usize {
     let mut total = 0usize;
     for para in text.split('\n') {
         if para.is_empty() { total += 1; continue; }

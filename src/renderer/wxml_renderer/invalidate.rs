@@ -42,6 +42,12 @@ pub(super) struct DiffCtx {
     pub bail: bool,
     /// 退回整帧的原因（诊断用）
     pub bail_why: String,
+    /// 内容变高了：不收集矩形，只记「最高的变化在哪一行」（invalidate_grow.rs）
+    pub grow: bool,
+    /// 内容变高时，这一行（物理像素，画布坐标）往下整宽都要重画
+    pub cut: Option<f32>,
+    /// 会被按兄弟位置选的规则选中的类名 / 标签（决定 fixed 的孩子能不能单独配，见 invalidate_pair.rs）
+    pub positional: crate::parser::wxss::PositionalSubjects,
 }
 
 impl DiffCtx {
@@ -72,8 +78,10 @@ impl WxmlRenderer {
         new_content_height: f32,
     ) -> FramePlan {
         let log = std::env::var("MINI_LAYOUT_LOG").is_ok();
-        // 内容高变了，宿主可能要重建画布，整帧最稳
-        if (old.content_height - new_content_height).abs() > 0.5 {
+        // 内容变矮：宿主要换一块更矮的画布，整帧最稳。
+        // 内容变高（列表 onReachBottom 追加几条）走「从最高的变化往下整宽重画」（invalidate_grow.rs）
+        let grow = new_content_height > old.content_height + 0.5;
+        if !grow && (old.content_height - new_content_height).abs() > 0.5 {
             if log {
                 eprintln!(
                     "🩹 退回整帧：内容高 {:.1} -> {:.1}",
@@ -82,21 +90,25 @@ impl WxmlRenderer {
             }
             return FramePlan::Full;
         }
-        if old.render_nodes.len() != new_nodes.len() {
+        let mut ctx = DiffCtx {
+            union: None,
+            fixed_changed: false,
+            bail: false,
+            bail_why: String::new(),
+            grow,
+            cut: None,
+            positional: self.stylesheet.positional_subjects(),
+        };
+        // 根节点这一层与每个节点的孩子同一套配对规则（invalidate_pair.rs）
+        Self::diff_children(&old.taffy, new_taffy, &old.render_nodes, new_nodes, (0.0, 0.0), (0.0, 0.0), false, false, &mut ctx);
+        if ctx.bail {
             if log {
-                eprintln!("🩹 退回整帧：根节点数变化");
+                eprintln!("🩹 退回整帧：{}", ctx.bail_why);
             }
             return FramePlan::Full;
         }
-        let mut ctx = DiffCtx { union: None, fixed_changed: false, bail: false, bail_why: String::new() };
-        for (o, n) in old.render_nodes.iter().zip(new_nodes.iter()) {
-            Self::diff_node(&old.taffy, new_taffy, o, n, 0.0, 0.0, 0.0, 0.0, false, &mut ctx);
-            if ctx.bail {
-                if log {
-                    eprintln!("🩹 退回整帧：{}", ctx.bail_why);
-                }
-                return FramePlan::Full;
-            }
+        if grow {
+            return self.grow_plan(old.content_height, new_content_height, &ctx, log);
         }
         let Some(rect) = ctx.union else {
             // 数据指纹变了但渲染结果一模一样（比如改了不参与渲染的字段）：
@@ -116,7 +128,7 @@ impl WxmlRenderer {
 
     /// 并行走新旧两棵树。`(oox, ooy)` / `(nox, noy)` 分别是旧/新树里父节点的累计原点。
     #[allow(clippy::too_many_arguments)]
-    fn diff_node(
+    pub(super) fn diff_node(
         old_t: &Tree,
         new_t: &Tree,
         old: &RenderNode,
@@ -131,7 +143,8 @@ impl WxmlRenderer {
         if ctx.bail {
             return;
         }
-        if old.tag != new.tag || old.children.len() != new.children.len() {
+        // 孩子个数对不对得上由 diff_children 判（fixed 的孩子单独数；内容变高时可以不同）
+        if old.tag != new.tag {
             ctx.bail = true;
             ctx.bail_why = format!(
                 "结构变化 <{}>({} 子) -> <{}>({} 子)",
@@ -149,6 +162,21 @@ impl WxmlRenderer {
         let old_rect = GeoRect::new(ox, oy, ol.size.width, ol.size.height);
         let new_rect = GeoRect::new(nx, ny, nl.size.width, nl.size.height);
 
+        // 一边是 fixed、一边不是（换了 class 变成 / 不再是 fixed，或内容变高时配错了对）。
+        // fixed 那一边的布局位置不是它画的位置（覆盖层按 fixed 的偏移另摆，布局里常常就在 (0,0)），
+        // 不能拿来当页面上的失效范围：内容高没变就整帧；变高了就两边各当「配不上的那段」走一遍 ——
+        // fixed 那边只记「覆盖层要重画」，另一边按它在页面上的位置取切线
+        if !in_fixed && old.style.is_fixed != new.style.is_fixed {
+            ctx.fixed_changed = true;
+            if !ctx.grow {
+                ctx.bail = true;
+                ctx.bail_why = format!("<{}> 一边是 fixed 一边不是", new.tag);
+                return;
+            }
+            Self::tail_cut(old_t, old, oox, ooy, old.style.is_fixed, ctx);
+            Self::tail_cut(new_t, new, nox, noy, new.style.is_fixed, ctx);
+            return;
+        }
         let in_fixed = in_fixed || new.style.is_fixed;
         // 这些子树的绘制坐标不等于布局坐标（子画布 / 横向偏移 / 离屏仿射），
         // 用布局包围盒当失效范围会擦错地方 —— 里面一有变化就整帧重绘。
@@ -177,18 +205,19 @@ impl WxmlRenderer {
                     new.attrs.get("class").map(|c| format!(" class={}", c)).unwrap_or_default()
                 );
                 return;
+            } else if ctx.grow {
+                ctx.cut_at(Self::grow_cut(new, &old_rect, &new_rect, painted_differs), new);
             } else {
-                ctx.add(old_rect);
-                ctx.add(new_rect);
+                // 框外还画出去的那圈（阴影）也要算进来：从前只收布局框，盒子一挪 / 一变高，
+                // 框外的旧阴影没人擦、新阴影只画了框里那半（tests/sdk_damage_grow.rs 抓到的）
+                ctx.add(super::invalidate_grow::inflate(old_rect, &old.style));
+                ctx.add(super::invalidate_grow::inflate(new_rect, &new.style));
             }
         }
 
-        for (o, n) in old.children.iter().zip(new.children.iter()) {
-            Self::diff_node(old_t, new_t, o, n, ox, oy, nx, ny, in_fixed, ctx);
-            if ctx.bail {
-                return;
-            }
-        }
+        // 孩子怎么配对（fixed 的单独配、内容变高时配不上的两段各走一遍）见 invalidate_pair.rs
+        let old_fixed = in_fixed || old.style.is_fixed;
+        Self::diff_children(old_t, new_t, &old.children, &new.children, (ox, oy), (nx, ny), in_fixed, old_fixed, ctx);
     }
 }
 

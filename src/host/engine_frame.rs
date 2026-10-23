@@ -64,7 +64,10 @@ impl MiniEngine {
             c.update(dt);
         }
         // scroll-view 的事件、wx.pageScrollTo、onPageScroll（与桌面共用 host::scroll_view）
-        if self.tick_scroll_views(now) {
+        let t = self.pump_notes.start();
+        let sv = self.tick_scroll_views(now);
+        self.pump_notes.add("滚动 / 观察者 / 事件回调", t);
+        if sv {
             self.mark_full();
         }
         if let Some(crate::ui::scroll_controller::ScrollEvent::ReachBottom) = event {

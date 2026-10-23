@@ -314,19 +314,40 @@ pub(super) fn matches_complex(cs: &ComplexSelector, chain: &[ElementDesc]) -> bo
     true
 }
 
-/// 复合选择器与元素描述匹配
+/// 复合选择器与元素描述匹配：标签 / id / 类 / 属性 / 伪类全部成立才算中（各项之间没有先后依赖）。
+///
+/// 从前先把类名收成一个 `Vec<&str>` 再交给通用的 `matches_compound`：这里是「每个节点 × 每条规则」
+/// 的最内层，一次 setData 整棵重建要分配释放几千次（一加真机上整棵重建 3~4ms 里，选择器匹配
+/// 占两成，其中大半是这次分配）。属性与伪类不看类名，`MatchTarget` 里给空表
 pub(super) fn compound_matches_desc(c: &Compound, d: &ElementDesc) -> bool {
-    let classes: Vec<&str> = d.classes.iter().map(|s| s.as_str()).collect();
+    if let Some(tag) = &c.tag {
+        if !tag.eq_ignore_ascii_case(&d.tag) {
+            return false;
+        }
+    }
+    if let Some(id) = &c.id {
+        if d.id.as_deref() != Some(id.as_str()) {
+            return false;
+        }
+    }
+    for cls in &c.classes {
+        if !d.classes.iter().any(|t| t == cls) {
+            return false;
+        }
+    }
+    if c.attrs.is_empty() && c.pseudos.is_empty() {
+        return true;
+    }
     let target = MatchTarget {
         tag: &d.tag,
         id: d.id.as_deref(),
-        classes: &classes,
+        classes: &[],
         attrs: Some(&d.attrs),
         sibling_index: d.sibling_index,
         sibling_count: d.sibling_count,
         pressed: d.pressed,
     };
-    matches_compound(c, &target)
+    c.attrs.iter().all(|a| matches_attr(a, &target)) && c.pseudos.iter().all(|p| matches_pseudo(p, &target))
 }
 
 /// 评估伪类。
@@ -399,41 +420,6 @@ pub(super) fn matches_pseudo(p: &str, t: &MatchTarget) -> bool {
             }
         }
     }
-}
-
-pub(super) fn matches_compound(c: &Compound, target: &MatchTarget) -> bool {
-    // 标签
-    if let Some(tag) = &c.tag {
-        if !tag.eq_ignore_ascii_case(target.tag) {
-            return false;
-        }
-    }
-    // id
-    if let Some(id) = &c.id {
-        match target.id {
-            Some(tid) if tid == id.as_str() => {}
-            _ => return false,
-        }
-    }
-    // 类
-    for cls in &c.classes {
-        if !target.classes.iter().any(|t| *t == cls.as_str()) {
-            return false;
-        }
-    }
-    // 属性
-    for a in &c.attrs {
-        if !matches_attr(a, target) {
-            return false;
-        }
-    }
-    // 伪类：结构性伪类按兄弟位置判定，其余放行
-    for p in &c.pseudos {
-        if !matches_pseudo(p, target) {
-            return false;
-        }
-    }
-    true
 }
 
 pub(super) fn matches_attr(a: &AttrSel, target: &MatchTarget) -> bool {

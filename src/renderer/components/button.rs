@@ -14,6 +14,96 @@ use taffy::prelude::*;
 
 pub struct ButtonComponent;
 
+/// 决定微信默认外观的几个属性
+#[derive(Clone, Copy)]
+struct Look<'a> {
+    btn_type: &'a str,
+    plain: bool,
+    disabled: bool,
+    mini: bool,
+}
+
+/// 内置 `.button-hover` 的底色。与 `StyleSheet::ensure_button_hover` 写的是同一个值，
+/// 走的也是 WXSS 解析器同一个颜色函数（parser.rs 的 `parse_rgb_color`），比较不会因舍入失配。
+fn builtin_hover_bg() -> Option<Color> {
+    static BG: std::sync::OnceLock<Option<Color>> = std::sync::OnceLock::new();
+    *BG.get_or_init(|| parse_color_str("rgba(0,0,0,0.1)"))
+}
+
+/// 页面没写的**绘制类**属性填上微信默认值：配色与边框、禁用色、字号、圆角、文字居中。
+///
+/// 常态与按压态各跑一遍（按压态整份替换常态，缺了这些它就画成一个没样式的块）。
+fn apply_paint_defaults(ns: &mut NodeStyle, look: Look, inherited_align: TextAlign, sf: f32) {
+    // 只有在 CSS 没有定义时才使用微信默认样式
+    let has_custom_bg = ns.background_color.is_some();
+    let has_custom_color = ns.text_color.is_some();
+    let has_custom_border = ns.border_color.is_some() || ns.border_width > 0.0;
+
+    // 微信默认配色（仅在没有自定义样式时使用）
+    if !has_custom_bg || !has_custom_color {
+        let (default_bg, default_fg, default_border) = match look.btn_type {
+            "primary" => {
+                if look.plain {
+                    (Color::WHITE, Color::from_hex(0x07C160), Some(Color::from_hex(0x07C160)))
+                } else {
+                    (Color::from_hex(0x07C160), Color::WHITE, None)
+                }
+            }
+            "warn" => {
+                if look.plain {
+                    (Color::WHITE, Color::from_hex(0xE64340), Some(Color::from_hex(0xE64340)))
+                } else {
+                    (Color::from_hex(0xE64340), Color::WHITE, None)
+                }
+            }
+            _ => { // default
+                if look.plain {
+                    (Color::WHITE, Color::from_hex(0x353535), Some(Color::from_hex(0x353535)))
+                } else {
+                    (Color::from_hex(0xF8F8F8), Color::BLACK, Some(Color::from_hex(0xD9D9D9)))
+                }
+            }
+        };
+
+        if !has_custom_bg {
+            ns.background_color = Some(default_bg);
+        }
+        if !has_custom_color {
+            ns.text_color = Some(default_fg);
+        }
+        if !has_custom_border {
+            ns.border_color = default_border;
+            if default_border.is_some() {
+                ns.border_width = 1.0 * sf;
+            }
+        }
+    }
+
+    // 禁用状态覆盖颜色
+    if look.disabled {
+        ns.background_color = Some(Color::from_hex(0xF7F7F7));
+        ns.text_color = Some(Color::from_hex(0xB2B2B2));
+    }
+
+    // 微信默认字号 / 圆角
+    let (font_size, radius) = if look.mini { (13.0, 3.0) } else { (18.0, 5.0) };
+    // 只在没有自定义 font-size 时使用默认值（14.0 是 NodeStyle 的默认值）
+    if ns.font_size == 14.0 {
+        ns.font_size = font_size;
+    }
+    // 只在没有自定义 border-radius 时使用默认值
+    if ns.border_radius == 0.0 {
+        ns.border_radius = radius * sf;
+    }
+
+    // 按钮文字默认水平居中（微信与 HTML 端 .wx-button 均为 text-align:center）。
+    // build_base_style 用继承值作为初值，若 CSS/内联未改写 text-align（仍等于继承值），
+    // 说明页面没有显式指定，此时取居中而不是继承来的左对齐。
+    if ns.text_align == inherited_align {
+        ns.text_align = TextAlign::Center;
+    }
+}
+
 impl ButtonComponent {
     pub fn build(node: &WxmlNode, ctx: &mut ComponentContext) -> Option<RenderNode> {
         // 首先使用 base 的样式解析，获取 CSS 定义的样式
@@ -35,56 +125,35 @@ impl ButtonComponent {
         let btn_size = node.get_attr("size").unwrap_or("default");
         let plain = node.get_attr("plain").map(|s| s == "true" || s == "{{true}}").unwrap_or(false);
         let disabled = node.get_attr("disabled").map(|s| s == "true" || s == "{{true}}").unwrap_or(false);
-        
-        // 只有在 CSS 没有定义时才使用微信默认样式
-        let has_custom_bg = ns.background_color.is_some();
-        let has_custom_color = ns.text_color.is_some();
-        let has_custom_border = ns.border_color.is_some() || ns.border_width > 0.0;
-        
-        // 微信默认配色（仅在没有自定义样式时使用）
-        if !has_custom_bg || !has_custom_color {
-            let (default_bg, default_fg, default_border) = match btn_type {
-                "primary" => {
-                    if plain {
-                        (Color::WHITE, Color::from_hex(0x07C160), Some(Color::from_hex(0x07C160)))
-                    } else {
-                        (Color::from_hex(0x07C160), Color::WHITE, None)
-                    }
-                }
-                "warn" => {
-                    if plain {
-                        (Color::WHITE, Color::from_hex(0xE64340), Some(Color::from_hex(0xE64340)))
-                    } else {
-                        (Color::from_hex(0xE64340), Color::WHITE, None)
-                    }
-                }
-                _ => { // default
-                    if plain {
-                        (Color::WHITE, Color::from_hex(0x353535), Some(Color::from_hex(0x353535)))
-                    } else {
-                        (Color::from_hex(0xF8F8F8), Color::BLACK, Some(Color::from_hex(0xD9D9D9)))
-                    }
-                }
-            };
-            
-            if !has_custom_bg {
-                ns.background_color = Some(default_bg);
-            }
-            if !has_custom_color {
-                ns.text_color = Some(default_fg);
-            }
-            if !has_custom_border {
-                ns.border_color = default_border;
-                if default_border.is_some() {
-                    ns.border_width = 1.0 * sf;
-                }
-            }
-        }
-        
-        // 禁用状态覆盖颜色
+        let look = Look { btn_type, plain, disabled, mini: btn_size == "mini" };
+        let inherited_align = ctx.inherited.align;
+
+        // 页面（常态）自己写没写背景 —— 按压态那层内置灰底能不能被类型色盖住，看的就是它
+        let page_bg = ns.background_color.is_some();
+        apply_paint_defaults(&mut ns, look, inherited_align, sf);
+
+        // ── 按压态（hover-class，默认 button-hover）──
+        //
+        // 按压态在绘制时**整份替换**常态（pressed.rs 的 `bake_pressed_style`），而它是在
+        // `build_base_style` 里、上面这些默认值落地之前算出来的。从前只给常态填默认值，
+        // 按下去那一刻全丢：文字回到左对齐（跑到左边）、圆角没了、字号回到 14、
+        // primary 的绿底被内置 `.button-hover` 的 rgba(0,0,0,.1) 换成一块灰。
         if disabled {
-            ns.background_color = Some(Color::from_hex(0xF7F7F7));
-            ns.text_color = Some(Color::from_hex(0xB2B2B2));
+            // 微信里禁用的按钮没有点击态（H5 端 `.wx-button-disabled` 是 pointer-events:none）
+            ns.pressed_style = None;
+        } else if let Some(mut pressed) = ns.pressed_style.take() {
+            // 内置 `.button-hover{background-color:rgba(0,0,0,.1);opacity:.7}`（官方文档的默认值）
+            // 在微信里压不过类型色：`wx-button[type=primary|warn]`、`wx-button[plain]` 的特异性
+            // (0,1,1) 高于 `.button-hover` (0,1,0)，只有默认按钮的底色（`wx-button`，0,0,1）会被它盖掉。
+            // 所以这几种按钮按下去仍是原来的颜色、整颗变淡到 0.7。H5 端同一套
+            // （compiler/html/transpile/css.rs 里 `.button-hover` 写在类型色之前）。
+            // 页面自己写了背景（常态，或页面覆盖了 `.button-hover`）就不碰。
+            let type_bg_wins = plain || btn_type == "primary" || btn_type == "warn";
+            if type_bg_wins && !page_bg && pressed.background_color == builtin_hover_bg() {
+                pressed.background_color = None;
+            }
+            apply_paint_defaults(&mut pressed, look, inherited_align, sf);
+            ns.pressed_style = Some(pressed);
         }
         
         // 各项默认值相互独立地应用（此前它们被绑在同一个 if 里：页面只要写了
@@ -95,20 +164,9 @@ impl ButtonComponent {
         let has_custom_padding = !(length_px(ts.padding.top) == 0.0) ||
                                   !(length_px(ts.padding.left) == 0.0);
         
-        // 微信默认度量：字号 / 垂直内边距 / 水平内边距 / 圆角 / 最小高度
-        let (font_size, padding_v, padding_h, radius, min_height) = match btn_size {
-            "mini" => (13.0, 4.0, 12.0, 3.0, 30.0),
-            _ => (18.0, 12.0, 24.0, 5.0, 46.0),
-        };
+        // 微信默认度量：垂直内边距 / 水平内边距 / 最小高度（字号与圆角见 `apply_paint_defaults`）
+        let (padding_v, padding_h, min_height) = if look.mini { (4.0, 12.0, 30.0) } else { (12.0, 24.0, 46.0) };
         
-        // 只在没有自定义 font-size 时使用默认值（14.0 是 NodeStyle 的默认值）
-        if ns.font_size == 14.0 {
-            ns.font_size = font_size;
-        }
-        // 只在没有自定义 border-radius 时使用默认值
-        if ns.border_radius == 0.0 {
-            ns.border_radius = radius * sf;
-        }
         if !has_custom_padding {
             ts.padding = Rect { 
                 top: length(padding_v * sf), 
@@ -156,13 +214,6 @@ impl ButtonComponent {
         }
         if ts.justify_content.is_none() {
             ts.justify_content = Some(JustifyContent::CENTER);
-        }
-        
-        // 按钮文字默认水平居中（微信与 HTML 端 .wx-button 均为 text-align:center）。
-        // build_base_style 用继承值作为初值，若 CSS/内联未改写 text-align（仍等于继承值），
-        // 说明页面没有显式指定，此时取居中而不是继承来的左对齐。
-        if ns.text_align == ctx.inherited.align {
-            ns.text_align = TextAlign::Center;
         }
         
         // 关键修复：button 是叶子节点（文本存在 node.text，taffy 无法据此推断内容宽）。

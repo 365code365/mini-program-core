@@ -27,6 +27,8 @@ use std::sync::{Arc, Mutex, OnceLock};
 
 /// 字体加载（系统字体 / font-family / 粗体字面 / 符号回退），见 text/load.rs
 mod load;
+/// 「这段字在这个宽度下排几行」的记忆表（建树 / 排版反复问同一段字）
+mod wrap_memo;
 
 /// CSS `line-height: normal` 的等效系数（含中日韩字符的行）。
 ///
@@ -115,6 +117,8 @@ pub struct TextRenderer {
     /// 使用 Mutex 实现内部可变性，因为 draw 方法是 &self。
     /// 位图用 Arc 共享：命中时只加引用计数，不必每帧每字深拷贝一份。
     cache: Arc<Mutex<HashMap<(char, u32, bool), (Metrics, Arc<[u8]>)>>>,
+    /// 断行行数的记忆表（见 text/wrap_memo.rs）
+    wrap_memo: wrap_memo::WrapMemo,
 }
 
 impl TextRenderer {
@@ -140,7 +144,14 @@ impl TextRenderer {
             symbol_font: OnceLock::new(),
             fallback: None,
             cache: Arc::new(Mutex::new(HashMap::new())),
+            wrap_memo: Default::default(),
         })
+    }
+
+    /// `text` 在 `max_width` 下排几行：记过就直接给，没记过 `compute` 一次再记（text/wrap_memo.rs）。
+    /// `compute` 必须只用这个渲染器量字 —— 记忆表挂在它身上，键里没有字体
+    pub(crate) fn memo_wrapped_lines(&self, text: &str, max_width: f32, size: f32, ls: f32, bold: bool, compute: impl FnOnce() -> usize) -> usize {
+        self.wrap_memo.lines(text, max_width, size, ls, bold, compute)
     }
 
     /// 判断主字体是否有该字符的字形（无字形时 fontdue 返回索引 0）

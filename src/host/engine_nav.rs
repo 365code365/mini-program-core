@@ -25,8 +25,12 @@ impl MiniEngine {
         }
         self.route.finish();
         // 转场：退栈之前留一张当前画面（要离开的那页），退栈之后它盖在恢复出来的上一页上滑走
+        let t = self.pump_notes.start();
         let leaving = if animate { self.snapshot_frame() } else { None };
+        self.pump_notes.add("留离开那页的图", t);
+        let t = self.pump_notes.start();
         self.pop_page(logic_popped);
+        self.pump_notes.add("退栈（onUnload + 放回视图）", t);
         if let Some(shot) = leaving {
             self.route.start_pop(shot);
         }
@@ -117,8 +121,13 @@ impl MiniEngine {
         if !self.pages.contains_key(path) {
             return Err(format!("页面不存在: {path}"));
         }
+        let t = self.pump_notes.start();
         self.cover_current_page();
-        match self.navigate_to(path, query) {
+        self.pump_notes.add("盖住旧页（onHide + 留图）", t);
+        let t = self.pump_notes.start();
+        let opened = self.navigate_to(path, query);
+        self.pump_notes.add("建新页（加载 + onLoad）", t);
+        match opened {
             Ok(()) => {
                 if self.opts.route_animation && self.page_stack.len() > 1 {
                     self.route.start_push();

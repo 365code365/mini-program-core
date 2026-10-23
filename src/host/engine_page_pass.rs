@@ -16,6 +16,36 @@ impl MiniEngine {
         }
     }
 
+    /// setData 让内容**变高**、失效分析却只给了一块矩形时（列表追加，见 `invalidate_grow.rs`）：
+    /// 画布接着长高，已经画好的那条带原样搬过去，滚动范围跟着放大。
+    ///
+    /// 从前内容高一变就整帧：换一块新画布、整条带重画、整张重传。这里只多一次条带大小的拷贝
+    /// （一屏多一点，几兆字节），新露出来的那截由这一帧的矩形 / 下一帧的补条带画上
+    pub(super) fn grow_canvas_to_content(&mut self) {
+        let Some(content_h) = self.renderer.as_ref().and_then(|r| r.cached_content_height()).filter(|h| *h > 1.0) else {
+            return;
+        };
+        let (width, old_h) = (self.canvas.read().width(), self.canvas.read().height());
+        let required = (content_h * self.dpr).ceil() as u32;
+        if required <= old_h {
+            return;
+        }
+        let mut fresh = Canvas::new(width, required);
+        if let Some((b0, b1)) = self.drawn_band {
+            // 条带以外的行本来就不保证是对的（滑回去之前会补画），只搬条带
+            let y0 = (b0.floor().max(0.0) as usize).min(old_h as usize);
+            let y1 = (b1.ceil().max(0.0) as usize).min(old_h as usize);
+            let row = width as usize;
+            if y1 > y0 {
+                fresh.pixels_mut()[y0 * row..y1 * row].copy_from_slice(&self.canvas.read().pixels()[y0 * row..y1 * row]);
+            }
+        }
+        // 换代数：GPU 镜像据此把条带整段重传（与内容高变了、整帧时一样，只是不用重画）
+        self.canvas.replace(fresh);
+        let vp = self.viewport_height();
+        self.scroll.update_content_height(content_h, vp);
+    }
+
     /// 页面画布画完之后：动画包围盒、页面动画标记、scroll-view 位置、布局偏移的记账
     pub(super) fn after_page_pass(&mut self, anim_complete: bool, scroll: f32) {
         if let Some(r) = self.renderer.as_mut() {

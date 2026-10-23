@@ -108,12 +108,37 @@ mod pixels;
 /// 基本图形
 mod shapes;
 
+/// `n` 个全透明像素（四个字节全 0），直接向分配器要「已清零」的内存。
+///
+/// 为什么不写 `vec![Color::TRANSPARENT; n]`：`Color` 是自定义结构体，标准库只对整数这类类型把
+/// `vec![0; n]` 走 calloc，结构体是**逐个写一遍** —— 页面画布按内容高分配（一加上「节点与滚动」页
+/// 1080 × 一万多行 ≈ 45MB），列表 onReachBottom 加几条、内容一长就要换一块新画布，光是这一遍写
+/// 就占了那一帧 20ms 里的大半（`整帧·数据` 的「布局」那一段）。calloc 拿到的大块是系统新给的零页，
+/// 用到哪一页才真正落地，没画到的行不占物理内存。
+fn zeroed_pixels(n: usize) -> Vec<Color> {
+    // `Color` 是 `#[repr(C)]` 的四个 u8，全零就是合法值（透明黑），与 `Color::TRANSPARENT` 逐字节相同
+    const _: () = assert!(std::mem::size_of::<Color>() == 4 && std::mem::align_of::<Color>() == 1);
+    if n == 0 {
+        return Vec::new();
+    }
+    let layout = std::alloc::Layout::array::<Color>(n).expect("画布尺寸溢出");
+    // SAFETY: layout 非零大小；全零字节是合法的 `Color`；指针由全局分配器按 `Vec<Color>` 同一个
+    // layout（size = n * 4，align = 1）分配，长度与容量都是 n，交给 Vec 之后由它按同一 layout 释放
+    unsafe {
+        let p = std::alloc::alloc_zeroed(layout) as *mut Color;
+        if p.is_null() {
+            std::alloc::handle_alloc_error(layout);
+        }
+        Vec::from_raw_parts(p, n, n)
+    }
+}
+
 impl Canvas {
     pub fn new(width: u32, height: u32) -> Self {
         Self {
             width,
             height,
-            pixels: vec![Color::TRANSPARENT; (width * height) as usize],
+            pixels: zeroed_pixels((width * height) as usize),
             clip_rect: None,
             translation: (0.0, 0.0),
             state_stack: Vec::new(),

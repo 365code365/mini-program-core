@@ -17,7 +17,9 @@ impl MiniEngine {
             return;
         }
         self.app.eval("__dispatchPage('onHide')").ok();
+        let t = self.pump_notes.start();
         self.capture_back_shot();
+        self.pump_notes.add("留图", t);
         let vp = self.viewport_height();
         let v = SavedView::take(&mut self.scroll, &mut self.renderer, &mut self.interaction, vp);
         self.keep.saved.push(v);

@@ -77,11 +77,13 @@ while read -r L; do D shell "dumpsys SurfaceFlinger --latency-clear '$L'" >/dev/
 D logcat -c
 # SurfaceFlinger 只留最近 127 帧：动作期间每 0.6s 取一次，事后按上屏时刻去重拼起来
 rm -f $OUT/sf_*.txt
+# 停止标记要在起轮询**之前**删：上一次退出时 trap 留下了它，晚删的话轮询一起来就看见、立刻退出，
+# 整段只剩最后一次 dump 的 127 帧（踩过：好几轮的「屏上重复」都只量了最后 1.4 秒）
+rm -f $OUT/stop
 ( k=0; while [ ! -f $OUT/stop ]; do k=$((k+1)); i=0; while read -r L; do i=$((i+1)); D shell "dumpsys SurfaceFlinger --latency '$L'" > $OUT/sf_${i}_$k.txt </dev/null; done < $OUT/layers.txt; sleep 0.6; done ) &
 POLL=$!
 # 任何原因退出（含 set -u 报错）都要停掉后台轮询，否则它一直跑、脚本卡住
 trap 'touch $OUT/stop' EXIT
-rm -f $OUT/stop
 case "$SC" in
   *-slow) D shell input swipe 540 1800 540 700 2500; sleep 0.5; D shell input swipe 540 700 540 1800 2500; sleep 0.5 ;;
   *-fastslow)
@@ -92,7 +94,9 @@ case "$SC" in
   sheet) D shell input tap 385 1330; sleep 0.8; D shell input tap 540 500; sleep 0.8 ;;
   *-idle) sleep 3 ;;
   enter-*)
-    for k in 1 2; do D shell input tap 540 $ENTER_Y; sleep 1.6; D shell input keyevent KEYCODE_BACK; sleep 1.2; done
+    # 返回点导航栏的返回箭头，不发 KEYCODE_BACK：没有触摸时 ColorOS 把屏降到 60Hz，
+    # 退场转场量出来一半是「重复」，可那是系统降频不是引擎慢（真人返回都是点 / 侧滑）
+    for k in 1 2; do D shell input tap 540 $ENTER_Y; sleep 1.6; D shell input tap 50 190; sleep 1.2; done
     D logcat -d -s flutter:I | grep -q "page $GO_PAGE" || echo "⚠ 没进到 ${GO_PAGE}（入口坐标变了？）" ;;
   resume)
     # 回桌面再点图标回来：量回来之后第一秒
@@ -171,4 +175,6 @@ for t, l in sorted(lines, reverse=True)[:5]:
 EOF
 # 转场：起步一步 / 最大一步与中位一步之比（tools/route-steps.py）
 python3 tools/route-steps.py $OUT/log.txt
+# 整个 pump 慢的那几次（⏱ 行：含重画之前的换页、事件回调、失效分析）
+grep -a "⏱ \[SDK\] pump" $OUT/log.txt | sed 's/.*⏱ \[SDK\] //; s/（含重画前的换页 \/ 事件回调 \/ 失效分析；*/（/' | sort -t' ' -k2 -rn | head -6 | sed 's/^/  /' | cut -c1-300
 D shell setprop debug.mini.damage_log '""'

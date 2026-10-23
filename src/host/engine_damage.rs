@@ -340,10 +340,13 @@ impl MiniEngine {
         if self.page_data_dirty {
             page_work = true;
             self.dmg.fixed_dirty = true;
-            match self.plan_data_damage() {
+            let plan = self.plan_data_damage();
+            match plan {
                 FramePlan::Unchanged => self.dmg.fixed_dirty = false,
                 FramePlan::Damage { rect, fixed_changed } => {
                     self.dmg.fixed_dirty = fixed_changed;
+                    // 内容变高（列表追加）也会走到这里：先把画布接长，下面的裁剪窗才算得到新那截
+                    self.grow_canvas_to_content();
                     once = union(once, rect);
                 }
                 FramePlan::Full => reason = Some(FullReason::Data),
@@ -462,7 +465,22 @@ impl MiniEngine {
 
     /// setData 之后：先建好新布局，问出「只影响哪一块」（要在清屏之前知道）
     fn plan_data_damage(&mut self) -> FramePlan {
+        let t = self.pump_notes.start();
         self.refresh_page_data();
+        self.pump_notes.add("取页面数据（JS → JSON）", t);
+        let t = self.pump_notes.start();
+        let plan = self.plan_data_layout();
+        self.pump_notes.add("重建布局 + 比对", t);
+        if let Some(l) = self.renderer.as_mut().and_then(|r| r.take_rebuild_laps()) {
+            self.pump_notes.note(&format!(
+                "〔模板 {:.1} 建树 {:.1} 布局 {:.1} 换行 {:.1} 比对 {:.1}〕",
+                l[0], l[1], l[2], l[3], l[4]
+            ));
+        }
+        plan
+    }
+
+    fn plan_data_layout(&mut self) -> FramePlan {
         let vp = self.viewport_height();
         // 用布局缓存上次被问的同一个偏移：偏移不进布局，换了偏移只会被判成「视口变了」
         let scroll = self.dmg.layout_scroll.unwrap_or_else(|| self.scroll.get_position());

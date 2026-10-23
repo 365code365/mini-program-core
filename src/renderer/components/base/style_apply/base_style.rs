@@ -10,18 +10,23 @@ pub fn build_base_style(
 ) -> (Style, NodeStyle) {
     let classes = get_classes(node);
     let id = node.get_attr("id");
-    // 构建「祖先链 + 当前元素」，支持 #id、[attr]、*、后代/子选择器
-    let mut chain = ctx.ancestors.clone();
+    // 样式表引用拷出来（生命周期是 'a，与 ctx 的借用无关）：级联结果借的是样式表，
+    // 下面 `apply_style_property` 还要可变借用 ctx
+    let sheet = ctx.stylesheet;
     // 属性表只有 `[attr]` 选择器用得到；没有这类规则就别带 —— 它会随祖先链克隆被深拷很多遍
     static EMPTY_ATTRS: std::sync::OnceLock<HashMap<String, String>> = std::sync::OnceLock::new();
-    let desc_attrs = if ctx.stylesheet.has_attr_selectors() {
+    let desc_attrs = if sheet.has_attr_selectors() {
         &node.attributes
     } else {
         EMPTY_ATTRS.get_or_init(HashMap::new)
     };
-    chain.push(ElementDesc::new(&node.tag_name, id, &classes, desc_attrs)
+    // 「祖先链 + 当前元素」，支持 #id、[attr]、*、后代/子选择器。当前元素临时压在 ctx 的祖先链上、
+    // 问完就弹出来：从前每次都把整条祖先链克隆一份（每层一个 tag / 类名表 / 属性表的深拷贝），
+    // 一个节点两三次、一次整棵重建几千次
+    ctx.ancestors.push(ElementDesc::new(&node.tag_name, id, &classes, desc_attrs)
         .with_position(ctx.sibling_index, ctx.sibling_count));
-    let css = ctx.stylesheet.get_styles_chain(&chain);
+    let css = sorted_cascade(sheet.cascade_chain(&ctx.ancestors));
+    let mut subject = ctx.ancestors.pop().expect("刚压进去的");
     
     // 先用继承的文本样式做默认值，再用 CSS/内联覆盖（CSS 继承语义）
     let mut ns = NodeStyle {
@@ -44,7 +49,7 @@ pub fn build_base_style(
     };
 
     // 应用类样式（顺序见 `declaration_order`：简写必须先落地）
-    for (name, value) in sorted_declarations(&css) {
+    for &(name, value) in &css {
         apply_style_property(name, value, &mut ts, &mut ns, ctx);
     }
 
@@ -102,20 +107,19 @@ pub fn build_base_style(
         _ if node.tag_name == "navigator" => Some("navigator-hover".to_string()),
         _ => None,
     };
-    if ctx.stylesheet.has_active_rules() || hover_class.is_some() {
-        let mut pressed_chain = chain;
-        if let Some(last) = pressed_chain.last_mut() {
-            last.pressed = true;
-            if let Some(hc) = &hover_class {
-                for c in hc.split_whitespace() {
-                    last.classes.push(c.to_string());
-                }
+    if sheet.has_active_rules() || hover_class.is_some() {
+        subject.pressed = true;
+        if let Some(hc) = &hover_class {
+            for c in hc.split_whitespace() {
+                subject.classes.push(c.to_string());
             }
         }
-        let pressed_css = ctx.stylesheet.get_styles_chain(&pressed_chain);
+        ctx.ancestors.push(subject);
+        let pressed_css = sorted_cascade(sheet.cascade_chain(&ctx.ancestors));
+        ctx.ancestors.pop();
         let mut pressed_ns = ns.clone();
         let mut throwaway_ts = ts.clone();
-        for (name, value) in sorted_declarations(&pressed_css) {
+        for &(name, value) in &pressed_css {
             apply_style_property(name, value, &mut throwaway_ts, &mut pressed_ns, ctx);
         }
         // 内联 style 优先级高于类样式，按压态同样要重放一遍

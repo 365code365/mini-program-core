@@ -11,6 +11,7 @@ pub mod touch_event_tests;
 pub mod complex_layout_tests;
 pub mod css_tests;
 pub mod component_tests;
+pub mod style_reuse_tests;
 pub mod renderer_tests;
 pub mod inline_style_tests;
 pub mod ui_overlay_tests;
@@ -26,6 +27,8 @@ pub mod inline_text_layout_tests;
 pub mod nested_style_tests;
 pub mod wx_api_tests;
 pub mod component_attr_tests;
+/// `<button>` 点击态：按下去保持默认外观（居中/圆角/类型色），只按 button-hover 变淡
+pub mod button_press_tests;
 pub mod image_event_tests;
 pub mod wxss_feature_tests;
 pub mod wxss_media_tests;
