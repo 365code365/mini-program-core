@@ -232,6 +232,27 @@ pub extern "system" fn Java_dev_minirender_MiniEngine_nativeSetBackend(
     (mr_app_set_backend(h as *mut MRApp, pref) != 0) as jboolean
 }
 
+/// 建引擎之前预热字体与 GPU（见 `mr_warmup`）
+#[no_mangle]
+#[allow(clippy::too_many_arguments)]
+pub extern "system" fn Java_dev_minirender_MiniEngine_nativeWarmup(
+    _env: JNIEnv,
+    _class: JClass,
+    width: jint,
+    height: jint,
+    dpr: jfloat,
+    pref: jint,
+    total_mem: jlong,
+    low_ram: jboolean,
+    api: jint,
+) -> jboolean {
+    (crate::ffi_backend::mr_warmup(width.max(1) as u32, height.max(1) as u32, dpr, pref, total_mem.max(0) as u64, (low_ram != 0) as i32, api.max(0) as u32) != 0) as jboolean
+}
+/// surface 来之前先开 GPU（见 `mr_app_prewarm_gpu`）。设好偏好与机型信息之后、`nativeLaunch` 之前调
+#[no_mangle]
+pub extern "system" fn Java_dev_minirender_MiniEngine_nativePrewarmGpu(_env: JNIEnv, _class: JClass, h: jlong) -> jboolean {
+    (crate::ffi_backend::mr_app_prewarm_gpu(h as *mut MRApp) != 0) as jboolean
+}
 /// 机型分级用：`ActivityManager.MemoryInfo.totalMem`、`isLowRamDevice`、`Build.VERSION.SDK_INT`
 #[no_mangle]
 pub extern "system" fn Java_dev_minirender_MiniEngine_nativeSetDeviceInfo(

@@ -18,7 +18,9 @@ pub fn opaque_row_span(canvas: &Canvas) -> Option<(u32, u32)> {
     let mut last = 0u32;
     for y in 0..h {
         let row = &pixels[y as usize * w..(y as usize + 1) * w];
-        if row.iter().any(|p| p.a > 0) {
+        // 整行按位或（不提前退出）：编译器能向量化，比逐个 `any(|p| p.a > 0)` 快一个量级，结论相同。
+        // 覆盖层大多数行是空的，从前这一遍扫描在手机上要几毫秒
+        if row.iter().fold(0u8, |acc, p| acc | p.a) != 0 {
             if first.is_none() {
                 first = Some(y);
             }

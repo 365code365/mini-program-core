@@ -19,25 +19,28 @@ pub struct Canvas {
     state_stack: Vec<CanvasState>,
 }
 
+use crate::renderer::components::image_cache::ByteLru;
+
+/// 缩放结果缓存的字节预算。从前两张表按**条数**封顶（192 / 128 条，超了整张清空）：
+/// 一条就是一张目标尺寸的整图（满宽 banner 1080×500 ≈ 2MB），192 条最坏能到 400MB，
+/// 而清空那一下又让整页的图在同一帧全部重采样。现在按字节封顶、按最近使用逐出
+const SCALED_BUDGET: usize = 32 << 20;
+const MIP_BUDGET: usize = 24 << 20;
+
 /// 图片缩放结果缓存（key 见 `Canvas::draw_image_cached`）
-static SCALED_IMAGE_CACHE: std::sync::OnceLock<
-    std::sync::Mutex<std::collections::HashMap<String, std::sync::Arc<Vec<Color>>>>,
-> = std::sync::OnceLock::new();
+static SCALED_IMAGE_CACHE: std::sync::OnceLock<std::sync::Mutex<ByteLru<std::sync::Arc<Vec<Color>>>>> = std::sync::OnceLock::new();
 
 /// 缩小用的中间图（mip）缓存：key 见 `Canvas::draw_image_cached`，值是 RGBA 字节。
 ///
 /// 面积滤波（盒式）只在这里做一次，逐帧绘制退化为在这张小图上做双线性 ——
 /// 和浏览器的多级过滤是同一个思路。少了这一层的话，轮播平移时亚像素偏移每帧都变，
 /// 缩放结果缓存全是未命中，面积滤波按帧重算（实测首页 135FPS → 58FPS）。
-static IMAGE_MIP_CACHE: std::sync::OnceLock<
-    std::sync::Mutex<std::collections::HashMap<String, std::sync::Arc<(u32, u32, Vec<u8>)>>>,
-> = std::sync::OnceLock::new();
+#[allow(clippy::type_complexity)]
+static IMAGE_MIP_CACHE: std::sync::OnceLock<std::sync::Mutex<ByteLru<std::sync::Arc<(u32, u32, Vec<u8>)>>>> = std::sync::OnceLock::new();
 
 #[allow(clippy::type_complexity)]
-fn image_mip_cache(
-) -> &'static std::sync::Mutex<std::collections::HashMap<String, std::sync::Arc<(u32, u32, Vec<u8>)>>>
-{
-    IMAGE_MIP_CACHE.get_or_init(|| std::sync::Mutex::new(std::collections::HashMap::new()))
+fn image_mip_cache() -> &'static std::sync::Mutex<ByteLru<std::sync::Arc<(u32, u32, Vec<u8>)>>> {
+    IMAGE_MIP_CACHE.get_or_init(|| std::sync::Mutex::new(ByteLru::new(MIP_BUDGET)))
 }
 
 /// 面积平均降采样：目标每个像素取源图对应矩形footprint 的 alpha 加权均值。
@@ -77,9 +80,22 @@ fn downscale_area(src: &[u8], sw: u32, sh: u32, dw: u32, dh: u32) -> Vec<u8> {
     out
 }
 
-fn scaled_image_cache(
-) -> &'static std::sync::Mutex<std::collections::HashMap<String, std::sync::Arc<Vec<Color>>>> {
-    SCALED_IMAGE_CACHE.get_or_init(|| std::sync::Mutex::new(std::collections::HashMap::new()))
+fn scaled_image_cache() -> &'static std::sync::Mutex<ByteLru<std::sync::Arc<Vec<Color>>>> {
+    SCALED_IMAGE_CACHE.get_or_init(|| std::sync::Mutex::new(ByteLru::new(SCALED_BUDGET)))
+}
+
+/// 放掉缩放结果与 mip（`trim_memory`：进后台 / 内存告警时）
+pub fn clear_scaled_image_caches() {
+    for c in [scaled_image_cache().lock().map(|mut g| g.clear()).ok(), image_mip_cache().lock().map(|mut g| g.clear()).ok()] {
+        let _ = c;
+    }
+}
+
+/// 缩放缓存占用（字节：缩放结果, mip）
+pub fn scaled_image_cache_bytes() -> (usize, usize) {
+    let a = scaled_image_cache().lock().map(|g| g.bytes()).unwrap_or(0);
+    let b = image_mip_cache().lock().map(|g| g.bytes()).unwrap_or(0);
+    (a, b)
 }
 
 // ── 按职责切开的几片（都是 `impl Canvas`）──

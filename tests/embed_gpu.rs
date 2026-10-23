@@ -244,3 +244,47 @@ fn 卸了换新_surface_复用合成器且不整页重画() {
     assert!(e.rgba() == before.as_slice(), "复用合成器后画面变了");
     e.detach_surface();
 }
+
+/// surface 来之前先开 GPU（宿主在 launch 之前调 prewarm_gpu）：挂上时直接用预热好的合成器，
+/// 画面与不预热时逐字节相同
+#[test]
+fn 预热的合成器_挂上就用_画面与现开相同() {
+    let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let layer = Layer::new();
+    let mut plain = engine("warm-plain", HostEnv::default());
+    if !attach_gpu(&mut plain, &layer) {
+        return;
+    }
+    let mut t = 0u64;
+    pump_presented(&mut plain, &mut t);
+    let want = plain.rgba().to_vec();
+    plain.detach_surface();
+    drop(plain);
+
+    let mut e = engine("warm", HostEnv::default());
+    e.set_backend_pref(BackendPref::Gpu);
+    assert!(e.prewarm_gpu(), "偏好 gpu 时应开始预热");
+    assert!(!e.prewarm_gpu(), "预热中再调不该再开一个");
+    let layer2 = Layer::new();
+    assert_eq!(e.attach_native_surface(SurfaceKind::MetalLayer, layer2.0), BackendKind::Gpu, "{}", e.backend().reason);
+    let mut t = 0u64;
+    pump_presented(&mut e, &mut t);
+    assert!(e.rgba() == want.as_slice(), "预热的合成器画出来的与现开的不同");
+    e.detach_surface();
+
+    // 建引擎之前预热（宿主的 nativeWarmup）：引擎认领那一份，画面照样相同
+    assert!(mini_render::host::warmup(200, 320, 2.0, Some(BackendPref::Gpu), Default::default()), "建引擎前应开始预热");
+    let mut early = engine("warm-early", HostEnv::default());
+    early.set_backend_pref(BackendPref::Gpu);
+    assert!(early.prewarm_gpu());
+    let layer3 = Layer::new();
+    assert_eq!(early.attach_native_surface(SurfaceKind::MetalLayer, layer3.0), BackendKind::Gpu, "{}", early.backend().reason);
+    let mut t = 0u64;
+    pump_presented(&mut early, &mut t);
+    assert!(early.rgba() == want.as_slice(), "建引擎前预热的合成器画出来的不同");
+    early.detach_surface();
+
+    // 偏好 cpu：不预热
+    let mut c = engine("warm-cpu", HostEnv::default());
+    assert!(!c.prewarm_gpu(), "默认偏好 cpu 不该预热");
+}

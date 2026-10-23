@@ -238,6 +238,12 @@ impl MiniEngine {
                 _ => String::new(),
             };
             let band = self.drawn_band.map(|(a, b)| format!(" 条带 {a:.0}..{b:.0}")).unwrap_or_default();
+            // 转场进度：真机上对着每帧的 t 看起步那一步与后面是不是一样大（route_anim.rs「时钟」）
+            let route = self
+                .route
+                .progress()
+                .map(|(t, n, dt, cap)| format!(" 转场 {t:.3}（第 {n} 步 间隔 {dt:.0} 封顶 {cap:.0}）"))
+                .unwrap_or_default();
             let why = match (kind, self.dmg.full_why) {
                 (FrameKind::Full(FullReason::Structural), Some(l)) => format!(" ← {}:{}", l.file(), l.line()),
                 _ => String::new(),
@@ -245,7 +251,7 @@ impl MiniEngine {
             log_line = Some((
                 std::time::Instant::now(),
                 format!(
-                    "🩹 [SDK] {}{r}{}{}  滚动 {:.1}{band}{why}",
+                    "🩹 [SDK] {}{r}{}{}  滚动 {:.1}{band}{route}{why}",
                     kind.label(),
                     if scope.fixed && kind != FrameKind::Compose { " +覆盖层" } else { "" },
                     if scope.tabbar && kind != FrameKind::Compose { " +tabBar" } else { "" },

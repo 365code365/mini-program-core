@@ -86,9 +86,13 @@ impl MiniEngine {
             (Ok(()), Some(why)) => BackendStatus::cpu(r.pref, r.source, why),
             (Ok(()), None) => match self.gpu.as_ref() {
                 Some(comp) => BackendStatus::gpu(r.pref, r.source, comp.facts().describe()),
-                None => match self.reattach_parked(kind, addr) {
-                    Some(comp_facts) => BackendStatus::gpu(r.pref, r.source, comp_facts),
-                    None => self.open_gpu(kind, addr, input),
+                // 预热过（engine_gpu_warm.rs）：没过门槛就用那个结论，过了的话合成器已经停在 gpu_parked
+                None => match self.take_warmed_gpu() {
+                    Some(status) => status,
+                    None => match self.reattach_parked(kind, addr) {
+                        Some(comp_facts) => BackendStatus::gpu(r.pref, r.source, comp_facts),
+                        None => self.open_gpu(kind, addr, input),
+                    },
                 },
             },
         };
@@ -156,6 +160,7 @@ impl MiniEngine {
 
     fn drop_gpu(&mut self) {
         self.gpu_parked = None;
+        self.gpu_warming = None;
         if self.gpu.take().is_some() {
             self.mark_full();
         }
@@ -176,6 +181,7 @@ impl MiniEngine {
         diag::emit(&diag::runtime_fallback(why, frame));
         self.gpu = None;
         self.gpu_parked = None;
+        self.gpu_warming = None;
         self.backend = self.backend.fell_back(why);
         self.gpu_failed = Some(format!("本实例 GPU 已失败过：{why}"));
         self.backend_changed = true;

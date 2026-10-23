@@ -183,6 +183,8 @@ class MiniProgramView @JvmOverloads constructor(
         post {
             choreographer = Choreographer.getInstance()
             if (boost == null) boost = FrameBoost.forCurrentThread(context)
+            // 系统中文字体（约 0.35s）跟建引擎并行；这个视图走 Bitmap（CPU），不预热 GPU（pref 传 cpu）
+            MiniEngine.nativeWarmup(lw, lh, dpr, MiniEngine.BACKEND_CPU, 0L, false, Build.VERSION.SDK_INT)
             handle = MiniEngine.nativeCreateEx(dir.absolutePath, data.absolutePath, lw, lh, dpr, options.toString())
             if (handle == 0L) return@post
             MiniEngine.nativeLaunch(handle, route)

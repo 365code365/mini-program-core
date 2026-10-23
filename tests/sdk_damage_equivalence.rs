@@ -301,3 +301,159 @@ fn dpr_3_小数滚动位置_补条带不留底色横线() {
     let band = p.kinds.iter().filter(|k| **k == FrameKind::Band).count();
     assert!(band >= 3, "补条带只有 {band} 帧，测试没走到要测的路径（{:?}）", p.kinds);
 }
+
+/// `onPageScroll` 里 setData（「节点与滚动」页那种：滚过一段就更新一次显示的 scrollTop）。
+/// 从前事件回调里的 setData 一律整页重画（`tick_scroll_views` 返回「要重画」→ `mark_full`），
+/// 一加真机上滑这页 42~71 帧 `整帧·结构`、每帧 24~31ms，屏上重复 9~11%。
+/// 现在与别处的 setData 一样走失效分析：只重画变了的那几个节点，且与整帧逐字节一致
+#[test]
+fn 滚动回调里_set_data_走局部重画且逐字节一致() {
+    let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let root = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("sdk-damage-page-scroll");
+    std::fs::remove_dir_all(&root).ok();
+    for (rel, text) in [
+        ("app.json", r#"{"pages":["pages/p/p"]}"#),
+        ("app.js", "App({});"),
+        ("app.wxss", ""),
+        (
+            "pages/p/p.wxml",
+            r#"<view class="hd">已滚动 {{top}}</view>
+<view wx:for="{{rows}}" wx:key="*this" class="row">第 {{item}} 行</view>
+<view class="bar">scrollTop {{top}}</view>"#,
+        ),
+        (
+            "pages/p/p.wxss",
+            ".hd { height: 40px; line-height: 40px; padding: 0 16px; background-color: #e8f8ee; }
+.row { height: 44px; line-height: 44px; padding: 0 16px; border-bottom: 1px solid #eeeeee; background-color: #ffffff; }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; height: 40px; line-height: 40px; background-color: #333333; color: #ffffff; }",
+        ),
+        (
+            "pages/p/p.js",
+            "Page({ data: { top: 0, rows: Array.from({length: 40}, (_, i) => i + 1) },
+  onPageScroll(e) { if (Math.abs(e.scrollTop - this.data.top) >= 30) this.setData({ top: Math.round(e.scrollTop) }); } });",
+        ),
+        ("pages/p/p.json", "{}"),
+    ] {
+        let p = root.join(rel);
+        std::fs::create_dir_all(p.parent().unwrap()).unwrap();
+        std::fs::write(p, text).unwrap();
+    }
+    mini_render::renderer::components::reset_shared_component_state();
+    let mut p = Pair { a: engine(&root, false), b: engine(&root, true), t: 1, frame: 0, kinds: Vec::new(), idle_while_ref_drew: 0 };
+    p.step("首屏");
+    p.kinds.clear();
+    for i in 1..=60 {
+        let y = i as f32 * 13.0;
+        p.both(|e| e.scroll_to(y));
+        p.step("滚动中 onPageScroll 改数据");
+    }
+    let full = p.kinds.iter().filter(|k| matches!(k, FrameKind::Full(_))).count();
+    assert_eq!(full, 0, "滚动回调里的 setData 不该整页重画：{:?}", p.kinds);
+    // 空转守卫：回调真的改了数据（不然比了个寂寞）
+    let top = p.a.eval("String(__currentPage.data.top)").unwrap_or_default();
+    assert!(top.trim().parse::<f32>().unwrap_or(0.0) > 600.0, "onPageScroll 没改到数据：top={top}");
+}
+
+/// swiper 自动播放 / 换页动画：只重画 swiper 自己的盒子（engine_swiper.rs），与整帧逐字节一致。
+/// 从前一动就整页重画：`sdk_scroll_bench pages/swiper/swiper` 惯性那段 94 帧 `整帧·结构`
+#[test]
+fn swiper_自动播放只重画它自己_且逐字节一致() {
+    let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let root = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("sdk-damage-swiper");
+    std::fs::remove_dir_all(&root).ok();
+    for (rel, text) in [
+        ("app.json", r#"{"pages":["pages/p/p"]}"#),
+        ("app.js", "App({});"),
+        ("app.wxss", ""),
+        (
+            "pages/p/p.wxml",
+            r#"<view class="hd">顶部</view>
+<swiper class="sw" autoplay interval="300" duration="200" circular indicator-dots>
+  <swiper-item wx:for="{{colors}}" wx:key="*this"><view class="item" style="background-color: {{item}};">{{item}}</view></swiper-item>
+</swiper>
+<view wx:for="{{rows}}" wx:key="*this" class="row">第 {{item}} 行</view>
+<view class="bar"><swiper class="mini" autoplay interval="250" duration="150" vertical><swiper-item><view class="a">A</view></swiper-item><swiper-item><view class="b">B</view></swiper-item></swiper></view>"#,
+        ),
+        (
+            "pages/p/p.wxss",
+            ".hd { height: 40px; line-height: 40px; padding: 0 16px; background-color: #e8f8ee; }
+.sw { height: 160px; margin: 10px; }
+.item { height: 160px; line-height: 160px; text-align: center; color: #ffffff; border-radius: 8px; }
+.row { height: 44px; line-height: 44px; padding: 0 16px; border-bottom: 1px solid #eeeeee; background-color: #ffffff; }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; height: 40px; background-color: #333333; }
+.mini { height: 40px; } .a { height: 40px; color: #ffffff; } .b { height: 40px; color: #ffc300; }",
+        ),
+        ("pages/p/p.js", "Page({ data: { colors: ['#07c160', '#10aeff', '#fa9d3b'], rows: Array.from({length: 20}, (_, i) => i + 1) } });"),
+        ("pages/p/p.json", "{}"),
+    ] {
+        let p = root.join(rel);
+        std::fs::create_dir_all(p.parent().unwrap()).unwrap();
+        std::fs::write(p, text).unwrap();
+    }
+    mini_render::renderer::components::reset_shared_component_state();
+    let mut p = Pair { a: engine(&root, false), b: engine(&root, true), t: 1, frame: 0, kinds: Vec::new(), idle_while_ref_drew: 0 };
+    p.step("首屏");
+    p.step("第二帧");
+    p.kinds.clear();
+    // 1.2s：页面上的 swiper 翻 3 次、覆盖层里的翻 4 次；中间滚一下，确认滚走之后照样对
+    for i in 0..75 {
+        if i == 40 {
+            p.both(|e| e.scroll_to(120.0));
+        }
+        p.step("swiper 自动播放");
+    }
+    // 不在这里测 bindchange 回调里的 setData：swiper 的状态与事件队列是进程级的，A、B 两个引擎共用一份，
+    // 事件被哪一边取走取决于谁先 pump —— 两边就不再是同一串输入。回调里 setData 走失效分析
+    // 由上面「滚动回调里_set_data」那一条守着（同一段代码：tick_scroll_views 末尾的 take_data_dirty）
+    let full = p.kinds.iter().filter(|k| matches!(k, FrameKind::Full(_))).count();
+    let damage = p.kinds.iter().filter(|k| **k == FrameKind::Damage).count();
+    assert!(damage >= 10, "swiper 动画帧没走局部重画（局部 {damage} 帧）：{:?}", p.kinds);
+    assert!(full <= 1, "swiper 动画不该整页重画（{full} 帧）：{:?}", p.kinds);
+}
+
+/// 覆盖层只清上次画过的那几行（engine_frame.rs `render_fixed_layer`）：fixed 元素挪了位置 / 消失之后，
+/// 旧位置不能留残影。A/B 两边用的是同一段覆盖层代码，残影两边一样、比不出来 —— 所以拿「挪完之后」
+/// 与「一开始就是这个状态」的新引擎比
+#[test]
+fn 覆盖层只清画过的行_挪走的元素不留残影() {
+    let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let root = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("sdk-damage-fixed-rows");
+    std::fs::remove_dir_all(&root).ok();
+    for (rel, text) in [
+        ("app.json", r#"{"pages":["pages/p/p"]}"#),
+        ("app.js", "App({});"),
+        ("app.wxss", ""),
+        (
+            "pages/p/p.wxml",
+            r#"<view class="row">内容</view>
+<view class="fab" wx:if="{{show}}" style="top: {{top}}px;">{{top}}</view>
+<view class="bar" wx:if="{{bar}}">底栏</view>"#,
+        ),
+        (
+            "pages/p/p.wxss",
+            ".row { height: 44px; background-color: #ffffff; }
+.fab { position: fixed; right: 16px; width: 60px; height: 60px; border-radius: 30px; background-color: #07c160; box-shadow: 0 4px 12px rgba(0,0,0,0.3); color: #ffffff; }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; height: 50px; background-color: #333333; }",
+        ),
+        ("pages/p/p.js", "Page({ data: { show: true, top: 80, bar: true } });"),
+        ("pages/p/p.json", "{}"),
+    ] {
+        let p = root.join(rel);
+        std::fs::create_dir_all(p.parent().unwrap()).unwrap();
+        std::fs::write(p, text).unwrap();
+    }
+    mini_render::renderer::components::reset_shared_component_state();
+    let mut a = engine(&root, false);
+    let mut t = 1u64;
+    a.pump_ex(t);
+    for step in ["__currentPage.setData({ top: 300 })", "__currentPage.setData({ bar: false })", "__currentPage.setData({ top: 160 })"] {
+        a.eval(step).unwrap();
+        t += 16;
+        a.pump_ex(t);
+    }
+    // 一开始就是 top 160、没有底栏的新引擎
+    std::fs::write(root.join("pages/p/p.js"), "Page({ data: { show: true, top: 160, bar: false } });").unwrap();
+    let mut c = engine(&root, false);
+    c.pump_ex(1);
+    assert!(a.rgba() == c.rgba(), "fixed 元素挪走 / 消失之后覆盖层留了残影");
+}

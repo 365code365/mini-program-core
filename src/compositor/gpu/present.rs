@@ -146,6 +146,13 @@ impl GpuCompositor {
     /// Surface 被系统收走，回来再 [`reattach_surface`](Self::reattach_surface) 就不用重开设备、重跑自检
     pub fn detach_surface(&mut self) {
         self.surface = None;
+        // 层纹理也放掉（页面镜像一张就是 宽 × 环长 × 4，一加上 20MB 往上）：进了后台没人采样，
+        // 挂回来时 `reattach_surface` 本来就整张重传。留着设备与管线，回来不用重开
+        self.release_caches();
+        self.reset_mirrors();
+        self.top = Default::default();
+        self.sheet_tex = None;
+        self.sheet_tex_id = None;
     }
 
     /// 用原来的设备挂一块新 surface。层纹理清掉、下一帧整张重传（宿主不在时 CPU 画布可能变了，

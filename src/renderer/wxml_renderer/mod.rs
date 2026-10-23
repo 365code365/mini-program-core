@@ -224,6 +224,9 @@ pub struct WxmlRenderer {
     scroll_views: Vec<ScrollViewInfo>,
     /// 本帧画到的 swiper 盒子（手势仲裁的候选，见 swiper_draw.rs）
     swiper_regions: Vec<SwiperRegion>,
+    /// 画到过的每个 swiper 最近一次的盒子（跨帧留着：局部重画帧里没画到的也在）。
+    /// SDK 的 swiper 换页 / 自动播放只重画这块（`host/engine_swiper.rs`）
+    swiper_known: HashMap<String, SwiperRegion>,
 }
 
 
@@ -317,6 +320,7 @@ impl WxmlRenderer {
             native_tags: Vec::new(),
             scroll_views: Vec::new(),
             swiper_regions: Vec::new(),
+            swiper_known: HashMap::new(),
         }
     }
 

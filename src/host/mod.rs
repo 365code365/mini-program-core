@@ -20,7 +20,11 @@ pub mod engine;
 pub mod engine_backend;
 /// 出帧：pump → 按需重画 → 合成（从 engine.rs 拆出）
 mod engine_frame;
+/// 页面画布那一趟前后的记账（换画布、动画包围盒、scroll-view 位置）
+mod engine_page_pass;
 mod engine_press;
+/// swiper 换页只重画它自己的盒子
+mod engine_swiper;
 mod engine_resample;
 mod engine_wants;
 mod frame_laps;
@@ -67,6 +71,11 @@ mod engine_life;
 /// SDK 的 GPU 上屏（原生 surface → GpuCompositor）
 #[cfg(feature = "gpu")]
 mod engine_gpu;
+/// surface 来之前在后台线程上先开 GPU 合成器（第一次打开快 0.3s）
+#[cfg(feature = "gpu")]
+mod engine_gpu_warm;
+#[cfg(feature = "gpu")]
+pub use engine_gpu_warm::warmup;
 /// 覆盖层状态：Toast/Loading/Modal 指令落地与查询（从 engine.rs 拆出）
 mod engine_ui;
 pub mod config;

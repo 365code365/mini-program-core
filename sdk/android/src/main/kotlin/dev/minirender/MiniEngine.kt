@@ -66,6 +66,10 @@ object MiniEngine {
     /** pref: [BACKEND_AUTO] / [BACKEND_CPU] / [BACKEND_GPU] */
     external fun nativeSetBackend(handle: Long, pref: Int): Boolean
     external fun nativeSetDeviceInfo(handle: Long, totalMem: Long, lowRam: Boolean, api: Int)
+    /** **建引擎之前**调：字体与 GPU 各开一条线程预热（参数与之后的 create / setBackend / setDeviceInfo 一致） */
+    external fun nativeWarmup(width: Int, height: Int, dpr: Float, pref: Int, totalMem: Long, lowRam: Boolean, api: Int): Boolean
+    /** surface 来之前在后台线程上先开 GPU（设好偏好与机型信息之后、[nativeLaunch] 之前调），返回是否开始预热 */
+    external fun nativePrewarmGpu(handle: Long): Boolean
     external fun nativeBackend(handle: Long): Int
     external fun nativeBackendReason(handle: Long): String?
     /**

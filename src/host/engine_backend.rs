@@ -112,7 +112,18 @@ impl MiniEngine {
         // 不开 MINI_FPS 时连时钟都不取：pump 是每个 vsync 都要调的热路径
         let begin = self.stats.enabled().then(Instant::now);
         self.frame_presented = false;
+        // Android：人在操作（按着 / 惯性 / 转场 / 侧滑）时引擎线程在大核上，停了就放开（cpu_affinity.rs）
+        let interacting = self.touch.is_active()
+            || self.scroll.is_dragging
+            || self.scroll.is_animating()
+            || self.route.active()
+            || self.edge_back.is_some();
+        let t = if now_ms > 0 { now_ms } else { self.mono_ms() };
+        super::cpu_affinity::note_frame(t, interacting);
         let produced = self.pump_frame(now_ms);
+        if produced || self.frame_presented {
+            super::cpu_affinity::note_produced(t);
+        }
         let mut flags = if produced { FRAME_NEW } else { 0 };
         if self.frame_presented {
             flags |= FRAME_PRESENTED;

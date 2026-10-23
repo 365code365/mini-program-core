@@ -4,6 +4,8 @@
 #   bash tools/android-jank.sh <场景> [install]
 #     场景：index-slow | wxss-slow | wxss-fastslow | index-fastslow | http-slow | http-fastslow | resume | sheet
 #           enter-query | enter-feedback | enter-storage | enter-form（进页面 + 返回，各两遍）
+#           query-slow | query-fastslow | swiper-slow | swiper-fastslow（在子页面里滑）
+#           perf-idle | perf-slow（综合场景页：CSS 动画 + 每秒 setData；idle = 不碰屏幕 3s，看小核上够不够）
 #
 # 判据只看两样：
 #   ① 屏上：SurfaceFlinger `--latency` 量引擎那一层每次上屏的时刻，「重复」= 相邻两次上屏隔了一个以上的显示器周期
@@ -41,22 +43,33 @@ F | grep -q "$PKG" || { echo "⚠ 前台不是示例 App"; D shell setprop debug
 case "$SC" in
   wxss-*) GO_Y=522; GO_PAGE=pages/wxss ;;
   http-*) GO_Y=1150; GO_PAGE=pages/http ;;
+  perf-*) GO_Y=1670; GO_PAGE=pages/perf ;;
   *) GO_Y="" ;;
 esac
 # 进页面（enter-<页>）：先到入口所在的 tab，量「点入口 → 转场 → 返回」两遍
 ENTER_Y=""
 case "$SC" in
   enter-query) TAB_X=675; ENTER_Y=1410; GO_PAGE=pages/query ;;
-  enter-feedback) TAB_X=675; ENTER_Y=1020; GO_PAGE=pages/feedback ;;
-  enter-storage) TAB_X=675; ENTER_Y=1215; GO_PAGE=pages/storage ;;
-  enter-form) TAB_X=405; ENTER_Y=1020; GO_PAGE=pages/form ;;
+  enter-feedback) TAB_X=675; ENTER_Y=730; GO_PAGE=pages/feedback ;;
+  enter-storage) TAB_X=675; ENTER_Y=1080; GO_PAGE=pages/storage ;;
+  enter-form) TAB_X=405; ENTER_Y=1070; GO_PAGE=pages/form ;;
 esac
 if [ -n "$ENTER_Y" ]; then
   D shell input tap $TAB_X 2270; sleep 1.5
 fi
+# 在子页面里滑：query =「节点与滚动」（onPageScroll / IntersectionObserver 回调改数据），swiper =「轮播」（自动播放）
+IN_TAB=""
+case "$SC" in
+  query-*) IN_TAB=675; IN_Y=1410; IN_PAGE=pages/query ;;
+  swiper-*) IN_TAB=405; IN_Y=1410; IN_PAGE=pages/swiper ;;
+esac
+if [ -n "$IN_TAB" ]; then
+  D shell input tap $IN_TAB 2270; sleep 1.5; D shell input tap 540 $IN_Y; sleep 2
+  D logcat -d -s flutter:I | grep -q "page ${IN_PAGE}" || { echo "⚠ 没进到 ${IN_PAGE}"; exit 1; }
+fi
 if [ -n "$GO_Y" ]; then
   for i in 1 2 3; do D shell input swipe 540 1900 540 400 120; sleep 0.5; done; sleep 1.5; D shell input tap 540 $GO_Y; sleep 2
-  D logcat -d -s flutter:I | grep -q "page $GO_PAGE" || { echo "⚠ 没进到 $GO_PAGE（首页目录变了？改上面的坐标）"; exit 1; }
+  D logcat -d -s flutter:I | grep -q "page $GO_PAGE" || { echo "⚠ 没进到 ${GO_PAGE}（首页目录变了？改上面的坐标）"; exit 1; }
 fi
 layers() { D shell dumpsys SurfaceFlinger --list </dev/null | grep "SurfaceView\[$PKG" | grep BLAST | sed 's/^RequestedLayerState{//; s/ parentId=.*$//; s/ relativeParentId=.*$//' | tr -d '\r'; }
 layers > $OUT/layers.txt
@@ -66,6 +79,8 @@ D logcat -c
 rm -f $OUT/sf_*.txt
 ( k=0; while [ ! -f $OUT/stop ]; do k=$((k+1)); i=0; while read -r L; do i=$((i+1)); D shell "dumpsys SurfaceFlinger --latency '$L'" > $OUT/sf_${i}_$k.txt </dev/null; done < $OUT/layers.txt; sleep 0.6; done ) &
 POLL=$!
+# 任何原因退出（含 set -u 报错）都要停掉后台轮询，否则它一直跑、脚本卡住
+trap 'touch $OUT/stop' EXIT
 rm -f $OUT/stop
 case "$SC" in
   *-slow) D shell input swipe 540 1800 540 700 2500; sleep 0.5; D shell input swipe 540 700 540 1800 2500; sleep 0.5 ;;
@@ -75,9 +90,10 @@ case "$SC" in
     for i in 1 2; do D shell input swipe 540 600 540 1800 90; sleep 0.25; done
     D shell input swipe 540 900 540 1700 2000; sleep 0.5 ;;
   sheet) D shell input tap 385 1330; sleep 0.8; D shell input tap 540 500; sleep 0.8 ;;
+  *-idle) sleep 3 ;;
   enter-*)
     for k in 1 2; do D shell input tap 540 $ENTER_Y; sleep 1.6; D shell input keyevent KEYCODE_BACK; sleep 1.2; done
-    D logcat -d -s flutter:I | grep -q "page $GO_PAGE" || echo "⚠ 没进到 $GO_PAGE（入口坐标变了？）" ;;
+    D logcat -d -s flutter:I | grep -q "page $GO_PAGE" || echo "⚠ 没进到 ${GO_PAGE}（入口坐标变了？）" ;;
   resume)
     # 回桌面再点图标回来：量回来之后第一秒
     D shell input keyevent KEYCODE_HOME; sleep 1.5
@@ -153,4 +169,6 @@ for t, l in sorted(lines, reverse=True)[:5]:
     l = re.sub(r'滚动 [\d.-]+ 条带 [\d.]+\.\.\d+', '', l)
     print("  " + l[:170])
 EOF
+# 转场：起步一步 / 最大一步与中位一步之比（tools/route-steps.py）
+python3 tools/route-steps.py $OUT/log.txt
 D shell setprop debug.mini.damage_log '""'

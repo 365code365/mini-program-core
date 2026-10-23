@@ -12,8 +12,23 @@
 //!   离开的那页只剩那张图，盖在上面往右滑走（`edge_back::compose_shot_over`）。
 //!
 //! 页面状态在转场开始那一刻就已经切好（与微信一致：生命周期先派发、动画在渲染层跑），
-//! 动画只管合成。时钟从**第一帧出完之后**才开始走：换页那一帧要整页建树排版（几十毫秒），
-//! 从按下那一刻算的话动画开头那一截直接跳过去。
+//! 动画只管合成。
+//!
+//! ## 时钟：每帧最多走一个半周期，起步那一步最多一个周期
+//! 换页那一帧要整页建树、排版、画、整张上传（一加 PLY110 上 20~22ms，两个 vsync），从前的时钟起点
+//! 是这一帧的 vsync 时刻：第二帧一来已经过了 22~33ms，减速曲线起手又最快 —— 新页一下子冲进来
+//! 两成屏宽（220px），之后才每帧 8%。这就是「点进页面一顿」。下一帧还常常被上一帧那 20MB 上传
+//! 拖住（提交 12ms），再跳一次。
+//!
+//! 现在按「出了几帧」推进：头两帧都是 t=0（新页还在屏幕外 / 离开的那页还盖满屏，看起来就是原画面），
+//! 从第三帧起每帧走实际流逝的时间，但最多 1.5 个刷新周期。第二帧不走：它与第一帧之间隔的是建页的时间
+//! （屏上什么都没动），按周期估计补一步也不行 —— 页面静止时 ColorOS 把屏降到 60Hz，估计还是 17ms，
+//! 实测起步那一步仍是后面的 1.55 倍。代价是晚一帧起步（11ms），看不出来。
+//! 起步后的头 [`STARTUP_STEPS`] 步再收紧到一个周期：建页那一帧传了 20MB（新页 + 垫底的旧页留图），
+//! 紧跟着的那次提交常被拖住 8~13ms，下一帧晚到一个周期 —— 按 1.5 倍放行的话起步那一步又是 1.7~1.95 倍
+//! （一加真机 4 次转场里有 1 次）。
+//! 偶尔一帧慢了（新页 onReady 里 setData 整页重画），动画慢一点走完，不往前跳。
+//! 周期取引擎的 pump 间隔估计（`engine_resample.rs`），不认识时按 120Hz。
 //!
 //! 转场期间不接受触摸（微信同样在转场中忽略点击）：按下就整串吞掉。
 use crate::compositor::EdgeBackFrame;
@@ -31,10 +46,42 @@ enum Kind {
 
 struct Anim {
     kind: Kind,
-    /// 时钟起点（毫秒）。None = 还没出过第一帧
-    start_ms: Option<u64>,
+    clock: StepClock,
     /// 0~1
     t: f32,
+}
+
+/// 起步后按一个周期封顶的步数（见文件头「时钟」）
+const STARTUP_STEPS: u32 = 3;
+
+/// 按帧推进的动画钟（见文件头「时钟」）
+#[derive(Default)]
+pub(crate) struct StepClock {
+    /// 上一帧的宿主时刻；None = 还没出过第一帧
+    last_ms: Option<u64>,
+    /// 动画已走的毫秒
+    elapsed: f32,
+    steps: u32,
+    /// 最近一步的实际间隔与封顶（诊断用）
+    last_dt: f32,
+    last_cap: f32,
+}
+
+impl StepClock {
+    /// 推进到这一帧，返回动画已走的毫秒。`period_ms` 是刷新周期估计
+    pub(crate) fn advance(&mut self, now_ms: u64, period_ms: f32) -> f32 {
+        let Some(prev) = self.last_ms.replace(now_ms) else { return 0.0 };
+        let dt = now_ms.saturating_sub(prev) as f32;
+        let cap = match self.steps {
+            0 => 0.0,
+            n if n <= STARTUP_STEPS => period_ms,
+            _ => period_ms * 1.5,
+        };
+        self.elapsed += dt.min(cap);
+        self.steps += 1;
+        (self.last_dt, self.last_cap) = (dt, cap);
+        self.elapsed
+    }
 }
 
 /// 转场状态（`MiniEngine::route`）
@@ -66,14 +113,19 @@ impl RouteState {
         self.anim.is_some()
     }
 
+    /// 转场进度 0~1、钟走了几步、这一步的实际间隔与封顶（没有转场给 None；`MINI_DAMAGE_LOG` 用）
+    pub fn progress(&self) -> Option<(f32, u32, f32, f32)> {
+        self.anim.as_ref().map(|a| (a.t, a.clock.steps, a.clock.last_dt, a.clock.last_cap))
+    }
+
     /// 新页刚入栈
     pub fn start_push(&mut self) {
-        self.anim = Some(Anim { kind: Kind::Push, start_ms: None, t: 0.0 });
+        self.anim = Some(Anim { kind: Kind::Push, clock: StepClock::default(), t: 0.0 });
     }
 
     /// 刚退栈。`leaving` 是退栈之前那一帧的画面（要离开的那页）
     pub fn start_pop(&mut self, leaving: PageShot) {
-        self.anim = Some(Anim { kind: Kind::Pop(leaving), start_ms: None, t: 0.0 });
+        self.anim = Some(Anim { kind: Kind::Pop(leaving), clock: StepClock::default(), t: 0.0 });
     }
 
     /// 立刻收手（又来了一次跳转、尺寸变了）
@@ -81,11 +133,10 @@ impl RouteState {
         self.anim = None;
     }
 
-    /// 按宿主时钟推进
-    pub fn tick(&mut self, now_ms: u64) -> Tick {
+    /// 按宿主时钟推进（`period_ms`：刷新周期估计，见文件头「时钟」）
+    pub fn tick(&mut self, now_ms: u64, period_ms: f32) -> Tick {
         let Some(a) = self.anim.as_mut() else { return Tick::Idle };
-        let start = *a.start_ms.get_or_insert(now_ms);
-        a.t = (now_ms.saturating_sub(start) as f32 / DURATION_MS).min(1.0);
+        a.t = (a.clock.advance(now_ms, period_ms) / DURATION_MS).min(1.0);
         if a.t >= 1.0 {
             self.anim = None;
             return Tick::Done;
@@ -153,26 +204,67 @@ mod tests {
     fn 时钟从第一帧之后才走_300ms_走完() {
         let mut r = RouteState::default();
         r.start_push();
-        assert_eq!(r.tick(1000), Tick::Running, "第一帧：起点");
+        assert_eq!(r.tick(1000, 10.0), Tick::Running, "第一帧：起点");
         let shots = [shot(1)];
         assert_eq!(r.frame(&shots, 400).unwrap().offset_px, 400, "第一帧新页整个在右边外面");
-        assert_eq!(r.tick(1150), Tick::Running);
+        let mut t = 1000;
+        for _ in 0..15 {
+            t += 10;
+            assert_eq!(r.tick(t, 10.0), Tick::Running);
+        }
         let mid = r.frame(&shots, 400).unwrap().offset_px;
         assert!(mid > 0 && mid < 100, "减速曲线：一半时间已走完大半（{mid}）");
-        assert_eq!(r.tick(1300), Tick::Done);
+        for _ in 0..14 {
+            t += 10;
+            assert_eq!(r.tick(t, 10.0), Tick::Running);
+        }
+        // 第二帧不走（建页那段不算），所以第一帧之后 310ms 走完
+        assert_eq!(r.tick(t + 10, 10.0), Tick::Running);
+        assert_eq!(r.tick(t + 20, 10.0), Tick::Done, "300ms 走完");
         assert!(r.frame(&shots, 400).is_none());
-        assert_eq!(r.tick(1316), Tick::Idle);
+        assert_eq!(r.tick(t + 30, 10.0), Tick::Idle);
     }
 
     #[test]
     fn 返回是图在上_从零滑到整屏() {
         let mut r = RouteState::default();
         r.start_pop(shot(7));
-        r.tick(0);
+        r.tick(0, 10.0);
         let f = r.frame(&[], 400).unwrap();
         assert!(f.shot_on_top && f.offset_px == 0 && f.shot.is_some(), "第一帧整屏还是离开的那页");
-        r.tick(299);
+        for k in 1..30 {
+            r.tick(k * 10, 10.0);
+        }
         assert!(r.frame(&[], 400).unwrap().offset_px > 390);
+    }
+    /// 一加真机：换页那一帧 22ms，下一帧又被上传拖了一个周期。从前第二帧新页一下冲进来两成屏宽
+    #[test]
+    fn 第一帧慢了_第二帧只走一个周期_之后慢帧也不往前跳() {
+        let mut r = RouteState::default();
+        r.start_push();
+        let shots = [shot(1)];
+        let w = 1080;
+        r.tick(1000, 11.0);
+        // 第一帧花了 22ms（再加派发延迟）：下一个回调在 33ms 之后。这一帧还在原地
+        r.tick(1033, 11.0);
+        assert_eq!(r.frame(&shots, w).unwrap().offset_px, w, "建页之后那一帧还不动");
+        // 之后每帧正常 11ms：起步那一步与后面一步差不多大（减速曲线，起步略大）
+        r.tick(1044, 11.0);
+        let first_step = w - r.frame(&shots, w).unwrap().offset_px;
+        let a = r.frame(&shots, w).unwrap().offset_px;
+        r.tick(1055, 11.0);
+        let normal_step = a - r.frame(&shots, w).unwrap().offset_px;
+        assert!(first_step <= normal_step * 5 / 4 + 1, "起步一步 {first_step}px，下一步 {normal_step}px");
+        // 起步第二步被上一帧的大上传拖了一个周期：仍只走一个周期
+        let b = r.frame(&shots, w).unwrap().offset_px;
+        r.tick(1077, 11.0);
+        let late = b - r.frame(&shots, w).unwrap().offset_px;
+        assert!(late <= normal_step + 2, "起步阶段晚到一帧跳了 {late}px（正常一步 {normal_step}px）");
+        // 中途一帧卡 40ms：只走 1.5 个周期
+        let before = r.frame(&shots, w).unwrap().offset_px;
+        r.tick(1117, 11.0);
+        let jump = before - r.frame(&shots, w).unwrap().offset_px;
+        assert!(jump <= normal_step * 2, "慢帧之后跳了 {jump}px（正常一步 {normal_step}px）");
     }
 
     #[test]

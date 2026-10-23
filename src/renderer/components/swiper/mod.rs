@@ -42,6 +42,11 @@ pub fn advance_due_swipers() -> bool {
     with(false, |m| m.advance(now))
 }
 
+/// 取走 [`advance_due_swipers`] 推进时动了的 swiper（组件 id）。宿主据此只重画这几个盒子
+pub fn take_moved_swipers() -> Vec<String> {
+    with(Vec::new(), |m| m.take_moved())
+}
+
 /// 是否有 swiper 现在需要出帧（动画中、拖动中、自动播放到点）
 pub fn swiper_needs_frame() -> bool {
     let now = motion::now_ms();

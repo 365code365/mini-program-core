@@ -25,6 +25,22 @@ pub struct SwiperRegion {
     pub vertical: bool,
 }
 
+/// 第 `real` 项（虚拟下标 `v`）相对盒子的主轴偏移（设备像素）。
+///
+/// 停住的时候（`pos` 是整数页）与从前逐字相同：`(v - real - pos) * item`。
+/// 动着的时候，「离最近一页还差多少」那一截取整到整像素：每帧画面只差整像素的平移，
+/// 项里的图片落在与停住时同一个亚像素相位上，`draw_image_cached` 的缩放缓存一直命中。
+/// 从前每帧亚像素偏移都不同，缓存按 1/4 像素分档、每档整张重采样：轮播 banner 966×444 一次
+/// 在一加 PLY110 上 50ms，翻页那 0.5s 卡成十几帧。3 倍屏上一个设备像素是 0.33pt，看不出台阶
+fn item_shift(v: i64, real: usize, pos: f32, item: f32) -> f32 {
+    let page = pos.round();
+    let rest = (v as f32 - real as f32 - page) * item;
+    if page == pos {
+        return rest;
+    }
+    rest + ((page - pos) * item).round()
+}
+
 /// 与盒子相交的项：(真实下标, 虚拟下标)
 fn visible_items(pos: f32, pad: f32, item: f32, view: f32, total: usize, circular: bool) -> Vec<(usize, i64)> {
     if total == 0 || item <= 0.0 {
@@ -72,6 +88,11 @@ impl WxmlRenderer {
                 Some((c, ox, oy))
             })
             .collect()
+    }
+
+    /// 这个 swiper 最近一次画在哪（跨帧留着，见 `swiper_known`）
+    pub fn known_swiper(&self, id: &str) -> Option<&SwiperRegion> {
+        self.swiper_known.get(id)
     }
 
     /// 本帧画到的 swiper 里，包含这个点的最内层那个（面积最小）。
@@ -127,9 +148,16 @@ impl WxmlRenderer {
             .unwrap_or((0.0, false, 0));
         if active {
             self.mark_animating();
+            // 记下盒子（与 CSS 动画节点同一条规则，见 animation.rs）：宿主只重画这块。
+            // 不记的话宿主只知道「在动」不知道在哪，SDK 每帧整页重画（`整帧·动画`）
+            if !self.drawing_offscreen {
+                self.animated_bounds.push(GeoRect::new(x - 2.0, y - 2.0, w + 4.0, h + 4.0));
+            }
         }
+        let region = SwiperRegion { id: id.clone(), bounds: logical, is_fixed: self.registering_fixed, vertical: cfg.vertical };
+        self.swiper_known.insert(id.clone(), region.clone());
         if !self.swiper_regions.iter().any(|r| r.id == id) {
-            self.swiper_regions.push(SwiperRegion { id, bounds: logical, is_fixed: self.registering_fixed, vertical: cfg.vertical });
+            self.swiper_regions.push(region);
         }
         canvas.save();
         canvas.clip_rect(GeoRect::new(x, y, w, h));
@@ -141,7 +169,7 @@ impl WxmlRenderer {
             }
         } else {
             for (real, v) in visible_items(pos, pad, item, view, cfg.total, cfg.circular) {
-                let shift = (v as f32 - real as f32 - pos) * item;
+                let shift = item_shift(v, real, pos, item);
                 let (ox, oy) = if cfg.vertical { (x, y + shift) } else { (x + shift, y) };
                 if let Some(child) = node.children.get(real) {
                     self.dispatch_draw(canvas, taffy, child, ox, oy, interaction, kind);
@@ -192,7 +220,7 @@ impl WxmlRenderer {
             }
         } else {
             for (real, v) in visible_items(pos, pad, item, view, cfg.total, cfg.circular) {
-                let shift = (v as f32 - real as f32 - pos) * item;
+                let shift = item_shift(v, real, pos, item);
                 let (ox, oy) = if cfg.vertical { (x, y + shift) } else { (x + shift, y) };
                 if let Some(child) = node.children.get(real) {
                     draw_item(self, canvas, child, ox, oy);

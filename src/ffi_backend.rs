@@ -59,6 +59,35 @@ pub extern "C" fn mr_app_set_backend(app: *mut MRApp, pref: c_int) -> c_int {
     }
 }
 
+/// surface 来之前先在后台线程上开 GPU 合成器（设备 + 管线 + 自检），挂 surface 时直接用。
+/// 设好偏好与机型信息之后、`mr_app_launch` 之前调：开 GPU 与首页启动并行（一加 PLY110 首帧早出约 0.3s）。
+/// 返回 1 表示开始预热；偏好是 cpu / 门槛不过 / 没编 gpu 时返回 0（不影响之后挂 surface）
+#[no_mangle]
+pub extern "C" fn mr_app_prewarm_gpu(app: *mut MRApp) -> c_int {
+    let Some(_a) = app_mut(app) else { return 0 };
+    #[cfg(feature = "gpu")]
+    return _a.engine.prewarm_gpu() as c_int;
+    #[cfg(not(feature = "gpu"))]
+    0
+}
+
+/// **建引擎之前**调：字体与 GPU 合成器各开一条线程预热，与建引擎、开首页并行（一加 PLY110 首帧早出约 0.4s）。
+/// 参数与之后的 `mr_app_create_ex`（逻辑宽高、dpr）、`mr_app_set_backend`、`mr_app_set_device_info` 一致；
+/// `pref` 传 -1 表示不指定。之后照常 `mr_app_prewarm_gpu`：它会认领这份。返回是否开始预热 GPU
+#[no_mangle]
+pub extern "C" fn mr_warmup(width: u32, height: u32, dpr: f32, pref: c_int, total_mem_bytes: u64, low_ram: c_int, os_api: u32) -> c_int {
+    let _device = DeviceInfo { total_mem_bytes, low_ram: low_ram != 0, os_api };
+    let _pref = pref::pref_from_code(pref);
+    #[cfg(feature = "gpu")]
+    return crate::host::warmup(width, height, dpr, _pref, _device) as c_int;
+    #[cfg(not(feature = "gpu"))]
+    {
+        let _ = (width, height, dpr);
+        std::thread::spawn(|| crate::text::shared_fonts());
+        0
+    }
+}
+
 /// 机型信息（机型分级用），挂 surface 之前调用。0 表示未知；`low_ram` 非 0 即真。
 #[no_mangle]
 pub extern "C" fn mr_app_set_device_info(app: *mut MRApp, total_mem_bytes: u64, low_ram: c_int, os_api: u32) {

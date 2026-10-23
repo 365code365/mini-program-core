@@ -153,6 +153,9 @@ pub struct MiniEngine {
     /// surface 被收走时留下的合成器（只放了 surface，设备 / 管线还在），下次挂载直接复用（engine_gpu.rs）
     #[cfg(feature = "gpu")]
     pub(crate) gpu_parked: Option<Box<crate::compositor::gpu::GpuCompositor>>,
+    /// 后台线程上正在开的合成器（engine_gpu_warm.rs），挂 surface 时取
+    #[cfg(feature = "gpu")]
+    pub(crate) gpu_warming: Option<super::engine_gpu_warm::Warming>,
     /// 本实例 GPU 运行中失败过（粘性回退的原因）
     #[cfg(feature = "gpu")]
     pub(crate) gpu_failed: Option<String>,
@@ -332,6 +335,8 @@ impl MiniEngine {
             gpu: None,
             #[cfg(feature = "gpu")]
             gpu_parked: None,
+            #[cfg(feature = "gpu")]
+            gpu_warming: None,
             #[cfg(feature = "gpu")]
             gpu_failed: None,
             #[cfg(feature = "gpu")]

@@ -35,9 +35,27 @@ internal class EngineView(context: Context, private val hostOf: () -> EngineHost
     private val frame = FrameLayout(context)
     private var surfaceView: SurfaceView? = null
     private var fixed: Pair<Int, Int>? = null
+    /** 引擎已在这块 SurfaceView 上交过帧（[reveal]） */
+    private var revealed = false
 
-    private val callback = object : SurfaceHolder.Callback {
+    /**
+     * Callback2：窗口这一帧要等这块 SurfaceView 有了内容再一起上屏。
+     *
+     * 只实现 Callback 的话，SurfaceView 在窗口重绘时走 `handleSyncNoBuffer`（logcat 里能看到）：
+     * 窗口不等它、直接上屏，这块 SurfaceView 还没有缓冲 —— 屏上露出它下面那层黑底，
+     * 直到引擎把第一帧交上来（回桌面再回来约 50ms）。这就是「从主屏幕回到小程序闪一下」。
+     * 实现 `surfaceRedrawNeededAsync` 之后，窗口（以及系统那张启动快照）一直留着，
+     * 直到引擎在这块新 Surface 上交出第一帧才换过来（[EngineHost.onViewRedrawNeeded]，带超时兜底）。
+     */
+    private val callback = object : SurfaceHolder.Callback2 {
         override fun surfaceCreated(holder: SurfaceHolder) {}
+
+        override fun surfaceRedrawNeeded(holder: SurfaceHolder) {}
+
+        override fun surfaceRedrawNeededAsync(holder: SurfaceHolder, drawingFinished: Runnable) {
+            val h = hostOf()
+            if (h == null) drawingFinished.run() else h.onViewRedrawNeeded(drawingFinished)
+        }
 
         override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
             val s = holder.surface
@@ -64,6 +82,11 @@ internal class EngineView(context: Context, private val hostOf: () -> EngineHost
         surfaceView?.holder?.removeCallback(callback)
         frame.removeAllViews()
         val sv = SurfaceView(frame.context)
+        // 第一帧之前先藏起来（Android 10+ 的 SurfaceView 才支持 alpha）：没有缓冲的 SurfaceView 露的是它下面那层
+        // 黑底，第一次打开时引擎要先开 GPU（一加 PLY110 约 0.5s），Flutter 的进场动画里就是一块黑屏滑进来。
+        // 藏着的时候露出 MiniProgramView 的 backgroundColor；引擎交出第一帧后 [reveal]
+        revealed = false
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) sv.alpha = 0f
         // 没用 setSurfaceLifecycle(SURFACE_LIFECYCLE_FOLLOWS_ATTACHMENT)：一加 PLY110（ColorOS，Android 16）
         // 上试过，回桌面照样 surfaceDestroyed（平台视图跟着 Activity 停了）。回来那 0.5s 的空白改在引擎侧解决：
         // 合成器只换 surface，不重开设备、不重跑自检、不整页重画（engine_gpu.rs `detach_native_surface`）
@@ -71,6 +94,13 @@ internal class EngineView(context: Context, private val hostOf: () -> EngineHost
         fixed?.let { (w, h) -> sv.holder.setFixedSize(w, h) }
         frame.addView(sv, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
         surfaceView = sv
+    }
+
+    /** 引擎在这块 Surface 上交出了第一帧：显示出来。主线程调，可重复调 */
+    fun reveal() {
+        if (revealed) return
+        revealed = true
+        surfaceView?.alpha = 1f
     }
 
     /** 缓冲区按引擎的像素尺寸（一个引擎像素对一个屏幕像素，不缩放）。主线程调 */

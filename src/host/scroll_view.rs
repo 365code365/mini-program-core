@@ -256,9 +256,11 @@ impl super::engine::MiniEngine {
         // swiper 的换页动画与自动播放按宿主给的时钟走（同一串 pump 时间 → 同一串画面）
         crate::renderer::components::swiper_set_clock(now_ms.max(1));
         let mut redraw = tick(&mut self.app, self.renderer.as_ref(), &mut self.interaction, now_ms);
-        if super::swiper::tick(&mut self.app, self.renderer.as_ref(), now_ms) {
-            redraw = true;
-        }
+        // swiper / picker-view 的事件（change / transition / animationfinish …）派完不用整页重画：
+        // 回调里 setData 走下面的失效分析，swiper 自己的位移由 engine_swiper.rs 只重画它的盒子，
+        // picker-view 的吸附动画照旧按「在动」整帧。从前这里 `redraw = true` → `mark_full`：
+        // 轮播页每次自动翻页那一帧整页重画（一加上 60ms，bindchange 里改了一行字）
+        super::swiper::tick(&mut self.app, self.renderer.as_ref(), now_ms);
         // picker 面板弹着时跟上页面改的 range（multiSelector 联动）
         if super::picker_sheet::sync_columns(&mut self.picker_sheet, self.renderer.as_ref()) {
             redraw = true;
@@ -311,10 +313,14 @@ impl super::engine::MiniEngine {
             self.scroll_moved = true;
         }
         self.interaction.scroll_views.entry(PAGE_KEY.to_string()).or_default().reported_pos = last;
-        // 事件处理函数里的 setData 这一帧就生效（不等下一帧开头）
+        // 事件处理函数里的 setData 这一帧就生效（不等下一帧开头）。
+        //
+        // 只记「数据脏了」，**不**要整页重画：与别处的 setData 一样交给失效分析（只重画变了的节点）。
+        // 从前这里 `redraw = true` → 调用方 `mark_full`：onPageScroll / IntersectionObserver 回调里
+        // 一 setData 就整页重画 —— 一加 PLY110 上滑「节点与滚动」页 42~71 帧 `整帧·结构`、
+        // 每帧 24~31ms，屏上重复 9~11%（tests/sdk_damage_equivalence.rs 有这一条）
         if self.app.take_data_dirty() {
             self.page_data_dirty = true;
-            redraw = true;
         }
         redraw
     }

@@ -169,6 +169,8 @@ pub type SwiperEvent = (String, &'static str, Value);
 pub struct SwiperStateManager {
     states: HashMap<String, SwiperState>,
     events: Vec<SwiperEvent>,
+    /// 最近几次 [`advance`](Self::advance) 动了的 swiper（宿主取走后只重画它们的盒子，见 SDK `engine_swiper.rs`）
+    moved: Vec<String>,
 }
 
 impl Default for SwiperStateManager {
@@ -179,7 +181,7 @@ impl Default for SwiperStateManager {
 
 impl SwiperStateManager {
     pub fn new() -> Self {
-        Self { states: HashMap::new(), events: Vec::new() }
+        Self { states: HashMap::new(), events: Vec::new(), moved: Vec::new() }
     }
 
     pub fn get(&self, id: &str) -> Option<&SwiperState> {
@@ -293,6 +295,9 @@ impl SwiperStateManager {
                 let p = now.saturating_sub(a.start) as f32 / a.dur.max(1) as f32;
                 st.pos = a.from + (a.to - a.from) * a.easing.apply(p);
                 changed = true;
+                if !self.moved.contains(&id) {
+                    self.moved.push(id.clone());
+                }
                 if p >= 1.0 {
                     st.pos = a.to;
                     st.anim = None;
@@ -325,9 +330,17 @@ impl SwiperStateManager {
                 let d = st.detail("autoplay");
                 self.events.push((id.clone(), "change", d));
                 changed = true;
+                if !self.moved.contains(&id) {
+                    self.moved.push(id.clone());
+                }
             }
         }
         changed
+    }
+
+    /// 取走动了的 swiper id
+    pub fn take_moved(&mut self) -> Vec<String> {
+        std::mem::take(&mut self.moved)
     }
 
     /// 有没有 swiper 现在要出帧：动画中、拖动中、或自动播放到点

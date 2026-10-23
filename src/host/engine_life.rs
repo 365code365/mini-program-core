@@ -40,6 +40,9 @@ impl MiniEngine {
 
     pub fn on_hide(&mut self) {
         self.app.eval("__dispatchApp('onHide')").ok();
+        // 进后台放掉图片的缩放结果与 mip（最多 32 + 24MB）：回前台只重新合成（on_show），不重画页面，
+        // 用不到它们；之后哪张图要重画再按需重采样。解码图与画布都留着，回来不用重新解码、重画
+        crate::canvas::clear_scaled_image_caches();
     }
 
     pub fn trim_memory(&mut self) {

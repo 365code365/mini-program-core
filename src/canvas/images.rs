@@ -59,17 +59,80 @@ impl Canvas {
 
         // 圆角裁剪预计算
         let has_radius = radius > 0.0;
-        let _cx = x + w / 2.0;
-        let _cy = y + h / 2.0;
 
-        for dest_y in dest_y0..dest_y1 {
-            for dest_x in dest_x0..dest_x1 {
+        // 逐像素的式子与从前逐字相同，只是把「只跟列有关 / 只跟行有关」的那几项提到循环外，
+        // 并把循环范围收窄到有效绘制区间（区外 `set_pixel` 本来就一个不写）—— 结果逐字节不变。
+        // 为什么要：轮播图翻页时每个亚像素偏移都要整张重采样一次（`draw_image_cached` 的缓存
+        // 按 1/4 像素分档），一加 PLY110 上 banner 那张 966×444 一次 50ms，翻页那 0.5s 卡成十几帧
+        let (bx0, bx1, by0, by1) = self.draw_bounds();
+        let (lx0, lx1) = (dest_x0.max(bx0), dest_x1.min(bx1));
+        let (ly0, ly1) = (dest_y0.max(by0), dest_y1.min(by1));
+        if lx1 <= lx0 || ly1 <= ly0 {
+            return;
+        }
+        // 列：源坐标（越界的列记 None）；面积滤波每列 box_nx 个采样列
+        let cols: Vec<Option<(f32, u32, f32)>> = (lx0..lx1)
+            .map(|dest_x| {
+                let local_x = (dest_x as f32 - x - offset_x) / scale_x;
+                if local_x < 0.0 || local_x >= img_w as f32 {
+                    return None;
+                }
+                let src_x = local_x.floor() as u32;
+                Some((local_x, src_x, local_x - src_x as f32))
+            })
+            .collect();
+        let box_cols: Vec<u32> = if use_box_filter {
+            cols.iter()
+                .flat_map(|c| {
+                    let local_x = c.map(|c| c.0).unwrap_or(0.0);
+                    (0..box_nx).map(move |sx| {
+                        let sample_x = local_x + (sx as f32 + 0.5) * footprint_x / box_nx as f32;
+                        sample_x.max(0.0) as u32
+                    })
+                })
+                .collect()
+        } else {
+            Vec::new()
+        };
+        let width = self.width as usize;
+        let sample = |sx: u32, sy: u32| -> (f32, f32, f32, f32) {
+            let sx = sx.min(img_w - 1);
+            let sy = sy.min(img_h - 1);
+            let idx = ((sy * img_w + sx) * 4) as usize;
+            (
+                img_data[idx] as f32,
+                img_data[idx + 1] as f32,
+                img_data[idx + 2] as f32,
+                img_data[idx + 3] as f32,
+            )
+        };
+        let lerp = |a: f32, b: f32, t: f32| a + (b - a) * t;
+        let mut box_rows: Vec<u32> = Vec::with_capacity(box_ny as usize);
+
+        for dest_y in ly0..ly1 {
+            let local_y = (dest_y as f32 - y - offset_y) / scale_y;
+            if local_y < 0.0 || local_y >= img_h as f32 {
+                continue;
+            }
+            let src_y = local_y.floor() as u32;
+            let fy = local_y - src_y as f32;
+            if use_box_filter {
+                box_rows.clear();
+                for sy in 0..box_ny {
+                    let sample_y = local_y + (sy as f32 + 0.5) * footprint_y / box_ny as f32;
+                    box_rows.push(sample_y.max(0.0) as u32);
+                }
+            }
+            let dy = dest_y as f32 + 0.5 - y;
+            let row = dest_y as usize * width;
+            for (ci, col) in cols.iter().enumerate() {
+                let Some((_, src_x, fx)) = *col else { continue };
+                let dest_x = lx0 + ci as i32;
                 // 圆角抗锯齿覆盖率：像素中心到圆角圆心的距离，落在边缘 1px 带内时按比例淡出，
                 // 消除之前硬裁剪（continue）造成的圆角锯齿。
                 let mut corner_cover = 1.0f32;
                 if has_radius {
                     let dx = dest_x as f32 + 0.5 - x;
-                    let dy = dest_y as f32 + 0.5 - y;
                     let cover_at = |cx: f32, cy: f32| -> f32 {
                         let d = ((dx - cx) * (dx - cx) + (dy - cy) * (dy - cy)).sqrt();
                         (radius + 0.5 - d).clamp(0.0, 1.0)
@@ -83,49 +146,19 @@ impl Canvas {
                     } else if dx > w - radius && dy > h - radius {
                         corner_cover = cover_at(w - radius, h - radius);
                     }
-                    if corner_cover <= 0.0 { continue; }
+                    if corner_cover <= 0.0 {
+                        continue;
+                    }
                 }
-
-                // 计算源图片坐标
-                let local_x = (dest_x as f32 - x - offset_x) / scale_x;
-                let local_y = (dest_y as f32 - y - offset_y) / scale_y;
-
-                // 边界检查
-                if local_x < 0.0 || local_y < 0.0 || 
-                   local_x >= img_w as f32 || local_y >= img_h as f32 {
-                    continue;
-                }
-
-                // 双线性插值采样
-                let src_x = local_x.floor() as u32;
-                let src_y = local_y.floor() as u32;
-                let fx = local_x - src_x as f32;
-                let fy = local_y - src_y as f32;
-
-                let sample = |sx: u32, sy: u32| -> (f32, f32, f32, f32) {
-                    let sx = sx.min(img_w - 1);
-                    let sy = sy.min(img_h - 1);
-                    let idx = ((sy * img_w + sx) * 4) as usize;
-                    (
-                        img_data[idx] as f32,
-                        img_data[idx + 1] as f32,
-                        img_data[idx + 2] as f32,
-                        img_data[idx + 3] as f32,
-                    )
-                };
 
                 let (r, g, b, a_f) = if use_box_filter {
                     // 面积平均：RGB 按 alpha 加权，避免透明像素把黑色混进边缘
                     let (mut wr, mut wg, mut wb, mut wa, mut weight) =
                         (0.0f32, 0.0f32, 0.0f32, 0.0f32, 0.0f32);
-                    for sy in 0..box_ny {
-                        let sample_y = local_y + (sy as f32 + 0.5) * footprint_y / box_ny as f32;
-                        for sx in 0..box_nx {
-                            let sample_x = local_x + (sx as f32 + 0.5) * footprint_x / box_nx as f32;
-                            let c = sample(
-                                sample_x.max(0.0) as u32,
-                                sample_y.max(0.0) as u32,
-                            );
+                    let bc = &box_cols[ci * box_nx as usize..(ci + 1) * box_nx as usize];
+                    for &sy in &box_rows {
+                        for &sx in bc {
+                            let c = sample(sx, sy);
                             wr += c.0 * c.3;
                             wg += c.1 * c.3;
                             wb += c.2 * c.3;
@@ -143,7 +176,6 @@ impl Canvas {
                     let c10 = sample(src_x + 1, src_y);
                     let c01 = sample(src_x, src_y + 1);
                     let c11 = sample(src_x + 1, src_y + 1);
-                    let lerp = |a: f32, b: f32, t: f32| a + (b - a) * t;
                     (
                         lerp(lerp(c00.0, c10.0, fx), lerp(c01.0, c11.0, fx), fy),
                         lerp(lerp(c00.1, c10.1, fx), lerp(c01.1, c11.1, fx), fy),
@@ -153,17 +185,19 @@ impl Canvas {
                 };
                 // 圆角边缘按覆盖率淡出 alpha，实现抗锯齿
                 let a = (a_f * corner_cover).round().clamp(0.0, 255.0) as u8;
-
-                self.set_pixel(
-                    dest_x,
-                    dest_y,
-                    Color::new(
-                        r.round().clamp(0.0, 255.0) as u8,
-                        g.round().clamp(0.0, 255.0) as u8,
-                        b.round().clamp(0.0, 255.0) as u8,
-                        a,
-                    ),
+                let color = Color::new(
+                    r.round().clamp(0.0, 255.0) as u8,
+                    g.round().clamp(0.0, 255.0) as u8,
+                    b.round().clamp(0.0, 255.0) as u8,
+                    a,
                 );
+                // 与 `set_pixel` 相同的写法（越界 / 裁剪已经由循环范围保证）
+                let idx = row + dest_x as usize;
+                if a == 255 {
+                    self.pixels[idx] = color;
+                } else if a > 0 {
+                    self.pixels[idx] = color.blend(&self.pixels[idx]);
+                }
             }
         }
     }
@@ -210,10 +244,8 @@ impl Canvas {
                             mip_h,
                             downscale_area(img_data, img_w, img_h, mip_w, mip_h),
                         ));
-                        if guard.len() > 128 {
-                            guard.clear(); // 简单上限：超出整体失效，避免无界增长
-                        }
-                        guard.insert(mip_key, data.clone());
+                        let bytes = data.2.len();
+                        guard.insert(mip_key, data.clone(), bytes);
                         Some(data)
                     }
                 }
@@ -260,10 +292,8 @@ impl Canvas {
                     off.clear(Color::new(0, 0, 0, 0));
                     off.draw_image(img_data, img_w, img_h, fx, fy, w, h, mode, radius);
                     let pixels = std::sync::Arc::new(off.pixels().to_vec());
-                    if guard.len() > 192 {
-                        guard.clear(); // 简单上限：超出整体失效，避免无界增长
-                    }
-                    guard.insert(key, pixels.clone());
+                    let bytes = pixels.len() * std::mem::size_of::<Color>();
+                    guard.insert(key, pixels.clone(), bytes);
                     Some(pixels)
                 }
             }

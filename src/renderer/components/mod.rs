@@ -19,7 +19,7 @@ mod radio;
 mod slider;
 mod input;
 pub mod image;
-mod image_cache;
+pub(crate) mod image_cache;
 mod video;
 pub mod video_audio;
 mod canvas;
@@ -61,7 +61,7 @@ pub use canvas::{CanvasComponent, Canvas2DContext, CanvasContextManager, LinearG
 // 可能先把它取走，拿页面像素断言会偶发失败
 // 读像素 / 导出的同步桥（js::bridge_io）与单测要直接摸管理器
 pub(crate) use canvas::CANVAS_MANAGER;
-pub use swiper::{SwiperComponent, SwiperItemComponent, SwiperConfig, SWIPER_MANAGER, swiper_needs_frame, has_autoplay_swiper, advance_due_swipers,
+pub use swiper::{SwiperComponent, SwiperItemComponent, SwiperConfig, SWIPER_MANAGER, swiper_needs_frame, has_autoplay_swiper, advance_due_swipers, take_moved_swipers,
     swiper_is_dragging, take_swiper_events, swiper_drag_begin, swiper_drag_update, swiper_drag_end, swiper_set_clock, swiper_clock_ms, swiper_pages,
     swiper_layout_params, Easing as SwiperEasing, SwiperStateManager};
 pub use swiper::effects as swiper_effects;

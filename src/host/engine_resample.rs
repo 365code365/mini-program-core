@@ -164,6 +164,11 @@ impl MiniEngine {
         }
     }
 
+    /// pump 间隔的估计（ms）：页面转场按帧推进时一步最多走多少（route_anim.rs）
+    pub(super) fn resample_period_ms(&self) -> f32 {
+        self.resample.period() as f32
+    }
+
     /// 每帧：页面在拖时，按重采样的手指位置摆页面。返回屏上位置是否变了
     pub(super) fn resample_page_drag(&mut self, now: u64) -> bool {
         self.resample.note_pump(now);

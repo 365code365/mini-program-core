@@ -74,6 +74,12 @@ internal class EngineHost(
     private var bitmap: Bitmap? = null
     private var needsPresent = false
 
+    /**
+     * 引擎已在当前这块 SurfaceView 上交过帧、[EngineView.reveal] 已经发出去了。
+     * 主线程换新 SurfaceView 时清掉（[replaceProducer]）；回桌面再回来要不要让窗口等引擎首帧也看它（[onViewRedrawNeeded]）
+     */
+    @Volatile private var revealed = false
+
     // ── 两条线程都读：像素尺寸（引擎线程写） ──
     @Volatile private var pixelW = 0
     @Volatile private var pixelH = 0
@@ -107,12 +113,18 @@ internal class EngineHost(
         engine.post {
             choreographer = Choreographer.getInstance()
             boost = FrameBoost.forCurrentThread(context)
+            // 字体与 GPU 跟建引擎并行（建引擎 0.3s、开 GPU 0.5s，从前是一个接一个）
+            MiniEngine.nativeWarmup(width, height, dpr, backend, device.totalMem, device.lowRam, device.api)
             val h = MiniEngine.nativeCreateEx(appDir, dataDir, width, height, dpr, options)
             if (h != 0L) {
                 // 机型信息要在挂 surface 之前给（Auto 的机型分级要用）
                 MiniEngine.nativeSetDeviceInfo(h, device.totalMem, device.lowRam, device.api)
                 MiniEngine.nativeSetBackend(h, backend)
-                if (backend != MiniEngine.BACKEND_CPU) mode = Present.GPU
+                if (backend != MiniEngine.BACKEND_CPU) {
+                    mode = Present.GPU
+                    // 开 GPU（约 0.5s）与下面的首页启动并行：SurfaceView 建出来时合成器多半已经好了
+                    MiniEngine.nativePrewarmGpu(h)
+                }
             }
             if (h == 0L || !MiniEngine.nativeLaunch(h, route)) {
                 if (h != 0L) MiniEngine.nativeDestroy(h)
@@ -189,6 +201,7 @@ internal class EngineHost(
         if (disposed) return
         if (viewMode) {
             // 换一块新的 SurfaceView（surfaceChanged 会再挂上），后端变了告诉 Dart
+            revealed = false
             view?.newSurface()
             onTexture(textureInfo(null))
             return
@@ -263,6 +276,13 @@ internal class EngineHost(
         surface = null
     }
 
+    /** 引擎线程：独立图层上交出了第一帧，让藏着的 SurfaceView 显示出来（只发一次） */
+    private fun revealView() {
+        if (!viewMode || revealed) return
+        revealed = true
+        main.post { view?.reveal() }
+    }
+
     private fun requestFrame() {
         if (frameScheduled || !running || handle == 0L) return
         frameScheduled = true
@@ -285,7 +305,10 @@ internal class EngineHost(
         if (mode == Present.GPU) {
             // 引擎已经画到 Surface 上了：只要通知 Flutter 取新的一帧
             needsPresent = false
-            if (f and MiniEngine.FRAME_PRESENTED != 0) scheduleFlutterFrame()
+            if (f and MiniEngine.FRAME_PRESENTED != 0) {
+                scheduleFlutterFrame()
+                revealView()
+            }
         } else {
             if (f and MiniEngine.FRAME_NEW != 0) needsPresent = true
             if (needsPresent) present()
@@ -309,6 +332,7 @@ internal class EngineHost(
                 if (r == 1) {
                     needsPresent = false
                     if (notifyFlutter) scheduleFlutterFrame()
+                    revealView()
                     return
                 }
                 Log.w(TAG, "CPU 直写 Surface 失败（$r），改走 Bitmap + lockHardwareCanvas")
@@ -333,6 +357,7 @@ internal class EngineHost(
                 }
                 needsPresent = false
                 if (notifyFlutter) scheduleFlutterFrame()
+                revealView()
             }
         }
     }
@@ -552,6 +577,38 @@ internal class EngineHost(
         engine.post { attach(s) }
     }
 
+    /**
+     * SurfaceView 要窗口等它这一帧（Callback2，见 EngineView）：引擎线程马上在刚挂上的 Surface 上
+     * 出一帧（不等下一个 vsync 回调），交上去之后再告诉系统。主线程调。
+     *
+     * 还没有引擎（第一次打开，引擎在建）就不等：建引擎 + 首页要几百毫秒，窗口不能停那么久。
+     * 超时兜底 [REDRAW_WAIT_MS]：引擎线程被 JS 卡住时窗口照常上屏（退回从前的样子），不会卡死界面
+     */
+    fun onViewRedrawNeeded(done: Runnable) {
+        val once = java.util.concurrent.atomic.AtomicBoolean(false)
+        val t0 = System.nanoTime()
+        fun finish(why: String) = Runnable {
+            if (!once.compareAndSet(false, true)) return@Runnable
+            done.run()
+            Log.i(TAG, "🪟 窗口等引擎首帧 ${(System.nanoTime() - t0) / 100_000 / 10.0}ms（$why）")
+        }
+        if (disposed) return finish("已销毁").run()
+        // 第一次打开（这块 SurfaceView 还没交过帧）：不等。引擎线程正在开 GPU（约 0.5s），窗口停这么久的话
+        // Flutter 的进场动画也跟着停（实测等满了 250ms 超时）。那时 SurfaceView 是藏着的（EngineView.newSurface）
+        if (pixelW == 0 || !revealed) return finish("还没交过帧（第一次打开），不等").run()
+        main.postDelayed(finish("超时"), REDRAW_WAIT_MS)
+        engine.post {
+            var why = "还没有引擎 / Surface"
+            if (handle != 0L && surface != null) {
+                choreographer?.removeFrameCallback(frameCallback)
+                frameScheduled = false
+                tick(System.nanoTime())
+                why = "已交帧"
+            }
+            main.post(finish(why))
+        }
+    }
+
     /** SurfaceView 的 Surface 要没了：同步等引擎线程放手 */
     fun onViewSurfaceGone() {
         if (disposed) return
@@ -578,6 +635,8 @@ internal class EngineHost(
     }
 
     private companion object {
+        /** 窗口最多等引擎第一帧这么久（一加 PLY110 上回前台实测 35ms 左右交出来） */
+        const val REDRAW_WAIT_MS = 250L
         const val TAG = "mini-render"
     }
 }

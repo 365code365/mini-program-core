@@ -76,9 +76,8 @@ impl MiniEngine {
         if let Some(nav) = self.take_navigation() {
             self.apply_navigation(nav);
         }
-        if crate::renderer::components::advance_due_swipers() {
-            self.mark_full();
-        }
+        // swiper 换页 / 自动播放：只重画动了的那几个盒子（engine_swiper.rs）
+        self.advance_swipers();
         // 画布被画过（旧接口的 draw()、type="2d" 的上下文）：像素在页面绘制时拷进去，要重画
         // （scroll-view 里的 canvas 在离屏缓存里，缓存也要作废）
         if crate::renderer::components::take_canvas_dirty() {
@@ -110,7 +109,7 @@ impl MiniEngine {
             self.dmg.compose_dirty = true;
         }
         // 页面转场（route_anim.rs）：位移变了只要重新合成，页面一个像素不用重画
-        if self.route.tick(now) != crate::host::route_anim::Tick::Idle {
+        if self.route.tick(now, self.resample_period_ms()) != crate::host::route_anim::Tick::Idle {
             self.dmg.compose_dirty = true;
         }
         // 导航栏的标题 / 颜色 / loading 转圈 / 按压态变了（engine_navbar.rs）：重画那一小条再合成
@@ -144,7 +143,10 @@ impl MiniEngine {
         // 动画标记是上一次绘制时求出来的，所以「有动画」本身就是重画的理由 ——
         // 但只重画动画那一块（engine_damage.rs），不再逼着整条带陪着重画。
         let tabbar_anim = self.tabbar_renderer.as_ref().map(|r| r.has_active_animations()).unwrap_or(false);
-        let media = crate::renderer::components::swiper_needs_frame()
+        // swiper 的换页动画 / 自动播放不在这里：只重画它自己的盒子（engine_swiper.rs + 动画包围盒）。
+        // 拖着的 swiper 仍整帧（拖动由输入驱动，位置每个 move 都变）
+        let media = crate::renderer::components::swiper_is_dragging()
+            || crate::renderer::components::picker_view::needs_frame()
             || (crate::renderer::components::has_playing_video() && self.opts.native_components.iter().all(|t| t != "video"));
         let scroll_moved = std::mem::take(&mut self.scroll_moved);
         // 聚焦的输入框**不再**逼着每帧重画：光标闪烁由 caret_tick 在翻转那一帧标脏，
@@ -298,41 +300,6 @@ impl MiniEngine {
         }
     }
 
-    /// 整条带重画之前：布局（结果进缓存）并按内容高换好画布。高度对的话什么也不做
-    fn presize_canvas(&mut self, scroll: f32, vp: f32) {
-        let (Some(r), Some(page)) = (self.renderer.as_mut(), self.page_stack.last()) else { return };
-        r.plan_frame(&page.wxml_nodes, &self.page_data, Some((scroll, vp)));
-        let Some(content_h) = r.cached_content_height().filter(|h| *h > 1.0) else { return };
-        let required = (content_h * self.dpr).ceil() as u32;
-        if required > 0 && required != self.canvas.read().height() {
-            let width = self.canvas.read().width();
-            self.canvas.replace(Canvas::new(width, required));
-        }
-    }
-
-    /// 页面画布画完之后：动画包围盒、页面动画标记、scroll-view 位置、布局偏移的记账
-    fn after_page_pass(&mut self, anim_complete: bool, scroll: f32) {
-        if let Some(r) = self.renderer.as_mut() {
-            let bounds = r.take_animated_bounds();
-            // 只有这一趟的裁剪范围覆盖了全部动画节点，收集到的包围盒才是完整的（与桌面
-            // 窗体同一条规则）。纯 setData 的局部帧只碰了一小块，拿它覆盖旧记录、或拿它的
-            // 「有没有动画」覆盖旧结论，都可能让外面的动画就此冻住 —— 那种帧只增不减
-            if anim_complete {
-                self.dmg.last_animated_bounds = bounds;
-                self.dmg.page_animates = r.has_active_animations();
-            } else {
-                self.dmg.page_animates |= r.has_active_animations();
-            }
-            // 覆盖层这一帧可能不重画：渲染器的「有动画」要把它那份并回来，宿主据此续帧
-            r.set_animations_active(self.dmg.page_animates || self.dmg.fixed_layer_animates);
-        }
-        self.dmg.drawn_area_positions.clear();
-        for (id, c) in &self.interaction.scroll_controllers {
-            self.dmg.drawn_area_positions.insert(id.clone(), c.get_position());
-        }
-        self.dmg.layout_scroll = Some(scroll);
-    }
-
     /// 重画 fixed 覆盖层，并记下它的动画标记、事件绑定与遮挡区域（跳过它的帧要补回来）
     fn render_fixed_layer(&mut self, vp: f32) {
         // fixed 层是页面视口坐标：引擎画了导航栏时它比画面矮一截（engine_navbar.rs）
@@ -345,9 +312,15 @@ impl MiniEngine {
             self.capsule_spec().map(|(r, dark)| (r, dark, self.capsule_pressed()))
         };
         let dpr = self.dpr;
+        let prev_rows = self.fixed_rows;
         let Self { renderer, fixed_canvas, page_stack, page_data, interaction, dmg, .. } = self;
         let fixed_canvas = fixed_canvas.write();
-        fixed_canvas.clear(Color::new(0, 0, 0, 0));
+        // 只清上次画过的那几行：其余行本来就全透明（上次的 `opaque_row_span` 量出来的；画布新建时整张透明）。
+        // 从前整张清：覆盖层整屏 1080×2200，只有一个右下角的悬浮按钮，也要清 950 万字节、再整张扫一遍 ——
+        // 「节点与滚动」页滚动时悬浮按钮上的 scrollTop 一变，这一帧覆盖层就要 6ms（一加 PLY110）
+        if let Some((a, b)) = prev_rows {
+            fixed_canvas.clear_band(a as i32, b as i32 + 1, Color::new(0, 0, 0, 0));
+        }
         if let (Some(r), Some(page)) = (renderer.as_mut(), page_stack.last()) {
             // 在两趟之间清零，才能分辨「动画在页面里」还是「在覆盖层里」
             r.set_animations_active(false);

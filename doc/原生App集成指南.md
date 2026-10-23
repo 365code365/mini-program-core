@@ -458,7 +458,14 @@ int  mr_app_pump_ex(MRApp*, uint64_t now_ms);              // MR_FRAME_* 的按�
   `SurfaceView[包名/…](BLAST)`），每行第二列是上屏时刻，相邻两行隔了一个以上的显示器周期就是屏上重复了一张。
   外部纹理那条路的诊断：`setprop debug.mini.pace 1`（引擎 `🎞E` / 宿主 `🎞` / Flutter `🎞F` 三路），
   `python3 tools/pace-check.py pace.log` 算出每个 vsync 屏上是哪一帧。
+- **建引擎之前预热**：`mr_warmup` / `MiniEngine.nativeWarmup(宽, 高, dpr, 偏好, 内存, lowRam, api)` 在建引擎之前调，
+  字体与 GPU 合成器各开一条线程跟建引擎并行；设好偏好与机型信息之后调 `mr_app_prewarm_gpu` / `nativePrewarmGpu` 认领。
+  一加 PLY110 上建引擎开始到 GPU 就绪 870ms → 480ms。不调就是挂 surface 时现开。
+- **SurfaceView 宿主**：实现 `SurfaceHolder.Callback2.surfaceRedrawNeededAsync`，等引擎在新 Surface 上交出第一帧再回调
+  （Flutter 插件 `EngineView.kt` / `EngineHost.onViewRedrawNeeded`），否则回前台那一下露黑底；第一次打开时
+  SurfaceView 先 `alpha = 0`，引擎交出第一帧再显示。
 - **引擎线程**：Android 上 `nativeCreateEx` 把调用它的线程（引擎线程）绑到大核（排除最慢一簇，`MINI_CPU_PIN=0` 关），
+  之后只在交互（按着、惯性、转场、侧滑）或连续出帧时绑着，停 800ms 放开，
   宿主再给这条线程开一个 ADPF 会话（`FrameBoost.kt`，目标为刷新周期的一半）。所以**引擎必须在一条专用线程上创建与驱动**，
   别在 UI 线程上建。回桌面 Surface 被收走时合成器只放 surface，回来挂新 surface 不重开设备（约 25ms）。
 - **动画按宿主帧时间取样**：`pump(now_ms)` 给的是 vsync 时刻（Choreographer 的 frameTimeNanos、CADisplayLink）时，

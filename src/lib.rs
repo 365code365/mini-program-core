@@ -130,14 +130,18 @@ mod tests;
 /// 正在使用中的资源不会被打断：调用方手上的 `Arc` 仍然有效，当前帧照常画完。
 pub fn trim_memory() {
     renderer::components::clear_image_caches();
+    canvas::clear_scaled_image_caches();
     text_family::clear_caches();
 }
 
 /// 各缓存的占用现状（一行文本，接内存监控/日志用）
 pub fn memory_report() -> String {
+    let (scaled, mip) = canvas::scaled_image_cache_bytes();
     format!(
-        "{}；自定义字体 {} 个（{}）",
+        "{}；缩放缓存 {:.1}MB + mip {:.1}MB；自定义字体 {} 个（{}）",
         renderer::components::image_cache_report(),
+        scaled as f32 / 1048576.0,
+        mip as f32 / 1048576.0,
         text_family::loaded_font_files().len(),
         text_family::loaded_font_files().join(", ")
     )
