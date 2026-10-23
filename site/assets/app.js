@@ -54,7 +54,7 @@
   if (track) {
     var srcs = [];
     each('.shots img', function (img) { srcs.push(img.getAttribute('src')); });
-    each('.hero-shots img, .phone-device img', function (img) { srcs.push(img.getAttribute('src')); });
+    each('.hero-shots img, .phone-device img, .sky-shots img', function (img) { srcs.push(img.getAttribute('src')); });
     var frag2 = document.createDocumentFragment();
     for (var k = 0; k < 2; k++) {
       srcs.forEach(function (src) {
@@ -101,7 +101,8 @@
   var targets = [];
   ['.sec-head', '.card', '.steps li', '.shot', '.bar-row', '.doc', '.deps li',
    '.stats > div', '.table-scroll', '.callout', '.tabs', '.split > div', '.flow',
-   '.metric', '.twin-tile', '.phone-device', '.be-points li']
+   '.metric', '.twin-tile', '.phone-device', '.be-points li',
+   '.sky-cov > div', '.tag-group', '.sky-shots .phone']
     .forEach(function (sel) {
       Array.prototype.push.apply(targets, document.querySelectorAll(sel));
     });

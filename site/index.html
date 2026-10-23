@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>mini-render — a mini-program rendering engine written from scratch in Rust</title>
-<meta name="description" content="A self-rendering mini-program engine aligned with WeChat Skyline: no WebView, no native widgets, no Skia. Mini-program source in, pixels out — on desktop, headless CI, Android, iOS and Flutter.">
+<meta name="description" content="A self-rendering mini-program engine aligned with WeChat Skyline: all 503 official wx.* APIs, the Skyline component set, no WebView, no native widgets, no Skia. Mini-program source in, pixels out — on desktop, headless CI, Android, iOS and Flutter.">
 <meta name="theme-color" content="#07090d">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/style.css">
@@ -33,6 +33,7 @@
       <span class="brand-name">mini-render</span>
     </a>
     <nav class="head-nav" aria-label="Page navigation" data-i18n-aria="nav.aria">
+      <a href="#skyline" data-i18n="nav.skyline">Skyline</a>
       <a href="#pipeline" data-i18n="nav.pipeline">Pipeline</a>
       <a href="#device" data-i18n="nav.device">On device</a>
       <a href="#gallery" data-i18n="nav.gallery">Gallery</a>
@@ -69,7 +70,9 @@
           and it draws the UI and runs the interactions. In between there is
           <strong>no browser engine, no platform widgets, no third-party 2D graphics library</strong>
           — the CPU draws every pixel, and an optional GPU backend only composites the layers,
-          byte-identical to the CPU.
+          byte-identical to the CPU. All <strong>503 official <code>wx.*</code> APIs</strong> are
+          there, and Skyline's own components — <code>grid-view</code>, gesture handlers,
+          <code>draggable-sheet</code>, worklet animations — run on the same pipeline.
         </p>
         <ul class="hero-nots">
           <li data-i18n="hero.not1">No WebView</li>
@@ -117,8 +120,8 @@
         <div><dt data-i18n="stat.2.k">Repeated frames, 90 Hz phone</dt><dd><span data-count="2.3">2.3</span><small>%</small></dd><p data-i18n="stat.2.v">list scrolling with setData, down from 11.2%</p></div>
         <div><dt data-i18n="stat.3.k">GPU vs CPU</dt><dd><span data-count="34">34</span><small>/34</small></dd><p data-i18n="stat.3.v">scenes byte-identical, fallback included</p></div>
         <div><dt data-i18n="stat.4.k">Difference vs Chrome</dt><dd><span data-count="4.57">4.57</span><small>%</small></dd><p data-i18n="stat.4.v">15 pages of the same source, per pixel</p></div>
-        <div><dt data-i18n="stat.5.k">Automated tests</dt><dd><span data-count="948">948</span><small></small></dd><p data-i18n="stat.5.v">plus 65 byte-reproducible baselines</p></div>
-        <div><dt data-i18n="stat.6.k">wx.* APIs</dt><dd><span data-count="120">120</span><small>+</small></dd><p data-i18n="stat.6.v">26 component tags, 28 lifecycle hooks</p></div>
+        <div><dt data-i18n="stat.5.k">Automated tests</dt><dd><span data-count="1033">1033</span><small></small></dd><p data-i18n="stat.5.v">plus 65 byte-reproducible baselines</p></div>
+        <div><dt data-i18n="stat.6.k">Official wx.* APIs</dt><dd><span data-count="503">503</span><small>/503</small></dd><p data-i18n="stat.6.v">every name in the index, plus 57 component tags</p></div>
       </dl>
     </div>
   </section>
@@ -168,7 +171,7 @@
             <tr>
               <th scope="row" data-i18n="why.r5.k">WeChat Skyline</th>
               <td data-i18n="why.r5.a">Native rendering with self-drawn components</td>
-              <td data-i18n="why.r5.b"><span class="tag yes">Alignment target</span> semantics, feel and event model all follow it</td>
+              <td data-i18n="why.r5.b"><span class="tag yes">Alignment target</span> semantics, feel, event model, API surface and component set all follow it</td>
             </tr>
           </tbody>
         </table>
@@ -180,6 +183,155 @@
         comes from system fonts — to remove even that, bundle a font with the app
         (<code>assets/SourceHanSansSC-Regular.otf</code> is there for exactly that). Measure first
         though: a bundled font costs <strong>more memory</strong>, not less.
+      </p>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────  Skyline 对齐  ───────────────────────── -->
+  <!-- 口径：官方 API 目录（503 个 wx.*）与组件目录，见 .agents/tasks/wx-gap-2026-10-23/gap.md 与测试说明 T31。
+       标签数 57 = 渲染器登记 26 + 按官方行为走兜底的 navigator / label / form 3 + cover-view / span / movable-area 3
+       + 内置组件 17（含 8 个手势组件）+ 原生组件占位 8；改了组件表要同步这里与 stat.6 / sky.c2 / scope.yes.1 -->
+  <section class="band sky-band" id="skyline">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="eyebrow" data-i18n="sky.eyebrow">Skyline alignment</p>
+        <h2 data-i18n="sky.h2">Every official API name,<br><span class="grad">the Skyline component set</span></h2>
+        <p class="sec-lede" data-i18n="sky.lede">
+          Checked against WeChat's own API index and component catalog, not a hand-picked list.
+          All <strong>503</strong> <code>wx.*</code> names exist at runtime; what only a host can do
+          (Bluetooth, payment, login…) fails at once with a reason until the host claims it, and
+          <code>canIUse</code> says so. Skyline-only components — <code>grid-view</code>, gesture
+          handlers, <code>draggable-sheet</code>, worklet animations — go through the same layout,
+          paint and partial-repaint pipeline as everything else.
+        </p>
+      </header>
+
+      <div class="sky-grid">
+        <div class="sky-main">
+          <dl class="sky-cov">
+            <div><dt data-i18n="sky.c1.k">Official wx.* names</dt><dd>503<small>/503</small></dd><p data-i18n="sky.c1.v">516 keys at runtime; host-only ones fail until the host claims them</p></div>
+            <div><dt data-i18n="sky.c2.k">Component tags</dt><dd>57</dd><p data-i18n="sky.c2.v">incl. 17 built-in components and 8 native-component placeholders</p></div>
+            <div><dt data-i18n="sky.c3.k">Map vs page while scrolling</dt><dd>0<small>px</small></dd><p data-i18n="sky.c3.v">same-layer rendering on Android, measured on a phone</p></div>
+          </dl>
+
+          <div class="tagset">
+            <div class="tag-group">
+              <h3 data-i18n="sky.g1">Containers &amp; layout<small>12</small></h3>
+              <ul class="chips">
+                <li>view</li><li>block</li><li>scroll-view</li><li>swiper</li><li>swiper-item</li>
+                <li class="new">grid-view</li><li class="new">movable-area</li><li class="new part">movable-view</li>
+                <li class="new">cover-view</li><li class="new">root-portal</li><li class="new">match-media</li><li class="new">span</li>
+              </ul>
+            </div>
+            <div class="tag-group">
+              <h3 data-i18n="sky.g2">Text &amp; media<small>8</small></h3>
+              <ul class="chips">
+                <li>text</li><li>rich-text</li><li>icon</li><li>image</li><li class="new">cover-image</li>
+                <li class="new same">video</li><li>canvas</li><li class="new">audio</li>
+              </ul>
+            </div>
+            <div class="tag-group">
+              <h3 data-i18n="sky.g3">Forms<small>16</small></h3>
+              <ul class="chips">
+                <li>button</li><li>input</li><li>textarea</li><li>switch</li><li>slider</li><li>progress</li>
+                <li>checkbox</li><li>checkbox-group</li><li>radio</li><li>radio-group</li><li>picker</li>
+                <li>picker-view</li><li>picker-view-column</li><li>form</li><li>label</li><li class="new part">editor</li>
+              </ul>
+            </div>
+            <div class="tag-group">
+              <h3 data-i18n="sky.g4">Page &amp; navigation<small>5</small></h3>
+              <ul class="chips">
+                <li>navigator</li><li class="new">page-container</li><li class="new part">page-meta</li>
+                <li class="new">navigation-bar</li><li class="new">draggable-sheet</li>
+              </ul>
+            </div>
+            <div class="tag-group">
+              <h3 data-i18n="sky.g5">Skyline gestures<small>8</small></h3>
+              <!-- 全名是 <xxx-gesture-handler>：一行一个太占地方，前缀写在这里、标签只写 xxx -->
+              <p class="tag-sub"><code>&lt;…-gesture-handler&gt;</code></p>
+              <ul class="chips">
+                <li class="new part">tap</li><li class="new part">double-tap</li><li class="new part">long-press</li>
+                <li class="new part">pan</li><li class="new part">horizontal-drag</li><li class="new part">vertical-drag</li>
+                <li class="new part">scale</li><li class="new part">force-press</li>
+              </ul>
+            </div>
+            <div class="tag-group">
+              <h3 data-i18n="sky.g6">Native components<small>8</small></h3>
+              <ul class="chips">
+                <li class="new ph same">map</li><li class="new ph">camera</li><li class="new ph">live-player</li>
+                <li class="new ph">live-pusher</li><li class="new ph">voip-room</li><li class="new ph">web-view</li>
+                <li class="new ph">channel-live</li><li class="new ph">channel-video</li>
+              </ul>
+            </div>
+          </div>
+
+          <ul class="chips chip-legend">
+            <li class="new" data-i18n="sky.leg.new">added in October 2026</li>
+            <li class="part" data-i18n="sky.leg.part">documented degradation</li>
+            <li class="same" data-i18n="sky.leg.same">same-layer rendering (Android)</li>
+            <li class="ph" data-i18n="sky.leg.ph">placeholder until the host takes it</li>
+          </ul>
+        </div>
+
+        <div class="sky-shots">
+          <figure class="phone">
+            <div class="phone-screen autoscroll" style="--d:24s">
+              <img src="assets/shots/demo_skyline.webp" width="500" height="2843" alt="Demo page rendered by the engine: grid-view masonry, movable-view, gesture handlers, draggable-sheet, this.animate and worklet" data-i18n-alt="sky.alt1" loading="lazy" decoding="async">
+            </div>
+            <figcaption data-i18n="sky.cap1">Skyline components</figcaption>
+          </figure>
+          <figure class="phone">
+            <div class="phone-screen autoscroll" style="--d:22s">
+              <img src="assets/shots/demo_builtin.webp" width="500" height="2439" alt="Demo page rendered by the engine: page-container, root-portal, match-media, audio, editor, native-component placeholders under a cover-view, span" data-i18n-alt="sky.alt2" loading="lazy" decoding="async">
+            </div>
+            <figcaption data-i18n="sky.cap2">Built-in components</figcaption>
+          </figure>
+          <figure class="phone">
+            <div class="phone-screen autoscroll" style="--d:20s">
+              <img src="assets/shots/demo_newapi.webp" width="500" height="2106" alt="Demo page rendered by the engine: EventChannel, createWorker, UDP and TCP sockets, batch storage, WebAudio, MediaQueryObserver, legacy canvas clip and dashes, host defaults" data-i18n-alt="sky.alt3" loading="lazy" decoding="async">
+            </div>
+            <figcaption data-i18n="sky.cap3">New APIs</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div class="grid-3 mt-lg">
+        <article class="card spot">
+          <h3 data-i18n="sky.k1.h">Done inside the engine</h3>
+          <ul class="ticks">
+            <li data-i18n="sky.k1.1">Routing checked against <code>app.json</code>, <code>success</code> after the new page's <code>onShow</code>, two-way <code>EventChannel</code>, route events, <code>enableAlertBeforeUnload</code></li>
+            <li data-i18n="sky.k1.2"><code>createTCPSocket</code> / <code>createUDPSocket</code>, <code>getLocalIPAddress</code>, <code>createWorker</code> in an isolated module scope</li>
+            <li data-i18n="sky.k1.3">A WebAudio node graph with native <code>decodeAudioData</code>, <code>createMediaQueryObserver</code>, <code>createOffscreenCanvas</code>, <code>createBufferURL</code></li>
+            <li data-i18n="sky.k1.4">Batch storage and <code>getStorageInfo</code>, OS-backed <code>getRandomValues</code>, <code>getVideoInfo</code> parsed from the MP4, legacy canvas <code>clip</code> / <code>setLineDash</code> / <code>measureText</code></li>
+          </ul>
+        </article>
+        <article class="card spot">
+          <h3 data-i18n="sky.k2.h">Handed to the host, through one channel</h3>
+          <ul class="ticks">
+            <li data-i18n="sky.k2.1">Name an API in <code>hostApis</code> (Flutter, Android, iOS, C ABI) and the call is yours; leave it out and it fails immediately with an <code>errMsg</code> saying the host can take over</li>
+            <li data-i18n="sky.k2.2"><code>chooseImage</code> / <code>chooseMedia</code> / <code>chooseVideo</code> / <code>chooseMessageFile</code> and saving to the album ship with the Android SDK and the Flutter plugin; the desktop window opens the system file dialog</li>
+            <li data-i18n="sky.k2.3">Files returned as <code>file://</code> are imported into <code>wxfile://tmp/</code>; <code>MapContext</code> and the other context objects forward each method with their id; host events reach <code>wx.onXxx</code> through <code>mr_app_dispatch_event</code></li>
+          </ul>
+        </article>
+        <article class="card spot">
+          <h3 data-i18n="sky.k3.h">Animation and touch, Skyline style</h3>
+          <ul class="ticks">
+            <li data-i18n="sky.k3.1"><code>this.animate</code> / <code>clearAnimation</code>, including scroll-driven timelines</li>
+            <li data-i18n="sky.k3.2"><code>wx.worklet</code>: shared and derived values, <code>timing</code> / <code>spring</code> / <code>decay</code> / <code>sequence</code> / <code>repeat</code> / <code>delay</code>, <code>Easing</code>, and <code>applyAnimatedStyle</code> writing node styles</li>
+            <li data-i18n="sky.k3.3">Gesture handlers report state, delta and velocity through <code>on-gesture-event</code>; while a <code>page-container</code> is open, going back closes it first</li>
+            <li data-i18n="sky.k3.4"><code>touchmove</code> / <code>touchend</code> / <code>touchcancel</code> stay locked to the node that got <code>touchstart</code>, as in WeChat and the DOM, even when the finger leaves it</li>
+          </ul>
+        </article>
+      </div>
+
+      <p class="note center" data-i18n="sky.note">
+        Degradations are written down, not hidden: worklets run on the logic thread; gesture handlers are
+        single-finger (scale stays 1, force-press never fires); <code>movable-view</code> has no pinch zoom;
+        <code>editor</code> is plain text; Workers share the page's QuickJS; <code>sticky-header</code> /
+        <code>sticky-section</code> do not stick and <code>list-view</code> / <code>nested-scroll-*</code> are
+        plain containers; WebAudio plays its sources but effect nodes do not change the sound; custom
+        <code>wx.router</code> transitions are not applied; <code>snapshot.takeSnapshot</code> fails. Each is
+        listed in the <a href="https://github.com/365code365/mini-program-core/blob/main/doc/%E5%BC%95%E6%93%8E%E6%B5%8B%E8%AF%95%E8%AF%B4%E6%98%8E.md">engine test guide</a> (Chinese).
       </p>
     </div>
   </section>
@@ -267,8 +419,9 @@
         <h2 data-i18n="dev.h2">Smooth on a 90 Hz phone,<br><span class="grad">measured frame by frame</span></h2>
         <p class="sec-lede" data-i18n="dev.lede">
           The same engine runs inside a Flutter plugin and native Android / iOS views. The numbers
-          below come from a OnePlus PLY110 (90 Hz, Adreno 810, Vulkan) running the Flutter release
-          build, judged by the timestamps SurfaceFlinger puts on every frame it shows — not by app logs.
+          below come from a OnePlus PLY110 (90 Hz, Adreno 810, Vulkan) running release builds of the
+          Flutter example and the native Android example (the same demo mini-program), judged by the
+          timestamps SurfaceFlinger puts on every frame it shows — not by app logs.
         </p>
       </header>
 
@@ -320,6 +473,21 @@
               <h3 data-i18n="dev.m6.h">Layout rebuild after setData</h3>
               <p data-i18n="dev.m6.p">Typical value among the slowest scroll frames. Found with simpleperf on the phone: selector matching stopped allocating, the cascade borrows instead of copying, containers stop resolving their style twice, line counts are remembered.</p>
             </article>
+            <article class="metric spot">
+              <b class="metric-num">19.9 → 2.5–3.3%</b>
+              <h3 data-i18n="dev.m7.h">Native Android view</h3>
+              <p data-i18n="dev.m7.p">Same engine library, same drag: the view stopped copying every frame into a Bitmap for <code>onDraw</code> and now presents into its own <code>SurfaceView</code> from the engine thread. Home page slow drag: 7.1% → 0.4%.</p>
+            </article>
+            <article class="metric spot">
+              <b class="metric-num">2.8 → 0px</b>
+              <h3 data-i18n="dev.m8.h">Map vs page while dragging</h3>
+              <p data-i18n="dev.m8.p">A <code>&lt;map&gt;</code> laid over the page drifts 2.8 px on average (15 px at worst) even with per-frame prediction. Same-layer rendering paints the host's frame into the page: 24 of 24 screenshots at 0 px.</p>
+            </article>
+            <article class="metric spot">
+              <b class="metric-num">0.5%</b>
+              <h3 data-i18n="dev.m9.h">Dragging across the map</h3>
+              <p data-i18n="dev.m9.p">Repeated frames while slowly dragging the page over the same-layer map, in both examples. The host redraws the map only when its content changes, never per scroll frame.</p>
+            </article>
           </div>
         </div>
 
@@ -338,7 +506,8 @@
               <li data-i18n="dev.feat.2">GPU compositing on Vulkan once the start-up self-test is byte-identical; CPU fallback on any failure or lost device</li>
               <li data-i18n="dev.feat.3">Engine-drawn navigation bar and capsule button, 300 ms route transitions, left-edge swipe back</li>
               <li data-i18n="dev.feat.4">Drags resampled by touch timestamps; animations sampled at the vsync, not when drawing happened</li>
-              <li data-i18n="dev.feat.5">Native components such as <code>&lt;video&gt;</code> are placed and clipped by the engine, so sheets, modals and the tabBar cover them as in WeChat</li>
+              <li data-i18n="dev.feat.5">Same-layer <code>&lt;video&gt;</code> and <code>&lt;map&gt;</code> on Android: the host decodes or draws the frame, the engine paints it into the page, so it scrolls with the page and sheets, modals and the tabBar cover it as in WeChat (iOS still lays them over the page)</li>
+              <li data-i18n="dev.feat.7">System pickers for <code>chooseImage</code> / <code>chooseMedia</code> / <code>chooseVideo</code> / <code>chooseMessageFile</code> and saving to the album, built into the Android SDK and the Flutter plugin</li>
               <li data-i18n="dev.feat.6">Idle costs nothing: frames only on demand; GPU textures and image caches are released in the background</li>
             </ul>
           </article>
@@ -554,7 +723,7 @@
               <tr><th scope="row" data-i18n="perf.real.r2k"><code>real-sample</code><small>8 pages</small></th><td data-i18n="perf.real.r2v">WeChat's official demo</td></tr>
               <tr><th scope="row" data-i18n="perf.real.r3k"><code>sample-app</code><small>15 pages</small></th><td data-i18n="perf.real.r3v">Full shop flow: cart → checkout → orders / shipping, cross-page state in storage</td></tr>
               <tr><th scope="row" data-i18n="perf.real.r4k"><code>news-app</code><small>6 pages</small></th><td data-i18n="perf.real.r4v">Full news flow: channel swiping, live font size, comments, persisted bookmarks</td></tr>
-              <tr><th scope="row" data-i18n="perf.real.r5k">Flutter demo<small>26 pages</small></th><td data-i18n="perf.real.r5v">The capability catalog that ships with the Flutter plugin: components, APIs, a mock HTTP feed, host-provided video</td></tr>
+              <tr><th scope="row" data-i18n="perf.real.r5k">Demo catalog<small>30 pages</small></th><td data-i18n="perf.real.r5v">Shared by the Flutter example and the native Android example: components incl. the Skyline set, new APIs, a mock HTTP feed, same-layer video and map</td></tr>
             </tbody>
           </table>
         </div>
@@ -595,7 +764,7 @@
         </article>
         <article class="card num spot" data-n="6">
           <h3 data-i18n="trade.6.h">The CPU draws, the GPU only composites</h3>
-          <p data-i18n="trade.6.p">The CPU rasterizer is the single pixel reference, so CI and embedded boxes with no GPU produce the same image. The GPU backend (desktop window and Android) only composites the page / tabBar / fixed layers as textures, <strong>byte-identical</strong> to the CPU for the same frame, and falls back to the CPU on any failure. No vello / Skia: their own anti-aliasing would make that unverifiable.</p>
+          <p data-i18n="trade.6.p">The CPU rasterizer is the single pixel reference, so CI and embedded boxes with no GPU produce the same image. The GPU backend (desktop window, Android and the native iOS view) only composites the page / tabBar / fixed layers as textures, <strong>byte-identical</strong> to the CPU for the same frame, and falls back to the CPU on any failure. No vello / Skia: their own anti-aliasing would make that unverifiable.</p>
         </article>
       </div>
       <p class="note center" data-i18n="trade.note">
@@ -654,8 +823,9 @@ cargo build --release
 
 final c = MiniProgramController(
   appDir: unpackedDir,                        // the unpacked mini-program (has app.json)
-  hostApis: {'chooseImage': (args) async =&gt; {'tempFilePaths': await pick()}},
-  nativeComponents: const ['video'],          // hosted by your own widgets
+  hostApis: {'login': (args) async =&gt; {'code': await myLogin()}},  // chooseImage &amp; co. are built in
+  nativeComponents: const ['video', 'map'],   // hosted by your own widgets
+  sameLayerViews: const ['map'],              // Android: painted into the page, scrolls with it
 );
 Navigator.push(context, MaterialPageRoute(
   builder: (_) =&gt; MiniProgramScaffold(        // nav bar + back + capsule + engine view
@@ -672,6 +842,8 @@ Navigator.push(context, MaterialPageRoute(
 //    cd sdk/android &amp;&amp; ./gradlew publishToMavenLocal
 
 val mini = MiniProgramView(this)
+mini.hostApis["login"] = MiniHostApi { call, reply -&gt; reply.success(JSONObject().put("code", myCode())) }
+mini.sameLayerViews["map"] = { MyMapView() }   // a MiniSameLayerView, painted into the page
 setContentView(mini)
 mini.open(File(filesDir, "my-mini-app"))   // the unpacked mini-program directory
 
@@ -687,8 +859,9 @@ override fun onPause()  { super.onPause();  mini.onHostPause() }</code></pre>
 //    bash tools/build-mobile.sh ios
 
 let mini = MiniProgramView(frame: view.bounds)
+mini.hostApis["login"] = { call, reply in reply.success(["code": myCode()]) }
 view.addSubview(mini)
-mini.open(appDir: unpackedDir)
+mini.open(appDir: unpackedDir)              // renders into its own CAMetalLayer (GPU, CPU fallback)
 
 if !mini.goBack() { navigationController?.popViewController(animated: true) }</code></pre>
         </div>
@@ -710,7 +883,7 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
           <h3 data-i18n="start.you.h">Only two things are yours to decide</h3>
           <ol class="ol">
             <li data-i18n="start.you.1"><b>Where the package comes from</b> — download / verify / unpack into the sandbox. The engine reads a <strong>directory</strong>; it does not parse <code>.wxapkg</code> and does no signature checking.</li>
-            <li data-i18n="start.you.2"><b>Who hosts native-layer components</b> — <code>&lt;web-view&gt;</code> / <code>&lt;map&gt;</code> live in WeChat's native component layer. The engine computes position and parameters; you place the widget with <code>WKWebView</code> / <code>android.webkit.WebView</code> / ArkUI <code>Web()</code>.</li>
+            <li data-i18n="start.you.2"><b>Who hosts native components</b> — <code>&lt;map&gt;</code>, <code>&lt;camera&gt;</code>, <code>&lt;web-view&gt;</code> live in WeChat's native component layer. Hand the engine a frame (<code>sameLayerViews</code>, Android) and it paints it into the page; or let the engine report position and parameters and place <code>WKWebView</code> / <code>android.webkit.WebView</code> / ArkUI <code>Web()</code> yourself. Tags nobody claims draw a labelled placeholder.</li>
           </ol>
         </article>
       </div>
@@ -730,17 +903,18 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
         <article class="card panel-yes">
           <h3 data-i18n="scope.yes.h"><span class="dot ok" aria-hidden="true"></span>Implemented</h3>
           <ul class="ticks">
-            <li data-i18n="scope.yes.1"><b>26 component tags</b>: containers, text and media, and forms, including <code>swiper</code>, <code>scroll-view</code>, <code>picker-view</code>, plus <code>navigator</code> / <code>label</code> with their official tap behavior</li>
+            <li data-i18n="scope.yes.1"><b>57 component tags</b>: 26 drawn by the renderer (incl. <code>swiper</code>, <code>scroll-view</code>, <code>picker-view</code>, <code>grid-view</code> aligned and masonry); <code>navigator</code> / <code>label</code> / <code>form</code> with official behavior; 17 built-in WXML components injected only when a page uses them (<code>movable-view</code>, <code>page-container</code>, <code>draggable-sheet</code>, 8 gesture handlers…); 8 native components drawn as placeholders until the host takes them</li>
             <li data-i18n="scope.yes.2"><b>Events</b>: six binding prefixes with the full capture-bubble chain; touch sequences follow WeChat semantics (slop cancels tap, 350ms longpress, a <code>touchcancel</code> is synthesized when scrolling takes over)</li>
             <li data-i18n="scope.yes.3"><b>Templates</b>: <code>wx:if</code> / <code>wx:for</code> / <code>wx:key</code> / <code>block</code>, the expression engine, <code>template</code> / <code>import</code> / <code>include</code>, <code>wxs</code> modules, custom components (one instance per use site, style isolation, named, default and dynamic <code>&lt;slot&gt;</code>, <code>virtualHost</code>, bubbling <code>triggerEvent</code>, <code>wx://form-field</code> behaviors)</li>
             <li data-i18n="scope.yes.4"><b>Styles</b>: selectors with specificity cascade, inheritance, <code>@import</code>, CSS variables, <code>rpx</code>, <code>calc()</code>, gradients, shadows, <code>transform</code> / <code>transition</code> / <code>@keyframes</code>, <code>@media</code> (size, orientation, dark mode), <code>@font-face</code></li>
-            <li data-i18n="scope.yes.5"><b>120+ <code>wx.*</code> APIs</b>: <code>request</code>, <code>connectSocket</code>, <code>downloadFile</code> / <code>uploadFile</code> and <code>FileSystemManager</code>, <code>InnerAudioContext</code>, storage persisted across launches, Toast / Modal / ActionSheet, <code>previewImage</code>, routing, <code>createSelectorQuery</code>, <code>createIntersectionObserver</code>, <code>createVideoContext</code>, the tabBar APIs, clipboard, <code>canIUse</code>, network status, <code>loadFontFace</code>; 30 host capabilities such as <code>login</code> go to the host through <code>hostApis</code></li>
+            <li data-i18n="scope.yes.5"><b>All 503 official <code>wx.*</code> APIs</b>: TCP / UDP, Worker, WebAudio, <code>EventChannel</code>, route events, <code>request</code>, <code>connectSocket</code>, <code>downloadFile</code> / <code>uploadFile</code> and <code>FileSystemManager</code>, <code>InnerAudioContext</code>, storage persisted across launches, Toast / Modal / ActionSheet, <code>previewImage</code>, routing, <code>createSelectorQuery</code>, <code>createIntersectionObserver</code>, <code>createVideoContext</code>, the tabBar APIs, clipboard, <code>canIUse</code>, network status, <code>loadFontFace</code>; hardware, payment, login and the rest go to the host through <code>hostApis</code> and fail immediately until it claims them</li>
             <li data-i18n="scope.yes.6"><b>Lifecycles</b>: 28 hooks across three levels (App 7 / Page 13 / Component 5 + <code>pageLifetimes</code> 3)</li>
             <li data-i18n="scope.yes.7"><b>Interaction</b>: inertial scrolling with critically damped bounce, gesture arbitration, 300 ms route transitions, left-edge swipe back, engine-drawn navigation bar and capsule button, pull-to-refresh, picker sheet, action sheet, image preview, partial repaint</li>
+            <li data-i18n="scope.yes.12"><b>Skyline animation and gestures</b>: <code>this.animate</code> / <code>clearAnimation</code> with scroll timelines, <code>wx.worklet</code> with <code>applyAnimatedStyle</code>, eight gesture handlers, <code>movable-view</code> with inertia and edge bounce, <code>draggable-sheet</code> with snap points; touch sequences stay on the <code>touchstart</code> node</li>
             <li data-i18n="scope.yes.8"><b>Media</b>: a Canvas 2D context plus <code>&lt;canvas type="2d"&gt;</code> with gradients, patterns, shadows, composite modes and pixel readback; <code>&lt;video&gt;</code> (MP4 demux + H.264 software decode + audio, playback events, <code>VideoContext</code>, fullscreen, poster, danmu), or hosted by the app's own player</li>
             <li data-i18n="scope.yes.9"><b>Dual backend</b>: CPU rasterization + optional GPU compositing (wgpu). Enabled only after a start-up self-test is byte-identical to the CPU, forceable with <code>--backend</code> / <code>MINI_BACKEND</code>, falls back to the CPU on any failure. Wired into the desktop window, headless, the Android SDK and the native iOS view (CAMetalLayer); the Flutter iOS texture composites on the CPU</li>
             <li data-i18n="scope.yes.10"><b>Component behavior</b>: <code>scroll-view</code> controlled position, events, custom pull-to-refresh, <code>reverse</code> and <code>padding</code>; <code>swiper</code> drag, circular mode, margins and Skyline's <code>direction</code> / <code>indicator-type</code> / <code>layout-type</code>; <code>form</code> submit / reset; <code>picker</code> column linkage and <code>header-text</code>; the inline <code>picker-view</code> wheel</li>
-            <li data-i18n="scope.yes.11"><b>Hosts</b>: desktop window and launcher, headless snapshots for CI, a C ABI, native Android and iOS views, and a Flutter plugin (<code>MiniProgramScaffold</code>, <code>hostApis</code>, native components through <code>nativeViewBuilder</code>)</li>
+            <li data-i18n="scope.yes.11"><b>Hosts</b>: desktop window and launcher, headless snapshots for CI, a C ABI, native Android and iOS views (with a native Android example app), and a Flutter plugin (<code>MiniProgramScaffold</code>, <code>hostApis</code>, native components through <code>nativeViewBuilder</code>, same-layer <code>sameLayerVideo</code> / <code>sameLayerViews</code>)</li>
           </ul>
         </article>
 
@@ -750,12 +924,12 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
             <tbody>
               <tr><th scope="row" data-i18n="scope.no.r1k">Drawing content on the GPU (vello / Skia style)</th><td data-i18n="scope.no.r1v">The GPU backend that exists only composites layers the CPU already drew. Content is always drawn by the CPU, so it stays the single pixel reference and places with no GPU (CI, embedded) produce the same image. Drawing on the GPU would mean a second rasterizer next to the CPU one; not done in this round</td></tr>
               <tr><th scope="row" data-i18n="scope.no.r2k">Parsing <code>.wxapkg</code> / signature checks</th><td data-i18n="scope.no.r2v"><code>.wxapkg</code> is WeChat's private compiled format and the signature is WeChat's key system; subpackages, staged rollout and integrity belong to the host, and the engine reads a source directory</td></tr>
-              <tr><th scope="row" data-i18n="scope.no.r3k">Compiling <code>&lt;web-view&gt;</code> / <code>&lt;map&gt;</code> into the engine</th><td data-i18n="scope.no.r3v">Skyline itself does not render <code>web-view</code> (its component table says "not planned"; such a page falls back to the WebView renderer), and <code>map</code> is a same-layer native component in Skyline: the engine computes position, the host places the widget</td></tr>
+              <tr><th scope="row" data-i18n="scope.no.r3k">Compiling <code>&lt;web-view&gt;</code> / <code>&lt;map&gt;</code> into the engine</th><td data-i18n="scope.no.r3v">Skyline itself does not render <code>web-view</code> (its component table says "not planned"; such a page falls back to the WebView renderer), and <code>map</code> is a same-layer native component in Skyline: the host draws the map, the engine paints that frame into the page (or reports the position so the host can lay its widget over it)</td></tr>
               <tr><th scope="row" data-i18n="scope.no.r5k">Accommodating code that deviates from WeChat semantics</th><td data-i18n="scope.no.r5v">Skyline is the only alignment target. This is a principle, not a feature that can be implemented</td></tr>
             </tbody>
           </table>
           <h3 class="mt" data-i18n="scope.miss.h">Still open</h3>
-          <p class="note" data-i18n="scope.miss.p">Each with its impact written down in the test guide: <code>wx:key</code> in incremental invalidation and WXS event handlers; custom components in the H5 export; scrollbars and Skyline's <code>sticky</code> / <code>grid-view</code> / nested scrolling; dragging video progress and picture-in-picture; swiper worklet callbacks; canvas dashed lines and <code>clip</code>; bare text placed directly in a <code>&lt;view&gt;</code> does not wrap; inherited <code>color</code> overriding progress / slider / icon defaults; per-element CSS variables and <code>grid-template</code>; textarea <code>auto-height</code> and IME composition.</p>
+          <p class="note" data-i18n="scope.miss.p">Each with its impact written down in the test guide: <code>wx:key</code> in incremental invalidation and WXS event handlers; custom components in the H5 export; scrollbars, Skyline's sticky sections and nested scrolling; dragging video progress and picture-in-picture; multi-finger gestures (pinch on <code>movable-view</code> and the scale handler); worklets off the logic thread and swiper worklet callbacks; <code>type="webgl"</code> canvases; bare text placed directly in a <code>&lt;view&gt;</code> does not wrap; inherited <code>color</code> overriding progress / slider / icon defaults; per-element CSS variables and <code>grid-template</code>; textarea <code>auto-height</code> and IME composition; same-layer components on iOS.</p>
         </article>
       </div>
 
@@ -804,9 +978,9 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
         <p class="eyebrow" data-i18n="stack.eyebrow">Stack</p>
         <h2 data-i18n="stack.h2">Few dependencies, all on current stable</h2>
         <p class="sec-lede" data-i18n="stack.lede">
-          <code>src/</code> is <b>389 <code>.rs</code> files / ~83k lines</b> (47 of them test modules),
-          plus 29 integration-test files; any file over 500 lines gets split. Outside the FFI
-          boundary, <code>unsafe</code> appears in <strong>11 audited spots</strong> — pixel slices
+          <code>src/</code> is <b>410 <code>.rs</code> files / ~88k lines</b> (49 of them test modules),
+          plus 33 integration-test files; any file over 500 lines gets split. Outside the FFI
+          boundary, <code>unsafe</code> appears in <strong>12 audited spots</strong> — pixel slices
           viewed as bytes, surfaces created from a native window pointer, two Android system calls
           (logcat, CPU affinity) and one zeroed canvas allocation — each with a SAFETY note; there is
           no <code>static mut</code>.
@@ -821,13 +995,13 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
         <li><b>ureq</b><span>3.3</span><i data-i18n="dep.ureq"><code>wx.request</code> and remote images</i></li>
         <li><b>tungstenite</b><span>=0.30.0</span><i data-i18n="dep.tungstenite"><code>wx.connectSocket</code>: the WebSocket protocol (TLS from the same rustls)</i></li>
         <li><b>rustls + webpki-roots</b><span>=0.23.42 / =1.0.9</span><i data-i18n="dep.rustls">TLS and root certificates for <code>wss://</code>, shared with ureq</i></li>
-        <li><b>base64 / flate2</b><span>=0.22.1 / =1.1.9</span><i data-i18n="dep.base64">Binary data across the bridge / deflate for <code>unzip</code></i></li>
+        <li><b>base64 / flate2 / getrandom</b><span>=0.22.1 / =1.1.9 / =0.2.17</span><i data-i18n="dep.base64">Binary data across the bridge / deflate for <code>unzip</code> / OS randomness for <code>wx.getRandomValues</code></i></li>
         <li><b>symphonia</b><span>0.6</span><i data-i18n="dep.symphonia">Audio demux and decode</i></li>
         <li><b>openh264</b><span>0.9</span><i data-i18n="dep.openh264">H.264 software decode (optional)</i></li>
         <li><b>winit + softbuffer</b><span>0.30 / 0.4</span><i data-i18n="dep.winit">Desktop window and software framebuffer, also the fallback when the GPU is unavailable (optional)</i></li>
         <li><b>wgpu + pollster</b><span>=30.0.1 / =1.0.1</span><i data-i18n="dep.wgpu">GPU compositing backend: Metal / Vulkan / DX12 / GLES (optional, pinned exactly)</i></li>
         <li><b>rodio</b><span>0.22</span><i data-i18n="dep.rodio">Desktop audio playback (optional)</i></li>
-        <li><b>arboard</b><span>3</span><i data-i18n="dep.arboard">Desktop clipboard for <code>wx.setClipboardData</code> (optional)</i></li>
+        <li><b>arboard + rfd</b><span>3 / =0.17.2</span><i data-i18n="dep.arboard">Desktop clipboard for <code>wx.setClipboardData</code> and system file dialogs for <code>wx.chooseImage</code> on macOS / Windows (optional)</i></li>
         <li><b>jni</b><span>0.21</span><i data-i18n="dep.jni">Android JNI entry</i></li>
       </ul>
 
@@ -842,13 +1016,13 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
         <article class="card">
           <h3 data-i18n="stack.reg.h">Regression suite<small>all green on every change</small></h3>
           <table class="kv"><tbody>
-            <tr><th scope="row" data-i18n="stack.reg.r1k">Rust tests</th><td>948</td></tr>
+            <tr><th scope="row" data-i18n="stack.reg.r1k">Rust tests</th><td>1033</td></tr>
             <tr><th scope="row" data-i18n="stack.reg.r2k">Scene gallery</th><td data-i18n="stack.reg.r2v">65 images, byte-reproducible</td></tr>
             <tr><th scope="row" data-i18n="stack.reg.r3k">Partial-repaint check</th><td data-i18n="stack.reg.r3v">5 desktop scenes + 12 SDK cases, frame by frame</td></tr>
             <tr><th scope="row" data-i18n="stack.reg.r4k">SDK vs desktop</th><td data-i18n="stack.reg.r4v">sample 15/15, news 6/6 pixel-identical</td></tr>
             <tr><th scope="row" data-i18n="stack.reg.r7k">GPU vs CPU</th><td data-i18n="stack.reg.r7v">34/34 byte-identical</td></tr>
-            <tr><th scope="row" data-i18n="stack.reg.r8k">Flutter plugin tests</th><td>22</td></tr>
-            <tr><th scope="row" data-i18n="stack.reg.r6k">Full run</th><td data-i18n="stack.reg.r6v"><code>bash tools/regress-async.sh</code>, 5–8 min, logged into timestamped batches</td></tr>
+            <tr><th scope="row" data-i18n="stack.reg.r8k">Flutter plugin tests</th><td>36</td></tr>
+            <tr><th scope="row" data-i18n="stack.reg.r6k">Full run</th><td data-i18n="stack.reg.r6v"><code>bash tools/regress-async.sh</code>, about 5 min, logged into timestamped batches</td></tr>
           </tbody></table>
         </article>
         <article class="card">
@@ -873,13 +1047,13 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
       </header>
 
       <div class="docs-grid">
-        <a class="doc spot" href="https://github.com/365code365/mini-program-core/blob/main/doc/%E6%9E%B6%E6%9E%84%E4%B8%8E%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86.md">
+        <a class="doc doc-wide spot" href="https://github.com/365code365/mini-program-core/blob/main/doc/%E6%9E%B6%E6%9E%84%E4%B8%8E%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86.md">
           <h3 data-i18n="docs.1.h">Architecture &amp; implementation</h3>
           <p data-i18n="docs.1.p">How a frame is drawn, layering and module split, how frame cost was driven down, partial repaint, scroll feel and touch alignment, taffy adaptation</p>
         </a>
         <a class="doc spot" href="https://github.com/365code365/mini-program-core/blob/main/doc/%E5%BC%95%E6%93%8E%E6%B5%8B%E8%AF%95%E8%AF%B4%E6%98%8E.md">
           <h3 data-i18n="docs.2.h">Engine test guide</h3>
-          <p data-i18n="docs.2.p">Capability matrix, T1–T30 checklists and criteria (every real-phone round included), measured memory breakdown, known gaps</p>
+          <p data-i18n="docs.2.p">Capability matrix, T1–T31 checklists and criteria (every real-phone round and the API / component catch-up with WeChat included), measured memory breakdown, known gaps</p>
         </a>
         <a class="doc spot" href="https://github.com/365code365/mini-program-core/blob/main/doc/%E5%8E%9F%E7%94%9FApp%E9%9B%86%E6%88%90%E6%8C%87%E5%8D%97.md">
           <h3 data-i18n="docs.3.h">Native app integration guide</h3>
@@ -907,7 +1081,11 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
         </a>
         <a class="doc spot" href="https://github.com/365code365/mini-program-core/blob/main/sdk/flutter/README.md">
           <h3 data-i18n="docs.9.h">Flutter plugin</h3>
-          <p data-i18n="docs.9.p"><code>MiniProgramController</code> / <code>MiniProgramScaffold</code>, host APIs, native components, navigation bar and capsule, Android system bars</p>
+          <p data-i18n="docs.9.p"><code>MiniProgramController</code> / <code>MiniProgramScaffold</code>, host APIs and the built-in pickers, native and same-layer components, navigation bar and capsule, Android system bars</p>
+        </a>
+        <a class="doc doc-wide spot" href="https://github.com/365code365/mini-program-core/blob/main/doc/%E6%BB%91%E5%8A%A8%E9%A1%BF%E6%8C%AB%E9%81%BF%E5%9D%91%E6%B8%85%E5%8D%95.md">
+          <h3 data-i18n="docs.10.h">Scroll-jank checklist</h3>
+          <p data-i18n="docs.10.p">"Repeated frames on screen" as the only criterion; the pitfalls in host presentation, engine invalidation and measurement tooling; current numbers for the Flutter and native examples, same-layer map alignment included</p>
         </a>
       </div>
     </div>
