@@ -11,6 +11,17 @@ pub struct JsRuntime {
 }
 
 impl JsRuntime {
+    /// QuickJS 堆：(分配器拿了多少字节, 其中对象 / 字符串等实际用了多少)
+    pub fn memory_used(&self) -> (usize, usize) {
+        let u = self.runtime.memory_usage();
+        (u.malloc_size.max(0) as usize, u.memory_used_size.max(0) as usize)
+    }
+
+    /// 跑一遍垃圾回收（宿主内存告警时）
+    pub fn collect_garbage(&self) {
+        self.runtime.run_gc();
+    }
+
     pub fn new() -> Result<Self, String> {
         let runtime = Runtime::new().map_err(|e| e.to_string())?;
         let context = Context::full(&runtime).map_err(|e| e.to_string())?;

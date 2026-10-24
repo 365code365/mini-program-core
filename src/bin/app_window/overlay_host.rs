@@ -109,7 +109,7 @@ impl crate::MiniAppWindow {
     pub(crate) fn handle_picker_sheet_move(&mut self, x: f32, y: f32) -> bool {
         match picker_sheet::on_move(&mut self.picker_sheet, x, y) {
             picker_sheet::SheetMove::NotOpen => {
-                if mini_render::host::ui_overlay::sheet_overlay_move(x) {
+                if mini_render::host::ui_overlay::sheet_overlay_move(x, y) {
                     self.needs_redraw = true;
                     if let Some(w) = &self.window { w.request_redraw(); }
                     return true;

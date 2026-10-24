@@ -11,23 +11,36 @@ use crate::Canvas;
 /// 这个扫描只在**覆盖层重绘的那一帧**做（它的内容被缓存，滚动/动画帧都不重画），
 /// 结果给后续所有帧复用，所以摊薄下来几乎免费。
 pub fn opaque_row_span(canvas: &Canvas) -> Option<(u32, u32)> {
+    row_spans(canvas).0
+}
+
+/// 一遍扫出两个行区间：(有不透明像素的行, 有非零字节的行)。后者以外的行每个字节都是 0，
+/// 那些页可以还给系统（`LayerCanvas::release_zero_rows_outside`）
+pub fn row_spans(canvas: &Canvas) -> (Option<(u32, u32)>, Option<(u32, u32)>) {
     let pixels = canvas.pixels();
     let w = canvas.width() as usize;
     let h = canvas.height();
-    let mut first = None;
-    let mut last = 0u32;
+    let (mut first, mut last) = (None, 0u32);
+    let (mut nz_first, mut nz_last) = (None, 0u32);
     for y in 0..h {
         let row = &pixels[y as usize * w..(y as usize + 1) * w];
         // 整行按位或（不提前退出）：编译器能向量化，比逐个 `any(|p| p.a > 0)` 快一个量级，结论相同。
         // 覆盖层大多数行是空的，从前这一遍扫描在手机上要几毫秒
-        if row.iter().fold(0u8, |acc, p| acc | p.a) != 0 {
+        let (a, any) = row.iter().fold((0u8, 0u8), |(a, any), p| (a | p.a, any | p.r | p.g | p.b | p.a));
+        if a != 0 {
             if first.is_none() {
                 first = Some(y);
             }
             last = y;
         }
+        if any != 0 {
+            if nz_first.is_none() {
+                nz_first = Some(y);
+            }
+            nz_last = y;
+        }
     }
-    first.map(|f| (f, last))
+    (first.map(|f| (f, last)), nz_first.map(|f| (f, nz_last)))
 }
 
 /// 将内容渲染到窗口缓冲区。

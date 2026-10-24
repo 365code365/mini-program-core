@@ -20,6 +20,10 @@ impl MiniEngine {
     pub(super) fn capture_back_shot(&mut self) {
         // 还没合成过（一打开就跳页）：没有图，侧滑时露出暗底（与桌面一致）
         let shot = self.snapshot_frame().unwrap_or(PageShot::empty());
+        // 只有最后一张会被用到（侧滑 / 返回转场），之前那张压起来（shot_pack.rs，一张 10MB → 几百 KB）
+        if let Some(prev) = self.back_shots.last_mut() {
+            prev.pack();
+        }
         self.back_shots.push(shot);
         if self.back_shots.len() > MAX_SHOTS {
             self.back_shots.remove(0);
@@ -35,7 +39,17 @@ impl MiniEngine {
         if self.compose.len() != (w as usize) * (h as usize) || self.compose.is_empty() {
             return None;
         }
-        Some(PageShot::new(w, h, self.compose.clone()))
+        // 直接拿走合成缓冲（不再拷一份 10MB）：下一帧合成时重新分配、整帧写满。
+        // GPU 上屏时这块缓冲只为留图才合成，拿走之后就不再常驻
+        self.rgba_stale = true;
+        Some(PageShot::new(w, h, std::mem::take(&mut self.compose)))
+    }
+
+    /// 退栈之后：新的最后一张要能直接显示，解开它（shot_pack.rs）
+    pub(super) fn unpack_last_shot(&mut self) {
+        if let Some(s) = self.back_shots.last_mut() {
+            s.unpack();
+        }
     }
 
     /// 推进松手后的收尾动画；判定为「返回」且动画走完时退栈。返回是否还在动（要续帧 / 重新合成）

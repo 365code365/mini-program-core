@@ -72,7 +72,7 @@ impl WxmlRenderer {
                     if (cur - h).abs() > 0.5 && h > 0.5 {
                         let mut st2 = st.clone();
                         st2.size.height = length(h);
-                        taffy.set_style(child.taffy_node, st2).ok();
+                        self.set_style_tracked(taffy, child.taffy_node, st2);
                         *changed = true;
                     }
                 }
@@ -105,7 +105,7 @@ impl WxmlRenderer {
             if node.tag == "text" && !node.text.is_empty() {
                 self.fix_text_box(taffy, node, parent_inner, changed);
             } else if node.tag == "scroll-view" {
-                Self::release_scroll_min_size(taffy, node, parent_inner, changed);
+                self.release_scroll_min_size(taffy, node, parent_inner, changed);
             }
             let inner = Self::content_box_of(taffy, node);
             self.fix_overflow_in(taffy, &node.children, inner, changed);
@@ -201,8 +201,19 @@ impl WxmlRenderer {
             st.size.height = length(needed_h);
             st.min_size.height = length(needed_h);
         }
-        taffy.set_style(node.taffy_node, st).ok();
+        self.set_style_tracked(taffy, node.taffy_node, st);
         *changed = true;
+    }
+
+    /// 布局之后改样式：改的是缓存那棵树（`record_touch`）就先把原样记下来，增量重建时还原
+    /// （layout_incremental.rs）。返回 taffy 收没收下
+    pub(super) fn set_style_tracked(&self, taffy: &mut Tree, id: taffy::NodeId, st: Style) -> bool {
+        if self.record_touch.get() {
+            if let Ok(orig) = taffy.style(id) {
+                self.layout_touched.borrow_mut().entry(id).or_insert_with(|| orig.clone());
+            }
+        }
+        taffy.set_style(id, st).is_ok()
     }
 
     /// 滚动容器溢出父级时解除它的自动最小尺寸（CSS 的 scroll container 语义）。
@@ -218,6 +229,7 @@ impl WxmlRenderer {
     /// - 整页那层 `<scroll-view class="page">`：父级本身就是内容高，自己 == 父级 → 不触发，
     ///   页面画布高与页面级滚动的现有行为完全不变。
     fn release_scroll_min_size(
+        &self,
         taffy: &mut Tree,
         node: &RenderNode,
         parent_inner: Option<(f32, f32)>,
@@ -237,7 +249,7 @@ impl WxmlRenderer {
             return; // 已经解除过，别重复触发 relayout
         }
         st.min_size.height = length(0.0_f32);
-        taffy.set_style(node.taffy_node, st).ok();
+        self.set_style_tracked(taffy, node.taffy_node, st);
         *changed = true;
     }
 }

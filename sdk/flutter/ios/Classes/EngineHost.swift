@@ -159,8 +159,11 @@ final class EngineHost: NSObject {
     }
 
     @objc private func tick(_ l: CADisplayLink) {
-        guard let h = handle else { return }
-        let f = mr_app_pump_ex(h, UInt64(CACurrentMediaTime() * 1000))
+        guard let h = handle, running else { return }
+        // vsync 时刻（与 UITouch.timestamp 同一个钟，Dart 的 PointerEvent.timeStamp 就是它）：
+        // 动画按它取样、拖动按它重采样。从前传 CACurrentMediaTime()（回调「此刻」），
+        // 画的时刻相对 vsync 忽早忽晚，与原生 iOS 宿主（EngineSession.swift）不一致
+        let f = mr_app_pump_ex(h, UInt64(l.timestamp * 1000))
         if f & Int32(MR_FRAME_NEW) != 0 { needsPresent = true }
         if needsPresent { present() }
         if f & Int32(MR_FRAME_EVENTS) != 0 { drainEvents() }
@@ -241,10 +244,15 @@ final class EngineHost: NSObject {
         switch call.method {
         case "pointer":
             let (phase, x, y) = (i("phase"), f("x"), f("y"))
+            // 移动带事件时间（Dart 的 PointerEvent.timeStamp，iOS 上就是 UITouch.timestamp）：
+            // 引擎按它重采样页面拖动。从前这里丢了 `t`、调不带时间的 move —— 重采样被清空，
+            // 经 MethodChannel 一帧到几个移动是碰运气，慢拖一顿一顿（清单第 9 / 15 条）
+            let t = (a["t"] as? NSNumber)?.doubleValue
             run { h in
                 switch phase {
                 case 0: mr_app_pointer_down(h, x, y)
-                case 1: mr_app_pointer_move(h, x, y)
+                case 1:
+                    if let t { mr_app_pointer_move_at(h, x, y, t) } else { mr_app_pointer_move(h, x, y) }
                 case 2: mr_app_pointer_up(h, x, y)
                 default: mr_app_pointer_cancel(h)
                 }
@@ -330,11 +338,10 @@ final class EngineHost: NSObject {
             let (name, payload) = (s("name"), s("payload"))
             thread.perform { [self] in
                 let n = handle.map { Int(mr_app_dispatch_event($0, name, payload)) } ?? 0
-                // 回调里多半 setData 了：与 run 一样回主线程挂一帧
-                DispatchQueue.main.async { [self] in
-                    requestFrame()
-                    result(n)
-                }
+                // 回调里多半 setData 了：在引擎线程上挂一帧（与 run 一样）。
+                // 从前在主线程上调 requestFrame —— running / handle / link 只归引擎线程，那是数据竞争
+                requestFrame()
+                DispatchQueue.main.async { result(n) }
             }
         case "eval":
             let code = s("code")

@@ -1,24 +1,9 @@
 //! 文本渲染模块 - 支持系统字体、Emoji 和高清渲染
 
-//! ## 内存：这里是整个引擎的峰值来源
-//! `fontdue` 在加载时把字体里**每个字形的几何**一次性展开，所以代价跟字形数量成正比、
-//! 与文件大小无关。`cargo run --release --example mem_report` 的实测（RSS 增量，macOS）：
-//!
-//! | 加载什么 | 字形数 | 增量 |
-//! |---|---|---|
-//! | Hiragino Sans GB 常规字面（系统默认） | ~2.9 万 | **+303 MB** |
-//! | 同集合的粗体字面（懒加载） | 同上 | +8~150 MB |
-//! | `Songti.ttc`（63.8MB 集合，指定宋体的应用） | ~2.8 万 | +138~156 MB |
-//! | `assets/SourceHanSansSC-Regular.otf`（16.5MB，单字面） | ~6.5 万 | **+405 MB** |
-//! | 1200 个不同汉字的**位图**缓存 | — | +12~31 MB |
-//!
-//! 两条别再猜的结论：**字形位图缓存不是问题**（几十 MB，已按字节封顶）；
-//! **内置单字面字体不省内存**（字形更多反而更贵），它只值得为「跨端逐像素一致」而做。
-//!
-//! 真要压峰值只有换惰性后端（`swash` / `cosmic-text`：按需取轮廓，不预展开）。
-//! **代码面很小** —— fontdue 的调用全在本文件：5 处 `Font::from_bytes`、4 处 `metrics`、
-//! 2 处 `rasterize`。难的是它会改变每个字形的抗锯齿，65 张画廊 + 21 页整帧 + 7 张交互
-//! 快照的基线全都要重定，所以是单独一轮的活，不能混在别的改动里。
+//! ## 内存
+//! 上游 fontdue 加载时把**每个字形的几何**一次性展开（CJK 字面一个 300~400MB）。现在用的是
+//! `vendor/fontdue`：字形第一次用到才展开、展开代码与上游逐行相同（光栅化逐位一致），
+//! 字体文件 mmap 进来、同一个 TTC 的几个字面共用（text/load.rs）。实测见 doc/引擎测试说明.md「五之二」。
 
 use crate::{Canvas, Paint};
 use fontdue::{Font, FontSettings, Metrics};
@@ -29,6 +14,8 @@ use std::sync::{Arc, Mutex, OnceLock};
 mod load;
 /// 「这段字在这个宽度下排几行」的记忆表（建树 / 排版反复问同一段字）
 mod wrap_memo;
+/// 字体占了多少内存（memory_report）
+pub mod mem;
 
 /// CSS `line-height: normal` 的等效系数（含中日韩字符的行）。
 ///
@@ -84,7 +71,7 @@ pub fn shared_fonts() -> Option<Arc<TextRenderer>> {
         .get_or_init(|| {
             TextRenderer::load_system_font()
                 .or_else(|_| {
-                    TextRenderer::from_bytes(include_bytes!("../assets/ArialUnicode.ttf"))
+                    TextRenderer::from_static(include_bytes!("../assets/ArialUnicode.ttf"))
                 })
                 .ok()
                 .map(Arc::new)
@@ -119,6 +106,8 @@ pub struct TextRenderer {
     cache: Arc<Mutex<HashMap<(char, u32, bool), (Metrics, Arc<[u8]>)>>>,
     /// 断行行数的记忆表（见 text/wrap_memo.rs）
     wrap_memo: wrap_memo::WrapMemo,
+    /// 整段宽度的记忆表（[`measure_text_weighted`](Self::measure_text_weighted)，同一套键）
+    width_memo: wrap_memo::Memo<f32>,
 }
 
 impl TextRenderer {
@@ -136,7 +125,12 @@ impl TextRenderer {
         };
         let font = Font::from_bytes(font_data, settings)
             .map_err(|e| e.to_string())?;
-        Ok(Self { 
+        Ok(Self::with_main_font(font))
+    }
+
+    /// 以 `font` 为主字体建渲染器（其余字面、回退都还没挂）
+    pub(crate) fn with_main_font(font: Font) -> Self {
+        Self { 
             main_font: font,
             bold_font: OnceLock::new(),
             bold_src: None,
@@ -145,7 +139,8 @@ impl TextRenderer {
             fallback: None,
             cache: Arc::new(Mutex::new(HashMap::new())),
             wrap_memo: Default::default(),
-        })
+            width_memo: Default::default(),
+        }
     }
 
     /// `text` 在 `max_width` 下排几行：记过就直接给，没记过 `compute` 一次再记（text/wrap_memo.rs）。
@@ -207,11 +202,9 @@ impl TextRenderer {
     fn bold_face(&self) -> Option<&Font> {
         self.bold_font
             .get_or_init(|| {
-                let path = self.bold_src.as_ref()?;
-                // 重新读一次字体文件：读盘走系统页缓存（实测 20ms 级），
-                // 比一直把 20~60MB 字节留在内存里划算。
-                let data = std::fs::read(path).ok()?;
-                Self::detect_bold_face(&data, &self.main_font)
+                // 同一个字体文件（TTC）里的别的字面：与常规字面共用那份字节（mmap，见 text/load.rs）
+                self.bold_src.as_ref()?;
+                Self::detect_bold_face(self.main_font.bytes(), &self.main_font)
             })
             .as_ref()
     }
@@ -420,6 +413,18 @@ impl TextRenderer {
     /// 带 letter-spacing 的标题盒子凭空高出一行（tea-app 首页
     /// `.brand-cn` 正是如此，把同一行的 `.brand-en` 挤出定高导航栏而整行消失）。
     pub fn measure_text_weighted(&self, text: &str, size: f32, letter_spacing: f32, bold: bool) -> f32 {
+        // 记忆表（text/wrap_memo.rs）：setData 之后整棵重建，页面上没变的几百段字又要逐字查字形、
+        // 量前进宽度 —— 一加真机「节点与滚动」页上建树时间的两成（fontdue `metrics_raw`、`font_for_weight`）。
+        // 结果只取决于（这个渲染器、文字、字号、字间距、粗细），命中时与现算逐位相同。
+        // 单个字不记：查表不比直接量便宜
+        if text.len() <= 4 {
+            return self.measure_text_weighted_uncached(text, size, letter_spacing, bold);
+        }
+        self.width_memo
+            .lines(text, 0.0, size, letter_spacing, bold, || self.measure_text_weighted_uncached(text, size, letter_spacing, bold))
+    }
+
+    fn measure_text_weighted_uncached(&self, text: &str, size: f32, letter_spacing: f32, bold: bool) -> f32 {
         let bold = bold && self.has_bold_face();
         let mut width = 0.0;
         for ch in text.chars() {

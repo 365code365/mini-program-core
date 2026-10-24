@@ -103,6 +103,11 @@ pub fn draw_linear_gradient(
     }
 
     let mut row_buf: Vec<Color> = Vec::new();
+    // 斜向、面积大的渐变按行缓存：补条带每次滑回页面顶部都要把头图那一截重算一遍
+    // （一加 PLY110 上 1078×286 的一条 13~16ms，引擎线程上最热的就是这个闭包）。同一个元素、同一个画布位置
+    // 每个像素的颜色是确定的，算过的行原样贴回去，结果与现算逐字节相同
+    let cache_key = (!vertical && !horizontal && w * h >= row_cache::MIN_AREA)
+        .then(|| row_cache::Key::new(grad, x, y, w, h, opacity));
     for py in y0..y1 {
         let fy = py as f32 + 0.5;
         if plain_row(py) {
@@ -118,6 +123,28 @@ pub fn draw_linear_gradient(
                 canvas.blend_pixels(x0, py, row, row.len());
                 continue;
             }
+        }
+        if plain_row(py) && cache_key.is_some() {
+            // 大块斜向渐变（首页头图）：这一行算过就直接贴（见 [`row_cache`]）
+            let key = cache_key.as_ref().unwrap();
+            let (bx0, bx1) = (x.floor() as i32, (x + w).ceil() as i32);
+            row_cache::with_row(key, py, (bx1 - bx0).max(0) as usize, |row| {
+                for (i, px) in (bx0..bx1).enumerate() {
+                    let fx = px as f32 + 0.5;
+                    let proj = (fx - cx) * dx + (fy - cy) * dy;
+                    let t = if full > 0.0 { proj / full + 0.5 } else { 0.5 };
+                    let mut c = color_at(t);
+                    c.a = (c.a as f32 * opacity * 1.0) as u8;
+                    row[i] = c;
+                }
+            }, |row| {
+                let s = (x0 - bx0) as usize;
+                let e = ((x1 - bx0) as usize).min(row.len());
+                if e > s {
+                    canvas.blend_pixels(x0, py, &row[s..e], e - s);
+                }
+            });
+            continue;
         }
         if plain_row(py) {
             // 斜向渐变的无圆角行：颜色照旧逐像素算（同一个算式），但整行算好一次贴上去 ——
@@ -229,5 +256,106 @@ mod tests {
         let at = |x: usize, y: usize| px[y * 40 + x];
         assert_eq!(at(3, 2), at(3, 17), "同一列在不同行应同色");
         assert_ne!(at(3, 2), at(30, 2), "同一行在不同列应不同色");
+    }
+}
+
+/// 斜向渐变的行缓存（只给大块的：头图、整屏背景）。键里是元素在画布上的**精确**位置与尺寸（浮点的位），
+/// 位置一变（画布窗口挪了、布局变了）就是新键 —— 像素与现算逐字节相同的前提就是同一组输入
+pub(crate) mod row_cache {
+    use super::{Color, LinearGradientBg};
+    use std::cell::RefCell;
+    use std::collections::HashMap;
+
+    /// 小于这个面积（物理像素）不缓存：按钮、卡片上的渐变现算很快
+    pub const MIN_AREA: f32 = 120_000.0;
+    /// 总共最多缓存这么多像素（约 8MB），满了整个清掉。
+    ///
+    /// 从前是 600 万像素（24MB）：键里有元素在画布上的精确位置，滑过一遍长页面，每个位置的大渐变都留一份。
+    /// 真正贵的是首页头图那种一块（1078×286 ≈ 31 万像素），200 万像素够留六七块
+    const MAX_PIXELS: usize = 2_000_000;
+
+    #[derive(PartialEq, Eq, Hash, Clone)]
+    pub struct Key(Vec<u32>);
+
+    impl Key {
+        pub fn new(g: &LinearGradientBg, x: f32, y: f32, w: f32, h: f32, opacity: f32) -> Self {
+            let mut v = vec![x.to_bits(), y.to_bits(), w.to_bits(), h.to_bits(), opacity.to_bits(), g.angle_deg.to_bits()];
+            for (t, c) in &g.stops {
+                v.push(t.to_bits());
+                v.push(u32::from_le_bytes([c.r, c.g, c.b, c.a]));
+            }
+            Key(v)
+        }
+    }
+
+    #[derive(Default)]
+    struct Rows {
+        rows: HashMap<i32, Vec<Color>>,
+    }
+
+    thread_local! {
+        static CACHE: RefCell<(HashMap<Key, Rows>, usize)> = RefCell::new((HashMap::new(), 0));
+    }
+
+    /// 整个清掉（进后台 / 内存告警，`trim_memory`）
+    pub fn clear() {
+        CACHE.with(|c| *c.borrow_mut() = (HashMap::new(), 0));
+    }
+
+    /// 占了多少字节
+    pub fn bytes() -> usize {
+        CACHE.with(|c| c.borrow().1 * 4)
+    }
+
+    /// 取第 `py` 行（没有就用 `fill` 算一行宽 `width` 的），交给 `use_row`
+    pub fn with_row(key: &Key, py: i32, width: usize, fill: impl FnOnce(&mut [Color]), use_row: impl FnOnce(&[Color])) {
+        CACHE.with(|c| {
+            let mut c = c.borrow_mut();
+            let (map, total) = &mut *c;
+            if !map.get(key).map_or(false, |r| r.rows.contains_key(&py)) {
+                if *total + width > MAX_PIXELS {
+                    map.clear();
+                    *total = 0;
+                }
+                let mut row = vec![Color::new(0, 0, 0, 0); width];
+                fill(&mut row);
+                *total += width;
+                map.entry(key.clone()).or_default().rows.insert(py, row);
+            }
+            use_row(&map[key].rows[&py]);
+        })
+    }
+}
+
+#[cfg(test)]
+mod row_cache_tests {
+    use super::*;
+    use crate::Rect as GeoRect;
+
+    fn grad() -> LinearGradientBg {
+        LinearGradientBg { angle_deg: 135.0, stops: vec![(0.0, Color::new(7, 193, 96, 255)), (1.0, Color::new(16, 174, 255, 255))] }
+    }
+
+    #[test]
+    fn 行缓存贴回去与现算逐字节相同() {
+        // 第一遍：整块现算（同时填满缓存）；第二遍：只画中间一条（命中缓存）；第三遍：不进缓存的小渐变路径参照
+        let (w, h) = (700u32, 400u32);
+        let draw = |clip: Option<GeoRect>| {
+            let mut c = Canvas::new(w, h);
+            c.clear(Color::WHITE);
+            if let Some(r) = clip {
+                c.clip_rect(r);
+            }
+            draw_linear_gradient(&mut c, &grad(), 10.3, 7.7, 660.0, 380.0, [24.0; 4], 1.0);
+            c.pixels().to_vec()
+        };
+        let full = draw(None);
+        let band = draw(Some(GeoRect::new(0.0, 120.0, w as f32, 90.0)));
+        let again = draw(None);
+        assert!(full == again, "命中缓存的整块与现算不同");
+        for y in 120..210usize {
+            let r = y * w as usize..(y + 1) * w as usize;
+            assert!(full[r.clone()] == band[r], "第 {y} 行：补条带命中缓存与整块现算不同");
+        }
     }
 }

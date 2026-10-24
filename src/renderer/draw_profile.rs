@@ -23,6 +23,15 @@ pub fn enabled() -> bool {
     switch()
 }
 
+/// `MINI_SCROLL_LOG`：绘制路径上（每帧、每个 scroll-view 一次）判它。
+/// `std::env::var` 每次都要拿进程的环境锁、扫一遍 environ；与 `MINI_DRAW_LOG` 一样进程里读一次。
+/// 宿主（MiniDiag / DiagProps）在建第一个引擎之前就把环境设好了
+#[inline]
+pub fn scroll_log() -> bool {
+    static ON: OnceLock<bool> = OnceLock::new();
+    *ON.get_or_init(|| std::env::var("MINI_SCROLL_LOG").is_ok())
+}
+
 thread_local! {
     /// tag -> (次数, 累计毫秒)
     static ACC: RefCell<HashMap<&'static str, (u64, f64)>> = RefCell::new(HashMap::new());

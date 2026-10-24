@@ -112,6 +112,8 @@ pub struct MiniEngine {
     pub(crate) anim_time: Option<f32>,
     /// fixed 覆盖层实际画过的行区间（设备像素）
     pub(super) fixed_rows: Option<(u32, u32)>,
+    /// 上次把画布页还给系统时留下的行（engine_memory.rs `release_idle_rows`）：变化不大就不再调 madvise
+    pub(super) mem_kept: super::engine_memory::Kept,
     /// 合成缓冲（0xRRGGBB）与交给宿主的 RGBA
     pub(super) compose: Vec<u32>,
     pub(super) rgba: Vec<u8>,
@@ -317,6 +319,7 @@ impl MiniEngine {
             caret_visible: true,
             anim_time: None,
             fixed_rows: None,
+            mem_kept: Default::default(),
             compose: Vec::new(),
             rgba: Vec::new(),
             rgba_stale: false,

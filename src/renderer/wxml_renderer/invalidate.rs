@@ -17,7 +17,17 @@
 //! transform 子树里、影响面过大）。少画一块的代价是残留脏像素，
 //! 比多画一次严重得多，所以这里的偏置是刻意保守的。
 
+use super::layout_snapshot::Layouts;
 use super::*;
+
+/// 失效分析要的旧树：节点、它们上一次的布局（旧 taffy 树或增量重建前拍下的那份）、内容高
+pub(super) struct OldLayout<'a> {
+    pub nodes: &'a [RenderNode],
+    pub layouts: &'a dyn Layouts,
+    pub content_height: f32,
+    /// 增量重建留下来的子树：旧树里的占位 → 新树里的真节点（整棵重建是空表）
+    pub moved: &'a HashMap<NodeId, &'a RenderNode>,
+}
 
 /// 这一帧该重绘多大范围
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -33,7 +43,9 @@ pub enum FramePlan {
 /// 收集到的失效范围超过这个比例（相对视口面积）就不值得做局部重绘了
 const DAMAGE_AREA_LIMIT: f32 = 0.34;
 
-pub(super) struct DiffCtx {
+pub(super) struct DiffCtx<'a> {
+    /// 见 [`OldLayout::moved`]
+    pub moved: &'a HashMap<NodeId, &'a RenderNode>,
     /// 失效矩形的并集（物理像素，画布坐标）
     pub union: Option<GeoRect>,
     /// 变化是否落在 `position: fixed` 覆盖层里（宿主据此决定是否重画覆盖层）
@@ -50,8 +62,8 @@ pub(super) struct DiffCtx {
     pub positional: crate::parser::wxss::PositionalSubjects,
 }
 
-impl DiffCtx {
-    fn add(&mut self, r: GeoRect) {
+impl DiffCtx<'_> {
+    pub(super) fn add(&mut self, r: GeoRect) {
         if r.width <= 0.0 || r.height <= 0.0 {
             return;
         }
@@ -72,7 +84,7 @@ impl WxmlRenderer {
     /// 比较新旧布局树，算出这次数据变化的重绘范围
     pub(super) fn plan_from_diff(
         &self,
-        old: &CachedLayout,
+        old: OldLayout<'_>,
         new_nodes: &[RenderNode],
         new_taffy: &Tree,
         new_content_height: f32,
@@ -91,6 +103,7 @@ impl WxmlRenderer {
             return FramePlan::Full;
         }
         let mut ctx = DiffCtx {
+            moved: old.moved,
             union: None,
             fixed_changed: false,
             bail: false,
@@ -100,7 +113,7 @@ impl WxmlRenderer {
             positional: self.stylesheet.positional_subjects(),
         };
         // 根节点这一层与每个节点的孩子同一套配对规则（invalidate_pair.rs）
-        Self::diff_children(&old.taffy, new_taffy, &old.render_nodes, new_nodes, (0.0, 0.0), (0.0, 0.0), false, false, &mut ctx);
+        Self::diff_children(old.layouts, new_taffy, old.nodes, new_nodes, (0.0, 0.0), (0.0, 0.0), false, false, &mut ctx);
         if ctx.bail {
             if log {
                 eprintln!("🩹 退回整帧：{}", ctx.bail_why);
@@ -121,6 +134,9 @@ impl WxmlRenderer {
         let sf = self.scale_factor;
         let viewport_area = (self.screen_width * sf) * (self.screen_height * sf);
         if rect.width * rect.height > viewport_area * DAMAGE_AREA_LIMIT {
+            if log {
+                eprintln!("🩹 退回整帧：失效范围 {:.0}x{:.0}@({:.0},{:.0}) 超过视口的 {DAMAGE_AREA_LIMIT}", rect.width, rect.height, rect.x, rect.y);
+            }
             return FramePlan::Full;
         }
         FramePlan::Damage { rect, fixed_changed: ctx.fixed_changed }
@@ -129,8 +145,8 @@ impl WxmlRenderer {
     /// 并行走新旧两棵树。`(oox, ooy)` / `(nox, noy)` 分别是旧/新树里父节点的累计原点。
     #[allow(clippy::too_many_arguments)]
     pub(super) fn diff_node(
-        old_t: &Tree,
-        new_t: &Tree,
+        old_t: &dyn Layouts,
+        new_t: &dyn Layouts,
         old: &RenderNode,
         new: &RenderNode,
         oox: f32,
@@ -143,6 +159,9 @@ impl WxmlRenderer {
         if ctx.bail {
             return;
         }
+        // 增量重建留下来的子树：旧树里只剩个占位，旧的就是新的这一份（布局各取各的）
+        let moved = ctx.moved;
+        let old = super::layout_incremental::resolve(old, moved);
         // 孩子个数对不对得上由 diff_children 判（fixed 的孩子单独数；内容变高时可以不同）
         if old.tag != new.tag {
             ctx.bail = true;
@@ -178,6 +197,12 @@ impl WxmlRenderer {
             return;
         }
         let in_fixed = in_fixed || new.style.is_fixed;
+        // 带静态 transform 的子树（手势 / worklet 每帧改 style 里的 transform）：按绘制几何
+        // 算旧、新两次画到哪，不再一律整帧（invalidate_transform.rs）
+        if !in_fixed && !ctx.grow && Self::transform_diffable(old, new) {
+            Self::diff_transform_subtree(old_t, new_t, old, new, (oox, ooy), (nox, noy), ctx);
+            return;
+        }
         // 这些子树的绘制坐标不等于布局坐标（子画布 / 横向偏移 / 离屏仿射），
         // 用布局包围盒当失效范围会擦错地方 —— 里面一有变化就整帧重绘。
         let opaque_subtree = matches!(new.tag.as_str(), "scroll-view" | "swiper")
@@ -234,6 +259,11 @@ impl WxmlRenderer {
     /// scroll-view 的整段内容位图（宽 × 内容高 × 4 字节）在那段时间里只是白占内存，回来时重画
     pub fn drop_offscreen_caches(&mut self) {
         self.scroll_cache.clear();
+    }
+
+    /// scroll-view 离屏缓存的像素缓冲（内存分项用）
+    pub fn offscreen_buffers(&self) -> Vec<&[crate::Color]> {
+        self.scroll_cache.pixel_buffers().collect()
     }
 
     /// 布局缓存作废，下一帧整棵树重建重排。字体换了（`@font-face` / `wx.loadFontFace` 下完）时用：

@@ -14,6 +14,20 @@ inclusion: always
 
 真机构建与安装**一条一条串着跑**：引擎库、`flutter build apk`、装包同时跑时 gradle 会打进旧库，量的是上一版。
 
+## 提速：怎么测得快（用户 2026-10-23 再次要求「测试一定要快、分析要准、直接改代码」）
+
+- **先拿数据再改**：顿挫先跑 `android-jank.sh <场景>`（几十秒，自带 `🩹 >8ms` 的帧与原因），不够准就真机 simpleperf
+  （配方见下），**不要**先读一圈源码猜。一次 profile 直接指出热点函数（例：`draw_linear_gradient` 闭包占引擎线程自身时间第一）。
+- **只编要的**：Kotlin / Dart 改动不重编引擎库（`./gradlew assembleRelease` 十几秒、`flutter test` 几秒）；
+  Rust 改动先 `cargo test --release --lib <过滤词>` 或 `--test <文件>`，别 `--all-targets`。
+- **功能先在模拟器上验**（`emulator-5554`，不跟别的会话抢手机）；手机只跑计时 / 顿挫 / GPU。
+- **全量只跑一次、放后台**：`regress-async.sh` 跑着的时候写文档，不改 Rust。
+- **截图看不见就等**：刚写的 PNG 本工具常要 ~1 分钟才读得到，别反复重拍；能用数字判的（像素统计、日志）就别看图。
+- simpleperf：Flutter 示例是 profileable 的（原生示例在 ColorOS 上 `--app` 认不出 profileable，量原生的引擎代码用 Flutter 示例同一页）：
+  `simpleperf record --app <包> -t <mini-render 线程> -e cpu-clock --call-graph dwarf,16384 -f 2000 --duration 14`，
+  拉回来 `report-sample --show-callchain`，`llvm-symbolizer --obj=target/aarch64-linux-android/release/libmini_render.so` 符号化
+  （APK 里的库 md5 必须等于 jniLibs 那份，否则偏移对不上）。
+
 ## 优化代码时盯住顿挫（硬规矩）
 
 用户反复遇到「滑起来一顿一顿」：**凡是动了上屏、帧调度、失效分析、绘制热路径、宿主视图的改动，都要按顿挫来验**，
@@ -25,8 +39,10 @@ inclusion: always
   两层各自按时上屏也可能错开，SurfaceFlinger 量不出来。数字不许比清单里的回退。
 - **宿主一律走独立图层 + 引擎线程**：Android SurfaceView、iOS CAMetalLayer，后端默认 auto；别在 UI 线程 `onDraw` /
   主线程 `CADisplayLink` 里上屏，别把原生控件盖在画面上（走同层渲染：`sameLayerVideo` / `sameLayerViews`）。
-- **四份宿主同一套规则**：Flutter `EngineHost.kt` / 原生 Android `EngineSession.kt` / iOS `EngineSession.swift`
-  （Flutter iOS 是纹理那条路），改一边要对照另一边；只改了一边的写进清单。
+- **四份宿主同一套规则**：Android 两份（Flutter `EngineHost.kt` / 原生 `EngineSession.kt`）已合成一个内核
+  `sdk/android/.../EngineCore.kt`（出帧、上屏、事件只写一次，两边只是适配层，Flutter 插件直接编进同一份源码）；
+  iOS 两份（`EngineSession.swift` / Flutter iOS 的 `EngineHost.swift`，后者是纹理那条路）仍各一份，改一边要对照另一边；
+  只改了一边的写进清单。
 - **绘制热路径不分配**：每个节点都走的函数（`draw_component`、`animated_image_frame` 这类）先判再分配，
   真机的 jemalloc 带锁，桌面量不出来。
 

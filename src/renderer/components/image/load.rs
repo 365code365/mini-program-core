@@ -83,6 +83,18 @@ pub(super) fn load_image(src: &str) -> Option<Arc<ImageData>> {
         });
     }
 
+    // 本地大文件（选图 / 拍照的原图、下载的大图）：后台解码并缩到长边 [`LARGE_MAX_SIDE`]，本帧先画占位。
+    // 小文件（包内图标、切图）照旧同步：读盘 + 解码很快，也避免首帧闪空、逐字节基线不变
+    if let Some(path) = crate::assets::resolve(src) {
+        if std::fs::metadata(&path).map(|m| m.len() > LARGE_FILE_BYTES).unwrap_or(false) {
+            let key = src.to_string();
+            return crate::renderer::components::image_net::get_or_load::<ImageData, _>(&format!("local:{src}"), move || {
+                let bytes = std::fs::read(&path).ok()?;
+                decode_with_animation(&key, &bytes).map(cap_side)
+            });
+        }
+    }
+
     // 本地文件：读盘 + 解码很快，保持同步（也避免首帧闪空）
     let result = load_image_from_file(src);
 
@@ -97,6 +109,25 @@ pub(super) fn load_image(src: &str) -> Option<Arc<ImageData>> {
     }
 
     result
+}
+
+/// 本地文件超过这么大就后台解码（包内的图几乎都在 300KB 以下）
+const LARGE_FILE_BYTES: u64 = 768 * 1024;
+/// 后台解码的大图缩到这个长边：页面上最大也就整屏宽（1080 物理像素），预览全屏 2× 也够。
+/// 1200 万像素的原图解码后 48MB，三张就把图片缓存挤爆、每帧逐出重解 —— 选完图整页卡死的另一半原因
+const LARGE_MAX_SIDE: u32 = 2048;
+
+fn cap_side(img: ImageData) -> ImageData {
+    let (w, h) = (img.width, img.height);
+    if w.max(h) <= LARGE_MAX_SIDE || img.frame_index != 0 {
+        return img;
+    }
+    let Some(buf) = image::RgbaImage::from_raw(w, h, (*img.data).clone()) else { return img };
+    // thumbnail：面积平均，比 resize 快得多，缩小时质量足够
+    let s = LARGE_MAX_SIDE as f32 / w.max(h) as f32;
+    let small = image::imageops::thumbnail(&buf, ((w as f32 * s) as u32).max(1), ((h as f32 * s) as u32).max(1));
+    let (nw, nh) = small.dimensions();
+    ImageData { data: Arc::new(small.into_raw()), width: nw, height: nh, frame_index: 0 }
 }
 
 /// 从本地文件加载图片（按宿主登记的小程序根目录解析包内绝对路径）

@@ -54,9 +54,26 @@ fn unb64(s: &str) -> Result<Vec<u8>, String> {
     base64::engine::general_purpose::STANDARD.decode(s.as_bytes()).map_err(|e| e.to_string())
 }
 
-/// 取走全部待送回 JS 的事件
+/// socket 是哪条线程建的（引擎各在自己的线程上跑逻辑层）。事件只送回建它的那条线程：
+/// 同一进程里几个引擎（或测试并行跑）各取各的 —— 从前 `take_events` 一把全拿走，
+/// 别的引擎 / 用例的回包就这么丢了（`net_socket::tests` 在并行回归里时不时收不到 connect）
+fn owners() -> &'static Mutex<HashMap<u32, std::thread::ThreadId>> {
+    static O: OnceLock<Mutex<HashMap<u32, std::thread::ThreadId>>> = OnceLock::new();
+    O.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn own(id: u32) {
+    owners().lock().unwrap().insert(id, std::thread::current().id());
+}
+
+/// 取走这条线程建的 socket 待送回 JS 的事件（别的线程建的留在队列里）
 pub fn take_events() -> Vec<(u32, NetEvent)> {
-    std::mem::take(&mut *events().lock().unwrap())
+    let me = std::thread::current().id();
+    let owners = owners().lock().unwrap();
+    let mut q = events().lock().unwrap();
+    let (mine, rest): (Vec<_>, Vec<_>) = std::mem::take(&mut *q).into_iter().partition(|(id, _)| owners.get(id).map_or(true, |t| *t == me));
+    *q = rest;
+    mine
 }
 
 /// 有 socket 开着或有事件没送回：宿主据此续帧
@@ -93,6 +110,7 @@ pub fn tcp_connect(id: u32, address: &str, port: u16, timeout_ms: u64) -> Result
     if port == 0 {
         return Err("connect:fail invalid port".into());
     }
+    own(id);
     let (tx, rx) = channel();
     {
         let mut map = sockets().lock().unwrap();
@@ -182,6 +200,7 @@ pub fn udp_bind(id: u32, port: u16, ipv6: bool) -> Result<u16, String> {
     if sockets().lock().unwrap().contains_key(&id) {
         return Err("bind:fail socket is already bound".into());
     }
+    own(id);
     let sock = UdpSocket::bind(if ipv6 { format!("[::]:{port}") } else { format!("0.0.0.0:{port}") }).map_err(|e| format!("bind:fail {e}"))?;
     let local = sock.local_addr().map_err(|e| format!("bind:fail {e}"))?;
     sock.set_read_timeout(Some(Duration::from_millis(15))).ok();

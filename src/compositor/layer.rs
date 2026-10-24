@@ -44,6 +44,13 @@ impl LayerCanvas {
         &self.canvas
     }
 
+    /// 把全是 0 的那几行（`[0, y0)` 与 `[y1, 高)`，调用方保证每个字节都是 0）的页还给系统。
+    /// 内容不变（还回去的页再读还是 0），所以不换代数、GPU 不用重传
+    pub fn release_zero_rows_outside(&mut self, y0: u32, y1: u32) -> usize {
+        let h = self.canvas.height();
+        self.canvas.release_rows(0, y0) + self.canvas.release_rows(y1, h)
+    }
+
     /// 拿可变引用即视为整层变了（不管实际画了多少）
     pub fn write(&mut self) -> &mut Canvas {
         self.gen = next_gen();
@@ -82,6 +89,13 @@ impl PageCanvas {
 
     pub fn read(&self) -> &Canvas {
         &self.canvas
+    }
+
+    /// 只保留 `[y0, y1)` 这几行，其余的页还给系统（`Canvas::release_rows`）。**不**记写入日志：
+    /// 条带以外的行内容本来就不算数（读之前一定先清再画，engine_frame.rs），GPU 镜像不用重传
+    pub fn release_outside(&mut self, y0: u32, y1: u32) -> usize {
+        let h = self.canvas.height();
+        self.canvas.release_rows(0, y0) + self.canvas.release_rows(y1, h)
     }
 
     /// 声明要写整宽条带 `[y0, y1)`，返回可变画布

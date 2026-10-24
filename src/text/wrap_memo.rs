@@ -30,21 +30,31 @@ impl Hasher for PreHashed {
     }
 }
 
-struct Entry {
+struct Entry<V> {
     text: Box<str>,
     /// 可用宽、字号、字间距的位模式与粗细
     params: (u32, u32, u32, bool),
-    lines: usize,
+    lines: V,
 }
 
-#[derive(Default)]
-pub(crate) struct WrapMemo {
-    map: Mutex<HashMap<u64, Entry, BuildHasherDefault<PreHashed>>>,
+/// 同一套键（文字 + 宽 / 字号 / 字间距 / 粗细）记一个结果：断行行数（[`WrapMemo`]），
+/// 或整段宽度（`TextRenderer::measure_text_weighted`，宽那一项填 0）
+pub(crate) struct Memo<V> {
+    map: Mutex<HashMap<u64, Entry<V>, BuildHasherDefault<PreHashed>>>,
 }
 
-impl WrapMemo {
+impl<V> Default for Memo<V> {
+    fn default() -> Self {
+        Self { map: Mutex::new(HashMap::default()) }
+    }
+}
+
+/// 断行行数的记忆表
+pub(crate) type WrapMemo = Memo<usize>;
+
+impl<V: Copy> Memo<V> {
     /// 记过就直接给，没记过就 `compute` 一次再记下
-    pub(crate) fn lines(&self, text: &str, max_width: f32, size: f32, ls: f32, bold: bool, compute: impl FnOnce() -> usize) -> usize {
+    pub(crate) fn lines(&self, text: &str, max_width: f32, size: f32, ls: f32, bold: bool, compute: impl FnOnce() -> V) -> V {
         let params = (max_width.to_bits(), size.to_bits(), ls.to_bits(), bold);
         // 固定种子的 SipHash（不取线程本地的随机种子）：同一进程内同键同值就够了
         let mut h = std::collections::hash_map::DefaultHasher::new();

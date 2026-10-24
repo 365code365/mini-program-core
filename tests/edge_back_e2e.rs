@@ -15,10 +15,15 @@ impl Drop for Fixture {
 }
 
 fn fixture() -> Fixture {
-    let root = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("edge-back-e2e");
+    fixture_in("edge-back-e2e")
+}
+
+/// 每个用例一个目录：并行跑时别互相删
+fn fixture_in(name: &str) -> Fixture {
+    let root = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join(name);
     std::fs::remove_dir_all(&root).ok();
     let files = [
-        ("app.json", r#"{"pages":["pages/a/a","pages/b/b"],"window":{"navigationStyle":"custom"}}"#),
+        ("app.json", r#"{"pages":["pages/a/a","pages/b/b","pages/c/c"],"window":{"navigationStyle":"custom"}}"#),
         ("app.js", "App({});"),
         ("app.wxss", ""),
         ("pages/a/a.json", "{}"),
@@ -29,6 +34,10 @@ fn fixture() -> Fixture {
         ("pages/b/b.wxml", "<view>B</view>"),
         ("pages/b/b.wxss", "page{background:#0000ff}"),
         ("pages/b/b.js", "Page({});"),
+        ("pages/c/c.json", "{}"),
+        ("pages/c/c.wxml", "<view>C</view>"),
+        ("pages/c/c.wxss", "page{background:#00ff00}"),
+        ("pages/c/c.js", "Page({});"),
     ];
     for (rel, text) in files {
         let p = root.join(rel);
@@ -126,4 +135,63 @@ fn edge_swipe_follows_finger_cancels_and_commits() {
     e.frames(3);
     assert_eq!(e.e.current_route(), "pages/a/a", "过阈值：返回上一页");
     assert_eq!(e.px(100, 300), (255, 0, 0));
+}
+
+/// 栈顶下面那张以外的截图压着（host/shot_pack.rs）：进三层之后截图只占一张原图多一点；
+/// 退一层之后新的最后一张解开，侧滑露出来的还是它（逐像素无损，红就是红）
+#[test]
+fn 深一点的栈_截图压着_退回来照样露出上一页() {
+    let fx = fixture_in("edge-back-e2e-deep");
+    let data = fx.0.join("_data2");
+    let mut e = MiniEngine::new(&fx.0.to_string_lossy(), Some(&data.to_string_lossy()), 375, 667, 2.0).expect("创建引擎");
+    e.set_animation_time(2.0);
+    e.launch(Some("pages/a/a")).expect("打开页面");
+    let mut e = E { e, t: 1000 };
+    e.frames(3);
+    e.e.navigate("pages/b/b").unwrap();
+    e.settle();
+    e.e.navigate("pages/c/c").unwrap();
+    e.settle();
+    assert_eq!(e.px(100, 300), (0, 255, 0));
+    let shots = e.e.memory_breakdown().into_iter().find(|i| i.name == "侧滑返回截图").expect("有这一项");
+    let one = 750 * 1334 * 4;
+    assert!(shots.alloc < one + one / 10, "两张截图占了 {} 字节（一张原图 {one}）：底下那张没压", shots.alloc);
+    // 侧滑回 b：露出的是 b 的图（蓝）
+    e.drag_from_edge(250.0, true);
+    e.settle();
+    e.frames(3);
+    assert_eq!(e.e.current_route(), "pages/b/b");
+    assert_eq!(e.px(100, 300), (0, 0, 255));
+    // 在 b 上再侧滑：露出 a 的图（红，压过又解开的那张）
+    e.drag_from_edge(200.0, false);
+    let left = e.px(60, 300);
+    assert!(left.0 > 150 && left.1 < 40 && left.2 < 40, "左边该露出 a（红，带压暗）：{left:?}");
+}
+
+/// 进后台（engine_life.rs `on_hide`）：合成缓冲、RGBA 读出缓冲放掉，最后一张截图也压起来；
+/// 回前台（`on_show`）重新合成出同一帧，侧滑露出来的还是上一页（截图解开后无损）
+#[test]
+fn 进后台放掉合成缓冲与截图_回前台画面与侧滑照旧() {
+    let fx = fixture_in("edge-back-e2e-hide");
+    let data = fx.0.join("_data3");
+    let mut e = MiniEngine::new(&fx.0.to_string_lossy(), Some(&data.to_string_lossy()), 375, 667, 2.0).expect("创建引擎");
+    e.set_animation_time(2.0);
+    e.launch(Some("pages/a/a")).expect("打开页面");
+    let mut e = E { e, t: 1000 };
+    e.frames(3);
+    e.e.navigate("pages/b/b").unwrap();
+    e.settle();
+    let before = e.e.rgba().to_vec();
+    e.e.on_hide();
+    let item = |e: &E, name: &str| e.e.memory_breakdown().into_iter().find(|i| i.name == name).map_or(0, |i| i.alloc);
+    assert_eq!(item(&e, "合成缓冲"), 0, "后台还留着合成缓冲");
+    assert_eq!(item(&e, "RGBA 读出缓冲"), 0, "后台还留着 RGBA 读出缓冲");
+    let one = 750 * 1334 * 4;
+    assert!(item(&e, "侧滑返回截图") < one / 10, "后台截图没压：{} 字节", item(&e, "侧滑返回截图"));
+    e.e.on_show();
+    e.frames(2);
+    assert!(e.e.rgba() == &before[..], "回前台重新合成的一帧与进后台前不一样");
+    e.drag_from_edge(200.0, false);
+    let left = e.px(60, 300);
+    assert!(left.0 > 150 && left.1 < 40 && left.2 < 40, "左边该露出 a（红，带压暗）：{left:?}");
 }

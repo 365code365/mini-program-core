@@ -25,7 +25,7 @@ mod sheet_raster;
 mod tip;
 /// `wx.showActionSheet` 的底部操作菜单（状态在线程局部，SDK 与桌面共用）
 pub mod action_sheet;
-/// `wx.previewImage` 的全屏图片预览（同上）
+/// `wx.previewImage` / `wx.previewMedia` 的全屏预览（同上；视频在里面直接播）
 pub mod image_preview;
 
 /// 操作菜单 / 图片预览这两层宿主浮层：有没有弹着（宿主据此把指针交给它们）
@@ -33,9 +33,14 @@ pub fn sheet_overlay_visible() -> bool {
     action_sheet::visible() || image_preview::visible()
 }
 
-/// 两层浮层的动画在走（宿主据此续帧）
+/// 两层浮层这一帧要重新合成（动画在走、拖动中、预览里有新的视频帧）
 pub fn sheet_overlay_animating() -> bool {
     action_sheet::animating() || image_preview::animating()
+}
+
+/// 宿主要一直出帧（比 [`sheet_overlay_animating`] 多一样：预览里的视频在放，等宿主送新帧）
+pub fn sheet_overlay_wants_frames() -> bool {
+    action_sheet::animating() || image_preview::wants_frames()
 }
 
 /// 换页 / 销毁时收掉两层浮层
@@ -53,15 +58,15 @@ pub fn take_sheet_requests(app: &mut crate::runtime::MiniApp) -> bool {
 
 /// 两层浮层的按下 / 移动 / 抬起（逻辑坐标，`vp` 是逻辑视口）。返回是否消费
 pub fn sheet_overlay_press(vp: (f32, f32), x: f32, y: f32) -> bool {
-    action_sheet::on_press(vp, x, y) || image_preview::on_press(x)
+    action_sheet::on_press(vp, x, y) || image_preview::on_press(vp, x, y)
 }
 
-pub fn sheet_overlay_move(x: f32) -> bool {
-    action_sheet::visible() || image_preview::on_move(x)
+pub fn sheet_overlay_move(x: f32, y: f32) -> bool {
+    action_sheet::visible() || image_preview::on_move(x, y)
 }
 
 pub fn sheet_overlay_release(app: &mut crate::runtime::MiniApp, vp: (f32, f32), x: f32, y: f32) -> bool {
-    action_sheet::on_release(app, vp, x, y) || image_preview::on_release(x)
+    action_sheet::on_release(app, vp, x, y) || image_preview::on_release(x, y)
 }
 
 /// 合成：图片预览盖在页面上，操作菜单在它上面。返回这一帧写了哪些像素

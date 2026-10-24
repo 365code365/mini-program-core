@@ -21,6 +21,14 @@ pub fn root() -> PathBuf {
 }
 
 /// `wxfile://tmp/a.png` → 真实路径；不是 wxfile 路径、或想跳出根目录时给 None
+/// 宿主（或旧版引擎）原样交给小程序的 `file://<沙盒里的真实路径>` → `wxfile://…`。沙盒外的一律不认
+/// （否则小程序借它就能读任意文件）。从前回包没导入时页面拿到的是 `file://…/wxfile/demo/tmp/host_…jpg`，
+/// `saveFile` / `<image>` 全失败；现在文件 API 与图片在入口处都先过一遍这里
+pub fn from_file_uri(uri: &str) -> Option<String> {
+    let rest = uri.strip_prefix("file://")?;
+    from_path(Path::new(rest.strip_prefix("localhost").unwrap_or(rest)))
+}
+
 pub fn to_path(uri: &str) -> Option<PathBuf> {
     let rest = uri.strip_prefix(SCHEME)?;
     let rel = Path::new(rest);

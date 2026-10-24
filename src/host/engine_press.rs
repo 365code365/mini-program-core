@@ -74,4 +74,35 @@ impl MiniEngine {
             });
         }
     }
+
+    /// 聚焦输入框的光标翻了一次（亮 ↔ 灭）：只重画这个输入框的盒子（覆盖层里的就重画覆盖层）。
+    ///
+    /// 从前这里 `mark_full`：键盘弹着的整段时间里每 500ms 整条带 + 覆盖层 + tabBar 重画一次，
+    /// 正好落在边打字边滑的那几帧上。光标画在输入框自己的盒子里（`FocusedInput::bounds`，
+    /// 页面内容坐标），重画这一块与整帧逐字节相同。
+    ///
+    /// scroll-view 里的输入框：重画这一块时 scroll-view 照旧从离屏缓存贴回 —— 与从前整帧时一样
+    /// （`mark_full` 也不作废离屏缓存），行为不变
+    pub(super) fn damage_caret(&mut self) {
+        let Some((b, fixed)) = self.interaction.focused_input.as_ref().map(|f| (f.bounds, f.is_fixed)) else { return };
+        if b.width <= 0.0 || b.height <= 0.0 {
+            // 还没排出位置（刚聚焦、首帧）：不知道画在哪，整页
+            return self.mark_full();
+        }
+        if fixed {
+            self.dmg.press_fixed = true;
+            return;
+        }
+        let pad = PAD_LOGICAL;
+        let d = self.dpr;
+        let r = GeoRect::new((b.x - pad) * d, (b.y - pad) * d, (b.width + pad * 2.0) * d, (b.height + pad * 2.0) * d);
+        self.dmg.extra = Some(match self.dmg.extra {
+            None => r,
+            Some(p) => {
+                let (x0, y0) = (p.x.min(r.x), p.y.min(r.y));
+                let (x1, y1) = (p.right().max(r.right()), p.bottom().max(r.bottom()));
+                GeoRect::new(x0, y0, x1 - x0, y1 - y0)
+            }
+        });
+    }
 }

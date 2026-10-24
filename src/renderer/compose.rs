@@ -39,8 +39,8 @@ fn linear_matrix(t: &Transform) -> (f32, f32, f32, f32) {
     )
 }
 
-/// 计算带 transform 后子树在目标画布上的包围盒（用于确定采样范围）
-fn transformed_bounds(
+/// 计算带 transform 后子树在目标画布上的包围盒（用于确定采样范围；setData 失效分析也拿它算画到了哪）
+pub(crate) fn transformed_bounds(
     src_w: f32,
     src_h: f32,
     src_pos: (f32, f32),

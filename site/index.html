@@ -117,10 +117,10 @@
     <div class="wrap">
       <dl class="stats">
         <div><dt data-i18n="stat.1.k">Shop home, full frame</dt><dd><span data-count="6.1">6.1</span><small>ms</small></dd><p data-i18n="stat.1.v">750×1334 physical pixels, pure CPU</p></div>
-        <div><dt data-i18n="stat.2.k">Repeated frames, 90 Hz phone</dt><dd><span data-count="2.3">2.3</span><small>%</small></dd><p data-i18n="stat.2.v">list scrolling with setData, down from 11.2%</p></div>
+        <div><dt data-i18n="stat.2.k">Repeated frames, 90 Hz phone</dt><dd><span data-count="1.5">1.5</span><small>%</small></dd><p data-i18n="stat.2.v">list scrolling with setData, down from 11.2%</p></div>
         <div><dt data-i18n="stat.3.k">GPU vs CPU</dt><dd><span data-count="34">34</span><small>/34</small></dd><p data-i18n="stat.3.v">scenes byte-identical, fallback included</p></div>
         <div><dt data-i18n="stat.4.k">Difference vs Chrome</dt><dd><span data-count="4.57">4.57</span><small>%</small></dd><p data-i18n="stat.4.v">15 pages of the same source, per pixel</p></div>
-        <div><dt data-i18n="stat.5.k">Automated tests</dt><dd><span data-count="1033">1033</span><small></small></dd><p data-i18n="stat.5.v">plus 65 byte-reproducible baselines</p></div>
+        <div><dt data-i18n="stat.5.k">Automated tests</dt><dd><span data-count="1055">1055</span><small></small></dd><p data-i18n="stat.5.v">plus 65 byte-reproducible baselines</p></div>
         <div><dt data-i18n="stat.6.k">Official wx.* APIs</dt><dd><span data-count="503">503</span><small>/503</small></dd><p data-i18n="stat.6.v">every name in the index, plus 57 component tags</p></div>
       </dl>
     </div>
@@ -436,17 +436,17 @@
             </div>
             <div class="strip-row">
               <span class="strip-label" data-i18n="dev.strip.a">Now</span>
-              <div class="strip" data-frames="90" data-rate="0.023" data-seed="3" role="img" aria-label="Now: 2.3% of frames repeated" data-i18n-aria="dev.strip.ariaA"></div>
-              <b class="strip-val good-val">2.3%</b>
+              <div class="strip" data-frames="90" data-rate="0.015" data-seed="3" role="img" aria-label="Now: 1.5% of frames repeated" data-i18n-aria="dev.strip.ariaA"></div>
+              <b class="strip-val good-val">1.5%</b>
             </div>
             <p class="note" data-i18n="dev.strip.note">Each cell is one vsync; a red cell is a vsync where the previous image stayed on screen. The red count follows the measured rate (fast flick, then slow drag); where the cells fall is illustrative.</p>
           </article>
 
           <div class="metrics">
             <article class="metric spot">
-              <b class="metric-num">11.2% → 2.3%</b>
+              <b class="metric-num">11.2% → 1.5%</b>
               <h3 data-i18n="dev.m1.h">List scrolling with setData</h3>
-              <p data-i18n="dev.m1.p">The page calls <code>setData</code> from <code>onPageScroll</code> and an IntersectionObserver. Slow drag alone: 6.6% → 2.0%. Frames that repainted the whole page: zero.</p>
+              <p data-i18n="dev.m1.p">The page calls <code>setData</code> from <code>onPageScroll</code> and an IntersectionObserver. Slow drag alone: 6.6% → 0.4%. Frames that repainted the whole page: zero.</p>
             </article>
             <article class="metric spot">
               <b class="metric-num">29 / 300ms</b>
@@ -469,9 +469,9 @@
               <p data-i18n="dev.m5.p">Slow drag on a gradient-and-transform page. The engine thread sits on the big cores only while you interact or frames keep coming, and is released after 800 ms.</p>
             </article>
             <article class="metric spot">
-              <b class="metric-num">7.3 → 3.6ms</b>
+              <b class="metric-num">7.3 → 0.9–1.3ms</b>
               <h3 data-i18n="dev.m6.h">Layout rebuild after setData</h3>
-              <p data-i18n="dev.m6.p">Typical value among the slowest scroll frames. Found with simpleperf on the phone: selector matching stopped allocating, the cascade borrows instead of copying, containers stop resolving their style twice, line counts are remembered.</p>
+              <p data-i18n="dev.m6.p">Typical value among the slowest scroll frames. Incremental layout: unchanged subtrees keep their taffy nodes and cached layout, only what changed is rebuilt, including lists that grow or shrink. Checked against a full rebuild node by node across the whole test suite: 0 mismatches.</p>
             </article>
             <article class="metric spot">
               <b class="metric-num">19.9 → 2.5–3.3%</b>
@@ -487,6 +487,16 @@
               <b class="metric-num">0.5%</b>
               <h3 data-i18n="dev.m9.h">Dragging across the map</h3>
               <p data-i18n="dev.m9.p">Repeated frames while slowly dragging the page over the same-layer map, in both examples. The host redraws the map only when its content changes, never per scroll frame.</p>
+            </article>
+            <article class="metric spot">
+              <b class="metric-num">300 → 1.4MB</b>
+              <h3 data-i18n="dev.m10.h">Memory per font face</h3>
+              <p data-i18n="dev.m10.p">A CJK system font used to expand all 29 352 glyph outlines on load. Now glyphs expand on first use and the file is memory-mapped; rasterization is bit-identical to upstream fontdue.</p>
+            </article>
+            <article class="metric spot">
+              <b class="metric-num">44 → 18MB</b>
+              <h3 data-i18n="dev.m11.h">Engine buffers in the background</h3>
+              <p data-i18n="dev.m11.p">Measured on the phone after pressing Home. Only the painted strip of the page stays; the compose buffer is dropped and swipe-back screenshots are packed losslessly. Native Heap 74.5 → 57.7MB.</p>
             </article>
           </div>
         </div>
@@ -508,7 +518,7 @@
               <li data-i18n="dev.feat.4">Drags resampled by touch timestamps; animations sampled at the vsync, not when drawing happened</li>
               <li data-i18n="dev.feat.5">Same-layer <code>&lt;video&gt;</code> and <code>&lt;map&gt;</code> on Android: the host decodes or draws the frame, the engine paints it into the page, so it scrolls with the page and sheets, modals and the tabBar cover it as in WeChat (iOS still lays them over the page)</li>
               <li data-i18n="dev.feat.7">System pickers for <code>chooseImage</code> / <code>chooseMedia</code> / <code>chooseVideo</code> / <code>chooseMessageFile</code> and saving to the album, built into the Android SDK and the Flutter plugin</li>
-              <li data-i18n="dev.feat.6">Idle costs nothing: frames only on demand; GPU textures and image caches are released in the background</li>
+              <li data-i18n="dev.feat.6">Idle costs nothing: frames only on demand; in the background GPU textures, image caches and the compose buffer are released and screenshots packed</li>
             </ul>
           </article>
         </aside>
@@ -1016,7 +1026,7 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
         <article class="card">
           <h3 data-i18n="stack.reg.h">Regression suite<small>all green on every change</small></h3>
           <table class="kv"><tbody>
-            <tr><th scope="row" data-i18n="stack.reg.r1k">Rust tests</th><td>1033</td></tr>
+            <tr><th scope="row" data-i18n="stack.reg.r1k">Rust tests</th><td>1055</td></tr>
             <tr><th scope="row" data-i18n="stack.reg.r2k">Scene gallery</th><td data-i18n="stack.reg.r2v">65 images, byte-reproducible</td></tr>
             <tr><th scope="row" data-i18n="stack.reg.r3k">Partial-repaint check</th><td data-i18n="stack.reg.r3v">5 desktop scenes + 12 SDK cases, frame by frame</td></tr>
             <tr><th scope="row" data-i18n="stack.reg.r4k">SDK vs desktop</th><td data-i18n="stack.reg.r4v">sample 15/15, news 6/6 pixel-identical</td></tr>

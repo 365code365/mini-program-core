@@ -8,6 +8,10 @@
 
 use super::*;
 
+/// 建一个孩子：(渲染器, 树, 孩子, 祖先链, 继承的文字样式, 兄弟序号, 兄弟数, 有无定位祖先)
+pub(super) type ChildBuilder<'a> =
+    dyn FnMut(&WxmlRenderer, &mut Tree, &WxmlNode, &[ElementDesc], &InheritedText, usize, usize, bool) -> Option<RenderNode> + 'a;
+
 impl WxmlRenderer {
     /// 需要时重建布局树，并返回这次数据变化的重绘范围（见 [`FramePlan`]）。
     pub(super) fn update_layout_if_needed(
@@ -18,6 +22,8 @@ impl WxmlRenderer {
     ) -> FramePlan {
         // 检查视口是否变化（用于虚拟列表）
         let viewport_changed = self.current_viewport != viewport;
+        // 布局只跟视口**高**有关（见下面「只有滚动偏移变了」那段）：偏移变了照样可以增量重建
+        let height_changed = self.current_viewport.map(|v| v.1) != viewport.map(|v| v.1);
         
         if let Some(cache) = &self.cache {
             // 整棵 JSON 的比较只做一次（下面两个分支都要用）
@@ -38,7 +44,6 @@ impl WxmlRenderer {
             // 损伤区，条带里落在新裁剪窗外的那部分会被清成底色却没人重画 —— 往回滚时露白。
             // 所以这里只省掉重建，重画范围与以前完全一样（整帧 + scroll-view 缓存作废），
             // 像素逐字节不变；「滚动中只补画新露出的条带」是另一项优化，要单独证明。
-            let height_changed = self.current_viewport.map(|v| v.1) != viewport.map(|v| v.1);
             if same_data && !height_changed {
                 self.current_viewport = viewport;
                 self.scroll_cache.mark_all_dirty();
@@ -59,6 +64,16 @@ impl WxmlRenderer {
         let t_start = std::time::Instant::now();
         let rendered = crate::parser::TemplateEngine::render_with_components(nodes, data, &self.component_templates);
         let t_template = std::time::Instant::now();
+        // 数据变了、视口高没变：先试增量重建（没变的子树原样留着，layout_incremental.rs）。
+        // 偏移也变了的那一帧重画范围照旧按整帧（与整棵重建时一样，见下面 `plan`）
+        let rendered = if !height_changed {
+            match self.rebuild_incremental(rendered, data, viewport, viewport_changed, t_start, t_template, log_timing) {
+                Ok(plan) => return plan,
+                Err(rendered) => rendered,
+            }
+        } else {
+            rendered
+        };
         let mut taffy = Tree::new();
         let mut render_nodes = Vec::new();
         
@@ -75,37 +90,12 @@ impl WxmlRenderer {
         
         // 构建正常布局树（包含所有节点，fixed 元素也参与布局计算）
         let child_ids: Vec<NodeId> = render_nodes.iter().map(|n| n.taffy_node).collect();
-        let canvas_w = self.screen_width * self.scale_factor;
-        let viewport_h = viewport
-            .map(|(_, h)| h * self.scale_factor)
-            .filter(|h| *h > 1.0)
-            .or(page.explicit_height)
-            .unwrap_or(self.screen_height * self.scale_factor);
-        let root = taffy.new_with_children(
-            Style {
-                // 页面根：高度由内容驱动（要能滚），但**至少一屏**。
-                //
-                // 这等价于 CSS 的 `min-height: 100vh` —— 编译出的 H5 端一直是这么写的
-                // （`#app{min-height:100vh}`），而这边只写了 `height:auto`。差别在内容不足
-                // 一屏的页面上肉眼可见：页面根上写 `flex:1` 的容器（框架产物的标准结构）
-                // 撑不满视口，底下漏出 `page` 的背景色 —— tea-app 登录页底部就露出一条
-                // 12px 的浅米色，而设计稿/微信里整屏都是深绿。
-                size: Size { width: length(canvas_w), height: auto() },
-                min_size: Size { width: auto(), height: length(viewport_h) },
-                flex_direction: FlexDirection::Column,
-                ..Default::default()
-            },
-            &child_ids,
-        ).unwrap();
+        let viewport_h = self.root_min_height(viewport);
+        let root = taffy.new_with_children(self.root_style(viewport_h), &child_ids).unwrap();
         
-        self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT);
-        let t_layout1 = std::time::Instant::now();
-        // 第二遍：按实际宽度修正换行文本高度、按实际包含块高度修正绝对定位高度，再重新布局
-        let mut need_relayout = self.correct_overflow(&mut taffy, &render_nodes);
-        need_relayout |= self.correct_absolute_heights(&mut taffy, &render_nodes, viewport_h);
-        if need_relayout { self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT); }
-        // 瀑布流 grid-view：子项高度定了才能按最矮列摆放（components::grid_view），摆完再排一遍
-        if crate::renderer::components::grid_view::masonry_pass(&mut taffy, &render_nodes, self.scale_factor) { self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT); }
+        // 新的一棵树：布局之后改样式的记录作废，从这里起记这棵（layout_incremental.rs）
+        self.layout_touched.borrow_mut().clear();
+        let t_layout1 = self.layout_pass(&mut taffy, root, &render_nodes, viewport_h, true);
         // 注：根节点保持 `height: auto`（内容高驱动滚动）。
         //
         // 曾经试过再补一趟「把根高度换成 max(视口, 内容高) 的确定值」来给百分比高度
@@ -133,7 +123,12 @@ impl WxmlRenderer {
         // 与上一棵树比对，算出这次只需要重画哪一块。
         // 视口变了走的是虚拟列表，结构本来就会变，直接整帧。
         let plan = match (&self.cache, viewport_changed) {
-            (Some(old), false) => self.plan_from_diff(old, &render_nodes, &taffy, content_height),
+            (Some(old), false) => self.plan_from_diff(
+                super::invalidate::OldLayout { nodes: &old.render_nodes, layouts: &old.taffy, content_height: old.content_height, moved: &HashMap::new() },
+                &render_nodes,
+                &taffy,
+                content_height,
+            ),
             _ => FramePlan::Full,
         };
         self.rebuild_laps = Some([
@@ -149,6 +144,8 @@ impl WxmlRenderer {
             taffy,
             content_height,
             data: data.clone(),
+            rendered,
+            root,
         });
         self.layout_generation += 1;
         plan
@@ -168,73 +165,17 @@ impl WxmlRenderer {
         self.update_layout_if_needed(nodes, data, viewport)
     }
 
-    /// 测量给定 WXML+数据的内容总高度（逻辑像素），用于自适应画布尺寸。
-    pub fn measure_content_height(&self, nodes: &[WxmlNode], data: &JsonValue) -> f32 {
-        let rendered = crate::parser::TemplateEngine::render_with_components(nodes, data, &self.component_templates);
-        let mut taffy = Tree::new();
-        let mut render_nodes = Vec::new();
-        // 同 `update_layout_if_needed`：继承起点是 `page { … }`（字号影响内容高）
-        let page = self.page_style();
-        for (sib_i, node) in rendered.iter().enumerate() {
-            if let Some(rn) = self.build_tree(&mut taffy, node, &[], &page.inherited, sib_i, rendered.len(), false) {
-                render_nodes.push(rn);
-            }
-        }
-        let child_ids: Vec<NodeId> = render_nodes.iter().map(|n| n.taffy_node).collect();
-        let root = taffy.new_with_children(
-            Style {
-                size: Size { width: length(self.screen_width * self.scale_factor), height: auto() },
-                flex_direction: FlexDirection::Column,
-                ..Default::default()
-            },
-            &child_ids,
-        ).unwrap();
-        self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT);
-        let mut need_relayout = self.correct_overflow(&mut taffy, &render_nodes);
-        need_relayout |= self.correct_absolute_heights(
-            &mut taffy,
-            &render_nodes,
-            self.screen_height * self.scale_factor,
-        );
-        if need_relayout { self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT); }
-        if crate::renderer::components::grid_view::masonry_pass(&mut taffy, &render_nodes, self.scale_factor) { self.compute_with_text(&mut taffy, root, Size::MAX_CONTENT); }
-        taffy.layout(root).unwrap().size.height / self.scale_factor
-    }
-    
-    /// 第二遍布局修正：首遍 `compute_layout` 后文本节点的实际宽度已知，
-    /// 对「宽度为百分比/100%」等在 build 阶段无法预知换行的文本重新计算换行行数，
-    /// 据此修正其盒子高度，避免多行文本被压成一行高而与后续兄弟节点重叠。
-    /// 返回是否有节点高度被修改（需要重新 compute_layout）。
-    ///
-    /// 这是对标准 CSS「文本按可用宽度自动换行、盒子高度随行数增长」语义的补齐。
-    /// 用文本度量闭包计算布局：仅带 TextMeasure 上下文的（block/auto 宽）文本按可用
-    /// 宽度解析换行与高度；其它叶子沿用各自 Style 里的显式尺寸（known dimensions）。
-    pub(super) fn compute_with_text(&self, taffy: &mut Tree, root: NodeId, available: Size<AvailableSpace>) {
-        let tr = self.text_renderer.as_deref();
-        // taffy 0.12 的度量回调多了一个 `&Style` 参数（叶子自己的样式），
-        // 文本度量用不到它 —— 换行只取决于「已知尺寸 + 可用宽度」。
-        //
-        // 其余叶子回答 0：非替换元素（空的 `<view>` 等）的内容尺寸本来就是 0，
-        // 所以 `min-height:auto` 允许它们被压缩 —— 音乐播放器那个 4px 高的进度条里
-        // 塞一个 13px 的圆把手，就是靠这条被压回去的。
-        // **替换元素**（image/canvas/video/input）不一样：它们有固有尺寸，
-        // 由各自的 `build` 显式写上 `min_size`（见 `ImageComponent::build`），
-        // 不靠这里兜——否则「所有定尺寸叶子都不可压」会误伤前者。
-        let _ = taffy.compute_layout_with_measure(
-            root,
-            available,
-            |known, avail, _id, ctx: Option<&mut TextMeasure>, _style| match ctx {
-                Some(tm) => measure_text_node(known, avail, tm, tr),
-                None => Size {
-                    width: known.width.unwrap_or(0.0),
-                    height: known.height.unwrap_or(0.0),
-                },
-            },
-        );
-    }
-
     #[allow(clippy::too_many_arguments)]
     pub(super) fn build_tree(&self, taffy: &mut Tree, node: &WxmlNode, ancestors: &[ElementDesc], inherited: &InheritedText, sib_index: usize, sib_count: usize, positioned_ancestor: bool) -> Option<RenderNode> {
+        self.build_tree_with(taffy, node, ancestors, inherited, sib_index, sib_count, positioned_ancestor, &mut |r, t, c, anc, inh, k, n, pos| {
+            r.build_tree(t, c, anc, inh, k, n, pos)
+        })
+    }
+
+    /// [`build_tree`](Self::build_tree)，孩子由 `child` 建（整棵重建就是递归 build_tree；
+    /// 增量重建换成「没变的孩子原样留着」，layout_incremental.rs）。参数与 build_tree 一一对应
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn build_tree_with(&self, taffy: &mut Tree, node: &WxmlNode, ancestors: &[ElementDesc], inherited: &InheritedText, sib_index: usize, sib_count: usize, positioned_ancestor: bool, child: &mut ChildBuilder<'_>) -> Option<RenderNode> {
         let sf = self.scale_factor;
         
         if node.node_type == WxmlNodeType::Text {
@@ -368,7 +309,7 @@ impl WxmlRenderer {
                     // slot 内容不吃组件的作用域样式（见 `slot_content_ancestors`）
                     let slot_chain = crate::parser::TemplateEngine::slot_content_ancestors(c, &child_ancestors);
                     let child_ancestors = slot_chain.as_deref().unwrap_or(&child_ancestors);
-                    if let Some(cr) = self.build_tree(ctx.taffy, c, child_ancestors, &child_inherited, sib_ci, node.children.len(), child_positioned) { 
+                    if let Some(cr) = child(self, ctx.taffy, c, child_ancestors, &child_inherited, sib_ci, node.children.len(), child_positioned) { 
                         children.push(cr); 
                     }
                 }
@@ -433,7 +374,9 @@ impl WxmlRenderer {
                     }
                     
                     let new_tn = ctx.taffy.new_with_children(ts, &child_ids).unwrap();
-                    
+                    // `build` 建的那个节点被上面这个顶替了：从树里拿掉（树在增量重建之间一直留着，
+                    // 不拿掉每次 setData 都多一批没人引用的节点）。它名下的孩子已经改挂到新节点上，不会被带走
+                    super::layout_incremental::remove_owned(ctx.taffy, rn.taffy_node);
                     rn.taffy_node = new_tn;
                     rn.children = children;
                     // 更新样式（保留原有样式中已设置的值，但用新样式覆盖）；复用的那种本来就是它

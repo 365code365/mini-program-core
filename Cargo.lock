@@ -1058,6 +1058,14 @@ checksum = "77ce24cb58228fbb8aa041425bb1050850ac19177686ea6e0f41a70416f56fdb"
 [[package]]
 name = "fontdue"
 version = "0.9.3"
+dependencies = [
+ "hashbrown 0.15.5",
+ "ttf-parser 0.21.1",
+]
+
+[[package]]
+name = "fontdue"
+version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2e57e16b3fe8ff4364c0661fdaac543fb38b29ea9bc9c2f45612d90adf931d2b"
 dependencies = [
@@ -1666,10 +1674,13 @@ dependencies = [
  "base64",
  "cbindgen",
  "flate2",
- "fontdue",
+ "fontdue 0.9.3",
+ "fontdue 0.9.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "getrandom 0.2.17",
  "image",
  "jni 0.21.1",
+ "libc",
+ "memmap2",
  "once_cell",
  "openh264",
  "pollster",

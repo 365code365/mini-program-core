@@ -41,7 +41,12 @@ gpu = ["dep:wgpu", "dep:pollster"]
 
 [dependencies]
 image = "0.25"
-fontdue = "0.9"
+# 惰性展开字形几何的 fontdue 0.9.3（vendor/fontdue/README.mini.md）：上游加载时展开全部字形，一个 CJK 字面 300MB
+fontdue = { path = "vendor/fontdue", features = ["std"] }
+# 字体文件只读映射（text/load.rs）：文件页按需进内存、可回收，同一个 TTC 的几个字面共用
+memmap2 = "=0.9.11"
+# 内存分项（host/engine_memory.rs）：mincore 量每块缓冲真正驻留了多少页、madvise 把用不到的页还给系统
+libc = "0.2"
 rquickjs = { version = "0.12", features = ["classes", "properties"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -146,5 +151,7 @@ path = "src/bin/compiler.rs"
 required-features = ["desktop"]
 
 [dev-dependencies]
+# 上游 fontdue（预展开全部字形）：tests/font_lazy_e2e.rs 拿它对照 vendor/fontdue 的惰性展开逐位一致
+fontdue_upstream = { package = "fontdue", version = "=0.9.3" }
 # 只给 examples/_font_probe.rs 用：量「惰性解析字体」的内存基线
 ttf-parser = "0.25"

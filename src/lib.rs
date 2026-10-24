@@ -7,6 +7,8 @@ mod geometry;
 mod paint;
 mod path;
 pub mod text;
+/// 一块缓冲真正驻留了多少（mincore）
+pub mod mem_probe;
 /// `font-family` → 具体字体（按字体栈解析 + 每族一份渲染器）
 pub mod text_family;
 pub mod text_system;
@@ -138,17 +140,23 @@ pub fn trim_memory() {
     renderer::components::clear_image_caches();
     canvas::clear_scaled_image_caches();
     text_family::clear_caches();
+    // 大块渐变的行缓存（本线程的）与系统字体的字形位图：都是可以重算的
+    renderer::components::gradient::row_cache::clear();
+    if let Some(t) = text::shared_fonts() {
+        t.clear_glyph_bitmaps();
+    }
 }
 
 /// 各缓存的占用现状（一行文本，接内存监控/日志用）
 pub fn memory_report() -> String {
     let (scaled, mip) = canvas::scaled_image_cache_bytes();
     format!(
-        "{}；缩放缓存 {:.1}MB + mip {:.1}MB；自定义字体 {} 个（{}）",
+        "{}；缩放缓存 {:.1}MB + mip {:.1}MB；自定义字体 {} 个（{}）；{}",
         renderer::components::image_cache_report(),
         scaled as f32 / 1048576.0,
         mip as f32 / 1048576.0,
         text_family::loaded_font_files().len(),
-        text_family::loaded_font_files().join(", ")
+        text_family::loaded_font_files().join(", "),
+        text::mem::report(),
     )
 }

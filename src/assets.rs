@@ -30,6 +30,10 @@ pub fn resolve(path: &str) -> Option<PathBuf> {
     if path.starts_with(crate::wxfile::SCHEME) {
         return crate::wxfile::to_path(path).filter(|p| p.is_file());
     }
+    if path.starts_with("file://") {
+        let uri = crate::wxfile::from_file_uri(path)?;
+        return crate::wxfile::to_path(&uri).filter(|p| p.is_file());
+    }
     let trimmed = path.trim_start_matches('/');
     let mut candidates: Vec<PathBuf> = Vec::new();
 

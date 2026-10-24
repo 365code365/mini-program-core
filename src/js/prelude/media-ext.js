@@ -64,20 +64,22 @@
             };
             wx.stopRecord = function(o) { wx.getRecorderManager().stop(); return __asyncOk(o, 'stopRecord'); };
 
-            // ---------- previewMedia（基础库 2.12.0）：图片走引擎的全屏预览；视频用封面图占位（引擎的预览层只放图） ----------
+            // ---------- previewMedia（基础库 2.12.0）：与 previewImage 同一个全屏预览层，视频在里面直接播 ----------
+            // `urls` 是每一项要画的图（视频是 poster，没有就空串：首帧到之前黑底 + 播放键），`videos` 是视频地址（图片项为空串）
             wx.previewMedia = function(o) {
                 o = o || {};
                 var src = o.sources || [];
                 if (!src.length) return __asyncFail(o, 'previewMedia', 'parameter error: sources should not be empty');
-                var urls = [], cur = 0;
+                var urls = [], videos = [], cur = 0;
                 src.forEach(function(s, i) {
-                    var u = s.type === 'video' ? (s.poster || '') : s.url;
-                    if (!u) return;
+                    if (!s || !s.url) return;
+                    var video = s.type === 'video';
                     if (i === (Number(o.current) || 0)) cur = urls.length;
-                    urls.push(String(u));
+                    urls.push(String(video ? (s.poster || '') : s.url));
+                    videos.push(video ? String(s.url) : '');
                 });
-                if (!urls.length) return __asyncFail(o, 'previewMedia', '没有可预览的图片（视频需要 poster）');
-                wx.previewImage({ urls: urls, current: urls[cur] });
+                if (!urls.length) return __asyncFail(o, 'previewMedia', 'parameter error: sources should not be empty');
+                __native_host_request('previewImage', JSON.stringify({ urls: urls, videos: videos, current: cur }));
                 return __asyncOk(o, 'previewMedia');
             };
 

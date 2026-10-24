@@ -157,7 +157,7 @@ impl WxmlRenderer {
                 
                 // 滑动手感的归因（`MINI_SCROLL_LOG=1`）：scroll-view 每帧的开销分三段
                 // ——「重画离屏内容」「上屏 blit」「登记交互区域」。哪一段贵，改哪一段。
-                let log_scroll = std::env::var("MINI_SCROLL_LOG").is_ok();
+                let log_scroll = crate::renderer::draw_profile::scroll_log();
                 let t_begin = std::time::Instant::now();
                 if cache_needs_render {
                     // 创建临时 Canvas 用于渲染

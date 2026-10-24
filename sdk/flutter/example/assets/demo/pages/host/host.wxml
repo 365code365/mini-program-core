@@ -1,6 +1,6 @@
 <view class="card">
   <text class="title">媒体与文件（插件自带）</text>
-  <text class="desc">选图、拍照、选视频、选文件、存相册、打开文档由插件内置，走系统自己的选择器。选到的文件以 wxfile://tmp/… 交给小程序：image、previewImage、getImageInfo、saveFile、uploadFile 直接能用。手机上两种来源都给时先弹「拍照 / 从手机相册选择」；桌面窗体开系统的文件对话框。</text>
+  <text class="desc">选图、拍照、选视频、选文件、存相册、打开文档由插件内置，走系统自己的选择器。选到的文件以 wxfile://tmp/… 交给小程序：image、previewMedia、getImageInfo、saveFile、uploadFile 直接能用。手机上两种来源都给时先弹「拍照 / 从手机相册选择」；桌面窗体开系统的文件对话框。</text>
   <view class="btns">
     <view class="btn-s" bindtap="chooseImage">chooseImage</view>
     <view class="btn-s" bindtap="chooseMedia">chooseMedia</view>

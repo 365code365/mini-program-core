@@ -23,6 +23,8 @@ mod engine_frame;
 /// 页面画布那一趟前后的记账（换画布、动画包围盒、scroll-view 位置）
 mod engine_page_pass;
 mod engine_press;
+/// 图片预览盖满整屏时只合成预览（页面的重画留到它露出来）
+mod engine_preview;
 /// swiper 换页只重画它自己的盒子
 mod engine_swiper;
 mod engine_resample;
@@ -35,6 +37,12 @@ mod frame_laps;
 mod engine_damage_rects;
 /// 这一帧重画多少（只合成 / 局部 / 补条带 / 整帧）与整帧归因
 pub mod engine_damage;
+/// 布局树诊断：增量重建留了几棵子树、树里有没有漏拿掉的节点
+mod engine_layout_diag;
+/// 内存分项：每块大缓冲分配 / 驻留多少
+pub mod engine_memory;
+/// 页面截图的无损压缩（栈顶下面那张以外的都压着）
+pub mod shot_pack;
 mod engine_input;
 /// 路由：返回（与逻辑层页面栈按层数对齐）、逻辑层发起的跳转、宿主深链
 mod engine_nav;

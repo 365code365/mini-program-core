@@ -32,6 +32,8 @@ impl MiniEngine {
     }
 
     pub fn on_show(&mut self) {
+        // 进后台时压起来的那张侧滑截图（on_hide）解开，侧滑一开始就要直接显示
+        self.unpack_last_shot();
         self.app.eval("__dispatchApp('onShow')").ok();
         // 回前台只要重新合成出一帧：画布一直在（进后台不释放），onShow 里的 setData 走自己的失效分析。
         // 从前这里 `mark_full`：每次从桌面回来都整页重画，一加 PLY110 上那一帧 39ms（画 23ms + 整张重传）
@@ -43,10 +45,35 @@ impl MiniEngine {
         // 进后台放掉图片的缩放结果与 mip（最多 32 + 24MB）：回前台只重新合成（on_show），不重画页面，
         // 用不到它们；之后哪张图要重画再按需重采样。解码图与画布都留着，回来不用重新解码、重画
         crate::canvas::clear_scaled_image_caches();
+        // 大块渐变的行缓存也放掉（回前台只重新合成，用不到；最多 8MB）
+        crate::renderer::components::gradient::row_cache::clear();
+        // 合成缓冲与 RGBA 读出缓冲（各一屏，1080×2200 上 9.5MB）也放掉：回前台 on_show 本来就整帧重新合成，
+        // 合成时按尺寸重新分配（engine_frame.rs `compose_frame`）。GPU 上屏时卸 surface 那一下还会 CPU 合成一帧
+        // （engine_gpu.rs `detach_native_surface`），这块缓冲在后台整屏驻留着，谁也不读。
+        // 后台期间取像素：长度对不上，`pixels_into` 返回 0、截图返回 None（都是已有的「没有帧」分支）
+        self.compose = Vec::new();
+        self.rgba = Vec::new();
+        // 侧滑要用的最后一张截图在后台也用不到：压起来（shot_pack.rs，一屏 9.5MB → 几百 KB），on_show 再解开。
+        // 解开写一屏内存（几 ms），落在回前台那一帧，不在滑动途中
+        if let Some(s) = self.back_shots.last_mut() {
+            s.pack();
+        }
+        self.rgba_stale = true;
+        self.dmg.compose_dirty = true;
+        #[cfg(feature = "gpu")]
+        {
+            self.cpu_frame_pending = None;
+        }
+        // `MINI_MEM_LOG=1`：进后台时打一行内存分项，放完之后量（真机上按 Home 就能看到后台留着多少，engine_memory.rs）
+        if std::env::var_os("MINI_MEM_LOG").is_some() {
+            crate::compositor::diag::emit(&format!("🧠 {}", self.memory_report_line()));
+        }
     }
 
     pub fn trim_memory(&mut self) {
         crate::trim_memory();
+        // 逻辑层也回收一遍（截图除了侧滑要用的那张本来就压着，engine_edge_back.rs）
+        self.app.collect_garbage();
     }
 
     /// 引擎的单调时钟（毫秒）。宿主给过时间就沿着宿主的时钟走（上次给的值 + 之后流逝的

@@ -97,14 +97,18 @@ impl MiniEngine {
             self.mark_full();
         }
         let image_arrived = crate::renderer::components::image_net::take_dirty();
-        if self.app.take_network_dirty() || image_arrived {
+        // 网络回包：回调里的 setData 本来就标了数据脏，交给失效分析（只重画变了的节点）。
+        // 从前回包与图片一样 `mark_full` —— 边甩边加载的信息流里每个回包一帧整页重画
+        if self.app.take_network_dirty() {
+            self.page_data_dirty = true;
+        }
+        // 网络图片到了：图片的固有尺寸可能改布局（widthFix / heightFix），又不知道画在哪几块，仍整页
+        if image_arrived {
             self.page_data_dirty = true;
             self.mark_full();
             // scroll-view 的离屏缓存也要作废：数据没变它就一直「干净」，贴回去的还是占位图（G-1）
-            if image_arrived {
-                for r in [self.renderer.as_mut(), self.tabbar_renderer.as_mut()].into_iter().flatten() {
-                    r.invalidate_offscreen_caches();
-                }
+            for r in [self.renderer.as_mut(), self.tabbar_renderer.as_mut()].into_iter().flatten() {
+                r.invalidate_offscreen_caches();
             }
         }
         // 侧滑返回的收尾动画（推出去 / 滑回来），走完判定为返回就退栈
@@ -205,7 +209,8 @@ impl MiniEngine {
         let vis = crate::renderer::components::cursor_blink_visible();
         if vis != self.caret_visible {
             self.caret_visible = vis;
-            self.mark_full();
+            // 只重画输入框那一块（engine_press.rs）
+            self.damage_caret();
         }
     }
 
@@ -283,6 +288,10 @@ impl MiniEngine {
             }
             PagePass::Skip => {}
         }
+        // 已绘制条带以外的页面画布页还给系统（engine_memory.rs）
+        if scope.page != PagePass::Skip {
+            self.release_idle_rows(None);
+        }
         if scope.fixed {
             self.render_fixed_layer(vp);
             laps.lap("覆盖层");
@@ -345,7 +354,9 @@ impl MiniEngine {
         self.dmg.fixed_dirty = false;
         // 覆盖层真正画过的行区间：`present_to_buffer` 只合成这几行，
         // 传 None 会**整层跳过** —— 底部吸底操作栏、弹窗遮罩就全丢了。
-        self.fixed_rows = crate::host::render::opaque_row_span(self.fixed_canvas.read());
+        let (opaque, nonzero) = crate::host::render::row_spans(self.fixed_canvas.read());
+        self.fixed_rows = opaque;
+        self.release_idle_rows(Some(nonzero));
     }
 
     /// 重画 tabBar（自定义组件式 / app.json 配置式）

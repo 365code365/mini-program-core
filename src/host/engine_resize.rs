@@ -184,7 +184,13 @@ impl MiniEngine {
         for i in 0..self.back_shots.len() {
             let fill = self.page_stack.get(i).and_then(|p| self.nav_bar_rgb(&p.path));
             let shot = &mut self.back_shots[i];
+            // 压着的先解开，改完尺寸再压回去
+            let was_packed = shot.packed.is_some();
+            shot.unpack();
             if shot.pixels.is_empty() || (shot.width, shot.height) == (w, h) {
+                if was_packed {
+                    shot.pack();
+                }
                 continue;
             }
             if !only_height || shot.width != w {
@@ -193,6 +199,9 @@ impl MiniEngine {
                 continue;
             }
             *shot = refit_bottom(shot, h, fill);
+            if was_packed {
+                shot.pack();
+            }
         }
     }
 

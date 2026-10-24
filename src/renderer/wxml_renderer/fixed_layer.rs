@@ -37,7 +37,10 @@ impl WxmlRenderer {
             self.registering_fixed = true;
             self.fixed_hit_regions.clear();
             self.clear_fixed_host_regions();
+            // 改的是缓存那棵树：fixed 子树根的样式改之前记原样，增量重建时还原（layout_incremental.rs）
+            self.record_touch.set(true);
             self.draw_fixed_layer_inner(canvas, &mut cache.taffy, &roots, viewport_h, Some(interaction));
+            self.record_touch.set(false);
             self.registering_fixed = false;
             cache.render_nodes = roots;
             self.cache = Some(cache);
@@ -131,7 +134,7 @@ impl WxmlRenderer {
                 style.position = Position::Relative;
                 style.inset = Rect { top: auto(), right: auto(), bottom: auto(), left: auto() };
                 style.size = Size { width: length(target_w), height: length(target_h) };
-                if taffy.set_style(*id, style).is_ok() {
+                if self.set_style_tracked(taffy, *id, style) {
                     self.compute_with_text(
                         taffy,
                         *id,

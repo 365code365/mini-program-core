@@ -296,3 +296,61 @@ fn 存相册的_hostcall_带文件真实路径() {
         "saveImageToPhotosAlbum:fail parameter error: parameter.filePath should be String instead of Undefined;"
     );
 }
+
+#[test]
+fn 沙盒里的_file_路径_saveFile_也认_沙盒外的不认() {
+    // 宿主 / 旧版引擎原样交来 `file://<沙盒里>`：saveFile 照样存得下（从前报 no such file or directory, open file:///…）
+    let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let root = fixture("fileuri");
+    let mut e = engine(&root, opts(&["chooseImage"], None));
+    call(&mut e, "chooseImage", json!({}));
+    let c = host_calls(&mut e).pop().unwrap();
+    let file = PathBuf::from(c["tempDir"].as_str().unwrap()).join("host_9.png");
+    red_png(&file);
+    let page = "getCurrentPages()[0]";
+    let save = |e: &mut MiniEngine, p: &str| {
+        e.eval(&format!(
+            "wx.saveFile({{tempFilePath: {p:?}, success: (r) => {page}.setData({{saved: r.savedFilePath}}), fail: (r) => {page}.setData({{saved: r.errMsg}})}})"
+        ))
+        .unwrap();
+        e.pump(81);
+        e.pump(89);
+        data(e, "saved")
+    };
+    let saved = save(&mut e, &format!("file://{}", file.display()));
+    assert!(saved.starts_with("wxfile://store/"), "{saved}");
+    let outside = root.join("_outside").join("x.png");
+    red_png(&outside);
+    let saved = save(&mut e, &format!("file://{}", outside.display()));
+    assert!(saved.contains("fail"), "沙盒外的 file:// 不能认：{saved}");
+}
+
+#[test]
+fn 大图后台解码_不卡渲染线程_几帧后画出来() {
+    // 选图的原图动辄 5MB：同步解码在一加上一张 300ms+、三张就卡一秒（页面「超卡」的来源）。
+    // 超过 768KB 的本地图后台解码：第一帧画占位、解码完下一帧画出来；长边超 2048 的缩小
+    let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let root = fixture("bigimg");
+    let mut e = engine(&root, opts(&["chooseImage"], None));
+    call(&mut e, "chooseImage", json!({ "count": 1 }));
+    let c = host_calls(&mut e).pop().unwrap();
+    // 不压缩的 BMP：2400×600×3 ≈ 4.3MB，纯红
+    let file = PathBuf::from(c["tempDir"].as_str().unwrap()).join("host_big.bmp");
+    image::RgbImage::from_pixel(2400, 600, image::Rgb([255, 0, 0])).save(&file).unwrap();
+    assert!(std::fs::metadata(&file).unwrap().len() > 768 * 1024);
+    let uri = format!("file://{}", file.display());
+    let t0 = std::time::Instant::now();
+    assert!(e.host_reply(c["id"].as_u64().unwrap() as u32, true, &json!({ "tempFiles": [{ "path": uri, "size": 1 }] }).to_string()));
+    e.pump(33);
+    assert!(t0.elapsed().as_millis() < 150, "大图不该在渲染线程上同步解码：{:?}", t0.elapsed());
+    let mut red = false;
+    for i in 0..100 {
+        std::thread::sleep(std::time::Duration::from_millis(20));
+        e.pump(49 + i * 16);
+        if pixel(&mut e, 50, 50) == [255, 0, 0, 255] {
+            red = true;
+            break;
+        }
+    }
+    assert!(red, "后台解码完要画出来：{:?}", pixel(&mut e, 50, 50));
+}

@@ -177,6 +177,17 @@ impl Canvas {
 
     pub fn width(&self) -> u32 { self.width }
 
+    /// 把 `[y0, y1)` 这几行（整页部分）还给系统（`mem_probe::release`）：只用于内容不再算数、
+    /// 或本来就全是 0 的行。返回还掉了多少字节
+    pub fn release_rows(&mut self, y0: u32, y1: u32) -> usize {
+        let (y0, y1) = (y0.min(self.height) as usize, y1.min(self.height) as usize);
+        if y1 <= y0 {
+            return 0;
+        }
+        let w = self.width as usize;
+        crate::mem_probe::release(&mut self.pixels[y0 * w..y1 * w])
+    }
+
     pub fn height(&self) -> u32 { self.height }
 
     /// 获取像素数据引用

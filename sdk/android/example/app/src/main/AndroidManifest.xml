@@ -6,6 +6,8 @@
     <application
         android:label="mini-render 原生示例"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        <!-- release 包也能 simpleperf 抓引擎线程（与 Flutter 示例一致；不影响性能） -->
+        <profileable android:shell="true" />
         <!-- configChanges：转屏 / 分屏 / 深色模式不重建 Activity（重建 = 引擎销毁重开，页面栈全丢），
              尺寸变了由 MiniProgramView.onSizeChanged 交给引擎 -->
         <activity

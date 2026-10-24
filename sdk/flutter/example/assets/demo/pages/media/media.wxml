@@ -27,6 +27,12 @@
   <view class="thumbs">
     <image wx:for="{{gallery}}" wx:key="*this" class="thumb" src="{{item}}" mode="aspectFill" data-index="{{index}}" bindtap="preview"/>
   </view>
+  <text class="title">wx.previewMedia（图片 + 视频混排：翻到视频直接播，点画面暂停 / 继续，下拉或右上角关闭）</text>
+  <view class="thumbs">
+    <image class="thumb" src="/images/clip_poster.jpg" mode="aspectFill" bindtap="previewMedia"/>
+    <image class="thumb" src="/images/coffee.jpg" mode="aspectFill" data-index="1" bindtap="previewMedia"/>
+    <image class="thumb" src="/images/cake.jpg" mode="aspectFill" data-index="2" bindtap="previewMedia"/>
+  </view>
 </view>
 
 <view class="card">

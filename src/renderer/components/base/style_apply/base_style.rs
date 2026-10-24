@@ -3,8 +3,15 @@
 //! `style_apply_new` 的一片。**纯搬迁**：从 792 行按职责切开，一行逻辑没改。
 use super::*;
 
-/// 构建基础 Taffy 样式
+/// 构建基础 Taffy 样式。同一张样式表、同一个元素上下文算过的直接给（memo.rs）
 pub fn build_base_style(
+    node: &WxmlNode,
+    ctx: &mut ComponentContext,
+) -> (Style, NodeStyle) {
+    super::memo::cached(node, ctx, build_base_style_uncached)
+}
+
+fn build_base_style_uncached(
     node: &WxmlNode,
     ctx: &mut ComponentContext,
 ) -> (Style, NodeStyle) {

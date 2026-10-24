@@ -119,6 +119,41 @@ where
     None
 }
 
+/// 同 [`get_or_fetch`]，但不下载：`load` 在后台线程上读盘 + 解码。本地大图用它（选图 / 拍照的原图
+/// 动辄 5MB、1200 万像素，同步解码在一加上一张 300ms+，整页卡住；三张就是一秒）
+pub fn get_or_load<T, F>(key: &str, load: F) -> Option<Arc<T>>
+where
+    T: 'static + Send + Sync,
+    F: FnOnce() -> Option<T> + Send + 'static,
+{
+    {
+        let map = states::<T>().lock().unwrap();
+        match map.get(key) {
+            Some(RemoteState::Ready(v)) => return Some(v.clone()),
+            // 本地文件失败了就是失败了（坏图 / 删了），不重试
+            Some(RemoteState::Loading) | Some(RemoteState::Failed { .. }) => return None,
+            None => {}
+        }
+    }
+    states::<T>().lock().unwrap().insert(key.to_string(), RemoteState::Loading);
+    *pending().lock().unwrap() += 1;
+    let key = key.to_string();
+    std::thread::spawn(move || {
+        let v = load();
+        {
+            let mut map = states::<T>().lock().unwrap();
+            match v {
+                Some(v) => map.insert(key, RemoteState::Ready(Arc::new(v))),
+                None => map.insert(key, RemoteState::Failed { at: Instant::now(), tries: MAX_TRIES }),
+            };
+        }
+        DIRTY.store(true, Ordering::Relaxed);
+        let mut n = pending().lock().unwrap();
+        *n = n.saturating_sub(1);
+    });
+    None
+}
+
 fn spawn_fetch<T, F>(url: String, decode: F)
 where
     T: 'static + Send + Sync,

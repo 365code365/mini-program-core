@@ -18,6 +18,7 @@
 //!   退出后宿主多半会把原来的值报回来；[`SAFE_AREA_HOLD_MS`] 内没报回来再用按住的那个。
 use super::engine::MiniEngine;
 use super::engine_options::SafeAreaInsets;
+use crate::host::ui_overlay::image_preview::video as preview;
 use crate::renderer::components::{host_feed, video_fullscreen, video_ui};
 use serde_json::{json, Value};
 
@@ -106,7 +107,8 @@ impl MiniEngine {
             self.events.push(ev);
         }
         let Some(r) = self.renderer.as_ref() else { return };
-        let generation = (r.layout_generation(), video_ui::feed_generation());
+        // 预览层（wx.previewMedia）里在放的视频也算一路：换了 / 关了要重新报
+        let generation = (r.layout_generation(), video_ui::feed_generation() ^ (preview::generation() << 32));
         if !self.video_feed.stale && self.video_feed.generation == Some(generation) {
             return;
         }
@@ -143,6 +145,13 @@ impl MiniEngine {
                 Some(json!({ "key": key, "url": resolve_url(src, &page_dir), "attrs": attrs, "box": bx }))
             })
             .collect();
+        let mut views = views;
+        if let Some(url) = preview::active() {
+            // 不对应任何节点：宿主照常建播放器、按这个键交帧，画在预览层里（image_preview/video.rs）
+            keys.push(preview::VIDEO_KEY.to_string());
+            let attrs = json!({ "autoplay": "true", "object-fit": "contain", "muted": "false", "loop": "false" });
+            views.push(json!({ "key": preview::VIDEO_KEY, "url": resolve_url(&url, &page_dir), "attrs": attrs, "box": [pw, ph] }));
+        }
         let sig = serde_json::to_string(&views).unwrap_or_default();
         if self.video_feed.last.as_deref() == Some(sig.as_str()) {
             return;
@@ -158,6 +167,12 @@ impl MiniEngine {
     pub(super) fn video_feed_event(&mut self, key: &str, name: &str, detail: Value) -> bool {
         if !self.opts.same_layer_video() {
             return false;
+        }
+        if key == preview::VIDEO_KEY {
+            // 预览层里那一路：没有节点可派发，只更新播放状态（播放键跟着变），重新合成
+            host_feed::note_event(key, name, &detail);
+            self.dmg.compose_dirty = true;
+            return true;
         }
         let Some(r) = self.renderer.take() else { return false };
         let hit = r.query_selector("video", true, &self.interaction).into_iter().find(|v| host_feed::video_key(&v.attrs) == key);

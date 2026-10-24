@@ -171,6 +171,11 @@ impl ScrollCacheManager {
     }
     
     /// 标记所有缓存为脏
+    /// 各离屏缓存的像素缓冲（内存分项用）
+    pub fn pixel_buffers(&self) -> impl Iterator<Item = &[crate::Color]> {
+        self.caches.values().map(|c| c.canvas.pixels())
+    }
+
     pub fn mark_all_dirty(&mut self) {
         self.global_version += 1;
         for cache in self.caches.values_mut() {

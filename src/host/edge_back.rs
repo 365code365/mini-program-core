@@ -35,12 +35,14 @@ pub struct PageShot {
     /// 一次转场里同一张图每帧都要用，整张 10MB 只该传一次；按地址判会把新图认成旧图
     /// （上一张释放后，新图可能正好分配在同一个地址）
     pub id: u64,
+    /// 压起来的像素（`pixels` 此时为空，host/shot_pack.rs）：栈顶下面那张以外的都压着
+    pub packed: Option<Box<[u8]>>,
 }
 
 impl PageShot {
     pub fn new(width: u32, height: u32, pixels: Vec<u32>) -> Self {
         static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
-        Self { width, height, pixels, id: NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed) }
+        Self { width, height, pixels, id: NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed), packed: None }
     }
 
     /// 空图（截不到画面时的占位）

@@ -9,11 +9,14 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.os.Build
 import android.util.AttributeSet
+import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.WindowInsets
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputConnection
 import android.widget.FrameLayout
 import org.json.JSONArray
 import org.json.JSONObject
@@ -75,6 +78,8 @@ class MiniProgramView @JvmOverloads constructor(
     private var startRoute: String? = null
     private var created = false
     private val hostCalls = HostCallRouter(context, session)
+    /** 软键盘：输入框聚焦弹出、输入法的字交给引擎（MiniImeConnection.kt） */
+    private val ime = MiniIme(this, ::sendText, ::sendKey)
     private val sameLayer = SameLayerViews(session) { resources.displayMetrics.density }
 
     // ── SurfaceView（只在主线程读写） ──
@@ -390,6 +395,8 @@ class MiniProgramView @JvmOverloads constructor(
                 "close" -> requestClose()
             }
             "hostCall" -> hostCalls.dispatch(ev, activity())
+            "inputFocus" -> ime.onFocus(ev)
+            "inputBlur" -> ime.onBlur()
             "sameLayerViews" -> sameLayer.onViews(ev)
             "nativeViewTap" -> sameLayer.onTap(ev)
             // 视频进 / 出全屏（横屏由引擎转画面）：收起 / 放出系统栏
@@ -425,22 +432,37 @@ class MiniProgramView @JvmOverloads constructor(
         activity()?.finish()
     }
 
+    override fun onCheckIsTextEditor(): Boolean = ime.active
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean = ime.onKey(event) || super.onKeyDown(keyCode, event)
+
+    override fun onCreateInputConnection(outAttrs: EditorInfo): InputConnection? = ime.create(outAttrs)
+
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (!session.ready) return false
         val dpr = resources.displayMetrics.density
         fun send(phase: Int, x: Float, y: Float) = session.run { MiniEngine.nativePointer(it, phase, x / dpr, y / dpr) }
         // 移动带上事件时间（uptimeMillis，与 pump 用的 Choreographer 帧时间同一个单调钟）：
         // 引擎按它重采样页面拖动，post 到哪一帧不再影响每帧挪多少（慢拖不一顿一顿）
-        fun move(x: Float, y: Float, t: Long) =
-            session.run { MiniEngine.nativePointerMoveAt(it, x / dpr, y / dpr, t.toDouble()) }
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> send(0, event.x, event.y)
             MotionEvent.ACTION_MOVE -> {
-                // 历史点也要送：抽稀会让滑动手感变差，也会漏掉快速滑动的方向判定
-                for (i in 0 until event.historySize) {
-                    move(event.getHistoricalX(i), event.getHistoricalY(i), event.getHistoricalEventTime(i))
+                // 历史点也要送：抽稀会让滑动手感变差，也会漏掉快速滑动的方向判定。
+                // 一个 MotionEvent 的全部采样打成一包、一次 post（与 iOS 的 coalescedTouches 一致）：
+                // 从前每个历史点各 post 一个 Runnable、各挂一次帧，120Hz 触控上一帧三四个
+                val n = event.historySize + 1
+                val xs = FloatArray(n)
+                val ys = FloatArray(n)
+                val ts = LongArray(n)
+                for (i in 0 until n - 1) {
+                    xs[i] = event.getHistoricalX(i) / dpr
+                    ys[i] = event.getHistoricalY(i) / dpr
+                    ts[i] = event.getHistoricalEventTime(i)
                 }
-                move(event.x, event.y, event.eventTime)
+                xs[n - 1] = event.x / dpr
+                ys[n - 1] = event.y / dpr
+                ts[n - 1] = event.eventTime
+                session.run { h -> for (i in 0 until n) MiniEngine.nativePointerMoveAt(h, xs[i], ys[i], ts[i].toDouble()) }
             }
             MotionEvent.ACTION_UP -> send(2, event.x, event.y)
             MotionEvent.ACTION_CANCEL -> send(3, 0f, 0f)

@@ -10,6 +10,8 @@
 //! 2. **内容变高时**孩子个数可以不同：配到第一个标签对不上为止，剩下的新旧两段各走一遍取切线
 //!    （invalidate_grow.rs）。
 use super::invalidate::DiffCtx;
+use super::layout_incremental::resolve;
+use super::layout_snapshot::Layouts;
 use super::*;
 
 impl WxmlRenderer {
@@ -17,8 +19,8 @@ impl WxmlRenderer {
     /// `in_fixed` / `old_fixed` 是父节点在新 / 旧树里是否已经在覆盖层里
     #[allow(clippy::too_many_arguments)]
     pub(super) fn diff_children(
-        old_t: &Tree,
-        new_t: &Tree,
+        old_t: &dyn Layouts,
+        new_t: &dyn Layouts,
         olds: &[RenderNode],
         news: &[RenderNode],
         old_o: (f32, f32),
@@ -53,7 +55,7 @@ impl WxmlRenderer {
         }
         let (fo, fnew) = (olds.iter().filter(|c| c.style.is_fixed), news.iter().filter(|c| c.style.is_fixed));
         if fo.clone().count() != fnew.clone().count()
-            || fo.zip(fnew).any(|(o, n)| Self::subtree_differs(old_t, new_t, o, n, old_o, new_o))
+            || fo.zip(fnew).any(|(o, n)| Self::subtree_differs(old_t, new_t, o, n, old_o, new_o, ctx.moved))
         {
             ctx.fixed_changed = true;
         }
@@ -62,8 +64,8 @@ impl WxmlRenderer {
     /// 按位置配对（个数不同时：内容变高就把配不上的两段各走一遍，否则整帧）
     #[allow(clippy::too_many_arguments)]
     fn diff_list<'a>(
-        old_t: &Tree,
-        new_t: &Tree,
+        old_t: &dyn Layouts,
+        new_t: &dyn Layouts,
         olds: impl Iterator<Item = &'a RenderNode> + Clone,
         news: impl Iterator<Item = &'a RenderNode> + Clone,
         old_o: (f32, f32),
@@ -79,7 +81,9 @@ impl WxmlRenderer {
             return;
         }
         let mut paired = 0;
+        let moved = ctx.moved;
         for (o, n) in olds.clone().zip(news.clone()) {
+            let o = resolve(o, moved);
             if ctx.grow && o.tag != n.tag {
                 break;
             }
@@ -100,7 +104,9 @@ impl WxmlRenderer {
     }
 
     /// 两棵子树画出来会不会不一样（结构、文字、属性、位置尺寸任何一样不同就算）
-    fn subtree_differs(old_t: &Tree, new_t: &Tree, o: &RenderNode, n: &RenderNode, old_o: (f32, f32), new_o: (f32, f32)) -> bool {
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn subtree_differs(old_t: &dyn Layouts, new_t: &dyn Layouts, o: &RenderNode, n: &RenderNode, old_o: (f32, f32), new_o: (f32, f32), moved: &HashMap<taffy::NodeId, &RenderNode>) -> bool {
+        let o = resolve(o, moved);
         if o.tag != n.tag || o.text != n.text || o.attrs != n.attrs || o.children.len() != n.children.len() {
             return true;
         }
@@ -111,6 +117,6 @@ impl WxmlRenderer {
         if !(near(oo.0, no.0) && near(oo.1, no.1) && near(ol.size.width, nl.size.width) && near(ol.size.height, nl.size.height)) {
             return true;
         }
-        o.children.iter().zip(&n.children).any(|(a, b)| Self::subtree_differs(old_t, new_t, a, b, oo, no))
+        o.children.iter().zip(&n.children).any(|(a, b)| Self::subtree_differs(old_t, new_t, a, b, oo, no, moved))
     }
 }

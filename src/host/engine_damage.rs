@@ -223,6 +223,10 @@ impl MiniEngine {
         if let Some(produced) = self.fullscreen_frame() {
             return produced;
         }
+        // 图片预览盖满整屏：同理，只在预览自己变了时重新合成（engine_preview.rs）
+        if let Some(produced) = self.preview_frame() {
+            return produced;
+        }
         let compose_dirty = std::mem::take(&mut self.dmg.compose_dirty);
         let recompose = scroll_moved || compose_dirty || self.present_pending;
         let (kind, scope) = if self.dmg.no_damage {

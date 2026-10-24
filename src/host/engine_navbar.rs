@@ -17,6 +17,13 @@ use crate::compositor::{LayerCanvas, TopBand};
 use crate::{Canvas, Rect};
 
 /// 导航栏的画布与交互状态
+impl super::engine::MiniEngine {
+    /// 导航栏画布的像素（内存分项用）
+    pub(super) fn nav_canvas_pixels(&self) -> Option<&[crate::Color]> {
+        self.nav.canvas.as_ref().map(|c| c.read().pixels())
+    }
+}
+
 #[derive(Default)]
 pub struct NavChrome {
     canvas: Option<LayerCanvas>,

@@ -94,9 +94,34 @@ pub struct KeyframesRule {
     pub steps: Vec<KeyframeStep>,
 }
 
+/// 样式表在进程里的编号：建出来 / 克隆出来各是新的一个。
+///
+/// 给「样式落地的记忆表」当键用（renderer/components/base/style_apply/memo.rs）：同一张表、
+/// 同一个元素上下文，级联结果就一样。克隆也换编号 —— 克隆出来的那份可能接着被改（`ensure_button_hover`）
+#[derive(Debug)]
+pub struct SheetId(pub u64);
+impl SheetId {
+    fn fresh() -> Self {
+        static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+        Self(NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed))
+    }
+}
+impl Default for SheetId {
+    fn default() -> Self {
+        Self::fresh()
+    }
+}
+impl Clone for SheetId {
+    fn clone(&self) -> Self {
+        Self::fresh()
+    }
+}
+
 /// 样式表
 #[derive(Debug, Clone, Default)]
 pub struct StyleSheet {
+    /// 进程内编号（见 [`SheetId`]）。规则在**第一次级联之后**就不该再改：要改就建一张新表
+    pub id: SheetId,
     pub rules: Vec<StyleRule>,
     /// @import 记录的外部 wxss 路径（由加载器解析合并）
     pub imports: Vec<String>,
@@ -171,7 +196,7 @@ impl ElementDesc {
 
 impl StyleSheet {
     pub fn new() -> Self {
-        Self { rules: Vec::new(), imports: Vec::new(), keyframes: Vec::new(), font_faces: Vec::new() }
+        Self { id: SheetId::fresh(), rules: Vec::new(), imports: Vec::new(), keyframes: Vec::new(), font_faces: Vec::new() }
     }
 
     /// 按名字查关键帧时间轴（后定义的同名规则覆盖先定义的，与 CSS 一致）

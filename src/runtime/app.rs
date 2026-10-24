@@ -226,6 +226,18 @@ impl MiniApp {
         self.bridge.take_data_dirty()
     }
     
+    /// QuickJS 堆（见 `JsRuntime::memory_used`）
+    pub fn js_memory(&self) -> (usize, usize) {
+        self.runtime.lock().map(|r| r.memory_used()).unwrap_or((0, 0))
+    }
+
+    /// 内存告警：跑一遍垃圾回收
+    pub fn collect_garbage(&self) {
+        if let Ok(r) = self.runtime.lock() {
+            r.collect_garbage();
+        }
+    }
+
     /// 更新一帧
     pub fn update(&mut self) -> Result<(), String> {
         let now = Instant::now();
@@ -337,6 +349,10 @@ impl MiniApp {
     
     fn process_timers(&mut self) -> Result<(), String> {
         let now = Instant::now();
+        // 每帧都走：先判有没有到点的，没有就不建那两个 Vec（真机 jemalloc 带锁，滚动时每帧两次分配）
+        if !self.timers.values().any(|s| now.duration_since(s.last_trigger).as_millis() as u32 >= s.delay_ms) {
+            return Ok(());
+        }
         let mut to_trigger = Vec::new();
         let mut to_remove = Vec::new();
         

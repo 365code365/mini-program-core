@@ -501,7 +501,7 @@ Kotlin 侧对应的 JNI（`src/ffi_jni.rs`，老的 `native*` 一个没动）：
 `nativeDetachSurface(h)`、`nativeBackend(h): Int`、`nativeBackendReason(h): String`、`nativePumpEx(h, nowMs): Int`。
 `nativeAttachSurface` 内部 `ANativeWindow_fromSurface` → `mr_app_attach_surface`（引擎 acquire 自己那份）→
 release；没编 gpu 时不碰 Surface、直接返回 1。返回 1 时那块 Surface 可能已被 GPU 连过，要 CPU 直写就换一块新的。
-Flutter 插件与 Android 原生 `MiniProgramView`（`EngineSession.kt`，与插件的 `EngineHost` 同一套上屏规则）都已接这组接口；
+Flutter 插件与 Android 原生 `MiniProgramView`（与插件的 `EngineHost` 共用同一个内核 `EngineCore.kt`：出帧、上屏、事件只有一份）都已接这组接口；
 iOS 的 Swift 视图同一套（`sdk/ios/Sources/MiniRender/EngineSession.swift`：引擎线程 + CADisplayLink、`mr_warmup` →
 `set_device_info` → `set_backend(AUTO)` → `prewarm_gpu` → `launch` → `attach_surface(CAMetalLayer)`，首帧前 Metal 层藏着，
 回退时拿掉 Metal 层改 CPU，进后台同步停 DisplayLink；这串 C 调用在 macOS 上由 `tests/ffi_metal_layer.rs` 跑过，

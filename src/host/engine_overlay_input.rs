@@ -60,7 +60,7 @@ impl MiniEngine {
                 return true;
             }
         }
-        if ui_overlay::sheet_overlay_move(x) {
+        if ui_overlay::sheet_overlay_move(x, y) {
             self.dmg.compose_dirty = true;
             return true;
         }

@@ -81,7 +81,13 @@ pub fn enter(video: VideoRef, direction: Option<i32>) {
     let attr = video.attrs.get("direction").and_then(|s| s.trim().parse::<i32>().ok()).and_then(parse_dir);
     let d = direction.and_then(parse_dir).or(attr).unwrap_or_else(|| {
         let st = video.status();
-        if st.width > st.height { 90 } else { 0 }
+        // 宿主还没报 loadedmetadata（宽高 0）时看已经交来的那一帧：从前这里直接当竖屏，横的视频全屏也是竖着的
+        let (w, h) = if st.width > 0 && st.height > 0 {
+            (st.width, st.height)
+        } else {
+            super::host_feed::frame(&video.key).map(|f| (f.width, f.height)).unwrap_or((0, 0))
+        };
+        if w > h { 90 } else { 0 }
     });
     let key = video.key.clone();
     let frozen = ui::live_mark_seq(&key);

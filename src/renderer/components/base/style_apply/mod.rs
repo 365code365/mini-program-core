@@ -17,6 +17,8 @@ pub enum Axis {
 mod base_style;
 /// 声明生效顺序
 mod order;
+/// 样式落地的记忆表（同一张表、同一个元素上下文直接给结果）
+mod memo;
 /// 逐条属性落地
 mod property;
 /// 单位换算与取值

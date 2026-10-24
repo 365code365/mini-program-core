@@ -64,6 +64,7 @@ impl MiniEngine {
             // 最后一次弹出的就是回到的那一页被盖住时留的视图（滚动位置、scroll-view 位置）
             returned = self.keep.saved.pop();
         }
+        self.unpack_last_shot();
         // **不重载**上一页的 js：否则用户在上一页的筛选/表单/滚动位置全丢，
         // 还会重复触发「仅首次进入」的逻辑
         if logic_popped == 0 {

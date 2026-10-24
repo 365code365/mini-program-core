@@ -47,7 +47,7 @@ Page({
     media: [],
     hasVideo: false,
     files: [],
-    mediaResult: '选到的图片、视频封面显示在上面（点一下 previewImage）',
+    mediaResult: '选到的图片、视频封面显示在上面（点一下 previewMedia：视频直接播）',
     lat: 39.908823,
     lng: 116.39747,
     mapResult: '点地图上的标记，宿主回传 markertap',
@@ -118,14 +118,16 @@ Page({
       fail: (r) => this.setData({ mediaResult: 'wx.chooseMessageFile ✗ ' + r.errMsg })
     });
   },
+  // 图片与视频一起预览（wx.previewMedia）：左右滑切换，视频在预览里直接播，右上角关闭
   preview(e) {
-    const images = this.data.media.filter((m) => m.kind === 'image').map((m) => m.path);
-    const item = this.data.media[e.currentTarget.dataset.index];
-    if (item.kind !== 'image') {
-      this.setData({ mediaResult: '视频：' + item.path });
-      return;
-    }
-    wx.previewImage({ urls: images, current: item.path });
+    const sources = this.data.media.map((m) => (m.kind === 'video'
+      ? { url: m.path, type: 'video', poster: m.src }
+      : { url: m.path, type: 'image' }));
+    wx.previewMedia({
+      sources,
+      current: e.currentTarget.dataset.index,
+      fail: (r) => this.setData({ mediaResult: 'wx.previewMedia ✗ ' + r.errMsg })
+    });
   },
   firstOf(kind) {
     const m = this.data.media.find((x) => x.kind === kind);

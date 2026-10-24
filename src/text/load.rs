@@ -3,15 +3,49 @@
 //! 从 `text.rs` 按职责拆出（**纯搬迁**，原本私有的几个函数改成 `pub(super)` 供父模块调用，其余一字未改）：
 //! 那个文件到了 667 行，加载与绘制 / 度量混在一起。
 use super::{shared_fonts, TextRenderer};
-use fontdue::{Font, FontSettings};
+use fontdue::{Font, FontBytes, FontSettings};
 use std::path::Path;
+use std::sync::Arc;
+
+/// 把字体文件映射进来（不读进堆）：字节是文件页，只有真的用到的那几页才进物理内存，
+/// 内存紧张时系统可以直接丢掉再从文件读回（不算进程的匿名内存）。
+///
+/// 从前 `std::fs::read` 整个文件（Hiragino 23MB、思源 16MB），而且常规 / 粗体两个字面各读一份。
+/// 映射失败（某些文件系统不支持）就退回读进内存。
+///
+/// 字体文件在映射期间不该被改写：系统字体、App 包里的字体、下载落盘后不再动的字体都满足；
+/// 改写一个正被映射的文件，读到的字节会跟着变（与别的 mmap 用法一样的约定）
+pub(crate) fn map_font_file(path: &str) -> std::io::Result<FontBytes> {
+    let file = std::fs::File::open(path)?;
+    // SAFETY: 只读映射；约定见上
+    match unsafe { memmap2::Mmap::map(&file) } {
+        Ok(m) => Ok(Arc::new(m)),
+        Err(_) => Ok(Arc::new(std::fs::read(path)?)),
+    }
+}
+
+/// 加载字形几何用的设置（所有字面都一样，见 `from_bytes_index`）
+fn settings(index: u32) -> FontSettings {
+    FontSettings { scale: 40.0, collection_index: index, ..Default::default() }
+}
 
 impl TextRenderer {
+    /// 共用一份字体字节建渲染器（mmap 的文件 / 内嵌字体），取第 `index` 个字面
+    pub(crate) fn from_shared_index(bytes: FontBytes, index: u32) -> Result<Self, String> {
+        let font = Font::from_shared(bytes, settings(index)).map_err(|e| e.to_string())?;
+        Ok(Self::with_main_font(font))
+    }
+
+    /// 内嵌在二进制里的字体（不拷贝）
+    pub(crate) fn from_static(bytes: &'static [u8]) -> Result<Self, String> {
+        Self::from_shared_index(Arc::new(bytes), 0)
+    }
+
     /// 从同一份字体数据里挑选粗体字面（TTC 字体集合常把 W3/W6 放在不同 face）。
     ///
     /// 判定方式：光栅化同一个汉字，比较墨水覆盖率，取显著更黑且步进宽度一致的字面。
     /// 找不到就返回 None，绘制端回退到 faux-bold。
-    pub(super) fn detect_bold_face(font_data: &[u8], regular: &Font) -> Option<Font> {
+    pub(super) fn detect_bold_face(font_data: FontBytes, regular: &Font) -> Option<Font> {
         const PROBE: char = '国';
         const PROBE_SIZE: f32 = 32.0;
         let ink_ratio = |font: &Font| -> f32 {
@@ -29,8 +63,8 @@ impl TextRenderer {
         // 全都发生在**第一帧的建树阶段**（启动页首帧因此要 3 秒才出来）。
         let mut lighter_in_a_row = 0;
         for index in 1..6u32 {
-            let settings = FontSettings { scale: 40.0, collection_index: index, ..Default::default() };
-            let Ok(candidate) = Font::from_bytes(font_data, settings) else { break };
+            // 字形惰性展开（vendor/fontdue）：探一个字面只展开「国」这一个字形，不再是整个字面
+            let Ok(candidate) = Font::from_shared(font_data.clone(), settings(index)) else { break };
             if candidate.lookup_glyph_index(PROBE) == 0 {
                 continue;
             }
@@ -68,9 +102,8 @@ impl TextRenderer {
 
     /// 从文件路径加载字体
     pub fn from_file(path: &str) -> Result<Self, String> {
-        let font_data = std::fs::read(path)
-            .map_err(|e| format!("Failed to read font file: {}", e))?;
-        Self::from_bytes(&font_data)
+        let font_data = map_font_file(path).map_err(|e| format!("Failed to read font file: {}", e))?;
+        Self::from_shared_index(font_data, 0)
     }
 
     /// 为某字符选择字体：主字体缺字形时依次回退 Emoji 字体、符号字体。
@@ -94,22 +127,18 @@ impl TextRenderer {
                     "/System/Library/Fonts/Menlo.ttc",
                     "/System/Library/Fonts/Apple Symbols.ttf",
                 ];
-                let settings = FontSettings { scale: 40.0, ..Default::default() };
                 for path in candidates {
                     if !Path::new(path).exists() {
                         continue;
                     }
-                    if let Ok(data) = std::fs::read(path) {
-                        if let Ok(font) = Font::from_bytes(data.as_slice(), settings.clone()) {
+                    if let Ok(data) = map_font_file(path) {
+                        if let Ok(font) = Font::from_shared(data, settings(0)) {
                             return Some(font);
                         }
                     }
                 }
-                Font::from_bytes(
-                    include_bytes!("../../assets/ArialUnicode.ttf").as_slice(),
-                    settings,
-                )
-                .ok()
+                let builtin: &'static [u8] = include_bytes!("../../assets/ArialUnicode.ttf");
+                Font::from_shared(Arc::new(builtin), settings(0)).ok()
             })
             .as_ref()
     }
@@ -121,16 +150,17 @@ impl TextRenderer {
     pub fn from_file_with_fallback(path: &str) -> Result<Self, String> {
         let log = std::env::var_os("MINI_FONT_LOG").is_some();
         let t0 = std::time::Instant::now();
-        let data = std::fs::read(path).map_err(|e| format!("读取字体 {path} 失败: {e}"))?;
+        let data = map_font_file(path).map_err(|e| format!("读取字体 {path} 失败: {e}"))?;
         let t_read = t0.elapsed();
-        let mut r = Self::from_bytes(&data)?;
+        let len = (*data).as_ref().len();
+        let mut r = Self::from_shared_index(data, 0)?;
         let t_parse = t0.elapsed();
         // 粗体字面留到第一次真的要画粗体时再探测（见 `bold_font` 字段注释）
         r.bold_src = Some(path.to_string());
         if log {
             eprintln!(
                 "🔤 加载 {path}（{:.1}MB）：读盘 {:.0}ms 解析常规字面 {:.0}ms（粗体字面懒加载）",
-                data.len() as f32 / 1048576.0,
+                len as f32 / 1048576.0,
                 t_read.as_secs_f32() * 1000.0,
                 (t_parse - t_read).as_secs_f32() * 1000.0,
             );
@@ -157,8 +187,8 @@ impl TextRenderer {
             if !Path::new(&c.path).exists() {
                 continue;
             }
-            let Ok(data) = std::fs::read(&c.path) else { continue };
-            match Self::from_bytes_index(&data, c.index) {
+            let Ok(data) = map_font_file(&c.path) else { continue };
+            match Self::from_shared_index(data, c.index) {
                 Ok(mut r) => {
                     if c.need_cjk && !r.main_has_glyph('国') {
                         continue;
@@ -183,12 +213,8 @@ impl TextRenderer {
         if std::env::var_os("MINI_LOAD_EMOJI_FONT").is_some() {
             for path in &emoji_font_paths {
                 if Path::new(path).exists() {
-                    if let Ok(data) = std::fs::read(path) {
-                        let settings = FontSettings {
-                            scale: 40.0,
-                            ..Default::default()
-                        };
-                        if let Ok(font) = Font::from_bytes(data.as_slice(), settings) {
+                    if let Ok(data) = map_font_file(path) {
+                        if let Ok(font) = Font::from_shared(data, settings(0)) {
                             println!("✅ Emoji font: {}", path);
                             renderer.emoji_font = Some(font);
                             break;

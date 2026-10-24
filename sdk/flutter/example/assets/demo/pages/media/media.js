@@ -23,6 +23,16 @@ Page({
     const i = e.currentTarget.dataset.index;
     wx.previewImage({ urls: this.data.gallery, current: this.data.gallery[i] });
   },
+  previewMedia(e) {
+    wx.previewMedia({
+      sources: [
+        { url: '/images/clip.mp4', type: 'video', poster: '/images/clip_poster.jpg' },
+        { url: '/images/coffee.jpg', type: 'image' },
+        { url: '/images/cake.jpg', type: 'image' }
+      ],
+      current: Number(e.currentTarget.dataset.index || 0)
+    });
+  },
   onVideo(e) {
     this.setData({ videoLog: 'bind' + (e.type || '?') + ' ' + JSON.stringify(e.detail || {}) });
   },

@@ -69,7 +69,9 @@ pub fn compose_rows(buf: &mut [u32], layers: &FrameLayers<'_>, rows: (u32, u32))
     let (w, h) = (layers.width, layers.height);
     // 全屏视频把每个像素都写一遍：底下的页面 / 导航栏 / 下拉指示器不用先拼出来（拼了也被盖掉，
     // 一加上整屏拷一遍页面要好几毫秒，全屏时每来一帧视频都要合成一次）
-    let covered = crate::renderer::components::fullscreen_video().is_some();
+    // 图片预览的黑底不透明时同理（左右滑动的每一帧都是整屏重画预览）
+    let preview_covers = ui_overlay::image_preview::covers_page();
+    let covered = crate::renderer::components::fullscreen_video().is_some() || preview_covers;
     if !covered {
         compose_page(buf, layers, rows);
     }

@@ -106,6 +106,12 @@ fn anim_bytes(a: &AnimatedImage) -> usize {
     a.frames.iter().map(|(f, _)| f.len()).sum::<usize>() + 128
 }
 
+/// 解码图片缓存的字节：(静态图, 动图帧)
+pub fn image_cache_bytes() -> (usize, usize) {
+    let a = get_image_cache().lock().map(|c| c.bytes()).unwrap_or(0);
+    let b = get_anim_cache().lock().map(|c| c.bytes()).unwrap_or(0);
+    (a, b)
+}
 /// 图片缓存现状（诊断/内存报告用）
 pub fn image_cache_report() -> String {
     let budget = super::image_cache::budget_bytes();

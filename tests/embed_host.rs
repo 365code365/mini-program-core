@@ -121,11 +121,14 @@ fn css_无限动画逐帧出新画面() {
     );
     let mut e = engine(&root, 375, 667, 1.0, EngineOptions::default());
     let mut produced = 0;
+    let mut missing = Vec::new();
     let mut frames = Vec::new();
     for i in 0..60u64 {
         let f = e.pump_ex(1 + i * 16);
         if f & NEW != 0 {
             produced += 1;
+        } else {
+            missing.push((i, e.last_frame_kind().label()));
         }
         assert!(f & WANTS_MORE != 0, "动画在跑就要一直要帧（第 {i} 帧）");
         if i == 1 || i == 30 {
@@ -133,7 +136,7 @@ fn css_无限动画逐帧出新画面() {
         }
         std::thread::sleep(Duration::from_millis(4));
     }
-    assert!(produced >= 59, "60 次 pump 只出了 {produced} 帧（动画只画第一帧就停）");
+    assert!(produced >= 59, "60 次 pump 只出了 {produced} 帧（动画只画第一帧就停），没出帧的：{missing:?}");
     assert_ne!(frames[0], frames[1], "第 1 帧与第 30 帧应不同（动画在动）");
 }
 

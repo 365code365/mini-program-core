@@ -53,6 +53,10 @@ pub fn resolve(path: &str) -> Option<Resolved> {
         let writable = path == USR || path.starts_with(&format!("{USR}/"));
         return Some(Resolved { real, writable });
     }
+    if path.starts_with("file://") {
+        // 沙盒里的 file://（见 wxfile::from_file_uri），沙盒外的不认
+        return resolve(&crate::wxfile::from_file_uri(path)?);
+    }
     if path.contains("://") {
         return None;
     }

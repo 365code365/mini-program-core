@@ -3,8 +3,9 @@
 #
 #   bash tools/android-jank.sh <场景> [install]
 #     场景：index-slow | wxss-slow | wxss-fastslow | index-fastslow | http-slow | http-fastslow | resume | sheet
-#           enter-query | enter-feedback | enter-storage | enter-form（进页面 + 返回，各两遍）
+#           enter-query | enter-feedback | enter-storage | enter-form | enter-skyline（进页面 + 返回，各两遍）
 #           query-slow | query-fastslow | swiper-slow | swiper-fastslow（在子页面里滑）
+#           preview-swipe（图片预览：开、左右滑、下拉关、点关闭键）
 #           perf-idle | perf-slow（综合场景页：CSS 动画 + 每秒 setData；idle = 不碰屏幕 3s，看小核上够不够）
 #
 # 判据只看两样：
@@ -64,15 +65,22 @@ case "$SC" in
   enter-feedback) TAB_X=675; ENTER_Y=730; GO_PAGE=pages/feedback ;;
   enter-storage) TAB_X=675; ENTER_Y=1080; GO_PAGE=pages/storage ;;
   enter-form) TAB_X=405; ENTER_Y=1070; GO_PAGE=pages/form ;;
+  # 最重的一页（movable / 手势 / grid-view / sheet）：组件 tab 滑到底，倒数第二行
+  enter-skyline) TAB_X=405; ENTER_Y=1858; GO_PAGE=pages/skyline/skyline; ENTER_BOTTOM=1 ;;
 esac
 if [ -n "$ENTER_Y" ]; then
   D shell input tap $TAB_X 2270; sleep 1.5
+  if [ -n "${ENTER_BOTTOM:-}" ]; then
+    for i in 1 2 3; do D shell input swipe 540 1900 540 400 120; sleep 0.5; done; sleep 1.5
+  fi
 fi
 # 在子页面里滑：query =「节点与滚动」（onPageScroll / IntersectionObserver 回调改数据），swiper =「轮播」（自动播放）
 IN_TAB=""
 case "$SC" in
   query-*) IN_TAB=675; IN_Y=1410; IN_PAGE=pages/query ;;
   swiper-*) IN_TAB=405; IN_Y=1410; IN_PAGE=pages/swiper ;;
+  # 图片预览（wx.previewImage）：「媒体」页底部那排缩略图，点第一张打开
+  preview-*) IN_TAB=405; IN_Y=1692; IN_PAGE=pages/media/media ;;
 esac
 # 宿主页（host-*）：地图那一段（同层渲染的 <map>：宿主画、引擎画进页面）。拖动不从地图上开始（盖上去的地图会吃掉触摸）
 case "$SC" in
@@ -117,7 +125,23 @@ case "$SC" in
     for i in 1 2; do D shell input swipe 540 600 540 1800 90; sleep 0.25; done
     D shell input swipe 540 900 540 1700 2000; sleep 0.5 ;;
   sheet) D shell input tap 385 1330; sleep 0.8; D shell input tap 540 500; sleep 0.8 ;;
+  # 「滑一会儿才顿」：同一页连续甩 + 慢拖 40 秒左右，看后半段是不是比前半段差（每轮一行，见下面的分段统计）
+  *-long)
+    for k in $(seq 1 10); do
+      date +%s.%N > $OUT/round_$k
+      for i in 1 2; do D shell input swipe 540 1800 540 600 90; sleep 0.3; done
+      D shell input swipe 540 1700 540 900 1500; sleep 0.3
+      for i in 1 2; do D shell input swipe 540 600 540 1800 90; sleep 0.3; done
+      D shell input swipe 540 900 540 1700 1500; sleep 0.3
+    done ;;
   *-idle) sleep 3 ;;
+  # 打开预览 → 左右各滑三张（快甩 + 慢拖）→ 下拉关闭 → 再开 → 点右上角关闭
+  preview-swipe)
+    D shell input tap 206 2230; sleep 1
+    for i in 1 2 3; do D shell input swipe 900 1200 200 1200 150; sleep 0.6; done
+    for i in 1 2 3; do D shell input swipe 200 1200 900 1200 500; sleep 0.6; done
+    D shell input swipe 540 1000 560 1700 400; sleep 0.8
+    D shell input tap 206 2230; sleep 1; D shell input tap 1007 205; sleep 0.8 ;;
   enter-*)
     # 返回点导航栏的返回箭头，不发 KEYCODE_BACK：没有触摸时 ColorOS 把屏降到 60Hz，
     # 退场转场量出来一半是「重复」，可那是系统降频不是引擎慢（真人返回都是点 / 侧滑）
@@ -132,6 +156,18 @@ case "$SC" in
     D shell monkey -p $PKG -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
     sleep 1.2
     layers > $OUT/layers.txt ;;
+  resume-scroll)
+    # 「回桌面再进来，一滑就顿」：先在首页滑一段，回桌面停 3 秒，回来立刻甩 + 慢拖
+    D shell input swipe 540 1800 540 700 600; sleep 0.5
+    D shell input keyevent KEYCODE_HOME; sleep 3
+    D shell monkey -p $PKG -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
+    sleep 0.8; layers > $OUT/layers.txt
+    while read -r L; do D shell "dumpsys SurfaceFlinger --latency-clear '$L'" >/dev/null </dev/null; done < $OUT/layers.txt
+    D logcat -c
+    D shell input swipe 540 1800 540 600 90; sleep 0.3
+    D shell input swipe 540 600 540 1800 90; sleep 0.3
+    D shell input swipe 540 1700 540 900 1500; sleep 0.3
+    D shell input swipe 540 900 540 1700 1500; sleep 0.5 ;;
 esac
 touch $OUT/stop; wait $POLL 2>/dev/null; rm -f $OUT/stop
 best=""
@@ -152,6 +188,12 @@ gg = [x for x in g if x < 150]
 v = statistics.median(gg)
 rep = sum(round(x / v) - 1 for x in gg if x > v * 1.5)
 print(f"{len(P)} 帧 周期 {v:.2f}ms 屏上重复 {rep} 次（{100*rep/max(1,len(gg)+rep):.1f}%） 最长 {max(gg):.0f}ms")
+# 前后两半各自的重复（「滑一会儿才顿」看后半段是不是变差）
+half = len(g) // 2
+for name, part in (("前半", g[:half]), ("后半", g[half:])):
+    pp = [x for x in part if x < 150]
+    r = sum(round(x / v) - 1 for x in pp if x > v * 1.5)
+    print(f"  {name}：{len(pp)} 帧 重复 {r} 次（{100*r/max(1,len(pp)+r):.1f}%）")
 # 每个空档的起止（单调钟 ns），给下面对时间线用
 with open(sys.argv[1] + 'gaps.tsv', 'w') as f:
     for a, b in zip(P, P[1:]):

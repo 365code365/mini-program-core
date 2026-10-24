@@ -31,6 +31,7 @@ impl MiniEngine {
             return; // cover 没做（栈是空的）
         }
         self.back_shots.pop();
+        self.unpack_last_shot();
         if let Some(v) = self.keep.saved.pop() {
             self.put_back_view(Some(v));
         }

@@ -36,7 +36,7 @@ impl MiniEngine {
             // Loading 的圈要一直转（`wx.showLoading` 没有时长，等逻辑层 hideLoading）
             || crate::host::ui_overlay::tip_spinning(&self.toast, &self.loading)
             || self.picker_sheet.as_ref().map(|s| s.animating()).unwrap_or(false)
-            || crate::host::ui_overlay::sheet_overlay_animating()
+            || crate::host::ui_overlay::sheet_overlay_wants_frames()
             || self.edge_back.as_ref().map(|e| e.is_settling()).unwrap_or(false)
             || c::has_playing_video()
             // 看得见的动图：醒着等它换帧（多数帧问下来不用重画，见 engine_damage::plan_redraw）

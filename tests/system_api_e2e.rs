@@ -77,9 +77,9 @@ impl E {
             self.e.pump(self.t);
         }
     }
-    /// 浮层的入场 / 退场按墙上时钟走（0.2s 左右）
+    /// 浮层的入场 / 退场、预览换张的弹簧按墙上时钟走（0.2~0.35s）
     fn settle(&mut self) {
-        std::thread::sleep(Duration::from_millis(300));
+        std::thread::sleep(Duration::from_millis(450));
         self.frames(3);
     }
     fn run(&mut self, code: &str) {
@@ -167,14 +167,120 @@ fn preview_image_switches_by_swipe_and_closes_on_tap() {
     assert_eq!(e.log(), serde_json::json!(["ok"]));
     assert_eq!(e.px(187, 333), (0, 0, 255), "current 指定第二张");
     e.drag(100.0, 260.0, 333.0);
-    e.frames(2);
+    e.settle();
     assert_eq!(e.px(187, 333), (255, 0, 0), "右划回到第一张");
     e.drag(100.0, 300.0, 333.0);
+    e.settle();
     assert_eq!(e.px(187, 333), (255, 0, 0), "到头不再切");
     e.tap(187.0, 333.0);
     e.settle();
     assert_eq!(e.px(187, 333), (0, 255, 0), "轻点关闭，页面回来");
     assert_eq!(e.js("__currentPage.data.taps"), 0, "预览里的点击不落到页面上");
+}
+
+/// 换张是滑过去的（松手后中间那几帧两张图各占一部分），不是一下跳过去
+#[test]
+fn preview_image_slides_between_images() {
+    let _g = SERIAL.lock().unwrap_or_else(|p| p.into_inner());
+    let fx = fixture("preview-slide", PAGE_WXML, PAGE_JS);
+    let mut e = E::new(&fx);
+    e.run("wx.previewImage({ urls: ['/img/red.png', '/img/blue.png'] })");
+    e.settle();
+    // 往左拖 120（不到半屏），松手立刻看：左边还露着红、右边已经是蓝 —— 正在滑
+    e.e.pointer_down(300.0, 333.0);
+    e.frames(1);
+    for i in 1..=6 {
+        e.e.pointer_move(300.0 - 20.0 * i as f32, 333.0);
+        e.frames(1);
+    }
+    e.e.pointer_up(180.0, 333.0);
+    e.frames(1);
+    assert_eq!(e.px(20, 333), (255, 0, 0), "松手那一刻左边还是红");
+    assert_eq!(e.px(355, 333), (0, 0, 255), "右边已经露出蓝");
+    e.settle();
+    assert_eq!(e.px(20, 333), (0, 0, 255), "停稳后整屏是第二张");
+    assert_eq!(e.px(355, 333), (0, 0, 255));
+}
+
+/// 右上角关闭键；往下拉没拉够回弹、拉够了关
+#[test]
+fn preview_image_close_button_and_pull_down() {
+    let _g = SERIAL.lock().unwrap_or_else(|p| p.into_inner());
+    let fx = fixture("preview-close", PAGE_WXML, PAGE_JS);
+    let mut e = E::new(&fx);
+    e.run("wx.previewImage({ urls: ['/img/red.png'] })");
+    e.settle();
+    // 关闭键在右上角（状态栏 20 下面，圆心 (343, 44)）：圈是深色的，叉是白的
+    assert_eq!(e.px(343, 44), (255, 255, 255), "关闭键的叉");
+    e.tap(343.0, 44.0);
+    e.settle();
+    assert_eq!(e.px(187, 333), (0, 255, 0), "点关闭键：页面回来");
+
+    let pull = |e: &mut E, dy: f32| {
+        e.e.pointer_down(187.0, 300.0);
+        e.frames(1);
+        for i in 1..=6 {
+            e.e.pointer_move(187.0, 300.0 + dy * i as f32 / 6.0);
+            e.frames(1);
+        }
+    };
+    e.run("wx.previewImage({ urls: ['/img/red.png'] })");
+    e.settle();
+    pull(&mut e, 200.0);
+    let mid = e.px(187, 100);
+    assert!(mid.1 > 0, "下拉时露出页面：{mid:?}");
+    e.e.pointer_move(187.0, 340.0);
+    e.frames(1);
+    std::thread::sleep(Duration::from_millis(120));
+    e.e.pointer_up(187.0, 340.0);
+    e.settle();
+    assert_eq!(e.px(187, 333), (255, 0, 0), "只拉了 40：回弹，预览还在");
+    pull(&mut e, 200.0);
+    e.e.pointer_up(187.0, 500.0);
+    e.settle();
+    assert_eq!(e.px(187, 333), (0, 255, 0), "拉了 200：关掉");
+    assert_eq!(e.js("__currentPage.data.taps"), 0);
+}
+
+/// previewMedia 里的视频：翻到它就作为一路同层视频报给宿主（键 `__preview_video`），关掉就撤
+#[test]
+fn preview_media_video_is_reported_to_host() {
+    let _g = SERIAL.lock().unwrap_or_else(|p| p.into_inner());
+    let fx = fixture("preview-media", PAGE_WXML, PAGE_JS);
+    let data = fx.0.join("_data");
+    let opts = mini_render::host::EngineOptions::from_json(r#"{"sameLayer":["video"]}"#).unwrap();
+    let env = mini_render::compositor::HostEnv::default();
+    let mut eng = MiniEngine::new_with_options(&fx.0.to_string_lossy(), Some(&data.to_string_lossy()), 375, 667, 2.0, env, opts).unwrap();
+    eng.launch(Some("pages/index/index")).unwrap();
+    let mut e = E { e: eng, t: 1000 };
+    e.frames(3);
+    let videos = |e: &mut E| -> Vec<Value> {
+        let mut out = Vec::new();
+        while let Some(ev) = e.e.poll_event() {
+            let v: Value = serde_json::from_str(&ev).unwrap_or(Value::Null);
+            if v["type"] == "videos" {
+                out.push(v["views"].clone());
+            }
+        }
+        out
+    };
+    videos(&mut e);
+    e.run("wx.previewMedia({ sources: [{ url: '/img/red.png' }, { url: '/v/a.mp4', type: 'video', poster: '/img/blue.png' }], current: 1, success: () => __currentPage.rec('ok') })");
+    e.settle();
+    assert_eq!(e.log(), serde_json::json!(["ok"]));
+    let got = videos(&mut e);
+    let last = got.last().cloned().unwrap_or(Value::Null);
+    assert_eq!(last[0]["key"], "__preview_video", "翻到视频那一项：报给宿主 {got:?}");
+    assert!(last[0]["url"].as_str().unwrap_or("").ends_with("a.mp4"));
+    assert_eq!(e.px(187, 200), (0, 0, 255), "首帧没到：先画封面");
+    // 视频暂停（还没起播）时中间有播放键：圈里是白色三角
+    assert_eq!(e.px(190, 333), (255, 255, 255), "播放键");
+    // 翻回图片：撤掉这一路
+    e.drag(60.0, 260.0, 500.0);
+    e.settle();
+    let got = videos(&mut e);
+    assert_eq!(got.last().cloned(), Some(serde_json::json!([])), "翻走后撤掉：{got:?}");
+    assert_eq!(e.px(187, 333), (255, 0, 0));
 }
 
 #[test]

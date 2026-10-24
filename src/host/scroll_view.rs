@@ -27,16 +27,17 @@ use serde_json::{json, Value};
 /// 每帧推进 scroll-view 的事件。返回是否派发过事件（宿主据此看要不要取数据、重画）
 pub fn tick(app: &mut MiniApp, renderer: Option<&WxmlRenderer>, interaction: &mut InteractionManager, time_ms: u64) -> bool {
     let Some(r) = renderer else { return false };
-    let infos: Vec<_> = r.scroll_views().iter().filter(|s| s.scrollable).cloned().collect();
+    // 按引用遍历：每帧都走（每个 scroll-view 一次），从前先整份克隆 `ScrollViewInfo`（组件 id、
+    // refresher 的键…）再 `entry(id.clone())`，滚着的时候每帧几次 jemalloc（真机上带锁）
     let mut fired = false;
-    for info in infos {
-        let id = info.component_id.clone();
-        let Some(c) = interaction.get_scroll_controller_mut(&id) else { continue };
+    for info in r.scroll_views().iter().filter(|s| s.scrollable) {
+        let id = info.component_id.as_str();
+        let Some(c) = interaction.get_scroll_controller_mut(id) else { continue };
         if let Some(rf) = &info.refresher {
             c.set_pull_threshold(rf.threshold);
         }
         let (pos, max, dragging, animating, gap) = (c.get_position(), c.get_max_scroll(), c.is_dragging, c.is_animating(), c.top_gap());
-        let st = interaction.scroll_views.entry(id.clone()).or_default();
+        let st = state(&mut interaction.scroll_views, id);
         let mut out: Vec<(&'static str, Value)> = Vec::new();
         let (sl, stp) = if info.horizontal { (pos, 0.0) } else { (0.0, pos) };
         let in_upper = pos <= info.upper_threshold;
@@ -117,7 +118,7 @@ pub fn tick(app: &mut MiniApp, renderer: Option<&WxmlRenderer>, interaction: &mu
                 }
                 RefresherPhase::Pulling if !dragging && was_dragging => {
                     new_pulled = 0.0;
-                    if interaction.get_scroll_controller_mut(&id).map(|c| c.take_pull_trigger()).unwrap_or(false) {
+                    if interaction.get_scroll_controller_mut(id).map(|c| c.take_pull_trigger()).unwrap_or(false) {
                         enter_refresh = true;
                         out.push(("refresherrefresh", json!({ "dy": rf.threshold })));
                     } else {
@@ -136,7 +137,7 @@ pub fn tick(app: &mut MiniApp, renderer: Option<&WxmlRenderer>, interaction: &mu
                 _ => {}
             }
             let seq = if enter_refresh { set_data_seq(app) } else { refresh_seq };
-            if let Some(c) = interaction.get_scroll_controller_mut(&id) {
+            if let Some(c) = interaction.get_scroll_controller_mut(id) {
                 if enter_refresh {
                     c.set_top_inset(rf.threshold);
                 } else if restore {
@@ -149,19 +150,30 @@ pub fn tick(app: &mut MiniApp, renderer: Option<&WxmlRenderer>, interaction: &mu
                 next = RefresherPhase::Idle;
                 out.push(("refresherrestore", json!({})));
             }
-            let st = interaction.scroll_views.entry(id.clone()).or_default();
+            let st = state(&mut interaction.scroll_views, id);
             st.refresher = next;
             st.pulled = new_pulled;
             st.refresh_seq = seq;
         }
         for (name, detail) in out {
-            fired |= super::own_events::dispatch_own(app, r, &id, name, detail, time_ms);
+            fired |= super::own_events::dispatch_own(app, r, id, name, detail, time_ms);
         }
     }
     if fired {
         app.pump_jobs();
     }
     fired
+}
+
+/// `scroll_views[id]`，没有就建。`entry(id.to_string())` 每次都分配一个键，这里只在第一次建时分配
+fn state<'a>(
+    map: &'a mut std::collections::HashMap<String, crate::ui::scroll_view_state::ScrollViewState>,
+    id: &str,
+) -> &'a mut crate::ui::scroll_view_state::ScrollViewState {
+    if !map.contains_key(id) {
+        map.insert(id.to_string(), Default::default());
+    }
+    map.get_mut(id).expect("刚插入")
 }
 
 fn set_data_seq(app: &MiniApp) -> u64 {
@@ -286,6 +298,9 @@ impl super::engine::MiniEngine {
         let route = self.current_route();
         super::observers::tick(&mut self.app, self.renderer.as_ref(), &self.interaction, &route, view, now_ms);
         // 操作菜单 / 图片预览的请求与动画（画在合成那一步，只要重新合成）
+        // 预览层的关闭键放在状态栏下面、「当前 / 总数」放在底部安全区上面
+        let bottom = self.opts.safe_area.map(|s| s.bottom).unwrap_or(0.0);
+        super::ui_overlay::image_preview::set_insets(self.opts.status_bar_height(), bottom);
         if super::ui_overlay::take_sheet_requests(&mut self.app) {
             self.dmg.compose_dirty = true;
         }
@@ -308,13 +323,13 @@ impl super::engine::MiniEngine {
         }
         let pos = self.scroll.get_position();
         let wants = self.page_wants_scroll_events();
-        let st = self.interaction.scroll_views.entry(PAGE_KEY.to_string()).or_default();
+        let st = state(&mut self.interaction.scroll_views, PAGE_KEY);
         let mut last = if st.tracked { st.reported_pos } else { 0.0 };
         st.tracked = true;
         if wants && page_scroll(&mut self.app, pos, &mut last) {
             self.scroll_moved = true;
         }
-        self.interaction.scroll_views.entry(PAGE_KEY.to_string()).or_default().reported_pos = last;
+        state(&mut self.interaction.scroll_views, PAGE_KEY).reported_pos = last;
         // 事件处理函数里的 setData 这一帧就生效（不等下一帧开头）。
         //
         // 只记「数据脏了」，**不**要整页重画：与别处的 setData 一样交给失效分析（只重画变了的节点）。

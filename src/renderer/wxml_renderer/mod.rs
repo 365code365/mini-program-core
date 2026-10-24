@@ -115,6 +115,10 @@ pub struct CachedLayout {
     pub taffy: Tree,
     pub content_height: f32,
     pub data: JsonValue,
+    /// 建这棵树用的模板展开结果（下一次 setData 拿它比，没变的子树原样留着，见 layout_incremental.rs）
+    pub rendered: Vec<WxmlNode>,
+    /// 页面根在 `taffy` 里的节点（增量重建时换它的孩子，不重建）
+    pub root: NodeId,
 }
 
 /// 在两个可选颜色之间插值：任一侧为 None 时按「另一侧的透明版本」处理，
@@ -237,6 +241,13 @@ pub struct WxmlRenderer {
     /// 上一次整棵重建各段的耗时（毫秒：模板 / 建树+样式 / 布局 / 换行修正 / 比对），
     /// 宿主取走接在 `⏱ [SDK] pump` 行尾（`take_rebuild_laps`）。时钟本来就在取，记下来不多花
     rebuild_laps: Option<[f32; 5]>,
+    /// 布局之后才改的样式（换行补高、包含块修正、覆盖层重排）改之前的原样：增量重建时先还原，
+    /// 留下来的子树才与「重新建」时的样式一致（layout_incremental.rs）。只记缓存那棵树上的
+    layout_touched: std::cell::RefCell<HashMap<NodeId, Style>>,
+    /// 正在改的是缓存那棵树（要记进 `layout_touched`）
+    record_touch: std::cell::Cell<bool>,
+    /// 上一次重建留下了几个子树、重建了几个节点（诊断与测试，见 `last_reuse`）
+    reuse_stats: (usize, usize),
 }
 
 
@@ -284,8 +295,19 @@ mod invalidate;
 mod invalidate_grow;
 /// 失效分析的孩子配对：fixed 的单独配、内容变高时配不上的两段各走一遍
 mod invalidate_pair;
+/// 带静态 transform 的子树：按绘制几何算旧、新两次画到哪
+mod invalidate_transform;
 pub use invalidate::FramePlan;
 pub(super) mod layout;
+/// setData 的增量布局：没变的子树（连同 taffy 节点与它的布局缓存）原样留着，只重建变了的
+mod layout_incremental;
+/// 排版那几步（根样式、排一遍 + 修正、文字度量、量内容高），整棵 / 增量 / 校验共用
+mod layout_pass;
+/// 失效分析读布局的两种来源：一棵 taffy 树，或增量重建前拍下的旧布局
+mod layout_snapshot;
+/// `MINI_LAYOUT_VERIFY=1`：增量重建之后再整棵重建一遍逐节点比（测试用）
+mod layout_verify;
+pub use layout_verify::layout_verify_failures;
 mod page_style;
 pub use page_style::PageStyle;
 mod pressed;
@@ -331,6 +353,9 @@ impl WxmlRenderer {
             layout_generation: 0,
             touch_capture: std::sync::Mutex::new(None),
             fixed_origins: (0, HashMap::new()),
+            layout_touched: Default::default(),
+            record_touch: Default::default(),
+            reuse_stats: (0, 0),
             damage_clip: None,
             js_animations: HashMap::new(),
             registering_fixed: false,

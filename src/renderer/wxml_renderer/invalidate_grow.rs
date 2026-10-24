@@ -20,7 +20,7 @@
 use super::invalidate::DiffCtx;
 use super::*;
 
-impl DiffCtx {
+impl DiffCtx<'_> {
     /// 记一条切线：这一行往下都要重画。`node` 只用于诊断（`MINI_LAYOUT_LOG` 打出切线是谁定的）
     pub(super) fn cut_at(&mut self, y: f32, node: &RenderNode) {
         if self.cut.is_none_or(|c| y < c) {
@@ -94,10 +94,13 @@ impl WxmlRenderer {
 
     /// 配不上对的那段子树（新树里多出来的 = 要画，旧树里剩下的 = 要擦）：整棵里最高的顶边。
     /// `t` 是这棵子树所在的那棵布局树，`(px, py)` 是父节点在其中的累计原点
-    pub(super) fn tail_cut(t: &Tree, node: &RenderNode, px: f32, py: f32, in_fixed: bool, ctx: &mut DiffCtx) {
+    pub(super) fn tail_cut(t: &dyn super::layout_snapshot::Layouts, node: &RenderNode, px: f32, py: f32, in_fixed: bool, ctx: &mut DiffCtx) {
         if ctx.bail {
             return;
         }
+        // 增量重建留下来的子树：旧树里的占位换回真节点（旧布局照样从快照取）
+        let moved = ctx.moved;
+        let node = super::layout_incremental::resolve(node, moved);
         let Ok(l) = t.layout(node.taffy_node) else {
             ctx.bail = true;
             ctx.bail_why = format!("配不上对的 <{}> 取不到布局", node.tag);
