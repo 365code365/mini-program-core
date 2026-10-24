@@ -1046,3 +1046,81 @@ html.theme-fade, html.theme-fade * {
   .theme-switch { margin-left: 0; padding: 2px; }
   .theme-switch button:not([aria-pressed="true"]) { display: none; }
 }
+
+/* ─────────────  全平台：每个平台一张卡，上面是那个平台的「样子」（手机 / 窗口 / 终端 / 代码）  ───────────── */
+.plat-band { position: relative; }
+.plat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 1080px) { .plat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px)  { .plat-grid { grid-template-columns: 1fr; } }
+.plat {
+  position: relative; display: grid; grid-template-rows: 230px auto; overflow: hidden;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
+  transition: border-color .22s, transform .22s;
+}
+.plat:hover { border-color: color-mix(in srgb, var(--pc) 55%, transparent); transform: translateY(-3px); }
+.plat-mock {
+  position: relative; display: grid; place-items: center; overflow: hidden; padding: 18px 18px 0;
+  background: radial-gradient(80% 70% at 50% 100%, color-mix(in srgb, var(--pc) 22%, transparent), transparent 70%);
+  border-bottom: 1px solid var(--line);
+}
+.plat-info { padding: 16px 18px 18px; display: grid; gap: 6px; align-content: start; }
+.plat-info h3 { font-size: 16.5px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.plat-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--pc); box-shadow: 0 0 10px var(--pc); flex: none; }
+.plat-st {
+  margin-left: auto; font-style: normal; font-size: 11.5px; font-weight: 650; font-family: var(--mono);
+  padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+}
+.plat-st.ok  { color: var(--soft-green); background: rgba(52, 211, 153, .12); }
+.plat-st.src { color: var(--soft-cyan); background: rgba(56, 189, 248, .12); }
+.plat-st.wip { color: #fbbf24; background: rgba(251, 191, 36, .12); }
+html[data-theme="light"] .plat-st.wip { color: #b45309; }
+.plat-how, .plat-gpu { margin: 0; font-size: 13.5px; line-height: 1.55; }
+.plat-how { color: var(--dim); }
+.plat-gpu { color: var(--faint); font-family: var(--mono); font-size: 12px; }
+.plat-note { margin: 22px 0 0; font-size: 13.5px; color: var(--faint); max-width: 90ch; }
+.plat-ios     { --pc: #a1a1aa; }
+.plat-android { --pc: #3ddc84; }
+.plat-harmony { --pc: #ff4d4f; }
+.plat-macos   { --pc: #60a5fa; }
+.plat-windows { --pc: #38bdf8; }
+.plat-linux   { --pc: #fbbf24; }
+.plat-flutter { --pc: #22d3ee; }
+.plat-web     { --pc: #ff7a2f; }
+/* 手机：沿用首页的 phone-screen，截一截露在卡片里 */
+.os-phone { width: 128px; align-self: end; margin-bottom: -40px; }
+.os-phone .phone-screen { border-radius: 18px; }
+.plat:hover .os-phone .phone-screen img { transform: translateY(calc(100cqh - 100%)); }
+/* 窗口：标题栏三个圆点 + 内容 */
+.os-win, .os-term {
+  width: 100%; align-self: end; margin-bottom: -1px; border-radius: 10px 10px 0 0; overflow: hidden;
+  border: 1px solid var(--line-2); border-bottom: 0; background: #fff;
+  box-shadow: 0 20px 40px -22px rgba(0, 0, 0, .7);
+}
+.os-win-bar {
+  display: flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px;
+  background: #e9ebef; color: #4b5563; font-size: 11px; font-family: var(--mono);
+}
+.os-win-bar i { width: 9px; height: 9px; border-radius: 50%; background: #ff5f57; }
+.os-win-bar i:nth-child(2) { background: #febc2e; }
+.os-win-bar i:nth-child(3) { background: #28c840; }
+.os-win-bar span { margin-left: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Windows：按钮在右边，方角 */
+.os-win.winos { border-radius: 6px 6px 0 0; }
+.os-win.winos .os-win-bar { flex-direction: row-reverse; background: #f3f3f3; }
+.os-win.winos .os-win-bar i { width: 10px; height: 2px; border-radius: 0; background: #6b7280; }
+.os-win.winos .os-win-bar span { margin: 0 auto 0 0; }
+.os-win.web .os-win-bar span { background: #fff; border-radius: 6px; padding: 1px 8px; color: #6b7280; }
+.os-win-body { height: 182px; overflow: hidden; container-type: size; }
+.os-win-body img { width: 64%; margin: 0 auto; transition: transform 6s cubic-bezier(.33, 0, .35, 1); }
+.plat:hover .os-win-body img { transform: translateY(calc(100cqh - 100%)); }
+.os-term { background: #0c0f14; }
+.os-term .os-win-bar { background: #1b2029; color: #9ca3af; }
+.os-term pre, .os-code pre { margin: 0; padding: 12px 14px; font-size: 11.5px; line-height: 1.65; color: #d7dee9; height: 182px; overflow: hidden; white-space: pre; }
+.os-term .p { color: #fbbf24; } .os-term .g { color: #6ee7b7; }
+.os-code {
+  width: 100%; align-self: end; border-radius: 10px 10px 0 0; overflow: hidden;
+  background: #0c0f14; border: 1px solid var(--line-2); border-bottom: 0;
+}
+.os-code pre { height: 206px; padding-top: 16px; }
+.os-code .c { color: #7b8496; } .os-code .s { color: #ffb98c; }
+.hero .platforms li.soon { border-style: dashed; }

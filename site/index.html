@@ -41,6 +41,7 @@
       <span class="brand-name">mini-render</span>
     </a>
     <nav class="head-nav" aria-label="Page navigation" data-i18n-aria="nav.aria">
+      <a href="#platforms" data-i18n="nav.platforms">Platforms</a>
       <a href="#skyline" data-i18n="nav.skyline">Skyline</a>
       <a href="#pipeline" data-i18n="nav.pipeline">Pipeline</a>
       <a href="#device" data-i18n="nav.device">On device</a>
@@ -100,7 +101,7 @@
         <div class="platforms">
           <span class="platforms-label" data-i18n="hero.runs">Runs on</span>
           <ul>
-            <li>Android</li><li>iOS</li><li>Flutter</li><li>macOS</li><li>Windows</li><li>Linux</li><li data-i18n="hero.ci">Headless CI</li>
+            <li>Android</li><li>iOS</li><li>Flutter</li><li>macOS</li><li>Windows</li><li>Linux</li><li class="soon" data-i18n="hero.harmony">HarmonyOS (C ABI)</li><li data-i18n="hero.ci">Headless CI</li>
           </ul>
         </div>
       </div>
@@ -137,6 +138,110 @@
         <div><dt data-i18n="stat.5.k">Automated tests</dt><dd><span data-count="1055">1055</span><small></small></dd><p data-i18n="stat.5.v">plus 65 byte-reproducible baselines</p></div>
         <div><dt data-i18n="stat.6.k">Official wx.* APIs</dt><dd><span data-count="503">503</span><small>/503</small></dd><p data-i18n="stat.6.v">every name in the index, plus 57 component tags</p></div>
       </dl>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────  平台：一份引擎，各端接入  ───────────────────────── -->
+  <section class="band plat-band" id="platforms">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="eyebrow" data-i18n="plat.eyebrow">One engine, every platform</p>
+        <h2 data-i18n="plat.h2">Phones, desktops, CI and the web —<br><span class="grad">the same pixels</span> everywhere</h2>
+        <p class="sec-lede" data-i18n="plat.lede">
+          The engine only needs a writable pixel buffer (or a GPU surface) and a clock. Every platform below
+          runs the same Rust code, the same layout and the same <code>wx.*</code> runtime; only the thin host
+          layer differs. The CPU render is the byte-exact reference on all of them.
+        </p>
+      </header>
+      <div class="plat-grid">
+        <article class="plat plat-ios spot">
+          <div class="plat-mock"><div class="os-phone "><div class="phone-screen"><img src="assets/shots/demo_skyline.webp" width="500" height="1090" alt="Skyline demo page rendered by the engine" data-i18n-alt="plat.ios.alt" loading="lazy" decoding="async"></div></div></div>
+          <div class="plat-info">
+            <h3><span class="plat-dot" aria-hidden="true"></span>iOS · iPadOS<em class="plat-st ok" data-i18n="plat.ios.st">SDK ready</em></h3>
+            <p class="plat-how" data-i18n="plat.ios.how">Swift Package / CocoaPods · <code>MiniProgramView</code> (UIKit)</p>
+            <p class="plat-gpu" data-i18n="plat.ios.gpu">CAMetalLayer → Metal · CPU fallback</p>
+          </div>
+        </article>
+        <article class="plat plat-android spot">
+          <div class="plat-mock"><div class="os-phone "><div class="phone-screen"><img src="assets/shots/device_components.webp" width="500" height="1090" alt="Components tab on a OnePlus phone" data-i18n-alt="plat.android.alt" loading="lazy" decoding="async"></div></div></div>
+          <div class="plat-info">
+            <h3><span class="plat-dot" aria-hidden="true"></span>Android<em class="plat-st ok" data-i18n="plat.android.st">Tested on device · 90 Hz</em></h3>
+            <p class="plat-how" data-i18n="plat.android.how">AAR · Kotlin <code>MiniProgramView</code> (SurfaceView)</p>
+            <p class="plat-gpu" data-i18n="plat.android.gpu">Vulkan / GLES via wgpu · CPU fallback</p>
+          </div>
+        </article>
+        <article class="plat plat-harmony spot">
+          <div class="plat-mock"><div class="os-code" aria-label="ArkTS integration sketch" data-i18n-aria="plat.harmony.codeAria"><pre><code><span class="c">// XComponent + OH_NativeWindow</span>
+XComponent({ type: <span class="s">'surface'</span>,
+  libraryname: <span class="s">'mini_render'</span> })
+<span class="c">// native: mr_app_create → mr_app_attach</span>
+<span class="c">// → mr_app_pump(vsync) each frame</span></code></pre></div></div>
+          <div class="plat-info">
+            <h3><span class="plat-dot" aria-hidden="true"></span>HarmonyOS<em class="plat-st wip" data-i18n="plat.harmony.st">C ABI path · SDK in progress</em></h3>
+            <p class="plat-how" data-i18n="plat.harmony.how">C ABI <code>include/mini_render.h</code> + NAPI</p>
+            <p class="plat-gpu" data-i18n="plat.harmony.gpu">XComponent native window · CPU blit</p>
+          </div>
+        </article>
+        <article class="plat plat-macos spot">
+          <div class="plat-mock"><div class="os-win mac" aria-hidden="false">
+            <div class="os-win-bar"><i></i><i></i><i></i><span>mini-app-window</span></div>
+            <div class="os-win-body"><img src="assets/shots/28_ecommerce_home.webp" width="500" height="900" alt="E-commerce home in the desktop window" data-i18n-alt="plat.macos.alt" loading="lazy" decoding="async"></div>
+          </div></div>
+          <div class="plat-info">
+            <h3><span class="plat-dot" aria-hidden="true"></span>macOS<em class="plat-st ok" data-i18n="plat.macos.st">Desktop window</em></h3>
+            <p class="plat-how" data-i18n="plat.macos.how">Rust crate · winit window · or the C ABI</p>
+            <p class="plat-gpu" data-i18n="plat.macos.gpu">Metal via wgpu · CPU fallback</p>
+          </div>
+        </article>
+        <article class="plat plat-windows spot">
+          <div class="plat-mock"><div class="os-win winos" aria-hidden="false">
+            <div class="os-win-bar"><i></i><i></i><i></i><span>mini-app-window.exe</span></div>
+            <div class="os-win-body"><img src="assets/shots/51_health_dashboard.webp" width="500" height="900" alt="Health dashboard in the desktop window" data-i18n-alt="plat.windows.alt" loading="lazy" decoding="async"></div>
+          </div></div>
+          <div class="plat-info">
+            <h3><span class="plat-dot" aria-hidden="true"></span>Windows<em class="plat-st src" data-i18n="plat.windows.st">Same code · no CI yet</em></h3>
+            <p class="plat-how" data-i18n="plat.windows.how">Rust crate · winit window · or the C ABI (DLL)</p>
+            <p class="plat-gpu" data-i18n="plat.windows.gpu">DX12 / Vulkan via wgpu · CPU fallback</p>
+          </div>
+        </article>
+        <article class="plat plat-linux spot">
+          <div class="plat-mock"><div class="os-term"><div class="os-win-bar"><i></i><i></i><i></i><span>bash</span></div><pre><code><span class="p">$</span> cargo run --release --bin mini-app-window \
+    sample-app --snapshot out/
+<span class="g">✓ 15 pages → out/*.png</span>
+<span class="p">$</span> python3 tools/pixdiff.py a.png b.png
+<span class="g">0.00 % · bbox none</span></code></pre></div></div>
+          <div class="plat-info">
+            <h3><span class="plat-dot" aria-hidden="true"></span>Linux<em class="plat-st src" data-i18n="plat.linux.st">Desktop + headless · no CI yet</em></h3>
+            <p class="plat-how" data-i18n="plat.linux.how">Rust crate · winit window · headless PNG</p>
+            <p class="plat-gpu" data-i18n="plat.linux.gpu">Vulkan via wgpu · CPU in CI</p>
+          </div>
+        </article>
+        <article class="plat plat-flutter spot">
+          <div class="plat-mock"><div class="os-phone "><div class="phone-screen"><img src="assets/shots/device_http.webp" width="500" height="1090" alt="HTTP feed in the Flutter demo app" data-i18n-alt="plat.flutter.alt" loading="lazy" decoding="async"></div></div></div>
+          <div class="plat-info">
+            <h3><span class="plat-dot" aria-hidden="true"></span>Flutter<em class="plat-st ok" data-i18n="plat.flutter.st">Plugin · Android + iOS</em></h3>
+            <p class="plat-how" data-i18n="plat.flutter.how"><code>mini_render</code> plugin · Texture / PlatformView</p>
+            <p class="plat-gpu" data-i18n="plat.flutter.gpu">Same engine library underneath</p>
+          </div>
+        </article>
+        <article class="plat plat-web spot">
+          <div class="plat-mock"><div class="os-win web" aria-hidden="false">
+            <div class="os-win-bar"><i></i><i></i><i></i><span>localhost/dist-html</span></div>
+            <div class="os-win-body"><img src="assets/shots/36_news_feed.webp" width="500" height="900" alt="News feed compiled to H5" data-i18n-alt="plat.web.alt" loading="lazy" decoding="async"></div>
+          </div></div>
+          <div class="plat-info">
+            <h3><span class="plat-dot" aria-hidden="true"></span>Web / H5<em class="plat-st ok" data-i18n="plat.web.st">Compiled preview</em></h3>
+            <p class="plat-how" data-i18n="plat.web.how">Compile the mini-program to static H5</p>
+            <p class="plat-gpu" data-i18n="plat.web.gpu">Pixel-compared against the native render</p>
+          </div>
+        </article>
+      </div>
+      <p class="plat-note" data-i18n="plat.note">
+        Status is what we have verified ourselves: Android on a OnePlus 90 Hz phone and an emulator; the iOS SDK builds for
+        device and simulator and its Metal path is covered by tests; the desktop window and headless snapshots run daily on macOS.
+        Windows and Linux build from the same winit / wgpu code but have no CI job yet. HarmonyOS has a documented C ABI path
+        (XComponent + <code>OH_NativeWindow</code>, see the integration guide); a packaged ArkTS SDK is still being built.
+      </p>
     </div>
   </section>
 
