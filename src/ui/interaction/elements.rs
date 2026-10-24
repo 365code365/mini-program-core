@@ -65,10 +65,17 @@ impl InteractionManager {
             }
             if let Some(f) = self.focused_input.as_mut().filter(|f| f.id == id) {
                 if f.value != attr {
+                    // 光标保持「离末尾的字数」不变：页面在 bindinput 里格式化（手机号加空格、金额加千分位）时，
+                    // 在末尾打字光标还在末尾，在中间改光标跟着那段字走。从前按下标夹住，
+                    // 每插一个空格光标就落后一位（「139 5901|48」）
+                    let old_len = f.value.chars().count();
+                    let new_len = attr.chars().count();
+                    let from_end = old_len.saturating_sub(f.cursor_pos);
                     f.value = attr.to_string();
-                    f.cursor_pos = f.cursor_pos.min(attr.chars().count());
+                    f.cursor_pos = new_len.saturating_sub(from_end);
                     f.selection_start = None;
                     f.selection_end = None;
+                    self.focused_value_changed = true;
                 }
             }
         }
@@ -85,6 +92,7 @@ impl InteractionManager {
             f.cursor_pos = value.chars().count();
             f.selection_start = None;
             f.selection_end = None;
+            self.focused_value_changed = true;
         }
     }
 

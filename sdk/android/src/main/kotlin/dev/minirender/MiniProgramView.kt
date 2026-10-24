@@ -79,8 +79,7 @@ class MiniProgramView @JvmOverloads constructor(
     private val hostCalls = HostCallRouter(context, session)
     /** 软键盘：输入框聚焦弹出、输入法的字交给引擎（MiniImeConnection.kt） */
     private val ime = MiniIme(this, ::sendText, ::sendKey)
-    /** 键盘弹起时把画面顶上去（`adjust-position`，MiniKeyboard.kt），键盘高度推给 `wx.onKeyboardHeightChange` */
-    private val keyboard = MiniKeyboard(this) { h -> dispatchEvent("keyboardHeightChange", JSONObject().put("height", h)) }
+    private val keyboard = MiniKeyboard(this) { h -> dispatchEvent("keyboardHeightChange", JSONObject().put("height", h)) } // adjust-position
     private val sameLayer = SameLayerViews(session) { resources.displayMetrics.density }
 
     // ── SurfaceView（只在主线程读写） ──
@@ -448,6 +447,7 @@ class MiniProgramView @JvmOverloads constructor(
             "vibrate" -> if (hapticFeedback) HostChrome.vibrate(this, ev)
             "inputFocus" -> { ime.onFocus(ev); keyboard.onFocus(ev) }
             "inputBlur" -> { ime.onBlur(); keyboard.onBlur() }
+            "inputValue" -> ime.onValue(ev)
             "sameLayerViews" -> sameLayer.onViews(ev)
             "nativeViewTap" -> sameLayer.onTap(ev)
             // 视频进 / 出全屏（横屏由引擎转画面）：收起 / 放出系统栏

@@ -260,6 +260,18 @@ impl MiniEngine {
         self.events.push(ev);
     }
 
+    /// 聚焦中的输入框被页面改了值（`setData` 格式化、`bindinput` 返回值）：告诉宿主新的内容与光标，
+    /// 输入法据此换掉它手里那份（Android 的镜像文本、Flutter 的 editing state）。不发的话输入法还拿着旧内容，
+    /// 下一次组字 / 删字按旧文本算差，字会落到错的位置
+    pub(super) fn emit_input_value_if_changed(&mut self) {
+        if !std::mem::take(&mut self.interaction.focused_value_changed) {
+            return;
+        }
+        let Some(f) = self.interaction.focused_input.as_ref() else { return };
+        let ev = json!({ "type": "inputValue", "id": f.id, "value": f.value, "cursor": f.cursor_pos });
+        self.events.push(ev);
+    }
+
     /// 输入框失焦 / 确认（键盘该收起了）
     pub(super) fn emit_input_blur(&mut self, id: &str, value: &str) {
         if self.events.focused.take().is_some() {

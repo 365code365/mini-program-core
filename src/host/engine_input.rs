@@ -322,6 +322,17 @@ impl MiniEngine {
             picker_sheet::open_if_hit(self.renderer.as_ref(), self.scroll.get_position(), x, y)
         {
             sheet.viewport = (self.width as f32, self.height as f32);
+            // 点别处（这里是 picker）输入框就失焦、键盘收起（微信语义）。从前直接弹面板就 return 了，
+            // 输入框还聚焦着，键盘盖在 picker 面板上
+            if let Some(crate::ui::interaction::InteractionResult::InputBlur { id, value, .. }) = self.interaction.blur_input() {
+                self.emit_input_blur(&id, &value);
+                let r = self.renderer.take();
+                crate::host::tap::dispatch_input_event(&mut self.app, r.as_ref(), &id, "blur", &value);
+                self.renderer = r;
+                if self.app.take_data_dirty() {
+                    self.page_data_dirty = true;
+                }
+            }
             self.picker_sheet = Some(sheet);
             self.mark_full();
             return;

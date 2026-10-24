@@ -84,6 +84,11 @@ impl crate::MiniAppWindow {
         );
         let opened = sheet.is_some();
         if opened {
+            // 点 picker 等于点了别处：输入框失焦、收起输入法（与 SDK 的 engine_input.rs 同一条规则）
+            if let Some(mini_render::ui::interaction::InteractionResult::InputBlur { id, value, .. }) = self.interaction.blur_input() {
+                mini_render::host::tap::dispatch_input_event(&mut self.app, self.renderer.as_ref(), &id, "blur", &value);
+                if let Some(w) = &self.window { w.set_ime_allowed(false); }
+            }
             self.picker_sheet = sheet;
             self.needs_redraw = true;
             if let Some(w) = &self.window { w.request_redraw(); }

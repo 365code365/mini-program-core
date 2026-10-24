@@ -52,6 +52,23 @@ internal class MiniIme(private val view: View, private val sendText: (String) ->
         imm?.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT)
     }
 
+    /**
+     * 页面改了聚焦中输入框的值（`setData` 格式化手机号、`bindinput` 返回新值）：换掉镜像、把光标告诉输入法。
+     * 不换的话输入法拿着旧内容算差，下一个字落到错的位置
+     */
+    fun onValue(ev: JSONObject) {
+        val f = focus ?: return
+        if (f.optString("id") != ev.optString("id")) return
+        val value = ev.optString("value")
+        val cursor = ev.optInt("cursor", value.length).coerceIn(0, value.length)
+        if (mirror.toString() != value) {
+            BaseInputConnection.removeComposingSpans(mirror)
+            mirror.replace(0, mirror.length, value)
+        }
+        Selection.setSelection(mirror, cursor)
+        imm?.updateSelection(view, cursor, cursor, -1, -1)
+    }
+
     fun onBlur() {
         if (focus == null) return
         focus = null

@@ -33,6 +33,56 @@ impl InputComponent {
     ) {
         Self::draw_with_selection(node, canvas, text_renderer, x, y, w, h, sf, focused, cursor_pos, None);
     }
+
+    /// 同 [`draw_with_selection`](Self::draw_with_selection)，另返回这一帧单行文字的排版（文字起点、每个字的右边界）：
+    /// 点击定位光标按看到的位置算（text-align 靠右 / 居中、真实字号与内边距、横向滚动都在里面）
+    #[allow(clippy::too_many_arguments)]
+    pub fn draw_single_line(
+        node: &RenderNode,
+        canvas: &mut Canvas,
+        text_renderer: Option<&TextRenderer>,
+        (x, y, w, h): (f32, f32, f32, f32),
+        sf: f32,
+        focused: bool,
+        cursor_pos: usize,
+        selection: Option<(usize, usize)>,
+    ) -> Option<crate::ui::interaction::text_lines::TextLayout> {
+        Self::draw_with_selection(node, canvas, text_renderer, x, y, w, h, sf, focused, cursor_pos, selection);
+        let tr = text_renderer?;
+        let style = &node.style;
+        let fs = style.font_size * sf;
+        let (pl, pr) = (style.padding_left * sf, style.padding_right * sf);
+        let avail = w - pl - pr;
+        let mut xs = vec![0.0f32];
+        let mut acc = String::new();
+        for c in node.text.chars() {
+            acc.push(c);
+            xs.push(tr.measure_text(&acc, fs));
+        }
+        let tw = *xs.last().unwrap_or(&0.0);
+        let x0 = Self::line_dx(style.text_align, tw, avail, focused, &xs, cursor_pos, fs);
+        let line = crate::ui::interaction::text_lines::TextLine { start: 0, end: xs.len() - 1, x0, xs };
+        Some(crate::ui::interaction::text_lines::TextLayout {
+            text: node.text.clone(),
+            lines: vec![line],
+            line_height: h.max(1.0),
+            origin: (pl, 0.0),
+            scroll_y: 0.0,
+        })
+    }
+
+    /// 单行文字的水平起点（相对内容区左边）：放得下按 text-align，放不下按光标横向滚动（与绘制同一算式）
+    fn line_dx(align: TextAlign, tw: f32, avail: f32, focused: bool, xs: &[f32], cursor: usize, fs: f32) -> f32 {
+        if tw <= avail {
+            return match align {
+                TextAlign::Center => (avail - tw) / 2.0,
+                TextAlign::Right => avail - tw,
+                _ => 0.0,
+            };
+        }
+        let cx = xs.get(cursor).copied().unwrap_or(tw);
+        if focused && cx > avail { avail - cx - fs } else { 0.0 }
+    }
     
     pub fn draw_with_selection(
         node: &RenderNode, 
@@ -101,6 +151,15 @@ impl InputComponent {
                 }
             }
             
+            // 文字整体的水平起点：text-align 居中 / 靠右（放得下时）、超长时按光标滚动。
+            // 文字、选区、光标三者共用这一个起点 —— 从前只有文字按 text-align 摆，光标与选区永远从左边算：
+            // 靠右的金额框（房贷计算「1000 万元」）光标停在最左边，离数字老远
+            let align_dx = match style.text_align {
+                TextAlign::Center if text_width <= available_width => (available_width - text_width) / 2.0,
+                TextAlign::Right if text_width <= available_width => available_width - text_width,
+                _ => text_offset,
+            };
+            let text_offset = align_dx;
             // 绘制选中背景（需要考虑 text_offset）
             if let Some((sel_start, sel_end)) = selection {
                 if sel_start != sel_end && focused {
@@ -125,15 +184,7 @@ impl InputComponent {
             
             if !node.text.is_empty() {
                 // 根据 text-align 调整 x 位置
-                let final_x = match style.text_align {
-                    TextAlign::Center if text_width <= available_width => {
-                        text_x + (available_width - text_width) / 2.0
-                    }
-                    TextAlign::Right if text_width <= available_width => {
-                        text_x + available_width - text_width
-                    }
-                    _ => text_x + text_offset, // Left 或文本超出时
-                };
+                let final_x = text_x + align_dx;
                 
                 tr.draw_text(canvas, &node.text, final_x, text_y, font_size, &paint);
             }

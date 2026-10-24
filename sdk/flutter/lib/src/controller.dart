@@ -490,6 +490,12 @@ class MiniProgramController {
         focusedInput.value = MiniInputFocus.fromJson(ev);
       case 'inputBlur':
         focusedInput.value = null;
+      case 'inputValue':
+        // 页面改了聚焦中输入框的值：输入法换上新内容与光标（MiniTextInput.open 认出同一个 id 就只 setEditingState）
+        final f = focusedInput.value;
+        if (f != null && f.id == ev['id']) {
+          focusedInput.value = f.withValue('${ev['value'] ?? ''}', (ev['cursor'] as num?)?.toInt() ?? -1);
+        }
       case 'clipboard':
         // wx.setClipboardData、输入框里的 copy / cut：写系统剪贴板
         Clipboard.setData(ClipboardData(text: '${ev['data'] ?? ''}'));

@@ -129,6 +129,7 @@ impl MiniEngine {
         let t = if now_ms > 0 { now_ms } else { self.mono_ms() };
         super::cpu_affinity::note_frame(t, interacting);
         let produced = self.pump_frame(now_ms);
+        self.emit_input_value_if_changed();
         if produced || self.frame_presented {
             super::cpu_affinity::note_produced(t);
         }

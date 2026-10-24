@@ -270,6 +270,9 @@ pub struct InteractionManager {
     slider_origin: HashMap<String, f64>,
     /// 每个 input / textarea 上一次见到的 `value` 属性原文（受控值，见 [`sync_input_value`](Self::sync_input_value)）
     input_attrs: HashMap<String, String>,
+    /// 聚焦中的输入框被页面 `setData` 改了值（或 `bindinput` 返回了新值）：宿主的输入法要跟着换内容与光标，
+    /// 引擎在这一帧末尾取走、发 `inputValue` 事件（engine_events.rs）
+    pub focused_value_changed: bool,
     /// 滚动控制器集合
     pub scroll_controllers: HashMap<String, ScrollController>,
     /// 每个 scroll-view 的受控属性与事件状态（键同 `scroll_controllers`）
@@ -336,6 +339,7 @@ impl InteractionManager {
             sliders: HashMap::new(),
             slider_origin: HashMap::new(),
             input_attrs: HashMap::new(),
+            focused_value_changed: false,
             pressed_button: None,
             press_feedback: None,
             hover_specs: HashMap::new(),

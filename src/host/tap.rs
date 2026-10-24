@@ -244,13 +244,15 @@ fn prepare_focused_input(
         .unwrap_or_else(|| if input.multiline { "return" } else { "done" }.to_string());
     input.confirm_hold = truthy("confirm-hold");
 
+    // 按上一帧画出来的排版定位（多行的折行、单行的 text-align / 字号 / 内边距 / 横向滚动都在里面）。
+    // 画的是占位符、或者值已经变了就不能用：多行留在末尾，单行退回下面按默认字号估
+    if let Some(l) = layout.filter(|l| l.text == input.value && !input.is_password) {
+        let (pos, up) = l.hit(*click_x * sf, (hit_y - bounds.y) * sf);
+        input.cursor_pos = pos;
+        input.caret_upstream = up && input.multiline;
+        return;
+    }
     if input.multiline {
-        // 按上一帧画出来的折行定位（画的是占位符、或者值已经变了就不能用，光标留在末尾）
-        if let Some(l) = layout.filter(|l| l.text == input.value) {
-            let (pos, up) = l.hit(*click_x * sf, (hit_y - bounds.y) * sf);
-            input.cursor_pos = pos;
-            input.caret_upstream = up;
-        }
         return;
     }
     if let Some(tr) = text_renderer {

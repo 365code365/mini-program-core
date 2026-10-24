@@ -93,6 +93,22 @@ class MiniInputFocus {
   final String id;
   final String value;
 
+  /// 页面改了这个输入框的值（`inputValue` 事件：setData 格式化 / bindinput 返回值）之后的样子
+  MiniInputFocus withValue(String value, int cursor) => MiniInputFocus(
+        id: id,
+        value: value,
+        cursor: cursor,
+        inputType: inputType,
+        password: password,
+        maxLength: maxLength,
+        confirmType: confirmType,
+        confirmHold: confirmHold,
+        multiline: multiline,
+        rect: rect,
+        adjustPosition: adjustPosition,
+        cursorSpacing: cursorSpacing,
+      );
+
   /// 引擎里的光标位置（**Unicode 码点**下标，不是 UTF-16）：点在文字中间时就在那里
   final int cursor;
 

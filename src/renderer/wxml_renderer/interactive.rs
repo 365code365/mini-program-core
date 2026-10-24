@@ -179,19 +179,19 @@ impl WxmlRenderer {
                 } else {
                     (0, None)
                 };
-                InputComponent::draw_with_selection(
+                let layout = InputComponent::draw_single_line(
                     target,
                     canvas,
                     self.text_renderer.as_deref(),
-                    x,
-                    y,
-                    w,
-                    h,
+                    (x, y, w, h),
                     sf,
                     focused,
                     cursor_pos,
                     selection,
                 );
+                if let Some(layout) = layout {
+                    interaction.record_text_layout(component_id, layout);
+                }
                 // 回写 text_offset：文本比可视区宽时，光标要能推着文字横向滚动
                 if focused {
                     if let Some(tr) = self.text_renderer.as_deref() {
