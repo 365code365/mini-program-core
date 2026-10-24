@@ -71,7 +71,7 @@ class MiniProgramView @JvmOverloads constructor(
         override fun onPixelSize(w: Int, h: Int) = setPixelSize(w, h)
         override fun reveal() = revealSurface()
         override fun newSurface() = newSurfaceView()
-        override fun onEvents(list: List<String>) = list.forEach(::dispatchEvent)
+        override fun onEvents(list: List<String>) = list.forEach(::onEngineEvent)
     })
     private var appDir: File? = null
     private var startRoute: String? = null
@@ -206,6 +206,16 @@ class MiniProgramView @JvmOverloads constructor(
 
     /** 跳到某个页面（`/pages/x/x?id=1`） */
     fun navigate(url: String) = session.run { MiniEngine.nativeNavigate(it, url) }
+
+    /**
+     * 宿主推事件给小程序的 `wx.onXxx`（`accelerometerChange` / `locationChange` / `networkStatusChange` /
+     * `contextEvent` …，名字写 `onLocationChange` 也认）。与 Flutter 插件的 `dispatchEvent` 同一组名字。
+     * 异步投到引擎线程；[done]（可选，主线程）拿到收到它的监听者个数，0 = 小程序没在听，可以停掉对应的传感器
+     */
+    fun dispatchEvent(name: String, payload: JSONObject? = null, done: ((Int) -> Unit)? = null) = session.run {
+        val n = MiniEngine.nativeDispatchEvent(it, name, payload?.toString())
+        if (done != null) post { done(n) }
+    }
 
     /**
      * 返回键。**返回 false 表示页面栈只剩一页**，宿主该退出小程序。
@@ -421,7 +431,7 @@ class MiniProgramView @JvmOverloads constructor(
     // ─────────────────────────── 事件 ───────────────────────────
 
     /** 主线程：胶囊的两个动作交给宿主（没设回调就走默认） */
-    private fun dispatchEvent(raw: String) {
+    private fun onEngineEvent(raw: String) {
         val ev = runCatching { JSONObject(raw) }.getOrNull() ?: return
         onEvent?.invoke(ev)
         when (ev.optString("type")) {

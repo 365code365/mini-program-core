@@ -79,6 +79,7 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }
 | 原生组件（Android） | `sameLayerViews["map"] = { MyMap() }`：宿主画、引擎画进页面（同层渲染），滑动时不错开；`<video>` 默认同层渲染（`sameLayerVideo`） |
 | 沙盒目录 | 自动指到 `filesDir` / `Caches`，storage 与图片磁盘缓存才生效 |
 | 生命周期 | 前后台切换、内存告警转发（Android 跟着 Activity 自动接，`autoLifecycle`）；重复报的同一状态引擎只派发一次 |
+| 宿主推事件 | `mini.dispatchEvent("locationChange", json)`（Android，与 Flutter 插件的 `dispatchEvent` 同一组名字）：传感器、定位变化、蓝牙发现等 `wx.onXxx` 监听；返回监听者个数。iOS 还没有 |
 | 系统栏 / 触感（Android） | 自动 edge-to-edge（`autoEdgeToEdge`）、`wx.vibrate*` 触感（`hapticFeedback`）；Flutter 插件同样自带触感与剪贴板 |
 
 ### 产物体积（实测 arm64）

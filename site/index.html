@@ -62,6 +62,7 @@
       <a href="#gallery" data-i18n="nav.gallery">Gallery</a>
       <a href="#perf" data-i18n="nav.perf">Measured</a>
       <a href="#start" data-i18n="nav.start">Quick start</a>
+      <a href="#host" data-i18n="nav.host">Host APIs</a>
       <a href="#scope" data-i18n="nav.scope">Scope</a>
       <a href="#docs" data-i18n="nav.docs">Docs</a>
     </nav>
@@ -1014,8 +1015,7 @@ mini.open(File(filesDir, "my-mini-app"))   // the unpacked mini-program director
 override fun onBackPressed() {
     if (!mini.goBack()) super.onBackPressed()   // exit only once the page stack is empty
 }
-override fun onResume() { super.onResume(); mini.onHostResume() }
-override fun onPause()  { super.onPause();  mini.onHostPause() }</code></pre>
+// lifecycle, edge-to-edge and haptics follow the Activity on their own</code></pre>
         </div>
 
         <div class="tabpanel" role="tabpanel" id="panel-ios" aria-labelledby="tab-ios" tabindex="0" hidden>
@@ -1051,6 +1051,115 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
           </ol>
         </article>
       </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────  宿主接口：SDK 做了什么、宿主要写什么  ───────────────────────── -->
+  <!-- API 名单与 src/js/prelude/host-capabilities.js（+ base-ext.js 的两个设置页）、host-objects.js 一一对应，2026-10-24 核过；
+       那边增删名字要同步这里，以及各语言 host.gN 里的计数（<small>） -->
+  <section class="band" id="host">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="eyebrow" data-i18n="host.eyebrow">Integration contract</p>
+        <h2 data-i18n="host.h2">What the SDK already does, and what is left to you</h2>
+        <p class="sec-lede" data-i18n="host.lede">Rendering, input, lifecycle and the system plumbing live in the SDK. What remains is what only your app can do (accounts, payment, location, hardware), and each of those is one named entry in <code>hostApis</code>.</p>
+      </header>
+
+      <div class="host-stack">
+        <article class="card">
+          <h3 data-i18n="host.sdk.h">Built into the SDK: no host code</h3>
+          <div class="host-scroll"><table class="kv host-kv">
+            <thead><tr><th></th><th>Android</th><th>Flutter</th><th>iOS</th></tr></thead>
+            <tbody>
+              <tr><th scope="row" data-i18n="host.r1">Pick images, videos and files, take photos, save to the album, open documents (the 7 APIs marked ⧉ below)</th><td>✓ <small><code>builtinHostApis</code></small></td><td>✓ <small><code>builtinHostApis</code></small></td><td>—</td></tr>
+              <tr><th scope="row" data-i18n="host.r2">System clipboard for <code>wx.setClipboardData</code> and copy / cut in inputs</th><td>✓</td><td>✓</td><td>✓</td></tr>
+              <tr><th scope="row" data-i18n="host.r3">Haptics for <code>wx.vibrateShort</code> / <code>wx.vibrateLong</code></th><td>✓ <small><code>hapticFeedback</code></small></td><td>✓ <small><code>hapticFeedback</code></small></td><td>—</td></tr>
+              <tr><th scope="row" data-i18n="host.r4">Foreground, background and memory warnings: App and current-page <code>onShow</code> / <code>onHide</code>, frames stop in the background; a state reported twice is dispatched once</th><td>✓ <small><code>autoLifecycle</code></small></td><td>✓</td><td>✓</td></tr>
+              <tr><th scope="row" data-i18n="host.r5">Drawing under the status bar, safe area, <code>env(safe-area-inset-*)</code></th><td>✓ <small><code>autoEdgeToEdge</code></small></td><td>✓</td><td>✓</td></tr>
+              <tr><th scope="row" data-i18n="host.r6">Navigation bar, capsule button, route transitions, edge swipe back</th><td>✓ <small><code>navigationBar</code></small></td><td>✓ <small><code>navigationBar</code></small></td><td>✓ <small><code>navigationBar</code></small></td></tr>
+              <tr><th scope="row" data-i18n="host.r7">Soft keyboard and text input for <code>input</code> / <code>textarea</code></th><td>✓</td><td>✓</td><td>—</td></tr>
+              <tr><th scope="row" data-i18n="host.r8"><code>&lt;video&gt;</code> on the system player, painted into the page; fullscreen hides the system bars</th><td>✓ <small><code>sameLayerVideo</code></small></td><td>✓ <small><code>sameLayerVideo</code></small></td><td>—</td></tr>
+              <tr><th scope="row" data-i18n="host.r9">Pushing events into <code>wx.onXxx</code> listeners</th><td>✓ <small><code>dispatchEvent</code></small></td><td>✓ <small><code>dispatchEvent</code></small></td><td>—</td></tr>
+            </tbody>
+          </table></div>
+          <p class="note" data-i18n="host.sdk.note">Each switch in a cell can be turned off before <code>open</code> if your app wants to handle that part itself; the event still reaches <code>onEvent</code> / <code>events</code>.</p>
+        </article>
+        <article class="card">
+          <h3 data-i18n="host.you.h">What you write</h3>
+          <ol class="ol">
+            <li data-i18n="host.you.1"><b>APIs only your app can serve</b>: register each name in <code>hostApis</code>. The call arrives on the main thread with its arguments; answer with <code>reply.success(…)</code> / <code>reply.fail(errMsg)</code> (Flutter: return a map or throw <code>MiniHostApiError</code>). A user who cancels gets an <code>errMsg</code> ending in <code>:fail cancel</code>, as in WeChat.</li>
+            <li data-i18n="host.you.2"><b>Names you leave out</b> still exist on <code>wx</code> and fail on the next tick with an <code>errMsg</code> that names the <code>hostApis</code> option; <code>wx.canIUse</code> reports <code>false</code>. Nothing hangs and nothing throws.</li>
+            <li data-i18n="host.you.3"><b>Events only your app sees</b>: sensors, location updates, Bluetooth discovery and the other <code>wx.onXxx</code> listeners fire when you call <code>dispatchEvent(name, payload)</code>. It returns the listener count, so a sensor nobody listens to can stay off.</li>
+            <li data-i18n="host.you.4"><b>The back key</b>: <code>if (!mini.goBack())</code> close the mini-program. With minSdk 24 a View cannot take the Activity's back press for you.</li>
+            <li data-i18n="host.you.5"><b>Start from the examples</b>: <code>DemoHostApis.kt</code> (Android) and <code>host_apis.dart</code> (Flutter) answer the 23 APIs marked ✦ with demo data and confirm dialogs. Replace the bodies with your own account, payment and map SDKs.</li>
+          </ol>
+        </article>
+      </div>
+
+      <h3 class="mt" data-i18n="host.list.h">APIs that go to the host</h3>
+      <p class="note" data-i18n="host.list.p">Names exactly as you register them. Object methods use the dotted name, e.g. <code>MapContext.getCenterLocation</code>, and the call carries <code>contextId</code> (the component id). The number after a class is its method count.</p>
+      <div class="tagset">
+            <div class="tag-group">
+              <h3 data-i18n="host.g1">Account &amp; open data<small>42</small></h3>
+              <ul class="chips"><li class="new">login</li><li>pluginLogin</li><li class="new">checkSession</li><li class="new">getUserProfile</li><li class="new">getUserInfo</li><li class="new">authorize</li><li>authorizeForMiniProgram</li><li class="new">openSetting</li><li class="new">getShareInfo</li><li>getGroupEnterInfo</li><li class="new">getWeRunData</li><li>shareToWeRun</li><li class="new">chooseAddress</li><li class="new">chooseInvoice</li><li>chooseInvoiceTitle</li><li>chooseLicensePlate</li><li>openCard</li><li>addCard</li><li class="new">requestSubscribeMessage</li><li>requestSubscribeDeviceMessage</li><li>requestSubscribeEmployeeMessage</li><li>checkEmployeeRelation</li><li>bindEmployeeRelation</li><li>checkIsAddedToMyMiniProgram</li><li>showRedPackage</li><li>addVideoToFavorites</li><li>addFileToFavorites</li><li class="new">openCustomerServiceChat</li><li class="new">startSoterAuthentication</li><li>checkIsSupportSoterAuthentication</li><li>checkIsSoterEnrolledInDevice</li><li>requestFacialVerify</li><li>checkIsSupportFacialRecognition</li><li>openStoreOrderDetail</li><li>openStoreCouponDetail</li><li>requestDeviceVoIP</li><li>getDeviceVoIPList</li><li>openStickerSetView</li><li>openStickerIPView</li><li>openSingleStickerView</li><li>openDesignerProfile</li><li>getStoreTraceId</li></ul>
+            </div>
+            <div class="tag-group">
+              <h3 data-i18n="host.g2">Payment<small>11</small></h3>
+              <ul class="chips"><li class="new">requestPayment</li><li>requestOrderPayment</li><li>requestPluginPayment</li><li>requestVirtualPayment</li><li>requestCommonPayment</li><li>requestMerchantTransfer</li><li>requestAppleSubscribeSign</li><li>requestAutomaticRepayment</li><li>verifyHKPaymentPassword</li><li>openHKOfflinePayView</li><li>jumpToOfflinePay</li></ul>
+            </div>
+            <div class="tag-group">
+              <h3 data-i18n="host.g3">Location<small>8</small></h3>
+              <ul class="chips"><li class="new">getLocation</li><li>getFuzzyLocation</li><li class="new">chooseLocation</li><li>choosePoi</li><li class="new">openLocation</li><li>startLocationUpdate</li><li>startLocationUpdateBackground</li><li>stopLocationUpdate</li></ul>
+            </div>
+            <div class="tag-group">
+              <h3 data-i18n="host.g4">Media<small>20</small></h3>
+              <ul class="chips"><li class="same">chooseImage</li><li class="same">chooseMedia</li><li class="same">chooseVideo</li><li class="same">chooseMessageFile</li><li class="same">saveImageToPhotosAlbum</li><li class="same">saveVideoToPhotosAlbum</li><li class="same">openDocument</li><li>saveMediaToPhotosAlbum</li><li>saveFileToDisk</li><li>editImage</li><li>cropImage</li><li>compressVideo</li><li>openVideoEditor</li><li>checkDeviceSupportHevc</li><li>joinVoIPChat</li><li>join1v1Chat</li><li>exitVoIPChat</li><li>updateVoIPChatMuteConfig</li><li>subscribeVoIPVideoMembers</li><li>setEnable1v1Chat</li></ul>
+            </div>
+            <div class="tag-group">
+              <h3 data-i18n="host.g5">Navigation &amp; sharing<small>26</small></h3>
+              <ul class="chips"><li class="new">navigateToMiniProgram</li><li class="new">navigateBackMiniProgram</li><li>openEmbeddedMiniProgram</li><li>openOfficialAccountProfile</li><li>openOfficialAccountChat</li><li>openOfficialAccountArticle</li><li>openInquiriesTopic</li><li>openPhotoTopicView</li><li>copyRealname</li><li>postMessageToReferrerPage</li><li>postMessageToReferrerMiniProgram</li><li>updateWeChatApp</li><li>shareFileMessage</li><li>shareVideoMessage</li><li>shareToOfficialAccount</li><li>authPrivateMessage</li><li>shareAppMessageToGroup</li><li>shareImageToGroup</li><li>shareVideoToGroup</li><li>shareFileToGroup</li><li>shareEmojiToGroup</li><li>selectGroupMembers</li><li>openChatTool</li><li>notifyGroupMembers</li><li>getChatToolInfo</li><li>enterChatToolMode</li></ul>
+            </div>
+            <div class="tag-group">
+              <h3 data-i18n="host.g6">Channels<small>9</small></h3>
+              <ul class="chips"><li>reserveChannelsLive</li><li>openChannelsUserProfile</li><li>openChannelsLiveNoticeInfo</li><li>openChannelsLive</li><li>openChannelsEvent</li><li>openChannelsActivity</li><li>getChannelsShareKey</li><li>getChannelsLiveNoticeInfo</li><li>getChannelsLiveInfo</li></ul>
+            </div>
+            <div class="tag-group">
+              <h3 data-i18n="host.g7">Device &amp; system<small>12</small></h3>
+              <ul class="chips"><li class="new">scanCode</li><li class="new">makePhoneCall</li><li>sendSms</li><li class="new">chooseContact</li><li class="new">addPhoneContact</li><li>addPhoneCalendar</li><li>addPhoneRepeatCalendar</li><li>setVisualEffectOnCapture</li><li>openSystemBluetoothSetting</li><li>openAppAuthorizeSetting</li><li>startLocalServiceDiscovery</li><li>stopLocalServiceDiscovery</li></ul>
+            </div>
+            <div class="tag-group">
+              <h3 data-i18n="host.g8">Sensors<small>8</small></h3>
+              <ul class="chips"><li>startAccelerometer</li><li>stopAccelerometer</li><li>startCompass</li><li>stopCompass</li><li>startGyroscope</li><li>stopGyroscope</li><li>startDeviceMotionListening</li><li>stopDeviceMotionListening</li></ul>
+            </div>
+            <div class="tag-group">
+              <h3 data-i18n="host.g9">Bluetooth &amp; BLE<small>20</small></h3>
+              <ul class="chips"><li>openBluetoothAdapter</li><li>closeBluetoothAdapter</li><li>getBluetoothAdapterState</li><li>startBluetoothDevicesDiscovery</li><li>stopBluetoothDevicesDiscovery</li><li>getBluetoothDevices</li><li>getConnectedBluetoothDevices</li><li>makeBluetoothPair</li><li>isBluetoothDevicePaired</li><li>createBLEConnection</li><li>closeBLEConnection</li><li>getBLEDeviceServices</li><li>getBLEDeviceCharacteristics</li><li>getBLEDeviceRSSI</li><li>getBLEMTU</li><li>setBLEMTU</li><li>readBLECharacteristicValue</li><li>writeBLECharacteristicValue</li><li>notifyBLECharacteristicValueChange</li><li>createBLEPeripheralServer</li></ul>
+            </div>
+            <div class="tag-group">
+              <h3 data-i18n="host.g10">Wi-Fi, beacons &amp; HCE<small>13</small></h3>
+              <ul class="chips"><li>startWifi</li><li>stopWifi</li><li>getWifiList</li><li>setWifiList</li><li>connectWifi</li><li>getConnectedWifi</li><li>startBeaconDiscovery</li><li>stopBeaconDiscovery</li><li>getBeacons</li><li>startHCE</li><li>stopHCE</li><li>sendHCEMessage</li><li>getHCEState</li></ul>
+            </div>
+            <div class="tag-group">
+              <h3 data-i18n="host.g11">Wallet &amp; transit cards<small>12</small></h3>
+              <ul class="chips"><li>getSecureElementPasses</li><li>canAddSecureElementPass</li><li>removeSecureElementPass</li><li>addPaymentPassGetCertificateData</li><li>addPaymentPassFinish</li><li>checkTransitCardSupport</li><li>getTransitCardList</li><li>getTransitCardInfo</li><li>getTransitCardCPLC</li><li>issueTransitCard</li><li>rechargeTransitCard</li><li>deleteTransitCard</li></ul>
+            </div>
+            <div class="tag-group">
+              <h3 data-i18n="host.g12">AI &amp; privacy<small>5</small></h3>
+              <ul class="chips"><li>initFaceDetect</li><li>faceDetect</li><li>stopFaceDetect</li><li>getCommonConfig</li><li>openPrivacyContract</li></ul>
+            </div>
+            <div class="tag-group">
+              <h3 data-i18n="host.g13">Object methods, registered by dotted name<small>20</small></h3>
+              <ul class="chips"><li>MapContext.*<small> 29</small></li><li>CameraContext.*<small> 4</small></li><li>CameraFrameListener.*<small> 2</small></li><li>LivePlayerContext.*<small> 15</small></li><li>LivePusherContext.*<small> 29</small></li><li>NFCAdapter.*<small> 2</small></li><li>IsoDep.*<small> 7</small></li><li>MifareClassic.*<small> 6</small></li><li>MifareUltralight.*<small> 6</small></li><li>NfcA.*<small> 8</small></li><li>NfcB.*<small> 6</small></li><li>NfcF.*<small> 6</small></li><li>NfcV.*<small> 6</small></li><li>Ndef.*<small> 5</small></li><li>MediaRecorder.*<small> 6</small></li><li>VideoDecoder.*<small> 4</small></li><li>MediaContainer.*<small> 5</small></li><li>GlobalPayment.*<small> 3</small></li><li>RecorderManager.*<small> 4</small></li><li>UserCryptoManager.*<small> 1</small></li></ul>
+            </div>
+            <div class="tag-group">
+              <h3 data-i18n="host.g14">Events you push with <code>dispatchEvent</code><small>49</small></h3>
+              <ul class="chips"><li>accelerometerChange</li><li>compassChange</li><li>gyroscopeChange</li><li>deviceMotionChange</li><li>locationChange</li><li>locationChangeError</li><li>bluetoothDeviceFound</li><li>bluetoothAdapterStateChange</li><li>BLEConnectionStateChange</li><li>BLECharacteristicValueChange</li><li>BLEMTUChange</li><li>BLEPeripheralConnectionStateChanged</li><li>beaconUpdate</li><li>beaconServiceChange</li><li>wifiConnected</li><li>wifiConnectedWithPartialInfo</li><li>getWifiList</li><li>HCEMessage</li><li>batteryInfoChange</li><li>screenRecordingStateChanged</li><li>generatePoster</li><li>copyUrl</li><li>localServiceFound</li><li>localServiceLost</li><li>localServiceResolveFail</li><li>localServiceDiscoveryStop</li><li>voIPChatInterrupted</li><li>voIPChatMembersChanged</li><li>voIPChatSpeakersChanged</li><li>voIPChatStateChanged</li><li>voIPVideoMembersChanged</li><li>audioInterruptionBegin</li><li>audioInterruptionEnd</li><li>lazyLoadError</li><li>apiCategoryChange</li><li>userTriggerTranslation</li><li>userOffTranslation</li><li>menuButtonBoundingClientRectWeightChange</li><li>windowStateChange</li><li>parallelStateChange</li><li>embeddedMiniProgramHeightChange</li><li>keyDown</li><li>keyUp</li><li>backgroundFetchData</li><li>needPrivacyAuthorization</li><li>networkStatusChange</li><li>userCaptureScreen</li><li>contextEvent</li><li>nfcDiscovered</li></ul>
+            </div>
+      </div>
+      <ul class="chips chip-legend">
+        <li class="new" data-i18n="host.leg.demo">working demo in the example apps</li>
+        <li class="same" data-i18n="host.leg.builtin">built into the Android and Flutter SDKs</li>
+      </ul>
     </div>
   </section>
 

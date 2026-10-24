@@ -505,6 +505,16 @@ table { width: 100%; border-collapse: collapse; }
 .kv td { color: var(--dim); }
 .kv th small, .kv td small { display: block; color: var(--faint); font-weight: 400; font-size: 12.5px; }
 .kv tr:last-child th, .kv tr:last-child td { border-bottom: 0; }
+/* 宿主接口一节：能力 × 三个平台。勾 / 横居中，格子里的开关名换行写小字 */
+.host-kv thead th { font-size: 12.5px; color: var(--faint); font-weight: 600; padding: 0 6px 8px; text-align: center; }
+.host-kv thead th:first-child { padding-left: 0; }
+.host-kv tbody th { font-weight: 500; font-size: 14px; }
+.host-kv td { text-align: center; padding: 11px 6px; color: var(--strong); white-space: nowrap; }
+.host-kv td small { font-size: 11px; }
+.chips li small { color: var(--faint); }
+.host-stack { display: grid; gap: 16px; }
+.host-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.host-kv { width: 100%; min-width: 560px; }
 .kv b { color: var(--acc); font-variant-numeric: tabular-nums; }
 /* 窄卡片里的表：标签列给够宽，不然「Rust tests」都要折成两行 */
 .grid-3 .kv th { width: 50%; }
