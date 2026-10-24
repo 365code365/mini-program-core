@@ -46,7 +46,7 @@ jobs:
       - name: 资源链接带版本号
         run: |
           v="${GITHUB_SHA::7}"
-          sed -i -E "s#(href|src)=\"assets/(style\.css|i18n\.js|app\.js)\"#\1=\"assets/\2?v=$v\"#g" site/index.html
+          sed -i -E "s#(href|src)=\"assets/(style\.css|i18n\.js|app\.js|theme\.js)\"#\1=\"assets/\2?v=$v\"#g" site/index.html
           grep -c "?v=$v" site/index.html
       - name: Setup Pages
         uses: actions/configure-pages@v5

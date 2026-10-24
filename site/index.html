@@ -14,6 +14,14 @@
   /* 提前打标记：有 JS 才启用入场动画，避免内容先显示再被隐藏的闪烁。
      没有 JS 时所有内容默认可见。 */
   document.documentElement.className += ' js-anim';
+  /* 背景主题也在这里先定下（assets/theme.js 负责切换）：等样式表画完再改的话，浅色主题的人会先看见一闪深色 */
+  (function () {
+    var pick = 'dark';
+    try { pick = (location.search.match(/[?&]theme=(\w+)/) || [])[1] || localStorage.getItem('mr-theme') || 'dark'; } catch (e) {}
+    var t = pick === 'auto' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : pick;
+    if (t !== 'dark' && t !== 'light' && t !== 'midnight') t = 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+  })();
 </script>
 
 <meta property="og:type" content="website">
@@ -45,6 +53,12 @@
     <div class="lang-switch" role="group" aria-label="Language" data-i18n-aria="ui.langAria">
       <button type="button" data-lang="en" aria-pressed="true">EN</button>
       <button type="button" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+    <div class="theme-switch" role="group" aria-label="Background theme" data-i18n-aria="theme.aria">
+      <button type="button" data-theme-pick="dark" aria-pressed="true" aria-label="Dark" data-i18n-aria="theme.dark"></button>
+      <button type="button" data-theme-pick="midnight" aria-pressed="false" aria-label="Midnight blue" data-i18n-aria="theme.midnight"></button>
+      <button type="button" data-theme-pick="light" aria-pressed="false" aria-label="Light" data-i18n-aria="theme.light"></button>
+      <button type="button" data-theme-pick="auto" aria-pressed="false" aria-label="Follow system" data-i18n-aria="theme.auto"></button>
     </div>
     <a class="btn btn-ghost head-cta" href="https://github.com/365code365/mini-program-core" aria-label="GitHub">
       <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-2.91-.88-2.91-2.9 0-.83.3-1.51.79-2.04-.08-.2-.35-.99.08-2.06 0 0 .65-.2 2.12.79a5.9 5.9 0 0 1 1.61-.22c.55 0 1.1.07 1.61.22 1.47-1 2.12-.79 2.12-.79.43 1.07.16 1.86.08 2.06.49.53.79 1.2.79 2.04 0 2.03-1.14 2.7-2.92 2.9.29.26.55.75.55 1.52 0 1.07-.01 1.95-.01 2.22 0 .21.15.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
@@ -1145,5 +1159,6 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
 
 <script src="assets/i18n.js" defer></script>
 <script src="assets/app.js" defer></script>
+<script src="assets/theme.js" defer></script>
 </body>
 </html>

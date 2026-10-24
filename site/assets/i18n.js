@@ -23,6 +23,11 @@
     'ui.copied': '已复制',
     'ui.copyFail': '复制失败',
     'ui.copyAria': '复制这段代码',
+    'theme.aria': '背景主题',
+    'theme.dark': '深色',
+    'theme.midnight': '午夜蓝',
+    'theme.light': '浅色',
+    'theme.auto': '跟随系统',
     'meta.title': 'mini-render — 用 Rust 从零写的小程序渲染引擎',
     'meta.desc': '对标微信 Skyline 的自绘小程序渲染引擎：官方 503 个 wx.* API 全在、Skyline 组件集补齐，不基于 WebView、不映射系统控件、不依赖 Skia。小程序源码进、像素出 —— 桌面、无头 CI、Android、iOS、Flutter 同一份代码。',
 
