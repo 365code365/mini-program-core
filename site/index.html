@@ -181,8 +181,8 @@
         The price is real too: CSS coverage has to be filled in one property at a time, and
         performance is spent CPU cycle by CPU cycle. The only remaining cross-platform difference
         comes from system fonts — to remove even that, bundle a font with the app
-        (<code>assets/SourceHanSansSC-Regular.otf</code> is there for exactly that). Measure first
-        though: a bundled font costs <strong>more memory</strong>, not less.
+        (<code>assets/SourceHanSansSC-Regular.otf</code> is there for exactly that). With glyphs
+        expanded on first use it costs about <strong>2MB</strong>, close to the system font's 1.4MB.
       </p>
     </div>
   </section>
@@ -959,23 +959,25 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
             <li data-i18n="scope.unfit.1">You need the full web platform (arbitrary CSS, third-party H5 SDKs, <code>&lt;iframe&gt;</code>) — use a WebView</li>
             <li data-i18n="scope.unfit.2">Heavy 3D or lots of filters — content is rasterized on the CPU (the GPU only composites), which will not hold up</li>
             <li data-i18n="scope.unfit.3">You expect any production mini-program to run with zero adaptation — there are still known gaps</li>
-            <li data-i18n="scope.unfit.4">Severely memory-constrained devices — the peak is high until the font backend is swapped</li>
+            <li data-i18n="scope.unfit.4">Very tight memory budgets — fonts are no longer the problem, but decoded images (capped at 64MB) and a CPU page canvas about one screen tall still count</li>
           </ul>
         </article>
       </div>
 
       <aside class="callout">
-        <h3 data-i18n="scope.mem.h">The biggest known weakness: memory</h3>
+        <h3 data-i18n="scope.mem.h">Memory: no longer the biggest weakness</h3>
         <p data-i18n="scope.mem.p">
-          Measured desktop peak 600MB–1GB, of which <b>about 98% is fonts</b> — fontdue expands the
-          geometry of every glyph in a font at load time (the system's primary Chinese face, ~29k
-          glyphs, measured <b>+303MB</b>). On the test phone, after opening four pages, total PSS is
-          <b>332MB</b> with a <b>251MB</b> native heap, most of it the system Chinese font. The cost
-          scales with glyph count, not file size: the bundled single-face Source Han Sans (~65k glyphs)
-          measured <b>+405MB</b>, so bundle a font for cross-platform identity, not to save memory.
-          Caches are byte-capped (LRU) and released in the background, and <code>trim_memory()</code>
-          is there for memory warnings. The real fix for the peak is a lazy font backend, which changes
-          the anti-aliasing of every glyph and therefore needs its own round of rebaselining.
+          It used to be: desktop peaks of 600MB–1GB, <b>about 98% of it fonts</b>, because fontdue expanded
+          every glyph's geometry at load time (the system's primary Chinese face, ~29k glyphs: <b>+303MB</b>;
+          the bundled Source Han Sans, ~65k glyphs: <b>+405MB</b>). The engine now ships a vendored fontdue
+          that expands a glyph the first time it is drawn, memory-maps the font file and looks up the
+          character map on demand — <b>303 → 1.4MB</b> and <b>405 → 2.0MB</b> per face, with metrics and
+          bitmaps bit-identical to upstream, so no baseline moved. Thirty real pages opened in a row use
+          about <b>6.7MB</b> of font memory in total. On the test phone Native Heap went <b>289 → 102MB</b>
+          and total PSS <b>374 → 194MB</b>; after the buffer work (only the painted strip of the page kept,
+          compose buffer dropped and screenshots packed in the background) the engine's own buffers sit at
+          <b>18MB</b> after pressing Home. Caches stay byte-capped (LRU), and <code>trim_memory()</code> is
+          there for memory warnings.
         </p>
       </aside>
     </div>
@@ -1000,7 +1002,7 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
       <ul class="deps">
         <li><b>taffy</b><span>0.12</span><i data-i18n="dep.taffy">Flexbox / block layout solving</i></li>
         <li><b>rquickjs</b><span>0.12</span><i data-i18n="dep.rquickjs">QuickJS bindings, the logic-layer runtime</i></li>
-        <li><b>fontdue</b><span>0.9</span><i data-i18n="dep.fontdue">Glyph rasterization</i></li>
+        <li><b>fontdue</b><span>0.9</span><i data-i18n="dep.fontdue">Glyph rasterization (vendored: glyphs expand on first use)</i></li>
         <li><b>image</b><span>0.25</span><i data-i18n="dep.image">PNG / JPEG / GIF frames / WebP decoding</i></li>
         <li><b>ureq</b><span>3.3</span><i data-i18n="dep.ureq"><code>wx.request</code> and remote images</i></li>
         <li><b>tungstenite</b><span>=0.30.0</span><i data-i18n="dep.tungstenite"><code>wx.connectSocket</code>: the WebSocket protocol (TLS from the same rustls)</i></li>
@@ -1038,8 +1040,8 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
         <article class="card">
           <h3 data-i18n="stack.todo.h">Three biggest TODOs</h3>
           <ol class="ol">
-            <li data-i18n="stack.todo.1"><b>Memory peak</b> — swap in a lazy font backend</li>
-            <li data-i18n="stack.todo.2"><b><code>setData</code> still rebuilds the whole layout tree</b> — about 3.5 ms on a phone now; patching only the changed subtree would remove it</li>
+            <li data-i18n="stack.todo.1"><b>Same-layer components on iOS</b> — <code>&lt;map&gt;</code> and <code>&lt;video&gt;</code> are still laid over the page there</li>
+            <li data-i18n="stack.todo.2"><b>The last incremental-layout gaps</b> — subtrees with a transform or animation are rebuilt whole, and content that gets shorter still repaints a full frame</li>
             <li data-i18n="stack.todo.3"><b>Custom components in the H5 export</b> — the cross-check against Chrome only covers pages without them</li>
           </ol>
         </article>

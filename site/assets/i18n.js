@@ -90,7 +90,7 @@
     'why.r5.k': '微信 Skyline',
     'why.r5.a': '原生渲染 + 自绘组件',
     'why.r5.b': '<span class="tag yes">对齐目标</span> 语义、手感、事件模型、API 面与组件集都按它对',
-    'why.note': '代价也很实：CSS 覆盖面要自己一条一条补，性能靠 CPU 省着花。各端剩余差异只来自系统字体 —— 要彻底消掉就把字体一起打包（<code>assets/SourceHanSansSC-Regular.otf</code> 就是为这个准备的）。但先量一量：内置字体<strong>更费内存</strong>，不是更省。',
+    'why.note': '代价也很实：CSS 覆盖面要自己一条一条补，性能靠 CPU 省着花。各端剩余差异只来自系统字体 —— 要彻底消掉就把字体一起打包（<code>assets/SourceHanSansSC-Regular.otf</code> 就是为这个准备的）。字形改成用到才展开之后，它只占约 <strong>2MB</strong>，与系统字体的 1.4MB 相近。',
 
     /* ── Skyline 对齐 ── */
     'sky.eyebrow': 'Skyline 对齐',
@@ -371,9 +371,9 @@
     'scope.unfit.1': '需要完整 Web 生态（任意 CSS、第三方 H5 SDK、<code>&lt;iframe&gt;</code>）—— 那就该用 WebView',
     'scope.unfit.2': '重度 3D / 大量滤镜 —— 内容光栅化在 CPU 上（GPU 只管合成），撑不住',
     'scope.unfit.3': '期望零适配跑通任意线上小程序 —— 还有一批已知差距',
-    'scope.unfit.4': '内存极紧的设备 —— 字体后端换完之前峰值偏高',
-    'scope.mem.h': '最大的已知短板：内存',
-    'scope.mem.p': '桌面实测峰值 600MB~1GB，其中 <b>约 98% 是字体</b> —— fontdue 加载时把字体里每个字形的几何一次性展开（系统主中文字面约 2.9 万字形，实测 <b>+303MB</b>）。测试手机上打开四个页面之后，总 PSS <b>332MB</b>，其中 native 堆 <b>251MB</b>，大头是系统中文字体。代价跟<strong>字形数量</strong>成正比，跟文件大小无关：内置的单字面 Source Han Sans（约 6.5 万字形）实测 <b>+405MB</b> —— 所以内置字体只该为了跨端一致而做，不是为了省内存。缓存都按字节封顶（LRU）、进后台就放掉，也有 <code>trim_memory()</code> 给内存告警时调用。真正压峰值只有换惰性字体后端这一条路，而它会改变每个字形的抗锯齿，需要单独一轮重定基线。',
+    'scope.unfit.4': '内存预算极紧的设备 —— 字体已经不是问题，但解码后的图片（封顶 64MB）与约一屏高的 CPU 页面画布还是要算进去',
+    'scope.mem.h': '内存：已经不是最大的短板',
+    'scope.mem.p': '从前是：桌面峰值 600MB~1GB，<b>约 98% 是字体</b> —— fontdue 加载时把每个字形的几何一次性展开（系统主中文字面约 2.9 万字形 <b>+303MB</b>，内置的 Source Han Sans 约 6.5 万字形 <b>+405MB</b>）。现在引擎带一份 vendored 的 fontdue：字形第一次画到才展开，字体文件 mmap 进来，字符表按需查 —— 每个字面 <b>303 → 1.4MB</b>、<b>405 → 2.0MB</b>，度量与位图与上游逐位相同，基线一张没动。连开 30 个真实页面，字体一共约 <b>6.7MB</b>。测试手机上 Native Heap <b>289 → 102MB</b>、总 PSS <b>374 → 194MB</b>；再加上缓冲那一轮（页面画布只留画过的条带，进后台放掉合成缓冲、压缩截图），按 Home 之后引擎自己的缓冲只剩 <b>18MB</b>。缓存照样按字节封顶（LRU），<code>trim_memory()</code> 给内存告警时调用。',
 
     /* ── 技术栈 ── */
     'stack.eyebrow': '技术栈',
@@ -381,7 +381,7 @@
     'stack.lede': '<code>src/</code> 共 <b>410 个 <code>.rs</code> / 约 8.8 万行</b>（其中 49 个是测试模块），另有 33 个集成测试文件；单文件超 500 行就拆。除 FFI 边界外，<code>unsafe</code> 只有<strong>审过的 12 处</strong> —— 像素切片按字节看、用原生窗口指针建 surface、两个 Android 系统调用（logcat、CPU 亲和性）、一处清零分配的画布 —— 每处都带 SAFETY 注释；没有 <code>static mut</code>。',
     'dep.taffy': 'Flexbox / block 布局求解',
     'dep.rquickjs': 'QuickJS 绑定，逻辑层运行时',
-    'dep.fontdue': '字形光栅化',
+    'dep.fontdue': '字形光栅化（vendored：字形用到才展开）',
     'dep.image': 'PNG / JPEG / GIF 逐帧 / WebP 解码',
     'dep.ureq': '<code>wx.request</code> 与远程图片',
     'dep.tungstenite': '<code>wx.connectSocket</code>：WebSocket 协议（TLS 走同一份 rustls）',
@@ -411,8 +411,8 @@
     'stack.reg.r6k': '全量回归',
     'stack.reg.r6v': '<code>bash tools/regress-async.sh</code>，约 5 分钟，结果按时间戳落成批次',
     'stack.todo.h': '最大的三件待办',
-    'stack.todo.1': '<b>内存峰值</b> —— 换惰性字体后端',
-    'stack.todo.2': '<b><code>setData</code> 仍整棵重建布局树</b> —— 真机上已降到约 3.5ms；只给变了的子树打补丁才能把它去掉',
+    'stack.todo.1': '<b>iOS 的同层渲染</b> —— 那边 <code>&lt;map&gt;</code> 与 <code>&lt;video&gt;</code> 还是盖在页面上',
+    'stack.todo.2': '<b>增量布局剩下的缺口</b> —— 带 transform / 动画的子树整段重建，内容变矮仍出整帧',
     'stack.todo.3': '<b>H5 导出的自定义组件</b> —— 与 Chrome 的双端对比目前只覆盖不用自定义组件的页面',
 
     /* ── 文档 ── */
