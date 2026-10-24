@@ -44,12 +44,14 @@ pub fn handle_interaction_result(
             println!("📝 Input {}: {}", id, value);
             mini_render::host::tap::dispatch_input_event(app, renderer, id, "input", value);
         }
-        InteractionResult::InputBlur { id, value } => {
+        InteractionResult::InputBlur { id, value, dispatched } => {
             println!("📝 Blur {}: {}", id, value);
             if let Some(window) = window {
                 window.set_ime_allowed(false);
             }
-            mini_render::host::tap::dispatch_input_event(app, renderer, id, "blur", value);
+            if !dispatched {
+                mini_render::host::tap::dispatch_input_event(app, renderer, id, "blur", value);
+            }
         }
         InteractionResult::InputConfirm { id, value, keep_focus } => {
             println!("📝 Confirm {}: {}", id, value);

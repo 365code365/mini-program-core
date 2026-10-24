@@ -417,7 +417,7 @@ impl MiniEngine {
         let (id, kind, value) = match &res {
             R::Focus { id, value, .. } => (id.clone(), "focus", value.clone()),
             R::InputChange { id, value } | R::CutText { id, value, .. } => (id.clone(), "input", value.clone()),
-            R::InputBlur { id, value } => (id.clone(), "blur", value.clone()),
+            R::InputBlur { id, value, .. } => (id.clone(), "blur", value.clone()),
             R::InputConfirm { id, value, .. } => (id.clone(), "confirm", value.clone()),
             _ => return,
         };
@@ -428,10 +428,18 @@ impl MiniEngine {
         // `confirm-hold` 的确认不收键盘：输入框还聚焦着
         match &res {
             R::Focus { id, value, bounds, is_fixed, .. } => self.emit_input_focus(id, value, *bounds, *is_fixed),
-            R::InputBlur { id, value } | R::InputConfirm { id, value, keep_focus: false } => {
+            R::InputBlur { id, value, .. } | R::InputConfirm { id, value, keep_focus: false } => {
                 self.emit_input_blur(id, value)
             }
             _ => {}
+        }
+        if matches!(res, R::InputBlur { dispatched: true, .. }) {
+            // bindblur 与这次 tap 已经在 tap.rs 里按「先 blur 后 tap」派发过了，这里只管收键盘
+            if self.app.take_data_dirty() {
+                self.page_data_dirty = true;
+                self.mark_full();
+            }
+            return;
         }
         // 与桌面窗体同一条派发（`host::tap::dispatch_input_event`）
         let r = self.renderer.take();

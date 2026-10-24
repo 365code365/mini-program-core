@@ -14,7 +14,7 @@
 #   ② 引擎：`debug.mini.damage_log` 里超过 8ms 的帧（哪一类、哪一段贵）。
 # 坐标按 1080×2354 的示例首页写死。设备序列号用 ANDROID_SERIAL。
 #
-# `STORE_APP=<id>`（只配 MINI_APP=native）：量商店里下载来的小程序，如 `STORE_APP=news-app MINI_APP=native … store-long`
+# `STORE_APP=<id>`（原生与 Flutter 示例都行）：量商店里下载来的小程序，如 `STORE_APP=news-app MINI_APP=native … store-long`
 #   （`*-slow` / `*-fastslow` / `*-long` 这几类只在当前页上下滑，任何小程序都能用）。
 # `MINI_APP=native`：量纯原生示例（sdk/android/example，MiniProgramView），同一个演示小程序、同一组坐标。
 # APK 用 `cd sdk/android/example && ./gradlew assembleRelease` 出的那份（debug 包是 DEBUGGABLE，量出来偏慢）
@@ -39,13 +39,31 @@ if [ "${MINI_APP:-flutter}" = native ]; then
     STORE_URL="${STORE_URL:-http://64.83.22.217:9630}"
     STORE_JSON=$(curl -s -m 8 "$STORE_URL/api/apps" | python3 -c "import json,sys; a=[x for x in json.load(sys.stdin)['apps'] if x['id']=='$STORE_APP']; print(json.dumps(a[0],ensure_ascii=True,separators=(',',':')) if a else '')")
     [ -n "$STORE_JSON" ] || { echo "⚠ 商店里没有 $STORE_APP（或连不上 $STORE_URL）"; exit 1; }
-    LAUNCH(){ D shell "am start -n $PKG/.MainActivity --es storeApp '$STORE_JSON' --es storeUrl '$STORE_URL'" >/dev/null 2>&1; }
+    # `STORE_PATH=pages/detail/detail?id=101`：直接打开到这一页（深链同一条路：storeLink 带 path / query）
+    if [ -n "${STORE_PATH:-}" ]; then
+      LINK_JSON=$(STORE_PATH="$STORE_PATH" STORE_JSON="$STORE_JSON" python3 -c "
+import json, os, urllib.parse
+app = json.loads(os.environ['STORE_JSON']); p = os.environ['STORE_PATH']; path, _, q = p.partition('?')
+print(json.dumps({'key': app.get('appId') or app['id'], 'path': path, 'query': dict(urllib.parse.parse_qsl(q)), 'scene': 1065}, separators=(',', ':')))")
+      LAUNCH(){ D shell "am start -n $PKG/.MainActivity --es storeLink '$LINK_JSON' --es storeUrl '$STORE_URL'" >/dev/null 2>&1; }
+    else
+      LAUNCH(){ D shell "am start -n $PKG/.MainActivity --es storeApp '$STORE_JSON' --es storeUrl '$STORE_URL'" >/dev/null 2>&1; }
+    fi
   fi
 else
   PKG=dev.minirender.mini_render_example
   APK=sdk/flutter/example/build/app/outputs/flutter-apk/app-release.apk
   HOSTLOG=flutter:I; OPEN_TAP="500 400"
   LAUNCH(){ D shell monkey -p $PKG -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; }
+  # Flutter 示例也能量商店里的小程序：按 AppID 走深链（minirender://open，与外部 App / H5 拉起同一条路）
+  if [ -n "${STORE_APP:-}" ]; then
+    STORE_URL="${STORE_URL:-http://64.83.22.217:9630}"
+    STORE_KEY=$(curl -s -m 8 "$STORE_URL/api/apps/$STORE_APP" | python3 -c "import json,sys; print(json.load(sys.stdin).get('appId',''))")
+    [ -n "$STORE_KEY" ] || { echo "⚠ 商店里没有 $STORE_APP（或连不上 $STORE_URL）"; exit 1; }
+    OPEN_TAP=""
+    SP=$(STORE_PATH="${STORE_PATH:-}" python3 -c "import os,urllib.parse; p=os.environ['STORE_PATH']; print('&path='+urllib.parse.quote(p,safe='') if p else '')")
+    LAUNCH(){ D shell "am start -a android.intent.action.VIEW -d 'minirender://open?appid=$STORE_KEY$SP' $PKG" >/dev/null 2>&1; }
+  fi
 fi
 if [ "${2:-}" = install ]; then
   # APK 里的引擎库必须是刚编的那份：引擎库与 `flutter build apk` 并行跑时，gradle 会把**旧库**合进去，
@@ -70,6 +88,12 @@ if [ -n "${STORE_APP:-}" ]; then
   sleep 1.5
 fi
 F | grep -q "$PKG" || { echo "⚠ 前台不是示例 App"; D shell setprop debug.mini.damage_log '""'; exit 1; }
+# `ENTER_TAP="x y"`：先点一下进子页面再量（如首页点一篇新闻进详情：首页的自动轮播还在底下翻，
+# 直接深链到详情页量不出这种「被盖住那一页逼着重画」的顿）
+if [ -n "${ENTER_TAP:-}" ]; then
+  D logcat -c; D shell input tap $ENTER_TAP; sleep 2.5
+  D logcat -d -s $HOSTLOG </dev/null | grep "\[事件\] page " | tail -1
+fi
 # 子页面：首页先滑到底（位置固定），再点那一行。首页目录（utils/catalog.js）一改，这两个坐标就要跟着改 ——
 # 进没进对页面按 flutter 日志里的 `page <路由>` 判，点歪了直接报错，不会量错页面
 case "$SC" in

@@ -50,7 +50,7 @@ pub fn take_requests(app: &mut MiniApp, renderer: Option<&WxmlRenderer>, interac
     }
     let mut blurred = false;
     if !app.take_host_requests("hideKeyboard").is_empty() {
-        if let Some(InteractionResult::InputBlur { id, value }) = interaction.blur_input() {
+        if let Some(InteractionResult::InputBlur { id, value, .. }) = interaction.blur_input() {
             super::tap::dispatch_input_event(app, renderer, &id, "blur", &value);
             blurred = true;
             redraw = true;

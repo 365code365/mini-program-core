@@ -251,6 +251,7 @@ impl InteractionManager {
             return Some(InteractionResult::InputBlur {
                 id: input.id,
                 value: input.value,
+                dispatched: false,
             });
         }
         None

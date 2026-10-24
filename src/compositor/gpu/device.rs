@@ -121,8 +121,13 @@ pub fn open(instance: wgpu::Instance, adapter: wgpu::Adapter, needs: GpuNeeds) -
     } else {
         wgpu::Limits::downlevel_defaults()
     };
-    limits.max_texture_dimension_2d = limits.max_texture_dimension_2d.max(needs.max_texture_dimension_2d);
-    limits.max_texture_array_layers = limits.max_texture_array_layers.max(needs.array_layers);
+    // 纹理边长与层数直接要**适配器能给的上限**，不按建设备那一刻的画面尺寸要：
+    // 从前要的是 max(2048, 当时的输出尺寸)，竖屏 1079×2312 起来就只要了 2312；手机一转横屏，
+    // 输出变成 2353×1037，`Surface::configure` 校验失败 → 整个会话回退 CPU（一加 PLY110 上传来的
+    // 诊断日志 20261024-143852：转回竖屏以后也一直是 CPU + 每帧整张 writePixels，上下滑一顿一顿）。
+    // 适配器自己的上限一定合法（上面 `adapter()` 已核对过不小于 needs），多要不占内存
+    limits.max_texture_dimension_2d = facts.max_texture_dimension_2d.max(needs.max_texture_dimension_2d);
+    limits.max_texture_array_layers = facts.max_texture_array_layers.max(needs.array_layers);
     let desc = wgpu::DeviceDescriptor {
         label: Some("mini-render 合成器"),
         required_features: wgpu::Features::empty(),

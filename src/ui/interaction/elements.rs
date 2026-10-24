@@ -51,6 +51,30 @@ impl InteractionManager {
         &self.elements
     }
 
+    /// 输入框的受控值：页面 `setData` 改了 `value` 属性（与上一次见到的不同）就以页面为准，
+    /// 覆盖掉输入框自己记着的内容（含聚焦中的那份，光标夹到末尾）；没变就保留用户打的字。返回这一帧该显示的值。
+    ///
+    /// 从前交互状态永远压过属性：打过字之后 `setData({ keyword: '' })` 清不掉输入框
+    /// （news-app 搜索页点「×」，数据清了、×也没了，框里的字还在）。与微信一致：value 是受控的
+    pub fn sync_input_value(&mut self, id: &str, attr: &str) -> String {
+        let changed = self.input_attrs.get(id).is_some_and(|last| last != attr);
+        self.input_attrs.insert(id.to_string(), attr.to_string());
+        if changed {
+            if let Some(s) = self.states.get_mut(id) {
+                s.value = attr.to_string();
+            }
+            if let Some(f) = self.focused_input.as_mut().filter(|f| f.id == id) {
+                if f.value != attr {
+                    f.value = attr.to_string();
+                    f.cursor_pos = f.cursor_pos.min(attr.chars().count());
+                    f.selection_start = None;
+                    f.selection_end = None;
+                }
+            }
+        }
+        self.states.get(id).map(|s| s.value.clone()).unwrap_or_else(|| attr.to_string())
+    }
+
     /// 获取组件状态
     pub fn get_state(&self, id: &str) -> Option<&ComponentState> {
         self.states.get(id)
@@ -91,6 +115,7 @@ impl InteractionManager {
             toggled_at: std::mem::take(&mut self.toggled_at),
             sliders: std::mem::take(&mut self.sliders),
             slider_origin: std::mem::take(&mut self.slider_origin),
+            input_attrs: std::mem::take(&mut self.input_attrs),
             scroll_controllers: std::mem::take(&mut self.scroll_controllers),
             scroll_views: std::mem::take(&mut self.scroll_views),
         };
@@ -112,6 +137,7 @@ impl InteractionManager {
         self.toggled_at = s.toggled_at;
         self.sliders = s.sliders;
         self.slider_origin = s.slider_origin;
+        self.input_attrs = s.input_attrs;
         self.scroll_controllers = controllers;
         self.scroll_views = s.scroll_views;
     }
@@ -133,6 +159,7 @@ impl InteractionManager {
         self.dragging_slider = None;
         self.sliders.clear();
         self.slider_origin.clear();
+        self.input_attrs.clear();
         self.scroll_controllers.clear();
         self.scroll_views.clear();
         self.dragging_scroll_area = None;

@@ -171,9 +171,15 @@ pub fn handle_content_click(
         
         return Some(result);
     } else {
-        // 点击了非交互区域，让输入框失去焦点
-        if interaction.has_focused_input() {
-            return interaction.blur_input();
+        // 点击了非交互区域：输入框失焦，**而且这次点击照常派发**（与微信一致：先 blur，再 tap）。
+        // 从前失焦之后直接 return，点的那个 bindtap 吞掉了 —— 输入框聚焦着点旁边的「×」清空，
+        // 第一下只收了键盘、没清（news-app 搜索页，真机上反馈「点 × 清不掉」）
+        if let Some(InteractionResult::InputBlur { id, value, .. }) = interaction.blur_input() {
+            dispatch_input_event(app, renderer, &id, "blur", &value);
+            if let Some(renderer) = renderer {
+                dispatch_tap_chain(app, renderer, x, adjusted_y, Some(false), tap_ctx);
+            }
+            return Some(InteractionResult::InputBlur { id, value, dispatched: true });
         }
     }
     

@@ -330,10 +330,8 @@ impl WxmlRenderer {
             "input" | "textarea" => {
                 // 只使用原始 value 属性，不使用 placeholder
                 let actual_value = Self::input_value_attr(original_node);
-                // 如果已有状态，使用状态中的值
-                let current_value = interaction.get_state(&id)
-                    .map(|s| s.value.clone())
-                    .unwrap_or(actual_value);
+                // 有交互状态用状态里的值；页面 setData 改了 value 时以页面为准（受控，elements.rs）
+                let current_value = interaction.sync_input_value(&id, &actual_value);
                 
                 interaction.register_element(InteractiveElement {
                     interaction_type: InteractionType::Input,

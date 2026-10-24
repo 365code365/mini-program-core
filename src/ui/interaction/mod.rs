@@ -242,6 +242,7 @@ pub struct PageUiState {
     toggled_at: HashMap<String, f32>,
     sliders: HashMap<String, SliderSpec>,
     slider_origin: HashMap<String, f64>,
+    input_attrs: HashMap<String, String>,
     scroll_controllers: HashMap<String, ScrollController>,
     scroll_views: HashMap<String, crate::ui::scroll_view_state::ScrollViewState>,
 }
@@ -267,6 +268,8 @@ pub struct InteractionManager {
     sliders: HashMap<String, SliderSpec>,
     /// 写入 slider 交互状态时 WXML 里的 `value`：页面 setData 改了它，交互状态就作废（受控）
     slider_origin: HashMap<String, f64>,
+    /// 每个 input / textarea 上一次见到的 `value` 属性原文（受控值，见 [`sync_input_value`](Self::sync_input_value)）
+    input_attrs: HashMap<String, String>,
     /// 滚动控制器集合
     pub scroll_controllers: HashMap<String, ScrollController>,
     /// 每个 scroll-view 的受控属性与事件状态（键同 `scroll_controllers`）
@@ -332,6 +335,7 @@ impl InteractionManager {
             dragging_slider: None,
             sliders: HashMap::new(),
             slider_origin: HashMap::new(),
+            input_attrs: HashMap::new(),
             pressed_button: None,
             press_feedback: None,
             hover_specs: HashMap::new(),
@@ -424,7 +428,9 @@ pub enum InteractionResult {
     /// `detail` 里带的就是它（`{ value, height }`）。
     Focus { id: String, bounds: Rect, click_x: f32, is_fixed: bool, value: String },
     InputChange { id: String, value: String },
-    InputBlur { id: String, value: String },
+    /// 失焦。`dispatched`：`bindblur` 已经派发过了（点空白处失焦时，tap.rs 要先发 blur 再发这次 tap），
+    /// 宿主只收键盘，不再派发
+    InputBlur { id: String, value: String, dispatched: bool },
     /// 按下回车/完成键。`keep_focus` 是 `confirm-hold`：为真时输入框仍聚焦，
     /// 宿主**不要**收键盘、不要关输入法
     InputConfirm { id: String, value: String, keep_focus: bool },

@@ -29,6 +29,8 @@ const SAME_CLOCK_MS: f64 = 1000.0;
 const MAX_PREDICT_MS: f64 = 8.0;
 /// 最后两个采样隔得比这还久：手指停过，不往前推
 const MAX_GAP_MS: f64 = 20.0;
+/// 拖动刚开始那段「追赶」用多久收回到正常的回取量（见 [`DragResampler::ramp_lead`]）
+const RAMP_MS: f64 = 120.0;
 
 #[derive(Default)]
 pub(crate) struct DragResampler {
@@ -46,6 +48,15 @@ pub(crate) struct DragResampler {
     /// 事件过两道线程才到，常常几个一批地到：按到达时刻算，最后 100ms 里的采样挤在 1ms 内，
     /// 松手速度就是真实速度的十几倍（一加真机慢拖 2.3px/帧，松手惯性第一帧 44.5px）
     event_ms: Option<u64>,
+    /// 拖动起步时少回取的毫秒数，[`RAMP_MS`] 内线性收回到 0。
+    ///
+    /// 正常每帧取 `now − (一帧 + 5ms)`；可拖动刚被认出来时，最早的采样就是这一刻的手指（再早的
+    /// 在判定拖动之前，不进采样）—— 取样时刻落在第一个采样之前，页面原地不动，要等 1~2 帧时间
+    /// 「走过」第一个采样才开始跟。真机上「甩完停住、再按住拖」那一下屏上空了 44ms
+    /// （`android-jank.sh news-fastslow`：✋ 之后两帧只合成、位置没变）。起步时让取样时刻正好落在
+    /// 第一个采样上，之后 120ms 里慢慢退回正常的回取量（这段时间页面比手指慢约一成，看不出来）
+    ramp_lead: f64,
+    ramp_start: u64,
 }
 
 impl DragResampler {
@@ -53,6 +64,21 @@ impl DragResampler {
         self.samples.clear();
         self.shown = None;
         self.shown_pos = None;
+        self.ramp_lead = 0.0;
+    }
+
+    /// 第一个采样到了：算起步要少回取多少（让这一帧的取样时刻落在它上面）
+    fn start_ramp(&mut self, now: u64, t_first: f64) {
+        let lag = self.period() + EXTRA_MS;
+        self.ramp_lead = (lag - (now as f64 - t_first)).clamp(0.0, lag);
+        self.ramp_start = now;
+    }
+
+    /// 这一帧的取样时刻
+    fn target(&self, now: u64) -> f64 {
+        let since = now.saturating_sub(self.ramp_start) as f64;
+        let lead = self.ramp_lead * (1.0 - since / RAMP_MS).max(0.0);
+        now as f64 - (self.period() + EXTRA_MS) + lead
     }
 
     fn push(&mut self, t: f64, y: f32) {
@@ -149,6 +175,10 @@ impl MiniEngine {
                 self.resample.period()
             ));
         }
+        if self.resample.samples.is_empty() {
+            let now = self.mono_ms();
+            self.resample.start_ramp(now, t_ms);
+        }
         self.resample.push(t_ms, y - self.nav_height());
     }
 
@@ -175,7 +205,7 @@ impl MiniEngine {
         if !self.scroll.is_dragging || self.interaction.dragging_scroll_area.is_some() {
             return false;
         }
-        let target = now as f64 - (self.resample.period() + EXTRA_MS);
+        let target = self.resample.target(now);
         let Some(y) = self.resample.next_shown(target) else { return false };
         self.scroll.drag_preview(y);
         let pos = self.scroll.get_position();
@@ -237,6 +267,30 @@ mod tests {
         let steps: Vec<f32> = shown.windows(2).skip(4).map(|w| w[1] - w[0]).collect();
         assert!(steps.iter().all(|s| *s >= 0.0), "不倒退：{steps:?}");
         assert!(steps.iter().all(|s| (s - 1.6).abs() < 0.05), "每帧都该挪 1.6px：{steps:?}");
+    }
+
+    #[test]
+    fn 拖动起步下一帧就跟手_之后退回正常回取量() {
+        // 手指 1px/ms，事件每 4ms 一个；拖动在 t=100 被认出来，第一个采样 10ms 后到（与真机一致）
+        let mut r = DragResampler::default();
+        r.period = 11.0;
+        r.start_ramp(110, 100.0);
+        let mut next = 100u64;
+        let mut ys = Vec::new();
+        for k in 0..20u64 {
+            let now = 110 + k * 11;
+            while next <= now.saturating_sub(2) {
+                r.push(next as f64, next as f32);
+                next += 4;
+            }
+            ys.push(r.next_shown(r.target(now)).unwrap());
+        }
+        // 第二帧起就在动（从前要等取样时刻走过第一个采样：头两帧都停在 100）
+        assert!(ys[1] > ys[0] + 5.0, "起步第二帧该动了：{ys:?}");
+        // 收回之后：每帧 11px，回取量回到一帧 + 5ms
+        let steps: Vec<f32> = ys.windows(2).skip(13).map(|w| w[1] - w[0]).collect();
+        assert!(steps.iter().all(|s| (s - 11.0).abs() < 0.01), "{steps:?}");
+        assert!((r.target(110 + 19 * 11) - (110.0 + 19.0 * 11.0 - 16.0)).abs() < 1e-6);
     }
 
     #[test]
