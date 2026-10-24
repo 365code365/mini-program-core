@@ -1,0 +1,50 @@
+<view class="page">
+  <view class="av-sec">
+    <view class="avatar av" style="background: {{color}};"><text class="av-text">{{initial}}</text></view>
+    <view class="swatches">
+      <view class="sw-c {{item === color ? 'sw-c-on' : ''}}" wx:for="{{colors}}" wx:key="*this" data-c="{{item}}" bindtap="pickColor">
+        <view class="sw-dot" style="background: {{item}};"></view>
+      </view>
+    </view>
+  </view>
+  <view class="card block">
+    <view class="field">
+      <text class="label">昵称</text>
+      <input class="input" value="{{nickname}}" placeholder="2~16 个字符" placeholder-class="ph" bindinput="onNick" maxlength="20" />
+      <text class="count {{nickLen > 16 ? 'over' : ''}}">{{nickLen}}/16</text>
+    </view>
+    <view class="err" wx:if="{{nickErr}}"><text class="err-text">{{nickErr}}</text></view>
+    <view class="field">
+      <text class="label">性别</text>
+      <radio-group class="radios" bindchange="onGender">
+        <label class="radio-item" wx:for="{{genders}}" wx:key="v">
+          <radio value="{{item.v}}" checked="{{gender === item.v}}" color="#4F6BFF" />
+          <text class="radio-text">{{item.t}}</text>
+        </label>
+      </radio-group>
+    </view>
+    <picker mode="date" value="{{birthday}}" start="1950-01-01" end="{{today}}" bindchange="onBirthday">
+      <view class="field">
+        <text class="label">生日</text>
+        <text class="value">{{birthday}}</text>
+        <view class="arrow"></view>
+      </view>
+    </picker>
+    <picker mode="selector" range="{{cities}}" value="{{cityIdx}}" bindchange="onCity">
+      <view class="field field-last">
+        <text class="label">城市</text>
+        <text class="value">{{cities[cityIdx]}}</text>
+        <view class="arrow"></view>
+      </view>
+    </picker>
+  </view>
+  <view class="card block sign-box">
+    <text class="label sign-label">个性签名</text>
+    <textarea class="textarea" value="{{signature}}" placeholder="介绍一下自己吧" placeholder-class="ph" bindinput="onSign" maxlength="-1" />
+    <view class="sign-foot">
+      <text class="sign-warn" wx:if="{{signLen > signMax}}">超出 {{signLen - signMax}} 字</text>
+      <text class="count {{signLen > signMax ? 'over' : ''}}">{{signLen}}/{{signMax}}</text>
+    </view>
+  </view>
+  <view class="save {{canSave ? '' : 'save-off'}}" bindtap="save" hover-class="save-hover"><text class="save-text">保存</text></view>
+</view>

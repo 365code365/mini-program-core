@@ -1,0 +1,31 @@
+<view class="top">
+  <view class="search row">
+    <view class="lens"><view class="lens-c"></view><view class="lens-h"></view></view>
+    <input class="flex1 search-ipt" placeholder="搜索姓名、卡号尾号或银行" value="{{kw}}" bindinput="onSearch" />
+    <text class="cancel" wx:if="{{kw}}" bindtap="clearKw">清除</text>
+  </view>
+</view>
+<scroll-view scroll-y class="list" style="height: {{listH}}px" scroll-into-view="{{intoView}}">
+  <view wx:for="{{groups}}" wx:key="letter" id="g-{{item.letter}}">
+    <view class="g-head"><text class="g-letter">{{item.letter}}</text></view>
+    <view class="p row" wx:for="{{item.items}}" wx:for-item="p" wx:key="card" data-i="{{p.idx}}" bindtap="pick" hover-class="p-down">
+      <view class="avatar" style="background: {{p.color}}"><text class="avatar-t">{{p.first}}</text></view>
+      <view class="col flex1 p-mid">
+        <text class="p-name">{{p.name}}</text>
+        <text class="sub">{{p.bank}} · 尾号 {{p.tail}}</text>
+      </view>
+      <!-- 不放 .chev 箭头：scroll-view 里的 transform: rotate 不生效，画出来是个直角（引擎问题） -->
+    </view>
+  </view>
+  <view class="empty" wx:if="{{!groups.length}}">
+    <view class="empty-ring"></view>
+    <text class="sub">没有找到「{{kw}}」相关的收款人</text>
+  </view>
+  <view class="bottom-pad"></view>
+</scroll-view>
+<view class="index col" wx:if="{{!kw}}">
+  <view class="idx {{intoView === 'g-' + item ? 'idx-on' : ''}}" wx:for="{{letters}}" wx:key="*this" data-l="{{item}}" bindtap="jump">
+    <text class="idx-t {{intoView === 'g-' + item ? 'idx-t-on' : ''}}">{{item}}</text>
+  </view>
+</view>
+<view class="toast-letter" wx:if="{{bigLetter}}"><text class="toast-letter-t">{{bigLetter}}</text></view>

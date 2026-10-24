@@ -1,0 +1,39 @@
+.hero { background: linear-gradient(160deg, #7C6CFF, #3D2FD6); padding: 36rpx 32rpx 40rpx; margin-bottom: 24rpx; }
+.avatar { width: 100rpx; height: 100rpx; border-radius: 50rpx; background: #fff; display: flex; flex-direction: row; align-items: center; justify-content: center; border: 4rpx solid rgba(255, 255, 255, 0.5); }
+.avatar-t { color: #4A3AE8; font-size: 42rpx; font-weight: bold; }
+.me { margin-left: 22rpx; }
+.me-n { color: #fff; font-size: 32rpx; font-weight: bold; margin-bottom: 10rpx; }
+.badge { border-radius: 20rpx; padding: 4rpx 16rpx; margin-right: 14rpx; }
+.badge-t { color: #fff; font-size: 22rpx; font-weight: bold; }
+.me-s { color: rgba(255, 255, 255, 0.85); font-size: 22rpx; }
+.sign { background: #FFD25A; border-radius: 28rpx; padding: 10rpx 22rpx; }
+.sign-done { background: rgba(255, 255, 255, 0.25); }
+.sign-t { color: #5a3b00; font-size: 22rpx; font-weight: bold; }
+.sign-done .sign-t { color: #fff; }
+.lv { margin-top: 32rpx; background: rgba(255, 255, 255, 0.12); border-radius: 16rpx; padding: 20rpx 24rpx; }
+.lv-t { color: rgba(255, 255, 255, 0.9); font-size: 22rpx; }
+.lv-track { height: 14rpx; border-radius: 7rpx; background: rgba(255, 255, 255, 0.2); margin-top: 14rpx; }
+.lv-bar { height: 14rpx; border-radius: 7rpx; background: linear-gradient(90deg, #FFE08A, #FFB547); }
+.bolt { width: 36rpx; height: 40rpx; position: relative; margin-right: 10rpx; }
+.bolt-a { position: absolute; left: 12rpx; top: 0; width: 10rpx; height: 24rpx; background: #F59E0B; transform: skewX(-20deg); }
+.bolt-b { position: absolute; left: 10rpx; top: 16rpx; width: 10rpx; height: 24rpx; background: #F59E0B; transform: skewX(-20deg); }
+.cells { margin-top: 22rpx; }
+.cell { flex: 1; height: 22rpx; border-radius: 11rpx; background: #ecebf7; margin-right: 8rpx; }
+.cell-on { background: linear-gradient(90deg, #FFC24B, #F59E0B); }
+.e-foot { margin-top: 18rpx; }
+.refill { color: #5B4BF5; font-size: 24rpx; font-weight: bold; }
+.chev-b { border-color: #5B4BF5; }
+.chips { flex-wrap: wrap; margin: 20rpx 0 8rpx; }
+.chip { padding: 8rpx 22rpx; border-radius: 24rpx; margin: 0 14rpx 12rpx 0; }
+.chip-t { font-size: 24rpx; font-weight: bold; }
+.start-wrap { padding: 8rpx 48rpx 32rpx; display: flex; flex-direction: column; align-items: center; }
+.start { width: 100%; height: 108rpx; line-height: 108rpx; border-radius: 54rpx; font-size: 36rpx; box-shadow: 0 12rpx 30rpx rgba(74, 58, 232, 0.35); }
+.start-down { transform: scale(0.97); }
+.cost { color: #8b8fa8; font-size: 22rpx; margin-top: 14rpx; }
+.props { margin-top: 20rpx; }
+.prop-m { flex: 1; margin-left: 20rpx; }
+.prop-n { font-size: 28rpx; font-weight: bold; margin-bottom: 4rpx; }
+.prop-c { font-size: 32rpx; font-weight: bold; color: #5B4BF5; }
+.stats { padding: 28rpx 0; }
+.st { align-items: center; }
+.st-v { font-size: 40rpx; font-weight: bold; color: #1f2140; margin-bottom: 4rpx; }

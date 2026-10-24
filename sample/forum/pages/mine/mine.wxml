@@ -1,0 +1,30 @@
+<view class="page">
+  <view class="hero">
+    <view class="hero-row">
+      <view class="avatar av" style="background: {{me.color}};"><text class="av-text big">{{initial}}</text></view>
+      <view class="hero-main">
+        <text class="name">{{me.name}}</text>
+        <text class="sub">{{joinedText}}</text>
+      </view>
+      <view class="reset" bindtap="reset"><text class="reset-text">恢复数据</text></view>
+    </view>
+    <view class="stats">
+      <view class="stat" wx:for="{{stats}}" wx:key="k"><text class="stat-v">{{item.v}}</text><text class="stat-l">{{item.l}}</text></view>
+    </view>
+  </view>
+  <view class="seg">
+    <view class="seg-item {{seg === 0 ? 'seg-on' : ''}}" data-i="0" bindtap="onSeg"><text class="seg-text {{seg === 0 ? 'seg-text-on' : ''}}">我的帖子</text></view>
+    <view class="seg-item {{seg === 1 ? 'seg-on' : ''}}" data-i="1" bindtap="onSeg"><text class="seg-text {{seg === 1 ? 'seg-text-on' : ''}}">我的收藏</text></view>
+  </view>
+  <view class="item {{flash === item.id ? 'flash' : ''}}" wx:for="{{list}}" wx:key="id">
+    <post-card item="{{item}}" bindopen="open" bindlike="like" bindfav="fav" bindcircle="goCircle"></post-card>
+    <view class="mine-ops" wx:if="{{seg === 0}}">
+      <view class="mop" data-id="{{item.id}}" bindtap="edit"><text class="mop-text">编辑</text></view>
+      <view class="mop mop-del" data-id="{{item.id}}" bindtap="remove"><text class="mop-text mop-del-text">删除</text></view>
+    </view>
+  </view>
+  <view class="empty" wx:if="{{empty}}">
+    <text class="muted">{{seg === 0 ? '还没有发过帖子' : '还没有收藏的帖子'}}</text>
+    <view class="go" wx:if="{{seg === 0}}" bindtap="compose"><text class="go-text">去发第一篇</text></view>
+  </view>
+</view>

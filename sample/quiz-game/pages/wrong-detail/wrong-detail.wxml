@@ -1,0 +1,25 @@
+<view class="bar row between">
+  <text class="sub">第 {{pos + 1}} / {{count}} 道</text>
+  <text class="sub">错过 {{times}} 次</text>
+</view>
+<view class="card">
+  <view class="row"><view class="cat" style="background: {{bg}}"><text class="cat-t" style="color: {{c}}">{{catName}}</text></view></view>
+  <text class="q">{{q.q}}</text>
+</view>
+<view class="opt row {{item.cls}}" wx:for="{{opts}}" wx:key="l">
+  <view class="letter letter-{{item.cls}}"><text class="letter-t">{{item.l}}</text></view>
+  <text class="opt-t flex1">{{item.t}}</text>
+  <text class="opt-tag" wx:if="{{item.tag}}">{{item.tag}}</text>
+</view>
+<view class="card exp-card">
+  <view class="row between" bindtap="toggleExp">
+    <text class="title">答案解析</text>
+    <text class="brand">{{showExp ? '收起' : '展开'}}</text>
+  </view>
+  <text class="exp" wx:if="{{showExp}}">{{q.exp}}</text>
+</view>
+<view class="foot row">
+  <view class="nav {{pos > 0 ? '' : 'nav-off'}}" bindtap="prev"><text class="nav-t">上一题</text></view>
+  <view class="btn-primary flex1 rm" bindtap="remove">已掌握，移出</view>
+  <view class="nav {{pos + 1 < count ? '' : 'nav-off'}}" bindtap="next"><text class="nav-t">下一题</text></view>
+</view>

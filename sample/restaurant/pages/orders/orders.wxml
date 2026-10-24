@@ -1,0 +1,35 @@
+<view class="tabs">
+  <view wx:for="{{tabs}}" wx:key="k" class="tab {{tab === item.k ? 'tab-on' : ''}}" data-k="{{item.k}}" bindtap="onTab">
+    <text>{{item.t}}</text>
+    <view class="tab-line" wx:if="{{tab === item.k}}"></view>
+  </view>
+</view>
+<view class="list">
+  <text class="sub refreshed" wx:if="{{refreshedAt}}">{{refreshedAt}} 已更新 · 共 {{total}} 单</text>
+  <view wx:for="{{list}}" wx:key="id" class="card order" data-id="{{item.id}}" bindtap="open">
+    <view class="row between">
+      <view class="row">
+        <view class="tno"><text>{{item.table}}</text></view>
+        <text class="otime">{{item.time}}</text>
+      </view>
+      <text class="st st-{{item.status}}">{{item.statusText}}</text>
+    </view>
+    <view class="thumbs">
+      <view wx:for="{{item.thumbs}}" wx:for-item="t" wx:key="k" class="th" style="background: {{t.bg}};"><text class="th-t">{{t.ch}}</text></view>
+      <view class="col sum">
+        <text class="price">¥{{item.payText}}</text>
+        <text class="sub">共 {{item.count}} 份</text>
+      </view>
+    </view>
+    <text class="sub names">{{item.names}}</text>
+    <view class="ops">
+      <text class="left" wx:if="{{item.left}}">{{item.left}}</text>
+      <view wx:if="{{item.status === 'unpaid'}}" class="op op-main" data-id="{{item.id}}" catchtap="pay"><text>去支付</text></view>
+      <view wx:if="{{item.status === 'paid'}}" class="op" data-id="{{item.id}}" catchtap="open"><text>查看进度</text></view>
+      <view wx:if="{{item.status === 'done' || item.status === 'canceled'}}" class="op op-main" data-id="{{item.id}}" catchtap="again"><text>再来一单</text></view>
+    </view>
+  </view>
+  <view class="empty" wx:if="{{!list.length}}"><text class="sub">这里还没有订单</text></view>
+  <view class="more" wx:if="{{list.length}}"><text class="sub">{{hasMore ? '上拉加载更多' : '没有更多订单了'}}</text></view>
+  <view class="tab-space"></view>
+</view>

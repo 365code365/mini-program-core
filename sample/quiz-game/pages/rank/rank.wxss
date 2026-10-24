@@ -1,0 +1,37 @@
+page { background: #fff; }
+.head { height: 420rpx; background: linear-gradient(170deg, #7C6CFF, #3D2FD6); box-sizing: border-box; padding-top: 20rpx; }
+.tabs { justify-content: center; }
+.tab { padding: 10rpx 40rpx; border-radius: 30rpx; margin: 0 8rpx; }
+.tab-on { background: rgba(255, 255, 255, 0.95); }
+.tab-t { font-size: 28rpx; color: rgba(255, 255, 255, 0.85); font-weight: bold; }
+.tab-t-on { color: #4A3AE8; }
+.podium { justify-content: center; align-items: flex-end; height: 320rpx; margin-top: 16rpx; }
+.pd { width: 210rpx; align-items: center; }
+.pd-av { width: 84rpx; height: 84rpx; border-radius: 42rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; border: 4rpx solid #fff; }
+.pd-me { border-color: #FFD25A; }
+.pd-av-t { color: #fff; font-size: 34rpx; font-weight: bold; }
+.pd-n { color: #fff; font-size: 24rpx; margin-top: 8rpx; white-space: nowrap; }
+.pd-s { color: #FFD25A; font-size: 26rpx; font-weight: bold; margin-bottom: 8rpx; }
+.pd-base { width: 180rpx; border-radius: 16rpx 16rpx 0 0; background: rgba(255, 255, 255, 0.2); align-items: center; justify-content: center; }
+.pd-1 .pd-base { background: rgba(255, 255, 255, 0.32); }
+.pd-r { color: #fff; font-size: 44rpx; font-weight: bold; }
+.list-wrap { position: relative; }
+.list { background: #fff; }
+.r { height: 112rpx; padding: 0 32rpx; border-bottom: 1rpx solid #f3f2fa; box-sizing: border-box; }
+.r-me { background: #F1EEFF; }
+.r-rank { width: 64rpx; font-size: 30rpx; font-weight: bold; color: #8b8fa8; }
+.r-av { width: 68rpx; height: 68rpx; border-radius: 34rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.r-av-t { color: #fff; font-size: 28rpx; font-weight: bold; }
+.r-mid { margin-left: 20rpx; }
+.r-n { font-size: 28rpx; font-weight: bold; margin-bottom: 2rpx; }
+.r-s { font-size: 30rpx; font-weight: bold; color: #4A3AE8; }
+.list-end { padding: 28rpx 0 40rpx; text-align: center; }
+/* 自己的名次：滚出视口时贴在列表顶部（吸顶）或底部 */
+.pin { position: absolute; left: 0; right: 0; height: 112rpx; padding: 0 32rpx; background: linear-gradient(90deg, #6B5CFF, #4A3AE8); box-sizing: border-box; }
+.pin-top { top: 0; box-shadow: 0 6rpx 16rpx rgba(60, 40, 180, 0.25); }
+.pin-bottom { bottom: 0; box-shadow: 0 -6rpx 16rpx rgba(60, 40, 180, 0.25); }
+.pin-rank { color: #FFD25A; }
+.pin-n { color: #fff; }
+.pin-sub { color: rgba(255, 255, 255, 0.75); font-size: 22rpx; }
+.pin-s { color: #FFD25A; }
+.tabbar-space-s { height: calc(100rpx + env(safe-area-inset-bottom)); }

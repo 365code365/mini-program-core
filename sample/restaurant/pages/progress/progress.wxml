@@ -1,0 +1,50 @@
+<view class="page" wx:if="{{o}}">
+  <view class="head">
+    <text class="head-t">{{headline}}</text>
+    <text class="head-s" wx:if="{{eta}}">{{eta}}</text>
+    <text class="head-s" wx:if="{{o.cancelReason}}">{{o.cancelReason}}</text>
+    <view class="code-box" wx:if="{{o.status === 'paid' || o.status === 'done'}}">
+      <text class="sub">取餐码</text>
+      <text class="code {{canPickup ? 'code-on' : ''}}">{{o.no}}</text>
+      <text class="sub">桌号 {{o.table}} · {{o.dine}}</text>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{o.status === 'paid' || o.status === 'done'}}">
+    <view class="track"><view class="track-fill" style="width: {{fill}}%;"></view></view>
+    <view class="steps">
+      <view wx:for="{{steps}}" wx:key="t" class="step">
+        <view class="dot {{item.done ? 'dot-on' : ''}} {{item.cur ? 'dot-cur' : ''}}"></view>
+        <text class="step-t {{item.done ? 'step-on' : ''}}">{{item.t}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <text class="title">菜品明细</text>
+    <view wx:for="{{items}}" wx:key="key" class="it">
+      <view class="col it-info">
+        <text class="it-name">{{item.name}}</text>
+        <text class="sub" wx:if="{{item.spec}}">{{item.spec}}</text>
+      </view>
+      <text class="sub it-qty">x{{item.qty}}</text>
+      <text class="it-price">¥{{item.lineText}}</text>
+    </view>
+    <view class="line"><text class="sub">满减优惠</text><text class="brand">-¥{{o.discountText}}</text></view>
+    <view class="line"><text class="sub">实付</text><text class="price">¥{{o.payText}}</text></view>
+  </view>
+
+  <view class="card">
+    <view class="kv"><text class="sub">下单时间</text><text>{{o.time}}</text></view>
+    <view class="kv"><text class="sub">支付方式</text><text>{{o.payMethod}}</text></view>
+    <view class="kv"><text class="sub">餐具</text><text>{{o.tableware}}</text></view>
+    <view class="kv"><text class="sub">备注</text><text class="kv-v">{{o.remark}}</text></view>
+  </view>
+
+  <view class="actions">
+    <view wx:if="{{canPickup}}" class="btn" bindtap="pickup"><text>我已取餐</text></view>
+    <view wx:if="{{active && !canPickup}}" class="btn btn-ghost" bindtap="urge"><text>催一下后厨</text></view>
+    <view wx:if="{{o.status === 'unpaid'}}" class="btn" bindtap="goPay"><text>去支付</text></view>
+    <view wx:if="{{o.status === 'done' || o.status === 'canceled'}}" class="btn" bindtap="again"><text>再来一单</text></view>
+  </view>
+</view>

@@ -1,0 +1,16 @@
+.head { align-items: center; background: #fff; padding: 48rpx 0 40rpx; margin-bottom: 20rpx; }
+.big { width: 104rpx; height: 104rpx; border-radius: 52rpx; }
+.h-title { font-size: 30rpx; color: #374151; margin-top: 20rpx; }
+.h-amt { font-size: 64rpx; font-weight: bold; margin-top: 12rpx; }
+.status { margin-top: 16rpx; }
+.s-dot { width: 14rpx; height: 14rpx; border-radius: 7rpx; background: #22B07D; margin-right: 8rpx; }
+.s-t { font-size: 24rpx; color: #22B07D; }
+.kv { padding: 16rpx 0; align-items: flex-start; }
+.k { width: 160rpx; color: #8a8f99; font-size: 26rpx; }
+.v { font-size: 26rpx; text-align: right; }
+.note { margin-top: 20rpx; height: 80rpx; background: #f4f5f7; border-radius: 12rpx; padding: 0 20rpx; font-size: 28rpx; }
+.note-ops { margin-top: 20rpx; flex-wrap: wrap; }
+.ntag { padding: 6rpx 22rpx; border-radius: 22rpx; border: 2rpx solid #e5e7eb; margin: 0 14rpx 12rpx 0; }
+.ntag-t { font-size: 24rpx; color: #4b5563; }
+.save { margin-top: 20rpx; }
+.foot { justify-content: center; padding: 20rpx 0 60rpx; }

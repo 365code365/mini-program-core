@@ -1,0 +1,36 @@
+<view class="page">
+  <view class="head">
+    <view class="avatar av" style="background: {{c.color}};"><text class="av-text">{{c.initial}}</text></view>
+    <view class="h-main">
+      <view class="h-row">
+        <text class="h-name">{{c.name}}</text>
+        <view class="star-tag" wx:if="{{star}}"><text class="star-tag-text">星标</text></view>
+      </view>
+      <view class="h-line" bindtap="copyId"><text class="muted">微信号：{{c.wxid}}</text></view>
+      <text class="muted">地区：{{c.region}}</text>
+    </view>
+  </view>
+  <view class="card block">
+    <view class="cell" wx:if="{{c.remark}}"><text class="label">备注</text><text class="value">{{c.remark}}</text></view>
+    <view class="cell"><text class="label">个性签名</text><text class="value">{{c.sign}}</text></view>
+    <view class="cell cell-last">
+      <text class="label">朋友圈</text>
+      <view class="moments">
+        <view class="mo" wx:for="{{moments}}" wx:key="k" style="background: {{item.color}};"></view>
+      </view>
+    </view>
+  </view>
+  <view class="card block">
+    <view class="cell cell-last" bindtap="toggleStar" hover-class="hover">
+      <text class="label">设为星标朋友</text>
+      <view class="sw {{star ? 'sw-on' : ''}}"><view class="knob"></view></view>
+    </view>
+  </view>
+  <view class="card block">
+    <view class="cell cell-last"><text class="label">聊天记录</text><text class="value">{{msgCount}} 条</text></view>
+  </view>
+  <view class="actions">
+    <view class="btn btn-main" bindtap="sendMsg" hover-class="btn-hover"><text class="btn-main-text">发消息</text></view>
+    <view class="btn btn-sub" bindtap="call" hover-class="btn-hover"><text class="btn-sub-text">音视频通话</text></view>
+  </view>
+</view>

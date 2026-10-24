@@ -1,0 +1,60 @@
+<view class="page" wx:if="{{trip}}">
+  <view class="head" style="background: linear-gradient(150deg, {{trip.color}}, #1e78ff);">
+    <text class="head-t">{{trip.title}}</text>
+    <text class="head-s">{{trip.range}} · {{trip.days}} 天 · {{trip.people}} 人 · {{trip.type}}</text>
+  </view>
+
+  <view class="entries">
+    <view class="entry" bindtap="goBudget">
+      <view class="row between"><text class="entry-t">预算</text><view class="arrow"></view></view>
+      <view class="row entry-v-row"><text class="entry-v {{budget.over ? 'danger' : ''}}">¥{{budget.sumText}}</text><text class="sub"> / {{budget.totalText}}</text></view>
+      <view class="track"><view class="fill {{budget.over ? 'fill-over' : ''}}" style="width: {{budget.pct}}%;"></view></view>
+    </view>
+    <view class="entry" bindtap="goPacking">
+      <view class="row between"><text class="entry-t">行李清单</text><view class="arrow"></view></view>
+      <view class="row entry-v-row"><text class="entry-v">{{pack.done}}</text><text class="sub"> / {{pack.total}} 件已备好</text></view>
+      <view class="track"><view class="fill fill-green" style="width: {{pack.pct}}%;"></view></view>
+    </view>
+  </view>
+
+  <scroll-view class="tabs" scroll-x="{{true}}" scroll-into-view="{{intoTab}}">
+    <view class="tabs-in">
+      <view wx:for="{{dayTabs}}" wx:key="i" id="tab{{index}}" class="tab {{day === index ? 'tab-on' : ''}}" data-i="{{index}}" bindtap="onDay">
+        <text class="tab-t">{{item.label}}</text>
+        <text class="tab-d">{{item.date}}</text>
+        <view class="tab-n" wx:if="{{item.n}}"><text>{{item.n}}</text></view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="card day-card">
+    <view class="row between">
+      <text class="title">{{dayTabs[day].label}} · {{spots.length}} 个景点</text>
+      <text class="sub">预计游玩 {{dayHours}} 小时</text>
+    </view>
+    <view class="spot" wx:for="{{spots}}" wx:key="name">
+      <view class="no"><text class="no-t">{{item.no}}</text></view>
+      <view class="line" wx:if="{{!item.last}}"></view>
+      <view class="spot-info">
+        <text class="spot-t">{{item.name}}</text>
+        <text class="sub">{{item.type}} · {{item.hours}} 小时 · 门票 {{item.ticket}}</text>
+      </view>
+      <view class="ops">
+        <view class="op {{item.first ? 'op-off' : ''}}" data-i="{{item.idx}}" bindtap="up"><view class="chev chev-up"></view></view>
+        <view class="op {{item.last ? 'op-off' : ''}}" data-i="{{item.idx}}" bindtap="down"><view class="chev chev-down"></view></view>
+        <view class="op op-del" data-i="{{item.idx}}" bindtap="del"><view class="x1"></view><view class="x2"></view></view>
+      </view>
+    </view>
+    <view class="empty" wx:if="{{!spots.length}}"><text class="sub">这一天还没有安排，先添加几个想去的地方</text></view>
+    <view class="add" bindtap="addSpot">
+      <view class="plus"><view class="plus-h"></view><view class="plus-v2"></view></view>
+      <text class="add-t">添加景点到{{dayTabs[day].label}}</text>
+    </view>
+  </view>
+  <view class="space"></view>
+
+  <view class="undo" wx:if="{{undo}}">
+    <text class="undo-t">已移除「{{undo.name}}」</text>
+    <view class="undo-btn" bindtap="undoDel"><text>撤销</text></view>
+  </view>
+</view>

@@ -1,0 +1,23 @@
+<view class="head col">
+  <view class="glyph big" style="background: {{bill.type === 'in' ? '#E8541E' : '#4B5563'}}"><text class="glyph-t">{{bill.g}}</text></view>
+  <text class="h-title">{{bill.title}}</text>
+  <text class="h-amt nowrap {{bill.type === 'in' ? 'income' : ''}}">{{bill.amtText}}</text>
+  <view class="status row"><view class="s-dot"></view><text class="s-t">交易成功</text></view>
+</view>
+<view class="card">
+  <view class="kv row" wx:for="{{rows}}" wx:key="k"><text class="k">{{item.k}}</text><text class="v flex1">{{item.v}}</text></view>
+</view>
+<view class="card">
+  <view class="row between">
+    <text class="title">备注</text>
+    <text class="sub">{{note.length}}/30</text>
+  </view>
+  <input class="note" placeholder="给这笔交易加个备注，方便以后查找" value="{{note}}" maxlength="30" bindinput="onNote" />
+  <view class="row note-ops">
+    <view class="ntag" wx:for="{{noteTags}}" wx:key="*this" data-t="{{item}}" bindtap="useTag"><text class="ntag-t">{{item}}</text></view>
+  </view>
+  <view class="btn-primary save {{dirty ? '' : 'btn-disabled'}}" bindtap="save">保存备注</view>
+</view>
+<view class="foot row">
+  <text class="sub" bindtap="report">对这笔交易有疑问？</text>
+</view>

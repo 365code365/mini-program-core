@@ -1,0 +1,69 @@
+<view class="hero">
+  <view class="row">
+    <view class="avatar"><text class="avatar-t">王</text></view>
+    <view class="col flex1 me">
+      <text class="me-n">答题小将 · 王同学</text>
+      <view class="row"><view class="badge" style="background: {{tier.color}}"><text class="badge-t">{{tier.name}}</text></view><text class="me-s">总积分 {{total}}</text></view>
+    </view>
+    <view class="sign {{signed ? 'sign-done' : ''}}" bindtap="sign"><text class="sign-t">{{signed ? '已签到' : '签到领道具'}}</text></view>
+  </view>
+  <view class="lv">
+    <view class="row between"><text class="lv-t">段位进度</text><text class="lv-t">{{tierHint}}</text></view>
+    <view class="lv-track"><view class="lv-bar" style="width: {{tier.pct}}%"></view></view>
+  </view>
+</view>
+
+<view class="card energy">
+  <view class="row between">
+    <view class="row"><view class="bolt"><view class="bolt-a"></view><view class="bolt-b"></view></view><text class="title">体力 {{energy}}/{{max}}</text></view>
+    <text class="sub">{{energyHint}}</text>
+  </view>
+  <view class="cells row">
+    <view class="cell {{item ? 'cell-on' : ''}}" wx:for="{{cells}}" wx:key="index"></view>
+  </view>
+  <view class="row between e-foot">
+    <text class="sub">每 5 分钟恢复 1 点，开局消耗 1 点</text>
+    <text class="refill" bindtap="refill">补充体力</text>
+  </view>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="title">当前题库</text>
+    <view class="row" bindtap="pickCats"><text class="brand">更换</text><view class="chev chev-b"></view></view>
+  </view>
+  <view class="row chips">
+    <view class="chip" wx:for="{{catList}}" wx:key="k" style="background: {{item.bg}}"><text class="chip-t" style="color: {{item.c}}">{{item.t}}</text></view>
+  </view>
+  <text class="sub">共 {{qCount}} 道题，每局随机 10 题，每题限时 10 秒</text>
+</view>
+
+<view class="start-wrap">
+  <view class="btn-primary start {{energy ? '' : 'btn-disabled'}}" hover-class="start-down" bindtap="start">开始答题</view>
+  <text class="cost">消耗 1 点体力</text>
+</view>
+
+<view class="card">
+  <text class="title">我的道具</text>
+  <view class="row props">
+    <view class="prop row flex1">
+      <view class="glyph" style="background: #7C6CFF"><text class="glyph-t">半</text></view>
+      <view class="col prop-m"><text class="prop-n">50:50</text><text class="sub">去掉两个错误选项</text></view>
+      <text class="prop-c">×{{props.half}}</text>
+    </view>
+  </view>
+  <view class="row props">
+    <view class="prop row flex1">
+      <view class="glyph" style="background: #F59E0B"><text class="glyph-t">跳</text></view>
+      <view class="col prop-m"><text class="prop-n">跳过</text><text class="sub">跳过当前题，不扣连对</text></view>
+      <text class="prop-c">×{{props.skip}}</text>
+    </view>
+  </view>
+</view>
+
+<view class="card row stats">
+  <view class="col flex1 st"><text class="st-v">{{games}}</text><text class="sub">总局数</text></view>
+  <view class="col flex1 st"><text class="st-v">{{best}}</text><text class="sub">最高分</text></view>
+  <view class="col flex1 st"><text class="st-v">{{wrongCount}}</text><text class="sub">错题</text></view>
+</view>
+<view class="tabbar-space"></view>

@@ -1,0 +1,32 @@
+{
+  "pages": [
+    "pages/trips/trips",
+    "pages/explore/explore",
+    "pages/mine/mine",
+    "pages/create/create",
+    "pages/detail/detail",
+    "pages/spots/spots",
+    "pages/budget/budget",
+    "pages/packing/packing"
+  ],
+  "window": {
+    "navigationBarTitleText": "途简行程",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f4f6fa"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#a0a0a8",
+    "selectedColor": "#1e78ff",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/trips/trips", "text": "行程", "iconPath": "images/tab/trips-off.png", "selectedIconPath": "images/tab/trips-on.png" },
+      { "pagePath": "pages/explore/explore", "text": "灵感", "iconPath": "images/tab/explore-off.png", "selectedIconPath": "images/tab/explore-on.png" },
+      { "pagePath": "pages/mine/mine", "text": "我的", "iconPath": "images/tab/mine-off.png", "selectedIconPath": "images/tab/mine-on.png" }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

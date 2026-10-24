@@ -1,0 +1,39 @@
+.page { padding-bottom: 140rpx; }
+.top { display: flex; flex-direction: row; align-items: center; padding: 16rpx 24rpx 20rpx; background: #f5f6fa; }
+.search { flex: 1; height: 72rpx; border-radius: 36rpx; background: #ffffff; display: flex; flex-direction: row; align-items: center; padding: 0 24rpx; }
+.glass { position: relative; width: 30rpx; height: 30rpx; margin-right: 14rpx; }
+.glass-ring { position: absolute; left: 0; top: 0; width: 18rpx; height: 18rpx; border: 4rpx solid #a9aeb8; border-radius: 50%; }
+.glass-bar { position: absolute; left: 20rpx; top: 21rpx; width: 10rpx; height: 4rpx; background: #a9aeb8; transform: rotate(45deg); }
+.search-input { flex: 1; height: 72rpx; font-size: 26rpx; }
+.ph { color: #a9aeb8; }
+.clear { position: relative; width: 36rpx; height: 36rpx; border-radius: 18rpx; background: #c9cdd4; }
+.x1, .x2 { position: absolute; left: 9rpx; top: 16rpx; width: 18rpx; height: 4rpx; background: #ffffff; }
+.x1 { transform: rotate(45deg); }
+.x2 { transform: rotate(-45deg); }
+.read-all { margin-left: 20rpx; height: 72rpx; padding: 0 24rpx; border-radius: 36rpx; background: #eef1ff; display: flex; flex-direction: row; align-items: center; }
+.read-all-text { color: #4F6BFF; font-size: 24rpx; white-space: nowrap; }
+.read-all-off { background: #eceef2; }
+.read-all-off .read-all-text { color: #a9aeb8; }
+.list { margin: 0 24rpx; background: #ffffff; border-radius: 24rpx; }
+.item { display: flex; flex-direction: row; align-items: center; padding: 26rpx 28rpx; border-bottom: 1rpx solid #f0f1f4; }
+.pinned { background: #f7f8fc; }
+.item-hover { background: #eef0f5; }
+.av-wrap { position: relative; width: 96rpx; height: 96rpx; margin-right: 24rpx; }
+.av { width: 96rpx; height: 96rpx; border-radius: 24rpx; }
+.av-text { color: #ffffff; font-size: 38rpx; font-weight: bold; }
+.badge { position: absolute; top: -10rpx; right: -10rpx; width: 36rpx; height: 36rpx; border-radius: 18rpx; background: #f53f3f; border: 3rpx solid #ffffff; display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.badge-wide { width: 52rpx; right: -22rpx; }
+.badge-text { color: #ffffff; font-size: 20rpx; white-space: nowrap; }
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.row1 { display: flex; flex-direction: row; align-items: center; justify-content: space-between; }
+.name { font-size: 30rpx; font-weight: bold; color: #1d2129; }
+.time { font-size: 22rpx; color: #a9aeb8; white-space: nowrap; }
+.row2 { display: flex; flex-direction: row; align-items: center; margin-top: 10rpx; }
+.last { flex: 1; font-size: 26rpx; color: #86909c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pin-tag { margin-left: 12rpx; padding: 2rpx 12rpx; border-radius: 8rpx; background: #eef1ff; }
+.pin-text { font-size: 20rpx; color: #4F6BFF; }
+.empty { display: flex; flex-direction: column; align-items: center; padding: 100rpx 0; }
+.empty-bubble { width: 120rpx; height: 90rpx; border-radius: 40rpx; background: #e5e8ff; margin-bottom: 24rpx; }
+.empty-text { color: #86909c; font-size: 26rpx; }
+.tip { display: flex; flex-direction: row; justify-content: center; padding: 28rpx 0; }
+.tip-text { color: #c0c4cc; font-size: 22rpx; }

@@ -1,0 +1,4 @@
+page { background: #f5f6fa; color: #1d2129; font-size: 28rpx; }
+.avatar { display: flex; flex-direction: row; align-items: center; justify-content: center; color: #ffffff; font-weight: bold; }
+.muted { color: #86909c; font-size: 24rpx; }
+.card { background: #ffffff; border-radius: 20rpx; }

@@ -1,0 +1,28 @@
+{
+  "pages": [
+    "pages/sessions/sessions",
+    "pages/contacts/contacts",
+    "pages/me/me",
+    "pages/chat/chat",
+    "pages/contact/contact",
+    "pages/profile/profile"
+  ],
+  "window": {
+    "navigationBarTitleText": "轻聊",
+    "navigationBarBackgroundColor": "#f5f6fa",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f5f6fa"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#9aa0a6",
+    "selectedColor": "#4F6BFF",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/sessions/sessions", "text": "消息", "iconPath": "images/tab-chats.png", "selectedIconPath": "images/tab-chats-on.png" },
+      { "pagePath": "pages/contacts/contacts", "text": "通讯录", "iconPath": "images/tab-contacts.png", "selectedIconPath": "images/tab-contacts-on.png" },
+      { "pagePath": "pages/me/me", "text": "我", "iconPath": "images/tab-me.png", "selectedIconPath": "images/tab-me-on.png" }
+    ]
+  }
+}

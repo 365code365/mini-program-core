@@ -1,0 +1,33 @@
+<view class="top">
+  <view class="search">
+    <view class="lens"><view class="lens-c"></view><view class="lens-h"></view></view>
+    <input class="search-in" value="{{kw}}" placeholder="搜索{{city}}的景点" bindinput="onKw" />
+    <text class="sub" wx:if="{{kw}}" bindtap="clearKw">取消</text>
+  </view>
+  <scroll-view scroll-x="{{true}}" class="types">
+    <view class="types-in">
+      <view wx:for="{{types}}" wx:key="*this" class="ty {{type === item ? 'ty-on' : ''}}" data-t="{{item}}" bindtap="onType"><text>{{item}}</text></view>
+    </view>
+  </scroll-view>
+</view>
+<view class="list">
+  <view class="custom">
+    <input class="custom-in" value="{{custom}}" placeholder="没找到？输入自定义地点" bindinput="onCustom" bindconfirm="addCustom" />
+    <view class="custom-btn {{custom ? '' : 'custom-off'}}" bindtap="addCustom"><text>添加</text></view>
+  </view>
+  <view wx:for="{{list}}" wx:key="name" class="sp {{item.takenDay ? 'sp-taken' : ''}}" data-name="{{item.name}}" bindtap="toggle">
+    <view class="sp-ic"><text class="sp-ic-t">{{item.type}}</text></view>
+    <view class="sp-info">
+      <text class="sp-t">{{item.name}}</text>
+      <text class="sub">建议 {{item.hours}} 小时 · 门票 {{item.ticket}}</text>
+    </view>
+    <text class="sub" wx:if="{{item.takenDay}}">已在第{{item.takenDay}}天</text>
+    <view wx:else class="check {{item.on ? 'check-on' : ''}}"><view class="tick" wx:if="{{item.on}}"></view></view>
+  </view>
+  <view class="empty" wx:if="{{!list.length}}"><text class="sub">没有匹配的景点，可以在上方添加自定义地点</text></view>
+  <view class="space"></view>
+</view>
+<view class="bottom">
+  <text class="sub">已选 <text class="brand">{{count}}</text> 个</text>
+  <view class="btn ok {{count ? '' : 'btn-disabled'}}" bindtap="confirm"><text>加入第{{day}}天</text></view>
+</view>

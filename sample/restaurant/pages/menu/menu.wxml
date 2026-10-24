@@ -1,0 +1,151 @@
+<view class="top">
+  <view class="row">
+    <view class="tbadge"><text class="tbadge-t">{{table || '未选桌'}}</text></view>
+    <view class="col">
+      <text class="top-t">禾味食堂 · 二楼堂食</text>
+      <text class="sub">{{table ? '菜品现点现做，出餐后凭取餐码取餐' : '请先扫码或输入桌号'}}</text>
+    </view>
+  </view>
+  <view class="change" bindtap="changeTable"><text>换桌</text></view>
+</view>
+
+<view class="body" style="height: {{bodyHeight}}px;">
+  <scroll-view class="cats" scroll-y="{{true}}" style="height: {{bodyHeight}}px;">
+    <view wx:for="{{cats}}" wx:key="id" class="cat {{activeCat === index ? 'cat-on' : ''}}" data-i="{{index}}" bindtap="onCat">
+      <view class="cat-bar" wx:if="{{activeCat === index}}"></view>
+      <text class="cat-t">{{item.name}}</text>
+    </view>
+    <view class="cat-tail"></view>
+  </scroll-view>
+  <scroll-view class="dishes" scroll-y="{{true}}" style="height: {{bodyHeight}}px;" scroll-into-view="{{intoView}}" bindscroll="onDishScroll">
+    <view wx:for="{{sections}}" wx:for-item="sec" wx:key="id" id="sec-{{sec.id}}">
+      <view class="sec-head"><text class="sec-t">{{sec.name}}</text></view>
+      <view wx:for="{{sec.dishes}}" wx:key="id" class="dish">
+        <view class="thumb" style="background: {{item.bg}};">
+          <text class="thumb-t">{{item.ch}}</text>
+          <view class="dish-tag" wx:if="{{item.tag}}"><text>{{item.tag}}</text></view>
+        </view>
+        <view class="dish-info">
+          <text class="dish-name">{{item.name}}</text>
+          <text class="dish-desc">{{item.desc}}</text>
+          <text class="dish-sales">月售 {{item.sales}}</text>
+          <view class="dish-foot">
+            <view class="row"><text class="yen">¥</text><text class="dish-price">{{item.priceText}}</text></view>
+            <view wx:if="{{item.spec}}" class="spec-btn" data-id="{{item.id}}" bindtap="openSpecTap">
+              <text class="spec-btn-t">选规格</text>
+              <view class="dot-badge" wx:if="{{counts[item.id]}}"><text class="dot-badge-t">{{counts[item.id]}}</text></view>
+            </view>
+            <view wx:else class="stepper">
+              <view wx:if="{{counts[item.id]}}" class="step-btn step-minus" data-id="{{item.id}}" catchtap="minus"><view class="bar-h"></view></view>
+              <text wx:if="{{counts[item.id]}}" class="step-num">{{counts[item.id]}}</text>
+              <view class="step-btn" data-id="{{item.id}}" catchtap="plus"><view class="bar-h"></view><view class="plus-v"></view></view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+    <view class="dish-tail"><text class="sub">— 已经到底啦 —</text></view>
+  </scroll-view>
+</view>
+
+<!-- 购物车抽屉（第一层弹层） -->
+<!-- 面板嵌在遮罩里并 catchtap：遮罩与面板做成兄弟 fixed 节点时，引擎里点面板会连带触发遮罩的 tap -->
+<view class="mask cart-mask" wx:if="{{showCart}}" bindtap="closeCart">
+<view class="drawer" catchtap="noop">
+  <view class="drawer-head">
+    <text class="title">已选菜品</text>
+    <view class="clear" bindtap="askClear"><view class="bin"></view><text class="sub">清空</text></view>
+  </view>
+  <scroll-view scroll-y="{{true}}" class="drawer-list">
+    <view wx:for="{{cart}}" wx:key="key" class="ci">
+      <view class="ci-thumb" style="background: {{item.bg}};"><text class="ci-thumb-t">{{item.ch}}</text></view>
+      <view class="ci-info">
+        <text class="ci-name">{{item.name}}</text>
+        <text class="sub" wx:if="{{item.spec}}">{{item.spec}}</text>
+        <text class="price ci-price">¥{{item.lineText}}</text>
+      </view>
+      <view class="stepper">
+        <view class="step-btn step-minus" data-key="{{item.key}}" bindtap="cartMinus"><view class="bar-h"></view></view>
+        <text class="step-num">{{item.qty}}</text>
+        <view class="step-btn" data-key="{{item.key}}" bindtap="cartPlus"><view class="bar-h"></view><view class="plus-v"></view></view>
+      </view>
+    </view>
+  </scroll-view>
+</view>
+</view>
+
+<!-- 底部：满减进度 + 购物车条 -->
+<view class="cartbar-wrap">
+  <view class="promo">
+    <view class="promo-track"><view class="promo-fill" style="width: {{sum.progress}}%;"></view>
+      <view class="promo-mark m30"></view>
+    </view>
+    <text class="promo-t">{{sum.tip}}</text>
+  </view>
+  <view class="cartbar">
+    <view class="bag {{sum.count ? 'bag-on' : ''}}" bindtap="toggleCart">
+      <view class="bag-handle"></view><view class="bag-body"></view>
+      <view class="bag-badge" wx:if="{{sum.count}}"><text class="bag-badge-t">{{sum.count}}</text></view>
+    </view>
+    <view class="cb-info" bindtap="toggleCart">
+      <view class="row" wx:if="{{sum.count}}">
+        <text class="cb-pay">¥{{sum.payText}}</text>
+        <text class="cb-origin" wx:if="{{sum.discount}}">已减¥{{sum.discountText}}</text>
+      </view>
+      <text class="cb-empty" wx:else>购物车是空的</text>
+    </view>
+    <view class="cb-go {{sum.count ? '' : 'cb-go-off'}}" bindtap="checkout"><text>去结算</text></view>
+  </view>
+</view>
+
+<!-- 第二层：清空确认 -->
+<view class="mask modal-mask" wx:if="{{showClear}}" catchtap="noop">
+  <view class="modal">
+    <text class="modal-t">清空购物车？</text>
+    <text class="modal-c">已选的 {{sum.count}} 份菜品将全部移除</text>
+    <view class="modal-btns">
+      <view class="modal-btn" bindtap="cancelClear"><text>再想想</text></view>
+      <view class="modal-btn modal-ok" bindtap="doClear"><text>清空</text></view>
+    </view>
+  </view>
+</view>
+
+<!-- 规格弹层 -->
+<view class="mask spec-mask" wx:if="{{spec}}" bindtap="closeSpec">
+<view class="spec" catchtap="noop">
+  <view class="spec-head">
+    <view class="spec-thumb" style="background: {{spec.bg}};"><text class="thumb-t">{{spec.ch}}</text></view>
+    <view class="col spec-hinfo">
+      <text class="title">{{spec.name}}</text>
+      <text class="sub">{{spec.desc}}</text>
+    </view>
+    <view class="x" bindtap="closeSpec"><view class="x1"></view><view class="x2"></view></view>
+  </view>
+  <text class="spec-label">份量</text>
+  <view class="opts">
+    <view wx:for="{{sizes}}" wx:key="id" class="opt {{sizeId === item.id ? 'opt-on' : ''}}" data-id="{{item.id}}" bindtap="onSize">
+      <text>{{item.label}}</text>
+    </view>
+  </view>
+  <text class="spec-label">辣度</text>
+  <view class="opts">
+    <view wx:for="{{spicyList}}" wx:key="*this" class="opt {{spicy === item ? 'opt-on' : ''}}" data-v="{{item}}" bindtap="onSpicy"><text>{{item}}</text></view>
+  </view>
+  <text class="spec-label">加料（可多选）</text>
+  <view class="opts">
+    <view wx:for="{{extras}}" wx:key="id" class="opt {{extrasOn[item.id] ? 'opt-on' : ''}}" data-id="{{item.id}}" bindtap="onExtra">
+      <text>{{item.label}}</text>
+    </view>
+  </view>
+  <view class="spec-sel"><text class="sub">已选：{{specDesc}}</text></view>
+  <view class="spec-foot">
+    <view class="row"><text class="yen">¥</text><text class="spec-price">{{specPrice}}</text></view>
+    <view class="stepper">
+      <view class="step-btn step-minus {{specQty > 1 ? '' : 'step-off'}}" bindtap="specMinus"><view class="bar-h"></view></view>
+      <text class="step-num">{{specQty}}</text>
+      <view class="step-btn" bindtap="specPlus"><view class="bar-h"></view><view class="plus-v"></view></view>
+    </view>
+  </view>
+  <view class="btn spec-add" bindtap="addSpec"><text>加入购物车</text></view>
+</view>
+</view>

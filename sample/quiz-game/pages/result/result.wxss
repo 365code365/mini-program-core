@@ -1,0 +1,24 @@
+.hero { background: linear-gradient(160deg, #7C6CFF, #3D2FD6); align-items: center; padding: 56rpx 0 48rpx; margin-bottom: 24rpx; position: relative; }
+.record { position: absolute; right: 32rpx; top: 32rpx; background: linear-gradient(90deg, #FFD25A, #FF9F43); border-radius: 30rpx; padding: 8rpx 22rpx; animation: pulse 1.2s ease-in-out infinite; }
+.record-t { color: #5a2d00; font-size: 26rpx; font-weight: bold; }
+@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.12); } 100% { transform: scale(1); } }
+.h-k { color: rgba(255, 255, 255, 0.8); font-size: 26rpx; }
+.h-score { color: #fff; font-size: 120rpx; font-weight: bold; margin: 8rpx 0; }
+.h-sub { color: rgba(255, 255, 255, 0.85); font-size: 24rpx; }
+.stars { margin-top: 24rpx; }
+.star { width: 36rpx; height: 36rpx; background: rgba(255, 255, 255, 0.25); transform: rotate(45deg); margin: 0 18rpx; border-radius: 6rpx; }
+.star-on { background: #FFD25A; }
+.grid { display: flex; flex-direction: row; flex-wrap: wrap; padding: 12rpx 0; }
+.cell { width: 50%; align-items: center; padding: 22rpx 0; }
+.cell-v { font-size: 40rpx; font-weight: bold; color: #1f2140; margin-bottom: 4rpx; }
+.tier { margin: 22rpx 0 16rpx; }
+.badge { border-radius: 20rpx; padding: 6rpx 18rpx; margin-right: 16rpx; }
+.badge-t { color: #fff; font-size: 24rpx; font-weight: bold; }
+.track { height: 14rpx; border-radius: 7rpx; background: #efeef8; }
+.bar { height: 14rpx; border-radius: 7rpx; background: linear-gradient(90deg, #7C6CFF, #4A3AE8); }
+.up { display: block; color: #F59E0B; font-weight: bold; font-size: 26rpx; margin-top: 14rpx; }
+.w { padding: 20rpx 0; border-bottom: 1rpx solid #f1f0f8; }
+.w-t { font-size: 26rpx; color: #374151; }
+.ops { padding: 8rpx 32rpx 60rpx; }
+.ops2 { margin-top: 24rpx; }
+.gap { width: 24rpx; }

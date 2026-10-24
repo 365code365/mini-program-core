@@ -1,0 +1,31 @@
+.page { padding: 20rpx 0 80rpx; }
+.tip { margin: 0 24rpx 20rpx; padding: 16rpx 24rpx; border-radius: 14rpx; background: #fff3ed; display: flex; flex-direction: row; align-items: center; }
+.tip-text { flex: 1; font-size: 24rpx; color: #FF6B3D; }
+.tip-clear { padding: 4rpx 16rpx; border-radius: 20rpx; background: #ffffff; }
+.tip-clear-text { font-size: 22rpx; color: #FF6B3D; }
+.card { background: #ffffff; border-radius: 24rpx; margin: 0 24rpx 20rpx; padding: 8rpx 28rpx; }
+.title-row { display: flex; flex-direction: row; align-items: center; border-bottom: 1rpx solid #f0f1f4; }
+.title-input { flex: 1; height: 100rpx; font-size: 32rpx; font-weight: bold; }
+.ph { color: #c0c4cc; font-weight: normal; }
+.count { font-size: 22rpx; color: #a9aeb8; white-space: nowrap; }
+.over { color: #F53F3F; }
+.err { padding: 10rpx 0; }
+.err-text { font-size: 22rpx; color: #F53F3F; }
+.body { width: 100%; height: 320rpx; margin-top: 20rpx; font-size: 28rpx; line-height: 44rpx; }
+.body-foot { display: flex; flex-direction: row; align-items: center; padding: 12rpx 0 16rpx; }
+.space { flex: 1; }
+.cell { display: flex; flex-direction: row; align-items: center; height: 96rpx; }
+.label { font-size: 28rpx; font-weight: bold; width: 140rpx; }
+.value { flex: 1; font-size: 28rpx; color: #1d2129; }
+.value-ph { color: #a9aeb8; }
+.arrow { width: 16rpx; height: 16rpx; border-top: 3rpx solid #c9cdd4; border-right: 3rpx solid #c9cdd4; transform: rotate(45deg); }
+.tag-head { display: flex; flex-direction: row; align-items: center; justify-content: space-between; padding: 22rpx 0 10rpx; }
+.tags { display: flex; flex-direction: row; flex-wrap: wrap; padding-bottom: 16rpx; }
+.tag { padding: 10rpx 22rpx; border-radius: 28rpx; background: #f5f6f8; margin: 0 16rpx 16rpx 0; border: 2rpx solid #f5f6f8; }
+.tag-on { background: #fff3ed; border-color: #FF6B3D; }
+.tag-text { font-size: 24rpx; color: #4e5969; }
+.tag-text-on { color: #FF6B3D; }
+.submit { margin: 40rpx 24rpx 0; height: 96rpx; border-radius: 48rpx; background: #FF6B3D; display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.submit-off { background: #ffc4b0; }
+.submit-hover { opacity: 0.85; }
+.submit-text { color: #ffffff; font-size: 30rpx; font-weight: bold; }

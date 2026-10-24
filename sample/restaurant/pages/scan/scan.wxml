@@ -1,0 +1,77 @@
+<view class="page">
+  <view class="hero">
+    <view class="row between">
+      <view class="col">
+        <text class="hero-title">禾味食堂 · 二楼</text>
+        <text class="hero-sub">营业中 10:30-14:00 / 17:00-20:30</text>
+      </view>
+      <view class="hero-badge"><text class="hero-badge-t">堂食</text></view>
+    </view>
+    <view class="seat-card" wx:if="{{table}}">
+      <view class="col">
+        <text class="sub">当前就餐桌号</text>
+        <text class="seat-no">{{table}}</text>
+      </view>
+      <view class="btn seat-go" bindtap="goMenu"><text>继续点餐</text></view>
+    </view>
+    <view class="scan-btn" bindtap="onScan">
+      <view class="scan-frame">
+        <view class="corner c1"></view><view class="corner c2"></view>
+        <view class="corner c3"></view><view class="corner c4"></view>
+        <view class="scan-dot"></view>
+      </view>
+      <view class="col">
+        <text class="scan-t">扫桌贴二维码点餐</text>
+        <text class="scan-s">对准桌角二维码，自动识别桌号</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <text class="title">手动输入桌号</text>
+    <view class="input-row">
+      <input class="input" value="{{input}}" placeholder="如 A05" maxlength="3" bindinput="onInput" bindconfirm="onConfirmInput" />
+      <view class="btn small-btn" bindtap="onConfirmInput"><text>校验</text></view>
+    </view>
+    <text class="error" wx:if="{{error}}">{{error}}</text>
+    <text class="sub tip" wx:else>区号 A 大厅 / B 窗边 / C 包间，后跟两位数字</text>
+  </view>
+
+  <view class="card">
+    <view class="row between">
+      <text class="title">选择空闲桌台</text>
+      <view class="legend row">
+        <view class="lg lg-free"></view><text class="sub">空闲</text>
+        <view class="lg lg-busy"></view><text class="sub">占用</text>
+      </view>
+    </view>
+    <view class="zones">
+      <view wx:for="{{zones}}" wx:key="id" class="zone {{zoneIdx === index ? 'zone-on' : ''}}" data-i="{{index}}" bindtap="onZone">
+        <text>{{item.name}} {{item.id}}</text>
+      </view>
+    </view>
+    <view class="grid">
+      <view wx:for="{{tables}}" wx:key="code" class="tb {{item.busy ? 'tb-busy' : ''}} {{selected === item.code ? 'tb-on' : ''}}" data-code="{{item.code}}" bindtap="onPick">
+        <text class="tb-code">{{item.code}}</text>
+        <text class="tb-seat">{{item.busy ? '用餐中' : item.seats + '人桌'}}</text>
+      </view>
+    </view>
+  </view>
+  <view class="foot-space"></view>
+
+  <view class="bottom">
+    <view class="btn {{canConfirm ? '' : 'btn-disabled'}}" bindtap="onSeat">
+      <text>{{canConfirm ? '确认入座 ' + selected + '，开始点餐' : '请选择或输入桌号'}}</text>
+    </view>
+  </view>
+
+  <view class="scan-layer" wx:if="{{scanning}}">
+    <view class="scan-box">
+      <view class="corner c1"></view><view class="corner c2"></view>
+      <view class="corner c3"></view><view class="corner c4"></view>
+      <view class="scan-line"></view>
+    </view>
+    <text class="scan-hint">正在识别桌贴二维码…</text>
+    <view class="scan-cancel" bindtap="cancelScan"><text>取消</text></view>
+  </view>
+</view>

@@ -1,0 +1,27 @@
+/* 引擎里 display:flex 不写 flex-direction 时按 column 排，下面一律写明方向 */
+page { background: #f4f5f7; color: #1f2329; font-size: 28rpx; }
+.row { display: flex; flex-direction: row; align-items: center; }
+.col { display: flex; flex-direction: column; }
+.between { justify-content: space-between; }
+.flex1 { flex: 1; }
+.card { background: #fff; border-radius: 20rpx; margin: 0 24rpx 20rpx; padding: 28rpx; box-shadow: 0 4rpx 20rpx rgba(120, 20, 30, 0.04); }
+.title { font-size: 32rpx; font-weight: bold; }
+.sub { font-size: 24rpx; color: #8a8f99; }
+.red { color: #D7263D; }
+.income { color: #E8541E; }
+.btn-primary { background: linear-gradient(90deg, #EE4B4B, #C8162E); color: #fff; font-size: 32rpx; font-weight: bold; height: 92rpx; line-height: 92rpx; text-align: center; border-radius: 46rpx; }
+.btn-disabled { background: #f0b3b9; }
+.btn-ghost { border: 2rpx solid #D7263D; color: #D7263D; font-size: 28rpx; height: 84rpx; line-height: 84rpx; text-align: center; border-radius: 42rpx; }
+.tag { font-size: 20rpx; padding: 4rpx 12rpx; border-radius: 6rpx; color: #D7263D; background: #fdecee; margin-right: 12rpx; }
+.tag-gray { color: #6b7280; background: #f1f2f4; }
+/* 右箭头用 border 画：引擎字体里 › 会落到错误字形 */
+.chev { width: 14rpx; height: 14rpx; border-top: 3rpx solid #c4c7cc; border-right: 3rpx solid #c4c7cc; transform: rotate(45deg); margin-left: 12rpx; }
+.glyph { width: 80rpx; height: 80rpx; border-radius: 40rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.glyph-t { color: #fff; font-size: 32rpx; font-weight: bold; }
+/* 引擎把 input padding 全 0 当成没写，套默认内边距，所以写 1rpx */
+input { padding: 0 0 0 1rpx; }
+.tabbar-space { height: calc(130rpx + env(safe-area-inset-bottom)); }
+.nowrap { white-space: nowrap; }
+.empty { padding: 120rpx 0; display: flex; flex-direction: column; align-items: center; }
+.empty-ring { width: 120rpx; height: 120rpx; border-radius: 60rpx; border: 6rpx solid #e5e7eb; margin-bottom: 24rpx; }
+.mask { position: fixed; left: 0; top: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.45); }

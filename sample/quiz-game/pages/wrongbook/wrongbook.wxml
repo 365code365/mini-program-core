@@ -1,0 +1,43 @@
+<view class="head row between">
+  <view class="col">
+    <text class="title">错题本</text>
+    <text class="sub">共 {{all}} 道，点开看解析，掌握了就移出</text>
+  </view>
+  <text class="clear" wx:if="{{all}}" bindtap="clearAll">清空</text>
+</view>
+<scroll-view scroll-x class="filters">
+  <view class="row frow">
+    <view class="f {{cat === item.k ? 'f-on' : ''}}" wx:for="{{filters}}" wx:key="k" data-k="{{item.k}}" bindtap="onFilter">
+      <text class="f-t {{cat === item.k ? 'f-t-on' : ''}}">{{item.t}} {{item.n}}</text>
+    </view>
+  </view>
+</scroll-view>
+
+<view class="card w" wx:for="{{list}}" wx:key="id">
+  <view class="row w-head" data-id="{{item.id}}" bindtap="toggle">
+    <view class="col flex1">
+      <view class="row w-meta">
+        <view class="cat" style="background: {{item.bg}}"><text class="cat-t" style="color: {{item.c}}">{{item.catName}}</text></view>
+        <text class="sub">错 {{item.times}} 次 · {{item.when}}</text>
+      </view>
+      <text class="w-q">{{item.q}}</text>
+    </view>
+    <view class="fold {{item.open ? 'fold-open' : ''}}"></view>
+  </view>
+  <view class="w-body" wx:if="{{item.open}}">
+    <view class="ans row"><text class="ans-k">正确答案</text><text class="ans-ok flex1">{{item.right}}</text></view>
+    <view class="ans row"><text class="ans-k">我的答案</text><text class="ans-no flex1">{{item.mine}}</text></view>
+    <view class="exp"><text class="exp-t">解析：{{item.exp}}</text></view>
+    <view class="row w-ops">
+      <view class="op op-ghost" data-id="{{item.id}}" bindtap="detail"><text class="op-t op-t-ghost">逐题复习</text></view>
+      <view class="op" data-id="{{item.id}}" bindtap="remove"><text class="op-t">已掌握，移除</text></view>
+    </view>
+  </view>
+</view>
+
+<view class="empty" wx:if="{{!list.length}}">
+  <view class="empty-ring"></view>
+  <text class="sub">{{all ? '这个分类没有错题' : '错题本空空如也，去答一局吧'}}</text>
+  <view class="btn-ghost go" wx:if="{{!all}}" bindtap="goHome">去答题</view>
+</view>
+<view class="tabbar-space"></view>

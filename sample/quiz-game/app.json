@@ -1,0 +1,29 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/rank/rank",
+    "pages/wrongbook/wrongbook",
+    "pages/category/category",
+    "pages/quiz/quiz",
+    "pages/result/result",
+    "pages/wrong-detail/wrong-detail"
+  ],
+  "window": {
+    "navigationBarTitleText": "答题王者",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f4f3fb"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#9aa0a6",
+    "selectedColor": "#5B4BF5",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "首页", "iconPath": "images/tab-home.png", "selectedIconPath": "images/tab-home-on.png" },
+      { "pagePath": "pages/rank/rank", "text": "排行榜", "iconPath": "images/tab-rank.png", "selectedIconPath": "images/tab-rank-on.png" },
+      { "pagePath": "pages/wrongbook/wrongbook", "text": "错题本", "iconPath": "images/tab-book.png", "selectedIconPath": "images/tab-book-on.png" }
+    ]
+  }
+}

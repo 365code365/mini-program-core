@@ -1,0 +1,11 @@
+.tags { display: flex; flex-direction: row; padding: 24rpx 24rpx 8rpx 24rpx; }
+.tg { flex-shrink: 0; white-space: nowrap; padding: 10rpx 22rpx; border-radius: 30rpx; background: #ffffff; margin-right: 12rpx; font-size: 26rpx; color: #4e5566; }
+.tg-on { background: #1e78ff; color: #ffffff; font-weight: bold; }
+.grid { display: flex; flex-direction: row; flex-wrap: wrap; padding: 0 12rpx; }
+.city { width: 339rpx; margin: 16rpx 12rpx 0 12rpx; background: #ffffff; border-radius: 20rpx; padding-bottom: 20rpx; }
+.cover { position: relative; height: 200rpx; border-radius: 20rpx 20rpx 0 0; padding: 24rpx; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-end; }
+.c-name { color: #ffffff; font-size: 40rpx; font-weight: bold; }
+.c-prov { color: rgba(255,255,255,0.85); font-size: 22rpx; margin-top: 4rpx; }
+.planned { position: absolute; right: 16rpx; top: 16rpx; background: rgba(255,255,255,0.9); color: #1e78ff; font-size: 20rpx; border-radius: 8rpx; padding: 2rpx 10rpx; }
+.c-desc { display: block; font-size: 24rpx; color: #4e5566; margin: 16rpx 20rpx 0 20rpx; }
+.tab-space { height: 140rpx; }

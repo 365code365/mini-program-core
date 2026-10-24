@@ -1,0 +1,15 @@
+<view class="page">
+  <view class="head"><text class="h-title">发现圈子</text><text class="muted">已加入 {{joinedCount}} 个</text></view>
+  <view class="c" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="open" hover-class="c-hover">
+    <view class="c-icon" style="background: {{item.bg}};"><text class="c-icon-text" style="color: {{item.color}};">{{item.initial}}</text></view>
+    <view class="c-main">
+      <text class="c-name">{{item.name}}</text>
+      <text class="c-desc">{{item.desc}}</text>
+      <text class="c-meta">{{item.members}} 成员 · {{item.posts}} 帖子</text>
+    </view>
+    <view class="c-ops">
+      <view class="join {{item.joined ? 'joined' : ''}}" data-id="{{item.id}}" catchtap="toggle"><text class="join-text {{item.joined ? 'joined-text' : ''}}">{{item.joined ? '已加入' : '加入'}}</text></view>
+      <view class="browse" data-id="{{item.id}}" catchtap="browse"><text class="browse-text">去首页看</text></view>
+    </view>
+  </view>
+</view>

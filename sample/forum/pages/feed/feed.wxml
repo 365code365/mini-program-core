@@ -1,0 +1,22 @@
+<view class="page">
+  <view class="tabs-bar">
+    <scroll-view class="tabs" scroll-x scroll-into-view="{{tabInto}}" scroll-with-animation enable-flex>
+      <view class="tabs-row">
+        <view class="tab {{cur === item.id ? 'tab-on' : ''}}" wx:for="{{tabs}}" wx:key="id" id="t-{{item.id}}" data-id="{{item.id}}" bindtap="onTab">
+          <text class="tab-text {{cur === item.id ? 'tab-text-on' : ''}}">{{item.name}}</text>
+          <view class="tab-line" wx:if="{{cur === item.id}}"></view>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+  <view class="banner" wx:if="{{banner}}"><text class="banner-text">{{banner}}</text></view>
+  <view class="list">
+    <post-card wx:for="{{list}}" wx:key="id" item="{{item}}" show-circle="{{cur === 'all' || cur === 'follow'}}" bindopen="open" bindlike="like" bindfav="fav" bindcircle="goCircle"></post-card>
+    <view class="empty" wx:if="{{empty}}"><text class="muted">这里还没有帖子，来发第一篇吧</text></view>
+    <view class="more" wx:if="{{!empty}}">
+      <view class="spinner" wx:if="{{loading}}"></view>
+      <text class="more-text">{{loading ? '正在加载…' : (hasMore ? '上拉加载更多' : '没有更多了')}}</text>
+    </view>
+  </view>
+  <view class="fab" bindtap="compose" hover-class="fab-hover"><view class="fab-h"></view><view class="fab-v"></view></view>
+</view>

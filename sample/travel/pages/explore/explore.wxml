@@ -1,0 +1,14 @@
+<view class="tags">
+  <view wx:for="{{tags}}" wx:key="*this" class="tg {{tag === item ? 'tg-on' : ''}}" data-t="{{item}}" bindtap="onTag"><text>{{item}}</text></view>
+</view>
+<view class="grid">
+  <view wx:for="{{list}}" wx:key="name" class="city" data-name="{{item.name}}" bindtap="plan">
+    <view class="cover" style="background: linear-gradient(160deg, {{item.color}}, #1c2230);">
+      <text class="c-name">{{item.name}}</text>
+      <text class="c-prov">{{item.prov}} · {{item.tag}}</text>
+      <view class="planned" wx:if="{{planned[item.name]}}"><text>已规划</text></view>
+    </view>
+    <text class="c-desc">{{item.desc}}</text>
+  </view>
+</view>
+<view class="tab-space"></view>

@@ -1,0 +1,57 @@
+<view class="top">
+  <view class="row">
+    <view class="avatar"><text class="avatar-t">陈</text></view>
+    <view class="col flex1 who">
+      <text class="who-n">陈** · 尾号 7788</text>
+      <view class="row"><text class="lv">金卡客户</text><text class="who-s">实名认证 · 风险评估 R3 平衡型</text></view>
+    </view>
+  </view>
+  <view class="row stats">
+    <view class="col flex1"><text class="st-v nowrap">{{balText}}</text><text class="st-k">账户余额</text></view>
+    <view class="col flex1"><text class="st-v nowrap">{{holdText}}</text><text class="st-k">理财持仓</text></view>
+    <view class="col st-n"><text class="st-v">{{holds.length}}</text><text class="st-k">持有产品</text></view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="row between head"><text class="title">我的持仓</text><text class="sub" bindtap="goWealth">去理财</text></view>
+  <view class="h row" wx:for="{{holds}}" wx:key="key" data-pid="{{item.pid}}" bindtap="openProduct">
+    <view class="col flex1">
+      <text class="h-n">{{item.name}}</text>
+      <text class="sub">{{item.dateText}} 买入 · {{item.termText}} · {{item.rateText}}%</text>
+    </view>
+    <view class="col h-r">
+      <text class="h-v nowrap">{{item.amtText}}</text>
+      <text class="h-inc nowrap">预计 +{{item.incText}}</text>
+    </view>
+  </view>
+  <view class="none" wx:if="{{!holds.length}}"><text class="sub">还没有持仓，去「理财」挑一款吧</text></view>
+</view>
+
+<view class="card">
+  <text class="title">安全中心</text>
+  <view class="row item">
+    <view class="col flex1">
+      <text class="item-t">支付密码</text>
+      <text class="sub {{pwd.locked ? 'red' : ''}}">{{pwdText}}</text>
+    </view>
+    <view class="sbtn {{pwd.locked || pwd.errors ? '' : 'sbtn-off'}}" bindtap="unlock"><text class="sbtn-t">{{pwd.locked ? '解除锁定' : '重置次数'}}</text></view>
+  </view>
+  <view class="row item">
+    <view class="col flex1">
+      <text class="item-t">小额免密</text>
+      <text class="sub">单笔 1,000 元以内免输支付密码（演示）</text>
+    </view>
+    <switch checked="{{nopwd}}" color="#D7263D" bindchange="onNopwd" />
+  </view>
+  <view class="row item" bindtap="goPayees">
+    <text class="item-t flex1">常用收款人</text>
+    <text class="sub">{{recentCount}} 人</text><view class="chev"></view>
+  </view>
+  <view class="row item item-last" bindtap="resetData">
+    <text class="item-t flex1">恢复演示数据</text>
+    <view class="chev"></view>
+  </view>
+</view>
+<text class="ver">招财银行 v3.8.2 · 客服热线 95555</text>
+<view class="tabbar-space"></view>

@@ -1,0 +1,29 @@
+.page { padding-bottom: 150rpx; }
+.hero { background: linear-gradient(180deg, #FF8A5C, #FF6B3D); padding: 40rpx 32rpx 32rpx; }
+.hero-row { display: flex; flex-direction: row; align-items: center; }
+.av { width: 120rpx; height: 120rpx; border-radius: 60rpx; border: 4rpx solid rgba(255, 255, 255, 0.7); margin-right: 24rpx; }
+.big { font-size: 48rpx; }
+.hero-main { flex: 1; display: flex; flex-direction: column; }
+.name { font-size: 38rpx; font-weight: bold; color: #ffffff; }
+.sub { margin-top: 8rpx; font-size: 22rpx; color: rgba(255, 255, 255, 0.85); }
+.reset { padding: 8rpx 20rpx; border-radius: 24rpx; background: rgba(255, 255, 255, 0.22); }
+.reset-text { font-size: 22rpx; color: #ffffff; white-space: nowrap; }
+.stats { display: flex; flex-direction: row; margin-top: 36rpx; }
+.stat { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.stat-v { font-size: 36rpx; font-weight: bold; color: #ffffff; }
+.stat-l { font-size: 22rpx; color: rgba(255, 255, 255, 0.85); margin-top: 4rpx; }
+.seg { display: flex; flex-direction: row; margin: 24rpx 24rpx 20rpx; background: #ffffff; border-radius: 16rpx; padding: 6rpx; }
+.seg-item { flex: 1; height: 68rpx; border-radius: 12rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.seg-on { background: #fff3ed; }
+.seg-text { font-size: 28rpx; color: #86909c; }
+.seg-text-on { color: #FF6B3D; font-weight: bold; }
+.item { padding-top: 4rpx; }
+.flash { background: #fff3ed; }
+.mine-ops { display: flex; flex-direction: row; justify-content: flex-end; margin: -8rpx 24rpx 24rpx; }
+.mop { padding: 10rpx 28rpx; border-radius: 28rpx; background: #ffffff; margin-left: 16rpx; border: 2rpx solid #e5e6eb; }
+.mop-text { font-size: 24rpx; color: #4e5969; }
+.mop-del { border-color: #ffd6d6; }
+.mop-del-text { color: #F53F3F; }
+.empty { display: flex; flex-direction: column; align-items: center; padding: 100rpx 0; }
+.go { margin-top: 24rpx; padding: 14rpx 40rpx; border-radius: 36rpx; background: #FF6B3D; }
+.go-text { color: #ffffff; font-size: 26rpx; }

@@ -1,0 +1,36 @@
+<view class="page">
+  <view class="tip" wx:if="{{draftTip}}"><text class="tip-text">{{draftTip}}</text><view class="tip-clear" bindtap="clearDraft"><text class="tip-clear-text">清空</text></view></view>
+  <view class="card">
+    <view class="title-row">
+      <input class="title-input" value="{{title}}" placeholder="标题（5~30 字）" placeholder-class="ph" maxlength="40" bindinput="onTitle" />
+      <text class="count {{titleLen > titleMax ? 'over' : ''}}">{{titleLen}}/{{titleMax}}</text>
+    </view>
+    <view class="err" wx:if="{{tried && errors.title}}"><text class="err-text">{{errors.title}}</text></view>
+    <textarea class="body" value="{{body}}" placeholder="分享你的经验、提问或者见闻…（至少 10 字）" placeholder-class="ph" maxlength="-1" bindinput="onBody" />
+    <view class="body-foot">
+      <text class="err-text" wx:if="{{tried && errors.body}}">{{errors.body}}</text>
+      <view class="space"></view>
+      <text class="count {{bodyLen > bodyMax ? 'over' : ''}}">{{bodyLen}}/{{bodyMax}}</text>
+    </view>
+  </view>
+  <view class="card">
+    <picker mode="selector" range="{{circles}}" value="{{pickerVal}}" bindchange="onCircle">
+      <view class="cell">
+        <text class="label">发布到</text>
+        <text class="value {{circleText ? '' : 'value-ph'}}">{{circleText || '选择圈子'}}</text>
+        <view class="arrow"></view>
+      </view>
+    </picker>
+    <view class="err" wx:if="{{tried && errors.circle}}"><text class="err-text">{{errors.circle}}</text></view>
+  </view>
+  <view class="card">
+    <view class="tag-head">
+      <text class="label">标签</text>
+      <text class="muted">已选 {{picked}}/{{tagMax}}</text>
+    </view>
+    <view class="tags">
+      <view class="tag {{item.on ? 'tag-on' : ''}}" wx:for="{{tags}}" wx:key="name" data-i="{{index}}" bindtap="toggleTag"><text class="tag-text {{item.on ? 'tag-text-on' : ''}}"># {{item.name}}</text></view>
+    </view>
+  </view>
+  <view class="submit {{canPost ? '' : 'submit-off'}}" bindtap="submit" hover-class="submit-hover"><text class="submit-text">{{mode === 'edit' ? '保存修改' : '发布'}}</text></view>
+</view>

@@ -1,0 +1,43 @@
+.hero { background: linear-gradient(160deg, #F0534A, #C8162E); padding: 32rpx 32rpx 40rpx; }
+.hello { color: #fff; font-size: 36rpx; font-weight: bold; }
+.hello-sub { color: rgba(255, 255, 255, 0.75); font-size: 24rpx; margin-top: 6rpx; }
+.safe { background: rgba(255, 255, 255, 0.18); border-radius: 24rpx; padding: 8rpx 18rpx; }
+.safe-dot { width: 12rpx; height: 12rpx; border-radius: 6rpx; background: #7CF2B0; margin-right: 8rpx; }
+.safe-t { color: #fff; font-size: 22rpx; }
+.asset { background: #fff; border-radius: 24rpx; padding: 32rpx; margin-top: 32rpx; box-shadow: 0 10rpx 30rpx rgba(120, 10, 20, 0.18); }
+.asset-label { font-size: 26rpx; color: #6b7280; }
+.eye-btn { width: 64rpx; height: 44rpx; margin-left: 8rpx; position: relative; display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.eye { width: 34rpx; height: 20rpx; border: 3rpx solid #9aa0a6; border-radius: 20rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.pupil { width: 10rpx; height: 10rpx; border-radius: 5rpx; background: #9aa0a6; }
+.eye-slash { position: absolute; left: 14rpx; top: 20rpx; width: 38rpx; height: 3rpx; background: #9aa0a6; transform: rotate(-35deg); }
+.asset-num { font-size: 60rpx; font-weight: bold; margin-top: 12rpx; color: #1f2329; }
+.asset-row { margin-top: 24rpx; }
+.asset-k { font-size: 22rpx; color: #9aa0a6; }
+.asset-v { font-size: 28rpx; font-weight: bold; margin-top: 6rpx; color: #1f2329; }
+.asset-v.income { color: #E8541E; }
+.sec-head { padding: 32rpx 32rpx 16rpx; }
+.acct-swiper { height: 350rpx; }
+.acct { margin: 0 24rpx; height: 300rpx; border-radius: 24rpx; padding: 28rpx 32rpx; }
+.acct-name { color: #fff; font-size: 32rpx; font-weight: bold; }
+.acct-type { color: rgba(255, 255, 255, 0.8); font-size: 22rpx; margin-top: 4rpx; }
+.acct-no { color: rgba(255, 255, 255, 0.9); font-size: 24rpx; }
+.acct-k { color: rgba(255, 255, 255, 0.8); font-size: 22rpx; margin-top: 20rpx; display: block; }
+.acct-bal { color: #fff; font-size: 48rpx; font-weight: bold; margin-top: 4rpx; display: block; }
+.acct-ops { margin-top: 14rpx; }
+.acct-op { background: rgba(255, 255, 255, 0.22); border-radius: 28rpx; padding: 8rpx 28rpx; margin-right: 16rpx; }
+.acct-op-t { color: #fff; font-size: 24rpx; }
+.grid { display: flex; flex-direction: row; flex-wrap: wrap; padding: 20rpx 8rpx; }
+.entry { width: 25%; display: flex; flex-direction: column; align-items: center; padding: 16rpx 0; }
+.entry-t { font-size: 24rpx; color: #374151; margin-top: 12rpx; }
+.card-head { margin-bottom: 8rpx; }
+.bill { padding: 20rpx 0; border-bottom: 1rpx solid #f1f2f4; }
+.glyph-s { width: 72rpx; height: 72rpx; border-radius: 36rpx; }
+.glyph-st { font-size: 28rpx; font-weight: bold; }
+.bill-mid { margin-left: 20rpx; }
+.bill-t { font-size: 28rpx; color: #1f2329; margin-bottom: 4rpx; }
+.bill-amt { font-size: 30rpx; font-weight: bold; }
+.none { padding: 40rpx 0; text-align: center; }
+.pick-body { margin-top: 20rpx; }
+.pick-l { width: 200rpx; }
+.pick-rate { font-size: 44rpx; font-weight: bold; color: #D7263D; }
+.pick-name { font-size: 28rpx; font-weight: bold; margin-bottom: 6rpx; }

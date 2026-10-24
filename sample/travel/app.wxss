@@ -1,0 +1,30 @@
+page { background: #f4f6fa; color: #1c2230; font-size: 28rpx; }
+.card { background: #ffffff; border-radius: 20rpx; margin: 24rpx 24rpx 0 24rpx; padding: 28rpx; }
+.row { display: flex; flex-direction: row; align-items: center; }
+.col { display: flex; flex-direction: column; }
+.between { justify-content: space-between; }
+.title { font-size: 34rpx; font-weight: bold; color: #1c2230; }
+.sub { font-size: 24rpx; color: #8a91a0; }
+.brand { color: #1e78ff; }
+.danger { color: #f5222d; }
+.btn {
+  display: flex; flex-direction: row; align-items: center; justify-content: center;
+  height: 88rpx; border-radius: 44rpx; background: #1e78ff; color: #ffffff; font-size: 30rpx; font-weight: bold;
+}
+.btn-disabled { background: #a8c8ff; }
+.btn-ghost { background: #eaf2ff; color: #1e78ff; }
+.mask { position: fixed; left: 0; top: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.45); }
+.stepper { display: flex; flex-direction: row; align-items: center; }
+.step-btn { position: relative; width: 56rpx; height: 56rpx; border-radius: 14rpx; background: #eaf2ff; display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.step-off { background: #f2f3f5; }
+.bar-h { width: 24rpx; height: 4rpx; border-radius: 2rpx; background: #1e78ff; }
+.plus-v { position: absolute; width: 4rpx; height: 24rpx; border-radius: 2rpx; background: #1e78ff; }
+.step-off .bar-h, .step-off .plus-v { background: #c4c8d0; }
+.step-num { width: 76rpx; text-align: center; font-size: 32rpx; font-weight: bold; }
+.track { height: 12rpx; border-radius: 6rpx; background: #edf0f5; }
+.fill { height: 12rpx; border-radius: 6rpx; background: #1e78ff; }
+.fill-over { background: #f5222d; }
+.check { position: relative; width: 40rpx; height: 40rpx; border-radius: 10rpx; border: 3rpx solid #c4c8d0; box-sizing: border-box; }
+.check-on { background: #1e78ff; border-color: #1e78ff; }
+.tick { position: absolute; left: 10rpx; top: 3rpx; width: 10rpx; height: 20rpx; border-right: 4rpx solid #ffffff; border-bottom: 4rpx solid #ffffff; transform: rotate(45deg); }
+.arrow { width: 14rpx; height: 14rpx; border-top: 3rpx solid #b4b9c4; border-right: 3rpx solid #b4b9c4; transform: rotate(45deg); }

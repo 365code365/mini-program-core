@@ -1,0 +1,18 @@
+.page { padding: 8rpx 0 150rpx; }
+.head { display: flex; flex-direction: row; align-items: baseline; justify-content: space-between; padding: 24rpx 32rpx 16rpx; }
+.h-title { font-size: 36rpx; font-weight: bold; }
+.c { display: flex; flex-direction: row; align-items: center; background: #ffffff; border-radius: 24rpx; margin: 0 24rpx 20rpx; padding: 28rpx; }
+.c-hover { background: #fafafb; }
+.c-icon { width: 104rpx; height: 104rpx; border-radius: 28rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; margin-right: 24rpx; }
+.c-icon-text { font-size: 44rpx; font-weight: bold; }
+.c-main { flex: 1; display: flex; flex-direction: column; }
+.c-name { font-size: 32rpx; font-weight: bold; }
+.c-desc { font-size: 24rpx; color: #4e5969; margin-top: 6rpx; }
+.c-meta { font-size: 22rpx; color: #a9aeb8; margin-top: 6rpx; }
+.c-ops { display: flex; flex-direction: column; align-items: flex-end; }
+.join { width: 128rpx; height: 56rpx; border-radius: 28rpx; background: #FF6B3D; display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.joined { background: #f2f3f5; }
+.join-text { font-size: 24rpx; color: #ffffff; white-space: nowrap; }
+.joined-text { color: #86909c; }
+.browse { margin-top: 14rpx; }
+.browse-text { font-size: 22rpx; color: #3491FA; }

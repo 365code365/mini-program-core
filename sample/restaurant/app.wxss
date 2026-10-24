@@ -1,0 +1,42 @@
+page {
+  background: #f5f6f8;
+  color: #1f2329;
+  font-size: 28rpx;
+}
+.card {
+  background: #ffffff;
+  border-radius: 20rpx;
+  margin: 24rpx 24rpx 0 24rpx;
+  padding: 28rpx;
+}
+.row { display: flex; flex-direction: row; align-items: center; }
+.col { display: flex; flex-direction: column; }
+.between { justify-content: space-between; }
+.title { font-size: 34rpx; font-weight: bold; color: #1f2329; }
+.sub { font-size: 24rpx; color: #8a8f99; }
+.brand { color: #ff6a2b; }
+.price { color: #ff4d1a; font-weight: bold; white-space: nowrap; }
+.btn {
+  display: flex; flex-direction: row; align-items: center; justify-content: center;
+  height: 88rpx; border-radius: 44rpx; background: #ff6a2b; color: #ffffff;
+  font-size: 30rpx; font-weight: bold;
+}
+.btn-disabled { background: #ffc2a6; }
+.btn-ghost { background: #fff1ea; color: #ff6a2b; }
+.mask {
+  position: fixed; left: 0; top: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+.stepper { display: flex; flex-direction: row; align-items: center; }
+.step-btn {
+  width: 48rpx; height: 48rpx; border-radius: 24rpx; background: #ff6a2b;
+  display: flex; flex-direction: row; align-items: center; justify-content: center;
+}
+.step-minus { background: #ffffff; border: 2rpx solid #ff6a2b; width: 44rpx; height: 44rpx; }
+.step-off { background: #f0f1f3; border: 2rpx solid #f0f1f3; }
+.bar-h { width: 22rpx; height: 4rpx; background: #ffffff; border-radius: 2rpx; }
+.step-minus .bar-h { background: #ff6a2b; }
+.step-off .bar-h { background: #c4c7cc; }
+.plus-v { position: absolute; width: 4rpx; height: 22rpx; background: #ffffff; border-radius: 2rpx; }
+.step-num { width: 60rpx; text-align: center; font-size: 28rpx; }
+.empty { padding: 80rpx 0; display: flex; flex-direction: column; align-items: center; }

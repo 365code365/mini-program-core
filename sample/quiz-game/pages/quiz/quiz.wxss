@@ -1,0 +1,67 @@
+/* page 上的渐变背景引擎不画（只认纯色），用纯色 */
+page { background: #4A3AE8; }
+.top { padding: 20rpx 32rpx 0; }
+.quit { width: 56rpx; height: 56rpx; border-radius: 28rpx; background: rgba(255, 255, 255, 0.18); position: relative; }
+.x1, .x2 { position: absolute; left: 16rpx; top: 26rpx; width: 24rpx; height: 4rpx; background: #fff; border-radius: 2rpx; }
+.x1 { transform: rotate(45deg); }
+.x2 { transform: rotate(-45deg); }
+.prog-t { color: #fff; font-size: 28rpx; font-weight: bold; }
+.score { background: rgba(255, 255, 255, 0.18); border-radius: 28rpx; padding: 6rpx 20rpx; }
+.score-k { color: rgba(255, 255, 255, 0.8); font-size: 22rpx; margin-right: 8rpx; }
+.score-v { color: #FFD25A; font-size: 30rpx; font-weight: bold; }
+.prog { height: 12rpx; border-radius: 6rpx; background: rgba(255, 255, 255, 0.2); margin-top: 22rpx; }
+.prog-bar { height: 12rpx; border-radius: 6rpx; background: linear-gradient(90deg, #FFE08A, #FFB547); }
+.stage { padding: 0 32rpx; }
+.ring-wrap { justify-content: center; height: 220rpx; position: relative; }
+/* 倒计时圆环：两个只露一半的矩形容器（不带圆角，裁剪可靠），各放一个只描两条边的圆，转角度露出弧 */
+.ring { width: 160rpx; height: 160rpx; position: relative; }
+.ring-bg { position: absolute; left: 0; top: 0; width: 160rpx; height: 160rpx; border-radius: 80rpx; border: 12rpx solid rgba(255, 255, 255, 0.22); box-sizing: border-box; }
+.half { position: absolute; top: 0; width: 80rpx; height: 160rpx; overflow: hidden; }
+.half-r { left: 80rpx; }
+.half-l { left: 0; }
+.arc { position: absolute; top: 0; width: 160rpx; height: 160rpx; border-radius: 80rpx; border: 12rpx solid transparent; box-sizing: border-box; }
+.arc-r { left: -80rpx; }
+.arc-l { left: 0; }
+.ring-c { position: absolute; left: 12rpx; top: 12rpx; width: 136rpx; height: 136rpx; border-radius: 68rpx; background: #fff; align-items: center; justify-content: center; }
+.sec { font-size: 52rpx; font-weight: bold; }
+.sec-u { font-size: 20rpx; color: #8b8fa8; margin-top: -6rpx; }
+.combo { position: absolute; left: 0; top: 70rpx; background: linear-gradient(90deg, #FF8A3D, #FF4D6D); border-radius: 30rpx; padding: 8rpx 22rpx; }
+.combo-t { color: #fff; font-size: 26rpx; font-weight: bold; }
+.combo-pop { animation: pop 0.4s ease-out; }
+.gain { position: absolute; right: 20rpx; top: 70rpx; }
+.gain-t { color: #FFD25A; font-size: 40rpx; font-weight: bold; white-space: nowrap; }
+.gain-up { animation: up 0.9s ease-out; }
+@keyframes pop { 0% { transform: scale(0.5); } 60% { transform: scale(1.2); } 100% { transform: scale(1); } }
+@keyframes up { 0% { transform: translateY(30rpx); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(-20rpx); opacity: 1; } }
+.qcard { background: #fff; border-radius: 24rpx; padding: 32rpx; margin-bottom: 28rpx; min-height: 200rpx; }
+.cat { border-radius: 8rpx; padding: 4rpx 14rpx; }
+.cat-t { font-size: 22rpx; font-weight: bold; }
+.q { display: block; font-size: 34rpx; font-weight: bold; line-height: 1.5; margin-top: 18rpx; color: #1f2140; }
+.opt { background: #fff; border-radius: 20rpx; padding: 26rpx 28rpx; margin-bottom: 20rpx; border: 4rpx solid #fff; box-sizing: border-box; }
+.letter { width: 52rpx; height: 52rpx; border-radius: 26rpx; background: #efeef8; display: flex; flex-direction: row; align-items: center; justify-content: center; margin-right: 20rpx; }
+.letter-t { font-size: 26rpx; font-weight: bold; color: #5B4BF5; }
+.opt-t { font-size: 30rpx; color: #1f2140; }
+.right { background: #E8FFF3; border-color: #22C55E; animation: pop 0.35s ease-out; }
+.wrong { background: #FFF0F1; border-color: #F43F5E; animation: shake 0.4s linear; }
+.dim { opacity: 0.55; }
+.gone { opacity: 0.18; }
+.letter-right { background: #22C55E; }
+.letter-wrong { background: #F43F5E; }
+.letter-right .letter-t, .letter-wrong .letter-t { color: #fff; }
+@keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-14rpx); } 50% { transform: translateX(14rpx); } 75% { transform: translateX(-8rpx); } 100% { transform: translateX(0); } }
+.mark-ok { width: 40rpx; height: 40rpx; border-radius: 20rpx; background: #22C55E; position: relative; }
+.mark-ok-tick { position: absolute; left: 13rpx; top: 6rpx; width: 10rpx; height: 20rpx; border-right: 4rpx solid #fff; border-bottom: 4rpx solid #fff; transform: rotate(45deg); }
+.mark-no { width: 40rpx; height: 40rpx; border-radius: 20rpx; background: #F43F5E; position: relative; }
+.mx1, .mx2 { position: absolute; left: 10rpx; top: 18rpx; width: 20rpx; height: 4rpx; background: #fff; }
+.mx1 { transform: rotate(45deg); }
+.mx2 { transform: rotate(-45deg); }
+.verdict { text-align: center; padding: 4rpx 0 0; }
+.verdict-t { font-size: 30rpx; font-weight: bold; }
+.v-ok { color: #A7F3D0; }
+.v-no { color: #FECDD3; }
+.tools { position: fixed; left: 0; right: 0; bottom: 0; padding: 20rpx 32rpx calc(28rpx + env(safe-area-inset-bottom)); justify-content: center; }
+.tool { background: rgba(255, 255, 255, 0.95); border-radius: 40rpx; padding: 12rpx 28rpx 12rpx 12rpx; margin: 0 16rpx; }
+.tool-off { opacity: 0.45; }
+.tool-g { width: 52rpx; height: 52rpx; border-radius: 26rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; margin-right: 12rpx; }
+.tool-gt { color: #fff; font-size: 24rpx; font-weight: bold; }
+.tool-t { font-size: 26rpx; font-weight: bold; color: #1f2140; white-space: nowrap; }

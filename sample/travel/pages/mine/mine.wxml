@@ -1,0 +1,21 @@
+<view class="head">
+  <view class="row">
+    <view class="avatar"><text class="avatar-t">周</text></view>
+    <view class="col">
+      <text class="name">周一舟</text>
+      <text class="head-s">下一站：{{next}}</text>
+    </view>
+  </view>
+</view>
+<view class="card stats">
+  <view class="stat" bindtap="goTrips"><text class="stat-v">{{trips}}</text><text class="sub">行程</text></view>
+  <view class="stat"><text class="stat-v">{{days}}</text><text class="sub">天数</text></view>
+  <view class="stat"><text class="stat-v">{{cities}}</text><text class="sub">城市</text></view>
+  <view class="stat"><text class="stat-v">{{spots}}</text><text class="sub">景点</text></view>
+</view>
+<view class="card">
+  <view class="cell"><text>累计规划花费</text><text class="sub">¥{{budgetText}}</text></view>
+  <view class="cell" bindtap="restore"><text>恢复示例行程</text><view class="arrow"></view></view>
+  <view class="cell cell-last" bindtap="clearAll"><text class="danger">清空全部行程</text><view class="arrow"></view></view>
+</view>
+<text class="foot sub">途简行程 · 数据仅保存在本机</text>

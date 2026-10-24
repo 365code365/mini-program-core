@@ -1,0 +1,26 @@
+page { background: #fff; }
+.top { padding: 16rpx 24rpx; background: #fff; border-bottom: 1rpx solid #f1f2f4; }
+.search { height: 72rpx; background: #f4f5f7; border-radius: 36rpx; padding: 0 24rpx; }
+.lens { width: 30rpx; height: 30rpx; position: relative; margin-right: 12rpx; }
+.lens-c { width: 20rpx; height: 20rpx; border: 3rpx solid #9aa0a6; border-radius: 12rpx; }
+.lens-h { position: absolute; left: 20rpx; top: 22rpx; width: 10rpx; height: 3rpx; background: #9aa0a6; transform: rotate(45deg); }
+.search-ipt { font-size: 26rpx; height: 72rpx; }
+.cancel { font-size: 24rpx; color: #D7263D; margin-left: 12rpx; }
+/* 不用 position:fixed（fixed 的 scroll-view 滚动后点不中里面的行，引擎问题），高度在 JS 里按窗口算 */
+.list { }
+.g-head { background: #f4f5f7; padding: 0 32rpx; height: 44rpx; display: flex; flex-direction: row; align-items: center; }
+.g-letter { font-size: 24rpx; color: #6b7280; font-weight: bold; }
+.p { height: 122rpx; box-sizing: border-box; padding: 0 64rpx 0 32rpx; border-bottom: 1rpx solid #f1f2f4; background: #fff; }
+.p-down { background: #f7f7f8; }
+.avatar { width: 76rpx; height: 76rpx; border-radius: 38rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.avatar-t { color: #fff; font-size: 30rpx; font-weight: bold; }
+.p-mid { margin-left: 22rpx; }
+.p-name { font-size: 30rpx; margin-bottom: 4rpx; }
+.index { position: fixed; right: 8rpx; top: 220rpx; align-items: center; }
+.idx { width: 40rpx; height: 40rpx; border-radius: 20rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; margin-bottom: 4rpx; }
+.idx-on { background: #D7263D; }
+.idx-t { font-size: 22rpx; color: #4b5563; font-weight: bold; }
+.idx-t-on { color: #fff; }
+.toast-letter { position: fixed; left: 295rpx; top: 500rpx; width: 160rpx; height: 160rpx; border-radius: 24rpx; background: rgba(0, 0, 0, 0.6); display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.toast-letter-t { color: #fff; font-size: 72rpx; font-weight: bold; }
+.bottom-pad { height: 80rpx; }

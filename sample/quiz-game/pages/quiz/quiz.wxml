@@ -1,0 +1,46 @@
+<view class="top">
+  <view class="row between">
+    <view class="quit" bindtap="quit"><view class="x1"></view><view class="x2"></view></view>
+    <text class="prog-t">第 {{idx + 1}}/{{total}} 题</text>
+    <view class="score row"><text class="score-k">得分</text><text class="score-v nowrap">{{score}}</text></view>
+  </view>
+  <view class="prog"><view class="prog-bar" style="width: {{progress}}%"></view></view>
+</view>
+
+<view class="stage">
+  <view class="ring-wrap row">
+    <view class="combo {{comboAnim ? 'combo-pop' : ''}}" wx:if="{{combo >= 2}}"><text class="combo-t">连对 ×{{combo}}</text></view>
+    <view class="ring">
+      <view class="ring-bg"></view>
+      <view class="half half-r" wx:if="{{showR}}"><view class="arc arc-r" style="transform: rotate({{rotR}}deg); border-top-color: {{ringColor}}; border-right-color: {{ringColor}}"></view></view>
+      <view class="half half-l" wx:if="{{showL}}"><view class="arc arc-l" style="transform: rotate({{rotL}}deg); border-bottom-color: {{ringColor}}; border-left-color: {{ringColor}}"></view></view>
+      <view class="ring-c col"><text class="sec" style="color: {{ringColor}}">{{sec}}</text><text class="sec-u">秒</text></view>
+    </view>
+    <view class="gain {{gainAnim ? 'gain-up' : ''}}" wx:if="{{gainText}}"><text class="gain-t">{{gainText}}</text></view>
+  </view>
+
+  <view class="qcard">
+    <view class="row"><view class="cat" style="background: {{catBg}}"><text class="cat-t" style="color: {{catColor}}">{{catName}}</text></view></view>
+    <text class="q">{{q.q}}</text>
+  </view>
+
+  <view class="opt row {{item.cls}}" wx:for="{{opts}}" wx:key="i" data-i="{{item.i}}" bindtap="choose">
+    <view class="letter {{item.cls ? 'letter-' + item.cls : ''}}"><text class="letter-t">{{item.l}}</text></view>
+    <text class="opt-t flex1">{{item.t}}</text>
+    <view class="mark-ok" wx:if="{{item.cls === 'right'}}"><view class="mark-ok-tick"></view></view>
+    <view class="mark-no" wx:if="{{item.cls === 'wrong'}}"><view class="mx1"></view><view class="mx2"></view></view>
+  </view>
+
+  <view class="verdict" wx:if="{{verdict}}"><text class="verdict-t {{verdictCls}}">{{verdict}}</text></view>
+</view>
+
+<view class="tools row">
+  <view class="tool row {{props.half && !halfUsed && phase === 'answer' ? '' : 'tool-off'}}" bindtap="useHalf">
+    <view class="tool-g" style="background: #7C6CFF"><text class="tool-gt">半</text></view>
+    <text class="tool-t">50:50 ×{{props.half}}</text>
+  </view>
+  <view class="tool row {{props.skip && phase === 'answer' ? '' : 'tool-off'}}" bindtap="useSkip">
+    <view class="tool-g" style="background: #F59E0B"><text class="tool-gt">跳</text></view>
+    <text class="tool-t">跳过 ×{{props.skip}}</text>
+  </view>
+</view>

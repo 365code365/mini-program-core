@@ -1,0 +1,54 @@
+<view class="filter">
+  <view class="tabs row">
+    <view class="tab {{type === item.k ? 'tab-on' : ''}}" wx:for="{{types}}" wx:key="k" data-k="{{item.k}}" bindtap="onType">
+      <text class="tab-t {{type === item.k ? 'tab-t-on' : ''}}">{{item.t}}</text>
+      <view class="tab-line" wx:if="{{type === item.k}}"></view>
+    </view>
+    <picker class="acct-pick" range="{{acctNames}}" value="{{acctIdx}}" bindchange="onAcct">
+      <view class="row acct-pick-in"><text class="acct-pick-t">{{acctNames[acctIdx]}}</text><view class="down"></view></view>
+    </picker>
+  </view>
+  <view class="range row">
+    <picker mode="date" value="{{start}}" end="{{end}}" bindchange="onStart">
+      <view class="date row"><text class="date-t">{{start}}</text></view>
+    </picker>
+    <text class="to">至</text>
+    <picker mode="date" value="{{end}}" start="{{start}}" end="{{today}}" bindchange="onEnd">
+      <view class="date row"><text class="date-t">{{end}}</text></view>
+    </picker>
+    <view class="flex1"></view>
+    <text class="reset" bindtap="resetRange">近三个月</text>
+  </view>
+</view>
+
+<view class="sum row">
+  <view class="col flex1"><text class="sum-k">收入（元）</text><text class="sum-v income nowrap">{{inText}}</text></view>
+  <view class="col flex1"><text class="sum-k">支出（元）</text><text class="sum-v nowrap">{{outText}}</text></view>
+  <view class="col sum-n"><text class="sum-k">笔数</text><text class="sum-v">{{count}}</text></view>
+</view>
+
+<view wx:for="{{groups}}" wx:key="key" class="group">
+  <view class="g-head row between">
+    <text class="g-title">{{item.title}}</text>
+    <text class="sub">收入 {{item.inText}} · 支出 {{item.outText}}</text>
+  </view>
+  <view class="g-body">
+    <view class="bill row" wx:for="{{item.items}}" wx:for-item="b" wx:key="id" data-id="{{b.id}}" bindtap="open" hover-class="bill-down">
+      <view class="glyph glyph-s" style="background: {{b.type === 'in' ? '#FDE7DC' : '#EEF1F6'}}">
+        <text class="glyph-st" style="color: {{b.type === 'in' ? '#E8541E' : '#4B5563'}}">{{b.g}}</text>
+      </view>
+      <view class="col flex1 bill-mid">
+        <text class="bill-t">{{b.title}}</text>
+        <text class="sub">{{b.timeText}} · {{b.acctName}}</text>
+      </view>
+      <text class="bill-amt nowrap {{b.type === 'in' ? 'income' : ''}}">{{b.amtText}}</text>
+    </view>
+  </view>
+</view>
+
+<view class="empty" wx:if="{{!count}}">
+  <view class="empty-ring"></view>
+  <text class="sub">所选时间段内没有{{typeName}}记录</text>
+</view>
+<view class="more" wx:if="{{count}}"><text class="sub">{{moreText}}</text></view>
+<view class="tabbar-space"></view>

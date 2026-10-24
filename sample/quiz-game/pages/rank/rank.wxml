@@ -1,0 +1,39 @@
+<view class="head">
+  <view class="tabs row">
+    <view class="tab {{kind === 'today' ? 'tab-on' : ''}}" data-k="today" bindtap="onTab"><text class="tab-t {{kind === 'today' ? 'tab-t-on' : ''}}">今日榜</text></view>
+    <view class="tab {{kind === 'week' ? 'tab-on' : ''}}" data-k="week" bindtap="onTab"><text class="tab-t {{kind === 'week' ? 'tab-t-on' : ''}}">本周榜</text></view>
+  </view>
+  <view class="podium row">
+    <view class="pd col pd-{{item.pos}}" wx:for="{{podium}}" wx:key="rank">
+      <view class="pd-av {{item.me ? 'pd-me' : ''}}" style="background: {{item.color}}"><text class="pd-av-t">{{item.first}}</text></view>
+      <text class="pd-n">{{item.name}}</text>
+      <text class="pd-s">{{item.score}}</text>
+      <view class="pd-base col" style="height: {{item.h}}rpx"><text class="pd-r">{{item.rank}}</text></view>
+    </view>
+  </view>
+</view>
+
+<view class="list-wrap" style="height: {{listH}}px">
+  <scroll-view scroll-y class="list" style="height: {{listH}}px" scroll-into-view="{{into}}" bindscroll="onScroll">
+    <view class="row r {{item.me ? 'r-me' : ''}}" id="{{item.me ? 'me' : 'r' + item.rank}}" wx:for="{{rest}}" wx:key="rank">
+      <text class="r-rank">{{item.rank}}</text>
+      <view class="r-av" style="background: {{item.color}}"><text class="r-av-t">{{item.first}}</text></view>
+      <view class="col flex1 r-mid">
+        <text class="r-n">{{item.me ? '我（王同学）' : item.name}}</text>
+        <text class="sub">{{item.city}}</text>
+      </view>
+      <text class="r-s">{{item.score}}</text>
+    </view>
+    <view class="list-end"><text class="sub">榜单每 10 分钟更新一次</text></view>
+  </scroll-view>
+  <view class="pin pin-{{pin}} row" wx:if="{{pin}}" bindtap="locate">
+    <text class="r-rank pin-rank">{{me.rank}}</text>
+    <view class="r-av" style="background: rgba(255, 255, 255, 0.25)"><text class="r-av-t">我</text></view>
+    <view class="col flex1 r-mid">
+      <text class="r-n pin-n">我的名次</text>
+      <text class="pin-sub">点击定位到我</text>
+    </view>
+    <text class="r-s pin-s">{{me.score}}</text>
+  </view>
+</view>
+<view class="tabbar-space-s"></view>

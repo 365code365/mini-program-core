@@ -1,0 +1,58 @@
+<view class="page">
+  <scroll-view class="scroll" scroll-y style="height: {{scrollH}}px;" scroll-into-view="{{intoView}}" scroll-with-animation>
+    <view class="post" wx:for="{{one}}" wx:for-item="p" wx:key="id">
+      <view class="head">
+        <view class="avatar av" style="background: {{p.color}};"><text class="av-text">{{p.initial}}</text></view>
+        <view class="who">
+          <text class="author">{{p.author}}</text>
+          <text class="muted">{{p.time}} · 发布于{{p.circleName}}圈</text>
+        </view>
+      </view>
+      <text class="title">{{p.title}}</text>
+      <text class="body">{{p.body}}</text>
+      <view class="pics {{p.picCls}}" wx:if="{{p.pics.length}}">
+        <view class="pic {{item.k ? 'pic-gap' : ''}}" wx:for="{{p.pics}}" wx:key="k" style="background: linear-gradient(135deg, {{item.from}}, {{item.color}});"></view>
+      </view>
+      <view class="tags" wx:if="{{p.tags.length}}">
+        <view class="tag" wx:for="{{p.tags}}" wx:key="*this"><text class="tag-text"># {{item}}</text></view>
+      </view>
+      <view class="ops">
+        <view class="op {{p.liked ? 'op-like' : ''}}" bindtap="like"><text class="op-text {{p.liked ? 'op-text-like' : ''}}">{{p.liked ? '已赞' : '点赞'}} {{p.likes}}</text></view>
+        <view class="op {{p.fav ? 'op-fav' : ''}}" bindtap="fav"><text class="op-text {{p.fav ? 'op-text-fav' : ''}}">{{p.fav ? '已收藏' : '收藏'}}</text></view>
+      </view>
+    </view>
+    <view class="cm-head">
+      <text class="cm-title">全部评论 {{total}}</text>
+      <view class="order" bindtap="toggleOrder"><text class="order-text">{{order === 'asc' ? '按楼层' : '最新在前'}}</text></view>
+    </view>
+    <view class="floor" wx:for="{{floors}}" wx:for-item="f" wx:key="id" id="{{f.id}}">
+      <view class="avatar fav-av" style="background: {{f.color}};"><text class="av-text f-av-text">{{f.initial}}</text></view>
+      <view class="f-main">
+        <view class="f-row">
+          <text class="f-name">{{f.author}}</text>
+          <view class="op-tag" wx:if="{{f.isOp}}"><text class="op-tag-text">楼主</text></view>
+          <view class="f-space"></view>
+          <text class="f-floor">{{f.floor}} 楼</text>
+        </view>
+        <text class="f-text">{{f.text}}</text>
+        <view class="subs" wx:if="{{f.replies.length}}">
+          <view class="sub" wx:for="{{f.replies}}" wx:for-item="r" wx:key="id" data-floor="{{f.id}}" data-name="{{r.author}}" bindtap="replySub" hover-class="sub-hover">
+            <text class="sub-line"><text class="sub-name">{{r.author}}</text><text wx:if="{{r.to}}">{{r.mid}}</text><text class="sub-name" wx:if="{{r.to}}">@{{r.to}}</text>：{{r.text}}</text>
+          </view>
+        </view>
+        <view class="f-foot">
+          <text class="muted">{{f.time}}</text>
+          <view class="f-space"></view>
+          <view class="f-act" data-id="{{f.id}}" bindtap="replyFloor"><text class="f-act-text">回复</text></view>
+          <view class="f-act" data-id="{{f.id}}" bindtap="likeFloor"><text class="f-act-text {{f.liked ? 'f-liked' : ''}}">赞 {{f.likes}}</text></view>
+        </view>
+      </view>
+    </view>
+    <view class="end"><text class="muted">— 到底了 —</text></view>
+  </scroll-view>
+  <view class="bar">
+    <view class="reply-chip" wx:if="{{replyTo}}" bindtap="cancelReply"><text class="chip-text">@{{replyTo.name}}</text><view class="chip-x"><view class="x1"></view><view class="x2"></view></view></view>
+    <input class="input" value="{{draft}}" placeholder="{{placeholder}}" placeholder-class="ph" focus="{{focus}}" bindinput="onInput" bindblur="onBlur" bindconfirm="send" confirm-type="send" />
+    <view class="send {{canSend ? '' : 'send-off'}}" bindtap="send"><text class="send-text">发表</text></view>
+  </view>
+</view>

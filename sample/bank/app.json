@@ -1,0 +1,32 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/bills/bills",
+    "pages/wealth/wealth",
+    "pages/mine/mine",
+    "pages/transfer/transfer",
+    "pages/payees/payees",
+    "pages/result/result",
+    "pages/bill-detail/bill-detail",
+    "pages/product/product"
+  ],
+  "window": {
+    "navigationBarTitleText": "招财银行",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f4f5f7"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#9aa0a6",
+    "selectedColor": "#D7263D",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "首页", "iconPath": "images/tab-home.png", "selectedIconPath": "images/tab-home-on.png" },
+      { "pagePath": "pages/bills/bills", "text": "明细", "iconPath": "images/tab-bills.png", "selectedIconPath": "images/tab-bills-on.png" },
+      { "pagePath": "pages/wealth/wealth", "text": "理财", "iconPath": "images/tab-wealth.png", "selectedIconPath": "images/tab-wealth-on.png" },
+      { "pagePath": "pages/mine/mine", "text": "我的", "iconPath": "images/tab-mine.png", "selectedIconPath": "images/tab-mine-on.png" }
+    ]
+  }
+}

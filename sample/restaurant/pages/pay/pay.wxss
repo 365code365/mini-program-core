@@ -1,0 +1,28 @@
+.head {
+  background: linear-gradient(160deg, #ff7a3a, #ff9f45); padding: 48rpx 32rpx 56rpx 32rpx;
+  display: flex; flex-direction: column; align-items: center;
+}
+.head-off { background: linear-gradient(160deg, #8a8f99, #b4b8bf); }
+.head-s { color: rgba(255,255,255,0.9); font-size: 26rpx; }
+.clock { margin-top: 20rpx; background: rgba(255,255,255,0.2); border-radius: 20rpx; padding: 8rpx 36rpx; }
+.clock-t { color: #ffffff; font-size: 64rpx; font-weight: bold; letter-spacing: 4rpx; }
+.urgent { color: #fff3a0; }
+.head-off-t { color: #ffffff; font-size: 30rpx; font-weight: bold; margin-top: 20rpx; }
+.amount-row { align-items: flex-end; margin: 24rpx 0 12rpx 0; }
+.amt-y { color: #ffffff; font-size: 36rpx; font-weight: bold; margin-bottom: 10rpx; }
+.amt { color: #ffffff; font-size: 80rpx; font-weight: bold; white-space: nowrap; }
+.pm { display: flex; flex-direction: row; align-items: center; height: 120rpx; border-bottom: 1rpx solid #f5f6f8; }
+.pm-ic { width: 60rpx; height: 60rpx; border-radius: 14rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.pm-wx { background: #07c160; }
+.pm-card { background: #ff9f45; }
+.pm-ic-t { color: #ffffff; font-size: 28rpx; font-weight: bold; }
+.pm-name { flex: 1; margin-left: 24rpx; font-size: 30rpx; }
+.warn { color: #f5222d; }
+.radio { width: 40rpx; height: 40rpx; border-radius: 20rpx; border: 2rpx solid #c4c7cc; position: relative; box-sizing: border-box; }
+.radio-on { background: #ff6a2b; border-color: #ff6a2b; }
+.tick {
+  position: absolute; left: 11rpx; top: 6rpx; width: 10rpx; height: 18rpx;
+  border-right: 4rpx solid #ffffff; border-bottom: 4rpx solid #ffffff; transform: rotate(45deg);
+}
+.actions { padding: 48rpx 32rpx; }
+.link { display: flex; flex-direction: row; justify-content: center; margin-top: 28rpx; padding: 12rpx; }

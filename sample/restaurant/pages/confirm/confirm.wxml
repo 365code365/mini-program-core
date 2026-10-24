@@ -1,0 +1,68 @@
+<view class="page">
+  <view class="card table-card">
+    <view class="col">
+      <text class="sub">就餐桌号</text>
+      <text class="tno">{{table || "未选桌"}}</text>
+    </view>
+    <view class="seg">
+      <view class="seg-i {{dine === '堂食' ? 'seg-on' : ''}}" data-v="堂食" bindtap="onDine"><text>堂食</text></view>
+      <view class="seg-i {{dine === '打包' ? 'seg-on' : ''}}" data-v="打包" bindtap="onDine"><text>打包</text></view>
+    </view>
+  </view>
+
+  <view class="card">
+    <text class="title">菜品（{{sum.count}} 份）</text>
+    <view class="empty" wx:if="{{!items.length}}"><text class="sub">购物车是空的，先去点几道菜吧</text></view>
+    <view wx:for="{{items}}" wx:key="key" class="it">
+      <view class="it-thumb" style="background: {{item.bg}};"><text class="it-thumb-t">{{item.ch}}</text></view>
+      <view class="it-info">
+        <text class="it-name">{{item.name}}</text>
+        <text class="sub" wx:if="{{item.spec}}">{{item.spec}}</text>
+      </view>
+      <text class="sub it-qty">x{{item.qty}}</text>
+      <text class="it-price">¥{{item.lineText}}</text>
+    </view>
+    <view class="line"><text class="sub">商品金额</text><text>¥{{sum.amountText}}</text></view>
+    <view class="line" wx:if="{{dine === '打包'}}"><text class="sub">打包费（每份 1 元）</text><text>¥{{packText}}</text></view>
+    <view class="line">
+      <view class="row"><view class="minus-tag"><text>减</text></view><text class="sub">满减优惠</text></view>
+      <text class="brand">{{sum.discount ? '-¥' + sum.discountText : '未满 30 元'}}</text>
+    </view>
+    <view class="line total"><text class="sub">合计</text><text class="price total-p">¥{{payText}}</text></view>
+  </view>
+
+  <view class="card">
+    <view class="row between">
+      <text class="title">备注</text>
+      <view class="row">
+        <text class="sub">{{remarkLen}}/{{maxRemark}}</text>
+        <text class="sub clr" wx:if="{{remarkLen}}" bindtap="clearRemark">清空</text>
+      </view>
+    </view>
+    <textarea class="remark" value="{{remark}}" placeholder="口味、忌口等要求（最多 50 字）" maxlength="-1" bindinput="onRemark"></textarea>
+    <view class="tags">
+      <view wx:for="{{tags}}" wx:key="t" class="tag {{item.on ? 'tag-on' : ''}}" data-t="{{item.t}}" bindtap="onTag"><text>{{item.t}}</text></view>
+    </view>
+  </view>
+
+  <view class="card row between">
+    <view class="col">
+      <text class="title">餐具份数</text>
+      <text class="sub ware-sub">{{tableware === 0 ? '不需要餐具，为环保出一份力' : '按就餐人数准备'}}</text>
+    </view>
+    <view class="stepper">
+      <view class="step-btn step-minus {{tableware === 0 ? 'step-off' : ''}}" bindtap="wareMinus"><view class="bar-h"></view></view>
+      <text class="step-num">{{tableware}}</text>
+      <view class="step-btn {{tableware === 10 ? 'step-off' : ''}}" bindtap="warePlus"><view class="bar-h"></view><view class="plus-v"></view></view>
+    </view>
+  </view>
+  <view class="space"></view>
+
+  <view class="bottom">
+    <view class="col">
+      <view class="row"><text class="sub">待支付 </text><text class="price bottom-p">¥{{payText}}</text></view>
+      <text class="sub" wx:if="{{sum.discount}}">已优惠 ¥{{sum.discountText}}</text>
+    </view>
+    <view class="btn submit {{submitting || !items.length ? 'btn-disabled' : ''}}" bindtap="submit"><text>提交订单</text></view>
+  </view>
+</view>

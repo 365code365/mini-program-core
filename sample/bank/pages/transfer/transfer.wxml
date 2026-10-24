@@ -1,0 +1,100 @@
+<view class="lock-bar row" wx:if="{{locked}}">
+  <text class="lock-t">支付密码已锁定，暂不能转账。请到「我的 - 安全中心」解除锁定</text>
+</view>
+
+<picker range="{{acctNames}}" value="{{acctIdx}}" bindchange="onAcct">
+  <view class="card payer row">
+    <view class="glyph" style="background: {{acct.bg}}"><text class="glyph-t">付</text></view>
+    <view class="col flex1 payer-mid">
+      <text class="payer-name">{{acct.name}}（{{acct.tail}}）</text>
+      <text class="sub">可用余额 ¥{{acct.balText}}</text>
+    </view>
+    <text class="sub">切换</text><view class="chev"></view>
+  </view>
+</picker>
+
+<view class="card">
+  <view class="row between">
+    <text class="title">收款人</text>
+    <view class="row link" bindtap="openPayees"><text class="red">通讯录选择</text><view class="chev chev-red"></view></view>
+  </view>
+  <scroll-view scroll-x class="recent" wx:if="{{recent.length}}">
+    <view class="row recent-row">
+      <view class="chip {{item.card === cardDigits ? 'chip-on' : ''}}" wx:for="{{recent}}" wx:key="card" data-i="{{index}}" bindtap="useRecent">
+        <text class="chip-t">{{item.name}} · {{item.tail}}</text>
+      </view>
+    </view>
+  </scroll-view>
+  <view class="field row">
+    <text class="label">户名</text>
+    <input class="flex1 ipt" placeholder="请输入收款人姓名" value="{{name}}" maxlength="20" bindinput="onName" />
+    <view class="clear" wx:if="{{name}}" data-f="name" bindtap="clearField"><view class="x1"></view><view class="x2"></view></view>
+  </view>
+  <text class="err" wx:if="{{errors.name}}">{{errors.name}}</text>
+  <view class="field row">
+    <text class="label">卡号</text>
+    <input class="flex1 ipt ipt-card" type="number" placeholder="请输入收款卡号" value="{{card}}" maxlength="23" bindinput="onCard" />
+    <view class="clear" wx:if="{{card}}" data-f="card" bindtap="clearField"><view class="x1"></view><view class="x2"></view></view>
+  </view>
+  <text class="err" wx:if="{{errors.card}}">{{errors.card}}</text>
+  <picker range="{{banks}}" value="{{bankPick}}" bindchange="onBank">
+    <view class="field row field-last">
+      <text class="label">开户行</text>
+      <text class="flex1 {{bankName ? 'val' : 'ph'}}">{{bankName || '请选择开户银行'}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <text class="err" wx:if="{{errors.bank}}">{{errors.bank}}</text>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="title">转账金额</text>
+    <text class="sub">单笔限额 50,000.00 元</text>
+  </view>
+  <view class="amt-row row">
+    <text class="yen">¥</text>
+    <input class="flex1 amt-ipt" type="digit" placeholder="0.00" value="{{amountView}}" bindinput="onAmount" />
+    <view class="clear" wx:if="{{amountView}}" data-f="amount" bindtap="clearField"><view class="x1"></view><view class="x2"></view></view>
+  </view>
+  <view class="upper-box" wx:if="{{upper}}"><text class="upper">{{upper}}</text></view>
+  <view class="row quick">
+    <view class="q" wx:for="{{quick}}" wx:key="*this" data-v="{{item}}" bindtap="quickAmount"><text class="q-t">{{item}}</text></view>
+    <view class="q" bindtap="allAmount"><text class="q-t">全部</text></view>
+  </view>
+  <text class="err" wx:if="{{errors.amount}}">{{errors.amount}}</text>
+  <view class="field row field-last remark">
+    <text class="label">附言</text>
+    <input class="flex1 ipt" placeholder="选填，如：房租、还款" value="{{remark}}" maxlength="20" bindinput="onRemark" />
+    <text class="sub">{{remark.length}}/20</text>
+  </view>
+</view>
+
+<view class="submit-wrap">
+  <view class="btn-primary {{canSubmit && !locked ? '' : 'btn-disabled'}}" bindtap="submit">下一步</view>
+  <text class="tip">转账前请核对户名与卡号，资金转出后无法撤回</text>
+</view>
+
+<!-- 键盘放进遮罩里并 catchtap：遮罩与键盘做成兄弟节点时，点键盘会同时触发遮罩的 closePad（引擎问题） -->
+<view class="mask" wx:if="{{showPad}}" bindtap="closePad">
+<view class="pad" catchtap="noop">
+  <view class="pad-head row">
+    <view class="pad-close" bindtap="closePad"><view class="x1 x-dark"></view><view class="x2 x-dark"></view></view>
+    <text class="pad-title flex1">请输入支付密码</text>
+    <view class="pad-close"></view>
+  </view>
+  <text class="pad-amt nowrap">¥ {{amountView}}</text>
+  <text class="sub pad-to">转给 {{name}}（{{bankName}} 尾号 {{cardTail}}）</text>
+  <view class="boxes row {{shake ? 'shake' : ''}}">
+    <view class="box" wx:for="{{dots}}" wx:key="index"><view class="dot" wx:if="{{item}}"></view></view>
+  </view>
+  <text class="pad-err" wx:if="{{pwdErrors}}">支付密码错误，还可尝试 {{3 - pwdErrors}} 次</text>
+  <text class="pad-hint" wx:else>演示环境支付密码：123456</text>
+  <view class="keys">
+    <view class="key {{item === '' ? 'key-blank' : ''}} {{item === 'del' ? 'key-fn' : ''}}" hover-class="key-down" wx:for="{{keys}}" wx:key="index" data-k="{{item}}" bindtap="press">
+      <text class="key-t" wx:if="{{item !== 'del'}}">{{item}}</text>
+      <view class="del" wx:else><view class="del-x1"></view><view class="del-x2"></view></view>
+    </view>
+  </view>
+</view>
+</view>

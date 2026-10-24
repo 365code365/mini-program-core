@@ -1,0 +1,40 @@
+.bar { position: fixed; left: 0; right: 0; top: 0; height: 88rpx; background: #fff; border-bottom: 1rpx solid #eeeff1; padding: 0 16rpx; }
+.bar-space { height: 108rpx; }
+.sort { flex: 1; justify-content: center; height: 88rpx; }
+.sort-t { font-size: 26rpx; color: #4b5563; white-space: nowrap; }
+.sort-t.on { color: #D7263D; font-weight: bold; }
+.arrows { margin-left: 6rpx; align-items: center; }
+/* 小三角用旋转的小方块描两条边画（不用 border 三角形） */
+.ar { width: 8rpx; height: 8rpx; border-left: 3rpx solid #c4c7cc; border-top: 3rpx solid #c4c7cc; }
+.ar-up { transform: rotate(45deg); margin-bottom: 2rpx; margin-top: 4rpx; }
+.ar-down { transform: rotate(225deg); }
+.ar-on { border-left-color: #D7263D; border-top-color: #D7263D; }
+.funnel { width: 18rpx; height: 14rpx; border-top: 4rpx solid #9aa0a6; border-bottom: 4rpx solid #9aa0a6; margin-left: 8rpx; }
+.funnel-on { border-top-color: #D7263D; border-bottom-color: #D7263D; }
+.hold { padding: 28rpx 32rpx; }
+.hold-v { font-size: 40rpx; font-weight: bold; margin-top: 6rpx; }
+.hold-r { align-items: flex-end; }
+.hold-inc { font-size: 30rpx; font-weight: bold; color: #E8541E; margin-top: 6rpx; }
+.count { padding: 4rpx 32rpx 16rpx; }
+.prod-down { background: #fafafa; }
+.p-name { font-size: 30rpx; font-weight: bold; }
+.p-body { margin-top: 20rpx; }
+.p-rate { width: 240rpx; }
+.rate { font-size: 44rpx; font-weight: bold; color: #D7263D; }
+.p-mid { width: 180rpx; }
+.p-v { font-size: 30rpx; font-weight: bold; color: #1f2329; margin-bottom: 6rpx; }
+.p-tags { margin-top: 18rpx; }
+.clear-btn { width: 240rpx; margin-top: 28rpx; }
+.pmask { position: fixed; left: 0; right: 0; top: 88rpx; bottom: 0; background: rgba(0, 0, 0, 0.4); }
+.panel { position: absolute; left: 0; right: 0; top: 0; background: #fff; padding: 12rpx 32rpx 28rpx; border-radius: 0 0 24rpx 24rpx; }
+.pg { margin-top: 16rpx; }
+.pg-title { font-size: 28rpx; font-weight: bold; display: block; margin-bottom: 14rpx; }
+.opts { display: flex; flex-direction: row; flex-wrap: wrap; }
+.opt { display: flex; flex-direction: row; align-items: center; width: 31%; margin: 0 2% 16rpx 0; height: 64rpx; border-radius: 12rpx; background: #f4f5f7; border: 2rpx solid #f4f5f7; padding-left: 12rpx; box-sizing: border-box; }
+.opt-on { background: #fdecee; border-color: #D7263D; }
+.cb { transform: scale(0.7); margin-right: 2rpx; }
+.opt-t { font-size: 24rpx; color: #374151; white-space: nowrap; }
+.opt-t-on { color: #D7263D; }
+.panel-ops { margin-top: 24rpx; }
+.gap { width: 24rpx; }
+.ok { height: 84rpx; line-height: 84rpx; font-size: 28rpx; }

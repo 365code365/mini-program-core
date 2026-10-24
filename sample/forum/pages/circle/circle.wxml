@@ -1,0 +1,19 @@
+<view class="page">
+  <view class="hero" style="background: linear-gradient(135deg, {{c.from}}, {{c.color}});">
+    <view class="hero-row">
+      <view class="icon"><text class="icon-text" style="color: {{c.color}};">{{c.initial}}</text></view>
+      <view class="hero-main">
+        <text class="name">{{c.name}}圈</text>
+        <text class="desc">{{c.desc}}</text>
+        <text class="meta">{{members}} 成员 · {{count}} 帖子</text>
+      </view>
+      <view class="join {{joined ? 'joined' : ''}}" bindtap="toggleJoin"><text class="join-text" style="color: {{joined ? '#ffffff' : c.color}};">{{joined ? '已加入' : '加入'}}</text></view>
+    </view>
+  </view>
+  <view class="sorts">
+    <view class="sort {{sort === 'new' ? 'sort-on' : ''}}" data-s="new" bindtap="setSort"><text class="sort-text {{sort === 'new' ? 'sort-text-on' : ''}}">最新</text></view>
+    <view class="sort {{sort === 'hot' ? 'sort-on' : ''}}" data-s="hot" bindtap="setSort"><text class="sort-text {{sort === 'hot' ? 'sort-text-on' : ''}}">最热</text></view>
+  </view>
+  <post-card wx:for="{{list}}" wx:key="id" item="{{item}}" show-circle="{{false}}" bindopen="open" bindlike="like" bindfav="fav" bindcircle="noop"></post-card>
+  <view class="empty" wx:if="{{empty}}"><text class="muted">圈子里还没有帖子</text></view>
+</view>

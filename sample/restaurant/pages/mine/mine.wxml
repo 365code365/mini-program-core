@@ -1,0 +1,42 @@
+<view class="head">
+  <view class="row">
+    <view class="avatar"><text class="avatar-t">林</text></view>
+    <view class="col">
+      <text class="name">林晓岚</text>
+      <text class="head-s">工号 HW20318 · 研发中心</text>
+    </view>
+  </view>
+  <view class="wallet">
+    <view class="col">
+      <text class="sub">饭卡余额（元）</text>
+      <text class="bal">{{balanceText}}</text>
+    </view>
+    <view class="btn rc-btn" bindtap="openRecharge"><text>充值</text></view>
+  </view>
+</view>
+
+<view class="card stats">
+  <view class="stat" bindtap="goOrders"><text class="stat-v">{{orders}}</text><text class="sub">有效订单</text></view>
+  <view class="stat"><text class="stat-v">{{spentText}}</text><text class="sub">累计消费</text></view>
+  <view class="stat"><text class="stat-v brand">{{savedText}}</text><text class="sub">满减省下</text></view>
+</view>
+
+<view class="card">
+  <view class="cell"><text>最常点</text><text class="sub">{{topDish}}</text></view>
+  <view class="cell" bindtap="changeTable"><text>当前桌号</text><view class="row"><text class="sub">{{table || '未选择'}}</text><view class="arrow"></view></view></view>
+  <view class="cell" bindtap="leaveTable"><text>离开餐桌</text><view class="arrow"></view></view>
+  <view class="cell cell-last" bindtap="clearAll"><text class="danger">清除本地数据</text><view class="arrow"></view></view>
+</view>
+<text class="foot sub">禾味食堂 · 营业时间 10:30-14:00 / 17:00-20:30</text>
+
+<view class="mask rc-mask" wx:if="{{recharge}}" bindtap="closeRecharge">
+<view class="rc" catchtap="innerTap">
+  <text class="title">饭卡充值</text>
+  <view class="amts">
+    <view wx:for="{{amounts}}" wx:key="*this" class="amt {{amountIdx === index ? 'amt-on' : ''}}" data-i="{{index}}" bindtap="pickAmount">
+      <text class="amt-t">{{item / 100}} 元</text>
+    </view>
+  </view>
+  <view class="btn" bindtap="doRecharge"><text>立即充值</text></view>
+</view>
+</view>

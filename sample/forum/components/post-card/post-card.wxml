@@ -1,0 +1,32 @@
+<view class="card" bindtap="open" hover-class="card-hover" hover-stay-time="80">
+  <view class="head">
+    <view class="avatar av" style="background: {{item.color}};"><text class="av-text">{{item.initial}}</text></view>
+    <view class="who">
+      <text class="author">{{item.author}}</text>
+      <text class="time">{{item.time}}{{item.edited ? ' · 已编辑' : ''}}</text>
+    </view>
+    <view class="circle" wx:if="{{showCircle}}" catchtap="circle" style="background: {{item.circleBg}};"><text class="circle-text" style="color: {{item.circleColor}};">{{item.circleName}}</text></view>
+  </view>
+  <text class="title">{{item.title}}</text>
+  <text class="body">{{item.summary}}</text>
+  <view class="pics {{item.picCls}}" wx:if="{{item.pics.length}}">
+    <view class="pic {{item.k ? 'pic-gap' : ''}}" wx:for="{{item.pics}}" wx:key="k" style="background: linear-gradient(135deg, {{item.from}}, {{item.color}});"></view>
+  </view>
+  <view class="tags" wx:if="{{item.tags.length}}">
+    <view class="tag" wx:for="{{item.tags}}" wx:key="*this"><text class="tag-text"># {{item}}</text></view>
+  </view>
+  <view class="foot">
+    <view class="act" catchtap="like">
+      <view class="heart {{item.liked ? 'heart-on' : ''}}"><view class="h-l"></view><view class="h-r"></view><view class="h-b"></view></view>
+      <text class="act-text {{item.liked ? 'on' : ''}}">{{item.likes}}</text>
+    </view>
+    <view class="act">
+      <view class="cmt"><view class="cmt-tail"></view></view>
+      <text class="act-text">{{item.comments}}</text>
+    </view>
+    <view class="act" catchtap="fav">
+      <view class="star {{item.fav ? 'star-on' : ''}}"></view>
+      <text class="act-text {{item.fav ? 'on-fav' : ''}}">{{item.fav ? '已收藏' : '收藏'}}</text>
+    </view>
+  </view>
+</view>

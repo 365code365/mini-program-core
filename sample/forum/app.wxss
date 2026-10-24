@@ -1,0 +1,4 @@
+page { background: #f5f6f8; color: #1d2129; font-size: 28rpx; }
+.avatar { display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.av-text { color: #ffffff; font-weight: bold; }
+.muted { color: #86909c; font-size: 24rpx; }

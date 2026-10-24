@@ -1,0 +1,43 @@
+<view class="page">
+  <scroll-view class="list" scroll-y style="height: {{listH}}px;" scroll-into-view="{{intoView}}">
+    <view class="top">
+      <view class="search">
+        <view class="glass"><view class="glass-ring"></view><view class="glass-bar"></view></view>
+        <input class="search-input" placeholder="搜索姓名 / 备注 / 微信号" placeholder-class="ph" value="{{kw}}" bindinput="onSearch" />
+      </view>
+    </view>
+    <view class="entries" wx:if="{{!kw}}">
+      <view class="entry" bindtap="newFriend" hover-class="hover">
+        <view class="ent-icon" style="background: #FF7D00;"><view class="plus-h"></view><view class="plus-v"></view></view>
+        <text class="ent-name">新的朋友</text>
+        <view class="ent-badge" wx:if="{{newFriends}}"><text class="badge-text">{{newFriends}}</text></view>
+      </view>
+      <view class="entry entry-last" bindtap="groupChat" hover-class="hover">
+        <view class="ent-icon" style="background: #00B42A;"><view class="grp g1"></view><view class="grp g2"></view></view>
+        <text class="ent-name">群聊</text>
+      </view>
+    </view>
+    <view class="group" wx:for="{{groups}}" wx:for-item="g" wx:key="id" id="{{g.id}}">
+      <view class="g-title {{curLetter === g.id ? 'g-title-on' : ''}}"><text class="g-title-text">{{g.title}}</text></view>
+      <view class="g-body">
+        <view class="person" wx:for="{{g.items}}" wx:key="key" data-id="{{item.id}}" bindtap="open" hover-class="hover">
+          <view class="avatar av" style="background: {{item.color}};"><text class="av-text">{{item.initial}}</text></view>
+          <view class="p-main">
+            <view class="p-row">
+              <text class="p-name">{{item.name}}</text>
+              <view class="p-remark" wx:if="{{item.remark}}"><text class="p-remark-text">{{item.remark}}</text></view>
+            </view>
+            <text class="p-sign">{{item.sign}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+    <view class="foot"><text class="foot-text">{{count}} 位联系人</text></view>
+  </scroll-view>
+  <view class="index" style="top: {{idxTop}}px;" catchtouchmove="onIdxMove" bindtouchend="onIdxEnd">
+    <view class="idx" wx:for="{{letters}}" wx:key="id" data-i="{{index}}" catchtap="jump" style="height: {{letterH}}px;">
+      <text class="idx-text {{curLetter === item.id ? 'idx-on' : ''}}">{{item.text}}</text>
+    </view>
+  </view>
+  <view class="big" wx:if="{{bigLetter}}"><text class="big-text">{{bigLetter}}</text></view>
+</view>

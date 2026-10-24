@@ -1,0 +1,24 @@
+<view class="head col">
+  <view class="ok pop"><view class="ok-tick"></view></view>
+  <text class="ok-t">转账成功</text>
+  <text class="ok-amt nowrap">¥ {{amtText}}</text>
+  <text class="sub">{{upper}}</text>
+</view>
+<view class="card">
+  <view class="steps row">
+    <view class="step col"><view class="sd sd-on"></view><text class="st">提交成功</text></view>
+    <view class="sl sl-on"></view>
+    <view class="step col"><view class="sd sd-on"></view><text class="st">银行处理</text></view>
+    <view class="sl sl-on"></view>
+    <view class="step col"><view class="sd sd-on"></view><text class="st">到账</text></view>
+  </view>
+  <view class="kv row" wx:for="{{rows}}" wx:key="k"><text class="k">{{item.k}}</text><text class="v flex1">{{item.v}}</text></view>
+</view>
+<view class="ops">
+  <view class="btn-primary" bindtap="done">完成</view>
+  <view class="row ops2">
+    <view class="btn-ghost flex1" bindtap="again">再转一笔</view>
+    <view class="gap"></view>
+    <view class="btn-ghost flex1" bindtap="bills">查看明细</view>
+  </view>
+</view>

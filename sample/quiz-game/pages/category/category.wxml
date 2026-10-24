@@ -1,0 +1,29 @@
+<view class="head row between">
+  <view class="col">
+    <text class="title">选择题库</text>
+    <text class="sub">可多选，每局从所选题库里随机抽 10 题</text>
+  </view>
+  <view class="all row" bindtap="toggleAll">
+    <view class="box {{allOn ? 'box-on' : ''}}"><view class="tick" wx:if="{{allOn}}"></view></view>
+    <text class="all-t">全选</text>
+  </view>
+</view>
+<checkbox-group class="grid" bindchange="onChange">
+  <label class="cat {{item.on ? 'cat-on' : ''}}" wx:for="{{cats}}" wx:key="k" style="border-color: {{item.on ? item.c : '#ffffff'}}">
+    <view class="row between">
+      <view class="glyph" style="background: {{item.c}}"><text class="glyph-t">{{item.g}}</text></view>
+      <checkbox value="{{item.k}}" checked="{{item.on}}" color="{{item.c}}" />
+    </view>
+    <text class="cat-t">{{item.t}}</text>
+    <text class="sub">{{item.n}} 道题 · 答错 {{item.wrong}} 道</text>
+    <view class="acc-track"><view class="acc-bar" style="width: {{item.acc}}%; background: {{item.c}}"></view></view>
+    <text class="acc-t">掌握度 {{item.acc}}%</text>
+  </label>
+</checkbox-group>
+<view class="foot">
+  <view class="row between foot-info">
+    <text class="sub">已选 {{selCount}} 个题库，共 {{qCount}} 道题</text>
+    <text class="sub">体力 {{energy}}/10</text>
+  </view>
+  <view class="btn-primary {{selCount ? '' : 'btn-disabled'}}" bindtap="start">{{selCount ? '开始挑战（消耗 1 体力）' : '请至少选择 1 个题库'}}</view>
+</view>

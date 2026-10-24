@@ -1,0 +1,30 @@
+.label { display: block; font-size: 30rpx; font-weight: bold; margin-bottom: 20rpx; }
+.nomb { margin-bottom: 6rpx; }
+.mt { margin-top: 32rpx; }
+.dest { display: flex; flex-direction: row; align-items: center; height: 92rpx; background: #f4f6fa; border-radius: 16rpx; padding: 0 20rpx; border: 2rpx solid #f4f6fa; }
+.dest-ok { border-color: #1e78ff; background: #f3f8ff; }
+.dest-err { border-color: #f5222d; background: #fff5f5; }
+.pin { width: 28rpx; height: 28rpx; border-radius: 14rpx; background: #1e78ff; display: flex; flex-direction: row; align-items: center; justify-content: center; margin-right: 16rpx; }
+.pin-dot { width: 10rpx; height: 10rpx; border-radius: 5rpx; background: #ffffff; }
+.dest-input { flex: 1; height: 92rpx; font-size: 30rpx; }
+.clear { position: relative; width: 40rpx; height: 40rpx; border-radius: 20rpx; background: #c4c8d0; }
+.x1, .x2 { position: absolute; left: 10rpx; top: 18rpx; width: 20rpx; height: 4rpx; background: #ffffff; border-radius: 2rpx; }
+.x1 { transform: rotate(45deg); }
+.x2 { transform: rotate(-45deg); }
+.err { display: block; color: #f5222d; font-size: 24rpx; margin-top: 14rpx; }
+.sugs { margin-top: 12rpx; border-radius: 16rpx; border: 1rpx solid #e6e9ef; background: #ffffff; }
+.sug { height: 88rpx; display: flex; flex-direction: row; align-items: center; justify-content: space-between; padding: 0 24rpx; border-bottom: 1rpx solid #f2f3f5; }
+.sug-t { font-size: 30rpx; color: #1c2230; }
+.sug-hit { color: #1e78ff; font-weight: bold; }
+.dates { display: flex; flex-direction: row; align-items: center; justify-content: space-between; }
+.date { display: flex; flex-direction: column; width: 250rpx; }
+.date-r { align-items: flex-end; }
+.date-t { font-size: 32rpx; font-weight: bold; margin-top: 8rpx; white-space: nowrap; }
+.days-pill { padding: 6rpx 20rpx; border-radius: 24rpx; background: #eaf2ff; color: #1e78ff; font-size: 24rpx; }
+.pill-err { background: #fff1f0; color: #f5222d; }
+.types { display: flex; flex-direction: row; flex-wrap: wrap; }
+.type { padding: 12rpx 26rpx; border-radius: 30rpx; background: #f4f6fa; margin: 0 16rpx 16rpx 0; font-size: 26rpx; color: #4e5566; border: 2rpx solid #f4f6fa; }
+.type-on { background: #eaf2ff; color: #1e78ff; border-color: #1e78ff; font-weight: bold; }
+.name-input { height: 88rpx; background: #f4f6fa; border-radius: 16rpx; padding: 0 20rpx; font-size: 30rpx; }
+.space { height: 200rpx; }
+.bottom { position: fixed; left: 0; right: 0; bottom: 0; padding: 20rpx 32rpx 32rpx 32rpx; background: #ffffff; border-top: 1rpx solid #edf0f5; }

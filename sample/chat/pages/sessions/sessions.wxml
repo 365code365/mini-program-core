@@ -1,0 +1,33 @@
+<view class="page">
+  <view class="top">
+    <view class="search">
+      <view class="glass"><view class="glass-ring"></view><view class="glass-bar"></view></view>
+      <input class="search-input" placeholder="搜索联系人或聊天内容" placeholder-class="ph" value="{{kw}}" bindinput="onSearch" />
+      <view class="clear" wx:if="{{kw}}" bindtap="clearKw"><view class="x1"></view><view class="x2"></view></view>
+    </view>
+    <view class="read-all {{total ? '' : 'read-all-off'}}" bindtap="readAll"><text class="read-all-text">全部已读</text></view>
+  </view>
+  <view class="list">
+    <view class="item {{item.pinned ? 'pinned' : ''}}" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="open" bindtouchstart="onTouchStart" bindlongpress="onLong" bindtouchend="onTouchEnd" hover-class="item-hover">
+      <view class="av-wrap">
+        <view class="avatar av" style="background: {{item.color}};"><text class="av-text">{{item.initial}}</text></view>
+        <view class="badge {{item.wide ? 'badge-wide' : ''}}" wx:if="{{item.unread > 0}}"><text class="badge-text">{{item.badge}}</text></view>
+      </view>
+      <view class="main">
+        <view class="row1">
+          <text class="name">{{item.name}}</text>
+          <text class="time">{{item.time}}</text>
+        </view>
+        <view class="row2">
+          <text class="last">{{item.last}}</text>
+          <view class="pin-tag" wx:if="{{item.pinned}}"><text class="pin-text">置顶</text></view>
+        </view>
+      </view>
+    </view>
+    <view class="empty" wx:if="{{empty}}">
+      <view class="empty-bubble"></view>
+      <text class="empty-text">{{kw ? '没有找到相关聊天' : '暂无聊天，去通讯录找人聊聊吧'}}</text>
+    </view>
+  </view>
+  <view class="tip"><text class="tip-text">长按会话可置顶、标为已读或删除</text></view>
+</view>

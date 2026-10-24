@@ -1,0 +1,21 @@
+.bar { padding: 24rpx 32rpx 16rpx; }
+.cat { border-radius: 8rpx; padding: 4rpx 14rpx; }
+.cat-t { font-size: 22rpx; font-weight: bold; }
+.q { display: block; font-size: 34rpx; font-weight: bold; line-height: 1.5; margin-top: 18rpx; }
+.opt { background: #fff; margin: 0 24rpx 18rpx; border-radius: 20rpx; padding: 24rpx 28rpx; border: 4rpx solid #fff; box-sizing: border-box; }
+.right { background: #E8FFF3; border-color: #22C55E; }
+.wrong { background: #FFF0F1; border-color: #F43F5E; }
+.letter { width: 52rpx; height: 52rpx; border-radius: 26rpx; background: #efeef8; display: flex; flex-direction: row; align-items: center; justify-content: center; margin-right: 20rpx; }
+.letter-right { background: #22C55E; }
+.letter-wrong { background: #F43F5E; }
+.letter-t { font-size: 26rpx; font-weight: bold; color: #5B4BF5; }
+.letter-right .letter-t, .letter-wrong .letter-t { color: #fff; }
+.opt-t { font-size: 30rpx; }
+.opt-tag { font-size: 22rpx; color: #8b8fa8; }
+.exp-card { margin-top: 12rpx; }
+.exp { display: block; font-size: 28rpx; color: #4b4f6b; line-height: 1.7; margin-top: 16rpx; }
+.foot { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; padding: 18rpx 24rpx calc(18rpx + env(safe-area-inset-bottom)); }
+.nav { width: 150rpx; height: 88rpx; border-radius: 44rpx; background: #f1f0f8; display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.nav-off { opacity: 0.4; }
+.nav-t { font-size: 26rpx; color: #4b4f6b; font-weight: bold; }
+.rm { margin: 0 18rpx; height: 88rpx; line-height: 88rpx; font-size: 28rpx; }

@@ -1,0 +1,85 @@
+<view class="bar row">
+  <view class="sort row" wx:for="{{sorts}}" wx:key="k" data-k="{{item.k}}" bindtap="onSort">
+    <text class="sort-t {{sortKey === item.k ? 'on' : ''}}">{{item.t}}</text>
+    <view class="arrows col" wx:if="{{item.k !== 'default'}}">
+      <view class="ar ar-up {{sortKey === item.k && sortDir === 1 ? 'ar-on' : ''}}"></view>
+      <view class="ar ar-down {{sortKey === item.k && sortDir === -1 ? 'ar-on' : ''}}"></view>
+    </view>
+  </view>
+  <view class="sort row filter-btn" bindtap="togglePanel">
+    <text class="sort-t {{filterCount || panel ? 'on' : ''}}">筛选{{filterCount ? '·' + filterCount : ''}}</text>
+    <view class="funnel {{filterCount || panel ? 'funnel-on' : ''}}"></view>
+  </view>
+</view>
+<view class="bar-space"></view>
+
+<view class="hold card row" bindtap="goMine">
+  <view class="col flex1">
+    <text class="sub">我的理财持仓（元）</text>
+    <text class="hold-v nowrap">{{holdText}}</text>
+  </view>
+  <view class="col hold-r">
+    <text class="sub">预计累计收益</text>
+    <text class="hold-inc nowrap">+{{incomeText}}</text>
+  </view>
+  <view class="chev"></view>
+</view>
+
+<view class="count row between">
+  <text class="sub">共 {{list.length}} 款产品{{filterCount ? '（已筛选）' : ''}}</text>
+  <text class="sub">{{sortDesc}}</text>
+</view>
+
+<view class="card prod" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="open" hover-class="prod-down">
+  <view class="row">
+    <text class="p-name flex1">{{item.name}}</text>
+    <text class="tag" wx:if="{{item.tag}}">{{item.tag}}</text>
+  </view>
+  <view class="row p-body">
+    <view class="col p-rate">
+      <text class="rate nowrap">{{item.rateText}}%</text>
+      <text class="sub">{{item.rateLabel}}</text>
+    </view>
+    <view class="col p-mid">
+      <text class="p-v nowrap">{{item.daysText}}</text>
+      <text class="sub">投资期限</text>
+    </view>
+    <view class="col flex1">
+      <text class="p-v nowrap">{{item.minText}}</text>
+      <text class="sub">起购金额</text>
+    </view>
+  </view>
+  <view class="row p-tags">
+    <text class="tag tag-gray">{{item.riskName}}</text>
+    <text class="tag tag-gray">{{item.type}}</text>
+  </view>
+</view>
+<view class="empty" wx:if="{{!list.length}}">
+  <view class="empty-ring"></view>
+  <text class="sub">没有符合条件的产品</text>
+  <view class="btn-ghost clear-btn" bindtap="clearFilter">清除筛选</view>
+</view>
+<view class="tabbar-space"></view>
+
+<!-- 面板放进遮罩里：两个 fixed 兄弟节点时，点面板会落到前面的遮罩上（引擎问题）。
+     面板上不能 catchtap（会挡掉 checkbox 的勾选），改成遮罩里判断点的是不是遮罩自己 -->
+<view class="pmask" wx:if="{{panel}}" data-mask="1" bindtap="maskTap">
+<view class="panel">
+  <view wx:for="{{groups}}" wx:key="k" wx:for-item="g" class="pg">
+    <text class="pg-title">{{g.t}}</text>
+    <checkbox-group class="opts" data-g="{{g.k}}" bindchange="onCheck">
+      <!-- 不用 label 包 checkbox：在 fixed 层里点 label 不会勾选（引擎问题）。整块 view 自己切换；
+           直接点到 checkbox 时由 checkbox-group 的 change 处理，外面 catchtap 挡住，免得再切一次 -->
+      <view class="opt {{o.checked ? 'opt-on' : ''}}" wx:for="{{g.opts}}" wx:for-item="o" wx:key="v" data-g="{{g.k}}" data-v="{{o.v}}" bindtap="onOpt">
+        <view catchtap="noop"><checkbox value="{{o.v}}" checked="{{o.checked}}" color="#D7263D" class="cb" /></view>
+        <text class="opt-t {{o.checked ? 'opt-t-on' : ''}}">{{o.t}}</text>
+      </view>
+    </checkbox-group>
+  </view>
+  <view class="row panel-ops">
+    <view class="btn-ghost flex1" bindtap="resetDraft">重置</view>
+    <view class="gap"></view>
+    <view class="btn-primary flex1 ok" bindtap="applyFilter">查看 {{draftCount}} 款</view>
+  </view>
+</view>
+</view>

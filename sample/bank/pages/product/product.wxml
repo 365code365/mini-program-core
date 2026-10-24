@@ -1,0 +1,70 @@
+<view class="head">
+  <view class="row">
+    <text class="h-name flex1">{{p.name}}</text>
+    <text class="h-tag" wx:if="{{p.tag}}">{{p.tag}}</text>
+  </view>
+  <text class="h-rate nowrap">{{rateText}}%</text>
+  <text class="h-k">{{rateLabel}}（{{periodName}}）</text>
+  <view class="row h-meta">
+    <text class="h-chip">{{riskName}}</text>
+    <text class="h-chip">{{p.type}}</text>
+    <text class="h-chip">{{minText}}起购</text>
+  </view>
+  <text class="h-desc">{{p.desc}}</text>
+</view>
+
+<view class="card">
+  <text class="title">收益试算</text>
+  <view class="row amt-row">
+    <text class="yen">¥</text>
+    <input class="flex1 amt-ipt" type="digit" value="{{amountText}}" bindinput="onAmountInput" bindblur="onAmountBlur" />
+    <text class="sub">{{upperShort}}</text>
+  </view>
+  <slider min="{{sMin}}" max="{{sMax}}" step="{{sStep}}" value="{{sliderVal}}" activeColor="#D7263D" backgroundColor="#f1d5d8" block-size="24" bindchanging="onSlide" bindchange="onSlide" />
+  <view class="row between scale"><text class="sub">{{sMinText}}</text><text class="sub">{{sMaxText}}</text></view>
+  <view class="row chips">
+    <view class="chip {{amount === item ? 'chip-on' : ''}}" wx:for="{{presets}}" wx:key="*this" data-v="{{item}}" bindtap="preset"><text class="chip-t {{amount === item ? 'chip-t-on' : ''}}">{{item / 10000}}万</text></view>
+  </view>
+  <picker range="{{periodNames}}" value="{{pIdx}}" bindchange="onPeriod">
+    <view class="row field">
+      <text class="label">投资期限</text>
+      <text class="flex1 val">{{periodNames[pIdx]}}</text>
+      <text class="sub">{{periodHint}}</text><view class="chev"></view>
+    </view>
+  </picker>
+  <view class="res row">
+    <view class="col flex1 res-cell res-gap"><text class="res-k">预计收益（元）</text><text class="res-v income nowrap">+{{incomeText}}</text></view>
+    <view class="col flex1 res-cell"><text class="res-k">到期本息（元）</text><text class="res-v nowrap">{{totalText}}</text></view>
+  </view>
+  <view class="cmp">
+    <text class="sub">同金额同期限对比</text>
+    <view class="cmp-row row" wx:for="{{cmp}}" wx:key="t">
+      <text class="cmp-t">{{item.t}}</text>
+      <view class="flex1 cmp-track"><view class="cmp-bar" style="width: {{item.w}}%; background: {{item.c}}"></view></view>
+      <text class="cmp-v nowrap">{{item.v}}</text>
+    </view>
+  </view>
+  <text class="note">测算基于业绩比较基准，不代表实际收益，理财非存款，投资需谨慎</text>
+</view>
+
+<view class="card">
+  <text class="title">交易规则</text>
+  <view class="tl row">
+    <view class="tl-i col"><view class="tl-d tl-on"></view><text class="tl-t">买入</text><text class="sub">{{dates.buy}}</text></view>
+    <view class="tl-l"></view>
+    <view class="tl-i col"><view class="tl-d"></view><text class="tl-t">起息</text><text class="sub">{{dates.start}}</text></view>
+    <view class="tl-l"></view>
+    <view class="tl-i col"><view class="tl-d"></view><text class="tl-t">到期</text><text class="sub">{{dates.end}}</text></view>
+  </view>
+</view>
+<view class="buy-space"></view>
+
+<view class="buybar row">
+  <picker range="{{acctNames}}" value="{{acctIdx}}" bindchange="onAcct" class="pay">
+    <view class="col">
+      <text class="sub">付款账户</text>
+      <view class="row"><text class="pay-t">{{acctNames[acctIdx]}}</text><view class="down"></view></view>
+    </view>
+  </picker>
+  <view class="btn-primary buy" bindtap="buy">立即买入</view>
+</view>

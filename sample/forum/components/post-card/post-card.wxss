@@ -1,0 +1,35 @@
+.card { background: #ffffff; border-radius: 24rpx; padding: 28rpx 28rpx 8rpx; margin: 0 24rpx 20rpx; }
+.card-hover { background: #fafafb; }
+.head { display: flex; flex-direction: row; align-items: center; }
+.avatar { display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.av { width: 68rpx; height: 68rpx; border-radius: 34rpx; margin-right: 18rpx; }
+.av-text { color: #ffffff; font-size: 28rpx; font-weight: bold; }
+.who { flex: 1; display: flex; flex-direction: column; }
+.author { font-size: 28rpx; font-weight: bold; color: #1d2129; }
+.time { font-size: 22rpx; color: #a9aeb8; margin-top: 4rpx; }
+.circle { padding: 6rpx 18rpx; border-radius: 24rpx; }
+.circle-text { font-size: 22rpx; white-space: nowrap; }
+.title { display: block; margin-top: 22rpx; font-size: 32rpx; font-weight: bold; line-height: 46rpx; color: #1d2129; }
+.body { display: block; margin-top: 10rpx; font-size: 26rpx; line-height: 40rpx; color: #4e5969; }
+.pics { display: flex; flex-direction: row; margin-top: 18rpx; }
+.pic { height: 200rpx; border-radius: 14rpx; flex: 1; }
+.pic-gap { margin-left: 10rpx; }
+.pic-one .pic { height: 280rpx; }
+.tags { display: flex; flex-direction: row; flex-wrap: wrap; margin-top: 16rpx; }
+.tag { padding: 4rpx 16rpx; border-radius: 8rpx; background: #f5f6f8; margin-right: 12rpx; }
+.tag-text { font-size: 22rpx; color: #4e5969; }
+.foot { display: flex; flex-direction: row; margin-top: 12rpx; border-top: 1rpx solid #f2f3f5; }
+.act { flex: 1; height: 84rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.act-text { font-size: 24rpx; color: #86909c; margin-left: 10rpx; }
+.on { color: #FF6B3D; }
+.on-fav { color: #F7BA1E; }
+.heart { position: relative; width: 32rpx; height: 30rpx; }
+.h-l, .h-r { position: absolute; top: 0; width: 18rpx; height: 18rpx; border-radius: 9rpx; background: #c9cdd4; }
+.h-l { left: 0; }
+.h-r { left: 14rpx; }
+.h-b { position: absolute; left: 7rpx; top: 6rpx; width: 18rpx; height: 18rpx; background: #c9cdd4; transform: rotate(45deg); }
+.heart-on .h-l, .heart-on .h-r, .heart-on .h-b { background: #FF6B3D; }
+.cmt { position: relative; width: 32rpx; height: 26rpx; border-radius: 8rpx; border: 4rpx solid #c9cdd4; box-sizing: border-box; }
+.cmt-tail { position: absolute; left: 6rpx; bottom: -9rpx; width: 9rpx; height: 9rpx; background: #c9cdd4; transform: rotate(45deg); }
+.star { width: 28rpx; height: 28rpx; border-radius: 6rpx; border: 4rpx solid #c9cdd4; box-sizing: border-box; transform: rotate(45deg); }
+.star-on { background: #F7BA1E; border-color: #F7BA1E; }

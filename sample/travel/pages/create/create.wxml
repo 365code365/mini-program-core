@@ -1,0 +1,64 @@
+<view class="page">
+  <view class="card">
+    <text class="label">目的地</text>
+    <view class="dest {{cityErr ? 'dest-err' : ''}} {{cityOk ? 'dest-ok' : ''}}">
+      <view class="pin"><view class="pin-dot"></view></view>
+      <input class="dest-input" value="{{city}}" placeholder="输入城市，支持拼音 / 首字母" bindinput="onCityInput" bindfocus="onCityFocus" bindblur="onCityBlur" />
+      <view class="clear" wx:if="{{city}}" bindtap="clearCity"><view class="x1"></view><view class="x2"></view></view>
+    </view>
+    <text class="err" wx:if="{{cityErr}}">{{cityErr}}</text>
+    <view class="sugs" wx:if="{{showSug}}">
+      <view wx:for="{{sugs}}" wx:key="name" class="sug" data-name="{{item.name}}" bindtap="onSug">
+        <view class="row">
+          <text class="sug-t">{{item.pre}}</text><text class="sug-t sug-hit">{{item.hit}}</text><text class="sug-t">{{item.post}}</text>
+        </view>
+        <text class="sub">{{item.prov}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <text class="label">出行日期</text>
+    <view class="dates">
+      <picker mode="date" value="{{start}}" start="{{minDate}}" end="{{maxDate}}" bindchange="onStart">
+        <view class="date">
+          <text class="sub">出发</text>
+          <text class="date-t">{{startText}}</text>
+        </view>
+      </picker>
+      <view class="days-pill {{dateErr ? 'pill-err' : ''}}"><text>{{dateErr ? '日期有误' : days + ' 天'}}</text></view>
+      <picker mode="date" value="{{end}}" start="{{minDate}}" end="{{maxDate}}" bindchange="onEnd">
+        <view class="date date-r">
+          <text class="sub">返回</text>
+          <text class="date-t {{dateErr ? 'danger' : ''}}">{{endText}}</text>
+        </view>
+      </picker>
+    </view>
+    <text class="err" wx:if="{{dateErr}}">{{dateErr}}</text>
+  </view>
+
+  <view class="card row between">
+    <view class="col">
+      <text class="label nomb">出行人数</text>
+      <text class="sub">含成人与儿童</text>
+    </view>
+    <view class="stepper">
+      <view class="step-btn {{people > 1 ? '' : 'step-off'}}" bindtap="minus"><view class="bar-h"></view></view>
+      <text class="step-num">{{people}}</text>
+      <view class="step-btn {{people < 20 ? '' : 'step-off'}}" bindtap="plus"><view class="bar-h"></view><view class="plus-v"></view></view>
+    </view>
+  </view>
+
+  <view class="card">
+    <text class="label">出行类型</text>
+    <view class="types">
+      <view wx:for="{{types}}" wx:key="*this" class="type {{type === item ? 'type-on' : ''}}" data-t="{{item}}" bindtap="onType"><text>{{item}}</text></view>
+    </view>
+    <text class="label mt">行程名称</text>
+    <input class="name-input" value="{{title}}" placeholder="选好目的地后自动生成" bindinput="onTitle" />
+  </view>
+  <view class="space"></view>
+  <view class="bottom">
+    <view class="btn {{canSubmit ? '' : 'btn-disabled'}}" bindtap="submit"><text>{{canSubmit ? '创建行程' : (dateErr ? '请修改日期' : '请选择目的地')}}</text></view>
+  </view>
+</view>

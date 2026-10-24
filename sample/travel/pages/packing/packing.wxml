@@ -1,0 +1,42 @@
+<view class="top">
+  <view class="row between">
+    <view class="col">
+      <text class="top-v">{{stat.done}}<text class="top-of"> / {{stat.total}}</text></text>
+      <text class="sub">{{allDone ? '全部备齐，可以出发了' : '件物品已备好'}}</text>
+    </view>
+    <view class="ring {{allDone ? 'ring-done' : ''}}"><text class="ring-t">{{stat.pct}}%</text></view>
+  </view>
+  <view class="track top-track"><view class="fill {{allDone ? 'fill-green' : ''}}" style="width: {{stat.pct}}%;"></view></view>
+  <view class="row acts">
+    <view class="act act-main" bindtap="selectAll"><text>一键全选</text></view>
+    <view class="act" bindtap="reset"><text>重置</text></view>
+  </view>
+</view>
+
+<view wx:for="{{groups}}" wx:key="g" wx:for-index="gi" class="card grp">
+  <view class="grp-head">
+    <view class="check {{item.full ? 'check-on' : ''}}" data-i="{{gi}}" bindtap="toggleGroup"><view class="tick" wx:if="{{item.full}}"></view></view>
+    <view class="grp-name" data-g="{{item.g}}" bindtap="fold">
+      <text class="grp-t">{{item.g}}</text>
+      <text class="sub">{{item.done}}/{{item.total}}</text>
+      <view class="fold-arrow {{fold[item.g] ? 'fold-closed' : ''}}"></view>
+    </view>
+  </view>
+  <view wx:if="{{!fold[item.g]}}">
+    <view wx:for="{{item.items}}" wx:for-item="it" wx:key="key" class="it" data-key="{{it.key}}" bindtap="toggle">
+      <view class="check {{it.on ? 'check-on' : ''}}"><view class="tick" wx:if="{{it.on}}"></view></view>
+      <text class="it-t {{it.on ? 'it-done' : ''}}">{{it.n}}</text>
+      <view class="grow"></view>
+      <view wx:if="{{it.custom}}" class="rm" data-g="{{item.g}}" data-n="{{it.n}}" catchtap="removeCustom"><text class="sub">移除</text></view>
+    </view>
+  </view>
+</view>
+
+<view class="card add">
+  <picker mode="selector" range="{{groupNames}}" value="{{addGroup}}" bindchange="onGroupPick">
+    <view class="add-g"><text>{{groupNames[addGroup]}}</text><view class="dn"></view></view>
+  </picker>
+  <input class="add-in" value="{{newItem}}" placeholder="添加自定义物品" bindinput="onNewItem" bindconfirm="addItem" />
+  <view class="add-btn {{newItem ? '' : 'add-off'}}" bindtap="addItem"><text>添加</text></view>
+</view>
+<view class="space"></view>

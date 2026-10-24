@@ -1,0 +1,32 @@
+{
+  "pages": [
+    "pages/scan/scan",
+    "pages/menu/menu",
+    "pages/orders/orders",
+    "pages/mine/mine",
+    "pages/confirm/confirm",
+    "pages/pay/pay",
+    "pages/progress/progress"
+  ],
+  "window": {
+    "navigationBarTitleText": "禾味食堂",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f5f6f8"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#a0a0a8",
+    "selectedColor": "#ff6a2b",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/scan/scan", "text": "首页", "iconPath": "images/tab/scan-off.png", "selectedIconPath": "images/tab/scan-on.png" },
+      { "pagePath": "pages/menu/menu", "text": "点餐", "iconPath": "images/tab/menu-off.png", "selectedIconPath": "images/tab/menu-on.png" },
+      { "pagePath": "pages/orders/orders", "text": "订单", "iconPath": "images/tab/orders-off.png", "selectedIconPath": "images/tab/orders-on.png" },
+      { "pagePath": "pages/mine/mine", "text": "我的", "iconPath": "images/tab/mine-off.png", "selectedIconPath": "images/tab/mine-on.png" }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

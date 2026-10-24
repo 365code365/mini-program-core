@@ -1,0 +1,29 @@
+{
+  "pages": [
+    "pages/feed/feed",
+    "pages/circles/circles",
+    "pages/mine/mine",
+    "pages/post/post",
+    "pages/compose/compose",
+    "pages/circle/circle"
+  ],
+  "window": {
+    "navigationBarTitleText": "兴趣圈",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f5f6f8",
+    "backgroundTextStyle": "dark"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#9aa0a6",
+    "selectedColor": "#FF6B3D",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/feed/feed", "text": "首页", "iconPath": "images/tab-home.png", "selectedIconPath": "images/tab-home-on.png" },
+      { "pagePath": "pages/circles/circles", "text": "圈子", "iconPath": "images/tab-circles.png", "selectedIconPath": "images/tab-circles-on.png" },
+      { "pagePath": "pages/mine/mine", "text": "我的", "iconPath": "images/tab-me.png", "selectedIconPath": "images/tab-me-on.png" }
+    ]
+  }
+}

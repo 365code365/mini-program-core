@@ -1,0 +1,38 @@
+<view class="hero col">
+  <view class="record" wx:if="{{r.newRecord}}"><text class="record-t">新纪录！</text></view>
+  <text class="h-k">本局得分</text>
+  <text class="h-score nowrap">{{shown}}</text>
+  <text class="h-sub">{{r.newRecord ? recordText : bestText}}</text>
+  <view class="stars row">
+    <view class="star {{item ? 'star-on' : ''}}" wx:for="{{stars}}" wx:key="index"></view>
+  </view>
+</view>
+<view class="card grid">
+  <view class="cell col"><text class="cell-v">{{accText}}</text><text class="sub">正确率</text></view>
+  <view class="cell col"><text class="cell-v">{{r.correct}}/{{r.answered}}</text><text class="sub">答对/作答</text></view>
+  <view class="cell col"><text class="cell-v">{{timeText}}</text><text class="sub">用时</text></view>
+  <view class="cell col"><text class="cell-v">{{r.maxCombo}}</text><text class="sub">最高连对</text></view>
+</view>
+<view class="card">
+  <view class="row between"><text class="title">段位</text><text class="sub">积分 +{{r.score}}</text></view>
+  <view class="row tier">
+    <view class="badge" style="background: {{tier.color}}"><text class="badge-t">{{tier.name}}</text></view>
+    <text class="sub flex1">{{tierHint}}</text>
+  </view>
+  <view class="track"><view class="bar" style="width: {{tier.pct}}%"></view></view>
+  <text class="up" wx:if="{{tierUp}}">恭喜晋级！</text>
+</view>
+<view class="card" wx:if="{{wrongs.length}}">
+  <view class="row between"><text class="title">本局错题 {{wrongs.length}} 道</text><text class="brand" bindtap="goBook">去错题本</text></view>
+  <view class="w row" wx:for="{{wrongs}}" wx:key="id" data-id="{{item.id}}" bindtap="openWrong">
+    <text class="w-t flex1">{{item.q}}</text><view class="chev"></view>
+  </view>
+</view>
+<view class="ops">
+  <view class="btn-primary" bindtap="again">再来一局（体力 {{energy}}）</view>
+  <view class="row ops2">
+    <view class="btn-ghost flex1" bindtap="home">回首页</view>
+    <view class="gap"></view>
+    <view class="btn-ghost flex1" bindtap="rank">看排行</view>
+  </view>
+</view>

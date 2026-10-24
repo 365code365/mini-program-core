@@ -1,0 +1,44 @@
+<view class="sum-card {{over ? 'sum-over' : ''}}">
+  <text class="sum-s">已规划花费（元）</text>
+  <text class="sum-v">{{sumText}}</text>
+  <view class="stack">
+    <view wx:for="{{segs}}" wx:key="k" class="seg" style="width: {{item.w}}%; background: {{item.color}};"></view>
+  </view>
+  <view class="row between sum-foot">
+    <text class="sum-s" wx:if="{{over}}">超出预算 ¥{{overText}}</text>
+    <text class="sum-s" wx:elif="{{total}}">还剩 ¥{{leftText}} · 已用 {{pct}}%</text>
+    <text class="sum-s" wx:else>设置总预算后可查看剩余额度</text>
+    <text class="sum-s">人均 ¥{{perText}}</text>
+  </view>
+</view>
+
+<view class="card">
+  <text class="title">总预算</text>
+  <view class="total-row {{over ? 'total-over' : ''}}">
+    <text class="yen">¥</text>
+    <input class="total-in" type="digit" value="{{total}}" placeholder="输入本次旅行总预算" bindinput="onTotal" />
+  </view>
+  <view class="quicks">
+    <view class="qk" data-v="3000" bindtap="quick"><text>3000</text></view>
+    <view class="qk" data-v="5000" bindtap="quick"><text>5000</text></view>
+    <view class="qk" data-v="8000" bindtap="quick"><text>8000</text></view>
+    <view class="qk" data-v="12000" bindtap="quick"><text>12000</text></view>
+  </view>
+</view>
+
+<view class="card">
+  <text class="title">分项</text>
+  <view wx:for="{{items}}" wx:key="k" class="it">
+    <view class="row">
+      <view class="dot" style="background: {{item.color}};"></view>
+      <text class="it-t">{{item.t}}</text>
+      <view class="it-in-wrap">
+        <input class="it-in" type="digit" value="{{item.val}}" placeholder="0" data-k="{{item.k}}" bindinput="onItem" />
+      </view>
+      <text class="sub it-share">{{item.share}}%</text>
+    </view>
+    <view class="track it-track"><view class="fill {{over ? 'fill-over' : ''}}" style="width: {{item.w}}%; background: {{over ? '#f5222d' : item.color}};"></view></view>
+  </view>
+</view>
+<view class="space"></view>
+<view class="bottom"><view class="btn" bindtap="done"><text>保存预算</text></view></view>

@@ -1,0 +1,32 @@
+.page { padding-bottom: 80rpx; }
+.av-sec { display: flex; flex-direction: column; align-items: center; padding: 40rpx 0 24rpx; background: #ffffff; }
+.av { width: 144rpx; height: 144rpx; border-radius: 32rpx; }
+.av-text { color: #ffffff; font-size: 60rpx; font-weight: bold; }
+.swatches { display: flex; flex-direction: row; margin-top: 28rpx; }
+.sw-c { width: 60rpx; height: 60rpx; border-radius: 30rpx; margin: 0 8rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; border: 4rpx solid #ffffff; }
+.sw-c-on { border: 4rpx solid #1d2129; }
+.sw-dot { width: 44rpx; height: 44rpx; border-radius: 22rpx; }
+.block { margin: 24rpx 24rpx 0; }
+.field { display: flex; flex-direction: row; align-items: center; min-height: 104rpx; padding: 0 32rpx; border-bottom: 1rpx solid #f0f1f4; }
+.field-last { border-bottom: 0; }
+.label { width: 140rpx; font-size: 28rpx; color: #1d2129; }
+.input { flex: 1; height: 100rpx; font-size: 28rpx; }
+.ph { color: #c0c4cc; }
+.count { font-size: 24rpx; color: #a9aeb8; white-space: nowrap; }
+.over { color: #F53F3F; }
+.err { padding: 12rpx 32rpx 12rpx 172rpx; background: #fff2f0; }
+.err-text { font-size: 24rpx; color: #F53F3F; }
+.radios { flex: 1; display: flex; flex-direction: row; }
+.radio-item { display: flex; flex-direction: row; align-items: center; margin-right: 36rpx; }
+.radio-text { font-size: 28rpx; margin-left: 8rpx; }
+.value { flex: 1; font-size: 28rpx; color: #4e5969; }
+.arrow { width: 16rpx; height: 16rpx; border-top: 3rpx solid #c9cdd4; border-right: 3rpx solid #c9cdd4; transform: rotate(45deg); }
+.sign-box { padding: 28rpx 32rpx; }
+.sign-label { display: block; margin-bottom: 16rpx; }
+.textarea { width: 100%; height: 180rpx; font-size: 28rpx; line-height: 42rpx; background: #f7f8fa; border-radius: 16rpx; padding: 16rpx 20rpx; box-sizing: border-box; }
+.sign-foot { display: flex; flex-direction: row; justify-content: flex-end; align-items: center; margin-top: 12rpx; }
+.sign-warn { font-size: 24rpx; color: #F53F3F; margin-right: 16rpx; }
+.save { margin: 56rpx 24rpx 0; height: 96rpx; border-radius: 20rpx; background: #4F6BFF; display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.save-off { background: #c3cbff; }
+.save-hover { opacity: 0.85; }
+.save-text { color: #ffffff; font-size: 30rpx; font-weight: bold; }

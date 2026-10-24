@@ -1,0 +1,34 @@
+<view class="page" wx:if="{{order}}">
+  <view class="head {{expired ? 'head-off' : ''}}">
+    <text class="head-s">{{expired ? '订单已取消' : '请在以下时间内完成支付'}}</text>
+    <view class="clock" wx:if="{{!expired}}">
+      <text class="clock-t {{urgent ? 'urgent' : ''}}">{{left}}</text>
+    </view>
+    <text class="head-off-t" wx:else>支付超时或已取消，菜品已释放</text>
+    <view class="row amount-row"><text class="amt-y">¥</text><text class="amt">{{payText}}</text></view>
+    <text class="head-s">桌号 {{order.table}} · {{order.name}}等 {{order.count}} 份</text>
+  </view>
+
+  <view class="card" wx:if="{{!expired}}">
+    <text class="title">支付方式</text>
+    <view class="pm" data-m="wx" bindtap="onMethod">
+      <view class="pm-ic pm-wx"><text class="pm-ic-t">微</text></view>
+      <text class="pm-name">微信支付</text>
+      <view class="radio {{method === 'wx' ? 'radio-on' : ''}}"><view class="tick" wx:if="{{method === 'wx'}}"></view></view>
+    </view>
+    <view class="pm" data-m="card" bindtap="onMethod">
+      <view class="pm-ic pm-card"><text class="pm-ic-t">卡</text></view>
+      <view class="col pm-name">
+        <text>饭卡余额</text>
+        <text class="sub {{balanceEnough ? '' : 'warn'}}">可用 ¥{{balanceText}}{{balanceEnough ? '' : '，余额不足'}}</text>
+      </view>
+      <view class="radio {{method === 'card' ? 'radio-on' : ''}}"><view class="tick" wx:if="{{method === 'card'}}"></view></view>
+    </view>
+  </view>
+
+  <view class="actions">
+    <view wx:if="{{!expired}}" class="btn {{paying ? 'btn-disabled' : ''}}" bindtap="pay"><text>{{paying ? '支付中…' : '确认支付 ¥' + payText}}</text></view>
+    <view wx:if="{{!expired}}" class="link" bindtap="cancelOrder"><text class="sub">取消订单</text></view>
+    <view wx:if="{{expired}}" class="btn" bindtap="reorder"><text>重新下单</text></view>
+  </view>
+</view>

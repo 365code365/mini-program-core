@@ -1,0 +1,59 @@
+.post { background: #ffffff; padding: 32rpx 32rpx 24rpx; }
+.head { display: flex; flex-direction: row; align-items: center; }
+.av { width: 80rpx; height: 80rpx; border-radius: 40rpx; margin-right: 20rpx; }
+.av-text { font-size: 32rpx; }
+.who { display: flex; flex-direction: column; }
+.author { font-size: 30rpx; font-weight: bold; margin-bottom: 4rpx; }
+.title { display: block; margin-top: 28rpx; font-size: 36rpx; font-weight: bold; line-height: 52rpx; }
+.body { display: block; margin-top: 16rpx; font-size: 30rpx; line-height: 48rpx; color: #2f3640; }
+.pics { display: flex; flex-direction: row; margin-top: 20rpx; }
+.pic { flex: 1; height: 220rpx; border-radius: 16rpx; }
+.pic-gap { margin-left: 12rpx; }
+.pic-one .pic { height: 400rpx; }
+.tags { display: flex; flex-direction: row; flex-wrap: wrap; margin-top: 12rpx; }
+.tag { padding: 4rpx 16rpx; border-radius: 8rpx; background: #fff3ed; margin-right: 12rpx; }
+.tag-text { font-size: 22rpx; color: #FF6B3D; }
+.ops { display: flex; flex-direction: row; justify-content: center; margin-top: 32rpx; }
+.op { width: 200rpx; height: 68rpx; border-radius: 34rpx; border: 2rpx solid #e5e6eb; margin: 0 16rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.op-like { border-color: #FF6B3D; background: #fff3ed; }
+.op-fav { border-color: #F7BA1E; background: #fffbe8; }
+.op-text { font-size: 26rpx; color: #4e5969; white-space: nowrap; }
+.op-text-like { color: #FF6B3D; }
+.op-text-fav { color: #d4a00f; }
+.cm-head { display: flex; flex-direction: row; align-items: center; justify-content: space-between; padding: 28rpx 32rpx 12rpx; }
+.cm-title { font-size: 30rpx; font-weight: bold; }
+.order { padding: 6rpx 18rpx; border-radius: 20rpx; background: #ffffff; }
+.order-text { font-size: 24rpx; color: #4e5969; }
+.floor { display: flex; flex-direction: row; background: #ffffff; margin: 0 24rpx 16rpx; padding: 24rpx; border-radius: 20rpx; }
+.fav-av { width: 64rpx; height: 64rpx; border-radius: 32rpx; margin-right: 18rpx; }
+.f-av-text { font-size: 26rpx; }
+.f-main { flex: 1; display: flex; flex-direction: column; }
+.f-row { display: flex; flex-direction: row; align-items: center; }
+.f-name { font-size: 26rpx; color: #4e5969; font-weight: bold; }
+.op-tag { margin-left: 10rpx; padding: 0 10rpx; border-radius: 6rpx; background: #FF6B3D; }
+.op-tag-text { font-size: 20rpx; color: #ffffff; }
+.f-space { flex: 1; }
+.f-floor { font-size: 22rpx; color: #a9aeb8; }
+.f-text { display: block; margin-top: 10rpx; font-size: 28rpx; line-height: 42rpx; }
+.subs { margin-top: 14rpx; background: #f7f8fa; border-radius: 12rpx; padding: 8rpx 18rpx; }
+.sub { padding: 8rpx 0; }
+.sub-hover { background: #eceef2; }
+.sub-line { font-size: 26rpx; line-height: 38rpx; color: #4e5969; }
+.sub-name { color: #3491FA; }
+.f-foot { display: flex; flex-direction: row; align-items: center; margin-top: 14rpx; }
+.f-act { margin-left: 28rpx; }
+.f-act-text { font-size: 24rpx; color: #86909c; }
+.f-liked { color: #FF6B3D; }
+.end { display: flex; flex-direction: row; justify-content: center; padding: 24rpx 0 40rpx; }
+.bar { height: 116rpx; display: flex; flex-direction: row; align-items: center; padding: 0 24rpx; background: #ffffff; border-top: 1rpx solid #eceef2; }
+.reply-chip { display: flex; flex-direction: row; align-items: center; height: 56rpx; padding: 0 12rpx 0 18rpx; border-radius: 28rpx; background: #e8f3ff; margin-right: 12rpx; }
+.chip-text { font-size: 22rpx; color: #3491FA; white-space: nowrap; }
+.chip-x { position: relative; width: 24rpx; height: 24rpx; margin-left: 6rpx; }
+.x1, .x2 { position: absolute; left: 2rpx; top: 10rpx; width: 20rpx; height: 3rpx; background: #3491FA; }
+.x1 { transform: rotate(45deg); }
+.x2 { transform: rotate(-45deg); }
+.input { flex: 1; height: 72rpx; border-radius: 36rpx; background: #f5f6f8; padding: 0 28rpx; font-size: 26rpx; }
+.ph { color: #a9aeb8; }
+.send { margin-left: 16rpx; width: 112rpx; height: 64rpx; border-radius: 32rpx; background: #FF6B3D; display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.send-off { background: #ffc4b0; }
+.send-text { color: #ffffff; font-size: 26rpx; white-space: nowrap; }

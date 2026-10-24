@@ -1,0 +1,101 @@
+<view class="hero">
+  <view class="row between">
+    <view class="col">
+      <text class="hello">{{greet}}，陈先生</text>
+      <text class="hello-sub">招财银行 · 一卡通金卡客户</text>
+    </view>
+    <view class="safe row"><view class="safe-dot"></view><text class="safe-t">账户安全</text></view>
+  </view>
+  <view class="asset">
+    <view class="row">
+      <text class="asset-label">总资产（元）</text>
+      <view class="eye-btn" bindtap="toggleEye">
+        <view class="eye"><view class="pupil" wx:if="{{!hide}}"></view></view>
+        <view class="eye-slash" wx:if="{{hide}}"></view>
+      </view>
+    </view>
+    <text class="asset-num nowrap">{{hide ? '******' : totalText}}</text>
+    <view class="row asset-row">
+      <view class="col flex1">
+        <text class="asset-k">昨日收益</text>
+        <text class="asset-v income">{{hide ? '****' : '+' + yesterdayText}}</text>
+      </view>
+      <view class="col flex1">
+        <text class="asset-k">理财持仓</text>
+        <text class="asset-v">{{hide ? '****' : holdText}}</text>
+      </view>
+      <view class="col flex1">
+        <text class="asset-k">本月支出</text>
+        <text class="asset-v">{{hide ? '****' : monthOutText}}</text>
+      </view>
+    </view>
+  </view>
+</view>
+
+<view class="sec-head row between">
+  <text class="title">我的账户</text>
+  <text class="sub">{{cur + 1}}/{{accounts.length}} 左右滑动切换</text>
+</view>
+<swiper class="acct-swiper" current="{{cur}}" bindchange="onSwiper" indicator-dots="{{true}}" indicator-color="rgba(0,0,0,0.15)" indicator-active-color="#D7263D">
+  <swiper-item wx:for="{{accounts}}" wx:key="id">
+    <view class="acct" style="background: {{item.bg}}">
+      <view class="row between">
+        <view class="col">
+          <text class="acct-name">{{item.name}}</text>
+          <text class="acct-type">{{item.type}}</text>
+        </view>
+        <text class="acct-no">{{item.masked}}</text>
+      </view>
+      <text class="acct-k">可用余额（元）</text>
+      <text class="acct-bal nowrap">{{hide ? '******' : item.balText}}</text>
+      <view class="row acct-ops">
+        <view class="acct-op" data-page="transfer" bindtap="go"><text class="acct-op-t">转账</text></view>
+        <view class="acct-op" data-page="bills" bindtap="go"><text class="acct-op-t">明细</text></view>
+      </view>
+    </view>
+  </swiper-item>
+</swiper>
+
+<view class="card grid">
+  <view class="entry" wx:for="{{entries}}" wx:key="k" data-page="{{item.k}}" bindtap="go">
+    <view class="glyph" style="background: {{item.c}}"><text class="glyph-t">{{item.g}}</text></view>
+    <text class="entry-t">{{item.t}}</text>
+  </view>
+</view>
+
+<view class="card">
+  <view class="row between card-head">
+    <text class="title">{{curName}} · 近期交易</text>
+    <view class="row" data-page="bills" bindtap="go"><text class="sub">全部</text><view class="chev"></view></view>
+  </view>
+  <view class="bill row" wx:for="{{recent}}" wx:key="id" data-id="{{item.id}}" bindtap="openBill">
+    <view class="glyph glyph-s" style="background: {{item.type === 'in' ? '#FDE7DC' : '#EEF1F6'}}">
+      <text class="glyph-st" style="color: {{item.type === 'in' ? '#E8541E' : '#4B5563'}}">{{item.g}}</text>
+    </view>
+    <view class="col flex1 bill-mid">
+      <text class="bill-t">{{item.title}}</text>
+      <text class="sub">{{item.timeText}}</text>
+    </view>
+    <text class="bill-amt nowrap {{item.type === 'in' ? 'income' : ''}}">{{hide ? '****' : item.amtText}}</text>
+  </view>
+  <view wx:if="{{!recent.length}}" class="none"><text class="sub">该账户暂无交易</text></view>
+</view>
+
+<view class="card pick" data-id="{{pick.id}}" bindtap="openProduct">
+  <view class="row between">
+    <text class="title">精选理财</text>
+    <text class="tag">{{pick.tag}}</text>
+  </view>
+  <view class="row pick-body">
+    <view class="col pick-l">
+      <text class="pick-rate nowrap">{{pick.rateText}}%</text>
+      <text class="sub">业绩比较基准</text>
+    </view>
+    <view class="col flex1">
+      <text class="pick-name">{{pick.name}}</text>
+      <text class="sub">{{pick.minText}}起购 · {{pick.riskName}}</text>
+    </view>
+    <view class="chev"></view>
+  </view>
+</view>
+<view class="tabbar-space"></view>

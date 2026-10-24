@@ -1,0 +1,15 @@
+.head { padding: 32rpx 32rpx 20rpx; }
+.all { padding: 10rpx 0 10rpx 20rpx; }
+.box { width: 36rpx; height: 36rpx; border-radius: 8rpx; border: 3rpx solid #c4c2dd; position: relative; margin-right: 10rpx; box-sizing: border-box; }
+.box-on { background: #5B4BF5; border-color: #5B4BF5; }
+.tick { position: absolute; left: 9rpx; top: 3rpx; width: 9rpx; height: 17rpx; border-right: 4rpx solid #fff; border-bottom: 4rpx solid #fff; transform: rotate(45deg); }
+.all-t { font-size: 26rpx; color: #4b4f6b; }
+.grid { display: flex; flex-direction: row; flex-wrap: wrap; padding: 0 16rpx; }
+.cat { width: 335rpx; margin: 0 8rpx 16rpx; background: #fff; border-radius: 24rpx; padding: 24rpx; border: 3rpx solid #fff; box-sizing: border-box; display: flex; flex-direction: column; }
+.cat-on { background: #fbfaff; }
+.cat-t { font-size: 32rpx; font-weight: bold; margin: 18rpx 0 6rpx; }
+.acc-track { height: 10rpx; border-radius: 5rpx; background: #efeef8; margin-top: 18rpx; }
+.acc-bar { height: 10rpx; border-radius: 5rpx; }
+.acc-t { font-size: 22rpx; color: #8b8fa8; margin-top: 8rpx; }
+.foot { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; padding: 20rpx 32rpx calc(24rpx + env(safe-area-inset-bottom)); box-shadow: 0 -6rpx 20rpx rgba(60, 40, 180, 0.06); }
+.foot-info { margin-bottom: 16rpx; }

@@ -1,0 +1,25 @@
+.tabs { position: fixed; left: 0; right: 0; top: 0; z-index: 10; height: 88rpx; background: #ffffff; display: flex; flex-direction: row; }
+.tab { flex: 1; position: relative; display: flex; flex-direction: row; align-items: center; justify-content: center; font-size: 28rpx; color: #5c6370; }
+.tab-on { color: #1f2329; font-weight: bold; }
+.tab-line { position: absolute; bottom: 8rpx; left: 50%; margin-left: -24rpx; width: 48rpx; height: 6rpx; border-radius: 3rpx; background: #ff6a2b; }
+.list { padding-top: 88rpx; }
+.refreshed { display: block; text-align: center; margin-top: 20rpx; }
+.order { padding: 24rpx 28rpx; }
+.tno { background: #fff1ea; color: #ff6a2b; font-size: 22rpx; font-weight: bold; border-radius: 8rpx; padding: 2rpx 12rpx; margin-right: 16rpx; }
+.otime { font-size: 24rpx; color: #8a8f99; }
+.st { font-size: 26rpx; font-weight: bold; }
+.st-unpaid { color: #ff4d1a; }
+.st-paid { color: #ff6a2b; }
+.st-done { color: #8a8f99; }
+.st-canceled { color: #b4b8bf; }
+.thumbs { display: flex; flex-direction: row; align-items: center; margin-top: 20rpx; }
+.th { width: 104rpx; height: 104rpx; border-radius: 14rpx; margin-right: 14rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.th-t { color: #ffffff; font-size: 40rpx; font-weight: bold; }
+.sum { flex: 1; align-items: flex-end; }
+.names { display: block; margin-top: 14rpx; }
+.ops { display: flex; flex-direction: row; justify-content: flex-end; align-items: center; margin-top: 16rpx; }
+.left { color: #ff4d1a; font-size: 24rpx; margin-right: 20rpx; }
+.op { padding: 0 28rpx; height: 60rpx; border-radius: 30rpx; border: 2rpx solid #d9dce1; display: flex; flex-direction: row; align-items: center; font-size: 26rpx; color: #1f2329; }
+.op-main { border-color: #ff6a2b; color: #ff6a2b; }
+.more { padding: 32rpx 0; display: flex; flex-direction: row; justify-content: center; }
+.tab-space { height: 140rpx; }

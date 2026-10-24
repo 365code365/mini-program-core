@@ -1,0 +1,42 @@
+<view class="head">
+  <text class="head-t">去哪儿都有计划</text>
+  <text class="head-s">{{list.length}} 个行程 · {{upcoming}} 个即将出发</text>
+  <view class="new-btn" bindtap="create">
+    <view class="plus"><view class="plus-h"></view><view class="plus-v2"></view></view>
+    <text class="new-t">新建行程</text>
+  </view>
+</view>
+
+<view class="list">
+  <view wx:for="{{list}}" wx:key="id" class="cell">
+    <view class="ops">
+      <view class="op op-pin" data-id="{{item.id}}" bindtap="pinTap"><text>{{item.pinned ? '取消置顶' : '置顶'}}</text></view>
+      <view class="op op-del" data-id="{{item.id}}" bindtap="delTap"><text>删除</text></view>
+    </view>
+    <view class="trip {{highlight === item.id ? 'trip-hl' : ''}}" style="transform: translateX({{offsets[item.id] || 0}}px);"
+      data-id="{{item.id}}" bindtouchstart="onTouchStart" bindtouchmove="onTouchMove" bindtouchend="onTouchEnd" bindtap="open" bindlongpress="onLong">
+      <view class="cover" style="background: {{item.color}};">
+        <text class="cover-t">{{item.city}}</text>
+        <text class="cover-s">{{item.prov}}</text>
+      </view>
+      <view class="info">
+        <view class="row between">
+          <text class="trip-t">{{item.title}}</text>
+          <view class="pin" wx:if="{{item.pinned}}"><text>置顶</text></view>
+        </view>
+        <text class="sub mt">{{item.range}} · {{item.days}} 天 · {{item.people}} 人</text>
+        <view class="row mt">
+          <view class="chip"><text>{{item.type}}</text></view>
+          <text class="sub">{{item.spots}} 个景点 · 行李 {{item.packPct}}%</text>
+        </view>
+        <text class="badge">{{item.badge}}</text>
+      </view>
+    </view>
+  </view>
+  <view class="empty" wx:if="{{!list.length}}">
+    <text class="title">还没有行程</text>
+    <text class="sub mt">点上方「新建行程」开始规划第一次旅行</text>
+  </view>
+  <text class="sub hint" wx:if="{{list.length}}">左滑或长按行程卡片可置顶、删除</text>
+  <view class="tab-space"></view>
+</view>

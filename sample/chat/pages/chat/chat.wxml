@@ -1,0 +1,46 @@
+<view class="wrap">
+  <scroll-view class="msgs" scroll-y style="height: {{scrollH}}px;" scroll-into-view="{{intoView}}" scroll-with-animation>
+    <view class="pad-top"></view>
+    <block wx:for="{{rows}}" wx:key="key">
+      <view class="time-row" wx:if="{{item.kind === 'time'}}" id="{{item.key}}"><text class="time-text">{{item.text}}</text></view>
+      <view class="time-row" wx:elif="{{item.kind === 'sys'}}" id="{{item.key}}"><text class="sys-text">{{item.text}}</text></view>
+      <view class="msg {{item.mine ? 'msg-me' : 'msg-them'}}" wx:else id="{{item.key}}">
+        <view class="avatar av" wx:if="{{!item.mine}}" style="background: {{peer.color}};" bindtap="openPeer"><text class="av-text">{{peer.initial}}</text></view>
+        <view class="bubble {{item.mine ? 'bubble-me' : 'bubble-them'}}" data-key="{{item.key}}" bindlongpress="onMsgLong" bindtouchend="onMsgEnd">
+          <text class="bubble-text {{item.mine ? 'text-me' : ''}}">{{item.text}}</text>
+        </view>
+        <view class="avatar av" wx:if="{{item.mine}}" style="background: {{me.color}};"><text class="av-text">{{me.initial}}</text></view>
+      </view>
+    </block>
+    <view class="msg msg-them" id="typing" wx:if="{{typing}}">
+      <view class="avatar av" style="background: {{peer.color}};"><text class="av-text">{{peer.initial}}</text></view>
+      <view class="bubble bubble-them typing">
+        <view class="dot dot1"></view><view class="dot dot2"></view><view class="dot dot3"></view>
+      </view>
+    </view>
+    <view class="pad-bottom"></view>
+  </scroll-view>
+  <view class="bar" style="height: {{barH}}px;">
+    <input class="input" value="{{draft}}" placeholder="发消息…" placeholder-class="ph" confirm-type="send" bindinput="onInput" bindconfirm="send" bindfocus="onFocus" maxlength="500" />
+    <view class="emo-btn {{panel ? 'emo-on' : ''}}" bindtap="togglePanel">
+      <view class="face"><view class="eye eye-l"></view><view class="eye eye-r"></view><view class="mouth"></view></view>
+    </view>
+    <view class="send {{canSend ? '' : 'send-off'}}" bindtap="send"><text class="send-text">发送</text></view>
+  </view>
+  <view class="panel" wx:if="{{panel}}">
+    <view class="ptabs">
+      <view class="ptab {{panelTab === 0 ? 'ptab-on' : ''}}" data-i="0" bindtap="switchPanelTab"><text class="ptab-text">表情</text></view>
+      <view class="ptab {{panelTab === 1 ? 'ptab-on' : ''}}" data-i="1" bindtap="switchPanelTab"><text class="ptab-text">常用语</text></view>
+      <view class="pspace"></view>
+      <view class="del" wx:if="{{panelTab === 0}}" bindtap="backspace"><text class="del-text">删除</text></view>
+    </view>
+    <view class="grid" wx:if="{{panelTab === 0}}">
+      <view class="emo" wx:for="{{emojis}}" wx:key="name" data-name="{{item.name}}" bindtap="addEmoji" hover-class="emo-hover">
+        <view class="emo-face" style="background: {{item.color}};"><text class="emo-text">{{item.short}}</text></view>
+      </view>
+    </view>
+    <view class="phrases" wx:else>
+      <view class="phrase" wx:for="{{phrases}}" wx:key="*this" data-i="{{index}}" bindtap="sendPhrase" hover-class="phrase-hover"><text class="phrase-text">{{item}}</text></view>
+    </view>
+  </view>
+</view>
