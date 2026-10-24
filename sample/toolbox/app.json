@@ -1,0 +1,17 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/calc/calc",
+    "pages/rate/rate",
+    "pages/unit/unit",
+    "pages/bmi/bmi",
+    "pages/loan/loan",
+    "pages/decide/decide"
+  ],
+  "window": {
+    "navigationBarTitleText": "万能工具箱",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f5f6f8"
+  }
+}

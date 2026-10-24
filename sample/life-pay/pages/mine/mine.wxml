@@ -1,0 +1,35 @@
+<view class="top">
+  <view class="row">
+    <view class="av"><text>张</text></view>
+    <view class="me">
+      <text class="me-name">张明远</text>
+      <view class="row"><text class="vf">已实名</text><text class="me-sub">138****6621</text></view>
+    </view>
+  </view>
+  <view class="stat row">
+    <view class="st" bindtap="goAccounts"><text class="st-n">{{accCount}}</text><text class="st-l">绑定户号</text></view>
+    <view class="st" bindtap="goRecords"><text class="st-n">{{recCount}}</text><text class="st-l">缴费笔数</text></view>
+    <view class="st" bindtap="goRecords"><text class="st-n">{{yearPaid}}</text><text class="st-l">今年缴费(元)</text></view>
+  </view>
+</view>
+
+<view class="card menu">
+  <view class="mi row" bindtap="goAccounts"><view class="ic mi-ic" style="background: linear-gradient(135deg, #4fd6a0, #14a06f);"><text>户</text></view><text class="mi-t">户号管理</text><text class="mi-x">{{accCount}} 个</text><view class="chev"></view></view>
+  <view class="mi row" bindtap="goMobile"><view class="ic mi-ic" style="background: linear-gradient(135deg, #6aaeff, #3c7cff);"><text>充</text></view><text class="mi-t">话费充值</text><view class="chev"></view></view>
+  <view class="mi row last" bindtap="invoice"><view class="ic mi-ic" style="background: linear-gradient(135deg, #ffcf5c, #ff9d1a);"><text>票</text></view><text class="mi-t">电子发票</text><view class="chev"></view></view>
+</view>
+
+<view class="card menu">
+  <view class="mi row"><view class="mi-main"><text class="mi-t">欠费提醒</text><text class="muted">出账后通过服务通知提醒</text></view><switch checked="{{remind}}" color="#14a06f" bindchange="onRemind" /></view>
+  <picker mode="selector" range="{{days}}" value="{{remindDay}}" bindchange="onDay">
+    <view class="mi row"><text class="mi-t">提醒日期</text><text class="mi-x">{{days[remindDay]}}</text><view class="chev"></view></view>
+  </picker>
+  <view class="mi row last"><view class="mi-main"><text class="mi-t">自动缴费</text><text class="muted">出账后自动扣款，不再错过缴费</text></view><switch checked="{{autoPay}}" color="#14a06f" bindchange="onAuto" /></view>
+</view>
+
+<view class="card menu">
+  <view class="mi row" bindtap="service"><text class="mi-t">联系客服</text><text class="mi-x">7×24 小时</text><view class="chev"></view></view>
+  <view class="mi row last" bindtap="reset"><text class="mi-t">恢复演示数据</text><view class="chev"></view></view>
+</view>
+<text class="ver">生活缴费 v3.1.2 · 数据由各缴费单位提供</text>
+<view class="tab-gap"></view>

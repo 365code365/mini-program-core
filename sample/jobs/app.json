@@ -1,0 +1,28 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/job/job",
+    "pages/company/company",
+    "pages/messages/messages",
+    "pages/resume/resume",
+    "pages/mine/mine"
+  ],
+  "window": {
+    "navigationBarTitleText": "职聘直通",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f5f6f8"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#9aa0a6",
+    "selectedColor": "#2E6BFF",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "职位", "iconPath": "images/tab-home.png", "selectedIconPath": "images/tab-home-on.png" },
+      { "pagePath": "pages/messages/messages", "text": "消息", "iconPath": "images/tab-msg.png", "selectedIconPath": "images/tab-msg-on.png" },
+      { "pagePath": "pages/mine/mine", "text": "我的", "iconPath": "images/tab-mine.png", "selectedIconPath": "images/tab-mine-on.png" }
+    ]
+  }
+}

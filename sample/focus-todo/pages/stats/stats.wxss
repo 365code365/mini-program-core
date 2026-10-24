@@ -1,0 +1,152 @@
+.summary {
+  margin: 24rpx 12rpx 24rpx;
+}
+.sum-card {
+  margin: 0 12rpx;
+  height: 156rpx;
+  border-radius: 24rpx;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-left: 28rpx;
+}
+.sum-num {
+  color: #ffffff;
+  font-size: 48rpx;
+  font-weight: bold;
+}
+.sum-unit {
+  font-size: 26rpx;
+}
+.sum-label {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 24rpx;
+  margin-top: 4rpx;
+}
+.seg {
+  background: #f1f2f5;
+  border-radius: 12rpx;
+  padding: 4rpx;
+}
+.seg-item {
+  padding: 6rpx 20rpx;
+  font-size: 22rpx;
+  color: #6b7280;
+  border-radius: 10rpx;
+}
+.seg-item.on {
+  background: #ffffff;
+  color: #ff6250;
+  font-weight: bold;
+}
+.chart-sub {
+  display: block;
+  margin-top: 8rpx;
+}
+.chart {
+  position: relative;
+  height: 320rpx;
+  margin-top: 24rpx;
+}
+.grid {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1rpx;
+  background: #f0f1f4;
+}
+.bars {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 320rpx;
+  align-items: flex-end;
+}
+.bar-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 320rpx;
+}
+.bar-val {
+  font-size: 22rpx;
+  color: #ff6250;
+  font-weight: bold;
+  margin-bottom: 6rpx;
+  opacity: 0;
+}
+.bar-val.show {
+  opacity: 1;
+}
+.bar {
+  width: 40rpx;
+  border-radius: 10rpx 10rpx 4rpx 4rpx;
+  background: #ffd3c9;
+}
+.bar.today {
+  background: linear-gradient(180deg, #ff8a5c, #ff6250);
+}
+.bar.sel {
+  background: #ff6250;
+}
+.axis {
+  margin-top: 14rpx;
+}
+.axis-label {
+  text-align: center;
+  font-size: 22rpx;
+  color: #a3a8b3;
+}
+.axis-label.today {
+  color: #ff6250;
+  font-weight: bold;
+}
+.goal {
+  margin-top: 24rpx;
+}
+.goal-bar {
+  height: 16rpx;
+  border-radius: 8rpx;
+  background: #f1f2f5;
+}
+.goal-fill {
+  height: 16rpx;
+  border-radius: 8rpx;
+  background: linear-gradient(90deg, #ff8a5c, #ff6250);
+}
+.goal-text {
+  margin-left: 20rpx;
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #ff6250;
+}
+.tomatoes {
+  margin-top: 20rpx;
+  flex-wrap: wrap;
+}
+.tomato {
+  font-size: 40rpx;
+  margin-right: 14rpx;
+  opacity: 0.2;
+}
+.tomato.on {
+  opacity: 1;
+}
+.dist {
+  margin-top: 24rpx;
+}
+.dist-title {
+  font-size: 28rpx;
+}
+.dist-bar {
+  margin-top: 12rpx;
+  height: 12rpx;
+  border-radius: 6rpx;
+  background: #f1f2f5;
+}
+.dist-fill {
+  height: 12rpx;
+  border-radius: 6rpx;
+}

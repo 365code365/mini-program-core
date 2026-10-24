@@ -1,0 +1,45 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/shop/shop",
+    "pages/checkout/checkout",
+    "pages/orders/orders",
+    "pages/order-detail/order-detail",
+    "pages/mine/mine"
+  ],
+  "window": {
+    "navigationBarTitleText": "饱了么外卖",
+    "navigationBarBackgroundColor": "#1677ff",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f5f6f8"
+  },
+  "tabBar": {
+    "color": "#8a8f99",
+    "selectedColor": "#1677ff",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "images/tab/home-off.png",
+        "selectedIconPath": "images/tab/home-on.png"
+      },
+      {
+        "pagePath": "pages/orders/orders",
+        "text": "订单",
+        "iconPath": "images/tab/order-off.png",
+        "selectedIconPath": "images/tab/order-on.png"
+      },
+      {
+        "pagePath": "pages/mine/mine",
+        "text": "我的",
+        "iconPath": "images/tab/mine-off.png",
+        "selectedIconPath": "images/tab/mine-on.png"
+      }
+    ],
+    "custom": true
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

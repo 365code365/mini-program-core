@@ -105,6 +105,8 @@ class StoreLinks {
   /// 打开一个小程序：先把栈上的小程序页收掉（一个进程同一时刻只能有一个小程序实例），
   /// 再推 loading 页（检查更新 → 下载 → 打开）
   static void open(StoreLink link, {StoreApp? hint}) {
+    // 记进「最近使用」（深链只有 AppID 时等打开那一刻知道是谁了再记，见 MiniStoreLaunchPage）
+    if (hint != null) store.touch(hint);
     final nav = navigatorKey.currentState;
     if (nav == null) return;
     nav.pushAndRemoveUntil(MiniStoreLaunchPage.route(store: store, link: link, hint: hint), (r) => r.isFirst);

@@ -1,0 +1,146 @@
+.hero {
+  background: linear-gradient(180deg, #2f6bff 0%, #5a90ff 100%);
+  border-radius: 0 0 48rpx 48rpx;
+  padding: 24rpx 24rpx 80rpx;
+}
+.search {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  background: #ffffff;
+  border-radius: 48rpx;
+  height: 96rpx;
+  padding: 0 10rpx 0 36rpx;
+  box-shadow: 0 8rpx 24rpx rgba(20, 50, 140, 0.18);
+}
+.search-input {
+  padding: 0 0 0 1rpx;
+  flex: 1;
+  font-size: 30rpx;
+  height: 96rpx;
+}
+.ph {
+  color: #b3b9c4;
+}
+.search-btn {
+  width: 148rpx;
+  height: 76rpx;
+  line-height: 76rpx;
+  text-align: center;
+  border-radius: 38rpx;
+  background: linear-gradient(90deg, #ff9a3d, #ff6a1a);
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: bold;
+}
+.detect {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-top: 22rpx;
+  padding-left: 12rpx;
+  height: 44rpx;
+}
+.logo.mini {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 20rpx;
+  font-size: 22rpx;
+  margin-right: 12rpx;
+  border: 2rpx solid rgba(255, 255, 255, 0.8);
+}
+.detect-text {
+  color: #ffffff;
+  font-size: 26rpx;
+}
+.detect-text.dim {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 24rpx;
+}
+.entries {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  margin-top: -48rpx;
+  padding: 32rpx 28rpx 28rpx;
+}
+.entry {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 140rpx;
+}
+.entry-icon {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.entry-glyph {
+  color: #ffffff;
+  font-size: 36rpx;
+  font-weight: bold;
+}
+.entry-text {
+  margin-top: 14rpx;
+  font-size: 24rpx;
+  color: #4a505c;
+}
+.list-head {
+  margin-top: 12rpx;
+}
+.count {
+  margin-right: 32rpx;
+}
+.filters {
+  white-space: nowrap;
+  padding: 0 24rpx 20rpx;
+  width: 100%;
+  box-sizing: border-box;
+}
+.filter {
+  display: inline-block;
+  padding: 10rpx 28rpx;
+  margin-right: 16rpx;
+  border-radius: 30rpx;
+  background: #ffffff;
+  color: #4a505c;
+  font-size: 26rpx;
+}
+.filter.on {
+  background: #2f6bff;
+  color: #ffffff;
+  font-weight: bold;
+}
+.pkg-main {
+  margin-left: 20rpx;
+}
+.pkg-name {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #1f2329;
+}
+.pkg-last {
+  margin-top: 22rpx;
+  background: #f7f8fb;
+  border-radius: 14rpx;
+  padding: 18rpx 20rpx;
+}
+.pkg-last-text {
+  font-size: 26rpx;
+  color: #4a505c;
+  line-height: 40rpx;
+}
+.pkg-foot {
+  margin-top: 10rpx;
+}
+.empty {
+  padding: 80rpx 0;
+  text-align: center;
+}
+.bottom-gap {
+  height: 24rpx;
+}
+.bottom-gap { height: calc(140rpx + env(safe-area-inset-bottom)); }

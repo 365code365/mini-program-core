@@ -1,0 +1,252 @@
+.hero {
+  margin: 16rpx 24rpx 24rpx;
+  padding: 36rpx 36rpx 32rpx;
+  border-radius: 28rpx;
+  background: linear-gradient(135deg, #ff8a5c 0%, #ff6250 100%);
+  box-shadow: 0 12rpx 32rpx rgba(255, 98, 80, 0.28);
+}
+.hero-date {
+  display: block;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 24rpx;
+}
+.hero-title {
+  display: block;
+  color: #ffffff;
+  font-size: 40rpx;
+  font-weight: bold;
+  margin-top: 8rpx;
+}
+.hero-ring {
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: 56rpx;
+  border: 6rpx solid rgba(255, 255, 255, 0.85);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+.hero-pct {
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: bold;
+}
+.hero-pct-sub {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 18rpx;
+}
+.hero-bar {
+  margin-top: 28rpx;
+  height: 10rpx;
+  border-radius: 5rpx;
+  background: rgba(255, 255, 255, 0.3);
+}
+.hero-fill {
+  height: 10rpx;
+  border-radius: 5rpx;
+  background: #ffffff;
+}
+.tabs {
+  display: flex;
+  flex-direction: row;
+  margin: 0 24rpx 24rpx;
+  background: #ebebf0;
+  border-radius: 20rpx;
+  padding: 6rpx;
+}
+.tab {
+  flex: 1;
+  height: 68rpx;
+  border-radius: 16rpx;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+.tab.on {
+  background: #ffffff;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
+}
+.tab-text {
+  font-size: 28rpx;
+  color: #6b7280;
+}
+.tab.on .tab-text {
+  color: #1f2329;
+  font-weight: bold;
+}
+.tab-count {
+  margin-left: 8rpx;
+  font-size: 22rpx;
+  color: #a3a8b3;
+}
+.tab.on .tab-count {
+  color: #ff6250;
+}
+.add {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 12rpx 12rpx 12rpx 28rpx;
+}
+.prio-dot {
+  width: 28rpx;
+  height: 28rpx;
+  border-radius: 14rpx;
+  margin-right: 20rpx;
+}
+.add-input {
+  padding: 0 0 0 1rpx;
+  flex: 1;
+  height: 80rpx;
+  font-size: 28rpx;
+}
+.add-btn {
+  width: 120rpx;
+  height: 64rpx;
+  line-height: 64rpx;
+  text-align: center;
+  border-radius: 16rpx;
+  background: #f1f2f5;
+  color: #a3a8b3;
+  font-size: 26rpx;
+}
+.add-btn.on {
+  background: #ff6250;
+  color: #ffffff;
+  font-weight: bold;
+}
+.group-title {
+  display: block;
+  margin: 8rpx 40rpx 16rpx;
+  font-size: 26rpx;
+  font-weight: bold;
+  color: #6b7280;
+}
+.list {
+  padding: 0 28rpx;
+}
+.item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 28rpx 0;
+  border-bottom: 1rpx solid #f0f1f4;
+}
+.item:last-child {
+  border-bottom: none;
+}
+.check {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 20rpx;
+  border: 4rpx solid #c4c9d2;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tick {
+  width: 16rpx;
+  height: 9rpx;
+  border-left: 4rpx solid #ffffff;
+  border-bottom: 4rpx solid #ffffff;
+  transform: rotate(-45deg);
+  margin-top: -4rpx;
+}
+.item-main {
+  margin-left: 22rpx;
+  overflow: hidden;
+  /* 收成内容宽，删除线（.strike）才只压在字上 */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.item-title {
+  font-size: 30rpx;
+  color: #1f2329;
+}
+.done .item-title {
+  color: #b3b8c2;
+}
+/* 自己画删除线：引擎的 text-decoration: line-through 在块宽文字上画满整行、
+   收成内容宽后列表里只有第一项画出来 */
+.title-wrap {
+  position: relative;
+}
+.strike {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2rpx;
+  background: #b3b8c2;
+}
+.meta {
+  margin-top: 8rpx;
+  align-self: stretch;
+}
+.meta-time {
+  font-size: 22rpx;
+  color: #8f95a3;
+  margin-right: 16rpx;
+}
+.meta-time.remind {
+  color: #ff6250;
+}
+.meta-pomo {
+  font-size: 22rpx;
+  color: #8f95a3;
+  margin-right: 16rpx;
+}
+.meta-note {
+  flex: 1;
+  font-size: 22rpx;
+  color: #a3a8b3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.play {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 28rpx;
+  background: #fff0ec;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 16rpx;
+}
+.play-icon {
+  width: 32rpx;
+  height: 32rpx;
+  margin-left: 4rpx;
+}
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 100rpx 0;
+}
+.empty-icon {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 60rpx;
+  background: #ffd9cf;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tick.big {
+  width: 44rpx;
+  height: 22rpx;
+  border-left: 8rpx solid #ffffff;
+  border-bottom: 8rpx solid #ffffff;
+}
+.empty-text {
+  margin-top: 24rpx;
+  font-size: 26rpx;
+  color: #a3a8b3;
+}

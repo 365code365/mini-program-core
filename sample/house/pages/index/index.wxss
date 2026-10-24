@@ -1,0 +1,183 @@
+.top {
+  background: #ffffff;
+  padding: 16rpx 24rpx 0;
+}
+.city {
+  margin-right: 20rpx;
+  height: 72rpx;
+}
+.city-name {
+  font-size: 32rpx;
+  font-weight: bold;
+}
+.caret {
+  width: 10rpx;
+  height: 10rpx;
+  border-right: 3rpx solid #1f2329;
+  border-bottom: 3rpx solid #1f2329;
+  transform: rotate(45deg);
+  margin: -6rpx 0 0 12rpx;
+}
+.search {
+  height: 72rpx;
+  border-radius: 36rpx;
+  background: #f3f4f6;
+  padding: 0 24rpx;
+}
+.lens {
+  position: relative;
+  width: 30rpx;
+  height: 30rpx;
+  margin-right: 12rpx;
+}
+.lens-c {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 22rpx;
+  height: 22rpx;
+  border-radius: 11rpx;
+  border: 3rpx solid #8a919f;
+  box-sizing: border-box;
+}
+.lens-h {
+  position: absolute;
+  left: 19rpx;
+  top: 17rpx;
+  width: 10rpx;
+  height: 3rpx;
+  background: #8a919f;
+  transform: rotate(45deg);
+}
+.search-input {
+  padding: 0 0 0 1rpx;
+  font-size: 26rpx;
+  height: 72rpx;
+}
+.types {
+  margin-top: 12rpx;
+}
+.type {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14rpx 0 0;
+  margin-right: 48rpx;
+  height: 70rpx;
+  box-sizing: border-box;
+}
+.type-text {
+  font-size: 30rpx;
+  color: #6b7280;
+}
+.type.on .type-text {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #1f2329;
+}
+.type-bar {
+  margin-top: 8rpx;
+  width: 40rpx;
+  height: 6rpx;
+  border-radius: 3rpx;
+  background: #ff6a1f;
+}
+.banner {
+  width: 702rpx;
+  height: 240rpx;
+  margin: 24rpx 24rpx;
+  border-radius: 20rpx;
+  overflow: hidden;
+}
+.banner-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  height: 240rpx;
+  border-radius: 20rpx;
+  padding: 36rpx 40rpx;
+  box-sizing: border-box;
+}
+.banner-title {
+  display: block;
+  color: #ffffff;
+  font-size: 38rpx;
+  font-weight: bold;
+}
+.banner-sub {
+  display: block;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 24rpx;
+  margin-top: 8rpx;
+}
+.banner-btn {
+  margin-top: 22rpx;
+  padding: 8rpx 26rpx;
+  border-radius: 28rpx;
+  background: #ffffff;
+  color: #ff5a1f;
+  font-size: 24rpx;
+  font-weight: bold;
+}
+.grid {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  padding: 28rpx 8rpx 4rpx;
+}
+.g-item {
+  width: 25%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 26rpx;
+}
+.g-icon {
+  width: 84rpx;
+  height: 84rpx;
+  border-radius: 26rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.g-glyph {
+  color: #ffffff;
+  font-size: 34rpx;
+  font-weight: bold;
+}
+.g-text {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  color: #4a505c;
+}
+.m-title {
+  font-size: 28rpx;
+  font-weight: bold;
+}
+.m-nums {
+  margin-top: 18rpx;
+}
+.m-num {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.m-val {
+  font-size: 34rpx;
+  font-weight: bold;
+  color: #1f2329;
+  margin-bottom: 4rpx;
+}
+.m-val.down {
+  color: #19a974;
+}
+.rec-head {
+  margin: 8rpx 32rpx 18rpx;
+}
+.more {
+  font-size: 24rpx;
+  color: #8a919f;
+}
+.list {
+  padding: 0 28rpx;
+}

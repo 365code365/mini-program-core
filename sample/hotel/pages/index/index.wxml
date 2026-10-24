@@ -1,0 +1,67 @@
+<view class="hero">
+  <text class="hero-title">住进风景里</text>
+  <text class="hero-sub">全国 32 万家酒店民宿 · 低价保障 · 到店无忧</text>
+</view>
+
+<view class="search card">
+  <view class="kinds">
+    <view wx:for="{{kinds}}" wx:key="*this" class="kind {{kind === index ? 'kind-on' : ''}}" data-idx="{{index}}" bindtap="onKind">{{item}}</view>
+  </view>
+  <picker mode="selector" range="{{cities}}" value="{{cityIdx}}" bindchange="onCity">
+    <view class="line row between">
+      <text class="city">{{s.city}}</text>
+      <view class="row"><text class="sub">我的位置</text><view class="loc"></view></view>
+    </view>
+  </picker>
+  <view class="line row dates">
+    <picker mode="date" value="{{s.checkin}}" start="{{today}}" end="{{maxDate}}" bindchange="onCheckin">
+      <view class="date">
+        <text class="date-label">入住</text>
+        <view class="row"><text class="date-val">{{inShort}}</text><text class="date-week">{{inWeek}}</text></view>
+      </view>
+    </picker>
+    <view class="nights">共{{nights}}晚</view>
+    <picker mode="date" value="{{s.checkout}}" start="{{minOut}}" end="{{maxDate}}" bindchange="onCheckout">
+      <view class="date right">
+        <text class="date-label">离店</text>
+        <view class="row"><text class="date-val">{{outShort}}</text><text class="date-week">{{outWeek}}</text></view>
+      </view>
+    </picker>
+  </view>
+  <view class="line">
+    <input class="kw" placeholder="关键字 / 位置 / 酒店名" value="{{s.keyword}}" bindinput="onKeyword" confirm-type="search" bindconfirm="onSearch" />
+  </view>
+  <view class="filter-title">价格</view>
+  <view class="chips">
+    <view wx:for="{{prices}}" wx:key="*this" class="chip {{s.price === index ? 'chip-on' : ''}}" data-idx="{{index}}" bindtap="onPrice">{{item}}</view>
+  </view>
+  <view class="filter-title">星级 / 类型</view>
+  <view class="chips">
+    <view wx:for="{{stars}}" wx:key="*this" class="chip {{s.star === index ? 'chip-on' : ''}}" data-idx="{{index}}" bindtap="onStar">{{item}}</view>
+  </view>
+  <view class="btn-primary search-btn" bindtap="onSearch">查找酒店</view>
+</view>
+
+<view class="perks">
+  <view class="perk" wx:for="{{perks}}" wx:key="t">
+    <view class="perk-icon" style="background:{{item.bg}}"><text class="perk-glyph">{{item.g}}</text></view>
+    <text class="perk-t">{{item.t}}</text>
+    <text class="perk-s">{{item.s}}</text>
+  </view>
+</view>
+
+<view class="section-title">为你推荐 · 杭州</view>
+<scroll-view scroll-x class="rec-scroll" show-scrollbar="{{false}}">
+  <view class="rec-row">
+    <view class="rec" wx:for="{{recs}}" wx:key="id" data-id="{{item.id}}" bindtap="onHotel">
+      <image class="rec-img" src="{{item.img}}" mode="aspectFill"></image>
+      <view class="rec-badge">{{item.starText}}</view>
+      <view class="rec-body">
+        <text class="rec-name">{{item.name}}</text>
+        <view class="row rec-meta"><text class="score">{{item.score}}</text><text class="sub rec-area">{{item.area}}</text></view>
+        <view class="row rec-price-row"><text class="price-color yen">¥</text><text class="price-color rec-price">{{item.price}}</text><text class="sub">起</text></view>
+      </view>
+    </view>
+  </view>
+</scroll-view>
+<view class="gap"></view>

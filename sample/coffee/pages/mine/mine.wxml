@@ -1,0 +1,60 @@
+<view class="head">
+  <view class="row">
+    <view class="avatar glyph">林</view>
+    <view class="flex1">
+      <text class="nick">林拾光</text>
+      <text class="uid">会员号 8866 2380</text>
+    </view>
+    <view class="code-btn" bindtap="onCode">会员码</view>
+  </view>
+
+  <view class="level-card">
+    <view class="row between">
+      <view class="row">
+        <text class="lv-name">{{level.name}}</text>
+        <text class="lv-tag">Lv{{level.lv}}</text>
+      </view>
+      <text class="lv-rights" bindtap="onRights">会员权益</text>
+    </view>
+    <view class="lv-bar"><view class="lv-bar-in" style="width: {{level.percent}}%;"></view></view>
+    <view class="row between lv-foot">
+      <text>已累计 {{cups}} 杯</text>
+      <text>再喝 {{level.need}} 杯升级{{level.next}}</text>
+    </view>
+    <view class="row perks">
+      <view class="perk" wx:for="{{perks}}" wx:key="*this">
+        <view class="perk-icon glyph">{{item.glyph}}</view>
+        <text class="perk-name">{{item.name}}</text>
+      </view>
+    </view>
+  </view>
+</view>
+
+<view class="card stats row">
+  <view class="stat" bindtap="onPoints"><text class="stat-num">{{points}}</text><text class="stat-name">积分</text></view>
+  <view class="stat" bindtap="onCoupons"><text class="stat-num">{{couponCount}}</text><text class="stat-name">优惠券</text></view>
+  <view class="stat" bindtap="onWallet"><text class="stat-num">128.00</text><text class="stat-name">咖啡钱包</text></view>
+</view>
+
+<view class="card sign row">
+  <view class="flex1">
+    <text class="title">每日签到</text>
+    <text class="sub sign-desc">连续签到 7 天领 ¥5 无门槛券</text>
+  </view>
+  <view class="sign-btn {{signed ? 'signed' : ''}}" bindtap="onSign">{{signed ? '已签到' : '签到 +10'}}</view>
+</view>
+
+<view class="card menu">
+  <view class="menu-item row" wx:for="{{menus}}" wx:key="name" data-name="{{item.name}}" bindtap="onMenu">
+    <view class="menu-icon glyph" style="background: {{item.color}};">{{item.glyph}}</view>
+    <text class="flex1">{{item.name}}</text>
+    <text class="sub">{{item.extra}}</text>
+    <view class="arrow"></view>
+  </view>
+  <view class="menu-item row no-border">
+    <view class="menu-icon glyph" style="background: #8fae7a;">推</view>
+    <text class="flex1">新品上市提醒</text>
+    <switch checked="{{notify}}" color="#6b4226" bindchange="onNotify" />
+  </view>
+</view>
+<view class="foot">拾光咖啡 v2.6.0 · 上海拾光餐饮管理有限公司</view>

@@ -1,0 +1,13 @@
+page { background: #f7f5f2; color: #2a2522; font-size: 28rpx; }
+.card { background: #ffffff; border-radius: 24rpx; margin: 24rpx 24rpx 0; padding: 28rpx; }
+.sec-title { font-size: 32rpx; font-weight: bold; color: #2a2522; }
+.muted { color: #9a928b; font-size: 24rpx; }
+.row { display: flex; flex-direction: row; align-items: center; }
+.between { justify-content: space-between; }
+.chev { width: 14rpx; height: 14rpx; border-top: 3rpx solid #c4bcb4; border-right: 3rpx solid #c4bcb4; transform: rotate(45deg); margin-left: 10rpx; flex-shrink: 0; }
+.link { display: flex; flex-direction: row; align-items: center; color: #9a928b; font-size: 24rpx; }
+.btn { background: linear-gradient(90deg, #ffb547, #ff7b54); color: #ffffff; border-radius: 44rpx; height: 88rpx; display: flex; align-items: center; justify-content: center; font-size: 30rpx; font-weight: bold; }
+.price { color: #ff5b35; font-weight: bold; }
+.yen { font-size: 22rpx; }
+.tag { font-size: 20rpx; color: #e0782f; background: #fff1e4; padding: 4rpx 12rpx; border-radius: 8rpx; margin-right: 10rpx; }
+.pet-av { display: flex; align-items: center; justify-content: center; color: #ffffff; font-weight: bold; flex-shrink: 0; }

@@ -1,0 +1,39 @@
+<view class="tabs row">
+  <view wx:for="{{tabs}}" wx:key="key" class="tab {{tab === item.key ? 'tab-on' : ''}}" data-key="{{item.key}}" bindtap="onTab">
+    <text>{{item.name}}</text>
+    <view wx:if="{{tab === item.key}}" class="tab-line"></view>
+  </view>
+</view>
+
+<view class="redeem row" wx:if="{{tab === 'valid'}}">
+  <input class="redeem-input" placeholder="输入兑换码（试试 SHIGUANG）" placeholder-class="ph" value="{{code}}" bindinput="onCode" />
+  <view class="redeem-btn {{code ? 'redeem-on' : ''}}" bindtap="onRedeem">兑换</view>
+</view>
+
+<view class="list">
+  <view class="coupon row {{item.status !== 'valid' ? 'coupon-off' : ''}}" wx:for="{{list}}" wx:key="id">
+    <view class="c-left">
+      <view class="row c-amount-row">
+        <text wx:if="{{item.unit === '元'}}" class="c-sym">¥</text>
+        <text class="c-amount">{{item.amount}}</text>
+        <text wx:if="{{item.unit === '折'}}" class="c-sym">折</text>
+      </view>
+      <text class="c-cond">{{item.min ? '满' + item.min + '可用' : '无门槛'}}</text>
+    </view>
+    <view class="c-cut">
+      <view class="c-hole c-hole-top"></view>
+      <view class="c-dash"></view>
+      <view class="c-hole c-hole-bottom"></view>
+    </view>
+    <view class="flex1 c-right">
+      <text class="c-title ellipsis">{{item.title}}</text>
+      <text class="c-desc ellipsis">{{item.cond}}</text>
+      <view class="row between c-foot">
+        <text class="c-expire">有效期至 {{item.expire}}</text>
+        <view wx:if="{{item.status === 'valid'}}" class="c-use" data-id="{{item.id}}" bindtap="onUse">去使用</view>
+      </view>
+    </view>
+    <view wx:if="{{item.status !== 'valid'}}" class="stamp glyph">{{item.status === 'used' ? '已使用' : '已过期'}}</view>
+  </view>
+  <view wx:if="{{!list.length}}" class="empty sub">这里空空如也</view>
+</view>

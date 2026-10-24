@@ -1,0 +1,81 @@
+<view class="map">
+  <view class="block park" style="left:40rpx;top:60rpx;width:220rpx;height:150rpx;"></view>
+  <view class="block park" style="left:520rpx;top:380rpx;width:200rpx;height:200rpx;"></view>
+  <view class="block bld" style="left:300rpx;top:40rpx;width:160rpx;height:120rpx;"></view>
+  <view class="block bld" style="left:520rpx;top:60rpx;width:190rpx;height:160rpx;"></view>
+  <view class="block bld" style="left:60rpx;top:400rpx;width:180rpx;height:150rpx;"></view>
+  <view class="river"></view>
+  <view class="road h" style="top:250rpx;"></view>
+  <view class="road h thin" style="top:520rpx;"></view>
+  <view class="road v" style="left:270rpx;"></view>
+  <view class="road v thin" style="left:480rpx;"></view>
+  <view class="road diag"></view>
+  <text class="map-label" style="left:60rpx;top:120rpx;">望京公园</text>
+  <text class="map-label" style="left:540rpx;top:460rpx;">大望京公园</text>
+  <text class="map-label road-name" style="left:560rpx;top:228rpx;">阜通东大街</text>
+  <text class="map-label road-name" style="left:110rpx;top:500rpx;">望京街</text>
+  <view class="car-icon" style="left:150rpx;top:236rpx;"></view>
+  <view class="car-icon" style="left:600rpx;top:506rpx;"></view>
+  <view class="car-icon v" style="left:258rpx;top:380rpx;"></view>
+  <view class="pin-wrap">
+    <view class="bubble"><text>在</text><text class="orange bubble-name">{{from.name}}</text><text>上车</text></view>
+    <view class="pulse"></view>
+    <view class="pin"><view class="pin-inner"></view></view>
+    <view class="pin-stick"></view>
+  </view>
+  <view class="locate" bindtap="onLocate"><view class="locate-ring"><view class="locate-dot"></view></view></view>
+  <view class="notice"><text class="notice-tag">安全</text><text class="notice-text">行程全程录音保护中，紧急情况一键报警</text></view>
+</view>
+
+<view class="panel">
+  <view class="types">
+    <view wx:for="{{types}}" wx:key="key" class="type {{carType === item.key ? 'type-on' : ''}}" data-key="{{item.key}}" bindtap="onType">
+      <text class="type-name">{{item.name}}</text>
+      <text class="type-desc">{{item.desc}}</text>
+    </view>
+  </view>
+  <view class="addr" bindtap="onPick" data-type="from">
+    <view class="dot dot-green"></view>
+    <view class="addr-body">
+      <text class="addr-main">{{from.name}}</text>
+      <text class="addr-sub">{{from.addr}}</text>
+    </view>
+  </view>
+  <view class="addr-line"></view>
+  <view class="addr" bindtap="onPick" data-type="to">
+    <view class="dot dot-orange"></view>
+    <view class="addr-body">
+      <text class="addr-main {{to ? '' : 'placeholder'}}">{{to ? to.name : '你要去哪儿'}}</text>
+      <text class="addr-sub" wx:if="{{to}}">{{to.addr}}</text>
+    </view>
+  </view>
+  <view wx:if="{{to}}" class="estimate">
+    <view class="row between">
+      <text class="sub">约 {{km}} 公里 · {{min}} 分钟</text>
+      <text class="sub">已减 ¥5 新客券</text>
+    </view>
+    <view class="price-row">
+      <text class="price-label">预估</text>
+      <text class="price">{{price}}</text>
+      <text class="price-unit">元</text>
+    </view>
+    <view class="btn-primary" bindtap="onCall">呼叫{{typeName}}</view>
+  </view>
+</view>
+
+<view wx:if="{{!to}}">
+  <view class="section-title">更多出行</view>
+  <view class="services">
+    <view class="svc" wx:for="{{services}}" wx:key="name" data-name="{{item.name}}" bindtap="onService">
+      <view class="svc-icon" style="background:{{item.bg}}"><text class="svc-glyph">{{item.glyph}}</text></view>
+      <text class="svc-name">{{item.name}}</text>
+    </view>
+  </view>
+  <view class="banner" bindtap="onCoupons">
+    <view>
+      <text class="banner-title">周末出行 5 折起</text>
+      <text class="banner-sub">领 3 张快车券，最高抵 15 元</text>
+    </view>
+    <view class="banner-btn">立即领取</view>
+  </view>
+</view>

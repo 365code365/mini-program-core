@@ -1,0 +1,51 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/dept/dept",
+    "pages/orders/orders",
+    "pages/mine/mine",
+    "pages/doctors/doctors",
+    "pages/doctor/doctor",
+    "pages/confirm/confirm",
+    "pages/patients/patients"
+  ],
+  "window": {
+    "navigationBarTitleText": "健康挂号",
+    "navigationBarBackgroundColor": "#1f7cf0",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f4f6fa"
+  },
+  "tabBar": {
+    "color": "#9aa0a8",
+    "selectedColor": "#1f7cf0",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "images/tab/home.png",
+        "selectedIconPath": "images/tab/home-on.png"
+      },
+      {
+        "pagePath": "pages/dept/dept",
+        "text": "科室",
+        "iconPath": "images/tab/grid.png",
+        "selectedIconPath": "images/tab/grid-on.png"
+      },
+      {
+        "pagePath": "pages/orders/orders",
+        "text": "挂号单",
+        "iconPath": "images/tab/doc.png",
+        "selectedIconPath": "images/tab/doc-on.png"
+      },
+      {
+        "pagePath": "pages/mine/mine",
+        "text": "我的",
+        "iconPath": "images/tab/user.png",
+        "selectedIconPath": "images/tab/user-on.png"
+      }
+    ],
+    "custom": true
+  }
+}

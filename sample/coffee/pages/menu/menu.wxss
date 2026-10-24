@@ -1,0 +1,401 @@
+page {
+  background: #ffffff;
+}
+
+.top {
+  height: 128rpx;
+  box-sizing: border-box;
+  padding: 0 28rpx;
+  border-bottom: 1rpx solid #f1ebe4;
+}
+
+.store-name {
+  font-size: 30rpx;
+  font-weight: bold;
+  max-width: 400rpx;
+}
+
+.seg {
+  height: 60rpx;
+  padding: 4rpx;
+  border-radius: 30rpx;
+  background: #f3ece4;
+  box-sizing: border-box;
+}
+
+.seg-item {
+  height: 52rpx;
+  line-height: 52rpx;
+  padding: 0 26rpx;
+  border-radius: 26rpx;
+  font-size: 24rpx;
+  color: #8a7e74;
+}
+
+.seg-on {
+  background: #6b4226;
+  color: #ffffff;
+  font-weight: bold;
+}
+
+.body {
+  align-items: flex-start;
+}
+
+.cats {
+  width: 180rpx;
+  background: #f7f3ee;
+}
+
+.cat {
+  position: relative;
+  height: 104rpx;
+  line-height: 104rpx;
+  text-align: center;
+  font-size: 26rpx;
+  color: #8a7e74;
+}
+
+.cat-on {
+  background: #ffffff;
+  color: #2b211b;
+  font-weight: bold;
+}
+
+.cat-bar {
+  position: absolute;
+  left: 0;
+  top: 34rpx;
+  width: 6rpx;
+  height: 36rpx;
+  border-radius: 3rpx;
+  background: #6b4226;
+}
+
+.list {
+  flex: 1;
+}
+
+.promo {
+  margin: 20rpx 24rpx 0;
+  padding: 14rpx 18rpx;
+  border-radius: 14rpx;
+  background: linear-gradient(90deg, #fbefe1, #fff8f0);
+}
+
+.promo-tag {
+  font-size: 20rpx;
+  line-height: 32rpx;
+  padding: 0 10rpx;
+  border-radius: 6rpx;
+  background: #5b3a29;
+  color: #f3d3a5;
+  margin-right: 12rpx;
+}
+
+.promo-text {
+  font-size: 22rpx;
+  color: #8a5a3b;
+}
+
+.cat-title {
+  display: block;
+  font-size: 26rpx;
+  font-weight: bold;
+  color: #5b3a29;
+  margin: 24rpx 24rpx 4rpx;
+}
+
+.drink {
+  padding: 20rpx 24rpx;
+  align-items: flex-start;
+}
+
+.d-img-wrap {
+  position: relative;
+  width: 170rpx;
+  height: 170rpx;
+  margin-right: 20rpx;
+  flex-shrink: 0;
+}
+
+.d-img {
+  width: 170rpx;
+  height: 170rpx;
+  border-radius: 20rpx;
+}
+
+.d-tag {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: 18rpx;
+  line-height: 30rpx;
+  padding: 0 10rpx;
+  border-radius: 20rpx 0 12rpx 0;
+  background: #b5562a;
+  color: #ffffff;
+}
+
+.d-name {
+  display: block;
+  font-size: 30rpx;
+  font-weight: bold;
+}
+
+.d-en {
+  display: block;
+  font-size: 20rpx;
+  color: #b3a89e;
+  line-height: 30rpx;
+}
+
+.d-desc {
+  display: block;
+  font-size: 22rpx;
+  color: #8a7e74;
+  line-height: 34rpx;
+  margin-top: 4rpx;
+}
+
+.d-bottom {
+  margin-top: 14rpx;
+}
+
+.d-price {
+  font-size: 34rpx;
+}
+
+.d-origin {
+  font-size: 22rpx;
+  color: #c2b8ae;
+  text-decoration: line-through;
+  margin-left: 10rpx;
+}
+
+.d-spec {
+  height: 48rpx;
+  line-height: 48rpx;
+  padding: 0 20rpx;
+  border-radius: 24rpx;
+  background: #6b4226;
+  color: #ffffff;
+  font-size: 22rpx;
+  font-weight: bold;
+}
+
+.list-end {
+  height: 200rpx;
+}
+
+.cart-bar {
+  position: fixed;
+  left: 24rpx;
+  right: 24rpx;
+  bottom: 20rpx;
+  height: 100rpx;
+  border-radius: 50rpx;
+  background: #2b211b;
+  box-shadow: 0 8rpx 24rpx rgba(43, 33, 27, 0.3);
+}
+
+.cart-icon {
+  position: relative;
+  width: 76rpx;
+  height: 76rpx;
+  border-radius: 38rpx;
+  background: #f3e3cf;
+  margin: 0 20rpx 0 14rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cart-cup {
+  width: 44rpx;
+  height: 44rpx;
+}
+
+.cart-badge {
+  position: absolute;
+  right: -8rpx;
+  top: -8rpx;
+  min-width: 34rpx;
+  height: 34rpx;
+  line-height: 34rpx;
+  border-radius: 17rpx;
+  background: #e5482d;
+  color: #ffffff;
+  font-size: 20rpx;
+  text-align: center;
+  padding: 0 6rpx;
+  box-sizing: border-box;
+}
+
+.cart-amount {
+  display: block;
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+.cart-tip {
+  display: block;
+  font-size: 20rpx;
+  color: #b3a89e;
+}
+
+.cart-go {
+  height: 100rpx;
+  line-height: 100rpx;
+  padding: 0 40rpx;
+  border-radius: 0 50rpx 50rpx 0;
+  background: linear-gradient(90deg, #c98b4e, #a8693a);
+  color: #ffffff;
+  font-weight: bold;
+  font-size: 28rpx;
+  white-space: nowrap;
+}
+
+.mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 32rpx 32rpx calc(24rpx + env(safe-area-inset-bottom));
+  border-radius: 32rpx 32rpx 0 0;
+  background: #ffffff;
+}
+
+.s-head {
+  align-items: flex-start;
+  padding-bottom: 20rpx;
+  border-bottom: 1rpx solid #f1ebe4;
+}
+
+.s-img {
+  width: 150rpx;
+  height: 150rpx;
+  border-radius: 20rpx;
+  margin-right: 24rpx;
+}
+
+.s-name {
+  display: block;
+  font-size: 34rpx;
+  font-weight: bold;
+}
+
+.s-desc {
+  display: block;
+  font-size: 24rpx;
+  color: #8a7e74;
+  margin-top: 6rpx;
+}
+
+.s-close {
+  width: 48rpx;
+  height: 48rpx;
+  line-height: 44rpx;
+  border-radius: 24rpx;
+  background: #f3ece4;
+  color: #8a7e74;
+  text-align: center;
+  font-size: 34rpx;
+}
+
+.s-label {
+  display: block;
+  font-size: 26rpx;
+  font-weight: bold;
+  margin: 24rpx 0 14rpx;
+}
+
+.opts {
+  flex-wrap: wrap;
+}
+
+.opt {
+  min-width: 140rpx;
+  height: 64rpx;
+  line-height: 64rpx;
+  padding: 0 20rpx;
+  margin: 0 16rpx 14rpx 0;
+  box-sizing: border-box;
+  border-radius: 14rpx;
+  background: #f7f3ee;
+  border: 2rpx solid #f7f3ee;
+  text-align: center;
+  font-size: 26rpx;
+  color: #5c5047;
+}
+
+.opt-size {
+  width: 200rpx;
+  height: 96rpx;
+  line-height: 1.3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.opt-main {
+  font-size: 28rpx;
+  font-weight: bold;
+}
+
+.opt-sub {
+  font-size: 20rpx;
+  color: #9b9087;
+}
+
+.opt-on {
+  background: #fbf1e6;
+  border-color: #a8693a;
+  color: #6b4226;
+  font-weight: bold;
+}
+
+.s-foot {
+  margin-top: 16rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid #f1ebe4;
+}
+
+.s-price-row {
+  align-items: flex-end;
+}
+
+.s-sym {
+  font-size: 24rpx;
+  padding-bottom: 6rpx;
+}
+
+.s-price {
+  font-size: 44rpx;
+  line-height: 1.2;
+}
+
+.s-picked {
+  display: block;
+  font-size: 22rpx;
+  color: #9b9087;
+}
+
+.s-add {
+  margin-top: 24rpx;
+  height: 88rpx;
+  line-height: 88rpx;
+  font-size: 30rpx;
+}

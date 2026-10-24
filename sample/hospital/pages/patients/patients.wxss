@@ -1,0 +1,20 @@
+.tip { padding: 20rpx 32rpx; background: #fff7e8; color: #c27c0e; font-size: 24rpx; }
+.pt { display: flex; flex-direction: row; align-items: center; }
+.pt-av { width: 88rpx; height: 88rpx; border-radius: 44rpx; color: #fff; font-size: 36rpx; font-weight: bold; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.pt-main { flex: 1; margin-left: 22rpx; display: flex; flex-direction: column; }
+.pt-main .muted { margin-top: 6rpx; }
+.pt-name { font-size: 30rpx; font-weight: bold; margin-right: 12rpx; }
+.def { font-size: 20rpx; color: #ffffff; background: #13a8a8; padding: 4rpx 12rpx; border-radius: 8rpx; }
+.form { padding-bottom: 36rpx; }
+.f-row { display: flex; flex-direction: row; align-items: center; min-height: 100rpx; border-bottom: 1rpx solid #f0f2f5; }
+.f-row.last { border-bottom: none; }
+.f-k { width: 160rpx; font-size: 28rpx; color: #3a4252; flex-shrink: 0; }
+/* 引擎把 font-size 恰为 14px、padding 为 0 当成「没写」，套 16px 字号与 12px 内边距，所以写 28.1rpx 与 1rpx */
+.f-in { flex: 1; height: 100rpx; font-size: 28.1rpx; padding: 0 0 0 1rpx; }
+.f-pk { flex: 1; }
+.f-pv { justify-content: space-between; font-size: 28rpx; color: #1d2330; }
+.ph { color: #b8bec8; }
+.f-radios { flex: 1; }
+.f-radio { margin-right: 48rpx; font-size: 28rpx; }
+.f-sw { flex: 1; display: flex; flex-direction: row; justify-content: flex-end; }
+.save { margin-top: 36rpx; }

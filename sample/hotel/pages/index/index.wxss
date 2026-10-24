@@ -1,0 +1,42 @@
+.hero { height: 300rpx; background: linear-gradient(160deg, #2F6BFF, #5AA2FF); padding: 40rpx 40rpx 0; }
+.hero-title { display: block; color: #fff; font-size: 48rpx; font-weight: bold; }
+.hero-sub { display: block; color: rgba(255, 255, 255, 0.85); font-size: 24rpx; margin-top: 12rpx; }
+.search { margin-top: -150rpx; padding: 8rpx 32rpx 32rpx; box-shadow: 0 8rpx 30rpx rgba(30, 91, 255, 0.10); }
+.kinds { display: flex; flex-direction: row; border-bottom: 1rpx solid #f0f1f3; }
+.kind { flex: 1; text-align: center; padding: 22rpx 0; font-size: 28rpx; color: #8a9099; }
+.kind-on { color: #1E6FFF; font-weight: bold; font-size: 30rpx; }
+.line { padding: 26rpx 0; border-bottom: 1rpx solid #f0f1f3; }
+.city { font-size: 40rpx; font-weight: bold; }
+.loc { width: 22rpx; height: 22rpx; border-radius: 11rpx; border: 5rpx solid #1E6FFF; margin-left: 10rpx; }
+.dates { justify-content: space-between; }
+.date { display: flex; flex-direction: column; }
+.date.right { align-items: flex-end; }
+.date-label { font-size: 22rpx; color: #9aa0a6; }
+.date-val { font-size: 38rpx; font-weight: bold; margin-top: 4rpx; }
+.date-week { font-size: 24rpx; color: #4e5969; margin-left: 10rpx; margin-top: 10rpx; }
+.nights { font-size: 22rpx; color: #4e5969; border: 1rpx solid #e3e5e8; border-radius: 20rpx; padding: 4rpx 16rpx; }
+.kw { font-size: 30rpx; height: 48rpx; }
+.filter-title { font-size: 24rpx; color: #8a9099; margin-top: 24rpx; }
+.chips { display: flex; flex-direction: row; flex-wrap: wrap; margin-top: 14rpx; }
+.chip { height: 40rpx; line-height: 40rpx; font-size: 24rpx; color: #4e5969; background: #f5f6f8; padding: 10rpx 22rpx; border-radius: 10rpx; margin: 0 14rpx 14rpx 0; border: 2rpx solid #f5f6f8; }
+.chip-on { color: #1E6FFF; background: #EAF2FF; border-color: #A9C8FF; }
+.search-btn { margin-top: 20rpx; }
+.perks { display: flex; flex-direction: row; margin: 0 24rpx 32rpx; background: #fff; border-radius: 20rpx; padding: 24rpx 0; }
+.perk { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.perk-icon { width: 64rpx; height: 64rpx; border-radius: 20rpx; display: flex; align-items: center; justify-content: center; }
+.perk-glyph { color: #fff; font-size: 26rpx; font-weight: bold; }
+.perk-t { font-size: 26rpx; font-weight: bold; margin-top: 10rpx; }
+.perk-s { font-size: 20rpx; color: #9aa0a6; margin-top: 4rpx; }
+.rec-scroll { width: 750rpx; }
+.rec-row { display: flex; flex-direction: row; padding: 0 24rpx; }
+.rec { position: relative; width: 300rpx; background: #fff; border-radius: 20rpx; margin-right: 20rpx; overflow: hidden; flex-shrink: 0; }
+.rec-img { width: 300rpx; height: 200rpx; border-radius: 20rpx 20rpx 0 0; }
+.rec-badge { position: absolute; left: 12rpx; top: 12rpx; background: rgba(0, 0, 0, 0.45); color: #fff; font-size: 20rpx; padding: 4rpx 12rpx; border-radius: 8rpx; }
+.rec-body { padding: 16rpx 18rpx 20rpx; }
+.rec-name { font-size: 28rpx; font-weight: bold; display: block; height: 40rpx; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rec-meta { margin-top: 10rpx; }
+.rec-area { margin-left: 10rpx; }
+.rec-price-row { margin-top: 10rpx; align-items: flex-end; }
+.yen { font-size: 22rpx; margin-bottom: 4rpx; }
+.rec-price { font-size: 36rpx; font-weight: bold; margin-right: 4rpx; }
+.gap { height: 40rpx; }

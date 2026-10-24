@@ -1,0 +1,15 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/city/city",
+    "pages/air/air",
+    "pages/life/life",
+    "pages/settings/settings"
+  ],
+  "window": {
+    "navigationBarTitleText": "晴雨天气",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f5f6f8"
+  }
+}

@@ -1,0 +1,40 @@
+<view class="page">
+  <view class="seg-wrap"><view class="seg">
+    <view class="seg-item {{type === 'out' ? 'seg-on' : ''}}" data-t="out" bindtap="onType"><text>支出</text></view>
+    <view class="seg-item {{type === 'in' ? 'seg-on' : ''}}" data-t="in" bindtap="onType"><text>收入</text></view>
+  </view></view>
+
+  <view class="amount-box">
+    <text class="amount-cat">{{cat}}</text>
+    <text class="amount {{type}}"><text class="amount-yen">¥</text>{{amount}}</text>
+  </view>
+
+  <view class="card grid">
+    <view wx:for="{{cats}}" wx:key="name" class="grid-item" data-name="{{item.name}}" bindtap="onCat">
+      <view class="cat-icon big {{cat === item.name ? '' : 'dim'}}" style="background: {{cat === item.name ? item.color : '#f0f1f4'}}; color: {{cat === item.name ? '#ffffff' : item.color}};"><text>{{item.ch}}</text></view>
+      <text class="grid-name {{cat === item.name ? 'grid-name-on' : ''}}">{{item.name}}</text>
+    </view>
+  </view>
+
+  <view class="card form">
+    <view class="row form-row">
+      <text class="form-label">备注</text>
+      <input class="flex1 form-input" placeholder="写点什么，例如：和同事午饭" placeholder-class="ph" value="{{note}}" maxlength="30" bindinput="onNote" />
+    </view>
+    <picker mode="date" value="{{date}}" start="2020-01-01" end="2030-12-31" bindchange="onDate">
+      <view class="row form-row last">
+        <text class="form-label">日期</text>
+        <text class="flex1 form-val">{{dateText}}</text>
+        <view class="arrow"></view>
+      </view>
+    </picker>
+  </view>
+
+  <view class="keypad-space"></view>
+
+  <view class="keypad">
+    <view wx:for="{{keys}}" wx:key="k" class="key key-{{item.k}}" hover-class="key-hover" data-k="{{item.k}}" bindtap="onKey">
+      <text>{{item.label}}</text>
+    </view>
+  </view>
+</view>

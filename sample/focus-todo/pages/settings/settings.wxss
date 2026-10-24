@@ -1,0 +1,82 @@
+.profile {
+  margin: 24rpx 24rpx 8rpx;
+  padding: 32rpx 28rpx;
+  border-radius: 24rpx;
+  background: #ffffff;
+}
+.avatar {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 48rpx;
+  background: linear-gradient(135deg, #ffd36b, #ff9f1a);
+  color: #ffffff;
+  font-size: 40rpx;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 24rpx;
+}
+.name {
+  display: block;
+  font-size: 32rpx;
+  font-weight: bold;
+  margin-bottom: 6rpx;
+}
+.pro {
+  padding: 6rpx 18rpx;
+  border-radius: 10rpx;
+  background: linear-gradient(90deg, #2b2f38, #4a4f5c);
+  color: #ffd36b;
+  font-size: 22rpx;
+  font-weight: bold;
+}
+.group {
+  display: block;
+  margin: 28rpx 40rpx 14rpx;
+  font-size: 24rpx;
+  color: #8f95a3;
+}
+.s-item {
+  padding: 8rpx 0;
+}
+.s-label {
+  font-size: 28rpx;
+}
+.s-value {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #ff6250;
+}
+.cells {
+  padding: 0 28rpx;
+}
+.cell {
+  min-height: 104rpx;
+  padding: 18rpx 0;
+  box-sizing: border-box;
+  border-bottom: 1rpx solid #f0f1f4;
+}
+.cell:last-child {
+  border-bottom: none;
+}
+.cell-label {
+  display: block;
+  font-size: 28rpx;
+}
+.cell-label.danger {
+  color: #f2453d;
+}
+.cell-desc {
+  display: block;
+  font-size: 22rpx;
+  color: #a3a8b3;
+  margin-top: 4rpx;
+}
+.ver {
+  display: block;
+  text-align: center;
+  font-size: 22rpx;
+  color: #b3b8c2;
+  margin-top: 8rpx;
+}

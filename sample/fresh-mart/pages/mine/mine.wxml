@@ -1,0 +1,54 @@
+<view class="head">
+  <view class="row">
+    <view class="avatar glyph">周</view>
+    <view class="flex1">
+      <text class="nick">周鲜鲜</text>
+      <view class="row"><text class="plus-tag">PLUS 会员</text><text class="phone">139****8826</text></view>
+    </view>
+    <view class="sign" bindtap="onSign">{{signed ? '已签到' : '签到领豆'}}</view>
+  </view>
+  <view class="row assets">
+    <view class="asset" wx:for="{{assets}}" wx:key="name" data-name="{{item.name}}" bindtap="onAsset">
+      <text class="asset-num">{{item.value}}</text>
+      <text class="asset-name">{{item.name}}</text>
+    </view>
+  </view>
+</view>
+
+<view class="plus row" bindtap="onPlus">
+  <view class="plus-badge glyph">P</view>
+  <view class="flex1">
+    <text class="plus-title">PLUS · 本年已省 ¥{{plusSaved}}</text>
+    <text class="plus-desc">每周 2 张免运费券 · 会员专享价</text>
+  </view>
+  <view class="plus-btn">续费 ¥88/年</view>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="title">我的订单</text>
+    <view class="row" bindtap="onOrders"><text class="sub">全部订单</text><view class="arrow"></view></view>
+  </view>
+  <view class="row orders">
+    <view class="order-entry" wx:for="{{orderEntries}}" wx:key="name" data-name="{{item.name}}" bindtap="onOrders">
+      <view class="oe-icon glyph" style="color: {{item.color}}; background: {{item.bg}};">{{item.glyph}}</view>
+      <text class="oe-name">{{item.name}}</text>
+      <view wx:if="{{item.badge}}" class="oe-badge">{{item.badge}}</view>
+    </view>
+  </view>
+</view>
+
+<view class="card menu">
+  <view class="menu-item row" wx:for="{{menus}}" wx:key="name" data-name="{{item.name}}" bindtap="onMenu">
+    <view class="menu-icon glyph" style="background: {{item.color}};">{{item.glyph}}</view>
+    <text class="flex1">{{item.name}}</text>
+    <text class="sub">{{item.extra}}</text>
+    <view class="arrow"></view>
+  </view>
+  <view class="menu-item row no-border">
+    <view class="menu-icon glyph" style="background: #ff8a3d;">醒</view>
+    <text class="flex1">秒杀开抢提醒</text>
+    <switch checked="{{remind}}" color="#12b76a" bindchange="onRemind" />
+  </view>
+</view>
+<view class="foot">鲜到家超市 v5.2.0 · 客服热线 400-610-8899</view>

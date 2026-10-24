@@ -1,0 +1,81 @@
+<view class="header">
+  <view class="row loc" bindtap="onLocation">
+    <view class="pin"></view>
+    <text class="loc-text">{{location}}</text>
+    <text class="loc-arrow">▾</text>
+    <view class="flex1"></view>
+    <text class="weather">晴 23°</text>
+  </view>
+  <view class="search row">
+    <view class="search-icon"></view>
+    <input class="search-input" placeholder="搜索商家、菜品" placeholder-class="ph" value="{{keyword}}" bindinput="onInput" confirm-type="search" />
+    <view wx:if="{{keyword}}" class="search-clear" bindtap="onClear">×</view>
+    <view class="search-btn">搜索</view>
+  </view>
+</view>
+
+<view class="kingkong">
+  <view class="kk-item" wx:for="{{categories}}" wx:key="name" data-name="{{item.name}}" bindtap="onCategory">
+    <view class="kk-icon glyph" style="background: linear-gradient(135deg, {{item.c1}}, {{item.c2}});">{{item.glyph}}</view>
+    <text class="kk-name">{{item.name}}</text>
+  </view>
+</view>
+
+<view class="banner-wrap">
+<swiper class="banner" indicator-dots="{{true}}" indicator-color="rgba(255,255,255,0.5)" indicator-active-color="#ffffff" autoplay="{{true}}" interval="3500" circular="{{true}}">
+  <swiper-item wx:for="{{banners}}" wx:key="title">
+    <view class="banner-item" style="background: linear-gradient(120deg, {{item.c1}}, {{item.c2}});" data-shop="{{item.shop}}" bindtap="onBanner">
+      <view class="banner-circle"></view>
+      <view class="banner-circle2"></view>
+      <text class="banner-kicker">{{item.kicker}}</text>
+      <text class="banner-title">{{item.title}}</text>
+      <text class="banner-desc">{{item.desc}}</text>
+      <view class="banner-btn">{{item.btn}}</view>
+    </view>
+  </swiper-item>
+</swiper>
+</view>
+
+<view class="section-head row between">
+  <text class="title">附近商家</text>
+  <view class="sorts row">
+    <text wx:for="{{sorts}}" wx:key="*this" class="sort {{sortIdx === index ? 'sort-on' : ''}}" data-idx="{{index}}" bindtap="onSort">{{item}}</text>
+  </view>
+</view>
+
+<view wx:if="{{filterText}}" class="filter-tip row">
+  <text class="flex1">{{filterText}}</text>
+  <text class="filter-reset" bindtap="onClear">清除</text>
+</view>
+
+<view class="shop-list">
+  <view class="shop card row" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onShop">
+    <view class="shop-logo glyph" style="background: linear-gradient(135deg, {{item.c1}}, {{item.c2}});">
+      <text>{{item.logo}}</text>
+      <view wx:if="{{item.brand}}" class="brand">品牌</view>
+    </view>
+    <view class="flex1 shop-info">
+      <text class="shop-name ellipsis">{{item.name}}</text>
+      <view class="row shop-meta">
+        <text class="star">★ {{item.rating}}</text>
+        <text class="meta-gap">月售 {{item.sales}}</text>
+        <view class="flex1"></view>
+        <text class="meta-time">{{item.time}}分钟 {{item.distance}}</text>
+      </view>
+      <view class="row shop-meta2">
+        <text>起送 ¥{{item.minOrder}}</text>
+        <text class="meta-gap">配送 ¥{{item.deliveryFee}}</text>
+        <view class="flex1"></view>
+        <text class="cat">{{item.cat}}</text>
+      </view>
+      <view class="tags">
+        <text class="tag" wx:for="{{item.tags}}" wx:for-item="t" wx:key="*this">{{t}}</text>
+      </view>
+    </view>
+  </view>
+  <view wx:if="{{!list.length}}" class="empty">
+    <view class="empty-circle"></view>
+    <text>附近没有找到「{{keyword}}」，换个词试试</text>
+  </view>
+  <view class="foot-tip">— 已经到底了 —</view>
+</view>

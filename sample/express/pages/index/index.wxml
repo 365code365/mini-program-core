@@ -1,0 +1,56 @@
+<view class="hero">
+  <view class="search">
+    <input class="search-input" placeholder="输入或粘贴快递单号" placeholder-class="ph" value="{{no}}" bindinput="onInput" confirm-type="search" bindconfirm="onQuery" />
+    <view class="search-btn" bindtap="onQuery">查询</view>
+  </view>
+  <view class="detect" wx:if="{{detected}}">
+    <view class="logo mini" style="background: {{detected.color}}">{{detected.short}}</view>
+    <text class="detect-text">已识别为 {{detected.name}}</text>
+  </view>
+  <view class="detect" wx:else>
+    <text class="detect-text dim">支持顺丰、京东、中通、圆通、韵达等 1500+ 家快递公司</text>
+  </view>
+</view>
+
+<view class="entries card">
+  <view class="entry" wx:for="{{entries}}" wx:key="text" bindtap="onEntry" data-i="{{index}}">
+    <view class="entry-icon" style="background: {{item.bg}}">
+      <text class="entry-glyph">{{item.glyph}}</text>
+    </view>
+    <text class="entry-text">{{item.text}}</text>
+  </view>
+</view>
+
+<view class="row between list-head">
+  <text class="section-title">我的快递</text>
+  <text class="sub count">共 {{total}} 件</text>
+</view>
+
+<scroll-view class="filters" scroll-x="true">
+  <view class="filter {{filter === item.key ? 'on' : ''}}" wx:for="{{filters}}" wx:key="key" bindtap="onFilter" data-key="{{item.key}}">{{item.text}}</view>
+</scroll-view>
+
+<view class="card pkg" wx:for="{{shown}}" wx:key="no" bindtap="onOpen" data-no="{{item.no}}">
+  <view class="row">
+    <view class="logo" style="background: {{item.color}}">{{item.short}}</view>
+    <view class="flex1 pkg-main">
+      <view class="row between">
+        <text class="pkg-name">{{item.remark || item.carrierName}}</text>
+        <text class="tag {{item.statusCls}}">{{item.statusText}}</text>
+      </view>
+      <text class="sub">{{item.carrierName}} {{item.no}}</text>
+    </view>
+  </view>
+  <view class="pkg-last">
+    <text class="pkg-last-text">{{item.last.text}}</text>
+    <view class="row between pkg-foot">
+      <text class="sub">{{item.from}} → {{item.to}}</text>
+      <text class="sub">{{item.last.time}}</text>
+    </view>
+  </view>
+</view>
+
+<view class="empty" wx:if="{{!shown.length}}">
+  <text class="sub">这里还没有快递，去上面查一单吧</text>
+</view>
+<view class="bottom-gap"></view>

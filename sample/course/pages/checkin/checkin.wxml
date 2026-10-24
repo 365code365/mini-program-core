@@ -1,0 +1,35 @@
+<view class="hero">
+  <text class="h-label">已连续打卡</text>
+  <view class="row h-row"><text class="h-num">{{streak}}</text><text class="h-unit">天</text></view>
+  <text class="h-sub">累计打卡 {{total}} 天 · 本月 {{monthCount}} 天</text>
+  <view class="h-btn {{todayDone ? 'done' : ''}}" bindtap="checkin"><text>{{todayDone ? '今日已打卡' : '立即打卡'}}</text></view>
+  <view class="h-deco"></view>
+</view>
+
+<view class="card cal">
+  <view class="row between cal-head">
+    <view class="nav" bindtap="prev"><view class="nav-ar l"></view></view>
+    <text class="cal-title">{{title}}</text>
+    <view class="nav {{isCurMonth ? 'dis' : ''}}" bindtap="next"><view class="nav-ar r"></view></view>
+  </view>
+  <view class="grid">
+    <view class="wk" wx:for="{{week}}" wx:key="*this"><text>{{item}}</text></view>
+    <view class="day" wx:for="{{days}}" wx:key="k">
+      <view wx:if="{{!item.empty}}" class="dot {{item.on ? 'on' : ''}} {{item.today ? 'today' : ''}} {{item.future ? 'future' : ''}}"><text>{{item.d}}</text></view>
+    </view>
+  </view>
+  <view class="row legend">
+    <view class="lg-dot on"></view><text class="muted">已打卡</text>
+    <view class="lg-dot today"></view><text class="muted">今天</text>
+  </view>
+</view>
+
+<view class="card">
+  <view class="row between"><text class="sec-title">今日任务</text><text class="muted">完成任务赚积分</text></view>
+  <view class="task row" wx:for="{{tasks}}" wx:key="key" data-k="{{item.key}}" bindtap="onTask">
+    <view class="tk-ic"><text>+{{item.pts}}</text></view>
+    <view class="tk-main"><text class="tk-name">{{item.name}}</text><text class="muted">{{item.sub}}</text></view>
+    <view class="tk-btn {{item.done ? 'done' : ''}}"><text>{{item.done ? '已完成' : '去完成'}}</text></view>
+  </view>
+</view>
+<view class="tab-gap"></view>

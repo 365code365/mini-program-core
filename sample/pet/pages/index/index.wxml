@@ -1,0 +1,62 @@
+<view class="top">
+  <view class="loc" bindtap="pickCity"><text class="loc-t">杭州 · 西溪</text><view class="down"></view></view>
+  <view class="search" bindtap="goMall"><view class="s-ic"></view><text class="s-ph">搜索猫粮、驱虫药、洗护服务</text></view>
+</view>
+
+<swiper class="pets" previous-margin="24rpx" next-margin="48rpx" current="{{petIdx}}" bindchange="onPet">
+  <swiper-item wx:for="{{pets}}" wx:key="id">
+    <view class="pet" style="background: {{item.color}};" data-id="{{item.id}}" bindtap="goPet">
+      <view class="paw p1"></view><view class="paw p2"></view>
+      <view class="row">
+        <view class="pet-av"><text>{{item.sx}}</text></view>
+        <view class="pet-m">
+          <view class="row"><text class="pet-n">{{item.name}}</text><text class="pet-g">{{item.gender === '公' ? '弟弟' : '妹妹'}}</text></view>
+          <text class="pet-b">{{item.breed}} · {{item.age}} · {{item.weight}}kg</text>
+        </view>
+      </view>
+      <view class="remind">
+        <view class="r-dot"></view>
+        <text class="r-t">{{item.remindText}}</text>
+      </view>
+    </view>
+  </swiper-item>
+</swiper>
+
+<view class="card entries">
+  <view class="en" wx:for="{{entries}}" wx:key="key" data-key="{{item.key}}" bindtap="onEntry">
+    <view class="en-ic" style="background: {{item.bg}};">
+      <view class="g-{{item.key}}"></view><view class="g2-{{item.key}}"></view>
+    </view>
+    <text class="en-t">{{item.name}}</text>
+    <text class="en-s">{{item.sub}}</text>
+  </view>
+</view>
+
+<view class="promo" bindtap="goBookingDefault">
+  <view>
+    <text class="pr-t">新客洗护首单立减 30 元</text>
+    <text class="pr-s">基础洗护 ¥88 → ¥58 · 含耳道清洁</text>
+  </view>
+  <view class="pr-btn"><text>去预约</text></view>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="sec-title">附近门店</text>
+    <text class="muted">按距离</text>
+  </view>
+  <view class="st" wx:for="{{stores}}" wx:key="id">
+    <view class="st-pic" style="background: {{item.color}};"><text>{{item.short}}</text></view>
+    <view class="st-m">
+      <text class="st-n">{{item.name}}</text>
+      <view class="row st-meta">
+        <text class="star">★ {{item.rate}}</text>
+        <text class="muted">{{item.dist}} · {{item.open}}</text>
+      </view>
+      <text class="st-a">{{item.addr}}</text>
+      <view class="row st-tags"><text class="tag" wx:for="{{item.tags}}" wx:key="*this" wx:for-item="t">{{t}}</text></view>
+    </view>
+    <view class="st-btn" data-id="{{item.id}}" bindtap="goBooking"><text>预约</text></view>
+  </view>
+</view>
+<view style="height: 40rpx;"></view>

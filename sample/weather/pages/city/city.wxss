@@ -1,0 +1,29 @@
+.press { opacity: 0.75; }
+.search { margin: 24rpx 24rpx 0; height: 80rpx; border-radius: 40rpx; background: #ffffff; padding: 0 28rpx; box-shadow: 0 4rpx 16rpx rgba(31, 35, 41, 0.05); }
+.lens { position: relative; width: 32rpx; height: 32rpx; margin-right: 16rpx; }
+.lens-c { position: absolute; left: 0; top: 0; width: 20rpx; height: 20rpx; border-radius: 50%; border: 4rpx solid #8a8d96; }
+.lens-h { position: absolute; left: 22rpx; top: 22rpx; width: 4rpx; height: 12rpx; background: #8a8d96; transform: rotate(-45deg); border-radius: 2rpx; }
+.search-in { height: 80rpx; font-size: 28rpx; }
+.ph { color: #b8bcc4; }
+.clear { color: #2f7ff0; font-size: 28rpx; margin-left: 16rpx; }
+.result { padding: 8rpx 28rpx; }
+.empty { padding: 40rpx 0; text-align: center; }
+.res { height: 96rpx; border-bottom: 1rpx solid #f2f3f5; }
+.res-n { font-size: 30rpx; font-weight: bold; }
+.res-p { margin-left: 16rpx; }
+.add { color: #2f7ff0; font-size: 26rpx; font-weight: bold; }
+.added { color: #b8bcc4; font-size: 26rpx; }
+.sec { margin: 36rpx 32rpx 4rpx; }
+.sec-t { font-size: 32rpx; font-weight: bold; }
+.city { margin: 20rpx 24rpx 0; padding: 24rpx 32rpx; border-radius: 28rpx; color: #ffffff; box-shadow: 0 8rpx 24rpx rgba(47, 127, 240, 0.18); }
+.city-n { font-size: 36rpx; font-weight: bold; white-space: nowrap; }
+.tag { margin-left: 12rpx; font-size: 20rpx; padding: 2rpx 12rpx; border-radius: 12rpx; background: rgba(255, 255, 255, 0.28); }
+.city-s { font-size: 24rpx; opacity: 0.9; margin-top: 10rpx; white-space: nowrap; }
+.city-t { font-size: 64rpx; font-weight: 300; width: 150rpx; text-align: right; white-space: nowrap; }
+.hot { flex-wrap: wrap; padding: 8rpx 15rpx 0; }
+.chip { width: 162rpx; height: 68rpx; margin: 16rpx 9rpx 0; border-radius: 34rpx; background: #ffffff; display: flex; flex-direction: row; align-items: center; justify-content: center; font-size: 26rpx; color: #3d4047; }
+.chip-on { background: #e8f1ff; color: #2f7ff0; }
+.space { height: 48rpx; }
+.manage { font-size: 26rpx; color: #2f7ff0; padding: 6rpx 20rpx; border-radius: 24rpx; background: #e8f1ff; }
+.del { margin-left: 24rpx; width: 126rpx; height: 60rpx; border-radius: 30rpx; background: #ffffff; color: #f04848; font-size: 26rpx; font-weight: bold; display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.hint { margin: 20rpx 32rpx 0; }

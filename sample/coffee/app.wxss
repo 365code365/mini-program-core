@@ -1,0 +1,123 @@
+page {
+  background: #f7f3ee;
+  color: #2b211b;
+  font-size: 28rpx;
+  line-height: 1.5;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 24rpx;
+  margin: 24rpx 28rpx 0;
+  padding: 28rpx;
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.between {
+  justify-content: space-between;
+}
+
+.flex1 {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #2b211b;
+}
+
+.sub {
+  font-size: 24rpx;
+  color: #9b9087;
+}
+
+.price {
+  color: #b5562a;
+  font-weight: bold;
+}
+
+.price-sym {
+  font-size: 22rpx;
+}
+
+.ellipsis {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-weight: bold;
+}
+
+.btn {
+  background: linear-gradient(90deg, #8a5a3b, #5b3a29);
+  color: #ffffff;
+  border-radius: 44rpx;
+  text-align: center;
+  font-weight: bold;
+}
+
+/* 右箭头：字体里的 › 在引擎里画不出来，用边框画 */
+.arrow {
+  width: 14rpx;
+  height: 14rpx;
+  border-top: 3rpx solid #bdb3aa;
+  border-right: 3rpx solid #bdb3aa;
+  transform: rotate(45deg);
+  margin-left: 12rpx;
+  margin-right: 4rpx;
+  flex-shrink: 0;
+}
+
+.stepper {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.step-minus {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 22rpx;
+  border: 2rpx solid #8a5a3b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.minus-bar {
+  width: 20rpx;
+  height: 4rpx;
+  border-radius: 2rpx;
+  background: #8a5a3b;
+}
+
+.step-plus {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 22rpx;
+  background: #6b4226;
+  color: #ffffff;
+  font-size: 34rpx;
+  line-height: 42rpx;
+  text-align: center;
+}
+
+.step-num {
+  min-width: 52rpx;
+  text-align: center;
+  font-size: 28rpx;
+}

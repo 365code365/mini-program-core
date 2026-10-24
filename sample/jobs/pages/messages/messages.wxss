@@ -1,0 +1,22 @@
+.top { padding: 24rpx 24rpx 8rpx; }
+.chip { background: #fff; border-radius: 28rpx; padding: 10rpx 28rpx; margin-right: 16rpx; }
+.chip.on { background: #2E6BFF; }
+.chip-t { font-size: 26rpx; color: #5c6370; }
+.chip.on .chip-t { color: #fff; font-weight: bold; }
+.read-all-t { font-size: 24rpx; color: #2E6BFF; }
+.notice { margin: 20rpx 24rpx; background: #eef3ff; border-radius: 20rpx; padding: 24rpx; }
+.n-icon { width: 80rpx; height: 80rpx; border-radius: 40rpx; background: linear-gradient(135deg, #4C86FF, #2E6BFF); display: flex; flex-direction: row; align-items: center; justify-content: center; margin-right: 20rpx; }
+.n-icon-t { color: #fff; font-size: 32rpx; font-weight: bold; }
+.n-title { font-size: 30rpx; font-weight: bold; margin-bottom: 6rpx; }
+.list { background: #fff; margin: 0 24rpx; border-radius: 20rpx; overflow: hidden; }
+.item { padding: 28rpx 24rpx; border-bottom: 1rpx solid #f0f1f3; align-items: flex-start; }
+.av-wrap { position: relative; margin-right: 20rpx; }
+.avatar { width: 88rpx; height: 88rpx; border-radius: 44rpx; font-size: 34rpx; }
+.badge { position: absolute; right: -6rpx; top: -6rpx; min-width: 32rpx; height: 32rpx; border-radius: 16rpx; background: #F5455C; border: 3rpx solid #fff; display: flex; flex-direction: row; align-items: center; justify-content: center; padding: 0 6rpx; }
+.badge-t { color: #fff; font-size: 20rpx; font-weight: bold; }
+.name { font-size: 30rpx; font-weight: bold; margin-right: 12rpx; }
+.time { font-size: 22rpx; color: #9aa0a6; }
+.job { font-size: 22rpx; color: #2E6BFF; margin: 8rpx 0 6rpx; }
+.last { font-size: 26rpx; color: #8a9099; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.last.strong { color: #1f2329; }
+.empty { padding: 80rpx 0; display: flex; flex-direction: row; justify-content: center; }

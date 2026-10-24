@@ -1,0 +1,251 @@
+.code-card {
+  margin: 24rpx 28rpx 0;
+  padding: 32rpx;
+  border-radius: 28rpx;
+  background: linear-gradient(160deg, #6b4226, #3d2416);
+  color: #fff6ec;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.code-card .between {
+  width: 100%;
+}
+
+.mode-tag {
+  font-size: 22rpx;
+  line-height: 40rpx;
+  padding: 0 16rpx;
+  border-radius: 20rpx;
+  background: rgba(255, 246, 236, 0.16);
+}
+
+.code-time {
+  font-size: 24rpx;
+  color: rgba(255, 246, 236, 0.75);
+}
+
+.code-label {
+  font-size: 26rpx;
+  margin-top: 28rpx;
+  color: rgba(255, 246, 236, 0.75);
+}
+
+.code {
+  font-size: 120rpx;
+  line-height: 150rpx;
+  font-weight: bold;
+  letter-spacing: 8rpx;
+  color: #f3d3a5;
+}
+
+.code-tip {
+  font-size: 24rpx;
+  color: rgba(255, 246, 236, 0.85);
+}
+
+.steps {
+  width: 100%;
+  margin-top: 36rpx;
+}
+
+.step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.step-top {
+  width: 100%;
+}
+
+.step-line {
+  flex: 1;
+  height: 4rpx;
+  background: rgba(255, 246, 236, 0.2);
+}
+
+.line-on {
+  background: #f3d3a5;
+}
+
+.hide {
+  background: transparent;
+}
+
+.step-dot {
+  width: 44rpx;
+  height: 44rpx;
+  line-height: 1;
+  border-radius: 22rpx;
+  font-size: 22rpx;
+  background: rgba(255, 246, 236, 0.2);
+  color: rgba(255, 246, 236, 0.6);
+}
+
+.dot-on {
+  background: #f3d3a5;
+  color: #5b3a29;
+}
+
+.step-name {
+  font-size: 22rpx;
+  margin-top: 10rpx;
+  color: rgba(255, 246, 236, 0.6);
+}
+
+.name-on {
+  color: #fff6ec;
+  font-weight: bold;
+}
+
+.store-icon {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 20rpx;
+  background: linear-gradient(135deg, #c98b4e, #8a5a3b);
+  font-size: 30rpx;
+  margin-right: 20rpx;
+}
+
+.store-addr {
+  display: block;
+}
+
+.store-ops {
+  margin-top: 24rpx;
+}
+
+.store-op {
+  flex: 1;
+  height: 68rpx;
+  line-height: 68rpx;
+  text-align: center;
+  border-radius: 34rpx;
+  background: #f7f3ee;
+  color: #5b3a29;
+  font-size: 26rpx;
+}
+
+.store-op:first-child {
+  margin-right: 20rpx;
+}
+
+.item {
+  margin-top: 24rpx;
+}
+
+.item-img {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 14rpx;
+  margin-right: 20rpx;
+}
+
+.item-name {
+  display: block;
+  font-size: 28rpx;
+  font-weight: bold;
+  line-height: 40rpx;
+}
+
+.item-spec {
+  display: block;
+  font-size: 22rpx;
+  color: #9b9087;
+}
+
+.item-qty {
+  margin: 0 24rpx;
+}
+
+.item-total {
+  font-size: 28rpx;
+}
+
+.paid {
+  margin-top: 24rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid #f1ebe4;
+  align-items: flex-end;
+  font-size: 26rpx;
+}
+
+.paid-num {
+  font-size: 34rpx;
+  margin-left: 8rpx;
+  line-height: 1.2;
+}
+
+.his {
+  margin-top: 20rpx;
+  padding-bottom: 20rpx;
+  border-bottom: 1rpx solid #f5f0ea;
+}
+
+.his-code {
+  width: 110rpx;
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #8a5a3b;
+}
+
+.his-name {
+  display: block;
+  font-size: 26rpx;
+}
+
+.his-pay {
+  font-size: 28rpx;
+  font-weight: bold;
+}
+
+.bottom-gap {
+  height: 40rpx;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 180rpx;
+}
+
+.empty-cup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 36rpx;
+}
+
+.empty-lid {
+  width: 180rpx;
+  height: 32rpx;
+  border-radius: 12rpx;
+  background: #c9b39d;
+}
+
+.empty-body {
+  width: 150rpx;
+  height: 170rpx;
+  border-radius: 0 0 30rpx 30rpx;
+  background: linear-gradient(180deg, #e9dccd, #d8c3ad);
+  color: #8a5a3b;
+  font-size: 56rpx;
+}
+
+.empty-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  margin-bottom: 8rpx;
+}
+
+.empty-btn {
+  margin-top: 40rpx;
+  width: 260rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  font-size: 28rpx;
+}

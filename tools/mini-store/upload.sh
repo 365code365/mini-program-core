@@ -3,6 +3,9 @@
 #
 #   MINI_STORE_PASS=… bash tools/mini-store/upload.sh <小程序目录> <id> [名称] [描述]
 #
+# 目录里有 store.meta.json（{name, description, category, tags, developer}）时，名称 / 描述没给就用它的，
+# 分类、标签、开发者一并带上（商店搜索与分类靠它们）。包根上的 icon.png 是商店图标。
+#
 # AppID 取包里 project.config.json 的 appid；没有就沿用这个 id 上次的，再没有就由服务器分配
 # （服务器会把最终的 AppID 写回包里的 project.config.json）。要强制指定：MINI_STORE_APPID=wx…
 #
@@ -19,7 +22,7 @@ USER_="${MINI_STORE_USER:-admin}"
 
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
-(cd "$DIR" && zip -qr -X "$TMP/pkg.zip" . -x '*.DS_Store' -x '__MACOSX/*' -x '*/node_modules/*' -x 'node_modules/*')
+(cd "$DIR" && zip -qr -X "$TMP/pkg.zip" . -x '*.DS_Store' -x '__MACOSX/*' -x '*/node_modules/*' -x 'node_modules/*' -x 'store.meta.json')
 
 # 登录拿 token（密码走 stdin 进 python，不出现在进程参数里）
 MS_USER="$USER_" python3 -c '
@@ -32,10 +35,18 @@ r = json.load(open(sys.argv[1]))
 if "token" not in r: sys.exit("✗ 登录失败：" + r.get("error", "?"))
 print(r["token"])' "$TMP/login.json")
 
-Q=$(MS_NAME="$NAME" MS_DESC="$DESC" python3 -c '
-import os, urllib.parse
-q = {"name": os.environ["MS_NAME"]}
-if os.environ["MS_DESC"]: q["description"] = os.environ["MS_DESC"]
+Q=$(MS_NAME="$NAME" MS_DESC="$DESC" MS_DIR="$DIR" python3 -c '
+import json, os, urllib.parse
+meta = {}
+mp = os.path.join(os.environ["MS_DIR"], "store.meta.json")
+if os.path.isfile(mp):
+    meta = json.load(open(mp, encoding="utf-8"))
+q = {"name": os.environ["MS_NAME"] or meta.get("name", "")}
+desc = os.environ["MS_DESC"] or meta.get("description", "")
+if desc: q["description"] = desc
+for k in ("category", "developer"):
+    if meta.get(k): q[k] = meta[k]
+if meta.get("tags"): q["tags"] = ",".join(meta["tags"])
 if os.environ.get("MINI_STORE_APPID"): q["appid"] = os.environ["MINI_STORE_APPID"]
 print(urllib.parse.urlencode(q))')
 

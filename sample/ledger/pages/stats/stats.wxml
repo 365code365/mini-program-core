@@ -1,0 +1,73 @@
+<view class="page">
+  <view class="month-bar row">
+    <view class="month-btn" hover-class="month-btn-hover" bindtap="onPrev"><view class="chev chev-l"></view></view>
+    <text class="month-text">{{monthText}}</text>
+    <view class="month-btn {{isCurrent ? 'month-btn-dis' : ''}}" hover-class="month-btn-hover" bindtap="onNext"><view class="chev chev-r"></view></view>
+  </view>
+
+  <view class="seg-wrap"><view class="seg">
+    <view class="seg-item {{type === 'out' ? 'seg-on' : ''}}" data-t="out" bindtap="onType"><text>支出</text></view>
+    <view class="seg-item {{type === 'in' ? 'seg-on' : ''}}" data-t="in" bindtap="onType"><text>收入</text></view>
+  </view></view>
+
+  <view class="card summary">
+    <text class="muted">{{type === 'out' ? '总支出' : '总收入'}}（元）</text>
+    <view class="sum-val"><text>{{totalText}}</text></view>
+    <view class="row sum-sub">
+      <view class="flex1"><view class="muted"><text>笔数</text></view><view class="sub-v"><text>{{count}}</text></view></view>
+      <view class="flex1"><view class="muted"><text>日均</text></view><view class="sub-v"><text>{{avgText}}</text></view></view>
+      <view class="flex1"><view class="muted"><text>{{type === 'out' ? '收入' : '支出'}}</text></view><view class="sub-v"><text>{{otherText}}</text></view></view>
+    </view>
+  </view>
+
+  <view wx:if="{{empty}}" class="card empty">
+    <text class="muted">{{monthText}}没有{{type === 'out' ? '支出' : '收入'}}记录</text>
+  </view>
+
+  <block wx:else>
+    <view class="card">
+      <text class="card-title">每日趋势</text>
+      <view class="chart row">
+        <view wx:for="{{days}}" wx:key="d" class="col">
+          <view class="col-track">
+            <view class="col-bar {{item.future ? 'col-future' : ''}}" style="height: {{item.h}}%;"></view>
+          </view>
+          <view class="col-label"><text>{{item.label}}</text></view>
+        </view>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="row between">
+        <text class="card-title">分类占比</text>
+        <text class="muted">{{cats.length}} 个分类</text>
+      </view>
+      <view wx:for="{{cats}}" wx:key="name" class="cat-row row">
+        <view class="cat-icon" style="background: {{item.color}};"><text>{{item.ch}}</text></view>
+        <view class="flex1 cat-main">
+          <view class="row between">
+            <text class="cat-name">{{item.name}} <text class="muted">{{item.pct}}%</text></text>
+            <text class="cat-v nowrap">{{item.vText}}</text>
+          </view>
+          <view class="bar-track cat-track">
+            <view class="bar-fill" style="width: {{item.w}}%; background: {{item.color}};"></view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="card">
+      <text class="card-title">{{type === 'out' ? '支出' : '收入'}}排行</text>
+      <view wx:for="{{top}}" wx:key="id" class="rank row" hover-class="rank-hover" data-id="{{item.id}}" bindtap="onItem">
+        <text class="rank-no {{index < 3 ? 'rank-top' : ''}}">{{index + 1}}</text>
+        <view class="cat-icon small" style="background: {{item.color}};"><text>{{item.ch}}</text></view>
+        <view class="flex1 rank-mid">
+          <view class="rank-note"><text>{{item.note || item.cat}}</text></view>
+          <view class="muted"><text>{{item.cat}} · {{item.dateText}}</text></view>
+        </view>
+        <text class="rank-amt nowrap">{{item.amountText}}</text>
+      </view>
+    </view>
+  </block>
+  <view class="bottom-space"></view>
+</view>

@@ -1,0 +1,66 @@
+<view class="hero">
+  <view class="row between">
+    <picker mode="selector" range="{{cities}}" bindchange="onCity">
+      <view class="city row"><text class="city-tx">{{city}}</text><view class="down"></view></view>
+    </picker>
+    <view class="h-rec row" bindtap="goRecords"><text>本月已缴 ¥{{monthPaid}}</text><view class="chev w"></view></view>
+  </view>
+  <view class="grid">
+    <view class="g" wx:for="{{types}}" wx:key="k" data-k="{{item.k}}" bindtap="onType">
+      <view class="ic g-ic" style="background: {{item.bg}};"><text>{{item.ch}}</text></view>
+      <text class="g-tx">{{item.name}}</text>
+    </view>
+  </view>
+</view>
+
+<view class="notice row" bindtap="notice">
+  <text class="n-tag">公告</text>
+  <text class="n-tx">文三路片区本周六夜间计划停水，请提前储水</text>
+  <view class="chev"></view>
+</view>
+
+<view class="card due" wx:if="{{dues.length}}">
+  <view class="row between">
+    <view class="row"><view class="dot"></view><text class="sec-title">待缴提醒</text></view>
+    <text class="muted">{{dues.length}} 笔 · 合计 <text class="owe">¥{{dueTotal}}</text></text>
+  </view>
+  <view class="due-item row" wx:for="{{dues}}" wx:key="id">
+    <view class="ic sm" style="background: {{item.bg}};"><text>{{item.ch}}</text></view>
+    <view class="d-main">
+      <view class="row"><text class="d-name">{{item.tname}}</text><text class="d-tag">{{item.tag}}</text></view>
+      <text class="muted">{{item.period}} · 户号 {{item.noTx}}</text>
+    </view>
+    <view class="d-right">
+      <text class="owe d-owe">¥{{item.oweTx}}</text>
+      <view class="d-btn" data-id="{{item.id}}" bindtap="goPay"><text>去缴费</text></view>
+    </view>
+  </view>
+</view>
+<view class="card ok row" wx:else>
+  <view class="ok-ic"><view class="ok-tick"></view></view>
+  <view class="ok-main"><text class="ok-t">暂无待缴账单</text><text class="muted">我们会在出账后第一时间提醒你</text></view>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="sec-title">我的户号</text>
+    <view class="row" bindtap="goAccounts"><text class="muted">管理</text><view class="chev"></view></view>
+  </view>
+  <scroll-view class="accs" scroll-x="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}">
+    <view class="acc" wx:for="{{accounts}}" wx:key="id" style="background: {{item.bg}};" data-id="{{item.id}}" bindtap="goPay">
+      <view class="row between"><text class="acc-type">{{item.tname}}</text><text class="acc-tag">{{item.tag}}</text></view>
+      <text class="acc-no">{{item.noTx}}</text>
+      <text class="acc-unit">{{item.unit}}</text>
+      <text class="acc-owe">{{item.owe > 0 ? '欠费 ¥' + item.oweTx : (item.balance ? '余额 ¥' + item.balTx : '无欠费')}}</text>
+    </view>
+    <view class="acc add" bindtap="goAdd"><text class="add-plus">+</text><text class="add-tx">添加户号</text></view>
+  </scroll-view>
+</view>
+
+<view class="card tips">
+  <text class="sec-title">缴费小贴士</text>
+  <view class="tip row"><text class="tip-n">1</text><text class="tip-t">缴费成功后 1~3 分钟到账，部分单位延迟至次日销账</text></view>
+  <view class="tip row"><text class="tip-n">2</text><text class="tip-t">户号可在纸质账单或营业厅回执上找到</text></view>
+  <view class="tip row"><text class="tip-n">3</text><text class="tip-t">电子发票可在缴费记录中申请开具</text></view>
+</view>
+<view class="tab-gap"></view>

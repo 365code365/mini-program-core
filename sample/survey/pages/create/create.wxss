@@ -1,0 +1,33 @@
+.card:first-child { margin-top: 24rpx; }
+.label { display: block; font-size: 28rpx; font-weight: bold; }
+.req { color: #F5455C; margin-left: 4rpx; }
+.title-input { font-size: 32rpx; height: 88rpx; border-bottom: 2rpx solid #eeedf5; margin: 8rpx 0 8rpx; }
+.ph { color: #b8bcc4; }
+.desc-l { margin-top: 20rpx; }
+.desc { width: 100%; height: 150rpx; box-sizing: border-box; background: #f7f7fb; border-radius: 14rpx; padding: 18rpx; font-size: 26rpx; margin-top: 14rpx; }
+.opt-head { margin-bottom: 12rpx; }
+.opt { height: 92rpx; border-bottom: 1rpx solid #f1f0f6; }
+.del { width: 40rpx; height: 40rpx; border-radius: 20rpx; background: #F5455C; display: flex; flex-direction: row; align-items: center; justify-content: center; margin-right: 20rpx; }
+.del.dis { background: #e3e2ea; }
+/* 减号用 CSS 画：「−」(U+2212) 在引擎里画不出来 */
+.del-bar { width: 18rpx; height: 4rpx; border-radius: 2rpx; background: #fff; }
+/* input 的 font-size 恰好 14px(28rpx) 时引擎当成「没写」改用 16px，所以写 29rpx */
+.opt-input { font-size: 29rpx; height: 92rpx; }
+.add { height: 92rpx; }
+.add.dis { opacity: 0.4; }
+.add-ic { position: relative; width: 40rpx; height: 40rpx; border-radius: 20rpx; background: #6C5CE7; margin-right: 20rpx; }
+.add-h { position: absolute; left: 11rpx; top: 18rpx; width: 18rpx; height: 4rpx; background: #fff; border-radius: 2rpx; }
+.add-v { position: absolute; left: 18rpx; top: 11rpx; width: 4rpx; height: 18rpx; background: #fff; border-radius: 2rpx; }
+.add-t { font-size: 28rpx; color: #6C5CE7; }
+.set { padding: 0 28rpx; }
+.set-i { min-height: 104rpx; border-bottom: 1rpx solid #f1f0f6; padding: 12rpx 0; box-sizing: border-box; }
+.set-i.last { border-bottom: none; }
+.set-k { font-size: 28rpx; }
+.set-v { font-size: 28rpx; color: #6C5CE7; }
+.preview { background: #faf9ff; border: 2rpx dashed #d6d0ff; box-shadow: none; }
+.p-title { display: block; font-size: 30rpx; font-weight: bold; margin: 10rpx 0 14rpx; }
+.p-opt { margin: 10rpx 0; }
+.p-radio { width: 24rpx; height: 24rpx; border-radius: 12rpx; border: 3rpx solid #A08CFF; margin-right: 14rpx; }
+.p-check { width: 24rpx; height: 24rpx; border-radius: 6rpx; border: 3rpx solid #A08CFF; margin-right: 14rpx; }
+.p-t { font-size: 26rpx; color: #3a3f47; }
+.go { padding: 8rpx 24rpx 24rpx; }

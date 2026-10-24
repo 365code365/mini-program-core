@@ -1,0 +1,4 @@
+.tb { height: 100rpx; background: #ffffff; display: flex; flex-direction: row; border-top: 1rpx solid #eef0f4; padding-bottom: env(safe-area-inset-bottom); }
+.tb-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.tb-ic { width: 48rpx; height: 48rpx; }
+.tb-tx { font-size: 20rpx; margin-top: 4rpx; }

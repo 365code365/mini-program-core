@@ -1,0 +1,49 @@
+<view class="addr" bindtap="pickAddr">
+  <view class="pin"><view class="pin-in"></view></view>
+  <view class="addr-m">
+    <text class="addr-t">{{addr.name}} {{addr.phone}}</text>
+    <text class="muted">{{addr.text}}</text>
+  </view>
+  <view class="chev"></view>
+</view>
+
+<view class="card list" wx:if="{{items.length}}">
+  <view class="it" wx:for="{{items}}" wx:key="key">
+    <view class="ck {{item.checked ? 'on' : ''}}" data-index="{{index}}" bindtap="toggle"><view class="ck-v" wx:if="{{item.checked}}"></view></view>
+    <image class="it-img" src="{{item.g.img}}" mode="aspectFill"></image>
+    <view class="it-m">
+      <text class="it-n">{{item.g.name}}</text>
+      <text class="it-spec">{{item.spec}}</text>
+      <view class="row between">
+        <text class="price"><text class="yen">¥</text>{{item.g.price}}</text>
+        <view class="stepper">
+          <view class="st-b" data-index="{{index}}" bindtap="dec"><text>－</text></view>
+          <text class="st-v">{{item.qty}}</text>
+          <view class="st-b" data-index="{{index}}" bindtap="inc"><text>＋</text></view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>
+
+<view wx:else class="empty">
+  <view class="e-bag"></view>
+  <text class="e-t">购物车空空的，去给毛孩子挑点好吃的吧</text>
+  <view class="e-btn" bindtap="goMall"><text>去逛逛</text></view>
+</view>
+
+<view class="card tips" wx:if="{{items.length}}">
+  <view class="row between"><text class="muted">商品金额</text><text>¥{{sum}}</text></view>
+  <view class="row between tip-r"><text class="muted">运费</text><text>{{freight ? '¥' + freight : '免运费'}}</text></view>
+  <text class="free" wx:if="{{freight}}">再买 ¥{{needMore}} 即可包邮</text>
+</view>
+<view style="height: 200rpx;"></view>
+
+<view class="bar" wx:if="{{items.length}}">
+  <view class="ck {{allChecked ? 'on' : ''}}" bindtap="toggleAll"><view class="ck-v" wx:if="{{allChecked}}"></view></view>
+  <text class="all">全选</text>
+  <view class="bar-sum">
+    <view class="row"><text class="muted">合计 </text><text class="price total"><text class="yen">¥</text>{{total}}</text></view>
+  </view>
+  <view class="pay" bindtap="checkout"><text>结算({{checkedCount}})</text></view>
+</view>

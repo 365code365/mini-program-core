@@ -1,0 +1,48 @@
+<view class="top">
+  <view class="top-bar row">
+    <view class="date-box">
+      <text class="db-line">住 {{inShort}}</text>
+      <text class="db-line">离 {{outShort}}</text>
+    </view>
+    <view class="search-box row">
+      <input class="search-input" placeholder="搜索酒店 / 地标 / 商圈" value="{{keyword}}" bindinput="onInput" />
+      <text wx:if="{{keyword}}" class="clear" bindtap="onClear">×</text>
+    </view>
+  </view>
+  <view class="sorts row">
+    <view wx:for="{{sorts}}" wx:key="*this" class="sort {{sort === index ? 'sort-on' : ''}}" data-idx="{{index}}" bindtap="onSort">{{item}}</view>
+  </view>
+  <scroll-view scroll-x class="chips-scroll" show-scrollbar="{{false}}">
+    <view class="chips">
+      <view wx:for="{{stars}}" wx:key="*this" class="chip {{star === index ? 'chip-on' : ''}}" data-idx="{{index}}" bindtap="onStar">{{item}}</view>
+      <view wx:for="{{prices}}" wx:key="*this" wx:if="{{index > 0}}" class="chip {{price === index ? 'chip-on' : ''}}" data-idx="{{index}}" bindtap="onPrice">{{item}}</view>
+    </view>
+  </scroll-view>
+</view>
+
+<view class="count sub">共 {{list.length}} 家酒店符合条件</view>
+<view wx:if="{{!list.length}}" class="empty">
+  <text class="empty-t">没有符合条件的酒店</text>
+  <view class="empty-btn" bindtap="onReset">清空筛选</view>
+</view>
+<view class="hotel card" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onOpen">
+  <image class="h-img" src="{{item.img}}" mode="aspectFill"></image>
+  <view class="h-body">
+    <text class="h-name">{{item.name}}</text>
+    <view class="row h-meta">
+      <text class="score">{{item.score}}</text>
+      <text class="h-good">{{item.score >= 4.8 ? '超棒' : '很好'}}</text>
+      <text class="sub">{{item.reviews}}条点评</text>
+    </view>
+    <text class="sub h-line">{{item.starText}} · {{item.dist}}</text>
+    <view class="row h-tags">
+      <text class="tag" wx:for="{{item.tags}}" wx:for-item="t" wx:key="*this">{{t}}</text>
+    </view>
+    <view class="row h-price-row">
+      <text class="h-fav" wx:if="{{item.fav}}">已收藏</text>
+      <view class="flex1"></view>
+      <text class="price-color yen">¥</text><text class="price-color h-price">{{item.price}}</text><text class="sub">起</text>
+    </view>
+  </view>
+</view>
+<view class="gap"></view>

@@ -1,0 +1,31 @@
+.top { background: #ffffff; padding: 16rpx 24rpx 0; }
+.search { height: 72rpx; border-radius: 36rpx; background: #f7f3ef; display: flex; flex-direction: row; align-items: center; padding: 0 24rpx; }
+.s-ic { width: 20rpx; height: 20rpx; border: 4rpx solid #b5aca4; border-radius: 50%; margin-right: 12rpx; flex-shrink: 0; }
+/* 引擎把 padding 为 0 当成「没写」，套 12px 默认内边距，所以写 1rpx */
+.s-in { flex: 1; height: 72rpx; font-size: 26rpx; padding: 0 0 0 1rpx; }
+.s-x { font-size: 24rpx; color: #ff8a3d; margin-left: 12rpx; }
+.cats { white-space: nowrap; margin-top: 12rpx; }
+.cat { display: inline-flex; flex-direction: column; align-items: center; padding: 16rpx 22rpx 14rpx; font-size: 28rpx; color: #7a7069; position: relative; }
+.cat.on { color: #2a2522; font-weight: bold; }
+.cat-line { position: absolute; bottom: 6rpx; width: 36rpx; height: 6rpx; border-radius: 3rpx; background: #ff8a3d; }
+.sort { display: flex; flex-direction: row; padding: 20rpx 32rpx 0; }
+.so { font-size: 24rpx; color: #9a928b; margin-right: 40rpx; }
+.so.on { color: #ff8a3d; font-weight: bold; }
+.grid { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-between; padding: 0 24rpx; }
+.gd { width: 339rpx; margin-top: 20rpx; background: #ffffff; border-radius: 20rpx; overflow: hidden; }
+.gd-img { width: 339rpx; height: 300rpx; display: block; border-radius: 20rpx 20rpx 0 0; }
+.gd-b { padding: 16rpx 20rpx 20rpx; }
+.gd-n { display: block; font-size: 26rpx; font-weight: bold; color: #2a2522; line-height: 36rpx; height: 72rpx; overflow: hidden; }
+.gd-s { display: block; margin-top: 6rpx; font-size: 22rpx; color: #b5aca4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gd-f { margin-top: 10rpx; }
+.gd-p { align-items: flex-end; }
+.gd-p .price { font-size: 34rpx; }
+.gd-o { margin: 0 0 6rpx 8rpx; font-size: 20rpx; color: #c4bcb4; text-decoration: line-through; }
+.add { width: 48rpx; height: 48rpx; border-radius: 24rpx; background: linear-gradient(135deg, #ffb547, #ff7b54); color: #fff; font-size: 34rpx; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+.gd-sales { display: block; margin-top: 6rpx; font-size: 20rpx; color: #b5aca4; }
+.empty { padding: 120rpx 0; text-align: center; color: #b5aca4; }
+/* 引擎里 tab 页的 position:fixed 的 bottom 从屏幕底边算（压在 tabBar 上），抬高一些避开 */
+.fab { position: fixed; right: 32rpx; bottom: 150rpx; width: 104rpx; height: 104rpx; border-radius: 52rpx; background: linear-gradient(135deg, #ffb547, #ff7b54); box-shadow: 0 8rpx 24rpx rgba(255,123,84,0.4); }
+.fab-bag { position: absolute; left: 30rpx; top: 40rpx; width: 44rpx; height: 34rpx; border: 5rpx solid #fff; border-radius: 6rpx 6rpx 10rpx 10rpx; box-sizing: border-box; }
+.fab-h { position: absolute; left: 40rpx; top: 24rpx; width: 24rpx; height: 22rpx; border: 5rpx solid #fff; border-bottom: none; border-radius: 12rpx 12rpx 0 0; box-sizing: border-box; }
+.badge { position: absolute; right: -4rpx; top: -4rpx; min-width: 36rpx; height: 36rpx; padding: 0 8rpx; border-radius: 18rpx; background: #ff3b30; border: 3rpx solid #fff; color: #fff; font-size: 20rpx; font-weight: bold; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }

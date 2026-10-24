@@ -1,0 +1,66 @@
+<view class="card">
+  <text class="sec-title">为谁预约</text>
+  <view class="pets">
+    <view class="pc {{petId === item.id ? 'on' : ''}}" wx:for="{{pets}}" wx:key="id" data-id="{{item.id}}" bindtap="pickPet">
+      <view class="pet-av sm" style="background: {{item.color}};"><text>{{item.sx}}</text></view>
+      <view class="pc-m">
+        <text class="pc-n">{{item.name}}</text>
+        <text class="muted">{{item.kind}} · {{item.weight}}kg</text>
+      </view>
+      <view class="ok" wx:if="{{petId === item.id}}"><view class="ok-v"></view></view>
+    </view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="sec-title">服务项目</text>
+    <text class="muted">可多选</text>
+  </view>
+  <view class="svc {{item.on ? 'on' : ''}}" wx:for="{{svcs}}" wx:key="id" data-index="{{index}}" bindtap="toggleSvc">
+    <view class="box {{item.on ? 'on' : ''}}"><view class="box-v" wx:if="{{item.on}}"></view></view>
+    <view class="svc-m">
+      <text class="svc-n">{{item.name}}</text>
+      <text class="muted">{{item.desc}}</text>
+    </view>
+    <text class="price"><text class="yen">¥</text>{{item.price}}</text>
+  </view>
+</view>
+
+<view class="card form">
+  <view class="f">
+    <text class="f-k">服务门店</text>
+    <picker class="f-pk" mode="selector" range="{{storeNames}}" value="{{storeIdx}}" bindchange="onStore">
+      <view class="f-v"><text>{{storeNames[storeIdx]}}</text><view class="chev"></view></view>
+    </picker>
+  </view>
+  <view class="f">
+    <text class="f-k">预约日期</text>
+    <picker class="f-pk" mode="date" value="{{date}}" start="{{today}}" end="{{maxDate}}" bindchange="onDate">
+      <view class="f-v"><text>{{date}} {{week}}</text><view class="chev"></view></view>
+    </picker>
+  </view>
+  <view class="f">
+    <text class="f-k">到店时间</text>
+    <picker class="f-pk" mode="time" value="{{time}}" start="09:00" end="20:00" bindchange="onTime">
+      <view class="f-v"><text>{{time}}</text><view class="chev"></view></view>
+    </picker>
+  </view>
+  <view class="f">
+    <text class="f-k">上门接送</text>
+    <view class="f-sw"><text class="muted">+¥20，3km 内</text><switch checked="{{pickup}}" color="#ff8a3d" bindchange="onPickup" /></view>
+  </view>
+  <view class="f last">
+    <text class="f-k">备注</text>
+    <input class="f-in" placeholder="如：怕吹风机、有皮肤病史" placeholder-style="color: #c4bcb4;" value="{{remark}}" bindinput="onRemark" maxlength="40" />
+  </view>
+</view>
+<view style="height: 200rpx;"></view>
+
+<view class="bar">
+  <view class="bar-l">
+    <view class="row"><text class="muted">合计 </text><text class="price total"><text class="yen">¥</text>{{total}}</text></view>
+    <text class="muted">预计 {{totalMin}} 分钟 · 到店支付</text>
+  </view>
+  <view class="btn bar-btn" bindtap="submit"><text>提交预约</text></view>
+</view>

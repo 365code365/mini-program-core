@@ -1,0 +1,15 @@
+.ring-card { padding-top: 36rpx; }
+.big-num { font-size: 80rpx; font-weight: bold; color: #f57c34; margin-top: 8rpx; white-space: nowrap; }
+.track { margin-top: 20rpx; height: 20rpx; }
+.track .bar-fill { height: 20rpx; }
+.stats { margin-top: 28rpx; }
+.stat-v { font-size: 32rpx; font-weight: bold; margin-top: 8rpx; }
+.red { color: #f04848; }
+.slider { margin: 36rpx 0 0; }
+.range { margin-top: 4rpx; }
+.presets { margin-top: 28rpx; justify-content: space-between; }
+.chip { width: 116rpx; height: 60rpx; line-height: 60rpx; text-align: center; border-radius: 30rpx; background: #f5f6f8; font-size: 26rpx; color: #5c6066; }
+.chip-on { background: #fff1e6; color: #f57c34; font-weight: bold; }
+.remind-t { font-size: 30rpx; font-weight: bold; margin-bottom: 6rpx; }
+.save { margin: 56rpx 24rpx 0; }
+.save-hover { opacity: 0.8; }

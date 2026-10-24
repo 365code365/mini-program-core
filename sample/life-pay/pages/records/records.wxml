@@ -1,0 +1,27 @@
+<view class="sum">
+  <text class="s-l">累计缴费（元）</text>
+  <text class="s-n">{{total}}</text>
+  <text class="s-sub">共 {{count}} 笔 · 近 3 个月</text>
+</view>
+<scroll-view class="filters" scroll-x="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}">
+  <view class="f {{filter === item.k ? 'on' : ''}}" wx:for="{{filters}}" wx:key="k" data-k="{{item.k}}" bindtap="onFilter"><text>{{item.name}}</text></view>
+</scroll-view>
+<view wx:if="{{groups.length === 0}}" class="empty"><text>暂无缴费记录</text></view>
+<view class="group" wx:for="{{groups}}" wx:key="key" wx:for-item="g">
+  <view class="g-head row between"><text class="g-title">{{g.title}}</text><text class="muted">支出 ¥{{g.sumTx}}</text></view>
+  <view class="card g-card">
+    <view class="rec row" wx:for="{{g.items}}" wx:key="id" data-id="{{item.id}}" bindtap="detail">
+      <view class="ic r-ic" style="background: {{item.bg}};"><text>{{item.ch}}</text></view>
+      <view class="r-main">
+        <text class="r-t">{{item.title}}</text>
+        <text class="muted">{{item.targetTx}} · {{item.day}}</text>
+      </view>
+      <view class="r-right">
+        <text class="r-amt">-{{item.paidTx}}</text>
+        <text wx:if="{{item.saved}}" class="r-save">已优惠 {{item.saved}}</text>
+        <text wx:else class="r-st">缴费成功</text>
+      </view>
+    </view>
+  </view>
+</view>
+<view class="tab-gap"></view>

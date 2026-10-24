@@ -1,0 +1,31 @@
+.pets { display: flex; flex-direction: row; margin-top: 20rpx; }
+.pc { flex: 1; display: flex; flex-direction: row; align-items: center; padding: 20rpx; border-radius: 20rpx; background: #faf8f6; border: 3rpx solid #faf8f6; margin-right: 20rpx; position: relative; }
+.pc:last-child { margin-right: 0; }
+.pc.on { border-color: #ff8a3d; background: #fff7f0; }
+.pet-av.sm { width: 76rpx; height: 76rpx; border-radius: 38rpx; font-size: 32rpx; }
+.pc-m { margin-left: 16rpx; display: flex; flex-direction: column; }
+.pc-n { font-size: 30rpx; font-weight: bold; }
+.ok { position: absolute; right: 0; top: 0; width: 40rpx; height: 36rpx; border-radius: 0 16rpx 0 16rpx; background: #ff8a3d; }
+.ok-v { position: absolute; left: 14rpx; top: 6rpx; width: 8rpx; height: 16rpx; border-right: 4rpx solid #fff; border-bottom: 4rpx solid #fff; transform: rotate(45deg); }
+.svc { display: flex; flex-direction: row; align-items: center; padding: 24rpx 0; border-bottom: 1rpx solid #f3efea; }
+.svc:last-child { border-bottom: none; padding-bottom: 0; }
+.box { width: 40rpx; height: 40rpx; border-radius: 20rpx; border: 3rpx solid #d9d2cb; box-sizing: border-box; position: relative; flex-shrink: 0; }
+.box.on { background: #ff8a3d; border-color: #ff8a3d; }
+.box-v { position: absolute; left: 13rpx; top: 7rpx; width: 8rpx; height: 16rpx; border-right: 4rpx solid #fff; border-bottom: 4rpx solid #fff; transform: rotate(45deg); }
+.svc-m { flex: 1; margin-left: 20rpx; display: flex; flex-direction: column; }
+.svc-n { font-size: 28rpx; font-weight: bold; margin-bottom: 4rpx; }
+.svc .price { font-size: 32rpx; }
+.form { padding-top: 4rpx; padding-bottom: 4rpx; }
+.f { display: flex; flex-direction: row; align-items: center; min-height: 100rpx; border-bottom: 1rpx solid #f3efea; }
+.f.last { border-bottom: none; }
+.f-k { width: 160rpx; font-size: 28rpx; color: #5a4f47; flex-shrink: 0; }
+.f-pk { flex: 1; }
+.f-v { display: flex; flex-direction: row; align-items: center; justify-content: flex-end; font-size: 28rpx; }
+.f-sw { flex: 1; display: flex; flex-direction: row; align-items: center; justify-content: flex-end; }
+.f-sw .muted { margin-right: 16rpx; }
+/* 引擎把 padding 为 0 当成「没写」，套 12px 默认内边距，所以写 1rpx */
+.f-in { flex: 1; text-align: right; font-size: 26rpx; padding: 0 0 0 1rpx; }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; background: #ffffff; padding: 20rpx 32rpx; padding-bottom: calc(20rpx + env(safe-area-inset-bottom)); display: flex; flex-direction: row; align-items: center; box-shadow: 0 -4rpx 16rpx rgba(0,0,0,0.05); }
+.bar-l { flex: 1; display: flex; flex-direction: column; }
+.total { font-size: 44rpx; margin-left: 8rpx; }
+.bar-btn { width: 260rpx; }

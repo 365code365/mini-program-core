@@ -1,0 +1,281 @@
+.hero {
+  background: linear-gradient(180deg, #1677ff 0%, #4aa3ff 80%, #f5f6f8 100%);
+  padding: 36rpx 40rpx 40rpx;
+  color: #ffffff;
+}
+
+.hero-title {
+  display: block;
+  font-size: 44rpx;
+  font-weight: bold;
+}
+
+.hero-sub {
+  display: block;
+  font-size: 26rpx;
+  margin-top: 8rpx;
+  opacity: 0.92;
+}
+
+.route {
+  position: relative;
+  height: 80rpx;
+  margin: 40rpx 30rpx 0;
+}
+
+.route-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 38rpx;
+  height: 6rpx;
+  border-radius: 3rpx;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.route-done {
+  position: absolute;
+  left: 0;
+  top: 38rpx;
+  height: 6rpx;
+  border-radius: 3rpx;
+  background: #ffffff;
+}
+
+.route-node {
+  position: absolute;
+  top: 16rpx;
+  width: 50rpx;
+  height: 50rpx;
+  border-radius: 25rpx;
+  font-size: 22rpx;
+  background: #ffffff;
+  color: #1677ff;
+}
+
+.node-shop {
+  left: -25rpx;
+}
+
+.node-home {
+  right: -25rpx;
+}
+
+.route-rider {
+  position: absolute;
+  top: 0;
+  width: 0;
+}
+
+.rider-dot {
+  width: 80rpx;
+  height: 80rpx;
+  margin-left: -40rpx;
+  border-radius: 40rpx;
+  background: linear-gradient(135deg, #ffb347, #ff7a1a);
+  border: 4rpx solid #ffffff;
+  font-size: 28rpx;
+  box-sizing: border-box;
+  box-shadow: 0 6rpx 16rpx rgba(0, 0, 0, 0.18);
+}
+
+.route-labels {
+  margin-top: 16rpx;
+  font-size: 22rpx;
+  opacity: 0.9;
+}
+
+.rider {
+  margin-top: 0;
+}
+
+.rider-avatar {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 44rpx;
+  background: linear-gradient(135deg, #7cc6ff, #2a7fff);
+  font-size: 34rpx;
+  margin-right: 20rpx;
+}
+
+.rider .title {
+  display: block;
+  font-size: 30rpx;
+}
+
+.call {
+  height: 60rpx;
+  line-height: 60rpx;
+  padding: 0 24rpx;
+  border-radius: 30rpx;
+  background: #e8f1ff;
+  color: #1677ff;
+  font-size: 24rpx;
+  font-weight: bold;
+}
+
+.timeline {
+  margin-top: 24rpx;
+}
+
+.step {
+  align-items: stretch;
+}
+
+.step-axis {
+  width: 40rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.dot {
+  width: 20rpx;
+  height: 20rpx;
+  border-radius: 10rpx;
+  background: #d4d7dd;
+  margin-top: 12rpx;
+  flex-shrink: 0;
+}
+
+.dot-done {
+  background: #1677ff;
+}
+
+.dot-current {
+  width: 28rpx;
+  height: 28rpx;
+  border-radius: 14rpx;
+  margin-top: 8rpx;
+  border: 6rpx solid #cfe2ff;
+  box-sizing: border-box;
+  background: #1677ff;
+}
+
+.axis-line {
+  flex: 1;
+  width: 4rpx;
+  background: #e6e9ef;
+  margin: 6rpx 0;
+}
+
+.axis-done {
+  background: #1677ff;
+}
+
+.step-body {
+  padding: 0 0 32rpx 16rpx;
+}
+
+.step-name {
+  font-size: 28rpx;
+  color: #8a8f99;
+}
+
+.step-name-done {
+  color: #1f2329;
+  font-weight: bold;
+}
+
+.step-time {
+  font-size: 24rpx;
+  color: #8a8f99;
+}
+
+.step-desc {
+  display: block;
+  font-size: 24rpx;
+  color: #8a8f99;
+  margin-top: 4rpx;
+}
+
+.shop-row {
+  padding-bottom: 16rpx;
+  border-bottom: 1rpx solid #f0f1f4;
+}
+
+.mini-logo {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 10rpx;
+  font-size: 22rpx;
+  margin-right: 14rpx;
+}
+
+.line-item {
+  height: 68rpx;
+  font-size: 26rpx;
+}
+
+.qty {
+  margin: 0 30rpx;
+}
+
+.line-price {
+  width: 120rpx;
+  text-align: right;
+}
+
+.paid {
+  justify-content: flex-end;
+  align-items: flex-end;
+  font-size: 26rpx;
+  padding-top: 16rpx;
+  border-top: 1rpx solid #f0f1f4;
+}
+
+.paid-num {
+  font-size: 34rpx;
+  margin-left: 8rpx;
+  line-height: 1.2;
+}
+
+.info-row {
+  min-height: 64rpx;
+  font-size: 26rpx;
+  align-items: flex-start;
+  padding-top: 8rpx;
+}
+
+.info-k {
+  width: 150rpx;
+  color: #8a8f99;
+  flex-shrink: 0;
+}
+
+.copy {
+  color: #1677ff;
+}
+
+.bottom-space {
+  height: 160rpx;
+}
+
+.op-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 112rpx;
+  padding: 0 24rpx env(safe-area-inset-bottom);
+  background: #ffffff;
+  justify-content: flex-end;
+  box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.06);
+}
+
+.op {
+  height: 72rpx;
+  line-height: 72rpx;
+  padding: 0 36rpx;
+  border-radius: 36rpx;
+  border: 1rpx solid #d4d7dd;
+  font-size: 28rpx;
+  margin-left: 20rpx;
+}
+
+.op-primary {
+  border: 0;
+  background: linear-gradient(90deg, #3d9bff, #1677ff);
+  color: #ffffff;
+  font-weight: bold;
+}

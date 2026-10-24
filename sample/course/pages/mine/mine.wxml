@@ -1,0 +1,39 @@
+<view class="top">
+  <view class="row">
+    <view class="avatar me-av"><text>林</text></view>
+    <view class="me">
+      <view class="row"><text class="me-name">林一帆</text><text class="vip">年度会员</text></view>
+      <text class="me-sub">学号 ZX20240318 · 会员至 2025-09-01</text>
+    </view>
+  </view>
+  <view class="row stat">
+    <view class="st" bindtap="goLearn"><text class="st-n">{{courseCount}}</text><text class="st-l">我的课程</text></view>
+    <view class="st" bindtap="goLearn"><text class="st-n">{{hours}}</text><text class="st-l">学习时长(h)</text></view>
+    <view class="st" bindtap="goCheckin"><text class="st-n">{{streak}}</text><text class="st-l">连续打卡</text></view>
+    <view class="st" bindtap="goExam"><text class="st-n">{{best}}</text><text class="st-l">练习最高分</text></view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="row between"><text class="sec-title">我的收藏</text><text class="muted">{{favs.length}} 门</text></view>
+  <view wx:if="{{favs.length === 0}}" class="fav-empty"><text>在课程详情页点「收藏」，会出现在这里</text></view>
+  <scroll-view wx:else class="favs" scroll-x="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}">
+    <view class="fav" wx:for="{{favs}}" wx:key="id" data-id="{{item.id}}" bindtap="goDetail">
+      <view class="fav-cv" style="background: {{item.cover}};"><text>{{item.mark}}</text></view>
+      <text class="fav-t">{{item.title}}</text>
+    </view>
+  </scroll-view>
+</view>
+
+<view class="card menu">
+  <view class="mi row" bindtap="orders"><view class="mi-ic" style="background: #edf2ff; color: #3d6cf6;"><text>单</text></view><text class="mi-t">我的订单</text><view class="chev"></view></view>
+  <view class="mi row" bindtap="cert"><view class="mi-ic" style="background: #fff3e8; color: #ff7a3d;"><text>证</text></view><text class="mi-t">我的证书</text><text class="mi-x">0 张</text><view class="chev"></view></view>
+  <view class="mi row"><view class="mi-ic" style="background: #e8f8f1; color: #20a37a;"><text>铃</text></view><text class="mi-t">每日学习提醒</text><switch checked="{{remind}}" color="#3d6cf6" bindchange="onRemind" /></view>
+  <picker mode="time" value="{{remindTime}}" bindchange="onTime">
+    <view class="mi row"><view class="mi-ic" style="background: #f3efff; color: #7b5cf0;"><text>时</text></view><text class="mi-t">提醒时间</text><text class="mi-x">{{remindTime}}</text><view class="chev"></view></view>
+  </picker>
+  <view class="mi row" bindtap="service"><view class="mi-ic" style="background: #fff0f3; color: #f0577a;"><text>客</text></view><text class="mi-t">联系客服</text><view class="chev"></view></view>
+  <view class="mi row" bindtap="clear"><view class="mi-ic" style="background: #f2f4f8; color: #6b7282;"><text>清</text></view><text class="mi-t">清除学习数据</text><view class="chev"></view></view>
+</view>
+<text class="ver">知学课堂 v2.3.0</text>
+<view class="tab-gap"></view>

@@ -1,0 +1,24 @@
+/* 注意：引擎里 display:flex 不写 flex-direction 时按 column 排，下面一律写明方向 */
+page { background: #f4f6f5; color: #1f2329; font-size: 28rpx; }
+.row { display: flex; flex-direction: row; align-items: center; }
+.col { display: flex; flex-direction: column; }
+.between { justify-content: space-between; }
+.flex1 { flex: 1; }
+.card { background: #fff; border-radius: 20rpx; margin: 0 24rpx 20rpx; padding: 28rpx; box-shadow: 0 4rpx 20rpx rgba(20, 40, 30, 0.04); }
+.sub { font-size: 24rpx; color: #8a9099; }
+.green { color: #00B87A; }
+.orange { color: #FF7A1A; }
+.section-title { font-size: 30rpx; font-weight: bold; }
+/* 加粗金额一律 nowrap：引擎对「¥ + 数字」量宽偏窄会折行 */
+.money { font-weight: bold; white-space: nowrap; }
+.btn-primary { background: linear-gradient(90deg, #22D193, #00B87A); color: #fff; font-size: 30rpx; font-weight: bold; height: 88rpx; line-height: 88rpx; text-align: center; border-radius: 44rpx; }
+.btn-ghost { border: 2rpx solid #00B87A; color: #00B87A; font-size: 28rpx; height: 80rpx; line-height: 80rpx; text-align: center; border-radius: 40rpx; }
+.tag { font-size: 20rpx; padding: 4rpx 12rpx; border-radius: 6rpx; margin-right: 10rpx; }
+.tag-green { color: #00A36C; background: #e6f8f0; }
+.tag-blue { color: #2D8CF0; background: #eaf3fe; }
+.tag-gray { color: #6b717a; background: #f2f3f5; }
+/* 右箭头用 border 画：引擎字体里 › 会落到错误字形 */
+.chev { width: 14rpx; height: 14rpx; border-top: 3rpx solid #c4c7cc; border-right: 3rpx solid #c4c7cc; transform: rotate(45deg); margin-left: 12rpx; }
+/* 引擎把 input padding 全 0 当成没写，套默认内边距，所以写 1rpx */
+input { padding: 0 0 0 1rpx; }
+.tabbar-space { height: calc(120rpx + env(safe-area-inset-bottom)); }

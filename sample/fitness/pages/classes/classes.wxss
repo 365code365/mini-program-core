@@ -1,0 +1,30 @@
+.top { background: #ffffff; padding: 16rpx 0 20rpx; }
+.days { white-space: nowrap; padding: 0 24rpx; }
+.day { display: inline-flex; flex-direction: column; align-items: center; width: 92rpx; padding: 12rpx 0; margin-right: 12rpx; border-radius: 20rpx; }
+.day.on { background: linear-gradient(180deg, #ff7a3d, #ff3d6e); }
+.d-w { font-size: 22rpx; color: #8b909a; }
+.d-n { margin-top: 4rpx; font-size: 34rpx; font-weight: bold; color: #1c1f26; }
+.day.on .d-w, .day.on .d-n { color: #ffffff; }
+.types { white-space: nowrap; margin-top: 20rpx; padding: 0 24rpx; }
+.type { display: inline-flex; padding: 10rpx 28rpx; margin-right: 16rpx; border-radius: 28rpx; background: #f3f4f6; font-size: 24rpx; color: #5c616b; }
+.type.on { background: #fff0ea; color: #ff5a36; font-weight: bold; }
+.sum { padding: 24rpx 32rpx 0; }
+.cc { margin: 20rpx 24rpx 0; background: #ffffff; border-radius: 24rpx; padding: 24rpx; display: flex; flex-direction: row; align-items: center; }
+.cc-time { width: 108rpx; display: flex; flex-direction: column; flex-shrink: 0; }
+.cc-t { white-space: nowrap; font-size: 30rpx; font-weight: bold; color: #1c1f26; }
+.cc-d { margin-top: 4rpx; font-size: 20rpx; color: #a0a5ae; }
+.cc-pic { width: 96rpx; height: 96rpx; border-radius: 18rpx; display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 24rpx; font-weight: bold; flex-shrink: 0; }
+.cc-main { flex: 1; margin-left: 20rpx; display: flex; flex-direction: column; min-width: 0; }
+.cc-name { font-size: 28rpx; font-weight: bold; color: #1c1f26; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cc-meta { margin-top: 8rpx; }
+.cc-meta .pill { margin-right: 10rpx; flex-shrink: 0; }
+.cc-meta .muted { font-size: 22rpx; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cc-foot { margin-top: 12rpx; }
+.bar { width: 120rpx; height: 10rpx; border-radius: 5rpx; background: #f0f1f4; overflow: hidden; }
+.bar-in { height: 10rpx; border-radius: 5rpx; }
+.cc-left { margin-left: 12rpx; font-size: 22rpx; color: #8b909a; }
+.cc-left.warn { color: #ff3d6e; }
+.cc-btn { width: 112rpx; height: 56rpx; border-radius: 28rpx; background: linear-gradient(90deg, #ff7a3d, #ff3d6e); color: #ffffff; font-size: 24rpx; display: flex; align-items: center; justify-content: center; margin-left: 12rpx; flex-shrink: 0; }
+.cc-btn.mine { background: #fff0ea; color: #ff5a36; }
+.cc-btn.full { background: #2b2f3a; }
+.empty { padding: 120rpx 0; text-align: center; color: #a0a5ae; }

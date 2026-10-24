@@ -1,0 +1,82 @@
+<view class="hero">
+  <view class="hero-deco"></view>
+  <view class="hero-deco2"></view>
+  <text class="greet">{{greeting}}，林拾光</text>
+  <text class="slogan">今天也给自己一点拾光时间</text>
+</view>
+
+<view class="member">
+  <view class="row">
+    <view class="m-avatar glyph">林</view>
+    <view class="flex1">
+      <view class="row">
+        <text class="m-level">{{level.name}}</text>
+        <text class="m-tag">Lv{{level.lv}}</text>
+      </view>
+      <text class="m-desc">再喝 {{level.need}} 杯升级 {{level.next}}</text>
+    </view>
+    <view class="m-code" bindtap="onMemberCode">会员码</view>
+  </view>
+  <view class="m-progress"><view class="m-progress-in" style="width: {{level.percent}}%;"></view></view>
+  <view class="row m-stats">
+    <view class="m-stat" bindtap="onPoints"><text class="m-num">{{points}}</text><text class="m-name">积分</text></view>
+    <view class="m-line"></view>
+    <view class="m-stat" bindtap="onCoupons"><text class="m-num">{{couponCount}}</text><text class="m-name">优惠券</text></view>
+    <view class="m-line"></view>
+    <view class="m-stat"><text class="m-num">¥128</text><text class="m-name">咖啡钱包</text></view>
+  </view>
+</view>
+
+<view class="modes row">
+  <view class="mode {{mode === 'pickup' ? 'mode-on' : ''}}" data-mode="pickup" bindtap="onMode">
+    <view class="mode-icon glyph mode-icon-a">取</view>
+    <text class="mode-title">到店自取</text>
+    <text class="mode-desc">下单免排队 · 最快 3 分钟</text>
+  </view>
+  <view class="mode {{mode === 'delivery' ? 'mode-on' : ''}}" data-mode="delivery" bindtap="onMode">
+    <view class="mode-icon glyph mode-icon-b">送</view>
+    <text class="mode-title">外卖送达</text>
+    <text class="mode-desc">满 29 免配送 · 30 分钟达</text>
+  </view>
+</view>
+
+<view class="store row" bindtap="onStore">
+  <view class="store-dot"></view>
+  <text class="store-name flex1 ellipsis">{{store.name}}</text>
+  <text class="sub">距你 {{store.distance}}</text>
+  <view class="arrow"></view>
+</view>
+
+<view class="banner-wrap">
+  <swiper class="banner" autoplay="{{true}}" interval="4000" circular="{{true}}" indicator-dots="{{true}}" indicator-color="rgba(255,255,255,0.45)" indicator-active-color="#ffffff">
+    <swiper-item wx:for="{{banners}}" wx:key="id">
+      <view class="banner-item" style="background: linear-gradient(120deg, {{item.c1}}, {{item.c2}});" data-id="{{item.id}}" bindtap="onBanner">
+        <view class="b-text">
+          <text class="b-kicker">{{item.kicker}}</text>
+          <text class="b-title">{{item.title}}</text>
+          <text class="b-desc">{{item.desc}}</text>
+          <view class="b-btn">立即尝鲜</view>
+        </view>
+        <image class="b-img" src="{{item.img}}" mode="aspectFill"></image>
+      </view>
+    </swiper-item>
+  </swiper>
+</view>
+
+<view class="sec row between">
+  <text class="title">店长推荐</text>
+  <text class="sub" bindtap="onMenu">全部饮品</text>
+</view>
+<scroll-view class="recs" scroll-x="{{true}}">
+  <view class="recs-inner row">
+    <view class="rec" wx:for="{{recs}}" wx:key="id" data-id="{{item.id}}" bindtap="onRec">
+      <image class="rec-img" src="{{item.img}}" mode="aspectFill"></image>
+      <text class="rec-name ellipsis">{{item.name}}</text>
+      <view class="row between">
+        <text class="price">¥{{item.price}}</text>
+        <view class="rec-add">+</view>
+      </view>
+    </view>
+  </view>
+</scroll-view>
+<view class="bottom-gap"></view>

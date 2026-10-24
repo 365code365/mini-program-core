@@ -1,0 +1,63 @@
+<view class="page">
+  <view class="group-t muted"><text>显示</text></view>
+  <view class="card list">
+    <view class="item row">
+      <view class="col flex1">
+        <text class="t">使用华氏度</text>
+        <text class="muted">当前：{{fahrenheit ? '华氏度 ℉' : '摄氏度 ℃'}}</text>
+      </view>
+      <switch checked="{{fahrenheit}}" color="#2f7ff0" bindchange="onUnit" />
+    </view>
+    <picker mode="selector" range="{{wind}}" value="{{wi}}" bindchange="onWind">
+      <view class="item row last">
+        <text class="t flex1">风力单位</text>
+        <text class="v">{{wind[wi]}}</text>
+        <view class="arrow"></view>
+      </view>
+    </picker>
+  </view>
+
+  <view class="group-t muted"><text>提醒</text></view>
+  <view class="card list">
+    <view class="item row">
+      <view class="col flex1">
+        <text class="t">降雨提醒</text>
+        <text class="muted">未来 2 小时有雨时通知</text>
+      </view>
+      <switch checked="{{rainAlert}}" color="#2f7ff0" bindchange="onRain" />
+    </view>
+    <view class="item row">
+      <view class="col flex1">
+        <text class="t">早间天气播报</text>
+        <text class="muted">每天 07:30 推送当天天气</text>
+      </view>
+      <switch checked="{{morning}}" color="#2f7ff0" bindchange="onMorning" />
+    </view>
+    <picker mode="selector" range="{{freq}}" value="{{fi}}" bindchange="onFreq">
+      <view class="item row last">
+        <text class="t flex1">自动刷新</text>
+        <text class="v">{{freq[fi]}}</text>
+        <view class="arrow"></view>
+      </view>
+    </picker>
+  </view>
+
+  <view class="group-t muted"><text>其他</text></view>
+  <view class="card list">
+    <view class="item row" hover-class="press" bindtap="onCache">
+      <text class="t flex1">清除缓存</text>
+      <text class="v">{{cache}} MB</text>
+      <view class="arrow"></view>
+    </view>
+    <view class="item row" hover-class="press" bindtap="onAbout">
+      <text class="t flex1">关于晴雨天气</text>
+      <text class="v">v3.2.1</text>
+      <view class="arrow"></view>
+    </view>
+    <view class="item row last" hover-class="press" bindtap="onReset">
+      <text class="t flex1 danger">恢复默认设置</text>
+      <view class="arrow"></view>
+    </view>
+  </view>
+  <view class="space"></view>
+</view>

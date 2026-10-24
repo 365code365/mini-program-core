@@ -1,0 +1,45 @@
+<view class="page">
+  <view class="card ring-card">
+    <text class="muted">每月预算（元）</text>
+    <view class="big-num"><text>{{budget}}</text></view>
+    <view class="bar-track track">
+      <view class="bar-fill" style="width: {{pct}}%; background: {{over ? 'linear-gradient(90deg,#ff8a8a,#f04848)' : 'linear-gradient(90deg,#ffc06b,#f5733b)'}};"></view>
+    </view>
+    <view class="row stats">
+      <view class="flex1">
+        <view class="muted"><text>本月已花</text></view>
+        <view class="stat-v nowrap"><text>{{spentText}}</text></view>
+      </view>
+      <view class="flex1">
+        <view class="muted"><text>{{over ? '已超支' : '还能花'}}</text></view>
+        <view class="stat-v nowrap {{over ? 'red' : ''}}"><text>{{leftText}}</text></view>
+      </view>
+      <view class="flex1">
+        <view class="muted"><text>日均可用</text></view>
+        <view class="stat-v nowrap"><text>{{perDayText}}</text></view>
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="row between">
+      <text class="card-title">调整预算</text>
+      <text class="muted">拖动滑块，步长 100 元</text>
+    </view>
+    <slider class="slider" min="1000" max="20000" step="100" value="{{budget}}" activeColor="#f57c34" backgroundColor="#f0f1f4" block-size="24" block-color="#ffffff" bindchanging="onSliding" bindchange="onSlide" />
+    <view class="row between range"><text class="muted">1000</text><text class="muted">20000</text></view>
+    <view class="presets row">
+      <view wx:for="{{presets}}" wx:key="*this" class="chip {{budget === item ? 'chip-on' : ''}}" data-v="{{item}}" bindtap="onPreset"><text>{{item}}</text></view>
+    </view>
+  </view>
+
+  <view class="card row between">
+    <view>
+      <view class="remind-t"><text>超支提醒</text></view>
+      <view class="muted"><text>用到 80% 时在首页标红提示</text></view>
+    </view>
+    <switch checked="{{remind}}" color="#f57c34" bindchange="onRemind" />
+  </view>
+
+  <view class="save btn-primary" hover-class="save-hover" bindtap="onSave"><text>保存预算</text></view>
+</view>

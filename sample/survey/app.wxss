@@ -1,0 +1,23 @@
+/* 注意：引擎里 display:flex 不写 flex-direction 时按 column 排，下面一律写明方向 */
+page { background: #f5f5fa; color: #1f2329; font-size: 28rpx; }
+.row { display: flex; flex-direction: row; align-items: center; }
+.col { display: flex; flex-direction: column; }
+.between { justify-content: space-between; }
+.flex1 { flex: 1; }
+.card { background: #fff; border-radius: 20rpx; margin: 0 24rpx 20rpx; padding: 28rpx; box-shadow: 0 4rpx 20rpx rgba(40, 30, 90, 0.04); }
+.sub { font-size: 24rpx; color: #8a8f99; }
+.purple { color: #6C5CE7; }
+.section-title { font-size: 30rpx; font-weight: bold; }
+.btn-primary { background: linear-gradient(90deg, #8E7CFF, #6C5CE7); color: #fff; font-size: 30rpx; font-weight: bold; height: 88rpx; line-height: 88rpx; text-align: center; border-radius: 44rpx; }
+.btn-ghost { border: 2rpx solid #6C5CE7; color: #6C5CE7; font-size: 28rpx; height: 84rpx; line-height: 84rpx; text-align: center; border-radius: 42rpx; }
+.btn-disabled { background: #d9d5f7; }
+.kind { font-size: 20rpx; padding: 4rpx 12rpx; border-radius: 6rpx; }
+.kind-q { color: #6C5CE7; background: #efedff; }
+.kind-v { color: #FF7A1A; background: #fff2e8; }
+.glyph { width: 88rpx; height: 88rpx; border-radius: 22rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.glyph-t { color: #fff; font-size: 38rpx; font-weight: bold; }
+/* 右箭头用 border 画：引擎字体里 › 会落到错误字形 */
+.chev { width: 14rpx; height: 14rpx; border-top: 3rpx solid #c4c7cc; border-right: 3rpx solid #c4c7cc; transform: rotate(45deg); margin-left: 12rpx; }
+/* 引擎把 input padding 全 0 当成没写，套默认内边距，所以写 1rpx */
+input { padding: 0 0 0 1rpx; }
+.tabbar-space { height: calc(120rpx + env(safe-area-inset-bottom)); }

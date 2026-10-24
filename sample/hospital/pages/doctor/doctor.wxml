@@ -1,0 +1,61 @@
+<view class="top">
+  <view class="row">
+    <view class="avatar big" style="background: linear-gradient(135deg, {{doc.color}}, #9fd0ff);"><text>{{doc.sx}}</text></view>
+    <view class="t-main">
+      <view class="row">
+        <text class="t-name">{{doc.name}}</text>
+        <text class="t-title">{{doc.title}}</text>
+      </view>
+      <text class="t-dept">{{deptName}} · 华康仁和医院</text>
+      <view class="row t-tags">
+        <text class="t-tag" wx:for="{{doc.tags}}" wx:key="*this">{{item}}</text>
+      </view>
+    </view>
+    <view class="follow {{followed ? 'on' : ''}}" bindtap="toggleFollow"><text>{{followed ? '已关注' : '+ 关注'}}</text></view>
+  </view>
+  <view class="stats">
+    <view class="st"><text class="st-v">{{doc.rate}}%</text><text class="st-k">好评率</text></view>
+    <view class="st-line"></view>
+    <view class="st"><text class="st-v">{{doc.visits}}</text><text class="st-k">累计接诊</text></view>
+    <view class="st-line"></view>
+    <view class="st"><text class="st-v">¥{{doc.fee}}</text><text class="st-k">挂号费</text></view>
+  </view>
+</view>
+
+<view class="card">
+  <text class="sec-title">擅长</text>
+  <text class="good">{{doc.good}}。从事临床工作二十余年，注重个体化治疗方案与长期随访管理。</text>
+</view>
+
+<view class="card sched">
+  <view class="row between">
+    <text class="sec-title">出诊排班</text>
+    <text class="muted">号源每日 08:00 更新</text>
+  </view>
+  <scroll-view class="days" scroll-x="{{true}}" show-scrollbar="{{false}}">
+    <view class="day {{dayIdx === index ? 'on' : ''}} {{item.total ? '' : 'full'}}" wx:for="{{days}}" wx:key="key" data-index="{{index}}" bindtap="pickDay">
+      <text class="d-week">{{item.week}}</text>
+      <text class="d-md">{{item.md}}</text>
+      <text class="d-st">{{item.total ? '有号' : '约满'}}</text>
+    </view>
+  </scroll-view>
+
+  <view wx:for="{{halves}}" wx:key="name" wx:for-item="h">
+    <text class="half">{{h.name}}</text>
+    <view class="slots">
+      <view class="slot {{item.left > 0 ? '' : 'dis'}} {{slot === item.time ? 'on' : ''}}" wx:for="{{h.slots}}" wx:key="time" data-time="{{item.time}}" data-left="{{item.left}}" bindtap="pickSlot">
+        <text class="s-time">{{item.time}}</text>
+        <text class="s-left">{{item.left > 0 ? '余 ' + item.left : (item.left === 0 ? '约满' : '停诊')}}</text>
+      </view>
+    </view>
+  </view>
+</view>
+<view style="height: 200rpx;"></view>
+
+<view class="bar">
+  <view class="bar-l">
+    <text class="muted">{{slot ? days[dayIdx].md + ' ' + slot : '请选择就诊时段'}}</text>
+    <text class="fee">¥{{doc.fee}}</text>
+  </view>
+  <view class="btn-primary bar-btn {{slot ? '' : 'disabled'}}" bindtap="book"><text>立即挂号</text></view>
+</view>

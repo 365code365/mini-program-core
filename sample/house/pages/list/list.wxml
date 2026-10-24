@@ -1,0 +1,51 @@
+<view class="sticky">
+  <view class="types row">
+    <view class="type {{type === item.key ? 'on' : ''}}" wx:for="{{types}}" wx:key="key" bindtap="onType" data-key="{{item.key}}">{{item.text}}</view>
+    <view class="search row flex1">
+      <input class="search-input flex1" placeholder="小区 / 商圈" value="{{kw}}" bindinput="onKw" confirm-type="search" />
+      <text class="clear" wx:if="{{kw}}" bindtap="onClearKw">×</text>
+    </view>
+  </view>
+  <view class="filters row">
+    <picker class="flex1" mode="selector" range="{{districts}}" value="{{dIndex}}" bindchange="onDistrict">
+      <view class="filter {{dIndex > 0 ? 'on' : ''}}"><text>{{dIndex > 0 ? districts[dIndex] : '区域'}}</text><view class="tri"></view></view>
+    </picker>
+    <picker class="flex1" mode="selector" range="{{priceRanges[type]}}" range-key="text" value="{{pIndex}}" bindchange="onPrice">
+      <view class="filter {{pIndex > 0 ? 'on' : ''}}"><text>{{pIndex > 0 ? priceRanges[type][pIndex].text : '价格'}}</text><view class="tri"></view></view>
+    </picker>
+    <picker class="flex1" mode="selector" range="{{layouts}}" value="{{lIndex}}" bindchange="onLayout">
+      <view class="filter {{lIndex > 0 ? 'on' : ''}}"><text>{{lIndex > 0 ? layouts[lIndex] : '户型'}}</text><view class="tri"></view></view>
+    </picker>
+    <view class="flex1" bindtap="onSort">
+      <view class="filter {{sort > 0 ? 'on' : ''}}"><text>{{sorts[sort]}}</text><view class="tri"></view></view>
+    </view>
+  </view>
+</view>
+
+<view class="result row between">
+  <text class="sub">共找到 <text class="hl">{{houses.length}}</text> 套{{typeText}}</text>
+  <text class="reset" wx:if="{{dIndex || pIndex || lIndex || kw}}" bindtap="onReset">清空筛选</text>
+</view>
+
+<view class="card list" wx:if="{{houses.length}}">
+  <view class="h-card" wx:for="{{houses}}" wx:key="id" bindtap="onOpen" data-id="{{item.id}}">
+    <image class="h-img" src="{{item.cover}}" mode="aspectFill"></image>
+    <view class="h-main">
+      <text class="h-title">{{item.title}}</text>
+      <text class="h-brief">{{item.brief}}</text>
+      <view class="h-tags">
+        <text class="h-tag {{index === 0 ? 'hot' : ''}}" wx:for="{{item.tags}}" wx:key="*this" wx:for-item="t" wx:if="{{index < 3}}">{{t}}</text>
+      </view>
+      <view class="h-price">
+        <text class="h-price-main">{{item.priceMain}}</text>
+        <text class="h-price-unit">{{item.priceUnit}}</text>
+        <text class="h-price-sub">{{item.priceSub}}</text>
+      </view>
+    </view>
+  </view>
+</view>
+<view class="empty" wx:else>
+  <view class="empty-ic"><view class="empty-roof"></view><view class="empty-body"></view></view>
+  <text class="sub">没有符合条件的房源，换个条件试试</text>
+</view>
+<view class="safe"></view>

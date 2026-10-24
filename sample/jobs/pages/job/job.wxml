@@ -1,0 +1,63 @@
+<view class="head card">
+  <text class="j-title">{{job.title}}</text>
+  <text class="j-salary">{{job.salary}}</text>
+  <view class="row meta">
+    <view class="meta-item row"><view class="ic ic-pin"></view><text class="meta-t">{{job.city}}·{{job.area}}</text></view>
+  </view>
+  <view class="row meta">
+    <view class="meta-item row"><view class="ic ic-bag"></view><text class="meta-t">经验 {{job.exp}}</text></view>
+    <view class="meta-item row"><view class="ic ic-cap"></view><text class="meta-t">学历 {{job.edu}}</text></view>
+  </view>
+</view>
+
+<view class="card row hr">
+  <view class="avatar big" style="background: {{job.hrInfo.bg}}">{{job.hrInfo.ch}}</view>
+  <view class="col flex1 hr-info">
+    <view class="row">
+      <text class="hr-name">{{job.hrInfo.name}}</text>
+      <text class="badge" wx:if="{{job.hrInfo.online}}">刚刚活跃</text>
+    </view>
+    <text class="sub">{{job.co.name}}·{{job.hrInfo.title}}</text>
+  </view>
+  <view class="chat-btn" bindtap="onChat"><text class="chat-btn-t">聊一聊</text></view>
+</view>
+
+<view class="card">
+  <text class="section-title">职位描述</text>
+  <view class="tags tag-box">
+    <text class="tag" wx:for="{{job.tags}}" wx:key="*this">{{item}}</text>
+  </view>
+  <text class="h3">岗位职责</text>
+  <!-- 序号与正文放进同一段文字：分成两个 text 时，折行的正文在引擎里比序号高出半行 -->
+  <view class="para" wx:for="{{job.desc}}" wx:key="*this"><text class="para-t">{{index + 1}}. {{item}}</text></view>
+  <text class="h3">任职要求</text>
+  <!-- 序号与正文放进同一段文字：分成两个 text 时，折行的正文在引擎里比序号高出半行 -->
+  <view class="para" wx:for="{{job.req}}" wx:key="*this"><text class="para-t">{{index + 1}}. {{item}}</text></view>
+</view>
+
+<view class="card row co" bindtap="onCompany">
+  <view class="logo" style="background: {{job.co.color}}">{{job.co.short}}</view>
+  <view class="col flex1 co-info">
+    <text class="co-name">{{job.co.name}}</text>
+    <text class="sub">{{job.co.industry}}·{{job.co.stage}}·{{job.co.size}}</text>
+  </view>
+  <view class="chev"></view>
+</view>
+
+<view class="card">
+  <text class="section-title">工作地点</text>
+  <view class="mini-map">
+    <view class="road r1"></view><view class="road r2"></view><view class="road r3"></view>
+    <view class="pin"><view class="pin-dot"></view></view>
+  </view>
+  <text class="addr">{{job.co.addr}}</text>
+</view>
+
+<view class="safe-space"></view>
+<view class="bar row">
+  <view class="fav col" bindtap="onFav">
+    <view class="star {{fav ? 'on' : ''}}"></view>
+    <text class="fav-t {{fav ? 'blue' : ''}}">{{fav ? '已收藏' : '收藏'}}</text>
+  </view>
+  <view class="btn-primary flex1 {{applied ? 'done' : ''}}" bindtap="onApply">{{applied ? '已投递，等待 HR 查看' : '立即投递'}}</view>
+</view>

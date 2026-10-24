@@ -1,0 +1,88 @@
+<view class="head" style="background: {{c.cover}};">
+  <text class="h-mark">{{c.mark}}</text>
+  <view class="h-deco"></view>
+  <view class="h-meta"><text>{{c.lessons}} 课时 · {{c.hours}} 小时</text></view>
+</view>
+<view class="info card">
+  <text class="title">{{c.title}}</text>
+  <view class="row tags"><text class="tag" wx:for="{{c.tags}}" wx:key="*this">{{item}}</text><text class="tag cat-tag">{{c.cat}}</text></view>
+  <view class="row between price-line">
+    <view class="row price-row">
+      <text wx:if="{{c.price === 0}}" class="price">免费</text>
+      <block wx:else><text class="yen">¥</text><text class="price">{{c.price}}</text></block>
+      <text class="origin">¥{{c.origin}}</text>
+    </view>
+    <text class="muted">{{stu}}人在学 · {{c.rating}} 分</text>
+  </view>
+</view>
+
+<view class="tabs">
+  <view class="tab {{tab === 'intro' ? 'on' : ''}}" data-t="intro" bindtap="onTab"><text>介绍</text><view class="tab-line"></view></view>
+  <view class="tab {{tab === 'toc' ? 'on' : ''}}" data-t="toc" bindtap="onTab"><text>目录</text><view class="tab-line"></view></view>
+  <view class="tab {{tab === 'review' ? 'on' : ''}}" data-t="review" bindtap="onTab"><text>评价</text><view class="tab-line"></view></view>
+</view>
+
+<block wx:if="{{tab === 'intro'}}">
+  <view class="card">
+    <text class="sec-title">课程简介</text>
+    <text class="desc">{{c.desc}}</text>
+    <view class="stats row">
+      <view class="st"><text class="st-n">{{c.lessons}}</text><text class="st-l">课时</text></view>
+      <view class="st"><text class="st-n">{{c.hours}}</text><text class="st-l">小时时长</text></view>
+      <view class="st"><text class="st-n">永久</text><text class="st-l">有效期</text></view>
+    </view>
+  </view>
+  <view class="card">
+    <text class="sec-title">讲师介绍</text>
+    <view class="row teacher">
+      <view class="avatar" style="background: {{t.color}};"><text>{{t.sx}}</text></view>
+      <view class="t-main">
+        <text class="t-name">{{t.name}}</text>
+        <text class="t-title">{{t.title}} · {{t.courses}} 门课 · {{t.fans}} 关注</text>
+      </view>
+    </view>
+    <text class="desc">{{t.intro}}</text>
+  </view>
+</block>
+
+<view wx:if="{{tab === 'toc'}}" class="card toc">
+  <view class="row between"><text class="sec-title">课程目录</text><text class="muted">{{chapters.length}} 章 · 共 {{c.lessons}} 节</text></view>
+  <view class="chapter" wx:for="{{chapters}}" wx:key="id">
+    <view class="ch-head row between" data-i="{{index}}" bindtap="toggle">
+      <view class="ch-left">
+        <text class="ch-title">{{item.title}}</text>
+        <text class="ch-sub">{{item.count}} 节</text>
+      </view>
+      <view class="arrow {{item.open ? 'up' : ''}}"></view>
+    </view>
+    <view wx:if="{{item.open}}" class="lessons">
+      <view class="lesson row" wx:for="{{item.lessons}}" wx:for-item="l" wx:key="id" data-free="{{l.free}}" data-title="{{l.title}}" bindtap="onLesson">
+        <view class="play {{owned || l.free ? 'ok' : ''}}"><view class="tri"></view></view>
+        <text class="l-title">{{l.title}}</text>
+        <text wx:if="{{l.free && !owned}}" class="free">试看</text>
+        <text class="l-mins">{{l.mins}} 分钟</text>
+      </view>
+    </view>
+  </view>
+</view>
+
+<view wx:if="{{tab === 'review'}}" class="card">
+  <view class="row between"><text class="sec-title">学员评价</text><text class="score">{{c.rating}}<text class="score-u"> 分</text></text></view>
+  <view class="review" wx:for="{{reviews}}" wx:key="name">
+    <view class="row">
+      <view class="avatar r-av" style="background: {{item.color}};"><text>{{item.sx}}</text></view>
+      <view class="r-main">
+        <text class="r-name">{{item.name}}</text>
+        <view class="row stars"><view wx:for="{{item.stars}}" wx:for-item="s" wx:key="*this" class="star {{s ? 'on' : ''}}"></view><text class="r-time">{{item.time}}</text></view>
+      </view>
+    </view>
+    <text class="r-text">{{item.text}}</text>
+  </view>
+</view>
+
+<view class="foot-gap"></view>
+<view class="foot">
+  <view class="f-btn" bindtap="toggleFav"><view class="heart {{fav ? 'on' : ''}}"></view><text class="f-tx {{fav ? 'on' : ''}}">{{fav ? '已收藏' : '收藏'}}</text></view>
+  <view class="f-btn" bindtap="consult"><view class="bubble"></view><text class="f-tx">咨询</text></view>
+  <view class="buy {{owned ? 'owned' : ''}}" bindtap="buy"><text>{{owned ? '开始学习' : (c.price === 0 ? '免费领取' : '立即购买 ¥' + c.price)}}</text></view>
+</view>

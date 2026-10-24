@@ -1,0 +1,39 @@
+page {
+  background: #f5f6f8;
+  color: #1f2329;
+  font-size: 28rpx;
+  font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+}
+.card {
+  background: #ffffff;
+  border-radius: 24rpx;
+  margin: 24rpx 24rpx 0;
+  padding: 28rpx;
+  box-shadow: 0 4rpx 20rpx rgba(31, 35, 41, 0.04);
+}
+.card-title { font-size: 32rpx; font-weight: bold; }
+.muted { color: #8a8d96; font-size: 24rpx; }
+.row { display: flex; flex-direction: row; align-items: center; }
+.between { justify-content: space-between; }
+.flex1 { flex: 1; }
+.nowrap { white-space: nowrap; }
+.btn-primary {
+  background: linear-gradient(90deg, #5c8cff, #4056ee);
+  color: #ffffff;
+  border-radius: 44rpx;
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  font-size: 30rpx;
+  font-weight: bold;
+}
+.tabs { display: flex; flex-direction: row; background: #ebecf0; border-radius: 36rpx; padding: 6rpx; }
+.tab { flex: 1; height: 60rpx; line-height: 60rpx; text-align: center; border-radius: 30rpx; font-size: 28rpx; color: #5c6066; }
+.tab-on { background: #ffffff; color: #4056ee; font-weight: bold; box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06); }
+/* 右箭头用 border 画：引擎字体里 › ‹ 会落到错误的字形上 */
+.arrow { width: 14rpx; height: 14rpx; border-top: 3rpx solid #b8bcc4; border-right: 3rpx solid #b8bcc4; transform: rotate(45deg); margin-left: 8rpx; }
+.field { height: 96rpx; border-bottom: 1rpx solid #f0f1f4; }
+.field-last { border-bottom: none; }
+.field-label { width: 160rpx; color: #5c6066; }
+.field-input { flex: 1; height: 96rpx; text-align: right; font-size: 30rpx; }
+.ph { color: #b8bcc4; }

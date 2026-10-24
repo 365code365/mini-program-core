@@ -1,0 +1,42 @@
+<view class="hero">
+  <view class="row">
+    <view class="me-av"><text class="me-av-t">{{avatarCh}}</text></view>
+    <view class="col flex1">
+      <text class="me-name">{{resume.name || '未填写姓名'}}</text>
+      <text class="me-sub">{{resume.position}}·{{resume.city}}</text>
+    </view>
+    <view class="edit" bindtap="onResume"><text class="edit-t">编辑简历</text></view>
+  </view>
+  <view class="row stats">
+    <view class="stat col" bindtap="onStat" data-k="0"><text class="stat-n">{{stats.applied}}</text><text class="stat-l">已投递</text></view>
+    <view class="stat col" bindtap="onStat" data-k="1"><text class="stat-n">{{stats.viewed}}</text><text class="stat-l">被查看</text></view>
+    <view class="stat col" bindtap="onStat" data-k="2"><text class="stat-n">{{stats.interview}}</text><text class="stat-l">面试邀请</text></view>
+    <view class="stat col" bindtap="onStat" data-k="3"><text class="stat-n">{{stats.fav}}</text><text class="stat-l">收藏职位</text></view>
+  </view>
+</view>
+
+<view class="card lift">
+  <view class="row between rec-head">
+    <text class="section-title">投递记录</text>
+    <text class="sub">共 {{records.length}} 条</text>
+  </view>
+  <view wx:for="{{records}}" wx:key="id" class="rec row" data-id="{{item.id}}" bindtap="onJob">
+    <view class="logo small" style="background: {{item.co.color}}">{{item.co.short}}</view>
+    <view class="col flex1 rec-body">
+      <text class="rec-title">{{item.title}}</text>
+      <text class="sub">{{item.co.name}}·{{item.time}}</text>
+    </view>
+    <text class="status s{{item.status}}">{{statusText[item.status]}}</text>
+  </view>
+  <view wx:if="{{records.length === 0}}" class="empty"><text class="sub">还没有投递记录，去首页看看吧</text></view>
+</view>
+
+<view class="card menu">
+  <view class="m-item row" wx:for="{{menus}}" wx:key="name" data-idx="{{index}}" bindtap="onMenu">
+    <view class="m-ic" style="background: {{item.bg}}"><text class="m-ic-t">{{item.glyph}}</text></view>
+    <text class="flex1 m-name">{{item.name}}</text>
+    <text class="sub">{{item.extra}}</text>
+    <view class="chev"></view>
+  </view>
+</view>
+<view class="tabbar-space"></view>

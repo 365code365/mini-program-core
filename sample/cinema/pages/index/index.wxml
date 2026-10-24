@@ -1,0 +1,62 @@
+<view class="top">
+  <view class="row">
+    <view class="city row" bindtap="onCity"><text class="city-t">{{city}}</text><view class="caret"></view></view>
+    <view class="search row">
+      <view class="glass"></view>
+      <input class="search-input" placeholder="搜电影、影院" value="{{keyword}}" bindinput="onInput" />
+    </view>
+  </view>
+  <view class="tabs row">
+    <view class="tab {{tab === 'now' ? 'tab-on' : ''}}" data-tab="now" bindtap="onTab"><text>正在热映</text><view class="tab-line" wx:if="{{tab === 'now'}}"></view></view>
+    <view class="tab {{tab === 'soon' ? 'tab-on' : ''}}" data-tab="soon" bindtap="onTab"><text>即将上映</text><view class="tab-line" wx:if="{{tab === 'soon'}}"></view></view>
+  </view>
+</view>
+
+<view class="banner-wrap" wx:if="{{tab === 'now' && !keyword}}">
+<swiper class="banner" autoplay interval="4000" circular indicator-dots indicator-color="rgba(255,255,255,0.4)" indicator-active-color="#ffffff">
+  <swiper-item wx:for="{{banners}}" wx:key="id">
+    <view class="banner-item" style="background:{{item.bg}}" data-id="{{item.id}}" bindtap="onMovie">
+      <image class="banner-poster" src="{{item.poster}}" mode="aspectFill"></image>
+      <view class="banner-info">
+        <text class="banner-tag">{{item.tag}}</text>
+        <text class="banner-title">{{item.title}}</text>
+        <text class="banner-sub">{{item.sub}}</text>
+      </view>
+    </view>
+  </swiper-item>
+</swiper>
+</view>
+
+<view wx:if="{{!list.length}}" class="empty">没有找到「{{keyword}}」相关的电影</view>
+
+<block wx:if="{{tab === 'now'}}">
+  <view class="movie" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onMovie">
+    <image class="poster" src="{{item.poster}}" mode="aspectFill"></image>
+    <view class="m-info">
+      <view class="row"><text class="m-title">{{item.title}}</text><text class="m-badge" wx:if="{{item.imax}}">IMAX</text></view>
+      <view class="row m-score-row">
+        <text class="sub">观众评分</text>
+        <text class="m-score">{{item.scoreText}}</text>
+      </view>
+      <view class="stars row">
+        <view class="star-bg"><view class="star-fill" style="width:{{item.score * 10}}%"></view></view>
+      </view>
+      <text class="sub m-line">{{item.genre}} · {{item.duration}}分钟</text>
+      <text class="sub m-line m-actors">主演：{{item.actorText}}</text>
+    </view>
+    <view class="buy" data-id="{{item.id}}" catchtap="onBuy">购票</view>
+  </view>
+</block>
+
+<view wx:else class="soon-grid">
+  <view class="soon" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onMovie">
+    <view class="soon-poster-wrap">
+      <image class="soon-poster" src="{{item.poster}}" mode="aspectFill"></image>
+      <text class="soon-date">{{item.releaseText}}上映</text>
+    </view>
+    <text class="soon-title">{{item.title}}</text>
+    <text class="sub">{{item.wishText}}人想看</text>
+    <view class="wish {{item.wished ? 'wish-on' : ''}}" data-id="{{item.id}}" catchtap="onWish">{{item.wished ? '已想看' : '想看'}}</view>
+  </view>
+</view>
+<view class="gap"></view>

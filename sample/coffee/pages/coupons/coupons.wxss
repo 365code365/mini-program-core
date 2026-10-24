@@ -1,0 +1,206 @@
+.tabs {
+  height: 88rpx;
+  background: #ffffff;
+}
+
+.tab {
+  position: relative;
+  flex: 1;
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  font-size: 28rpx;
+  color: #8a7e74;
+}
+
+.tab-on {
+  color: #2b211b;
+  font-weight: bold;
+}
+
+.tab-line {
+  position: absolute;
+  left: 50%;
+  bottom: 10rpx;
+  width: 40rpx;
+  height: 6rpx;
+  margin-left: -20rpx;
+  border-radius: 3rpx;
+  background: #6b4226;
+}
+
+.redeem {
+  margin: 24rpx 28rpx 0;
+  height: 84rpx;
+  padding: 0 8rpx 0 28rpx;
+  border-radius: 42rpx;
+  background: #ffffff;
+}
+
+.redeem-input {
+  flex: 1;
+  height: 84rpx;
+  font-size: 26rpx;
+}
+
+.ph {
+  color: #c2b8ae;
+}
+
+.redeem-btn {
+  height: 68rpx;
+  line-height: 68rpx;
+  padding: 0 36rpx;
+  border-radius: 34rpx;
+  background: #e6ddd3;
+  color: #ffffff;
+  font-size: 26rpx;
+  font-weight: bold;
+}
+
+.redeem-on {
+  background: linear-gradient(90deg, #8a5a3b, #5b3a29);
+}
+
+.list {
+  padding: 4rpx 0 40rpx;
+}
+
+.coupon {
+  position: relative;
+  margin: 24rpx 28rpx 0;
+  height: 190rpx;
+  border-radius: 20rpx;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.c-left {
+  width: 200rpx;
+  height: 190rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(160deg, #fbefe1, #f3dcc2);
+}
+
+.c-amount-row {
+  align-items: flex-end;
+  color: #b5562a;
+}
+
+.c-sym {
+  font-size: 26rpx;
+  font-weight: bold;
+  padding-bottom: 10rpx;
+}
+
+.c-amount {
+  font-size: 60rpx;
+  font-weight: bold;
+  line-height: 1.1;
+}
+
+.c-cond {
+  font-size: 20rpx;
+  color: #b5562a;
+  margin-top: 6rpx;
+}
+
+.c-cut {
+  position: relative;
+  width: 24rpx;
+  height: 190rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.c-hole {
+  position: absolute;
+  left: -0rpx;
+  width: 24rpx;
+  height: 24rpx;
+  border-radius: 12rpx;
+  background: #f7f3ee;
+}
+
+.c-hole-top {
+  top: -12rpx;
+}
+
+.c-hole-bottom {
+  bottom: -12rpx;
+}
+
+.c-dash {
+  margin-top: 24rpx;
+  height: 142rpx;
+  border-left: 2rpx dashed #e6ddd3;
+}
+
+.c-right {
+  padding: 0 24rpx 0 8rpx;
+}
+
+.c-title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: bold;
+  line-height: 44rpx;
+}
+
+.c-desc {
+  display: block;
+  font-size: 22rpx;
+  color: #9b9087;
+  line-height: 34rpx;
+}
+
+.c-foot {
+  margin-top: 14rpx;
+}
+
+.c-expire {
+  font-size: 20rpx;
+  color: #b3a89e;
+}
+
+.c-use {
+  height: 48rpx;
+  line-height: 48rpx;
+  padding: 0 20rpx;
+  border-radius: 24rpx;
+  background: #6b4226;
+  color: #ffffff;
+  font-size: 22rpx;
+}
+
+.coupon-off .c-left {
+  background: #f1eeea;
+}
+
+.coupon-off .c-amount-row,
+.coupon-off .c-cond,
+.coupon-off .c-title {
+  color: #b3a89e;
+}
+
+.stamp {
+  position: absolute;
+  right: 24rpx;
+  top: 24rpx;
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50rpx;
+  border: 3rpx solid #d4cbc2;
+  color: #c2b8ae;
+  font-size: 22rpx;
+  transform: rotate(-20deg);
+}
+
+.empty {
+  text-align: center;
+  padding-top: 120rpx;
+}

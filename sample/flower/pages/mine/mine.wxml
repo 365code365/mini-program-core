@@ -1,0 +1,46 @@
+<view class="top">
+  <view class="row">
+    <view class="av"><text>林</text></view>
+    <view class="me">
+      <text class="me-name">林知夏</text>
+      <view class="row"><text class="lv">银卡会员</text><text class="me-sub">积分 1,280</text></view>
+    </view>
+  </view>
+  <view class="orders">
+    <view class="row between"><text class="sec-title">我的订单</text><view class="row link" bindtap="goOrders"><text class="muted">全部订单</text><view class="chev"></view></view></view>
+    <view class="row o-row">
+      <view class="o" bindtap="goOrders"><text class="o-n">{{counts.paid}}</text><text class="o-l">制作中</text></view>
+      <view class="o" bindtap="goOrders"><text class="o-n">{{counts.shipping}}</text><text class="o-l">配送中</text></view>
+      <view class="o" bindtap="goOrders"><text class="o-n">{{counts.done}}</text><text class="o-l">已签收</text></view>
+      <view class="o" data-k="coupon" bindtap="menu"><text class="o-n">2</text><text class="o-l">优惠券</text></view>
+    </view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="row between"><text class="sec-title">纪念日提醒</text><switch checked="{{remind}}" color="#ef5b7e" bindchange="onRemind" /></view>
+  <view class="date row" wx:for="{{dates}}" wx:key="name">
+    <view class="d-dot" style="background: {{item.color}};"></view>
+    <view class="d-main"><text class="d-name">{{item.name}}</text><text class="muted">{{item.date}}</text></view>
+    <text class="d-left">还有 <text class="d-n" style="color: {{item.color}};">{{item.left}}</text> 天</text>
+  </view>
+  <view class="d-add" bindtap="addDate"><text>+ 添加纪念日</text></view>
+</view>
+
+<view class="card" wx:if="{{favs.length}}">
+  <text class="sec-title">我的收藏</text>
+  <scroll-view class="favs" scroll-x="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}">
+    <view class="fav" wx:for="{{favs}}" wx:key="id" data-id="{{item.id}}" bindtap="goDetail">
+      <image class="fav-img" src="{{item.img}}" mode="aspectFill"></image>
+      <text class="fav-p">¥{{item.price}}</text>
+    </view>
+  </scroll-view>
+</view>
+
+<view class="card menu">
+  <view class="mi row" data-k="addr" bindtap="menu"><text class="mi-t">常用地址</text><view class="chev"></view></view>
+  <view class="mi row" data-k="coupon" bindtap="menu"><text class="mi-t">优惠券</text><text class="mi-x">2 张可用</text><view class="chev"></view></view>
+  <view class="mi row" data-k="vip" bindtap="menu"><text class="mi-t">会员权益</text><text class="mi-x">银卡 · 9.5 折</text><view class="chev"></view></view>
+  <view class="mi row last" data-k="service" bindtap="menu"><text class="mi-t">联系客服</text><text class="mi-x">8:00-22:00</text><view class="chev"></view></view>
+</view>
+<view class="tab-gap"></view>

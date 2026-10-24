@@ -1,0 +1,43 @@
+.top { background: #fff; padding: 16rpx 24rpx 0; }
+.city { margin-right: 20rpx; }
+.city-t { font-size: 30rpx; font-weight: bold; }
+.caret { width: 10rpx; height: 10rpx; border-right: 3rpx solid #1f2329; border-bottom: 3rpx solid #1f2329; transform: rotate(45deg); margin-left: 12rpx; margin-top: -6rpx; }
+.search { flex: 1; height: 68rpx; background: #f5f6f8; border-radius: 34rpx; padding: 0 24rpx; }
+.glass { width: 22rpx; height: 22rpx; border-radius: 11rpx; border: 4rpx solid #9aa0a6; margin-right: 14rpx; }
+.search-input { flex: 1; font-size: 26rpx; height: 68rpx; }
+.tabs { margin-top: 8rpx; }
+.tab { display: flex; flex-direction: column; align-items: center; padding: 20rpx 0 12rpx; margin-right: 48rpx; font-size: 30rpx; color: #8a9099; }
+.tab-on { color: #1f2329; font-weight: bold; font-size: 34rpx; }
+.tab-line { width: 36rpx; height: 6rpx; border-radius: 3rpx; background: #F0384D; margin-top: 8rpx; }
+/* swiper 带左右 margin 时，引擎里 swiper-item 仍按整屏宽排，右侧溢出；改成外层留白 + 定宽 swiper */
+.banner-wrap { padding: 24rpx 24rpx 8rpx; }
+.banner { width: 702rpx; height: 260rpx; border-radius: 20rpx; overflow: hidden; }
+.banner-item { height: 260rpx; border-radius: 20rpx; display: flex; flex-direction: row; align-items: center; padding: 0 32rpx; }
+.banner-poster { width: 150rpx; height: 210rpx; border-radius: 12rpx; }
+.banner-info { margin-left: 28rpx; flex: 1; display: flex; flex-direction: column; }
+.banner-tag { font-size: 20rpx; color: #fff; background: rgba(255, 255, 255, 0.22); padding: 4rpx 14rpx; border-radius: 8rpx; align-self: flex-start; }
+.banner-title { color: #fff; font-size: 40rpx; font-weight: bold; margin-top: 14rpx; }
+.banner-sub { color: rgba(255, 255, 255, 0.85); font-size: 24rpx; margin-top: 8rpx; }
+.movie { display: flex; flex-direction: row; align-items: center; background: #fff; margin: 16rpx 24rpx 0; border-radius: 20rpx; padding: 24rpx; }
+.poster { width: 150rpx; height: 210rpx; border-radius: 12rpx; flex-shrink: 0; }
+.m-info { flex: 1; margin-left: 22rpx; display: flex; flex-direction: column; }
+.m-title { font-size: 32rpx; font-weight: bold; }
+.m-badge { font-size: 18rpx; color: #fff; background: #3D7BFF; padding: 2rpx 8rpx; border-radius: 6rpx; margin-left: 10rpx; }
+.m-score-row { margin-top: 10rpx; }
+.m-score { font-size: 32rpx; font-weight: bold; color: #FFB400; margin-left: 10rpx; }
+.stars { margin-top: 6rpx; }
+.star-bg { width: 160rpx; height: 10rpx; border-radius: 5rpx; background: #f0f1f3; }
+.star-fill { height: 10rpx; border-radius: 5rpx; background: linear-gradient(90deg, #FFD36B, #FFB400); }
+.m-line { margin-top: 10rpx; }
+.m-actors { width: 340rpx; height: 34rpx; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.buy { font-size: 26rpx; color: #fff; background: linear-gradient(90deg, #FF5A6E, #E8243F); padding: 12rpx 30rpx; border-radius: 30rpx; font-weight: bold; }
+.soon-grid { display: flex; flex-direction: row; flex-wrap: wrap; padding: 16rpx 12rpx 0; }
+.soon { width: 33.33%; display: flex; flex-direction: column; align-items: center; padding: 12rpx; margin-bottom: 16rpx; box-sizing: border-box; }
+.soon-poster-wrap { position: relative; width: 210rpx; height: 294rpx; }
+.soon-poster { width: 210rpx; height: 294rpx; border-radius: 14rpx; }
+.soon-date { position: absolute; left: 0; right: 0; bottom: 0; font-size: 20rpx; color: #fff; text-align: center; padding: 8rpx 0; background: rgba(0, 0, 0, 0.45); border-radius: 0 0 14rpx 14rpx; }
+.soon-title { font-size: 28rpx; font-weight: bold; margin-top: 12rpx; }
+.wish { margin-top: 10rpx; font-size: 24rpx; color: #FFB400; border: 2rpx solid #FFB400; border-radius: 28rpx; padding: 4rpx 32rpx; }
+.wish-on { color: #fff; background: #FFB400; }
+.empty { text-align: center; color: #9aa0a6; padding: 100rpx 0; }
+.gap { height: 32rpx; }

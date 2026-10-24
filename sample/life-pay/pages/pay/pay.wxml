@@ -1,0 +1,50 @@
+<view class="acc" style="background: {{a.bg}};">
+  <view class="row between">
+    <view class="row"><view class="a-ic"><text>{{a.ch}}</text></view><text class="a-type">{{a.tname}}</text></view>
+    <picker wx:if="{{same.length > 1}}" mode="selector" range="{{sameNames}}" value="{{sameIdx}}" bindchange="onSame">
+      <view class="switch row"><text>切换户号</text><view class="down"></view></view>
+    </picker>
+  </view>
+  <text class="a-unit">{{a.unit}}</text>
+  <view class="a-rows">
+    <view class="a-row row"><text class="a-l">户号</text><text class="a-v">{{a.noTx}}</text></view>
+    <view class="a-row row"><text class="a-l">户名</text><text class="a-v">{{a.owner}}（{{a.tag}}）</text></view>
+    <view class="a-row row"><text class="a-l">地址</text><text class="a-v">{{a.addr}}</text></view>
+  </view>
+</view>
+
+<view class="card owe-card">
+  <view class="row between">
+    <text class="muted">{{a.owe > 0 ? '当前欠费' : '账户余额'}}</text>
+    <view class="row" bindtap="bill"><text class="muted">账单明细</text><view class="chev"></view></view>
+  </view>
+  <view class="row owe-row">
+    <text class="owe-y {{a.owe > 0 ? 'red' : ''}}">¥</text>
+    <text class="owe-n {{a.owe > 0 ? 'red' : ''}}">{{a.owe > 0 ? a.oweTx : a.balTx}}</text>
+  </view>
+  <text wx:if="{{a.owe > 0}}" class="owe-p">{{a.period}} · 请在月底前缴清，避免产生违约金</text>
+  <text wx:else class="owe-p ok">当前无欠费，可预存费用</text>
+</view>
+
+<view class="card">
+  <text class="sec-title">缴费金额</text>
+  <view class="quick">
+    <view class="q {{!custom && amount === item.v ? 'on' : ''}}" wx:for="{{quick}}" wx:key="v" data-v="{{item.v}}" bindtap="onQuick">
+      <text class="q-v">¥{{item.v}}</text>
+      <text wx:if="{{item.label}}" class="q-l">{{item.label}}</text>
+    </view>
+    <view class="q {{custom ? 'on' : ''}}" bindtap="onCustom"><text class="q-v">其他金额</text></view>
+  </view>
+  <view wx:if="{{custom}}" class="custom row">
+    <text class="c-y">¥</text>
+    <input class="c-in" type="digit" focus="{{true}}" value="{{amount}}" placeholder="请输入缴费金额" bindinput="onInput" />
+  </view>
+  <picker mode="selector" range="{{ways}}" value="{{payWay}}" bindchange="onWay">
+    <view class="way row between"><text class="way-l">支付方式</text><view class="row"><text class="way-v">{{ways[payWay]}}</text><view class="chev"></view></view></view>
+  </picker>
+</view>
+<text class="agree">点击确认缴费即表示同意《生活缴费服务协议》</text>
+<view class="foot-gap"></view>
+<view class="foot">
+  <view class="btn-primary {{amount ? '' : 'off'}}" bindtap="confirm"><text>确认缴费{{amount ? ' ¥' + amount : ''}}</text></view>
+</view>

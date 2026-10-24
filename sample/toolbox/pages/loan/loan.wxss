@@ -1,0 +1,22 @@
+.tabs-wrap { padding: 24rpx 24rpx 0; }
+.form { padding: 0 28rpx 28rpx; }
+.unit { margin-left: 12rpx; color: #5c6066; width: 64rpx; text-align: right; }
+.pick-v { text-align: right; font-size: 30rpx; }
+.calc-btn { margin-top: 28rpx; }
+.press { opacity: 0.8; }
+.big { font-size: 76rpx; font-weight: bold; color: #4056ee; margin-top: 8rpx; }
+.dec { margin-top: 4rpx; }
+.sum-row { margin-top: 24rpx; padding-top: 24rpx; border-top: 1rpx solid #f2f3f5; }
+.sv { font-size: 30rpx; font-weight: bold; margin-top: 6rpx; }
+.red { color: #f04848; }
+.tbl { padding: 28rpx 20rpx 12rpx; }
+.tbl .card-title { margin-left: 8rpx; }
+.mini-tabs { background: #f5f6f8; border-radius: 24rpx; padding: 4rpx; }
+.mt { padding: 6rpx 20rpx; font-size: 24rpx; color: #5c6066; border-radius: 20rpx; }
+.mt-on { background: #ffffff; color: #4056ee; font-weight: bold; }
+.th { margin-top: 20rpx; height: 64rpx; background: #eef1ff; border-radius: 12rpx; font-size: 22rpx; color: #4056ee; font-weight: bold; }
+.td { height: 64rpx; font-size: 24rpx; color: #3d4047; border-radius: 12rpx; }
+.odd { background: #fafbfc; }
+.c1 { width: 112rpx; text-align: center; }
+.c { flex: 1; text-align: right; padding-right: 12rpx; white-space: nowrap; }
+.note { text-align: center; margin: 24rpx 0 48rpx; }

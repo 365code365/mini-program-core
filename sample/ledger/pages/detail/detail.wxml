@@ -1,0 +1,23 @@
+<view class="page">
+  <view wx:if="{{missing}}" class="card empty"><text class="muted">这笔账单已被删除</text></view>
+  <block wx:else>
+    <view class="card head">
+      <view class="cat-icon huge" style="background: {{rec.color}};"><text>{{rec.ch}}</text></view>
+      <text class="head-cat">{{rec.cat}}</text>
+      <view class="head-amt {{rec.type}}"><text>{{rec.amountText}}</text></view>
+      <text class="tag {{rec.type === 'out' ? 'tag-out' : 'tag-in'}}">{{typeText}}</text>
+    </view>
+
+    <view class="card info">
+      <view class="row between info-row"><text class="muted lbl">分类</text><text class="val">{{typeText}} · {{rec.cat}}</text></view>
+      <view class="row between info-row"><text class="muted lbl">日期</text><text class="val">{{dateText}}</text></view>
+      <view class="row between info-row"><text class="muted lbl">备注</text><text class="val">{{rec.note || '无'}}</text></view>
+      <view class="row between info-row last"><text class="muted lbl">本月同类</text><text class="val">{{sameCatCount}} 笔 · ¥{{sameCatText}}</text></view>
+    </view>
+
+    <view class="actions row">
+      <view class="act act-del" hover-class="act-hover" bindtap="onDelete"><text>删除</text></view>
+      <view class="act act-edit" hover-class="act-hover" bindtap="onEdit"><text>编辑</text></view>
+    </view>
+  </block>
+</view>

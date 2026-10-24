@@ -1,0 +1,22 @@
+/* 注意：引擎里 display:flex 不写 flex-direction 时按 column 排，下面一律写明方向 */
+page { background: #f5f6f8; color: #1f2329; font-size: 28rpx; }
+.row { display: flex; flex-direction: row; align-items: center; }
+.col { display: flex; flex-direction: column; }
+.between { justify-content: space-between; }
+.flex1 { flex: 1; }
+.card { background: #fff; border-radius: 20rpx; margin: 0 24rpx 20rpx; padding: 28rpx; box-shadow: 0 4rpx 20rpx rgba(31, 35, 41, 0.04); }
+.title { font-size: 34rpx; font-weight: bold; }
+.sub { font-size: 24rpx; color: #8a9099; }
+.blue { color: #2E6BFF; }
+.salary { color: #2E6BFF; font-size: 30rpx; font-weight: bold; white-space: nowrap; }
+.tag { font-size: 22rpx; color: #5c6370; background: #f2f4f7; padding: 6rpx 16rpx; border-radius: 8rpx; margin: 0 12rpx 12rpx 0; }
+.tags { display: flex; flex-direction: row; flex-wrap: wrap; }
+.avatar { width: 64rpx; height: 64rpx; border-radius: 32rpx; color: #fff; font-size: 28rpx; font-weight: bold; display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.logo { width: 88rpx; height: 88rpx; border-radius: 20rpx; color: #fff; font-size: 40rpx; font-weight: bold; display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.btn-primary { background: linear-gradient(90deg, #4C86FF, #2E6BFF); color: #fff; font-size: 30rpx; font-weight: bold; height: 88rpx; line-height: 88rpx; text-align: center; border-radius: 44rpx; }
+.section-title { font-size: 30rpx; font-weight: bold; margin-bottom: 20rpx; }
+/* 右箭头用 border 画：引擎字体里 › 会落到错误字形 */
+.chev { width: 14rpx; height: 14rpx; border-top: 3rpx solid #c4c7cc; border-right: 3rpx solid #c4c7cc; transform: rotate(45deg); margin-left: 12rpx; }
+/* 引擎把 input padding 全 0 当成没写，套默认内边距，所以写 1rpx */
+input { padding: 0 0 0 1rpx; }
+.tabbar-space { height: calc(120rpx + env(safe-area-inset-bottom)); }

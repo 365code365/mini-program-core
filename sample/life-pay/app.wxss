@@ -1,0 +1,13 @@
+page { background: #f4f6f8; color: #1e2329; font-size: 28rpx; }
+.card { background: #ffffff; border-radius: 20rpx; margin: 24rpx 24rpx 0; padding: 28rpx; box-shadow: 0 4rpx 16rpx rgba(20, 80, 60, 0.04); }
+.sec-title { font-size: 32rpx; font-weight: bold; color: #1e2329; }
+.muted { color: #8a919c; font-size: 24rpx; }
+.row { display: flex; flex-direction: row; align-items: center; }
+.between { justify-content: space-between; }
+.chev { width: 14rpx; height: 14rpx; border-top: 3rpx solid #b8bfc8; border-right: 3rpx solid #b8bfc8; transform: rotate(45deg); margin-left: 10rpx; flex-shrink: 0; }
+.ic { width: 80rpx; height: 80rpx; border-radius: 24rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; color: #ffffff; font-size: 34rpx; font-weight: bold; flex-shrink: 0; }
+.btn-primary { background: linear-gradient(90deg, #2fc488, #14a06f); color: #ffffff; border-radius: 44rpx; height: 88rpx; line-height: 88rpx; text-align: center; font-size: 30rpx; font-weight: bold; }
+.btn-primary.off { background: #c4cad2; }
+.tab-gap { height: calc(100rpx + env(safe-area-inset-bottom) + 24rpx); }
+.empty { padding: 100rpx 0; text-align: center; color: #a0a7b1; font-size: 26rpx; }
+.owe { color: #f2603d; font-weight: bold; }

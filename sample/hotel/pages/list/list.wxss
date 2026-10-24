@@ -1,0 +1,30 @@
+.top { background: #fff; padding: 16rpx 24rpx 0; }
+.date-box { display: flex; flex-direction: column; background: #f5f6f8; border-radius: 12rpx; padding: 6rpx 16rpx; margin-right: 16rpx; }
+.db-line { font-size: 20rpx; color: #1E6FFF; line-height: 30rpx; }
+.search-box { flex: 1; height: 72rpx; background: #f5f6f8; border-radius: 36rpx; padding: 0 24rpx; }
+.search-input { flex: 1; font-size: 26rpx; height: 72rpx; }
+.clear { font-size: 34rpx; color: #b5b9bf; padding-left: 12rpx; }
+.sorts { margin-top: 12rpx; }
+.sort { flex: 1; text-align: center; padding: 20rpx 0; font-size: 26rpx; color: #4e5969; }
+.sort-on { color: #1E6FFF; font-weight: bold; }
+.chips-scroll { width: 702rpx; }
+.chips { display: flex; flex-direction: row; padding-bottom: 20rpx; }
+.chip { height: 40rpx; line-height: 40rpx; flex-shrink: 0; font-size: 24rpx; color: #4e5969; background: #f5f6f8; padding: 8rpx 20rpx; border-radius: 28rpx; margin-right: 14rpx; border: 2rpx solid #f5f6f8; white-space: nowrap; }
+.chip-on { color: #1E6FFF; background: #EAF2FF; border-color: #A9C8FF; }
+.count { margin: 20rpx 28rpx; }
+.hotel { display: flex; flex-direction: row; padding: 20rpx; }
+.h-img { width: 220rpx; height: 280rpx; border-radius: 14rpx; flex-shrink: 0; }
+.h-body { flex: 1; margin-left: 20rpx; display: flex; flex-direction: column; }
+.h-name { font-size: 30rpx; font-weight: bold; line-height: 42rpx; }
+.h-meta { margin-top: 10rpx; }
+.h-good { font-size: 24rpx; color: #1E6FFF; font-weight: bold; margin: 0 10rpx; }
+.h-line { margin-top: 8rpx; }
+.h-tags { margin-top: 12rpx; flex-wrap: wrap; }
+.h-price-row { margin-top: auto; align-items: flex-end; }
+.h-fav { font-size: 20rpx; color: #E8743B; }
+.yen { font-size: 22rpx; margin-bottom: 6rpx; }
+.h-price { font-size: 40rpx; font-weight: bold; margin-right: 4rpx; }
+.empty { display: flex; flex-direction: column; align-items: center; padding: 100rpx 0; }
+.empty-t { color: #9aa0a6; }
+.empty-btn { margin-top: 24rpx; color: #1E6FFF; border: 2rpx solid #1E6FFF; border-radius: 30rpx; padding: 10rpx 36rpx; font-size: 26rpx; }
+.gap { height: 30rpx; }

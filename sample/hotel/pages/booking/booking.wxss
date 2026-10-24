@@ -1,0 +1,37 @@
+.head { background: linear-gradient(160deg, #2F6BFF, #5AA2FF); padding: 28rpx 32rpx 80rpx; }
+.h-name { display: block; color: #fff; font-size: 34rpx; font-weight: bold; }
+.h-dates { margin-top: 16rpx; }
+.h-d { color: #fff; font-size: 28rpx; font-weight: bold; }
+.h-sep { color: rgba(255, 255, 255, 0.7); margin: 0 12rpx; }
+.h-n { color: #fff; font-size: 22rpx; background: rgba(255, 255, 255, 0.2); border-radius: 16rpx; padding: 2rpx 14rpx; margin-left: 16rpx; }
+.h-room { display: block; color: rgba(255, 255, 255, 0.9); font-size: 24rpx; margin-top: 12rpx; }
+.h-policy { margin-top: 16rpx; }
+.h-policy-t { font-size: 22rpx; color: #E3FFF1; background: rgba(30, 158, 106, 0.55); padding: 4rpx 14rpx; border-radius: 8rpx; }
+.form { padding: 0 28rpx; }
+.form.first { margin-top: -50rpx; position: relative; }
+.f-row { display: flex; flex-direction: row; align-items: center; min-height: 100rpx; border-bottom: 1rpx solid #f0f1f3; }
+.f-row.no-border { border-bottom: none; }
+.f-label { width: 160rpx; font-size: 28rpx; color: #4e5969; }
+.f-input { flex: 1; font-size: 28rpx; height: 100rpx; }
+.f-val { font-size: 28rpx; }
+.f-ph { color: #b5b9bf; }
+.f-tip { font-size: 22rpx; color: #9aa0a6; padding: 16rpx 0 22rpx; }
+.stepper { display: flex; flex-direction: row; align-items: center; }
+/* 「−」(U+2212) 在引擎里画不出来，加减号用 CSS 画 */
+.st-btn { position: relative; width: 56rpx; height: 56rpx; border-radius: 28rpx; border: 2rpx solid #1E6FFF; }
+.st-h { position: absolute; left: 16rpx; top: 26rpx; width: 24rpx; height: 4rpx; border-radius: 2rpx; background: #1E6FFF; }
+.st-v { position: absolute; left: 26rpx; top: 16rpx; width: 4rpx; height: 24rpx; border-radius: 2rpx; background: #1E6FFF; }
+.st-dis { border-color: #d5d8dc; }
+.st-dis .st-h, .st-dis .st-v { background: #d5d8dc; }
+.st-val { width: 100rpx; text-align: center; font-size: 28rpx; font-weight: bold; }
+.inv-types { display: flex; flex-direction: row; padding: 20rpx 0 4rpx; }
+.inv-type { font-size: 24rpx; color: #4e5969; background: #f5f6f8; padding: 10rpx 28rpx; border-radius: 10rpx; margin-right: 16rpx; border: 2rpx solid #f5f6f8; }
+.inv-on { color: #1E6FFF; background: #EAF2FF; border-color: #A9C8FF; }
+.block-title { display: block; font-size: 30rpx; font-weight: bold; margin-bottom: 8rpx; }
+.fee { font-size: 26rpx; color: #4e5969; padding: 10rpx 0; }
+.bottom-space { height: calc(150rpx + env(safe-area-inset-bottom)); }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; display: flex; flex-direction: row; align-items: center; padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom)) 32rpx; box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.06); }
+.total-row { align-items: flex-end; }
+.yen { font-size: 24rpx; margin-bottom: 6rpx; margin-left: 6rpx; }
+.total { font-size: 44rpx; font-weight: bold; }
+.submit { width: 260rpx; height: 88rpx; line-height: 88rpx; text-align: center; border-radius: 44rpx; background: linear-gradient(90deg, #FF8A4C, #FF5A36); color: #fff; font-size: 30rpx; font-weight: bold; }

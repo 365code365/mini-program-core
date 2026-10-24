@@ -1,0 +1,74 @@
+<view class="hero">
+  <text class="hero-title">{{statusTitle}}</text>
+  <text class="hero-sub">{{statusSub}}</text>
+  <view class="route">
+    <view class="route-line"></view>
+    <view class="route-done" style="width: {{progress}}%;"></view>
+    <view class="route-node node-shop glyph">店</view>
+    <view class="route-rider" style="left: {{progress}}%;">
+      <view class="rider-dot glyph">骑</view>
+    </view>
+    <view class="route-node node-home glyph">家</view>
+  </view>
+  <view class="row between route-labels">
+    <text>{{shop.name}}</text>
+    <text>{{order.address.tag}}</text>
+  </view>
+</view>
+
+<view class="card rider row" wx:if="{{order.status !== 'refund'}}">
+  <view class="rider-avatar glyph">张</view>
+  <view class="flex1">
+    <text class="title">张师傅 · 饱了么专送</text>
+    <text class="sub">★ 4.96 · 准时率 99%</text>
+  </view>
+  <view class="call" bindtap="onCall">联系骑手</view>
+</view>
+
+<view class="card">
+  <text class="title">配送进度</text>
+  <view class="timeline">
+    <view class="step row" wx:for="{{steps}}" wx:key="name">
+      <view class="step-axis">
+        <view class="dot {{item.done ? 'dot-done' : ''}} {{item.current ? 'dot-current' : ''}}"></view>
+        <view wx:if="{{index < steps.length - 1}}" class="axis-line {{item.done && steps[index + 1].done ? 'axis-done' : ''}}"></view>
+      </view>
+      <view class="flex1 step-body">
+        <view class="row between">
+          <text class="step-name {{item.done ? 'step-name-done' : ''}}">{{item.name}}</text>
+          <text class="step-time">{{item.time}}</text>
+        </view>
+        <text class="step-desc">{{item.desc}}</text>
+      </view>
+    </view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="row shop-row">
+    <view class="mini-logo glyph" style="background: linear-gradient(135deg, {{shop.c1}}, {{shop.c2}});">{{shop.logo}}</view>
+    <text class="title flex1 ellipsis">{{shop.name}}</text>
+  </view>
+  <view class="line-item row between" wx:for="{{order.items}}" wx:key="name">
+    <text class="flex1 ellipsis">{{item.name}}</text>
+    <text class="sub qty">×{{item.qty}}</text>
+    <text class="line-price">¥{{item.price}}</text>
+  </view>
+  <view class="paid row"><text>实付</text><text class="price paid-num">¥{{order.pay}}</text></view>
+</view>
+
+<view class="card info">
+  <view class="info-row row"><text class="info-k">订单号</text><text class="flex1">{{order.id}}</text><text class="copy" bindtap="onCopy">复制</text></view>
+  <view class="info-row row"><text class="info-k">下单时间</text><text>{{createdText}}</text></view>
+  <view class="info-row row"><text class="info-k">收货地址</text><text class="flex1">{{order.address.detail}}（{{order.address.name}}）</text></view>
+  <view class="info-row row"><text class="info-k">备注</text><text>{{order.remark}}</text></view>
+  <view class="info-row row"><text class="info-k">餐具</text><text>{{order.tableware || '按餐量提供'}}</text></view>
+  <view class="info-row row"><text class="info-k">支付方式</text><text>微信支付</text></view>
+</view>
+
+<view class="bottom-space"></view>
+<view class="op-bar row">
+  <view class="op" bindtap="onService">联系客服</view>
+  <view wx:if="{{order.status === 'delivering'}}" class="op op-primary" bindtap="onConfirm">确认收货</view>
+  <view wx:else class="op op-primary" bindtap="onAgain">再来一单</view>
+</view>

@@ -1,6 +1,10 @@
 // 管理页：登录态走 HttpOnly Cookie；改数据的请求带 X-Mini-Store 头（服务器据此挡 CSRF）
 'use strict';
 const $ = (id) => document.getElementById(id);
+const CATEGORIES = ['美食', '购物', '出行', '生活服务', '医疗健康', '金融', '工具', '教育', '娱乐', '资讯', '政务', '其他'];
+for (const id of ['ucat', 'fcat', 'ecat']) {
+  for (const c of CATEGORIES) $(id).append(new Option(c, c));
+}
 const COLORS = ['#07c160', '#10aeff', '#fa9d3b', '#e64340', '#6467f0', '#1485ee', '#91d300', '#576b95'];
 
 async function api(method, path, body, headers = {}) {
@@ -79,6 +83,9 @@ $('uploadForm').addEventListener('submit', async (e) => {
     $('ubtn').disabled = true;
     msg.textContent = `上传 ${(blob.size / 1048576).toFixed(1)} MB…`;
     const q = new URLSearchParams({ name: $('uname').value.trim(), description: $('udesc').value.trim() });
+    for (const [k, id] of [['category', 'ucat'], ['tags', 'utags'], ['developer', 'udev']]) {
+      if ($(id).value.trim()) q.set(k, $(id).value.trim());
+    }
     const meta = await api('PUT', `/api/admin/apps/${encodeURIComponent($('uid').value.trim())}?${q}`, blob,
       { 'Content-Type': 'application/zip' });
     msg.className = 'msg ok';
@@ -93,31 +100,65 @@ $('uploadForm').addEventListener('submit', async (e) => {
   }
 });
 
+// 列表：搜索框与分类走服务器的 /api/apps?q=&category=（与 App 同一套排序），空着就是全部
+let searchTimer = 0;
+$('q').addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(refresh, 200); });
+$('fcat').addEventListener('change', refresh);
+
 async function refresh() {
-  const { apps } = await api('GET', '/api/apps');
-  $('count').textContent = `${apps.length} 个`;
+  const q = new URLSearchParams({ q: $('q').value.trim(), category: $('fcat').value, limit: '200' });
+  const [{ apps }, all, cats, hot] = await Promise.all([
+    api('GET', `/api/apps?${q}`),
+    api('GET', '/api/apps'),
+    api('GET', '/api/categories'),
+    api('GET', '/api/search/hot'),
+  ]);
+  $('count').textContent = `${apps.length} / ${all.apps.length} 个`;
+  $('stApps').textContent = all.apps.length;
+  $('stCats').textContent = cats.categories.length;
+  $('stDl').textContent = all.apps.reduce((n, a) => n + (a.downloads || 0), 0);
+  $('hot').replaceChildren(...hot.keywords.map((w) => {
+    const b = btn(w, () => { $('q').value = w; refresh(); });
+    b.className = 'tag';
+    return b;
+  }));
   const tbody = $('list');
   tbody.replaceChildren();
-  apps.forEach((a, i) => {
+  apps.forEach((a) => {
     const tr = document.createElement('tr');
-    const icon = document.createElement('span');
-    icon.className = 'icon';
-    icon.style.background = COLORS[hash(a.id) % COLORS.length];
-    icon.textContent = [...a.name][0] || '?';
+    let icon;
+    if (a.iconUrl) {
+      icon = document.createElement('img');
+      icon.className = 'icon';
+      icon.src = a.iconUrl;
+      icon.alt = '';
+    } else {
+      icon = document.createElement('span');
+      icon.className = 'icon letter';
+      icon.style.background = COLORS[hash(a.id) % COLORS.length];
+      icon.textContent = [...a.name][0] || '?';
+    }
     const name = document.createElement('div');
-    name.innerHTML = '<div class="name"></div><div class="id"></div><div class="hint"></div>';
-    name.children[0].textContent = a.name;
-    name.children[1].textContent = a.id;
+    name.innerHTML = '<div class="name"><span></span><span class="cat"></span></div><div class="id"></div><div class="hint"></div><div class="tags"></div>';
+    name.querySelector('.name span').textContent = a.name;
+    name.querySelector('.cat').textContent = a.category || '其他';
+    name.children[1].textContent = `${a.id} · ${a.appId || ''}`;
     name.children[2].textContent = a.description || '';
+    for (const t of a.tags || []) {
+      const s = document.createElement('span');
+      s.className = 'tag';
+      s.textContent = t;
+      name.children[3].append(s);
+    }
     const ops = document.createElement('td');
     ops.className = 'ops';
     ops.append(
-      btn('改名', () => edit(a)),
+      btn('编辑', () => edit(a)),
       btn('下载', () => { location.href = a.packageUrl; }),
       btn('删除', () => remove(a), 'danger'),
     );
-    tr.append(td(icon), td(name), td(`v${a.version}`), td(`${(a.size / 1048576).toFixed(2)} MB`),
-      td(new Date(a.updatedAt).toLocaleString()), ops);
+    tr.append(td(icon), td(name), td(a.developer || '-'), td(`v${a.version}`), td(`${(a.size / 1048576).toFixed(2)} MB`),
+      td(String(a.downloads || 0)), td(new Date(a.updatedAt).toLocaleString()), ops);
     tbody.append(tr);
   });
 }
@@ -153,13 +194,30 @@ async function refreshDiag() {
   }
 }
 
-async function edit(a) {
-  const name = prompt('名称', a.name);
-  if (name === null) return;
-  const description = prompt('描述', a.description || '');
-  if (description === null) return;
-  await api('PATCH', `/api/admin/apps/${a.id}`, JSON.stringify({ name, description }), { 'Content-Type': 'application/json' });
-  refresh();
+function edit(a) {
+  $('ename').value = a.name;
+  $('edesc').value = a.description || '';
+  $('ecat').value = a.category || '其他';
+  $('etags').value = (a.tags || []).join(', ');
+  $('edev').value = a.developer || '';
+  $('eorder').value = String(a.order ?? 1000);
+  const dlg = $('editDlg');
+  dlg.onclose = async () => {
+    if (dlg.returnValue !== 'ok') return;
+    const body = {
+      name: $('ename').value.trim(), description: $('edesc').value.trim(), category: $('ecat').value,
+      tags: $('etags').value, developer: $('edev').value.trim(),
+    };
+    const order = parseInt($('eorder').value, 10);
+    if (Number.isFinite(order)) body.order = order;
+    try {
+      await api('PATCH', `/api/admin/apps/${a.id}`, JSON.stringify(body), { 'Content-Type': 'application/json' });
+      refresh();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+  dlg.showModal();
 }
 
 async function remove(a) {

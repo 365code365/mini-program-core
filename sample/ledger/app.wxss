@@ -1,0 +1,66 @@
+page {
+  background: #f5f6f8;
+  color: #1f2329;
+  font-size: 28rpx;
+  font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+}
+.card {
+  background: #ffffff;
+  border-radius: 24rpx;
+  margin: 24rpx 24rpx 0;
+  padding: 28rpx;
+  box-shadow: 0 4rpx 20rpx rgba(31, 35, 41, 0.04);
+}
+.card-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #1f2329;
+}
+.muted { color: #8a8d96; font-size: 24rpx; }
+.row { display: flex; flex-direction: row; align-items: center; }
+.between { justify-content: space-between; }
+.flex1 { flex: 1; }
+.cat-icon {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 36rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: bold;
+}
+.out { color: #1f2329; }
+.in { color: #f57c34; }
+.btn-primary {
+  background: linear-gradient(90deg, #ffa94d, #f5733b);
+  color: #ffffff;
+  border-radius: 44rpx;
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  font-size: 30rpx;
+  font-weight: bold;
+}
+.bar-track {
+  height: 16rpx;
+  background: #f0f1f4;
+  border-radius: 8rpx;
+  overflow: hidden;
+}
+.bar-fill {
+  height: 16rpx;
+  border-radius: 8rpx;
+}
+/* 右箭头用 border 画：引擎字体里 › ‹ 会落到错误的字形上 */
+.arrow {
+  width: 14rpx;
+  height: 14rpx;
+  border-top: 3rpx solid #b8bcc4;
+  border-right: 3rpx solid #b8bcc4;
+  transform: rotate(45deg);
+  margin-left: 8rpx;
+}
+/* 加粗的金额一律 nowrap：引擎对「¥ + 数字」的加粗文字量宽偏窄，会在 ¥ 后折行且第二行被裁掉 */
+.nowrap { white-space: nowrap; }

@@ -1,0 +1,27 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/answer/answer",
+    "pages/result/result",
+    "pages/create/create",
+    "pages/mine/mine"
+  ],
+  "window": {
+    "navigationBarTitleText": "问卷星球",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f5f5fa"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#9aa0a6",
+    "selectedColor": "#6C5CE7",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "广场", "iconPath": "images/tab-home.png", "selectedIconPath": "images/tab-home-on.png" },
+      { "pagePath": "pages/create/create", "text": "发起", "iconPath": "images/tab-create.png", "selectedIconPath": "images/tab-create-on.png" },
+      { "pagePath": "pages/mine/mine", "text": "我的", "iconPath": "images/tab-mine.png", "selectedIconPath": "images/tab-mine-on.png" }
+    ]
+  }
+}

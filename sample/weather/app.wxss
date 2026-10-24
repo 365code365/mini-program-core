@@ -1,0 +1,17 @@
+/* 注意：引擎里 display:flex 不写 flex-direction 时按 column 排（CSS 默认是 row），所以下面一律写明方向 */
+page {
+  background: #f5f6f8;
+  color: #1f2329;
+  font-size: 28rpx;
+  font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+}
+.card { background: #ffffff; border-radius: 24rpx; margin: 24rpx 24rpx 0; padding: 28rpx; box-shadow: 0 4rpx 20rpx rgba(31, 35, 41, 0.04); }
+.card-title { font-size: 32rpx; font-weight: bold; }
+.muted { color: #8a8d96; font-size: 24rpx; }
+.row { display: flex; flex-direction: row; align-items: center; }
+.col { display: flex; flex-direction: column; }
+.between { justify-content: space-between; }
+.flex1 { flex: 1; }
+.nowrap { white-space: nowrap; }
+.arrow { width: 14rpx; height: 14rpx; border-top: 3rpx solid #b8bcc4; border-right: 3rpx solid #b8bcc4; transform: rotate(45deg); margin-left: 8rpx; }
+.arrow-w { border-color: rgba(255, 255, 255, 0.8); }

@@ -1,0 +1,43 @@
+.hero { background: linear-gradient(180deg, #1f7cf0 0%, #3b8cff 70%, #f4f6fa 100%); padding: 16rpx 24rpx 8rpx; }
+.search { height: 72rpx; background: rgba(255,255,255,0.95); border-radius: 36rpx; display: flex; flex-direction: row; align-items: center; padding: 0 28rpx; }
+.search-icon { width: 22rpx; height: 22rpx; border: 4rpx solid #8a93a3; border-radius: 50%; margin-right: 14rpx; }
+.search-ph { color: #a0a7b4; font-size: 26rpx; }
+.hos { margin-top: 24rpx; background: #ffffff; border-radius: 24rpx 24rpx 0 0; padding: 28rpx; display: flex; flex-direction: row; align-items: center; }
+.hos-logo { width: 104rpx; height: 104rpx; border-radius: 24rpx; background: linear-gradient(135deg, #3b8cff, #1fc8b4); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 48rpx; font-weight: bold; flex-shrink: 0; }
+.hos-info { flex: 1; margin-left: 22rpx; display: flex; flex-direction: column; }
+.hos-name { font-size: 32rpx; font-weight: bold; color: #1d2330; }
+.hos-tags { margin-top: 8rpx; }
+.lv { font-size: 20rpx; color: #ffffff; background: linear-gradient(90deg, #ff9a3d, #ff6a3d); padding: 2rpx 12rpx; border-radius: 8rpx; margin-right: 12rpx; }
+.hos-branch { font-size: 24rpx; color: #5a6475; }
+.hos-addr { margin-top: 8rpx; font-size: 24rpx; color: #8a93a3; }
+.hos-call { width: 88rpx; height: 56rpx; border-radius: 28rpx; background: #eaf2ff; color: #1f7cf0; font-size: 24rpx; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.hos-hours { background: #f2f7ff; border-radius: 0 0 24rpx 24rpx; padding: 16rpx 28rpx; font-size: 22rpx; color: #4f6b99; }
+.grid { display: flex; flex-direction: row; flex-wrap: wrap; padding: 24rpx 8rpx 8rpx; }
+.cell { width: 25%; display: flex; flex-direction: column; align-items: center; margin-bottom: 24rpx; }
+.cell-ic { width: 88rpx; height: 88rpx; border-radius: 28rpx; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 36rpx; font-weight: bold; }
+.cell-tx { margin-top: 12rpx; font-size: 24rpx; color: #3a4252; }
+.notice { padding: 22rpx 28rpx; }
+.notice-tag { font-size: 20rpx; color: #ff6a3d; background: #fff1eb; padding: 4rpx 12rpx; border-radius: 8rpx; margin-right: 16rpx; flex-shrink: 0; }
+.notice-tx { flex: 1; font-size: 26rpx; color: #3a4252; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.arrow { color: #c0c6d0; font-size: 36rpx; margin-left: 12rpx; }
+.banner-wrap { margin: 24rpx 24rpx 0; border-radius: 20rpx; overflow: hidden; height: 220rpx; }
+.banner { height: 220rpx; }
+.banner-item { height: 220rpx; border-radius: 20rpx; padding: 32rpx 36rpx; position: relative; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden; }
+.b-title { font-size: 34rpx; font-weight: bold; color: #ffffff; }
+.b-sub { margin-top: 8rpx; font-size: 24rpx; color: rgba(255,255,255,0.85); }
+.b-btn { margin-top: 20rpx; width: 160rpx; height: 52rpx; border-radius: 26rpx; background: #ffffff; color: #1f7cf0; font-size: 24rpx; display: flex; align-items: center; justify-content: center; }
+.b-cross { position: absolute; right: 48rpx; top: 40rpx; width: 140rpx; height: 140rpx; opacity: 0.35; }
+.cx { position: absolute; left: 0; top: 46rpx; width: 140rpx; height: 48rpx; background: #ffffff; border-radius: 12rpx; }
+.cy { position: absolute; left: 46rpx; top: 0; width: 48rpx; height: 140rpx; background: #ffffff; border-radius: 12rpx; }
+.experts { margin-top: 24rpx; white-space: nowrap; }
+.expert { display: inline-flex; flex-direction: column; align-items: center; width: 180rpx; padding: 24rpx 0; margin-right: 20rpx; background: #f7f9fc; border-radius: 20rpx; }
+.ex-name { margin-top: 14rpx; font-size: 28rpx; font-weight: bold; color: #1d2330; }
+.ex-title { margin-top: 4rpx; font-size: 22rpx; color: #1f7cf0; }
+.ex-dept { margin-top: 4rpx; font-size: 22rpx; color: #8a93a3; }
+.news-item { display: flex; flex-direction: row; padding: 26rpx 0; border-bottom: 1rpx solid #eef0f4; }
+.news-item:last-child { border-bottom: none; padding-bottom: 0; }
+.news-main { flex: 1; display: flex; flex-direction: column; justify-content: space-between; margin-right: 20rpx; }
+.news-title { font-size: 28rpx; color: #1d2330; line-height: 40rpx; }
+.news-meta { margin-top: 12rpx; }
+.news-tag { font-size: 20rpx; border: 1rpx solid; border-radius: 6rpx; padding: 0 8rpx; margin-right: 12rpx; }
+.news-pic { width: 180rpx; height: 128rpx; border-radius: 12rpx; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 30rpx; font-weight: bold; flex-shrink: 0; }

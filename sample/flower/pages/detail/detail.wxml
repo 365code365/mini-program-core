@@ -1,0 +1,65 @@
+<image class="hero" src="{{p.img}}" mode="aspectFill"></image>
+<view class="card info">
+  <view class="row between">
+    <view class="row price-row"><text class="price yen">¥</text><text class="price big">{{unit}}</text><text class="origin">¥{{p.origin + unit - p.price}}</text></view>
+    <view class="fav {{fav ? 'on' : ''}}" bindtap="toggleFav"><view class="heart"></view><text>{{fav ? '已收藏' : '收藏'}}</text></view>
+  </view>
+  <text class="name">{{p.name}}</text>
+  <text class="flowers">花材：{{p.flowers}}</text>
+  <view class="row promise">
+    <text class="pr">鲜花实拍</text><text class="pr">花艺师手作</text><text class="pr">准时送达</text><text class="pr">免费贺卡</text>
+  </view>
+</view>
+
+<view class="card">
+  <text class="sec-title">选择枝数</text>
+  <view class="opts">
+    <view class="opt {{stem === item.k ? 'on' : ''}}" wx:for="{{stems}}" wx:key="k" data-k="{{item.k}}" bindtap="onStem">
+      <text class="o-name">{{item.name}}</text>
+      <text class="o-sub">{{item.sub}}</text>
+    </view>
+  </view>
+  <text class="sec-title sub-sec">包装方式</text>
+  <view class="opts">
+    <view class="opt pk {{pack === item.k ? 'on' : ''}}" wx:for="{{packs}}" wx:key="k" data-k="{{item.k}}" bindtap="onPack">
+      <text class="o-name">{{item.name}}</text>
+      <text class="o-sub">{{item.add ? '+¥' + item.add : '标配'}}</text>
+    </view>
+  </view>
+  <view class="row between qty-row">
+    <text class="sec-title">数量</text>
+    <view class="stepper row">
+      <view class="st-btn {{qty <= 1 ? 'dis' : ''}}" bindtap="minus"><text>－</text></view>
+      <text class="st-n">{{qty}}</text>
+      <view class="st-btn" bindtap="plus"><text>＋</text></view>
+    </view>
+  </view>
+</view>
+
+<view class="card">
+  <text class="sec-title">配送时间</text>
+  <picker mode="date" value="{{date}}" start="{{minDate}}" end="{{maxDate}}" bindchange="onDate">
+    <view class="cell row between"><text class="c-label">配送日期</text><view class="row"><text class="c-val">{{date}}</text><view class="chev"></view></view></view>
+  </picker>
+  <picker mode="selector" range="{{slots}}" value="{{slotIdx}}" bindchange="onSlot">
+    <view class="cell row between"><text class="c-label">送达时段</text><view class="row"><text class="c-val">{{slots[slotIdx]}}</text><view class="chev"></view></view></view>
+  </picker>
+</view>
+
+<view class="card">
+  <view class="row between"><text class="sec-title">贺卡留言</text><text class="muted">{{card.length}}/60</text></view>
+  <textarea class="ta" value="{{card}}" maxlength="60" placeholder="写下想对 TA 说的话，花艺师会手写在贺卡上" bindinput="onCard" />
+  <scroll-view class="tpls" scroll-x="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}">
+    <view class="tpl" wx:for="{{cardTpls}}" wx:key="*this" data-t="{{item}}" bindtap="useTpl"><text>{{item}}</text></view>
+  </scroll-view>
+</view>
+<view class="foot-gap"></view>
+<view class="foot row">
+  <view class="f-cart" bindtap="goCart">
+    <image class="f-ic" src="/images/tab/cart.png"></image>
+    <text class="f-tx">购物车</text>
+    <view wx:if="{{cartCount > 0}}" class="badge"><text>{{cartCount}}</text></view>
+  </view>
+  <view class="f-add" bindtap="addCart"><text>加入购物车</text></view>
+  <view class="f-buy" bindtap="buyNow"><text>立即购买 ¥{{total}}</text></view>
+</view>

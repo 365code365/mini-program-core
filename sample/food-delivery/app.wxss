@@ -1,0 +1,135 @@
+page {
+  background: #f5f6f8;
+  color: #1f2329;
+  font-size: 28rpx;
+  line-height: 1.5;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 20rpx;
+  margin: 20rpx 24rpx 0;
+  padding: 28rpx;
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.between {
+  justify-content: space-between;
+}
+
+.flex1 {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #1f2329;
+}
+
+.sub {
+  font-size: 24rpx;
+  color: #8a8f99;
+}
+
+.price {
+  color: #ff4d2d;
+  font-weight: bold;
+}
+
+.price-sym {
+  font-size: 22rpx;
+}
+
+.ellipsis {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tag {
+  display: inline-block;
+  font-size: 20rpx;
+  line-height: 32rpx;
+  padding: 0 10rpx;
+  border-radius: 6rpx;
+  margin-right: 10rpx;
+  color: #ff4d2d;
+  border: 1rpx solid #ffb7a8;
+}
+
+.glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-weight: bold;
+}
+
+.btn-primary {
+  background: linear-gradient(90deg, #3d9bff, #1677ff);
+  color: #ffffff;
+  border-radius: 44rpx;
+  text-align: center;
+  font-weight: bold;
+}
+
+.stepper {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.step-minus {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 22rpx;
+  border: 2rpx solid #1677ff;
+  color: #1677ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.minus-bar {
+  width: 20rpx;
+  height: 4rpx;
+  border-radius: 2rpx;
+  background: #1677ff;
+}
+
+.step-plus {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 22rpx;
+  background: #1677ff;
+  color: #ffffff;
+  font-size: 34rpx;
+  line-height: 42rpx;
+  text-align: center;
+}
+
+.step-num {
+  min-width: 52rpx;
+  text-align: center;
+  font-size: 28rpx;
+}
+
+/* 右箭头：字体里的 › 在引擎里画不出来，用边框画 */
+.arrow {
+  width: 14rpx;
+  height: 14rpx;
+  border-top: 3rpx solid #b0b4bc;
+  border-right: 3rpx solid #b0b4bc;
+  transform: rotate(45deg);
+  margin-left: 12rpx;
+  margin-right: 4rpx;
+  flex-shrink: 0;
+}

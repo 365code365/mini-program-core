@@ -1,0 +1,71 @@
+<view class="top">
+  <view class="row">
+    <picker mode="selector" range="{{cities}}" value="{{cityIndex}}" bindchange="onCity">
+      <view class="city row">
+        <text class="city-name">{{cities[cityIndex]}}</text>
+        <view class="caret"></view>
+      </view>
+    </picker>
+    <view class="search row flex1">
+      <view class="lens"><view class="lens-c"></view><view class="lens-h"></view></view>
+      <input class="search-input flex1" placeholder="搜小区、商圈、地铁站" value="{{kw}}" bindinput="onKw" bindconfirm="onSearch" confirm-type="search" />
+    </view>
+  </view>
+  <view class="types row">
+    <view class="type {{type === item.key ? 'on' : ''}}" wx:for="{{types}}" wx:key="key" bindtap="onType" data-key="{{item.key}}">
+      <text class="type-text">{{item.text}}</text>
+      <view class="type-bar" wx:if="{{type === item.key}}"></view>
+    </view>
+  </view>
+</view>
+
+<swiper class="banner" autoplay="true" interval="4000" circular="true" indicator-dots="true" indicator-color="rgba(255,255,255,0.5)" indicator-active-color="#ffffff">
+  <swiper-item wx:for="{{banners}}" wx:key="title">
+    <view class="banner-item" style="background: {{item.bg}}" bindtap="onBanner" data-i="{{index}}">
+      <text class="banner-title">{{item.title}}</text>
+      <text class="banner-sub">{{item.sub}}</text>
+      <view class="banner-btn">{{item.btn}}</view>
+    </view>
+  </swiper-item>
+</swiper>
+
+<view class="card grid">
+  <view class="g-item" wx:for="{{entries}}" wx:key="text" bindtap="onEntry" data-i="{{index}}">
+    <view class="g-icon" style="background: {{item.bg}}"><text class="g-glyph">{{item.glyph}}</text></view>
+    <text class="g-text">{{item.text}}</text>
+  </view>
+</view>
+
+<view class="card market row">
+  <view class="flex1">
+    <text class="m-title">杭州 10 月房价参考</text>
+    <view class="row m-nums">
+      <view class="m-num"><text class="m-val">38,612</text><text class="sub">二手均价 元/㎡</text></view>
+      <view class="m-num"><text class="m-val down">-0.6%</text><text class="sub">环比上月</text></view>
+      <view class="m-num"><text class="m-val">5,214</text><text class="sub">本月成交 套</text></view>
+    </view>
+  </view>
+</view>
+
+<view class="row between rec-head">
+  <text class="title">为你推荐 · {{typeText}}</text>
+  <text class="more" bindtap="onMore">查看全部</text>
+</view>
+<view class="card list">
+  <view class="h-card" wx:for="{{houses}}" wx:key="id" bindtap="onOpen" data-id="{{item.id}}">
+    <image class="h-img" src="{{item.cover}}" mode="aspectFill"></image>
+    <view class="h-main">
+      <text class="h-title">{{item.title}}</text>
+      <text class="h-brief">{{item.brief}}</text>
+      <view class="h-tags">
+        <text class="h-tag {{index === 0 ? 'hot' : ''}}" wx:for="{{item.tags}}" wx:key="*this" wx:for-item="t" wx:if="{{index < 3}}">{{t}}</text>
+      </view>
+      <view class="h-price">
+        <text class="h-price-main">{{item.priceMain}}</text>
+        <text class="h-price-unit">{{item.priceUnit}}</text>
+        <text class="h-price-sub">{{item.priceSub}}</text>
+      </view>
+    </view>
+  </view>
+</view>
+<view class="tab-safe"></view>

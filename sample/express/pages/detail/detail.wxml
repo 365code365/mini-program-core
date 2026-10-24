@@ -1,0 +1,64 @@
+<view class="head">
+  <view class="row">
+    <view class="logo" style="background: {{pkg.color}}">{{pkg.short}}</view>
+    <view class="flex1 head-main">
+      <text class="head-carrier">{{pkg.carrierName}}</text>
+      <view class="row">
+        <text class="head-no">{{pkg.no}}</text>
+        <view class="copy" bindtap="onCopy">复制</view>
+      </view>
+    </view>
+    <text class="tag {{pkg.statusCls}} head-tag">{{pkg.statusText}}</text>
+  </view>
+  <view class="route row">
+    <view class="city">
+      <text class="city-name">{{pkg.from}}</text>
+      <text class="city-sub">发件</text>
+    </view>
+    <view class="route-line flex1">
+      <view class="route-bar"><view class="route-fill" style="width: {{progress}}%"></view></view>
+      <text class="route-eta">{{pkg.eta}}</text>
+    </view>
+    <view class="city">
+      <text class="city-name">{{pkg.to}}</text>
+      <text class="city-sub">收件</text>
+    </view>
+  </view>
+</view>
+
+<view class="card courier">
+  <view class="row">
+    <view class="avatar">{{courierInitial}}</view>
+    <view class="flex1 courier-main">
+      <view class="row">
+        <text class="courier-name">{{pkg.courier.name}}</text>
+        <text class="star">★ {{pkg.courier.rate}}</text>
+      </view>
+      <text class="sub">已服务 {{pkg.courier.count}} 次 · {{pkg.courier.phone}}</text>
+    </view>
+    <view class="circle-btn" bindtap="onCall">电话</view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="row between tl-head">
+    <text class="title">物流详情</text>
+    <text class="sub">{{pkg.remark}}</text>
+  </view>
+  <view class="tl-item {{index === 0 ? 'first' : ''}}" wx:for="{{pkg.traces}}" wx:key="time">
+    <view class="tl-axis">
+      <view class="tl-dot"></view>
+      <view class="tl-line" wx:if="{{index < pkg.traces.length - 1}}"></view>
+    </view>
+    <view class="tl-body flex1">
+      <text class="tl-text">{{item.text}}</text>
+      <text class="tl-time">{{item.time}}</text>
+    </view>
+  </view>
+</view>
+
+<view class="actions row">
+  <view class="act-btn ghost" bindtap="onRemark">修改备注</view>
+  <view class="act-btn" bindtap="onSubscribe">{{subscribed ? '已开启推送' : '开启物流推送'}}</view>
+</view>
+<view class="safe"></view>

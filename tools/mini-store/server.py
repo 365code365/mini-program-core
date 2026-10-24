@@ -10,7 +10,11 @@
 包的校验、AppID 分配见 store_pkg.py；H5 落地页见 landing.py。
 
 接口（<key> = AppID 或 id）：
-    GET    /api/apps                     公开：小程序列表（示例 App 用）
+    GET    /api/apps?q=&category=&limit= 公开：小程序列表 / 搜索（示例 App 用；q 为空 = 全部，按热度）
+    GET    /api/categories               公开：分类与各分类的数量
+    GET    /api/search/hot               公开：热搜词
+    GET    /api/search/suggest?q=        公开：输入联想
+    GET    /api/apps/<key>/icon          公开：商店图标（包根上的 icon.png）
     GET    /api/apps/<key>               公开：一个小程序的最新版本信息（App 打开前据此判断要不要更新）
     GET    /api/apps/<key>/package       公开：下载包（ETag = sha256，带 If-None-Match 回 304）
     GET    /open?appid=&path=&query=     公开：H5 跳小程序的落地页（拉起 App 的 URL Scheme）
@@ -22,8 +26,8 @@
     POST   /api/login                    {"username","password"} → 设 Cookie，同时返回 token（脚本用 Bearer）
     POST   /api/logout
     GET    /api/admin/me                 登录态
-    PUT    /api/admin/apps/<id>?name=&description=&appid=   body = zip，新建或升级（版本号 +1）
-    PATCH  /api/admin/apps/<id>          {"name","description"} 只改展示信息
+    PUT    /api/admin/apps/<id>?name=&description=&appid=&category=&tags=&developer=   body = zip，新建或升级（版本号 +1）
+    PATCH  /api/admin/apps/<id>          {"name","description","category","tags","developer","order"} 只改展示信息
     DELETE /api/admin/apps/<id>
     GET    /admin                        管理页面
 
@@ -46,8 +50,9 @@ from urllib.parse import parse_qs, urlsplit
 
 import diag
 import landing
-from store_pkg import (DATA, HttpError, app_dir, delete_app, find, list_apps, patch_app, public_meta,
-                       save_app, write_json)
+import store_search
+from store_pkg import (DATA, HttpError, app_dir, bump_downloads, delete_app, find, list_apps, patch_app,
+                       public_meta, save_app, write_json)
 
 PORT = int(os.environ.get('MINI_STORE_PORT', '9630'))
 STATIC = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
@@ -179,9 +184,26 @@ class Handler(BaseHTTPRequestHandler):
             appid = p[1] if len(p) == 2 else self.query.get('appid', '')
             status, page = landing.render(appid, self.query.get('path', ''), self.query.get('query', ''))
             return self.send_html(page, status)
+        if method == 'GET' and p == ['api', 'categories']:
+            return self.send_json({'categories': store_search.categories()})
+        if method == 'GET' and p == ['api', 'search', 'hot']:
+            return self.send_json({'keywords': store_search.hot_keywords()})
+        if method == 'GET' and p == ['api', 'search', 'suggest']:
+            return self.send_json({'words': store_search.suggest(self.query.get('q', ''))})
         if p[:2] == ['api', 'apps']:
             if method == 'GET' and len(p) == 2:
-                return self.send_json({'apps': list_apps(), 'serverTime': int(time.time() * 1000)})
+                q, cat = self.query.get('q', ''), self.query.get('category', '')
+                if not q and not cat:
+                    return self.send_json({'apps': list_apps(), 'serverTime': int(time.time() * 1000)})
+                try:
+                    limit = max(1, min(200, int(self.query.get('limit', '50'))))
+                except ValueError:
+                    limit = 50
+                apps, total = store_search.search(q, cat, limit)
+                return self.send_json({'apps': apps, 'total': total, 'q': q, 'category': cat,
+                                       'serverTime': int(time.time() * 1000)})
+            if method == 'GET' and len(p) == 4 and p[3] == 'icon':
+                return self.send_icon(p[2])
             if method == 'GET' and len(p) == 3:
                 meta = find(p[2])
                 if not meta:
@@ -212,7 +234,8 @@ class Handler(BaseHTTPRequestHandler):
                 if method == 'PUT':
                     body = self.read_body(MAX_UPLOAD)
                     meta = save_app(p[3], body, self.query.get('name', '').strip()[:200],
-                                    self.query.get('description'), self.query.get('appid'))
+                                    self.query.get('description'), self.query.get('appid'),
+                                    {k: self.query[k] for k in ('category', 'tags', 'developer') if k in self.query})
                     return self.send_json(meta)
                 if method == 'PATCH':
                     return self.send_json(patch_app(p[3], self.read_json()))
@@ -323,6 +346,7 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             return
         size = os.path.getsize(path)
+        bump_downloads(meta['id'])
         self.send_response(200)
         self.send_header('Content-Type', 'application/zip')
         self.send_header('Content-Length', str(size))
@@ -332,6 +356,22 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         with open(path, 'rb') as f:
             shutil.copyfileobj(f, self.wfile, 256 << 10)
+
+
+    def send_icon(self, key):
+        meta = find(key)
+        path = os.path.join(app_dir(meta['id']), 'icon.png') if meta else ''
+        if not meta or not os.path.isfile(path):
+            raise HttpError(404, '没有图标')
+        with open(path, 'rb') as f:
+            data = f.read()
+        self.send_response(200)
+        self.send_header('Content-Type', 'image/png')
+        self.send_header('Content-Length', str(len(data)))
+        # 地址带 ?v=版本，换包就换地址：可以长缓存
+        self.send_header('Cache-Control', 'public, max-age=86400')
+        self.end_headers()
+        self.wfile.write(data)
 
 
 def serve():

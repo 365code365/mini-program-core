@@ -1,0 +1,43 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/stats/stats",
+    "pages/mine/mine",
+    "pages/add/add",
+    "pages/detail/detail",
+    "pages/budget/budget"
+  ],
+  "window": {
+    "navigationBarTitleText": "小鹿记账",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f5f6f8"
+  },
+  "tabBar": {
+    "color": "#8a8d96",
+    "selectedColor": "#f57c34",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "明细",
+        "iconPath": "images/tab/home-off.png",
+        "selectedIconPath": "images/tab/home-on.png"
+      },
+      {
+        "pagePath": "pages/stats/stats",
+        "text": "统计",
+        "iconPath": "images/tab/chart-off.png",
+        "selectedIconPath": "images/tab/chart-on.png"
+      },
+      {
+        "pagePath": "pages/mine/mine",
+        "text": "我的",
+        "iconPath": "images/tab/mine-off.png",
+        "selectedIconPath": "images/tab/mine-on.png"
+      }
+    ],
+    "custom": true
+  }
+}

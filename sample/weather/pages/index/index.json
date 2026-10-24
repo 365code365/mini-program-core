@@ -1,0 +1,9 @@
+{
+  "navigationStyle": "custom",
+  "navigationBarTextStyle": "white",
+  "enablePullDownRefresh": true,
+  "backgroundColor": "#2f7ff0",
+  "usingComponents": {
+    "wicon": "/components/wicon/wicon"
+  }
+}

@@ -1,0 +1,39 @@
+.top { background: linear-gradient(160deg, #5b8cff, #3d6cf6); padding: 32rpx 40rpx 36rpx; color: #ffffff; }
+.today { display: flex; flex-direction: column; }
+.t-label { font-size: 24rpx; color: rgba(255, 255, 255, 0.8); }
+.t-num-row { align-items: baseline; margin-top: 8rpx; }
+.t-num { font-size: 72rpx; font-weight: bold; color: #ffffff; }
+.t-goal { margin-left: 12rpx; font-size: 24rpx; color: rgba(255, 255, 255, 0.8); }
+.ring { width: 132rpx; height: 132rpx; border-radius: 66rpx; border: 8rpx solid rgba(255, 255, 255, 0.35); display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; }
+.ring-n { font-size: 32rpx; font-weight: bold; color: #ffffff; }
+.ring-l { font-size: 18rpx; color: rgba(255, 255, 255, 0.8); }
+.goal-bar { margin-top: 20rpx; height: 12rpx; border-radius: 6rpx; background: rgba(255, 255, 255, 0.25); overflow: hidden; }
+.goal-in { height: 12rpx; border-radius: 6rpx; background: #ffd25c; }
+.sums { margin-top: 32rpx; }
+.sum { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.sum-n { font-size: 36rpx; font-weight: bold; color: #ffffff; }
+.sum-l { margin-top: 4rpx; font-size: 22rpx; color: rgba(255, 255, 255, 0.8); }
+.cont { margin-top: -0rpx; }
+.cont-body { margin-top: 22rpx; }
+.cv { width: 150rpx; height: 112rpx; border-radius: 14rpx; display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 40rpx; font-weight: bold; flex-shrink: 0; }
+.cv.sm { width: 132rpx; height: 100rpx; font-size: 34rpx; }
+.cont-main { flex: 1; margin-left: 20rpx; display: flex; flex-direction: column; min-width: 0; }
+.cont-title { font-size: 28rpx; font-weight: bold; color: #1f2430; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.cont-last { margin-top: 6rpx; font-size: 24rpx; color: #3d6cf6; }
+.pg { margin-top: 14rpx; }
+.pg-bar { flex: 1; }
+.pg-tx { margin-left: 14rpx; font-size: 22rpx; color: #6b7282; width: 64rpx; text-align: right; }
+.cont-btn { margin-top: 26rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }
+.exam { padding: 24rpx 28rpx; }
+.ex-ic { width: 76rpx; height: 76rpx; border-radius: 22rpx; background: linear-gradient(135deg, #7fe0bf, #20b486); color: #ffffff; font-size: 32rpx; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+.ex-main { flex: 1; margin-left: 20rpx; display: flex; flex-direction: column; }
+.ex-title { font-size: 28rpx; font-weight: bold; margin-bottom: 4rpx; }
+.ex-go { height: 56rpx; padding: 0 26rpx; border-radius: 28rpx; background: #e8f8f1; color: #20a37a; font-size: 24rpx; display: flex; flex-direction: row; align-items: center; }
+.seg { background: #f2f4f8; border-radius: 28rpx; padding: 4rpx; }
+.seg-i { height: 48rpx; padding: 0 22rpx; border-radius: 24rpx; font-size: 24rpx; color: #6b7282; display: flex; flex-direction: row; align-items: center; }
+.seg-i.on { background: #ffffff; color: #3d6cf6; font-weight: bold; }
+.my { padding: 26rpx 0; border-bottom: 1rpx solid #f0f2f5; }
+.my:last-child { border-bottom: none; padding-bottom: 0; }
+.my-main { flex: 1; margin-left: 20rpx; display: flex; flex-direction: column; min-width: 0; }
+.my-title { font-size: 28rpx; font-weight: bold; margin-bottom: 6rpx; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.go-home { margin: 24rpx auto 0; width: 200rpx; height: 60rpx; border-radius: 30rpx; border: 2rpx solid #3d6cf6; color: #3d6cf6; font-size: 24rpx; display: flex; align-items: center; justify-content: center; }

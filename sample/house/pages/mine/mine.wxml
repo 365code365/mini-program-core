@@ -1,0 +1,45 @@
+<view class="head">
+  <view class="row">
+    <view class="avatar">周</view>
+    <view class="flex1 me">
+      <text class="me-name">周一凡</text>
+      <text class="me-sub">已实名 · 杭州 · 刚需首套</text>
+    </view>
+    <view class="edit" bindtap="onEdit">编辑资料</view>
+  </view>
+  <view class="stats row">
+    <view class="stat flex1" bindtap="onFavTab"><text class="stat-num">{{favCount}}</text><text class="stat-label">收藏</text></view>
+    <view class="stat flex1"><text class="stat-num">{{historyCount}}</text><text class="stat-label">足迹</text></view>
+    <view class="stat flex1"><text class="stat-num">{{bookings.length}}</text><text class="stat-label">预约</text></view>
+    <view class="stat flex1"><text class="stat-num">2</text><text class="stat-label">订阅</text></view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="title">我的看房预约</text>
+    <text class="sub">{{bookings.length}} 条</text>
+  </view>
+  <view class="bk row" wx:for="{{bookings}}" wx:key="id">
+    <image class="bk-img" src="{{item.cover}}" mode="aspectFill"></image>
+    <view class="flex1 bk-main">
+      <view class="row between">
+        <text class="bk-name">{{item.community}}</text>
+        <text class="bk-status {{item.status === '已带看' ? 'done' : ''}}">{{item.status}}</text>
+      </view>
+      <text class="sub">{{item.layout}} · {{item.area}}㎡ · 经纪人 {{item.agent}}</text>
+      <text class="bk-time">{{item.time}}</text>
+    </view>
+  </view>
+  <view class="bk-empty" wx:if="{{!bookings.length}}"><text class="sub">暂无预约，去房源详情页预约看房</text></view>
+</view>
+
+<view class="card menu">
+  <view class="m-item row" wx:for="{{menus}}" wx:key="text" bindtap="onMenu" data-i="{{index}}">
+    <view class="m-icon" style="background: {{item.bg}}">{{item.glyph}}</view>
+    <text class="flex1 m-text">{{item.text}}</text>
+    <text class="sub">{{item.hint}}</text>
+    <view class="chev"></view>
+  </view>
+</view>
+<view class="tab-safe"></view>

@@ -1,0 +1,39 @@
+<view class="top">
+  <view class="search">
+    <view class="s-ic"></view>
+    <input class="s-in" placeholder="搜索商品" placeholder-style="color: #b5aca4;" value="{{kw}}" bindinput="onKw" confirm-type="search" />
+    <text class="s-x" wx:if="{{kw}}" bindtap="clearKw">清除</text>
+  </view>
+  <scroll-view class="cats" scroll-x="{{true}}" show-scrollbar="{{false}}">
+    <view class="cat {{cat === item ? 'on' : ''}}" wx:for="{{cats}}" wx:key="*this" data-c="{{item}}" bindtap="pickCat">
+      <text>{{item}}</text>
+      <view class="cat-line" wx:if="{{cat === item}}"></view>
+    </view>
+  </scroll-view>
+</view>
+
+<view class="sort">
+  <text class="so {{sort === item.k ? 'on' : ''}}" wx:for="{{sorts}}" wx:key="k" data-k="{{item.k}}" bindtap="pickSort">{{item.n}}</text>
+</view>
+
+<view class="grid">
+  <view class="gd" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="goGoods">
+    <image class="gd-img" src="{{item.img}}" mode="aspectFill"></image>
+    <view class="gd-b">
+      <text class="gd-n">{{item.name}}</text>
+      <text class="gd-s">{{item.sub}}</text>
+      <view class="row between gd-f">
+        <view class="row gd-p"><text class="price"><text class="yen">¥</text>{{item.price}}</text><text class="gd-o">¥{{item.orig}}</text></view>
+        <view class="add" data-id="{{item.id}}" catchtap="quickAdd"><text>+</text></view>
+      </view>
+      <text class="gd-sales">已售 {{item.sales}}</text>
+    </view>
+  </view>
+</view>
+<view wx:if="{{!list.length}}" class="empty"><text>没有找到「{{kw}}」相关商品</text></view>
+<view style="height: 140rpx;"></view>
+
+<view class="fab" bindtap="goCart">
+  <view class="fab-bag"></view><view class="fab-h"></view>
+  <view class="badge" wx:if="{{cartCount}}"><text>{{cartCount}}</text></view>
+</view>

@@ -1,0 +1,38 @@
+<view class="page">
+  <view class="banner">
+    <view class="banner-hi"><text>{{greet}}，今天要算点什么？</text></view>
+    <view class="banner-sub"><text>6 个常用工具 · 全部离线可用 · 不收集数据</text></view>
+    <view class="bubble b1"></view>
+    <view class="bubble b2"></view>
+  </view>
+
+  <view class="card grid-card">
+    <view class="grid">
+      <view wx:for="{{tools}}" wx:key="id" class="tool" hover-class="tool-hover" data-id="{{item.id}}" bindtap="onTool">
+        <view class="tool-icon" style="background: linear-gradient(135deg, {{item.c1}}, {{item.c2}});"><text>{{item.ch}}</text></view>
+        <view class="tool-name"><text>{{item.name}}</text></view>
+        <view class="tool-desc"><text>{{item.desc}}</text></view>
+      </view>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{recent.length}}">
+    <view class="card-title"><text>最近使用</text></view>
+    <view class="recent row">
+      <view wx:for="{{recent}}" wx:key="id" class="chip row" hover-class="tool-hover" data-id="{{item.id}}" bindtap="onTool">
+        <view class="chip-dot" style="background: {{item.c2}};"></view>
+        <text>{{item.name}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card tip row" hover-class="tool-hover" bindtap="onFeedback">
+    <view class="tip-icon"><text>新</text></view>
+    <view class="flex1">
+      <view class="tip-t"><text>想要更多工具？</text></view>
+      <view class="muted"><text>告诉我们，下个版本就安排</text></view>
+    </view>
+    <view class="arrow"></view>
+  </view>
+  <view class="foot muted"><text>方寸实验室 · v1.6.2</text></view>
+</view>

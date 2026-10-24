@@ -18,6 +18,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <!-- 搜索小程序：历史、热搜、联想、分类筛选（SearchActivity.kt）。adjustResize：键盘弹起时结果列表跟着缩 -->
+        <activity
+            android:name=".SearchActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
         <!-- configChanges：转屏 / 分屏 / 深色模式不重建 Activity（重建 = 引擎销毁重开，页面栈全丢），
              尺寸变了由 MiniProgramView.onSizeChanged 交给引擎 -->
         <!-- 外部 App / H5 打开小程序：minirender://open?appid=…&path=…&query=…（转给 MainActivity，见 LinkActivity.kt） -->

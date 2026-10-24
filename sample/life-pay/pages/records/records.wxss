@@ -1,0 +1,19 @@
+.sum { background: linear-gradient(160deg, #2fc488, #14a06f); padding: 36rpx 40rpx 40rpx; display: flex; flex-direction: column; }
+.s-l { font-size: 24rpx; color: rgba(255, 255, 255, 0.85); }
+.s-n { margin-top: 8rpx; font-size: 64rpx; font-weight: bold; color: #ffffff; }
+.s-sub { margin-top: 4rpx; font-size: 22rpx; color: rgba(255, 255, 255, 0.85); }
+.filters { white-space: nowrap; background: #ffffff; padding: 20rpx 0 20rpx 24rpx; }
+.f { display: inline-block; height: 56rpx; line-height: 56rpx; padding: 0 26rpx; margin-right: 16rpx; border-radius: 28rpx; background: #f2f4f7; color: #5b626c; font-size: 26rpx; }
+.f.on { background: #e6f7f0; color: #14a06f; font-weight: bold; }
+.g-head { margin: 32rpx 32rpx 0; }
+.g-title { font-size: 28rpx; font-weight: bold; color: #3a4049; }
+.g-card { margin-top: 16rpx; padding: 0 28rpx; }
+.rec { padding: 26rpx 0; border-bottom: 1rpx solid #f0f2f5; }
+.rec:last-child { border-bottom: none; }
+.r-ic { width: 72rpx; height: 72rpx; border-radius: 36rpx; font-size: 30rpx; }
+.r-main { flex: 1; margin-left: 20rpx; display: flex; flex-direction: column; min-width: 0; }
+.r-t { font-size: 28rpx; font-weight: bold; margin-bottom: 4rpx; }
+.r-right { display: flex; flex-direction: column; align-items: flex-end; }
+.r-amt { font-size: 30rpx; font-weight: bold; color: #1e2329; }
+.r-st { margin-top: 4rpx; font-size: 20rpx; color: #14a06f; }
+.r-save { margin-top: 4rpx; font-size: 20rpx; color: #f2603d; }

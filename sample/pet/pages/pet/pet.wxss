@@ -1,0 +1,48 @@
+.switch { display: flex; flex-direction: row; padding: 20rpx 24rpx 0; }
+.sw { display: flex; flex-direction: row; align-items: center; padding: 8rpx 22rpx 8rpx 8rpx; border-radius: 40rpx; background: #ffffff; margin-right: 16rpx; border: 3rpx solid #ffffff; }
+.sw.on { border-color: #ff8a3d; }
+.pet-av.xs { width: 52rpx; height: 52rpx; border-radius: 26rpx; font-size: 24rpx; }
+.sw-n { margin-left: 10rpx; font-size: 26rpx; font-weight: bold; }
+.sw.add { padding-left: 20rpx; }
+.plus { font-size: 32rpx; color: #ff8a3d; }
+.prof { margin: 20rpx 24rpx 0; border-radius: 28rpx; padding: 32rpx; }
+.pet-av.lg { width: 112rpx; height: 112rpx; border-radius: 56rpx; background: rgba(255,255,255,0.3); border: 4rpx solid rgba(255,255,255,0.85); font-size: 48rpx; }
+.pf-m { margin-left: 24rpx; display: flex; flex-direction: column; }
+.pf-n { font-size: 40rpx; font-weight: bold; color: #ffffff; }
+.pf-b { margin-top: 6rpx; font-size: 24rpx; color: rgba(255,255,255,0.9); }
+.pf-grid { display: flex; flex-direction: row; margin-top: 28rpx; background: rgba(255,255,255,0.2); border-radius: 20rpx; padding: 20rpx 0; }
+.pg { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.pg-v { font-size: 28rpx; font-weight: bold; color: #ffffff; }
+.pg-k { margin-top: 4rpx; font-size: 22rpx; color: rgba(255,255,255,0.85); }
+.pf-chip { display: block; margin-top: 20rpx; font-size: 22rpx; color: rgba(255,255,255,0.85); }
+.filters { display: flex; flex-direction: row; }
+.ft { font-size: 22rpx; color: #9a928b; padding: 6rpx 16rpx; border-radius: 20rpx; margin-left: 8rpx; background: #f7f3ef; }
+.ft.on { color: #ffffff; background: #ff8a3d; }
+.tl { margin-top: 24rpx; }
+.tl-i { display: flex; flex-direction: row; }
+.tl-axis { width: 36rpx; display: flex; flex-direction: column; align-items: center; }
+.tl-dot { width: 20rpx; height: 20rpx; border-radius: 10rpx; margin-top: 10rpx; flex-shrink: 0; }
+.tl-line { width: 3rpx; flex: 1; background: #efe7df; margin-top: 6rpx; }
+.tl-dot.st-ok { background: #2fb57a; }
+.tl-dot.st-soon { background: #ffa53d; }
+.tl-dot.st-due { background: #ff5b35; }
+.tl-c { flex: 1; margin-left: 16rpx; padding-bottom: 32rpx; }
+.tl-type { font-size: 20rpx; padding: 2rpx 10rpx; border-radius: 6rpx; margin-right: 12rpx; }
+.t-疫苗 { color: #3b9cf0; background: #eaf4ff; }
+.t-驱虫 { color: #2fb57a; background: #e7f7ef; }
+.t-体检 { color: #8a5cff; background: #f1ebff; }
+.tl-n { font-size: 28rpx; font-weight: bold; color: #2a2522; }
+.tl-st { font-size: 22rpx; font-weight: bold; }
+.tl-st.st-ok { color: #2fb57a; }
+.tl-st.st-soon { color: #ffa53d; }
+.tl-st.st-due { color: #ff5b35; }
+.tl-d { display: block; margin-top: 8rpx; }
+.tl-act { display: flex; flex-direction: row; margin-top: 14rpx; }
+.mini { height: 52rpx; padding: 0 22rpx; border-radius: 26rpx; background: linear-gradient(90deg, #ffb547, #ff7b54); color: #fff; font-size: 22rpx; display: flex; align-items: center; justify-content: center; margin-right: 16rpx; }
+.mini.ghost { background: #f7f3ef; color: #7a7069; }
+.empty { padding: 40rpx 0; text-align: center; }
+.wchart { display: flex; flex-direction: row; align-items: flex-end; height: 240rpx; margin-top: 20rpx; }
+.wc { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
+.wc-v { font-size: 20rpx; color: #9a928b; margin-bottom: 6rpx; }
+.wc-bar { width: 36rpx; border-radius: 18rpx 18rpx 6rpx 6rpx; background: linear-gradient(180deg, #ffb547, #ffe0c2); }
+.wc-m { margin-top: 10rpx; font-size: 22rpx; color: #9a928b; }

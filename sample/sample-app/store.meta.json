@@ -1,0 +1,13 @@
+{
+ "name": "Mini Shop",
+ "description": "综合组件示例：表单、轮播、画布、动画等组件的效果展示",
+ "category": "工具",
+ "tags": [
+  "组件",
+  "示例",
+  "演示",
+  "表单",
+  "动画"
+ ],
+ "developer": "mini-render 示例"
+}

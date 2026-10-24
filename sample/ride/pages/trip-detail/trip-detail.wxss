@@ -1,0 +1,23 @@
+.hero { background: linear-gradient(160deg, #FF9A3C, #FF6A1A); padding: 40rpx 32rpx 100rpx; display: flex; flex-direction: column; align-items: center; }
+.hero-label { color: rgba(255, 255, 255, 0.9); font-size: 28rpx; }
+.hero-price { display: flex; flex-direction: row; align-items: flex-end; margin-top: 8rpx; }
+.hero-num { color: #fff; font-size: 80rpx; font-weight: bold; }
+.hero-unit { color: #fff; font-size: 28rpx; margin: 0 0 16rpx 6rpx; }
+.hero-sub { color: rgba(255, 255, 255, 0.85); font-size: 24rpx; margin-top: 8rpx; }
+.overlap { margin-top: -70rpx; }
+.route-text { font-size: 28rpx; margin-left: 18rpx; }
+.route-line { width: 2rpx; height: 24rpx; background: #e3e5e8; margin: 6rpx 0 6rpx 7rpx; }
+.driver { margin-top: 24rpx; padding-top: 24rpx; border-top: 1rpx solid #f0f1f3; }
+.avatar { width: 80rpx; height: 80rpx; border-radius: 40rpx; background: linear-gradient(135deg, #8EC5FF, #3D7BFF); display: flex; align-items: center; justify-content: center; }
+.avatar-text { color: #fff; font-size: 32rpx; font-weight: bold; }
+.ml { margin-left: 20rpx; }
+.driver-name { font-size: 28rpx; font-weight: bold; display: block; }
+.block { display: block; margin-top: 4rpx; }
+.rate-btn { font-size: 24rpx; color: #FF7A1A; border: 2rpx solid #FF7A1A; border-radius: 28rpx; padding: 8rpx 24rpx; }
+.head { margin-bottom: 12rpx; }
+.title-sm { font-size: 30rpx; font-weight: bold; }
+.fee { font-size: 28rpx; color: #4e5969; padding: 12rpx 0; }
+.total { border-top: 1rpx dashed #e3e5e8; margin-top: 12rpx; padding: 22rpx 0 12rpx; }
+.total-label { font-size: 30rpx; font-weight: bold; }
+.total-num { font-size: 36rpx; font-weight: bold; }
+.ops { display: flex; flex-direction: row; margin: 8rpx 24rpx calc(32rpx + env(safe-area-inset-bottom)); }

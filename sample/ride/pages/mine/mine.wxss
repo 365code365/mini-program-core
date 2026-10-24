@@ -1,0 +1,25 @@
+.header { background: linear-gradient(180deg, #FF8A2A, #FF9F4A); padding: 24rpx 32rpx 120rpx; display: flex; flex-direction: row; align-items: center; }
+.avatar { width: 112rpx; height: 112rpx; border-radius: 56rpx; background: linear-gradient(135deg, #FFE1C2, #FFC08A); border: 4rpx solid rgba(255, 255, 255, 0.7); display: flex; align-items: center; justify-content: center; }
+.avatar-text { color: #C25A10; font-size: 44rpx; font-weight: bold; }
+.info { margin-left: 24rpx; }
+.nick { color: #fff; font-size: 36rpx; font-weight: bold; display: block; }
+.phone { color: rgba(255, 255, 255, 0.9); font-size: 24rpx; }
+.level { color: #8A5A00; background: linear-gradient(90deg, #FFE7A8, #FFD36B); font-size: 20rpx; padding: 2rpx 14rpx; border-radius: 16rpx; margin-left: 14rpx; }
+.arrow-w { color: #fff; font-size: 40rpx; }
+.wallet { display: flex; flex-direction: row; margin: -90rpx 24rpx 24rpx; background: #fff; border-radius: 20rpx; padding: 32rpx 0; box-shadow: 0 6rpx 24rpx rgba(0, 0, 0, 0.06); }
+.w-item { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.w-num { font-size: 36rpx; font-weight: bold; }
+.w-label { font-size: 22rpx; color: #8a9099; margin-top: 6rpx; }
+.vip { background: linear-gradient(120deg, #2E3440, #4A5263); }
+.vip-title { display: block; color: #FFD99A; font-size: 30rpx; font-weight: bold; }
+.vip-sub { display: block; color: rgba(255, 255, 255, 0.7); font-size: 24rpx; margin-top: 8rpx; }
+.vip-bar { height: 10rpx; background: rgba(255, 255, 255, 0.15); border-radius: 5rpx; margin-top: 24rpx; }
+.vip-fill { width: 70%; height: 10rpx; border-radius: 5rpx; background: linear-gradient(90deg, #FFE7A8, #FFB84D); }
+.menu { padding: 8rpx 28rpx; }
+.menu-item { display: flex; flex-direction: row; align-items: center; padding: 26rpx 0; border-bottom: 1rpx solid #f0f1f3; }
+.menu-item:last-child { border-bottom: none; }
+.m-icon { width: 56rpx; height: 56rpx; border-radius: 16rpx; display: flex; align-items: center; justify-content: center; }
+.m-glyph { color: #fff; font-size: 24rpx; font-weight: bold; }
+.m-name { flex: 1; margin-left: 20rpx; font-size: 28rpx; }
+.arrow { color: #c4c7cc; font-size: 36rpx; margin-left: 12rpx; }
+.setting { font-size: 28rpx; }

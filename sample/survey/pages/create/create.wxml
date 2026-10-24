@@ -1,0 +1,57 @@
+<view class="card">
+  <!-- 标签与星号分两个 text 放进 row：display:block 的 text 里再嵌 text，引擎会逐字竖排 -->
+  <view class="row"><text class="label">投票标题</text><text class="req">*</text></view>
+  <input class="title-input" placeholder="例如：周五部门聚餐吃什么？" placeholder-class="ph" value="{{title}}" maxlength="30" bindinput="onTitle" />
+  <view class="row between"><view></view><text class="sub">{{title.length}}/30</text></view>
+  <text class="label desc-l">补充说明</text>
+  <textarea class="desc" placeholder="选填，介绍一下投票背景" placeholder-class="ph" value="{{desc}}" maxlength="100" bindinput="onDesc" />
+</view>
+
+<view class="card">
+  <view class="row between opt-head">
+    <view class="row"><text class="label">投票选项</text><text class="req">*</text></view>
+    <text class="sub">{{options.length}}/8，至少 2 项</text>
+  </view>
+  <view wx:for="{{options}}" wx:key="key" class="opt row">
+    <view class="del {{options.length <= 2 ? 'dis' : ''}}" data-idx="{{index}}" bindtap="onDel"><view class="del-bar"></view></view>
+    <input class="opt-input flex1" placeholder="选项 {{index + 1}}" placeholder-class="ph" value="{{item.text}}" data-idx="{{index}}" bindinput="onOpt" maxlength="20" />
+  </view>
+  <view class="add row {{options.length >= 8 ? 'dis' : ''}}" bindtap="onAdd">
+    <view class="add-ic"><view class="add-h"></view><view class="add-v"></view></view>
+    <text class="add-t">添加选项</text>
+  </view>
+</view>
+
+<view class="card set">
+  <picker mode="date" value="{{deadline}}" start="{{today}}" end="2027-12-31" bindchange="onDate">
+    <view class="set-i row">
+      <text class="flex1 set-k">截止日期</text>
+      <text class="set-v">{{deadline}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <view class="set-i row">
+    <view class="col flex1"><text class="set-k">允许多选</text></view>
+    <switch checked="{{multi}}" color="#6C5CE7" bindchange="onMultiSw" />
+  </view>
+  <view class="set-i row last">
+    <view class="col flex1">
+      <text class="set-k">匿名投票</text>
+      <text class="sub">开启后你看不到每个人选了什么</text>
+    </view>
+    <switch checked="{{anonymous}}" color="#6C5CE7" bindchange="onAnon" />
+  </view>
+</view>
+
+<view class="preview card" wx:if="{{validCount >= 2}}">
+  <text class="sub">预览</text>
+  <text class="p-title">{{title || '未命名投票'}}</text>
+  <view wx:for="{{options}}" wx:key="key" wx:if="{{item.text}}" class="p-opt row">
+    <view class="{{multi ? 'p-check' : 'p-radio'}}"></view><text class="p-t">{{item.text}}</text>
+  </view>
+</view>
+
+<view class="go">
+  <view class="btn-primary {{ready ? '' : 'btn-disabled'}}" bindtap="onPublish">发布投票</view>
+</view>
+<view class="tabbar-space"></view>

@@ -1,0 +1,56 @@
+<view class="tip"><text>已添加 {{list.length}}/5 位就诊人，就诊人信息需与身份证一致</text></view>
+
+<view class="card pt" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onItem">
+  <view class="pt-av" style="background: {{item.gender === '女' ? 'linear-gradient(135deg, #ff9fb5, #f2557a)' : 'linear-gradient(135deg, #5aa2ff, #1f7cf0)'}};"><text>{{item.sx}}</text></view>
+  <view class="pt-main">
+    <view class="row">
+      <text class="pt-name">{{item.name}}</text>
+      <text class="tag">{{item.relation}}</text>
+      <text class="def" wx:if="{{item.isDefault}}">默认</text>
+    </view>
+    <text class="muted">{{item.gender}} · 身份证 {{item.idcard}}</text>
+    <text class="muted">就诊卡 {{item.card}}</text>
+  </view>
+  <view class="chev"></view>
+</view>
+
+<view class="card form">
+  <text class="sec-title">添加就诊人</text>
+  <view class="f-row">
+    <text class="f-k">姓名</text>
+    <input class="f-in" placeholder-style="font-size: 28.1rpx; color: #b8bec8;" placeholder="请输入真实姓名" value="{{form.name}}" data-f="name" bindinput="onField" />
+  </view>
+  <view class="f-row">
+    <text class="f-k">关系</text>
+    <picker class="f-pk" mode="selector" range="{{relations}}" value="{{relIdx}}" bindchange="onRel">
+      <view class="row f-pv"><text class="{{relIdx >= 0 ? '' : 'ph'}}">{{relIdx >= 0 ? relations[relIdx] : '请选择与本人关系'}}</text><view class="chev"></view></view>
+    </picker>
+  </view>
+  <view class="f-row">
+    <text class="f-k">性别</text>
+    <radio-group class="row f-radios" bindchange="onGender">
+      <label class="row f-radio"><radio value="男" checked="{{form.gender === '男'}}" color="#1f7cf0" /><text>男</text></label>
+      <label class="row f-radio"><radio value="女" checked="{{form.gender === '女'}}" color="#1f7cf0" /><text>女</text></label>
+    </radio-group>
+  </view>
+  <view class="f-row">
+    <text class="f-k">出生日期</text>
+    <picker class="f-pk" mode="date" value="{{form.birth}}" start="1930-01-01" end="2024-12-31" bindchange="onBirth">
+      <view class="row f-pv"><text class="{{form.birth ? '' : 'ph'}}">{{form.birth || '请选择出生日期'}}</text><view class="chev"></view></view>
+    </picker>
+  </view>
+  <view class="f-row">
+    <text class="f-k">身份证号</text>
+    <input class="f-in" placeholder-style="font-size: 28.1rpx; color: #b8bec8;" placeholder="18 位身份证号码" maxlength="18" type="idcard" value="{{form.idcard}}" data-f="idcard" bindinput="onField" />
+  </view>
+  <view class="f-row">
+    <text class="f-k">手机号</text>
+    <input class="f-in" placeholder-style="font-size: 28.1rpx; color: #b8bec8;" placeholder="用于接收就诊短信" maxlength="11" type="number" value="{{form.phone}}" data-f="phone" bindinput="onField" />
+  </view>
+  <view class="f-row last">
+    <text class="f-k">设为默认</text>
+    <view class="f-sw"><switch checked="{{form.isDefault}}" color="#1f7cf0" bindchange="onDefault" /></view>
+  </view>
+  <view class="btn-primary save" bindtap="save"><text>保存就诊人</text></view>
+</view>
+<view style="height: 60rpx;"></view>

@@ -1,0 +1,29 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/cart/cart",
+    "pages/orders/orders",
+    "pages/mine/mine",
+    "pages/detail/detail",
+    "pages/confirm/confirm"
+  ],
+  "window": {
+    "navigationBarTitleText": "花语鲜花",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f7f5f6"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#9aa0ab",
+    "selectedColor": "#ef5b7e",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "首页", "iconPath": "images/tab/home.png", "selectedIconPath": "images/tab/home-on.png" },
+      { "pagePath": "pages/cart/cart", "text": "购物车", "iconPath": "images/tab/cart.png", "selectedIconPath": "images/tab/cart-on.png" },
+      { "pagePath": "pages/orders/orders", "text": "订单", "iconPath": "images/tab/doc.png", "selectedIconPath": "images/tab/doc-on.png" },
+      { "pagePath": "pages/mine/mine", "text": "我的", "iconPath": "images/tab/user.png", "selectedIconPath": "images/tab/user-on.png" }
+    ]
+  }
+}

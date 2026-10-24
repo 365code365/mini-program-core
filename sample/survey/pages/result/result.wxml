@@ -1,0 +1,52 @@
+<view class="ok col" wx:if="{{fresh}}">
+  <view class="ok-ic"><view class="ok-tick"></view></view>
+  <text class="ok-t">提交成功，感谢参与</text>
+  <text class="ok-s">你是第 {{totalText}} 位参与者，下面是实时统计</text>
+</view>
+<view class="head" wx:else>
+  <text class="h-title">{{sv.title}}</text>
+  <text class="sub">{{totalText}} 人参与·截止 {{sv.deadline}}</text>
+</view>
+
+<view wx:for="{{stats}}" wx:key="id" class="card">
+  <view class="row q-head">
+    <text class="q-type">{{item.typeText}}</text>
+    <text class="sub">{{item.n}} 人作答</text>
+  </view>
+  <text class="q-title">{{index + 1}}. {{item.title}}</text>
+
+  <view wx:if="{{item.bars}}">
+    <view wx:for="{{item.bars}}" wx:for-item="b" wx:key="t" class="bar-row">
+      <view class="row between bar-label">
+        <view class="row flex1">
+          <text class="b-t {{b.mine ? 'mine' : ''}}">{{b.t}}</text>
+          <text class="mine-tag" wx:if="{{b.mine}}">我的选择</text>
+        </view>
+        <text class="b-p">{{b.pct}}%</text>
+      </view>
+      <view class="b-bg"><view class="b-fg {{b.top ? 'top' : ''}}" style="width: {{b.pct}}%"></view></view>
+    </view>
+  </view>
+
+  <view wx:if="{{item.avg}}" class="rate row">
+    <view class="col rate-l">
+      <view class="row rate-num"><text class="avg">{{item.avg}}</text><text class="avg-u">/ 10</text></view>
+      <text class="sub">平均分</text>
+    </view>
+    <view class="col flex1">
+      <view class="row r-line"><text class="sub r-k">你的打分</text><text class="r-v">{{item.myRate}}</text></view>
+      <view class="row r-line"><text class="sub r-k">高于你的</text><text class="r-v">{{item.above}}%</text></view>
+    </view>
+  </view>
+
+  <view wx:if="{{item.texts}}">
+    <view wx:for="{{item.texts}}" wx:for-item="t" wx:key="*this" class="txt {{t.mine ? 'txt-mine' : ''}}">
+      <text class="txt-t">{{t.mine ? '我：' : ''}}{{t.v}}</text>
+    </view>
+  </view>
+</view>
+
+<view class="actions row">
+  <view class="btn-ghost flex1" bindtap="onHome">返回广场</view>
+  <view class="btn-primary flex1 share" bindtap="onShare">分享给好友</view>
+</view>

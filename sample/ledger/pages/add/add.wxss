@@ -1,0 +1,80 @@
+.page { background: #f5f6f8; }
+.seg {
+  margin: 24rpx 0 0;
+  width: 360rpx;
+  height: 68rpx;
+  border-radius: 34rpx;
+  background: #ebecf0;
+  display: flex;
+  flex-direction: row;
+  padding: 6rpx;
+  box-sizing: border-box;
+}
+.seg-item {
+  flex: 1;
+  height: 56rpx;
+  line-height: 56rpx;
+  text-align: center;
+  border-radius: 28rpx;
+  font-size: 28rpx;
+  color: #5c6066;
+}
+.seg-on { background: #ffffff; color: #f57c34; font-weight: bold; box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06); }
+
+.amount-box {
+  margin: 28rpx 24rpx 0;
+  padding: 0 12rpx;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+.amount-cat { font-size: 30rpx; color: #5c6066; font-weight: bold; }
+.amount { font-size: 72rpx; font-weight: bold; white-space: nowrap; }
+.amount-yen { font-size: 40rpx; margin-right: 6rpx; }
+
+.grid { display: flex; flex-direction: row; flex-wrap: wrap; padding: 24rpx 8rpx 8rpx; }
+.grid-item { width: 20%; display: flex; flex-direction: column; align-items: center; margin-bottom: 20rpx; }
+.big { width: 84rpx; height: 84rpx; border-radius: 42rpx; font-size: 32rpx; }
+.grid-name { font-size: 24rpx; color: #8a8d96; margin-top: 10rpx; }
+.grid-name-on { color: #1f2329; font-weight: bold; }
+
+.form { padding: 0 28rpx; }
+.form-row { height: 96rpx; border-bottom: 1rpx solid #f0f1f4; }
+.last { border-bottom: none; }
+.form-label { width: 96rpx; color: #5c6066; font-size: 28rpx; }
+.form-input { font-size: 28rpx; height: 96rpx; }
+.form-val { font-size: 28rpx; color: #1f2329; }
+.ph { color: #b8bcc4; }
+
+.keypad-space { height: 460rpx; }
+.keypad {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #e8e9ed;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  padding: 8rpx 8rpx calc(8rpx + env(safe-area-inset-bottom));
+}
+.key {
+  width: 25%;
+  height: 104rpx;
+  box-sizing: border-box;
+  border: 6rpx solid #e8e9ed;
+  border-radius: 18rpx;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40rpx;
+  color: #1f2329;
+}
+.key-del, .key-clear, .key-again { font-size: 28rpx; color: #5c6066; background: #f5f6f8; }
+.key-ok { background: linear-gradient(135deg, #ffa94d, #f5733b); color: #ffffff; font-size: 32rpx; font-weight: bold; }
+.key-hover { opacity: 0.6; }
+
+/* 引擎里定宽块的 margin: 0 auto 不居中，外面套一层 flex 居中 */
+.seg-wrap { display: flex; flex-direction: row; justify-content: center; }

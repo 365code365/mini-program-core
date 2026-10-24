@@ -1,0 +1,50 @@
+<view class="head">
+  <text class="h-title">{{m.title}}</text>
+  <text class="sub">{{pick.day}} {{pick.time}} · {{pick.lang}} · {{c.name}}</text>
+</view>
+
+<view class="legend row">
+  <view class="lg row"><view class="seat-i empty"></view><text class="lg-t">可选</text></view>
+  <view class="lg row"><view class="seat-i sold"></view><text class="lg-t">已售</text></view>
+  <view class="lg row"><view class="seat-i sel"></view><text class="lg-t">已选</text></view>
+  <view class="lg row"><view class="seat-i best"></view><text class="lg-t">最佳观影区</text></view>
+</view>
+
+<view class="hall">
+  <view class="screen"><text class="screen-t">{{pick.hall}} 银幕</text></view>
+  <view class="screen-glow"></view>
+  <view class="grid">
+    <view class="seat-row" wx:for="{{rows}}" wx:key="r" wx:for-item="row">
+      <text class="row-no">{{row.r}}</text>
+      <view class="cell" wx:for="{{row.seats}}" wx:key="key" wx:for-item="s">
+        <view wx:if="{{s.state !== 'gap'}}" class="seat {{s.state}} {{s.best && s.state === 'empty' ? 'best' : ''}}" data-r="{{row.r}}" data-c="{{s.c}}" bindtap="onSeat">
+          <text wx:if="{{s.state === 'sel'}}" class="seat-no">{{s.c}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+  <view class="center-line"><text class="center-t">银幕中央</text></view>
+</view>
+
+<view class="tips card">
+  <text class="tips-t">· 一次最多选 4 个座位，座位间请勿留空</text>
+  <text class="tips-t">· 开场前 30 分钟停止售票，开场前 60 分钟可改签</text>
+</view>
+<view class="bottom-space"></view>
+
+<view class="bar">
+  <view wx:if="{{selected.length}}" class="chosen">
+    <view class="chip" wx:for="{{selected}}" wx:key="key" data-r="{{item.r}}" data-c="{{item.c}}" bindtap="onSeat">
+      <text class="chip-t">{{item.r}}排{{item.c}}座</text>
+      <text class="chip-p">¥{{pick.price}}</text>
+      <text class="chip-x">×</text>
+    </view>
+  </view>
+  <view wx:else class="recommend row">
+    <text class="sub">推荐座位</text>
+    <view class="rec-btn" wx:for="{{[1,2,3,4]}}" wx:key="*this" data-n="{{item}}" bindtap="onRecommend">{{item}}人</view>
+  </view>
+  <view class="btn-primary {{selected.length ? '' : 'disabled'}}" bindtap="onConfirm">
+    {{selected.length ? '¥' + total + ' 确认选座' : '请先选座'}}
+  </view>
+</view>

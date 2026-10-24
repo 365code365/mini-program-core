@@ -1,0 +1,28 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/station/station",
+    "pages/scan/scan",
+    "pages/charging/charging",
+    "pages/orders/orders",
+    "pages/wallet/wallet"
+  ],
+  "window": {
+    "navigationBarTitleText": "易充电",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f4f6f5"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#9aa0a6",
+    "selectedColor": "#00B87A",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "找桩", "iconPath": "images/tab-home.png", "selectedIconPath": "images/tab-home-on.png" },
+      { "pagePath": "pages/orders/orders", "text": "订单", "iconPath": "images/tab-orders.png", "selectedIconPath": "images/tab-orders-on.png" },
+      { "pagePath": "pages/wallet/wallet", "text": "钱包", "iconPath": "images/tab-wallet.png", "selectedIconPath": "images/tab-wallet-on.png" }
+    ]
+  }
+}

@@ -1,0 +1,51 @@
+<view class="timer"><text class="timer-t">座位已锁定，请在 <text class="timer-n">{{left}}</text> 内完成支付</text></view>
+
+<view class="card movie">
+  <image class="poster" src="{{m.poster}}" mode="aspectFill"></image>
+  <view class="flex1 info">
+    <text class="title">{{m.title}}</text>
+    <text class="line strong">{{pick.day}} {{pick.time}}-{{pick.end}}</text>
+    <text class="line">{{pick.lang}} · {{pick.hall}}</text>
+    <text class="line">{{c.name}}</text>
+  </view>
+</view>
+
+<view class="card">
+  <text class="block-title">座位（{{pick.seats.length}}张）</text>
+  <view class="seats">
+    <view class="seat-chip" wx:for="{{pick.seats}}" wx:key="*this">{{item}}</view>
+  </view>
+  <view class="row note"><view class="dot-g"></view><text class="sub">支持开场前 60 分钟退改签</text></view>
+</view>
+
+<view class="card form">
+  <view class="f-row">
+    <text class="f-label">手机号</text>
+    <input class="f-input" type="number" maxlength="11" value="{{phone}}" placeholder="接收取票短信" bindinput="onPhone" />
+  </view>
+  <picker mode="selector" range="{{couponNames}}" value="{{coupon}}" bindchange="onCoupon">
+    <view class="f-row">
+      <text class="f-label">优惠券</text>
+      <text class="flex1 f-val {{coupon > 0 ? 'red' : ''}}">{{couponNames[coupon]}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <view class="f-row no-border">
+    <text class="f-label">卖品</text>
+    <text class="flex1 f-val">爆米花可乐套餐 ¥39</text>
+    <switch checked="{{snack}}" color="#F0384D" bindchange="onSnack" />
+  </view>
+</view>
+
+<view class="card">
+  <view class="fee row between"><text>票价（¥{{pick.price}} × {{pick.seats.length}}）</text><text>¥{{ticketFee}}</text></view>
+  <view class="fee row between"><text>服务费</text><text>¥{{service}}</text></view>
+  <view class="fee row between" wx:if="{{snack}}"><text>卖品</text><text>¥39</text></view>
+  <view class="fee row between" wx:if="{{discount > 0}}"><text>优惠</text><text class="red">-¥{{discount}}</text></view>
+</view>
+<view class="bottom-space"></view>
+
+<view class="bar">
+  <view class="flex1 row total-row"><text class="sub">实付</text><text class="red yen">¥</text><text class="red total">{{total}}</text></view>
+  <view class="pay" bindtap="onPay">立即支付</view>
+</view>

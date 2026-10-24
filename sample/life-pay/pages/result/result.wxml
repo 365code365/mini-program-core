@@ -1,0 +1,19 @@
+<view class="top">
+  <view class="ok"><view class="tick"></view></view>
+  <text class="t">缴费成功</text>
+  <view class="row amt-row"><text class="y">¥</text><text class="amt">{{r.paidTx}}</text></view>
+  <text class="sub">{{r.type === 'phone' ? '话费预计 10 分钟内到账' : '费用将在 1~3 分钟内到账，请留意短信通知'}}</text>
+</view>
+<view class="card">
+  <view class="kv row between"><text class="k">缴费项目</text><text class="v">{{r.tname}}</text></view>
+  <view class="kv row between"><text class="k">{{r.type === 'phone' ? '充值号码' : '户号'}}</text><text class="v">{{r.targetTx}}</text></view>
+  <view wx:if="{{r.unit}}" class="kv row between"><text class="k">缴费单位</text><text class="v">{{r.unit}}</text></view>
+  <view class="kv row between"><text class="k">{{r.type === 'phone' ? '充值面额' : '缴费金额'}}</text><text class="v">¥{{r.amountTx}}</text></view>
+  <view class="kv row between"><text class="k">支付时间</text><text class="v">{{r.time}}</text></view>
+  <view class="kv row between"><text class="k">交易单号</text><text class="v">{{r.orderNo}}</text></view>
+</view>
+<view class="card inv row between" bindtap="invoice"><text>申请电子发票</text><view class="chev"></view></view>
+<view class="btns row">
+  <view class="ghost" bindtap="records"><text>查看记录</text></view>
+  <view class="btn-primary home" bindtap="home"><text>返回首页</text></view>
+</view>

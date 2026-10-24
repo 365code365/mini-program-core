@@ -1,0 +1,52 @@
+<view class="hero">
+  <view class="row between">
+    <view>
+      <text class="hero-date">{{dateText}}</text>
+      <text class="hero-title">今天还有 {{leftToday}} 件事</text>
+    </view>
+    <view class="hero-ring">
+      <text class="hero-pct">{{pct}}%</text>
+      <text class="hero-pct-sub">完成</text>
+    </view>
+  </view>
+  <view class="hero-bar"><view class="hero-fill" style="width: {{pct}}%"></view></view>
+</view>
+
+<view class="tabs">
+  <view class="tab {{tab === index ? 'on' : ''}}" wx:for="{{tabs}}" wx:key="key" bindtap="onTab" data-i="{{index}}">
+    <text class="tab-text">{{item.text}}</text>
+    <text class="tab-count">{{item.count}}</text>
+  </view>
+</view>
+
+<view class="add card" wx:if="{{tab !== 2}}">
+  <view class="prio-dot" style="background: {{prioColor}}" bindtap="onCyclePrio"></view>
+  <input class="add-input" placeholder="添加待办，回车保存" value="{{newTitle}}" bindinput="onNewInput" bindconfirm="onAdd" confirm-type="done" />
+  <view class="add-btn {{newTitle ? 'on' : ''}}" bindtap="onAdd">添加</view>
+</view>
+
+<block wx:for="{{groups}}" wx:key="key" wx:for-item="g">
+  <text class="group-title" wx:if="{{g.title}}">{{g.title}}</text>
+  <view class="card list">
+    <view class="item {{item.done ? 'done' : ''}}" wx:for="{{g.items}}" wx:key="id" bindtap="onOpen" data-id="{{item.id}}">
+      <view class="check" style="border-color: {{item.color}}; background: {{item.done ? item.color : '#ffffff'}}" catchtap="onToggle" data-id="{{item.id}}">
+        <view class="tick" wx:if="{{item.done}}"></view>
+      </view>
+      <view class="flex1 item-main">
+        <view class="title-wrap"><text class="item-title">{{item.title}}</text><view class="strike" wx:if="{{item.done}}"></view></view>
+        <view class="row meta" wx:if="{{item.time || item.note || item.pomos}}">
+          <text class="meta-time {{item.remind ? 'remind' : ''}}" wx:if="{{item.time}}">{{item.remind ? '⏰ ' : ''}}{{item.time}}</text>
+          <text class="meta-pomo" wx:if="{{item.pomos}}">🍅 ×{{item.pomos}}</text>
+          <text class="meta-note" wx:if="{{item.note}}">{{item.note}}</text>
+        </view>
+      </view>
+      <view class="play" wx:if="{{!item.done}}" catchtap="onFocus" data-id="{{item.id}}"><image class="play-icon" src="/images/play.png"></image></view>
+    </view>
+  </view>
+</block>
+
+<view class="empty" wx:if="{{!groups.length}}">
+  <view class="empty-icon"><view class="tick big"></view></view>
+  <text class="empty-text">{{tab === 2 ? '还没有完成的事项' : '全部搞定，去喝杯咖啡吧'}}</text>
+</view>
+<view class="tab-safe"></view>

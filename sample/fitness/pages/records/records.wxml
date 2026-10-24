@@ -1,0 +1,40 @@
+<view class="sum">
+  <view class="s-item"><text class="s-v">{{days}}</text><text class="s-k">本周训练(天)</text></view>
+  <view class="s-item"><text class="s-v">{{totalMin}}</text><text class="s-k">总时长(分钟)</text></view>
+  <view class="s-item"><text class="s-v">{{totalKcal}}</text><text class="s-k">总消耗(千卡)</text></view>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="sec-title">本周趋势</text>
+    <view class="seg">
+      <view class="seg-i {{mode === 'min' ? 'on' : ''}}" data-m="min" bindtap="setMode"><text>时长</text></view>
+      <view class="seg-i {{mode === 'kcal' ? 'on' : ''}}" data-m="kcal" bindtap="setMode"><text>消耗</text></view>
+    </view>
+  </view>
+  <view class="chart">
+    <view class="avg" style="bottom: {{avgPos}}rpx;"><text class="avg-t">日均 {{avg}}</text></view>
+    <view class="col" wx:for="{{bars}}" wx:key="d" data-index="{{index}}" bindtap="pickBar">
+      <text class="col-v {{sel === index ? 'show' : ''}}">{{item.v}}</text>
+      <view class="col-bar {{sel === index ? 'sel' : ''}} {{item.v ? '' : 'zero'}}" style="height: {{item.h}}rpx;"></view>
+      <text class="col-d {{sel === index ? 'sel' : ''}}">{{item.d}}</text>
+    </view>
+  </view>
+  <view class="tip"><text class="muted">{{tip}}</text></view>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="sec-title">最近训练</text>
+    <text class="muted">共 {{history.length}} 条</text>
+  </view>
+  <view class="h" wx:for="{{history}}" wx:key="id">
+    <view class="h-ic {{item.type === '团课' ? 'g' : 's'}}"><text>{{item.type === '团课' ? '课' : '练'}}</text></view>
+    <view class="h-main">
+      <text class="h-name">{{item.name}}</text>
+      <text class="muted">{{item.date}} · {{item.min}} 分钟 · 平均心率 {{item.hr}}</text>
+    </view>
+    <view class="h-k"><text class="h-kv">{{item.kcal}}</text><text class="muted">千卡</text></view>
+  </view>
+</view>
+<view style="height: 40rpx;"></view>

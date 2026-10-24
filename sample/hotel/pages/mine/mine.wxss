@@ -1,0 +1,30 @@
+.header { background: linear-gradient(180deg, #2F6BFF, #4F8CFF); padding: 24rpx 32rpx 100rpx; }
+.avatar { width: 108rpx; height: 108rpx; border-radius: 54rpx; background: linear-gradient(135deg, #DDE9FF, #A9C8FF); border: 4rpx solid rgba(255, 255, 255, 0.7); display: flex; align-items: center; justify-content: center; }
+.avatar-t { color: #1E5BFF; font-size: 42rpx; font-weight: bold; }
+.info { margin-left: 22rpx; display: flex; flex-direction: column; }
+.nick { color: #fff; font-size: 36rpx; font-weight: bold; }
+.phone { color: rgba(255, 255, 255, 0.85); font-size: 24rpx; margin-top: 6rpx; }
+/* 粗体且含数字/西文的文字，引擎按收缩宽度排版时量得偏窄会折行，这里给定宽 */
+.sign { width: 150rpx; text-align: center; flex-shrink: 0; color: #1E5BFF; background: #fff; font-size: 24rpx; font-weight: bold; padding: 10rpx 0; border-radius: 30rpx; }
+.member { margin-top: 32rpx; background: linear-gradient(120deg, #3A3226, #6B5A3E); border-radius: 20rpx; padding: 26rpx; }
+.m-level { color: #F6D9A4; font-size: 30rpx; font-weight: bold; }
+.m-right { color: rgba(246, 217, 164, 0.8); font-size: 22rpx; }
+.m-sub { display: block; color: rgba(255, 255, 255, 0.7); font-size: 22rpx; margin-top: 10rpx; }
+.m-bar { height: 8rpx; border-radius: 4rpx; background: rgba(255, 255, 255, 0.15); margin-top: 18rpx; }
+.m-fill { width: 62%; height: 8rpx; border-radius: 4rpx; background: linear-gradient(90deg, #F6D9A4, #E0A95A); }
+.stats { display: flex; flex-direction: row; margin-top: -70rpx; padding: 30rpx 0; }
+.stat { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.stat-n { font-size: 36rpx; font-weight: bold; }
+.stat-l { font-size: 22rpx; color: #8a9099; margin-top: 4rpx; }
+.block-title { font-size: 30rpx; font-weight: bold; }
+.fav-empty { padding: 30rpx 0 10rpx; text-align: center; }
+.fav { margin-top: 22rpx; }
+.fav-img { width: 110rpx; height: 110rpx; border-radius: 12rpx; }
+.fav-info { margin-left: 18rpx; display: flex; flex-direction: column; }
+.fav-name { font-size: 28rpx; font-weight: bold; margin-bottom: 10rpx; }
+.fav-area { margin-left: 10rpx; }
+.fav-price { font-size: 30rpx; font-weight: bold; }
+.menu { padding: 0 28rpx; }
+.menu-item { display: flex; flex-direction: row; align-items: center; height: 100rpx; border-bottom: 1rpx solid #f0f1f3; font-size: 28rpx; }
+.menu-item:last-child { border-bottom: none; }
+.gap { height: 24rpx; }

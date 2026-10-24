@@ -1,0 +1,54 @@
+<view class="top">
+  <view class="search row" bindtap="onSearch">
+    <view class="s-icon"></view>
+    <text class="s-ph">搜索商品名称</text>
+  </view>
+</view>
+
+<view class="body row" style="height: {{bodyHeight}}px;">
+  <scroll-view class="side" scroll-y="{{true}}" style="height: {{bodyHeight}}px;">
+    <view wx:for="{{categories}}" wx:key="id" class="side-item {{cate === item.id ? 'side-on' : ''}}" data-id="{{item.id}}" bindtap="onCate">
+      <view wx:if="{{cate === item.id}}" class="side-bar"></view>
+      <text>{{item.name}}</text>
+    </view>
+  </scroll-view>
+
+  <scroll-view class="main" scroll-y="{{true}}" style="height: {{bodyHeight}}px;" scroll-top="{{mainTop}}">
+    <view class="banner row" style="background: linear-gradient(120deg, {{cur.color}}, {{cur.color}}99);">
+      <view class="banner-text">
+        <text class="banner-title">{{cur.name}}</text>
+        <text class="banner-sub">每日凌晨到货 · 坏单 1 小时极速退款</text>
+      </view>
+      <view class="banner-glyph glyph">{{cur.glyph}}</view>
+    </view>
+
+    <scroll-view class="chips" scroll-x="{{true}}">
+      <view class="row chips-inner">
+        <view wx:for="{{sorts}}" wx:key="*this" class="chip {{sortIdx === index ? 'chip-on' : ''}}" data-idx="{{index}}" bindtap="onSort">{{item}}</view>
+      </view>
+    </scroll-view>
+
+    <view class="item row" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onDetail">
+      <image class="item-img" src="{{item.img}}" mode="aspectFill"></image>
+      <view class="flex1 item-info">
+        <text class="item-name ellipsis2">{{item.name}}</text>
+        <text class="item-spec">{{item.spec}} · {{item.place}}</text>
+        <view class="row item-tags">
+          <text class="tag" wx:for="{{item.tags}}" wx:for-item="t" wx:key="*this">{{t}}</text>
+        </view>
+        <view class="row between item-foot">
+          <view class="price-row"><text class="p-sym">¥</text><text class="p-num">{{item.price}}</text><text class="p-origin">¥{{item.origin}}</text></view>
+          <view class="row">
+            <view wx:if="{{counts[item.id]}}" class="mini-num">{{counts[item.id]}}</view>
+            <view class="add-btn" data-id="{{item.id}}" catchtap="onAdd">+</view>
+          </view>
+        </view>
+      </view>
+    </view>
+    <view wx:if="{{!list.length}}" class="empty">
+      <view class="empty-box glyph">{{cur.glyph}}</view>
+      <text class="sub">该分类商品正在补货中，敬请期待</text>
+    </view>
+    <view class="main-end"></view>
+  </scroll-view>
+</view>

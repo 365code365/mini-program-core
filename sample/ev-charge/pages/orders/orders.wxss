@@ -1,0 +1,24 @@
+.summary { background: linear-gradient(120deg, #22D193, #00A36C); padding: 36rpx 0 40rpx; }
+.sum { flex: 1; align-items: center; }
+.sum-n { color: #fff; font-size: 44rpx; font-weight: bold; white-space: nowrap; }
+.sum-l { color: rgba(255, 255, 255, 0.85); font-size: 22rpx; margin-top: 6rpx; }
+.tabs { background: #fff; padding: 20rpx 32rpx 0; margin-bottom: 20rpx; }
+.tab { margin-right: 56rpx; display: flex; flex-direction: column; align-items: center; padding-bottom: 14rpx; }
+.tab-t { font-size: 28rpx; color: #6b717a; }
+.tab.on .tab-t { color: #1f2329; font-weight: bold; }
+.tab-line { width: 40rpx; height: 6rpx; border-radius: 3rpx; background: #00B87A; margin-top: 10rpx; }
+.going { background: #f1fbf7; border: 2rpx solid #a9e8cf; }
+.g-ic { width: 72rpx; height: 72rpx; border-radius: 36rpx; background: #00B87A; display: flex; flex-direction: row; align-items: center; justify-content: center; margin-right: 20rpx; }
+.g-ic-t { color: #fff; font-size: 30rpx; font-weight: bold; }
+.g-tag { font-size: 24rpx; color: #fff; background: #00B87A; border-radius: 24rpx; padding: 8rpx 20rpx; }
+.o-head { margin-bottom: 20rpx; }
+.o-name { font-size: 30rpx; font-weight: bold; margin-right: 16rpx; }
+.o-st { font-size: 24rpx; color: #00A36C; }
+.o-body { background: #f7f8fa; border-radius: 14rpx; padding: 20rpx 24rpx; }
+.o-kv { flex: 1; }
+.o-kv.right { align-items: flex-end; }
+.o-v { font-size: 34rpx; font-weight: bold; margin-bottom: 4rpx; }
+.fee { color: #FF7A1A; }
+.o-foot { margin-top: 18rpx; }
+.empty { align-items: center; padding: 100rpx 0; }
+.empty-ic { width: 120rpx; height: 120rpx; border-radius: 60rpx; background: #e1f5ec; margin-bottom: 20rpx; }

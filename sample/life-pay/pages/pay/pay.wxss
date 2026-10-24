@@ -1,0 +1,31 @@
+.acc { margin: 24rpx 24rpx 0; border-radius: 24rpx; padding: 32rpx; color: #ffffff; }
+.a-ic { width: 56rpx; height: 56rpx; border-radius: 16rpx; background: rgba(255, 255, 255, 0.25); display: flex; flex-direction: row; align-items: center; justify-content: center; font-size: 28rpx; font-weight: bold; margin-right: 14rpx; }
+.a-type { font-size: 32rpx; font-weight: bold; }
+.switch { height: 48rpx; padding: 0 18rpx; border-radius: 24rpx; background: rgba(255, 255, 255, 0.22); font-size: 22rpx; }
+.down { width: 0; height: 0; border-left: 8rpx solid transparent; border-right: 8rpx solid transparent; border-top: 10rpx solid #ffffff; margin-left: 8rpx; }
+.a-unit { display: block; margin-top: 14rpx; font-size: 24rpx; color: rgba(255, 255, 255, 0.9); }
+.a-rows { margin-top: 20rpx; background: rgba(255, 255, 255, 0.16); border-radius: 16rpx; padding: 8rpx 22rpx; }
+.a-row { padding: 10rpx 0; align-items: flex-start; }
+.a-l { width: 80rpx; font-size: 24rpx; color: rgba(255, 255, 255, 0.8); flex-shrink: 0; }
+.a-v { flex: 1; font-size: 26rpx; color: #ffffff; }
+.owe-row { align-items: baseline; margin-top: 10rpx; }
+.owe-y { font-size: 36rpx; font-weight: bold; color: #1e2329; }
+.owe-n { font-size: 72rpx; font-weight: bold; color: #1e2329; margin-left: 6rpx; }
+.red { color: #f2603d; }
+.owe-p { display: block; margin-top: 6rpx; font-size: 24rpx; color: #f2603d; }
+.owe-p.ok { color: #14a06f; }
+.quick { display: flex; flex-direction: row; flex-wrap: wrap; margin: 12rpx -20rpx 0 0; }
+.q { width: 202rpx; height: 112rpx; margin: 18rpx 20rpx 0 0; border-radius: 16rpx; border: 2rpx solid #e6e9ee; background: #f8f9fb; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; }
+.q.on { border-color: #14a06f; background: #e9f8f1; }
+.q-v { font-size: 30rpx; font-weight: bold; color: #1e2329; }
+.q.on .q-v { color: #14a06f; }
+.q-l { margin-top: 2rpx; font-size: 20rpx; color: #f2603d; }
+.custom { margin-top: 24rpx; border-bottom: 2rpx solid #14a06f; padding-bottom: 12rpx; }
+.c-y { font-size: 44rpx; font-weight: bold; margin-right: 12rpx; }
+.c-in { flex: 1; height: 72rpx; font-size: 40rpx; font-weight: bold; }
+.way { margin-top: 28rpx; padding-top: 24rpx; border-top: 1rpx solid #eef0f3; }
+.way-l { font-size: 28rpx; color: #5b626c; }
+.way-v { font-size: 28rpx; }
+.agree { display: block; text-align: center; margin-top: 28rpx; font-size: 22rpx; color: #a0a7b1; }
+.foot-gap { height: calc(150rpx + env(safe-area-inset-bottom)); }
+.foot { position: fixed; left: 0; right: 0; bottom: 0; background: #ffffff; padding: 20rpx 32rpx calc(20rpx + env(safe-area-inset-bottom)); box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.05); }

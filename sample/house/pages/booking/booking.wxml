@@ -1,0 +1,66 @@
+<view class="card house row">
+  <image class="h-img small" src="{{h.cover}}" mode="aspectFill"></image>
+  <view class="flex1 h-main">
+    <text class="one">{{h.title}}</text>
+    <text class="h-brief">{{h.brief}}</text>
+    <view class="h-price">
+      <text class="h-price-main">{{h.priceMain}}</text>
+      <text class="h-price-unit">{{h.priceUnit}}</text>
+    </view>
+  </view>
+</view>
+
+<view class="card form">
+  <text class="title">选择看房时间</text>
+  <scroll-view class="days" scroll-x="true">
+    <view class="day {{dayIndex === index ? 'on' : ''}}" wx:for="{{days}}" wx:key="date" bindtap="onDay" data-i="{{index}}">
+      <text class="day-w">{{item.week}}</text>
+      <text class="day-d">{{item.md}}</text>
+    </view>
+  </scroll-view>
+  <view class="slots">
+    <view class="slot {{slot === index ? 'on' : ''}} {{item.full ? 'full' : ''}}" wx:for="{{slots}}" wx:key="text" bindtap="onSlot" data-i="{{index}}">
+      <text>{{item.text}}</text>
+      <text class="slot-sub">{{item.full ? '已约满' : '可预约'}}</text>
+    </view>
+  </view>
+</view>
+
+<view class="card cells">
+  <view class="cell row">
+    <text class="label">联系人</text>
+    <input class="flex1 field" placeholder="怎么称呼您" value="{{name}}" bindinput="onName" />
+    <view class="gender row">
+      <view class="g {{gender === 0 ? 'on' : ''}}" bindtap="onGender" data-g="0">先生</view>
+      <view class="g {{gender === 1 ? 'on' : ''}}" bindtap="onGender" data-g="1">女士</view>
+    </view>
+  </view>
+  <view class="cell row">
+    <text class="label">手机号</text>
+    <input class="flex1 field" type="number" maxlength="11" placeholder="经纪人会提前联系您" value="{{phone}}" bindinput="onPhone" />
+  </view>
+  <picker mode="selector" range="{{people}}" value="{{peopleIndex}}" bindchange="onPeople">
+    <view class="cell row">
+      <text class="label">看房人数</text>
+      <text class="flex1 field">{{people[peopleIndex]}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <view class="cell row">
+    <text class="label">需要接送</text>
+    <view class="flex1"></view>
+    <switch checked="{{pickup}}" color="#ff6a1f" bindchange="onPickup" />
+  </view>
+  <view class="cell col last">
+    <text class="label">其他需求</text>
+    <textarea class="note" placeholder="如：想同时看看同小区其他户型、关心学区…" value="{{note}}" maxlength="120" bindinput="onNote" />
+  </view>
+</view>
+
+<view class="agree row" bindtap="onAgree">
+  <view class="box {{agree ? 'on' : ''}}"><view class="tick" wx:if="{{agree}}"></view></view>
+  <text class="sub">我已阅读并同意《看房服务协议》，号码仅用于本次带看</text>
+</view>
+
+<view class="submit btn-primary {{canSubmit ? '' : 'disabled'}}" bindtap="onSubmit">提交预约</view>
+<view class="safe"></view>

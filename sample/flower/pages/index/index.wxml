@@ -1,0 +1,65 @@
+<view class="top row">
+  <view class="loc row"><view class="pin"></view><text class="loc-tx">上海 · 徐汇区</text></view>
+  <view class="promise row"><text class="pm">3 小时送达</text><text class="pm">不满意包退</text></view>
+</view>
+<view class="banner-wrap">
+  <swiper class="banner" autoplay="{{true}}" interval="4000" circular="{{true}}" indicator-dots="{{true}}" indicator-color="rgba(255,255,255,0.45)" indicator-active-color="#ffffff">
+    <swiper-item wx:for="{{banners}}" wx:key="title">
+      <view class="b-item" style="background: {{item.bg}};" data-id="{{item.id}}" bindtap="goDetail">
+        <view class="b-text">
+          <text class="b-title">{{item.title}}</text>
+          <text class="b-sub">{{item.sub}}</text>
+          <view class="b-btn"><text>{{item.btn}}</text></view>
+        </view>
+        <image class="b-img" src="{{item.img}}" mode="aspectFill"></image>
+      </view>
+    </swiper-item>
+  </swiper>
+</view>
+
+<view class="uses">
+  <view class="use {{use === item.key ? 'on' : ''}}" wx:for="{{uses}}" wx:key="key" data-k="{{item.key}}" bindtap="onUse">
+    <view class="use-ic" style="background: {{item.bg}};"><text>{{item.name}}</text></view>
+    <text class="use-name">{{item.name}}鲜花</text>
+    <text class="use-sub">{{item.sub}}</text>
+  </view>
+</view>
+
+<view class="sec row between">
+  <view class="row"><view class="sec-bar"></view><text class="sec-title">{{use ? '为你筛选' : '热销花束'}}</text></view>
+  <text class="muted" wx:if="{{use}}" bindtap="onUse" data-k="{{use}}">清除筛选 · {{count}} 款</text>
+  <text class="muted" wx:else>今日已售 2,836 束</text>
+</view>
+<view class="cols">
+  <view class="col">
+    <view class="goods" wx:for="{{left}}" wx:key="id" data-id="{{item.id}}" bindtap="goDetail">
+      <image class="g-img" src="{{item.img}}" mode="aspectFill"></image>
+      <view class="g-body">
+        <text class="g-name">{{item.name}}</text>
+        <view class="row g-tags"><text wx:if="{{item.tag}}" class="g-tag">{{item.tag}}</text><text class="g-sold">已售 {{item.soldTx}}</text></view>
+        <view class="row between g-foot">
+          <view class="row g-price"><text class="price yen">¥</text><text class="price g-p">{{item.price}}</text><text class="g-o">¥{{item.origin}}</text></view>
+          <view class="add" data-id="{{item.id}}" catchtap="quickAdd"><text>+</text></view>
+        </view>
+      </view>
+    </view>
+  </view>
+  <view class="col">
+    <view class="goods" wx:for="{{right}}" wx:key="id" data-id="{{item.id}}" bindtap="goDetail">
+      <image class="g-img" src="{{item.img}}" mode="aspectFill"></image>
+      <view class="g-body">
+        <text class="g-name">{{item.name}}</text>
+        <view class="row g-tags"><text wx:if="{{item.tag}}" class="g-tag">{{item.tag}}</text><text class="g-sold">已售 {{item.soldTx}}</text></view>
+        <view class="row between g-foot">
+          <view class="row g-price"><text class="price yen">¥</text><text class="price g-p">{{item.price}}</text><text class="g-o">¥{{item.origin}}</text></view>
+          <view class="add" data-id="{{item.id}}" catchtap="quickAdd"><text>+</text></view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>
+<view class="tab-gap"></view>
+<view class="float-cart" bindtap="goCart">
+  <image class="fc-ic" src="/images/tab/cart.png"></image>
+  <view wx:if="{{cartCount > 0}}" class="badge"><text>{{cartCount}}</text></view>
+</view>

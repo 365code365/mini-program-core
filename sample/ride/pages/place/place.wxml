@@ -1,0 +1,59 @@
+<view class="search-bar">
+  <view class="city">北京<view class="caret"></view></view>
+  <view class="search">
+    <view class="dot {{type === 'from' ? 'dot-green' : 'dot-orange'}}"></view>
+    <input class="search-input" placeholder="{{type === 'from' ? '从哪儿上车' : '你要去哪儿'}}" value="{{keyword}}" bindinput="onInput" focus="{{false}}" />
+    <text wx:if="{{keyword}}" class="clear" bindtap="onClear">×</text>
+  </view>
+</view>
+
+<view wx:if="{{!keyword}}">
+  <view class="common">
+    <view class="common-item" wx:for="{{common}}" wx:key="tag" data-idx="{{index}}" bindtap="onCommon">
+      <view class="common-icon" style="background:{{item.bg}}"><text class="common-glyph">{{item.glyph}}</text></view>
+      <view class="common-body">
+        <text class="common-tag">{{item.tag}}</text>
+        <text class="common-name">{{item.name}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="list-head row between">
+    <text class="list-title">历史记录</text>
+    <text wx:if="{{history.length}}" class="sub" bindtap="onClearHistory">清空</text>
+  </view>
+  <view class="list">
+    <view wx:if="{{!history.length}}" class="empty">暂无历史记录</view>
+    <view class="poi" wx:for="{{history}}" wx:key="name" data-src="history" data-idx="{{index}}" bindtap="onChoose">
+      <view class="poi-icon clock"><view class="clock-hand"></view></view>
+      <view class="poi-body">
+        <text class="poi-name">{{item.name}}</text>
+        <text class="poi-addr">{{item.addr}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="list-head"><text class="list-title">附近推荐</text></view>
+  <view class="list">
+    <view class="poi" wx:for="{{nearby}}" wx:key="name" data-src="nearby" data-idx="{{index}}" bindtap="onChoose">
+      <view class="poi-icon"><view class="poi-pin"></view></view>
+      <view class="poi-body">
+        <text class="poi-name">{{item.name}}</text>
+        <text class="poi-addr">{{item.addr}}</text>
+      </view>
+      <text class="poi-dist">{{item.km}}km</text>
+    </view>
+  </view>
+</view>
+
+<view wx:else class="list result">
+  <view wx:if="{{!results.length}}" class="empty">没有找到「{{keyword}}」相关地点</view>
+  <view class="poi" wx:for="{{results}}" wx:key="name" data-src="results" data-idx="{{index}}" bindtap="onChoose">
+    <view class="poi-icon"><view class="poi-pin"></view></view>
+    <view class="poi-body">
+      <text class="poi-name">{{item.name}}</text>
+      <text class="poi-addr">{{item.addr}}</text>
+    </view>
+    <text class="poi-dist">{{item.km}}km</text>
+  </view>
+</view>

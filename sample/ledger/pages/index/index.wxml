@@ -1,0 +1,65 @@
+<view class="page">
+  <view class="hero">
+    <view class="row between">
+      <text class="hero-month">{{monthText}} · 支出</text>
+      <view class="hero-chip" bindtap="onBudget"><text>预算 ¥{{budgetText}}</text></view>
+    </view>
+    <view class="hero-amount"><text><text class="hero-yen">¥</text>{{outText}}</text></view>
+    <view class="row hero-sub">
+      <view class="flex1">
+        <view class="hero-label"><text>本月收入</text></view>
+        <view class="hero-val"><text><text>¥</text>{{inText}}</text></view>
+      </view>
+      <view class="hero-split"></view>
+      <view class="flex1 hero-right">
+        <view class="hero-label"><text>本月结余</text></view>
+        <view class="hero-val"><text><text>¥</text>{{leftText}}</text></view>
+      </view>
+    </view>
+    <view class="add-btn" hover-class="add-btn-hover" bindtap="onAdd">
+      <text class="add-plus">+</text><text class="add-text">记一笔</text>
+    </view>
+  </view>
+
+  <view class="card budget" bindtap="onBudget">
+    <view class="row between">
+      <text class="card-title">月度预算</text>
+      <view class="row"><text class="muted">设置</text><view class="arrow"></view></view>
+    </view>
+    <view class="bar-track budget-track">
+      <view class="bar-fill" style="width: {{budgetPct}}%; background: {{budgetWarn ? 'linear-gradient(90deg,#ff8a8a,#f04848)' : 'linear-gradient(90deg,#ffc06b,#f5733b)'}};"></view>
+    </view>
+    <view class="row between budget-foot">
+      <text class="muted {{budgetWarn ? 'warn' : ''}}">已用 {{budgetPct}}%</text>
+      <text wx:if="{{!budgetOver}}" class="muted">剩余 <text class="strong">¥{{budgetLeftText}}</text> · 日均可用 ¥{{perDayText}}</text>
+      <text wx:else class="over">已超支 ¥{{budgetLeftText}}</text>
+    </view>
+  </view>
+
+  <view class="list-head row between">
+    <text class="card-title">本月流水</text>
+    <text class="muted">共 {{groups.length}} 天有记录</text>
+  </view>
+
+  <view wx:if="{{empty}}" class="card empty">
+    <view class="empty-icon"><text>账</text></view>
+    <view class="muted"><text>这个月还没有记账，点右下角记一笔吧</text></view>
+  </view>
+
+  <view wx:for="{{groups}}" wx:key="date" class="card group">
+    <view class="row between group-head">
+      <text class="group-date">{{item.label}}</text>
+      <text class="muted"><text wx:if="{{item.hasOut}}">支 {{item.outText}}</text><text wx:if="{{item.hasIn}}">  收 {{item.inText}}</text></text>
+    </view>
+    <view wx:for="{{item.items}}" wx:for-item="r" wx:key="id" class="row rec" hover-class="rec-hover" data-id="{{r.id}}" bindtap="onItem">
+      <view class="cat-icon" style="background: {{r.color}};"><text>{{r.ch}}</text></view>
+      <view class="flex1 rec-mid">
+        <view class="rec-cat"><text>{{r.cat}}</text></view>
+        <view class="muted rec-note"><text>{{r.note || '无备注'}}</text></view>
+      </view>
+      <text class="rec-amt {{r.type}}">{{r.amountText}}</text>
+    </view>
+  </view>
+  <view class="bottom-space"></view>
+
+</view>

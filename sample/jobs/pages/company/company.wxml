@@ -1,0 +1,45 @@
+<view class="banner" style="background: {{co.color}}">
+  <view class="deco d1"></view><view class="deco d2"></view>
+  <view class="row b-row">
+    <view class="b-logo"><text class="b-logo-t">{{co.short}}</text></view>
+    <view class="col flex1">
+      <text class="b-name">{{co.name}}</text>
+      <text class="b-sub">{{co.industry}}</text>
+    </view>
+    <view class="follow {{followed ? 'on' : ''}}" bindtap="onFollow"><text class="follow-t">{{followed ? '已关注' : '+ 关注'}}</text></view>
+  </view>
+  <view class="row stats">
+    <view class="stat col"><text class="stat-n">{{co.stage}}</text><text class="stat-l">融资阶段</text></view>
+    <view class="stat col"><text class="stat-n">{{co.size}}</text><text class="stat-l">公司规模</text></view>
+    <view class="stat col"><text class="stat-n">{{jobs.length}} 个</text><text class="stat-l">在招职位</text></view>
+  </view>
+</view>
+
+<view class="card lift">
+  <text class="section-title">公司介绍</text>
+  <text class="intro">{{co.intro}}</text>
+</view>
+
+<view class="card">
+  <text class="section-title">员工福利</text>
+  <view class="welfare">
+    <view class="w-item row" wx:for="{{co.welfare}}" wx:key="*this">
+      <view class="w-dot"></view><text class="w-t">{{item}}</text>
+    </view>
+  </view>
+</view>
+
+<view class="card">
+  <text class="section-title">公司地址</text>
+  <text class="intro">{{co.addr}}</text>
+</view>
+
+<text class="list-title">在招职位</text>
+<view class="card job row" wx:for="{{jobs}}" wx:key="id" data-id="{{item.id}}" bindtap="onJob">
+  <view class="col flex1">
+    <text class="job-title">{{item.title}}</text>
+    <text class="sub">{{item.city}}·{{item.exp}}·{{item.edu}}</text>
+  </view>
+  <text class="salary">{{item.salary}}</text>
+</view>
+<view style="height: 40rpx"></view>

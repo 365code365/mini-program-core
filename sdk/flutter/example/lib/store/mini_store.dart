@@ -34,6 +34,11 @@ class StoreApp {
     required this.sha256,
     required this.size,
     required this.packageUrl,
+    this.category = '',
+    this.tags = const [],
+    this.developer = '',
+    this.iconUrl = '',
+    this.downloads = 0,
   });
 
   factory StoreApp.fromJson(Map<String, dynamic> j) => StoreApp(
@@ -45,6 +50,11 @@ class StoreApp {
         sha256: (j['sha256'] as String?) ?? '',
         size: (j['size'] as num?)?.toInt() ?? 0,
         packageUrl: (j['packageUrl'] as String?) ?? '/api/apps/${j['id']}/package',
+        category: (j['category'] as String?) ?? '',
+        tags: [for (final t in (j['tags'] as List? ?? const [])) '$t'],
+        developer: (j['developer'] as String?) ?? '',
+        iconUrl: (j['iconUrl'] as String?) ?? '',
+        downloads: (j['downloads'] as num?)?.toInt() ?? 0,
       );
 
   Map<String, Object> toJson() => {
@@ -56,6 +66,11 @@ class StoreApp {
         'sha256': sha256,
         'size': size,
         'packageUrl': packageUrl,
+        'category': category,
+        'tags': tags,
+        'developer': developer,
+        'iconUrl': iconUrl,
+        'downloads': downloads,
       };
 
   final String id;
@@ -66,6 +81,15 @@ class StoreApp {
   final String sha256;
   final int size;
   final String packageUrl;
+
+  /// 商店展示与搜索用（服务器 store.meta.json / 管理页填的）；老服务器没有这些字段
+  final String category;
+  final List<String> tags;
+  final String developer;
+
+  /// 相对服务器的图标地址（`/api/apps/<id>/icon?v=`）；空 = 没有图标，画首字
+  final String iconUrl;
+  final int downloads;
 
   /// 深链 / 跳转用的 key：有 AppID 用 AppID
   String get key => appId.isNotEmpty ? appId : id;
@@ -144,6 +168,80 @@ class MiniStore {
       for (final j in list.cast<Map<String, dynamic>>())
         if (_idRe.hasMatch(j['id'] as String? ?? '')) StoreApp.fromJson(j),
     ];
+  }
+
+  /// 搜索（`/api/apps?q=&category=`）：关键词每段都要命中，按相关度 + 热度排。返回 (结果, 总数)
+  Future<(List<StoreApp>, int)> search(String q, {String category = ''}) async {
+    final u = Uri.parse('$baseUrl/api/apps').replace(queryParameters: {'q': q, 'category': category, 'limit': '100'});
+    final body = await _getText('$u', const Duration(seconds: 8));
+    return (_parse(body), ((jsonDecode(body) as Map)['total'] as num?)?.toInt() ?? 0);
+  }
+
+  Future<List<String>> hotKeywords() async =>
+      _strings(await _getText('$baseUrl/api/search/hot', const Duration(seconds: 6)), 'keywords');
+
+  Future<List<String>> suggest(String q) async {
+    final u = Uri.parse('$baseUrl/api/search/suggest').replace(queryParameters: {'q': q});
+    return _strings(await _getText('$u', const Duration(seconds: 4)), 'words');
+  }
+
+  /// 分类与数量，服务器的固定顺序
+  Future<List<(String, int)>> categories() async {
+    final body = await _getText('$baseUrl/api/categories', const Duration(seconds: 6));
+    return [
+      for (final c in ((jsonDecode(body) as Map)['categories'] as List).cast<Map>())
+        ('${c['name']}', (c['count'] as num?)?.toInt() ?? 0),
+    ];
+  }
+
+  static List<String> _strings(String body, String key) =>
+      [for (final w in ((jsonDecode(body) as Map)[key] as List? ?? const [])) '$w'];
+
+  /// 图标的完整地址（空 = 没有图标）
+  String iconUrlOf(StoreApp app) => app.iconUrl.isEmpty ? '' : Uri.parse(baseUrl).resolve(app.iconUrl).toString();
+
+  // ── 本机记着的：最近使用（入口页顶上那排）与搜索历史，存在 mini-apps/store_local.json ──
+  static const maxRecent = 8;
+  static const maxHistory = 12;
+
+  Future<Map<String, dynamic>> _localState() async {
+    final f = File('${await _rootDir()}/store_local.json');
+    try {
+      return jsonDecode(await f.readAsString()) as Map<String, dynamic>;
+    } catch (_) {
+      return {};
+    }
+  }
+
+  Future<void> _saveLocal(Map<String, dynamic> m) async =>
+      File('${await _rootDir()}/store_local.json').writeAsString(jsonEncode(m));
+
+  Future<List<StoreApp>> recent() async => [
+        for (final j in ((await _localState())['recent'] as List? ?? const []).cast<Map<String, dynamic>>())
+          StoreApp.fromJson(j),
+      ];
+
+  Future<void> touch(StoreApp app) async {
+    final m = await _localState();
+    final list = [app, ...(await recent()).where((a) => a.id != app.id)].take(maxRecent);
+    m['recent'] = [for (final a in list) a.toJson()];
+    await _saveLocal(m);
+  }
+
+  Future<List<String>> history() async => [for (final w in ((await _localState())['history'] as List? ?? const [])) '$w'];
+
+  Future<void> addHistory(String q) async {
+    final w = q.trim();
+    if (w.isEmpty) return;
+    final m = await _localState();
+    m['history'] = [w, ...(await history()).where((x) => x != w)].take(maxHistory).toList();
+    await _saveLocal(m);
+  }
+
+  Future<void> clearHistory() async {
+    final m = await _localState();
+    m['history'] = [];
+    await _saveLocal(m);
   }
 
   /// 服务器上这个小程序的最新版（key = AppID 或 id）

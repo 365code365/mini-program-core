@@ -1,0 +1,195 @@
+.head {
+  background: linear-gradient(170deg, #8a5a3b, #4a2c1c);
+  padding: 36rpx 28rpx 40rpx;
+}
+
+.avatar {
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: 56rpx;
+  background: linear-gradient(135deg, #f3d3a5, #c98b4e);
+  color: #5b3a29;
+  font-size: 44rpx;
+  margin-right: 22rpx;
+  border: 4rpx solid rgba(255, 246, 236, 0.6);
+}
+
+.nick {
+  display: block;
+  font-size: 36rpx;
+  line-height: 52rpx;
+  font-weight: bold;
+  color: #fff6ec;
+}
+
+.uid {
+  display: block;
+  font-size: 22rpx;
+  color: rgba(255, 246, 236, 0.7);
+}
+
+.code-btn {
+  height: 56rpx;
+  line-height: 56rpx;
+  padding: 0 24rpx;
+  border-radius: 28rpx;
+  border: 1rpx solid rgba(255, 246, 236, 0.6);
+  color: #fff6ec;
+  font-size: 24rpx;
+}
+
+.level-card {
+  margin-top: 32rpx;
+  padding: 28rpx;
+  border-radius: 24rpx;
+  background: linear-gradient(120deg, #2b1a10, #5b3a29);
+  border: 1rpx solid rgba(243, 211, 165, 0.3);
+}
+
+.lv-name {
+  font-size: 34rpx;
+  font-weight: bold;
+  color: #f3d3a5;
+}
+
+.lv-tag {
+  font-size: 20rpx;
+  line-height: 32rpx;
+  padding: 0 12rpx;
+  margin-left: 12rpx;
+  border-radius: 16rpx;
+  background: #f3d3a5;
+  color: #5b3a29;
+  font-weight: bold;
+}
+
+.lv-rights {
+  font-size: 22rpx;
+  color: rgba(243, 211, 165, 0.85);
+}
+
+.lv-bar {
+  height: 12rpx;
+  border-radius: 6rpx;
+  background: rgba(243, 211, 165, 0.18);
+  margin-top: 24rpx;
+  overflow: hidden;
+}
+
+.lv-bar-in {
+  height: 12rpx;
+  border-radius: 6rpx;
+  background: linear-gradient(90deg, #f3d3a5, #c98b4e);
+}
+
+.lv-foot {
+  margin-top: 12rpx;
+  font-size: 22rpx;
+  color: rgba(243, 211, 165, 0.75);
+}
+
+.perks {
+  margin-top: 28rpx;
+}
+
+.perk {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.perk-icon {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 32rpx;
+  background: rgba(243, 211, 165, 0.16);
+  color: #f3d3a5;
+  font-size: 26rpx;
+}
+
+.perk-name {
+  font-size: 20rpx;
+  color: rgba(255, 246, 236, 0.8);
+  margin-top: 8rpx;
+}
+
+.stats {
+  margin-top: -0rpx;
+}
+
+.stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-num {
+  font-size: 36rpx;
+  line-height: 50rpx;
+  font-weight: bold;
+}
+
+.stat-name {
+  font-size: 22rpx;
+  color: #9b9087;
+}
+
+.sign .title {
+  display: block;
+  line-height: 48rpx;
+}
+
+.sign-desc {
+  display: block;
+}
+
+.sign-btn {
+  width: 150rpx;
+  text-align: center;
+  height: 60rpx;
+  line-height: 60rpx;
+  border-radius: 30rpx;
+  background: linear-gradient(90deg, #c98b4e, #a8693a);
+  color: #ffffff;
+  font-size: 24rpx;
+  font-weight: bold;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.signed {
+  background: #efe8e0;
+  color: #9b9087;
+}
+
+.menu {
+  padding-top: 4rpx;
+  padding-bottom: 4rpx;
+}
+
+.menu-item {
+  height: 100rpx;
+  font-size: 28rpx;
+  border-bottom: 1rpx solid #f5f0ea;
+}
+
+.no-border {
+  border-bottom: 0;
+}
+
+.menu-icon {
+  width: 52rpx;
+  height: 52rpx;
+  border-radius: 16rpx;
+  font-size: 24rpx;
+  margin-right: 20rpx;
+}
+
+.foot {
+  text-align: center;
+  color: #c2b8ae;
+  font-size: 22rpx;
+  padding: 36rpx 0;
+}

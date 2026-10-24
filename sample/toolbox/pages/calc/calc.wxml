@@ -1,0 +1,19 @@
+<view class="calc">
+  <scroll-view scroll-y class="history">
+    <view wx:if="{{!history.length}}" class="hist-empty"><text>计算记录会保存在这里</text></view>
+    <view wx:for="{{history}}" wx:key="index" class="hist" data-r="{{item.r}}" bindtap="onHistory">
+      <text class="hist-e">{{item.e}} =</text>
+      <text class="hist-r">{{item.r}}</text>
+    </view>
+    <view wx:if="{{history.length}}" class="hist-clear" bindtap="onClear"><text>清空记录</text></view>
+  </scroll-view>
+  <view class="screen">
+    <view class="expr"><text>{{expr}}</text></view>
+    <view class="display {{small ? 'display-s' : ''}}"><text>{{display}}</text></view>
+  </view>
+  <view class="pad">
+    <view wx:for="{{keys}}" wx:key="k" class="key-cell {{item.cls === 'zero' ? 'cell-zero' : ''}}">
+      <view class="key key-{{item.cls || 'num'}} {{item.cls === 'zero' ? 'key-wide' : ''}} {{op === item.k ? 'key-active' : ''}}" hover-class="key-press" data-k="{{item.k}}" bindtap="onPad"><text>{{item.t}}</text></view>
+    </view>
+  </view>
+</view>

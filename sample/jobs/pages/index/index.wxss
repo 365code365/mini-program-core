@@ -1,0 +1,31 @@
+.hero { background: linear-gradient(180deg, #2E6BFF 0%, #4C86FF 100%); padding: 16rpx 32rpx 36rpx; }
+.intent { color: #fff; font-size: 40rpx; font-weight: bold; }
+.intent-add { margin-left: 16rpx; background: rgba(255, 255, 255, 0.22); border-radius: 20rpx; padding: 4rpx 16rpx; }
+.intent-add-t { color: #fff; font-size: 22rpx; }
+.city { background: rgba(255, 255, 255, 0.18); padding: 8rpx 20rpx; border-radius: 28rpx; }
+.city-t { color: #fff; font-size: 26rpx; }
+/* 下箭头：border 透明边拼三角在引擎里画不出来，改用旋转的折角 */
+.tri { width: 12rpx; height: 12rpx; border-right: 3rpx solid #fff; border-bottom: 3rpx solid #fff; transform: rotate(45deg); margin: 0 0 6rpx 14rpx; }
+.search { margin-top: 28rpx; background: #fff; height: 76rpx; border-radius: 38rpx; padding: 0 28rpx; }
+.search-icon { width: 22rpx; height: 22rpx; border: 4rpx solid #9aa0a6; border-radius: 15rpx; margin-right: 16rpx; }
+/* 28rpx=14px 会被引擎当成默认值换成 16px，写 27rpx */
+.search-input { font-size: 27rpx; height: 76rpx; }
+.ph { color: #b0b5bc; }
+.clear { padding: 6rpx 12rpx; }
+.clear-t { font-size: 24rpx; color: #2E6BFF; }
+.tabs { padding: 24rpx 32rpx 16rpx; }
+.tab { margin-right: 44rpx; display: flex; flex-direction: column; align-items: center; }
+.tab-t { font-size: 30rpx; color: #6b717a; }
+.tab.on .tab-t { color: #1f2329; font-size: 34rpx; font-weight: bold; }
+.tab-line { width: 36rpx; height: 6rpx; border-radius: 3rpx; background: #2E6BFF; margin-top: 8rpx; }
+.job { padding: 30rpx 28rpx 24rpx; }
+.job-title { font-size: 32rpx; font-weight: bold; margin-right: 16rpx; }
+.co-line { margin: 14rpx 0 18rpx; }
+.co-name { font-size: 26rpx; color: #3a3f47; margin-right: 16rpx; }
+.co-meta { font-size: 24rpx; }
+.hr-line { border-top: 1rpx solid #f0f1f3; padding-top: 20rpx; margin-top: 4rpx; }
+.avatar { width: 48rpx; height: 48rpx; border-radius: 24rpx; font-size: 22rpx; }
+.hr-name { font-size: 24rpx; color: #5c6370; margin-left: 12rpx; }
+.online { width: 12rpx; height: 12rpx; border-radius: 6rpx; background: #19BE6B; margin-left: 10rpx; }
+.empty { display: flex; flex-direction: column; align-items: center; padding: 120rpx 0; }
+.empty-circle { width: 120rpx; height: 120rpx; border-radius: 60rpx; background: #e8eefc; margin-bottom: 24rpx; }

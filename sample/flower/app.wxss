@@ -1,0 +1,15 @@
+page { background: #f7f5f6; color: #26222a; font-size: 28rpx; }
+.card { background: #ffffff; border-radius: 20rpx; margin: 24rpx 24rpx 0; padding: 28rpx; box-shadow: 0 4rpx 16rpx rgba(140, 40, 70, 0.04); }
+.sec-title { font-size: 32rpx; font-weight: bold; color: #26222a; }
+.muted { color: #958d96; font-size: 24rpx; }
+.row { display: flex; flex-direction: row; align-items: center; }
+.between { justify-content: space-between; }
+.chev { width: 14rpx; height: 14rpx; border-top: 3rpx solid #bdb5be; border-right: 3rpx solid #bdb5be; transform: rotate(45deg); margin-left: 10rpx; flex-shrink: 0; }
+.price { color: #ef3f66; font-weight: bold; }
+.yen { font-size: 22rpx; }
+.btn-primary { background: linear-gradient(90deg, #ff7f9c, #ef4f76); color: #ffffff; border-radius: 44rpx; height: 88rpx; line-height: 88rpx; text-align: center; font-size: 30rpx; font-weight: bold; }
+.tab-gap { height: calc(100rpx + env(safe-area-inset-bottom) + 24rpx); }
+.empty { padding: 100rpx 0; text-align: center; color: #a89fa9; font-size: 26rpx; }
+.check { width: 40rpx; height: 40rpx; border-radius: 20rpx; border: 3rpx solid #d3cbd4; box-sizing: border-box; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.check.on { background: #ef5b7e; border-color: #ef5b7e; }
+.check-in { width: 16rpx; height: 9rpx; border-left: 3rpx solid #ffffff; border-bottom: 3rpx solid #ffffff; transform: rotate(-45deg); margin-top: -4rpx; }

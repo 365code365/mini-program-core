@@ -1,0 +1,62 @@
+.head { background: #fff; padding: 32rpx 32rpx 28rpx; margin-bottom: 20rpx; }
+.h-name { display: block; font-size: 38rpx; font-weight: bold; }
+.h-meta { margin: 16rpx 0 20rpx; }
+.score { font-size: 26rpx; color: #FF7A1A; font-weight: bold; margin-right: 16rpx; }
+.h-addr { align-items: flex-start; }
+.h-addr-t { font-size: 26rpx; color: #5c6370; line-height: 40rpx; margin-right: 24rpx; }
+.nav { align-items: center; }
+.nav-ic { width: 52rpx; height: 52rpx; border-radius: 26rpx; background: linear-gradient(135deg, #4FA6FF, #2D8CF0); display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.nav-arrow { width: 14rpx; height: 14rpx; border-top: 4rpx solid #fff; border-right: 4rpx solid #fff; transform: rotate(45deg); margin-right: 6rpx; }
+.nav-t { font-size: 22rpx; color: #2D8CF0; margin-top: 6rpx; }
+.park-note { margin-top: 20rpx; background: #f5f7fa; border-radius: 12rpx; padding: 14rpx 18rpx; }
+.p-badge { width: 32rpx; height: 32rpx; line-height: 32rpx; text-align: center; border-radius: 6rpx; background: #2D8CF0; color: #fff; font-size: 22rpx; font-weight: bold; margin-right: 12rpx; }
+.p-t { font-size: 24rpx; color: #5c6370; }
+.now { margin: 16rpx 0 24rpx; align-items: flex-end; }
+.now-p { font-size: 56rpx; color: #FF7A1A; }
+.now-u { font-size: 26rpx; color: #FF7A1A; margin: 0 20rpx 10rpx 4rpx; }
+.now-detail { margin-bottom: 10rpx; }
+.tbl { border-radius: 12rpx; overflow: hidden; border: 1rpx solid #eef0f2; }
+.tr { height: 76rpx; border-bottom: 1rpx solid #f2f3f5; }
+.th { background: #f7f8fa; height: 64rpx; }
+.th .td { color: #8a9099; font-size: 24rpx; }
+.tr-cur { background: #fff6ee; }
+.td { font-size: 26rpx; color: #3a3f47; }
+.c1 { width: 280rpx; padding-left: 20rpx; }
+.c2 { flex: 1; text-align: center; }
+.pname { width: 36rpx; height: 36rpx; line-height: 36rpx; text-align: center; border-radius: 8rpx; color: #fff; font-size: 20rpx; margin-right: 12rpx; }
+.prange { font-size: 24rpx; color: #3a3f47; }
+.total { font-weight: bold; color: #1f2329; }
+.t-head { margin-bottom: 16rpx; }
+.seg { background: #f2f4f3; border-radius: 26rpx; padding: 4rpx; }
+.seg-i { padding: 6rpx 22rpx; border-radius: 22rpx; }
+.seg-i.on { background: #fff; }
+.seg-t { font-size: 24rpx; color: #5c6370; }
+.seg-i.on .seg-t { color: #00A36C; font-weight: bold; }
+.legend { margin-bottom: 20rpx; }
+.lg { margin-right: 28rpx; }
+.lg-dot { width: 14rpx; height: 14rpx; border-radius: 7rpx; margin-right: 8rpx; }
+.lg-dot.idle { background: #00B87A; }
+.lg-dot.busy { background: #2D8CF0; }
+.lg-dot.fault { background: #c4c7cc; }
+.grid { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-between; }
+.term { width: 304rpx; box-sizing: border-box; border-radius: 16rpx; padding: 20rpx; margin-bottom: 20rpx; border: 2rpx solid #e5e8eb; }
+.term.idle { border-color: #8fe0c2; background: #f1fbf7; }
+.term.busy { border-color: #b9d8fa; background: #f3f8fe; }
+.term.fault { background: #f7f8fa; }
+.t-no { font-size: 28rpx; font-weight: bold; }
+.t-kind { font-size: 20rpx; color: #fff; padding: 2rpx 10rpx; border-radius: 6rpx; }
+.k-fast { background: #FF7A1A; }
+.k-slow { background: #2D8CF0; }
+.t-power { display: block; font-size: 24rpx; color: #8a9099; margin: 6rpx 0 10rpx; }
+.soc-bg { height: 8rpx; border-radius: 4rpx; background: #dce9f8; margin-bottom: 10rpx; overflow: hidden; }
+.soc-fg { height: 8rpx; border-radius: 4rpx; background: #2D8CF0; }
+.t-st { font-size: 24rpx; font-weight: bold; }
+.idle .t-st { color: #00A36C; }
+.busy .t-st { color: #2D8CF0; }
+.fault .t-st { color: #9aa0a6; }
+.bottom-space { height: calc(150rpx + env(safe-area-inset-bottom)); }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; padding: 16rpx 32rpx calc(16rpx + env(safe-area-inset-bottom)); box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.04); }
+.fav { align-items: center; width: 100rpx; margin-right: 24rpx; }
+.heart { width: 32rpx; height: 32rpx; border-radius: 16rpx; border: 4rpx solid #9aa0a6; margin: 4rpx 0 8rpx; }
+.heart.on { background: #FF7A1A; border-color: #FF7A1A; }
+.fav-t { font-size: 22rpx; color: #6b717a; }

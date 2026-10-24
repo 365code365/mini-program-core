@@ -1,0 +1,102 @@
+<view class="top row">
+  <view class="flex1" bindtap="onStore">
+    <view class="row">
+      <text class="store-name ellipsis">{{store.name}}</text>
+      <view class="arrow"></view>
+    </view>
+    <text class="sub">距你 {{store.distance}} · 营业中 {{store.hours}}</text>
+  </view>
+  <view class="seg row">
+    <view class="seg-item {{mode === 'pickup' ? 'seg-on' : ''}}" data-mode="pickup" bindtap="onMode">自提</view>
+    <view class="seg-item {{mode === 'delivery' ? 'seg-on' : ''}}" data-mode="delivery" bindtap="onMode">外送</view>
+  </view>
+</view>
+
+<view class="body row" style="height: {{bodyHeight}}px;">
+  <scroll-view class="cats" scroll-y="{{true}}" style="height: {{bodyHeight}}px;">
+    <view wx:for="{{categories}}" wx:key="id" class="cat {{catId === item.id ? 'cat-on' : ''}}" data-id="{{item.id}}" bindtap="onCat">
+      <view wx:if="{{catId === item.id}}" class="cat-bar"></view>
+      <text>{{item.name}}</text>
+    </view>
+  </scroll-view>
+  <scroll-view class="list" scroll-y="{{true}}" style="height: {{bodyHeight}}px;" scroll-top="{{listTop}}">
+    <view class="promo row">
+      <text class="promo-tag">会员</text>
+      <text class="promo-text flex1">金豆会员周三 8 折 · 新品第 2 杯半价</text>
+    </view>
+    <text class="cat-title">{{catName}}</text>
+    <view class="drink row" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onOpen">
+      <view class="d-img-wrap">
+        <image class="d-img" src="{{item.img}}" mode="aspectFill"></image>
+        <text wx:if="{{item.tag}}" class="d-tag">{{item.tag}}</text>
+      </view>
+      <view class="flex1 d-info">
+        <text class="d-name ellipsis">{{item.name}}</text>
+        <text class="d-en ellipsis">{{item.en}}</text>
+        <text class="d-desc ellipsis">{{item.desc}}</text>
+        <view class="row d-bottom">
+          <text class="price d-price"><text class="price-sym">¥</text>{{item.price}}</text>
+          <text class="d-origin">¥{{item.origin}}</text>
+          <view class="flex1"></view>
+          <view class="d-spec">选规格</view>
+        </view>
+      </view>
+    </view>
+    <view class="list-end"></view>
+  </scroll-view>
+</view>
+
+<view wx:if="{{cart.count}}" class="cart-bar row" style="bottom: {{tabGap + 10}}px;">
+  <view class="cart-icon" bindtap="onCart">
+    <image class="cart-cup" src="/images/tab/menu-on.png"></image>
+    <view class="cart-badge">{{cart.count}}</view>
+  </view>
+  <view class="flex1" bindtap="onCart">
+    <text class="cart-amount">¥{{cart.amount}}</text>
+    <text class="cart-tip">{{mode === 'delivery' ? '外送 · 预计 30 分钟送达' : '自提 · 预计 5 分钟可取'}}</text>
+  </view>
+  <view class="cart-go" bindtap="onCart">去结算</view>
+</view>
+
+<view wx:if="{{sheet}}" class="mask" bindtap="onClose"></view>
+<view wx:if="{{sheet}}" class="sheet" style="bottom: {{tabGap}}px;">
+  <view class="row s-head">
+    <image class="s-img" src="{{sheet.img}}" mode="aspectFill"></image>
+    <view class="flex1">
+      <text class="s-name">{{sheet.name}}</text>
+      <text class="s-desc">{{sheet.desc}}</text>
+    </view>
+    <view class="s-close" bindtap="onClose">×</view>
+  </view>
+
+  <text class="s-label">杯型</text>
+  <view class="row opts">
+    <view wx:for="{{sizes}}" wx:key="name" class="opt opt-size {{sizeIdx === index ? 'opt-on' : ''}}" data-idx="{{index}}" bindtap="onSize">
+      <text class="opt-main">{{item.name}}</text>
+      <text class="opt-sub">{{item.ml}}{{item.add ? ' +¥' + item.add : ''}}</text>
+    </view>
+  </view>
+
+  <text class="s-label">温度</text>
+  <view class="row opts">
+    <view wx:for="{{sheet.temps}}" wx:key="*this" class="opt {{tempIdx === index ? 'opt-on' : ''}}" data-idx="{{index}}" bindtap="onTemp">{{item}}</view>
+  </view>
+
+  <text class="s-label">糖度</text>
+  <view class="row opts wrap">
+    <view wx:for="{{sugars}}" wx:key="*this" class="opt {{sugarIdx === index ? 'opt-on' : ''}}" data-idx="{{index}}" bindtap="onSugar">{{item}}</view>
+  </view>
+
+  <view class="row s-foot">
+    <view class="flex1">
+      <view class="row s-price-row"><text class="price s-sym">¥</text><text class="price s-price">{{unitPrice * qty}}</text></view>
+      <text class="s-picked">{{sizes[sizeIdx].name}} / {{sheet.temps[tempIdx]}} / {{sugars[sugarIdx]}}</text>
+    </view>
+    <view class="stepper">
+      <view class="step-minus" bindtap="onQtyMinus"><view class="minus-bar"></view></view>
+      <text class="step-num">{{qty}}</text>
+      <view class="step-plus" bindtap="onQtyPlus">+</view>
+    </view>
+  </view>
+  <view class="btn s-add" bindtap="onAdd">加入购物车</view>
+</view>

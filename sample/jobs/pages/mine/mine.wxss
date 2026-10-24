@@ -1,0 +1,30 @@
+.hero { background: linear-gradient(160deg, #4C86FF 0%, #2E6BFF 100%); padding: 32rpx 32rpx 80rpx; }
+.me-av { width: 120rpx; height: 120rpx; border-radius: 60rpx; background: linear-gradient(135deg, #FFD59A, #FF9F2E); border: 4rpx solid rgba(255, 255, 255, 0.8); display: flex; flex-direction: row; align-items: center; justify-content: center; margin-right: 24rpx; }
+.me-av-t { color: #fff; font-size: 48rpx; font-weight: bold; }
+.me-name { color: #fff; font-size: 38rpx; font-weight: bold; }
+.me-sub { color: rgba(255, 255, 255, 0.85); font-size: 24rpx; margin-top: 8rpx; }
+.edit { background: rgba(255, 255, 255, 0.2); border-radius: 28rpx; padding: 10rpx 22rpx; }
+.edit-t { color: #fff; font-size: 24rpx; }
+.stats { margin-top: 40rpx; }
+.stat { flex: 1; align-items: center; }
+.stat-n { color: #fff; font-size: 40rpx; font-weight: bold; }
+.stat-l { color: rgba(255, 255, 255, 0.8); font-size: 22rpx; margin-top: 4rpx; }
+.lift { margin-top: -44rpx; position: relative; }
+.rec { padding: 20rpx 0; border-top: 1rpx solid #f3f4f6; }
+.logo.small { width: 72rpx; height: 72rpx; border-radius: 16rpx; font-size: 32rpx; }
+.rec-body { margin-left: 20rpx; }
+.rec-title { font-size: 28rpx; font-weight: bold; margin-bottom: 4rpx; }
+.status { font-size: 22rpx; padding: 6rpx 14rpx; border-radius: 8rpx; }
+.s0 { color: #2E6BFF; background: #eef3ff; }
+.s1 { color: #FF8A00; background: #fff4e6; }
+.s2 { color: #19BE6B; background: #e8f8ef; }
+.s3 { color: #9aa0a6; background: #f2f3f5; }
+.empty { padding: 40rpx 0; display: flex; flex-direction: row; justify-content: center; }
+.menu { padding: 8rpx 28rpx; }
+.m-item { height: 100rpx; border-bottom: 1rpx solid #f3f4f6; }
+.m-item:last-child { border-bottom: none; }
+.m-ic { width: 52rpx; height: 52rpx; border-radius: 14rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; margin-right: 20rpx; }
+.m-ic-t { color: #fff; font-size: 24rpx; font-weight: bold; }
+.m-name { font-size: 28rpx; }
+.rec-head { margin-bottom: 16rpx; }
+.rec-head .section-title { margin-bottom: 0; }

@@ -1,0 +1,108 @@
+<swiper class="gallery" circular="{{true}}" bindchange="onSwiper">
+  <swiper-item>
+    <image class="gallery-img" src="{{goods.img}}" mode="aspectFill"></image>
+  </swiper-item>
+  <swiper-item>
+    <view class="slide slide-a">
+      <text class="slide-kicker">产地直采 · {{goods.place}}</text>
+      <text class="slide-title">从田间到餐桌 48 小时</text>
+      <text class="slide-desc">凌晨采摘 → 冷链干线 → 前置仓分拣 → 30 分钟送达</text>
+      <view class="row slide-steps">
+        <view class="slide-step glyph">采</view><view class="slide-line"></view>
+        <view class="slide-step glyph">运</view><view class="slide-line"></view>
+        <view class="slide-step glyph">仓</view><view class="slide-line"></view>
+        <view class="slide-step glyph">送</view>
+      </view>
+    </view>
+  </swiper-item>
+  <swiper-item>
+    <view class="slide slide-b">
+      <text class="slide-kicker">鲜到家品控</text>
+      <text class="slide-title">坏一赔一 · 1 小时极速退款</text>
+      <text class="slide-desc">每批次抽检糖度与农残，不满意 30 天无忧退</text>
+      <view class="row slide-badges">
+        <view class="badge-round glyph">检</view>
+        <view class="badge-round glyph">赔</view>
+        <view class="badge-round glyph">退</view>
+      </view>
+    </view>
+  </swiper-item>
+</swiper>
+<view class="pager">{{current + 1}}/3</view>
+
+<view class="price-band row" wx:if="{{flash}}">
+  <view class="flex1">
+    <view class="row band-price"><text class="band-sym">¥</text><text class="band-num">{{unit}}</text><text class="band-origin">¥{{goods.origin}}</text></view>
+    <text class="band-sold">限时秒杀 · 已抢 {{flash.stock}}%</text>
+  </view>
+  <view class="band-right">
+    <text class="band-label">距结束</text>
+    <view class="row"><text class="band-clock">{{hh}}</text><text class="band-sep">:</text><text class="band-clock">{{mm}}</text><text class="band-sep">:</text><text class="band-clock">{{ss}}</text></view>
+  </view>
+</view>
+
+<view class="card info">
+  <view class="row between" wx:if="{{!flash}}">
+    <view class="price-row big-price"><text class="p-sym">¥</text><text class="p-num">{{unit}}</text><text class="p-origin">¥{{goods.origin}}</text></view>
+    <text class="sub">已售 {{goods.sales}}</text>
+  </view>
+  <text class="g-name">{{goods.name}}</text>
+  <view class="row g-tags">
+    <text class="tag" wx:for="{{goods.tags}}" wx:key="*this">{{item}}</text>
+  </view>
+  <view class="row fav-row">
+    <text class="sub flex1">产地 {{goods.place}} · 冷链配送</text>
+    <view class="fav {{faved ? 'fav-on' : ''}}" bindtap="onFav">{{faved ? '已收藏' : '收藏'}}</view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="opt-row row">
+    <text class="opt-k">规格</text>
+    <view class="row flex1 specs">
+      <view wx:for="{{goods.specs}}" wx:key="index" class="spec {{specIdx === index ? 'spec-on' : ''}}" data-idx="{{index}}" bindtap="onSpec">{{item[0]}}</view>
+    </view>
+  </view>
+  <view class="opt-row row">
+    <text class="opt-k">数量</text>
+    <view class="flex1"></view>
+    <view class="stepper">
+      <view class="step-btn" bindtap="onMinus"><view class="bar-h"></view></view>
+      <text class="step-num">{{qty}}</text>
+      <view class="step-btn step-plus" bindtap="onPlus"><view class="bar-h"></view><view class="bar-v"></view></view>
+    </view>
+  </view>
+  <view class="opt-row row no-border">
+    <text class="opt-k">配送</text>
+    <text class="flex1 opt-v">送至 {{address}}，现在下单 <text class="green">{{eta}}</text> 前送达</text>
+  </view>
+</view>
+
+<view class="card">
+  <text class="title">商品详情</text>
+  <view class="params">
+    <view class="param row" wx:for="{{params}}" wx:key="k">
+      <text class="param-k">{{item.k}}</text>
+      <text class="param-v flex1">{{item.v}}</text>
+    </view>
+  </view>
+  <text class="desc">{{desc}}</text>
+</view>
+
+<view class="bottom-gap"></view>
+
+<view class="bar row">
+  <view class="bar-icon" bindtap="onHome">
+    <image class="ic" src="/images/tab/home-off.png"></image>
+    <text class="bar-text">首页</text>
+  </view>
+  <view class="bar-icon" bindtap="onCart">
+    <image class="ic" src="/images/tab/cart-off.png"></image>
+    <text class="bar-text">购物车</text>
+    <view wx:if="{{cartCount}}" class="bar-badge">{{cartCount}}</view>
+  </view>
+  <view class="bar-btns row flex1">
+    <view class="bar-add" bindtap="onAdd">加入购物车</view>
+    <view class="bar-buy" bindtap="onBuy">立即购买</view>
+  </view>
+</view>

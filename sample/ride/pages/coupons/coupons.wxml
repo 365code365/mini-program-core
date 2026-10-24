@@ -1,0 +1,24 @@
+<view class="tabs">
+  <view wx:for="{{tabs}}" wx:key="key" class="tab {{tab === item.key ? 'tab-on' : ''}}" data-key="{{item.key}}" bindtap="onTab">{{item.name}}</view>
+</view>
+<view class="exchange">
+  <input class="ex-input" placeholder="输入兑换码" value="{{code}}" bindinput="onCode" />
+  <view class="ex-btn" bindtap="onExchange">兑换</view>
+</view>
+<view wx:if="{{!list.length}}" class="empty">暂无优惠券</view>
+<view class="coupon {{tab !== 'ok' ? 'gray' : ''}}" wx:for="{{list}}" wx:key="id">
+  <view class="c-left">
+    <view class="row amount-row"><text class="c-yen">¥</text><text class="c-amount">{{item.amount}}</text></view>
+    <text class="c-cond">{{item.cond}}</text>
+  </view>
+  <view class="c-split"></view>
+  <view class="c-right">
+    <text class="c-name">{{item.name}}</text>
+    <text class="c-date">{{item.date}}</text>
+    <view class="row between">
+      <text class="c-tag">{{item.scope}}</text>
+      <view wx:if="{{tab === 'ok'}}" class="c-btn" data-id="{{item.id}}" bindtap="onUse">去使用</view>
+      <text wx:else class="sub">{{tab === 'used' ? '已使用' : '已过期'}}</text>
+    </view>
+  </view>
+</view>

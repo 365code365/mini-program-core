@@ -1,0 +1,27 @@
+.top { background: linear-gradient(180deg, #ffd6df 0%, #fff0f3 70%, #f7f5f6 100%); padding: 40rpx 24rpx 0; }
+.av { width: 116rpx; height: 116rpx; border-radius: 58rpx; background: linear-gradient(135deg, #ff9fb4, #ef4f76); border: 4rpx solid #ffffff; color: #ffffff; font-size: 46rpx; font-weight: bold; display: flex; align-items: center; justify-content: center; margin-left: 12rpx; }
+.me { margin-left: 24rpx; display: flex; flex-direction: column; }
+.me-name { font-size: 38rpx; font-weight: bold; margin-bottom: 10rpx; }
+.lv { font-size: 20rpx; color: #ffffff; background: linear-gradient(90deg, #b4bccb, #8792a6); padding: 4rpx 14rpx; border-radius: 20rpx; margin-right: 14rpx; }
+.me-sub { font-size: 24rpx; color: #7d747f; }
+.orders { margin-top: 36rpx; background: #ffffff; border-radius: 20rpx; padding: 28rpx; }
+.o-row { margin-top: 24rpx; }
+.o { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.o-n { font-size: 38rpx; font-weight: bold; color: #26222a; }
+.o-l { margin-top: 4rpx; font-size: 22rpx; color: #7d747f; }
+.date { margin-top: 22rpx; background: #faf8f9; border-radius: 14rpx; padding: 20rpx; }
+.d-dot { width: 16rpx; height: 16rpx; border-radius: 8rpx; margin-right: 18rpx; }
+.d-main { flex: 1; display: flex; flex-direction: column; }
+.d-name { font-size: 28rpx; font-weight: bold; margin-bottom: 4rpx; }
+.d-left { font-size: 24rpx; color: #7d747f; }
+.d-n { font-size: 36rpx; font-weight: bold; }
+.d-add { margin-top: 20rpx; height: 72rpx; border-radius: 14rpx; border: 2rpx dashed #f2a7b8; color: #ef4f76; font-size: 26rpx; display: flex; align-items: center; justify-content: center; }
+.favs { margin-top: 20rpx; white-space: nowrap; }
+.fav { display: inline-flex; flex-direction: column; width: 180rpx; margin-right: 16rpx; }
+.fav-img { width: 180rpx; height: 180rpx; border-radius: 14rpx; }
+.fav-p { margin-top: 8rpx; font-size: 26rpx; color: #ef3f66; font-weight: bold; }
+.menu { padding: 0 28rpx; }
+.mi { padding: 30rpx 0; border-bottom: 1rpx solid #f3eef1; }
+.mi.last { border-bottom: none; }
+.mi-t { flex: 1; font-size: 28rpx; }
+.mi-x { font-size: 24rpx; color: #a39aa4; }

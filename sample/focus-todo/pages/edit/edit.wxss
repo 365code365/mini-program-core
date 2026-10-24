@@ -1,0 +1,139 @@
+.head {
+  margin-top: 24rpx;
+}
+.check {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 22rpx;
+  border: 4rpx solid #c4c9d2;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tick {
+  width: 18rpx;
+  height: 10rpx;
+  border-left: 4rpx solid #ffffff;
+  border-bottom: 4rpx solid #ffffff;
+  transform: rotate(-45deg);
+  margin-top: -4rpx;
+}
+.title-input {
+  padding: 0 0 0 1rpx;
+  flex: 1;
+  margin-left: 20rpx;
+  font-size: 34rpx;
+  font-weight: bold;
+  height: 72rpx;
+}
+.prio-row {
+  margin-top: 28rpx;
+  padding-top: 24rpx;
+  border-top: 1rpx solid #f0f1f4;
+}
+.label {
+  font-size: 26rpx;
+  color: #6b7280;
+  margin-right: 20rpx;
+}
+.prio {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 8rpx 22rpx;
+  border-radius: 28rpx;
+  border: 2rpx solid #e5e7eb;
+  margin-right: 14rpx;
+}
+.prio-dot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 8rpx;
+  margin-right: 8rpx;
+}
+.prio-text {
+  font-size: 24rpx;
+  color: #4b5563;
+}
+.prio.on .prio-text {
+  color: #ffffff;
+  font-weight: bold;
+}
+.cells {
+  padding: 0 28rpx;
+}
+.cell {
+  height: 104rpx;
+  border-bottom: 1rpx solid #f0f1f4;
+}
+.cell.last {
+  border-bottom: none;
+}
+.ic {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 12rpx;
+  color: #ffffff;
+  font-size: 24rpx;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20rpx;
+}
+.cell-label {
+  font-size: 28rpx;
+}
+.cell-value {
+  font-size: 28rpx;
+  color: #ff6250;
+}
+.cell-value.ph {
+  color: #a3a8b3;
+}
+.note {
+  width: 100%;
+  height: 200rpx;
+  margin-top: 20rpx;
+  padding: 20rpx;
+  box-sizing: border-box;
+  background: #f7f7fa;
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  line-height: 44rpx;
+}
+.pomo-emoji {
+  font-size: 48rpx;
+  margin-right: 20rpx;
+}
+.pomo-title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: bold;
+}
+.pomo-btn {
+  padding: 12rpx 28rpx;
+  border-radius: 32rpx;
+  background: #fff0ec;
+  color: #ff6250;
+  font-size: 26rpx;
+  font-weight: bold;
+}
+.btns {
+  margin: 16rpx 24rpx 0;
+}
+.btn-del {
+  width: 200rpx;
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  border-radius: 44rpx;
+  background: #ffffff;
+  color: #f2453d;
+  font-size: 30rpx;
+  margin-right: 20rpx;
+}
+.safe {
+  height: calc(40rpx + env(safe-area-inset-bottom));
+}

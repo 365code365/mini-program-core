@@ -1,0 +1,56 @@
+<view class="page">
+  <view class="topic row" hover-class="press" bindtap="onTopic">
+    <view class="flex1">
+      <view class="muted"><text>当前话题 · 点击切换</text></view>
+      <view class="topic-t"><text>{{title}}</text></view>
+    </view>
+    <view class="switch-btn"><text>换话题</text></view>
+  </view>
+
+  <view class="board">
+    <view wx:for="{{cells}}" wx:key="i" class="cell-wrap">
+      <view wx:if="{{item.i === 4}}" class="cell start {{running ? 'start-run' : ''}}" hover-class="press" bindtap="onStart">
+        <text class="start-t">{{running ? '抽签中' : '开始'}}</text>
+        <text class="start-s">{{running ? '' : '点我抽签'}}</text>
+      </view>
+      <view wx:else class="cell {{active === item.i ? 'cell-on' : ''}} {{result && active === item.i ? 'cell-win' : ''}}">
+        <text class="cell-t">{{item.text}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{result}}" class="card result row">
+    <view class="res-badge"><text>签</text></view>
+    <view class="flex1">
+      <view class="muted"><text>抽签结果</text></view>
+      <view class="res-t"><text>{{result}}</text></view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="row between">
+      <text class="card-title">自定义选项</text>
+      <text class="muted">{{custom.length}}/8</text>
+    </view>
+    <view class="row add-row">
+      <input class="flex1 add-input" value="{{draft}}" placeholder="例如：火锅" placeholder-class="ph" maxlength="10" bindinput="onDraft" bindconfirm="onAddOpt" />
+      <view class="add-btn" hover-class="press" bindtap="onAddOpt"><text>添加</text></view>
+    </view>
+    <view class="opts">
+      <view wx:for="{{custom}}" wx:key="index" class="opt row">
+        <text>{{item}}</text>
+        <view class="opt-x" data-i="{{index}}" bindtap="onDelOpt"><view class="x1"></view><view class="x2"></view></view>
+      </view>
+    </view>
+    <view wx:if="{{custom.length >= 2}}" class="use-custom" bindtap="useCustom"><text>用这些选项抽签</text></view>
+  </view>
+
+  <view class="card" wx:if="{{history.length}}">
+    <text class="card-title">最近结果</text>
+    <view wx:for="{{history}}" wx:key="index" class="row hist">
+      <text class="muted flex1">{{item.t}}</text>
+      <text class="hist-r">{{item.r}}</text>
+    </view>
+  </view>
+  <view class="space"></view>
+</view>

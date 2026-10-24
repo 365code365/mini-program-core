@@ -1,0 +1,13 @@
+.press { opacity: 0.75; }
+.hero { margin: 24rpx 24rpx 0; padding: 28rpx 32rpx; border-radius: 28rpx; color: #ffffff; }
+.hero-c { font-size: 26rpx; opacity: 0.9; }
+.hero-t { font-size: 40rpx; font-weight: bold; margin-top: 8rpx; white-space: nowrap; }
+.hero-s { font-size: 22rpx; opacity: 0.85; margin-top: 10rpx; }
+.item { margin-top: 20rpx; padding: 28rpx; border: 3rpx solid transparent; }
+.item-on { border-color: #2f7ff0; background: #f5f9ff; }
+.ic { width: 80rpx; height: 80rpx; border-radius: 24rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; color: #ffffff; font-size: 32rpx; font-weight: bold; margin-right: 24rpx; }
+.name { font-size: 30rpx; font-weight: bold; }
+.desc { font-size: 24rpx; color: #8a8d96; margin-top: 8rpx; line-height: 1.5; }
+.level { font-size: 30rpx; font-weight: bold; margin-left: 16rpx; white-space: nowrap; }
+.tip-btn { margin: 36rpx 24rpx 0; height: 88rpx; border-radius: 44rpx; background: linear-gradient(90deg, #4c9bff, #2f7ff0); color: #ffffff; font-size: 30rpx; font-weight: bold; display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.space { height: 48rpx; }

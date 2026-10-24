@@ -1,0 +1,54 @@
+<view class="page">
+  <view class="header">
+    <view class="row">
+      <view class="avatar"><text>鹿</text></view>
+      <view class="flex1 who">
+        <view class="nick"><text>小鹿用户 8826</text></view>
+        <view class="motto"><text>已连续记账 {{streak}} 天，继续保持</text></view>
+      </view>
+      <view class="vip"><text>记账达人</text></view>
+    </view>
+    <view class="row nums">
+      <view class="flex1 num"><view class="num-v"><text>{{total}}</text></view><view class="num-l"><text>记账笔数</text></view></view>
+      <view class="flex1 num"><view class="num-v"><text>{{days}}</text></view><view class="num-l"><text>记账天数</text></view></view>
+      <view class="flex1 num"><view class="num-v nowrap"><text>{{balanceText}}</text></view><view class="num-l"><text>本月结余</text></view></view>
+    </view>
+  </view>
+
+  <view class="card menu">
+    <view class="row item" hover-class="item-hover" bindtap="onBudget">
+      <view class="ico" style="background: #fff1e6; color: #f57c34;"><text>预</text></view>
+      <text class="flex1 item-t">预算设置</text>
+      <text class="muted">¥{{budget}}/月</text><view class="arrow"></view>
+    </view>
+    <view class="row item" hover-class="item-hover" bindtap="onAdd">
+      <view class="ico" style="background: #e9f3ff; color: #4c9bff;"><text>记</text></view>
+      <text class="flex1 item-t">快速记一笔</text>
+      <view class="arrow"></view>
+    </view>
+    <view class="row item" hover-class="item-hover" bindtap="onReminder">
+      <view class="ico" style="background: #e8f8f2; color: #2fbf8f;"><text>醒</text></view>
+      <text class="flex1 item-t">记账提醒</text>
+      <text class="muted">每晚 21:00</text><view class="arrow"></view>
+    </view>
+    <view class="row item last" hover-class="item-hover" bindtap="onExport">
+      <view class="ico" style="background: #f3eeff; color: #9b6bff;"><text>导</text></view>
+      <text class="flex1 item-t">导出账单</text>
+      <view class="arrow"></view>
+    </view>
+  </view>
+
+  <view class="card menu">
+    <view class="row item" hover-class="item-hover" bindtap="onAbout">
+      <view class="ico" style="background: #f0f1f4; color: #5c6066;"><text>关</text></view>
+      <text class="flex1 item-t">关于小鹿记账</text>
+      <text class="muted">v2.3.0</text><view class="arrow"></view>
+    </view>
+    <view class="row item last" hover-class="item-hover" bindtap="onClear">
+      <view class="ico" style="background: #ffeded; color: #f04848;"><text>清</text></view>
+      <text class="flex1 item-t danger">清空全部账单</text>
+      <view class="arrow"></view>
+    </view>
+  </view>
+  <view class="foot muted"><text>账单仅保存在本机 · 鹿鸣数字科技</text></view>
+</view>

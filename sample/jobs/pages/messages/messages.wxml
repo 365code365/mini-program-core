@@ -1,0 +1,37 @@
+<view class="top row">
+  <view wx:for="{{filters}}" wx:key="*this" class="chip {{fIdx === index ? 'on' : ''}}" data-idx="{{index}}" bindtap="onFilter">
+    <text class="chip-t">{{item}}</text>
+  </view>
+  <view class="flex1"></view>
+  <view class="read-all" bindtap="onReadAll"><text class="read-all-t">全部已读</text></view>
+</view>
+
+<view class="notice row">
+  <view class="n-icon"><text class="n-icon-t">通</text></view>
+  <view class="col flex1">
+    <text class="n-title">求职小助手</text>
+    <text class="sub">本周有 3 家公司查看了你的简历</text>
+  </view>
+</view>
+
+<view class="list">
+  <view wx:for="{{shown}}" wx:key="id" class="item row" data-idx="{{item.idx}}" bindtap="onOpen">
+    <view class="av-wrap">
+      <view class="avatar" style="background: {{item.hrInfo.bg}}">{{item.hrInfo.ch}}</view>
+      <view class="badge" wx:if="{{item.unread > 0}}"><text class="badge-t">{{item.unread}}</text></view>
+    </view>
+    <view class="col flex1 body">
+      <view class="row between">
+        <view class="row">
+          <text class="name">{{item.hrInfo.name}}</text>
+          <text class="sub">{{item.co.name}}·{{item.hrInfo.title}}</text>
+        </view>
+        <text class="time">{{item.time}}</text>
+      </view>
+      <text class="job">沟通职位：{{item.jobTitle}}</text>
+      <text class="last {{item.unread > 0 ? 'strong' : ''}}">{{item.last}}</text>
+    </view>
+  </view>
+  <view wx:if="{{shown.length === 0}}" class="empty"><text class="sub">暂无未读消息</text></view>
+</view>
+<view class="tabbar-space"></view>

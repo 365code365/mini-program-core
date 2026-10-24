@@ -1,0 +1,45 @@
+<view class="page">
+  <view class="search row">
+    <view class="lens"><view class="lens-c"></view><view class="lens-h"></view></view>
+    <input class="flex1 search-in" value="{{kw}}" placeholder="搜索城市，如：成都 / 广东 / xiamen" placeholder-class="ph" confirm-type="search" bindinput="onInput" />
+    <view wx:if="{{kw}}" class="clear" bindtap="onClearKw"><text>取消</text></view>
+  </view>
+
+  <view wx:if="{{kw}}" class="card result">
+    <view wx:if="{{!results.length}}" class="empty muted"><text>没有找到「{{kw}}」，试试省份名</text></view>
+    <view wx:for="{{results}}" wx:key="id" class="res row" hover-class="press" data-id="{{item.id}}" bindtap="onAdd">
+      <text class="res-n">{{item.name}}</text>
+      <text class="muted res-p">{{item.prov}}</text>
+      <view class="flex1"></view>
+      <text class="{{item.added ? 'added' : 'add'}}">{{item.added ? '已添加' : '+ 添加'}}</text>
+    </view>
+  </view>
+
+  <block wx:else>
+    <view class="sec row between">
+      <text class="sec-t">我的城市</text>
+      <view class="manage" hover-class="press" bindtap="onManage"><text>{{editing ? '完成' : '管理'}}</text></view>
+    </view>
+    <view wx:for="{{mine}}" wx:key="id" class="city row" style="background: {{item.bg}};" hover-class="press" data-id="{{item.id}}" bindtap="onPick" bindlongpress="onLong">
+      <view class="col flex1">
+        <view class="row">
+          <text class="city-n">{{item.name}}</text>
+          <view wx:if="{{item.id === current}}" class="tag"><text>首页</text></view>
+        </view>
+        <text class="city-s">{{item.condName}}   {{item.hi}}°/{{item.lo}}°   空气{{item.aqi}}</text>
+      </view>
+      <wicon cond="{{item.cond}}" size="96rpx" />
+      <text wx:if="{{!editing}}" class="city-t">{{item.t}}°</text>
+      <view wx:else class="del" hover-class="press" data-id="{{item.id}}" catchtap="onDel"><text>删除</text></view>
+    </view>
+
+    <view class="hint muted"><text>点「管理」删除城市，或长按卡片设为首页 / 置顶 / 删除</text></view>
+    <view class="sec"><text class="sec-t">热门城市</text></view>
+    <view class="hot row">
+      <view wx:for="{{hot}}" wx:key="id" class="chip {{item.added ? 'chip-on' : ''}}" hover-class="press" data-id="{{item.id}}" bindtap="onAdd">
+        <text>{{item.name}}</text>
+      </view>
+    </view>
+  </block>
+  <view class="space"></view>
+</view>

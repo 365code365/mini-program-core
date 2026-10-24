@@ -1,0 +1,46 @@
+<view class="header">
+  <view class="row">
+    <view class="avatar"><text class="avatar-t">影</text></view>
+    <view class="flex1 info">
+      <text class="nick">爱看电影的小林</text>
+      <view class="row"><text class="lv">Lv.6 资深影迷</text><text class="phone">138****6621</text></view>
+    </view>
+  </view>
+  <view class="stats row">
+    <view class="stat" bindtap="onWishList"><text class="stat-n">{{wishCount}}</text><text class="stat-l">想看</text></view>
+    <view class="stat"><text class="stat-n">{{seen}}</text><text class="stat-l">看过</text></view>
+    <view class="stat"><text class="stat-n">12</text><text class="stat-l">影评</text></view>
+    <view class="stat" bindtap="onTickets"><text class="stat-n">{{ticketCount}}</text><text class="stat-l">电影票</text></view>
+  </view>
+</view>
+
+<view class="vip">
+  <view>
+    <text class="vip-t">光影会员卡</text>
+    <text class="vip-s">每周三购票立减 20 元 · 免服务费</text>
+  </view>
+  <view class="vip-btn" bindtap="onVip">{{vip ? '已开通' : '¥19 开通'}}</view>
+</view>
+
+<view class="card">
+  <view class="row between"><text class="block-title">我想看的</text><text class="sub">{{wishCount}} 部</text></view>
+  <view wx:if="{{!wishes.length}}" class="sub empty">在电影详情页点「想看」，上映时提醒你</view>
+  <scroll-view scroll-x class="wish-scroll" wx:else show-scrollbar="{{false}}">
+    <view class="wish-row">
+      <view class="wish" wx:for="{{wishes}}" wx:key="id" data-id="{{item.id}}" bindtap="onMovie">
+        <image class="wish-poster" src="{{item.poster}}" mode="aspectFill"></image>
+        <text class="wish-t">{{item.title}}</text>
+      </view>
+    </view>
+  </scroll-view>
+</view>
+
+<view class="card menu">
+  <view class="menu-item" wx:for="{{menus}}" wx:key="name" data-name="{{item.name}}" bindtap="onMenu">
+    <view class="m-icon" style="background:{{item.bg}}"><text class="m-g">{{item.g}}</text></view>
+    <text class="flex1 m-name">{{item.name}}</text>
+    <text class="sub">{{item.extra}}</text>
+    <view class="chev"></view>
+  </view>
+</view>
+<view class="gap"></view>

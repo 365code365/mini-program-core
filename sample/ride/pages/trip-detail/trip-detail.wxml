@@ -1,0 +1,41 @@
+<view class="hero">
+  <text class="hero-label">{{trip.status === 'done' ? (paid ? '支付成功' : '行程已完成') : '行程已取消'}}</text>
+  <view class="hero-price" wx:if="{{trip.status === 'done'}}"><text class="hero-num">{{fee.total}}</text><text class="hero-unit">元</text></view>
+  <text class="hero-sub">{{trip.date}} · {{trip.type}}</text>
+</view>
+
+<view class="card overlap">
+  <view class="route">
+    <view class="row"><view class="dot dot-green"></view><text class="route-text">{{trip.from}}</text></view>
+    <view class="route-line"></view>
+    <view class="row"><view class="dot dot-orange"></view><text class="route-text">{{trip.to}}</text></view>
+  </view>
+  <view class="driver row" wx:if="{{trip.status === 'done'}}">
+    <view class="avatar"><text class="avatar-text">{{surname}}</text></view>
+    <view class="flex1 ml">
+      <text class="driver-name">{{trip.driver}} · {{trip.plate}}</text>
+      <text class="sub block">{{trip.car}}</text>
+    </view>
+    <view class="rate-btn" bindtap="onRate">{{rated ? '已评价' : '评价'}}</view>
+  </view>
+</view>
+
+<view class="card" wx:if="{{trip.status === 'done'}}">
+  <view class="row between head"><text class="title-sm">费用明细</text><view class="row" bindtap="onRule"><text class="sub">计价规则</text><view class="chev"></view></view></view>
+  <view class="fee row between"><text>起步价</text><text>¥{{fee.base}}</text></view>
+  <view class="fee row between"><text>里程费（{{trip.km}}公里）</text><text>¥{{fee.mileage}}</text></view>
+  <view class="fee row between"><text>时长费（{{trip.min}}分钟）</text><text>¥{{fee.time}}</text></view>
+  <view class="fee row between" wx:if="{{fee.far > 0}}"><text>远途费</text><text>¥{{fee.far}}</text></view>
+  <view class="fee row between" wx:if="{{fee.coupon > 0}}"><text>快车券</text><text class="orange">-¥{{fee.coupon}}</text></view>
+  <view class="total row between"><text class="total-label">实付金额</text><text class="total-num">¥{{fee.total}}</text></view>
+  <text class="sub">已通过 微信支付 支付</text>
+</view>
+
+<view class="card" wx:else>
+  <text class="sub">该行程在司机接单前取消，未产生任何费用。</text>
+</view>
+
+<view class="ops" wx:if="{{trip.status === 'done'}}">
+  <view class="btn-ghost flex1" bindtap="onInvoice">开具发票</view>
+  <view class="btn-ghost flex1 ml" bindtap="onComplain">投诉与反馈</view>
+</view>

@@ -1,0 +1,23 @@
+.tabs { display: flex; flex-direction: row; background: #fff; padding: 0 24rpx; }
+.tab { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 24rpx 0 16rpx; font-size: 28rpx; color: #8a9099; }
+.tab-on { color: #1f2329; font-weight: bold; }
+.tab-line { width: 40rpx; height: 6rpx; border-radius: 3rpx; background: #FF7A1A; margin-top: 10rpx; }
+.summary { display: flex; flex-direction: row; align-items: center; margin: 24rpx; padding: 28rpx 0; border-radius: 20rpx; background: linear-gradient(120deg, #2E3440, #4A5263); }
+.sum-item { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.sum-num { color: #fff; font-size: 38rpx; font-weight: bold; }
+.sum-label { color: rgba(255, 255, 255, 0.65); font-size: 22rpx; margin-top: 6rpx; }
+.sum-split { width: 1rpx; height: 56rpx; background: rgba(255, 255, 255, 0.2); }
+.trip { margin-top: 0; }
+.trip-type { font-size: 30rpx; font-weight: bold; }
+.trip-date { font-size: 24rpx; color: #9aa0a6; margin-left: 16rpx; }
+.status { font-size: 24rpx; }
+.status.done { color: #19BE6B; }
+.status.cancel { color: #9aa0a6; }
+.route { margin-top: 22rpx; }
+.route-text { font-size: 28rpx; margin-left: 18rpx; color: #4e5969; }
+.route-line { width: 2rpx; height: 24rpx; background: #e3e5e8; margin: 6rpx 0 6rpx 7rpx; }
+.foot { margin-top: 22rpx; padding-top: 20rpx; border-top: 1rpx solid #f0f1f3; }
+.pay { font-size: 32rpx; font-weight: bold; }
+.empty { text-align: center; color: #9aa0a6; padding: 120rpx 0; }
+.bottom-gap { height: 24rpx; }
+.pay-label { margin-right: 6rpx; }

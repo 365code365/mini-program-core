@@ -1,0 +1,29 @@
+.header {
+  padding: 40rpx 36rpx 36rpx;
+  background: linear-gradient(160deg, #ffb057 0%, #f5733b 100%);
+  border-radius: 0 0 40rpx 40rpx;
+  color: #ffffff;
+}
+.avatar {
+  width: 112rpx; height: 112rpx; border-radius: 56rpx;
+  background: radial-gradient(circle at 30% 30%, #fff7ef, #ffd9b8);
+  color: #f5733b; font-size: 48rpx; font-weight: bold;
+  display: flex; align-items: center; justify-content: center;
+  border: 4rpx solid rgba(255, 255, 255, 0.6);
+}
+.who { margin-left: 24rpx; }
+.nick { font-size: 36rpx; font-weight: bold; white-space: nowrap; }
+.motto { font-size: 24rpx; opacity: 0.9; margin-top: 8rpx; }
+.vip { font-size: 22rpx; padding: 6rpx 18rpx; border-radius: 20rpx; background: rgba(255, 255, 255, 0.22); }
+.nums { margin-top: 40rpx; }
+.num { text-align: center; }
+.num-v { font-size: 40rpx; font-weight: bold; }
+.num-l { font-size: 22rpx; opacity: 0.85; margin-top: 6rpx; }
+.menu { padding: 0 28rpx; }
+.item { height: 108rpx; border-bottom: 1rpx solid #f0f1f4; }
+.last { border-bottom: none; }
+.item-hover { opacity: 0.6; }
+.ico { width: 56rpx; height: 56rpx; border-radius: 16rpx; font-size: 26rpx; font-weight: bold; display: flex; align-items: center; justify-content: center; margin-right: 22rpx; }
+.item-t { font-size: 30rpx; }
+.danger { color: #f04848; }
+.foot { text-align: center; margin: 40rpx 0; }

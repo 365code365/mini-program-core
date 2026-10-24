@@ -14,7 +14,7 @@ if [ -n "${SSHPASS:-}" ]; then S=(sshpass -e); else S=(); fi
 R() { "${S[@]}" ssh -o ConnectTimeout=15 "$HOST" "$@"; }
 
 # --no-xattrs / COPYFILE_DISABLE：别把 macOS 的扩展属性打进去（GNU tar 解的时候每个文件警告一行）
-COPYFILE_DISABLE=1 tar --no-xattrs -czf - server.py store_pkg.py landing.py diag.py static mini-store.service | R 'set -e
+COPYFILE_DISABLE=1 tar --no-xattrs -czf - server.py store_pkg.py store_search.py landing.py diag.py static mini-store.service | R 'set -e
 id mini-store >/dev/null 2>&1 || useradd --system --home /opt/mini-store --shell /usr/sbin/nologin mini-store
 mkdir -p /opt/mini-store/app /opt/mini-store/data/apps
 tar xzf - -C /opt/mini-store/app

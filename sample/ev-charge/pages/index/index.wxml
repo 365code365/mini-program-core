@@ -1,0 +1,73 @@
+<view class="top row">
+  <view class="loc row"><view class="loc-dot"></view><text class="loc-t">杭州·西溪</text></view>
+  <view class="search row flex1" bindtap="onSearchTap">
+    <view class="search-icon"></view>
+    <input class="search-input flex1" placeholder="搜索电站 / 地址" placeholder-class="ph" value="{{keyword}}" bindinput="onSearch" />
+  </view>
+</view>
+
+<!-- 地图示意：纯 CSS 画道路、河流、绿地与电站标记（不用 <map>） -->
+<view class="map">
+  <view class="park p1"></view><view class="park p2"></view>
+  <view class="river"></view>
+  <view class="road h1"></view><view class="road h2"></view>
+  <view class="road v1"></view><view class="road v2"></view>
+  <view class="road d1"></view>
+  <text class="road-name n1">文一西路</text>
+  <text class="road-name n2">五常大道</text>
+  <view class="me" style="left: 50%; top: 50%"><view class="me-halo"></view><view class="me-dot"></view></view>
+  <view wx:for="{{stations}}" wx:key="id" class="marker {{selId === item.id ? 'sel' : ''}} {{item.fastFree + item.slowFree === 0 ? 'full' : ''}}" style="left: {{item.x}}%; top: {{item.y}}%" data-id="{{item.id}}" catchtap="onMarker">
+    <view class="m-bubble row">
+      <view class="m-bolt"><text class="m-bolt-t">充</text></view>
+      <text class="m-t">{{item.fastFree + item.slowFree}}</text>
+    </view>
+    <view class="m-tip"></view>
+  </view>
+  <view class="locate" bindtap="onLocate"><view class="locate-in"></view></view>
+</view>
+
+<view class="scan-bar row" bindtap="onScan">
+  <view class="scan-ic"><view class="sc c1"></view><view class="sc c2"></view><view class="sc c3"></view><view class="sc c4"></view><view class="sc-line"></view></view>
+  <view class="col flex1">
+    <text class="scan-title">扫码充电</text>
+    <text class="scan-sub">扫描充电桩二维码或输入终端编号</text>
+  </view>
+  <view class="chev white"></view>
+</view>
+
+<view class="charging-tip row" wx:if="{{session}}" bindtap="onSession">
+  <view class="pulse"></view>
+  <text class="flex1 tip-t">正在充电 {{session.terminal}}，点击查看进度</text>
+  <view class="chev"></view>
+</view>
+
+<scroll-view scroll-x class="filters" enable-flex>
+  <view class="filters-in row">
+    <view wx:for="{{filters}}" wx:key="*this" class="chip {{fIdx === index ? 'on' : ''}}" data-idx="{{index}}" bindtap="onFilter"><text class="chip-t">{{item}}</text></view>
+  </view>
+</scroll-view>
+
+<view wx:for="{{list}}" wx:key="id" class="card st {{selId === item.id ? 'st-sel' : ''}}" data-id="{{item.id}}" bindtap="onStation">
+  <view class="row between">
+    <text class="st-name flex1">{{item.name}}</text>
+    <text class="st-dist">{{item.distText}}</text>
+  </view>
+  <text class="sub st-addr">{{item.addr}}</text>
+  <view class="row st-mid">
+    <view class="free row">
+      <view class="free-ic fast"><text class="free-ic-t">快</text></view>
+      <text class="free-n {{item.fastFree ? '' : 'none'}}">空闲 {{item.fastFree}}</text><text class="free-total">/{{item.fastTotal}}</text>
+    </view>
+    <view class="free row" wx:if="{{item.slowTotal}}">
+      <view class="free-ic slow"><text class="free-ic-t">慢</text></view>
+      <text class="free-n {{item.slowFree ? '' : 'none'}}">空闲 {{item.slowFree}}</text><text class="free-total">/{{item.slowTotal}}</text>
+    </view>
+    <view class="flex1"></view>
+    <text class="price money">¥{{item.price}}</text><text class="sub">/度</text>
+  </view>
+  <view class="row">
+    <text class="tag tag-green">{{item.open}}</text>
+    <text class="tag tag-gray">{{item.parking}}</text>
+  </view>
+</view>
+<view class="tabbar-space"></view>

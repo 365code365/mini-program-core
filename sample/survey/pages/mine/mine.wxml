@@ -1,0 +1,58 @@
+<view class="hero">
+  <view class="row">
+    <view class="av"><text class="av-t">星</text></view>
+    <view class="col flex1">
+      <text class="name">星球居民 9527</text>
+      <text class="lv">Lv.3 活跃答主·已认证</text>
+    </view>
+  </view>
+  <view class="row stats">
+    <view class="stat col"><text class="stat-n">{{sum.pub}}</text><text class="stat-l">发布</text></view>
+    <view class="stat col"><text class="stat-n">{{sum.votes}}</text><text class="stat-l">收到票数</text></view>
+    <view class="stat col"><text class="stat-n">{{sum.joined}}</text><text class="stat-l">参与</text></view>
+  </view>
+</view>
+
+<view class="tabs row">
+  <view wx:for="{{tabs}}" wx:key="*this" class="tab {{tIdx === index ? 'on' : ''}}" data-idx="{{index}}" bindtap="onTab">
+    <text class="tab-t">{{item}}</text>
+    <view class="tab-line" wx:if="{{tIdx === index}}"></view>
+  </view>
+</view>
+
+<view wx:if="{{tIdx === 0}}">
+  <view wx:for="{{pub}}" wx:key="id" class="card p">
+    <view class="row between">
+      <text class="st {{item.ended ? 'end' : ''}}">{{item.ended ? '已截止' : '进行中'}}</text>
+      <view class="more row" data-idx="{{index}}" bindtap="onMore"><view class="md"></view><view class="md"></view><view class="md"></view></view>
+    </view>
+    <text class="p-title">{{item.title}}</text>
+    <view wx:for="{{item.top}}" wx:for-item="o" wx:key="t" class="mini row">
+      <text class="mini-t">{{o.t}}</text>
+      <view class="mini-bg flex1"><view class="mini-fg" style="width: {{o.pct}}%"></view></view>
+      <text class="mini-p">{{o.pct}}%</text>
+    </view>
+    <view class="row between p-foot">
+      <text class="sub">{{item.total}} 票·{{item.multi ? '多选' : '单选'}}{{item.anonymous ? '·匿名' : ''}}·截止 {{item.deadline}}</text>
+      <view class="link" data-id="{{item.id}}" bindtap="onResult"><text class="link-t">查看结果</text></view>
+    </view>
+  </view>
+  <view class="new" bindtap="onCreate"><text class="new-t">+ 发起新投票</text></view>
+</view>
+
+<view wx:if="{{tIdx === 1}}">
+  <view wx:for="{{joined}}" wx:key="id" class="card row j" data-id="{{item.id}}" bindtap="onJoined">
+    <view class="glyph" style="background: {{item.bg}}"><text class="glyph-t">{{item.glyph}}</text></view>
+    <view class="col flex1 j-main">
+      <text class="j-title">{{item.title}}</text>
+      <text class="sub">{{item.kind}}·{{item.author}}·{{item.qCount}} 题</text>
+    </view>
+    <view class="chev"></view>
+  </view>
+  <view wx:if="{{joined.length === 0}}" class="empty col">
+    <view class="empty-ic"><view class="e-line l1"></view><view class="e-line l2"></view><view class="e-line l3"></view></view>
+    <text class="sub">还没有参与过问卷</text>
+    <view class="btn-ghost empty-btn" bindtap="onGo">去广场看看</view>
+  </view>
+</view>
+<view class="tabbar-space"></view>

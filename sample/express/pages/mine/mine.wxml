@@ -1,0 +1,47 @@
+<view class="profile">
+  <view class="row">
+    <view class="me-avatar">鹿</view>
+    <view class="flex1 me-main">
+      <text class="me-name">林小鹿</text>
+      <view class="row"><text class="vip">黄金会员</text><text class="me-phone">138****6630</text></view>
+    </view>
+    <text class="me-set" bindtap="onSetting">设置</text>
+  </view>
+  <view class="stats row">
+    <view class="stat flex1" wx:for="{{stats}}" wx:key="label">
+      <text class="stat-num">{{item.num}}</text>
+      <text class="stat-label">{{item.label}}</text>
+    </view>
+  </view>
+</view>
+
+<view class="card coupon row">
+  <view class="coupon-left">
+    <text class="coupon-amt">¥5</text>
+    <text class="coupon-cond">无门槛</text>
+  </view>
+  <view class="flex1 coupon-main">
+    <text class="coupon-title">寄件立减券</text>
+    <text class="sub">11-30 前有效 · 全场通用</text>
+  </view>
+  <view class="coupon-btn" bindtap="onUseCoupon">去使用</view>
+</view>
+
+<view class="card menu">
+  <view class="menu-item row" wx:for="{{menus}}" wx:key="text" bindtap="onMenu" data-i="{{index}}">
+    <view class="menu-icon" style="background: {{item.bg}}">{{item.glyph}}</view>
+    <text class="flex1 menu-text">{{item.text}}</text>
+    <text class="sub">{{item.hint}}</text>
+    <view class="chev"></view>
+  </view>
+</view>
+
+<view class="card menu">
+  <view class="menu-item row" bindtap="onClear">
+    <view class="menu-icon" style="background: #f2453d">清</view>
+    <text class="flex1 menu-text">清除查询记录</text>
+    <view class="chev"></view>
+  </view>
+</view>
+<text class="ver">快递100查 v3.8.2 · 蓝鲸速达</text>
+<view class="safe"></view>

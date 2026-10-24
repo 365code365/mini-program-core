@@ -1,0 +1,74 @@
+<view class="banner">
+  <text class="banner-title">上门取件 · 最快 1 小时</text>
+  <text class="banner-sub">新用户首单立减 5 元，丢损必赔</text>
+</view>
+
+<view class="card addr-card">
+  <view class="addr-row" bindtap="onPick" data-role="sender">
+    <view class="addr-badge send">寄</view>
+    <view class="flex1 addr-main" wx:if="{{sender}}">
+      <view class="row"><text class="addr-name">{{sender.name}}</text><text class="sub">{{sender.phone}}</text></view>
+      <text class="addr-detail">{{sender.region}} {{sender.detail}}</text>
+    </view>
+    <view class="flex1 addr-main" wx:else><text class="addr-ph">填写寄件人信息</text></view>
+    <view class="chev"></view>
+  </view>
+  <view class="addr-divider"></view>
+  <view class="addr-row" bindtap="onPick" data-role="receiver">
+    <view class="addr-badge recv">收</view>
+    <view class="flex1 addr-main" wx:if="{{receiver}}">
+      <view class="row"><text class="addr-name">{{receiver.name}}</text><text class="sub">{{receiver.phone}}</text></view>
+      <text class="addr-detail">{{receiver.region}} {{receiver.detail}}</text>
+    </view>
+    <view class="flex1 addr-main" wx:else><text class="addr-ph">填写收件人信息</text></view>
+    <view class="chev"></view>
+  </view>
+</view>
+
+<view class="card">
+  <text class="title">物品类型</text>
+  <view class="chips">
+    <view class="chip {{goods === index ? 'on' : ''}}" wx:for="{{goodsList}}" wx:key="*this" bindtap="onGoods" data-i="{{index}}">{{item}}</view>
+  </view>
+
+  <view class="row between field-head">
+    <text class="title">预估重量</text>
+    <text class="weight">{{weight}} kg</text>
+  </view>
+  <slider min="1" max="30" step="1" value="{{weight}}" activeColor="#2f6bff" backgroundColor="#e3e7ee" block-size="24" bindchanging="onWeight" bindchange="onWeight" />
+  <view class="row between"><text class="sub">1kg</text><text class="sub">30kg</text></view>
+</view>
+
+<view class="card">
+  <text class="title">快递公司</text>
+  <view class="carriers">
+    <view class="carrier {{carrier === index ? 'on' : ''}}" wx:for="{{carrierList}}" wx:key="key" bindtap="onCarrier" data-i="{{index}}">
+      <text class="carrier-name">{{item.name}}</text>
+      <text class="carrier-eta">{{item.eta}}</text>
+    </view>
+  </view>
+
+  <picker mode="multiSelector" range="{{timeRange}}" value="{{timeIndex}}" bindchange="onTime">
+    <view class="cell row between">
+      <text class="cell-label">上门时间</text>
+      <view class="row"><text class="cell-value">{{timeText}}</text><view class="chev"></view></view>
+    </view>
+  </picker>
+  <view class="cell row between">
+    <text class="cell-label">保价服务</text>
+    <switch checked="{{insured}}" color="#2f6bff" bindchange="onInsure" />
+  </view>
+  <view class="cell row between last">
+    <text class="cell-label">给快递员留言</text>
+    <input class="cell-input" placeholder="如：易碎品请轻拿轻放" value="{{note}}" bindinput="onNote" />
+  </view>
+</view>
+
+<view class="fee-gap"></view>
+<view class="fee-bar">
+  <view class="flex1">
+    <view class="row"><text class="fee-label">预估运费</text><text class="fee">¥{{fee}}</text></view>
+    <text class="sub">首重 ¥{{first}} + 续重 {{weight - 1}}kg × ¥{{extra}}{{insured ? ' + 保价 ¥3' : ''}}</text>
+  </view>
+  <view class="submit" bindtap="onSubmit">立即下单</view>
+</view>

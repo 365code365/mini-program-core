@@ -25,6 +25,8 @@ import java.util.zip.ZipInputStream
  * 全部是阻塞调用，放后台线程跑。
  */
 class MiniStore(ctx: Context, val baseUrl: String = DEFAULT_URL) {
+    /** 图标加载要用（application context，不拿着 Activity） */
+    val context: Context = ctx.applicationContext
     data class App(
         val id: String,
         val appId: String,
@@ -34,13 +36,21 @@ class MiniStore(ctx: Context, val baseUrl: String = DEFAULT_URL) {
         val sha256: String,
         val size: Long,
         val packageUrl: String,
+        /** 商店展示与搜索用（服务器 store.meta.json / 管理页填的）；老服务器没有这些字段 */
+        val category: String = "",
+        val tags: List<String> = emptyList(),
+        val developer: String = "",
+        val iconUrl: String = "",
+        val downloads: Int = 0,
     ) {
         /** 深链 / 跳转用的 key：有 AppID 用 AppID */
         val key: String get() = appId.ifEmpty { id }
 
         fun toJson(): String = JSONObject()
             .put("id", id).put("appId", appId).put("name", name).put("description", description).put("version", version)
-            .put("sha256", sha256).put("size", size).put("packageUrl", packageUrl).toString()
+            .put("sha256", sha256).put("size", size).put("packageUrl", packageUrl)
+            .put("category", category).put("tags", org.json.JSONArray(tags)).put("developer", developer)
+            .put("iconUrl", iconUrl).put("downloads", downloads).toString()
 
         companion object {
             fun fromJson(j: JSONObject) = App(
@@ -52,6 +62,11 @@ class MiniStore(ctx: Context, val baseUrl: String = DEFAULT_URL) {
                 sha256 = j.optString("sha256"),
                 size = j.optLong("size"),
                 packageUrl = j.optString("packageUrl", "/api/apps/${j.getString("id")}/package"),
+                category = j.optString("category"),
+                tags = j.optJSONArray("tags")?.let { a -> (0 until a.length()).map { a.optString(it) } }.orEmpty(),
+                developer = j.optString("developer"),
+                iconUrl = j.optString("iconUrl"),
+                downloads = j.optInt("downloads"),
             )
         }
     }
@@ -65,7 +80,7 @@ class MiniStore(ctx: Context, val baseUrl: String = DEFAULT_URL) {
     /** 服务器明确回了 404：没有这个小程序（AppID 不对 / 已下架） */
     class NotFound(msg: String) : IOException(msg)
 
-    private val root = File(ctx.filesDir, "mini-apps").apply { mkdirs() }
+    private val root = File(context.filesDir, "mini-apps").apply { mkdirs() }
 
     fun list(): Listing {
         val cache = File(root, "index.json")
@@ -78,6 +93,38 @@ class MiniStore(ctx: Context, val baseUrl: String = DEFAULT_URL) {
             val apps = if (cache.isFile) runCatching { parse(cache.readText()) }.getOrDefault(emptyList()) else emptyList()
             Listing(apps, true, e.message ?: e.javaClass.simpleName)
         }
+    }
+
+    /** 搜索（服务器 `/api/apps?q=&category=`）：关键词每段都要命中，按相关度 + 热度排。返回 (结果, 总数) */
+    fun search(q: String, category: String = ""): Pair<List<App>, Int> {
+        val url = "$baseUrl/api/apps?q=${enc(q)}&category=${enc(category)}&limit=100"
+        val body = JSONObject(get(url, connectMs = 6000).toString(Charsets.UTF_8))
+        return parse(body.toString()) to body.optInt("total")
+    }
+
+    /** 热搜词（服务器按搜索次数排，冷启动时用热门小程序补齐） */
+    fun hotKeywords(): List<String> = strings(JSONObject(get("$baseUrl/api/search/hot", connectMs = 6000).toString(Charsets.UTF_8)), "keywords")
+
+    /** 输入联想 */
+    fun suggest(q: String): List<String> =
+        strings(JSONObject(get("$baseUrl/api/search/suggest?q=${enc(q)}", connectMs = 4000).toString(Charsets.UTF_8)), "words")
+
+    /** 分类与数量（`name to count`），服务器的固定顺序 */
+    fun categories(): List<Pair<String, Int>> {
+        val a = JSONObject(get("$baseUrl/api/categories", connectMs = 6000).toString(Charsets.UTF_8)).getJSONArray("categories")
+        return (0 until a.length()).map { a.getJSONObject(it).let { o -> o.getString("name") to o.optInt("count") } }
+    }
+
+    /** 商店图标的字节（`filesDir/mini-apps/icons/<id>-v<版本>.png` 缓存，换版本换文件）；没有图标返回 null */
+    fun iconBytes(app: App): ByteArray? {
+        if (app.iconUrl.isEmpty()) return null
+        val dir = File(root, "icons").apply { mkdirs() }
+        val f = File(dir, "${app.id}-v${app.version}.png")
+        if (f.isFile) return f.readBytes()
+        val bytes = runCatching { get(URL(URL(baseUrl), app.iconUrl).toString(), connectMs = 6000) }.getOrNull() ?: return null
+        dir.listFiles { x -> x.name.startsWith("${app.id}-v") }?.forEach { it.delete() }
+        f.writeBytes(bytes)
+        return bytes
     }
 
     /** 服务器上的最新版（key = AppID 或 id） */
@@ -193,6 +240,11 @@ class MiniStore(ctx: Context, val baseUrl: String = DEFAULT_URL) {
                 .filter { ID_RE.matches(it.optString("id")) }
                 .map { App.fromJson(it) }
         }
+
+        private fun enc(s: String) = java.net.URLEncoder.encode(s, "UTF-8")
+
+        private fun strings(o: JSONObject, key: String): List<String> =
+            o.optJSONArray(key)?.let { a -> (0 until a.length()).map { a.optString(it) } }.orEmpty().filter { it.isNotEmpty() }
 
         private fun sha256(b: ByteArray): String =
             MessageDigest.getInstance("SHA-256").digest(b).joinToString("") { "%02x".format(it) }

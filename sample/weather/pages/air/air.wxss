@@ -1,0 +1,29 @@
+.hero { margin: 24rpx 24rpx 0; padding: 40rpx 32rpx 32rpx; border-radius: 28rpx; color: #ffffff; align-items: center; background: linear-gradient(160deg, #2f7ff0 0%, #5aa9ff 100%); box-shadow: 0 12rpx 30rpx rgba(47, 127, 240, 0.25); }
+.ring { width: 280rpx; height: 280rpx; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.95); box-shadow: 0 0 0 16rpx rgba(255, 255, 255, 0.25); }
+.ring-v { font-size: 96rpx; font-weight: bold; line-height: 1.1; }
+.ring-n { font-size: 30rpx; font-weight: bold; }
+.ring-l { font-size: 22rpx; color: #8a8d96; margin-top: 4rpx; }
+.hero-tip { margin-top: 36rpx; font-size: 26rpx; line-height: 1.6; text-align: center; }
+.hero-rank { margin-top: 12rpx; font-size: 22rpx; opacity: 0.85; }
+.grid { flex-wrap: wrap; margin-top: 8rpx; }
+.p { width: 33.33%; padding: 20rpx 12rpx; box-sizing: border-box; }
+.p-k { font-size: 26rpx; font-weight: bold; }
+.p-v { font-size: 40rpx; font-weight: bold; margin-top: 4rpx; }
+.p-n { font-size: 20rpx; color: #8a8d96; margin-top: 2rpx; }
+.p-track { height: 8rpx; border-radius: 4rpx; background: #f0f1f4; margin-top: 12rpx; }
+.p-fill { height: 8rpx; border-radius: 4rpx; }
+.chart { height: 240rpx; align-items: flex-end; margin-top: 20rpx; }
+.bar-col { flex: 1; align-items: center; }
+.bar-v { font-size: 20rpx; color: #5c6066; margin-bottom: 6rpx; }
+.bar-box { height: 190rpx; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; }
+.bar { width: 24rpx; border-radius: 12rpx 12rpx 4rpx 4rpx; }
+.bar-l { font-size: 18rpx; color: #b8bcc4; margin-top: 8rpx; white-space: nowrap; }
+.adv { flex-wrap: wrap; margin-top: 12rpx; }
+.adv-i { width: 50%; height: 96rpx; }
+.adv-dot { width: 56rpx; height: 56rpx; border-radius: 16rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; color: #ffffff; font-size: 24rpx; font-weight: bold; margin-right: 16rpx; }
+.adv-t { font-size: 26rpx; }
+.scale { margin-top: 16rpx; }
+.lv { height: 64rpx; }
+.lv-c { width: 24rpx; height: 24rpx; border-radius: 6rpx; margin-right: 16rpx; }
+.lv-n { width: 160rpx; font-size: 26rpx; }
+.space { height: 48rpx; }

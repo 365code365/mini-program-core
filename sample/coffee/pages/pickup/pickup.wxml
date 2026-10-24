@@ -1,0 +1,77 @@
+<view wx:if="{{order}}">
+  <view class="code-card">
+    <view class="row between">
+      <text class="mode-tag">{{order.mode === 'pickup' ? '到店自取' : '外卖送达'}}</text>
+      <text class="code-time">{{order.pickTime}}</text>
+    </view>
+    <text class="code-label">{{order.mode === 'pickup' ? '取餐码' : '订单号'}}</text>
+    <text class="code">{{order.code}}</text>
+    <text class="code-tip">{{tip}}</text>
+
+    <view class="steps row">
+      <view class="step" wx:for="{{steps}}" wx:key="name">
+        <view class="row step-top">
+          <view class="step-line {{index === 0 ? 'hide' : ''}} {{item.done ? 'line-on' : ''}}"></view>
+          <view class="step-dot {{item.done ? 'dot-on' : ''}} glyph">{{index + 1}}</view>
+          <view class="step-line {{index === steps.length - 1 ? 'hide' : ''}} {{steps[index + 1].done ? 'line-on' : ''}}"></view>
+        </view>
+        <text class="step-name {{item.done ? 'name-on' : ''}}">{{item.name}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="row">
+      <view class="store-icon glyph">店</view>
+      <view class="flex1">
+        <text class="title">{{store.name}}</text>
+        <text class="sub store-addr">{{store.addr}}</text>
+      </view>
+    </view>
+    <view class="row store-ops">
+      <view class="store-op" bindtap="onCall">联系门店</view>
+      <view class="store-op" bindtap="onNav">到店导航</view>
+    </view>
+  </view>
+
+  <view class="card">
+    <text class="title">饮品明细</text>
+    <view class="item row" wx:for="{{order.items}}" wx:key="spec">
+      <image class="item-img" src="{{item.img}}" mode="aspectFill"></image>
+      <view class="flex1">
+        <text class="item-name">{{item.name}}</text>
+        <text class="item-spec">{{item.spec}}</text>
+      </view>
+      <text class="sub item-qty">×{{item.qty}}</text>
+      <text class="item-total">¥{{item.total}}</text>
+    </view>
+    <view class="row paid">
+      <text class="sub flex1">订单号 {{order.id}}</text>
+      <text>实付</text>
+      <text class="price paid-num">¥{{order.pay}}</text>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{history.length}}">
+    <text class="title">历史订单</text>
+    <view class="his row" wx:for="{{history}}" wx:key="id">
+      <text class="his-code">{{item.code}}</text>
+      <view class="flex1">
+        <text class="his-name ellipsis">{{item.summary}}</text>
+        <text class="sub">{{item.time}}</text>
+      </view>
+      <text class="his-pay">¥{{item.pay}}</text>
+    </view>
+  </view>
+  <view class="bottom-gap"></view>
+</view>
+
+<view wx:else class="empty">
+  <view class="empty-cup">
+    <view class="empty-lid"></view>
+    <view class="empty-body glyph">拾</view>
+  </view>
+  <text class="empty-title">还没有进行中的订单</text>
+  <text class="sub">下单后在这里查看取餐码与制作进度</text>
+  <view class="btn empty-btn" bindtap="onGoMenu">去点一杯</view>
+</view>

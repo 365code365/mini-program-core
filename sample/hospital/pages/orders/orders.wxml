@@ -1,0 +1,38 @@
+<view class="tabs">
+  <view class="tab {{tab === item.key ? 'on' : ''}}" wx:for="{{tabs}}" wx:key="key" data-key="{{item.key}}" bindtap="setTab">
+    <text>{{item.name}}</text>
+    <view class="tab-line" wx:if="{{tab === item.key}}"></view>
+  </view>
+</view>
+
+<view class="card ord" wx:for="{{list}}" wx:key="id">
+  <view class="row between o-head">
+    <text class="o-date">{{item.date}} {{item.time}}</text>
+    <text class="o-st st-{{item.status}}">{{statusText[item.status]}}</text>
+  </view>
+  <view class="row o-body">
+    <view class="o-no" wx:if="{{item.status === 'wait'}}">
+      <text class="o-no-v">{{item.no}}</text>
+      <text class="o-no-k">号</text>
+    </view>
+    <view class="o-main">
+      <text class="o-dept">{{item.dept}} · {{item.doctor}} {{item.title}}</text>
+      <text class="muted">就诊人：{{item.patient}}　挂号费 ¥{{item.fee}}</text>
+      <text class="muted">{{item.room}}</text>
+    </view>
+  </view>
+  <view class="o-foot" wx:if="{{item.status === 'wait'}}">
+    <view class="o-btn" data-id="{{item.id}}" bindtap="cancel"><text>取消预约</text></view>
+    <view class="o-btn pri" data-id="{{item.id}}" bindtap="checkin"><text>就诊签到</text></view>
+  </view>
+  <view class="o-foot" wx:else>
+    <view class="o-btn" bindtap="again"><text>再次挂号</text></view>
+  </view>
+</view>
+
+<view wx:if="{{!list.length}}" class="empty-box">
+  <view class="empty-ic"><view class="e1"></view><view class="e2"></view><view class="e3"></view></view>
+  <text class="empty-tx">暂无{{tabName}}的挂号记录</text>
+  <view class="btn-primary empty-btn" bindtap="again"><text>去挂号</text></view>
+</view>
+<view style="height: 40rpx;"></view>

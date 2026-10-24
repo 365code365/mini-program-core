@@ -1,0 +1,29 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/records/records",
+    "pages/mine/mine",
+    "pages/pay/pay",
+    "pages/result/result",
+    "pages/accounts/accounts",
+    "pages/mobile/mobile"
+  ],
+  "window": {
+    "navigationBarTitleText": "生活缴费",
+    "navigationBarBackgroundColor": "#14a06f",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f4f6f8"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#9aa0ab",
+    "selectedColor": "#14a06f",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "缴费", "iconPath": "images/tab/home.png", "selectedIconPath": "images/tab/home-on.png" },
+      { "pagePath": "pages/records/records", "text": "记录", "iconPath": "images/tab/bill.png", "selectedIconPath": "images/tab/bill-on.png" },
+      { "pagePath": "pages/mine/mine", "text": "我的", "iconPath": "images/tab/user.png", "selectedIconPath": "images/tab/user-on.png" }
+    ]
+  }
+}

@@ -1,0 +1,46 @@
+<view class="header">
+  <view class="row">
+    <view class="avatar"><text class="avatar-t">舟</text></view>
+    <view class="flex1 info">
+      <text class="nick">林晓舟</text>
+      <text class="phone">138****6621</text>
+    </view>
+    <view class="sign" bindtap="onSign">{{signed ? '已签到' : '签到 +10'}}</view>
+  </view>
+  <view class="member">
+    <view class="row between">
+      <text class="m-level">途栖 · 金卡会员</text>
+      <text class="m-right">权益 6 项</text>
+    </view>
+    <text class="m-sub">再住 3 晚升级铂金卡，享延迟退房至 14:00</text>
+    <view class="m-bar"><view class="m-fill"></view></view>
+  </view>
+</view>
+
+<view class="stats card">
+  <view class="stat" bindtap="onFavTab"><text class="stat-n">{{favs.length}}</text><text class="stat-l">收藏</text></view>
+  <view class="stat"><text class="stat-n">{{views}}</text><text class="stat-l">浏览记录</text></view>
+  <view class="stat"><text class="stat-n">{{points}}</text><text class="stat-l">积分</text></view>
+  <view class="stat"><text class="stat-n">4</text><text class="stat-l">优惠券</text></view>
+</view>
+
+<view class="card">
+  <view class="row between"><text class="block-title">我的收藏</text><text class="sub">{{favs.length}} 家</text></view>
+  <view wx:if="{{!favs.length}}" class="fav-empty sub">还没有收藏，去酒店详情页点「收藏」吧</view>
+  <view class="fav row" wx:for="{{favs}}" wx:key="id" data-id="{{item.id}}" bindtap="onHotel">
+    <image class="fav-img" src="{{item.img}}" mode="aspectFill"></image>
+    <view class="flex1 fav-info">
+      <text class="fav-name">{{item.name}}</text>
+      <view class="row"><text class="score">{{item.score}}</text><text class="sub fav-area">{{item.area}}</text></view>
+    </view>
+    <text class="price-color fav-price">¥{{item.price}}</text>
+  </view>
+</view>
+
+<view class="card menu">
+  <view class="menu-item" wx:for="{{menus}}" wx:key="*this" data-name="{{item}}" bindtap="onMenu">
+    <text class="flex1">{{item}}</text>
+    <view class="chev"></view>
+  </view>
+</view>
+<view class="gap"></view>

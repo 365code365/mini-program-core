@@ -1,0 +1,54 @@
+<view class="top">
+  <view class="row between">
+    <view class="today">
+      <text class="t-label">今日已学（分钟）</text>
+      <view class="row t-num-row"><text class="t-num">{{todayMins}}</text><text class="t-goal">/ 目标 {{goal}}</text></view>
+    </view>
+    <view class="ring"><text class="ring-n">{{goalPct}}%</text><text class="ring-l">今日目标</text></view>
+  </view>
+  <view class="goal-bar"><view class="goal-in" style="width: {{goalPct}}%;"></view></view>
+  <view class="row sums">
+    <view class="sum"><text class="sum-n">{{totalHours}}</text><text class="sum-l">累计学时</text></view>
+    <view class="sum"><text class="sum-n">{{courseCount}}</text><text class="sum-l">我的课程</text></view>
+    <view class="sum"><text class="sum-n">{{doneCount}}</text><text class="sum-l">已学完</text></view>
+  </view>
+</view>
+
+<view wx:if="{{cur}}" class="card cont">
+  <view class="row between"><text class="sec-title">继续学习</text><text class="muted">上次学到</text></view>
+  <view class="row cont-body" data-id="{{cur.id}}" bindtap="goDetail">
+    <view class="cv" style="background: {{cur.cover}};"><text>{{cur.mark}}</text></view>
+    <view class="cont-main">
+      <text class="cont-title">{{cur.title}}</text>
+      <text class="cont-last">{{cur.lastTitle}}</text>
+      <view class="row pg"><view class="bar pg-bar"><view class="bar-in" style="width: {{cur.pct}}%;"></view></view><text class="pg-tx">{{cur.pct}}%</text></view>
+    </view>
+  </view>
+  <view class="btn-primary cont-btn" data-id="{{cur.id}}" bindtap="study"><text>继续学习 · 第 {{cur.done + 1}} 节</text></view>
+</view>
+
+<view class="card exam row" bindtap="goExam">
+  <view class="ex-ic"><text>练</text></view>
+  <view class="ex-main"><text class="ex-title">章节练习 · Python 基础</text><text class="muted">5 道单选题 · 约 3 分钟</text></view>
+  <view class="ex-go"><text>去练习</text></view>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="sec-title">我的课程</text>
+    <view class="seg row">
+      <view class="seg-i {{filter === 'ing' ? 'on' : ''}}" data-f="ing" bindtap="onFilter"><text>学习中</text></view>
+      <view class="seg-i {{filter === 'done' ? 'on' : ''}}" data-f="done" bindtap="onFilter"><text>已学完</text></view>
+    </view>
+  </view>
+  <view wx:if="{{list.length === 0}}" class="empty"><text>{{filter === 'ing' ? '还没有在学的课程' : '还没有学完的课程，坚持就是胜利'}}</text><view class="go-home" bindtap="goHome"><text>去选课</text></view></view>
+  <view class="my row" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="goDetail">
+    <view class="cv sm" style="background: {{item.cover}};"><text>{{item.mark}}</text></view>
+    <view class="my-main">
+      <text class="my-title">{{item.title}}</text>
+      <text class="muted">{{item.teacher}} · 已学 {{item.done}}/{{item.lessons}} 节</text>
+      <view class="row pg"><view class="bar pg-bar"><view class="bar-in" style="width: {{item.pct}}%;"></view></view><text class="pg-tx">{{item.pct}}%</text></view>
+    </view>
+  </view>
+</view>
+<view class="tab-gap"></view>

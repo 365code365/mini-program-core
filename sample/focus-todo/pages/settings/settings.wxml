@@ -1,0 +1,49 @@
+<view class="profile row">
+  <view class="avatar">柠</view>
+  <view class="flex1">
+    <text class="name">阿柠</text>
+    <text class="sub">已坚持专注 {{streak}} 天 · 累计 {{totalHours}} 小时</text>
+  </view>
+  <view class="pro">PRO</view>
+</view>
+
+<text class="group">番茄时长</text>
+<view class="card">
+  <view class="s-item" wx:for="{{sliders}}" wx:key="key">
+    <view class="row between">
+      <text class="s-label">{{item.label}}</text>
+      <text class="s-value">{{settings[item.key]}} {{item.unit}}</text>
+    </view>
+    <slider min="{{item.min}}" max="{{item.max}}" step="{{item.step}}" value="{{settings[item.key]}}" activeColor="#ff6250" backgroundColor="#f0f1f4" block-size="22" data-k="{{item.key}}" bindchanging="onSlide" bindchange="onSlideEnd" />
+  </view>
+</view>
+
+<text class="group">提醒与行为</text>
+<view class="card cells">
+  <view class="cell row" wx:for="{{switches}}" wx:key="key">
+    <view class="flex1">
+      <text class="cell-label">{{item.label}}</text>
+      <text class="cell-desc">{{item.desc}}</text>
+    </view>
+    <switch checked="{{settings[item.key]}}" color="#ff6250" data-k="{{item.key}}" bindchange="onSwitch" />
+  </view>
+</view>
+
+<text class="group">数据</text>
+<view class="card cells">
+  <view class="cell row" bindtap="onExport">
+    <text class="flex1 cell-label">导出专注记录</text>
+    <text class="sub">{{sessionCount}} 条</text>
+    <view class="chev"></view>
+  </view>
+  <view class="cell row" bindtap="onReset">
+    <text class="flex1 cell-label danger">恢复默认设置</text>
+    <view class="chev"></view>
+  </view>
+  <view class="cell row" bindtap="onClear">
+    <text class="flex1 cell-label danger">清空所有数据</text>
+    <view class="chev"></view>
+  </view>
+</view>
+<text class="ver">专注清单 2.4.0</text>
+<view class="tab-safe"></view>

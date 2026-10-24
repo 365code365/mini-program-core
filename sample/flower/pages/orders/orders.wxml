@@ -1,0 +1,28 @@
+<view class="tabs">
+  <view class="tab {{tab === item.k ? 'on' : ''}}" wx:for="{{tabs}}" wx:key="k" data-k="{{item.k}}" bindtap="onTab"><text>{{item.n}}</text><view class="tab-line"></view></view>
+</view>
+<view wx:if="{{list.length === 0}}" class="empty"><text>暂无相关订单</text><view class="e-btn" bindtap="goHome"><text>去挑花</text></view></view>
+<view class="card order" wx:for="{{list}}" wx:key="no">
+  <view class="row between o-head">
+    <text class="o-no">订单号 {{item.no}}</text>
+    <text class="o-st st-{{item.status}}">{{item.st}}</text>
+  </view>
+  <view class="row o-item" wx:for="{{item.items}}" wx:for-item="g" wx:key="id">
+    <image class="o-img" src="{{g.img}}" mode="aspectFill"></image>
+    <view class="o-main">
+      <text class="o-name">{{g.name}}</text>
+      <text class="o-spec">{{g.spec}} · ×{{g.qty}}</text>
+      <text class="o-to">送至 {{item.receiver}} · {{item.date}} {{item.slot}}</text>
+    </view>
+  </view>
+  <view class="row between o-foot">
+    <view class="row"><text wx:if="{{item.anonymous}}" class="anon">匿名</text><text class="muted">{{item.time}}</text></view>
+    <text class="o-sum">共 {{item.qty}} 件 实付 <text class="price">¥{{item.total}}</text></text>
+  </view>
+  <view class="row o-acts">
+    <view wx:if="{{item.status === 'paid'}}" class="act" data-no="{{item.no}}" bindtap="cancel"><text>取消订单</text></view>
+    <view wx:if="{{item.status !== 'cancel'}}" class="act" data-no="{{item.no}}" bindtap="track"><text>查看进度</text></view>
+    <view class="act main" data-no="{{item.no}}" bindtap="again"><text>再来一单</text></view>
+  </view>
+</view>
+<view class="tab-gap"></view>

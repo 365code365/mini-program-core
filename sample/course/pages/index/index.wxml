@@ -1,0 +1,77 @@
+<view class="hero">
+  <view class="search">
+    <view class="s-ic"></view>
+    <input class="s-input" placeholder="搜索课程、讲师" placeholder-class="s-ph" value="{{keyword}}" bindinput="onInput" confirm-type="search" />
+    <view wx:if="{{keyword}}" class="s-clear" bindtap="clearKw"><text>×</text></view>
+  </view>
+</view>
+<scroll-view class="cats" scroll-x="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}">
+  <view class="cat {{cat === item ? 'on' : ''}}" wx:for="{{cats}}" wx:key="*this" data-c="{{item}}" bindtap="onCat"><text>{{item}}</text></view>
+</scroll-view>
+
+<block wx:if="{{!keyword && cat === '全部'}}">
+  <view class="banner-wrap">
+    <swiper class="banner" autoplay="{{true}}" interval="4000" circular="{{true}}" indicator-dots="{{true}}" indicator-color="rgba(255,255,255,0.45)" indicator-active-color="#ffffff">
+      <swiper-item wx:for="{{banners}}" wx:key="title">
+        <view class="b-item" style="background: {{item.bg}};" data-id="{{item.id}}" bindtap="goCourse">
+          <text class="b-title">{{item.title}}</text>
+          <text class="b-sub">{{item.sub}}</text>
+          <view class="b-btn"><text>{{item.btn}}</text></view>
+          <view class="b-deco1"></view>
+          <view class="b-deco2"></view>
+        </view>
+      </swiper-item>
+    </swiper>
+  </view>
+
+  <view class="quick card">
+    <view class="q-item" bindtap="goLearn"><view class="q-ic" style="background: linear-gradient(135deg, #6f9bff, #3d6cf6);"><text>学</text></view><text class="q-tx">学习中心</text></view>
+    <view class="q-item" bindtap="goCheckin"><view class="q-ic" style="background: linear-gradient(135deg, #ffc46b, #ff8a3d);"><text>卡</text></view><text class="q-tx">每日打卡</text></view>
+    <view class="q-item" bindtap="goExam"><view class="q-ic" style="background: linear-gradient(135deg, #7fe0bf, #20b486);"><text>练</text></view><text class="q-tx">考试练习</text></view>
+    <view class="q-item" data-id="k7" bindtap="goCourse"><view class="q-ic" style="background: linear-gradient(135deg, #ff9fb6, #f0577a);"><text>免</text></view><text class="q-tx">免费好课</text></view>
+  </view>
+
+  <view class="card">
+    <view class="row between">
+      <text class="sec-title">名师推荐</text>
+      <text class="muted">{{teachers.length}} 位认证讲师</text>
+    </view>
+    <scroll-view class="teachers" scroll-x="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}">
+      <view class="teacher" wx:for="{{teachers}}" wx:key="id" data-id="{{item.id}}" bindtap="onTeacher">
+        <view class="avatar t-av" style="background: {{item.color}};"><text>{{item.sx}}</text></view>
+        <text class="t-name">{{item.name}}</text>
+        <text class="t-title">{{item.title}}</text>
+        <text class="t-fans">{{item.fans}} 人关注</text>
+      </view>
+    </scroll-view>
+  </view>
+</block>
+
+<view class="card list-card">
+  <view class="row between">
+    <text class="sec-title">{{keyword ? '搜索结果' : (cat === '全部' ? '精品好课' : cat)}}</text>
+    <text class="muted">共 {{total}} 门</text>
+  </view>
+  <view wx:if="{{total === 0}}" class="empty"><text>没有找到相关课程，换个关键词试试</text></view>
+  <view class="course" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="goCourse">
+    <view class="cover" style="background: {{item.cover}};">
+      <text class="cover-mark">{{item.mark}}</text>
+      <text class="cover-ls">{{item.lessons}} 课时</text>
+      <view wx:if="{{item.hot}}" class="hot"><text>热门</text></view>
+    </view>
+    <view class="c-main">
+      <text class="c-title">{{item.title}}</text>
+      <text class="c-sub">{{item.tname}} · {{item.hours}} 小时 · {{item.rating}} 分</text>
+      <view class="row c-tags"><text class="tag" wx:for="{{item.tags}}" wx:for-item="t" wx:key="*this">{{t}}</text></view>
+      <view class="row between c-foot">
+        <view class="row price-row">
+          <text wx:if="{{item.free}}" class="price">免费</text>
+          <block wx:else><text class="yen">¥</text><text class="price">{{item.price}}</text></block>
+          <text class="origin">¥{{item.origin}}</text>
+        </view>
+        <text class="stu">{{item.stu}}人在学</text>
+      </view>
+    </view>
+  </view>
+</view>
+<view class="tab-gap"></view>

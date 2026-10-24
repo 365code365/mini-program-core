@@ -1,0 +1,89 @@
+<view class="gallery">
+  <swiper class="swiper" current="{{cur}}" bindchange="onSwiper" circular="true">
+    <swiper-item wx:for="{{imgs}}" wx:key="src">
+      <image class="slide" src="{{item.src}}" mode="aspectFill" bindtap="onPreview" data-i="{{index}}"></image>
+    </swiper-item>
+  </swiper>
+  <view class="g-tabs row">
+    <view class="g-tab {{cur === index ? 'on' : ''}}" wx:for="{{imgs}}" wx:key="src" bindtap="onGTab" data-i="{{index}}">{{item.label}}</view>
+  </view>
+  <view class="g-count">{{cur + 1}}/{{imgs.length}}</view>
+</view>
+
+<view class="card info">
+  <view class="row top-align">
+    <text class="type-badge">{{h.typeText}}</text>
+    <text class="h-name flex1">{{h.title}}</text>
+  </view>
+  <view class="big row">
+    <view class="big-item flex1">
+      <view class="row baseline"><text class="big-val red">{{h.priceMain}}</text><text class="big-unit red">{{h.priceUnit}}</text></view>
+      <text class="sub">{{h.type === 'rent' ? '月租金' : (h.type === 'new' ? '参考均价' : '总价')}}</text>
+    </view>
+    <view class="big-item flex1">
+      <text class="big-val">{{h.layout}}</text>
+      <text class="sub">户型</text>
+    </view>
+    <view class="big-item flex1">
+      <view class="row baseline"><text class="big-val">{{h.area}}</text><text class="big-unit">㎡</text></view>
+      <text class="sub">建筑面积</text>
+    </view>
+  </view>
+  <view class="h-tags">
+    <text class="h-tag {{index === 0 ? 'hot' : ''}}" wx:for="{{h.tags}}" wx:key="*this">{{item}}</text>
+  </view>
+</view>
+
+<view class="card">
+  <text class="title">基本信息</text>
+  <view class="table">
+    <view class="t-cell" wx:for="{{facts}}" wx:key="k">
+      <text class="t-k">{{item.k}}</text>
+      <text class="t-v">{{item.v}}</text>
+    </view>
+  </view>
+  <view class="subway row">
+    <view class="sw-badge">铁</view>
+    <text class="sw-text">{{h.subway}}</text>
+  </view>
+</view>
+
+<view class="card agent">
+  <view class="row">
+    <view class="a-avatar" style="background: {{agent.color}}">{{agent.initial}}</view>
+    <view class="flex1 a-main">
+      <view class="row"><text class="a-name">{{agent.name}}</text><text class="a-badge">金牌经纪人</text></view>
+      <text class="sub">{{agent.store}}</text>
+      <text class="sub">从业 {{agent.years}} 年 · 成交 {{agent.deals}} 套 · 好评 {{agent.rate}}</text>
+    </view>
+  </view>
+  <view class="a-btns row">
+    <view class="a-btn ghost flex1" bindtap="onChat">在线咨询</view>
+    <view class="a-btn flex1" bindtap="onCall">电话联系</view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="title">小区热度</text>
+    <text class="sub">近 30 天</text>
+  </view>
+  <view class="heat row">
+    <view class="heat-item flex1"><text class="heat-val">{{h.views}}</text><text class="sub">浏览</text></view>
+    <view class="heat-item flex1"><text class="heat-val">{{h.follow}}</text><text class="sub">关注</text></view>
+    <view class="heat-item flex1"><text class="heat-val">{{bookedCount}}</text><text class="sub">带看</text></view>
+  </view>
+</view>
+
+<view class="bar-gap"></view>
+<view class="bar row">
+  <view class="fav" bindtap="onFav">
+    <image class="fav-icon" src="{{faved ? '/images/tab-fav-on.png' : '/images/tab-fav.png'}}"></image>
+    <text class="fav-text {{faved ? 'on' : ''}}">{{faved ? '已收藏' : '收藏'}}</text>
+  </view>
+  <view class="fav" bindtap="onShare">
+    <image class="fav-icon" src="/images/share.png"></image>
+    <text class="fav-text">分享</text>
+  </view>
+  <view class="book flex1" bindtap="onBook">预约看房</view>
+</view>

@@ -1,0 +1,60 @@
+<view class="summary row">
+  <view class="sum-card flex1" style="background: linear-gradient(135deg, #ff8a5c, #ff6250)">
+    <text class="sum-num">{{weekPomos}}</text>
+    <text class="sum-label">本周番茄</text>
+  </view>
+  <view class="sum-card flex1" style="background: linear-gradient(135deg, #5b9dff, #3a86ff)">
+    <text class="sum-num">{{weekHours}}<text class="sum-unit">h</text></text>
+    <text class="sum-label">专注时长</text>
+  </view>
+  <view class="sum-card flex1" style="background: linear-gradient(135deg, #3fd09a, #19a974)">
+    <text class="sum-num">{{doneCount}}</text>
+    <text class="sum-label">完成待办</text>
+  </view>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="title">本周专注</text>
+    <view class="seg row">
+      <view class="seg-item {{unit === 0 ? 'on' : ''}}" bindtap="onUnit" data-u="0">番茄</view>
+      <view class="seg-item {{unit === 1 ? 'on' : ''}}" bindtap="onUnit" data-u="1">分钟</view>
+    </view>
+  </view>
+  <text class="sub chart-sub">日均 {{avgText}} · 最高 {{best.label}}</text>
+  <view class="chart">
+    <view class="grid" wx:for="{{gridLines}}" wx:key="*this" style="bottom: {{item * 25}}%"></view>
+    <view class="bars row">
+      <view class="bar-col flex1" wx:for="{{week}}" wx:key="date" bindtap="onBar" data-i="{{index}}">
+        <text class="bar-val {{sel === index ? 'show' : ''}}">{{item.value}}</text>
+        <view class="bar {{item.isToday ? 'today' : ''}} {{sel === index ? 'sel' : ''}}" style="height: {{item.h}}rpx"></view>
+      </view>
+    </view>
+  </view>
+  <view class="row axis">
+    <text class="axis-label flex1 {{item.isToday ? 'today' : ''}}" wx:for="{{week}}" wx:key="date">{{item.label}}</text>
+  </view>
+</view>
+
+<view class="card">
+  <text class="title">今日目标</text>
+  <view class="goal row">
+    <view class="goal-bar flex1"><view class="goal-fill" style="width: {{goalPct}}%"></view></view>
+    <text class="goal-text">{{todayPomos}}/{{goal}}</text>
+  </view>
+  <view class="tomatoes row">
+    <text class="tomato {{index < todayPomos ? 'on' : ''}}" wx:for="{{goalDots}}" wx:key="*this">🍅</text>
+  </view>
+</view>
+
+<view class="card">
+  <text class="title">专注分布</text>
+  <view class="dist" wx:for="{{dist}}" wx:key="title">
+    <view class="row between">
+      <text class="dist-title">{{item.title}}</text>
+      <text class="sub">{{item.count}} 个 · {{item.minutes}} 分钟</text>
+    </view>
+    <view class="dist-bar"><view class="dist-fill" style="width: {{item.pct}}%; background: {{item.color}}"></view></view>
+  </view>
+</view>
+<view class="tab-safe"></view>

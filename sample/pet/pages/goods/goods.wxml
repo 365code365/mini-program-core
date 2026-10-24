@@ -1,0 +1,59 @@
+<swiper class="gal" indicator-dots="{{true}}" indicator-color="rgba(0,0,0,0.15)" indicator-active-color="#ff8a3d" circular="{{true}}">
+  <swiper-item wx:for="{{gallery}}" wx:key="*this">
+    <view class="gal-i" style="background: {{item}};"><image class="gal-img" src="{{g.img}}" mode="aspectFill"></image></view>
+  </swiper-item>
+</swiper>
+
+<view class="card info">
+  <view class="row between">
+    <view class="row pr"><text class="price big"><text class="yen">¥</text>{{g.price}}</text><text class="orig">¥{{g.orig}}</text><text class="save">省 ¥{{saved}}</text></view>
+    <view class="fav {{fav ? 'on' : ''}}" bindtap="toggleFav"><text class="star">★</text><text>{{fav ? '已收藏' : '收藏'}}</text></view>
+  </view>
+  <text class="g-n">{{g.name}}</text>
+  <text class="g-s">{{g.sub}}</text>
+  <view class="row g-tags"><text class="tag">满 99 包邮</text><text class="tag">7 天无理由</text><text class="tag">次日达</text><text class="muted g-sales">已售 {{g.sales}}</text></view>
+</view>
+
+<view class="card">
+  <view class="row">
+    <text class="lbl">规格</text>
+    <view class="specs">
+      <text class="spec {{spec === item ? 'on' : ''}}" wx:for="{{g.specs}}" wx:key="*this" data-s="{{item}}" bindtap="pickSpec">{{item}}</text>
+    </view>
+  </view>
+  <view class="row qty-row">
+    <text class="lbl">数量</text>
+    <view class="stepper">
+      <view class="st-b {{qty <= 1 ? 'dis' : ''}}" bindtap="dec"><text>－</text></view>
+      <text class="st-v">{{qty}}</text>
+      <view class="st-b" bindtap="inc"><text>＋</text></view>
+    </view>
+  </view>
+  <view class="row"><text class="lbl">配送</text><text class="v">杭州仓发货 · 预计明天 18:00 前送达</text></view>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="sec-title">宠友评价（{{reviews.length * 312}}）</text>
+    <text class="muted">好评率 98%</text>
+  </view>
+  <view class="rv" wx:for="{{reviews}}" wx:key="name">
+    <view class="row">
+      <view class="rv-av" style="background: {{item.color}};"><text>{{item.sx}}</text></view>
+      <text class="rv-n">{{item.name}}</text>
+      <text class="rv-pet">{{item.pet}}</text>
+    </view>
+    <text class="rv-t">{{item.text}}</text>
+  </view>
+</view>
+<view style="height: 200rpx;"></view>
+
+<view class="bar">
+  <view class="bar-ic" bindtap="goHome"><image class="i-img" src="/images/tab/home.png"></image><text>首页</text></view>
+  <view class="bar-ic" bindtap="goCart">
+    <image class="i-img" src="/images/tab/bag.png"></image><text>购物车</text>
+    <view class="badge" wx:if="{{cartCount}}"><text>{{cartCount}}</text></view>
+  </view>
+  <view class="b-add" bindtap="addCart"><text>加入购物车</text></view>
+  <view class="b-buy" bindtap="buyNow"><text>立即购买</text></view>
+</view>

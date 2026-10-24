@@ -1,0 +1,60 @@
+<view class="card info">
+  <view class="row">
+    <view class="avatar" style="background: linear-gradient(135deg, {{doc.color}}, #9fd0ff);"><text>{{doc.sx}}</text></view>
+    <view class="i-main">
+      <view class="row"><text class="i-name">{{doc.name}}</text><text class="i-title">{{doc.title}}</text></view>
+      <text class="muted">{{deptName}} · 华康仁和医院（总院）</text>
+    </view>
+  </view>
+  <view class="kv"><text class="k">就诊日期</text><text class="v">{{date}} {{week}}</text></view>
+  <view class="kv"><text class="k">就诊时段</text><text class="v">{{time}}</text></view>
+  <view class="kv"><text class="k">就诊地点</text><text class="v">门诊 3 楼 B 区 · 307 诊室</text></view>
+  <view class="kv"><text class="k">挂号费用</text><text class="v price">¥{{doc.fee}}.00</text></view>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="sec-title">就诊人</text>
+    <view class="link" bindtap="goPatients"><text>管理就诊人</text><view class="chev"></view></view>
+  </view>
+  <picker mode="selector" range="{{patientNames}}" value="{{pIdx}}" bindchange="onPatient">
+    <view class="patient">
+      <view class="p-ic"><text>{{patient.sx}}</text></view>
+      <view class="p-main">
+        <view class="row"><text class="p-name">{{patient.name}}</text><text class="tag">{{patient.relation}}</text></view>
+        <text class="muted">就诊卡 {{patient.card}}</text>
+      </view>
+      <text class="p-switch">切换</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <view class="kv">
+    <text class="k">医保类型</text>
+    <picker mode="selector" range="{{payTypes}}" value="{{payIdx}}" bindchange="onPay">
+      <view class="row"><text class="v">{{payTypes[payIdx]}}</text><view class="chev"></view></view>
+    </picker>
+  </view>
+  <view class="kv">
+    <text class="k">病情描述</text>
+    <input class="desc" placeholder="选填，如：咳嗽一周伴低热" value="{{desc}}" bindinput="onDesc" maxlength="60" />
+  </view>
+</view>
+
+<view class="card notice">
+  <text class="sec-title">挂号须知</text>
+  <text class="n-line">1. 请于就诊当日提前 15 分钟到诊区自助机签到，过号需重新排队。</text>
+  <text class="n-line">2. 就诊前一天 17:00 前可免费退号，逾期不予退费。</text>
+  <text class="n-line">3. 一个就诊人同一科室同一天限挂 1 个号。</text>
+  <checkbox-group bindchange="onAgree">
+    <label class="agree">
+      <checkbox value="ok" checked="{{agree}}" color="#1f7cf0" />
+      <text class="agree-tx">我已阅读并同意《预约挂号须知》</text>
+    </label>
+  </checkbox-group>
+</view>
+<view style="height: 200rpx;"></view>
+
+<view class="bar">
+  <view class="bar-l"><text class="muted">应付</text><text class="fee">¥{{doc.fee}}.00</text></view>
+  <view class="btn-primary bar-btn {{agree ? '' : 'disabled'}}" bindtap="submit"><text>确认挂号</text></view>
+</view>

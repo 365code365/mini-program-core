@@ -1,0 +1,62 @@
+.hero {
+  margin: 24rpx 24rpx 0;
+  padding: 36rpx 36rpx 32rpx;
+  border-radius: 28rpx;
+  background: linear-gradient(135deg, #ffb057 0%, #f5733b 100%);
+  color: #ffffff;
+  box-shadow: 0 12rpx 32rpx rgba(245, 115, 59, 0.28);
+}
+.hero-month { font-size: 26rpx; opacity: 0.9; }
+.hero-chip {
+  font-size: 22rpx;
+  padding: 6rpx 18rpx;
+  border-radius: 24rpx;
+  background: rgba(255, 255, 255, 0.22);
+}
+.hero-amount { font-size: 68rpx; font-weight: bold; margin-top: 16rpx; white-space: nowrap; }
+.hero-yen { font-size: 36rpx; margin-right: 6rpx; }
+.hero-sub { margin-top: 28rpx; }
+.hero-label { font-size: 22rpx; opacity: 0.85; }
+.hero-val { font-size: 32rpx; font-weight: bold; margin-top: 6rpx; white-space: nowrap; }
+.hero-split { width: 2rpx; height: 56rpx; background: rgba(255, 255, 255, 0.35); }
+.hero-right { padding-left: 36rpx; }
+
+.budget-track { margin-top: 24rpx; }
+.budget-foot { margin-top: 16rpx; }
+.strong { color: #1f2329; font-weight: bold; }
+.over { color: #f04848; font-size: 24rpx; font-weight: bold; white-space: nowrap; }
+
+.list-head { margin: 36rpx 32rpx 0; }
+.group { padding: 20rpx 28rpx 8rpx; }
+.group-head { padding-bottom: 12rpx; border-bottom: 1rpx solid #f0f1f4; }
+.group-date { font-size: 26rpx; color: #5c6066; font-weight: bold; }
+.rec { padding: 20rpx 0; }
+.rec-hover { opacity: 0.6; }
+.rec-mid { margin-left: 20rpx; overflow: hidden; }
+.rec-cat { font-size: 28rpx; color: #1f2329; }
+.rec-note { margin-top: 4rpx; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rec-amt { font-size: 30rpx; font-weight: bold; white-space: nowrap; margin-left: 16rpx; }
+
+.empty { text-align: center; padding: 60rpx 28rpx; }
+.empty-icon {
+  width: 96rpx; height: 96rpx; border-radius: 48rpx; margin: 0 auto 20rpx;
+  background: #fff1e6; color: #f57c34; font-size: 40rpx; font-weight: bold;
+  display: flex; align-items: center; justify-content: center;
+}
+.bottom-space { height: 40rpx; }
+
+.add-btn {
+  margin-top: 32rpx;
+  height: 84rpx;
+  border-radius: 42rpx;
+  background: #ffffff;
+  color: #f5733b;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+.add-btn-hover { opacity: 0.85; }
+.add-plus { font-size: 40rpx; font-weight: bold; margin-right: 10rpx; }
+.add-text { font-size: 30rpx; font-weight: bold; }
+.warn { color: #f04848; }

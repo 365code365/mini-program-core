@@ -1,0 +1,40 @@
+<view wx:if="{{!list.length}}" class="empty">
+  <text class="empty-t">还没有电影票</text>
+  <view class="empty-btn" bindtap="onGo">去选片</view>
+</view>
+<view class="ticket" wx:for="{{list}}" wx:key="id">
+  <view class="t-top row" data-id="{{item.id}}" bindtap="onToggle">
+    <image class="t-poster" src="{{item.poster}}" mode="aspectFill"></image>
+    <view class="flex1 t-info">
+      <view class="row between"><text class="t-title">{{item.title}}</text><text class="t-status st-{{item.status}}">{{item.status === 'unused' ? '待观影' : '已观影'}}</text></view>
+      <text class="t-time">{{item.day}} {{item.time}}</text>
+      <text class="sub t-line">{{item.cinema}}</text>
+      <text class="sub t-line">{{item.hall}} · {{item.seatText}}</text>
+    </view>
+  </view>
+  <view class="t-cut">
+    <view class="notch left"></view>
+    <view class="dash"></view>
+    <view class="notch right"></view>
+  </view>
+  <view class="t-bottom" wx:if="{{open === item.id && item.status === 'unused'}}">
+    <view class="qr">
+      <view class="qr-row" wx:for="{{qr}}" wx:key="index" wx:for-item="qrow">
+        <view class="qr-cell {{v ? 'on' : ''}}" wx:for="{{qrow}}" wx:key="index" wx:for-item="v"></view>
+      </view>
+    </view>
+    <text class="code-label">取票码</text>
+    <text class="code">{{item.codeText}}</text>
+    <text class="sub">请在开场前到 {{item.hall}} 旁自助机取票，或直接扫码入场</text>
+    <view class="row t-ops">
+      <view class="t-op" data-id="{{item.id}}" bindtap="onRefund">退票</view>
+      <view class="t-op" data-id="{{item.id}}" bindtap="onChange">改签</view>
+      <view class="t-op" bindtap="onNav">导航到影院</view>
+    </view>
+  </view>
+  <view class="t-bottom fold row" wx:else data-id="{{item.id}}" bindtap="onToggle">
+    <text class="sub">{{item.status === 'unused' ? '点击查看取票码' : '感谢观影，去写影评吧'}}</text>
+    <text class="t-price">¥{{item.total}}</text>
+  </view>
+</view>
+<view class="gap"></view>

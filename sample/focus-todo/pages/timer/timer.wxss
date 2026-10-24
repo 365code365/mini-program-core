@@ -1,0 +1,194 @@
+.modes {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  margin: 24rpx 0 20rpx;
+}
+.mode {
+  padding: 12rpx 32rpx;
+  border-radius: 32rpx;
+  font-size: 26rpx;
+  color: #6b7280;
+  margin: 0 8rpx;
+  background: #ebebf0;
+}
+.mode.on {
+  background: #1f2329;
+  color: #ffffff;
+  font-weight: bold;
+}
+.task {
+  position: relative;
+  z-index: 2;
+  margin: 0 64rpx;
+  height: 80rpx;
+  padding: 0 28rpx;
+  border-radius: 40rpx;
+  background: #ffffff;
+}
+.task-label {
+  font-size: 24rpx;
+  color: #a3a8b3;
+  margin-right: 16rpx;
+}
+.task-name {
+  font-size: 28rpx;
+  color: #1f2329;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ring-wrap {
+  margin: 116rpx 0 56rpx;
+}
+/* 圆环：底色整圆 + 左右两个半区各裁一块旋转的「轨道色」矩形，转开多少就露出多少进度；
+   矩形转起来四角会伸出圆外，外面再压一圈页面底色的 border 环把它们盖掉。
+   没用 conic-gradient（引擎不支持）；也没用「旋转半圆盘」—— 引擎把 250x500 盒子上 250 的圆角
+   按 min(w,h)/2 截成了 125，半圆盘画成了圆角矩形。 */
+.ring {
+  position: relative;
+  width: 500rpx;
+  height: 500rpx;
+  margin-left: 125rpx;
+}
+.base {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 500rpx;
+  height: 500rpx;
+  border-radius: 250rpx;
+}
+.half {
+  position: absolute;
+  top: 0;
+  width: 250rpx;
+  height: 500rpx;
+  overflow: hidden;
+}
+.half.right {
+  left: 250rpx;
+}
+.half.left {
+  left: 0;
+}
+.rotor {
+  position: absolute;
+  top: 0;
+  width: 500rpx;
+  height: 500rpx;
+}
+.half.right .rotor {
+  left: -250rpx;
+}
+.half.left .rotor {
+  left: 0;
+}
+.cover {
+  position: absolute;
+  top: 0;
+  width: 250rpx;
+  height: 500rpx;
+}
+.cover-r {
+  left: 250rpx;
+}
+.cover-l {
+  left: 0;
+}
+.mask {
+  position: absolute;
+  left: -110rpx;
+  top: -110rpx;
+  width: 720rpx;
+  height: 720rpx;
+  border-radius: 360rpx;
+  border: 110rpx solid #f6f6f9;
+  box-sizing: border-box;
+}
+.inner {
+  position: absolute;
+  left: 28rpx;
+  top: 28rpx;
+  width: 444rpx;
+  height: 444rpx;
+  border-radius: 222rpx;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.05);
+}
+.time {
+  font-size: 112rpx;
+  font-weight: bold;
+  color: #1f2329;
+}
+.state {
+  font-size: 26rpx;
+  margin-top: 4rpx;
+}
+.dots {
+  margin-top: 24rpx;
+}
+.dot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 8rpx;
+  background: #e5e7eb;
+  margin: 0 6rpx;
+}
+.ctrls {
+  justify-content: center;
+  margin-bottom: 48rpx;
+}
+.ctrl {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ctrl.small {
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: 56rpx;
+  background: #ffffff;
+}
+.ctrl-text {
+  font-size: 26rpx;
+  color: #4b5563;
+}
+.ctrl.main {
+  width: 200rpx;
+  height: 112rpx;
+  border-radius: 56rpx;
+  margin: 0 48rpx;
+}
+.main-text {
+  color: #ffffff;
+  font-size: 34rpx;
+  font-weight: bold;
+}
+.today {
+  padding: 28rpx 0;
+}
+.today-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.today-num {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #1f2329;
+}
+.unit {
+  font-size: 22rpx;
+  font-weight: normal;
+  color: #8f95a3;
+}
+.vline {
+  width: 1rpx;
+  height: 56rpx;
+  background: #eceef2;
+}

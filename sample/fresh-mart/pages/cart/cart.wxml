@@ -1,0 +1,77 @@
+<view class="addr row">
+  <text class="addr-k">送至</text>
+  <text class="addr-v flex1 ellipsis">{{address}}</text>
+  <text class="edit" bindtap="onEdit">{{editing ? '完成' : '管理'}}</text>
+</view>
+
+<view wx:if="{{list.length}}">
+  <view class="free card row">
+    <text class="free-tag">运费</text>
+    <text class="flex1 free-text">{{freeText}}</text>
+    <text wx:if="{{freeGap > 0}}" class="free-go" bindtap="onGoShop">去凑单</text>
+  </view>
+
+  <view class="card shop">
+    <view class="row shop-head">
+      <view class="check {{allChecked ? 'check-on' : ''}}" bindtap="onCheckAll"><view wx:if="{{allChecked}}" class="check-mark"></view></view>
+      <text class="shop-name">鲜到家 · 望京前置仓</text>
+      <text class="shop-tip">30 分钟达</text>
+    </view>
+    <view class="item row" wx:for="{{list}}" wx:key="key">
+      <view class="check {{item.checked ? 'check-on' : ''}}" data-index="{{index}}" bindtap="onCheck"><view wx:if="{{item.checked}}" class="check-mark"></view></view>
+      <image class="item-img" src="{{item.img}}" mode="aspectFill" data-id="{{item.id}}" bindtap="onDetail"></image>
+      <view class="flex1 item-info">
+        <text class="item-name ellipsis2" data-id="{{item.id}}" bindtap="onDetail">{{item.name}}</text>
+        <text class="item-spec">{{item.spec}}</text>
+        <view wx:if="{{item.flash}}" class="flash-tag">秒杀价</view>
+        <view class="row between item-foot">
+          <view class="price-row"><text class="p-sym">¥</text><text class="p-num">{{item.unit}}</text></view>
+          <view class="stepper">
+            <view class="step-btn" data-index="{{index}}" bindtap="onMinus"><view class="bar-h"></view></view>
+            <text class="step-num">{{item.qty}}</text>
+            <view class="step-btn step-plus" data-index="{{index}}" bindtap="onPlus"><view class="bar-h"></view><view class="bar-v"></view></view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>
+
+<view wx:else class="empty">
+  <view class="empty-cart">
+    <image class="empty-img" src="/images/tab/cart-off.png"></image>
+  </view>
+  <text class="empty-title">购物车空空的</text>
+  <text class="sub">去挑点新鲜的水果蔬菜吧</text>
+  <view class="btn empty-btn" bindtap="onGoShop">去逛逛</view>
+</view>
+
+<view class="rec-title row" wx:if="{{recs.length}}">
+  <view class="rec-line"></view><text>为你推荐</text><view class="rec-line"></view>
+</view>
+<view class="recs">
+  <view class="rec" wx:for="{{recs}}" wx:key="id" data-id="{{item.id}}" bindtap="onDetail">
+    <image class="rec-img" src="{{item.img}}" mode="aspectFill"></image>
+    <text class="rec-name ellipsis">{{item.name}}</text>
+    <view class="row between">
+      <view class="price-row"><text class="p-sym">¥</text><text class="p-num rec-num">{{item.price}}</text></view>
+      <view class="add-btn" data-id="{{item.id}}" catchtap="onAddRec">+</view>
+    </view>
+  </view>
+</view>
+
+<view class="bottom-gap"></view>
+
+<view wx:if="{{list.length}}" class="settle row" style="bottom: {{tabGap}}px;">
+  <view class="check {{allChecked ? 'check-on' : ''}}" bindtap="onCheckAll"><view wx:if="{{allChecked}}" class="check-mark"></view></view>
+  <text class="all-text">全选</text>
+  <view class="flex1"></view>
+  <block wx:if="{{!editing}}">
+    <view class="sum">
+      <view class="row sum-line"><text class="sum-k">合计</text><text class="sum-sym">¥</text><text class="sum-num">{{total}}</text></view>
+      <text class="sum-save" wx:if="{{saved > 0}}">已优惠 ¥{{saved}}</text>
+    </view>
+    <view class="settle-btn {{checkedCount ? '' : 'settle-off'}}" bindtap="onSettle">结算({{checkedCount}})</view>
+  </block>
+  <view wx:else class="del-btn" bindtap="onDelete">删除所选</view>
+</view>

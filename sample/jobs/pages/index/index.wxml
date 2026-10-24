@@ -1,0 +1,59 @@
+<view class="hero">
+  <view class="row between">
+    <view class="row">
+      <text class="intent">{{intent}}</text>
+      <view class="intent-add" bindtap="onIntent"><text class="intent-add-t">切换</text></view>
+    </view>
+    <picker mode="selector" range="{{cities}}" value="{{cityIdx}}" bindchange="onCity">
+      <view class="row city">
+        <text class="city-t">{{cities[cityIdx]}}</text>
+        <view class="tri"></view>
+      </view>
+    </picker>
+  </view>
+  <view class="search row">
+    <view class="search-icon"></view>
+    <input class="search-input flex1" placeholder="搜索职位 / 公司 / 技能" placeholder-class="ph" value="{{keyword}}" bindinput="onSearch" confirm-type="search" />
+    <view wx:if="{{keyword}}" class="clear" bindtap="onClear"><text class="clear-t">清除</text></view>
+  </view>
+</view>
+
+<view class="tabs row">
+  <view wx:for="{{tabs}}" wx:key="*this" class="tab {{tabIdx === index ? 'on' : ''}}" data-idx="{{index}}" bindtap="onTab">
+    <text class="tab-t">{{item}}</text>
+    <view class="tab-line" wx:if="{{tabIdx === index}}"></view>
+  </view>
+  <view class="flex1"></view>
+  <text class="sub">共 {{list.length}} 个职位</text>
+</view>
+
+<view class="list">
+  <view wx:for="{{list}}" wx:key="id" class="card job" data-id="{{item.id}}" bindtap="onJob">
+    <view class="row between">
+      <text class="job-title flex1">{{item.title}}</text>
+      <text class="salary">{{item.salary}}</text>
+    </view>
+    <view class="row co-line">
+      <text class="co-name">{{item.co.name}}</text>
+      <text class="sub co-meta">{{item.co.stage}}·{{item.co.size}}</text>
+    </view>
+    <view class="tags">
+      <text class="tag">{{item.exp}}</text>
+      <text class="tag">{{item.edu}}</text>
+      <text class="tag" wx:for="{{item.tags}}" wx:for-item="t" wx:key="*this">{{t}}</text>
+    </view>
+    <view class="row between hr-line">
+      <view class="row">
+        <view class="avatar" style="background: {{item.hrInfo.bg}}">{{item.hrInfo.ch}}</view>
+        <text class="hr-name">{{item.hrInfo.name}}·{{item.hrInfo.title}}</text>
+        <view class="online" wx:if="{{item.hrInfo.online}}"></view>
+      </view>
+      <text class="sub">{{item.area}} {{item.distText}}</text>
+    </view>
+  </view>
+  <view wx:if="{{list.length === 0}}" class="empty">
+    <view class="empty-circle"></view>
+    <text class="sub">没有找到「{{keyword}}」相关的职位</text>
+  </view>
+</view>
+<view class="tabbar-space"></view>

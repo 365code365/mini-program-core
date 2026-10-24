@@ -1,0 +1,26 @@
+page { background: #1c1d22; }
+.calc { display: flex; flex-direction: column; height: 100vh; }
+.history { flex: 1; height: 0; padding: 12rpx 40rpx 0; box-sizing: border-box; }
+.hist-empty { color: #55575f; font-size: 24rpx; text-align: right; padding-top: 24rpx; }
+.hist { display: flex; flex-direction: column; align-items: flex-end; padding: 10rpx 0; }
+.hist-e { color: #6e7079; font-size: 24rpx; }
+.hist-r { color: #a9abb3; font-size: 32rpx; }
+.hist-clear { color: #5c8cff; font-size: 24rpx; text-align: right; padding: 12rpx 0 20rpx; }
+.screen { padding: 0 44rpx 24rpx; }
+.expr { color: #8a8d96; font-size: 32rpx; text-align: right; height: 48rpx; white-space: nowrap; }
+.display { color: #ffffff; font-size: 128rpx; text-align: right; white-space: nowrap; line-height: 1.15; }
+.display-s { font-size: 84rpx; line-height: 1.75; }
+.pad { display: flex; flex-direction: row; flex-wrap: wrap; padding: 0 20rpx calc(28rpx + env(safe-area-inset-bottom)); }
+.key-cell { width: 25%; height: 172rpx; display: flex; align-items: center; justify-content: center; }
+.cell-zero { width: 50%; }
+.key {
+  width: 148rpx; height: 148rpx; border-radius: 74rpx;
+  display: flex; flex-direction: row; align-items: center; justify-content: center;
+  font-size: 56rpx; color: #ffffff; background: #34353b;
+}
+.key-wide { width: 322rpx; justify-content: flex-start; padding-left: 56rpx; box-sizing: border-box; }
+.key-fn { background: #a5a7ae; color: #1c1d22; font-size: 44rpx; }
+.key-op { background: #4f73f8; font-size: 64rpx; }
+.key-eq { background: #4f73f8; font-size: 64rpx; }
+.key-active { background: #ffffff; color: #4f73f8; }
+.key-press { opacity: 0.65; }

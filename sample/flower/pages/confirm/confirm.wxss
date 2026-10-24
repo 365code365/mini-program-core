@@ -1,0 +1,32 @@
+.steps { background: #ffffff; padding: 28rpx 48rpx; justify-content: space-between; }
+.stp { display: flex; flex-direction: column; align-items: center; }
+.stp-n { width: 44rpx; height: 44rpx; border-radius: 22rpx; background: #ece6ea; color: #a39aa4; font-size: 24rpx; line-height: 44rpx; text-align: center; font-weight: bold; }
+.stp.on .stp-n { background: #ef5b7e; color: #ffffff; }
+.stp-t { margin-top: 8rpx; font-size: 22rpx; color: #a39aa4; }
+.stp.on .stp-t { color: #ef4f76; font-weight: bold; }
+.stp-line { flex: 1; height: 2rpx; background: #ece6ea; margin: 0 16rpx 30rpx; }
+.f { padding: 26rpx 0; border-bottom: 1rpx solid #f3eef1; }
+.f.last { border-bottom: none; padding-bottom: 6rpx; }
+.f-l { width: 150rpx; font-size: 28rpx; color: #4d4550; flex-shrink: 0; }
+.f-in { flex: 1; font-size: 28rpx; color: #26222a; height: 44rpx; }
+.f-val { line-height: 44rpx; }
+.line { margin-top: 22rpx; align-items: flex-start; }
+.l-img { width: 140rpx; height: 140rpx; border-radius: 14rpx; flex-shrink: 0; }
+.l-main { flex: 1; margin-left: 20rpx; display: flex; flex-direction: column; min-width: 0; }
+.l-name { font-size: 28rpx; font-weight: bold; }
+.l-spec { margin-top: 6rpx; font-size: 22rpx; color: #7d747f; }
+.l-time { margin-top: 6rpx; font-size: 22rpx; color: #ef5b7e; }
+.l-card { margin-top: 6rpx; font-size: 22rpx; color: #a39aa4; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.l-p { font-size: 28rpx; margin-left: 12rpx; }
+.sw { padding: 18rpx 0; }
+.sw-main { flex: 1; display: flex; flex-direction: column; margin-right: 20rpx; }
+.sw-t { font-size: 28rpx; font-weight: bold; margin-bottom: 4rpx; }
+.fee { padding: 12rpx 0; font-size: 26rpx; }
+.fee-l { color: #7d747f; }
+.free { color: #2fb487; }
+.foot-gap { height: calc(140rpx + env(safe-area-inset-bottom)); }
+.foot { position: fixed; left: 0; right: 0; bottom: 0; background: #ffffff; padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom)) 32rpx; box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.05); justify-content: space-between; }
+.tot { align-items: baseline; }
+.tot-l { font-size: 26rpx; margin-right: 8rpx; }
+.tot-p { font-size: 44rpx; }
+.pay { width: 260rpx; height: 84rpx; border-radius: 42rpx; background: linear-gradient(90deg, #ff7f9c, #ef4f76); color: #ffffff; font-size: 30rpx; font-weight: bold; display: flex; align-items: center; justify-content: center; }

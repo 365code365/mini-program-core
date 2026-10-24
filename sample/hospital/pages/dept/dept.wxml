@@ -1,0 +1,42 @@
+<view class="page">
+  <view class="top">
+    <view class="search">
+      <view class="search-icon"></view>
+      <input class="search-in" placeholder="搜索科室或症状，如：咳嗽" value="{{kw}}" bindinput="onInput" confirm-type="search" />
+      <text wx:if="{{kw}}" class="clear" bindtap="clearKw">取消</text>
+    </view>
+  </view>
+
+  <view wx:if="{{kw}}" class="result">
+    <view class="r-item" wx:for="{{results}}" wx:key="id" data-id="{{item.id}}" bindtap="goDoctors">
+      <view>
+        <text class="r-name">{{item.name}}</text>
+        <text class="r-group">{{item.group}}</text>
+      </view>
+      <text class="r-desc">{{item.desc}}</text>
+    </view>
+    <view wx:if="{{!results.length}}" class="empty">没有找到「{{kw}}」相关科室</view>
+  </view>
+
+  <view wx:else class="body">
+    <scroll-view class="left" scroll-y="{{true}}">
+      <view class="l-item {{active === index ? 'on' : ''}}" wx:for="{{groups}}" wx:key="id" data-index="{{index}}" bindtap="pickGroup">
+        <view class="l-bar" wx:if="{{active === index}}"></view>
+        <text>{{item.name}}</text>
+      </view>
+    </scroll-view>
+    <scroll-view class="right" scroll-y="{{true}}" scroll-into-view="{{intoView}}" scroll-with-animation="{{true}}" bindscroll="onScroll">
+      <view class="sec" id="g-{{g.id}}" wx:for="{{groups}}" wx:key="id" wx:for-item="g">
+        <text class="sec-h">{{g.name}}</text>
+        <view class="d-item" wx:for="{{g.depts}}" wx:key="id" wx:for-item="d" data-id="{{d.id}}" bindtap="goDoctors">
+          <view class="d-main">
+            <text class="d-name">{{d.name}}</text>
+            <text class="d-desc">{{d.desc}}</text>
+          </view>
+          <view class="chev"></view>
+        </view>
+      </view>
+      <view style="height: 760rpx;"></view>
+    </scroll-view>
+  </view>
+</view>

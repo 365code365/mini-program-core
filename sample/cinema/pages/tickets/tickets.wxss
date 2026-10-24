@@ -1,0 +1,30 @@
+.ticket { margin: 24rpx 24rpx 0; background: #fff; border-radius: 20rpx; }
+.t-top { padding: 28rpx; align-items: flex-start; }
+.t-poster { width: 130rpx; height: 182rpx; border-radius: 10rpx; }
+.t-info { margin-left: 22rpx; display: flex; flex-direction: column; }
+.t-title { font-size: 32rpx; font-weight: bold; }
+.t-status { font-size: 22rpx; padding: 2rpx 12rpx; border-radius: 8rpx; }
+.st-unused { color: #F0384D; background: #FFF1F3; }
+.st-used { color: #9aa0a6; background: #f2f3f5; }
+.t-time { font-size: 28rpx; font-weight: bold; color: #F0384D; margin-top: 14rpx; }
+.t-line { margin-top: 8rpx; }
+.t-cut { position: relative; height: 32rpx; display: flex; flex-direction: row; align-items: center; }
+.notch { position: absolute; top: 0; width: 32rpx; height: 32rpx; border-radius: 16rpx; background: #f5f6f8; }
+.notch.left { left: -16rpx; }
+.notch.right { right: -16rpx; }
+.dash { flex: 1; margin: 0 30rpx; border-top: 2rpx dashed #e3e5e8; }
+.t-bottom { padding: 20rpx 28rpx 32rpx; display: flex; flex-direction: column; align-items: center; }
+.t-bottom.fold { flex-direction: row; justify-content: space-between; padding: 16rpx 28rpx 26rpx; }
+.t-price { font-size: 30rpx; font-weight: bold; }
+.qr { padding: 16rpx; background: #fff; border: 2rpx solid #f0f1f3; border-radius: 12rpx; }
+.qr-row { display: flex; flex-direction: row; }
+.qr-cell { width: 11rpx; height: 11rpx; }
+.qr-cell.on { background: #1f2329; }
+.code-label { font-size: 22rpx; color: #9aa0a6; margin-top: 20rpx; }
+.code { font-size: 44rpx; font-weight: bold; letter-spacing: 6rpx; margin: 4rpx 0 10rpx; }
+.t-ops { margin-top: 24rpx; width: 100%; border-top: 1rpx solid #f0f1f3; padding-top: 22rpx; }
+.t-op { flex: 1; text-align: center; font-size: 26rpx; color: #4e5969; }
+.empty { display: flex; flex-direction: column; align-items: center; padding: 160rpx 0; }
+.empty-t { color: #9aa0a6; }
+.empty-btn { margin-top: 24rpx; color: #F0384D; border: 2rpx solid #F0384D; border-radius: 30rpx; padding: 10rpx 40rpx; font-size: 26rpx; }
+.gap { height: 32rpx; }

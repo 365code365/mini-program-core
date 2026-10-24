@@ -1,0 +1,65 @@
+<view class="hero">
+  <view class="orb o1"></view><view class="orb o2"></view>
+  <text class="hero-t">发现有趣的问题</text>
+  <text class="hero-s">今天已有 {{todayText}} 人在问卷星球参与调查</text>
+  <view class="hero-btn row" bindtap="onCreate"><text class="hero-btn-t">+ 发起投票</text></view>
+</view>
+
+<view class="search row">
+  <view class="search-icon"></view>
+  <input class="search-input flex1" placeholder="搜索问卷或投票" placeholder-class="ph" value="{{keyword}}" bindinput="onSearch" />
+</view>
+
+<view class="row seg">
+  <view wx:for="{{segs}}" wx:key="*this" class="seg-i {{sIdx === index ? 'on' : ''}}" data-idx="{{index}}" bindtap="onSeg">
+    <text class="seg-t">{{item}}</text>
+  </view>
+</view>
+
+<view wx:for="{{list}}" wx:key="id" class="card sv" data-id="{{item.id}}" bindtap="onOpen">
+  <view class="row">
+    <view class="glyph" style="background: {{item.bg}}"><text class="glyph-t">{{item.glyph}}</text></view>
+    <view class="col flex1 sv-main">
+      <view class="row">
+        <text class="kind {{item.kind === '投票' ? 'kind-v' : 'kind-q'}}">{{item.kind}}</text>
+        <text class="hot" wx:if="{{item.hot}}">热门</text>
+        <view class="flex1"></view>
+        <text class="done" wx:if="{{item.done}}">已参与</text>
+      </view>
+      <text class="sv-title">{{item.title}}</text>
+    </view>
+  </view>
+  <text class="sv-desc">{{item.desc}}</text>
+  <view class="row between sv-foot">
+    <view class="row">
+      <view class="faces row">
+        <view class="face f1"></view><view class="face f2"></view><view class="face f3"></view>
+      </view>
+      <text class="sub">{{item.joinedText}} 人参与·{{item.qCount}} 题</text>
+    </view>
+    <text class="sub">截止 {{item.deadlineShort}}</text>
+  </view>
+</view>
+<view wx:if="{{list.length === 0}}" class="empty"><text class="sub">没有找到相关问卷</text></view>
+
+<view class="mine-head row between">
+  <text class="section-title">我的发布</text>
+  <view class="row" bindtap="onMine"><text class="sub">全部 {{mine.length}}</text><view class="chev"></view></view>
+</view>
+<scroll-view scroll-x class="mine-scroll" enable-flex>
+  <view class="mine-in row">
+    <view wx:for="{{mine}}" wx:key="id" class="m-card" data-id="{{item.id}}" bindtap="onResult">
+      <text class="m-title">{{item.title}}</text>
+      <view class="row m-foot">
+        <text class="m-n">{{item.total}}</text><text class="sub"> 票</text>
+        <view class="flex1"></view>
+        <text class="m-st {{item.ended ? 'end' : ''}}">{{item.ended ? '已截止' : '进行中'}}</text>
+      </view>
+    </view>
+    <view class="m-card add col" bindtap="onCreate">
+      <text class="add-plus">+</text>
+      <text class="sub">新建投票</text>
+    </view>
+  </view>
+</scroll-view>
+<view class="tabbar-space"></view>

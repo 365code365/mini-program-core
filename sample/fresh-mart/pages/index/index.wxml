@@ -1,0 +1,79 @@
+<view class="header">
+  <view class="row addr" bindtap="onAddress">
+    <text class="addr-label">配送至</text>
+    <text class="addr-text ellipsis">{{address}}</text>
+    <view class="addr-arrow"></view>
+    <view class="flex1"></view>
+    <text class="eta">最快 30 分钟达</text>
+  </view>
+  <view class="search row" bindtap="onSearch">
+    <view class="s-icon"><view class="s-handle"></view></view>
+    <text class="s-ph flex1">{{hotWord}}</text>
+    <view class="s-btn">搜索</view>
+  </view>
+  <view class="row promises">
+    <text class="promise">产地直采</text>
+    <text class="promise">坏单包赔</text>
+    <text class="promise">满 39 免运费</text>
+    <text class="promise">30 天无忧退</text>
+  </view>
+</view>
+
+<view class="cates">
+  <view class="cate" wx:for="{{categories}}" wx:key="id" data-id="{{item.id}}" bindtap="onCate">
+    <view class="cate-icon glyph" style="background: {{item.bg}}; color: {{item.color}};">{{item.glyph}}</view>
+    <text class="cate-name">{{item.name}}</text>
+  </view>
+</view>
+
+<view class="flash">
+  <view class="row flash-head">
+    <text class="flash-title">限时秒杀</text>
+    <text class="flash-slot">{{slot}}场</text>
+    <view class="row clock">
+      <text class="clock-num">{{hh}}</text><text class="clock-sep">:</text>
+      <text class="clock-num">{{mm}}</text><text class="clock-sep">:</text>
+      <text class="clock-num">{{ss}}</text>
+    </view>
+    <view class="flex1"></view>
+    <text class="flash-more" bindtap="onFlashMore">更多</text>
+    <view class="arrow"></view>
+  </view>
+  <scroll-view class="flash-list" scroll-x="{{true}}">
+    <view class="row flash-inner">
+      <view class="f-item" wx:for="{{flashList}}" wx:key="id" data-id="{{item.id}}" bindtap="onDetail">
+        <image class="f-img" src="{{item.img}}" mode="aspectFill"></image>
+        <view class="f-bar"><view class="f-bar-in" style="width: {{item.stock}}%;"></view><text class="f-bar-text">已抢{{item.stock}}%</text></view>
+        <view class="price-row f-price"><text class="p-sym">¥</text><text class="p-num">{{item.flashPrice}}</text></view>
+        <text class="f-origin">¥{{item.price}}</text>
+      </view>
+    </view>
+  </scroll-view>
+</view>
+
+<view class="feed-head row">
+  <view wx:for="{{feedTabs}}" wx:key="*this" class="feed-tab {{feedIdx === index ? 'feed-on' : ''}}" data-idx="{{index}}" bindtap="onFeedTab">
+    <text class="feed-name">{{item.name}}</text>
+    <text class="feed-desc">{{item.desc}}</text>
+  </view>
+</view>
+
+<view class="falls row">
+  <view class="col" wx:for="{{columns}}" wx:key="index" wx:for-item="col">
+    <view class="goods" wx:for="{{col}}" wx:key="id" data-id="{{item.id}}" bindtap="onDetail">
+      <image class="g-img" style="height: {{item.tall ? 400 : 330}}rpx;" src="{{item.img}}" mode="aspectFill"></image>
+      <view class="g-body">
+        <text class="g-name ellipsis2">{{item.name}}</text>
+        <view class="row g-tags">
+          <text class="tag" wx:for="{{item.tags}}" wx:for-item="t" wx:key="*this">{{t}}</text>
+        </view>
+        <text class="g-spec">{{item.spec}} · 已售 {{item.sales}}</text>
+        <view class="row between g-foot">
+          <view class="price-row"><text class="p-sym">¥</text><text class="p-num">{{item.price}}</text><text class="p-origin">¥{{item.origin}}</text></view>
+          <view class="add-btn" data-id="{{item.id}}" catchtap="onAdd">+</view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>
+<view class="end">— 更多好物持续上新 —</view>

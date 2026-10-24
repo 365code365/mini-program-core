@@ -1,0 +1,9 @@
+.group-t { margin: 36rpx 40rpx 0; }
+.list { margin-top: 16rpx; padding: 0 28rpx; }
+.item { min-height: 112rpx; border-bottom: 1rpx solid #f2f3f5; padding: 16rpx 0; box-sizing: border-box; }
+.last { border-bottom: none; }
+.press { opacity: 0.7; }
+.t { font-size: 30rpx; margin-bottom: 4rpx; }
+.v { font-size: 26rpx; color: #8a8d96; }
+.danger { color: #f04848; }
+.space { height: 48rpx; }

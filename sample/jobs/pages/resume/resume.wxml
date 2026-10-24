@@ -1,0 +1,95 @@
+<view class="progress card">
+  <view class="row between">
+    <text class="p-title">简历完整度 {{percent}}%</text>
+    <text class="sub">{{percent >= 90 ? '简历很完善，HR 更愿意联系你' : '完善简历，获得更多面试机会'}}</text>
+  </view>
+  <view class="bar-bg"><view class="bar-fg" style="width: {{percent}}%"></view></view>
+</view>
+
+<view class="card form">
+  <text class="section-title">基本信息</text>
+  <view class="field row">
+    <text class="label">姓名</text>
+    <input class="flex1 ival" value="{{r.name}}" placeholder="请输入真实姓名" data-key="name" bindinput="onInput" />
+  </view>
+  <picker mode="selector" range="{{genders}}" value="{{r.gender}}" data-key="gender" bindchange="onPick">
+    <view class="field row">
+      <text class="label">性别</text>
+      <text class="flex1 val">{{genders[r.gender]}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <view class="field row">
+    <text class="label">年龄</text>
+    <input class="flex1 ival" type="number" value="{{r.age}}" placeholder="请输入年龄" data-key="age" bindinput="onInput" />
+  </view>
+  <view class="field row">
+    <text class="label">手机号</text>
+    <input class="flex1 ival" type="number" value="{{r.phone}}" placeholder="用于 HR 联系你" data-key="phone" bindinput="onInput" />
+  </view>
+  <picker mode="selector" range="{{cities}}" value="{{cityIdx}}" bindchange="onCity">
+    <view class="field row last">
+      <text class="label">所在城市</text>
+      <text class="flex1 val">{{r.city}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+</view>
+
+<view class="card form">
+  <text class="section-title">教育经历</text>
+  <picker mode="selector" range="{{edus}}" value="{{r.edu}}" data-key="edu" bindchange="onPick">
+    <view class="field row">
+      <text class="label">最高学历</text>
+      <text class="flex1 val">{{edus[r.edu]}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <view class="field row">
+    <text class="label">学校</text>
+    <input class="flex1 ival" value="{{r.school}}" placeholder="毕业院校" data-key="school" bindinput="onInput" />
+  </view>
+  <view class="field row last">
+    <text class="label">专业</text>
+    <input class="flex1 ival" value="{{r.major}}" placeholder="所学专业" data-key="major" bindinput="onInput" />
+  </view>
+</view>
+
+<view class="card form">
+  <text class="section-title">求职期望</text>
+  <view class="field row">
+    <text class="label">期望职位</text>
+    <input class="flex1 ival" value="{{r.position}}" placeholder="如：前端开发工程师" data-key="position" bindinput="onInput" />
+  </view>
+  <picker mode="selector" range="{{exps}}" value="{{r.expYears}}" data-key="expYears" bindchange="onPick">
+    <view class="field row">
+      <text class="label">工作经验</text>
+      <text class="flex1 val">{{exps[r.expYears]}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <picker mode="selector" range="{{salaries}}" value="{{r.salary}}" data-key="salary" bindchange="onPick">
+    <view class="field row">
+      <text class="label">期望薪资</text>
+      <text class="flex1 val">{{salaries[r.salary]}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <view class="field row last">
+    <text class="label">简历公开</text>
+    <text class="flex1 sub">开启后 HR 可主动联系你</text>
+    <switch checked="{{r.open !== false}}" color="#2E6BFF" bindchange="onSwitch" />
+  </view>
+</view>
+
+<view class="card form">
+  <view class="row between">
+    <text class="section-title">个人优势</text>
+    <text class="sub">{{r.intro.length}}/300</text>
+  </view>
+  <textarea class="intro" value="{{r.intro}}" maxlength="300" placeholder="介绍一下你的工作亮点与技能" data-key="intro" bindinput="onInput" />
+</view>
+
+<view class="save-wrap">
+  <view class="btn-primary" bindtap="onSave">保存简历</view>
+</view>

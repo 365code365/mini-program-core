@@ -1,0 +1,72 @@
+<view class="head">
+  <text class="h-name">{{st.name}}</text>
+  <view class="row h-meta">
+    <text class="score">{{st.score}} 分</text>
+    <text class="tag tag-green">{{st.open}}</text>
+    <text class="tag tag-blue">{{st.brand}}运营</text>
+  </view>
+  <view class="row h-addr">
+    <text class="flex1 h-addr-t">{{st.addr}}</text>
+    <view class="nav col" bindtap="onNav"><view class="nav-ic"><view class="nav-arrow"></view></view><text class="nav-t">{{st.distText}}</text></view>
+  </view>
+  <view class="park-note row"><text class="p-badge">P</text><text class="p-t">{{st.parking}}</text></view>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="section-title">电价</text>
+    <text class="sub">当前 {{cur.range}}·{{cur.name}}时段</text>
+  </view>
+  <view class="row now">
+    <text class="now-p money">¥{{curTotal}}</text><text class="now-u">/度</text>
+    <text class="sub now-detail">电费 {{cur.elec}} + 服务费 {{cur.service}}</text>
+  </view>
+  <view class="tbl">
+    <view class="tr th row">
+      <text class="td c1">时段</text><text class="td c2">电费</text><text class="td c2">服务费</text><text class="td c2">合计</text>
+    </view>
+    <view wx:for="{{periods}}" wx:key="range" class="tr row {{item.range === cur.range ? 'tr-cur' : ''}}">
+      <view class="td c1 row">
+        <text class="pname" style="background: {{item.color}}">{{item.name}}</text>
+        <text class="prange">{{item.range}}</text>
+      </view>
+      <text class="td c2">{{item.elec}}</text>
+      <text class="td c2">{{item.service}}</text>
+      <text class="td c2 total">{{item.total}}</text>
+    </view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="row between t-head">
+    <text class="section-title">充电终端</text>
+    <view class="row seg">
+      <view wx:for="{{segs}}" wx:key="*this" class="seg-i {{sIdx === index ? 'on' : ''}}" data-idx="{{index}}" bindtap="onSeg"><text class="seg-t">{{item}}</text></view>
+    </view>
+  </view>
+  <view class="row legend">
+    <view class="lg row"><view class="lg-dot idle"></view><text class="sub">空闲 {{count.idle}}</text></view>
+    <view class="lg row"><view class="lg-dot busy"></view><text class="sub">充电中 {{count.busy}}</text></view>
+    <view class="lg row"><view class="lg-dot fault"></view><text class="sub">故障 {{count.fault}}</text></view>
+  </view>
+  <view class="grid">
+    <view wx:for="{{terms}}" wx:key="no" class="term {{item.status}}" data-no="{{item.no}}" bindtap="onTerm">
+      <view class="row between">
+        <text class="t-no">{{item.short}}</text>
+        <text class="t-kind {{item.power > 7 ? 'k-fast' : 'k-slow'}}">{{item.power > 7 ? '快' : '慢'}}</text>
+      </view>
+      <text class="t-power">{{item.power}}kW</text>
+      <view wx:if="{{item.status === 'busy'}}" class="soc-bg"><view class="soc-fg" style="width: {{item.soc}}%"></view></view>
+      <text class="t-st">{{item.status === 'idle' ? '空闲可用' : item.status === 'busy' ? '充电中 ' + item.soc + '%' : '维护中'}}</text>
+    </view>
+  </view>
+</view>
+
+<view class="bottom-space"></view>
+<view class="bar row">
+  <view class="fav col" bindtap="onFav">
+    <view class="heart {{fav ? 'on' : ''}}"></view>
+    <text class="fav-t">{{fav ? '已收藏' : '收藏'}}</text>
+  </view>
+  <view class="btn-primary flex1" bindtap="onScan">扫码充电</view>
+</view>

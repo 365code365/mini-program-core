@@ -1,0 +1,32 @@
+.ok { align-items: center; background: linear-gradient(180deg, #8E7CFF, #6C5CE7); padding: 48rpx 32rpx 56rpx; margin-bottom: 24rpx; }
+.ok-ic { width: 112rpx; height: 112rpx; border-radius: 56rpx; background: #fff; display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.ok-tick { width: 26rpx; height: 48rpx; border-right: 8rpx solid #6C5CE7; border-bottom: 8rpx solid #6C5CE7; transform: rotate(45deg); margin-top: -12rpx; }
+.ok-t { color: #fff; font-size: 38rpx; font-weight: bold; margin-top: 24rpx; }
+.ok-s { color: rgba(255, 255, 255, 0.85); font-size: 24rpx; margin-top: 10rpx; }
+.head { background: #fff; padding: 28rpx 32rpx; margin-bottom: 20rpx; }
+.h-title { display: block; font-size: 34rpx; font-weight: bold; margin-bottom: 8rpx; }
+.q-head { justify-content: space-between; margin-bottom: 12rpx; }
+.q-type { font-size: 22rpx; color: #6C5CE7; background: #efedff; padding: 4rpx 14rpx; border-radius: 6rpx; }
+.q-title { display: block; font-size: 30rpx; font-weight: bold; line-height: 44rpx; margin-bottom: 20rpx; }
+.bar-row { margin-bottom: 22rpx; }
+.bar-label { margin-bottom: 10rpx; }
+.b-t { font-size: 26rpx; color: #3a3f47; }
+.b-t.mine { color: #6C5CE7; font-weight: bold; }
+.mine-tag { font-size: 20rpx; color: #fff; background: #6C5CE7; border-radius: 6rpx; padding: 2rpx 10rpx; margin-left: 12rpx; }
+.b-p { font-size: 26rpx; font-weight: bold; color: #3a3f47; white-space: nowrap; }
+.b-bg { height: 20rpx; border-radius: 10rpx; background: #f0eff7; overflow: hidden; }
+.b-fg { height: 20rpx; border-radius: 10rpx; background: #c3baff; }
+.b-fg.top { background: linear-gradient(90deg, #A08CFF, #6C5CE7); }
+.rate { background: #f7f6ff; border-radius: 16rpx; padding: 24rpx 28rpx; }
+.rate-l { margin-right: 40rpx; }
+.rate-num { align-items: flex-end; }
+.avg { font-size: 72rpx; font-weight: bold; color: #6C5CE7; line-height: 80rpx; }
+.avg-u { font-size: 24rpx; color: #8a8f99; margin: 0 0 12rpx 8rpx; }
+.r-line { margin: 8rpx 0; }
+.r-k { width: 130rpx; }
+.r-v { font-size: 30rpx; font-weight: bold; }
+.txt { background: #f7f7fb; border-radius: 12rpx; padding: 18rpx 22rpx; margin-bottom: 14rpx; }
+.txt-mine { background: #efedff; }
+.txt-t { font-size: 26rpx; color: #3a3f47; line-height: 40rpx; }
+.actions { padding: 12rpx 24rpx calc(40rpx + env(safe-area-inset-bottom)); }
+.share { margin-left: 20rpx; }

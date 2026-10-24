@@ -1,0 +1,60 @@
+<view class="head">
+  <text class="h-title">{{sv.title}}</text>
+  <view class="row h-meta">
+    <text class="sub">{{sv.author}}·截止 {{sv.deadline}}</text>
+    <view class="flex1"></view>
+    <text class="h-step"><text class="h-cur">{{step + 1}}</text>/{{total}}</text>
+  </view>
+  <view class="bar-bg"><view class="bar-fg" style="width: {{(step + 1) / total * 100}}%"></view></view>
+  <view class="row dots">
+    <view wx:for="{{sv.questions}}" wx:key="id" class="dot {{index < step ? 'done' : ''}} {{index === step ? 'cur' : ''}}" data-idx="{{index}}" bindtap="onJump"></view>
+  </view>
+</view>
+
+<view class="card q">
+  <view class="row q-head">
+    <text class="q-type">{{typeText[q.type]}}</text>
+    <text class="q-req" wx:if="{{q.required}}">必答</text>
+  </view>
+  <text class="q-title">{{step + 1}}. {{q.title}}</text>
+
+  <view wx:if="{{q.type === 'single'}}">
+    <view wx:for="{{q.options}}" wx:key="*this" class="opt row {{cur === index ? 'on' : ''}}" data-idx="{{index}}" bindtap="onSingle">
+      <view class="radio"><view class="radio-in" wx:if="{{cur === index}}"></view></view>
+      <text class="opt-t flex1">{{item}}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{q.type === 'multi'}}">
+    <view wx:for="{{optList}}" wx:key="t" class="opt row {{item.on ? 'on' : ''}}" data-idx="{{index}}" bindtap="onMulti">
+      <view class="check {{item.on ? 'on' : ''}}"><view class="tick" wx:if="{{item.on}}"></view></view>
+      <text class="opt-t flex1">{{item.t}}</text>
+    </view>
+    <text class="sub multi-n">已选 {{multiCount}} 项</text>
+  </view>
+
+  <view wx:if="{{q.type === 'rate'}}" class="rate">
+    <view class="row rate-top">
+      <text wx:if="{{cur === null}}" class="rate-none">未打分</text>
+      <text wx:if="{{cur !== null}}" class="rate-n">{{cur}}</text>
+      <text wx:if="{{cur !== null}}" class="rate-u">分</text>
+      <text class="rate-word">{{rateWord}}</text>
+    </view>
+    <slider min="{{q.min}}" max="{{q.max}}" step="1" value="{{cur === null ? 5 : cur}}" activeColor="#6C5CE7" backgroundColor="#e8e5ff" block-size="26" bindchanging="onRate" bindchange="onRate" />
+    <view class="row between"><text class="sub">{{q.min}} 完全不会</text><text class="sub">{{q.max}} 非常愿意</text></view>
+  </view>
+
+  <view wx:if="{{q.type === 'text'}}">
+    <textarea class="ta" value="{{cur || ''}}" maxlength="200" placeholder="{{q.placeholder || '请输入'}}" placeholder-class="ph" bindinput="onText" />
+    <text class="sub ta-n">{{(cur || '').length}}/200</text>
+  </view>
+
+  <text class="err" wx:if="{{err}}">{{err}}</text>
+</view>
+
+<view class="bottom-space"></view>
+<view class="bar row">
+  <!-- 用 wx:if：.prev.hide { display:none } 在引擎里没生效 -->
+  <view wx:if="{{step > 0}}" class="btn-ghost prev" bindtap="onPrev">上一题</view>
+  <view class="btn-primary flex1" bindtap="onNext">{{step === total - 1 ? '提交' : '下一题'}}</view>
+</view>

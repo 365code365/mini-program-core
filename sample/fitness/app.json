@@ -1,0 +1,49 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/classes/classes",
+    "pages/records/records",
+    "pages/mine/mine",
+    "pages/course/course",
+    "pages/card/card"
+  ],
+  "window": {
+    "navigationBarTitleText": "燃动健身",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f6f6f8"
+  },
+  "tabBar": {
+    "color": "#9aa0a8",
+    "selectedColor": "#ff5a36",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "images/tab/home.png",
+        "selectedIconPath": "images/tab/home-on.png"
+      },
+      {
+        "pagePath": "pages/classes/classes",
+        "text": "团课",
+        "iconPath": "images/tab/cal.png",
+        "selectedIconPath": "images/tab/cal-on.png"
+      },
+      {
+        "pagePath": "pages/records/records",
+        "text": "记录",
+        "iconPath": "images/tab/chart.png",
+        "selectedIconPath": "images/tab/chart-on.png"
+      },
+      {
+        "pagePath": "pages/mine/mine",
+        "text": "我的",
+        "iconPath": "images/tab/user.png",
+        "selectedIconPath": "images/tab/user-on.png"
+      }
+    ],
+    "custom": true
+  }
+}

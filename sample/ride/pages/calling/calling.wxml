@@ -1,0 +1,67 @@
+<view class="map">
+  <view class="road h" style="top:180rpx;"></view>
+  <view class="road h thin" style="top:380rpx;"></view>
+  <view class="road v" style="left:200rpx;"></view>
+  <view class="road v thin" style="left:560rpx;"></view>
+  <view class="block" style="left:260rpx;top:240rpx;width:260rpx;height:110rpx;"></view>
+  <view class="block park" style="left:30rpx;top:220rpx;width:140rpx;height:130rpx;"></view>
+  <view wx:if="{{stage === 'waiting'}}" class="radar">
+    <view class="wave w1"></view>
+    <view class="wave w2"></view>
+    <view class="wave w3"></view>
+    <view class="radar-core"><view class="radar-dot"></view></view>
+  </view>
+  <block wx:else>
+    <view class="route-line"></view>
+    <view class="me"><view class="me-dot"></view></view>
+    <view class="driver-car"></view>
+    <view class="eta-bubble"><text>司机距你 <text class="orange">{{driver.distance}}</text> · 约 <text class="orange">{{driver.eta}}</text> 分钟</text></view>
+  </block>
+</view>
+
+<view class="sheet">
+  <block wx:if="{{stage === 'waiting'}}">
+    <view class="wait-title">正在为你呼叫{{order.type}}</view>
+    <view class="wait-sub"><text>已等待 <text class="orange mono">{{elapsedText}}</text>，附近有 {{nearby}} 辆车</text></view>
+    <view class="progress"><view class="progress-bar"></view></view>
+    <view class="trip-mini">
+      <view class="row"><view class="dot dot-green"></view><text class="trip-mini-text">{{order.from.name}}</text></view>
+      <view class="row mt"><view class="dot dot-orange"></view><text class="trip-mini-text">{{order.to.name}}</text></view>
+    </view>
+    <view class="tip-row">
+      <text class="sub">预估</text><text class="tip-price">{{order.price}}</text><text class="sub">元 · 同时呼叫专车可更快应答</text>
+    </view>
+    <view class="btn-ghost" bindtap="onCancel">取消呼叫</view>
+  </block>
+  <block wx:else>
+    <view class="status-row row between">
+      <text class="status-title">司机正在赶来</text>
+      <text class="sub">请到上车点等候</text>
+    </view>
+    <view class="driver-card">
+      <view class="avatar"><text class="avatar-text">{{driver.surname}}</text></view>
+      <view class="driver-info">
+        <view class="plate-row">
+          <text class="plate">{{driver.plate}}</text>
+        </view>
+        <text class="car-model">{{driver.color}} · {{driver.model}}</text>
+        <view class="row meta">
+          <text class="driver-name">{{driver.name}}</text>
+          <text class="star">★</text><text class="rating">{{driver.rating}}</text>
+          <text class="sub orders">接单 {{driver.orders}} 次</text>
+        </view>
+      </view>
+      <view class="car-pic"><view class="car-top"></view><view class="car-body"></view><view class="wheel l"></view><view class="wheel r"></view></view>
+    </view>
+    <view class="actions">
+      <view class="act" bindtap="onCallDriver"><view class="act-icon">话</view><text class="act-text">打电话</text></view>
+      <view class="act" bindtap="onMessage"><view class="act-icon">信</view><text class="act-text">发消息</text></view>
+      <view class="act" bindtap="onSafety"><view class="act-icon safe">安</view><text class="act-text">安全中心</text></view>
+      <view class="act" bindtap="onMore"><view class="act-icon">…</view><text class="act-text">更多</text></view>
+    </view>
+    <view class="row btns">
+      <view class="btn-ghost flex1" bindtap="onCancel">取消行程</view>
+      <view class="btn-primary flex1 ml" bindtap="onFinish">模拟到达终点</view>
+    </view>
+  </block>
+</view>

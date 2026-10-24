@@ -1,0 +1,81 @@
+.seg {
+  margin: 24rpx 24rpx 24rpx;
+  background: #ebecef;
+  border-radius: 16rpx;
+  padding: 6rpx;
+}
+.seg-item {
+  flex: 1;
+  height: 64rpx;
+  line-height: 64rpx;
+  text-align: center;
+  border-radius: 12rpx;
+  font-size: 26rpx;
+  color: #6b7280;
+}
+.seg-item.on {
+  background: #ffffff;
+  color: #ff5a1f;
+  font-weight: bold;
+}
+.list {
+  padding: 0 28rpx;
+}
+.ops {
+  margin-top: 10rpx;
+}
+.op-tag {
+  font-size: 20rpx;
+  color: #8a919f;
+  border: 1rpx solid #dfe2e8;
+  padding: 0 10rpx;
+  border-radius: 6rpx;
+}
+.op {
+  font-size: 22rpx;
+  color: #6b7280;
+  padding: 6rpx 18rpx;
+  border-radius: 24rpx;
+  background: #f3f4f6;
+  margin-left: 12rpx;
+}
+.op.main {
+  color: #ffffff;
+  background: #ff6a1f;
+}
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 120rpx;
+}
+.heart {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 80rpx;
+  background: #fff1e8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 28rpx;
+}
+.heart-img {
+  width: 80rpx;
+  height: 80rpx;
+}
+.empty-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  margin-bottom: 10rpx;
+}
+.go {
+  margin-top: 36rpx;
+  width: 240rpx;
+  height: 76rpx;
+  line-height: 76rpx;
+  text-align: center;
+  border-radius: 38rpx;
+  border: 2rpx solid #ff6a1f;
+  color: #ff5a1f;
+  font-size: 28rpx;
+}

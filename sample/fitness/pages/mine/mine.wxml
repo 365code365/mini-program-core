@@ -1,0 +1,55 @@
+<view class="hd">
+  <view class="av"><text>陈</text></view>
+  <view class="hd-m">
+    <text class="nm">陈一鸣</text>
+    <view class="row"><text class="lv">黑金会员</text><text class="muted">ID 20310457</text></view>
+  </view>
+  <view class="edit" bindtap="editProfile"><text>编辑资料</text></view>
+</view>
+
+<view class="vip" bindtap="goCard">
+  <view>
+    <text class="vip-t">黑金年卡</text>
+    <text class="vip-s">全国 86 家门店通用 · 团课无限约</text>
+  </view>
+  <view class="vip-btn"><text>查看权益</text></view>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="sec-title">身体数据</text>
+    <text class="muted">BMI {{bmi}} · {{bmiText}}</text>
+  </view>
+  <view class="body">
+    <view class="b-i"><text class="b-v">{{height}}</text><text class="b-k">身高 cm</text></view>
+    <view class="b-i"><text class="b-v">{{weight}}</text><text class="b-k">体重 kg</text></view>
+    <view class="b-i"><text class="b-v">18.6</text><text class="b-k">体脂率 %</text></view>
+  </view>
+  <text class="sl-t">更新体重</text>
+  <slider min="40" max="120" step="0.5" value="{{weight}}" activeColor="#ff5a36" block-size="22" show-value="{{true}}" bindchange="onWeight" />
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="sec-title">我的预约</text>
+    <text class="muted">{{bookings.length}} 节</text>
+  </view>
+  <view class="bk" wx:for="{{bookings}}" wx:key="id">
+    <view class="bk-d"><text>{{item.time}}</text></view>
+    <view class="bk-m">
+      <text class="bk-n">{{item.name}}</text>
+      <text class="muted">{{item.dateText}} · {{item.room}}</text>
+    </view>
+  </view>
+  <view wx:if="{{!bookings.length}}" class="bk-empty" bindtap="goClasses"><text>还没有预约，去看看今天的团课</text><view class="chev"></view></view>
+</view>
+
+<view class="card menu">
+  <view class="m">
+    <text class="m-t">上课前 1 小时提醒</text>
+    <switch checked="{{remind}}" color="#ff5a36" bindchange="onRemind" />
+  </view>
+  <view class="m" bindtap="goCard"><text class="m-t">会员卡与续费</text><view class="chev"></view></view>
+  <view class="m" bindtap="contact"><text class="m-t">联系门店</text><text class="muted">0755-8666 2031</text><view class="chev"></view></view>
+</view>
+<view style="height: 40rpx;"></view>

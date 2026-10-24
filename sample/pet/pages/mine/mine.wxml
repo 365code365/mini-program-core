@@ -1,0 +1,51 @@
+<view class="hd">
+  <view class="av"><text>林</text></view>
+  <view class="hd-m">
+    <text class="nm">林小满</text>
+    <view class="row"><text class="lv">萌宠 VIP</text><text class="muted">积分 2,680 · 洗护卡余 3 次</text></view>
+  </view>
+</view>
+
+<view class="card stats">
+  <view class="sti" bindtap="goPet"><text class="st-v">{{pets.length}}</text><text class="st-k">我的宠物</text></view>
+  <view class="sti"><text class="st-v">{{bookings.length}}</text><text class="st-k">服务预约</text></view>
+  <view class="sti" bindtap="goCart"><text class="st-v">{{cartCount}}</text><text class="st-k">购物车</text></view>
+  <view class="sti"><text class="st-v">{{favCount}}</text><text class="st-k">收藏</text></view>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="sec-title">我的预约</text>
+    <view class="link" bindtap="goBooking"><text>新预约</text><view class="chev"></view></view>
+  </view>
+  <view class="bk" wx:for="{{bookings}}" wx:key="id">
+    <view class="bk-date"><text class="bk-d">{{item.dayNum}}</text><text class="bk-m">{{item.monthText}}</text></view>
+    <view class="bk-c">
+      <text class="bk-s">{{item.pet}} · {{item.svc}}</text>
+      <text class="muted">{{item.week}} {{item.time}} · {{item.store}}</text>
+    </view>
+    <view class="bk-x" data-id="{{item.id}}" bindtap="cancel"><text>取消</text></view>
+  </view>
+  <view wx:if="{{!bookings.length}}" class="none" bindtap="goBooking"><text>暂无预约，给毛孩子安排一次洗护吧</text><view class="chev"></view></view>
+</view>
+
+<view class="card orders">
+  <text class="sec-title">商城订单</text>
+  <view class="os">
+    <view class="o" wx:for="{{orderTabs}}" wx:key="n" bindtap="orderTip">
+      <view class="o-ic" style="background: {{item.bg}};"><text>{{item.ch}}</text></view>
+      <text class="o-n">{{item.n}}</text>
+      <view class="o-b" wx:if="{{item.c}}"><text>{{item.c}}</text></view>
+    </view>
+  </view>
+</view>
+
+<view class="card menu">
+  <view class="m">
+    <text class="m-t">疫苗驱虫到期提醒</text>
+    <switch checked="{{remind}}" color="#ff8a3d" bindchange="onRemind" />
+  </view>
+  <view class="m" bindtap="goCart"><text class="m-t">购物车</text><text class="muted">{{cartCount}} 件</text><view class="chev"></view></view>
+  <view class="m" bindtap="contact"><text class="m-t">联系客服</text><text class="muted">9:00-22:00</text><view class="chev"></view></view>
+</view>
+<view style="height: 40rpx;"></view>

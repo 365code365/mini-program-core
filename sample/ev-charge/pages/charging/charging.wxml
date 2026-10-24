@@ -1,0 +1,45 @@
+<view class="top">
+  <view class="row st-line">
+    <view class="live"></view>
+    <text class="st-t flex1">{{stationName}}</text>
+    <text class="term-t">{{no}}</text>
+  </view>
+
+  <!-- 圆环：48 个刻度点按角度摆放（CSS 不支持 conic-gradient，点阵环最稳） -->
+  <view class="ring-wrap"><view class="ring">
+    <view wx:for="{{dots}}" wx:key="i" class="dot {{item.on ? 'on' : ''}}" style="left: {{item.x}}rpx; top: {{item.y}}rpx"></view>
+    <view class="ring-in col">
+      <text class="pct-l">当前电量</text>
+      <view class="row pct-row"><text class="pct">{{soc}}</text><text class="pct-u">%</text></view>
+      <text class="pct-sub">{{soc >= 100 ? '已充满' : '预计 ' + remain + ' 分钟充满'}}</text>
+    </view>
+  </view></view>
+
+  <view class="row stats">
+    <view class="stat col"><text class="stat-n">{{kwhText}}</text><text class="stat-l">已充(度)</text></view>
+    <view class="vline"></view>
+    <view class="stat col"><text class="stat-n">{{feeText}}</text><text class="stat-l">费用(元)</text></view>
+    <view class="vline"></view>
+    <view class="stat col"><text class="stat-n">{{duration}}</text><text class="stat-l">时长</text></view>
+  </view>
+</view>
+
+<view class="card">
+  <text class="section-title">实时数据</text>
+  <view class="grid">
+    <view class="g-item col"><text class="g-n">{{powerNow}}<text class="g-u"> kW</text></text><text class="sub">充电功率</text></view>
+    <view class="g-item col"><text class="g-n">{{volt}}<text class="g-u"> V</text></text><text class="sub">输出电压</text></view>
+    <view class="g-item col"><text class="g-n">{{amp}}<text class="g-u"> A</text></text><text class="sub">输出电流</text></view>
+    <view class="g-item col"><text class="g-n">{{price}}<text class="g-u"> 元/度</text></text><text class="sub">当前电价</text></view>
+  </view>
+</view>
+
+<view class="card tips">
+  <view class="row tip"><view class="tip-dot"></view><text class="tip-t">充电期间请勿强行拔枪，结束后先在小程序内停止充电</text></view>
+  <view class="row tip"><view class="tip-dot"></view><text class="tip-t">费用按实际充电量结算，从账户余额扣除</text></view>
+</view>
+
+<view class="bottom-space"></view>
+<view class="bar">
+  <view class="btn-stop" bindtap="onStop">结束充电</view>
+</view>

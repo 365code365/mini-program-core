@@ -1,0 +1,37 @@
+<view class="top">
+  <scroll-view class="days" scroll-x="{{true}}" show-scrollbar="{{false}}">
+    <view class="day {{dayIdx === index ? 'on' : ''}}" wx:for="{{days}}" wx:key="idx" data-index="{{index}}" bindtap="pickDay">
+      <text class="d-w">{{item.week}}</text>
+      <text class="d-n">{{item.day}}</text>
+    </view>
+  </scroll-view>
+  <scroll-view class="types" scroll-x="{{true}}" show-scrollbar="{{false}}">
+    <view class="type {{type === item ? 'on' : ''}}" wx:for="{{types}}" wx:key="*this" data-t="{{item}}" bindtap="pickType"><text>{{item}}</text></view>
+  </scroll-view>
+</view>
+
+<view class="sum"><text class="muted">{{days[dayIdx].key}} · 燃动科技园店 · 共 {{list.length}} 节课</text></view>
+
+<view class="cc" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="goCourse">
+  <view class="cc-time">
+    <text class="cc-t">{{item.time}}</text>
+    <text class="cc-d">{{item.dur}}分钟</text>
+  </view>
+  <view class="cc-pic" style="background: {{item.bg}};"><text>{{item.type}}</text></view>
+  <view class="cc-main">
+    <text class="cc-name">{{item.name}}</text>
+    <view class="row cc-meta">
+      <text class="pill lv-{{item.level}}">{{item.levelText}}</text>
+      <text class="muted">{{item.coachInfo.name}} · {{item.room}}</text>
+    </view>
+    <view class="row cc-foot">
+      <view class="bar"><view class="bar-in" style="width: {{item.pct}}%; background: {{item.left ? (item.left <= 3 ? '#ff3d6e' : '#ff7a3d') : '#c8cbd2'}};"></view></view>
+      <text class="cc-left {{item.left && item.left <= 3 ? 'warn' : ''}}">{{item.left ? '余 ' + item.left + ' 位' : '已满员'}}</text>
+    </view>
+  </view>
+  <view class="cc-btn {{item.mine ? 'mine' : ''}} {{!item.left && !item.mine ? 'full' : ''}}" catchtap="book" data-index="{{index}}">
+    <text>{{item.mine ? '已预约' : (item.left ? '预约' : '排队')}}</text>
+  </view>
+</view>
+<view wx:if="{{!list.length}}" class="empty"><text>当天暂无「{{type}}」课程，换一天看看吧</text></view>
+<view style="height: 40rpx;"></view>

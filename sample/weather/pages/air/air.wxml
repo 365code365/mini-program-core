@@ -1,0 +1,58 @@
+<view class="page">
+  <view class="hero col">
+    <view class="ring">
+      <text class="ring-v" style="color: {{aqi.color}};">{{aqi.v}}</text>
+      <text class="ring-n" style="color: {{aqi.color}};">{{aqi.name}}</text>
+      <text class="ring-l">AQI 实时</text>
+    </view>
+    <view class="hero-tip"><text>{{aqi.tip}}</text></view>
+    <view class="hero-rank"><text>全国 {{total}} 城中排名第 {{rank}}（越靠前空气越好）</text></view>
+  </view>
+
+  <view class="card">
+    <view class="row between"><text class="card-title">污染物浓度</text><text class="muted">μg/m³（CO 为 mg/m³）</text></view>
+    <view class="grid row">
+      <view wx:for="{{items}}" wx:key="k" class="p col">
+        <text class="p-k">{{item.k}}</text>
+        <text class="p-v" style="color: {{item.color}};">{{item.v}}</text>
+        <text class="p-n">{{item.n}}</text>
+        <view class="p-track"><view class="p-fill" style="width: {{item.pct}}%; background: {{item.color}};"></view></view>
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <text class="card-title">未来 24 小时</text>
+    <view class="chart row">
+      <view wx:for="{{trend}}" wx:key="i" class="bar-col col">
+        <view class="bar-box">
+          <text class="bar-v">{{item.v}}</text>
+          <view class="bar" style="height: {{item.h}}rpx; background: {{item.color}};"></view>
+        </view>
+        <text class="bar-l">{{item.label}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <text class="card-title">健康建议</text>
+    <view class="adv row">
+      <view wx:for="{{advice}}" wx:key="t" class="adv-i row">
+        <view class="adv-dot" style="background: {{item.c}};"><text>{{item.d}}</text></view>
+        <text class="adv-t">{{item.t}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <text class="card-title">AQI 分级</text>
+    <view class="scale col">
+      <view class="lv row"><view class="lv-c" style="background: #3ccf7c;"></view><text class="lv-n">0 ~ 50 优</text><text class="muted">空气清新</text></view>
+      <view class="lv row"><view class="lv-c" style="background: #f2c230;"></view><text class="lv-n">51 ~ 100 良</text><text class="muted">可正常活动</text></view>
+      <view class="lv row"><view class="lv-c" style="background: #f58d1f;"></view><text class="lv-n">101 ~ 150 轻度</text><text class="muted">敏感人群减少外出</text></view>
+      <view class="lv row"><view class="lv-c" style="background: #f04848;"></view><text class="lv-n">151 ~ 200 中度</text><text class="muted">减少户外运动</text></view>
+      <view class="lv row"><view class="lv-c" style="background: #9b4dca;"></view><text class="lv-n">201 ~ 300 重度</text><text class="muted">停止户外运动</text></view>
+    </view>
+  </view>
+  <view class="space"></view>
+</view>

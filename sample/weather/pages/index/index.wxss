@@ -1,0 +1,61 @@
+.page { min-height: 100vh; color: #ffffff; padding-bottom: env(safe-area-inset-bottom); }
+.press { opacity: 0.7; }
+.nav { display: flex; flex-direction: row; align-items: center; padding-left: 32rpx; box-sizing: content-box; }
+.nav-city { height: 64rpx; }
+.pin { width: 18rpx; height: 18rpx; border-radius: 50%; border: 5rpx solid #ffffff; margin-right: 12rpx; }
+.nav-name { font-size: 36rpx; font-weight: bold; white-space: nowrap; }
+.nav-btn { font-size: 26rpx; padding: 8rpx 22rpx; border-radius: 28rpx; background: rgba(255, 255, 255, 0.2); margin-right: 12rpx; }
+
+.now { padding: 8rpx 40rpx 0; }
+.dots { justify-content: center; height: 24rpx; }
+.dot { width: 10rpx; height: 10rpx; border-radius: 5rpx; background: rgba(255, 255, 255, 0.4); margin: 0 6rpx; }
+.dot-on { width: 28rpx; background: #ffffff; }
+.now-main { justify-content: space-between; margin-top: 12rpx; }
+.now-left { flex: 1; }
+.temp { align-items: flex-start; }
+.temp-n { font-size: 200rpx; font-weight: 300; line-height: 1; letter-spacing: -6rpx; }
+/* 大号度数符号用 CSS 圆环：° 字形在引擎里落到全角回退字体上，和数字之间空一大截 */
+.deg { width: 22rpx; height: 22rpx; border-radius: 50%; border: 6rpx solid #ffffff; margin: 30rpx 0 0 8rpx; }
+.temp-u { font-size: 44rpx; margin-top: 22rpx; margin-left: 6rpx; opacity: 0.9; }
+.cond { font-size: 36rpx; margin-top: 12rpx; }
+.meta { font-size: 24rpx; opacity: 0.85; margin-top: 12rpx; }
+.aqi-pill { align-self: flex-start; margin-top: 28rpx; padding: 10rpx 20rpx 10rpx 18rpx; border-radius: 30rpx; background: rgba(255, 255, 255, 0.2); font-size: 24rpx; }
+.aqi-dot { width: 16rpx; height: 16rpx; border-radius: 8rpx; margin-right: 10rpx; }
+
+.glass { margin: 28rpx 24rpx 0; padding: 24rpx 28rpx; border-radius: 28rpx; background: rgba(255, 255, 255, 0.16); border: 1rpx solid rgba(255, 255, 255, 0.22); }
+.glass-head { padding-bottom: 16rpx; border-bottom: 1rpx solid rgba(255, 255, 255, 0.2); margin-bottom: 8rpx; }
+.g-title { font-size: 28rpx; font-weight: bold; }
+.g-sub { font-size: 22rpx; opacity: 0.8; }
+
+.hours { width: 100%; white-space: nowrap; }
+.hours-in { padding: 8rpx 0; }
+.hour { width: 112rpx; flex-shrink: 0; align-items: center; padding: 12rpx 0; border-radius: 20rpx; }
+.hour-now { background: rgba(255, 255, 255, 0.18); }
+.h-label { font-size: 22rpx; opacity: 0.85; margin-bottom: 8rpx; }
+.h-t { font-size: 30rpx; font-weight: bold; margin-top: 8rpx; }
+.h-pop { font-size: 20rpx; color: #bfe3ff; margin-top: 4rpx; height: 28rpx; }
+
+.day { height: 96rpx; }
+.d-left { width: 104rpx; }
+.d-name { font-size: 28rpx; font-weight: bold; }
+.d-date { font-size: 20rpx; opacity: 0.75; }
+.d-cond { width: 112rpx; font-size: 24rpx; margin-left: 12rpx; white-space: nowrap; }
+.d-lo { width: 64rpx; text-align: right; font-size: 26rpx; opacity: 0.8; }
+.d-track { position: relative; flex: 1; height: 10rpx; border-radius: 5rpx; background: rgba(255, 255, 255, 0.22); margin: 0 18rpx; }
+.d-bar { position: absolute; top: 0; height: 10rpx; border-radius: 5rpx; background: linear-gradient(90deg, #8fe3ff, #ffd36b, #ff9a4d); }
+.d-hi { width: 64rpx; font-size: 26rpx; font-weight: bold; }
+
+.aqi-row { padding-top: 12rpx; }
+.aqi-big { width: 160rpx; align-items: center; }
+.aqi-v { font-size: 64rpx; font-weight: bold; }
+.aqi-n { font-size: 24rpx; font-weight: bold; padding: 2rpx 16rpx; border-radius: 16rpx; background: rgba(255, 255, 255, 0.92); }
+.aqi-track { position: relative; height: 12rpx; border-radius: 6rpx; background: linear-gradient(90deg, #3ccf7c, #f2c230, #f58d1f, #f04848, #9b4dca); }
+.aqi-mark { position: absolute; top: -8rpx; width: 20rpx; height: 20rpx; margin-left: -10rpx; border-radius: 50%; background: #ffffff; border: 4rpx solid rgba(0, 0, 0, 0.15); }
+.aqi-tip { font-size: 24rpx; opacity: 0.9; margin-top: 20rpx; line-height: 1.5; }
+
+.life { flex-wrap: wrap; }
+.life-item { width: 25%; align-items: center; padding: 20rpx 0; }
+.life-ic { width: 64rpx; height: 64rpx; border-radius: 20rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; font-size: 28rpx; font-weight: bold; box-shadow: 0 6rpx 14rpx rgba(0, 0, 0, 0.12); }
+.life-lv { font-size: 26rpx; font-weight: bold; margin-top: 12rpx; white-space: nowrap; }
+.life-n { font-size: 22rpx; opacity: 0.8; margin-top: 4rpx; }
+.foot { text-align: center; font-size: 22rpx; opacity: 0.7; padding: 36rpx 0 48rpx; }

@@ -1,0 +1,23 @@
+.hero { margin: 24rpx 24rpx 0; padding: 32rpx; border-radius: 28rpx; background: linear-gradient(135deg, #5c8cff, #4056ee); color: #ffffff; box-shadow: 0 12rpx 30rpx rgba(64, 86, 238, 0.25); }
+.flag { width: 80rpx; height: 80rpx; border-radius: 40rpx; color: #ffffff; font-weight: bold; font-size: 32rpx; display: flex; align-items: center; justify-content: center; border: 4rpx solid rgba(255, 255, 255, 0.7); margin-right: 20rpx; }
+.base-code { font-size: 36rpx; font-weight: bold; }
+.base-name { font-size: 22rpx; opacity: 0.85; margin-top: 4rpx; }
+/* 下拉箭头：引擎不画「零宽高 + 透明边框」的 CSS 三角，改用旋转的折线 */
+.caret { width: 14rpx; height: 14rpx; border-right: 4rpx solid #ffffff; border-bottom: 4rpx solid #ffffff; transform: rotate(45deg); margin: -8rpx 8rpx 0; }
+.amount-row { margin-top: 28rpx; padding-bottom: 16rpx; border-bottom: 2rpx solid rgba(255, 255, 255, 0.3); }
+.sym { font-size: 44rpx; font-weight: bold; margin-right: 12rpx; }
+.amount { flex: 1; height: 96rpx; font-size: 64rpx; font-weight: bold; color: #ffffff; }
+.ph-w { color: rgba(255, 255, 255, 0.5); }
+.quick { margin-top: 24rpx; }
+.q { padding: 8rpx 28rpx; border-radius: 28rpx; background: rgba(255, 255, 255, 0.18); font-size: 24rpx; margin-right: 16rpx; }
+.list { padding: 8rpx 28rpx; }
+.item { height: 124rpx; border-bottom: 1rpx solid #f2f3f5; }
+.item:last-child { border-bottom: none; }
+.item-hover { opacity: 0.6; }
+.small { width: 64rpx; height: 64rpx; border-radius: 32rpx; font-size: 26rpx; border: none; }
+.mid { overflow: hidden; }
+.code { font-size: 30rpx; font-weight: bold; }
+.unit { margin-top: 4rpx; }
+.val { font-size: 34rpx; font-weight: bold; color: #1f2329; margin-left: 12rpx; }
+.note { margin: 24rpx 40rpx 48rpx; text-align: center; line-height: 1.6; }
+.cname { font-size: 24rpx; color: #8a8d96; font-weight: normal; margin-left: 12rpx; }

@@ -1,0 +1,44 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/place/place",
+    "pages/calling/calling",
+    "pages/trips/trips",
+    "pages/trip-detail/trip-detail",
+    "pages/mine/mine",
+    "pages/coupons/coupons"
+  ],
+  "window": {
+    "navigationBarTitleText": "滴达出行",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f5f6f8"
+  },
+  "tabBar": {
+    "color": "#9aa0a6",
+    "selectedColor": "#FF7A1A",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "叫车",
+        "iconPath": "images/tab-home.png",
+        "selectedIconPath": "images/tab-home-on.png"
+      },
+      {
+        "pagePath": "pages/trips/trips",
+        "text": "行程",
+        "iconPath": "images/tab-trips.png",
+        "selectedIconPath": "images/tab-trips-on.png"
+      },
+      {
+        "pagePath": "pages/mine/mine",
+        "text": "我的",
+        "iconPath": "images/tab-mine.png",
+        "selectedIconPath": "images/tab-mine-on.png"
+      }
+    ],
+    "custom": true
+  }
+}

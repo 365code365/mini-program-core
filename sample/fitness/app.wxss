@@ -1,0 +1,14 @@
+page { background: #f6f6f8; color: #1c1f26; font-size: 28rpx; }
+.card { background: #ffffff; border-radius: 24rpx; margin: 24rpx 24rpx 0; padding: 28rpx; }
+.sec-title { font-size: 34rpx; font-weight: bold; color: #1c1f26; }
+.muted { color: #8b909a; font-size: 24rpx; }
+.row { display: flex; flex-direction: row; align-items: center; }
+.between { justify-content: space-between; }
+.chev { width: 14rpx; height: 14rpx; border-top: 3rpx solid #b8bcc4; border-right: 3rpx solid #b8bcc4; transform: rotate(45deg); margin-left: 10rpx; flex-shrink: 0; }
+.link { display: flex; flex-direction: row; align-items: center; color: #8b909a; font-size: 24rpx; }
+.btn { background: linear-gradient(90deg, #ff7a3d, #ff3d6e); color: #ffffff; border-radius: 44rpx; height: 88rpx; display: flex; align-items: center; justify-content: center; font-size: 30rpx; font-weight: bold; }
+.btn.gray { background: #e5e6ea; color: #9aa0a8; }
+.pill { font-size: 20rpx; padding: 4rpx 12rpx; border-radius: 8rpx; }
+.lv-1 { color: #2fb57a; background: #e7f7ef; }
+.lv-2 { color: #ff8a1f; background: #fff3e6; }
+.lv-3 { color: #ff3d6e; background: #ffe9ef; }

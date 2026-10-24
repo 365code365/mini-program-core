@@ -1,0 +1,54 @@
+<view class="steps row">
+  <view class="stp on"><text class="stp-n">1</text><text class="stp-t">确认订单</text></view>
+  <view class="stp-line"></view>
+  <view class="stp"><text class="stp-n">2</text><text class="stp-t">花艺制作</text></view>
+  <view class="stp-line"></view>
+  <view class="stp"><text class="stp-n">3</text><text class="stp-t">准时送达</text></view>
+</view>
+
+<view class="card">
+  <view class="row between"><text class="sec-title">收花人信息</text><text class="muted">已加密保护</text></view>
+  <view class="f row"><text class="f-l">收花人</text><input class="f-in" value="{{receiver}}" data-f="receiver" bindinput="onInput" placeholder="请输入姓名" /></view>
+  <view class="f row"><text class="f-l">手机号</text><input class="f-in" type="number" maxlength="11" value="{{phone}}" data-f="phone" bindinput="onInput" placeholder="请输入 11 位手机号" /></view>
+  <picker mode="selector" range="{{cities}}" value="{{cityIdx}}" bindchange="onCity">
+    <view class="f row"><text class="f-l">所在城市</text><text class="f-in f-val">{{cities[cityIdx]}}</text><view class="chev"></view></view>
+  </picker>
+  <view class="f row last"><text class="f-l">详细地址</text><input class="f-in" value="{{addr}}" data-f="addr" bindinput="onInput" placeholder="街道、楼牌号、公司名称" /></view>
+</view>
+
+<view class="card">
+  <text class="sec-title">花束清单</text>
+  <view class="line row" wx:for="{{lines}}" wx:key="key">
+    <image class="l-img" src="{{item.img}}" mode="aspectFill"></image>
+    <view class="l-main">
+      <text class="l-name">{{item.name}}</text>
+      <text class="l-spec">{{item.spec}} · ×{{item.qty}}</text>
+      <text class="l-time">{{item.date}} {{item.slot}}</text>
+      <text wx:if="{{item.card}}" class="l-card">贺卡：{{item.card}}</text>
+    </view>
+    <text class="price l-p">¥{{item.sum}}</text>
+  </view>
+</view>
+
+<view class="card">
+  <view class="sw row">
+    <view class="sw-main"><text class="sw-t">匿名送花</text><text class="muted">贺卡不署名，配送员不透露订花人信息</text></view>
+    <switch checked="{{anonymous}}" color="#ef5b7e" bindchange="onAnon" />
+  </view>
+  <view wx:if="{{!anonymous}}" class="f row"><text class="f-l">署名</text><input class="f-in" value="{{sender}}" data-f="sender" bindinput="onInput" placeholder="贺卡落款" /></view>
+  <view class="sw row">
+    <view class="sw-main"><text class="sw-t">送达前电话联系</text><text class="muted">关闭后配送员将直接送达，适合制造惊喜</text></view>
+    <switch checked="{{callFirst}}" color="#ef5b7e" bindchange="onCall" />
+  </view>
+</view>
+
+<view class="card">
+  <view class="fee row between"><text class="fee-l">商品金额</text><text>¥{{goods}}</text></view>
+  <view class="fee row between"><text class="fee-l">配送费</text><text class="free">免运费</text></view>
+  <view class="fee row between"><text class="fee-l">满 199 减 20</text><text class="price">-¥{{coupon}}</text></view>
+</view>
+<view class="foot-gap"></view>
+<view class="foot row">
+  <view class="row tot"><text class="tot-l">实付</text><text class="price yen">¥</text><text class="price tot-p">{{total}}</text></view>
+  <view class="pay" bindtap="submit"><text>提交订单</text></view>
+</view>

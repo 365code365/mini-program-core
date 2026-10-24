@@ -1,0 +1,36 @@
+/* 阴影放外层：同一节点同时有 box-shadow 与 overflow:hidden 时，引擎不裁绝对定位的装饰圆 */
+.bal-shadow { margin: 24rpx; border-radius: 24rpx; box-shadow: 0 12rpx 28rpx rgba(15, 61, 46, 0.25); }
+.bal-card { position: relative; overflow: hidden; border-radius: 24rpx; padding: 36rpx 36rpx 30rpx; background: linear-gradient(130deg, #1a6b4f, #0f3d2e); }
+.deco { position: absolute; border-radius: 50%; background: rgba(34, 209, 147, 0.16); }
+/* overflow:hidden 只按矩形裁、不认圆角，装饰圆别碰到卡片四角 */
+.d1 { width: 320rpx; height: 320rpx; right: 40rpx; top: -190rpx; }
+.d2 { width: 220rpx; height: 220rpx; right: -60rpx; bottom: -40rpx; }
+.bal-l { display: block; color: rgba(255, 255, 255, 0.75); font-size: 24rpx; position: relative; }
+.bal-n { display: block; color: #fff; font-size: 72rpx; margin: 12rpx 0 24rpx; position: relative; }
+.bal-foot { position: relative; }
+.bal-s { color: #9ff0d0; font-size: 24rpx; margin-right: 36rpx; }
+.amounts { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-between; margin-top: 24rpx; }
+.amt { width: 200rpx; height: 120rpx; box-sizing: border-box; border: 2rpx solid #e3e6e9; border-radius: 16rpx; margin-bottom: 20rpx; align-items: center; justify-content: center; }
+.amt.on { border-color: #00B87A; background: #f1fbf7; }
+.amt-v { font-size: 40rpx; font-weight: bold; white-space: nowrap; }
+.amt-y { font-size: 24rpx; }
+.amt.on .amt-v { color: #00A36C; }
+.amt-g { font-size: 20rpx; color: #FF7A1A; margin-top: 4rpx; }
+.custom { height: 88rpx; border: 2rpx solid #e3e6e9; border-radius: 16rpx; padding: 0 24rpx; }
+.custom.on { border-color: #00B87A; }
+.custom-l { font-size: 26rpx; color: #5c6370; margin-right: 20rpx; }
+.custom-input { font-size: 30rpx; height: 88rpx; }
+.ph { color: #b0b5bc; font-size: 26rpx; }
+.pay-i { height: 100rpx; border-bottom: 1rpx solid #f2f3f5; }
+.pay-ic { width: 52rpx; height: 52rpx; border-radius: 14rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; margin-right: 20rpx; }
+.pay-ic-t { color: #fff; font-size: 24rpx; font-weight: bold; }
+.pay-name { font-size: 28rpx; }
+.radio { width: 36rpx; height: 36rpx; border-radius: 18rpx; border: 3rpx solid #c4c7cc; display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.radio.on { border-color: #00B87A; }
+.radio-in { width: 20rpx; height: 20rpx; border-radius: 10rpx; background: #00B87A; }
+.auto { height: 100rpx; }
+.go { padding: 0 24rpx 24rpx; }
+.log { padding: 20rpx 0; border-bottom: 1rpx solid #f2f3f5; }
+.log-t { font-size: 28rpx; margin-bottom: 4rpx; }
+.log-v { font-size: 30rpx; color: #1f2329; }
+.log-v.in { color: #00A36C; }

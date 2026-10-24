@@ -1,0 +1,29 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/learn/learn",
+    "pages/checkin/checkin",
+    "pages/mine/mine",
+    "pages/detail/detail",
+    "pages/exam/exam"
+  ],
+  "window": {
+    "navigationBarTitleText": "知学课堂",
+    "navigationBarBackgroundColor": "#3d6cf6",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f5f6f8"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#9aa0ab",
+    "selectedColor": "#3d6cf6",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "首页", "iconPath": "images/tab/home.png", "selectedIconPath": "images/tab/home-on.png" },
+      { "pagePath": "pages/learn/learn", "text": "学习", "iconPath": "images/tab/book.png", "selectedIconPath": "images/tab/book-on.png" },
+      { "pagePath": "pages/checkin/checkin", "text": "打卡", "iconPath": "images/tab/cal.png", "selectedIconPath": "images/tab/cal-on.png" },
+      { "pagePath": "pages/mine/mine", "text": "我的", "iconPath": "images/tab/user.png", "selectedIconPath": "images/tab/user-on.png" }
+    ]
+  }
+}

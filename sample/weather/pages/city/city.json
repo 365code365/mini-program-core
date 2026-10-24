@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "城市管理",
+  "usingComponents": {
+    "wicon": "/components/wicon/wicon"
+  }
+}

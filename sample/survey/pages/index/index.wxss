@@ -1,0 +1,41 @@
+.hero { position: relative; overflow: hidden; background: linear-gradient(135deg, #8E7CFF 0%, #6C5CE7 60%, #5A48D6 100%); padding: 40rpx 32rpx 100rpx; }
+.orb { position: absolute; border-radius: 50%; }
+.o1 { width: 300rpx; height: 300rpx; right: -80rpx; top: -100rpx; background: rgba(255, 255, 255, 0.12); }
+.o2 { width: 140rpx; height: 140rpx; right: 180rpx; top: 150rpx; background: rgba(255, 255, 255, 0.14); }
+.hero-t { display: block; color: #fff; font-size: 44rpx; font-weight: bold; position: relative; }
+.hero-s { display: block; color: rgba(255, 255, 255, 0.85); font-size: 24rpx; margin-top: 12rpx; position: relative; }
+.hero-btn { margin-top: 28rpx; background: #fff; border-radius: 32rpx; padding: 12rpx 28rpx; align-self: flex-start; position: relative; width: 170rpx; justify-content: center; }
+.hero-btn-t { color: #6C5CE7; font-size: 26rpx; font-weight: bold; white-space: nowrap; }
+.search { margin: -50rpx 24rpx 24rpx; position: relative; background: #fff; height: 84rpx; border-radius: 42rpx; padding: 0 28rpx; box-shadow: 0 8rpx 24rpx rgba(80, 60, 200, 0.1); }
+.search-icon { width: 22rpx; height: 22rpx; border: 4rpx solid #9aa0a6; border-radius: 15rpx; margin-right: 16rpx; }
+/* input 的 font-size 恰好 14px(28rpx) 时引擎当成「没写」改用 16px，所以写 27rpx */
+.search-input { font-size: 27rpx; height: 84rpx; }
+.ph { color: #b0b5bc; }
+.seg { padding: 0 24rpx 20rpx; }
+.seg-i { padding: 10rpx 28rpx; border-radius: 28rpx; margin-right: 16rpx; background: #fff; }
+.seg-i.on { background: #6C5CE7; }
+.seg-t { font-size: 26rpx; color: #5c6370; }
+.seg-i.on .seg-t { color: #fff; font-weight: bold; }
+.sv-main { margin-left: 20rpx; }
+.hot { font-size: 20rpx; color: #fff; background: linear-gradient(90deg, #FF8A5B, #FF5E62); padding: 4rpx 10rpx; border-radius: 6rpx; margin-left: 10rpx; }
+.done { font-size: 22rpx; color: #19BE6B; }
+.sv-title { font-size: 31rpx; font-weight: bold; margin-top: 10rpx; line-height: 44rpx; }
+.sv-desc { display: block; font-size: 25rpx; color: #6b717a; margin: 18rpx 0 20rpx; line-height: 38rpx; }
+.sv-foot { border-top: 1rpx solid #f2f2f6; padding-top: 18rpx; }
+.faces { margin-right: 14rpx; }
+.face { width: 36rpx; height: 36rpx; border-radius: 18rpx; border: 3rpx solid #fff; margin-right: -12rpx; }
+.f1 { background: linear-gradient(135deg, #FFB3C1, #FF7A98); }
+.f2 { background: linear-gradient(135deg, #9EC9FF, #4C8DFF); }
+.f3 { background: linear-gradient(135deg, #FFD59A, #FF9F2E); margin-right: 0; }
+.empty { padding: 60rpx 0; display: flex; flex-direction: row; justify-content: center; }
+.mine-head { padding: 12rpx 32rpx 20rpx; }
+.mine-scroll { white-space: nowrap; }
+.mine-in { padding: 0 24rpx 8rpx; align-items: stretch; }
+.m-card { width: 300rpx; flex-shrink: 0; background: #fff; border-radius: 20rpx; padding: 24rpx; margin-right: 20rpx; box-sizing: border-box; height: 180rpx; display: flex; flex-direction: column; justify-content: space-between; }
+.m-title { font-size: 28rpx; font-weight: bold; white-space: normal; line-height: 40rpx; }
+.m-foot { align-items: flex-end; }
+.m-n { font-size: 36rpx; font-weight: bold; color: #6C5CE7; line-height: 40rpx; }
+.m-st { font-size: 22rpx; color: #19BE6B; }
+.m-st.end { color: #9aa0a6; }
+.m-card.add { align-items: center; justify-content: center; border: 2rpx dashed #c9c2ff; background: #faf9ff; }
+.add-plus { font-size: 52rpx; color: #6C5CE7; line-height: 60rpx; }

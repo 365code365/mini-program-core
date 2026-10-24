@@ -1,0 +1,94 @@
+<view class="card mode-card">
+  <view class="seg row">
+    <view class="seg-item {{mode === 'pickup' ? 'seg-on' : ''}}" data-mode="pickup" bindtap="onMode">到店自取</view>
+    <view class="seg-item {{mode === 'delivery' ? 'seg-on' : ''}}" data-mode="delivery" bindtap="onMode">外卖送达</view>
+  </view>
+  <view wx:if="{{mode === 'pickup'}}">
+    <view class="row info-line">
+      <view class="dot dot-green"></view>
+      <text class="info-main flex1 ellipsis">{{store.name}}</text>
+      <text class="sub">{{store.distance}}</text>
+    </view>
+    <text class="info-sub">{{store.addr}}</text>
+    <picker mode="selector" range="{{pickTimes}}" value="{{pickIdx}}" bindchange="onPickTime">
+      <view class="row between time-row">
+        <text>取餐时间</text>
+        <view class="row"><text class="time-val">{{pickTimes[pickIdx]}}</text><view class="arrow"></view></view>
+      </view>
+    </picker>
+  </view>
+  <view wx:else>
+    <view class="row info-line">
+      <view class="dot dot-orange"></view>
+      <text class="info-main flex1 ellipsis">望京SOHO T3 座 18 层 1806</text>
+    </view>
+    <text class="info-sub">林拾光 186****0520</text>
+    <view class="row between time-row">
+      <text>预计送达</text>
+      <text class="time-val">约 30 分钟 · 配送费 {{deliveryFee ? '¥' + deliveryFee : '已免'}}</text>
+    </view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="title">已选饮品</text>
+    <text class="sub" wx:if="{{list.length}}" bindtap="onClear">清空</text>
+  </view>
+  <view class="item row" wx:for="{{list}}" wx:key="key">
+    <image class="item-img" src="{{item.img}}" mode="aspectFill"></image>
+    <view class="flex1">
+      <text class="item-name ellipsis">{{item.name}}</text>
+      <text class="item-spec ellipsis">{{item.size}} / {{item.temp}} / {{item.sugar}}</text>
+      <text class="price item-price">¥{{item.total}}</text>
+    </view>
+    <view class="stepper">
+      <view class="step-minus" data-key="{{item.key}}" bindtap="onMinus"><view class="minus-bar"></view></view>
+      <text class="step-num">{{item.qty}}</text>
+      <view class="step-plus" data-key="{{item.key}}" bindtap="onPlus">+</view>
+    </view>
+  </view>
+  <view wx:if="{{!list.length}}" class="empty">
+    <text class="sub">购物车还是空的，去点一杯吧</text>
+    <view class="btn empty-btn" bindtap="onGoMenu">去点单</view>
+  </view>
+</view>
+
+<view class="card" wx:if="{{list.length}}">
+  <view class="fee-row row between" bindtap="onCoupon">
+    <view class="row"><text class="badge">券</text><text>优惠券</text></view>
+    <view class="row">
+      <text class="{{couponCut ? 'cut' : 'sub'}}">{{couponCut ? '-¥' + couponCut : couponHint}}</text>
+      <view class="arrow"></view>
+    </view>
+  </view>
+  <view class="fee-row row between" wx:if="{{mode === 'delivery'}}">
+    <text>配送费</text>
+    <text>{{deliveryFee ? '¥' + deliveryFee : '¥0（满 29 免）'}}</text>
+  </view>
+  <view class="fee-row row between">
+    <text>使用 {{usePointsNum}} 积分抵扣 ¥{{pointsCut}}</text>
+    <switch checked="{{usePoints}}" color="#6b4226" bindchange="onPoints" />
+  </view>
+  <view class="fee-row row between">
+    <text>备注</text>
+    <input class="remark" placeholder="例如：少冰块、分开打包" placeholder-class="ph" value="{{remark}}" bindinput="onRemark" maxlength="30" />
+  </view>
+  <view class="row total-row">
+    <text class="sub">本单预计获得 {{earn}} 积分</text>
+    <view class="flex1"></view>
+    <text>合计</text>
+    <text class="price total-num">¥{{pay}}</text>
+  </view>
+</view>
+
+<view class="bottom-gap"></view>
+
+<view class="pay-bar row" wx:if="{{list.length}}">
+  <view class="flex1 row pay-left">
+    <text class="pay-label">待支付</text>
+    <text class="price pay-num">¥{{pay}}</text>
+    <text class="pay-off" wx:if="{{saved}}">已省 ¥{{saved}}</text>
+  </view>
+  <view class="btn pay-btn" bindtap="onPay">去支付</view>
+</view>

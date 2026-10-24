@@ -1,0 +1,78 @@
+page {
+  background: #f4f6fa;
+  color: #1f2329;
+  font-size: 28rpx;
+}
+.card {
+  background: #ffffff;
+  border-radius: 20rpx;
+  margin: 0 24rpx 24rpx;
+  padding: 28rpx;
+  box-shadow: 0 4rpx 16rpx rgba(31, 53, 102, 0.06);
+}
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.between {
+  justify-content: space-between;
+}
+.flex1 {
+  flex: 1;
+}
+.title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #1f2329;
+}
+.sub {
+  font-size: 24rpx;
+  color: #8a919f;
+}
+.tag {
+  font-size: 22rpx;
+  padding: 4rpx 14rpx;
+  border-radius: 8rpx;
+}
+.tag-transit { color: #2f6bff; background: #eaf1ff; }
+.tag-deliver { color: #ff7a1a; background: #fff2e6; }
+.tag-signed { color: #19a974; background: #e7f7f0; }
+.tag-pending { color: #8a919f; background: #f0f2f5; }
+.tag-problem { color: #f2453d; background: #fdecec; }
+.btn-primary {
+  background: linear-gradient(90deg, #4c86ff, #2f6bff);
+  color: #ffffff;
+  border-radius: 44rpx;
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  font-size: 30rpx;
+  font-weight: bold;
+}
+.logo {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 36rpx;
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.section-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  margin: 8rpx 32rpx 20rpx;
+}
+.chev {
+  width: 14rpx;
+  height: 14rpx;
+  border-top: 3rpx solid #c4c9d2;
+  border-right: 3rpx solid #c4c9d2;
+  transform: rotate(45deg);
+  margin: 0 8rpx 0 16rpx;
+}
+/* 引擎给 input 默认 12px/8px 内边距（微信是 0），而且把 padding 全 0 当成「没写」照样套默认值，
+   所以各页输入框 class 里写的是 padding: 0 0 0 1rpx（左边 0.5px，看不出来） */

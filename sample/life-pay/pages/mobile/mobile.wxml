@@ -1,0 +1,40 @@
+<view class="card phone-card">
+  <view class="row">
+    <input class="ph" type="number" maxlength="13" value="{{phoneTx}}" placeholder="请输入手机号" bindinput="onPhone" />
+    <view wx:if="{{phone}}" class="clr" bindtap="clear"><text>×</text></view>
+  </view>
+  <view class="row ph-sub">
+    <text wx:if="{{carrier}}" class="carrier">{{carrier}}</text>
+    <text wx:elif="{{phone.length === 11}}" class="bad">暂不支持该号段</text>
+    <text wx:else class="muted">支持移动、联通、电信全国号码</text>
+  </view>
+  <view class="recent row">
+    <text class="muted">最近充值：</text>
+    <view class="rc" wx:for="{{recent}}" wx:key="*this" data-p="{{item}}" bindtap="useRecent"><text>{{item}}</text></view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="tabs row">
+    <view class="tb {{tab === 'fee' ? 'on' : ''}}" data-t="fee" bindtap="onTab"><text>充话费</text></view>
+    <view class="tb {{tab === 'flow' ? 'on' : ''}}" data-t="flow" bindtap="onTab"><text>充流量</text></view>
+  </view>
+  <view wx:if="{{tab === 'fee'}}" class="faces">
+    <view class="fc {{idx === index ? 'on' : ''}}" wx:for="{{faces}}" wx:key="v" data-i="{{index}}" bindtap="onFace">
+      <text class="fc-v">{{item.v}}<text class="fc-u">元</text></text>
+      <text class="fc-p">售价 {{item.priceTx}} 元</text>
+      <view wx:if="{{item.v >= 100}}" class="fc-hot"><text>优惠</text></view>
+    </view>
+  </view>
+  <view wx:else class="faces">
+    <view class="fc flow {{idx === index ? 'on' : ''}}" wx:for="{{flows}}" wx:key="v" data-i="{{index}}" bindtap="onFace">
+      <text class="fc-v">{{item.v}}</text>
+      <text class="fc-p">{{item.d}} · ¥{{item.price}}</text>
+    </view>
+  </view>
+  <text class="note">充值成功后一般 10 分钟内到账，月初月末高峰期可能延迟</text>
+</view>
+<view class="foot-gap"></view>
+<view class="foot">
+  <view class="btn-primary {{carrier ? '' : 'off'}}" bindtap="pay"><text>立即充值 ¥{{tab === 'fee' ? faces[idx].priceTx : flows[idx].price}}</text></view>
+</view>

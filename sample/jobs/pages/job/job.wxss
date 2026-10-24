@@ -1,0 +1,41 @@
+.head { margin-top: 20rpx; }
+.head { padding: 36rpx 32rpx 28rpx; }
+.j-title { font-size: 40rpx; font-weight: bold; display: block; }
+.j-salary { font-size: 38rpx; font-weight: bold; color: #2E6BFF; display: block; margin: 16rpx 0 20rpx; white-space: nowrap; }
+.meta { margin-top: 10rpx; }
+.meta-item { margin-right: 40rpx; }
+.meta-t { font-size: 26rpx; color: #5c6370; }
+.ic { width: 24rpx; height: 24rpx; margin-right: 10rpx; }
+.ic-pin { border: 4rpx solid #2E6BFF; border-radius: 14rpx 14rpx 14rpx 0; transform: rotate(-45deg); width: 18rpx; height: 18rpx; }
+.ic-bag { border: 4rpx solid #2E6BFF; border-radius: 6rpx; height: 18rpx; }
+.ic-cap { background: #2E6BFF; border-radius: 4rpx; height: 10rpx; transform: rotate(0deg); width: 28rpx; }
+.hr { padding: 28rpx; }
+.avatar.big { width: 88rpx; height: 88rpx; border-radius: 44rpx; font-size: 36rpx; }
+.hr-info { margin-left: 20rpx; }
+.hr-name { font-size: 30rpx; font-weight: bold; margin-right: 12rpx; margin-bottom: 6rpx; }
+.badge { font-size: 20rpx; color: #19BE6B; background: #e8f8ef; padding: 2rpx 10rpx; border-radius: 6rpx; }
+.chat-btn { border: 2rpx solid #2E6BFF; border-radius: 30rpx; padding: 10rpx 26rpx; }
+.chat-btn-t { color: #2E6BFF; font-size: 26rpx; }
+.tag-box { margin-bottom: 12rpx; }
+.tag { background: #eef3ff; color: #2E6BFF; }
+.h3 { display: block; font-size: 28rpx; font-weight: bold; margin: 16rpx 0 12rpx; }
+.para { align-items: flex-start; margin-bottom: 10rpx; }
+.num { font-size: 26rpx; color: #5c6370; width: 36rpx; line-height: 44rpx; }
+.para-t { font-size: 26rpx; color: #3a3f47; line-height: 44rpx; }
+.co-info { margin-left: 20rpx; }
+.co-name { font-size: 30rpx; font-weight: bold; margin-bottom: 6rpx; }
+.mini-map { position: relative; height: 220rpx; border-radius: 16rpx; background: #eaf0f6; overflow: hidden; }
+.road { position: absolute; background: #fff; }
+.r1 { left: 0; right: 0; top: 80rpx; height: 18rpx; }
+.r2 { top: 0; bottom: 0; left: 220rpx; width: 16rpx; }
+.r3 { left: 0; right: 0; top: 170rpx; height: 10rpx; background: #d7e9d4; }
+.pin { position: absolute; left: 320rpx; top: 50rpx; width: 48rpx; height: 48rpx; background: #2E6BFF; border-radius: 24rpx 24rpx 24rpx 0; transform: rotate(-45deg); display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.pin-dot { width: 18rpx; height: 18rpx; border-radius: 9rpx; background: #fff; }
+.addr { display: block; font-size: 26rpx; color: #5c6370; margin-top: 18rpx; }
+.safe-space { height: calc(150rpx + env(safe-area-inset-bottom)); }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; padding: 16rpx 32rpx calc(16rpx + env(safe-area-inset-bottom)); box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.04); }
+.fav { align-items: center; width: 100rpx; margin-right: 24rpx; }
+.star { width: 36rpx; height: 36rpx; border: 4rpx solid #9aa0a6; border-radius: 8rpx; transform: rotate(45deg); margin: 4rpx 0 10rpx; }
+.star.on { background: #2E6BFF; border-color: #2E6BFF; }
+.fav-t { font-size: 22rpx; color: #6b717a; }
+.btn-primary.done { background: #c9d7f7; }

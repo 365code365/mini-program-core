@@ -1,0 +1,19 @@
+page { background: #f5f6f8; color: #1f2329; font-size: 28rpx; }
+.card { background: #fff; border-radius: 20rpx; margin: 0 24rpx 24rpx; padding: 28rpx; box-shadow: 0 4rpx 20rpx rgba(31, 35, 41, 0.05); }
+.title { font-size: 34rpx; font-weight: bold; }
+.sub { font-size: 24rpx; color: #8a9099; }
+.row { display: flex; flex-direction: row; align-items: center; }
+.between { justify-content: space-between; }
+.flex1 { flex: 1; }
+.orange { color: #FF7A1A; }
+.btn-primary { background: linear-gradient(90deg, #FF9A3C, #FF6A1A); color: #fff; font-size: 32rpx; font-weight: bold; height: 92rpx; line-height: 92rpx; text-align: center; border-radius: 46rpx; }
+.btn-ghost { background: #fff; color: #1f2329; border: 2rpx solid #e3e5e8; font-size: 28rpx; height: 80rpx; line-height: 80rpx; text-align: center; border-radius: 40rpx; }
+.dot { width: 16rpx; height: 16rpx; border-radius: 8rpx; }
+.dot-green { background: #19BE6B; }
+.dot-orange { background: #FF7A1A; }
+.section-title { font-size: 30rpx; font-weight: bold; margin: 32rpx 24rpx 0; }
+/* 右箭头用 CSS 画：U+203A「›」在引擎字体回退里画成了冒号 */
+.chev { width: 14rpx; height: 14rpx; border-top: 3rpx solid #c4c7cc; border-right: 3rpx solid #c4c7cc; transform: rotate(45deg); margin-left: 12rpx; }
+.chev.white { border-color: #fff; width: 18rpx; height: 18rpx; }
+/* 引擎的 input 只要 padding 全为 0 就套用默认 8px/12px 内边距（微信里 input 无内边距），给 1rpx 让它认作自定义 */
+input { padding: 0 0 0 1rpx; }

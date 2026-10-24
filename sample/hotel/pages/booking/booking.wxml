@@ -1,0 +1,79 @@
+<view class="head">
+  <text class="h-name">{{h.name}}</text>
+  <view class="row h-dates">
+    <text class="h-d">{{inShort}} {{inWeek}}</text><text class="h-sep">—</text><text class="h-d">{{outShort}} {{outWeek}}</text>
+    <text class="h-n">共{{nights}}晚</text>
+  </view>
+  <text class="h-room">{{room.name}} · {{room.bed}} · {{room.breakfast}} · {{room.size}}</text>
+  <view class="h-policy"><text class="h-policy-t">入住前一天 18:00 前可免费取消</text></view>
+</view>
+
+<view class="card form first">
+  <view class="f-row">
+    <text class="f-label">房间数</text>
+    <view class="flex1"></view>
+    <view class="stepper">
+      <view class="st-btn {{count <= 1 ? 'st-dis' : ''}}" bindtap="onMinus"><view class="st-h"></view></view>
+      <text class="st-val">{{count}}间</text>
+      <view class="st-btn {{count >= room.left ? 'st-dis' : ''}}" bindtap="onPlus"><view class="st-h"></view><view class="st-v"></view></view>
+    </view>
+  </view>
+  <view class="f-row" wx:for="{{guests}}" wx:key="*this">
+    <text class="f-label">住客{{guests.length > 1 ? index + 1 : ''}}</text>
+    <input class="f-input" placeholder="每间填 1 人，与证件一致" value="{{item}}" data-idx="{{index}}" bindinput="onGuest" />
+  </view>
+  <view class="f-row">
+    <text class="f-label">联系手机</text>
+    <input class="f-input" type="number" maxlength="11" placeholder="用于接收订单短信" value="{{phone}}" bindinput="onPhone" />
+  </view>
+  <picker mode="selector" range="{{arrivals}}" value="{{arrival}}" bindchange="onArrival">
+    <view class="f-row">
+      <text class="f-label">预计到店</text>
+      <text class="f-val flex1">{{arrivals[arrival]}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <view class="f-tip">房间将整晚保留，20:00 后到店请提前联系酒店</view>
+</view>
+
+<view class="card form">
+  <view class="f-row">
+    <text class="f-label">需要发票</text>
+    <view class="flex1"></view>
+    <switch checked="{{invoice}}" color="#1E6FFF" bindchange="onInvoice" />
+  </view>
+  <block wx:if="{{invoice}}">
+    <view class="inv-types">
+      <view wx:for="{{invTypes}}" wx:key="*this" class="inv-type {{invType === index ? 'inv-on' : ''}}" data-idx="{{index}}" bindtap="onInvType">{{item}}</view>
+    </view>
+    <view class="f-row">
+      <text class="f-label">发票抬头</text>
+      <input class="f-input" placeholder="{{invType === 0 ? '个人姓名' : '公司全称'}}" value="{{invTitle}}" bindinput="onInvTitle" />
+    </view>
+    <view class="f-row" wx:if="{{invType === 1}}">
+      <text class="f-label">税号</text>
+      <input class="f-input" placeholder="纳税人识别号" value="{{taxNo}}" bindinput="onTaxNo" />
+    </view>
+  </block>
+  <view class="f-row no-border">
+    <text class="f-label">特殊要求</text>
+    <text class="f-val flex1 {{needs.length ? '' : 'f-ph'}}" bindtap="onNeeds">{{needs.length ? needs : '高楼层、无烟房、安静房…'}}</text>
+    <view class="chev"></view>
+  </view>
+</view>
+
+<view class="card">
+  <text class="block-title">费用明细</text>
+  <view class="fee row between"><text>房费（{{count}}间 × {{nights}}晚）</text><text>¥{{roomFee}}</text></view>
+  <view class="fee row between"><text>会员 9.5 折</text><text class="price-color">-¥{{discount}}</text></view>
+  <view class="fee row between"><text>税费及服务费</text><text>已包含</text></view>
+</view>
+<view class="bottom-space"></view>
+
+<view class="bar">
+  <view class="flex1">
+    <view class="row total-row"><text class="sub">在线付 </text><text class="price-color yen">¥</text><text class="price-color total">{{total}}</text></view>
+    <text class="sub">已优惠 ¥{{discount}}</text>
+  </view>
+  <view class="submit" bindtap="onSubmit">提交订单</view>
+</view>

@@ -1,0 +1,30 @@
+.header { background: linear-gradient(180deg, #E8243F, #FF5A6E); padding: 24rpx 32rpx 30rpx; }
+.avatar { width: 108rpx; height: 108rpx; border-radius: 54rpx; background: linear-gradient(135deg, #FFE0E5, #FFB3BD); border: 4rpx solid rgba(255, 255, 255, 0.7); display: flex; align-items: center; justify-content: center; }
+.avatar-t { color: #E8243F; font-size: 42rpx; font-weight: bold; }
+.info { margin-left: 22rpx; display: flex; flex-direction: column; }
+.nick { color: #fff; font-size: 36rpx; font-weight: bold; margin-bottom: 8rpx; }
+.lv { font-size: 20rpx; color: #8A5A00; background: linear-gradient(90deg, #FFE7A8, #FFD36B); padding: 2rpx 12rpx; border-radius: 14rpx; margin-right: 14rpx; }
+.phone { color: rgba(255, 255, 255, 0.85); font-size: 22rpx; }
+.stats { margin-top: 36rpx; }
+.stat { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.stat-n { color: #fff; font-size: 38rpx; font-weight: bold; }
+.stat-l { color: rgba(255, 255, 255, 0.8); font-size: 22rpx; margin-top: 4rpx; }
+.vip { margin: 24rpx; border-radius: 20rpx; padding: 28rpx; background: linear-gradient(120deg, #2A2238, #57406A); display: flex; flex-direction: row; align-items: center; justify-content: space-between; }
+.vip-t { display: block; color: #F6D9A4; font-size: 32rpx; font-weight: bold; }
+.vip-s { display: block; color: rgba(255, 255, 255, 0.7); font-size: 22rpx; margin-top: 8rpx; }
+/* 粗体且含数字/西文的文字，引擎按收缩宽度排版时量得偏窄会折行，这里给定宽 */
+.vip-btn { width: 170rpx; text-align: center; flex-shrink: 0; background: linear-gradient(90deg, #F6D9A4, #E0A95A); color: #3A2A00; font-size: 24rpx; font-weight: bold; padding: 12rpx 0; border-radius: 30rpx; }
+.block-title { font-size: 30rpx; font-weight: bold; }
+.empty { display: block; padding: 24rpx 0 8rpx; text-align: center; }
+.wish-scroll { width: 646rpx; margin-top: 20rpx; }
+.wish-row { display: flex; flex-direction: row; }
+.wish { width: 150rpx; margin-right: 20rpx; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; }
+.wish-poster { width: 150rpx; height: 210rpx; border-radius: 12rpx; }
+.wish-t { font-size: 24rpx; margin-top: 10rpx; }
+.menu { padding: 0 28rpx; }
+.menu-item { display: flex; flex-direction: row; align-items: center; height: 104rpx; border-bottom: 1rpx solid #f0f1f3; }
+.menu-item:last-child { border-bottom: none; }
+.m-icon { width: 52rpx; height: 52rpx; border-radius: 14rpx; display: flex; align-items: center; justify-content: center; }
+.m-g { color: #fff; font-size: 22rpx; font-weight: bold; }
+.m-name { margin-left: 20rpx; font-size: 28rpx; }
+.gap { height: 24rpx; }

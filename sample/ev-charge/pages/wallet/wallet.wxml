@@ -1,0 +1,56 @@
+<view class="bal-shadow"><view class="bal-card">
+  <view class="deco d1"></view><view class="deco d2"></view>
+  <text class="bal-l">账户余额(元)</text>
+  <text class="bal-n money">{{balance}}</text>
+  <view class="row bal-foot">
+    <text class="bal-s">充电券 2 张</text>
+    <text class="bal-s">积分 1,280</text>
+  </view>
+</view></view>
+
+<view class="card">
+  <view class="row between">
+    <text class="section-title">选择充值金额</text>
+    <text class="sub">充 200 送 10</text>
+  </view>
+  <view class="amounts">
+    <view wx:for="{{amounts}}" wx:key="v" class="amt col {{aIdx === index ? 'on' : ''}}" data-idx="{{index}}" bindtap="onAmount">
+      <text class="amt-v"><text class="amt-y">¥</text>{{item.v}}</text>
+      <text class="amt-g" wx:if="{{item.gift}}">送 {{item.gift}} 元</text>
+    </view>
+  </view>
+  <view class="custom row {{aIdx === -1 ? 'on' : ''}}">
+    <text class="custom-l">其他金额</text>
+    <input class="custom-input flex1" type="digit" placeholder="10~2000 元" placeholder-class="ph" value="{{custom}}" bindinput="onCustom" bindfocus="onCustomFocus" />
+    <text class="sub">元</text>
+  </view>
+</view>
+
+<view class="card pay">
+  <text class="section-title">支付方式</text>
+  <view wx:for="{{pays}}" wx:key="name" class="pay-i row" data-idx="{{index}}" bindtap="onPay">
+    <view class="pay-ic" style="background: {{item.bg}}"><text class="pay-ic-t">{{item.glyph}}</text></view>
+    <text class="flex1 pay-name">{{item.name}}</text>
+    <view class="radio {{pIdx === index ? 'on' : ''}}"><view class="radio-in" wx:if="{{pIdx === index}}"></view></view>
+  </view>
+  <view class="row auto">
+    <text class="flex1 pay-name">余额低于 20 元自动充值</text>
+    <switch checked="{{autoPay}}" color="#00B87A" bindchange="onAuto" />
+  </view>
+</view>
+
+<view class="go">
+  <view class="btn-primary" bindtap="onRecharge">立即充值 ¥{{payText}}</view>
+</view>
+
+<view class="card">
+  <text class="section-title">收支明细</text>
+  <view wx:for="{{logs}}" wx:key="id" class="log row">
+    <view class="col flex1">
+      <text class="log-t">{{item.title}}</text>
+      <text class="sub">{{item.date}}</text>
+    </view>
+    <text class="log-v money {{item.v > 0 ? 'in' : ''}}">{{item.vText}}</text>
+  </view>
+</view>
+<view class="tabbar-space"></view>

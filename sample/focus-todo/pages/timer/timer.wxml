@@ -1,0 +1,65 @@
+<view class="modes">
+  <view class="mode {{mode === index ? 'on' : ''}}" wx:for="{{modes}}" wx:key="key" bindtap="onMode" data-i="{{index}}">{{item.text}}</view>
+</view>
+
+<picker mode="selector" range="{{taskNames}}" value="{{taskIndex}}" bindchange="onTask">
+  <view class="task row">
+    <text class="task-label">专注于</text>
+    <text class="flex1 task-name">{{taskNames[taskIndex]}}</text>
+    <view class="chev"></view>
+  </view>
+</picker>
+
+<view class="ring-wrap">
+  <view class="ring">
+    <view class="base" style="background: {{color}}"></view>
+    <view class="half right">
+      <view class="rotor" style="transform: rotate({{rightDeg}}deg)">
+        <view class="cover cover-r" style="background: {{track}}"></view>
+      </view>
+    </view>
+    <view class="half left">
+      <view class="rotor" style="transform: rotate({{leftDeg}}deg)">
+        <view class="cover cover-l" style="background: {{track}}"></view>
+      </view>
+    </view>
+    <view class="mask"></view>
+    <view class="inner">
+      <text class="time">{{timeText}}</text>
+      <text class="state" style="color: {{color}}">{{stateText}}</text>
+      <view class="dots row">
+        <view class="dot {{index < round ? 'on' : ''}}" wx:for="{{roundDots}}" wx:key="*this" style="{{index < round ? 'background:' + color : ''}}"></view>
+      </view>
+    </view>
+  </view>
+</view>
+
+<view class="ctrls row">
+  <view class="ctrl small" bindtap="onReset">
+    <text class="ctrl-text">重置</text>
+  </view>
+  <view class="ctrl main" style="background: {{color}}; box-shadow: 0 12rpx 32rpx {{shadow}}" bindtap="onToggle">
+    <text class="main-text">{{mainText}}</text>
+  </view>
+  <view class="ctrl small" bindtap="onSkip">
+    <text class="ctrl-text">跳过</text>
+  </view>
+</view>
+
+<view class="card today row">
+  <view class="flex1 today-item">
+    <text class="today-num">{{todayPomos}}</text>
+    <text class="sub">今日番茄</text>
+  </view>
+  <view class="vline"></view>
+  <view class="flex1 today-item">
+    <text class="today-num">{{todayMinutes}}<text class="unit"> 分钟</text></text>
+    <text class="sub">今日专注</text>
+  </view>
+  <view class="vline"></view>
+  <view class="flex1 today-item">
+    <text class="today-num">{{goal}}</text>
+    <text class="sub">每日目标</text>
+  </view>
+</view>
+<view class="tab-safe"></view>

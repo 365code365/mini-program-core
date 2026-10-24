@@ -1,0 +1,24 @@
+.phone-card { padding: 32rpx; }
+.ph { flex: 1; height: 80rpx; font-size: 48rpx; font-weight: bold; color: #1e2329; }
+.clr { width: 40rpx; height: 40rpx; border-radius: 20rpx; background: #c4cad2; color: #ffffff; font-size: 30rpx; line-height: 38rpx; text-align: center; }
+.ph-sub { margin-top: 8rpx; padding-bottom: 22rpx; border-bottom: 1rpx solid #f0f2f5; }
+.carrier { font-size: 24rpx; color: #14a06f; background: #e6f7f0; padding: 4rpx 14rpx; border-radius: 8rpx; }
+.bad { font-size: 24rpx; color: #f2603d; }
+.recent { margin-top: 20rpx; flex-wrap: wrap; }
+.rc { height: 48rpx; padding: 0 18rpx; margin-right: 12rpx; border-radius: 24rpx; background: #f2f4f7; font-size: 22rpx; color: #5b626c; display: flex; flex-direction: row; align-items: center; }
+.tabs { background: #f2f4f7; border-radius: 16rpx; padding: 6rpx; }
+.tb { flex: 1; height: 64rpx; border-radius: 12rpx; font-size: 28rpx; color: #5b626c; display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.tb.on { background: #ffffff; color: #14a06f; font-weight: bold; box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06); }
+.faces { display: flex; flex-direction: row; flex-wrap: wrap; margin: 8rpx -20rpx 0 0; }
+.fc { width: 202rpx; height: 136rpx; margin: 20rpx 20rpx 0 0; border-radius: 16rpx; border: 2rpx solid #e6e9ee; background: #ffffff; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; box-sizing: border-box; overflow: hidden; }
+.fc.flow { width: 313rpx; }
+.fc.on { border-color: #14a06f; background: #e9f8f1; }
+.fc-v { font-size: 40rpx; font-weight: bold; color: #1e2329; }
+.fc-u { font-size: 24rpx; font-weight: normal; margin-left: 4rpx; }
+.fc.on .fc-v { color: #14a06f; }
+.fc-p { margin-top: 4rpx; font-size: 22rpx; color: #8a919c; }
+.fc.on .fc-p { color: #14a06f; }
+.fc-hot { position: absolute; right: 0; top: 0; background: #f2603d; color: #ffffff; font-size: 18rpx; padding: 2rpx 10rpx; border-radius: 0 0 0 12rpx; }
+.note { display: block; margin-top: 24rpx; font-size: 22rpx; color: #a0a7b1; line-height: 34rpx; }
+.foot-gap { height: calc(150rpx + env(safe-area-inset-bottom)); }
+.foot { position: fixed; left: 0; right: 0; bottom: 0; background: #ffffff; padding: 20rpx 32rpx calc(20rpx + env(safe-area-inset-bottom)); box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.05); }

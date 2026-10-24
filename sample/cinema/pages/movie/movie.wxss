@@ -1,0 +1,59 @@
+page { background: #f5f6f8; }
+.hero { display: flex; flex-direction: row; padding: 32rpx 32rpx 80rpx; background: linear-gradient(180deg, #2A2238, #4A3550); }
+.poster { width: 220rpx; height: 308rpx; border-radius: 14rpx; flex-shrink: 0; box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.4); }
+.h-info { flex: 1; margin-left: 28rpx; display: flex; flex-direction: column; }
+.h-title { color: #fff; font-size: 40rpx; font-weight: bold; }
+.h-en { color: rgba(255, 255, 255, 0.6); font-size: 22rpx; margin: 4rpx 0 14rpx; }
+.h-line { color: rgba(255, 255, 255, 0.8); font-size: 24rpx; margin-top: 6rpx; }
+.h-btns { margin-top: auto; }
+.h-btn { font-size: 24rpx; color: #fff; background: rgba(255, 255, 255, 0.18); border-radius: 10rpx; padding: 10rpx 0; width: 150rpx; text-align: center; margin-right: 16rpx; }
+.h-btn-on { background: #FFB400; color: #3A2A00; font-weight: bold; }
+.score-card { position: relative; display: flex; flex-direction: row; align-items: center; margin: -50rpx 24rpx 24rpx; background: #fff; border-radius: 20rpx; padding: 26rpx 28rpx; box-shadow: 0 6rpx 24rpx rgba(0, 0, 0, 0.06); }
+.soon-card { align-items: flex-end; }
+.sc-left { display: flex; flex-direction: column; width: 150rpx; }
+.sc-label { font-size: 22rpx; color: #8a9099; }
+.sc-num-row { align-items: flex-end; }
+.sc-num { font-size: 56rpx; font-weight: bold; color: #FFB400; }
+.sc-num.small { font-size: 44rpx; margin-right: 12rpx; }
+.sc-unit { font-size: 22rpx; color: #FFB400; margin: 0 0 12rpx 4rpx; }
+.sc-sub { font-size: 20rpx; color: #9aa0a6; }
+.sc-bars { flex: 1; margin: 0 20rpx; }
+.sc-bar-row { margin: 3rpx 0; }
+.sc-star { font-size: 18rpx; color: #9aa0a6; width: 40rpx; }
+.sc-bar { flex: 1; height: 8rpx; background: #f0f1f3; border-radius: 4rpx; margin: 0 10rpx; }
+.sc-fill { height: 8rpx; border-radius: 4rpx; background: #FFB400; }
+.sc-pct { font-size: 18rpx; color: #9aa0a6; width: 50rpx; }
+.sc-box { display: flex; flex-direction: column; align-items: center; padding-left: 20rpx; border-left: 1rpx solid #f0f1f3; }
+.sc-box-num { font-size: 32rpx; font-weight: bold; }
+.block-title { display: block; font-size: 32rpx; font-weight: bold; margin-bottom: 16rpx; }
+.intro { display: block; font-size: 26rpx; line-height: 44rpx; color: #4e5969; }
+.intro-clip { height: 132rpx; overflow: hidden; }
+.more { justify-content: center; margin-top: 10rpx; }
+.chev.down { transform: rotate(135deg); margin-top: -8rpx; }
+.chev.up { transform: rotate(-45deg); margin-top: 8rpx; }
+.cast-card { padding-left: 0; padding-right: 0; }
+.cast-head { padding: 0 28rpx; }
+.cast-scroll { width: 702rpx; }
+.cast-row { display: flex; flex-direction: row; padding: 0 16rpx; }
+.cast { width: 150rpx; display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+.cast-avatar { width: 112rpx; height: 112rpx; border-radius: 56rpx; display: flex; align-items: center; justify-content: center; }
+.cast-glyph { color: #fff; font-size: 40rpx; font-weight: bold; }
+.cast-name { font-size: 24rpx; margin-top: 12rpx; }
+.cast-role { font-size: 20rpx; color: #9aa0a6; margin-top: 4rpx; }
+.days { margin-bottom: 8rpx; }
+.day { font-size: 26rpx; color: #4e5969; padding: 10rpx 24rpx; border-radius: 30rpx; margin-right: 16rpx; background: #f5f6f8; }
+.day-on { color: #fff; background: #F0384D; font-weight: bold; }
+.cinema { padding: 26rpx 0 10rpx; border-bottom: 1rpx solid #f0f1f3; }
+.cinema:last-child { border-bottom: none; }
+.c-name { font-size: 30rpx; font-weight: bold; }
+.c-dist { font-size: 22rpx; color: #9aa0a6; }
+.c-addr { display: block; margin-top: 6rpx; }
+.c-tags { margin-top: 12rpx; }
+.shows-scroll { width: 646rpx; margin-top: 18rpx; }
+.shows { display: flex; flex-direction: row; }
+.show { flex-shrink: 0; width: 160rpx; background: #FFF5F6; border-radius: 14rpx; padding: 14rpx 0; margin-right: 16rpx; display: flex; flex-direction: column; align-items: center; }
+.s-time { font-size: 32rpx; font-weight: bold; }
+.s-end { font-size: 18rpx; color: #9aa0a6; margin-top: 2rpx; }
+.s-lang { font-size: 20rpx; color: #4e5969; margin-top: 6rpx; }
+.s-price { font-size: 26rpx; color: #F0384D; font-weight: bold; margin-top: 4rpx; }
+.gap { height: 32rpx; }

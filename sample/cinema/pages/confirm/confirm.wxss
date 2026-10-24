@@ -1,0 +1,28 @@
+.timer { background: #FFF1F3; padding: 18rpx 0; margin-bottom: 24rpx; display: flex; flex-direction: row; justify-content: center; }
+.timer-t { font-size: 24rpx; color: #E8243F; }
+.timer-n { font-weight: bold; }
+.movie { display: flex; flex-direction: row; }
+.poster { width: 150rpx; height: 210rpx; border-radius: 12rpx; }
+.info { margin-left: 22rpx; display: flex; flex-direction: column; }
+.title { font-size: 34rpx; font-weight: bold; margin-bottom: 10rpx; }
+.line { font-size: 24rpx; color: #4e5969; margin-top: 8rpx; }
+.line.strong { color: #F0384D; font-weight: bold; font-size: 26rpx; }
+.block-title { display: block; font-size: 30rpx; font-weight: bold; }
+.seats { display: flex; flex-direction: row; flex-wrap: wrap; margin-top: 16rpx; }
+/* 粗体且含数字/西文的文字，引擎按收缩宽度排版时量得偏窄会折行，这里给定宽 */
+.seat-chip { width: 150rpx; text-align: center; font-size: 26rpx; font-weight: bold; background: #f5f6f8; border-radius: 10rpx; padding: 10rpx 0; margin: 0 14rpx 14rpx 0; }
+.note { margin-top: 6rpx; }
+.dot-g { width: 12rpx; height: 12rpx; border-radius: 6rpx; background: #1E9E6A; margin-right: 10rpx; }
+.form { padding: 0 28rpx; }
+.f-row { display: flex; flex-direction: row; align-items: center; height: 100rpx; border-bottom: 1rpx solid #f0f1f3; }
+.no-border { border-bottom: none; }
+.f-label { width: 140rpx; color: #4e5969; }
+.f-input { flex: 1; font-size: 28rpx; height: 100rpx; }
+.f-val { font-size: 28rpx; }
+.fee { font-size: 26rpx; color: #4e5969; padding: 10rpx 0; }
+.bottom-space { height: calc(140rpx + env(safe-area-inset-bottom)); }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; display: flex; flex-direction: row; align-items: center; padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom)) 32rpx; box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.06); }
+.total-row { align-items: flex-end; }
+.yen { font-size: 26rpx; margin: 0 0 6rpx 8rpx; }
+.total { font-size: 48rpx; font-weight: bold; }
+.pay { width: 260rpx; height: 88rpx; line-height: 88rpx; text-align: center; border-radius: 44rpx; background: linear-gradient(90deg, #FF5A6E, #E8243F); color: #fff; font-size: 30rpx; font-weight: bold; }

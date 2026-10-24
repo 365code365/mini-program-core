@@ -27,6 +27,10 @@ MAX_FILES = 20000
 ID_RE = re.compile(r'^[a-z0-9][a-z0-9._-]{0,63}$')
 APPID_RE = re.compile(r'^wx[0-9a-f]{16}$')
 SKIP_NAMES = {'.DS_Store', 'Thumbs.db'}
+# 分类是固定的一组（商店首页按它分栏、搜索页按它筛）：与示例小程序 store.meta.json 的 category 同一组
+CATEGORIES = ['美食', '购物', '出行', '生活服务', '医疗健康', '金融', '工具', '教育', '娱乐', '资讯', '政务', '其他']
+ICON_NAME = 'icon.png'          # 包根上的商店图标（144×144 PNG），上传时取出来单独存
+MAX_ICON = 512 << 10
 WRITE_LOCK = threading.Lock()
 
 
@@ -59,8 +63,53 @@ def load_meta(app_id):
 
 
 def public_meta(meta):
-    """对外的 meta：带上下载地址（`?v=` 让中间缓存按版本区分）"""
-    return dict(meta, packageUrl=f"/api/apps/{meta['id']}/package?v={meta['version']}")
+    """对外的 meta：带上下载地址与图标地址（`?v=` 让中间缓存按版本区分）、累计打开次数"""
+    out = dict(meta, packageUrl=f"/api/apps/{meta['id']}/package?v={meta['version']}")
+    out.setdefault('category', '其他')
+    out.setdefault('tags', [])
+    out.setdefault('developer', '')
+    if meta.get('hasIcon'):
+        out['iconUrl'] = f"/api/apps/{meta['id']}/icon?v={meta['version']}"
+    out['downloads'] = load_stats(meta['id']).get('downloads', 0)
+    return out
+
+
+def load_stats(app_id):
+    try:
+        with open(os.path.join(app_dir(app_id), 'stats.json'), encoding='utf-8') as f:
+            return json.load(f)
+    except (FileNotFoundError, ValueError):
+        return {}
+
+
+STATS_LOCK = threading.Lock()
+
+
+def bump_downloads(app_id):
+    """包被下载了一次（新装或升级）：热门排序用。与 meta 分开存，改它不碰包的版本"""
+    with STATS_LOCK:
+        st = load_stats(app_id)
+        st['downloads'] = st.get('downloads', 0) + 1
+        write_json(os.path.join(app_dir(app_id), 'stats.json'), st)
+
+
+def clean_store_fields(body, old=None):
+    """category / tags / developer：上传参数或 PATCH 里给的，校验后返回要写进 meta 的字段"""
+    out = {}
+    cat = body.get('category')
+    if isinstance(cat, str) and cat.strip():
+        if cat.strip() not in CATEGORIES:
+            raise HttpError(400, f"category 只能是：{'、'.join(CATEGORIES)}")
+        out['category'] = cat.strip()
+    tags = body.get('tags')
+    if isinstance(tags, str):
+        tags = [t for t in tags.replace('，', ',').split(',')]
+    if isinstance(tags, list):
+        out['tags'] = [str(t).strip()[:20] for t in tags if str(t).strip()][:12]
+    dev = body.get('developer')
+    if isinstance(dev, str):
+        out['developer'] = dev.strip()[:60]
+    return out
 
 
 def all_metas():
@@ -155,8 +204,11 @@ def _pick_appid(app_id, explicit, project, old):
     return chosen
 
 
-def save_app(app_id, data, name, description, appid=None):
+def save_app(app_id, data, name, description, appid=None, store_fields=None):
     entries, files, unpacked, app_json, project = normalize_zip(data)
+    icon = next((c for rel, _, c in entries if rel == ICON_NAME), None)
+    if icon is not None and (len(icon) > MAX_ICON or not icon.startswith(b'\x89PNG')):
+        raise HttpError(400, 'icon.png 要是 PNG、不超过 512KB')
     d = app_dir(app_id)
     with WRITE_LOCK:
         old = load_meta(app_id) or {}
@@ -184,6 +236,9 @@ def save_app(app_id, data, name, description, appid=None):
         with open(tmp, 'wb') as f:
             f.write(pkg)
         os.replace(tmp, os.path.join(d, 'package.zip'))
+        if icon is not None:
+            with open(os.path.join(d, 'icon.png'), 'wb') as f:
+                f.write(icon)
         meta = {
             'id': app_id,
             'appId': chosen,
@@ -197,7 +252,13 @@ def save_app(app_id, data, name, description, appid=None):
             'pages': len(app_json.get('pages') or []),
             'updatedAt': int(time.time() * 1000),
             'order': old.get('order', 1000),
+            'hasIcon': icon is not None or (old.get('hasIcon', False) and os.path.isfile(os.path.join(d, 'icon.png'))),
+            'category': old.get('category', '其他'),
+            'tags': old.get('tags', []),
+            'developer': old.get('developer', ''),
+            'createdAt': old.get('createdAt', int(time.time() * 1000)),
         }
+        meta.update(clean_store_fields(store_fields or {}))
         write_json(os.path.join(d, 'meta.json'), meta)
     return public_meta(meta)
 
@@ -212,6 +273,7 @@ def patch_app(app_id, body):
                 meta[key] = body[key].strip()[:200]
         if isinstance(body.get('order'), int):
             meta['order'] = body['order']
+        meta.update(clean_store_fields(body))
         write_json(os.path.join(app_dir(app_id), 'meta.json'), meta)
     return public_meta(meta)
 

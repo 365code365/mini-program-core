@@ -1,0 +1,38 @@
+<view class="viewer">
+  <view class="frame">
+    <view class="corner k1"></view><view class="corner k2"></view><view class="corner k3"></view><view class="corner k4"></view>
+    <view class="laser"></view>
+    <view class="qr">
+      <view class="qr-b b1"><view class="qr-in"></view></view>
+      <view class="qr-b b2"><view class="qr-in"></view></view>
+      <view class="qr-b b3"><view class="qr-in"></view></view>
+    </view>
+  </view>
+  <text class="hint">将充电桩上的二维码放入框内，即可自动识别</text>
+  <view class="row tools">
+    <view class="tool col" bindtap="onScanTap"><view class="tool-ic"><view class="t-cam"></view></view><text class="tool-t">扫一扫</text></view>
+    <view class="tool col" bindtap="onLight"><view class="tool-ic {{light ? 'on' : ''}}"><view class="t-bulb"></view></view><text class="tool-t">{{light ? '关闭照明' : '打开照明'}}</text></view>
+  </view>
+</view>
+
+<view class="card input-card">
+  <text class="section-title">输入终端编号</text>
+  <view class="code row {{error ? 'err' : ''}}">
+    <input class="code-input flex1" placeholder="桩身铭牌上的编号，如 XX0128-02" placeholder-class="ph" value="{{code}}" bindinput="onInput" maxlength="12" />
+    <view class="clr" wx:if="{{code}}" bindtap="onClear"><text class="clr-t">清除</text></view>
+  </view>
+  <text class="err-t" wx:if="{{error}}">{{error}}</text>
+  <view class="found row" wx:if="{{found}}">
+    <view class="f-ic"><text class="f-ic-t">{{found.terminal.power > 7 ? '快' : '慢'}}</text></view>
+    <view class="col flex1">
+      <text class="f-name">{{found.station.name}}</text>
+      <text class="sub">{{found.terminal.type}} {{found.terminal.power}}kW·{{found.terminal.status === 'idle' ? '空闲' : found.terminal.status === 'busy' ? '使用中' : '维护中'}}</text>
+    </view>
+  </view>
+  <text class="sub recent-title">最近使用</text>
+  <view class="row recent">
+    <view wx:for="{{recent}}" wx:key="*this" class="r-chip" data-code="{{item}}" bindtap="onRecent"><text class="r-chip-t">{{item}}</text></view>
+  </view>
+  <view class="btn-primary start" bindtap="onStart">开始充电</view>
+  <text class="sub balance">账户余额 ¥{{balance}}，充电结束后按实际电量扣费</text>
+</view>

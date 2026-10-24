@@ -1,0 +1,93 @@
+<view class="page" style="background: {{bg}};">
+  <view class="nav" style="padding-top: {{navTop}}px; height: {{navH}}px; padding-right: {{capsuleW}}px;">
+    <view class="nav-city row" hover-class="press" bindtap="onCity">
+      <view class="pin"></view>
+      <text class="nav-name">{{city.name}}</text>
+      <view class="arrow arrow-w"></view>
+    </view>
+    <view class="flex1"></view>
+    <view class="nav-btn" hover-class="press" bindtap="onSettings"><text>设置</text></view>
+  </view>
+
+  <view class="now col">
+    <view class="dots row">
+      <view wx:for="{{mine}}" wx:key="*this" class="dot {{index === ci ? 'dot-on' : ''}}" data-i="{{index}}" bindtap="onDot"></view>
+    </view>
+    <view class="now-main row">
+      <view class="col now-left">
+        <view class="temp row"><text class="temp-n">{{temp}}</text><view class="deg"></view><text class="temp-u">{{unit}}</text></view>
+        <view class="cond"><text>{{condName}}  {{hiT}}° / {{loT}}°</text></view>
+        <view class="meta"><text>体感 {{feels}}°   湿度 {{city.hum}}%   {{city.wind}}{{city.lv}}级</text></view>
+      </view>
+      <wicon cond="{{city.cond}}" size="260rpx" />
+    </view>
+    <view class="aqi-pill row" hover-class="press" bindtap="onAir">
+      <view class="aqi-dot" style="background: {{aqi.color}};"></view>
+      <text>空气{{aqi.name}} {{aqi.v}}</text>
+      <view class="arrow arrow-w"></view>
+    </view>
+  </view>
+
+  <view class="glass">
+    <view class="row between glass-head">
+      <text class="g-title">24 小时预报</text>
+      <text class="g-sub">{{updated}}</text>
+    </view>
+    <scroll-view scroll-x class="hours" enhanced show-scrollbar="{{false}}">
+      <view class="hours-in row">
+        <view wx:for="{{hours}}" wx:key="i" class="hour col {{index === 0 ? 'hour-now' : ''}}" data-i="{{index}}" bindtap="onHour">
+          <text class="h-label">{{item.label}}</text>
+          <wicon cond="{{item.cond}}" size="64rpx" />
+          <text class="h-t">{{item.tt}}°</text>
+          <text class="h-pop">{{item.pop ? item.pop + '%' : ' '}}</text>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <view class="glass">
+    <view class="glass-head"><text class="g-title">7 日预报</text></view>
+    <view wx:for="{{days}}" wx:key="i" class="day row">
+      <view class="d-left col">
+        <text class="d-name">{{item.day}}</text>
+        <text class="d-date">{{item.date}}</text>
+      </view>
+      <wicon cond="{{item.cond}}" size="56rpx" />
+      <text class="d-cond">{{item.condName}}</text>
+      <text class="d-lo">{{item.loT}}°</text>
+      <view class="d-track">
+        <view class="d-bar" style="left: {{item.left}}%; width: {{item.width}}%;"></view>
+      </view>
+      <text class="d-hi">{{item.hiT}}°</text>
+    </view>
+  </view>
+
+  <view class="glass" hover-class="press" bindtap="onAir">
+    <view class="row between glass-head">
+      <text class="g-title">空气质量</text>
+      <view class="row"><text class="g-sub">详情</text><view class="arrow arrow-w"></view></view>
+    </view>
+    <view class="row aqi-row">
+      <view class="aqi-big col">
+        <text class="aqi-v">{{aqi.v}}</text>
+        <text class="aqi-n" style="color: {{aqi.color}};">{{aqi.name}}</text>
+      </view>
+      <view class="flex1 col">
+        <view class="aqi-track"><view class="aqi-mark" style="left: {{aqi.pct}}%;"></view></view>
+        <view class="aqi-tip"><text>{{aqi.tip}}</text></view>
+      </view>
+    </view>
+  </view>
+
+  <view class="glass">
+    <view class="glass-head"><text class="g-title">生活指数</text></view>
+    <view class="life row">
+      <view wx:for="{{life}}" wx:key="key" class="life-item col" hover-class="press" data-key="{{item.key}}" bindtap="onLife">
+        <view class="life-ic" style="background: {{item.color}};"><text>{{item.ch}}</text></view>
+        <text class="life-lv">{{item.level}}</text>
+        <text class="life-n">{{item.name}}</text>
+      </view>
+    </view>
+  </view>
+  <view class="foot"><text>数据来源：云图气象 · 离线演示数据</text></view>
+</view>

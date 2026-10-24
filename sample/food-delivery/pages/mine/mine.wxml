@@ -1,0 +1,57 @@
+<view class="head">
+  <view class="row">
+    <view class="avatar glyph">陈</view>
+    <view class="flex1">
+      <text class="nick">陈小饱</text>
+      <view class="row">
+        <text class="vip">超级会员</text>
+        <text class="phone">138****6620</text>
+      </view>
+    </view>
+    <text class="setting" bindtap="onSetting">设置</text>
+  </view>
+  <view class="stats row">
+    <view class="stat" wx:for="{{stats}}" wx:key="name" data-name="{{item.name}}" bindtap="onStat">
+      <text class="stat-num">{{item.value}}</text>
+      <text class="stat-name">{{item.name}}</text>
+    </view>
+  </view>
+</view>
+
+<view class="vip-card row" bindtap="onVip">
+  <view class="flex1">
+    <text class="vip-title">超级会员 · 本月已省 ¥{{saved}}</text>
+    <text class="vip-desc">还有 2 张 ¥5 无门槛红包待使用，10-31 到期</text>
+  </view>
+  <view class="vip-btn">去使用</view>
+</view>
+
+<view class="card">
+  <text class="title">我的订单</text>
+  <view class="row order-entries">
+    <view class="entry" wx:for="{{orderEntries}}" wx:key="name" bindtap="onOrders">
+      <view class="entry-icon glyph" style="background: {{item.color}};">{{item.glyph}}</view>
+      <text class="entry-name">{{item.name}}</text>
+      <view wx:if="{{item.badge}}" class="entry-badge">{{item.badge}}</view>
+    </view>
+  </view>
+</view>
+
+<view class="card menu">
+  <view class="menu-item row" wx:for="{{menus}}" wx:key="name" data-name="{{item.name}}" bindtap="onMenu">
+    <view class="menu-icon glyph" style="background: {{item.color}};">{{item.glyph}}</view>
+    <text class="flex1">{{item.name}}</text>
+    <text class="sub">{{item.extra}}</text>
+    <view class="arrow"></view>
+  </view>
+</view>
+
+<view class="card menu">
+  <view class="menu-item row">
+    <view class="menu-icon glyph" style="background: #13a89e;">推</view>
+    <text class="flex1">订单状态通知</text>
+    <switch checked="{{notify}}" color="#1677ff" bindchange="onNotify" />
+  </view>
+</view>
+
+<view class="version">饱了么外卖 v3.8.2 · 杭州饱了么网络科技有限公司</view>

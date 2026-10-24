@@ -1,0 +1,152 @@
+.tabs {
+  height: 88rpx;
+  background: #ffffff;
+  padding: 0 8rpx;
+}
+
+.tab {
+  position: relative;
+  flex: 1;
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  font-size: 28rpx;
+  color: #5c6370;
+}
+
+.tab-on {
+  color: #1f2329;
+  font-weight: bold;
+}
+
+.tab-line {
+  position: absolute;
+  left: 50%;
+  bottom: 10rpx;
+  width: 40rpx;
+  height: 6rpx;
+  margin-left: -20rpx;
+  border-radius: 3rpx;
+  background: #1677ff;
+}
+
+.list {
+  padding-bottom: 40rpx;
+}
+
+.order {
+  padding: 28rpx;
+}
+
+.logo {
+  width: 52rpx;
+  height: 52rpx;
+  border-radius: 12rpx;
+  font-size: 26rpx;
+  margin-right: 14rpx;
+  flex-shrink: 0;
+}
+
+.shop-name {
+  font-size: 30rpx;
+  font-weight: bold;
+  max-width: 380rpx;
+}
+
+
+.status {
+  font-size: 26rpx;
+  color: #8a8f99;
+  flex-shrink: 0;
+}
+
+.status-delivering {
+  color: #1677ff;
+  font-weight: bold;
+}
+
+.status-refund {
+  color: #ff8a00;
+}
+
+.goods {
+  margin-top: 24rpx;
+  padding: 20rpx 24rpx;
+  background: #f7f8fa;
+  border-radius: 14rpx;
+}
+
+.goods-text {
+  font-size: 26rpx;
+  color: #3a3f47;
+}
+
+.goods-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-left: 20rpx;
+}
+
+.goods-pay {
+  font-size: 30rpx;
+  font-weight: bold;
+}
+
+.foot {
+  margin-top: 24rpx;
+}
+
+.op {
+  height: 56rpx;
+  line-height: 56rpx;
+  padding: 0 26rpx;
+  border-radius: 28rpx;
+  border: 1rpx solid #d4d7dd;
+  font-size: 24rpx;
+  margin-left: 16rpx;
+  color: #3a3f47;
+}
+
+.op-primary {
+  border-color: #1677ff;
+  color: #1677ff;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 160rpx;
+  font-size: 26rpx;
+  color: #8a8f99;
+}
+
+.empty-icon {
+  width: 140rpx;
+  height: 170rpx;
+  border-radius: 20rpx;
+  background: #e6e9ef;
+  margin-bottom: 28rpx;
+  padding: 50rpx 28rpx 0;
+  box-sizing: border-box;
+}
+
+.empty-line {
+  height: 10rpx;
+  border-radius: 5rpx;
+  background: #ffffff;
+  margin-bottom: 18rpx;
+}
+
+.short {
+  width: 50%;
+}
+
+.empty-btn {
+  margin-top: 32rpx;
+  width: 240rpx;
+  height: 72rpx;
+  line-height: 72rpx;
+  font-size: 28rpx;
+}

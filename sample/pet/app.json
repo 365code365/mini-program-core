@@ -1,0 +1,50 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/pet/pet",
+    "pages/mall/mall",
+    "pages/mine/mine",
+    "pages/booking/booking",
+    "pages/goods/goods",
+    "pages/cart/cart"
+  ],
+  "window": {
+    "navigationBarTitleText": "萌宠家",
+    "navigationBarBackgroundColor": "#fff8f1",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f7f5f2"
+  },
+  "tabBar": {
+    "color": "#9aa0a8",
+    "selectedColor": "#ff8a3d",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "images/tab/home.png",
+        "selectedIconPath": "images/tab/home-on.png"
+      },
+      {
+        "pagePath": "pages/pet/pet",
+        "text": "宠物档案",
+        "iconPath": "images/tab/paw.png",
+        "selectedIconPath": "images/tab/paw-on.png"
+      },
+      {
+        "pagePath": "pages/mall/mall",
+        "text": "商城",
+        "iconPath": "images/tab/bag.png",
+        "selectedIconPath": "images/tab/bag-on.png"
+      },
+      {
+        "pagePath": "pages/mine/mine",
+        "text": "我的",
+        "iconPath": "images/tab/user.png",
+        "selectedIconPath": "images/tab/user-on.png"
+      }
+    ],
+    "custom": true
+  }
+}

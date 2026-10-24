@@ -1,0 +1,15 @@
+.head { background: #ffffff; padding: 28rpx 32rpx 20rpx; }
+.h-name { display: block; font-size: 36rpx; font-weight: bold; color: #1d2330; }
+.h-desc { display: block; margin-top: 8rpx; font-size: 24rpx; color: #8a93a3; }
+.filters { display: flex; flex-direction: row; margin-top: 24rpx; }
+.f { padding: 10rpx 26rpx; border-radius: 28rpx; background: #f2f4f8; color: #5a6475; font-size: 24rpx; margin-right: 16rpx; }
+.f.on { background: #eaf2ff; color: #1f7cf0; font-weight: bold; }
+.doc { display: flex; flex-direction: row; }
+.doc-main { flex: 1; margin-left: 24rpx; display: flex; flex-direction: column; }
+.doc-name { font-size: 32rpx; font-weight: bold; color: #1d2330; margin-right: 14rpx; }
+.doc-title { font-size: 24rpx; color: #5a6475; }
+.tags { margin-top: 10rpx; }
+.good { margin-top: 12rpx; font-size: 24rpx; color: #5a6475; line-height: 36rpx; }
+.foot { margin-top: 16rpx; }
+.left { padding: 6rpx 20rpx; border-radius: 24rpx; background: #1f7cf0; color: #ffffff; font-size: 22rpx; }
+.left.none { background: #e6e9ef; color: #9aa0a8; }

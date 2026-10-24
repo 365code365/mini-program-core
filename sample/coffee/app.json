@@ -1,0 +1,31 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/menu/menu",
+    "pages/cart/cart",
+    "pages/pickup/pickup",
+    "pages/coupons/coupons",
+    "pages/mine/mine"
+  ],
+  "window": {
+    "navigationBarTitleText": "拾光咖啡",
+    "navigationBarBackgroundColor": "#f7f3ee",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f7f3ee"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#a39a92",
+    "selectedColor": "#6b4226",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "首页", "iconPath": "images/tab/home-off.png", "selectedIconPath": "images/tab/home-on.png" },
+      { "pagePath": "pages/menu/menu", "text": "点单", "iconPath": "images/tab/menu-off.png", "selectedIconPath": "images/tab/menu-on.png" },
+      { "pagePath": "pages/pickup/pickup", "text": "取餐", "iconPath": "images/tab/order-off.png", "selectedIconPath": "images/tab/order-on.png" },
+      { "pagePath": "pages/mine/mine", "text": "我的", "iconPath": "images/tab/mine-off.png", "selectedIconPath": "images/tab/mine-on.png" }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

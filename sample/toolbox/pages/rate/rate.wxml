@@ -1,0 +1,36 @@
+<view class="page">
+  <view class="hero">
+    <picker mode="selector" range="{{names}}" value="{{base}}" bindchange="onPick">
+      <view class="row base">
+        <view class="flag" style="background: {{cur.color}};"><text>{{cur.flag}}</text></view>
+        <view class="flex1">
+          <view class="base-code"><text>{{cur.code}}</text></view>
+          <view class="base-name"><text>{{cur.name}} · 点击切换币种</text></view>
+        </view>
+        <view class="caret"></view>
+      </view>
+    </picker>
+    <view class="row amount-row">
+      <text class="sym">{{cur.sym}}</text>
+      <input class="amount" type="digit" value="{{amount}}" placeholder="输入金额" placeholder-class="ph-w" maxlength="12" bindinput="onInput" />
+    </view>
+    <view class="row quick">
+      <view class="q" data-v="100" bindtap="onQuick"><text>100</text></view>
+      <view class="q" data-v="500" bindtap="onQuick"><text>500</text></view>
+      <view class="q" data-v="1000" bindtap="onQuick"><text>1000</text></view>
+      <view class="q" data-v="10000" bindtap="onQuick"><text>1万</text></view>
+    </view>
+  </view>
+
+  <view class="card list">
+    <view wx:for="{{list}}" wx:key="code" class="row item" hover-class="item-hover" data-code="{{item.code}}" bindtap="onRow">
+      <view class="flag small" style="background: {{item.color}};"><text>{{item.flag}}</text></view>
+      <view class="flex1 mid">
+        <view class="code row"><text>{{item.code}}</text><text class="cname">{{item.name}}</text></view>
+        <view class="muted unit"><text>{{item.unit}}</text></view>
+      </view>
+      <text class="val nowrap">{{item.value}}</text>
+    </view>
+  </view>
+  <view class="note muted"><text>汇率为 {{updated}} 参考中间价，仅供参考，实际以银行成交价为准</text></view>
+</view>

@@ -1,0 +1,54 @@
+<view class="page">
+  <view class="vip">
+    <view class="row between">
+      <text class="vip-brand">燃动 RANDONG</text>
+      <text class="vip-lv">{{card.level}}</text>
+    </view>
+    <text class="vip-name">{{card.name}}</text>
+    <text class="vip-no">NO. 6688 2031 0457</text>
+    <view class="row between vip-foot">
+      <view class="row"><text class="vip-k">有效期至</text><text class="vip-v">{{card.expire}}</text></view>
+      <text class="vip-v">剩余 {{card.leftDays}} 天</text>
+    </view>
+    <view class="vip-prog"><view class="vip-prog-in" style="width: {{card.usedPct}}%;"></view></view>
+  </view>
+
+  <view class="code" bindtap="showCode">
+    <view class="qr">
+      <view class="q q1"></view><view class="q q2"></view><view class="q q3"></view>
+      <view class="qd" wx:for="{{qrDots}}" wx:key="*this" style="left: {{item[0]}}rpx; top: {{item[1]}}rpx;"></view>
+    </view>
+    <view class="code-r">
+      <text class="code-t">入场码</text>
+      <text class="code-s">到店出示扫码入场 · 每 60 秒刷新</text>
+    </view>
+    <view class="chev light"></view>
+  </view>
+
+  <text class="sec">会员权益</text>
+  <view class="perks">
+    <view class="perk" wx:for="{{perks}}" wx:key="name">
+      <view class="perk-ic"><text>{{item.ch}}</text></view>
+      <text class="perk-n">{{item.name}}</text>
+      <text class="perk-d">{{item.desc}}</text>
+    </view>
+  </view>
+
+  <text class="sec">续费 / 升级</text>
+  <view class="plans">
+    <view class="plan {{planIdx === index ? 'on' : ''}}" wx:for="{{plans}}" wx:key="name" data-index="{{index}}" bindtap="pickPlan">
+      <text class="badge" wx:if="{{item.badge}}">{{item.badge}}</text>
+      <text class="p-name">{{item.name}}</text>
+      <view class="p-price"><text class="p-y">¥</text><text class="p-v">{{item.price}}</text></view>
+      <text class="p-per">{{item.per}}</text>
+      <text class="p-orig">¥{{item.orig}}</text>
+    </view>
+  </view>
+  <view class="auto">
+    <text class="auto-t">到期自动续费（可随时关闭）</text>
+    <switch checked="{{autoRenew}}" color="#ff5a36" bindchange="onAuto" />
+  </view>
+  <view class="btn pay" bindtap="pay"><text>立即支付 ¥{{plans[planIdx].price}}</text></view>
+  <text class="agree">支付即同意《燃动会员服务协议》，7 天内未入场可全额退款</text>
+  <view style="height: 60rpx;"></view>
+</view>

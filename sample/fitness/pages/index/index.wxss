@@ -1,0 +1,42 @@
+.hello { display: flex; flex-direction: row; justify-content: space-between; align-items: center; padding: 28rpx 32rpx 8rpx; }
+.h1 { display: block; font-size: 40rpx; font-weight: bold; color: #1c1f26; }
+.h2 { display: block; margin-top: 8rpx; font-size: 24rpx; color: #8b909a; }
+.store { padding: 10rpx 22rpx; border-radius: 28rpx; background: #ffffff; font-size: 22rpx; color: #5c616b; }
+.today { margin: 24rpx 24rpx 0; border-radius: 28rpx; padding: 36rpx 32rpx; background: linear-gradient(135deg, #2b2f3a, #14161c); display: flex; flex-direction: row; align-items: center; }
+/* 环形进度：两个半边裁剪框里各放一个半圆盘，绕圆心旋转露出对应角度（纯 CSS，不用 canvas） */
+.ring { width: 240rpx; height: 240rpx; border-radius: 120rpx; background: #3a3f4b; position: relative; flex-shrink: 0; }
+.ring-half { position: absolute; top: 0; width: 120rpx; height: 240rpx; overflow: hidden; }
+.ring-half.r { left: 120rpx; }
+.ring-half.l { left: 0; }
+.disc { position: absolute; top: 0; width: 240rpx; height: 240rpx; border-radius: 120rpx; }
+/* 盘子与圆环同心、同尺寸，只涂一半：绕自身中心转即绕圆心转（不依赖 transform-origin） */
+.disc-l { left: 0; background: linear-gradient(90deg, #ff5a36 50%, rgba(255,90,54,0) 50%); }
+.ring-half.r .disc-l { left: -120rpx; }
+.disc-r { left: 0; background: linear-gradient(90deg, rgba(255,90,54,0) 50%, #ff5a36 50%); }
+.ring-in { position: absolute; left: 22rpx; top: 22rpx; width: 196rpx; height: 196rpx; border-radius: 98rpx; background: #20232b; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.ring-v { font-size: 48rpx; font-weight: bold; color: #ffffff; }
+.ring-k { font-size: 22rpx; color: #9aa0ab; margin-top: 2rpx; }
+.today-r { flex: 1; margin-left: 40rpx; display: flex; flex-direction: column; }
+.t-item { display: flex; flex-direction: row; align-items: center; margin-bottom: 18rpx; }
+.t-line { display: flex; flex-direction: row; align-items: baseline; }
+.dot { width: 14rpx; height: 14rpx; border-radius: 7rpx; margin-right: 14rpx; }
+.t-v { font-size: 36rpx; font-weight: bold; color: #ffffff; }
+.t-u { font-size: 22rpx; color: #9aa0ab; margin-left: 8rpx; }
+.goal-btn { margin-top: 6rpx; width: 160rpx; height: 52rpx; border-radius: 26rpx; border: 2rpx solid #ff7a3d; color: #ff7a3d; font-size: 22rpx; display: flex; align-items: center; justify-content: center; }
+.hl { color: #ff5a36; font-weight: bold; }
+.week-h { display: flex; flex-direction: row; margin-top: 24rpx; }
+.wh { width: 14.28%; text-align: center; font-size: 22rpx; color: #a0a5ae; }
+.cal { display: flex; flex-direction: row; flex-wrap: wrap; margin-top: 8rpx; }
+.cd { width: 14.28%; height: 76rpx; display: flex; align-items: center; justify-content: center; }
+.cd-in { width: 60rpx; height: 60rpx; border-radius: 30rpx; display: flex; align-items: center; justify-content: center; font-size: 26rpx; color: #3a3f4b; }
+.cd-in.on { background: linear-gradient(135deg, #ff7a3d, #ff3d6e); color: #ffffff; font-weight: bold; }
+.cd-in.is-today { background: #fff0ea; color: #ff5a36; font-weight: bold; }
+.check-btn { margin-top: 20rpx; height: 80rpx; font-size: 28rpx; }
+.rec { display: flex; flex-direction: row; margin-top: 28rpx; }
+.rec-pic { width: 180rpx; height: 136rpx; border-radius: 18rpx; display: flex; flex-direction: column; justify-content: space-between; padding: 16rpx; box-sizing: border-box; flex-shrink: 0; }
+.rec-type { font-size: 30rpx; font-weight: bold; color: #ffffff; }
+.rec-dur { font-size: 22rpx; color: rgba(255,255,255,0.9); }
+.rec-main { flex: 1; margin-left: 22rpx; display: flex; flex-direction: column; justify-content: space-between; }
+.rec-name { font-size: 30rpx; font-weight: bold; color: #1c1f26; }
+.rec-meta .pill { margin-right: 12rpx; }
+.cd-in.on.is-today { background: linear-gradient(135deg, #ff7a3d, #ff3d6e); color: #ffffff; }

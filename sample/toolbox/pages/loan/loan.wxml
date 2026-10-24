@@ -1,0 +1,67 @@
+<view class="page">
+  <view class="tabs-wrap">
+    <view class="tabs">
+      <view class="tab {{method === 0 ? 'tab-on' : ''}}" data-m="0" bindtap="onMethod"><text>等额本息</text></view>
+      <view class="tab {{method === 1 ? 'tab-on' : ''}}" data-m="1" bindtap="onMethod"><text>等额本金</text></view>
+    </view>
+  </view>
+
+  <view class="card form">
+    <view class="row field">
+      <text class="field-label">贷款金额</text>
+      <input class="field-input" type="digit" value="{{amount}}" placeholder="请输入" placeholder-class="ph" bindinput="onAmount" />
+      <text class="unit">万元</text>
+    </view>
+    <picker mode="selector" range="{{yearsList}}" value="{{yi}}" bindchange="onYears">
+      <view class="row field">
+        <text class="field-label">贷款期限</text>
+        <text class="flex1 pick-v">{{yearsList[yi]}}</text>
+        <view class="arrow"></view>
+      </view>
+    </picker>
+    <view class="row field field-last">
+      <text class="field-label">年利率</text>
+      <input class="field-input" type="digit" value="{{rate}}" placeholder="LPR 3.10" placeholder-class="ph" bindinput="onRate" />
+      <text class="unit">%</text>
+    </view>
+    <view class="btn-primary calc-btn" hover-class="press" bindtap="onCalc"><text>开始计算</text></view>
+  </view>
+
+  <view wx:if="{{calced}}" class="card sum">
+    <view class="muted"><text>{{method === 0 ? '每月月供（元）' : '首月月供（元）'}}</text></view>
+    <view class="big nowrap"><text>{{firstPay}}</text></view>
+    <view wx:if="{{method === 1}}" class="muted dec"><text>每月递减 {{decline}} 元 · 末月 {{lastPay}} 元</text></view>
+    <view class="row sum-row">
+      <view class="flex1"><view class="muted"><text>贷款总额</text></view><view class="sv nowrap"><text>{{loanWan}} 万</text></view></view>
+      <view class="flex1"><view class="muted"><text>支付利息</text></view><view class="sv red nowrap"><text>{{totalInterest}} 万</text></view></view>
+      <view class="flex1"><view class="muted"><text>还款总额</text></view><view class="sv nowrap"><text>{{totalPay}} 万</text></view></view>
+    </view>
+  </view>
+
+  <view wx:if="{{calced}}" class="card tbl">
+    <view class="row between">
+      <text class="card-title">还款计划</text>
+      <view class="row mini-tabs">
+        <view class="mt {{view === 0 ? 'mt-on' : ''}}" data-v="0" bindtap="onView"><text>按年</text></view>
+        <view class="mt {{view === 1 ? 'mt-on' : ''}}" data-v="1" bindtap="onView"><text>首年按月</text></view>
+      </view>
+    </view>
+    <block wx:if="{{view === 0}}">
+      <view class="row th">
+        <text class="c1">年份</text><text class="c">还款(万)</text><text class="c">本金(万)</text><text class="c">利息(万)</text><text class="c">剩余(万)</text>
+      </view>
+      <view wx:for="{{years}}" wx:key="y" class="row td {{index % 2 ? 'odd' : ''}}">
+        <text class="c1">{{item.y}}</text><text class="c">{{item.pay}}</text><text class="c">{{item.pr}}</text><text class="c">{{item.it}}</text><text class="c">{{item.left}}</text>
+      </view>
+    </block>
+    <block wx:else>
+      <view class="row th">
+        <text class="c1">期数</text><text class="c">月供</text><text class="c">本金</text><text class="c">利息</text>
+      </view>
+      <view wx:for="{{months}}" wx:key="m" class="row td {{index % 2 ? 'odd' : ''}}">
+        <text class="c1">{{item.m}}</text><text class="c">{{item.pay}}</text><text class="c">{{item.pr}}</text><text class="c">{{item.it}}</text>
+      </view>
+    </block>
+  </view>
+  <view class="note muted"><text>计算结果仅供参考，以贷款银行实际审批为准</text></view>
+</view>

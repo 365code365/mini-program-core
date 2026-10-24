@@ -1,0 +1,60 @@
+.map { position: relative; height: 640rpx; background: #eef1ec; overflow: hidden; }
+.block { position: absolute; border-radius: 16rpx; }
+.park { background: #d3e8c8; }
+.bld { background: #e4e2dc; }
+.river { position: absolute; left: -60rpx; top: 320rpx; width: 900rpx; height: 56rpx; background: #c6dff2; transform: rotate(-12deg); }
+.road { position: absolute; background: #ffffff; }
+.road.h { left: 0; width: 750rpx; height: 34rpx; }
+.road.v { top: 0; height: 640rpx; width: 30rpx; }
+.road.thin.h { height: 20rpx; }
+.road.thin.v { width: 20rpx; }
+.road.diag { left: 300rpx; top: 120rpx; width: 520rpx; height: 22rpx; transform: rotate(32deg); background: #fff7e6; }
+.map-label { position: absolute; font-size: 20rpx; color: #7b8a73; }
+.road-name { color: #9aa0a6; }
+.car-icon { position: absolute; width: 36rpx; height: 20rpx; border-radius: 6rpx; background: #3a3f47; border: 3rpx solid #fff; }
+.car-icon.v { width: 20rpx; height: 36rpx; }
+.pin-wrap { position: absolute; left: 0; right: 0; top: 150rpx; display: flex; flex-direction: column; align-items: center; }
+.bubble { background: #fff; padding: 14rpx 26rpx; border-radius: 32rpx; font-size: 26rpx; box-shadow: 0 6rpx 20rpx rgba(0, 0, 0, 0.12); margin-bottom: 18rpx; }
+.pulse { position: absolute; top: 96rpx; width: 120rpx; height: 120rpx; border-radius: 60rpx; background: rgba(255, 122, 26, 0.18); animation: pulse 2.4s ease-out infinite; }
+@keyframes pulse { 0% { transform: scale(0.4); opacity: 1; } 100% { transform: scale(1.6); opacity: 0; } }
+.pin { width: 56rpx; height: 56rpx; border-radius: 28rpx; background: #FF7A1A; display: flex; align-items: center; justify-content: center; box-shadow: 0 6rpx 14rpx rgba(255, 122, 26, 0.45); margin-top: 28rpx; }
+.pin-inner { width: 20rpx; height: 20rpx; border-radius: 10rpx; background: #fff; }
+.pin-stick { width: 6rpx; height: 30rpx; background: #FF7A1A; border-radius: 3rpx; }
+.locate { position: absolute; right: 24rpx; bottom: 110rpx; width: 72rpx; height: 72rpx; border-radius: 36rpx; background: #fff; box-shadow: 0 4rpx 14rpx rgba(0, 0, 0, 0.12); display: flex; align-items: center; justify-content: center; }
+.locate-ring { width: 32rpx; height: 32rpx; border-radius: 16rpx; border: 4rpx solid #1f2329; display: flex; align-items: center; justify-content: center; }
+.locate-dot { width: 10rpx; height: 10rpx; border-radius: 5rpx; background: #1f2329; }
+.notice { position: absolute; left: 24rpx; right: 24rpx; top: 20rpx; background: rgba(255, 255, 255, 0.96); border-radius: 16rpx; padding: 14rpx 20rpx; display: flex; flex-direction: row; align-items: center; box-shadow: 0 4rpx 14rpx rgba(0, 0, 0, 0.06); }
+.notice-tag { font-size: 20rpx; color: #19BE6B; background: #e7f8ef; padding: 2rpx 12rpx; border-radius: 8rpx; margin-right: 14rpx; }
+.notice-text { font-size: 24rpx; color: #4e5969; }
+
+.panel { position: relative; margin: -80rpx 24rpx 0; background: #fff; border-radius: 24rpx; padding: 24rpx 28rpx 32rpx; box-shadow: 0 -4rpx 24rpx rgba(0, 0, 0, 0.06); }
+.types { display: flex; flex-direction: row; background: #f5f6f8; border-radius: 16rpx; padding: 6rpx; margin-bottom: 20rpx; }
+.type { flex: 1; text-align: center; padding: 12rpx 0; border-radius: 12rpx; display: flex; flex-direction: column; align-items: center; }
+.type-on { background: #fff; box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.06); }
+.type-name { font-size: 30rpx; font-weight: bold; color: #4e5969; }
+.type-on .type-name { color: #FF7A1A; }
+.type-desc { font-size: 20rpx; color: #9aa0a6; margin-top: 4rpx; }
+.addr { display: flex; flex-direction: row; align-items: center; padding: 18rpx 0; }
+.addr-body { flex: 1; margin-left: 22rpx; display: flex; flex-direction: column; }
+.addr-main { font-size: 32rpx; font-weight: bold; }
+.addr-main.placeholder { color: #b5b9bf; font-weight: normal; font-size: 34rpx; }
+.addr-sub { font-size: 24rpx; color: #8a9099; margin-top: 4rpx; }
+.addr-line { height: 1rpx; background: #eef0f2; margin-left: 38rpx; }
+.estimate { margin-top: 12rpx; border-top: 1rpx solid #eef0f2; padding-top: 20rpx; }
+.price-row { display: flex; flex-direction: row; align-items: flex-end; justify-content: center; margin: 12rpx 0 24rpx; }
+.price-label { font-size: 26rpx; color: #4e5969; margin-right: 8rpx; margin-bottom: 10rpx; }
+.price { font-size: 64rpx; font-weight: bold; color: #1f2329; }
+.price-unit { font-size: 26rpx; color: #4e5969; margin-left: 6rpx; margin-bottom: 10rpx; }
+
+.services { display: flex; flex-direction: row; justify-content: space-between; margin: 20rpx 24rpx 0; background: #fff; border-radius: 20rpx; padding: 28rpx 24rpx; }
+.svc { display: flex; flex-direction: column; align-items: center; width: 140rpx; }
+.svc-icon { width: 88rpx; height: 88rpx; border-radius: 28rpx; display: flex; align-items: center; justify-content: center; }
+.svc-glyph { color: #fff; font-size: 34rpx; font-weight: bold; }
+.svc-name { font-size: 24rpx; color: #4e5969; margin-top: 12rpx; }
+.banner { margin: 24rpx; height: 160rpx; border-radius: 20rpx; background: linear-gradient(110deg, #FFB067, #FF6A1A); display: flex; flex-direction: row; align-items: center; justify-content: space-between; padding: 0 32rpx; }
+.banner-title { display: block; color: #fff; font-size: 36rpx; font-weight: bold; }
+.banner-sub { display: block; color: rgba(255, 255, 255, 0.9); font-size: 24rpx; margin-top: 8rpx; }
+.banner-btn { background: #fff; color: #FF6A1A; font-size: 24rpx; font-weight: bold; padding: 12rpx 24rpx; border-radius: 30rpx; }
+/* 嵌套 <text> 前后的空格会被引擎吞掉，改用 flex + 外边距留空 */
+.bubble { display: flex; flex-direction: row; }
+.bubble-name { margin: 0 8rpx; }

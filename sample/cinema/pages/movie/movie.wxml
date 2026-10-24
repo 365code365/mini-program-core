@@ -1,0 +1,90 @@
+<view class="hero">
+  <image class="poster" src="{{m.poster}}" mode="aspectFill"></image>
+  <view class="h-info">
+    <text class="h-title">{{m.title}}</text>
+    <text class="h-en">{{m.en}}</text>
+    <text class="h-line">{{m.genre}}</text>
+    <text class="h-line">{{m.region}} / {{m.duration}}分钟</text>
+    <text class="h-line">{{m.release}} 中国大陆上映</text>
+    <view class="row h-btns">
+      <view class="h-btn {{wished ? 'h-btn-on' : ''}}" bindtap="onWish">{{wished ? '已想看' : '想看'}}</view>
+      <view class="h-btn" bindtap="onRate">{{m.status === 'now' ? '看过' : '预约'}}</view>
+    </view>
+  </view>
+</view>
+
+<view class="score-card" wx:if="{{m.status === 'now'}}">
+  <view class="sc-left">
+    <text class="sc-label">光影评分</text>
+    <view class="row sc-num-row"><text class="sc-num">{{m.score}}</text><text class="sc-unit">分</text></view>
+    <text class="sc-sub">{{ratingCount}}人评</text>
+  </view>
+  <view class="sc-bars">
+    <view class="row sc-bar-row" wx:for="{{dist}}" wx:key="star">
+      <text class="sc-star">{{item.star}}星</text>
+      <view class="sc-bar"><view class="sc-fill" style="width:{{item.pct}}%"></view></view>
+      <text class="sc-pct">{{item.pct}}%</text>
+    </view>
+  </view>
+  <view class="sc-box">
+    <text class="sc-box-num">{{m.box}}</text>
+    <text class="sc-label">累计票房</text>
+  </view>
+</view>
+<view class="score-card soon-card" wx:else>
+  <text class="sc-num small">{{wishText}}</text><text class="sc-label">人想看 · {{m.release}} 上映</text>
+</view>
+
+<view class="card">
+  <text class="block-title">简介</text>
+  <text class="intro {{expand ? '' : 'intro-clip'}}">{{m.intro}}</text>
+  <view class="row more" bindtap="onExpand"><text class="sub">{{expand ? '收起' : '展开'}}</text><view class="chev {{expand ? 'up' : 'down'}}"></view></view>
+</view>
+
+<view class="card cast-card">
+  <view class="row between cast-head"><text class="block-title">演职人员</text><text class="sub">导演 {{m.director}}</text></view>
+  <scroll-view scroll-x class="cast-scroll" show-scrollbar="{{false}}">
+    <view class="cast-row">
+      <view class="cast">
+        <view class="cast-avatar" style="background:linear-gradient(135deg, #5D5A7A, #2A2238)"><text class="cast-glyph">{{directorGlyph}}</text></view>
+        <text class="cast-name">{{m.director}}</text>
+        <text class="cast-role">导演</text>
+      </view>
+      <view class="cast" wx:for="{{cast}}" wx:key="name">
+        <view class="cast-avatar" style="background:{{item.bg}}"><text class="cast-glyph">{{item.glyph}}</text></view>
+        <text class="cast-name">{{item.name}}</text>
+        <text class="cast-role">{{item.role}}</text>
+      </view>
+    </view>
+  </scroll-view>
+</view>
+
+<view class="card" wx:if="{{m.status === 'now'}}">
+  <text class="block-title">选择影院场次</text>
+  <view class="days row">
+    <view wx:for="{{days}}" wx:key="label" class="day {{day === index ? 'day-on' : ''}}" data-idx="{{index}}" bindtap="onDay">{{item.label}}</view>
+  </view>
+  <view class="cinema" wx:for="{{cinemas}}" wx:key="id" wx:for-item="c">
+    <view class="row between">
+      <text class="c-name">{{c.name}}</text>
+      <text class="c-dist">{{c.dist}}</text>
+    </view>
+    <text class="sub c-addr">{{c.addr}}</text>
+    <view class="row c-tags"><text class="tag" wx:for="{{c.tags}}" wx:key="*this">{{item}}</text></view>
+    <scroll-view scroll-x class="shows-scroll" show-scrollbar="{{false}}">
+      <view class="shows">
+        <view class="show" wx:for="{{c.shows}}" wx:key="time" wx:for-item="s" data-cid="{{c.id}}" data-time="{{s.time}}" bindtap="onPickShow">
+          <text class="s-time">{{s.time}}</text>
+          <text class="s-end">{{s.end}}散场</text>
+          <text class="s-lang">{{s.lang}}</text>
+          <text class="s-price">¥{{s.price}}</text>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+</view>
+<view class="card" wx:else>
+  <text class="block-title">预售提醒</text>
+  <text class="sub">影片尚未开启预售，点「想看」后开售第一时间通知你。</text>
+</view>
+<view class="gap"></view>

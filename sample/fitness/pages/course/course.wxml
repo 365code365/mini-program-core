@@ -1,0 +1,59 @@
+<view class="hero" style="background: {{c.bg}};">
+  <view class="deco d1"></view><view class="deco d2"></view>
+  <text class="h-type">{{c.type}} · {{c.levelText}}</text>
+  <text class="h-name">{{c.name}}</text>
+  <view class="row h-tags">
+    <text class="h-tag">{{c.dur}} 分钟</text>
+    <text class="h-tag">约 {{c.kcal}} 千卡</text>
+    <text class="h-tag">{{c.room}}</text>
+  </view>
+</view>
+
+<view class="card info">
+  <view class="kv"><text class="k">上课时间</text><text class="v">{{dateText}} {{c.time}}-{{endTime}}</text></view>
+  <view class="kv"><text class="k">上课门店</text><text class="v">燃动 · 科技园店（科苑南路 3099 号 2F）</text></view>
+  <view class="kv">
+    <text class="k">预约人数</text>
+    <view class="row">
+      <view class="avs"><view class="av" wx:for="{{avatars}}" wx:key="*this" style="background: {{item}};"></view></view>
+      <text class="v">{{c.booked}}/{{c.cap}} 人</text>
+    </view>
+  </view>
+  <view class="kv">
+    <text class="k">强度</text>
+    <view class="row">
+      <view class="fire {{index < c.level ? 'on' : ''}}" wx:for="{{[1,2,3]}}" wx:key="*this"></view>
+    </view>
+  </view>
+</view>
+
+<view class="card coach">
+  <view class="c-av" style="background: {{c.coachInfo.color}};"><text>{{coachInitial}}</text></view>
+  <view class="c-main">
+    <text class="c-name">{{c.coachInfo.name}}</text>
+    <text class="muted">{{c.coachInfo.tag}} · 带课 1,280+ 节</text>
+  </view>
+  <view class="c-fo {{followed ? 'on' : ''}}" bindtap="follow"><text>{{followed ? '已关注' : '关注'}}</text></view>
+</view>
+
+<view class="card">
+  <text class="sec-title">课程介绍</text>
+  <text class="p">{{c.intro}}</text>
+  <text class="sub">课程环节</text>
+  <view class="step" wx:for="{{steps}}" wx:key="name">
+    <view class="s-dot"></view>
+    <text class="s-name">{{item.name}}</text>
+    <text class="muted">{{item.min}} 分钟</text>
+  </view>
+  <text class="sub">温馨提示</text>
+  <text class="p">请穿着运动服与运动鞋，提前 10 分钟到店签到；开课前 2 小时内取消将记 1 次爽约，累计 3 次暂停预约 7 天。</text>
+</view>
+<view style="height: 200rpx;"></view>
+
+<view class="bar">
+  <view class="bar-l">
+    <text class="bar-v">{{c.left ? '剩余 ' + c.left + ' 个名额' : '已满员'}}</text>
+    <text class="muted">会员卡免费 · 非会员 ¥79/次</text>
+  </view>
+  <view class="btn bar-btn {{mine ? 'gray' : ''}}" bindtap="book"><text>{{mine ? '取消预约' : (c.left ? '立即预约' : '加入候补')}}</text></view>
+</view>

@@ -1,0 +1,33 @@
+<view class="page">
+  <view class="tabs-wrap">
+    <view class="tabs">
+      <view wx:for="{{groups}}" wx:key="*this" class="tab {{gi === index ? 'tab-on' : ''}}" data-i="{{index}}" bindtap="onTab"><text>{{item}}</text></view>
+    </view>
+  </view>
+
+  <view class="card input-card">
+    <picker mode="selector" range="{{unitNames}}" value="{{ui}}" bindchange="onPick">
+      <view class="row unit-pick">
+        <text class="from-n">{{from.n}}</text>
+        <text class="from-s">{{from.s}}</text>
+        <view class="caret"></view>
+      </view>
+    </picker>
+    <input class="val-input" type="digit" value="{{value}}" placeholder="输入数值" placeholder-class="ph" maxlength="14" bindinput="onInput" />
+  </view>
+
+  <view class="card list">
+    <view class="list-head muted"><text>换算结果 · 点一行把它设为输入单位</text></view>
+    <view wx:for="{{list}}" wx:key="s" class="row item" hover-class="item-hover" data-s="{{item.s}}" data-v="{{item.v}}" bindtap="onRow">
+      <view class="badge"><text>{{item.s}}</text></view>
+      <text class="flex1 name">{{item.n}}</text>
+      <text class="v nowrap">{{item.v}}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{gi === 2}}" class="card tip">
+    <view class="tip-t"><text>常用参考</text></view>
+    <view class="muted"><text>人体正常体温 36.0~37.2℃，水的沸点 100℃ = 212℉，绝对零度 0K = -273.15℃</text></view>
+  </view>
+  <view class="space"></view>
+</view>

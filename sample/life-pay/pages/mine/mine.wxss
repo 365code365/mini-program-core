@@ -1,0 +1,19 @@
+.top { background: linear-gradient(160deg, #2fc488, #14a06f); padding: 40rpx 32rpx 36rpx; }
+.av { width: 116rpx; height: 116rpx; border-radius: 58rpx; background: #ffffff; color: #14a06f; font-size: 46rpx; font-weight: bold; display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.me { margin-left: 24rpx; display: flex; flex-direction: column; }
+.me-name { font-size: 38rpx; font-weight: bold; color: #ffffff; margin-bottom: 10rpx; }
+.vf { font-size: 20rpx; color: #14a06f; background: #ffffff; padding: 2rpx 12rpx; border-radius: 16rpx; margin-right: 12rpx; }
+.me-sub { font-size: 24rpx; color: rgba(255, 255, 255, 0.9); }
+.stat { margin-top: 36rpx; background: rgba(255, 255, 255, 0.15); border-radius: 20rpx; padding: 24rpx 0; }
+.st { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.st-n { font-size: 36rpx; font-weight: bold; color: #ffffff; }
+.st-l { margin-top: 4rpx; font-size: 22rpx; color: rgba(255, 255, 255, 0.85); }
+.menu { padding: 0 28rpx; }
+.mi { padding: 28rpx 0; border-bottom: 1rpx solid #f0f2f5; }
+.mi.last { border-bottom: none; }
+.mi-ic { width: 60rpx; height: 60rpx; border-radius: 18rpx; font-size: 26rpx; margin-right: 20rpx; }
+.mi-t { flex: 1; font-size: 28rpx; }
+.mi-main { flex: 1; display: flex; flex-direction: column; }
+.mi-main .mi-t { margin-bottom: 4rpx; }
+.mi-x { font-size: 24rpx; color: #8a919c; }
+.ver { display: block; text-align: center; margin-top: 32rpx; font-size: 22rpx; color: #b3b8c2; }

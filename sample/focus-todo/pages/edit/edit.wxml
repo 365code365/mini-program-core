@@ -1,0 +1,71 @@
+<view class="card head">
+  <view class="row">
+    <view class="check" style="border-color: {{prioColor}}; background: {{form.done ? prioColor : '#ffffff'}}" bindtap="onToggleDone">
+      <view class="tick" wx:if="{{form.done}}"></view>
+    </view>
+    <input class="title-input" value="{{form.title}}" placeholder="要做什么？" bindinput="onTitle" />
+  </view>
+  <view class="prio-row row">
+    <text class="label">优先级</text>
+    <view class="prio {{form.priority === index ? 'on' : ''}}" wx:for="{{prios}}" wx:key="text" bindtap="onPrio" data-i="{{index}}"
+      style="{{form.priority === index ? 'background:' + item.color + ';border-color:' + item.color : ''}}">
+      <view class="prio-dot" style="background: {{form.priority === index ? '#ffffff' : item.color}}"></view>
+      <text class="prio-text">{{item.text}}</text>
+    </view>
+  </view>
+</view>
+
+<view class="card cells">
+  <picker mode="date" value="{{form.date}}" start="2024-01-01" end="2030-12-31" bindchange="onDate">
+    <view class="cell row">
+      <view class="ic" style="background: #ff6250">日</view>
+      <text class="flex1 cell-label">截止日期</text>
+      <text class="cell-value">{{dateLabel}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <picker mode="time" value="{{form.time || '09:00'}}" bindchange="onTime">
+    <view class="cell row">
+      <view class="ic" style="background: #3a86ff">时</view>
+      <text class="flex1 cell-label">时间</text>
+      <text class="cell-value {{form.time ? '' : 'ph'}}">{{form.time || '不设置'}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <view class="cell row">
+    <view class="ic" style="background: #ff9f1a">铃</view>
+    <text class="flex1 cell-label">准时提醒</text>
+    <switch checked="{{form.remind}}" color="#ff6250" bindchange="onRemind" />
+  </view>
+  <picker mode="selector" range="{{repeats}}" value="{{form.repeat || 0}}" bindchange="onRepeat">
+    <view class="cell row last">
+      <view class="ic" style="background: #19a974">重</view>
+      <text class="flex1 cell-label">重复</text>
+      <text class="cell-value">{{repeats[form.repeat || 0]}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="title">备注</text>
+    <text class="sub">{{noteLen}}/200</text>
+  </view>
+  <textarea class="note" value="{{form.note}}" maxlength="200" placeholder="补充细节、链接或拆分步骤…" bindinput="onNote" />
+</view>
+
+<view class="card pomo row" wx:if="{{!isNew}}">
+  <text class="pomo-emoji">🍅</text>
+  <view class="flex1">
+    <text class="pomo-title">已专注 {{form.pomos}} 个番茄</text>
+    <text class="sub">约 {{form.pomos * 25}} 分钟</text>
+  </view>
+  <view class="pomo-btn" bindtap="onFocus">开始专注</view>
+</view>
+
+<view class="btns row">
+  <view class="btn-del" wx:if="{{!isNew}}" bindtap="onDelete">删除</view>
+  <view class="btn-primary flex1" bindtap="onSave">保存</view>
+</view>
+<view class="safe"></view>

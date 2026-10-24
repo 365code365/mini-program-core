@@ -1,0 +1,99 @@
+<view class="gallery">
+  <swiper class="swiper" indicator-dots="{{false}}" autoplay="{{false}}" circular bindchange="onSwiper">
+    <swiper-item wx:for="{{h.images}}" wx:key="*this">
+      <image class="swiper-img" src="{{item}}" mode="aspectFill"></image>
+    </swiper-item>
+  </swiper>
+  <view class="counter">{{cur + 1}}/{{h.images.length}}</view>
+</view>
+
+<view class="info card">
+  <text class="name">{{h.name}}</text>
+  <view class="row star-row">
+    <text class="tag orange">{{h.starText}}</text>
+    <text class="tag" wx:for="{{h.tags}}" wx:key="*this">{{item}}</text>
+  </view>
+  <view class="row score-row">
+    <view class="score-box">
+      <text class="score-num">{{h.score}}</text>
+      <text class="score-word">{{h.score >= 4.8 ? '超棒' : '很好'}}</text>
+    </view>
+    <view class="flex1 score-text">
+      <text class="score-line">“{{reviews[0].text}}”</text>
+      <text class="sub">{{h.reviews}} 条点评 · 卫生 4.9 · 服务 4.8</text>
+    </view>
+  </view>
+  <view class="row addr-row" bindtap="onMap">
+    <view class="flex1">
+      <text class="addr">{{h.addr}}</text>
+      <text class="sub addr-dist">{{h.dist}}</text>
+    </view>
+    <view class="map-btn"><view class="map-pin"></view><text class="map-t">地图</text></view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="row between"><text class="block-title">设施服务</text><text class="sub">共 {{h.facilities.length}} 项</text></view>
+  <view class="facs">
+    <view class="fac" wx:for="{{h.facilities}}" wx:key="*this"><view class="fac-dot"></view><text class="fac-t">{{item}}</text></view>
+  </view>
+</view>
+
+<view class="card dates row" bindtap="onDates">
+  <view class="flex1 row">
+    <text class="d-val">{{inShort}}</text><text class="d-week">{{inWeek}}</text>
+    <text class="d-sep">—</text>
+    <text class="d-val">{{outShort}}</text><text class="d-week">{{outWeek}}</text>
+  </view>
+  <text class="d-n">共{{nights}}晚</text>
+  <view class="chev"></view>
+</view>
+
+<view class="card rooms">
+  <text class="block-title">房型</text>
+  <view class="room" wx:for="{{h.rooms}}" wx:key="id">
+    <image class="room-img" src="{{item.img}}" mode="aspectFill"></image>
+    <view class="room-body">
+      <text class="room-name">{{item.name}}</text>
+      <text class="sub room-line">{{item.size}} · {{item.bed}} · {{item.breakfast}}</text>
+      <view class="row room-tags"><text class="tag green">免费取消</text><text class="tag orange" wx:if="{{item.left <= 3}}">仅剩{{item.left}}间</text></view>
+    </view>
+    <view class="room-right">
+      <view class="row price-row"><text class="price-color yen">¥</text><text class="price-color room-price">{{item.price}}</text></view>
+      <view class="book-btn" data-rid="{{item.id}}" catchtap="onBook">预订</view>
+    </view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="row between"><text class="block-title">住客点评</text><text class="sub blue">{{h.reviews}} 条</text></view>
+  <view class="rv-tags">
+    <text class="rv-tag">位置绝佳 286</text><text class="rv-tag">早餐丰富 174</text><text class="rv-tag">服务热情 152</text><text class="rv-tag">隔音好 63</text>
+  </view>
+  <view class="review" wx:for="{{reviews}}" wx:key="user">
+    <view class="row">
+      <view class="rv-avatar"><text class="rv-avatar-t">{{item.avatar}}</text></view>
+      <view class="flex1 rv-head">
+        <text class="rv-user">{{item.user}}</text>
+        <text class="sub">{{item.date}} · {{item.room}}</text>
+      </view>
+      <text class="rv-score">{{item.score}}.0 分</text>
+    </view>
+    <text class="rv-text">{{item.text}}</text>
+  </view>
+</view>
+<view class="bottom-space"></view>
+
+<view class="bar">
+  <view class="bar-ico" bindtap="onFav">
+    <text class="heart {{fav ? 'heart-on' : ''}}">★</text>
+    <text class="bar-t">{{fav ? '已收藏' : '收藏'}}</text>
+  </view>
+  <view class="bar-ico" bindtap="onCall">
+    <view class="phone"></view>
+    <text class="bar-t">咨询</text>
+  </view>
+  <view class="bar-btn" data-rid="{{h.rooms[0].id}}" bindtap="onBook">
+    <text class="bar-btn-t">¥{{h.price}} 起 · 立即预订</text>
+  </view>
+</view>

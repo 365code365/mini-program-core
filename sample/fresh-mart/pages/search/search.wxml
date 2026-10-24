@@ -1,0 +1,56 @@
+<view class="bar row">
+  <view class="box row flex1">
+    <view class="s-icon"></view>
+    <input class="input flex1" placeholder="搜索水果、蔬菜、牛奶" placeholder-class="ph" value="{{keyword}}" focus="{{true}}" confirm-type="search" bindinput="onInput" bindconfirm="onConfirm" />
+    <view wx:if="{{keyword}}" class="clear glyph" bindtap="onClear">×</view>
+  </view>
+  <text class="go" bindtap="onConfirm">搜索</text>
+</view>
+
+<view wx:if="{{!searched}}">
+  <view class="sec" wx:if="{{history.length}}">
+    <view class="row between">
+      <text class="sec-title">搜索历史</text>
+      <text class="sub" bindtap="onClearHistory">清空</text>
+    </view>
+    <view class="chips">
+      <text class="chip" wx:for="{{history}}" wx:key="*this" data-word="{{item}}" bindtap="onWord">{{item}}</text>
+    </view>
+  </view>
+
+  <view class="sec">
+    <text class="sec-title">热门搜索</text>
+    <view class="hot">
+      <view class="hot-item row" wx:for="{{hot}}" wx:key="word" data-word="{{item.word}}" bindtap="onWord">
+        <text class="rank rank-{{index < 3 ? 'top' : 'n'}}">{{index + 1}}</text>
+        <text class="hot-word flex1">{{item.word}}</text>
+        <text wx:if="{{item.flag}}" class="hot-flag">{{item.flag}}</text>
+      </view>
+    </view>
+  </view>
+</view>
+
+<view wx:else>
+  <view class="sorts row">
+    <view wx:for="{{sorts}}" wx:key="*this" class="sort {{sortIdx === index ? 'sort-on' : ''}}" data-idx="{{index}}" bindtap="onSort">{{item}}</view>
+    <view class="flex1"></view>
+    <text class="sub">共 {{results.length}} 件</text>
+  </view>
+  <view class="result row" wx:for="{{results}}" wx:key="id" data-id="{{item.id}}" bindtap="onDetail">
+    <image class="r-img" src="{{item.img}}" mode="aspectFill"></image>
+    <view class="flex1 r-info">
+      <text class="r-name ellipsis2">{{item.name}}</text>
+      <text class="r-spec">{{item.spec}} · 已售 {{item.sales}}</text>
+      <view class="row r-tags"><text class="tag" wx:for="{{item.tags}}" wx:for-item="t" wx:key="*this">{{t}}</text></view>
+      <view class="row between r-foot">
+        <view class="price-row"><text class="p-sym">¥</text><text class="p-num">{{item.price}}</text><text class="p-origin">¥{{item.origin}}</text></view>
+        <view class="add-btn" data-id="{{item.id}}" catchtap="onAdd">+</view>
+      </view>
+    </view>
+  </view>
+  <view wx:if="{{!results.length}}" class="none">
+    <view class="none-icon glyph">?</view>
+    <text class="none-title">没有找到「{{keyword}}」相关商品</text>
+    <text class="sub">换个关键词试试，比如「{{hot[0].word}}」</text>
+  </view>
+</view>

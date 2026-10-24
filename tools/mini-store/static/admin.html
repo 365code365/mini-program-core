@@ -36,6 +36,19 @@
   .hidden { display: none !important; }
   .src { display: flex; gap: 16px; margin: 6px 0; }
   .src label { display: inline; margin: 0; color: #222; }
+  select { padding: 7px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; background: #fff; }
+  img.icon { object-fit: cover; border-radius: 9px; }
+  .icon.letter { border-radius: 9px; }
+  .tags { margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px; }
+  .tag { font-size: 11px; padding: 1px 6px; border-radius: 3px; background: #f0f0f0; color: #666; }
+  .cat { font-size: 11px; padding: 1px 6px; border-radius: 3px; background: #e8f8ef; color: #07a050; margin-left: 6px; font-weight: normal; }
+  .toolbar { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .toolbar input { flex: 1; min-width: 200px; }
+  .stats { display: flex; gap: 24px; margin-bottom: 12px; }
+  .stats b { font-size: 20px; display: block; }
+  dialog { border: 0; border-radius: 10px; padding: 20px; width: min(520px, 92vw); box-shadow: 0 8px 40px rgba(0,0,0,.2); }
+  dialog::backdrop { background: rgba(0,0,0,.35); }
+  .hot { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
 </style>
 </head>
 <body>
@@ -64,6 +77,11 @@
           <div><label for="uname">名称（不填用 app.json 的导航栏标题）</label><input id="uname" type="text" maxlength="200"></div>
         </div>
         <label for="udesc">描述</label><input id="udesc" type="text" maxlength="200">
+        <div class="row">
+          <div><label for="ucat">分类（不选 = 用包里 store.meta.json 的，没有就是「其他」）</label><select id="ucat"><option value="">—</option></select></div>
+          <div><label for="utags">搜索标签（逗号分隔）</label><input id="utags" type="text" maxlength="200"></div>
+          <div><label for="udev">开发者</label><input id="udev" type="text" maxlength="60"></div>
+        </div>
         <label>代码</label>
         <div class="src" role="radiogroup">
           <span><input type="radio" name="src" id="srcDir" value="dir" checked><label for="srcDir">选文件夹（含 app.json 的那一层）</label></span>
@@ -78,8 +96,18 @@
     </section>
     <section class="card">
       <h2>已上架 <span id="count" class="hint"></span></h2>
+      <div class="stats">
+        <div><b id="stApps">-</b><span class="hint">小程序</span></div>
+        <div><b id="stCats">-</b><span class="hint">分类</span></div>
+        <div><b id="stDl">-</b><span class="hint">累计打开</span></div>
+        <div style="flex:1"><span class="hint">热搜</span><div id="hot" class="hot"></div></div>
+      </div>
+      <div class="toolbar">
+        <input id="q" type="text" placeholder="搜索名称 / 标签 / 开发者 / 描述（与 App 里的搜索同一套）" aria-label="搜索">
+        <select id="fcat" aria-label="按分类筛选"><option value="">全部分类</option></select>
+      </div>
       <table>
-        <thead><tr><th></th><th>名称 / ID</th><th>版本</th><th>大小</th><th>更新</th><th>操作</th></tr></thead>
+        <thead><tr><th></th><th>名称 / ID</th><th>开发者</th><th>版本</th><th>大小</th><th>打开</th><th>更新</th><th>操作</th></tr></thead>
         <tbody id="list"></tbody>
       </table>
     </section>
@@ -93,6 +121,22 @@
     </section>
   </main>
 </div>
+<dialog id="editDlg">
+  <form method="dialog" id="editForm">
+    <h2 style="margin-top:0">编辑展示信息</h2>
+    <label for="ename">名称</label><input id="ename" type="text" maxlength="200" required>
+    <label for="edesc">描述</label><input id="edesc" type="text" maxlength="200">
+    <div class="row">
+      <div><label for="ecat">分类</label><select id="ecat"></select></div>
+      <div><label for="eorder">排序（小的在前）</label><input id="eorder" type="text" inputmode="numeric"></div>
+    </div>
+    <label for="etags">搜索标签（逗号分隔）</label><input id="etags" type="text" maxlength="200">
+    <label for="edev">开发者</label><input id="edev" type="text" maxlength="60">
+    <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">
+      <button value="cancel" formnovalidate>取消</button><button class="primary" value="ok">保存</button>
+    </div>
+  </form>
+</dialog>
 <script src="/admin.js"></script>
 </body>
 </html>

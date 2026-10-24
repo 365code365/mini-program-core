@@ -1,0 +1,29 @@
+<view class="head">
+  <view>
+    <text class="h-name">{{dept.name}}</text>
+    <text class="h-desc">擅长：{{dept.desc}}</text>
+  </view>
+  <view class="filters">
+    <view class="f {{filter === item.key ? 'on' : ''}}" wx:for="{{filters}}" wx:key="key" data-key="{{item.key}}" bindtap="setFilter"><text>{{item.name}}</text></view>
+  </view>
+</view>
+
+<view class="card doc" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="goDetail">
+  <view class="avatar" style="background: linear-gradient(135deg, {{item.color}}, #9fd0ff);"><text>{{item.sx}}</text></view>
+  <view class="doc-main">
+    <view class="row">
+      <text class="doc-name">{{item.name}}</text>
+      <text class="doc-title">{{item.title}}</text>
+    </view>
+    <view class="row tags" wx:if="{{item.tags.length}}">
+      <text class="tag" wx:for="{{item.tags}}" wx:key="*this" wx:for-item="t">{{t}}</text>
+    </view>
+    <text class="good">擅长：{{item.good}}</text>
+    <view class="row between foot">
+      <text class="muted">好评 {{item.rate}}% · 接诊 {{item.visits}}</text>
+      <view class="left {{item.left ? '' : 'none'}}"><text>{{item.left ? '余号 ' + item.left : '已约满'}}</text></view>
+    </view>
+  </view>
+</view>
+<view wx:if="{{!list.length}}" class="empty">该科室暂无符合条件的医生</view>
+<view style="height: 40rpx;"></view>

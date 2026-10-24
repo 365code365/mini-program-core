@@ -1,0 +1,122 @@
+.tip {
+  margin: 0 0 20rpx;
+  padding: 18rpx 32rpx;
+  background: #fff6e8;
+  color: #c27200;
+  font-size: 24rpx;
+}
+.top-gap {
+  height: 24rpx;
+}
+.addr-tag {
+  color: #ffffff;
+  font-size: 20rpx;
+  padding: 2rpx 12rpx;
+  border-radius: 6rpx;
+  margin-right: 14rpx;
+}
+.addr-name {
+  font-size: 30rpx;
+  font-weight: bold;
+  margin-right: 16rpx;
+}
+.addr-detail {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 26rpx;
+  color: #4a505c;
+  line-height: 40rpx;
+}
+.addr-foot {
+  margin-top: 20rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid #eef0f4;
+}
+.radio {
+  width: 32rpx;
+  height: 32rpx;
+  border-radius: 16rpx;
+  border: 2rpx solid #c4c9d2;
+  margin-right: 12rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+.radio.on {
+  border-color: #2f6bff;
+  background: #2f6bff;
+}
+.radio-in {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 6rpx;
+  background: #ffffff;
+}
+.op {
+  font-size: 26rpx;
+  color: #2f6bff;
+}
+.f-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: 100rpx;
+  border-bottom: 1rpx solid #eef0f4;
+}
+.f-row.last {
+  border-bottom: none;
+}
+.f-label {
+  width: 160rpx;
+  font-size: 28rpx;
+  color: #4a505c;
+}
+.f-input {
+  padding: 0 0 0 1rpx;
+  flex: 1;
+  font-size: 28rpx;
+  color: #1f2329;
+}
+.f-input.ph {
+  color: #b3b9c4;
+}
+.f-chip {
+  padding: 6rpx 24rpx;
+  border-radius: 24rpx;
+  background: #f4f6fa;
+  color: #4a505c;
+  font-size: 24rpx;
+  margin-right: 14rpx;
+}
+.f-chip.on {
+  background: #2f6bff;
+  color: #ffffff;
+}
+.form-btns {
+  margin-top: 24rpx;
+}
+.btn-ghost {
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  border-radius: 44rpx;
+  background: #f4f6fa;
+  color: #4a505c;
+  font-size: 30rpx;
+  margin-right: 20rpx;
+}
+.add {
+  margin: 16rpx 24rpx 0;
+  height: 96rpx;
+  line-height: 96rpx;
+  text-align: center;
+  border-radius: 20rpx;
+  border: 2rpx dashed #9db9ff;
+  color: #2f6bff;
+  font-size: 30rpx;
+  background: #ffffff;
+}
+.safe {
+  height: calc(40rpx + env(safe-area-inset-bottom));
+}

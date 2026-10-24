@@ -1,0 +1,15 @@
+.top { background: #ffffff; padding: 60rpx 0 48rpx; display: flex; flex-direction: column; align-items: center; }
+.ok { width: 128rpx; height: 128rpx; border-radius: 64rpx; background: linear-gradient(135deg, #4fd6a0, #14a06f); display: flex; flex-direction: row; align-items: center; justify-content: center; box-shadow: 0 10rpx 30rpx rgba(20, 160, 111, 0.3); }
+.tick { width: 52rpx; height: 28rpx; border-left: 8rpx solid #ffffff; border-bottom: 8rpx solid #ffffff; transform: rotate(-45deg); margin-top: -14rpx; }
+.t { margin-top: 28rpx; font-size: 36rpx; font-weight: bold; }
+.amt-row { margin-top: 16rpx; align-items: baseline; }
+.y { font-size: 36rpx; font-weight: bold; }
+.amt { font-size: 72rpx; font-weight: bold; margin-left: 6rpx; }
+.sub { margin-top: 12rpx; font-size: 24rpx; color: #8a919c; }
+.kv { padding: 16rpx 0; }
+.k { font-size: 26rpx; color: #8a919c; flex-shrink: 0; margin-right: 24rpx; }
+.v { font-size: 26rpx; color: #1e2329; text-align: right; }
+.inv { font-size: 28rpx; }
+.btns { margin: 48rpx 32rpx 0; }
+.ghost { width: 260rpx; height: 88rpx; border-radius: 44rpx; border: 2rpx solid #14a06f; color: #14a06f; font-size: 30rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; box-sizing: border-box; margin-right: 20rpx; }
+.home { flex: 1; }

@@ -1,0 +1,119 @@
+<view class="shop-head">
+  <view class="row">
+    <view class="logo glyph" style="background: linear-gradient(135deg, {{shop.c1}}, {{shop.c2}});">{{shop.logo}}</view>
+    <view class="flex1 head-info">
+      <text class="head-name ellipsis">{{shop.name}}</text>
+      <view class="row head-meta">
+        <text class="head-star">★ {{shop.rating}}</text>
+        <text class="head-gap">月售 {{shop.sales}}</text>
+        <text class="head-gap">约 {{shop.time}} 分钟</text>
+        <text class="head-gap">{{shop.distance}}</text>
+      </view>
+    </view>
+    <view class="fav {{faved ? 'fav-on' : ''}}" bindtap="onFav">{{faved ? '已收藏' : '+ 收藏'}}</view>
+  </view>
+  <text class="notice ellipsis">公告：{{shop.notice}}</text>
+  <view class="row coupons">
+    <view class="coupon" wx:for="{{shop.tags}}" wx:key="*this">{{item}}</view>
+  </view>
+</view>
+
+<view class="tabs row">
+  <view wx:for="{{tabs}}" wx:key="*this" class="tab {{tabIdx === index ? 'tab-on' : ''}}" data-idx="{{index}}" bindtap="onTab">
+    <text>{{item}}</text>
+    <view wx:if="{{tabIdx === index}}" class="tab-line"></view>
+  </view>
+</view>
+
+<view wx:if="{{tabIdx === 0}}" class="body row" style="height: {{bodyHeight}}px;">
+  <scroll-view class="cats" scroll-y="{{true}}" style="height: {{bodyHeight}}px;">
+    <view wx:for="{{menu}}" wx:key="name" class="cat {{activeCat === index ? 'cat-on' : ''}}" data-idx="{{index}}" bindtap="onCat">
+      <view wx:if="{{activeCat === index}}" class="cat-bar"></view>
+      <text>{{item.name}}</text>
+      <view wx:if="{{item.count}}" class="cat-badge">{{item.count}}</view>
+    </view>
+  </scroll-view>
+  <scroll-view class="dishes" scroll-y="{{true}}" style="height: {{bodyHeight}}px;" scroll-into-view="{{intoView}}" bindscroll="onDishScroll">
+    <view wx:for="{{menu}}" wx:key="name" wx:for-item="group" wx:for-index="gi" id="sec-{{gi}}">
+      <view class="sec-title">{{group.name}}</view>
+      <view class="dish row" wx:for="{{group.items}}" wx:key="id">
+        <view class="dish-img glyph" style="background: linear-gradient(135deg, {{item.c1}}, {{item.c2}});">{{item.glyph}}</view>
+        <view class="flex1 dish-info">
+          <text class="dish-name ellipsis">{{item.name}}</text>
+          <text class="dish-desc ellipsis">{{item.desc}}</text>
+          <text class="dish-sales">月售 {{item.sales}}</text>
+          <view class="row dish-bottom">
+            <text class="price"><text class="price-sym">¥</text>{{item.price}}</text>
+            <text wx:if="{{item.origin}}" class="origin">¥{{item.origin}}</text>
+            <view class="flex1"></view>
+            <view class="stepper">
+              <view wx:if="{{counts[item.id]}}" class="step-minus" data-id="{{item.id}}" catchtap="onMinus"><view class="minus-bar"></view></view>
+              <text wx:if="{{counts[item.id]}}" class="step-num">{{counts[item.id]}}</text>
+              <view class="step-plus" data-id="{{item.id}}" catchtap="onPlus">+</view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+    <view class="dish-end">本店已展示全部菜品</view>
+  </scroll-view>
+</view>
+
+<view wx:if="{{tabIdx === 1}}" class="reviews">
+  <view class="card score row">
+    <view class="score-big">{{shop.rating}}</view>
+    <view class="flex1">
+      <text class="score-label">商家评分</text>
+      <view class="row score-sub"><text>口味 4.9</text><text class="head-gap">包装 4.8</text><text class="head-gap">配送 4.7</text></view>
+    </view>
+  </view>
+  <view class="card review" wx:for="{{reviews}}" wx:key="name">
+    <view class="row">
+      <view class="avatar glyph" style="background: {{item.color}};">{{item.short}}</view>
+      <view class="flex1">
+        <text class="review-name">{{item.name}}</text>
+        <text class="review-star">{{item.stars}}</text>
+      </view>
+      <text class="sub">{{item.date}}</text>
+    </view>
+    <text class="review-text">{{item.text}}</text>
+  </view>
+</view>
+
+<view wx:if="{{tabIdx === 2}}" class="card info">
+  <view class="info-row row between"><text class="sub">商家地址</text><text>朝阳区望京街 10 号 B1 层</text></view>
+  <view class="info-row row between"><text class="sub">营业时间</text><text>09:30 - 22:00</text></view>
+  <view class="info-row row between"><text class="sub">商家电话</text><text class="link" bindtap="onCall">010-6478 2211</text></view>
+  <view class="info-row row between"><text class="sub">配送服务</text><text>饱了么专送 · 准时宝</text></view>
+  <view class="info-row row between"><text class="sub">食品安全</text><text>A 级（量化分级）</text></view>
+</view>
+
+<view wx:if="{{showCart && cart.count}}" class="mask" bindtap="onToggleCart"></view>
+<view wx:if="{{showCart && cart.count}}" class="cart-panel">
+  <view class="row between panel-head">
+    <text class="title">已选商品</text>
+    <text class="sub" bindtap="onClearCart">清空购物车</text>
+  </view>
+  <view class="panel-item row" wx:for="{{cart.list}}" wx:key="id">
+    <text class="flex1 ellipsis">{{item.name}}</text>
+    <text class="price panel-price">¥{{item.total}}</text>
+    <view class="stepper">
+      <view class="step-minus" data-id="{{item.id}}" catchtap="onMinus"><view class="minus-bar"></view></view>
+      <text class="step-num">{{item.qty}}</text>
+      <view class="step-plus" data-id="{{item.id}}" catchtap="onPlus">+</view>
+    </view>
+  </view>
+</view>
+
+<view class="cart-bar row">
+  <view class="cart-icon {{cart.count ? 'cart-icon-on' : ''}}" bindtap="onToggleCart">
+    <view class="cart-basket"></view>
+    <view wx:if="{{cart.count}}" class="cart-badge">{{cart.count}}</view>
+  </view>
+  <view class="flex1 cart-text" bindtap="onToggleCart">
+    <text wx:if="{{cart.count}}" class="cart-amount">¥{{cart.amount}}</text>
+    <text wx:else class="cart-empty">未选购商品</text>
+    <text class="cart-fee">另需配送费 ¥{{shop.deliveryFee}}</text>
+  </view>
+  <view class="cart-go {{canSubmit ? 'cart-go-on' : ''}}" bindtap="onCheckout">{{goText}}</view>
+</view>

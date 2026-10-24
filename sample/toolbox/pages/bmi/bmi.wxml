@@ -1,0 +1,58 @@
+<view class="page">
+  <view class="card result">
+    <view class="row between">
+      <text class="muted">你的 BMI</text>
+      <text class="level-tag" style="background: {{level.color}};">{{level.name}}</text>
+    </view>
+    <view class="bmi" style="color: {{level.color}};"><text>{{bmi}}</text></view>
+    <view class="scale">
+      <view class="seg-bar" style="width: 22.5%; background: #4c9bff;"></view>
+      <view class="seg-bar" style="width: 27.5%; background: #2fbf8f;"></view>
+      <view class="seg-bar" style="width: 20%; background: #f5a623;"></view>
+      <view class="seg-bar" style="width: 30%; background: #f04848;"></view>
+      <view class="marker" style="left: {{pos}}%;"></view>
+    </view>
+    <view class="scale-labels">
+      <text class="sl" style="left: 22.5%;">18.5</text>
+      <text class="sl" style="left: 50%;">24</text>
+      <text class="sl" style="left: 70%;">28</text>
+    </view>
+    <view class="tip"><text>{{level.tip}}</text></view>
+    <view class="ideal muted"><text>身高 {{height}}cm 的健康体重：{{idealLow}} ~ {{idealHigh}} kg</text></view>
+  </view>
+
+  <view class="card">
+    <view class="row gender">
+      <view class="g {{gender === 0 ? 'g-on' : ''}}" data-g="0" bindtap="onGender"><text>男</text></view>
+      <view class="g {{gender === 1 ? 'g-on' : ''}}" data-g="1" bindtap="onGender"><text>女</text></view>
+    </view>
+    <view class="row between label-row">
+      <text class="lbl">身高</text>
+      <view class="row">
+        <view class="step" data-k="height" data-d="-1" bindtap="onStep"><text>－</text></view>
+        <view class="num"><text>{{height}}</text><text class="u">cm</text></view>
+        <view class="step" data-k="height" data-d="1" bindtap="onStep"><text>+</text></view>
+      </view>
+    </view>
+    <slider min="120" max="220" step="1" value="{{height}}" activeColor="#4f73f8" backgroundColor="#eef0f4" block-size="24" bindchanging="onH" bindchange="onH" />
+    <view class="row between label-row">
+      <text class="lbl">体重</text>
+      <view class="row">
+        <view class="step" data-k="weight" data-d="-1" bindtap="onStep"><text>－</text></view>
+        <view class="num"><text>{{weight}}</text><text class="u">kg</text></view>
+        <view class="step" data-k="weight" data-d="1" bindtap="onStep"><text>+</text></view>
+      </view>
+    </view>
+    <slider min="30" max="160" step="1" value="{{weight}}" activeColor="#4f73f8" backgroundColor="#eef0f4" block-size="24" bindchanging="onW" bindchange="onW" />
+  </view>
+
+  <view class="card table">
+    <view class="card-title"><text>分级标准（中国成人）</text></view>
+    <view wx:for="{{levels}}" wx:key="name" class="row trow">
+      <view class="dot" style="background: {{item.color}};"></view>
+      <text class="flex1">{{item.name}}</text>
+      <text class="muted">{{item.range}}</text>
+    </view>
+  </view>
+  <view class="space"></view>
+</view>

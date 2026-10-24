@@ -1,0 +1,36 @@
+<view class="header">
+  <view class="avatar"><text class="avatar-text">林</text></view>
+  <view class="flex1 info">
+    <text class="nick">林晓舟</text>
+    <view class="row"><text class="phone">138****6621</text><text class="level">黄金会员</text></view>
+  </view>
+  <view class="chev white"></view>
+</view>
+
+<view class="wallet">
+  <view class="w-item" bindtap="onWallet"><text class="w-num">{{balance}}</text><text class="w-label">余额(元)</text></view>
+  <view class="w-item" bindtap="onCoupons"><text class="w-num">{{couponCount}}</text><text class="w-label">优惠券</text></view>
+  <view class="w-item"><text class="w-num">2380</text><text class="w-label">积分</text></view>
+  <view class="w-item"><text class="w-num">3</text><text class="w-label">礼品卡</text></view>
+</view>
+
+<view class="vip card">
+  <view>
+    <text class="vip-title">滴达会员 · 黄金</text>
+    <text class="vip-sub">再完成 6 单升级铂金，享专车 9 折</text>
+  </view>
+  <view class="vip-bar"><view class="vip-fill"></view></view>
+</view>
+
+<view class="card menu">
+  <view class="menu-item" wx:for="{{menus}}" wx:key="name" data-idx="{{index}}" bindtap="onMenu">
+    <view class="m-icon" style="background:{{item.bg}}"><text class="m-glyph">{{item.glyph}}</text></view>
+    <text class="m-name">{{item.name}}</text>
+    <text class="sub">{{item.extra}}</text>
+    <view class="chev"></view>
+  </view>
+</view>
+<view class="card setting row between">
+  <text>夜间行程自动分享给紧急联系人</text>
+  <switch checked="{{autoShare}}" color="#FF7A1A" bindchange="onShare" />
+</view>

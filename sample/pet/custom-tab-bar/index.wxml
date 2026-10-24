@@ -1,0 +1,6 @@
+<view class="tb">
+  <view class="tb-item" wx:for="{{list}}" wx:key="pagePath" data-index="{{index}}" data-path="{{item.path}}" bindtap="switchTab">
+    <image class="tb-ic" src="{{selected === index ? item.iconOn : item.icon}}"></image>
+    <text class="tb-tx" style="color: {{selected === index ? selectedColor : color}};">{{item.text}}</text>
+  </view>
+</view>

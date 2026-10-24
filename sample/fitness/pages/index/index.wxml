@@ -1,0 +1,73 @@
+<view class="hello">
+  <view>
+    <text class="h1">{{greet}}，陈一鸣</text>
+    <text class="h2">已坚持训练 {{streak}} 天 · 燃动 · 科技园店</text>
+  </view>
+  <view class="store" bindtap="pickStore"><text>切换门店</text></view>
+</view>
+
+<view class="today">
+  <view class="ring">
+    <view class="ring-half r"><view class="disc disc-l" style="transform: rotate({{rightDeg}}deg);"></view></view>
+    <view class="ring-half l"><view class="disc disc-r" style="transform: rotate({{leftDeg}}deg);"></view></view>
+    <view class="ring-in">
+      <text class="ring-v">{{pct}}%</text>
+      <text class="ring-k">今日目标</text>
+    </view>
+  </view>
+  <view class="today-r">
+    <view class="t-item">
+      <view class="dot" style="background: #ff5a36;"></view>
+      <view class="t-line"><text class="t-v">{{today.kcal}}</text><text class="t-u">/ {{goal}} 千卡</text></view>
+    </view>
+    <view class="t-item">
+      <view class="dot" style="background: #ffb020;"></view>
+      <view class="t-line"><text class="t-v">{{today.min}}</text><text class="t-u">分钟训练</text></view>
+    </view>
+    <view class="t-item">
+      <view class="dot" style="background: #3d7bff;"></view>
+      <view class="t-line"><text class="t-v">{{today.steps}}</text><text class="t-u">步</text></view>
+    </view>
+    <view class="goal-btn" bindtap="setGoal"><text>调整目标</text></view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="sec-title">{{month}}月打卡</text>
+    <text class="muted">本月已打卡 <text class="hl">{{checkCount}}</text> 天</text>
+  </view>
+  <view class="week-h">
+    <text class="wh" wx:for="{{weekHead}}" wx:key="*this">{{item}}</text>
+  </view>
+  <view class="cal">
+    <view class="cd" wx:for="{{cells}}" wx:key="k">
+      <view wx:if="{{item.day}}" class="cd-in {{item.checked ? 'on' : ''}} {{item.today ? 'is-today' : ''}}">
+        <text>{{item.day}}</text>
+      </view>
+    </view>
+  </view>
+  <view class="btn check-btn {{todayChecked ? 'gray' : ''}}" bindtap="checkIn"><text>{{todayChecked ? '今日已打卡 · 明天继续' : '训练完成，立即打卡'}}</text></view>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="sec-title">推荐课程</text>
+    <view class="link" bindtap="goClasses"><text>全部团课</text><view class="chev"></view></view>
+  </view>
+  <view class="rec" wx:for="{{recs}}" wx:key="id" data-id="{{item.id}}" bindtap="goCourse">
+    <view class="rec-pic" style="background: {{item.bg}};">
+      <text class="rec-type">{{item.type}}</text>
+      <text class="rec-dur">{{item.dur}}min</text>
+    </view>
+    <view class="rec-main">
+      <text class="rec-name">{{item.name}}</text>
+      <view class="row rec-meta">
+        <text class="pill lv-{{item.level}}">{{item.levelText}}</text>
+        <text class="muted">{{item.coachInfo.name}}</text>
+      </view>
+      <text class="muted">今天 {{item.time}} · {{item.room}} · 约 {{item.kcal}} 千卡</text>
+    </view>
+  </view>
+</view>
+<view style="height: 40rpx;"></view>

@@ -1,0 +1,47 @@
+<view class="tip" wx:if="{{selectRole}}">
+  <text>点击地址选为{{selectRole === 'sender' ? '寄件人' : '收件人'}}</text>
+</view>
+<view class="top-gap"></view>
+
+<view class="card addr" wx:for="{{list}}" wx:key="id" bindtap="onSelect" data-i="{{index}}">
+  <view class="row">
+    <view class="flex1">
+      <view class="row">
+        <text class="addr-tag" style="background: {{tagColors[item.tag] || '#8a919f'}}">{{item.tag}}</text>
+        <text class="addr-name">{{item.name}}</text>
+        <text class="sub">{{item.phone}}</text>
+      </view>
+      <text class="addr-detail">{{item.region}} {{item.detail}}</text>
+    </view>
+  </view>
+  <view class="row between addr-foot">
+    <view class="row" catchtap="onDefault" data-i="{{index}}">
+      <view class="radio {{item.isDefault ? 'on' : ''}}"><view class="radio-in" wx:if="{{item.isDefault}}"></view></view>
+      <text class="sub">{{item.isDefault ? '默认地址' : '设为默认'}}</text>
+    </view>
+    <text class="op" catchtap="onMore" data-i="{{index}}">管理</text>
+  </view>
+</view>
+
+<view class="card form" wx:if="{{showForm}}">
+  <text class="title">新增地址</text>
+  <view class="f-row"><text class="f-label">联系人</text><input class="f-input" placeholder="姓名" value="{{form.name}}" bindinput="onField" data-k="name" /></view>
+  <view class="f-row"><text class="f-label">手机号</text><input class="f-input" type="number" maxlength="11" placeholder="11 位手机号" value="{{form.phone}}" bindinput="onField" data-k="phone" /></view>
+  <picker mode="region" value="{{form.regionArr}}" bindchange="onRegion">
+    <view class="f-row"><text class="f-label">所在地区</text><text class="f-input {{form.region ? '' : 'ph'}}">{{form.region || '省 / 市 / 区'}}</text></view>
+  </picker>
+  <view class="f-row"><text class="f-label">详细地址</text><input class="f-input" placeholder="街道、楼牌号" value="{{form.detail}}" bindinput="onField" data-k="detail" /></view>
+  <view class="f-row last">
+    <text class="f-label">标签</text>
+    <view class="row">
+      <view class="f-chip {{form.tag === item ? 'on' : ''}}" wx:for="{{tags}}" wx:key="*this" bindtap="onTag" data-t="{{item}}">{{item}}</view>
+    </view>
+  </view>
+  <view class="row form-btns">
+    <view class="btn-ghost flex1" bindtap="onCancel">取消</view>
+    <view class="btn-primary flex1" bindtap="onSave">保存</view>
+  </view>
+</view>
+
+<view class="add" wx:if="{{!showForm}}" bindtap="onAdd">+ 新增收寄地址</view>
+<view class="safe"></view>

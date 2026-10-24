@@ -1,0 +1,46 @@
+<block wx:if="{{!finished}}">
+  <view class="head">
+    <view class="row between"><text class="h-name">Python 基础 · 章节练习</text><text class="h-idx"><text class="h-cur">{{idx + 1}}</text> / {{total}}</text></view>
+    <view class="bar h-bar"><view class="bar-in" style="width: {{pct}}%;"></view></view>
+  </view>
+  <view class="card qcard">
+    <view class="row"><text class="qtype">单选题</text><text class="muted">每题 20 分</text></view>
+    <text class="qtext">{{q.q}}</text>
+    <view class="opt {{item.cls}}" wx:for="{{q.opts}}" wx:key="k" data-k="{{item.k}}" bindtap="pick">
+      <view class="ol"><text>{{item.l}}</text></view>
+      <text class="ot">{{item.t}}</text>
+      <text wx:if="{{item.cls === 'right'}}" class="mark ok">正确</text>
+      <text wx:if="{{item.cls === 'wrong'}}" class="mark bad">错误</text>
+    </view>
+  </view>
+  <view wx:if="{{picked >= 0}}" class="card exp {{picked === q.ans ? 'good' : 'bad'}}">
+    <text class="exp-r">{{picked === q.ans ? '回答正确' : '回答错误，正确答案是 ' + q.opts[q.ans].l}}</text>
+    <text class="exp-k">解析</text>
+    <text class="exp-t">{{q.exp}}</text>
+  </view>
+  <view class="foot-gap"></view>
+  <view class="foot">
+    <view class="btn-primary {{picked < 0 ? 'off' : ''}}" bindtap="next"><text>{{isLast ? '交卷' : '下一题'}}</text></view>
+  </view>
+</block>
+
+<block wx:else>
+  <view class="result">
+    <text class="r-label">本次得分</text>
+    <view class="row r-row"><text class="r-score">{{score}}</text><text class="r-unit">分</text></view>
+    <text class="r-sub">答对 {{right}} 题 · 答错 {{total - right}} 题 · {{score >= 80 ? '优秀，继续保持！' : (score >= 60 ? '及格啦，再巩固一下' : '别灰心，回顾解析再来一次')}}</text>
+  </view>
+  <view class="card">
+    <text class="sec-title">答题卡</text>
+    <view class="sheet">
+      <view class="sh-item" wx:for="{{review}}" wx:key="i">
+        <view class="sh-dot {{item.ok ? 'ok' : 'bad'}}"><text>{{item.i}}</text></view>
+        <text class="sh-tx">{{item.ok ? item.ans : item.mine + '→' + item.ans}}</text>
+      </view>
+    </view>
+  </view>
+  <view class="actions row">
+    <view class="ghost" bindtap="back"><text>返回</text></view>
+    <view class="btn-primary again" bindtap="retry"><text>再练一次</text></view>
+  </view>
+</block>

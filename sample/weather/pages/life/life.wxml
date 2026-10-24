@@ -1,0 +1,23 @@
+<view class="page">
+  <view class="hero row" style="background: {{bg}};">
+    <view class="col flex1">
+      <text class="hero-c">{{city.name}} · 今天</text>
+      <text class="hero-t">{{condName}}  {{hi}}° / {{lo}}°</text>
+      <text class="hero-s">根据今日天气为你生成 {{list.length}} 项生活建议</text>
+    </view>
+    <wicon cond="{{city.cond}}" size="150rpx" />
+  </view>
+
+  <view wx:for="{{list}}" wx:key="key" class="card item {{focus === item.key ? 'item-on' : ''}}" hover-class="press" data-key="{{item.key}}" bindtap="onTap">
+    <view class="row">
+      <view class="ic" style="background: {{item.color}};"><text>{{item.ch}}</text></view>
+      <view class="col flex1">
+        <text class="name">{{item.name}}指数</text>
+        <text class="desc">{{item.desc}}</text>
+      </view>
+      <text class="level" style="color: {{item.color}};">{{item.level}}</text>
+    </view>
+  </view>
+  <view class="tip-btn" hover-class="press" bindtap="onShareTip"><text>查看选中指数的完整说明</text></view>
+  <view class="space"></view>
+</view>

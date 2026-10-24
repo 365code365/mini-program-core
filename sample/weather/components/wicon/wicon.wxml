@@ -1,0 +1,21 @@
+<view class="wi" style="width: {{size}}; height: {{size}};">
+  <view wx:if="{{cond === 'sunny'}}" class="sun sun-full"></view>
+  <view wx:if="{{cond === 'night'}}" class="moon"></view>
+  <view wx:if="{{cond === 'cloudy'}}" class="sun sun-part"></view>
+  <view wx:if="{{cond !== 'sunny' && cond !== 'night'}}" class="cloud {{cond === 'overcast' || cond === 'rain' || cond === 'storm' ? 'cloud-dark' : ''}}">
+    <view class="puff p1"></view>
+    <view class="puff p2"></view>
+    <view class="base"></view>
+  </view>
+  <block wx:if="{{cond === 'rain' || cond === 'storm'}}">
+    <view class="drop d1"></view>
+    <view class="drop d2"></view>
+    <view class="drop d3"></view>
+  </block>
+  <view wx:if="{{cond === 'storm'}}" class="bolt"></view>
+  <block wx:if="{{cond === 'snow'}}">
+    <view class="flake f1"></view>
+    <view class="flake f2"></view>
+    <view class="flake f3"></view>
+  </block>
+</view>

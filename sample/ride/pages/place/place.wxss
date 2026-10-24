@@ -1,0 +1,29 @@
+.search-bar { display: flex; flex-direction: row; align-items: center; background: #fff; padding: 16rpx 24rpx 24rpx; }
+.city { font-size: 28rpx; font-weight: bold; margin-right: 20rpx; display: flex; flex-direction: row; align-items: center; }
+.caret { width: 10rpx; height: 10rpx; border-right: 3rpx solid #1f2329; border-bottom: 3rpx solid #1f2329; transform: rotate(45deg); margin-left: 12rpx; margin-top: -6rpx; }
+.search { flex: 1; height: 76rpx; background: #f5f6f8; border-radius: 38rpx; display: flex; flex-direction: row; align-items: center; padding: 0 24rpx; }
+.search-input { flex: 1; margin-left: 16rpx; font-size: 28rpx; height: 76rpx; }
+.clear { font-size: 36rpx; color: #b5b9bf; padding-left: 16rpx; }
+.common { display: flex; flex-direction: row; margin: 24rpx; }
+.common-item { flex: 1; background: #fff; border-radius: 20rpx; padding: 24rpx; display: flex; flex-direction: row; align-items: center; margin-right: 16rpx; }
+.common-item:last-child { margin-right: 0; }
+.common-icon { width: 64rpx; height: 64rpx; border-radius: 20rpx; display: flex; align-items: center; justify-content: center; }
+.common-glyph { color: #fff; font-size: 28rpx; font-weight: bold; }
+.common-body { margin-left: 16rpx; display: flex; flex-direction: column; flex: 1; }
+.common-tag { font-size: 28rpx; font-weight: bold; }
+.common-name { font-size: 22rpx; color: #8a9099; margin-top: 4rpx; }
+.list-head { margin: 32rpx 24rpx 12rpx; }
+.list-title { font-size: 28rpx; font-weight: bold; color: #4e5969; }
+.list { background: #fff; margin: 0 24rpx; border-radius: 20rpx; padding: 0 24rpx; }
+.result { margin-top: 24rpx; }
+.empty { text-align: center; color: #9aa0a6; font-size: 26rpx; padding: 40rpx 0; }
+.poi { display: flex; flex-direction: row; align-items: center; padding: 24rpx 0; border-bottom: 1rpx solid #f0f1f3; }
+.poi:last-child { border-bottom: none; }
+.poi-icon { width: 52rpx; height: 52rpx; border-radius: 26rpx; background: #f2f3f5; display: flex; align-items: center; justify-content: center; }
+.poi-pin { width: 18rpx; height: 18rpx; border-radius: 9rpx; border: 5rpx solid #8a9099; }
+.clock { position: relative; }
+.clock-hand { width: 20rpx; height: 20rpx; border-left: 4rpx solid #8a9099; border-bottom: 4rpx solid #8a9099; margin-left: 8rpx; margin-top: -8rpx; }
+.poi-body { flex: 1; margin-left: 20rpx; display: flex; flex-direction: column; }
+.poi-name { font-size: 30rpx; color: #1f2329; }
+.poi-addr { font-size: 24rpx; color: #9aa0a6; margin-top: 6rpx; }
+.poi-dist { font-size: 24rpx; color: #9aa0a6; }
