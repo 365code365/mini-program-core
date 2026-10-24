@@ -2,15 +2,10 @@ package dev.minirender.example
 
 import android.app.Activity
 import android.content.Intent
-import android.graphics.Color
-import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import android.view.HapticFeedbackConstants
-import android.view.View
-import android.view.WindowManager
 import android.widget.FrameLayout
 import dev.minirender.MiniProgramView
 import org.json.JSONObject
@@ -28,6 +23,9 @@ import kotlin.concurrent.thread
  * - `dump`：第一条 `page` 事件之后 2 秒，把视图当前画的内容存成 `files/engine_frame.png`，并在日志打一行
  *   `MINI_DUMP`（视图在屏幕上的位置与尺寸）。与 `adb exec-out screencap` 裁出的同一块逐像素比，
  *   差异为 0 才说明画面没被拉伸、颜色通道没反。
+ *
+ * 铺满整屏、前后台 / 内存告警 / 销毁、`wx.vibrateShort` 的触感都由 SDK 自己做（MiniProgramView 的
+ * autoEdgeToEdge / autoLifecycle / hapticFeedback），宿主只剩返回键一行。
  *
  * 引擎发来的每条事件都打到 logcat（tag `mini-example`），脚本靠 `[事件] page <路由>` 判断进没进对页面。
  */
@@ -55,7 +53,6 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        edgeToEdge()
         root = FrameLayout(this)
         mini = newMiniView()
         root.addView(mini)
@@ -95,7 +92,6 @@ class MainActivity : Activity() {
         onEvent = { ev ->
             Log.i(TAG, "[事件] " + summarize(ev))
             when (ev.optString("type")) {
-                "vibrate" -> vibrate(ev)
                 // 第一页出来了才收起 loading（冷启动加载字体那几百毫秒也盖在底下，不露白屏）
                 "page" -> cover?.let { cover = null; it.hide() }
             }
@@ -178,26 +174,6 @@ class MainActivity : Activity() {
         openStore(parsed.copy(scene = 1037, referrer = referrer))
     }
 
-    /**
-     * 画面铺到状态栏下面：引擎按 insets 算 `statusBarHeight`、胶囊位置与 `env(safe-area-inset-*)`。
-     * targetSdk 35 在 Android 15 上本来就是 edge-to-edge，这里给低版本补上
-     */
-    @Suppress("DEPRECATION")
-    private fun edgeToEdge() {
-        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
-        window.statusBarColor = Color.TRANSPARENT
-        window.navigationBarColor = Color.TRANSPARENT
-        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
-            View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
-            View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
-            View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
-        if (Build.VERSION.SDK_INT >= 28) {
-            window.attributes = window.attributes.apply {
-                layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
-            }
-        }
-    }
-
     private fun summarize(e: JSONObject): String {
         val type = e.optString("type")
         if (type == "page") {
@@ -239,19 +215,6 @@ class MainActivity : Activity() {
             "density=${resources.displayMetrics.density}"
     }
 
-    /**
-     * `wx.vibrateShort` / `vibrateLong`：触感反馈不用 VIBRATE 权限（与 Flutter 示例的 HapticFeedback 同一档）。
-     * 长振动用 LONG_PRESS 那一档代替（没权限时 Vibrator 振不了）
-     */
-    private fun vibrate(ev: JSONObject) {
-        val kind = when {
-            ev.optString("duration") == "long" -> HapticFeedbackConstants.LONG_PRESS
-            ev.optString("style") == "light" -> HapticFeedbackConstants.CLOCK_TICK
-            else -> HapticFeedbackConstants.VIRTUAL_KEY
-        }
-        mini.performHapticFeedback(kind)
-    }
-
     /** 从入口页点开的（打开时是上推）：关掉时往下退，与打开成对 */
     override fun finish() {
         super.finish()
@@ -272,11 +235,6 @@ class MainActivity : Activity() {
     override fun onBackPressed() {
         if (!mini.goBack()) super.onBackPressed()   // 页面栈空了才退出
     }
-
-    override fun onResume() { super.onResume(); mini.onHostResume() }
-    override fun onPause() { super.onPause(); mini.onHostPause() }
-    override fun onTrimMemory(level: Int) { super.onTrimMemory(level); mini.onHostTrimMemory() }
-    override fun onDestroy() { super.onDestroy(); mini.close() }
 
     companion object {
         const val TAG = "mini-example"

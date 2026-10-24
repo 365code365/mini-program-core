@@ -1,7 +1,6 @@
 package dev.minirender
 
 import android.app.Activity
-import android.app.ActivityManager
 import android.app.AlertDialog
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -115,6 +114,18 @@ class MiniProgramView @JvmOverloads constructor(
      */
     var sameLayerVideo = true
 
+    /**
+     * 替宿主把窗口铺满整屏（透明状态栏 / 导航条、刘海区也画；默认开，挂到窗口时生效）：引擎按 insets 算状态栏高度、
+     * 胶囊位置与安全区，画面不铺到状态栏下面就对不上。宿主自己管系统栏样式的话关掉
+     */
+    var autoEdgeToEdge = true
+
+    /** 跟着所在 Activity 的 resume / pause / destroy 与系统内存告警自动转给引擎（默认开；关掉的话宿主自己调 onHost*） */
+    var autoLifecycle = true
+
+    /** `wx.vibrateShort` / `vibrateLong` 由 SDK 做触感反馈（默认开；关掉的话宿主在 [onEvent] 里接 `vibrate`） */
+    var hapticFeedback = true
+
     /** 视频全屏时收起状态栏与导航条（默认开；[onEvent] 里也能收到 `videoFullscreen` 自己处理） */
     var immersiveVideoFullscreen = true
 
@@ -204,12 +215,20 @@ class MiniProgramView @JvmOverloads constructor(
      */
     fun goBack(): Boolean = session.call(false) { MiniEngine.nativeBack(it) }
 
+    /**
+     * 回前台。所在 Activity 的 resume / pause / destroy 与内存告警 SDK 已经自己跟着转了（[autoLifecycle]），
+     * 宿主不用再调；调了也没关系：前后台状态没变的那次不转
+     */
     fun onHostResume() {
+        if (!background) return
+        background = false
         session.lifecycle(0)
     }
 
     /** 进后台：派发 `App.onHide` 并**停止出帧**（继续出帧纯属耗电） */
     fun onHostPause() {
+        if (background) return
+        background = true
         session.lifecycle(1)
     }
 
@@ -222,7 +241,22 @@ class MiniProgramView @JvmOverloads constructor(
      * 引擎实例，小程序根目录、数据目录是进程级的）
      */
     fun close() {
+        lifecycle?.unregister()
+        lifecycle = null
         session.dispose()
+    }
+
+    private var background = false
+    private var lifecycle: HostLifecycle? = null
+
+    /** 挂到窗口上：按开关替宿主铺满整屏、接上 Activity 生命周期（HostChrome.kt） */
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        val a = activity() ?: return
+        if (autoEdgeToEdge) HostChrome.edgeToEdge(a)
+        if (autoLifecycle && lifecycle == null) {
+            lifecycle = HostLifecycle(a, ::onHostResume, ::onHostPause, ::onHostTrimMemory, ::close).also { it.register() }
+        }
     }
 
     /**
@@ -290,20 +324,13 @@ class MiniProgramView @JvmOverloads constructor(
         if (sameLayerVideo) same.put("video")
         sameLayer.tags().filter { it != "video" }.forEach { same.put(it) }
         if (same.length() > 0) options.put("sameLayer", same)
-        rootWindowInsets?.let { options.put("safeArea", insetsJson(it, dpr)) }
-        session.create(dir.absolutePath, data.absolutePath, startRoute, lw, lh, dpr, options.toString(), backend, deviceInfo(), diagnostics)
-    }
-
-    /** auto 后端的机型分级：内存、低内存机型标记、API level（与 Flutter 插件同一组） */
-    private fun deviceInfo(): EngineSession.DeviceInfo {
-        val am = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
-        val mem = ActivityManager.MemoryInfo().also { am?.getMemoryInfo(it) }
-        return EngineSession.DeviceInfo(mem.totalMem, am?.isLowRamDevice ?: false, Build.VERSION.SDK_INT)
+        rootWindowInsets?.let { options.put("safeArea", HostChrome.insetsJson(it, dpr)) }
+        session.create(dir.absolutePath, data.absolutePath, startRoute, lw, lh, dpr, options.toString(), backend, HostChrome.deviceInfo(context), diagnostics)
     }
 
     /** 刘海 / 状态栏 / 导航条（逻辑像素）：`statusBarHeight`、胶囊位置与 `env(safe-area-inset-*)` 都按它算 */
     override fun onApplyWindowInsets(insets: WindowInsets): WindowInsets {
-        val o = insetsJson(insets, resources.displayMetrics.density)
+        val o = HostChrome.insetsJson(insets, resources.displayMetrics.density)
         session.run {
             MiniEngine.nativeSetSafeArea(
                 it,
@@ -312,17 +339,6 @@ class MiniProgramView @JvmOverloads constructor(
             )
         }
         return super.onApplyWindowInsets(insets)
-    }
-
-    @Suppress("DEPRECATION")
-    private fun insetsJson(i: WindowInsets, dpr: Float): JSONObject {
-        val (t, r, b, l) = if (Build.VERSION.SDK_INT >= 30) {
-            val s = i.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
-            listOf(s.top, s.right, s.bottom, s.left)
-        } else {
-            listOf(i.systemWindowInsetTop, i.systemWindowInsetRight, i.systemWindowInsetBottom, i.systemWindowInsetLeft)
-        }
-        return JSONObject().put("top", t / dpr).put("right", r / dpr).put("bottom", b / dpr).put("left", l / dpr)
     }
 
     // ─────────────────────────── SurfaceView ───────────────────────────
@@ -415,6 +431,7 @@ class MiniProgramView @JvmOverloads constructor(
                 "close" -> requestClose()
             }
             "hostCall" -> hostCalls.dispatch(ev, activity())
+            "vibrate" -> if (hapticFeedback) HostChrome.vibrate(this, ev)
             "inputFocus" -> ime.onFocus(ev)
             "inputBlur" -> ime.onBlur()
             "sameLayerViews" -> sameLayer.onViews(ev)
@@ -458,36 +475,7 @@ class MiniProgramView @JvmOverloads constructor(
 
     override fun onCreateInputConnection(outAttrs: EditorInfo): InputConnection? = ime.create(outAttrs)
 
-    override fun onTouchEvent(event: MotionEvent): Boolean {
-        if (!session.ready) return false
-        val dpr = resources.displayMetrics.density
-        fun send(phase: Int, x: Float, y: Float) = session.run { MiniEngine.nativePointer(it, phase, x / dpr, y / dpr) }
-        // 移动带上事件时间（uptimeMillis，与 pump 用的 Choreographer 帧时间同一个单调钟）：
-        // 引擎按它重采样页面拖动，post 到哪一帧不再影响每帧挪多少（慢拖不一顿一顿）
-        when (event.actionMasked) {
-            MotionEvent.ACTION_DOWN -> send(0, event.x, event.y)
-            MotionEvent.ACTION_MOVE -> {
-                // 历史点也要送：抽稀会让滑动手感变差，也会漏掉快速滑动的方向判定。
-                // 一个 MotionEvent 的全部采样打成一包、一次 post（与 iOS 的 coalescedTouches 一致）：
-                // 从前每个历史点各 post 一个 Runnable、各挂一次帧，120Hz 触控上一帧三四个
-                val n = event.historySize + 1
-                val xs = FloatArray(n)
-                val ys = FloatArray(n)
-                val ts = LongArray(n)
-                for (i in 0 until n - 1) {
-                    xs[i] = event.getHistoricalX(i) / dpr
-                    ys[i] = event.getHistoricalY(i) / dpr
-                    ts[i] = event.getHistoricalEventTime(i)
-                }
-                xs[n - 1] = event.x / dpr
-                ys[n - 1] = event.y / dpr
-                ts[n - 1] = event.eventTime
-                session.run { h -> for (i in 0 until n) MiniEngine.nativePointerMoveAt(h, xs[i], ys[i], ts[i].toDouble()) }
-            }
-            MotionEvent.ACTION_UP -> send(2, event.x, event.y)
-            MotionEvent.ACTION_CANCEL -> send(3, 0f, 0f)
-            else -> return false
-        }
-        return true
-    }
+    override fun onTouchEvent(event: MotionEvent): Boolean =
+        session.ready && MiniTouch.forward(session, event, resources.displayMetrics.density)
+
 }

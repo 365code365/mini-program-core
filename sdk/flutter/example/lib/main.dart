@@ -106,7 +106,16 @@ class _LauncherState extends State<Launcher> {
 
   void _open(String dir, {String? dumpTo, String? route}) {
     Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => MiniAppPage(appDir: dir, dumpTo: dumpTo, route: route)));
+        .push(PageRouteBuilder<void>(
+          pageBuilder: (_, _, _) => MiniAppPage(appDir: dir, dumpTo: dumpTo, route: route),
+          transitionsBuilder: (_, a, _, child) => SlideTransition(
+            position: Tween(begin: const Offset(1, 0), end: Offset.zero)
+                .animate(CurvedAnimation(parent: a, curve: Curves.easeOutCubic)),
+            child: child,
+          ),
+          // 退出不做动画：理由见 store/store_pages.dart 的 MiniStoreLaunchPage.route
+          reverseTransitionDuration: Duration.zero,
+        ));
   }
 
   @override

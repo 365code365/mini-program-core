@@ -145,6 +145,11 @@ class MiniStoreLaunchPage extends StatefulWidget {
   /// 从下往上推出来（与微信点开小程序一致）
   static Route<void> route({required MiniStore store, required StoreLink link, StoreApp? hint}) => PageRouteBuilder<void>(
         transitionDuration: const Duration(milliseconds: 250),
+        // 关闭（胶囊 ⊙ / 返回键退到最后一页）**不做退出动画**：小程序画面是一块 SurfaceView 平台视图
+        // （hybrid composition），路由动画每帧都要挪它，Flutter 这一层只能跟着平台线程同步出帧 ——
+        // 一加 PLY110 上量到退出那 250ms 里 45 帧/秒（每帧 22ms）、最后一帧 55ms，看着就是「点了关闭一卡」。
+        // 直接收掉：一帧回到列表，引擎的销毁在引擎线程上异步做（EngineCore.dispose）
+        reverseTransitionDuration: Duration.zero,
         pageBuilder: (_, _, _) => MiniStoreLaunchPage(store: store, link: link, hint: hint),
         transitionsBuilder: (_, a, _, child) => SlideTransition(
           position: Tween(begin: const Offset(0, 1), end: Offset.zero)

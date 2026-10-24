@@ -1,5 +1,7 @@
 package dev.minirender.flutter
 
+import dev.minirender.MediaImport
+
 import android.Manifest
 import android.app.Activity
 import android.content.ActivityNotFoundException

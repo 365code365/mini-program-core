@@ -44,9 +44,17 @@ impl WxmlRenderer {
             // 损伤区，条带里落在新裁剪窗外的那部分会被清成底色却没人重画 —— 往回滚时露白。
             // 所以这里只省掉重建，重画范围与以前完全一样（整帧 + scroll-view 缓存作废），
             // 像素逐字节不变；「滚动中只补画新露出的条带」是另一项优化，要单独证明。
+            // scroll-view 的离屏缓存**不作废**：缓存里是 scroll-view 自己的整段内容，按 (0,0) 起画、
+            // 不做视口裁剪也不看损伤区（`draw_child_to_cache`），与页面滚到哪一个字节都无关。
+            //
+            // 从前这里也 `mark_all_dirty`：uni-app 产物的页面根就是一个 `<scroll-view class="page">`
+            // （内容多高它就多高，滚的是页面），于是视口每滑出已绘制条带一次（补条带），这个 scroll-view
+            // 就把整页内容（ai-result 3705 行 × 1080 宽）重新光栅化一遍，外加一块 16MB 的新画布 ——
+            // 补 30 行要画 8ms（桌面）/ 15~23ms（一加 PLY110，诊断 20261024-153306），其余页面 0.2ms。
+            // 这正是「刚开始不卡、滑着滑着卡起来」：一开始在预画好的条带里滑，只合成；滑出条带以后
+            // 每帧都要补条带，每次补都整页重画。缓存的作废照旧由数据变化 / 图片下完 / 字体换了负责
             if same_data && !height_changed {
                 self.current_viewport = viewport;
-                self.scroll_cache.mark_all_dirty();
                 return self.full_because(|| "数据没变、只换了滚动偏移".into());
             }
         }

@@ -317,8 +317,11 @@ pub fn apply_gesture_move(
                 break;
             }
             GestureAction::UpdateArea { ref id, axis } => {
+                let mut moved = false;
                 if let Some(c) = interaction.get_scroll_controller_mut(id) {
+                    let before = c.get_position();
                     c.update_drag(if axis == Axis::Horizontal { x } else { y }, clock_ms);
+                    moved = c.get_position() != before;
                 }
                 // 内层到边界后还在往同一方向推 → 把这次手势交给页面继续
                 // （手指往下推时内容已经到顶、往上推时已经到底）。
@@ -342,6 +345,11 @@ pub fn apply_gesture_move(
                 eff.area_scrolled = true;
                 if axis == Axis::Vertical && keep_pushing {
                     eff.area_scrolled = false;
+                    // 内层没动（不可滚 / 早已在边界上）就不用重画：从前这里每一次移动都整帧。
+                    // uni-app 页面根是 `<scroll-view class="page">`，内容不满一屏时它不可滚、页面也不可滚 ——
+                    // 手指在上面拖一下，每帧整页重画 9~19ms（tea-app 分类 / 购物车 / 订单详情等 20 多页，
+                    // `sdk_scroll_bench` 拖动段 53 帧全是「整帧·结构 ← engine_input.rs」）
+                    eff.needs_redraw = moved;
                     if let Some(id) = interaction.dragging_scroll_area.take() {
                         if let Some(c) = interaction.get_scroll_controller_mut(&id) {
                             c.end_drag();

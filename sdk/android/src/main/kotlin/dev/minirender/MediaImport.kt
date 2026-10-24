@@ -1,7 +1,6 @@
 package dev.minirender
 
-// 与 Flutter 插件的 dev.minirender.flutter.MediaImport 是同一份（那边当时正在别的改动里，没并过来）：
-// 改一边要照着改另一边，之后插件改用这一份就能删掉那边的。
+// 原生 SDK（MiniMediaApis）与 Flutter 插件（MediaPicker，直接编这份源码）共用这一份
 import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap

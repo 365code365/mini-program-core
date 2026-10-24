@@ -85,6 +85,12 @@ internal class EngineCore(
     private var frameScheduled = false
     private var running = true
     private var surface: Surface? = null
+    /**
+     * **引擎线程**：挂过的 Surface 被收走了（[detach]），新的还没来。这段时间不出帧：引擎一没了 Surface 就回退 CPU，
+     * 接着按 vsync 把整页 CPU 光栅化一遍又一遍，画给谁也看不见 —— 关小程序时（平台视图先没、销毁后到）主线程
+     * 在 [dispose] 里等引擎线程放手，排在这些白画的帧后面：tea-app 首页上实测等了 102ms，点 ⊙ 那一下一卡
+     */
+    private var surfaceLost = false
     private var mode = Present.WINDOW
     /** GPU 模式下 [surface] 已交给合成器（同一块 Surface 改尺寸不用重挂：合成器自己 reconfigure） */
     private var gpuAttached = false
@@ -189,6 +195,8 @@ internal class EngineCore(
             videoHost?.pauseAll()
         }
         if (handle == 0L) return@post
+        // 一档一行：宿主自动跟生命周期（MiniProgramView.autoLifecycle）有没有接上、有没有重复派发，看这一行
+        if (what != 2) Log.i(TAG, if (what == 0) "🔁 生命周期：回前台（App.onShow）" else "🔁 生命周期：进后台（App.onHide）")
         MiniEngine.nativeLifecycle(handle, what)
         if (what == 0) {
             needsPresent = true
@@ -280,6 +288,7 @@ internal class EngineCore(
     /** **引擎线程**：挂上一块 Surface（[attachSurface] 的引擎线程那一半，改尺寸时宿主要先挂再画） */
     fun attach(s: Surface) {
         if (handle == 0L) return
+        surfaceLost = false
         if (mode == Present.GPU) {
             if (!(gpuAttached && s === surface) && !attachGpu(s)) return
         } else {
@@ -323,6 +332,7 @@ internal class EngineCore(
     }
 
     private fun detach() {
+        surfaceLost = true
         if (handle != 0L) {
             if (gpuAttached) MiniEngine.nativeDetachSurface(handle) else MiniEngine.nativeDetachCpuWindow(handle)
         }
@@ -359,7 +369,7 @@ internal class EngineCore(
      * 而 BufferQueue 本来就有一两帧的余量（入队到上屏约 25ms），赶得上它的那一格
      */
     private fun tick(frameTimeNanos: Long) {
-        if (handle == 0L) return
+        if (handle == 0L || surfaceLost) return
         val speculative = wantedMore
         if (speculative) requestFrame()
         val t0 = System.nanoTime()
