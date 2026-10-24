@@ -112,10 +112,13 @@ impl WxmlRenderer {
         }
         self.note_animated_image(node, gif, (x, y, w, h));
         
-        // 顶层 scroll-view 里有 swiper：不走离屏缓存，按嵌套 scroll-view 那条路逐帧画可见子节点
+        // 顶层 scroll-view 是横向的、或里面有 swiper：不走离屏缓存，按嵌套 scroll-view 那条路逐帧画可见子节点
         // （见 scroll_live.rs —— 缓存里的 swiper 换页、拖动时整块缓存要每帧重画，代价是整段内容高）
         // picker-view 同理：滚轮一拖，缓存整块要重画；动图也是（缓存里的 GIF 不换帧，见 animated_image.rs）
-        if node.tag == "scroll-view" && (Self::subtree_has_tag(node, "swiper") || Self::subtree_has_tag(node, "picker-view") || Self::subtree_has_animated_image(node)) {
+        // 横向（`scroll-x`）的也走这条：下面的离屏缓存只会按纵向偏移贴 —— 从前横着一滑，
+        // 整段内容被当成「往下滚」贴出视口，那一排（分类标签、筛选条）整个变空白
+        if node.tag == "scroll-view" && (super::scroll_views::scroll_axes(&node.attrs).0
+            || Self::subtree_has_tag(node, "swiper") || Self::subtree_has_tag(node, "picker-view") || Self::subtree_has_animated_image(node)) {
             self.draw_scroll_view_live(canvas, taffy, node, (x, y, w, h), &component_id, interaction, scroll_offset, viewport_height);
             self.push_event_bindings(node, logical_bounds);
             return;

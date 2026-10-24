@@ -205,14 +205,32 @@ impl WxmlRenderer {
                     );
                 }
                 
+                // 结尾那一截也算可滚范围（与 CSS 的可滚溢出区、微信一致）：直接子节点的外边距，
+                // 再加 scroll-view 自己的右 / 下内边距。从前只到最后一个子节点的边框盒：
+                // `padding: 0 24rpx` 的横向标签栏，最后一个标签滚到头也贴着右边被切掉一截
+                // （快递100查的「已签收」、`margin-right` 撑开的那几像素也滚不出来）
+                for child in original_node.children.iter().filter(|c| !c.style.is_fixed) {
+                    if let Ok(l) = taffy.layout(child.taffy_node) {
+                        content_width = content_width.max(l.location.x + l.size.width + l.margin.right.max(0.0));
+                        content_height = content_height.max(l.location.y + l.size.height + l.margin.bottom.max(0.0));
+                    }
+                }
+                if content_width > 0.0 || content_height > 0.0 {
+                    if let Ok(own) = taffy.layout(original_node.taffy_node) {
+                        content_width += own.padding.right.max(0.0);
+                        content_height += own.padding.bottom.max(0.0);
+                    }
+                }
+
                 // 转换为逻辑像素
                 let logical_content_height = content_height / self.scale_factor;
                 let logical_content_width = content_width / self.scale_factor;
 
                 if std::env::var("MINI_SCROLL_LOG").is_ok() {
                     eprintln!(
-                        "📦 scroll-view {} 视口 {:.1} 内容 {:.1}",
-                        id, bounds.height, logical_content_height
+                        "📦 scroll-view {} 视口 {:.1}×{:.1} 内容 {:.1}×{:.1}{}",
+                        id, bounds.width, bounds.height, logical_content_width, logical_content_height,
+                        if scroll_x { " 横向" } else { "" }
                     );
                     if std::env::var("MINI_SCROLL_TREE").is_ok() {
                         for child in original_node.children.iter() {

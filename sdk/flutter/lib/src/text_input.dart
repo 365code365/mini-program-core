@@ -59,7 +59,11 @@ class MiniTextInput implements TextInputClient {
         inputType: _keyboard(f),
         obscureText: f.password || f.inputType == 'safe-password',
         autocorrect: false,
-        enableSuggestions: false,
+        // 普通文字框必须开：Flutter 在 Android 上把 enableSuggestions:false 翻成
+        // TYPE_TEXT_VARIATION_VISIBLE_PASSWORD | NO_SUGGESTIONS（0x80091），中文输入法把它当密码框 ——
+        // 百度 / 搜狗切成英文键盘、ColorOS 换上「安全键盘」（截屏全黑），打不了汉字。
+        // 只有密码、身份证、数字框关掉联想
+        enableSuggestions: !(f.password || const ['safe-password', 'idcard', 'number', 'digit'].contains(f.inputType)),
         inputAction: _action(f),
       ),
     );

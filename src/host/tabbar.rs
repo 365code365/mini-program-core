@@ -199,17 +199,33 @@ pub fn nav_at_w(
     logical_width: f32,
 ) -> Option<super::navigation::NavigationRequest> {
     use super::navigation::NavigationRequest;
-    // 自定义 tabBar：由组件自己的事件绑定决定去哪
+    // 自定义 tabBar：由点中的那一项决定去哪。组件是按快照画的（不跑它的 `bindtap`），
+    // 所以照官方写法认这几种：`data-path`（带不带前导 `/` 都行）→ `data-index` 对上 app.json
+    // `tabBar.list` 的同一项（官方要求自定义 tabBar 也写全 list）→ 都没有就按 list 平均分栏。
+    // 从前只认「data-index 和 data-path 都写了」：只写 `data-index` + `wx.switchTab` 的组件
+    // （花语鲜花、知学课堂、生活缴费）点了没反应
     if let Some(renderer) = custom {
-        if let Some(binding) = renderer.hit_test(x, y_in_bar) {
-            if let (Some(_idx), Some(path)) = (binding.data.get("index"), binding.data.get("path")) {
-                if path != current_path {
-                    println!("👆 TabBar -> {path}");
-                    return Some(NavigationRequest::SwitchTab { url: path.clone() });
-                }
-            }
+        let target = match renderer.hit_test(x, y_in_bar) {
+            Some(b) => b
+                .data
+                .get("path")
+                .or_else(|| b.data.get("pagePath"))
+                .or_else(|| b.data.get("url"))
+                .map(|p| p.trim_start_matches('/').to_string())
+                .filter(|p| !p.is_empty())
+                .or_else(|| {
+                    let i: usize = b.data.get("index")?.trim().parse().ok()?;
+                    native?.list.get(i).map(|it| it.page_path.clone())
+                }),
+            None => None,
         }
-        return None;
+        .or_else(|| handle_native_tabbar_click_w(native?, x, "", logical_width));
+        let path = target?;
+        if path == current_path {
+            return None;
+        }
+        println!("👆 TabBar -> {path}");
+        return Some(NavigationRequest::SwitchTab { url: path });
     }
     // 原生 tabBar：按 list 平均分栏
     let target = handle_native_tabbar_click_w(native?, x, current_path, logical_width)?;
