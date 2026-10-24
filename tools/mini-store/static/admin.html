@@ -3,140 +3,365 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>小程序管理</title>
+<title>小程序管理后台</title>
 <style>
-  :root { --green: #07c160; --line: #e5e5e5; --sub: #888; }
+  :root {
+    --brand: #07c160; --brand-d: #06ad56; --brand-l: #e8f8ef;
+    --side: #001529; --side-h: #0b2a45; --side-t: rgba(255,255,255,.65);
+    --bg: #f0f2f5; --line: #f0f0f0; --line2: #d9d9d9; --t1: #1f2329; --t2: #646a73; --t3: #8f959e;
+    --danger: #f5222d; --warn: #fa8c16; --blue: #1677ff; --r: 8px;
+    --shadow: 0 1px 2px rgba(0,0,0,.03), 0 1px 6px -1px rgba(0,0,0,.02), 0 2px 4px rgba(0,0,0,.02);
+  }
   * { box-sizing: border-box; }
-  body { margin: 0; font: 14px/1.5 -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f5f5f5; color: #222; }
-  header { background: #fff; border-bottom: 1px solid var(--line); padding: 12px 24px; display: flex; align-items: center; gap: 12px; }
-  header h1 { font-size: 17px; margin: 0; flex: 1; }
-  main { max-width: 980px; margin: 24px auto; padding: 0 16px; }
-  .card { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 16px; }
-  .card h2 { font-size: 15px; margin: 0 0 14px; }
-  label { display: block; margin: 10px 0 4px; color: #555; }
-  input[type=text], input[type=password] { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
-  button { padding: 7px 16px; border: 1px solid #ccc; border-radius: 4px; background: #fff; cursor: pointer; font-size: 14px; }
-  button.primary { background: var(--green); border-color: var(--green); color: #fff; }
-  button.danger { color: #e64340; }
-  button:disabled { opacity: .5; cursor: default; }
-  .row { display: flex; gap: 12px; flex-wrap: wrap; }
-  .row > div { flex: 1; min-width: 200px; }
-  .hint { color: var(--sub); font-size: 12px; }
-  .msg { margin-top: 10px; min-height: 20px; }
-  .msg.err { color: #e64340; }
-  .msg.ok { color: var(--green); }
-  table { width: 100%; border-collapse: collapse; }
-  th, td { text-align: left; padding: 10px 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
-  th { color: var(--sub); font-weight: normal; font-size: 12px; }
-  .icon { width: 36px; height: 36px; border-radius: 50%; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-weight: 600; }
-  .name { font-weight: 600; }
-  .id { color: var(--sub); font-size: 12px; }
-  .ops button { margin-right: 6px; padding: 4px 10px; font-size: 13px; }
-  #login { max-width: 360px; margin: 80px auto; }
+  html, body { height: 100%; }
+  body { margin: 0; font: 14px/1.5715 -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif; background: var(--bg); color: var(--t1); -webkit-font-smoothing: antialiased; }
   .hidden { display: none !important; }
-  .src { display: flex; gap: 16px; margin: 6px 0; }
-  .src label { display: inline; margin: 0; color: #222; }
-  select { padding: 7px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; background: #fff; }
-  img.icon { object-fit: cover; border-radius: 9px; }
-  .icon.letter { border-radius: 9px; }
-  .tags { margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px; }
-  .tag { font-size: 11px; padding: 1px 6px; border-radius: 3px; background: #f0f0f0; color: #666; }
-  .cat { font-size: 11px; padding: 1px 6px; border-radius: 3px; background: #e8f8ef; color: #07a050; margin-left: 6px; font-weight: normal; }
-  .toolbar { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-  .toolbar input { flex: 1; min-width: 200px; }
-  .stats { display: flex; gap: 24px; margin-bottom: 12px; }
-  .stats b { font-size: 20px; display: block; }
-  dialog { border: 0; border-radius: 10px; padding: 20px; width: min(520px, 92vw); box-shadow: 0 8px 40px rgba(0,0,0,.2); }
-  dialog::backdrop { background: rgba(0,0,0,.35); }
-  .hot { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  code { background: #f5f5f5; border: 1px solid #eee; border-radius: 4px; padding: 1px 5px; font-size: 12px; }
+
+  /* ── 控件 ── */
+  input[type=text], input[type=password], select {
+    width: 100%; height: 34px; padding: 4px 11px; border: 1px solid var(--line2); border-radius: 6px;
+    font: inherit; color: var(--t1); background: #fff; transition: border-color .2s, box-shadow .2s; outline: 0;
+  }
+  input[type=text]:hover, input[type=password]:hover, select:hover { border-color: var(--brand); }
+  input[type=text]:focus, input[type=password]:focus, select:focus { border-color: var(--brand); box-shadow: 0 0 0 2px rgba(7,193,96,.15); }
+  input:invalid:not(:placeholder-shown):not(:focus) { border-color: var(--danger); }
+  button {
+    height: 34px; padding: 0 15px; border: 1px solid var(--line2); border-radius: 6px; background: #fff; color: var(--t1);
+    font: inherit; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: all .2s; white-space: nowrap;
+  }
+  button:hover { color: var(--brand); border-color: var(--brand); }
+  button.primary { background: var(--brand); border-color: var(--brand); color: #fff; box-shadow: 0 2px 0 rgba(7,193,96,.1); }
+  button.primary:hover { background: var(--brand-d); border-color: var(--brand-d); color: #fff; }
+  button.danger:hover { color: var(--danger); border-color: var(--danger); }
+  button.danger.solid { background: var(--danger); border-color: var(--danger); color: #fff; }
+  button.link { border: 0; background: none; height: auto; padding: 0; color: var(--blue); }
+  button.link:hover { color: #4096ff; }
+  button.link.danger { color: var(--danger); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  label.f { display: block; margin: 0 0 6px; color: var(--t1); }
+  label.f .req { color: var(--danger); margin-right: 3px; }
+  .help { color: var(--t3); font-size: 12px; margin-top: 4px; }
+  .field { margin-bottom: 18px; }
+  .grid { display: grid; gap: 0 20px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+
+  /* ── 登录 ── */
+  #login { min-height: 100%; display: flex; align-items: center; justify-content: center; padding: 24px;
+    background: radial-gradient(1200px 600px at 10% -10%, #d6f5e3 0, transparent 60%), radial-gradient(900px 500px at 110% 110%, #dbeafe 0, transparent 60%), #f5f7fa; }
+  .login-box { width: 380px; max-width: 100%; background: #fff; border-radius: 12px; padding: 40px 36px 32px; box-shadow: 0 12px 48px rgba(0,0,0,.08); }
+  .login-box .logo { display: block; width: 48px; height: 48px; margin: 0 auto 14px; }
+  .login-box h2 { text-align: center; margin: 0 0 4px; font-size: 22px; font-weight: 600; }
+  .login-box .sub { text-align: center; color: var(--t3); margin-bottom: 28px; }
+  .login-box input { height: 40px; }
+  .login-box button.primary { width: 100%; height: 40px; font-size: 15px; margin-top: 6px; }
+  .login-err { color: var(--danger); min-height: 22px; margin-top: 10px; text-align: center; }
+
+  /* ── 骨架：侧栏 + 顶栏 + 内容 ── */
+  #app { display: flex; min-height: 100%; }
+  aside { width: 220px; flex: none; background: var(--side); color: var(--side-t); position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; }
+  .brand { height: 60px; display: flex; align-items: center; gap: 10px; padding: 0 20px; color: #fff; font-size: 16px; font-weight: 600; }
+  .brand .logo { width: 28px; height: 28px; }
+  nav { padding: 8px; flex: 1; }
+  nav a { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 16px; margin: 4px 0; border-radius: 6px; color: inherit; text-decoration: none; transition: background .2s, color .2s; }
+  nav a:hover { color: #fff; }
+  nav a.on { background: var(--brand); color: #fff; }
+  nav a .badge { margin-left: auto; }
+  .side-foot { padding: 14px 20px; font-size: 12px; color: rgba(255,255,255,.35); border-top: 1px solid rgba(255,255,255,.06); }
+  .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .topbar { height: 60px; background: #fff; display: flex; align-items: center; padding: 0 24px; gap: 16px; box-shadow: 0 1px 4px rgba(0,21,41,.08); position: sticky; top: 0; z-index: 5; }
+  .crumb { flex: 1; color: var(--t3); }
+  .crumb b { color: var(--t1); font-weight: 500; }
+  .user { display: flex; align-items: center; gap: 8px; color: var(--t2); }
+  .avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--brand); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-weight: 600; font-size: 13px; }
+  .content { padding: 24px; flex: 1; }
+  .page-h { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .page-h h1 { font-size: 20px; font-weight: 600; margin: 0; flex: 1; }
+  .page-h .desc { color: var(--t3); font-size: 13px; font-weight: normal; margin-left: 8px; }
+
+  .card { background: #fff; border-radius: var(--r); box-shadow: var(--shadow); margin-bottom: 16px; }
+  .card-h { padding: 14px 20px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 15px; }
+  .card-h .more { margin-left: auto; font-weight: normal; font-size: 13px; color: var(--blue); text-decoration: none; }
+  .card-h .more:hover { color: #4096ff; }
+  .card-b { padding: 20px; }
+
+  /* ── 概览 ── */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 16px; }
+  .stat { background: #fff; border-radius: var(--r); box-shadow: var(--shadow); padding: 20px; display: flex; align-items: center; gap: 16px; }
+  .stat .ic { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+  .stat .ic svg { width: 24px; height: 24px; }
+  .stat .lb { color: var(--t3); font-size: 13px; }
+  .stat .v { font-size: 26px; font-weight: 600; line-height: 1.25; font-variant-numeric: tabular-nums; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .two > .card { margin: 0; }
+  .bars { display: flex; flex-direction: column; gap: 12px; }
+  .bar { display: grid; grid-template-columns: 72px 1fr 36px; align-items: center; gap: 10px; font-size: 13px; }
+  .bar .track { height: 8px; background: #f5f5f5; border-radius: 4px; overflow: hidden; }
+  .bar .fill { height: 100%; background: linear-gradient(90deg, #07c160, #4ade80); border-radius: 4px; }
+  .bar .n { text-align: right; color: var(--t2); font-variant-numeric: tabular-nums; }
+  .hot { display: flex; gap: 8px; flex-wrap: wrap; }
+  .hot button { height: 28px; padding: 0 10px; border-radius: 14px; background: #f7f8fa; border-color: transparent; font-size: 13px; color: var(--t2); }
+  .hot button:hover { background: var(--brand-l); color: var(--brand); border-color: transparent; }
+  .hot button .rk { color: var(--t3); font-weight: 600; margin-right: 2px; }
+  .hot button:nth-child(-n+3) .rk { color: var(--warn); }
+  .mini-list { list-style: none; margin: 0; padding: 0; }
+  .mini-list li { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .mini-list li:last-child { border-bottom: 0; }
+  .mini-list .meta { flex: 1; min-width: 0; }
+  .mini-list .t { color: var(--t3); font-size: 12px; white-space: nowrap; }
+
+  /* ── 表格 ── */
+  .toolbar { display: flex; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--line); flex-wrap: wrap; align-items: center; }
+  .search { position: relative; flex: 1; min-width: 240px; max-width: 420px; }
+  .search svg { position: absolute; left: 10px; top: 9px; color: var(--t3); }
+  .search input { padding-left: 32px; }
+  .toolbar select { width: 160px; }
+  .toolbar .sp { flex: 1; }
+  .tbl-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 14px 16px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  th { background: #fafafa; color: var(--t1); font-weight: 500; font-size: 13px; white-space: nowrap; }
+  tbody tr { transition: background .15s; }
+  tbody tr:hover { background: #fafafa; }
+  td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.muted { color: var(--t2); white-space: nowrap; }
+  .ops { white-space: nowrap; }
+  .ops button { margin-right: 14px; }
+  .ops button:last-child { margin-right: 0; }
+  .appcell { display: flex; gap: 12px; align-items: flex-start; min-width: 260px; }
+  .icon { width: 40px; height: 40px; border-radius: 10px; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-weight: 600; font-size: 16px; flex: none; object-fit: cover; }
+  .mini-list .icon { width: 34px; height: 34px; border-radius: 8px; font-size: 14px; }
+  .name { font-weight: 500; display: flex; align-items: center; gap: 8px; }
+  .id { color: var(--t3); font-size: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .desc-t { color: var(--t2); font-size: 12px; margin-top: 2px; max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tags { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
+  .tag { font-size: 12px; line-height: 20px; padding: 0 7px; border-radius: 4px; background: #fafafa; border: 1px solid var(--line2); color: var(--t2); }
+  .cat { font-size: 12px; line-height: 20px; padding: 0 7px; border-radius: 4px; background: var(--brand-l); border: 1px solid #b7ebcf; color: #08a04f; font-weight: normal; }
+  .ver { font-size: 12px; line-height: 20px; padding: 0 7px; border-radius: 4px; background: #e6f4ff; border: 1px solid #91caff; color: var(--blue); }
+  .badge { min-width: 20px; height: 20px; line-height: 20px; padding: 0 6px; border-radius: 10px; background: rgba(255,255,255,.15); font-size: 12px; text-align: center; }
+  .badge:empty { display: none; }
+  .count-t { color: var(--t3); font-size: 13px; font-weight: normal; }
+  .empty { padding: 56px 0; text-align: center; color: var(--t3); }
+  .empty svg { width: 56px; height: 56px; stroke-width: 1; color: #d9d9d9; display: block; margin: 0 auto 10px; }
+  .pre { white-space: pre-line; }
+
+  /* ── 上传 ── */
+  .seg { display: inline-flex; background: #f5f5f5; border-radius: 6px; padding: 3px; margin-bottom: 12px; }
+  .seg label { padding: 4px 16px; border-radius: 4px; cursor: pointer; color: var(--t2); transition: all .2s; }
+  .seg input { display: none; }
+  .seg input:checked + label { background: #fff; color: var(--t1); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .drop { position: relative; border: 1px dashed var(--line2); border-radius: var(--r); background: #fafafa; padding: 32px 16px; text-align: center; transition: border-color .2s, background .2s; }
+  .drop:hover, .drop.over { border-color: var(--brand); background: #f6fffa; }
+  .drop input[type=file] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+  .drop svg { width: 44px; height: 44px; color: var(--brand); stroke-width: 1.4; }
+  .drop .t1 { font-size: 15px; margin-top: 6px; }
+  .drop .t2 { color: var(--t3); font-size: 12px; margin-top: 4px; }
+  .drop .picked { margin-top: 10px; color: var(--brand); font-weight: 500; }
+  .form-foot { display: flex; align-items: center; gap: 14px; padding-top: 4px; }
+  .msg { min-height: 22px; }
+  .msg.err { color: var(--danger); }
+  .msg.ok { color: var(--brand); }
+  .upload-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+  .tips { margin: 0; padding-left: 18px; color: var(--t2); font-size: 13px; }
+  .tips li { margin-bottom: 8px; }
+
+  /* ── 弹窗 / 提示 ── */
+  dialog { border: 0; border-radius: 10px; padding: 0; width: min(560px, 92vw); box-shadow: 0 6px 16px rgba(0,0,0,.08), 0 9px 28px 8px rgba(0,0,0,.05); color: var(--t1); }
+  dialog::backdrop { background: rgba(0,0,0,.45); }
+  .dlg-h { padding: 16px 24px; font-size: 16px; font-weight: 600; border-bottom: 1px solid var(--line); }
+  .dlg-b { padding: 20px 24px 4px; }
+  .dlg-f { padding: 12px 24px 16px; display: flex; gap: 8px; justify-content: flex-end; border-top: 1px solid var(--line); }
+  #confirmDlg { width: min(420px, 92vw); }
+  #confirmDlg .dlg-b { display: flex; gap: 12px; padding-bottom: 20px; }
+  #confirmDlg .dlg-b svg { width: 22px; height: 22px; color: var(--warn); margin-top: 1px; }
+  #confirmDlg .dlg-f { border: 0; padding-top: 0; }
+  #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 100; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
+  .toast { background: #fff; padding: 9px 16px; border-radius: 8px; box-shadow: 0 6px 16px rgba(0,0,0,.12); display: flex; align-items: center; gap: 8px; animation: tin .2s ease-out; }
+  .toast::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--brand); }
+  .toast.err::before { background: var(--danger); }
+  @keyframes tin { from { opacity: 0; transform: translateY(-8px); } }
+
+  @media (max-width: 900px) {
+    aside { width: 64px; } .brand span, nav a span, nav a .badge, .side-foot { display: none; }
+    .brand, nav a { justify-content: center; padding: 0; }
+    .two, .upload-layout { grid-template-columns: 1fr; }
+    .content { padding: 16px; }
+  }
 </style>
 </head>
 <body>
-<div id="login" class="card hidden">
-  <h2>小程序管理 · 登录</h2>
-  <form id="loginForm">
-    <label for="lu">账户</label><input id="lu" type="text" autocomplete="username" required>
-    <label for="lp">密码</label><input id="lp" type="password" autocomplete="current-password" required>
-    <div style="margin-top:16px"><button class="primary" type="submit">登录</button></div>
-    <div id="loginMsg" class="msg err" role="alert"></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-logo" viewBox="0 0 48 48"><rect width="48" height="48" rx="12" fill="#07c160"/><path d="M15 31V19l9 7 9-7v12" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-dash" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></symbol>
+  <symbol id="i-apps" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><circle cx="17.5" cy="17.5" r="3.5"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 16V4m0 0L7 9m5-5 5 5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></symbol>
+  <symbol id="i-bug" viewBox="0 0 24 24"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/><path d="M9 13h6M9 17h4"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-out" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v5h-5"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 7v6M12 16.5v.5"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M21 8 12 3 3 8v8l9 5 9-5V8z"/><path d="m3 8 9 5 9-5M12 13v8"/></symbol>
+</svg>
+
+<div id="login" class="hidden">
+  <form id="loginForm" class="login-box">
+    <svg class="logo"><use href="#i-logo"/></svg>
+    <h2>小程序管理后台</h2>
+    <div class="sub">Mini Store · 上架、版本与诊断</div>
+    <div class="field"><label class="f" for="lu">账户</label><input id="lu" type="text" autocomplete="username" placeholder="请输入账户" required></div>
+    <div class="field"><label class="f" for="lp">密码</label><input id="lp" type="password" autocomplete="current-password" placeholder="请输入密码" required></div>
+    <button class="primary" type="submit">登 录</button>
+    <div id="loginMsg" class="login-err" role="alert"></div>
   </form>
 </div>
 
 <div id="app" class="hidden">
-  <header>
-    <h1>小程序管理</h1>
-    <span id="who" class="hint"></span>
-    <button id="logout" type="button">退出</button>
-  </header>
-  <main>
-    <section class="card">
-      <h2>上传小程序</h2>
-      <form id="uploadForm">
-        <div class="row">
-          <div><label for="uid">ID（目录名，小写字母 / 数字 / . _ -；同 ID 上传 = 升级）</label><input id="uid" type="text" required pattern="[a-z0-9][a-z0-9._\-]{0,63}"></div>
-          <div><label for="uname">名称（不填用 app.json 的导航栏标题）</label><input id="uname" type="text" maxlength="200"></div>
+  <aside>
+    <div class="brand"><svg class="logo"><use href="#i-logo"/></svg><span>Mini Store</span></div>
+    <nav>
+      <a href="#overview" data-view="overview"><svg class="i"><use href="#i-dash"/></svg><span>概览</span></a>
+      <a href="#apps" data-view="apps"><svg class="i"><use href="#i-apps"/></svg><span>小程序管理</span><em id="navApps" class="badge"></em></a>
+      <a href="#upload" data-view="upload"><svg class="i"><use href="#i-up"/></svg><span>上传发布</span></a>
+      <a href="#diag" data-view="diag"><svg class="i"><use href="#i-bug"/></svg><span>诊断日志</span><em id="navDiag" class="badge"></em></a>
+    </nav>
+    <div class="side-foot">mini-program-core</div>
+  </aside>
+  <div class="main">
+    <header class="topbar">
+      <div class="crumb">管理后台 / <b id="crumb">概览</b></div>
+      <div class="user"><span id="avatar" class="avatar">A</span><span id="who"></span></div>
+      <button id="logout" type="button"><svg class="i"><use href="#i-out"/></svg>退出</button>
+    </header>
+    <main class="content">
+      <!-- 概览 -->
+      <section id="view-overview" data-title="概览">
+        <div class="stats">
+          <div class="stat"><div class="ic" style="background:#e8f8ef;color:#07c160"><svg class="i"><use href="#i-apps"/></svg></div><div><div class="lb">已上架小程序</div><div id="stApps" class="v">-</div></div></div>
+          <div class="stat"><div class="ic" style="background:#e6f4ff;color:#1677ff"><svg class="i"><use href="#i-tag"/></svg></div><div><div class="lb">分类</div><div id="stCats" class="v">-</div></div></div>
+          <div class="stat"><div class="ic" style="background:#fff7e6;color:#fa8c16"><svg class="i"><use href="#i-eye"/></svg></div><div><div class="lb">累计打开</div><div id="stDl" class="v">-</div></div></div>
+          <div class="stat"><div class="ic" style="background:#fff1f0;color:#f5222d"><svg class="i"><use href="#i-bug"/></svg></div><div><div class="lb">诊断日志</div><div id="stDiag" class="v">-</div></div></div>
         </div>
-        <label for="udesc">描述</label><input id="udesc" type="text" maxlength="200">
-        <div class="row">
-          <div><label for="ucat">分类（不选 = 用包里 store.meta.json 的，没有就是「其他」）</label><select id="ucat"><option value="">—</option></select></div>
-          <div><label for="utags">搜索标签（逗号分隔）</label><input id="utags" type="text" maxlength="200"></div>
-          <div><label for="udev">开发者</label><input id="udev" type="text" maxlength="60"></div>
+        <div class="two">
+          <div class="card"><div class="card-h">分类分布</div><div class="card-b"><div id="catBars" class="bars"></div></div></div>
+          <div class="card"><div class="card-h">最近更新<a class="more" href="#apps">查看全部</a></div><div class="card-b" style="padding-top:6px;padding-bottom:6px"><ul id="recent" class="mini-list"></ul></div></div>
         </div>
-        <label>代码</label>
-        <div class="src" role="radiogroup">
-          <span><input type="radio" name="src" id="srcDir" value="dir" checked><label for="srcDir">选文件夹（含 app.json 的那一层）</label></span>
-          <span><input type="radio" name="src" id="srcZip" value="zip"><label for="srcZip">选 zip</label></span>
+        <div class="card" style="margin-top:16px"><div class="card-h">热搜词<span class="count-t">点击在列表里搜索</span></div><div class="card-b"><div id="hot" class="hot"></div></div></div>
+      </section>
+
+      <!-- 小程序管理 -->
+      <section id="view-apps" data-title="小程序管理" class="hidden">
+        <div class="page-h"><h1>小程序管理<span id="count" class="desc"></span></h1>
+          <button class="primary" type="button" data-go="upload"><svg class="i"><use href="#i-up"/></svg>上传小程序</button></div>
+        <div class="card">
+          <div class="toolbar">
+            <div class="search"><svg class="i"><use href="#i-search"/></svg><input id="q" type="text" placeholder="搜索名称 / 标签 / 开发者 / 描述" aria-label="搜索"></div>
+            <select id="fcat" aria-label="按分类筛选"><option value="">全部分类</option></select>
+            <span class="sp"></span>
+            <button type="button" id="reloadApps"><svg class="i"><use href="#i-refresh"/></svg>刷新</button>
+          </div>
+          <div class="tbl-wrap"><table>
+            <thead><tr><th>小程序</th><th>开发者</th><th>版本</th><th>大小</th><th>打开</th><th>更新时间</th><th>操作</th></tr></thead>
+            <tbody id="list"></tbody>
+          </table></div>
+          <div id="emptyApps" class="empty hidden"><svg class="i"><use href="#i-box"/></svg>没有匹配的小程序</div>
         </div>
-        <input id="udir" type="file" webkitdirectory multiple aria-label="小程序文件夹">
-        <input id="uzip" type="file" accept=".zip,application/zip" class="hidden" aria-label="小程序 zip">
-        <div class="hint">文件夹会在浏览器里打成 zip 再传；app.json 可以在 zip 根上，也可以在唯一一层子目录里。</div>
-        <div style="margin-top:14px"><button id="ubtn" class="primary" type="submit">上传</button></div>
-        <div id="uploadMsg" class="msg" role="status"></div>
-      </form>
-    </section>
-    <section class="card">
-      <h2>已上架 <span id="count" class="hint"></span></h2>
-      <div class="stats">
-        <div><b id="stApps">-</b><span class="hint">小程序</span></div>
-        <div><b id="stCats">-</b><span class="hint">分类</span></div>
-        <div><b id="stDl">-</b><span class="hint">累计打开</span></div>
-        <div style="flex:1"><span class="hint">热搜</span><div id="hot" class="hot"></div></div>
-      </div>
-      <div class="toolbar">
-        <input id="q" type="text" placeholder="搜索名称 / 标签 / 开发者 / 描述（与 App 里的搜索同一套）" aria-label="搜索">
-        <select id="fcat" aria-label="按分类筛选"><option value="">全部分类</option></select>
-      </div>
-      <table>
-        <thead><tr><th></th><th>名称 / ID</th><th>开发者</th><th>版本</th><th>大小</th><th>打开</th><th>更新</th><th>操作</th></tr></thead>
-        <tbody id="list"></tbody>
-      </table>
-    </section>
-    <section class="card">
-      <h2>诊断日志 <span id="diagCount" class="hint"></span></h2>
-      <div class="hint">App 里点「上传诊断日志」传上来的；开发机上 <code>bash tools/mini-store/diag.sh get &lt;id&gt;</code> 拉回来分析。</div>
-      <table>
-        <thead><tr><th>id / 时间</th><th>宿主 / 设备</th><th>小程序</th><th>日志</th><th>说明</th><th>操作</th></tr></thead>
-        <tbody id="diagList"></tbody>
-      </table>
-    </section>
-  </main>
+      </section>
+
+      <!-- 上传发布 -->
+      <section id="view-upload" data-title="上传发布" class="hidden">
+        <div class="page-h"><h1>上传发布<span class="desc">同 ID 再次上传即为升级，版本号自动 +1</span></h1></div>
+        <div class="upload-layout">
+          <form id="uploadForm" class="card">
+            <div class="card-h">基本信息</div>
+            <div class="card-b">
+              <div class="grid">
+                <div class="field"><label class="f" for="uid"><span class="req">*</span>ID</label><input id="uid" type="text" required pattern="[a-z0-9][a-z0-9._\-]{0,63}" placeholder="如 news-app"><div class="help">目录名：小写字母 / 数字 / . _ -</div></div>
+                <div class="field"><label class="f" for="uname">名称</label><input id="uname" type="text" maxlength="200" placeholder="不填用 app.json 的导航栏标题"></div>
+              </div>
+              <div class="field"><label class="f" for="udesc">描述</label><input id="udesc" type="text" maxlength="200" placeholder="一句话介绍"></div>
+              <div class="grid">
+                <div class="field"><label class="f" for="ucat">分类</label><select id="ucat"><option value="">跟随包内配置</option></select><div class="help">不选 = 用 store.meta.json 的，没有就是「其他」</div></div>
+                <div class="field"><label class="f" for="udev">开发者</label><input id="udev" type="text" maxlength="60"></div>
+              </div>
+              <div class="field"><label class="f" for="utags">搜索标签</label><input id="utags" type="text" maxlength="200" placeholder="逗号分隔，如 新闻, 资讯"></div>
+            </div>
+            <div class="card-h" style="border-top:1px solid var(--line)">代码包</div>
+            <div class="card-b">
+              <div class="seg" role="radiogroup">
+                <input type="radio" name="src" id="srcDir" value="dir" checked><label for="srcDir">选择文件夹</label>
+                <input type="radio" name="src" id="srcZip" value="zip"><label for="srcZip">选择 zip</label>
+              </div>
+              <div id="drop" class="drop">
+                <svg class="i"><use href="#i-up"/></svg>
+                <div id="dropT1" class="t1">点击或拖入小程序文件夹</div>
+                <div id="dropT2" class="t2">选含 app.json 的那一层；会在浏览器里打成 zip 再上传</div>
+                <div id="picked" class="picked"></div>
+                <input id="udir" type="file" webkitdirectory multiple aria-label="小程序文件夹">
+                <input id="uzip" type="file" accept=".zip,application/zip" class="hidden" aria-label="小程序 zip">
+              </div>
+              <div class="form-foot" style="margin-top:20px">
+                <button id="ubtn" class="primary" type="submit"><svg class="i"><use href="#i-up"/></svg>上传并发布</button>
+                <button id="ureset" type="button">重置</button>
+                <div id="uploadMsg" class="msg" role="status"></div>
+              </div>
+            </div>
+          </form>
+          <div class="card">
+            <div class="card-h">说明</div>
+            <div class="card-b"><ul class="tips">
+              <li>app.json 可以在 zip 根上，也可以在唯一一层子目录里。</li>
+              <li>选文件夹时 ID 留空会按文件夹名自动填。</li>
+              <li>.DS_Store、node_modules 会被跳过。</li>
+              <li>上传后客户端下次打开时按版本号自动更新。</li>
+              <li>单包上限 128 MB。</li>
+            </ul></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 诊断日志 -->
+      <section id="view-diag" data-title="诊断日志" class="hidden">
+        <div class="page-h"><h1>诊断日志<span id="diagCount" class="desc"></span></h1>
+          <button type="button" id="reloadDiag"><svg class="i"><use href="#i-refresh"/></svg>刷新</button></div>
+        <div class="card">
+          <div class="toolbar help" style="margin:0">App 里点「上传诊断日志」传上来的；开发机上 <code>bash tools/mini-store/diag.sh get &lt;id&gt;</code> 拉回来分析。</div>
+          <div class="tbl-wrap"><table>
+            <thead><tr><th>ID / 时间</th><th>宿主 / 设备</th><th>小程序</th><th>日志</th><th>说明</th><th>操作</th></tr></thead>
+            <tbody id="diagList"></tbody>
+          </table></div>
+          <div id="emptyDiag" class="empty hidden"><svg class="i"><use href="#i-bug"/></svg>暂无诊断日志</div>
+        </div>
+      </section>
+    </main>
+  </div>
 </div>
+
 <dialog id="editDlg">
   <form method="dialog" id="editForm">
-    <h2 style="margin-top:0">编辑展示信息</h2>
-    <label for="ename">名称</label><input id="ename" type="text" maxlength="200" required>
-    <label for="edesc">描述</label><input id="edesc" type="text" maxlength="200">
-    <div class="row">
-      <div><label for="ecat">分类</label><select id="ecat"></select></div>
-      <div><label for="eorder">排序（小的在前）</label><input id="eorder" type="text" inputmode="numeric"></div>
+    <div class="dlg-h">编辑展示信息</div>
+    <div class="dlg-b">
+      <div class="field"><label class="f" for="ename"><span class="req">*</span>名称</label><input id="ename" type="text" maxlength="200" required></div>
+      <div class="field"><label class="f" for="edesc">描述</label><input id="edesc" type="text" maxlength="200"></div>
+      <div class="grid">
+        <div class="field"><label class="f" for="ecat">分类</label><select id="ecat"></select></div>
+        <div class="field"><label class="f" for="eorder">排序</label><input id="eorder" type="text" inputmode="numeric"><div class="help">小的在前</div></div>
+      </div>
+      <div class="field"><label class="f" for="etags">搜索标签</label><input id="etags" type="text" maxlength="200" placeholder="逗号分隔"></div>
+      <div class="field"><label class="f" for="edev">开发者</label><input id="edev" type="text" maxlength="60"></div>
     </div>
-    <label for="etags">搜索标签（逗号分隔）</label><input id="etags" type="text" maxlength="200">
-    <label for="edev">开发者</label><input id="edev" type="text" maxlength="60">
-    <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">
-      <button value="cancel" formnovalidate>取消</button><button class="primary" value="ok">保存</button>
-    </div>
+    <div class="dlg-f"><button value="cancel" formnovalidate>取消</button><button class="primary" value="ok">保存</button></div>
   </form>
 </dialog>
+<dialog id="confirmDlg">
+  <form method="dialog">
+    <div class="dlg-h" id="confirmTitle">确认</div>
+    <div class="dlg-b"><svg class="i"><use href="#i-warn"/></svg><div id="confirmText"></div></div>
+    <div class="dlg-f"><button value="cancel">取消</button><button class="danger solid" value="ok">删除</button></div>
+  </form>
+</dialog>
+<div id="toast" role="status"></div>
 <script src="/admin.js"></script>
 </body>
 </html>

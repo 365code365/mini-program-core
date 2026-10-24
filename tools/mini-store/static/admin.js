@@ -14,6 +14,39 @@ async function api(method, path, body, headers = {}) {
   return data;
 }
 
+// ── 通用：提示条、确认框、页面切换 ──
+function toast(text, err = false) {
+  const t = document.createElement('div');
+  t.className = err ? 'toast err' : 'toast';
+  t.textContent = text;
+  $('toast').append(t);
+  setTimeout(() => t.remove(), 2600);
+}
+
+function fail(err) {
+  if (err.status === 401) { show('login'); return; }
+  toast(err.message, true);
+}
+
+function confirmDanger(title, text) {
+  const dlg = $('confirmDlg');
+  $('confirmTitle').textContent = title;
+  $('confirmText').textContent = text;
+  dlg.returnValue = '';
+  dlg.showModal();
+  return new Promise((resolve) => { dlg.onclose = () => resolve(dlg.returnValue === 'ok'); });
+}
+
+const VIEWS = ['overview', 'apps', 'upload', 'diag'];
+function route() {
+  const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'overview';
+  for (const name of VIEWS) $(`view-${name}`).classList.toggle('hidden', name !== v);
+  for (const a of document.querySelectorAll('nav a')) a.classList.toggle('on', a.dataset.view === v);
+  $('crumb').textContent = $(`view-${v}`).dataset.title;
+}
+window.addEventListener('hashchange', route);
+for (const b of document.querySelectorAll('[data-go]')) b.addEventListener('click', () => { location.hash = b.dataset.go; });
+
 function show(which) {
   $('login').classList.toggle('hidden', which !== 'login');
   $('app').classList.toggle('hidden', which !== 'app');
@@ -23,9 +56,11 @@ async function boot() {
   try {
     const me = await api('GET', '/api/admin/me');
     $('who').textContent = me.username;
+    $('avatar').textContent = ([...(me.username || 'A')][0] || 'A').toUpperCase();
     show('app');
-    refresh();
-    refreshDiag();
+    route();
+    refresh().catch(fail);
+    refreshDiag().catch(fail);
   } catch (_) {
     show('login');
   }
@@ -49,13 +84,30 @@ $('logout').addEventListener('click', async () => {
   show('login');
 });
 
-for (const r of document.querySelectorAll('input[name=src]')) {
-  r.addEventListener('change', () => {
-    const dir = $('srcDir').checked;
-    $('udir').classList.toggle('hidden', !dir);
-    $('uzip').classList.toggle('hidden', dir);
-  });
+// ── 上传 ──
+function pickedText() {
+  if ($('srcDir').checked) {
+    const files = $('udir').files;
+    return files.length ? `已选文件夹「${files[0].webkitRelativePath.split('/')[0]}」，${files.length} 个文件` : '';
+  }
+  const f = $('uzip').files[0];
+  return f ? `已选 ${f.name}（${(f.size / 1048576).toFixed(2)} MB）` : '';
 }
+
+function syncSrc() {
+  const dir = $('srcDir').checked;
+  $('udir').classList.toggle('hidden', !dir);
+  $('uzip').classList.toggle('hidden', dir);
+  $('dropT1').textContent = dir ? '点击或拖入小程序文件夹' : '点击或拖入 zip 文件';
+  $('dropT2').textContent = dir ? '选含 app.json 的那一层；会在浏览器里打成 zip 再上传' : 'app.json 在 zip 根上或唯一一层子目录里';
+  $('picked').textContent = pickedText();
+}
+for (const r of document.querySelectorAll('input[name=src]')) r.addEventListener('change', syncSrc);
+
+const drop = $('drop');
+for (const ev of ['dragenter', 'dragover']) drop.addEventListener(ev, () => drop.classList.add('over'));
+for (const ev of ['dragleave', 'drop']) drop.addEventListener(ev, () => drop.classList.remove('over'));
+$('uzip').addEventListener('change', syncSrc);
 
 // 选了文件夹：ID 没填就用文件夹名猜一个
 $('udir').addEventListener('change', () => {
@@ -63,6 +115,13 @@ $('udir').addEventListener('change', () => {
   if (f && !$('uid').value) {
     $('uid').value = f.webkitRelativePath.split('/')[0].toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/^-+/, '');
   }
+  syncSrc();
+});
+
+$('ureset').addEventListener('click', () => {
+  $('uploadForm').reset();
+  $('uploadMsg').textContent = '';
+  syncSrc();
 });
 
 $('uploadForm').addEventListener('submit', async (e) => {
@@ -90,7 +149,8 @@ $('uploadForm').addEventListener('submit', async (e) => {
       { 'Content-Type': 'application/zip' });
     msg.className = 'msg ok';
     msg.textContent = `已上架「${meta.name}」v${meta.version}（${meta.files} 个文件，${meta.pages} 页）`;
-    refresh();
+    toast(`已上架「${meta.name}」v${meta.version}`);
+    refresh().catch(fail);
   } catch (err) {
     msg.className = 'msg err';
     msg.textContent = err.message;
@@ -100,10 +160,66 @@ $('uploadForm').addEventListener('submit', async (e) => {
   }
 });
 
-// 列表：搜索框与分类走服务器的 /api/apps?q=&category=（与 App 同一套排序），空着就是全部
+// ── 列表：搜索框与分类走服务器的 /api/apps?q=&category=（与 App 同一套排序），空着就是全部 ──
 let searchTimer = 0;
-$('q').addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(refresh, 200); });
-$('fcat').addEventListener('change', refresh);
+$('q').addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => refresh().catch(fail), 200); });
+$('fcat').addEventListener('change', () => refresh().catch(fail));
+$('reloadApps').addEventListener('click', () => refresh().then(() => toast('已刷新'), fail));
+$('reloadDiag').addEventListener('click', () => refreshDiag().then(() => toast('已刷新'), fail));
+
+function appIcon(a) {
+  let icon;
+  if (a.iconUrl) {
+    icon = document.createElement('img');
+    icon.src = a.iconUrl;
+    icon.alt = '';
+  } else {
+    icon = document.createElement('span');
+    icon.style.background = COLORS[hash(a.id) % COLORS.length];
+    icon.textContent = [...a.name][0] || '?';
+  }
+  icon.className = 'icon';
+  return icon;
+}
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+
+const fmtTime = (t) => new Date(t).toLocaleString('zh-CN', { hour12: false });
+
+function renderOverview(all, cats, hot) {
+  $('stApps').textContent = all.length;
+  $('stCats').textContent = cats.length;
+  $('stDl').textContent = all.reduce((n, a) => n + (a.downloads || 0), 0).toLocaleString();
+  $('navApps').textContent = all.length || '';
+  const max = Math.max(1, ...cats.map((c) => c.count));
+  $('catBars').replaceChildren(...(cats.length ? cats.map((c) => {
+    const row = el('div', 'bar');
+    const track = el('div', 'track');
+    const fill = el('div', 'fill');
+    fill.style.width = `${(c.count / max) * 100}%`;
+    track.append(fill);
+    row.append(el('span', '', c.name), track, el('span', 'n', String(c.count)));
+    return row;
+  }) : [el('div', 'empty', '暂无数据')]));
+  const recent = [...all].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)).slice(0, 5);
+  $('recent').replaceChildren(...(recent.length ? recent.map((a) => {
+    const li = el('li');
+    const meta = el('div', 'meta');
+    meta.append(el('div', 'name', a.name), el('div', 'id', `${a.id} · v${a.version}`));
+    li.append(appIcon(a), meta, el('span', 't', fmtTime(a.updatedAt)));
+    return li;
+  }) : [el('li', 'empty', '暂无小程序')]));
+  $('hot').replaceChildren(...(hot.length ? hot.map((w, i) => {
+    const b = btn('', () => { $('q').value = w; location.hash = 'apps'; return refresh(); });
+    b.append(el('span', 'rk', String(i + 1)), document.createTextNode(w));
+    return b;
+  }) : [el('span', 'help', '暂无热搜')]));
+}
 
 async function refresh() {
   const q = new URLSearchParams({ q: $('q').value.trim(), category: $('fcat').value, limit: '200' });
@@ -113,66 +229,45 @@ async function refresh() {
     api('GET', '/api/categories'),
     api('GET', '/api/search/hot'),
   ]);
-  $('count').textContent = `${apps.length} / ${all.apps.length} 个`;
-  $('stApps').textContent = all.apps.length;
-  $('stCats').textContent = cats.categories.length;
-  $('stDl').textContent = all.apps.reduce((n, a) => n + (a.downloads || 0), 0);
-  $('hot').replaceChildren(...hot.keywords.map((w) => {
-    const b = btn(w, () => { $('q').value = w; refresh(); });
-    b.className = 'tag';
-    return b;
-  }));
-  const tbody = $('list');
-  tbody.replaceChildren();
-  apps.forEach((a) => {
+  renderOverview(all.apps, cats.categories, hot.keywords);
+  $('count').textContent = `共 ${all.apps.length} 个${apps.length !== all.apps.length ? `，筛选出 ${apps.length} 个` : ''}`;
+  $('emptyApps').classList.toggle('hidden', apps.length > 0);
+  $('list').replaceChildren(...apps.map((a) => {
     const tr = document.createElement('tr');
-    let icon;
-    if (a.iconUrl) {
-      icon = document.createElement('img');
-      icon.className = 'icon';
-      icon.src = a.iconUrl;
-      icon.alt = '';
-    } else {
-      icon = document.createElement('span');
-      icon.className = 'icon letter';
-      icon.style.background = COLORS[hash(a.id) % COLORS.length];
-      icon.textContent = [...a.name][0] || '?';
+    const cell = el('div', 'appcell');
+    const info = el('div');
+    const name = el('div', 'name');
+    name.append(el('span', '', a.name), el('span', 'cat', a.category || '其他'));
+    info.append(name, el('div', 'id', `${a.id}${a.appId ? ` · ${a.appId}` : ''}`));
+    if (a.description) info.append(el('div', 'desc-t', a.description));
+    if ((a.tags || []).length) {
+      const tags = el('div', 'tags');
+      for (const t of a.tags) tags.append(el('span', 'tag', t));
+      info.append(tags);
     }
-    const name = document.createElement('div');
-    name.innerHTML = '<div class="name"><span></span><span class="cat"></span></div><div class="id"></div><div class="hint"></div><div class="tags"></div>';
-    name.querySelector('.name span').textContent = a.name;
-    name.querySelector('.cat').textContent = a.category || '其他';
-    name.children[1].textContent = `${a.id} · ${a.appId || ''}`;
-    name.children[2].textContent = a.description || '';
-    for (const t of a.tags || []) {
-      const s = document.createElement('span');
-      s.className = 'tag';
-      s.textContent = t;
-      name.children[3].append(s);
-    }
-    const ops = document.createElement('td');
-    ops.className = 'ops';
+    cell.append(appIcon(a), info);
+    const ops = el('td', 'ops');
     ops.append(
-      btn('编辑', () => edit(a)),
-      btn('下载', () => { location.href = a.packageUrl; }),
-      btn('删除', () => remove(a), 'danger'),
+      btn('编辑', () => edit(a), 'link'),
+      btn('下载', () => { location.href = a.packageUrl; }, 'link'),
+      btn('删除', () => remove(a), 'link danger'),
     );
-    tr.append(td(icon), td(name), td(a.developer || '-'), td(`v${a.version}`), td(`${(a.size / 1048576).toFixed(2)} MB`),
-      td(String(a.downloads || 0)), td(new Date(a.updatedAt).toLocaleString()), ops);
-    tbody.append(tr);
-  });
+    tr.append(td(cell), td(a.developer || '-', 'muted'), td(el('span', 'ver', `v${a.version}`)),
+      td(`${(a.size / 1048576).toFixed(2)} MB`, 'num'), td(String(a.downloads || 0), 'num'), td(fmtTime(a.updatedAt), 'muted'), ops);
+    return tr;
+  }));
 }
 
 async function refreshDiag() {
   const { items } = await api('GET', '/api/admin/diag');
-  $('diagCount').textContent = `${items.length} 份`;
-  const tbody = $('diagList');
-  tbody.replaceChildren();
-  for (const d of items) {
+  $('diagCount').textContent = `共 ${items.length} 份`;
+  $('stDiag').textContent = items.length;
+  $('navDiag').textContent = items.length || '';
+  $('emptyDiag').classList.toggle('hidden', items.length > 0);
+  $('diagList').replaceChildren(...items.map((d) => {
     const tr = document.createElement('tr');
     const app = d.app || {};
-    const ops = document.createElement('td');
-    ops.className = 'ops';
+    const ops = el('td', 'ops');
     ops.append(
       btn('下载', async () => {
         const full = await api('GET', `/api/admin/diag/${d.id}`);
@@ -180,18 +275,22 @@ async function refreshDiag() {
         a.href = URL.createObjectURL(new Blob([JSON.stringify(full, null, 1)], { type: 'application/json' }));
         a.download = `${d.id}.json`;
         a.click();
-      }),
+      }, 'link'),
       btn('删除', async () => {
-        if (!confirm(`删除诊断 ${d.id}？`)) return;
+        if (!await confirmDanger('删除诊断日志', `删除诊断 ${d.id}？`)) return;
         await api('DELETE', `/api/admin/diag/${d.id}`);
-        refreshDiag();
-      }, 'danger'),
+        toast('已删除');
+        await refreshDiag();
+      }, 'link danger'),
     );
-    tr.append(td(`${d.id}\n${new Date(d.receivedAt).toLocaleString()}`), td(`${d.host || ''} · ${d.platform || ''}\n${d.device || ''}`),
-      td(app.id || app.appId || app.name || '-'), td(`${d.logLines} 行 / ${(d.size / 1024).toFixed(0)} KB`), td(d.note || ''), ops);
-    tr.querySelectorAll('td').forEach((c) => { c.style.whiteSpace = 'pre-line'; });
-    tbody.append(tr);
-  }
+    const idc = el('div');
+    idc.append(el('div', 'id', d.id), el('div', 'help', fmtTime(d.receivedAt)));
+    const dev = el('div');
+    dev.append(el('div', '', [d.host, d.platform].filter(Boolean).join(' · ') || '-'), el('div', 'help', d.device || ''));
+    tr.append(td(idc), td(dev), td(app.id || app.appId || app.name || '-'),
+      td(`${d.logLines} 行 / ${(d.size / 1024).toFixed(0)} KB`, 'num'), td(d.note || '', 'pre'), ops);
+    return tr;
+  }));
 }
 
 function edit(a) {
@@ -202,6 +301,7 @@ function edit(a) {
   $('edev').value = a.developer || '';
   $('eorder').value = String(a.order ?? 1000);
   const dlg = $('editDlg');
+  dlg.returnValue = '';
   dlg.onclose = async () => {
     if (dlg.returnValue !== 'ok') return;
     const body = {
@@ -212,24 +312,27 @@ function edit(a) {
     if (Number.isFinite(order)) body.order = order;
     try {
       await api('PATCH', `/api/admin/apps/${a.id}`, JSON.stringify(body), { 'Content-Type': 'application/json' });
-      refresh();
+      toast('已保存');
+      await refresh();
     } catch (err) {
-      alert(err.message);
+      fail(err);
     }
   };
   dlg.showModal();
 }
 
 async function remove(a) {
-  if (!confirm(`删除「${a.name}」（${a.id}）？客户端已下载的不受影响，列表里不再出现。`)) return;
+  if (!await confirmDanger('删除小程序', `删除「${a.name}」（${a.id}）？客户端已下载的不受影响，列表里不再出现。`)) return;
   await api('DELETE', `/api/admin/apps/${a.id}`);
-  refresh();
+  toast(`已删除「${a.name}」`);
+  await refresh();
 }
 
-function td(content) {
-  const el = document.createElement('td');
-  if (typeof content === 'string') el.textContent = content; else el.append(content);
-  return el;
+function td(content, cls = '') {
+  const e = document.createElement('td');
+  if (cls) e.className = cls;
+  if (typeof content === 'string') e.textContent = content; else e.append(content);
+  return e;
 }
 
 function btn(text, onClick, cls = '') {
@@ -237,7 +340,7 @@ function btn(text, onClick, cls = '') {
   b.type = 'button';
   b.textContent = text;
   b.className = cls;
-  b.addEventListener('click', () => Promise.resolve().then(onClick).catch((err) => alert(err.message)));
+  b.addEventListener('click', () => Promise.resolve().then(onClick).catch(fail));
   return b;
 }
 
