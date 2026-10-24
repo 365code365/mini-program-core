@@ -34,7 +34,7 @@ impl ProgressComponent {
         
         let pct = node.get_attr("percent").and_then(|s| s.parse::<f32>().ok()).unwrap_or(0.0);
         let stroke_width = node.get_attr("stroke-width").and_then(|s| s.parse::<f32>().ok()).unwrap_or(6.0);
-        let show_info = node.get_attr("show-info").map(|s| s == "true" || s == "{{true}}").unwrap_or(false);
+        let show_info = node.get_attr("show-info").map(|s| crate::renderer::components::attr_is_true(s)).unwrap_or(false);
         
         // 检查 CSS 是否定义了颜色
         let has_custom_bg = ns.background_color.is_some();

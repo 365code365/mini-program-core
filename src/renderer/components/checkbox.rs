@@ -29,8 +29,8 @@ impl CheckboxComponent {
         let attrs = node.attributes.clone();
         let sf = ctx.scale_factor;
         
-        let checked = node.get_attr("checked").map(|s| s == "true" || s == "{{true}}").unwrap_or(false);
-        let disabled = node.get_attr("disabled").map(|s| s == "true" || s == "{{true}}").unwrap_or(false);
+        let checked = node.get_attr("checked").map(|s| crate::renderer::components::attr_is_true(s)).unwrap_or(false);
+        let disabled = node.get_attr("disabled").map(|s| crate::renderer::components::attr_is_true(s)).unwrap_or(false);
         let checkbox_color = node.get_attr("color").and_then(|c| parse_color_str(c))
             .unwrap_or(Color::from_hex(0x09BB07));
         

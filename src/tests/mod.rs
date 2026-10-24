@@ -26,6 +26,7 @@ pub mod network_tests;
 pub mod inline_text_layout_tests;
 pub mod nested_style_tests;
 pub mod wx_api_tests;
+pub mod wx_semantics_tests;
 pub mod component_attr_tests;
 /// `<button>` 点击态：按下去保持默认外观（居中/圆角/类型色），只按 button-hover 变淡
 pub mod button_press_tests;

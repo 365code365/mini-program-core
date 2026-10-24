@@ -130,7 +130,7 @@ impl WxmlRenderer {
         is_in_fixed_container: bool
     ) {
         let disabled = original_node.attrs.get("disabled")
-            .map(|s| s == "true" || s == "{{true}}")
+            .map(|s| crate::renderer::components::attr_is_true(s))
             .unwrap_or(false);
         
         let id = Self::get_component_id(original_node, bounds);
@@ -148,7 +148,7 @@ impl WxmlRenderer {
             let stop = original_node
                 .attrs
                 .get("hover-stop-propagation")
-                .map(|s| s == "true" || s == "{{true}}")
+                .map(|s| crate::renderer::components::attr_is_true(s))
                 .unwrap_or(false);
             interaction.note_hover(
                 id.clone(),

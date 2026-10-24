@@ -111,9 +111,13 @@ fn test_setdata_data_paths() {
 
 #[test]
 fn test_setdata_callback_runs() {
-    let app = new_app();
+    let mut app = new_app();
     app.load_script(r#"Page({ data: { x: 0 } });"#).unwrap();
     app.eval(r#"var __cb = false; __currentPage.setData({ x: 1 }, function(){ __cb = true; });"#).unwrap();
+    // 回调在画出来之后（下一轮事件循环），不在 setData 的调用栈里
+    assert_eq!(app.eval("__cb").unwrap(), "false");
+    app.update().unwrap();
+    app.update().unwrap();
     assert_eq!(app.eval("__cb").unwrap(), "true");
     assert_eq!(app.eval("__currentPage.data.x").unwrap(), "1");
 }

@@ -198,8 +198,11 @@ impl WxmlParser {
         
         self.skip_whitespace();
         
+        // 不带值的属性（`<button disabled>`、`<swiper autoplay>`）是 true（与微信 WXML 编译一致）。
+        // 从前给空串，而组件按 `== "true"` 判，`<switch checked>`、`<button disabled>` 全成了 false；
+        // 空串留给「绑定求出来是空」（`{{undefined}}`），按布尔属性是 false
         if self.current_char() != '=' {
-            return Ok((name, String::new()));
+            return Ok((name, "true".to_string()));
         }
         
         self.advance(); // skip '='

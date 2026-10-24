@@ -176,6 +176,9 @@ pub fn animation_total_ms(src: &str) -> Option<u32> {
 
 /// 加载与解码（本地 / 远程 / GIF）
 mod load;
+mod intrinsic;
+mod crop;
+pub use intrinsic::intrinsic_size;
 /// 快要滑进屏幕的图先在后台解码、降采样（与绘制同一份缓存，像素不变）
 pub mod prefetch;
 use load::*;
@@ -184,7 +187,7 @@ pub struct ImageComponent;
 
 impl ImageComponent {
     pub fn build(node: &WxmlNode, ctx: &mut ComponentContext) -> Option<RenderNode> {
-        let (mut ts, mut ns) = build_base_style(node, ctx);
+        let (mut ts, ns) = build_base_style(node, ctx);
         // 替换元素：作者写死的尺寸就是它的最小尺寸，别被兄弟压没。
         // 必须在合成默认尺寸**之前**调用 —— CSS 语义里「指定尺寸」只算作者写的那个，
         // 引擎给 textarea 之类补的默认高度不算，那种情况仍应允许被父级压缩。
@@ -206,15 +209,29 @@ impl ImageComponent {
                                 ns.border_radius_br.is_some() ||
                                 ns.border_radius_bl.is_some();
         
-        // 默认图片大小 150x100 - 只在 CSS 没有定义时使用
-        let default_width = 150.0;
-        let default_height = 100.0;
-        
+        // 微信的默认尺寸 320×240（官方 component/image：「image 组件默认宽度 320px、高度 240px」）。
+        // 从前用 150×100，没写尺寸的图整块小一圈，下面的内容跟着往上挪
+        let default_width = 320.0;
+        let default_height = 240.0;
+        // widthFix：宽度不变、高度按原图比例；heightFix：高度不变、宽度按比例。
+        // 原图尺寸还不知道（远程图在下载）时先按默认尺寸排，到了之后整页重排（engine_frame.rs）
+        let ratio = match mode {
+            "widthFix" | "heightFix" => intrinsic_size(src).map(|(w, h)| w as f32 / h as f32),
+            _ => None,
+        };
         if !has_custom_width {
             ts.size.width = length(default_width * sf);
         }
         if !has_custom_height {
             ts.size.height = length(default_height * sf);
+        }
+        if let Some(r) = ratio {
+            ts.aspect_ratio = Some(r);
+            if mode == "widthFix" {
+                ts.size.height = taffy::style::Dimension::auto();
+            } else {
+                ts.size.width = taffy::style::Dimension::auto();
+            }
         }
         
         // 注意：不再强制设置默认背景色。
@@ -222,10 +239,8 @@ impl ImageComponent {
         // 时才绘制底色，图片加载失败时才回退到占位符浅灰底。
         let _ = has_custom_bg;
         
-        // 只在 CSS 没有定义时使用默认圆角
-        if !has_custom_radius {
-            ns.border_radius = 4.0 * sf;
-        }
+        // 微信的 image 没有默认圆角（从前补了 4px，没写圆角的图四角都被切掉一点）
+        let _ = has_custom_radius;
         
         let tn = ctx.taffy.new_leaf(ts).unwrap();
         
@@ -307,6 +322,17 @@ impl ImageComponent {
             if let Some(img_data) = load_image(src) {
                 if super::image_net::log_enabled() {
                     eprintln!("🖼 ✓ 画出 {:.0}x{:.0} src={:?}", w, h, src);
+                }
+                // 裁剪模式（top / center / bottom right …）：原图不缩放，贴边画、裁到框里（crop.rs）
+                if let Some((dx, dy, dw, dh)) = crop::crop_rect(mode, img_data.width, img_data.height, x, y, w, h, _sf) {
+                    canvas.save();
+                    canvas.clip_rect(GeoRect::new(x, y, w, h));
+                    // 圆角按框裁（与 object-fit:none 一致）不在这条路上做：目标矩形比框大，圆角会落在框外。取舍：裁剪模式下不画圆角
+                    canvas.draw_image(&img_data.data, img_data.width, img_data.height, dx, dy, dw, dh, "scaleToFill", 0.0);
+                    canvas.restore();
+                    Self::draw_border(canvas, style, x, y, w, h, has_radius, uniform_radius,
+                                      radius, radius_tl, radius_tr, radius_br, radius_bl);
+                    return;
                 }
                 // 绘制图片（透明度通过背景色已经处理）
                 // 走带缩放缓存的绘制：动画页面每帧重绘时不再重复重采样

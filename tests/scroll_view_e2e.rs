@@ -267,6 +267,10 @@ fn page_scroll_to_与_sdk_的_on_page_scroll() {
     assert!(mid > 300.0 && mid < 880.0, "带 duration：半路 {mid}");
     e.frames(30);
     assert!((e.e.scroll_position() - 880.0).abs() < 0.5, "selector 顶边 900 + offsetTop -20：{}", e.e.scroll_position());
-    let r = e.js("(function(){ var r = 'none'; wx.pageScrollTo({ fail: function (x) { r = x.errMsg; } }); return r; })()");
+    // fail 回调在下一轮事件循环（微信的异步 API 不在调用栈里同步回）
+    e.e.eval("var __psr = 'none'; wx.pageScrollTo({ fail: function (x) { __psr = x.errMsg; } });").unwrap();
+    assert_eq!(e.js("__psr"), "none", "回调不能同步发生");
+    e.frames(3);
+    let r = e.js("__psr");
     assert!(r.contains("fail"), "两个都没给：fail（{r}）");
 }

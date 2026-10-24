@@ -10,25 +10,34 @@
                 var url = options.url || '';
                 var method = (options.method || 'GET').toUpperCase();
                 var header = options.header || options.headers || {};
+                var ctype = '';
+                for (var hk in header) { if (header.hasOwnProperty(hk) && hk.toLowerCase() === 'content-type') ctype = String(header[hk]).toLowerCase(); }
+                function __formEncode(d) {
+                    var ps = [];
+                    for (var k in d) {
+                        if (d.hasOwnProperty(k) && d[k] !== undefined) {
+                            var v = d[k];
+                            ps.push(encodeURIComponent(k) + '=' + encodeURIComponent(v !== null && typeof v === 'object' ? JSON.stringify(v) : v));
+                        }
+                    }
+                    return ps.join('&');
+                }
                 // 微信按 dataType/method 决定怎么序列化 body：GET 的 data 拼进 query，
                 // 其余情况对象转 JSON。
                 var body = '';
                 var data = options.data;
                 if (data !== undefined && data !== null) {
                     if (method === 'GET' || method === 'HEAD') {
-                        var parts = [];
-                        if (typeof data === 'object') {
-                            for (var k in data) {
-                                if (data.hasOwnProperty(k)) {
-                                    parts.push(encodeURIComponent(k) + '=' + encodeURIComponent(data[k]));
-                                }
-                            }
-                        }
-                        if (parts.length) {
-                            url += (url.indexOf('?') >= 0 ? '&' : '?') + parts.join('&');
+                        // 对象按键值拼 query；字符串原样拼上（从前字符串 data 被丢掉）
+                        var q = typeof data === 'object' ? __formEncode(data) : String(data);
+                        if (q) {
+                            url += (url.indexOf('?') >= 0 ? '&' : '?') + q;
                         }
                     } else if (typeof data === 'string') {
                         body = data;
+                    } else if (ctype.indexOf('application/x-www-form-urlencoded') >= 0 && typeof data === 'object') {
+                        // 表单编码（官方：content-type 为 x-www-form-urlencoded 时对象转成 query string）
+                        body = __formEncode(data);
                     } else {
                         try { body = JSON.stringify(data); } catch (e) { body = String(data); }
                     }
@@ -36,6 +45,7 @@
 
                 var task = {
                     id: id,
+                    kind: 'request',
                     aborted: false,
                     success: options.success,
                     fail: options.fail,
@@ -68,7 +78,11 @@
                 if (!task) { return false; }
                 delete __requestTasks[id];
                 if (task.aborted) {
-                    task.complete && task.complete({ errMsg: 'request:fail abort' });
+                    // 微信：abort 之后走 fail（`request:fail abort`）再 complete。从前只调 complete，
+                    // 在 fail 里收尾（关 loading、复位标记）的页面就卡住了；下载 / 上传任务的 complete 是空的，什么都不回
+                    var abortRes = { errMsg: (task.kind || 'request') + ':fail abort' };
+                    task.fail && task.fail(abortRes);
+                    task.complete && task.complete(abortRes);
                     return true;
                 }
                 var header = {};
@@ -105,7 +119,7 @@
             function __fileTask(kind, options, shape) {
                 var id = ++__requestSeq;
                 var task = {
-                    id: id, aborted: false, dataType: kind === 'downloadFile' ? 'json' : 'text',
+                    id: id, kind: kind, aborted: false, dataType: kind === 'downloadFile' ? 'json' : 'text',
                     success: function(r) {
                         var res = shape(r);
                         res.errMsg = kind + ':ok';

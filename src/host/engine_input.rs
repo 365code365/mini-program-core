@@ -445,6 +445,12 @@ impl MiniEngine {
         let r = self.renderer.take();
         crate::host::tap::dispatch_input_event(&mut self.app, r.as_ref(), &id, kind, &value);
         self.renderer = r;
+        if kind == "input" {
+            if let Some(v) = crate::host::tap::take_input_replacement(&self.app) {
+                self.interaction.replace_input_value(&id, &v);
+                self.mark_full();
+            }
+        }
         if self.app.take_data_dirty() {
             self.page_data_dirty = true;
             self.mark_full();

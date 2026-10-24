@@ -76,6 +76,8 @@ impl MiniEngine {
         }
         // 面板 / 弹窗的回调里有 setData 的话，下一次 pump 照常取到数据脏
         if picker_sheet::on_release(&mut self.picker_sheet, &mut self.app, x, y) {
+            let t = self.mono_ms();
+            picker_sheet::emit::flush(&mut self.picker_sheet, &mut self.app, self.renderer.as_ref(), t);
             self.page_data_dirty = true;
             self.dmg.compose_dirty = true;
             return true;

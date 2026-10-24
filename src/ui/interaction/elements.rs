@@ -75,6 +75,19 @@ impl InteractionManager {
         self.states.get(id).map(|s| s.value.clone()).unwrap_or_else(|| attr.to_string())
     }
 
+    /// 把输入框内容整个换掉（`bindinput` 返回了字符串）：光标放到末尾、选区清掉
+    pub fn replace_input_value(&mut self, id: &str, value: &str) {
+        if let Some(s) = self.states.get_mut(id) {
+            s.value = value.to_string();
+        }
+        if let Some(f) = self.focused_input.as_mut().filter(|f| f.id == id) {
+            f.value = value.to_string();
+            f.cursor_pos = value.chars().count();
+            f.selection_start = None;
+            f.selection_end = None;
+        }
+    }
+
     /// 获取组件状态
     pub fn get_state(&self, id: &str) -> Option<&ComponentState> {
         self.states.get(id)

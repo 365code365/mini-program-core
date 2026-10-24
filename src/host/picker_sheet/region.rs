@@ -67,6 +67,8 @@ mod tests {
             cancel_handler: None,
             header_text: String::new(),
             column_changes: Vec::new(),
+            origin: None,
+            outbox: Vec::new(),
             visible: true,
             pressed: None,
             // 起点放到过去 → slide_offset 归零，面板完全展开，命中坐标稳定

@@ -76,8 +76,12 @@
                 if (typeof __native_page_update === 'function') {
                     __native_page_update();
                 }
+                // 回调在这次改动**画出来之后**（微信语义）：数据在这一帧的 pump 里重排重画，
+                // 下一轮事件循环（下一帧开头的定时器）再回调。从前同步回调，回调里量节点量到的还是旧布局
                 if (typeof callback === 'function') {
-                    try { callback(); } catch (e) { __native_print('[setData.cb] ' + e.message); }
+                    setTimeout(function() {
+                        try { callback.call(instance); } catch (e) { __native_print('[setData.cb] ' + e.message); }
+                    }, 0);
                 }
             }
 

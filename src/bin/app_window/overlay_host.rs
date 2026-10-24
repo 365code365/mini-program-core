@@ -135,7 +135,12 @@ impl crate::MiniAppWindow {
     pub(crate) fn handle_picker_sheet_release(&mut self, x: f32, y: f32) -> bool {
         // 全屏视频：顶栏返回 / 控制条按钮 / 拖完进度 / 点画面切换控制条（事件下一帧由 host::video::tick 发）
         let vp = (LOGICAL_WIDTH as f32, LOGICAL_HEIGHT as f32);
-        let consumed = picker_sheet::on_release(&mut self.picker_sheet, &mut self.app, x, y)
+        let picked = picker_sheet::on_release(&mut self.picker_sheet, &mut self.app, x, y);
+        if picked {
+            // 面板定下的 change / cancel / columnchange 经事件链派发（与 SDK 同一份 picker_sheet::emit）
+            picker_sheet::emit::flush(&mut self.picker_sheet, &mut self.app, self.renderer.as_ref(), 0);
+        }
+        let consumed = picked
             || mini_render::host::ui_overlay::sheet_overlay_release(&mut self.app, vp, x, y)
             || mini_render::renderer::components::video_fullscreen::fullscreen_release(x, y, vp.0, vp.1);
         if consumed {

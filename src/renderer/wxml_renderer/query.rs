@@ -220,6 +220,6 @@ impl WxmlRenderer {
 fn dataset_of(n: &RenderNode) -> HashMap<String, String> {
     n.attrs
         .iter()
-        .filter_map(|(k, v)| k.strip_prefix("data-").map(|d| (d.to_string(), v.clone())))
+        .filter_map(|(k, v)| k.strip_prefix("data-").map(|d| (crate::renderer::components::event_attr::dataset_key(d), v.clone())))
         .collect()
 }

@@ -40,12 +40,15 @@ pub fn open_if_hit(
     y: f32,
 ) -> Option<PickerSheetState> {
     let on_fixed_layer = renderer.map(|r| r.fixed_layer_hit(x, y)).unwrap_or(false);
+    let mut origin = None;
     let binding = renderer.and_then(|r| {
         r.picker_hit(x, y, true)
+            .map(|b| { origin = Some((x, y, true)); b })
             .or_else(|| {
                 if on_fixed_layer {
                     None
                 } else {
+                    origin = Some((x, y + scroll_pos, false));
                     r.picker_hit(x, y + scroll_pos, false)
                 }
             })
@@ -68,7 +71,9 @@ pub fn open_if_hit(
     if std::env::var("MINI_PICKER_LOG").is_ok() {
         eprintln!("👆 picker -> 打开选择面板 mode={}", binding.mode);
     }
-    Some(build(&binding))
+    let mut sheet = build(&binding);
+    sheet.origin = origin;
+    Some(sheet)
 }
 
 /// 面板可见时的按下：记录按压的头部按钮以给出反馈；按在滚轮上就让那一列准备跟手。
@@ -153,24 +158,16 @@ pub fn on_release(
     match hit_test(sheet, x, y) {
         SheetHit::Confirm => {
             let value = sheet.change_value();
-            let handler = sheet.handler.clone();
             let labels = sheet.picked_labels().join(" ");
             sheet.begin_close();
-            if let Some(handler) = handler {
-                // `__callPageMethod` 的第二个参数就是 dataset，事件对象里 `detail` 直接指向它。
-                // 多包一层 `{detail:{...}}` 会让页面拿到 `e.detail.detail.value`，
-                // 于是 `e.detail.value` 是 undefined —— 选了「选项二」按确定却没反应就是这个。
-                let payload = serde_json::json!({ "value": value });
-                println!("👆 picker 确定 -> {handler} value={value} ({labels})");
-                app.eval(&format!("__callPageMethod('{handler}', {payload})")).ok();
-            }
+            println!("👆 picker 确定 value={value} ({labels})");
+            let detail = super::emit::change_detail(sheet, value);
+            sheet.outbox.push(("change", detail));
         }
         SheetHit::Cancel | SheetHit::Mask => {
             sheet.begin_close();
             // bindcancel：取消、点遮罩收起都算（微信语义）
-            if let Some(h) = sheet.cancel_handler.clone() {
-                app.eval(&format!("__callPageMethod({}, {{}})", js_str(&h))).ok();
-            }
+            sheet.outbox.push(("cancel", serde_json::json!({})));
         }
         SheetHit::Item { col, delta } => {
             // 点选是直接跳到那一行（不做滚动动画）；这一列要是还在回正，先掐掉，
@@ -186,18 +183,11 @@ pub fn on_release(
     true
 }
 
-/// 把这次抬手里落定的列变化发给页面：`bindcolumnchange` 的 `detail = {column, value}`，都是数字
-fn flush_column_changes(sheet: &mut PickerSheetState, app: &mut crate::runtime::MiniApp) {
-    let changes = std::mem::take(&mut sheet.column_changes);
-    let Some(h) = sheet.column_handler.clone() else { return };
-    for (column, value) in changes {
-        let payload = serde_json::json!({ "column": column, "value": value });
-        app.eval(&format!("__callPageMethod({}, {payload})", js_str(&h))).ok();
+/// 把这次抬手里落定的列变化排给页面：`bindcolumnchange` 的 `detail = {column, value}`，都是数字
+fn flush_column_changes(sheet: &mut PickerSheetState, _app: &mut crate::runtime::MiniApp) {
+    for (column, value) in std::mem::take(&mut sheet.column_changes) {
+        sheet.outbox.push(("columnchange", serde_json::json!({ "column": column, "value": value })));
     }
-}
-
-fn js_str(s: &str) -> String {
-    serde_json::to_string(s).unwrap_or_else(|_| "''".into())
 }
 
 /// 退场动画走完后丢弃面板。返回是否真的丢了（宿主据此标脏重绘）。

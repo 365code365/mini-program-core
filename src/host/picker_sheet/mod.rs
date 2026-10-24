@@ -29,6 +29,7 @@ const ANIM_SECS: f32 = 0.22;
 mod build;
 /// 指针闭环（命中 / 按下 / 抬起 / 收尾）
 mod pointer;
+pub mod emit;
 /// 面板绘制
 mod render;
 /// 省市区联动
@@ -82,6 +83,11 @@ pub struct PickerSheetState {
     pub header_text: String,
     /// 还没派发的列变化 (列, 新下标)：multiSelector 每列落定一次记一条（见 `pointer::on_release`）
     pub column_changes: Vec<(usize, usize)>,
+    /// 点开它的那一点 `(x, 命中纵坐标, 在 fixed 层)`：change / cancel / columnchange 从这里经事件链派发，
+    /// 事件对象与 tap 同一套（`currentTarget.dataset` 是 picker 自己的 `data-*`、`type` 对、会冒泡）
+    pub origin: Option<(f32, f32, bool)>,
+    /// 抬手里定下、还没派发的事件 `(事件类型, detail)`，由宿主拿着渲染器调 [`emit::flush`] 发出去
+    pub outbox: Vec<(&'static str, serde_json::Value)>,
     pub visible: bool,
     pub pressed: Option<SheetHit>,
     /// 动画起点：入场从这时开始算，退场时重置

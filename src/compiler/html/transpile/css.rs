@@ -206,7 +206,8 @@ const BASE_CSS: &str = {
 .wx-scroll-view>*{flex-shrink:0;}
 /* text：保留数据里的换行（小程序 <text> 中 \n 就是换行），但仍折叠连续空格与缩进 */
 .wx-text{display:inline;white-space:pre-line;}
-.wx-image{display:block;}
+/* image 默认 320×240（微信官方默认，与引擎一致；作者写了宽高就被覆盖）*/
+.wx-image{display:block;width:320px;height:240px;}
 .wx-input,.wx-textarea{border:0;outline:none;background:none;font:inherit;color:inherit;width:100%;}
 .wx-navigator{text-decoration:none;color:inherit;}
 img{display:block;}

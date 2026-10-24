@@ -92,25 +92,29 @@
             ///
             /// 找不到时再退回「页面 → 任意组件实例」的老顺序：框架产物偶尔把方法
             /// 挂在别处，宁可派发出去也别静默丢事件。
+            // 处理函数的返回值记在 __lastHandlerResult：`bindinput` 返回一个字符串就替换输入框内容（微信语义），
+            // 宿主派发完 input 之后来取（host::tap::take_input_replacement）
+            var __lastHandlerResult;
             function __dispatchHandler(name, event, ownerKey) {
+                __lastHandlerResult = undefined;
                 if (!name) { return false; }
                 var st = __compState();
                 if (ownerKey) {
                     var owner = st.map[ownerKey] ||
                         (__pageComponents.hasOwnProperty(ownerKey) ? __componentInstances[__pageComponents[ownerKey]] : null);
                     if (owner && typeof owner[name] === 'function') {
-                        owner[name](event);
+                        __lastHandlerResult = owner[name](event);
                         return true;
                     }
                 }
                 if (__currentPage && typeof __currentPage[name] === 'function') {
-                    __currentPage[name](event);
+                    __lastHandlerResult = __currentPage[name](event);
                     return true;
                 }
                 for (var i = 0; i < st.order.length; i++) {
                     var inst = st.map[st.order[i]];
                     if (inst && typeof inst[name] === 'function') {
-                        inst[name](event);
+                        __lastHandlerResult = inst[name](event);
                         return true;
                     }
                 }

@@ -247,6 +247,8 @@ mod tests {
             cancel_handler: None,
             header_text: String::new(),
             column_changes: Vec::new(),
+            origin: None,
+            outbox: Vec::new(),
             visible: true,
             pressed: None,
             anim_from: Instant::now() - Duration::from_secs(1),

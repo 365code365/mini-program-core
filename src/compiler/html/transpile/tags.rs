@@ -26,6 +26,17 @@ pub(super) fn map_tag(node: &WxmlNode) -> (&'static str, String, bool) {
                 "aspectFit" => "object-fit:contain",
                 "aspectFill" => "object-fit:cover",
                 "widthFix" => "height:auto",
+                "heightFix" => "width:auto",
+                // 裁剪模式：不缩放、贴边（与引擎 image/crop.rs 一致）
+                "top" => "object-fit:none;object-position:center top",
+                "bottom" => "object-fit:none;object-position:center bottom",
+                "center" => "object-fit:none;object-position:center",
+                "left" => "object-fit:none;object-position:left center",
+                "right" => "object-fit:none;object-position:right center",
+                "top left" => "object-fit:none;object-position:left top",
+                "top right" => "object-fit:none;object-position:right top",
+                "bottom left" => "object-fit:none;object-position:left bottom",
+                "bottom right" => "object-fit:none;object-position:right bottom",
                 _ => "object-fit:fill",
             };
             ("img", fit.to_string(), true)

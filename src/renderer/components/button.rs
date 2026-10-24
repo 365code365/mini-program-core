@@ -123,8 +123,8 @@ impl ButtonComponent {
         let text = if has_element_children { String::new() } else { get_text_content(node) };
         let btn_type = node.get_attr("type").unwrap_or("default");
         let btn_size = node.get_attr("size").unwrap_or("default");
-        let plain = node.get_attr("plain").map(|s| s == "true" || s == "{{true}}").unwrap_or(false);
-        let disabled = node.get_attr("disabled").map(|s| s == "true" || s == "{{true}}").unwrap_or(false);
+        let plain = node.get_attr("plain").map(|s| crate::renderer::components::attr_is_true(s)).unwrap_or(false);
+        let disabled = node.get_attr("disabled").map(|s| crate::renderer::components::attr_is_true(s)).unwrap_or(false);
         let look = Look { btn_type, plain, disabled, mini: btn_size == "mini" };
         let inherited_align = ctx.inherited.align;
 
@@ -268,7 +268,7 @@ impl ButtonComponent {
         // 点击态不再在这里另外压暗、盖一层黑。微信的按压就是 `hover-class`
         // （默认 `button-hover`：整颗按钮 opacity 0.7），由按压样式和组合成负责。
         let _disabled = node.attrs.get("disabled")
-            .map(|s| s == "true" || s == "{{true}}")
+            .map(|s| crate::renderer::components::attr_is_true(s))
             .unwrap_or(false);
 
         // 获取圆角值（支持四个角独立设置），并按盒子尺寸夹紧（含 border-radius:50% 情况）

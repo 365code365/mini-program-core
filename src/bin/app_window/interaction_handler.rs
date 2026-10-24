@@ -6,7 +6,8 @@ use mini_render::runtime::MiniApp;
 use winit::window::Window;
 use std::sync::Arc;
 
-/// 处理交互结果
+/// 处理交互结果。返回 `bindinput` 要求换成的内容 `(输入框 id, 新值)`（处理函数 return 了字符串，
+/// 与 SDK 的 engine_input.rs 同一条规则）；调用方手里有 InteractionManager 的就把它写回去
 pub fn handle_interaction_result(
     result: &InteractionResult,
     window: Option<&Arc<Window>>,
@@ -15,7 +16,7 @@ pub fn handle_interaction_result(
     clipboard: &mut Option<arboard::Clipboard>,
     _scroll_position: f32,
     _scale_factor: f64,
-) {
+) -> Option<(String, String)> {
     match result {
         InteractionResult::Toggle { id, checked } => {
             println!("🔘 Toggle {}: {}", id, checked);
@@ -43,6 +44,7 @@ pub fn handle_interaction_result(
         InteractionResult::InputChange { id, value } => {
             println!("📝 Input {}: {}", id, value);
             mini_render::host::tap::dispatch_input_event(app, renderer, id, "input", value);
+            return mini_render::host::tap::take_input_replacement(app).map(|v| (id.clone(), v));
         }
         InteractionResult::InputBlur { id, value, dispatched } => {
             println!("📝 Blur {}: {}", id, value);
@@ -85,8 +87,10 @@ pub fn handle_interaction_result(
             }
             // 剪切改了值：与打字一样要发 bindinput（以前漏了，页面上的字数统计不跟着变）
             mini_render::host::tap::dispatch_input_event(app, renderer, id, "input", value);
+            return mini_render::host::tap::take_input_replacement(app).map(|v| (id.clone(), v));
         }
     }
+    None
 }
 
 /// 把 `<image>` 的 `bindload` / `binderror` 派发到逻辑层（微信语义）。

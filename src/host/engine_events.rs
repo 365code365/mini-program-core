@@ -226,7 +226,7 @@ impl MiniEngine {
     pub(super) fn emit_input_focus(&mut self, id: &str, value: &str, bounds: crate::Rect, is_fixed: bool) {
         let region = self.renderer.as_ref().and_then(|r| r.input_region(id)).cloned();
         let attr = |k: &str| region.as_ref().and_then(|r| r.attrs.get(k)).cloned();
-        let truthy = |k: &str| attr(k).map(|v| v == "true" || v == "{{true}}" || v.is_empty()).unwrap_or(false);
+        let truthy = |k: &str| attr(k).map(|v| crate::renderer::components::attr_is_true(&v)).unwrap_or(false);
         // 画面坐标：引擎画了导航栏时页面视口在它下面（宿主按这个矩形算键盘顶起多少）
         let y = self.nav_height() + if is_fixed { bounds.y } else { bounds.y - self.scroll.get_position() };
         let tag = region.as_ref().map(|r| r.tag.clone()).unwrap_or_else(|| "input".into());

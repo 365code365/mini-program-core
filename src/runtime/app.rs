@@ -359,15 +359,18 @@ impl MiniApp {
         for (id, state) in &self.timers {
             let elapsed = now.duration_since(state.last_trigger).as_millis() as u32;
             if elapsed >= state.delay_ms {
-                to_trigger.push(*id);
+                to_trigger.push((state.last_trigger + std::time::Duration::from_millis(state.delay_ms as u64), *id));
                 if !state.repeat {
                     to_remove.push(*id);
                 }
             }
         }
-        
+        // 按到点时刻、同一时刻按登记先后触发（JS 的语义）。表是 HashMap，从前顺序随进程变：
+        // 先后两个 setTimeout(fn, 0) 可能倒着执行
+        to_trigger.sort_unstable();
+
         // 触发定时器
-        for id in to_trigger {
+        for (_, id) in to_trigger {
             self.bridge.trigger_timer(id)?;
             if let Some(state) = self.timers.get_mut(&id) {
                 state.last_trigger = now;

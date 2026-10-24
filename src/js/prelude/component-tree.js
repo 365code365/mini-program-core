@@ -284,8 +284,11 @@
                 }
                 __runObservers(inst, keys);
                 __runPropObservers(inst, defs, fired);
+                // 与页面的 setData 一样：画出来之后（下一轮事件循环）再回调
                 if (typeof callback === 'function') {
-                    try { callback.call(inst); } catch (e) { __native_print('[setData.cb] ' + e.message); }
+                    setTimeout(function() {
+                        try { callback.call(inst); } catch (e) { __native_print('[setData.cb] ' + e.message); }
+                    }, 0);
                 }
             }
 

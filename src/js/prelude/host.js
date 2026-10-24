@@ -19,13 +19,16 @@
             }
 
             // 同步成功的 API：有回调走回调；一个回调都没给时按新版基础库返回 Promise
+            // 立刻办完、但回调照微信放到下一轮事件循环（不在调用栈里同步回）
             function __syncOk(options, name, res) {
                 res = res || {};
                 res.errMsg = name + ':ok';
                 var o = options || {};
-                o.success && o.success(res);
-                o.complete && o.complete(res);
                 if (!o.success && !o.fail && !o.complete) return Promise.resolve(res);
+                setTimeout(function() {
+                    o.success && o.success(res);
+                    o.complete && o.complete(res);
+                }, 0);
             }
 
             wx.setNavigationBarTitle = function(o) {

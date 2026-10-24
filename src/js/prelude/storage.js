@@ -4,8 +4,10 @@
             // 一个回调都没给时返回 Promise —— 与新版基础库一致。
             var __storage = {};
 
+            // 一律按 JSON 存：读回来类型不变（微信语义）。从前字符串原样存、读时再 JSON.parse，
+            // 存 '42' 读回数字 42、存 'true' 读回布尔。旧版存下的裸字符串 JSON.parse 不了，照旧按原文读回
             wx.setStorageSync = function(key, data) {
-                var value = typeof data === 'string' ? data : JSON.stringify(data);
+                var value = data === undefined ? '' : JSON.stringify(data);
                 __storage[key] = value;
                 if (typeof __native_storage_set === 'function') { __native_storage_set(key, value); }
             };

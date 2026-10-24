@@ -89,6 +89,8 @@ pub fn build(binding: &PickerBinding) -> PickerSheetState {
         cancel_handler: binding.cancel_handler.clone(),
         header_text: binding.header_text.clone(),
         column_changes: Vec::new(),
+        origin: None,
+        outbox: Vec::new(),
         visible: true,
         pressed: None,
         anim_from: Instant::now(),

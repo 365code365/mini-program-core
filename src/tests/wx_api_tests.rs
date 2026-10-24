@@ -19,6 +19,11 @@ fn get(app: &MiniApp, expr: &str) -> String {
     app.eval(expr).unwrap_or_default()
 }
 
+/// 跑完零延时定时器：异步 API 的回调在下一轮事件循环（第一轮 update 登记定时器，第二轮到点）
+fn flush(app: &mut MiniApp) {
+    app.update().expect("update");
+    app.update().expect("update");
+}
 /// 跑一轮 update 把桥事件搬到 UiEvent 队列，再全部取出
 fn ui_events(app: &mut MiniApp) -> Vec<UiEvent> {
     app.update().expect("update");
@@ -149,9 +154,12 @@ fn 提示框回调带_err_msg_没回调时返回_promise() {
         wx.showToast({ title: 'a', success: function (r) { __r.toast = r.errMsg; } });
         wx.showLoading({ title: 'b', complete: function (r) { __r.loading = r.errMsg; } });
         __r.promise = typeof wx.hideLoading().then;
+        __r.syncToast = String(__r.toast);
         "#,
     )
     .unwrap();
+    assert_eq!(get(&app, "__r.syncToast"), "undefined", "回调不能在调用栈里同步发生");
+    flush(&mut app);
     assert_eq!(get(&app, "__r.toast"), "showToast:ok");
     assert_eq!(get(&app, "__r.loading"), "showLoading:ok");
     assert_eq!(get(&app, "__r.promise"), "function");
@@ -162,6 +170,7 @@ fn 提示框回调带_err_msg_没回调时返回_promise() {
 fn 标题不是字符串时_fail_且什么也不弹() {
     let mut app = new_app();
     app.load_script("var __e = ''; wx.showLoading({ fail: function (r) { __e = r.errMsg; } });").unwrap();
+    flush(&mut app);
     assert_eq!(get(&app, "__e"), "showLoading:fail parameter error: parameter.title should be String instead of Undefined;");
     assert!(ui_events(&mut app).iter().all(|e| !matches!(e, UiEvent::ShowLoading { .. })));
 }
@@ -182,11 +191,14 @@ fn hide_默认混用_no_conflict_只关自己_空槽位_fail() {
         "#,
     )
     .unwrap();
+    // 回调在下一轮事件循环；各自按调用顺序到点
+    app.update().unwrap();
+    let evs = app.drain_ui_events();
+    app.update().unwrap();
     assert_eq!(
         get(&app, "__h.join('|')"),
         "hideToast:ok|hideLoading:fail:toast can't be found|hideToast:fail:toast can't be found|hideLoading:ok"
     );
-    let evs = ui_events(&mut app);
     assert!(evs.iter().any(|e| matches!(e, UiEvent::HideToast { no_conflict: false })));
     assert!(evs.iter().any(|e| matches!(e, UiEvent::HideLoading { no_conflict: true })));
 }
@@ -213,8 +225,9 @@ fn modal_颜色与按钮文字长度() {
         "#,
     )
     .unwrap();
-    assert_eq!(get(&app, "__e"), "showModal:fail confirmText length should not larger than 4 Chinese characters");
     let evs = ui_events(&mut app);
+    app.update().unwrap();
+    assert_eq!(get(&app, "__e"), "showModal:fail confirmText length should not larger than 4 Chinese characters");
     let modals: Vec<_> = evs.iter().filter(|e| matches!(e, UiEvent::ShowModal { .. })).collect();
     assert_eq!(modals.len(), 1, "超长的那个不弹");
     match modals[0] {

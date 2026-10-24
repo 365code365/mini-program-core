@@ -225,7 +225,7 @@ fn prepare_focused_input(
             .or_else(|| binding.and_then(|b| b.data.get(k)))
             .cloned()
     };
-    let truthy = |k: &str| attr(k).map(|v| v.is_empty() || v == "true" || v == "{{true}}").unwrap_or(false);
+    let truthy = |k: &str| attr(k).map(|v| crate::renderer::components::attr_is_true(&v)).unwrap_or(false);
     let layout = interaction.text_layouts.get(id.as_str()).cloned();
     let Some(input) = interaction.focused_input.as_mut() else { return };
     if let Some(r) = region {
@@ -366,6 +366,18 @@ fn dispatch_tap_chain(
     if hit {
         println!("👆 tap");
     }
+}
+
+/// `bindinput` 的处理函数返回了一个字符串：用它替换输入框的内容（官方 component/input：
+/// 「处理函数可以直接 return 一个字符串，将替换输入框的内容」）。在派发完 `input` 之后立刻取
+pub fn take_input_replacement(app: &MiniApp) -> Option<String> {
+    let raw = app
+        .eval("typeof __lastHandlerResult === 'string' ? JSON.stringify(__lastHandlerResult) : ''")
+        .ok()?;
+    if raw.is_empty() {
+        return None;
+    }
+    serde_json::from_str::<String>(&raw).ok()
 }
 
 pub fn dispatch_input_event(

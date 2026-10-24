@@ -59,9 +59,9 @@ pub struct RefresherConfig {
 
 pub use crate::parser::template::REFRESHER_KEYS_ATTR;
 
-/// 布尔属性：写了且不是 `false` 就是真（`<scroll-view scroll-y>` 没有值也算开）
+/// 布尔属性（`<scroll-view scroll-y>` 不带值解析成 "true"；`{{flag}}` 求出空是假），规则见 `attr_is_true`
 pub fn bool_attr(attrs: &HashMap<String, String>, name: &str) -> bool {
-    attrs.get(name).map(|v| { let v = v.trim(); v != "false" && v != "0" }).unwrap_or(false)
+    attrs.get(name).map(|v| crate::renderer::components::attr_is_true(v)).unwrap_or(false)
 }
 
 /// 滚动方向：`(横向, 可滚)`。两个都写时按纵向（单轴控制器）

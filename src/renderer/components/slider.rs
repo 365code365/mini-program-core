@@ -108,8 +108,7 @@ fn decimals(v: f64) -> usize {
 
 /// 布尔属性：写了且不是 `false` / `0` 就是真（`<slider show-value>` 不带值也算开）
 fn attr_truthy(s: &str) -> bool {
-    let s = s.trim();
-    s != "false" && s != "0" && s != "{{false}}"
+    crate::renderer::components::attr_is_true(s)
 }
 
 /// 轨道左端与长度：两端各让出半个滑块（滑块圆心落在轨道端点上），show-value 时右侧再让出数值宽。
@@ -305,8 +304,10 @@ mod tests {
 
     #[test]
     fn 坐标换算与绘制几何一致() {
-        let a = attrs(&[("min", "1"), ("max", "5"), ("show-value", "")]);
-        assert!(a.show_value, "不带值的 show-value 也算开");
+        // 不带值的 `show-value` 由 parser 解析成 "true"（见 parser::wxml）；空串是绑定求出来的空，算假
+        assert!(!attrs(&[("show-value", "")]).show_value);
+        let a = attrs(&[("min", "1"), ("max", "5"), ("show-value", "true")]);
+        assert!(a.show_value);
         // 盒子 x=100 宽 300：轨道 114..236（左右各让 14，右侧再让 50）
         let (tx, tw) = slider_track_span(100.0, 300.0, a.block_size, SLIDER_VALUE_WIDTH);
         assert_eq!((tx, tw), (114.0, 222.0));

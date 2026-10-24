@@ -47,6 +47,10 @@ Page({
 "#;
 
 fn fixture(name: &str) -> Fixture {
+    fixture_with(name, WXML, JS)
+}
+
+fn fixture_with(name: &str, wxml: &str, js: &str) -> Fixture {
     let root = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("picker-e2e").join(name);
     std::fs::remove_dir_all(&root).ok();
     let files = [
@@ -54,9 +58,9 @@ fn fixture(name: &str) -> Fixture {
         ("app.js", "App({});"),
         ("app.wxss", ""),
         ("pages/index/index.json", "{}"),
-        ("pages/index/index.wxml", WXML),
+        ("pages/index/index.wxml", wxml),
         ("pages/index/index.wxss", ""),
-        ("pages/index/index.js", JS),
+        ("pages/index/index.js", js),
     ];
     for (rel, text) in files {
         let p = root.join(rel);
@@ -177,4 +181,32 @@ fn cancel_button_and_mask_fire_bindcancel() {
     e.tap(W / 2.0, 100.0); // 遮罩（面板上方）
     assert!(!e.e.picker_sheet_open(), "点遮罩应收起");
     assert_eq!(e.js("__currentPage.data.cancels"), "2");
+}
+
+/// 面板的 change 走与 tap 同一条事件链：`e.type` 是 change、`currentTarget` 是 picker 自己
+/// （`data-*` 转驼峰），`fields="year"` 的值保持字符串、会冒泡到外层的 `bindchange`。
+/// 从前走 `__callPageMethod`：type 是 tap、dataset 被换成了 detail、"2024" 变成数字 2024
+#[test]
+fn change_event_object_matches_wechat() {
+    let _g = SERIAL.lock().unwrap_or_else(|p| p.into_inner());
+    let wxml = r#"<view bindchange="onOuter">
+<picker id="yr" mode="date" fields="year" value="2024" start="2020" end="2030" data-row-index="3" bindchange="onChange">
+  <view style="height:120px">pick</view>
+</picker></view>"#;
+    let js = r#"
+Page({
+  data: { got: '', outer: '' },
+  onChange(e) {
+    this.setData({ got: [e.type, e.currentTarget.id, String(e.currentTarget.dataset.rowIndex), typeof e.detail.value, e.detail.value].join('|') });
+  },
+  onOuter(e) { this.setData({ outer: e.type + '|' + e.target.id }); },
+});
+"#;
+    let fx = fixture_with("event-object", wxml, js);
+    let mut e = E::new(&fx);
+    e.open();
+    e.confirm();
+    e.frames(2);
+    assert_eq!(e.js("__currentPage.data.got"), "change|yr|3|string|2024");
+    assert_eq!(e.js("__currentPage.data.outer"), "change|yr", "change 冒泡到外层，target 是 picker");
 }

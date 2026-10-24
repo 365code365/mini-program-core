@@ -1,10 +1,11 @@
             var __timers = {};
             var __timer_id = 0;
             
+            // 第三个起的参数原样交给回调（官方签名 `setTimeout(callback, delay, ...rest)`）
             function setTimeout(callback, delay) {
                 delay = delay || 0;
                 var id = ++__timer_id;
-                __timers[id] = { callback: callback, delay: delay, type: 'timeout' };
+                __timers[id] = { callback: callback, delay: delay, type: 'timeout', args: [].slice.call(arguments, 2) };
                 if (typeof __native_set_timer === 'function') {
                     __native_set_timer(String(id), String(delay), 'false');
                 }
@@ -14,7 +15,7 @@
             function setInterval(callback, delay) {
                 delay = delay || 0;
                 var id = ++__timer_id;
-                __timers[id] = { callback: callback, delay: delay, type: 'interval' };
+                __timers[id] = { callback: callback, delay: delay, type: 'interval', args: [].slice.call(arguments, 2) };
                 if (typeof __native_set_timer === 'function') {
                     __native_set_timer(String(id), String(delay), 'true');
                 }
@@ -35,7 +36,7 @@
             function __trigger_timer(id) {
                 var timer = __timers[id];
                 if (timer && typeof timer.callback === 'function') {
-                    try { timer.callback(); } catch (e) { console.error('Timer error:', e); }
+                    try { timer.callback.apply(null, timer.args || []); } catch (e) { console.error('Timer error:', e); }
                     if (timer.type === 'timeout') { delete __timers[id]; }
                 }
             }

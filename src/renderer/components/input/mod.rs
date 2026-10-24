@@ -157,10 +157,10 @@ impl InputType {
 /// 建树（初始值）与交互态（打字之后）两处都按它画圆点 —— 从前只有建树那处判断，
 /// 一打字就由交互态把明文直接写进节点，密码框里看得见输入的字。
 ///
-/// 空串**不**算真：裸写的 `password` 与绑定到 undefined 的 `password="{{x}}"` 解析出来都是
-/// 空串，分不开；后者在微信里是假，按真处理的话普通输入框会变成一排圆点。
+/// 裸写的 `password` 解析成 "true"（parser::wxml）；绑定到 undefined 的 `password="{{x}}"` 求出空串，
+/// 按布尔属性是假 —— 按真处理的话普通输入框会变成一排圆点。
 pub fn is_password_input(password: Option<&str>, input_type: Option<&str>) -> bool {
-    let attr = password.map(str::trim).map(|s| s == "true" || s == "{{true}}");
+    let attr = password.map(str::trim).map(|s| crate::renderer::components::attr_is_true(s));
     attr.unwrap_or(false) || input_type.map(InputType::from_str) == Some(InputType::SafePassword)
 }
 
@@ -268,16 +268,16 @@ impl InputComponent {
             .unwrap_or("");
         let placeholder = node.get_attr("placeholder").unwrap_or("");
         let password = is_password_input(node.get_attr("password"), node.get_attr("type"));
-        let disabled = node.get_attr("disabled").map(|s| s == "true" || s == "{{true}}").unwrap_or(false);
+        let disabled = node.get_attr("disabled").map(|s| crate::renderer::components::attr_is_true(s)).unwrap_or(false);
         let _maxlength = node.get_attr("maxlength")
             .and_then(|s| s.parse::<i32>().ok())
             .unwrap_or(DEFAULT_MAXLENGTH);
-        let _focus = node.get_attr("focus").map(|s| s == "true" || s == "{{true}}").unwrap_or(false);
+        let _focus = node.get_attr("focus").map(|s| crate::renderer::components::attr_is_true(s)).unwrap_or(false);
         let _cursor = node.get_attr("cursor").and_then(|s| s.parse::<usize>().ok());
         let _selection_start = node.get_attr("selection-start").and_then(|s| s.parse::<i32>().ok()).unwrap_or(-1);
         let _selection_end = node.get_attr("selection-end").and_then(|s| s.parse::<i32>().ok()).unwrap_or(-1);
         let _confirm_type = ConfirmType::from_str(node.get_attr("confirm-type").unwrap_or("done"));
-        let _confirm_hold = node.get_attr("confirm-hold").map(|s| s == "true" || s == "{{true}}").unwrap_or(false);
+        let _confirm_hold = node.get_attr("confirm-hold").map(|s| crate::renderer::components::attr_is_true(s)).unwrap_or(false);
         let _adjust_position = node.get_attr("adjust-position").map(|s| s != "false" && s != "{{false}}").unwrap_or(true);
         let _cursor_spacing = node.get_attr("cursor-spacing").and_then(|s| s.parse::<f32>().ok()).unwrap_or(0.0);
         

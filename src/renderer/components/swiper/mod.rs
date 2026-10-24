@@ -172,8 +172,7 @@ impl SwiperComponent {
 
 /// 布尔属性：写了且不是 `false` / `0` 就是真（`<swiper autoplay>` 不带值也算开）
 fn truthy(s: &str) -> bool {
-    let s = s.trim();
-    s != "false" && s != "0"
+    crate::renderer::components::attr_is_true(s)
 }
 
 /// 布局要用的四个属性：(纵向, 一屏几项, 前边距, 后边距)，边距为逻辑 px

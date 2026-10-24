@@ -21,7 +21,21 @@
 set -u
 cd "$(dirname "$0")/.."
 SERIAL="${ANDROID_SERIAL:-3B669L00NA000000}"
-D(){ "$HOME/Library/Android/sdk/platform-tools/adb" -s "$SERIAL" "$@"; }
+ADB_BIN="$HOME/Library/Android/sdk/platform-tools/adb"
+# 脚本里的点击 / 滑动坐标按 1080 宽的屏写死（一加 PLY110 设了 `wm size 1080x2354`）。屏幕分辨率被改回原生
+# （1272×2772）之后，按宽度等比换算 —— 页面按 dp 排版、两档 dp 宽只差 1%，换算后落在同一个控件上。
+# 不换算的话 tabBar 点不到、「没进到 pages/query」，整段量的是首页
+SCREEN_W=$("$ADB_BIN" -s "$SERIAL" shell wm size 2>/dev/null | awk -F'[ x]' '/Override/{w=$3} /Physical/{if(!w)w=$3} END{print w}')
+TAP_K=$(python3 -c "print(${SCREEN_W:-1080}/1080)")
+D(){
+  if [ "$1" = shell ] && [ "$2" = input ] && { [ "$3" = tap ] || [ "$3" = swipe ]; } && [ "$TAP_K" != "1.0" ]; then
+    local op=$3; shift 3
+    local args; args=$(python3 -c "import sys; k=$TAP_K; a=sys.argv[1:]; n=4 if '$op'=='swipe' else 2; print(' '.join([str(round(float(v)*k)) for v in a[:n]]+a[n:]))" "$@")
+    "$ADB_BIN" -s "$SERIAL" shell input $op $args
+    return
+  fi
+  "$ADB_BIN" -s "$SERIAL" "$@"
+}
 F(){ D shell dumpsys window </dev/null | grep -m1 mCurrentFocus | sed 's/.*\///'; }
 SC="${1:-wxss-slow}"
 OUT=target/_jank; mkdir -p $OUT

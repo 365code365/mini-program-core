@@ -15,12 +15,17 @@
                 return Object.prototype.toString.call(v).slice(8, -1);
             }
             // 回调与 Promise 两种风格：一个回调都没给时返回 Promise（与新版基础库一致）
+            // 回调在**下一轮事件循环**（微信的异步 API 从不在调用栈里同步回：
+            // `wx.showToast({success(){ a = 1 }}); a = 2;` 在微信里最后是 1）
             function __uiDone(o, res, ok) {
-                if (ok) { o.success && o.success(res); } else { o.fail && o.fail(res); }
-                o.complete && o.complete(res);
+                o = o || {};
                 if (!o.success && !o.fail && !o.complete) {
                     return ok ? Promise.resolve(res) : Promise.reject(res);
                 }
+                setTimeout(function() {
+                    if (ok) { o.success && o.success(res); } else { o.fail && o.fail(res); }
+                    o.complete && o.complete(res);
+                }, 0);
             }
             // title 是必填的 string：基础库按类型校验，`wx.showLoading()` 在微信里就是 fail、什么也不弹
             function __tipTitleError(api, title) {
@@ -241,8 +246,7 @@
                 if (typeof __native_start_pull_down_refresh === 'function') {
                     __native_start_pull_down_refresh();
                 }
-                options.success && options.success();
-                options.complete && options.complete();
+                return __uiDone(options, { errMsg: 'startPullDownRefresh:ok' }, true);
             };
             
             wx.stopPullDownRefresh = function(options) {
@@ -250,8 +254,7 @@
                 if (typeof __native_stop_pull_down_refresh === 'function') {
                     __native_stop_pull_down_refresh();
                 }
-                options.success && options.success();
-                options.complete && options.complete();
+                return __uiDone(options, { errMsg: 'stopPullDownRefresh:ok' }, true);
             };
 
             // 页面滚动到目标位置（官方 api/ui/scroll/wx.pageScrollTo）：`scrollTop` 或 `selector`
@@ -262,11 +265,7 @@
                 var top = Number(options.scrollTop);
                 var sel = typeof options.selector === 'string' ? options.selector : '';
                 if (!sel && !isFinite(top)) {
-                    var bad = { errMsg: 'pageScrollTo:fail scrollTop or selector is required' };
-                    options.fail && options.fail(bad);
-                    options.complete && options.complete(bad);
-                    if (!options.success && !options.fail && !options.complete) { return Promise.reject(bad); }
-                    return;
+                    return __uiDone(options, { errMsg: 'pageScrollTo:fail scrollTop or selector is required' }, false);
                 }
                 var dur = options.duration === undefined ? 300 : Number(options.duration);
                 __native_page_scroll_to(JSON.stringify({
@@ -275,10 +274,7 @@
                     offsetTop: Number(options.offsetTop) || 0,
                     duration: isFinite(dur) && dur > 0 ? dur : 0
                 }));
-                var res = { errMsg: 'pageScrollTo:ok' };
-                options.success && options.success(res);
-                options.complete && options.complete(res);
-                if (!options.success && !options.fail && !options.complete) { return Promise.resolve(res); }
+                return __uiDone(options, { errMsg: 'pageScrollTo:ok' }, true);
             };
             
             function __getUIState() {

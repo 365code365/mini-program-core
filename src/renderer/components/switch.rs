@@ -42,7 +42,7 @@ impl SwitchComponent {
         let attrs = node.attributes.clone();
         let sf = ctx.scale_factor;
         
-        let checked = node.get_attr("checked").map(|s| s == "true" || s == "{{true}}").unwrap_or(false);
+        let checked = node.get_attr("checked").map(|s| crate::renderer::components::attr_is_true(s)).unwrap_or(false);
         let switch_type = node.get_attr("type").unwrap_or("switch");
         
         // 检查 CSS 是否定义了尺寸和颜色
@@ -114,7 +114,7 @@ impl SwitchComponent {
         } else {
             let progress = style.custom_data.clamp(0.0, 1.0);
             let disabled = node.attrs.get("disabled")
-                .map(|s| s == "true" || s == "{{true}}").unwrap_or(false);
+                .map(|s| crate::renderer::components::attr_is_true(s)).unwrap_or(false);
             Self::draw_switch(canvas, style, progress, on_color, disabled, x, y, w, h, sf);
         }
     }

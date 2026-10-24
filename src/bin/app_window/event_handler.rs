@@ -145,7 +145,7 @@ pub fn handle_keyboard_event(
             if let Some(ref text) = event.text {
                 let results = keyboard::handle_text_input(text, ctrl, interaction);
                 for result in results {
-                    handle_interaction_result(
+                    let replaced = handle_interaction_result(
                         &result,
                         window,
                         renderer,
@@ -154,6 +154,9 @@ pub fn handle_keyboard_event(
                         scroll.get_position(),
                         scale_factor,
                     );
+                    if let Some((id, v)) = replaced {
+                        interaction.replace_input_value(&id, &v);
+                    }
                 }
             }
         }

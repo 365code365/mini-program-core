@@ -67,6 +67,25 @@ pub fn parse_event_attr(attr: &str) -> Option<(&str, bool, EventPhase, bool)> {
     None
 }
 
+/// 布尔属性的取值（微信把属性值按 Boolean 转）：空串、`false`、`0`、`null` / `undefined` 是假，其余是真。
+/// 不带值的属性解析成 `"true"`（parser::wxml），`{{false}}` 求值成 `"false"`。
+/// `{{true}}` / `{{false}}` 原样出现只在没经过模板展开的路径上（单测直接喂的节点），一并认
+pub fn attr_is_true(v: &str) -> bool {
+    !matches!(v.trim(), "" | "false" | "0" | "null" | "undefined" | "{{false}}")
+}
+
+/// 节点上的布尔属性：没写是 false
+pub fn bool_attr_of(node: &WxmlNode, name: &str) -> bool {
+    node.get_attr(name).map(attr_is_true).unwrap_or(false)
+}
+
+/// `data-*` 属性名 → `dataset` 的键（微信规则）：连字符转驼峰，其余大写字母转小写。
+/// `data-element-type` → `elementType`，`data-elementType` → `elementtype`。
+/// 从前原样用 `element-type`，页面里 `e.currentTarget.dataset.elementType` 永远是 undefined
+pub fn dataset_key(name: &str) -> String {
+    crate::parser::template::camel_case(&name.to_ascii_lowercase())
+}
+
 /// 提取节点上的全部事件绑定
 pub fn extract_events(node: &WxmlNode) -> Vec<EventBind> {
     let mut events = vec![];
@@ -74,7 +93,7 @@ pub fn extract_events(node: &WxmlNode) -> Vec<EventBind> {
     let mut data = HashMap::new();
     for (k, v) in &node.attributes {
         if let Some(name) = k.strip_prefix("data-") {
-            data.insert(name.to_string(), v.clone());
+            data.insert(dataset_key(name), v.clone());
         }
     }
     // input/textarea：把宿主侧编辑需要的属性一并带上（maxlength/type/password）
