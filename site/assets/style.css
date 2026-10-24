@@ -823,6 +823,15 @@ table { width: 100%; border-collapse: collapse; }
 .callout h3 { font-size: 16.5px; margin-bottom: 10px; color: #ffb98c; }
 .callout p { margin: 0; color: var(--dim); font-size: 14.5px; }
 .callout b { color: var(--acc); }
+/* 内存「之前 → 现在」对照表：之前划灰，现在用强调色，数字等宽对齐 */
+.callout .mt { margin-top: 14px; }
+.mem-cmp { min-width: 520px; font-size: 14px; }
+.mem-cmp th, .mem-cmp td { padding: 10px 16px; }
+.mem-cmp tbody th small { display: block; color: var(--faint); font-weight: 400; font-size: 12px; white-space: normal; }
+.mem-cmp td { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mem-cmp td.before { color: var(--faint); text-decoration: line-through; text-decoration-color: rgba(255, 95, 87, .55); }
+.mem-cmp td.after { color: var(--acc); font-weight: 650; }
+.mem-cmp td.delta { color: #6ee7b7; font-weight: 650; }
 
 /* ─────────────  依赖  ───────────── */
 

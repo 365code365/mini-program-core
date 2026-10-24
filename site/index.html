@@ -967,18 +967,30 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
       <aside class="callout">
         <h3 data-i18n="scope.mem.h">Memory: no longer the biggest weakness</h3>
         <p data-i18n="scope.mem.p">
-          It used to be: desktop peaks of 600MB–1GB, <b>about 98% of it fonts</b>, because fontdue expanded
-          every glyph's geometry at load time (the system's primary Chinese face, ~29k glyphs: <b>+303MB</b>;
-          the bundled Source Han Sans, ~65k glyphs: <b>+405MB</b>). The engine now ships a vendored fontdue
-          that expands a glyph the first time it is drawn, memory-maps the font file and looks up the
-          character map on demand — <b>303 → 1.4MB</b> and <b>405 → 2.0MB</b> per face, with metrics and
-          bitmaps bit-identical to upstream, so no baseline moved. Thirty real pages opened in a row use
-          about <b>6.7MB</b> of font memory in total. On the test phone Native Heap went <b>289 → 102MB</b>
-          and total PSS <b>374 → 194MB</b>; after the buffer work (only the painted strip of the page kept,
-          compose buffer dropped and screenshots packed in the background) the engine's own buffers sit at
-          <b>18MB</b> after pressing Home. Caches stay byte-capped (LRU), and <code>trim_memory()</code> is
-          there for memory warnings.
+          Fonts used to be about 98% of the peak: fontdue expanded every glyph's geometry at load time.
+          A vendored fontdue now expands a glyph the first time it is drawn and memory-maps the font file;
+          metrics and bitmaps are bit-identical to upstream, so no baseline moved. The buffer round then
+          keeps only the painted strip of the page and drops or packs full-screen buffers in the background.
         </p>
+        <div class="table-scroll mt">
+          <table class="cmp mem-cmp">
+            <caption class="sr-only" data-i18n="mem.caption">Memory before and now</caption>
+            <thead><tr><th scope="col" data-i18n="mem.th1">Measured</th><th scope="col" data-i18n="mem.th2">Before</th><th scope="col" data-i18n="mem.th3">Now</th><th scope="col" data-i18n="mem.th4">Change</th></tr></thead>
+            <tbody>
+              <tr><th scope="row" data-i18n="mem.r1">System Chinese face<small>~29k glyphs, loaded</small></th><td class="before">+303 MB</td><td class="after">+1.4 MB</td><td class="delta">−99.5%</td></tr>
+              <tr><th scope="row" data-i18n="mem.r2">Its bold face<small>first bold text drawn</small></th><td class="before">+279 MB</td><td class="after">+1.3 MB</td><td class="delta">−99.5%</td></tr>
+              <tr><th scope="row" data-i18n="mem.r3">Bundled Source Han Sans<small>~65k glyphs, single face</small></th><td class="before">+405 MB</td><td class="after">+2.0 MB</td><td class="delta">−99.5%</td></tr>
+              <tr><th scope="row" data-i18n="mem.r4">Loading the system face<small>time</small></th><td class="before">~350 ms</td><td class="after">3 ms</td><td class="delta">−99.1%</td></tr>
+              <tr><th scope="row" data-i18n="mem.r5">Desktop memory report<small>whole process at exit</small></th><td class="before">~740 MB</td><td class="after">26.6 MB</td><td class="delta">−96%</td></tr>
+              <tr><th scope="row" data-i18n="mem.r6">Phone, Native Heap<small>after scrolling a setData list</small></th><td class="before">289 MB</td><td class="after">102 MB</td><td class="delta">−65%</td></tr>
+              <tr><th scope="row" data-i18n="mem.r7">Phone, total PSS<small>same run</small></th><td class="before">374 MB</td><td class="after">194 MB</td><td class="delta">−48%</td></tr>
+              <tr><th scope="row" data-i18n="mem.r8">Engine buffers in the background<small>phone, after pressing Home</small></th><td class="before">44.3 MB</td><td class="after">18.1 MB</td><td class="delta">−59%</td></tr>
+              <tr><th scope="row" data-i18n="mem.r9">Native Heap in the background<small>same run</small></th><td class="before">74.5 MB</td><td class="after">57.7 MB</td><td class="delta">−23%</td></tr>
+              <tr><th scope="row" data-i18n="mem.r10">Desktop, 30 pages in a row<small>process footprint at the end</small></th><td class="before">211 MB</td><td class="after">98 MB</td><td class="delta">−54%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="mt" data-i18n="scope.mem.p2">Caches stay byte-capped (LRU) and are released in the background; <code>trim_memory()</code> is there for memory warnings. Phone: OnePlus PLY110, Flutter example.</p>
       </aside>
     </div>
   </section>
