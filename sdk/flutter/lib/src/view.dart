@@ -215,12 +215,12 @@ class _MiniProgramViewState extends State<MiniProgramView> with WidgetsBindingOb
   /// 键盘挡住聚焦的输入框时，画面整体上移多少（微信 `adjust-position` 的行为）
   double _keyboardShift(Size size) {
     final f = _c.focusedInput.value;
-    if (f == null) return 0;
+    if (f == null || !f.adjustPosition) return 0;
     final kb = MediaQuery.viewInsetsOf(context).bottom;
     final overlap = math.max(0.0, kb - _gapToScreenBottom);
     if (overlap <= 0) return 0;
     const spacing = 10.0; // 输入框与键盘之间留一点（微信默认 cursor-spacing）
-    final need = f.rect.bottom + spacing - (size.height - overlap);
+    final need = f.rect.bottom + f.cursorSpacing + spacing - (size.height - overlap);
     return need.clamp(0.0, overlap);
   }
 

@@ -248,6 +248,12 @@ impl MiniEngine {
             "tag": tag,
             "confirmHold": truthy("confirm-hold"),
             "placeholder": attr("placeholder").unwrap_or_default(),
+            // 键盘弹起时宿主要不要把画面顶上去（`adjust-position`，默认 true）、
+            // 输入框底边与键盘之间留多少（`cursor-spacing`，px，默认 0）
+            "adjustPosition": attr("adjust-position").map(|v| crate::renderer::components::attr_is_true(&v)).unwrap_or(true),
+            "cursorSpacing": attr("cursor-spacing")
+                .and_then(|v| v.trim().trim_end_matches("px").parse::<f32>().ok())
+                .unwrap_or(0.0),
             "rect": { "x": bounds.x, "y": y, "width": bounds.width, "height": bounds.height },
         });
         self.events.focused = Some(id.to_string());

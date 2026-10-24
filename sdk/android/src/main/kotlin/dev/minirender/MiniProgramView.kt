@@ -79,6 +79,8 @@ class MiniProgramView @JvmOverloads constructor(
     private val hostCalls = HostCallRouter(context, session)
     /** 软键盘：输入框聚焦弹出、输入法的字交给引擎（MiniImeConnection.kt） */
     private val ime = MiniIme(this, ::sendText, ::sendKey)
+    /** 键盘弹起时把画面顶上去（`adjust-position`，MiniKeyboard.kt），键盘高度推给 `wx.onKeyboardHeightChange` */
+    private val keyboard = MiniKeyboard(this) { h -> dispatchEvent("keyboardHeightChange", JSONObject().put("height", h)) }
     private val sameLayer = SameLayerViews(session) { resources.displayMetrics.density }
 
     // ── SurfaceView（只在主线程读写） ──
@@ -262,6 +264,7 @@ class MiniProgramView @JvmOverloads constructor(
     /** 挂到窗口上：按开关替宿主铺满整屏、接上 Activity 生命周期（HostChrome.kt） */
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
+        keyboard.attach()
         val a = activity() ?: return
         if (autoEdgeToEdge) HostChrome.edgeToEdge(a)
         if (autoLifecycle && lifecycle == null) {
@@ -340,6 +343,7 @@ class MiniProgramView @JvmOverloads constructor(
 
     /** 刘海 / 状态栏 / 导航条（逻辑像素）：`statusBarHeight`、胶囊位置与 `env(safe-area-inset-*)` 都按它算 */
     override fun onApplyWindowInsets(insets: WindowInsets): WindowInsets {
+        keyboard.onInsets(insets)
         val o = HostChrome.insetsJson(insets, resources.displayMetrics.density)
         session.run {
             MiniEngine.nativeSetSafeArea(
@@ -442,8 +446,8 @@ class MiniProgramView @JvmOverloads constructor(
             }
             "hostCall" -> hostCalls.dispatch(ev, activity())
             "vibrate" -> if (hapticFeedback) HostChrome.vibrate(this, ev)
-            "inputFocus" -> ime.onFocus(ev)
-            "inputBlur" -> ime.onBlur()
+            "inputFocus" -> { ime.onFocus(ev); keyboard.onFocus(ev) }
+            "inputBlur" -> { ime.onBlur(); keyboard.onBlur() }
             "sameLayerViews" -> sameLayer.onViews(ev)
             "nativeViewTap" -> sameLayer.onTap(ev)
             // 视频进 / 出全屏（横屏由引擎转画面）：收起 / 放出系统栏
@@ -485,7 +489,12 @@ class MiniProgramView @JvmOverloads constructor(
 
     override fun onCreateInputConnection(outAttrs: EditorInfo): InputConnection? = ime.create(outAttrs)
 
-    override fun onTouchEvent(event: MotionEvent): Boolean =
-        session.ready && MiniTouch.forward(session, event, resources.displayMetrics.density)
+    override fun onDetachedFromWindow() = keyboard.detach().also { super.onDetachedFromWindow() }
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (!session.ready) return false
+        keyboard.adjustTouch(event)
+        return MiniTouch.forward(session, event, resources.displayMetrics.density)
+    }
 
 }

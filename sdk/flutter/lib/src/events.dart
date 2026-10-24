@@ -58,6 +58,8 @@ class MiniInputFocus {
     required this.confirmHold,
     required this.multiline,
     required this.rect,
+    this.adjustPosition = true,
+    this.cursorSpacing = 0,
   });
 
   factory MiniInputFocus.fromJson(Map<String, dynamic> j) {
@@ -77,8 +79,16 @@ class MiniInputFocus {
       confirmHold: j['confirmHold'] == true,
       multiline: multiline,
       rect: Rect.fromLTWH(d('x'), d('y'), d('width'), d('height')),
+      adjustPosition: j['adjustPosition'] != false,
+      cursorSpacing: (j['cursorSpacing'] as num?)?.toDouble() ?? 0,
     );
   }
+
+  /// 键盘弹起时把画面顶上去（`adjust-position`，默认 true）
+  final bool adjustPosition;
+
+  /// 输入框底边与键盘之间留多少（`cursor-spacing`，逻辑像素）
+  final double cursorSpacing;
 
   final String id;
   final String value;
