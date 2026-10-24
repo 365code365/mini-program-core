@@ -9,7 +9,8 @@ innerHTML。这么做的前提是**键必须两边对齐** —— 少一个键�
 
   ① HTML 里每个 data-i18n / data-i18n-alt / data-i18n-aria 的键，表里都要有；
   ② 表里每个键都要有人用（除了几个给 JS 用的 ui.* / meta.*）；
-  ③ 英文页面里不该残留中文（除了语言切换按钮上那个「中文」字样）；
+  ③ 英文页面里不该残留中文（除了语言菜单里各语言的自称）；
+  ⑤ 其余语言（site/assets/i18n/*.js）与英文对齐：交给 tools/site-i18n-lang.py --check，这里一并跑。
   ④ 键不许重复定义（JS 对象字面量里重复键会静默覆盖）。
 """
 import json
@@ -61,7 +62,8 @@ def main() -> int:
     visible = drop_noise(html)
     leaks = []
     for i, line in enumerate(visible.split("\n"), 1):
-        if CJK.search(line) and 'data-lang="zh"' not in line:
+        # 语言菜单里各语言的自称（简体中文 / 繁體中文 / 日本語）不算残留
+        if CJK.search(line) and 'data-lang="' not in line:
             leaks.append(f"{i}: {line.strip()[:90]}")
     if leaks:
         problems.append("英文页面里残留中文：\n    " + "\n    ".join(leaks))
@@ -89,6 +91,10 @@ def main() -> int:
             print("  -", p)
         return 1
 
+    import subprocess
+    r = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve().parent / "site-i18n-lang.py"), "--check"])
+    if r.returncode:
+        return 1
     print(f"✅ 落地页 i18n 一致：{len(used)} 个键在 HTML 里用到，"
           f"表里 {len(defined)} 个（含 {len(JS_ONLY)} 个给 JS 用），无残留中文")
     return 0

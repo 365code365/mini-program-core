@@ -508,10 +508,38 @@
     'foot.readme': 'README'
   };
 
+  /* 其余语言一种一个文件（assets/i18n/<代码>.js，tools/site-i18n-lang.py 生成），切过去时才加载 ——
+     首屏不必把十几种语言都下下来。name 是语言菜单里显示的自称，html 是 <html lang>。 */
+  var LANGS = [
+    { code: 'en', name: 'English', html: 'en' },
+    { code: 'zh', name: '简体中文', html: 'zh-CN' },
+    { code: 'zh-tw', name: '繁體中文', html: 'zh-TW' },
+    { code: 'ja', name: '日本語', html: 'ja' },
+    { code: 'ko', name: '한국어', html: 'ko' },
+    { code: 'hi', name: 'हिन्दी', html: 'hi' },
+    { code: 'fr', name: 'Français', html: 'fr' },
+    { code: 'de', name: 'Deutsch', html: 'de' },
+    { code: 'es', name: 'Español', html: 'es' },
+    { code: 'pt', name: 'Português', html: 'pt-BR' },
+    { code: 'it', name: 'Italiano', html: 'it' },
+    { code: 'ru', name: 'Русский', html: 'ru' },
+    { code: 'tr', name: 'Türkçe', html: 'tr' },
+    { code: 'vi', name: 'Tiếng Việt', html: 'vi' },
+    { code: 'id', name: 'Bahasa Indonesia', html: 'id' },
+    { code: 'th', name: 'ไทย', html: 'th' }
+  ];
+  function info(code) {
+    for (var i = 0; i < LANGS.length; i++) if (LANGS[i].code === code) return LANGS[i];
+    return null;
+  }
   var DICT = { zh: ZH };
   var EN = {};                       /* 英文原文：初始化时从 DOM 抓，切回来直接还原 */
   var STORE = 'mr-lang';
   var current = 'en';
+  /* 语言文件与 i18n.js 同一个版本号（Pages 发布时给 i18n.js 带 ?v=提交号，见 static.yml） */
+  var me = document.currentScript && document.currentScript.src;
+  var VER = me && me.indexOf('?') >= 0 ? me.slice(me.indexOf('?')) : '';
+  var BASE = me ? me.replace(/i18n\.js(\?.*)?$/, '') : 'assets/';
 
   function each(sel, fn) {
     Array.prototype.forEach.call(document.querySelectorAll(sel), fn);
@@ -531,11 +559,24 @@
     EN['ui.copyAria'] = 'Copy this snippet';
   }
 
-  function table(lang) { return lang === 'en' ? EN : DICT[lang] || EN; }
+  function table(lang) {
+    if (lang === 'en') return EN;
+    return DICT[lang] || (window.MR_I18N && window.MR_I18N[lang]) || EN;
+  }
 
   function t(key) {
     var v = table(current)[key];
     return v == null ? (EN[key] == null ? '' : EN[key]) : v;
+  }
+
+  /* 语言文件还没下来时先下（一个 <script>：file:// 打开也能用，fetch 不行） */
+  function load(lang, done) {
+    if (lang === 'en' || DICT[lang] || (window.MR_I18N && window.MR_I18N[lang])) return done(true);
+    var s = document.createElement('script');
+    s.src = BASE + 'i18n/' + lang + '.js' + VER;
+    s.onload = function () { done(!!(window.MR_I18N && window.MR_I18N[lang])); };
+    s.onerror = function () { done(false); };
+    document.head.appendChild(s);
   }
 
   function apply(lang) {
@@ -556,44 +597,86 @@
     if (tb['meta.title']) document.title = tb['meta.title'];
     var d = document.querySelector('meta[name="description"]');
     if (d && tb['meta.desc']) d.setAttribute('content', tb['meta.desc']);
-    document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+    var li = info(lang) || LANGS[0];
+    document.documentElement.lang = li.html;
     each('.lang-switch [data-lang]', function (b) {
       b.setAttribute('aria-pressed', String(b.getAttribute('data-lang') === lang));
     });
+    var cur = document.querySelector('.lang-cur-name');
+    if (cur) cur.textContent = li.name;
     /* 让 app.js 里那些自己造出来的按钮（复制）也跟着换 */
     document.dispatchEvent(new CustomEvent('mr:langchange', { detail: { lang: lang } }));
   }
 
+  function switchTo(lang) {
+    load(lang, function (ok) {
+      if (!ok) lang = 'en';
+      apply(lang);
+      try { localStorage.setItem(STORE, lang); } catch (e) { /* 隐私模式下 localStorage 会抛，忽略 */ }
+      /* 让地址栏与分享出去的链接一致 */
+      var url = new URL(location.href);
+      if (lang === 'en') url.searchParams.delete('lang');
+      else url.searchParams.set('lang', lang);
+      history.replaceState(null, '', url.toString());
+    });
+  }
+
   function pick() {
     var q = new URLSearchParams(location.search).get('lang');
-    if (q === 'zh' || q === 'en') return q;
+    if (q && info(q)) return q;
     try {
       var s = localStorage.getItem(STORE);
-      if (s === 'zh' || s === 'en') return s;
-    } catch (e) { /* 隐私模式下 localStorage 会抛，忽略 */ }
+      if (s && info(s)) return s;
+    } catch (e) { /* 同上 */ }
     return 'en';                     /* 默认英文 */
+  }
+
+  /* 语言菜单：按钮展开 / 收起，点外面、按 Esc 收起，上下键在选项间移动 */
+  function menu() {
+    var box = document.querySelector('.lang-switch');
+    if (!box) return;
+    var btn = box.querySelector('.lang-cur');
+    var list = box.querySelector('.lang-menu');
+    if (!btn || !list) return;
+    var opts = function () { return Array.prototype.slice.call(list.querySelectorAll('[data-lang]')); };
+    var open = function (on, focus) {
+      list.hidden = !on;
+      btn.setAttribute('aria-expanded', String(on));
+      if (on && focus) {
+        var o = opts();
+        var sel = o.filter(function (b) { return b.getAttribute('aria-pressed') === 'true'; })[0] || o[0];
+        if (sel) sel.focus();
+      }
+    };
+    btn.addEventListener('click', function () { open(list.hidden, true); });
+    document.addEventListener('click', function (ev) { if (!box.contains(ev.target)) open(false); });
+    box.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape') { open(false); btn.focus(); return; }
+      if (list.hidden || (ev.key !== 'ArrowDown' && ev.key !== 'ArrowUp')) return;
+      ev.preventDefault();
+      var o = opts();
+      var i = o.indexOf(document.activeElement);
+      var n = ev.key === 'ArrowDown' ? (i + 1) % o.length : (i - 1 + o.length) % o.length;
+      o[n].focus();
+    });
+    opts().forEach(function (b) {
+      b.addEventListener('click', function () {
+        var lang = b.getAttribute('data-lang');
+        open(false);
+        btn.focus();
+        if (lang !== current) switchTo(lang);
+      });
+    });
   }
 
   function init() {
     snapshotEnglish();
-    each('.lang-switch [data-lang]', function (b) {
-      b.addEventListener('click', function () {
-        var lang = b.getAttribute('data-lang');
-        if (lang === current) return;
-        apply(lang);
-        try { localStorage.setItem(STORE, lang); } catch (e) { /* 同上 */ }
-        /* 让地址栏与分享出去的链接一致 */
-        var url = new URL(location.href);
-        if (lang === 'en') url.searchParams.delete('lang');
-        else url.searchParams.set('lang', lang);
-        history.replaceState(null, '', url.toString());
-      });
-    });
+    menu();
     var want = pick();
-    if (want !== 'en') apply(want);
+    if (want !== 'en') load(want, function (ok) { if (ok) apply(want); });
   }
 
-  window.I18N = { t: t, apply: apply, lang: function () { return current; }, keys: Object.keys(ZH) };
+  window.I18N = { t: t, apply: apply, lang: function () { return current; }, keys: Object.keys(ZH), langs: LANGS };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();

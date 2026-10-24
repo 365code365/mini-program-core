@@ -68,10 +68,9 @@ def main() -> int:
         got = m.group(1) if m else "?"
         if got != want_lang:
             problems.append(f"{name}：<html lang> 是 {got}，应为 {want_lang}")
-        body = drop_noise(html)
+        # 语言菜单里各语言的自称（简体中文 / 繁體中文 / 日本語）不算
+        body = re.sub(r'<ul class="lang-menu".*?</ul>', '', drop_noise(html), flags=re.S)
         n = len(CJK.findall(body))
-        # 语言切换按钮上永远有「中文」两个字，扣掉
-        n = max(0, n - 2)
         if want_cjk and n < 500:
             problems.append(f"{name}：中文字符只有 {n} 个，像是没切过去")
         if not want_cjk and n:
@@ -96,12 +95,21 @@ def main() -> int:
         if inner and not CJK.search(inner):
             problems.append(f"{probe} 在中文版里仍是英文")
 
+    # 懒加载的语言文件：抽两种（一种 CJK、一种拉丁字母）真开一遍，确认 <script> 加载 + 替换生效
+    with tempfile.TemporaryDirectory() as p3, tempfile.TemporaryDirectory() as p4:
+        for lang, want_lang, probe in (("ja", "ja", re.compile(r"[\u3040-\u30ff]")), ("de", "de", re.compile(r"[äöüß]"))):
+            html = dump(chrome, base + "?lang=" + lang, p3 if lang == "ja" else p4)
+            m = re.search(r'<html lang="([^"]+)"', html or "")
+            got = m.group(1) if m else "?"
+            inner = inner_html(html or "", "hero.lede") or ""
+            if got != want_lang or not probe.search(inner):
+                problems.append(f"?lang={lang}：<html lang> 是 {got}，hero.lede 没换成该语言（语言文件没加载上？）")
     if problems:
         print("❌ 落地页渲染检查不通过：")
         for p in problems:
             print("  -", p)
         return 1
-    print(f"✅ 默认英文（html lang=en，正文无中文）；?lang=zh 切中文生效；"
+    print(f"✅ 默认英文（html lang=en，正文无中文）；?lang=zh 切中文生效；?lang=ja / de 懒加载生效；"
           f"两边各 {len(keys)} 个 data-i18n 元素都有文字")
     return 0
 
