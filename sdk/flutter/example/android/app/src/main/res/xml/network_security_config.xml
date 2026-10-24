@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 测试用的小程序商店（tools/mini-store）走明文 HTTP：只对这台放行，其余照旧只许 HTTPS。
+     换了 MINI_STORE 地址的话这里跟着加一条 -->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">64.83.22.217</domain>
+        <domain includeSubdomains="false">10.0.2.2</domain>
+    </domain-config>
+</network-security-config>

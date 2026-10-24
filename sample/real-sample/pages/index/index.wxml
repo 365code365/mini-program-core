@@ -1,29 +1,42 @@
 <view class="page">
   <!-- 搜索栏 -->
-  <view class="search-bar" bindtap="onSearchTap">
-    <view class="search-box">
-      <icon type="search" size="16" color="#999"></icon>
-      <text class="search-text">搜索商品</text>
+  <view class="header">
+    <view class="search-box" bindtap="onSearchTap">
+      <icon type="search" size="15" color="#B3B3B3"></icon>
+      <text class="search-text">降噪耳机 限时直降200</text>
+      <view class="search-btn"><text>搜索</text></view>
     </view>
   </view>
 
   <!-- 轮播 Banner -->
-  <swiper class="banner-swiper" indicator-dots="{{true}}" autoplay="{{true}}" interval="3000">
-    <swiper-item wx:for="{{banners}}" wx:key="id">
-      <view class="banner-item" style="background-color: {{item.color}}">
-        <text class="banner-tag">{{item.tag}}</text>
-        <text class="banner-title">{{item.title}}</text>
-        <text class="banner-desc">{{item.desc}}</text>
-      </view>
-    </swiper-item>
-  </swiper>
+  <view class="banner-wrap">
+    <swiper class="banner-swiper" indicator-dots="{{true}}" indicator-color="rgba(255,255,255,0.5)" indicator-active-color="#ffffff" autoplay="{{true}}" interval="3000" circular="{{true}}">
+      <swiper-item wx:for="{{banners}}" wx:key="id">
+        <view class="banner-item" bindtap="onBannerTap" data-id="{{item.productId}}">
+          <image class="banner-bg" src="{{item.image}}" mode="aspectFill"></image>
+          <view class="banner-text">
+            <view class="banner-tag"><text>{{item.tag}}</text></view>
+            <text class="banner-title">{{item.title}}</text>
+            <text class="banner-desc">{{item.desc}}</text>
+            <view class="banner-cta"><text>立即抢购 ></text></view>
+          </view>
+        </view>
+      </swiper-item>
+    </swiper>
+  </view>
+
+  <!-- 服务承诺 -->
+  <view class="promise-row">
+    <view class="promise"><view class="promise-dot"></view><text>正品保障</text></view>
+    <view class="promise"><view class="promise-dot"></view><text>极速发货</text></view>
+    <view class="promise"><view class="promise-dot"></view><text>七天无理由</text></view>
+    <view class="promise"><view class="promise-dot"></view><text>售后无忧</text></view>
+  </view>
 
   <!-- 分类导航 -->
   <view class="category-nav">
     <view class="category-item" wx:for="{{categories}}" wx:key="id" bindtap="onCategoryTap" data-id="{{item.id}}">
-      <view class="category-icon" style="background-color: {{item.color}};">
-        <icon type="{{item.icon}}" size="24" color="#fff"></icon>
-      </view>
+      <image class="category-icon" src="{{item.icon}}"></image>
       <text class="category-name">{{item.name}}</text>
     </view>
   </view>
@@ -32,51 +45,51 @@
   <view class="section">
     <view class="section-header">
       <view class="section-title">
-        <text class="title-icon">⚡</text>
+        <view class="title-bar"></view>
         <text class="title-text">限时特惠</text>
+        <text class="title-sub">每日10点上新</text>
       </view>
-      <text class="section-more" bindtap="onViewAll">查看全部 ></text>
+      <text class="section-more" bindtap="onViewAll">更多 ></text>
     </view>
-    <scroll-view class="product-scroll" scroll-x="{{true}}" show-scrollbar="{{false}}">
-      <view class="product-card scroll-card" wx:for="{{flashProducts}}" wx:key="id" bindtap="onProductTap" data-id="{{item.id}}">
-        <view class="product-badge" wx:if="{{item.badge}}">{{item.badge}}</view>
-        <view class="product-img-placeholder" style="background-color: {{item.bgColor}};">
-          <icon type="{{item.icon}}" size="32" color="#fff"></icon>
-        </view>
-        <text class="product-name">{{item.name}}</text>
-        <view class="product-info">
-          <text class="product-price">¥{{item.price}}</text>
-          <text class="product-original">¥{{item.originalPrice}}</text>
-        </view>
-        <view class="add-btn" catchtap="onAddCart" data-product="{{item}}">
-          <text>+</text>
+    <scroll-view class="flash-scroll" scroll-x="{{true}}" show-scrollbar="{{false}}">
+      <view class="flash-row">
+        <view class="flash-card" wx:for="{{flashProducts}}" wx:key="id" bindtap="onProductTap" data-id="{{item.id}}">
+          <image class="flash-img" src="{{item.image}}" mode="aspectFill"></image>
+          <text class="flash-name">{{item.name}}</text>
+          <view class="flash-price-row">
+            <text class="price-symbol">¥</text>
+            <text class="flash-price">{{item.price}}</text>
+            <text class="flash-original">¥{{item.originalPrice}}</text>
+          </view>
         </view>
       </view>
     </scroll-view>
   </view>
 
   <!-- 热销推荐 -->
-  <view class="section">
-    <view class="section-header">
-      <view class="section-title">
-        <text class="title-icon">🔥</text>
-        <text class="title-text">热销推荐</text>
-      </view>
-    </view>
-    <view class="product-grid">
-      <view class="product-card" wx:for="{{hotProducts}}" wx:key="id" bindtap="onProductTap" data-id="{{item.id}}">
-        <view class="product-badge" wx:if="{{item.badge}}" style="background-color: #FF6B35;">{{item.badge}}</view>
-        <view class="product-img-placeholder" style="background-color: {{item.bgColor}};">
-          <icon type="{{item.icon}}" size="36" color="#fff"></icon>
+  <view class="block-title">
+    <text class="block-title-text">热销推荐</text>
+    <text class="block-title-sub">大家都在买</text>
+  </view>
+  <view class="product-grid">
+    <view class="grid-card" wx:for="{{hotProducts}}" wx:key="id" bindtap="onProductTap" data-id="{{item.id}}">
+      <image class="grid-img" src="{{item.image}}" mode="aspectFill"></image>
+      <view class="grid-body">
+        <text class="grid-name">{{item.name}}</text>
+        <text class="grid-desc">{{item.desc}}</text>
+        <view class="grid-tags">
+          <text class="tag" wx:if="{{item.tag}}">{{item.tag}}</text>
+          <text class="tag tag-grey">包邮</text>
         </view>
-        <text class="product-name">{{item.name}}</text>
-        <text class="product-desc">{{item.desc}}</text>
-        <view class="product-info">
-          <text class="product-price">¥{{item.price}}</text>
-          <text class="product-sold">已售{{item.sold}}</text>
-        </view>
-        <view class="add-btn" catchtap="onAddCart" data-product="{{item}}">
-          <text>+</text>
+        <view class="grid-bottom">
+          <view class="grid-price-wrap">
+            <text class="price-symbol">¥</text>
+            <text class="grid-price">{{item.price}}</text>
+            <text class="grid-sold">已售{{item.sold}}</text>
+          </view>
+          <view class="add-btn" catchtap="onAddCart" data-product="{{item}}">
+            <text>+</text>
+          </view>
         </view>
       </view>
     </view>
@@ -86,29 +99,23 @@
   <view class="section">
     <view class="section-header">
       <view class="section-title">
-        <text class="title-icon">✨</text>
+        <view class="title-bar"></view>
         <text class="title-text">新品上架</text>
       </view>
     </view>
-    <view class="product-list">
-      <view class="list-item" wx:for="{{newProducts}}" wx:key="id" bindtap="onProductTap" data-id="{{item.id}}">
-        <view class="list-img-placeholder" style="background-color: {{item.bgColor}};">
-          <icon type="{{item.icon}}" size="28" color="#fff"></icon>
+    <view class="list-item" wx:for="{{newProducts}}" wx:key="id" bindtap="onProductTap" data-id="{{item.id}}">
+      <image class="list-img" src="{{item.image}}" mode="aspectFill"></image>
+      <view class="list-info">
+        <text class="list-name">{{item.name}}</text>
+        <text class="list-desc">{{item.desc}}</text>
+        <view class="list-bottom">
+          <text class="price-symbol">¥</text>
+          <text class="list-price">{{item.price}}</text>
+          <text class="list-original">¥{{item.originalPrice}}</text>
         </view>
-        <view class="list-info">
-          <text class="list-name">{{item.name}}</text>
-          <text class="list-desc">{{item.desc}}</text>
-          <view class="list-tags">
-            <text class="tag" wx:if="{{item.tag}}">{{item.tag}}</text>
-          </view>
-          <view class="list-bottom">
-            <text class="list-price">¥{{item.price}}</text>
-            <text class="list-original">¥{{item.originalPrice}}</text>
-          </view>
-        </view>
-        <view class="list-add" catchtap="onAddCart" data-product="{{item}}">
-          <text>加入购物车</text>
-        </view>
+      </view>
+      <view class="list-add" catchtap="onAddCart" data-product="{{item}}">
+        <text>加购</text>
       </view>
     </view>
   </view>

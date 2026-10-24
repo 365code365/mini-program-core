@@ -1,5 +1,6 @@
 "use strict";
 const common_vendor = require("../../common/vendor.js");
+const config_env = require("../../config/env.js");
 const api_adopt = require("../../api/adopt.js");
 const api_mappers = require("../../api/mappers.js");
 const common_assets = require("../../common/assets.js");
@@ -32,6 +33,8 @@ const _sfc_main = common_vendor.defineComponent({
     }
   },
   onLoad(opt) {
+    if (config_env.MOCK)
+      opt = Object.assign({ id: "1" }, opt || {});
     const id = opt["id"];
     if (id != null) {
       api_adopt.gardenDetail(parseInt(id)).then((res) => {

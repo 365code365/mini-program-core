@@ -191,6 +191,8 @@ pub struct MiniEngine {
     pub(super) stats: FrameStats,
     /// 局部重画的跨帧状态与本帧的活儿归类（见 engine_damage.rs）
     pub(crate) dmg: super::engine_damage::DamageState,
+    /// 快要滑进来的图先在后台解码（engine_prefetch.rs）
+    pub(super) prefetch: super::engine_prefetch::Prefetch,
 }
 
 impl MiniEngine {
@@ -247,6 +249,8 @@ impl MiniEngine {
         let mut app = MiniApp::new(width, height)?;
         app.init()?;
         engine_options::install_system_info(&app, &engine_options::system_info(width, height, dpr, &opts));
+        let app_id = crate::app_about::project_app_id(&page_loader::get_app_path());
+        engine_options::install_launch_context(&app, &app_id, opts.launch_options.as_ref());
         app.install_host_apis(&opts.host_apis);
         // 之后解析的样式表（自定义 tabBar、页面）看到宿主给的安全区
         Self::apply_env_context(&opts, width, height);
@@ -358,6 +362,7 @@ impl MiniEngine {
                 log: env.damage_log,
                 ..Default::default()
             },
+            prefetch: Default::default(),
             env,
             host_pref: None,
             backend,

@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>小程序管理</title>
+<style>
+  :root { --green: #07c160; --line: #e5e5e5; --sub: #888; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.5 -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f5f5f5; color: #222; }
+  header { background: #fff; border-bottom: 1px solid var(--line); padding: 12px 24px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 17px; margin: 0; flex: 1; }
+  main { max-width: 980px; margin: 24px auto; padding: 0 16px; }
+  .card { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+  .card h2 { font-size: 15px; margin: 0 0 14px; }
+  label { display: block; margin: 10px 0 4px; color: #555; }
+  input[type=text], input[type=password] { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+  button { padding: 7px 16px; border: 1px solid #ccc; border-radius: 4px; background: #fff; cursor: pointer; font-size: 14px; }
+  button.primary { background: var(--green); border-color: var(--green); color: #fff; }
+  button.danger { color: #e64340; }
+  button:disabled { opacity: .5; cursor: default; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .row > div { flex: 1; min-width: 200px; }
+  .hint { color: var(--sub); font-size: 12px; }
+  .msg { margin-top: 10px; min-height: 20px; }
+  .msg.err { color: #e64340; }
+  .msg.ok { color: var(--green); }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 10px 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  th { color: var(--sub); font-weight: normal; font-size: 12px; }
+  .icon { width: 36px; height: 36px; border-radius: 50%; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-weight: 600; }
+  .name { font-weight: 600; }
+  .id { color: var(--sub); font-size: 12px; }
+  .ops button { margin-right: 6px; padding: 4px 10px; font-size: 13px; }
+  #login { max-width: 360px; margin: 80px auto; }
+  .hidden { display: none !important; }
+  .src { display: flex; gap: 16px; margin: 6px 0; }
+  .src label { display: inline; margin: 0; color: #222; }
+</style>
+</head>
+<body>
+<div id="login" class="card hidden">
+  <h2>小程序管理 · 登录</h2>
+  <form id="loginForm">
+    <label for="lu">账户</label><input id="lu" type="text" autocomplete="username" required>
+    <label for="lp">密码</label><input id="lp" type="password" autocomplete="current-password" required>
+    <div style="margin-top:16px"><button class="primary" type="submit">登录</button></div>
+    <div id="loginMsg" class="msg err" role="alert"></div>
+  </form>
+</div>
+
+<div id="app" class="hidden">
+  <header>
+    <h1>小程序管理</h1>
+    <span id="who" class="hint"></span>
+    <button id="logout" type="button">退出</button>
+  </header>
+  <main>
+    <section class="card">
+      <h2>上传小程序</h2>
+      <form id="uploadForm">
+        <div class="row">
+          <div><label for="uid">ID（目录名，小写字母 / 数字 / . _ -；同 ID 上传 = 升级）</label><input id="uid" type="text" required pattern="[a-z0-9][a-z0-9._\-]{0,63}"></div>
+          <div><label for="uname">名称（不填用 app.json 的导航栏标题）</label><input id="uname" type="text" maxlength="200"></div>
+        </div>
+        <label for="udesc">描述</label><input id="udesc" type="text" maxlength="200">
+        <label>代码</label>
+        <div class="src" role="radiogroup">
+          <span><input type="radio" name="src" id="srcDir" value="dir" checked><label for="srcDir">选文件夹（含 app.json 的那一层）</label></span>
+          <span><input type="radio" name="src" id="srcZip" value="zip"><label for="srcZip">选 zip</label></span>
+        </div>
+        <input id="udir" type="file" webkitdirectory multiple aria-label="小程序文件夹">
+        <input id="uzip" type="file" accept=".zip,application/zip" class="hidden" aria-label="小程序 zip">
+        <div class="hint">文件夹会在浏览器里打成 zip 再传；app.json 可以在 zip 根上，也可以在唯一一层子目录里。</div>
+        <div style="margin-top:14px"><button id="ubtn" class="primary" type="submit">上传</button></div>
+        <div id="uploadMsg" class="msg" role="status"></div>
+      </form>
+    </section>
+    <section class="card">
+      <h2>已上架 <span id="count" class="hint"></span></h2>
+      <table>
+        <thead><tr><th></th><th>名称 / ID</th><th>版本</th><th>大小</th><th>更新</th><th>操作</th></tr></thead>
+        <tbody id="list"></tbody>
+      </table>
+    </section>
+    <section class="card">
+      <h2>诊断日志 <span id="diagCount" class="hint"></span></h2>
+      <div class="hint">App 里点「上传诊断日志」传上来的；开发机上 <code>bash tools/mini-store/diag.sh get &lt;id&gt;</code> 拉回来分析。</div>
+      <table>
+        <thead><tr><th>id / 时间</th><th>宿主 / 设备</th><th>小程序</th><th>日志</th><th>说明</th><th>操作</th></tr></thead>
+        <tbody id="diagList"></tbody>
+      </table>
+    </section>
+  </main>
+</div>
+<script src="/admin.js"></script>
+</body>
+</html>

@@ -1,5 +1,6 @@
 "use strict";
 const common_vendor = require("../../common/vendor.js");
+const config_env = require("../../config/env.js");
 const api_adopt = require("../../api/adopt.js");
 const utils_auth = require("../../utils/auth.js");
 const _sfc_main = common_vendor.defineComponent({
@@ -14,6 +15,8 @@ const _sfc_main = common_vendor.defineComponent({
     };
   },
   onLoad(opt) {
+    if (config_env.MOCK)
+      opt = Object.assign({ recordId: "501", gardenName: "%E5%9D%AA%E5%9D%91%E5%8F%A3%20%C2%B7%20%E9%B8%AD%E5%B1%8E%E9%A6%99%E5%8F%A4%E6%A0%91%E5%9B%AD" }, opt || {});
     var _a;
     if (!utils_auth.isLogin()) {
       common_vendor.index.redirectTo({ url: "/pages/login/login" });

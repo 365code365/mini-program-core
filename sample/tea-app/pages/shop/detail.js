@@ -1,5 +1,6 @@
 "use strict";
 const common_vendor = require("../../common/vendor.js");
+const config_env = require("../../config/env.js");
 const api_product = require("../../api/product.js");
 const api_cart = require("../../api/cart.js");
 const api_mappers = require("../../api/mappers.js");
@@ -88,6 +89,8 @@ const _sfc_main = common_vendor.defineComponent({
     }
   },
   onLoad(opt) {
+    if (config_env.MOCK)
+      opt = Object.assign({ id: "1001" }, opt || {});
     this.imgCover = utils_assets.assetUrl("detail_cover", "/static/gen/detail-1.jpg");
     this.imgOrigin = utils_assets.assetUrl("detail_origin", "/static/gen/detail-3.jpg");
     const id = opt["id"];

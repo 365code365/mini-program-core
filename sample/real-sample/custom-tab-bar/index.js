@@ -1,4 +1,3 @@
-const app = getApp();
 
 Component({
   data: {
@@ -29,7 +28,9 @@ Component({
     },
 
     updateCartCount: function() {
-      this.setData({ cartCount: app.globalData.cartCount });
+      // getApp() 用时再取：组件脚本可能在 App() 之前就被加载
+      const app = getApp();
+      this.setData({ cartCount: app ? app.globalData.cartCount : 0 });
     },
 
     onSwitchTab: function(e) {

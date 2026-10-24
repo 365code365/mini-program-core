@@ -2,6 +2,7 @@
 const common_vendor = require("../common/vendor.js");
 const config_env = require("../config/env.js");
 const utils_auth = require("./auth.js");
+const api_mock = require("../api/mock.js");
 class RequestOptions extends common_vendor.UTS.UTSType {
   static get$UTSMetadata$() {
     return {
@@ -39,7 +40,19 @@ function goLogin() {
   utils_auth.clearToken();
   common_vendor.index.navigateTo({ url: "/pages/login/login" });
 }
+/** 离线演示：与真实接口同样的 UTSJSONObject 形状（uni.request 的 returnValue 也是这样包的），异步返回 */
+function mockRequest(method, url, data) {
+  return new Promise((resolve) => {
+    const raw = api_mock.mockData(method, url, data);
+    const isObj = raw != null && typeof raw == "object";
+    setTimeout(() => {
+      resolve(isObj ? common_vendor.UTS.JSON.parse(JSON.stringify(raw)) : raw);
+    }, 0);
+  });
+}
 function request(method, url, data = null, opt = DEFAULT_OPT) {
+  if (config_env.MOCK)
+    return mockRequest(method, url, data);
   return new Promise((resolve, reject) => {
     common_vendor.index.request({
       url: config_env.BASE_URL + url,

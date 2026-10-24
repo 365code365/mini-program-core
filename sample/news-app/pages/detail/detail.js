@@ -7,21 +7,21 @@ var ARTICLES = {
     avatar: '/assets/avatar1.jpg',
     time: '2 小时前',
     readCount: '12.8万',
-    cover: '/assets/banner.jpg',
+    cover: '/assets/n_economy.jpg',
     tags: ['数字经济', '产业升级', '独家'],
     body: '记者从相关部门获悉，上半年数字经济核心产业增加值同比增长明显，占国内生产总值比重进一步提升。\n\n从结构上看，数字技术与实体产业的融合成为增长主线：智能制造改造项目数量同比增加，工业互联网平台连接设备规模持续扩大，一批中小企业通过轻量化改造实现了产能与良率的同步提升。\n\n业内人士分析认为，下一阶段的重点将从"建平台"转向"用平台"，数据要素的流通与定价机制、算力资源的跨区域调度，都会成为政策关注的方向。\n\n多位受访企业负责人表示，融合发展带来的效率提升已在订单交付周期上体现，但复合型人才短缺仍是主要制约因素。'
   }
 };
 
 var TITLES = {
-  101: { title: '国产大飞机再获百架订单 交付节奏明显加快', author: '经济观察' },
-  102: { title: '多地推出住房消费新政 首套房贷利率下调', author: '财经快讯' },
-  103: { title: '人工智能进课堂：一线教师的真实体验', author: '教育前沿' },
-  104: { title: '暑运客流创新高 铁路部门加开夜间高铁', author: '出行观察' },
-  201: { title: '新能源车渗透率突破关键节点 供应链加速重构', author: '汽车纵横' },
-  301: { title: '联赛焦点战：主队补时绝杀 现场万人沸腾', author: '体育直播间' },
-  401: { title: '暑期档票房破百亿 现实题材成最大赢家', author: '娱乐观察' },
-  1002: { title: '城市更新样本：老街区如何焕发新活力', author: '城市观察' }
+  101: { title: '国产大飞机再获百架订单 交付节奏明显加快', author: '经济观察', cover: '/assets/n_airplane.jpg' },
+  102: { title: '多地推出住房消费新政 首套房贷利率下调', author: '财经快讯', cover: '/assets/n_housing.jpg' },
+  103: { title: '人工智能进课堂：一线教师的真实体验', author: '教育前沿', cover: '/assets/n_ai_class.jpg' },
+  104: { title: '暑运客流创新高 铁路部门加开夜间高铁', author: '出行观察', cover: '/assets/n_rail.jpg' },
+  201: { title: '新能源车渗透率突破关键节点 供应链加速重构', author: '汽车纵横', cover: '/assets/n_ev.jpg' },
+  301: { title: '联赛焦点战：主队补时绝杀 现场万人沸腾', author: '体育直播间', cover: '/assets/n_football.jpg' },
+  401: { title: '暑期档票房破百亿 现实题材成最大赢家', author: '娱乐观察', cover: '/assets/n_cinema.jpg' },
+  1002: { title: '城市更新样本：老街区如何焕发新活力', author: '城市观察', cover: '/assets/n_street1.jpg' }
 };
 
 Page({
@@ -40,6 +40,8 @@ Page({
     composing: false,
     draft: '',
     article: ARTICLES.default,
+    // 自定义顶栏的几何（app.navMetrics）
+    nav: { statusBar: 20, navHeight: 44, capsuleSpace: 96 },
     related: [
       { id: 3001, title: '工业互联网平台连接设备数突破新高', source: '产业观察', comments: 132 },
       { id: 3002, title: '数据要素市场化配置改革试点扩围', source: '政策解读', comments: 88 },
@@ -61,9 +63,11 @@ Page({
     if (TITLES[id]) {
       article.title = TITLES[id].title;
       article.author = TITLES[id].author;
+      if (TITLES[id].cover) { article.cover = TITLES[id].cover; }
     }
     var settings = app.getSettings();
     this.setData({
+      nav: app.navMetrics(),
       articleId: id,
       article: article,
       nightMode: !!settings.nightMode,
@@ -164,6 +168,7 @@ Page({
   },
 
   onBack: function () {
-    wx.navigateBack();
+    // 深链直接打开到详情页时栈里只有这一页：回首页
+    if (getCurrentPages().length > 1) { wx.navigateBack(); } else { wx.switchTab({ url: '/pages/home/home' }); }
   }
 });

@@ -17,7 +17,11 @@ import org.json.JSONObject
  * 弹宿主自己的对话框 —— 表明调用确实走到了宿主、结果是宿主给的。用户取消一律 `<api>:fail cancel`（与微信一致）。
  * 选图 / 拍照 / 选视频 / 选文件 / 存相册 / 打开文档**不在这里**：SDK 自带（`MiniProgramView.builtinHostApis`）。
  */
-class DemoHostApis(private val activity: Activity) {
+class DemoHostApis(
+    private val activity: Activity,
+    /** wx.navigateToMiniProgram 的参数（appId / path / extraData），用户点了允许之后交给宿主去打开 */
+    private val onNavigateToMiniProgram: (JSONObject) -> Unit = {},
+) {
     private val granted = mutableSetOf("scope.writePhotosAlbum", "scope.camera")
 
     /** api 名 → 处理器（登记进 `MiniProgramView.hostApis`） */
@@ -93,9 +97,14 @@ class DemoHostApis(private val activity: Activity) {
         },
         "getWeRunData" to sync { JSONObject().put("encryptedData", "ZGVtbw==").put("iv", "ZGVtbw==").put("cloudID", "demo_cloud_id") },
         // ── 跳转与分享 ──
+        // 点了允许：先把 success 回给小程序，再按 AppID 去商店换过去（换的时候当前这个小程序会被销毁，
+        // 回调就没人接了）。目标小程序拿到的启动参数：scene 1037 + referrerInfo
         "navigateToMiniProgram" to ask({
             "打开小程序" to "即将打开 ${it.args.optString("appId")}\n路径 ${it.args.optString("path").ifEmpty { "首页" }}"
-        }, "允许") { JSONObject() },
+        }, "允许") { call ->
+            activity.window.decorView.postDelayed({ onNavigateToMiniProgram(call.args) }, 50)
+            JSONObject()
+        },
         // 只有被别的小程序打开时才回得去（与微信一致）；示例里小程序是宿主直接打开的
         "navigateBackMiniProgram" to MiniHostApi { _, reply ->
             reply.fail("navigateBackMiniProgram:fail 当前小程序不是由其它小程序打开的")

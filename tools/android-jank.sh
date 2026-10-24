@@ -14,6 +14,8 @@
 #   ② 引擎：`debug.mini.damage_log` 里超过 8ms 的帧（哪一类、哪一段贵）。
 # 坐标按 1080×2354 的示例首页写死。设备序列号用 ANDROID_SERIAL。
 #
+# `STORE_APP=<id>`（只配 MINI_APP=native）：量商店里下载来的小程序，如 `STORE_APP=news-app MINI_APP=native … store-long`
+#   （`*-slow` / `*-fastslow` / `*-long` 这几类只在当前页上下滑，任何小程序都能用）。
 # `MINI_APP=native`：量纯原生示例（sdk/android/example，MiniProgramView），同一个演示小程序、同一组坐标。
 # APK 用 `cd sdk/android/example && ./gradlew assembleRelease` 出的那份（debug 包是 DEBUGGABLE，量出来偏慢）
 set -u
@@ -28,10 +30,22 @@ if [ "${MINI_APP:-flutter}" = native ]; then
   APK=sdk/android/example/app/build/outputs/apk/release/app-release.apk
   # 宿主日志（`[事件] page <路由>`）；原生示例一启动就是小程序首页，没有 Flutter 那层入口列表
   HOSTLOG=mini-example:I; OPEN_TAP=""
+  # 桌面图标进的是入口页（StoreActivity，服务器上的小程序列表），量的是内置示例：直接起 MainActivity。
+  # 回桌面再回来也用同一条 —— 意图与任务的根意图一样，系统只把任务带回前台，不会再起一个
+  LAUNCH(){ D shell am start -n $PKG/.MainActivity >/dev/null 2>&1; }
+  # `STORE_APP=news-app`：量从服务器下载的小程序（与入口页点图标同一条路：MainActivity 带 storeApp 起来，
+  # 盖 loading 层、下载解包、打开）。列表从商店服务取（STORE_URL 可换），已是最新版就不再下载
+  if [ -n "${STORE_APP:-}" ]; then
+    STORE_URL="${STORE_URL:-http://64.83.22.217:9630}"
+    STORE_JSON=$(curl -s -m 8 "$STORE_URL/api/apps" | python3 -c "import json,sys; a=[x for x in json.load(sys.stdin)['apps'] if x['id']=='$STORE_APP']; print(json.dumps(a[0],ensure_ascii=True,separators=(',',':')) if a else '')")
+    [ -n "$STORE_JSON" ] || { echo "⚠ 商店里没有 $STORE_APP（或连不上 $STORE_URL）"; exit 1; }
+    LAUNCH(){ D shell "am start -n $PKG/.MainActivity --es storeApp '$STORE_JSON' --es storeUrl '$STORE_URL'" >/dev/null 2>&1; }
+  fi
 else
   PKG=dev.minirender.mini_render_example
   APK=sdk/flutter/example/build/app/outputs/flutter-apk/app-release.apk
   HOSTLOG=flutter:I; OPEN_TAP="500 400"
+  LAUNCH(){ D shell monkey -p $PKG -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; }
 fi
 if [ "${2:-}" = install ]; then
   # APK 里的引擎库必须是刚编的那份：引擎库与 `flutter build apk` 并行跑时，gradle 会把**旧库**合进去，
@@ -46,9 +60,15 @@ if [ "${2:-}" = install ]; then
 fi
 D shell setprop debug.mini.damage_log 1
 D shell am force-stop $PKG
-D shell monkey -p $PKG -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
+D logcat -c
+LAUNCH
 for i in $(seq 1 30); do sleep 0.3; F | grep -q "$PKG" && break; done
 sleep 1.3; [ -n "$OPEN_TAP" ] && D shell input tap $OPEN_TAP; sleep 2.5
+# 商店小程序：第一次要下载（几 MB），等到第一条 page 事件（loading 层收起）再量
+if [ -n "${STORE_APP:-}" ]; then
+  for i in $(seq 1 60); do D logcat -d -s $HOSTLOG </dev/null | grep -q "\[事件\] page " && break; sleep 0.5; done
+  sleep 1.5
+fi
 F | grep -q "$PKG" || { echo "⚠ 前台不是示例 App"; D shell setprop debug.mini.damage_log '""'; exit 1; }
 # 子页面：首页先滑到底（位置固定），再点那一行。首页目录（utils/catalog.js）一改，这两个坐标就要跟着改 ——
 # 进没进对页面按 flutter 日志里的 `page <路由>` 判，点歪了直接报错，不会量错页面
@@ -153,14 +173,14 @@ case "$SC" in
     layers > $OUT/layers.txt
     D logcat -c
     T0=$(python3 -c 'import time; print(time.time())')
-    D shell monkey -p $PKG -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
+    LAUNCH
     sleep 1.2
     layers > $OUT/layers.txt ;;
   resume-scroll)
     # 「回桌面再进来，一滑就顿」：先在首页滑一段，回桌面停 3 秒，回来立刻甩 + 慢拖
     D shell input swipe 540 1800 540 700 600; sleep 0.5
     D shell input keyevent KEYCODE_HOME; sleep 3
-    D shell monkey -p $PKG -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
+    LAUNCH
     sleep 0.8; layers > $OUT/layers.txt
     while read -r L; do D shell "dumpsys SurfaceFlinger --latency-clear '$L'" >/dev/null </dev/null; done < $OUT/layers.txt
     D logcat -c

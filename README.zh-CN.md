@@ -149,7 +149,7 @@ my-mini-app/                                                    ┌────�
 | 示例 | 页数 | 与 Chrome 的变化像素比 |
 |---|---|---|
 | `sample-app`（商城） | 15 | **4.57%** |
-| `news-app`（资讯） | 6 | **6.34%** |
+| `news-app`（资讯） | 6 | **6.46%** |
 
 剩余差异集中在粗体字形与亚像素文本位置。这个数字是**回归判据**，不是宣传语 ——
 任何渲染改动都要先看它有没有变坏。
@@ -582,7 +582,7 @@ bash tools/snapshot-all.sh sample-app target/fin2_sample --settle 0 --time 2
 python3 tools/pixdiff.py a.png b.png       # 差异占比 + 包围盒
 ```
 
-当前基线：sample-app **4.57%**、news-app **6.34%**（与编译出的 HTML 对比的变化像素比）。
+当前基线：sample-app **4.57%**、news-app **6.46%**（与编译出的 HTML 对比的变化像素比）。
 
 ### 两条硬规则
 

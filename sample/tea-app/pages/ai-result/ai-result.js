@@ -145,8 +145,9 @@ const _sfc_main = common_vendor.defineComponent({
   onLoad() {
     var _a;
     const cached = common_vendor.index.getStorageSync("yunxiu_ai_request");
-    if (cached != null) {
-      this.requestBody = cached;
+    // 微信里没存过的 key 读回来是 ""（不是 null）；存进去的对象读回来也可能是普通对象，统一转成 UTSJSONObject
+    if (cached != null && typeof cached == "object") {
+      this.requestBody = common_vendor.UTS.JSON.parse(JSON.stringify(cached));
       this.applyIntent(this.requestBody);
       this.askText = (_a = this.requestBody.getString("text")) !== null && _a !== void 0 ? _a : "";
     }

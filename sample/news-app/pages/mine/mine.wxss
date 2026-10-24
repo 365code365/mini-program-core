@@ -1,6 +1,7 @@
 .user-header {
   background-color: #D43C33;
-  padding: 44rpx 28rpx;
+  background: linear-gradient(to bottom, #DC443A, #C9322B);
+  padding: 48rpx 32rpx 96rpx;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -10,6 +11,7 @@
   width: 116rpx;
   height: 116rpx;
   border-radius: 50%;
+  border: 4rpx solid rgba(255, 255, 255, 0.7);
   background-color: rgba(255, 255, 255, 0.35);
   flex-shrink: 0;
 }
@@ -30,7 +32,7 @@
   display: block;
   font-size: 24rpx;
   color: rgba(255, 255, 255, 0.85);
-  margin-top: 10rpx;
+  margin-top: 12rpx;
 }
 
 .user-arrow {
@@ -41,9 +43,12 @@
 /* 统计 */
 .stat-card {
   background-color: #fff;
-  margin: 20rpx;
-  border-radius: 14rpx;
-  padding: 26rpx 0;
+  /* 上浮压住红色头部，形成层次 */
+  margin: -64rpx 24rpx 20rpx;
+  border-radius: 16rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.06);
+  padding: 30rpx 0;
+  position: relative;
   display: flex;
   flex-direction: row;
   justify-content: space-around;
@@ -57,30 +62,31 @@
 }
 
 .stat-value {
-  font-size: 38rpx;
-  color: #1A1A1A;
+  font-size: 40rpx;
+  color: #222222;
   font-weight: bold;
 }
 
 .stat-label {
   font-size: 22rpx;
-  color: #9A9A9A;
+  color: #999999;
   margin-top: 8rpx;
 }
 
 /* 菜单 */
 .menu-card {
   background-color: #fff;
-  margin: 0 20rpx 20rpx;
-  border-radius: 14rpx;
-  padding: 8rpx 24rpx 4rpx;
+  margin: 0 24rpx 20rpx;
+  border-radius: 16rpx;
+  padding: 8rpx 28rpx 4rpx;
 }
 
 .menu-head {
   display: block;
-  font-size: 26rpx;
-  color: #9A9A9A;
-  padding: 16rpx 0 8rpx;
+  font-size: 28rpx;
+  color: #222222;
+  font-weight: bold;
+  padding: 20rpx 0 8rpx;
 }
 
 .menu-item {
@@ -94,8 +100,8 @@
 .menu-text {
   flex: 1;
   font-size: 30rpx;
-  color: #2A2A2A;
-  margin-left: 18rpx;
+  color: #333333;
+  margin-left: 20rpx;
 }
 
 .menu-badge {
@@ -124,7 +130,7 @@
 
 .switch-label {
   font-size: 30rpx;
-  color: #2A2A2A;
+  color: #333333;
 }
 
 .slider-row {
@@ -132,7 +138,7 @@
 }
 
 .logout-wrap {
-  padding: 20rpx;
+  padding: 12rpx 24rpx 20rpx;
 }
 
 .logout-btn {

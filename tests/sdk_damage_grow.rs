@@ -23,6 +23,9 @@ fn fixture(dir: &str, anim: bool, root_level: bool) -> PathBuf {
     std::fs::remove_dir_all(&root).ok();
     // 顶上那行不随数据变：变了的话切线就在顶上，整条带都得重画（那是对的，但测不到要测的）
     let cards = r#"<view wx:for="{{rows}}" wx:key="*this" class="card {{item > 12 && anim ? 'fade' : ''}}">第 {{item}} 条 · 卡片内容</view>"#;
+    // 带动画时列表底下还有个一直在转的加载圈（下载来的「头条新闻」底部的 refresh-ring）：追加之后它被挤到
+    // 新的底下，旧位置要擦、新位置要画
+    let ring = if anim { r#"<view class="ring"><view class="dot"></view></view>"# } else { "" };
     let wxml = if root_level {
         format!(
             r#"<view class="hd">列表</view>
@@ -35,6 +38,7 @@ fn fixture(dir: &str, anim: bool, root_level: bool) -> PathBuf {
             r#"<view class="hd">列表</view>
 <view class="list">{cards}</view>
 <view class="tip">{{{{tip}}}}</view>
+{ring}
 <view class="bar">底栏 {{{{rows.length}}}}</view>"#
         )
     };
@@ -44,6 +48,9 @@ fn fixture(dir: &str, anim: bool, root_level: bool) -> PathBuf {
         border-bottom: 2px solid #07c160; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
 .fade { animation: fade 0.5s linear; }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+.ring { width: 40px; height: 40px; margin: 8px auto; border: 4px solid #07c160; border-radius: 6px; animation: spin 0.9s linear infinite; }
+.dot { width: 12px; height: 12px; margin-left: 30px; background-color: #e64340; }
+@keyframes spin { from { transform: rotate(0deg) translateY(-6px); } to { transform: rotate(360deg) translateY(-6px); } }
 .tip { height: 44px; line-height: 44px; text-align: center; color: #999999; }
 .bar { position: fixed; left: 0; right: 0; bottom: 0; height: 44px; background-color: #333333; color: #ffffff; }
 .fab { position: fixed; right: 16px; bottom: 24px; width: 50px; height: 50px; border-radius: 25px; background-color: rgba(0,0,0,0.65); color: #ffffff; }";
@@ -117,6 +124,18 @@ impl Pair {
         if pa.as_slice() != pb {
             let row = (self.a.pixel_size().0 * 4) as usize;
             let rows: Vec<usize> = (0..pa.len() / row).filter(|&r| pa[r * row..(r + 1) * row] != pb[r * row..(r + 1) * row]).collect();
+            // 第一行里哪几列不一样、两边各是什么颜色（看是谁留下的脏像素）
+            let r0 = rows[0];
+            let cols: Vec<usize> = (0..row / 4).filter(|&c| pa[r0 * row + c * 4..r0 * row + c * 4 + 4] != pb[r0 * row + c * 4..r0 * row + c * 4 + 4]).collect();
+            let at = |v: &[u8], c: usize| (v[r0 * row + c * 4], v[r0 * row + c * 4 + 1], v[r0 * row + c * 4 + 2]);
+            eprintln!(
+                "第一行不一致的列 {}..{}（{} 列），局部 {:?} / 整帧 {:?}",
+                cols[0],
+                cols[cols.len() - 1],
+                cols.len(),
+                at(&pa, cols[0]),
+                at(pb, cols[0])
+            );
             panic!(
                 "第 {} 帧（{what}，局部那边做的是「{}」，滚动 {}）：合成结果不一致，不一致的行 {:?}（共 {} 行）",
                 self.frame,
@@ -250,9 +269,11 @@ fn 内容高不变的盒子变高_阴影那圈也重画_逐字节一致() {
     grows_with_radius("sdk-damage-grow-radius-short", 200);
 }
 
-/// 追加的行带入场动画（绘制坐标≠布局坐标）：照旧整帧，结果仍一致
+/// 追加的行带入场动画、底下还有个一直在转的加载圈（绘制坐标≠布局坐标）：按整段动画最多画到框外多远
+/// 取切线（invalidate_grow.rs `tail_reach`），不再整帧 —— 结果仍逐字节一致。
+/// 从前这里一律整帧：下载来的「头条新闻」每次上拉加载更多都是一个 40~57ms 的 pump
 #[test]
-fn 追加的行带动画_退回整帧_仍逐字节一致() {
+fn 追加的行带动画_底下有转圈_按动画外沿取切线_仍逐字节一致() {
     let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
     let root = fixture("sdk-damage-grow-anim", true, false);
     let mut p = Pair::new(&root);
@@ -263,11 +284,22 @@ fn 追加的行带动画_退回整帧_仍逐字节一致() {
     }
     p.kinds.clear();
     p.more("追加带动画的行");
-    assert!(matches!(p.kinds.first(), Some(FrameKind::Full(_))), "带动画的追加应退回整帧：{:?}", p.kinds);
+    let first = p.kinds.first().cloned();
     for i in 1..=40 {
         p.both(|e| e.scroll_to(600.0 + i as f32 * 12.0));
         p.step("动画中滑进新行");
     }
+    p.more("再追加一次（转圈又往下挪）");
+    for _ in 0..20 {
+        p.step("转圈继续转");
+    }
+    use mini_render::host::engine_damage::FullReason;
+    assert!(
+        !matches!(first, Some(FrameKind::Full(FullReason::Data))),
+        "带动画的追加不该因为 setData 整帧：{:?}",
+        p.kinds
+    );
+    assert!(first.is_some(), "追加那一帧没出帧");
 }
 
 /// 页面根上一个 `wx:if` 的 fixed 悬浮按钮出现 / 消失（「节点与滚动」页滚过 200px 的那个）：

@@ -351,6 +351,17 @@ impl Timeline {
         self.frames.is_empty()
     }
 
+    /// 整段动画里，`w × h` 的盒子最多画到布局框外多远（物理像素，四个方向取同一个上界）。
+    ///
+    /// 关键帧之间平移 / 缩放按线性插值，极值落在关键帧上；旋转走到中间也不会超过 `transform_padding`
+    /// 按对角线给的那圈。没写 transform 的关键帧按节点自己的 `base` 算。
+    /// setData 的失效分析用它（列表追加时，末尾那个在转的加载圈要擦掉 / 画上，invalidate_grow.rs）
+    pub fn paint_reach(&self, w: f32, h: f32, base: Option<Transform>) -> f32 {
+        let one = |t: &Transform| t.translate_x.abs().max(t.translate_y.abs()) + crate::renderer::compose::transform_padding(w, h, t);
+        let base_reach = base.as_ref().map(one).unwrap_or(0.0);
+        self.frames.iter().map(|f| f.transform.as_ref().map(one).unwrap_or(base_reach)).fold(base_reach, f32::max)
+    }
+
     /// 在时间轴位置 `t`（0..1，已缓动）上求值。
     pub fn sample(&self, t: f32) -> AnimatedValues {
         self.sample_with_base(t, &FrameValues::default())

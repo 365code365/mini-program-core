@@ -3,11 +3,13 @@
 
 .hnav {
   background-color: #D43C33;
+  box-sizing: content-box;
   height: 88rpx;
   display: flex;
   flex-direction: row;
   align-items: center;
-  padding: 0 24rpx;
+  /* 自定义导航栏：右侧给胶囊按钮让位 */
+  padding: 0 190rpx 0 16rpx;
 }
 .hnav-back,
 .hnav-act {
@@ -22,7 +24,7 @@
   font-size: 32rpx;
   color: #fff;
   font-weight: bold;
-  text-align: center;
+  margin-left: 8rpx;
 }
 
 .card {

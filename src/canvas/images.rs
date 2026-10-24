@@ -202,6 +202,87 @@ impl Canvas {
         }
     }
 
+    /// `draw_image_cached` 的缩放结果（`img_data` 已经是降采样过的那张）：同一张图 + 同一目标尺寸 +
+    /// 同一 mode / 圆角 / 四分之一像素的亚像素偏移 `(fx, fy)` 共用一份。
+    ///
+    /// 与 [`Self::image_mip`] 一样在锁外算（预取线程也调，见 `components::image::prefetch`）
+    #[allow(clippy::too_many_arguments)]
+    pub fn image_scaled(
+        cache_key: &str,
+        img_data: &[u8],
+        img_w: u32,
+        img_h: u32,
+        (fx, fy): (f32, f32),
+        w: f32,
+        h: f32,
+        mode: &str,
+        radius: f32,
+    ) -> Option<std::sync::Arc<Vec<Color>>> {
+        let dst_w = w.ceil() as u32 + 1;
+        let dst_h = h.ceil() as u32 + 1;
+        // 全整数格式化：避免浮点转十进制的开销（每帧每张图都会走到）
+        let key = format!(
+            "{}|{}x{}|{}x{}|{}|{}|{}|{}",
+            cache_key,
+            dst_w,
+            dst_h,
+            (w * 4.0) as i32,
+            (h * 4.0) as i32,
+            mode,
+            (radius * 4.0) as i32,
+            (fx * 4.0).round() as i32,
+            (fy * 4.0).round() as i32
+        );
+        if let Some(hit) = scaled_image_cache().lock().ok()?.get(&key) {
+            return Some(hit.clone());
+        }
+        let t = crate::renderer::frame_cost::start();
+        let mut off = Canvas::new(dst_w, dst_h);
+        off.clear(Color::new(0, 0, 0, 0));
+        off.draw_image(img_data, img_w, img_h, fx, fy, w, h, mode, radius);
+        let pixels = std::sync::Arc::new(off.pixels().to_vec());
+        crate::renderer::frame_cost::record("缩放", t, || {
+            format!("{} →{}×{}", crate::renderer::frame_cost::short(cache_key), dst_w, dst_h)
+        });
+        let bytes = pixels.len() * std::mem::size_of::<Color>();
+        scaled_image_cache().lock().ok()?.insert(key, pixels.clone(), bytes);
+        Some(pixels)
+    }
+
+    /// `draw_image_cached` 缩小时用的那张面积降采样中间图（不需要缩小时 None）。
+    ///
+    /// 降采样在锁**外面**做：图片预取（`components::image::prefetch`）在后台线程上也调它，
+    /// 锁里算的话一张 1024² 的图要占着锁十几毫秒，引擎线程画任何一张图都得等它
+    #[allow(clippy::type_complexity)]
+    pub fn image_mip(
+        cache_key: &str,
+        img_data: &[u8],
+        img_w: u32,
+        img_h: u32,
+        w: f32,
+        h: f32,
+        mode: &str,
+    ) -> Option<std::sync::Arc<(u32, u32, Vec<u8>)>> {
+        let (scale_x, scale_y) = Self::image_scale_for_mode(mode, img_w, img_h, w, h);
+        if !(scale_x < 0.8 || scale_y < 0.8) {
+            return None;
+        }
+        let mip_w = ((img_w as f32 * scale_x.min(1.0)).ceil() as u32).max(1);
+        let mip_h = ((img_h as f32 * scale_y.min(1.0)).ceil() as u32).max(1);
+        let mip_key = format!("{}|mip{}x{}", cache_key, mip_w, mip_h);
+        if let Some(hit) = image_mip_cache().lock().ok()?.get(&mip_key) {
+            return Some(hit.clone());
+        }
+        let t = crate::renderer::frame_cost::start();
+        let data = std::sync::Arc::new((mip_w, mip_h, downscale_area(img_data, img_w, img_h, mip_w, mip_h)));
+        crate::renderer::frame_cost::record("降采样", t, || {
+            format!("{} {}×{}→{}×{}", crate::renderer::frame_cost::short(cache_key), img_w, img_h, mip_w, mip_h)
+        });
+        let bytes = data.2.len();
+        image_mip_cache().lock().ok()?.insert(mip_key, data.clone(), bytes);
+        Some(data)
+    }
+
     /// 绘制图片（带缩放结果缓存）。
     ///
     /// `draw_image` 是逐像素双线性重采样：一张 750x300 的 banner 就是 22 万次四抽样。
@@ -229,31 +310,7 @@ impl Canvas {
         }
         // 缩小时先取（或建）一张按目标尺寸面积降采样的中间图，之后一律按 1:1 附近的
         // 双线性绘制。面积滤波只在这里付一次，轮播平移等每帧变亚像素偏移的场景不再重算。
-        let (scale_x, scale_y) = Self::image_scale_for_mode(mode, img_w, img_h, w, h);
-        let mip = if scale_x < 0.8 || scale_y < 0.8 {
-            let mip_w = ((img_w as f32 * scale_x.min(1.0)).ceil() as u32).max(1);
-            let mip_h = ((img_h as f32 * scale_y.min(1.0)).ceil() as u32).max(1);
-            let mip_key = format!("{}|mip{}x{}", cache_key, mip_w, mip_h);
-            match image_mip_cache().lock() {
-                Ok(mut guard) => {
-                    if let Some(hit) = guard.get(&mip_key) {
-                        Some(hit.clone())
-                    } else {
-                        let data = std::sync::Arc::new((
-                            mip_w,
-                            mip_h,
-                            downscale_area(img_data, img_w, img_h, mip_w, mip_h),
-                        ));
-                        let bytes = data.2.len();
-                        guard.insert(mip_key, data.clone(), bytes);
-                        Some(data)
-                    }
-                }
-                Err(_) => None,
-            }
-        } else {
-            None
-        };
+        let mip = Self::image_mip(cache_key, img_data, img_w, img_h, w, h, mode);
         let (img_data, img_w, img_h) = match &mip {
             Some(m) => (m.2.as_slice(), m.0, m.1),
             None => (img_data, img_w, img_h),
@@ -267,38 +324,7 @@ impl Canvas {
         }
         let ix = x.floor();
         let iy = y.floor();
-        let fx = x - ix;
-        let fy = y - iy;
-        // 全整数格式化：避免浮点转十进制的开销（每帧每张图都会走到）
-        let key = format!(
-            "{}|{}x{}|{}x{}|{}|{}|{}|{}",
-            cache_key,
-            dst_w,
-            dst_h,
-            (w * 4.0) as i32,
-            (h * 4.0) as i32,
-            mode,
-            (radius * 4.0) as i32,
-            (fx * 4.0).round() as i32,
-            (fy * 4.0).round() as i32
-        );
-
-        let cached: Option<std::sync::Arc<Vec<Color>>> = match scaled_image_cache().lock() {
-            Ok(mut guard) => {
-                if let Some(hit) = guard.get(&key) {
-                    Some(hit.clone())
-                } else {
-                    let mut off = Canvas::new(dst_w, dst_h);
-                    off.clear(Color::new(0, 0, 0, 0));
-                    off.draw_image(img_data, img_w, img_h, fx, fy, w, h, mode, radius);
-                    let pixels = std::sync::Arc::new(off.pixels().to_vec());
-                    let bytes = pixels.len() * std::mem::size_of::<Color>();
-                    guard.insert(key, pixels.clone(), bytes);
-                    Some(pixels)
-                }
-            }
-            Err(_) => None,
-        };
+        let cached = Self::image_scaled(cache_key, img_data, img_w, img_h, (x - ix, y - iy), w, h, mode, radius);
 
         match cached {
             Some(pixels) => {

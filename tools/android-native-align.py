@@ -86,7 +86,11 @@ for v in (sys.argv[2:] or ['native']):
     if kind == 'flutter':
         D('install', '-r', f'/tmp/flutter_{v}.apk')
     D('shell', 'am', 'force-stop', pkg); D('logcat', '-c')
-    D('shell', 'monkey', '-p', pkg, '-c', 'android.intent.category.LAUNCHER', '1')
+    if kind == 'flutter':
+        D('shell', 'monkey', '-p', pkg, '-c', 'android.intent.category.LAUNCHER', '1')
+    else:
+        # 原生示例的桌面图标进的是入口页（StoreActivity），内置示例直接起 MainActivity
+        D('shell', 'am', 'start', '-n', f'{pkg}/.MainActivity')
     time.sleep(3)
     if kind == 'flutter':
         D('shell', 'input', 'tap', '500', '400')

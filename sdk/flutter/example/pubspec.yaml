@@ -27,6 +27,9 @@ dependencies:
 
   # 宿主承载的 <video>（lib/host_video.dart）：Flutter 官方播放器插件，版本锁死
   video_player: 2.11.1
+  # 商店（lib/store/）：解小程序 zip、校验 sha256。版本锁死
+  archive: 3.6.1
+  crypto: 3.0.6
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

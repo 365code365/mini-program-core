@@ -63,3 +63,35 @@ internal class BlitStats {
         }
     }
 }
+
+/**
+ * 引擎的销毁在引擎线程上异步做（[EngineCore.dispose]），这里记着「还有一个没销毁完」：
+ * 下一个引擎建之前在它自己的引擎线程上等（一个进程同一时刻只能有一个引擎实例：小程序根目录、数据目录是进程级的）。
+ * 主线程只等「放手 Surface」那一小段，耗时打 `[生命周期]` 一行（`adb logcat -s mini-render`）
+ */
+internal object EngineTeardown {
+    @Volatile private var pending: CountDownLatch? = null
+
+    /** 主线程：放手 Surface 之后、开始异步销毁之前 */
+    fun begin(t0: Long): CountDownLatch {
+        val l = CountDownLatch(1)
+        pending = l
+        Log.i("mini-render", "[生命周期] 关闭：主线程等放手 Surface ${"%.1f".format((System.nanoTime() - t0) / 1e6)}ms，销毁转到引擎线程")
+        return l
+    }
+
+    /** 引擎线程：销毁做完 */
+    fun done(l: CountDownLatch, t: Long) {
+        Log.i("mini-render", "[生命周期] 引擎线程上销毁引擎 ${"%.1f".format((System.nanoTime() - t) / 1e6)}ms")
+        l.countDown()
+    }
+
+    /** 新引擎的线程上：等上一个销毁完（最多 3 秒，超时照建，打一行警告） */
+    fun awaitPrevious() {
+        val l = pending ?: return
+        val t = System.nanoTime()
+        if (!l.await(3, TimeUnit.SECONDS)) Log.w("mini-render", "[生命周期] 上一个引擎 3 秒还没销毁完，照常建新的")
+        val ms = (System.nanoTime() - t) / 1e6
+        if (ms >= 1) Log.i("mini-render", "[生命周期] 新引擎等上一个销毁完 ${"%.1f".format(ms)}ms")
+    }
+}

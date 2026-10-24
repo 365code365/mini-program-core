@@ -34,9 +34,9 @@ const _sfc_main = common_vendor.defineComponent({
   data() {
     return {
       champions: [
-        new Champ({ pid: "p4", name: "宋种水仙 · 茶王珍藏", award: "国家级斗茶赛冠军", desc: "老枞水仙 · 限量 88 罐", price: 1280, cover: "/static/slices/category-aroma/card-shuixian.jpg" }),
-        new Champ({ pid: "p1", name: "鸭屎香 · 茶王甄选", award: "省赛金奖", desc: "核心产区古树 · 礼盒装", price: 880, cover: "/static/slices/category-aroma/card-yashixiang.jpg" }),
-        new Champ({ pid: "p2", name: "蜜兰香 · 名丛臻品", award: "市赛特等奖", desc: "甜蜜幽兰 · 韵味悠长", price: 680, cover: "/static/slices/category-aroma/card-milanxiang.jpg" })
+        new Champ({ pid: "p4", name: "宋种水仙 · 茶王珍藏", award: "国家级斗茶赛冠军", desc: "老枞水仙 · 限量 88 罐", price: 1280, cover: "/static/mock/p-laocong.jpg" }),
+        new Champ({ pid: "p1", name: "鸭屎香 · 茶王甄选", award: "省赛金奖", desc: "核心产区古树 · 礼盒装", price: 880, cover: "/static/mock/p-yashixiang.jpg" }),
+        new Champ({ pid: "p2", name: "蜜兰香 · 名丛臻品", award: "市赛特等奖", desc: "甜蜜幽兰 · 韵味悠长", price: 680, cover: "/static/mock/p-milanxiang.jpg" })
       ]
     };
   },

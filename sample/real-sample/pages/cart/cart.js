@@ -18,13 +18,18 @@ Page({
 
   // 加载购物车
   loadCart: function() {
-    const cart = app.globalData.cart.map(item => ({
-      ...item,
-      bgColor: item.bgColor || '#FF6B35',
-      icon: item.icon || 'success'
-    }));
-    this.calculateTotal();
+    const cart = app.globalData.cart.map(item => ({ ...item }));
+    // 先放进 data 再算合计：calculateTotal 读的是 this.data.cart
     this.setData({ cart });
+    this.calculateTotal();
+    this.refreshTabBar();
+  },
+
+  // 自定义 tabBar 的角标跟着购物车数量走
+  refreshTabBar: function() {
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) {
+      this.getTabBar().updateCartCount();
+    }
   },
 
   // 选择商品
@@ -131,6 +136,7 @@ Page({
     app.globalData.cart = this.data.cart;
     app.updateCartCount();
     app.saveToStorage();
+    this.refreshTabBar();
   },
 
   // 结算

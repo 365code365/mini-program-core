@@ -2,6 +2,25 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- 测试用的小程序商店（tools/mini-store）是明文 HTTP 的 IP 地址：ATS 的 NSExceptionDomains 不认 IP，
+	     只能整体放开。示例 App 专用，真实 App 上 HTTPS 后删掉 -->
+	<!-- 外部 App / H5 打开小程序：minirender://open?appid=…&path=…（AppDelegate.swift 的 MiniLinks 接） -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>dev.minirender.example.open</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>minirender</string>
+			</array>
+		</dict>
+	</array>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>

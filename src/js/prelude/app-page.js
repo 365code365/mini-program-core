@@ -8,7 +8,9 @@
                 __app = config;
                 __app.globalData = __app.globalData || {};
                 if (config.onLaunch) {
-                    try { config.onLaunch(); } catch (e) { __native_print('[App.onLaunch] ' + e.message); }
+                    // 与微信一致：onLaunch 收到启动参数（与 getLaunchOptionsSync 同一份）
+                    var opts = (typeof wx === 'object' && wx.getLaunchOptionsSync) ? wx.getLaunchOptionsSync() : {};
+                    try { config.onLaunch(opts); } catch (e) { __native_print('[App.onLaunch] ' + e.message); }
                 }
                 return __app;
             }

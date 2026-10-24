@@ -20,10 +20,12 @@ const _sfc_main = common_vendor.defineComponent({
   },
   computed: {
     certImgUrl() {
-      return config_env.BASE_URL + "/adopt/cert/image/" + this.orderNo;
+      return config_env.MOCK ? "/static/mock/cert.jpg" : config_env.BASE_URL + "/adopt/cert/image/" + this.orderNo;
     }
   },
   onLoad(opt) {
+    if (config_env.MOCK)
+      opt = Object.assign({ id: "1", shares: "2", recordId: "503", orderNo: "AD2024031501" }, opt || {});
     const id = opt["id"];
     if (id != null) {
       api_adopt.gardenDetail(parseInt(id)).then((res) => {

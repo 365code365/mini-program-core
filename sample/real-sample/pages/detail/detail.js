@@ -1,10 +1,12 @@
 const app = getApp();
+const data = require('../../utils/data.js');
 
 Page({
   data: {
     productId: null,
     product: {},
-    cartCount: 0
+    cartCount: 0,
+    recommends: []
   },
 
   onLoad: function(options) {
@@ -17,28 +19,20 @@ Page({
     this.setData({ cartCount: app.globalData.cartCount });
   },
 
-  // 加载商品详情
+  // 加载商品详情（没有带 id 或 id 不认识时展示第一件商品）
   loadProductDetail: function(productId) {
-    // 模拟商品数据
-    const products = {
-      101: { id: 101, name: '无线蓝牙耳机', desc: '高保真音质，超长续航', price: '199', originalPrice: '399', icon: 'success', bgColor: '#FF6B35', tag: '限时特惠', stock: 999 },
-      201: { id: 201, name: '智能手机Pro', desc: '旗舰处理器，拍照更清晰', price: '2999', originalPrice: '3499', icon: 'info', bgColor: '#4A90D9', tag: '新品上市', stock: 500 },
-      1001: { id: 1001, name: '智能手机Pro', desc: '旗舰处理器，拍照更清晰', price: '2999', originalPrice: '3499', icon: 'success', bgColor: '#FF6B35', tag: '热销', stock: 500 }
-    };
+    const product = data.get(productId) || data.products[0];
+    const recommends = data.products.filter(p => p.id !== product.id && p.cat === product.cat).concat(
+      data.products.filter(p => p.cat !== product.cat)
+    ).slice(0, 3);
+    this.setData({
+      product: { ...product, stock: 999 },
+      recommends
+    });
+  },
 
-    const product = products[productId] || {
-      id: productId,
-      name: '精选商品',
-      desc: '品质保证，值得信赖',
-      price: '99',
-      originalPrice: '199',
-      icon: 'success',
-      bgColor: '#FF6B35',
-      tag: '新品',
-      stock: 999
-    };
-
-    this.setData({ product });
+  onRecommendTap: function(e) {
+    wx.redirectTo({ url: `/pages/detail/detail?id=${e.currentTarget.dataset.id}` });
   },
 
   // 联系客服
@@ -70,7 +64,6 @@ Page({
       selected: true
     }];
     app.globalData.checkoutTotal = product.price;
-
     wx.navigateTo({
       url: `/pages/address/address?from=checkout`
     });

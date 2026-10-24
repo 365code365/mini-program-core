@@ -12,7 +12,8 @@
   align-items: center;
   margin: 16rpx 32rpx;
   padding: 16rpx 28rpx;
-  background-color: rgba(0, 0, 0, 0.06);
+  background-color: #fffdf9;
+  border: 1rpx solid #e8dcc8;
   border-radius: 40rpx;
 }
 .sicon {
@@ -48,11 +49,15 @@
 }
 .hot-tag {
   font-size: 26rpx;
-  color: #7a746a;
-  background-color: rgba(0, 0, 0, 0.05);
+  color: #8a6236;
+  background-color: #fffdf9;
+  border: 1rpx solid #e8dcc8;
   padding: 12rpx 28rpx;
   border-radius: 40rpx;
   margin: 0 16rpx 16rpx 0;
+}
+.picks {
+  margin-top: 8rpx;
 }
 .empty {
   align-items: center;

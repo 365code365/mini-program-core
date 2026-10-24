@@ -137,6 +137,8 @@ internal class EngineCore(
         done: (error: String?) -> Unit,
     ) = engine.post {
         if (disposed) return@post done("已销毁")
+        // 上一个引擎还在它的线程上销毁（dispose 是异步的）：一个进程同一时刻只能有一个引擎实例
+        EngineTeardown.awaitPrevious()
         choreographer = Choreographer.getInstance()
         boost = FrameBoost.forCurrentThread(context)
         beforeWarmup()
@@ -237,22 +239,26 @@ internal class EngineCore(
         }
     }
 
-    /** 主线程调：先让引擎线程放手 Surface 并销毁引擎，再停线程。[onEngineThread] 在引擎线程上最后跑 */
+    /**
+     * 主线程调：**同步**等引擎线程放手 Surface（返回后宿主就能放掉它），销毁引擎在引擎线程上**异步**做，
+     * [onEngineThread] 在那之后跑。下一个引擎 [start] 会先等这次销毁做完（[EngineTeardown]）。
+     * 从前整个销毁都同步：退出小程序回 App 主界面时主线程卡在这里，那几帧动画一顿（日志 `[生命周期]`）
+     */
     fun dispose(onEngineThread: () -> Unit = {}) {
         if (disposed) return
         disposed = true
-        onEngineSync {
-            choreographer?.removeFrameCallback(frameCallback)
-            videoHost?.release()
-            videoHost = null
-            detach()
+        val t0 = System.nanoTime()
+        onEngineSync { choreographer?.removeFrameCallback(frameCallback); detach() }
+        val gone = EngineTeardown.begin(t0)
+        engine.post {
+            val t = System.nanoTime()
+            videoHost?.release(); videoHost = null
             if (handle != 0L) MiniEngine.nativeDestroy(handle)
             handle = 0L
-            boost?.close()
-            boost = null
-            bitmap?.recycle()
-            bitmap = null
+            boost?.close(); boost = null
+            bitmap?.recycle(); bitmap = null
             onEngineThread()
+            EngineTeardown.done(gone, t)
         }
         thread.quitSafely()
     }

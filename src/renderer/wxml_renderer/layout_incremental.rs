@@ -256,7 +256,7 @@ impl WxmlRenderer {
         // 5) 失效分析：旧的读快照，新的读树
         let moved = moved_nodes(&new_roots, &stats.moved);
         // 滚动偏移也变了：重画范围与整棵重建时一样按整帧（layout.rs 里 `(Some(old), false)` 那条）
-        let plan = if offset_changed { FramePlan::Full } else { self.plan_from_diff(
+        let plan = if offset_changed { self.full_because(|| "增量布局：滚动偏移与上次布局时不同".into()) } else { self.plan_from_diff(
             OldLayout { nodes: &old_roots, layouts: &snapshot, content_height: old_height, moved: &moved },
             &new_roots,
             &cache.taffy,

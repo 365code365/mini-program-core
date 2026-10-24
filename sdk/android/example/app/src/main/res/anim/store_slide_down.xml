@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 关掉小程序：往下退出去（与打开时的 store_slide_up 成对，微信也是这样）。
+     从前打开是自己的上推、关闭是系统默认的缩放淡出，一来一回两种手感，退出那一下显得「顿」 -->
+<translate xmlns:android="http://schemas.android.com/apk/res/android"
+    android:duration="220"
+    android:fromYDelta="0"
+    android:interpolator="@android:interpolator/accelerate_cubic"
+    android:toYDelta="100%p" />

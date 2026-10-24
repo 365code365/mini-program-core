@@ -13,10 +13,16 @@ const _sfc_main = common_vendor.defineComponent({
       loading: false,
       hots: ["鸭屎香", "古树认养", "蜜兰香", "礼盒", "坪坑口", "口粮茶"],
       gardenHits: [],
-      productHits: []
+      productHits: [],
+      picks: []
     };
   },
   onLoad() {
+    // 未搜索时的「大家都在喝」：取在售前 4 款，空白页不至于只有一排标签
+    api_product.productList("", 0, 1, 4).then((res) => {
+      this.picks = api_mappers.toProductList(res.list);
+    }).catch((_e = null) => {
+    });
     api_product.searchKeywords().then((arr) => {
       var _a, _b;
       const ks = [];
@@ -127,6 +133,16 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
       });
     })
   } : {}), {
+    u: !$data.searched && $data.picks.length > 0,
+    v: common_vendor.f($data.picks, (p, i, i0) => {
+      return {
+        a: p.cover,
+        b: common_vendor.t(p.name),
+        d: common_vendor.t(p.price),
+        e: i,
+        f: common_vendor.o(($event) => $options.toProduct(p.id), i)
+      };
+    }),
     r: common_vendor.sei(common_vendor.gei(_ctx, ""), "view"),
     s: `${_ctx.u_s_b_h}px`,
     t: common_vendor.pvhc(_ctx.$scope.data.virtualHostClass)

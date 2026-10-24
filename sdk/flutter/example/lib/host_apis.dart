@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mini_render/mini_render.dart';
 
+import 'store/store_links.dart';
+
 /// 例子的 hostApis：引擎做不了、插件也没自带，要 App 自己接的那些（登录、支付、定位、扫码……）。
 ///
 /// 真实 App 在这里接自己的账号体系、支付 SDK、地图 / 定位 SDK、扫码库。例子给演示数据；要用户点头的
@@ -143,6 +145,9 @@ class ExampleHostApis {
           if (!await _confirm('打开小程序', '即将打开 ${a['appId'] ?? ''}\n路径 ${a['path'] ?? '首页'}', '允许')) {
             throw const MiniHostApiError('navigateToMiniProgram:fail cancel');
           }
+          // 先把 success 回给小程序，再换页（换页会销毁当前这个小程序，回调就没人接了）。
+          // 按 AppID 去商店找：检查更新 → 下载 → 打开，启动参数带 scene 1037 与 referrerInfo
+          Future<void>.delayed(const Duration(milliseconds: 50), () => StoreLinks.openFromMiniProgram(a));
           return {};
         },
         // 只有被别的小程序打开时才回得去（与微信一致）；例子里小程序是从 Flutter 列表打开的

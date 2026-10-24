@@ -95,8 +95,14 @@ pub(super) fn load_image(src: &str) -> Option<Arc<ImageData>> {
         }
     }
 
-    // 本地文件：读盘 + 解码很快，保持同步（也避免首帧闪空）
+    // 本地文件：读盘 + 解码很快，保持同步（也避免首帧闪空）。
+    // 「很快」是桌面上的说法：一加上一张 1024² 的 jpg 也要十几毫秒，诊断开着时记进这一帧的〔慢：…〕
+    let t = crate::renderer::frame_cost::start();
     let result = load_image_from_file(src);
+    crate::renderer::frame_cost::record("解码", t, || match &result {
+        Some(d) => format!("{} {}×{}", crate::renderer::frame_cost::short(src), d.width, d.height),
+        None => format!("{} 失败", crate::renderer::frame_cost::short(src)),
+    });
 
     // 存入缓存（Arc 共享，后续帧零拷贝取用）
     let result = result.map(Arc::new);

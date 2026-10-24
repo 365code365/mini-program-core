@@ -30,10 +30,26 @@ internal object MiniDiag {
         "no_resample" to "MINI_NO_RESAMPLE",
         "pace" to "MINI_PACE",
         "cpu_pin" to "MINI_CPU_PIN",
+        "draw_log" to "MINI_DRAW_LOG",
+        "img_log" to "MINI_IMG_LOG",
+        "no_prefetch" to "MINI_NO_PREFETCH",
     )
 
-    /** 建引擎（以及 `nativeWarmup`）之前调 */
-    fun apply() {
+    /** 上一次由宿主（[MiniProgramView.diagnostics]）打开的：这次没再给的要关掉（环境变量是进程级的） */
+    private var fromHost = emptySet<String>()
+
+    /**
+     * 建引擎（以及 `nativeWarmup`）之前调。[extra]：宿主在代码里打开的开关（名字同 `debug.mini.*` 的后缀，值为 1）。
+     * 注意：少数开关进程里只读一次（`MINI_DRAW_LOG`、`MINI_NO_PREFETCH`），改了要重启进程
+     */
+    fun apply(extra: Set<String> = emptySet()) {
+        for (name in fromHost - extra) KEYS[name]?.let { Os.unsetenv(it) }
+        for (name in extra) {
+            val env = KEYS[name] ?: continue
+            Os.setenv(env, "1", true)
+            Log.i("mini-render", "诊断开关 $env=1（宿主打开）")
+        }
+        fromHost = extra
         val props = try {
             Runtime.getRuntime().exec(arrayOf("getprop")).inputStream.bufferedReader().use { it.readText() }
         } catch (e: Exception) {

@@ -3,6 +3,13 @@ const app = getApp();
 Page({
   data: {
     currentTab: 'all',
+    tabs: [
+      { key: 'all', name: '全部' },
+      { key: 'pending', name: '待付款' },
+      { key: 'paid', name: '待发货' },
+      { key: 'shipped', name: '待收货' },
+      { key: 'completed', name: '已完成' }
+    ],
     orders: []
   },
 
@@ -25,14 +32,7 @@ Page({
 
   // 加载订单
   loadOrders: function() {
-    let orders = app.globalData.orders.map(order => ({
-      ...order,
-      products: order.products.map(p => ({
-        ...p,
-        bgColor: p.bgColor || '#FF6B35',
-        icon: p.icon || 'success'
-      }))
-    }));
+    let orders = app.globalData.orders.slice();
 
     // 筛选订单
     if (this.data.currentTab !== 'all') {
@@ -111,6 +111,11 @@ Page({
         }
       }
     });
+  },
+
+  // 再次购买 / 去逛逛
+  onBuyAgain: function() {
+    wx.switchTab({ url: '/pages/index/index' });
   },
 
   // 删除订单

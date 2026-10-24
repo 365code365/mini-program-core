@@ -462,7 +462,13 @@ int  mr_app_pump_ex(MRApp*, uint64_t now_ms);              // MR_FRAME_* 的按�
   CPU 合成覆盖层那一截的时间，c 是等 surface，d 是这一帧上传的字节数。
   这几个开关在 `MiniEngine` 创建时读一次：Android 要在 `nativeCreateEx` 之前 `Os.setenv`。
   Flutter 插件与 Android 原生 `MiniProgramView`（`MiniDiag.kt`）替你做了：`adb shell setprop debug.mini.fps 1`（还有 `damage_log` / `no_damage` / `scroll_log` /
-  `layout_log` / `backend` / `no_resample` / `cpu_pin`），重开小程序生效，不用重新打包；用完 `setprop debug.mini.fps ""` 关掉。
+  `layout_log` / `backend` / `no_resample` / `cpu_pin` / `draw_log` / `img_log` / `no_prefetch`），重开小程序生效，不用重新打包；用完 `setprop debug.mini.fps ""` 关掉。
+  测试包里也可以在代码里开（不用 adb）：`MiniProgramView.diagnostics = setOf("damage_log", "fps")`（`open` 之前设）；
+  原生示例入口页上有个「诊断日志」开关就是这么接的。`damage_log` 开着时：
+  - 每一帧的 🩹 行尾带 `〔慢：解码 3次 36.0ms（最慢 20.2 p_coffee.jpg 1248×832） · 降采样 … · 缩放 … · 字形 …〕`
+    —— 这一帧（连同前面的建树 / 布局）里第一次解的图、第一次降采样 / 缩放、第一次光栅化的字各花了多少；
+  - `整帧·数据` 后面带 `← 原因`（失效分析为什么退回整帧，如 `配不上对的 <view class=refresh-ring>（动画）…`）；
+  - 关闭小程序打 `[生命周期] 关闭：主线程等放手 Surface 0.3ms` / `引擎线程上销毁引擎 18ms`。
 - **屏上实际的帧**：Flutter 插件在 Android 上默认把引擎画到自己的 SurfaceView（`androidSurfaceView: true`，
   平台视图 hybrid composition），系统合成器直接取引擎交的每一帧；`false` 退回外部纹理（屏上那一帧要看 Flutter
   自己这一帧有没有按时出，主线程一忙就重复一张）。判据用 SurfaceFlinger：

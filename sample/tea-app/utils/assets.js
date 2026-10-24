@@ -56,6 +56,8 @@ function normalize(url) {
   return siteOrigin() + (s.startsWith("/") ? s : "/" + s);
 }
 function assetUrl(key, fallback) {
+  if (config_env.MOCK)
+    return fallback;
   if (cache == null) {
     cache = loadCache();
   }
@@ -66,6 +68,8 @@ function assetUrl(key, fallback) {
   return remote(fallback);
 }
 function refreshAssets() {
+  if (config_env.MOCK)
+    return;
   utils_request.getPublic("/tea/ui/assets").then((data) => {
     common_vendor.index.setStorageSync(STORAGE_KEY, data);
     cache = null;

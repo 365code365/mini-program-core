@@ -187,13 +187,7 @@ impl WxmlRenderer {
             if let Ok(layout) = taffy.layout(node.taffy_node) {
                 let (x, y) = (ox + layout.location.x, oy + layout.location.y);
                 let (w, h) = (layout.size.width, layout.size.height);
-                let pad = crate::renderer::compose::transform_padding(w, h, &transform).max(2.0);
-                self.animated_bounds.push(GeoRect::new(
-                    x - pad,
-                    y - pad,
-                    w + pad * 2.0,
-                    h + pad * 2.0,
-                ));
+                self.animated_bounds.push(animated_bound(taffy, node, (x, y, w, h), &transform));
             }
         }
 
@@ -343,4 +337,37 @@ impl WxmlRenderer {
         true
     }
 
+}
+
+/// 一个在动的节点这一帧最多画到哪（宿主下一帧擦旧的、画新的都按它）。
+///
+/// 从前只按节点自己的框 + `transform_padding` 算，漏了两样（tests/sdk_damage_grow.rs 的转圈抓到的）：
+/// - **平移**：离屏仿射贴回时整块按 (tx, ty) 挪，`transform_padding` 只管缩放 / 旋转撑出去的那圈；
+/// - **溢出框的孩子**：转圈里那个点超出了框，跟着转到框外，那几行每帧留着上一帧的像素。
+///
+/// 现在取「框 ∪ 子树里各节点的框」：只平移时整块挪 |t|；有缩放 / 旋转 / 倾斜时，任何一点离变换原点
+/// （框心）都不超过它到外包框最远那个角的距离 × 放大倍数，按这个半径取正方形。外面再留 2px（双线性采样）
+fn animated_bound(taffy: &Tree, node: &RenderNode, (x, y, w, h): (f32, f32, f32, f32), t: &crate::renderer::components::Transform) -> GeoRect {
+    fn extent(taffy: &Tree, n: &RenderNode, px: f32, py: f32, b: &mut (f32, f32, f32, f32)) {
+        for c in &n.children {
+            let Ok(l) = taffy.layout(c.taffy_node) else { continue };
+            let (x, y) = (px + l.location.x, py + l.location.y);
+            *b = (b.0.min(x), b.1.min(y), b.2.max(x + l.size.width), b.3.max(y + l.size.height));
+            extent(taffy, c, x, y, b);
+        }
+    }
+    let mut b = (x, y, x + w, y + h);
+    extent(taffy, node, x, y, &mut b);
+    let shift = t.translate_x.abs().max(t.translate_y.abs()).ceil() + 2.0;
+    if crate::renderer::compose::is_translate_only(t) {
+        return GeoRect::new(b.0 - shift, b.1 - shift, b.2 - b.0 + shift * 2.0, b.3 - b.1 + shift * 2.0);
+    }
+    let (cx, cy) = (x + w / 2.0, y + h / 2.0);
+    let far = [(b.0, b.1), (b.2, b.1), (b.0, b.3), (b.2, b.3)]
+        .iter()
+        .map(|(px, py)| ((px - cx).powi(2) + (py - cy).powi(2)).sqrt())
+        .fold(0.0f32, f32::max);
+    let skew = 1.0 + t.skew_x.to_radians().tan().abs() + t.skew_y.to_radians().tan().abs();
+    let r = (far * t.scale_x.abs().max(t.scale_y.abs()).max(1.0) * skew).ceil() + shift;
+    GeoRect::new(cx - r, cy - r, r * 2.0, r * 2.0)
 }

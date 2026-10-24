@@ -1,31 +1,19 @@
 <view class="tab-bar">
   <view class="tab-item {{selected === 0 ? 'active' : ''}}" bindtap="onSwitchTab" data-index="0" data-path="/pages/index/index">
-    <view class="tab-icon">
-      <icon type="success" size="24" color="{{selected === 0 ? '#FF6B35' : '#999'}}"></icon>
-    </view>
+    <image class="tab-icon" src="{{selected === 0 ? '/assets/icons/tab_home_on.png' : '/assets/icons/tab_home.png'}}"></image>
     <text class="tab-text">首页</text>
-    <view class="tab-badge" wx:if="{{cartCount > 0}}">{{cartCount}}</view>
   </view>
-
   <view class="tab-item {{selected === 1 ? 'active' : ''}}" bindtap="onSwitchTab" data-index="1" data-path="/pages/category/category">
-    <view class="tab-icon">
-      <icon type="info" size="24" color="{{selected === 1 ? '#FF6B35' : '#999'}}"></icon>
-    </view>
+    <image class="tab-icon" src="{{selected === 1 ? '/assets/icons/tab_cat_on.png' : '/assets/icons/tab_cat.png'}}"></image>
     <text class="tab-text">分类</text>
   </view>
-
   <view class="tab-item {{selected === 2 ? 'active' : ''}}" bindtap="onSwitchTab" data-index="2" data-path="/pages/cart/cart">
-    <view class="tab-icon">
-      <icon type="warn" size="24" color="{{selected === 2 ? '#FF6B35' : '#999'}}"></icon>
-    </view>
+    <image class="tab-icon" src="{{selected === 2 ? '/assets/icons/tab_cart_on.png' : '/assets/icons/tab_cart.png'}}"></image>
     <text class="tab-text">购物车</text>
-    <view class="tab-badge" wx:if="{{cartCount > 0}}">{{cartCount}}</view>
+    <view class="tab-badge" wx:if="{{cartCount > 0}}">{{cartCount > 99 ? '99+' : cartCount}}</view>
   </view>
-
   <view class="tab-item {{selected === 3 ? 'active' : ''}}" bindtap="onSwitchTab" data-index="3" data-path="/pages/profile/profile">
-    <view class="tab-icon">
-      <icon type="waiting" size="24" color="{{selected === 3 ? '#FF6B35' : '#999'}}"></icon>
-    </view>
+    <image class="tab-icon" src="{{selected === 3 ? '/assets/icons/tab_user_on.png' : '/assets/icons/tab_user.png'}}"></image>
     <text class="tab-text">我的</text>
   </view>
 </view>

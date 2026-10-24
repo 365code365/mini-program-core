@@ -180,7 +180,7 @@ screenshotted in Chrome on the other, compared per pixel):
 | Sample | Pages | Changed-pixel ratio vs Chrome |
 |---|---|---|
 | `sample-app` (shop) | 15 | **4.57%** |
-| `news-app` (news) | 6 | **6.34%** |
+| `news-app` (news) | 6 | **6.46%** |
 
 What remains is concentrated in bold glyph shapes and subpixel text positioning. That number is a
 **regression criterion, not a marketing line** — every rendering change is checked against it first.
@@ -670,7 +670,7 @@ bash tools/snapshot-all.sh sample-app target/fin2_sample --settle 0 --time 2
 python3 tools/pixdiff.py a.png b.png       # changed ratio + bounding box
 ```
 
-Current baselines: sample-app **4.57%**, news-app **6.34%** (changed-pixel ratio against the
+Current baselines: sample-app **4.57%**, news-app **6.46%** (changed-pixel ratio against the
 compiled HTML).
 
 ### Two hard rules

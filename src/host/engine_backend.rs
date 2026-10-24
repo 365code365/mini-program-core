@@ -114,6 +114,9 @@ impl MiniEngine {
         // `MINI_DAMAGE_LOG`：整个 pump 慢的时候另打一行 —— 🩹 行只算重画那一段，换页（留图、建页、onLoad）、
         // 事件回调、失效分析都在它前面，从前看不见
         let pump_t0 = self.dmg.log.then(Instant::now);
+        // 「慢在哪」的账（解码 / 降采样 / 缩放 / 字形，renderer/frame_cost.rs）跟着同一个开关；
+        // 每次 pump 设一次：pump 在哪条线程上跑，账就记在哪条线程上
+        crate::renderer::frame_cost::set_enabled(self.dmg.log);
         // 上一次 pump 没慢到要打 ⏱ 行的话，它记下的不要并进这一次
         self.pump_notes.take_line();
         self.frame_presented = false;
@@ -157,7 +160,9 @@ impl MiniEngine {
             let ms = t0.elapsed().as_secs_f32() * 1000.0;
             // 与 🩹 行同一道线（8ms）：90Hz 的周期是 11.1ms，再加上合成 / 上屏就悬了
             if ms > 8.0 {
-                diag::emit(&format!("⏱ [SDK] pump {ms:.1}ms（含重画前的换页 / 事件回调 / 失效分析{}）", self.pump_notes.take_line()));
+                // 这一次 pump 没出 🩹 行（比如只在建页 / 回调里解了图）时，慢在哪的账接在这一行
+                let cost = crate::renderer::frame_cost::take(1.0).unwrap_or_default();
+                diag::emit(&format!("⏱ [SDK] pump {ms:.1}ms（含重画前的换页 / 事件回调 / 失效分析{}）{cost}", self.pump_notes.take_line()));
             }
         }
         if let Some(begin) = begin {

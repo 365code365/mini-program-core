@@ -18,6 +18,9 @@ Page({
 
   onShow: function() {
     this.loadOrderCounts();
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) {
+      this.getTabBar().updateCartCount();
+    }
   },
 
   // 加载订单数量

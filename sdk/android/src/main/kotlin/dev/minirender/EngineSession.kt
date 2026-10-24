@@ -50,11 +50,12 @@ internal class EngineSession(context: Context, private val ui: Ui) {
         options: String,
         backend: Int,
         device: DeviceInfo,
+        diagnostics: Set<String> = emptySet(),
     ) = core.start(
         appDir, dataDir, route, width, height, dpr, options, backend,
         EngineCore.DeviceInfo(device.totalMem, device.lowRam, device.api),
         // 诊断开关要在引擎读环境之前就位
-        beforeWarmup = { MiniDiag.apply() },
+        beforeWarmup = { MiniDiag.apply(diagnostics) },
     ) { error ->
         when (error) {
             null -> {

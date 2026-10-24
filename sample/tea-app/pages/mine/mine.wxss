@@ -52,14 +52,21 @@
   width: 116rpx;
   height: 116rpx;
   border-radius: 60rpx;
-  background-color: rgba(255, 250, 243, 0.9);
-  border: 3rpx solid rgba(255, 255, 255, 0.6);
+  /* 游客头像是白色线框图标：底色不能也是白的，否则整块看起来是空的 */
+  background-color: rgba(255, 250, 243, 0.22);
+  border: 3rpx solid rgba(255, 255, 255, 0.7);
+  overflow: hidden;
   align-items: center;
   justify-content: center;
 }
 .avatar-img {
   width: 56rpx;
   height: 56rpx;
+}
+.avatar-photo {
+  width: 116rpx;
+  height: 116rpx;
+  border-radius: 58rpx;
 }
 .profile-copy {
   flex: 1;

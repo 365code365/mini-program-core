@@ -29,6 +29,9 @@ internal object DiagProps {
         "no_resample" to "MINI_NO_RESAMPLE",
         "pace" to "MINI_PACE",
         "cpu_pin" to "MINI_CPU_PIN",
+        "draw_log" to "MINI_DRAW_LOG",
+        "img_log" to "MINI_IMG_LOG",
+        "no_prefetch" to "MINI_NO_PREFETCH",
     )
 
     /** `debug.mini.fps` 开着：宿主这边也每秒打一行上屏耗时（[EngineHost.present]） */

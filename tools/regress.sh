@@ -139,7 +139,7 @@ do_h5() {
         --rust-from target/fin2_news --out "$OUT/cmp_news" || rc=1
     a=$(grep -o '阈值差异像素 [0-9.]*%' "$OUT/h5.log" | sed -n 1p | grep -o '[0-9.]*%')
     b=$(grep -o '阈值差异像素 [0-9.]*%' "$OUT/h5.log" | sed -n 2p | grep -o '[0-9.]*%')
-    echo "H5 对比：sample ${a:-?}，news ${b:-?}（基线 4.57% / 6.34%，不得回退）"
+    echo "H5 对比：sample ${a:-?}，news ${b:-?}（基线 4.57% / 6.46%，不得回退）"
     return $rc
 }
 

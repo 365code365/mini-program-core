@@ -9,7 +9,8 @@
   flex-direction: row;
   justify-content: space-around;
   align-items: center;
-  box-shadow: 0 -2rpx 12rpx rgba(0, 0, 0, 0.05);
+  border-top: 1rpx solid #EEEEEE;
+  box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.04);
   z-index: 100;
 }
 
@@ -18,17 +19,20 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   width: 25%;
-  padding: 10rpx 0;
+  height: 100rpx;
 }
 
 .tab-icon {
+  width: 44rpx;
+  height: 44rpx;
   margin-bottom: 4rpx;
 }
 
 .tab-text {
   font-size: 20rpx;
-  color: #999;
+  color: #8C8C8C;
 }
 
 .tab-item.active .tab-text {
@@ -38,13 +42,17 @@
 
 .tab-badge {
   position: absolute;
-  top: 4rpx;
-  right: 30rpx;
-  background-color: #FF6B35;
+  top: 6rpx;
+  left: 50%;
+  margin-left: 10rpx;
+  background-color: #FF3B30;
   color: #fff;
   font-size: 18rpx;
-  padding: 2rpx 10rpx;
-  border-radius: 10rpx;
-  min-width: 20rpx;
+  line-height: 28rpx;
+  height: 28rpx;
+  padding: 0 8rpx;
+  border-radius: 14rpx;
+  min-width: 12rpx;
   text-align: center;
+  border: 2rpx solid #fff;
 }

@@ -88,7 +88,7 @@ Page({
           }
 
           app.globalData.addresses = newAddresses;
-          this.setData({ addresses });
+          this.setData({ addresses: newAddresses });
           wx.showToast({ title: '删除成功', icon: 'success' });
         }
       }

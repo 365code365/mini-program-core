@@ -5,21 +5,40 @@
 
     <application
         android:label="mini-render 原生示例"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        android:theme="@android:style/Theme.Material.Light.NoActionBar"
+        android:networkSecurityConfig="@xml/network_security_config">
         <!-- release 包也能 simpleperf 抓引擎线程（与 Flutter 示例一致；不影响性能） -->
         <profileable android:shell="true" />
-        <!-- configChanges：转屏 / 分屏 / 深色模式不重建 Activity（重建 = 引擎销毁重开，页面栈全丢），
-             尺寸变了由 MiniProgramView.onSizeChanged 交给引擎 -->
+        <!-- 入口页：内置示例 + 服务器上的小程序（tools/mini-store）。验收脚本不走它，直接 am start MainActivity -->
         <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|keyboard|uiMode|density"
-            android:windowSoftInputMode="adjustNothing">
+            android:name=".StoreActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <!-- configChanges：转屏 / 分屏 / 深色模式不重建 Activity（重建 = 引擎销毁重开，页面栈全丢），
+             尺寸变了由 MiniProgramView.onSizeChanged 交给引擎 -->
+        <!-- 外部 App / H5 打开小程序：minirender://open?appid=…&path=…&query=…（转给 MainActivity，见 LinkActivity.kt） -->
+        <activity
+            android:name=".LinkActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="minirender" android:host="open" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|keyboard|uiMode|density"
+            android:windowSoftInputMode="adjustNothing" />
         <!-- SDK 自带的选图 / 拍照 / 选文件要的两项。示例直接编 SDK 的源码（不经 AAR），SDK 清单合并不进来，
              所以照 sdk/android/src/main/AndroidManifest.xml 抄一遍；用 AAR 的工程不用写 -->
         <activity

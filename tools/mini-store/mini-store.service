@@ -1,0 +1,22 @@
+[Unit]
+Description=mini-store 小程序管理服务
+After=network.target
+
+[Service]
+Type=simple
+User=mini-store
+Group=mini-store
+Environment=MINI_STORE_DATA=/opt/mini-store/data
+Environment=MINI_STORE_PORT=9630
+ExecStart=/usr/bin/python3 /opt/mini-store/app/server.py serve
+Restart=on-failure
+RestartSec=2
+# 只给它写自己的数据目录
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/mini-store/data
+
+[Install]
+WantedBy=multi-user.target

@@ -1,5 +1,6 @@
 <view class="page">
-  <view class="snav">
+  <!-- 自定义导航栏：顶上让出状态栏、高度与胶囊对齐、右边给胶囊让位（app.navMetrics） -->
+  <view class="snav" style="padding-top:{{nav.statusBar}}px;height:{{nav.navHeight}}px;padding-right:{{nav.capsuleSpace}}px">
     <view class="snav-back" bindtap="onBack">
       <icon type="back" size="20" color="#ffffff"></icon>
     </view>

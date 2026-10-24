@@ -191,4 +191,4 @@ bash tools/clean-target.sh --dry      # 先看会删什么
 不要只说"看起来没问题"。给出：
 
 - `python3 tools/pixdiff.py a.png b.png` 的差异占比 **与包围盒**（包围盒决定是真回归还是时钟噪声）；
-- 或 `compare` 报告里的整体百分比（当前基线：sample **4.57%**、news **6.34%**）。
+- 或 `compare` 报告里的整体百分比（当前基线：sample **4.57%**、news **6.46%**）。

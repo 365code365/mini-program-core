@@ -160,7 +160,10 @@ impl MiniEngine {
         // 打字/移光标由 text_input / key 标脏。从前这里多一个 `|| has_focused_input()`，
         // 键盘弹着的整段时间里每次 pump 都整条带重画并回报「有新画面」。
         // 页面画布用内容坐标：视口还在已绘制条带内时，滚动只是换一段切片上屏
-        self.redraw_as_needed(tabbar_anim, media, scroll_moved)
+        let produced = self.redraw_as_needed(tabbar_anim, media, scroll_moved);
+        // 画完再排预取：这一帧的布局是最新的（进页面第一帧画完才有布局）
+        self.prefetch_images();
+        produced
     }
 
     /// 本帧上屏要用的那段页面画布是否已经画过

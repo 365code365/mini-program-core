@@ -1,20 +1,13 @@
 const app = getApp();
+const data = require('../../utils/data.js');
 
 Page({
   data: {
     keyword: '',
     hasSearched: false,
     searchHistory: [],
-    hotKeywords: [
-      '无线蓝牙耳机',
-      '智能手机',
-      '机械键盘',
-      '显示器',
-      '笔记本',
-      '路由器',
-      '充电宝',
-      '蓝牙音箱'
-    ],
+    hotKeywords: ['蓝牙耳机', '运动手表', '手机', '运动鞋', '口红', '咖啡', '保温杯', '双肩包'],
+    guessList: data.pick([105, 107, 110, 108]),
     results: []
   },
 
@@ -74,18 +67,7 @@ Page({
     this.setData({ hasSearched: true });
 
     // 模拟搜索结果
-    const allProducts = [
-      { id: 1001, name: '智能手机Pro', desc: '旗舰处理器', price: '2999', icon: 'success', bgColor: '#FF6B35', sold: '1.2万' },
-      { id: 1002, name: '轻薄笔记本', desc: '超长续航', price: '4999', icon: 'info', bgColor: '#4A90D9', sold: '8900' },
-      { id: 1003, name: '无线蓝牙耳机', desc: '降噪功能', price: '399', icon: 'warn', bgColor: '#52C41A', sold: '2.5万' },
-      { id: 1004, name: '智能手表', desc: '健康监测', price: '899', icon: 'waiting', bgColor: '#FF69B4', sold: '1.8万' },
-      { id: 1005, name: '机械键盘', desc: 'RGB背光', price: '299', icon: 'circle', bgColor: '#722ED1', sold: '6700' },
-      { id: 1006, name: '游戏鼠标', desc: '16000DPI', price: '199', icon: 'success_no_circle', bgColor: '#FA541C', sold: '5400' },
-      { id: 1007, name: '显示器4K', desc: 'IPS面板', price: '1299', icon: 'success', bgColor: '#FF6B35', sold: '4200' },
-      { id: 1008, name: '无线路由器', desc: 'WiFi6', price: '399', icon: 'info', bgColor: '#4A90D9', sold: '3800' },
-      { id: 1009, name: '便携充电宝', desc: '快充支持', price: '99', icon: 'warn', bgColor: '#52C41A', sold: '3.2万' },
-      { id: 1010, name: '蓝牙音箱', desc: '高保真音质', price: '159', icon: 'waiting', bgColor: '#FF69B4', sold: '4500' }
-    ];
+    const allProducts = data.products;
 
     // 模糊搜索
     const results = allProducts.filter(p =>

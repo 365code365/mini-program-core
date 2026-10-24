@@ -67,6 +67,10 @@ public final class MiniProgramView: UIView, EngineSessionUI {
     public var navigationBar = true
     /// 页面转场动画（默认开；`open` 之前设）：navigateTo 从右边滑入、返回向右滑出，300ms
     public var routeAnimation = true
+    /// 启动参数（`open` 之前设）：外部 App / H5 / 别的小程序打开时给，小程序在 `App.onLaunch(options)` 与
+    /// `wx.getLaunchOptionsSync()` 里读到。形状与微信一致：
+    /// `["path": "pages/x/x", "query": ["id": "1"], "scene": 1065, "referrerInfo": ["appId": "wx…"]]`。不给就是默认（scene 1001）
+    public var launchOptions: [String: Any]?
     /// 渲染后端偏好（`open` 之前设）。调试时 Xcode 的 scheme 里设环境变量 `MINI_BACKEND=cpu` 可以强制
     public var backend: RenderBackend = .auto
     /// 实际后端（挂上 Metal 层之后才定）
@@ -182,7 +186,7 @@ public final class MiniProgramView: UIView, EngineSessionUI {
         try? FileManager.default.createDirectory(at: data, withIntermediateDirectories: true)
         // 选项要在 app.js 执行前就位：onLaunch 里读 getSystemInfoSync（状态栏高度、胶囊位置）是常态
         let insets = safeAreaInsets
-        let options: [String: Any] = [
+        var options: [String: Any] = [
             "systemInfo": [
                 "platform": "ios",
                 "model": UIDevice.current.model,
@@ -195,6 +199,7 @@ public final class MiniProgramView: UIView, EngineSessionUI {
             // 点了名的 wx.* 才交给宿主（hostCall 事件）；没点名的照旧立刻 fail
             "hostApis": Array(hostApis.keys),
         ]
+        if let lo = launchOptions, JSONSerialization.isValidJSONObject(lo) { options["launchOptions"] = lo }
         let json = (try? JSONSerialization.data(withJSONObject: options)).flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
         logicalSize = (UInt32(bounds.width), UInt32(bounds.height))
         let os = ProcessInfo.processInfo.operatingSystemVersion

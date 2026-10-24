@@ -47,7 +47,7 @@ const _sfc_main = common_vendor.defineComponent({
         common_vendor.index.showToast({ title: "暂无认养证", icon: "none" });
         return null;
       }
-      const url = config_env.BASE_URL + "/adopt/cert/image/" + orderNo;
+      const url = config_env.MOCK ? "/static/mock/cert.jpg" : config_env.BASE_URL + "/adopt/cert/image/" + orderNo;
       common_vendor.index.previewImage({ urls: [url], current: 0 });
     },
     goAdopt() {

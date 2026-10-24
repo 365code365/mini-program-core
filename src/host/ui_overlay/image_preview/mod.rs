@@ -332,7 +332,7 @@ pub fn on_release(x: f32, y: f32) -> bool {
         d.y = y;
         p.drag = Some(d.clone());
         let look = look_at(p, now);
-        let (vx, vy) = d.track.velocity();
+        let (vx, vy) = d.track.velocity(Instant::now());
         p.drag = None;
         p.dirty = true;
         match d.axis {

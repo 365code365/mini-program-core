@@ -11,3 +11,6 @@ __pycache__/
 # 账号导出文件（含 accessToken / refreshToken）：曾被误提交进未推送的历史，推送前已清掉。
 # 它不是 workflow，GitHub Actions 也不读 .json；留在本地即可，别再进仓库
 .github/workflows/kiro-accounts-*.json
+
+# 测试服务器的 root 与 mini-store 管理账户（明文），别提交
+sample/测试服务器.txt

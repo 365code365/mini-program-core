@@ -1,74 +1,122 @@
 .page {
-  background-color: #F5F5F5;
+  background-color: #F6F6F6;
+  min-height: 100vh;
 }
 
 /* 地址列表 */
 .address-list {
-  padding: 20rpx;
+  padding: 20rpx 24rpx 0;
 }
 
 .address-item {
   background-color: #fff;
-  border-radius: 16rpx;
-  padding: 24rpx;
+  border-radius: 20rpx;
+  padding: 28rpx 24rpx 0;
   margin-bottom: 20rpx;
 }
 
+.address-main {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding-bottom: 24rpx;
+}
+
+.avatar {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 20rpx;
+  flex-shrink: 0;
+}
+
 .address-info {
-  margin-bottom: 16rpx;
+  flex: 1;
+  margin-left: 20rpx;
 }
 
 .address-header {
   display: flex;
   flex-direction: row;
   align-items: center;
-  margin-bottom: 12rpx;
+  margin-bottom: 10rpx;
 }
 
 .name {
   font-size: 30rpx;
-  color: #333;
+  color: #1F1F1F;
   font-weight: bold;
 }
 
 .phone {
   font-size: 26rpx;
   color: #666;
-  margin-left: 20rpx;
+  margin-left: 16rpx;
 }
 
 .default-badge {
   background-color: #FF6B35;
   color: #fff;
   font-size: 20rpx;
-  padding: 4rpx 12rpx;
-  border-radius: 4rpx;
-  margin-left: auto;
+  padding: 2rpx 10rpx;
+  border-radius: 6rpx;
+  margin-left: 14rpx;
+}
+
+.tag-badge {
+  color: #4A90D9;
+  background-color: #EAF2FD;
+  font-size: 20rpx;
+  padding: 2rpx 10rpx;
+  border-radius: 6rpx;
+  margin-left: 10rpx;
 }
 
 .address-text {
   display: block;
   font-size: 26rpx;
-  color: #666;
+  color: #555;
   line-height: 1.5;
 }
 
 .address-actions {
   display: flex;
   flex-direction: row;
-  justify-content: flex-end;
-  border-top: 1rpx solid #F0F0F0;
-  padding-top: 16rpx;
-  gap: 24rpx;
+  align-items: center;
+  border-top: 1rpx solid #F2F2F2;
+  height: 84rpx;
+}
+
+.default-switch {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-right: auto;
+}
+
+.check {
+  width: 30rpx;
+  height: 30rpx;
+  border-radius: 15rpx;
+  border: 2rpx solid #CCC;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10rpx;
+  box-sizing: border-box;
+}
+
+.check-on {
+  background-color: #FF6B35;
+  border-color: #FF6B35;
 }
 
 .action-item {
-  font-size: 26rpx;
-  color: #666;
+  margin-left: 32rpx;
 }
 
-.action-item.delete {
-  color: #FF6B35;
+.action-text {
+  font-size: 24rpx;
+  color: #666;
 }
 
 /* 空状态 */
@@ -76,33 +124,34 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 200rpx;
+  padding-top: 160rpx;
 }
 
-.empty-icon {
-  margin-bottom: 30rpx;
+.empty-img {
+  width: 240rpx;
+  height: 240rpx;
 }
 
 .empty-text {
   font-size: 28rpx;
   color: #999;
+  margin-top: 24rpx;
 }
 
 /* 添加按钮 */
 .add-btn-wrapper {
-  padding: 20rpx;
+  padding: 20rpx 24rpx;
 }
 
 .add-btn {
-  width: 100%;
   height: 88rpx;
   line-height: 88rpx;
-  background-color: #FF6B35;
+  text-align: center;
+  background: linear-gradient(90deg, #FF8A50, #FF6B35);
   color: #fff;
   font-size: 30rpx;
+  font-weight: bold;
   border-radius: 44rpx;
-  border: none;
-  padding: 0;
 }
 
 /* 底部结算栏 */
@@ -111,14 +160,14 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 100rpx;
+  height: 110rpx;
   background-color: #fff;
   display: flex;
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  padding: 0 20rpx;
-  box-shadow: 0 -2rpx 12rpx rgba(0, 0, 0, 0.05);
+  padding: 0 24rpx 0 32rpx;
+  border-top: 1rpx solid #F0F0F0;
   box-sizing: border-box;
   z-index: 100;
 }
@@ -130,7 +179,7 @@
 
 .checkout-total {
   font-size: 32rpx;
-  color: #FF6B35;
+  color: #FF4D1C;
   font-weight: bold;
 }
 
@@ -141,17 +190,13 @@
 }
 
 .checkout-btn {
-  width: 200rpx;
-  height: 70rpx;
-  line-height: 70rpx;
-  background-color: #FF6B35;
+  width: 220rpx;
+  height: 76rpx;
+  line-height: 76rpx;
+  text-align: center;
+  background: linear-gradient(90deg, #FF8A50, #FF6B35);
   color: #fff;
   font-size: 28rpx;
-  border-radius: 35rpx;
-  border: none;
-  padding: 0;
-}
-
-.bottom-space {
-  height: 20rpx;
+  font-weight: bold;
+  border-radius: 38rpx;
 }

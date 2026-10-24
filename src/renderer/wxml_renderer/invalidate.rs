@@ -60,6 +60,10 @@ pub(super) struct DiffCtx<'a> {
     pub cut: Option<f32>,
     /// 会被按兄弟位置选的规则选中的类名 / 标签（决定 fixed 的孩子能不能单独配，见 invalidate_pair.rs）
     pub positional: crate::parser::wxss::PositionalSubjects,
+    /// 查 `@keyframes` 用（列表追加时末尾那段里有 CSS 动画的节点，按整段动画画到多远取切线，见 invalidate_grow.rs）
+    pub sheet: &'a StyleSheet,
+    /// rpx 换算：(屏宽逻辑像素, 像素比)
+    pub units: (f32, f32),
 }
 
 impl DiffCtx<'_> {
@@ -94,13 +98,7 @@ impl WxmlRenderer {
         // 内容变高（列表 onReachBottom 追加几条）走「从最高的变化往下整宽重画」（invalidate_grow.rs）
         let grow = new_content_height > old.content_height + 0.5;
         if !grow && (old.content_height - new_content_height).abs() > 0.5 {
-            if log {
-                eprintln!(
-                    "🩹 退回整帧：内容高 {:.1} -> {:.1}",
-                    old.content_height, new_content_height
-                );
-            }
-            return FramePlan::Full;
+            return self.full_because(|| format!("内容变矮 {:.1} -> {:.1}", old.content_height, new_content_height));
         }
         let mut ctx = DiffCtx {
             moved: old.moved,
@@ -111,14 +109,13 @@ impl WxmlRenderer {
             grow,
             cut: None,
             positional: self.stylesheet.positional_subjects(),
+            sheet: &self.stylesheet,
+            units: (self.screen_width, self.scale_factor),
         };
         // 根节点这一层与每个节点的孩子同一套配对规则（invalidate_pair.rs）
         Self::diff_children(old.layouts, new_taffy, old.nodes, new_nodes, (0.0, 0.0), (0.0, 0.0), false, false, &mut ctx);
         if ctx.bail {
-            if log {
-                eprintln!("🩹 退回整帧：{}", ctx.bail_why);
-            }
-            return FramePlan::Full;
+            return self.full_because(|| ctx.bail_why.clone());
         }
         if grow {
             return self.grow_plan(old.content_height, new_content_height, &ctx, log);
@@ -134,10 +131,9 @@ impl WxmlRenderer {
         let sf = self.scale_factor;
         let viewport_area = (self.screen_width * sf) * (self.screen_height * sf);
         if rect.width * rect.height > viewport_area * DAMAGE_AREA_LIMIT {
-            if log {
-                eprintln!("🩹 退回整帧：失效范围 {:.0}x{:.0}@({:.0},{:.0}) 超过视口的 {DAMAGE_AREA_LIMIT}", rect.width, rect.height, rect.x, rect.y);
-            }
-            return FramePlan::Full;
+            return self.full_because(|| {
+                format!("失效范围 {:.0}x{:.0}@({:.0},{:.0}) 超过视口的 {DAMAGE_AREA_LIMIT}", rect.width, rect.height, rect.x, rect.y)
+            });
         }
         FramePlan::Damage { rect, fixed_changed: ctx.fixed_changed }
     }
@@ -222,6 +218,17 @@ impl WxmlRenderer {
                 // 入场动画（`animation: popIn`，含 transform），要是先判 opaque
                 // 就会因为「弹窗里有个带动画的 view」把**整页**也拖去重绘。
                 ctx.fixed_changed = true;
+            } else if opaque_subtree && ctx.grow && !matches!(new.tag.as_str(), "scroll-view" | "swiper") {
+                // 内容变高、它在切线下面整宽重画的那截里：按整段变换 / 动画最多画到哪取切线（invalidate_grow.rs）
+                let (ob, nb) = ((oox, ooy), (nox, noy));
+                match Self::moving_anim_cut(old_t, old, ob, new_t, new, nb, ctx) {
+                    Some(cut) => ctx.cut_at(cut, new),
+                    None => {
+                        ctx.bail = true;
+                        ctx.bail_why = format!("<{}> 变换 / 动画画到哪算不准", new.tag);
+                    }
+                }
+                return;
             } else if opaque_subtree {
                 ctx.bail = true;
                 ctx.bail_why = format!(

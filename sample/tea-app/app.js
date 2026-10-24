@@ -4,6 +4,8 @@ const common_vendor = require("./common/vendor.js");
 const store_index = require("./store/index.js");
 const utils_assets = require("./utils/assets.js");
 const config_env = require("./config/env.js");
+const utils_auth = require("./utils/auth.js");
+const api_mock = require("./api/mock.js");
 if (!Math) {
   "./pages/splash/splash.js";
   "./pages/index/index.js";
@@ -67,10 +69,17 @@ function loadBrandFont(family, file, weight, retry) {
 const _sfc_main = common_vendor.defineComponent({
   onLaunch: function() {
     store_index.initStore();
+    if (config_env.MOCK && !utils_auth.isLogin()) {
+      utils_auth.setToken(api_mock.MOCK_USER.token);
+      utils_auth.setUser(JSON.stringify(api_mock.MOCK_USER));
+    }
     utils_assets.refreshAssets();
-    loadBrandFont(FONT_BODY_CN, "NotoSerifSC-Regular.woff", "400", true);
-    loadBrandFont(FONT_TITLE_CN, "SourceHanSerifSC-Heavy.woff", "900", true);
-    loadBrandFont(FONT_LATIN, "PlayfairDisplay-Regular.woff", "400", true);
+    // 离线演示不拉远程字体（拉不到只会刷失败日志），回落到系统衬线字
+    if (!config_env.MOCK) {
+      loadBrandFont(FONT_BODY_CN, "NotoSerifSC-Regular.woff", "400", true);
+      loadBrandFont(FONT_TITLE_CN, "SourceHanSerifSC-Heavy.woff", "900", true);
+      loadBrandFont(FONT_LATIN, "PlayfairDisplay-Regular.woff", "400", true);
+    }
     common_vendor.index.__f__("log", "at App.uvue:49", "凤凰云岫 App Launch");
   },
   onShow: function() {

@@ -1,7 +1,74 @@
+<!-- 头部在 .outer 之外：不挂任何触摸绑定，只显示读数 -->
+<view class="header">
+  <view class="title-row">
+    <text class="title">触摸探针</text>
+    <text class="total">{{total}} 次事件</text>
+  </view>
+  <text class="subtitle">观察引擎派发的捕获、冒泡、catch 截断与手势归属</text>
+  <view class="chips">
+    <view class="chip"><text class="chip-k">start</text><text class="chip-v">{{counts.start}}</text></view>
+    <view class="chip"><text class="chip-k">move</text><text class="chip-v">{{counts.move}}</text></view>
+    <view class="chip"><text class="chip-k">end</text><text class="chip-v">{{counts.end}}</text></view>
+    <view class="chip"><text class="chip-k">cancel</text><text class="chip-v">{{counts.cancel}}</text></view>
+    <view class="chip"><text class="chip-k">tap</text><text class="chip-v">{{counts.tap}}</text></view>
+    <view class="chip"><text class="chip-k">long</text><text class="chip-v">{{counts.longpress}}</text></view>
+  </view>
+</view>
+
+<!-- 下面的绑定、data-who 与原版一致。卡片内部的子节点带上与父节点相同的 data-who，
+     所以 EV 日志里的 target 与原来（文字直接写在节点里）打印的一样。 -->
 <view class="outer" capture-bind:touchstart="capOuterTS" bindtouchstart="tsOuter" bindtouchmove="tmOuter"
       bindtouchend="teOuter" bindtouchcancel="tcOuter" bindtap="tapOuter" bindlongpress="lpOuter" data-who="outer">
-  <view class="inner" bindtouchstart="tsInner" bindtouchmove="tmInner" bindtouchend="teInner" bindtouchcancel="tcInner"
-        catchtap="tapInner" bindlongpress="lpInner" data-who="inner">内层</view>
-  <view class="mask" catchtouchmove="lockMove" data-who="mask">遮罩锁滚</view>
-  <view class="tall">很高的内容，让页面可以滚动</view>
+  <view class="inner card" bindtouchstart="tsInner" bindtouchmove="tmInner" bindtouchend="teInner" bindtouchcancel="tcInner"
+        catchtap="tapInner" bindlongpress="lpInner" data-who="inner">
+    <view class="card-head" data-who="inner">
+      <text class="card-title" data-who="inner">内层</text>
+      <text class="tag tag-blue" data-who="inner">catchtap · longpress</text>
+    </view>
+    <text class="card-desc" data-who="inner">短按看 capture → 冒泡顺序，tap 在此被 catch 截断。长按 600ms 看 longpress 冒泡，上滑看 touchcancel</text>
+    <view class="readout" data-who="inner">
+      <view class="ro-row" data-who="inner">
+        <text class="ro-k" data-who="inner">type</text><text class="ro-v ro-strong" data-who="inner">{{innerLast.type}}</text>
+        <text class="ro-k" data-who="inner">x, y</text><text class="ro-v" data-who="inner">{{innerLast.pt}}</text>
+      </view>
+      <view class="ro-row" data-who="inner">
+        <text class="ro-k" data-who="inner">handler</text><text class="ro-v" data-who="inner">{{innerLast.handler}}</text>
+        <text class="ro-k" data-who="inner">target</text><text class="ro-v" data-who="inner">{{innerLast.target}} / {{innerLast.current}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="mask card" catchtouchmove="lockMove" data-who="mask">
+    <view class="card-head" data-who="mask">
+      <text class="card-title" data-who="mask">遮罩锁滚</text>
+      <text class="tag tag-amber" data-who="mask">catchtouchmove</text>
+    </view>
+    <text class="card-desc" data-who="mask">从这里起手上滑：touchmove 被截断，手势归属 Blocked，页面不应滚动。</text>
+    <view class="readout" data-who="mask">
+      <view class="ro-row" data-who="mask">
+        <text class="ro-k" data-who="mask">拦截</text><text class="ro-v ro-strong" data-who="mask">{{maskMoves}} 次</text>
+        <text class="ro-k" data-who="mask">x, y</text><text class="ro-v" data-who="mask">{{maskLast.pt}}</text>
+      </view>
+    </view>
+    <text class="card-hint" data-who="mask">点按仍会冒泡到外层的 tapOuter，只有 touchmove 被拦下。</text>
+  </view>
+
+  <view class="tall card">
+    <view class="card-head">
+      <text class="card-title">滚动区</text>
+      <text class="tag tag-gray">无绑定</text>
+    </view>
+    <text class="card-desc">很高的内容，让页面可以滚动。在这里拖动只会触发外层的绑定。</text>
+    <view class="readout">
+      <view class="ro-row">
+        <text class="ro-k">最近</text><text class="ro-v ro-strong">{{last.type}}</text>
+        <text class="ro-k">handler</text><text class="ro-v">{{last.handler}}</text>
+      </view>
+    </view>
+    <view class="ruler">
+      <view class="tick"><text class="tick-t">继续往下滑</text></view>
+      <view class="tick"><text class="tick-t">继续往下滑</text></view>
+      <view class="tick"><text class="tick-t">到底了吗？还没有</text></view>
+    </view>
+  </view>
 </view>

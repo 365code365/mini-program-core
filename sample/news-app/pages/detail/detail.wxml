@@ -1,14 +1,24 @@
 <view class="page {{nightMode ? 'night' : ''}}">
-  <!-- 顶部返回栏 -->
-  <view class="dnav">
-    <view class="dnav-back" bindtap="onBack">
-      <icon type="back" size="20" color="#ffffff"></icon>
-    </view>
-    <text class="dnav-title">{{article.author}}</text>
-    <view class="dnav-act" bindtap="onOpenFontPanel">
-      <text class="dnav-font">字号</text>
+  <!-- 顶栏（固定，与状态栏融成一块）：左边返回 + 字号，中间是媒体名称，右边给胶囊让位。
+       左右两侧等宽（都等于胶囊占的宽度），中间的名字才落在屏幕正中 -->
+  <view class="dnav" style="padding-top:{{nav.statusBar}}px">
+    <view class="dnav-bar" style="height:{{nav.navHeight}}px">
+      <view class="dnav-side" style="width:{{nav.capsuleSpace}}px">
+        <view class="dnav-back" bindtap="onBack">
+          <icon type="back" size="20" color="#ffffff"></icon>
+        </view>
+        <view class="dnav-act" bindtap="onOpenFontPanel">
+          <text class="dnav-font">Aa</text>
+        </view>
+      </view>
+      <view class="dnav-center">
+        <image class="dnav-avatar" src="{{article.avatar}}" mode="aspectFill"></image>
+        <text class="dnav-title">{{article.author}}</text>
+      </view>
+      <view class="dnav-side" style="width:{{nav.capsuleSpace}}px"></view>
     </view>
   </view>
+  <view style="height:{{nav.statusBar + nav.navHeight}}px"></view>
 
   <!-- 文章头部 -->
   <view class="article">

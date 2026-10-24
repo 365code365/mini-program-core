@@ -176,6 +176,8 @@ pub fn animation_total_ms(src: &str) -> Option<u32> {
 
 /// 加载与解码（本地 / 远程 / GIF）
 mod load;
+/// 快要滑进屏幕的图先在后台解码、降采样（与绘制同一份缓存，像素不变）
+pub mod prefetch;
 use load::*;
 
 pub struct ImageComponent;

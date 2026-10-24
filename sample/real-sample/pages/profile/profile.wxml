@@ -1,102 +1,112 @@
 <view class="page">
   <!-- 用户头部 -->
   <view class="user-header">
-    <view class="user-avatar">
-      <icon type="success" size="60" color="#fff"></icon>
+    <view class="user-row">
+      <image class="user-avatar" src="{{userInfo.avatar || '/assets/avatar.jpg'}}" mode="aspectFill"></image>
+      <view class="user-info">
+        <text class="user-name">{{userInfo.nickName}}</text>
+        <view class="user-level"><text>★ {{userInfo.level}}</text></view>
+      </view>
+      <view class="sign-btn"><text>签到 +5</text></view>
     </view>
-    <view class="user-info">
-      <text class="user-name">{{userInfo.nickName}}</text>
-      <text class="user-level">{{userInfo.level}}</text>
-    </view>
-    <view class="user-points">
-      <text class="points-label">积分</text>
-      <text class="points-value">1,280</text>
+    <view class="asset-row">
+      <view class="asset-item">
+        <text class="asset-value">1,280</text>
+        <text class="asset-label">积分</text>
+      </view>
+      <view class="asset-item">
+        <text class="asset-value">3</text>
+        <text class="asset-label">优惠券</text>
+      </view>
+      <view class="asset-item">
+        <text class="asset-value">12</text>
+        <text class="asset-label">收藏</text>
+      </view>
+      <view class="asset-item">
+        <text class="asset-value">36</text>
+        <text class="asset-label">足迹</text>
+      </view>
     </view>
   </view>
 
+  <!-- 会员卡 -->
+  <view class="vip-card">
+    <view class="vip-left">
+      <text class="vip-title">PLUS 会员</text>
+      <text class="vip-desc">开通立享 95 折 · 每月免邮券</text>
+    </view>
+    <view class="vip-btn"><text>立即开通</text></view>
+  </view>
+
   <!-- 订单状态 -->
-  <view class="order-status">
+  <view class="card order-status">
     <view class="status-title">
-      <text>我的订单</text>
-      <text class="view-all" bindtap="onViewAllOrders">查看全部 ></text>
+      <text class="card-title">我的订单</text>
+      <text class="view-all" bindtap="onViewAllOrders">全部订单 ></text>
     </view>
     <view class="status-list">
       <view class="status-item" bindtap="onOrderStatusTap" data-status="pending">
-        <icon type="info" size="24" color="#FF6B35"></icon>
+        <image class="status-icon" src="/assets/icons/order_pay.png"></image>
         <text class="status-name">待付款</text>
         <view class="status-badge" wx:if="{{orderCounts.pending > 0}}">{{orderCounts.pending}}</view>
       </view>
       <view class="status-item" bindtap="onOrderStatusTap" data-status="paid">
-        <icon type="warn" size="24" color="#4A90D9"></icon>
+        <image class="status-icon" src="/assets/icons/order_ship.png"></image>
         <text class="status-name">待发货</text>
         <view class="status-badge" wx:if="{{orderCounts.paid > 0}}">{{orderCounts.paid}}</view>
       </view>
       <view class="status-item" bindtap="onOrderStatusTap" data-status="shipped">
-        <icon type="waiting" size="24" color="#52C41A"></icon>
+        <image class="status-icon" src="/assets/icons/order_recv.png"></image>
         <text class="status-name">待收货</text>
         <view class="status-badge" wx:if="{{orderCounts.shipped > 0}}">{{orderCounts.shipped}}</view>
       </view>
       <view class="status-item" bindtap="onOrderStatusTap" data-status="completed">
-        <icon type="success_no_circle" size="24" color="#FF69B4"></icon>
+        <image class="status-icon" src="/assets/icons/order_done.png"></image>
         <text class="status-name">已完成</text>
-        <view class="status-badge" wx:if="{{orderCounts.completed > 0}}">{{orderCounts.completed}}</view>
       </view>
     </view>
   </view>
 
-  <!-- 常用功能 -->
-  <view class="function-section">
-    <view class="function-item" bindtap="onAddressManage">
-      <view class="function-icon" style="background-color: #FF6B35;">
-        <icon type="success" size="20" color="#fff"></icon>
+  <!-- 常用功能：宫格 -->
+  <view class="card">
+    <text class="card-title">常用功能</text>
+    <view class="grid">
+      <view class="grid-item" bindtap="onAddressManage">
+        <image class="grid-icon" src="/assets/icons/fn_address.png"></image>
+        <text class="grid-name">收货地址</text>
       </view>
-      <text class="function-name">收货地址</text>
-      <text class="function-arrow">></text>
-    </view>
-    <view class="function-item" bindtap="onMyCoupons">
-      <view class="function-icon" style="background-color: #4A90D9;">
-        <icon type="info" size="20" color="#fff"></icon>
+      <view class="grid-item" bindtap="onMyCoupons">
+        <image class="grid-icon" src="/assets/icons/fn_coupon.png"></image>
+        <text class="grid-name">优惠券</text>
       </view>
-      <text class="function-name">优惠券</text>
-      <text class="function-arrow">></text>
-    </view>
-    <view class="function-item" bindtap="onMyFavorites">
-      <view class="function-icon" style="background-color: #52C41A;">
-        <icon type="warn" size="20" color="#fff"></icon>
+      <view class="grid-item" bindtap="onMyFavorites">
+        <image class="grid-icon" src="/assets/icons/fn_fav.png"></image>
+        <text class="grid-name">我的收藏</text>
       </view>
-      <text class="function-name">我的收藏</text>
-      <text class="function-arrow">></text>
-    </view>
-    <view class="function-item" bindtap="onHistory">
-      <view class="function-icon" style="background-color: #FF69B4;">
-        <icon type="waiting" size="20" color="#fff"></icon>
+      <view class="grid-item" bindtap="onHistory">
+        <image class="grid-icon" src="/assets/icons/fn_history.png"></image>
+        <text class="grid-name">浏览记录</text>
       </view>
-      <text class="function-name">浏览记录</text>
-      <text class="function-arrow">></text>
     </view>
   </view>
 
-  <!-- 客户服务 -->
-  <view class="function-section">
+  <!-- 客户服务：列表 -->
+  <view class="card list-card">
     <view class="function-item" bindtap="onContactService">
-      <view class="function-icon" style="background-color: #722ED1;">
-        <icon type="circle" size="20" color="#fff"></icon>
-      </view>
+      <image class="function-icon" src="/assets/icons/fn_service.png"></image>
       <text class="function-name">联系客服</text>
+      <text class="function-extra">9:00-18:00</text>
       <text class="function-arrow">></text>
     </view>
     <view class="function-item" bindtap="onFeedback">
-      <view class="function-icon" style="background-color: #FA541C;">
-        <icon type="success_no_circle" size="20" color="#fff"></icon>
-      </view>
+      <image class="function-icon" src="/assets/icons/fn_feedback.png"></image>
       <text class="function-name">意见反馈</text>
       <text class="function-arrow">></text>
     </view>
     <view class="function-item" bindtap="onAbout">
-      <view class="function-icon" style="background-color: #13C2C2;">
-        <icon type="success" size="20" color="#fff"></icon>
-      </view>
+      <image class="function-icon" src="/assets/icons/fn_about.png"></image>
       <text class="function-name">关于我们</text>
+      <text class="function-extra">v1.0.0</text>
       <text class="function-arrow">></text>
     </view>
   </view>

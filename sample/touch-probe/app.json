@@ -1,1 +1,9 @@
-{ "pages": ["pages/p/p"], "window": { "navigationBarTitleText": "touch probe" } }
+{
+  "pages": ["pages/p/p"],
+  "window": {
+    "navigationBarTitleText": "触摸探针",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f3f4f6"
+  }
+}

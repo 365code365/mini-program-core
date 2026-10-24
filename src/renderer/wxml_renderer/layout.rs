@@ -47,7 +47,7 @@ impl WxmlRenderer {
             if same_data && !height_changed {
                 self.current_viewport = viewport;
                 self.scroll_cache.mark_all_dirty();
-                return FramePlan::Full;
+                return self.full_because(|| "数据没变、只换了滚动偏移".into());
             }
         }
         
@@ -129,7 +129,8 @@ impl WxmlRenderer {
                 &taffy,
                 content_height,
             ),
-            _ => FramePlan::Full,
+            (None, _) => self.full_because(|| "第一次布局".into()),
+            (Some(_), true) => self.full_because(|| "视口（滚动偏移 / 高）与上次布局时不同".into()),
         };
         self.rebuild_laps = Some([
             ms(t_start, t_template),

@@ -107,16 +107,31 @@ impl Tracker {
         }
     }
 
-    /// （vx, vy）逻辑像素 / 秒。轨迹太短（不到 12ms，事件挤在一起）给 0：按距离判
-    pub fn velocity(&self) -> (f32, f32) {
-        let (Some(a), Some(b)) = (self.samples.front(), self.samples.back()) else { return (0.0, 0.0) };
-        let dt = b.0.duration_since(a.0).as_secs_f32();
+    /// 松手那一刻 `now` 的（vx, vy），逻辑像素 / 秒。
+    ///
+    /// 只看松手前 [`VELOCITY_WINDOW`] 里的那几个点：手指拉下去又推回来、停了一会儿才松，按整段首尾算的话
+    /// 是一个朝下的大速度 —— 没拉够也被当成「往下甩」关掉了（机器一忙、事件挤得稀，这种误判就冒出来）。
+    /// 最后一个点离松手已经超过 [`STILL_SECS`]：手指是停着松开的，速度 0。点挤在一起（不到 12ms）也给 0：按距离判
+    pub fn velocity(&self, now: Instant) -> (f32, f32) {
+        let Some(last) = self.samples.back() else { return (0.0, 0.0) };
+        if now.saturating_duration_since(last.0).as_secs_f32() > STILL_SECS {
+            return (0.0, 0.0);
+        }
+        let Some(first) = self.samples.iter().find(|s| last.0.duration_since(s.0).as_secs_f32() <= VELOCITY_WINDOW) else {
+            return (0.0, 0.0);
+        };
+        let dt = last.0.duration_since(first.0).as_secs_f32();
         if dt < 0.012 {
             return (0.0, 0.0);
         }
-        ((b.1 - a.1) / dt, (b.2 - a.2) / dt)
+        ((last.1 - first.1) / dt, (last.2 - first.2) / dt)
     }
 }
+
+/// 松手速度只看最后这么长（秒）
+const VELOCITY_WINDOW: f32 = 0.06;
+/// 最后一次移动到松手超过这么久（秒）算停着松开
+const STILL_SECS: f32 = 0.08;
 
 #[cfg(test)]
 mod tests {
@@ -132,6 +147,23 @@ mod tests {
         assert!(spring_done(x, v) || x.abs() < 0.003, "0.35s 基本停稳：{x} {v}");
         let min = (0..100).map(|i| spring(x0, v0, i as f32 * 0.01).0).fold(f32::MAX, f32::min);
         assert!(min > -0.02, "临界阻尼不该明显过冲：{min}");
+    }
+
+    #[test]
+    fn 松手速度只看最后一小段_停住再松是零() {
+        let t0 = Instant::now();
+        let ms = |m: u64| t0 + std::time::Duration::from_millis(m);
+        let mut tr = Tracker::default();
+        // 往下拉 200，又推回 160（每 10ms 一个点）
+        for i in 0..=10 {
+            tr.push(ms(i * 10), 0.0, i as f32 * 20.0);
+        }
+        for i in 1..=4 {
+            tr.push(ms(100 + i * 10), 0.0, 200.0 - i as f32 * 40.0);
+        }
+        let (_, vy) = tr.velocity(ms(140));
+        assert!(vy < 0.0, "最后那段是往上推：{vy}");
+        assert_eq!(tr.velocity(ms(300)), (0.0, 0.0), "停了 160ms 才松：速度 0");
     }
 
     #[test]

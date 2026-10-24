@@ -32,6 +32,7 @@ class MiniProgramController {
     required this.appDir,
     this.dataDir,
     this.route,
+    this.launchOptions,
     this.hostApis = const {},
     this.builtinHostApis = true,
     this.nativeComponents = const [],
@@ -85,6 +86,12 @@ class MiniProgramController {
 
   /// 起始页（`pages/x/x?id=1`），不给就是 app.json 首页
   final String? route;
+
+  /// 启动参数：外部 App / H5 / 别的小程序打开时给，小程序在 `App.onLaunch(options)` 与
+  /// `wx.getLaunchOptionsSync()` 里读到。形状与微信一致：
+  /// `{'path': 'pages/x/x', 'query': {'id': '1'}, 'scene': 1065, 'referrerInfo': {'appId': 'wx…', 'extraData': {…}}}`。
+  /// 不给就是默认（scene 1001）
+  final Map<String, Object?>? launchOptions;
 
   /// 宿主实现的 `wx.*`：名字会装进小程序的 `wx`，调用转到这里
   final Map<String, MiniHostApi> hostApis;
@@ -264,6 +271,7 @@ class MiniProgramController {
       'menuButton': menuButton,
       'navigationBar': navigationBar,
       'routeAnimation': routeAnimation,
+      if (launchOptions != null) 'launchOptions': launchOptions,
     };
     final Map<String, Object?>? r;
     try {

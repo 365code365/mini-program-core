@@ -1,5 +1,6 @@
 "use strict";
 const common_vendor = require("../../common/vendor.js");
+const config_env = require("../../config/env.js");
 const api_iot = require("../../api/iot.js");
 const common_assets = require("../../common/assets.js");
 const _sfc_main = common_vendor.defineComponent({
@@ -15,6 +16,8 @@ const _sfc_main = common_vendor.defineComponent({
     };
   },
   onLoad(opt) {
+    if (config_env.MOCK)
+      opt = Object.assign({ gardenId: "1" }, opt || {});
     const gid = opt["gardenId"];
     if (gid != null)
       this.gardenId = parseInt(gid);

@@ -1,4 +1,64 @@
-.outer{ width:375px; }
-.inner{ width:375px; height:200px; background-color:#eef; }
-.mask{ width:375px; height:200px; background-color:#fee; }
-.tall{ width:375px; height:1200px; background-color:#efe; }
+/* 区域高度写死：README 里的 --touch / --swipe 坐标依赖这几个数。
+   header 0~120，.inner 120~320，.mask 332~532，.tall 544~1744（间距 12px）。 */
+page { background-color: #f3f4f6; }
+
+.header {
+  height: 120px;
+  padding: 16px 16px 0 16px;
+  box-sizing: border-box;
+}
+.title-row { display: flex; flex-direction: row; align-items: center; justify-content: space-between; }
+.title { font-size: 22px; font-weight: bold; color: #111827; }
+.total { font-size: 12px; color: #6b7280; }
+.subtitle { display: block; margin-top: 4px; font-size: 12px; color: #6b7280; }
+.chips { display: flex; flex-direction: row; justify-content: space-between; margin-top: 12px; }
+.chip {
+  width: 52px; height: 36px;
+  border-radius: 8px;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  box-sizing: border-box;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.chip-k { font-size: 10px; color: #9ca3af; }
+.chip-v { font-size: 13px; font-weight: bold; color: #111827; }
+
+.outer { width: 375px; padding: 0 16px; box-sizing: border-box; }
+
+.card {
+  width: 343px;
+  margin-bottom: 12px;
+  padding: 16px;
+  box-sizing: border-box;
+  border-radius: 14px;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(17, 24, 39, 0.06);
+}
+.inner { height: 200px; }
+.mask { height: 200px; }
+.tall { height: 1200px; }
+
+.card-head { display: flex; flex-direction: row; align-items: center; justify-content: space-between; }
+.card-title { font-size: 16px; font-weight: bold; color: #111827; }
+.tag { font-size: 11px; padding: 2px 8px; border-radius: 10px; }
+.tag-blue { color: #1d4ed8; background-color: #dbeafe; }
+.tag-amber { color: #b45309; background-color: #fef3c7; }
+.tag-gray { color: #4b5563; background-color: #f3f4f6; }
+.card-desc { display: block; margin-top: 8px; font-size: 12px; line-height: 18px; color: #6b7280; }
+
+.readout {
+  margin-top: 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background-color: #111827;
+}
+.ro-row { display: flex; flex-direction: row; align-items: center; height: 22px; }
+.ro-k { width: 52px; font-size: 11px; color: #9ca3af; }
+.ro-v { width: 100px; font-size: 12px; color: #e5e7eb; font-family: Menlo, Monaco, monospace; }
+.ro-strong { color: #34d399; font-weight: bold; }
+
+.ruler { margin-top: 24px; }
+.tick { height: 300px; border-top: 1px dashed #d1d5db; }
+.tick-t { font-size: 10px; color: #9ca3af; }
+.card-hint { display: block; margin-top: 12px; font-size: 11px; line-height: 16px; color: #9ca3af; }

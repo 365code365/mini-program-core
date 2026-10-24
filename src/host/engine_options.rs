@@ -61,6 +61,10 @@ pub struct EngineOptions {
     /// 页面转场动画（`"routeAnimation": true`）：navigateTo 新页从右边滑入、返回时当前页向右
     /// 滑出，300ms（见 `route_anim.rs`）。默认关：无头测试与老宿主照旧「一换就到」
     pub route_animation: bool,
+    /// 启动参数（`"launchOptions": {path, query, scene, referrerInfo}`）：外部 App / H5 / 别的小程序
+    /// 打开时由宿主给，`wx.getLaunchOptionsSync()` 与 `App.onLaunch(options)` 读它。不给就是
+    /// 从前的默认（scene 1001）。字段形状与微信一致：`query` 是对象，`referrerInfo` 有 `appId` / `extraData`
+    pub launch_options: Option<Value>,
 }
 
 impl EngineOptions {
@@ -87,6 +91,7 @@ impl EngineOptions {
             menu_button: o.get("menuButton").and_then(|v| v.as_bool()).unwrap_or(false),
             navigation_bar: o.get("navigationBar").and_then(|v| v.as_bool()).unwrap_or(false),
             route_animation: o.get("routeAnimation").and_then(|v| v.as_bool()).unwrap_or(false),
+            launch_options: o.get("launchOptions").filter(|v| v.is_object()).cloned(),
         })
     }
 
@@ -151,6 +156,18 @@ pub fn system_info(width: u32, height: u32, dpr: f32, opts: &EngineOptions) -> V
         }
     }
     info
+}
+
+/// 小程序身份与启动参数装进逻辑层（`app.js` 执行之前调一次）：
+/// - `__projectAppId`：`project.config.json` 的 appid（`wx.getAccountInfoSync().miniProgram.appId`）。
+///   从前 app-info.js 读这个全局，却没有人给它赋值，appId 永远是空串；
+/// - `__hostLaunchOptions`：宿主给的启动参数（见 [`EngineOptions::launch_options`]）
+pub fn install_launch_context(app: &crate::runtime::MiniApp, app_id: &str, launch: Option<&Value>) {
+    let launch = launch.cloned().unwrap_or(Value::Null);
+    let script = format!("globalThis.__projectAppId = {}; globalThis.__hostLaunchOptions = {launch};", json!(app_id));
+    if let Err(e) = app.eval(&script) {
+        eprintln!("⚠️  安装启动参数失败: {e}");
+    }
 }
 
 /// 把系统信息装进逻辑层（`app.js` 执行之前调一次，尺寸 / 安全区变了再调）

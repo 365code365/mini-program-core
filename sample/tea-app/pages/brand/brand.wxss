@@ -10,7 +10,8 @@
 .back {
   position: absolute;
   left: 24rpx;
-  top: 80rpx;
+  /* 状态栏下面再留 12px（胶囊同一行）：从前写死 80rpx，刘海屏上返回键压在状态栏里 */
+  top: calc(var(--status-bar-height, 20px) + 12px);
   z-index: 10;
   width: 64rpx;
   height: 64rpx;

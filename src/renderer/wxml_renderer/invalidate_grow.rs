@@ -111,15 +111,90 @@ impl WxmlRenderer {
         if in_fixed {
             // 画在覆盖层里，不在页面画布上
             ctx.fixed_changed = true;
+        } else if let Some((top, reach)) = Self::subtree_box(t, node, x, y)
+            // 变换原点是节点自己的框心，不是外包框的中心：再加半条对角线，转到哪个角度都盖得住
+            .and_then(|(top, w, h)| Self::tail_reach(node, w, h, ctx).map(|r| (top, r + (w * w + h * h).sqrt() / 2.0)))
+        {
+            // 带 transform / CSS 动画的（列表底下那个在转的加载圈）：整棵子树跟着它一起变换，
+            // 按子树的外包框算它最多画到框外多远，切线取「外包框顶 - 这一圈」—— 切线以下整宽重画，
+            // 它画到哪都盖得住。子树里还嵌着变换 / 动画的算不准，`subtree_box` 给 None，照旧整帧
+            ctx.cut_at(top - reach - overhang(&node.style), node);
+            return;
         } else if matches!(node.tag.as_str(), "scroll-view" | "swiper") || node.style.transform.is_some() || node.style.animation.is_some() {
             ctx.bail = true;
-            ctx.bail_why = format!("配不上对的 <{}> 子树绘制坐标≠布局坐标", node.tag);
+            let what = if node.style.animation.is_some() { "动画" } else if node.style.transform.is_some() { "transform" } else { "子画布" };
+            ctx.bail_why = format!(
+                "配不上对的 <{}{}>（{what}）子树绘制坐标≠布局坐标",
+                node.tag,
+                node.attrs.get("class").map(|c| format!(" class={c}")).unwrap_or_default()
+            );
             return;
         } else {
             ctx.cut_at(y - overhang(&node.style), node);
         }
         for c in &node.children {
             Self::tail_cut(t, c, x, y, in_fixed, ctx);
+        }
+    }
+
+    /// 子树的外包框（布局坐标，不算变换）：(顶, 宽, 高)。子树里还有带变换 / 动画 / 子画布的节点给 None
+    pub(super) fn subtree_box(t: &dyn super::layout_snapshot::Layouts, node: &RenderNode, x: f32, y: f32) -> Option<(f32, f32, f32)> {
+        let l = t.layout(node.taffy_node).ok()?;
+        let (mut x0, mut y0, mut x1, mut y1) = (x, y, x + l.size.width, y + l.size.height);
+        fn walk(t: &dyn super::layout_snapshot::Layouts, n: &RenderNode, px: f32, py: f32, b: &mut (f32, f32, f32, f32)) -> Option<()> {
+            let s = &n.style;
+            if s.transform.is_some() || s.animation.is_some() || matches!(n.tag.as_str(), "scroll-view" | "swiper") {
+                return None;
+            }
+            let l = t.layout(n.taffy_node).ok()?;
+            let (x, y) = (px + l.location.x, py + l.location.y);
+            *b = (b.0.min(x), b.1.min(y), b.2.max(x + l.size.width), b.3.max(y + l.size.height));
+            n.children.iter().try_for_each(|c| walk(t, c, x, y, b))
+        }
+        let mut b = (x0, y0, x1, y1);
+        node.children.iter().try_for_each(|c| walk(t, c, x, y, &mut b))?;
+        (x0, y0, x1, y1) = b;
+        let _ = x0;
+        Some((y0, x1 - b.0, y1 - y0))
+    }
+
+    /// 内容变高时，一个配上了对、带 transform / CSS 动画的子树变了（挪了位置 / 内容变了）：
+    /// 新旧两次各自最多画到的顶边取上面那个。算不准给 None（调用方照旧整帧）
+    pub(super) fn moving_anim_cut(
+        old_t: &dyn super::layout_snapshot::Layouts,
+        old: &RenderNode,
+        (ox, oy): (f32, f32),
+        new_t: &dyn super::layout_snapshot::Layouts,
+        new: &RenderNode,
+        (nx, ny): (f32, f32),
+        ctx: &DiffCtx,
+    ) -> Option<f32> {
+        let top = |t: &dyn super::layout_snapshot::Layouts, n: &RenderNode, x: f32, y: f32| -> Option<f32> {
+            let (top, w, h) = Self::subtree_box(t, n, x, y)?;
+            let reach = Self::tail_reach(n, w, h, ctx)? + (w * w + h * h).sqrt() / 2.0;
+            Some(top - reach - overhang(&n.style))
+        };
+        Some(top(old_t, old, ox, oy)?.min(top(new_t, new, nx, ny)?))
+    }
+
+    /// 配不上对的那段里一个带 transform / CSS 动画的节点：最多画到布局框外多远（物理像素）。
+    /// 算不出来（`wx.createAnimation` 下发的动画、找不到 `@keyframes`、scroll-view / swiper）给 None，照旧整帧
+    pub(super) fn tail_reach(node: &RenderNode, w: f32, h: f32, ctx: &DiffCtx) -> Option<f32> {
+        let s = &node.style;
+        if matches!(node.tag.as_str(), "scroll-view" | "swiper") || node.attrs.contains_key("animation") {
+            return None;
+        }
+        let pad = |t: &crate::renderer::components::Transform| {
+            t.translate_x.abs().max(t.translate_y.abs()) + crate::renderer::compose::transform_padding(w, h, t)
+        };
+        match (&s.animation, &s.transform) {
+            (None, None) => None,
+            (None, Some(t)) => Some(pad(t)),
+            (Some(spec), base) => {
+                let rule = ctx.sheet.keyframes_named(&spec.name)?;
+                let tl = crate::renderer::anim::Timeline::from_rule(rule, ctx.units.0, ctx.units.1);
+                Some(tl.paint_reach(w, h, *base))
+            }
         }
     }
 

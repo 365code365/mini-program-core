@@ -2,77 +2,70 @@
 page {
   background-color: #F4F5F6;
 }
-
 /* 顶部品牌栏（红底 + 搜索框） */
 .nav-bar {
   background-color: #D43C33;
-  padding: 16rpx 24rpx;
+  background: linear-gradient(to bottom, #DC443A, #CF362E);
+  padding: 16rpx 28rpx 18rpx;
   display: flex;
   flex-direction: row;
   align-items: center;
 }
-
 .nav-logo {
-  font-size: 34rpx;
+  font-size: 38rpx;
   font-weight: bold;
   color: #fff;
-  margin-right: 16rpx;
+  letter-spacing: 2rpx;
+  margin-right: 20rpx;
 }
-
 .nav-search {
   flex: 1;
-  background-color: rgba(255, 255, 255, 0.92);
-  border-radius: 30rpx;
-  height: 60rpx;
+  background-color: #ffffff;
+  border-radius: 32rpx;
+  height: 64rpx;
   display: flex;
   flex-direction: row;
   align-items: center;
-  padding: 0 20rpx;
+  padding: 0 24rpx;
 }
-
 .nav-search-text {
   font-size: 26rpx;
-  color: #9A9A9A;
-  margin-left: 10rpx;
+  color: #A3A3A3;
+  margin-left: 12rpx;
 }
-
 /* 卡片通用 */
 .card {
   background-color: #fff;
-  padding: 24rpx;
-  border-bottom: 1rpx solid #EDEDED;
+  padding: 28rpx 32rpx;
+  border-bottom: 1rpx solid #F0F0F0;
 }
-
 .meta-row {
   display: flex;
   flex-direction: row;
   align-items: center;
-  margin-top: 14rpx;
+  margin-top: 16rpx;
 }
-
 .meta-source {
   font-size: 22rpx;
-  color: #8A8A8A;
+  color: #999999;
 }
-
 .meta-dot {
-  width: 6rpx;
-  height: 6rpx;
+  width: 4rpx;
+  height: 4rpx;
   border-radius: 50%;
-  background-color: #CFCFCF;
+  background-color: #C4C4C4;
   margin: 0 12rpx;
 }
-
 .meta-comment {
   font-size: 22rpx;
-  color: #8A8A8A;
+  color: #999999;
 }
-
 .tag {
   font-size: 20rpx;
   color: #D43C33;
-  border: 1rpx solid #F0BDB9;
-  border-radius: 4rpx;
-  padding: 2rpx 8rpx;
-  margin-right: 10rpx;
+  border: 1rpx solid #F2B8B3;
+  border-radius: 6rpx;
+  padding: 0 8rpx;
+  line-height: 30rpx;
+  margin-right: 12rpx;
 }

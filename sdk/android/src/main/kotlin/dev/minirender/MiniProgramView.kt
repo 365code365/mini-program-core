@@ -101,6 +101,14 @@ class MiniProgramView @JvmOverloads constructor(
     var routeAnimation = true
 
     /**
+     * 启动参数（`open` 之前设）：外部 App / H5 / 别的小程序打开时给，小程序在 `App.onLaunch(options)` 与
+     * `wx.getLaunchOptionsSync()` 里读到。形状与微信一致：
+     * `{"path":"pages/x/x","query":{"id":"1"},"scene":1065,"referrerInfo":{"appId":"wx…","extraData":{…}}}`。
+     * 不给就是默认（scene 1001）
+     */
+    var launchOptions: JSONObject? = null
+
+    /**
      * `<video>` 走同层渲染（默认开，与 Flutter 插件一致；`open` 之前设）：SDK 自带的系统播放器（MediaPlayer，硬解、
      * 带声音）解码，帧交给引擎画进页面，滚动时与页面一起动；控制条、全屏（横 / 竖）由引擎画。
      * false = 引擎自己软解（openh264，手机上没有声音、耗 CPU）
@@ -116,6 +124,12 @@ class MiniProgramView @JvmOverloads constructor(
      * 调试时也可以 `adb shell setprop debug.mini.backend cpu` 强制，实际用的是哪个看 [activeBackend]
      */
     var backend = MiniEngine.BACKEND_AUTO
+    /**
+     * 诊断开关（`open` 之前设；测试包里打开，不用 `adb setprop`）：名字与 `debug.mini.<名字>` 同一组，
+     * 如 `setOf("damage_log", "fps")`。日志在 `adb logcat -s mini-render`：每帧慢在哪（〔慢：解码 / 降采样 / 缩放 / 字形〕）、
+     * 为什么整帧（`整帧·数据 ← 原因`）、关闭耗时（`[生命周期]`）。见 [MiniDiag]
+     */
+    var diagnostics: Set<String> = emptySet()
 
     /** 实际后端（[MiniEngine.BACKEND_CPU] / [MiniEngine.BACKEND_GPU]），挂上 Surface 之后才定 */
     val activeBackend: Int get() = session.activeBackend
@@ -202,6 +216,11 @@ class MiniProgramView @JvmOverloads constructor(
     /** 对应 Activity/Application 的 `onTrimMemory` */
     fun onHostTrimMemory() = session.lifecycle(2)
 
+    /**
+     * 销毁引擎：返回时引擎线程已经放手 Surface；实例在引擎线程上异步销毁（不卡主线程，退出时回 App 的动画不顿）。
+     * 之后可以在**新的**视图上 `open` 另一个小程序（新引擎会先等上一个销毁完 —— 一个进程同一时刻只有一个
+     * 引擎实例，小程序根目录、数据目录是进程级的）
+     */
     fun close() {
         session.dispose()
     }
@@ -261,6 +280,7 @@ class MiniProgramView @JvmOverloads constructor(
             .put("menuButton", menuButton)
             .put("navigationBar", navigationBar)
             .put("routeAnimation", routeAnimation)
+            .put("launchOptions", launchOptions ?: JSONObject.NULL)
             // 点了名的 wx.* 才交给宿主（hostCall 事件）；没点名的照旧立刻 fail
             .put("hostApis", JSONArray(hostCalls.names()))
         // 同层渲染：宿主画 / 解码，引擎画进页面，滚动时与页面在同一张图里走。
@@ -271,7 +291,7 @@ class MiniProgramView @JvmOverloads constructor(
         sameLayer.tags().filter { it != "video" }.forEach { same.put(it) }
         if (same.length() > 0) options.put("sameLayer", same)
         rootWindowInsets?.let { options.put("safeArea", insetsJson(it, dpr)) }
-        session.create(dir.absolutePath, data.absolutePath, startRoute, lw, lh, dpr, options.toString(), backend, deviceInfo())
+        session.create(dir.absolutePath, data.absolutePath, startRoute, lw, lh, dpr, options.toString(), backend, deviceInfo(), diagnostics)
     }
 
     /** auto 后端的机型分级：内存、低内存机型标记、API level（与 Flutter 插件同一组） */

@@ -241,6 +241,9 @@ pub struct WxmlRenderer {
     /// 上一次整棵重建各段的耗时（毫秒：模板 / 建树+样式 / 布局 / 换行修正 / 比对），
     /// 宿主取走接在 `⏱ [SDK] pump` 行尾（`take_rebuild_laps`）。时钟本来就在取，记下来不多花
     rebuild_laps: Option<[f32; 5]>,
+    /// 最近一次 setData 的失效分析为什么退回了整帧（宿主接在 `整帧·数据` 那行 🩹 后面，`take_full_why`）。
+    /// 从前只有 `MINI_LAYOUT_LOG` 的 eprintln —— 手机上 stderr 没人收，「为什么整帧」只能猜
+    full_why: std::cell::RefCell<Option<String>>,
     /// 布局之后才改的样式（换行补高、包含块修正、覆盖层重排）改之前的原样：增量重建时先还原，
     /// 留下来的子树才与「重新建」时的样式一致（layout_incremental.rs）。只记缓存那棵树上的
     layout_touched: std::cell::RefCell<HashMap<NodeId, Style>>,
@@ -273,6 +276,9 @@ mod refresher;
 /// 按选择器找节点与位置（`wx.pageScrollTo({selector})`、SelectorQuery）
 mod query;
 pub use query::QueryHit;
+/// 每张图画的时候的几何（图片预取用）
+mod image_plan;
+pub use image_plan::ImagePlan;
 /// `<form>`：form-type 按钮所在的表单与表单里的控件（提交 / 重置）
 mod form;
 pub use form::{FormAction, FormControl, FormField, FormHit};
@@ -368,10 +374,26 @@ impl WxmlRenderer {
             swiper_regions: Vec::new(),
             swiper_known: HashMap::new(),
             rebuild_laps: None,
+            full_why: std::cell::RefCell::new(None),
         }
     }
 
     /// 取走上一次整棵重建的分段耗时（模板 / 建树+样式 / 布局 / 换行修正 / 比对，毫秒）
+    /// 最近一次失效分析退回整帧的原因（取走即清空）
+    pub fn take_full_why(&mut self) -> Option<String> {
+        self.full_why.get_mut().take()
+    }
+
+    /// 记下「这次为什么整帧」并返回 `FramePlan::Full`（`MINI_LAYOUT_LOG` 开着时另打一行）
+    pub(super) fn full_because(&self, why: impl FnOnce() -> String) -> FramePlan {
+        let why = why();
+        if std::env::var_os("MINI_LAYOUT_LOG").is_some() {
+            eprintln!("🩹 退回整帧：{why}");
+        }
+        *self.full_why.borrow_mut() = Some(why);
+        FramePlan::Full
+    }
+
     pub fn take_rebuild_laps(&mut self) -> Option<[f32; 5]> {
         self.rebuild_laps.take()
     }

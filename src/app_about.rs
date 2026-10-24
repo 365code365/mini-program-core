@@ -8,15 +8,26 @@
 use serde_json::{json, Value};
 use std::path::Path;
 
-/// 读小程序根目录下的 `project.config.json` + 已解析的 app.json，拼出关于信息
-pub fn about(root: &Path, app_json: &Value) -> Value {
-    let project: Value = std::fs::read_to_string(root.join("project.config.json"))
+fn project_config(root: &Path) -> Value {
+    std::fs::read_to_string(root.join("project.config.json"))
         .ok()
         .and_then(|s| serde_json::from_str(&s).ok())
-        .unwrap_or(Value::Null);
-    let text = |v: &Value, k: &str| {
-        v.get(k).and_then(|x| x.as_str()).map(str::trim).filter(|x| !x.is_empty()).map(str::to_string)
-    };
+        .unwrap_or(Value::Null)
+}
+
+fn text(v: &Value, k: &str) -> Option<String> {
+    v.get(k).and_then(|x| x.as_str()).map(str::trim).filter(|x| !x.is_empty()).map(str::to_string)
+}
+
+/// 小程序的 AppID（`project.config.json` 的 `appid`）。没有、或是开发者工具「游客模式」的
+/// 占位 `touristappid` 时是空串。`wx.getAccountInfoSync()` 与关于信息共用这一份
+pub fn project_app_id(root: &Path) -> String {
+    text(&project_config(root), "appid").filter(|a| a != "touristappid").unwrap_or_default()
+}
+
+/// 读小程序根目录下的 `project.config.json` + 已解析的 app.json，拼出关于信息
+pub fn about(root: &Path, app_json: &Value) -> Value {
+    let project = project_config(root);
     let mut pages: Vec<String> = string_list(app_json.get("pages"));
     // 分包里的页面也算（`subPackages` / 旧写法 `subpackages`，页面路径相对分包 root）
     for key in ["subPackages", "subpackages"] {
@@ -33,8 +44,7 @@ pub fn about(root: &Path, app_json: &Value) -> Value {
         .unwrap_or_default();
     // 开发者工具新建项目时写进去的默认 description（「项目配置文件，详见文档：…」）不是小程序简介
     let description = text(&project, "description").filter(|d| !d.starts_with("项目配置文件")).unwrap_or_default();
-    // `touristappid` 是开发者工具的「游客模式」占位，不是真的 AppID
-    let app_id = text(&project, "appid").filter(|a| a != "touristappid").unwrap_or_default();
+    let app_id = project_app_id(root);
     json!({
         "name": name,
         "appId": app_id,

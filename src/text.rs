@@ -364,8 +364,9 @@ impl TextRenderer {
             } else {
                 // 缓存未命中，执行光栅化（按字重与字形可用性选择字体，含符号回退）
                 let font = self.font_for_weight(ch, bold);
-                
+                let t = crate::renderer::frame_cost::start();
                 let (metrics, bitmap) = font.rasterize(ch, size);
+                crate::renderer::frame_cost::record("字形", t, String::new);
                 let bitmap: Arc<[u8]> = bitmap.into();
                 
                 // 存入缓存（封顶，见 glyph_cache_budget）

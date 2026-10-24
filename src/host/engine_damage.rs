@@ -115,6 +115,8 @@ pub(crate) struct DamageState {
     /// 布局缓存最近一次是按哪个滚动偏移问的。setData 的失效分析要拿**同一个**偏移去问，
     /// 否则会被当成「视口变了」直接整帧（滚动中的每一次 setData 都整帧）
     pub(crate) layout_scroll: Option<f32>,
+    /// 这一帧 `整帧·数据` 的原因（渲染器的失效分析给的，接在 🩹 行尾）
+    pub(crate) data_why: Option<String>,
     /// tabBar 画布上画的是哪个页面的选中态
     pub(crate) tabbar_route: Option<String>,
     /// 页面画布上画成点击态的那几个元素（`engine_press.rs` 每帧比对，变了才重画它们自己）
@@ -254,6 +256,9 @@ impl MiniEngine {
                 .unwrap_or_default();
             let why = match (kind, self.dmg.full_why) {
                 (FrameKind::Full(FullReason::Structural), Some(l)) => format!(" ← {}:{}", l.file(), l.line()),
+                (FrameKind::Full(FullReason::Data), _) => {
+                    self.dmg.data_why.take().map(|w| format!(" ← {w}")).unwrap_or_default()
+                }
                 _ => String::new(),
             };
             log_line = Some((
@@ -277,7 +282,9 @@ impl MiniEngine {
         // 画完再打：带上这一帧画 + 合成花了多久（真机上哪种帧慢，一眼看得出来）
         if let Some((t0, line)) = log_line {
             let gpu = self.dmg.gpu_note.take().unwrap_or_default();
-            crate::compositor::diag::emit(&format!("{line}{gpu}  {:.1}ms", t0.elapsed().as_secs_f32() * 1000.0));
+            // 慢在哪：这一帧（连同前面的建树 / 布局）里第一次解的图、第一次光栅化的字…（renderer/frame_cost.rs）
+            let cost = crate::renderer::frame_cost::take(1.0).unwrap_or_default();
+            crate::compositor::diag::emit(&format!("{line}{gpu}  {:.1}ms{cost}", t0.elapsed().as_secs_f32() * 1000.0));
         }
         true
     }
@@ -357,7 +364,12 @@ impl MiniEngine {
                     self.grow_canvas_to_content();
                     once = union(once, rect);
                 }
-                FramePlan::Full => reason = Some(FullReason::Data),
+                FramePlan::Full => {
+                    reason = Some(FullReason::Data);
+                    if self.dmg.log {
+                        self.dmg.data_why = self.renderer.as_mut().and_then(|r| r.take_full_why());
+                    }
+                }
             }
         }
         match self.scroll_area_damage() {
@@ -469,33 +481,5 @@ impl MiniEngine {
             return (FrameKind::Compose, RenderScope::FULL);
         }
         (kind, RenderScope { page, fixed, tabbar })
-    }
-
-    /// setData 之后：先建好新布局，问出「只影响哪一块」（要在清屏之前知道）
-    fn plan_data_damage(&mut self) -> FramePlan {
-        let t = self.pump_notes.start();
-        self.refresh_page_data();
-        self.pump_notes.add("取页面数据（JS → JSON）", t);
-        let t = self.pump_notes.start();
-        let plan = self.plan_data_layout();
-        self.pump_notes.add("重建布局 + 比对", t);
-        if let Some(l) = self.renderer.as_mut().and_then(|r| r.take_rebuild_laps()) {
-            self.pump_notes.note(&format!(
-                "〔模板 {:.1} 建树 {:.1} 布局 {:.1} 换行 {:.1} 比对 {:.1}〕",
-                l[0], l[1], l[2], l[3], l[4]
-            ));
-        }
-        plan
-    }
-
-    fn plan_data_layout(&mut self) -> FramePlan {
-        let vp = self.viewport_height();
-        // 用布局缓存上次被问的同一个偏移：偏移不进布局，换了偏移只会被判成「视口变了」
-        let scroll = self.dmg.layout_scroll.unwrap_or_else(|| self.scroll.get_position());
-        let Self { renderer, page_stack, page_data, .. } = self;
-        match (renderer.as_mut(), page_stack.last()) {
-            (Some(r), Some(page)) => r.plan_frame(&page.wxml_nodes, page_data, Some((scroll, vp))),
-            _ => FramePlan::Full,
-        }
     }
 }

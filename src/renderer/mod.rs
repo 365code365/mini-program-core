@@ -8,6 +8,8 @@ pub mod anim;
 pub mod compose;
 /// 绘制耗时按组件类型归因（`MINI_DRAW_LOG=1`）
 pub mod draw_profile;
+/// 一帧里慢在哪（解码 / 降采样 / 缩放 / 字形），随 MINI_DAMAGE_LOG 接在 🩹 行尾
+pub mod frame_cost;
 
 pub use wxml_renderer::{WxmlRenderer, EventBinding, PickerBinding, FramePlan, ImageEvent, ImageEventDetail, InputRegion, NativeRegion, VIEWPORT_CULL_MARGIN_PX};
 pub use wxml_renderer::{FormAction, FormControl, FormField, FormHit, NavigatorHit, QueryHit};

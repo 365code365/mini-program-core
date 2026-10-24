@@ -1,30 +1,34 @@
 <view class="page">
-  <!-- 顶部品牌 + 搜索 -->
-  <view class="nav-bar">
-    <text class="nav-logo">头条</text>
-    <view class="nav-search" bindtap="onSearchTap">
-      <icon type="search" size="14" color="#9A9A9A"></icon>
-      <text class="nav-search-text">{{searchHint}}</text>
+  <!-- 顶部（固定）：状态栏 + 品牌 / 搜索（右边给胶囊让位）+ 频道栏，一整块红色顶栏，信息流在它下面滚 -->
+  <view class="top-fixed" style="padding-top:{{nav.statusBar}}px">
+    <view class="nav-bar" style="height:{{nav.navHeight}}px;padding-right:{{nav.capsuleSpace}}px">
+      <text class="nav-logo">头条</text>
+      <view class="nav-search" bindtap="onSearchTap">
+        <icon type="search" size="14" color="#9A9A9A"></icon>
+        <text class="nav-search-text">{{searchHint}}</text>
+      </view>
+      <view class="nav-hot" bindtap="onMoreHot">
+        <icon type="star" size="18" color="#ffffff"></icon>
+      </view>
     </view>
-    <view class="nav-hot" bindtap="onMoreHot">
-      <icon type="star" size="18" color="#ffffff"></icon>
-    </view>
+    <!-- 频道栏：横向滚动；切频道（点或在信息流上左右滑）时把当前频道滚到中间 -->
+    <scroll-view class="channel-bar" scroll-x="true" scroll-into-view="{{channelAnchor}}"
+                 scroll-into-view-alignment="center" scroll-with-animation="{{true}}">
+      <view
+        wx:for="{{channels}}"
+        wx:key="id"
+        id="ch{{item.id}}"
+        class="channel-item {{currentChannel == item.id ? 'channel-active' : ''}}"
+        bindtap="onSelectChannel"
+        data-id="{{item.id}}"
+      >
+        <text class="channel-text">{{item.name}}</text>
+        <view class="channel-underline {{currentChannel == item.id ? '' : 'channel-underline-off'}}"></view>
+      </view>
+    </scroll-view>
   </view>
-
-  <!-- 频道栏（横向滚动，当前频道下划线高亮） -->
-  <scroll-view class="channel-bar" scroll-x="true">
-    <view
-      wx:for="{{channels}}"
-      wx:key="id"
-      class="channel-item {{currentChannel == item.id ? 'channel-active' : ''}}"
-      bindtap="onSelectChannel"
-      data-id="{{item.id}}"
-    >
-      <text class="channel-text">{{item.name}}</text>
-      <view wx:if="{{currentChannel == item.id}}" class="channel-underline"></view>
-    </view>
-  </scroll-view>
-
+  <!-- 顶栏是 fixed 的：这里垫一块同样高的空白，内容从顶栏下面开始 -->
+  <view style="height:{{headerHeight}}px"></view>
   <!-- 要闻轮播 -->
   <swiper class="focus-swiper" indicator-dots="{{true}}" autoplay="{{true}}" interval="3200"
           circular="{{true}}" indicator-color="rgba(255,255,255,0.5)" indicator-active-color="#ffffff">
@@ -39,6 +43,8 @@
     </swiper-item>
   </swiper>
 
+  <!-- 轮播下面的内容：左右滑切频道（轮播自己吃横滑，不包进来） -->
+  <view class="feed-wrap {{slideClass}}" bindtouchstart="onFeedTouchStart" bindtouchend="onFeedTouchEnd">
   <!-- 刷新提示（下拉刷新时出现，带动画） -->
   <view wx:if="{{refreshing}}" class="refresh-row">
     <view class="refresh-ring"></view>
@@ -120,18 +126,18 @@
         <text class="hot-more" bindtap="onMoreHot">更多</text>
       </view>
       <view class="hot-item" wx:for="{{hotList}}" wx:key="id" bindtap="onOpenArticle" data-id="{{item.id}}">
-        <text class="hot-rank rank-{{index < 3 ? 'top' : 'normal'}}">{{index + 1}}</text>
+        <text class="hot-rank rank-{{index < 3 ? index + 1 : 'normal'}}">{{index + 1}}</text>
         <text class="hot-text">{{item.title}}</text>
         <text class="hot-heat">{{item.heat}}万</text>
       </view>
     </view>
 
     <!-- 触底加载 -->
-    <view wx:if="{{loadingMore}}" class="refresh-row">
-      <view class="refresh-ring"></view>
-      <text class="refresh-tx">加载更多…</text>
+    <view class="refresh-row">
+      <text class="refresh-tx">没有更多了</text>
     </view>
   </view>
 
+  </view>
   <view class="bottom-space"></view>
 </view>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 点开小程序：从下往上推出来（与微信、Flutter 示例一致） -->
+<translate xmlns:android="http://schemas.android.com/apk/res/android"
+    android:duration="250"
+    android:fromYDelta="100%p"
+    android:interpolator="@android:interpolator/decelerate_cubic"
+    android:toYDelta="0" />

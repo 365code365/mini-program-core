@@ -25,6 +25,8 @@ mod engine_page_pass;
 mod engine_press;
 /// 图片预览盖满整屏时只合成预览（页面的重画留到它露出来）
 mod engine_preview;
+/// 快要滑进屏幕的图先在后台解码、降采样
+mod engine_prefetch;
 /// swiper 换页只重画它自己的盒子
 mod engine_swiper;
 mod engine_resample;
@@ -37,6 +39,8 @@ mod frame_laps;
 mod engine_damage_rects;
 /// 这一帧重画多少（只合成 / 局部 / 补条带 / 整帧）与整帧归因
 pub mod engine_damage;
+/// setData 之后的失效分析入口（取数据 + 布局 + 比对）
+mod engine_damage_data;
 /// 布局树诊断：增量重建留了几棵子树、树里有没有漏拿掉的节点
 mod engine_layout_diag;
 /// 内存分项：每块大缓冲分配 / 驻留多少

@@ -165,7 +165,8 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
   return common_vendor.e({
     a: common_vendor.s("padding-top:" + ($data.statusBarH + 8) + "px"),
     b: $data.imgProfile,
-    c: common_assets._imports_0$1,
+    c: $data.logged && $data.user.avatar.length > 0 ? $data.user.avatar : common_assets._imports_0$1,
+    cP: $data.logged && $data.user.avatar.length > 0,
     d: common_vendor.t($data.logged ? $data.user.nickname : "欢迎来到凤凰云岫"),
     e: common_vendor.t($data.logged ? "喝茶有分寸，生活有温度" : "茶不必说满，诚意会自己抵达。"),
     f: common_vendor.t($data.logged ? $data.user.level.length > 0 ? $data.user.level : "初识茶香" : "初识茶香"),

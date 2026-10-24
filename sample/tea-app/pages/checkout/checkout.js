@@ -1,5 +1,6 @@
 "use strict";
 const common_vendor = require("../../common/vendor.js");
+const config_env = require("../../config/env.js");
 const api_adopt = require("../../api/adopt.js");
 const api_agreement = require("../../api/agreement.js");
 const api_user = require("../../api/user.js");
@@ -42,6 +43,8 @@ const _sfc_main = common_vendor.defineComponent({
     }
   },
   onLoad(opt) {
+    if (config_env.MOCK)
+      opt = Object.assign({ id: "1", shares: "2" }, opt || {});
     if (!utils_auth.isLogin()) {
       common_vendor.index.redirectTo({ url: "/pages/login/login?redirect=/pages/adoption/list" });
       return null;

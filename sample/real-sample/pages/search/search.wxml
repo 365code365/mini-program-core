@@ -2,78 +2,84 @@
   <!-- 搜索栏 -->
   <view class="search-bar">
     <view class="search-input-wrapper">
-      <icon type="search" size="16" color="#999"></icon>
+      <icon type="search" size="15" color="#B3B3B3"></icon>
       <input class="search-input"
              placeholder="搜索商品"
+             placeholder-class="search-placeholder"
              value="{{keyword}}"
              bindinput="onInput"
              bindconfirm="onSearch"
              focus="{{true}}" />
-      <icon type="clear" size="16" color="#999" wx:if="{{keyword}}" bindtap="onClear"></icon>
+      <icon type="clear" size="15" color="#C8C8C8" wx:if="{{keyword}}" bindtap="onClear"></icon>
     </view>
-    <text class="cancel-btn" bindtap="onCancel">取消</text>
+    <view class="search-btn" bindtap="onSearch"><text>搜索</text></view>
   </view>
 
   <!-- 搜索历史 -->
-  <view class="history-section" wx:if="{{!hasSearched && searchHistory.length > 0}}">
+  <view class="block" wx:if="{{!hasSearched && searchHistory.length > 0}}">
     <view class="section-header">
       <text class="section-title">搜索历史</text>
-      <icon type="clear" size="18" color="#999" bindtap="onClearHistory"></icon>
+      <text class="section-action" bindtap="onClearHistory">清空</text>
     </view>
-    <view class="history-list">
-      <view class="history-item" wx:for="{{searchHistory}}" wx:key="*this" bindtap="onHistoryTap" data-keyword="{{item}}">
-        <text class="history-text">{{item}}</text>
+    <view class="chip-list">
+      <view class="chip" wx:for="{{searchHistory}}" wx:key="*this" bindtap="onHistoryTap" data-keyword="{{item}}">
+        <text>{{item}}</text>
       </view>
     </view>
   </view>
 
   <!-- 热门搜索 -->
-  <view class="hot-section" wx:if="{{!hasSearched}}">
+  <view class="block" wx:if="{{!hasSearched}}">
     <view class="section-header">
       <text class="section-title">热门搜索</text>
     </view>
-    <view class="hot-list">
-      <view class="hot-item {{index < 3 ? 'hot-top' : ''}}" wx:for="{{hotKeywords}}" wx:key="*this" bindtap="onHotTap" data-keyword="{{item}}">
+    <view class="chip-list">
+      <view class="chip {{index < 3 ? 'chip-hot' : ''}}" wx:for="{{hotKeywords}}" wx:key="*this" bindtap="onHotTap" data-keyword="{{item}}">
         <text class="hot-index" wx:if="{{index < 3}}">{{index + 1}}</text>
-        <text class="hot-text">{{item}}</text>
+        <text>{{item}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 猜你喜欢 -->
+  <view class="block" wx:if="{{!hasSearched}}">
+    <view class="section-header">
+      <text class="section-title">猜你喜欢</text>
+    </view>
+    <view class="guess-grid">
+      <view class="guess-item" wx:for="{{guessList}}" wx:key="id" bindtap="onProductTap" data-id="{{item.id}}">
+        <image class="guess-img" src="{{item.image}}" mode="aspectFill"></image>
+        <view class="guess-info">
+          <text class="guess-name">{{item.name}}</text>
+          <text class="guess-price">¥{{item.price}}</text>
+        </view>
       </view>
     </view>
   </view>
 
   <!-- 搜索结果 -->
   <view class="result-section" wx:if="{{hasSearched}}">
-    <view class="result-header">
-      <text class="result-count">找到 {{results.length}} 个商品</text>
-    </view>
-
-    <view class="result-list" wx:if="{{results.length > 0}}">
-      <view class="result-item" wx:for="{{results}}" wx:key="id" bindtap="onProductTap" data-id="{{item.id}}">
-        <view class="result-img-placeholder" style="background-color: {{item.bgColor}};">
-          <icon type="{{item.icon}}" size="32" color="#fff"></icon>
+    <text class="result-count">找到 {{results.length}} 个商品</text>
+    <view class="result-item" wx:for="{{results}}" wx:key="id" bindtap="onProductTap" data-id="{{item.id}}">
+      <image class="result-img" src="{{item.image}}" mode="aspectFill"></image>
+      <view class="result-info">
+        <text class="result-name">{{item.name}}</text>
+        <text class="result-desc">{{item.desc}}</text>
+        <view class="result-bottom">
+          <text class="result-price">¥{{item.price}}</text>
+          <text class="result-sold">已售{{item.sold || 0}}</text>
         </view>
-        <view class="result-info">
-          <text class="result-name">{{item.name}}</text>
-          <text class="result-desc">{{item.desc}}</text>
-          <view class="result-bottom">
-            <text class="result-price">¥{{item.price}}</text>
-            <text class="result-sold">已售{{item.sold || 0}}</text>
-          </view>
-        </view>
-        <view class="result-add" catchtap="onAddCart" data-product="{{item}}">
-          <text>+</text>
-        </view>
+      </view>
+      <view class="result-add" catchtap="onAddCart" data-product="{{item}}">
+        <text>+</text>
       </view>
     </view>
 
     <!-- 空结果 -->
     <view class="empty-result" wx:if="{{results.length === 0}}">
-      <view class="empty-icon">
-        <icon type="info" size="80" color="#ccc"></icon>
-      </view>
+      <image class="empty-img" src="/assets/icons/empty_search.png"></image>
       <text class="empty-text">没有找到相关商品</text>
       <text class="empty-tip">换个关键词试试吧</text>
     </view>
   </view>
-
-  <view class="bottom-space"></view>
 </view>

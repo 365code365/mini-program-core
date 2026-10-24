@@ -11,7 +11,8 @@
 }
 .brand {
   align-items: center;
-  margin-top: 160rpx;
+  /* 从状态栏下沿算起（从前写死 160rpx，刘海屏上整块往上挤） */
+  margin-top: calc(var(--status-bar-height, 20px) + 120rpx);
 }
 .brand-cn {
   font-size: 52rpx;

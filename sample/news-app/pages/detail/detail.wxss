@@ -233,12 +233,25 @@
 
 /* ── 新增：返回栏 / 夜间模式 / 评论输入 / 字号面板 ── */
 .dnav {
-  background-color: #D43C33;
-  height: 88rpx;
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 100;
+  background: linear-gradient(to bottom, #DC443A, #CF362E);
+}
+.dnav-bar {
   display: flex;
   flex-direction: row;
   align-items: center;
-  padding: 0 24rpx;
+}
+.dnav-side {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-shrink: 0;
+  padding-left: 8rpx;
+  box-sizing: border-box;
 }
 .dnav-back {
   width: 64rpx;
@@ -247,22 +260,42 @@
   align-items: center;
   justify-content: center;
 }
-.dnav-title {
+.dnav-act {
+  height: 64rpx;
+  padding: 0 12rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dnav-font {
+  font-size: 28rpx;
+  color: #fff;
+  font-weight: bold;
+}
+/* 中间：媒体头像 + 名称，居中 */
+.dnav-center {
   flex: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.dnav-avatar {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+  border: 2rpx solid rgba(255, 255, 255, 0.7);
+  margin-right: 12rpx;
+  flex-shrink: 0;
+}
+.dnav-title {
   font-size: 32rpx;
   color: #fff;
   font-weight: bold;
-  text-align: center;
-}
-.dnav-act {
-  width: 80rpx;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-}
-.dnav-font {
-  font-size: 26rpx;
-  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* 夜间模式 */

@@ -5,14 +5,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mini_render/mini_render.dart';
 
+import 'diag_upload.dart';
 import 'host_apis.dart';
 import 'host_video.dart';
+import 'store/store_links.dart';
+import 'store/store_pages.dart';
 
 /// 例子：从 Flutter 打开小程序。
 ///
 /// - 「内置示例」是 `assets/demo` 里的小程序（首次运行时拷到应用私有目录）；
 /// - 外部目录里有 `sample-app` / `news-app` 时（`adb push sample/sample-app
-///   /sdcard/Android/data/dev.minirender.mini_render_example/files/`）也列出来。
+///   /sdcard/Android/data/dev.minirender.mini_render_example/files/`）也列出来；
+/// - 下面一段「小程序」是服务器上的（tools/mini-store，`--dart-define=MINI_STORE=http://host:port` 换地址），
+///   点开先下载解包，见 lib/store/。
 ///
 /// `--dart-define=MINI_AUTODUMP=1`：打开内置示例 3 秒后把引擎当前帧存成 PNG（外部目录），
 /// 并在日志里打出纹理的屏幕位置 —— 与 `adb exec-out screencap` 逐像素对，确认纹理没被拉伸。
@@ -23,7 +28,11 @@ import 'host_video.dart';
 /// `--dart-define=MINI_BACKEND=auto|cpu|gpu`：渲染后端偏好（默认 cpu）。实际后端打在
 /// 日志的「[后端]」行里；GPU 上屏时存帧取的是同一组图层的 CPU 合成，与屏幕逐字节对得上
 /// 才说明 GPU 输出没偏。
-void main() => runApp(const ExampleApp());
+void main() {
+  // 「上传诊断日志」用：debugPrint 的每一行留一份（lib/diag_upload.dart）
+  DiagLog.install();
+  runApp(const ExampleApp());
+}
 
 class ExampleApp extends StatelessWidget {
   const ExampleApp({super.key});
@@ -32,6 +41,8 @@ class ExampleApp extends StatelessWidget {
   Widget build(BuildContext context) => MaterialApp(
         title: 'mini_render 示例',
         theme: ThemeData(colorSchemeSeed: const Color(0xFF07C160), useMaterial3: true),
+        // 外部链接 / navigateToMiniProgram 要在任何页面上都能推出小程序页（store/store_links.dart）
+        navigatorKey: StoreLinks.navigatorKey,
         home: const Launcher(),
       );
 }
@@ -55,6 +66,8 @@ class _LauncherState extends State<Launcher> {
   void initState() {
     super.initState();
     _prepare();
+    // 外部 App / H5 拉起时带的链接（minirender://open?appid=…）
+    StoreLinks.init();
   }
 
   Future<void> _prepare() async {
@@ -99,11 +112,29 @@ class _LauncherState extends State<Launcher> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('mini_render 示例')),
+      appBar: AppBar(title: const Text('mini_render 示例'), actions: [
+        // 真机出问题、手边没 USB：日志传到 mini-store，开发机上 tools/mini-store/diag.sh 拉回来
+        IconButton(
+          tooltip: '上传诊断日志',
+          icon: const Icon(Icons.bug_report_outlined),
+          onPressed: () => DiagUpload.ask(context),
+        ),
+      ]),
+      // 本地的在最上面：tools/android-jank.sh 等脚本点 (500,400) 打开「内置示例」，别把它挤下去
       body: ListView(children: [
         if (_status.isNotEmpty) ListTile(title: Text(_status)),
         for (final (name, dir) in _apps)
           ListTile(title: Text(name), subtitle: Text(dir), onTap: () => _open(dir), trailing: const Icon(Icons.chevron_right)),
+        // 服务器上的小程序（tools/mini-store），点开即下载
+        const StoreSection(),
+        // 与原生示例入口页同一行（右上角的虫子图标是同一个功能，不显眼，这里再放一行）
+        const Divider(height: 32),
+        ListTile(
+          leading: const Icon(Icons.bug_report_outlined),
+          title: const Text('上传诊断日志'),
+          subtitle: const Text('把运行日志、机型与版本传到服务器，交给开发分析'),
+          onTap: () => DiagUpload.ask(context),
+        ),
       ]),
     );
   }
@@ -111,11 +142,27 @@ class _LauncherState extends State<Launcher> {
 
 /// 一个小程序页：导航栏、返回键、原生组件、宿主能力都接上
 class MiniAppPage extends StatefulWidget {
-  const MiniAppPage({super.key, required this.appDir, this.dumpTo, this.route});
+  const MiniAppPage({super.key, required this.appDir, this.dumpTo, this.route, this.launchOptions, this.onReady});
 
   final String appDir;
   final String? dumpTo;
   final String? route;
+
+  /// 启动参数（外部链接 / 别的小程序打开时）：`App.onLaunch(options)`、`wx.getLaunchOptionsSync()` 读它
+  final Map<String, Object?>? launchOptions;
+
+  /// 还没销毁的小程序页个数。一个进程同一时刻只能有一个小程序实例：换小程序（深链、
+  /// navigateToMiniProgram）时，新的要等旧的 dispose 完再建（[waitAllClosed]）
+  static final live = ValueNotifier<int>(0);
+
+  static Future<void> waitAllClosed() async {
+    while (live.value > 0) {
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+    }
+  }
+
+  /// 第一个页面出来了（引擎的第一条 `page` 事件）：商店的 loading 页据此收起
+  final VoidCallback? onReady;
 
   @override
   State<MiniAppPage> createState() => _MiniPageState();
@@ -130,6 +177,7 @@ class _MiniPageState extends State<MiniAppPage> {
   late final MiniProgramController _c = MiniProgramController(
     appDir: widget.appDir,
     route: widget.route,
+    launchOptions: widget.launchOptions,
     backend: _backend,
     // 内置示例里 media / perf 页有 <video>，宿主 tab 有 <map>。
     // video 在 Android 上走同层渲染（插件自带的 MediaPlayer 解码、引擎把帧画进页面，滑动时贴着页面走），
@@ -152,6 +200,7 @@ class _MiniPageState extends State<MiniAppPage> {
   @override
   void initState() {
     super.initState();
+    MiniAppPage.live.value++;
     _c.logs.listen((l) => debugPrint('[小程序] $l'));
     // 例子里把引擎事件打进日志（logcat 里 grep「[事件]」），排查与自动化验收都靠它
     _c.events.listen((e) {
@@ -181,6 +230,15 @@ class _MiniPageState extends State<MiniAppPage> {
     });
     _c.activeBackend.addListener(() => debugPrint('[后端] 偏好 ${_backend.name} → ${_c.activeBackend.value}'));
     if (widget.dumpTo != null) _scheduleDump(widget.dumpTo!);
+    if (widget.onReady != null) {
+      void onPage() {
+        if (_c.page.value == null) return;
+        _c.page.removeListener(onPage);
+        widget.onReady!();
+      }
+
+      _c.page.addListener(onPage);
+    }
   }
 
   static String _brief(Map<String, dynamic> e) {
@@ -231,7 +289,23 @@ class _MiniPageState extends State<MiniAppPage> {
       builder: (ctx) => AlertDialog(
         title: Text(a?.dialogTitle ?? '关于小程序'),
         content: Text(a?.dialogMessage ?? '小程序还在加载'),
-        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('确定'))],
+        actions: [
+          // 出问题时就在小程序里：胶囊「•••」直接能传日志
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              final b = _c.activeBackend.value;
+              DiagUpload.ask(context, backend: b == null ? null : '$b', app: {
+                'dir': widget.appDir,
+                'appId': a?.appId ?? StoreLinks.currentAppId,
+                'name': a?.name,
+                'route': _c.page.value?.route,
+              });
+            },
+            child: const Text('上传诊断日志'),
+          ),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('确定')),
+        ],
       ),
     );
   }
@@ -239,6 +313,7 @@ class _MiniPageState extends State<MiniAppPage> {
   @override
   void dispose() {
     _c.dispose();
+    MiniAppPage.live.value--;
     super.dispose();
   }
 
