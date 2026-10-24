@@ -37,13 +37,16 @@ class MiniActivity : AppCompatActivity() {
     override fun onBackPressed() {
         if (!mini.goBack()) super.onBackPressed()     // 页面栈空了才退出
     }
-
-    override fun onResume()  { super.onResume();  mini.onHostResume() }
-    override fun onPause()   { super.onPause();   mini.onHostPause() }
-    override fun onTrimMemory(level: Int) { super.onTrimMemory(level); mini.onHostTrimMemory() }
-    override fun onDestroy() { super.onDestroy(); mini.close() }
 }
 ```
+
+宿主只剩返回键这一行（minSdk 24 上 View 截不住 Activity 的返回）。下面这几件 `MiniProgramView` 挂到窗口上时自己做，
+都在 `open` 之前可关：
+
+- `autoEdgeToEdge`：透明状态栏 / 导航条、画面铺到刘海下面（胶囊位置与 `env(safe-area-inset-*)` 按 insets 算，不铺满就对不上）；
+- `autoLifecycle`：跟着所在 Activity 的 resume / pause / destroy 与系统内存告警（`App.onShow` / `onHide` + 当前页
+  `onShow` / `onHide`、停帧、销毁）。宿主照旧手动调 `onHostResume` / `onHostPause` 也没关系：前后台没变的那次引擎不派发；
+- `hapticFeedback`：`wx.vibrateShort` / `vibrateLong` 走 `performHapticFeedback`（不要 VIBRATE 权限）。
 
 ### 3. iOS（Swift）
 
@@ -75,7 +78,8 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }
 | 宿主能力 | `hostApis["login"] = …`（两端都有）：点了名的 `wx.*` 交给宿主、回包走 `MiniHostReply`；Android 另**自带**选图 / 拍照 / 选视频 / 选文件 / 存相册 / 打开文档（`builtinHostApis`，透明的 `MiniMediaActivity` 代办，宿主不用转发 `onActivityResult`；清单要有它与 `MiniFileProvider`，AAR 自带） |
 | 原生组件（Android） | `sameLayerViews["map"] = { MyMap() }`：宿主画、引擎画进页面（同层渲染），滑动时不错开；`<video>` 默认同层渲染（`sameLayerVideo`） |
 | 沙盒目录 | 自动指到 `filesDir` / `Caches`，storage 与图片磁盘缓存才生效 |
-| 生命周期 | 前后台切换、内存告警转发 |
+| 生命周期 | 前后台切换、内存告警转发（Android 跟着 Activity 自动接，`autoLifecycle`）；重复报的同一状态引擎只派发一次 |
+| 系统栏 / 触感（Android） | 自动 edge-to-edge（`autoEdgeToEdge`）、`wx.vibrate*` 触感（`hapticFeedback`）；Flutter 插件同样自带触感与剪贴板 |
 
 ### 产物体积（实测 arm64）
 

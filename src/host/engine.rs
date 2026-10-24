@@ -119,6 +119,8 @@ pub struct MiniEngine {
     pub(super) rgba: Vec<u8>,
     /// `rgba` 落后于 `compose`：只在有人要 RGBA 时才转换（`pixels_into` 直接读 compose）
     pub(super) rgba_stale: bool,
+    /// 在后台（`on_hide` 之后、`on_show` 之前）：前后台没变的那次 `on_show` / `on_hide` 不派发（engine_life.rs）
+    pub(super) backgrounded: bool,
     /// 引擎自己的单调时钟原点（宿主从不给时间时用）
     pub(super) clock_origin: Instant,
     /// 宿主最近一次给的时间戳与收到它的时刻。触摸、长按、事件 timeStamp 全部用
@@ -327,6 +329,7 @@ impl MiniEngine {
             compose: Vec::new(),
             rgba: Vec::new(),
             rgba_stale: false,
+            backgrounded: false,
             clock_origin: Instant::now(),
             host_clock: None,
             last_pump_ms: 0,

@@ -525,8 +525,8 @@ mini.open(File(filesDir, "my-mini-app"))          // the unpacked mini-program d
 override fun onBackPressed() {
     if (!mini.goBack()) super.onBackPressed()      // exit only once the page stack is empty
 }
-override fun onResume() { super.onResume(); mini.onHostResume() }
-override fun onPause()  { super.onPause();  mini.onHostPause() }
+// lifecycle (foreground / background / low memory / destroy), edge-to-edge and wx.vibrate* haptics are handled
+// by the view itself (autoLifecycle / autoEdgeToEdge / hapticFeedback)
 ```
 
 iOS:

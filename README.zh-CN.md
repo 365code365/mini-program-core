@@ -444,8 +444,7 @@ mini.open(File(filesDir, "my-mini-app"))          // 解包后的小程序目录
 override fun onBackPressed() {
     if (!mini.goBack()) super.onBackPressed()      // 页面栈空了才退出
 }
-override fun onResume() { super.onResume(); mini.onHostResume() }
-override fun onPause()  { super.onPause();  mini.onHostPause() }
+// 前后台 / 内存告警 / 销毁、铺满整屏、wx.vibrate* 触感：View 自己跟着 Activity 做（autoLifecycle / autoEdgeToEdge / hapticFeedback）
 ```
 
 iOS：

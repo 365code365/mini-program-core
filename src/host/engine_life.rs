@@ -31,16 +31,30 @@ impl MiniEngine {
         }
     }
 
+    /// 回前台。前后台没变时不派发：Flutter 的 `AppLifecycleState` 一次切后台会来 hidden + paused 两条，
+    /// 启动时还有一条 resumed；从前每条都派发，切一次后台 `App.onHide` 两三次、启动时多一次 `App.onShow`
+    /// （微信每次只一次）。宿主各自去重容易漏，引擎这里统一挡住
     pub fn on_show(&mut self) {
+        if !std::mem::replace(&mut self.backgrounded, false) {
+            return;
+        }
         // 进后台时压起来的那张侧滑截图（on_hide）解开，侧滑一开始就要直接显示
         self.unpack_last_shot();
         self.app.eval("__dispatchApp('onShow')").ok();
+        // 与微信一致：回前台时当前页也收到 onShow（组件 pageLifetimes.show 跟着）——从前只派发 App 级，
+        // 页面里「切后台再回来就刷新」的写法（route 页的生命周期流水）在本引擎上不生效。先 App 后 Page
+        self.app.eval("typeof __dispatchPage === 'function' && __dispatchPage('onShow')").ok();
         // 回前台只要重新合成出一帧：画布一直在（进后台不释放），onShow 里的 setData 走自己的失效分析。
         // 从前这里 `mark_full`：每次从桌面回来都整页重画，一加 PLY110 上那一帧 39ms（画 23ms + 整张重传）
         self.dmg.compose_dirty = true;
     }
 
     pub fn on_hide(&mut self) {
+        if std::mem::replace(&mut self.backgrounded, true) {
+            return;
+        }
+        // 切后台：先当前页 onHide，再 App.onHide（与 on_show 的顺序相反）
+        self.app.eval("typeof __dispatchPage === 'function' && __dispatchPage('onHide')").ok();
         self.app.eval("__dispatchApp('onHide')").ok();
         // 进后台放掉图片的缩放结果与 mip（最多 32 + 24MB）：回前台只重新合成（on_show），不重画页面，
         // 用不到它们；之后哪张图要重画再按需重采样。解码图与画布都留着，回来不用重新解码、重画

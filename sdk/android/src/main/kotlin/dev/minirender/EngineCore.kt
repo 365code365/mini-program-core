@@ -195,8 +195,9 @@ internal class EngineCore(
             videoHost?.pauseAll()
         }
         if (handle == 0L) return@post
-        // 一档一行：宿主自动跟生命周期（MiniProgramView.autoLifecycle）有没有接上、有没有重复派发，看这一行
-        if (what != 2) Log.i(TAG, if (what == 0) "🔁 生命周期：回前台（App.onShow）" else "🔁 生命周期：进后台（App.onHide）")
+        // 宿主每报一次打一行（MiniProgramView.autoLifecycle / Flutter 的 AppLifecycleState 有没有接上看这一行）。
+        // 报重了没关系：前后台没变的那次引擎不派发（engine_life.rs），Flutter 切一次后台就会报两三条
+        if (what != 2) Log.i(TAG, if (what == 0) "🔁 生命周期：宿主报回前台" else "🔁 生命周期：宿主报进后台")
         MiniEngine.nativeLifecycle(handle, what)
         if (what == 0) {
             needsPresent = true

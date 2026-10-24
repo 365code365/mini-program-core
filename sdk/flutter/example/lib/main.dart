@@ -202,7 +202,7 @@ class _MiniPageState extends State<MiniAppPage> {
     // - 其余「要宿主才能做」的（登录、支付、定位、扫码、通讯录……）：host_apis.dart，演示数据 +
     //   要用户点头的弹 Flutter 自己的界面。真实 App 在那里接自己的账号 / 支付 / 地图 SDK。
     // 注意：别点名 setClipboardData —— 点名会**替换**引擎自带的实现（弹「内容已复制」、
-    // getClipboardData 读回），剪贴板改由下面监听 `clipboard` 事件来写系统剪贴板。
+    // getClipboardData 读回），系统剪贴板由插件听 `clipboard` 事件写。
     hostApis: ExampleHostApis(() => mounted ? context : null).all,
   );
 
@@ -217,25 +217,7 @@ class _MiniPageState extends State<MiniAppPage> {
       // 视频框跟页面就更容易错开）；停下来那条（速度 0）照打
       final scrolling = e['type'] == 'nativeViews' && (e['velocity'] as num? ?? 0) != 0;
       if (e['type'] != 'log' && !scrolling) debugPrint('[事件] ${e['type']} ${_brief(e)}');
-      switch (e['type']) {
-        // wx.setClipboardData：引擎自己存一份并弹 Toast，宿主负责写系统剪贴板
-        case 'clipboard':
-          Clipboard.setData(ClipboardData(text: '${e['data'] ?? ''}'));
-        // wx.vibrateShort / vibrateLong
-        case 'vibrate':
-          if (e['duration'] == 'long') {
-            HapticFeedback.vibrate();
-          } else {
-            switch (e['style']) {
-              case 'heavy':
-                HapticFeedback.heavyImpact();
-              case 'light':
-                HapticFeedback.lightImpact();
-              default:
-                HapticFeedback.mediumImpact();
-            }
-          }
-      }
+      // 剪贴板（clipboard）与触感（vibrate）插件自己处理，这里只打日志
     });
     _c.activeBackend.addListener(() => debugPrint('[后端] 偏好 ${_backend.name} → ${_c.activeBackend.value}'));
     if (widget.dumpTo != null) _scheduleDump(widget.dumpTo!);

@@ -35,6 +35,7 @@ class MiniProgramController {
     this.launchOptions,
     this.hostApis = const {},
     this.builtinHostApis = true,
+    this.hapticFeedback = true,
     this.nativeComponents = const [],
     this.systemInfo = const {},
     this.backend = MiniBackend.auto,
@@ -99,6 +100,10 @@ class MiniProgramController {
   /// 插件自带的宿主能力（默认开）：选图 / 选视频 / 选文件 / 存相册 / 打开文档，走系统自己的选择器，
   /// 见 [MiniBuiltinHostApis]。[hostApis] 里给了同名的用宿主的；关掉后这几个回到「没点名 = 立刻 fail」
   final bool builtinHostApis;
+
+  /// `wx.vibrateShort` / `vibrateLong` 由插件做触感反馈（默认开，[HapticFeedback]：不要 VIBRATE 权限）。
+  /// 关掉的话宿主听 [events] 里的 `vibrate` 自己处理（`duration: long|short`、`style: heavy|medium|light`）
+  final bool hapticFeedback;
 
   /// 装进小程序 `wx` 的宿主 API：宿主给的 + 插件自带的
   List<String> get _hostApiNames => {
@@ -448,6 +453,22 @@ class MiniProgramController {
     return null;
   }
 
+  /// 长振动走 [HapticFeedback.vibrate]，短振动按 `style` 分轻重（与 Android SDK 的 HostChrome.vibrate 同一套分档）
+  static void _vibrate(Map<String, dynamic> ev) {
+    if (ev['duration'] == 'long') {
+      HapticFeedback.vibrate();
+      return;
+    }
+    switch (ev['style']) {
+      case 'heavy':
+        HapticFeedback.heavyImpact();
+      case 'light':
+        HapticFeedback.lightImpact();
+      default:
+        HapticFeedback.mediumImpact();
+    }
+  }
+
   void _onEvent(Map<String, dynamic> ev) {
     if (!_events.isClosed) _events.add(ev);
     switch (ev['type']) {
@@ -472,6 +493,8 @@ class MiniProgramController {
       case 'clipboard':
         // wx.setClipboardData、输入框里的 copy / cut：写系统剪贴板
         Clipboard.setData(ClipboardData(text: '${ev['data'] ?? ''}'));
+      case 'vibrate':
+        if (hapticFeedback) _vibrate(ev);
       case 'nativeViews':
         _nativeMotion = MiniNativeMotion.fromJson(ev);
         nativeViews.value = [
