@@ -41,6 +41,13 @@ jobs:
       # 页面照样能打开、没人会发现 —— 所以发布前先对一遍键
       - name: 检查中英文案对齐
         run: python3 tools/site-i18n-check.py
+      # Pages 给静态文件 `max-age=600`：HTML 换了、浏览器里还是旧的 i18n.js / style.css，中文那段就停在上一版
+      # （踩过：发布成功十几分钟后切中文还是旧文案）。发布时给资源链接带上提交号，每次部署都是新 URL
+      - name: 资源链接带版本号
+        run: |
+          v="${GITHUB_SHA::7}"
+          sed -i -E "s#(href|src)=\"assets/(style\.css|i18n\.js|app\.js)\"#\1=\"assets/\2?v=$v\"#g" site/index.html
+          grep -c "?v=$v" site/index.html
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
