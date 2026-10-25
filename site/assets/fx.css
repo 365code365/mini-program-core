@@ -1,0 +1,326 @@
+/* mini-render 落地页：3D 与动效层（assets/fx.js 配套）。
+   - 演示视频：一只纸鹤从星空深处飞来，落定后展开成视频卡片；落定后卡片跟着指针在 3D 里倾斜。
+   - 全站：入场动画改成从下方「翻」上来；卡片悬停微倾（--tilt 由 fx.js 写）；首屏手机组跟指针转。
+   状态机挂在 .sc-stage[data-sc] 上：armed（藏好、折成纸鹤）→ fly（飞）→ unfold（展开）→ landed（静止 + 交互）。
+   每个阶段都用 animation 而不是 transition：动画撤掉时 transition 的起点取决于浏览器怎么算
+   「变化前的样式」，几家不一样；关键帧的首尾写死，交接处才对得上。
+   只动 transform / opacity / clip-path；滤镜（drop-shadow）只在飞行那两秒挂着，落定就摘掉。
+   section 不在视口里时（data-vis="0"）星空、地面、光环一律暂停。 */
+
+/* ─────────────  演示视频这一节：不论站点主题，都是一块深色的星空  ───────────── */
+.showcase-band {
+  color-scheme: dark;
+  --bg: #04060c; --bg-2: #080b14; --bg-3: #0e1320;
+  --surface: rgba(255, 255, 255, .04); --surface-2: rgba(255, 255, 255, .07);
+  --line: rgba(255, 255, 255, .09); --line-2: rgba(255, 255, 255, .15);
+  --text: #e8ebf1; --dim: #a9b4c6; --faint: #7c879a; --strong: #fff;
+  --acc: #ff7a2f; --acc-2: #38bdf8; --acc-3: #34d399;
+  position: relative; overflow: hidden; isolation: isolate; color: var(--text);
+  background:
+    radial-gradient(60% 50% at 50% 62%, rgba(56, 189, 248, .16), transparent 70%),
+    radial-gradient(40% 40% at 78% 20%, rgba(168, 85, 247, .14), transparent 70%),
+    radial-gradient(40% 40% at 18% 30%, rgba(255, 122, 47, .10), transparent 70%),
+    linear-gradient(180deg, #03050a, #070b16 55%, #04060c);
+}
+.sc-head { position: relative; text-align: center; margin-left: auto; margin-right: auto; }
+.sc-head .sec-lede { margin-left: auto; margin-right: auto; max-width: 70ch; }
+
+/* 星空：三层点阵从远处迎面飞来（translateZ），错开相位首尾相接，像在星海里往前穿 */
+.sc-space { position: absolute; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; perspective: 600px; }
+.sc-stars {
+  position: absolute; inset: -25%;
+  background-image:
+    radial-gradient(1.6px 1.6px at 23px 41px, #fff, transparent),
+    radial-gradient(1.2px 1.2px at 141px 97px, #bfe8ff, transparent),
+    radial-gradient(1.4px 1.4px at 87px 173px, #fff, transparent),
+    radial-gradient(1px 1px at 199px 21px, #ffd9c2, transparent),
+    radial-gradient(1.2px 1.2px at 171px 201px, #fff, transparent),
+    radial-gradient(1px 1px at 61px 121px, #c7d2fe, transparent);
+  background-size: 230px 230px;
+  opacity: 0; animation: sc-warp 14s linear infinite; will-change: transform, opacity;
+}
+.sc-stars:nth-child(2) { background-size: 310px 310px; animation-delay: -4.7s; }
+.sc-stars:nth-child(3) { background-size: 270px 270px; animation-delay: -9.4s; }
+@keyframes sc-warp {
+  0%   { transform: translateZ(-900px); opacity: 0; }
+  25%  { opacity: .9; }
+  80%  { opacity: .8; }
+  100% { transform: translateZ(380px); opacity: 0; }
+}
+
+/* 地面：一张透视网格往观众这边流（只平移一个格距再跳回，看不出接缝） */
+.sc-floor {
+  position: absolute; left: -30%; right: -30%; bottom: 0; height: 46%;
+  perspective: 360px; perspective-origin: 50% 0; overflow: hidden;
+  -webkit-mask-image: linear-gradient(to top, #000 0%, rgba(0, 0, 0, .55) 45%, transparent 92%);
+  mask-image: linear-gradient(to top, #000 0%, rgba(0, 0, 0, .55) 45%, transparent 92%);
+}
+.sc-floor i {
+  position: absolute; left: 0; right: 0; top: 0; height: 260%;
+  transform-origin: 50% 0;
+  background-image:
+    linear-gradient(rgba(56, 189, 248, .42) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, .30) 1px, transparent 1px);
+  background-size: 64px 64px;
+  animation: sc-floor 2.6s linear infinite; will-change: transform;
+}
+@keyframes sc-floor {
+  from { transform: rotateX(72deg) translateY(-64px); }
+  to   { transform: rotateX(72deg) translateY(0); }
+}
+
+/* ─────────────  舞台  ───────────── */
+.sc-stage { position: relative; max-width: min(1040px, calc((100vh - 170px) * 16 / 9)); margin: 0 auto; perspective: 1600px; perspective-origin: 50% 40%; }
+.sc-flight { position: relative; perspective: 1400px; transform-style: preserve-3d; }
+.sc-tilt {
+  position: relative; transform-style: preserve-3d;
+  transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition: transform .5s cubic-bezier(.2, .7, .3, 1);
+}
+.sc-stage.is-tilting .sc-tilt { transition-duration: .12s; }
+
+.sc-card {
+  position: relative; margin: 0; aspect-ratio: 16 / 9; overflow: hidden;
+  border-radius: 20px; background: #0a0f1c;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .06);
+  transition: box-shadow .8s ease;
+}
+.sc-video { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; background: #000; }
+
+/* 纸：纸鹤那一身折面。从「身体中心」放射出去的几块明暗不同的三角面 + 两道折痕高光 */
+.sc-paper {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0;
+  background:
+    linear-gradient(118deg, transparent 47.5%, rgba(255, 255, 255, .85) 49.6%, transparent 51.5%),
+    linear-gradient(62deg, transparent 48%, rgba(255, 255, 255, .55) 49.8%, transparent 51.6%),
+    conic-gradient(from 205deg at 50% 56%,
+      #f7fbff 0 58deg, #c3d4f6 58deg 118deg, #eaf2ff 118deg 172deg,
+      #93acec 172deg 232deg, #dde8fc 232deg 296deg, #aec1ef 296deg 360deg);
+}
+
+/* HUD：四角括号、REC、参数、一道来回扫的光 */
+.sc-hud { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .5s ease; }
+.sc-corner { position: absolute; width: 26px; height: 26px; border: 2px solid rgba(125, 211, 252, .85); filter: drop-shadow(0 0 6px rgba(56, 189, 248, .8)); }
+.sc-corner.tl { top: 14px; left: 14px; border-right: 0; border-bottom: 0; border-top-left-radius: 6px; }
+.sc-corner.tr { top: 14px; right: 14px; border-left: 0; border-bottom: 0; border-top-right-radius: 6px; }
+.sc-corner.bl { bottom: 14px; left: 14px; border-right: 0; border-top: 0; border-bottom-left-radius: 6px; }
+.sc-corner.br { bottom: 14px; right: 14px; border-left: 0; border-top: 0; border-bottom-right-radius: 6px; }
+.sc-rec, .sc-meta {
+  position: absolute; top: 18px; font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em;
+  color: #e0f2fe; text-shadow: 0 0 8px rgba(56, 189, 248, .9);
+  padding: 3px 9px; border-radius: 6px; background: rgba(4, 8, 18, .45);
+}
+.sc-rec { left: 48px; }
+.sc-rec::before {
+  content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%;
+  background: #ff4d4f; box-shadow: 0 0 8px #ff4d4f; vertical-align: 1px; animation: sc-blink 1.2s steps(2, jump-none) infinite;
+}
+.sc-meta { right: 48px; }
+@keyframes sc-blink { 50% { opacity: .15; } }
+.sc-scan { position: absolute; inset: 0; animation: sc-scan 4.2s cubic-bezier(.5, 0, .5, 1) infinite alternate; will-change: transform; }
+.sc-scan::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(125, 211, 252, .9) 30%, rgba(255, 185, 140, .9) 70%, transparent);
+  box-shadow: 0 0 18px 4px rgba(56, 189, 248, .35);
+}
+/* 元素与卡片同高，平移 100% 就是从顶扫到底（不用 JS 量高度） */
+@keyframes sc-scan { from { transform: translateY(0); } to { transform: translateY(calc(100% - 2px)); } }
+/* 扫描线纹理（很淡）：只在 HUD 显示时有 */
+.sc-hud::after {
+  content: ""; position: absolute; inset: 0;
+  background: repeating-linear-gradient(0deg, rgba(255, 255, 255, .035) 0 1px, transparent 1px 3px);
+}
+
+/* 高光：落定后跟着指针走的一团光；展开那一下从左扫到右 */
+.sc-glare {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0; mix-blend-mode: screen;
+  background: radial-gradient(42% 60% at var(--gx, 50%) var(--gy, 30%), rgba(255, 255, 255, .22), transparent 70%);
+  transition: opacity .4s ease;
+}
+.sc-stage.is-tilting .sc-glare { opacity: 1; }
+
+/* 播放按钮：玻璃圆片 + 两圈往外扩的波纹 */
+.sc-play {
+  position: absolute; left: 50%; top: 50%; width: 88px; height: 88px; margin: -44px 0 0 -44px;
+  display: none; place-items: center; padding: 0 0 0 5px; cursor: pointer;
+  border-radius: 50%; border: 1px solid rgba(255, 255, 255, .45); color: #fff;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, .35), rgba(255, 255, 255, .08) 60%), rgba(8, 14, 28, .35);
+  -webkit-backdrop-filter: blur(10px) saturate(1.4); backdrop-filter: blur(10px) saturate(1.4);
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, .35), 0 0 40px rgba(56, 189, 248, .55), inset 0 0 20px rgba(255, 255, 255, .15);
+  transition: transform .25s cubic-bezier(.2, .8, .3, 1.4), box-shadow .25s;
+}
+.sc-play::before, .sc-play::after {
+  content: ""; position: absolute; inset: -1px; border-radius: 50%;
+  border: 1px solid rgba(125, 211, 252, .75); animation: sc-ripple 2.4s ease-out infinite;
+}
+.sc-play::after { animation-delay: 1.2s; }
+@keyframes sc-ripple { from { transform: scale(1); opacity: .9; } to { transform: scale(1.9); opacity: 0; } }
+.sc-play:hover { transform: scale(1.08); box-shadow: 0 0 0 1px rgba(56, 189, 248, .6), 0 0 60px rgba(56, 189, 248, .8), inset 0 0 20px rgba(255, 255, 255, .2); }
+.sc-play:focus-visible { outline: 2px solid #7dd3fc; outline-offset: 6px; }
+
+/* 光环：卡片后面一大团彩色的光（静态配色，只做呼吸：缩放不重绘） */
+.sc-halo {
+  position: absolute; inset: 4% 3%; border-radius: 40px; pointer-events: none; opacity: 0;
+  background: conic-gradient(from 120deg, #38bdf8, #a855f7, #ff7a2f, #34d399, #38bdf8);
+  filter: blur(70px); transform: translateZ(-80px) scale(.9);
+  transition: opacity 1s ease;
+}
+/* 细边：一圈沿着边转的流光（@property 让角度可以插值） */
+@property --sc-ang { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.sc-ring {
+  position: absolute; inset: -1px; border-radius: 21px; padding: 1.5px; pointer-events: none; opacity: 0;
+  background: conic-gradient(from var(--sc-ang), transparent 0 18%, #7dd3fc 26%, transparent 36%, transparent 52%, #ffb98c 62%, transparent 72%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  transform: translateZ(1px); transition: opacity .8s ease;
+}
+
+/* 漂在卡片前面的几块参数牌：各自在不同的深度（--z），卡片一倾就有视差 */
+.sc-chips { list-style: none; margin: 0; padding: 0; position: absolute; inset: 0; pointer-events: none; transform-style: preserve-3d; }
+.sc-chips li {
+  position: absolute; left: var(--x); top: var(--y); white-space: nowrap;
+  transform: translate(-50%, -50%) translateZ(var(--z));
+  font-family: var(--mono); font-size: 12.5px; font-weight: 600; letter-spacing: .08em; color: #e0f2fe;
+  padding: 7px 13px 7px 11px; border-radius: 10px;
+  background: linear-gradient(135deg, rgba(56, 189, 248, .18), rgba(168, 85, 247, .12)), rgba(6, 10, 22, .72);
+  border: 1px solid rgba(125, 211, 252, .45);
+  box-shadow: 0 10px 30px -8px rgba(0, 0, 0, .8), 0 0 18px rgba(56, 189, 248, .25);
+  opacity: 0; transition: opacity .6s ease;
+}
+.sc-chips li::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 8px; border-radius: 50%; background: #34d399; box-shadow: 0 0 8px #34d399; vertical-align: 1px; }
+@keyframes sc-bob { 50% { translate: 0 -9px; } }
+
+.sc-cap { margin: 26px 0 0; text-align: center; color: var(--faint); font-size: 13px; font-family: var(--mono); letter-spacing: .04em; }
+
+/* 飞行路上撒下的星尘（fx.js 一颗颗生成，播完自己删） */
+.sc-spark {
+  position: absolute; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, #fff, rgba(125, 211, 252, .9) 40%, transparent 70%);
+  animation: sc-spark .9s ease-out forwards;
+}
+@keyframes sc-spark { to { transform: translate(var(--sx), var(--sy)) scale(.2); opacity: 0; } }
+
+/* ─────────────  状态机  ───────────── */
+.sc-stage[data-sc] .sc-video { cursor: pointer; }
+
+/* armed：等进视口；卡片已经折成纸鹤、藏起来 */
+.sc-stage[data-sc="armed"] .sc-flight { opacity: 0; }
+.sc-stage[data-sc="armed"] .sc-card,
+.sc-stage[data-sc="fly"] .sc-card { clip-path: polygon(4% 22%, 38% 55%, 27% 3%, 60% 50%, 62% 52%, 94% 12%, 91% 19%, 66% 61%, 50% 74%, 34% 62%); }
+.sc-stage[data-sc="armed"] .sc-paper,
+.sc-stage[data-sc="fly"] .sc-paper { opacity: 1; }
+
+/* fly：沿一条弧线从右上深处飞到正中，一路扇翅膀、带着一圈蓝光 */
+.sc-stage[data-sc="fly"] .sc-flight {
+  animation: sc-flight 2.3s cubic-bezier(.37, 0, .63, 1) forwards;
+  filter: drop-shadow(0 0 16px rgba(125, 211, 252, .85)) drop-shadow(0 0 42px rgba(56, 189, 248, .45));
+}
+.sc-stage[data-sc="fly"] .sc-card { animation: sc-flap .34s ease-in-out infinite alternate; }
+@keyframes sc-flight {
+  0%   { opacity: 0; transform: translate3d(46vw, -30vh, -2600px) rotateX(18deg) rotateY(-58deg) rotateZ(22deg); }
+  12%  { opacity: 1; }
+  40%  { transform: translate3d(-24vw, -12vh, -1500px) rotateX(10deg) rotateY(36deg) rotateZ(-14deg); }
+  72%  { transform: translate3d(13vw, 4vh, -760px) rotateX(-6deg) rotateY(-22deg) rotateZ(8deg); }
+  100% { opacity: 1; transform: translate3d(0, -2vh, -380px) rotateX(8deg) rotateY(0deg) rotateZ(0deg); }
+}
+/* 十个点：尾尖、尾根、翼尖、翼根、颈根、头、喙、颈下、腹、尾下；翅膀上下扇只挪翼尖（头尾跟着轻轻起伏）。
+   展开时这十个点一一拉到矩形四边上（sc-open），点数必须一样多才能插值 */
+@keyframes sc-flap {
+  from { clip-path: polygon(4% 22%, 38% 55%, 27% 3%, 60% 50%, 62% 52%, 94% 12%, 91% 19%, 66% 61%, 50% 74%, 34% 62%); }
+  to   { clip-path: polygon(4% 28%, 38% 57%, 40% 46%, 60% 52%, 62% 54%, 94% 18%, 91% 25%, 66% 63%, 50% 70%, 34% 63%); }
+}
+
+/* unfold：纸鹤正面朝向观众，八个角一齐拉到卡片的四边，纸面褪去露出视频，落地一圈冲击波 */
+.sc-stage[data-sc="unfold"] .sc-flight { animation: sc-land 1.15s cubic-bezier(.2, .75, .25, 1) forwards; }
+.sc-stage[data-sc="unfold"] .sc-card { animation: sc-open 1s cubic-bezier(.65, 0, .25, 1) forwards; }
+.sc-stage[data-sc="unfold"] .sc-paper { animation: sc-paper-off .9s ease .2s both; }
+.sc-stage[data-sc="unfold"] .sc-glare { opacity: 1; animation: sc-sweep 1.1s ease .35s both; }
+@keyframes sc-land {
+  from { transform: translate3d(0, -2vh, -380px) rotateX(8deg); }
+  62%  { transform: translate3d(0, 0, 36px) rotateX(-2deg); }
+  to   { transform: translate3d(0, 0, 0) rotateX(0deg); }
+}
+@keyframes sc-open {
+  from { clip-path: polygon(4% 22%, 38% 55%, 27% 3%, 60% 50%, 62% 52%, 94% 12%, 91% 19%, 66% 61%, 50% 74%, 34% 62%); }
+  to   { clip-path: polygon(0 0, 20% 0, 35% 0, 50% 0, 65% 0, 100% 0, 100% 100%, 75% 100%, 50% 100%, 0 100%); }
+}
+@keyframes sc-paper-off { from { opacity: 1; } to { opacity: 0; } }
+@keyframes sc-sweep {
+  from { background: linear-gradient(105deg, transparent 0%, rgba(255, 255, 255, .5) 8%, transparent 16%) no-repeat -30% 0 / 60% 100%; }
+  to   { background: linear-gradient(105deg, transparent 0%, rgba(255, 255, 255, .5) 8%, transparent 16%) no-repeat 160% 0 / 60% 100%; }
+}
+.sc-stage::after {
+  content: ""; position: absolute; left: 50%; top: 50%; width: 60%; aspect-ratio: 2.2; pointer-events: none;
+  border-radius: 50%; border: 2px solid rgba(125, 211, 252, .8);
+  box-shadow: 0 0 30px rgba(56, 189, 248, .6), inset 0 0 30px rgba(56, 189, 248, .4);
+  transform: translate(-50%, -50%) scale(.2); opacity: 0;
+}
+.sc-stage[data-sc="unfold"]::after { animation: sc-shock 1.2s cubic-bezier(.2, .7, .3, 1) .45s; }
+@keyframes sc-shock { 0% { opacity: 1; transform: translate(-50%, -50%) scale(.3); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(2.1); } }
+
+/* landed：静止、能倾斜、HUD 与参数牌上来；有 JS 才露出播放按钮 */
+.sc-stage[data-sc="landed"] .sc-card { box-shadow: 0 0 0 1px rgba(125, 211, 252, .22), 0 50px 120px -30px rgba(0, 0, 0, .95), 0 0 80px -20px rgba(56, 189, 248, .45); }
+.sc-stage[data-sc="landed"] .sc-hud { opacity: 1; }
+.sc-stage[data-sc="landed"] .sc-halo { opacity: .5; animation: sc-breathe 6s ease-in-out infinite alternate; }
+.sc-stage[data-sc="landed"] .sc-ring { opacity: 1; animation: sc-spin 5s linear infinite; }
+.sc-stage[data-sc="landed"] .sc-chips li { opacity: 1; animation: sc-bob 5s ease-in-out var(--d) infinite; }
+.sc-stage[data-sc="landed"] .sc-play { display: grid; }
+@keyframes sc-breathe { from { transform: translateZ(-80px) scale(.88); } to { transform: translateZ(-80px) scale(1.02); } }
+@keyframes sc-spin { to { --sc-ang: 360deg; } }
+
+/* 播放中：摆正、收起装饰，只留视频与原生控件 */
+.sc-stage.is-playing .sc-tilt { transform: none; }
+.sc-stage.is-playing .sc-hud,
+.sc-stage.is-playing .sc-glare,
+.sc-stage.is-playing .sc-chips li { opacity: 0 !important; }
+.sc-stage.is-playing .sc-play { display: none; }
+.sc-stage.is-playing .sc-ring { animation-play-state: paused; opacity: .5; }
+
+/* 不在视口里：停掉一切循环动画 */
+.showcase-band[data-vis="0"] .sc-stars,
+.showcase-band[data-vis="0"] .sc-floor i,
+.showcase-band[data-vis="0"] .sc-ring,
+.showcase-band[data-vis="0"] .sc-halo,
+.showcase-band[data-vis="0"] .sc-scan,
+.showcase-band[data-vis="0"] .sc-chips li,
+.showcase-band[data-vis="0"] .sc-play::before,
+.showcase-band[data-vis="0"] .sc-play::after { animation-play-state: paused; }
+
+@media (max-width: 720px) {
+  .sc-chips, .sc-meta { display: none; }
+  .sc-play { width: 68px; height: 68px; margin: -34px 0 0 -34px; }
+  .sc-card, .sc-ring { border-radius: 14px; }
+  .sc-rec { left: 40px; }
+}
+
+/* ─────────────  全站：入场从下方翻上来（3D）  ───────────── */
+.js-anim .reveal { transform: perspective(1000px) translate3d(0, 34px, -40px) rotateX(14deg); transform-origin: 50% 100%; }
+.js-anim .reveal.is-in.tilting { transition: opacity .6s ease, transform .14s ease-out; }
+
+/* 小标题前一道发光的短线：HUD 的味道 */
+.sec-head .eyebrow::before {
+  content: ""; display: inline-block; width: 22px; height: 2px; margin-right: 10px; vertical-align: .3em;
+  border-radius: 2px; background: currentColor; box-shadow: 0 0 10px currentColor;
+}
+.sc-head .eyebrow::after {
+  content: ""; display: inline-block; width: 22px; height: 2px; margin-left: 10px; vertical-align: .3em;
+  border-radius: 2px; background: currentColor; box-shadow: 0 0 10px currentColor;
+}
+
+/* 首屏的三台手机：组成一组在 3D 里转（--hx/--hy 由 fx.js 按指针写），主屏往前凸 */
+.hero-shots {
+  transform: perspective(1400px) rotateX(var(--hy, 4deg)) rotateY(var(--hx, -9deg));
+  transform-style: preserve-3d; transition: transform .6s cubic-bezier(.2, .7, .3, 1);
+}
+.hero-shots .phone-main { translate: 0 0 70px; }
+.hero-shots .phone-side { translate: 0 0 -20px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-stars { animation: none !important; opacity: .7; transform: none; }
+  .sc-floor i { animation: none !important; transform: rotateX(72deg); }
+  .sc-scan, .sc-play::before, .sc-play::after, .sc-rec::before { animation: none !important; }
+  .sc-scan { display: none; }
+  .sc-stage[data-sc="landed"] .sc-ring, .sc-stage[data-sc="landed"] .sc-halo, .sc-stage[data-sc="landed"] .sc-chips li { animation: none !important; }
+  .js-anim .reveal { transform: none; }
+  .hero-shots { transform: none; }
+}

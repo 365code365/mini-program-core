@@ -8,6 +8,7 @@
 <meta name="theme-color" content="#07090d">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="assets/fx.css">
 <link rel="alternate" hreflang="en" href="https://365code365.github.io/mini-program-core/">
 <link rel="alternate" hreflang="zh-Hans" href="https://365code365.github.io/mini-program-core/?lang=zh">
 <link rel="alternate" hreflang="zh-Hant" href="https://365code365.github.io/mini-program-core/?lang=zh-tw">
@@ -55,11 +56,11 @@
       <span class="brand-name">mini-render</span>
     </a>
     <nav class="head-nav" aria-label="Page navigation" data-i18n-aria="nav.aria">
+      <a href="#showcase" data-i18n="nav.showcase">Demo</a>
       <a href="#platforms" data-i18n="nav.platforms">Platforms</a>
       <a href="#skyline" data-i18n="nav.skyline">Skyline</a>
       <a href="#pipeline" data-i18n="nav.pipeline">Pipeline</a>
       <a href="#device" data-i18n="nav.device">On device</a>
-      <a href="#showcase" data-i18n="nav.showcase">Demo</a>
       <a href="#gallery" data-i18n="nav.gallery">Gallery</a>
       <a href="#perf" data-i18n="nav.perf">Measured</a>
       <a href="#start" data-i18n="nav.start">Quick start</a>
@@ -175,6 +176,60 @@
         <div><dt data-i18n="stat.5.k">Automated tests</dt><dd><span data-count="1055">1055</span><small></small></dd><p data-i18n="stat.5.v">plus 65 byte-reproducible baselines</p></div>
         <div><dt data-i18n="stat.6.k">Official wx.* APIs</dt><dd><span data-count="503">503</span><small>/503</small></dd><p data-i18n="stat.6.v">every name in the index, plus 57 component tags</p></div>
       </dl>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────  演示视频：纸鹤从远处飞来，落定后展开成视频  ─────────────────────────
+       视频由 tools/showcase/{capture.sh,music.py,video.py} 生成，再压成 720p 放这里；preload="none" 免得首屏就拉 5MB。
+       动画与 3D 倾斜在 assets/fx.{css,js}；没有 JS 时就是一个带原生控件的普通 <video>（controls 由 fx.js 摘掉）。 -->
+  <section class="band showcase-band" id="showcase">
+    <div class="sc-space" aria-hidden="true">
+      <i class="sc-stars"></i><i class="sc-stars"></i><i class="sc-stars"></i>
+      <div class="sc-floor"><i></i></div>
+    </div>
+    <div class="wrap">
+      <header class="sec-head sc-head">
+        <p class="eyebrow" data-i18n="show.eyebrow">Demo</p>
+        <h2 data-i18n="show.h2">Twelve mini-programs,<br><span class="grad">one engine, one minute</span></h2>
+        <p class="sec-lede" data-i18n="show.lede">
+          Chat, kanban, train tickets, stocks, recipes and more: complex sample mini-programs running on the
+          Android SDK, captured from the device frame by frame. Every screen is drawn by this engine, not by a WebView.
+        </p>
+      </header>
+
+      <div class="sc-stage">
+        <div class="sc-flight">
+          <div class="sc-tilt">
+            <div class="sc-halo" aria-hidden="true"></div>
+            <figure class="sc-card">
+              <video class="sc-video" controls preload="none" playsinline
+                     poster="assets/video/showcase.jpg" width="1280" height="720"
+                     aria-label="Showcase video" data-i18n-aria="show.aria">
+                <source src="assets/video/showcase.mp4" type="video/mp4">
+              </video>
+              <div class="sc-paper" aria-hidden="true"></div>
+              <div class="sc-hud" aria-hidden="true">
+                <i class="sc-corner tl"></i><i class="sc-corner tr"></i><i class="sc-corner bl"></i><i class="sc-corner br"></i>
+                <span class="sc-rec">REC</span>
+                <span class="sc-meta">1280×720 · 30 fps · 01:00</span>
+                <span class="sc-scan"></span>
+              </div>
+              <div class="sc-glare" aria-hidden="true"></div>
+              <button type="button" class="sc-play" aria-label="Play the demo" data-i18n-aria="show.play">
+                <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path fill="currentColor" d="M8 5.2v13.6a.8.8 0 0 0 1.2.7l10.6-6.8a.8.8 0 0 0 0-1.4L9.2 4.5A.8.8 0 0 0 8 5.2Z"/></svg>
+              </button>
+            </figure>
+            <div class="sc-ring" aria-hidden="true"></div>
+            <ul class="sc-chips" aria-hidden="true">
+              <li style="--x:4%;--y:12%;--z:110px;--d:0s">12 apps</li>
+              <li style="--x:93%;--y:20%;--z:140px;--d:-1.4s">0 WebView</li>
+              <li style="--x:9%;--y:90%;--z:80px;--d:-2.6s">Android SDK</li>
+              <li style="--x:86%;--y:88%;--z:120px;--d:-3.8s">wx.* 503</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <p class="sc-cap" data-i18n="show.cap">60 s · 1280×720 · screenshots from the Android emulator, music synthesized by script</p>
     </div>
   </section>
 
@@ -679,29 +734,6 @@ XComponent({ type: <span class="s">'surface'</span>,
           </article>
         </aside>
       </div>
-    </div>
-  </section>
-
-  <!-- ─────────────────────────  演示视频  ───────────────────────── -->
-  <!-- 视频由 tools/showcase/{capture.sh,music.py,video.py} 生成，再压成 720p 放这里；preload="none" 免得首屏就拉 5MB -->
-  <section class="band" id="showcase">
-    <div class="wrap">
-      <header class="sec-head">
-        <p class="eyebrow" data-i18n="show.eyebrow">Demo</p>
-        <h2 data-i18n="show.h2">Twelve mini-programs,<br><span class="grad">one engine, one minute</span></h2>
-        <p class="sec-lede" data-i18n="show.lede">
-          Chat, kanban, train tickets, stocks, recipes and more: complex sample mini-programs running on the
-          Android SDK, captured from the device frame by frame. Every screen is drawn by this engine, not by a WebView.
-        </p>
-      </header>
-      <figure class="showcase-figure">
-        <video class="showcase-video" controls preload="none" playsinline
-               poster="assets/video/showcase.jpg" width="1280" height="720"
-               aria-label="Showcase video" data-i18n-aria="show.aria">
-          <source src="assets/video/showcase.mp4" type="video/mp4">
-        </video>
-        <figcaption data-i18n="show.cap">60 s · 1280×720 · screenshots from the Android emulator, music synthesized by script</figcaption>
-      </figure>
     </div>
   </section>
 
@@ -1432,6 +1464,7 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
 
 <script src="assets/i18n.js" defer></script>
 <script src="assets/app.js" defer></script>
+<script src="assets/fx.js" defer></script>
 <script src="assets/theme.js" defer></script>
 </body>
 </html>

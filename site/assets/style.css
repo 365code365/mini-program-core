@@ -984,8 +984,9 @@ pre code { background: none; border: 0; padding: 0; color: inherit; font-size: i
 /* ─────────────  入场动画  ───────────── */
 
 .js-anim .reveal { opacity: 0; transform: translateY(18px); }
+/* --tilt 由 assets/fx.js 在指针悬停时写（卡片跟着指针微微倾斜）；平时是 none */
 .js-anim .reveal.is-in {
-  opacity: 1; transform: none;
+  opacity: 1; transform: var(--tilt, none);
   transition: opacity .6s ease, transform .6s cubic-bezier(.2, .7, .3, 1);
 }
 
@@ -1162,12 +1163,3 @@ html[data-theme="light"] .plat-st.wip { color: #b45309; }
 .os-code pre { height: 206px; padding-top: 16px; }
 .os-code .c { color: #7b8496; } .os-code .s { color: #ffb98c; }
 .hero .platforms li.soon { border-style: dashed; }
-
-/* ───── 演示视频 ───── */
-.showcase-figure { margin: 0 auto; max-width: 1040px; }
-.showcase-video {
-  display: block; width: 100%; height: auto; aspect-ratio: 16 / 9;
-  border-radius: var(--r-lg); border: 1px solid var(--line-2);
-  background: var(--bg-3); box-shadow: 0 24px 60px rgba(0, 0, 0, .35);
-}
-.showcase-figure figcaption { margin-top: 12px; text-align: center; color: var(--faint); font-size: 13px; }

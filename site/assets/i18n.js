@@ -215,6 +215,7 @@
     'show.h2': '十二个小程序，<br><span class="grad">一个引擎，一分钟</span>',
     'show.lede': '聊天、看板、火车票、股票、菜谱……这些复杂的示例小程序跑在 Android SDK 上，逐屏从设备截下来。每一屏都是本引擎画的，不是 WebView。',
     'show.aria': '演示视频',
+    'show.play': '播放演示',
     'show.cap': '60 秒 · 1280×720 · Android 模拟器截图，配乐由脚本合成',
     'dev.eyebrow': '真机',
     'dev.h2': '90Hz 真机上的顺滑，<br><span class="grad">逐帧量出来</span>',
