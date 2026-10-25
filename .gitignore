@@ -14,3 +14,6 @@ __pycache__/
 
 # 测试服务器的 root 与 mini-store 管理账户（明文），别提交
 sample/测试服务器.txt
+
+# 演示视频原片（1080p，33MB）；网页版压到 site/assets/video/showcase.mp4
+doc/videos/showcase_*.mp4

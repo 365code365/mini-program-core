@@ -1162,3 +1162,12 @@ html[data-theme="light"] .plat-st.wip { color: #b45309; }
 .os-code pre { height: 206px; padding-top: 16px; }
 .os-code .c { color: #7b8496; } .os-code .s { color: #ffb98c; }
 .hero .platforms li.soon { border-style: dashed; }
+
+/* ───── 演示视频 ───── */
+.showcase-figure { margin: 0 auto; max-width: 1040px; }
+.showcase-video {
+  display: block; width: 100%; height: auto; aspect-ratio: 16 / 9;
+  border-radius: var(--r-lg); border: 1px solid var(--line-2);
+  background: var(--bg-3); box-shadow: 0 24px 60px rgba(0, 0, 0, .35);
+}
+.showcase-figure figcaption { margin-top: 12px; text-align: center; color: var(--faint); font-size: 13px; }

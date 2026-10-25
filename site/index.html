@@ -59,6 +59,7 @@
       <a href="#skyline" data-i18n="nav.skyline">Skyline</a>
       <a href="#pipeline" data-i18n="nav.pipeline">Pipeline</a>
       <a href="#device" data-i18n="nav.device">On device</a>
+      <a href="#showcase" data-i18n="nav.showcase">Demo</a>
       <a href="#gallery" data-i18n="nav.gallery">Gallery</a>
       <a href="#perf" data-i18n="nav.perf">Measured</a>
       <a href="#start" data-i18n="nav.start">Quick start</a>
@@ -678,6 +679,29 @@ XComponent({ type: <span class="s">'surface'</span>,
           </article>
         </aside>
       </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────  演示视频  ───────────────────────── -->
+  <!-- 视频由 tools/showcase/{capture.sh,music.py,video.py} 生成，再压成 720p 放这里；preload="none" 免得首屏就拉 5MB -->
+  <section class="band" id="showcase">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="eyebrow" data-i18n="show.eyebrow">Demo</p>
+        <h2 data-i18n="show.h2">Twelve mini-programs,<br><span class="grad">one engine, one minute</span></h2>
+        <p class="sec-lede" data-i18n="show.lede">
+          Chat, kanban, train tickets, stocks, recipes and more: complex sample mini-programs running on the
+          Android SDK, captured from the device frame by frame. Every screen is drawn by this engine, not by a WebView.
+        </p>
+      </header>
+      <figure class="showcase-figure">
+        <video class="showcase-video" controls preload="none" playsinline
+               poster="assets/video/showcase.jpg" width="1280" height="720"
+               aria-label="Showcase video" data-i18n-aria="show.aria">
+          <source src="assets/video/showcase.mp4" type="video/mp4">
+        </video>
+        <figcaption data-i18n="show.cap">60 s · 1280×720 · screenshots from the Android emulator, music synthesized by script</figcaption>
+      </figure>
     </div>
   </section>
 
