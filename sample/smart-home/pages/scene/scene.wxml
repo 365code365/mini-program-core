@@ -1,0 +1,27 @@
+<text class="h">一键场景</text>
+<view class="scenes">
+  <view wx:for="{{builtin}}" wx:key="id" class="scene scene-{{item.id}} {{last === item.id ? 'last' : ''}}" style="background: {{item.color}}" data-id="{{item.id}}" bindtap="onRun">
+    <view class="s-icon">{{item.icon}}</view>
+    <view class="flex1">
+      <text class="s-name">{{item.name}}</text>
+      <text class="s-desc">{{item.desc}}</text>
+    </view>
+    <text class="s-go">{{running === item.id ? '执行中' : '执行'}}</text>
+  </view>
+</view>
+<view class="row between h2">
+  <text class="h">我的场景</text>
+  <view class="add" bindtap="onAdd">＋ 新建</view>
+</view>
+<view class="card" wx:if="{{custom.length}}">
+  <view wx:for="{{custom}}" wx:key="id" class="c-item row" data-id="{{item.id}}" bindtap="onRun" bindlongpress="onLong">
+    <view class="c-icon">{{item.icon}}</view>
+    <view class="flex1">
+      <text class="c-name">{{item.name}}</text>
+      <text class="sub c-desc">{{item.desc}}</text>
+    </view>
+    <text class="c-go">{{running === item.id ? '执行中' : '执行'}}</text>
+  </view>
+</view>
+<view class="empty" wx:else>还没有自定义场景，点「新建」组合几台设备一键控制</view>
+<text class="result" wx:if="{{lastResult}}">{{lastResult}}</text>

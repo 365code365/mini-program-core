@@ -1,0 +1,19 @@
+<view class="head row between">
+  <text class="title">我的报名</text>
+  <text class="sub">有效 {{activeCount}} 条</text>
+</view>
+<view class="card item" wx:for="{{list}}" wx:key="no" data-no="{{item.no}}" bindtap="onOpen">
+  <view class="row between">
+    <text class="it-group">{{item.groupName}}</text>
+    <text class="it-st st-{{item.status}}">{{item.statusText}}</text>
+  </view>
+  <text class="sub it-sub">报名号 {{item.no}} · {{item.name}} · {{item.idMasked}}</text>
+  <view class="row it-foot" wx:if="{{item.status !== 'canceled'}}">
+    <view class="flex1"></view>
+    <view class="it-btn cancel" data-no="{{item.no}}" catchtap="onCancel">取消报名</view>
+  </view>
+</view>
+<view class="empty" wx:if="{{!list.length}}">
+  <text>还没有报名记录</text>
+  <view class="btn-primary home" bindtap="goHome">去报名</view>
+</view>

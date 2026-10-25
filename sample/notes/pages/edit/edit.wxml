@@ -1,0 +1,30 @@
+<view class="paper" style="background: {{bg}}">
+  <input class="title-input" value="{{form.title}}" placeholder="标题" bindinput="onTitle" />
+  <view class="meta row">
+    <text class="meta-words">{{words}} 字</text>
+    <text class="meta-state">{{saveState}}</text>
+  </view>
+  <textarea class="body-input" value="{{form.body}}" maxlength="2000" placeholder="写点什么…" bindinput="onBody" />
+</view>
+<text class="sec">标签（可多选）</text>
+<view class="card">
+  <checkbox-group class="tag-group" bindchange="onTags">
+    <label class="tag-opt" wx:for="{{tagOpts}}" wx:key="id">
+      <checkbox class="tag-cb" value="{{item.id}}" checked="{{item.on}}" color="#f5a623" />
+      <text class="tag-name">{{item.name}}</text>
+    </label>
+  </checkbox-group>
+  <text class="sub" wx:if="{{!tagOpts.length}}">还没有标签，去「标签管理」新建</text>
+</view>
+<text class="sec">纸张颜色</text>
+<view class="card">
+  <radio-group class="color-group" bindchange="onColor">
+    <label class="color-opt" wx:for="{{colors}}" wx:key="key">
+      <radio class="color-rd" value="{{item.key}}" checked="{{form.color === item.key}}" color="#f5a623" />
+      <view class="swatch" style="background: {{item.hex}}"></view>
+      <text class="color-name">{{item.name}}</text>
+    </label>
+  </radio-group>
+</view>
+<view class="btn btn-danger del" wx:if="{{!isNew}}" bindtap="onTrash">移到回收站</view>
+<view class="safe"></view>

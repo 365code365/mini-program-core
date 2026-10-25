@@ -1,0 +1,28 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/favs/favs",
+    "pages/mine/mine",
+    "pages/search/search",
+    "pages/detail/detail"
+  ],
+  "window": {
+    "navigationBarTitleText": "厨房小当家",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#faf7f2",
+    "onReachBottomDistance": 60
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#9aa0ab",
+    "selectedColor": "#ff7a2f",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "菜谱" },
+      { "pagePath": "pages/favs/favs", "text": "收藏" },
+      { "pagePath": "pages/mine/mine", "text": "我的" }
+    ]
+  }
+}

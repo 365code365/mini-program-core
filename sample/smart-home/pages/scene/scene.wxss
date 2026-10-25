@@ -1,0 +1,100 @@
+.h {
+  display: block;
+  margin: 32rpx 32rpx 16rpx;
+  font-size: 32rpx;
+  font-weight: bold;
+}
+.h2 .h {
+  margin-right: 0;
+}
+.scene {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin: 0 24rpx 20rpx;
+  padding: 28rpx;
+  border-radius: 24rpx;
+  color: #ffffff;
+}
+.scene.last {
+  border: 4rpx solid #ffd166;
+}
+.s-icon {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 40rpx;
+  background: rgba(255, 255, 255, 0.25);
+  font-size: 34rpx;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 24rpx;
+}
+.s-name {
+  display: block;
+  font-size: 32rpx;
+  font-weight: bold;
+}
+.s-desc {
+  display: block;
+  font-size: 22rpx;
+  opacity: 0.85;
+  margin-top: 4rpx;
+}
+.s-go {
+  padding: 8rpx 24rpx;
+  border-radius: 28rpx;
+  background: rgba(255, 255, 255, 0.25);
+  font-size: 24rpx;
+}
+.add {
+  margin: 32rpx 32rpx 16rpx;
+  padding: 8rpx 24rpx;
+  border-radius: 28rpx;
+  background: #3a86ff;
+  color: #ffffff;
+  font-size: 24rpx;
+}
+.c-item {
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #eef0f4;
+}
+.c-icon {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 32rpx;
+  background: #2a9d8f;
+  color: #ffffff;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20rpx;
+}
+.c-name {
+  display: block;
+  font-weight: bold;
+}
+.c-desc {
+  display: block;
+}
+.c-go {
+  color: #2a9d8f;
+  font-size: 26rpx;
+}
+.empty {
+  margin: 0 24rpx;
+  padding: 60rpx 40rpx;
+  border-radius: 24rpx;
+  background: #ffffff;
+  text-align: center;
+  color: #9aa1ad;
+  font-size: 24rpx;
+}
+.result {
+  display: block;
+  margin: 24rpx 32rpx;
+  font-size: 24rpx;
+  color: #7a8291;
+}

@@ -1,0 +1,27 @@
+{
+  "pages": [
+    "pages/home/home",
+    "pages/scene/scene",
+    "pages/energy/energy",
+    "pages/ac/ac",
+    "pages/light/light",
+    "pages/scene-edit/scene-edit"
+  ],
+  "window": {
+    "navigationBarTitleText": "智慧家",
+    "navigationBarBackgroundColor": "#f3f5f9",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f3f5f9"
+  },
+  "tabBar": {
+    "color": "#9aa1ad",
+    "selectedColor": "#3a86ff",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/home/home", "text": "首页", "iconPath": "images/tab-home.png", "selectedIconPath": "images/tab-home-on.png" },
+      { "pagePath": "pages/scene/scene", "text": "场景", "iconPath": "images/tab-scene.png", "selectedIconPath": "images/tab-scene-on.png" },
+      { "pagePath": "pages/energy/energy", "text": "能耗", "iconPath": "images/tab-energy.png", "selectedIconPath": "images/tab-energy-on.png" }
+    ]
+  }
+}

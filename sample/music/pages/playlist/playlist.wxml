@@ -1,0 +1,27 @@
+<view class="hero" style="background: linear-gradient(160deg, {{pl.c1}}, {{pl.c2}})">
+  <view class="hero-cover cover" style="background: linear-gradient(135deg, {{pl.c2}}, {{pl.c1}})">
+    <text class="cover-initial">{{pl.name}}</text>
+  </view>
+  <view class="hero-main">
+    <text class="hero-name">{{pl.name}}</text>
+    <text class="hero-desc">{{pl.desc}}</text>
+    <text class="hero-desc">{{songs.length}} 首 · {{totalText}} · 播放 {{pl.plays}}</text>
+  </view>
+</view>
+<view class="bar row">
+  <view class="play-all row" bindtap="onPlayAll">
+    <view class="play-dot"><text class="play-dot-text">▶</text></view>
+    <text class="play-all-text">播放全部</text>
+    <text class="sub">（{{songs.length}}）</text>
+  </view>
+</view>
+<view class="song pl-song" wx:for="{{songs}}" wx:key="id" data-index="{{index}}" bindtap="onSong">
+  <text class="song-no {{curId === item.id ? 'on' : ''}}">{{curId === item.id ? '♪' : index + 1}}</text>
+  <view class="song-main">
+    <text class="song-name {{curId === item.id ? 'on' : ''}}">{{item.name}}</text>
+    <text class="song-meta">{{item.fav ? '♥ ' : ''}}{{item.artist}} · {{item.album}}</text>
+  </view>
+  <text class="sub">{{item.durText}}</text>
+</view>
+<view class="bottom-space"></view>
+<include src="../../templates/mini-bar.wxml" />

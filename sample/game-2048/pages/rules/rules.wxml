@@ -1,0 +1,16 @@
+<view class="hero">
+  <text class="hero-title">2048 游戏规则</text>
+  <view class="demo row">
+    <view class="d t2">2</view><text class="op">+</text><view class="d t2">2</view><text class="op">=</text><view class="d t4">4</view>
+  </view>
+</view>
+<view class="card">
+  <view class="sec" wx:for="{{sections}}" wx:key="title" data-i="{{index}}" bindtap="onToggle">
+    <view class="row between">
+      <text class="sec-title">{{index + 1}}. {{item.title}}</text>
+      <text class="sub">{{open === index ? '收起' : '展开'}}</text>
+    </view>
+    <text class="sec-body" wx:if="{{open === index}}">{{item.body}}</text>
+  </view>
+</view>
+<view class="btn play" bindtap="onPlay">开始游戏</view>

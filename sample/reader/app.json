@@ -1,0 +1,27 @@
+{
+  "pages": [
+    "pages/shelf/shelf",
+    "pages/store/store",
+    "pages/mine/mine",
+    "pages/detail/detail",
+    "pages/catalog/catalog",
+    "pages/reader/reader"
+  ],
+  "window": {
+    "navigationBarTitleText": "书香阅读",
+    "navigationBarBackgroundColor": "#f7f3ea",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f7f3ea"
+  },
+  "tabBar": {
+    "color": "#9aa1ad",
+    "selectedColor": "#c8873c",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/shelf/shelf", "text": "书架", "iconPath": "images/tab-shelf.png", "selectedIconPath": "images/tab-shelf-on.png" },
+      { "pagePath": "pages/store/store", "text": "书城", "iconPath": "images/tab-store.png", "selectedIconPath": "images/tab-store-on.png" },
+      { "pagePath": "pages/mine/mine", "text": "我的", "iconPath": "images/tab-mine.png", "selectedIconPath": "images/tab-mine-on.png" }
+    ]
+  }
+}

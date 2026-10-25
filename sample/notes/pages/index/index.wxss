@@ -1,0 +1,137 @@
+.top {
+  padding: 16rpx 24rpx 8rpx;
+}
+.search {
+  height: 72rpx;
+  background: #ffffff;
+  border-radius: 36rpx;
+  padding: 0 24rpx;
+  border: 2rpx solid #efe8d8;
+}
+.search-ic {
+  font-size: 26rpx;
+  margin-right: 12rpx;
+}
+.search-input {
+  flex: 1;
+  height: 72rpx;
+  padding: 0 0 0 1rpx;
+  font-size: 28rpx;
+}
+.search-clear {
+  font-size: 26rpx;
+  color: #b0aa9c;
+  padding: 0 8rpx;
+}
+.links {
+  margin-top: 16rpx;
+}
+.link {
+  font-size: 24rpx;
+  color: #8a6d2f;
+  background: #f6edd6;
+  padding: 8rpx 24rpx;
+  border-radius: 24rpx;
+  margin-right: 16rpx;
+}
+.chips {
+  white-space: nowrap;
+  height: 76rpx;
+}
+.chip-row {
+  display: flex;
+  flex-direction: row;
+  padding: 12rpx 24rpx;
+}
+.chip {
+  flex-shrink: 0;
+  font-size: 24rpx;
+  color: #6b675d;
+  background: #ffffff;
+  border: 2rpx solid #ece5d4;
+  padding: 6rpx 22rpx;
+  border-radius: 26rpx;
+  margin-right: 14rpx;
+}
+.chip.on {
+  background: #f5a623;
+  border-color: #f5a623;
+  color: #ffffff;
+}
+.summary {
+  justify-content: space-between;
+  padding: 4rpx 28rpx 12rpx;
+}
+.summary-text,
+.summary-sort {
+  font-size: 22rpx;
+  color: #a39e92;
+}
+.group-title {
+  display: block;
+  font-size: 24rpx;
+  color: #8f8a7e;
+  padding: 12rpx 28rpx;
+}
+.note {
+  margin: 0 24rpx 20rpx;
+  padding: 24rpx 28rpx;
+  border-radius: 20rpx;
+  border: 2rpx solid #efe8d8;
+}
+.note-title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: bold;
+}
+.note-body {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 26rpx;
+  color: #6b675d;
+  line-height: 40rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.note-foot {
+  margin-top: 14rpx;
+}
+.note-tag {
+  font-size: 22rpx;
+  color: #b07d1a;
+  margin-right: 12rpx;
+}
+.note-time {
+  margin-left: auto;
+  font-size: 22rpx;
+  color: #a39e92;
+}
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 120rpx;
+}
+.empty-ic {
+  font-size: 80rpx;
+}
+.empty-text {
+  margin-top: 20rpx;
+  font-size: 26rpx;
+  color: #a39e92;
+}
+.fab {
+  position: fixed;
+  right: 40rpx;
+  bottom: 120rpx;
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: 56rpx;
+  background: #f5a623;
+  color: #ffffff;
+  font-size: 56rpx;
+  line-height: 112rpx;
+  text-align: center;
+  box-shadow: 0 8rpx 24rpx rgba(245, 166, 35, 0.4);
+}

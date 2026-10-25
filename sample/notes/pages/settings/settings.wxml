@@ -1,0 +1,21 @@
+<text class="sec">列表</text>
+<view class="card cells">
+  <picker class="sort-picker" mode="selector" range="{{sorts}}" value="{{sort}}" bindchange="onSort">
+    <view class="cell row">
+      <text class="flex1 cell-label">排序方式</text>
+      <text class="cell-value sort-value">{{sorts[sort]}}</text>
+      <text class="chev">›</text>
+    </view>
+  </picker>
+  <view class="cell row last">
+    <view class="flex1">
+      <text class="cell-label">显示正文预览</text>
+      <text class="cell-desc">关掉后列表只显示标题</text>
+    </view>
+    <switch class="preview-sw" checked="{{preview}}" color="#f5a623" bindchange="onPreview" />
+  </view>
+</view>
+<text class="sec">数据</text>
+<view class="card">
+  <text class="stats">{{stats}}</text>
+</view>

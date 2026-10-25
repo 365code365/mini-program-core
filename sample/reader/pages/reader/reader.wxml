@@ -1,0 +1,44 @@
+<view class="page" style="background: {{theme.bg}}">
+  <scroll-view class="content" scroll-y scroll-top="{{scrollTop}}" bindscroll="onScroll" bindtap="onTapContent" style="background: {{theme.bg}}; color: {{theme.fg}}">
+    <view class="inner">
+      <text class="book-t">{{bookTitle}}</text>
+      <text class="ch-title" style="font-size: {{fontSize + 6}}px">{{chapterTitle}}</text>
+      <text class="para" wx:for="{{paras}}" wx:key="index" style="font-size: {{fontSize}}px; line-height: {{fontSize * 1.8}}px">{{item}}</text>
+      <view class="end row">
+        <view class="end-btn end-prev {{chapter === 0 ? 'off' : ''}}" catchtap="onPrev">上一章</view>
+        <view class="end-btn end-next {{chapter === total - 1 ? 'off' : ''}}" catchtap="onNext">下一章</view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 菜单：fixed 顶栏 + 底栏，盖在正文上；点它们不能穿透到正文（正文 tap 会收起菜单） -->
+  <view class="topbar row" wx:if="{{menu}}" style="background: {{theme.bar}}; color: {{theme.fg}}">
+    <view class="back" bindtap="onBack">‹</view>
+    <text class="flex1 top-title">{{bookTitle}} · {{chapterTitle}}</text>
+    <view class="mark {{marked ? 'on' : ''}}" bindtap="onBookmark">{{marked ? '已加书签' : '书签'}}</view>
+  </view>
+  <view class="bottombar" wx:if="{{menu}}" style="background: {{theme.bar}}; color: {{theme.fg}}">
+    <view class="row nav">
+      <view class="nav-btn prev {{chapter === 0 ? 'off' : ''}}" bindtap="onPrev">上一章</view>
+      <text class="flex1 pct">第 {{chapter + 1}}/{{total}} 章 · 全书 {{pct}}%</text>
+      <view class="nav-btn next {{chapter === total - 1 ? 'off' : ''}}" bindtap="onNext">下一章</view>
+    </view>
+    <view class="row font-row">
+      <text class="a-small">A</text>
+      <slider class="font flex1" min="{{fontMin}}" max="{{fontMax}}" step="1" value="{{fontSize}}" activeColor="#c8873c" block-size="20" bindchange="onFont" />
+      <text class="a-big">A</text>
+      <text class="font-v">{{fontSize}}</text>
+    </view>
+    <radio-group class="themes row" bindchange="onTheme">
+      <label class="th row" wx:for="{{themes}}" wx:key="key">
+        <radio class="th-radio" value="{{item.key}}" checked="{{theme.key === item.key}}" color="#c8873c" />
+        <view class="th-chip" style="background: {{item.bg}}"></view>
+        <text>{{item.name}}</text>
+      </label>
+    </radio-group>
+    <view class="row tools">
+      <view class="tool catalog" bindtap="onCatalog">目录</view>
+      <view class="tool marks" bindtap="onMine">我的书签</view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,33 @@
+<view class="hero">
+  <view class="row between">
+    <view>
+      <text class="hero-label">总资产（元）</text>
+      <text class="hero-num num">{{assets}}</text>
+    </view>
+    <view class="hero-btn go-pos" bindtap="goPositions">持仓 ›</view>
+  </view>
+  <view class="row hero-foot">
+    <text class="hero-stat">自选 {{list.length}}</text>
+    <text class="hero-stat">上涨 <text class="hero-up">{{upCount}}</text></text>
+    <text class="hero-stat">下跌 <text class="hero-down">{{downCount}}</text></text>
+    <text class="hero-live">● 行情第 {{tickNo}} 跳</text>
+  </view>
+</view>
+<view class="thead row">
+  <text class="th th-name flex1" bindtap="onResetSort">名称代码</text>
+  <view class="th th-price {{sortKey === 'price' ? 'on' : ''}}" data-key="price" bindtap="onSort">现价{{sortKey === 'price' ? (sortAsc ? ' ↑' : ' ↓') : ''}}</view>
+  <view class="th th-pct {{sortKey === 'pct' ? 'on' : ''}}" data-key="pct" bindtap="onSort">涨跌幅{{sortKey === 'pct' ? (sortAsc ? ' ↑' : ' ↓') : ''}}</view>
+</view>
+<view class="q-row row" wx:for="{{list}}" wx:key="code" data-code="{{item.code}}" bindtap="onOpen" bindlongpress="onLong">
+  <view class="flex1">
+    <text class="q-name">{{item.name}}</text>
+    <text class="q-code num">{{item.code}}</text>
+  </view>
+  <text class="q-price num {{item.dir}}">{{item.priceText}}</text>
+  <view class="q-pct-wrap"><text class="q-pct num bg-{{item.dir}}">{{item.pctText}}</text></view>
+</view>
+<view class="empty" wx:if="{{!list.length}}">
+  <text class="empty-text">还没有自选股</text>
+</view>
+<view class="add-row go-search" bindtap="goSearch">＋ 添加自选</view>
+<text class="tip">长按一行可删除自选 · 行情为本地模拟数据</text>

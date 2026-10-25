@@ -1,0 +1,84 @@
+page {
+  background: #f0f2f7;
+  color: #1f1f1f;
+  font-size: 28rpx;
+}
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.between {
+  justify-content: space-between;
+}
+.flex1 {
+  flex: 1;
+}
+.card-box {
+  background: #ffffff;
+  border-radius: 16rpx;
+  margin: 0 24rpx 24rpx;
+  padding: 24rpx 28rpx;
+}
+.sec {
+  display: block;
+  font-size: 24rpx;
+  color: #8c8c8c;
+  padding: 24rpx 32rpx 12rpx;
+}
+.sub {
+  font-size: 24rpx;
+  color: #8c8c8c;
+}
+.cell {
+  min-height: 96rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+.cell.last {
+  border-bottom: none;
+}
+.cell-label {
+  font-size: 28rpx;
+  color: #595959;
+  width: 160rpx;
+}
+.cell-value {
+  flex: 1;
+  text-align: right;
+  font-size: 28rpx;
+}
+.chev {
+  color: #bfbfbf;
+  font-size: 34rpx;
+  margin-left: 12rpx;
+}
+.btn {
+  height: 84rpx;
+  line-height: 84rpx;
+  border-radius: 12rpx;
+  text-align: center;
+  font-size: 30rpx;
+  margin: 0 24rpx 24rpx;
+}
+.btn-primary {
+  background: #2f54eb;
+  color: #ffffff;
+}
+.btn-ghost {
+  background: #ffffff;
+  color: #2f54eb;
+  border: 2rpx solid #adc6ff;
+}
+.btn-danger {
+  background: #fff1f0;
+  color: #f5222d;
+}
+.avatar {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 20rpx;
+  color: #ffffff;
+  font-size: 22rpx;
+  line-height: 40rpx;
+  text-align: center;
+}

@@ -1,0 +1,154 @@
+.head {
+  background: #ffffff;
+  padding: 24rpx 32rpx;
+}
+.price {
+  font-size: 64rpx;
+  font-weight: bold;
+}
+.chg {
+  display: flex;
+  flex-direction: column;
+  margin-left: 24rpx;
+  font-size: 26rpx;
+}
+.kv {
+  margin-top: 16rpx;
+}
+.kv-cell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.k {
+  font-size: 22rpx;
+  color: #8a8f9c;
+}
+.v {
+  font-size: 26rpx;
+}
+.tabs {
+  background: #ffffff;
+  margin-top: 16rpx;
+  padding: 0 24rpx;
+  border-bottom: 1rpx solid #eceef2;
+}
+.tab {
+  padding: 20rpx 28rpx;
+  font-size: 28rpx;
+  color: #8a8f9c;
+}
+.tab.on {
+  color: #e93030;
+  font-weight: bold;
+  border-bottom: 4rpx solid #e93030;
+}
+.chart {
+  background: #ffffff;
+  height: 360rpx;
+  padding: 16rpx 24rpx;
+  margin-bottom: 16rpx;
+}
+.ts {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+}
+.ts-base {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  border-top: 1rpx dashed #c4c8d2;
+}
+.ts-bar {
+  flex: 1;
+  margin-right: 1px;
+  opacity: 0.75;
+}
+.kl {
+  height: 100%;
+  display: flex;
+  flex-direction: row;
+}
+.k-col {
+  position: relative;
+  flex: 1;
+  height: 100%;
+  margin-right: 3px;
+}
+.k-wick {
+  position: absolute;
+  left: 50%;
+  width: 1px;
+}
+.k-body {
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+.book-row {
+  height: 48rpx;
+}
+.b-label {
+  width: 80rpx;
+  font-size: 24rpx;
+  color: #8a8f9c;
+}
+.b-price {
+  font-size: 26rpx;
+}
+.b-vol {
+  font-size: 24rpx;
+  color: #5c6170;
+}
+.book-split {
+  border-top: 1rpx solid #eceef2;
+  margin: 8rpx 0;
+}
+.hold {
+  display: block;
+  text-align: center;
+  font-size: 24rpx;
+  color: #8a8f9c;
+}
+.safe {
+  height: 160rpx;
+}
+.foot {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 112rpx;
+  padding: 0 24rpx;
+  background: #ffffff;
+  border-top: 1rpx solid #eceef2;
+}
+.btn-watch {
+  width: 150rpx;
+  font-size: 26rpx;
+  color: #e93030;
+  text-align: center;
+}
+.btn-watch.on {
+  color: #8a8f9c;
+}
+.btn-buy,
+.btn-sell {
+  height: 80rpx;
+  line-height: 80rpx;
+  text-align: center;
+  color: #ffffff;
+  font-size: 30rpx;
+  border-radius: 12rpx;
+  margin-left: 16rpx;
+}
+.btn-buy {
+  background: #e93030;
+}
+.btn-sell {
+  background: #12a35b;
+}

@@ -1,0 +1,63 @@
+.profile {
+  margin: 24rpx;
+  padding: 32rpx;
+  border-radius: 20rpx;
+  background: linear-gradient(135deg, #e0a96d, #a0522d);
+  color: #ffffff;
+}
+.avatar {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50rpx;
+  background: rgba(255, 255, 255, 0.3);
+  font-size: 40rpx;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 24rpx;
+}
+.name {
+  display: block;
+  font-size: 34rpx;
+  font-weight: bold;
+}
+.profile .sub {
+  color: rgba(255, 255, 255, 0.85);
+}
+.kpi {
+  flex: 1;
+  text-align: center;
+}
+.kv {
+  display: block;
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #3d372f;
+}
+.mark {
+  padding: 20rpx 0;
+  border-top: 1rpx solid #f1ece3;
+}
+.m-title {
+  display: block;
+  font-size: 28rpx;
+}
+.m-ex {
+  display: block;
+  margin-top: 4rpx;
+}
+.empty {
+  padding: 40rpx 0;
+  text-align: center;
+  color: #b3a998;
+  font-size: 24rpx;
+}
+.reset {
+  margin: 24rpx;
+  padding: 24rpx;
+  text-align: center;
+  color: #c0392b;
+  background: #ffffff;
+  border-radius: 20rpx;
+}

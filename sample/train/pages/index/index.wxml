@@ -1,0 +1,40 @@
+<view class="hero">
+  <text class="hero-title">说走就走，一票到家</text>
+  <text class="hero-sub">12306 官方余票 · 极速出票（演示数据）</text>
+</view>
+<view class="form card">
+  <view class="cities row">
+    <view class="city flex1" data-field="from" bindtap="onCity">
+      <text class="city-label">出发地</text>
+      <text class="city-name from-name">{{from}}</text>
+    </view>
+    <view class="swap" bindtap="onSwap"><text class="swap-text">⇄</text></view>
+    <view class="city flex1 city-right" data-field="to" bindtap="onCity">
+      <text class="city-label">目的地</text>
+      <text class="city-name to-name">{{to}}</text>
+    </view>
+  </view>
+  <picker class="date-picker" mode="date" value="{{date}}" start="{{start}}" end="{{end}}" bindchange="onDate">
+    <view class="date row">
+      <text class="date-text flex1">{{dateText}}</text>
+      <text class="sub">{{date}}</text>
+    </view>
+  </picker>
+  <view class="hs row">
+    <text class="flex1">只看高铁 / 动车</text>
+    <switch class="hs-switch" checked="{{highSpeed}}" color="#2b6de8" bindchange="onHigh" />
+  </view>
+  <view class="btn search-btn" bindtap="onSearch"><text class="btn-text">查询车票</text></view>
+  <view class="history row" wx:if="{{history.length}}">
+    <text class="hist" wx:for="{{history}}" wx:key="*this" data-index="{{index}}" bindtap="onHistory">{{item}}</text>
+    <view class="flex1"></view>
+    <text class="hist-clear" bindtap="onClearHistory">清除</text>
+  </view>
+</view>
+<view class="card tips">
+  <text class="tips-title">出行提示</text>
+  <text class="tips-line">· 车票预售期 30 天，可选今天起 30 天内的日期</text>
+  <text class="tips-line">· 每笔订单最多 5 位乘车人，选座按乘车人顺序分配</text>
+  <text class="tips-line">· 发车前可在「订单」里取消，退款原路返回</text>
+</view>
+<view class="bottom-space"></view>

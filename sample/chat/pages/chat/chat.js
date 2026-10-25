@@ -6,7 +6,7 @@ const PHRASES = ['好的，收到', '稍等，我马上来', '在开会，晚点
 Page({
   data: {
     rows: [], draft: '', canSend: false, intoView: '', typing: false,
-    panel: false, panelTab: 0, scrollH: 500, barH: 56, me: {}, peer: {},
+    panel: false, panelTab: 0, scrollH: 500, barH: 56, kbH: 0, me: {}, peer: {},
     emojis: EMOJI.map((n, i) => ({ name: n, short: n.slice(0, 2), color: EMOJI_COLORS[i % 4] })),
     phrases: PHRASES
   },
@@ -39,7 +39,17 @@ Page({
   layout() {
     const bar = Math.round(112 * this.rpx);
     const panel = this.data.panel ? Math.round(440 * this.rpx) : 0;
-    this.setData({ barH: bar, scrollH: this.winH - bar - panel });
+    // 键盘弹着时列表让出键盘那么高（输入框 adjust-position=false，画面不整体上移）：
+    // 输入条贴着键盘、最新消息还在眼前，像原生聊天
+    const below = Math.max(panel, this.data.kbH);
+    this.setData({ barH: bar, scrollH: this.winH - bar - below });
+  },
+  onKbHeight(e) {
+    const h = Math.max(0, Math.round(Number(e.detail.height) || 0));
+    if (h === this.data.kbH) return;
+    this.setData({ kbH: h });
+    this.layout();
+    if (h > 0) this.scrollToEnd();
   },
   render(scroll) {
     const now = Date.now();

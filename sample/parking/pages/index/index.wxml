@@ -1,0 +1,45 @@
+<view class="hero">
+  <text class="hero-t">停车不绕圈，离场不排队</text>
+  <text class="hero-s">附近 6 个停车场 · 实时空位</text>
+</view>
+<view class="card plate-card">
+  <view class="row between">
+    <text class="title">添加车辆</text>
+    <view class="ne-chip {{newEnergy ? 'ne-on' : ''}}" bindtap="toggleEnergy">新能源</view>
+  </view>
+  <view class="boxes row" bindtap="openKb">
+    <view class="box {{item.cur ? 'box-cur' : ''}} {{index === 7 ? 'box-ne' : ''}}" wx:for="{{boxes}}" wx:key="index">
+      <text class="box-t">{{item.ch}}</text>
+    </view>
+  </view>
+  <text class="err" wx:if="{{err}}">{{err}}</text>
+  <view class="btn-primary add-car" bindtap="addCar">添加</view>
+</view>
+<view class="entries row">
+  <view class="entry go-lots" bindtap="goLots"><image class="entry-ic" src="/images/p-blue.png" /><text class="entry-t">找车位</text></view>
+  <view class="entry go-pay" bindtap="goPay"><view class="entry-ic ic-pay"><text class="ic-t">¥</text></view><text class="entry-t">停车缴费</text></view>
+  <view class="entry go-orders" bindtap="goOrders"><view class="entry-ic ic-ord"><text class="ic-t">单</text></view><text class="entry-t">订单记录</text></view>
+</view>
+<view class="sec-t">我的车辆（{{cars.length}}）</view>
+<view class="car row" wx:for="{{cars}}" wx:key="plate" data-plate="{{item.plate}}" bindtap="onCar">
+  <view class="plate-tag {{item.newEnergy ? 'tag-ne' : ''}}"><text class="plate-t">{{item.plate}}</text></view>
+  <text class="flex1 sub car-where">{{item.where}}</text>
+  <view class="car-del" data-plate="{{item.plate}}" catchtap="delCar">解绑</view>
+</view>
+<view class="empty" wx:if="{{!cars.length}}">还没有绑定车辆</view>
+<view class="kb-space" wx:if="{{showKb}}"></view>
+<!-- 车牌键盘：固定在底部，不用系统输入法。面板 catchtap 吃掉点击，不让它冒泡到页面 -->
+<view class="kb" wx:if="{{showKb}}" catchtap="noop">
+  <view class="kb-head row between">
+    <text class="sub">{{panel === 'prov' ? '选择省份简称' : (plate.length === 1 ? '第二位须为字母' : '输入字母或数字')}}</text>
+    <view class="kb-done" catchtap="closeKb">完成</view>
+  </view>
+  <view class="keys" wx:if="{{panel === 'prov'}}">
+    <view class="key key-prov" hover-class="key-down" wx:for="{{provKeys}}" wx:key="*this" data-k="{{item}}" catchtap="onKey"><text class="key-t">{{item}}</text></view>
+    <view class="key key-del" hover-class="key-down" catchtap="onDel"><text class="key-t">删除</text></view>
+  </view>
+  <view class="keys" wx:else>
+    <view class="key key-an {{plate.length === 1 && index < 10 ? 'key-off' : ''}}" hover-class="key-down" wx:for="{{alnumKeys}}" wx:key="*this" data-k="{{item}}" catchtap="onKey"><text class="key-t">{{item}}</text></view>
+    <view class="key key-del" hover-class="key-down" catchtap="onDel"><text class="key-t">删除</text></view>
+  </view>
+</view>

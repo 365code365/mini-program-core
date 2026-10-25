@@ -1,0 +1,31 @@
+<view class="top row">
+  <view class="cover" style="background: linear-gradient(160deg, {{book.c0}}, {{book.c1}})">
+    <text class="cover-t">{{book.title}}</text>
+  </view>
+  <view class="flex1">
+    <text class="title">{{book.title}}</text>
+    <text class="sub line">{{book.author}} 著</text>
+    <text class="sub line">{{book.category}} · {{book.words}} · 共 {{book.chapters}} 章</text>
+    <view class="row stats">
+      <text class="score">{{book.score}}</text><text class="sub"> 分 · {{book.reads}} 人在读</text>
+    </view>
+  </view>
+</view>
+<view class="card">
+  <text class="card-title">简介</text>
+  <text class="intro">{{introText}}</text>
+  <view class="toggle" wx:if="{{foldable}}" bindtap="onToggle">{{expanded ? '收起' : '展开全部'}}</view>
+</view>
+<view class="card">
+  <view class="row between cat-head" bindtap="onCatalog">
+    <text class="card-title t0">目录</text>
+    <text class="sub">共 {{book.chapters}} 章 ›</text>
+  </view>
+  <view class="ch" wx:for="{{firstChapters}}" wx:key="index" data-i="{{item.index}}" bindtap="onChapter">{{item.title}}</view>
+</view>
+<view class="prog card" wx:if="{{progress}}">上次读到 {{progress.chapterTitle}}（{{progress.pct}}%）</view>
+<view class="bottom-safe"></view>
+<view class="bottom row">
+  <view class="b-shelf {{inShelf ? 'done' : ''}}" bindtap="onShelf">{{inShelf ? '已在书架' : '加入书架'}}</view>
+  <view class="b-read flex1" bindtap="onRead">{{progress ? '继续阅读' : '开始阅读'}}</view>
+</view>

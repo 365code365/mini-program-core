@@ -1,0 +1,32 @@
+<view class="card">
+  <text class="card-title">场景名称</text>
+  <input class="name-input" value="{{name}}" placeholder="例如：观影模式（不超过 8 个字）" bindinput="onName" />
+  <text class="err" wx:if="{{error}}">{{error}}</text>
+</view>
+<view class="card">
+  <text class="card-title">执行动作</text>
+  <radio-group class="actions row" bindchange="onAction">
+    <label class="act row"><radio class="act-on" value="on" checked="{{action === 'on'}}" color="#3a86ff" /><text>全部打开</text></label>
+    <label class="act row"><radio class="act-off" value="off" checked="{{action === 'off'}}" color="#3a86ff" /><text>全部关闭</text></label>
+  </radio-group>
+</view>
+<view class="card">
+  <view class="row between">
+    <text class="card-title">选择设备</text>
+    <text class="sub picked">已选 {{selected.length}} 台</text>
+  </view>
+  <view wx:for="{{groups}}" wx:for-item="g" wx:key="room" class="group">
+    <text class="g-room">{{g.room}}</text>
+    <checkbox-group class="cg" data-room="{{g.room}}" bindchange="onCheck">
+      <label class="dev row" wx:for="{{g.list}}" wx:key="id">
+        <checkbox class="dev-cb" id="cb-{{item.id}}" value="{{item.id}}" checked="{{item.checked}}" color="#3a86ff" />
+        <text class="flex1">{{item.name}}</text>
+      </label>
+    </checkbox-group>
+  </view>
+  <text class="sub tip">离线设备不能加入场景</text>
+</view>
+<view class="save-safe"></view>
+<view class="save-bar">
+  <view class="btn save" bindtap="onSave">保存场景</view>
+</view>

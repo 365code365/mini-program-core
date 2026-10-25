@@ -1,0 +1,37 @@
+<view class="bar row">
+  <view class="box row flex1">
+    <input class="ipt flex1" placeholder="搜菜名、食材或标签" value="{{keyword}}" confirm-type="search" focus bindinput="onInput" bindconfirm="onConfirm" />
+    <text class="clear" wx:if="{{keyword}}" bindtap="onClear">×</text>
+  </view>
+  <text class="go" bindtap="onConfirm">搜索</text>
+</view>
+<block wx:if="{{!searched}}">
+  <view class="sec row" wx:if="{{history.length}}">
+    <text class="sec-title flex1">搜索历史</text>
+    <text class="sub clear-history" bindtap="onClearHistory">清空</text>
+  </view>
+  <view class="tags" wx:if="{{history.length}}">
+    <text class="tag hist" wx:for="{{history}}" wx:key="*this" data-kw="{{item}}" bindtap="onTag">{{item}}</text>
+  </view>
+  <view class="sec row"><text class="sec-title">热门搜索</text></view>
+  <view class="tags">
+    <text class="tag hot {{index < 3 ? 'top' : ''}}" wx:for="{{hot}}" wx:key="*this" data-kw="{{item}}" bindtap="onTag">{{item}}</text>
+  </view>
+</block>
+<block wx:else>
+  <text class="result-count sub">「{{searched}}」找到 {{results.length}} 道菜</text>
+  <view class="rc result" wx:for="{{results}}" wx:key="id" data-id="{{item.id}}" bindtap="onRecipe">
+    <view class="rc-cover cover" style="background: linear-gradient(135deg, {{item.c1}}, {{item.c2}})">
+      <text class="cover-initial">{{item.initial}}</text>
+    </view>
+    <view class="rc-main">
+      <text class="rc-name">{{item.name}}</text>
+      <text class="rc-meta">{{item.catText}} · {{item.minutes}} 分钟 · {{item.level}}</text>
+    </view>
+  </view>
+  <view class="empty no-result" wx:if="{{!results.length}}">
+    <view class="empty-icon"><text>?</text></view>
+    <text>没有找到「{{searched}}」相关的菜谱</text>
+    <text class="sub">换个关键词试试，比如「鸡蛋」「豆腐」</text>
+  </view>
+</block>

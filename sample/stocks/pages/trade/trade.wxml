@@ -1,0 +1,45 @@
+<view class="sides row">
+  <view class="side {{side === 'buy' ? 'on buy' : ''}}" data-s="buy" bindtap="onSide">买入</view>
+  <view class="side {{side === 'sell' ? 'on sell' : ''}}" data-s="sell" bindtap="onSide">卖出</view>
+</view>
+<view class="box">
+  <view class="row between">
+    <text class="t-name">{{name}} <text class="sub num">{{code}}</text></text>
+    <text class="num {{q.dir}}">现价 {{q.priceText}} {{q.pctText}}</text>
+  </view>
+  <view class="field row">
+    <text class="f-label">委托价</text>
+    <view class="stepper row flex1">
+      <view class="step p-minus" data-d="-0.01" bindtap="onPrice">－</view>
+      <text class="step-val num flex1 price-val">{{priceText}}</text>
+      <view class="step p-plus" data-d="0.01" bindtap="onPrice">＋</view>
+    </view>
+  </view>
+  <view class="field row">
+    <text class="f-label">数量</text>
+    <view class="stepper row flex1">
+      <view class="step q-minus" data-d="-100" bindtap="onQtyStep">－</view>
+      <text class="step-val num flex1 qty-val">{{qty}} 股</text>
+      <view class="step q-plus" data-d="100" bindtap="onQtyStep">＋</view>
+    </view>
+  </view>
+  <slider class="q-slider" min="100" max="{{sliderMax}}" step="100" value="{{qty}}" activeColor="{{side === 'buy' ? '#e93030' : '#12a35b'}}" block-size="22" bindchange="onSlide" />
+  <view class="row between hint">
+    <text class="sub">{{side === 'buy' ? '可买' : '可卖'}} {{maxQty}} 股</text>
+    <text class="q-all" bindtap="onAll">全部</text>
+  </view>
+  <view class="row between amount">
+    <text class="sub">金额</text>
+    <text class="amount-val num">¥ {{amountText}}</text>
+  </view>
+  <view class="row between">
+    <text class="sub">可用资金</text>
+    <text class="sub num cash-val">{{cashText}}</text>
+  </view>
+  <text class="error" wx:if="{{error}}">{{error}}</text>
+</view>
+<view class="submit {{side}}" bindtap="onSubmit">{{side === 'buy' ? '买入' : '卖出'}} {{name}}</view>
+<view class="box last" wx:if="{{last}}">
+  <text class="last-text">最近成交：{{last.side === 'buy' ? '买入' : '卖出'}} {{last.qty}} 股 @ {{last.price}}</text>
+  <text class="go-pos" bindtap="goPositions">查看持仓 ›</text>
+</view>

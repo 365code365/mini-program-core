@@ -1,0 +1,72 @@
+.tabs {
+  background: #ffffff;
+  height: 96rpx;
+}
+.tab {
+  height: 96rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tab-text {
+  font-size: 28rpx;
+  color: #8a909c;
+}
+.tab.on .tab-text {
+  color: #2b6de8;
+  font-weight: bold;
+}
+.tab.on {
+  border-bottom: 4rpx solid #2b6de8;
+}
+.order {
+  display: flex;
+  flex-direction: column;
+}
+.o-no {
+  font-size: 30rpx;
+  font-weight: bold;
+}
+.o-state {
+  font-size: 24rpx;
+  color: #ff7a00;
+}
+.o-state.done {
+  color: #8a909c;
+}
+.o-line {
+  font-size: 24rpx;
+  color: #5c6370;
+  margin-top: 10rpx;
+}
+.o-foot {
+  margin-top: 20rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid #f0f1f5;
+}
+.o-total {
+  color: #ff5a1f;
+  font-size: 30rpx;
+  font-weight: bold;
+}
+.o-btn {
+  padding: 12rpx 28rpx;
+  border-radius: 30rpx;
+  border: 1rpx solid #c5cdda;
+  font-size: 24rpx;
+  color: #5c6370;
+}
+.go {
+  margin: 24rpx auto 0;
+  width: 200rpx;
+  height: 64rpx;
+  border-radius: 32rpx;
+  background: #2b6de8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.go-text {
+  color: #ffffff;
+  font-size: 26rpx;
+}

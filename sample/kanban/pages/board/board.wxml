@@ -1,0 +1,40 @@
+<view class="hero">
+  <view class="row between">
+    <view>
+      <text class="hero-title">移动端 2.4 迭代</text>
+      <text class="hero-sub">{{total}} 张卡片 · {{overdue}} 张逾期 · 今天 {{todayText}}</text>
+    </view>
+  </view>
+  <view class="row hero-links">
+    <view class="hero-link go-stats" bindtap="goStats">📊 统计</view>
+    <view class="hero-link go-members" bindtap="goMembers">👥 成员</view>
+  </view>
+</view>
+<scroll-view class="board" scroll-x>
+  <view class="board-row">
+    <view class="col col-{{col.key}}" wx:for="{{cols}}" wx:key="key" wx:for-item="col">
+      <view class="col-head row">
+        <view class="col-dot" style="background: {{col.color}}"></view>
+        <text class="col-name">{{col.name}}</text>
+        <text class="col-count">{{col.count}}</text>
+      </view>
+      <view class="card card-{{col.key}} {{item.overdue ? 'is-overdue' : ''}}" wx:for="{{col.cards}}" wx:key="id" data-id="{{item.id}}" bindtap="onOpen">
+        <view class="row between">
+          <text class="prio" style="background: {{item.prioColor}}">{{item.prioName}}</text>
+          <view class="card-move" data-id="{{item.id}}" catchtap="onMove">⋯</view>
+        </view>
+        <text class="card-title">{{item.title}}</text>
+        <view class="bar" wx:if="{{item.subText}}"><view class="bar-fill" style="width: {{item.pct}}%"></view></view>
+        <view class="row card-foot">
+          <view class="avatar" style="background: {{item.ownerColor}}">{{item.ownerInitial}}</view>
+          <text class="owner">{{item.owner}}</text>
+          <text class="sub-count" wx:if="{{item.subText}}">☑ {{item.subText}}</text>
+          <text class="due {{item.overdue ? 'late' : ''}}">{{item.overdue ? '逾期 ' : ''}}{{item.dueText}}</text>
+        </view>
+      </view>
+      <view class="col-empty" wx:if="{{!col.count}}">暂无卡片</view>
+      <view class="col-add" data-col="{{col.key}}" bindtap="onAdd">＋ 添加卡片</view>
+    </view>
+  </view>
+</scroll-view>
+<view class="fab" bindtap="onAdd" data-col="todo">＋</view>

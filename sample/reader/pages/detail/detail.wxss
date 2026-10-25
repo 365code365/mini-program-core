@@ -1,0 +1,96 @@
+.top {
+  padding: 32rpx;
+  align-items: flex-start;
+}
+.cover {
+  width: 200rpx;
+  height: 270rpx;
+  border-radius: 12rpx;
+  padding: 24rpx 16rpx;
+  box-sizing: border-box;
+  margin-right: 32rpx;
+}
+.cover-t {
+  color: #ffffff;
+  font-size: 32rpx;
+  font-weight: bold;
+}
+.title {
+  display: block;
+  font-size: 40rpx;
+  font-weight: bold;
+  margin-bottom: 12rpx;
+}
+.line {
+  display: block;
+  margin-bottom: 8rpx;
+}
+.stats {
+  margin-top: 12rpx;
+  align-items: baseline;
+}
+.score {
+  font-size: 44rpx;
+  font-weight: bold;
+  color: #e76f51;
+}
+.intro {
+  display: block;
+  line-height: 1.8;
+  color: #5c544a;
+}
+.toggle {
+  margin-top: 12rpx;
+  color: #c8873c;
+  font-size: 26rpx;
+}
+.t0 {
+  margin-bottom: 0;
+}
+.cat-head {
+  margin-bottom: 12rpx;
+}
+.ch {
+  padding: 16rpx 0;
+  border-top: 1rpx solid #f1ece3;
+  color: #5c544a;
+}
+.prog {
+  color: #c8873c;
+  font-size: 26rpx;
+}
+.bottom-safe {
+  height: 140rpx;
+}
+.bottom {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 16rpx 24rpx;
+  background: #ffffff;
+  border-top: 1rpx solid #ece6db;
+}
+.b-shelf {
+  width: 220rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  text-align: center;
+  border-radius: 40rpx;
+  border: 2rpx solid #c8873c;
+  color: #c8873c;
+  margin-right: 20rpx;
+}
+.b-shelf.done {
+  border-color: #d6cfc4;
+  color: #a0968a;
+}
+.b-read {
+  height: 84rpx;
+  line-height: 84rpx;
+  text-align: center;
+  border-radius: 42rpx;
+  background: #c8873c;
+  color: #ffffff;
+  font-weight: bold;
+}

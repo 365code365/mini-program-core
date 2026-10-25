@@ -1,0 +1,14 @@
+<!-- 迷你播放条（position: fixed）：在 tab 页上抬到 tabBar 之上（mini-tab），其它页贴底 -->
+<view class="mini {{miniOnTab ? 'mini-tab' : ''}}" wx:if="{{mini}}" bindtap="onMiniTap">
+  <view class="mini-cover" style="background: linear-gradient(135deg, {{mini.c1}}, {{mini.c2}})">
+    <text class="mini-initial">{{mini.initial}}</text>
+  </view>
+  <view class="mini-info">
+    <text class="mini-name">{{mini.name}}</text>
+    <text class="mini-artist">{{mini.artist}}</text>
+  </view>
+  <view class="mini-btn" catchtap="onMiniToggle">
+    <text class="mini-btn-text">{{miniPlaying ? '暂停' : '播放'}}</text>
+  </view>
+  <view class="mini-prog" style="width: {{miniPct}}%"></view>
+</view>

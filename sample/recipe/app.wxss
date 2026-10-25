@@ -1,0 +1,94 @@
+page {
+  background: #faf7f2;
+  color: #2b2118;
+  font-size: 28rpx;
+}
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.flex1 {
+  flex: 1;
+}
+.sub {
+  font-size: 24rpx;
+  color: #9a8f84;
+}
+.cover {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20rpx;
+}
+.cover-initial {
+  color: #ffffff;
+  font-size: 56rpx;
+  font-weight: bold;
+}
+/* 菜谱卡片（首页 / 搜索 / 收藏共用） */
+.rc {
+  display: flex;
+  flex-direction: row;
+  background: #ffffff;
+  border-radius: 24rpx;
+  margin: 0 24rpx 20rpx;
+  padding: 20rpx;
+}
+.rc-cover {
+  width: 200rpx;
+  height: 160rpx;
+  flex-shrink: 0;
+}
+.rc-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-left: 20rpx;
+}
+.rc-name {
+  font-size: 32rpx;
+  font-weight: bold;
+}
+.rc-meta {
+  font-size: 22rpx;
+  color: #9a8f84;
+  margin-top: 8rpx;
+}
+.rc-tags {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin-top: 12rpx;
+}
+.rc-tag {
+  font-size: 20rpx;
+  color: #ff7a2f;
+  background: #fff1e6;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+  margin-right: 8rpx;
+}
+.empty {
+  padding: 100rpx 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #9a8f84;
+  font-size: 26rpx;
+}
+.empty-icon {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 60rpx;
+  background: #f6efe6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48rpx;
+  color: #d8c8b5;
+  margin-bottom: 20rpx;
+}
+.bottom-space {
+  height: 140rpx;
+}

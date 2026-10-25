@@ -1,0 +1,26 @@
+<text class="sec">团队成员 · 点一下看 TA 的卡片</text>
+<view class="card-box list">
+  <view class="member row {{selected === item.id ? 'on' : ''}}" wx:for="{{members}}" wx:key="id" data-id="{{item.id}}" bindtap="onMember">
+    <view class="m-avatar" style="background: {{item.color}}">{{item.initial}}</view>
+    <view class="flex1">
+      <text class="m-name">{{item.name}}</text>
+      <text class="m-role">{{item.role}}</text>
+    </view>
+    <view class="m-stat">
+      <text class="m-open">{{item.open}}</text>
+      <text class="m-total"> / {{item.total}}</text>
+      <text class="m-late" wx:if="{{item.late}}">逾期 {{item.late}}</text>
+    </view>
+  </view>
+</view>
+<block wx:if="{{selected}}">
+  <text class="sec">{{selName}} 的卡片（{{cards.length}}）</text>
+  <view class="card-box">
+    <view class="m-card row" wx:for="{{cards}}" wx:key="id" data-id="{{item.id}}" bindtap="onOpen">
+      <text class="m-prio" style="background: {{item.prioColor}}">{{item.prioName}}</text>
+      <text class="flex1 m-card-title">{{item.title}}</text>
+      <text class="m-due {{item.overdue ? 'late' : ''}}">{{item.dueText}}</text>
+    </view>
+    <text class="sub" wx:if="{{!cards.length}}">没有分配给 TA 的卡片</text>
+  </view>
+</block>

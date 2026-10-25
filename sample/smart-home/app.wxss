@@ -1,0 +1,58 @@
+page {
+  background: #f3f5f9;
+  color: #1f2533;
+  font-size: 28rpx;
+}
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.between {
+  justify-content: space-between;
+}
+.flex1 {
+  flex: 1;
+}
+.sub {
+  font-size: 24rpx;
+  color: #7a8291;
+}
+.card {
+  background: #ffffff;
+  border-radius: 24rpx;
+  margin: 0 24rpx 24rpx;
+  padding: 28rpx;
+}
+.card-title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: bold;
+  margin-bottom: 20rpx;
+}
+.btn {
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  border-radius: 44rpx;
+  background: linear-gradient(90deg, #4361ee, #3a86ff);
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: bold;
+  margin: 24rpx;
+}
+.power {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 48rpx;
+  background: #d9dee7;
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.power.on {
+  background: #3a86ff;
+}

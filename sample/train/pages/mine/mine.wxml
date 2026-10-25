@@ -1,0 +1,25 @@
+<view class="head">
+  <view class="avatar"><text class="avatar-text">行</text></view>
+  <view class="head-main">
+    <text class="nick">畅行旅客</text>
+    <text class="head-sub">已购 {{orderCount}} 单 · 累计 ¥{{spent}}</text>
+  </view>
+</view>
+<view class="card">
+  <view class="row">
+    <text class="sec flex1">常用乘车人（{{passengers.length}}）</text>
+    <text class="add" bindtap="onAdd">+ 添加</text>
+  </view>
+  <view class="p row" wx:for="{{passengers}}" wx:key="id">
+    <view class="flex1 p-main">
+      <text class="p-name">{{item.name}}<text class="tag" wx:if="{{item.self}}"> 本人 </text></text>
+      <text class="sub">{{item.idText}} · {{item.phone}}</text>
+    </view>
+    <text class="p-del" wx:if="{{!item.self}}" data-index="{{index}}" bindtap="onRemove">删除</text>
+  </view>
+</view>
+<view class="card links">
+  <text class="link">客服电话 12306（演示）</text>
+  <text class="link">关于畅行火车票 v1.0</text>
+</view>
+<view class="bottom-space"></view>

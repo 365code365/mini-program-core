@@ -1,0 +1,15 @@
+<view class="wrap">
+<view class="head row between">
+  <text class="sub">共 {{total}} 章 · 读到第 {{current + 1}} 章</text>
+  <view class="row">
+    <view class="op locate" bindtap="onLocate">定位</view>
+    <view class="op reverse" bindtap="onReverse">{{reverse ? '正序' : '倒序'}}</view>
+  </view>
+</view>
+<scroll-view class="list" scroll-y scroll-into-view="{{intoView}}">
+  <view wx:for="{{list}}" wx:key="index" id="ch-{{item.index}}" class="ch row {{item.index === current ? 'cur' : ''}}" data-i="{{item.index}}" bindtap="onPick">
+    <text class="flex1 ch-t">{{item.title}}</text>
+    <text class="tag" wx:if="{{item.index === current}}">在读</text>
+  </view>
+</scroll-view>
+</view>

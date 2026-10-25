@@ -1,0 +1,9 @@
+.ok-wrap { display: flex; flex-direction: column; align-items: center; padding: 60rpx 0 40rpx; }
+.ok-ic { width: 120rpx; height: 120rpx; border-radius: 60rpx; background: #19a974; display: flex; align-items: center; justify-content: center; }
+.tick { width: 48rpx; height: 24rpx; border-left: 8rpx solid #ffffff; border-bottom: 8rpx solid #ffffff; transform: rotate(-45deg); margin-top: -12rpx; }
+.ok-t { font-size: 34rpx; font-weight: bold; margin-top: 24rpx; }
+.ok-amt { font-size: 60rpx; font-weight: bold; margin: 12rpx 0; }
+.cells { padding: 0 24rpx; }
+.off { color: #ff5a1f; }
+.btns { padding: 24rpx 32rpx; }
+.btn-ghost { margin-top: 20rpx; height: 88rpx; line-height: 88rpx; text-align: center; border-radius: 44rpx; border: 2rpx solid #1677ff; color: #1677ff; font-size: 30rpx; }

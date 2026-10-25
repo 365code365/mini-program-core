@@ -1,0 +1,28 @@
+<text class="group">棋盘</text>
+<view class="card">
+  <picker class="size-picker" mode="selector" range="{{sizeNames}}" value="{{sizeIndex}}" bindchange="onSize">
+    <view class="row between line">
+      <text>棋盘尺寸</text>
+      <text class="sub size-value">{{sizeNames[sizeIndex]}} ›</text>
+    </view>
+  </picker>
+  <view class="row between line">
+    <view class="flex1">
+      <text class="label">方块动画</text>
+      <text class="sub desc">新出现的方块弹一下</text>
+    </view>
+    <switch class="anim-switch" checked="{{anim}}" color="#8f7a66" bindchange="onAnim" />
+  </view>
+</view>
+<text class="group">主题色</text>
+<view class="card">
+  <radio-group class="themes" bindchange="onTheme">
+    <label class="theme row" wx:for="{{themes}}" wx:key="key">
+      <radio class="theme-radio" value="{{item.key}}" checked="{{item.key === theme}}" color="#8f7a66" />
+      <view class="swatch" style="background: {{item.board}}"></view>
+      <view class="swatch" style="background: {{item.accent}}"></view>
+      <text class="flex1 theme-name">{{item.name}}</text>
+    </label>
+  </radio-group>
+</view>
+<view class="btn reset" bindtap="onReset">恢复默认设置</view>

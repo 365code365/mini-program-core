@@ -1,0 +1,22 @@
+<view class="card grid row">
+  <view class="kpi"><text class="kv games">{{games}}</text><text class="sub">已记录局数</text></view>
+  <view class="kpi"><text class="kv">{{avg}}</text><text class="sub">平均分</text></view>
+  <view class="kpi"><text class="kv">{{top}}</text><text class="sub">最高分</text></view>
+  <view class="kpi"><text class="kv">{{maxTile}}</text><text class="sub">最大方块</text></view>
+</view>
+<text class="group">各尺寸最高分</text>
+<view class="card">
+  <view class="row between line" wx:for="{{bests}}" wx:key="n">
+    <text>{{item.n}}×{{item.n}}</text>
+    <text class="best-v">{{item.best}}</text>
+  </view>
+</view>
+<text class="group">最大方块分布</text>
+<view class="card">
+  <view class="bar-row row" wx:for="{{tiles}}" wx:key="v">
+    <text class="bar-label">{{item.v}}</text>
+    <view class="bar-track flex1"><view class="bar" style="width: {{item.pct}}%"></view></view>
+    <text class="bar-n">{{item.n}} 局</text>
+  </view>
+  <view class="empty" wx:if="{{!tiles.length}}">暂无数据</view>
+</view>

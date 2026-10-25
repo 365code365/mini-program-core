@@ -1,0 +1,23 @@
+<view class="tabs row">
+  <view class="tab flex1 {{tab === index ? 'on' : ''}}" wx:for="{{tabs}}" wx:key="*this" data-i="{{index}}" bindtap="onTab">
+    <text class="tab-text">{{item}}（{{counts[index]}}）</text>
+  </view>
+</view>
+<view class="order card" wx:for="{{list}}" wx:key="id">
+  <view class="row">
+    <text class="o-no flex1">{{item.no}} · {{item.from}} → {{item.to}}</text>
+    <text class="o-state {{item.done ? 'done' : ''}}">{{item.stateText}}</text>
+  </view>
+  <text class="o-line">{{item.dateText}} {{item.depText}} 开 · {{item.seat}} × {{item.count}}</text>
+  <text class="o-line">乘车人：{{item.namesText}}</text>
+  <text class="o-line" wx:if="{{item.seatsText}}">座位偏好：{{item.seatsText}}</text>
+  <view class="row o-foot">
+    <text class="o-total flex1">实付 ¥{{item.total}}</text>
+    <view class="o-btn cancel-btn" wx:if="{{!item.done}}" data-index="{{index}}" bindtap="onCancel"><text>取消订单</text></view>
+  </view>
+</view>
+<view class="empty" wx:if="{{!list.length}}">
+  <text>{{tab === 0 ? '暂无待出行的订单' : '暂无已完成的订单'}}</text>
+  <view class="go" bindtap="onGo"><text class="go-text">去买票</text></view>
+</view>
+<view class="bottom-space"></view>

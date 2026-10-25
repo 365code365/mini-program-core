@@ -1,0 +1,23 @@
+<view class="seg row">
+  <view wx:for="{{periods}}" wx:key="key" class="seg-i seg-{{item.key}} {{period === item.key ? 'on' : ''}}" data-p="{{item.key}}" bindtap="onPeriod">{{item.name}}</view>
+</view>
+<view class="total-card">
+  <text class="t-k">{{period === 'week' ? '本周' : '本月'}}总用电</text>
+  <view class="row t-row">
+    <text class="t-v total">{{total}}</text><text class="t-u">kWh</text>
+  </view>
+  <text class="t-cost">约 ¥{{cost}}（0.56 元/度）</text>
+</view>
+<view class="card">
+  <text class="card-title">按设备</text>
+  <view wx:for="{{bars}}" wx:key="id" wx:if="{{expanded || index < top}}" class="b-row">
+    <view class="row between">
+      <text class="b-name">{{item.name}}<text class="sub"> · {{item.room}}</text></text>
+      <text class="b-v">{{item.kwh}} kWh</text>
+    </view>
+    <view class="b-track">
+      <view class="b-bar" style="width: {{item.pct}}%"></view>
+    </view>
+  </view>
+  <view class="expand" bindtap="onExpand">{{expanded ? '收起' : '展开全部 ' + bars.length + ' 台设备'}}</view>
+</view>

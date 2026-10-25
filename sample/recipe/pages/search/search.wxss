@@ -1,0 +1,53 @@
+.bar {
+  background: #ffffff;
+  padding: 16rpx 24rpx;
+}
+.box {
+  height: 72rpx;
+  border-radius: 36rpx;
+  background: #f6efe6;
+  padding: 0 24rpx;
+}
+.ipt {
+  height: 72rpx;
+  font-size: 26rpx;
+}
+.clear {
+  font-size: 34rpx;
+  color: #9a8f84;
+  padding: 0 8rpx;
+}
+.go {
+  margin-left: 20rpx;
+  color: #ff7a2f;
+  font-size: 28rpx;
+}
+.sec {
+  padding: 28rpx 28rpx 12rpx;
+}
+.sec-title {
+  font-size: 28rpx;
+  font-weight: bold;
+}
+.tags {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  padding: 0 20rpx;
+}
+.tag {
+  font-size: 24rpx;
+  color: #6d6258;
+  background: #ffffff;
+  padding: 10rpx 24rpx;
+  border-radius: 28rpx;
+  margin: 8rpx;
+}
+.tag.top {
+  color: #ff7a2f;
+  background: #fff1e6;
+}
+.result-count {
+  display: block;
+  padding: 20rpx 28rpx;
+}

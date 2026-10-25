@@ -1,0 +1,62 @@
+<view class="card head">
+  <input class="ipt title-input" value="{{form.title}}" placeholder="日程标题（必填）" maxlength="40" bindinput="onTitle" />
+  <text class="err" wx:if="{{err}}">{{err}}</text>
+</view>
+<view class="card cells">
+  <view class="cell row">
+    <text class="flex1 cell-label">全天</text>
+    <switch class="allday" checked="{{form.allDay}}" color="#3a6bf0" bindchange="onAllDay" />
+  </view>
+  <picker class="pk-date" mode="date" value="{{form.date}}" start="2020-01-01" end="2035-12-31" bindchange="onDate">
+    <view class="cell row">
+      <text class="flex1 cell-label">日期</text>
+      <text class="cell-value">{{dateLabel}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <block wx:if="{{!form.allDay}}">
+    <picker class="pk-start" mode="time" value="{{form.start}}" bindchange="onStart">
+      <view class="cell row">
+        <text class="flex1 cell-label">开始</text>
+        <text class="cell-value">{{form.start}}</text>
+        <view class="chev"></view>
+      </view>
+    </picker>
+    <picker class="pk-end" mode="time" value="{{form.end}}" bindchange="onEnd">
+      <view class="cell row">
+        <text class="flex1 cell-label">结束</text>
+        <text class="cell-value">{{form.end}}</text>
+        <view class="chev"></view>
+      </view>
+    </picker>
+  </block>
+  <picker class="pk-repeat" mode="selector" range="{{repeats}}" value="{{form.repeat}}" bindchange="onRepeat">
+    <view class="cell row">
+      <text class="flex1 cell-label">重复</text>
+      <text class="cell-value">{{repeats[form.repeat]}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <picker class="pk-remind" mode="selector" range="{{reminds}}" value="{{form.remind}}" bindchange="onRemind">
+    <view class="cell row cell-last">
+      <text class="flex1 cell-label">提醒</text>
+      <text class="cell-value">{{reminds[form.remind]}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+</view>
+<view class="card">
+  <text class="cell-label">颜色</text>
+  <radio-group class="colors row" bindchange="onColor">
+    <label class="color-item row" wx:for="{{colors}}" wx:key="value">
+      <radio class="color-radio" value="{{index}}" checked="{{form.color === index}}" color="{{item.value}}" />
+      <view class="swatch" style="background: {{item.value}}"></view>
+    </label>
+  </radio-group>
+</view>
+<view class="card">
+  <input class="ipt note" value="{{form.note}}" placeholder="地点或备注（选填）" maxlength="60" bindinput="onNote" />
+</view>
+<view class="save-wrap">
+  <view class="btn-primary save" bindtap="onSave">保存</view>
+</view>

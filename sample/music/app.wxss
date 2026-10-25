@@ -1,0 +1,159 @@
+page {
+  background: #f5f6fa;
+  color: #1d2129;
+  font-size: 28rpx;
+}
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.flex1 {
+  flex: 1;
+}
+.sec-title {
+  font-size: 34rpx;
+  font-weight: bold;
+  margin: 32rpx 32rpx 20rpx;
+}
+.sub {
+  font-size: 24rpx;
+  color: #8a909c;
+}
+/* 封面：渐变方块 + 首字 */
+.cover {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16rpx;
+}
+.cover-initial {
+  color: #ffffff;
+  font-size: 36rpx;
+  font-weight: bold;
+}
+/* 歌曲行（发现 / 曲库 / 歌单 / 我的 共用） */
+.song {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 18rpx 32rpx;
+  background: #ffffff;
+}
+.song-no {
+  width: 48rpx;
+  font-size: 26rpx;
+  color: #a0a6b1;
+}
+.song-cover {
+  width: 88rpx;
+  height: 88rpx;
+  margin-right: 20rpx;
+}
+.song-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.song-name {
+  font-size: 30rpx;
+}
+.song-name.on {
+  color: #ff3a5c;
+}
+.song-meta {
+  font-size: 22rpx;
+  color: #8a909c;
+  margin-top: 6rpx;
+}
+.song-fav {
+  width: 72rpx;
+  height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.song-fav-text {
+  font-size: 34rpx;
+  color: #c3c8d1;
+}
+.song-fav-text.on {
+  color: #ff3a5c;
+}
+.empty {
+  padding: 120rpx 0;
+  text-align: center;
+  color: #a0a6b1;
+  font-size: 26rpx;
+}
+/* 迷你播放条 */
+.mini {
+  position: fixed;
+  left: 16rpx;
+  right: 16rpx;
+  bottom: 16rpx;
+  height: 112rpx;
+  background: #ffffff;
+  border-radius: 56rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0 16rpx;
+  overflow: hidden;
+}
+.mini-tab {
+  bottom: 116rpx;
+}
+.mini-cover {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 40rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mini-initial {
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: bold;
+}
+.mini-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-left: 20rpx;
+}
+.mini-name {
+  font-size: 28rpx;
+}
+.mini-artist {
+  font-size: 22rpx;
+  color: #8a909c;
+}
+.mini-btn {
+  width: 120rpx;
+  height: 64rpx;
+  border-radius: 32rpx;
+  background: #ff3a5c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mini-btn-text {
+  color: #ffffff;
+  font-size: 24rpx;
+}
+.mini-prog {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 4rpx;
+  background: #ff3a5c;
+}
+.bottom-space {
+  height: 160rpx;
+}
+.bottom-space-tab {
+  height: 260rpx;
+}

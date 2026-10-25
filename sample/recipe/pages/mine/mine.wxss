@@ -1,0 +1,81 @@
+.head {
+  background: linear-gradient(135deg, #ffb05c, #ff7a2f);
+  padding: 40rpx 32rpx 32rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.avatar {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 60rpx;
+  background: rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.avatar-text {
+  color: #ffffff;
+  font-size: 48rpx;
+  font-weight: bold;
+}
+.nick {
+  color: #ffffff;
+  font-size: 34rpx;
+  font-weight: bold;
+  margin-top: 12rpx;
+}
+.stats {
+  width: 100%;
+  margin-top: 28rpx;
+}
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.stat-num {
+  color: #ffffff;
+  font-size: 40rpx;
+  font-weight: bold;
+}
+.stat-label {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 22rpx;
+}
+.card {
+  background: #ffffff;
+  border-radius: 24rpx;
+  margin: 20rpx 24rpx;
+  padding: 24rpx 28rpx;
+}
+.sec {
+  display: block;
+  font-size: 30rpx;
+  font-weight: bold;
+  margin-bottom: 12rpx;
+}
+.cooked {
+  padding: 16rpx 0;
+}
+.mini-cover {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 14rpx;
+}
+.mini-initial {
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: bold;
+}
+.cooked-name {
+  margin-left: 20rpx;
+}
+.none {
+  display: block;
+  padding: 20rpx 0;
+}
+.link {
+  height: 88rpx;
+  border-bottom: 1rpx solid #f5efe8;
+}

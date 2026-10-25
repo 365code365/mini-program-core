@@ -1,0 +1,18 @@
+<view class="summary row between">
+  <text class="title">未来 30 天</text>
+  <text class="sub">{{range}} · 共 {{total}} 项</text>
+</view>
+<view class="group" wx:for="{{groups}}" wx:for-item="g" wx:key="date">
+  <view class="g-head row">
+    <text class="g-label">{{g.label}}</text>
+    <text class="sub g-rel">{{g.rel}}</text>
+  </view>
+  <view class="card g-card">
+    <view class="item row" wx:for="{{g.items}}" wx:key="id" data-id="{{item.id}}" bindtap="onEvent">
+      <view class="ev-dot" style="background: {{item.color}}"></view>
+      <text class="flex1 it-title">{{item.title}}</text>
+      <text class="sub">{{item.time}}</text>
+    </view>
+  </view>
+</view>
+<view class="empty" wx:if="{{!groups.length}}">未来 30 天没有安排</view>

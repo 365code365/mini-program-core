@@ -1,0 +1,29 @@
+<view class="card top-gap">
+  <text class="title">选择车辆</text>
+  <radio-group class="cars" bindchange="onCar">
+    <label class="car-opt row" wx:for="{{cars}}" wx:key="plate">
+      <radio class="car-radio" value="{{item.plate}}" checked="{{item.plate === plate}}" color="#1677ff" />
+      <text class="flex1 car-plate">{{item.plate}}</text>
+      <text class="sub {{item.inside ? 'in' : ''}}">{{item.inside ? '在场' : '未在场'}}</text>
+    </label>
+  </radio-group>
+  <view class="empty" wx:if="{{!cars.length}}">还没有绑定车辆</view>
+</view>
+<view class="card cells" wx:if="{{lot}}">
+  <view class="cell row"><text class="flex1 cell-label">停车场</text><text class="cell-value">{{lot.name}}</text></view>
+  <picker class="pk-in" mode="time" value="{{inTime}}" bindchange="onIn">
+    <view class="cell row"><text class="flex1 cell-label">入场时间</text><text class="cell-value">{{inTime}}</text><view class="chev"></view></view>
+  </picker>
+  <view class="cell row"><text class="flex1 cell-label">当前时间</text><text class="cell-value">{{now}}</text></view>
+  <view class="cell row"><text class="flex1 cell-label">停车时长</text><text class="cell-value v-dur">{{durText}}</text></view>
+  <view class="cell row"><text class="flex1 cell-label">停车费</text><text class="cell-value">{{feeText}}</text></view>
+  <picker class="pk-coupon" range="{{coupons}}" value="{{couponIdx}}" bindchange="onCoupon">
+    <view class="cell row cell-last"><text class="flex1 cell-label">优惠券</text><text class="cell-value coupon">{{couponIdx ? coupons[couponIdx] + ' ' + offText : '不使用'}}</text><view class="chev"></view></view>
+  </picker>
+</view>
+<view class="tip" wx:if="{{tip}}">{{tip}}</view>
+<text class="err" wx:if="{{err}}">{{err}}</text>
+<view class="pay-bar row">
+  <view class="flex1"><text class="sub">应付</text><text class="pay-amt">{{payText}}</text></view>
+  <view class="pay-btn {{lot ? '' : 'pay-off'}}" bindtap="submit">立即支付</view>
+</view>

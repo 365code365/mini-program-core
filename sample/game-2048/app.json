@@ -1,0 +1,15 @@
+{
+  "pages": [
+    "pages/game/game",
+    "pages/settings/settings",
+    "pages/rank/rank",
+    "pages/stats/stats",
+    "pages/rules/rules"
+  ],
+  "window": {
+    "navigationBarTitleText": "2048",
+    "navigationBarBackgroundColor": "#faf8ef",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#faf8ef"
+  }
+}

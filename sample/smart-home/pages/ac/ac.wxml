@@ -1,0 +1,36 @@
+<view class="panel {{dev.on ? 'on' : ''}}">
+  <text class="state">{{dev.on ? '运行中' : '已关闭'}}</text>
+  <view class="temp-row row">
+    <view class="step minus {{dev.temp <= min ? 'disabled' : ''}}" data-d="-1" bindtap="onStep">－</view>
+    <view class="temp">
+      <text class="temp-v">{{dev.temp}}</text><text class="unit">℃</text>
+    </view>
+    <view class="step plus {{dev.temp >= max ? 'disabled' : ''}}" data-d="1" bindtap="onStep">＋</view>
+  </view>
+  <text class="range">可调范围 {{min}}~{{max}}℃</text>
+  <view class="power power-btn {{dev.on ? 'on' : ''}}" bindtap="onPower">{{dev.on ? '关' : '开'}}</view>
+</view>
+<view class="card">
+  <text class="card-title">模式</text>
+  <radio-group class="modes row" bindchange="onMode">
+    <label class="mode {{dev.mode === item.key ? 'cur' : ''}}" wx:for="{{modes}}" wx:key="key">
+      <radio class="mode-radio" value="{{item.key}}" checked="{{dev.mode === item.key}}" color="#3a86ff" />
+      <text>{{item.name}}</text>
+    </label>
+  </radio-group>
+</view>
+<view class="card">
+  <view class="row between">
+    <text class="card-title">风速</text>
+    <text class="sub wind-name">{{winds[dev.wind]}}（{{dev.wind}} 档）</text>
+  </view>
+  <slider class="wind" min="1" max="5" step="1" value="{{dev.wind}}" activeColor="#3a86ff" block-size="24" bindchanging="onWindChanging" bindchange="onWind" />
+</view>
+<view class="card">
+  <picker class="timer" mode="selector" range="{{timers}}" value="{{dev.timer}}" bindchange="onTimer">
+    <view class="row between">
+      <text class="card-title t0">定时关闭</text>
+      <text class="sub timer-v">{{timers[dev.timer]}} ›</text>
+    </view>
+  </picker>
+</view>

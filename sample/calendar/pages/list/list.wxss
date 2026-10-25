@@ -1,0 +1,6 @@
+.summary { padding: 24rpx 32rpx; }
+.g-head { padding: 8rpx 32rpx 12rpx; }
+.g-label { font-size: 28rpx; font-weight: bold; margin-right: 16rpx; }
+.g-card { padding: 0 24rpx; }
+.item { height: 92rpx; border-bottom: 1rpx solid #f0f1f4; }
+.it-title { font-size: 28rpx; }

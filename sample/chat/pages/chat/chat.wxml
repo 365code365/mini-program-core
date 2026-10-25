@@ -1,5 +1,5 @@
 <view class="wrap">
-  <scroll-view class="msgs" scroll-y style="height: {{scrollH}}px;" scroll-into-view="{{intoView}}" scroll-with-animation>
+  <scroll-view class="msgs" scroll-y style="height: {{scrollH}}px;" scroll-into-view="{{intoView}}" scroll-into-view-alignment="end" scroll-with-animation>
     <view class="pad-top"></view>
     <block wx:for="{{rows}}" wx:key="key">
       <view class="time-row" wx:if="{{item.kind === 'time'}}" id="{{item.key}}"><text class="time-text">{{item.text}}</text></view>
@@ -21,7 +21,7 @@
     <view class="pad-bottom"></view>
   </scroll-view>
   <view class="bar" style="height: {{barH}}px;">
-    <input class="input" value="{{draft}}" placeholder="发消息…" placeholder-class="ph" confirm-type="send" bindinput="onInput" bindconfirm="send" bindfocus="onFocus" maxlength="500" />
+    <input class="input" value="{{draft}}" placeholder="发消息…" placeholder-class="ph" confirm-type="send" confirm-hold="{{true}}" adjust-position="{{false}}" bindkeyboardheightchange="onKbHeight" bindinput="onInput" bindconfirm="send" bindfocus="onFocus" maxlength="500" />
     <view class="emo-btn {{panel ? 'emo-on' : ''}}" bindtap="togglePanel">
       <view class="face"><view class="eye eye-l"></view><view class="eye eye-r"></view><view class="mouth"></view></view>
     </view>

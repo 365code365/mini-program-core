@@ -1,0 +1,15 @@
+<view class="filters row">
+  <view wx:for="{{filters}}" wx:key="index" class="filter {{filter === index ? 'on' : ''}}" data-i="{{index}}" bindtap="onFilter">{{item}}</view>
+</view>
+<view class="card list" wx:if="{{list.length}}">
+  <view class="item row" wx:for="{{list}}" wx:key="at">
+    <view class="no {{item.rank <= 3 ? 'top' : ''}}">{{item.medal || item.rank}}</view>
+    <view class="flex1">
+      <text class="score">{{item.score}} 分</text>
+      <text class="sub meta">{{item.size}}×{{item.size}} · 最大 {{item.maxTile}} · {{item.moves}} 步</text>
+    </view>
+    <text class="sub">{{item.at}}</text>
+  </view>
+</view>
+<view class="empty" wx:else>还没有成绩，去玩一局吧</view>
+<view class="btn clear" bindtap="onClear">清空排行榜</view>

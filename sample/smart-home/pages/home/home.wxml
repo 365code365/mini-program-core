@@ -1,0 +1,38 @@
+<view class="hero">
+  <text class="hello">{{greeting}}，阿杰</text>
+  <view class="sum row">
+    <view class="sum-item"><text class="sum-v online">{{online}}/{{total}}</text><text class="sum-k">设备在线</text></view>
+    <view class="sum-item"><text class="sum-v running">{{running}}</text><text class="sum-k">正在运行</text></view>
+    <view class="sum-item"><text class="sum-v">24℃</text><text class="sum-k">室内温度</text></view>
+    <view class="sum-item"><text class="sum-v">52%</text><text class="sum-k">湿度</text></view>
+  </view>
+</view>
+<view class="tabs row">
+  <view wx:for="{{rooms}}" wx:key="key" class="tab {{current === index ? 'on' : ''}}" data-i="{{index}}" bindtap="onTab">
+    <text>{{item.name}}</text>
+    <view class="bar" wx:if="{{current === index}}"></view>
+  </view>
+  <view class="flex1"></view>
+  <view class="room-off" bindtap="onRoomOff">全关</view>
+</view>
+<swiper class="rooms" current="{{current}}" bindchange="onSwiper" duration="300">
+  <swiper-item wx:for="{{pages}}" wx:for-item="devs" wx:for-index="ri" wx:key="ri">
+    <view class="grid">
+      <view wx:for="{{devs}}" wx:key="id" class="dev {{item.on && item.online ? 'is-on' : ''}} {{item.online ? '' : 'offline'}}" id="dev-{{item.id}}" data-id="{{item.id}}" bindtap="onCard">
+        <view class="row between">
+          <view class="icon" style="background: {{item.on && item.online ? item.color : '#d9dee7'}}">{{item.icon}}</view>
+          <view catchtap="noop" class="sw-wrap">
+            <switch class="sw" checked="{{item.on}}" disabled="{{!item.online}}" color="{{item.color}}" data-id="{{item.id}}" bindchange="onSwitch" />
+          </view>
+        </view>
+        <text class="dev-name">{{item.name}}</text>
+        <view class="row">
+          <view class="dot {{item.online ? 'ok' : ''}}"></view>
+          <text class="dev-status">{{item.status}}</text>
+          <text class="more" wx:if="{{item.detail && item.online}}">›</text>
+        </view>
+      </view>
+    </view>
+  </swiper-item>
+</swiper>
+<view class="tip">左右滑动切换房间 · 点卡片进入设备详情</view>

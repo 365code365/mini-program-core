@@ -1,0 +1,10 @@
+.head { margin-top: 20rpx; }
+.title-input { font-size: 34rpx; height: 72rpx; }
+.err { display: block; color: #f2453d; font-size: 24rpx; margin-top: 8rpx; }
+.cells { padding: 0 24rpx; }
+.colors { margin-top: 16rpx; flex-wrap: wrap; }
+.color-item { margin-right: 24rpx; }
+.color-radio { transform: scale(0.8); }
+.swatch { width: 36rpx; height: 36rpx; border-radius: 18rpx; margin-left: 4rpx; }
+.note { font-size: 28rpx; height: 64rpx; }
+.save-wrap { padding: 12rpx 32rpx 60rpx; }

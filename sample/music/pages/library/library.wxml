@@ -1,0 +1,24 @@
+<view class="top">
+  <view class="search row">
+    <text class="search-icon">搜</text>
+    <input class="search-input flex1" placeholder="搜索歌名或歌手" value="{{keyword}}" bindinput="onInput" />
+    <text class="search-clear" wx:if="{{keyword}}" bindtap="onClear">清除</text>
+  </view>
+  <view class="chips row">
+    <view class="chip {{lang === index ? 'on' : ''}}" wx:for="{{langs}}" wx:key="key" data-index="{{index}}" bindtap="onLang">{{item.text}}</view>
+  </view>
+</view>
+<text class="count sub">共 {{songs.length}} 首</text>
+<view class="song lib-song" wx:for="{{songs}}" wx:key="id" data-index="{{index}}" bindtap="onSong">
+  <text class="song-no">{{index + 1}}</text>
+  <view class="song-main">
+    <text class="song-name {{curId === item.id ? 'on' : ''}}">{{item.name}}</text>
+    <text class="song-meta">{{item.artist}} · {{item.album}} · {{item.durText}}</text>
+  </view>
+  <view class="song-fav" data-index="{{index}}" catchtap="onFav">
+    <text class="song-fav-text {{item.fav ? 'on' : ''}}">{{item.fav ? '♥' : '♡'}}</text>
+  </view>
+</view>
+<view class="empty" wx:if="{{!songs.length}}">没有找到「{{keyword}}」相关的歌曲</view>
+<view class="bottom-space-tab"></view>
+<include src="../../templates/mini-bar.wxml" />

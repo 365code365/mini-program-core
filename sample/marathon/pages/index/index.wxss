@@ -1,0 +1,23 @@
+.banner { position: relative; height: 300rpx; }
+.banner-img { width: 750rpx; height: 300rpx; }
+.banner-mask { position: absolute; left: 0; right: 0; bottom: 0; padding: 24rpx 32rpx; background: linear-gradient(180deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.45)); }
+.ev-name { display: block; color: #ffffff; font-size: 40rpx; font-weight: bold; }
+.ev-sub { display: block; color: rgba(255, 255, 255, 0.9); font-size: 22rpx; margin-top: 6rpx; }
+.cd-card { margin: 20rpx 24rpx; background: #ffffff; border-radius: 20rpx; padding: 24rpx; justify-content: space-between; }
+.closed { justify-content: center; text-align: center; }
+.cd-l { font-size: 26rpx; color: #5c6370; }
+.cd-n { min-width: 52rpx; height: 52rpx; line-height: 52rpx; text-align: center; background: #2b2d33; color: #ffffff; font-size: 30rpx; font-weight: bold; border-radius: 8rpx; padding: 0 6rpx; }
+.cd-u { font-size: 24rpx; margin: 0 8rpx; color: #5c6370; }
+.sec { padding: 8rpx 32rpx 16rpx; }
+.mine-link { font-size: 26rpx; color: #e8491d; }
+.g-card { background: #ffffff; border-radius: 20rpx; margin: 0 24rpx 20rpx; padding: 24rpx; }
+.g-full { opacity: 0.7; }
+.g-name { font-size: 32rpx; font-weight: bold; margin-right: 16rpx; }
+.g-dist { font-size: 24rpx; color: #e8491d; background: #fff1eb; border-radius: 8rpx; padding: 2rpx 12rpx; }
+.g-fee { font-size: 34rpx; font-weight: bold; color: #e8491d; }
+.g-meta { display: block; margin: 8rpx 0 16rpx; }
+.g-prog { width: 100%; color: #e8491d; }
+.g-prog-full { color: #c4c9d2; }
+.g-foot { margin-top: 16rpx; }
+.g-btn { font-size: 26rpx; color: #ffffff; background: #e8491d; border-radius: 28rpx; padding: 8rpx 28rpx; }
+.g-btn-off { background: #c4c9d2; }

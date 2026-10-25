@@ -1,0 +1,142 @@
+.head {
+  background: linear-gradient(180deg, #2b6de8, #4a8bff);
+  padding: 32rpx 40rpx 40rpx;
+}
+.hcol {
+  display: flex;
+  flex-direction: column;
+}
+.hcol-r {
+  align-items: flex-end;
+}
+.htime {
+  color: #ffffff;
+  font-size: 44rpx;
+  font-weight: bold;
+}
+.hcity {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 26rpx;
+  margin-top: 6rpx;
+}
+.hmid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.hno {
+  color: #ffffff;
+  font-size: 28rpx;
+}
+.hdur {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 22rpx;
+  margin-top: 6rpx;
+}
+.hdate {
+  display: block;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 24rpx;
+  margin-top: 20rpx;
+  text-align: center;
+}
+.sec {
+  display: block;
+  font-size: 28rpx;
+  font-weight: bold;
+  margin-bottom: 12rpx;
+}
+.seat-opt {
+  height: 88rpx;
+  border-bottom: 1rpx solid #f0f1f5;
+}
+.seat-opt.on .seat-name {
+  color: #2b6de8;
+  font-weight: bold;
+}
+.seat-name {
+  margin-left: 12rpx;
+  font-size: 28rpx;
+}
+.seat-left {
+  font-size: 24rpx;
+  color: #19a974;
+  margin-right: 24rpx;
+}
+.seat-left.none {
+  color: #c5cdda;
+}
+.seat-price {
+  color: #ff5a1f;
+  font-size: 30rpx;
+  font-weight: bold;
+  width: 120rpx;
+  text-align: right;
+}
+.add-p {
+  color: #2b6de8;
+  font-size: 26rpx;
+}
+.p-item {
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #f0f1f5;
+}
+.p-main {
+  display: flex;
+  flex-direction: column;
+  margin-left: 12rpx;
+}
+.p-name {
+  font-size: 28rpx;
+}
+.letters {
+  justify-content: center;
+  padding: 12rpx 0;
+}
+.win {
+  font-size: 22rpx;
+  color: #8a909c;
+  margin: 0 12rpx;
+}
+.letter {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 12rpx;
+  border: 2rpx solid #c5cdda;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 10rpx;
+  color: #5c6370;
+  font-size: 28rpx;
+}
+.letter.aisle {
+  margin-right: 50rpx;
+}
+.letter.on {
+  background: #2b6de8;
+  border-color: #2b6de8;
+  color: #ffffff;
+}
+.footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 120rpx;
+  background: #ffffff;
+  padding: 0 24rpx;
+  box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.06);
+}
+.total-label {
+  font-size: 26rpx;
+}
+.total {
+  color: #ff5a1f;
+  font-size: 40rpx;
+  font-weight: bold;
+}
+.submit {
+  width: 240rpx;
+  height: 84rpx;
+}

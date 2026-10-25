@@ -1,0 +1,13 @@
+<view class="card add row">
+  <input class="tag-input" value="{{name}}" placeholder="新标签名，最多 8 个字" bindinput="onInput" bindconfirm="onAdd" />
+  <view class="tag-add" bindtap="onAdd">添加</view>
+</view>
+<text class="error" wx:if="{{error}}">{{error}}</text>
+<view class="card list">
+  <view class="tag-row row" wx:for="{{tags}}" wx:key="id">
+    <text class="tag-name flex1">#{{item.name}}</text>
+    <text class="tag-count">{{item.count}} 篇</text>
+    <view class="tag-del" data-id="{{item.id}}" bindtap="onDel">删除</view>
+  </view>
+  <text class="sub" wx:if="{{!tags.length}}">还没有标签</text>
+</view>

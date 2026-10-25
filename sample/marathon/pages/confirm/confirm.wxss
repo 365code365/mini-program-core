@@ -1,0 +1,9 @@
+.card:first-child { margin-top: 20rpx; }
+.edit { font-size: 26rpx; color: #e8491d; padding: 8rpx 0 8rpx 24rpx; }
+.kv { margin-top: 14rpx; }
+.k { width: 200rpx; font-size: 26rpx; color: #8f95a3; }
+.v { flex: 1; font-size: 28rpx; }
+.fee { color: #e8491d; font-weight: bold; }
+.err { display: block; color: #f2453d; font-size: 26rpx; text-align: center; }
+.foot { padding: 20rpx 32rpx 60rpx; }
+.home { margin: 32rpx 120rpx 0; }

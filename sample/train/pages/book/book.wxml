@@ -1,0 +1,61 @@
+<view class="head">
+  <view class="row">
+    <view class="hcol">
+      <text class="htime">{{train.depText}}</text>
+      <text class="hcity">{{train.from}}</text>
+    </view>
+    <view class="flex1 hmid">
+      <text class="hno">{{train.no}}</text>
+      <text class="hdur">{{train.durText}}</text>
+    </view>
+    <view class="hcol hcol-r">
+      <text class="htime">{{train.arrText}}</text>
+      <text class="hcity">{{train.to}}</text>
+    </view>
+  </view>
+  <text class="hdate">{{dateText}}</text>
+</view>
+<view class="card">
+  <text class="sec">选择席别</text>
+  <radio-group class="seat-group" bindchange="onSeat">
+    <label class="seat-opt row {{seatIdx === index ? 'on' : ''}}" wx:for="{{train.seats}}" wx:key="name">
+      <radio class="seat-radio" value="{{index}}" checked="{{seatIdx === index}}" disabled="{{item.left === 0}}" color="#2b6de8" />
+      <text class="flex1 seat-name">{{item.name}}</text>
+      <text class="seat-left {{item.left === 0 ? 'none' : ''}}">{{item.leftText}}</text>
+      <text class="seat-price">¥{{item.price}}</text>
+    </label>
+  </radio-group>
+</view>
+<view class="card">
+  <view class="row">
+    <text class="sec flex1">乘车人（已选 {{count}} 位）</text>
+    <text class="add-p" bindtap="onAddPassenger">+ 添加乘车人</text>
+  </view>
+  <checkbox-group class="p-group" bindchange="onPassengers">
+    <label class="p-item row" wx:for="{{passengers}}" wx:key="id">
+      <checkbox class="p-check" value="{{item.id}}" checked="{{item.checked}}" color="#2b6de8" />
+      <view class="flex1 p-main">
+        <text class="p-name">{{item.name}}<text class="tag" wx:if="{{item.self}}"> 本人 </text></text>
+        <text class="sub">身份证 {{item.idText}}</text>
+      </view>
+    </label>
+  </checkbox-group>
+</view>
+<view class="card">
+  <text class="sec">在线选座（已选 {{chosen.length}}/{{count}}）</text>
+  <view class="letters row" wx:if="{{canChoose}}">
+    <text class="win">窗</text>
+    <view class="letter {{seatOn[item] ? 'on' : ''}} {{index === 2 ? 'aisle' : ''}}" wx:for="{{letters}}" wx:key="*this" data-l="{{item}}" bindtap="onLetter">{{item}}</view>
+    <text class="win">窗</text>
+  </view>
+  <text class="sub" wx:else>普速列车暂不支持在线选座，系统随机分配</text>
+</view>
+<view class="bottom-space"></view>
+<view class="footer row">
+  <view class="flex1">
+    <text class="total-label">合计 </text>
+    <text class="total">¥{{total}}</text>
+    <text class="sub">（{{count}} 人 × ¥{{price}}）</text>
+  </view>
+  <view class="btn submit {{count ? '' : 'disabled'}}" bindtap="onSubmit"><text class="btn-text">提交订单</text></view>
+</view>

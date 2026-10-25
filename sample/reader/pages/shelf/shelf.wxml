@@ -1,0 +1,32 @@
+<view class="recent row" wx:if="{{recent}}" data-id="{{recent.id}}" bindtap="onOpen">
+  <view class="mini-cover" style="background: linear-gradient(160deg, {{recent.c0}}, {{recent.c1}})">{{recent.title[0]}}</view>
+  <view class="flex1">
+    <text class="r-k">继续阅读</text>
+    <text class="r-title">{{recent.title}}</text>
+    <text class="sub">{{recent.chapterTitle}} · {{recent.status}}</text>
+  </view>
+  <view class="r-go">去读</view>
+</view>
+<view class="head row between">
+  <text class="h">我的书架</text>
+  <text class="sub">共 {{books.length}} 本 · 长按可移出</text>
+</view>
+<view class="grid" wx:if="{{books.length}}">
+  <view class="book" wx:for="{{books}}" wx:key="id" id="book-{{item.id}}" data-id="{{item.id}}" bindtap="onOpen" bindlongpress="onLong">
+    <view class="cover" style="background: linear-gradient(160deg, {{item.c0}}, {{item.c1}})">
+      <text class="cover-t">{{item.title}}</text>
+      <text class="cover-a">{{item.author}}</text>
+      <view class="pbar"><view class="pbar-in" style="width: {{item.pct}}%"></view></view>
+    </view>
+    <text class="b-title">{{item.title}}</text>
+    <text class="b-pct">{{item.status}}</text>
+  </view>
+  <view class="book add" bindtap="onGoStore">
+    <view class="cover add-cover"><text class="plus">＋</text></view>
+    <text class="b-title">添加书籍</text>
+  </view>
+</view>
+<view class="empty" wx:else>
+  <text>书架空空的</text>
+  <view class="go-store" bindtap="onGoStore">去书城逛逛</view>
+</view>

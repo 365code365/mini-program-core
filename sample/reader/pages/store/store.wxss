@@ -1,0 +1,92 @@
+.banner {
+  height: 300rpx;
+  margin: 24rpx;
+  border-radius: 20rpx;
+  overflow: hidden;
+}
+.slide {
+  height: 300rpx;
+  padding: 40rpx;
+  box-sizing: border-box;
+  color: #ffffff;
+}
+.s-k {
+  display: block;
+  font-size: 22rpx;
+  opacity: 0.8;
+}
+.s-title {
+  display: block;
+  margin: 16rpx 0 8rpx;
+  font-size: 40rpx;
+  font-weight: bold;
+}
+.s-slogan {
+  display: block;
+  font-size: 26rpx;
+  opacity: 0.9;
+}
+.cats {
+  padding: 0 24rpx 16rpx;
+}
+.cat {
+  margin-right: 16rpx;
+  padding: 10rpx 26rpx;
+  border-radius: 30rpx;
+  background: #ffffff;
+  color: #7d7365;
+  font-size: 26rpx;
+}
+.cat.on {
+  background: #c8873c;
+  color: #ffffff;
+  font-weight: bold;
+}
+.item {
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #f1ece3;
+  align-items: flex-start;
+}
+.no {
+  width: 44rpx;
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #c9bfb0;
+  padding-top: 8rpx;
+}
+.no.top {
+  color: #e76f51;
+}
+.cv {
+  width: 96rpx;
+  height: 128rpx;
+  border-radius: 8rpx;
+  color: #ffffff;
+  font-size: 36rpx;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20rpx;
+}
+.i-title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: bold;
+}
+.i-meta {
+  display: block;
+  margin: 4rpx 0;
+}
+.i-brief {
+  display: block;
+  font-size: 24rpx;
+  color: #8a8174;
+  line-height: 1.5;
+}
+.score {
+  margin-left: 12rpx;
+  color: #e76f51;
+  font-weight: bold;
+  font-size: 30rpx;
+}

@@ -1,0 +1,33 @@
+.tab-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: row;
+  background: #ffffff;
+  border-top: 1rpx solid #eceef2;
+}
+.tab-item {
+  flex: 1;
+  height: 100rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.tab-icon {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 22rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tab-glyph {
+  font-size: 22rpx;
+}
+.tab-text {
+  font-size: 20rpx;
+  margin-top: 4rpx;
+}

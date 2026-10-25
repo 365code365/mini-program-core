@@ -1,0 +1,13 @@
+.top-gap { margin-top: 20rpx; }
+.cars { display: block; margin-top: 8rpx; }
+.car-opt { height: 88rpx; border-bottom: 1rpx solid #f0f1f4; }
+.car-plate { font-size: 30rpx; font-weight: bold; margin-left: 12rpx; }
+.in { color: #19a974; }
+.cells { padding: 0 24rpx; }
+.coupon { color: #ff7a1f; }
+.tip { text-align: center; font-size: 26rpx; color: #19a974; padding: 12rpx 0; }
+.err { display: block; color: #f2453d; font-size: 24rpx; text-align: center; }
+.pay-bar { position: fixed; left: 0; right: 0; bottom: 0; height: 120rpx; background: #ffffff; padding: 0 32rpx; border-top: 1rpx solid #eceef2; }
+.pay-amt { font-size: 44rpx; font-weight: bold; color: #ff5a1f; margin-left: 12rpx; }
+.pay-btn { width: 260rpx; height: 84rpx; line-height: 84rpx; text-align: center; border-radius: 42rpx; background: #1677ff; color: #ffffff; font-size: 30rpx; font-weight: bold; }
+.pay-off { background: #c4c9d2; }

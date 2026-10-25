@@ -1,0 +1,24 @@
+<view class="card-box head">
+  <view class="row between">
+    <text class="box-title">标题 <text class="req">*</text></text>
+    <text class="sub">{{titleLen}}/30</text>
+  </view>
+  <input class="n-title {{error ? 'bad' : ''}}" value="{{form.title}}" placeholder="要做什么？" bindinput="onTitle" />
+  <text class="error" wx:if="{{error}}">{{error}}</text>
+  <textarea class="n-desc" value="{{form.desc}}" placeholder="描述（选填）" maxlength="500" bindinput="onDesc" />
+</view>
+<view class="card-box cells">
+  <picker class="n-col" mode="selector" range="{{colNames}}" value="{{form.col}}" bindchange="onCol">
+    <view class="cell row"><text class="cell-label">所在列</text><text class="cell-value">{{colNames[form.col]}}</text><text class="chev">›</text></view>
+  </picker>
+  <picker class="n-prio" mode="selector" range="{{prioNames}}" value="{{form.prio}}" bindchange="onPrio">
+    <view class="cell row"><text class="cell-label">优先级</text><text class="cell-value">{{prioNames[form.prio]}}</text><text class="chev">›</text></view>
+  </picker>
+  <picker class="n-owner" mode="selector" range="{{ownerNames}}" value="{{form.owner}}" bindchange="onOwner">
+    <view class="cell row"><text class="cell-label">负责人</text><text class="cell-value">{{ownerNames[form.owner]}}</text><text class="chev">›</text></view>
+  </picker>
+  <picker class="n-due" mode="date" value="{{form.due}}" start="2020-01-01" end="2035-12-31" bindchange="onDue">
+    <view class="cell row last"><text class="cell-label">截止日期</text><text class="cell-value">{{form.due}}</text><text class="chev">›</text></view>
+  </picker>
+</view>
+<view class="btn btn-primary n-submit" bindtap="onSubmit">创建卡片</view>

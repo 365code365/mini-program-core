@@ -1,0 +1,17 @@
+<view class="bar row">
+  <text class="sub flex1">回收站里的笔记不会出现在列表与搜索里</text>
+  <view class="clear {{items.length ? '' : 'off'}}" bindtap="onClear">清空</view>
+</view>
+<view class="card item" wx:for="{{items}}" wx:key="id">
+  <text class="item-title">{{item.title}}</text>
+  <text class="item-body" wx:if="{{item.body}}">{{item.body}}</text>
+  <view class="row ops">
+    <text class="sub flex1">{{item.time}}</text>
+    <view class="op restore" data-id="{{item.id}}" bindtap="onRestore">恢复</view>
+    <view class="op purge" data-id="{{item.id}}" bindtap="onPurge">彻底删除</view>
+  </view>
+</view>
+<view class="empty" wx:if="{{!items.length}}">
+  <text class="empty-ic">🗑️</text>
+  <text class="empty-text">回收站是空的</text>
+</view>

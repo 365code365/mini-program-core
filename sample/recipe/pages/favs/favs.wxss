@@ -1,0 +1,29 @@
+.tip {
+  display: block;
+  padding: 20rpx 28rpx;
+}
+.fav-item.pinned {
+  background: #fff8f1;
+}
+.pin {
+  font-size: 20rpx;
+  color: #ffffff;
+  background: #ff7a2f;
+  padding: 2rpx 10rpx;
+  border-radius: 6rpx;
+  margin-right: 10rpx;
+}
+.go {
+  margin-top: 24rpx;
+  width: 200rpx;
+  height: 64rpx;
+  border-radius: 32rpx;
+  background: #ff7a2f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.go-text {
+  color: #ffffff;
+  font-size: 26rpx;
+}

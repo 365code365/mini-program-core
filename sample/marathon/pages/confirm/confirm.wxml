@@ -1,0 +1,27 @@
+<view class="empty" wx:if="{{!form}}">
+  <text>还没有填写报名信息</text>
+  <view class="btn-primary home" bindtap="goHome">去选择组别</view>
+</view>
+<block wx:else>
+  <view class="card">
+    <view class="row between"><text class="title">参赛组别</text><text class="edit edit-0" data-step="0" bindtap="onEdit">修改</text></view>
+    <view class="kv row"><text class="k">组别</text><text class="v v-group">{{sum.group}}</text></view>
+    <view class="kv row"><text class="k">报名费</text><text class="v fee">¥{{sum.fee}}</text></view>
+  </view>
+  <view class="card">
+    <view class="row between"><text class="title">个人信息</text><text class="edit edit-1" data-step="1" bindtap="onEdit">修改</text></view>
+    <view class="kv row"><text class="k">姓名</text><text class="v v-name">{{form.name}}</text></view>
+    <view class="kv row"><text class="k">{{sum.idType}}</text><text class="v">{{sum.idMasked}}</text></view>
+    <view class="kv row"><text class="k">性别 / 年龄</text><text class="v">{{form.gender}} · {{sum.age}} 岁（比赛日）</text></view>
+    <view class="kv row"><text class="k">手机号</text><text class="v">{{form.phone}}</text></view>
+    <view class="kv row"><text class="k">所在地区</text><text class="v">{{sum.region}}</text></view>
+  </view>
+  <view class="card">
+    <view class="row between"><text class="title">紧急联系人与装备</text><text class="edit edit-2" data-step="2" bindtap="onEdit">修改</text></view>
+    <view class="kv row"><text class="k">紧急联系人</text><text class="v">{{form.ecName}} {{form.ecPhone}}</text></view>
+    <view class="kv row"><text class="k">服装尺码</text><text class="v v-size">{{form.size}}</text></view>
+    <view class="kv row"><text class="k">最好成绩</text><text class="v">{{sum.best}}</text></view>
+  </view>
+  <text class="err" wx:if="{{err}}">{{err}}</text>
+  <view class="foot"><view class="btn-primary submit" bindtap="onSubmit">提交报名</view></view>
+</block>

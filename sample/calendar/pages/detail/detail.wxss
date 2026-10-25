@@ -1,0 +1,7 @@
+.hero { margin-top: 20rpx; }
+.bar { width: 10rpx; height: 48rpx; border-radius: 5rpx; margin-right: 20rpx; }
+.h-title { font-size: 38rpx; font-weight: bold; }
+.h-sub { display: block; margin-top: 16rpx; font-size: 26rpx; }
+.cells { padding: 0 24rpx; }
+.btns { padding: 20rpx 32rpx; }
+.btn-del { width: 200rpx; height: 88rpx; line-height: 88rpx; text-align: center; border-radius: 44rpx; background: #ffecea; color: #f2453d; font-size: 30rpx; margin-right: 24rpx; }

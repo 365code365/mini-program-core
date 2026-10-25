@@ -1,0 +1,54 @@
+<view wx:if="{{!card}}" class="missing">卡片不存在或已删除</view>
+<block wx:else>
+  <view class="card-box head">
+    <view class="row">
+      <text class="col-tag">{{colName}}</text>
+      <text class="late-tag" wx:if="{{overdue}}">已逾期</text>
+    </view>
+    <input class="f-title" value="{{card.title}}" placeholder="卡片标题" bindinput="onTitle" />
+    <textarea class="f-desc" value="{{card.desc}}" placeholder="补充描述…" maxlength="500" bindinput="onDesc" />
+  </view>
+  <view class="card-box cells">
+    <picker class="p-prio" mode="selector" range="{{prioNames}}" value="{{card.prio}}" bindchange="onPrio">
+      <view class="cell row">
+        <text class="cell-label">优先级</text>
+        <text class="cell-value prio-value" style="color: {{prioColor}}">{{prioNames[card.prio]}}</text>
+        <text class="chev">›</text>
+      </view>
+    </picker>
+    <picker class="p-owner" mode="selector" range="{{ownerNames}}" value="{{ownerIdx}}" bindchange="onOwner">
+      <view class="cell row">
+        <text class="cell-label">负责人</text>
+        <text class="cell-value">{{ownerNames[ownerIdx]}}</text>
+        <text class="chev">›</text>
+      </view>
+    </picker>
+    <picker class="p-due" mode="date" value="{{card.due}}" start="2020-01-01" end="2035-12-31" bindchange="onDue">
+      <view class="cell row last">
+        <text class="cell-label">截止日期</text>
+        <text class="cell-value {{overdue ? 'late' : ''}}">{{card.due}}</text>
+        <text class="chev">›</text>
+      </view>
+    </picker>
+  </view>
+  <view class="card-box">
+    <view class="row between">
+      <text class="box-title">子任务</text>
+      <text class="sub">{{progressText}}</text>
+    </view>
+    <progress class="prog" percent="{{pct}}" show-info stroke-width="6" activeColor="#52c41a" backgroundColor="#f0f0f0" />
+    <checkbox-group bindchange="onSubs">
+      <label class="sub-row row" wx:for="{{card.subs}}" wx:key="id">
+        <checkbox class="sub-cb" value="{{item.id}}" checked="{{item.done}}" color="#52c41a" />
+        <text class="sub-text {{item.done ? 'done' : ''}}">{{item.text}}</text>
+      </label>
+    </checkbox-group>
+    <view class="row sub-new">
+      <input class="sub-input flex1" value="{{subDraft}}" placeholder="添加子任务" bindinput="onSubDraft" bindconfirm="onSubAdd" />
+      <view class="sub-add" bindtap="onSubAdd">添加</view>
+    </view>
+  </view>
+  <view class="btn btn-ghost btn-move" bindtap="onMove">移动到…</view>
+  <view class="btn btn-danger btn-del" bindtap="onDelete">删除卡片</view>
+  <view class="safe"></view>
+</block>

@@ -1,0 +1,14 @@
+.tabs { background: #ffffff; height: 88rpx; margin-bottom: 20rpx; }
+.tab { flex: 1; height: 88rpx; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+.tab-t { font-size: 28rpx; color: #5c6370; }
+.tab-on .tab-t { color: #1677ff; font-weight: bold; }
+.tab-line { position: absolute; bottom: 0; width: 60rpx; height: 6rpx; border-radius: 3rpx; background: #1677ff; }
+.o-lot { font-size: 30rpx; font-weight: bold; }
+.o-status { font-size: 24rpx; }
+.st-parking, .st-ongoing { color: #ff8a1f; }
+.st-done { color: #19a974; }
+.st-canceled { color: #a3a8b3; }
+.o-desc { display: block; margin-top: 8rpx; }
+.o-foot { margin-top: 16rpx; }
+.o-amt { font-size: 32rpx; font-weight: bold; margin-right: 16rpx; }
+.o-btn { font-size: 24rpx; color: #1677ff; border: 2rpx solid #1677ff; border-radius: 24rpx; padding: 6rpx 20rpx; margin-left: 12rpx; }

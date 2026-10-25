@@ -1,0 +1,22 @@
+<view class="tabs row">
+  <view class="tab {{tab === index ? 'tab-on' : ''}}" wx:for="{{tabs}}" wx:key="*this" data-i="{{index}}" bindtap="onTab">
+    <text class="tab-t">{{item}}（{{counts[index]}}）</text>
+    <view class="tab-line" wx:if="{{tab === index}}"></view>
+  </view>
+</view>
+<view class="order card" wx:for="{{list}}" wx:key="id">
+  <view class="row between">
+    <text class="o-lot">{{item.lotName}}</text>
+    <text class="o-status st-{{item.status || 'parking'}}">{{item.statusText}}</text>
+  </view>
+  <text class="sub o-desc">{{item.plate}} · {{item.desc}}</text>
+  <view class="row between o-foot">
+    <text class="sub">{{item.kind === 'parking' ? '' : '订单号 ' + item.id}}</text>
+    <view class="row">
+      <text class="o-amt" wx:if="{{item.amountText}}">{{item.amountText}}</text>
+      <view class="o-btn go-pay" wx:if="{{item.kind === 'parking'}}" data-plate="{{item.plate}}" bindtap="goPay">去缴费</view>
+      <view class="o-btn o-cancel" wx:if="{{item.kind === 'reserve' && item.status === 'ongoing'}}" data-id="{{item.id}}" bindtap="cancel">取消预约</view>
+    </view>
+  </view>
+</view>
+<view class="empty" wx:if="{{!list.length}}">暂无订单</view>

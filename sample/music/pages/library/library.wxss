@@ -1,0 +1,45 @@
+.top {
+  background: #ffffff;
+  padding: 20rpx 32rpx 8rpx;
+}
+.search {
+  height: 72rpx;
+  border-radius: 36rpx;
+  background: #f2f3f7;
+  padding: 0 28rpx;
+}
+.search-icon {
+  font-size: 24rpx;
+  color: #a0a6b1;
+  margin-right: 12rpx;
+}
+.search-input {
+  font-size: 26rpx;
+  height: 72rpx;
+}
+.search-clear {
+  font-size: 24rpx;
+  color: #ff3a5c;
+}
+.chips {
+  padding: 20rpx 0 12rpx;
+}
+.chip {
+  padding: 10rpx 28rpx;
+  border-radius: 28rpx;
+  background: #f2f3f7;
+  font-size: 24rpx;
+  margin-right: 16rpx;
+  color: #5c6370;
+}
+.chip.on {
+  background: #ff3a5c;
+  color: #ffffff;
+}
+.count {
+  display: block;
+  padding: 16rpx 32rpx;
+}
+.lib-song {
+  border-bottom: 1rpx solid #f0f1f5;
+}

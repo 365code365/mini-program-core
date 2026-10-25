@@ -1,0 +1,16 @@
+{
+  "pages": [
+    "pages/watch/watch",
+    "pages/search/search",
+    "pages/detail/detail",
+    "pages/trade/trade",
+    "pages/positions/positions",
+    "pages/orders/orders"
+  ],
+  "window": {
+    "navigationBarTitleText": "自选股",
+    "navigationBarBackgroundColor": "#1b1f2b",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f3f4f7"
+  }
+}

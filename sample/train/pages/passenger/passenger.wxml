@@ -1,0 +1,26 @@
+<view class="card form">
+  <view class="field row {{errField === 'name' ? 'bad' : ''}}">
+    <text class="label">姓名</text>
+    <input class="flex1 ipt name-input" placeholder="与证件上的姓名一致" value="{{name}}" bindinput="onName" />
+  </view>
+  <view class="field row {{errField === 'idcard' ? 'bad' : ''}}">
+    <text class="label">身份证</text>
+    <input class="flex1 ipt id-input" type="idcard" maxlength="18" placeholder="18 位二代身份证号" value="{{idcard}}" bindinput="onId" />
+  </view>
+  <view class="field row {{errField === 'phone' ? 'bad' : ''}}">
+    <text class="label">手机号</text>
+    <input class="flex1 ipt phone-input" type="number" maxlength="11" placeholder="用于接收出票短信" value="{{phone}}" bindinput="onPhone" />
+  </view>
+  <picker mode="selector" range="{{types}}" value="{{typeIdx}}" bindchange="onType">
+    <view class="field row type-row">
+      <text class="label">票种</text>
+      <text class="flex1 type-text">{{types[typeIdx]}}</text>
+      <text class="sub">更改</text>
+    </view>
+  </picker>
+</view>
+<text class="err" wx:if="{{err}}">{{err}}</text>
+<view class="tips">
+  <text class="sub">乘车人信息仅保存在本机，用于购票时实名核验。</text>
+</view>
+<view class="btn save-btn" bindtap="onSave"><text class="btn-text">保存</text></view>

@@ -1,0 +1,50 @@
+<view class="top">
+  <view class="search row">
+    <text class="search-ic">🔍</text>
+    <input class="search-input" value="{{kw}}" placeholder="搜索标题或正文" bindinput="onSearch" confirm-type="search" />
+    <text class="search-clear" wx:if="{{kw}}" bindtap="onClearSearch">✕</text>
+  </view>
+  <view class="links row">
+    <view class="link go-tags" bindtap="goTags">标签</view>
+    <view class="link go-trash" bindtap="goTrash">回收站</view>
+    <view class="link go-settings" bindtap="goSettings">设置</view>
+  </view>
+</view>
+<scroll-view class="chips" scroll-x>
+  <view class="chip-row">
+    <view class="chip {{tagId === '' ? 'on' : ''}}" data-id="" bindtap="onChip">全部</view>
+    <view class="chip {{tagId === item.id ? 'on' : ''}}" wx:for="{{tags}}" wx:key="id" data-id="{{item.id}}" bindtap="onChip">#{{item.name}}</view>
+  </view>
+</scroll-view>
+<view class="summary row">
+  <text class="summary-text">共 {{total}} 篇 · 显示 {{shown}} 篇</text>
+  <text class="summary-sort">{{sortName}}</text>
+</view>
+<block wx:if="{{pinned.length}}">
+  <text class="group-title">📌 置顶</text>
+  <view class="note pinned-note" wx:for="{{pinned}}" wx:key="id" style="background: {{item.bg}}" data-id="{{item.id}}" bindtap="onOpen" bindlongpress="onLong">
+    <text class="note-title">{{item.title}}</text>
+    <text class="note-body" wx:if="{{preview && item.body}}">{{item.body}}</text>
+    <view class="note-foot row">
+      <text class="note-tag" wx:for="{{item.tagNames}}" wx:for-item="t" wx:key="*this">#{{t}}</text>
+      <text class="note-time">{{item.time}}</text>
+    </view>
+  </view>
+</block>
+<block wx:if="{{others.length}}">
+  <text class="group-title" wx:if="{{pinned.length}}">其他</text>
+  <view class="note other-note" wx:for="{{others}}" wx:key="id" style="background: {{item.bg}}" data-id="{{item.id}}" bindtap="onOpen" bindlongpress="onLong">
+    <text class="note-title">{{item.title}}</text>
+    <text class="note-body" wx:if="{{preview && item.body}}">{{item.body}}</text>
+    <view class="note-foot row">
+      <text class="note-tag" wx:for="{{item.tagNames}}" wx:for-item="t" wx:key="*this">#{{t}}</text>
+      <text class="note-time">{{item.time}}</text>
+    </view>
+  </view>
+</block>
+<view class="empty" wx:if="{{!shown}}">
+  <text class="empty-ic">🗒️</text>
+  <text class="empty-text">{{kw || tagId ? '没有找到相关笔记' : '还没有笔记，点右下角写一篇'}}</text>
+</view>
+<view class="safe"></view>
+<view class="fab" bindtap="onNew">＋</view>

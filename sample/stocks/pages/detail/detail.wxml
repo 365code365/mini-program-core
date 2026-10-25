@@ -1,0 +1,50 @@
+<view class="head">
+  <view class="row">
+    <text class="price num {{q.dir}}">{{q.priceText}}</text>
+    <view class="chg">
+      <text class="num {{q.dir}}">{{q.chgText}}</text>
+      <text class="num {{q.dir}}">{{q.pctText}}</text>
+    </view>
+  </view>
+  <view class="kv row">
+    <view class="kv-cell"><text class="k">今开</text><text class="v num">{{q.open}}</text></view>
+    <view class="kv-cell"><text class="k">最高</text><text class="v num up">{{q.high}}</text></view>
+    <view class="kv-cell"><text class="k">最低</text><text class="v num down">{{q.low}}</text></view>
+    <view class="kv-cell"><text class="k">昨收</text><text class="v num">{{q.prev}}</text></view>
+  </view>
+</view>
+<view class="tabs row">
+  <view class="tab {{tab === index ? 'on' : ''}}" wx:for="{{tabs}}" wx:key="*this" data-i="{{index}}" bindtap="onTab">{{item}}</view>
+</view>
+<view class="chart">
+  <view class="ts" wx:if="{{tab === 0}}">
+    <view class="ts-base"></view>
+    <view class="ts-bar bg-{{item.dir}}" wx:for="{{pts}}" wx:key="i" style="height: {{item.h}}%"></view>
+  </view>
+  <view class="kl" wx:else>
+    <view class="k-col" wx:for="{{bars}}" wx:key="i">
+      <view class="k-wick bg-{{item.dir}}" style="top: {{item.wickTop}}%; height: {{item.wickH}}%"></view>
+      <view class="k-body bg-{{item.dir}}" style="top: {{item.bodyTop}}%; height: {{item.bodyH}}%"></view>
+    </view>
+  </view>
+</view>
+<view class="box book">
+  <view class="book-row row" wx:for="{{book.sells}}" wx:key="label">
+    <text class="b-label">{{item.label}}</text>
+    <text class="b-price num up flex1">{{item.price}}</text>
+    <text class="b-vol num">{{item.vol}}</text>
+  </view>
+  <view class="book-split"></view>
+  <view class="book-row row" wx:for="{{book.buys}}" wx:key="label">
+    <text class="b-label">{{item.label}}</text>
+    <text class="b-price num down flex1">{{item.price}}</text>
+    <text class="b-vol num">{{item.vol}}</text>
+  </view>
+</view>
+<text class="hold" wx:if="{{hold}}">当前持有 {{hold}} 股</text>
+<view class="safe"></view>
+<view class="foot row">
+  <view class="btn-watch {{watched ? 'on' : ''}}" bindtap="onWatch">{{watched ? '删自选' : '＋自选'}}</view>
+  <view class="btn-buy flex1" data-side="buy" bindtap="onTrade">买入</view>
+  <view class="btn-sell flex1" data-side="sell" bindtap="onTrade">卖出</view>
+</view>

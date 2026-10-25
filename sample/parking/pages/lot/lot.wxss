@@ -1,0 +1,17 @@
+.head { margin-top: 20rpx; }
+.h-name { display: block; font-size: 36rpx; font-weight: bold; }
+.h-addr { display: block; margin-top: 8rpx; }
+.stat { margin-top: 24rpx; }
+.stat-i { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.stat-n { font-size: 40rpx; font-weight: bold; }
+.free-n { color: #19a974; }
+.gray { color: #c4c9d2; }
+.rule { margin-top: 12rpx; }
+.rule-dot { width: 10rpx; height: 10rpx; border-radius: 5rpx; background: #1677ff; margin-right: 16rpx; }
+.rule-t { font-size: 26rpx; color: #5c6370; }
+.cells { padding: 20rpx 24rpx 0; }
+.sec { display: block; margin-bottom: 4rpx; }
+.fee { font-size: 34rpx; font-weight: bold; color: #ff7a1f; }
+.err { display: block; color: #f2453d; font-size: 24rpx; text-align: center; }
+.foot { padding: 20rpx 32rpx 60rpx; }
+.btn-off { background: #c4c9d2; }

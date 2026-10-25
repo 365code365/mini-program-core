@@ -1,0 +1,15 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/signup/signup",
+    "pages/confirm/confirm",
+    "pages/success/success",
+    "pages/mine/mine"
+  ],
+  "window": {
+    "navigationBarTitleText": "城市马拉松报名",
+    "navigationBarBackgroundColor": "#e8491d",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f6f4f2"
+  }
+}

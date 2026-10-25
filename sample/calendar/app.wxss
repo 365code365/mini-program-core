@@ -1,0 +1,78 @@
+page {
+  background: #f5f6fa;
+  color: #1f2329;
+  font-size: 28rpx;
+}
+.card {
+  background: #ffffff;
+  border-radius: 20rpx;
+  margin: 0 24rpx 20rpx;
+  padding: 24rpx;
+}
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.between {
+  justify-content: space-between;
+}
+.flex1 {
+  flex: 1;
+}
+.title {
+  font-size: 32rpx;
+  font-weight: bold;
+}
+.sub {
+  font-size: 24rpx;
+  color: #8f95a3;
+}
+.chev {
+  width: 14rpx;
+  height: 14rpx;
+  border-top: 3rpx solid #c4c9d2;
+  border-right: 3rpx solid #c4c9d2;
+  transform: rotate(45deg);
+  margin: 0 8rpx 0 16rpx;
+}
+.btn-primary {
+  background: linear-gradient(90deg, #5b8cff, #3a6bf0);
+  color: #ffffff;
+  border-radius: 44rpx;
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  font-size: 30rpx;
+  font-weight: bold;
+}
+.cell {
+  height: 96rpx;
+  border-bottom: 1rpx solid #f0f1f4;
+}
+.cell-last {
+  border-bottom: 0;
+}
+.cell-label {
+  font-size: 28rpx;
+}
+.cell-value {
+  font-size: 28rpx;
+  color: #5c6370;
+}
+.ev-dot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 8rpx;
+  margin-right: 16rpx;
+}
+.empty {
+  text-align: center;
+  padding: 40rpx 0;
+  color: #a3a8b3;
+  font-size: 26rpx;
+}
+/* 引擎给 input 默认内边距（微信是 0），padding 全 0 会被当成「没写」，所以左边留 1rpx */
+.ipt {
+  padding: 0 0 0 1rpx;
+}

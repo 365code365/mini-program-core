@@ -1,0 +1,27 @@
+{
+  "pages": [
+    "pages/discover/discover",
+    "pages/library/library",
+    "pages/mine/mine",
+    "pages/playlist/playlist",
+    "pages/player/player"
+  ],
+  "window": {
+    "navigationBarTitleText": "悦听音乐",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f5f6fa"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#9aa0ab",
+    "selectedColor": "#ff3a5c",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/discover/discover", "text": "发现" },
+      { "pagePath": "pages/library/library", "text": "曲库" },
+      { "pagePath": "pages/mine/mine", "text": "我的" }
+    ]
+  }
+}

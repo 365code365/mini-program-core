@@ -1,0 +1,36 @@
+.form {
+  padding: 0 28rpx;
+}
+.field {
+  height: 104rpx;
+  border-bottom: 1rpx solid #f0f1f5;
+}
+.field.bad .label {
+  color: #f2453d;
+}
+.label {
+  width: 140rpx;
+  font-size: 28rpx;
+}
+.ipt {
+  height: 104rpx;
+  font-size: 28rpx;
+}
+.type-row {
+  border-bottom: none;
+}
+.type-text {
+  font-size: 28rpx;
+}
+.err {
+  display: block;
+  color: #f2453d;
+  font-size: 24rpx;
+  padding: 0 48rpx;
+}
+.tips {
+  padding: 16rpx 48rpx;
+}
+.save-btn {
+  margin: 40rpx 48rpx;
+}

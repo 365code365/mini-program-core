@@ -1,0 +1,40 @@
+.name-input {
+  height: 80rpx;
+  padding: 0 0 0 1rpx;
+  border-bottom: 1rpx solid #e3e7ee;
+  font-size: 30rpx;
+}
+.err {
+  display: block;
+  margin-top: 12rpx;
+  color: #e63946;
+  font-size: 24rpx;
+}
+.act {
+  margin-right: 48rpx;
+}
+.g-room {
+  display: block;
+  margin: 16rpx 0 4rpx;
+  font-size: 24rpx;
+  color: #9aa1ad;
+}
+.dev {
+  padding: 14rpx 0;
+}
+.tip {
+  display: block;
+  margin-top: 12rpx;
+}
+/* 保存键固定在底部：设备多时不用滚到底才能保存 */
+.save-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: #f3f5f9;
+}
+.save-safe {
+  height: 160rpx;
+}

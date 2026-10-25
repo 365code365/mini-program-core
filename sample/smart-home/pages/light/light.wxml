@@ -1,0 +1,31 @@
+<view class="stage">
+  <view class="glow" style="background: {{dev.on ? glow : '#3d4352'}}; opacity: {{dev.on ? 0.4 + dev.brightness / 170 : 1}}">
+    <view class="bulb" style="background: {{dev.on ? dev.color : '#5c6475'}}"></view>
+  </view>
+  <text class="stage-t">{{dev.on ? '亮度 ' + dev.brightness + '% · ' + dev.ct + 'K · ' + colorName : '已关闭'}}</text>
+  <view class="power power-btn {{dev.on ? 'on' : ''}}" bindtap="onPower">{{dev.on ? '关' : '开'}}</view>
+</view>
+<view class="card">
+  <view class="row between">
+    <text class="card-title">亮度</text>
+    <text class="sub bright-v">{{dev.brightness}}%</text>
+  </view>
+  <slider class="bright" min="1" max="100" step="1" value="{{dev.brightness}}" activeColor="#ffb703" block-size="24" bindchanging="onBrightChanging" bindchange="onBright" />
+</view>
+<view class="card">
+  <view class="row between">
+    <text class="card-title">色温</text>
+    <text class="sub ct-v">{{dev.ct}}K</text>
+  </view>
+  <slider class="ct" min="2700" max="6500" step="100" value="{{dev.ct}}" activeColor="#4cc9f0" block-size="24" bindchanging="onCtChanging" bindchange="onCt" />
+  <view class="row between ct-tip"><text class="sub">暖光</text><text class="sub">冷光</text></view>
+</view>
+<view class="card">
+  <text class="card-title">颜色</text>
+  <view class="colors row">
+    <view wx:for="{{colors}}" wx:key="v" class="color {{dev.color === item.v ? 'cur' : ''}}" data-v="{{item.v}}" bindtap="onColor">
+      <view class="chip" style="background: {{item.v}}"></view>
+      <text class="chip-n">{{item.name}}</text>
+    </view>
+  </view>
+</view>

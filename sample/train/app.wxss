@@ -1,0 +1,55 @@
+page {
+  background: #f3f5f9;
+  color: #1d2129;
+  font-size: 28rpx;
+}
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.flex1 {
+  flex: 1;
+}
+.card {
+  background: #ffffff;
+  border-radius: 20rpx;
+  margin: 24rpx;
+  padding: 28rpx;
+}
+.sub {
+  font-size: 24rpx;
+  color: #8a909c;
+}
+.btn {
+  height: 92rpx;
+  border-radius: 46rpx;
+  background: linear-gradient(90deg, #4a8bff, #2b6de8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-text {
+  color: #ffffff;
+  font-size: 32rpx;
+  font-weight: bold;
+}
+.btn.disabled {
+  background: #c5cdda;
+}
+.empty {
+  padding: 120rpx 0;
+  text-align: center;
+  color: #a0a6b1;
+  font-size: 26rpx;
+}
+.tag {
+  font-size: 20rpx;
+  padding: 2rpx 10rpx;
+  border-radius: 6rpx;
+  background: #eaf1ff;
+  color: #2b6de8;
+}
+.bottom-space {
+  height: 160rpx;
+}

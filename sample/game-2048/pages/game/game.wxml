@@ -1,0 +1,36 @@
+<view class="page" style="--accent: {{theme.accent}}">
+  <view class="head row">
+    <view class="logo" style="background: {{theme.accent}}">2048</view>
+    <view class="flex1"></view>
+    <view class="score-box">
+      <text class="score-label">分数</text>
+      <text class="score-num score">{{score}}</text>
+      <text class="plus" wx:if="{{gained}}">+{{gained}}</text>
+    </view>
+    <view class="score-box">
+      <text class="score-label">最高</text>
+      <text class="score-num best">{{best}}</text>
+    </view>
+  </view>
+  <view class="tip row">
+    <text class="flex1 sub">滑动合并相同数字，凑出 <text class="em">2048</text>！{{size}}×{{size}} · 第 {{moves}} 步</text>
+  </view>
+  <view class="ops row">
+    <view class="op btn-new" style="background: {{theme.accent}}" bindtap="onNewGame">新游戏</view>
+    <view class="op btn-undo {{canUndo ? '' : 'disabled'}}" bindtap="onUndo">撤销</view>
+  </view>
+  <view class="board" style="background: {{theme.board}}" bindtouchstart="onTouchStart" catchtouchmove="noop" bindtouchend="onTouchEnd">
+    <view class="brow" wx:for="{{rows}}" wx:for-item="row" wx:key="index">
+      <view class="cell" wx:for="{{row}}" wx:key="key" style="width: {{cell}}rpx; height: {{cell}}rpx; background: {{theme.cell}}">
+        <view wx:if="{{item.v}}" class="{{item.cls}}" style="font-size: {{item.v >= 1024 ? fontRpx * 0.7 : fontRpx}}rpx">{{item.v}}</view>
+      </view>
+    </view>
+  </view>
+  <view class="state" wx:if="{{won}}">已合成 2048，继续冲击更高分</view>
+  <view class="nav row">
+    <view class="nav-item btn-rank" data-p="rank" bindtap="go">排行榜</view>
+    <view class="nav-item btn-stats" data-p="stats" bindtap="go">统计</view>
+    <view class="nav-item btn-settings" data-p="settings" bindtap="go">设置</view>
+    <view class="nav-item btn-rules" data-p="rules" bindtap="go">规则</view>
+  </view>
+</view>

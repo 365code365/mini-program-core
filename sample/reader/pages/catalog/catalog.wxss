@@ -1,0 +1,52 @@
+.head {
+  height: 88rpx;
+  padding: 0 32rpx;
+  background: #ffffff;
+  border-bottom: 1rpx solid #ece6db;
+}
+.op {
+  margin-left: 16rpx;
+  padding: 6rpx 20rpx;
+  border-radius: 24rpx;
+  background: #f4efe6;
+  color: #7d7365;
+  font-size: 24rpx;
+}
+/* 列表占满头部以下：用 flex 而不是 calc(100vh - 88rpx) ——
+   本引擎的 calc 不支持混合单位（vh 与 rpx），整条声明会被丢掉，scroll-view 被内容撑高、滚不动 */
+.wrap {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.head {
+  flex-shrink: 0;
+}
+.list {
+  flex: 1;
+  height: 0;
+  background: #ffffff;
+}
+.ch {
+  height: 96rpx;
+  padding: 0 32rpx;
+  border-bottom: 1rpx solid #f4efe6;
+}
+.ch-t {
+  font-size: 28rpx;
+  color: #3d372f;
+}
+.ch.cur .ch-t {
+  color: #c8873c;
+  font-weight: bold;
+}
+.ch.cur {
+  background: #fbf6ee;
+}
+.tag {
+  padding: 2rpx 14rpx;
+  border-radius: 6rpx;
+  background: #c8873c;
+  color: #ffffff;
+  font-size: 20rpx;
+}

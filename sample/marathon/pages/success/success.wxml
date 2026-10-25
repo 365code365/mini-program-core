@@ -1,0 +1,28 @@
+<view class="empty" wx:if="{{!e}}">
+  <text>没有找到这条报名</text>
+  <view class="btn-primary home go-home" bindtap="goHome">返回首页</view>
+</view>
+<block wx:else>
+  <view class="bib">
+    <view class="bib-top row between">
+      <text class="bib-ev">{{event.name}}</text>
+      <text class="bib-st st-{{e.status}}">{{e.statusText}}</text>
+    </view>
+    <text class="bib-no">{{e.no}}</text>
+    <text class="bib-name">{{e.name}}</text>
+    <text class="bib-group">{{e.groupName}} · {{event.raceDate}} {{event.startTime}} 鸣枪</text>
+    <view class="bib-holes row between"><view class="hole"></view><view class="hole"></view></view>
+  </view>
+  <view class="card">
+    <view class="kv row"><text class="k">证件号</text><text class="v">{{idMasked}}</text></view>
+    <view class="kv row"><text class="k">服装尺码</text><text class="v">{{e.size}}</text></view>
+    <view class="kv row"><text class="k">领物地点</text><text class="v">{{event.place}}</text></view>
+  </view>
+  <view class="btns">
+    <view class="btn-primary pay" wx:if="{{e.status === 'unpaid'}}" bindtap="onPay">缴纳报名费 ¥{{e.fee}}</view>
+    <view class="row two">
+      <view class="btn-line go-mine" bindtap="goMine">我的报名</view>
+      <view class="btn-line go-home" bindtap="goHome">返回首页</view>
+    </view>
+  </view>
+</block>

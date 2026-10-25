@@ -1,0 +1,29 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/orders/orders",
+    "pages/mine/mine",
+    "pages/city/city",
+    "pages/list/list",
+    "pages/book/book",
+    "pages/passenger/passenger"
+  ],
+  "window": {
+    "navigationBarTitleText": "畅行火车票",
+    "navigationBarBackgroundColor": "#2b6de8",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f3f5f9"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#9aa0ab",
+    "selectedColor": "#2b6de8",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "首页" },
+      { "pagePath": "pages/orders/orders", "text": "订单" },
+      { "pagePath": "pages/mine/mine", "text": "我的" }
+    ]
+  }
+}

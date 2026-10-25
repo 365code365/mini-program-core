@@ -1,0 +1,52 @@
+page {
+  background: #faf8ef;
+  color: #776e65;
+  font-size: 28rpx;
+}
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.between {
+  justify-content: space-between;
+}
+.flex1 {
+  flex: 1;
+}
+.sub {
+  font-size: 24rpx;
+  color: #a39489;
+}
+.card {
+  background: #ffffff;
+  border-radius: 20rpx;
+  margin: 0 24rpx 24rpx;
+  padding: 28rpx;
+}
+.group {
+  display: block;
+  margin: 32rpx 40rpx 16rpx;
+  font-size: 24rpx;
+  color: #a39489;
+}
+.cell-row {
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid #f0ebe4;
+}
+.btn {
+  height: 84rpx;
+  line-height: 84rpx;
+  text-align: center;
+  border-radius: 42rpx;
+  background: #8f7a66;
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: bold;
+  margin: 24rpx;
+}
+.empty {
+  padding: 120rpx 0;
+  text-align: center;
+  color: #c4b9ad;
+}

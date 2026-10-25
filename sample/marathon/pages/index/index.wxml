@@ -1,0 +1,38 @@
+<view class="banner">
+  <image class="banner-img" src="/images/banner.png" mode="aspectFill" />
+  <view class="banner-mask">
+    <text class="ev-name">{{event.name}}</text>
+    <text class="ev-sub">{{event.raceDate}} {{event.startTime}} 鸣枪 · {{event.place}}</text>
+  </view>
+</view>
+<view class="cd-card row" wx:if="{{!closed}}">
+  <text class="cd-l">距报名截止</text>
+  <view class="row cd">
+    <text class="cd-n cd-d">{{cd.d}}</text><text class="cd-u">天</text>
+    <text class="cd-n">{{cd.h}}</text><text class="cd-u">时</text>
+    <text class="cd-n">{{cd.m}}</text><text class="cd-u">分</text>
+    <text class="cd-n cd-s">{{cd.s}}</text><text class="cd-u">秒</text>
+  </view>
+</view>
+<view class="cd-card closed" wx:else><text class="cd-l">报名已截止，感谢关注</text></view>
+<view class="sec row between">
+  <text class="title">选择组别</text>
+  <view class="mine-link go-mine" bindtap="goMine">我的报名{{myCount ? '（' + myCount + '）' : ''}}</view>
+</view>
+<view class="g-card {{item.full ? 'g-full' : ''}}" wx:for="{{groups}}" wx:key="name" data-i="{{index}}" bindtap="onGroup">
+  <view class="row between">
+    <view class="row">
+      <text class="g-name">{{item.name}}</text>
+      <text class="g-dist">{{item.dist}}</text>
+    </view>
+    <text class="g-fee">¥{{item.fee}}</text>
+  </view>
+  <text class="sub g-meta">年龄 {{item.age}} · 关门时间 {{item.cutoff}}</text>
+  <!-- activeColor 之外再用 class 给 color：引擎里 progress 的进度色会被继承来的 page 文字色盖掉（见引擎问题用例） -->
+  <progress class="g-prog {{item.full ? 'g-prog-full' : ''}}" percent="{{item.percent}}" stroke-width="6" activeColor="{{item.full ? '#c4c9d2' : '#e8491d'}}" backgroundColor="#f1ece8" border-radius="3" />
+  <view class="row between g-foot">
+    <text class="sub">已报 {{item.taken}} / {{item.quota}}（{{item.percent}}%）</text>
+    <text class="g-btn {{item.full || closed ? 'g-btn-off' : ''}}">{{item.full ? '名额已满' : (closed ? '已截止' : '立即报名')}}</text>
+  </view>
+</view>
+<view style="height: 40rpx"></view>

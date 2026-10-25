@@ -1,0 +1,31 @@
+<view class="hero">
+  <text class="hero-label">总资产（元）</text>
+  <text class="hero-num num">{{totalText}}</text>
+  <view class="row hero-grid">
+    <view class="cell"><text class="c-k">持仓市值</text><text class="c-v num mv-val">{{mvText}}</text></view>
+    <view class="cell"><text class="c-k">浮动盈亏</text><text class="c-v num pnl-val {{s.dir}}">{{pnlText}}</text></view>
+    <view class="cell"><text class="c-k">可用资金</text><text class="c-v num">{{cashText}}</text></view>
+  </view>
+</view>
+<view class="thead row">
+  <text class="th flex1">名称 / 市值</text>
+  <text class="th w1">持仓 / 成本</text>
+  <text class="th w2">盈亏</text>
+</view>
+<view class="pos-row row" wx:for="{{rows}}" wx:key="code" data-code="{{item.code}}" bindtap="onOpen">
+  <view class="flex1">
+    <text class="p-name">{{item.name}}</text>
+    <text class="p-sub num">{{item.mvText}}</text>
+  </view>
+  <view class="w1">
+    <text class="p-main num">{{item.qty}}</text>
+    <text class="p-sub num">{{item.cost}} / {{item.priceText}}</text>
+  </view>
+  <view class="w2">
+    <text class="p-main num {{item.dir}}">{{item.pnlText}}</text>
+    <text class="p-sub num {{item.dir}}">{{item.pnlPctText}}</text>
+  </view>
+  <view class="pos-sell" data-code="{{item.code}}" catchtap="onSell">卖</view>
+</view>
+<view class="empty" wx:if="{{!rows.length}}">空仓中，去自选里挑一只吧</view>
+<view class="go-orders" bindtap="goOrders">成交记录 ›</view>

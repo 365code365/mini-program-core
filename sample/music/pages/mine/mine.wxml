@@ -1,0 +1,27 @@
+<view class="head">
+  <view class="avatar"><text class="avatar-text">悦</text></view>
+  <view class="head-main">
+    <text class="nick">悦听用户</text>
+    <text class="head-sub">收藏 {{favCount}} 首 · 最近播放 {{recentCount}} 首</text>
+  </view>
+</view>
+<view class="tabs row">
+  <view class="tab {{tab === 0 ? 'on' : ''}}" data-i="0" bindtap="onTab">我的收藏 {{favCount}}</view>
+  <view class="tab {{tab === 1 ? 'on' : ''}}" data-i="1" bindtap="onTab">最近播放 {{recentCount}}</view>
+  <view class="flex1"></view>
+  <text class="clear" wx:if="{{tab === 1 && recentCount}}" bindtap="onClearRecent">清空</text>
+</view>
+<view class="song mine-song" wx:for="{{list}}" wx:key="id" data-index="{{index}}" bindtap="onSong">
+  <view class="song-cover cover" style="background: linear-gradient(135deg, {{item.c1}}, {{item.c2}})">
+    <text class="cover-initial">{{item.initial}}</text>
+  </view>
+  <view class="song-main">
+    <text class="song-name">{{item.name}}</text>
+    <text class="song-meta">{{item.artist}} · {{item.durText}}</text>
+  </view>
+  <view class="song-fav" wx:if="{{item.fav}}" data-index="{{index}}" catchtap="onUnfav">
+    <text class="song-fav-text on">♥</text>
+  </view>
+</view>
+<view class="empty" wx:if="{{!list.length}}">{{tab === 0 ? '还没有收藏的歌，去播放页点 ♡ 收藏吧' : '还没有播放记录'}}</view>
+<view class="bottom-space"></view>

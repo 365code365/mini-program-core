@@ -1,0 +1,32 @@
+<view class="profile row">
+  <view class="avatar">读</view>
+  <view class="flex1">
+    <text class="name">书虫小林</text>
+    <text class="sub">已坚持阅读 {{days}} 天</text>
+  </view>
+</view>
+<view class="card stats row">
+  <view class="kpi"><text class="kv total">{{totalText}}</text><text class="sub">累计阅读</text></view>
+  <view class="kpi"><text class="kv today">{{todayText}}</text><text class="sub">今日阅读</text></view>
+  <view class="kpi"><text class="kv">{{shelfCount}}</text><text class="sub">书架</text></view>
+  <view class="kpi"><text class="kv">{{finished}}</text><text class="sub">读完</text></view>
+</view>
+<view class="card">
+  <view class="row between">
+    <text class="card-title">我的书签</text>
+    <text class="sub">{{bookmarks.length}} 个 · 长按删除</text>
+  </view>
+  <view class="mark row" wx:for="{{bookmarks}}" wx:key="id" data-i="{{index}}" bindtap="onMark" bindlongpress="onDelMark">
+    <view class="flex1">
+      <text class="m-title">《{{item.bookTitle}}》{{item.chapterTitle}}</text>
+      <text class="sub m-ex">{{item.excerpt}}</text>
+    </view>
+    <text class="sub">{{item.at}}</text>
+  </view>
+  <view class="empty" wx:if="{{!bookmarks.length}}">阅读时点顶栏「书签」即可添加</view>
+</view>
+<view class="card row between">
+  <text>阅读设置</text>
+  <text class="sub">字号 {{settings.fontSize}} · {{settings.theme === 'night' ? '夜间' : settings.theme === 'eye' ? '护眼' : '日间'}}</text>
+</view>
+<view class="reset" bindtap="onReset">清空阅读记录</view>

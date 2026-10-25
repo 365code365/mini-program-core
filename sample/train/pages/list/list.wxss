@@ -1,0 +1,138 @@
+.datebar {
+  background: #2b6de8;
+  padding: 20rpx 24rpx;
+}
+.day-btn {
+  color: #ffffff;
+  font-size: 24rpx;
+  padding: 8rpx 16rpx;
+}
+.day-btn.off {
+  color: rgba(255, 255, 255, 0.4);
+}
+.day-text {
+  color: #ffffff;
+  text-align: center;
+  font-size: 30rpx;
+  font-weight: bold;
+}
+.filters {
+  background: #ffffff;
+  padding: 8rpx 24rpx 16rpx;
+}
+.frow {
+  padding: 12rpx 0;
+  flex-wrap: wrap;
+}
+.flabel {
+  font-size: 24rpx;
+  color: #8a909c;
+  margin-right: 16rpx;
+}
+.sort {
+  font-size: 24rpx;
+  color: #5c6370;
+  margin-right: 24rpx;
+  padding: 6rpx 0;
+}
+.sort.on {
+  color: #2b6de8;
+  font-weight: bold;
+}
+.chip {
+  font-size: 22rpx;
+  color: #5c6370;
+  background: #f3f5f9;
+  padding: 8rpx 14rpx;
+  border-radius: 8rpx;
+  margin-right: 10rpx;
+}
+.chip.on {
+  background: #eaf1ff;
+  color: #2b6de8;
+}
+.count {
+  display: block;
+  padding: 16rpx 28rpx 0;
+}
+.train {
+  margin: 16rpx 24rpx;
+  padding: 24rpx;
+}
+.tcol {
+  display: flex;
+  flex-direction: column;
+  width: 130rpx;
+}
+.tcol-r {
+  align-items: flex-end;
+}
+.ttime {
+  font-size: 38rpx;
+  font-weight: bold;
+}
+.plus {
+  font-size: 20rpx;
+  color: #ff7a00;
+}
+.tcity {
+  font-size: 24rpx;
+  color: #5c6370;
+  margin-top: 4rpx;
+}
+.tmid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.tno {
+  font-size: 24rpx;
+  color: #1d2129;
+}
+.tline {
+  width: 120rpx;
+  height: 2rpx;
+  background: #c5cdda;
+  margin: 8rpx 0;
+}
+.tdur {
+  font-size: 20rpx;
+  color: #8a909c;
+}
+.tprice {
+  width: 120rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.price {
+  color: #ff5a1f;
+  font-size: 34rpx;
+  font-weight: bold;
+}
+.seats {
+  margin-top: 16rpx;
+  padding-top: 16rpx;
+  border-top: 1rpx solid #f0f1f5;
+}
+.seat-name {
+  font-size: 22rpx;
+  color: #5c6370;
+}
+.seat-left {
+  font-size: 22rpx;
+  color: #19a974;
+  margin-left: 8rpx;
+}
+.seat-left.none {
+  color: #c5cdda;
+}
+.reset {
+  margin: 24rpx auto 0;
+  width: 240rpx;
+  padding: 16rpx 0;
+  border-radius: 32rpx;
+  border: 1rpx solid #2b6de8;
+  color: #2b6de8;
+  font-size: 24rpx;
+}

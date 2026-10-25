@@ -1,0 +1,40 @@
+.add {
+  margin-top: 24rpx;
+}
+.tag-input {
+  flex: 1;
+  height: 72rpx;
+  padding: 0 0 0 1rpx;
+}
+.tag-add {
+  font-size: 26rpx;
+  color: #ffffff;
+  background: #f5a623;
+  padding: 10rpx 28rpx;
+  border-radius: 28rpx;
+}
+.error {
+  display: block;
+  color: #e5483d;
+  font-size: 24rpx;
+  padding: 0 32rpx 16rpx;
+}
+.tag-row {
+  height: 88rpx;
+  border-bottom: 1rpx solid #f3efe6;
+}
+.tag-name {
+  font-size: 28rpx;
+}
+.tag-count {
+  font-size: 24rpx;
+  color: #a39e92;
+  margin-right: 20rpx;
+}
+.tag-del {
+  font-size: 24rpx;
+  color: #e5483d;
+  padding: 6rpx 18rpx;
+  border-radius: 20rpx;
+  background: #fdeceb;
+}

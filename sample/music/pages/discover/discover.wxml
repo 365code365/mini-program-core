@@ -1,0 +1,30 @@
+<view class="banner">
+  <text class="banner-greet">{{greet}}，今天想听点什么？</text>
+  <text class="banner-title">每日推荐 · 为你挑了 {{daily.length}} 首</text>
+  <view class="banner-btn" bindtap="onPlayDaily"><text class="banner-btn-text">立即播放</text></view>
+</view>
+<text class="sec-title">推荐歌单</text>
+<view class="grid">
+  <view class="pl" wx:for="{{playlists}}" wx:key="id" data-id="{{item.id}}" bindtap="onPlaylist">
+    <view class="pl-cover cover" style="background: linear-gradient(135deg, {{item.c1}}, {{item.c2}})">
+      <text class="pl-plays">▶ {{item.plays}}</text>
+      <text class="cover-initial">{{item.name}}</text>
+    </view>
+    <text class="pl-name">{{item.desc}}</text>
+  </view>
+</view>
+<text class="sec-title">每日推荐</text>
+<view class="list">
+  <view class="song daily" wx:for="{{daily}}" wx:key="id" data-index="{{index}}" bindtap="onDaily">
+    <view class="song-cover cover" style="background: linear-gradient(135deg, {{item.c1}}, {{item.c2}})">
+      <text class="cover-initial">{{item.initial}}</text>
+    </view>
+    <view class="song-main">
+      <text class="song-name {{curId === item.id ? 'on' : ''}}">{{item.name}}</text>
+      <text class="song-meta">{{item.artist}} · {{item.album}}</text>
+    </view>
+    <text class="sub">{{item.durText}}</text>
+  </view>
+</view>
+<view class="bottom-space-tab"></view>
+<include src="../../templates/mini-bar.wxml" />

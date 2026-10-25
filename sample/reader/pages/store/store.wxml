@@ -1,0 +1,28 @@
+<swiper class="banner" autoplay interval="3000" duration="400" circular indicator-dots indicator-color="rgba(255,255,255,0.4)" indicator-active-color="#ffffff" bindchange="onBanner">
+  <swiper-item wx:for="{{banners}}" wx:key="id">
+    <view class="slide" style="background: linear-gradient(120deg, {{item.c0}}, {{item.c1}})" data-id="{{item.id}}" bindtap="onBook">
+      <text class="s-k">主编推荐</text>
+      <text class="s-title">《{{item.title}}》</text>
+      <text class="s-slogan">{{item.slogan}}</text>
+    </view>
+  </swiper-item>
+</swiper>
+<view class="cats row">
+  <view wx:for="{{categories}}" wx:key="*this" class="cat {{cat === index ? 'on' : ''}}" data-i="{{index}}" bindtap="onCat">{{item}}</view>
+</view>
+<view class="card">
+  <view class="row between">
+    <text class="card-title">{{categories[cat]}}榜 · 按评分</text>
+    <text class="sub">{{list.length}} 本</text>
+  </view>
+  <view class="item row" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onBook">
+    <text class="no {{item.rank <= 3 ? 'top' : ''}}">{{item.rank}}</text>
+    <view class="cv" style="background: linear-gradient(160deg, {{item.c0}}, {{item.c1}})">{{item.title[0]}}</view>
+    <view class="flex1 info">
+      <text class="i-title">{{item.title}}</text>
+      <text class="sub i-meta">{{item.author}} · {{item.category}} · {{item.words}}</text>
+      <text class="i-brief">{{item.brief}}</text>
+    </view>
+    <text class="score">{{item.score}}</text>
+  </view>
+</view>

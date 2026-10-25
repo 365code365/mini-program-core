@@ -1,0 +1,96 @@
+.hero {
+  background: linear-gradient(180deg, #2b6de8, #5b95ff);
+  padding: 40rpx 40rpx 120rpx;
+  display: flex;
+  flex-direction: column;
+}
+.hero-title {
+  color: #ffffff;
+  font-size: 40rpx;
+  font-weight: bold;
+}
+.hero-sub {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 24rpx;
+  margin-top: 12rpx;
+}
+.form {
+  margin-top: -90rpx;
+}
+.cities {
+  padding-bottom: 24rpx;
+  border-bottom: 1rpx solid #eef0f4;
+}
+.city {
+  display: flex;
+  flex-direction: column;
+}
+.city-right {
+  align-items: flex-end;
+}
+.city-label {
+  font-size: 22rpx;
+  color: #8a909c;
+}
+.city-name {
+  font-size: 44rpx;
+  font-weight: bold;
+  margin-top: 8rpx;
+}
+.swap {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 40rpx;
+  border: 2rpx solid #d6e2fb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.swap-text {
+  color: #2b6de8;
+  font-size: 36rpx;
+}
+.date {
+  height: 100rpx;
+  border-bottom: 1rpx solid #eef0f4;
+}
+.date-text {
+  font-size: 34rpx;
+  font-weight: bold;
+}
+.hs {
+  height: 100rpx;
+}
+.search-btn {
+  margin-top: 24rpx;
+}
+.history {
+  margin-top: 24rpx;
+  flex-wrap: wrap;
+}
+.hist {
+  font-size: 22rpx;
+  color: #5c6370;
+  background: #f3f5f9;
+  padding: 8rpx 16rpx;
+  border-radius: 8rpx;
+  margin-right: 12rpx;
+}
+.hist-clear {
+  font-size: 22rpx;
+  color: #8a909c;
+}
+.tips {
+  display: flex;
+  flex-direction: column;
+}
+.tips-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  margin-bottom: 12rpx;
+}
+.tips-line {
+  font-size: 24rpx;
+  color: #5c6370;
+  line-height: 44rpx;
+}

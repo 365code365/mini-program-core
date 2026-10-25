@@ -1,0 +1,16 @@
+.bib { margin: 24rpx; border-radius: 24rpx; padding: 32rpx; background: linear-gradient(135deg, #ff7a3d, #e8491d); }
+.bib-ev { color: rgba(255, 255, 255, 0.9); font-size: 24rpx; }
+.bib-st { font-size: 24rpx; color: #e8491d; background: #ffffff; border-radius: 20rpx; padding: 4rpx 16rpx; }
+.st-canceled { color: #8f95a3; }
+.bib-no { display: block; color: #ffffff; font-size: 110rpx; font-weight: bold; text-align: center; margin-top: 16rpx; letter-spacing: 6rpx; }
+.bib-name { display: block; color: #ffffff; font-size: 40rpx; text-align: center; font-weight: bold; }
+.bib-group { display: block; color: rgba(255, 255, 255, 0.85); font-size: 24rpx; text-align: center; margin-top: 8rpx; }
+.bib-holes { margin-top: 24rpx; }
+.hole { width: 24rpx; height: 24rpx; border-radius: 12rpx; background: #f6f4f2; }
+.kv { margin-top: 12rpx; }
+.k { width: 160rpx; font-size: 26rpx; color: #8f95a3; }
+.v { flex: 1; font-size: 28rpx; }
+.btns { padding: 8rpx 32rpx 60rpx; }
+.two { margin-top: 20rpx; }
+.btn-line { flex: 1; height: 80rpx; line-height: 80rpx; text-align: center; border: 2rpx solid #e8491d; color: #e8491d; border-radius: 40rpx; margin: 0 8rpx; font-size: 28rpx; }
+.home { margin: 32rpx 160rpx 0; }

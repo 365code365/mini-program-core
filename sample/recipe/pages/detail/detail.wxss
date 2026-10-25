@@ -1,0 +1,158 @@
+.hero {
+  height: 320rpx;
+  border-radius: 0;
+}
+.hero-initial {
+  color: #ffffff;
+  font-size: 140rpx;
+  font-weight: bold;
+}
+.card {
+  background: #ffffff;
+  border-radius: 24rpx;
+  margin: 20rpx 24rpx;
+  padding: 28rpx;
+}
+.head {
+  margin-top: -40rpx;
+  display: flex;
+  flex-direction: column;
+}
+.name {
+  font-size: 40rpx;
+  font-weight: bold;
+}
+.fav {
+  padding: 10rpx 28rpx;
+  border-radius: 30rpx;
+  border: 2rpx solid #ff7a2f;
+}
+.fav-text {
+  color: #ff7a2f;
+  font-size: 24rpx;
+}
+.fav.on {
+  background: #ff7a2f;
+}
+.fav.on .fav-text {
+  color: #ffffff;
+}
+.meta {
+  font-size: 24rpx;
+  color: #9a8f84;
+  margin-top: 12rpx;
+}
+.sec {
+  font-size: 30rpx;
+  font-weight: bold;
+}
+.stepper {
+  border-radius: 28rpx;
+  background: #f6efe6;
+}
+.sbtn {
+  width: 60rpx;
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ff7a2f;
+  font-size: 30rpx;
+}
+.sbtn.off {
+  color: #d8c8b5;
+}
+.servings {
+  font-size: 24rpx;
+  width: 100rpx;
+  text-align: center;
+}
+.ing {
+  height: 84rpx;
+  border-bottom: 1rpx solid #f5efe8;
+}
+.ing-name {
+  margin-left: 12rpx;
+  font-size: 28rpx;
+}
+.ing.done .ing-name {
+  color: #b8ada2;
+  text-decoration: line-through;
+}
+.ing-amount {
+  font-size: 26rpx;
+  color: #6d6258;
+}
+.nav {
+  font-size: 24rpx;
+  color: #ff7a2f;
+  margin-left: 20rpx;
+  padding: 8rpx 0;
+}
+.nav.off {
+  color: #d8c8b5;
+}
+.steps {
+  height: 300rpx;
+  margin-top: 20rpx;
+}
+.step {
+  height: 260rpx;
+  border-radius: 20rpx;
+  padding: 28rpx;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+.step-no {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #ff7a2f;
+}
+.step-text {
+  font-size: 28rpx;
+  line-height: 44rpx;
+  margin-top: 12rpx;
+}
+.timer {
+  margin-top: 20rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid #f5efe8;
+}
+.timer-label {
+  font-size: 24rpx;
+  color: #9a8f84;
+  margin-right: 16rpx;
+}
+.timer-text {
+  font-size: 44rpx;
+  font-weight: bold;
+}
+.tbtn {
+  padding: 12rpx 28rpx;
+  border-radius: 30rpx;
+  border: 2rpx solid #e8dccd;
+  font-size: 24rpx;
+  margin-left: 16rpx;
+}
+.tbtn.main {
+  background: #ff7a2f;
+  border-color: #ff7a2f;
+}
+.tbtn-main-text {
+  color: #ffffff;
+}
+.cooked {
+  margin: 24rpx;
+  height: 92rpx;
+  border-radius: 46rpx;
+  background: linear-gradient(90deg, #ffb05c, #ff7a2f);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cooked-text {
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: bold;
+}

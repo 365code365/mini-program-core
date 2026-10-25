@@ -1,0 +1,31 @@
+<view class="top">
+  <view class="search row" bindtap="onSearch">
+    <text class="search-icon">搜</text>
+    <text class="search-hint">搜菜谱、食材，如「{{hint}}」</text>
+  </view>
+  <scroll-view class="cats" scroll-x>
+    <view class="cats-inner">
+      <view class="cat {{cat === index ? 'on' : ''}}" wx:for="{{cats}}" wx:key="key" data-index="{{index}}" bindtap="onCat">{{item.text}}</view>
+    </view>
+  </scroll-view>
+</view>
+<text class="count sub">{{cats[cat].text}} · 共 {{total}} 道</text>
+<view class="rc" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onRecipe">
+  <view class="rc-cover cover" style="background: linear-gradient(135deg, {{item.c1}}, {{item.c2}})">
+    <text class="cover-initial">{{item.initial}}</text>
+  </view>
+  <view class="rc-main">
+    <text class="rc-name">{{item.name}}</text>
+    <text class="rc-meta">{{item.catText}} · {{item.minutes}} 分钟 · {{item.level}} · {{item.kcal}} 千卡</text>
+    <text class="rc-meta">{{item.steps}} 个步骤</text>
+    <view class="rc-tags">
+      <text class="rc-tag" wx:for="{{item.tags}}" wx:key="*this" wx:for-item="t">{{t}}</text>
+    </view>
+  </view>
+</view>
+<view class="more">
+  <text class="sub" wx:if="{{loading}}">正在加载…</text>
+  <text class="sub" wx:elif="{{noMore}}">— 没有更多了 —</text>
+  <text class="sub" wx:else>上拉加载更多</text>
+</view>
+<view class="bottom-space"></view>

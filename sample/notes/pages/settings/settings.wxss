@@ -1,0 +1,40 @@
+.sec {
+  display: block;
+  font-size: 24rpx;
+  color: #8f8a7e;
+  padding: 28rpx 32rpx 12rpx;
+}
+.cells {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.cell {
+  min-height: 100rpx;
+  border-bottom: 1rpx solid #f3efe6;
+}
+.cell.last {
+  border-bottom: none;
+}
+.cell-label {
+  display: block;
+  font-size: 28rpx;
+}
+.cell-desc {
+  display: block;
+  font-size: 22rpx;
+  color: #a39e92;
+  margin-top: 4rpx;
+}
+.cell-value {
+  font-size: 26rpx;
+  color: #8f8a7e;
+}
+.chev {
+  font-size: 36rpx;
+  color: #c9c3b6;
+  margin-left: 12rpx;
+}
+.stats {
+  font-size: 26rpx;
+  color: #6b675d;
+}

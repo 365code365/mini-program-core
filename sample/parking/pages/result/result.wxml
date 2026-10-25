@@ -1,0 +1,20 @@
+<view class="empty" wx:if="{{missing}}">订单不存在</view>
+<block wx:else>
+  <view class="ok-wrap">
+    <view class="ok-ic"><view class="tick"></view></view>
+    <text class="ok-t">支付成功</text>
+    <text class="ok-amt">{{amountText}}</text>
+    <text class="sub">请在 15 分钟内离场，超时将重新计费</text>
+  </view>
+  <view class="card cells">
+    <view class="cell row"><text class="flex1 cell-label">订单号</text><text class="cell-value v-id">{{order.id}}</text></view>
+    <view class="cell row"><text class="flex1 cell-label">车牌</text><text class="cell-value">{{order.plate}}</text></view>
+    <view class="cell row"><text class="flex1 cell-label">停车场</text><text class="cell-value">{{order.lotName}}</text></view>
+    <view class="cell row"><text class="flex1 cell-label">停车费</text><text class="cell-value">{{feeText}}</text></view>
+    <view class="cell row cell-last" wx:if="{{offText}}"><text class="flex1 cell-label">{{order.coupon}}</text><text class="cell-value off">{{offText}}</text></view>
+  </view>
+  <view class="btns">
+    <view class="btn-primary go-orders" bindtap="goOrders">查看订单</view>
+    <view class="btn-ghost go-home" bindtap="goHome">返回首页</view>
+  </view>
+</block>

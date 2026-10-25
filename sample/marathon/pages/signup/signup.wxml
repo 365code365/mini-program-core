@@ -1,0 +1,79 @@
+<view class="steps row">
+  <view class="step {{index === step ? 'step-on' : ''}} {{index < step ? 'step-done' : ''}}" wx:for="{{steps}}" wx:key="*this" data-i="{{index}}" bindtap="onStep">
+    <!-- 文本节点里的 mustache 不写小于号：引擎会把它当成标签开头（见 tests/sample_marathon_e2e.rs 的引擎问题用例） -->
+    <view class="step-n"><text class="step-nt">{{step > index ? '✓' : index + 1}}</text></view>
+    <text class="step-t">{{item}}</text>
+  </view>
+</view>
+
+<!-- ① 选组别 -->
+<view class="card" wx:if="{{step === 0}}">
+  <text class="title">选择参赛组别</text>
+  <radio-group class="groups" bindchange="onGroup">
+    <label class="g-opt row {{full[index] ? 'g-off' : ''}}" wx:for="{{groups}}" wx:key="name">
+      <radio class="g-radio" value="{{index}}" checked="{{form.group === index}}" disabled="{{full[index]}}" color="#e8491d" />
+      <view class="flex1 g-mid">
+        <text class="g-name">{{item.name}} · {{item.dist}}</text>
+        <text class="sub">年龄 {{item.age}}{{full[index] ? ' · 名额已满' : ''}}</text>
+      </view>
+      <text class="g-fee">¥{{item.fee}}</text>
+    </label>
+  </radio-group>
+</view>
+
+<!-- ② 个人信息 -->
+<view class="card cells" wx:if="{{step === 1}}">
+  <view class="cell row"><text class="lb">姓名</text><input class="ipt flex1 ipt-name" value="{{form.name}}" placeholder="与证件一致" maxlength="20" bindinput="onName" /></view>
+  <picker class="pk-idtype" range="{{idTypes}}" value="{{form.idType}}" bindchange="onIdType">
+    <view class="cell row"><text class="lb">证件类型</text><text class="flex1 cell-value">{{idTypes[form.idType]}}</text><view class="chev"></view></view>
+  </picker>
+  <view class="cell row"><text class="lb">证件号码</text><input class="ipt flex1 ipt-idno" type="{{form.idType === 0 ? 'idcard' : 'text'}}" value="{{form.idNo}}" placeholder="请输入证件号码" maxlength="20" bindinput="onIdNo" /></view>
+  <view class="cell row">
+    <text class="lb">性别</text>
+    <radio-group class="row flex1" bindchange="onGender">
+      <label class="row gd"><radio class="gd-radio" value="男" checked="{{form.gender === '男'}}" color="#e8491d" /><text>男</text></label>
+      <label class="row gd"><radio class="gd-radio" value="女" checked="{{form.gender === '女'}}" color="#e8491d" /><text>女</text></label>
+    </radio-group>
+  </view>
+  <picker class="pk-birth" mode="date" value="{{form.birth || birthHint}}" start="1940-01-01" end="{{raceDate}}" bindchange="onBirth">
+    <view class="cell row"><text class="lb">出生日期</text><text class="flex1 {{form.birth ? 'cell-value' : 'ph'}}">{{form.birth || '请选择'}}</text><view class="chev"></view></view>
+  </picker>
+  <view class="cell row"><text class="lb">手机号</text><input class="ipt flex1 ipt-phone" type="number" value="{{form.phone}}" placeholder="用于接收参赛通知" maxlength="11" bindinput="onPhone" /></view>
+  <picker class="pk-region" mode="region" value="{{form.region}}" bindchange="onRegion">
+    <view class="cell row cell-last"><text class="lb">所在地区</text><text class="flex1 {{regionLabel ? 'cell-value' : 'ph'}}">{{regionLabel || '请选择省 / 市 / 区'}}</text><view class="chev"></view></view>
+  </picker>
+</view>
+
+<!-- ③ 紧急联系人 + 尺码 + 成绩 -->
+<block wx:if="{{step === 2}}">
+  <view class="card cells">
+    <view class="cell row"><text class="lb">紧急联系人</text><input class="ipt flex1 ipt-ecname" value="{{form.ecName}}" placeholder="姓名" maxlength="20" bindinput="onEcName" /></view>
+    <view class="cell row"><text class="lb">联系电话</text><input class="ipt flex1 ipt-ecphone" type="number" value="{{form.ecPhone}}" placeholder="不能填本人手机号" maxlength="11" bindinput="onEcPhone" /></view>
+    <picker class="pk-best" mode="time" value="{{form.best || '03:30'}}" bindchange="onBest">
+      <view class="cell row cell-last"><text class="lb">最好成绩</text><text class="flex1 {{form.best ? 'cell-value' : 'ph'}}">{{form.best ? bestLabel : '选填（时:分）'}}</text><view class="chev"></view></view>
+    </picker>
+  </view>
+  <view class="card">
+    <text class="title">参赛服尺码</text>
+    <radio-group class="sizes row" bindchange="onSize">
+      <label class="size row" wx:for="{{sizes}}" wx:key="*this"><radio class="size-radio" value="{{item}}" checked="{{form.size === item}}" color="#e8491d" /><text>{{item}}</text></label>
+    </radio-group>
+  </view>
+</block>
+
+<!-- ④ 免责声明 -->
+<view class="card" wx:if="{{step === 3}}">
+  <text class="title">参赛免责声明</text>
+  <text class="dis" wx:for="{{disclaimer}}" wx:key="*this">{{index + 1}}. {{item}}</text>
+  <checkbox-group class="agree" bindchange="onAgree">
+    <label class="row agree-row"><checkbox class="agree-box" value="agree" checked="{{form.agree}}" color="#e8491d" /><text class="agree-t">我已阅读并同意以上声明</text></label>
+  </checkbox-group>
+</view>
+
+<text class="err" wx:if="{{err}}">{{err}}</text>
+<view class="bar-space"></view>
+<view class="bar row">
+  <!-- 用 wx:if 不用 class 切 display:none：引擎不认 class 里的 display:none（见 tests/sample_calendar_e2e.rs 的引擎问题用例） -->
+  <view class="btn-ghost prev" wx:if="{{step > 0}}" bindtap="onPrev">上一步</view>
+  <view class="btn-primary flex1 next" bindtap="onNext">{{step === steps.length - 1 ? '确认信息' : '下一步'}}</view>
+</view>

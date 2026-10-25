@@ -1,0 +1,29 @@
+<view class="kpis row">
+  <view class="kpi"><text class="kpi-num">{{total}}</text><text class="kpi-label">全部卡片</text></view>
+  <view class="kpi"><text class="kpi-num ok">{{rate}}%</text><text class="kpi-label">完成率</text></view>
+  <view class="kpi"><text class="kpi-num late">{{overdue}}</text><text class="kpi-label">逾期</text></view>
+  <view class="kpi"><text class="kpi-num">{{dueToday}}</text><text class="kpi-label">今天到期</text></view>
+</view>
+<text class="sec">各列数量</text>
+<view class="card-box">
+  <view class="bar-row row" wx:for="{{cols}}" wx:key="key">
+    <text class="bar-name">{{item.name}}</text>
+    <view class="bar-track flex1"><view class="bar-fill" style="width: {{item.width}}%; background: {{item.color}}"></view></view>
+    <text class="bar-num">{{item.count}}</text>
+  </view>
+</view>
+<text class="sec">未完成 · 按优先级</text>
+<view class="card-box row prio-box">
+  <view class="prio-cell" wx:for="{{prios}}" wx:key="name">
+    <text class="prio-num" style="color: {{item.color}}">{{item.count}}</text>
+    <text class="prio-name">{{item.name}}</text>
+  </view>
+</view>
+<text class="sec">逾期卡片（今天 {{todayText}}）</text>
+<view class="card-box">
+  <view class="late-row row" wx:for="{{lateList}}" wx:key="id" data-id="{{item.id}}" bindtap="onOpen">
+    <text class="flex1 late-title">{{item.title}}</text>
+    <text class="sub">{{item.owner}} · {{item.due}}</text>
+  </view>
+  <text class="sub" wx:if="{{!lateList.length}}">没有逾期的卡片 🎉</text>
+</view>

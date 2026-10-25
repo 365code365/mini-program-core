@@ -1,0 +1,48 @@
+page {
+  background: #f3f4f7;
+  color: #1b1f2b;
+  font-size: 28rpx;
+}
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.between {
+  justify-content: space-between;
+}
+.flex1 {
+  flex: 1;
+}
+.box {
+  background: #ffffff;
+  border-radius: 16rpx;
+  margin: 0 24rpx 24rpx;
+  padding: 24rpx 28rpx;
+}
+.sub {
+  font-size: 22rpx;
+  color: #8a8f9c;
+}
+/* 涨红跌绿（A 股习惯） */
+.up {
+  color: #e93030;
+}
+.down {
+  color: #12a35b;
+}
+.flat {
+  color: #8a8f9c;
+}
+.bg-up {
+  background: #e93030;
+}
+.bg-down {
+  background: #12a35b;
+}
+.bg-flat {
+  background: #a3a8b3;
+}
+.num {
+  font-family: Arial;
+}

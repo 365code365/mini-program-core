@@ -1,0 +1,15 @@
+{
+  "pages": [
+    "pages/board/board",
+    "pages/card/card",
+    "pages/new/new",
+    "pages/stats/stats",
+    "pages/members/members"
+  ],
+  "window": {
+    "navigationBarTitleText": "团队看板",
+    "navigationBarBackgroundColor": "#2f54eb",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f0f2f7"
+  }
+}

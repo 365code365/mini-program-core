@@ -1,0 +1,4 @@
+.top-gap { margin-top: 20rpx; }
+.cells { padding: 0 24rpx; }
+.danger { color: #f2453d; }
+.tip { display: block; text-align: center; margin-top: 20rpx; }

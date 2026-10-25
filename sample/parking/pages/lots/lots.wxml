@@ -1,0 +1,30 @@
+<view class="bar">
+  <view class="search-box row">
+    <text class="s-ic">搜</text>
+    <input class="ipt search flex1" value="{{keyword}}" placeholder="搜索停车场名称或地址" bindinput="onSearch" />
+    <text class="s-clear" wx:if="{{keyword}}" bindtap="clearSearch">清除</text>
+  </view>
+  <view class="row between filters">
+    <view class="row">
+      <view class="sort sort-dist {{sort === 'dist' ? 'sort-on' : ''}}" data-s="dist" bindtap="onSort">距离最近</view>
+      <view class="sort sort-price {{sort === 'price' ? 'sort-on' : ''}}" data-s="price" bindtap="onSort">价格最低</view>
+    </view>
+    <view class="row">
+      <text class="sub">只看有空位</text>
+      <switch class="only-free" checked="{{onlyFree}}" color="#1677ff" bindchange="onOnlyFree" />
+    </view>
+  </view>
+</view>
+<view class="lot row" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onLot" hover-class="lot-down">
+  <image class="lot-ic" src="{{item.free ? '/images/p-blue.png' : '/images/p-gray.png'}}" />
+  <view class="flex1 lot-mid">
+    <text class="lot-name">{{item.name}}</text>
+    <text class="sub lot-addr">{{item.distText}} · {{item.addr}}</text>
+    <text class="lot-price">{{item.priceText}}</text>
+  </view>
+  <view class="free-box free-{{item.level}}">
+    <text class="free-n">{{item.free}}</text>
+    <text class="free-l">{{item.free ? '空位' : '已满'}}</text>
+  </view>
+</view>
+<view class="empty" wx:if="{{!list.length}}">没有符合条件的停车场</view>

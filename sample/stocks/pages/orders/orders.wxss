@@ -1,0 +1,27 @@
+.sum {
+  margin-top: 24rpx;
+}
+.s-v {
+  display: block;
+  font-size: 34rpx;
+  font-weight: bold;
+  margin-top: 6rpx;
+}
+.o-row {
+  height: 108rpx;
+  border-bottom: 1rpx solid #f3f4f7;
+}
+.o-side {
+  color: #ffffff;
+  font-size: 22rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 6rpx;
+  margin-right: 20rpx;
+}
+.o-name {
+  display: block;
+  font-size: 28rpx;
+}
+.o-amt {
+  font-size: 28rpx;
+}

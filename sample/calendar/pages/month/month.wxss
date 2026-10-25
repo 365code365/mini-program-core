@@ -1,0 +1,32 @@
+.top { background: #ffffff; padding: 16rpx 24rpx 8rpx; }
+.col-c { display: flex; flex-direction: column; align-items: center; }
+.m-title { font-size: 36rpx; font-weight: bold; }
+.nav-btn { width: 72rpx; height: 72rpx; border-radius: 36rpx; background: #f1f3f8; display: flex; align-items: center; justify-content: center; }
+.arrow { width: 18rpx; height: 18rpx; border-top: 4rpx solid #3a6bf0; border-right: 4rpx solid #3a6bf0; }
+.arrow-l { transform: rotate(-135deg); margin-left: 8rpx; }
+.arrow-r { transform: rotate(45deg); margin-right: 8rpx; }
+.tools { background: #ffffff; padding: 8rpx 24rpx 16rpx; }
+.tool { font-size: 24rpx; color: #3a6bf0; background: #eef3ff; border-radius: 24rpx; padding: 8rpx 24rpx; margin-right: 16rpx; }
+.grid-card { background: #ffffff; padding: 0 12rpx 12rpx; border-radius: 0 0 24rpx 24rpx; }
+.heads { height: 56rpx; }
+.head { flex: 1; text-align: center; font-size: 24rpx; color: #8f95a3; }
+.weekend { color: #ff6b5b; }
+.grid { display: flex; flex-direction: row; flex-wrap: wrap; }
+.day { width: 14.28%; height: 84rpx; display: flex; flex-direction: column; align-items: center; }
+.num-wrap { width: 56rpx; height: 56rpx; border-radius: 28rpx; display: flex; align-items: center; justify-content: center; }
+.num { font-size: 28rpx; color: #1f2329; }
+.other .num { color: #c4c9d2; }
+.is-today .num { color: #3a6bf0; font-weight: bold; }
+.sel .num-wrap { background: #3a6bf0; }
+.sel .num { color: #ffffff; }
+.dots { height: 16rpx; justify-content: center; }
+.dot { width: 10rpx; height: 10rpx; border-radius: 5rpx; margin: 0 3rpx; }
+.sel-head { padding: 24rpx 32rpx 16rpx; }
+.sel-label { font-size: 28rpx; font-weight: bold; }
+.add { font-size: 26rpx; color: #ffffff; background: #3a6bf0; border-radius: 28rpx; padding: 8rpx 24rpx; }
+.ev-card { padding: 8rpx 24rpx; }
+.ev { height: 104rpx; border-bottom: 1rpx solid #f0f1f4; }
+.ev-down { background: #f7f8fb; }
+.ev-bar { width: 8rpx; height: 60rpx; border-radius: 4rpx; margin-right: 20rpx; }
+.ev-title { display: block; font-size: 30rpx; }
+.ev-time { display: block; margin-top: 4rpx; }

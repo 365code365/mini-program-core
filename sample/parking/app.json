@@ -1,0 +1,16 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/lots/lots",
+    "pages/lot/lot",
+    "pages/pay/pay",
+    "pages/result/result",
+    "pages/orders/orders"
+  ],
+  "window": {
+    "navigationBarTitleText": "停车宝",
+    "navigationBarBackgroundColor": "#1677ff",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f3f5f9"
+  }
+}

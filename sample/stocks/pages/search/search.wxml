@@ -1,0 +1,23 @@
+<view class="bar row">
+  <view class="search row flex1">
+    <text class="ic">🔍</text>
+    <input class="s-input flex1" value="{{kw}}" placeholder="输入股票代码或名称" bindinput="onInput" confirm-type="search" />
+    <text class="s-clear" wx:if="{{kw}}" bindtap="onClear">✕</text>
+  </view>
+</view>
+<text class="sec">{{hot ? '全部股票' : '搜索结果 ' + results.length + ' 只'}}</text>
+<view class="list">
+  <view class="s-row row" wx:for="{{results}}" wx:key="code" data-code="{{item.code}}" bindtap="onOpen">
+    <view class="flex1">
+      <text class="s-name">{{item.name}}</text>
+      <text class="s-code num">{{item.code}}</text>
+    </view>
+    <view class="s-quote">
+      <text class="s-price num {{item.dir}}">{{item.priceText}}</text>
+      <text class="s-pct num {{item.dir}}">{{item.pctText}}</text>
+    </view>
+    <view class="s-added" wx:if="{{item.watched}}">已添加</view>
+    <view class="s-add" wx:else data-code="{{item.code}}" catchtap="onAdd">＋</view>
+  </view>
+</view>
+<view class="s-empty" wx:if="{{!results.length}}">没有找到「{{kw}}」相关的股票</view>

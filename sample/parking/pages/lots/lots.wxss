@@ -1,0 +1,20 @@
+.bar { background: #ffffff; padding: 20rpx 24rpx 8rpx; margin-bottom: 20rpx; }
+.search-box { background: #f1f3f7; border-radius: 36rpx; height: 72rpx; padding: 0 24rpx; }
+.s-ic { font-size: 24rpx; color: #8f95a3; margin-right: 12rpx; }
+.search { font-size: 28rpx; height: 72rpx; }
+.s-clear { font-size: 24rpx; color: #1677ff; }
+.filters { height: 88rpx; }
+.sort { font-size: 26rpx; color: #5c6370; padding: 8rpx 20rpx; border-radius: 24rpx; margin-right: 12rpx; background: #f1f3f7; }
+.sort-on { color: #ffffff; background: #1677ff; }
+.lot { background: #ffffff; margin: 0 24rpx 16rpx; border-radius: 16rpx; padding: 20rpx 24rpx; }
+.lot-down { background: #f7f8fb; }
+.lot-ic { width: 64rpx; height: 64rpx; margin-right: 20rpx; }
+.lot-name { display: block; font-size: 30rpx; font-weight: bold; }
+.lot-addr { display: block; margin-top: 6rpx; }
+.lot-price { display: block; margin-top: 6rpx; font-size: 24rpx; color: #ff7a1f; }
+.free-box { width: 110rpx; display: flex; flex-direction: column; align-items: center; }
+.free-n { font-size: 40rpx; font-weight: bold; }
+.free-l { font-size: 22rpx; color: #8f95a3; }
+.free-ok .free-n { color: #19a974; }
+.free-tight .free-n { color: #ff8a1f; }
+.free-full .free-n { color: #c4c9d2; }

@@ -1,0 +1,72 @@
+.kpis {
+  margin: 24rpx;
+  background: #ffffff;
+  border-radius: 16rpx;
+  padding: 28rpx 0;
+}
+.kpi {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.kpi-num {
+  font-size: 40rpx;
+  font-weight: bold;
+}
+.kpi-num.ok {
+  color: #52c41a;
+}
+.kpi-num.late {
+  color: #f5222d;
+}
+.kpi-label {
+  font-size: 22rpx;
+  color: #8c8c8c;
+  margin-top: 6rpx;
+}
+.bar-row {
+  height: 64rpx;
+}
+.bar-name {
+  width: 120rpx;
+  font-size: 26rpx;
+}
+.bar-track {
+  height: 20rpx;
+  border-radius: 10rpx;
+  background: #f0f0f0;
+}
+.bar-fill {
+  height: 20rpx;
+  border-radius: 10rpx;
+}
+.bar-num {
+  width: 60rpx;
+  text-align: right;
+  font-size: 26rpx;
+}
+.prio-box {
+  justify-content: space-around;
+}
+.prio-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.prio-num {
+  font-size: 36rpx;
+  font-weight: bold;
+}
+.prio-name {
+  font-size: 22rpx;
+  color: #8c8c8c;
+}
+.late-row {
+  height: 80rpx;
+  border-bottom: 1rpx solid #f5f5f5;
+}
+.late-title {
+  font-size: 28rpx;
+  color: #f5222d;
+}

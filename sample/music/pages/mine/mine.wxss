@@ -1,0 +1,60 @@
+.head {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 48rpx 32rpx;
+  background: linear-gradient(135deg, #ff6a88, #ff3a5c);
+}
+.avatar {
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: 56rpx;
+  background: rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.avatar-text {
+  color: #ffffff;
+  font-size: 44rpx;
+  font-weight: bold;
+}
+.head-main {
+  display: flex;
+  flex-direction: column;
+  margin-left: 28rpx;
+}
+.nick {
+  color: #ffffff;
+  font-size: 36rpx;
+  font-weight: bold;
+}
+.head-sub {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 24rpx;
+  margin-top: 8rpx;
+}
+.tabs {
+  background: #ffffff;
+  padding: 0 32rpx;
+  height: 96rpx;
+  border-bottom: 1rpx solid #f0f1f5;
+}
+.tab {
+  font-size: 28rpx;
+  color: #8a909c;
+  margin-right: 40rpx;
+  padding: 24rpx 0;
+}
+.tab.on {
+  color: #1d2129;
+  font-weight: bold;
+  border-bottom: 4rpx solid #ff3a5c;
+}
+.clear {
+  font-size: 24rpx;
+  color: #ff3a5c;
+}
+.mine-song {
+  border-bottom: 1rpx solid #f0f1f5;
+}

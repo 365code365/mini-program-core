@@ -1,0 +1,62 @@
+.stage {
+  margin: 24rpx;
+  padding: 40rpx 0 32rpx;
+  border-radius: 28rpx;
+  background: #232733;
+  text-align: center;
+}
+.glow {
+  width: 260rpx;
+  height: 260rpx;
+  border-radius: 130rpx;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.bulb {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 60rpx;
+}
+.stage-t {
+  display: block;
+  margin: 24rpx 0;
+  color: #d9dee7;
+  font-size: 26rpx;
+}
+.power-btn {
+  margin: 0 auto;
+  background: #3d4352;
+}
+.power-btn.on {
+  background: #ffb703;
+}
+.ct-tip {
+  margin-top: 4rpx;
+}
+.colors {
+  justify-content: space-between;
+}
+.color {
+  width: 92rpx;
+  text-align: center;
+}
+.chip {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 36rpx;
+  margin: 0 auto 8rpx;
+  border: 4rpx solid #eef0f4;
+}
+.color.cur .chip {
+  border-color: #3a86ff;
+}
+.chip-n {
+  font-size: 22rpx;
+  color: #7a8291;
+}
+.color.cur .chip-n {
+  color: #3a86ff;
+  font-weight: bold;
+}

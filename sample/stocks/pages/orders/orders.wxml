@@ -1,0 +1,15 @@
+<view class="box row sum">
+  <view class="flex1"><text class="sub">买入合计</text><text class="s-v num up">{{buyTotal}}</text></view>
+  <view class="flex1"><text class="sub">卖出合计</text><text class="s-v num down">{{sellTotal}}</text></view>
+</view>
+<view class="box">
+  <view class="o-row row" wx:for="{{list}}" wx:key="id">
+    <text class="o-side {{item.side === 'buy' ? 'bg-up' : 'bg-down'}}">{{item.sideText}}</text>
+    <view class="flex1">
+      <text class="o-name">{{item.name}}</text>
+      <text class="sub num">{{item.time}} · {{item.qty}} 股 @ {{item.price}}</text>
+    </view>
+    <text class="o-amt num">{{item.amountText}}</text>
+  </view>
+  <text class="sub" wx:if="{{!list.length}}">今天还没有成交</text>
+</view>

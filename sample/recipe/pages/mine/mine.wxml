@@ -1,0 +1,23 @@
+<view class="head">
+  <view class="avatar"><text class="avatar-text">厨</text></view>
+  <text class="nick">小当家</text>
+  <view class="stats row">
+    <view class="stat flex1"><text class="stat-num">{{favCount}}</text><text class="stat-label">收藏</text></view>
+    <view class="stat flex1"><text class="stat-num">{{cookedTotal}}</text><text class="stat-label">下厨打卡</text></view>
+    <view class="stat flex1"><text class="stat-num">{{historyCount}}</text><text class="stat-label">搜索历史</text></view>
+  </view>
+</view>
+<view class="card">
+  <text class="sec">做过的菜</text>
+  <view class="cooked row" wx:for="{{cooked}}" wx:key="id" data-id="{{item.id}}" bindtap="onRecipe">
+    <view class="mini-cover cover" style="background: linear-gradient(135deg, {{item.c1}}, {{item.c2}})"><text class="mini-initial">{{item.initial}}</text></view>
+    <text class="flex1 cooked-name">{{item.name}}</text>
+    <text class="sub">做过 {{item.times}} 次</text>
+  </view>
+  <text class="sub none" wx:if="{{!cooked.length}}">还没有打卡记录，在菜谱详情页点「我做好了」</text>
+</view>
+<view class="card">
+  <view class="link row clear-history" bindtap="onClearHistory"><text class="flex1">清空搜索历史</text><text class="sub">{{historyCount}} 条</text></view>
+  <view class="link row"><text class="flex1">关于厨房小当家</text><text class="sub">v1.0</text></view>
+</view>
+<view class="bottom-space"></view>

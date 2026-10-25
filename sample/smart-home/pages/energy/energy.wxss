@@ -1,0 +1,75 @@
+.seg {
+  margin: 24rpx;
+  padding: 6rpx;
+  border-radius: 40rpx;
+  background: #e3e7ee;
+}
+.seg-i {
+  flex: 1;
+  height: 64rpx;
+  line-height: 64rpx;
+  text-align: center;
+  border-radius: 34rpx;
+  color: #7a8291;
+}
+.seg-i.on {
+  background: #ffffff;
+  color: #1f2533;
+  font-weight: bold;
+}
+.total-card {
+  margin: 0 24rpx 24rpx;
+  padding: 32rpx;
+  border-radius: 24rpx;
+  background: linear-gradient(135deg, #06d6a0, #2a9d8f);
+  color: #ffffff;
+}
+.t-k {
+  display: block;
+  font-size: 24rpx;
+  opacity: 0.85;
+}
+.t-row {
+  align-items: baseline;
+}
+.t-v {
+  font-size: 72rpx;
+  font-weight: bold;
+}
+.t-u {
+  margin-left: 8rpx;
+  font-size: 28rpx;
+}
+.t-cost {
+  display: block;
+  font-size: 24rpx;
+  opacity: 0.85;
+}
+.b-row {
+  padding: 14rpx 0;
+}
+.b-name {
+  font-size: 26rpx;
+}
+.b-v {
+  font-size: 24rpx;
+  color: #2a9d8f;
+  font-weight: bold;
+}
+.b-track {
+  margin-top: 10rpx;
+  height: 20rpx;
+  border-radius: 10rpx;
+  background: #eef0f4;
+}
+.b-bar {
+  height: 20rpx;
+  border-radius: 10rpx;
+  background: linear-gradient(90deg, #06d6a0, #2a9d8f);
+}
+.expand {
+  margin-top: 16rpx;
+  text-align: center;
+  color: #3a86ff;
+  font-size: 26rpx;
+}

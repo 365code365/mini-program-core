@@ -1,0 +1,26 @@
+.line {
+  padding: 20rpx 0;
+}
+.label {
+  display: block;
+}
+.desc {
+  display: block;
+  margin-top: 4rpx;
+}
+.theme {
+  padding: 18rpx 0;
+}
+.swatch {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 8rpx;
+  margin-left: 16rpx;
+}
+.theme-name {
+  margin-left: 20rpx;
+}
+.reset {
+  background: #ffffff;
+  color: #e0574a;
+}

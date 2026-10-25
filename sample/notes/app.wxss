@@ -1,0 +1,48 @@
+page {
+  background: #fbf8f1;
+  color: #2b2a27;
+  font-size: 28rpx;
+}
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.between {
+  justify-content: space-between;
+}
+.flex1 {
+  flex: 1;
+}
+.card {
+  background: #ffffff;
+  border-radius: 20rpx;
+  margin: 0 24rpx 24rpx;
+  padding: 24rpx 28rpx;
+}
+.sub {
+  font-size: 24rpx;
+  color: #9a968c;
+}
+.btn {
+  height: 80rpx;
+  line-height: 80rpx;
+  border-radius: 40rpx;
+  text-align: center;
+  font-size: 28rpx;
+  background: #f0ebe0;
+  color: #5a564c;
+}
+.btn-primary {
+  background: #f5a623;
+  color: #ffffff;
+  font-weight: bold;
+}
+.btn-danger {
+  background: #fdeceb;
+  color: #e5483d;
+}
+.safe {
+  height: 180rpx;
+}
+/* 引擎给 input 默认内边距，写 0 0 0 1rpx 覆盖（同 focus-todo） */

@@ -1,0 +1,42 @@
+<view class="top row between">
+  <view class="nav-btn prev" bindtap="onPrev"><view class="arrow arrow-l"></view></view>
+  <view class="col-c">
+    <text class="m-title">{{title}}</text>
+    <text class="sub">本月 {{monthCount}} 天有安排</text>
+  </view>
+  <view class="nav-btn next" bindtap="onNext"><view class="arrow arrow-r"></view></view>
+</view>
+<view class="tools row">
+  <view class="tool today-btn" bindtap="onToday">回到今天</view>
+  <view class="tool to-list" bindtap="onList">列表</view>
+  <view class="tool to-settings" bindtap="onSettings">设置</view>
+</view>
+<view class="grid-card" bindtouchstart="onTouchStart" bindtouchend="onTouchEnd">
+  <view class="heads row">
+    <text class="head {{item === '六' || item === '日' ? 'weekend' : ''}}" wx:for="{{heads}}" wx:key="*this">{{item}}</text>
+  </view>
+  <view class="grid">
+    <view class="day {{item.cur ? '' : 'other'}} {{item.sel ? 'sel' : ''}} {{item.isToday ? 'is-today' : ''}}" wx:for="{{cells}}" wx:key="date" data-date="{{item.date}}" bindtap="onCell">
+      <view class="num-wrap"><text class="num">{{item.day}}</text></view>
+      <view class="dots row">
+        <view class="dot" wx:for="{{item.dots}}" wx:for-item="c" wx:for-index="k" wx:key="k" style="background: {{c}}"></view>
+      </view>
+    </view>
+  </view>
+</view>
+<view class="sel-head row between">
+  <text class="sel-label">{{selLabel}}</text>
+  <view class="add" bindtap="onAdd">+ 新建</view>
+</view>
+<view class="card ev-card">
+  <view class="ev row" wx:for="{{selEvents}}" wx:key="id" data-id="{{item.id}}" bindtap="onEvent" hover-class="ev-down">
+    <view class="ev-bar" style="background: {{item.color}}"></view>
+    <view class="flex1">
+      <text class="ev-title">{{item.title}}</text>
+      <text class="sub ev-time">{{item.time}}<text wx:if="{{item.repeat}}"> · {{item.repeat}}</text></text>
+    </view>
+    <view class="chev"></view>
+  </view>
+  <view class="empty" wx:if="{{!selEvents.length}}">这天没有安排，点「+ 新建」添加</view>
+</view>
+<view style="height: 40rpx"></view>

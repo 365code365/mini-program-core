@@ -1,0 +1,51 @@
+<view class="hero cover" style="background: linear-gradient(135deg, {{r.c1}}, {{r.c2}})">
+  <text class="hero-initial">{{r.initial}}</text>
+</view>
+<view class="card head">
+  <view class="row">
+    <text class="name flex1">{{r.name}}</text>
+    <view class="fav {{fav ? 'on' : ''}}" bindtap="onFav"><text class="fav-text">{{fav ? '已收藏' : '收藏'}}</text></view>
+  </view>
+  <text class="meta">{{r.catText}} · {{r.minutes}} 分钟 · {{r.level}} · {{r.kcal}} 千卡/份</text>
+  <text class="meta" wx:if="{{cookedTimes}}">你已经做过 {{cookedTimes}} 次</text>
+</view>
+<view class="card">
+  <view class="row">
+    <text class="sec flex1">食材清单（已备 {{ready}}/{{ingredients.length}}）</text>
+    <view class="stepper row">
+      <view class="sbtn minus {{servings <= 1 ? 'off' : ''}}" bindtap="onMinus"><text>－</text></view>
+      <text class="servings">{{servings}} 人份</text>
+      <view class="sbtn plus {{servings >= 10 ? 'off' : ''}}" bindtap="onPlus"><text>＋</text></view>
+    </view>
+  </view>
+  <checkbox-group bindchange="onCheck">
+    <label class="ing row {{item.checked ? 'done' : ''}}" wx:for="{{ingredients}}" wx:key="key">
+      <checkbox class="ing-check" value="{{item.key}}" checked="{{item.checked}}" color="#ff7a2f" />
+      <text class="ing-name flex1">{{item.name}}</text>
+      <text class="ing-amount">{{item.amount}} {{item.unit}}</text>
+    </label>
+  </checkbox-group>
+</view>
+<view class="card">
+  <view class="row">
+    <text class="sec flex1">做法 · 第 {{step + 1}}/{{r.steps.length}} 步</text>
+    <text class="nav prev-step {{step === 0 ? 'off' : ''}}" bindtap="onPrevStep">上一步</text>
+    <text class="nav next-step {{step === r.steps.length - 1 ? 'off' : ''}}" bindtap="onNextStep">下一步</text>
+  </view>
+  <swiper class="steps" current="{{step}}" indicator-dots indicator-color="#f0e2d2" indicator-active-color="#ff7a2f" bindchange="onSwiper">
+    <swiper-item wx:for="{{r.steps}}" wx:key="no">
+      <view class="step" style="background: linear-gradient(135deg, {{r.c1}}22, {{r.c2}}44)">
+        <text class="step-no">{{item.no}}</text>
+        <text class="step-text">{{item.text}}</text>
+      </view>
+    </swiper-item>
+  </swiper>
+  <view class="timer row">
+    <text class="timer-label">本步计时</text>
+    <text class="timer-text flex1">{{remainText}}</text>
+    <view class="tbtn reset-btn" bindtap="resetTimer"><text>重置</text></view>
+    <view class="tbtn main timer-btn" bindtap="onTimer"><text class="tbtn-main-text">{{running ? '暂停' : '开始'}}</text></view>
+  </view>
+</view>
+<view class="cooked" bindtap="onCooked"><text class="cooked-text">我做好了 · 打卡</text></view>
+<view class="bottom-space"></view>

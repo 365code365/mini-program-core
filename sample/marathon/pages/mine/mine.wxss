@@ -1,0 +1,10 @@
+.head { padding: 24rpx 32rpx; }
+.it-group { font-size: 30rpx; font-weight: bold; }
+.it-st { font-size: 24rpx; }
+.st-unpaid { color: #ff8a1f; }
+.st-paid { color: #19a974; }
+.st-canceled { color: #a3a8b3; }
+.it-sub { display: block; margin-top: 8rpx; }
+.it-foot { margin-top: 16rpx; }
+.it-btn { font-size: 24rpx; color: #5c6370; border: 2rpx solid #d6dbe6; border-radius: 24rpx; padding: 6rpx 20rpx; }
+.home { margin: 32rpx 160rpx 0; }

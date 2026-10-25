@@ -1,0 +1,24 @@
+<view class="search">
+  <input class="search-input" placeholder="输入城市名，如：杭州" value="{{keyword}}" bindinput="onInput" />
+</view>
+<view class="results" wx:if="{{keyword}}">
+  <view class="res-item" wx:for="{{results}}" wx:key="*this" data-name="{{item}}" bindtap="onPick">{{item}}</view>
+  <view class="empty" wx:if="{{!results.length}}">没有找到「{{keyword}}」</view>
+</view>
+<scroll-view class="body" scroll-y scroll-into-view="{{toView}}" wx:else>
+  <view class="cur" wx:if="{{current}}">
+    <text class="sec">当前选择</text>
+    <view class="chips"><view class="chip on">{{current}}</view></view>
+  </view>
+  <text class="sec">热门城市</text>
+  <view class="chips">
+    <view class="chip hot" wx:for="{{hot}}" wx:key="*this" data-name="{{item}}" bindtap="onPick">{{item}}</view>
+  </view>
+  <view wx:for="{{groups}}" wx:key="letter" wx:for-item="g" id="g{{g.letter}}">
+    <text class="letter">{{g.letter}}</text>
+    <view class="city-item" wx:for="{{g.cities}}" wx:key="*this" data-name="{{item}}" bindtap="onPick">{{item}}</view>
+  </view>
+</scroll-view>
+<view class="index-bar" wx:if="{{!keyword}}">
+  <text class="idx" wx:for="{{groups}}" wx:key="letter" data-letter="{{item.letter}}" bindtap="onLetter">{{item.letter}}</text>
+</view>

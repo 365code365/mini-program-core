@@ -1,0 +1,20 @@
+<view class="empty" wx:if="{{missing}}">日程不存在或已被删除</view>
+<block wx:if="{{ev}}">
+  <view class="card hero">
+    <view class="row">
+      <view class="bar" style="background: {{info.color}}"></view>
+      <text class="h-title flex1">{{ev.title}}</text>
+    </view>
+    <text class="sub h-sub">{{info.dateLabel}}  {{info.time}}</text>
+  </view>
+  <view class="card cells">
+    <view class="cell row"><text class="flex1 cell-label">重复</text><text class="cell-value v-repeat">{{info.repeat}}</text></view>
+    <view class="cell row"><text class="flex1 cell-label">提醒</text><text class="cell-value v-remind">{{info.remind}}</text></view>
+    <view class="cell row"><text class="flex1 cell-label">颜色</text><view class="ev-dot" style="background: {{info.color}}"></view><text class="cell-value">{{info.colorName}}</text></view>
+    <view class="cell row cell-last"><text class="flex1 cell-label">备注</text><text class="cell-value">{{ev.note || '无'}}</text></view>
+  </view>
+  <view class="btns row">
+    <view class="btn-del" bindtap="onDelete">删除</view>
+    <view class="btn-primary flex1 edit" bindtap="onEdit">编辑</view>
+  </view>
+</block>

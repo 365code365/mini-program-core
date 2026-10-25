@@ -1,0 +1,19 @@
+<text class="tip sub" wx:if="{{list.length}}">共 {{list.length}} 道 · 长按可置顶或删除</text>
+<view class="rc fav-item {{item.pinned ? 'pinned' : ''}}" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" data-index="{{index}}" bindtap="onRecipe" bindlongpress="onLong">
+  <view class="rc-cover cover" style="background: linear-gradient(135deg, {{item.c1}}, {{item.c2}})">
+    <text class="cover-initial">{{item.initial}}</text>
+  </view>
+  <view class="rc-main">
+    <view class="row">
+      <text class="pin" wx:if="{{item.pinned}}">置顶</text>
+      <text class="rc-name">{{item.name}}</text>
+    </view>
+    <text class="rc-meta">{{item.catText}} · {{item.minutes}} 分钟 · {{item.level}}</text>
+  </view>
+</view>
+<view class="empty" wx:if="{{!list.length}}">
+  <view class="empty-icon"><text>♡</text></view>
+  <text>还没有收藏的菜谱</text>
+  <view class="go" bindtap="onGo"><text class="go-text">去逛逛</text></view>
+</view>
+<view class="bottom-space"></view>

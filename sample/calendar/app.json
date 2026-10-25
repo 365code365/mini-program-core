@@ -1,0 +1,15 @@
+{
+  "pages": [
+    "pages/month/month",
+    "pages/edit/edit",
+    "pages/detail/detail",
+    "pages/list/list",
+    "pages/settings/settings"
+  ],
+  "window": {
+    "navigationBarTitleText": "日程本",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f5f6fa"
+  }
+}

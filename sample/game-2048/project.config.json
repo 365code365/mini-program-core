@@ -1,0 +1,6 @@
+{
+  "appid": "wx93aa8fd3dc7a1219",
+  "projectname": "game-2048",
+  "description": "2048：滑动合并数字方块，可撤销、排行榜、多尺寸棋盘",
+  "compileType": "miniprogram"
+}

@@ -1,0 +1,15 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/edit/edit",
+    "pages/trash/trash",
+    "pages/tags/tags",
+    "pages/settings/settings"
+  ],
+  "window": {
+    "navigationBarTitleText": "灵感笔记",
+    "navigationBarBackgroundColor": "#fbf8f1",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#fbf8f1"
+  }
+}

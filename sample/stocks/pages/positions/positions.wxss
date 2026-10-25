@@ -1,0 +1,100 @@
+.hero {
+  background: #1b1f2b;
+  padding: 24rpx 32rpx 28rpx;
+}
+.hero-label {
+  display: block;
+  color: #8a8f9c;
+  font-size: 22rpx;
+}
+.hero-num {
+  display: block;
+  color: #ffffff;
+  font-size: 52rpx;
+  font-weight: bold;
+}
+.hero-grid {
+  margin-top: 20rpx;
+}
+.cell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.c-k {
+  font-size: 22rpx;
+  color: #8a8f9c;
+}
+.c-v {
+  font-size: 28rpx;
+  color: #ffffff;
+  margin-top: 4rpx;
+}
+.c-v.up {
+  color: #ff6b6b;
+}
+.c-v.down {
+  color: #3ddc84;
+}
+.thead {
+  height: 64rpx;
+  padding: 0 32rpx;
+  background: #ffffff;
+  border-bottom: 1rpx solid #eceef2;
+}
+.th {
+  font-size: 22rpx;
+  color: #8a8f9c;
+}
+.w1 {
+  width: 200rpx;
+  text-align: right;
+}
+.w2 {
+  width: 170rpx;
+  text-align: right;
+}
+.pos-row {
+  height: 124rpx;
+  padding: 0 32rpx;
+  background: #ffffff;
+  border-bottom: 1rpx solid #f3f4f7;
+}
+.p-name {
+  display: block;
+  font-size: 30rpx;
+}
+.p-main {
+  display: block;
+  font-size: 28rpx;
+}
+.p-sub {
+  display: block;
+  font-size: 22rpx;
+  color: #8a8f9c;
+}
+.pos-sell {
+  width: 56rpx;
+  height: 56rpx;
+  line-height: 56rpx;
+  text-align: center;
+  margin-left: 16rpx;
+  border-radius: 28rpx;
+  background: #e8f7ef;
+  color: #12a35b;
+  font-size: 24rpx;
+}
+.empty {
+  padding: 80rpx 0;
+  text-align: center;
+  color: #8a8f9c;
+}
+.go-orders {
+  margin: 24rpx;
+  height: 84rpx;
+  line-height: 84rpx;
+  text-align: center;
+  background: #ffffff;
+  border-radius: 14rpx;
+  color: #3a6ff0;
+}

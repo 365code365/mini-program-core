@@ -1,0 +1,50 @@
+<view class="datebar row">
+  <text class="day-btn prev-day {{canPrev ? '' : 'off'}}" bindtap="onPrevDay">前一天</text>
+  <text class="flex1 day-text">{{dateText}}</text>
+  <text class="day-btn next-day" bindtap="onNextDay">后一天</text>
+</view>
+<view class="filters">
+  <view class="frow row">
+    <text class="flabel">排序</text>
+    <view class="sort {{sort === index ? 'on' : ''}}" wx:for="{{sorts}}" wx:key="key" data-index="{{index}}" bindtap="onSort">{{item.text}}</view>
+    <view class="flex1"></view>
+    <view class="chip hs-chip {{highSpeed ? 'on' : ''}}" bindtap="onHigh">只看高铁</view>
+  </view>
+  <view class="frow row">
+    <text class="flabel">出发</text>
+    <view class="chip period {{item.on ? 'on' : ''}}" wx:for="{{periods}}" wx:key="key" data-index="{{index}}" bindtap="onPeriod">{{item.text}}</view>
+  </view>
+</view>
+<text class="count sub">共 {{total}} 趟车次</text>
+<view class="train card" wx:for="{{trains}}" wx:key="no" data-index="{{index}}" bindtap="onTrain">
+  <view class="row">
+    <view class="tcol">
+      <text class="ttime">{{item.depText}}</text>
+      <text class="tcity">{{item.from}}</text>
+    </view>
+    <view class="flex1 tmid">
+      <text class="tno">{{item.no}}</text>
+      <view class="tline"></view>
+      <text class="tdur">{{item.durText}}</text>
+    </view>
+    <view class="tcol tcol-r">
+      <text class="ttime">{{item.arrText}}<text class="plus" wx:if="{{item.nextDay}}">+1</text></text>
+      <text class="tcity">{{item.to}}</text>
+    </view>
+    <view class="tprice">
+      <text class="price">¥{{item.minPrice}}</text>
+      <text class="sub">起</text>
+    </view>
+  </view>
+  <view class="seats row">
+    <view class="seat flex1" wx:for="{{item.seats}}" wx:key="name" wx:for-item="s">
+      <text class="seat-name">{{s.name}}</text>
+      <text class="seat-left {{s.left === 0 ? 'none' : ''}}">{{s.leftText}}</text>
+    </view>
+  </view>
+</view>
+<view class="empty" wx:if="{{!total}}">
+  <text>没有符合条件的车次</text>
+  <view class="reset" bindtap="onResetPeriod"><text>清除时段筛选</text></view>
+</view>
+<view class="bottom-space"></view>

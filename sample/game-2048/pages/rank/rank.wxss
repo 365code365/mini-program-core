@@ -1,0 +1,41 @@
+.filters {
+  padding: 24rpx;
+}
+.filter {
+  padding: 10rpx 28rpx;
+  margin-right: 16rpx;
+  border-radius: 30rpx;
+  background: #eee4da;
+  font-size: 24rpx;
+}
+.filter.on {
+  background: #8f7a66;
+  color: #ffffff;
+}
+.item {
+  padding: 22rpx 0;
+  border-bottom: 1rpx solid #f0ebe4;
+}
+.no {
+  width: 64rpx;
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #c4b9ad;
+}
+.no.top {
+  font-size: 36rpx;
+}
+.score {
+  display: block;
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #776e65;
+}
+.meta {
+  display: block;
+  margin-top: 4rpx;
+}
+.clear {
+  background: #ffffff;
+  color: #e0574a;
+}

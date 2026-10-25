@@ -1,0 +1,30 @@
+<view class="card head">
+  <text class="h-name">{{lot.name}}</text>
+  <text class="sub h-addr">{{lot.addr}} · 营业 {{lot.open}}</text>
+  <view class="row stat">
+    <view class="stat-i"><text class="stat-n free-n {{free ? '' : 'gray'}}">{{free}}</text><text class="sub">剩余空位</text></view>
+    <view class="stat-i"><text class="stat-n">{{lot.total}}</text><text class="sub">总车位</text></view>
+    <view class="stat-i"><text class="stat-n">¥{{lot.first}}</text><text class="sub">首小时</text></view>
+  </view>
+</view>
+<view class="card">
+  <text class="title">收费规则</text>
+  <view class="rule row" wx:for="{{rules}}" wx:key="*this"><view class="rule-dot"></view><text class="rule-t">{{item}}</text></view>
+</view>
+<view class="card cells">
+  <text class="title sec">预约车位</text>
+  <picker class="pk-car" range="{{plates}}" value="{{carIdx}}" bindchange="onCar">
+    <view class="cell row"><text class="flex1 cell-label">车辆</text><text class="cell-value">{{plates[carIdx] || '未添加车辆'}}</text><view class="chev"></view></view>
+  </picker>
+  <picker class="pk-arrive" mode="time" value="{{arrive}}" bindchange="onArrive">
+    <view class="cell row"><text class="flex1 cell-label">到达时间</text><text class="cell-value">{{arrive}}</text><view class="chev"></view></view>
+  </picker>
+  <picker class="pk-dur" range="{{durations}}" value="{{durIdx}}" bindchange="onDur">
+    <view class="cell row"><text class="flex1 cell-label">预约时长</text><text class="cell-value">{{durations[durIdx]}}（至 {{leaveText}}）</text><view class="chev"></view></view>
+  </picker>
+  <view class="cell row cell-last"><text class="flex1 cell-label">预计费用</text><text class="fee">{{feeText}}</text></view>
+</view>
+<text class="err" wx:if="{{err}}">{{err}}</text>
+<view class="foot">
+  <view class="btn-primary reserve {{free ? '' : 'btn-off'}}" bindtap="reserve">{{free ? '立即预约' : '车位已满'}}</view>
+</view>
