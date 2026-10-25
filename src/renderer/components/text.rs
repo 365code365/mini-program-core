@@ -279,7 +279,29 @@ impl TextComponent {
                     .unwrap_or_default(),
                 _ => std::collections::HashMap::new(),
             };
-            for unit in crate::renderer::components::rich_text::split_wrappable(&seg_text) {
+            // 嵌套的 `<text>` 带了底色 / 内边距 / 边框（标签、徽章：`李明<text class="tag"> 本人 </text>`）：
+            // 整段一个 run，盒子把内边距算进去 —— 与叶子文本同一个约定（绘制时把字画进内容区）。
+            // 从前照样逐字切开、每个字的盒子只有字宽：每个字各画一块圆角底，内边距把字推出自己的盒子，
+            // 「本」被下一块底盖掉一半（火车票确认订单页的乘车人「本人」）。代价是这一段不能折行，
+            // 与浏览器里 inline-block 的标签一样
+            let decorated = matches!(child.node_type, WxmlNodeType::Element)
+                && (seg_style.background_color.is_some()
+                    || seg_style.padding_left > 0.0
+                    || seg_style.padding_right > 0.0
+                    || seg_style.padding_top > 0.0
+                    || seg_style.padding_bottom > 0.0
+                    || seg_style.border_width > 0.0);
+            let (pad_w, pad_h) = if decorated {
+                ((seg_style.padding_left + seg_style.padding_right) * sf, (seg_style.padding_top + seg_style.padding_bottom) * sf)
+            } else {
+                (0.0, 0.0)
+            };
+            let units = if decorated {
+                vec![seg_text.clone()]
+            } else {
+                crate::renderer::components::rich_text::split_wrappable(&seg_text)
+            };
+            for unit in units {
                 if unit.is_empty() {
                     continue;
                 }
@@ -296,9 +318,10 @@ impl TextComponent {
                             .map(|c| if c.is_ascii() { font_px * 0.62 } else { font_px })
                             .sum()
                     })
-                    .ceil();
+                    .ceil()
+                    + pad_w;
                 let cts = Style {
-                    size: Size { width: length(w), height: length(line_h) },
+                    size: Size { width: length(w), height: length(line_h + pad_h) },
                     flex_shrink: 0.0,
                     ..Default::default()
                 };

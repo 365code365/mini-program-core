@@ -337,3 +337,33 @@ fn 单书名号不画成冒号() {
     assert!(!a.is_empty() && !b.is_empty(), "两个字都画出来了");
     assert_ne!(a, b, "「›」与「:」画得一模一样");
 }
+
+/// `<text>` 里嵌套带底色 / 内边距的 `<text>`（标签）：整段一块底，字都在底里。
+/// 从前逐字切开、每字一块圆角底，内边距把字推出自己的盒子（火车票确认订单「李明 本人」的「本」被盖掉一半）
+#[test]
+fn 嵌套的标签文字_一整块底色() {
+    let _g = serial();
+    let fx = fixture(
+        "nested-tag",
+        "",
+        "page{color:#1d2129;font-size:28rpx}.tag{font-size:20rpx;padding:2rpx 10rpx;border-radius:6rpx;background:#eaf1ff;color:#2b6de8}",
+        &[("pages/index/index", r#"<view style="padding:20rpx"><text style="font-size:28rpx">李明<text class="tag"> 本人 </text></text></view>"#, "Page({})", "")],
+    );
+    let mut e = E::new(&fx);
+    let (w, _) = e.e.pixel_size();
+    let px = e.e.rgba().to_vec();
+    // 标签那一行（20rpx 内边距之下 4~22 逻辑像素）里，底色 #eaf1ff 的最长连续一段
+    let mut best = 0;
+    for y in (12..44).step_by(2) {
+        let mut run = 0;
+        for x in 0..w as usize {
+            let i = (y * w as usize + x) * 4;
+            let bg = (px[i] as i32 - 0xea).abs() < 6 && (px[i + 1] as i32 - 0xf1).abs() < 6 && px[i + 2] > 245;
+            let ink = px[i + 2] > 180 && px[i] < 120; // 标签里的蓝字
+            run = if bg || ink { run + 1 } else { 0 };
+            best = best.max(run);
+        }
+    }
+    // 两个 10px 的汉字 + 左右各 5px 内边距 = 30 逻辑像素 = 60 设备像素（逐字切开时每块只有 20 上下）
+    assert!(best >= 54, "标签底色应连成一整块（最长 {best} 设备像素）");
+}
