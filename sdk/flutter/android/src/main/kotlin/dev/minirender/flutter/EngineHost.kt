@@ -198,6 +198,11 @@ internal class EngineHost(
                 }
                 result.success(null)
             }
+            "keyboardShift" -> {
+                // 键盘顶起画面：引擎合成时导航栏以下整体上移、自己缓动（与原生 SDK 的 MiniKeyboard 同一个接口）
+                run { MiniEngine.nativeSetKeyboardShift(it, f("shift")) }
+                result.success(null)
+            }
             "wheel" -> {
                 run { MiniEngine.nativeWheel(it, f("dy"), call.argument<Boolean>("precise") ?: true) }
                 result.success(null)

@@ -35,7 +35,7 @@ class MiniTextInput implements TextInputClient {
   /// 引擎发来 `inputFocus`：按输入框属性打开对应的键盘。
   ///
   /// 已经聚焦的输入框再点一下，引擎会再发一次 `inputFocus`（光标挪到点中的位置）：
-  /// 这时不重开键盘，只把输入法那边的光标对齐过去。
+  /// 这时不重建连接，只把输入法那边的光标对齐过去，并确保键盘弹着。
   void open(MiniInputFocus f) {
     final runes = f.value.runes.length;
     final cursor = (f.cursor < 0 || f.cursor > runes) ? runes : f.cursor;
@@ -48,6 +48,9 @@ class MiniTextInput implements TextInputClient {
     if (_id == f.id && attached) {
       _value = value;
       _conn!.setEditingState(value);
+      // 键盘可能被用户收掉了（Android 返回键收键盘不关连接）：再点一下要重新弹出来。
+      // 从前这里直接 return，轻聊聊天页收起键盘后再点输入框，键盘就再也弹不出来
+      _conn!.show();
       return;
     }
     close();

@@ -10,9 +10,6 @@ import android.os.Build
 import android.util.AttributeSet
 import android.view.KeyEvent
 import android.view.MotionEvent
-import android.view.Surface
-import android.view.SurfaceHolder
-import android.view.SurfaceView
 import android.view.WindowInsets
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
@@ -68,9 +65,9 @@ class MiniProgramView @JvmOverloads constructor(
 ) : FrameLayout(context, attrs) {
 
     private val session = EngineSession(context.applicationContext, object : EngineSession.Ui {
-        override fun onPixelSize(w: Int, h: Int) = setPixelSize(w, h)
-        override fun reveal() = revealSurface()
-        override fun newSurface() = newSurfaceView()
+        override fun onPixelSize(w: Int, h: Int) = surfaces.setPixelSize(w, h)
+        override fun reveal() = surfaces.revealSurface()
+        override fun newSurface() = surfaces.newSurfaceView()
         override fun onEvents(list: List<String>) = list.forEach(::onEngineEvent)
     })
     private var appDir: File? = null
@@ -79,13 +76,20 @@ class MiniProgramView @JvmOverloads constructor(
     private val hostCalls = HostCallRouter(context, session)
     /** 软键盘：输入框聚焦弹出、输入法的字交给引擎（MiniImeConnection.kt） */
     private val ime = MiniIme(this, ::sendText, ::sendKey)
-    private val keyboard = MiniKeyboard(this) { h -> dispatchEvent("keyboardHeightChange", JSONObject().put("height", h)) } // adjust-position
+    // adjust-position：键盘高度推给 wx.onKeyboardHeightChange；顶起量交给引擎（合成时上移，导航栏不动）
+    private val keyboard = MiniKeyboard(
+        this,
+        { h -> dispatchEvent("keyboardHeightChange", JSONObject().put("height", h)) },
+        { shift -> session.run { MiniEngine.nativeSetKeyboardShift(it, shift) } },
+        { sendKey("escape") }, // 用户自己收了键盘：输入框失焦（引擎派发 bindblur、回 inputBlur）
+        { navReserve.px }, // 留给导航栏的那一截：键盘先盖住它
+    )
+    /** 底部留给系统导航栏的那一截（NavBarReserve.kt）：引擎只画上面那部分 */
+    private val navReserve = NavBarReserve(this)
     private val sameLayer = SameLayerViews(session) { resources.displayMetrics.density }
 
-    // ── SurfaceView（只在主线程读写） ──
-    private var surfaceView: SurfaceView? = null
-    private var fixed: Pair<Int, Int>? = null
-    private var surfaceRevealed = false
+    /** SurfaceView 的建 / 换 / 定尺寸（MiniSurfaceHost.kt，只在主线程读写） */
+    private val surfaces: MiniSurfaceHost by lazy { MiniSurfaceHost(this, session) }
 
     /** 引擎在 custom 导航栏的页面上画右上角胶囊（`open` 之前设） */
     var menuButton = true
@@ -302,9 +306,17 @@ class MiniProgramView @JvmOverloads constructor(
             return
         }
         // 转屏 / 分屏：引擎重排，SurfaceView 跟着引擎的新像素尺寸改（EngineSession.resize → setPixelSize）
-        val dpr = resources.displayMetrics.density
-        session.resize((w / dpr).toInt().coerceAtLeast(1), (h / dpr).toInt().coerceAtLeast(1), dpr)
+        resizeEngine()
     }
+
+    private fun resizeEngine() {
+        val dpr = resources.displayMetrics.density
+        session.resize((width / dpr).toInt().coerceAtLeast(1), (navReserve.engineHeight(height) / dpr).toInt().coerceAtLeast(1), dpr)
+    }
+
+    /** 安全区（逻辑像素）：底下留了导航栏那一截时，底部安全区已在画面之外，给 0（与 Flutter 插件一致） */
+    private fun safeArea(insets: WindowInsets): JSONObject =
+        HostChrome.insetsJson(insets, resources.displayMetrics.density).also { if (navReserve.px > 0) it.put("bottom", 0.0) }
 
     private fun createEngine() {
         val dir = appDir ?: return
@@ -313,7 +325,8 @@ class MiniProgramView @JvmOverloads constructor(
         val dpr = resources.displayMetrics.density
         // 逻辑尺寸 = 像素 / density（引擎按逻辑坐标工作，rpx 由它自己换算）
         val lw = (width / dpr).toInt().coerceAtLeast(1)
-        val lh = (height / dpr).toInt().coerceAtLeast(1)
+        rootWindowInsets?.let { navReserve.update(it) }
+        val lh = (navReserve.engineHeight(height) / dpr).toInt().coerceAtLeast(1)
         // 数据目录必须给：storage 与图片磁盘缓存都落在这里，不给会静默失效
         val data = File(context.filesDir, "mini-render").apply { mkdirs() }
         // 选项要在 app.js 执行前就位：onLaunch 里读 getSystemInfoSync（状态栏高度、胶囊位置）是常态
@@ -336,14 +349,15 @@ class MiniProgramView @JvmOverloads constructor(
         if (sameLayerVideo) same.put("video")
         sameLayer.tags().filter { it != "video" }.forEach { same.put(it) }
         if (same.length() > 0) options.put("sameLayer", same)
-        rootWindowInsets?.let { options.put("safeArea", HostChrome.insetsJson(it, dpr)) }
+        rootWindowInsets?.let { options.put("safeArea", safeArea(it)) }
         session.create(dir.absolutePath, data.absolutePath, startRoute, lw, lh, dpr, options.toString(), backend, HostChrome.deviceInfo(context), diagnostics)
     }
 
     /** 刘海 / 状态栏 / 导航条（逻辑像素）：`statusBarHeight`、胶囊位置与 `env(safe-area-inset-*)` 都按它算 */
     override fun onApplyWindowInsets(insets: WindowInsets): WindowInsets {
+        if (navReserve.update(insets) && created) resizeEngine() // 三键 ↔ 手势导航切换、转屏
         keyboard.onInsets(insets)
-        val o = HostChrome.insetsJson(insets, resources.displayMetrics.density)
+        val o = safeArea(insets)
         session.run {
             MiniEngine.nativeSetSafeArea(
                 it,
@@ -354,83 +368,6 @@ class MiniProgramView @JvmOverloads constructor(
         return super.onApplyWindowInsets(insets)
     }
 
-    // ─────────────────────────── SurfaceView ───────────────────────────
-
-    /**
-     * Callback2：窗口这一帧要等这块 SurfaceView 有了内容再一起上屏（[EngineSession.onRedrawNeeded]）。
-     * 只实现 Callback 的话，回桌面再回来时窗口不等它、直接上屏，SurfaceView 还没有缓冲 —— 露出底下那层，闪一下
-     */
-    private val callback = object : SurfaceHolder.Callback2 {
-        override fun surfaceCreated(holder: SurfaceHolder) {}
-
-        override fun surfaceRedrawNeeded(holder: SurfaceHolder) {}
-
-        override fun surfaceRedrawNeededAsync(holder: SurfaceHolder, drawingFinished: Runnable) =
-            session.onRedrawNeeded(drawingFinished)
-
-        override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
-            val s = holder.surface
-            requestHighRefresh(s)
-            session.onSurface(s)
-        }
-
-        // 返回之后不能再碰这块 Surface：同步等引擎线程放手
-        override fun surfaceDestroyed(holder: SurfaceHolder) = session.onSurfaceGone()
-    }
-
-    /** 引擎的像素尺寸到了 / 变了。第一次到的时候才建 SurfaceView：缓冲区一建出来就是对的尺寸 */
-    private fun setPixelSize(w: Int, h: Int) {
-        if (w <= 0 || h <= 0) return
-        val first = fixed == null
-        if (fixed == w to h) return
-        fixed = w to h
-        if (first || surfaceView == null) return newSurfaceView()
-        surfaceView?.let { sv ->
-            sv.holder.setFixedSize(w, h)
-            sv.layoutParams = LayoutParams(w, h)
-        }
-    }
-
-    /**
-     * 换一块从没被连过的 SurfaceView（第一次建、GPU 回退 CPU、直写失败改走 Bitmap：
-     * 那块 Surface 已经被另一种生产者连过）。主线程调
-     */
-    private fun newSurfaceView() {
-        surfaceView?.holder?.removeCallback(callback)
-        removeAllViews()
-        val sv = SurfaceView(context)
-        // 第一帧之前先藏起来（Android 10+ 的 SurfaceView 才支持 alpha）：没有缓冲的 SurfaceView 露的是黑底，
-        // 第一次打开时引擎要先开 GPU（一加 PLY110 约 0.5s）。藏着的时候露出这个视图的背景色
-        surfaceRevealed = false
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) sv.alpha = 0f
-        sv.holder.addCallback(callback)
-        // 一个引擎像素对一个屏幕像素：布局尺寸 = 缓冲区尺寸 = 引擎像素尺寸。视图宽 1080、引擎 1079 时
-        // MATCH_PARENT 会让 SurfaceFlinger 把整帧横向拉伸 1 像素（全屏发虚），所以按像素尺寸摆在左上角
-        val (w, h) = fixed ?: (LayoutParams.MATCH_PARENT to LayoutParams.MATCH_PARENT)
-        fixed?.let { (fw, fh) -> sv.holder.setFixedSize(fw, fh) }
-        addView(sv, LayoutParams(w, h))
-        surfaceView = sv
-    }
-
-    private fun revealSurface() {
-        if (surfaceRevealed) return
-        surfaceRevealed = true
-        surfaceView?.alpha = 1f
-    }
-
-    /**
-     * 这一层在动的时候要高刷：没人要的话系统（ColorOS 实测）会把整个屏降到 60Hz。
-     * 只是「希望」，静止时系统照样可以降（静止页面本来也不出帧）
-     */
-    private fun requestHighRefresh(s: Surface) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
-        val max = display?.supportedModes?.maxOfOrNull { it.refreshRate } ?: return
-        try {
-            s.setFrameRate(max, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT)
-        } catch (_: Exception) {
-        }
-    }
-
     // ─────────────────────────── 事件 ───────────────────────────
 
     /** 主线程：胶囊的两个动作交给宿主（没设回调就走默认） */
@@ -439,6 +376,7 @@ class MiniProgramView @JvmOverloads constructor(
         onEvent?.invoke(ev)
         when (ev.optString("type")) {
             "app" -> about = MiniProgramAbout.fromJson(ev.optJSONObject("about"))
+            "page" -> setBackgroundColor(NavBarReserve.color(ev)) // 导航栏那一截与 SurfaceView 第一帧之前露出的底色
             "menuButton" -> when (ev.optString("action")) {
                 "menu" -> showAbout()
                 "close" -> requestClose()
@@ -493,7 +431,7 @@ class MiniProgramView @JvmOverloads constructor(
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (!session.ready) return false
-        keyboard.adjustTouch(event)
+        if (event.actionMasked == MotionEvent.ACTION_DOWN && navReserve.swallows(event.y, height)) return false
         return MiniTouch.forward(session, event, resources.displayMetrics.density)
     }
 

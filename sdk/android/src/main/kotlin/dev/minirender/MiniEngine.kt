@@ -125,6 +125,8 @@ object MiniEngine {
     external fun nativeNativeViewEvent(handle: Long, key: String, name: String, detailJson: String?): Boolean
     /** 宿主推事件给 `wx.onXxx`（`accelerometerChange` / `locationChange` / `networkStatusChange` …）；返回收到它的监听者个数 */
     external fun nativeDispatchEvent(handle: Long, name: String, payloadJson: String?): Int
+    /** 键盘顶起画面：导航栏以下整体上移（逻辑像素，0 = 收回），引擎自己缓动、触摸坐标自己换算 */
+    external fun nativeSetKeyboardShift(handle: Long, logical: Float)
 
     /**
      * 同层渲染的 `<video>`（创建选项 `sameLayer: ["video"]`）：解出的一帧交给引擎画进页面，

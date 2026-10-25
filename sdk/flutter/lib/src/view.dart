@@ -1,3 +1,4 @@
+import 'dart:async' show Timer;
 import 'dart:math' as math;
 import 'dart:ui' show PlatformDispatcher;
 
@@ -99,6 +100,7 @@ class _MiniProgramViewState extends State<MiniProgramView> with WidgetsBindingOb
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _c.focusedInput.removeListener(_onFocus);
+    _keyboardTimer?.cancel();
     _input.close();
     super.dispose();
   }
@@ -108,6 +110,7 @@ class _MiniProgramViewState extends State<MiniProgramView> with WidgetsBindingOb
     if (f == null) {
       _input.close();
     } else {
+      _focusAt = DateTime.now();
       _input.open(f);
     }
     if (mounted) setState(() {}); // 键盘位移跟着输入框走
@@ -212,6 +215,44 @@ class _MiniProgramViewState extends State<MiniProgramView> with WidgetsBindingOb
     if (mounted) setState(() => _error = e);
   }
 
+  /// 上次交给引擎的顶起量（Android，见 build）
+  double _sentShift = 0;
+
+  /// 上次报给小程序的键盘高度（键盘挡住引擎画面的那一截，逻辑像素）与键盘是否弹着
+  double _sentKeyboard = 0;
+  double _pendingKeyboard = 0;
+  Timer? _keyboardTimer;
+  bool _keyboardUp = false;
+  DateTime _focusAt = DateTime.fromMillisecondsSinceEpoch(0);
+
+  /// 键盘高度推给 `wx.onKeyboardHeightChange` 与输入框的 `bindkeyboardheightchange`（聊天页靠它把列表改矮）；
+  /// 输入框还聚焦着、键盘却被用户收掉（返回键 / 收起键）时让输入框失焦（与微信一致，见 MiniKeyboard.kt）
+  void _trackKeyboard() {
+    final kb = MediaQuery.viewInsetsOf(context).bottom;
+    // 引擎画面底下还留着导航栏那一截（_reservedBottom）：键盘先盖住它
+    final covered = math.max(0.0, kb - _gapToScreenBottom - _reservedBottom).roundToDouble();
+    // Flutter 在 Android 上把键盘动画逐帧放进 viewInsets：每帧都报的话页面每帧 setData、重排一次（顿）。
+    // 等它停下来（80ms 没再变）再报一次最终高度，与微信「弹起 / 收起各报一次」一致
+    if (covered != _pendingKeyboard) {
+      _pendingKeyboard = covered;
+      _keyboardTimer?.cancel();
+      if (covered != _sentKeyboard) {
+        _keyboardTimer = Timer(const Duration(milliseconds: 80), () {
+          if (!mounted) return;
+          _sentKeyboard = covered;
+          _c.dispatchEvent('keyboardHeightChange', {'height': covered});
+        });
+      }
+    }
+    final up = kb > 0;
+    final focused = _c.focusedInput.value != null;
+    // 换输入框时有的输入法先收再弹：刚聚焦的 500ms 内不算用户收起
+    if (_keyboardUp && !up && focused && DateTime.now().difference(_focusAt).inMilliseconds > 500) {
+      _c.sendKey('escape');
+    }
+    _keyboardUp = up;
+  }
+
   /// 键盘挡住聚焦的输入框时，画面整体上移多少（微信 `adjust-position` 的行为）
   double _keyboardShift(Size size) {
     final f = _c.focusedInput.value;
@@ -267,12 +308,21 @@ class _MiniProgramViewState extends State<MiniProgramView> with WidgetsBindingOb
       _queueSync();
       final size = constraints.biggest;
       final shift = _keyboardShift(size);
+      // Android：顶起交给引擎（导航栏不动、按 vsync 缓动，engine_keyboard.rs）；视图本身不挪。
+      // 从前整个视图 Transform 上移：引擎画的导航栏跟着被推出屏幕、页面顶到状态栏底下，平台视图的
+      // 位置更新与引擎出帧也不同步（一顿一顿）。iOS 那边还没接，照旧平移视图
+      final engineShift = defaultTargetPlatform == TargetPlatform.android;
+      if (engineShift && shift != _sentShift) {
+        _sentShift = shift;
+        _c.keyboardShift(shift);
+      }
+      _trackKeyboard();
       return ColoredBox(
         key: _box,
         color: widget.backgroundColor,
         child: ClipRect(
           child: Transform.translate(
-            offset: Offset(0, -shift),
+            offset: Offset(0, engineShift ? 0 : -shift),
             child: Stack(
               fit: StackFit.expand,
               children: [

@@ -413,6 +413,10 @@ class MiniProgramController {
   /// 进前台 / 进后台 / 内存告警（[MiniProgramView] 已自动转发）
   Future<void> lifecycle(int what) => _call('lifecycle', {'what': what});
 
+  /// 键盘顶起画面（`adjust-position`）：导航栏以下整体上移 [logical] 逻辑像素（0 = 收回）。
+  /// 引擎自己按帧缓动、合成时上移、触摸坐标自己换回去（Android；iOS 仍由视图平移，见 view.dart）
+  Future<void> keyboardShift(double logical) => _call('keyboardShift', {'shift': logical});
+
   /// 在逻辑层执行一段 JS（调试与集成测试用）
   Future<String> debugEval(String code) async {
     if (!_created || _disposed) return '';

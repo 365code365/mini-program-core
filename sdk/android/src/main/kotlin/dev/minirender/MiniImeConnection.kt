@@ -49,7 +49,9 @@ internal class MiniIme(private val view: View, private val sendText: (String) ->
         view.requestFocus()
         // 换了输入框 / 键盘类型：让输入法重新问 onCreateInputConnection（数字键盘、密码、回车键文字）
         if (changed) imm?.restartInput(view)
-        imm?.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT)
+        // 显式请求（flags = 0）：这是用户点了输入框。SHOW_IMPLICIT 是「非用户发起」的请求，用户刚用返回键
+        // 收过键盘时系统会忽略它 —— 再点输入框键盘弹不出来（轻聊聊天页）
+        imm?.showSoftInput(view, 0)
     }
 
     /**

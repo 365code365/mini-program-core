@@ -21,6 +21,7 @@ internal object MiniDiag {
         "no_damage" to "MINI_NO_DAMAGE",
         "no_style_memo" to "MINI_NO_STYLE_MEMO",
         "no_incremental_layout" to "MINI_NO_INCREMENTAL_LAYOUT",
+        "no_scroll_tiles" to "MINI_NO_SCROLL_TILES",
         "layout_verify" to "MINI_LAYOUT_VERIFY",
         "mem_log" to "MINI_MEM_LOG",
         "scroll_log" to "MINI_SCROLL_LOG",
