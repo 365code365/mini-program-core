@@ -173,8 +173,10 @@ impl MiniEngine {
         // 从前这里无条件 `needs_redraw`：每一次滑动松手都整帧重画，正好砸在惯性的第一帧上
         // 正在拖的 swiper 松手要起吸附 / 翻页动画：动画由绘制推进，这一帧不画它就停在半路
         // 点击态褪去不在这里整页重画：engine_press.rs 在它真正褪掉的那一帧只重画那个元素
-        let had_press = self.interaction.dragging_scroll_area.is_some()
-            || self.interaction.dragging_slider.is_some()
+        // 拖过 scroll-view 不算：松手只是把拖动交给惯性，位置一变出帧时按位置变化只重画它的盒子（engine_damage
+        // `scroll_area_damage`），与拖动途中同一条路。从前它也在这里整帧：兴趣圈帖子页每次抬手那一帧真机 18~44ms，
+        // 正好砸在惯性第一帧上（诊断 20261025-100253-98de9a）
+        let had_press = self.interaction.dragging_slider.is_some()
             || crate::renderer::components::swiper_is_dragging();
         let now = self.mono_ms();
         // 拖过 slider：松手发 change，并且这一下不再算 tap（见 slider_input::finish）
@@ -291,7 +293,7 @@ impl MiniEngine {
         } = self;
         // touchmove 里 setData（跟手的拖拽条、滑块）每一步都会走到这里：只标数据脏，
         // 重画多大交给失效分析，不再每一步整帧
-        input::dispatch_touch_sequence(
+        let sent = input::dispatch_touch_sequence(
             app,
             renderer.as_ref(),
             outs,
@@ -305,6 +307,10 @@ impl MiniEngine {
                 }
             },
         );
+        // 长按派发到了处理函数：抬手不再有 tap（见 TouchTracker::note_long_handled）
+        if sent && outs.contains(&TouchOut::LongPress) {
+            self.touch.note_long_handled();
+        }
     }
 
     fn handle_click(&mut self, x: f32, y: f32) {

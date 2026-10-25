@@ -43,6 +43,9 @@ pub struct ActionSheet {
     closing: Option<Instant>,
     /// 按住的那一行：0.. 是选项，-1 是「取消」
     pressed: Option<i32>,
+    /// 这串触摸是在菜单弹出**之后**按下的。长按里弹的菜单：按下那根手指还在屏上，
+    /// 它抬起时不能当成「点了遮罩」—— 从前菜单刚弹出就以 fail cancel 关掉（轻聊会话列表）
+    armed: bool,
     /// 当前这段入场 / 退场的终态已经画出来过（之后不必再续帧）。
     /// 只看时间不够：宿主在动画末尾那一刻恰好没出帧的话，最后合成的是半路的画面
     settled: bool,
@@ -152,7 +155,7 @@ pub fn take_requests(app: &mut MiniApp) -> bool {
             .and_then(crate::host::tabbar::parse_color)
             .unwrap_or(Color::BLACK);
         let alert = req.get("alertText").and_then(Value::as_str).unwrap_or("").to_string();
-        with(|s| *s = Some(ActionSheet { id, alert, items, color, opened: crate::frame_clock::now(), closing: None, pressed: None, settled: false }));
+        with(|s| *s = Some(ActionSheet { id, alert, items, color, opened: crate::frame_clock::now(), closing: None, pressed: None, armed: false, settled: false }));
         changed = true;
     }
     let now = crate::frame_clock::now();
@@ -201,6 +204,7 @@ pub fn on_press(vp: (f32, f32), _x: f32, y: f32) -> bool {
     with(|s| {
         let Some(st) = s.as_mut() else { return false };
         st.pressed = if st.closing.is_some() { None } else { hit(st, vp, y).filter(|r| *r != i32::MIN) };
+        st.armed = true;
         true
     })
 }
@@ -210,6 +214,10 @@ pub fn on_release(app: &mut MiniApp, vp: (f32, f32), _x: f32, y: f32) -> bool {
     let outcome = with(|s| {
         let st = s.as_mut()?;
         st.pressed = None;
+        // 弹出前就按下的那根手指：抬起交还页面（它要收 touchend），菜单留着
+        if !st.armed {
+            return None;
+        }
         if st.closing.is_some() {
             return Some(None);
         }
@@ -349,6 +357,7 @@ pub(crate) fn with_selftest_sheet<R>(f: impl FnOnce() -> R) -> R {
         closing: None,
         // 按着第一项：按压底盖过圆角，缓存里那几个像素要按内容贴
         pressed: Some(0),
+        armed: true,
         settled: true,
     };
     with(|s| *s = Some(st));
@@ -453,6 +462,7 @@ pub(crate) fn open_at(ago_ms: u64, closing: bool) {
         color: Color::BLACK,
         opened: t,
         closing: closing.then_some(t),
+        armed: true, // 测试里直接点：当作弹出之后才按下
         pressed: Some(1),
         settled: false,
     };

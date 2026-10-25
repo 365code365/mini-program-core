@@ -44,8 +44,9 @@
                 var ch = (__routePending && __routePending.channel) || null;
                 page.getOpenerEventChannel = function() { return ch || (ch = __makeEventChannel({})); };
                 page.router = page.pageRouter = __routerFor(page);
-                // 自定义 tabBar 的实例：引擎的自定义 tabBar 不暴露组件实例（官方写法 `this.getTabBar && this.getTabBar()` 判空能接住）
-                page.getTabBar = function() { return typeof __customTabBarInstance === 'object' ? __customTabBarInstance : null; };
+                // 自定义 tabBar 的实例（宿主在 app.js 之后用 __mountCustomTabBar 建好；没有自定义 tabBar 时是 null，
+                // 官方写法 `typeof this.getTabBar === 'function' && this.getTabBar()` 判空能接住）
+                page.getTabBar = function() { return __customTabBarInstance || null; };
                 page.setUpdatePerformanceListener = function(opt, cb) { page.__perfListener = typeof opt === 'function' ? opt : cb; };
                 if (typeof __attachMediaQuery === 'function') __attachMediaQuery(page);
                 if (typeof __attachAnimate === 'function') __attachAnimate(page);
@@ -105,3 +106,25 @@
                     return raw(delta, byApi);
                 };
             })();
+
+            // ---------- 自定义 tabBar 的活实例 ----------
+            // 从前 tabBar 只用另一个 JS 上下文里取的 data 快照画：`getTabBar()` 是 null，组件自己 setData
+            // （角标、选中态）也改不到画面（轻聊消息角标一直停在 20）。现在宿主在 app.js 执行之后建一个实例：
+            // 页面 `getTabBar().setData(...)` 与组件内部的 setData 都会让 `__tabBarVersion` 加一，
+            // 宿主在取页面数据时比对版本号，变了就取 `__customTabBarData()` 重画 tabBar。
+            var __customTabBarInstance = null;
+            var __tabBarVersion = 0;
+            function __mountCustomTabBar() {
+                if (__customTabBarInstance) { return true; }
+                var inst = __createComponentInstance('custom-tab-bar', {});
+                if (!inst) { return false; }
+                inst.__appLevel = true;
+                var raw = inst.setData;
+                inst.setData = function(d, cb) { raw.call(inst, d, cb); __tabBarVersion++; };
+                __customTabBarInstance = inst;
+                __tabBarVersion++;
+                return true;
+            }
+            function __customTabBarData() {
+                return JSON.stringify(__customTabBarInstance ? __customTabBarInstance.data : {});
+            }

@@ -129,6 +129,12 @@ impl crate::MiniAppWindow {
         if !(structural || css_anim || gif.is_some()) && matches!(area, AreaDamage::Nothing) {
             return;
         }
+        // 覆盖层里的 scroll-view 在动（松手后的惯性 / 回弹）：覆盖层是按 `fixed_dirty` 门控重画的，
+        // 不置的话这几帧它停在按下时那一帧，登记的点击区域也是旧的 —— 甩完列表画面不跟、
+        // 第一下点击按旧位置命中，落空（restaurant 购物车抽屉，划完要点两下）
+        if matches!(area, AreaDamage::Full) {
+            self.fixed_dirty = true;
+        }
         let damage = if structural {
             None
         } else {

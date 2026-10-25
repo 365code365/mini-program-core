@@ -61,6 +61,8 @@ struct Active {
     /// 超过 slop：tap 作废
     moved: bool,
     long_fired: bool,
+    /// 长按派发到了页面里绑定的 `longpress` / `longtap`：抬手不再派 tap（微信语义）
+    long_handled: bool,
     /// 被滚动等手势接管：后续不再派发 touch 事件，tap 作废
     canceled: bool,
 }
@@ -116,6 +118,7 @@ impl TouchTracker {
             started_ms: now_ms,
             moved: false,
             long_fired: false,
+            long_handled: false,
             canceled: false,
         });
         vec![TouchOut::Start]
@@ -161,7 +164,7 @@ impl TouchTracker {
         }
         a.pos = (x, y);
         let mut out = vec![TouchOut::End];
-        if !a.moved {
+        if !a.moved && !a.long_handled {
             out.push(TouchOut::Tap);
         }
         out
@@ -178,6 +181,16 @@ impl TouchTracker {
         }
         a.canceled = true;
         vec![TouchOut::Cancel]
+    }
+
+    /// 宿主告诉状态机：刚产出的 `LongPress` 真的派发到了处理函数。
+    ///
+    /// 官方文档（事件 / longpress）：超过 350ms 再离开，**如果指定了回调并触发了**，tap 不再触发；
+    /// 没绑 longpress 的元素按久了照样有 tap。所以要靠派发结果来判，状态机自己不知道
+    pub fn note_long_handled(&mut self) {
+        if let Some(a) = &mut self.active {
+            a.long_handled = true;
+        }
     }
 
     /// 抬起时清干净（cancel 之后仍会来一次 release）
@@ -356,6 +369,11 @@ mod tests {
         assert_eq!(names(t.tick(400)), ["longpress"]);
         assert!(t.tick(900).is_empty(), "长按只触发一次");
         assert_eq!(names(t.release(10.0, 10.0, 2000)), ["touchend", "tap"]);
+        // 页面绑了 longpress 且派发到了：抬手只有 touchend
+        t.press(10.0, 10.0, 3000);
+        assert_eq!(names(t.tick(3400)), ["longpress"]);
+        t.note_long_handled();
+        assert_eq!(names(t.release(10.0, 10.0, 3500)), ["touchend"]);
     }
 
     /// 移动超过阈值：tap 作废，长按也不再触发

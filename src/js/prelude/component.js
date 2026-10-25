@@ -351,6 +351,8 @@
                 for (var id in __componentInstances) {
                     if (!__componentInstances.hasOwnProperty(id) || ids.indexOf(id) >= 0) { continue; }
                     var t = __componentInstances[id].__tree;
+                    // 自定义 tabBar 的实例属于整个 App（page-ext.js 的 __mountCustomTabBar），换页不卸
+                    if (__componentInstances[id].__appLevel) { continue; }
                     if (!t || t === st) { ids.push(id); }
                 }
                 for (var i = 0; i < ids.length; i++) { __detachComponentInstance(ids[i]); }

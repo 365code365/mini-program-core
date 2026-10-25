@@ -135,6 +135,8 @@ pub mod observers;
 pub mod ui_overlay;
 /// wx.setBackgroundColor（帧底色）与 wx.hideKeyboard（输入框失焦）
 pub mod window_api;
+/// 自定义 tabBar 的活实例（getTabBar、组件 setData 改角标），SDK 与桌面共用
+pub mod custom_tabbar_live;
 
 pub use config::*;
 pub use navigation::*;

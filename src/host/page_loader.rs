@@ -15,6 +15,8 @@ pub struct CustomTabBar {
     pub wxml_nodes: Vec<WxmlNode>,
     pub stylesheet: StyleSheet,
     pub js_code: String,
+    /// 主上下文里那个活实例上次画的版本号（见 custom_tabbar_live.rs）；-1 = 还没建
+    pub version: i64,
 }
 
 /// 小程序目录路径（全局状态）。
@@ -209,6 +211,7 @@ pub fn load_custom_tabbar_with_app_wxss(app_wxss: &str) -> Result<Option<CustomT
         wxml_nodes,
         stylesheet,
         js_code: js,
+        version: -1,
     }))
 }
 

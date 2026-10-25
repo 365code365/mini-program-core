@@ -117,8 +117,13 @@
                         (val.charAt(0) === '[' && val.charAt(val.length - 1) === ']')) {
                         try { out[key] = JSON.parse(val.replace(/'/g, '"')); }
                         catch (e) { out[key] = val; }
-                    } else if (/^-?\d+(\.\d+)?$/.test(val)) {
+                    } else if (/^-?\d+(\.\d+)?$/.test(val) && String(parseFloat(val)) === val) {
+                        // 只还原「写回去还是它自己」的数字：`{{7}}` → 7；
+                        // `007`、`1.50`、超过 2^53 的订单号这类必须保持字符串（还原了就丢了前导零 / 精度）
                         out[key] = parseFloat(val);
+                    } else if (val === 'true' || val === 'false') {
+                        // `data-busy="{{false}}"`：微信给布尔值。从前到页面是字符串 "false"，`if (busy)` 永远为真
+                        out[key] = val === 'true';
                     } else {
                         out[key] = val;
                     }

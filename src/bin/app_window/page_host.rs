@@ -43,11 +43,11 @@ impl crate::MiniAppWindow {
         // path 即页面路由，决定页面里相对 require 的基准目录。
         self.app.load_module_script(path, &page_info.js)?;
         let query_json = serde_json::to_string(&query).unwrap_or("{}".to_string());
-        self.app.eval(&format!("if(__currentPage && __currentPage.onLoad) __currentPage.onLoad({})", query_json)).ok();
-        self.app.eval("if(__currentPage && __currentPage.onShow) __currentPage.onShow()").ok();
+        self.app.call_page_hook("onLoad", &query_json);
+        self.app.call_page_hook("onShow", "");
         // onReady：微信在首次渲染完成后触发；编译端取数据快照时也会走这一步，
         // 窗体不调用会导致两端初始数据不同（例如在 onReady 里补数据的页面）。
-        self.app.eval("if(__currentPage && __currentPage.onReady) __currentPage.onReady()").ok();
+        self.app.call_page_hook("onReady", "");
         // 自定义组件：先按「组件路径」执行它的 js（`Component()` 借此注册到该路径），
         // 再建实例。实例必须真的建出来 —— 框架型产物在 attached 里挂载自己的组件树
         // 并触发首次 setData，没有实例的话组件模板里全是空值（底部导航整条空白）。
@@ -98,7 +98,7 @@ impl crate::MiniAppWindow {
             if logic_popped == 0 {
                 pop_logic_page(&self.app);
             }
-            self.app.eval("if(__currentPage && __currentPage.onShow) __currentPage.onShow()").ok();
+            self.app.call_page_hook("onShow", "");
             // 自定义组件的实例要重建：往前走的时候 `navigate_to` 调过
             // `__resetPageComponents()`，把**上一页**的组件实例也一起作废了。
             // 不重建的话返回后组件模板里全是空值 —— tea-app 从二级页返回首页，

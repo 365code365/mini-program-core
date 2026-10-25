@@ -146,18 +146,12 @@ pub fn handle_content_click(
         return result;
     }
     
-    // 检查是否点击在 scroll-view 内部，如果是，需要调整坐标
-    let mut adjusted_y = actual_y;
-    if let Some(element) = interaction.hit_test(x, actual_y) {
-        if element.interaction_type == InteractionType::ScrollArea {
-            // 点击在 scroll-view 上，需要加上 scroll-view 的滚动偏移
-            if let Some(controller) = interaction.get_scroll_controller(&element.id) {
-                let scroll_offset = controller.get_position();
-                // 计算相对于 scroll-view 内部的坐标
-                adjusted_y = actual_y + scroll_offset;
-            }
-        }
-    }
+    // scroll-view 里的子元素登记时已经减过它自己的滚动量（draw_interactive.rs 的
+    // `child_offset_y`、scroll_live.rs 同理），命中只用页面内容坐标。
+    // 从前这里又加了一次 scroll-view 的偏移：一滚过（scroll-into-view / 手指拖），
+    // 点到的就是「两倍偏移」处的那一项 —— 往往在视口外，表现成整片列表点不动
+    // （bank 收款人、restaurant 菜品）；横向的还把 x 偏移加到了 y 上
+    let adjusted_y = actual_y;
     
     // 使用交互管理器处理点击
     if let Some(result) = interaction.handle_click(x, adjusted_y) {

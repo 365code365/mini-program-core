@@ -207,9 +207,15 @@ impl MiniAppWindow {
             println!("🎨 app.wxss loaded ({} 字节)", app_wxss.len());
         }
         
-        let custom_tabbar = if app_config.tab_bar.as_ref().map(|tb| tb.custom).unwrap_or(false) {
+        let mut custom_tabbar = if app_config.tab_bar.as_ref().map(|tb| tb.custom).unwrap_or(false) {
             load_custom_tabbar_with_app_wxss(&app_wxss)?
         } else { None };
+        // 主上下文里的活实例（getTabBar、组件 setData），与 SDK 同一份（host::custom_tabbar_live）
+        if let Some(ct) = custom_tabbar.as_mut() {
+            if mini_render::host::custom_tabbar_live::mount(&app, &ct.js_code) {
+                if let Some(d) = mini_render::host::custom_tabbar_live::take_data(&app, &mut ct.version) { ct.data = d; }
+            }
+        }
         
         // tabBar 高度以组件 WXSS 实测为准（微信同样由组件自身决定），
         // 写死常量会让内容视口和固定层与 H5 差几个像素。

@@ -270,7 +270,7 @@ impl MiniEngine {
             .and_then(|v| v.get("window").cloned())
             .unwrap_or(serde_json::Value::Null);
         let app_wxss = page_loader::load_app_wxss();
-        let custom_tabbar = if config.tab_bar.as_ref().map(|t| t.custom).unwrap_or(false) {
+        let mut custom_tabbar = if config.tab_bar.as_ref().map(|t| t.custom).unwrap_or(false) {
             crate::host::load_custom_tabbar_with_app_wxss(&app_wxss)?
         } else {
             None
@@ -286,6 +286,14 @@ impl MiniEngine {
 
         let px = |v: u32| (v as f32 * dpr) as u32;
         let vp = height as f32;
+        // 主上下文里建活实例：页面 getTabBar()、组件自己的 setData 才改得到画面（custom_tabbar_live.rs）
+        if let Some(ct) = custom_tabbar.as_mut() {
+            if crate::host::custom_tabbar_live::mount(&app, &ct.js_code) {
+                if let Some(d) = crate::host::custom_tabbar_live::take_data(&app, &mut ct.version) {
+                    ct.data = d;
+                }
+            }
+        }
         let tabbar_px = ((tabbar_logical_height(custom_tabbar.is_some(), &opts) * dpr) as u32).max(1);
         Ok(Self {
             app,

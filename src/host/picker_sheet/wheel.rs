@@ -254,6 +254,7 @@ mod tests {
             anim_from: Instant::now() - Duration::from_secs(1),
             closing: false,
             date_fields: DateFields::Day,
+            date_range: ((1970, 1, 1), (2100, 12, 31)),
             viewport: (375.0, 667.0),
             wheel: WheelState::default(),
         }

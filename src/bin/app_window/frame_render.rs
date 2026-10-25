@@ -36,6 +36,15 @@ impl crate::MiniAppWindow {
             // 只在事件循环里标记的话，快照/无窗口路径会漏掉（底部固定栏会整条丢失）。
             self.fixed_dirty = true;
         }
+        // 自定义 tabBar 的实例 setData 过：换数据。tabBar 只在整帧里画，这一帧不许走局部
+        if self.page_data_dirty {
+            if let Some(ct) = self.custom_tabbar.as_mut() {
+                if let Some(d) = mini_render::host::custom_tabbar_live::take_data(&self.app, &mut ct.version) {
+                    ct.data = d;
+                    self.force_full_redraw = true;
+                }
+            }
+        }
         if self.page_data_dirty {
             self.fixed_dirty = true;
             // 取数据顺带对账组件实例（每处使用一个实例），与 SDK 引擎共用一个入口

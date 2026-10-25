@@ -232,3 +232,21 @@ fn dispatch_event_fills_missing_timestamp() {
     assert_eq!(app.eval("typeof __currentPage.ts").unwrap(), "number");
     assert!(app.eval("__currentPage.ts > 0").unwrap() == "true");
 }
+
+/// dataset 还原的边界：布尔值还原；前导零、尾随零的数字保持字符串
+#[test]
+fn dataset_coerces_booleans_and_keeps_leading_zero_strings() {
+    let mut app = crate::runtime::MiniApp::new(375, 667).expect("create MiniApp");
+    app.init().expect("init");
+    app.load_script(r#"Page({ data: {}, onTap: function (e) { this.ds = e.currentTarget.dataset; } });"#).unwrap();
+    app.eval(
+        r#"__dispatchEvent('onTap', { type: 'tap',
+            target: { id: 'a', dataset: {} },
+            currentTarget: { id: 'a', dataset: { busy: 'false', on: 'true', code: '007', price: '1.50', n: '12', f: '2.5' } } })"#,
+    )
+    .unwrap();
+    let ds = app.eval("JSON.stringify(__currentPage.ds)").unwrap();
+    for want in [r#""busy":false"#, r#""on":true"#, r#""code":"007""#, r#""price":"1.50""#, r#""n":12"#, r#""f":2.5"#] {
+        assert!(ds.contains(want), "{want} 不在 {ds}");
+    }
+}

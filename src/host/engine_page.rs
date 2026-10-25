@@ -42,11 +42,9 @@ impl MiniEngine {
             .ok();
         self.app.load_module_script(&path, &info.js)?;
         let q = serde_json::to_string(&query).unwrap_or_else(|_| "{}".into());
-        self.app
-            .eval(&format!("if(__currentPage&&__currentPage.onLoad)__currentPage.onLoad({q})"))
-            .ok();
-        self.app.eval("if(__currentPage&&__currentPage.onShow)__currentPage.onShow()").ok();
-        self.app.eval("if(__currentPage&&__currentPage.onReady)__currentPage.onReady()").ok();
+        self.app.call_page_hook("onLoad", &q);
+        self.app.call_page_hook("onShow", "");
+        self.app.call_page_hook("onReady", "");
         component_mount::mount_page_components(&mut self.app, &info.components, &nodes);
 
         self.page_stack.push(PageInstance {

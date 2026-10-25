@@ -20,6 +20,7 @@ pub fn build(binding: &PickerBinding) -> PickerSheetState {
         _ => SheetMode::Selector,
     };
     let mut date_fields = DateFields::Day;
+    let mut date_range = ((1970, 1, 1), (2100, 12, 31));
     let (columns, selected) = match mode {
         SheetMode::Selector => {
             let col = binding.range.clone();
@@ -55,9 +56,14 @@ pub fn build(binding: &PickerBinding) -> PickerSheetState {
             };
             let (cy, cm, cd) = current_ymd();
             let (y, m, d) = parse_ymd(&binding.value).unwrap_or((cy, cm, cd));
-            let start_year = parse_ymd(&binding.start).map(|(v, ..)| v).unwrap_or((y - 60).min(cy - 60));
-            let end_year = parse_ymd(&binding.end).map(|(v, ..)| v).unwrap_or((y + 60).max(cy + 60));
-            let end_year = end_year.max(start_year);
+            let start = parse_ymd(&binding.start).unwrap_or(((y - 60).min(cy - 60), 1, 1));
+            // `end="2026"` / `"2026-05"`：缺的月、日按那一年 / 那个月的最后一天算（含 end 当天）
+            let mut end = parse_ymd_end(&binding.end).unwrap_or(((y + 60).max(cy + 60), 12, 31));
+            if end < start {
+                end = start;
+            }
+            date_range = (start, end);
+            let (start_year, end_year) = (start.0, end.0);
             let years: Vec<String> = (start_year..=end_year).map(|v| format!("{}年", v)).collect();
             let yi = (y - start_year).clamp(0, years.len() as i32 - 1) as usize;
             let mut cols = vec![years];
@@ -79,7 +85,7 @@ pub fn build(binding: &PickerBinding) -> PickerSheetState {
         }
     };
 
-    PickerSheetState {
+    let mut st = PickerSheetState {
         id: binding.id.clone(),
         mode,
         columns,
@@ -96,9 +102,15 @@ pub fn build(binding: &PickerBinding) -> PickerSheetState {
         anim_from: Instant::now(),
         closing: false,
         date_fields,
+        date_range,
         viewport: (LOGICAL_WIDTH as f32, LOGICAL_HEIGHT as f32),
         wheel: WheelState::default(),
+    };
+    // 初值落在 start / end 之外时夹回范围里，月、日两列按范围裁
+    if mode == SheetMode::Date {
+        st.rebuild_date_columns();
     }
+    st
 }
 
 /// `[0,2]` / `[0, 2]` / `'[0,2]'` -> `[0, 2]`
@@ -132,6 +144,17 @@ fn parse_ymd(s: &str) -> Option<(i32, u32, u32)> {
     Some((y, m, d.max(1)))
 }
 
+/// `end` 的写法可以只到年或月：缺的部分取那一段的最后一天
+fn parse_ymd_end(s: &str) -> Option<(i32, u32, u32)> {
+    let parts = s.trim().split('-').count();
+    let (y, m, d) = parse_ymd(s)?;
+    Some(match parts {
+        1 => (y, 12, 31),
+        2 => (y, m, super::days_in_month(y, m)),
+        _ => (y, m, d),
+    })
+}
+
 /// 当前 UTC 日期。没引入 chrono，用 Howard Hinnant 的 civil-from-days 算法从
 /// Unix 时间戳直接换算（只用于 date/time picker 的默认值，时区差一小时无妨）。
 pub fn current_ymd() -> (i32, u32, u32) {
@@ -159,4 +182,56 @@ fn current_hh_mm() -> (u32, u32) {
         .unwrap_or(0);
     let sod = secs.rem_euclid(86_400);
     ((sod / 3600) as u32, ((sod % 3600) / 60) as u32)
+}
+
+#[cfg(test)]
+mod date_range_tests {
+    use super::*;
+    fn date(value: &str, start: &str, end: &str) -> PickerSheetState {
+        build(&PickerBinding {
+            id: "p".into(),
+            bounds: crate::Rect::new(0.0, 0.0, 10.0, 10.0),
+            mode: "date".into(),
+            range: vec![],
+            multi_range: vec![],
+            value: value.into(),
+            fields: "day".into(),
+            start: start.into(),
+            end: end.into(),
+            change_handler: None,
+            column_handler: None,
+            cancel_handler: None,
+            header_text: String::new(),
+            disabled: false,
+            is_fixed: false,
+        })
+    }
+    /// 起始年只从起始月起、起始月只从起始日起；往前滚滚不出 start
+    #[test]
+    fn start_裁掉起始年月之前的月日() {
+        let mut s = date("2026-06-10", "2026-06-05", "2026-08-20");
+        assert_eq!(s.columns[1], ["6月", "7月", "8月"]);
+        assert_eq!(s.columns[2].first().map(String::as_str), Some("5日"));
+        s.move_selection(2, -100);
+        assert_eq!(s.change_value(), "2026-06-05");
+        // 换到结束月：日只到 20
+        s.move_selection(1, 2);
+        assert_eq!(s.columns[2].last().map(String::as_str), Some("20日"));
+        assert_eq!(s.change_value(), "2026-08-05");
+        s.move_selection(2, 100);
+        assert_eq!(s.change_value(), "2026-08-20");
+    }
+    /// 初值在范围外：夹到 start（微信同样落在边界上）
+    #[test]
+    fn 初值早于_start_落在_start() {
+        let s = date("2026-01-01", "2026-06-05", "2027-01-31");
+        assert_eq!(s.change_value(), "2026-06-05");
+    }
+    /// `end` 只写到年：含那一年 12 月 31 日
+    #[test]
+    fn end_只写年份() {
+        let mut s = date("2026-12-01", "2026-01-01", "2026");
+        s.move_selection(2, 100);
+        assert_eq!(s.change_value(), "2026-12-31");
+    }
 }

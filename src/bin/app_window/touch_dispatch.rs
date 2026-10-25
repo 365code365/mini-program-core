@@ -40,7 +40,7 @@ impl crate::MiniAppWindow {
             pending_navigation,
             ..
         } = self;
-        input::dispatch_touch_sequence(
+        let sent = input::dispatch_touch_sequence(
             app,
             renderer.as_ref(),
             outs,
@@ -61,6 +61,10 @@ impl crate::MiniAppWindow {
                 }
             },
         );
+        // 长按派发到了处理函数：抬手不再有 tap（与 SDK 同一条规则，见 TouchTracker::note_long_handled）
+        if sent && outs.contains(&app_window::touch::TouchOut::LongPress) {
+            self.touch.note_long_handled();
+        }
     }
 
     /// 拖着的 slider 换了值：派发 `changing`（派发本身与 SDK 共用 `host::slider_input`）

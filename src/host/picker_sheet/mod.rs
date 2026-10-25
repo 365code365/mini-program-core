@@ -96,6 +96,9 @@ pub struct PickerSheetState {
     pub closing: bool,
     /// `date` 模式的年月日范围（用于换月后重算天数）
     pub date_fields: DateFields,
+    /// `date` 模式的 `start` / `end`（含两端，年月日）。月、日两列按它裁：起始年只从起始月开始，
+    /// 起始年月只从起始日开始；结束那头同理。没写 start / end 时是年份列的两头（不裁月日）
+    pub date_range: ((i32, u32, u32), (i32, u32, u32)),
     /// 弹出时的逻辑视口（宽, 高）。面板贴着视口底边、头部按宽度左右分「取消 / 确定」。
     /// 从前写死 375×667：别的尺寸上面板画在半空、按钮点不准（桌面窗体就是 375×667，不受影响）。
     pub viewport: (f32, f32),
@@ -167,33 +170,36 @@ impl PickerSheetState {
         }
         // multiSelector 的联动（bindcolumnchange）与 date 的天数重算
         if self.mode == SheetMode::Date {
-            self.rebuild_date_days();
+            self.rebuild_date_columns();
         }
     }
 
-    /// 年/月变化后重算「日」这一列（闰年、大小月）
-    fn rebuild_date_days(&mut self) {
+    /// 年/月变化后按 `date_range` 重建「月」「日」两列（闰年、大小月、start / end 裁边），
+    /// 选中项按**数值**保持：在 3 月选着 31 日、换到 2 月就落在 28/29 日；
+    /// 换到起始年而月份早于起始月就落在起始月。从前只重算天数、不看 start / end ——
+    /// 年份列限住了，月日照样能滚到 start 之前（travel 出发日期能选到 start 前一天）
+    pub(crate) fn rebuild_date_columns(&mut self) {
+        if self.date_fields == DateFields::Year || self.columns.len() < 2 {
+            return;
+        }
+        let ((sy, sm, sd), (ey, em, ed)) = self.date_range;
+        let y = self.picked_number(0).unwrap_or(sy as i64) as i32;
+        let m = self.picked_number(1).unwrap_or(1) as u32;
+        let (m_lo, m_hi) = (if y == sy { sm } else { 1 }, if y == ey { em } else { 12 });
+        let m_hi = m_hi.max(m_lo);
+        let m = m.clamp(m_lo, m_hi);
+        self.columns[1] = (m_lo..=m_hi).map(|v| format!("{}月", v)).collect();
+        self.selected[1] = (m - m_lo) as usize;
         if self.date_fields != DateFields::Day || self.columns.len() < 3 {
             return;
         }
-        let year: i32 = self
-            .columns
-            .first()
-            .and_then(|c| c.get(self.selected[0]))
-            .and_then(|s| s.trim_end_matches('年').parse().ok())
-            .unwrap_or(2000);
-        let month: u32 = self
-            .columns
-            .get(1)
-            .and_then(|c| c.get(self.selected[1]))
-            .and_then(|s| s.trim_end_matches('月').parse().ok())
-            .unwrap_or(1);
-        let days = days_in_month(year, month);
-        let new_col: Vec<String> = (1..=days).map(|d| format!("{}日", d)).collect();
-        if self.selected[2] >= new_col.len() {
-            self.selected[2] = new_col.len() - 1;
-        }
-        self.columns[2] = new_col;
+        let d = self.picked_number(2).unwrap_or(1) as u32;
+        let days = days_in_month(y, m);
+        let d_lo = if y == sy && m == sm { sd.min(days) } else { 1 };
+        let d_hi = if y == ey && m == em { ed.min(days) } else { days }.max(d_lo);
+        let d = d.clamp(d_lo, d_hi);
+        self.columns[2] = (d_lo..=d_hi).map(|v| format!("{}日", v)).collect();
+        self.selected[2] = (d - d_lo) as usize;
     }
 
     /// 按当前选择算出 `bindchange` 的 `detail.value`，类型与微信一致：

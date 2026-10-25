@@ -210,8 +210,12 @@ impl WxmlRenderer {
                 // 注册子元素的交互区域（需要考虑滚动偏移）
                 child_offset_y = -scroll_position * sf;
                 let text_color = node.style.text_color.unwrap_or(Color::BLACK);
+                // 可见窗口是 scroll-view 自己在页面上的那一段（子节点的 y 已经减过滚动量）。
+                // 从前传的是 `[scroll_position, +h]` —— 内部滚动量当成了页面坐标：
+                // 一滚过，登记的就是视口外的那几项，视口里的一项都没登记，整片点不动
+                let window_top = logical_bounds.y;
                 for child in &node.children {
-                    self.register_child_interactions(taffy, child, x, y + child_offset_y, text_color, interaction, scroll_position, h / sf);
+                    self.register_child_interactions(taffy, child, x, y + child_offset_y, text_color, interaction, window_top, h / sf);
                 }
                 if log_scroll {
                     let ms = |a: std::time::Instant, b: std::time::Instant| (b - a).as_secs_f32() * 1000.0;

@@ -75,6 +75,7 @@ mod tests {
             anim_from: Instant::now() - std::time::Duration::from_secs(1),
             closing: false,
             date_fields: DateFields::Day,
+            date_range: ((1970, 1, 1), (2100, 12, 31)),
             viewport: (LOGICAL_WIDTH as f32, LOGICAL_HEIGHT as f32),
             wheel: WheelState::default(),
         }

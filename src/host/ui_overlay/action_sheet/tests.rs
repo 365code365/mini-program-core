@@ -67,6 +67,7 @@ fn 缓存贴出来与直接画逐字节相同() {
             opened: t,
             closing: None,
             pressed,
+            armed: true,
             settled: false,
         };
         with(|s| *s = Some(st.clone()));

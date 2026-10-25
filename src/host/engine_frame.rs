@@ -40,6 +40,7 @@ impl MiniEngine {
         // 从前这里连带 `needs_redraw` —— 每秒一次的倒计时 setData 就是每秒一次整帧
         if self.app.take_data_dirty() {
             self.page_data_dirty = true;
+            self.sync_custom_tabbar();
         }
         self.drain_ui_events();
         // Toast 到时收起（桌面窗体由 update_toast_timeout 做，SDK 从前从不收）
