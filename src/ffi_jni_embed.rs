@@ -323,6 +323,12 @@ pub extern "system" fn Java_dev_minirender_MiniEngine_nativeHostReply(
     ) != 0) as jboolean
 }
 
+/// 键盘顶起画面（见 `mr_app_set_keyboard_shift`）
+#[no_mangle]
+pub extern "system" fn Java_dev_minirender_MiniEngine_nativeSetKeyboardShift(_env: JNIEnv, _class: JClass, h: jlong, logical: f32) {
+    crate::ffi_app::mr_app_set_keyboard_shift(h as *mut MRApp, logical)
+}
+
 /// 宿主推事件给 `wx.onXxx`（见 `mr_app_dispatch_event`）；返回收到它的监听者个数
 #[no_mangle]
 pub extern "system" fn Java_dev_minirender_MiniEngine_nativeDispatchEvent(

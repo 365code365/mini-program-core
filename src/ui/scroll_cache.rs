@@ -128,13 +128,39 @@ pub struct ScrollCacheManager {
     caches: HashMap<String, ScrollViewCache>,
     /// 全局版本号（页面数据变化时递增）
     global_version: u64,
+    /// 嵌在容器里的 scroll-view 的分块缓存（renderer/wxml_renderer/scroll_tiles.rs）。
+    /// 与上面的整段缓存同进同退：数据一变（`mark_all_dirty`）、页面切走（`clear`）就整个丢掉
+    pub tiles: HashMap<String, TileSet>,
+    /// 页面数据变过几次（`mark_data_changed`）：块按这个代数决定要不要重新核对内容签名
+    pub data_gen: u64,
 }
+
+/// 一个 scroll-view 的分块缓存：内容按固定的 [`TILE_ROWS`] 行一块切开，第 k 块画的是内容的
+/// `[k*TILE_ROWS, (k+1)*TILE_ROWS)` 行。块的位置只取决于 k，与滚到哪里无关 —— 开 / 关局部重画的两个
+/// 引擎各自建块，同一块画出来逐字节相同
+pub struct TileSet {
+    /// 块的宽（物理像素）、scroll-view 左上角的小数部分（块里按它偏移画，贴回去按整数行列贴）、内容高
+    pub key: (u32, u32, u32, u32),
+    /// 底色（scroll-view 底下那一块是纯色才走分块，块先铺成它再画内容）
+    pub bg: crate::Color,
+    /// 块号 → (块, 是否每个像素都不透明：是就整段拷贝贴回去)
+    pub tiles: HashMap<u32, (crate::Canvas, bool)>,
+    /// 画这些块时 scroll-view 子树的内容签名（结构、文字、属性、节点身份、布局）与当时的数据代数。
+    /// 数据变了但签名没变（setData 改的是别处）：块照用 —— 点餐页滚动时左侧分类高亮一换，右边菜品列表的块不用重画
+    pub sig: u64,
+    pub data_gen: u64,
+}
+
+/// 每块多少行（物理像素）。块小了补得勤、每次补的少；块大了留着的内存多。512 行一加上画一块约 2~3ms
+pub const TILE_ROWS: u32 = 512;
 
 impl ScrollCacheManager {
     pub fn new() -> Self {
         Self {
             caches: HashMap::new(),
             global_version: 0,
+            tiles: HashMap::new(),
+            data_gen: 0,
         }
     }
     
@@ -173,19 +199,34 @@ impl ScrollCacheManager {
     /// 标记所有缓存为脏
     /// 各离屏缓存的像素缓冲（内存分项用）
     pub fn pixel_buffers(&self) -> impl Iterator<Item = &[crate::Color]> {
-        self.caches.values().map(|c| c.canvas.pixels())
+        self.caches
+            .values()
+            .map(|c| c.canvas.pixels())
+            .chain(self.tiles.values().flat_map(|t| t.tiles.values().map(|(c, _)| c.pixels())))
     }
 
+    /// 页面数据变了：整段缓存作废，分块缓存留着（下次画时按内容签名核对，见 scroll_tiles.rs）
+    pub fn mark_data_changed(&mut self) {
+        self.global_version += 1;
+        for cache in self.caches.values_mut() {
+            cache.mark_dirty();
+        }
+        self.data_gen += 1;
+    }
+
+    /// 全部作废（图片下完、canvas 画过、字体换了：签名看不出来的变化），分块缓存也丢掉
     pub fn mark_all_dirty(&mut self) {
         self.global_version += 1;
         for cache in self.caches.values_mut() {
             cache.mark_dirty();
         }
+        self.tiles.clear();
     }
     
     /// 清除所有缓存
     pub fn clear(&mut self) {
         self.caches.clear();
+        self.tiles.clear();
         self.global_version = 0;
     }
     

@@ -161,6 +161,31 @@ impl Canvas {
         }
     }
 
+    /// 与 [`blend_pixels`](Self::blend_pixels) 同样按边界与裁剪矩形夹，但**调用方保证每个像素都不透明**：
+    /// 直接整段拷贝，不再逐行扫三遍 alpha（不透明时两者结果相同）。scroll-view 的分块缓存贴回页面走这里
+    /// （scroll_tiles.rs：块铺了不透明底色），一加上贴一屏省下约 1ms
+    pub fn copy_opaque_pixels(&mut self, dst_x: i32, dst_y: i32, src: &[Color], src_width: usize) {
+        if src_width == 0 {
+            return;
+        }
+        let (bx0, bx1, by0, by1) = self.draw_bounds();
+        let start = bx0.max(dst_x);
+        let end = bx1.min(dst_x + src_width as i32);
+        if end <= start {
+            return;
+        }
+        let (src_off, len) = ((start - dst_x) as usize, (end - start) as usize);
+        let width = self.width as usize;
+        for (row, line) in src.chunks_exact(src_width).enumerate() {
+            let y = dst_y + row as i32;
+            if y < by0 || y >= by1 {
+                continue;
+            }
+            let at = y as usize * width + start as usize;
+            self.pixels[at..at + len].copy_from_slice(&line[src_off..src_off + len]);
+        }
+    }
+
     /// 用一张 8 位覆盖率掩膜按单色合成（`box-shadow` 的模糊边缘走这里）。
     ///
     /// `mask` 按 `mask_w` 行主序排列，值即覆盖率（0~255）。掩膜可以离线算好并缓存，

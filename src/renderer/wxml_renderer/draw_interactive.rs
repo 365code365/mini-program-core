@@ -371,17 +371,10 @@ impl WxmlRenderer {
             );
             std::borrow::Cow::Owned(modified)
         } else if matches!(node.tag.as_str(), "input" | "textarea") {
-            // 输入框但还没有交互状态，显示 placeholder 或初始值
-            let placeholder = node.attrs.get("placeholder").cloned().unwrap_or_default();
-            let initial_value = Self::input_value_attr(node);
-            
+            // 输入框但还没有交互状态：显示 placeholder 或初始值（与有交互状态时同一份，interactive.rs）。
+            // 从前这里另写了一份、占位符颜色写死 #BFBFBF：没点过的框与点过又失焦的框颜色不一样
             let mut modified = Self::shallow_for_draw(node);
-            if initial_value.is_empty() {
-                modified.text = placeholder;
-                modified.style.text_color = Some(Color::from_hex(0xBFBFBF));
-            } else {
-                modified.text = Self::input_display_text(node, &initial_value);
-            }
+            Self::apply_interaction_state(node, &mut modified, interaction, &component_id, None);
             std::borrow::Cow::Owned(modified)
         } else {
             std::borrow::Cow::Borrowed(node)
@@ -421,7 +414,16 @@ impl WxmlRenderer {
             }
         }
         self.note_animated_image(node, gif, (x, y, w, h));
-        
+        // 嵌在容器里的纵向 scroll-view、内容是静态的：分块缓存，滚动只贴块（scroll_tiles.rs）。
+        // 这种 scroll-view 逐帧画时偏移也按物理像素取整（下面的 `tiled` 分支），与贴块的位置一致
+        let tiled = node.tag == "scroll-view"
+            && !super::scroll_views::scroll_axes(&node.attrs).0
+            && self.tile_eligible(node);
+        if tiled && self.draw_scroll_view_tiled(canvas, taffy, node, (x, y, w, h), &component_id, logical_bounds, interaction) {
+            self.push_event_bindings(node, logical_bounds);
+            return;
+        }
+
         if Self::draws_children(node) {
             let is_scroll_view = node.tag == "scroll-view";
             let has_overflow_hidden = node.style.overflow == crate::renderer::components::Overflow::Hidden;
@@ -451,6 +453,8 @@ impl WxmlRenderer {
                     let pos = controller.get_position();
                     if is_horizontal_scroll {
                         child_offset_x = -pos * sf; // 横向滚动
+                    } else if tiled {
+                        child_offset_y = -(pos * sf).round(); // 与分块贴的位置一致（scroll_tiles.rs）
                     } else {
                         child_offset_y = -pos * sf; // 纵向滚动
                     }

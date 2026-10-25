@@ -38,7 +38,9 @@ impl ProgressComponent {
         
         // 检查 CSS 是否定义了颜色
         let has_custom_bg = ns.background_color.is_some();
-        let has_custom_active = ns.text_color.is_some();
+        // 只认写在 progress 自己身上的 color：继承来的（`page { color: #111 }`）不算 ——
+        // 从前继承的字色把 activeColor 与默认绿一起盖掉，进度条画成黑的（马拉松名额进度）
+        let has_custom_active = ns.text_color.is_some() && ns.text_color != ctx.inherited.color;
         let has_custom_height = !dim_is_auto(ts.size.height);
         let has_custom_radius = ns.border_radius > 0.0;
         

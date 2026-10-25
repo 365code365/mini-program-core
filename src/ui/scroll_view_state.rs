@@ -46,6 +46,8 @@ pub struct ScrollViewState {
     /// 进入刷新态时逻辑层的 setData 序号：之后再 setData 了 `refresher-triggered` 绑定的字段
     /// （哪怕值没变，比如一直是 false）才算「设回 false」—— 微信的属性设置就是这个语义
     pub refresh_seq: u64,
+    /// 上次核对 `scroll-into-view` 绑定字段时逻辑层的 setData 序号（host/scroll_view.rs `rearm_into_view`）
+    pub into_seq: Option<u64>,
     /// 上一次报的下拉距离（`refresherpulling` 只在变了时发）
     pub pulled: f32,
     /// 开了 `refresher-enabled`（渲染器登记时写）。手势仲裁据此决定：到顶后继续往下拉

@@ -357,6 +357,7 @@ impl crate::MiniAppWindow {
             tabbar_px: if has_tabbar { (tabbar_height() as f64 * self.scale_factor) as u32 } else { 0 },
             fixed: self.fixed_canvas.as_ref(),
             fixed_rows: self.fixed_rows,
+            content_shift: 0,
             pull: (gap > 0.5 || self.pull_refreshing).then(|| PullState {
                 gap_logical: gap,
                 refreshing: self.pull_refreshing,

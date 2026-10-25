@@ -32,7 +32,7 @@ impl MiniEngine {
         if self.nav_pointer_down(x, y) {
             return;
         }
-        let y = y - self.nav_height();
+        let y = self.unshift_y(y) - self.nav_height();
 
         let now = self.mono_ms();
         let has_tabbar = self.is_tabbar_page(&self.current_route());
@@ -108,7 +108,7 @@ impl MiniEngine {
         if self.route.swallowing() || self.overlay_pointer_move(x, y) || self.nav_pointer_move(x, y) {
             return;
         }
-        let y = y - self.nav_height();
+        let y = self.unshift_y(y) - self.nav_height();
         let now = self.mono_ms();
         // 移出元素就撤点击态；重画只画它自己（engine_press.rs 下一帧比对出来）
         self.interaction.update_press_position(x, y, y + self.scroll.get_position());
@@ -167,7 +167,7 @@ impl MiniEngine {
         if self.route.swallow_end() || self.overlay_pointer_up(x, y) || self.nav_pointer_up(x, y) {
             return;
         }
-        let y = y - self.nav_height();
+        let y = self.unshift_y(y) - self.nav_height();
 
         // 松手要重画的只有按压态（`:active` / `hover-class` 要褪掉）与 scroll-view 拖拽收尾。
         // 从前这里无条件 `needs_redraw`：每一次滑动松手都整帧重画，正好砸在惯性的第一帧上
@@ -253,6 +253,15 @@ impl MiniEngine {
     /// iOS 的 `insertText("\n")`、Android 硬件键盘与 Flutter 多行输入的回车都是这样送进来的。
     /// 其余控制字符丢掉（画出来是豆腐块），多行里的换行保留。
     pub fn text_input(&mut self, text: &str) {
+        // 页面刚 setData 过、还没画：等画完一帧再送（engine_input_queue.rs）
+        if let Some(super::engine_input_queue::QueuedInput::Text(t)) =
+            self.queue_input_if_pending(super::engine_input_queue::QueuedInput::Text(text.to_string()))
+        {
+            self.text_input_now(&t);
+        }
+    }
+
+    pub(super) fn text_input_now(&mut self, text: &str) {
         if !self.interaction.has_focused_input() {
             return;
         }
@@ -267,6 +276,14 @@ impl MiniEngine {
     /// `word-right`、`doc-start` / `doc-end`、`delete-word-back`、`selectall` `copy` `cut`
     /// `undo` `redo` `escape`。不认识的名字忽略。
     pub fn key(&mut self, name: &str) {
+        if let Some(super::engine_input_queue::QueuedInput::Key(k)) =
+            self.queue_input_if_pending(super::engine_input_queue::QueuedInput::Key(name.to_string()))
+        {
+            self.key_now(&k);
+        }
+    }
+
+    pub(super) fn key_now(&mut self, name: &str) {
         let Some(input) = KeyInput::from_name(name) else {
             return;
         };
@@ -392,6 +409,11 @@ impl MiniEngine {
                 // 引擎自己画的 <video>：点一下起播 / 暂停 / 拖进度，控制条的样子变了却没有 setData
                 !self.interaction.click_animations.is_empty() || self.tap_on_engine_video(x, y, scroll)
             }
+            // 聚焦 / 失焦：变的只有新、旧两个输入框的盒子（光标出现 / 消失），由 engine_press.rs
+            // `sync_focus_visual` 每帧比对、只重画这两块。从前整页重画：点输入框那一帧一加上 31ms，
+            // 正好压在键盘弹起的第一帧上（转账页「附言」）
+            Some(crate::ui::interaction::InteractionResult::Focus { .. })
+            | Some(crate::ui::interaction::InteractionResult::InputBlur { .. }) => false,
             Some(_) => true,
         };
         if let Some(res) = result {

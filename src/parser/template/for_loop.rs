@@ -98,11 +98,14 @@ fn item_key(k: &str, item: &JsonValue, scope: &JsonValue) -> Option<String> {
     }
 }
 
-/// 树里有没有写 `wx:key` 的节点（决定这次渲染要不要记结构位置）
+/// 树里有没有写 `wx:key` 的节点、或输入框（决定这次渲染要不要记结构位置：输入框的身份见 `emit.rs`）
 pub(super) fn has_wx_key(nodes: &[WxmlNode]) -> bool {
     nodes.iter().any(|n| {
         n.node_type == WxmlNodeType::Element
             && n.tag_name != "wxs"
-            && (n.attributes.contains_key("wx:key") || has_wx_key(&n.children))
+            && (n.attributes.contains_key("wx:key")
+                || n.tag_name == "input"
+                || n.tag_name == "textarea"
+                || has_wx_key(&n.children))
     })
 }

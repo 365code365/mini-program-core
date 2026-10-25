@@ -33,11 +33,25 @@ pub const PAGE_LOG_CAP: usize = 32;
 pub struct LayerCanvas {
     canvas: Canvas,
     gen: u64,
+    /// 上一次写只改了这几行：`(写之前的代数, y0, y1)`。GPU 镜像正好停在「写之前」那一代时只补传这几行
+    /// （覆盖层里按下一个键只重画那个键，见 engine_frame.rs `render_fixed_layer`）
+    partial: Option<(u64, u32, u32)>,
 }
 
 impl LayerCanvas {
     pub fn new(canvas: Canvas) -> Self {
-        Self { canvas, gen: next_gen() }
+        Self { canvas, gen: next_gen(), partial: None }
+    }
+    /// 只改 `[y0, y1)` 这几行（调用方保证不碰别的行）。换代数，但记下是从哪一代改来的
+    pub fn write_rows(&mut self, y0: u32, y1: u32) -> &mut Canvas {
+        let prev = self.gen;
+        self.gen = next_gen();
+        self.partial = Some((prev, y0, y1));
+        &mut self.canvas
+    }
+    /// 上一次写是不是从 `gen` 那一代只改了几行：是就给出行区间
+    pub fn partial_since(&self, gen: u64) -> Option<(u32, u32)> {
+        self.partial.filter(|p| p.0 == gen).map(|p| (p.1, p.2))
     }
 
     pub fn read(&self) -> &Canvas {
@@ -54,6 +68,7 @@ impl LayerCanvas {
     /// 拿可变引用即视为整层变了（不管实际画了多少）
     pub fn write(&mut self) -> &mut Canvas {
         self.gen = next_gen();
+        self.partial = None;
         &mut self.canvas
     }
 

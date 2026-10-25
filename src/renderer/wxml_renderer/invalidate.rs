@@ -247,6 +247,32 @@ impl WxmlRenderer {
             }
         }
 
+        // scroll-view / swiper 自己没变、里面变了：里面的布局坐标没扣滚动偏移 / 翻页位移，按孩子的布局框收会擦错地方
+        // （滚过一段的列表里改一行字，重画的是没滚时那一行的位置，看得见的那行留着旧字 ——
+        // tests/sdk_damage_nested_scroll.rs 抓到的）。里面有任何不同就重画它整个盒子
+        // 内容不超过盒子的 scroll-view（uni-app 的 `<scroll-view class="page">` 包住整页、内容多高它多高）滚不动、
+        // 偏移恒为 0，布局坐标就是画的坐标，照常往里比
+        let can_scroll = new.tag == "swiper"
+            || new.children.iter().any(|c| {
+                new_t.layout(c.taffy_node).is_ok_and(|l| {
+                    l.location.y + l.size.height > nl.size.height + 0.5 || l.location.x + l.size.width > nl.size.width + 0.5
+                })
+            });
+        if matches!(new.tag.as_str(), "scroll-view" | "swiper") && can_scroll {
+            let differs = old.children.len() != new.children.len()
+                || old.children.iter().zip(&new.children).any(|(a, b)| Self::subtree_differs(old_t, new_t, a, b, (ox, oy), (nx, ny), ctx.moved));
+            if differs {
+                if in_fixed {
+                    ctx.fixed_changed = true;
+                } else if ctx.grow {
+                    ctx.cut_at(Self::grow_cut(new, &old_rect, &new_rect, true), new);
+                } else {
+                    ctx.add(super::invalidate_grow::inflate(old_rect, &old.style));
+                    ctx.add(super::invalidate_grow::inflate(new_rect, &new.style));
+                }
+            }
+            return;
+        }
         // 孩子怎么配对（fixed 的单独配、内容变高时配不上的两段各走一遍）见 invalidate_pair.rs
         let old_fixed = in_fixed || old.style.is_fixed;
         Self::diff_children(old_t, new_t, &old.children, &new.children, (ox, oy), (nx, ny), in_fixed, old_fixed, ctx);

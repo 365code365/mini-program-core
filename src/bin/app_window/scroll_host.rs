@@ -75,6 +75,8 @@ impl crate::MiniAppWindow {
         // scroll-view 的事件与 wx.pageScrollTo（与 SDK 共用 host::scroll_view；onPageScroll 见上面）
         let t_ms = self.event_time_ms();
         if mini_render::host::scroll_view::tick(&mut self.app, self.renderer.as_ref(), &mut self.interaction, t_ms) { changed = true; }
+        // scroll-into-view 绑定的字段变过又变回来也再滚（桌面不记数据脏没脏，每帧核对；只问绑了字段的 scroll-view）
+        mini_render::host::scroll_view::rearm_into_view(&self.app, self.renderer.as_ref(), &mut self.interaction, true);
         if mini_render::host::scroll_view::apply_page_scroll(&mut self.app, self.renderer.as_ref(), &self.interaction, &mut self.scroll) { changed = true; }
         if mini_render::host::swiper::tick(&mut self.app, self.renderer.as_ref(), t_ms) { changed = true; }
         if mini_render::host::picker_sheet::sync_columns(&mut self.picker_sheet, self.renderer.as_ref()) { self.needs_redraw = true; changed = true; }

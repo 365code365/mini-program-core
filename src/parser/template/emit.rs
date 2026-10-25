@@ -42,11 +42,29 @@ impl TemplateEngine {
         let mut new_node = WxmlNode::new_element(&node.tag_name);
         // 收集模式只关心组件出现在哪，普通元素的属性不必插值
         if !cx.collecting() {
+            let mut str_keys: Vec<String> = Vec::new();
             for (key, value) in &node.attributes {
                 if Self::is_directive(key) {
                     continue;
                 }
+                // `data-x="{{expr}}"` 求出来是字符串：记下来，派发时 dataset 保持字符串（微信里绑定的值保留 JS 类型）。
+                // 不记的话逻辑层按字面量还原，'600519' 变成 number、'000001' 仍是字符串 —— 同一个字段类型随值变
+                // （自选股的股票代码）。字面量 `data-id="12"` 照旧还原（引擎既有约定）
+                if let Some(name) = key.strip_prefix("data-") {
+                    let t = value.trim();
+                    if let Some(inner) = t.strip_prefix("{{").and_then(|s| s.strip_suffix("}}")).filter(|i| !i.contains("{{")) {
+                        if let JsonValue::String(s) = expr::eval_str(inner.trim(), data) {
+                            str_keys.push(crate::parser::template::camel_case(&name.to_ascii_lowercase()));
+                            new_node.attributes.insert(key.clone(), s);
+                            continue;
+                        }
+                    }
+                }
                 new_node.attributes.insert(key.clone(), Self::interpolate_attr(key, value, data));
+            }
+            if !str_keys.is_empty() {
+                str_keys.sort();
+                new_node.attributes.insert(super::DATASET_STR_ATTR.to_string(), str_keys.join(","));
             }
             Self::stamp_owner(&mut new_node, f.owner);
             // `this.animate` / applyAnimatedStyle 按选择器写的样式（作用域根 data 的 `__nodeStyles`，node_styles.rs）
@@ -59,9 +77,18 @@ impl TemplateEngine {
                 if let Some(raw) = node.attributes.get("refresher-triggered").filter(|r| r.contains("{{")) {
                     new_node.attributes.insert(super::REFRESHER_KEYS_ATTR.to_string(), super::binding_roots(raw).join(","));
                 }
+                if let Some(raw) = node.attributes.get("scroll-into-view").filter(|r| r.contains("{{")) {
+                    new_node.attributes.insert(super::INTO_VIEW_KEYS_ATTR.to_string(), super::binding_roots(raw).join(","));
+                }
             }
             // 带 wx:key 的列表项里的元素：给一个跟着 key 走的身份，渲染器用它当交互状态的键
-            if let Some(k) = cx.keyed_identity(f.owner) {
+            // 输入框不在带 key 的列表里时也要一个不随位置变的身份：从前退回「标签_x_y」，
+            // 聚焦中的输入框一挪位置（聊天页键盘弹起、列表变矮、输入条跟着上移）焦点就对不上任何节点 ——
+            // 光标消失、打的字进不了 bindinput。按模板里的结构位置给（wx:if 兄弟的增删不影响它）
+            let identity = cx.keyed_identity(f.owner).or_else(|| {
+                matches!(node.tag_name.as_str(), "input" | "textarea").then(|| cx.site_identity(f.owner)).flatten()
+            });
+            if let Some(k) = identity {
                 new_node.attributes.insert(super::for_loop::KEYED_ID_ATTR.to_string(), k);
             }
         }

@@ -147,7 +147,7 @@ mod tests {
                 tabbar: Some(tab),
                 tabbar_px: 50,
                 fixed: Some(fixed),
-                fixed_rows: Some((100, 560)),
+                fixed_rows: Some((100, 560)), content_shift: 0,
                 pull: None,
                 overlays: OverlayRefs::none(),
                 edge_back: None,

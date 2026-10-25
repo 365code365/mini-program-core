@@ -362,19 +362,19 @@ impl TextComponent {
             let should_wrap = !matches!(node.style.white_space, WhiteSpace::NoWrap | WhiteSpace::Pre);
             let use_ellipsis = matches!(node.style.text_overflow, TextOverflow::Ellipsis);
             
-            // 粗体：优先用字体自带的粗体字面（与浏览器一致）；字体没有粗体字面时，
-            // 才退回「轻微偏移二次描绘」的 faux-bold 近似。
+            // 粗体：字体有粗体字面就用它（与浏览器一致），没有就由 TextRenderer 把字形加粗（text/embolden.rs）。
+            // 从前这里退回「往右挪 0.7 逻辑像素再画一遍」：两份抗锯齿边缘叠出重影，看着发虚、有锯齿
             let is_bold = matches!(
                 node.style.font_weight,
                 FontWeight::Bold | FontWeight::W600 | FontWeight::W700 | FontWeight::W800 | FontWeight::W900
             );
-            let real_bold = is_bold && tr.has_bold_face();
-            let faux_bold_dx = if is_bold && !real_bold { 0.7 * sf } else { 0.0 };
-            
+            let real_bold = is_bold;
             let text = &node.text;
             let text_w = tr.measure_text_weighted(text, size, letter_spacing, real_bold);
             // 是否需要多行：含换行符，或允许换行且超出内容宽度
-            let multiline = text.contains('\n') || (should_wrap && cw > 0.0 && text_w > cw);
+            // 盒子是取整过的（可能比度量时窄不到 1px）：判「放不下」时放回这点余量，与布局补高同一个口径
+            let slack = super::base::LAYOUT_ROUNDING_SLACK_PX;
+            let multiline = text.contains('\n') || (should_wrap && cw > 0.0 && text_w > cw + slack);
             
             if multiline {
                 // 多行：顶部对齐换行绘制（在内容区内）
@@ -382,12 +382,6 @@ impl TextComponent {
                     canvas, tr, text, cx, cy + size, size, cw, chh,
                     line_height, letter_spacing, real_bold, &node.style, &paint
                 );
-                if faux_bold_dx > 0.0 {
-                    draw_text_wrapped_advanced(
-                        canvas, tr, text, cx + faux_bold_dx, cy + size, size, cw, chh,
-                        line_height, letter_spacing, real_bold, &node.style, &paint
-                    );
-                }
             } else {
                 // 单行：在内容区内垂直居中（基线 ≈ 内容区中心 + 0.34*字号）
                 let baseline = cy + chh / 2.0 + size * 0.34;
@@ -400,16 +394,10 @@ impl TextComponent {
                     }
                 } else { 0.0 };
                 let ax = cx + align_dx;
-                if cw > 0.0 && use_ellipsis && text_w > cw {
+                if cw > 0.0 && use_ellipsis && text_w > cw + slack {
                     draw_text_with_ellipsis(canvas, tr, text, cx, baseline, size, cw, letter_spacing, real_bold, &paint);
-                    if faux_bold_dx > 0.0 {
-                        draw_text_with_ellipsis(canvas, tr, text, cx + faux_bold_dx, baseline, size, cw, letter_spacing, real_bold, &paint);
-                    }
                 } else {
                     tr.draw_text_weighted(canvas, text, ax, baseline, size, letter_spacing, real_bold, &paint);
-                    if faux_bold_dx > 0.0 {
-                        tr.draw_text_weighted(canvas, text, ax + faux_bold_dx, baseline, size, letter_spacing, real_bold, &paint);
-                    }
                 }
             }
             
@@ -478,7 +466,8 @@ fn draw_text_wrapped_advanced(
         let measure = |s: &[char]| -> f32 {
             s.iter().map(|c| tr.measure_char_weighted(*c, size, bold) + letter_spacing).sum()
         };
-        let lines = super::base::wrap_paragraph_lines(&chars, max_width, measure);
+        // 断行按取整前的宽（多放取整吃掉的那点，见 LAYOUT_ROUNDING_SLACK_PX）；对齐仍按盒子的宽
+        let lines = super::base::wrap_paragraph_lines(&chars, max_width + super::base::LAYOUT_ROUNDING_SLACK_PX, measure);
 
         for (idx, (ls_i, le_i)) in lines.iter().enumerate() {
             let has_more = idx + 1 < lines.len();

@@ -55,7 +55,9 @@ impl InputComponent {
         let avail = w - pl - pr;
         let mut xs = vec![0.0f32];
         let mut acc = String::new();
-        for c in node.text.chars() {
+        // 画的是占位符时，点击定位按空值算（光标只能在开头）
+        let value: &str = if node.attrs.contains_key(super::PLACEHOLDER_SHOWN) { "" } else { &node.text };
+        for c in value.chars() {
             acc.push(c);
             xs.push(tr.measure_text(&acc, fs));
         }
@@ -63,7 +65,7 @@ impl InputComponent {
         let x0 = Self::line_dx(style.text_align, tw, avail, focused, &xs, cursor_pos, fs);
         let line = crate::ui::interaction::text_lines::TextLine { start: 0, end: xs.len() - 1, x0, xs };
         Some(crate::ui::interaction::text_lines::TextLayout {
-            text: node.text.clone(),
+            text: value.to_string(),
             lines: vec![line],
             line_height: h.max(1.0),
             origin: (pl, 0.0),
@@ -133,9 +135,12 @@ impl InputComponent {
             let clip_h = h;
             canvas.clip_rect(GeoRect::new(clip_x, clip_y, clip_w, clip_h));
             
+            // 画的是占位符：光标、选区、横向滚动都按空值算，占位符自己按 text-align 摆
+            let ph = node.attrs.contains_key(super::PLACEHOLDER_SHOWN);
+            let value: &str = if ph { "" } else { &node.text };
             // 先计算文本偏移（用于所有绘制）
-            let text_width = if !node.text.is_empty() {
-                tr.measure_text(&node.text, font_size)
+            let text_width = if !value.is_empty() {
+                tr.measure_text(value, font_size)
             } else {
                 0.0
             };
@@ -143,7 +148,7 @@ impl InputComponent {
             
             let mut text_offset = 0.0;
             if focused && text_width > available_width {
-                let cursor_text: String = node.text.chars().take(cursor_pos).collect();
+                let cursor_text: String = value.chars().take(cursor_pos).collect();
                 let cursor_x_in_text = tr.measure_text(&cursor_text, font_size);
                 
                 if cursor_x_in_text > available_width {
@@ -163,8 +168,8 @@ impl InputComponent {
             // 绘制选中背景（需要考虑 text_offset）
             if let Some((sel_start, sel_end)) = selection {
                 if sel_start != sel_end && focused {
-                    let start_text: String = node.text.chars().take(sel_start).collect();
-                    let sel_text: String = node.text.chars().skip(sel_start).take(sel_end - sel_start).collect();
+                    let start_text: String = value.chars().take(sel_start).collect();
+                    let sel_text: String = value.chars().skip(sel_start).take(sel_end - sel_start).collect();
                     
                     let sel_x = text_x + tr.measure_text(&start_text, font_size) + text_offset;
                     let sel_w = tr.measure_text(&sel_text, font_size);
@@ -183,8 +188,17 @@ impl InputComponent {
             let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill);
             
             if !node.text.is_empty() {
-                // 根据 text-align 调整 x 位置
-                let final_x = text_x + align_dx;
+                // 根据 text-align 调整 x 位置（占位符按它自己的宽对齐）
+                let final_x = if ph {
+                    let pw = tr.measure_text(&node.text, font_size);
+                    text_x + match style.text_align {
+                        TextAlign::Center if pw <= available_width => (available_width - pw) / 2.0,
+                        TextAlign::Right if pw <= available_width => available_width - pw,
+                        _ => 0.0,
+                    }
+                } else {
+                    text_x + align_dx
+                };
                 
                 tr.draw_text(canvas, &node.text, final_x, text_y, font_size, &paint);
             }
@@ -198,7 +212,7 @@ impl InputComponent {
             //   微信的光标是 **2 逻辑像素**宽，两端带圆角；
             // - 高度取字号会显得比文字矮一截，微信是略高于字面（约 1.15em）并垂直居中。
             if focused && selection.map(|(s, e)| s == e).unwrap_or(true) {
-                let cursor_text: String = node.text.chars().take(cursor_pos).collect();
+                let cursor_text: String = value.chars().take(cursor_pos).collect();
                 let cursor_x = text_x + tr.measure_text(&cursor_text, font_size) + text_offset;
                 let caret_w = (2.0 * sf).max(2.0);
                 let caret_h = font_size * 1.15;

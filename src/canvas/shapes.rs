@@ -66,6 +66,10 @@ impl Canvas {
                     px.r = ((sr + px.r as u32 * inv) / 255) as u8;
                     px.g = ((sg + px.g as u32 * inv) / 255) as u8;
                     px.b = ((sb + px.b as u32 * inv) / 255) as u8;
+                } else if px.a == 0 {
+                    // 盖在全透明上（覆盖层刚清过的行，遮罩就画在这上面）：`Color::blend` 在 dst.a = 0 时
+                    // 得到的恰好是源色本身（dst_factor = 0，r·a/a = r），省掉三次除法
+                    *px = *color;
                 } else {
                     *px = color.blend(px);
                 }

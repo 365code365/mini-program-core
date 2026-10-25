@@ -128,6 +128,7 @@ pub(super) fn compose_page(buf: &mut [u32], layers: &FrameLayers<'_>, rows: (u32
         layers.page_bg,
         layers.top.as_ref().map(|t| t.rows).unwrap_or(0),
         rows,
+        layers.content_shift,
     );
     // 顶部宿主外壳（导航栏）：盖在页面与 fixed 层之上、所有浮层之下 —— Modal / picker 的遮罩
     // 连导航栏一起压暗（与微信一致：弹窗是盖住整个窗口的）
@@ -261,7 +262,7 @@ mod tests {
             tabbar: Some(&tab),
             tabbar_px: 50,
             fixed: Some(&fixed),
-            fixed_rows: Some((100, 560)),
+            fixed_rows: Some((100, 560)), content_shift: 0,
             pull: None,
             overlays: OverlayRefs::none(),
             edge_back: None,

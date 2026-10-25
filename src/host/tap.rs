@@ -113,6 +113,9 @@ pub fn handle_content_click(
                 let result = interaction.handle_click_scoped(x, y, true);
                 if let Some(r) = &result {
                     prepare_focused_input(interaction, Some(renderer), text_renderer, scale_factor, x, y, r);
+                    // 拨了覆盖层里的开关 / 单选 / 勾选：它们的 change 照发（这里只是「没有 tap 处理器」）。
+                    // 从前这条分支直接 return —— fixed 底栏里的 radio-group 点了不触发 change（阅读器主题切换）
+                    dispatch_component_events(app, renderer, interaction, x, y, Some(true), tap_ctx, Some(r));
                 }
                 // 表单提交 / navigator 跳转 / label 转发（label 转发出来的结果当作这次点击的结果）
                 if let Some(r) = super::builtin_tap::after_click(app, renderer, interaction, result.as_ref(), x, y, Some(true), tap_ctx) {
@@ -289,29 +292,38 @@ pub(super) fn dispatch_component_events(
     result: Option<&InteractionResult>,
 ) {
     let (identifier, time_ms) = tap_ctx;
-    let dispatch_change = |app: &mut MiniApp, detail: serde_json::Value| {
-        super::touch::dispatch_to_js(
-            app, renderer, "change", (x, hit_y), (x, hit_y), scope, identifier, time_ms, detail,
-        );
+    // `change` 是组件自己的事件，**不冒泡**（微信 / Skyline）：只交给发出它的那个组件 ——
+    // 开关 / 勾选框 / 滑块自己，或包着勾选框 / 单选框的 `checkbox-group` / `radio-group`。
+    // 从前按 tap 那样走整条冒泡链：卡片里的开关一拨，外层 swiper 的 `bindchange` 也收到
+    // `{value: true}`（智慧家首页的房间 swiper 被当成翻页）
+    let dispatch_change = |app: &mut MiniApp, detail: serde_json::Value, owners: &[&str]| {
+        let chain = renderer.dispatch_chain(x, hit_y, "change", scope);
+        let own = chain
+            .iter()
+            .find(|b| b.phase == crate::renderer::components::EventPhase::Bubble && owners.contains(&b.tag.as_str()))
+            .or_else(|| chain.iter().rev().find(|b| owners.contains(&b.tag.as_str())))
+            .cloned();
+        if let Some(b) = own {
+            super::touch::dispatch_chain_to_js(app, std::slice::from_ref(&b), Some(b.clone()), "change", (x, hit_y), identifier, time_ms, detail);
+        }
     };
     match result {
         Some(InteractionResult::Toggle { checked, .. }) => {
             // 在 `checkbox-group` 里：detail.value 是组内选中项的 value 数组（微信语义）；
             // 单独的 `<switch>`：detail.value 是布尔开关状态。
-            let detail = match group_values(renderer, interaction, x, hit_y, scope, "checkbox-group") {
-                Some(values) => serde_json::json!({ "value": values }),
-                None => serde_json::json!({ "value": checked }),
-            };
-            dispatch_change(app, detail);
+            match group_values(renderer, interaction, x, hit_y, scope, "checkbox-group") {
+                Some(values) => dispatch_change(app, serde_json::json!({ "value": values }), &["checkbox-group"]),
+                None => dispatch_change(app, serde_json::json!({ "value": checked }), &["switch", "checkbox"]),
+            }
             dispatch_tap_chain(app, renderer, x, hit_y, scope, tap_ctx);
         }
         Some(InteractionResult::Select { value, .. }) => {
-            dispatch_change(app, serde_json::json!({ "value": value }));
+            dispatch_change(app, serde_json::json!({ "value": value }), &["radio-group", "radio"]);
             dispatch_tap_chain(app, renderer, x, hit_y, scope, tap_ctx);
         }
         // 点按 slider：跳到手指处发一次 change（detail.value 是 number），再照常冒泡 tap
         Some(InteractionResult::SliderChange { value, .. }) => {
-            dispatch_change(app, serde_json::json!({ "value": super::form::number(*value) }));
+            dispatch_change(app, serde_json::json!({ "value": super::form::number(*value) }), &["slider"]);
             dispatch_tap_chain(app, renderer, x, hit_y, scope, tap_ctx);
         }
         // 输入框的焦点事件由 interaction_handler 派发（它才有输入框的当前文本）
@@ -383,6 +395,32 @@ pub fn dispatch_input_event(
     event_type: &str,
     value: &str,
 ) -> bool {
+    // 微信的 detail：input 是 `{value, cursor, keyCode}`，focus 是 `{value, height}`，
+    // blur / confirm 是 `{value}`。
+    let mut detail = serde_json::json!({ "value": value });
+    match event_type {
+        "input" => {
+            detail["cursor"] = serde_json::json!(value.chars().count());
+            detail["keyCode"] = serde_json::json!(0);
+        }
+        "focus" => {
+            // 软键盘高度：桌面宿主没有软键盘，微信在无键盘时也给 0
+            detail["height"] = serde_json::json!(0);
+        }
+        _ => {}
+    }
+    dispatch_input_detail(app, renderer, component_id, event_type, detail)
+}
+
+/// 按输入框的组件 id 派发它身上的 `bind<event_type>`，detail 由调用方给
+/// （`keyboardheightchange` 的 `{height, duration}` 走这里，见 engine_keyboard.rs）
+pub fn dispatch_input_detail(
+    app: &mut MiniApp,
+    renderer: Option<&WxmlRenderer>,
+    component_id: &str,
+    event_type: &str,
+    detail: serde_json::Value,
+) -> bool {
     let Some(renderer) = renderer else { return false };
     let binding = match renderer.binding_for(component_id, event_type) {
         Some(b) => b,
@@ -406,20 +444,6 @@ pub fn dispatch_input_event(
         "offsetLeft": binding.bounds.x,
         "offsetTop": binding.bounds.y,
     });
-    // 微信的 detail：input 是 `{value, cursor, keyCode}`，focus 是 `{value, height}`，
-    // blur / confirm 是 `{value}`。
-    let mut detail = serde_json::json!({ "value": value });
-    match event_type {
-        "input" => {
-            detail["cursor"] = serde_json::json!(value.chars().count());
-            detail["keyCode"] = serde_json::json!(0);
-        }
-        "focus" => {
-            // 软键盘高度：桌面宿主没有软键盘，微信在无键盘时也给 0
-            detail["height"] = serde_json::json!(0);
-        }
-        _ => {}
-    }
     let event = serde_json::json!({
         "type": event_type,
         "target": node,

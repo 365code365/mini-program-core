@@ -35,7 +35,7 @@ mod wxs_scope;
 mod bindings;
 /// `this.animate` / applyAnimatedStyle 按选择器写给节点的样式（data 的 `__nodeStyles`）
 mod node_styles;
-pub use bindings::{binding_roots, REFRESHER_KEYS_ATTR};
+pub use bindings::{binding_roots, INTO_VIEW_KEYS_ATTR, REFRESHER_KEYS_ATTR};
 #[cfg(test)]
 mod tests;
 
@@ -45,6 +45,9 @@ pub use component::{camel_case, instance_key, is_property_attr, Occurrence};
 pub use slot::SLOT_CONTENT_ATTR;
 pub use wxs_scope::{bundle_of as wxs_bundle_of, WXS_BUNDLE_ATTR};
 pub use for_loop::KEYED_ID_ATTR;
+/// 哪些 dataset 键的值是绑定求出来的字符串（逗号分隔，隐藏属性）：派发时保持字符串，不按字面量还原
+/// （emit.rs 写、`components::base::event_attr` 带进事件、逻辑层 `__coerceDataset` 认）
+pub const DATASET_STR_ATTR: &str = "__ds_s";
 
 /// 自定义组件模板表：标签名 → 组件 WXML 根节点
 pub type ComponentTemplates = HashMap<String, Vec<WxmlNode>>;

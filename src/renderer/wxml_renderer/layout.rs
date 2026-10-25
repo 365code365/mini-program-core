@@ -63,7 +63,7 @@ impl WxmlRenderer {
         self.current_viewport = viewport;
         
         // 数据变化，标记所有 scroll-view 缓存为脏
-        self.scroll_cache.mark_all_dirty();
+        self.scroll_cache.mark_data_changed();
         
         // 重建耗时诊断（`MINI_LAYOUT_LOG=1`）：一次 setData 会走完整条
         // 「模板求值 → 建树/样式 → 布局」流水线，是交互卡顿的主要来源，

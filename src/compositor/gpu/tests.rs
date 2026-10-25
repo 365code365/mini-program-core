@@ -103,6 +103,8 @@ fn random_layer_configs_match_cpu_byte_for_byte() {
             tabbar_px: if has_tabbar { tab_h } else { 0 },
             fixed: (rng.u(3) != 0).then_some(&fixed),
             fixed_rows: (rng.u(4) != 0).then(|| (rows, (rows + rng.u(h)).min(h + 5))),
+            // 键盘顶起画面（engine_keyboard.rs）：三分之一的配置带上移
+            content_shift: if case % 3 == 0 { 1 + rng.u(h / 2) } else { 0 },
             pull: (rng.u(3) == 0).then(|| PullState { gap_logical: rng.u(80) as f32, refreshing: rng.u(2) == 0, progress: 0.7, phase: 0.25 }),
             overlays: OverlayRefs::none(),
             edge_back: None, top: None,
@@ -166,7 +168,7 @@ fn incremental_mirror_200_steps_match_cpu() {
             tabbar: None,
             tabbar_px: 0,
             fixed: None,
-            fixed_rows: None,
+            fixed_rows: None, content_shift: 0,
             pull: None,
             overlays: OverlayRefs::none(),
             edge_back: None, top: None,
@@ -188,7 +190,7 @@ fn tint_fault_is_detected() {
     let page = PageCanvas::new(c);
     let l = FrameLayers {
         width: w, height: h, scale: 2.0, page: &page, scroll_px: 0, page_bg: 0, has_tabbar: false,
-        tabbar: None, tabbar_px: 0, fixed: None, fixed_rows: None, pull: None,
+        tabbar: None, tabbar_px: 0, fixed: None, fixed_rows: None, content_shift: 0, pull: None,
         overlays: OverlayRefs::none(), edge_back: None, top: None,
     };
     comp.compose_offscreen(&l, true).unwrap();
@@ -208,7 +210,7 @@ fn lost_fault_surfaces_as_device_lost() {
     let page = PageCanvas::new(Canvas::new(w, 64));
     let l = FrameLayers {
         width: w, height: h, scale: 2.0, page: &page, scroll_px: 0, page_bg: 0, has_tabbar: false,
-        tabbar: None, tabbar_px: 0, fixed: None, fixed_rows: None, pull: None,
+        tabbar: None, tabbar_px: 0, fixed: None, fixed_rows: None, content_shift: 0, pull: None,
         overlays: OverlayRefs::none(), edge_back: None, top: None,
     };
     assert!(comp.compose_offscreen(&l, true).is_ok(), "第 1 帧正常");
@@ -261,7 +263,7 @@ fn top_band_and_edge_back_match_cpu_byte_for_byte() {
             tabbar: Some(&tab),
             tabbar_px: if has_tabbar { 20 } else { 0 },
             fixed: (rng.u(2) == 0).then_some(&fixed),
-            fixed_rows: Some((rows, (rows + rng.u(h)).min(h))),
+            fixed_rows: Some((rows, (rows + rng.u(h)).min(h))), content_shift: 0,
             pull: None,
             overlays: OverlayRefs::none(),
             edge_back: (rng.u(6) != 0).then(|| EdgeBackFrame {
@@ -330,7 +332,7 @@ fn overlay_band_passthrough_matches_cpu_byte_for_byte() {
                 tabbar: Some(&tab),
                 tabbar_px: if has_tabbar { 20 } else { 0 },
                 fixed: (k < 2).then_some(&fixed),
-                fixed_rows: Some((0, h)),
+                fixed_rows: Some((0, h)), content_shift: 0,
                 pull: None,
                 overlays: OverlayRefs { anim_secs: 0.4, toast: t, loading: lo, modal: m, picker: None, text: None },
                 edge_back: None,

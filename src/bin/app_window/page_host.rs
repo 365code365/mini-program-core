@@ -196,7 +196,8 @@ impl crate::MiniAppWindow {
                     let (p, q) = parse_url(&url);
                     self.app.eval("if(__currentPage && __currentPage.onUnload) __currentPage.onUnload()").ok();
                     self.page_stack.pop();
-                    self.app.eval("__popPage(1)").ok();
+                    // 只剩一页也要拿掉（与 SDK 的 engine_nav.rs 同一条，__popPage 至少留一页）
+                    self.app.eval("__dropTopPage()").ok();
                     self.interaction.clear_page_state();
                     self.renderer = None;
                     self.navigate_to(&p, q).ok();

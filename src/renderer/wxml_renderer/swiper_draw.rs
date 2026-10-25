@@ -107,6 +107,31 @@ impl WxmlRenderer {
             .min_by(|a, b| (a.bounds.width * a.bounds.height).total_cmp(&(b.bounds.width * b.bounds.height)))
     }
 
+    /// 第 `i` 项相对它在布局里的位置挪了多少（主轴，设备像素，与绘制同一个算式）：节点查询、label 之类走布局树的
+    /// 要跟着挪。从前 SelectorQuery 量 swiper 第 3 页里的节点，报的是没翻页时的位置（left 多了 2 × 屏宽）。
+    /// 衔接模式下取离当前位置最近的那一份
+    pub(super) fn swiper_item_offset(&self, taffy: &Tree, node: &RenderNode, id: &str, i: usize) -> (f32, f32) {
+        let cfg: SwiperConfig = SwiperComponent::config(node);
+        let pages = swiper_pages(&cfg).max(1);
+        let pos = SWIPER_MANAGER
+            .lock()
+            .ok()
+            .and_then(|m| m.get(id).map(|s| s.pos))
+            .unwrap_or_else(|| cfg.current_attr.unwrap_or(0).min(pages - 1) as f32);
+        let (item, _) = Self::swiper_item_geometry(taffy, node, cfg.vertical);
+        let mut v = i as i64;
+        if cfg.circular && cfg.total > 0 {
+            let t = cfg.total as f32;
+            v += ((pos - i as f32) / t).round() as i64 * cfg.total as i64;
+        }
+        let shift = item_shift(v, i, pos, item);
+        if cfg.vertical {
+            (0.0, shift)
+        } else {
+            (shift, 0.0)
+        }
+    }
+
     /// 第一项的尺寸与它在容器里的起点（主轴，物理像素）：项宽与前边距都由布局算好了
     fn swiper_item_geometry(taffy: &Tree, node: &RenderNode, vertical: bool) -> (f32, f32) {
         let Some(first) = node.children.first() else { return (0.0, 0.0) };

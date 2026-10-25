@@ -66,7 +66,15 @@ pub fn present_to_buffer(
     // 只写缓冲的这几行 [a, b)（GPU 直通帧只要覆盖层那一截，见 `compositor::cpu::compose_rows`）。
     // (0, 高) 时与从前逐字节相同
     rows: (u32, u32),
+    // 键盘顶起画面：导航栏以下整体上移的行数（`FrameLayers::content_shift`）。0 走下面的老路，逐字节不变
+    content_shift: u32,
 ) {
+    if content_shift > 0 {
+        let l = super::render_shift::Layers {
+            canvas, fixed_canvas, tabbar_canvas, scroll_offset, has_tabbar, tabbar_physical_height, fixed_rows, page_bg, top_px,
+        };
+        return super::render_shift::present_shifted(buffer, buffer_width, buffer_height, &l, rows, content_shift);
+    }
     let pixels = canvas.pixels();
     let canvas_width = canvas.width();
     let canvas_height = canvas.height();

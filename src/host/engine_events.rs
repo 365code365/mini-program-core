@@ -258,6 +258,7 @@ impl MiniEngine {
         });
         self.events.focused = Some(id.to_string());
         self.events.push(ev);
+        self.note_keyboard_input(id);
     }
 
     /// 聚焦中的输入框被页面改了值（`setData` 格式化、`bindinput` 返回值）：告诉宿主新的内容与光标，
@@ -304,6 +305,7 @@ impl MiniEngine {
         let vw = self.width as f32;
         // 报给宿主的是**画面坐标**：引擎画了导航栏时页面视口整体在它下面（engine_navbar.rs）
         let top = self.nav_height();
+        let kb_shift = self.keyboard_shift_px() as f32 / self.dpr;
         // 正常流画在 tabBar 之上的那一截；fixed 覆盖层盖满整个视口（含 tabBar，见 present_to_buffer）
         let flow_area = crate::Rect::new(0.0, top, vw, self.viewport_height());
         let fixed_area = crate::Rect::new(0.0, top, vw, self.page_window_height());
@@ -317,7 +319,8 @@ impl MiniEngine {
         let views: Vec<Value> = regions
             .iter()
             .filter_map(|n| {
-                let y = top + if n.is_fixed { n.bounds.y } else { n.bounds.y - scroll };
+                // 键盘顶起画面时导航栏以下整体上移（engine_keyboard.rs）：盖在画面上的控件跟着走
+                let y = top + if n.is_fixed { n.bounds.y } else { n.bounds.y - scroll } - kb_shift;
                 let b = &n.bounds;
                 let view = crate::Rect::new(b.x, y, b.width, b.height);
                 let area = if n.is_fixed { fixed_area } else { flow_area };
@@ -417,6 +420,10 @@ impl MiniEngine {
             Value::String(if payload_json.trim().is_empty() { "{}".into() } else { payload_json.to_string() })
         );
         let n = self.app.eval(&code).ok().and_then(|s| s.trim().parse::<u32>().ok()).unwrap_or(0);
+        if name.trim_start_matches("on").eq_ignore_ascii_case("keyboardHeightChange") {
+            // 输入框自己的 `bindkeyboardheightchange`（engine_keyboard.rs）
+            self.keyboard_height_to_input(payload_json);
+        }
         self.app.pump_jobs();
         if self.app.take_data_dirty() {
             self.page_data_dirty = true;

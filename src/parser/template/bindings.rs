@@ -5,6 +5,11 @@
 /// 微信的属性设置就是这个语义，只比较值的话「一直是 false」的写法永远收不起刷新指示器
 pub const REFRESHER_KEYS_ATTR: &str = "__rt_keys";
 
+/// 模板展开时给 scroll-view 记下的「`scroll-into-view` 绑定了哪些字段」（逗号分隔）。
+/// `setData({intoView: ''}); setData({intoView: id})` 是「再滚一次到同一处」的常见写法：两次 setData
+/// 落在同一帧，渲染时只看得到最终值（与上次相同），靠这些字段「中途变过」才知道要再滚（host/scroll_view.rs）
+pub const INTO_VIEW_KEYS_ATTR: &str = "__siv_keys";
+
 /// `refresher-triggered="{{expr}}"` 里的根字段名（`{{a.b || c}}` → `a`, `c`）。
 /// 模板展开时调，结果写进 [`REFRESHER_KEYS_ATTR`]
 pub fn binding_roots(raw: &str) -> Vec<String> {

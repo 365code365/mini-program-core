@@ -292,6 +292,8 @@ mod picker_view_draw;
 pub use swiper_draw::SwiperRegion;
 /// 有 swiper 的顶层 scroll-view 不走离屏缓存
 mod scroll_live;
+// 嵌在容器里的纵向 scroll-view：内容按固定行数分块缓存，滚动只贴块（不逐帧重画可见子节点）
+mod scroll_tiles;
 pub use scroll_views::{RefresherConfig, ScrollViewInfo};
 mod interactions;
 /// 有状态组件的状态落地与带交互的绘制（唯一一份，三条绘制路径共用）

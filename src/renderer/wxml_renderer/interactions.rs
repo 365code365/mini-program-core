@@ -123,7 +123,7 @@ impl WxmlRenderer {
     pub(super) fn register_interactive_element(
         &mut self, 
         original_node: &RenderNode, 
-        drawn_node: &RenderNode,
+        _drawn_node: &RenderNode,
         bounds: &GeoRect, 
         interaction: &mut InteractionManager,
         taffy: &Tree,
@@ -264,11 +264,13 @@ impl WxmlRenderer {
                 );
             }
             "checkbox" => {
+                // 受控的选中态：页面 setData 改了 checked 就以页面为准（elements.rs `sync_checked`）
+                let checked = interaction.sync_checked(&id, Self::checked_attr(original_node));
                 interaction.register_element(InteractiveElement {
                     interaction_type: InteractionType::Checkbox,
                     id,
                     bounds: *bounds,
-                    checked: drawn_node.style.custom_data > 0.5,
+                    checked,
                     value: Self::input_value_attr(original_node),
                     disabled,
                     min: 0.0,
@@ -282,11 +284,12 @@ impl WxmlRenderer {
                 });
             }
             "radio" => {
+                let checked = interaction.sync_checked(&id, Self::checked_attr(original_node));
                 interaction.register_element(InteractiveElement {
                     interaction_type: InteractionType::Radio,
                     id,
                     bounds: *bounds,
-                    checked: drawn_node.style.custom_data > 0.5,
+                    checked,
                     value: Self::input_value_attr(original_node),
                     disabled,
                     min: 0.0,
@@ -300,11 +303,13 @@ impl WxmlRenderer {
                 });
             }
             "switch" => {
+                // 不看画出来的进度（拨动动画中途是 0~1 之间的数）
+                let checked = interaction.sync_checked(&id, Self::checked_attr(original_node));
                 interaction.register_element(InteractiveElement {
                     interaction_type: InteractionType::Switch,
                     id,
                     bounds: *bounds,
-                    checked: drawn_node.style.custom_data > 0.5,
+                    checked,
                     value: original_node.text.clone(),
                     disabled,
                     min: 0.0,
@@ -434,5 +439,8 @@ impl WxmlRenderer {
         }
     }
 
-    
+    /// `checked` 属性（`<switch checked>` 不带值也算开，规则见 `attr_is_true`）
+    fn checked_attr(node: &RenderNode) -> bool {
+        node.attrs.get("checked").is_some_and(|s| crate::renderer::components::attr_is_true(s))
+    }
 }

@@ -174,8 +174,9 @@ impl MiniEngine {
         }
         // fixed 子树的区域是页面视口坐标：引擎画了导航栏时整体在它下面（画面坐标要加回去）
         let top = self.nav_height();
+        let kb_shift = self.keyboard_shift_px() as f32 / self.dpr;
         if let Some(r) = self.renderer.as_ref() {
-            covers.over_flow.extend(r.fixed_hit_regions().iter().map(|f| Rect::new(f.x, f.y + top, f.width, f.height)));
+            covers.over_flow.extend(r.fixed_hit_regions().iter().map(|f| Rect::new(f.x, f.y + top - kb_shift, f.width, f.height)));
         }
         // 引擎画的导航栏压在所有原生组件之上（与微信一致：视频滚到导航栏底下就被它挡住）
         if top > 0.0 {

@@ -164,6 +164,8 @@ void   mr_app_key(MRApp* app, const char* name);
 int    mr_app_back(MRApp* app);
 uint32_t mr_app_page_depth(MRApp* app);
 
+// 键盘顶起画面（输入框 adjust-position）：导航栏以下整体上移 logical 逻辑像素（0 = 收回），引擎自己缓动、换算触摸坐标
+void   mr_app_set_keyboard_shift(MRApp* app, float logical);
 void   mr_app_on_show(MRApp* app);   // 进前台
 void   mr_app_on_hide(MRApp* app);   // 进后台（之后应停止 pump）
 void   mr_app_trim_memory(MRApp* app); // 系统内存告警时调用

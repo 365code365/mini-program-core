@@ -154,7 +154,7 @@ fn layers<'a>(
         tabbar: Some(tab),
         tabbar_px: tab_h,
         fixed: Some(fixed),
-        fixed_rows: Some((h / 4, h * 3 / 4)),
+        fixed_rows: Some((h / 4, h * 3 / 4)), content_shift: 0,
         pull: Some(PullState { gap_logical: 40.0, refreshing: false, progress: 0.8, phase: 0.25 }),
         overlays,
         edge_back: None, top: None,

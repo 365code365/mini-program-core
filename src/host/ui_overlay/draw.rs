@@ -307,21 +307,21 @@ pub(super) fn draw_text_line(
     if text.is_empty() {
         return;
     }
-    let real_bold = bold && tr.has_bold_face();
-    let faux = if bold && !real_bold { 0.7 * sf } else { 0.0 };
+    // 没有粗体字面时 TextRenderer 自己把字形加粗（text/embolden.rs），左右各多出一点，留够边
+    let faux = if bold && !tr.has_bold_face() { crate::text::faux_bold_strength(size) } else { 0.0 };
+    let _ = sf;
+    // 加粗向左多出来的那几列：临时画布左边留出这么多整像素，贴的时候再挪回去（字形落点不变）
+    let lm = faux.ceil();
     let ascent = (size * 1.15).ceil();
-    let tw = (tr.measure_text_weighted(text, size, 0.0, real_bold) + faux + 4.0).ceil() as u32;
+    let tw = (tr.measure_text_weighted(text, size, 0.0, bold) + faux + lm + 4.0).ceil() as u32;
     let th = (ascent + size * 0.45).ceil() as u32;
     let mut tmp = Canvas::new(tw.max(1), th.max(1));
     tmp.clear(Color::TRANSPARENT);
     let paint = Paint::new().with_color(Color::from_hex(rgb));
     // 小数部分留在临时画布里画，整数部分在贴的时候挪：字形落点与直接画一致
-    let (ox, oy) = (x.floor(), (baseline - ascent).floor());
+    let (ox, oy) = (x.floor() - lm, (baseline - ascent).floor());
     let (fx, fy) = (x - ox, baseline - ascent - oy);
-    tr.draw_text_weighted(&mut tmp, text, fx, ascent + fy, size, 0.0, real_bold, &paint);
-    if faux > 0.0 {
-        tr.draw_text_weighted(&mut tmp, text, fx + faux, ascent + fy, size, 0.0, real_bold, &paint);
-    }
+    tr.draw_text_weighted(&mut tmp, text, fx, ascent + fy, size, 0.0, bold, &paint);
     let src = tmp.pixels();
     let (ox, oy) = (ox as i32, oy as i32);
     for ty in 0..th as i32 {

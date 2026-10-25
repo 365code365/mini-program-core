@@ -23,6 +23,7 @@ impl MiniEngine {
             || self.renderer.as_ref().map(|r| r.has_active_animations()).unwrap_or(false)
             || self.tabbar_renderer.as_ref().map(|r| r.has_active_animations()).unwrap_or(false)
             || self.interaction.has_focused_input()
+            || self.input_queue_pending()
             || self.interaction.press_feedback_pending()
             || self.touch.is_active()
             || c::has_autoplay_swiper()
@@ -51,5 +52,7 @@ impl MiniEngine {
             // 报给宿主的滚动速度还不是 0：再出一帧把「停了」报出去（native_motion.rs），
             // 否则宿主按最后那个速度把视频框一直往前推
             || self.events.motion.unsettled
+            // 键盘顶起 / 收回的那 200ms
+            || self.keyboard_shift_animating()
     }
 }

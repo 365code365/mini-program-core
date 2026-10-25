@@ -184,7 +184,9 @@ impl WxmlRenderer {
             node.style.font_weight,
             FontWeight::Bold | FontWeight::W600 | FontWeight::W700 | FontWeight::W800 | FontWeight::W900
         ) && tr.has_bold_face();
-        let lines = count_wrapped_lines(tr, &node.text, avail, size, ls, bold);
+        // 盒宽是取整过的：放回取整吃掉的那点（measure.rs `LAYOUT_ROUNDING_SLACK_PX`）
+        let slack = crate::renderer::components::LAYOUT_ROUNDING_SLACK_PX;
+        let lines = count_wrapped_lines(tr, &node.text, avail + slack, size, ls, bold);
         let needed_h = lines as f32 * line_height + pt + pb;
 
         if narrowed.is_none() && needed_h <= box_h + 0.5 {

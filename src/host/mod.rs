@@ -108,6 +108,16 @@ pub mod page_loader;
 pub mod picker_sheet;
 pub mod region_data;
 pub mod render;
+/// 键盘顶起画面时的合成（导航栏以下整体上移，render.rs `present_to_buffer` 转进来）
+mod render_shift;
+/// 键盘顶起画面（`adjust-position`）：宿主给目标上移量，引擎按帧推进、合成时整体上移、触摸坐标加回去
+mod engine_keyboard;
+/// 输入法连着送来的几下（上屏 + 发送键）：页面 setData 过就等它画完一帧再送下一下
+mod engine_input_queue;
+/// 覆盖层只重画点击态 / 光标那一块（支付密码键盘按键）
+mod engine_fixed_partial;
+/// 动了的 scroll-view 要重画哪（页面 / 覆盖层分开）
+mod engine_damage_area;
 pub mod tabbar;
 /// 原生 tabBar 的运行时 API（setTabBarBadge / RedDot / Item / Style / show / hide）
 pub mod tabbar_api;

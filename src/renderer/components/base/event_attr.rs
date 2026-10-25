@@ -86,6 +86,9 @@ pub fn dataset_key(name: &str) -> String {
     crate::parser::template::camel_case(&name.to_ascii_lowercase())
 }
 
+/// dataset 里「这几个键保持字符串」的那一项（逻辑层 `__coerceDataset` 读完删掉，页面看不见）
+pub const DATASET_STR_KEY: &str = "__str";
+
 /// 提取节点上的全部事件绑定
 pub fn extract_events(node: &WxmlNode) -> Vec<EventBind> {
     let mut events = vec![];
@@ -95,6 +98,10 @@ pub fn extract_events(node: &WxmlNode) -> Vec<EventBind> {
         if let Some(name) = k.strip_prefix("data-") {
             data.insert(dataset_key(name), v.clone());
         }
+    }
+    // 绑定求出来的字符串：逻辑层不按字面量还原（`__coerceDataset` 认这个键，用完删掉）
+    if let Some(keys) = node.get_attr(crate::parser::template::DATASET_STR_ATTR) {
+        data.insert(DATASET_STR_KEY.to_string(), keys.to_string());
     }
     // input/textarea：把宿主侧编辑需要的属性一并带上（maxlength/type/password）
     if node.tag_name == "input" || node.tag_name == "textarea" {

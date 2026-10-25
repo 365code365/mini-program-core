@@ -4,8 +4,8 @@ use std::collections::HashMap;
 /// 着色器源码（编进二进制；它的哈希进判定缓存键，改着色器就会重新评估驱动）
 pub const WGSL: &str = include_str!("compose.wgsl");
 
-/// 与 `compose.wgsl` 的 `struct U` 逐字段对应：36 个 4 字节标量 + 16 个 f32 的阴影系数 + 64 个 u32 的
-/// 压暗表 = 464 字节（两个数组分别在 144、208 字节处开始，满足 uniform 里 vec4 数组 16 字节对齐）
+/// 与 `compose.wgsl` 的 `struct U` 逐字段对应：40 个 4 字节标量 + 16 个 f32 的阴影系数 + 64 个 u32 的
+/// 压暗表 = 480 字节（两个数组分别在 160、224 字节处开始，满足 uniform 里 vec4 数组 16 字节对齐）
 #[repr(C)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Uniforms {
@@ -52,12 +52,17 @@ pub struct Uniforms {
     pub sheet_top: i32,
     pub sheet_y0: u32,
     pub sheet_y1: u32,
+    /// 键盘顶起画面：导航栏以下整体上移的行数（`FrameLayers::content_shift`）；后三个只为让下面的数组 16 字节对齐
+    pub content_shift: u32,
+    pub pad0: u32,
+    pub pad1: u32,
+    pub pad2: u32,
     pub eb_shadow_f: [f32; 16],
     /// 256 项压暗表，4 项一个 u32（小端：第 c 项在第 c/4 个字的第 c%4 个字节）
     pub lut: [u32; 64],
 }
 
-pub const UNIFORM_BYTES: usize = 464;
+pub const UNIFORM_BYTES: usize = 480;
 const _: () = assert!(std::mem::size_of::<Uniforms>() == UNIFORM_BYTES);
 
 /// 256 项字节表 → 64 个 u32（与 `compose.wgsl` 的 `lut_at` 对应）

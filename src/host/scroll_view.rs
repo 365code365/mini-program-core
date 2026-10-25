@@ -180,6 +180,36 @@ fn set_data_seq(app: &MiniApp) -> u64 {
     app.eval("__setDataSeq").ok().and_then(|s| s.trim().parse().ok()).unwrap_or(0)
 }
 
+/// 页面 setData 过、重画之前调：`scroll-into-view` 绑定的字段这段时间里**值变过**（哪怕最后又设回原值），
+/// 就忘掉「上次见到的值」，渲染时按「变了」再滚一次。
+///
+/// 聊天页的 `scrollToEnd`：`setData({intoView: ''}); setData({intoView: last})`。微信两次 setData 逐次生效，
+/// 第二次是从 '' 变成 last、照样滚；这里两次落在同一帧，渲染时只见到 last（与上次相同）—— 不滚，
+/// 键盘弹起列表变矮后最新消息被挡在下面（轻聊真机）。只在数据脏的帧、只问绑了字段的 scroll-view
+///
+/// 第一次见到的 scroll-view 先在一帧干净的数据上记下序号作起点（`data_dirty` 为假也要记），之后只在数据脏的帧核对
+pub fn rearm_into_view(app: &MiniApp, renderer: Option<&WxmlRenderer>, interaction: &mut InteractionManager, data_dirty: bool) {
+    let Some(r) = renderer else { return };
+    let mut seq_now = None;
+    for info in r.scroll_views().iter().filter(|s| s.scrollable && !s.into_keys.is_empty()) {
+        let st = state(&mut interaction.scroll_views, &info.component_id);
+        if st.into_seq.is_some() && !data_dirty {
+            continue;
+        }
+        let seq = *seq_now.get_or_insert_with(|| set_data_seq(app));
+        let Some(since) = st.into_seq.replace(seq) else { continue };
+        if seq > since && changed_since(app, &info.owner, &info.into_keys, since) {
+            st.last_into_view = None;
+        }
+    }
+}
+
+fn changed_since(app: &MiniApp, owner: &str, keys: &[String], seq: u64) -> bool {
+    let o = serde_json::to_string(owner).unwrap_or_else(|_| "''".into());
+    let k = serde_json::to_string(keys).unwrap_or_else(|_| "[]".into());
+    app.eval(&format!("__changedSince({o}, {k}, {seq})")).map(|s| s.trim() == "1").unwrap_or(false)
+}
+
 fn set_since(app: &MiniApp, owner: &str, keys: &[String], seq: u64) -> bool {
     let o = serde_json::to_string(owner).unwrap_or_else(|_| "''".into());
     let k = serde_json::to_string(keys).unwrap_or_else(|_| "[]".into());
@@ -262,12 +292,23 @@ impl super::engine::MiniEngine {
     pub fn scroll_view_offset(&self, id: &str) -> Option<f32> {
         self.interaction.get_scroll_controller(id).map(|c| c.get_position())
     }
+    /// 所有 scroll-view 的偏移（按 id 排好）。测试用：两个引擎比「滚到同一处没有」
+    pub fn scroll_view_offsets(&self) -> Vec<(String, f32)> {
+        let mut v: Vec<(String, f32)> = self.interaction.scroll_controllers.iter().map(|(k, c)| (k.clone(), c.get_position())).collect();
+        v.sort_by(|a, b| a.0.cmp(&b.0));
+        v
+    }
 
     /// SDK 每帧：scroll-view 事件 → `wx.pageScrollTo` → `onPageScroll`。返回是否要重画
     pub(super) fn tick_scroll_views(&mut self, now_ms: u64) -> bool {
         // swiper 的换页动画与自动播放按宿主给的时钟走（同一串 pump 时间 → 同一串画面）
         crate::renderer::components::swiper_set_clock(now_ms.max(1));
-        let mut redraw = tick(&mut self.app, self.renderer.as_ref(), &mut self.interaction, now_ms);
+        // scroll-view 的事件（bindscroll / scrolltolower / refresher…）派完不用整页重画：回调里的 setData
+        // 在本函数末尾记成数据脏，交给失效分析；scroll-view 自己的位移由 engine_damage 只重画它的盒子。
+        // 从前派过事件就 `mark_full`：带 bindscroll 的列表（外卖店铺页、点餐页按滚动高亮左侧分类）
+        // 滚着的每一帧都整页重画，一加 PLY110 上 14~34ms、屏上重复 25.7%
+        let mut redraw = false;
+        tick(&mut self.app, self.renderer.as_ref(), &mut self.interaction, now_ms);
         // swiper / picker-view 的事件（change / transition / animationfinish …）派完不用整页重画：
         // 回调里 setData 走下面的失效分析，swiper 自己的位移由 engine_swiper.rs 只重画它的盒子，
         // picker-view 的吸附动画照旧按「在动」整帧。从前这里 `redraw = true` → `mark_full`：
@@ -339,6 +380,8 @@ impl super::engine::MiniEngine {
         if self.app.take_data_dirty() {
             self.page_data_dirty = true;
         }
+        // 重画之前：scroll-into-view 绑定的字段这一帧里变过又变回来，也要再滚一次
+        rearm_into_view(&self.app, self.renderer.as_ref(), &mut self.interaction, self.page_data_dirty);
         redraw
     }
 }

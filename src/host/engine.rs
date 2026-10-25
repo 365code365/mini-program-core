@@ -121,6 +121,10 @@ pub struct MiniEngine {
     pub(super) rgba_stale: bool,
     /// 在后台（`on_hide` 之后、`on_show` 之前）：前后台没变的那次 `on_show` / `on_hide` 不派发（engine_life.rs）
     pub(super) backgrounded: bool,
+    /// 键盘顶起画面（engine_keyboard.rs）
+    pub(super) kb: super::engine_keyboard::KeyboardShift,
+    /// 等页面先画一帧再送的输入（engine_input_queue.rs）
+    pub(super) input_queue: std::collections::VecDeque<super::engine_input_queue::QueuedInput>,
     /// 引擎自己的单调时钟原点（宿主从不给时间时用）
     pub(super) clock_origin: Instant,
     /// 宿主最近一次给的时间戳与收到它的时刻。触摸、长按、事件 timeStamp 全部用
@@ -338,6 +342,8 @@ impl MiniEngine {
             rgba: Vec::new(),
             rgba_stale: false,
             backgrounded: false,
+            kb: Default::default(),
+            input_queue: Default::default(),
             clock_origin: Instant::now(),
             host_clock: None,
             last_pump_ms: 0,

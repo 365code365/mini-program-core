@@ -128,8 +128,16 @@ impl WxmlParser {
             if self.current_char() == '>' || self.starts_with("/>") {
                 break;
             }
-            
+            // 读到结尾还没有 `>`、或这一位既不是属性名也不是 `>`（`<b ? 'x'`）：报错。
+            // 从前这里不前进也不退出 —— 文本里 `{{a<b ? 'x' : 'y'}}` 让整个引擎卡死在解析上
+            if self.pos >= self.input.len() {
+                return Err(format!("<{tag_name}> 没有闭合的 '>'"));
+            }
+            let start = self.pos;
             let (name, value) = self.parse_attribute()?;
+            if name.is_empty() || self.pos == start {
+                return Err(format!("<{tag_name}> 里有认不出的字符 '{}'", self.input[start]));
+            }
             node.attributes.insert(name, value);
         }
         
@@ -258,9 +266,21 @@ impl WxmlParser {
         Ok(value)
     }
     
+    /// 文字节点：读到下一个标签为止。`{{ }}` 里面原样读（表达式里的 `<` 不是标签：
+    /// `{{a < b ? 'x' : 'y'}}` 从前整页解析失败，`{{a<b ? …}}` 把解析器卡死）
     fn parse_text(&mut self) -> Option<WxmlNode> {
         let mut text = String::new();
-        while self.pos < self.input.len() && self.current_char() != '<' {
+        while self.pos < self.input.len() {
+            // 没有配对的 `}}` 就当普通字符（别把后面整页吞进一个文字节点）
+            if let Some(close) = self.starts_with("{{").then(|| self.find_from(self.pos + 2, "}}")).flatten() {
+                text.extend(&self.input[self.pos..close + 2]);
+                self.pos = close + 2;
+                continue;
+            }
+            // 表达式外面的 `<` 一律当标签开头（与从前一致：写坏的 `<<<` 整段报错、不渲染）
+            if self.current_char() == '<' {
+                break;
+            }
             text.push(self.current_char());
             self.advance();
         }
@@ -300,6 +320,12 @@ impl WxmlParser {
         }
     }
     
+    /// 从 `from` 起第一次出现 `s` 的位置
+    fn find_from(&self, from: usize, s: &str) -> Option<usize> {
+        let pat: Vec<char> = s.chars().collect();
+        (from..self.input.len().saturating_sub(pat.len() - 1)).find(|&i| self.input[i..i + pat.len()] == pat[..])
+    }
+
     fn current_char(&self) -> char {
         if self.pos < self.input.len() {
             self.input[self.pos]
@@ -351,5 +377,31 @@ mod tests {
         assert_eq!(nodes.len(), 1);
         assert_eq!(nodes[0].tag_name, "view");
         assert_eq!(nodes[0].get_attr("class"), Some("container"));
+    }
+
+    /// 文字里 `{{ }}` 中的 `<` 是比较运算，不是标签（马拉松报名页步骤条 `{{step < index ? …}}`）
+    #[test]
+    fn 文字里的表达式带小于号() {
+        for src in [
+            "<view>{{a < b ? 'x' : 'y'}}</view>",
+            "<view>{{a<b ? 'x' : 'y'}}</view>",
+            "<view>{{a<b}}<text>t</text></view>",
+        ] {
+            let nodes = WxmlParser::new(src).parse().unwrap_or_else(|e| panic!("{src}: {e}"));
+            assert_eq!(nodes[0].tag_name, "view", "{src}");
+            assert!(nodes[0].children[0].text_content.starts_with("{{a"), "{src}: {:?}", nodes[0].children[0].text_content);
+        }
+        let n = WxmlParser::new("<view>{{a<b}}<text>t</text></view>").parse().unwrap();
+        assert_eq!(n[0].children[1].tag_name, "text", "表达式后面的标签照常解析");
+    }
+
+    /// 写坏的标签报错，不卡死（从前属性循环不前进）
+    #[test]
+    fn 坏标签报错不卡死() {
+        assert!(WxmlParser::new("<view a=1 ?>x</view>").parse().is_err());
+        assert!(WxmlParser::new("<view a=1").parse().is_err());
+        // 没配对的 {{ 不吞掉后面的标签
+        let n = WxmlParser::new("<view>{{x<text>t</text></view>").parse();
+        assert!(n.is_ok() || n.is_err(), "不卡死就行");
     }
 }

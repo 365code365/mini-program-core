@@ -113,7 +113,7 @@ impl MiniEngine {
     }
 
     /// reLaunch：所有页（含留着的 tab 页）onUnload，再开目标页
-    pub(super) fn relaunch(&mut self, path: &str) {
+    pub(super) fn relaunch(&mut self, path: &str, query: HashMap<String, String>) {
         page_keep::relaunch_js(&self.app);
         self.page_stack.clear();
         self.back_shots.clear();
@@ -121,6 +121,6 @@ impl MiniEngine {
         self.edge_back = None;
         self.route.finish();
         self.interaction.clear_page_state();
-        self.navigate_to(path, HashMap::new()).ok();
+        self.navigate_to(path, query).ok();
     }
 }

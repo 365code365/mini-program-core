@@ -280,6 +280,13 @@ pub extern "C" fn mr_app_on_show(app: *mut MRApp) {
     with_app!(app, (), |a| a.engine.on_show())
 }
 
+/// 键盘顶起画面（输入框 `adjust-position`）：导航栏以下整体上移 `logical` 逻辑像素（0 = 收回）。
+/// 引擎自己按帧缓动过去、只重新合成；触摸坐标宿主照原样给，引擎按当前上移量换回去（host/engine_keyboard.rs）
+#[no_mangle]
+pub extern "C" fn mr_app_set_keyboard_shift(app: *mut MRApp, logical: f32) {
+    with_app!(app, (), |a| a.engine.set_keyboard_shift(logical))
+}
+
 /// 进后台：派发 `App.onHide`。宿主这时应**停止调用 `mr_app_pump`**，否则白耗电。
 #[no_mangle]
 pub extern "C" fn mr_app_on_hide(app: *mut MRApp) {

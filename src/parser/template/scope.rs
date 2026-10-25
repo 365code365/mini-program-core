@@ -154,7 +154,8 @@ impl<'a> Cx<'a> {
         self.collect.is_some()
     }
 
-    /// 页面里写了 `wx:key` 时也记结构位置：带 key 的列表项要靠它得到稳定身份（见 `for_loop.rs`）
+    /// 页面里写了 `wx:key`、或有输入框时也记结构位置：带 key 的列表项、输入框要靠它得到稳定身份
+    /// （见 `for_loop.rs`、`emit.rs`）
     pub(super) fn track_keys_in(&mut self, nodes: &[WxmlNode]) {
         if !self.track && super::for_loop::has_wx_key(nodes) {
             self.track = true;
@@ -168,6 +169,11 @@ impl<'a> Cx<'a> {
         }
         let in_keyed = self.path.borrow().iter().any(|s| matches!(s, Seg::Key(_))) || owner.contains("[#");
         in_keyed.then(|| format!("{owner}|{}", self.site()))
+    }
+
+    /// 不在带 key 的列表里时，按模板里的结构位置给身份（输入框用，见 `emit.rs`）。没记结构位置时为 None
+    pub(super) fn site_identity(&self, owner: &str) -> Option<String> {
+        self.track.then(|| format!("{owner}|{}", self.site()))
     }
 
     /// 实例 data：先按实例键找；找不到再按标签名（`__mountPageComponent` 的老式单实例）

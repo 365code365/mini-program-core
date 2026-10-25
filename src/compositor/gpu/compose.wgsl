@@ -27,6 +27,8 @@ struct U {
     pass_y0: u32, pass_y1: u32, lut_on: u32,
     // 操作菜单面板缓存：直通帧里 [sheet_y0, sheet_y1) 行取 sheet_tex 第 y - sheet_top 行
     sheet_on: u32, sheet_top: i32, sheet_y0: u32, sheet_y1: u32,
+    // 键盘顶起画面：导航栏以下的页面 / tabBar / fixed 整体上移 content_shift 行（后三个只为对齐）
+    content_shift: u32, pad0: u32, pad1: u32, pad2: u32,
     // 交界阴影各列的压暗系数（第 i 个 = 离交界 i 列，贴着边缘最深）
     eb_shadow_f: array<vec4f, 4>,
     // 覆盖层遮罩的 256 项压暗表（4 项一个字，小端）
@@ -89,8 +91,17 @@ fn lut_at(c: u32) -> u32 {
 }
 
 // 不算转场的这一帧在 (x, y) 处的颜色：页面 → tabBar → fixed → 导航栏 → 下拉指示器
-fn base(x: u32, y: u32) -> vec3<u32> {
+fn base(x: u32, y_out: u32) -> vec3<u32> {
     var rgb = vec3<u32>(0u);
+    // 键盘顶起画面（与 present_shifted 同一套）：导航栏以下这一行取「没顶起时」第 y_out + shift 行的样子；
+    // 顶出画面底边的那几行（在键盘后面）填页面底色
+    var y = y_out;
+    if (u.content_shift > 0u && y_out >= u.top_px) {
+        y = y_out + u.content_shift;
+        if (y >= u.height) {
+            return unpack_rgb(u.page_bg);
+        }
+    }
     if (y < u.content_h) {
         // 导航栏占的那几行：present_to_buffer 不写（保留缓冲初值 0），由导航栏盖上
         if (y >= u.top_px) {
@@ -117,11 +128,11 @@ fn base(x: u32, y: u32) -> vec3<u32> {
             rgb = blend(textureLoad(fixed_layer, vec2<u32>(x, fy), 0), rgb);
         }
     }
-    if (y < u.top_rows && x < min(u.width, u.top_w)) {
-        rgb = blend(textureLoad(top_band, vec2<u32>(x, y), 0), rgb);
+    if (y_out < u.top_rows && x < min(u.width, u.top_w)) {
+        rgb = blend(textureLoad(top_band, vec2<u32>(x, y_out), 0), rgb);
     }
-    if (y < u.pull_rows) {
-        rgb = blend(textureLoad(pull_band, vec2<u32>(x, y), 0), rgb);
+    if (y_out < u.pull_rows) {
+        rgb = blend(textureLoad(pull_band, vec2<u32>(x, y_out), 0), rgb);
     }
     return rgb;
 }

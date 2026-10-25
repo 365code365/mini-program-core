@@ -109,10 +109,12 @@
             function __coerceDataset(raw) {
                 var out = {};
                 if (!raw) { return out; }
+                // `data-x="{{expr}}"` 求出来就是字符串的键（引擎记在 __str 里）：保持字符串，不还原成数字
+                var keep = typeof raw.__str === 'string' ? raw.__str.split(',') : [];
                 for (var key in raw) {
-                    if (!raw.hasOwnProperty(key)) { continue; }
+                    if (!raw.hasOwnProperty(key) || key === '__str') { continue; }
                     var val = raw[key];
-                    if (typeof val !== 'string') { out[key] = val; continue; }
+                    if (typeof val !== 'string' || keep.indexOf(key) >= 0) { out[key] = val; continue; }
                     if ((val.charAt(0) === '{' && val.charAt(val.length - 1) === '}') ||
                         (val.charAt(0) === '[' && val.charAt(val.length - 1) === ']')) {
                         try { out[key] = JSON.parse(val.replace(/'/g, '"')); }

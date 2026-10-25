@@ -12,6 +12,10 @@ pub(super) fn apply_style_property(
     ctx: &mut ComponentContext
 ) {
     let sf = ctx.scale_factor;
+    // 样式表里的 `none` 解析成 `StyleValue::None`，而下面各条按字符串比 —— `.gone { display: none }`
+    // 从前整条作废（只有行内 style 的 none 是字符串、才生效），`box-shadow: none` 覆盖不掉前一条规则的阴影
+    let none = StyleValue::String("none".into());
+    let value = if matches!(value, StyleValue::None) { &none } else { value };
     match name {
             "width" => if let Some(v) = to_dimension(value, ctx.screen_width, ctx.screen_height, sf) { ts.size.width = v; }
             "height" => if let Some(v) = to_dimension(value, ctx.screen_width, ctx.screen_height, sf) { ts.size.height = v; }

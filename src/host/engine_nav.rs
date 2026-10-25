@@ -116,13 +116,14 @@ impl MiniEngine {
                     .eval("if(__currentPage&&__currentPage.onUnload)__currentPage.onUnload()")
                     .ok();
                 self.page_stack.pop();
-                self.app.eval("__popPage(1)").ok();
+                self.app.eval("__dropTopPage()").ok();
                 self.interaction.clear_page_state();
                 self.navigate_to(&p, q).ok();
             }
             NavigationRequest::ReLaunch { url } => {
-                let (p, _) = parse_url(&url);
-                self.relaunch(&p);
+                // query 要带上：`wx.reLaunch({url:'/pages/a?id=1'})` 的 onLoad 收到 {id:'1'}（从前丢了，收到 {}）
+                let (p, q) = parse_url(&url);
+                self.relaunch(&p, q);
             }
         }
     }

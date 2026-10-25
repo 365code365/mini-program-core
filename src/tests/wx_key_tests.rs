@@ -76,3 +76,19 @@ fn 带_key_的组件实例里的元素也有身份() {
     assert_eq!(sw.tag_name, "switch");
     assert_eq!(sw.get_attr(KEYED_ID_ATTR), Some("/my-sw@0.0[#u]|0"));
 }
+
+/// 输入框不在带 key 的列表里也有身份：按模板结构位置给，不随坐标、不随前面 wx:if 兄弟的显隐变。
+/// 从前退回「input_x_y」：聊天页键盘弹起、列表变矮、输入条上移，焦点就对不上任何节点（tests/chat_keyboard_e2e.rs）
+#[test]
+fn 输入框按结构位置有稳定身份() {
+    let page = parse(r#"<view><view wx:if="{{tip}}">提示</view><view class="bar" style="height:{{h}}px"><input/><textarea/></view></view>"#);
+    let render = |d: serde_json::Value| TemplateEngine::render(&page, &d);
+    let id = |n: &WxmlNode| n.get_attr(KEYED_ID_ATTR).map(str::to_string);
+    let a = render(json!({ "tip": true, "h": 50 }));
+    let b = render(json!({ "tip": false, "h": 80 }));
+    let (bar_a, bar_b) = (&a[0].children[1], &b[0].children[0]);
+    assert!(id(&bar_a.children[0]).is_some(), "输入框该有身份");
+    assert_eq!(id(&bar_a.children[0]), id(&bar_b.children[0]), "前面的兄弟没了、位置变了，身份不变");
+    assert_ne!(id(&bar_a.children[0]), id(&bar_a.children[1]), "两个输入框身份不同");
+    assert_eq!(id(bar_a), None, "普通元素不加（仍按坐标，与从前一致）");
+}

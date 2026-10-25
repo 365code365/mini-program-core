@@ -76,8 +76,31 @@ impl WxmlRenderer {
     ) {
         let (no, nn) = (olds.clone().count(), news.clone().count());
         if no != nn && !ctx.grow {
-            ctx.bail = true;
-            ctx.bail_why = format!("结构变化：孩子 {no} 个 -> {nn} 个");
+            // 孩子多了 / 少了一个（`wx:if` 切换选中条、角标）而父节点的盒子没变：新旧两串孩子各自整棵画到哪
+            // 就重画哪（布局框 + 阴影外扩）。从前一律整帧：外卖店铺页滚动时左侧分类的高亮条一换（孩子 2 -> 1），
+            // 一加上那一帧整页重画 31~43ms。按位置选的规则（:first-child 等）可能因此改了别的兄弟的样式、
+            // 子树里有画法≠布局的（scroll-view / swiper / 变换 / 动画）时照旧整帧
+            if in_fixed || old_fixed {
+                ctx.fixed_changed = true;
+                return;
+            }
+            let positional = olds
+                .clone()
+                .chain(news.clone())
+                .any(|c| ctx.positional.may_match(&c.tag, c.attrs.get("class").map(String::as_str)));
+            let moved = ctx.moved;
+            let mut acc: Option<GeoRect> = None;
+            let ok = !positional
+                && olds.clone().all(|o| Self::subtree_paint_bounds(old_t, resolve(o, moved), old_o, moved, &mut acc))
+                && news.clone().all(|n| Self::subtree_paint_bounds(new_t, n, new_o, moved, &mut acc));
+            if !ok {
+                ctx.bail = true;
+                ctx.bail_why = format!("结构变化：孩子 {no} 个 -> {nn} 个");
+                return;
+            }
+            if let Some(r) = acc {
+                ctx.add(r);
+            }
             return;
         }
         let mut paired = 0;
@@ -101,6 +124,27 @@ impl WxmlRenderer {
                 Self::tail_cut(new_t, n, new_o.0, new_o.1, in_fixed, ctx);
             }
         }
+    }
+
+    /// 一棵子树画出来盖到的范围（每个节点的布局框按阴影外扩，并进 `acc`）。
+    /// 碰到画法≠布局的节点（scroll-view / swiper / 变换 / 动画 / fixed）返回 false：那种算不准，调用方整帧
+    fn subtree_paint_bounds(t: &dyn Layouts, n: &RenderNode, origin: (f32, f32), moved: &HashMap<taffy::NodeId, &RenderNode>, acc: &mut Option<GeoRect>) -> bool {
+        let n = resolve(n, moved);
+        if matches!(n.tag.as_str(), "scroll-view" | "swiper") || n.style.transform.is_some() || n.style.animation.is_some() || n.style.is_fixed {
+            return false;
+        }
+        let Ok(l) = t.layout(n.taffy_node) else { return false };
+        let o = (origin.0 + l.location.x, origin.1 + l.location.y);
+        let r = super::invalidate_grow::inflate(GeoRect::new(o.0, o.1, l.size.width, l.size.height), &n.style);
+        *acc = Some(match *acc {
+            None => r,
+            Some(a) => {
+                let (x0, y0) = (a.x.min(r.x), a.y.min(r.y));
+                let (x1, y1) = ((a.x + a.width).max(r.x + r.width), (a.y + a.height).max(r.y + r.height));
+                GeoRect::new(x0, y0, x1 - x0, y1 - y0)
+            }
+        });
+        n.children.iter().all(|c| Self::subtree_paint_bounds(t, c, o, moved, acc))
     }
 
     /// 两棵子树画出来会不会不一样（结构、文字、属性、位置尺寸任何一样不同就算）

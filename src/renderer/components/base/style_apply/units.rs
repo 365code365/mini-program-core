@@ -52,8 +52,53 @@ pub fn to_px(v: &StyleValue, screen_width: f32, screen_height: f32) -> Option<f3
             LengthUnit::Vh => *n / 100.0 * screen_height,
         }),
         StyleValue::Number(n) => Some(*n),
+        StyleValue::String(s) if s.trim_start().starts_with("calc(") => calc_px(s, screen_width, screen_height),
         _ => None,
     }
+}
+
+/// 解析期合不成一个单位的 `calc()`（`calc(100vh - 52px)`、`calc(100vw - 30rpx)`）：落样式时按视口换算成 px。
+///
+/// 解析器只折叠同单位的加减（calc_env.rs），单位一混就整条留成字符串 —— 从前到这里认不出、整条声明作废，
+/// `height: calc(100vh - 104rpx)` 的 scroll-view 被内容撑高、滚不动（火车票城市页、阅读器目录页）。
+/// 支持 px / rpx / vw / vh / em / rem 与无单位数的 `+ - * /`（乘除按无单位数，先乘除后加减）。
+/// 带 `%` 的（`calc(100% - 20px)`）要按包含块解析，这里没有包含块，仍不支持（返回 None，与从前一样）
+pub(super) fn calc_px(s: &str, sw: f32, sh: f32) -> Option<f32> {
+    let inner = s.trim().strip_prefix("calc(")?.strip_suffix(')')?;
+    // 一个操作数：(值, 是不是长度)
+    let operand = |tok: &str| -> Option<(f32, bool)> {
+        let tok = tok.trim();
+        if let Ok(n) = tok.parse::<f32>() {
+            return Some((n, false));
+        }
+        let units: [(&str, f32); 6] = [("rpx", sw / 750.0), ("px", 1.0), ("vw", sw / 100.0), ("vh", sh / 100.0), ("rem", 16.0), ("em", 16.0)];
+        let (num, k) = units.iter().find_map(|(u, k)| tok.strip_suffix(u).map(|n| (n, *k)))?;
+        Some((num.trim().parse::<f32>().ok()? * k, true))
+    };
+    let tokens: Vec<&str> = inner.split_whitespace().collect();
+    if tokens.is_empty() || tokens.len() % 2 == 0 {
+        return None;
+    }
+    // 先乘除：把「项」合并成 (值, 是不是长度)，再按加减累加
+    let mut terms: Vec<(char, f32, bool)> = Vec::new();
+    let (v, l) = operand(tokens[0])?;
+    let mut cur = (v, l);
+    let mut sign = '+';
+    for pair in tokens[1..].chunks(2) {
+        let (op, rhs) = (pair[0], operand(pair[1])?);
+        match op {
+            "*" => cur = (cur.0 * rhs.0, cur.1 || rhs.1),
+            "/" if !rhs.1 && rhs.0 != 0.0 => cur = (cur.0 / rhs.0, cur.1),
+            "+" | "-" => {
+                terms.push((sign, cur.0, cur.1));
+                sign = op.chars().next().unwrap();
+                cur = rhs;
+            }
+            _ => return None,
+        }
+    }
+    terms.push((sign, cur.0, cur.1));
+    Some(terms.iter().map(|(s, v, _)| if *s == '-' { -v } else { *v }).sum())
 }
 
 /// 将 StyleValue 转换为 Dimension

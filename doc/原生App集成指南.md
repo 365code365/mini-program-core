@@ -753,6 +753,11 @@ Android 的 `MiniProgramView`（`sameLayerVideo`，默认开）与 Flutter 插�
 - **软键盘**：`inputFocus` → `TextInput.attach`（按 `type` / `password` / `confirm-type` 选键盘），
   输入法给的文本与上次按码点差分成 backspace + 整串文字；键盘弹起时不缩画面，而是像微信
   `adjust-position` 那样整体上移露出输入框（`MiniProgramScaffold` 已设 `resizeToAvoidBottomInset: false`）。
+  Android 上上移由引擎做（`keyboardShift` → `nativeSetKeyboardShift`）：导航栏不动、按 vsync 缓动；iOS 仍平移视图。
+  键盘高度经 `dispatchEvent('keyboardHeightChange', {height})` 交给 `wx.onKeyboardHeightChange` 与键盘所属输入框的
+  `bindkeyboardheightchange`；`height` 是键盘挡住小程序视图的那一截（逻辑像素），键盘动画停下来再报一次。
+  聚焦着却被用户收了键盘（返回键 / 收起键）时插件送 `escape` 让输入框失焦（与微信一致）；再点输入框会重新弹出。
+  自己接键盘的宿主照这三条做：报遮挡高度、用户收键盘时 `sendKey('escape')`、`inputFocus`（含已聚焦再点）一律弹键盘。
 - **安全区**：按视图与屏幕刘海 / 底部横条真正重叠的部分算（放在 AppBar 下面时上边是 0）。
 - **尺寸**：引擎是整数逻辑尺寸；纹理按 `pixelWidth / dpr` 摆、最近邻采样 —— 一个设备像素对一个纹理像素。
 

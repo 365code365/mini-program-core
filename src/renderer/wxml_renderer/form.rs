@@ -87,6 +87,13 @@ impl WxmlRenderer {
     pub(super) fn form_geom(&self, n: &RenderNode, taffy: &Tree, origin: (f32, f32), interaction: &InteractionManager) -> Option<(GeoRect, String, (f32, f32))> {
         let l = taffy.layout(n.taffy_node).ok()?;
         let sf = self.scale_factor;
+        // fixed 子树的根按覆盖层钉住它的原点算（视口坐标，与 query.rs 同一条）。从前用它在正常流里的位置：
+        // 页面比视口高时 `bottom:0` 的底栏在内容最底下，点底栏里的 label / navigator / 表单按钮全落空
+        // （阅读器的主题 radio 包在 label 里，点字不切换）
+        let pinned = (n.style.is_fixed && self.fixed_origins.0 == self.layout_generation)
+            .then(|| self.fixed_origins.1.get(&n.taffy_node).copied())
+            .flatten();
+        let origin = pinned.unwrap_or(origin);
         let (x, y) = (origin.0 + l.location.x, origin.1 + l.location.y);
         let rect = GeoRect::new(x / sf, y / sf, l.size.width / sf, l.size.height / sf);
         let id = Self::get_component_id(n, &rect);

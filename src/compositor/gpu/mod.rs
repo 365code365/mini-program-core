@@ -249,7 +249,8 @@ impl GpuCompositor {
             }
         }
         let content_h = l.height - if l.has_tabbar { l.tabbar_px.min(l.height) } else { 0 };
-        let visible = (l.scroll_px, l.scroll_px.saturating_add(content_h as i32));
+        // 键盘顶起画面时底下多露出 content_shift 行（在键盘后面，但要与 CPU 合成逐字节相同，照样传上去）
+        let visible = (l.scroll_px, l.scroll_px.saturating_add(content_h as i32 + l.content_shift as i32));
         if let Some(m) = &mut self.page {
             sent += m.sync(queue, l.page, visible);
         }
@@ -435,9 +436,15 @@ fn sync_layer(slot: &mut LayerSlot, dev: &wgpu::Device, queue: &wgpu::Queue, lab
     if !stale_tex && slot.gen == layer.gen() && slot.rows == rows {
         return 0;
     }
+    let bytes = super::color_bytes(c.pixels());
+    // 镜像停在上一代、这一代只改了几行（行区间也没变）：只补传那几行
+    if let (false, Some((y0, y1))) = (stale_tex, layer.partial_since(slot.gen).filter(|_| slot.rows == rows)) {
+        slot.gen = layer.gen();
+        let (y0, y1) = (y0.min(c.height()), y1.min(c.height()));
+        return slot.tex.as_ref().map(|t| t.upload_rows(queue, bytes, c.width(), y0, y1.saturating_sub(y0), c.width())).unwrap_or(0);
+    }
     slot.gen = layer.gen();
     slot.rows = rows;
-    let bytes = super::color_bytes(c.pixels());
     let (y0, n) = match (label, rows) {
         ("fixed", Some((a, b))) => (a.min(c.height()), b.saturating_add(1).min(c.height()).saturating_sub(a.min(c.height()))),
         ("fixed", None) => (0, 0),

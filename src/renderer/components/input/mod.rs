@@ -31,6 +31,7 @@
 //! | bindfocus | 聚焦时触发 | event.detail = {value, height} |
 //! | bindblur | 失焦时触发 | event.detail = {value} |
 //! | bindconfirm | 点击完成按钮时触发 | event.detail = {value} |
+//! | bindkeyboardheightchange | 键盘高度变了（宿主推 `keyboardHeightChange`，host/engine_keyboard.rs） | event.detail = {height, duration} |
 //! 
 //! ## CSS 支持
 //! 
@@ -191,6 +192,24 @@ impl ConfirmType {
     }
 }
 
+/// 本帧画的是占位符（值为空）：`text` 是占位符、`style.text_color` 是占位符的颜色，
+/// 光标 / 选区 / 点击定位按「空值」算（input/draw.rs、textarea.rs）。建树时写进 attrs，交互态落地时跟着值改
+pub const PLACEHOLDER_SHOWN: &str = "__placeholder_shown";
+/// 占位符颜色（`placeholder-style` > `placeholder-class` 里的 color > 默认 #BFBFBF），`#rrggbbaa`
+pub const PLACEHOLDER_COLOR: &str = "__placeholder_color";
+/// 作者给输入框写的文字颜色（没写为空）：占位符换成值时用它
+pub const VALUE_COLOR: &str = "__value_color";
+
+/// `#rrggbbaa`
+pub fn color_attr(c: Color) -> String {
+    format!("#{:02x}{:02x}{:02x}{:02x}", c.r, c.g, c.b, c.a)
+}
+pub fn parse_color_attr(s: &str) -> Option<Color> {
+    let h = s.strip_prefix('#')?;
+    let v = u32::from_str_radix(h, 16).ok()?;
+    (h.len() == 8).then(|| Color::new((v >> 24) as u8, (v >> 16) as u8, (v >> 8) as u8, v as u8))
+}
+
 /// 解析 placeholder-style 属性
 fn parse_placeholder_style(style_str: &str) -> Option<Color> {
     // 支持格式: "color: #999999" 或 "color: rgb(153, 153, 153)"
@@ -257,7 +276,7 @@ impl InputComponent {
         // 引擎给 textarea 之类补的默认高度不算，那种情况仍应允许被父级压缩。
         super::pin_replaced_min_size(&mut ts);
         let events = extract_events(node);
-        let attrs = node.attributes.clone();
+        let mut attrs = node.attributes.clone();
         let sf = ctx.scale_factor;
         
         // 解析属性
@@ -281,10 +300,23 @@ impl InputComponent {
         let _adjust_position = node.get_attr("adjust-position").map(|s| s != "false" && s != "{{false}}").unwrap_or(true);
         let _cursor_spacing = node.get_attr("cursor-spacing").and_then(|s| s.parse::<f32>().ok()).unwrap_or(0.0);
         
-        // 解析 placeholder 样式
+        // 占位符颜色：`placeholder-style` > `placeholder-class` 里的 color > 默认。
+        // 从前只认 placeholder-style，而且输入框自己写了 `color` 时占位符也用那个颜色画（深色的「占位符」
+        // 看着像已经填了值）；`placeholder-class`（官方默认 `input-placeholder`）完全没认
+        let class_color = || {
+            let cls = node.get_attr("placeholder-class").unwrap_or("input-placeholder");
+            let names: Vec<&str> = cls.split_whitespace().collect();
+            match ctx.stylesheet.get_styles(&names, "").get("color") {
+                Some(crate::parser::wxss::StyleValue::Color(c)) => Some(*c),
+                _ => None,
+            }
+        };
         let placeholder_color = node.get_attr("placeholder-style")
             .and_then(|s| parse_placeholder_style(s))
+            .or_else(class_color)
             .unwrap_or(Color::from_hex(0xBFBFBF));
+        // 作者写的文字颜色（值的颜色），在下面补默认值之前记下
+        let author_color = ns.text_color;
         
         let is_textarea = node.tag_name == "textarea";
         
@@ -360,15 +392,19 @@ impl InputComponent {
             value.to_string()
         };
         
-        // 文本颜色 - 只在没有自定义颜色时使用默认值
-        if ns.text_color.is_none() {
-            ns.text_color = Some(if value.is_empty() {
-                placeholder_color
-            } else if disabled {
-                Color::from_hex(0xBFBFBF)
-            } else {
-                Color::BLACK
-            });
+        // 文本颜色：值为空时画占位符（占位符颜色）；有值用作者写的颜色，没写按默认
+        if value.is_empty() {
+            ns.text_color = Some(placeholder_color);
+        } else if ns.text_color.is_none() {
+            ns.text_color = Some(if disabled { Color::from_hex(0xBFBFBF) } else { Color::BLACK });
+        }
+        // 交互态落地时要用（wxml_renderer/interactive.rs）：值变空 / 变非空时在两种颜色之间换
+        attrs.insert(PLACEHOLDER_COLOR.into(), color_attr(placeholder_color));
+        if let Some(c) = author_color {
+            attrs.insert(VALUE_COLOR.into(), color_attr(c));
+        }
+        if value.is_empty() && !placeholder.is_empty() {
+            attrs.insert(PLACEHOLDER_SHOWN.into(), "1".into());
         }
         
         // 禁用状态背景（覆盖自定义样式）

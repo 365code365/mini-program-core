@@ -218,6 +218,10 @@ pub struct FrameLayers<'a> {
     /// 下移 `rows` 行，这几行由导航栏画布盖住；`None`（桌面窗体、custom 导航栏的页面）
     /// 与从前逐字节相同
     pub top: Option<TopBand<'a>>,
+    /// 键盘顶起画面（`adjust-position`）：导航栏以下的页面、tabBar、fixed 层整体上移这么多行（设备像素），
+    /// 导航栏不动 —— 与微信一致（页面被顶上去，原生导航栏留在原处）。底下露出来的那几行在键盘后面，填页面底色。
+    /// 0 时与从前逐字节相同（host/engine_keyboard.rs）
+    pub content_shift: u32,
 }
 
 /// 顶部宿主外壳那一条（导航栏 + 状态栏底色）

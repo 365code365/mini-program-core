@@ -45,6 +45,7 @@ impl MiniEngine {
             if fixed {
                 // 单独一个标记：同一帧 setData 的失效分析会改写 fixed_dirty（engine_damage.rs）
                 self.dmg.press_fixed = true;
+                self.note_fixed_rect(b);
                 continue;
             }
             let pad = PAD_LOGICAL;
@@ -75,6 +76,27 @@ impl MiniEngine {
         }
     }
 
+    /// 聚焦的输入框换了（点了另一个、失焦、`focus` 属性 / `wx.hideKeyboard` 改的）：旧框、新框各重画一次。
+    ///
+    /// 光标与「聚焦态」画在输入框自己的盒子里，局部重画只重画变了的那块 —— 从前只有点击那条路
+    /// 在点之后读「旧框」，而那时焦点已经换到新框，旧框没人重画：两个输入框各留一个光标
+    /// （兴趣圈发帖页，标题框失焦后光标还在）。每帧对一遍上次画的是哪个框，哪条路改的焦点都接得住
+    pub(super) fn sync_focus_visual(&mut self) {
+        let now = self.interaction.focused_input.as_ref().map(|f| (f.id.clone(), f.bounds, f.is_fixed));
+        let same = match (&now, &self.dmg.focus_drawn) {
+            (None, None) => true,
+            (Some(a), Some(b)) => a.0 == b.0 && a.1 == b.1 && a.2 == b.2,
+            _ => false,
+        };
+        if same {
+            return;
+        }
+        let old = std::mem::replace(&mut self.dmg.focus_drawn, now.clone());
+        for (_, b, fixed) in old.into_iter().chain(now) {
+            self.damage_input_box(b, fixed);
+        }
+    }
+
     /// 聚焦输入框的光标翻了一次（亮 ↔ 灭）：只重画这个输入框的盒子（覆盖层里的就重画覆盖层）。
     ///
     /// 从前这里 `mark_full`：键盘弹着的整段时间里每 500ms 整条带 + 覆盖层 + tabBar 重画一次，
@@ -85,18 +107,38 @@ impl MiniEngine {
     /// （`mark_full` 也不作废离屏缓存），行为不变
     pub(super) fn damage_caret(&mut self) {
         let Some((b, fixed)) = self.interaction.focused_input.as_ref().map(|f| (f.bounds, f.is_fixed)) else { return };
+        self.damage_input_box(b, fixed);
+    }
+
+    /// 只重画一个输入框的盒子（页面内容坐标的逻辑像素；覆盖层里的就重画覆盖层）。光标翻转、聚焦 / 失焦换框都走这里
+    pub(super) fn damage_input_box(&mut self, b: GeoRect, fixed: bool) {
         if b.width <= 0.0 || b.height <= 0.0 {
             // 还没排出位置（刚聚焦、首帧）：不知道画在哪，整页
             return self.mark_full();
         }
         if fixed {
             self.dmg.press_fixed = true;
+            self.note_fixed_rect(b);
             return;
         }
         let pad = PAD_LOGICAL;
         let d = self.dpr;
         let r = GeoRect::new((b.x - pad) * d, (b.y - pad) * d, (b.width + pad * 2.0) * d, (b.height + pad * 2.0) * d);
         self.dmg.extra = Some(match self.dmg.extra {
+            None => r,
+            Some(p) => {
+                let (x0, y0) = (p.x.min(r.x), p.y.min(r.y));
+                let (x1, y1) = (p.right().max(r.right()), p.bottom().max(r.bottom()));
+                GeoRect::new(x0, y0, x1 - x0, y1 - y0)
+            }
+        });
+    }
+
+    /// 覆盖层里要重画的一块（覆盖层画布是视口坐标，逻辑像素 → 设备像素，外扩 PAD_LOGICAL 盖住阴影 / 抗锯齿）
+    fn note_fixed_rect(&mut self, b: GeoRect) {
+        let (pad, d) = (PAD_LOGICAL, self.dpr);
+        let r = GeoRect::new((b.x - pad) * d, (b.y - pad) * d, (b.width + pad * 2.0) * d, (b.height + pad * 2.0) * d);
+        self.dmg.press_fixed_rect = Some(match self.dmg.press_fixed_rect {
             None => r,
             Some(p) => {
                 let (x0, y0) = (p.x.min(r.x), p.y.min(r.y));

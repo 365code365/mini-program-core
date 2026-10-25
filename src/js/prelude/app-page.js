@@ -63,9 +63,16 @@
                 if (newData) {
                     __setDataSeq++;
                     var seen = instance.__setKeys || (instance.__setKeys = {});
+                    var chg = instance.__chgKeys || (instance.__chgKeys = {});
                     for (var key in newData) {
                         if (!newData.hasOwnProperty(key)) { continue; }
-                        seen[String(key).split(/[.\[]/)[0]] = __setDataSeq;
+                        var root = String(key).split(/[.\[]/)[0];
+                        seen[root] = __setDataSeq;
+                        // 值真的变了（路径写法、对象一律算变）：`scroll-into-view` 先设 '' 再设回原 id，
+                        // 同一帧里合成一次只看得到最终值，靠它知道中途变过（微信逐次 setData 都会生效）
+                        if (root !== key || typeof newData[key] === 'object' || instance.data[key] !== newData[key]) {
+                            chg[root] = __setDataSeq;
+                        }
                         if (key.indexOf('.') >= 0 || key.indexOf('[') >= 0) {
                             __setByPath(instance.data, key, newData[key]);
                         } else {
@@ -96,6 +103,17 @@
                 return 0;
             }
             
+            /// 序号 `seq` 之后 `keys` 里任一字段的**值**被 setData 改过（中途改过又改回来也算）
+            function __changedSince(ownerKey, keys, seq) {
+                var inst = ownerKey ? (typeof __compState === 'function' ? __compState().map[ownerKey] : null) : __currentPage;
+                var chg = inst && inst.__chgKeys;
+                if (!chg) { return 0; }
+                for (var i = 0; i < keys.length; i++) {
+                    if ((chg[keys[i]] || 0) > seq) { return 1; }
+                }
+                return 0;
+            }
+
             function Page(config) {
                 // 创建页面实例
                 var page = {
@@ -175,6 +193,13 @@
             // 宿主据此只退自己的栈、不再出逻辑层的栈、不再派发 onUnload —— 从前两边各出一次，
             // 回到的页面拿着上上一页的 data 渲染；onUnload 也派给了出栈之后的 __currentPage，
             // 那是要回去的那一页。宿主发起的返回（返回键、侧滑）由宿主先派发、再 __popPage(1)。
+            // redirectTo：栈顶那一页换掉（只剩它一页时也要拿掉 —— __popPage 至少留一页，
+            // 从栈底那页 redirectTo 过去，逻辑层成了 [旧页, 新页]，getCurrentPages() 多一层）
+            function __dropTopPage() {
+                __pageStack.pop();
+                __currentPage = __pageStack[__pageStack.length - 1] || null;
+            }
+
             function __popPage(delta, byApi) {
                 delta = delta || 1;
                 for (var i = 0; i < delta && __pageStack.length > 1; i++) {

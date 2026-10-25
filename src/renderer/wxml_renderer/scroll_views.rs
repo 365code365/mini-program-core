@@ -41,6 +41,8 @@ pub struct ScrollViewInfo {
     /// `enable-back-to-top`：点状态栏（iOS）/ 双击标题栏（安卓）时滚回顶部，只对纵向生效
     pub back_to_top: bool,
     pub refresher: Option<RefresherConfig>,
+    /// `scroll-into-view` 绑定的根字段名（`INTO_VIEW_KEYS_ATTR`）：同一帧里改过又改回原值也要再滚（host/scroll_view.rs）
+    pub into_keys: Vec<String>,
 }
 
 /// `refresher-*` 配置（`refresher-enabled` 时才有）
@@ -138,6 +140,10 @@ impl WxmlRenderer {
             enhanced: bool_attr(a, "enhanced"),
             back_to_top: bool_attr(a, "enable-back-to-top") && !horizontal,
             refresher,
+            into_keys: a
+                .get(crate::parser::template::INTO_VIEW_KEYS_ATTR)
+                .map(|s| s.split(',').filter(|k| !k.is_empty()).map(str::to_string).collect())
+                .unwrap_or_default(),
         };
         if scrollable {
             self.apply_controlled_position(node, taffy, &info, interaction);

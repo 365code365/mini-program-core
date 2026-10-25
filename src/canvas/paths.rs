@@ -126,10 +126,26 @@ impl Canvas {
                     }
                 }
 
+                // 每条子扫描线都只有一个区间时，所有子扫描线都整格盖住的那段像素覆盖率恰好是 4/4 = 1.0：
+                // 逐像素算出来也是 `set_pixel_aa(.., 1.0)`，等价于整段 `fill_span`（同一套 alpha 规则与裁剪）。
+                // 圆角不一样的大块背景（底部弹出的面板 `border-radius: 24rpx 24rpx 0 0`）从前整块逐像素算 4 条子扫描线，
+                // 转账页支付键盘每按一下重画覆盖层，这一项桌面上就 10ms 往上
+                let solid = if all_intersections.iter().all(|s| s.len() == 2) {
+                    let l = all_intersections.iter().map(|s| s[0]).fold(f32::MIN, f32::max).ceil() as i32;
+                    let r = all_intersections.iter().map(|s| s[1]).fold(f32::MAX, f32::min).floor() as i32 - 1;
+                    (r >= l).then_some((l, r))
+                } else {
+                    None
+                };
                 for (seg_l, seg_r) in merged {
                     let sx0 = ((seg_l - 1.0).floor() as i32).max(bx0);
                     let sx1 = ((seg_r + 1.0).ceil() as i32).min(bx1 - 1);
                     for x in sx0..=sx1 {
+                        if let Some((l, r)) = solid {
+                            if x >= l && x <= r {
+                                continue;
+                            }
+                        }
                         let px = x as f32;
                         let mut coverage = 0.0;
 
@@ -166,6 +182,11 @@ impl Canvas {
                             self.set_pixel_aa(x, y, paint.color, coverage.min(1.0));
                         }
                     }
+                }
+                if let Some((l, r)) = solid {
+                    // 只落在被区间扫到的那几列里（与上面逐像素会访问的列一致：区间各留了 1px 余量）
+                    let a = (paint.color.a as f32).round().clamp(0.0, 255.0) as u8;
+                    self.fill_span(l, r + 1, y, Color::new(paint.color.r, paint.color.g, paint.color.b, a));
                 }
             }
         } else {

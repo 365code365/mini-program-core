@@ -124,8 +124,12 @@ impl InputComponent {
         // 否则打下第一个汉字的瞬间所有行一起跳高
         let line_h = style.line_height.map(|lh| lh * sf).unwrap_or_else(|| tr.natural_line_height(fs)).max(1.0);
 
-        let chars: Vec<char> = node.text.chars().collect();
+        // 画的是占位符：文字照画占位符，光标 / 选区 / 点击定位按空值（第一行开头）
+        let ph = node.attrs.contains_key(super::PLACEHOLDER_SHOWN);
+        let shown: Vec<char> = node.text.chars().collect();
+        let chars: Vec<char> = if ph { Vec::new() } else { shown.clone() };
         let lines = layout_textarea_lines(&chars, content_w, |c| advance(tr, c, fs), style.text_align);
+        let shown_lines = if ph { layout_textarea_lines(&shown, content_w, |c| advance(tr, c, fs), style.text_align) } else { lines.clone() };
         let cursor_pos = cursor_pos.min(chars.len());
         let caret_li = text_lines::caret_line(&lines, cursor_pos, upstream);
         // 光标所在行露出来：只在它越过底边时往上推（无状态，每帧按光标算）
@@ -160,12 +164,12 @@ impl InputComponent {
         // ── 文字：只画露在盒子里的行 ──
         let color = style.text_color.unwrap_or(Color::BLACK);
         let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill);
-        for (i, l) in lines.iter().enumerate() {
+        for (i, l) in shown_lines.iter().enumerate() {
             let b = baseline(i);
             if b - fs > y + h || b + line_h < y || l.start == l.end {
                 continue;
             }
-            let text: String = chars[l.start..l.end].iter().map(|&c| if c.is_control() { ' ' } else { c }).collect();
+            let text: String = shown[l.start..l.end].iter().map(|&c| if c.is_control() { ' ' } else { c }).collect();
             tr.draw_text(canvas, &text, cx + l.x0, b, fs, &paint);
         }
 
@@ -188,6 +192,6 @@ impl InputComponent {
         }
         canvas.restore();
 
-        Some(TextLayout { text: node.text.clone(), lines, line_height: line_h, origin: (pl, pt), scroll_y })
+        Some(TextLayout { text: chars.iter().collect(), lines, line_height: line_h, origin: (pl, pt), scroll_y })
     }
 }

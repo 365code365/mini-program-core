@@ -179,7 +179,7 @@ impl MiniEngine {
             let now = self.mono_ms();
             self.resample.start_ramp(now, t_ms);
         }
-        self.resample.push(t_ms, y - self.nav_height());
+        self.resample.push(t_ms, self.unshift_y(y) - self.nav_height());
     }
 
     /// 手势推进用的时刻：带时间戳的移动用事件时间，否则 `now`（到达时刻）

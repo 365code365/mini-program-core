@@ -20,12 +20,37 @@ fn upstream(bytes: &[u8]) -> Upstream {
     Upstream::from_bytes(bytes, UpSettings { scale: 40.0, ..Default::default() }).unwrap()
 }
 
-/// 全部 Unicode 码位：惰性查 cmap 与上游建好的整张表一致
-fn same_cmap(lazy: &Font, up: &Upstream, what: &str) {
+/// 全部 Unicode 码位：惰性查 cmap 与上游建好的整张表一致。
+///
+/// 唯一有意的不同：vendor 只查 Unicode 子表（字体里有 Unicode 子表时，Mac 平台的旧编码表不查 ——
+/// 冬青黑的 GB 编码表把 U+203A「›」查成「:」，见 vendor/fontdue/src/font.rs `cmap_lookup`）。
+/// 两边不一样的码位，必须正好是「只有非 Unicode 子表映射了它」的那些，vendor 给的是 Unicode 子表的结果
+fn same_cmap(lazy: &Font, up: &Upstream, bytes: &[u8], what: &str) {
+    let face = ttf_parser::Face::parse(bytes, 0).unwrap();
+    let st = face.tables().cmap.unwrap().subtables;
+    let has_unicode = (0..st.len()).any(|i| st.get(i).is_some_and(|t| t.is_unicode()));
+    let unicode_only = |c: u32| -> u16 {
+        for i in (0..st.len()).rev() {
+            let Some(t) = st.get(i) else { continue };
+            if has_unicode && !t.is_unicode() {
+                continue;
+            }
+            if let Some(g) = t.glyph_index(c).filter(|g| g.0 != 0) {
+                return g.0;
+            }
+        }
+        0
+    };
+    let mut differ = 0;
     for c in (0u32..=0x10FFFF).filter_map(char::from_u32) {
-        let want = up.chars().get(&c).map(|g| g.get()).unwrap_or(0);
-        assert_eq!(lazy.lookup_glyph_index(c), want, "{what}：U+{:04X} 字形编号不同", c as u32);
+        let up_g = up.chars().get(&c).map(|g| g.get()).unwrap_or(0);
+        let got = lazy.lookup_glyph_index(c);
+        if got != up_g {
+            differ += 1;
+            assert_eq!(got, unicode_only(c as u32), "{what}：U+{:04X} 与上游不同、也不是 Unicode 子表的结果", c as u32);
+        }
     }
+    assert!(differ < 300, "{what}：与上游不同的码位太多（{differ}），不该只是 Mac 旧编码表的那几个");
 }
 
 fn same_glyph(lazy: &Font, up: &Upstream, index: u16, what: &str) {
@@ -44,7 +69,7 @@ fn 小字体_每个字形都与上游逐位一致() {
         let (lazy, bytes) = load(path);
         let up = upstream(&bytes);
         assert_eq!(lazy.glyph_count(), up.glyph_count());
-        same_cmap(&lazy, &up, path);
+        same_cmap(&lazy, &up, &bytes, path);
         for i in 0..up.glyph_count() {
             same_glyph(&lazy, &up, i, path);
         }
@@ -61,7 +86,7 @@ fn 思源黑体_cmap_全码位一致_常用汉字光栅化一致() {
     let path = "assets/SourceHanSansSC-Regular.otf";
     let (lazy, bytes) = load(path);
     let up = upstream(&bytes);
-    same_cmap(&lazy, &up, path);
+    same_cmap(&lazy, &up, &bytes, path);
     let chars: Vec<char> = ('\u{4E00}'..='\u{4FFF}').chain('A'..='z').chain("，。！？、（）《》".chars()).collect();
     for pass in 0..2 {
         for &c in &chars {

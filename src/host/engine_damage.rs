@@ -26,6 +26,7 @@
 //! 判据是 `tests/sdk_damage_equivalence.rs`：同一串输入喂给开 / 关局部重画的两个引擎，
 //! 每一帧的合成结果逐字节相同。
 use super::engine::MiniEngine;
+use super::engine_damage_area::AreaDamage;
 use super::engine_damage_rects::{clamp_rect, merge_rects, union, EAGER_STRIP_PX};
 use crate::renderer::{EventBinding, FramePlan, VIEWPORT_CULL_MARGIN_PX};
 use crate::Rect as GeoRect;
@@ -121,10 +122,16 @@ pub(crate) struct DamageState {
     pub(crate) tabbar_route: Option<String>,
     /// 页面画布上画成点击态的那几个元素（`engine_press.rs` 每帧比对，变了才重画它们自己）
     pub(crate) press_drawn: Vec<String>,
+    /// 上一次画进画面的聚焦输入框（id、盒子、是否在覆盖层）：换了就把旧框、新框都重画（engine_press.rs `sync_focus_visual`）
+    pub(crate) focus_drawn: Option<(String, GeoRect, bool)>,
     /// 这一帧额外要重画的页面画布区域（物理像素，画布坐标）：点击态变了的元素
     pub(crate) extra: Option<GeoRect>,
     /// 覆盖层里的元素点击态变了：覆盖层要重画
     pub(crate) press_fixed: bool,
+    /// 覆盖层里点击态 / 光标变了的那几块（覆盖层画布的设备像素）：只有它们变时覆盖层只重画这几块
+    pub(crate) press_fixed_rect: Option<GeoRect>,
+    /// 这一帧覆盖层只重画这一块（`plan_redraw` 定，`render_fixed_layer` 用掉）
+    pub(crate) fixed_partial: Option<GeoRect>,
     /// 这一帧第一个要整页重画的源码位置（`MINI_DAMAGE_LOG`，见 `engine_press.rs::mark_full`）
     pub(crate) full_why: Option<&'static std::panic::Location<'static>>,
     /// 这一帧 GPU 上屏的账（只在 `log` 时填，接在 🩹 行尾）
@@ -156,12 +163,6 @@ impl RenderScope {
     pub(crate) const FULL: Self = Self { page: PagePass::Band, fixed: true, tabbar: true };
 }
 
-/// scroll-view 动了之后要重画多少
-enum AreaDamage {
-    Nothing,
-    Rect(GeoRect),
-    Full,
-}
 
 impl MiniEngine {
     /// 最近一次产出新画面的 pump 做了哪种活（基准与诊断用）
@@ -190,31 +191,6 @@ impl MiniEngine {
         self.renderer.as_ref().map(|r| r.has_animated_images(y0, y1)).unwrap_or(false)
     }
 
-    /// 相对上次画进页面画布时，哪些 scroll-view 的位置变了（与桌面 `scroll_area_damage` 一致）
-    fn scroll_area_damage(&self) -> AreaDamage {
-        let mut acc = None;
-        let mut moved_any = false;
-        for (id, c) in &self.interaction.scroll_controllers {
-            let pos = c.get_position();
-            let moved = self.dmg.drawn_area_positions.get(id).map(|p| (p - pos).abs() > 0.001).unwrap_or(true);
-            if !moved {
-                continue;
-            }
-            moved_any = true;
-            // 覆盖层里的要连覆盖层一起重画；本帧没登记（滚出视口了）的不知道画在哪
-            let Some((b, false)) = self.interaction.scroll_area_bounds(id) else {
-                return AreaDamage::Full;
-            };
-            let s = self.dpr;
-            acc = union(acc, GeoRect::new(b.x * s, b.y * s, b.width * s, b.height * s));
-        }
-        match acc {
-            Some(r) => AreaDamage::Rect(r),
-            // 动了但宽高为 0（还没布局出来）：保守整帧
-            None if moved_any => AreaDamage::Full,
-            None => AreaDamage::Nothing,
-        }
-    }
 
     /// 决定这一帧重画多少，并画出来。返回是否产出了新画面。
     ///
@@ -324,6 +300,8 @@ impl MiniEngine {
         // 点击态变了的元素（engine_press.rs）：这一帧一定消费掉，整帧的路径里它们本来就画到了
         let press_rect = self.dmg.extra.take();
         let press_fixed = std::mem::take(&mut self.dmg.press_fixed);
+        let press_fixed_rect = self.dmg.press_fixed_rect.take();
+        self.dmg.fixed_partial = None;
         if self.needs_redraw {
             return full(FullReason::Structural, true, true);
         }
@@ -372,19 +350,34 @@ impl MiniEngine {
                 }
             }
         }
+        let mut fixed_area: Option<GeoRect> = None;
         match self.scroll_area_damage() {
             AreaDamage::Nothing => {}
-            AreaDamage::Rect(r) => {
+            AreaDamage::Rect(r, f) => {
                 page_work = true;
                 once = union(once, r);
+                fixed_area = f;
             }
+            AreaDamage::Fixed(f) => fixed_area = Some(f),
             AreaDamage::Full => {
                 page_work = true;
                 reason = reason.or(Some(FullReason::ScrollView));
             }
         }
-        // 覆盖层里的点击态变了（engine_press.rs）：放在 setData 的失效分析之后，不被它改写
-        if press_fixed {
+        // 覆盖层里的点击态变了（engine_press.rs）：放在 setData 的失效分析之后，不被它改写。
+        // 覆盖层没有别的原因要重画（数据、动画）时只重画点击态那几块：支付密码键盘按一下从前整层重画
+        // （全屏遮罩 + 面板 + 12 个键），一加上 9~13ms 外加整层 12MB 上传
+        // 覆盖层里的 scroll-view 动了（scroll_area_damage）也一样：只重画它那块
+        if press_fixed || fixed_area.is_some() {
+            let rect = match (press_fixed.then_some(press_fixed_rect).flatten(), fixed_area) {
+                (Some(a), Some(b)) => union(Some(a), b),
+                (a, b) => a.or(b),
+            };
+            // 点击态在覆盖层里却没记下矩形（不该发生）：rect 为空，整层重画
+            let only_press = !press_fixed || press_fixed_rect.is_some();
+            if !self.dmg.fixed_dirty && !self.dmg.fixed_layer_animates && !self.needs_redraw && only_press {
+                self.dmg.fixed_partial = rect;
+            }
             self.dmg.fixed_dirty = true;
         }
         let fixed = self.dmg.fixed_dirty || self.dmg.fixed_layer_animates;
@@ -462,7 +455,10 @@ impl MiniEngine {
         rects.extend(gifs);
         let rects = merge_rects(rects);
         let area: f32 = rects.iter().map(|r| r.width * r.height).sum();
-        if area > pw * (wy1 - wy0) * BAND_AREA_LIMIT {
+        // 只有一块时不换整条带：一块矩形本来就只走一趟节点树，换成整条带只是把块外的东西白画一遍。
+        // 兴趣圈帖子页（诊断 20261025-100253-98de9a）：滚的是一个占屏 93% 的定高 scroll-view，
+        // 从前每帧被换成整条带，连底下的输入条（圆角路径 + 输入框）一起重画，真机一帧多 1~2ms
+        if rects.len() > 1 && area > pw * (wy1 - wy0) * BAND_AREA_LIMIT {
             // 要补的加起来快赶上整条带了：一趟整条带比分好几趟各走一遍节点树便宜
             let kind = if strip { FrameKind::Band } else { FrameKind::Full(FullReason::Animation) };
             return (kind, RenderScope { page: PagePass::Band, fixed, tabbar });

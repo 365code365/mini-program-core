@@ -314,6 +314,9 @@ pub fn apply_gesture_move(
                 }
                 interaction.dragging_scroll_area = Some(id.clone());
                 eff.needs_redraw = true;
+                // 锁定这一步也只是推动了 scroll-view（与下面 UpdateArea 同一条局部重画的路）。
+                // 从前这里整帧：每次手指一按下开拖，第一帧整页重画（兴趣圈帖子页，诊断 20261025-100253-98de9a）
+                eff.area_scrolled = true;
                 break;
             }
             GestureAction::UpdateArea { ref id, axis } => {
@@ -350,6 +353,10 @@ pub fn apply_gesture_move(
                     // 手指在上面拖一下，每帧整页重画 9~19ms（tea-app 分类 / 购物车 / 订单详情等 20 多页，
                     // `sdk_scroll_bench` 拖动段 53 帧全是「整帧·结构 ← engine_input.rs」）
                     eff.needs_redraw = moved;
+                    // 动了也只是这个 scroll-view 在边界上被推了一下（橡皮筋）：按位置变化重画它的盒子
+                    // （engine_damage `scroll_area_damage` 只看位置，不看还在不在拖）。从前这一步整帧：
+                    // 兴趣圈帖子页每次拖到底 / 顶再推，那一帧整页重画（诊断 20261025-100253-98de9a）
+                    eff.area_scrolled = moved;
                     if let Some(id) = interaction.dragging_scroll_area.take() {
                         if let Some(c) = interaction.get_scroll_controller_mut(&id) {
                             c.end_drag();

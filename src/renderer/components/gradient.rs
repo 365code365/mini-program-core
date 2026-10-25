@@ -106,8 +106,12 @@ pub fn draw_linear_gradient(
     // 斜向、面积大的渐变按行缓存：补条带每次滑回页面顶部都要把头图那一截重算一遍
     // （一加 PLY110 上 1078×286 的一条 13~16ms，引擎线程上最热的就是这个闭包）。同一个元素、同一个画布位置
     // 每个像素的颜色是确定的，算过的行原样贴回去，结果与现算逐字节相同
+    // 第一次见到的键不进缓存（`admit`）：键里有画布上的精确位置，定高 scroll-view 里滚一下位置就变，
+    // 从前每帧都给几百行分配、哈希、塞进表，从来命不中，满 2M 像素再整表清掉 —— 兴趣圈帖子页三张 135° 渐变图
+    // 真机上这一套占引擎线程 10%（诊断 20261025-100253-98de9a）。没进缓存的行走下面的整行现算，像素相同
     let cache_key = (!vertical && !horizontal && w * h >= row_cache::MIN_AREA)
-        .then(|| row_cache::Key::new(grad, x, y, w, h, opacity));
+        .then(|| row_cache::Key::new(grad, x, y, w, h, opacity))
+        .filter(row_cache::admit);
     for py in y0..y1 {
         let fy = py as f32 + 0.5;
         if plain_row(py) {
@@ -295,11 +299,36 @@ pub(crate) mod row_cache {
 
     thread_local! {
         static CACHE: RefCell<(HashMap<Key, Rows>, usize)> = RefCell::new((HashMap::new(), 0));
+        /// 只见过一次的键（还没进 CACHE）
+        static SEEN: RefCell<std::collections::HashSet<Key>> = RefCell::new(Default::default());
+    }
+
+    /// 只记这么多个「见过一次」的键，满了清掉（键只有几十字节，这里只防无限长）
+    const MAX_SEEN: usize = 64;
+
+    /// 这个键要不要用行缓存：已经在缓存里、或者之前见过一次（同一位置画第二遍，才值得存）。
+    /// 第一次见到只记下来，返回 false
+    pub fn admit(key: &Key) -> bool {
+        if CACHE.with(|c| c.borrow().0.contains_key(key)) {
+            return true;
+        }
+        SEEN.with(|s| {
+            let mut s = s.borrow_mut();
+            if s.remove(key) {
+                return true;
+            }
+            if s.len() >= MAX_SEEN {
+                s.clear();
+            }
+            s.insert(key.clone());
+            false
+        })
     }
 
     /// 整个清掉（进后台 / 内存告警，`trim_memory`）
     pub fn clear() {
         CACHE.with(|c| *c.borrow_mut() = (HashMap::new(), 0));
+        SEEN.with(|s| s.borrow_mut().clear());
     }
 
     /// 占了多少字节
@@ -338,7 +367,8 @@ mod row_cache_tests {
 
     #[test]
     fn 行缓存贴回去与现算逐字节相同() {
-        // 第一遍：整块现算（同时填满缓存）；第二遍：只画中间一条（命中缓存）；第三遍：不进缓存的小渐变路径参照
+        // 第一遍：整块现算（键第一次见，不进缓存）；第二遍：只画中间一条（键第二次见，算完存下）；
+        // 第三遍：整块，中间那条命中缓存、其余行进缓存现算 —— 三遍逐字节对得上
         let (w, h) = (700u32, 400u32);
         let draw = |clip: Option<GeoRect>| {
             let mut c = Canvas::new(w, h);

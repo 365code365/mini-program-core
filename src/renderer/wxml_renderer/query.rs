@@ -181,7 +181,15 @@ impl WxmlRenderer {
             out.push(QueryHit {
                 rect,
                 id: n.attrs.get("id").cloned().unwrap_or_default(),
-                dataset: n.events.first().map(|e| e.data.clone()).unwrap_or_else(|| dataset_of(n)),
+                dataset: n
+                    .events
+                    .first()
+                    .map(|e| {
+                        let mut d = e.data.clone();
+                        d.remove(crate::renderer::components::event_attr::DATASET_STR_KEY);
+                        d
+                    })
+                    .unwrap_or_else(|| dataset_of(n)),
                 is_fixed: fixed,
                 tag: n.tag.clone(),
                 component_id: Self::get_component_id(n, &rect),
@@ -205,8 +213,11 @@ impl WxmlRenderer {
             }
         }
         chain.push(n);
-        for c in &n.children {
-            if self.walk_query(c, taffy, (cx, cy), fixed, groups, all, interaction, chain, out) {
+        let swiper_id = (n.tag == "swiper").then(|| Self::get_component_id(n, &GeoRect::new(x / sf, y / sf, l.size.width / sf, l.size.height / sf)));
+        for (i, c) in n.children.iter().enumerate() {
+            // swiper 的项随翻页平移（与绘制同一个算式，swiper_draw.rs）
+            let (dx, dy) = swiper_id.as_deref().map(|id| self.swiper_item_offset(taffy, n, id, i)).unwrap_or((0.0, 0.0));
+            if self.walk_query(c, taffy, (cx + dx, cy + dy), fixed, groups, all, interaction, chain, out) {
                 chain.pop();
                 return true;
             }

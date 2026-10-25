@@ -792,8 +792,17 @@ impl Font {
     fn cmap_lookup(&self, c: u32) -> u16 {
         let Some(cmap) = self.face.tables().cmap else { return 0 };
         let st = cmap.subtables;
+        // 只查 Unicode 子表（平台 0、或 Windows 的 Unicode BMP / 全集）。mini-render 的改动：上游连 Mac 平台的
+        // 旧编码表一起查 —— 冬青黑（Hiragino Sans GB）带一张 (1, 25) 简体中文 GB 的 format 2 表，Unicode 表里没有的
+        // U+203A「›」被它当成双字节码查，高字节 0x20 落到单字节区，取回的是 0x3A「:」的字形：
+        // 「持仓 ›」画成「持仓 :」。字体里一张 Unicode 子表都没有时才退回全部子表（与上游一样）
+        let has_unicode = (0..st.len()).any(|i| st.get(i).is_some_and(|t| t.is_unicode()));
         for i in (0..st.len()).rev() {
-            if let Some(g) = st.get(i).and_then(|t| t.glyph_index(c)) {
+            let Some(t) = st.get(i) else { continue };
+            if has_unicode && !t.is_unicode() {
+                continue;
+            }
+            if let Some(g) = t.glyph_index(c) {
                 if g.0 != 0 {
                     return g.0;
                 }

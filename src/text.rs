@@ -14,6 +14,9 @@ use std::sync::{Arc, Mutex, OnceLock};
 mod load;
 /// 「这段字在这个宽度下排几行」的记忆表（建树 / 排版反复问同一段字）
 mod wrap_memo;
+/// 没有粗体字面时的伪粗体（覆盖率膨胀）
+mod embolden;
+pub use embolden::strength as faux_bold_strength;
 /// 字体占了多少内存（memory_report）
 pub mod mem;
 
@@ -317,8 +320,12 @@ impl TextRenderer {
         crate::emoji::advance(ch, size)
     }
 
-    /// 渲染文本到画布（带字间距 + 字重）。bold 为真且存在真实粗体字面时用该字面绘制。
+    /// 渲染文本到画布（带字间距 + 字重）。bold 为真时：有真实粗体字面用该字面，
+    /// 没有就把常规字形加粗（text/embolden.rs，前进宽度不变）。调用方直接传「要不要粗」，不用自己判字面
     pub fn draw_text_weighted(&self, canvas: &mut Canvas, text: &str, x: f32, y: f32, size: f32, letter_spacing: f32, bold: bool, paint: &Paint) {
+        // 缓存键里的 bold 是「画成粗体」：这个渲染器有没有粗体字面是定的，真粗体 / 伪粗体不会混
+        let want_bold = bold;
+        let faux = bold && !self.has_bold_face();
         let bold = bold && self.has_bold_face();
         let mut cursor_x = x;
         let size_key = (size * 10.0) as u32; // 将 size 转换为整数 key，保留1位小数精度
@@ -356,7 +363,7 @@ impl TextRenderer {
             // 先尝试从缓存获取（快速路径）
             let cached_data = {
                 let cache = self.cache.lock().unwrap();
-                cache.get(&(ch, size_key, bold)).cloned()
+                cache.get(&(ch, size_key, want_bold)).cloned()
             };
             
             let (metrics, bitmap) = if let Some(data) = cached_data {
@@ -366,13 +373,14 @@ impl TextRenderer {
                 let font = self.font_for_weight(ch, bold);
                 let t = crate::renderer::frame_cost::start();
                 let (metrics, bitmap) = font.rasterize(ch, size);
+                let (metrics, bitmap) = if faux { embolden::embolden(&metrics, &bitmap, size) } else { (metrics, bitmap) };
                 crate::renderer::frame_cost::record("字形", t, String::new);
                 let bitmap: Arc<[u8]> = bitmap.into();
                 
                 // 存入缓存（封顶，见 glyph_cache_budget）
                 let mut cache = self.cache.lock().unwrap();
                 Self::trim_glyph_cache(&mut cache, bitmap.len());
-                cache.insert((ch, size_key, bold), (metrics, bitmap.clone()));
+                cache.insert((ch, size_key, want_bold), (metrics, bitmap.clone()));
                 (metrics, bitmap)
             };
             

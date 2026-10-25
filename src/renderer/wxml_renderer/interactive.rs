@@ -51,19 +51,28 @@ impl WxmlRenderer {
         }
 
         if let Some(state) = interaction.get_state(component_id) {
+            // 勾选类的选中态是受控的：页面 setData 改了 `checked` 就以页面为准（elements.rs `sync_checked`）
+            let checked = || {
+                let attr = node.attrs.get("checked").is_some_and(|s| crate::renderer::components::attr_is_true(s));
+                interaction.effective_checked(component_id, attr)
+            };
             match node.tag.as_str() {
                 // switch 的配色由组件自己按进度求值（轨道关态是微信的浅灰，不是纯白）
                 "switch" => {
-                    target.style.custom_data =
-                        switch_progress.unwrap_or(if state.checked { 1.0 } else { 0.0 });
+                    let on = checked();
+                    // 拨动动画只跟着「点出来的」状态走；页面改的 checked 直接落位
+                    let anim = switch_progress.filter(|_| on == state.checked);
+                    target.style.custom_data = anim.unwrap_or(if on { 1.0 } else { 0.0 });
                 }
                 "checkbox" => {
-                    target.style.custom_data = if state.checked { 1.0 } else { 0.0 };
-                    checked_palette(node, target, state.checked);
+                    let on = checked();
+                    target.style.custom_data = if on { 1.0 } else { 0.0 };
+                    checked_palette(node, target, on);
                 }
                 "radio" => {
-                    target.style.custom_data = if state.checked { 1.0 } else { 0.0 };
-                    checked_palette(node, target, state.checked);
+                    let on = checked();
+                    target.style.custom_data = if on { 1.0 } else { 0.0 };
+                    checked_palette(node, target, on);
                 }
                 "slider" => {
                     // 进度按 min/max 换算（从前是 `v / 100`：min=1 max=5 的滑块一碰就跳到最左），
@@ -76,35 +85,34 @@ impl WxmlRenderer {
                         }
                     }
                 }
-                "input" | "textarea" => {
-                    let placeholder = node.attrs.get("placeholder").cloned().unwrap_or_default();
-                    let is_focused = interaction
-                        .focused_input
-                        .as_ref()
-                        .map(|f| f.id == component_id)
-                        .unwrap_or(false);
-                    if state.value.is_empty() && !is_focused {
-                        // 没有输入值且未聚焦：显示占位符
-                        target.text = placeholder;
-                        target.style.text_color = Some(Color::from_hex(0xBFBFBF));
-                    } else {
-                        // 有值或已聚焦：显示实际值（聚焦时即使为空也不显示占位符；密码框画圆点）
-                        target.text = Self::input_display_text(node, &state.value);
-                        target.style.text_color = Some(Color::BLACK);
-                    }
-                }
+                "input" | "textarea" => Self::apply_input_text(node, target, &state.value),
                 _ => {}
             }
         } else if matches!(node.tag.as_str(), "input" | "textarea") {
             // 输入框还没有交互状态：显示占位符或 WXML 里写的初始值
-            let placeholder = node.attrs.get("placeholder").cloned().unwrap_or_default();
             let initial_value = Self::input_value_attr(node);
-            if initial_value.is_empty() {
-                target.text = placeholder;
-                target.style.text_color = Some(Color::from_hex(0xBFBFBF));
-            } else {
-                target.text = Self::input_display_text(node, &initial_value);
-            }
+            Self::apply_input_text(node, target, &initial_value);
+        }
+    }
+
+    /// 输入框这一帧画什么字、用什么颜色。值为空就画占位符 —— **聚焦时也画**（微信、原生输入框都是
+    /// 光标在前、占位符照常显示，打下第一个字才消失）。从前聚焦就不画占位符，而且值的颜色写死成黑、
+    /// 占位符写死成 #BFBFBF：页面写的 `color` / `placeholder-class` 在用户点过之后全丢了
+    fn apply_input_text(node: &RenderNode, target: &mut RenderNode, value: &str) {
+        use crate::renderer::components::{parse_color_attr, PLACEHOLDER_COLOR, PLACEHOLDER_SHOWN, VALUE_COLOR};
+        let placeholder = node.attrs.get("placeholder").cloned().unwrap_or_default();
+        let color_of = |k: &str| node.attrs.get(k).and_then(|s| parse_color_attr(s));
+        if value.is_empty() && !placeholder.is_empty() {
+            target.text = placeholder;
+            target.style.text_color = Some(color_of(PLACEHOLDER_COLOR).unwrap_or(Color::from_hex(0xBFBFBF)));
+            target.attrs.insert(PLACEHOLDER_SHOWN.into(), "1".into());
+        } else {
+            // 有值（或没有占位符）：画值；密码框画圆点
+            target.text = Self::input_display_text(node, value);
+            let disabled = node.attrs.get("disabled").is_some_and(|s| crate::renderer::components::attr_is_true(s));
+            let default = if disabled { Color::from_hex(0xBFBFBF) } else { Color::BLACK };
+            target.style.text_color = Some(color_of(VALUE_COLOR).unwrap_or(default));
+            target.attrs.remove(PLACEHOLDER_SHOWN);
         }
     }
 

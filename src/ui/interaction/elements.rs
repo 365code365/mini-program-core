@@ -43,6 +43,14 @@ impl InteractionManager {
                 }
             }
         }
+        // 聚焦中的输入框挪了位置（聊天页键盘弹起、输入条跟着上移）：焦点记的框跟上。
+        // 光标闪烁、换焦点时按这个框局部重画（engine_press.rs），不跟上就重画在旧位置，新位置的光标不闪
+        if element.interaction_type == InteractionType::Input {
+            if let Some(f) = self.focused_input.as_mut().filter(|f| f.id == element.id) {
+                f.bounds = element.bounds;
+                f.is_fixed = element.is_fixed;
+            }
+        }
         self.elements.push(element);
     }
 
@@ -80,6 +88,35 @@ impl InteractionManager {
             }
         }
         self.states.get(id).map(|s| s.value.clone()).unwrap_or_else(|| attr.to_string())
+    }
+
+    /// `<switch>` / `<checkbox>` / `<radio>` 的 `checked` 也是受控的：页面 `setData` 改了它（与上一次见到的不同）
+    /// 就以页面为准，覆盖掉点出来的状态；没变就保留用户点的。返回这一帧的选中态。
+    ///
+    /// 从前点过一次之后交互状态永远压过属性：开关点开（on=true）、页面再 `setData({on:false})` 关掉，
+    /// 画面仍是开、再点一下发出来的是 `false`（智慧家「全关」之后再拨开关）。
+    /// 上一次见到的值与输入框的共用一张表（键加 `checked#` 前缀），翻页留存 / 清空跟着走
+    pub fn sync_checked(&mut self, id: &str, attr: bool) -> bool {
+        let key = format!("checked#{id}");
+        let a = if attr { "1" } else { "0" };
+        let changed = self.input_attrs.get(&key).is_some_and(|last| last != a);
+        self.input_attrs.insert(key, a.to_string());
+        if changed {
+            if let Some(s) = self.states.get_mut(id) {
+                s.checked = attr;
+            }
+        }
+        self.states.get(id).map(|s| s.checked).unwrap_or(attr)
+    }
+
+    /// [`sync_checked`](Self::sync_checked) 之前（画的时候只有 `&self`）：这一帧该画的选中态
+    pub fn effective_checked(&self, id: &str, attr: bool) -> bool {
+        let a = if attr { "1" } else { "0" };
+        let changed = self.input_attrs.get(&format!("checked#{id}")).is_some_and(|last| last != a);
+        if changed {
+            return attr;
+        }
+        self.states.get(id).map(|s| s.checked).unwrap_or(attr)
     }
 
     /// 把输入框内容整个换掉（`bindinput` 返回了字符串）：光标放到末尾、选区清掉
