@@ -227,10 +227,18 @@ fn fullscreen_covers_page_and_eats_taps() {
     e.ctx("requestFullScreen()");
     assert_eq!(
         e.events(),
-        vec![r#"fullscreenchange {"direction":"horizontal","fullScreen":true}"#],
-        "不给 direction 时按画面宽高比（64×48 是横的）"
+        vec![r#"fullscreenchange {"direction":"vertical","fullScreen":true}"#],
+        "不给 direction：竖屏全屏（不再按画面宽高比强制横屏，64×48 是横的视频也一样）"
     );
+    // 手机横过来（左侧朝下）：跟着转成横屏，再发一次 fullscreenchange
+    e.clear();
+    e.e.set_device_orientation(90);
     e.wait(32);
+    assert_eq!(e.events(), vec![r#"fullscreenchange {"direction":"horizontal","fullScreen":true}"#], "跟着手机转");
+    e.clear();
+    e.e.set_device_orientation(90);
+    e.wait(32);
+    assert!(e.events().is_empty(), "方向没变不再发：{:?}", e.events());
     // 横屏：画面转过来画，667×375 的画面里 4:3 的视频左右是黑边 —— 也就是屏幕上方 / 下方那几十像素
     let at = |e: &mut E, x: usize, y: usize| {
         let (w, _) = e.e.pixel_size();
@@ -269,6 +277,11 @@ fn vertical_fullscreen_seek_drag_and_back_key() {
     e.clear();
     e.ctx("requestFullScreen({direction: 0})");
     assert_eq!(e.events(), vec![r#"fullscreenchange {"direction":"vertical","fullScreen":true}"#]);
+    // 指定了方向：锁定，不跟手机转
+    e.clear();
+    e.e.set_device_orientation(90);
+    e.wait(32);
+    assert!(e.events().is_empty(), "指定 direction 的全屏不跟传感器：{:?}", e.events());
     // 竖屏全屏：画面坐标就是屏幕坐标。拖底部控制条上的进度到正中，松手才 seek 一次
     let flags = { let mut f = Flags::of(&Default::default(), 375.0); f.fullscreen_btn = true; f };
     let bar = bar_layout(0.0, 0.0, 375.0, 667.0, &flags, 1.0, true, 1.0);

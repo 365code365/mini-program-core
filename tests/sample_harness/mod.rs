@@ -17,6 +17,8 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 use std::time::Duration;
 
+pub mod demo_server;
+
 pub static SERIAL: Mutex<()> = Mutex::new(());
 
 pub const W: f32 = 375.0;
@@ -57,10 +59,23 @@ impl App {
     }
 
     pub fn open_with(name: &str, route: Option<&str>, tag: &str, opts: EngineOptions) -> App {
+        Self::open_seeded(name, route, tag, opts, &[])
+    }
+
+    /// 同 [`App::open_with`]，开跑前先往 storage 里放几项（`wx.getStorageSync(key)` 读回的是 `value` 这个字符串）。
+    /// 示例在模块加载时就读 storage（如 `utils/api.js` 的 `demoApiBase`），等打开之后再 `setStorageSync` 就晚了
+    pub fn open_seeded(name: &str, route: Option<&str>, tag: &str, opts: EngineOptions, storage: &[(&str, &str)]) -> App {
         let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("sample").join(name);
         assert!(root.join("app.json").exists(), "没有示例 {name}");
         let data = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("sample-e2e").join(format!("{name}-{tag}"));
         std::fs::remove_dir_all(&data).ok();
+        if !storage.is_empty() {
+            // 与 storage_file.rs 同一份格式：<数据目录>/mini-storage/<小程序名>.json，值是 JSON.stringify 过的
+            let m: serde_json::Map<String, Value> =
+                storage.iter().map(|(k, v)| (k.to_string(), Value::String(serde_json::to_string(v).unwrap()))).collect();
+            std::fs::create_dir_all(data.join("mini-storage")).unwrap();
+            std::fs::write(data.join("mini-storage").join(format!("{name}.json")), Value::Object(m).to_string()).unwrap();
+        }
         let mut e = MiniEngine::new_with_options(&root.to_string_lossy(), Some(&data.to_string_lossy()), W as u32, H as u32, DPR, Default::default(), opts)
             .expect("创建引擎");
         e.set_animation_clock(0.0);

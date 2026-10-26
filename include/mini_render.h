@@ -153,6 +153,10 @@ void   mr_app_pointer_move(MRApp* app, float x, float y);
 void   mr_app_pointer_move_at(MRApp* app, float x, float y, double t_ms);
 void   mr_app_pointer_up(MRApp* app, float x, float y);
 void   mr_app_pointer_cancel(MRApp* app);
+/* 第二根手指（0 按下 / 1 移动 / 2 抬起 / 其它 取消）：只有图片预览认它（双指缩放），页面仍是单指 */
+void   mr_app_pointer2(MRApp* app, int phase, float x, float y);
+/* 手机朝向（0 竖 / 90 左侧朝下 / -90 右侧朝下）：全屏视频没指定 direction 时跟着转 */
+void   mr_app_set_device_orientation(MRApp* app, int deg);
 void   mr_app_wheel(MRApp* app, float delta_y, int precise);
 void   mr_app_text_input(MRApp* app, const char* utf8);
 // enter / newline / backspace / delete / left / right / up / down / home / end / shift+<方向|home|end> /

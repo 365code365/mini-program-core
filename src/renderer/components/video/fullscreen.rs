@@ -6,9 +6,12 @@
 //! 返回键与 `title`，全屏键换成「退出全屏」。点画面切换控制条、播放中 3 秒自动收起（`ui.rs`）。
 //!
 //! ## 方向（官方 component/video.html 的 `direction`）
-//! `requestFullScreen({direction})` 给了用它，否则用节点的 `direction` 属性，都没有按画面宽高比：
-//! 横的视频横屏（90）、竖的竖屏（0）。`90` = 屏幕逆时针转 90 度（手机左侧朝下，原来的右边沿成了上边），
-//! `-90` 顺时针。事件里的 `direction` 是 `horizontal` / `vertical`。
+//! `requestFullScreen({direction})` 给了用它，否则用节点的 `direction` 属性；都没有时**竖屏全屏**，
+//! 之后跟着手机转（宿主听方向传感器，[`follow_device`]）：横过来拿就横屏、竖回去就竖屏。
+//! 从前没给方向时按画面宽高比定（横的视频一进全屏就强制横屏）—— 用户竖着拿手机点全屏，画面却横了过来，
+//! 不跟手；指定了方向的照旧锁定那个方向、不跟传感器。
+//! `90` = 屏幕逆时针转 90 度（手机左侧朝下，原来的右边沿成了上边），`-90` 顺时针。
+//! 事件里的 `direction` 是 `horizontal` / `vertical`，转的时候再发一次 `fullscreenchange`。
 //!
 //! 取舍：横屏是**引擎把这一层转过来画**，不让宿主转 Activity。转 Activity 会让引擎改尺寸、整页按横屏宽度
 //! 重排（综合场景页在一加上要几百毫秒），退出时再排回来、滚动位置也可能变；转画面只动这一层，页面一个像素
@@ -26,6 +29,8 @@ struct Fs {
     video: VideoRef,
     /// 0 / 90 / -90
     direction: i32,
+    /// 没指定方向：跟着手机转（[`follow_device`]）
+    auto: bool,
     /// 进全屏那一刻页面里那一框的版本号（全屏时它不跟着重画）
     frozen: Option<u32>,
 }
@@ -79,23 +84,44 @@ pub fn enter(video: VideoRef, direction: Option<i32>) {
     }
     exit();
     let attr = video.attrs.get("direction").and_then(|s| s.trim().parse::<i32>().ok()).and_then(parse_dir);
-    let d = direction.and_then(parse_dir).or(attr).unwrap_or_else(|| {
-        let st = video.status();
-        // 宿主还没报 loadedmetadata（宽高 0）时看已经交来的那一帧：从前这里直接当竖屏，横的视频全屏也是竖着的
-        let (w, h) = if st.width > 0 && st.height > 0 {
-            (st.width, st.height)
-        } else {
-            super::host_feed::frame(&video.key).map(|f| (f.width, f.height)).unwrap_or((0, 0))
-        };
-        if w > h { 90 } else { 0 }
-    });
+    let fixed = direction.and_then(parse_dir).or(attr);
+    // 没指定：按手机此刻的朝向（宿主报过的话；竖着拿就是 0）
+    let d = fixed.unwrap_or_else(|| DEVICE.with(|c| c.get()));
     let key = video.key.clone();
     let frozen = ui::live_mark_seq(&key);
-    FS.with(|f| *f.borrow_mut() = Some(Fs { video, direction: d, frozen }));
+    FS.with(|f| *f.borrow_mut() = Some(Fs { video, direction: d, auto: fixed.is_none(), frozen }));
     ui::queue_event(&key, "fullscreenchange", json!({ "fullScreen": true, "direction": dir_name(d) }));
     NOTICES.with(|n| n.borrow_mut().push(json!({ "type": "videoFullscreen", "fullScreen": true, "direction": d, "key": key })));
     ui::poke(&key);
     ui::bump_feed_generation();
+}
+
+thread_local! {
+    /// 宿主最近一次报的手机朝向（0 / 90 / -90；倒拿的 180 不报）
+    static DEVICE: std::cell::Cell<i32> = const { std::cell::Cell::new(0) };
+}
+
+/// 手机转了（宿主的方向传感器）：记下来；全屏中、而且没指定方向的话跟着转这一层，发 `fullscreenchange`。
+/// 返回画面要不要重新合成
+pub fn follow_device(deg: i32) -> bool {
+    let Some(d) = parse_dir(deg) else { return false };
+    DEVICE.with(|c| c.set(d));
+    let changed = FS.with(|f| {
+        let mut f = f.borrow_mut();
+        let s = f.as_mut().filter(|s| s.auto && s.direction != d)?;
+        s.direction = d;
+        Some(s.video.key.clone())
+    });
+    let Some(key) = changed else { return false };
+    // 换方向：触摸坐标、画布尺寸都变了，按到一半的那串作废
+    PRESS.with(|p| *p.borrow_mut() = None);
+    CANVAS.with(|c| *c.borrow_mut() = None);
+    ui::queue_event(&key, "fullscreenchange", json!({ "fullScreen": true, "direction": dir_name(d) }));
+    NOTICES.with(|n| n.borrow_mut().push(json!({ "type": "videoFullscreen", "fullScreen": true, "direction": d, "key": key })));
+    ui::poke(&key);
+    // 同层视频的读回尺寸跟着方向换（engine_video_feed 的 box 宽高对调）
+    ui::bump_feed_generation();
+    true
 }
 
 /// 退出全屏（返回键、顶栏的返回、控制条的退出键、`exitFullScreen`）。返回是不是真的退了

@@ -152,6 +152,25 @@ pub extern "system" fn Java_dev_minirender_MiniEngine_nativePointer(
     }
 }
 
+/// 第二根手指（见 `mr_app_pointer2`）
+#[no_mangle]
+pub extern "system" fn Java_dev_minirender_MiniEngine_nativePointer2(
+    _env: JNIEnv,
+    _class: JClass,
+    h: jlong,
+    phase: jint,
+    x: jfloat,
+    y: jfloat,
+) {
+    mr_app_pointer2(h as *mut MRApp, phase, x, y);
+}
+
+/// 手机朝向（见 `mr_app_set_device_orientation`）
+#[no_mangle]
+pub extern "system" fn Java_dev_minirender_MiniEngine_nativeDeviceOrientation(_env: JNIEnv, _class: JClass, h: jlong, deg: jint) {
+    mr_app_set_device_orientation(h as *mut MRApp, deg);
+}
+
 /// 带事件时间的移动（`tMs`：`MotionEvent.getEventTime()` 那个钟，见 `mr_app_pointer_move_at`）
 #[no_mangle]
 pub extern "system" fn Java_dev_minirender_MiniEngine_nativePointerMoveAt(

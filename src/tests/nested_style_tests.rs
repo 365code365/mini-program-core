@@ -76,6 +76,20 @@ fn nested_text_runs_keep_per_run_font_size() {
     assert!(h >= 60.0, "行高要按 32 逻辑 px 的那一段算（物理 ≥60），实际 {h}");
 }
 
+/// 外层 `display:block` 的 `<text>` 里嵌套 `<text>`：照样按行内排、到宽度才折行。
+/// 从前容器成了 taffy 的 Block 布局，不认 flex-wrap，逐字切开的 run 竖着叠 —— 每个字一行
+#[test]
+fn block_text_with_nested_text_still_flows_inline() {
+    let r = render(
+        ".d { display: block; font-size: 12px; line-height: 18px; } .c { color: #6b5cff; }",
+        r#"<view style="width:300px"><text class="d">来自 <text class="c">wx</text>。被别的小程序打开时这里显示来源。</text></view>"#,
+        2.0,
+    );
+    let (w, h) = r.node_size_by_class("d").expect("外层应有尺寸");
+    // 二十来个 12px 的字在 300px 里：一两行（18px 一行，物理像素 ×2）。坏的时候是 21 行
+    assert!(h <= 18.0 * 2.0 * 2.0 + 1.0, "应是一两行，实际高 {h}（宽 {w}）");
+}
+
 /// 混排里出现非 `<text>` 元素时退回原来的拍平逻辑 —— 本引擎没有真正的行内流，
 /// 硬拆会把图文混排拆成上下两行。
 #[test]

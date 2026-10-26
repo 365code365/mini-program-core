@@ -33,6 +33,13 @@ impl TextComponent {
         // 把混排内容切成一个个 run（裸文字按最外层样式，嵌套 `<text>` 按它自己的 CSS），
         // 每个 run 再按可换行单元细分，这样既保留各自样式又不会整段无法折行。
         if let Some(runs) = Self::build_inline_runs(node, ctx, &ns) {
+            // 容器必须是 flex：`display:block` / `grid` 会被映射成 taffy 的 Block / Grid 布局，它们不认下面的
+            // flex-direction / flex-wrap —— 每个 run（汉字逐字一个）竖着叠成一列，整段变成「每个字一行」
+            // （`<text style="display:block">来自 <text class="code">…</text>…</text>` 这种说明文字踩过）。
+            // `display:block` 的「独占一行」语义仍由 `ns.is_block` 带着
+            if ts.display != Display::None {
+                ts.display = Display::Flex;
+            }
             ts.flex_direction = FlexDirection::Row;
             ts.flex_wrap = FlexWrap::Wrap;
             ts.align_items = Some(AlignItems::BASELINE);

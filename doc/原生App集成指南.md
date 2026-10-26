@@ -379,6 +379,8 @@ void     mr_app_pointer_down(MRApp*, float x, float y);
 void     mr_app_pointer_move(MRApp*, float x, float y);
 void     mr_app_pointer_up(MRApp*, float x, float y);
 void     mr_app_pointer_cancel(MRApp*);
+void     mr_app_pointer2(MRApp*, int phase, float x, float y);   // 第二根手指：只有图片预览认它（双指缩放）
+void     mr_app_set_device_orientation(MRApp*, int deg);          // 0 / 90 / -90：全屏视频没指定 direction 时跟着转
 void     mr_app_wheel(MRApp*, float delta_y, int precise);
 void     mr_app_text_input(MRApp*, const char* utf8);
 void     mr_app_key(MRApp*, const char* name);

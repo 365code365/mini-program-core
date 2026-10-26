@@ -45,6 +45,23 @@ impl MiniEngine {
         self.capsule_down(x, y)
     }
 
+    /// 第二根手指（`phase` 0 按下 / 1 移动 / 2 抬起 / 其它 取消，逻辑坐标）。
+    /// 页面的触摸状态机是单指的（与从前一样只认第一根）：只有图片预览认它（双指捏合缩放），其余时候丢掉
+    pub fn pointer2(&mut self, phase: i32, x: f32, y: f32) {
+        let vp = self.viewport_logical();
+        if ui_overlay::image_preview::on_pointer2(phase, vp, x, y) {
+            self.dmg.compose_dirty = true;
+        }
+    }
+
+    /// 手机现在的朝向（宿主听方向传感器，0 竖 / 90 左侧朝下 / -90 右侧朝下，与 `direction` 同一套）。
+    /// 全屏视频没指定方向时跟着转（`fullscreenchange` 带新方向）；没在全屏就什么也不做
+    pub fn set_device_orientation(&mut self, deg: i32) {
+        if crate::renderer::components::video_fullscreen::follow_device(deg) {
+            self.dmg.compose_dirty = true;
+        }
+    }
+
     /// 移动：浮层吃掉了返回 true
     pub(super) fn overlay_pointer_move(&mut self, x: f32, y: f32) -> bool {
         // 按在胶囊上的这串触摸：只更新按压态，不滚页面

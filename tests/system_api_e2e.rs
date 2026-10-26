@@ -174,6 +174,8 @@ fn preview_image_switches_by_swipe_and_closes_on_tap() {
     assert_eq!(e.px(187, 333), (255, 0, 0), "到头不再切");
     e.tap(187.0, 333.0);
     e.settle();
+    assert_ne!(e.px(187, 333), (0, 255, 0), "轻点之后先等一下（看是不是双击），不立刻关");
+    e.settle();
     assert_eq!(e.px(187, 333), (0, 255, 0), "轻点关闭，页面回来");
     assert_eq!(e.js("__currentPage.data.taps"), 0, "预览里的点击不落到页面上");
 }
@@ -200,6 +202,105 @@ fn preview_image_slides_between_images() {
     e.settle();
     assert_eq!(e.px(20, 333), (0, 0, 255), "停稳后整屏是第二张");
     assert_eq!(e.px(355, 333), (0, 0, 255));
+}
+
+/// 一张左红右蓝的横图（20×10）：放大后看屏上中间那一列是哪种颜色，就知道锚点对不对
+fn half_image(fx: &Fixture) {
+    let mut img = image::RgbaImage::from_pixel(20, 10, image::Rgba([255, 0, 0, 255]));
+    for y in 0..10 {
+        for x in 10..20 {
+            img.put_pixel(x, y, image::Rgba([0, 0, 255, 255]));
+        }
+    }
+    img.save(fx.0.join("img/half.png")).unwrap();
+}
+
+/// 双击放大（以点的位置为锚）、再双击还原；单指拖动平移；放大着轻点一下照样关
+#[test]
+fn preview_image_double_tap_zoom_and_pan() {
+    let _g = SERIAL.lock().unwrap_or_else(|p| p.into_inner());
+    let fx = fixture("preview-zoom", PAGE_WXML, PAGE_JS);
+    half_image(&fx);
+    let mut e = E::new(&fx);
+    e.run("wx.previewImage({ urls: ['/img/half.png'] })");
+    e.settle();
+    // fit：375×187.5 居中（y 240~427）。屏幕 (100, 333) 落在左半（红）
+    assert_eq!(e.px(100, 333), (255, 0, 0));
+    assert_eq!(e.px(187, 200), (0, 0, 0), "没放大时图上下是黑边");
+    // 双击左半：放大 2.5 倍，锚点在左半 —— 屏幕中间那一列变成红的，上下黑边也被图盖住
+    e.tap(100.0, 333.0);
+    e.frames(2);
+    e.tap(100.0, 333.0);
+    e.settle();
+    assert_eq!(e.px(187, 333), (255, 0, 0), "以点的位置为锚放大：中间是左半的红");
+    assert_eq!(e.px(187, 260), (255, 0, 0), "放大后图变高（187.5×2.5=469），原来的黑边位置也是图");
+    assert_eq!(e.px(187, 600), (0, 0, 0), "469 高还盖不满 667：再往下仍是黑边");
+    // 单指往左拖 300：平移到右半（蓝）
+    e.drag(300.0, 0.0, 333.0);
+    e.settle();
+    assert_eq!(e.px(187, 333), (0, 0, 255), "放大后拖动是平移，不关不翻页");
+    // 再双击：还原
+    e.tap(187.0, 333.0);
+    e.frames(2);
+    e.tap(187.0, 333.0);
+    e.settle();
+    assert_eq!(e.px(187, 200), (0, 0, 0), "还原：上下又是黑边");
+    assert_eq!(e.px(100, 333), (255, 0, 0));
+    // 轻点：等过双击时限再关
+    e.tap(187.0, 333.0);
+    e.settle();
+    e.settle();
+    assert_eq!(e.px(187, 333), (0, 255, 0), "轻点关闭");
+    assert_eq!(e.js("__currentPage.data.taps"), 0);
+}
+
+/// 双指捏合：以两指中点为锚放大；捏小了松手回到原大；页面不收到这串触摸
+#[test]
+fn preview_image_pinch_zoom() {
+    let _g = SERIAL.lock().unwrap_or_else(|p| p.into_inner());
+    let fx = fixture("preview-pinch", PAGE_WXML, PAGE_JS);
+    half_image(&fx);
+    let mut e = E::new(&fx);
+    e.run("wx.previewImage({ urls: ['/img/half.png'] })");
+    e.settle();
+    // 两指按在右半（蓝），中点 (280, 333)，从相距 40 拉到 200：放大 5 倍（超过 4 有阻力，松手回 4）
+    e.e.pointer_down(260.0, 333.0);
+    e.frames(1);
+    e.e.pointer2(0, 300.0, 333.0);
+    e.frames(1);
+    for i in 1..=8 {
+        let d = 20.0 + 80.0 * i as f32 / 8.0;
+        e.e.pointer_move(280.0 - d, 333.0);
+        e.e.pointer2(1, 280.0 + d, 333.0);
+        e.frames(1);
+    }
+    assert_eq!(e.px(280, 333), (0, 0, 255), "中点下面还是捏之前那一点（蓝）");
+    assert_eq!(e.px(187, 200), (0, 0, 255), "放大到盖住原来的黑边");
+    e.e.pointer2(2, 380.0, 333.0);
+    e.frames(1);
+    e.e.pointer_up(180.0, 333.0);
+    e.settle();
+    assert_eq!(e.px(187, 333), (0, 0, 255), "松手停在放大的样子（回到 4 倍以内、不露黑边）");
+    // 捏小：两指从相距 200 并到 40 → 缩到 1 以下，松手回到原大
+    e.e.pointer_down(100.0, 333.0);
+    e.frames(1);
+    e.e.pointer2(0, 300.0, 333.0);
+    e.frames(1);
+    for i in 1..=8 {
+        let d = 100.0 - 80.0 * i as f32 / 8.0;
+        e.e.pointer_move(200.0 - d, 333.0);
+        e.e.pointer2(1, 200.0 + d, 333.0);
+        e.frames(1);
+    }
+    e.e.pointer2(2, 220.0, 333.0);
+    e.frames(1);
+    e.e.pointer_up(180.0, 333.0);
+    e.settle();
+    assert_eq!(e.px(187, 200), (0, 0, 0), "缩过头松手：回到原大，上下黑边");
+    assert_eq!(e.px(100, 333), (255, 0, 0));
+    assert_eq!(e.js("__currentPage.data.taps"), 0, "捏合不算点击，也不落到页面");
+    e.settle();
+    assert_ne!(e.px(187, 333), (0, 255, 0), "捏完松手不关预览");
 }
 
 /// 右上角关闭键；往下拉没拉够回弹、拉够了关

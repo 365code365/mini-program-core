@@ -26,7 +26,8 @@
     document.addEventListener("fullscreenchange", function () {
       var cur = document.fullscreenElement;
       var v = isVideo(cur) ? cur : fsEl; if (!v) return;
-      fire(v, "fullscreenchange", { fullScreen: !!cur, direction: (v.videoWidth > v.videoHeight) ? "horizontal" : "vertical" });
+      // 与原生端一致：不按画面宽高比，按屏幕此刻的朝向（竖着拿就是竖屏全屏，横过来才是横屏）
+      fire(v, "fullscreenchange", { fullScreen: !!cur, direction: window.innerWidth > window.innerHeight ? "horizontal" : "vertical" });
       fsEl = isVideo(cur) ? cur : null;
     });
     function byId(id) { var el = document.getElementById(id); return isVideo(el) ? el : null; }

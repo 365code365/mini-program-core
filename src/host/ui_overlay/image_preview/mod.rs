@@ -7,13 +7,22 @@
 //! - 左右拖动跟手，松手按距离（过四分之一屏）或甩的速度换张，弹簧接住松手速度滑过去（`motion.rs`）；
 //!   到头拉不动（有阻力）；滑动中再按住就停在手指下面；
 //! - 往下拉跟手缩小、背景变透明，拉够了松手就关，没拉够回弹；
-//! - 打开放大淡入、关闭缩小淡出；右上角关闭键，轻点图片也关；多于一张时底部显示「当前 / 总数」。
-//! 取舍：不做双指缩放与长按菜单（`showmenu`）；打开不从缩略图的位置飞出来（接口不带缩略图的位置）。
+//! - 打开放大淡入、关闭缩小淡出；右上角关闭键，轻点图片也关；多于一张时底部显示「当前 / 总数」；
+//! - 双指捏合缩放、双击放大 / 还原、放大后单指平移（到边拖出去一截就换张），见 `zoom.rs`。
+//!   轻点关闭要等 [`zoom::DOUBLE_TAP_SECS`] 确认不是双击（微信一样有这一下延迟）。
+//!   第二根手指由宿主经 [`on_pointer2`] 送来（引擎的页面触摸仍是单指，只有预览认第二根）。
+//! 取舍：不做长按菜单（`showmenu`）；打开不从缩略图的位置飞出来（接口不带缩略图的位置）。
 
 mod chrome;
+mod draw;
+mod input;
 mod motion;
 mod raster;
 pub mod video;
+mod zoom;
+
+pub use draw::render;
+pub use input::{on_pointer2, on_press, on_move, on_release};
 
 use crate::runtime::MiniApp;
 use crate::text::TextRenderer;
@@ -46,6 +55,10 @@ struct Item {
 enum Axis {
     X,
     Down,
+    /// 放大着：单指平移
+    Pan,
+    /// 两指捏合（以及捏完剩下那根手指：不再算点击、不翻页）
+    Pinch,
 }
 
 #[derive(Clone, Debug)]
@@ -61,6 +74,8 @@ struct Drag {
     caught: bool,
     on_close: bool,
     track: Tracker,
+    /// 按下（或捏合结束换回单指）那一刻的平移
+    pan0: (f32, f32),
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -88,6 +103,18 @@ struct Preview {
     dirty: bool,
     /// 上一帧有图没到（远程 / 后台解码）：续帧等它
     missing: bool,
+    /// 当前那张的缩放平移（换张时归位）
+    zoom: zoom::Zoom,
+    pinch: Option<zoom::Pinch>,
+    /// 第二根手指（逻辑坐标）
+    p2: Option<(f32, f32)>,
+    /// 捏合刚结束：下一次单指移动从那一刻的位置重新起算（剩下的手指可能是另一根，位置会跳）
+    rebase: bool,
+    /// 上一次轻点（双击判定）与等着确认不是双击的关闭
+    last_tap: Option<(Instant, f32, f32)>,
+    pending_close: Option<Instant>,
+    /// 当前那张 aspectFit 后的大小（逻辑像素，上一次画的时候记下）
+    fit: (f32, f32),
 }
 
 thread_local! {
@@ -141,6 +168,7 @@ fn needs_compose(p: &Preview) -> bool {
     let waiting = p.missing && p.opened.elapsed().as_secs_f32() < WAIT_SECS;
     let video = video::active().map(|u| video::has_new_frame(&u)).unwrap_or(false);
     p.dirty || waiting || video || p.drag.is_some() || p.slide.is_some() || p.back.is_some() || !matches!(p.phase, Phase::Shown)
+        || p.zoom.animating() || p.pending_close.is_some()
 }
 
 /// 第几张在正中（拖动 / 弹簧 / 停住）
@@ -193,6 +221,16 @@ pub fn take_requests(app: &mut MiniApp) -> bool {
             p.back = None;
             p.dirty = true;
         }
+        if p.zoom.tick(now) {
+            p.dirty = true;
+        }
+        // 轻点过了双击的时限还没等来第二下：关
+        if p.pending_close.is_some_and(|t| now.saturating_duration_since(t).as_secs_f32() >= zoom::DOUBLE_TAP_SECS) {
+            p.pending_close = None;
+            p.last_tap = None;
+            let look = look_at(p, now);
+            p.phase = Phase::Closing(now, look);
+        }
         match p.phase {
             Phase::Opening(t0) if now.saturating_duration_since(t0).as_secs_f32() >= motion::OPEN_SECS => {
                 p.phase = Phase::Shown;
@@ -242,6 +280,13 @@ fn open(req: &Value) -> bool {
             opened: now,
             dirty: true,
             missing: false,
+            zoom: zoom::Zoom::default(),
+            pinch: None,
+            p2: None,
+            rebase: false,
+            last_tap: None,
+            pending_close: None,
+            fit: (375.0, 667.0),
         })
     });
     sync_video();
@@ -278,112 +323,6 @@ fn prefetch() {
     }
 }
 
-pub fn on_press(vp: (f32, f32), x: f32, y: f32) -> bool {
-    let now = crate::frame_clock::now();
-    let top = TOP.with(Cell::get);
-    with(|s| {
-        let Some(p) = s.as_mut() else { return false };
-        if matches!(p.phase, Phase::Closing(..)) {
-            return true;
-        }
-        p.vp = vp;
-        let pos = pos_at(p, now);
-        let caught = p.slide.is_some();
-        // 滑动中途按住：停在手指下面（位置接着按下这一刻的往下算）
-        p.slide = None;
-        p.back = None;
-        let mut track = Tracker::default();
-        track.push(Instant::now(), x, y);
-        let on_close = chrome::hits_close(vp.0, top, x, y);
-        p.drag = Some(Drag { x0: x, y0: y, x, y, axis: None, pos0: pos, caught, on_close, track });
-        p.dirty = true;
-        true
-    })
-}
-
-pub fn on_move(x: f32, y: f32) -> bool {
-    with(|s| {
-        let Some(p) = s.as_mut() else { return false };
-        let Some(d) = p.drag.as_mut() else { return true };
-        d.x = x;
-        d.y = y;
-        d.track.push(Instant::now(), x, y);
-        if d.axis.is_none() && !d.on_close {
-            let (dx, dy) = (x - d.x0, y - d.y0);
-            if dx.abs().max(dy.abs()) >= TAP_SLOP {
-                // 竖着往下拉、而且不是滑动中途按住的：下拉关闭；其余都算左右翻
-                let down = dy > 0.0 && dy.abs() > dx.abs() * 1.2 && !d.caught && d.pos0.fract().abs() < 1e-3;
-                d.axis = Some(if down { Axis::Down } else { Axis::X });
-                // 手指已经走出去的那段不吞掉：从按下的地方起算（跟手不跳）
-            }
-        }
-        true
-    })
-}
-
-pub fn on_release(x: f32, y: f32) -> bool {
-    let now = crate::frame_clock::now();
-    let top = TOP.with(Cell::get);
-    let consumed = visible();
-    let toggle = with(|s| {
-        let Some(p) = s.as_mut() else { return None };
-        let Some(mut d) = p.drag.clone() else { return None };
-        d.x = x;
-        d.y = y;
-        p.drag = Some(d.clone());
-        let look = look_at(p, now);
-        let (vx, vy) = d.track.velocity(Instant::now());
-        p.drag = None;
-        p.dirty = true;
-        match d.axis {
-            None => {
-                if d.on_close && chrome::hits_close(p.vp.0, top, x, y) {
-                    p.phase = Phase::Closing(now, look);
-                } else if d.caught {
-                    // 滑动中途按住又松开：滑到最近的那张
-                    settle(p, look.pos, 0.0, now);
-                } else if !p.items[p.index].video.is_empty() {
-                    return Some(p.items[p.index].video.clone());
-                } else {
-                    p.phase = Phase::Closing(now, look);
-                }
-            }
-            Some(Axis::Down) => {
-                if d.y - d.y0 > DISMISS_DY || vy > DISMISS_VY {
-                    p.phase = Phase::Closing(now, look);
-                } else {
-                    p.back = Some((now, d.x - d.x0, d.y - d.y0));
-                }
-            }
-            Some(Axis::X) => {
-                let dx = d.x - d.x0;
-                let target = if dx <= -p.vp.0 * 0.25 || vx < -FLING_VX {
-                    (d.pos0.floor() + 1.0).min(p.items.len() as f32 - 1.0)
-                } else if dx >= p.vp.0 * 0.25 || vx > FLING_VX {
-                    (d.pos0.ceil() - 1.0).max(0.0)
-                } else {
-                    look.pos.round().clamp(0.0, p.items.len() as f32 - 1.0)
-                };
-                p.index = target as usize;
-                p.slide = Some((now, look.pos - target, -vx / p.vp.0.max(1.0)));
-            }
-        }
-        None
-    });
-    if let Some(v) = toggle {
-        video::toggle(&v);
-    }
-    sync_video();
-    consumed
-}
-
-/// 滑到离 `pos` 最近的那张
-fn settle(p: &mut Preview, pos: f32, v: f32, now: Instant) {
-    let target = pos.round().clamp(0.0, p.items.len() as f32 - 1.0);
-    p.index = target as usize;
-    p.slide = Some((now, pos - target, v));
-}
-
 /// 预览停在「黑底不透明」的状态（开完了、没在下拉 / 回弹 / 关）：页面整个看不见，
 /// 宿主可以把页面的重画（动图换帧、CSS 动画、setData）留到它露出来再做（`engine_preview.rs`）
 pub fn opaque() -> bool {
@@ -401,65 +340,4 @@ pub fn covers_page() -> bool {
     let look = with(|s| s.as_ref().map(|p| look_at(p, crate::frame_clock::now())));
     FRAME_LOOK.with(|f| f.set(look));
     look.is_some_and(|l| l.bg >= 0.999)
-}
-
-/// 画进输出缓冲（0x00RRGGBB，行宽 `w`）。没有预览时什么也不写
-pub fn render(buf: &mut [u32], w: u32, h: u32, sf: f32, text: Option<&TextRenderer>) {
-    let Some(p) = with(|s| s.clone()) else { return };
-    let look = FRAME_LOOK.with(|f| f.take()).unwrap_or_else(|| look_at(&p, crate::frame_clock::now()));
-    LAST_SIZE.with(|s| s.set((w, h)));
-    let (vw, keep) = (w as f32, ((1.0 - look.bg) * 256.0).round().clamp(0.0, 256.0) as u32);
-    raster::darken(buf, keep);
-    let k = (look.alpha * 256.0).round().clamp(0.0, 256.0) as u32;
-    let mut missing = false;
-    let mut paused_video = false;
-    let lo = look.pos.floor() as isize;
-    for i in [lo, lo + 1] {
-        let Some(item) = (i >= 0).then(|| p.items.get(i as usize)).flatten() else { continue };
-        let off = (i as f32 - look.pos) * vw;
-        if off.abs() >= vw {
-            continue;
-        }
-        // 当前那张（离正中最近）带着开合 / 下拉的缩放与位移
-        let near = (i as f32 - look.pos).abs() < 0.5;
-        let (scale, tx, ty) = if near { (look.scale, look.tx * sf, look.ty * sf) } else { (1.0, 0.0, 0.0) };
-        let place = |fw: u32, fh: u32| {
-            let (dw, dh) = (fw as f32 * scale, fh as f32 * scale);
-            ((vw - dw) / 2.0 + off + tx, (h as f32 - dh) / 2.0 + ty, dw, dh)
-        };
-        let frame = (!item.video.is_empty() && video::active().as_deref() == Some(item.video.as_str()))
-            .then(|| {
-                video::note_box(w, h);
-                video::frame(&item.video)
-            })
-            .flatten();
-        if let Some(f) = &frame {
-            let (data, fw0, fh0) = f.rgba();
-            let (fw, fh) = raster::fit_size(fw0, fh0, w, h);
-            raster::blit(buf, w, h, &raster::Src::Rgba(data, fw0, fh0), place(fw, fh), k);
-        } else if let Some(f) = raster::fitted(&item.url, w, h) {
-            raster::blit(buf, w, h, &raster::Src::Px(&f.px, f.w, f.h), place(f.w, f.h), k);
-        } else if !item.url.is_empty() {
-            // 后台还在缩（或图还没解出来）：有原图就拿原图凑合，缩好了下一帧换上
-            missing = true;
-            if let Some((data, iw, ih)) = crate::renderer::components::image_rgba(&item.url) {
-                let (fw, fh) = raster::fit_size(iw, ih, w, h);
-                raster::blit(buf, w, h, &raster::Src::Rgba(&data, iw, ih), place(fw, fh), k);
-            }
-        }
-        if near && !item.video.is_empty() {
-            paused_video = !video::playing(&item.video);
-        }
-    }
-    let shown = look.pos.round().clamp(0.0, (p.items.len() - 1) as f32) as usize;
-    let insets = (TOP.with(Cell::get), BOTTOM.with(Cell::get));
-    chrome::draw(buf, (w, h, sf), text, insets, (shown, p.items.len()), paused_video, look.bg);
-    with(|s| {
-        if let Some(x) = s.as_mut() {
-            x.dirty = false;
-            x.missing = missing;
-            // 拖动的换算（一屏多宽、下拉缩放按多高）按画面的逻辑尺寸；按下时宿主也会给一份
-            x.vp = (w as f32 / sf, h as f32 / sf);
-        }
-    });
 }

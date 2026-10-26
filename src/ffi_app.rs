@@ -230,6 +230,19 @@ pub extern "C" fn mr_app_pointer_cancel(app: *mut MRApp) {
     with_app!(app, (), |a| a.engine.pointer_cancel())
 }
 
+/// 第二根手指（`phase` 0 按下 / 1 移动 / 2 抬起 / 其它 取消）：只有图片预览认它（双指缩放），页面仍是单指。
+/// 第一根抬起而第二根还按着时：先送第二根的抬起，之后把它当第一根接着送（`mr_app_pointer_move`…）
+#[no_mangle]
+pub extern "C" fn mr_app_pointer2(app: *mut MRApp, phase: c_int, x: f32, y: f32) {
+    with_app!(app, (), |a| a.engine.pointer2(phase, x, y))
+}
+
+/// 手机朝向（方向传感器：0 竖 / 90 左侧朝下 / -90 右侧朝下）。全屏视频没指定 `direction` 时跟着转
+#[no_mangle]
+pub extern "C" fn mr_app_set_device_orientation(app: *mut MRApp, deg: c_int) {
+    with_app!(app, (), |a| a.engine.set_device_orientation(deg))
+}
+
 /// 滚轮/触控板（`precise` 非 0 表示像素级精密滚动）
 #[no_mangle]
 pub extern "C" fn mr_app_wheel(app: *mut MRApp, delta_y: f32, precise: c_int) {
@@ -345,6 +358,8 @@ mod tests {
         assert_eq!(mr_app_back(std::ptr::null_mut()), 0);
         mr_app_pointer_down(std::ptr::null_mut(), 1.0, 1.0);
         mr_app_pointer_cancel(std::ptr::null_mut());
+        mr_app_pointer2(std::ptr::null_mut(), 0, 1.0, 1.0);
+        mr_app_set_device_orientation(std::ptr::null_mut(), 90);
         mr_app_trim_memory(std::ptr::null_mut());
         mr_app_destroy(std::ptr::null_mut());
         assert!(mr_app_last_error(std::ptr::null_mut()).is_null());

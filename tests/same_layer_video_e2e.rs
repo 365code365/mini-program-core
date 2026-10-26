@@ -223,13 +223,17 @@ fn 全屏_横屏_宿主按对调的尺寸交帧_只重新合成() {
         (e.last_frame_kind(), events(e))
     };
     pump(&mut e);
-    // 4:3 的画面：不给方向就横屏（90）
+    // 4:3 的画面：不给方向时竖屏进全屏（不再按宽高比强制横屏），手机横过来（宿主报朝向 90）才转成横屏
     e.dispatch_native_view_event("v", "loadedmetadata", serde_json::json!({"duration": 10, "width": 8, "height": 6}));
     pump(&mut e);
     e.eval("wx.createVideoContext('v').requestFullScreen()").unwrap();
     let (_, evs) = pump(&mut e);
     let fs = evs.iter().find(|v| v["type"] == "videoFullscreen").expect("宿主要收起状态栏");
-    assert_eq!((fs["fullScreen"].as_bool(), fs["direction"].as_i64(), fs["key"].as_str()), (Some(true), Some(90), Some("v")));
+    assert_eq!((fs["fullScreen"].as_bool(), fs["direction"].as_i64(), fs["key"].as_str()), (Some(true), Some(0), Some("v")));
+    e.set_device_orientation(90);
+    let (_, evs) = pump(&mut e);
+    let fs = evs.iter().find(|v| v["type"] == "videoFullscreen").expect("转了：再报一次方向");
+    assert_eq!((fs["fullScreen"].as_bool(), fs["direction"].as_i64()), (Some(true), Some(90)));
     let videos = evs.iter().find(|v| v["type"] == "videos").expect("全屏换了读回尺寸，要重报 videos");
     let v = &videos["views"][0];
     assert_eq!(v["box"], serde_json::json!([(H as f32 * DPR), (W as f32 * DPR)]), "横屏：宽高对调");
