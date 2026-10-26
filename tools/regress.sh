@@ -162,6 +162,8 @@ clear_storage
 # 收尾：只清本脚本与它调用的工具写出来的东西（不跑 clean-target.sh：
 # 那会连别的会话正在用的目录一起删）。日志与汇总留着，很小
 rm -rf target/_sdk_parity target/dm_*_on target/dm_*_off /tmp/dm_*_on.log /tmp/dm_*_off.log
+# 构建中间件：剪掉这轮编译换下来的旧产物（拿 cargo 的锁，别的会话在编就跳过，不会误删）
+python3 tools/prune-target.py --quiet | tee -a "$SUMMARY"
 if [ "$KEEP" = 0 ]; then
     rm -rf target/fin2_sample target/fin2_news "$OUT/ia" "$OUT"/h5_* "$OUT"/cmp_*
 fi

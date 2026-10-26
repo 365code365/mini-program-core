@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# 清理 target/：测试产物会无限堆积，实测能涨到 26GB。
+# 清理 target/：测试产物与过期构建产物都会无限堆积，实测涨到过 26GB（测试产物）与 49GB（旧构建）。
 #
-#   bash tools/clean-target.sh          # 清测试产物 + debug 构建（保留 release，不用重编）
+#   bash tools/clean-target.sh          # 清测试产物 + debug 构建 + 过期的 release 中间件（不用重编）
 #   bash tools/clean-target.sh --targets # 再清交叉编译目标目录（iOS/Android，~6GB）
 #   bash tools/clean-target.sh --all    # 连 cargo 构建缓存一起清（下次要全量重编）
 #   bash tools/clean-target.sh --dry    # 只看会删什么
@@ -10,6 +10,10 @@
 # （`target/_ns5`、`target/wc25`、`target/tf19_cmp`…），跑一轮回归就多出几十个目录，
 # 每个十几 MB。基线目录（`fin2_sample` 等）也在里面，但它们**一条命令就能重新生成**
 # （见 README 的「测试与回归」），所以一并清掉，不必长期占着。
+#
+# 另一半是 cargo 自己不回收的旧产物（每换一次特性 / profile 参数就多一份带新哈希的），
+# 交给 tools/prune-target.py：只删「下次构建反正要重编」或「源文件已不存在」的那几份，
+# 还活着的留着，清完照常增量编译（判据见那个脚本的文件头）。
 set -eu
 cd "$(dirname "$0")/.."
 [ -d target ] || { echo "没有 target/，无需清理"; exit 0; }
@@ -44,6 +48,7 @@ done
 if [ "$MODE" = "--dry" ]; then
     printf '%s\n' "${victims[@]:-（无）}"
     echo "共 ${#victims[@]} 项测试产物"
+    python3 tools/prune-target.py --dry
     exit 0
 fi
 
@@ -54,6 +59,11 @@ echo "🧹 清掉 ${#victims[@]} 项测试产物"
 if [ -d target/debug ]; then
     rm -rf target/debug
     echo "🧹 清掉 target/debug（所有脚本都用 --release）"
+fi
+
+# 过期的构建中间件（target/release 与 target/<triple>/release 的 deps / examples / incremental）
+if [ "$MODE" != "--all" ]; then
+    python3 tools/prune-target.py --quiet || echo "⚠  prune-target.py 失败（不影响上面的清理）"
 fi
 
 # 交叉编译目标目录：移动端库不常编，产物已经拷进 sdk/，这里的中间件可以放心删

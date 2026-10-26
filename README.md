@@ -680,7 +680,8 @@ compiled HTML).
 measured at **26 GB**.
 
 ```bash
-bash tools/clean-target.sh            # test output + target/debug (keeps release, no rebuild)
+bash tools/clean-target.sh            # test output + target/debug + stale build artifacts (no rebuild)
+python3 tools/prune-target.py         # only prune stale cargo artifacts (--dry to preview); build/regress scripts run it on exit
 bash tools/clean-target.sh --targets  # also cross-compile target dirs (iOS/Android, ~6 GB)
 bash tools/clean-target.sh --all      # plus the cargo cache
 bash tools/clean-target.sh --dry      # show what would be deleted first

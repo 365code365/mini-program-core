@@ -32,4 +32,6 @@ fi
 eval "$(sed -n '/^setup_ndk() {/,/^}/p;/^android_target() {/,/^}/p' tools/build-mobile.sh)"
 setup_ndk
 android_target "$TARGET" "$ABI"
+# 同 build-mobile.sh：剪掉换下来的旧产物，target/<triple>/ 不再一份份攒
+python3 tools/prune-target.py --quiet || true
 echo "✅ sdk/android/src/main/jniLibs/$ABI/libmini_render.so"

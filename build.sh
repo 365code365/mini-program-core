@@ -9,6 +9,8 @@ echo "🔨 构建 Mini Render Engine..."
 cargo build --release
 
 echo "✅ 动态库构建完成！"
+# cargo 不回收旧产物：剪掉换下来的那几份（判据见 tools/prune-target.py 文件头）
+python3 "$(dirname "$0")/tools/prune-target.py" --quiet || true
 
 # 显示生成的库文件
 echo ""

@@ -589,7 +589,8 @@ python3 tools/pixdiff.py a.png b.png       # 差异占比 + 包围盒
 一轮回归多出几十个目录，实测涨到过 **26GB**。
 
 ```bash
-bash tools/clean-target.sh            # 清测试产物 + target/debug（保留 release，不重编）
+bash tools/clean-target.sh            # 清测试产物 + target/debug + 过期构建中间件（不重编）
+python3 tools/prune-target.py         # 只剪 cargo 不回收的旧产物（--dry 先看）；构建/回归脚本收尾自动跑
 bash tools/clean-target.sh --targets  # 再清交叉编译目标目录（iOS/Android，约 6GB）
 bash tools/clean-target.sh --all      # 连 cargo 缓存一起清
 bash tools/clean-target.sh --dry      # 先看会删什么

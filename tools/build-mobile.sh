@@ -117,8 +117,10 @@ ios_target() {
     if [ "$MODE" = check ]; then
         cargo check "${IOS_FLAGS[@]}" --target "$target"
     else
-        # 发出去的库要 thin LTO（同 android_target）
-        CARGO_PROFILE_RELEASE_LTO=thin CARGO_PROFILE_RELEASE_INCREMENTAL=false \
+        # 发出去的库要 thin LTO（同 android_target）；MOBILE_LTO=false 是调试档（tools/ios-debug.sh 的默认）
+        local lto="${MOBILE_LTO:-thin}" incr=false
+        [ "$lto" = false ] && incr=true
+        CARGO_PROFILE_RELEASE_LTO="$lto" CARGO_PROFILE_RELEASE_INCREMENTAL="$incr" \
             cargo build "${IOS_FLAGS[@]}" --target "$target"
     fi
 }
@@ -154,3 +156,5 @@ case "$MODE" in
     check)   echo "== 交叉编译检查 =="; build_ios; build_android; echo "✅ iOS / Android 均可编译" ;;
     *) echo "用法: build-mobile.sh [ios|android|check]"; exit 1 ;;
 esac
+# 剪掉交叉编译目录里换下来的旧产物（发版 thin LTO 与调试档哈希不同，来回切会一份份攒下去）
+python3 tools/prune-target.py --quiet || true

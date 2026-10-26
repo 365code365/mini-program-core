@@ -26,6 +26,8 @@ sdk/
 
 ```bash
 bash tools/build-mobile.sh android    # arm64-v8a / armeabi-v7a / x86_64
+bash tools/ios-setup.sh               # 先查 / 补 iOS 环境（Xcode 本体要自己装，脚本会提示）
+bash tools/ios-debug.sh               # 一条龙：等 Xcode → 编库 → 模拟器上 flutter run 挂调试，日志在 target/ios-debug/latest/
 bash tools/build-mobile.sh ios        # 真机 + 模拟器，打成 XCFramework
 bash tools/build-mobile.sh check      # 只做交叉编译检查，不产出
 ```

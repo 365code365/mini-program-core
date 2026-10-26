@@ -151,7 +151,8 @@ picker 弹面板、Modal 按钮按压/命中、按压态、长按、手势归属
 而重新生成的基线已经是改动**之后**的了，参照物就永远丢了。
 
 ```bash
-bash tools/clean-target.sh            # 清测试产物 + target/debug，保留 release 与 baseline_*
+bash tools/clean-target.sh            # 清测试产物 + target/debug + 过期构建中间件，保留 release 与 baseline_*
+python3 tools/prune-target.py         # 只剪过期构建中间件（--dry 先看），清完照常增量编译
 bash tools/clean-target.sh --targets  # 再清交叉编译目标目录（iOS/Android，约 6GB）
 bash tools/clean-target.sh --all      # 连 cargo 缓存一起清（下次全量重编）
 bash tools/clean-target.sh --dry      # 先看会删什么
@@ -166,6 +167,28 @@ bash tools/clean-target.sh --dry      # 先看会删什么
 - `target/debug` 永远可以删：所有脚本都跑 `--release`。
 - 编过移动端库之后跑一次 `--targets`：那几个交叉编译目录一共约 6GB，
   而产物已经拷进 `sdk/` 了，中间件留着没用。
+
+## 构建产物的存储预算（编译时顺手剪，2026-10-26）
+
+**cargo 从不回收旧产物。** 每换一次特性 / profile 参数（`CARGO_PROFILE_RELEASE_LTO=thin` 也算）、
+升一次依赖，同一个目标就多一份带新哈希的产物，旧的永远留着。实测 `target/` 涨到 **49GB**：
+`release/deps` 17GB（每个集成测试 7 份、`mini_render` 单测二进制 10 份，一份 75MB）、
+`release/incremental` 19GB（`mini_render` 14 份增量缓存，一份 0.7~1.8GB）。
+`python3 tools/prune-target.py` 一次剪掉 31.6GB（49→20GB），之后 `cargo build --release` 只重编工程本身（4s），
+第三方依赖一个没动。
+
+- **预算**：`target/release` ≤ 15GB，整个 `target/` ≤ 20GB（含三个 Android ABI 的交叉编译目录约 6GB）。
+  超了先 `bash tools/clean-target.sh --dry` 看是谁，别直接 `--all`（`cargo clean` 之后从零编完 457s）。
+- **编译脚本收尾一律剪一次**：`regress.sh`、`build-mobile.sh`、`build-android-abi.sh`、`build.sh` 结尾都调
+  `python3 tools/prune-target.py --quiet`，`clean-target.sh` 默认也调。**新写的构建 / 回归脚本照做。**
+  它拿 cargo 自己的 `.cargo-lock`，别的会话正在编就跳过那个目录，不会删掉正在写的文件；
+  只删「下次构建反正要重编」与「源文件已不存在」的那几份，每个目标永远留最新一份（判据见脚本文件头）。
+- **别加新的 `tests/*.rs` 来放一两个用例**：每个集成测试文件是一个独立二进制（~75MB）外加一份增量缓存，
+  还要单独链接一次。能进 `src/tests/` 的单测或现有 e2e 文件的就放进去。
+- **临时探针（`examples/tmp_*`、`_probe`、`zz_*`）用完就删源文件**：源文件删了，下次剪的时候它的产物与增量缓存一并清掉；
+  源文件留着，它的二进制就一直占着几十 MB。
+- **别为了省盘改 `Cargo.toml` 的 release 档**（关增量 / 开 LTO / strip）：增量缓存是改一行引擎 20s 编完的前提，
+  `strip` 会让 simpleperf 符号化对不上。占盘交给剪枝，不交给编译参数。
 
 ## 两个坑（踩过，会让你误判成回归）
 
