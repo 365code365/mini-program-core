@@ -353,6 +353,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut backend_probe = false;
     let (mut bench_out, mut bench_shot) = (None, None);
     let mut hz = app_window::bench_run::DEFAULT_HZ;
+    // 小游戏：--hz 显式给了才用（缺省 60，与 rAF 默认帧率一致）；--query 是启动参数（夹具读 getLaunchOptionsSync().query）
+    let mut game_hz: Option<u32> = None;
+    let mut game_query: Option<String> = None;
     let mut it = args.into_iter();
     while let Some(arg) = it.next() {
         match arg.as_str() {
@@ -362,7 +365,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             // 值不对直接退出：--hz 越界 2，--bench 的目录建不出来 1（见 app_window::bench_run）
             "--bench" => bench_out = Some(app_window::bench_run::out_arg_or_exit(it.next())),
             "--bench-shot" => bench_shot = it.next().map(std::path::PathBuf::from),
-            "--hz" => hz = app_window::bench_run::hz_arg_or_exit(it.next()),
+            "--hz" => {
+                hz = app_window::bench_run::hz_arg_or_exit(it.next());
+                game_hz = Some(hz.round() as u32);
+            }
+            "--query" => game_query = it.next(),
             "--snapshot" => snapshot = it.next().map(std::path::PathBuf::from),
             "--scale" => scale = it.next().and_then(|v| v.parse().ok()).unwrap_or(2.0),
             "--time" => anim_time = it.next().and_then(|v| v.parse().ok()),
@@ -387,6 +394,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("  --time <秒>    动画时钟位置（CSS @keyframes 求值到该时刻，不消耗真实时间）");
                 println!("  --settle <秒>  真实等待该时长，让 setTimeout/setInterval、延时弹层、");
                 println!("  --frames <N>   按刷新率跑 N 个与交互窗体同逻辑的帧再截图（验证动画/局部重绘）");
+                println!("  小游戏（目录里是 game.json）：按 --hz（默认 60）跑 --frames 帧，打印日志；--query \"a=1&b=2\" 给启动参数");
                 println!("  --click <x,y>  在该逻辑坐标模拟一次点击，走真实命中/冒泡/导航链路");
                 println!("  --press <x,y>  在该坐标按下并保持（验证 :active / hover-class 与过渡）");
                 println!("                 轮播自动播放跑起来（要「和真机一样」的画面时用这个）");
@@ -446,6 +454,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if app_path.is_none() {
         println!("📂 使用内置 sample-app");
+    }
+
+    // 小游戏包（game.json）走小游戏入口（app_window::game_run）；认不出的包在 MiniAppWindow::new 里报错
+    if let Some(p) = app_path.as_ref() {
+        if mini_render::app_profile::detect(p) == Ok(mini_render::app_profile::AppProfile::MiniGame) {
+            let run = app_window::game_run::GameRun {
+                frames: if frames > 0 { frames } else { 1 },
+                hz: game_hz.unwrap_or(60),
+                query: game_query.clone(),
+                evals: evals.clone(),
+            };
+            std::process::exit(app_window::game_run::run(p, run));
+        }
     }
 
     let app_label = app_path.as_ref().map(|p| p.display().to_string()).unwrap_or_else(|| "sample-app".into());
