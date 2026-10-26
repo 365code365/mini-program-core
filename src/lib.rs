@@ -22,6 +22,9 @@ pub mod assets;
 /// 示例小程序目录的定位（裸名字 / `sample/xxx` / 任意路径都能解析）
 pub mod app_dir;
 
+/// 包种类探测：小程序（app.json）还是小游戏（game.json），两者都有 / 都没有报错
+pub mod app_profile;
+
 /// `wx.request` 等网络 API 的原生实现（后台线程 + 按帧取回）
 pub mod net;
 

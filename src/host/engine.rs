@@ -241,6 +241,8 @@ impl MiniEngine {
         env: HostEnv,
         opts: EngineOptions,
     ) -> Result<Self, String> {
+        // 认不出包种类就报错（从前没有 app.json 时静默套默认配置，小游戏包会被当成空白小程序打开）
+        crate::app_profile::require_mini_program(std::path::Path::new(app_dir))?;
         for w in env.warnings(HostKind::Sdk) {
             diag::emit(&w);
         }

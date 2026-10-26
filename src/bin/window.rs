@@ -170,11 +170,10 @@ struct MiniAppWindow {
 impl MiniAppWindow {
     fn new(app_path: Option<std::path::PathBuf>, backend: compositor::BackendStatus) -> Result<Self, String> {
         // 登记小程序根目录：页面/组件加载与包内资源（图片）解析都依赖它
-        page_loader::set_app_path(
-            app_path.unwrap_or_else(|| {
-                mini_render::app_dir::default_app()
-            }),
-        );
+        let app_path = app_path.unwrap_or_else(|| mini_render::app_dir::default_app());
+        // 认不出包种类就报错，不再静默套默认配置（mini_render::app_profile）
+        mini_render::app_profile::require_mini_program(&app_path)?;
+        page_loader::set_app_path(app_path);
         
         let mut app = MiniApp::new(LOGICAL_WIDTH, LOGICAL_HEIGHT)?;
         app.init()?;
