@@ -6,10 +6,16 @@ import 'package:flutter/services.dart';
 import 'package:mini_render/mini_render.dart';
 
 import 'diag_upload.dart';
+import 'fake_map.dart';
 import 'host_apis.dart';
 import 'host_video.dart';
+import 'native_sheet.dart';
+import 'store/mini_store.dart' show StoreApp;
+import 'store/store_drawer.dart';
+import 'store/store_home.dart';
 import 'store/store_links.dart';
-import 'store/store_pages.dart';
+import 'store/store_panel.dart';
+import 'store/store_sheets.dart';
 
 /// 例子：从 Flutter 打开小程序。
 ///
@@ -39,7 +45,7 @@ class ExampleApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-        title: 'mini_render 示例',
+        title: '灵犀',
         theme: ThemeData(colorSchemeSeed: const Color(0xFF07C160), useMaterial3: true),
         // 外部链接 / navigateToMiniProgram 要在任何页面上都能推出小程序页（store/store_links.dart）
         navigatorKey: StoreLinks.navigatorKey,
@@ -104,10 +110,18 @@ class _LauncherState extends State<Launcher> {
     }
   }
 
+  /// 胶囊菜单「重新进入小程序」（本地的）：先收掉这一页，等实例销毁完再开一个新的（单实例）
+  Future<void> _relaunch(String dir) async {
+    Navigator.of(context).popUntil((r) => r.isFirst);
+    await MiniAppPage.waitAllClosed();
+    if (mounted) _open(dir);
+  }
+
   void _open(String dir, {String? dumpTo, String? route}) {
     Navigator.of(context)
         .push(PageRouteBuilder<void>(
-          pageBuilder: (_, _, _) => MiniAppPage(appDir: dir, dumpTo: dumpTo, route: route),
+          pageBuilder: (_, _, _) =>
+              MiniAppPage(appDir: dir, dumpTo: dumpTo, route: route, onRelaunch: () => _relaunch(dir)),
           transitionsBuilder: (_, a, _, child) => SlideTransition(
             position: Tween(begin: const Offset(1, 0), end: Offset.zero)
                 .animate(CurvedAnimation(parent: a, curve: Curves.easeOutCubic)),
@@ -118,44 +132,115 @@ class _LauncherState extends State<Launcher> {
         ));
   }
 
+  static const _pageBg = Color(0xFFF2F3F5);
+
+  // 高度定死 88：tools/android-jank.sh 点的 (500,400) 要落在第一行里（模拟器 420dpi 上标题栏到 y=210，
+  // 72 高的话这一行到 399 就完了，正好点空）
+  Widget _localTile(String name, String dir) => ListTile(
+        minTileHeight: 88,
+        leading: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(color: const Color(0xFF07C160), borderRadius: BorderRadius.circular(10)),
+          child: const Icon(Icons.widgets_outlined, color: Colors.white, size: 22),
+        ),
+        title: Text(name, style: const TextStyle(fontWeight: FontWeight.w500)),
+        subtitle: Text(name == '内置示例' ? 'APK 里的演示小程序 · 组件 / 宿主能力 / 性能页' : dir,
+            maxLines: 1, overflow: TextOverflow.ellipsis),
+        onTap: () => _open(dir),
+        trailing: const Icon(Icons.chevron_right, color: Colors.black26),
+      );
+
   @override
   Widget build(BuildContext context) {
+    // 外层 Scaffold 不带 AppBar：提示条（SnackBar）挂在它上面，面板展开、首页沉到底时也看得见
     return Scaffold(
-      appBar: AppBar(title: const Text('mini_render 示例'), actions: [
-        // 真机出问题、手边没 USB：日志传到 mini-store，开发机上 tools/mini-store/diag.sh 拉回来
-        IconButton(
-          tooltip: '上传诊断日志',
-          icon: const Icon(Icons.bug_report_outlined),
-          onPressed: () => DiagUpload.ask(context),
+      backgroundColor: const Color(0xFF1C1C25),
+      // 微信式下拉面板：首页滚到顶再往下拉（或点标题栏的宫格图标），露出「最近使用」「我的小程序」
+      body: PullDownDrawer(
+        panel: const MiniProgramPanel(),
+        builder: (context, scroll, physics) => Material(
+          color: _pageBg,
+          child: Column(children: [
+            AppBar(
+              backgroundColor: Colors.white,
+              surfaceTintColor: Colors.white,
+              scrolledUnderElevation: 0,
+              // 标题栏高度不变（仍是 kToolbarHeight）：下面「内置示例」那一行的位置跟以前一样
+              title: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('灵犀', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                Text('小程序引擎演示 · 下拉打开小程序面板', style: TextStyle(fontSize: 11, color: Colors.black38)),
+              ]),
+              actions: [
+                Builder(
+                  builder: (context) => IconButton(
+                    tooltip: '小程序面板',
+                    icon: const Icon(Icons.apps_rounded),
+                    onPressed: () => PullDownDrawer.of(context)?.open(),
+                  ),
+                ),
+                // 真机出问题、手边没 USB：日志传到 mini-store，开发机上 tools/mini-store/diag.sh 拉回来
+                IconButton(
+                  tooltip: '上传诊断日志',
+                  icon: const Icon(Icons.bug_report_outlined),
+                  onPressed: () => DiagUpload.ask(context),
+                ),
+              ],
+            ),
+            Expanded(
+              // 本地的在最上面、紧贴标题栏：tools/android-jank.sh 等脚本点 (500,400) 打开「内置示例」，别把它挤下去
+              child: ListView(controller: scroll, physics: physics, padding: const EdgeInsets.only(bottom: 24), children: [
+                Material(
+                  color: Colors.white,
+                  child: Column(children: [
+                    if (_status.isNotEmpty) ListTile(title: Text(_status)),
+                    for (final (name, dir) in _apps) _localTile(name, dir),
+                  ]),
+                ),
+                const SizedBox(height: 12),
+                // 服务器上的小程序（tools/mini-store），点开即下载
+                const StoreSection(),
+                // 与原生示例入口页同一行（右上角的虫子图标是同一个功能，不显眼，这里再放一行）
+                HomeCard(
+                  padding: EdgeInsets.zero,
+                  child: ListTile(
+                    leading: const Icon(Icons.bug_report_outlined),
+                    title: const Text('上传诊断日志'),
+                    subtitle: const Text('把运行日志、机型与版本传到服务器，交给开发分析'),
+                    onTap: () => DiagUpload.ask(context),
+                  ),
+                ),
+              ]),
+            ),
+          ]),
         ),
-      ]),
-      // 本地的在最上面：tools/android-jank.sh 等脚本点 (500,400) 打开「内置示例」，别把它挤下去
-      body: ListView(children: [
-        if (_status.isNotEmpty) ListTile(title: Text(_status)),
-        for (final (name, dir) in _apps)
-          ListTile(title: Text(name), subtitle: Text(dir), onTap: () => _open(dir), trailing: const Icon(Icons.chevron_right)),
-        // 服务器上的小程序（tools/mini-store），点开即下载
-        const StoreSection(),
-        // 与原生示例入口页同一行（右上角的虫子图标是同一个功能，不显眼，这里再放一行）
-        const Divider(height: 32),
-        ListTile(
-          leading: const Icon(Icons.bug_report_outlined),
-          title: const Text('上传诊断日志'),
-          subtitle: const Text('把运行日志、机型与版本传到服务器，交给开发分析'),
-          onTap: () => DiagUpload.ask(context),
-        ),
-      ]),
+      ),
     );
   }
 }
 
 /// 一个小程序页：导航栏、返回键、原生组件、宿主能力都接上
 class MiniAppPage extends StatefulWidget {
-  const MiniAppPage({super.key, required this.appDir, this.dumpTo, this.route, this.launchOptions, this.onReady});
+  const MiniAppPage({
+    super.key,
+    required this.appDir,
+    this.dumpTo,
+    this.route,
+    this.launchOptions,
+    this.onReady,
+    this.storeApp,
+    this.onRelaunch,
+  });
 
   final String appDir;
   final String? dumpTo;
   final String? route;
+
+  /// 商店里的小程序（胶囊菜单的转发 / 收藏要用）；本地的（内置示例）为空
+  final StoreApp? storeApp;
+
+  /// 胶囊菜单「重新进入小程序」：由打开它的那一页重建（单实例，得先关后开）
+  final VoidCallback? onRelaunch;
 
   /// 启动参数（外部链接 / 别的小程序打开时）：`App.onLaunch(options)`、`wx.getLaunchOptionsSync()` 读它
   final Map<String, Object?>? launchOptions;
@@ -269,12 +354,87 @@ class _MiniPageState extends State<MiniAppPage> {
     }
   }
 
-  /// 胶囊的「•••」：查看关于。SDK 只留了口子（`onMenu`），展示什么由宿主定；
-  /// 示例弹一个关于框（信息来自引擎的 `app` 事件，见 `controller.about`）。
+  /// 胶囊的「•••」：SDK 只留了口子（`onMenu`），展示什么由宿主定。示例照微信弹底部菜单
+  /// （store/store_sheets.dart）：顶上小程序名（点了看关于）、转发 / 收藏、重新进入 / 诊断日志 / 关于。
   /// 「⊙」不用接：`onExit` 不给时默认关掉整个小程序页面，回到打开小程序的那一页
-  void _showAbout() {
+  Future<void> _showMenu() async {
     if (!mounted) return;
     final a = _c.about.value;
+    final app = widget.storeApp;
+    final store = StoreLinks.store;
+    final fav = app != null && await store.isFavorite(app.id);
+    if (!mounted) return;
+    final name = app?.name ?? (a?.name.isNotEmpty == true ? a!.name : '内置示例');
+    final top = [
+      CapsuleMenuItem(Icons.share_outlined, '转发给朋友', () => copyMiniLink(context, app!, route: _c.page.value?.route),
+          enabled: app != null, id: 'share', glyph: '↗'),
+      CapsuleMenuItem(fav ? Icons.star_rounded : Icons.star_outline_rounded, fav ? '取消收藏' : '添加到\n我的小程序', () async {
+        final now = await store.toggleFavorite(app!);
+        _toast(now ? '已添加到「我的小程序」，首页下拉可见' : '已从「我的小程序」移除');
+      }, enabled: app != null, active: fav, id: 'favorite', glyph: fav ? '★' : '☆'),
+    ];
+    final bottom = [
+      CapsuleMenuItem(Icons.refresh_rounded, '重新进入\n小程序', () => widget.onRelaunch?.call(),
+          enabled: widget.onRelaunch != null, id: 'relaunch', glyph: '↻'),
+      CapsuleMenuItem(Icons.bug_report_outlined, '上传\n诊断日志', _uploadDiag, id: 'diag', glyph: '⚑'),
+      CapsuleMenuItem(Icons.info_outline_rounded, '关于', _showAbout, id: 'about', glyph: 'ⓘ'),
+    ];
+    final iconUrl = app == null ? '' : store.iconUrlOf(app);
+    final subtitle = app == null ? '本地小程序' : 'v${app.version}';
+    // Android：原生窗口画（盖在平台视图上的 Flutter 弹层每帧 22~42ms，见 native_sheet.dart）
+    if (NativeSheet.available) {
+      try {
+        final picked = await NativeSheet.capsule(
+            id: app?.id ?? 'demo', name: name, iconUrl: iconUrl, subtitle: subtitle, top: top, bottom: bottom);
+        if (!mounted || picked == null) return;
+        if (picked == 'header') return _showAbout();
+        [...top, ...bottom].where((it) => it.id == picked).firstOrNull?.onTap();
+        return;
+      } on MissingPluginException {
+        // 通道不在（宿主没接）：退回 Flutter 画的那份
+      }
+    }
+    if (!mounted) return;
+    await showCapsuleMenu(context,
+        id: app?.id ?? 'demo', name: name, iconUrl: iconUrl, subtitle: subtitle, onHeader: _showAbout, top: top, bottom: bottom);
+  }
+
+  /// 小程序页上的提示：Android 用系统 Toast（理由同上），别的平台用 SnackBar
+  void _toast(String text) {
+    if (NativeSheet.available) {
+      NativeSheet.toast(text).catchError((_) {});
+      return;
+    }
+    ScaffoldMessenger.maybeOf(context)
+      ?..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(behavior: SnackBarBehavior.floating, duration: const Duration(milliseconds: 1600), content: Text(text)));
+  }
+
+  void _uploadDiag() {
+    final a = _c.about.value;
+    final b = _c.activeBackend.value;
+    DiagUpload.ask(context, backend: b == null ? null : '$b', app: {
+      'dir': widget.appDir,
+      'appId': a?.appId ?? StoreLinks.currentAppId,
+      'name': a?.name,
+      'route': _c.page.value?.route,
+    });
+  }
+
+  /// 关于框（信息来自引擎的 `app` 事件，见 `controller.about`）
+  Future<void> _showAbout() async {
+    if (!mounted) return;
+    final a = _c.about.value;
+    if (NativeSheet.available) {
+      try {
+        final i = await NativeSheet.alert(a?.dialogTitle ?? '关于小程序', a?.dialogMessage ?? '小程序还在加载', const ['上传诊断日志', '确定']);
+        if (i == 0 && mounted) _uploadDiag();
+        return;
+      } on MissingPluginException {
+        // 退回 Flutter 的对话框
+      }
+    }
+    if (!mounted) return;
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -285,13 +445,7 @@ class _MiniPageState extends State<MiniAppPage> {
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              final b = _c.activeBackend.value;
-              DiagUpload.ask(context, backend: b == null ? null : '$b', app: {
-                'dir': widget.appDir,
-                'appId': a?.appId ?? StoreLinks.currentAppId,
-                'name': a?.name,
-                'route': _c.page.value?.route,
-              });
+              _uploadDiag();
             },
             child: const Text('上传诊断日志'),
           ),
@@ -312,7 +466,7 @@ class _MiniPageState extends State<MiniAppPage> {
   Widget build(BuildContext context) {
     return MiniProgramScaffold(
       controller: _c,
-      onMenu: _showAbout,
+      onMenu: _showMenu,
       nativeViewBuilder: (context, view, c) {
         switch (view.tag) {
           // 只有 iOS（或 sameLayerVideo: false）走到这里：video_player 出画面（系统硬解），
@@ -321,66 +475,10 @@ class _MiniPageState extends State<MiniAppPage> {
             return HostVideo(view: view, controller: c);
           // 真实 App 在这里放 google_maps_flutter / 高德；示例画一张网格和一个标记
           case 'map':
-            return _FakeMap(view: view, controller: c);
+            return FakeMap(view: view, controller: c);
         }
         return null;
       },
     );
   }
-}
-
-/// 假地图：按 latitude / longitude 属性画一张网格，中间一个标记；点标记回传 markertap {markerId}
-class _FakeMap extends StatelessWidget {
-  const _FakeMap({required this.view, required this.controller});
-
-  final MiniNativeView view;
-  final MiniProgramController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    final lat = double.tryParse(view.attrs['latitude'] ?? '') ?? 0;
-    final lng = double.tryParse(view.attrs['longitude'] ?? '') ?? 0;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(6),
-      child: Stack(children: [
-        Positioned.fill(child: CustomPaint(painter: _GridPainter())),
-        Center(
-          child: GestureDetector(
-            onTap: () => controller.sendNativeViewEvent(view.key, 'markertap', {'markerId': 1}),
-            child: const Icon(Icons.location_on, color: Color(0xFFE64340), size: 40),
-          ),
-        ),
-        Positioned(
-          left: 8,
-          bottom: 6,
-          child: Text('宿主原生 map（假地图） ${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}',
-              style: const TextStyle(color: Colors.black54, fontSize: 11)),
-        ),
-      ]),
-    );
-  }
-}
-
-class _GridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawRect(Offset.zero & size, Paint()..color = const Color(0xFFE8EEF5));
-    final line = Paint()
-      ..color = const Color(0xFFCAD6E3)
-      ..strokeWidth = 1;
-    for (double x = 0; x < size.width; x += 24) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), line);
-    }
-    for (double y = 0; y < size.height; y += 24) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), line);
-    }
-    final road = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 8;
-    canvas.drawLine(Offset(0, size.height * 0.62), Offset(size.width, size.height * 0.38), road);
-    canvas.drawLine(Offset(size.width * 0.3, 0), Offset(size.width * 0.45, size.height), road);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

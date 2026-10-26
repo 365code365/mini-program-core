@@ -18,6 +18,8 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         initial = linkOf(intent)
+        // 小程序页上的弹层用原生窗口画（理由见 NativeSheet.kt）
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "mini_render_example/sheet").setMethodCallHandler(NativeSheet(this))
         links = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "mini_render_example/links").apply {
             setMethodCallHandler { call, result ->
                 when (call.method) {

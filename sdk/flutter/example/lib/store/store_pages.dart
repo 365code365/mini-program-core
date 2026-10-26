@@ -1,4 +1,4 @@
-// 商店的界面：入口页里的「小程序」宫格（像微信下拉出来的那排圆图标）+ 点开后的 loading 页。
+// 商店的界面零件：圆形图标 + 点开后的 loading 页（入口页的宫格在 store_home.dart，下拉面板在 store_panel.dart）。
 //
 // loading 页的流程与微信一致：先盖一层「图标 + 名字 + 三个跳动的点」，后面同时下载、解包、建引擎；
 // 引擎的第一条 page 事件到了才把这层淡出 —— 冷启动加载字体那几百毫秒也在 loading 底下，不露白屏。
@@ -7,8 +7,6 @@ import 'package:flutter/material.dart';
 import '../main.dart' show MiniAppPage;
 import 'mini_store.dart';
 import 'store_links.dart';
-import 'store_search.dart';
-export 'store_search.dart' show StoreChip;
 
 const _iconColors = [
   Color(0xFF07C160), Color(0xFF10AEFF), Color(0xFFFA9D3B), Color(0xFFE64340),
@@ -58,166 +56,6 @@ class StoreAppIcon extends StatelessWidget {
       decoration: BoxDecoration(color: _iconColors[_hash(id) % _iconColors.length], shape: BoxShape.circle),
       child: Text(ch, style: TextStyle(color: Colors.white, fontSize: size * 0.42, fontWeight: FontWeight.w600)),
     );
-  }
-}
-
-/// 入口页里的一段：服务器上的小程序，四列宫格
-class StoreSection extends StatefulWidget {
-  const StoreSection({super.key});
-
-  @override
-  State<StoreSection> createState() => _StoreSectionState();
-}
-
-class _StoreSectionState extends State<StoreSection> {
-  final _store = StoreLinks.store;
-  StoreList? _list;
-  List<StoreApp> _recent = const [];
-  bool _loading = false;
-
-  static const _catOrder = ['美食', '购物', '出行', '生活服务', '医疗健康', '金融', '工具', '教育', '娱乐', '资讯', '政务', '其他'];
-
-  @override
-  void initState() {
-    super.initState();
-    _refresh();
-  }
-
-  Future<void> _refresh() async {
-    setState(() => _loading = true);
-    final l = await _store.list();
-    final r = await _store.recent();
-    if (!mounted) return;
-    setState(() {
-      _list = l;
-      _recent = r;
-      _loading = false;
-    });
-  }
-
-  Future<void> _reloadRecent() async {
-    final r = await _store.recent();
-    if (mounted) setState(() => _recent = r);
-  }
-
-  // 场景值 1001：发现栏小程序主入口（微信「小程序」列表点进去就是它）
-  void _open(StoreApp app) {
-    StoreLinks.open(StoreLink(key: app.key, scene: 1001), hint: app);
-    Future.delayed(const Duration(milliseconds: 400), _reloadRecent);
-  }
-
-  Future<void> _search({String category = ''}) async {
-    await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => StoreSearchPage(category: category)));
-    _reloadRecent();
-  }
-
-  Widget _cell(StoreApp app) => Semantics(
-        button: true,
-        label: '打开小程序 ${app.name}',
-        child: InkWell(
-          borderRadius: BorderRadius.circular(8),
-          onTap: () => _open(app),
-          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            StoreAppIcon.of(app, size: 52),
-            const SizedBox(height: 8),
-            Text(app.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
-          ]),
-        ),
-      );
-
-  Widget _title(String t, {Widget? trailing}) => Padding(
-        padding: const EdgeInsets.fromLTRB(16, 18, 8, 6),
-        child: Row(children: [
-          Expanded(child: Text(t, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600))),
-          ?trailing,
-        ]),
-      );
-
-  @override
-  Widget build(BuildContext context) {
-    final l = _list;
-    final sub = Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.black45);
-    final counts = <String, int>{};
-    for (final a in l?.apps ?? const <StoreApp>[]) {
-      final c = a.category.isEmpty ? '其他' : a.category;
-      counts[c] = (counts[c] ?? 0) + 1;
-    }
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      const Padding(
-        padding: EdgeInsets.fromLTRB(16, 20, 16, 10),
-        child: Text('小程序', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
-      ),
-      // 假搜索框：点了进搜索页（微信也是这样，入口页上不直接输入）
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Semantics(
-          button: true,
-          label: '搜索小程序',
-          child: InkWell(
-            borderRadius: BorderRadius.circular(8),
-            onTap: _search,
-            child: Ink(
-              height: 38,
-              decoration: BoxDecoration(color: const Color(0xFFEDEDED), borderRadius: BorderRadius.circular(8)),
-              child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                Icon(Icons.search, size: 18, color: Colors.black38),
-                SizedBox(width: 6),
-                Text('搜索小程序', style: TextStyle(fontSize: 15, color: Colors.black38)),
-              ]),
-            ),
-          ),
-        ),
-      ),
-      if (_recent.isNotEmpty) ...[
-        _title('最近使用'),
-        SizedBox(
-          height: 92,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            children: [for (final a in _recent) SizedBox(width: (MediaQuery.sizeOf(context).width - 16) / 4, child: _cell(a))],
-          ),
-        ),
-      ],
-      if (counts.isNotEmpty) ...[
-        _title('分类'),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Wrap(spacing: 8, runSpacing: 8, children: [
-            for (final c in _catOrder)
-              if ((counts[c] ?? 0) > 0) StoreChip(label: '$c ${counts[c]}', onTap: () => _search(category: c)),
-          ]),
-        ),
-      ],
-      _title('全部小程序',
-          trailing: _loading
-              ? const Padding(
-                  padding: EdgeInsets.all(12),
-                  child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)))
-              : IconButton(tooltip: '刷新列表', icon: const Icon(Icons.refresh), onPressed: _refresh)),
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Text(
-          l == null
-              ? '正在连接 $kMiniStoreUrl …'
-              : l.offline
-                  ? '服务器连不上，显示上次的列表（${l.error}）'
-                  : '来自 $kMiniStoreUrl',
-          style: sub,
-        ),
-      ),
-      if (l != null && l.apps.isEmpty)
-        const Padding(padding: EdgeInsets.all(16), child: Text('服务器上还没有小程序')),
-      if (l != null && l.apps.isNotEmpty)
-        GridView.count(
-          crossAxisCount: 4,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(8, 12, 8, 8),
-          childAspectRatio: 0.8,
-          children: [for (final app in l.apps) _cell(app)],
-        ),
-    ]);
   }
 }
 
@@ -314,6 +152,9 @@ class _LaunchState extends State<MiniStoreLaunchPage> {
           appDir: _dir!,
           route: widget.link.route,
           launchOptions: widget.link.launchOptions,
+          storeApp: _app,
+          // 胶囊菜单「重新进入小程序」：与从列表点开同一条路（先收掉这一页，新的 loading 页等旧实例销毁完）
+          onRelaunch: () => StoreLinks.open(widget.link, hint: _app),
           onReady: () => mounted ? setState(() => _ready = true) : null,
         ),
       // 淡出之后整层拿掉：留在树里的话三个点的动画每帧都让 Flutter 出一帧，小程序滑起来就多一份主线程负担

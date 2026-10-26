@@ -14,7 +14,7 @@ android {
         minSdk = 24
         targetSdk = 35
         versionCode = 1
-        versionName = "0.1.0"
+        versionName = "1.0.0"
         // 真机与 Apple 芯片上的模拟器都是 arm64；三个 ABI 全打进去 APK 要大一百多 MB，装包也慢
         ndk { abiFilters += listOf("arm64-v8a") }
     }

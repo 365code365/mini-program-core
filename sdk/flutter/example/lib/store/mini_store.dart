@@ -13,6 +13,7 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart' show ValueNotifier;
 import 'package:mini_render/mini_render.dart';
 
 /// 服务地址：`flutter build apk --dart-define=MINI_STORE=http://host:port` 换
@@ -213,19 +214,54 @@ class MiniStore {
     }
   }
 
-  Future<void> _saveLocal(Map<String, dynamic> m) async =>
-      File('${await _rootDir()}/store_local.json').writeAsString(jsonEncode(m));
+  /// 本机记录（最近使用 / 我的小程序 / 搜索历史）每改一次 +1：入口页、下拉面板、胶囊菜单各自听它刷新，
+  /// 在一处收藏 / 删除，另几处不用等下次进页面才变
+  final localChanges = ValueNotifier<int>(0);
 
-  Future<List<StoreApp>> recent() async => [
-        for (final j in ((await _localState())['recent'] as List? ?? const []).cast<Map<String, dynamic>>())
-          StoreApp.fromJson(j),
-      ];
+  Future<void> _saveLocal(Map<String, dynamic> m) async {
+    await File('${await _rootDir()}/store_local.json').writeAsString(jsonEncode(m));
+    localChanges.value++;
+  }
+
+  static List<StoreApp> _apps(Object? list) =>
+      [for (final j in ((list as List?) ?? const []).cast<Map<String, dynamic>>()) StoreApp.fromJson(j)];
+
+  Future<List<StoreApp>> recent() async => _apps((await _localState())['recent']);
 
   Future<void> touch(StoreApp app) async {
     final m = await _localState();
-    final list = [app, ...(await recent()).where((a) => a.id != app.id)].take(maxRecent);
+    final list = [app, ..._apps(m['recent']).where((a) => a.id != app.id)].take(maxRecent);
     m['recent'] = [for (final a in list) a.toJson()];
+    // 收藏里存的是收藏那一刻的版本：打开时顺手换成最新的（名字 / 图标改了，面板上跟着变）
+    final fav = _apps(m['favorites']);
+    final i = fav.indexWhere((a) => a.id == app.id);
+    if (i >= 0) m['favorites'] = [for (final a in (fav..[i] = app)) a.toJson()];
     await _saveLocal(m);
+  }
+
+  /// 从「最近使用」里删掉（长按 → 删除）；收藏不受影响
+  Future<void> removeRecent(String id) async {
+    final m = await _localState();
+    m['recent'] = [for (final a in _apps(m['recent']).where((a) => a.id != id)) a.toJson()];
+    await _saveLocal(m);
+  }
+
+  // ── 我的小程序（收藏）：后收藏的排前面，与微信下拉面板一致 ──
+  static const maxFavorites = 50;
+
+  Future<List<StoreApp>> favorites() async => _apps((await _localState())['favorites']);
+
+  Future<bool> isFavorite(String id) async => (await favorites()).any((a) => a.id == id);
+
+  /// 收藏 / 取消收藏；返回之后的状态（true = 已在「我的小程序」里）
+  Future<bool> toggleFavorite(StoreApp app) async {
+    final m = await _localState();
+    final fav = _apps(m['favorites']);
+    final had = fav.any((a) => a.id == app.id);
+    final next = had ? fav.where((a) => a.id != app.id) : [app, ...fav].take(maxFavorites);
+    m['favorites'] = [for (final a in next) a.toJson()];
+    await _saveLocal(m);
+    return !had;
   }
 
   Future<List<String>> history() async => [for (final w in ((await _localState())['history'] as List? ?? const [])) '$w'];

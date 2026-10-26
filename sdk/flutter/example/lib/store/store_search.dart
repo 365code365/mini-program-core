@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'mini_store.dart';
 import 'store_links.dart';
 import 'store_pages.dart' show StoreAppIcon;
+import 'store_sheets.dart' show showAppActions;
 
 const _green = Color(0xFF07C160);
 
@@ -313,6 +314,8 @@ class _StoreSearchState extends State<StoreSearchPage> {
       for (final a in _results)
         InkWell(
           onTap: () => _open(a),
+          // 长按：收藏到「我的小程序」（与入口页、下拉面板同一张操作单）
+          onLongPress: () => showAppActions(context, a, scene: 1005),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(children: [

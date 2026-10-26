@@ -29,6 +29,10 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
+    // 只打 arm64（真机与 Apple 芯片上的模拟器都是它；构建用 `flutter build apk --target-platform android-arm64`）：
+    // 插件的 jniLibs 里三个 ABI 的引擎库各 40MB 上下，全打进去 APK 是 180MB。defaultConfig 的 abiFilters
+    // 会被 Flutter 的 Gradle 插件按 --target-platform 改写，挡不住插件带来的另外两份，所以在打包这一步排除
+    packaging { jniLibs { excludes += listOf("lib/armeabi-v7a/**", "lib/x86_64/**", "lib/x86/**") } }
 
     buildTypes {
         release {

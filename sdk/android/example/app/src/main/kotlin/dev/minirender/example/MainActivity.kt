@@ -48,6 +48,15 @@ class MainActivity : Activity() {
     private var dumpPending = false
     private var geomLogged = false
 
+    /** 当前（或正在打开）的商店链接：「重新进入小程序」照它再开一次；内置示例为空 */
+    private var currentLink: StoreLink? = null
+
+    /** 当前打开着的商店小程序（胶囊菜单的转发 / 收藏要用）；内置示例为空 */
+    internal var currentStoreApp: MiniStore.App? = null
+
+    /** 当前页面路由（page 事件带的），转发链接带上它 */
+    internal var currentRoute: String? = null
+
     /** 商店点开时的 loading 层（第一条 page 事件到了收起） */
     private var cover: StoreViews.LoadingCover? = null
 
@@ -60,7 +69,7 @@ class MainActivity : Activity() {
         dumpPending = intent.getBooleanExtra("dump", false)
         val hint = intent.getStringExtra(EXTRA_STORE_APP)?.let { MiniStore.App.fromJson(JSONObject(it)) }
         val link = intent.getStringExtra(EXTRA_LINK)?.let { StoreLink.fromJson(it) }
-            ?: hint?.let { StoreLink(it.key, scene = 1001) }   // 1001：小程序列表点进来
+            ?: hint?.let { StoreLink(it.key, scene = intent.getIntExtra(EXTRA_SCENE, 1001)) }   // 1001：小程序列表点进来
         if (link == null) {
             // 内置示例：验收脚本都走这条（`am start -n …/.MainActivity [--es route …]`）
             mini.open(DemoAssets.unpack(this), intent.getStringExtra("route"))
@@ -80,15 +89,8 @@ class MainActivity : Activity() {
         hostApis.putAll(DemoHostApis(this@MainActivity, ::navigateToMiniProgram).all)
         // 宿主承载的 <map>：同层渲染（宿主画、引擎画进页面），滑动时跟页面在同一张图里走
         sameLayerViews["map"] = { DemoMapView() }
-        // 胶囊「•••」：关于 + 上传诊断日志（出问题时就在小程序里，不用退出去找入口）
-        onAbout = { a ->
-            android.app.AlertDialog.Builder(this@MainActivity)
-                .setTitle(a.dialogTitle)
-                .setMessage(a.dialogMessage)
-                .setNeutralButton("上传诊断日志") { _, _ -> uploadDiag() }
-                .setPositiveButton("确定", null)
-                .show()
-        }
+        // 胶囊「•••」：微信式底部菜单（转发、收藏 / 重新进入、上传诊断日志、关于），见 MenuSheet.kt
+        onAbout = { a -> showCapsuleMenu(a) }
         onEvent = { ev ->
             Log.i(TAG, "[事件] " + summarize(ev))
             when (ev.optString("type")) {
@@ -104,10 +106,12 @@ class MainActivity : Activity() {
      */
     private fun openStore(link: StoreLink, hint: MiniStore.App? = null) {
         val gen = ++generation
+        currentLink = link
         if (opened) {
             // close 返回时旧引擎已经放手 Surface；实例在它的线程上销毁，新视图的引擎建之前会等它（不会撞上「单实例」）
             opened = false
             currentAppId = ""
+            currentStoreApp = null
             mini.close()
             root.removeView(mini)
             mini = newMiniView()
@@ -136,6 +140,7 @@ class MainActivity : Activity() {
                     val why = p.stale?.let { "连不上服务器，用本地版（${it.message}）" } ?: if (p.updated) "已更新" else "已是最新"
                     Log.i(TAG, "[商店] 打开 ${p.app.id} ${p.app.appId} v${p.app.version} $why → ${p.dir} 起始页 ${link.route ?: "首页"}")
                     currentAppId = p.app.appId
+                    currentStoreApp = p.app
                     currentApp = JSONObject(p.app.toJson()).put("route", link.route ?: JSONObject.NULL)
                         .put("stale", p.stale?.message ?: JSONObject.NULL)
                     c.identity(p.app.id, p.app.name)
@@ -154,7 +159,17 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun uploadDiag() {
+    /** 胶囊菜单「重新进入小程序」：商店的走 [openStore]（先关后开）；内置示例同样换一个新视图再开 */
+    internal fun relaunch() {
+        currentLink?.let { return openStore(it, currentStoreApp) }
+        mini.close()
+        root.removeView(mini)
+        mini = newMiniView()
+        root.addView(mini, 0)
+        mini.open(DemoAssets.unpack(this), intent.getStringExtra("route"))
+    }
+
+    internal fun uploadDiag() {
         val backend = "${if (mini.activeBackend == dev.minirender.MiniEngine.BACKEND_GPU) "gpu" else "cpu"}：${mini.backendReason}"
         DiagUpload.ask(this, intent.getStringExtra(EXTRA_STORE_URL) ?: MiniStore.DEFAULT_URL, currentApp, backend)
     }
@@ -188,6 +203,7 @@ class MainActivity : Activity() {
                 main.postDelayed(::dump, 2000)
             }
             val title = e.optJSONObject("window")?.optString("navigationBarTitleText")
+            currentRoute = e.optString("route").ifEmpty { null }
             return "page ${e.optString("route")} depth=${e.optInt("depth")} title=$title"
         }
         val copy = JSONObject(e.toString()).apply { remove("type") }
@@ -242,6 +258,8 @@ class MainActivity : Activity() {
         /** [StoreActivity] 点开的小程序（[MiniStore.App.toJson]）；不给就打开内置示例 */
         const val EXTRA_STORE_APP = "storeApp"
         const val EXTRA_STORE_URL = "storeUrl"
+        /** 打开它的入口（微信场景值）：1001 列表、1005 搜索、1089 下拉最近使用、1104 下拉我的小程序 */
+        const val EXTRA_SCENE = "scene"
         /** 入口页「诊断日志」开关存在这里（[StoreActivity.diagRow]） */
         const val PREFS = "example"
         const val PREF_DIAG = "diag"

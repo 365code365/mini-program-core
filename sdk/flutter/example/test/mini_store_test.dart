@@ -79,6 +79,34 @@ void main() {
     await files.delete(recursive: true);
   });
 
+  test('本机记录：收藏 / 取消收藏、删最近使用不动收藏、打开时收藏跟着换成新版信息、每次改动都通知', () async {
+    final store = MiniStore(baseUrl: url);
+    final apps = (await store.list()).apps;
+    final good = apps.firstWhere((a) => a.id == 'good');
+    final evil = apps.firstWhere((a) => a.id == 'evil');
+    var changes = 0;
+    store.localChanges.addListener(() => changes++);
+
+    await store.touch(good);
+    await store.touch(evil);
+    expect((await store.recent()).map((a) => a.id), ['evil', 'good']);
+
+    expect(await store.toggleFavorite(good), isTrue);
+    expect(await store.toggleFavorite(evil), isTrue);
+    expect((await store.favorites()).map((a) => a.id), ['evil', 'good'], reason: '后收藏的在前');
+    expect(await store.toggleFavorite(evil), isFalse);
+    expect(await store.isFavorite('evil'), isFalse);
+
+    await store.removeRecent('good');
+    expect((await store.recent()).map((a) => a.id), ['evil']);
+    expect(await store.isFavorite('good'), isTrue, reason: '删最近使用不该动收藏');
+
+    final renamed = StoreApp.fromJson({...good.toJson(), 'name': '新名字', 'version': 9});
+    await store.touch(renamed);
+    expect((await store.favorites()).single.name, '新名字');
+    expect(changes, 7);
+  });
+
   test('列表：非法 id 被滤掉，带 AppID', () async {
     final l = await MiniStore(baseUrl: url).list();
     expect(l.offline, isFalse);

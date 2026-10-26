@@ -18,11 +18,15 @@ object StoreWidgets {
     const val GRAY_BG = 0xFFF7F7F7.toInt()
     const val SUB = 0x8A000000.toInt()
 
-    /** 打开一个商店小程序：记进「最近使用」，起 [MainActivity]（微信是从下往上推出来的） */
-    fun open(a: Activity, store: MiniStore, app: MiniStore.App) {
+    /**
+     * 打开一个商店小程序：记进「最近使用」，起 [MainActivity]（微信是从下往上推出来的）。
+     * [scene]：微信的场景值 —— 1001 小程序列表、1005 搜索、1089 下拉「最近使用」、1104 下拉「我的小程序」
+     */
+    fun open(a: Activity, store: MiniStore, app: MiniStore.App, scene: Int = 1001) {
         StoreLocal(a).touch(app)
         a.startActivity(Intent(a, MainActivity::class.java)
             .putExtra(MainActivity.EXTRA_STORE_APP, app.toJson())
+            .putExtra(MainActivity.EXTRA_SCENE, scene)
             .putExtra(MainActivity.EXTRA_STORE_URL, store.baseUrl))
         @Suppress("DEPRECATION")
         a.overridePendingTransition(R.anim.store_slide_up, 0)
@@ -95,7 +99,9 @@ object StoreWidgets {
             visibility = if (app.description.isEmpty()) View.GONE else View.VISIBLE
         })
         addView(col, LinearLayout.LayoutParams(0, -2, 1f))
-        setOnClickListener { open(a, store, app) }
+        setOnClickListener { open(a, store, app, 1005) }
+        // 长按：收藏到「我的小程序」（与入口页、下拉面板同一张操作单）
+        setOnLongClickListener { StoreSheets.appActions(a, store, app, 1005); true }
     }
 
     /** 名称里出现的关键词标绿（微信搜索结果就是这样）；每段关键词各标一次 */
