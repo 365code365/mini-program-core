@@ -200,6 +200,24 @@
                 __currentPage = __pageStack[__pageStack.length - 1] || null;
             }
 
+            // 分栏（host/engine_frameset_focus.rs）：活页面换成栈顶往下第 `below` 页（0 = 栈顶）。
+            // 页面栈不动、不派 onShow / onHide —— 两栏的页面一直都在屏上，只是事件与 setData 改认这一页
+            function __framesetFocus(below) {
+                var p = __pageStack[__pageStack.length - 1 - (below || 0)];
+                if (p) __currentPage = p;
+                return !!p;
+            }
+            // 分栏：左栏（活页面）navigateTo 之前关掉右栏那页（栈顶）。之后新页进右栏
+            function __framesetDropTop() {
+                if (__pageStack.length < 2) return false;
+                var gone = __pageStack.pop();
+                if (gone && typeof gone.onUnload === 'function') {
+                    try { gone.onUnload(); } catch (e) { __native_print('[Page.onUnload] ' + e.message); }
+                }
+                __currentPage = __pageStack[__pageStack.length - 1] || null;
+                return true;
+            }
+
             function __popPage(delta, byApi) {
                 delta = delta || 1;
                 for (var i = 0; i < delta && __pageStack.length > 1; i++) {

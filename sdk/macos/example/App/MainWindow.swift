@@ -23,10 +23,11 @@ final class MainWindowController: NSWindowController {
         w.titleVisibility = .hidden
         w.title = "灵犀"
         w.minSize = NSSize(width: 820, height: 560)
-        w.setFrameAutosaveName("main")
+        // 每次打开都居中（从前按 autosave 恢复上次的位置：拖到副屏 / 屏边上之后再开就不在正中）
+        w.isRestorable = false
         super.init(window: w)
         build()
-        if w.frame.origin == .zero { w.center() }
+        w.center()
         NotificationCenter.default.addObserver(self, selector: #selector(localChanged), name: StoreLocal.changed, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(appsArrived), name: Self.appsChanged, object: nil)
         refreshApps()

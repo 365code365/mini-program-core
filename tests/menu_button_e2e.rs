@@ -218,10 +218,8 @@ fn 改前景色之后换配色() {
     let mut e = engine(&root, true);
     assert_eq!(px(&mut e, DOT_AT.0, DOT_AT.1), (0, 0, 0));
     e.eval("wx.setNavigationBarColor({frontColor:'#ffffff', backgroundColor:'#07c160'})").unwrap();
-    // 这条事件在帧末尾才收到：这一帧要报「还要一帧」，下一帧换成白点
+    // 导航栏改动在画之前就收进来（engine_frame.rs `take_nav_updates`）：同一帧就换成白点，不用再续一帧
     let f = e.pump_ex(300);
-    assert!(f & WANTS_MORE != 0, "改了前景色要续一帧（flags {f}）");
-    e.pump_ex(316);
     assert_eq!(px(&mut e, DOT_AT.0, DOT_AT.1), (255, 255, 255));
-    assert!(e.pump_ex(332) & WANTS_MORE == 0, "换完了就别再要帧");
+    assert!(f & WANTS_MORE == 0, "换完了就别再要帧（flags {f}）");
 }

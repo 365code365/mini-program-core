@@ -44,10 +44,14 @@ pub struct Frameset {
     pub total_width: u32,
     /// 另一栏的图（整栏，0xRRGGBB）；None = 还没画 / 不分栏
     pub side: Option<PageShot>,
+    /// 栈顶两页对调着：左栏那页是活页面、右栏那页留成图（engine_frameset_focus.rs）
+    pub swapped: bool,
+    /// 正在临时换上来画另一栏（[`MiniEngine::repaint_side`]）：Some(那一栏在左)。胶囊只画在右栏
+    pub painting_left: Option<bool>,
     /// 另一栏那页滚了：下一次 pump 按新位置重画（一帧最多一次，滚轮再密也不会每个事件画两页）
     pub stale: bool,
-    /// 上一次报给宿主的 (on, 活页面在左栏, 一栏宽)
-    pub reported: Option<(bool, bool, u32)>,
+    /// 上一次报给宿主的 (on, 活页面在左栏, 一栏宽, 另一栏有页面)
+    pub reported: Option<(bool, bool, u32, bool)>,
 }
 
 impl Frameset {
@@ -78,36 +82,103 @@ pub fn mode_from(opts: &serde_json::Value, app_json: &serde_json::Value) -> Opti
 }
 
 impl MiniEngine {
-    /// 活页面在左栏（栈上只有一页）
+    /// 活页面在左栏：栈上只有一页，或者点了左栏把栈顶两页对调了（engine_frameset_focus.rs）
     pub fn frameset_live_left(&self) -> bool {
-        self.page_stack.len() <= 1
+        self.page_stack.len() <= 1 || self.frameset.swapped
+    }
+
+    /// 另一栏显示的是一页（栈上两页以上），不是占位
+    fn side_has_page(&self) -> bool {
+        self.page_stack.len() >= 2
     }
 
     pub fn frameset_active(&self) -> bool {
         self.frameset.active
     }
 
-    /// 要不要做页面转场：宿主开了 `routeAnimation` 且没分栏（分栏时新页本来就出现在另一栏）
+    /// 要不要做页面转场（宿主开了 `routeAnimation`）。分栏时只在**右栏里**做：进页前 / 返回后右栏都有页
+    /// （栈上 ≥ 3 页 —— 进页时在入栈之后判，返回时在出栈之前判），新页从右栏右边滑进来、盖住的是右栏原来那页，
+    /// 与单栏同一套（下面那张就是 `back_shots.last()`）；左栏那张直接换。栈上两页时活页面要在两栏之间挪
+    /// （单页 → 右栏打开第一页、返回到只剩一页），没有「下面那一页」可露，一换就到
     pub(super) fn route_motion(&self) -> bool {
-        self.opts.route_animation && !self.frameset.active
+        self.opts.route_animation && (!self.frameset.active || (self.page_stack.len() >= 3 && !self.frameset.swapped))
+    }
+
+    /// 活页面在页面栈里是第几层（返回箭头按它）。分栏对调着时活页面是栈顶往下那一页（engine_frameset_focus.rs）：
+    /// 左栏的首页不该有返回箭头
+    pub(super) fn page_depth_of_live(&self) -> usize {
+        self.page_stack.len() - usize::from(self.frameset.swapped && self.page_stack.len() >= 2)
+    }
+
+    /// 给另一栏留图的这一帧不画浮层（Toast / loading / Modal / picker）：浮层属于整个小程序、跟着活页面走，
+    /// 冻进留图的话左栏会一直顶着一个 Toast
+    pub(super) fn overlays_hidden(&self) -> bool {
+        self.frameset.painting_left.is_some()
+    }
+
+    /// 要挪到另一栏（`left` = 左栏）的这页留图前要不要按「另一栏」重画一帧：带着该去掉的胶囊或浮层时要
+    pub(super) fn side_shot_needs_repaint(&self, left: bool) -> bool {
+        self.frameset.active
+            && ((left && self.capsule_spec_raw().is_some() && self.capsule_in_this_pane())
+                || !self.interaction.pressed_visual().is_empty()
+                || self.toast.is_some()
+                || self.loading.is_some()
+                || self.modal.is_some()
+                || self.picker_sheet.is_some())
+    }
+
+    /// 胶囊只在窗口右上角（微信 PC 分栏：左栏的导航栏上没有胶囊，右栏是占位时胶囊也在右栏那里）
+    pub(super) fn capsule_in_this_pane(&self) -> bool {
+        !self.frameset.active || !self.frameset.painting_left.unwrap_or_else(|| self.frameset_live_left())
+    }
+
+    /// 这一帧不上 GPU、走 CPU 合成交给宿主：分栏期间一直这样，外加开 / 关分栏的那一帧。
+    ///
+    /// 为什么分栏时不用 GPU：分栏里一次点击要换两次摆法（按下时左栏换成活页面、松手打开新页又回到右栏），
+    /// 活页面所在的图层要跟着挪。GPU 是引擎线程直接画进 Metal 层的，宿主挪层在主线程、晚一拍；
+    /// 换回 GPU 时把 Metal 层重新显示出来，屏上先露出的是它**上一张** drawable（另一页的画面）——
+    /// 实测（2026-10-26 灵犀 for Mac，聊天列表点会话）每点一下闪两次。走 CPU 时新画面、另一栏的图、
+    /// 挪层在宿主的同一次提交里，一下到位。一栏只有半个窗口宽，CPU 合成一帧的代价也小一半
+    pub(super) fn frameset_holds_gpu(&self) -> bool {
+        self.frameset.active || self.frameset_layout_pending()
+    }
+
+    /// 这一帧画完之后摆法要变（活页面换栏、开 / 关分栏）：宿主还没挪图层，GPU 直接画上屏的话新画面会在旧位置上
+    /// 闪一帧（两栏一抖）。这一帧改走 CPU 合成，跟 `frameset` 事件一起交给宿主（宿主在同一次提交里挪层、换图）
+    pub(super) fn frameset_layout_pending(&self) -> bool {
+        let fs = &self.frameset;
+        let state = (fs.active, self.frameset_live_left(), self.width, self.side_has_page());
+        fs.reported != Some(state) && !(!state.0 && fs.reported.map_or(true, |r| !r.0))
     }
 
     /// 每次 pump（出帧之后）：另一栏该显示什么、要不要告诉宿主换摆法。
     /// 返回 (另一栏的图换了, 临时换过页 —— 活页面要整帧重画)
     pub(super) fn sync_frameset(&mut self) -> (bool, bool) {
+        if self.page_stack.len() < 2 {
+            self.frameset.swapped = false; // 对调的那两页里有一页没了（switchTab / reLaunch 清了栈）
+        }
         let fs = &self.frameset;
-        let state = (fs.active, self.frameset_live_left(), self.width);
+        let state = (fs.active, self.frameset_live_left(), self.width, self.side_has_page());
         if fs.reported != Some(state) {
             // 一直没分栏：不发（老宿主、窄窗口、拉宽了但没开分栏，一个事件都看不到）
             let silent = !state.0 && fs.reported.map_or(true, |r| !r.0);
             self.frameset.reported = Some(state);
             if !silent {
+                // 这一帧是 CPU 合成的（frameset_layout_pending）：下一次 pump 补一次 GPU 上屏
+                #[cfg(feature = "gpu")]
+                if self.gpu.is_some() {
+                    self.present_pending = true;
+                }
                 self.events.push(json!({
                     "type": "frameset",
                     "on": state.0,
                     "livePane": if state.1 { "left" } else { "right" },
                     "paneWidth": state.2,
                     "totalWidth": self.frameset.total_width,
+                    // 另一栏是一页（点它要 `frameset_focus`）还是占位
+                    "sidePage": state.3,
+                    // 另一栏的图上画着窗口的胶囊（右栏是占位）：宿主在这里接点击（左半 menu、右半 close）
+                    "sideCapsule": self.side_capsule_rect().map(|r| json!({"x": r.x, "y": r.y, "width": r.width, "height": r.height})),
                 }));
             }
         }
@@ -122,7 +193,7 @@ impl MiniEngine {
             return (false, false);
         }
         let mut repainted = false;
-        let side = if self.frameset_live_left() {
+        let side = if !self.side_has_page() {
             self.placeholder_shot(w, h)
         } else {
             if let Some(s) = self.back_shots.last_mut() {
@@ -146,7 +217,7 @@ impl MiniEngine {
 
     /// 另一栏图的来源编号：栈顶下面那页的留图（单页时是 0 = 占位）
     fn side_source_id(&self) -> u64 {
-        if self.frameset_live_left() {
+        if !self.side_has_page() {
             0
         } else {
             self.back_shots.last().map(|s| s.id).unwrap_or(0)
@@ -157,6 +228,15 @@ impl MiniEngine {
     fn placeholder_shot(&self, w: u32, h: u32) -> PageShot {
         let bg = 0x00F7_F7F7u32;
         let mut px = vec![bg; (w as usize) * (h as usize)];
+        // 活页面在左栏时窗口的胶囊落在右栏（占位）上
+        if let Some(r) = self.side_capsule_rect() {
+            let mut c = crate::Canvas::new(w, h);
+            c.clear(crate::Color::new(0xF7, 0xF7, 0xF7, 255));
+            crate::host::capsule::draw(&mut c, r, self.dpr, false, None);
+            for (d, s) in px.iter_mut().zip(c.pixels()) {
+                *d = (s.r as u32) << 16 | (s.g as u32) << 8 | s.b as u32;
+            }
+        }
         if let Some((rgba, iw, ih)) = crate::renderer::components::image_rgba("/frameset/placeholder.png")
             .filter(|_| crate::assets::resolve("/frameset/placeholder.png").is_some())
         {
@@ -188,6 +268,8 @@ impl MiniEngine {
             return None;
         }
         let t0 = std::time::Instant::now();
+        // 另一栏在左还是右（胶囊只画在右栏，capsule_in_this_pane）
+        self.frameset.painting_left = Some(!self.frameset_live_left());
         // ── 换上去 ──
         let top = self.page_stack.pop()?;
         let mut saved = self.keep.saved.pop()?;
@@ -228,6 +310,7 @@ impl MiniEngine {
         self.drawn_band = None;
         self.dmg.fixed_dirty = true;
         self.needs_redraw = true;
+        self.frameset.painting_left = None;
         self.pump_notes.add("分栏：重画另一栏", Some(t0));
         let shot = shot?;
         // 留进侧滑那一叠（返回时这页从留图上出来，宽度也对了）
@@ -238,9 +321,39 @@ impl MiniEngine {
         Some(shot)
     }
 
+    /// 当前页按「在另一栏」整帧画进合成缓冲，不上屏（留图用，宿主看不到这一帧）：不画浮层，
+    /// `left` 时也不画胶囊
+    pub(super) fn frameset_render_for_side(&mut self, left: bool) {
+        let t0 = std::time::Instant::now();
+        #[cfg(feature = "gpu")]
+        let gpu = self.gpu.take();
+        self.frameset.painting_left = Some(left);
+        // 点击态（hover-class，松手后还留 hover-stay-time）不进留图：点会话打开聊天时，那一行的按压底色
+        // 会被冻在左栏的图里一直亮着，下次点别的会话换栏时又一下灭掉 —— 每点一下整行闪一次
+        self.interaction.cancel_press();
+        self.mark_full();
+        self.drawn_band = None;
+        self.dmg.fixed_dirty = true;
+        self.render();
+        self.frameset.painting_left = None;
+        #[cfg(feature = "gpu")]
+        {
+            self.gpu = gpu;
+        }
+        self.mark_full();
+        self.dmg.fixed_dirty = true;
+        self.pump_notes.add("分栏：按另一栏重画留图", Some(t0));
+    }
+
+    /// 右栏是占位时画在它上面的胶囊（一栏内的逻辑坐标）。没开胶囊 / 不是这种摆法时 None
+    fn side_capsule_rect(&self) -> Option<crate::Rect> {
+        (self.opts.menu_button && self.frameset.active && !self.side_has_page() && self.capsule_spec_raw().is_some())
+            .then(|| crate::host::capsule::rect(&self.page_system_info()))
+    }
+
     /// 另一栏上的滚轮 / 触控板（逻辑像素，与 `wheel` 同号）：滚它、重画那一栏
     pub fn side_wheel(&mut self, delta_y: f32, precise: bool) {
-        if !self.frameset.active || self.frameset_live_left() {
+        if !self.frameset.active || !self.side_has_page() {
             return;
         }
         let Some(saved) = self.keep.saved.last_mut() else { return };

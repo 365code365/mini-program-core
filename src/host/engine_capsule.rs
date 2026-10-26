@@ -36,6 +36,15 @@ impl MiniEngine {
 
     /// 画不画、画在哪、是不是深色导航栏（白图标）
     pub(super) fn capsule_spec(&self) -> Option<(Rect, bool)> {
+        // 分栏时左栏没有胶囊（engine_frameset.rs `capsule_in_this_pane`）
+        if !self.capsule_in_this_pane() {
+            return None;
+        }
+        self.capsule_spec_raw()
+    }
+
+    /// 不看分栏：这一页按它的导航栏该不该有胶囊
+    pub(super) fn capsule_spec_raw(&self) -> Option<(Rect, bool)> {
         if !self.opts.menu_button || self.page_stack.is_empty() {
             return None;
         }

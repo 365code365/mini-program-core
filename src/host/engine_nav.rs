@@ -35,6 +35,8 @@ impl MiniEngine {
         if self.page_stack.len() <= 1 {
             return false;
         }
+        // 分栏对调着（左栏是活页面）：先换回来，返回关掉的是右栏那页（engine_frameset_focus.rs）
+        self.frameset_unswap();
         self.route.finish();
         // 转场：退栈之前留一张当前画面（要离开的那页），退栈之后它盖在恢复出来的上一页上滑走
         let t = self.pump_notes.start();
@@ -106,11 +108,13 @@ impl MiniEngine {
                 self.back_with(self.route_motion());
             }
             NavigationRequest::SwitchTab { url } => {
+                self.frameset_unswap();
                 let (p, _) = parse_url(&url);
                 self.switch_tab(&p);
             }
             NavigationRequest::RedirectTo { url } => {
                 // 替换当前页：栈深不变
+                self.frameset_unswap();
                 let (p, q) = parse_url(&url);
                 self.app
                     .eval("if(__currentPage&&__currentPage.onUnload)__currentPage.onUnload()")
@@ -123,6 +127,7 @@ impl MiniEngine {
             NavigationRequest::ReLaunch { url } => {
                 // query 要带上：`wx.reLaunch({url:'/pages/a?id=1'})` 的 onLoad 收到 {id:'1'}（从前丢了，收到 {}）
                 let (p, q) = parse_url(&url);
+                self.frameset_unswap();
                 self.relaunch(&p, q);
             }
         }
@@ -135,6 +140,8 @@ impl MiniEngine {
         if !self.pages.contains_key(path) {
             return Err(format!("页面不存在: {path}"));
         }
+        // 分栏时从左栏打开：右栏那页关掉，新页进右栏（engine_frameset_focus.rs）
+        self.frameset_drop_right();
         let t = self.pump_notes.start();
         self.cover_current_page();
         self.pump_notes.add("盖住旧页（onHide + 留图）", t);

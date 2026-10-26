@@ -19,6 +19,10 @@ impl MiniEngine {
     /// 当前页将被新页盖住：留一张视口图（`navigateTo` 之前调）
     pub(super) fn capture_back_shot(&mut self) {
         // 还没合成过（一打开就跳页）：没有图，侧滑时露出暗底（与桌面一致）
+        // 分栏：被盖住这页要挪到左栏：左栏没有胶囊、浮层不进留图（engine_frameset.rs）—— 按另一栏重画一帧再留
+        if self.side_shot_needs_repaint(true) {
+            self.frameset_render_for_side(true);
+        }
         let shot = self.snapshot_frame().unwrap_or(PageShot::empty());
         // 只有最后一张会被用到（侧滑 / 返回转场），之前那张压起来（shot_pack.rs，一张 10MB → 几百 KB）
         if let Some(prev) = self.back_shots.last_mut() {

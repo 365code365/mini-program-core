@@ -51,6 +51,7 @@ import json
 import os
 import secrets
 import shutil
+import socketserver
 import sys
 import threading
 import time
@@ -408,10 +409,21 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
 
+class _Server(ThreadingHTTPServer):
+    """`HTTPServer.server_bind` 会 `socket.getfqdn()` 反查本机名：网络环境里反查超时（2026-10-26 开发机实测卡住十几秒），
+    服务就迟迟不监听，e2e 的 10 秒等待（tests/sample_harness/demo_server.rs）全部超时。server_name 只用于 CGI 环境变量，不反查"""
+
+    def server_bind(self):
+        socketserver.TCPServer.server_bind(self)
+        host, port = self.server_address[:2]
+        self.server_name = host
+        self.server_port = port
+
+
 def serve():
     Handler.cfg = load_config()
     os.makedirs(os.path.join(DATA, 'apps'), exist_ok=True)
-    httpd = ThreadingHTTPServer(('0.0.0.0', PORT), Handler)
+    httpd = _Server(('0.0.0.0', PORT), Handler)
     httpd.daemon_threads = True
     print(f'mini-store 在 :{PORT}，数据 {DATA}', flush=True)
     httpd.serve_forever()

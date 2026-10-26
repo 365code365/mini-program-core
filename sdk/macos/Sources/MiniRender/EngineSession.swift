@@ -69,6 +69,11 @@ protocol EngineSessionUI: AnyObject {
     func sessionCpuFrame(_ image: CGImage)
     /// 分栏时另一栏的图换了（nil = 不分栏了）
     func sessionSideFrame(_ image: CGImage?)
+    /// 分栏摆法变了的这一帧引擎没上 GPU（CPU 合成好交给了 sessionCpuFrame）：先盖上 CPU 那张、藏起 Metal 层，
+    /// 等下一次 GPU 上屏（层已挪到新位置）再 sessionReveal
+    func sessionHoldGpu()
+    /// 这一帧的事件 / 图都交完了（诊断 `MINI_SPLIT_TRACE` 在这里记一张屏上的样子）
+    func sessionCommitted()
     func sessionEvents(_ events: [[String: Any]])
     /// 引擎线程要一个跟着视图所在屏幕刷新的显示同步（macOS 14 起只能从 NSView / NSScreen 取）
     func sessionMakeDisplayLink(target: Any, selector: Selector) -> CADisplayLink?
@@ -97,6 +102,9 @@ final class EngineSession: NSObject {
     private var gpuAttached = false
     private var revealed = false
     private var needsPresent = false
+    /// 引擎这几帧没上 GPU、交的是 CPU 合成（分栏期间，engine_frameset.rs `frameset_holds_gpu`）：
+    /// 显示 CPU 那张、藏起 Metal 层，等它再上屏时换回来
+    private var bridging = false
 
     // ── 引擎线程写、主线程读 ──
     private let lock = NSLock()
@@ -312,10 +320,21 @@ final class EngineSession: NSObject {
         let sideChanged = f & Int32(MR_FRAME_SIDE) != 0
         let side = sideChanged ? sideImage(h) : nil
         var frame: CGImage?
+        // 分栏换摆法（活页面换栏、开 / 关分栏）：引擎这一帧没上 GPU（engine_frameset.rs），新画面在 CPU 合成缓冲里。
+        // 跟着挪层的同一次提交显示它；GPU 直接画上去的话，新画面会先在旧位置闪一帧
+        // 分栏期间引擎整段走 CPU：GPU 模式下照样有 FRAME_NEW、没有 PRESENTED，要取 CPU 那张
+        let presented = f & Int32(MR_FRAME_PRESENTED) != 0
+        let cpuFrame = f & Int32(MR_FRAME_NEW) != 0 && !presented
+        let relayout = gpu && revealed && (cpuFrame || events.contains { $0["type"] as? String == "frameset" })
+        if relayout {
+            frame = cpuImage(h)
+            if frame != nil { bridging = true }
+        }
         if gpu {
             needsPresent = false
-            if f & Int32(MR_FRAME_PRESENTED) != 0 && !revealed {
+            if presented && (!revealed || bridging) {
                 revealed = true
+                bridging = false
                 DispatchQueue.main.async { [weak self] in self?.ui?.sessionReveal() }
             }
         } else {
@@ -326,11 +345,20 @@ final class EngineSession: NSObject {
             }
         }
         if !events.isEmpty || sideChanged || frame != nil {
+            let hold = bridging
             DispatchQueue.main.async { [weak self] in
                 guard let ui = self?.ui else { return }
+                // 整块包在一个显式事务里：挪层（applyFrameset 里的 begin/commit 嵌套进来，不再单独提交）与换图
+                // 同一次交给渲染服务。从前挪层那个事务在最外层、立刻提交，换图跟着 RunLoop 末尾的隐式事务走——
+                // 真录屏（tools/mac-split-flicker.py）里两栏对调着显示一帧：左栏是聊天页、右栏是会话列表
+                CATransaction.begin()
+                CATransaction.setDisableActions(true)
+                defer { CATransaction.commit() }
                 if !events.isEmpty { ui.sessionEvents(events) }
                 if sideChanged { ui.sessionSideFrame(side) }
                 if let frame { ui.sessionCpuFrame(frame) }
+                if relayout && frame != nil && hold { ui.sessionHoldGpu() }
+                ui.sessionCommitted()
             }
         }
         if f & Int32(MR_FRAME_WANTS_MORE) == 0 && !needsPresent { l.isPaused = true }

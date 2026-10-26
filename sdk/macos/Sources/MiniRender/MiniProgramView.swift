@@ -1,4 +1,5 @@
 import AppKit
+import ImageIO
 import QuartzCore
 
 #if canImport(MiniRenderFFI)
@@ -67,7 +68,11 @@ public final class MiniProgramView: NSView, EngineSessionUI {
     private let dividerLayer = CALayer()
     /// 分栏状态（`frameset` 事件）：活页面那一栏的左边 x、一栏宽（pt）
     private var split = (on: false, liveX: CGFloat(0), pane: CGFloat(0))
-    /// 这一次按下落在另一栏（第一步只接滚轮，点击不派给引擎）
+    /// 另一栏显示的是一页（能点），不是占位
+    private var sidePage = false
+    /// 右栏是占位时画在它上面的窗口胶囊（一栏内坐标）：点它与点引擎里的胶囊一样
+    private var sideCapsule: CGRect?
+    /// 这一次按下落在占位栏上：整串不派给引擎
     private var pointerInSide = false
     private var metalLayer: CAMetalLayer?
     private var appDir: URL?
@@ -272,6 +277,64 @@ public final class MiniProgramView: NSView, EngineSessionUI {
         imageLayer.isHidden = true
     }
 
+    /// `MINI_SPLIT_TRACE=<目录>`：每次交帧后把两栏图层此刻的内容按摆放位置拼一张（按 pt 大小）存下来，另外每个 vsync 往 layers.txt 记一行图层的真实状态，
+    /// 查「点一下闪两次」这类问题用 —— 屏上每一个中间状态都留得下来，不靠录屏。Metal 层的内容截不到（只记它藏没藏）
+    private static let splitTrace = ProcessInfo.processInfo.environment["MINI_SPLIT_TRACE"]
+    private var traceN = 0
+
+    /// 每个 vsync 记一行屏上图层的真实状态（presentation layer：Core Animation 此刻显示的那份）
+    private var traceLink: CADisplayLink?
+    private var traceLines: [String] = []
+    @objc private func traceTick(_ l: CADisplayLink) {
+        func d(_ x: CALayer?) -> String {
+            guard let x else { return "-" }
+            let p = x.presentation() ?? x
+            let c = p.contents.map { String(UInt(bitPattern: Unmanaged.passUnretained($0 as AnyObject).toOpaque().hashValue) % 100000) } ?? "nil"
+            return String(format: "x%.0f w%.0f %@ c%@ o%.2f", p.frame.minX, p.frame.width, p.isHidden ? "H" : "V", c, p.opacity)
+        }
+        traceLines.append(String(format: "%.3f img[%@] side[%@] metal[%@]", l.timestamp, d(imageLayer), d(sideLayer), d(metalLayer)))
+        if traceLines.count % 120 == 0, let dir = Self.splitTrace {
+            try? traceLines.joined(separator: "\n").write(toFile: dir + "/layers.txt", atomically: true, encoding: .utf8)
+        }
+    }
+
+    func sessionCommitted() {
+        if Self.splitTrace != nil, traceLink == nil {
+            traceLink = displayLink(target: self, selector: #selector(traceTick(_:)))
+            traceLink?.add(to: .main, forMode: .common)
+        }
+        guard let dir = Self.splitTrace, split.on else { return }
+        traceN += 1
+        let s: CGFloat = 1
+        let w = Int(bounds.width * s), h = Int(bounds.height * s)
+        guard w > 0, h > 0, let ctx = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0,
+                                                 space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return }
+        ctx.setFillColor(NSColor.magenta.cgColor) // 两层都没盖到的地方：洋红（闪白 / 露底一眼看得出）
+        ctx.fill(CGRect(x: 0, y: 0, width: w, height: h))
+        for l in [sideLayer, imageLayer] where !l.isHidden {
+            guard let c = l.contents else { continue }
+            let f = l.frame
+            // 视图是 flipped 的，CGContext 原点在左下
+            ctx.draw(c as! CGImage, in: CGRect(x: f.minX * s, y: CGFloat(h) - f.maxY * s, width: f.width * s, height: f.height * s))
+        }
+        guard let img = ctx.makeImage() else { return }
+        let url = URL(fileURLWithPath: dir).appendingPathComponent(String(format: "%04d-live%.0f.png", traceN, split.liveX))
+        try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+        if let dest = CGImageDestinationCreateWithURL(url as CFURL, "public.png" as CFString, 1, nil) {
+            CGImageDestinationAddImage(dest, img, nil)
+            CGImageDestinationFinalize(dest)
+        }
+    }
+
+    func sessionHoldGpu() {
+        guard let m = metalLayer else { return }
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        imageLayer.isHidden = false
+        m.isHidden = true
+        CATransaction.commit()
+    }
+
     func sessionLeftGpu() {
         metalLayer?.removeFromSuperlayer()
         metalLayer = nil
@@ -312,6 +375,11 @@ public final class MiniProgramView: NSView, EngineSessionUI {
         let pane = CGFloat((ev["paneWidth"] as? NSNumber)?.doubleValue ?? 0)
         let liveRight = on && (ev["livePane"] as? String) == "right"
         split = (on, liveRight ? pane : 0, pane)
+        sidePage = on && (ev["sidePage"] as? Bool ?? false)
+        sideCapsule = (ev["sideCapsule"] as? [String: Any]).map { r in
+            let n = { (k: String) in CGFloat((r[k] as? NSNumber)?.doubleValue ?? 0) }
+            return CGRect(x: n("x"), y: n("y"), width: n("width"), height: n("height"))
+        }
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         for l in [imageLayer, metalLayer].compactMap({ $0 }) { l.frame.origin.x = split.liveX }
@@ -388,8 +456,30 @@ public final class MiniProgramView: NSView, EngineSessionUI {
     }
 
     public override func mouseDown(with e: NSEvent) {
-        pointerInSide = inSidePane(convert(e.locationInWindow, from: nil).x)
-        if pointerInSide { return }
+        let vx = convert(e.locationInWindow, from: nil).x
+        pointerInSide = false
+        if inSidePane(vx) {
+            // 另一栏是占位：不派。是一页：先让引擎把它换成活页面，这一串的坐标改按那一栏算
+            // （引擎线程上按顺序执行，focus 一定在 pointer_down 之前；图层等 frameset 事件来了再挪）
+            guard sidePage else {
+                pointerInSide = true
+                // 占位栏上的胶囊：左半「•••」、右半「⊙」（与引擎的 menuButton 事件同一套处理）
+                let origin = vx < split.pane ? 0 : split.pane
+                let p = CGPoint(x: vx - origin, y: convert(e.locationInWindow, from: nil).y)
+                if let c = sideCapsule, c.contains(p) {
+                    dispatchEvent(["type": "menuButton", "action": p.x < c.midX ? "menu" : "close"])
+                }
+                return
+            }
+            let left = vx < split.pane
+            split.liveX = left ? 0 : split.pane
+            let (x, y) = point(e)
+            session.run {
+                _ = mr_app_frameset_focus($0, left ? 0 : 1)
+                mr_app_pointer_down($0, x, y)
+            }
+            return
+        }
         let (x, y) = point(e)
         session.run { mr_app_pointer_down($0, x, y) }
     }

@@ -281,7 +281,10 @@ size_t mr_app_pixels_into(MRApp* app, uint8_t* dst, size_t len, uint32_t stride,
 // mr_app_pixels_into 的主画面放在 livePane 那一栏（坐标照旧相对这一栏），另一栏放
 // mr_app_side_pixels_into 的图（MR_FRAME_SIDE 表示它换了）。栈上一页时活页面在左、右栏是占位；
 // 两页以上栈顶在右、下面那页在左。另一栏的滚轮交给 mr_app_side_wheel。
+// 两栏都能点：按下落在另一栏（事件 sidePage 为 true）时先 mr_app_frameset_focus(app, 0 左 / 1 右)，
+// 返回 1 表示那一栏换成了活页面（livePane 随之变），指针坐标改按这一栏算；左栏 navigateTo 时右栏那页关掉、新页进右栏。
 #define MR_FRAME_SIDE 64
+int    mr_app_frameset_focus(MRApp* app, int pane);
 size_t mr_app_side_pixels_into(MRApp* app, uint8_t* dst, size_t len, uint32_t stride, int format);
 void   mr_app_side_pixel_size(MRApp* app, uint32_t* out_w, uint32_t* out_h);
 void   mr_app_side_wheel(MRApp* app, float delta_y, int precise);

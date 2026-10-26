@@ -122,6 +122,9 @@ impl MiniEngine {
         if self.route.tick(now, self.resample_period_ms()) != crate::host::route_anim::Tick::Idle {
             self.dmg.compose_dirty = true;
         }
+        // 这一帧里逻辑层改的导航栏（新页 onLoad 里的 setNavigationBarTitle 最常见）画之前就收进来：
+        // 从前要等 pump 末尾才收，新页第一帧顶着 json 里的标题、下一帧才换 —— 每进一页标题闪一下
+        self.take_nav_updates();
         // 导航栏的标题 / 颜色 / loading 转圈 / 按压态变了（engine_navbar.rs）：重画那一小条再合成
         if self.nav_needs_paint() {
             self.dmg.compose_dirty = true;
@@ -367,6 +370,10 @@ impl MiniEngine {
         // 只有 GPU 上屏时接在 🩹 行尾（CPU 合成的帧由 render_scoped 的「合成」那一段计进去）
         #[cfg_attr(not(feature = "gpu"), allow(unused_variables))]
         let nav_note = laps.finish();
+        // 分栏时整段不上 GPU（engine_frameset.rs `frameset_holds_gpu`）
+        #[cfg(feature = "gpu")]
+        let hold_gpu = self.gpu.is_some() && self.frameset_holds_gpu();
+        let hide_overlays = self.overlays_hidden();
         let top_rows = self.nav_rows();
         // 合成序列与桌面窗体同一份（compositor::cpu）。SDK 没有下拉指示器这一层
         let layers = FrameLayers {
@@ -385,11 +392,11 @@ impl MiniEngine {
             pull: None,
             overlays: OverlayRefs {
                 anim_secs: self.overlay_clock(),
-                toast: &self.toast,
-                loading: &self.loading,
-                modal: &self.modal,
+                toast: if hide_overlays { &None } else { &self.toast },
+                loading: if hide_overlays { &None } else { &self.loading },
+                modal: if hide_overlays { &None } else { &self.modal },
                 // picker 面板画在最上层（与桌面窗体同一份绘制）
-                picker: self.picker_sheet.as_ref(),
+                picker: if hide_overlays { None } else { self.picker_sheet.as_ref() },
                 text: self.text.as_deref(),
             },
             // 页面转场优先于侧滑（转场期间不接受触摸，两者不会同时有）
@@ -400,8 +407,11 @@ impl MiniEngine {
             top: self.nav.band(top_rows),
         };
         // GPU 上屏（宿主挂了原生 surface 时）：画到 surface 上就不做 CPU 合成
+        // 分栏摆法要变的这一帧不上 GPU（engine_frameset.rs `frameset_layout_pending`）
         #[cfg(feature = "gpu")]
-        match super::engine_gpu::present_on(&mut self.gpu, &layers) {
+        let gpu_result = if hold_gpu { Ok(super::engine_gpu::GpuFrame::NotActive) } else { super::engine_gpu::present_on(&mut self.gpu, &layers) };
+        #[cfg(feature = "gpu")]
+        match gpu_result {
             Ok(super::engine_gpu::GpuFrame::Presented(st)) => {
                 // `MINI_DAMAGE_LOG`：🩹 行尾带上 GPU 这一帧的账（准备 / 其中 CPU 合成 / 等 surface / 上传）
                 if self.dmg.log {
@@ -440,6 +450,10 @@ impl MiniEngine {
         #[cfg(feature = "gpu")]
         {
             self.cpu_frame_pending = None;
+            // 分栏期间这一帧就是交给宿主的那一帧（CPU 那张），不欠 GPU 上屏 —— 不清的话每次 pump 都重新合成
+            if hold_gpu {
+                self.present_pending = false;
+            }
         }
         // RGBA 不在这里转：要的人（`rgba()` / `mr_app_pixels`）再转，
         // `pixels_into` 直接从合成缓冲写进平台缓冲（见 engine_pixels.rs）

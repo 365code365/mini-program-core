@@ -139,6 +139,14 @@ pub extern "C" fn mr_app_side_pixel_size(app: *mut MRApp, out_w: *mut u32, out_h
     }
 }
 
+/// 分栏时按下落在哪一栏（`pane` 0 = 左、1 = 右），在 `mr_app_pointer_down` 之前调。那一栏显示的是另一页
+/// （`frameset` 事件 `sidePage` 为 true 的另一栏）时把它换成活页面、返回 1 —— 之后的指针坐标相对这一栏；
+/// 已经是活页面那一栏 / 占位栏 / 没分栏返回 0
+#[no_mangle]
+pub extern "C" fn mr_app_frameset_focus(app: *mut MRApp, pane: c_int) -> c_int {
+    app_mut(app).map(|a| a.engine.frameset_focus(pane == 0) as c_int).unwrap_or(0)
+}
+
 /// 另一栏上的滚轮 / 触控板（同 `mr_app_wheel`）
 #[no_mangle]
 pub extern "C" fn mr_app_side_wheel(app: *mut MRApp, delta_y: f32, precise: c_int) {

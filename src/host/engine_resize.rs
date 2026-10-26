@@ -29,6 +29,10 @@ impl MiniEngine {
         self.frameset.total_width = width;
         let (split, width) = self.frameset.pane_width(width);
         if split != self.frameset.active {
+            if !split {
+                // 窄回单栏显示栈顶那页：对调着的话先换回来（engine_frameset_focus.rs）
+                self.frameset_unswap();
+            }
             self.frameset.active = split;
             self.frameset.side = None;
         }

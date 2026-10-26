@@ -11,7 +11,7 @@ import MiniRender
 /// （PC 微信的 frameset：上一页在左栏、当前页在右栏），窄回去退回单栏。
 ///
 /// 验收参数（子进程）：`-miniWidth <pt>` 起来 4 秒后把窗口拉到这个宽、`-miniNav <url>` 6 秒后跳一页、
-/// `-miniShot <目录>` 9 秒后把两栏拼成一张 `split.png`（不要屏幕录制权限）。
+/// `-miniTap x,y[;x,y…]` 7.5 秒起每 1.5 秒点一下、`-miniShot <目录>` 9 秒后把两栏拼成一张 `split.png`（不要屏幕录制权限）。
 final class MiniWindowController: NSWindowController, NSWindowDelegate {
     static private(set) var shared: MiniWindowController?
 
@@ -49,13 +49,12 @@ final class MiniWindowController: NSWindowController, NSWindowDelegate {
         w.contentView?.layer?.backgroundColor = NSColor.white.cgColor
         super.init(window: w)
         w.delegate = self
-        // 子进程里没有主窗口：按「第几个开的」往右下错开，几个小程序窗口不叠在一起（PC 微信也是这样排的）
-        let n = CGFloat(UserDefaults.standard.integer(forKey: "cascade"))
-        if let screen = NSScreen.main?.visibleFrame {
-            w.setFrameTopLeftPoint(NSPoint(x: screen.maxX - 440 - n * 420, y: screen.maxY - 40 - n * 30))
-        } else {
-            w.center()
-        }
+        // 居中打开；同时开着几个时按「第几个开的」往右下错开 30pt，不完全叠在一起。
+        // 从前贴着屏幕右边开（maxX - 440），拉宽到分栏时窗口有一半出了屏幕
+        w.isRestorable = false
+        w.center()
+        let n = CGFloat(UserDefaults.standard.integer(forKey: "cascade") % 8)
+        w.setFrameOrigin(NSPoint(x: w.frame.minX + n * 30, y: w.frame.minY - n * 30))
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
@@ -107,17 +106,38 @@ final class MiniWindowController: NSWindowController, NSWindowDelegate {
             DispatchQueue.main.asyncAfter(deadline: .now() + 4) { [weak self] in
                 guard let w = self?.window else { return }
                 var f = w.frame
+                f.origin.x -= (width - f.width) / 2 // 向两边拉开，窗口仍在原来的中线上
                 f.size.width = width
-                w.setFrame(f, display: true)
+                w.setFrame(w.constrainFrameRect(f, to: w.screen), display: true)
                 NSLog("[分栏] 窗口拉到 %.0fpt", width)
             }
         }
         if let url = d.string(forKey: "miniNav"), !url.isEmpty {
             DispatchQueue.main.asyncAfter(deadline: .now() + 6) { [weak self] in self?.mini?.navigate(url) }
         }
+        // `-miniTap x,y`（视图坐标，pt）：7.5 秒时在那里点一下（不要辅助功能权限：事件直接交给视图）
+        // 多个点用分号隔开（`200,670;200,760`），每隔 1.5 秒点下一个
+        for (i, one) in (d.string(forKey: "miniTap") ?? "").split(separator: ";").enumerated() {
+            let xy = one.split(separator: ",").compactMap { Double($0) }
+            guard xy.count == 2 else { continue }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 7.5 + Double(i) * 1.5) { [weak self] in self?.click(CGPoint(x: xy[0], y: xy[1])) }
+        }
         if let dir = d.string(forKey: "miniShot"), !dir.isEmpty {
             DispatchQueue.main.asyncAfter(deadline: .now() + 9) { [weak self] in self?.saveSplitShot(to: URL(fileURLWithPath: dir)) }
         }
+    }
+
+    private func click(_ p: CGPoint) {
+        guard let mini, let w = window else { return }
+        let inWindow = mini.convert(p, to: nil)
+        let make = { (type: NSEvent.EventType) in
+            NSEvent.mouseEvent(with: type, location: inWindow, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+                               windowNumber: w.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: 1)
+        }
+        if let e = make(.leftMouseDown) { mini.mouseDown(with: e) }
+        // 真手指按下到抬起约 90ms（用户上传的诊断里每次点击两组日志隔 ~90ms）：中间那几帧也要上屏
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.09) { if let e = make(.leftMouseUp) { mini.mouseUp(with: e) } }
+        NSLog("[分栏] 点了 (%.0f, %.0f)", p.x, p.y)
     }
 
     /// 两栏拼一张：活页面（引擎快照）摆在 liveX，另一栏（引擎给的图）摆在另一边

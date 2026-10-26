@@ -23,7 +23,9 @@ impl MiniEngine {
         let vp = self.viewport_height();
         let mut v = SavedView::take(&mut self.scroll, &mut self.renderer, &mut self.interaction, vp);
         // 分栏时它还显示在另一栏，尺寸变了要按这份数据重画（engine_frameset.rs）。不分栏也留：
-        // 窗口随时可能被拉宽，那时逻辑层里这页的组件实例已经作废，拿不回数据
+        // 窗口随时可能被拉宽，那时逻辑层里这页的组件实例已经作废，拿不回数据。
+        // 先取最新的（这一页 setData 了还没重画、或分栏刚换上来时 page_data 还不是它的）
+        self.refresh_page_data();
         v.data = Some(self.page_data.clone());
         self.keep.saved.push(v);
     }

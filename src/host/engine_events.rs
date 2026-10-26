@@ -37,7 +37,7 @@ pub struct HostEvents {
     last_page: Option<(String, usize)>,
     /// 页面栈每一层被 `setNavigationBarTitle/Color` 改过的字段（与 page_stack 对齐）。
     /// 返回上一页时宿主要恢复**那一页**的标题，所以按层存，不是一个全局值。
-    nav: Vec<(String, Map<String, Value>)>,
+    pub(super) nav: Vec<(String, Map<String, Value>)>,
     /// 当前聚焦的输入框（发 `inputBlur` 用）
     focused: Option<String>,
     /// 上一次报的原生组件摆放（变了才发，免得滚动静止时每帧刷一条）
@@ -107,6 +107,13 @@ impl MiniEngine {
         self.events.push(json!({ "type": "app", "about": about }));
     }
 
+    /// 逻辑层这一帧的宿主事件（含导航栏改动）先收进来：画之前调（engine_frame.rs）。事件顺序不变，
+    /// pump 末尾那次再收就是空的
+    pub(super) fn take_nav_updates(&mut self) {
+        self.sync_nav_slots();
+        self.drain_js_host_events();
+    }
+
     /// 导航栏改动按页面栈层对齐：换页（同层换了路由）清空，出栈截断
     fn sync_nav_slots(&mut self) {
         let routes: Vec<String> = self.page_stack.iter().map(|p| p.path.clone()).collect();
@@ -173,7 +180,10 @@ impl MiniEngine {
                 }
             }
         }
-        if let Some((_, nav)) = self.events.nav.last() {
+        // 按层取，不取最后一格：格子在 pump 末尾才与页面栈对齐（sync_nav_slots），返回之后的第一帧
+        // 最后一格还是刚退掉那页的 —— 上一页会顶着它的标题画一帧
+        let slot = self.page_stack.len().checked_sub(1).and_then(|i| self.events.nav.get(i)).filter(|(r, _)| *r == route);
+        if let Some((_, nav)) = slot {
             fn map(k: &str) -> &str {
                 match k {
                     "title" => "navigationBarTitleText",

@@ -56,6 +56,8 @@ mod engine_page;
 mod engine_keep;
 /// 分栏模式（微信 frameset：阔折叠展开 / PC 窗口拉宽时左右两栏各一页）
 pub mod engine_frameset;
+/// 分栏时点另一栏：那一栏的页面换成活页面
+mod engine_frameset_focus;
 /// 页面视图的留存（SDK 与桌面共用）：滚动、渲染器、交互状态
 pub mod page_keep;
 /// 页面转场（navigateTo 滑入 / 返回滑出）

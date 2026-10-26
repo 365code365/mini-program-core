@@ -99,7 +99,7 @@ impl MiniEngine {
         if rows == 0 {
             return None;
         }
-        let bar = NavBar::from_window(&self.page_window(), self.page_stack.len());
+        let bar = NavBar::from_window(&self.page_window(), self.page_depth_of_live());
         let spin = if bar.loading { navbar::spin_step(self.overlay_clock()) } else { 0 };
         let capsule = self.capsule_spec().map(|(r, dark)| (r, dark, self.capsule_pressed()));
         Some(NavSig {
@@ -232,7 +232,7 @@ impl MiniEngine {
         }
         let (top, bar_h) = (self.opts.status_bar_height(), navbar::bar_height(self.opts.platform()));
         self.nav.down = true;
-        self.nav.back_down = self.page_stack.len() > 1 && navbar::back_hit(x, y, top, bar_h);
+        self.nav.back_down = self.page_depth_of_live() > 1 && navbar::back_hit(x, y, top, bar_h);
         self.nav.back_inside = self.nav.back_down;
         true
     }
