@@ -22,6 +22,15 @@ impl JsRuntime {
         self.runtime.run_gc();
     }
 
+    /// 底层运行时（守护装在这上面，见 guards.rs）
+    pub(crate) fn raw_runtime(&self) -> &Runtime {
+        &self.runtime
+    }
+
+    pub(crate) fn raw_context(&self) -> &Context {
+        &self.context
+    }
+
     pub fn new() -> Result<Self, String> {
         let runtime = Runtime::new().map_err(|e| e.to_string())?;
         let context = Context::full(&runtime).map_err(|e| e.to_string())?;

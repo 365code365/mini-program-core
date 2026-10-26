@@ -508,6 +508,11 @@ impl MiniApp {
 
     // 宿主事件与 hostCall（take_host_events / install_host_apis / resolve_host_call）在 app_host.rs
 
+    /// JS 运行时本身（小游戏在上面装守护，见 js/guards.rs）
+    pub fn js_runtime(&self) -> Arc<Mutex<JsRuntime>> {
+        self.runtime.clone()
+    }
+
     /// 执行 JS 代码
     pub fn eval(&self, code: &str) -> Result<String, String> {
         let rt = self.runtime.lock().unwrap();

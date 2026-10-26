@@ -27,6 +27,9 @@
 
 /// QuickJS 运行时封装（求值、注册原生函数、模块作用域）
 mod runtime;
+/// 运行时守护：看门狗、内存上限、未处理的 Promise 拒绝（小游戏用）
+mod guards;
+pub use guards::{Guards, Watchdog};
 /// `wx.*` 的 JS 前置代码注册表（真正的实现在 `src/js/prelude/*.js`）
 mod api;
 /// JS ↔ Rust 桥：原生函数入口与事件队列
