@@ -138,12 +138,13 @@ impl JsRuntime {
         })
     }
     
-    /// 调用 JS 函数
+    /// 调用 JS 函数（`name` 由调用方保证是合法的标识符 / 成员表达式；参数一律按字符串传）
     pub fn call_function(&self, name: &str, args: &[&str]) -> Result<String, String> {
-        // 构建调用代码
+        // 参数用 JSON 字符串字面量注入（JSON 是 JS 字面量的子集，含 U+2028 在 ES2019 起也合法）。
+        // 从前只转义了 `"`：参数里的 `\`、换行会改写字面量，等于能往 eval 里注入代码（game-doc/04 G0.7）
         let args_str = args
             .iter()
-            .map(|s| format!("\"{}\"", s.replace("\"", "\\\"")))
+            .map(|s| serde_json::Value::String((*s).to_string()).to_string())
             .collect::<Vec<_>>()
             .join(", ");
         

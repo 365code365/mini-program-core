@@ -1,6 +1,6 @@
 //! 小游戏 G0：前置代码分组、包种类入口、`call_function` 的转义（game-doc/04 G0.4 / G0.5 / G0.7）
 
-use crate::js::{MiniAppApi, PreludeProfile, GAME_CORE};
+use crate::js::{JsRuntime, MiniAppApi, PreludeProfile, GAME_CORE};
 use crate::runtime::MiniApp;
 
 /// 小程序装的段：名字与顺序**写死**。G0.4 是纯搬迁，这张表与引入 profile 之前的 `PRELUDE` 逐项相同；
@@ -48,4 +48,16 @@ fn 小游戏的通用段能单独装上且_wx_基础能力可用() {
         )
         .unwrap();
     assert_eq!(r, "object,function,function,function,function,function,function,undefined,undefined");
+}
+
+#[test]
+fn call_function_的参数不会改写字面量() {
+    let rt = JsRuntime::new().unwrap();
+    rt.eval("function __echo(a, b) { return JSON.stringify([a, b]); }").unwrap();
+    let tricky = ["a\\b", "line1\nline2", "q\"uote", "</script>", "\u{2028}", "'); throw 1; ('"];
+    for s in tricky {
+        let out = rt.call_function("__echo", &[s, "x"]).unwrap();
+        let back: Vec<String> = serde_json::from_str(&out).unwrap();
+        assert_eq!(back, vec![s.to_string(), "x".to_string()], "参数 {s:?} 往返不一致");
+    }
 }
