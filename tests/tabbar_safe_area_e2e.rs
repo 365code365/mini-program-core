@@ -97,3 +97,48 @@ fn 原生_tabbar_底下垫安全区_点得到_安全区改回_0_贴底() {
     assert_eq!(px(&mut e, 2.0, 610.0), GREEN, "安全区 0 时 617 以上是页面");
     assert_eq!(px(&mut e, 2.0, 620.0), WHITE);
 }
+
+/// 自定义 tabBar + iOS 的底部安全区（402×874 @3x，bottom 34）：图标与文字和没有安全区时**逐像素同位**。
+///
+/// 真机现象（iPhone，Flutter 与 Swift 宿主都一样）：底部图标被切掉一半、文字压上来。原因不在渲染：
+/// Skyline 默认 `box-sizing: border-box`（官方 WXSS 文档的属性表），而示例的组件写的是
+/// `height: 100rpx; padding-bottom: env(safe-area-inset-bottom)` —— 34px 的 padding 被算进 53.6px 的高里，
+/// 内容区只剩 19.6px，居中的图标文字上下溢出、被 tabBar 画布裁掉。桌面与多数 Android 机安全区是 0，看不出来。
+/// 示例已改成 `height: calc(100rpx + env(safe-area-inset-bottom))`；这条守住「有安全区时上面那条不变」。
+#[test]
+fn 自定义_tabbar_有底部安全区时_图标文字与无安全区同位() {
+    let _g = SERIAL.lock().unwrap();
+    let root = std::fs::canonicalize(concat!(env!("CARGO_MANIFEST_DIR"), "/sample/cinema")).unwrap();
+    let shot = |bottom: f32| {
+        let data = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("tabbar-safe-area-cinema");
+        std::fs::remove_dir_all(&data).ok();
+        let safe_area = Some(SafeAreaInsets { top: 62.0, right: 0.0, bottom, left: 0.0 });
+        let opts = EngineOptions { safe_area, ..Default::default() };
+        let mut e = MiniEngine::new_with_options(&root.to_string_lossy(), Some(&data.to_string_lossy()), 402, 874, 3.0, HostEnv::default(), opts)
+            .expect("创建引擎");
+        e.launch(None).expect("打开首页");
+        for t in 0..20 {
+            e.pump(t * 16);
+        }
+        let (w, h) = e.pixel_size();
+        assert_eq!((w, h), (1206, 2622));
+        e.rgba().to_vec()
+    };
+    let (flat, inset) = (shot(0.0), shot(34.0));
+    // tabBar 上沿（100rpx = 53.6px）往下 2..52px 这一条：图标 + 文字。有安全区时整条上移 34px（102 物理行）
+    let row = |px: &[u8], ly: u32| -> Vec<u8> {
+        let s = (ly * 3 * 1206 * 4) as usize;
+        px[s..s + 1206 * 4].to_vec()
+    };
+    let top0 = 874 - 54;
+    let mut inked = 0;
+    for ly in top0 + 2..top0 + 52 {
+        let a = row(&flat, ly);
+        assert_eq!(a, row(&inset, ly - 34), "逻辑行 {ly}（有安全区时是 {}）不一致", ly - 34);
+        inked += a.chunks(4).filter(|p| (p[0] as u32 + p[1] as u32 + p[2] as u32) < 600).count();
+    }
+    assert!(inked > 500, "这一条里应该有图标和文字（防止比的是两片空白）：{inked}");
+    // 安全区那一截是 tabBar 底色，不是页面
+    let pad = row(&inset, 874 - 10);
+    assert!(pad.chunks(4).all(|p| p[..3] == [255, 255, 255]), "安全区那条应是 tabBar 白底");
+}

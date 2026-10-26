@@ -1,0 +1,62 @@
+# 「灵犀 for Mac」：PC 微信式的 macOS 宿主示例（AppKit）。
+#
+#   bash tools/build-mobile.sh macos                          # 先编引擎库 → sdk/macos/MiniRender.xcframework
+#   xcodegen generate --spec sdk/macos/example/project.yml    # 生成 MiniRenderMac.xcodeproj（不进仓库）
+#   bash tools/mac-debug.sh                                   # 一条龙：编库 → 生成工程 → 编 → 启动，日志落 target/mac-debug/
+#
+# 依赖本地 Swift Package（../ = sdk/macos）。商店客户端、链接解析、本机记录、解 ZIP 与 iOS 示例是同一份源码
+# （直接引 ../../ios/example/App/Store/ 下的文件，不复制）；演示小程序与其它示例共用 sdk/flutter/example/assets/demo。
+name: MiniRenderMac
+options:
+  bundleIdPrefix: dev.minirender
+  deploymentTarget:
+    macOS: "14.0"
+packages:
+  MiniRender:
+    path: ..
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    # 本机自签即可运行（不上架）：「Sign to Run Locally」
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGN_STYLE: Manual
+targets:
+  LingxiMac:
+    type: application
+    platform: macOS
+    sources:
+      - path: App
+      - path: ../../ios/example/App/Store/MiniStore.swift
+      - path: ../../ios/example/App/Store/StoreLink.swift
+      - path: ../../ios/example/App/Store/StoreLocal.swift
+      - path: ../../ios/example/App/Store/ZipReader.swift
+      - path: ../../ios/example/App/DemoAssets.swift
+      - path: ../../flutter/example/assets/demo
+        type: folder
+        buildPhase: resources
+    dependencies:
+      - package: MiniRender
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: 灵犀
+        CFBundleName: 灵犀
+        LSApplicationCategoryType: public.app-category.social-networking
+        NSHighResolutionCapable: true
+        # 商店是明文 HTTP 的测试服务器
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
+        CFBundleURLTypes:
+          - CFBundleURLName: dev.minirender.mac.link
+            CFBundleURLSchemes: [minirender]
+    entitlements:
+      path: App/LingxiMac.entitlements
+      properties:
+        # 不开沙盒：示例要直连测试商店、把小程序解到 Application Support（开沙盒还要再声明网络客户端）
+        com.apple.security.app-sandbox: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.minirender.mac
+        PRODUCT_NAME: 灵犀

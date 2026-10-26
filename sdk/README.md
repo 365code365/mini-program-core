@@ -19,6 +19,8 @@ sdk/
     ├── Sources/MiniRender/MiniProgramView.swift   # ← 集成方只用这个（CAMetalLayer，GPU 合成，失败回退 CPU）
     ├── Sources/MiniRender/EngineSession.swift     # 引擎线程、CADisplayLink、GPU / CPU 上屏（内部）
     ├── module.modulemap                 # 让 Swift 看见 C ABI
+    ├── example/                         # Swift 原生示例 App（UIKit，project.yml → XcodeGen 生成工程）
+    │                                    #   IOS_APP=native bash tools/ios-debug.sh 一条龙装到真机 / 模拟器
     └── MiniRender.xcframework           # 由 tools/build-mobile.sh ios 产出
 ```
 

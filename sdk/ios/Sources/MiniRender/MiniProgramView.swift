@@ -96,6 +96,10 @@ public final class MiniProgramView: UIView, EngineSessionUI {
     private var appDir: URL?
     private var startRoute: String?
     private var created = false
+    /// [close] 过：引擎已销毁、线程已停，不再建引擎
+    private var closed = false
+    /// 软键盘：输入框聚焦弹键盘、字交给引擎、键盘挡住时顶起画面（MiniKeyboard.swift）
+    private var keyboard: MiniKeyboard?
     private var logicalSize = (UInt32(0), UInt32(0))
 
     public override init(frame: CGRect) {
@@ -113,6 +117,15 @@ public final class MiniProgramView: UIView, EngineSessionUI {
         isMultipleTouchEnabled = true
         backgroundColor = .white
         session.ui = self
+        keyboard = MiniKeyboard(
+            host: self,
+            sendText: { [weak self] t in self?.sendText(t) },
+            sendKey: { [weak self] k in self?.sendKey(k) },
+            onShift: { [weak self] v in self?.session.run { mr_app_set_keyboard_shift($0, Float(v)) } },
+            onHeight: { [weak self] h in
+                // wx.onKeyboardHeightChange / bindkeyboardheightchange：键盘挡住视图的那一截
+                self?.session.run { _ = mr_app_dispatch_event($0, "keyboardHeightChange", "{\"height\":\(Int(h))}") }
+            })
         imageLayer.magnificationFilter = .nearest
         imageLayer.anchorPoint = .zero
         // 子图层改 contents / 尺寸默认带 0.25s 的隐式动画：每一帧都是一次淡入淡出
@@ -136,6 +149,18 @@ public final class MiniProgramView: UIView, EngineSessionUI {
 
     deinit {
         NotificationCenter.default.removeObserver(self)
+        close()
+    }
+
+    /// 关掉小程序：同步销毁引擎（返回时引擎已经放手 Metal 层、线程已停）。与 Android 的 `MiniProgramView.close()` 同义。
+    ///
+    /// 换小程序时要先关旧的再开新的（引擎的小程序根目录是进程级的，同一时刻只能有一个实例）：
+    /// 只靠 `removeFromSuperview` 等 deinit 不行 —— 闭包 / 手势还拿着视图时 deinit 会晚到，新引擎就撞上旧的。
+    /// 关过之后这个视图不能再 `open`，换一个新视图。可重复调。
+    public func close() {
+        if closed { return }
+        closed = true
+        keyboard?.onBlur()
         // 先卸 Metal 层、销毁引擎，层这时才能放（引擎不持有 CAMetalLayer）
         session.dispose()
     }
@@ -156,7 +181,9 @@ public final class MiniProgramView: UIView, EngineSessionUI {
     /// 同步等引擎线程的结果（返回是低频操作，代价可以忽略）
     @discardableResult
     public func goBack() -> Bool {
-        session.call(false) { mr_app_back($0) != 0 }
+        // 关过的视图引擎线程已停：不等那 2 秒的超时
+        if closed { return false }
+        return session.call(false) { mr_app_back($0) != 0 }
     }
 
     /// 引擎当前这一帧（截图 / 自动化验收用；画面在 CAMetalLayer 上时 `layer.render(in:)` 截不到）
@@ -179,7 +206,7 @@ public final class MiniProgramView: UIView, EngineSessionUI {
     private var dpr: Float { Float(window?.screen.scale ?? UIScreen.main.scale) }
 
     private func createEngineIfPossible() {
-        guard !created, let dir = appDir, bounds.width > 0, bounds.height > 0 else { return }
+        guard !created, !closed, let dir = appDir, bounds.width > 0, bounds.height > 0 else { return }
         created = true
         // 数据目录必须给：storage 与图片磁盘缓存都落这里，不给会静默失效
         let data = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
@@ -279,6 +306,9 @@ public final class MiniProgramView: UIView, EngineSessionUI {
         switch ev["type"] as? String {
         case "app":
             if let a = ev["about"] as? [String: Any] { about = MiniProgramAbout(json: a) }
+        case "inputFocus": keyboard?.onFocus(ev)
+        case "inputBlur": keyboard?.onBlur()
+        case "inputValue": keyboard?.onValue(ev)
         case "menuButton":
             switch MiniMenuButtonAction(rawValue: ev["action"] as? String ?? "") {
             case .menu: showAbout()

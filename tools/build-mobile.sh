@@ -3,6 +3,7 @@
 #
 #   bash tools/build-mobile.sh ios       # → sdk/ios/MiniRender.xcframework
 #   bash tools/build-mobile.sh android   # → sdk/android/src/main/jniLibs/<abi>/libmini_render.so
+#   bash tools/build-mobile.sh macos     # → sdk/macos/MiniRender.xcframework（Apple 芯片；MAC_UNIVERSAL=1 再带 Intel）
 #   bash tools/build-mobile.sh check     # 只做交叉编译检查（不产出）
 #
 # 三个**必须**的构建参数，缺一个都编不过：
@@ -150,11 +151,47 @@ build_ios() {
     echo "   Flutter 插件：sdk/flutter/ios/MiniRender.xcframework 已软链到这里"
 }
 
+# ─────────────────────────────── macOS ───────────────────────────────
+# 给 sdk/macos 的 MiniProgramView（AppKit 宿主，PC 微信式示例在 sdk/macos/example）用的静态库。
+# 与 iOS 的区别：不要 bindgen（rquickjs-sys 预生成了 darwin 的绑定）；带 h264 / audio（桌面上软解 <video>、
+# 自己出声，与 mini-app-window 一样）；不带 desktop（窗口、上屏、剪贴板都归宿主）。
+build_macos() {
+    local flags=(--release --lib --no-default-features --features gpu,h264,audio)
+    local lto="${MOBILE_LTO:-thin}" incr=false
+    [ "$lto" = false ] && incr=true
+    local targets=(aarch64-apple-darwin)
+    [ "${MAC_UNIVERSAL:-0}" = 1 ] && targets+=(x86_64-apple-darwin)
+    export MACOSX_DEPLOYMENT_TARGET="${MACOSX_DEPLOYMENT_TARGET:-14.0}"
+    for t in "${targets[@]}"; do
+        rustup target add "$t" >/dev/null 2>&1 || true
+        echo "▶ $t"
+        CARGO_PROFILE_RELEASE_LTO="$lto" CARGO_PROFILE_RELEASE_INCREMENTAL="$incr" \
+            cargo build "${flags[@]}" --target "$t"
+    done
+    local lib="target/${targets[0]}/release/libmini_render.a"
+    if [ "${#targets[@]}" -gt 1 ]; then
+        mkdir -p target/macos-universal
+        lipo -create "target/aarch64-apple-darwin/release/libmini_render.a" "target/x86_64-apple-darwin/release/libmini_render.a" \
+            -output target/macos-universal/libmini_render.a
+        lib=target/macos-universal/libmini_render.a
+    fi
+    local hdr=target/macos-headers
+    rm -rf "$hdr"
+    mkdir -p "$hdr"
+    cp include/mini_render.h "$hdr/"
+    cp sdk/ios/ffi-headers/module.modulemap "$hdr/"
+    local out=sdk/macos/MiniRender.xcframework
+    rm -rf "$out"
+    xcodebuild -create-xcframework -library "$lib" -headers "$hdr" -output "$out"
+    echo "✅ $out"
+}
+
 case "$MODE" in
     android) build_android ;;
     ios)     build_ios ;;
+    macos)   build_macos ;;
     check)   echo "== 交叉编译检查 =="; build_ios; build_android; echo "✅ iOS / Android 均可编译" ;;
-    *) echo "用法: build-mobile.sh [ios|android|check]"; exit 1 ;;
+    *) echo "用法: build-mobile.sh [ios|android|macos|check]"; exit 1 ;;
 esac
 # 剪掉交叉编译目录里换下来的旧产物（发版 thin LTO 与调试档哈希不同，来回切会一份份攒下去）
 python3 tools/prune-target.py --quiet || true

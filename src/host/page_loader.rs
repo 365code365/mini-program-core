@@ -215,6 +215,15 @@ pub fn load_custom_tabbar_with_app_wxss(app_wxss: &str) -> Result<Option<CustomT
     }))
 }
 
+/// 只重新解析自定义 tabBar 的样式表（屏宽 / 安全区变了：rpx 与 `env()` 在解析期折算）。
+///
+/// 不走 [`load_custom_tabbar_with_app_wxss`]：那个还要读 WXML、**新建一个 JS 上下文**跑组件取 data 快照
+/// （`snapshot_component_data`），拖窗口宽度时每一步都来一遍，单这一项就十几毫秒，而 data 换完又被活实例的覆盖掉
+pub fn parse_custom_tabbar_stylesheet(app_wxss: &str) -> Option<StyleSheet> {
+    let wxss = fs::read_to_string(get_app_path().join("custom-tab-bar").join("index.wxss")).unwrap_or_default();
+    WxssParser::new(&format!("{}\n{}", app_wxss, wxss)).parse().ok()
+}
+
 /// 内置页面（fallback）
 fn load_builtin_pages() -> HashMap<String, PageInfo> {
     let mut pages = HashMap::new();

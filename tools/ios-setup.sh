@@ -38,19 +38,19 @@ if [ -z "$XCODE" ]; then
     note "装法见本脚本文件头：App Store 搜 Xcode，或 xcodes install --latest --experimental-unxip"
     note "空闲盘：$(df -h / | awk 'NR==2{print $4}')（Xcode 解开约 40GB，另加模拟器运行时约 8GB）"
 else
-    ok "Xcode：$XCODE（$("$XCODE/Contents/Developer/usr/bin/xcodebuild" -version 2>/dev/null | head -1)）"
+    ok "Xcode：${XCODE}（$("$XCODE/Contents/Developer/usr/bin/xcodebuild" -version 2>/dev/null | head -1)）"
     # sudo 一律 `-n`：本脚本也会被 ios-debug.sh 在后台调起，没有终端时交互式 sudo 会一直挂着等密码
     if [ "${DEVELOPER_DIR:-}" = "$XCODE/Contents/Developer" ]; then
         ok "DEVELOPER_DIR 已指向 Xcode（不动 xcode-select）"
     elif [ "$(xcode-select -p 2>/dev/null)" != "$XCODE/Contents/Developer" ]; then
         if [ "$CHECK" = 0 ] && [ -t 0 ]; then
-            echo "▶ sudo xcode-select -s $XCODE（要输开机密码）"
+            echo "▶ sudo xcode-select -s ${XCODE}（要输开机密码）"
             sudo xcode-select -s "$XCODE/Contents/Developer"
         elif [ "$CHECK" = 0 ] && sudo -n xcode-select -s "$XCODE/Contents/Developer" 2>/dev/null; then
             ok "xcode-select 已切到 $XCODE"
         else
             export DEVELOPER_DIR="$XCODE/Contents/Developer"
-            note "xcode-select 还指着 $(xcode-select -p)；本次用 DEVELOPER_DIR（想永久切：sudo xcode-select -s $XCODE）"
+            note "xcode-select 还指着 $(xcode-select -p)；本次用 DEVELOPER_DIR（想永久切：sudo xcode-select -s ${XCODE}）"
         fi
     fi
     if ! xcodebuild -license check >/dev/null 2>&1 || ! xcodebuild -checkFirstLaunchStatus >/dev/null 2>&1; then
@@ -68,6 +68,8 @@ else
     fi
     if xcrun simctl list runtimes 2>/dev/null | grep -q '^iOS'; then
         ok "模拟器运行时：$(xcrun simctl list runtimes | grep '^iOS' | tail -1 | cut -c1-60)"
+    elif [ "${IOS_SKIP_RUNTIME:-0}" = 1 ]; then
+        note "没有 iOS 模拟器运行时（只调真机用不到；要模拟器：xcodebuild -downloadPlatform iOS，约 8GB）"
     elif [ "$CHECK" = 1 ]; then
         miss "没有 iOS 模拟器运行时"
     else
@@ -95,9 +97,9 @@ for f in xcodes aria2 xcbeautify ios-deploy; do
     if command -v "$bin" >/dev/null; then
         ok "$f"
     elif [ "$CHECK" = 1 ]; then
-        miss "$f（brew install $f）"
+        miss "${f}（brew install ${f}）"
     else
-        brew install --formula "$f" >/dev/null && ok "$f（刚装）" || miss "$f 安装失败"
+        brew install --formula "$f" >/dev/null && ok "${f}（刚装）" || miss "$f 安装失败"
     fi
 done
 

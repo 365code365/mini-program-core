@@ -5,3 +5,5 @@ android/build/
 android/.gradle/
 ios/MiniRender.xcframework/
 ios/.build/
+macos/MiniRender.xcframework/
+macos/.build/

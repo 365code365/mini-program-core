@@ -1,0 +1,3 @@
+# XcodeGen 按 project.yml 生成，不进仓库
+MiniRenderExample.xcodeproj/
+build/

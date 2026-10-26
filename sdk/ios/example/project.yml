@@ -1,0 +1,88 @@
+# 原生 iOS 示例（Swift / UIKit，与 Android 的 sdk/android/example 对应）。
+#
+#   xcodegen generate --spec sdk/ios/example/project.yml   # 生成 MiniRenderExample.xcodeproj（不进仓库）
+#   IOS_APP=native bash tools/ios-debug.sh                 # 一条龙：编库 → 生成工程 → 装到真机 / 模拟器
+#
+# 为什么用 XcodeGen 而不是提交 .xcodeproj：pbxproj 是几百行 UUID，改一处就是一大片 diff、合并必冲突；
+# 这份 yml 一眼看得懂引了什么。
+#
+# 依赖：本地 Swift Package（../ = sdk/ios），它引 MiniRender.xcframework —— 先跑一次
+# `bash tools/build-mobile.sh ios`（ios-debug.sh 会自动跑）。
+# 演示小程序与 Flutter / Android 示例共用 sdk/flutter/example/assets/demo（文件夹引用，原样拷进 App）。
+name: MiniRenderExample
+options:
+  bundleIdPrefix: dev.minirender
+  deploymentTarget:
+    iOS: "13.0"
+  createIntermediateGroups: true
+packages:
+  MiniRender:
+    path: ..
+settings:
+  base:
+    # 签名 team：命令行 `DEVELOPMENT_TEAM=<Team ID>` 覆盖（ios-debug.sh 从 Flutter 示例工程里读同一个）
+    CODE_SIGN_STYLE: Automatic
+    SWIFT_VERSION: "5.9"
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  MiniRenderExample:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+      # 文件夹引用（蓝色目录）：整棵 demo 小程序原样进包，取 Bundle.main.url(forResource: "demo")
+      - path: ../../flutter/example/assets/demo
+        type: folder
+        buildPhase: resources
+    dependencies:
+      - package: MiniRender
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: 灵犀原生
+        # 不用 LaunchScreen.storyboard：storyboard 要 ibtool 编译，没装 iOS 平台组件时会报
+        # 「Platform Not Installed」；UILaunchScreen 字典不经 ibtool
+        UILaunchScreen:
+          UIColorName: ""
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+          UISceneConfigurations:
+            UIWindowSceneSessionRoleApplication:
+              - UISceneConfigurationName: Default
+                UISceneDelegateClassName: $(PRODUCT_MODULE_NAME).SceneDelegate
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        # ProMotion 上要 120Hz（MiniProgramView 的 CADisplayLink 才拿得到高刷）
+        CADisableMinimumFrameDurationOnPhone: true
+        # demo 小程序请求本地测试服务器（http）
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
+        NSLocationWhenInUseUsageDescription: 演示 wx.getLocation（示例返回固定坐标，不真的定位）
+        # 外部 App / H5 拉起小程序：minirender://open?appid=…&path=…（与 Android 示例的 LinkActivity 同一种链接）
+        CFBundleURLTypes:
+          - CFBundleURLName: dev.minirender.example.link
+            CFBundleURLSchemes: [minirender]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.minirender.example.native
+        TARGETED_DEVICE_FAMILY: "1"
+  # 真触摸验收（键盘弹出、输入）：xcodebuild test -scheme MiniRenderExample …
+  MiniRenderExampleUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [UITests]
+    dependencies:
+      - target: MiniRenderExample
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.minirender.example.native.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: MiniRenderExample
+schemes:
+  MiniRenderExample:
+    build:
+      targets:
+        MiniRenderExample: all
+        MiniRenderExampleUITests: [test]
+    test:
+      targets: [MiniRenderExampleUITests]

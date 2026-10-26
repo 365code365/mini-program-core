@@ -32,7 +32,7 @@ for a in "$@"; do
     case "$a" in
         --no-h5) H5=0 ;;
         --keep) KEEP=1 ;;
-        *) echo "未知参数 $a（可用：--no-h5 --keep）"; exit 2 ;;
+        *) echo "未知参数 ${a}（可用：--no-h5 --keep）"; exit 2 ;;
     esac
 done
 OUT=target/_regress
@@ -86,7 +86,7 @@ do_gallery() {
     local changed n=0 f
     changed=$(git diff HEAD --name-only -- doc/gallery | grep '\.png$')
     for f in $changed; do
-        git show "HEAD:$f" > "$OUT/_head.png" 2>/dev/null || { echo "  $f（HEAD 里没有，新图）"; n=$((n + 1)); continue; }
+        git show "HEAD:$f" > "$OUT/_head.png" 2>/dev/null || { echo "  ${f}（HEAD 里没有，新图）"; n=$((n + 1)); continue; }
         printf '  %-36s ' "$(basename "$f")"
         python3 tools/pixdiff.py "$OUT/_head.png" "$f" | tail -1
         n=$((n + 1))

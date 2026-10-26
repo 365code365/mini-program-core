@@ -279,7 +279,12 @@ impl MiniEngine {
         } else {
             None
         };
-        // tabBar 高度以组件 WXSS 实测为准（微信也是由组件自身决定）
+        // tabBar 高度以组件 WXSS 实测为准（微信也是由组件自身决定）。没有自定义 tabBar 时先回到默认 50：
+        // 这个高度是进程级的，同一进程里先开过带自定义 tabBar 的小程序（商店示例里来回切），
+        // 不复位的话原生 tabBar 的小程序会沿用上一个的高度
+        if custom_tabbar.is_none() {
+            crate::host::set_tabbar_height(crate::host::tabbar::TABBAR_HEIGHT);
+        }
         if let Some(ct) = &custom_tabbar {
             let probe = WxmlRenderer::new(ct.stylesheet.clone(), width as f32, height as f32);
             let measured = probe.measure_content_height(&ct.wxml_nodes, &ct.data);

@@ -112,13 +112,10 @@ impl MiniEngine {
         }
         self.keep.forget_renderers();
         Self::apply_env_context(&self.opts, self.width, self.height);
-        if self.custom_tabbar.is_some() {
-            if let Ok(Some(mut ct)) = crate::host::load_custom_tabbar_with_app_wxss(&self.app_wxss) {
-                // 重新加载只为按新尺寸重解样式；数据仍以主上下文里的活实例为准（version -1 必然取一次）
-                if let Some(d) = crate::host::custom_tabbar_live::take_data(&self.app, &mut ct.version) {
-                    ct.data = d;
-                }
-                self.custom_tabbar = Some(ct);
+        if let Some(ct) = self.custom_tabbar.as_mut() {
+            // 只按新尺寸重解样式（WXML 与尺寸无关，data 以主上下文里的活实例为准，都不动）
+            if let Some(sheet) = crate::host::page_loader::parse_custom_tabbar_stylesheet(&self.app_wxss) {
+                ct.stylesheet = sheet;
             }
         }
         if let Some(ct) = &self.custom_tabbar {
