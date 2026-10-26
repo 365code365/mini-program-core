@@ -78,8 +78,8 @@ def _term_score(term, m):
     return 0
 
 
-def search(q='', category='', limit=50, record=True):
-    """返回 (结果列表, 总数)。q 为空时按分类列出（热度排序）"""
+def search(q='', category='', limit=50, record=True, offset=0):
+    """返回 (结果列表, 总数)。q 为空时按分类列出（热度排序）；offset 给管理页翻页用"""
     terms = [t for t in (q or '').split() if t][:6]
     out = []
     for m in all_metas():
@@ -99,12 +99,14 @@ def search(q='', category='', limit=50, record=True):
         out.append((score + hot, pm))
     out.sort(key=lambda x: (-x[0], x[1].get('order', 1000), x[1]['id']))
     # 记进热搜的只是「像个词」的搜索：整段出现在头一个结果的名称 / 标签 / 分类里（「饱外」这种跳字匹配不记）
-    if record and terms and out:
+    # 翻到第二页以后不再记：同一次搜索翻几页不该把热搜次数刷几遍
+    if record and offset == 0 and terms and out:
         top = out[0][1]
         hay = [top.get('name', '')] + list(top.get('tags') or []) + [top.get('category', '')]
         if all(any(t.lower() in h.lower() for h in hay) for t in terms):
             _record(' '.join(terms))
-    return [pm for _, pm in out[:limit]], len(out)
+    offset = max(0, offset)
+    return [pm for _, pm in out[offset:offset + limit]], len(out)
 
 
 def categories():

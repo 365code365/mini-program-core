@@ -1,0 +1,15 @@
+<view class="mp" wx:if="{{song}}" style="bottom: {{bottom}}rpx" bindtap="onOpen">
+  <view class="mp-prog" style="width: {{progress}}%"></view>
+  <image class="mp-cover {{playing ? 'mp-spin' : ''}}" src="{{song.cover}}" mode="aspectFill"></image>
+  <view class="mp-info">
+    <text class="mp-name">{{song.name}}</text>
+    <text class="mp-singer">{{waiting ? '缓冲中…' : song.singer.name}}</text>
+  </view>
+  <view class="mp-btn" catchtap="onToggle">
+    <view class="mp-pause" wx:if="{{playing}}"><view class="bar"></view><view class="bar"></view></view>
+    <view class="mp-play" wx:else></view>
+  </view>
+  <view class="mp-next" catchtap="onNext">
+    <view class="nx-tri"></view><view class="nx-bar"></view>
+  </view>
+</view>

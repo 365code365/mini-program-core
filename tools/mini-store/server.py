@@ -11,6 +11,15 @@
 
 接口（<key> = AppID 或 id）：
     GET    /api/apps?q=&category=&limit= 公开：小程序列表 / 搜索（示例 App 用；q 为空 = 全部，按热度）
+           &page=&pageSize=              给了任一个才分页（pageSize 1~100，默认 20），回 {apps, total, page, pageSize}；
+                                         不给保持全量（App 依赖全量列表）
+    GET    /api/demo/…                   公开：示例小程序的演示数据（CORS *；完整说明见 demo_api.py 文件头）
+           列表都收 ?page=1&size=10（size ≤ 50），回 {list, page, size, total, hasMore}：
+           movies?type=now|coming|top&q=   movies/<id>   movies/<id>/comments?sort=hot|new
+           banners?app=movie|music|gallery   tags?app=gallery|music|movie
+           music/playlists?tag=   music/playlists/<id>   music/songs?q=   music/songs/<id>（lrc + audioUrl）   music/charts
+           photos?tag=&q=   photos/<id>   img/<kind>/<name>.jpg   audio/<n>.wav
+           图片 / 音频由 make_demo_assets.py 在本机生成到 demo_assets/，随 deploy.sh 上传
     GET    /api/categories               公开：分类与各分类的数量
     GET    /api/search/hot               公开：热搜词
     GET    /api/search/suggest?q=        公开：输入联想
@@ -48,6 +57,7 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlsplit
 
+import demo_api
 import diag
 import landing
 import store_search
@@ -139,6 +149,13 @@ class LoginThrottle:
 THROTTLE = LoginThrottle()
 
 
+def _int_arg(v, default, lo, hi):
+    try:
+        return max(lo, min(hi, int(v)))
+    except (TypeError, ValueError):
+        return default
+
+
 # ─────────────────────────── HTTP ───────────────────────────
 
 class Handler(BaseHTTPRequestHandler):
@@ -164,6 +181,10 @@ class Handler(BaseHTTPRequestHandler):
     def do_DELETE(self):
         self.dispatch('DELETE')
 
+    def do_OPTIONS(self):
+        # 只有 /api/demo/ 回 CORS 预检，其它路径照旧 404
+        self.dispatch('OPTIONS')
+
     def dispatch(self, method):
         url = urlsplit(self.path)
         self.query = {k: v[0] for k, v in parse_qs(url.query).items()}
@@ -178,7 +199,7 @@ class Handler(BaseHTTPRequestHandler):
     def route(self, method, p):
         if method == 'GET' and p in ([], ['admin']):
             return self.send_static('admin.html', 'text/html; charset=utf-8')
-        if method == 'GET' and p in (['admin.js'], ['open.js']):
+        if method == 'GET' and p in (['admin.js'], ['open.js'], ['pager.js']):
             return self.send_static(p[0], 'text/javascript; charset=utf-8')
         if method == 'GET' and (p == ['open'] or (len(p) == 2 and p[0] == 'a')):
             appid = p[1] if len(p) == 2 else self.query.get('appid', '')
@@ -192,16 +213,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_json({'words': store_search.suggest(self.query.get('q', ''))})
         if p[:2] == ['api', 'apps']:
             if method == 'GET' and len(p) == 2:
-                q, cat = self.query.get('q', ''), self.query.get('category', '')
-                if not q and not cat:
-                    return self.send_json({'apps': list_apps(), 'serverTime': int(time.time() * 1000)})
-                try:
-                    limit = max(1, min(200, int(self.query.get('limit', '50'))))
-                except ValueError:
-                    limit = 50
-                apps, total = store_search.search(q, cat, limit)
-                return self.send_json({'apps': apps, 'total': total, 'q': q, 'category': cat,
-                                       'serverTime': int(time.time() * 1000)})
+                return self.list_apps_api()
             if method == 'GET' and len(p) == 4 and p[3] == 'icon':
                 return self.send_icon(p[2])
             if method == 'GET' and len(p) == 3:
@@ -242,7 +254,29 @@ class Handler(BaseHTTPRequestHandler):
                 if method == 'DELETE':
                     delete_app(p[3])
                     return self.send_json({'ok': True})
+        if p[:2] == ['api', 'demo']:
+            return demo_api.handle(self, method, p[2:], self.query)
         raise HttpError(404, '没有这个接口')
+
+    def list_apps_api(self):
+        """GET /api/apps：分页参数给了才分页 —— App 拿的是全量（不带参数），管理页按页拉"""
+        q, cat = self.query.get('q', ''), self.query.get('category', '')
+        paged = 'page' in self.query or 'pageSize' in self.query
+        page = _int_arg(self.query.get('page'), 1, 1, 100_000)
+        size = _int_arg(self.query.get('pageSize'), 20, 1, 100)
+        now = int(time.time() * 1000)
+        if not q and not cat:
+            apps = list_apps()
+            if not paged:
+                return self.send_json({'apps': apps, 'serverTime': now})
+            return self.send_json({'apps': apps[(page - 1) * size:page * size], 'total': len(apps), 'page': page,
+                                   'pageSize': size, 'serverTime': now})
+        if paged:
+            apps, total = store_search.search(q, cat, size, offset=(page - 1) * size)
+            return self.send_json({'apps': apps, 'total': total, 'page': page, 'pageSize': size, 'q': q,
+                                   'category': cat, 'serverTime': now})
+        apps, total = store_search.search(q, cat, _int_arg(self.query.get('limit'), 50, 1, 200))
+        return self.send_json({'apps': apps, 'total': total, 'q': q, 'category': cat, 'serverTime': now})
 
     # ── 鉴权 ──
     def login(self):

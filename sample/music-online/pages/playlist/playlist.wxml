@@ -1,0 +1,54 @@
+<view class="state" wx:if="{{status === 'loading'}}"><text>加载中…</text></view>
+<view class="state" wx:elif="{{status === 'error'}}">
+  <text>{{errMsg}}</text>
+  <view class="retry" bindtap="onRetry">重试</view>
+</view>
+<block wx:else>
+  <view class="head">
+    <image class="head-bg" src="{{p.cover}}" mode="aspectFill"></image>
+    <view class="head-mask"></view>
+    <view class="ref ref-dark" wx:if="{{referrer}}">
+      <view class="ref-dot"></view>
+      <text class="ref-t">来自「{{referrer.name}}」{{referrer.movieTitle ? '·《' + referrer.movieTitle + '》' : ''}}</text>
+      <text class="ref-back" bindtap="onBack">返回{{referrer.name}}</text>
+    </view>
+    <view class="row head-row">
+      <view class="cover-wrap">
+        <image class="cover" src="{{p.cover}}" mode="aspectFill"></image>
+        <text class="pl-count">▶ {{p.playCountText}}</text>
+      </view>
+      <view class="col flex1 head-info">
+        <text class="name">{{p.name}}</text>
+        <view class="row creator">
+          <image class="c-avatar" src="{{p.creator.avatar}}" mode="aspectFill"></image>
+          <text class="c-name">{{p.creator.name}}</text>
+        </view>
+        <view class="row tags"><text class="tg" wx:for="{{p.tags}}" wx:key="*this">{{item}}</text></view>
+      </view>
+    </view>
+    <text class="desc {{descOpen ? '' : 'desc-fold'}}" bindtap="onDesc">{{p.description}}</text>
+    <view class="ops row">
+      <view class="op" bindtap="onCollect"><text class="op-n">{{p.subscribed}}</text><text class="op-l">收藏</text></view>
+      <view class="op"><text class="op-n">{{p.songCount}}</text><text class="op-l">首歌</text></view>
+      <view class="op"><text class="op-n">{{p.playCountText}}</text><text class="op-l">播放</text></view>
+    </view>
+  </view>
+  <view class="list">
+    <view class="play-all row" bindtap="onPlayAll" hover-class="song-hover">
+      <view class="pa-icon"><view class="pa-tri"></view></view>
+      <text class="pa-t">播放全部</text>
+      <text class="sub">（{{songs.length}}）</text>
+    </view>
+    <view class="song {{playingId === item.id ? 'song-on' : ''}}" wx:for="{{songs}}" wx:key="id" data-index="{{index}}" bindtap="onSong" hover-class="song-hover">
+      <text class="song-idx">{{playingId === item.id ? '♪' : index + 1}}</text>
+      <view class="song-main">
+        <text class="song-name">{{item.name}}</text>
+        <view class="row"><text class="vip" wx:if="{{item.vip}}">VIP</text><text class="song-meta">{{item.singer.name}} · {{item.album.name}}</text></view>
+      </view>
+      <text class="dur">{{item.durationText}}</text>
+    </view>
+    <view class="foot">— 试听版每首 {{songs[0].trialSeconds}} 秒 —</view>
+  </view>
+</block>
+<view class="mp-gap" wx:if="{{hasSong}}"></view>
+<mini-player></mini-player>

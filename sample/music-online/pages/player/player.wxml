@@ -1,0 +1,54 @@
+<view class="wrap">
+  <image class="bg" wx:if="{{song}}" src="{{song.cover}}" mode="aspectFill"></image>
+  <view class="bg-mask"></view>
+  <block wx:if="{{song}}">
+    <view class="disc-area">
+      <view class="needle {{playing ? 'needle-on' : ''}}"></view>
+      <view class="disc {{playing ? 'spin' : ''}}">
+        <image class="disc-cover" src="{{song.cover}}" mode="aspectFill"></image>
+      </view>
+    </view>
+    <view class="info row">
+      <view class="col flex1">
+        <text class="name">{{song.name}}</text>
+        <text class="artist">{{song.singer.name}} · {{song.album.name}}</text>
+      </view>
+      <text class="like {{liked ? 'like-on' : ''}}" bindtap="onLike">{{liked ? '♥' : '♡'}}</text>
+    </view>
+    <scroll-view class="lyric" scroll-y scroll-into-view="{{toView}}" scroll-with-animation>
+      <view class="line {{curLine === index ? 'line-on' : ''}}" wx:for="{{lyrics}}" wx:key="time" id="l{{index}}" data-index="{{index}}" bindtap="onLine">{{item.text}}</view>
+      <view class="line" wx:if="{{!lyrics.length}}">歌词加载中…</view>
+      <view class="lyric-end"></view>
+    </scroll-view>
+    <view class="prog row">
+      <text class="time">{{posText}}</text>
+      <slider class="slider flex1" min="0" max="{{max}}" value="{{pos}}" block-size="14" activeColor="#ffffff" backgroundColor="rgba(255,255,255,0.25)" bindchanging="onSeeking" bindchange="onSeek" />
+      <text class="time">{{durText}}</text>
+    </view>
+    <view class="ctrls row">
+      <view class="ctrl" bindtap="onLike"><text class="ctrl-s">{{liked ? '♥' : '♡'}}</text></view>
+      <view class="ctrl" bindtap="onPrev"><view class="pv-bar"></view><view class="pv-tri"></view></view>
+      <view class="play" bindtap="onToggle">
+        <view class="pause" wx:if="{{playing}}"><view class="pbar"></view><view class="pbar"></view></view>
+        <view class="tri" wx:else></view>
+      </view>
+      <view class="ctrl" bindtap="onNext"><view class="nx-tri"></view><view class="nx-bar"></view></view>
+      <view class="ctrl" bindtap="onQueue"><text class="ctrl-s">≡</text></view>
+    </view>
+    <text class="tip">{{waiting ? '缓冲中…' : '试听片段 · 第 ' + (index + 1) + ' / ' + queue.length + ' 首'}}</text>
+  </block>
+  <view class="none" wx:else>
+    <text class="none-t">还没有在播放的歌曲</text>
+    <text class="none-s">去发现页挑一张歌单吧</text>
+  </view>
+</view>
+<view class="mask" wx:if="{{showQueue}}" bindtap="onCloseQueue">
+  <view class="sheet" catchtap="noop">
+    <text class="sheet-t">播放队列（{{queue.length}}）</text>
+    <scroll-view class="sheet-list" scroll-y>
+      <view class="q {{index === idx ? 'q-on' : ''}}" wx:for="{{queue}}" wx:key="id" wx:for-index="idx" data-index="{{idx}}" catchtap="onPick">
+        <text class="q-name">{{item.name}}</text><text class="q-artist"> - {{item.singer.name}}</text>
+      </view>
+    </scroll-view>
+  </view>
+</view>

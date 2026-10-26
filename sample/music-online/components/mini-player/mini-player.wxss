@@ -1,0 +1,16 @@
+.mp { position: fixed; left: 16rpx; right: 16rpx; height: 108rpx; background: rgba(255, 255, 255, 0.98); border-radius: 54rpx; box-shadow: 0 6rpx 24rpx rgba(0, 0, 0, 0.12); display: flex; flex-direction: row; align-items: center; padding: 0 24rpx 0 14rpx; overflow: hidden; margin-bottom: 16rpx; }
+.mp-prog { position: absolute; left: 0; bottom: 0; height: 4rpx; background: #f04c4c; }
+.mp-cover { width: 80rpx; height: 80rpx; border-radius: 40rpx; border: 6rpx solid #222; flex-shrink: 0; }
+.mp-spin { animation: mpspin 12s linear infinite; }
+@keyframes mpspin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.mp-info { flex: 1; margin-left: 20rpx; display: flex; flex-direction: column; overflow: hidden; }
+.mp-name { font-size: 28rpx; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #1f2329; }
+.mp-singer { font-size: 22rpx; color: #8a9099; margin-top: 4rpx; }
+.mp-btn { width: 64rpx; height: 64rpx; border-radius: 32rpx; border: 3rpx solid #1f2329; display: flex; align-items: center; justify-content: center; margin-left: 12rpx; }
+/* 三角形用边框画：引擎与 H5 都认，不依赖图标字体 */
+.mp-play { width: 0; height: 0; border-top: 14rpx solid transparent; border-bottom: 14rpx solid transparent; border-left: 22rpx solid #1f2329; margin-left: 6rpx; }
+.mp-pause { display: flex; flex-direction: row; }
+.bar { width: 6rpx; height: 24rpx; background: #1f2329; border-radius: 3rpx; margin: 0 4rpx; }
+.mp-next { display: flex; flex-direction: row; align-items: center; padding: 16rpx 0 16rpx 26rpx; }
+.nx-tri { width: 0; height: 0; border-top: 12rpx solid transparent; border-bottom: 12rpx solid transparent; border-left: 18rpx solid #1f2329; }
+.nx-bar { width: 5rpx; height: 24rpx; background: #1f2329; }

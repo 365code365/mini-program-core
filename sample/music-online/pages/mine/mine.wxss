@@ -1,0 +1,14 @@
+.hero { background: linear-gradient(135deg, #3a3d5c, #f04c4c); padding: 40rpx 32rpx 32rpx; color: #fff; }
+.avatar { width: 112rpx; height: 112rpx; border-radius: 56rpx; background: rgba(255, 255, 255, 0.22); text-align: center; line-height: 112rpx; font-size: 46rpx; font-weight: bold; margin-right: 24rpx; }
+.nick { font-size: 36rpx; font-weight: bold; }
+.lv { font-size: 22rpx; color: rgba(255, 255, 255, 0.8); margin-top: 8rpx; }
+.ref-dark { margin: 28rpx 0 0; background: rgba(255, 255, 255, 0.16); }
+.ref-dark .ref-t { color: #fff; }
+.box { background: #fff; margin: 24rpx; border-radius: 20rpx; padding: 12rpx 0 16rpx; }
+.seg { padding: 16rpx 24rpx; }
+.seg-i { font-size: 28rpx; color: #8a9099; margin-right: 36rpx; }
+.seg-on { color: #1f2329; font-weight: bold; }
+.play-all { padding: 16rpx 24rpx; }
+.pa-tri { width: 0; height: 0; border-top: 12rpx solid transparent; border-bottom: 12rpx solid transparent; border-left: 18rpx solid #f04c4c; margin-right: 14rpx; }
+.pa-t { font-size: 28rpx; font-weight: bold; }
+.cover { width: 88rpx; height: 88rpx; border-radius: 12rpx; margin-right: 12rpx; background: #e9ebef; }

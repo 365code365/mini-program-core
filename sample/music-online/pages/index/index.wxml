@@ -1,0 +1,77 @@
+<view class="ref" wx:if="{{referrer}}">
+  <view class="ref-dot"></view>
+  <text class="ref-t">来自「{{referrer.name}}」小程序{{referrer.movieTitle ? ' · 《' + referrer.movieTitle + '》原声' : ''}}</text>
+  <text class="ref-back" bindtap="onBack">返回</text>
+  <text class="ref-x" bindtap="onCloseRef">×</text>
+</view>
+
+<view class="state" wx:if="{{status === 'loading'}}"><text>正在加载…</text></view>
+<view class="state" wx:elif="{{status === 'error'}}">
+  <text>网络开小差了</text>
+  <view class="retry" bindtap="onRetry">重新加载</view>
+</view>
+<block wx:else>
+  <view class="banner-wrap">
+    <swiper class="banner" autoplay interval="4500" circular indicator-dots indicator-color="rgba(255,255,255,0.45)" indicator-active-color="#ffffff">
+      <swiper-item wx:for="{{banners}}" wx:key="id">
+        <image class="banner-img" src="{{item.image}}" mode="aspectFill" data-type="{{item.target.type}}" data-id="{{item.target.id}}" bindtap="onBanner"></image>
+      </swiper-item>
+    </swiper>
+  </view>
+
+  <view class="entries row">
+    <view class="entry" bindtap="onDaily"><view class="e-icon e1"><text class="e-t">荐</text></view><text class="e-l">每日推荐</text></view>
+    <view class="entry" bindtap="onMorePlaylists"><view class="e-icon e2"><text class="e-t">单</text></view><text class="e-l">歌单广场</text></view>
+    <view class="entry" data-id="1" bindtap="onCharts"><view class="e-icon e3"><text class="e-t">榜</text></view><text class="e-l">排行榜</text></view>
+    <view class="entry" bindtap="onOst"><view class="e-icon e4"><text class="e-t">影</text></view><text class="e-l">电影原声</text></view>
+  </view>
+
+  <view class="sec">
+    <view class="sec-h"><text class="sec-t">推荐歌单</text><text class="more" bindtap="onMorePlaylists">更多 ›</text></view>
+    <view class="grid">
+      <view class="pl" wx:for="{{playlists}}" wx:key="id" data-id="{{item.id}}" bindtap="onPlaylist">
+        <view class="pl-cover-wrap">
+          <image class="pl-cover" src="{{item.cover}}" mode="aspectFill"></image>
+          <text class="pl-count">▶ {{item.playCountText}}</text>
+        </view>
+        <text class="pl-name">{{item.name}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="sec">
+    <view class="sec-h"><text class="sec-t">排行榜</text><text class="more" data-id="1" bindtap="onCharts">全部 ›</text></view>
+    <scroll-view scroll-x class="chart-scroll" show-scrollbar="{{false}}">
+      <view class="chart-row">
+        <view class="chart" wx:for="{{charts}}" wx:key="id" data-id="{{item.id}}" bindtap="onCharts">
+          <view class="row chart-h">
+            <text class="chart-name" style="color: {{item.color}}">{{item.name}}</text>
+            <text class="sub">{{item.updateText}}</text>
+          </view>
+          <view class="chart-song row" wx:for="{{item.top}}" wx:for-item="s" wx:key="id">
+            <image class="cs-cover" src="{{s.cover}}" mode="aspectFill"></image>
+            <text class="cs-rank" style="color: {{s.rank === 1 ? item.color : '#1f2329'}}">{{s.rank}}</text>
+            <view class="col flex1 cs-main">
+              <text class="cs-name ellipsis">{{s.name}}</text>
+              <text class="sub ellipsis">{{s.singer.name}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <view class="sec card">
+    <view class="sec-h pad"><text class="sec-t">新歌速递</text><text class="more" bindtap="onDaily">播放全部</text></view>
+    <view class="song" wx:for="{{songs}}" wx:key="id" data-index="{{index}}" bindtap="onSong" hover-class="song-hover">
+      <image class="ns-cover" src="{{item.cover}}" mode="aspectFill"></image>
+      <view class="song-main">
+        <text class="song-name">{{item.name}}</text>
+        <view class="row"><text class="vip" wx:if="{{item.vip}}">VIP</text><text class="song-meta">{{item.singer.name}} · {{item.album.name}}</text></view>
+      </view>
+      <text class="dur">{{item.durationText}}</text>
+    </view>
+  </view>
+</block>
+<view class="mp-gap" wx:if="{{hasSong}}"></view>
+<mini-player></mini-player>

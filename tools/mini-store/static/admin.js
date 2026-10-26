@@ -161,9 +161,12 @@ $('uploadForm').addEventListener('submit', async (e) => {
 });
 
 // ── 列表：搜索框与分类走服务器的 /api/apps?q=&category=（与 App 同一套排序），空着就是全部 ──
+// 列表按页拉（page/pageSize），概览的统计仍用全量 /api/apps（不带分页参数 = 全量，App 也靠它）
+const listState = { page: 1, pageSize: Number(localStorage.getItem('ms_page_size')) || 10 };
 let searchTimer = 0;
-$('q').addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => refresh().catch(fail), 200); });
-$('fcat').addEventListener('change', () => refresh().catch(fail));
+// 搜索词、分类一变就回第 1 页：留在第 5 页而结果只有 1 页，看到的会是一张空表
+$('q').addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => { listState.page = 1; refresh().catch(fail); }, 200); });
+$('fcat').addEventListener('change', () => { listState.page = 1; refresh().catch(fail); });
 $('reloadApps').addEventListener('click', () => refresh().then(() => toast('已刷新'), fail));
 $('reloadDiag').addEventListener('click', () => refreshDiag().then(() => toast('已刷新'), fail));
 
@@ -215,22 +218,37 @@ function renderOverview(all, cats, hot) {
     return li;
   }) : [el('li', 'empty', '暂无小程序')]));
   $('hot').replaceChildren(...(hot.length ? hot.map((w, i) => {
-    const b = btn('', () => { $('q').value = w; location.hash = 'apps'; return refresh(); });
+    const b = btn('', () => { $('q').value = w; listState.page = 1; location.hash = 'apps'; return refresh(); });
     b.append(el('span', 'rk', String(i + 1)), document.createTextNode(w));
     return b;
   }) : [el('span', 'help', '暂无热搜')]));
 }
 
 async function refresh() {
-  const q = new URLSearchParams({ q: $('q').value.trim(), category: $('fcat').value, limit: '200' });
-  const [{ apps }, all, cats, hot] = await Promise.all([
+  const q = new URLSearchParams({ q: $('q').value.trim(), category: $('fcat').value,
+    page: String(listState.page), pageSize: String(listState.pageSize) });
+  const [{ apps, total }, all, cats, hot] = await Promise.all([
     api('GET', `/api/apps?${q}`),
     api('GET', '/api/apps'),
     api('GET', '/api/categories'),
     api('GET', '/api/search/hot'),
   ]);
   renderOverview(all.apps, cats.categories, hot.keywords);
-  $('count').textContent = `共 ${all.apps.length} 个${apps.length !== all.apps.length ? `，筛选出 ${apps.length} 个` : ''}`;
+  // 删掉了当前页最后一条（或别处删了数据）：这一页空了就退一页再拉
+  if (!apps.length && total > 0 && listState.page > 1) {
+    listState.page = Math.max(1, Math.ceil(total / listState.pageSize));
+    return refresh();
+  }
+  $('count').textContent = `共 ${all.apps.length} 个${total !== all.apps.length ? `，筛选出 ${total} 个` : ''}`;
+  renderPager($('pager'), {
+    page: listState.page, pageSize: listState.pageSize, total, sizes: [10, 20, 50],
+    onChange(page, size) {
+      listState.page = page;
+      if (size !== listState.pageSize) localStorage.setItem('ms_page_size', String(size));
+      listState.pageSize = size;
+      refresh().catch(fail);
+    },
+  });
   $('emptyApps').classList.toggle('hidden', apps.length > 0);
   $('list').replaceChildren(...apps.map((a) => {
     const tr = document.createElement('tr');

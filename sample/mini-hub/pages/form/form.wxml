@@ -1,0 +1,49 @@
+<view class="card top">
+  <text class="sec-t">快速填充</text>
+  <view class="presets">
+    <text class="preset" wx:for="{{presets}}" wx:key="label" data-index="{{index}}" bindtap="onPreset">{{item.label}}</text>
+  </view>
+</view>
+
+<view class="card">
+  <view class="field">
+    <text class="label">目标小程序</text>
+    <picker mode="selector" range="{{targets}}" value="{{ti}}" bindchange="onTarget">
+      <view class="picker row"><text class="flex1">{{targets[ti]}}</text><text class="chev">›</text></view>
+    </picker>
+  </view>
+  <view class="field">
+    <text class="label">AppID</text>
+    <input class="ipt {{custom ? '' : 'ipt-ro'}}" value="{{appId}}" disabled="{{!custom}}" placeholder="wx 开头 + 16 位十六进制" maxlength="18" bindinput="onAppId" />
+    <text class="err" wx:if="{{appIdErr}}">{{appIdErr}}</text>
+  </view>
+  <view class="field">
+    <text class="label">path（可带 query，留空打开首页）</text>
+    <input class="ipt" value="{{path}}" placeholder="pages/index/index?id=1" bindinput="onPath" />
+  </view>
+  <view class="field">
+    <view class="row"><text class="label flex1">extraData（JSON 对象）</text><text class="fmt" bindtap="onFormat">格式化</text></view>
+    <textarea class="ta {{extraErr ? 'ta-err' : ''}}" value="{{extra}}" maxlength="2000" placeholder="JSON 对象，如 movieTitle、playlistId" bindinput="onExtra" />
+    <text class="err" wx:if="{{extraErr}}">{{extraErr}}</text>
+    <text class="hint" wx:else>会自动加上 from / fromName / ts 三个字段</text>
+  </view>
+  <view class="field">
+    <text class="label">envVersion</text>
+    <picker mode="selector" range="{{envs}}" value="{{ei}}" bindchange="onEnv">
+      <view class="picker row"><text class="flex1">{{envs[ei]}}</text><text class="chev">›</text></view>
+    </picker>
+  </view>
+  <view class="go" hover-class="open-hover" bindtap="onGo">跳转</view>
+</view>
+
+<view class="card">
+  <view class="sec-h"><text class="sec-t">跳转记录</text><text class="sub" wx:if="{{logs.length}}" bindtap="onClearLogs">清空</text></view>
+  <view class="state" wx:if="{{!logs.length}}"><text>还没有跳转过</text></view>
+  <view class="log row" wx:for="{{logs}}" wx:key="index">
+    <view class="log-dot {{item.ok ? 'ok' : 'bad'}}"></view>
+    <view class="col flex1">
+      <text class="log-t">{{item.time}} · {{item.name}}{{item.path ? ' · ' + item.path : ''}}</text>
+      <text class="log-m">{{item.msg}}</text>
+    </view>
+  </view>
+</view>

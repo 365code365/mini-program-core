@@ -1,0 +1,92 @@
+<view class="hero">
+  <text class="hero-t">小程序跳转中心</text>
+  <text class="hero-s">一处打开商店里的所有小程序，演示三种跳转写法</text>
+</view>
+
+<view class="card launch">
+  <view class="sec-h"><text class="sec-t">本次启动参数</text><text class="pill {{launch.hasRef ? 'pill-on' : ''}}">{{launch.hasRef ? '被小程序打开' : '直接打开'}}</text></view>
+  <text class="sec-d">来自 <text class="code">wx.getLaunchOptionsSync()</text>。被别的小程序打开时（scene 1037），这里显示来源的 AppID 与它带来的 extraData。</text>
+  <view class="kv row"><text class="k">scene</text><text class="v">{{launch.scene}}</text></view>
+  <view class="kv row"><text class="k">path</text><text class="v">{{launch.path}}</text></view>
+  <view class="kv row"><text class="k">query</text><text class="v mono">{{launch.query}}</text></view>
+  <block wx:if="{{launch.hasRef}}">
+    <view class="kv row"><text class="k">来源 AppID</text><text class="v mono" data-text="{{launch.refAppId}}" bindtap="onCopy">{{launch.refAppId}}</text></view>
+    <view class="kv row"><text class="k">extraData</text><text class="v mono">{{launch.refExtra}}</text></view>
+  </block>
+  <view class="kv row" wx:else><text class="k">referrerInfo</text><text class="v muted">{}（试试从别的小程序打开我）</text></view>
+  <view class="kv row" wx:if="{{enter.scene !== launch.scene || enter.refAppId !== launch.refAppId}}"><text class="k">最近一次进入</text><text class="v">scene {{enter.scene}} {{enter.refAppId}}</text></view>
+</view>
+
+<view class="card">
+  <view class="sec-h"><text class="sec-t">① wx.navigateToMiniProgram</text></view>
+  <text class="sec-d">点「打开」调 <text class="code">wx.navigateToMiniProgram({appId, path, extraData})</text>，失败会弹出原因（未安装、宿主不支持……）。</text>
+  <view class="app row" wx:for="{{featured}}" wx:key="appId">
+    <image wx:if="{{!item.iconFail}}" class="icon" src="{{item.icon}}" mode="aspectFill" data-list="featured" data-index="{{index}}" binderror="onIconErr"></image>
+    <text wx:else class="icon-t" style="background: {{item.color}}">{{item.initial}}</text>
+    <view class="app-main">
+      <text class="app-name">{{item.name}}</text>
+      <text class="app-desc">{{item.description}}</text>
+      <text class="app-id">{{item.appId}} {{item.path ? '· ' + item.path : ''}}</text>
+    </view>
+    <view class="open" hover-class="open-hover" data-index="{{index}}" bindtap="onOpenFeatured">打开</view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="sec-h"><text class="sec-t">② navigator 组件</text></view>
+  <text class="sec-d"><text class="code">navigator target="miniProgram"</text> 配 app-id / path / extra-data，不写一行 JS。</text>
+  <navigator class="nav row" target="miniProgram" open-type="navigate" app-id="wxc0bec341b9d3e883" path="pages/index/index" extra-data="{{navExtra}}" version="release" hover-class="open-hover">
+    <text class="nav-icon" style="background: #f04c4c">听</text>
+    <view class="col flex1"><text class="nav-t">云听音乐 · 带歌单打开</text><text class="nav-s">extra-data = {{navExtra}}</text></view>
+    <text class="chev">›</text>
+  </navigator>
+  <navigator class="nav row" target="miniProgram" app-id="wxaaf1983a0caced0c" path="pages/search/search" extra-data="{{navExtra2}}" hover-class="open-hover">
+    <text class="nav-icon" style="background: #ff4e6a">影</text>
+    <view class="col flex1"><text class="nav-t">光影放映厅 · 直达搜索页</text><text class="nav-s">path = pages/search/search</text></view>
+    <text class="chev">›</text>
+  </navigator>
+  <navigator class="nav row" target="miniProgram" app-id="wx6158cbd043d9faf1" path="pages/index/index" hover-class="open-hover">
+    <text class="nav-icon" style="background: #3b82f6">图</text>
+    <view class="col flex1"><text class="nav-t">拾光图库 · 只给 app-id 与 path</text><text class="nav-s">不带 extra-data</text></view>
+    <text class="chev">›</text>
+  </navigator>
+  <view class="form-link" bindtap="onForm">③ 想自己填 path 与 extraData？去「带参跳转」 ›</view>
+</view>
+
+<view class="card" wx:if="{{logs.length}}">
+  <view class="sec-h"><text class="sec-t">最近跳转</text><text class="sub" bindtap="onClearLogs">清空</text></view>
+  <view class="log row" wx:for="{{logs}}" wx:key="index">
+    <view class="log-dot {{item.ok ? 'ok' : 'bad'}}"></view>
+    <view class="col flex1">
+      <text class="log-t">{{item.time}} · {{item.name}}{{item.path ? ' · ' + item.path : ''}}</text>
+      <text class="log-m">{{item.msg}}</text>
+    </view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="sec-h"><text class="sec-t">商店里的小程序</text><text class="sub">{{total ? '共 ' + total + ' 个' : ''}}</text></view>
+  <text class="sec-d">来自 <text class="code">/api/apps</text> 的分页参数（page、pageSize=20），上拉加载下一页。</text>
+  <view class="state" wx:if="{{status === 'loading'}}"><text>加载中…</text></view>
+  <view class="state" wx:elif="{{status === 'error'}}">
+    <text>商店列表加载失败</text>
+    <view class="retry" bindtap="onRetry">重试</view>
+  </view>
+  <view class="state" wx:elif="{{status === 'empty'}}"><text>商店里还没有小程序</text></view>
+  <block wx:else>
+    <view class="app row" wx:for="{{apps}}" wx:key="appId">
+      <image wx:if="{{!item.iconFail}}" class="icon" src="{{item.icon}}" mode="aspectFill" data-list="apps" data-index="{{index}}" binderror="onIconErr"></image>
+      <text wx:else class="icon-t" style="background: #8b7bff">{{item.initial}}</text>
+      <view class="app-main">
+        <text class="app-name">{{item.name}}</text>
+        <text class="app-desc">{{item.description}}</text>
+        <text class="app-id">{{item.appId}} · {{item.category}}</text>
+      </view>
+      <view class="open" hover-class="open-hover" data-index="{{index}}" bindtap="onOpenStore">打开</view>
+    </view>
+    <view class="foot" wx:if="{{more === 'loading'}}">加载中…</view>
+    <view class="foot" wx:elif="{{more === 'error'}}" bindtap="onRetryMore">加载失败，<text class="accent">点击重试</text></view>
+    <view class="foot" wx:elif="{{more === 'end'}}">— 已显示全部 {{total}} 个 —</view>
+    <view class="foot" wx:else>上拉加载更多</view>
+  </block>
+</view>

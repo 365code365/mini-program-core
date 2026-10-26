@@ -1,0 +1,38 @@
+<view class="head row">
+  <view class="col flex1">
+    <text class="h-t">我的收藏</text>
+    <text class="sub">{{count ? '共 ' + count + ' 张 · 长按可预览或取消收藏' : '喜欢的图片点 ☆ 收藏到这里'}}</text>
+  </view>
+  <text class="clear" wx:if="{{count}}" bindtap="onClear">清空</text>
+</view>
+<view class="state" wx:if="{{!count}}">
+  <view class="state-icon">☆</view>
+  <text>收藏夹还是空的</text>
+  <view class="retry" bindtap="onGo">去发现好图</view>
+</view>
+<view class="wf" wx:else>
+  <view class="wf-col">
+    <view class="pc" wx:for="{{left}}" wx:key="id" data-id="{{item.id}}" bindtap="onPhoto" bindlongpress="onLong">
+      <image class="pc-img" src="{{item.url}}" mode="aspectFill" style="height: {{item.h}}rpx; background: {{item.color}}"></image>
+      <view class="pc-info">
+        <text class="pc-title ellipsis">{{item.title}}</text>
+        <view class="row pc-meta">
+          <image class="pc-avatar" src="{{item.author.avatar}}" mode="aspectFill"></image>
+          <text class="pc-author ellipsis">{{item.author.name}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+  <view class="wf-col wf-col-r">
+    <view class="pc" wx:for="{{right}}" wx:key="id" data-id="{{item.id}}" bindtap="onPhoto" bindlongpress="onLong">
+      <image class="pc-img" src="{{item.url}}" mode="aspectFill" style="height: {{item.h}}rpx; background: {{item.color}}"></image>
+      <view class="pc-info">
+        <text class="pc-title ellipsis">{{item.title}}</text>
+        <view class="row pc-meta">
+          <image class="pc-avatar" src="{{item.author.avatar}}" mode="aspectFill"></image>
+          <text class="pc-author ellipsis">{{item.author.name}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

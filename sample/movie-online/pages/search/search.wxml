@@ -1,0 +1,48 @@
+<view class="bar row">
+  <view class="box row flex1">
+    <view class="glass"></view>
+    <input class="ipt flex1" placeholder="搜索片名、导演、演员" value="{{kw}}" focus confirm-type="search" bindinput="onInput" bindconfirm="onConfirm" />
+    <view class="clear" wx:if="{{kw}}" bindtap="onClear">×</view>
+  </view>
+</view>
+
+<block wx:if="{{status === 'idle'}}">
+  <view class="block" wx:if="{{history.length}}">
+    <view class="sec-h"><text class="sec-t">搜索历史</text><text class="more" bindtap="onClearHistory">清空</text></view>
+    <view class="chips">
+      <text class="chip" wx:for="{{history}}" wx:key="*this" data-kw="{{item}}" bindtap="onPick">{{item}}</text>
+    </view>
+  </view>
+  <view class="block">
+    <view class="sec-h"><text class="sec-t">大家都在搜</text></view>
+    <view class="chips">
+      <text class="chip {{index < 3 ? 'chip-hot' : ''}}" wx:for="{{hot}}" wx:key="*this" data-kw="{{item}}" bindtap="onPick">{{item}}</text>
+    </view>
+  </view>
+</block>
+<view class="state" wx:elif="{{status === 'loading'}}"><text>搜索中…</text></view>
+<view class="state" wx:elif="{{status === 'error'}}">
+  <view class="state-icon">!</view>
+  <text>搜索失败，请检查网络</text>
+  <view class="retry" hover-class="retry-hover" bindtap="onRetry">重试</view>
+</view>
+<view class="state" wx:elif="{{status === 'empty'}}">
+  <view class="state-icon">?</view>
+  <text>没有找到「{{kw}}」相关的影片</text>
+</view>
+<block wx:else>
+  <view class="count sub">找到 {{total}} 部相关影片</view>
+  <view class="item row" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onMovie" hover-class="item-hover">
+    <image class="poster" src="{{item.poster}}" mode="aspectFill"></image>
+    <view class="info flex1">
+      <text class="title">{{item.title}}</text>
+      <text class="sub line">{{item.enTitle}}</text>
+      <text class="sub line">{{item.genreText}} · {{item.releaseDate}}</text>
+      <text class="sub line cast">{{item.castText}}</text>
+    </view>
+    <text class="score {{item.score ? '' : 'score-none'}}">{{item.scoreText}}</text>
+  </view>
+  <view class="foot" wx:if="{{more === 'loading'}}">加载中…</view>
+  <view class="foot" wx:elif="{{more === 'error'}}" bindtap="onRetryMore">加载失败，<text class="accent">点击重试</text></view>
+  <view class="foot" wx:elif="{{more === 'end'}}">— 没有更多了 —</view>
+</block>

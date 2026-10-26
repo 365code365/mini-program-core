@@ -1,0 +1,28 @@
+.head { position: relative; padding: 24rpx 32rpx 28rpx; overflow: hidden; color: #fff; }
+/* 背景：放大的封面压一层深色，近似毛玻璃（不依赖 filter: blur） */
+.head-bg { position: absolute; left: -100rpx; top: -100rpx; width: 950rpx; height: 950rpx; opacity: 0.9; }
+.head-mask { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background: rgba(20, 20, 30, 0.62); }
+.ref-dark { position: relative; margin: 0 0 24rpx; background: rgba(255, 255, 255, 0.16); }
+.ref-dark .ref-t { color: #fff; }
+.head-row { position: relative; align-items: flex-start; }
+.cover-wrap { position: relative; width: 240rpx; height: 240rpx; flex-shrink: 0; }
+.cover { width: 240rpx; height: 240rpx; border-radius: 20rpx; }
+.pl-count { position: absolute; right: 10rpx; top: 8rpx; font-size: 20rpx; color: #fff; background: rgba(0, 0, 0, 0.3); border-radius: 16rpx; padding: 2rpx 12rpx; }
+.head-info { margin-left: 28rpx; }
+.name { font-size: 34rpx; font-weight: bold; line-height: 48rpx; }
+.creator { margin-top: 20rpx; }
+.c-avatar { width: 48rpx; height: 48rpx; border-radius: 24rpx; margin-right: 12rpx; }
+.c-name { font-size: 24rpx; color: rgba(255, 255, 255, 0.85); }
+.tags { margin-top: 20rpx; }
+.tg { font-size: 20rpx; color: #fff; border: 1rpx solid rgba(255, 255, 255, 0.5); border-radius: 18rpx; padding: 2rpx 14rpx; margin-right: 10rpx; }
+.desc { position: relative; display: block; margin-top: 24rpx; font-size: 24rpx; line-height: 36rpx; color: rgba(255, 255, 255, 0.75); }
+.desc-fold { height: 36rpx; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ops { position: relative; margin-top: 28rpx; background: rgba(255, 255, 255, 0.14); border-radius: 16rpx; padding: 16rpx 0; }
+.op { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.op-n { font-size: 28rpx; font-weight: bold; }
+.op-l { font-size: 20rpx; color: rgba(255, 255, 255, 0.7); margin-top: 2rpx; }
+.list { background: #fff; border-radius: 28rpx 28rpx 0 0; margin-top: -20rpx; position: relative; padding-top: 8rpx; }
+.play-all { padding: 24rpx; }
+.pa-icon { width: 52rpx; height: 52rpx; border-radius: 26rpx; background: #f04c4c; display: flex; align-items: center; justify-content: center; margin-right: 16rpx; }
+.pa-tri { width: 0; height: 0; border-top: 11rpx solid transparent; border-bottom: 11rpx solid transparent; border-left: 17rpx solid #fff; margin-left: 4rpx; }
+.pa-t { font-size: 32rpx; font-weight: bold; }

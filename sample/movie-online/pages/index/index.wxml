@@ -1,0 +1,67 @@
+<view class="search-wrap">
+  <view class="search row" bindtap="onSearch" hover-class="btn-hover">
+    <view class="glass"></view>
+    <text class="search-ph">搜索片名、导演、演员</text>
+  </view>
+</view>
+<view class="banner-wrap" wx:if="{{banners.length}}">
+  <swiper class="banner" autoplay interval="4000" circular indicator-dots indicator-color="rgba(255,255,255,0.45)" indicator-active-color="#ffffff">
+    <swiper-item wx:for="{{banners}}" wx:key="id">
+      <image class="banner-img" src="{{item.image}}" mode="aspectFill" data-type="{{item.target.type}}" data-id="{{item.target.id}}" bindtap="onBanner"></image>
+    </swiper-item>
+  </swiper>
+</view>
+<view class="tabs row">
+  <view wx:for="{{tabs}}" wx:key="key" class="tab {{tab === item.key ? 'tab-on' : ''}}" data-key="{{item.key}}" bindtap="onTab">
+    <text>{{item.name}}</text>
+    <view class="tab-line" wx:if="{{tab === item.key}}"></view>
+  </view>
+  <view class="flex1"></view>
+  <text class="sub" wx:if="{{status === 'ok'}}">共 {{total}} 部</text>
+</view>
+
+<view class="state" wx:if="{{status === 'loading'}}">
+  <view class="spinner"></view>
+  <text>正在加载影片…</text>
+</view>
+<view class="state" wx:elif="{{status === 'error'}}">
+  <view class="state-icon">!</view>
+  <text>网络开小差了</text>
+  <view class="retry" hover-class="retry-hover" bindtap="onRetry">重新加载</view>
+</view>
+<view class="state" wx:elif="{{status === 'empty'}}">
+  <view class="state-icon">?</view>
+  <text>这里还没有影片</text>
+</view>
+
+<block wx:else>
+  <view class="movie" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onMovie" hover-class="movie-hover">
+    <view class="poster-wrap">
+      <image class="poster" src="{{item.poster}}" mode="aspectFill"></image>
+      <text class="rank rank-{{item.rank <= 3 ? item.rank : 'n'}}" wx:if="{{item.rank}}">{{item.rank}}</text>
+    </view>
+    <view class="m-info">
+      <view class="row">
+        <text class="m-title">{{item.title}}</text>
+        <text class="m-badge" wx:for="{{item.tags}}" wx:for-item="t" wx:key="*this">{{t}}</text>
+      </view>
+      <view class="row m-line" wx:if="{{item.score}}">
+        <view class="stars"><text class="stars-bg">★★★★★</text><text class="stars-fg" style="width: {{item.starWidth}}%">★★★★★</text></view>
+        <text class="m-score">{{item.scoreText}}</text>
+      </view>
+      <view class="row m-line" wx:else>
+        <text class="wish-n">{{item.wishText}}</text><text class="sub">人想看</text>
+      </view>
+      <text class="sub m-line">{{item.genreText}} · {{item.duration}}分钟 · {{item.region}}</text>
+      <text class="sub m-line m-cast">主演：{{item.castText}}</text>
+      <text class="sub m-line" wx:if="{{item.status === 'coming'}}"><text class="accent">{{item.releaseText}}</text> 上映</text>
+      <text class="sub m-line" wx:elif="{{item.status === 'classic'}}">{{item.year}} 年经典</text>
+      <text class="sub m-line" wx:elif="{{item.boxOffice}}">累计票房 {{item.boxOffice}}</text>
+    </view>
+    <view class="wish {{item.wished ? 'wish-on' : ''}}" data-index="{{index}}" catchtap="onWish">{{item.wished ? '已想看' : '想看'}}</view>
+  </view>
+  <view class="foot" wx:if="{{more === 'loading'}}">加载中…</view>
+  <view class="foot" wx:elif="{{more === 'error'}}" bindtap="onRetryMore">加载失败，<text class="accent">点击重试</text></view>
+  <view class="foot" wx:elif="{{more === 'end'}}">— 已经到底啦 —</view>
+  <view class="foot" wx:else>上拉加载更多</view>
+</block>

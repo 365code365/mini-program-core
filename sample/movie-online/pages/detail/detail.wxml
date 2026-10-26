@@ -1,0 +1,100 @@
+<view class="state" wx:if="{{status === 'loading'}}"><text>加载中…</text></view>
+<view class="state" wx:elif="{{status === 'error'}}">
+  <view class="state-icon">!</view>
+  <text>{{errMsg}}</text>
+  <view class="retry" hover-class="retry-hover" bindtap="onRetry">重新加载</view>
+</view>
+<block wx:else>
+  <view class="head" style="background: {{headBg}}">
+    <view class="row head-row">
+      <image class="poster" src="{{m.poster}}" mode="aspectFill" bindtap="onPoster"></image>
+      <view class="head-info flex1">
+        <text class="title">{{m.title}}</text>
+        <text class="en">{{m.enTitle}}</text>
+        <text class="meta">{{m.genreText}} · {{m.duration}} 分钟</text>
+        <text class="meta">{{m.region}} · {{m.releaseDate}} {{m.status === 'coming' ? '上映' : '首映'}}</text>
+        <view class="row head-tags">
+          <text class="htag" wx:for="{{m.tags}}" wx:key="*this">{{item}}</text>
+        </view>
+      </view>
+    </view>
+    <view class="score-box row">
+      <block wx:if="{{m.score}}">
+        <view class="col">
+          <text class="score-label">观众评分</text>
+          <view class="row">
+            <text class="score">{{scoreText}}</text>
+            <view class="col score-side">
+              <view class="stars"><text class="stars-bg">★★★★★</text><text class="stars-fg" style="width: {{starWidth}}%">★★★★★</text></view>
+              <text class="score-n">{{m.scoreCount}} 人评分</text>
+            </view>
+          </view>
+        </view>
+      </block>
+      <view class="col" wx:else>
+        <text class="score-label">期待指数</text>
+        <text class="score">{{m.wishText}}<text class="score-unit"> 人想看</text></text>
+      </view>
+      <view class="flex1"></view>
+      <view class="col box-office" wx:if="{{m.boxOffice}}">
+        <text class="score-label">累计票房</text>
+        <text class="bo">{{m.boxOffice}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="actions row">
+    <view class="act {{wished ? 'act-on' : ''}}" hover-class="btn-hover" bindtap="onWish">{{wished ? '♥ 已想看' : '♡ 想看'}}</view>
+    <view class="act act-music" hover-class="btn-hover" bindtap="onSoundtrack">♪ 听原声</view>
+  </view>
+
+  <view class="card">
+    <view class="sec-h"><text class="sec-t">剧情简介</text></view>
+    <view class="summary {{expanded ? '' : 'summary-fold'}}"><text class="summary-t">{{m.summary}}</text></view>
+    <view class="fold-btn" bindtap="onToggleSummary">{{expanded ? '收起 ▲' : '展开 ▼'}}</view>
+  </view>
+
+  <view class="card card-flush">
+    <view class="sec-h pad"><text class="sec-t">演职人员</text><text class="more">{{people.length}} 人</text></view>
+    <scroll-view scroll-x class="hscroll" show-scrollbar="{{false}}">
+      <view class="hrow">
+        <view class="person" wx:for="{{people}}" wx:key="id">
+          <image class="avatar" src="{{item.avatar}}" mode="aspectFill"></image>
+          <text class="p-name">{{item.name}}</text>
+          <text class="p-role">{{item.role}}</text>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <view class="card card-flush">
+    <view class="sec-h pad"><text class="sec-t">剧照</text><text class="more">{{m.stills.length}} 张 · 点击查看大图</text></view>
+    <scroll-view scroll-x class="hscroll" show-scrollbar="{{false}}">
+      <view class="hrow">
+        <image class="still" wx:for="{{m.stills}}" wx:key="*this" src="{{item}}" mode="aspectFill" data-index="{{index}}" bindtap="onStill"></image>
+      </view>
+    </scroll-view>
+  </view>
+
+  <view class="card">
+    <view class="sec-h"><text class="sec-t">热门短评</text><text class="more" bindtap="onComments">全部 {{m.commentCount}} 条 ›</text></view>
+    <view class="cmt" wx:for="{{comments}}" wx:key="id">
+      <view class="row">
+        <image class="c-avatar" src="{{item.user.avatar}}" mode="aspectFill"></image>
+        <view class="col flex1">
+          <text class="c-name">{{item.user.name}}</text>
+          <view class="stars stars-sm"><text class="stars-bg">★★★★★</text><text class="stars-fg" style="width: {{item.starWidth}}%">★★★★★</text></view>
+        </view>
+        <text class="sub">{{item.likes}} 赞</text>
+      </view>
+      <text class="c-text">{{item.content}}</text>
+      <text class="sub">{{item.date}}</text>
+    </view>
+    <view class="all-btn" hover-class="btn-hover" bindtap="onComments">查看全部短评</view>
+  </view>
+  <view class="bottom-gap"></view>
+  <view class="bar row">
+    <view class="bar-btn" bindtap="onWrite">写短评</view>
+    <view class="btn btn-primary flex1" hover-class="btn-hover" bindtap="onWish">{{wished ? '已想看 · 上映提醒' : '想看 · 上映提醒我'}}</view>
+  </view>
+</block>

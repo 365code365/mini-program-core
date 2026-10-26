@@ -1,0 +1,24 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/favorites/favorites",
+    "pages/detail/detail"
+  ],
+  "window": {
+    "navigationBarTitleText": "拾光图库",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f4f5f7",
+    "backgroundTextStyle": "dark"
+  },
+  "tabBar": {
+    "color": "#9aa0ab",
+    "selectedColor": "#3b82f6",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "发现", "iconPath": "images/tab-grid.png", "selectedIconPath": "images/tab-grid-on.png" },
+      { "pagePath": "pages/favorites/favorites", "text": "收藏", "iconPath": "images/tab-heart.png", "selectedIconPath": "images/tab-heart-on.png" }
+    ]
+  }
+}

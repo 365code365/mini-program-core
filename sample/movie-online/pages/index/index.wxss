@@ -1,0 +1,31 @@
+.search-wrap { background: #fff; padding: 16rpx 24rpx 20rpx; }
+.search { height: 72rpx; background: #f3f4f6; border-radius: 36rpx; padding: 0 28rpx; }
+.glass { width: 22rpx; height: 22rpx; border-radius: 13rpx; border: 4rpx solid #9aa0a6; margin-right: 16rpx; }
+.search-ph { color: #9aa0a6; font-size: 26rpx; }
+/* swiper 带左右 margin 时 swiper-item 仍按整屏宽排：外层留白 + 定宽 swiper */
+.banner-wrap { background: #fff; padding: 0 24rpx 8rpx; }
+.banner { width: 702rpx; height: 281rpx; border-radius: 20rpx; overflow: hidden; }
+.banner-img { width: 702rpx; height: 281rpx; border-radius: 20rpx; }
+.tabs { background: #fff; padding: 8rpx 24rpx 0; margin-bottom: 16rpx; }
+.tab { display: flex; flex-direction: column; align-items: center; padding: 20rpx 0 14rpx; margin-right: 44rpx; font-size: 30rpx; color: #8a9099; }
+.tab-on { color: #1f2329; font-weight: bold; font-size: 34rpx; }
+.tab-line { width: 40rpx; height: 6rpx; border-radius: 3rpx; background: #ff4e6a; margin-top: 8rpx; }
+.movie { display: flex; flex-direction: row; align-items: center; background: #fff; margin: 0 24rpx 16rpx; border-radius: 20rpx; padding: 24rpx; }
+.movie-hover { background: #fafafa; }
+.poster-wrap { position: relative; width: 160rpx; height: 240rpx; flex-shrink: 0; }
+.poster { width: 160rpx; height: 240rpx; border-radius: 12rpx; background: #eceef1; }
+.rank { position: absolute; left: 0; top: 0; min-width: 44rpx; height: 44rpx; line-height: 44rpx; text-align: center; font-size: 26rpx; font-weight: bold; color: #fff; border-radius: 12rpx 0 12rpx 0; background: #9aa0a6; }
+.rank-1 { background: linear-gradient(135deg, #ffd36b, #ff9f00); }
+.rank-2 { background: linear-gradient(135deg, #d6dde8, #9aa7ba); }
+.rank-3 { background: linear-gradient(135deg, #f3c39b, #c9875a); }
+.m-info { flex: 1; margin-left: 24rpx; display: flex; flex-direction: column; overflow: hidden; }
+.m-title { font-size: 32rpx; font-weight: bold; margin-right: 8rpx; }
+.m-badge { font-size: 18rpx; color: #fff; background: #3d7bff; padding: 2rpx 8rpx; border-radius: 6rpx; margin-left: 6rpx; }
+.m-line { margin-top: 10rpx; }
+.m-score { font-size: 30rpx; font-weight: bold; color: #ffb400; margin-left: 12rpx; }
+.m-cast { width: 360rpx; height: 34rpx; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.wish-n { font-size: 30rpx; font-weight: bold; color: #ffb400; margin-right: 6rpx; }
+.wish { font-size: 24rpx; color: #ff4e6a; border: 2rpx solid #ff4e6a; border-radius: 28rpx; padding: 8rpx 26rpx; margin-left: 12rpx; }
+.wish-on { color: #fff; background: #ff4e6a; }
+.spinner { width: 56rpx; height: 56rpx; border-radius: 28rpx; border: 6rpx solid #f0f1f3; border-top: 6rpx solid #ff4e6a; margin-bottom: 20rpx; animation: spin 0.9s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }

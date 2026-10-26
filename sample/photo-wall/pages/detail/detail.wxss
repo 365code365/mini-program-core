@@ -1,0 +1,32 @@
+.hero { position: relative; width: 750rpx; }
+.big { width: 750rpx; display: block; }
+.zoom { position: absolute; right: 20rpx; bottom: 20rpx; font-size: 22rpx; color: #fff; background: rgba(0, 0, 0, 0.35); border-radius: 20rpx; padding: 6rpx 18rpx; }
+.card { background: #fff; margin: 20rpx 24rpx 0; border-radius: 20rpx; padding: 28rpx; display: flex; flex-direction: column; }
+.avatar { width: 80rpx; height: 80rpx; border-radius: 40rpx; margin-right: 20rpx; }
+.author { font-size: 30rpx; font-weight: bold; margin-bottom: 4rpx; }
+.follow { font-size: 24rpx; color: #fff; background: #3b82f6; border-radius: 28rpx; padding: 8rpx 28rpx; }
+.follow-on { color: #8a9099; background: #f0f1f4; }
+.title { font-size: 36rpx; font-weight: bold; margin-top: 28rpx; }
+.desc { font-size: 28rpx; line-height: 44rpx; color: #4e5969; margin-top: 12rpx; }
+.tags { flex-wrap: wrap; margin-top: 20rpx; }
+.tag { font-size: 24rpx; color: #3b82f6; background: #eef4ff; border-radius: 24rpx; padding: 6rpx 20rpx; margin: 0 14rpx 12rpx 0; }
+.exif { margin-top: 12rpx; font-size: 24rpx; }
+.ex-k { width: 80rpx; color: #9aa0ab; }
+.ex-v { color: #4e5969; }
+.stats { margin-top: 24rpx; border-top: 1rpx solid #f0f1f4; padding-top: 24rpx; }
+.st { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.st-n { font-size: 32rpx; font-weight: bold; }
+.st-l { font-size: 22rpx; color: #9aa0ab; margin-top: 4rpx; }
+.sec-t { font-size: 32rpx; font-weight: bold; margin-bottom: 20rpx; }
+.grid { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-between; }
+.rel { width: 200rpx; margin-bottom: 20rpx; }
+.rel-img { width: 200rpx; height: 200rpx; border-radius: 12rpx; }
+.rel-t { font-size: 22rpx; color: #4e5969; margin-top: 8rpx; display: block; }
+.gap { height: 150rpx; }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; padding: 16rpx 24rpx 28rpx; box-shadow: 0 -2rpx 12rpx rgba(0, 0, 0, 0.05); }
+.bar-i { display: flex; flex-direction: column; align-items: center; width: 110rpx; }
+.bar-ic { font-size: 40rpx; color: #4e5969; line-height: 44rpx; }
+.liked { color: #ff4d6d; }
+.faved { color: #ffb400; }
+.bar-l { font-size: 20rpx; color: #8a9099; }
+.save { height: 80rpx; line-height: 80rpx; text-align: center; border-radius: 40rpx; background: linear-gradient(90deg, #60a5fa, #3b82f6); color: #fff; font-size: 30rpx; font-weight: bold; margin-left: 16rpx; }

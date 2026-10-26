@@ -1,0 +1,20 @@
+page { background: #fff; }
+.bar { padding: 16rpx 24rpx; border-bottom: 1rpx solid #f0f1f3; }
+.box { height: 72rpx; background: #f3f4f6; border-radius: 36rpx; padding: 0 24rpx; }
+.glass { width: 22rpx; height: 22rpx; border-radius: 13rpx; border: 4rpx solid #9aa0a6; margin-right: 16rpx; }
+.ipt { height: 72rpx; font-size: 28rpx; }
+.clear { width: 36rpx; height: 36rpx; line-height: 34rpx; text-align: center; border-radius: 18rpx; background: #c4c7cc; color: #fff; font-size: 28rpx; }
+.block { padding: 32rpx 24rpx 0; }
+.chips { display: flex; flex-direction: row; flex-wrap: wrap; }
+.chip { font-size: 26rpx; color: #4e5969; background: #f3f4f6; border-radius: 30rpx; padding: 10rpx 28rpx; margin: 0 16rpx 16rpx 0; }
+.chip-hot { color: #ff4e6a; background: #fff0f2; }
+.count { padding: 20rpx 24rpx 4rpx; }
+.item { padding: 24rpx; border-bottom: 1rpx solid #f5f6f8; }
+.item-hover { background: #fafafa; }
+.poster { width: 120rpx; height: 170rpx; border-radius: 10rpx; background: #eceef1; flex-shrink: 0; }
+.info { margin-left: 24rpx; display: flex; flex-direction: column; overflow: hidden; }
+.title { font-size: 30rpx; font-weight: bold; }
+.line { margin-top: 8rpx; }
+.cast { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 420rpx; }
+.score { font-size: 34rpx; font-weight: bold; color: #ffb400; margin-left: 12rpx; }
+.score-none { font-size: 22rpx; color: #b0b4ba; font-weight: normal; }

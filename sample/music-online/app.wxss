@@ -1,0 +1,40 @@
+page { background: #f6f7f9; color: #1f2329; font-size: 28rpx; }
+.row { display: flex; flex-direction: row; align-items: center; }
+.col { display: flex; flex-direction: column; }
+.flex1 { flex: 1; }
+.sub { font-size: 24rpx; color: #8a9099; }
+.accent { color: #f04c4c; }
+.sec { margin: 0 24rpx 32rpx; }
+.sec-h { display: flex; flex-direction: row; align-items: center; justify-content: space-between; margin-bottom: 20rpx; }
+.sec-t { font-size: 34rpx; font-weight: bold; }
+.more { font-size: 24rpx; color: #8a9099; border: 1rpx solid #dfe1e5; border-radius: 22rpx; padding: 4rpx 18rpx; }
+.ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 歌单网格：三列 */
+.grid { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-between; }
+.pl { width: 220rpx; margin-bottom: 28rpx; }
+.pl-cover-wrap { position: relative; width: 220rpx; height: 220rpx; }
+.pl-cover { width: 220rpx; height: 220rpx; border-radius: 18rpx; background: #e9ebef; }
+.pl-count { position: absolute; right: 10rpx; top: 8rpx; font-size: 20rpx; color: #fff; background: rgba(0, 0, 0, 0.3); border-radius: 16rpx; padding: 2rpx 12rpx; }
+.pl-name { font-size: 24rpx; line-height: 34rpx; margin-top: 10rpx; height: 68rpx; overflow: hidden; color: #333; }
+/* 歌曲行 */
+.song { display: flex; flex-direction: row; align-items: center; padding: 20rpx 24rpx; }
+.song-hover { background: #f0f1f4; }
+.song-idx { width: 56rpx; font-size: 28rpx; color: #9aa0ab; text-align: center; }
+.song-on .song-idx, .song-on .song-name { color: #f04c4c; }
+.song-main { flex: 1; overflow: hidden; display: flex; flex-direction: column; margin-left: 8rpx; }
+.song-name { font-size: 30rpx; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.song-meta { font-size: 22rpx; color: #9aa0ab; margin-top: 6rpx; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vip { font-size: 18rpx; color: #f04c4c; border: 1rpx solid #f04c4c; border-radius: 4rpx; padding: 0 6rpx; margin-right: 8rpx; }
+.dur { font-size: 22rpx; color: #b0b4ba; margin-left: 12rpx; }
+.state { display: flex; flex-direction: column; align-items: center; padding: 100rpx 0; color: #9aa0ab; }
+.retry { margin-top: 28rpx; font-size: 26rpx; color: #f04c4c; border: 2rpx solid #f04c4c; border-radius: 32rpx; padding: 10rpx 44rpx; }
+.foot { text-align: center; color: #b0b4ba; font-size: 24rpx; padding: 28rpx 0 40rpx; }
+.btn-hover { opacity: 0.8; }
+/* 有迷你播放条时页面底部留白，别让最后一行被盖住 */
+.mp-gap { height: 150rpx; }
+/* 「来自 xxx 小程序」提示条 */
+.ref { margin: 16rpx 24rpx; padding: 18rpx 20rpx 18rpx 24rpx; border-radius: 16rpx; background: linear-gradient(90deg, #fff1ec, #ffe4e4); display: flex; flex-direction: row; align-items: center; }
+.ref-dot { width: 12rpx; height: 12rpx; border-radius: 6rpx; background: #f04c4c; margin-right: 14rpx; }
+.ref-t { flex: 1; font-size: 24rpx; color: #b2443d; }
+.ref-back { font-size: 24rpx; color: #fff; background: #f04c4c; border-radius: 24rpx; padding: 6rpx 22rpx; margin-left: 12rpx; }
+.ref-x { font-size: 34rpx; color: #c98a85; padding: 0 0 0 18rpx; }

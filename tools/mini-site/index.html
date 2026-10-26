@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>灵犀 · 小程序渲染引擎</title>
+<meta name="description" content="灵犀：对标微信 Skyline 的小程序渲染引擎。Rust 写成，CPU / GPU 双后端，Android / iOS / Flutter 一套 SDK。下载演示 App 体验。">
+<link rel="icon" href="shots/icon-flutter.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="nav">
+  <a class="brand" href="#top"><img src="shots/icon-flutter.png" alt=""><span>灵犀</span></a>
+  <nav>
+    <a href="#features">能力</a>
+    <a href="#apps">演示 App</a>
+    <a href="#samples">示例小程序</a>
+    <a href="#download" class="cta">下载</a>
+  </nav>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="hero-text">
+      <p class="eyebrow">对标微信 Skyline 的小程序渲染引擎</p>
+      <h1>一份小程序源码，<br><span class="grad">原生般流畅</span>地跑在你的 App 里</h1>
+      <p class="lead">灵犀把 WXML / WXSS / JS 直接渲染成画面：逻辑层与渲染层分离、只重画变了的那一块。
+        Rust 写成，CPU 软件光栅化与 GPU 双后端，Android、iOS、Flutter 同一套 SDK。</p>
+      <div class="hero-actions">
+        <a class="btn primary" href="#download">下载演示 App</a>
+        <a class="btn ghost" href="intro/?lang=zh">完整技术介绍 →</a>
+      </div>
+      <ul class="stats">
+        <li><b>48+</b><span>可下载的示例小程序</span></li>
+        <li><b>90Hz</b><span>贴住刷新率的滑动</span></li>
+        <li><b>2</b><span>渲染后端（CPU / GPU）</span></li>
+      </ul>
+    </div>
+    <div class="hero-phones" aria-hidden="true">
+      <div class="phone back"><img src="shots/music-home.jpg" alt=""></div>
+      <div class="phone front"><img src="shots/movie-home.jpg" alt=""></div>
+    </div>
+  </section>
+
+  <section id="features" class="section">
+    <h2>为什么是灵犀</h2>
+    <div class="grid features">
+      <article><i>⚡</i><h3>只重画变了的那块</h3><p>布局缓存 + setData 增量失效，滚动只合成、不重画；最慢一帧而不是平均帧率才是判据。</p></article>
+      <article><i>🎯</i><h3>对齐 Skyline 语义</h3><p>事件冒泡 / catch、position:fixed、按压态、picker、Modal、页面栈与生命周期，与微信行为逐项对照。</p></article>
+      <article><i>🖥</i><h3>CPU / GPU 双后端</h3><p>低端机走 CPU 参考实现，高端机自动用 GPU；GPU 初始化失败、丢上下文一律回退，不黑屏。</p></article>
+      <article><i>🧩</i><h3>同层渲染</h3><p>视频、地图等原生组件画进页面里，滑动时贴着页面走，不再「盖在上面一顿一顿」。</p></article>
+      <article><i>📦</i><h3>小程序商店</h3><p>服务端上传、App 内搜索 / 下载 / 自动更新；外部链接与 wx.navigateToMiniProgram 互相跳转。</p></article>
+      <article><i>🔍</i><h3>手势对齐微信</h3><p>图片预览双指缩放、双击放大；全屏视频竖屏进入、跟着手机横竖旋转。</p></article>
+    </div>
+  </section>
+
+  <section id="apps" class="section alt">
+    <h2>两个演示 App</h2>
+    <div class="grid apps">
+      <article class="app">
+        <img src="shots/icon-flutter.png" alt="灵犀图标">
+        <div>
+          <h3>灵犀 <small>Flutter 版</small></h3>
+          <p>Flutter 插件 <code>mini_render</code> 的完整示例：微信式下拉小程序面板、最近使用 / 我的小程序、长按收藏与删除、胶囊「•••」底部菜单、小程序商店。</p>
+        </div>
+      </article>
+      <article class="app">
+        <img src="shots/icon-native.png" alt="灵犀原生图标">
+        <div>
+          <h3>灵犀原生 <small>Android 原生版</small></h3>
+          <p>只用 Android 框架自带的类（不依赖 AndroidX）：一个 <code>MiniProgramView</code> 就是一个小程序。同一套商店、面板与菜单。</p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section id="samples" class="section">
+    <h2>示例小程序（App 里下拉面板 / 商店可下载）</h2>
+    <p class="sub">数据都来自演示接口：电影、音乐、图库的列表分页、详情、图片与试听音频；跳转中心演示小程序之间互相打开。</p>
+    <div class="shots" id="shots"></div>
+  </section>
+
+  <section id="download" class="section alt">
+    <h2>下载</h2>
+    <p class="sub">Android 8.0 以上、arm64 手机。下载后在浏览器里点开安装（首次需要允许「安装未知应用」）。</p>
+    <div class="grid downloads" id="downloads"><p class="muted">正在读取版本信息…</p></div>
+    <p class="muted small">校验：下载后可对照 SHA-256。演示包用调试签名，仅供体验。</p>
+  </section>
+</main>
+
+<footer>
+  <p>灵犀 · mini-render 小程序渲染引擎 · <a href="intro/?lang=zh">技术介绍</a> · <a href="http://64.83.22.217:9630/admin">小程序管理后台</a></p>
+</footer>
+<script src="app.js"></script>
+</body>
+</html>

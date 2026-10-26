@@ -1,0 +1,29 @@
+<scroll-view scroll-x class="tags" show-scrollbar="{{false}}">
+  <view class="tag-row">
+    <text wx:for="{{tags}}" wx:key="label" class="tag {{tag === item.name ? 'tag-on' : ''}}" data-name="{{item.name}}" bindtap="onTag">{{item.label}}</text>
+  </view>
+</scroll-view>
+<view class="state" wx:if="{{status === 'loading'}}"><text>加载中…</text></view>
+<view class="state" wx:elif="{{status === 'error'}}">
+  <text>歌单加载失败</text>
+  <view class="retry" bindtap="onRetry">重试</view>
+</view>
+<view class="state" wx:elif="{{status === 'empty'}}"><text>这个分类下还没有歌单</text></view>
+<block wx:else>
+  <view class="sec top-gap">
+    <view class="grid">
+      <view class="pl" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onPlaylist">
+        <view class="pl-cover-wrap">
+          <image class="pl-cover" src="{{item.cover}}" mode="aspectFill"></image>
+          <text class="pl-count">▶ {{item.playCountText}}</text>
+        </view>
+        <text class="pl-name">{{item.name}}</text>
+      </view>
+    </view>
+  </view>
+  <view class="foot" wx:if="{{more === 'loading'}}">加载中…</view>
+  <view class="foot" wx:elif="{{more === 'error'}}" bindtap="onRetryMore">加载失败，<text class="accent">点击重试</text></view>
+  <view class="foot" wx:elif="{{more === 'end'}}">— 共 {{total}} 个歌单 —</view>
+</block>
+<view class="mp-gap" wx:if="{{hasSong}}"></view>
+<mini-player></mini-player>

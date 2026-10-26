@@ -1,0 +1,28 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/charts/charts",
+    "pages/mine/mine",
+    "pages/playlists/playlists",
+    "pages/playlist/playlist",
+    "pages/player/player"
+  ],
+  "window": {
+    "navigationBarTitleText": "云听音乐",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f6f7f9",
+    "backgroundTextStyle": "dark"
+  },
+  "tabBar": {
+    "color": "#9aa0ab",
+    "selectedColor": "#f04c4c",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "发现", "iconPath": "images/tab-disc.png", "selectedIconPath": "images/tab-disc-on.png" },
+      { "pagePath": "pages/charts/charts", "text": "榜单", "iconPath": "images/tab-chart.png", "selectedIconPath": "images/tab-chart-on.png" },
+      { "pagePath": "pages/mine/mine", "text": "我的", "iconPath": "images/tab-mine.png", "selectedIconPath": "images/tab-mine-on.png" }
+    ]
+  }
+}

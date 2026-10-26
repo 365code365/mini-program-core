@@ -1,0 +1,33 @@
+<view class="hero">
+  <view class="row">
+    <view class="me">影</view>
+    <view class="col flex1">
+      <text class="hello">影迷你好</text>
+      <text class="hint">标记想看，上映前提醒你</text>
+    </view>
+  </view>
+  <view class="stats row">
+    <view class="stat"><text class="n">{{list.length}}</text><text class="l">想看</text></view>
+    <view class="stat"><text class="n">{{coming}}</text><text class="l">待上映</text></view>
+    <view class="stat"><text class="n">{{list.length - coming}}</text><text class="l">可观看</text></view>
+  </view>
+</view>
+<view class="card">
+  <view class="sec-h"><text class="sec-t">我的想看</text><text class="more" wx:if="{{list.length}}" bindtap="onClear">清空</text></view>
+  <view class="state" wx:if="{{!list.length}}">
+    <view class="state-icon">♡</view>
+    <text>还没有想看的影片</text>
+    <view class="retry" hover-class="retry-hover" bindtap="onGo">去逛逛</view>
+  </view>
+  <view class="item row" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onMovie" hover-class="item-hover">
+    <image class="poster" src="{{item.poster}}" mode="aspectFill"></image>
+    <view class="col flex1 info">
+      <text class="title">{{item.title}}</text>
+      <text class="sub line">{{item.genreText}}</text>
+      <text class="line status {{item.status === 'coming' ? 'accent' : ''}}">{{item.statusText}}</text>
+    </view>
+    <text class="score" wx:if="{{item.scoreText}}">{{item.scoreText}}</text>
+    <view class="rm" data-index="{{index}}" catchtap="onRemove">×</view>
+  </view>
+</view>
+<view class="about sub">数据来自演示接口 {{base}}</view>

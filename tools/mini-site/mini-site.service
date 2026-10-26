@@ -1,0 +1,20 @@
+[Unit]
+Description=灵犀官网（介绍页 + 演示 App 下载）
+After=network.target
+
+[Service]
+User=mini-store
+Group=mini-store
+Environment=MINI_SITE_ROOT=/opt/mini-site/www
+Environment=MINI_SITE_PORT=9640
+ExecStart=/usr/bin/python3 /opt/mini-site/server.py
+Restart=on-failure
+RestartSec=2
+# 只读服务：网站文件归 root，进程不需要写任何地方
+ProtectSystem=strict
+ProtectHome=true
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

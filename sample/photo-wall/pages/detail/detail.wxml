@@ -1,0 +1,59 @@
+<view class="state" wx:if="{{status === 'loading'}}"><text>加载中…</text></view>
+<view class="state" wx:elif="{{status === 'error'}}">
+  <view class="state-icon">!</view>
+  <text>{{errMsg}}</text>
+  <view class="retry" bindtap="onRetry">重新加载</view>
+</view>
+<block wx:else>
+  <view class="hero" style="background: {{p.color}}" bindtap="onPreview">
+    <image class="big" src="{{p.url}}" mode="aspectFill" style="height: {{imgH}}rpx"></image>
+    <text class="zoom">点击查看大图</text>
+  </view>
+
+  <view class="card">
+    <view class="row">
+      <image class="avatar" src="{{p.author.avatar}}" mode="aspectFill"></image>
+      <view class="col flex1">
+        <text class="author">{{p.author.name}}</text>
+        <text class="sub">{{p.createdAt}} · {{p.location}}</text>
+      </view>
+      <view class="follow {{following ? 'follow-on' : ''}}" bindtap="onFollow">{{following ? '已关注' : '+ 关注'}}</view>
+    </view>
+    <text class="title">{{p.title}}</text>
+    <text class="desc">{{p.description}}</text>
+    <view class="tags row">
+      <text class="tag" wx:for="{{p.tags}}" wx:key="*this" data-tag="{{item}}" bindtap="onTag">#{{item}}</text>
+    </view>
+    <view class="exif row">
+      <text class="ex-k">相机</text><text class="ex-v">{{p.camera}}</text>
+    </view>
+    <view class="exif row">
+      <text class="ex-k">参数</text><text class="ex-v">{{p.exif}}</text>
+    </view>
+    <view class="exif row">
+      <text class="ex-k">尺寸</text><text class="ex-v">{{p.width}} × {{p.height}}</text>
+    </view>
+    <view class="stats row">
+      <view class="st"><text class="st-n">{{p.views}}</text><text class="st-l">浏览</text></view>
+      <view class="st"><text class="st-n">{{likes}}</text><text class="st-l">喜欢</text></view>
+      <view class="st"><text class="st-n">{{p.downloads}}</text><text class="st-l">下载</text></view>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{related.length}}">
+    <text class="sec-t">相关推荐</text>
+    <view class="grid">
+      <view class="rel" wx:for="{{related}}" wx:key="id" data-id="{{item.id}}" bindtap="onRelated">
+        <image class="rel-img" src="{{item.url}}" mode="aspectFill" style="background: {{item.color}}"></image>
+        <text class="rel-t ellipsis">{{item.title}}</text>
+      </view>
+    </view>
+  </view>
+  <view class="gap"></view>
+
+  <view class="bar row">
+    <view class="bar-i" bindtap="onLike"><text class="bar-ic {{liked ? 'liked' : ''}}">{{liked ? '♥' : '♡'}}</text><text class="bar-l">{{likes}}</text></view>
+    <view class="bar-i" bindtap="onFav"><text class="bar-ic {{fav ? 'faved' : ''}}">{{fav ? '★' : '☆'}}</text><text class="bar-l">{{fav ? '已收藏' : '收藏'}}</text></view>
+    <view class="save flex1" hover-class="btn-hover" bindtap="onSave">{{saving ? '保存中…' : '保存到相册'}}</view>
+  </view>
+</block>

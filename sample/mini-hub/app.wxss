@@ -1,0 +1,33 @@
+page { background: #f3f5f8; color: #1f2329; font-size: 28rpx; }
+.row { display: flex; flex-direction: row; align-items: center; }
+.col { display: flex; flex-direction: column; }
+.flex1 { flex: 1; }
+.sub { font-size: 24rpx; color: #8a9099; }
+.accent { color: #6b5cff; }
+.ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card { background: #fff; border-radius: 20rpx; margin: 0 24rpx 24rpx; padding: 28rpx; }
+.sec-h { display: flex; flex-direction: row; align-items: center; justify-content: space-between; margin-bottom: 8rpx; }
+.sec-t { font-size: 32rpx; font-weight: bold; }
+.sec-d { font-size: 24rpx; color: #8a9099; line-height: 36rpx; margin-bottom: 16rpx; display: block; }
+.code { font-family: Menlo, monospace; font-size: 22rpx; color: #6b5cff; background: #f3f1ff; border-radius: 6rpx; padding: 0 8rpx; }
+input { padding: 0 0 0 1rpx; }
+/* 小程序卡片 */
+.app { padding: 22rpx 0; border-bottom: 1rpx solid #f3f4f6; }
+.icon { width: 96rpx; height: 96rpx; border-radius: 22rpx; flex-shrink: 0; background: #eceef3; }
+.icon-t { width: 96rpx; height: 96rpx; border-radius: 22rpx; flex-shrink: 0; color: #fff; font-size: 40rpx; font-weight: bold; text-align: center; line-height: 96rpx; }
+.app-main { flex: 1; margin: 0 20rpx; overflow: hidden; display: flex; flex-direction: column; }
+.app-name { font-size: 30rpx; font-weight: bold; }
+.app-desc { font-size: 22rpx; color: #8a9099; margin-top: 6rpx; height: 32rpx; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.app-id { font-size: 20rpx; color: #b0b4ba; margin-top: 4rpx; font-family: Menlo, monospace; }
+.open { font-size: 26rpx; color: #fff; background: linear-gradient(90deg, #8b7bff, #6b5cff); border-radius: 30rpx; padding: 10rpx 32rpx; }
+.open-hover { opacity: 0.8; }
+.state { display: flex; flex-direction: column; align-items: center; padding: 60rpx 0; color: #9aa0ab; }
+.retry { margin-top: 24rpx; font-size: 26rpx; color: #6b5cff; border: 2rpx solid #6b5cff; border-radius: 32rpx; padding: 10rpx 44rpx; }
+.foot { text-align: center; color: #b0b4ba; font-size: 24rpx; padding: 20rpx 0 8rpx; }
+/* 跳转记录 */
+.log { padding: 14rpx 0; border-bottom: 1rpx solid #f5f6f8; }
+.log-dot { width: 14rpx; height: 14rpx; border-radius: 7rpx; margin-right: 14rpx; flex-shrink: 0; }
+.ok { background: #00b578; }
+.bad { background: #ff4d4f; }
+.log-t { font-size: 24rpx; }
+.log-m { font-size: 22rpx; color: #8a9099; margin-top: 2rpx; word-break: break-all; }

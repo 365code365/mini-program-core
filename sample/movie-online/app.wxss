@@ -1,0 +1,28 @@
+page { background: #f5f6f8; color: #1f2329; font-size: 28rpx; }
+.row { display: flex; flex-direction: row; align-items: center; }
+.col { display: flex; flex-direction: column; }
+.flex1 { flex: 1; }
+.sub { font-size: 24rpx; color: #8a9099; }
+.accent { color: #ff4e6a; }
+.gold { color: #ffb400; }
+.card { background: #fff; border-radius: 20rpx; margin: 0 24rpx 24rpx; padding: 28rpx; }
+.sec-h { display: flex; flex-direction: row; align-items: center; justify-content: space-between; margin-bottom: 20rpx; }
+.sec-t { font-size: 32rpx; font-weight: bold; }
+.more { font-size: 24rpx; color: #8a9099; }
+/* 引擎的 input 只要 padding 全为 0 就套用默认内边距（微信里 input 无内边距），给 1rpx 让它认作自定义 */
+input { padding: 0 0 0 1rpx; }
+/* 星级：灰底五颗星上叠一层按分数裁宽的金色星 */
+.stars { position: relative; height: 32rpx; width: 140rpx; }
+.stars-bg, .stars-fg { position: absolute; left: 0; top: 0; font-size: 26rpx; line-height: 32rpx; letter-spacing: 2rpx; white-space: nowrap; }
+.stars-bg { color: #e3e5e8; }
+.stars-fg { color: #ffb400; overflow: hidden; }
+/* 加载态 / 失败态 / 空状态 */
+.state { display: flex; flex-direction: column; align-items: center; padding: 100rpx 0; color: #9aa0a6; }
+.state-icon { width: 120rpx; height: 120rpx; border-radius: 60rpx; background: #eef0f3; display: flex; align-items: center; justify-content: center; font-size: 56rpx; color: #c4c7cc; margin-bottom: 24rpx; }
+.retry { margin-top: 28rpx; font-size: 26rpx; color: #ff4e6a; border: 2rpx solid #ff4e6a; border-radius: 32rpx; padding: 10rpx 44rpx; }
+.retry-hover { background: #fff0f2; }
+.foot { text-align: center; color: #b0b4ba; font-size: 24rpx; padding: 28rpx 0 40rpx; }
+.btn { height: 80rpx; line-height: 80rpx; text-align: center; border-radius: 40rpx; font-size: 30rpx; font-weight: bold; }
+.btn-primary { background: linear-gradient(90deg, #ff7a8a, #ff4e6a); color: #fff; }
+.btn-hover { opacity: 0.85; }
+.tag { font-size: 20rpx; color: #ff4e6a; border: 1rpx solid #ffb3bd; padding: 2rpx 10rpx; border-radius: 6rpx; margin-right: 10rpx; }

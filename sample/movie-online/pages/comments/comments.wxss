@@ -1,0 +1,12 @@
+page { background: #fff; }
+.top { padding: 24rpx; border-bottom: 1rpx solid #f3f4f6; }
+.seg { background: #f3f4f6; border-radius: 30rpx; padding: 4rpx; }
+.seg-i { font-size: 24rpx; color: #8a9099; padding: 8rpx 26rpx; border-radius: 26rpx; }
+.seg-on { background: #fff; color: #1f2329; font-weight: bold; }
+.cmt { padding: 28rpx 24rpx; border-bottom: 1rpx solid #f5f6f8; display: flex; flex-direction: column; }
+.avatar { width: 72rpx; height: 72rpx; border-radius: 36rpx; margin-right: 18rpx; background: #eceef1; }
+.name { font-size: 26rpx; color: #4e5969; margin-bottom: 4rpx; }
+.date { margin-left: 14rpx; }
+.like { font-size: 24rpx; color: #8a9099; padding: 8rpx 0 8rpx 20rpx; }
+.like-on { color: #ff4e6a; }
+.text { font-size: 28rpx; line-height: 44rpx; margin: 16rpx 0 0 90rpx; }

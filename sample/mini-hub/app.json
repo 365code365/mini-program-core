@@ -1,0 +1,23 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/form/form"
+  ],
+  "window": {
+    "navigationBarTitleText": "小程序跳转中心",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f3f5f8",
+    "backgroundTextStyle": "dark"
+  },
+  "tabBar": {
+    "color": "#9aa0ab",
+    "selectedColor": "#6b5cff",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "跳转中心", "iconPath": "images/tab-link.png", "selectedIconPath": "images/tab-link-on.png" },
+      { "pagePath": "pages/form/form", "text": "带参跳转", "iconPath": "images/tab-form.png", "selectedIconPath": "images/tab-form-on.png" }
+    ]
+  }
+}

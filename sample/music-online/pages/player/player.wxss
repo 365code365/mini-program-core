@@ -1,0 +1,46 @@
+page { background: #1d1b26; }
+.wrap { position: relative; min-height: 100vh; overflow: hidden; display: flex; flex-direction: column; align-items: center; color: #fff; padding-bottom: 40rpx; }
+.bg { position: absolute; left: -200rpx; top: -200rpx; width: 1150rpx; height: 1600rpx; opacity: 0.55; }
+.bg-mask { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(20, 18, 30, 0.55), rgba(20, 18, 30, 0.92)); }
+.disc-area { position: relative; width: 750rpx; height: 560rpx; display: flex; align-items: center; justify-content: center; margin-top: 30rpx; }
+.needle { position: absolute; top: 0; left: 360rpx; width: 12rpx; height: 150rpx; background: linear-gradient(180deg, #ddd, #999); border-radius: 6rpx; transform-origin: 6rpx 0; transform: rotate(-28deg); transition: transform 0.4s; z-index: 2; }
+.needle-on { transform: rotate(-6deg); }
+.disc { width: 500rpx; height: 500rpx; border-radius: 250rpx; background: radial-gradient(circle, #333 0%, #111 70%, #222 100%); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 16rpx rgba(255, 255, 255, 0.08); }
+/* 只在播放时挂动画：暂停就把 class 去掉（animation-play-state 引擎还不认），回到 0° 也比卡在半路自然 */
+.spin { animation: spin 20s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.disc-cover { width: 330rpx; height: 330rpx; border-radius: 165rpx; }
+.info { position: relative; width: 686rpx; margin-top: 16rpx; }
+.name { font-size: 40rpx; font-weight: bold; }
+.artist { font-size: 26rpx; color: rgba(255, 255, 255, 0.7); margin-top: 8rpx; }
+.like { font-size: 48rpx; color: rgba(255, 255, 255, 0.8); padding: 0 8rpx; }
+.like-on { color: #ff5c6c; }
+.lyric { position: relative; width: 686rpx; height: 320rpx; margin-top: 24rpx; }
+.line { font-size: 28rpx; line-height: 64rpx; color: rgba(255, 255, 255, 0.5); text-align: center; }
+.line-on { color: #fff; font-size: 32rpx; font-weight: bold; }
+.lyric-end { height: 128rpx; }
+.prog { position: relative; width: 686rpx; margin-top: 16rpx; }
+.time { font-size: 22rpx; color: rgba(255, 255, 255, 0.7); width: 72rpx; text-align: center; }
+.slider { margin: 0 12rpx; }
+.ctrls { position: relative; width: 686rpx; justify-content: space-between; margin-top: 28rpx; }
+.ctrl { width: 96rpx; height: 96rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.ctrl-s { font-size: 44rpx; color: rgba(255, 255, 255, 0.85); }
+.pv-bar, .nx-bar { width: 6rpx; height: 34rpx; background: #fff; border-radius: 2rpx; }
+.pv-tri { width: 0; height: 0; border-top: 18rpx solid transparent; border-bottom: 18rpx solid transparent; border-right: 28rpx solid #fff; }
+.nx-tri { width: 0; height: 0; border-top: 18rpx solid transparent; border-bottom: 18rpx solid transparent; border-left: 28rpx solid #fff; }
+.play { width: 132rpx; height: 132rpx; border-radius: 66rpx; border: 4rpx solid rgba(255, 255, 255, 0.9); display: flex; align-items: center; justify-content: center; }
+.tri { width: 0; height: 0; border-top: 24rpx solid transparent; border-bottom: 24rpx solid transparent; border-left: 38rpx solid #fff; margin-left: 10rpx; }
+.pause { display: flex; flex-direction: row; }
+.pbar { width: 10rpx; height: 44rpx; background: #fff; border-radius: 4rpx; margin: 0 8rpx; }
+.tip { position: relative; font-size: 22rpx; color: rgba(255, 255, 255, 0.5); margin-top: 24rpx; }
+.none { position: relative; display: flex; flex-direction: column; align-items: center; padding-top: 300rpx; }
+.none-t { font-size: 32rpx; }
+.none-s { font-size: 24rpx; color: rgba(255, 255, 255, 0.6); margin-top: 12rpx; }
+.mask { position: fixed; left: 0; top: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; background: #fff; border-radius: 28rpx 28rpx 0 0; padding: 28rpx 0 40rpx; }
+.sheet-t { font-size: 30rpx; font-weight: bold; color: #1f2329; padding: 0 32rpx; }
+.sheet-list { height: 640rpx; margin-top: 16rpx; }
+.q { padding: 22rpx 32rpx; border-bottom: 1rpx solid #f3f4f6; }
+.q-name { font-size: 28rpx; color: #1f2329; }
+.q-artist { font-size: 24rpx; color: #9aa0ab; }
+.q-on .q-name, .q-on .q-artist { color: #f04c4c; }

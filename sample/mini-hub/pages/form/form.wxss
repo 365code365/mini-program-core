@@ -1,0 +1,15 @@
+.top { margin-top: 24rpx; }
+.presets { display: flex; flex-direction: column; margin-top: 16rpx; }
+.preset { font-size: 26rpx; color: #6b5cff; background: #f3f1ff; border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 12rpx; }
+.field { margin-bottom: 28rpx; display: flex; flex-direction: column; }
+.label { font-size: 26rpx; color: #4e5969; margin-bottom: 12rpx; }
+.picker { height: 80rpx; background: #f6f7f9; border-radius: 12rpx; padding: 0 24rpx; font-size: 28rpx; }
+.chev { font-size: 36rpx; color: #c4c7cc; }
+.ipt { height: 80rpx; background: #f6f7f9; border-radius: 12rpx; padding: 0 24rpx; font-size: 28rpx; font-family: Menlo, monospace; }
+.ipt-ro { color: #8a9099; }
+.ta { width: 100%; height: 220rpx; background: #f6f7f9; border-radius: 12rpx; padding: 20rpx 24rpx; font-size: 24rpx; font-family: Menlo, monospace; box-sizing: border-box; border: 2rpx solid #f6f7f9; }
+.ta-err { border-color: #ff4d4f; }
+.fmt { font-size: 24rpx; color: #6b5cff; margin-bottom: 12rpx; }
+.err { font-size: 22rpx; color: #ff4d4f; margin-top: 8rpx; }
+.hint { font-size: 22rpx; color: #9aa0ab; margin-top: 8rpx; }
+.go { height: 88rpx; line-height: 88rpx; text-align: center; border-radius: 44rpx; background: linear-gradient(90deg, #8b7bff, #6b5cff); color: #fff; font-size: 32rpx; font-weight: bold; }

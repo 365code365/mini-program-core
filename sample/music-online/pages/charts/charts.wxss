@@ -1,0 +1,17 @@
+.tabs { padding: 20rpx 24rpx; background: #fff; }
+.tab { flex: 1; text-align: center; font-size: 26rpx; color: #4e5969; background: #f3f4f6; border-radius: 30rpx; padding: 12rpx 0; margin: 0 8rpx; }
+.tab-on { color: #fff; font-weight: bold; }
+.hero { margin: 24rpx; border-radius: 24rpx; padding: 36rpx 32rpx; color: #fff; display: flex; flex-direction: column; }
+.hero-t { font-size: 48rpx; font-weight: bold; }
+.hero-s { font-size: 24rpx; color: rgba(255, 255, 255, 0.8); margin-top: 8rpx; }
+.pa { margin-top: 28rpx; align-self: flex-start; background: rgba(255, 255, 255, 0.22); border-radius: 30rpx; padding: 10rpx 28rpx; font-size: 26rpx; }
+.pa-tri { width: 0; height: 0; border-top: 10rpx solid transparent; border-bottom: 10rpx solid transparent; border-left: 16rpx solid #fff; margin-right: 12rpx; }
+.list { background: #fff; margin: 0 24rpx 24rpx; border-radius: 20rpx; padding: 8rpx 0; }
+.rank-box { width: 64rpx; display: flex; flex-direction: column; align-items: center; }
+.rank { font-size: 30rpx; font-weight: bold; color: #9aa0ab; font-style: italic; }
+.rank-top { font-size: 36rpx; }
+.trend { font-size: 18rpx; margin-top: 2rpx; }
+.up { color: #f04c4c; }
+.down { color: #00b578; }
+.flat { color: #c4c7cc; }
+.cover { width: 88rpx; height: 88rpx; border-radius: 12rpx; margin: 0 12rpx 0 8rpx; background: #e9ebef; }

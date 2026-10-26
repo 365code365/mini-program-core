@@ -1,0 +1,5 @@
+.tags { width: 750rpx; background: #fff; }
+.tag-row { display: flex; flex-direction: row; padding: 20rpx 16rpx; }
+.tag { flex-shrink: 0; font-size: 26rpx; color: #4e5969; background: #f3f4f6; border-radius: 30rpx; padding: 10rpx 28rpx; margin: 0 8rpx; }
+.tag-on { color: #fff; background: #f04c4c; }
+.top-gap { margin-top: 24rpx; }

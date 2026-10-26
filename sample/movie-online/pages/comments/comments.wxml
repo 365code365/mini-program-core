@@ -1,0 +1,34 @@
+<view class="top row">
+  <text class="sec-t">共 {{total}} 条短评</text>
+  <view class="flex1"></view>
+  <view class="seg row">
+    <text class="seg-i {{sort === 'hot' ? 'seg-on' : ''}}" data-sort="hot" bindtap="onSort">最热</text>
+    <text class="seg-i {{sort === 'new' ? 'seg-on' : ''}}" data-sort="new" bindtap="onSort">最新</text>
+  </view>
+</view>
+<view class="state" wx:if="{{status === 'loading'}}"><text>加载中…</text></view>
+<view class="state" wx:elif="{{status === 'error'}}">
+  <view class="state-icon">!</view>
+  <text>短评加载失败</text>
+  <view class="retry" hover-class="retry-hover" bindtap="onRetry">重试</view>
+</view>
+<view class="state" wx:elif="{{status === 'empty'}}"><text>还没有人写短评</text></view>
+<block wx:else>
+  <view class="cmt" wx:for="{{list}}" wx:key="id">
+    <view class="row">
+      <image class="avatar" src="{{item.user.avatar}}" mode="aspectFill"></image>
+      <view class="col flex1">
+        <text class="name">{{item.user.name}}</text>
+        <view class="row">
+          <view class="stars"><text class="stars-bg">★★★★★</text><text class="stars-fg" style="width: {{item.starWidth}}%">★★★★★</text></view>
+          <text class="sub date">{{item.date}}</text>
+        </view>
+      </view>
+      <view class="like {{item.liked ? 'like-on' : ''}}" data-index="{{index}}" bindtap="onLike">{{item.liked ? '♥' : '♡'}} {{item.likes}}</view>
+    </view>
+    <text class="text">{{item.content}}</text>
+  </view>
+  <view class="foot" wx:if="{{more === 'loading'}}">加载中…</view>
+  <view class="foot" wx:elif="{{more === 'error'}}" bindtap="onRetryMore">加载失败，<text class="accent">点击重试</text></view>
+  <view class="foot" wx:elif="{{more === 'end'}}">— 已显示全部 {{total}} 条 —</view>
+</block>
