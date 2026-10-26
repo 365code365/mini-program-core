@@ -46,8 +46,10 @@ final class MiniWindowController: NSWindowController, NSWindowDelegate {
         w.contentView?.layer?.backgroundColor = NSColor.white.cgColor
         super.init(window: w)
         w.delegate = self
-        if let main = NSApp.mainWindow {
-            w.setFrameTopLeftPoint(NSPoint(x: main.frame.maxX - 420, y: main.frame.maxY - 20))
+        // 子进程里没有主窗口：按「第几个开的」往右下错开，几个小程序窗口不叠在一起（PC 微信也是这样排的）
+        let n = CGFloat(UserDefaults.standard.integer(forKey: "cascade"))
+        if let screen = NSScreen.main?.visibleFrame {
+            w.setFrameTopLeftPoint(NSPoint(x: screen.maxX - 440 - n * 420, y: screen.maxY - 40 - n * 30))
         } else {
             w.center()
         }
@@ -60,6 +62,8 @@ final class MiniWindowController: NSWindowController, NSWindowDelegate {
         mini?.removeFromSuperview()
         mini = nil
         Self.shared = nil
+        // 子进程（一个小程序一个进程，MiniProcess.swift）：窗口关了进程就退
+        if UserDefaults.standard.bool(forKey: "miniHost") { NSApp.terminate(nil) }
     }
 
     // MARK: - 打开

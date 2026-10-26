@@ -20,8 +20,16 @@ enum DemoAssets {
         if fm.fileExists(atPath: dst.path), (try? String(contentsOf: stamp, encoding: .utf8)) == version {
             return dst
         }
+        // 先拷到临时目录再换上去：macOS 示例一个小程序一个进程，两个进程可能同时在解（同时开两个内置示例）
+        let tmp = base.appendingPathComponent("demo.\(ProcessInfo.processInfo.processIdentifier).tmp", isDirectory: true)
+        try? fm.removeItem(at: tmp)
+        try fm.copyItem(at: src, to: tmp)
         try? fm.removeItem(at: dst)
-        try fm.copyItem(at: src, to: dst)
+        if (try? fm.moveItem(at: tmp, to: dst)) == nil {
+            // 另一个进程刚换上了同一版：用它的
+            try? fm.removeItem(at: tmp)
+            guard fm.fileExists(atPath: dst.path) else { throw CocoaError(.fileWriteUnknown) }
+        }
         try version.write(to: stamp, atomically: true, encoding: .utf8)
         return dst
     }

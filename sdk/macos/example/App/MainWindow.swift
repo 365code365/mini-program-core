@@ -161,11 +161,11 @@ final class MainWindowController: NSWindowController {
     /// 打开一个商店小程序（PC 微信：手机大小的独立窗口）
     func open(_ app: MiniStore.App, scene: Int = 1001) {
         StoreLocal().touch(app)
-        MiniWindowController.open(link: StoreLink(key: app.key, scene: scene), hint: app, store: store)
+        MiniProcess.open(StoreLink(key: app.key, scene: scene))
     }
 
     func openDemo() {
-        MiniWindowController.open(link: nil, store: store)
+        MiniProcess.open(nil)
     }
 
     // MARK: - 数据

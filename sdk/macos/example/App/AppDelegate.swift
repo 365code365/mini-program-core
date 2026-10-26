@@ -18,6 +18,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ n: Notification) {
         buildMenu()
+        let d0 = UserDefaults.standard
+        // 子进程：只开一个小程序窗口（MiniProcess.swift）。不进 Dock（.accessory），窗口照样能当 key window、
+        // ⌘C / ⌘V 照样走 mainMenu 分发
+        if d0.bool(forKey: "miniHost") {
+            NSApp.setActivationPolicy(.accessory)
+            let store = MiniStore()
+            let link = d0.string(forKey: "link").flatMap(MiniProcess.link(fromArgument:))
+            MiniWindowController.open(link: link, store: store)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
         main = MainWindowController()
         main.showWindow(nil)
         NSApp.activate(ignoringOtherApps: true)
@@ -47,12 +58,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             c.queryItems = [URLQueryItem(name: "appid", value: key), URLQueryItem(name: "path", value: d.string(forKey: "route") ?? "")]
             if var l = StoreLink.parse("minirender://open?" + (c.percentEncodedQuery ?? "")) {
                 l.scene = 1001
-                MiniWindowController.open(link: l, store: main.store)
+                MiniProcess.open(l)
             }
+            // `-open2 <id>`：再开一个（验收「同时开两个」用）
+            if let k2 = d.string(forKey: "open2"), !k2.isEmpty { MiniProcess.open(StoreLink(key: k2, scene: 1001)) }
         }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
+
+    func applicationWillTerminate(_ n: Notification) { MiniProcess.terminateAll() }
+
+    /// 子进程里收藏 / 打开过小程序：主窗口回到前台时重读本机记录（UserDefaults 跨进程同步，但没有通知）
+    func applicationDidBecomeActive(_ n: Notification) {
+        guard main != nil else { return }
+        NotificationCenter.default.post(name: StoreLocal.changed, object: nil)
+    }
 
     private func saveShots(to dir: URL) {
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -69,7 +90,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Dock 图标点一下：主窗口回来
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        main.showWindow(nil)
+        main?.showWindow(nil)
         return true
     }
 
@@ -77,7 +98,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let s = event.paramDescriptor(forKeyword: keyDirectObject)?.stringValue else { return }
         let link = StoreLink.parse(s)
         NSLog("[商店] 外部链接 %@ → %@", s, link.map { "\($0.key) \($0.route ?? "首页")" } ?? "认不出")
-        if let link { MiniWindowController.open(link: link, store: main.store) }
+        if let link { MiniProcess.open(link) }
     }
 
     private func buildMenu() {
