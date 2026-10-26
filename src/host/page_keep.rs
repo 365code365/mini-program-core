@@ -20,6 +20,8 @@ pub struct SavedView {
     pub scroll: ScrollController,
     pub renderer: Option<WxmlRenderer>,
     pub ui: PageUiState,
+    /// 盖住那一刻的页面数据（分栏时另一栏要按它重画，engine_frameset.rs）。只有 SDK 引擎填
+    pub data: Option<serde_json::Value>,
 }
 
 impl SavedView {
@@ -42,6 +44,7 @@ impl SavedView {
             scroll: std::mem::replace(scroll, ScrollController::new(vp, vp)),
             renderer: r,
             ui: ui.take_page_state(),
+            data: None,
         }
     }
 

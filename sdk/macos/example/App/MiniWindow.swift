@@ -7,8 +7,11 @@ import MiniRender
 /// 不是最新就下载解包 → 打开；内置示例直接打开包里的 demo。胶囊「•••」弹 PC 微信式菜单
 /// （转发 = 复制链接、收藏、重新进入、上传诊断日志、关于），「⊙」关窗口。
 ///
-/// **同一时刻只开一个小程序**：引擎的小程序根目录是进程级的（单实例）。再开一个就在这个窗口里换掉
-/// （先同步关掉旧引擎再开新的，见 [MiniProgramView.close]）。PC 微信可以并排开好几个，这里做不到，是引擎的限制。
+/// 一个进程一个小程序窗口（多开靠多进程，见 MiniProcess.swift）。窗口拉宽到 600pt 以上自动分栏
+/// （PC 微信的 frameset：上一页在左栏、当前页在右栏），窄回去退回单栏。
+///
+/// 验收参数（子进程）：`-miniWidth <pt>` 起来 4 秒后把窗口拉到这个宽、`-miniNav <url>` 6 秒后跳一页、
+/// `-miniShot <目录>` 9 秒后把两栏拼成一张 `split.png`（不要屏幕录制权限）。
 final class MiniWindowController: NSWindowController, NSWindowDelegate {
     static private(set) var shared: MiniWindowController?
 
@@ -92,7 +95,55 @@ final class MiniWindowController: NSWindowController, NSWindowDelegate {
         }
         window!.contentView!.addSubview(v, positioned: .below, relativeTo: nil)
         mini = v
+        scheduleAcceptance()
         return v
+    }
+
+    /// `-miniWidth` / `-miniNav` / `-miniShot`（见类注释）
+    private func scheduleAcceptance() {
+        let d = UserDefaults.standard
+        let width = d.double(forKey: "miniWidth")
+        if width > 0 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 4) { [weak self] in
+                guard let w = self?.window else { return }
+                var f = w.frame
+                f.size.width = width
+                w.setFrame(f, display: true)
+                NSLog("[分栏] 窗口拉到 %.0fpt", width)
+            }
+        }
+        if let url = d.string(forKey: "miniNav"), !url.isEmpty {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 6) { [weak self] in self?.mini?.navigate(url) }
+        }
+        if let dir = d.string(forKey: "miniShot"), !dir.isEmpty {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 9) { [weak self] in self?.saveSplitShot(to: URL(fileURLWithPath: dir)) }
+        }
+    }
+
+    /// 两栏拼一张：活页面（引擎快照）摆在 liveX，另一栏（引擎给的图）摆在另一边
+    private func saveSplitShot(to dir: URL) {
+        guard let mini else { return }
+        let layout = mini.splitLayout
+        let side = mini.snapshotSide()
+        let size = mini.bounds.size
+        mini.snapshot { live in
+            guard let live else { return }
+            let img = NSImage(size: size)
+            img.lockFocusFlipped(true)
+            NSColor.white.setFill()
+            NSRect(origin: .zero, size: size).fill()
+            let paneW = layout.on ? layout.pane : size.width
+            live.draw(in: NSRect(x: layout.liveX, y: 0, width: paneW, height: size.height))
+            if let side {
+                side.draw(in: NSRect(x: layout.liveX > 0 ? 0 : layout.pane, y: 0, width: layout.pane, height: size.height))
+            }
+            img.unlockFocus()
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            if let tiff = img.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff) {
+                try? rep.representation(using: .png, properties: [:])?.write(to: dir.appendingPathComponent("split.png"))
+            }
+            NSLog("[分栏] 截图 on=%d liveX=%.0f pane=%.0f side=%d → %@", layout.on ? 1 : 0, layout.liveX, layout.pane, side == nil ? 0 : 1, dir.path)
+        }
     }
 
     private func load(link l: StoreLink?, hint: MiniStore.App?) {

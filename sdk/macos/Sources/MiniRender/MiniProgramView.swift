@@ -44,6 +44,10 @@ public final class MiniProgramView: NSView, EngineSessionUI {
     public var launchOptions: [String: Any]?
     /// 渲染后端偏好（`open` 之前设）
     public var backend: RenderBackend = .auto
+    /// 分栏（微信 PC / 阔折叠的 frameset，`open` 之前设）：窗口宽到 [framesetMinWidth] 自动分左右两栏，
+    /// 栈上两页以上时上一页在左栏、当前页在右栏；窄回去退回单栏。false = 永不分栏
+    public var frameset = true
+    public var framesetMinWidth: CGFloat = 600
     public var activeBackend: RenderBackend { RenderBackend(rawValue: session.activeBackend) ?? .cpu }
     public var backendReason: String { session.backendReason }
     /// 宿主实现的 `wx.*`（`open` 之前登记；主线程上调）
@@ -58,6 +62,13 @@ public final class MiniProgramView: NSView, EngineSessionUI {
 
     private let session = EngineSession()
     private let imageLayer = CALayer()
+    /// 分栏时的另一栏（引擎给的整栏图）与两栏中间的分隔线
+    private let sideLayer = CALayer()
+    private let dividerLayer = CALayer()
+    /// 分栏状态（`frameset` 事件）：活页面那一栏的左边 x、一栏宽（pt）
+    private var split = (on: false, liveX: CGFloat(0), pane: CGFloat(0))
+    /// 这一次按下落在另一栏（第一步只接滚轮，点击不派给引擎）
+    private var pointerInSide = false
     private var metalLayer: CAMetalLayer?
     private var appDir: URL?
     private var startRoute: String?
@@ -84,6 +95,14 @@ public final class MiniProgramView: NSView, EngineSessionUI {
         imageLayer.anchorPoint = .zero
         imageLayer.actions = Self.noAnimations
         layer?.addSublayer(imageLayer)
+        for l in [sideLayer, dividerLayer] {
+            l.anchorPoint = .zero
+            l.actions = Self.noAnimations
+            l.isHidden = true
+            layer?.addSublayer(l)
+        }
+        sideLayer.magnificationFilter = .nearest
+        dividerLayer.backgroundColor = NSColor(white: 0.88, alpha: 1).cgColor
         keyboard = MiniKeyboard(host: self, sendText: { [weak self] in self?.sendText($0) }, sendKey: { [weak self] in self?.sendKey($0) })
         let nc = NotificationCenter.default
         nc.addObserver(self, selector: #selector(onBackground), name: NSApplication.didHideNotification, object: nil)
@@ -198,6 +217,8 @@ public final class MiniProgramView: NSView, EngineSessionUI {
             "menuButton": menuButton,
             "navigationBar": navigationBar,
             "routeAnimation": routeAnimation,
+            "frameset": frameset ? "auto" : "off",
+            "framesetMinWidth": framesetMinWidth,
             "hostApis": Array(hostApis.keys),
         ]
         if let lo = launchOptions, JSONSerialization.isValidJSONObject(lo) { options["launchOptions"] = lo }
@@ -219,7 +240,7 @@ public final class MiniProgramView: NSView, EngineSessionUI {
         guard width > 0, height > 0 else { return }
         let scale = CGFloat(dpr)
         // 一个引擎像素对一个屏幕像素：层的尺寸 = 引擎像素 / scale，摆在左上角（视图是 flipped 的）
-        let frame = CGRect(x: 0, y: 0, width: CGFloat(width) / scale, height: CGFloat(height) / scale)
+        let frame = CGRect(x: split.liveX, y: 0, width: CGFloat(width) / scale, height: CGFloat(height) / scale)
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         imageLayer.frame = frame
@@ -261,6 +282,51 @@ public final class MiniProgramView: NSView, EngineSessionUI {
         imageLayer.contents = image
     }
 
+    /// 分栏状态：是否分栏、活页面那一栏的左边 x、一栏宽（pt）
+    public var splitLayout: (on: Bool, liveX: CGFloat, pane: CGFloat) { split }
+
+    /// 分栏时另一栏的图（截图验收用；不分栏为 nil）
+    public func snapshotSide() -> NSImage? {
+        guard split.on, let c = sideLayer.contents else { return nil }
+        return NSImage(cgImage: c as! CGImage, size: .zero)
+    }
+
+    func sessionSideFrame(_ image: CGImage?) {
+        let scale = CGFloat(dpr)
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        sideLayer.contents = image
+        sideLayer.contentsScale = scale
+        if let image {
+            // 拖窗口只改了高时不会再来 frameset 事件：尺寸跟着图走
+            sideLayer.frame.size = CGSize(width: CGFloat(image.width) / scale, height: CGFloat(image.height) / scale)
+            dividerLayer.frame.size.height = bounds.height
+        }
+        sideLayer.isHidden = image == nil || !split.on
+        CATransaction.commit()
+    }
+
+    /// `frameset` 事件：活页面放 livePane 那一栏，另一栏放引擎给的图，中间一条分隔线
+    private func applyFrameset(_ ev: [String: Any]) {
+        let on = ev["on"] as? Bool ?? false
+        let pane = CGFloat((ev["paneWidth"] as? NSNumber)?.doubleValue ?? 0)
+        let liveRight = on && (ev["livePane"] as? String) == "right"
+        split = (on, liveRight ? pane : 0, pane)
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        for l in [imageLayer, metalLayer].compactMap({ $0 }) { l.frame.origin.x = split.liveX }
+        sideLayer.frame = CGRect(x: liveRight ? 0 : pane, y: 0, width: pane, height: bounds.height)
+        sideLayer.isHidden = !on || sideLayer.contents == nil
+        dividerLayer.frame = CGRect(x: pane, y: 0, width: 1 / max(1, CGFloat(dpr)), height: bounds.height)
+        dividerLayer.isHidden = !on
+        CATransaction.commit()
+    }
+
+    /// 视图里的 x 落在另一栏
+    private func inSidePane(_ x: CGFloat) -> Bool {
+        split.on && (x < split.liveX || x >= split.liveX + split.pane)
+    }
+
     func sessionEvents(_ events: [[String: Any]]) {
         events.forEach(dispatchEvent)
     }
@@ -270,9 +336,10 @@ public final class MiniProgramView: NSView, EngineSessionUI {
     private func dispatchEvent(_ ev: [String: Any]) {
         onEvent?(ev)
         switch ev["type"] as? String {
+        case "frameset": applyFrameset(ev)
         case "app":
             if let a = ev["about"] as? [String: Any] { about = MiniProgramAbout(json: a) }
-        case "inputFocus": keyboard.onFocus(ev)
+        case "inputFocus": keyboard.onFocus(ev, originX: split.liveX)
         case "inputBlur": keyboard.onBlur()
         case "inputValue": keyboard.onValue(ev)
         case "menuButton":
@@ -314,17 +381,21 @@ public final class MiniProgramView: NSView, EngineSessionUI {
     public override var acceptsFirstResponder: Bool { true }
     public override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
+    /// 引擎坐标：分栏时相对活页面那一栏
     private func point(_ e: NSEvent) -> (Float, Float) {
         let p = convert(e.locationInWindow, from: nil)
-        return (Float(p.x), Float(p.y))
+        return (Float(p.x - split.liveX), Float(p.y))
     }
 
     public override func mouseDown(with e: NSEvent) {
+        pointerInSide = inSidePane(convert(e.locationInWindow, from: nil).x)
+        if pointerInSide { return }
         let (x, y) = point(e)
         session.run { mr_app_pointer_down($0, x, y) }
     }
 
     public override func mouseDragged(with e: NSEvent) {
+        if pointerInSide { return }
         let (x, y) = point(e)
         // NSEvent.timestamp 与 CADisplayLink、CACurrentMediaTime 同一个钟：引擎按它重采样拖动
         let ms = e.timestamp * 1000
@@ -332,6 +403,7 @@ public final class MiniProgramView: NSView, EngineSessionUI {
     }
 
     public override func mouseUp(with e: NSEvent) {
+        if pointerInSide { pointerInSide = false; return }
         let (x, y) = point(e)
         session.run { mr_app_pointer_up($0, x, y) }
     }
@@ -340,7 +412,12 @@ public final class MiniProgramView: NSView, EngineSessionUI {
     public override func scrollWheel(with e: NSEvent) {
         let dy = Float(-e.scrollingDeltaY)
         let precise: Int32 = e.hasPreciseScrollingDeltas ? 1 : 0
-        if dy != 0 { session.run { mr_app_wheel($0, dy, precise) } }
+        guard dy != 0 else { return }
+        if inSidePane(convert(e.locationInWindow, from: nil).x) {
+            session.run { mr_app_side_wheel($0, dy, precise) }
+        } else {
+            session.run { mr_app_wheel($0, dy, precise) }
+        }
     }
 
     /// 没有输入框聚焦时：⌘[ / Esc 返回上一页（PC 微信小程序窗口没有返回键，导航栏左上角的返回箭头之外再给一个快捷键）

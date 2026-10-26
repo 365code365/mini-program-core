@@ -25,7 +25,7 @@ impl MiniEngine {
         if self.back_intercepted() {
             return true;
         }
-        self.back_with(self.opts.route_animation)
+        self.back_with(self.route_motion())
     }
 
     /// `animate`：要不要转场。侧滑返回松手判定返回时不要 —— 页面已经跟着手指滑出去了
@@ -103,7 +103,7 @@ impl MiniEngine {
                 self.push_page(&p, q).ok();
             }
             NavigationRequest::NavigateBack => {
-                self.back_with(self.opts.route_animation);
+                self.back_with(self.route_motion());
             }
             NavigationRequest::SwitchTab { url } => {
                 let (p, _) = parse_url(&url);
@@ -143,7 +143,7 @@ impl MiniEngine {
         self.pump_notes.add("建新页（加载 + onLoad）", t);
         match opened {
             Ok(()) => {
-                if self.opts.route_animation && self.page_stack.len() > 1 {
+                if self.route_motion() && self.page_stack.len() > 1 {
                     self.route.start_push();
                 }
                 Ok(())

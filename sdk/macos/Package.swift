@@ -37,5 +37,7 @@ let package = Package(
                 .linkedFramework("SystemConfiguration"),
             ]
         ),
+        // `swift test`（在 sdk/macos 下）：输入法对端等不依赖小程序的部分
+        .testTarget(name: "MiniRenderTests", dependencies: ["MiniRender"], path: "Tests/MiniRenderTests"),
     ]
 )

@@ -34,7 +34,7 @@ impl PixelFormat {
 
 /// 把一行 `0x00RRGGBB` 写成目标格式
 #[inline]
-fn write_row(dst: &mut [u8], src: &[u32], format: PixelFormat) {
+pub(super) fn write_row(dst: &mut [u8], src: &[u32], format: PixelFormat) {
     match format {
         PixelFormat::Bgra8 => {
             for (d, px) in dst.chunks_exact_mut(4).zip(src) {

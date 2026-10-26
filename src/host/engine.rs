@@ -149,6 +149,8 @@ pub struct MiniEngine {
     pub(crate) route: super::route_anim::RouteState,
     /// 被盖住的页与切走的 tab 页留着的视图（engine_keep.rs）
     pub(crate) keep: super::page_keep::Keep,
+    /// 分栏模式（阔折叠展开 / PC 窗口拉宽，engine_frameset.rs）
+    pub(crate) frameset: super::engine_frameset::Frameset,
     /// app.json 的 `window`（原样保留，页面事件里与页面 json 合并后交给宿主画导航栏）
     pub(crate) app_window: serde_json::Value,
     /// 引擎 → 宿主的事件队列（见 engine_events.rs）
@@ -251,6 +253,15 @@ impl MiniEngine {
         page_loader::set_app_path(std::path::PathBuf::from(app_dir));
         let (width, height) = (width.max(1), height.max(1));
         let dpr = if dpr > 0.1 { dpr } else { 1.0 };
+        // 分栏（engine_frameset.rs）：一打开就够宽时，引擎的宽从一开始就是一栏的宽（系统信息、rpx 都按它）
+        let app_json = page_loader::load_app_json();
+        let mut frameset = super::engine_frameset::Frameset {
+            mode: super::engine_frameset::mode_from(&opts.frameset, &serde_json::from_str(&app_json).unwrap_or_default()),
+            total_width: width,
+            ..Default::default()
+        };
+        let (split, width) = frameset.pane_width(width);
+        frameset.active = split;
 
         let mut app = MiniApp::new(width, height)?;
         app.init()?;
@@ -266,7 +277,6 @@ impl MiniEngine {
         app.register_all_modules(&root).ok();
         app.load_module_script("app", &page_loader::load_app_js())?;
 
-        let app_json = page_loader::load_app_json();
         let config: AppConfig =
             serde_json::from_str(&app_json).map_err(|e| format!("app.json 解析失败: {e}"))?;
         let app_window = serde_json::from_str::<serde_json::Value>(&app_json)
@@ -361,6 +371,7 @@ impl MiniEngine {
             nav: Default::default(),
             route: Default::default(),
             keep: Default::default(),
+            frameset,
             app_window,
             events: HostEvents::default(),
             video_feed: Default::default(),

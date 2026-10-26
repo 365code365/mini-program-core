@@ -25,6 +25,13 @@ impl MiniEngine {
     pub fn resize(&mut self, width: u32, height: u32, dpr: f32) -> bool {
         let (width, height) = (width.max(1), height.max(1));
         let dpr = if dpr > 0.1 { dpr } else { 1.0 };
+        // 分栏（engine_frameset.rs）：宿主给的是整个窗口宽，够宽时引擎按一栏的宽排
+        self.frameset.total_width = width;
+        let (split, width) = self.frameset.pane_width(width);
+        if split != self.frameset.active {
+            self.frameset.active = split;
+            self.frameset.side = None;
+        }
         if (width, height) == (self.width, self.height) && (dpr - self.dpr).abs() < 1e-6 {
             return false;
         }

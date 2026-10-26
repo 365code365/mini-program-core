@@ -65,6 +65,9 @@ pub struct EngineOptions {
     /// 打开时由宿主给，`wx.getLaunchOptionsSync()` 与 `App.onLaunch(options)` 读它。不给就是
     /// 从前的默认（scene 1001）。字段形状与微信一致：`query` 是对象，`referrerInfo` 有 `appId` / `extraData`
     pub launch_options: Option<Value>,
+    /// 分栏（`"frameset": "auto"|"off"`，`"framesetMinWidth": 600`，见 engine_frameset.rs）：原样留
+    /// 这两个键，不给时按 app.json 的 `resizable` + `frameset`
+    pub frameset: Value,
 }
 
 impl EngineOptions {
@@ -92,6 +95,12 @@ impl EngineOptions {
             navigation_bar: o.get("navigationBar").and_then(|v| v.as_bool()).unwrap_or(false),
             route_animation: o.get("routeAnimation").and_then(|v| v.as_bool()).unwrap_or(false),
             launch_options: o.get("launchOptions").filter(|v| v.is_object()).cloned(),
+            frameset: o
+                .iter()
+                .filter(|(k, _)| *k == "frameset" || *k == "framesetMinWidth")
+                .map(|(k, v)| (k.clone(), v.clone()))
+                .collect::<serde_json::Map<_, _>>()
+                .into(),
         })
     }
 

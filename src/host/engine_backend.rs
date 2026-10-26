@@ -27,6 +27,8 @@ pub const FRAME_PENDING: u32 = 8;
 pub const FRAME_WANTS_MORE: u32 = 16;
 /// 事件队列里有东西（`mr_app_poll_event` 取到 NULL 为止）
 pub const FRAME_EVENTS: u32 = 32;
+/// 分栏时另一栏的图换了（`side_pixels_into` 取新图，engine_frameset.rs）
+pub const FRAME_SIDE: u32 = 64;
 
 /// SDK 的一次后端选择：偏好按「`MINI_BACKEND` > 宿主配置 > cpu」，再过不碰 GPU 的门槛
 pub(crate) fn select_backend(
@@ -128,7 +130,13 @@ impl MiniEngine {
             || self.edge_back.is_some();
         let t = if now_ms > 0 { now_ms } else { self.mono_ms() };
         super::cpu_affinity::note_frame(t, interacting);
-        let produced = self.pump_frame(now_ms);
+        let mut produced = self.pump_frame(now_ms);
+        // 分栏：另一栏换了图（开 / 关分栏、拖宽、换页、另一栏滚了）。要临时换页重画时活页面跟着整帧重画一次
+        let side_changed = self.sync_frameset();
+        if side_changed.1 {
+            self.render();
+            produced = true;
+        }
         self.emit_input_value_if_changed();
         if produced || self.frame_presented {
             super::cpu_affinity::note_produced(t);
@@ -142,6 +150,9 @@ impl MiniEngine {
         }
         if std::mem::take(&mut self.backend_changed) {
             flags |= FRAME_BACKEND_CHANGED;
+        }
+        if side_changed.0 {
+            flags |= FRAME_SIDE;
         }
         self.sync_host_events();
         if self.wants_next_frame() {

@@ -54,6 +54,8 @@ mod engine_nav;
 mod engine_page;
 /// 被盖住的页留视图、返回时放回、tab 页切走时留实例（SDK 一侧）
 mod engine_keep;
+/// 分栏模式（微信 frameset：阔折叠展开 / PC 窗口拉宽时左右两栏各一页）
+pub mod engine_frameset;
 /// 页面视图的留存（SDK 与桌面共用）：滚动、渲染器、交互状态
 pub mod page_keep;
 /// 页面转场（navigateTo 滑入 / 返回滑出）

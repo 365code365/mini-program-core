@@ -67,6 +67,8 @@ protocol EngineSessionUI: AnyObject {
     func sessionLeftGpu()
     /// CPU 合成好的一帧
     func sessionCpuFrame(_ image: CGImage)
+    /// 分栏时另一栏的图换了（nil = 不分栏了）
+    func sessionSideFrame(_ image: CGImage?)
     func sessionEvents(_ events: [[String: Any]])
     /// 引擎线程要一个跟着视图所在屏幕刷新的显示同步（macOS 14 起只能从 NSView / NSScreen 取）
     func sessionMakeDisplayLink(target: Any, selector: Selector) -> CADisplayLink?
@@ -304,6 +306,12 @@ final class EngineSession: NSObject {
             NSLog("⚠️ mini-render GPU 回退 CPU：\(backendReason)")
             leaveGpu(h)
         }
+        // 事件、另一栏、主画面放进同一个主线程块：分栏开关时「换摆法」与两栏的新图在同一次提交里上屏，
+        // 不会有一帧新图摆在旧位置上
+        let events = f & Int32(MR_FRAME_EVENTS) != 0 ? pollEvents(h) : []
+        let sideChanged = f & Int32(MR_FRAME_SIDE) != 0
+        let side = sideChanged ? sideImage(h) : nil
+        var frame: CGImage?
         if gpu {
             needsPresent = false
             if f & Int32(MR_FRAME_PRESENTED) != 0 && !revealed {
@@ -314,25 +322,45 @@ final class EngineSession: NSObject {
             if f & Int32(MR_FRAME_NEW) != 0 { needsPresent = true }
             if needsPresent, let img = cpuImage(h) {
                 needsPresent = false
-                DispatchQueue.main.async { [weak self] in self?.ui?.sessionCpuFrame(img) }
+                frame = img
             }
         }
-        if f & Int32(MR_FRAME_EVENTS) != 0 { drainEvents(h) }
+        if !events.isEmpty || sideChanged || frame != nil {
+            DispatchQueue.main.async { [weak self] in
+                guard let ui = self?.ui else { return }
+                if !events.isEmpty { ui.sessionEvents(events) }
+                if sideChanged { ui.sessionSideFrame(side) }
+                if let frame { ui.sessionCpuFrame(frame) }
+            }
+        }
         if f & Int32(MR_FRAME_WANTS_MORE) == 0 && !needsPresent { l.isPaused = true }
     }
 
     /// 当前帧 → CGImage（BGRA 小端）。每帧一块新的缓冲：主线程显示时还在用它
     private func cpuImage(_ h: OpaquePointer) -> CGImage? {
+        image(h, size: mr_app_pixel_size, write: mr_app_pixels_into)
+    }
+
+    /// 分栏时另一栏的图（不分栏为 nil）
+    private func sideImage(_ h: OpaquePointer) -> CGImage? {
+        image(h, size: mr_app_side_pixel_size, write: mr_app_side_pixels_into)
+    }
+
+    private func image(
+        _ h: OpaquePointer,
+        size: (OpaquePointer?, UnsafeMutablePointer<UInt32>?, UnsafeMutablePointer<UInt32>?) -> Void,
+        write: (OpaquePointer?, UnsafeMutablePointer<UInt8>?, Int, UInt32, Int32) -> Int
+    ) -> CGImage? {
         var w: UInt32 = 0
         var hh: UInt32 = 0
-        mr_app_pixel_size(h, &w, &hh)
+        size(h, &w, &hh)
         let stride = Int(w) * 4
         let len = stride * Int(hh)
         guard len > 0 else { return nil }
         var data = Data(count: len)
         let n = data.withUnsafeMutableBytes { buf -> Int in
             guard let base = buf.baseAddress?.assumingMemoryBound(to: UInt8.self) else { return 0 }
-            return Int(mr_app_pixels_into(h, base, len, UInt32(stride), Int32(MR_PIXEL_BGRA8)))
+            return write(h, base, len, UInt32(stride), Int32(MR_PIXEL_BGRA8))
         }
         guard n > 0, let provider = CGDataProvider(data: data as CFData) else { return nil }
         let info = CGBitmapInfo(rawValue: CGImageAlphaInfo.noneSkipFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)
@@ -342,15 +370,13 @@ final class EngineSession: NSObject {
             provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent)
     }
 
-    private func drainEvents(_ h: OpaquePointer) {
+    private func pollEvents(_ h: OpaquePointer) -> [[String: Any]] {
         var list: [[String: Any]] = []
         while let p = mr_app_poll_event(h) {
             guard let data = String(cString: p).data(using: .utf8),
                   let ev = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { continue }
             list.append(ev)
         }
-        if !list.isEmpty {
-            DispatchQueue.main.async { [weak self] in self?.ui?.sessionEvents(list) }
-        }
+        return list
     }
 }

@@ -94,8 +94,8 @@ impl MiniEngine {
             y,
             on_fixed,
             self.page_stack.len(),
-            // 侧滑返回（engine_edge_back.rs）：上一次的还在收尾时不再起新的
-            self.edge_back.is_some(),
+            // 侧滑返回（engine_edge_back.rs）：上一次的还在收尾时不再起新的；分栏时不做（上一页就在另一栏）
+            self.edge_back.is_some() || self.frameset.active,
         ));
         // 建手势本身不改任何像素：按压态、停惯性、touchstart 里的 setData 上面各自标过脏。
         // 从前这里无条件 `needs_redraw` —— 每一次按下都整帧重画一次，滑动的第一帧必卡

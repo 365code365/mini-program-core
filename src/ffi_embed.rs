@@ -114,6 +114,39 @@ pub extern "C" fn mr_app_pixels_into(app: *mut MRApp, dst: *mut u8, len: usize, 
     a.engine.write_pixels(buf, stride as usize, fmt)
 }
 
+/// 分栏时另一栏的图（`MR_FRAME_SIDE` 之后取），参数与返回同 [`mr_app_pixels_into`]。不分栏返回 0
+#[no_mangle]
+pub extern "C" fn mr_app_side_pixels_into(app: *mut MRApp, dst: *mut u8, len: usize, stride: u32, format: c_int) -> usize {
+    let Some(a) = app_mut(app) else { return 0 };
+    let Some(fmt) = PixelFormat::from_code(format) else { return 0 };
+    if dst.is_null() || len == 0 {
+        return 0;
+    }
+    // SAFETY: 调用方保证 dst 指向至少 len 字节的可写内存
+    let buf = unsafe { std::slice::from_raw_parts_mut(dst, len) };
+    a.engine.side_pixels_into(buf, stride as usize, fmt)
+}
+
+/// 另一栏的像素尺寸（不分栏时 0×0）
+#[no_mangle]
+pub extern "C" fn mr_app_side_pixel_size(app: *mut MRApp, out_w: *mut u32, out_h: *mut u32) {
+    let (w, h) = app_mut(app).map(|a| a.engine.side_pixel_size()).unwrap_or((0, 0));
+    if !out_w.is_null() {
+        unsafe { *out_w = w };
+    }
+    if !out_h.is_null() {
+        unsafe { *out_h = h };
+    }
+}
+
+/// 另一栏上的滚轮 / 触控板（同 `mr_app_wheel`）
+#[no_mangle]
+pub extern "C" fn mr_app_side_wheel(app: *mut MRApp, delta_y: f32, precise: c_int) {
+    if let Some(a) = app_mut(app) {
+        a.engine.side_wheel(delta_y, precise != 0);
+    }
+}
+
 /// 取一条事件（UTF-8 JSON），没有了返回 NULL。指针活到下一次对同一 app 调用 `mr_app_*`。
 #[no_mangle]
 pub extern "C" fn mr_app_poll_event(app: *mut MRApp) -> *const c_char {

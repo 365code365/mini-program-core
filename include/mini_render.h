@@ -275,6 +275,17 @@ int mr_app_set_safe_area(MRApp* app, float top, float right, float bottom, float
 #define MR_PIXEL_BGRA8 1
 size_t mr_app_pixels_into(MRApp* app, uint8_t* dst, size_t len, uint32_t stride, int format);
 
+// 分栏（微信 frameset：阔折叠展开 / PC 窗口拉宽）。选项 "frameset":"auto"（或 app.json 的
+// resizable + frameset）且 mr_app_resize 给的宽 ≥ "framesetMinWidth"（默认 600）时，引擎按一栏
+// （宽的一半）排页面，并发 frameset 事件 {on, livePane:"left"|"right", paneWidth, totalWidth}：
+// mr_app_pixels_into 的主画面放在 livePane 那一栏（坐标照旧相对这一栏），另一栏放
+// mr_app_side_pixels_into 的图（MR_FRAME_SIDE 表示它换了）。栈上一页时活页面在左、右栏是占位；
+// 两页以上栈顶在右、下面那页在左。另一栏的滚轮交给 mr_app_side_wheel。
+#define MR_FRAME_SIDE 64
+size_t mr_app_side_pixels_into(MRApp* app, uint8_t* dst, size_t len, uint32_t stride, int format);
+void   mr_app_side_pixel_size(MRApp* app, uint32_t* out_w, uint32_t* out_h);
+void   mr_app_side_wheel(MRApp* app, float delta_y, int precise);
+
 // 引擎 → 宿主的事件（UTF-8 JSON），没有了返回 NULL。指针活到下一次对同一 app 调用 mr_app_*。
 // type：page / navigationBar / inputFocus / inputBlur / nativeViews / hostCall / clipboard /
 //       vibrate / app（启动后一次：about 关于信息）/
