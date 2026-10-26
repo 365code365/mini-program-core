@@ -25,6 +25,9 @@ pub mod app_dir;
 /// 包种类探测：小程序（app.json）还是小游戏（game.json），两者都有 / 都没有报错
 pub mod app_profile;
 
+/// 小游戏运行实例（game.json + game.js；与 `host::MiniEngine` 平级，见 game-doc/02 §2）
+pub mod game;
+
 /// `wx.request` 等网络 API 的原生实现（后台线程 + 按帧取回）
 pub mod net;
 

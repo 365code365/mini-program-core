@@ -169,6 +169,25 @@ fn in_profile(name: &str, profile: PreludeProfile) -> bool {
     }
 }
 
+/// 只装进小游戏的段（顺序即执行顺序），插在通用段之后、`api-probe` 之前。
+/// 不进 `PRELUDE`：小程序的那张表一个字节都不能变（G0.4 的等价证明守着）
+const GAME_EXTRA: &[Prelude] = prelude![
+    // GameGlobal、console 缓冲泄漏的止血、wx.onError / onUnhandledRejection、回调守卫 __gameCall
+    "game-global" => "game-global.js",
+];
+
+/// 一个应用种类实际执行的段（按顺序）
+fn sequence(profile: PreludeProfile) -> Vec<&'static Prelude> {
+    let base = PRELUDE.iter().filter(|p| in_profile(p.name, profile));
+    match profile {
+        PreludeProfile::MiniProgram => base.collect(),
+        PreludeProfile::MiniGame => {
+            let (probe, rest): (Vec<_>, Vec<_>) = base.partition(|p| p.name == "api-probe");
+            rest.into_iter().chain(GAME_EXTRA.iter()).chain(probe).collect()
+        }
+    }
+}
+
 /// 小程序 API
 pub struct MiniAppApi {
     runtime: Arc<Mutex<JsRuntime>>,
@@ -190,7 +209,7 @@ impl MiniAppApi {
     /// 按应用种类注入前置代码（见 [`PreludeProfile`]）
     pub fn init_profile(&self, profile: PreludeProfile) -> Result<(), String> {
         let mut n = 0;
-        for p in PRELUDE.iter().filter(|p| in_profile(p.name, profile)) {
+        for p in sequence(profile) {
             let rt = self.runtime.lock().unwrap();
             rt.eval(p.source).map_err(|e| format!("{}: {e}", p.name))?;
             n += 1;
@@ -206,6 +225,6 @@ impl MiniAppApi {
 
     /// 某个应用种类实际装的段（按执行顺序）
     pub fn prelude_names_for(profile: PreludeProfile) -> Vec<&'static str> {
-        PRELUDE.iter().filter(|p| in_profile(p.name, profile)).map(|p| p.name).collect()
+        sequence(profile).into_iter().map(|p| p.name).collect()
     }
 }

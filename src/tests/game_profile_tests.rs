@@ -26,9 +26,11 @@ fn 小游戏的通用段都在表里且按表的顺序() {
         assert!(all.contains(n), "GAME_CORE 里的 {n} 不在 PRELUDE 里");
     }
     let game = MiniAppApi::prelude_names_for(PreludeProfile::MiniGame);
-    assert_eq!(game.len(), GAME_CORE.len());
+    let from_table: Vec<&str> = game.iter().copied().filter(|n| all.contains(n)).collect();
+    assert_eq!(from_table.len(), GAME_CORE.len());
+    assert!(game.contains(&"game-global"), "小游戏自己的段要装上");
     // 顺序跟着表走，不跟着 GAME_CORE 的书写顺序走
-    let idx: Vec<usize> = game.iter().map(|n| all.iter().position(|a| a == n).unwrap()).collect();
+    let idx: Vec<usize> = from_table.iter().map(|n| all.iter().position(|a| a == n).unwrap()).collect();
     assert!(idx.windows(2).all(|w| w[0] < w[1]), "小游戏段必须保持表内相对顺序：{game:?}");
     assert_eq!(game.last(), Some(&"api-probe"), "api-probe 必须最后装");
     for n in ["app-page", "route", "tabbar", "component", "query", "wxs"] {
