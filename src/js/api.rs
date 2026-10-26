@@ -143,6 +143,32 @@ const PRELUDE: &[Prelude] = prelude![
     "api-probe" => "api-probe.js",
 ];
 
+/// 应用种类决定装哪些前置代码（game-doc/02 §3.1）。
+///
+/// 小程序装**整张表、原顺序**（与引入 profile 之前逐字节相同的执行序列）；
+/// 小游戏只装 [`GAME_CORE`] 里的通用段，同样按表的顺序，再接小游戏自己的那几段（G1 起）。
+/// 不把表拆成两张：顺序本身有意义（见文件头），拆开以后两张表的相对顺序就没人守了。
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PreludeProfile {
+    MiniProgram,
+    MiniGame,
+}
+
+/// 小游戏也要的通用段（名字须在 `PRELUDE` 里，测试守着）。页面栈、组件、路由、tabBar、
+/// WXML 查询这类只对小程序有意义的段不在这里。`api-probe` 仍然最后装（表里它就在最后）。
+pub const GAME_CORE: &[&str] = &[
+    "module", "console", "fake-clock", "wx-object", "codec", "timer", "storage", "device", "network",
+    "host", "system", "socket", "fs", "audio", "app-info", "host-capabilities", "base-ext", "net-socket",
+    "media-ext", "webaudio", "api-probe",
+];
+
+fn in_profile(name: &str, profile: PreludeProfile) -> bool {
+    match profile {
+        PreludeProfile::MiniProgram => true,
+        PreludeProfile::MiniGame => GAME_CORE.contains(&name),
+    }
+}
+
 /// 小程序 API
 pub struct MiniAppApi {
     runtime: Arc<Mutex<JsRuntime>>,
@@ -158,16 +184,28 @@ impl MiniAppApi {
     /// 每段单独一次 `eval` 并单独持锁：出错时能报出域名，也避免长时间独占运行时。
     /// 分段不改变语义 —— `var` / `function` 声明都落在全局，后一段照样看得见前一段。
     pub fn init(&self) -> Result<(), String> {
-        for p in PRELUDE {
+        self.init_profile(PreludeProfile::MiniProgram)
+    }
+
+    /// 按应用种类注入前置代码（见 [`PreludeProfile`]）
+    pub fn init_profile(&self, profile: PreludeProfile) -> Result<(), String> {
+        let mut n = 0;
+        for p in PRELUDE.iter().filter(|p| in_profile(p.name, profile)) {
             let rt = self.runtime.lock().unwrap();
             rt.eval(p.source).map_err(|e| format!("{}: {e}", p.name))?;
+            n += 1;
         }
-        println!("    prelude: {} 段 JS 已注入", PRELUDE.len());
+        println!("    prelude: {} 段 JS 已注入", n);
         Ok(())
     }
 
     /// 前置代码的域名列表（诊断与测试用：确认注册表没被漏掉一段）
     pub fn prelude_names() -> Vec<&'static str> {
-        PRELUDE.iter().map(|p| p.name).collect()
+        Self::prelude_names_for(PreludeProfile::MiniProgram)
+    }
+
+    /// 某个应用种类实际装的段（按执行顺序）
+    pub fn prelude_names_for(profile: PreludeProfile) -> Vec<&'static str> {
+        PRELUDE.iter().filter(|p| in_profile(p.name, profile)).map(|p| p.name).collect()
     }
 }

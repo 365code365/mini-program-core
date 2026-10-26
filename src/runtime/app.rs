@@ -85,13 +85,18 @@ impl MiniApp {
     
     /// 初始化应用
     pub fn init(&mut self) -> Result<(), String> {
+        self.init_profile(crate::js::PreludeProfile::MiniProgram)
+    }
+
+    /// 按应用种类初始化（小游戏只装通用段，见 `js::api::GAME_CORE`）
+    pub fn init_profile(&mut self, profile: crate::js::PreludeProfile) -> Result<(), String> {
         // 先初始化桥接（注册 native 函数）
         println!("  Initializing Bridge...");
         self.bridge.init().map_err(|e| format!("Bridge init failed: {}", e))?;
         
         // 再初始化 API（使用 native 函数）
         println!("  Initializing API...");
-        self.api.init().map_err(|e| format!("API init failed: {}", e))?;
+        self.api.init_profile(profile).map_err(|e| format!("API init failed: {}", e))?;
         // 本线程上的渲染层从此能调 wxs 模块（`{{m.f(x)}}`）；渲染与逻辑层同线程
         crate::parser::expr::wxs::set_host(Some(std::rc::Rc::new(super::wxs_host::AppWxsHost::new(&self.runtime))));
         

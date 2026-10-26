@@ -66,3 +66,5 @@ pub mod swiper_tests;
 pub mod switch_checkbox_tests;
 /// Skyline 新组件：grid-view（网格 / 瀑布流）、cover-image、未接管原生组件的占位与默认尺寸
 pub mod skyline_component_tests;
+/// 小游戏 G0：前置代码按应用种类分组、包种类入口、call_function 转义
+pub mod game_profile_tests;

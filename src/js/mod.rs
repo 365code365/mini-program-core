@@ -37,5 +37,5 @@ mod bridge_io;
 mod bridge_ext;
 
 pub use runtime::JsRuntime;
-pub use api::MiniAppApi;
+pub use api::{MiniAppApi, PreludeProfile, GAME_CORE};
 pub use bridge::{JsBridge, BridgeEvent};
