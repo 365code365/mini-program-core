@@ -370,6 +370,13 @@ class MiniProgramController {
     _channel.invokeMethod<void>('pointer', {'phase': phase, 'x': x, 'y': y, if (timeMs != null) 't': timeMs});
   }
 
+  /// 第二根手指（0 按下 / 1 移动 / 2 抬起 / 3 取消）：引擎只给图片预览用（双指捏合缩放），页面仍是单指。
+  /// [MiniProgramView] 已自动转发
+  void pointer2(int phase, double x, double y) {
+    if (!_created || _disposed) return;
+    _channel.invokeMethod<void>('pointer2', {'phase': phase, 'x': x, 'y': y});
+  }
+
   void wheel(double dy, {bool precise = true}) {
     if (!_created || _disposed) return;
     _channel.invokeMethod<void>('wheel', {'dy': dy, 'precise': precise});

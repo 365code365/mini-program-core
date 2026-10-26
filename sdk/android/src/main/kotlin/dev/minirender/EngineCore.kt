@@ -256,6 +256,7 @@ internal class EngineCore(
     fun dispose(onEngineThread: () -> Unit = {}) {
         if (disposed) return
         disposed = true
+        orientation.enable(false)
         val t0 = System.nanoTime()
         onEngineSync { choreographer?.removeFrameCallback(frameCallback); detach() }
         val gone = EngineTeardown.begin(t0)
@@ -472,8 +473,16 @@ internal class EngineCore(
         // 同层渲染的视频（`videos` / `videoCommand`）由 SDK 自带的播放器接（VideoHost），
         // 照样也交给宿主（`videoFullscreen` 由宿主收起状态栏）
         for (s in list) if (s.contains("\"type\":\"video")) video().onEvent(s)
+        // 全屏视频：全屏期间听方向传感器，手机横过来画面跟着转（竖着进全屏，见引擎 video/fullscreen.rs）
+        list.lastOrNull { it.contains("\"type\":\"videoFullscreen\"") }?.let { s ->
+            val on = s.contains("\"fullScreen\":true")
+            main.post { if (!disposed) orientation.enable(on) }
+        }
         if (list.isNotEmpty()) main.post { if (!disposed) hooks.onEvents(list) }
     }
+
+    /** 全屏视频跟着手机转（主线程上开关） */
+    private val orientation = FullscreenOrientation(context) { deg -> run { MiniEngine.nativeDeviceOrientation(it, deg) } }
 
     /** 同层渲染的视频播放器（第一次有 `videos` 事件时才建，没有视频的小程序不多开一条线程）。只在引擎线程上取 */
     private var videoHost: VideoHost? = null

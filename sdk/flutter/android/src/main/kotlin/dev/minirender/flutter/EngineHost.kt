@@ -198,6 +198,12 @@ internal class EngineHost(
                 }
                 result.success(null)
             }
+            // 第二根手指（view.dart 只在两指同时按着时送）：引擎只给图片预览用（双指缩放）
+            "pointer2" -> {
+                val phase = call.argument<Int>("phase") ?: 3
+                run { MiniEngine.nativePointer2(it, phase, f("x"), f("y")) }
+                result.success(null)
+            }
             "keyboardShift" -> {
                 // 键盘顶起画面：引擎合成时导航栏以下整体上移、自己缓动（与原生 SDK 的 MiniKeyboard 同一个接口）
                 run { MiniEngine.nativeSetKeyboardShift(it, f("shift")) }

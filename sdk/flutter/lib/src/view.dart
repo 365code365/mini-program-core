@@ -68,6 +68,10 @@ class _MiniProgramViewState extends State<MiniProgramView> with WidgetsBindingOb
   late final MiniTextInput _input = MiniTextInput(widget.controller);
   final GlobalKey _box = GlobalKey();
   int? _pointer;
+
+  /// 第二根手指（只给图片预览的双指缩放；见 [_down]）与它最后的位置
+  int? _pointer2;
+  Offset? _last2;
   Size? _size;
   double? _dpr;
   List<double>? _insets;
@@ -266,7 +270,15 @@ class _MiniProgramViewState extends State<MiniProgramView> with WidgetsBindingOb
   }
 
   void _down(PointerDownEvent e) {
-    if (_pointer != null) return; // 只认第一根手指：引擎的触摸状态机是单指的
+    if (_pointer != null) {
+      // 第二根手指单独送（引擎只给图片预览的双指缩放用，页面的触摸状态机仍是单指）；第三根起不送
+      if (_pointer2 == null) {
+        _pointer2 = e.pointer;
+        _last2 = e.localPosition;
+        _c.pointer2(0, e.localPosition.dx, e.localPosition.dy);
+      }
+      return;
+    }
     // 按在留给系统导航栏的那一截上（手势导航时这条收得到触摸）：不属于小程序
     if (_reservedBottom > 0 && e.localPosition.dy >= (_size?.height ?? double.infinity)) return;
     _pointer = e.pointer;
@@ -274,19 +286,47 @@ class _MiniProgramViewState extends State<MiniProgramView> with WidgetsBindingOb
   }
 
   void _move(PointerMoveEvent e) {
+    if (e.pointer == _pointer2) {
+      _last2 = e.localPosition;
+      _c.pointer2(1, e.localPosition.dx, e.localPosition.dy);
+      return;
+    }
     if (e.pointer != _pointer) return;
     // 带上事件时间：安卓上 timeStamp 就是 MotionEvent.getEventTime()，与引擎 pump 的帧时间同一个钟
     _c.pointer(1, e.localPosition.dx, e.localPosition.dy, timeMs: e.timeStamp.inMicroseconds / 1000.0);
   }
 
   void _up(PointerUpEvent e) {
+    if (e.pointer == _pointer2) {
+      _pointer2 = null;
+      _c.pointer2(2, e.localPosition.dx, e.localPosition.dy);
+      return;
+    }
     if (e.pointer != _pointer) return;
+    if (_pointer2 != null) {
+      // 第一根先抬、第二根还按着：报第二根抬起，之后把它当第一根接着送（不报第一根抬起：
+      // 否则页面 / 预览当成一次点击）。与 Android MiniTouch.kt 同一条规则
+      final p = _last2 ?? e.localPosition;
+      _c.pointer2(2, p.dx, p.dy);
+      _pointer = _pointer2;
+      _pointer2 = null;
+      return;
+    }
     _pointer = null;
     _c.pointer(2, e.localPosition.dx, e.localPosition.dy);
   }
 
   void _cancel(PointerCancelEvent e) {
+    if (e.pointer == _pointer2) {
+      _pointer2 = null;
+      _c.pointer2(3, 0, 0);
+      return;
+    }
     if (e.pointer != _pointer) return;
+    if (_pointer2 != null) {
+      _pointer2 = null;
+      _c.pointer2(3, 0, 0);
+    }
     _pointer = null;
     _c.pointer(3, 0, 0);
   }

@@ -44,6 +44,10 @@ object MiniEngine {
     external fun nativePixels(handle: Long, out: ByteArray): Int
     /** phase: 0 按下 / 1 移动 / 2 抬起 / 3 取消 */
     external fun nativePointer(handle: Long, phase: Int, x: Float, y: Float)
+    /** 第二根手指（同上的 phase）：只有图片预览认它（双指缩放），页面仍是单指 */
+    external fun nativePointer2(handle: Long, phase: Int, x: Float, y: Float)
+    /** 手机朝向：0 竖 / 90 左侧朝下 / -90 右侧朝下。全屏视频没指定 direction 时跟着转 */
+    external fun nativeDeviceOrientation(handle: Long, deg: Int)
     /**
      * 带事件时间的移动。`tMs` 是 `MotionEvent.getEventTime()` 那个钟（`SystemClock.uptimeMillis`，
      * 与 `nativePumpEx` 的 Choreographer 帧时间同一个单调时钟）。页面拖动按它重采样，消掉慢拖抖动

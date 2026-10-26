@@ -429,10 +429,13 @@ class MiniProgramView @JvmOverloads constructor(
 
     override fun onDetachedFromWindow() = keyboard.detach().also { super.onDetachedFromWindow() }
 
+    /** 第一根 / 第二根手指的跟踪（第二根只给图片预览的双指缩放用） */
+    private val touch = MiniTouch()
+
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (!session.ready) return false
         if (event.actionMasked == MotionEvent.ACTION_DOWN && navReserve.swallows(event.y, height)) return false
-        return MiniTouch.forward(session, event, resources.displayMetrics.density)
+        return touch.forward(session, event, resources.displayMetrics.density)
     }
 
 }

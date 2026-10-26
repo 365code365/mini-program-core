@@ -109,7 +109,8 @@ public final class MiniProgramView: UIView, EngineSessionUI {
     }
 
     private func setup() {
-        isMultipleTouchEnabled = false
+        // 第二根手指只给图片预览的双指缩放（mr_app_pointer2），页面仍是单指（见 touchesBegan）
+        isMultipleTouchEnabled = true
         backgroundColor = .white
         session.ui = self
         imageLayer.magnificationFilter = .nearest
@@ -289,6 +290,9 @@ public final class MiniProgramView: UIView, EngineSessionUI {
         case "clipboard":
             // wx.setClipboardData、输入框里的 copy / cut：引擎自己存一份并弹 Toast，系统剪贴板由宿主写
             UIPasteboard.general.string = ev["data"] as? String ?? ""
+        case "videoFullscreen":
+            // 全屏期间听设备朝向：手机横过来画面跟着转（竖着进全屏，见引擎 video/fullscreen.rs）
+            orientation.enable(ev["fullScreen"] as? Bool ?? false)
         default: break
         }
     }
@@ -337,14 +341,34 @@ public final class MiniProgramView: UIView, EngineSessionUI {
 
     // ───────────────────────── 输入 ─────────────────────────
 
+    /// 全屏视频跟着手机转
+    private lazy var orientation = FullscreenOrientation { [session] deg in
+        session.run { mr_app_set_device_orientation($0, deg) }
+    }
+
+    /// 第一根手指（页面的触摸状态机是单指的）与第二根（只给图片预览的双指缩放）
+    private weak var primaryTouch: UITouch?
+    private weak var secondaryTouch: UITouch?
+
     public override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let t = touches.first else { return }
-        let p = t.location(in: self)
-        session.run { mr_app_pointer_down($0, Float(p.x), Float(p.y)) }
+        for t in touches {
+            let p = t.location(in: self)
+            if primaryTouch == nil {
+                primaryTouch = t
+                session.run { mr_app_pointer_down($0, Float(p.x), Float(p.y)) }
+            } else if secondaryTouch == nil {
+                secondaryTouch = t
+                session.run { mr_app_pointer2($0, 0, Float(p.x), Float(p.y)) }
+            }
+        }
     }
 
     public override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let t = touches.first else { return }
+        if let s = secondaryTouch, touches.contains(s) {
+            let p = s.location(in: self)
+            session.run { mr_app_pointer2($0, 1, Float(p.x), Float(p.y)) }
+        }
+        guard let t = primaryTouch, touches.contains(t) else { return }
         // 120Hz 屏上一帧可能积压多个点，全都要送（抽稀会影响滑动手感与方向判定）；带上各自的时间
         // （UITouch.timestamp 与 CADisplayLink、CACurrentMediaTime 同一个钟）：引擎按它重采样页面拖动
         let points = (event?.coalescedTouches(for: t) ?? [t]).map { ($0.location(in: self), $0.timestamp * 1000) }
@@ -354,13 +378,34 @@ public final class MiniProgramView: UIView, EngineSessionUI {
     }
 
     public override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let t = touches.first else { return }
+        if let s = secondaryTouch, touches.contains(s) {
+            let p = s.location(in: self)
+            secondaryTouch = nil
+            session.run { mr_app_pointer2($0, 2, Float(p.x), Float(p.y)) }
+        }
+        guard let t = primaryTouch, touches.contains(t) else { return }
+        if let s = secondaryTouch {
+            // 第一根先抬、第二根还按着：报第二根抬起，之后把它当第一根接着送（不报第一根抬起：
+            // 否则页面 / 预览当成一次点击）。与 Android MiniTouch.kt 同一条规则
+            let p = s.location(in: self)
+            session.run { mr_app_pointer2($0, 2, Float(p.x), Float(p.y)) }
+            primaryTouch = s
+            secondaryTouch = nil
+            return
+        }
         let p = t.location(in: self)
+        primaryTouch = nil
         session.run { mr_app_pointer_up($0, Float(p.x), Float(p.y)) }
     }
 
     public override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-        session.run { mr_app_pointer_cancel($0) }
+        let two = secondaryTouch != nil
+        primaryTouch = nil
+        secondaryTouch = nil
+        session.run { h in
+            if two { mr_app_pointer2(h, 3, 0, 0) }
+            mr_app_pointer_cancel(h)
+        }
     }
 
     /// 键盘提交的文字（自己接 `UIKeyInput` 时把字符转过来即可）

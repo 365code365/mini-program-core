@@ -221,8 +221,18 @@ final class EngineHost: NSObject {
         }
         if !list.isEmpty {
             let cb = onEvents
-            DispatchQueue.main.async { cb(list) }
+            // 全屏视频：全屏期间听设备朝向，手机横过来画面跟着转（与 Android EngineCore 同一条）
+            let fs = list.last { $0.contains("\"type\":\"videoFullscreen\"") }.map { $0.contains("\"fullScreen\":true") }
+            DispatchQueue.main.async { [weak self] in
+                if let on = fs { self?.orientation.enable(on) }
+                cb(list)
+            }
         }
+    }
+
+    /// 全屏视频跟着手机转（主线程上开关）
+    private lazy var orientation = FullscreenOrientation { [weak self] deg in
+        self?.run { mr_app_set_device_orientation($0, deg) }
     }
 
     /// 在引擎线程上执行一条命令，之后挂一帧
@@ -257,6 +267,11 @@ final class EngineHost: NSObject {
                 default: mr_app_pointer_cancel(h)
                 }
             }
+            result(nil)
+        case "pointer2":
+            // 第二根手指（view.dart 只在两指同时按着时送）：引擎只给图片预览用（双指缩放）
+            let (phase, x, y) = (Int32(i("phase")), f("x"), f("y"))
+            run { mr_app_pointer2($0, phase, x, y) }
             result(nil)
         case "wheel":
             let (dy, precise) = (f("dy"), (a["precise"] as? Bool ?? true) ? Int32(1) : 0)
@@ -381,6 +396,7 @@ final class EngineHost: NSObject {
 
     /// 主线程调：引擎线程上销毁引擎，再注销纹理
     func dispose() {
+        orientation.enable(false)
         thread.performSync { [self] in
             link?.invalidate()
             link = nil
