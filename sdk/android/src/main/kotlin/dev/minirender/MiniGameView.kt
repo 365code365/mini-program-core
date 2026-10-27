@@ -7,6 +7,7 @@ import android.os.HandlerThread
 import android.os.Looper
 import android.util.Log
 import android.view.Choreographer
+import android.view.MotionEvent
 import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.SurfaceView
@@ -46,6 +47,10 @@ class MiniGameView(
     private var appliedFps = 0
     private var boost: FrameBoost? = null
     private val slowLog = SystemProperties_get("debug.mini.game_log") == "1"
+    /** `adb shell setprop debug.mini.touch_log 1`：每帧打「最早一个还没派发的触摸 → 这次 pump」隔了多久（A3.3：≤ 1 个 vsync） */
+    private val touchLog = SystemProperties_get("debug.mini.touch_log") == "1"
+    /** 引擎线程：排队等派发的触摸里最早的那个的事件时刻（ns，CLOCK_MONOTONIC），0 = 没有 */
+    private var pendingTouchNanos = 0L
 
     @Volatile private var disposed = false
 
@@ -113,6 +118,58 @@ class MiniGameView(
         }
     }
 
+    /**
+     * 触摸（game-doc/02 §7.1）：一个 MotionEvent 拆成「每根指针一次」——POINTER_DOWN / UP 只报那一根，
+     * MOVE 把全部历史采样按时间顺序、每根指针各报一次（游戏算手势速度要采样密度），CANCEL 报全部指针。
+     * UI 线程上只打包，一次 post 到引擎线程、一次 JNI；派发在下一帧 pump 的 rAF 之前。
+     */
+    override fun onTouchEvent(e: MotionEvent): Boolean {
+        val d = resources.displayMetrics.density
+        val n = e.pointerCount
+        val buf = FloatArray(6 * n * (e.historySize + 1))
+        var k = 0
+        val baseNanos = eventNanos(e)
+        fun add(phase: Int, i: Int, x: Float, y: Float, p: Float, tNanos: Long) {
+            buf[k++] = phase.toFloat(); buf[k++] = e.getPointerId(i).toFloat()
+            buf[k++] = x / d; buf[k++] = y / d; buf[k++] = p.coerceIn(0f, 1f)
+            buf[k++] = ((tNanos - baseNanos) / 1e6).toFloat()
+        }
+        when (e.actionMasked) {
+            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
+                // 不要系统按 vsync 攒批的 MOVE：攒批要等到 UI 线程的下一个 vsync 才交出来，再 post 到引擎线程
+                // 又错过引擎这一帧，实测事件 → 派发中位 25ms（1.5 个 vsync）。游戏自己按帧消费，来一个收一个
+                if (e.actionMasked == MotionEvent.ACTION_DOWN && Build.VERSION.SDK_INT >= 30) requestUnbufferedDispatch(e)
+                val i = e.actionIndex
+                add(0, i, e.getX(i), e.getY(i), e.getPressure(i), baseNanos)
+            }
+            MotionEvent.ACTION_MOVE -> {
+                for (h in 0 until e.historySize) {
+                    val t = e.getHistoricalEventTime(h) * 1_000_000
+                    for (i in 0 until n) add(1, i, e.getHistoricalX(i, h), e.getHistoricalY(i, h), e.getHistoricalPressure(i, h), t)
+                }
+                for (i in 0 until n) add(1, i, e.getX(i), e.getY(i), e.getPressure(i), baseNanos)
+            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
+                val i = e.actionIndex
+                add(2, i, e.getX(i), e.getY(i), 0f, baseNanos)
+            }
+            MotionEvent.ACTION_CANCEL -> for (i in 0 until n) add(3, i, e.getX(i), e.getY(i), 0f, baseNanos)
+            else -> return true
+        }
+        val count = k / 6
+        engine.post {
+            if (handle == 0L) return@post
+            MiniGame.nativeTouchBatch(handle, buf, count, baseNanos / 1000)
+            if (pendingTouchNanos == 0L) pendingTouchNanos = baseNanos
+            requestFrame()
+        }
+        return true
+    }
+
+    /** 事件时刻（ns）：API 34 起有纳秒精度的版本 */
+    private fun eventNanos(e: MotionEvent): Long =
+        if (Build.VERSION.SDK_INT >= 34) e.eventTimeNanos else e.eventTime * 1_000_000
+
     /** 诊断：在逻辑层执行 JS（结果回到主线程） */
     fun eval(js: String, cb: (String?) -> Unit) = engine.post {
         val r = if (handle != 0L) MiniGame.nativeEval(handle, js) else null
@@ -172,6 +229,10 @@ class MiniGameView(
         val speculative = wantedMore
         if (speculative) requestFrame()
         val t0 = System.nanoTime()
+        if (pendingTouchNanos != 0L) {
+            if (touchLog) Log.i("mini-render", "👆 [GAME] 触摸 → 派发 %.1fms".format((t0 - pendingTouchNanos) / 1e6))
+            pendingTouchNanos = 0L
+        }
         val f = MiniGame.nativePump(handle, frameTimeNanos / 1000)
         val t1 = System.nanoTime()
         var blit = 0

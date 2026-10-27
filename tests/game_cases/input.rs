@@ -115,21 +115,21 @@ fn a3_3_g_touch_draw_同帧画出() {
         if k == 3 {
             h.engine.touch(PHASE_DOWN, 6, 200.0, 300.0, 0.0, 0);
         }
-        let n_before = h.frame;
         h.vsyncs(1);
         let fr = h.frames();
-        let (n, v) = fr.last().unwrap();
-        assert_eq!(fr.len(), before + k as usize, "每帧都画了");
-        // 夹具的 n 从第一次 rAF 起数，与 harness 的帧号差一个常数：只要求「这一帧画了这一帧到的点」
-        assert!(*n >= 1 && h.frame == n_before + 1);
+        let (_, v) = fr.last().unwrap();
+        assert_eq!(fr.len(), before + k as usize, "每帧一行 T:FRAME");
         let expect = if k == 1 { 2 } else if k == 3 { 2 } else { 1 };
         assert_eq!(v["drawn"], expect, "第 {k} 次：这一帧到的点都在这一帧画（down+move / move+另一根 down）");
+        if k == 1 {
+            assert_eq!(fr[fr.len() - 2].1["drawn"], 0, "喂之前那一帧没有点");
+        }
     }
     h.assert_no_fail();
     // 主画布 = 逻辑尺寸（375×667），点是 6×6 方块
     assert_eq!(&h.pixel(150, 100)[..3], &[255, 0, 0], "0 号手指最后的位置是红点");
     assert_eq!(&h.pixel(200, 300)[..3], &[0, 255, 0], "1 号手指是绿点");
-    assert_eq!(&h.pixel(10, 10)[..3], &[0, 0, 0], "别处是黑底");
+    assert_eq!(&h.pixel(10, 100)[..3], &[0, 0, 0], "别处是黑底");
 }
 
 /// off、回调抛错不打断其余回调、PC 键鼠字段

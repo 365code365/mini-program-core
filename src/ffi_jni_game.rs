@@ -138,6 +138,31 @@ pub extern "system" fn Java_dev_minirender_MiniGame_nativeSetBackground(_e: JNIE
     }
 }
 
+/// 一批指针事件（一个 MotionEvent 拆出来的全部指针 × 全部历史采样，按时间顺序）：每个事件 6 个 float
+/// `[phase, id, x, y, force, t_ms_offset]`，外加批的基准时刻 `base_us`（µs，与 nativePump 同一时钟）。
+/// 一次 JNI 进来，不是每个指针一次（1000Hz 屏上一次 MOVE 可能带十几个历史采样）
+#[no_mangle]
+pub extern "system" fn Java_dev_minirender_MiniGame_nativeTouchBatch(
+    env: JNIEnv,
+    _c: JClass,
+    h: jlong,
+    data: jni::objects::JFloatArray,
+    count: jint,
+    base_us: jlong,
+) {
+    let Some(hd) = handle(h) else { return };
+    let n = count.max(0) as usize;
+    let mut buf = vec![0f32; n * 6];
+    if n == 0 || env.get_float_array_region(&data, 0, &mut buf).is_err() {
+        return;
+    }
+    for e in buf.chunks_exact(6) {
+        // 偏移是相对 base 的毫秒（float 装不下 µs 级的绝对时刻）
+        let t = (base_us as f64 + e[5] as f64 * 1000.0).max(0.0) as u64;
+        mr_game_touch(hd.game, e[0] as i32, e[1] as i32, e[2], e[3], e[4], t);
+    }
+}
+
 /// rAF 目标帧率（宿主据此 `Surface.setFrameRate`）
 #[no_mangle]
 pub extern "system" fn Java_dev_minirender_MiniGame_nativePreferredFps(_e: JNIEnv, _c: JClass, h: jlong) -> jint {

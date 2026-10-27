@@ -26,6 +26,11 @@ object MiniGame {
     external fun nativePollEvent(handle: Long): String?
     external fun nativeEval(handle: Long, code: String): String?
     external fun nativeSetBackground(handle: Long, background: Boolean)
+    /**
+     * 一批指针事件：每个 6 个 float `[phase(0 下/1 移/2 抬/3 取消), pointerId, x, y, force, 相对 baseUs 的毫秒]`，
+     * 坐标是视图内逻辑像素；baseUs 与 [nativePump] 同一时钟（MotionEvent 的 eventTime 与 Choreographer 都是 CLOCK_MONOTONIC）
+     */
+    external fun nativeTouchBatch(handle: Long, data: FloatArray, count: Int, baseUs: Long)
     external fun nativePreferredFps(handle: Long): Int
     external fun nativeNextWakeUs(handle: Long): Long
     external fun nativeAttachWindow(handle: Long, surface: android.view.Surface): Boolean

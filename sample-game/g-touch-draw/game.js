@@ -21,12 +21,19 @@ function brief(e) {
     });
   });
 });
-var n = 0;
-function tick() {
+var n = 0, last = 0, down = 0;
+wx.onTouchStart(function (e) { down = e.touches.length; });
+wx.onTouchEnd(function (e) { down = e.touches.length; });
+wx.onTouchCancel(function (e) { down = e.touches.length; });
+function tick(ts) {
   n++;
   // 同一帧到达的点在同一帧画出（A3.3）：本帧 rAF 消费 pending
   pending.forEach(function (p) { ctx.fillStyle = colors[p[0]]; ctx.fillRect(Math.round(p[1] * k) - 3, Math.round(p[2] * k) - 3, 6, 6); });
-  if (pending.length) T.frame(n, { drawn: pending.length });
+  // 左上角 HUD 每帧重画（按着几根手指 + 帧号的低位当进度条）：每帧都有新内容上屏，真机量具才量得出屏上重复
+  ctx.fillStyle = '#202020'; ctx.fillRect(0, 0, 120, 14);
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, 12 * down, 6); ctx.fillRect(0, 8, n % 120, 6);
+  T.frame(n, { drawn: pending.length, ts: ts, dt: last ? +(ts - last).toFixed(3) : 0 });
+  last = ts;
   pending = [];
   requestAnimationFrame(tick);
 }
