@@ -35,6 +35,15 @@
                 wx.exitMiniProgram = hostAction('exit', 'exitMiniProgram');
                 wx.restartMiniProgram = hostAction('restart', 'restartMiniProgram');
 
+                // ── 引擎插件（G6.7，原生在 game/plugin.rs）：requirePlugin('name') 取入口，'name/子路径' 取插件里的模块 ──
+                globalThis.requirePlugin = function(name) {
+                    var s = String(name || ''), i = s.indexOf('/'), n = i < 0 ? s : s.slice(0, i);
+                    var table = globalThis.__gamePlugins || {};
+                    var main = table[n];
+                    if (!main) throw new Error('plugin "' + n + '" is not defined' + (n in table ? '（pluginDir 与包内 path 都没有这个插件）' : '（game.json 的 plugins 里没有声明）'));
+                    return origRequire('', i < 0 ? main : '__plugin__/' + n + '/' + s.slice(i + 1));
+                };
+
                 // ── 分包 ──
                 // 分包表由原生在前置代码之后、game.js 之前设（__gameSubpackages / __gameEntrySub / __gameMainBytes），第一次用时读
                 var subs = null, loaded = {}, mainLoaded = true;

@@ -17,11 +17,13 @@ pub struct Opts {
     pub entry: Option<&'static str>,
     /// 宿主转不了方向（创建选项 rotateInEngine，宿主给竖屏尺寸）
     pub rotate: bool,
+    /// 引擎插件目录（创建选项 pluginDir）
+    pub plugin_dir: Option<std::path::PathBuf>,
 }
 
 impl Default for Opts {
     fn default() -> Self {
-        Self { hz: 60, query: "", watchdog_ms: 5000, entry: None, rotate: false }
+        Self { hz: 60, query: "", watchdog_ms: 5000, entry: None, rotate: false, plugin_dir: None }
     }
 }
 
@@ -99,6 +101,7 @@ impl GameHarness {
             fixed_clock: true,
             entry_subpackage: opts.entry.map(str::to_string),
             rotate_in_engine: opts.rotate,
+            plugin_dir: opts.plugin_dir.as_ref().map(|p| p.to_string_lossy().to_string()),
             ..Default::default()
         };
         let data = dir.with_extension("data");

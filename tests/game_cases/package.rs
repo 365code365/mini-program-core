@@ -186,3 +186,31 @@ T.ready('m1');
     let b = &h.events("bench")[0];
     assert_eq!((b["benchmarkLevel"].as_i64(), b["modelLevel"].as_i64()), (Some(1), Some(3)), "默认 benchmarkLevel 1 → 低档 3：{b}");
 }
+
+/// PL1~PL3：pluginDir 里有就用它；没有就用包内 path 兜底（插件内相对 require、'name/子路径'）；都没有抛错，没接住的进 onError
+#[test]
+fn pl1_pl3_引擎插件() {
+    let _g = serial();
+    let mut h = GameHarness::open("g-plugin", Opts::default());
+    h.vsyncs(2);
+    let eng = &h.events("eng")[0];
+    assert_eq!((eng["from"].as_str(), eng["util"].as_str(), eng["sub"].as_bool()), (Some("local"), Some("local-util"), Some(true)), "包内兜底：{eng}");
+    assert_eq!(h.events("sub")[0]["v"], "local-util");
+    let miss = h.events("miss");
+    assert!(miss.iter().all(|m| m["threw"] == true), "{miss:?}");
+    assert!(miss[0]["msg"].as_str().unwrap().contains("ghost") && miss[1]["msg"].as_str().unwrap().contains("没有声明"), "{miss:?}");
+    assert!(h.events("onError").iter().any(|e| e["message"].as_str().unwrap().contains("ghost")), "没接住的进 onError");
+    drop(h);
+    // pluginDir 里有同一个插件：优先用它
+    let pd = std::env::temp_dir().join(format!("pl-dir-{}", std::process::id()));
+    let d = pd.join("wxeng000000000000/1.2.3");
+    std::fs::create_dir_all(&d).unwrap();
+    std::fs::write(d.join("index.js"), "module.exports = { from: 'pluginDir', util: require('./util.js').v, sub: true };").unwrap();
+    std::fs::write(d.join("util.js"), "module.exports = { v: 'dir-util' };").unwrap();
+    let mut h = GameHarness::open("g-plugin", Opts { plugin_dir: Some(pd.clone()), ..Default::default() });
+    h.vsyncs(2);
+    assert_eq!(h.events("eng")[0]["from"], "pluginDir");
+    assert_eq!(h.events("sub")[0]["v"], "dir-util", "插件里的模块按插件根解析");
+    assert!(h.log.iter().any(|l| l.contains("来自pluginDir")));
+    std::fs::remove_dir_all(&pd).ok();
+}

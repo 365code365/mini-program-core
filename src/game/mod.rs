@@ -16,6 +16,7 @@ mod fonts;
 pub mod image;
 mod lifecycle;
 mod package;
+mod plugin;
 pub mod rotate;
 mod window;
 pub mod worker;
@@ -60,6 +61,8 @@ pub struct GameOptions {
     pub entry_subpackage: Option<String>,
     /// 宿主转不了方向时（竖屏锁定的页面里嵌横屏游戏）引擎自己转：输出帧转 90°、触点反变换（G6.4，rotate.rs）
     pub rotate_in_engine: bool,
+    /// 引擎插件目录：`<pluginDir>/<provider>/<version>/`（G6.7，plugin.rs）
+    pub plugin_dir: Option<String>,
 }
 
 /// 游戏实例报给 `wx.getSystemInfoSync().SDKVersion` 的基础库版本（决策 D-9 未定：取证后按已实现的 API 集合选定，
@@ -99,6 +102,7 @@ impl GameOptions {
             fixed_clock: v.get("fixedClock").and_then(|x| x.as_bool()).unwrap_or(false),
             entry_subpackage: v.get("entrySubpackage").and_then(|x| x.as_str()).map(str::to_string),
             rotate_in_engine: v.get("rotateInEngine").and_then(|x| x.as_bool()).unwrap_or(false),
+            plugin_dir: v.get("pluginDir").and_then(|x| x.as_str()).map(str::to_string),
         })
     }
 }
@@ -232,7 +236,7 @@ impl GameEngine {
         // game.js 顶层登记的定时器从游戏时间轴的此刻起算（固定时钟下是 0），不是墙上时钟
         let at = engine.clock.borrow().current_instant();
         engine.app.set_timer_clock(Some(at));
-        let entry = engine.install_packages(opts.entry_subpackage.as_deref());
+        let entry = engine.install_packages(opts.entry_subpackage.as_deref(), opts.plugin_dir.as_deref());
         engine.guards.watchdog.arm();
         let r = match &entry {
             // 独立分包：经 require 执行它的入口（模块缓存里记一笔，之后 loadSubpackage 同一个分包不会再执行一遍）

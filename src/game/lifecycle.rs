@@ -7,7 +7,11 @@ use serde_json::json;
 
 impl GameEngine {
     /// 分包表 → `__gameSubpackages` 等全局；`entry`：创建选项 entrySubpackage。返回要执行的独立分包入口（None = 执行 game.js）
-    pub(super) fn install_packages(&mut self, entry: Option<&str>) -> Option<String> {
+    pub(super) fn install_packages(&mut self, entry: Option<&str>, plugin_dir: Option<&str>) -> Option<String> {
+        let (plugins, plogs) = super::plugin::install(&self.app, &self.root, plugin_dir.map(std::path::Path::new), &self.config);
+        for l in plogs {
+            self.host_log(&l);
+        }
         let (subs, warns) = super::package::describe(&self.root, &self.config);
         for w in warns {
             self.host_log(&format!("⚠ {w}"));
@@ -22,7 +26,7 @@ impl GameEngine {
             None => None,
         };
         let entry_name = picked.as_ref().map(|p| json!(p.0)).unwrap_or(json!(null));
-        let js = format!("globalThis.__gameSubpackages = {subs}; globalThis.__gameEntrySub = {entry_name}; globalThis.__gameMainBytes = {main};");
+        let js = format!("globalThis.__gameSubpackages = {subs}; globalThis.__gameEntrySub = {entry_name}; globalThis.__gameMainBytes = {main}; globalThis.__gamePlugins = {plugins};");
         if let Err(e) = self.app.eval(&js) {
             self.report_error("script", &e);
         }
