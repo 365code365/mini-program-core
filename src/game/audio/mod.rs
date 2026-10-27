@@ -11,19 +11,22 @@
 
 #[cfg(all(feature = "game-audio", target_os = "android"))]
 mod aaudio;
+mod graph;
 mod js;
 mod mixer;
 mod output;
 mod ring;
+mod web;
 
 pub use js::register;
+pub use web::register as register_webaudio;
 use js::load_src;
 
 use crate::audio_ctx::decode::Pcm;
 use mixer::{Cmd, Mixer, Report, MAX_VOICES};
 use ring::{ring, Consumer, Producer};
 use serde_json::{json, Value};
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::path::PathBuf;
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Weak};
@@ -58,7 +61,8 @@ impl Ctx {
 struct Ends {
     cmds: Producer<Cmd>,
     reports: Consumer<Report>,
-    retire: Consumer<Arc<Pcm>>,
+    retire: Consumer<graph::Retired>,
+    ended: Consumer<graph::Ended>,
 }
 
 pub struct GameAudio {
@@ -81,17 +85,24 @@ pub struct GameAudio {
     suspended: bool,
     /// 固定时钟（无头）：帧与帧之间不真等，解码没做完就等它做完（与图片同一个做法），结果才逐次可复现
     wait_decodes: bool,
+    /// 命令队列满了没发出去的（按顺序留着，下次再发；从前是直接丢）
+    backlog: VecDeque<Cmd>,
+    web: web::WebAudio,
 }
 
 impl GameAudio {
     /// `offline`：无头 / 测试（不开设备，按帧时钟渲染）
     pub fn new(root: PathBuf, offline: bool) -> Self {
         let offline = offline || std::env::var("MINI_AUDIO_OFFLINE").is_ok();
+        let clocks: Arc<graph::Clocks> = Arc::new(std::array::from_fn(|_| Default::default()));
+        let gc = clocks.clone();
         let (opened, ends) = output::open(offline, |rate, channels| {
-            let (cp, cc) = ring(256);
+            let (cp, cc) = ring(1024);
             let (rp, rc) = ring(4096);
-            let (tp, tc) = ring(256);
-            (Mixer::new(rate, channels, cc, rp, tp), Ends { cmds: cp, reports: rc, retire: tc })
+            let (tp, tc) = ring(4096);
+            let (ep, ec) = ring(1024);
+            let g = graph::Graph::new(rate, channels, gc.clone(), ep);
+            (Mixer::new(rate, channels, cc, rp, tp, g), Ends { cmds: cp, reports: rc, retire: tc, ended: ec })
         });
         let (done_tx, done_rx) = channel();
         let mut a = Self {
@@ -111,6 +122,8 @@ impl GameAudio {
             logs: Vec::new(),
             suspended: false,
             wait_decodes: offline,
+            backlog: VecDeque::new(),
+            web: web::WebAudio::new(opened.rate, clocks),
         };
         if std::env::var("MINI_AUDIO_LOG").is_ok() || !a.out.is_device() && !offline {
             a.logs.push(format!("🔊 音频：{}", opened.note));
@@ -119,8 +132,25 @@ impl GameAudio {
     }
 
     fn send(&mut self, c: Cmd) {
-        if self.ends.cmds.push(c).is_err() {
-            self.logs.push("⚠️ 音频命令队列满了，丢掉一条".into());
+        self.drain_backlog();
+        if !self.backlog.is_empty() {
+            self.backlog.push_back(c);
+            return;
+        }
+        if let Err(c) = self.ends.cmds.push(c) {
+            if self.backlog.is_empty() {
+                self.logs.push("⚠️ 音频命令队列满了，余下的下一帧再发".into());
+            }
+            self.backlog.push_back(c);
+        }
+    }
+
+    fn drain_backlog(&mut self) {
+        while let Some(c) = self.backlog.pop_front() {
+            if let Err(c) = self.ends.cmds.push(c) {
+                self.backlog.push_front(c);
+                break;
+            }
         }
     }
 
@@ -347,11 +377,13 @@ impl GameAudio {
 
     /// pump 里调：离线渲染补到此刻、收解码结果与混音器回报、发 timeUpdate / ended
     pub fn tick(&mut self, t_us: u64) {
+        self.drain_backlog();
         self.out.advance(t_us, self.rate);
         if let Some(l) = self.out.poll() {
             self.logs.push(l);
         }
         while self.ends.retire.pop().is_some() {}
+        self.web_tick();
         let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
         loop {
             let got = if self.wait_decodes && !self.pending.is_empty() {
@@ -436,7 +468,7 @@ impl GameAudio {
 
     /// 有在解码 / 在播的：宿主要继续出帧（位置回报、ended 要有帧去取）
     pub fn busy(&self) -> bool {
-        !self.pending.is_empty() || !self.events.is_empty() || self.ctxs.values().any(|c| c.playing)
+        !self.pending.is_empty() || !self.events.is_empty() || self.ctxs.values().any(|c| c.playing) || self.web.busy() || !self.backlog.is_empty()
     }
 
     /// 诊断 JSON：输出帧数、延迟、回调块、回调次数、欠载、采样率、是否真设备、在播几路

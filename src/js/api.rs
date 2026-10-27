@@ -188,6 +188,8 @@ const GAME_EXTRA: &[Prelude] = prelude![
     "game-input" => "game-input.js",
     // InnerAudioContext 接小游戏自己的混音器与真设备（game/audio）：只换掉原生入口，外壳仍是 audio.js
     "game-audio" => "game-audio.js",
+    // wx.createWebAudioContext 换成真混音图（game/audio/graph + web）；没编进去时（__game_webaudio 不存在）保留 webaudio.js 那份
+    "game-webaudio" => "game-webaudio.js",
 ];
 
 /// 一个应用种类实际执行的段（按顺序）

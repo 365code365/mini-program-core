@@ -155,6 +155,7 @@ impl GameEngine {
             image::register(&rt, images.clone())?;
             fonts::register(&rt, root.clone())?;
             audio::register(&rt, audio.clone())?;
+            audio::register_webaudio(&rt, audio.clone())?;
             frame::register(&rt, pacer.clone(), clock.clone())?;
         }
         app.init_profile(PreludeProfile::MiniGame)?;

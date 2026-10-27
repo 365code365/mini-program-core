@@ -4,6 +4,7 @@
 //! 不再用的 PCM（`Arc`）也经队列送回引擎线程去释放 —— 最后一个引用在这里掉了就会在音频线程上 free。
 //! 离线模式（无头 / 设备打不开）同一个混音器由引擎线程按帧调用，结果逐样本相同。
 
+use super::graph::{GCmd, Graph, Retired};
 use super::ring::{Consumer, Producer};
 use crate::audio_ctx::decode::Pcm;
 use std::sync::Arc;
@@ -22,6 +23,8 @@ pub enum Cmd {
     Loop { slot: usize, gen: u32, looping: bool },
     /// 进后台 / 打断：整体静音暂停（Voice 原样留着）
     Suspend(bool),
+    /// WebAudio 混音图的命令（graph/mod.rs）
+    Graph(GCmd),
 }
 
 /// 每次 render 之后，每个在发声的 Voice 一条：(槽, 代数, 源里的位置（秒）, 是否播完)
@@ -53,20 +56,22 @@ pub struct Mixer {
     suspended: bool,
     cmds: Consumer<Cmd>,
     reports: Producer<Report>,
-    retire: Producer<Arc<Pcm>>,
+    retire: Producer<Retired>,
+    /// WebAudio 的图：与 Voice 叠在同一个输出上
+    graph: Graph,
     /// 已经输出的帧数（播放时钟）
     pub frames: u64,
 }
 
 impl Mixer {
-    pub fn new(out_rate: u32, channels: usize, cmds: Consumer<Cmd>, reports: Producer<Report>, retire: Producer<Arc<Pcm>>) -> Self {
-        Self { out_rate: out_rate.max(1), channels: channels.max(1), voices: Default::default(), suspended: false, cmds, reports, retire, frames: 0 }
+    pub fn new(out_rate: u32, channels: usize, cmds: Consumer<Cmd>, reports: Producer<Report>, retire: Producer<Retired>, graph: Graph) -> Self {
+        Self { out_rate: out_rate.max(1), channels: channels.max(1), voices: Default::default(), suspended: false, cmds, reports, retire, graph, frames: 0 }
     }
 
     fn drop_voice(&mut self, slot: usize) {
         if let Some(v) = self.voices[slot].take() {
             // 送回引擎线程释放；队列满了就只能在这里放（极少，计数器以后在 MINI_AUDIO_LOG 里报）
-            let _ = self.retire.push(v.pcm);
+            let _ = self.retire.push(Retired::Pcm(v.pcm));
         }
     }
 
@@ -117,6 +122,7 @@ impl Mixer {
                 }
             }
             Cmd::Suspend(s) => self.suspended = s,
+            Cmd::Graph(g) => self.graph.apply(g, &mut self.retire),
             Cmd::Start { .. } => {}
         }
     }
@@ -142,6 +148,7 @@ impl Mixer {
                     self.drop_voice(slot);
                 }
             }
+            self.graph.render(out);
         }
         for s in out.iter_mut() {
             *s = s.clamp(-1.0, 1.0);
@@ -192,11 +199,13 @@ mod tests {
     use super::super::ring::ring;
     use super::*;
 
-    fn mixer() -> (Mixer, Producer<Cmd>, Consumer<Report>, Consumer<Arc<Pcm>>) {
+    fn mixer() -> (Mixer, Producer<Cmd>, Consumer<Report>, Consumer<Retired>) {
         let (cp, cc) = ring(64);
         let (rp, rc) = ring(1024);
         let (tp, tc) = ring(64);
-        (Mixer::new(48_000, 2, cc, rp, tp), cp, rc, tc)
+        let (ep, _) = ring(8);
+        let clocks = Arc::new(std::array::from_fn(|_| std::sync::atomic::AtomicU64::new(0)));
+        (Mixer::new(48_000, 2, cc, rp, tp, Graph::new(48_000, 2, clocks, ep)), cp, rc, tc)
     }
 
     fn ramp(n: usize, rate: u32) -> Arc<Pcm> {
@@ -218,7 +227,7 @@ mod tests {
         let r: Vec<Report> = std::iter::from_fn(|| rep.pop()).collect();
         assert_eq!(r.last().map(|r| (r.slot, r.gen, r.ended)), Some((3, 7, true)));
         drop(pcm);
-        let back = ret.pop().expect("PCM 送回引擎线程");
+        let Some(Retired::Pcm(back)) = ret.pop() else { panic!("PCM 送回引擎线程") };
         assert_eq!(Arc::strong_count(&back), 1, "音频线程不留引用");
     }
 

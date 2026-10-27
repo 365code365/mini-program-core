@@ -27,6 +27,8 @@ mod net_cases;
 mod fs_cases;
 #[path = "game_cases/audio.rs"]
 mod audio_cases;
+#[path = "game_cases/webaudio.rs"]
+mod webaudio_cases;
 
 /// GT-R1 / R5 / S4：game.js 执行一次，console、onError、onUnhandledRejection、GameGlobal
 #[test]

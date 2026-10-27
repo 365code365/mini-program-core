@@ -10,14 +10,14 @@ impl GameEngine {
 
     /// 把排着的音频事件交给 JS。进后台时也直接调：后台不再 pump，pause 事件要当场发出去
     pub(super) fn flush_audio_events(&mut self) {
-        let (events, logs) = {
+        let (events, logs, web) = {
             let mut a = self.audio.borrow_mut();
-            (a.take_events(), a.take_logs())
+            (a.take_events(), a.take_logs(), a.take_web_events())
         };
         for l in logs {
             self.host_log(&l);
         }
-        if events.is_empty() {
+        if events.is_empty() && web.is_empty() {
             return;
         }
         self.guards.watchdog.arm();
@@ -25,6 +25,12 @@ impl GameEngine {
         for (id, ty, detail) in events {
             let js = format!("__resolveAudio({id}, {}, {})", serde_json::json!(ty), serde_json::json!(detail.to_string()));
             if let Err(e) = self.app.eval(&js) {
+                errors.push(e);
+            }
+        }
+        // WebAudio：源节点 ended、decodeAudioData 的结果（game-webaudio.js 的 __webAudioEvent）
+        for ev in web {
+            if let Err(e) = self.app.eval(&format!("typeof __webAudioEvent === 'function' && __webAudioEvent({ev})")) {
                 errors.push(e);
             }
         }
