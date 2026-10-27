@@ -37,6 +37,8 @@ pub struct FrameOut {
     pub stale: bool,
     /// 已经出过的帧数（rAF 帧里主画布变了才算一帧）
     pub count: u64,
+    /// 引擎内旋转时的中间缓冲（转之前的那一份）
+    pub unrotated: Vec<u8>,
 }
 
 pub(super) fn register(rt: &JsRuntime, pacer: Rc<RefCell<RafPacer>>, clock: Rc<RefCell<GameClock>>) -> Result<(), String> {
@@ -181,10 +183,20 @@ impl GameEngine {
                 }
             }
             self.frame.stale = false;
+            if let Some(r) = self.rotation {
+                // 引擎内旋转（rotate.rs）：整帧转 90°，宽高对调
+                std::mem::swap(&mut self.frame.rgba, &mut self.frame.unrotated);
+                r.rotate_rgba(&self.frame.unrotated, self.frame.w, self.frame.h, &mut self.frame.rgba);
+                (self.frame.w, self.frame.h) = (self.frame.h, self.frame.w);
+            }
         }
         (self.frame.w, self.frame.h, &self.frame.rgba)
     }
 
+    /// 输出帧是不是引擎转过的（宿主上屏要走转好的 RGBA，不能直取主画布像素）
+    pub fn rotated_output(&self) -> bool {
+        self.rotation.is_some()
+    }
     /// 拿主画布的原始像素（宽、高、`Color` 行优先）跑一段宿主侧上屏代码：热路径直写宿主缓冲，
     /// 不经 [`frame_rgba`](Self::frame_rgba) 的中间缓冲（`compose::write_opaque_rows`）。还没有主画布返回 None
     pub fn with_main_pixels<R>(&self, f: impl FnOnce(u32, u32, &[crate::Color]) -> R) -> Option<R> {
@@ -196,6 +208,17 @@ impl GameEngine {
 
     /// 缩放到 `(w, h)` 的 RGBA（无头快照 / 桌面窗体；移动端交给系统缩放器，不走这里）
     pub fn frame_rgba_scaled(&mut self, w: u32, h: u32) -> Vec<u8> {
+        if let Some(r) = self.rotation {
+            // 转之前按对调的尺寸缩，再转
+            let raw = self.scaled_unrotated(h, w);
+            let mut out = Vec::new();
+            r.rotate_rgba(&raw, h, w, &mut out);
+            return out;
+        }
+        self.scaled_unrotated(w, h)
+    }
+
+    fn scaled_unrotated(&self, w: u32, h: u32) -> Vec<u8> {
         let cs = self.canvases.borrow();
         let mut out = Vec::new();
         match cs.main_slot() {

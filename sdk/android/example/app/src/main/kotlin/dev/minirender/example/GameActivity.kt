@@ -27,6 +27,8 @@ class GameActivity : Activity() {
         val opts = org.json.JSONObject()
             .put("appId", "wxdemo-$name")
             .put("launchOptions", org.json.JSONObject().put("query", q).put("scene", 1001))
+            // --ez rotate true：横屏包在竖屏里由引擎自己转（G6.4）
+            .put("rotateInEngine", intent.getBooleanExtra("rotate", false))
         val v = MiniGameView(this, dir.absolutePath, File(filesDir, "game-data").absolutePath, opts.toString())
         // wx.exitMiniProgram 关掉这一页；wx.restartMiniProgram 重建（新实例从 game.js 重新跑）
         v.onHostEvent = { type, _ ->

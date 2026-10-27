@@ -16,6 +16,9 @@ impl GameEngine {
     /// 宿主窗口变了（转屏、分屏、折叠屏）。`orientation`：宿主知道的实际方向（landscapeReverse 只有宿主分得出来）
     pub fn resize(&mut self, width: u32, height: u32, dpr: f32, orientation: Option<&str>) {
         let (width, height) = (width.max(1), height.max(1));
+        // 引擎内旋转：宿主给的竖屏尺寸对调成游戏看到的横屏
+        let (width, height) = if self.rotation.is_some() && width < height { (height, width) } else { (width, height) };
+        let orientation = if self.rotation.is_some() { Some("landscape") } else { orientation };
         let dpr = if dpr > 0.1 { dpr } else { self.dpr };
         let value = match orientation {
             Some(o @ ("portrait" | "landscape" | "landscapeReverse")) => o.to_string(),

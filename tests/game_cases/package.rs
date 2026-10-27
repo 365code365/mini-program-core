@@ -115,3 +115,34 @@ fn o1_o3_横屏与转屏() {
     let i = ((hh as usize - 1) * w as usize + (w as usize - 1)) * 4;
     assert_eq!(&px[i..i + 3], &[255, 255, 0], "右下角是黄块");
 }
+
+/// O2：rotateInEngine（宿主竖屏、包横屏）：游戏看到横屏窗口；输出帧顺时针转 90°（游戏左上 → 设备右上）；
+/// 点设备坐标，回调里是游戏坐标，画出来的点在设备上就在点下去的地方（±1px）
+#[test]
+fn o2_引擎内旋转() {
+    let _g = serial();
+    let mut h = GameHarness::open("g-landscape", Opts { rotate: true, ..Default::default() });
+    h.vsyncs(2);
+    let b = &h.events("boot")[0];
+    assert_eq!((b["ww"].as_f64(), b["wh"].as_f64(), b["cw"].as_u64()), (Some(667.0), Some(375.0), Some(667)), "{b}");
+    let px = |h: &mut GameHarness, x: usize, y: usize| {
+        let (w, _, p) = h.engine.frame_rgba();
+        let i = (y * w as usize + x) * 4;
+        [p[i], p[i + 1], p[i + 2]]
+    };
+    assert_eq!(h.engine.frame_rgba().0, 375, "输出帧是竖的");
+    assert_eq!(px(&mut h, 370, 5), [255, 0, 0], "游戏左上（红）→ 设备右上");
+    assert_eq!(px(&mut h, 370, 660), [0, 255, 0], "游戏右上（绿）→ 设备右下");
+    assert_eq!(px(&mut h, 5, 5), [0, 0, 255], "游戏左下（蓝）→ 设备左上");
+    assert_eq!(px(&mut h, 5, 660), [255, 255, 0], "游戏右下（黄）→ 设备左下");
+    let t = h.now_us();
+    h.engine.touch(0, 1, 300.0, 200.0, 1.0, t);
+    h.engine.touch(2, 1, 300.0, 200.0, 0.0, t);
+    h.vsyncs(2);
+    let tap = &h.events("tap")[0];
+    assert_eq!((tap["x"].as_f64(), tap["y"].as_f64()), (Some(200.0), Some(75.0)), "游戏坐标 = (yd, Wd − xd)");
+    assert_eq!(px(&mut h, 300, 200), [255, 255, 255], "点在设备上画在手指下面");
+    h.engine.resize(375, 667, 2.0, Some("portrait"));
+    h.vsyncs(1);
+    assert!(h.events("resize").is_empty() && h.events("orient").is_empty(), "宿主报的还是同一个竖屏：游戏看到的横屏没变");
+}

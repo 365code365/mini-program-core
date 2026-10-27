@@ -12,16 +12,26 @@ impl GameEngine {
         if self.input_blocked() {
             return;
         }
+        let (x, y) = self.host_to_game(x, y);
         self.touch.push(phase, id, x, y, force, t_us);
     }
 
     /// 鼠标（`phase` 0 下 / 1 移 / 2 抬；`button` 0 左 1 中 2 右）
     pub fn mouse(&mut self, phase: i32, button: i32, x: f32, y: f32, t_us: u64) {
+        let (x, y) = self.host_to_game(x, y);
         self.pc.mouse(phase, button, x, y, t_us);
     }
 
     pub fn wheel(&mut self, dx: f32, dy: f32, dz: f32, x: f32, y: f32, t_us: u64) {
+        let (x, y) = self.host_to_game(x, y);
         self.pc.wheel(dx, dy, dz, x, y, t_us);
+    }
+    /// 宿主坐标 → 游戏坐标（引擎内旋转时反变换，rotate.rs；宿主竖屏的宽 = 游戏窗口的高）
+    fn host_to_game(&self, x: f32, y: f32) -> (f32, f32) {
+        match self.rotation {
+            Some(r) => r.to_game(x, y, self.height as f32, self.width as f32),
+            None => (x, y),
+        }
     }
 
     pub fn key(&mut self, down: bool, key: &str, code: &str, t_us: u64) {

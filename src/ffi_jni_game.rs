@@ -238,6 +238,9 @@ pub extern "system" fn Java_dev_minirender_MiniGame_nativeBlit(_e: JNIEnv, _c: J
     }
     let win = hd.window as *mut c_void;
     let game = hd.game;
+    if mr_game_with_engine(game, |e| e.rotated_output()).unwrap_or(false) {
+        return blit_rgba(hd);
+    }
     let geometry = &mut hd.geometry;
     let (wait, copy, post) = (&mut hd.last_wait_us, &mut hd.last_copy_us, &mut hd.last_post_us);
     mr_game_with_main_pixels(game, |w, hgt, px| {
@@ -272,6 +275,36 @@ pub extern "system" fn Java_dev_minirender_MiniGame_nativeBlit(_e: JNIEnv, _c: J
     .unwrap_or(0)
 }
 
+/// 引擎内旋转（game/rotate.rs）时的上屏：转好的 RGBA 逐行拷进 surface（多一次整帧转置，横屏嵌竖屏页面这种少见场景才走）
+fn blit_rgba(hd: &mut Handle) -> jint {
+    let win = hd.window as *mut c_void;
+    let geometry = &mut hd.geometry;
+    mr_game_with_frame(hd.game, |w, hgt, px| unsafe {
+        // SAFETY: 同 nativeBlit
+        if *geometry != (w, hgt) {
+            if ANativeWindow_setBuffersGeometry(win, w as i32, hgt as i32, WINDOW_FORMAT_RGBA_8888) != 0 {
+                return -1;
+            }
+            *geometry = (w, hgt);
+        }
+        let mut buf = ANativeWindowBuffer { width: 0, height: 0, stride: 0, format: 0, bits: std::ptr::null_mut(), reserved: [0; 6] };
+        let r = ANativeWindow_lock(win, &mut buf, std::ptr::null_mut());
+        if r != 0 || buf.bits.is_null() {
+            return if r < 0 { r } else { -2 };
+        }
+        if buf.width as u32 == w && buf.height as u32 == hgt {
+            let stride = buf.stride.max(0) as usize * 4;
+            let row = w as usize * 4;
+            let dst = std::slice::from_raw_parts_mut(buf.bits as *mut u8, stride * hgt as usize);
+            for y in 0..hgt as usize {
+                dst[y * stride..y * stride + row].copy_from_slice(&px[y * row..(y + 1) * row]);
+            }
+        }
+        ANativeWindow_unlockAndPost(win);
+        1
+    })
+    .unwrap_or(0)
+}
 /// 最近一次上屏的耗时：高 32 位 = 等缓冲（µs），低 32 位 = 拷贝 + 提交（µs）
 #[no_mangle]
 pub extern "system" fn Java_dev_minirender_MiniGame_nativeBlitStats(_e: JNIEnv, _c: JClass, h: jlong) -> jlong {

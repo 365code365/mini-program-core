@@ -16,6 +16,7 @@ mod fonts;
 pub mod image;
 mod lifecycle;
 mod package;
+pub mod rotate;
 mod window;
 mod image_events;
 mod input;
@@ -56,6 +57,8 @@ pub struct GameOptions {
     pub fixed_clock: bool,
     /// 从独立分包启动（分包名或 root）：执行它的入口而不是 game.js，主包要 `loadSubpackage({name:'__GAME__'})`（G6.1，GT-P5）
     pub entry_subpackage: Option<String>,
+    /// 宿主转不了方向时（竖屏锁定的页面里嵌横屏游戏）引擎自己转：输出帧转 90°、触点反变换（G6.4，rotate.rs）
+    pub rotate_in_engine: bool,
 }
 
 /// 游戏实例报给 `wx.getSystemInfoSync().SDKVersion` 的基础库版本（决策 D-9 未定：取证后按已实现的 API 集合选定，
@@ -94,6 +97,7 @@ impl GameOptions {
             fault: v.get("fault").and_then(|x| x.as_str()).map(str::to_string),
             fixed_clock: v.get("fixedClock").and_then(|x| x.as_bool()).unwrap_or(false),
             entry_subpackage: v.get("entrySubpackage").and_then(|x| x.as_str()).map(str::to_string),
+            rotate_in_engine: v.get("rotateInEngine").and_then(|x| x.as_bool()).unwrap_or(false),
         })
     }
 }
@@ -123,6 +127,8 @@ pub struct GameEngine {
     orientation: String,
     /// 宿主给的系统信息覆盖项（resize 时重算系统信息要用）
     system_info_opts: serde_json::Map<String, Value>,
+    /// 引擎内旋转（rotate.rs）；None = 宿主自己转
+    rotation: Option<rotate::Rotation>,
 }
 
 impl GameEngine {
@@ -148,6 +154,9 @@ impl GameEngine {
         // 包内资源（图片、音频、require 的基准）都按包根解析
         crate::host::page_loader::set_app_path(root.clone());
         let (width, height) = (width.max(1), height.max(1));
+        // 引擎内旋转：游戏看到的窗口是横的（宿主给的宽高对调）
+        let rotation = rotate::decide(opts.rotate_in_engine, config.device_orientation, width, height);
+        let (width, height) = if rotation.is_some() { (height, width) } else { (width, height) };
         let dpr = if dpr > 0.1 { dpr } else { 1.0 };
 
         let mut app = MiniApp::new(width, height)?;
@@ -194,7 +203,7 @@ impl GameEngine {
             canvases, pacer, clock, frame: frame::FrameOut::default(), backgrounded: false,
             touch: Default::default(), pc: Default::default(), images, audio,
             orientation: if config_landscape { "landscape".into() } else { "portrait".into() },
-            system_info_opts: opts.system_info.clone() };
+            system_info_opts: opts.system_info.clone(), rotation };
         engine.announce_orientation();
         let log = std::env::var("MINI_GAME_LOG").is_ok();
         if opts.app_id.is_none() {

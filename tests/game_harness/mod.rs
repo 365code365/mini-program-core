@@ -15,11 +15,13 @@ pub struct Opts {
     pub watchdog_ms: u64,
     /// 从独立分包启动（创建选项 entrySubpackage）
     pub entry: Option<&'static str>,
+    /// 宿主转不了方向（创建选项 rotateInEngine，宿主给竖屏尺寸）
+    pub rotate: bool,
 }
 
 impl Default for Opts {
     fn default() -> Self {
-        Self { hz: 60, query: "", watchdog_ms: 5000, entry: None }
+        Self { hz: 60, query: "", watchdog_ms: 5000, entry: None, rotate: false }
     }
 }
 
@@ -96,6 +98,7 @@ impl GameHarness {
             watchdog_ms: Some(opts.watchdog_ms),
             fixed_clock: true,
             entry_subpackage: opts.entry.map(str::to_string),
+            rotate_in_engine: opts.rotate,
             ..Default::default()
         };
         let data = dir.with_extension("data");
@@ -103,7 +106,7 @@ impl GameHarness {
         let land = std::fs::read_to_string(dir.join("game.json")).ok()
             .and_then(|t| mini_render::game::config::GameConfig::parse(&t).ok())
             .is_some_and(|c| c.device_orientation.is_landscape());
-        let (w, h) = if land { (667, 375) } else { (375, 667) };
+        let (w, h) = if land && !opts.rotate { (667, 375) } else { (375, 667) };
         let engine = GameEngine::new(dir.to_str().unwrap(), Some(data.to_str().unwrap()), w, h, 2.0, go)
             .unwrap_or_else(|e| panic!("建游戏实例失败：{e}"));
         let mut h = Self { engine, hz: opts.hz, frame: 0, log: Vec::new(), errors: Vec::new(), host: Vec::new(), dir };

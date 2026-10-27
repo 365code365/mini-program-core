@@ -87,7 +87,9 @@ class MiniGameView(
     init {
         // 建实例之前就按 game.json 锁方向：否则第一帧拿到竖屏尺寸，横屏包要先错一次再 resize（G6.3）
         val o = try { org.json.JSONObject(java.io.File(dir, "game.json").readText()).optString("deviceOrientation", "portrait") } catch (_: Exception) { "portrait" }
-        lockOrientation(o)
+        // rotateInEngine：宿主不转（引擎自己把横屏画面转进竖屏，game/rotate.rs），锁竖屏
+        val inEngine = try { org.json.JSONObject(options).optBoolean("rotateInEngine") } catch (_: Exception) { false }
+        lockOrientation(if (inEngine) "portrait" else o)
         post { start() }
     }
 
