@@ -210,10 +210,11 @@
                     this.__id = id;
                     this.__onscreen = info[3] === 1;
                     var self = this;
+                    var glReset = null;
                     function resize(nw, nh) {
                         var r = __game_canvas_resize(id, nw, nh);
                         if (r) { w = r[0]; h = r[1]; }
-                        if (ctx) ctx.__reset();
+                        if (glReset) glReset(); else if (ctx) ctx.__reset();
                     }
                     // sharedCanvas 在主域与开放数据域各有一个包装：尺寸以原生为准
                     function sync() { if (self.__shared) { var s = __game_canvas_size(id); if (s) { w = s[0]; h = s[1]; } } }
@@ -231,7 +232,8 @@
                             // WebGL（G8，game-webgl.js）：改尺寸 = 换绘图缓冲（视口不动，与浏览器一致）
                             ctx = __gameWebGL(self, type, attrs);
                             if (!ctx) return null;
-                            ctx.__reset = function() { __game_gl_resize(id, w, h); };
+                            // 不挂在上下文对象上（CTS 的 methods 用例不许上下文有标准之外的自有方法）
+                            glReset = function() { __game_gl_resize(id, w, h); };
                             Object.defineProperty(self, '__glctx', { value: ctx, enumerable: false });
                             kind = type;
                             return ctx;

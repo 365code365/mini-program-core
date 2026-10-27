@@ -341,6 +341,9 @@ GPU 初始化失败、自检不一致、运行中设备丢失或 surface 无法�
 | `MINI_GPU_FAULT=init\|selftest\|tint\|lost@N\|surface-lost@N\|timeout@N` | 故障注入，用来测回退：建设备后失败 / 自检判不一致 / 着色器 R+1 / 第 N 帧设备丢失 / 第 N 帧 surface 丢失 / 第 N 帧 acquire 超时 |
 | `MINI_GAME_LOG=1` | 小游戏（`game.json`）诊断：`game.json` 未知字段、注册的模块数、屏幕方向 |
 | `MINI_GAME_LOG_ALL=1` | 小游戏：关掉每帧日志限流（默认每帧 500 行、单行 4KB） |
+| `MINI_WEBGL=auto\|angle\|swiftshader\|system\|off` | 小游戏 WebGL 后端（压过创建选项 `webgl`）：auto 交互先 ANGLE（macOS Metal）、无头先 SwiftShader（确定性），Android 是 ANGLE → 系统 GLES；off 让 `getContext('webgl')` 返回 null。选中哪个、为什么回退都进游戏日志（🧊 / ℹ️ 开头） |
+| `MINI_ANGLE_DIR=<目录>` | 小游戏 WebGL：ANGLE 动态库（libEGL / libGLESv2）所在目录；默认找可执行文件旁、`../Frameworks`、仓库 `third_party/angle/<平台>/`（`tools/fetch-angle.sh` 拉） |
+| `MINI_GPU_FAULT=lost@N`（小游戏） | 小游戏里作用于 WebGL：第 N 次上屏时让主画布的上下文丢失，派发 `webglcontextlost`（A8.4） |
 | `MINI_GAME_WATCHDOG_MS=<毫秒>` | 小游戏：单次进入 JS 的时间上限（默认 5000），超时中断抛 `InternalError: interrupted`，交给 `wx.onError` 并发宿主 `error{kind:"watchdog"}` |
 | `MINI_GAME_FAULT=panic@pump\|panic@eval` | 小游戏故障注入：验证 FFI 的 panic 防护（实例失效、宿主进程不崩） |
 | `MINI_RAF_LOG=1` | 小游戏：每轮 `requestAnimationFrame` 一行（时间戳、目标帧率、实测显示周期、节拍不均匀告警） |

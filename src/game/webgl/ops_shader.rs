@@ -54,8 +54,8 @@ pub fn call<'js>(c: &mut GlCtx, e: &Env<'_, 'js>, op: Op, a: &A<'_, 'js>) -> Opt
                 let Some(s) = shader(a.u(0)) else { return Some(null(ctx)) };
                 return Some(match a.u(1) {
                     glow::COMPILE_STATUS => gl.get_shader_compile_status(s).into_js(ctx),
-                    // COMPLETION_STATUS_KHR（KHR_parallel_shader_compile）：同步编译，问就是好了
-                    0x91B1 => true.into_js(ctx),
+                    // COMPLETION_STATUS_KHR（KHR_parallel_shader_compile 开了才认）：同步编译，问就是好了
+                    0x91B1 if c.has_enabled("KHR_parallel_shader_compile") => true.into_js(ctx),
                     _ => {
                         c.error(glow::INVALID_ENUM);
                         null(ctx)
@@ -100,7 +100,7 @@ pub fn call<'js>(c: &mut GlCtx, e: &Env<'_, 'js>, op: Op, a: &A<'_, 'js>) -> Opt
                 let v = gl.get_program_parameter_i32(pp, pn);
                 return Some(match pn {
                     glow::DELETE_STATUS | glow::LINK_STATUS | glow::VALIDATE_STATUS => (v != 0).into_js(ctx),
-                    0x91B1 => true.into_js(ctx),
+                    0x91B1 if c.has_enabled("KHR_parallel_shader_compile") => true.into_js(ctx),
                     glow::ATTACHED_SHADERS | glow::ACTIVE_ATTRIBUTES | glow::ACTIVE_UNIFORMS => v.into_js(ctx),
                     glow::TRANSFORM_FEEDBACK_BUFFER_MODE | glow::TRANSFORM_FEEDBACK_VARYINGS | glow::ACTIVE_UNIFORM_BLOCKS if c.version == 2 => v.into_js(ctx),
                     _ => {
@@ -111,7 +111,8 @@ pub fn call<'js>(c: &mut GlCtx, e: &Env<'_, 'js>, op: Op, a: &A<'_, 'js>) -> Opt
             }
             getProgramInfoLog => return Some(p().map_or_else(|| null(ctx), |pp| gl.get_program_info_log(pp).into_js(ctx))),
             getActiveAttrib => {
-                let r = p().and_then(|pp| gl.get_active_attribute(pp, a.u(1)));
+                // 下标越界：GL 驱动可能照样填一个（未定义），WebGL 要 INVALID_VALUE + null
+                let r = p().filter(|pp| a.u(1) < gl.get_active_attributes(*pp)).and_then(|pp| gl.get_active_attribute(pp, a.u(1)));
                 return Some(match r {
                     Some(at) => info(ctx, at.size, at.atype, at.name),
                     None => {
@@ -121,7 +122,7 @@ pub fn call<'js>(c: &mut GlCtx, e: &Env<'_, 'js>, op: Op, a: &A<'_, 'js>) -> Opt
                 });
             }
             getActiveUniform => {
-                let r = p().and_then(|pp| gl.get_active_uniform(pp, a.u(1)));
+                let r = p().filter(|pp| a.u(1) < gl.get_active_uniforms(*pp)).and_then(|pp| gl.get_active_uniform(pp, a.u(1)));
                 return Some(match r {
                     Some(u) => info(ctx, u.size, u.utype, u.name),
                     None => {

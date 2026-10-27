@@ -238,9 +238,10 @@ pub fn choose_config(d: &Display, w: &Want) -> Option<(egl::Config, Got)> {
             continue;
         }
         let mut score = 0i64;
-        if (a == 8) == w.alpha { score += 1000; }
-        if w.depth { if dp >= 16 { score += 400 + if dp >= 24 { 50 } else { 0 }; } } else if dp == 0 { score += 100; }
-        if w.stencil { if st >= 8 { score += 400; } } else if st == 0 { score += 100; }
+        // 权重：alpha 一致 > depth / stencil 与要求一致（要了就得有，不要就别多给：getContextAttributes 报实际值，CTS 判它）> 抗锯齿
+        if (a == 8) == w.alpha { score += 4000; }
+        if w.depth { if dp >= 16 { score += 1000 + if dp >= 24 { 50 } else { 0 }; } } else if dp == 0 { score += 1000; }
+        if w.stencil { if st >= 8 { score += 1000; } } else if st == 0 { score += 1000; }
         if w.antialias { if s >= 4 { score += 200 - (s - 4) as i64; } } else if s == 0 { score += 200; }
         // 也能建窗口 surface 的优先（Android 直接上屏要用同一个 config，window.rs）
         if q(c, egl::SURFACE_TYPE) & egl::WINDOW_BIT != 0 { score += 20; }

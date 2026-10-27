@@ -28,8 +28,8 @@ set -eu
 cd "$(dirname "$0")/.."
 MODE="${1:-check}"
 # 小游戏音频（cpal：AAudio / CoreAudio）默认编进去；GAME_AUDIO=0 去掉（小游戏音频只走静音的离线模式）
-# 小游戏 + 音频输出 + WebGL（WebGL 不链接 GL 库，运行时加载 EGL，见 src/game/webgl/egl.rs）
-GA=$([ "${GAME_AUDIO:-1}" = 0 ] && echo game,webgl || echo game,game-audio,webgl)
+# 小游戏 + 音频输出 + WebGL（不链接 GL 库，运行时加载 EGL，src/game/webgl/egl.rs）+ WXWebAssembly（wasmi）
+GA=$([ "${GAME_AUDIO:-1}" = 0 ] && echo game,webgl,wasm || echo game,game-audio,webgl,wasm)
 FLAGS=(--release --lib --no-default-features --features "bindgen,$GA")
 if [ "${ANDROID_GPU:-1}" = 0 ]; then
     ANDROID_FLAGS=("${FLAGS[@]}")

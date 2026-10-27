@@ -163,14 +163,14 @@ T.ready('wg3');
     assert_eq!(r, &want);
 }
 
-/// WG4：WEBGL_lose_context —— 丢失事件、getError 报一次 CONTEXT_LOST_WEBGL、preventDefault 后 restoreContext、旧对象作废
+/// WG4：WEBGL_lose_context —— 丢失事件、getError 报一次 CONTEXT_LOST_WEBGL、丢失期间 create* 给无效对象（不是 null，新版规范）、preventDefault 后 restoreContext、旧对象作废
 #[test]
 fn wg4_丢失与恢复() {
     let _g = serial();
     let mut h = open("wg4", r#"
 var c = wx.createCanvas(), gl = c.getContext('webgl'), ext = gl.getExtension('WEBGL_lose_context');
 var old = gl.createBuffer();
-c.addEventListener('webglcontextlost', function (e) { e.preventDefault(); T.ev('lost', { isLost: gl.isContextLost(), err1: gl.getError(), err2: gl.getError(), create: gl.createBuffer(), param: gl.getParameter(gl.MAX_TEXTURE_SIZE) }); ext.restoreContext(); });
+c.addEventListener('webglcontextlost', function (e) { e.preventDefault(); T.ev('lost', { isLost: gl.isContextLost(), err1: gl.getError(), err2: gl.getError(), create: (function () { var b = gl.createBuffer(); return b instanceof WebGLBuffer && !gl.isBuffer(b); })(), param: gl.getParameter(gl.MAX_TEXTURE_SIZE) }); ext.restoreContext(); });
 c.addEventListener('webglcontextrestored', function () {
     gl.bindBuffer(gl.ARRAY_BUFFER, old);
     T.ev('restored', { isLost: gl.isContextLost(), oldErr: gl.getError(), fresh: gl.createBuffer() instanceof WebGLBuffer });
@@ -184,7 +184,7 @@ T.ready('wg4');
     h.assert_no_fail();
     assert_eq!(h.events("has")[0], serde_json::json!({ "ext": true, "again": true }));
     let l = &h.events("lost")[0];
-    assert_eq!(l, &serde_json::json!({ "isLost": true, "err1": 0x9242, "err2": 0, "create": null, "param": null }));
+    assert_eq!(l, &serde_json::json!({ "isLost": true, "err1": 0x9242, "err2": 0, "create": true, "param": null }));
     let r = &h.events("restored")[0];
     assert_eq!(r, &serde_json::json!({ "isLost": false, "oldErr": 0x502, "fresh": true }));
     assert_eq!(px(&mut h, 10, 10), [0, 0, 255], "恢复后画的蓝色上屏");

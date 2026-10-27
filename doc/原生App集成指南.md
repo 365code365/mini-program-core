@@ -897,3 +897,54 @@ Linux 上如果要嵌 WebView（`web-view` 组件）才需要 GTK；纯渲染不
 9. **能后台**：切后台停止出帧（用系统能耗面板确认），回前台画面正常。
 
 引擎自身的回归请跑 `doc/引擎测试说明.md` 第一节那一套。
+
+## 小游戏（game.json 包）
+
+同一个库也能跑微信小游戏（`game.json` + `game.js`，设计与验收见 `game-doc/`）。与小程序是两套平级的实例：
+小程序用 `MRApp` / `MiniAppView`，小游戏用 `MRGame` / `MiniGameView`，互不影响。
+
+### Android
+
+```kotlin
+val view = MiniGameView(activity, gameDir, dataDir, """{"appId":"wx123","hostApis":["login","openData.getFriendCloudStorage"]}""")
+view.onHostEvent = { type, e ->
+    when (type) {
+        "exit" -> activity.finish()
+        "hostCall" -> view.hostReply(e.getInt("id"), true, """{"code":"..."}""")   // 点名的 API 交给宿主
+        else -> {}
+    }
+}
+setContentView(view)   // onResume / onPause 转给 view，onDestroy 调 view.dispose()
+```
+
+`MiniGameView` 自己做的：引擎线程、vsync 节拍（按 rAF 帧率请求显示刷新率）、触摸、键盘输入条、传感器、音频焦点与打断、
+方向锁定（按 game.json 在建实例之前锁）、内存告警、视频（wx.createVideo）。宿主只决定：
+
+| 事 | 怎么做 |
+|---|---|
+| 关系链 / 登录 / 广告等要账号体系的 API | 创建选项 `hostApis` 点名，`onHostEvent("hostCall")` 里处理，`view.hostReply(id, ok, json)` 回结果；没点名的一律 fail（与「无权限」同形） |
+| 开放数据域 | game.json 写了 `openDataContext` 就会在主域第一次 `wx.getOpenDataContext()` 后启动；好友数据走 `openData.*` 的 hostCall |
+| 手柄 / 指针锁定 | `view.dispatchEvent("gamepad", json)`、`dispatchEvent("pointerLockChange", {"locked":true})` |
+
+### 渲染
+
+- 2D 画布在 CPU 上画，主画布按自己的分辨率交给 SurfaceView，系统缩放器拉满屏；
+- **WebGL**：运行时加载 EGL（不链接任何 GL 库）。ANGLE 能加载就用它的 WebGL 兼容上下文（校验与着色器翻译在 ANGLE 里），
+  否则用系统 GLES 驱动，引擎自己做越界检查。主画布是 WebGL 时直接 `eglSwapBuffers` 到 SurfaceView，不经 CPU；
+  Toast / Modal 这类覆盖层弹着时由 GPU 叠在上面。一加 PLY110（Adreno 810）上 1270×2770 的 WebGL 画面 60fps、重复帧 0；
+- **WXWebAssembly**：wasmi 解释执行（iOS 不许 App 自己 JIT），同一台机器上比 QuickJS 跑同一算法快 3~9 倍。
+
+### 体积（arm64，未剥离符号的估算）
+
+| 能力 | 增量 |
+|---|---|
+| WebGL（glow + khronos-egl + game/webgl） | 约 0.28MB |
+| WXWebAssembly（wasmi + wasmparser + game/wasm） | 约 1.8MB |
+
+不要的能力可以在编库时关掉：`--no-default-features` 后按需加 `game`、`game-audio`、`webgl`、`wasm`（`tools/build-mobile.sh` 的 `GA`）。
+
+### 已知限制
+
+- iOS 还没有小游戏视图（`MiniGameView` 只有 Android）；
+- WebGPU（`wx.getGPU`）只给形状，`requestAdapter()` 返回 null，引擎会回退 WebGL；
+- JS 引擎是 QuickJS（不是微信的 V8 / JSC）：没有 JIT，`Intl` 只有最小实现。

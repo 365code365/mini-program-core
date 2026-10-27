@@ -414,6 +414,9 @@ and the log says why:
 | `MINI_GPU_FAULT=init\|selftest\|tint\|lost@N\|surface-lost@N\|timeout@N` | Fault injection for the fallback paths |
 | `MINI_GAME_LOG=1` | Mini-game (`game.json`) diagnostics: unknown `game.json` fields, module count, orientation |
 | `MINI_GAME_LOG_ALL=1` | Mini-game: disable the per-frame console limit (500 lines/frame, 4KB/line) |
+| `MINI_WEBGL=auto\|angle\|swiftshader\|system\|off` | Mini-game WebGL backend (overrides the `webgl` creation option): auto tries ANGLE first when interactive (Metal on macOS) and SwiftShader first when headless (deterministic); Android tries ANGLE then the system GLES driver; off makes `getContext('webgl')` return null. The chosen backend and any fallback reason go to the game log |
+| `MINI_ANGLE_DIR=<dir>` | Mini-game WebGL: directory with the ANGLE libraries (libEGL / libGLESv2); defaults to next to the executable, `../Frameworks`, then `third_party/angle/<platform>/` (fetched by `tools/fetch-angle.sh`) |
+| `MINI_GPU_FAULT=lost@N` (mini-game) | In a mini-game it applies to WebGL: the main canvas context is lost at the N-th present and `webglcontextlost` is dispatched |
 | `MINI_GAME_WATCHDOG_MS=<ms>` | Mini-game: time limit for one entry into JS (default 5000); exceeded → `InternalError: interrupted`, `wx.onError`, host `error{kind:"watchdog"}` |
 | `MINI_GAME_FAULT=panic@pump\|panic@eval` | Mini-game fault injection: verifies the FFI panic guard (instance becomes poisoned, host process survives) |
 | `MINI_RAF_LOG=1` | Mini-game: one line per `requestAnimationFrame` round (timestamp, target fps, measured display period, uneven-cadence warning) |

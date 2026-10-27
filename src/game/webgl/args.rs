@@ -7,15 +7,22 @@ use std::num::NonZeroU32;
 pub struct A<'a, 'js>(pub &'a [Value<'js>]);
 
 impl<'a, 'js> A<'a, 'js> {
+    /// WebIDL 的数值参数 = ToNumber（"2" → 2、[2] → 2、"foo" → NaN → 0）。数字直接取（热路径），别的才走 JS 的强制转换
     pub fn n(&self, i: usize) -> f64 {
         match self.0.get(i) {
-            Some(v) => v.as_number().or_else(|| v.as_bool().map(|b| b as i32 as f64)).unwrap_or(0.0),
+            Some(v) => match v.as_number() {
+                Some(x) => x,
+                None if v.is_bool() => v.as_bool().unwrap_or(false) as i32 as f64,
+                None if v.is_null() || v.is_undefined() => if v.is_undefined() { f64::NAN } else { 0.0 },
+                None => v.get::<rquickjs::convert::Coerced<f64>>().map(|c| c.0).unwrap_or(f64::NAN),
+            },
             None => 0.0,
         }
     }
     pub fn f(&self, i: usize) -> f32 {
         self.n(i) as f32
     }
+    /// GLclampf / GLfloat 里 undefined 是 NaN（ToNumber）；整数参数里 NaN 一律按 0
     pub fn i(&self, i: usize) -> i32 {
         let x = self.n(i);
         if x.is_finite() { (x.trunc() as i64) as i32 } else { 0 }

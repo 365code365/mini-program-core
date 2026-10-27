@@ -67,7 +67,14 @@ pub fn call<'js>(c: &mut GlCtx, e: &Env<'_, 'js>, op: Op, a: &A<'_, 'js>) -> Opt
                     }
                 }
             }
-            getBufferParameter => return Some(c.gl.get_buffer_parameter_i32(a.u(0), a.u(1)).into_js(ctx)),
+            getBufferParameter => {
+                let p = a.u(1);
+                if p != glow::BUFFER_SIZE && p != glow::BUFFER_USAGE {
+                    c.error(glow::INVALID_ENUM);
+                    return Some(null(ctx));
+                }
+                return Some(c.gl.get_buffer_parameter_i32(a.u(0), p).into_js(ctx));
+            }
             enableVertexAttribArray => {
                 c.gl.enable_vertex_attrib_array(a.u(0));
                 if let Some(t) = c.check.as_mut() { t.enable_attrib(a.u(0), true); }
@@ -152,8 +159,11 @@ pub fn call<'js>(c: &mut GlCtx, e: &Env<'_, 'js>, op: Op, a: &A<'_, 'js>) -> Opt
                 let base = if op == drawRangeElements { 2 } else { 0 };
                 let (mode, count, ty, off) = (a.u(0), a.i(base + 1), a.u(base + 2), a.l(base + 3));
                 let inst = if op == drawElementsInstanced { a.i(4) } else { 1 };
-                if count < 0 || off < 0 || inst < 0 || off > i32::MAX as i64 {
+                if count < 0 || off < 0 || inst < 0 {
                     c.error(glow::INVALID_VALUE);
+                } else if off > i32::MAX as i64 {
+                    // 偏移超出任何缓冲可能的长度：按越界处理（WebGL：INVALID_OPERATION）
+                    c.error(glow::INVALID_OPERATION);
                 } else if ty == glow::UNSIGNED_INT && c.version == 1 && !c.has_enabled("OES_element_index_uint") {
                     c.error(glow::INVALID_ENUM);
                 } else if c.check.as_mut().map(|t| t.draw_elements(count, ty, off, inst)) == Some(false) {

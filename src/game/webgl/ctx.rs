@@ -71,6 +71,9 @@ pub struct GlCtx {
     /// WebGLSync：GLsync 是指针，不交给 JS，JS 只拿编号
     pub syncs: std::collections::HashMap<u32, glow::NativeFence>,
     pub next_sync: u32,
+    /// 按 WebGL1 的 DEPTH_STENCIL 分配的渲染缓冲（GL 里是 DEPTH24_STENCIL8，查询时报回 DEPTH_STENCIL）与当前绑着的那个
+    pub ds_rbos: std::collections::HashSet<u32>,
+    pub bound_rbo: u32,
     /// 当前当默认帧缓冲用的窗口 surface（window.rs 建、毁；None = pbuffer）
     window: Option<k::Surface>,
 }
@@ -93,7 +96,7 @@ impl GlCtx {
         let check = (!d.webgl_compat).then(super::validate::Tracker::default);
         let mut c = Self { d, cfg, context, surface, gl, version, attrs, got, w, h, errors: Vec::new(), lost: false, lost_reported: false,
             unpack: Unpack::default(), pack_alignment: 4, drew: false, needs_clear: false, draw_fb_default: true, read_fb_default: true,
-            enabled: Vec::new(), check, scratch: Vec::new(), syncs: Default::default(), next_sync: 0, window: None };
+            enabled: Vec::new(), check, scratch: Vec::new(), syncs: Default::default(), next_sync: 0, window: None, ds_rbos: Default::default(), bound_rbo: 0 };
         unsafe {
             // WebGL：视口与裁剪框的初值 = 画布尺寸（GL 也是 surface 尺寸，pbuffer 就是画布尺寸）
             c.gl.viewport(0, 0, w as i32, h as i32);

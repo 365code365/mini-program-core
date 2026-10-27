@@ -45,6 +45,13 @@
 
                 // ── 对象 ──
                 function wrap(gl, kind, id, extra) {
+                    // 丢失期间 create* 也返回对象（新版规范：永远非 null，只是无效 —— 换代号 -1，任何上下文都不认）
+                    if ((id === null || id === undefined) && gl.__lost) {
+                        var dead = Object.create(C[kind].prototype);
+                        hide(dead, '__id', 0); hide(dead, '__ctx', gl); hide(dead, '__gen', -1); hide(dead, '__del', false, true); hide(dead, '__bound', false, true);
+                        if (extra) for (var k0 in extra) hide(dead, k0, extra[k0], true);
+                        return dead;
+                    }
                     if (id === null || id === undefined) return null;
                     var o = Object.create(C[kind].prototype);
                     hide(o, '__id', id); hide(o, '__ctx', gl); hide(o, '__gen', gl.__gen);
@@ -55,12 +62,20 @@
                 }
                 function err(gl, code) { G(gl.__cid, OP._synthError, code); }
                 // 对象参数 → GL 名字；null → 0；不属于这个上下文 / 已删 → 记错误返回 -1
+                // deletedOk：true = 已删也给名字；'bind' = 绑定类调用（已删 → INVALID_OPERATION）；其余已删 → INVALID_VALUE（Chromium 同款）
                 function oid(gl, o, kind, deletedOk) {
                     if (o === null || o === undefined) return 0;
                     if (!(o instanceof C[kind])) throw new TypeError('参数应当是 WebGL' + kind + ' 或 null');
                     if (o.__ctx !== gl || o.__gen !== gl.__gen) { err(gl, E_OP); return -1; }
-                    if (o.__del && !deletedOk) { err(gl, E_OP); return -1; }
+                    // 标了删除但 GL 里还活着：当前程序、还挂在程序上的着色器（真正的删除推迟到不再使用）
+                    var dead = o.__del && !(kind === 'Program' && o === gl.__program) && !(kind === 'Shader' && o.__attached > 0);
+                    if (dead && deletedOk !== true) { err(gl, deletedOk === 'bind' ? E_OP : E_VALUE); return -1; }
                     return o.__id;
+                }
+                // 不可为 null 的对象参数（WebIDL 里没有 ?）：null / undefined 抛 TypeError
+                function req(gl, o, kind, deletedOk) {
+                    if (o === null || o === undefined) throw new TypeError('参数应当是 WebGL' + kind + '（不能是 null）');
+                    return oid(gl, o, kind, deletedOk);
                 }
                 function live(gl, o, kind) { return o instanceof C[kind] && o.__ctx === gl && o.__gen === gl.__gen && !o.__del; }
                 function lookup(gl, kind, id) { return id ? (gl.__objs[kind][id] || null) : null; }
@@ -109,6 +124,8 @@
                         return [2, s.__id];
                     }
                     if (s && s.data && typeof s.width === 'number' && typeof s.height === 'number') return [3, s.width, s.height, s.data];
+                    // 小游戏里没有 <video> 当纹理源（wx.createVideo 是原生层）：与浏览器里「视频还没有帧」一样什么都不传
+                    if (s && s.tagName === 'VIDEO') return 'skip';
                     throw new TypeError('纹理来源应当是 Image / Canvas / ImageData / ArrayBufferView');
                 }
 
@@ -143,7 +160,7 @@
                         if (id <= 0 || o.__del) return;
                         G(this.__cid, OP[op], id);
                         o.__del = true;
-                        delete this.__objs[kind][id];
+                        // 不从表里删：还挂在帧缓冲上 / 还是当前程序的已删对象，查询仍要返回它（GL 复用名字时 wrap 覆盖）
                         if (after) after.call(this, o);
                     };
                 }
@@ -153,21 +170,33 @@
                 B.createRenderbuffer = create('Renderbuffer', 'createRenderbuffer');
                 B.createTexture = create('Texture', 'createTexture');
                 B.createProgram = function() { return wrap(this, 'Program', G(this.__cid, OP.createProgram), { __shaders: [], __link: 0 }); };
-                B.createShader = function(type) { return wrap(this, 'Shader', G(this.__cid, OP.createShader, type), { __type: type, __src: '' }); };
+                B.createShader = function(type) { return wrap(this, 'Shader', G(this.__cid, OP.createShader, type), { __type: type, __src: '', __attached: 0 }); };
                 B.deleteBuffer = del('Buffer', 'deleteBuffer');
                 B.deleteFramebuffer = del('Framebuffer', 'deleteFramebuffer');
-                B.deleteRenderbuffer = del('Renderbuffer', 'deleteRenderbuffer');
-                B.deleteTexture = del('Texture', 'deleteTexture');
+                // 删掉还挂在当前帧缓冲上的渲染缓冲 / 纹理：GL 从当前帧缓冲上摘掉它
+                function detachDeleted(gl, o) {
+                    var f = gl.__fbo; if (!f || !f.__att) return;
+                    Object.keys(f.__att).forEach(function(k) { var x = f.__att[k]; if (x === o || (x && x.__tex === o)) f.__att[k] = null; });
+                    fbDirty(gl);
+                }
+                B.deleteRenderbuffer = del('Renderbuffer', 'deleteRenderbuffer', function(r) { detachDeleted(this, r); if (this.__rbo === r) this.__rbo = null; });
+                // 删掉的纹理从各个单元上解绑（GL 也是这么做的；之后在这个目标上调 texParameter → 没绑纹理）
+                B.deleteTexture = del('Texture', 'deleteTexture', function(x) {
+                    detachDeleted(this, x);
+                    var u = this.__units; Object.keys(u).forEach(function(k) { Object.keys(u[k]).forEach(function(t) { if (u[k][t] === x) u[k][t] = null; }); });
+                });
                 B.deleteShader = del('Shader', 'deleteShader');
-                B.deleteProgram = del('Program', 'deleteProgram', function(p) { if (this.__program === p) this.__program = null; });
+                // 删掉当前程序：GL 里它还在用（CURRENT_PROGRAM 照常返回它），直到 useProgram 换掉
+                B.deleteProgram = del('Program', 'deleteProgram', function(p) { p.__shaders.forEach(function(s) { s.__attached--; }); });
                 B.isBuffer = isFn('Buffer', true);
                 B.isFramebuffer = isFn('Framebuffer', true);
                 B.isRenderbuffer = isFn('Renderbuffer', true);
                 B.isTexture = isFn('Texture', true);
-                B.isShader = isFn('Shader');
-                B.isProgram = isFn('Program');
+                // 删掉但还挂在程序上的着色器：GL 里还没真删，isShader 仍是 true
+                B.isShader = function(o) { return !this.__lost && o instanceof C.Shader && o.__ctx === this && o.__gen === this.__gen && (!o.__del || o.__attached > 0); };
+                B.isProgram = function(o) { return !this.__lost && o instanceof C.Program && o.__ctx === this && o.__gen === this.__gen && (!o.__del || o === this.__program); };
                 B.bindBuffer = function(t, b) {
-                    var id = oid(this, b, 'Buffer'); if (id < 0) return;
+                    var id = oid(this, b, 'Buffer', 'bind'); if (id < 0) return;
                     // WebGL §5.1：绑过 ELEMENT_ARRAY_BUFFER 的缓冲不能再绑到别的目标，反之亦然
                     if (b) {
                         var el = t === 0x8893;
@@ -177,64 +206,97 @@
                     G(this.__cid, OP.bindBuffer, t, id);
                     if (b) b.__bound = true;
                 };
-                B.bindFramebuffer = function(t, f) { var id = oid(this, f, 'Framebuffer'); if (id < 0) return; G(this.__cid, OP.bindFramebuffer, t, id); if (f) f.__bound = true; };
-                B.bindRenderbuffer = function(t, r) { var id = oid(this, r, 'Renderbuffer'); if (id < 0) return; G(this.__cid, OP.bindRenderbuffer, t, id); if (r) r.__bound = true; };
+                B.bindFramebuffer = function(t, f) { if (!fbTarget(this, t)) return; var id = oid(this, f, 'Framebuffer', 'bind'); if (id < 0) return;
+                    if (t !== 0x8CA8) { this.__fbo = f || null; fbDirty(this); } G(this.__cid, OP.bindFramebuffer, t, id); if (f) f.__bound = true; };
+                B.renderbufferStorage = function(t, f, w, h) {
+                    G(this.__cid, OP.renderbufferStorage, t, f, w, h);
+                    var r = this.__rbo; if (r) { r.__fmt = f; r.__w = w; r.__h = h; }
+                    fbDirty(this);
+                };
+                B.bindRenderbuffer = function(t, r) {
+                    this.__rbo = r || null; var id = oid(this, r, 'Renderbuffer', 'bind'); if (id < 0) return; G(this.__cid, OP.bindRenderbuffer, t, id); if (r) r.__bound = true; };
+                // 纹理绑定按单元记一份：没绑纹理就 texImage / texParameter … → INVALID_OPERATION（GL 的默认纹理 0 在 WebGL 里不存在）
+                var CUBE_FACES = [0x8515, 0x8516, 0x8517, 0x8518, 0x8519, 0x851A];
+                // image = true：texImage 一类（目标是 TEXTURE_2D 或立方体的某个面）；否则 texParameter 一类（TEXTURE_2D / TEXTURE_CUBE_MAP）
+                function texBound(gl, t, image) {
+                    var v2 = gl.__v === 2 && (t === 0x806F || t === 0x8C1A);
+                    var okT = image ? (t === 0x0DE1 || CUBE_FACES.indexOf(t) >= 0) : (t === 0x0DE1 || t === 0x8513 || v2);
+                    if (!okT) { err(gl, E_ENUM); return false; }
+                    var k = CUBE_FACES.indexOf(t) >= 0 ? 0x8513 : t;
+                    var u = gl.__units[gl.__unit] || {};
+                    if (u[k]) return true;
+                    err(gl, E_OP); return false;
+                }
+                B.activeTexture = function(u) { G(this.__cid, OP.activeTexture, u); this.__unit = u - 0x84C0; };
                 B.bindTexture = function(t, x) {
-                    var id = oid(this, x, 'Texture'); if (id < 0) return;
+                    if (!(t === 0x0DE1 || t === 0x8513 || (this.__v === 2 && (t === 0x806F || t === 0x8C1A)))) { err(this, E_ENUM); return; }
+                    var id = oid(this, x, 'Texture', 'bind'); if (id < 0) return;
                     // 纹理第一次绑到哪个目标就一直是那个目标
                     if (x) { if (x.__target !== undefined && x.__target !== t) { err(this, E_OP); return; } x.__target = t; }
                     G(this.__cid, OP.bindTexture, t, id);
                     if (x) x.__bound = true;
+                    (this.__units[this.__unit] = this.__units[this.__unit] || {})[t] = x || null;
                 };
                 B.attachShader = function(p, s) {
-                    var pi = oid(this, p, 'Program'), si = oid(this, s, 'Shader'); if (pi <= 0 || si <= 0) { if (pi === 0 || si === 0) err(this, E_VALUE); return; }
+                    var pi = req(this, p, 'Program'), si = req(this, s, 'Shader'); if (pi <= 0 || si <= 0) return;
                     if (p.__shaders.some(function(x) { return x === s || x.__type === s.__type; })) { err(this, E_OP); return; }
-                    G(this.__cid, OP.attachShader, pi, si); p.__shaders.push(s);
+                    G(this.__cid, OP.attachShader, pi, si); p.__shaders.push(s); s.__attached++;
                 };
                 B.detachShader = function(p, s) {
-                    var pi = oid(this, p, 'Program'), si = oid(this, s, 'Shader', true); if (pi <= 0 || si <= 0) return;
+                    var pi = req(this, p, 'Program'), si = req(this, s, 'Shader', true); if (pi <= 0 || si <= 0) return;
                     var i = p.__shaders.indexOf(s); if (i < 0) { err(this, E_OP); return; }
-                    G(this.__cid, OP.detachShader, pi, si); p.__shaders.splice(i, 1);
+                    G(this.__cid, OP.detachShader, pi, si); p.__shaders.splice(i, 1); s.__attached--;
                 };
-                B.getAttachedShaders = function(p) { return oid(this, p, 'Program') > 0 && !this.__lost ? p.__shaders.slice() : null; };
-                B.shaderSource = function(s, src) { var id = oid(this, s, 'Shader'); if (id <= 0) return; s.__src = String(src); G(this.__cid, OP.shaderSource, id, s.__src); };
-                B.getShaderSource = function(s) { return oid(this, s, 'Shader') > 0 && !this.__lost ? s.__src : null; };
-                B.compileShader = function(s) { var id = oid(this, s, 'Shader'); if (id > 0) G(this.__cid, OP.compileShader, id); };
+                B.getAttachedShaders = function(p) { return req(this, p, 'Program') > 0 && !this.__lost ? p.__shaders.slice() : null; };
+                B.shaderSource = function(s, src) { var id = req(this, s, 'Shader'); if (id <= 0) return; s.__src = String(src); G(this.__cid, OP.shaderSource, id, s.__src); };
+                B.getShaderSource = function(s) { return req(this, s, 'Shader') > 0 && !this.__lost ? s.__src : null; };
+                B.compileShader = function(s) { var id = req(this, s, 'Shader'); if (id > 0) G(this.__cid, OP.compileShader, id); };
                 B.getShaderParameter = function(s, p) {
-                    var id = oid(this, s, 'Shader', true); if (id <= 0 || this.__lost) return null;
+                    var id = req(this, s, 'Shader', true); if (id <= 0 || this.__lost) return null;
                     if (p === 0x8B4F) return s.__type; // SHADER_TYPE
                     if (p === 0x8B80) return s.__del;  // DELETE_STATUS
                     return G(this.__cid, OP.getShaderParameter, id, p);
                 };
-                B.getShaderInfoLog = function(s) { var id = oid(this, s, 'Shader', true); return id > 0 ? G(this.__cid, OP.getShaderInfoLog, id) : null; };
-                B.linkProgram = function(p) { var id = oid(this, p, 'Program'); if (id <= 0) return; p.__link++; G(this.__cid, OP.linkProgram, id); };
-                B.validateProgram = function(p) { var id = oid(this, p, 'Program'); if (id > 0) G(this.__cid, OP.validateProgram, id); };
-                B.useProgram = function(p) { var id = oid(this, p, 'Program'); if (id < 0) return; G(this.__cid, OP.useProgram, id); this.__program = p || null; };
+                B.getShaderInfoLog = function(s) { var id = req(this, s, 'Shader', true); return id > 0 ? G(this.__cid, OP.getShaderInfoLog, id) : null; };
+                B.linkProgram = function(p) {
+                    var id = req(this, p, 'Program'); if (id <= 0) return;
+                    p.__link++; G(this.__cid, OP.linkProgram, id);
+                    p.__linked = !!G(this.__cid, OP.getProgramParameter, id, 0x8B82);
+                };
+                // getUniformLocation / getAttribLocation 要程序链接成功过（WebGL：INVALID_OPERATION）
+                function linked(gl, p) { if (p.__linked) return true; err(gl, E_OP); return false; }
+                B.validateProgram = function(p) { var id = req(this, p, 'Program'); if (id > 0) G(this.__cid, OP.validateProgram, id); };
+                B.useProgram = function(p) { var id = oid(this, p, 'Program', 'bind'); if (id < 0) return; G(this.__cid, OP.useProgram, id); this.__program = p || null; };
                 B.getProgramParameter = function(p, n) {
-                    var id = oid(this, p, 'Program', true); if (id <= 0 || this.__lost) return null;
+                    var id = req(this, p, 'Program', true); if (id <= 0 || this.__lost) return null;
                     if (n === 0x8B80) return p.__del;
                     return G(this.__cid, OP.getProgramParameter, id, n);
                 };
-                B.getProgramInfoLog = function(p) { var id = oid(this, p, 'Program', true); return id > 0 ? G(this.__cid, OP.getProgramInfoLog, id) : null; };
+                B.getProgramInfoLog = function(p) { var id = req(this, p, 'Program', true); return id > 0 ? G(this.__cid, OP.getProgramInfoLog, id) : null; };
                 function active(op) {
                     return function(p, i) {
-                        var id = oid(this, p, 'Program'); if (id <= 0) return null;
+                        var id = req(this, p, 'Program'); if (id <= 0) return null;
                         var r = G(this.__cid, OP[op], id, i);
+                        // WebGL：数组 uniform 的名字带 [0]
+                        if (r && op === 'getActiveUniform' && r.size > 1 && !/\]$/.test(r.name)) r.name += '[0]';
                         return r ? info(WebGLActiveInfo, r) : null;
                     };
                 }
                 B.getActiveAttrib = active('getActiveAttrib');
                 B.getActiveUniform = active('getActiveUniform');
-                function nameOk(gl, name) {
+                // WebGL §6.18 / §6.21：名字只能用 GLSL ES 的字符集，长度 ≤ 256；webgl_ / _webgl_ 前缀是保留的
+                // （bindAttribLocation → INVALID_OPERATION；getXxxLocation 只是查不到，不报错）
+                var BAD_CHAR = /[^\x09-\x0d\x20-\x7e]|["$'@\\`]/;
+                function nameOk(gl, name, bind) {
                     name = String(name);
-                    if (name.length > 256) { err(gl, E_VALUE); return null; }
-                    if (/^_?webgl_/.test(name)) { err(gl, E_OP); return null; }
+                    if (name.length > 256 || BAD_CHAR.test(name)) { err(gl, E_VALUE); return null; }
+                    if (/^_?webgl_/.test(name)) { if (bind) err(gl, E_OP); return null; }
                     return name;
                 }
-                B.getAttribLocation = function(p, name) { var id = oid(this, p, 'Program'); if (id <= 0) return -1; name = nameOk(this, name); return name === null ? -1 : G(this.__cid, OP.getAttribLocation, id, name); };
-                B.bindAttribLocation = function(p, i, name) { var id = oid(this, p, 'Program'); if (id <= 0) return; name = nameOk(this, name); if (name !== null) G(this.__cid, OP.bindAttribLocation, id, i, name); };
+                B.getAttribLocation = function(p, name) { var id = req(this, p, 'Program'); if (id <= 0 || !linked(this, p)) return -1; name = nameOk(this, name); return name === null ? -1 : G(this.__cid, OP.getAttribLocation, id, name); };
+                B.bindAttribLocation = function(p, i, name) { var id = req(this, p, 'Program'); if (id <= 0) return; name = nameOk(this, name, true); if (name !== null) G(this.__cid, OP.bindAttribLocation, id, i, name); };
                 B.getUniformLocation = function(p, name) {
-                    var id = oid(this, p, 'Program'); if (id <= 0) return null;
+                    var id = req(this, p, 'Program'); if (id <= 0 || !linked(this, p)) return null;
                     name = nameOk(this, name); if (name === null) return null;
                     var l = G(this.__cid, OP.getUniformLocation, id, name);
                     if (l === null || l === undefined) return null;
@@ -250,8 +312,9 @@
                     return l.__l;
                 }
                 B.getUniform = function(p, l) {
-                    var id = oid(this, p, 'Program'); if (id <= 0) return null;
-                    if (!(l instanceof WebGLUniformLocation) || l.__p !== p || l.__link !== p.__link) { err(this, E_OP); return null; }
+                    var id = req(this, p, 'Program'); if (id <= 0) return null;
+                    if (!(l instanceof WebGLUniformLocation)) throw new TypeError('getUniform：第二个参数应当是 WebGLUniformLocation');
+                    if (l.__p !== p || l.__link !== p.__link) { err(this, E_OP); return null; }
                     return G(this.__cid, OP.getUniform, id, l.__l, l.__name);
                 };
                 ['1f', '2f', '3f', '4f', '1i', '2i', '3i', '4i'].forEach(function(s) {
@@ -269,7 +332,10 @@
                     B['vertexAttrib' + n + 'fv'] = function(i, v) { G(this.__cid, OP._vertexAttribfv, i, n, typed(Float32Array, v)); };
                 });
                 // 顶点属性：偏移记在当前 VAO 上（getVertexAttribOffset 要读回）
+                var VA1 = [0x1400, 0x1401, 0x1402, 0x1403, 0x1406], VA2 = VA1.concat([0x1404, 0x1405, 0x140B, 0x8D9F, 0x8368]);
                 B.vertexAttribPointer = function(i, size, type, norm, stride, off) {
+                    if ((this.__v === 2 ? VA2 : VA1).indexOf(type) < 0) { err(this, E_ENUM); return; }
+                    if (!(size >= 1 && size <= 4) && !(this.__v === 2 && size === 0x80E1 && (type === 0x1401 || type === 0x8368))) { err(this, E_VALUE); return; }
                     G(this.__cid, OP.vertexAttribPointer, i, size, type, norm, stride, off);
                     (this.__vao || this.__defVao)[i] = off;
                 };
@@ -278,9 +344,63 @@
                     var r = G(this.__cid, OP.getVertexAttrib, i, p);
                     return p === 0x889F ? lookup(this, 'Buffer', r) : r;
                 };
-                B.framebufferTexture2D = function(t, a, tt, x, lv) { var id = oid(this, x, 'Texture'); if (id >= 0) G(this.__cid, OP.framebufferTexture2D, t, a, tt, id, lv); };
-                B.framebufferRenderbuffer = function(t, a, rt, r) { var id = oid(this, r, 'Renderbuffer'); if (id >= 0) G(this.__cid, OP.framebufferRenderbuffer, t, a, rt, id); };
+                // WebGL1 只有 FRAMEBUFFER 一个目标（READ / DRAW_FRAMEBUFFER 是 WebGL2）
+                function attOk(gl, a) {
+                    if (a === 0x8CE0 || a === 0x8D00 || a === 0x8D20 || a === 0x821A) return true;
+                    var max = gl.__v === 2 || gl.__ext.webgl_draw_buffers ? 16 : 1;
+                    if (a > 0x8CE0 && a < 0x8CE0 + max) return true;
+                    err(gl, E_ENUM); return false;
+                }
+                function fbTarget(gl, t) {
+                    if (t === 0x8D40 || (gl.__v === 2 && (t === 0x8CA8 || t === 0x8CA9))) return true;
+                    err(gl, E_ENUM); return false;
+                }
+                // WebGL1 §6.6 在 GL 之上多出来的完整性规则（Chromium WebGLFramebuffer::CheckStatus 同款）：深度 / 模板挂点的格式必须对、
+                // 深度 / 模板 / 深度模板三者只能挂一个、渲染缓冲尺寸必须一致
+                function fbExtra(gl) {
+                    var f = gl.__fbo;
+                    if (gl.__v === 1 && f && f.__att) {
+                        var A = f.__att, ds = 0, size = null, bad = false;
+                        var want = { 0x8D00: 0x81A5, 0x8D20: 0x8D48, 0x821A: 0x84F9 };
+                        Object.keys(A).forEach(function(k) {
+                            var r = A[k]; if (!r) return; k = Number(k);
+                            if (want[k]) ds++;
+                            if (r instanceof C.Renderbuffer) {
+                                if (want[k] && r.__fmt !== want[k]) bad = true;
+                                if (r.__w === 0 || r.__h === 0) bad = true;
+                                var sz = r.__w + 'x' + r.__h; if (size === null) size = sz; else if (size !== sz) size = 'mismatch';
+                            }
+                        });
+                        if (bad) return 0x8CD6;
+                        if (ds > 1) return 0x8CDD;
+                        if (size === 'mismatch') return 0x8CD9;
+                    }
+                    return 0;
+                }
+                // 挂点 / 存储 / 绑定一变就重算：画 / 清 / 读的热路径只看 __fbBad 一个标志（不完整 → INVALID_FRAMEBUFFER_OPERATION）
+                function fbDirty(gl) { gl.__fbBad = fbExtra(gl) !== 0; }
+                B.checkFramebufferStatus = function(t) {
+                    if (!fbTarget(this, t)) return 0;
+                    return fbExtra(this) || G(this.__cid, OP.checkFramebufferStatus, t);
+                };
+                ['clear', 'drawArrays', 'drawElements'].forEach(function(n) {
+                    var op = OP[n];
+                    B[n] = function(a, b, c, d) { if (this.__fbBad) { err(this, 0x506); return; } return G(this.__cid, op, a, b, c, d); };
+                });
+                B.framebufferTexture2D = function(t, a, tt, x, lv) { if (!fbTarget(this, t) || !attOk(this, a)) return;
+                    if (this.__v === 1 && lv !== 0) { err(this, E_VALUE); return; }
+                    if (this.__fbo) { this.__fbo.__att = this.__fbo.__att || {}; this.__fbo.__att[a] = x ? { __tex: x } : null; fbDirty(this); } var id = oid(this, x, 'Texture'); if (id >= 0) G(this.__cid, OP.framebufferTexture2D, t, a, tt, id, lv); };
+                B.framebufferRenderbuffer = function(t, a, rt, r) { if (!fbTarget(this, t) || !attOk(this, a)) return; var id = oid(this, r, 'Renderbuffer');
+                    if (id >= 0 && this.__fbo) { this.__fbo.__att = this.__fbo.__att || {}; this.__fbo.__att[a] = r || null; fbDirty(this); } if (id >= 0) G(this.__cid, OP.framebufferRenderbuffer, t, a, rt, id); };
                 B.getFramebufferAttachmentParameter = function(t, a, p) {
+                    if (!fbTarget(this, t) || !attOk(this, a)) return null;
+                    if (this.__v === 1) {
+                        var okp = p === 0x8CD0 || p === 0x8CD1 || p === 0x8CD2 || p === 0x8CD3 || (p === 0x8210 && this.__ext.ext_srgb)
+                            || (p === 0x8211 && (this.__ext.ext_color_buffer_half_float || this.__ext.webgl_color_buffer_float));
+                        if (!okp) { err(this, E_ENUM); return null; }
+                        // 没挂东西的挂点：只能问 OBJECT_TYPE（WebGL1）
+                        if (p !== 0x8CD0 && G(this.__cid, OP.getFramebufferAttachmentParameter, t, a, 0x8CD0) === 0) { err(this, E_ENUM); return null; }
+                    }
                     if (p === 0x8CD1) { // FRAMEBUFFER_ATTACHMENT_OBJECT_NAME → 对象
                         var ty = G(this.__cid, OP.getFramebufferAttachmentParameter, t, a, 0x8CD0);
                         var n = G(this.__cid, OP.getFramebufferAttachmentParameter, t, a, p);
@@ -288,24 +408,69 @@
                     }
                     return G(this.__cid, OP.getFramebufferAttachmentParameter, t, a, p);
                 };
+                // blendEquation：MIN / MAX 要 WebGL2 或 EXT_blend_minmax
+                function eqOk(gl, m) {
+                    if (m === 0x8006 || m === 0x800A || m === 0x800B) return true;
+                    if ((m === 0x8007 || m === 0x8008) && (gl.__v === 2 || gl.__ext.ext_blend_minmax)) return true;
+                    err(gl, E_ENUM); return false;
+                }
+                B.blendEquation = function(m) { if (eqOk(this, m)) G(this.__cid, OP.blendEquation, m); };
+                B.blendEquationSeparate = function(a, b) { if (eqOk(this, a) && eqOk(this, b)) G(this.__cid, OP.blendEquationSeparate, a, b); };
+                // hint：FRAGMENT_SHADER_DERIVATIVE_HINT 要 WebGL2 或 OES_standard_derivatives
+                B.hint = function(t, m) {
+                    if (t !== 0x8192 && !(t === 0x8B8B && (this.__v === 2 || this.__ext.oes_standard_derivatives))) { err(this, E_ENUM); return; }
+                    G(this.__cid, OP.hint, t, m);
+                };
+                var USAGE1 = [0x88E0, 0x88E4, 0x88E8], USAGE2 = USAGE1.concat([0x88E1, 0x88E2, 0x88E5, 0x88E6, 0x88E9, 0x88EA]);
+                var BT1 = [0x8892, 0x8893], BT2 = BT1.concat([0x8F36, 0x8F37, 0x88EB, 0x88EC, 0x8C8E, 0x8A11]);
+                B.getBufferParameter = function(t, p) {
+                    if ((this.__v === 2 ? BT2 : BT1).indexOf(t) < 0) { err(this, E_ENUM); return null; }
+                    return G(this.__cid, OP.getBufferParameter, t, p);
+                };
                 B.bufferData = function(t, d, usage, off, len) {
-                    if (typeof d === 'number') return G(this.__cid, OP._bufferDataSize, t, d, usage);
+                    if ((this.__v === 2 ? USAGE2 : USAGE1).indexOf(usage) < 0) { err(this, E_ENUM); return; }
                     if (d === null || d === undefined) { err(this, E_VALUE); return; }
+                    // WebIDL (BufferSource or GLsizeiptr)：不是缓冲的一律 ToNumber（字符串 / 普通对象 → NaN → 0）
+                    if (!(d instanceof ArrayBuffer || ArrayBuffer.isView(d) || (typeof SharedArrayBuffer === 'function' && d instanceof SharedArrayBuffer))) {
+                        var n = Number(d); n = isFinite(n) ? Math.trunc(n) : 0;
+                        return G(this.__cid, OP._bufferDataSize, t, n, usage);
+                    }
                     if (off !== undefined && ArrayBuffer.isView(d)) d = d.subarray(off, len ? off + len : undefined);
                     G(this.__cid, OP.bufferData, t, d, usage);
                 };
                 B.bufferSubData = function(t, o, d, off, len) {
-                    if (d === null || d === undefined) { err(this, E_VALUE); return; }
+                    if (!(d instanceof ArrayBuffer || ArrayBuffer.isView(d) || (typeof SharedArrayBuffer === 'function' && d instanceof SharedArrayBuffer))) throw new TypeError('bufferSubData：数据应当是 BufferSource');
                     if (off !== undefined && ArrayBuffer.isView(d)) d = d.subarray(off, len ? off + len : undefined);
                     G(this.__cid, OP.bufferSubData, t, o, d);
                 };
                 B.readPixels = function(x, y, w, h, f, ty, dst, off) {
+                    if (this.__fbBad) { err(this, 0x506); return; }
                     if (typeof dst === 'number') { if (this.__v < 2) throw new TypeError('readPixels: WebGL1 不支持 PBO 偏移'); return G(this.__cid, OP._readPixels, x, y, w, h, f, ty, dst); }
                     if (dst === null || dst === undefined) { err(this, E_VALUE); return; }
                     var v = pixView(this, dst, ty, off); if (v === undefined) return;
                     G(this.__cid, OP._readPixels, x, y, w, h, f, ty, v);
                 };
+                ['texParameterf', 'texParameteri', 'generateMipmap', 'copyTexImage2D', 'copyTexSubImage2D', 'getTexParameter'].forEach(function(n) {
+                    var op = OP[n], image = n.indexOf('copyTex') === 0, reads = image;
+                    B[n] = function(t, a, b, c, d, e, f, g) {
+                        if (!texBound(this, t, image)) return n === 'getTexParameter' ? null : undefined;
+                        if (reads && this.__fbBad) { err(this, 0x506); return; }
+                        return G(this.__cid, op, t, a, b, c, d, e, f, g);
+                    };
+                });
+                // WebGL1 的 texImage type：扩展开了才认 FLOAT / HALF_FLOAT_OES / 深度纹理那几种
+                function texType(gl, ty) {
+                    if (gl.__v === 2) return true;
+                    var x = gl.__ext;
+                    if (ty === 0x1401 || ty === 0x8363 || ty === 0x8033 || ty === 0x8034) return true;
+                    if (ty === 0x1406 && x.oes_texture_float) return true;
+                    if (ty === 0x8D61 && x.oes_texture_half_float) return true;
+                    if ((ty === 0x1403 || ty === 0x1405 || ty === 0x84FA) && x.webgl_depth_texture) return true;
+                    err(gl, E_ENUM); return false;
+                }
                 B.texImage2D = function(t, lv, ifmt, a, b, c, d, e, f, g) {
+                    if (!texBound(this, t, true)) return;
+                    if (!texType(this, arguments.length === 6 ? b : e)) return;
                     if (arguments.length === 6) return texSrc(this, OP._texImage2DSource, [t, lv, ifmt, a, b], c);
                     // (t, lv, ifmt, w, h, border, format, type, 像素 | PBO 偏移 | 来源 [, srcOffset])
                     if (typeof f === 'number') return G(this.__cid, OP._texImage2D, t, lv, ifmt, a, b, c, d, e, f);
@@ -314,6 +479,8 @@
                     G(this.__cid, OP._texImage2D, t, lv, ifmt, a, b, c, d, e, v);
                 };
                 B.texSubImage2D = function(t, lv, x, y, a, b, c, d, e, f) {
+                    if (!texBound(this, t, true)) return;
+                    if (!texType(this, arguments.length === 7 ? b : d)) return;
                     if (arguments.length === 7) return texSrc(this, OP._texSubImage2DSource, [t, lv, x, y, a, b], c);
                     if (typeof e === 'number') return G(this.__cid, OP._texSubImage2D, t, lv, x, y, a, b, c, d, e);
                     if (e && typeof e === 'object' && !ArrayBuffer.isView(e)) return texSrc(this, OP._texSubImage2DSource, [t, lv, x, y, c, d], e);
@@ -327,6 +494,7 @@
                     G.apply(null, [gl.__cid, op].concat(head, a));
                 }
                 B.compressedTexImage2D = function(t, lv, ifmt, w, h, b, d, off, len) {
+                    if (!texBound(this, t, true)) return;
                     if (!ArrayBuffer.isView(d)) throw new TypeError('compressedTexImage2D: 数据应当是 ArrayBufferView');
                     if (off || len) d = d.subarray(off || 0, len ? (off || 0) + len : undefined);
                     G(this.__cid, OP._compressedTexImage2D, t, lv, ifmt, w, h, b, d);
@@ -351,6 +519,8 @@
                     var k = OBJ_PARAM[p];
                     return k ? lookup(this, k, r) : r;
                 };
+                // WEBGL_lose_context 在丢失状态下误用：GL 那边不再产生错误，这一条由这里报
+                B.getError = function() { if (this.__pendingLostErr) { this.__pendingLostErr = false; return E_OP; } return G(this.__cid, OP.getError); };
                 B.getSupportedExtensions = function() { return this.__lost ? null : G(this.__cid, OP.getSupportedExtensions); };
                 B.getExtension = function(name) {
                     if (this.__lost) return null;
@@ -371,7 +541,8 @@
                 // 微信扩展（官方文档：WebGLRenderingContext.wxBindCanvasTexture）：把一块画布当前的像素传进当前绑着的纹理。
                 // 微信是零拷贝共享；这里是调用那一刻拷一份（之后画布再变要再调一次）
                 B.wxBindCanvasTexture = function(t, canvas) { texSrc(this, OP._texImage2DSource, [t, 0, 0x1908, 0x1908, 0x1401], canvas); };
-                Object.keys(B).forEach(function(k) { P1[k] = P2[k] = B[k]; });
+                // 微信扩展 wxBindCanvasTexture 不进 for-in（CTS 的 methods 用例按可枚举属性对照标准方法表）
+                Object.keys(B).forEach(function(k) { [P1, P2].forEach(function(P) { Object.defineProperty(P, k, { value: B[k], writable: true, configurable: true, enumerable: k !== 'wxBindCanvasTexture' }); }); });
                 [P1, P2].forEach(function(P) {
                     Object.defineProperty(P, 'drawingBufferWidth', { get: function() { return Math.max(1, this.canvas.width); }, enumerable: true });
                     Object.defineProperty(P, 'drawingBufferHeight', { get: function() { return Math.max(1, this.canvas.height); }, enumerable: true });
@@ -405,8 +576,11 @@
                     return e;
                 });
                 ext('WEBGL_lose_context', function(gl) {
-                    return { loseContext: function() { if (!gl.__lost) { gl.__byApi = true; __game_gl_lose(gl.__cid); } },
-                        restoreContext: function() { if (!gl.__lost || !gl.__byApi) { err(gl, E_OP); return; } gl.__restoreSoon(); } };
+                    // 丢失是同步的（isContextLost 立刻为 true），事件在帧末派发；已经丢了再调 → INVALID_OPERATION
+                    return { loseContext: function() { if (gl.__lost) { gl.__pendingLostErr = true; return; } gl.__byApi = true; gl.__lost = true; __game_gl_lose(gl.__cid); },
+                        // 只能在 webglcontextlost 派发之后恢复（之前 / 没丢 / 不是 loseContext 丢的 → INVALID_OPERATION）
+                        // 游戏没在 webglcontextlost 里 preventDefault 也不能恢复
+                        restoreContext: function() { if (!gl.__lost || !gl.__byApi || !gl.__lostSeen || !gl.__restorable) { if (gl.__lost) gl.__pendingLostErr = true; else err(gl, E_OP); return; } gl.__restoreSoon(); } };
                 });
                 ext('WEBGL_debug_renderer_info', consts({ UNMASKED_VENDOR_WEBGL: 0x9245, UNMASKED_RENDERER_WEBGL: 0x9246 }));
                 ext('WEBGL_debug_shaders', function(gl) { return { getTranslatedShaderSource: function(s) { var id = oid(gl, s, 'Shader'); return id > 0 ? G(gl.__cid, OP.getTranslatedShaderSource, id) : ''; } }; });
@@ -454,29 +628,31 @@
                     hide(gl, '__attrs', attrs, true); hide(gl, '__byApi', false, true);
                     Object.defineProperty(gl, 'canvas', { value: canvas, enumerable: true });
                     reset(gl);
-                    hide(gl, '__restoreSoon', function() {
-                        // 浏览器的恢复是异步的：下一轮再建，恢复事件在帧末派发
-                        setTimeout(function() { __game_gl_restore(gl.__cid); }, 0);
-                    });
                 }
+                // 浏览器的恢复是异步的：下一轮再建，恢复事件在帧末派发（放在原型上：上下文不许有标准之外的自有方法）
+                [P1, P2].forEach(function(P) {
+                    Object.defineProperty(P, '__restoreSoon', { value: function() { var id = this.__cid; setTimeout(function() { __game_gl_restore(id); }, 0); }, enumerable: false });
+                });
                 // 换代：旧对象全部作废（丢失 / 恢复之后）
                 function reset(gl) {
                     var objs = {}; Object.keys(C).forEach(function(k) { objs[k] = {}; });
                     hide(gl, '__objs', objs, true); hide(gl, '__program', null, true); hide(gl, '__vao', null, true);
                     hide(gl, '__defVao', {}, true); hide(gl, '__ext', {}, true); hide(gl, '__queries', {}, true);
+                    hide(gl, '__units', {}, true); hide(gl, '__unit', 0, true);
                 }
                 // VAO（WebGL2 核心与 OES 扩展共用）
                 function vaoFns(P) {
-                    P.__createVao = function() { return wrap(this, 'VertexArrayObject', G(this.__cid, OP.createVertexArray)); };
-                    P.__deleteVao = function(v) {
+                    function def(k, f) { Object.defineProperty(P, k, { value: f, writable: true, configurable: true, enumerable: false }); }
+                    def('__createVao', function() { return wrap(this, 'VertexArrayObject', G(this.__cid, OP.createVertexArray)); });
+                    def('__deleteVao', function(v) {
                         var id = oid(this, v, 'VertexArrayObject', true); if (id <= 0 || v.__del) return;
-                        G(this.__cid, OP.deleteVertexArray, id); v.__del = true; delete this.__objs.VertexArrayObject[id];
+                        G(this.__cid, OP.deleteVertexArray, id); v.__del = true;
                         if (this.__vao === v) this.__vao = null;
-                    };
-                    P.__bindVao = function(v) {
-                        var id = oid(this, v, 'VertexArrayObject'); if (id < 0) return;
+                    });
+                    def('__bindVao', function(v) {
+                        var id = oid(this, v, 'VertexArrayObject', 'bind'); if (id < 0) return;
                         G(this.__cid, OP.bindVertexArray, id); this.__vao = v || null; if (v) v.__bound = true;
-                    };
+                    });
                 }
                 vaoFns(P1); vaoFns(P2);
 
@@ -493,12 +669,17 @@
                 // 原生在帧末派发：丢失 → 游戏 preventDefault 了就安排恢复；恢复 → 换代后派发
                 globalThis.__gameGlEvent = function(id, type) {
                     var gl = byCanvas[id]; if (!gl) return;
-                    if (type === 'webglcontextlost') gl.__lost = true;
-                    if (type === 'webglcontextrestored') { gl.__lost = false; gl.__byApi = false; gl.__gen++; reset(gl); }
+                    if (type === 'webglcontextlost') { gl.__lost = true; gl.__lostSeen = true; gl.__restorable = false; }
+                    if (type === 'webglcontextrestored') {
+                        gl.__lost = false; gl.__byApi = false; gl.__lostSeen = false; gl.__gen++;
+                        // 恢复之后扩展要重新 getExtension（新对象）；只有 WEBGL_lose_context 还是原来那个（CTS context-lost-restored）
+                        var lc = gl.__ext.webgl_lose_context; reset(gl);
+                        if (lc) gl.__ext.webgl_lose_context = lc;
+                    }
                     var ev = Object.create(WebGLContextEvent.prototype);
                     var prevented = false;
                     ev.type = type; ev.statusMessage = ''; ev.target = ev.currentTarget = gl.canvas;
-                    ev.preventDefault = function() { prevented = true; };
+                    ev.preventDefault = function() { prevented = true; if (type === 'webglcontextlost') gl.__restorable = true; };
                     Object.defineProperty(ev, 'defaultPrevented', { get: function() { return prevented; } });
                     if (typeof gl.canvas.dispatchEvent === 'function') gl.canvas.dispatchEvent(ev);
                     if (type === 'webglcontextlost' && prevented && !gl.__byApi) gl.__restoreSoon();

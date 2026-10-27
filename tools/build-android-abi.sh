@@ -24,8 +24,8 @@ MODE=android
 if [ "${LTO:-0}" = 1 ]; then MOBILE_LTO=thin; else MOBILE_LTO=false; fi
 # 与 build-mobile.sh 同一套参数（默认带 gpu，`ANDROID_GPU=0` 关掉）
 # 小游戏音频默认编进去（与 build-mobile.sh 一致）；GAME_AUDIO=0 去掉
-# 小游戏 + 音频输出 + WebGL（WebGL 不链接 GL 库，运行时加载 EGL，见 src/game/webgl/egl.rs）
-GA=$([ "${GAME_AUDIO:-1}" = 0 ] && echo game,webgl || echo game,game-audio,webgl)
+# 小游戏 + 音频输出 + WebGL（不链接 GL 库，运行时加载 EGL，src/game/webgl/egl.rs）+ WXWebAssembly（wasmi）
+GA=$([ "${GAME_AUDIO:-1}" = 0 ] && echo game,webgl,wasm || echo game,game-audio,webgl,wasm)
 if [ "${ANDROID_GPU:-1}" = 0 ]; then
     ANDROID_FLAGS=(--release --lib --no-default-features --features "bindgen,$GA")
 else

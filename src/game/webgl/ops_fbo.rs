@@ -43,14 +43,25 @@ pub fn call<'js>(c: &mut GlCtx, e: &Env<'_, 'js>, op: Op, a: &A<'_, 'js>) -> Opt
             }
             createRenderbuffer => return Some(c.gl.create_renderbuffer().map(|r| r.0.get()).map_or_else(|_| null(ctx), |n| js(ctx, n))),
             deleteRenderbuffer => { if let Some(r) = rbo(a.u(0)) { c.gl.delete_renderbuffer(r) } }
-            bindRenderbuffer => c.gl.bind_renderbuffer(a.u(0), rbo(a.u(1))),
+            bindRenderbuffer => {
+                c.gl.bind_renderbuffer(a.u(0), rbo(a.u(1)));
+                c.bound_rbo = a.u(1);
+            }
             renderbufferStorage => {
                 // WebGL1 的 DEPTH_STENCIL（0x84F9）= GL 的 DEPTH24_STENCIL8
-                let f = if a.u(1) == glow::DEPTH_STENCIL { glow::DEPTH24_STENCIL8 } else { a.u(1) };
+                let ds = a.u(1) == glow::DEPTH_STENCIL;
+                let f = if ds { glow::DEPTH24_STENCIL8 } else { a.u(1) };
                 c.gl.renderbuffer_storage(a.u(0), f, a.i(2), a.i(3));
+                let b = c.bound_rbo;
+                if ds { c.ds_rbos.insert(b); } else { c.ds_rbos.remove(&b); }
             }
             renderbufferStorageMultisample => c.gl.renderbuffer_storage_multisample(a.u(0), a.i(1), a.u(2), a.i(3), a.i(4)),
-            getRenderbufferParameter => return Some(c.gl.get_renderbuffer_parameter_i32(a.u(0), a.u(1)).into_js(ctx)),
+            getRenderbufferParameter => {
+                if a.u(1) == glow::RENDERBUFFER_INTERNAL_FORMAT && c.ds_rbos.contains(&c.bound_rbo) {
+                    return Some(glow::DEPTH_STENCIL.into_js(ctx));
+                }
+                return Some(c.gl.get_renderbuffer_parameter_i32(a.u(0), a.u(1)).into_js(ctx));
+            }
             _readPixels => read_pixels(c, a),
             blitFramebuffer => {
                 c.touch_default(false);

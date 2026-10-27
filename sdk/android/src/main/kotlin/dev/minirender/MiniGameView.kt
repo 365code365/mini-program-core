@@ -218,6 +218,19 @@ class MiniGameView(
         }
     }
 
+    /**
+     * 回宿主事件 `hostCall`（创建选项 hostApis 里点名的 wx.* / 对象方法 / 开放数据域的 `openData.*`）：
+     * `id` 就是事件里的 id，`json` 是 success 的结果对象或 fail 的 `{errMsg}`。任意线程调用
+     */
+    fun hostReply(id: Int, ok: Boolean, json: String) = engine.post {
+        if (handle != 0L) { MiniGame.nativeHostReply(handle, id, ok, json); drainEvents(); requestFrame() }
+    }
+
+    /** 宿主推给游戏的事件（contextEvent、gamepad、pointerLockChange …，见 mr_game_dispatch_event）。任意线程调用 */
+    fun dispatchEvent(name: String, json: String) = engine.post {
+        if (handle != 0L) { MiniGame.nativeDispatchEvent(handle, name, json); drainEvents(); requestFrame() }
+    }
+
     fun onResume() = engine.post {
         running = true
         if (handle != 0L) MiniGame.nativeSetBackground(handle, false)

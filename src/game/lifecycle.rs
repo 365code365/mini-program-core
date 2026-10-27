@@ -75,3 +75,10 @@ impl GameEngine {
         self.after_js();
     }
 }
+
+impl GameEngine {
+    /// QuickJS 堆（分配器拿了多少字节, 其中实际在用的）—— 长稳（A9.2）采样用
+    pub fn js_heap(&self) -> (usize, usize) {
+        self.app.js_runtime().lock().unwrap().memory_used()
+    }
+}
