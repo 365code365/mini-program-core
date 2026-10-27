@@ -50,6 +50,39 @@ pub fn data_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target")
 }
 
+fn scope_slot() -> &'static RwLock<Option<String>> {
+    static SLOT: OnceLock<RwLock<Option<String>>> = OnceLock::new();
+    SLOT.get_or_init(|| RwLock::new(None))
+}
+
+/// 小游戏的数据命名空间（game-doc/09 §2.2）：按 `appId` 隔离，而不是按包目录名。
+///
+/// 小程序的 storage / wxfile 按「包目录名」区分（`mini-storage/<名>.json`、`wxfile/<名>/`）：两个不同的包只要解包目录
+/// 同名就会共用存档，换个目录名存档就「丢了」。小游戏不沿用：设了之后 storage 在 `<数据目录>/game/<appId>/storage.json`、
+/// wxfile 在 `<数据目录>/game/<appId>/wxfile/`。`None` = 小程序的老规则（`MiniEngine` 创建时清掉，行为与从前逐字节相同）。
+/// appId 只允许 `[A-Za-z0-9_-]`，其余字符换成 `_`（防止借 appId 写出数据目录）
+pub fn set_app_scope(app_id: Option<&str>) {
+    let v = app_id.map(|s| {
+        let c: String = s.chars().map(|ch| if ch.is_ascii_alphanumeric() || ch == '_' || ch == '-' { ch } else { '_' }).collect();
+        if c.is_empty() { "_".to_string() } else { c }
+    });
+    if let Ok(mut w) = scope_slot().write() {
+        *w = v;
+    }
+}
+
+/// lib 单测里凡是会改 / 依赖数据命名空间的用例都拿这把锁（命名空间是进程级的，并行跑会互相改写）
+#[cfg(test)]
+pub(crate) static SCOPE_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+/// 设了命名空间时返回 `<数据目录>/game/<appId>`（会建出来）
+pub fn app_scope() -> Option<PathBuf> {
+    let id = scope_slot().read().ok()?.clone()?;
+    let dir = data_dir().join("game").join(id);
+    std::fs::create_dir_all(&dir).ok();
+    Some(dir)
+}
+
 /// 数据目录下的一个子目录（不存在则创建）。
 pub fn subdir(name: &str) -> PathBuf {
     subdir_in(&data_dir(), name)

@@ -15,6 +15,10 @@ use std::path::PathBuf;
 
 /// 当前小程序的 storage 文件路径。拿不到小程序目录时返回 None（退化成纯内存）。
 fn storage_path() -> Option<PathBuf> {
+    // 小游戏按 appId 隔离（data_dir::set_app_scope）；小程序走下面的老规则
+    if let Some(scope) = crate::data_dir::app_scope() {
+        return Some(scope.join("storage.json"));
+    }
     let root = crate::assets::app_root()?;
     let name = root
         .file_name()
@@ -66,7 +70,9 @@ mod tests {
     /// （踩过一次：损坏文件那条读到了另一个用例写的合法 JSON）。
     #[test]
     fn storage_file_path_and_round_trip() {
-        // ① 路径按小程序名隔离，且绝不落在 sample/ 里
+        let _scope = crate::data_dir::SCOPE_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        // ① 路径按小程序名隔离，且绝不落在 sample/ 里（小游戏的 appId 命名空间不在这条路上）
+        crate::data_dir::set_app_scope(None);
         crate::assets::set_app_root(PathBuf::from("/tmp/whatever/tea-app"));
         let p = storage_path().expect("应能算出路径");
         assert!(p.ends_with("tea-app.json"), "按小程序名分文件: {:?}", p);

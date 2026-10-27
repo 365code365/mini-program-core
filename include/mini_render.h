@@ -330,6 +330,29 @@ int mr_native_view_frame_rgba(const char* key, uint32_t width, uint32_t height, 
 // 指针活到下一次对同一 app 调用 mr_app_*。注入深链参数、集成测试断言页面数据用。
 const char* mr_app_eval(MRApp* app, const char* code);
 
+// ───────────── 小游戏（src/ffi_game.rs）─────────────
+// 与 MRApp 平级的独立句柄。所有 mr_game_* 必须在同一条线程上调（与 mr_app_* 同一约定）。
+// 每个入口都有 panic 防护：引擎内部出错时实例进入「失效」状态，之后的调用返回失败值，
+// 事件队列里留一条 {"type":"error","kind":"panic"}，宿主应销毁重建（mr_game_is_poisoned 查询）。
+typedef struct MRGame MRGame;
+// 包种类：0 = 认不出（没有 / 同时有 app.json 与 game.json），1 = 小程序，2 = 小游戏
+int mr_package_kind(const char* dir);
+// 本库编进了哪些能力（JSON：game / webgl / audio / wasm / gpu / version / sdkVersion）。静态字符串，不用释放
+const char* mr_capabilities(void);
+// 建实例并执行 game.js。options_json 可为 NULL：{"appId","systemInfo","launchOptions","watchdogMs","jsMemoryLimitMB"}。
+// appId 决定数据命名空间（<data_dir>/game/<appId>/），请务必给。不是小游戏包 / game.json 坏了返回 NULL
+MRGame* mr_game_create(const char* app_dir, const char* data_dir, uint32_t width, uint32_t height, float dpr, const char* options_json);
+void mr_game_destroy(MRGame* game);
+// 跑一帧，返回 MR_FRAME_* 位（与 mr_app_pump_ex 同一套）。now_ms 用宿主 vsync 时刻，0 = 引擎自己取
+int mr_game_pump_ex(MRGame* game, uint64_t now_ms);
+// 取一条事件（JSON：log / error），没有了返回 NULL。指针活到下一次对同一实例调用 mr_game_*
+const char* mr_game_poll_event(MRGame* game);
+// 执行一段 JS（诊断用）。抛异常返回 NULL（原因见 mr_game_last_error）
+const char* mr_game_eval(MRGame* game, const char* code);
+const char* mr_game_last_error(MRGame* game);
+// 1 = 实例已因内部错误失效（或句柄为空）
+int mr_game_is_poisoned(MRGame* game);
+
 #ifdef __cplusplus
 }
 #endif

@@ -252,6 +252,8 @@ impl MiniEngine {
         if let Some(d) = data_dir {
             crate::data_dir::set_data_dir(d);
         }
+        // 小程序的数据仍按包目录名区分（同一进程里先开过小游戏的话，这里把它的 appId 命名空间清掉）
+        crate::data_dir::set_app_scope(None);
         page_loader::set_app_path(std::path::PathBuf::from(app_dir));
         let (width, height) = (width.max(1), height.max(1));
         let dpr = if dpr > 0.1 { dpr } else { 1.0 };

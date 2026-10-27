@@ -35,6 +35,22 @@ pub struct GameOptions {
     pub watchdog_ms: Option<u64>,
     /// JS 堆上限（MB，默认 1024；0 = 不限）。超了 JS 侧抛 out of memory，进程不崩
     pub js_memory_limit_mb: Option<u64>,
+    /// 故障注入（测试用，与 `MINI_GAME_FAULT` 同义）：`panic@pump` / `panic@eval`，验证 FFI 的 panic 防护
+    pub fault: Option<String>,
+}
+
+/// 游戏实例报给 `wx.getSystemInfoSync().SDKVersion` 的基础库版本（决策 D-9 未定：取证后按已实现的 API 集合选定，
+/// 之后随实现进度升；`wx.canIUse` 必须与它一致）。先沿用小程序默认值，免得报高了让游戏调用我们还没有的 API
+pub const GAME_SDK_VERSION: &str = "3.0.0";
+
+/// 编译目标对应的 `platform`（game-doc/09 §2.3）：游戏引擎普遍按它分支，`devtools` 会走调试逻辑。
+/// 只有不在这几个目标上（Linux 等开发 / CI 机器）才报 `devtools`
+pub fn target_platform() -> &'static str {
+    if cfg!(target_os = "android") { "android" }
+    else if cfg!(target_os = "ios") { "ios" }
+    else if cfg!(target_os = "macos") { "mac" }
+    else if cfg!(target_os = "windows") { "windows" }
+    else { "devtools" }
 }
 
 /// 看门狗默认值（game-doc/02 §3.3）
@@ -56,6 +72,7 @@ impl GameOptions {
             log_all: v.get("logAll").and_then(|x| x.as_bool()).unwrap_or(false),
             watchdog_ms: v.get("watchdogMs").and_then(|x| x.as_u64()),
             js_memory_limit_mb: v.get("jsMemoryLimitMB").and_then(|x| x.as_u64()),
+            fault: v.get("fault").and_then(|x| x.as_str()).map(str::to_string),
         })
     }
 }
@@ -70,6 +87,7 @@ pub struct GameEngine {
     events: VecDeque<String>,
     logs: logs::LogPump,
     guards: crate::js::Guards,
+    fault: Option<String>,
 }
 
 impl GameEngine {
@@ -89,6 +107,9 @@ impl GameEngine {
         if let Some(d) = data_dir {
             crate::data_dir::set_data_dir(d);
         }
+        // 数据按 appId 隔离（game-doc/09 §2.2）：必须在建运行时之前设，storage 在桥初始化时就读回
+        let app_id = opts.app_id.clone().unwrap_or_else(|| dir_name(&root));
+        crate::data_dir::set_app_scope(Some(&app_id));
         // 包内资源（图片、音频、require 的基准）都按包根解析
         crate::host::page_loader::set_app_path(root.clone());
         let (width, height) = (width.max(1), height.max(1));
@@ -99,16 +120,27 @@ impl GameEngine {
         let eo = crate::host::EngineOptions { system_info: opts.system_info.clone(), ..Default::default() };
         let mut info = crate::host::engine_options::system_info(width, height, dpr, &eo);
         info["deviceOrientation"] = json!(config.device_orientation.as_str());
+        // 宿主不能把 platform 覆盖成 devtools，也不能改 SDKVersion（与 canIUse 必须一致）
+        let host_platform = info.get("platform").and_then(|v| v.as_str()).map(str::to_string);
+        info["platform"] = json!(target_platform());
+        info["SDKVersion"] = json!(GAME_SDK_VERSION);
         crate::host::engine_options::install_system_info(&app, &info);
-        let app_id = opts.app_id.clone().unwrap_or_else(|| dir_name(&root));
         crate::host::engine_options::install_launch_context(&app, &app_id, opts.launch_options.as_ref());
 
         let watchdog_ms = std::env::var("MINI_GAME_WATCHDOG_MS").ok().and_then(|v| v.parse().ok())
             .or(opts.watchdog_ms).unwrap_or(DEFAULT_WATCHDOG_MS);
         let mem = opts.js_memory_limit_mb.unwrap_or(DEFAULT_JS_MEMORY_MB) as usize * 1024 * 1024;
         let guards = app.js_runtime().lock().unwrap().install_guards(watchdog_ms, mem);
-        let mut engine = Self { app, config, root, width, height, dpr, events: VecDeque::new(), logs: logs::LogPump::new(opts.log_all), guards };
+        let host_platform_note = host_platform.filter(|p| p != target_platform());
+        let mut engine = Self { app, config, root, width, height, dpr, events: VecDeque::new(), logs: logs::LogPump::new(opts.log_all), guards,
+            fault: opts.fault.clone().or_else(|| std::env::var("MINI_GAME_FAULT").ok()) };
         let log = std::env::var("MINI_GAME_LOG").is_ok();
+        if opts.app_id.is_none() {
+            engine.host_log(&format!("⚠️ 创建选项没给 appId，数据命名空间回落成包目录名 {app_id:?}：换了解包目录名存档就会丢"));
+        }
+        if let Some(p) = host_platform_note {
+            engine.host_log(&format!("⚠️ 宿主给的 systemInfo.platform={p:?} 被忽略：小游戏实例按编译目标报 {:?}", target_platform()));
+        }
         for w in engine.config.warnings.clone() {
             engine.host_log(&format!("⚠️ {w}"));
         }
@@ -135,6 +167,7 @@ impl GameEngine {
     /// 跑一帧：逻辑层（定时器、回包、微任务）→ 日志。返回 `FRAME_*` 位（与 `MiniEngine::pump_ex` 同一套）。
     /// G2 起这里加 rAF、主画布提交与上屏（02 §4.1 的顺序）。
     pub fn pump_ex(&mut self, _now_ms: u64) -> u32 {
+        self.inject("panic@pump");
         self.guards.watchdog.arm();
         let r = self.app.update();
         self.guards.watchdog.disarm();
@@ -159,11 +192,18 @@ impl GameEngine {
 
     /// 执行一段 JS（诊断与测试；`mr_app_eval` 同义）
     pub fn eval(&mut self, js: &str) -> Result<String, String> {
+        self.inject("panic@eval");
         self.guards.watchdog.arm();
         let r = self.app.eval(js);
         self.guards.watchdog.disarm();
         self.after_js();
         r
+    }
+
+    fn inject(&self, at: &str) {
+        if self.fault.as_deref() == Some(at) {
+            panic!("MINI_GAME_FAULT={at}（故障注入）");
+        }
     }
 
     pub fn config(&self) -> &GameConfig {
@@ -218,6 +258,14 @@ impl GameEngine {
 /// 看门狗中断的异常是 `InternalError: interrupted`：单独标成 watchdog，宿主据此区分「卡死」与普通异常
 fn error_kind(e: &str, default: &'static str) -> &'static str {
     if e.contains("interrupted") { "watchdog" } else if e.contains("out of memory") { "oom" } else { default }
+}
+
+impl Drop for GameEngine {
+    /// 数据命名空间是进程级的（data_dir::set_app_scope）：实例没了就清掉，否则之后在同一进程里打开的
+    /// 小程序（或并行跑的测试）会把 storage 写进这个游戏的目录（踩过：lib 测试并行时 storage 用例读到了游戏的路径）
+    fn drop(&mut self) {
+        crate::data_dir::set_app_scope(None);
+    }
 }
 
 fn dir_name(root: &Path) -> String {

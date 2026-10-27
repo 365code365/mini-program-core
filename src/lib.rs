@@ -120,6 +120,10 @@ pub use ffi_backend::*;
 mod ffi_embed;
 pub use ffi_embed::*;
 
+/// 小游戏的 C ABI（`mr_game_*`、`mr_package_kind`、`mr_capabilities`），入口都有 panic 防护
+mod ffi_game;
+pub use ffi_game::*;
+
 /// Android 的 JNI 入口（只在 android 目标编译）
 #[cfg(target_os = "android")]
 mod ffi_jni;

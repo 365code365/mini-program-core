@@ -14,6 +14,10 @@ pub const SCHEME: &str = "wxfile://";
 
 /// 当前小程序的 wxfile 根目录
 pub fn root() -> PathBuf {
+    // 小游戏按 appId 隔离（data_dir::set_app_scope）；小程序走下面的老规则
+    if let Some(scope) = crate::data_dir::app_scope() {
+        return scope.join("wxfile");
+    }
     let name = crate::assets::app_root()
         .and_then(|r| r.file_name().and_then(|s| s.to_str()).map(str::to_string))
         .unwrap_or_else(|| "unknown".into());

@@ -183,3 +183,64 @@ fn b2_1mb_往返耗时() {
     println!("1MB base64 往返平均 {ms}ms");
     assert!(ms < 50.0, "1MB 往返 {ms}ms");
 }
+
+/// GT-FS6（09 §2.2）：两个 appId 不同、解包目录同名的游戏数据互不可见；同一 appId 换目录名后数据仍在
+#[test]
+fn fs6_数据按_appid_隔离() {
+    let _g = serial();
+    use mini_render::game::{GameEngine, GameOptions};
+    let base = std::path::PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join(format!("fs6-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&base);
+    let data = base.join("data");
+    let mk = |dir: &str| {
+        let d = base.join(dir).join("game"); // 两个包解包目录都叫 game
+        std::fs::create_dir_all(&d).unwrap();
+        std::fs::write(d.join("game.json"), "{}").unwrap();
+        std::fs::write(d.join("game.js"), "").unwrap();
+        d
+    };
+    let (a, b, a2) = (mk("a"), mk("b"), mk("a-renamed"));
+    let open = |dir: &std::path::Path, id: &str| {
+        let o = GameOptions { app_id: Some(id.into()), ..Default::default() };
+        GameEngine::new(dir.to_str().unwrap(), Some(data.to_str().unwrap()), 375, 667, 2.0, o).unwrap()
+    };
+    let fs_write = "wx.getFileSystemManager().writeFileSync(wx.env.USER_DATA_PATH + '/save.txt', 'A', 'utf8')";
+    let fs_read = "(function(){try{return wx.getFileSystemManager().readFileSync(wx.env.USER_DATA_PATH + '/save.txt', 'utf8')}catch(e){return 'none'}})()";
+    {
+        let mut g = open(&a, "wxAAA");
+        g.eval("wx.setStorageSync('k', 'from-A')").unwrap();
+        g.eval(fs_write).unwrap();
+    }
+    {
+        let mut g = open(&b, "wxBBB");
+        assert_eq!(g.eval("String(wx.getStorageSync('k'))").unwrap(), "", "B 不该看到 A 的 storage");
+        assert_eq!(g.eval(fs_read).unwrap(), "none", "B 不该看到 A 的文件");
+    }
+    {
+        let mut g = open(&a2, "wxAAA");
+        assert_eq!(g.eval("String(wx.getStorageSync('k'))").unwrap(), "from-A", "同一 appId 换目录名后 storage 应当还在");
+        assert_eq!(g.eval(fs_read).unwrap(), "A");
+    }
+    assert!(data.join("game/wxAAA/storage.json").is_file());
+    // appId 里的路径字符被换掉，写不出数据目录
+    {
+        let _g2 = open(&b, "../../evil");
+    }
+    assert!(data.join("game/______evil").is_dir(), "../../evil 应当变成 ______evil");
+    assert!(!base.join("evil").exists());
+    let _ = std::fs::remove_dir_all(&base);
+}
+
+/// GT-R9（09 §2.3）：platform 按编译目标、不能被宿主改成 devtools；SDKVersion 是常量
+#[test]
+fn r9_系统信息_platform_与_sdkversion() {
+    let _g = serial();
+    let mut h = GameHarness::open_inline("sys", "", Opts::default());
+    let p = h.engine.eval("wx.getSystemInfoSync().platform").unwrap();
+    assert_eq!(p, mini_render::game::target_platform());
+    if cfg!(target_os = "macos") {
+        assert_eq!(p, "mac");
+    }
+    assert_eq!(h.engine.eval("wx.getSystemInfoSync().SDKVersion").unwrap(), mini_render::game::GAME_SDK_VERSION);
+    assert_eq!(h.engine.eval("wx.getSystemInfoSync().deviceOrientation").unwrap(), "portrait");
+}
