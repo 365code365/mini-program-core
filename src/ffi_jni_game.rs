@@ -138,6 +138,14 @@ pub extern "system" fn Java_dev_minirender_MiniGame_nativeSetBackground(_e: JNIE
     }
 }
 
+/// 窗口变了（见 `mr_game_resize`）；orientation 可以是 null
+#[no_mangle]
+pub extern "system" fn Java_dev_minirender_MiniGame_nativeResize(mut env: JNIEnv, _c: JClass, h: jlong, w: jint, hh: jint, dpr: f32, orientation: JString) {
+    let Some(hd) = handle(h) else { return };
+    let o: Option<String> = if orientation.is_null() { None } else { env.get_string(&orientation).ok().map(Into::into) };
+    let c = o.and_then(|s| CString::new(s).ok());
+    mr_game_resize(hd.game, w.max(1) as u32, hh.max(1) as u32, dpr, c.as_ref().map(|c| c.as_ptr()).unwrap_or(std::ptr::null()));
+}
 /// 系统音频打断：true = 开始，false = 结束（见 `mr_game_audio_interruption`）
 #[no_mangle]
 pub extern "system" fn Java_dev_minirender_MiniGame_nativeAudioInterruption(_e: JNIEnv, _c: JClass, h: jlong, begin: jboolean) {

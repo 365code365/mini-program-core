@@ -35,7 +35,9 @@ pub fn run(dir: &Path, opts: GameRun) -> i32 {
         ..Default::default()
     };
     let data = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/game-data");
-    let mut engine = match GameEngine::new(&dir.to_string_lossy(), Some(&data.to_string_lossy()), 375, 667, 2.0, go) {
+    // 宿主按 game.json 锁方向（G6.3）：横屏包给横屏窗口
+    let (w, h) = if landscape(&dir) { (667, 375) } else { (375, 667) };
+    let mut engine = match GameEngine::new(&dir.to_string_lossy(), Some(&data.to_string_lossy()), w, h, 2.0, go) {
         Ok(e) => e,
         Err(e) => {
             eprintln!("❌ {e}");
@@ -115,4 +117,11 @@ fn drain(engine: &mut GameEngine) -> bool {
         }
     }
     err
+}
+
+/// game.json 的 deviceOrientation 是不是横屏（读不出按竖屏）
+pub fn landscape(dir: &std::path::Path) -> bool {
+    std::fs::read_to_string(dir.join("game.json")).ok()
+        .and_then(|t| mini_render::game::config::GameConfig::parse(&t).ok())
+        .is_some_and(|c| c.device_orientation.is_landscape())
 }

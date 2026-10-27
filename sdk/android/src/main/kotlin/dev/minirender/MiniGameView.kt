@@ -85,7 +85,44 @@ class MiniGameView(
     }
 
     init {
+        // 建实例之前就按 game.json 锁方向：否则第一帧拿到竖屏尺寸，横屏包要先错一次再 resize（G6.3）
+        val o = try { org.json.JSONObject(java.io.File(dir, "game.json").readText()).optString("deviceOrientation", "portrait") } catch (_: Exception) { "portrait" }
+        lockOrientation(o)
         post { start() }
+    }
+
+    /** game.json / wx.setDeviceOrientation 的方向 → Activity 的 requestedOrientation（宿主不是 Activity 时不管） */
+    private fun lockOrientation(value: String) {
+        val a = context as? android.app.Activity ?: return
+        a.requestedOrientation = when (value) {
+            "landscape" -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            // 官方：landscapeLeft = home 键在左（设备顺时针转），landscapeRight = home 键在右
+            "landscapeLeft" -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
+            "landscapeRight" -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            else -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        }
+    }
+
+    /** 尺寸变了（转屏、分屏）：告诉引擎新的逻辑尺寸与方向（派发 wx.onWindowResize / onDeviceOrientationChange） */
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        if (oldw == 0 && oldh == 0) return // 第一次布局：start() 按它建实例
+        val d = resources.displayMetrics.density
+        val rot = (if (Build.VERSION.SDK_INT >= 30) display?.rotation else null) ?: android.view.Surface.ROTATION_0
+        val orient = when (rot) {
+            android.view.Surface.ROTATION_90 -> "landscape"
+            android.view.Surface.ROTATION_270 -> "landscapeReverse"
+            else -> if (w > h) "landscape" else "portrait"
+        }
+        val lw = (w / d).toInt().coerceAtLeast(1)
+        val lh = (h / d).toInt().coerceAtLeast(1)
+        engine.post {
+            if (handle == 0L) return@post
+            MiniGame.nativeResize(handle, lw, lh, d, orient)
+            drainEvents()
+            forceBlit = true
+            requestFrame()
+        }
     }
 
     /** 尺寸要等第一次布局之后才知道：逻辑尺寸 = 视图像素 / density（与小程序同一口径） */
@@ -303,6 +340,8 @@ class MiniGameView(
             when (o?.optString("type")) {
                 "log" -> o.optString("text").lineSequence().forEach { Log.i("mini-game", it) }
                 "audioSession" -> { Log.i("mini-game", e); audioSession?.apply(o) }
+                // initial 的那条建实例之前已经按 game.json 锁过了；wx.setDeviceOrientation 的才要转
+                "deviceOrientation" -> if (!o.optBoolean("initial")) { val v = o.optString("value"); main.post { lockOrientation(v) } }
                 "error" -> Log.w("mini-game", e)
                 else -> {
                     Log.i("mini-game", e)

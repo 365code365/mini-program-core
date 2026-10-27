@@ -234,6 +234,14 @@ pub extern "C" fn mr_game_set_background(game: *mut MRGame, background: c_int) {
 pub extern "C" fn mr_game_audio_interruption(game: *mut MRGame, begin: c_int) {
     guarded(game, (), |e| e.audio_interruption(begin != 0));
 }
+/// 窗口变了（转屏、分屏、折叠屏）：逻辑尺寸、像素比、方向（"portrait" / "landscape" / "landscapeReverse"，NULL = 按宽高推）。
+/// 引擎更新系统信息、派发 wx.onWindowResize / onDeviceOrientationChange；主画布尺寸不变（游戏自己改，见 game/window.rs）
+#[cfg(feature = "game")]
+#[no_mangle]
+pub extern "C" fn mr_game_resize(game: *mut MRGame, width: u32, height: u32, dpr: f32, orientation: *const c_char) {
+    let o = cstr(orientation);
+    guarded(game, (), |e| e.resize(width, height, dpr, o.as_deref()));
+}
 /// rAF 目标帧率（1~60）。宿主据此请求显示刷新率（60 的整数倍，game-doc/02 §4.2）
 #[cfg(feature = "game")]
 #[no_mangle]

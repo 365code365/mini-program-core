@@ -16,6 +16,7 @@ mod fonts;
 pub mod image;
 mod lifecycle;
 mod package;
+mod window;
 mod image_events;
 mod input;
 pub mod pc_input;
@@ -118,6 +119,10 @@ pub struct GameEngine {
     pc: pc_input::PcInput,
     images: std::rc::Rc<std::cell::RefCell<image::ImageStore>>,
     audio: std::rc::Rc<std::cell::RefCell<audio::GameAudio>>,
+    /// 当前方向（portrait / landscape / landscapeReverse，window.rs）
+    orientation: String,
+    /// 宿主给的系统信息覆盖项（resize 时重算系统信息要用）
+    system_info_opts: serde_json::Map<String, Value>,
 }
 
 impl GameEngine {
@@ -164,6 +169,7 @@ impl GameEngine {
             frame::register(&rt, pacer.clone(), clock.clone())?;
         }
         app.init_profile(PreludeProfile::MiniGame)?;
+        let config_landscape = config.device_orientation.is_landscape();
         let eo = crate::host::EngineOptions { system_info: opts.system_info.clone(), ..Default::default() };
         let mut info = crate::host::engine_options::system_info(width, height, dpr, &eo);
         info["deviceOrientation"] = json!(config.device_orientation.as_str());
@@ -186,7 +192,10 @@ impl GameEngine {
         let mut engine = Self { app, config, root, width, height, dpr, events: VecDeque::new(), logs: logs::LogPump::new(opts.log_all), guards,
             fault: opts.fault.clone().or_else(|| std::env::var("MINI_GAME_FAULT").ok()),
             canvases, pacer, clock, frame: frame::FrameOut::default(), backgrounded: false,
-            touch: Default::default(), pc: Default::default(), images, audio };
+            touch: Default::default(), pc: Default::default(), images, audio,
+            orientation: if config_landscape { "landscape".into() } else { "portrait".into() },
+            system_info_opts: opts.system_info.clone() };
+        engine.announce_orientation();
         let log = std::env::var("MINI_GAME_LOG").is_ok();
         if opts.app_id.is_none() {
             engine.host_log(&format!("⚠️ 创建选项没给 appId，数据命名空间回落成包目录名 {app_id:?}：换了解包目录名存档就会丢"));

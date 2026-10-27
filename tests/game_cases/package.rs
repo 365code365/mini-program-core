@@ -83,3 +83,35 @@ fn lc1_lc3_生命周期() {
     assert_eq!(kinds, ["exit", "restart"], "{:?}", h.host);
     assert_eq!(h.events("exit")[0]["errMsg"], "exitMiniProgram:ok");
 }
+
+/// O1：横屏包（宿主按 deviceOrientation 锁方向）windowWidth > windowHeight、主画布默认是横屏尺寸、启动时告诉宿主锁 landscape；
+/// O3：setDeviceOrientation 交给宿主，宿主转完 resize → onWindowResize（小游戏形状）与 onDeviceOrientationChange、系统信息更新；
+/// 非法值 fail
+#[test]
+fn o1_o3_横屏与转屏() {
+    let _g = serial();
+    let mut h = GameHarness::open("g-landscape", Opts::default());
+    h.vsyncs(2);
+    let b = &h.events("boot")[0];
+    assert_eq!((b["ww"].as_f64(), b["wh"].as_f64(), b["cw"].as_u64(), b["ch"].as_u64()), (Some(667.0), Some(375.0), Some(667), Some(375)), "{b}");
+    assert_eq!(b["orient"], "landscape");
+    assert!(h.host.iter().any(|e| e["type"] == "deviceOrientation" && e["value"] == "landscape" && e["initial"] == true), "{:?}", h.host);
+    let (_, _, px) = h.engine.frame_rgba();
+    assert_eq!(&px[..3], &[255, 0, 0], "左上角是红块");
+    h.engine.eval("goRotate('portrait'); goRotate('upside')").unwrap();
+    h.vsyncs(2);
+    assert!(h.host.iter().any(|e| e["type"] == "deviceOrientation" && e["value"] == "portrait" && e.get("initial").is_none()));
+    assert!(h.events("setOk").len() == 1 && h.events("setFail")[0]["errMsg"].as_str().unwrap().starts_with("setDeviceOrientation:fail"));
+    h.engine.resize(375, 667, 2.0, None);
+    h.engine.resize(375, 667, 2.0, None); // 没变不再派发
+    h.vsyncs(2);
+    let r = h.events("resize");
+    assert_eq!(r.len(), 1, "{r:?}");
+    assert_eq!(r[0]["r"], serde_json::json!({ "windowWidth": 375, "windowHeight": 667 }), "小游戏形状：只有 windowWidth / windowHeight");
+    assert_eq!((r[0]["ww"].as_f64(), r[0]["orient"].as_str(), r[0]["cw"].as_u64()), (Some(375.0), Some("portrait"), Some(375)));
+    assert_eq!(h.events("orient"), vec![serde_json::json!({ "value": "portrait" })]);
+    let (w, hh, px) = h.engine.frame_rgba();
+    assert_eq!((w, hh), (375, 667), "游戏在回调里改了主画布尺寸（主画布按逻辑尺寸）");
+    let i = ((hh as usize - 1) * w as usize + (w as usize - 1)) * 4;
+    assert_eq!(&px[i..i + 3], &[255, 255, 0], "右下角是黄块");
+}

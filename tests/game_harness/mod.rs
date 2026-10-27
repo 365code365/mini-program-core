@@ -99,7 +99,12 @@ impl GameHarness {
             ..Default::default()
         };
         let data = dir.with_extension("data");
-        let engine = GameEngine::new(dir.to_str().unwrap(), Some(data.to_str().unwrap()), 375, 667, 2.0, go)
+        // 宿主按 game.json 锁方向：横屏包给横屏窗口（G6.3）
+        let land = std::fs::read_to_string(dir.join("game.json")).ok()
+            .and_then(|t| mini_render::game::config::GameConfig::parse(&t).ok())
+            .is_some_and(|c| c.device_orientation.is_landscape());
+        let (w, h) = if land { (667, 375) } else { (375, 667) };
+        let engine = GameEngine::new(dir.to_str().unwrap(), Some(data.to_str().unwrap()), w, h, 2.0, go)
             .unwrap_or_else(|e| panic!("建游戏实例失败：{e}"));
         let mut h = Self { engine, hz: opts.hz, frame: 0, log: Vec::new(), errors: Vec::new(), host: Vec::new(), dir };
         h.collect();
