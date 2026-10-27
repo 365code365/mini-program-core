@@ -161,6 +161,10 @@ impl GameEngine {
         info["SDKVersion"] = json!(GAME_SDK_VERSION);
         crate::host::engine_options::install_system_info(&app, &info);
         crate::host::engine_options::install_launch_context(&app, &app_id, opts.launch_options.as_ref());
+        // game.json 的 networkTimeout：request / connectSocket / uploadFile / downloadFile 没给 timeout 时的默认（GT-N6）
+        let nt = json!({ "request": config.timeout_request, "connectSocket": config.timeout_connect_socket,
+            "uploadFile": config.timeout_upload_file, "downloadFile": config.timeout_download_file });
+        let _ = app.eval(&format!("globalThis.__networkTimeout = {nt};"));
 
         let watchdog_ms = std::env::var("MINI_GAME_WATCHDOG_MS").ok().and_then(|v| v.parse().ok())
             .or(opts.watchdog_ms).unwrap_or(DEFAULT_WATCHDOG_MS);

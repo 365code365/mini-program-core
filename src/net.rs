@@ -251,7 +251,8 @@ fn perform(
             status: 0,
             headers: Vec::new(),
             body: String::new(),
-            error: Some(format!("request:fail {}", e)),
+            // 超时与微信同一个文案（`request:fail timeout`），别的错误带上 ureq 的原因
+            error: Some(if matches!(e, ureq::Error::Timeout(_)) { "request:fail timeout".to_string() } else { format!("request:fail {}", e) }),
         },
     }
 }

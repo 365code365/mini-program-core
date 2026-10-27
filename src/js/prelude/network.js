@@ -3,6 +3,13 @@
             // 响应由宿主每帧取回后调 __resolveRequest。
             var __requestSeq = 0;
             var __requestTasks = {};
+            // 没给 timeout 时的默认（毫秒）：小游戏实例按 game.json 的 networkTimeout 设 globalThis.__networkTimeout
+            // （game/mod.rs）；小程序不设，照旧交给原生的 60s 默认
+            function __defTimeout(o, k) {
+                if (o && o.timeout) return o.timeout;
+                var t = globalThis.__networkTimeout;
+                return (t && t[k]) || 0;
+            }
             // 任务对象上的 on/off（RequestTask / DownloadTask / UploadTask 共用）
             function __on(task, k) { return function(cb) { if (typeof cb === 'function') task.listeners[k].push(cb); }; }
             function __off(task, k) { return function(cb) { task.listeners[k] = typeof cb === 'function' ? task.listeners[k].filter(function(f) { return f !== cb; }) : []; }; }
@@ -92,7 +99,7 @@
 
                 if (typeof __native_request === 'function') {
                     __native_request(String(id), method, url, JSON.stringify(header), body,
-                                     String(options.timeout || 0), String((task.binary ? 1 : 0) | (options.enableChunked ? 2 : 0)));
+                                     String(__defTimeout(options, 'request')), String((task.binary ? 1 : 0) | (options.enableChunked ? 2 : 0)));
                 } else {
                     // 没有原生桥（纯 JS 单测环境）：立刻失败，不要让调用方一直等
                     __resolveRequest(id, 0, '{}', '', 'request:fail 原生网络桥未注册');
@@ -184,7 +191,7 @@
                 });
                 if (typeof __native_download === 'function') {
                     __native_download(String(t.id), String(options.url || ''), JSON.stringify(options.header || {}),
-                                      String(options.filePath || ''), String(options.timeout || 0));
+                                      String(options.filePath || ''), String(__defTimeout(options, 'downloadFile')));
                 } else {
                     __resolveRequest(t.id, 0, '{}', '', 'downloadFile:fail 原生网络桥未注册');
                 }
@@ -197,7 +204,7 @@
                 });
                 if (typeof __native_upload === 'function') {
                     __native_upload(String(t.id), String(options.url || ''), String(options.filePath || ''), String(options.name || 'file'),
-                                    JSON.stringify(options.header || {}), JSON.stringify(options.formData || {}), String(options.timeout || 0));
+                                    JSON.stringify(options.header || {}), JSON.stringify(options.formData || {}), String(__defTimeout(options, 'uploadFile')));
                 } else {
                     __resolveRequest(t.id, 0, '{}', '', 'uploadFile:fail 原生网络桥未注册');
                 }

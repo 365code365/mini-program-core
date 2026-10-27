@@ -178,3 +178,40 @@ T.ready('n5');
     assert_eq!((tcp["len"].as_u64(), tcp["ok"].as_bool()), (Some(65536), Some(true)), "{tcp}");
     assert_eq!(tcp["b64"], 0, "TCP 二进制不该经过 base64");
 }
+
+/// GT-N6：没给 timeout 时按 game.json 的 networkTimeout.request（300ms）超时，文案 `request:fail timeout`；
+/// 显式给 timeout 的照自己的；服务端 800ms 才回
+#[test]
+fn n6_networktimeout() {
+    let _g = serial();
+    use std::io::{Read, Write};
+    let l = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let port = l.local_addr().unwrap().port();
+    std::thread::spawn(move || {
+        for mut s in l.incoming().flatten() {
+            std::thread::spawn(move || {
+                let mut buf = [0u8; 1024];
+                let _ = s.read(&mut buf);
+                std::thread::sleep(std::time::Duration::from_millis(800));
+                let _ = s.write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nok");
+            });
+        }
+    });
+    let js = format!(r#"
+var T = require('_lib/t.js');
+var t0 = Date.now();
+wx.request({{ url: 'http://127.0.0.1:{port}/a', success: function () {{ T.ev('def', {{ ok: true }}); }}, fail: function (e) {{ T.ev('def', {{ ok: false, msg: e.errMsg, ms: Date.now() - t0 }}); }} }});
+wx.request({{ url: 'http://127.0.0.1:{port}/b', timeout: 3000, success: function (r) {{ T.ev('own', {{ ok: true, data: r.data }}); }}, fail: function (e) {{ T.ev('own', {{ ok: false, msg: e.errMsg }}); }} }});
+T.ev('nt', globalThis.__networkTimeout);
+"#);
+    let js: &'static str = Box::leak(js.into_boxed_str());
+    let mut h = GameHarness::open_inline_with("n6", r#"{"networkTimeout":{"request":300}}"#, js, Opts::default());
+    h.until("T:EV def", 2000);
+    h.until("T:EV own", 2000);
+    assert_eq!(h.events("nt")[0]["request"], 300);
+    let d = h.events("def").pop().unwrap();
+    assert_eq!((d["ok"].as_bool(), d["msg"].as_str()), (Some(false), Some("request:fail timeout")), "{d}");
+    assert!(d["ms"].as_u64().unwrap() < 780, "按 300ms 超时，不是等到服务端回：{d}");
+    let o = h.events("own").pop().unwrap();
+    assert_eq!((o["ok"].as_bool(), o["data"].as_str()), (Some(true), Some("ok")), "显式 timeout 优先：{o}");
+}

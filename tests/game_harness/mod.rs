@@ -60,9 +60,14 @@ impl GameHarness {
 
     /// 现场写一个只有 game.js 的夹具（一次性用例用，不进 sample-game/）
     pub fn open_inline(name: &str, game_js: &str, opts: Opts) -> Self {
+        Self::open_inline_with(name, "{}", game_js, opts)
+    }
+
+    /// 同上，带一份 game.json
+    pub fn open_inline_with(name: &str, game_json: &str, game_js: &str, opts: Opts) -> Self {
         let dir = Self::scratch(name);
         std::fs::create_dir_all(&dir).unwrap();
-        std::fs::write(dir.join("game.json"), "{}").unwrap();
+        std::fs::write(dir.join("game.json"), game_json).unwrap();
         std::fs::write(dir.join("game.js"), game_js).unwrap();
         copy_dir(&repo().join("sample-game/_lib"), &dir.join("_lib"));
         Self::start(dir, opts)

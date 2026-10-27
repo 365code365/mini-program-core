@@ -48,7 +48,7 @@
                 __sockets[id] = task;
                 __sockLatest = id;
                 var err = __native_socket_connect(String(id), String(o.url || ''), JSON.stringify(o.header || {}),
-                                                  JSON.stringify(o.protocols || []), String(o.timeout || 0));
+                                                  JSON.stringify(o.protocols || []), String(o.timeout || (globalThis.__networkTimeout && globalThis.__networkTimeout.connectSocket) || 0));
                 if (err) {
                     delete __sockets[id];
                     task.readyState = 3;
