@@ -39,12 +39,6 @@
    "showToast",
    "updateKeyboard"
   ],
-  "G2": [
-   "createCanvas",
-   "createImageData",
-   "createPath2D",
-   "setPreferredFramesPerSecond"
-  ],
   "G4": [
    "createImage",
    "getTextLineHeight",

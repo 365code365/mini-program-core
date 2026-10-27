@@ -178,6 +178,10 @@ const GAME_EXTRA: &[Prelude] = prelude![
     "game-compat" => "game-compat.js",
     // 官方 API 表面的宿主代理 / 监听型补齐与小游戏版 canIUse（game-doc/10；延期项见 取证/api-surface-deferred.json）
     "game-surface" => "game-surface.js",
+    // requestAnimationFrame / cancelAnimationFrame / setPreferredFramesPerSecond / performance.now（帧时钟）
+    "game-raf" => "game-raf.js",
+    // wx.createCanvas、Canvas、CanvasRenderingContext2D（立即模式，原生在 game/canvas/natives.rs）
+    "game-canvas" => "game-canvas.js",
 ];
 
 /// 一个应用种类实际执行的段（按顺序）

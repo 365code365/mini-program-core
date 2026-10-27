@@ -7,12 +7,16 @@
 //! 为什么复用 `MiniApp`：它就是「QuickJS + 原生桥 + 每帧推进定时器 / 网络 / IO」那一层，与页面模型无关；
 //! 页面相关的东西都在 `MiniEngine` 里，小游戏不碰。
 
+pub mod canvas;
+mod clock;
 pub mod config;
+mod frame;
+pub use frame::FRAME_WAKE_AT;
 mod loader;
 mod logs;
+pub mod raf_pacer;
 
 use crate::app_profile::{detect, AppProfile};
-use crate::host::engine_backend::{FRAME_EVENTS, FRAME_WANTS_MORE};
 use crate::js::PreludeProfile;
 use crate::runtime::MiniApp;
 use config::GameConfig;
@@ -37,6 +41,8 @@ pub struct GameOptions {
     pub js_memory_limit_mb: Option<u64>,
     /// 故障注入（测试用，与 `MINI_GAME_FAULT` 同义）：`panic@pump` / `panic@eval`，验证 FFI 的 panic 防护
     pub fault: Option<String>,
+    /// 固定时钟（无头测试）：宿主给的时刻就是游戏时间，帧间 performance.now() 停住，结果逐帧可复现（clock.rs）
+    pub fixed_clock: bool,
 }
 
 /// 游戏实例报给 `wx.getSystemInfoSync().SDKVersion` 的基础库版本（决策 D-9 未定：取证后按已实现的 API 集合选定，
@@ -73,6 +79,7 @@ impl GameOptions {
             watchdog_ms: v.get("watchdogMs").and_then(|x| x.as_u64()),
             js_memory_limit_mb: v.get("jsMemoryLimitMB").and_then(|x| x.as_u64()),
             fault: v.get("fault").and_then(|x| x.as_str()).map(str::to_string),
+            fixed_clock: v.get("fixedClock").and_then(|x| x.as_bool()).unwrap_or(false),
         })
     }
 }
@@ -88,6 +95,12 @@ pub struct GameEngine {
     logs: logs::LogPump,
     guards: crate::js::Guards,
     fault: Option<String>,
+    canvases: std::rc::Rc<std::cell::RefCell<canvas::GameCanvases>>,
+    pacer: std::rc::Rc<std::cell::RefCell<raf_pacer::RafPacer>>,
+    clock: std::rc::Rc<std::cell::RefCell<clock::GameClock>>,
+    /// 合成好的输出帧（RGBA，主画布分辨率）与它是不是最新的
+    frame: frame::FrameOut,
+    backgrounded: bool,
 }
 
 impl GameEngine {
@@ -116,6 +129,16 @@ impl GameEngine {
         let dpr = if dpr > 0.1 { dpr } else { 1.0 };
 
         let mut app = MiniApp::new(width, height)?;
+        // 小游戏自己的原生函数要在前置代码之前注册（game-canvas.js 加载时就取 __game_2d）
+        let canvases = std::rc::Rc::new(std::cell::RefCell::new(canvas::GameCanvases::new((width, height))));
+        let pacer = std::rc::Rc::new(std::cell::RefCell::new(raf_pacer::RafPacer::default()));
+        let clock = std::rc::Rc::new(std::cell::RefCell::new(clock::GameClock::new(opts.fixed_clock)));
+        {
+            let rt = app.js_runtime();
+            let rt = rt.lock().unwrap();
+            canvas::register(&rt, canvases.clone())?;
+            frame::register(&rt, pacer.clone(), clock.clone())?;
+        }
         app.init_profile(PreludeProfile::MiniGame)?;
         let eo = crate::host::EngineOptions { system_info: opts.system_info.clone(), ..Default::default() };
         let mut info = crate::host::engine_options::system_info(width, height, dpr, &eo);
@@ -133,7 +156,8 @@ impl GameEngine {
         let guards = app.js_runtime().lock().unwrap().install_guards(watchdog_ms, mem);
         let host_platform_note = host_platform.filter(|p| p != target_platform());
         let mut engine = Self { app, config, root, width, height, dpr, events: VecDeque::new(), logs: logs::LogPump::new(opts.log_all), guards,
-            fault: opts.fault.clone().or_else(|| std::env::var("MINI_GAME_FAULT").ok()) };
+            fault: opts.fault.clone().or_else(|| std::env::var("MINI_GAME_FAULT").ok()),
+            canvases, pacer, clock, frame: frame::FrameOut::default(), backgrounded: false };
         let log = std::env::var("MINI_GAME_LOG").is_ok();
         if opts.app_id.is_none() {
             engine.host_log(&format!("⚠️ 创建选项没给 appId，数据命名空间回落成包目录名 {app_id:?}：换了解包目录名存档就会丢"));
@@ -154,6 +178,9 @@ impl GameEngine {
         if log {
             engine.host_log(&format!("🎮 小游戏：{}（{}，{n} 个模块）", engine.root.display(), engine.config.device_orientation.as_str()));
         }
+        // game.js 顶层登记的定时器从游戏时间轴的此刻起算（固定时钟下是 0），不是墙上时钟
+        let at = engine.clock.borrow().current_instant();
+        engine.app.set_timer_clock(Some(at));
         engine.guards.watchdog.arm();
         let r = loader::run_module(&engine.app, "game", &source);
         engine.guards.watchdog.disarm();
@@ -162,27 +189,6 @@ impl GameEngine {
         }
         engine.after_js();
         Ok(engine)
-    }
-
-    /// 跑一帧：逻辑层（定时器、回包、微任务）→ 日志。返回 `FRAME_*` 位（与 `MiniEngine::pump_ex` 同一套）。
-    /// G2 起这里加 rAF、主画布提交与上屏（02 §4.1 的顺序）。
-    pub fn pump_ex(&mut self, _now_ms: u64) -> u32 {
-        self.inject("panic@pump");
-        self.guards.watchdog.arm();
-        let r = self.app.update();
-        self.guards.watchdog.disarm();
-        if let Err(e) = r {
-            self.report_error(error_kind(&e, "update"), &e);
-        }
-        self.after_js();
-        let mut flags = 0;
-        if self.app.has_active_timers() || self.app.has_pending_host_work() {
-            flags |= FRAME_WANTS_MORE;
-        }
-        if !self.events.is_empty() {
-            flags |= FRAME_EVENTS;
-        }
-        flags
     }
 
     /// 取一条宿主事件（JSON 串：`{"type":"log","text"}` / `{"type":"error","kind","message"}`），没有了返回 None
@@ -222,7 +228,7 @@ impl GameEngine {
             let rt = self.app.js_runtime();
             let rt = rt.lock().unwrap();
             rt.flush_rejections(&self.guards);
-            if rt.eval("__gameGcRequested ? (__gameGcRequested = false, '1') : ''").ok().as_deref() == Some("1") {
+            if rt.call_num("__gameGcTake", &[]).unwrap_or(0.0) != 0.0 {
                 rt.collect_garbage();
             }
         }

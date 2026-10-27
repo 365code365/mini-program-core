@@ -85,6 +85,7 @@ impl GameHarness {
             app_id: Some("wxtest0000000000".into()),
             launch_options: Some(serde_json::json!({ "query": query, "scene": 1001 })),
             watchdog_ms: Some(opts.watchdog_ms),
+            fixed_clock: true,
             ..Default::default()
         };
         let data = dir.with_extension("data");
@@ -95,15 +96,15 @@ impl GameHarness {
         h
     }
 
-    /// 帧 n 的时刻（毫秒）：n × 1000 / hz
-    pub fn now_ms(&self) -> u64 {
-        (self.frame * 1000 / self.hz as u64).max(1)
+    /// 帧 n 的时刻（微秒）：n × 1e6 / hz
+    pub fn now_us(&self) -> u64 {
+        (self.frame * 1_000_000 / self.hz as u64).max(1)
     }
 
     pub fn vsyncs(&mut self, n: u32) -> &mut Self {
         for _ in 0..n {
             self.frame += 1;
-            let t = self.now_ms();
+            let t = self.now_us();
             self.engine.pump_ex(t);
             self.collect();
         }
@@ -156,6 +157,33 @@ impl GameHarness {
     pub fn assert_no_fail(&self) {
         let fails: Vec<_> = self.log.iter().filter(|l| l.contains("T:FAIL")).collect();
         assert!(fails.is_empty(), "夹具自检失败：{fails:#?}");
+    }
+
+    /// 主画布像素（不透明 RGBA，主画布分辨率）里某个颜色的包围盒 (x0, y0, x1, y1)，含端点
+    pub fn bbox_of(&mut self, rgb: [u8; 3]) -> Option<(u32, u32, u32, u32)> {
+        let (w, _h, px) = self.engine.frame_rgba();
+        let mut b: Option<(u32, u32, u32, u32)> = None;
+        for (i, p) in px.chunks(4).enumerate() {
+            if p[..3] == rgb {
+                let (x, y) = ((i as u32) % w, (i as u32) / w);
+                b = Some(match b {
+                    None => (x, y, x, y),
+                    Some((x0, y0, x1, y1)) => (x0.min(x), y0.min(y), x1.max(x), y1.max(y)),
+                });
+            }
+        }
+        b
+    }
+
+    pub fn count_of(&mut self, rgb: [u8; 3]) -> usize {
+        let (_, _, px) = self.engine.frame_rgba();
+        px.chunks(4).filter(|p| p[..3] == rgb).count()
+    }
+
+    pub fn pixel(&mut self, x: u32, y: u32) -> [u8; 4] {
+        let (w, _, px) = self.engine.frame_rgba();
+        let i = ((y * w + x) * 4) as usize;
+        [px[i], px[i + 1], px[i + 2], px[i + 3]]
     }
 
     pub fn has(&self, pat: &str) -> bool {

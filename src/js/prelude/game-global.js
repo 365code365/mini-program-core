@@ -62,6 +62,9 @@
             // wx.triggerGC：只做标记，由宿主在这段 JS 跑完之后执行 GC（在 JS 调用栈里直接回收不安全）
             var __gameGcRequested = false;
             wx.triggerGC = function() { __gameGcRequested = true; };
+            // 宿主每段 JS 之后取一次（直调，不经 eval）
+            globalThis.__gameGcTake = function() { var r = __gameGcRequested ? 1 : 0; __gameGcRequested = false; return r; };
+            globalThis.__gameLogCount = function() { return __print_buffer.length; };
 
             // 统一的「执行一段游戏回调」入口：异常不外抛（一个回调出错不能打断同批其余回调，GT-S3），
             // 转给 wx.onError 并打日志。返回 true = 正常结束

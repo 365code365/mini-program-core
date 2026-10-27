@@ -14,6 +14,8 @@ pub struct GameRun {
     pub hz: u32,
     pub query: Option<String>,
     pub evals: Vec<String>,
+    /// 跑完之后存最后一帧（缩放到逻辑尺寸 × dpr，与小程序快照同一尺寸）
+    pub snapshot: Option<std::path::PathBuf>,
 }
 
 pub fn run(dir: &Path, opts: GameRun) -> i32 {
@@ -24,7 +26,12 @@ pub fn run(dir: &Path, opts: GameRun) -> i32 {
         .split('&')
         .filter_map(|kv| kv.split_once('=').map(|(k, v)| (k.to_string(), serde_json::Value::String(v.to_string()))))
         .collect();
-    let go = GameOptions { launch_options: Some(serde_json::json!({ "query": query, "scene": 1001 })), ..Default::default() };
+    // 无头一律固定时钟：同一个 --hz 跑两次逐帧相同（game/clock.rs）
+    let go = GameOptions {
+        launch_options: Some(serde_json::json!({ "query": query, "scene": 1001 })),
+        fixed_clock: true,
+        ..Default::default()
+    };
     let data = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/game-data");
     let mut engine = match GameEngine::new(&dir.to_string_lossy(), Some(&data.to_string_lossy()), 375, 667, 2.0, go) {
         Ok(e) => e,
@@ -37,15 +44,20 @@ pub fn run(dir: &Path, opts: GameRun) -> i32 {
     println!("🎮 小游戏：{}（{}，{w}x{h}@{dpr}）", dir.display(), engine.config().device_orientation.as_str());
     let mut had_error = drain(&mut engine);
     let hz = opts.hz.max(1) as u64;
-    let start = std::time::Instant::now();
+    let mut pump_us: Vec<u64> = Vec::with_capacity(opts.frames as usize);
     for n in 1..=opts.frames as u64 {
-        // 定时器在 G2 之前按墙上时钟到点：无头也按节拍真等，结果才与交互窗体一致
-        let due = std::time::Duration::from_micros(n * 1_000_000 / hz);
-        if let Some(wait) = due.checked_sub(start.elapsed()) {
-            std::thread::sleep(wait);
-        }
-        engine.pump_ex(n * 1000 / hz);
+        // 固定时钟：不用真等，帧时刻就是 n / hz
+        let t0 = std::time::Instant::now();
+        engine.pump_ex(n * 1_000_000 / hz);
+        pump_us.push(t0.elapsed().as_micros() as u64);
         had_error |= drain(&mut engine);
+    }
+    if pump_us.len() >= 10 {
+        let mut s = pump_us.clone();
+        s.sort_unstable();
+        let worst: Vec<String> = { let mut v: Vec<(u64, usize)> = pump_us.iter().copied().zip(1..).collect(); v.sort_unstable_by(|a, b| b.0.cmp(&a.0)); v.iter().take(5).map(|(us, n)| format!("#{n} {:.2}ms", *us as f64 / 1000.0)).collect() };
+        println!("⏱ 最慢 5 帧：{}", worst.join("、"));
+        println!("⏱ pump {} 帧：中位 {:.3}ms p99 {:.3}ms 最大 {:.3}ms", s.len(), s[s.len() / 2] as f64 / 1000.0, s[s.len() * 99 / 100] as f64 / 1000.0, s[s.len() - 1] as f64 / 1000.0);
     }
     for js in &opts.evals {
         match engine.eval(js) {
@@ -56,6 +68,19 @@ pub fn run(dir: &Path, opts: GameRun) -> i32 {
             }
         }
         had_error |= drain(&mut engine);
+    }
+    if let Some(dir) = opts.snapshot.as_ref() {
+        let (dw, dh) = ((w as f32 * dpr) as u32, (h as f32 * dpr) as u32);
+        let px = engine.frame_rgba_scaled(dw, dh);
+        let path = dir.join(format!("frame_{:04}.png", opts.frames));
+        std::fs::create_dir_all(dir).ok();
+        match image::RgbaImage::from_raw(dw, dh, px).map(|img| img.save(&path)) {
+            Some(Ok(())) => println!("📸 {}", path.display()),
+            _ => {
+                eprintln!("❌ 存快照失败：{}", path.display());
+                had_error = true;
+            }
+        }
     }
     if had_error { 3 } else { 0 }
 }

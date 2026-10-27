@@ -167,6 +167,28 @@ impl JsRuntime {
         })
     }
 
+    /// 直接调一个全局函数（数字参数、返回数字），**不经 eval**：每帧都要调的那几个（rAF、计数）走这里。
+    /// eval 每次都要把字符串重新解析编译一遍——一加 PLY110 上每帧几次 eval，解析器（next_token / resolve_variables …）
+    /// 在游戏线程上占到可观的一截（simpleperf 实测）。调完照常泵微任务。函数不存在或抛错返回 Err
+    pub fn call_num(&self, name: &str, args: &[f64]) -> Result<f64, String> {
+        let r = self.context.with(|ctx| {
+            let f: Function = ctx.globals().get(name).map_err(|e| format!("{name}: {e}"))?;
+            let v: JsResult<Value> = match args.len() {
+                0 => f.call(()),
+                1 => f.call((args[0],)),
+                2 => f.call((args[0], args[1])),
+                _ => f.call((args[0], args[1], args[2])),
+            };
+            match v {
+                Ok(v) => Ok(v.as_number().unwrap_or(0.0)),
+                Err(rquickjs::Error::Exception) => Err(format!("JS Exception: {}", describe_exception(&ctx))),
+                Err(e) => Err(format!("{e:?}")),
+            }
+        });
+        self.pump_jobs();
+        r
+    }
+
     /// 调用 JS 函数（`name` 由调用方保证是合法的标识符 / 成员表达式；参数一律按字符串传）
     pub fn call_function(&self, name: &str, args: &[&str]) -> Result<String, String> {
         // 参数用 JSON 字符串字面量注入（JSON 是 JS 字面量的子集，含 U+2028 在 ES2019 起也合法）。

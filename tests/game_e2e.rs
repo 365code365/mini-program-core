@@ -276,3 +276,218 @@ fn api1_官方_api_表面门禁() {
     assert_eq!(ev.len(), 1);
     assert!(ev[0]["errMsg"].as_str().unwrap().starts_with("getFriendCloudStorage:fail"), "{ev:?}");
 }
+
+// ───────────────────────── G2：帧循环、rAF、画布 ─────────────────────────
+
+/// GT-K1：60Hz 跑 120 帧，rAF 恰 120 次、dt 恒 16.667、第 n 帧方块左边沿 x = n
+#[test]
+fn k1_方块每帧右移一像素() {
+    let _g = serial();
+    let mut h = GameHarness::open("g-square", Opts { query: "max=120", ..Default::default() });
+    h.vsyncs(60);
+    let (x0, y0, _, _) = h.bbox_of([255, 0, 0]).expect("第 60 帧没画出红块");
+    assert_eq!((x0, y0), (60, 100), "第 60 帧方块左上角");
+    h.vsyncs(70);
+    let f = h.frames();
+    assert_eq!(f.len(), 120, "rAF 次数");
+    assert!(h.has("T:DONE {\"frames\":120}"));
+    for (n, v) in f.iter().skip(1) {
+        let dt = v["dt"].as_f64().unwrap();
+        assert!((dt - 16.667).abs() < 0.002, "第 {n} 帧 dt={dt}");
+        // rAF 参数与 performance.now() 同一条时间轴（K8）
+        assert!((v["ts"].as_f64().unwrap() - v["now"].as_f64().unwrap()).abs() < 16.7, "{v}");
+    }
+    assert_eq!(h.bbox_of([255, 0, 0]).unwrap().0, 120);
+    assert_eq!(h.engine.main_canvas_size(), (375, 667), "主画布默认 = 窗口逻辑尺寸");
+}
+
+/// GT-K2 / K3：120Hz、144Hz 上仍是 60fps；144Hz 的间隔只有 13.889 / 20.833 两种且交替
+#[test]
+fn k2_k3_高刷屏仍是_60() {
+    let _g = serial();
+    for hz in [120u32, 144] {
+        let mut h = GameHarness::open("g-square", Opts { hz, ..Default::default() });
+        h.vsyncs(hz * 2);
+        let f = h.frames();
+        assert!((119..=121).contains(&f.len()), "{hz}Hz 2 秒 rAF {} 次", f.len());
+        let dts: Vec<f64> = f.iter().skip(1).map(|(_, v)| v["dt"].as_f64().unwrap()).collect();
+        if hz == 144 {
+            assert!(dts.iter().all(|d| (d - 13.889).abs() < 0.01 || (d - 20.833).abs() < 0.01), "{dts:?}");
+        } else {
+            assert!(dts.iter().all(|d| (d - 16.667).abs() < 0.01), "{dts:?}");
+        }
+        let mean = dts.iter().sum::<f64>() / dts.len() as f64;
+        assert!((mean - 16.667).abs() < 0.2, "{hz}Hz 平均 {mean}");
+    }
+}
+
+/// GT-K5 / K6：setPreferredFramesPerSecond(30) → 60Hz 上每秒 30 次；越界夹到 1~60
+#[test]
+fn k5_设帧率() {
+    let _g = serial();
+    let mut h = GameHarness::open("g-square", Opts { query: "fps=30", ..Default::default() });
+    h.vsyncs(60);
+    assert!((29..=31).contains(&h.frames().len()), "{}", h.frames().len());
+    assert_eq!(h.engine.preferred_fps(), 30);
+    h.engine.eval("wx.setPreferredFramesPerSecond(0)").unwrap();
+    assert_eq!(h.engine.preferred_fps(), 1);
+    h.engine.eval("wx.setPreferredFramesPerSecond(240)").unwrap();
+    assert_eq!(h.engine.preferred_fps(), 60);
+    h.engine.eval("wx.setPreferredFramesPerSecond('x')").unwrap();
+    assert_eq!(h.engine.preferred_fps(), 60, "非数字忽略");
+}
+
+/// GT-K7：同批同时间戳；回调里注册的进下一批；回调里取消同批里还没执行的不执行；id 从 1 递增；回调抛错不影响同批（S3）
+#[test]
+fn k7_raf_语义() {
+    let _g = serial();
+    let mut h = GameHarness::open_inline("rafsem", r#"
+        var log = [];
+        var a = requestAnimationFrame(function (t) { log.push(['a', t]); requestAnimationFrame(function (t2) { log.push(['next', t2]); }); });
+        var b = requestAnimationFrame(function (t) { log.push(['b', t]); cancelAnimationFrame(c); throw new Error('raf-boom'); });
+        var c = requestAnimationFrame(function (t) { log.push(['c', t]); });
+        var d = requestAnimationFrame(function (t) { log.push(['d', t]); });
+        console.log('T:EV ids ' + JSON.stringify([a, b, c, d]));
+        setTimeout(function () { console.log('T:EV log ' + JSON.stringify(log)); }, 100);
+    "#, Opts::default());
+    h.vsyncs(10);
+    assert_eq!(h.events("ids")[0], serde_json::json!([1, 2, 3, 4]));
+    let log = h.events("log")[0].as_array().unwrap().clone();
+    let names: Vec<&str> = log.iter().map(|e| e[0].as_str().unwrap()).collect();
+    assert_eq!(names, vec!["a", "b", "d", "next"], "c 在同批里被取消；next 进下一批");
+    assert_eq!(log[0][1], log[2][1], "同批同时间戳");
+    assert!(log[3][1].as_f64() > log[0][1].as_f64());
+    assert!(h.log.iter().any(|l| l.contains("raf-boom")), "抛错要报出来");
+}
+
+/// GT-K9：后台不跑 rAF、不要帧；回前台继续
+#[test]
+fn k9_后台不跑_raf() {
+    let _g = serial();
+    let mut h = GameHarness::open("g-square", Opts::default());
+    h.vsyncs(10);
+    let n0 = h.frames().len();
+    h.engine.set_background(true);
+    h.frame += 1;
+    let f = h.engine.pump_ex(h.now_us());
+    assert_eq!(f & 16, 0, "后台不置 WANTS_MORE");
+    h.vsyncs(30);
+    assert_eq!(h.frames().len(), n0, "后台跑了 rAF");
+    h.engine.set_background(false);
+    h.vsyncs(5);
+    assert!(h.frames().len() > n0);
+}
+
+/// GT-K10~K12：定时器跟帧时钟走（同刻按登记序、可复现）；只剩远期定时器时 WAKE_AT 而不是 WANTS_MORE
+#[test]
+fn k10_k12_定时器与唤醒() {
+    let _g = serial();
+    let mut h = GameHarness::open_inline("timers", r#"
+        var o = [];
+        setTimeout(function () { o.push('t1'); }, 50);
+        setTimeout(function () { o.push('t2'); }, 50);
+        setTimeout(function () { o.push('t0'); }, 0);
+        setTimeout(function () { console.log('T:EV order ' + JSON.stringify(o)); }, 100);
+        setTimeout(function () {}, 30000);
+    "#, Opts::default());
+    h.vsyncs(3);
+    assert!(h.events("order").is_empty(), "50ms 的定时器在第 3 帧（50ms）之前不该到点之外的东西乱序");
+    h.vsyncs(5);
+    assert_eq!(h.events("order")[0], serde_json::json!(["t0", "t1", "t2"]));
+    // 现在只剩 30 秒那个
+    h.frame += 1;
+    let f = h.engine.pump_ex(h.now_us());
+    assert_eq!(f & 16, 0, "不该为 30 秒后的定时器每帧空转");
+    assert_ne!(f & mini_render::game::FRAME_WAKE_AT, 0);
+    let wake = h.engine.next_wake_us().unwrap();
+    assert!((29_000_000..=30_000_000).contains(&wake), "{wake}");
+}
+
+/// GT-C1~C3、C9：主 / 离屏、默认尺寸、改尺寸清空与上限、一画布一种上下文、save 上限
+#[test]
+fn c1_c3_画布对象() {
+    let _g = serial();
+    let mut h = GameHarness::open_inline("canvasobj", r#"
+        var T = require('_lib/t.js');
+        var main = wx.createCanvas(), off = wx.createCanvas();
+        T.check('main-size', main.width === 375 && main.height === 667, main.width + 'x' + main.height);
+        T.check('off-size', off.width === 300 && off.height === 150);
+        var c2 = off.getContext('2d');
+        T.check('same-ctx', c2 === off.getContext('2d'));
+        T.check('no-webgl-after-2d', off.getContext('webgl') === null);
+        T.check('webgl-null-g8', wx.createCanvas().getContext('webgl') === null);
+        c2.fillStyle = '#ff0000'; c2.fillRect(0, 0, 10, 10);
+        T.check('drawn', c2.getImageData(1, 1, 1, 1).data[0] === 255);
+        off.width = 64;
+        T.check('cleared', c2.getImageData(1, 1, 1, 1).data[3] === 0, 'resize 要清空');
+        T.check('state-reset', c2.fillStyle === '#000000');
+        off.width = 99999; T.check('clamp', off.width === 4096, String(off.width));
+        for (var i = 0; i < 2000; i++) c2.save();
+        T.check('save-cap-no-throw', true);
+        T.done({});
+    "#, Opts::default());
+    h.vsyncs(1);
+    assert!(h.has("T:DONE"), "{:?}", h.log.iter().rev().take(5).collect::<Vec<_>>());
+    h.assert_no_fail();
+    assert_eq!(h.log.iter().filter(|l| l.contains("超过 1024 层")).count(), 1, "save 超限只警告一次");
+}
+
+/// GT-C6 / C7 / S7：属性读回规范化、非法值保留旧值、像素往返（非预乘）、非有限数忽略
+#[test]
+fn c6_c7_属性与像素() {
+    let _g = serial();
+    let mut h = GameHarness::open_inline("props", r#"
+        var T = require('_lib/t.js');
+        var g = wx.createCanvas().getContext('2d');
+        g.fillStyle = 'red'; T.check('named', g.fillStyle === '#ff0000', g.fillStyle);
+        g.fillStyle = '#ABC'; T.check('short-hex', g.fillStyle === '#aabbcc', g.fillStyle);
+        g.fillStyle = 'rgba(1,2,3,0.5)'; T.check('rgba', g.fillStyle === 'rgba(1, 2, 3, 0.5)', g.fillStyle);
+        g.fillStyle = 'not-a-color'; T.check('invalid-keeps', g.fillStyle === 'rgba(1, 2, 3, 0.5)', g.fillStyle);
+        g.lineWidth = -1; T.check('lw-keep', g.lineWidth === 1);
+        g.globalAlpha = 2; T.check('alpha-keep', g.globalAlpha === 1);
+        g.font = 'bold 20px Arial'; T.check('font', g.font === 'bold 20px Arial');
+        g.textAlign = 'nope'; T.check('align-keep', g.textAlign === 'start');
+        g.save(); g.fillStyle = '#00ff00'; g.translate(5, 6); g.restore();
+        T.check('restore-props', g.fillStyle === 'rgba(1, 2, 3, 0.5)' && g.getTransform().e === 0);
+        g.translate(3, 4); g.scale(2, 2); var m = g.getTransform();
+        T.check('transform', m.a === 2 && m.e === 3 && m.f === 4);
+        g.resetTransform();
+        var img = g.createImageData(2, 1);
+        img.data.set([255, 0, 0, 128, 0, 0, 255, 255]);
+        g.putImageData(img, 4, 4);
+        var back = g.getImageData(4, 4, 2, 1).data;
+        T.check('pixels', [].join.call(back) === '255,0,0,128,0,0,255,255', [].join.call(back));
+        g.fillStyle = '#00ff00'; g.fillRect(NaN, 0, 10, 10); g.fillRect(0, 0, Infinity, 10);
+        T.check('nan-ignored', g.getImageData(1, 1, 1, 1).data[1] === 0);
+        var e = ''; try { g.getImageData(0, 0, 0, 5); } catch (x) { e = x.name; } T.check('gid-range', e === 'RangeError', e);
+        e = ''; try { g.arc(0, 0, -1, 0, 1); } catch (x) { e = x.name; } T.check('arc-neg', e === 'RangeError', e);
+        T.check('measure', g.measureText('Hello').width > 0);
+        var gr = g.createLinearGradient(0, 0, 10, 0); gr.addColorStop(0, 'red'); gr.addColorStop(1, 'blue');
+        g.fillStyle = gr; T.check('gradient-obj', g.fillStyle === gr);
+        g.fillRect(0, 20, 10, 2);
+        T.check('gradient-drawn', g.getImageData(0, 20, 1, 1).data[0] > 200 && g.getImageData(9, 20, 1, 1).data[2] > 200);
+        T.done({});
+    "#, Opts::default());
+    h.vsyncs(1);
+    assert!(h.has("T:DONE"), "{:?}", h.log.iter().rev().take(5).collect::<Vec<_>>());
+    h.assert_no_fail();
+}
+
+/// GT-C10：toDataURL / toTempFilePathSync 能解回与后备缓冲相同的像素
+#[test]
+fn c10_导出() {
+    let _g = serial();
+    let mut h = GameHarness::open_inline("export", r#"
+        var T = require('_lib/t.js');
+        var c = wx.createCanvas(); c.width = 4; c.height = 2;
+        var g = c.getContext('2d'); g.fillStyle = '#123456'; g.fillRect(0, 0, 4, 2);
+        var u = c.toDataURL(); T.check('png-uri', u.indexOf('data:image/png;base64,') === 0);
+        var p = c.toTempFilePathSync({ fileType: 'png' }); T.check('tmp', /^wxfile:\/\/tmp/.test(p), p);
+        console.log('T:EV file ' + JSON.stringify({ p: p }));
+        T.check('empty', (function () { var z = wx.createCanvas(); z.width = 0; return z.toDataURL() === 'data:,'; })());
+        T.done({});
+    "#, Opts::default());
+    h.vsyncs(1);
+    h.assert_no_fail();
+    assert!(h.has("T:DONE"));
+}

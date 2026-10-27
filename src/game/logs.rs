@@ -22,6 +22,10 @@ impl LogPump {
 
     /// 取走本帧的日志行（已限流、已截断）。缓冲为空时只做一次长度判断，不分配
     pub fn drain(&mut self, app: &MiniApp) -> Vec<String> {
+        // 先直调问有没有（不经 eval，没日志的帧——绝大多数帧——到此为止）
+        if app.call_num("__gameLogCount", &[]).unwrap_or(1.0) == 0.0 {
+            return self.flush_dropped();
+        }
         let cap = if self.unlimited { usize::MAX } else { MAX_LINES };
         // 在 JS 侧就截掉多余的行：不让 10 000 行先被 JSON 序列化出来再丢
         let js = format!(

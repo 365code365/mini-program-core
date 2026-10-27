@@ -468,6 +468,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 hz: game_hz.unwrap_or(60),
                 query: game_query.clone(),
                 evals: evals.clone(),
+                snapshot: snapshot.clone(),
             };
             std::process::exit(app_window::game_run::run(p, run));
         }
