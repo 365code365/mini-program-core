@@ -3,6 +3,10 @@
 //! 两个引擎跑同一个手势：A 调老接口（pointer_* / pointer2，与 Android MiniTouch.kt 的调用序列相同），
 //! B 只调适配层（宿主指针 id 故意不是 0/1）。帧时刻、事件时间两边一模一样（pump 给显式的毫秒），
 //! 比路由、面板状态与整帧像素。
+//!
+//! 比像素的用例只用**没有墙上时钟驱动内容**的页面（cart / category）：首页有 200ms 后弹出的优惠券浮层与每秒走的倒计时，
+//! showcase 有 GIF 与定时器 —— 全量并行跑时机器一慢，两个引擎落在不同的秒上，整帧像素自然不同
+//! （实测首页两条路差 94% 像素，单独跑却全绿）。picker 只在 showcase 上有，那一例只比状态。
 use super::engine_input_tests::engine_in;
 use crate::host::touch_adapter::{TouchAdapter, PHASE_CANCEL, PHASE_DOWN, PHASE_MOVE, PHASE_UP};
 use crate::host::MiniEngine;
@@ -78,7 +82,7 @@ fn adapted(e: &mut MiniEngine, ops: &[Op]) {
     }
 }
 
-fn same(route: &str, slot: &str, prep: impl Fn(&mut MiniEngine), ops: &[Op]) -> MiniEngine {
+fn same(route: &str, slot: &str, prep: impl Fn(&mut MiniEngine), ops: &[Op], pixels: bool) -> MiniEngine {
     let mut a = engine_in(route, &format!("{slot}-a"));
     let mut b = engine_in(route, &format!("{slot}-b"));
     prep(&mut a);
@@ -87,9 +91,12 @@ fn same(route: &str, slot: &str, prep: impl Fn(&mut MiniEngine), ops: &[Op]) -> 
     adapted(&mut b, ops);
     assert_eq!(a.current_route(), b.current_route(), "{slot}：路由不同");
     assert_eq!(a.picker_sheet_open(), b.picker_sheet_open(), "{slot}：面板状态不同");
-    let (pa, pb) = (a.rgba().to_vec(), b.rgba().to_vec());
-    let diff = pa.chunks(4).zip(pb.chunks(4)).filter(|(x, y)| x != y).count();
-    assert_eq!(diff, 0, "{slot}：两条路的整帧像素差 {diff} 个");
+    assert_eq!(a.scroll_position().to_bits(), b.scroll_position().to_bits(), "{slot}：滚动位置不同");
+    if pixels {
+        let (pa, pb) = (a.rgba().to_vec(), b.rgba().to_vec());
+        let diff = pa.chunks(4).zip(pb.chunks(4)).filter(|(x, y)| x != y).count();
+        assert_eq!(diff, 0, "{slot}：两条路的整帧像素差 {diff} 个");
+    }
     b
 }
 
@@ -103,7 +110,8 @@ fn mr_app_touch_点_tabbar_切页() {
     let h = 667.0 - crate::host::tabbar_height() as f32 + 25.0;
     let mut ops = vec![Op::Pump(1000), Op::Down(0, 141.0, h), Op::Pump(1016), Op::Up(0, 141.0, h)];
     ops.extend(frames(1032, 4));
-    let e = same("pages/index/index", "touch-tab", |_| {}, &ops);
+    // 从购物车点第二格（分类）：两个页面都没有定时器
+    let e = same("pages/cart/cart", "touch-tab", |_| {}, &ops, true);
     assert_eq!(e.current_route(), "pages/category/category", "测试本身要真的点到 tab（防空转）");
 }
 
@@ -119,8 +127,8 @@ fn mr_app_touch_带时间戳的拖动与惯性() {
     }
     ops.push(Op::Up(0, 180.0, 200.0));
     ops.extend(frames(1112, 20));
-    let e = same("pages/index/index", "touch-drag", |_| {}, &ops);
-    assert!(e.scroll_position() > 100.0, "测试本身要真的滚起来（防空转）：{}", e.scroll_position());
+    let e = same("pages/category/category", "touch-drag", |_| {}, &ops, true);
+    assert!(e.scroll_position() > 20.0, "测试本身要真的滚起来（防空转）：{}", e.scroll_position());
 }
 
 #[test]
@@ -133,7 +141,7 @@ fn mr_app_touch_双指_第一根先抬_与取消() {
     ops.extend(frames(1032, 3));
     ops.extend([Op::Down(0, 100.0, 300.0), Op::Down(1, 200.0, 300.0), Op::Cancel]);
     ops.extend(frames(1100, 3));
-    same("pages/index/index", "touch-two", |_| {}, &ops);
+    same("pages/category/category", "touch-two", |_| {}, &ops, true);
 }
 
 #[test]
@@ -142,6 +150,6 @@ fn mr_app_touch_点_picker_弹面板() {
     let e = same("pages/showcase/showcase", "touch-picker", |e| {
         e.scroll_to(300.0);
         e.pump(984);
-    }, &ops);
+    }, &ops, false);
     assert!(e.picker_sheet_open(), "测试本身要真的弹出面板（防空转）");
 }

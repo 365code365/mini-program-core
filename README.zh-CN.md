@@ -314,6 +314,8 @@ cargo build --release
 
 常用动作参数（按书写顺序执行，可重复）：`--touch x,y` / `--swipe x1,y1,x2,y2`
 / `--drag px×帧数` / `--type 文本` / `--key enter` / `--wheel` / `--wait 秒` / `--frames N`。
+小游戏包上 `--touch` / `--click` / `--press` / `--swipe` / `--wait` 驱动 `wx.onTouch*`（坐标是游戏逻辑像素）；
+多指用 `--multitouch "7:100,200@0;7:110,200@16;9:300,400@32;u7@48;c9@64"`（`id:x,y@毫秒`，`u` 抬起、`c` 取消）。
 窗体里 `wx.chooseImage` / `chooseMedia` / `chooseVideo` / `chooseMessageFile` 开系统文件对话框、存相册开「存储为」
 （macOS / Windows）；无头 / 自动化用 `MINI_PICK_FILES=/a.png,/b.jpg` 当作选了这些文件、`MINI_SAVE_DIR=<目录>` 指定存到哪，
 不给时无头一律 `:fail cancel`。
@@ -343,6 +345,7 @@ GPU 初始化失败、自检不一致、运行中设备丢失或 surface 无法�
 | `MINI_GAME_FAULT=panic@pump\|panic@eval` | 小游戏故障注入：验证 FFI 的 panic 防护（实例失效、宿主进程不崩） |
 | `MINI_RAF_LOG=1` | 小游戏：每轮 `requestAnimationFrame` 一行（时间戳、目标帧率、实测显示周期、节拍不均匀告警） |
 | `adb shell setprop debug.mini.game_log 1` | Android 小游戏视图：每帧都打引擎工作 / 拷贝 / 提交 / 等缓冲（默认只打超过 8ms 的帧） |
+| `adb shell setprop debug.mini.touch_log 1` | Android 小游戏视图：每帧打「最早一个排队的触摸 → 派发它的那次 pump」隔了多久（`👆 [GAME]`） |
 
 `auto` 怎么选：适配器必须是集显或独显（llvmpipe 这类软件适配器一律不算），后端是 Metal / Vulkan / DX12（GLES 只在强制 `gpu` 时用）；
 启动自检用一张固定测试帧比较 GPU 与 CPU 输出（必须逐字节一致），并比一次稳态成本（GPU 主线程 ≤ 1ms、GPU 完成 < 4ms；不和 CPU 合成时间比，因为自检量不到 CPU 的上屏开销）。

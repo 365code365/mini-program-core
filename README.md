@@ -382,7 +382,8 @@ Headless image output (for CI / regression):
 
 Common action flags (executed in the order written, repeatable): `--touch x,y` /
 `--swipe x1,y1,x2,y2` / `--drag px×frames` / `--type text` / `--key enter` / `--wheel` /
-`--wait seconds` / `--frames N`. In the window, `wx.chooseImage` / `chooseMedia` / `chooseVideo` /
+`--wait seconds` / `--frames N`. On a mini-game package, `--touch` / `--click` / `--press` / `--swipe` / `--wait` drive
+`wx.onTouch*` (game logical pixels); multi-touch uses `--multitouch "7:100,200@0;7:110,200@16;u7@48"` (`id:x,y@ms`, `u` up, `c` cancel). In the window, `wx.chooseImage` / `chooseMedia` / `chooseVideo` /
 `chooseMessageFile` open the system file dialog and saving to the album opens "Save As" (macOS / Windows);
 headless runs use `MINI_PICK_FILES=/a.png,/b.jpg` as the picked files and `MINI_SAVE_DIR=<dir>` as the
 save target, and fail with `:fail cancel` when neither is set. Full list via `--help`. Diagnostic switches
@@ -417,6 +418,7 @@ and the log says why:
 | `MINI_GAME_FAULT=panic@pump\|panic@eval` | Mini-game fault injection: verifies the FFI panic guard (instance becomes poisoned, host process survives) |
 | `MINI_RAF_LOG=1` | Mini-game: one line per `requestAnimationFrame` round (timestamp, target fps, measured display period, uneven-cadence warning) |
 | `adb shell setprop debug.mini.game_log 1` | Android mini-game view: log every frame's engine work / copy / submit / buffer-wait (default: only frames over 8ms) |
+| `adb shell setprop debug.mini.touch_log 1` | Android mini-game view: per frame, how long the oldest queued touch waited before the pump that dispatched it (`👆 [GAME]`) |
 
 How `auto` decides: the adapter must be an integrated or discrete GPU (software adapters such as
 llvmpipe never count), on Metal / Vulkan / DX12 (GLES only when `gpu` is forced); a start-up
