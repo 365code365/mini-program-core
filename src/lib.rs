@@ -31,6 +31,8 @@ pub mod game;
 
 /// `wx.request` 等网络 API 的原生实现（后台线程 + 按帧取回）
 pub mod net;
+/// wx.request 的流式部分：二进制正文、响应头 / 分块 / 下载进度事件
+pub mod net_stream;
 
 /// 引擎的可写数据目录（storage 落盘、图片磁盘缓存），由宿主指定
 pub mod data_dir;

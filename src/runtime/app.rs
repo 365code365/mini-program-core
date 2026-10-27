@@ -276,6 +276,8 @@ impl MiniApp {
     /// 把后台线程完成的 HTTP 响应喂回 JS 的 `__resolveRequest`
     fn process_network_responses(&mut self) -> Result<(), String> {
         let done = crate::net::take_completed(self.bridge.net_owner());
+        // 过程事件在完成结果之后取、之前派发：事件总先于结果入队，先拍下结果再取事件就一个不漏（app_io.rs）
+        self.process_net_events();
         if done.is_empty() {
             return Ok(());
         }

@@ -189,11 +189,13 @@ impl JsBridge {
         let rt = self.runtime.lock().unwrap();
         let owner = self.net_owner;
         rt.register_function("__native_request", move |args| {
-            // (id, method, url, headersJson, body, timeoutMs)
+            // (id, method, url, headersJson, body, timeoutMs, [flags：1 = arraybuffer、2 = enableChunked])
             if args.len() >= 5 {
                 let id: u32 = args[0].parse().unwrap_or(0);
                 let timeout: u64 = args.get(5).and_then(|s| s.parse().ok()).unwrap_or(0);
-                crate::net::submit(owner, id, &args[1], &args[2], &args[3], &args[4], timeout);
+                let flags: u32 = args.get(6).and_then(|s| s.parse().ok()).unwrap_or(0);
+                let opts = crate::net_stream::StreamOpts { binary: flags & 1 != 0, chunked: flags & 2 != 0 };
+                crate::net::submit_ex(owner, id, &args[1], &args[2], &args[3], &args[4], timeout, opts);
             }
             "undefined".to_string()
         })?;
@@ -215,6 +217,7 @@ impl JsBridge {
             "undefined".to_string()
         })?;
         rt.register_function("__native_clipboard_get", move |_args| crate::clipboard::get())?;
+        crate::net_stream::register(&rt, owner)?;
         // wx.loadFontFace：(id, family, src)。结果排队，MiniApp::update 每帧回 __resolveFontFace
         rt.register_function("__native_load_font", move |args| {
             let a = |i: usize| args.get(i).cloned().unwrap_or_default();

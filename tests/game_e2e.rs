@@ -21,6 +21,8 @@ mod input;
 mod image_cases;
 #[path = "game_cases/text.rs"]
 mod text_cases;
+#[path = "game_cases/net.rs"]
+mod net_cases;
 
 /// GT-R1 / R5 / S4：game.js 执行一次，console、onError、onUnhandledRejection、GameGlobal
 #[test]

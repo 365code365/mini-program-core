@@ -43,4 +43,27 @@ impl MiniApp {
     pub(super) fn has_pending_io(&self) -> bool {
         crate::websocket::has_pending() || crate::audio_ctx::has_pending() || crate::net_socket::has_pending()
     }
+
+    /// wx.request / downloadFile 的过程事件（net_stream.rs）：`__netEvent(id, kind, json)`
+    pub(super) fn process_net_events(&mut self) {
+        let evs = crate::net_stream::take_events(self.bridge.net_owner());
+        if evs.is_empty() {
+            return;
+        }
+        let rt = self.runtime.lock().unwrap();
+        for (id, e) in evs {
+            let (kind, payload) = match e {
+                crate::net_stream::NetEvent::Headers { status, headers } => {
+                    let h: serde_json::Map<String, serde_json::Value> = headers.into_iter().map(|(k, v)| (k, serde_json::Value::String(v))).collect();
+                    ("headers", serde_json::json!({ "statusCode": status, "header": h }))
+                }
+                crate::net_stream::NetEvent::Chunk => ("chunk", serde_json::Value::Null),
+                crate::net_stream::NetEvent::Progress { written, expected } => ("progress", serde_json::json!({ "written": written, "expected": expected })),
+            };
+            let code = format!("typeof __netEvent === 'function' && __netEvent({id}, {}, {})", serde_json::json!(kind), serde_json::json!(payload.to_string()));
+            if let Err(e) = rt.eval(&code) {
+                eprintln!("⚠  网络过程回调执行失败 (id={id}): {e}");
+            }
+        }
+    }
 }
