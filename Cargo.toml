@@ -66,6 +66,8 @@ base64 = "=0.22.1"
 encoding_rs = "=0.8.35"
 # FileSystemManager.unzip 的 deflate 解压（ureq 的 gzip 用的就是它，不多编一份）
 flate2 = "=1.1.9"
+# FileSystemManager.readCompressedFile（只有 br，官方）：纯 Rust、只解压
+brotli-decompressor = "=5.0.3"
 once_cell = "1.21"
 # wx.getRandomValues / UserCryptoManager.getRandomValues：系统的密码学安全随机数。
 # 这个版本本来就在依赖图里（ring → getrandom 0.2），直接用不多编一份
@@ -160,3 +162,5 @@ required-features = ["desktop"]
 fontdue_upstream = { package = "fontdue", version = "=0.9.3" }
 # 只给 examples/_font_probe.rs 用：量「惰性解析字体」的内存基线
 ttf-parser = "0.25"
+# wxfs/extra.rs 的单测：生成 br 样本
+brotli = "=8.0.4"

@@ -51,6 +51,8 @@ fn io_err(e: std::io::Error, op: &str, p: &str) -> String {
 /// 写入内容：`data` 是字符串（按 encoding）或 `{"__b64":"…"}`（JS 侧把 ArrayBuffer 换成的）
 fn payload(a: &Value) -> Result<Vec<u8>, String> {
     match a.get("data") {
+        // ArrayBuffer 直通（extra.rs）：字节在本线程的 RAW_IN 里
+        Some(Value::Object(o)) if o.get("__raw").is_some() => super::extra::RAW_IN.with(|i| i.borrow_mut().take()).ok_or("invalid data".into()),
         Some(Value::Object(o)) => o.get("__b64").and_then(Value::as_str).and_then(codec::unb64).ok_or("invalid data".into()),
         Some(Value::String(t)) => codec::encode(t, s(a, "encoding")).ok_or_else(|| format!("invalid encoding \"{}\"", s(a, "encoding"))),
         Some(Value::Null) | None => Ok(Vec::new()),
@@ -189,6 +191,9 @@ fn dispatch(op: &str, a: &Value) -> R {
             let start = (n(a, "position").unwrap_or(0) as usize).min(bytes.len());
             let end = n(a, "length").map(|l| (start + l as usize).min(bytes.len())).unwrap_or(bytes.len());
             bytes = bytes[start..end].to_vec();
+            if b(a, "raw") {
+                return super::extra::content_raw(bytes, s(a, "encoding"));
+            }
             content(&bytes, s(a, "encoding"))
         }
         "writeFile" | "appendFile" => {
@@ -198,6 +203,7 @@ fn dispatch(op: &str, a: &Value) -> R {
             if op == "appendFile" && !r.real.exists() {
                 return Err(not_found("open", p));
             }
+            super::extra::check_quota(&r.real, data.len() as u64, op == "appendFile")?;
             let mut f = fs::OpenOptions::new()
                 .create(true)
                 .write(true)
@@ -212,6 +218,7 @@ fn dispatch(op: &str, a: &Value) -> R {
             let (sp, dp) = (s(a, "srcPath"), s(a, "destPath"));
             let src = readable(sp, "copyFile")?;
             let dst = writable(dp, "copyFile")?;
+            super::extra::check_quota(&dst.real, fs::metadata(&src.real).map(|m| m.len()).unwrap_or(0), false)?;
             fs::copy(&src.real, &dst.real).map_err(|e| io_err(e, "copyFile", sp))?;
             Ok(json!({}))
         }
@@ -350,6 +357,16 @@ fn dispatch(op: &str, a: &Value) -> R {
                 }
             }
             Ok(json!({}))
+        }
+        "readCompressedFile" => {
+            let p = s(a, "filePath");
+            let r = readable(p, "open")?;
+            super::extra::read_compressed(&r.real, p, s(a, "compressionAlgorithm"))
+        }
+        "readZipEntry" => {
+            let p = s(a, "filePath");
+            let r = readable(p, "open")?;
+            super::extra::read_zip_entry(&r.real, p, a.get("entries").unwrap_or(&Value::Null), s(a, "encoding"))
         }
         "open" => open(a),
         "close" => {

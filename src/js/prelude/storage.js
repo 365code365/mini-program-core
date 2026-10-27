@@ -6,10 +6,33 @@
 
             // 一律按 JSON 存：读回来类型不变（微信语义）。从前字符串原样存、读时再 JSON.parse，
             // 存 '42' 读回数字 42、存 'true' 读回布尔。旧版存下的裸字符串 JSON.parse 不了，照旧按原文读回
-            wx.setStorageSync = function(key, data) {
+            // 上限（官方「数据缓存」：单个 key 1MB，总共 10MB；按 UTF-8 字节算，与 getStorageInfo 的 currentSize 同一口径）。
+            // 超了不写，抛错 / 走 fail —— 文案待取证（game-doc/06 §7）
+            var __STORAGE_ITEM_MAX = 1024 * 1024, __STORAGE_TOTAL_MAX = 10 * 1024 * 1024;
+            function __utf8len(str) {
+                var n = 0;
+                for (var i = 0; i < str.length; i++) {
+                    var c = str.charCodeAt(i);
+                    if (c < 0x80) n += 1; else if (c < 0x800) n += 2;
+                    else if (c >= 0xd800 && c <= 0xdbff) { n += 4; i++; } else n += 3;
+                }
+                return n;
+            }
+            function __storageSet(key, data) {
                 var value = data === undefined ? '' : JSON.stringify(data);
+                if (value === undefined) value = '';
+                var size = __utf8len(key) + __utf8len(value);
+                if (size > __STORAGE_ITEM_MAX) throw new Error('exceed storage item max length 1MB');
+                if (typeof __native_storage_size === 'function') {
+                    var old = __storage[key] !== undefined ? __storage[key] : (typeof __native_storage_get === 'function' ? __native_storage_get(key) : '');
+                    var oldSize = old ? __utf8len(key) + __utf8len(old) : 0;
+                    if ((Number(__native_storage_size()) || 0) - oldSize + size > __STORAGE_TOTAL_MAX) throw new Error('exceed storage max size 10MB');
+                }
                 __storage[key] = value;
                 if (typeof __native_storage_set === 'function') { __native_storage_set(key, value); }
+            }
+            wx.setStorageSync = function(key, data) {
+                try { __storageSet(key, data); } catch (e) { throw new Error('setStorageSync:fail ' + e.message); }
             };
 
             wx.getStorageSync = function(key) {
@@ -59,7 +82,7 @@
                 return k;
             }
 
-            wx.setStorage = function(o) { o = o || {}; return __storageCb(o, 'setStorage', function() { wx.setStorageSync(__storageKey(o.key), o.data); }); };
+            wx.setStorage = function(o) { o = o || {}; return __storageCb(o, 'setStorage', function() { __storageSet(__storageKey(o.key), o.data); }); };
             // 键不存在：微信是 fail（data not found），不是 success('')
             wx.getStorage = function(o) {
                 o = o || {};

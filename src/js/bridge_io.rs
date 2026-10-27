@@ -62,6 +62,7 @@ pub(super) fn register(rt: &JsRuntime, queue: Queue) -> Result<(), String> {
     })?;
     // 二进制直通（WebSocket / TCP / UDP 的 ArrayBuffer 收发，src/bin_stash.rs）
     crate::bin_stash::register(rt)?;
+    crate::wxfs::extra::register(rt)?;
     // ── 文件系统：(op, argsJson) → {ok, …} ──
     rt.register_function("__native_fs", move |args| {
         let a = |i: usize| args.get(i).cloned().unwrap_or_default();

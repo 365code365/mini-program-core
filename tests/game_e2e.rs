@@ -23,6 +23,8 @@ mod image_cases;
 mod text_cases;
 #[path = "game_cases/net.rs"]
 mod net_cases;
+#[path = "game_cases/fs.rs"]
+mod fs_cases;
 
 /// GT-R1 / R5 / S4：game.js 执行一次，console、onError、onUnhandledRejection、GameGlobal
 #[test]
