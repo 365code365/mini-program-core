@@ -14,6 +14,8 @@ mod clock;
 pub mod config;
 mod fonts;
 pub mod image;
+mod lifecycle;
+mod package;
 mod image_events;
 mod input;
 pub mod pc_input;
@@ -51,6 +53,8 @@ pub struct GameOptions {
     pub fault: Option<String>,
     /// 固定时钟（无头测试）：宿主给的时刻就是游戏时间，帧间 performance.now() 停住，结果逐帧可复现（clock.rs）
     pub fixed_clock: bool,
+    /// 从独立分包启动（分包名或 root）：执行它的入口而不是 game.js，主包要 `loadSubpackage({name:'__GAME__'})`（G6.1，GT-P5）
+    pub entry_subpackage: Option<String>,
 }
 
 /// 游戏实例报给 `wx.getSystemInfoSync().SDKVersion` 的基础库版本（决策 D-9 未定：取证后按已实现的 API 集合选定，
@@ -88,6 +92,7 @@ impl GameOptions {
             js_memory_limit_mb: v.get("jsMemoryLimitMB").and_then(|x| x.as_u64()),
             fault: v.get("fault").and_then(|x| x.as_str()).map(str::to_string),
             fixed_clock: v.get("fixedClock").and_then(|x| x.as_bool()).unwrap_or(false),
+            entry_subpackage: v.get("entrySubpackage").and_then(|x| x.as_str()).map(str::to_string),
         })
     }
 }
@@ -205,8 +210,13 @@ impl GameEngine {
         // game.js 顶层登记的定时器从游戏时间轴的此刻起算（固定时钟下是 0），不是墙上时钟
         let at = engine.clock.borrow().current_instant();
         engine.app.set_timer_clock(Some(at));
+        let entry = engine.install_packages(opts.entry_subpackage.as_deref());
         engine.guards.watchdog.arm();
-        let r = loader::run_module(&engine.app, "game", &source);
+        let r = match &entry {
+            // 独立分包：经 require 执行它的入口（模块缓存里记一笔，之后 loadSubpackage 同一个分包不会再执行一遍）
+            Some(key) => engine.app.eval(&format!("__require('', {key:?})")).map(|_| ()),
+            None => loader::run_module(&engine.app, "game", &source),
+        };
         engine.guards.watchdog.disarm();
         if let Err(e) = r {
             engine.report_error(error_kind(&e, "script"), &e);
@@ -257,6 +267,10 @@ impl GameEngine {
             }
         }
         self.drain_logs();
+        // JS 交给宿主的事件（exit / restart、数据上报、hostCall）：从前小游戏没取，宿主一条也收不到
+        for raw in self.app.take_host_events() {
+            self.events.push_back(raw);
+        }
     }
 
     /// `wx.triggerGC` / 宿主内存告警：跑一遍 GC

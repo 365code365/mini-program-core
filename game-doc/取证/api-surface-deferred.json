@@ -41,15 +41,8 @@
   ],
   "G6": [
    "createWorker",
-   "exitMiniProgram",
-   "loadSubpackage",
    "offDeviceOrientationChange",
-   "offHide",
-   "offShow",
    "onDeviceOrientationChange",
-   "onHide",
-   "onShow",
-   "restartMiniProgram",
    "setDeviceOrientation"
   ],
   "G3": [

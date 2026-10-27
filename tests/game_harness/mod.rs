@@ -13,11 +13,13 @@ pub struct Opts {
     pub hz: u32,
     pub query: &'static str,
     pub watchdog_ms: u64,
+    /// 从独立分包启动（创建选项 entrySubpackage）
+    pub entry: Option<&'static str>,
 }
 
 impl Default for Opts {
     fn default() -> Self {
-        Self { hz: 60, query: "", watchdog_ms: 5000 }
+        Self { hz: 60, query: "", watchdog_ms: 5000, entry: None }
     }
 }
 
@@ -93,6 +95,7 @@ impl GameHarness {
             launch_options: Some(serde_json::json!({ "query": query, "scene": 1001 })),
             watchdog_ms: Some(opts.watchdog_ms),
             fixed_clock: true,
+            entry_subpackage: opts.entry.map(str::to_string),
             ..Default::default()
         };
         let data = dir.with_extension("data");

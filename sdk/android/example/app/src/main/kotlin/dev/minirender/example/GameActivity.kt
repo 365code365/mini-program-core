@@ -28,6 +28,13 @@ class GameActivity : Activity() {
             .put("appId", "wxdemo-$name")
             .put("launchOptions", org.json.JSONObject().put("query", q).put("scene", 1001))
         val v = MiniGameView(this, dir.absolutePath, File(filesDir, "game-data").absolutePath, opts.toString())
+        // wx.exitMiniProgram 关掉这一页；wx.restartMiniProgram 重建（新实例从 game.js 重新跑）
+        v.onHostEvent = { type, _ ->
+            when (type) {
+                "exit" -> finish()
+                "restart" -> recreate()
+            }
+        }
         view = v
         setContentView(v)
         window.decorView.post {

@@ -57,6 +57,12 @@ class MiniGameView(
 
     @Volatile private var disposed = false
 
+    /**
+     * 引擎交给宿主的事件（日志、audioSession 之外的：`exit` / `restart`（wx.exitMiniProgram / restartMiniProgram）、
+     * 数据上报 `report` 等），在主线程上回调：type 与原始 JSON
+     */
+    var onHostEvent: ((type: String, event: org.json.JSONObject) -> Unit)? = null
+
     /** 音频焦点与来电（[GameAudioSession]），引擎线程上建、用、放 */
     private var audioSession: GameAudioSession? = null
 
@@ -297,7 +303,13 @@ class MiniGameView(
             when (o?.optString("type")) {
                 "log" -> o.optString("text").lineSequence().forEach { Log.i("mini-game", it) }
                 "audioSession" -> { Log.i("mini-game", e); audioSession?.apply(o) }
-                else -> Log.w("mini-game", e)
+                "error" -> Log.w("mini-game", e)
+                else -> {
+                    Log.i("mini-game", e)
+                    val type = o?.optString("type") ?: ""
+                    val cb = onHostEvent
+                    if (cb != null && o != null) main.post { cb(type, o) }
+                }
             }
         }
     }

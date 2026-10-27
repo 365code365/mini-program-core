@@ -150,6 +150,8 @@ impl GameEngine {
                 // 回前台第一帧要重新上屏（surface 可能换过）
                 self.frame.stale = true;
             }
+            // 音频已经停 / 恢复之后才派发：onHide 里读到的 InnerAudio 已经是 paused（lifecycle.rs）
+            self.dispatch_lifecycle(if bg { "hide" } else { "show" });
         }
     }
 
