@@ -79,7 +79,9 @@ impl GameEngine {
                 self.report_error(super::error_kind(&e, "raf"), &e);
             }
             self.after_js();
-            if std::env::var("MINI_RAF_LOG").is_ok() {
+            // 进程级开关只读一次：env::var 每次都拿全局锁并分配，这里每个 rAF 帧都走
+            static RAF_LOG: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+            if *RAF_LOG.get_or_init(|| std::env::var("MINI_RAF_LOG").is_ok()) {
                 let line = {
                     let p = self.pacer.borrow();
                     format!("🎞 rAF t={ts:.3}ms 目标 {}fps 显示周期 {:.2}ms{}", p.fps(), p.display_period_ms(), if p.uneven() { " ⚠ 节拍不均匀" } else { "" })
