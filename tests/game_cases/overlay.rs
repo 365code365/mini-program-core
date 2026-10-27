@@ -289,3 +289,40 @@ T.ready('s1');
     assert_eq!((a["x"].as_f64(), a["y"].as_f64(), a["z"].as_f64()), (Some(0.1), Some(-0.2), Some(1.0)), "{a}");
     assert!(h.events("gyroFail")[0]["errMsg"].as_str().unwrap().starts_with("startGyroscope:fail"), "宿主没接");
 }
+
+/// G7.7：createVideo 的对象形状与宿主协议：create 带全部属性（缺省值）、改属性发 update、方法发对应 op、
+/// 宿主推的 contextEvent 到 onTimeUpdate / onEnded；destroy 之后不再发
+#[test]
+fn v1_create_video() {
+    let _g = serial();
+    let js = r#"
+var T = require('_lib/t.js');
+var v = wx.createVideo({ x: 10, y: 20, width: 200, height: 120, src: 'a.mp4', loop: true });
+v.onTimeUpdate(function (r) { T.ev('tu', r); });
+v.onEnded(function () { T.ev('ended', {}); });
+v.width = 240; v.play(); v.seek(3.5); v.requestFullScreen(90);
+globalThis.vid = v.__id;
+globalThis.done = function () { v.destroy(); v.play(); };
+T.ev('vid', { id: v.__id, fns: ['play', 'pause', 'stop', 'seek', 'requestFullScreen', 'exitFullScreen', 'destroy', 'onPlay', 'offPlay', 'onError', 'onWaiting', 'onProgress'].filter(function (m) { return typeof v[m] !== 'function'; }) });
+T.ready('v1');
+"#;
+    let mut h = GameHarness::open_inline("v1", js, Opts::default());
+    h.vsyncs(2);
+    let id = h.events("vid")[0]["id"].as_str().unwrap().to_string();
+    assert_eq!(h.events("vid")[0]["fns"], serde_json::json!([]));
+    let ops: Vec<serde_json::Value> = h.host.iter().filter(|e| e["type"] == "video").cloned().collect();
+    let names: Vec<&str> = ops.iter().map(|e| e["op"].as_str().unwrap()).collect();
+    assert_eq!(names, ["create", "update", "play", "seek", "requestFullScreen"]);
+    let p = &ops[0]["props"];
+    assert_eq!((p["x"].as_u64(), p["loop"].as_bool(), p["controls"].as_bool(), p["objectFit"].as_str(), p["underGameView"].as_bool()), (Some(10), Some(true), Some(true), Some("contain"), Some(false)));
+    assert_eq!(ops[1]["props"]["width"], 240);
+    assert_eq!((ops[3]["time"].as_f64(), ops[4]["direction"].as_u64()), (Some(3.5), Some(90)));
+    h.engine.dispatch_event("contextEvent", &serde_json::json!({ "context": "Video", "contextId": id, "event": "timeUpdate", "data": { "position": 1.5, "duration": 10 } }).to_string());
+    h.engine.dispatch_event("contextEvent", &serde_json::json!({ "context": "Video", "contextId": id, "event": "ended", "data": {} }).to_string());
+    h.engine.eval("done()").unwrap();
+    h.vsyncs(1);
+    assert_eq!(h.events("tu")[0]["position"], 1.5);
+    assert_eq!(h.events("ended").len(), 1);
+    let last: Vec<&str> = h.host.iter().filter(|e| e["type"] == "video").map(|e| e["op"].as_str().unwrap()).collect();
+    assert_eq!(last.last(), Some(&"destroy"), "destroy 之后的 play 不再发：{last:?}");
+}

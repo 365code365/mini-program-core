@@ -140,6 +140,45 @@
                         setData: function(o) { __native_host_event(JSON.stringify({ type: 'report', api: 'ScenePerformanceManager.setData', data: o || {} })); }
                     };
                 };
+                // ── wx.createVideo（G7.7）：原生视频由宿主画（Android VideoView，GameVideo.kt），引擎给完整的对象与事件 ──
+                // 宿主事件 {type:'video', op:'create' | 'update' | 'play' | 'pause' | 'stop' | 'seek' | 'requestFullScreen' |
+                // 'exitFullScreen' | 'destroy', id, props?, time?, direction?}；属性（x / y / width / height / src …）直接改就发 update。
+                // 宿主推 contextEvent {context:'Video', contextId, event:'play' | 'pause' | 'ended' | 'timeUpdate' | 'error' | 'waiting' | 'progress'}。
+                // underGameView：视频在游戏画面下面、靠游戏画布透明的地方透出来 —— 引擎上屏是不透明的，这里交给宿主自己决定（Android 示例盖在上面，记在验收文档）
+                var VPROPS = ['x', 'y', 'width', 'height', 'src', 'poster', 'initialTime', 'playbackRate', 'live', 'objectFit', 'controls',
+                    'showProgress', 'showProgressInControlMode', 'backgroundColor', 'autoplay', 'loop', 'muted', 'obeyMuteSwitch',
+                    'enableProgressGesture', 'enablePlayGesture', 'showCenterPlayBtn', 'underGameView'];
+                var VDEF = { x: 0, y: 0, width: 300, height: 150, src: '', poster: '', initialTime: 0, playbackRate: 1, live: false,
+                    objectFit: 'contain', controls: true, showProgress: true, showProgressInControlMode: true, backgroundColor: '#000000',
+                    autoplay: false, loop: false, muted: false, obeyMuteSwitch: false, enableProgressGesture: true, enablePlayGesture: false,
+                    showCenterPlayBtn: true, underGameView: false };
+                wx.createVideo = function(o) {
+                    o = o || {};
+                    var id = 'video' + (++seq), props = {}, v = { __id: id }, alive = true;
+                    VPROPS.forEach(function(k) {
+                        props[k] = o[k] === undefined ? VDEF[k] : o[k];
+                        Object.defineProperty(v, k, { enumerable: true, get: function() { return props[k]; },
+                            set: function(val) { props[k] = val; if (alive) send('update', { props: props }); } });
+                    });
+                    function send(op, extra) {
+                        var e = { type: 'video', op: op, id: id };
+                        for (var k in (extra || {})) e[k] = extra[k];
+                        __native_host_event(JSON.stringify(e));
+                    }
+                    ['play', 'pause', 'stop', 'exitFullScreen'].forEach(function(m) {
+                        v[m] = function() { if (alive) send(m); return Promise.resolve(); };
+                    });
+                    v.seek = function(t) { if (alive) send('seek', { time: Number(t) || 0 }); return Promise.resolve(); };
+                    v.requestFullScreen = function(direction) { if (alive) send('requestFullScreen', { direction: direction === undefined ? 0 : Number(direction) }); return Promise.resolve(); };
+                    v.destroy = function() { if (alive) { alive = false; send('destroy'); } };
+                    ['Play', 'Pause', 'Ended', 'TimeUpdate', 'Error', 'Waiting', 'Progress'].forEach(function(E) {
+                        var e = E.charAt(0).toLowerCase() + E.slice(1);
+                        v['on' + E] = function(cb) { on('Video', id, e, cb); };
+                        v['off' + E] = function(cb) { off('Video', id, e, cb); };
+                    });
+                    send('create', { props: props });
+                    return v;
+                };
                 wx.setMenuStyle = function(o) {
                     o = o || {};
                     __native_host_event(JSON.stringify({ type: 'menuStyle', style: o.style === 'dark' ? 'dark' : 'light' }));
