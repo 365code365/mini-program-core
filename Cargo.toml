@@ -22,7 +22,7 @@ crate-type = ["cdylib", "staticlib", "rlib"]
 [features]
 # 默认同时编进 CPU 与 GPU 两个后端，运行时选（交互窗体 auto；无头与回归脚本 cpu）。
 # 只要 CPU：`cargo build --release --no-default-features --features desktop,audio,h264`
-default = ["desktop", "audio", "h264", "gpu", "game", "game-audio", "webgl"]
+default = ["desktop", "audio", "h264", "gpu", "game", "game-audio", "webgl", "wasm"]
 # 桌面宿主（自带窗口、上屏、剪贴板）
 desktop = ["winit", "softbuffer", "arboard", "dep:rfd"]
 # 内置音频播放（video 组件的声音）
@@ -46,6 +46,8 @@ game = []
 # 小游戏的 WebGL（game-doc/02 §10、design-webgl.md）：EGL + GLES 运行时加载（ANGLE 优先，Android 退到系统驱动），
 # 不链接任何 GL 库。关掉时 getContext('webgl') 返回 null，其余照常
 webgl = ["game", "dep:glow", "dep:khronos-egl"]
+# 小游戏的 WXWebAssembly（G10，game/wasm）：wasmi 解释执行（纯 Rust，iOS 可用；D-11 的 JIT 一档见 game-doc/验收/G10.md）
+wasm = ["game", "dep:wasmi"]
 
 [dependencies]
 image = "0.25"
@@ -82,6 +84,8 @@ symphonia = { version = "0.6", features = ["isomp4", "aac", "mp3"] }
 # WebGL（feature `webgl`）：glow 只是 GL 函数表（按名字从 EGL 取指针），khronos-egl 用 libloading 运行时加载 libEGL
 glow = { version = "=0.17.0", optional = true }
 khronos-egl = { version = "=6.0.0", optional = true, default-features = false, features = ["1_5", "dynamic"] }
+# WXWebAssembly（feature `wasm`）：解释器，开 SIMD（微信 8.0.25 起支持）
+wasmi = { version = "=2.0.0", optional = true, default-features = false, features = ["std", "simd", "validate"] }
 # H.264 解码 (纯 Rust，可选)
 openh264 = { version = "0.9", optional = true }
 
@@ -177,3 +181,5 @@ fontdue_upstream = { package = "fontdue", version = "=0.9.3" }
 ttf-parser = "0.25"
 # wxfs/extra.rs 的单测：生成 br 样本
 brotli = "=8.0.4"
+# WXWebAssembly 用例（tests/game_cases/wasm.rs）：现场把 WAT 编成 .wasm
+wat = "=1.262.0"

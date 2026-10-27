@@ -26,6 +26,8 @@ mod window;
 pub mod worker;
 #[cfg(feature = "webgl")]
 pub mod webgl;
+#[cfg(feature = "wasm")]
+pub(crate) mod wasm;
 mod image_events;
 mod input;
 pub mod pc_input;
@@ -208,6 +210,8 @@ impl GameEngine {
             buttons::register(&rt, btns.clone())?;
             #[cfg(feature = "webgl")]
             webgl::register(&rt, webgl.clone(), canvases.clone(), images.clone())?;
+            #[cfg(feature = "wasm")]
+            wasm::register(&rt, std::rc::Rc::new(std::cell::RefCell::new(wasm::Rt::new(root.clone()))))?;
             frame::register(&rt, pacer.clone(), clock.clone())?;
         }
         app.init_profile(PreludeProfile::MiniGame)?;

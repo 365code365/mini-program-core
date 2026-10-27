@@ -188,6 +188,8 @@ const GAME_EXTRA: &[Prelude] = prelude![
     "game-webgl-consts" => "game-webgl-consts.js",
     "game-webgl" => "game-webgl.js",
     "game-webgl2" => "game-webgl2.js",
+    // WXWebAssembly（G10，原生在 game/wasm）
+    "game-wasm" => "game-wasm.js",
     // wx.onTouch* / onMouse* / onWheel 的监听表与派发（原生在 game/touch.rs、game/pc_input.rs）
     "game-input" => "game-input.js",
     // InnerAudioContext 接小游戏自己的混音器与真设备（game/audio）：只换掉原生入口，外壳仍是 audio.js

@@ -125,6 +125,9 @@ fn run(spec: Spec, rx: Receiver<ToWorker>, tx: Sender<FromWorker>, stop: Arc<Ato
             *k.borrow_mut() = true;
             JsValue::new_undefined(ctx.clone()).into_js(&ctx)
         })?;
+        // WXWebAssembly 在 Worker 里也能用（基础库 2.15 起；.wasm 放在 Worker 目录外，路径相对包根，G10.4）
+        #[cfg(feature = "wasm")]
+        crate::game::wasm::register(&rt, Rc::new(RefCell::new(crate::game::wasm::Rt::new(spec.root.clone()))))?;
         Ok(())
     };
     if let Err(e) = reg() {
@@ -135,7 +138,8 @@ fn run(spec: Spec, rx: Receiver<ToWorker>, tx: Sender<FromWorker>, stop: Arc<Ato
         let (message, stack) = crate::game::split_exception(&e);
         let _ = tx.send(FromWorker::Error { message, stack });
     };
-    for src in [crate::js::prelude_source("module"), Some(crate::js::game_prelude_source("game-worker-codec")), Some(RUNTIME_JS)].into_iter().flatten() {
+    let wasm_js = if cfg!(feature = "wasm") { Some(crate::js::game_prelude_source("game-wasm")) } else { None };
+    for src in [crate::js::prelude_source("module"), Some(crate::js::game_prelude_source("game-worker-codec")), Some(RUNTIME_JS), wasm_js].into_iter().flatten() {
         if let Err(e) = rt.eval(src) {
             let _ = tx.send(FromWorker::Killed(format!("Worker 环境初始化失败：{e}")));
             return;
