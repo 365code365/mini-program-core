@@ -99,7 +99,8 @@
                         strokeStyle: function(v) { style('strokeStyle', 31, v); },
                         lineWidth: function(v) { v = Number(v); if (v > 0 && isFinite(v)) { st.lineWidth = v; N(id, 32, v); } },
                         globalAlpha: function(v) { v = Number(v); if (v >= 0 && v <= 1) { st.globalAlpha = v; N(id, 33, v); } },
-                        font: function(v) { if (/\d(px|pt|em|rem)\b/.test(String(v))) { st.font = String(v); N(id, 34, st.font); } },
+                        // 原生按 CSS 简写解析，成功返回规范化的读回值（"bold 16px Arial"），失败 null = 保留旧值
+                        font: function(v) { var r = N(id, 34, String(v)); if (typeof r === 'string') st.font = r; },
                         textAlign: function(v) { if (['start', 'end', 'left', 'right', 'center'].indexOf(v) >= 0) { st.textAlign = v; N(id, 35, v); } },
                         textBaseline: function(v) { if (['top', 'hanging', 'middle', 'alphabetic', 'ideographic', 'bottom'].indexOf(v) >= 0) { st.textBaseline = v; N(id, 36, v); } },
                         lineCap: function(v) { if (['butt', 'round', 'square'].indexOf(v) >= 0) { st.lineCap = v; N(id, 37, v); } },
@@ -134,7 +135,10 @@
                     this.restore = function() {
                         if (!stack.length) return;
                         N(id, OP.restore);
+                        var oldFont = st.font;
                         var s = stack.pop(); SAVED.forEach(function(k) { st[k] = s[k]; });
+                        // font 存在原生的画布槽里，不在原生的状态栈上：变了就重设一次
+                        if (st.font !== oldFont) N(id, 34, st.font);
                     };
                     // 变换：原生改矩阵，JS 记一份给 getTransform 读回（只在参数都是有限数时生效，与原生同一判断）
                     function fin() { for (var i = 0; i < arguments.length; i++) if (!isFinite(arguments[i])) return false; return true; }
@@ -156,7 +160,7 @@
                     ['fill', 'stroke', 'clip'].forEach(function(k) {
                         self[k] = function(p) { if (p && p.__cmds) replay(p); N(id, OP[k]); };
                     });
-                    this.measureText = function(t) { return { width: N(id, OP.measureText, String(t)) }; };
+                    this.measureText = function(t) { return N(id, OP.measureText, String(t)); };
                     this.setLineDash = function(segs) {
                         if (!segs || typeof segs.length !== 'number') return;
                         var a = []; for (var i = 0; i < segs.length; i++) { var v = Number(segs[i]); if (!(v >= 0 && isFinite(v))) return; a.push(v); }
@@ -164,8 +168,8 @@
                         st.__dash = a; N(id, 40, a);
                     };
                     this.getLineDash = function() { return st.__dash.slice(); };
-                    this.fillText = function(t, x, y) { N(id, OP.fillText, String(t), x, y); };
-                    this.strokeText = function(t, x, y) { N(id, OP.strokeText, String(t), x, y); };
+                    this.fillText = function(t, x, y, maxWidth) { N(id, OP.fillText, String(t), x, y, maxWidth); };
+                    this.strokeText = function(t, x, y, maxWidth) { N(id, OP.strokeText, String(t), x, y, maxWidth); };
                     this.createLinearGradient = function(x0, y0, x1, y1) { return new Gradient('linear', [x0, y0, x1, y1].map(Number)); };
                     this.createRadialGradient = function(x0, y0, r0, x1, y1, r1) {
                         if (r0 < 0 || r1 < 0) throw new RangeError('createRadialGradient: 半径不能为负（IndexSizeError）');

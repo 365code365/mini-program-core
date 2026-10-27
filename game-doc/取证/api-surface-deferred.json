@@ -39,10 +39,6 @@
    "showToast",
    "updateKeyboard"
   ],
-  "G4": [
-   "getTextLineHeight",
-   "loadFont"
-  ],
   "G6": [
    "createWorker",
    "exitMiniProgram",

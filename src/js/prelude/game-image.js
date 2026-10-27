@@ -1,4 +1,4 @@
-            // ==================== 小游戏：wx.createImage()（game-doc/02 §5.3、03） ====================
+            // ==================== 小游戏：wx.createImage() 与字体（game-doc/02 §5.3、03） ====================
             //
             // 解码在原生的后台线程（game/image）；结果在下一次 pump（rAF 之前）经 __gameImageDone(id, json) 回来。
             // - 加载期间 JS 这边强引用着对象：常见写法是局部变量 + onload，没人持有也得等它回调完；
@@ -51,4 +51,11 @@
                     return 1;
                 };
                 wx.createImage = function() { return new GameImage(); };
+                // 字体（game/fonts.rs）：loadFont 同步返回字族名，失败 null；getTextLineHeight 返回行高 number
+                wx.loadFont = function(path) { return __game_load_font(String(path === undefined ? '' : path)); };
+                wx.getTextLineHeight = function(o) {
+                    o = o || {};
+                    return __game_text_line_height(JSON.stringify({ fontSize: Number(o.fontSize) || 16, fontFamily: o.fontFamily ? String(o.fontFamily) : 'sans-serif',
+                        fontWeight: o.fontWeight, fontStyle: o.fontStyle, text: o.text === undefined ? '' : String(o.text) }));
+                };
             })();

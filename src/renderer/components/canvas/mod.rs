@@ -121,6 +121,8 @@ pub mod fx2d;
 mod extra2d;
 /// drawImage 的 HTML 语义（源是解码好的 RGBA、9 参数、仿射、平滑开关；小游戏用）
 pub mod image2d;
+/// `font` 简写、按字族 / 字重画字与 measureText（小游戏用）
+pub mod text_font;
 
 /// 渐变对象（线性 / 径向）
 mod gradient;

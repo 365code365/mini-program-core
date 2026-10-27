@@ -10,6 +10,7 @@
 pub mod canvas;
 mod clock;
 pub mod config;
+mod fonts;
 pub mod image;
 mod image_events;
 mod input;
@@ -147,6 +148,7 @@ impl GameEngine {
             let rt = rt.lock().unwrap();
             canvas::register(&rt, canvases.clone(), images.clone())?;
             image::register(&rt, images.clone())?;
+            fonts::register(&rt, root.clone())?;
             frame::register(&rt, pacer.clone(), clock.clone())?;
         }
         app.init_profile(PreludeProfile::MiniGame)?;

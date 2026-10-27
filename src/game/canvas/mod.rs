@@ -8,6 +8,7 @@
 pub mod compose;
 mod image_ops;
 mod natives;
+mod text_ops;
 
 use crate::renderer::components::Canvas2DContext;
 
@@ -25,11 +26,13 @@ pub struct Slot {
     pub h: u32,
     /// 拿过的上下文种类：0 = 还没拿，1 = 2d（webgl 在 G8）
     pub kind: u8,
+    /// 当前 `font`（解析好的；save / restore 由 JS 外壳在 restore 之后重设）
+    pub font: crate::renderer::components::FontSpec,
 }
 
 impl Slot {
     fn new(id: u32, w: u32, h: u32) -> Self {
-        Self { ctx: Canvas2DContext::new_with_dpr(&format!("game#{id}"), w.max(1), h.max(1), 1.0), w, h, kind: 0 }
+        Self { ctx: Canvas2DContext::new_with_dpr(&format!("game#{id}"), w.max(1), h.max(1), 1.0), w, h, kind: 0, font: Default::default() }
     }
 }
 

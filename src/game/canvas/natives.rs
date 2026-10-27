@@ -150,6 +150,14 @@ pub fn register(rt: &JsRuntime, canvases: Rc<RefCell<GameCanvases>>, images: Rc<
             return super::image_ops::set_pattern(&mut slot.ctx, &src, &text(a.get(2)).unwrap_or_default(), stroke).into_js(&ctx);
         }
         let Some(slot) = cs.get(id) else { return Ok(Value::new_undefined(ctx)) };
+        // 文字三条要用到这块画布的 font（不在 Canvas2DContext 里，见 Slot::font）
+        if matches!(op, 25..=27 | 34) {
+            let r = super::text_ops::text_op(&ctx, slot, op, a)?;
+            if is_main && op != 27 && op != 34 {
+                cs.main_dirty = true;
+            }
+            return Ok(r);
+        }
         let r = op_2d(&ctx, &mut slot.ctx, op, a)?;
         // 只有真的会改像素的调用才把主画布标脏
         if is_main && matches!(op, 1..=3 | 14 | 15 | 25 | 26 | 46) {
@@ -213,18 +221,7 @@ fn op_2d<'js>(ctx: &Ctx<'js>, g: &mut crate::renderer::components::Canvas2DConte
             }
         }
         24 => g.set_transform_pre([1.0, 0.0, 0.0, 1.0, 0.0, 0.0], (1.0, 1.0)),
-        25 | 26 => {
-            if let Some(t) = text(a.first()) {
-                let (x, y) = (n(1), n(2));
-                if finite(&[x, y]) {
-                    g.draw_op(|g| if op == 25 { g.fill_text(&t, x, y) } else { g.stroke_text(&t, x, y) });
-                }
-            }
-        }
-        27 => {
-            let t = text(a.first()).unwrap_or_default();
-            return (crate::renderer::components::canvas_measure_text(g.font_size_px(), &t) as f64).into_js(ctx);
-        }
+        // 25 / 26 / 27 / 34（文字与 font）在 text_ops.rs
         // 设颜色：解析不了就保持旧值并返回 false（HTML 语义），JS 外壳据此决定读回值
         30 | 31 => {
             let s = text(a.first()).unwrap_or_default();
@@ -238,11 +235,6 @@ fn op_2d<'js>(ctx: &Ctx<'js>, g: &mut crate::renderer::components::Canvas2DConte
         }
         32 if n(0).is_finite() && n(0) > 0.0 => g.set_line_width(n(0)),
         33 if n(0).is_finite() && (0.0..=1.0).contains(&n(0)) => g.set_global_alpha(n(0)),
-        34 => {
-            if let Some(f) = text(a.first()) {
-                g.set_font(&f)
-            }
-        }
         35 => g.set_text_align(&text(a.first()).unwrap_or_default()),
         36 => g.set_text_baseline(&text(a.first()).unwrap_or_default()),
         37 => g.set_line_cap(&text(a.first()).unwrap_or_default()),
