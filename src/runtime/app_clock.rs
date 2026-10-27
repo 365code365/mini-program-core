@@ -26,6 +26,11 @@ impl MiniApp {
             .min()
     }
 
+    /// 直接调一个全局函数，参数是两个字符串（见 `JsRuntime::call_str2`）
+    pub fn call_str2(&self, name: &str, a: &str, b: &str) -> Result<f64, String> {
+        self.runtime.lock().unwrap().call_str2(name, a, b)
+    }
+
     /// 直接调一个全局函数（见 `JsRuntime::call_num`）
     pub fn call_num(&self, name: &str, args: &[f64]) -> Result<f64, String> {
         self.runtime.lock().unwrap().call_num(name, args)

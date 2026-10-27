@@ -66,6 +66,26 @@ impl GameClock {
         us as f64 / 1000.0
     }
 
+    /// 宿主时刻（µs，与 `begin_frame` 同一时钟；0 = 不知道）→ 游戏时间轴上的毫秒（输入事件的 `timeStamp`）。
+    /// 宿主时钟模式下用帧映射同一个偏移，并夹到「此刻」以内（事件不可能来自未来）；还没映射过（第一帧之前）用此刻
+    pub fn host_to_game_ms(&self, host_us: u64) -> f64 {
+        let now = self.now_ms();
+        if host_us == 0 {
+            return now;
+        }
+        let us = if self.fixed {
+            host_us as i64
+        } else {
+            match self.offset {
+                Some(off) => host_us as i64 + off,
+                None => return now,
+            }
+        };
+        let ms = us.max(0) as f64 / 1000.0;
+        // 固定时钟（无头）不夹：脚本里给的就是游戏时刻，可以落在「下一帧」
+        if self.fixed { ms } else { ms.min(now) }
+    }
+
     /// 游戏时刻对应的 Instant（定时器时钟用）
     pub fn instant_at(&self, us: u64) -> Instant {
         self.origin + std::time::Duration::from_micros(us)

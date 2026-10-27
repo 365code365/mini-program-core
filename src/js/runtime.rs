@@ -189,6 +189,20 @@ impl JsRuntime {
         r
     }
 
+    /// 与 [`call_num`](Self::call_num) 相同，但参数是两个字符串（小游戏输入事件：类型 + JSON），同样不经 eval
+    pub fn call_str2(&self, name: &str, a: &str, b: &str) -> Result<f64, String> {
+        let r = self.context.with(|ctx| {
+            let f: Function = ctx.globals().get(name).map_err(|e| format!("{name}: {e}"))?;
+            match f.call::<_, Value>((a, b)) {
+                Ok(v) => Ok(v.as_number().unwrap_or(0.0)),
+                Err(rquickjs::Error::Exception) => Err(format!("JS Exception: {}", describe_exception(&ctx))),
+                Err(e) => Err(format!("{e:?}")),
+            }
+        });
+        self.pump_jobs();
+        r
+    }
+
     /// 调用 JS 函数（`name` 由调用方保证是合法的标识符 / 成员表达式；参数一律按字符串传）
     pub fn call_function(&self, name: &str, args: &[&str]) -> Result<String, String> {
         // 参数用 JSON 字符串字面量注入（JSON 是 JS 字面量的子集，含 U+2028 在 ES2019 起也合法）。

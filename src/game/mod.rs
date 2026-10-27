@@ -10,6 +10,9 @@
 pub mod canvas;
 mod clock;
 pub mod config;
+mod input;
+pub mod pc_input;
+pub mod touch;
 mod frame;
 pub use frame::FRAME_WAKE_AT;
 mod loader;
@@ -101,6 +104,8 @@ pub struct GameEngine {
     /// 合成好的输出帧（RGBA，主画布分辨率）与它是不是最新的
     frame: frame::FrameOut,
     backgrounded: bool,
+    touch: touch::TouchInput,
+    pc: pc_input::PcInput,
 }
 
 impl GameEngine {
@@ -157,7 +162,8 @@ impl GameEngine {
         let host_platform_note = host_platform.filter(|p| p != target_platform());
         let mut engine = Self { app, config, root, width, height, dpr, events: VecDeque::new(), logs: logs::LogPump::new(opts.log_all), guards,
             fault: opts.fault.clone().or_else(|| std::env::var("MINI_GAME_FAULT").ok()),
-            canvases, pacer, clock, frame: frame::FrameOut::default(), backgrounded: false };
+            canvases, pacer, clock, frame: frame::FrameOut::default(), backgrounded: false,
+            touch: Default::default(), pc: Default::default() };
         let log = std::env::var("MINI_GAME_LOG").is_ok();
         if opts.app_id.is_none() {
             engine.host_log(&format!("⚠️ 创建选项没给 appId，数据命名空间回落成包目录名 {app_id:?}：换了解包目录名存档就会丢"));

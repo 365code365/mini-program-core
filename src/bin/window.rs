@@ -355,7 +355,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut hz = app_window::bench_run::DEFAULT_HZ;
     // 小游戏：--hz 显式给了才用（缺省 60，与 rAF 默认帧率一致）；--query 是启动参数（夹具读 getLaunchOptionsSync().query）
     let mut game_hz: Option<u32> = None;
-    let mut game_query: Option<String> = None;
+    let (mut game_query, mut game_touch): (Option<String>, Option<String>) = (None, None);
     let mut it = args.into_iter();
     while let Some(arg) = it.next() {
         match arg.as_str() {
@@ -370,6 +370,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 game_hz = Some(hz.round() as u32);
             }
             "--query" => game_query = it.next(),
+            "--multitouch" => game_touch = it.next(),
             "--snapshot" => snapshot = it.next().map(std::path::PathBuf::from),
             "--scale" => scale = it.next().and_then(|v| v.parse().ok()).unwrap_or(2.0),
             "--time" => anim_time = it.next().and_then(|v| v.parse().ok()),
@@ -458,7 +459,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 关掉 game feature 时 --hz / --query 只给小程序那条路的 --hz 用
     #[cfg(not(feature = "game"))]
-    let _ = (game_hz, game_query);
+    let _ = (game_hz, game_query, game_touch);
     // 小游戏包（game.json）走小游戏入口（app_window::game_run）；认不出的包在 MiniAppWindow::new 里报错
     #[cfg(feature = "game")]
     if let Some(p) = app_path.as_ref() {
@@ -469,6 +470,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 query: game_query.clone(),
                 evals: evals.clone(),
                 snapshot: snapshot.clone(),
+                input: app_window::game_script::timeline(&actions, game_touch.as_deref(), game_hz.unwrap_or(60)),
             };
             std::process::exit(app_window::game_run::run(p, run));
         }

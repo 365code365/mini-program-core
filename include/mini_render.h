@@ -363,6 +363,15 @@ int64_t mr_game_next_wake_us(MRGame* game);
 void mr_game_frame_size(MRGame* game, uint32_t* width, uint32_t* height);
 // 当前帧（不透明）写进 buf：stride 字节一行，format 0 = RGBA8、1 = BGRA8。返回写入的行数，0 = 没写
 int mr_game_pixels_into(MRGame* game, uint8_t* buf, size_t len, size_t stride, int format);
+// 一个指针事件，宿主每个指针调一次：phase 0 下 / 1 移 / 2 抬 / 3 取消；id 宿主指针 id；x, y 视图内逻辑像素；
+// force 0~1（没有给 0）；t_us 事件时刻（微秒，与 mr_game_pump_ex 同一时钟，0 = 此刻）。只排队，下一次 pump 在 rAF 之前派发
+void mr_game_touch(MRGame* game, int phase, int id, float x, float y, float force, uint64_t t_us);
+// PC 鼠标：phase 0 下 / 1 移 / 2 抬；button 0 左 1 中 2 右
+void mr_game_mouse(MRGame* game, int phase, int button, float x, float y, uint64_t t_us);
+// PC 滚轮：deltaX / deltaY / deltaZ（像素）
+void mr_game_wheel(MRGame* game, float dx, float dy, float dz, float x, float y, uint64_t t_us);
+// 键盘：down 非 0 = 按下；key 如 "a" / "Enter"，code 如 "KeyA"
+void mr_game_key(MRGame* game, int down, const char* key, const char* code, uint64_t t_us);
 
 #ifdef __cplusplus
 }

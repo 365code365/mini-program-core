@@ -1,6 +1,6 @@
 //! 桌面窗体的小游戏入口（game-doc/04 G1.4）。
 //!
-//! G1 只有无头：按 `--hz` 的节拍 pump `--frames` 帧，把游戏的日志 / 错误逐行打到 stdout，然后退出。
+//! 只有无头（`--touch` / `--swipe` / `--multitouch` 驱动 wx.onTouch*，见 game_script.rs）：按 `--hz` 的节拍 pump `--frames` 帧，把游戏的日志 / 错误逐行打到 stdout，然后退出。
 //! 主画布与上屏在 G2 接进来（那时 `--snapshot` 才有图可存）；交互窗口在 G2/G3。
 //!
 //! 退出码：0 正常；1 建实例失败（包不合法）；3 运行中出现过错误事件（脚本异常、看门狗、OOM），
@@ -16,6 +16,8 @@ pub struct GameRun {
     pub evals: Vec<String>,
     /// 跑完之后存最后一帧（缩放到逻辑尺寸 × dpr，与小程序快照同一尺寸）
     pub snapshot: Option<std::path::PathBuf>,
+    /// 按帧排好的指针事件（game_script.rs）
+    pub input: Vec<super::game_script::Ev>,
 }
 
 pub fn run(dir: &Path, opts: GameRun) -> i32 {
@@ -45,10 +47,17 @@ pub fn run(dir: &Path, opts: GameRun) -> i32 {
     let mut had_error = drain(&mut engine);
     let hz = opts.hz.max(1) as u64;
     let mut pump_us: Vec<u64> = Vec::with_capacity(opts.frames as usize);
-    for n in 1..=opts.frames as u64 {
+    // 脚本比 --frames 长就跑到最后一个事件之后一帧，抬手那一帧的回调也要跑到
+    let frames = (opts.frames as u64).max(opts.input.last().map(|e| e.frame + 1).unwrap_or(0));
+    let mut input = opts.input.iter().peekable();
+    for n in 1..=frames {
         // 固定时钟：不用真等，帧时刻就是 n / hz
+        let t = n * 1_000_000 / hz;
+        while let Some(e) = input.next_if(|e| e.frame <= n) {
+            engine.touch(e.phase, e.id, e.x, e.y, 0.0, t);
+        }
         let t0 = std::time::Instant::now();
-        engine.pump_ex(n * 1_000_000 / hz);
+        engine.pump_ex(t);
         pump_us.push(t0.elapsed().as_micros() as u64);
         had_error |= drain(&mut engine);
     }
@@ -72,7 +81,7 @@ pub fn run(dir: &Path, opts: GameRun) -> i32 {
     if let Some(dir) = opts.snapshot.as_ref() {
         let (dw, dh) = ((w as f32 * dpr) as u32, (h as f32 * dpr) as u32);
         let px = engine.frame_rgba_scaled(dw, dh);
-        let path = dir.join(format!("frame_{:04}.png", opts.frames));
+        let path = dir.join(format!("frame_{frames:04}.png"));
         std::fs::create_dir_all(dir).ok();
         match image::RgbaImage::from_raw(dw, dh, px).map(|img| img.save(&path)) {
             Some(Ok(())) => println!("📸 {}", path.display()),

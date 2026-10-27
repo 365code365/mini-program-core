@@ -291,6 +291,37 @@ pub extern "C" fn mr_game_pixels_into(game: *mut MRGame, buf: *mut u8, len: usiz
     .unwrap_or(0)
 }
 
+/// 一个指针事件（game-doc/02 §7.1）：宿主**每个指针**调一次。`phase` 0 下 / 1 移 / 2 抬 / 3 取消；
+/// `id` 宿主的指针 id（Android pointerId、iOS 映射后的小整数）；`x, y` 视图内逻辑像素；`force` 0~1（没有给 0）；
+/// `t_us` 事件时刻，**微秒**，与 `mr_game_pump_ex` 同一时钟（0 = 此刻）。只排队，下一次 pump 在 rAF 之前派发
+#[cfg(feature = "game")]
+#[no_mangle]
+pub extern "C" fn mr_game_touch(game: *mut MRGame, phase: c_int, id: c_int, x: f32, y: f32, force: f32, t_us: u64) {
+    guarded(game, (), |e| e.touch(phase, id, x, y, force, t_us));
+}
+
+/// 鼠标（PC）：`phase` 0 下 / 1 移 / 2 抬，`button` 0 左 1 中 2 右，坐标视图内逻辑像素
+#[cfg(feature = "game")]
+#[no_mangle]
+pub extern "C" fn mr_game_mouse(game: *mut MRGame, phase: c_int, button: c_int, x: f32, y: f32, t_us: u64) {
+    guarded(game, (), |e| e.mouse(phase, button, x, y, t_us));
+}
+
+/// 滚轮（PC）：`wx.onWheel` 的 deltaX / deltaY / deltaZ（像素，与 DOM WheelEvent 的 deltaMode 0 相同）
+#[cfg(feature = "game")]
+#[no_mangle]
+pub extern "C" fn mr_game_wheel(game: *mut MRGame, dx: f32, dy: f32, dz: f32, x: f32, y: f32, t_us: u64) {
+    guarded(game, (), |e| e.wheel(dx, dy, dz, x, y, t_us));
+}
+
+/// 键盘：`down` 非 0 = 按下；`key` 如 `"a"` / `"Enter"`，`code` 如 `"KeyA"`（UTF-8，可为 NULL 当空串）
+#[cfg(feature = "game")]
+#[no_mangle]
+pub extern "C" fn mr_game_key(game: *mut MRGame, down: c_int, key: *const c_char, code: *const c_char, t_us: u64) {
+    let (k, c) = (cstr(key).unwrap_or_default(), cstr(code).unwrap_or_default());
+    guarded(game, (), |e| e.key(down != 0, &k, &c, t_us));
+}
+
 /// 拿主画布原始像素跑一段宿主侧上屏代码（JNI 直写 ANativeWindow 用，不经中间缓冲）
 #[cfg(feature = "game")]
 #[cfg_attr(not(target_os = "android"), allow(dead_code))] // 只有 Android 的 JNI 直写用

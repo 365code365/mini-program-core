@@ -182,6 +182,8 @@ const GAME_EXTRA: &[Prelude] = prelude![
     "game-raf" => "game-raf.js",
     // wx.createCanvas、Canvas、CanvasRenderingContext2D（立即模式，原生在 game/canvas/natives.rs）
     "game-canvas" => "game-canvas.js",
+    // wx.onTouch* / onMouse* / onWheel 的监听表与派发（原生在 game/touch.rs、game/pc_input.rs）
+    "game-input" => "game-input.js",
 ];
 
 /// 一个应用种类实际执行的段（按顺序）

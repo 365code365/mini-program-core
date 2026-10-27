@@ -2,7 +2,7 @@
 //!
 //! ```text
 //!  0. 帧时刻：宿主 vsync（µs）→ 游戏时刻（clock.rs）；定时器时钟跟它走
-//!  1. 输入（G3）
+//!  1. 输入：排队的触摸 / 键鼠按到达顺序派发（input.rs）
 //!  2~4. 逻辑层：定时器、回包、微任务（MiniApp::update）
 //!  5. rAF：节拍器（raf_pacer.rs）说这是 rAF 帧，就以同一个时间戳跑完当前这一批
 //!  6. 主画布这一帧画过 → FRAME_NEW（像素在后备缓冲里，宿主要的时候再转格式）
@@ -58,6 +58,9 @@ impl GameEngine {
         let t = self.clock.borrow_mut().begin_frame(now_us);
         self.app.set_timer_clock(Some(self.clock.borrow().instant_at(t)));
         let mut flags = 0;
+
+        // 1 输入
+        self.dispatch_input();
 
         // 2~4 逻辑层
         self.guards.watchdog.arm();
@@ -132,6 +135,10 @@ impl GameEngine {
     /// 前后台：后台不跑 rAF、不要帧；回前台从下一个 vsync 重新起算（不补帧）
     pub fn set_background(&mut self, bg: bool) {
         if self.backgrounded != bg {
+            if bg {
+                // 微信切后台：按着的手指收到 touchcancel（GT-T4）
+                self.cancel_touches();
+            }
             self.backgrounded = bg;
             if !bg {
                 self.pacer.borrow_mut().reset();

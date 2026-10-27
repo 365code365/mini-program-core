@@ -48,6 +48,9 @@ pub mod headless_run;
 /// 小游戏入口（game.json）：G1 只有无头，按 --hz / --frames pump 并打印日志
 #[cfg(feature = "game")]
 pub mod game_run;
+/// 小游戏无头输入脚本：`--touch` / `--swipe` / `--wait` 与 `--multitouch` → 按帧排好的指针事件
+#[cfg(feature = "game")]
+pub mod game_script;
 
 // ── 从 lib 的宿主层重新导出（同一份实现）──
 pub use mini_render::host::{
