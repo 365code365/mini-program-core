@@ -105,6 +105,8 @@ mod images;
 mod paths;
 /// 像素级读写与混合
 mod pixels;
+/// 轴对齐矩形的抗锯齿填充（fill_path 的等价特化）
+mod rect_aa;
 /// 基本图形
 mod shapes;
 

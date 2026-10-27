@@ -49,6 +49,10 @@ impl Canvas {
         let y1 = (max_y + 1.0).ceil() as i32;
 
         if paint.anti_alias {
+            // 轴对齐矩形（小游戏每帧几百个 fillRect）走逐字节等价的特化，见 rect_aa.rs
+            if let Some(r) = super::rect_aa::axis_rect(contours) {
+                return self.fill_axis_rect_aa(r, y0, y1, paint);
+            }
             self.fill_path_aa_scan(contours, y0, y1, paint);
         } else {
             self.fill_path_plain(contours, y0, y1, paint);
@@ -74,7 +78,7 @@ impl Canvas {
             // 而真正跨过这一行的通常只有四五条。行列范围也先与裁剪区求交 ——
             // 损伤区帧里一个高卡片的边框环大部分行都在裁剪区外，算完覆盖率再被
             // `set_pixel` 丢掉是白算。两项都不改变任何像素的结果。
-            const SUB_SAMPLES: usize = 4;
+            const SUB_SAMPLES: usize = super::rect_aa::AA_SUB_SAMPLES;
             let mut edges: Vec<(Point, Point, f32, f32)> = Vec::new();
             for contour in contours {
                 for i in 0..contour.len() {
