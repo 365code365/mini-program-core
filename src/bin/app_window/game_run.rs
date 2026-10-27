@@ -90,6 +90,12 @@ pub fn run(dir: &Path, opts: GameRun) -> i32 {
                 had_error = true;
             }
         }
+        // 主画布自己的分辨率（不缩放）：与 Chrome 参考逐像素比时用这一张（tools/game-compare.py）
+        let (nw, nh, raw) = engine.frame_rgba();
+        let native = dir.join(format!("frame_{frames:04}.native.png"));
+        if let Some(Ok(())) = image::RgbaImage::from_raw(nw, nh, raw.to_vec()).map(|img| img.save(&native)) {
+            println!("📸 {}", native.display());
+        }
     }
     if had_error { 3 } else { 0 }
 }

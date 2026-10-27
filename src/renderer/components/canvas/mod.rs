@@ -123,6 +123,8 @@ mod extra2d;
 pub mod image2d;
 /// `font` 简写、按字族 / 字重画字与 measureText（小游戏用）
 pub mod text_font;
+/// 旋转 / 压缩 / 描边文字：离屏光栅再按矩阵贴回
+mod text_raster;
 
 /// 渐变对象（线性 / 径向）
 mod gradient;

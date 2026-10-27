@@ -6,8 +6,7 @@
 //!   size 认 px / pt / em / rem / %（em / rem / % 按 HTML 画布的默认 10px 换算）；解析不了返回 None（HTML：保留旧值）；
 //! - 字族按 `text_family::renderer_for_family` 解析（`wx.loadFont` 登记的字族也在里面）；字重 ≥ 600 画粗体；
 //! - 基线按字体真实的 ascent / descent 对（top / hanging / middle / alphabetic / ideographic / bottom）；
-//! - `maxWidth`：文字比它宽时按比例缩字号（浏览器是横向压缩字形；这里压不了单轴，缩字号是近似，记在验收文档）。
-//! 描边文字仍是用描边色填充的近似（text2d.rs 同一个做法）。
+//! - 旋转 / 斜切、`maxWidth`（横向压缩，与浏览器一样字高不变）、`strokeText`（真描轮廓）走离屏光栅再按矩阵贴回（text_raster.rs）。
 
 use super::{Canvas2DContext, TextAlign, TextBaseline};
 use crate::text::TextRenderer;
@@ -126,10 +125,14 @@ impl Canvas2DContext {
     /// 基线相对 y 的下移量（用户坐标）
     fn baseline_shift(&self, tr: &TextRenderer, size: f32) -> f32 {
         let (asc, desc) = tr.line_metrics(size);
+        // top / middle 按 em 框（ascent : descent 按比例缩到正好 1em），与 Chrome 一致：按字体的 ascent 对 top，
+        // 20px Arial 会比 Chrome 低 2px、middle 低 1px（tools/game-compare.py g-text 格 7 / 8 量出来的）
+        let em_asc = if asc + desc > 0.0 { size * asc / (asc + desc) } else { size * 0.8 };
+        let em_desc = size - em_asc;
         match self.text_baseline {
-            TextBaseline::Top => asc,
+            TextBaseline::Top => em_asc,
             TextBaseline::Hanging => asc * 0.8,
-            TextBaseline::Middle => (asc - desc) / 2.0,
+            TextBaseline::Middle => (em_asc - em_desc) / 2.0,
             TextBaseline::Alphabetic => 0.0,
             TextBaseline::Ideographic | TextBaseline::Bottom => -desc,
         }
@@ -146,19 +149,27 @@ impl Canvas2DContext {
     /// 按 `font` 画字（`stroke` 用描边色，近似描边）。`max_width` 见文件头
     pub fn fill_text_font(&mut self, font: &FontSpec, text: &str, x: f32, y: f32, max_width: Option<f32>, stroke: bool) {
         let Some(tr) = font.renderer() else { return };
-        let mut size = font.size;
-        let mut width = tr.measure_text_weighted(text, size, 0.0, font.bold());
+        let size = font.size;
+        let width = tr.measure_text_weighted(text, size, 0.0, font.bold());
+        let mut draw_width = width;
         if let Some(mw) = max_width.filter(|m| m.is_finite()) {
             if mw <= 0.0 {
                 return;
             }
             if width > mw && width > 0.0 {
-                size *= mw / width;
-                width = mw;
+                draw_width = mw;
             }
         }
-        let ax = x + self.align_shift(width);
+        let ax = x + self.align_shift(draw_width);
         let ay = y + self.baseline_shift(&tr, size);
+        // 旋转 / 斜切、maxWidth 横向压缩、描边：离屏光栅再按矩阵贴回（text_raster.rs）。
+        // 合成模式 / 阴影 / 渐变填充仍走下面的蒙版路径（不旋转、不压缩，记在 game-doc/验收/G4.md）
+        if (self.has_rotation() || draw_width < width || stroke) && self.fx.trivial(stroke) {
+            let base = if stroke { self.stroke_style } else { self.fill_style };
+            let lw = stroke.then_some(self.line_width);
+            let job = super::text_raster::TextJob { tr: &tr, text, size, bold: font.bold(), x: ax, y: ay, width, draw_width, stroke: lw };
+            return self.draw_text_offscreen(job, base);
+        }
         let sc = self.avg_scale();
         let (px, py) = self.tp(ax, ay);
         let dsize = size * sc;

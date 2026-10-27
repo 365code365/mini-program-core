@@ -85,8 +85,9 @@ fn f1_f5_字体与文字() {
     assert!(lh >= 20.0 && lh2 >= 20.0 && lh >= lh2, "行高：中文 {lh} ≥ 西文 {lh2} ≥ 字号");
     // 基线与对齐的像素
     let top = ink(&mut h, 0, 60, 120, 160).expect("top 基线的字没画出来");
-    // top = 字体 ascent 那条线：Arial ascent 0.905em、H 的字高 0.716em → 30px 下 H 顶在 y = 100 + 5.7（Chrome 同样按 ascent 对）
-    assert!(top.1 >= 104 && top.1 <= 108, "textBaseline=top：H 的墨迹顶约在 y=105.7，实际 {top:?}");
+    // top = em 框顶（ascent:descent 缩到 1em，与 Chrome 一致）：Arial 0.905 / 0.212 → 30px 下 em 顶在基线上 24.3px，
+    // H 字高 0.716em = 21.5px → H 顶在 y = 100 + 24.3 − 21.5 ≈ 102.8
+    assert!(top.1 >= 102 && top.1 <= 104, "textBaseline=top：H 的墨迹顶约在 y=102.8，实际 {top:?}");
     let bottom = ink(&mut h, 0, 150, 120, 240).expect("bottom 的字没画出来");
     assert!(bottom.3 <= 200 && bottom.3 >= 194, "textBaseline=bottom：墨迹底在 y=200 以上，实际 {bottom:?}");
     let right = ink(&mut h, 200, 260, 375, 320).expect("right 对齐的字没画出来");
