@@ -49,6 +49,15 @@ impl Canvas {
         let y1 = (max_y + 1.0).ceil() as i32;
 
         if paint.anti_alias {
+            self.fill_path_aa_scan(contours, y0, y1, paint);
+        } else {
+            self.fill_path_plain(contours, y0, y1, paint);
+        }
+    }
+
+    /// 抗锯齿扫描线填充（`fill_path` 的主体）
+    pub(super) fn fill_path_aa_scan(&mut self, contours: &[Vec<Point>], y0: i32, y1: i32, paint: &Paint) {
+        {
             // 抗锯齿填充：纵向多条子扫描线 + 横向按区间解析求覆盖。
             // 横向本来就是连续的，纵向档数决定「接近水平的边」有多少级灰度 ——
             // 4 档时圆弧顶部/箭头斜边看得出台阶，16 档基本看不出来。
@@ -189,8 +198,12 @@ impl Canvas {
                     self.fill_span(l, r + 1, y, Color::new(paint.color.r, paint.color.g, paint.color.b, a));
                 }
             }
-        } else {
-            // 非抗锯齿填充
+        }
+    }
+
+    /// 非抗锯齿填充
+    fn fill_path_plain(&mut self, contours: &[Vec<Point>], y0: i32, y1: i32, paint: &Paint) {
+        {
             for y in y0..=y1 {
                 let mut intersections = Vec::new();
                 let scan_y = y as f32 + 0.5;
