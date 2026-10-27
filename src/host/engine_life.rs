@@ -95,11 +95,19 @@ impl MiniEngine {
     /// 长按、动画计时跳变，而且与宿主传进 `pump` 的时间不是一个量纲。
     pub(crate) fn mono_ms(&self) -> u64 {
         match self.host_clock {
+            Some((ms, _)) if self.clock_frozen => ms,
             Some((ms, at)) => ms + at.elapsed().as_millis() as u64,
             None => self.clock_origin.elapsed().as_millis() as u64,
         }
     }
 
+    /// 测试用：引擎时钟停在宿主最近一次 pump 给的时刻（不加之后流逝的真实时间）。
+    /// 两个实例先后跑同一串输入时，「pump 之后过了多久才来事件」随机器负载变，重采样的起点就差几毫秒
+    /// （GT-T9 的拖动用例全量并行时撞上过）；停住之后两条路逐位相同
+    #[allow(dead_code)]
+    pub(crate) fn freeze_clock_for_test(&mut self) {
+        self.clock_frozen = true;
+    }
     /// 把本实例的安全区、屏幕尺寸与深浅色放进本线程，供之后的 WXSS 解析求 `env()` 与 `@media` 用
     pub(crate) fn apply_env_context(opts: &EngineOptions, width: u32, height: u32) {
         let base = crate::parser::wxss::EnvContext::default();

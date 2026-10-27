@@ -91,6 +91,9 @@ fn adapted(e: &mut MiniEngine, ops: &[Op]) -> Vec<u32> {
 fn same(route: &str, slot: &str, prep: impl Fn(&mut MiniEngine), ops: &[Op], pixels: bool) -> super::LockedEngine {
     let mut a = engine_in(route, &format!("{slot}-a"));
     let mut b = engine_in(route, &format!("{slot}-b"));
+    // 时钟停在 pump 给的时刻：两条路先后跑，中间隔多久随负载变，不能让它影响重采样（见 freeze_clock_for_test）
+    a.freeze_clock_for_test();
+    b.freeze_clock_for_test();
     prep(&mut a);
     prep(&mut b);
     let (ta, tb) = (legacy(&mut a, ops), adapted(&mut b, ops));

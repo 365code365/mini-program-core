@@ -131,6 +131,8 @@ pub struct MiniEngine {
     /// 这一个时钟 —— 从前按下用墙上时钟、长按计时用宿主时钟，两者差几个数量级，
     /// 宿主一传 `now_ms` 长按就永远触发不了。
     pub(super) host_clock: Option<(u64, Instant)>,
+    /// 测试用：时钟只认宿主给的时刻，不加「之后流逝的真实时间」（见 [`MiniEngine::freeze_clock_for_test`]）
+    pub(super) clock_frozen: bool,
     pub(super) last_pump_ms: u64,
     /// 宿主帧时间 → `Instant` 的锚点（`frame_clock`：动画按 vsync 取样，不按画的那一刻）
     pub(super) frame_anchor: crate::frame_clock::Anchor,
@@ -365,6 +367,7 @@ impl MiniEngine {
             input_queue: Default::default(),
             clock_origin: Instant::now(),
             host_clock: None,
+            clock_frozen: false,
             last_pump_ms: 0,
             frame_anchor: Default::default(),
             page_scroll_handler: None,
