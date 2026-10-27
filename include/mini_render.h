@@ -155,6 +155,10 @@ void   mr_app_pointer_up(MRApp* app, float x, float y);
 void   mr_app_pointer_cancel(MRApp* app);
 /* 第二根手指（0 按下 / 1 移动 / 2 抬起 / 其它 取消）：只有图片预览认它（双指缩放），页面仍是单指 */
 void   mr_app_pointer2(MRApp* app, int phase, float x, float y);
+// 每根指针一次的触摸（与 mr_game_touch 同形）：phase 0 下 / 1 移 / 2 抬 / 3 取消，id 宿主指针 id，坐标逻辑像素，
+// t_ms 事件时刻（与 mr_app_pump 同一个钟，<=0 = 不知道）。第一根映射到 pointer_*、第二根到 pointer2、第三根起丢掉。
+// 与上面的 pointer_* 二选一，不要混着调
+void   mr_app_touch(MRApp* app, int phase, int id, float x, float y, float force, double t_ms);
 /* 手机朝向（0 竖 / 90 左侧朝下 / -90 右侧朝下）：全屏视频没指定 direction 时跟着转 */
 void   mr_app_set_device_orientation(MRApp* app, int deg);
 void   mr_app_wheel(MRApp* app, float delta_y, int precise);

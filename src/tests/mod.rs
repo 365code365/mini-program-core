@@ -41,6 +41,8 @@ pub mod text_edit_tests;
 pub mod textarea_render_tests;
 /// 移动端 SDK（MiniEngine）的指针链路：手势仲裁 / tabBar / picker / Modal
 pub mod engine_input_tests;
+/// GT-T9：mr_app_touch（每根指针一次）与老接口逐字节相同
+mod touch_adapter_tests;
 pub mod engine_slider_tests;
 /// 移动端 SDK 的出帧：页面画布按内容扩容、条带内滚动只重新合成
 pub mod engine_render_tests;

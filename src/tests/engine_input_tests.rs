@@ -13,7 +13,7 @@ use crate::host::MiniEngine;
 ///
 /// 别图省事共用一个：`wx.setStorageSync` 是写穿到磁盘的，测试并行跑时会互相读到
 /// 对方写的购物车/设置，页面内容随之变化 —— 表现是「单独跑必过、全量跑偶发失败」。
-fn engine_in(route: &str, slot: &str) -> MiniEngine {
+pub(crate) fn engine_in(route: &str, slot: &str) -> MiniEngine {
     let root = crate::app_dir::resolve("sample-app");
     let data = crate::data_dir::subdir(&format!("engine-input-tests/{slot}"));
     std::fs::remove_dir_all(&data).ok();
