@@ -184,6 +184,10 @@ const GAME_EXTRA: &[Prelude] = prelude![
     "game-image" => "game-image.js",
     // wx.createCanvas、Canvas、CanvasRenderingContext2D（立即模式，原生在 game/canvas/natives.rs）
     "game-canvas" => "game-canvas.js",
+    // WebGL / WebGL2（G8，原生在 game/webgl）：常量表、两个版本共有的方法与扩展、WebGL2 独有的方法
+    "game-webgl-consts" => "game-webgl-consts.js",
+    "game-webgl" => "game-webgl.js",
+    "game-webgl2" => "game-webgl2.js",
     // wx.onTouch* / onMouse* / onWheel 的监听表与派发（原生在 game/touch.rs、game/pc_input.rs）
     "game-input" => "game-input.js",
     // InnerAudioContext 接小游戏自己的混音器与真设备（game/audio）：只换掉原生入口，外壳仍是 audio.js

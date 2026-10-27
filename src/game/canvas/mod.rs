@@ -24,7 +24,7 @@ pub struct Slot {
     /// `canvas.width / height`（可以是 0；后备缓冲至少 1×1）
     pub w: u32,
     pub h: u32,
-    /// 拿过的上下文种类：0 = 还没拿，1 = 2d（webgl 在 G8）
+    /// 拿过的上下文种类：0 = 还没拿，1 = 2d，2 = webgl，3 = webgl2（game/webgl）
     pub kind: u8,
     /// 当前 `font`（解析好的；save / restore 由 JS 外壳在 restore 之后重设）
     pub font: crate::renderer::components::FontSpec,
@@ -80,6 +80,10 @@ impl GameCanvases {
 
     pub fn get(&mut self, id: u32) -> Option<&mut Slot> {
         self.slots.get_mut(id as usize)?.as_mut()
+    }
+
+    pub fn main_id(&self) -> Option<u32> {
+        self.main
     }
 
     pub fn is_main(&self, id: u32) -> bool {

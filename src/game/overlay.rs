@@ -99,8 +99,14 @@ impl GameEngine {
     /// 主画布 RGBA（`w × h`，逻辑尺寸）+ 覆盖层 → 合成好的 RGBA 与它的尺寸
     pub(super) fn compose_overlay(&self, out: &mut Vec<u8>) -> (u32, u32) {
         let (lw, lh) = (self.width, self.height);
-        let (w, h, sf) = compose_size(lw, lh, self.dpr);
+        let (w, h, _) = compose_size(lw, lh, self.dpr);
         let base = self.scaled_unrotated(w, h);
+        self.compose_on(&base, out)
+    }
+
+    /// 覆盖层画在 `base`（合成尺寸的不透明 RGBA）上
+    pub(super) fn compose_on(&self, base: &[u8], out: &mut Vec<u8>) -> (u32, u32) {
+        let (w, h, sf) = compose_size(self.width, self.height, self.dpr);
         let mut buf = Vec::new();
         if self.buttons_visible() {
             // 原生按钮在游戏之上、系统覆盖层之下（buttons.rs）
@@ -111,7 +117,7 @@ impl GameEngine {
             self.draw_buttons(&mut c, sf);
             buf.extend(c.pixels().iter().map(|p| ((p.r as u32) << 16) | ((p.g as u32) << 8) | p.b as u32));
         } else {
-            rgba_to_u32(&base, &mut buf);
+            rgba_to_u32(base, &mut buf);
         }
         let text = crate::text::shared_fonts();
         let tr = text.as_deref();

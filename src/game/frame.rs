@@ -104,7 +104,9 @@ impl GameEngine {
             }
         }
 
-        // 6 主画布
+        // 6 主画布（WebGL 的先读回后备缓冲）
+        #[cfg(feature = "webgl")]
+        self.webgl_frame_end();
         let t_ms = t / 1000;
         if std::mem::take(&mut self.canvases.borrow_mut().main_dirty) {
             self.frame.stale = true;

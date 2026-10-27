@@ -45,6 +45,8 @@ struct Handle {
     last_wait_us: u32,
     last_copy_us: u32,
     last_post_us: u32,
+    /// 被 ANativeWindow_lock 锁过的那块窗口（CPU 生产者连上之后 EGL 就连不上了，WebGL 只能读回上屏）
+    cpu_locked: usize,
 }
 
 fn handle<'a>(h: jlong) -> Option<&'a mut Handle> {
@@ -95,7 +97,7 @@ pub extern "system" fn Java_dev_minirender_MiniGame_nativeCreate(
     if g.is_null() {
         return 0;
     }
-    Box::into_raw(Box::new(Handle { game: g, window: 0, geometry: (0, 0), last_wait_us: 0, last_copy_us: 0, last_post_us: 0 })) as jlong
+    Box::into_raw(Box::new(Handle { game: g, window: 0, geometry: (0, 0), last_wait_us: 0, last_copy_us: 0, last_post_us: 0, cpu_locked: 0 })) as jlong
 }
 
 #[no_mangle]
@@ -226,9 +228,12 @@ pub extern "system" fn Java_dev_minirender_MiniGame_nativeNextWakeUs(_e: JNIEnv,
 pub extern "system" fn Java_dev_minirender_MiniGame_nativeAttachWindow(env: JNIEnv, _c: JClass, h: jlong, surface: JObject) -> jboolean {
     let Some(hd) = handle(h) else { return 0 };
     if hd.window != 0 {
+        #[cfg(feature = "webgl")]
+        mr_game_with_engine(hd.game, |e| e.webgl_detach_window());
         unsafe { ANativeWindow_release(hd.window as *mut c_void) };
         hd.window = 0;
     }
+    hd.cpu_locked = 0;
     if surface.is_null() {
         return 0;
     }
@@ -246,6 +251,10 @@ pub extern "system" fn Java_dev_minirender_MiniGame_nativeAttachWindow(env: JNIE
 #[no_mangle]
 pub extern "system" fn Java_dev_minirender_MiniGame_nativeDetachWindow(_e: JNIEnv, _c: JClass, h: jlong) {
     if let Some(hd) = handle(h) {
+        // EGL 窗口 surface 先拆（它引用着这块 ANativeWindow）
+        #[cfg(feature = "webgl")]
+        mr_game_with_engine(hd.game, |e| e.webgl_detach_window());
+        hd.cpu_locked = 0;
         if hd.window != 0 {
             unsafe { ANativeWindow_release(hd.window as *mut c_void) };
             hd.window = 0;
@@ -262,6 +271,27 @@ pub extern "system" fn Java_dev_minirender_MiniGame_nativeBlit(_e: JNIEnv, _c: J
     }
     let win = hd.window as *mut c_void;
     let game = hd.game;
+    // 主画布是 WebGL：直接 eglSwapBuffers 到这块窗口（game/webgl/window.rs），不经 CPU
+    #[cfg(feature = "webgl")]
+    {
+        let cpu_locked = hd.cpu_locked == hd.window;
+        let geometry = &mut hd.geometry;
+        let mut set = |w: u32, h: u32| {
+            if *geometry == (w, h) {
+                return true;
+            }
+            // SAFETY: win 是挂上的 ANativeWindow；format 0 = 保持 surface 现有格式（EGL 按 config 选）
+            let ok = unsafe { ANativeWindow_setBuffersGeometry(win, w as i32, h as i32, 0) } == 0;
+            if ok {
+                *geometry = (w, h);
+            }
+            ok
+        };
+        if let Some(Some(r)) = mr_game_with_engine(game, |e| e.webgl_present_window(win as usize, cpu_locked, &mut set)) {
+            return r;
+        }
+    }
+    hd.cpu_locked = hd.window;
     if mr_game_with_engine(game, |e| e.rgba_output()).unwrap_or(false) {
         return blit_rgba(hd);
     }

@@ -50,7 +50,7 @@
                 // drawImage / createPattern 的源：[种类, id]；不是 Image / Canvas 返回 null
                 function imageSource(img) {
                     if (img instanceof __GameImage) return [1, img.__id];
-                    if (img instanceof GameCanvas) return [2, img.__id];
+                    if (img instanceof GameCanvas) { if (img.__glctx) __game_gl_sync(img.__id); return [2, img.__id]; }
                     return null;
                 }
 
@@ -217,25 +217,46 @@
                     }
                     Object.defineProperty(this, 'width', { get: function() { return w; }, set: function(v) { resize(v, h); }, enumerable: true });
                     Object.defineProperty(this, 'height', { get: function() { return h; }, set: function(v) { resize(w, v); }, enumerable: true });
-                    this.getContext = function(type) {
+                    this.getContext = function(type, attrs) {
                         type = String(type);
+                        // experimental-webgl 就是 webgl（同一个上下文）
+                        if (type === 'experimental-webgl') type = 'webgl';
                         if (kind !== null && kind !== type) return null;
                         if (ctx) return ctx;
+                        if (type === 'webgl' || type === 'webgl2') {
+                            // WebGL（G8，game-webgl.js）：改尺寸 = 换绘图缓冲（视口不动，与浏览器一致）
+                            ctx = __gameWebGL(self, type, attrs);
+                            if (!ctx) return null;
+                            ctx.__reset = function() { __game_gl_resize(id, w, h); };
+                            Object.defineProperty(self, '__glctx', { value: ctx, enumerable: false });
+                            kind = type;
+                            return ctx;
+                        }
                         if (!__game_canvas_ctx(id, type)) return null;
                         kind = type;
                         ctx = new Context2D(self);
                         return ctx;
                     };
-                    function save(o) { return JSON.parse(__game_canvas_save(id, JSON.stringify(o || {}))); }
+                    // webglcontextlost / webglcontextrestored 这类画布事件（EventTarget 的最小子集，加 onxxx 属性）
+                    var listeners = {};
+                    this.addEventListener = function(t, f) { if (typeof f !== 'function') return; (listeners[t] = listeners[t] || []).indexOf(f) < 0 && listeners[t].push(f); };
+                    this.removeEventListener = function(t, f) { var l = listeners[t]; if (l) { var i = l.indexOf(f); if (i >= 0) l.splice(i, 1); } };
+                    this.dispatchEvent = function(ev) {
+                        (listeners[ev.type] || []).slice().forEach(function(f) { __gameCall(f, self, [ev]); });
+                        var h = self['on' + ev.type]; if (typeof h === 'function') __gameCall(h, self, [ev]);
+                        return !ev.defaultPrevented;
+                    };
+                    function save(o) { if (self.__glctx) __game_gl_sync(id); return JSON.parse(__game_canvas_save(id, JSON.stringify(o || {}))); }
                     this.toTempFilePathSync = function(o) { var r = save(o); if (r.err) throw new Error('toTempFilePathSync:fail ' + r.err); return r.tempFilePath; };
                     this.toTempFilePath = function(o) {
                         o = o || {}; var r = save(o);
                         if (r.err) return __asyncFail(o, 'toTempFilePath', r.err);
                         return __asyncOk(o, 'toTempFilePath', { tempFilePath: r.tempFilePath });
                     };
-                    this.toDataURL = function(type, quality) { return __game_canvas_encode(id, String(type || 'image/png'), quality === undefined ? 0.92 : Number(quality)); };
+                    this.toDataURL = function(type, quality) { if (self.__glctx) __game_gl_sync(id); return __game_canvas_encode(id, String(type || 'image/png'), quality === undefined ? 0.92 : Number(quality)); };
                 }
 
+                globalThis.__GameCanvas = GameCanvas;
                 wx.createCanvas = function() { return new GameCanvas(__game_canvas_new()); };
                 wx.createImageData = newImageData;
                 wx.createPath2D = function() {

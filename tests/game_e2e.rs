@@ -33,6 +33,8 @@ mod webaudio_cases;
 mod package_cases;
 #[path = "game_cases/worker.rs"]
 mod worker_cases;
+#[path = "game_cases/webgl.rs"]
+mod webgl_cases;
 #[path = "game_cases/overlay.rs"]
 mod overlay_cases;
 
@@ -436,7 +438,8 @@ fn c1_c3_画布对象() {
         var c2 = off.getContext('2d');
         T.check('same-ctx', c2 === off.getContext('2d'));
         T.check('no-webgl-after-2d', off.getContext('webgl') === null);
-        T.check('webgl-null-g8', wx.createCanvas().getContext('webgl') === null);
+        // G8 之后：新画布拿得到 WebGL（无头走 SwiftShader）；同一块画布拿过 2d 之后仍是 null（上一行）
+        T.check('webgl-g8', wx.createCanvas().getContext('webgl') instanceof WebGLRenderingContext);
         c2.fillStyle = '#ff0000'; c2.fillRect(0, 0, 10, 10);
         T.check('drawn', c2.getImageData(1, 1, 1, 1).data[0] === 255);
         off.width = 64;

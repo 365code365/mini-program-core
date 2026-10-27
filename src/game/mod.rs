@@ -17,11 +17,15 @@ pub mod image;
 mod lifecycle;
 mod package;
 mod overlay;
+#[cfg(feature = "webgl")]
+mod overlay_layer;
 mod buttons;
 mod plugin;
 pub mod rotate;
 mod window;
 pub mod worker;
+#[cfg(feature = "webgl")]
+pub mod webgl;
 mod image_events;
 mod input;
 pub mod pc_input;
@@ -67,6 +71,8 @@ pub struct GameOptions {
     pub plugin_dir: Option<String>,
     /// 宿主实现的 `wx.*` 与对象方法（`login`、`BannerAd.show` …）：调用变成 hostCall 宿主事件，宿主 `mr_game_host_reply` 回结果
     pub host_apis: Vec<String>,
+    /// WebGL 后端偏好：auto / angle / swiftshader / system / off（`MINI_WEBGL` 优先，webgl/egl.rs）
+    pub webgl: Option<String>,
 }
 
 /// 游戏实例报给 `wx.getSystemInfoSync().SDKVersion` 的基础库版本（决策 D-9 未定：取证后按已实现的 API 集合选定，
@@ -107,6 +113,7 @@ impl GameOptions {
             entry_subpackage: v.get("entrySubpackage").and_then(|x| x.as_str()).map(str::to_string),
             rotate_in_engine: v.get("rotateInEngine").and_then(|x| x.as_bool()).unwrap_or(false),
             plugin_dir: v.get("pluginDir").and_then(|x| x.as_str()).map(str::to_string),
+            webgl: v.get("webgl").and_then(|x| x.as_str()).map(str::to_string),
             host_apis: v.get("hostApis").and_then(|x| x.as_array()).map(|a| a.iter().filter_map(|s| s.as_str().map(str::to_string)).collect()).unwrap_or_default(),
         })
     }
@@ -142,6 +149,9 @@ pub struct GameEngine {
     workers: std::rc::Rc<std::cell::RefCell<worker::Workers>>,
     /// 系统覆盖层（Toast / Loading / Modal / ActionSheet，overlay.rs）
     overlay: overlay::Overlay,
+    /// WebGL 上下文（webgl/）
+    #[cfg(feature = "webgl")]
+    webgl: std::rc::Rc<std::cell::RefCell<webgl::WebGl>>,
     /// 原生按钮（UserInfoButton 等，buttons.rs）
     buttons: std::rc::Rc<std::cell::RefCell<buttons::Buttons>>,
 }
@@ -184,6 +194,8 @@ impl GameEngine {
         let audio = std::rc::Rc::new(std::cell::RefCell::new(audio::GameAudio::new(root.clone(), opts.fixed_clock)));
         let workers = std::rc::Rc::new(std::cell::RefCell::new(worker::Workers::new(root.clone(), &config)));
         let btns: std::rc::Rc<std::cell::RefCell<buttons::Buttons>> = Default::default();
+        #[cfg(feature = "webgl")]
+        let webgl = std::rc::Rc::new(std::cell::RefCell::new(webgl::WebGl::new(opts.webgl.as_deref(), opts.fixed_clock, opts.fault.as_deref())));
         {
             let rt = app.js_runtime();
             let rt = rt.lock().unwrap();
@@ -194,6 +206,8 @@ impl GameEngine {
             audio::register_webaudio(&rt, audio.clone())?;
             worker::register(&rt, workers.clone())?;
             buttons::register(&rt, btns.clone())?;
+            #[cfg(feature = "webgl")]
+            webgl::register(&rt, webgl.clone(), canvases.clone(), images.clone())?;
             frame::register(&rt, pacer.clone(), clock.clone())?;
         }
         app.init_profile(PreludeProfile::MiniGame)?;
@@ -225,7 +239,9 @@ impl GameEngine {
             canvases, pacer, clock, frame: frame::FrameOut::default(), backgrounded: false,
             touch: Default::default(), pc: Default::default(), images, audio,
             orientation: if config_landscape { "landscape".into() } else { "portrait".into() },
-            system_info_opts: opts.system_info.clone(), rotation, workers, overlay: Default::default(), buttons: btns };
+            system_info_opts: opts.system_info.clone(), rotation, workers, overlay: Default::default(), buttons: btns,
+            #[cfg(feature = "webgl")]
+            webgl };
         engine.announce_orientation();
         let log = std::env::var("MINI_GAME_LOG").is_ok();
         if opts.app_id.is_none() {
@@ -307,6 +323,8 @@ impl GameEngine {
             }
         }
         self.drain_logs();
+        #[cfg(feature = "webgl")]
+        self.webgl_notes();
         // JS 交给宿主的事件（exit / restart、数据上报、hostCall）：从前小游戏没取，宿主一条也收不到
         for raw in self.app.take_host_events() {
             self.events.push_back(raw);

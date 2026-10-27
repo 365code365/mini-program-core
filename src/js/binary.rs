@@ -49,3 +49,24 @@ pub fn require_bytes<'js, R>(ctx: &Ctx<'js>, v: Option<&Value<'js>>, what: &str,
     }
     with_bytes(v, f).ok_or_else(|| Exception::throw_type(ctx, &format!("{what} 应当是 ArrayBuffer / TypedArray / DataView（且未 detached）")))
 }
+
+/// 可写地借出一个二进制值的字节（readPixels / getBufferSubData 往里写）。规则与 [`with_bytes`] 相同：
+/// 只在当次原生调用里有效，期间不能回调 JS
+pub fn with_bytes_mut<'js, R>(v: &Value<'js>, f: impl FnOnce(&mut [u8]) -> R) -> Option<R> {
+    let (ab, off, len) = if let Some(ab) = ArrayBuffer::from_value(v.clone()) {
+        let n = ab.len();
+        (ab, 0usize, n)
+    } else {
+        let obj: &Object = v.as_object()?;
+        let ab = ArrayBuffer::from_value(obj.get::<_, Value>("buffer").ok()?)?;
+        (ab, obj.get::<_, f64>("byteOffset").ok()? as usize, obj.get::<_, f64>("byteLength").ok()? as usize)
+    };
+    let raw = ab.as_raw()?;
+    let end = off.checked_add(len)?;
+    if end > raw.len {
+        return None;
+    }
+    // SAFETY: raw 指向这块 ArrayBuffer 的存储（未 detached，as_raw 判过），[off, end) 在界内；
+    // 借用期间不回调 JS，没有别人会同时读写或释放它
+    Some(f(unsafe { std::slice::from_raw_parts_mut(raw.ptr.as_ptr().add(off), len) }))
+}

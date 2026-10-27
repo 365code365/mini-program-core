@@ -20,3 +20,6 @@ doc/videos/showcase_*.mp4
 
 # 小游戏夹具的生成素材（tools/gen-game-assets.py）
 sample-game/g-audio/assets/
+
+# ANGLE / SwiftShader 预编译库（tools/fetch-angle.sh 拉取，不入库）
+third_party/angle/
