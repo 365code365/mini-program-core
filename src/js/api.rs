@@ -198,6 +198,8 @@ const GAME_EXTRA: &[Prelude] = prelude![
     "game-worker" => "game-worker.js",
     // 键盘（showKeyboard / updateKeyboard / hideKeyboard、onKeyboardInput / Confirm / Complete）与宿主事件入口 __gameHostEvent（G7.2）
     "game-keyboard" => "game-keyboard.js",
+    // 原生按钮（UserInfo / OpenSetting / Feedback / GameClub / GameRecorderShare，G7.3，原生在 game/buttons.rs）；要在 game-image 之后
+    "game-buttons" => "game-buttons.js",
     // wx.createWebAudioContext 换成真混音图（game/audio/graph + web）；没编进去时（__game_webaudio 不存在）保留 webaudio.js 那份
     "game-webaudio" => "game-webaudio.js",
 ];

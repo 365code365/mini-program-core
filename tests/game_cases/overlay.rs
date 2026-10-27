@@ -141,3 +141,57 @@ T.ready('u2');
     assert_eq!(kb, [("Input".into(), "hi!".into()), ("Confirm".into(), "hi!".into()), ("Complete".into(), "hi!".into())]);
     assert_eq!(h.events("kbh")[0]["height"], 280);
 }
+
+/// U3：原生按钮。样式字段（底色、边框、圆角、文字）画出来；点按钮 onTap（UserInfoButton 没接宿主 → getUserInfo:fail）且不进游戏；
+/// 改 style.left 跟着动；hide 之后不命中、点下去进游戏；destroy 之后不再画（输出与没建过逐字节相同）；image 型按图铺满；
+/// Feedback / GameClub 交宿主事件
+#[test]
+fn u3_原生按钮() {
+    let _g = serial();
+    let mut h = GameHarness::open("g-overlays", Opts::default());
+    h.vsyncs(2);
+    let plain = h.engine.frame_rgba().2.to_vec();
+    let png = {
+        let img = image::RgbaImage::from_pixel(8, 8, image::Rgba([10, 200, 250, 255]));
+        let mut out = std::io::Cursor::new(Vec::new());
+        img.write_to(&mut out, image::ImageFormat::Png).unwrap();
+        out.into_inner()
+    };
+    std::fs::write(h.dir.join("btn.png"), png).unwrap();
+    h.engine.eval(r#"
+        var T = require('_lib/t.js');
+        globalThis.btn = wx.createUserInfoButton({ type: 'text', text: '登录', style: { left: 20, top: 100, width: 200, height: 40,
+            backgroundColor: '#ff0000', borderColor: '#0000ff', borderWidth: 2, borderRadius: 8, color: '#ffffff', textAlign: 'center', fontSize: 16 } });
+        btn.onTap(function (r) { T.ev('tap', r); });
+        globalThis.ib = wx.createFeedbackButton({ type: 'image', image: 'btn.png', style: { left: 300, top: 500, width: 40, height: 40 } });
+        ib.onTap(function (r) { T.ev('fb', r); });
+    "#).unwrap();
+    h.vsyncs(3);
+    let px = |h: &mut GameHarness, x: u32, y: u32| { let (w, _, p) = h.engine.frame_rgba(); let i = ((y * w + x) * 4) as usize; [p[i], p[i + 1], p[i + 2]] };
+    assert_eq!(h.engine.frame_rgba().0, 750);
+    assert_eq!(px(&mut h, 2 * 30, 2 * 110), [255, 0, 0], "底色");
+    assert_eq!(px(&mut h, 2 * 120, 2 * 100 + 1), [0, 0, 255], "上边框");
+    assert_eq!(px(&mut h, 2 * 20 + 1, 2 * 100 + 1), GREEN, "圆角外是游戏");
+    let white = { let (w, _, p) = h.engine.frame_rgba(); (2 * 20..2 * 220).filter(|&x| { let i = ((2 * 120 * w + x) * 4) as usize; p[i] > 200 && p[i + 1] > 200 }).count() };
+    assert!(white > 5, "按钮中线上有白色文字像素：{white}");
+    assert_eq!(px(&mut h, 2 * 320, 2 * 520), [10, 200, 250], "image 型按图铺满");
+    tap(&mut h, 100.0, 120.0);
+    let t = h.events("tap");
+    assert_eq!(t.len(), 1);
+    assert!(t[0]["errMsg"].as_str().unwrap().starts_with("getUserInfo:fail"), "没接宿主：{t:?}");
+    assert!(h.events("gameTouch").is_empty(), "点按钮不进游戏");
+    tap(&mut h, 320.0, 520.0);
+    assert_eq!(h.events("fb").len(), 1);
+    assert!(h.host.iter().any(|e| e["type"] == "openFeedback"));
+    h.engine.eval("btn.style.left = 120").unwrap();
+    h.vsyncs(1);
+    assert_eq!(px(&mut h, 2 * 30, 2 * 110), GREEN, "左移走了");
+    assert_eq!(px(&mut h, 2 * 130, 2 * 110), [255, 0, 0]);
+    h.engine.eval("btn.hide()").unwrap();
+    h.vsyncs(1);
+    tap(&mut h, 150.0, 120.0);
+    assert_eq!((h.events("tap").len(), h.events("gameTouch").len()), (1, 1), "hide 之后不命中，点下去进游戏");
+    h.engine.eval("btn.destroy(); ib.destroy()").unwrap();
+    h.vsyncs(2);
+    assert_eq!(h.engine.frame_rgba().2, &plain[..], "destroy 之后与没建过逐字节相同");
+}

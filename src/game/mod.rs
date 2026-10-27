@@ -17,6 +17,7 @@ pub mod image;
 mod lifecycle;
 mod package;
 mod overlay;
+mod buttons;
 mod plugin;
 pub mod rotate;
 mod window;
@@ -138,6 +139,8 @@ pub struct GameEngine {
     workers: std::rc::Rc<std::cell::RefCell<worker::Workers>>,
     /// 系统覆盖层（Toast / Loading / Modal / ActionSheet，overlay.rs）
     overlay: overlay::Overlay,
+    /// 原生按钮（UserInfoButton 等，buttons.rs）
+    buttons: std::rc::Rc<std::cell::RefCell<buttons::Buttons>>,
 }
 
 impl GameEngine {
@@ -177,6 +180,7 @@ impl GameEngine {
         // 无头（固定时钟）不开声卡：混音器按帧时钟离线渲染，逐样本可复现
         let audio = std::rc::Rc::new(std::cell::RefCell::new(audio::GameAudio::new(root.clone(), opts.fixed_clock)));
         let workers = std::rc::Rc::new(std::cell::RefCell::new(worker::Workers::new(root.clone(), &config)));
+        let btns: std::rc::Rc<std::cell::RefCell<buttons::Buttons>> = Default::default();
         {
             let rt = app.js_runtime();
             let rt = rt.lock().unwrap();
@@ -186,6 +190,7 @@ impl GameEngine {
             audio::register(&rt, audio.clone())?;
             audio::register_webaudio(&rt, audio.clone())?;
             worker::register(&rt, workers.clone())?;
+            buttons::register(&rt, btns.clone())?;
             frame::register(&rt, pacer.clone(), clock.clone())?;
         }
         app.init_profile(PreludeProfile::MiniGame)?;
@@ -214,7 +219,7 @@ impl GameEngine {
             canvases, pacer, clock, frame: frame::FrameOut::default(), backgrounded: false,
             touch: Default::default(), pc: Default::default(), images, audio,
             orientation: if config_landscape { "landscape".into() } else { "portrait".into() },
-            system_info_opts: opts.system_info.clone(), rotation, workers, overlay: Default::default() };
+            system_info_opts: opts.system_info.clone(), rotation, workers, overlay: Default::default(), buttons: btns };
         engine.announce_orientation();
         let log = std::env::var("MINI_GAME_LOG").is_ok();
         if opts.app_id.is_none() {

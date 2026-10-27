@@ -79,14 +79,16 @@ impl GameEngine {
         let anim = ui_overlay::action_sheet::animating()
             || ui_overlay::tip_needs_recompose(self.overlay.secs, &self.overlay.toast, &self.overlay.loading);
         let visible = self.overlay.visible();
-        let redraw = changed || anim || visible != self.overlay.drawn;
+        let buttons = std::mem::take(&mut self.buttons.borrow_mut().dirty);
+        let visible = visible || self.buttons_visible();
+        let redraw = changed || anim || buttons || visible != self.overlay.drawn;
         self.overlay.drawn = visible;
         redraw
     }
 
     /// 覆盖层弹着（输出帧要在引擎里合成，宿主上屏走 RGBA 那条路）
     pub fn overlay_visible(&self) -> bool {
-        self.overlay.visible()
+        self.overlay.visible() || self.buttons_visible()
     }
 
     /// 还要不要接着出帧（菜单在动、圈在转）
@@ -100,7 +102,17 @@ impl GameEngine {
         let (w, h, sf) = compose_size(lw, lh, self.dpr);
         let base = self.scaled_unrotated(w, h);
         let mut buf = Vec::new();
-        rgba_to_u32(&base, &mut buf);
+        if self.buttons_visible() {
+            // 原生按钮在游戏之上、系统覆盖层之下（buttons.rs）
+            let mut c = crate::Canvas::new(w, h);
+            for (d, s) in c.pixels_mut().iter_mut().zip(base.chunks_exact(4)) {
+                *d = crate::Color::new(s[0], s[1], s[2], 255);
+            }
+            self.draw_buttons(&mut c, sf);
+            buf.extend(c.pixels().iter().map(|p| ((p.r as u32) << 16) | ((p.g as u32) << 8) | p.b as u32));
+        } else {
+            rgba_to_u32(&base, &mut buf);
+        }
         let text = crate::text::shared_fonts();
         let tr = text.as_deref();
         let rows = (0, h);
