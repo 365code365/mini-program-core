@@ -17,11 +17,13 @@ impl Canvas2DContext {
             let y0 = y.max(0.0) as i32;
             let x1 = (x + width).min(canvas.width() as f32) as i32;
             let y1 = (y + height).min(canvas.height() as f32) as i32;
-            
-            // 直接设置像素为透明
-            for py in y0..y1 {
-                for px in x0..x1 {
-                    canvas.set_pixel_direct(px, py, Color::TRANSPARENT);
+            // 直接设置像素为透明：按行切片 fill，与逐像素 set_pixel_direct 结果相同（同一组像素、同一个值），
+            // 从前逐像素调用在全屏清屏上要 0.24ms（桌面）/ 2ms（一加 PLY110）
+            if x1 > x0 && y1 > y0 {
+                let w = canvas.width() as usize;
+                let px = canvas.pixels_mut();
+                for py in y0 as usize..y1 as usize {
+                    px[py * w + x0 as usize..py * w + x1 as usize].fill(Color::TRANSPARENT);
                 }
             }
         }
@@ -43,6 +45,9 @@ impl Canvas2DContext {
 
     /// 填充矩形
     pub fn fill_rect(&mut self, x: f32, y: f32, width: f32, height: f32) {
+        if self.fill_rect_fast(x, y, width, height) {
+            return;
+        }
         let path = self.rect_path(x, y, width, height);
         if !self.fx.trivial(false) {
             return self.fx_path(&path, None);
@@ -175,5 +180,95 @@ impl Canvas2DContext {
         if let Ok(mut canvas) = self.canvas.lock() {
             canvas.draw_image(&rgba, iw, ih, px, py, tw, th, "scaleToFill", 0.0);
         }
+    }
+}
+
+impl Canvas2DContext {
+    /// fillRect 的快路：轴对齐、四边落在整像素上、不透明纯色、普通合成。这种矩形的抗锯齿覆盖率在每个像素上不是 0 就是 1，
+    /// 通用路径光栅（fill_path）算出来就是把这些像素写成这个颜色 —— 这里直接写，结果逐字节相同（`快路与通用路径逐字节相同`守着）。
+    /// 游戏每帧整屏清底、画方块精灵占位都是这种；一加 PLY110 上整屏 fillRect 走通用路径要 3~4ms（simpleperf：fill_path 占游戏线程 36%）。
+    /// 小程序的 canvas 也走这里：结果相同，只是更快。不满足条件（旋转、半像素边、半透明、渐变 / 阴影 / 合成模式、有裁剪）返回 false
+    fn fill_rect_fast(&mut self, x: f32, y: f32, w: f32, h: f32) -> bool {
+        let m = self.transform;
+        if m[1] != 0.0 || m[2] != 0.0 || !self.fx.trivial(false) {
+            return false;
+        }
+        let color = self.apply_alpha(self.fill_style);
+        if color.a != 255 {
+            return false;
+        }
+        let (ax, ay) = self.tp(x, y);
+        let (bx, by) = self.tp(x + w, y + h);
+        let (x0, x1, y0, y1) = (ax.min(bx), ax.max(bx), ay.min(by), ay.max(by));
+        let int = |v: f32| v.is_finite() && (v - v.round()).abs() < 1e-4;
+        if !(int(x0) && int(x1) && int(y0) && int(y1)) {
+            return false;
+        }
+        let Ok(mut canvas) = self.canvas.lock() else { return false };
+        // 画布自己的裁剪矩形（clip_rect）：通用路径会遵守它，快路不去复刻，有就走原路
+        if canvas.has_clip_rect() {
+            return false;
+        }
+        let (cw, ch) = (canvas.width() as i64, canvas.height() as i64);
+        let cx0 = (x0.round() as i64).clamp(0, cw) as usize;
+        let cx1 = (x1.round() as i64).clamp(0, cw) as usize;
+        let cy0 = (y0.round() as i64).clamp(0, ch) as usize;
+        let cy1 = (y1.round() as i64).clamp(0, ch) as usize;
+        if cx1 > cx0 && cy1 > cy0 {
+            let stride = cw as usize;
+            let px = canvas.pixels_mut();
+            for py in cy0..cy1 {
+                px[py * stride + cx0..py * stride + cx1].fill(color);
+            }
+        }
+        true
+    }
+}
+
+#[cfg(test)]
+mod fast_tests {
+    use super::*;
+
+    /// 快路与通用路径（fill_path）逐字节相同：随机整像素矩形、各种 dpr / 平移 / 缩放、越界、负宽高
+    #[test]
+    fn 快路与通用路径逐字节相同() {
+        let mut seed = 12345u32;
+        let mut r = |n: u32| {
+            seed = seed.wrapping_mul(1664525).wrapping_add(1013904223);
+            (seed >> 8) % n
+        };
+        let mut fast_hits = 0;
+        for case in 0..400 {
+            let dpr = [1.0f32, 2.0, 3.0, 2.75][case % 4];
+            let mut a = Canvas2DContext::new_with_dpr("a", 64, 48, dpr);
+            let mut b = Canvas2DContext::new_with_dpr("b", 64, 48, dpr);
+            let (tx, ty) = (r(7) as f32, r(5) as f32);
+            for g in [&mut a, &mut b] {
+                g.set_fill_style("#336699");
+                g.fill_rect(0.0, 0.0, 64.0, 48.0);
+                if case % 4 == 1 {
+                    g.translate(tx, ty);
+                }
+                if case % 5 == 2 {
+                    g.scale(2.0, 3.0);
+                }
+                g.set_fill_style(["#ff0000", "#00ff00", "#123456"][case % 3]);
+            }
+            let (x, y) = (r(80) as f32 - 10.0, r(60) as f32 - 10.0);
+            let (w, h) = (r(50) as f32 - 5.0, r(40) as f32 - 5.0);
+            if a.fill_rect_fast(x, y, w, h) {
+                fast_hits += 1;
+            } else {
+                a.fill_rect(x, y, w, h);
+            }
+            // b：强制通用路径
+            let path = b.rect_path(x, y, w, h);
+            let color = b.apply_alpha(b.fill_style);
+            b.canvas.lock().unwrap().draw_path(&path, &Paint::new().with_color(color).with_style(PaintStyle::Fill).with_anti_alias(true));
+            let pa = a.canvas.lock().unwrap().pixels().to_vec();
+            let pb = b.canvas.lock().unwrap().pixels().to_vec();
+            assert!(pa == pb, "第 {case} 例不一致：rect ({x},{y},{w},{h}) dpr {dpr}");
+        }
+        assert!(fast_hits > 100, "快路几乎没走到，测试没测到东西：{fast_hits}");
     }
 }

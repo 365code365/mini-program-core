@@ -195,6 +195,11 @@ impl Canvas {
         &self.pixels
     }
 
+    /// 有没有设裁剪矩形（快路要知道：它们不复刻裁剪，有就走通用路径）
+    pub fn has_clip_rect(&self) -> bool {
+        self.clip_rect.is_some()
+    }
+
     /// 获取像素数据可变引用
     pub fn pixels_mut(&mut self) -> &mut [Color] {
         &mut self.pixels
