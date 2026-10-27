@@ -176,6 +176,8 @@ const GAME_EXTRA: &[Prelude] = prelude![
     "game-global" => "game-global.js",
     // wx.encode / wx.decode、原生 base64（二进制桥，js/bridge_bin.rs）
     "game-compat" => "game-compat.js",
+    // 官方 API 表面的宿主代理 / 监听型补齐与小游戏版 canIUse（game-doc/10；延期项见 取证/api-surface-deferred.json）
+    "game-surface" => "game-surface.js",
 ];
 
 /// 一个应用种类实际执行的段（按顺序）
