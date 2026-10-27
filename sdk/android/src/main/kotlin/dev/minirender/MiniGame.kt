@@ -26,6 +26,8 @@ object MiniGame {
     external fun nativePollEvent(handle: Long): String?
     external fun nativeEval(handle: Long, code: String): String?
     external fun nativeSetBackground(handle: Long, background: Boolean)
+    /** 系统内存告警：5 / 10 / 15 派发 wx.onMemoryWarning，其它只回收 */
+    external fun nativeMemoryWarning(handle: Long, level: Int)
     /** 窗口变了：逻辑尺寸、像素比、方向（portrait / landscape / landscapeReverse，可为 null） */
     external fun nativeResize(handle: Long, width: Int, height: Int, dpr: Float, orientation: String?)
     /** 系统音频打断开始（true）/ 结束（false）：引擎暂停全部音频后派发 wx.onAudioInterruptionBegin / End */

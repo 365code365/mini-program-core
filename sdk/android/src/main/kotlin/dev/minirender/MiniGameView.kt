@@ -105,6 +105,49 @@ class MiniGameView(
         }
     }
 
+    /**
+     * wx.getDeviceBenchmarkInfo 的档位（G6.6）：宿主没在 systemInfo 里给，就按核数与内存估一个。
+     * 不是微信的跑分口径（那是微信自己的数据），只保证「高中低」三档的方向对：≥8 核且 ≥8GB → 40 / 高档 1，
+     * ≥6 核且 ≥4GB → 20 / 中档 2，其余 → 8 / 低档 3
+     */
+    private fun withBenchmark(options: String): String = try {
+        val o = org.json.JSONObject(options)
+        val si = o.optJSONObject("systemInfo") ?: org.json.JSONObject().also { o.put("systemInfo", it) }
+        if (!si.has("benchmarkLevel")) {
+            val mi = android.app.ActivityManager.MemoryInfo()
+            (context.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager).getMemoryInfo(mi)
+            val gb = mi.totalMem / (1L shl 30)
+            val cores = Runtime.getRuntime().availableProcessors()
+            val (lv, ml) = when {
+                cores >= 8 && gb >= 7 -> 40 to 1
+                cores >= 6 && gb >= 3 -> 20 to 2
+                else -> 8 to 3
+            }
+            si.put("benchmarkLevel", lv).put("modelLevel", ml)
+        }
+        o.toString()
+    } catch (_: Exception) { options }
+
+    /** 系统内存告警 → 引擎回收、派发 wx.onMemoryWarning（前台三档 5 / 10 / 15；后台档只回收） */
+    private val memory = object : android.content.ComponentCallbacks2 {
+        override fun onTrimMemory(level: Int) {
+            engine.post { if (handle != 0L) { MiniGame.nativeMemoryWarning(handle, level); drainEvents() } }
+        }
+        @Deprecated("系统接口")
+        override fun onLowMemory() = onTrimMemory(android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL)
+        override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {}
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        context.applicationContext.registerComponentCallbacks(memory)
+    }
+
+    override fun onDetachedFromWindow() {
+        context.applicationContext.unregisterComponentCallbacks(memory)
+        super.onDetachedFromWindow()
+    }
+
     /** 尺寸变了（转屏、分屏）：告诉引擎新的逻辑尺寸与方向（派发 wx.onWindowResize / onDeviceOrientationChange） */
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
@@ -137,7 +180,7 @@ class MiniGameView(
             choreographer = Choreographer.getInstance()
             boost = FrameBoost.forCurrentThread(context)
             val t0 = System.nanoTime()
-            handle = MiniGame.nativeCreate(dir, dataDir, w, h, dpr, options)
+            handle = MiniGame.nativeCreate(dir, dataDir, w, h, dpr, withBenchmark(options))
             if (handle != 0L) audioSession = GameAudioSession(context, engine) { begin ->
                 if (handle != 0L) {
                     MiniGame.nativeAudioInterruption(handle, begin)

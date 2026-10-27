@@ -201,6 +201,12 @@ impl ImageStore {
         }
     }
 
+    /// 系统内存告警：没有 Image 对象引用的解码结果全部放掉（被引用的留着，否则 drawImage 画空）。返回放掉的字节数
+    pub fn trim_unreferenced(&mut self) -> usize {
+        let free: Vec<String> = self.cache.iter().filter(|(_, e)| Arc::strong_count(&e.img) == 1).map(|(k, _)| k.clone()).collect();
+        free.iter().filter_map(|k| self.cache.remove(k)).map(|e| e.img.bytes()).sum()
+    }
+
     pub fn take_ready(&mut self) -> Vec<Ready> {
         std::mem::take(&mut self.ready)
     }

@@ -366,6 +366,8 @@ void mr_game_audio_interruption(MRGame* game, int begin);
 // 引擎派发 wx.onWindowResize / onDeviceOrientationChange；主画布尺寸不变（游戏自己改）。
 // 建实例后会有一条 {"type":"deviceOrientation","value":…,"initial":true} 事件：宿主按它锁方向；wx.setDeviceOrientation 发同样的事件
 void mr_game_resize(MRGame* game, uint32_t width, uint32_t height, float dpr, const char* orientation);
+// 系统内存告警：level 5 / 10 / 15 派发 wx.onMemoryWarning（Android 前台三档），其它值只回收（图片缓存、JS GC）
+void mr_game_memory_warning(MRGame* game, int level);
 // rAF 目标帧率（1~60）：宿主据此请求显示刷新率（60 的整数倍）
 int mr_game_preferred_fps(MRGame* game);
 // pump_ex 返回 MR_FRAME_WAKE_AT（128）时：多久之后再 pump（微秒），-1 = 没有定时器

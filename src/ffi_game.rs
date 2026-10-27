@@ -242,6 +242,12 @@ pub extern "C" fn mr_game_resize(game: *mut MRGame, width: u32, height: u32, dpr
     let o = cstr(orientation);
     guarded(game, (), |e| e.resize(width, height, dpr, o.as_deref()));
 }
+/// 系统内存告警：`level` 5 / 10 / 15 派发 wx.onMemoryWarning（Android 前台三档），其它值只回收（图片缓存、JS GC）
+#[cfg(feature = "game")]
+#[no_mangle]
+pub extern "C" fn mr_game_memory_warning(game: *mut MRGame, level: c_int) {
+    guarded(game, (), |e| e.memory_warning(level));
+}
 /// rAF 目标帧率（1~60）。宿主据此请求显示刷新率（60 的整数倍，game-doc/02 §4.2）
 #[cfg(feature = "game")]
 #[no_mangle]

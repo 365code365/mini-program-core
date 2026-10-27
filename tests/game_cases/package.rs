@@ -146,3 +146,43 @@ fn o2_引擎内旋转() {
     h.vsyncs(1);
     assert!(h.events("resize").is_empty() && h.events("orient").is_empty(), "宿主报的还是同一个竖屏：游戏看到的横屏没变");
 }
+
+/// G6.6：系统内存告警 → 放掉没人引用的图片解码结果（被引用的留着）、level 5/10/15 派发 onMemoryWarning、后台档不派发；
+/// getDeviceBenchmarkInfo 按宿主给的 benchmarkLevel 推 modelLevel
+#[test]
+fn m1_内存告警与机型档位() {
+    let _g = serial();
+    let js = r#"
+var T = require('_lib/t.js');
+wx.onMemoryWarning(function (r) { T.ev('mem', r); });
+var keep = wx.createImage(), drop = wx.createImage();
+keep.onload = drop.onload = function () { T.ev('loaded', {}); };
+globalThis.load = function () { keep.src = 'a.png'; drop.src = 'b.png'; };
+globalThis.go = function () { drop = null; };
+wx.getDeviceBenchmarkInfo({ success: function (r) { T.ev('bench', r); } });
+T.ready('m1');
+"#;
+    let mut h = GameHarness::open_inline("m1", js, Opts::default());
+    let png = |c: u8| {
+        let img = image::RgbaImage::from_pixel(64, 64, image::Rgba([c, 0, 0, 255]));
+        let mut out = std::io::Cursor::new(Vec::new());
+        img.write_to(&mut out, image::ImageFormat::Png).unwrap();
+        out.into_inner()
+    };
+    std::fs::write(h.dir.join("a.png"), png(1)).unwrap();
+    std::fs::write(h.dir.join("b.png"), png(2)).unwrap();
+    // 文件写在建实例之后才设 src
+    h.engine.eval("load()").unwrap();
+    h.vsyncs(3);
+    assert_eq!(h.engine.image_cache_bytes(), 2 * 64 * 64 * 4);
+    h.engine.eval("go()").unwrap();
+    h.engine.memory_warning(20);
+    h.vsyncs(1);
+    assert_eq!(h.engine.image_cache_bytes(), 64 * 64 * 4, "没人引用的那张放掉、被引用的留着");
+    assert!(h.events("mem").is_empty(), "后台档只回收不派发");
+    h.engine.memory_warning(10);
+    h.vsyncs(1);
+    assert_eq!(h.events("mem"), vec![serde_json::json!({ "level": 10 })]);
+    let b = &h.events("bench")[0];
+    assert_eq!((b["benchmarkLevel"].as_i64(), b["modelLevel"].as_i64()), (Some(1), Some(3)), "默认 benchmarkLevel 1 → 低档 3：{b}");
+}

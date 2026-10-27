@@ -23,6 +23,15 @@
                 wx.onDeviceOrientationChange = orient.on; wx.offDeviceOrientationChange = orient.off;
                 globalThis.__gameWindowResize = function(res) { resize.fire(res); return true; };
                 globalThis.__gameOrientationChange = function(res) { orient.fire(res); return true; };
+                // getDeviceBenchmarkInfo（G6.6）：benchmarkLevel / modelLevel 由宿主按机器估算后放进 systemInfo（Android 示例按
+                // 核数与内存，MiniGameView）；宿主没给 modelLevel 时按 benchmarkLevel 推：≥30 高档 1、≥15 中档 2、≥1 低档 3、其余未知 0。
+                // 官方的跑分口径是微信自己的，对不上（记在验收文档）
+                wx.getDeviceBenchmarkInfo = function(o) {
+                    var i = wx.getSystemInfoSync(), lv = Number(i.benchmarkLevel);
+                    if (!(lv === lv)) lv = -1;
+                    var ml = typeof i.modelLevel === 'number' ? i.modelLevel : lv >= 30 ? 1 : lv >= 15 ? 2 : lv >= 1 ? 3 : 0;
+                    return __asyncOk(o, 'getDeviceBenchmarkInfo', { benchmarkLevel: lv, modelLevel: ml });
+                };
                 wx.setDeviceOrientation = function(o) {
                     o = o || {};
                     if (o.value !== 'portrait' && o.value !== 'landscape') {

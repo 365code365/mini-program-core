@@ -8,6 +8,26 @@ use std::time::Duration;
 const FIXED_CLOCK_WAIT: Duration = Duration::from_secs(10);
 
 impl GameEngine {
+    /// 系统内存告警（Android onTrimMemory / onLowMemory，iOS didReceiveMemoryWarning；`mr_game_memory_warning`）：
+    /// 放掉没人引用的图片解码结果、跑一遍 JS GC；`level` 是 5 / 10 / 15（Android 前台的三档，官方 onMemoryWarning 的取值）时
+    /// 派发 wx.onMemoryWarning({level})，其它值（后台那几档）只回收不派发
+    pub fn memory_warning(&mut self, level: i32) {
+        // GC 之后 FinalizationRegistry 的回调是排进 job 队列的（Image 对象在那里通知原生放掉引用）：先跑完再回收
+        self.collect_garbage();
+        self.app.js_runtime().lock().unwrap().pump_jobs();
+        let freed = self.images.borrow_mut().trim_unreferenced();
+        self.host_log(&format!("🧹 内存告警 level={level}：放掉图片缓存 {}KB", freed / 1024));
+        if matches!(level, 5 | 10 | 15) {
+            self.guards.watchdog.arm();
+            let r = self.app.eval(&format!("typeof __dispatchMemoryWarning === 'function' && __dispatchMemoryWarning({level})"));
+            self.guards.watchdog.disarm();
+            if let Err(e) = r {
+                self.report_error(super::error_kind(&e, "memory"), &e);
+            }
+            self.after_js();
+        }
+    }
+
     pub(super) fn dispatch_images(&mut self) {
         let fixed = self.clock.borrow().is_fixed();
         let (ready, logs, warn) = {
