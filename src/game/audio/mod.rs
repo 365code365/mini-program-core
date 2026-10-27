@@ -471,11 +471,12 @@ impl GameAudio {
         !self.pending.is_empty() || !self.events.is_empty() || self.ctxs.values().any(|c| c.playing) || self.web.busy() || !self.backlog.is_empty()
     }
 
-    /// 诊断 JSON：输出帧数、延迟、回调块、回调次数、欠载、采样率、是否真设备、在播几路
+    /// 诊断 JSON：输出帧数、延迟、回调块、回调次数、欠载、采样率、是否真设备、在播几路、WebAudio 的节点数与占着的槽位
     pub fn stats_json(&self) -> Value {
         let (l, b, n) = self.out.stats();
         json!({ "frames": self.out.frames(), "latencyMs": l as f64 / 1000.0, "block": b, "callbacks": n, "xruns": self.out.xruns(),
-            "rate": self.rate, "device": self.out.is_device(), "voices": self.slots.iter().filter(|s| s.is_some()).count() })
+            "rate": self.rate, "device": self.out.is_device(), "voices": self.slots.iter().filter(|s| s.is_some()).count(),
+            "webNodes": self.web.nodes.len(), "webSlots": self.web.slot_owner.len() })
     }
 
     pub fn is_device(&self) -> bool {
