@@ -26,6 +26,8 @@ object MiniGame {
     external fun nativePollEvent(handle: Long): String?
     external fun nativeEval(handle: Long, code: String): String?
     external fun nativeSetBackground(handle: Long, background: Boolean)
+    /** 回 hostCall 事件的结果（ok 走 success，result 是回调参数 JSON） */
+    external fun nativeHostReply(handle: Long, id: Int, ok: Boolean, result: String): Boolean
     /** 宿主推事件给 wx.onXxx（键盘、传感器…）；返回监听者个数 */
     external fun nativeDispatchEvent(handle: Long, name: String, payload: String): Int
     /** 系统内存告警：5 / 10 / 15 派发 wx.onMemoryWarning，其它只回收 */

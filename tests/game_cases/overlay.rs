@@ -264,3 +264,27 @@ T.ready('h3');
     assert_eq!(h.events("adLoad")[0]["w"], 1);
     assert!(h.events("adErr").is_empty());
 }
+
+/// G7.5（引擎侧）：传感器由宿主采集。start 交宿主（hostCall 带 interval），宿主推 accelerometerChange 到 onAccelerometerChange；
+/// 宿主没接时 start fail
+#[test]
+fn s1_传感器() {
+    let _g = serial();
+    let js = r#"
+var T = require('_lib/t.js');
+wx.onAccelerometerChange(function (r) { T.ev('acc', r); });
+wx.startAccelerometer({ interval: 'game', success: function (r) { T.ev('start', r); }, fail: function (r) { T.ev('startFail', r); } });
+wx.startGyroscope({ fail: function (r) { T.ev('gyroFail', r); } });
+T.ready('s1');
+"#;
+    let mut h = GameHarness::open_inline("s1", js, Opts { host_apis: &["startAccelerometer"], ..Default::default() });
+    h.vsyncs(2);
+    let call = h.host.iter().find(|e| e["type"] == "hostCall" && e["api"] == "startAccelerometer").expect("交宿主").clone();
+    assert_eq!(call["args"]["interval"], "game");
+    h.engine.host_reply(call["id"].as_u64().unwrap() as u32, true, r#"{"errMsg":"startAccelerometer:ok"}"#);
+    assert_eq!(h.engine.dispatch_event("accelerometerChange", r#"{"x":0.1,"y":-0.2,"z":1.0}"#), 1);
+    h.vsyncs(2);
+    assert_eq!(h.events("start")[0]["errMsg"], "startAccelerometer:ok");
+    assert_eq!(h.events("acc")[0], serde_json::json!({ "x": 0.1, "y": -0.2, "z": 1.0 }));
+    assert!(h.events("gyroFail")[0]["errMsg"].as_str().unwrap().starts_with("startGyroscope:fail"), "宿主没接");
+}

@@ -70,6 +70,9 @@ class MiniGameView(
         }
     }
 
+    /** 传感器（[GameSensors]），引擎线程上建、用、放 */
+    private var sensors: GameSensors? = null
+
     /** 音频焦点与来电（[GameAudioSession]），引擎线程上建、用、放 */
     private var audioSession: GameAudioSession? = null
 
@@ -121,6 +124,9 @@ class MiniGameView(
     private fun withBenchmark(options: String): String = try {
         val o = org.json.JSONObject(options)
         val si = o.optJSONObject("systemInfo") ?: org.json.JSONObject().also { o.put("systemInfo", it) }
+        // 传感器由 SDK 采集（GameSensors）：那几个 start / stop 交给宿主
+        val apis = o.optJSONArray("hostApis") ?: org.json.JSONArray().also { o.put("hostApis", it) }
+        GameSensors.APIS.forEach { apis.put(it) }
         if (!si.has("benchmarkLevel")) {
             val mi = android.app.ActivityManager.MemoryInfo()
             (context.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager).getMemoryInfo(mi)
@@ -189,6 +195,9 @@ class MiniGameView(
             boost = FrameBoost.forCurrentThread(context)
             val t0 = System.nanoTime()
             handle = MiniGame.nativeCreate(dir, dataDir, w, h, dpr, withBenchmark(options))
+            if (handle != 0L) sensors = GameSensors(context, engine) { name, json ->
+                if (handle != 0L) { MiniGame.nativeDispatchEvent(handle, name, json); drainEvents(); requestFrame() }
+            }
             if (handle != 0L) audioSession = GameAudioSession(context, engine) { begin ->
                 if (handle != 0L) {
                     MiniGame.nativeAudioInterruption(handle, begin)
@@ -206,6 +215,7 @@ class MiniGameView(
         running = true
         if (handle != 0L) MiniGame.nativeSetBackground(handle, false)
         audioSession?.setForeground(true)
+        sensors?.resumeAll()
         requestFrame()
     }
 
@@ -213,6 +223,7 @@ class MiniGameView(
         running = false
         if (handle != 0L) MiniGame.nativeSetBackground(handle, true)
         audioSession?.setForeground(false)
+        sensors?.pauseAll()
         choreographer?.removeFrameCallback(frame)
         scheduled = false
     }
@@ -223,6 +234,7 @@ class MiniGameView(
         engine.post {
             choreographer?.removeFrameCallback(frame)
             audioSession?.release()
+            sensors?.release()
             audioSession = null
             if (handle != 0L) MiniGame.nativeDestroy(handle)
             handle = 0L
@@ -399,6 +411,11 @@ class MiniGameView(
                 "hideKeyboard" -> main.post { keyboard.hide() }
                 "deviceOrientation" -> if (!o.optBoolean("initial")) { val v = o.optString("value"); main.post { lockOrientation(v) } }
                 "error" -> Log.w("mini-game", e)
+                "hostCall" -> {
+                    val r = sensors?.handle(o.optString("api"), o.optJSONObject("args"))
+                    if (r != null) MiniGame.nativeHostReply(handle, o.optInt("id"), r.first, r.second)
+                    else { val cb = onHostEvent; if (cb != null) main.post { cb("hostCall", o) } else Log.i("mini-game", e) }
+                }
                 else -> {
                     Log.i("mini-game", e)
                     val type = o?.optString("type") ?: ""
