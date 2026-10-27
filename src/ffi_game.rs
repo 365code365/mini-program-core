@@ -256,6 +256,13 @@ pub extern "C" fn mr_game_dispatch_event(game: *mut MRGame, name: *const c_char,
     let (Some(name), payload) = (cstr(name), cstr(payload_json).unwrap_or_else(|| "{}".into())) else { return 0 };
     guarded(game, 0, |e| e.dispatch_event(&name, &payload) as c_int)
 }
+/// 宿主回 hostCall 事件（`{"type":"hostCall","id","api","args"}`）的结果：`ok` 非 0 走 success，`result_json` 是回调参数
+#[cfg(feature = "game")]
+#[no_mangle]
+pub extern "C" fn mr_game_host_reply(game: *mut MRGame, id: u32, ok: c_int, result_json: *const c_char) -> c_int {
+    let r = cstr(result_json).unwrap_or_else(|| "{}".into());
+    guarded(game, 0, |e| e.host_reply(id, ok != 0, &r) as c_int)
+}
 /// rAF 目标帧率（1~60）。宿主据此请求显示刷新率（60 的整数倍，game-doc/02 §4.2）
 #[cfg(feature = "game")]
 #[no_mangle]

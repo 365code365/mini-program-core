@@ -65,6 +65,8 @@ pub struct GameOptions {
     pub rotate_in_engine: bool,
     /// 引擎插件目录：`<pluginDir>/<provider>/<version>/`（G6.7，plugin.rs）
     pub plugin_dir: Option<String>,
+    /// 宿主实现的 `wx.*` 与对象方法（`login`、`BannerAd.show` …）：调用变成 hostCall 宿主事件，宿主 `mr_game_host_reply` 回结果
+    pub host_apis: Vec<String>,
 }
 
 /// 游戏实例报给 `wx.getSystemInfoSync().SDKVersion` 的基础库版本（决策 D-9 未定：取证后按已实现的 API 集合选定，
@@ -105,6 +107,7 @@ impl GameOptions {
             entry_subpackage: v.get("entrySubpackage").and_then(|x| x.as_str()).map(str::to_string),
             rotate_in_engine: v.get("rotateInEngine").and_then(|x| x.as_bool()).unwrap_or(false),
             plugin_dir: v.get("pluginDir").and_then(|x| x.as_str()).map(str::to_string),
+            host_apis: v.get("hostApis").and_then(|x| x.as_array()).map(|a| a.iter().filter_map(|s| s.as_str().map(str::to_string)).collect()).unwrap_or_default(),
         })
     }
 }
@@ -194,6 +197,9 @@ impl GameEngine {
             frame::register(&rt, pacer.clone(), clock.clone())?;
         }
         app.init_profile(PreludeProfile::MiniGame)?;
+        if !opts.host_apis.is_empty() {
+            app.install_host_apis(&opts.host_apis);
+        }
         let config_landscape = config.device_orientation.is_landscape();
         let eo = crate::host::EngineOptions { system_info: opts.system_info.clone(), ..Default::default() };
         let mut info = crate::host::engine_options::system_info(width, height, dpr, &eo);

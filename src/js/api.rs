@@ -200,6 +200,8 @@ const GAME_EXTRA: &[Prelude] = prelude![
     "game-keyboard" => "game-keyboard.js",
     // 原生按钮（UserInfo / OpenSetting / Feedback / GameClub / GameRecorderShare，G7.3，原生在 game/buttons.rs）；要在 game-image 之后
     "game-buttons" => "game-buttons.js",
+    // 宿主承载的对象（广告、相机、录屏、GameServerManager…）、setMenuStyle / setStatusBarStyle（G7.4 / G7.6）
+    "game-proxies" => "game-proxies.js",
     // wx.createWebAudioContext 换成真混音图（game/audio/graph + web）；没编进去时（__game_webaudio 不存在）保留 webaudio.js 那份
     "game-webaudio" => "game-webaudio.js",
 ];

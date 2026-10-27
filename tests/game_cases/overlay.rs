@@ -195,3 +195,72 @@ fn u3_原生按钮() {
     h.vsyncs(2);
     assert_eq!(h.engine.frame_rgba().2, &plain[..], "destroy 之后与没建过逐字节相同");
 }
+
+/// H1 / H2：没接宿主的代理对象——方法都在、建出来下一轮 onError（errCode 1004）、show() 的 Promise reject、普通方法 fail；
+/// 引擎就地做的 GameLogManager / ScenePerformanceManager 能用；setMenuStyle / setStatusBarStyle 交宿主
+#[test]
+fn h1_h2_宿主代理对象_没接宿主() {
+    let _g = serial();
+    let js = r#"
+var T = require('_lib/t.js');
+var ad = wx.createBannerAd({ adUnitId: 'x', style: { left: 0, top: 0, width: 300 } });
+ad.onError(function (e) { T.ev('adErr', e); });
+ad.show().then(function () { T.ev('show', { ok: true }); }, function (e) { T.ev('show', { ok: false, e: e }); });
+var rv = wx.createRewardedVideoAd({ adUnitId: 'y' });
+var miss = ['show', 'load', 'destroy', 'onClose', 'offClose', 'setServerSideVerificationData'].filter(function (m) { return typeof rv[m] !== 'function'; });
+var gs = wx.getGameServerManager();
+gs.login({ fail: function (e) { T.ev('gsFail', e); } });
+var rec = wx.getGameRecorder();
+var lm = wx.getGameLogManager(); lm.updateCommonInfo({ a: 1 });
+var sp = wx.getScenePerformanceManager(); sp.setCommonInfo({ b: 2 });
+wx.setMenuStyle({ style: 'dark' }); wx.setStatusBarStyle({ style: 'white' });
+T.ev('shape', { miss: miss, sameRecorder: rec === wx.getGameRecorder(), sound: rec.isSoundSupported(), log: lm.getCommonInfo(), perf: sp.getCommonInfo(),
+  styleW: ad.style.width, fns: [typeof wx.createGridAd, typeof wx.createCustomAd, typeof wx.createCamera, typeof wx.createPageManager,
+  typeof wx.createStoreGift, typeof wx.createVideoDecoder, typeof wx.getRankManager, typeof wx.getMiniReportManager, typeof wx.createAdSkipCard] });
+T.ready('h1');
+"#;
+    let mut h = GameHarness::open_inline("h1", js, Opts::default());
+    h.vsyncs(3);
+    let s = &h.events("shape")[0];
+    assert_eq!((s["miss"].as_array().map(|a| a.len()), s["sameRecorder"].as_bool(), s["sound"].as_bool()), (Some(0), Some(true), Some(false)), "{s}");
+    assert_eq!((&s["log"], &s["perf"], s["styleW"].as_u64()), (&serde_json::json!({ "a": 1 }), &serde_json::json!({ "b": 2 }), Some(300)));
+    assert!(s["fns"].as_array().unwrap().iter().all(|f| f == "function"), "{s}");
+    let e = &h.events("adErr")[0];
+    assert_eq!((e["errCode"].as_u64(), e["errMsg"].as_str()), (Some(1004), Some("BannerAd:fail no advertisement")));
+    assert_eq!(h.events("show")[0]["ok"], false);
+    assert!(h.events("gsFail")[0]["errMsg"].as_str().unwrap().starts_with("login:fail"));
+    assert!(h.host.iter().any(|e| e["type"] == "menuStyle" && e["style"] == "dark"));
+    assert!(h.host.iter().any(|e| e["type"] == "statusBar" && e["style"] == "white"));
+}
+
+/// H3：宿主接了 login 与 BannerAd.show：调用变成 hostCall 事件（args 带上 contextId），宿主 host_reply 之后 success 拿到原样的参数；
+/// 宿主推的 contextEvent 到对象的 onLoad
+#[test]
+fn h3_宿主接管() {
+    let _g = serial();
+    let js = r#"
+var T = require('_lib/t.js');
+wx.login({ timeout: 5000, success: function (r) { T.ev('login', r); } });
+var ad = wx.createBannerAd({ adUnitId: 'u1' });
+ad.onLoad(function (d) { T.ev('adLoad', d); });
+ad.show().then(function (r) { T.ev('adShow', r); });
+T.ev('adId', { id: ad.__id });
+T.ready('h3');
+"#;
+    let mut h = GameHarness::open_inline("h3", js, Opts { host_apis: &["login", "BannerAd.show", "BannerAd.load"], ..Default::default() });
+    h.vsyncs(2);
+    let calls: Vec<serde_json::Value> = h.host.iter().filter(|e| e["type"] == "hostCall").cloned().collect();
+    let login = calls.iter().find(|c| c["api"] == "login").expect("login 的 hostCall");
+    assert_eq!(login["args"]["timeout"], 5000);
+    let show = calls.iter().find(|c| c["api"] == "BannerAd.show").expect("BannerAd.show 的 hostCall");
+    let ad_id = h.events("adId")[0]["id"].as_str().unwrap().to_string();
+    assert_eq!(show["args"]["contextId"], ad_id.as_str());
+    assert!(h.engine.host_reply(login["id"].as_u64().unwrap() as u32, true, r#"{"code":"abc","errMsg":"login:ok"}"#));
+    h.engine.host_reply(show["id"].as_u64().unwrap() as u32, true, r#"{"errMsg":"show:ok"}"#);
+    h.engine.dispatch_event("contextEvent", &serde_json::json!({ "context": "BannerAd", "contextId": ad_id, "event": "load", "data": { "w": 1 } }).to_string());
+    h.vsyncs(2);
+    assert_eq!(h.events("login")[0]["code"], "abc");
+    assert_eq!(h.events("adShow")[0]["errMsg"], "show:ok");
+    assert_eq!(h.events("adLoad")[0]["w"], 1);
+    assert!(h.events("adErr").is_empty());
+}

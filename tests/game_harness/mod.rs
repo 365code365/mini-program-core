@@ -19,11 +19,13 @@ pub struct Opts {
     pub rotate: bool,
     /// 引擎插件目录（创建选项 pluginDir）
     pub plugin_dir: Option<std::path::PathBuf>,
+    /// 宿主实现的 API（创建选项 hostApis）
+    pub host_apis: &'static [&'static str],
 }
 
 impl Default for Opts {
     fn default() -> Self {
-        Self { hz: 60, query: "", watchdog_ms: 5000, entry: None, rotate: false, plugin_dir: None }
+        Self { hz: 60, query: "", watchdog_ms: 5000, entry: None, rotate: false, plugin_dir: None, host_apis: &[] }
     }
 }
 
@@ -101,6 +103,7 @@ impl GameHarness {
             fixed_clock: true,
             entry_subpackage: opts.entry.map(str::to_string),
             rotate_in_engine: opts.rotate,
+            host_apis: opts.host_apis.iter().map(|s| s.to_string()).collect(),
             plugin_dir: opts.plugin_dir.as_ref().map(|p| p.to_string_lossy().to_string()),
             ..Default::default()
         };

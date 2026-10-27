@@ -3,23 +3,7 @@
  "snapshot": "official-api-index-2026-10-26.json",
  "deferred": {
   "G7": [
-   "createAdSkipCard",
-   "createBannerAd",
-   "createCamera",
-   "createCustomAd",
-   "createGridAd",
-   "createPageManager",
-   "createStoreGift",
-   "createVideo",
-   "createVideoDecoder",
-   "getGameLogManager",
-   "getGameRecorder",
-   "getGameServerManager",
-   "getMiniReportManager",
-   "getRankManager",
-   "getScenePerformanceManager",
-   "setMenuStyle",
-   "setStatusBarStyle"
+   "createVideo"
   ],
   "G6": [],
   "G3": [

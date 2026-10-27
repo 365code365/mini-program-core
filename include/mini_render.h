@@ -372,6 +372,8 @@ void mr_game_memory_warning(MRGame* game, int level);
 // 传感器（accelerometerChange …）、网络等，名字与 mr_app_dispatch_event 相同。返回收到它的监听者个数。
 // 键盘相关的宿主事件：{"type":"showKeyboard",defaultValue,maxLength,multiple,confirmHold,confirmType} / updateKeyboard {value} / hideKeyboard
 int mr_game_dispatch_event(MRGame* game, const char* name, const char* payload_json);
+// 创建选项 hostApis 点名的 wx.* / 对象方法（login、BannerAd.show …）调用时发 {"type":"hostCall","id","api","args"}，宿主用它回结果
+int mr_game_host_reply(MRGame* game, uint32_t id, int ok, const char* result_json);
 // rAF 目标帧率（1~60）：宿主据此请求显示刷新率（60 的整数倍）
 int mr_game_preferred_fps(MRGame* game);
 // pump_ex 返回 MR_FRAME_WAKE_AT（128）时：多久之后再 pump（微秒），-1 = 没有定时器

@@ -54,6 +54,13 @@ impl GameEngine {
         n
     }
 
+    /// 宿主回 hostCall 的结果（`ok` = success / fail，`result_json` 是回调参数）。id 不认识返回 false
+    pub fn host_reply(&mut self, id: u32, ok: bool, result_json: &str) -> bool {
+        let r = self.app.resolve_host_call(id, ok, result_json);
+        self.after_js();
+        r
+    }
+
     /// 派发 wx.onShow / wx.onHide（`kind` = "show" / "hide"）
     pub(super) fn dispatch_lifecycle(&mut self, kind: &str) {
         self.guards.watchdog.arm();

@@ -155,6 +155,14 @@ pub extern "system" fn Java_dev_minirender_MiniGame_nativeDispatchEvent(mut env:
     let (Ok(n), Ok(p)) = (CString::new(n), CString::new(p)) else { return 0 };
     mr_game_dispatch_event(hd.game, n.as_ptr(), p.as_ptr())
 }
+/// 宿主回 hostCall 的结果（见 `mr_game_host_reply`）
+#[no_mangle]
+pub extern "system" fn Java_dev_minirender_MiniGame_nativeHostReply(mut env: JNIEnv, _c: JClass, h: jlong, id: jint, ok: jboolean, result: JString) -> jboolean {
+    let Some(hd) = handle(h) else { return 0 };
+    let r: String = if result.is_null() { "{}".into() } else { env.get_string(&result).map(Into::into).unwrap_or_else(|_| "{}".into()) };
+    let Ok(c) = CString::new(r) else { return 0 };
+    (mr_game_host_reply(hd.game, id.max(0) as u32, ok as i32, c.as_ptr()) != 0) as jboolean
+}
 /// 系统内存告警（见 `mr_game_memory_warning`）
 #[no_mangle]
 pub extern "system" fn Java_dev_minirender_MiniGame_nativeMemoryWarning(_e: JNIEnv, _c: JClass, h: jlong, level: jint) {
