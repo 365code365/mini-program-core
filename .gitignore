@@ -23,3 +23,6 @@ sample-game/g-audio/assets/
 
 # ANGLE / SwiftShader 预编译库（tools/fetch-angle.sh 拉取，不入库）
 third_party/angle/
+
+# 兼容矩阵的第三方引擎（tools/fetch-engines.sh 拉取，不入库）
+sample-game/e-*/libs/

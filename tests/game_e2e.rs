@@ -33,6 +33,15 @@ mod webaudio_cases;
 mod package_cases;
 #[path = "game_cases/worker.rs"]
 mod worker_cases;
+/// 输出帧某个逻辑像素（主画布可能是 dpr 倍：按输出帧尺寸换算）
+pub fn webgl_px(h: &mut game_harness::GameHarness, x: u32, y: u32) -> [u8; 3] {
+    let (w, hh, p) = h.engine.frame_rgba();
+    let (sx, sy) = (w as f32 / 375.0, hh as f32 / 667.0);
+    let i = (((y as f32 * sy) as u32 * w + (x as f32 * sx) as u32) * 4) as usize;
+    [p[i], p[i + 1], p[i + 2]]
+}
+#[path = "game_cases/engines.rs"]
+mod engine_cases;
 #[path = "game_cases/webgl.rs"]
 mod webgl_cases;
 #[path = "game_cases/overlay.rs"]

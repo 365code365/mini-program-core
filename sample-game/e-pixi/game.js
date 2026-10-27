@@ -1,0 +1,22 @@
+// e-pixi（G9.1）：PixiJS 7.4.2 WebGL 渲染器 —— Graphics、Text（2D 画布排字再当纹理）、可点的精灵（pointerdown）
+var T = require('_lib/t.js');
+var canvas = require('_lib/adapter.js');
+var PIXI = require('./libs/pixi.js');
+var info = wx.getSystemInfoSync();
+var app = new PIXI.Application({ view: canvas, width: info.windowWidth, height: info.windowHeight, resolution: T.q.dpr ? Number(T.q.dpr) : info.pixelRatio, backgroundColor: 0x203040, antialias: false });
+T.ev('pixi', { ver: PIXI.VERSION, type: app.renderer.type, w: canvas.width, h: canvas.height });
+var g = new PIXI.Graphics();
+g.beginFill(0xf0a020); g.drawRoundedRect(40, 120, 200, 120, 16); g.endFill();
+g.beginFill(0x40c0ff); g.drawCircle(260, 380, 60); g.endFill();
+app.stage.addChild(g);
+var txt = new PIXI.Text('PixiJS 小游戏', { fontSize: 28, fill: 0xffffff });
+txt.x = 40; txt.y = 40; app.stage.addChild(txt);
+var box = new PIXI.Sprite(PIXI.Texture.WHITE); box.width = box.height = 80; box.x = 60; box.y = 480; box.tint = 0x00ff00;
+box.eventMode = 'static'; box.cursor = 'pointer';
+box.on('pointerdown', function (e) { box.tint = 0xff0000; T.ev('tap', { x: Math.round(e.global.x), y: Math.round(e.global.y) }); });
+app.stage.addChild(box);
+var n = 0, cnt = 0, last = Date.now();
+app.ticker.add(function () { g.rotation = 0; txt.alpha = 1; n++; cnt++;
+    if (n === 20) T.ev('frames', { n: n });
+    if (Date.now() - last >= 1000) { T.ev('fps', { fps: cnt }); cnt = 0; last = Date.now(); } });
+T.ready('e-pixi');
