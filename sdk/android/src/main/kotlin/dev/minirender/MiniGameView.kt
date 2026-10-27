@@ -63,6 +63,13 @@ class MiniGameView(
      */
     var onHostEvent: ((type: String, event: org.json.JSONObject) -> Unit)? = null
 
+    /** 原生输入条 + 输入法（[GameKeyboard]，主线程上用） */
+    private val keyboard: GameKeyboard by lazy {
+        GameKeyboard(this) { name, json ->
+            engine.post { if (handle != 0L) { MiniGame.nativeDispatchEvent(handle, name, json); drainEvents(); requestFrame() } }
+        }
+    }
+
     /** 音频焦点与来电（[GameAudioSession]），引擎线程上建、用、放 */
     private var audioSession: GameAudioSession? = null
 
@@ -91,6 +98,7 @@ class MiniGameView(
         val inEngine = try { org.json.JSONObject(options).optBoolean("rotateInEngine") } catch (_: Exception) { false }
         lockOrientation(if (inEngine) "portrait" else o)
         post { start() }
+        post { keyboard }
     }
 
     /** game.json / wx.setDeviceOrientation 的方向 → Activity 的 requestedOrientation（宿主不是 Activity 时不管） */
@@ -386,6 +394,9 @@ class MiniGameView(
                 "log" -> o.optString("text").lineSequence().forEach { Log.i("mini-game", it) }
                 "audioSession" -> { Log.i("mini-game", e); audioSession?.apply(o) }
                 // initial 的那条建实例之前已经按 game.json 锁过了；wx.setDeviceOrientation 的才要转
+                "showKeyboard" -> main.post { keyboard.show(o) }
+                "updateKeyboard" -> main.post { keyboard.update(o) }
+                "hideKeyboard" -> main.post { keyboard.hide() }
                 "deviceOrientation" -> if (!o.optBoolean("initial")) { val v = o.optString("value"); main.post { lockOrientation(v) } }
                 "error" -> Log.w("mini-game", e)
                 else -> {

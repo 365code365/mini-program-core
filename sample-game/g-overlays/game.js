@@ -23,5 +23,11 @@ if (T.q.auto) {
   var seq = ['toast', 'loading', 'hideLoading', 'modal'];
   seq.forEach(function (s, i) { setTimeout(function () { go(s); }, 800 + i * 1500); });
 }
+// kb=1：真机键盘（输入条、输入 / 确认 / 收起事件）
+if (T.q.kb) {
+  ['Input', 'Confirm', 'Complete'].forEach(function (k) { wx['onKeyboard' + k](function (r) { T.ev('kb', { k: k, v: r.value }); }); });
+  wx.onKeyboardHeightChange(function (r) { T.ev('kbh', r); });
+  setTimeout(function () { wx.showKeyboard({ defaultValue: 'hi', maxLength: 10, confirmType: 'send' }); }, 800);
+}
 (function tick() { requestAnimationFrame(tick); })();
 T.ready('g-overlays');

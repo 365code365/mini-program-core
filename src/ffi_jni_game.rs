@@ -146,6 +146,15 @@ pub extern "system" fn Java_dev_minirender_MiniGame_nativeResize(mut env: JNIEnv
     let c = o.and_then(|s| CString::new(s).ok());
     mr_game_resize(hd.game, w.max(1) as u32, hh.max(1) as u32, dpr, c.as_ref().map(|c| c.as_ptr()).unwrap_or(std::ptr::null()));
 }
+/// 宿主推事件给 wx.onXxx（见 `mr_game_dispatch_event`）；返回监听者个数
+#[no_mangle]
+pub extern "system" fn Java_dev_minirender_MiniGame_nativeDispatchEvent(mut env: JNIEnv, _c: JClass, h: jlong, name: JString, payload: JString) -> jint {
+    let Some(hd) = handle(h) else { return 0 };
+    let n: String = env.get_string(&name).map(Into::into).unwrap_or_default();
+    let p: String = if payload.is_null() { "{}".into() } else { env.get_string(&payload).map(Into::into).unwrap_or_else(|_| "{}".into()) };
+    let (Ok(n), Ok(p)) = (CString::new(n), CString::new(p)) else { return 0 };
+    mr_game_dispatch_event(hd.game, n.as_ptr(), p.as_ptr())
+}
 /// 系统内存告警（见 `mr_game_memory_warning`）
 #[no_mangle]
 pub extern "system" fn Java_dev_minirender_MiniGame_nativeMemoryWarning(_e: JNIEnv, _c: JClass, h: jlong, level: jint) {

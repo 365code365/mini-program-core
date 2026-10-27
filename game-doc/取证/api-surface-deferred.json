@@ -23,16 +23,8 @@
    "getMiniReportManager",
    "getRankManager",
    "getScenePerformanceManager",
-   "offKeyboardComplete",
-   "offKeyboardConfirm",
-   "offKeyboardInput",
-   "onKeyboardComplete",
-   "onKeyboardConfirm",
-   "onKeyboardInput",
    "setMenuStyle",
-   "setStatusBarStyle",
-   "showKeyboard",
-   "updateKeyboard"
+   "setStatusBarStyle"
   ],
   "G6": [],
   "G3": [

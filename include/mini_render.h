@@ -368,6 +368,10 @@ void mr_game_audio_interruption(MRGame* game, int begin);
 void mr_game_resize(MRGame* game, uint32_t width, uint32_t height, float dpr, const char* orientation);
 // 系统内存告警：level 5 / 10 / 15 派发 wx.onMemoryWarning（Android 前台三档），其它值只回收（图片缓存、JS GC）
 void mr_game_memory_warning(MRGame* game, int level);
+// 宿主推事件给 wx.onXxx：键盘 keyboardInput / keyboardConfirm / keyboardComplete {"value"}、keyboardHeightChange {"height"}、
+// 传感器（accelerometerChange …）、网络等，名字与 mr_app_dispatch_event 相同。返回收到它的监听者个数。
+// 键盘相关的宿主事件：{"type":"showKeyboard",defaultValue,maxLength,multiple,confirmHold,confirmType} / updateKeyboard {value} / hideKeyboard
+int mr_game_dispatch_event(MRGame* game, const char* name, const char* payload_json);
 // rAF 目标帧率（1~60）：宿主据此请求显示刷新率（60 的整数倍）
 int mr_game_preferred_fps(MRGame* game);
 // pump_ex 返回 MR_FRAME_WAKE_AT（128）时：多久之后再 pump（微秒），-1 = 没有定时器

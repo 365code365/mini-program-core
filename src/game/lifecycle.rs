@@ -36,6 +36,24 @@ impl GameEngine {
         picked.map(|p| p.1)
     }
 
+    /// 宿主推一个事件给 `wx.onXxx`（键盘输入 / 确认 / 完成、键盘高度、传感器、网络、主题……，与 `mr_app_dispatch_event` 同一套名字）。
+    /// 返回收到它的监听者个数
+    pub fn dispatch_event(&mut self, name: &str, payload_json: &str) -> u32 {
+        self.guards.watchdog.arm();
+        let r = self.app.eval(&format!("typeof __gameHostEvent === 'function' ? __gameHostEvent({}, {}) : 0",
+            serde_json::json!(name), serde_json::json!(payload_json)));
+        self.guards.watchdog.disarm();
+        let n = match r {
+            Ok(v) => v.parse::<f64>().unwrap_or(0.0) as u32,
+            Err(e) => {
+                self.report_error(super::error_kind(&e, "event"), &e);
+                0
+            }
+        };
+        self.after_js();
+        n
+    }
+
     /// 派发 wx.onShow / wx.onHide（`kind` = "show" / "hide"）
     pub(super) fn dispatch_lifecycle(&mut self, kind: &str) {
         self.guards.watchdog.arm();

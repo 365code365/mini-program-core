@@ -105,3 +105,39 @@ fn u1_覆盖层盖在游戏上_拦触摸_回调值() {
     assert_eq!(h.events("gameTouch").len(), 2, "菜单弹着时的触摸一个都没进游戏");
     assert_eq!(h.engine.frame_rgba().2, &plain[..], "都收起之后与没弹过逐字节相同");
 }
+
+/// U2：showKeyboard 的参数完整交给宿主；宿主推 keyboardInput / Confirm / Complete → 回调 {value}；
+/// confirmHold:false 时确认之后发 hideKeyboard；keyboardHeightChange 到 onKeyboardHeightChange
+#[test]
+fn u2_键盘() {
+    let _g = serial();
+    let js = r#"
+var T = require('_lib/t.js');
+['Input', 'Confirm', 'Complete'].forEach(function (k) { wx['onKeyboard' + k](function (r) { T.ev('kb', { k: k, v: r.value }); }); });
+wx.onKeyboardHeightChange(function (r) { T.ev('kbh', r); });
+globalThis.go = function () {
+  wx.showKeyboard({ defaultValue: 'hi', maxLength: 20, confirmType: 'send', success: function (r) { T.ev('kbShown', r); } });
+};
+globalThis.upd = function () { wx.updateKeyboard({ value: 'x' }); };
+T.ready('u2');
+"#;
+    let mut h = GameHarness::open_inline("u2", js, Opts::default());
+    h.engine.eval("go()").unwrap();
+    h.vsyncs(2);
+    let show: Vec<&serde_json::Value> = h.host.iter().filter(|e| e["type"] == "showKeyboard").collect();
+    assert_eq!(show.len(), 1, "{:?}", h.host);
+    assert_eq!(show[0], &serde_json::json!({ "type": "showKeyboard", "defaultValue": "hi", "maxLength": 20, "multiple": false, "confirmHold": false, "confirmType": "send" }));
+    assert_eq!(h.events("kbShown")[0]["errMsg"], "showKeyboard:ok");
+    assert_eq!(h.engine.dispatch_event("keyboardInput", r#"{"value":"hi!"}"#), 1);
+    h.engine.dispatch_event("keyboardHeightChange", r#"{"height":280}"#);
+    h.engine.eval("upd()").unwrap();
+    h.engine.dispatch_event("keyboardConfirm", r#"{"value":"hi!"}"#);
+    h.vsyncs(1);
+    assert!(h.host.iter().any(|e| e["type"] == "updateKeyboard" && e["value"] == "x"));
+    assert!(h.host.iter().any(|e| e["type"] == "hideKeyboard"), "confirmHold:false → 确认之后收起");
+    h.engine.dispatch_event("keyboardComplete", r#"{"value":"hi!"}"#);
+    h.vsyncs(1);
+    let kb: Vec<(String, String)> = h.events("kb").iter().map(|e| (e["k"].as_str().unwrap().into(), e["v"].as_str().unwrap().into())).collect();
+    assert_eq!(kb, [("Input".into(), "hi!".into()), ("Confirm".into(), "hi!".into()), ("Complete".into(), "hi!".into())]);
+    assert_eq!(h.events("kbh")[0]["height"], 280);
+}

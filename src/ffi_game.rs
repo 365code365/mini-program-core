@@ -248,6 +248,14 @@ pub extern "C" fn mr_game_resize(game: *mut MRGame, width: u32, height: u32, dpr
 pub extern "C" fn mr_game_memory_warning(game: *mut MRGame, level: c_int) {
     guarded(game, (), |e| e.memory_warning(level));
 }
+/// 宿主推事件给 `wx.onXxx`（键盘 keyboardInput / keyboardConfirm / keyboardComplete {value}、keyboardHeightChange {height}、
+/// 传感器、网络……，名字与 `mr_app_dispatch_event` 相同）。返回收到它的监听者个数
+#[cfg(feature = "game")]
+#[no_mangle]
+pub extern "C" fn mr_game_dispatch_event(game: *mut MRGame, name: *const c_char, payload_json: *const c_char) -> c_int {
+    let (Some(name), payload) = (cstr(name), cstr(payload_json).unwrap_or_else(|| "{}".into())) else { return 0 };
+    guarded(game, 0, |e| e.dispatch_event(&name, &payload) as c_int)
+}
 /// rAF 目标帧率（1~60）。宿主据此请求显示刷新率（60 的整数倍，game-doc/02 §4.2）
 #[cfg(feature = "game")]
 #[no_mangle]
