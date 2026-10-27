@@ -2,7 +2,8 @@
             // wx.connectSocket 返回 SocketTask；连接、收发在原生线程里（src/websocket.rs），
             // 事件由宿主每帧取回后调 __resolveSocket(id, type, json)。
             // 旧式全局 API（wx.onSocketOpen / sendSocketMessage / closeSocket …）作用于**最近一次**创建的连接。
-            // 二进制帧按 base64 过桥（codec.js），onMessage 里还原成 ArrayBuffer。
+            // 二进制帧不经 base64：发送直接把 ArrayBuffer 交给原生（__native_socket_send_bin），收到的帧在原生排队，
+            // 事件里只有 bin:true，这里按 id 取 ArrayBuffer（src/bin_stash.rs）。
             var __sockSeq = 0, __sockets = {}, __sockLatest = 0;
             var __sockGlobal = { open: [], message: [], error: [], close: [] };
             function __sockCall(o, name, res) {
@@ -21,6 +22,7 @@
                         o = o || {};
                         var d = o.data, err;
                         if (typeof d === 'string') err = __native_socket_send(String(id), 't', d);
+                        else if (typeof __native_socket_send_bin === 'function') err = __native_socket_send_bin(id, __toBytes(d));
                         else err = __native_socket_send(String(id), 'b', __b64encode(d));
                         __sockCall(o, 'sendSocketMessage', err ? { errMsg: err } : {});
                     },
@@ -63,7 +65,7 @@
                 var res = {};
                 try { res = JSON.parse(json || '{}'); } catch (e) {}
                 if (type === 'open') task.readyState = 1;
-                if (type === 'message' && res.binary !== undefined) { res = { data: __b64decode(res.binary) }; }
+                if (type === 'message' && res.bin) { res = { data: __native_bin_take(1, id) || new ArrayBuffer(0) }; }
                 if (type === 'close') { task.readyState = 3; delete __sockets[id]; }
                 var fire = function(list) { list.slice().forEach(function(cb) { try { cb(res); } catch (e) { console.error(e); } }); };
                 fire(task.__ls[type] || []);

@@ -23,7 +23,7 @@ impl MiniApp {
             }
         }
         for (id, ev) in sockets {
-            let (ty, json) = ev.to_js();
+            let (ty, json) = ev.into_js(id);
             let js = format!("__resolveSocket({id}, {}, {})", serde_json::Value::String(ty.into()), serde_json::Value::String(json));
             if let Err(e) = self.eval(&js) {
                 eprintln!("⚠️  WebSocket 回调执行失败 (id={id}): {e}");

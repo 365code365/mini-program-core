@@ -102,3 +102,79 @@ fn n1_n4_二进制_分块_响应头_进度() {
     assert_eq!(*prog.last().unwrap(), 100, "最后一次是 100");
     assert_eq!(n4["h"].as_u64(), Some(want), "下载落盘的内容与源不同");
 }
+
+/// WebSocket 回声 + TCP 回声（原样回）
+fn echo_servers() -> (u16, u16) {
+    let ws = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let tcp = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let ports = (ws.local_addr().unwrap().port(), tcp.local_addr().unwrap().port());
+    std::thread::spawn(move || {
+        for s in ws.incoming().flatten() {
+            std::thread::spawn(move || {
+                let Ok(mut ws) = tungstenite::accept(s) else { return };
+                while let Ok(m) = ws.read() {
+                    if (m.is_binary() || m.is_text()) && ws.send(m).is_err() {
+                        break;
+                    }
+                }
+            });
+        }
+    });
+    std::thread::spawn(move || {
+        use std::io::{Read, Write};
+        for mut s in tcp.incoming().flatten() {
+            std::thread::spawn(move || {
+                let mut buf = [0u8; 65536];
+                while let Ok(n) = s.read(&mut buf) {
+                    if n == 0 || s.write_all(&buf[..n]).is_err() {
+                        break;
+                    }
+                }
+            });
+        }
+    });
+    ports
+}
+
+/// GT-N5：WebSocket 1MB 二进制帧、TCP 64KB 往返内容相同，且不经 base64（JS 侧的 __b64encode / __b64decode 一次都没被调）
+#[test]
+fn n5_长连接二进制直通() {
+    let _g = serial();
+    let (wsp, tcpp) = echo_servers();
+    let js = format!(r#"
+var T = require('_lib/t.js');
+function fnv(buf) {{ var a = new Uint8Array(buf), h = 0x811c9dc5; for (var i = 0; i < a.length; i++) {{ h ^= a[i]; h = Math.imul(h, 16777619) >>> 0; }} return h >>> 0; }}
+var b64calls = 0, e0 = __b64encode, d0 = __b64decode;
+globalThis.__b64encode = function (x) {{ b64calls++; return e0(x); }};
+globalThis.__b64decode = function (x) {{ b64calls++; return d0(x); }};
+var big = new Uint8Array(1024 * 1024); for (var i = 0; i < big.length; i++) big[i] = (i * 31 + 7) & 255;
+var want = fnv(big.buffer);
+var ws = wx.connectSocket({{ url: 'ws://127.0.0.1:{wsp}/' }});
+ws.onOpen(function () {{ ws.send({{ data: big.buffer }}); }});
+ws.onMessage(function (r) {{ T.ev('ws', {{ isAB: r.data instanceof ArrayBuffer, len: r.data.byteLength, ok: fnv(r.data) === want, b64: b64calls }}); ws.close({{}}); }});
+var small = new Uint8Array(65536); for (var j = 0; j < small.length; j++) small[j] = (j * 7) & 255;
+var got = [], gotLen = 0;
+var tcp = wx.createTCPSocket();
+tcp.onConnect(function () {{ tcp.write(small); }});
+tcp.onMessage(function (r) {{
+  got.push(r.message); gotLen += r.message.byteLength;
+  if (gotLen >= small.length) {{
+    var all = new Uint8Array(gotLen), o = 0; got.forEach(function (g) {{ all.set(new Uint8Array(g), o); o += g.byteLength; }});
+    T.ev('tcp', {{ len: gotLen, ok: fnv(all.buffer) === fnv(small.buffer), b64: b64calls }}); tcp.close();
+  }}
+}});
+tcp.connect({{ address: '127.0.0.1', port: {tcpp} }});
+T.ready('n5');
+"#);
+    let js: &'static str = Box::leak(js.into_boxed_str());
+    let mut h = GameHarness::open_inline("n5", js, Opts::default());
+    h.until("T:EV ws", 2000);
+    h.until("T:EV tcp", 2000);
+    h.assert_no_fail();
+    let ws = h.events("ws").pop().unwrap();
+    assert_eq!((ws["isAB"].as_bool(), ws["len"].as_u64(), ws["ok"].as_bool()), (Some(true), Some(1024 * 1024), Some(true)), "{ws}");
+    assert_eq!(ws["b64"], 0, "WebSocket 二进制不该经过 base64");
+    let tcp = h.events("tcp").pop().unwrap();
+    assert_eq!((tcp["len"].as_u64(), tcp["ok"].as_bool()), (Some(65536), Some(true)), "{tcp}");
+    assert_eq!(tcp["b64"], 0, "TCP 二进制不该经过 base64");
+}

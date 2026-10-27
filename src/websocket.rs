@@ -7,7 +7,8 @@
 //! 协议层用 `tungstenite`（握手、分帧、掩码、ping/pong 都在里面），TLS 自己接 rustls：
 //! 根证书与 ureq 用的是同一份 `webpki-roots`，`wss://` 与 `wx.request` 的 https 信任同一批 CA。
 //!
-//! 二进制消息在 JS 与这里之间按 base64 走（桥上只有字符串），JS 侧再换回 ArrayBuffer。
+//! 二进制帧不经 base64：收到的字节进 `bin_stash`，事件里只带 `"bin": true`，JS 按 id 取 ArrayBuffer；
+//! 发送走 `send_bytes`（`__native_socket_send_bin` 直接收 ArrayBuffer）。base64 的 `send` 仍保留（老的 JS 外壳、测试）。
 
 use base64::Engine as _;
 use std::collections::HashMap;
@@ -26,14 +27,23 @@ use tungstenite::{Error as WsError, Message};
 pub enum SocketEvent {
     Open { header: Vec<(String, String)>, protocol: String },
     Text(String),
-    /// base64 编码的二进制帧
-    Binary(String),
+    /// 二进制帧（字节在 `to_js` 时放进 bin_stash）
+    Binary(Vec<u8>),
     Error(String),
     Close { code: u16, reason: String },
 }
 
 impl SocketEvent {
-    /// (`type`, 参数 JSON)：JS 侧按 type 分发到 onOpen / onMessage / onError / onClose
+    /// (`type`, 参数 JSON)：JS 侧按 type 分发到 onOpen / onMessage / onError / onClose。
+    /// 二进制帧的字节在这里交给 bin_stash（JS 收到 `bin: true` 再取），所以按值消费
+    pub fn into_js(self, id: u32) -> (&'static str, String) {
+        if let SocketEvent::Binary(b) = self {
+            crate::bin_stash::stash(crate::bin_stash::WS, id, b);
+            return ("message", serde_json::json!({ "bin": true }).to_string());
+        }
+        self.to_js()
+    }
+
     pub fn to_js(&self) -> (&'static str, String) {
         use serde_json::json;
         match self {
@@ -43,7 +53,7 @@ impl SocketEvent {
                 ("open", json!({ "header": h, "protocol": protocol }).to_string())
             }
             SocketEvent::Text(s) => ("message", json!({ "data": s }).to_string()),
-            SocketEvent::Binary(b) => ("message", json!({ "binary": b }).to_string()),
+            SocketEvent::Binary(b) => ("message", json!({ "bytes": b.len() }).to_string()),
             SocketEvent::Error(e) => ("error", json!({ "errMsg": e }).to_string()),
             SocketEvent::Close { code, reason } => ("close", json!({ "code": code, "reason": reason }).to_string()),
         }
@@ -122,6 +132,13 @@ pub fn send(id: u32, text: Option<String>, binary_b64: Option<String>) -> Result
     let map = sockets().lock().unwrap();
     let tx = map.get(&id).ok_or_else(|| "sendSocketMessage:fail WebSocket is not connected".to_string())?;
     tx.send(cmd).map_err(|_| "sendSocketMessage:fail WebSocket is not connected".to_string())
+}
+
+/// `SocketTask.send` 的二进制版（字节直接从 ArrayBuffer 来）
+pub fn send_bytes(id: u32, bytes: Vec<u8>) -> Result<(), String> {
+    let map = sockets().lock().unwrap();
+    let tx = map.get(&id).ok_or_else(|| "sendSocketMessage:fail WebSocket is not connected".to_string())?;
+    tx.send(Cmd::Binary(bytes)).map_err(|_| "sendSocketMessage:fail WebSocket is not connected".to_string())
 }
 
 /// `SocketTask.close`：发关闭帧，等对端回关闭帧后以 `close` 事件结束
@@ -302,7 +319,7 @@ fn run(id: u32, url: &str, headers: &[(String, String)], protocols: &[String], t
         }
         match ws.read() {
             Ok(Message::Text(t)) => push(id, SocketEvent::Text(t.to_string())),
-            Ok(Message::Binary(b)) => push(id, SocketEvent::Binary(base64::engine::general_purpose::STANDARD.encode(&b))),
+            Ok(Message::Binary(b)) => push(id, SocketEvent::Binary(b.to_vec())),
             Ok(Message::Close(frame)) => {
                 let (code, reason) = frame.map(|f| (u16::from(f.code), f.reason.to_string())).unwrap_or((1005, String::new()));
                 // 对端先关：tungstenite 会自动回关闭帧，再读一次把它冲出去
@@ -338,8 +355,9 @@ mod tests {
         assert_eq!(t, "close");
         let v: serde_json::Value = serde_json::from_str(&j).unwrap();
         assert_eq!(v["code"], 1000);
-        let (t, j) = SocketEvent::Binary("AAE=".into()).to_js();
+        let (t, j) = SocketEvent::Binary(vec![0, 1]).into_js(9004);
         assert_eq!(t, "message");
-        assert!(j.contains("\"binary\""));
+        assert!(j.contains("\"bin\""));
+        assert_eq!(crate::bin_stash::take(crate::bin_stash::WS, 9004), Some(vec![0, 1]), "字节进了 bin_stash，不在 JSON 里");
     }
 }
