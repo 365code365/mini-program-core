@@ -138,6 +138,13 @@ pub extern "system" fn Java_dev_minirender_MiniGame_nativeSetBackground(_e: JNIE
     }
 }
 
+/// 系统音频打断：true = 开始，false = 结束（见 `mr_game_audio_interruption`）
+#[no_mangle]
+pub extern "system" fn Java_dev_minirender_MiniGame_nativeAudioInterruption(_e: JNIEnv, _c: JClass, h: jlong, begin: jboolean) {
+    if let Some(hd) = handle(h) {
+        mr_game_audio_interruption(hd.game, begin as i32);
+    }
+}
 /// 一批指针事件（一个 MotionEvent 拆出来的全部指针 × 全部历史采样，按时间顺序）：每个事件 6 个 float
 /// `[phase, id, x, y, force, t_ms_offset]`，外加批的基准时刻 `base_us`（µs，与 nativePump 同一时钟）。
 /// 一次 JNI 进来，不是每个指针一次（1000Hz 屏上一次 MOVE 可能带十几个历史采样）

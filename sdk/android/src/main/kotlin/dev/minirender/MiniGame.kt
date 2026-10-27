@@ -26,6 +26,8 @@ object MiniGame {
     external fun nativePollEvent(handle: Long): String?
     external fun nativeEval(handle: Long, code: String): String?
     external fun nativeSetBackground(handle: Long, background: Boolean)
+    /** 系统音频打断开始（true）/ 结束（false）：引擎暂停全部音频后派发 wx.onAudioInterruptionBegin / End */
+    external fun nativeAudioInterruption(handle: Long, begin: Boolean)
     /**
      * 一批指针事件：每个 6 个 float `[phase(0 下/1 移/2 抬/3 取消), pointerId, x, y, force, 相对 baseUs 的毫秒]`，
      * 坐标是视图内逻辑像素；baseUs 与 [nativePump] 同一时钟（MotionEvent 的 eventTime 与 Choreographer 都是 CLOCK_MONOTONIC）

@@ -29,6 +29,8 @@ pub struct GameHarness {
     pub log: Vec<String>,
     /// 宿主事件里的错误（原样 JSON）
     pub errors: Vec<Value>,
+    /// 其它宿主事件（audioSession …）
+    pub host: Vec<Value>,
     pub dir: PathBuf,
 }
 
@@ -96,7 +98,7 @@ impl GameHarness {
         let data = dir.with_extension("data");
         let engine = GameEngine::new(dir.to_str().unwrap(), Some(data.to_str().unwrap()), 375, 667, 2.0, go)
             .unwrap_or_else(|e| panic!("建游戏实例失败：{e}"));
-        let mut h = Self { engine, hz: opts.hz, frame: 0, log: Vec::new(), errors: Vec::new(), dir };
+        let mut h = Self { engine, hz: opts.hz, frame: 0, log: Vec::new(), errors: Vec::new(), host: Vec::new(), dir };
         h.collect();
         h
     }
@@ -136,7 +138,7 @@ impl GameHarness {
             match v["type"].as_str() {
                 Some("log") => self.log.extend(v["text"].as_str().unwrap_or("").lines().map(str::to_string)),
                 Some("error") => self.errors.push(v),
-                _ => {}
+                _ => self.host.push(v),
             }
         }
     }

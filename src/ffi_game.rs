@@ -227,6 +227,13 @@ pub extern "C" fn mr_game_set_background(game: *mut MRGame, background: c_int) {
     guarded(game, (), |e| e.set_background(background != 0));
 }
 
+/// 系统音频打断：非 0 = 开始（来电、闹钟、别的 App 拿走独占焦点），0 = 结束。引擎暂停全部音频后派发
+/// `wx.onAudioInterruptionBegin` / `End`，结束时不自动续播（game/audio/session.rs）
+#[cfg(feature = "game")]
+#[no_mangle]
+pub extern "C" fn mr_game_audio_interruption(game: *mut MRGame, begin: c_int) {
+    guarded(game, (), |e| e.audio_interruption(begin != 0));
+}
 /// rAF 目标帧率（1~60）。宿主据此请求显示刷新率（60 的整数倍，game-doc/02 §4.2）
 #[cfg(feature = "game")]
 #[no_mangle]

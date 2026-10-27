@@ -57,6 +57,9 @@ class MiniGameView(
 
     @Volatile private var disposed = false
 
+    /** 音频焦点与来电（[GameAudioSession]），引擎线程上建、用、放 */
+    private var audioSession: GameAudioSession? = null
+
     private val frame = Choreographer.FrameCallback { t ->
         scheduled = false
         tick(t)
@@ -90,6 +93,13 @@ class MiniGameView(
             boost = FrameBoost.forCurrentThread(context)
             val t0 = System.nanoTime()
             handle = MiniGame.nativeCreate(dir, dataDir, w, h, dpr, options)
+            if (handle != 0L) audioSession = GameAudioSession(context, engine) { begin ->
+                if (handle != 0L) {
+                    MiniGame.nativeAudioInterruption(handle, begin)
+                    drainEvents()
+                    requestFrame()
+                }
+            }
             Log.i(TAG, "🎮 建实例 ${(System.nanoTime() - t0) / 1_000_000}ms（$w×$h@$dpr，$dir）${if (handle == 0L) " 失败" else ""}")
             drainEvents()
             requestFrame()
@@ -99,12 +109,14 @@ class MiniGameView(
     fun onResume() = engine.post {
         running = true
         if (handle != 0L) MiniGame.nativeSetBackground(handle, false)
+        audioSession?.setForeground(true)
         requestFrame()
     }
 
     fun onPause() = engine.post {
         running = false
         if (handle != 0L) MiniGame.nativeSetBackground(handle, true)
+        audioSession?.setForeground(false)
         choreographer?.removeFrameCallback(frame)
         scheduled = false
     }
@@ -114,6 +126,8 @@ class MiniGameView(
         disposed = true
         engine.post {
             choreographer?.removeFrameCallback(frame)
+            audioSession?.release()
+            audioSession = null
             if (handle != 0L) MiniGame.nativeDestroy(handle)
             handle = 0L
             boost?.close()
@@ -282,6 +296,7 @@ class MiniGameView(
             val o = try { org.json.JSONObject(e) } catch (_: Exception) { null }
             when (o?.optString("type")) {
                 "log" -> o.optString("text").lineSequence().forEach { Log.i("mini-game", it) }
+                "audioSession" -> { Log.i("mini-game", e); audioSession?.apply(o) }
                 else -> Log.w("mini-game", e)
             }
         }

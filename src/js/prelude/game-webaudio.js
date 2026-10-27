@@ -30,7 +30,7 @@
                 var reg = typeof FinalizationRegistry === 'function' ? new FinalizationRegistry(function(h) {
                     try { N(h.op, JSON.stringify(h.arg)); } catch (e) {}
                 }) : null;
-                var playing = {}, decodes = {};
+                var playing = {}, decodes = {}, contexts = {};
 
                 function AudioParam(target, name, range) {
                     this.__t = target; this.__name = name;
@@ -165,6 +165,8 @@
                     return n;
                 }
                 globalThis.__webAudioEvent = function(ev) {
+                    // 系统打断：原生把 running 的上下文挂起了（game/audio/session.rs）
+                    if (ev.type === 'state') { var cx = contexts[ev.ctx]; if (cx) cx.__setState(ev.state); return; }
                     if (ev.type === 'ended') {
                         var n = playing[ev.node];
                         if (!n) return;
@@ -218,6 +220,8 @@
                         state = s;
                         setTimeout(function() { if (typeof ctx.onstatechange === 'function') ctx.onstatechange({ type: 'statechange', target: ctx }); }, 0);
                     };
+                    ctx.__setState = setState;
+                    contexts[r.ctx] = ctx;
                     ctx.destination = new AudioNode(ctx, 'destination', null, { node: r.dest, inputs: 1, outputs: 0, params: [], channelCount: 2, channelCountMode: 'explicit', channelInterpretation: 'speakers' });
                     ctx.destination.maxChannelCount = 2;
                     var L = {};
@@ -344,7 +348,8 @@
                         return function() {
                             if (state === 'closed') return Promise.reject(err('InvalidStateError', '上下文已经关闭'));
                             if (s === state) return Promise.resolve();
-                            call(op, { ctx: ctx.__id });
+                            // 打断期间 resume 失败（收到 onAudioInterruptionEnd 之后才能恢复）
+                            try { call(op, { ctx: ctx.__id }); } catch (e) { return Promise.reject(e); }
                             if (op === 'close') ctx.__last = call('time', { ctx: ctx.__id }).v;
                             setState(s);
                             return Promise.resolve();
@@ -356,6 +361,7 @@
                         if (state !== 'closed') {
                             ctx.__last = ctx.currentTime;
                             call('close', { ctx: ctx.__id });
+                            delete contexts[ctx.__id];
                             setState('closed');
                         }
                         return Promise.resolve();

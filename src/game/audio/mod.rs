@@ -16,9 +16,11 @@ mod js;
 mod mixer;
 mod output;
 mod ring;
+mod session;
 mod web;
 
 pub use js::register;
+pub use session::SessionOptions;
 pub use web::register as register_webaudio;
 use js::load_src;
 
@@ -88,6 +90,11 @@ pub struct GameAudio {
     /// 命令队列满了没发出去的（按顺序留着，下次再发；从前是直接丢）
     backlog: VecDeque<Cmd>,
     web: web::WebAudio,
+    /// 系统打断中（session.rs）
+    interrupted: bool,
+    session: SessionOptions,
+    /// setInnerAudioOption 改过、还没交给宿主
+    session_dirty: bool,
 }
 
 impl GameAudio {
@@ -124,6 +131,9 @@ impl GameAudio {
             wait_decodes: offline,
             backlog: VecDeque::new(),
             web: web::WebAudio::new(opened.rate, clocks),
+            interrupted: false,
+            session: SessionOptions::default(),
+            session_dirty: false,
         };
         if std::env::var("MINI_AUDIO_LOG").is_ok() || !a.out.is_device() && !offline {
             a.logs.push(format!("🔊 音频：{}", opened.note));
@@ -227,6 +237,9 @@ impl GameAudio {
 
     fn play(&mut self, id: u32) {
         let Some(c) = self.ctxs.get_mut(&id) else { return };
+        if self.interrupted {
+            return; // 打断期间不能播（session.rs）
+        }
         if c.pcm.is_none() {
             c.play_when_ready = true;
             if c.loading {
@@ -454,7 +467,7 @@ impl GameAudio {
                 self.pause(id);
             }
         }
-        self.send(Cmd::Suspend(bg));
+        self.apply_suspend();
         self.out.set_paused(bg);
     }
 

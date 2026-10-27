@@ -13,9 +13,15 @@ pub(super) fn load_src(src: &str, root: &std::path::Path) -> Result<Pcm, (i32, S
     decode::decode_bytes(bytes, &ext)
 }
 
-/// JS 入口：`__game_audio(op, id, json)`
+/// JS 入口：`__game_audio(op, id, json)`；`__game_audio_session(json)`（setInnerAudioOption，返回生效后的三项）
 pub fn register(rt: &crate::js::JsRuntime, audio: std::rc::Rc<std::cell::RefCell<GameAudio>>) -> Result<(), String> {
     use rquickjs::IntoJs;
+    let a2 = audio.clone();
+    rt.register_raw("__game_audio_session", move |ctx, a| {
+        let text = a.0.first().and_then(|v| v.as_string()).and_then(|s| s.to_string().ok()).unwrap_or_default();
+        let v: serde_json::Value = serde_json::from_str(&text).unwrap_or_default();
+        a2.borrow_mut().set_session_options(&v).to_string().into_js(&ctx)
+    })?;
     rt.register_raw("__game_audio", move |ctx, a| {
         let text = |i: usize| a.0.get(i).and_then(|v| v.as_string()).and_then(|s| s.to_string().ok()).unwrap_or_default();
         let id = text(1).parse().unwrap_or(0);

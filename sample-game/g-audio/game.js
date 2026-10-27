@@ -3,6 +3,8 @@
 // 每秒一行 T:EV clock（bgm.currentTime 与 performance.now，验证播放位置跟着真设备走）
 var T = require('_lib/t.js');
 var bgmSrc = T.q.bgm || 'assets/bgm.wav';
+// query mix=0：不跟别的 App 混音（Android 申请独占焦点），打断测试用（G5.5）
+if (T.q.mix === '0') wx.setInnerAudioOption({ mixWithOther: false });
 var bgm = wx.createInnerAudioContext(); bgm.src = bgmSrc; bgm.loop = true; bgm.volume = 0.4;
 ['Canplay', 'Play', 'Pause', 'Stop', 'Ended', 'Error', 'Waiting', 'Seeking', 'Seeked'].forEach(function (e) {
   bgm['on' + e](function (r) { T.ev('bgm.' + e, r || {}); });
@@ -14,8 +16,8 @@ var idx = 0;
 function click() { var a = pool[idx++ % 32]; a.stop(); a.play(); }
 wx.onTouchStart(click);
 if (T.q.auto) setInterval(click, 500);
-wx.onAudioInterruptionBegin && wx.onAudioInterruptionBegin(function () { T.ev('interruptBegin', {}); });
-wx.onAudioInterruptionEnd && wx.onAudioInterruptionEnd(function () { T.ev('interruptEnd', {}); });
+wx.onAudioInterruptionBegin && wx.onAudioInterruptionBegin(function () { T.ev('interruptBegin', { bgmPaused: bgm.paused }); });
+wx.onAudioInterruptionEnd && wx.onAudioInterruptionEnd(function () { T.ev('interruptEnd', { bgmPaused: bgm.paused }); if (T.q.resume) bgm.play(); });
 wx.onHide && wx.onHide(function () { T.ev('hide', { bgmPaused: bgm.paused }); });
 wx.onShow && wx.onShow(function () { T.ev('show', { bgmPaused: bgm.paused }); });
 var c = wx.createCanvas(), g = c.getContext('2d'), n = 0, t0 = 0, b0 = 0;

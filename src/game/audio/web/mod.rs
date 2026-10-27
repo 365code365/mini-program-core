@@ -333,6 +333,9 @@ impl GameAudio {
         if c.state == State::Closed {
             return err("InvalidStateError", "上下文已经关闭");
         }
+        if s == State::Running && self.interrupted {
+            return err("InvalidStateError", "音频被系统打断，收到 onAudioInterruptionEnd 之后才能 resume");
+        }
         c.state = s;
         self.web_send(GCmd::Running { ctx, on: s == State::Running });
         if s == State::Closed {
@@ -379,6 +382,16 @@ impl GameAudio {
                 Err((_, msg)) => json!({ "type": "decodeError", "job": job, "errMsg": format!("decodeAudioData:fail {msg}") }),
             };
             self.web.events.push(ev);
+        }
+    }
+
+    /// 系统打断：running 的上下文全部变成 suspended（JS 那边跟着改 state、发 statechange）
+    pub(super) fn web_interrupt(&mut self) {
+        let running: Vec<usize> = self.web.ctxs.iter().filter(|(_, c)| c.state == State::Running).map(|(&i, _)| i).collect();
+        for ctx in running {
+            self.web.ctxs.get_mut(&ctx).unwrap().state = State::Suspended;
+            self.web_send(GCmd::Running { ctx, on: false });
+            self.web.events.push(json!({ "type": "state", "ctx": ctx, "state": "suspended" }));
         }
     }
 

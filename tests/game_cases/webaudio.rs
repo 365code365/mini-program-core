@@ -182,3 +182,62 @@ T.ready('wa5');
     assert!((a["db"].as_f64().unwrap() + 13.6).abs() < 0.3, "{a}");
     assert!((a["max"].as_f64().unwrap() - 1.0).abs() < 1e-3, "{a}");
 }
+
+/// GT-AU8（引擎侧）：系统打断。开始：InnerAudio 发 pause、WebAudio 变 suspended，之后才派发 onAudioInterruptionBegin；
+/// 打断期间 play 不生效、resume 被拒；结束：派发 onAudioInterruptionEnd、不自动续播，游戏在回调里 play / resume 才恢复。
+/// setInnerAudioOption 的结果交给宿主（audioSession 事件）
+#[test]
+fn au8_系统打断与会话设置() {
+    let _g = serial();
+    let js = r#"
+var T = require('_lib/t.js');
+var bgm = wx.createInnerAudioContext(); bgm.loop = true;
+var ctx = wx.createWebAudioContext();
+var o = ctx.createOscillator(); o.connect(ctx.destination); o.start();
+['Play', 'Pause'].forEach(function (e) { bgm['on' + e](function () { T.ev('w', { e: 'bgm' + e }); }); });
+ctx.onstatechange = function () { T.ev('w', { e: 'state', s: ctx.state }); };
+wx.onAudioInterruptionBegin(function () {
+  T.ev('w', { e: 'begin', paused: bgm.paused, s: ctx.state });
+  bgm.play();
+  ctx.resume().then(function () { T.ev('w', { e: 'resumeOk' }); }, function (er) { T.ev('w', { e: 'resumeFail', name: er.name }); });
+  setTimeout(function () { T.ev('w', { e: 'during', paused: bgm.paused }); }, 50);
+});
+wx.onAudioInterruptionEnd(function () {
+  T.ev('w', { e: 'end', paused: bgm.paused, s: ctx.state });
+  bgm.play();
+  ctx.resume().then(function () { T.ev('w', { e: 'resumed', s: ctx.state }); });
+});
+wx.setInnerAudioOption({ mixWithOther: false, obeyMuteSwitch: 'x', success: function () { T.ev('w', { e: 'optOk' }); } });
+globalThis.go = function () { bgm.src = 'a.wav'; bgm.play(); };
+T.ready('au8');
+"#;
+    let mut h = GameHarness::open_inline("au8", js, Opts::default());
+    std::fs::write(h.dir.join("a.wav"), make_wav(48_000, 1, 0.5)).unwrap();
+    h.engine.eval("go()").unwrap();
+    h.until("\"e\":\"bgmPlay\"", 60);
+    h.engine.audio_interruption(true);
+    h.engine.audio_interruption(true); // 重复的开始不再派发
+    h.until("\"e\":\"during\"", 60);
+    h.engine.audio_interruption(false);
+    h.until("\"e\":\"resumed\"", 60);
+    h.vsyncs(3);
+    h.assert_no_fail();
+    let w = h.events("w");
+    let names: Vec<&str> = w.iter().map(|e| e["e"].as_str().unwrap()).collect();
+    let ev = &names;
+    let pos = |n: &str| names.iter().position(|x| *x == n).unwrap_or_else(|| panic!("缺 {n}：{ev:?}"));
+    assert!(pos("bgmPause") < pos("begin"), "{ev:?}");
+    let begin = &w[pos("begin")];
+    assert_eq!((begin["paused"].as_bool(), begin["s"].as_str()), (Some(true), Some("suspended")), "回调里读到的已经是暂停后的状态");
+    assert_eq!(names.iter().filter(|n| **n == "begin").count(), 1);
+    assert_eq!(w[pos("resumeFail")]["name"], "InvalidStateError");
+    assert_eq!(w[pos("during")]["paused"], true, "打断期间 play 不生效");
+    let end = &w[pos("end")];
+    assert_eq!((end["paused"].as_bool(), end["s"].as_str()), (Some(true), Some("suspended")), "结束时不自动续播");
+    assert!(pos("bgmPlay") < pos("begin") && names.iter().rposition(|n| *n == "bgmPlay").unwrap() > pos("end"), "回调里 play 才恢复：{ev:?}");
+    assert_eq!(w[pos("resumed")]["s"], "running");
+    assert!(names.contains(&"optOk"));
+    let sess: Vec<&serde_json::Value> = h.host.iter().filter(|e| e["type"] == "audioSession").collect();
+    assert_eq!(sess.len(), 1, "{:?}", h.host);
+    assert_eq!((sess[0]["mixWithOther"].as_bool(), sess[0]["obeyMuteSwitch"].as_bool(), sess[0]["speakerOn"].as_bool()), (Some(false), Some(true), Some(true)), "非布尔值忽略");
+}
