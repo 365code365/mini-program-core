@@ -10,7 +10,7 @@
 | D-2 | A：ANGLE 的 WebGL 兼容上下文（`EGL_ANGLE_create_context_webgl_compatibility`），校验与 GLSL 翻译交给 ANGLE | 探针（§6）：macOS 上 Metal 与 SwiftShader 两个后端都建得出、越界 `drawArrays` 得 `INVALID_OPERATION` |
 | D-2 平台退路 | Android 若加载不到 ANGLE，退到系统 EGL/GLES（方案 B 的子集）：开 robust access 防越界读，校验只做内存安全那几条（§4） | 构建 Android 版 ANGLE 要 gn + 整套 Chromium 依赖（数 GB），本机放不下；系统 GLES 每台机器都有 |
 | D-2b | ANGLE + SwiftShader（Vulkan）做软件兜底与逐字节基线 | 与合成后端无关：CPU 合成时 WebGL 照样可用 |
-| 上屏 | 第一版：WebGL 画进 pbuffer，帧末 `readPixels` 读回主画布后备缓冲，之后走现有合成 / 旋转 / 覆盖层 / 宿主上屏 | 一条路覆盖全部宿主与无头测试；代价是每帧一次读回（§5 记数字） |
+| 上屏 | 无头 / 桌面：pbuffer + 帧末读回主画布后备缓冲；Android：EGL 窗口 surface 直接建在 SurfaceView 上，`eglSwapBuffers`（§5） | 读回在真机上就是瓶颈（1270×2770 每帧 32ms），直接上屏后 60fps |
 | WebGPU `wx.getGPU` | 返回 GPU 对象，`requestAdapter()` resolve `null`（WebGPU 标准里「没有可用适配器」的写法），游戏回退 WebGL | 映射到 wgpu 是另一个数周的项目；W 级，写进验收 |
 
 ## 2. 结构
@@ -45,9 +45,13 @@ src/js/prelude/game-webgl.js   WebGLRenderingContext / WebGL2RenderingContext、
 - `drawArrays` / `drawElements`：按每个启用属性的缓冲尺寸、步长、偏移算可用顶点数；`drawElements` 扫索引（按缓冲 + 偏移 + 个数缓存最大值，`bufferData/SubData` 作废）。越界 → `INVALID_OPERATION`，不下发。
 - 着色器不做 WebGL 的 GLSL 限制检查（驱动能编的都放过），写进验收。
 
-## 5. 上屏代价
+## 5. 上屏（window.rs）
 
-读回在引擎线程上同步：`glReadPixels` 一次整块 RGBA8 + 一遍行翻转。真机数字在验收文档。超出预算时的下一步：Android 上把 EGL window surface 直接建在 SurfaceView 的 `ANativeWindow` 上（不经 CPU），代价是覆盖层与引擎内旋转要在 GL 里画。
+- 读回那一版实测（一加 PLY110）：1270×2770 每帧 32ms、427×931 每帧 8.6ms，都过不了 60fps；
+- 现在：主画布是 WebGL、宿主给了 ANativeWindow、这块窗口没被 CPU 锁过 → 窗口 surface 当默认帧缓冲，帧末 swap；
+- 覆盖层（Toast / Modal / 按钮）弹着：覆盖层黑底、白底各画一遍求出预乘 RGBA，辅助上下文先把游戏这一帧拷进纹理，
+  再把覆盖层混合上去、swap（不碰游戏上下文的 GL 状态；游戏不动、覆盖层在动的帧用存下的那一帧）；
+- 引擎内旋转、窗口刚接上的第一帧、窗口被 CPU 锁过：仍然读回 + CPU 合成，辅助上下文把整帧画上去。
 
 ## 6. 探针（examples/tmp_probe_angle，已删）
 
