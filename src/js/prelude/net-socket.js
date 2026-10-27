@@ -1,7 +1,7 @@
             // ───────── TCP / UDP（官方 api/network/tcp、api/network/udp）与本机 IP ─────────
             // 连接与收发在原生线程里（src/net_socket.rs），事件由宿主每帧取回后调
             // __resolveNetSocket(id, type, json)。write / send 收 string（按 UTF-8）或 ArrayBuffer / TypedArray，
-            // 字节直接过桥（__native_*_bin，src/bin_stash.rs）；onMessage 的 message 是 ArrayBuffer（与微信一致），同样不经 base64。
+            // 字节直接过桥（几个 _bin 结尾的原生入口，src/bin_stash.rs）；onMessage 的 message 是 ArrayBuffer（与微信一致），同样不经 base64。
             var __netSeq = 0, __netSockets = {};
             function __netBytes(data, offset, length) {
                 var b = typeof data === 'string' ? __utf8encode(data) : __toBytes(data);

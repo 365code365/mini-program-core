@@ -12,6 +12,7 @@
 //!   `setBroadcast`；`connect` 之后 `write` 不用再带地址；`setTTL`。
 //! - `onMessage` 的 `remoteInfo` / `localInfo` 字段名与微信一致（`address` `family` `port` `size`）。
 
+#[cfg(test)]
 use base64::Engine as _;
 use std::collections::HashMap;
 use std::io::{ErrorKind, Read, Write};
@@ -52,6 +53,7 @@ fn b64(bytes: &[u8]) -> String {
     base64::engine::general_purpose::STANDARD.encode(bytes)
 }
 
+#[cfg(test)] // 老的 base64 入口：JS 已改走 *_bytes（bin_stash.rs），只留给单测
 fn unb64(s: &str) -> Result<Vec<u8>, String> {
     base64::engine::general_purpose::STANDARD.decode(s.as_bytes()).map_err(|e| e.to_string())
 }
@@ -188,6 +190,7 @@ fn tcp_run(id: u32, address: &str, port: u16, timeout: Duration, rx: Receiver<Cm
     }
 }
 
+#[cfg(test)] // 老的 base64 入口：JS 已改走 *_bytes（bin_stash.rs），只留给单测
 pub fn tcp_write(id: u32, data_b64: &str) -> Result<(), String> {
     tcp_write_bytes(id, unb64(data_b64)?)
 }
@@ -272,6 +275,7 @@ fn udp_run(id: u32, sock: UdpSocket, local: SocketAddr, rx: Receiver<Cmd>) {
     }
 }
 
+#[cfg(test)] // 老的 base64 入口：JS 已改走 *_bytes（bin_stash.rs），只留给单测
 pub fn udp_send(id: u32, address: &str, port: u16, data_b64: &str, broadcast: bool) -> Result<(), String> {
     udp_send_bytes(id, address, port, unb64(data_b64)?, broadcast)
 }
@@ -284,6 +288,7 @@ pub fn udp_connect(id: u32, address: &str, port: u16) -> Result<(), String> {
     command(id, Cmd::Connect(address.to_string(), port), "connect")
 }
 
+#[cfg(test)] // 老的 base64 入口：JS 已改走 *_bytes（bin_stash.rs），只留给单测
 pub fn udp_write(id: u32, data_b64: &str) -> Result<(), String> {
     udp_write_bytes(id, unb64(data_b64)?)
 }
