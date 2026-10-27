@@ -82,7 +82,9 @@
                             st[name] = v; return;
                         }
                         if (typeof v !== 'string') return;
-                        if (N(id, op, v)) st[name] = normColor(v);
+                        // 存原串、读时才规范化：游戏每帧设几百次 fillStyle 而几乎不读，规范化（正则 + toLowerCase）
+                        // 放在设的时候，一加上占到游戏线程的几个百分点（simpleperf：lre_exec_backtrack / js_string_toLowerCase）
+                        if (N(id, op, v)) st[name] = v;
                     }
                     function shadow() { N(id, 42, st.shadowBlur, st.shadowColor, st.shadowOffsetX, st.shadowOffsetY); }
                     var props = {
@@ -106,7 +108,9 @@
                         imageSmoothingEnabled: function(v) { st.imageSmoothingEnabled = !!v; }
                     };
                     Object.keys(props).forEach(function(k) {
-                        Object.defineProperty(self, k, { get: function() { return st[k]; }, set: props[k], enumerable: true });
+                        var lazy = k === 'fillStyle' || k === 'strokeStyle';
+                        Object.defineProperty(self, k, { get: lazy ? function() { var x = st[k]; return typeof x === 'string' ? normColor(x) : x; }
+                            : function() { return st[k]; }, set: props[k], enumerable: true });
                     });
                     Object.keys(OP).forEach(function(k) {
                         var op = OP[k];
