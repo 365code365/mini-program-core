@@ -415,6 +415,8 @@ and the log says why:
 | `MINI_GAME_LOG_ALL=1` | Mini-game: disable the per-frame console limit (500 lines/frame, 4KB/line) |
 | `MINI_GAME_WATCHDOG_MS=<ms>` | Mini-game: time limit for one entry into JS (default 5000); exceeded → `InternalError: interrupted`, `wx.onError`, host `error{kind:"watchdog"}` |
 | `MINI_GAME_FAULT=panic@pump\|panic@eval` | Mini-game fault injection: verifies the FFI panic guard (instance becomes poisoned, host process survives) |
+| `MINI_RAF_LOG=1` | Mini-game: one line per `requestAnimationFrame` round (timestamp, target fps, measured display period, uneven-cadence warning) |
+| `adb shell setprop debug.mini.game_log 1` | Android mini-game view: log every frame's engine work / copy / submit / buffer-wait (default: only frames over 8ms) |
 
 How `auto` decides: the adapter must be an integrated or discrete GPU (software adapters such as
 llvmpipe never count), on Metal / Vulkan / DX12 (GLES only when `gpu` is forced); a start-up
