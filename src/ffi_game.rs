@@ -322,6 +322,13 @@ pub extern "C" fn mr_game_key(game: *mut MRGame, down: c_int, key: *const c_char
     guarded(game, (), |e| e.key(down != 0, &k, &c, t_us));
 }
 
+/// 在实例上跑一段宿主侧代码（JNI 的诊断入口用）。实例为空 / 失效返回 None
+#[cfg(feature = "game")]
+#[cfg_attr(not(target_os = "android"), allow(dead_code))]
+pub(crate) fn mr_game_with_engine<R>(game: *mut MRGame, f: impl FnOnce(&mut GameEngine) -> R) -> Option<R> {
+    guarded(game, None, |e| Some(f(e)))
+}
+
 /// 拿主画布原始像素跑一段宿主侧上屏代码（JNI 直写 ANativeWindow 用，不经中间缓冲）
 #[cfg(feature = "game")]
 #[cfg_attr(not(target_os = "android"), allow(dead_code))] // 只有 Android 的 JNI 直写用

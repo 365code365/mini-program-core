@@ -143,6 +143,7 @@ impl GameEngine {
                 self.cancel_touches();
             }
             self.audio.borrow_mut().set_background(bg);
+            self.flush_audio_events();
             self.backgrounded = bg;
             if !bg {
                 self.pacer.borrow_mut().reset();

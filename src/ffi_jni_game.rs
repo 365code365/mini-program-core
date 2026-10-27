@@ -163,6 +163,14 @@ pub extern "system" fn Java_dev_minirender_MiniGame_nativeTouchBatch(
     }
 }
 
+/// 音频输出统计（JSON：frames / latencyMs / block / callbacks / xruns / rate / device / voices），诊断用
+#[no_mangle]
+pub extern "system" fn Java_dev_minirender_MiniGame_nativeAudioStats(env: JNIEnv, _c: JClass, h: jlong) -> jstring {
+    let Some(hd) = handle(h) else { return std::ptr::null_mut() };
+    let s = crate::ffi_game::mr_game_with_engine(hd.game, |e| e.audio_stats().to_string()).unwrap_or_default();
+    env.new_string(s).map(|s| s.into_raw()).unwrap_or(std::ptr::null_mut())
+}
+
 /// rAF 目标帧率（宿主据此 `Surface.setFrameRate`）
 #[no_mangle]
 pub extern "system" fn Java_dev_minirender_MiniGame_nativePreferredFps(_e: JNIEnv, _c: JClass, h: jlong) -> jint {

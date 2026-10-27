@@ -9,6 +9,8 @@
 //! - 进后台：混音器整体挂起，在播的全部 `pause`（回前台不自动恢复，与 02 §8.1 一致，待取证）；
 //! - 长音乐目前也整段解码（流式解码没做，3 分钟立体声 44.1k 约 60MB，记在验收文档）。
 
+#[cfg(all(feature = "game-audio", target_os = "android"))]
+mod aaudio;
 mod mixer;
 mod output;
 mod ring;
@@ -73,6 +75,8 @@ pub struct GameAudio {
     events: Vec<(u32, &'static str, Value)>,
     logs: Vec<String>,
     suspended: bool,
+    /// 固定时钟（无头）：帧与帧之间不真等，解码没做完就等它做完（与图片同一个做法），结果才逐次可复现
+    wait_decodes: bool,
 }
 
 impl GameAudio {
@@ -102,6 +106,7 @@ impl GameAudio {
             events: Vec::new(),
             logs: Vec::new(),
             suspended: false,
+            wait_decodes: offline,
         };
         if std::env::var("MINI_AUDIO_LOG").is_ok() || !a.out.is_device() && !offline {
             a.logs.push(format!("🔊 音频：{}", opened.note));
@@ -339,8 +344,18 @@ impl GameAudio {
     /// pump 里调：离线渲染补到此刻、收解码结果与混音器回报、发 timeUpdate / ended
     pub fn tick(&mut self, t_us: u64) {
         self.out.advance(t_us, self.rate);
+        if let Some(l) = self.out.poll() {
+            self.logs.push(l);
+        }
         while self.ends.retire.pop().is_some() {}
-        while let Ok((src, r)) = self.done_rx.try_recv() {
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+        loop {
+            let got = if self.wait_decodes && !self.pending.is_empty() {
+                self.done_rx.recv_timeout(deadline.saturating_duration_since(std::time::Instant::now())).ok()
+            } else {
+                self.done_rx.try_recv().ok()
+            };
+            let Some((src, r)) = got else { break };
             let waiters = self.pending.remove(&src).unwrap_or_default();
             let r = r.map(Arc::new);
             if let Ok(p) = &r {
@@ -404,6 +419,7 @@ impl GameAudio {
             }
         }
         self.send(Cmd::Suspend(bg));
+        self.out.set_paused(bg);
     }
 
     pub fn take_events(&mut self) -> Vec<(u32, &'static str, Value)> {
@@ -419,10 +435,15 @@ impl GameAudio {
         !self.pending.is_empty() || !self.events.is_empty() || self.ctxs.values().any(|c| c.playing)
     }
 
-    /// 诊断：(输出帧数, 延迟 µs, 回调块帧数, 回调次数, 采样率, 是否真设备)
-    pub fn stats(&self) -> (u64, u32, u32, u64, u32, bool) {
+    /// 诊断 JSON：输出帧数、延迟、回调块、回调次数、欠载、采样率、是否真设备、在播几路
+    pub fn stats_json(&self) -> Value {
         let (l, b, n) = self.out.stats();
-        (self.out.frames(), l, b, n, self.rate, self.out.is_device())
+        json!({ "frames": self.out.frames(), "latencyMs": l as f64 / 1000.0, "block": b, "callbacks": n, "xruns": self.out.xruns(),
+            "rate": self.rate, "device": self.out.is_device(), "voices": self.slots.iter().filter(|s| s.is_some()).count() })
+    }
+
+    pub fn is_device(&self) -> bool {
+        self.out.is_device()
     }
 }
 

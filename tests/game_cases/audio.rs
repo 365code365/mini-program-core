@@ -129,5 +129,5 @@ T.ready('au');
     let stops: Vec<i64> = h.events("stop").iter().map(|e| e["k"].as_i64().unwrap()).collect();
     assert_eq!(stops, vec![1], "第 33 路抢最早开始的非循环那个（0 号在循环，所以是 1 号）");
     assert!(h.has("被抢占"), "抢占要打日志");
-    assert!(!h.engine.audio_stats().5, "固定时钟下不开声卡");
+    assert_eq!(h.engine.audio_stats()["device"], false, "固定时钟下不开声卡");
 }

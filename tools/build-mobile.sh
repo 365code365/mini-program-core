@@ -27,16 +27,18 @@
 set -eu
 cd "$(dirname "$0")/.."
 MODE="${1:-check}"
-FLAGS=(--release --lib --no-default-features --features bindgen,game)
+# 小游戏音频（cpal：AAudio / CoreAudio）默认编进去；GAME_AUDIO=0 去掉（小游戏音频只走静音的离线模式）
+GA=$([ "${GAME_AUDIO:-1}" = 0 ] && echo game || echo game,game-audio)
+FLAGS=(--release --lib --no-default-features --features "bindgen,$GA")
 if [ "${ANDROID_GPU:-1}" = 0 ]; then
     ANDROID_FLAGS=("${FLAGS[@]}")
 else
-    ANDROID_FLAGS=(--release --lib --no-default-features --features bindgen,gpu,game)
+    ANDROID_FLAGS=(--release --lib --no-default-features --features "bindgen,gpu,$GA")
 fi
 if [ "${IOS_GPU:-1}" = 0 ]; then
     IOS_FLAGS=("${FLAGS[@]}")
 else
-    IOS_FLAGS=(--release --lib --no-default-features --features bindgen,gpu,game)
+    IOS_FLAGS=(--release --lib --no-default-features --features "bindgen,gpu,$GA")
 fi
 export IPHONEOS_DEPLOYMENT_TARGET="${IPHONEOS_DEPLOYMENT_TARGET:-13.0}"
 

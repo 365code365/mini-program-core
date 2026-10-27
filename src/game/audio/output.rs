@@ -1,4 +1,4 @@
-//! 输出：真设备（cpal：Android AAudio、iOS / macOS CoreAudio，决策 D-4 = A）或离线（无头 / 设备打不开）。
+//! 输出：真设备（桌面 / iOS 用 cpal 的 CoreAudio 等；Android 用 aaudio.rs 运行时 dlopen 的 AAudio，决策 D-4 = A）或离线（无头 / 设备打不开）。
 //!
 //! - 设备模式：混音器整个搬进 cpal 的输出回调（音频线程独占，无锁）；采样格式不是 f32 的设备（不少 Android 机给 i16）
 //!   在回调里经一块**预先分配**的 f32 缓冲转换；
@@ -8,7 +8,9 @@
 
 use super::mixer::Mixer;
 use std::io::Write;
-use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicU32, AtomicU64};
+use std::sync::atomic::Ordering;
+#[cfg(all(feature = "game-audio", not(target_os = "android")))]
 use std::sync::Arc;
 
 /// 离线模式的采样率（与 Chrome OfflineAudioContext 对拍时固定 48k）
@@ -28,8 +30,10 @@ pub struct Stats {
 }
 
 pub enum Output {
-    #[cfg(feature = "game-audio")]
+    #[cfg(all(feature = "game-audio", not(target_os = "android")))]
     Device { _stream: cpal::Stream, stats: Arc<Stats> },
+    #[cfg(all(feature = "game-audio", target_os = "android"))]
+    Android(super::aaudio::Out),
     Offline { mixer: Box<Mixer>, done: u64, origin_us: Option<u64>, buf: Vec<f32>, dump: Option<std::fs::File>, channels: usize },
 }
 
@@ -51,12 +55,24 @@ pub fn open<E>(offline: bool, mut make: impl FnMut(u32, usize) -> (Mixer, E)) ->
         if std::env::var("MINI_AUDIO_FAULT").as_deref() == Ok("open") {
             return offline_out(make, "设备打开失败（故障注入 MINI_AUDIO_FAULT=open），静音模式".into());
         }
+        #[cfg(target_os = "android")]
+        return match super::aaudio::open(&mut make) {
+            Ok((out, ends, note)) => {
+                let (rate, channels) = (out.rate, out.channels);
+                (Opened { out: Output::Android(out), rate, channels, note }, ends)
+            }
+            Err(e) => offline_out(make, format!("{e}，静音模式")),
+        };
+        #[cfg(not(target_os = "android"))]
         let dev = match device::open() {
             Ok(d) => d,
             Err(e) => return offline_out(make, format!("没有可用的输出设备（{e}），静音模式")),
         };
+        #[cfg(not(target_os = "android"))]
         let (rate, channels) = (dev.rate, dev.channels);
+        #[cfg(not(target_os = "android"))]
         let (mixer, ends) = make(rate, channels);
+        #[cfg(not(target_os = "android"))]
         return match dev.start(mixer) {
             Ok((stream, stats, note)) => (Opened { out: Output::Device { _stream: stream, stats }, rate, channels, note }, ends),
             Err(e) => offline_out(make, format!("设备启动失败（{e}），静音模式")),
@@ -91,25 +107,66 @@ impl Output {
         }
     }
 
+    /// 设备模式的维护（Android：设备断开重开、延迟估计）；有要记的日志就返回
+    pub fn poll(&mut self) -> Option<String> {
+        match self {
+            #[cfg(all(feature = "game-audio", target_os = "android"))]
+            Output::Android(o) => o.poll(),
+            _ => None,
+        }
+    }
+
+    fn device_stats(&self) -> Option<&Stats> {
+        match self {
+            #[cfg(all(feature = "game-audio", not(target_os = "android")))]
+            Output::Device { stats, .. } => Some(stats),
+            #[cfg(all(feature = "game-audio", target_os = "android"))]
+            Output::Android(o) => Some(&o.stats),
+            _ => None,
+        }
+    }
+
+    /// 进后台停设备回调、回前台恢复（离线模式什么都不做）
+    pub fn set_paused(&mut self, paused: bool) {
+        match self {
+            #[cfg(all(feature = "game-audio", target_os = "android"))]
+            Output::Android(o) => o.set_paused(paused),
+            #[cfg(all(feature = "game-audio", not(target_os = "android")))]
+            Output::Device { _stream, .. } => {
+                use cpal::traits::StreamTrait;
+                if paused { let _ = _stream.pause(); } else { let _ = _stream.play(); }
+            }
+            _ => {}
+        }
+        let _ = paused;
+    }
+
+    /// 欠载次数（Android 有，其它 0）
+    pub fn xruns(&self) -> i32 {
+        match self {
+            #[cfg(all(feature = "game-audio", target_os = "android"))]
+            Output::Android(o) => o.xruns(),
+            _ => 0,
+        }
+    }
+
     /// 已经输出的帧数
     pub fn frames(&self) -> u64 {
+        if let Some(s) = self.device_stats() {
+            return s.frames.load(Ordering::Relaxed);
+        }
         match self {
-            #[cfg(feature = "game-audio")]
-            Output::Device { stats, .. } => stats.frames.load(Ordering::Relaxed),
             Output::Offline { done, .. } => *done,
+            #[allow(unreachable_patterns)]
+            _ => 0,
         }
     }
 
     /// (延迟 µs, 回调块帧数, 回调次数)；离线全 0
     pub fn stats(&self) -> (u32, u32, u64) {
-        match self {
-            #[cfg(feature = "game-audio")]
-            Output::Device { stats, .. } => (
-                stats.latency_us.load(Ordering::Relaxed),
-                stats.block_frames.load(Ordering::Relaxed),
-                stats.callbacks.load(Ordering::Relaxed),
-            ),
-            Output::Offline { .. } => (0, 0, 0),
+        match self.device_stats() {
+            Some(s) => (s.latency_us.load(Ordering::Relaxed), s.block_frames.load(Ordering::Relaxed), s.callbacks.load(Ordering::Relaxed)),
+            None => (0, 0, 0),
         }
     }
 
@@ -118,7 +175,7 @@ impl Output {
     }
 }
 
-#[cfg(feature = "game-audio")]
+#[cfg(all(feature = "game-audio", not(target_os = "android")))]
 mod device {
     use super::*;
     use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};

@@ -84,8 +84,6 @@ winit = { version = "0.30", optional = true }
 softbuffer = { version = "0.4", optional = true }
 arboard = { version = "3", optional = true }
 rodio = { version = "0.22", optional = true }
-# 与 rodio 0.22 用的同一个版本（Cargo.lock 里已有），小游戏直接用它开输出流
-cpal = { version = "=0.17.3", optional = true }
 # ── GPU 合成后端（可选，feature `gpu`）──
 # 版本锁死：wgpu 大约一季度一个破坏性大版本，升级要单独立项并重跑全部 GPU 判据。
 # 传递依赖由入库的 Cargo.lock 锁定，`cargo update` 只能单独提交。
@@ -160,6 +158,11 @@ required-features = ["desktop"]
 name = "mini-compiler"
 path = "src/bin/compiler.rs"
 required-features = ["desktop"]
+
+# 小游戏音频输出（feature game-audio）：桌面 / iOS 用 cpal（与 rodio 0.22 同一个版本，Cargo.lock 里已有）。
+# Android 不用：cpal 直接链接 libaaudio（API 26+），而 SDK 的 minSdk 是 24 —— 改为运行时 dlopen（src/game/audio/aaudio.rs）
+[target.'cfg(not(target_os = "android"))'.dependencies]
+cpal = { version = "=0.17.3", optional = true }
 
 [dev-dependencies]
 # 上游 fontdue（预展开全部字形）：tests/font_lazy_e2e.rs 拿它对照 vendor/fontdue 的惰性展开逐位一致

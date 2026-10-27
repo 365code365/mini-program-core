@@ -49,6 +49,9 @@ class MiniGameView(
     private val slowLog = SystemProperties_get("debug.mini.game_log") == "1"
     /** `adb shell setprop debug.mini.touch_log 1`：每帧打「最早一个还没派发的触摸 → 这次 pump」隔了多久（A3.3：≤ 1 个 vsync） */
     private val touchLog = SystemProperties_get("debug.mini.touch_log") == "1"
+    /** `adb shell setprop debug.mini.audio_log 1`：每 2 秒打一行音频输出统计（延迟、欠载、回调块） */
+    private val audioLog = SystemProperties_get("debug.mini.audio_log") == "1"
+    private var lastAudioLog = 0L
     /** 引擎线程：排队等派发的触摸里最早的那个的事件时刻（ns，CLOCK_MONOTONIC），0 = 没有 */
     private var pendingTouchNanos = 0L
 
@@ -251,6 +254,10 @@ class MiniGameView(
             Log.i("mini-render", "⏱ [GAME] 工作 %.1fms（逻辑+rAF %.1f，上屏拷贝 %.1f 其中提交 %.1f）等缓冲 %.1f".format(workMs, (t1 - t0) / 1e6, (st and 0xffffffffL) / 1000.0, postMs, waitMs))
         }
         if (f and MiniGame.FRAME_EVENTS != 0) drainEvents()
+        if (audioLog && t2 - lastAudioLog > 2_000_000_000L) {
+            lastAudioLog = t2
+            Log.i("mini-render", "🔊 [GAME] 音频 ${MiniGame.nativeAudioStats(handle)}")
+        }
         applyFrameRate(false)
         wantedMore = f and MiniGame.FRAME_WANTS_MORE != 0
         engine.removeCallbacks(wake)

@@ -17,3 +17,6 @@ sample/测试服务器.txt
 
 # 演示视频原片（1080p，33MB）；网页版压到 site/assets/video/showcase.mp4
 doc/videos/showcase_*.mp4
+
+# 小游戏夹具的生成素材（tools/gen-game-assets.py）
+sample-game/g-audio/assets/

@@ -23,10 +23,12 @@ esac
 MODE=android
 if [ "${LTO:-0}" = 1 ]; then MOBILE_LTO=thin; else MOBILE_LTO=false; fi
 # 与 build-mobile.sh 同一套参数（默认带 gpu，`ANDROID_GPU=0` 关掉）
+# 小游戏音频默认编进去（与 build-mobile.sh 一致）；GAME_AUDIO=0 去掉
+GA=$([ "${GAME_AUDIO:-1}" = 0 ] && echo game || echo game,game-audio)
 if [ "${ANDROID_GPU:-1}" = 0 ]; then
-    ANDROID_FLAGS=(--release --lib --no-default-features --features bindgen,game)
+    ANDROID_FLAGS=(--release --lib --no-default-features --features "bindgen,$GA")
 else
-    ANDROID_FLAGS=(--release --lib --no-default-features --features bindgen,gpu,game)
+    ANDROID_FLAGS=(--release --lib --no-default-features --features "bindgen,gpu,$GA")
 fi
 # 只取 build-mobile.sh 里的两个函数定义，不执行它末尾的 case
 eval "$(sed -n '/^setup_ndk() {/,/^}/p;/^android_target() {/,/^}/p' tools/build-mobile.sh)"

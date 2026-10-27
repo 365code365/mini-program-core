@@ -32,6 +32,8 @@ object MiniGame {
      */
     external fun nativeTouchBatch(handle: Long, data: FloatArray, count: Int, baseUs: Long)
     external fun nativePreferredFps(handle: Long): Int
+    /** 音频输出统计 JSON（frames / latencyMs / block / callbacks / xruns / rate / device / voices） */
+    external fun nativeAudioStats(handle: Long): String?
     external fun nativeNextWakeUs(handle: Long): Long
     external fun nativeAttachWindow(handle: Long, surface: android.view.Surface): Boolean
     external fun nativeDetachWindow(handle: Long)
