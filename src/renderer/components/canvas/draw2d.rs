@@ -31,9 +31,7 @@ impl Canvas2DContext {
 
     /// 构建一个经当前矩阵变换的矩形路径（支持旋转/缩放）
     pub(super) fn rect_path(&self, x: f32, y: f32, w: f32, h: f32) -> Path {
-        let (p0, p1, p2, p3) = (
-            self.tp(x, y), self.tp(x + w, y), self.tp(x + w, y + h), self.tp(x, y + h),
-        );
+        let [p0, p1, p2, p3] = self.rect_quad(x, y, w, h).map(|p| (p.x, p.y));
         let mut path = Path::new();
         path.move_to(p0.0, p0.1);
         path.line_to(p1.0, p1.1);
@@ -43,19 +41,26 @@ impl Canvas2DContext {
         path
     }
 
+    /// 矩形四个角经当前矩阵变换后的位置（rect_path 的顶点，同一顺序）
+    fn rect_quad(&self, x: f32, y: f32, w: f32, h: f32) -> [crate::Point; 4] {
+        [self.tp(x, y), self.tp(x + w, y), self.tp(x + w, y + h), self.tp(x, y + h)].map(|(a, b)| crate::Point::new(a, b))
+    }
+
     /// 填充矩形
     pub fn fill_rect(&mut self, x: f32, y: f32, width: f32, height: f32) {
         if self.fill_rect_fast(x, y, width, height) {
             return;
         }
-        let path = self.rect_path(x, y, width, height);
         if !self.fx.trivial(false) {
+            let path = self.rect_path(x, y, width, height);
             return self.fx_path(&path, None);
         }
         let color = self.apply_alpha(self.fill_style);
+        let quad = self.rect_quad(x, y, width, height);
         if let Ok(mut canvas) = self.canvas.lock() {
             let paint = Paint::new().with_color(color).with_style(PaintStyle::Fill).with_anti_alias(true);
-            canvas.draw_path(&path, &paint);
+            // = draw_path(rect_path) 逐字节相同，不建 Path（canvas/rect_aa.rs::fill_quad_aa）
+            canvas.fill_quad_aa(quad, &paint);
         }
     }
 

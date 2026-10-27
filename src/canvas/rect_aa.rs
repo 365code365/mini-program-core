@@ -29,11 +29,15 @@ pub(super) struct AxisRect {
 /// 只有一个轮廓、四个顶点（或闭合时补回起点的五个）、边全是横平竖直的才认。任何非有限值都不认（交给通用路径）
 pub(super) fn axis_rect(contours: &[Vec<Point>]) -> Option<AxisRect> {
     let [c] = contours else { return None };
-    let p = match c.len() {
-        4 => &c[..4],
-        5 if c[4] == c[0] => &c[..4],
-        _ => return None,
-    };
+    match c.len() {
+        4 => axis_rect_pts(&c[..4]),
+        5 if c[4] == c[0] => axis_rect_pts(&c[..4]),
+        _ => None,
+    }
+}
+
+/// 四个顶点（不含闭合点）是不是轴对齐矩形
+fn axis_rect_pts(p: &[Point]) -> Option<AxisRect> {
     if !p.iter().all(|q| q.x.is_finite() && q.y.is_finite()) {
         return None;
     }
@@ -62,22 +66,29 @@ impl Canvas {
         // 列范围与解析覆盖都不随行变：通用路径里合并后的区间就是 [l, r]，左右各留 1px 余量
         let sx0 = ((l - 1.0).floor() as i32).max(bx0);
         let sx1 = ((r + 1.0).ceil() as i32).min(bx1 - 1);
+        // 整格列 [sl, sr]：像素整格落在 [l, r] 里（`x >= l && x + 1 <= r`），每条命中的子扫描线覆盖量恰为 1.0
         let (sl, sr) = (l.ceil() as i32, r.floor() as i32 - 1);
-        let solid_a = (paint.color.a as f32).round().clamp(0.0, 255.0) as u8;
-        let solid_color = Color::new(paint.color.r, paint.color.g, paint.color.b, solid_a);
+        let c = paint.color;
+        // 覆盖量 o、命中 k 条 → 写入的 alpha：与通用路径同样「0.0 起连加 k 次 o、再 / 4」，再按 set_pixel_aa 取整
+        let alpha = |o: f32, k: usize| -> u8 {
+            let mut coverage = 0.0f32;
+            for _ in 0..k {
+                coverage += o;
+            }
+            coverage /= AA_SUB_SAMPLES as f32;
+            if coverage > 0.0 { (c.a as f32 * coverage.min(1.0)).round().clamp(0.0, 255.0) as u8 } else { 0 }
+        };
         for y in y0.max(by0)..=y1.min(by1 - 1) {
             let k = (0..AA_SUB_SAMPLES).filter(|&s| { let sy = scan(y, s); t <= sy && b > sy }).count();
             if k == 0 {
                 continue;
             }
-            // 4 条子扫描线都盖住时，[ceil(l), floor(r)) 这段覆盖率恰为 1，通用路径整段 fill_span
-            let solid = k == AA_SUB_SAMPLES && sr >= sl;
-            for x in sx0..=sx1 {
-                if solid && x >= sl && x <= sr {
-                    continue;
-                }
-                let px = x as f32;
-                let (pixel_left, pixel_right) = (px, px + 1.0);
+            let row = y as usize * self.width as usize;
+            // 只逐像素算两侧的边缘列；中间整格那段覆盖率处处相同，整段 fill_span（它与逐个 set_pixel 同一套 alpha 规则，
+            // 4 条全中时就是通用路径的「solid」整段）。从前每行把中间几十列逐个跳过，一加上这个函数占游戏线程 26%
+            let (left_end, right_start) = if sr >= sl { (sl - 1, sr + 1) } else { (sx1, sx1 + 1) };
+            for x in (sx0..=left_end.min(sx1)).chain(right_start.max(sx0)..=sx1) {
+                let (pixel_left, pixel_right) = (x as f32, x as f32 + 1.0);
                 let o = if pixel_right <= l || pixel_left >= r {
                     continue;
                 } else if pixel_left >= l && pixel_right <= r {
@@ -85,19 +96,50 @@ impl Canvas {
                 } else {
                     pixel_right.min(r) - pixel_left.max(l)
                 };
-                let mut coverage = 0.0f32;
-                for _ in 0..k {
-                    coverage += o;
-                }
-                coverage /= AA_SUB_SAMPLES as f32;
-                if coverage > 0.0 {
-                    self.set_pixel_aa(x, y, paint.color, coverage.min(1.0));
+                // = set_pixel_aa 展开：行列已夹在 draw_bounds（画布 ∩ 裁剪）里，set_pixel 的越界 / 裁剪判断恒为真
+                let a = alpha(o, k);
+                let idx = row + x as usize;
+                if a == 255 {
+                    self.pixels[idx] = Color::new(c.r, c.g, c.b, 255);
+                } else if a > 0 {
+                    self.pixels[idx] = Color::new(c.r, c.g, c.b, a).blend(&self.pixels[idx]);
                 }
             }
-            if solid {
-                self.fill_span(sl, sr + 1, y, solid_color);
+            if sr >= sl {
+                self.fill_span(sl, sr + 1, y, Color::new(c.r, c.g, c.b, alpha(1.0, k)));
             }
         }
+    }
+}
+
+impl Canvas {
+    /// 抗锯齿填充一个四边形 `q[0]→q[1]→q[2]→q[3]→闭合`，结果与「建 `Path`（move/line×3/close）再 `draw_path`（Fill + 抗锯齿）」
+    /// 逐字节相同，只是不建 Path、不展平（那一趟每个 fillRect 五六次堆分配，真机 jemalloc 带锁）。
+    /// 等价的根据：`Path::flatten` 对这条路径给出 `[q0, q1, q2, q3]`，q3 ≠ q0 时闭合再补一个 q0；
+    /// `draw_path` 随后给每个点加画布平移、交给 `fill_path`。这里按同样的顺序做同样的事
+    pub fn fill_quad_aa(&mut self, q: [Point; 4], paint: &Paint) {
+        let (tx, ty) = self.translation;
+        let mut p = q;
+        if tx != 0.0 || ty != 0.0 {
+            for v in &mut p {
+                v.x += tx;
+                v.y += ty;
+            }
+        }
+        // 轴对齐 + 抗锯齿：直接走特化，不分配。y0 / y1 与 fill_path 同一个式子（闭合补的那个点就是 q0，不影响上下界）
+        if paint.anti_alias {
+            if let Some(r) = axis_rect_pts(&p) {
+                let (lo, hi) = p.iter().fold((f32::MAX, f32::MIN), |(lo, hi), v| (lo.min(v.y), hi.max(v.y)));
+                return self.fill_axis_rect_aa(r, (lo - 1.0).floor() as i32, (hi + 1.0).ceil() as i32, paint);
+            }
+        }
+        // 其余（旋转 / 斜切 / 非有限值）照原样：与 flatten 相同地闭合，交给 fill_path
+        let mut c = p.to_vec();
+        // flatten 比的是平移之前的点（平移在 draw_path 里、flatten 之后才加）
+        if q[3] != q[0] {
+            c.push(p[0]);
+        }
+        self.fill_path(std::slice::from_ref(&c), paint);
     }
 }
 
@@ -167,6 +209,55 @@ mod rect_aa_tests {
             a.fill_path(&contours, &paint);
             b.fill_path_aa_scan(&contours, y0, y1, &paint);
             assert!(a.pixels() == b.pixels(), "第 {case} 例不一致：({x},{y}) {rw}×{rh} alpha {alpha}");
+        }
+    }
+
+    /// fill_quad_aa 与「建 Path + draw_path」逐字节相同：轴对齐 / 旋转 / 退化（首尾重合）四边形、画布平移、裁剪、半透明
+    #[test]
+    fn 四边形直填与_draw_path_逐字节相同() {
+        let mut seed = 0x1234_5678u32;
+        let mut rnd = move || {
+            seed ^= seed << 13;
+            seed ^= seed >> 17;
+            seed ^= seed << 5;
+            seed as f32 / u32::MAX as f32
+        };
+        for case in 0..3000 {
+            let clip = (case % 3 == 1).then(|| Rect::new(rnd() * 20.0, rnd() * 16.0, rnd() * 30.0, rnd() * 24.0));
+            let tr = (case % 4 == 2).then(|| (rnd() * 6.0 - 3.0, rnd() * 6.0 - 3.0));
+            let make = || {
+                let mut c = Canvas::new(40, 32);
+                c.clear(Color::new(10, 200, 30, [255, 90][case % 2]));
+                if let Some(r) = clip {
+                    c.clip_rect(r);
+                }
+                if let Some((x, y)) = tr {
+                    c.translate(x, y);
+                }
+                c
+            };
+            let (mut a, mut b) = (make(), make());
+            let (x, y, w, h) = (rnd() * 50.0 - 5.0, rnd() * 40.0 - 5.0, rnd() * 30.0 - 8.0, rnd() * 24.0 - 6.0);
+            let q: [Point; 4] = match case % 5 {
+                // 斜的：随机扰动
+                3 => [Point::new(x, y), Point::new(x + w, y + rnd() * 4.0), Point::new(x + w - rnd() * 3.0, y + h), Point::new(x, y + h)],
+                // 退化：首尾重合
+                4 => [Point::new(x, y), Point::new(x + w, y), Point::new(x + w, y + h), Point::new(x, y)],
+                _ => [Point::new(x, y), Point::new(x + w, y), Point::new(x + w, y + h), Point::new(x, y + h)],
+            };
+            let paint = Paint::new()
+                .with_color(Color::new(200, 40, 90, [255, 128, 3][case % 3]))
+                .with_style(PaintStyle::Fill)
+                .with_anti_alias(true);
+            a.fill_quad_aa(q, &paint);
+            let mut path = Path::new();
+            path.move_to(q[0].x, q[0].y);
+            path.line_to(q[1].x, q[1].y);
+            path.line_to(q[2].x, q[2].y);
+            path.line_to(q[3].x, q[3].y);
+            path.close();
+            b.draw_path(&path, &paint);
+            assert!(a.pixels() == b.pixels(), "第 {case} 例不一致：{q:?}");
         }
     }
 
