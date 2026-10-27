@@ -149,11 +149,13 @@ fn panic_text(p: &Box<dyn std::any::Any + Send>) -> String {
     p.downcast_ref::<&str>().map(|s| s.to_string()).or_else(|| p.downcast_ref::<String>().cloned()).unwrap_or_else(|| "未知 panic".into())
 }
 
-/// 跑一帧，返回 `MR_FRAME_*` 位（与 `mr_app_pump_ex` 同一套）。`now_ms` 用宿主 vsync 时刻，0 = 引擎自己取
+/// 跑一帧，返回 `MR_FRAME_*` 位（与 `mr_app_pump_ex` 同一套，另加 `FRAME_WAKE_AT = 128`）。
+/// `now_us` 是宿主 vsync 时刻，**微秒**（Android `frameTimeNanos / 1000`、iOS `targetTimestamp * 1e6`），0 = 引擎自己取。
+/// 与 `mr_app_pump_ex` 的毫秒不同：rAF 的时间戳要微秒精度（144Hz 一帧 6.944ms）
 #[cfg(feature = "game")]
 #[no_mangle]
-pub extern "C" fn mr_game_pump_ex(game: *mut MRGame, now_ms: u64) -> c_int {
-    let flags = guarded(game, 0, |e| e.pump_ex(now_ms) as c_int);
+pub extern "C" fn mr_game_pump_ex(game: *mut MRGame, now_us: u64) -> c_int {
+    let flags = guarded(game, 0, |e| e.pump_ex(now_us) as c_int);
     // 中毒那一刻还有一条 panic 事件没交出去：带上 EVENTS 位让宿主来取
     match unsafe { game.as_ref() } {
         Some(g) if g.panic_event.is_some() => flags | crate::host::engine_backend::FRAME_EVENTS as c_int,
@@ -216,6 +218,96 @@ pub extern "C" fn mr_game_last_error(game: *mut MRGame) -> *const c_char {
 #[no_mangle]
 pub extern "C" fn mr_game_is_poisoned(game: *mut MRGame) -> c_int {
     unsafe { game.as_ref() }.map(|g| g.poisoned as c_int).unwrap_or(1)
+}
+
+/// 前后台：非 0 = 进后台（不跑 rAF、不要帧），0 = 回前台（从下一个 vsync 重新起算，不补帧）
+#[cfg(feature = "game")]
+#[no_mangle]
+pub extern "C" fn mr_game_set_background(game: *mut MRGame, background: c_int) {
+    guarded(game, (), |e| e.set_background(background != 0));
+}
+
+/// rAF 目标帧率（1~60）。宿主据此请求显示刷新率（60 的整数倍，game-doc/02 §4.2）
+#[cfg(feature = "game")]
+#[no_mangle]
+pub extern "C" fn mr_game_preferred_fps(game: *mut MRGame) -> c_int {
+    guarded(game, 60, |e| e.preferred_fps() as c_int)
+}
+
+/// 只剩远期定时器时多久之后再 pump（微秒，相对现在）；没有定时器 -1
+#[cfg(feature = "game")]
+#[no_mangle]
+pub extern "C" fn mr_game_next_wake_us(game: *mut MRGame) -> i64 {
+    guarded(game, -1, |e| e.next_wake_us().map(|v| v as i64).unwrap_or(-1))
+}
+
+/// 主画布像素尺寸（宿主按它设 surface 缓冲尺寸，由系统缩放到全屏）。还没建主画布时写 0
+#[cfg(feature = "game")]
+#[no_mangle]
+pub extern "C" fn mr_game_frame_size(game: *mut MRGame, w: *mut u32, h: *mut u32) {
+    let (fw, fh) = guarded(game, (0, 0), |e| {
+        let (w, h, _) = e.frame_rgba();
+        (w, h)
+    });
+    // SAFETY: 调用方给的输出指针，可为 NULL
+    unsafe {
+        if let Some(w) = w.as_mut() {
+            *w = fw;
+        }
+        if let Some(h) = h.as_mut() {
+            *h = fh;
+        }
+    }
+}
+
+/// 把当前帧（主画布分辨率，不透明 RGBA8）写进宿主缓冲：`stride` 字节一行，`format` 0 = RGBA8、1 = BGRA8。
+/// 缓冲至少 `stride × 高` 字节。返回写入的行数，0 = 没写（尺寸为 0 / 实例失效 / 缓冲太小）
+#[cfg(feature = "game")]
+#[no_mangle]
+pub extern "C" fn mr_game_pixels_into(game: *mut MRGame, buf: *mut u8, len: usize, stride: usize, format: c_int) -> c_int {
+    if buf.is_null() {
+        return 0;
+    }
+    mr_game_with_frame(game, |w, h, px| {
+        let row = w as usize * 4;
+        if stride < row || len < stride * h as usize {
+            return 0;
+        }
+        // SAFETY: 调用方保证 buf 至少 len 字节且本次调用内有效
+        let dst = unsafe { std::slice::from_raw_parts_mut(buf, len) };
+        for y in 0..h as usize {
+            let s = &px[y * row..(y + 1) * row];
+            let d = &mut dst[y * stride..y * stride + row];
+            if format == 1 {
+                for (o, i) in d.chunks_exact_mut(4).zip(s.chunks_exact(4)) {
+                    o.copy_from_slice(&[i[2], i[1], i[0], i[3]]);
+                }
+            } else {
+                d.copy_from_slice(s);
+            }
+        }
+        h as c_int
+    })
+    .unwrap_or(0)
+}
+
+/// 拿主画布原始像素跑一段宿主侧上屏代码（JNI 直写 ANativeWindow 用，不经中间缓冲）
+#[cfg(feature = "game")]
+#[cfg_attr(not(target_os = "android"), allow(dead_code))] // 只有 Android 的 JNI 直写用
+pub(crate) fn mr_game_with_main_pixels<R>(game: *mut MRGame, f: impl FnOnce(u32, u32, &[crate::Color]) -> R) -> Option<R> {
+    guarded(game, None, |e| e.with_main_pixels(f))
+}
+
+/// 拿当前帧（宽、高、RGBA）跑一段宿主侧的上屏代码（JNI 直写 ANativeWindow 用）。实例为空 / 失效返回 None
+#[cfg(feature = "game")]
+pub(crate) fn mr_game_with_frame<R>(game: *mut MRGame, f: impl FnOnce(u32, u32, &[u8]) -> R) -> Option<R> {
+    guarded(game, None, |e| {
+        let (w, h, px) = e.frame_rgba();
+        if w == 0 || h == 0 {
+            return None;
+        }
+        Some(f(w, h, px))
+    })
 }
 
 #[cfg(all(test, feature = "game"))]

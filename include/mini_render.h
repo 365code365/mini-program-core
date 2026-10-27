@@ -343,8 +343,9 @@ const char* mr_capabilities(void);
 // appId 决定数据命名空间（<data_dir>/game/<appId>/），请务必给。不是小游戏包 / game.json 坏了返回 NULL
 MRGame* mr_game_create(const char* app_dir, const char* data_dir, uint32_t width, uint32_t height, float dpr, const char* options_json);
 void mr_game_destroy(MRGame* game);
-// 跑一帧，返回 MR_FRAME_* 位（与 mr_app_pump_ex 同一套）。now_ms 用宿主 vsync 时刻，0 = 引擎自己取
-int mr_game_pump_ex(MRGame* game, uint64_t now_ms);
+// 跑一帧，返回 MR_FRAME_* 位（与 mr_app_pump_ex 同一套，另加 MR_FRAME_WAKE_AT = 128：只剩远期定时器，
+// 按 mr_game_next_wake_us 定时唤醒即可）。now_us 是宿主 vsync 时刻，单位**微秒**，0 = 引擎自己取
+int mr_game_pump_ex(MRGame* game, uint64_t now_us);
 // 取一条事件（JSON：log / error），没有了返回 NULL。指针活到下一次对同一实例调用 mr_game_*
 const char* mr_game_poll_event(MRGame* game);
 // 执行一段 JS（诊断用）。抛异常返回 NULL（原因见 mr_game_last_error）
@@ -352,6 +353,16 @@ const char* mr_game_eval(MRGame* game, const char* code);
 const char* mr_game_last_error(MRGame* game);
 // 1 = 实例已因内部错误失效（或句柄为空）
 int mr_game_is_poisoned(MRGame* game);
+// 前后台：非 0 = 进后台（不跑 rAF、不要帧），0 = 回前台（不补帧）
+void mr_game_set_background(MRGame* game, int background);
+// rAF 目标帧率（1~60）：宿主据此请求显示刷新率（60 的整数倍）
+int mr_game_preferred_fps(MRGame* game);
+// pump_ex 返回 MR_FRAME_WAKE_AT（128）时：多久之后再 pump（微秒），-1 = 没有定时器
+int64_t mr_game_next_wake_us(MRGame* game);
+// 主画布像素尺寸：宿主把 surface 缓冲设成这个尺寸，由系统缩放到全屏（不要在 CPU 上缩放）
+void mr_game_frame_size(MRGame* game, uint32_t* width, uint32_t* height);
+// 当前帧（不透明）写进 buf：stride 字节一行，format 0 = RGBA8、1 = BGRA8。返回写入的行数，0 = 没写
+int mr_game_pixels_into(MRGame* game, uint8_t* buf, size_t len, size_t stride, int format);
 
 #ifdef __cplusplus
 }

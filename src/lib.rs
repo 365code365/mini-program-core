@@ -132,6 +132,10 @@ mod ffi_jni;
 #[cfg(target_os = "android")]
 mod ffi_jni_embed;
 
+/// Android：小游戏的 JNI（Kotlin `dev.minirender.MiniGame`）
+#[cfg(all(target_os = "android", feature = "game"))]
+mod ffi_jni_game;
+
 // 单元测试
 #[cfg(test)]
 mod tests;
