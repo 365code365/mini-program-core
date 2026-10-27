@@ -22,7 +22,8 @@ enum Op {
 }
 
 /// 老接口：按 MiniTouch.kt 的规则手写调用序列（第一根先抬时报第二根抬起、不报第一根，第二根接班）
-fn legacy(e: &mut MiniEngine, ops: &[Op]) {
+fn legacy(e: &mut MiniEngine, ops: &[Op]) -> Vec<u32> {
+    let mut trace = Vec::new();
     // 当前谁是「第一根」（0 / 1）、第二根按着没有与它最后的位置
     let (mut primary, mut second, mut pos2) = (0u8, false, (0.0f32, 0.0f32));
     for op in ops {
@@ -61,12 +62,15 @@ fn legacy(e: &mut MiniEngine, ops: &[Op]) {
             }
             Op::Pump(t) => {
                 e.pump(t);
+                trace.push(e.scroll_position().to_bits());
             }
         }
     }
+    trace
 }
 
-fn adapted(e: &mut MiniEngine, ops: &[Op]) {
+fn adapted(e: &mut MiniEngine, ops: &[Op]) -> Vec<u32> {
+    let mut trace = Vec::new();
     let mut a = TouchAdapter::default();
     let id = |f: u8| if f == 0 { 11 } else { 23 };
     for op in ops {
@@ -77,18 +81,21 @@ fn adapted(e: &mut MiniEngine, ops: &[Op]) {
             Op::Cancel => a.apply(e, PHASE_CANCEL, 0, 0.0, 0.0, 0.0),
             Op::Pump(t) => {
                 e.pump(t);
+                trace.push(e.scroll_position().to_bits());
             }
         }
     }
+    trace
 }
 
-fn same(route: &str, slot: &str, prep: impl Fn(&mut MiniEngine), ops: &[Op], pixels: bool) -> MiniEngine {
+fn same(route: &str, slot: &str, prep: impl Fn(&mut MiniEngine), ops: &[Op], pixels: bool) -> super::LockedEngine {
     let mut a = engine_in(route, &format!("{slot}-a"));
     let mut b = engine_in(route, &format!("{slot}-b"));
     prep(&mut a);
     prep(&mut b);
-    legacy(&mut a, ops);
-    adapted(&mut b, ops);
+    let (ta, tb) = (legacy(&mut a, ops), adapted(&mut b, ops));
+    // 每次 pump 之后的滚动位置都要相同（拖动中按事件时间重采样，只比终点的话 move_at 退化成 move 也看不出来）
+    assert_eq!(ta, tb, "{slot}：逐帧滚动位置不同");
     assert_eq!(a.current_route(), b.current_route(), "{slot}：路由不同");
     assert_eq!(a.picker_sheet_open(), b.picker_sheet_open(), "{slot}：面板状态不同");
     assert_eq!(a.scroll_position().to_bits(), b.scroll_position().to_bits(), "{slot}：滚动位置不同");
@@ -116,7 +123,7 @@ fn mr_app_touch_点_tabbar_切页() {
 }
 
 #[test]
-fn mr_app_touch_带时间戳的拖动与惯性() {
+fn mr_app_touch_带时间戳的拖动() {
     let mut ops = vec![Op::Pump(1000), Op::Down(0, 180.0, 500.0)];
     for i in 1..=12 {
         let t = 1000.0 + i as f64 * 8.0;
@@ -125,8 +132,14 @@ fn mr_app_touch_带时间戳的拖动与惯性() {
             ops.push(Op::Pump(1000 + i as u64 * 8));
         }
     }
+    // 停住 120ms 再抬手：速度归零，不起惯性。抬手（pointer_up 不带时间）按墙上时钟取时刻，
+    // 两条路先后跑、各自隔了多久不一样，带惯性的话终点差几个 ULP（全量并行时撞上过）
+    for k in 1..=8u64 {
+        ops.push(Op::Move(0, 180.0, 200.0, 1096.0 + k as f64 * 16.0));
+        ops.push(Op::Pump(1096 + k * 16));
+    }
     ops.push(Op::Up(0, 180.0, 200.0));
-    ops.extend(frames(1112, 20));
+    ops.extend(frames(1240, 20));
     let e = same("pages/category/category", "touch-drag", |_| {}, &ops, true);
     assert!(e.scroll_position() > 20.0, "测试本身要真的滚起来（防空转）：{}", e.scroll_position());
 }

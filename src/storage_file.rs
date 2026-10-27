@@ -71,6 +71,7 @@ mod tests {
     #[test]
     fn storage_file_path_and_round_trip() {
         let _scope = crate::data_dir::SCOPE_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let _root = crate::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner());
         // ① 路径按小程序名隔离，且绝不落在 sample/ 里（小游戏的 appId 命名空间不在这条路上）
         crate::data_dir::set_app_scope(None);
         crate::assets::set_app_root(PathBuf::from("/tmp/whatever/tea-app"));

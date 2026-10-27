@@ -13,7 +13,8 @@ use crate::host::MiniEngine;
 ///
 /// 别图省事共用一个：`wx.setStorageSync` 是写穿到磁盘的，测试并行跑时会互相读到
 /// 对方写的购物车/设置，页面内容随之变化 —— 表现是「单独跑必过、全量跑偶发失败」。
-pub(crate) fn engine_in(route: &str, slot: &str) -> MiniEngine {
+pub(crate) fn engine_in(route: &str, slot: &str) -> super::LockedEngine {
+    let g = super::LockedEngine::lock();
     let root = crate::app_dir::resolve("sample-app");
     let data = crate::data_dir::subdir(&format!("engine-input-tests/{slot}"));
     std::fs::remove_dir_all(&data).ok();
@@ -28,7 +29,7 @@ pub(crate) fn engine_in(route: &str, slot: &str) -> MiniEngine {
     e.set_animation_time(2.0);
     e.launch(Some(route)).expect("打开页面");
     e.pump(1);
-    e
+    super::LockedEngine::new(e, g)
 }
 
 /// 一次完整触摸：按下 → 若干步移动 → 抬起（步进给状态机足够的位移判定）
@@ -124,7 +125,7 @@ fn 点picker会弹出底部面板并能确定() {
 }
 
 /// 打开 showcase 页那个 selector 的面板，并等入场动画走完（命中坐标随面板位移变化）
-fn open_picker(slot: &str) -> MiniEngine {
+fn open_picker(slot: &str) -> super::LockedEngine {
     let mut e = engine_in("pages/showcase/showcase", slot);
     e.scroll_to(300.0);
     e.pump(0);
@@ -242,7 +243,7 @@ fn drain_events(e: &mut MiniEngine) -> Vec<serde_json::Value> {
 }
 
 /// 滚到 showcase 页的 textarea（「备注」）并点进去，清空原有内容
-fn focus_textarea(slot: &str) -> MiniEngine {
+fn focus_textarea(slot: &str) -> super::LockedEngine {
     use crate::ui::interaction::InteractionType;
     let mut e = engine_in("pages/showcase/showcase", slot);
     for step in 0..16 {

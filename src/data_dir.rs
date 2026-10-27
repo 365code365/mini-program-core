@@ -74,6 +74,11 @@ pub fn set_app_scope(app_id: Option<&str>) {
 /// lib 单测里凡是会改 / 依赖数据命名空间的用例都拿这把锁（命名空间是进程级的，并行跑会互相改写）
 #[cfg(test)]
 pub(crate) static SCOPE_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+/// 包根（`assets::set_app_root`）也是进程级的：起 `MiniEngine` 的 lib 单测拿读锁（彼此可以并行），
+/// 会把包根改成别的目录的单测（storage_file、ffi_game）拿写锁。不加的话前者偶发「页面不存在」——
+/// 后者在它们 launch 之前把包根换走了（2026-10-27 全量里撞上过两次）
+#[cfg(test)]
+pub(crate) static ROOT_TEST_LOCK: std::sync::RwLock<()> = std::sync::RwLock::new(());
 
 /// 设了命名空间时返回 `<数据目录>/game/<appId>`（会建出来）
 pub fn app_scope() -> Option<PathBuf> {

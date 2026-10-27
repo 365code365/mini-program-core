@@ -17,8 +17,10 @@ fn c(s: &str) -> CString {
 }
 
 /// 建游戏实例会改进程级的数据命名空间：与 storage_file 的用例互斥
-fn scope_lock() -> std::sync::MutexGuard<'static, ()> {
-    crate::data_dir::SCOPE_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner())
+fn scope_lock() -> (std::sync::MutexGuard<'static, ()>, std::sync::RwLockWriteGuard<'static, ()>) {
+    // 建游戏实例也会换掉进程级的包根：拿写锁，起 MiniEngine 的用例这时等着（data_dir::ROOT_TEST_LOCK）
+    (crate::data_dir::SCOPE_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner()),
+     crate::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner()))
 }
 
 fn create(dir: &std::path::Path, opts: &str) -> *mut MRGame {

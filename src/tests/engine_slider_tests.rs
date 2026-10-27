@@ -11,7 +11,8 @@
 use crate::host::MiniEngine;
 use crate::ui::interaction::SliderSpec;
 
-fn engine_in(slot: &str) -> MiniEngine {
+fn engine_in(slot: &str) -> super::LockedEngine {
+    let g = super::LockedEngine::lock();
     let root = crate::app_dir::resolve("sample-app");
     let data = crate::data_dir::subdir(&format!("engine-slider-tests/{slot}"));
     std::fs::remove_dir_all(&data).ok();
@@ -20,7 +21,7 @@ fn engine_in(slot: &str) -> MiniEngine {
     e.set_animation_time(2.0);
     e.launch(Some("pages/showcase/showcase")).expect("打开页面");
     e.pump(1);
-    e
+    super::LockedEngine::new(e, g)
 }
 
 /// 把页面滚到滑块落在视口 y≈300 处，返回它的登记信息与它在视口里的纵坐标

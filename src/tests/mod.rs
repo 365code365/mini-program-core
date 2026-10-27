@@ -70,3 +70,48 @@ pub mod switch_checkbox_tests;
 pub mod skyline_component_tests;
 /// 小游戏 G0：前置代码按应用种类分组、包种类入口、call_function 转义
 pub mod game_profile_tests;
+
+/// 拿着包根读锁的 `MiniEngine`（见 `data_dir::ROOT_TEST_LOCK`）：用法与 `MiniEngine` 相同（Deref）。
+/// 同一条线程上同时活着几个（GT-T9 一次起两个对照）只真锁一次：std 的 RwLock 同线程重复读锁可能死锁（有写者在等时）
+pub(crate) struct LockedEngine {
+    pub e: crate::host::MiniEngine,
+    _g: RootGuard,
+}
+
+pub(crate) struct RootGuard(Option<std::sync::RwLockReadGuard<'static, ()>>);
+
+thread_local! {
+    static ROOT_DEPTH: std::cell::Cell<u32> = const { std::cell::Cell::new(0) };
+}
+
+impl Drop for RootGuard {
+    fn drop(&mut self) {
+        ROOT_DEPTH.with(|d| d.set(d.get() - 1));
+    }
+}
+
+impl LockedEngine {
+    pub(crate) fn lock() -> RootGuard {
+        let first = ROOT_DEPTH.with(|d| {
+            d.set(d.get() + 1);
+            d.get() == 1
+        });
+        RootGuard(first.then(|| crate::data_dir::ROOT_TEST_LOCK.read().unwrap_or_else(|e| e.into_inner())))
+    }
+    pub(crate) fn new(e: crate::host::MiniEngine, g: RootGuard) -> Self {
+        Self { e, _g: g }
+    }
+}
+
+impl std::ops::Deref for LockedEngine {
+    type Target = crate::host::MiniEngine;
+    fn deref(&self) -> &Self::Target {
+        &self.e
+    }
+}
+
+impl std::ops::DerefMut for LockedEngine {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.e
+    }
+}

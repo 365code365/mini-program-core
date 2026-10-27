@@ -5,7 +5,8 @@
 
 use crate::host::MiniEngine;
 
-fn engine_in(route: &str, slot: &str) -> MiniEngine {
+fn engine_in(route: &str, slot: &str) -> super::LockedEngine {
+    let g = super::LockedEngine::lock();
     let root = crate::app_dir::resolve("sample-app");
     let data = crate::data_dir::subdir(&format!("engine-render-tests/{slot}"));
     std::fs::remove_dir_all(&data).ok();
@@ -20,7 +21,7 @@ fn engine_in(route: &str, slot: &str) -> MiniEngine {
     e.set_animation_time(2.0);
     e.launch(Some(route)).expect("打开页面");
     e.pump(1);
-    e
+    super::LockedEngine::new(e, g)
 }
 
 #[test]
