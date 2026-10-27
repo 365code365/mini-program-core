@@ -52,6 +52,7 @@ pub fn decode_bytes(bytes: Vec<u8>, ext: &str) -> Result<Pcm, (i32, String)> {
 }
 
 fn decode(bytes: Vec<u8>, ext: &str) -> Result<Pcm, String> {
+    let edit = super::mp4_edit::trim(&bytes);
     let mss = MediaSourceStream::new(Box::new(std::io::Cursor::new(bytes)), Default::default());
     let mut hint = Hint::new();
     if !ext.is_empty() {
@@ -82,7 +83,19 @@ fn decode(bytes: Vec<u8>, ext: &str) -> Result<Pcm, String> {
         if let Ok(decoded) = decoder.decode(&packet) {
             chunk.clear();
             decoded.copy_to_vec_interleaved(&mut chunk);
+            // 编码器延迟 / 填充（mp3 的 LAME 头、ogg 的 granule）symphonia 的解码器自己按包的 trim_start / trim_end 裁过了，
+            // 这里再裁就多裁一截（GT-AU5 实测 mp3 少 478 帧）
             out.extend_from_slice(&chunk);
+        }
+    }
+    // MP4 的编辑表（AAC 的预滚帧，isomp4 读取器不处理，见 mp4_edit.rs）
+    if let Some((skip, keep)) = edit {
+        let ch = channels.max(1) as usize;
+        let total = out.len() / ch;
+        let a = ((skip * rate as f64).round() as usize).min(total);
+        let e = (a + (keep * rate as f64).round() as usize).min(total);
+        if keep > 0.0 && e > a {
+            out = out[a * ch..e * ch].to_vec();
         }
     }
     if out.is_empty() {
