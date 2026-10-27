@@ -24,9 +24,9 @@ MODE=android
 if [ "${LTO:-0}" = 1 ]; then MOBILE_LTO=thin; else MOBILE_LTO=false; fi
 # 与 build-mobile.sh 同一套参数（默认带 gpu，`ANDROID_GPU=0` 关掉）
 if [ "${ANDROID_GPU:-1}" = 0 ]; then
-    ANDROID_FLAGS=(--release --lib --no-default-features --features bindgen)
+    ANDROID_FLAGS=(--release --lib --no-default-features --features bindgen,game)
 else
-    ANDROID_FLAGS=(--release --lib --no-default-features --features bindgen,gpu)
+    ANDROID_FLAGS=(--release --lib --no-default-features --features bindgen,gpu,game)
 fi
 # 只取 build-mobile.sh 里的两个函数定义，不执行它末尾的 case
 eval "$(sed -n '/^setup_ndk() {/,/^}/p;/^android_target() {/,/^}/p' tools/build-mobile.sh)"

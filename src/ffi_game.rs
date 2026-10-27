@@ -14,10 +14,13 @@
 //! 之后的调用一律返回失败值，`mr_game_last_error` 给出 panic 位置，事件队列里留一条 `error{kind:"panic"}`，
 //! 由宿主决定销毁重建。不在同一实例上继续跑。
 
+#[cfg(feature = "game")]
 use crate::game::{GameEngine, GameOptions};
 use std::ffi::{c_char, c_int, CString};
+#[cfg(feature = "game")]
 use std::panic::{catch_unwind, AssertUnwindSafe};
 
+#[cfg(feature = "game")]
 pub struct MRGame {
     engine: Option<GameEngine>,
     poisoned: bool,
@@ -44,20 +47,25 @@ pub extern "C" fn mr_package_kind(dir: *const c_char) -> c_int {
     }
 }
 
+#[cfg(feature = "game")]
+const SDK_VERSION: &str = crate::game::GAME_SDK_VERSION;
+#[cfg(not(feature = "game"))]
+const SDK_VERSION: &str = "";
+
 /// 本库编进了哪些能力（JSON，静态字符串，不用释放）：宿主据此决定是否展示小游戏入口
 #[no_mangle]
 pub extern "C" fn mr_capabilities() -> *const c_char {
     static CAPS: std::sync::OnceLock<CString> = std::sync::OnceLock::new();
     CAPS.get_or_init(|| {
         let v = serde_json::json!({
-            "game": true,
+            "game": cfg!(feature = "game"),
             // 下面三项随实现进度改（G8 WebGL、G5 移动端音频、G10 wasm）
             "webgl": false,
             "audio": cfg!(feature = "audio"),
             "wasm": false,
             "gpu": cfg!(feature = "gpu"),
             "version": env!("CARGO_PKG_VERSION"),
-            "sdkVersion": crate::game::GAME_SDK_VERSION,
+            "sdkVersion": SDK_VERSION,
         });
         CString::new(v.to_string()).unwrap_or_default()
     })
@@ -67,6 +75,7 @@ pub extern "C" fn mr_capabilities() -> *const c_char {
 /// 建小游戏实例并执行 `game.js`。失败（不是小游戏包、game.json 坏了）返回 NULL，原因打到 stderr。
 /// `options_json` 见 `GameOptions::from_json`（`appId`、`systemInfo`、`launchOptions`、`watchdogMs`、`jsMemoryLimitMB`）。
 /// game.js 顶层抛错**不算**失败：实例照常返回，错误在事件队列里
+#[cfg(feature = "game")]
 #[no_mangle]
 pub extern "C" fn mr_game_create(
     app_dir: *const c_char,
@@ -102,6 +111,7 @@ pub extern "C" fn mr_game_create(
     }
 }
 
+#[cfg(feature = "game")]
 #[no_mangle]
 pub extern "C" fn mr_game_destroy(game: *mut MRGame) {
     if game.is_null() {
@@ -113,6 +123,7 @@ pub extern "C" fn mr_game_destroy(game: *mut MRGame) {
 }
 
 /// 在没中毒的实例上跑 `f`；panic 时把实例标成 poisoned。实例为空 / 已中毒返回 `fail`
+#[cfg(feature = "game")]
 fn guarded<R>(game: *mut MRGame, fail: R, f: impl FnOnce(&mut GameEngine) -> R) -> R {
     let Some(g) = (unsafe { game.as_mut() }) else { return fail };
     if g.poisoned {
@@ -133,11 +144,13 @@ fn guarded<R>(game: *mut MRGame, fail: R, f: impl FnOnce(&mut GameEngine) -> R) 
     }
 }
 
+#[cfg(feature = "game")]
 fn panic_text(p: &Box<dyn std::any::Any + Send>) -> String {
     p.downcast_ref::<&str>().map(|s| s.to_string()).or_else(|| p.downcast_ref::<String>().cloned()).unwrap_or_else(|| "未知 panic".into())
 }
 
 /// 跑一帧，返回 `MR_FRAME_*` 位（与 `mr_app_pump_ex` 同一套）。`now_ms` 用宿主 vsync 时刻，0 = 引擎自己取
+#[cfg(feature = "game")]
 #[no_mangle]
 pub extern "C" fn mr_game_pump_ex(game: *mut MRGame, now_ms: u64) -> c_int {
     let flags = guarded(game, 0, |e| e.pump_ex(now_ms) as c_int);
@@ -149,6 +162,7 @@ pub extern "C" fn mr_game_pump_ex(game: *mut MRGame, now_ms: u64) -> c_int {
 }
 
 /// 取一条事件（JSON），没有了返回 NULL。返回的指针活到下一次对同一实例的调用
+#[cfg(feature = "game")]
 #[no_mangle]
 pub extern "C" fn mr_game_poll_event(game: *mut MRGame) -> *const c_char {
     let Some(g) = (unsafe { game.as_mut() }) else { return std::ptr::null() };
@@ -167,6 +181,7 @@ pub extern "C" fn mr_game_poll_event(game: *mut MRGame) -> *const c_char {
 }
 
 /// 执行一段 JS（诊断用；release 宿主可以不暴露）。出错返回 NULL，原因见 `mr_game_last_error`
+#[cfg(feature = "game")]
 #[no_mangle]
 pub extern "C" fn mr_game_eval(game: *mut MRGame, code: *const c_char) -> *const c_char {
     let Some(code) = cstr(code) else { return std::ptr::null() };
@@ -188,6 +203,7 @@ pub extern "C" fn mr_game_eval(game: *mut MRGame, code: *const c_char) -> *const
 }
 
 /// 最近一次失败的原因（没有返回空串）。指针活到下一次对同一实例的调用
+#[cfg(feature = "game")]
 #[no_mangle]
 pub extern "C" fn mr_game_last_error(game: *mut MRGame) -> *const c_char {
     let Some(g) = (unsafe { game.as_mut() }) else { return std::ptr::null() };
@@ -196,10 +212,11 @@ pub extern "C" fn mr_game_last_error(game: *mut MRGame) -> *const c_char {
 }
 
 /// 实例是否已因 panic 失效（1 = 失效）
+#[cfg(feature = "game")]
 #[no_mangle]
 pub extern "C" fn mr_game_is_poisoned(game: *mut MRGame) -> c_int {
     unsafe { game.as_ref() }.map(|g| g.poisoned as c_int).unwrap_or(1)
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "game"))]
 mod tests;

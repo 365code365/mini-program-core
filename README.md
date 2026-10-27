@@ -411,6 +411,10 @@ and the log says why:
 | `MINI_GPU_LOG=1` | Verbose GPU log: init time, self-test samples, surface format, per-frame composite mode (layered / passthrough) and upload bytes |
 | `MINI_GPU_VERIFY=1` | Headless: read back every GPU frame and compare it byte-for-byte with the CPU composite of the same layers; exits with code 5 on mismatch |
 | `MINI_GPU_FAULT=init\|selftest\|tint\|lost@N\|surface-lost@N\|timeout@N` | Fault injection for the fallback paths |
+| `MINI_GAME_LOG=1` | Mini-game (`game.json`) diagnostics: unknown `game.json` fields, module count, orientation |
+| `MINI_GAME_LOG_ALL=1` | Mini-game: disable the per-frame console limit (500 lines/frame, 4KB/line) |
+| `MINI_GAME_WATCHDOG_MS=<ms>` | Mini-game: time limit for one entry into JS (default 5000); exceeded → `InternalError: interrupted`, `wx.onError`, host `error{kind:"watchdog"}` |
+| `MINI_GAME_FAULT=panic@pump\|panic@eval` | Mini-game fault injection: verifies the FFI panic guard (instance becomes poisoned, host process survives) |
 
 How `auto` decides: the adapter must be an integrated or discrete GPU (software adapters such as
 llvmpipe never count), on Metal / Vulkan / DX12 (GLES only when `gpu` is forced); a start-up

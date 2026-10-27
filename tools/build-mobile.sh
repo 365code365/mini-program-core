@@ -27,16 +27,16 @@
 set -eu
 cd "$(dirname "$0")/.."
 MODE="${1:-check}"
-FLAGS=(--release --lib --no-default-features --features bindgen)
+FLAGS=(--release --lib --no-default-features --features bindgen,game)
 if [ "${ANDROID_GPU:-1}" = 0 ]; then
     ANDROID_FLAGS=("${FLAGS[@]}")
 else
-    ANDROID_FLAGS=(--release --lib --no-default-features --features bindgen,gpu)
+    ANDROID_FLAGS=(--release --lib --no-default-features --features bindgen,gpu,game)
 fi
 if [ "${IOS_GPU:-1}" = 0 ]; then
     IOS_FLAGS=("${FLAGS[@]}")
 else
-    IOS_FLAGS=(--release --lib --no-default-features --features bindgen,gpu)
+    IOS_FLAGS=(--release --lib --no-default-features --features bindgen,gpu,game)
 fi
 export IPHONEOS_DEPLOYMENT_TARGET="${IPHONEOS_DEPLOYMENT_TARGET:-13.0}"
 
@@ -156,7 +156,7 @@ build_ios() {
 # 与 iOS 的区别：不要 bindgen（rquickjs-sys 预生成了 darwin 的绑定）；带 h264 / audio（桌面上软解 <video>、
 # 自己出声，与 mini-app-window 一样）；不带 desktop（窗口、上屏、剪贴板都归宿主）。
 build_macos() {
-    local flags=(--release --lib --no-default-features --features gpu,h264,audio)
+    local flags=(--release --lib --no-default-features --features gpu,h264,audio,game)
     local lto="${MOBILE_LTO:-thin}" incr=false
     [ "$lto" = false ] && incr=true
     local targets=(aarch64-apple-darwin)

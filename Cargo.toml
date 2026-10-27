@@ -22,7 +22,7 @@ crate-type = ["cdylib", "staticlib", "rlib"]
 [features]
 # 默认同时编进 CPU 与 GPU 两个后端，运行时选（交互窗体 auto；无头与回归脚本 cpu）。
 # 只要 CPU：`cargo build --release --no-default-features --features desktop,audio,h264`
-default = ["desktop", "audio", "h264", "gpu"]
+default = ["desktop", "audio", "h264", "gpu", "game"]
 # 桌面宿主（自带窗口、上屏、剪贴板）
 desktop = ["winit", "softbuffer", "arboard", "dep:rfd"]
 # 内置音频播放（video 组件的声音）
@@ -38,6 +38,9 @@ bindgen = ["rquickjs/bindgen"]
 # 内容仍由 CPU 光栅化。**CPU 后端是参考实现、永远可用**：关掉这个 feature 照常编译、照常过全部回归；
 # 开了也只在偏好 auto / gpu 且门槛、自检都过了时才用，任何失败一律回退 CPU。
 gpu = ["dep:wgpu", "dep:pollster"]
+# 小游戏运行模式（game.json + game.js，见 game-doc/）。只要小程序的宿主可以关掉它少付体积：
+# 关掉之后 src/game、mr_game_* 都不编，小程序构建与回归逐字节不变（mr_capabilities 照样有，报 game:false）
+game = []
 
 [dependencies]
 image = "0.25"

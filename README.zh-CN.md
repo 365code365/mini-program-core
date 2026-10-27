@@ -337,6 +337,10 @@ GPU 初始化失败、自检不一致、运行中设备丢失或 surface 无法�
 | `MINI_GPU_LOG=1` | GPU 详细日志：初始化耗时、自检样本、surface 格式、每帧合成模式（分层 / 直通）与上传字节数 |
 | `MINI_GPU_VERIFY=1` | 无头每帧把 GPU 读回与同一帧的 CPU 合成逐字节比较，不一致以退出码 5 结束 |
 | `MINI_GPU_FAULT=init\|selftest\|tint\|lost@N\|surface-lost@N\|timeout@N` | 故障注入，用来测回退：建设备后失败 / 自检判不一致 / 着色器 R+1 / 第 N 帧设备丢失 / 第 N 帧 surface 丢失 / 第 N 帧 acquire 超时 |
+| `MINI_GAME_LOG=1` | 小游戏（`game.json`）诊断：`game.json` 未知字段、注册的模块数、屏幕方向 |
+| `MINI_GAME_LOG_ALL=1` | 小游戏：关掉每帧日志限流（默认每帧 500 行、单行 4KB） |
+| `MINI_GAME_WATCHDOG_MS=<毫秒>` | 小游戏：单次进入 JS 的时间上限（默认 5000），超时中断抛 `InternalError: interrupted`，交给 `wx.onError` 并发宿主 `error{kind:"watchdog"}` |
+| `MINI_GAME_FAULT=panic@pump\|panic@eval` | 小游戏故障注入：验证 FFI 的 panic 防护（实例失效、宿主进程不崩） |
 
 `auto` 怎么选：适配器必须是集显或独显（llvmpipe 这类软件适配器一律不算），后端是 Metal / Vulkan / DX12（GLES 只在强制 `gpu` 时用）；
 启动自检用一张固定测试帧比较 GPU 与 CPU 输出（必须逐字节一致），并比一次稳态成本（GPU 主线程 ≤ 1ms、GPU 完成 < 4ms；不和 CPU 合成时间比，因为自检量不到 CPU 的上屏开销）。

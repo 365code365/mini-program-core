@@ -1,3 +1,4 @@
+#![cfg(feature = "game")]
 //! 小游戏 e2e：驱动 GameEngine 跑 sample-game/ 下的夹具，断言事件序列与日志（game-doc/05、08）。
 //!
 //! 为什么只有一个文件：每个 tests/*.rs 是独立二进制（约 75MB）外加一份增量缓存，还要单独链接一次
@@ -243,4 +244,35 @@ fn r9_系统信息_platform_与_sdkversion() {
     }
     assert_eq!(h.engine.eval("wx.getSystemInfoSync().SDKVersion").unwrap(), mini_render::game::GAME_SDK_VERSION);
     assert_eq!(h.engine.eval("wx.getSystemInfoSync().deviceOrientation").unwrap(), "portrait");
+}
+
+/// GT-API1（11 §4）：官方小游戏 API 总览里的 382 个 `wx.*` —— 游戏实例里缺的必须正好是延期清单里的那些
+#[test]
+fn api1_官方_api_表面门禁() {
+    let _g = serial();
+    let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("game-doc/取证");
+    let idx: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(root.join("official-api-index-2026-10-26.json")).unwrap()).unwrap();
+    let names: Vec<String> = idx["api"].as_object().unwrap().keys().map(|k| k.trim_start_matches("wx.").to_string()).collect();
+    assert_eq!(names.len(), 382);
+    let def: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(root.join("api-surface-deferred.json")).unwrap()).unwrap();
+    let deferred: std::collections::BTreeSet<String> =
+        def["deferred"].as_object().unwrap().values().flat_map(|v| v.as_array().unwrap().iter().map(|x| x.as_str().unwrap().to_string())).collect();
+    let mut h = GameHarness::open_inline("api", "", Opts::default());
+    let js = format!("JSON.stringify({}.filter(function (k) {{ return typeof wx[k] === 'undefined'; }}))", serde_json::to_string(&names).unwrap());
+    let missing: std::collections::BTreeSet<String> = serde_json::from_str(&h.engine.eval(&js).unwrap()).unwrap();
+    let not_listed: Vec<_> = missing.difference(&deferred).collect();
+    let stale: Vec<_> = deferred.difference(&missing).collect();
+    assert!(not_listed.is_empty(), "这些官方 API 在游戏实例里不存在，也不在延期清单里：{not_listed:?}");
+    assert!(stale.is_empty(), "这些已经实现了，从 api-surface-deferred.json 里删掉：{stale:?}");
+    println!("官方 API {}：已有 {}，延期 {}", names.len(), names.len() - missing.len(), missing.len());
+    // 宿主没接的代理 API：存在、canIUse 为 false、调用后 fail（GT-H1 的抽样）
+    assert_eq!(h.engine.eval("String(wx.canIUse('getFriendCloudStorage'))").unwrap(), "false");
+    assert_eq!(h.engine.eval("String(wx.canIUse('view'))").unwrap(), "false", "小游戏没有 WXML 组件");
+    assert_eq!(h.engine.eval("String(wx.canIUse('getSystemInfoSync'))").unwrap(), "true");
+    h.engine.eval("wx.getFriendCloudStorage({ keyList: ['s'], fail: function (e) { console.log('T:EV hfail ' + JSON.stringify(e)); } })").unwrap();
+    std::thread::sleep(std::time::Duration::from_millis(5));
+    h.vsyncs(2);
+    let ev = h.events("hfail");
+    assert_eq!(ev.len(), 1);
+    assert!(ev[0]["errMsg"].as_str().unwrap().starts_with("getFriendCloudStorage:fail"), "{ev:?}");
 }

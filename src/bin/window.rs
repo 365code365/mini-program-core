@@ -456,7 +456,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("📂 使用内置 sample-app");
     }
 
+    // 关掉 game feature 时 --hz / --query 只给小程序那条路的 --hz 用
+    #[cfg(not(feature = "game"))]
+    let _ = (game_hz, game_query);
     // 小游戏包（game.json）走小游戏入口（app_window::game_run）；认不出的包在 MiniAppWindow::new 里报错
+    #[cfg(feature = "game")]
     if let Some(p) = app_path.as_ref() {
         if mini_render::app_profile::detect(p) == Ok(mini_render::app_profile::AppProfile::MiniGame) {
             let run = app_window::game_run::GameRun {

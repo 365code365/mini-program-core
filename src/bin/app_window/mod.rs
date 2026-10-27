@@ -46,6 +46,7 @@ pub mod host_calls;
 /// 无头运行：整帧快照与拖动基准
 pub mod headless_run;
 /// 小游戏入口（game.json）：G1 只有无头，按 --hz / --frames pump 并打印日志
+#[cfg(feature = "game")]
 pub mod game_run;
 
 // ── 从 lib 的宿主层重新导出（同一份实现）──

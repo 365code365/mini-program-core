@@ -26,6 +26,7 @@ pub mod app_dir;
 pub mod app_profile;
 
 /// 小游戏运行实例（game.json + game.js；与 `host::MiniEngine` 平级，见 game-doc/02 §2）
+#[cfg(feature = "game")]
 pub mod game;
 
 /// `wx.request` 等网络 API 的原生实现（后台线程 + 按帧取回）
