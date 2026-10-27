@@ -190,6 +190,10 @@ const GAME_EXTRA: &[Prelude] = prelude![
     "game-webgl2" => "game-webgl2.js",
     // WXWebAssembly（G10，原生在 game/wasm）
     "game-wasm" => "game-wasm.js",
+    // 主域的开放数据域入口 wx.getOpenDataContext（G9.7）；开放数据域自己的环境（game-opendata-env / -wx）不进这张表，game/opendata.rs 按名字取
+    "game-opendata" => "game-opendata.js",
+    "game-opendata-env" => "game-opendata-env.js",
+    "game-opendata-wx" => "game-opendata-wx.js",
     // wx.onTouch* / onMouse* / onWheel 的监听表与派发（原生在 game/touch.rs、game/pc_input.rs）
     "game-input" => "game-input.js",
     // InnerAudioContext 接小游戏自己的混音器与真设备（game/audio）：只换掉原生入口，外壳仍是 audio.js
@@ -210,6 +214,8 @@ const GAME_EXTRA: &[Prelude] = prelude![
     "game-proxies" => "game-proxies.js",
     // wx.createWebAudioContext 换成真混音图（game/audio/graph + web）；没编进去时（__game_webaudio 不存在）保留 webaudio.js 那份
     "game-webaudio" => "game-webaudio.js",
+    // PC 端的指针锁定 / 手柄 / 光标（G3 延后项）；要在 game-keyboard 之后（接 __gameHostEvent）
+    "game-pc" => "game-pc.js",
 ];
 
 /// 按名字取一段通用前置代码的源码（Worker 线程的运行时要单独装 module.js 之类）
@@ -227,7 +233,8 @@ fn sequence(profile: PreludeProfile) -> Vec<&'static Prelude> {
         PreludeProfile::MiniProgram => base.collect(),
         PreludeProfile::MiniGame => {
             let (probe, rest): (Vec<_>, Vec<_>) = base.partition(|p| p.name == "api-probe");
-            rest.into_iter().chain(GAME_EXTRA.iter()).chain(probe).collect()
+            // game-opendata-env / -wx 只装进开放数据域的运行时（game/opendata.rs）
+            rest.into_iter().chain(GAME_EXTRA.iter().filter(|p| !p.name.starts_with("game-opendata-"))).chain(probe).collect()
         }
     }
 }

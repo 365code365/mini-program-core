@@ -17,6 +17,7 @@ pub mod image;
 mod lifecycle;
 mod package;
 mod overlay;
+mod opendata;
 #[cfg(feature = "webgl")]
 mod overlay_layer;
 mod buttons;
@@ -151,6 +152,11 @@ pub struct GameEngine {
     workers: std::rc::Rc<std::cell::RefCell<worker::Workers>>,
     /// 系统覆盖层（Toast / Loading / Modal / ActionSheet，overlay.rs）
     overlay: overlay::Overlay,
+    /// 开放数据域（opendata.rs）：主域与它之间的消息 / 日志，与它自己的运行时（启动之后才有）
+    od: std::rc::Rc<std::cell::RefCell<opendata::Shared>>,
+    od_rt: Option<opendata::OpenData>,
+    /// 创建选项 hostApis（开放数据域的关系链 API 也按它判）
+    host_apis: Vec<String>,
     /// WebGL 上下文（webgl/）
     #[cfg(feature = "webgl")]
     webgl: std::rc::Rc<std::cell::RefCell<webgl::WebGl>>,
@@ -196,6 +202,7 @@ impl GameEngine {
         let audio = std::rc::Rc::new(std::cell::RefCell::new(audio::GameAudio::new(root.clone(), opts.fixed_clock)));
         let workers = std::rc::Rc::new(std::cell::RefCell::new(worker::Workers::new(root.clone(), &config)));
         let btns: std::rc::Rc<std::cell::RefCell<buttons::Buttons>> = Default::default();
+        let od: std::rc::Rc<std::cell::RefCell<opendata::Shared>> = Default::default();
         #[cfg(feature = "webgl")]
         let webgl = std::rc::Rc::new(std::cell::RefCell::new(webgl::WebGl::new(opts.webgl.as_deref(), opts.fixed_clock, opts.fault.as_deref())));
         {
@@ -208,6 +215,7 @@ impl GameEngine {
             audio::register_webaudio(&rt, audio.clone())?;
             worker::register(&rt, workers.clone())?;
             buttons::register(&rt, btns.clone())?;
+            opendata::register_main(&rt, od.clone(), config.open_data_context.is_some())?;
             #[cfg(feature = "webgl")]
             webgl::register(&rt, webgl.clone(), canvases.clone(), images.clone())?;
             #[cfg(feature = "wasm")]
@@ -244,6 +252,7 @@ impl GameEngine {
             touch: Default::default(), pc: Default::default(), images, audio,
             orientation: if config_landscape { "landscape".into() } else { "portrait".into() },
             system_info_opts: opts.system_info.clone(), rotation, workers, overlay: Default::default(), buttons: btns,
+            od, od_rt: None, host_apis: opts.host_apis.clone(),
             #[cfg(feature = "webgl")]
             webgl };
         engine.announce_orientation();

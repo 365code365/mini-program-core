@@ -215,10 +215,14 @@
                         if (r) { w = r[0]; h = r[1]; }
                         if (ctx) ctx.__reset();
                     }
-                    Object.defineProperty(this, 'width', { get: function() { return w; }, set: function(v) { resize(v, h); }, enumerable: true });
-                    Object.defineProperty(this, 'height', { get: function() { return h; }, set: function(v) { resize(w, v); }, enumerable: true });
+                    // sharedCanvas 在主域与开放数据域各有一个包装：尺寸以原生为准
+                    function sync() { if (self.__shared) { var s = __game_canvas_size(id); if (s) { w = s[0]; h = s[1]; } } }
+                    Object.defineProperty(this, 'width', { get: function() { sync(); return w; }, set: function(v) { if (self.__readOnlySize) return; sync(); resize(v, h); }, enumerable: true });
+                    Object.defineProperty(this, 'height', { get: function() { sync(); return h; }, set: function(v) { if (self.__readOnlySize) return; sync(); resize(w, v); }, enumerable: true });
                     this.getContext = function(type, attrs) {
                         type = String(type);
+                        // 主域拿不到 sharedCanvas 的上下文（只能 drawImage 它），开放数据域里只能 2d
+                        if (self.__mainShared || (self.__shared && type !== '2d')) return null;
                         // experimental-webgl 就是 webgl（同一个上下文）
                         if (type === 'experimental-webgl') type = 'webgl';
                         if (kind !== null && kind !== type) return null;
@@ -246,14 +250,14 @@
                         var h = self['on' + ev.type]; if (typeof h === 'function') __gameCall(h, self, [ev]);
                         return !ev.defaultPrevented;
                     };
-                    function save(o) { if (self.__glctx) __game_gl_sync(id); return JSON.parse(__game_canvas_save(id, JSON.stringify(o || {}))); }
+                    function save(o) { if (self.__mainShared) throw new Error('主域不能读 sharedCanvas 的像素'); if (self.__glctx) __game_gl_sync(id); return JSON.parse(__game_canvas_save(id, JSON.stringify(o || {}))); }
                     this.toTempFilePathSync = function(o) { var r = save(o); if (r.err) throw new Error('toTempFilePathSync:fail ' + r.err); return r.tempFilePath; };
                     this.toTempFilePath = function(o) {
                         o = o || {}; var r = save(o);
                         if (r.err) return __asyncFail(o, 'toTempFilePath', r.err);
                         return __asyncOk(o, 'toTempFilePath', { tempFilePath: r.tempFilePath });
                     };
-                    this.toDataURL = function(type, quality) { if (self.__glctx) __game_gl_sync(id); return __game_canvas_encode(id, String(type || 'image/png'), quality === undefined ? 0.92 : Number(quality)); };
+                    this.toDataURL = function(type, quality) { if (self.__mainShared) throw new Error('主域不能读 sharedCanvas 的像素'); if (self.__glctx) __game_gl_sync(id); return __game_canvas_encode(id, String(type || 'image/png'), quality === undefined ? 0.92 : Number(quality)); };
                 }
 
                 globalThis.__GameCanvas = GameCanvas;

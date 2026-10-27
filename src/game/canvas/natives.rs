@@ -46,6 +46,17 @@ pub fn register(rt: &JsRuntime, canvases: Rc<RefCell<GameCanvases>>, images: Rc<
         vec![id as f64, w as f64, h as f64, if main { 1.0 } else { 0.0 }].into_js(&ctx)
     })?;
     let c = canvases.clone();
+    rt.register_raw("__game_canvas_shared", move |ctx, _args| {
+        let (id, w, h) = c.borrow_mut().shared();
+        vec![id as f64, w as f64, h as f64].into_js(&ctx)
+    })?;
+    // 当前尺寸（sharedCanvas 两个运行时各有一个包装对象，尺寸以原生为准）
+    let c = canvases.clone();
+    rt.register_raw("__game_canvas_size", move |ctx, args| match c.borrow_mut().get(num(args.0.first()) as u32) {
+        Some(s) => vec![s.w as f64, s.h as f64].into_js(&ctx),
+        None => Ok(Value::new_undefined(ctx)),
+    })?;
+    let c = canvases.clone();
     rt.register_raw("__game_canvas_resize", move |ctx, args| {
         let id = num(args.0.first()) as u32;
         let (w, h) = (num(args.0.get(1)) as f64, num(args.0.get(2)) as f64);

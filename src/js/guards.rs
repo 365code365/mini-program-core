@@ -29,6 +29,11 @@ impl Watchdog {
         Self { origin: Instant::now(), deadline_us: Arc::new(AtomicU64::new(0)), budget_us: budget_ms.max(1) * 1000 }
     }
     /// 进入一段 JS 之前调：从此刻起给它一个预算
+    /// 单次进 JS 的上限（毫秒）
+    pub fn budget_ms(&self) -> u64 {
+        self.budget_us / 1000
+    }
+
     pub fn arm(&self) {
         let now = self.origin.elapsed().as_micros() as u64;
         self.deadline_us.store(now + self.budget_us, Ordering::Relaxed);

@@ -504,3 +504,13 @@
                     if (type === 'webglcontextlost' && prevented && !gl.__byApi) gl.__restoreSoon();
                 };
             })();
+            // wx.getGPU（G8.9，11 B-5）：WebGPU 还没有映射到 wgpu。按 WebGPU 标准里「没有可用适配器」的写法给：
+            // requestAdapter() resolve null —— 引擎（three.js WebGPURenderer、Babylon 等）据此回退 WebGL（design-webgl.md §1）
+            (function() {
+                var gpu = {
+                    requestAdapter: function() { return Promise.resolve(null); },
+                    getPreferredCanvasFormat: function() { return 'rgba8unorm'; },
+                    wgslLanguageFeatures: typeof Set === 'function' ? new Set() : []
+                };
+                wx.getGPU = function() { return gpu; };
+            })();

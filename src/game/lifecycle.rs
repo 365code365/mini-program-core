@@ -56,6 +56,9 @@ impl GameEngine {
 
     /// 宿主回 hostCall 的结果（`ok` = success / fail，`result_json` 是回调参数）。id 不认识返回 false
     pub fn host_reply(&mut self, id: u32, ok: bool, result_json: &str) -> bool {
+        if let Some(r) = self.opendata_reply(id, ok, result_json) {
+            return r;
+        }
         let r = self.app.resolve_host_call(id, ok, result_json);
         self.after_js();
         r

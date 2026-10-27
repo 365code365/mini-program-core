@@ -84,6 +84,10 @@ impl GameEngine {
 
         // 5 rAF（后台不跑：微信切后台后 rAF 不回调）
         let raf_frame = !self.backgrounded && self.pacer.borrow_mut().on_vsync(t);
+        // 4.5 开放数据域（opendata.rs）：在主域的 rAF 之前画 sharedCanvas，主域这一帧 drawImage 拿到的是新的
+        if !self.backgrounded {
+            self.opendata_tick(t as f64 / 1000.0, raf_frame);
+        }
         if raf_frame && self.raf_pending() > 0 {
             let ts = t as f64 / 1000.0;
             self.guards.watchdog.arm();
@@ -114,7 +118,8 @@ impl GameEngine {
             flags |= FRAME_NEW;
             crate::host::cpu_affinity::note_produced(t_ms);
         }
-        let raf_waiting = !self.backgrounded && (self.raf_pending() > 0 || self.overlay_animating());
+        let od_busy = { let o = self.od.borrow(); o.busy || (o.wanted && self.od_rt.is_none()) || !o.inbox.is_empty() };
+        let raf_waiting = !self.backgrounded && (self.raf_pending() > 0 || self.overlay_animating() || od_busy);
         // Android 大核：有挂着的 rAF 就算「在连续出帧」（游戏几乎一直是），停了 800ms 放开（桌面 / iOS 什么都不做）
         crate::host::cpu_affinity::note_frame(t_ms, raf_waiting);
 

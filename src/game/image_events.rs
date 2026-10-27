@@ -51,6 +51,7 @@ impl GameEngine {
             if let Err(e) = self.app.call_str2("__gameImageDone", &r.id.to_string(), &json.to_string()) {
                 errors.push(e);
             }
+            self.opendata_image_done(r.id, &json.to_string());
         }
         if warn {
             if let Err(e) = self.app.call_num("__dispatchMemoryWarning", &[10.0]) {

@@ -4,22 +4,8 @@
  "deferred": {
   "G7": [],
   "G6": [],
-  "G3": [
-   "exitPointerLock",
-   "getGamepads",
-   "isPointerLocked",
-   "onGamepadConnected",
-   "onGamepadDisconnected",
-   "requestPointerLock",
-   "setCursor"
-  ],
-  "G8": [
-   "getGPU"
-  ],
-  "G9": [
-   "getOpenDataContext",
-   "getSharedCanvas",
-   "onMessage"
-  ]
+  "G3": [],
+  "G8": [],
+  "G9": []
  }
 }

@@ -44,6 +44,8 @@ pub struct GameCanvases {
     pub main_dirty: bool,
     /// 窗口逻辑尺寸（主画布的默认尺寸）
     pub window: (u32, u32),
+    /// 主域与开放数据域共享的 sharedCanvas（G9.7，game/opendata.rs）
+    pub shared: Option<u32>,
 }
 
 impl GameCanvases {
@@ -62,6 +64,20 @@ impl GameCanvases {
             self.main_dirty = true;
         }
         (id, w, h, main)
+    }
+
+    /// sharedCanvas：第一次要时建（离屏，默认窗口逻辑尺寸），之后同一块
+    pub fn shared(&mut self) -> (u32, u32, u32) {
+        if let Some(id) = self.shared {
+            if let Some(s) = self.get(id) {
+                return (id, s.w, s.h);
+            }
+        }
+        let id = self.slots.len() as u32;
+        let (w, h) = self.window;
+        self.slots.push(Some(Slot::new(id, w, h)));
+        self.shared = Some(id);
+        (id, w, h)
     }
 
     /// 改尺寸：夹到上限，重建后备缓冲（清空 + 状态复位）。返回实际生效的尺寸
