@@ -13,6 +13,10 @@ impl GameEngine {
             return;
         }
         let (x, y) = self.host_to_game(x, y);
+        // 覆盖层先命中（02 §7.4）：归了覆盖层的这串触摸不进游戏
+        if self.overlay_touch(phase, id, x, y) {
+            return;
+        }
         self.touch.push(phase, id, x, y, force, t_us);
     }
 

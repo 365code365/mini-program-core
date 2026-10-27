@@ -157,7 +157,7 @@ pub enum PreludeProfile {
 /// 小游戏也要的通用段（名字须在 `PRELUDE` 里，测试守着）。页面栈、组件、路由、tabBar、
 /// WXML 查询这类只对小程序有意义的段不在这里。`api-probe` 仍然最后装（表里它就在最后）。
 pub const GAME_CORE: &[&str] = &[
-    "module", "console", "fake-clock", "wx-object", "codec", "timer", "storage", "device", "network",
+    "module", "console", "fake-clock", "wx-object", "codec", "timer", "storage", "ui", "device", "network",
     "host", "system", "socket", "fs", "audio", "app-info", "host-capabilities", "base-ext", "net-socket",
     "media-ext", "webaudio", "api-probe",
 ];

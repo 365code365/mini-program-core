@@ -16,6 +16,7 @@ mod fonts;
 pub mod image;
 mod lifecycle;
 mod package;
+mod overlay;
 mod plugin;
 pub mod rotate;
 mod window;
@@ -135,6 +136,8 @@ pub struct GameEngine {
     /// 引擎内旋转（rotate.rs）；None = 宿主自己转
     rotation: Option<rotate::Rotation>,
     workers: std::rc::Rc<std::cell::RefCell<worker::Workers>>,
+    /// 系统覆盖层（Toast / Loading / Modal / ActionSheet，overlay.rs）
+    overlay: overlay::Overlay,
 }
 
 impl GameEngine {
@@ -211,7 +214,7 @@ impl GameEngine {
             canvases, pacer, clock, frame: frame::FrameOut::default(), backgrounded: false,
             touch: Default::default(), pc: Default::default(), images, audio,
             orientation: if config_landscape { "landscape".into() } else { "portrait".into() },
-            system_info_opts: opts.system_info.clone(), rotation, workers };
+            system_info_opts: opts.system_info.clone(), rotation, workers, overlay: Default::default() };
         engine.announce_orientation();
         let log = std::env::var("MINI_GAME_LOG").is_ok();
         if opts.app_id.is_none() {

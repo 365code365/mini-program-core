@@ -23,8 +23,6 @@
    "getMiniReportManager",
    "getRankManager",
    "getScenePerformanceManager",
-   "hideLoading",
-   "hideToast",
    "offKeyboardComplete",
    "offKeyboardConfirm",
    "offKeyboardInput",
@@ -34,9 +32,6 @@
    "setMenuStyle",
    "setStatusBarStyle",
    "showKeyboard",
-   "showLoading",
-   "showModal",
-   "showToast",
    "updateKeyboard"
   ],
   "G6": [],

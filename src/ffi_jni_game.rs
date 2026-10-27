@@ -245,7 +245,7 @@ pub extern "system" fn Java_dev_minirender_MiniGame_nativeBlit(_e: JNIEnv, _c: J
     }
     let win = hd.window as *mut c_void;
     let game = hd.game;
-    if mr_game_with_engine(game, |e| e.rotated_output()).unwrap_or(false) {
+    if mr_game_with_engine(game, |e| e.rgba_output()).unwrap_or(false) {
         return blit_rgba(hd);
     }
     let geometry = &mut hd.geometry;

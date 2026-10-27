@@ -76,6 +76,11 @@ impl GameEngine {
             self.report_error(super::error_kind(&e, "update"), &e);
         }
         self.after_js();
+        // 2b 系统覆盖层（Toast / Modal / ActionSheet 的请求在逻辑层里登记，overlay.rs）
+        if self.overlay_tick(t) {
+            self.frame.stale = true;
+            flags |= FRAME_NEW;
+        }
 
         // 5 rAF（后台不跑：微信切后台后 rAF 不回调）
         let raf_frame = !self.backgrounded && self.pacer.borrow_mut().on_vsync(t);
@@ -107,7 +112,7 @@ impl GameEngine {
             flags |= FRAME_NEW;
             crate::host::cpu_affinity::note_produced(t_ms);
         }
-        let raf_waiting = !self.backgrounded && self.raf_pending() > 0;
+        let raf_waiting = !self.backgrounded && (self.raf_pending() > 0 || self.overlay_animating());
         // Android 大核：有挂着的 rAF 就算「在连续出帧」（游戏几乎一直是），停了 800ms 放开（桌面 / iOS 什么都不做）
         crate::host::cpu_affinity::note_frame(t_ms, raf_waiting);
 
@@ -168,6 +173,13 @@ impl GameEngine {
         if self.frame.stale || self.frame.rgba.is_empty() {
             let cs = self.canvases.borrow();
             match cs.main_slot() {
+                // 覆盖层弹着：在引擎里合成（overlay.rs），输出按 min(dpr, 2) 放大
+                Some(_) if self.overlay_visible() => {
+                    drop(cs);
+                    let mut out = std::mem::take(&mut self.frame.rgba);
+                    let (w, h) = self.compose_overlay(&mut out);
+                    (self.frame.rgba, self.frame.w, self.frame.h) = (out, w, h);
+                }
                 Some(slot) => {
                     let canvas = slot.ctx.get_canvas();
                     let c = canvas.lock().unwrap();
@@ -194,9 +206,9 @@ impl GameEngine {
         (self.frame.w, self.frame.h, &self.frame.rgba)
     }
 
-    /// 输出帧是不是引擎转过的（宿主上屏要走转好的 RGBA，不能直取主画布像素）
-    pub fn rotated_output(&self) -> bool {
-        self.rotation.is_some()
+    /// 输出帧是不是引擎合成过的（转过方向、或盖着覆盖层）：宿主上屏要走 RGBA，不能直取主画布像素
+    pub fn rgba_output(&self) -> bool {
+        self.rotation.is_some() || self.overlay_visible()
     }
     /// 拿主画布的原始像素（宽、高、`Color` 行优先）跑一段宿主侧上屏代码：热路径直写宿主缓冲，
     /// 不经 [`frame_rgba`](Self::frame_rgba) 的中间缓冲（`compose::write_opaque_rows`）。还没有主画布返回 None
@@ -219,7 +231,7 @@ impl GameEngine {
         self.scaled_unrotated(w, h)
     }
 
-    fn scaled_unrotated(&self, w: u32, h: u32) -> Vec<u8> {
+    pub(super) fn scaled_unrotated(&self, w: u32, h: u32) -> Vec<u8> {
         let cs = self.canvases.borrow();
         let mut out = Vec::new();
         match cs.main_slot() {
