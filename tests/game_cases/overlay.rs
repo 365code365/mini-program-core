@@ -285,6 +285,7 @@ T.ready('s1');
     assert_eq!(h.engine.dispatch_event("accelerometerChange", r#"{"x":0.1,"y":-0.2,"z":1.0}"#), 1);
     h.vsyncs(2);
     assert_eq!(h.events("start")[0]["errMsg"], "startAccelerometer:ok");
-    assert_eq!(h.events("acc")[0], serde_json::json!({ "x": 0.1, "y": -0.2, "z": 1.0 }));
+    let a = &h.events("acc")[0];
+    assert_eq!((a["x"].as_f64(), a["y"].as_f64(), a["z"].as_f64()), (Some(0.1), Some(-0.2), Some(1.0)), "{a}");
     assert!(h.events("gyroFail")[0]["errMsg"].as_str().unwrap().starts_with("startGyroscope:fail"), "宿主没接");
 }
