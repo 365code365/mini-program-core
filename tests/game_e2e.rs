@@ -31,6 +31,8 @@ mod audio_cases;
 mod webaudio_cases;
 #[path = "game_cases/package.rs"]
 mod package_cases;
+#[path = "game_cases/worker.rs"]
+mod worker_cases;
 
 /// GT-R1 / R5 / S4：game.js 执行一次，console、onError、onUnhandledRejection、GameGlobal
 #[test]

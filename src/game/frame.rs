@@ -66,6 +66,7 @@ impl GameEngine {
         self.dispatch_input();
         self.dispatch_images();
         self.dispatch_audio(t);
+        self.dispatch_workers();
 
         // 2~4 逻辑层
         self.guards.watchdog.arm();
@@ -112,7 +113,7 @@ impl GameEngine {
 
         // 7 要不要下一帧
         let near_timer = self.app.next_timer_due_ms().map(|ms| ms <= NEAR_TIMER_MS).unwrap_or(false);
-        if raf_waiting || (!self.backgrounded && (near_timer || self.app.has_pending_host_work() || self.images.borrow().loading() || self.audio.borrow().busy())) {
+        if raf_waiting || (!self.backgrounded && (near_timer || self.app.has_pending_host_work() || self.images.borrow().loading() || self.audio.borrow().busy() || self.worker_alive())) {
             flags |= FRAME_WANTS_MORE;
         } else if self.app.next_timer_due_ms().is_some() {
             flags |= FRAME_WAKE_AT;

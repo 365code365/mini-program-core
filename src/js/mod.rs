@@ -32,6 +32,7 @@ mod guards;
 pub use guards::{Guards, Watchdog};
 /// `wx.*` 的 JS 前置代码注册表（真正的实现在 `src/js/prelude/*.js`）
 mod api;
+pub use api::{game_prelude_source, prelude_source};
 /// JS ↔ Rust 桥：原生函数入口与事件队列
 mod bridge;
 /// WebSocket / 文件系统 / 音频 / 图片信息这组同步桥入口（从 bridge.rs 拆出）

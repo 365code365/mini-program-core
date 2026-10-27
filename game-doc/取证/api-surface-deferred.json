@@ -39,9 +39,7 @@
    "showToast",
    "updateKeyboard"
   ],
-  "G6": [
-   "createWorker"
-  ],
+  "G6": [],
   "G3": [
    "exitPointerLock",
    "getGamepads",

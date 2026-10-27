@@ -192,10 +192,22 @@ const GAME_EXTRA: &[Prelude] = prelude![
     "game-lifecycle" => "game-lifecycle.js",
     // wx.onWindowResize（小游戏形状）/ onDeviceOrientationChange / setDeviceOrientation（G6.3，原生在 game/window.rs）
     "game-window" => "game-window.js",
+    // Worker 消息的结构化克隆（Worker 线程上同一份，game/worker/thread.rs 按名字取）
+    "game-worker-codec" => "game-worker-codec.js",
+    // wx.createWorker 真线程（G6.5，原生在 game/worker）
+    "game-worker" => "game-worker.js",
     // wx.createWebAudioContext 换成真混音图（game/audio/graph + web）；没编进去时（__game_webaudio 不存在）保留 webaudio.js 那份
     "game-webaudio" => "game-webaudio.js",
 ];
 
+/// 按名字取一段通用前置代码的源码（Worker 线程的运行时要单独装 module.js 之类）
+pub fn prelude_source(name: &str) -> Option<&'static str> {
+    PRELUDE.iter().find(|p| p.name == name).map(|p| p.source)
+}
+/// 按名字取一段小游戏专用前置代码的源码；名字不在表里是编程错误（panic）
+pub fn game_prelude_source(name: &str) -> &'static str {
+    GAME_EXTRA.iter().find(|p| p.name == name).map(|p| p.source).unwrap_or_else(|| panic!("GAME_EXTRA 里没有 {name}"))
+}
 /// 一个应用种类实际执行的段（按顺序）
 fn sequence(profile: PreludeProfile) -> Vec<&'static Prelude> {
     let base = PRELUDE.iter().filter(|p| in_profile(p.name, profile));

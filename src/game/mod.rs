@@ -18,6 +18,7 @@ mod lifecycle;
 mod package;
 pub mod rotate;
 mod window;
+pub mod worker;
 mod image_events;
 mod input;
 pub mod pc_input;
@@ -129,6 +130,7 @@ pub struct GameEngine {
     system_info_opts: serde_json::Map<String, Value>,
     /// 引擎内旋转（rotate.rs）；None = 宿主自己转
     rotation: Option<rotate::Rotation>,
+    workers: std::rc::Rc<std::cell::RefCell<worker::Workers>>,
 }
 
 impl GameEngine {
@@ -167,6 +169,7 @@ impl GameEngine {
         let images = std::rc::Rc::new(std::cell::RefCell::new(image::ImageStore::new(root.clone())));
         // 无头（固定时钟）不开声卡：混音器按帧时钟离线渲染，逐样本可复现
         let audio = std::rc::Rc::new(std::cell::RefCell::new(audio::GameAudio::new(root.clone(), opts.fixed_clock)));
+        let workers = std::rc::Rc::new(std::cell::RefCell::new(worker::Workers::new(root.clone(), &config)));
         {
             let rt = app.js_runtime();
             let rt = rt.lock().unwrap();
@@ -175,6 +178,7 @@ impl GameEngine {
             fonts::register(&rt, root.clone())?;
             audio::register(&rt, audio.clone())?;
             audio::register_webaudio(&rt, audio.clone())?;
+            worker::register(&rt, workers.clone())?;
             frame::register(&rt, pacer.clone(), clock.clone())?;
         }
         app.init_profile(PreludeProfile::MiniGame)?;
@@ -203,7 +207,7 @@ impl GameEngine {
             canvases, pacer, clock, frame: frame::FrameOut::default(), backgrounded: false,
             touch: Default::default(), pc: Default::default(), images, audio,
             orientation: if config_landscape { "landscape".into() } else { "portrait".into() },
-            system_info_opts: opts.system_info.clone(), rotation };
+            system_info_opts: opts.system_info.clone(), rotation, workers };
         engine.announce_orientation();
         let log = std::env::var("MINI_GAME_LOG").is_ok();
         if opts.app_id.is_none() {
