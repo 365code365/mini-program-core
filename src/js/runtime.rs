@@ -147,6 +147,26 @@ impl JsRuntime {
         })
     }
     
+    /// 注册全局函数（**原值版**，game-doc/02 §6）：参数按 JS 原值交给 Rust（ArrayBuffer / TypedArray 可借出字节，
+    /// 见 js/binary.rs），返回值也是 JS 原值。`register_function` 那条只有字符串的路照旧给老代码用
+    pub fn register_raw<F>(&self, name: &str, func: F) -> Result<(), String>
+    where
+        F: for<'js> Fn(Ctx<'js>, Rest<Value<'js>>) -> JsResult<Value<'js>> + 'static,
+    {
+        // 单独一个带具名 'js 的函数：闭包里写 `Ctx<'_>` 时参数与返回值的生命周期推不到一起
+        fn make<'js, F>(ctx: &Ctx<'js>, f: Rc<F>) -> JsResult<Function<'js>>
+        where
+            F: for<'a> Fn(Ctx<'a>, Rest<Value<'a>>) -> JsResult<Value<'a>> + 'static,
+        {
+            Function::new(ctx.clone(), move |c: Ctx<'js>, args: Rest<Value<'js>>| -> JsResult<Value<'js>> { f(c, args) })
+        }
+        let func = Rc::new(func);
+        self.context.with(|ctx| {
+            let js_func = make(&ctx, func.clone()).map_err(|e| e.to_string())?;
+            ctx.globals().set(name, js_func).map_err(|e| e.to_string())
+        })
+    }
+
     /// 调用 JS 函数（`name` 由调用方保证是合法的标识符 / 成员表达式；参数一律按字符串传）
     pub fn call_function(&self, name: &str, args: &[&str]) -> Result<String, String> {
         // 参数用 JSON 字符串字面量注入（JSON 是 JS 字面量的子集，含 U+2028 在 ES2019 起也合法）。

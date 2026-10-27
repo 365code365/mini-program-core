@@ -174,6 +174,8 @@ fn in_profile(name: &str, profile: PreludeProfile) -> bool {
 const GAME_EXTRA: &[Prelude] = prelude![
     // GameGlobal、console 缓冲泄漏的止血、wx.onError / onUnhandledRejection、回调守卫 __gameCall
     "game-global" => "game-global.js",
+    // wx.encode / wx.decode、原生 base64（二进制桥，js/bridge_bin.rs）
+    "game-compat" => "game-compat.js",
 ];
 
 /// 一个应用种类实际执行的段（按顺序）

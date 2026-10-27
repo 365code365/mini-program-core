@@ -101,3 +101,85 @@ fn r7_包种类互斥() {
     let e = mini_render::host::MiniEngine::new(game.to_str().unwrap(), None, 375, 667, 2.0).err().unwrap();
     assert!(e.contains("是小游戏"), "{e}");
 }
+
+/// GT-B1 / B2：二进制往返（各种大小、byteOffset ≠ 0 的子视图、DataView），与老的纯 JS base64 输出逐字节相同
+#[test]
+fn b1_二进制往返与子视图() {
+    let _g = serial();
+    let mut h = GameHarness::open_inline("bin", r#"
+        var T = require('_lib/t.js');
+        [0, 1, 2, 3, 4095, 65536, 16 << 20].forEach(function (n) {
+          var a = new Uint8Array(n + 8); for (var i = 0; i < a.length; i++) a[i] = (i * 31 + 7) & 255;
+          var sub = new Uint8Array(a.buffer, 3, n);                 // byteOffset ≠ 0
+          var b64 = wx.arrayBufferToBase64(sub);
+          var back = new Uint8Array(wx.base64ToArrayBuffer(b64));
+          var same = back.length === n; for (var j = 0; same && j < n; j++) same = back[j] === sub[j];
+          T.check('roundtrip' + n, same, 'len ' + back.length);
+          if (n <= 4095) T.check('same-as-codec' + n, b64 === __b64encode(sub), b64.slice(0, 20));
+        });
+        var dv = new DataView(new Uint8Array([1, 2, 3, 4, 5]).buffer, 1, 3);
+        T.check('dataview', wx.arrayBufferToBase64(dv) === 'AgME');
+        T.check('b64-loose', new Uint8Array(wx.base64ToArrayBuffer('Ag\nME')).join() === '2,3,4');
+        var threw = ''; try { wx.arrayBufferToBase64('nope'); } catch (e) { threw = e.name; }
+        T.check('type-error', threw === 'TypeError', threw);
+        T.done({});
+    "#, Opts::default());
+    h.vsyncs(1);
+    assert!(h.has("T:DONE"), "{:?}", h.log.iter().rev().take(5).collect::<Vec<_>>());
+    h.assert_no_fail();
+    assert_eq!(h.log.iter().filter(|l| l.starts_with("T:OK roundtrip")).count(), 7);
+}
+
+/// GT-B5 / 10 矩阵「本轮补入」：wx.encode / wx.decode 的官方 format 全集
+#[test]
+fn b5_wx_encode_decode() {
+    let _g = serial();
+    let mut h = GameHarness::open_inline("codec", r#"
+        var T = require('_lib/t.js');
+        var s = '我爱 Beijing 天安门';
+        ['utf8', 'utf-8', 'ucs2', 'ucs-2', 'utf16le', 'utf-16le', 'gbk'].forEach(function (f) {
+          T.check('rt-' + f, wx.decode({ data: wx.encode({ data: s, format: f }), format: f }) === s);
+        });
+        T.check('default-utf8', wx.encode({ data: 'é' }).byteLength === 2);
+        T.check('gbk-bytes', new Uint8Array(wx.encode({ data: '我', format: 'gbk' })).join() === '206,210');
+        T.check('latin1', wx.decode({ data: new Uint8Array([0xe9]).buffer, format: 'latin1' }) === 'é');
+        var e1 = ''; try { wx.encode({ data: 'x', format: 'ascii' }); } catch (e) { e1 = e.name; }
+        T.check('bad-format', e1 === 'TypeError', e1);
+        // TextEncoder 不由我们加（取证前不多给全局）；atob / btoa 是 QuickJS 自带的（game-doc/01 §1.2 更正）
+        T.check('no-textencoder-global', typeof TextEncoder === 'undefined' && typeof TextDecoder === 'undefined');
+        T.done({});
+    "#, Opts::default());
+    h.vsyncs(1);
+    assert!(h.has("T:DONE"));
+    h.assert_no_fail();
+}
+
+/// GT-B3：超过单次过桥上限抛 RangeError，进程不崩
+#[test]
+fn b3_过桥上限() {
+    let _g = serial();
+    let mut h = GameHarness::open_inline("big", r#"
+        var T = require('_lib/t.js');
+        var name = ''; try { wx.arrayBufferToBase64(new ArrayBuffer(256 * 1024 * 1024 + 1)); } catch (e) { name = e.name; }
+        T.check('range', name === 'RangeError', name);
+        T.done({});
+    "#, Opts::default());
+    h.vsyncs(1);
+    assert!(h.has("T:DONE"));
+    h.assert_no_fail();
+}
+
+/// 1MB 往返的耗时（GT-B2 / 04 A1.3 的数字；断言放宽到 50ms 防机器忙时误报，实测值打印出来）
+#[test]
+fn b2_1mb_往返耗时() {
+    let _g = serial();
+    let mut h = GameHarness::open_inline("speed", r#"
+        var a = new Uint8Array(1 << 20); for (var i = 0; i < a.length; i++) a[i] = i & 255;
+        var t0 = Date.now(); for (var k = 0; k < 10; k++) wx.base64ToArrayBuffer(wx.arrayBufferToBase64(a));
+        console.log('T:EV speed ' + JSON.stringify({ ms: (Date.now() - t0) / 10 }));
+    "#, Opts::default());
+    h.vsyncs(1);
+    let ms = h.events("speed")[0]["ms"].as_f64().unwrap();
+    println!("1MB base64 往返平均 {ms}ms");
+    assert!(ms < 50.0, "1MB 往返 {ms}ms");
+}

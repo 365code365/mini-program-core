@@ -1673,6 +1673,7 @@ dependencies = [
  "arboard",
  "base64",
  "cbindgen",
+ "encoding_rs",
  "flate2",
  "fontdue 0.9.3",
  "fontdue 0.9.3 (registry+https://github.com/rust-lang/crates.io-index)",

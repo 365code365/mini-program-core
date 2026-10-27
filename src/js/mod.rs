@@ -38,6 +38,10 @@ mod bridge;
 mod bridge_io;
 /// 随机数、本机 IP、storage 全量键、TCP / UDP、视频信息、离屏画布这组桥入口（与 bridge_io 同一种写法）
 mod bridge_ext;
+/// 二进制过桥的工具（ArrayBuffer / TypedArray ↔ 字节）
+pub mod binary;
+/// 走二进制桥的原生函数（wx.encode / decode、原生 base64）
+mod bridge_bin;
 
 pub use runtime::JsRuntime;
 pub use api::{MiniAppApi, PreludeProfile, GAME_CORE};

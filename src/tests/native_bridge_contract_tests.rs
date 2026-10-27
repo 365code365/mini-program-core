@@ -51,15 +51,19 @@ fn registered_in_rust() -> HashSet<String> {
     let src = concat!(
         include_str!("../js/bridge.rs"),
         include_str!("../js/bridge_io.rs"),
-        include_str!("../js/bridge_ext.rs")
+        include_str!("../js/bridge_ext.rs"),
+        include_str!("../js/bridge_bin.rs")
     );
     let mut out = HashSet::new();
-    let mut rest = src;
-    while let Some(i) = rest.find("register_function(\"") {
-        rest = &rest[i + "register_function(\"".len()..];
-        if let Some(end) = rest.find('"') {
-            out.insert(rest[..end].to_string());
-            rest = &rest[end..];
+    // 字符串版 register_function 与原值版 register_raw（二进制桥，js/bridge_bin.rs）都算注册
+    for pat in ["register_function(\"", "register_raw(\""] {
+        let mut rest = src;
+        while let Some(i) = rest.find(pat) {
+            rest = &rest[i + pat.len()..];
+            if let Some(end) = rest.find('"') {
+                out.insert(rest[..end].to_string());
+                rest = &rest[end..];
+            }
         }
     }
     out
