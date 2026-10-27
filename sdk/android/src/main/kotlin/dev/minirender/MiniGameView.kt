@@ -70,6 +70,13 @@ class MiniGameView(
         }
     }
 
+    /** wx.createVideo 的原生视频（[GameVideo]，主线程上用） */
+    private val video: GameVideo by lazy {
+        GameVideo(this, dir) { name, json ->
+            engine.post { if (handle != 0L) { MiniGame.nativeDispatchEvent(handle, name, json); drainEvents(); requestFrame() } }
+        }
+    }
+
     /** 传感器（[GameSensors]），引擎线程上建、用、放 */
     private var sensors: GameSensors? = null
 
@@ -231,6 +238,7 @@ class MiniGameView(
     fun dispose() {
         if (disposed) return
         disposed = true
+        main.post { video.release() }
         engine.post {
             choreographer?.removeFrameCallback(frame)
             audioSession?.release()
@@ -409,6 +417,7 @@ class MiniGameView(
                 "showKeyboard" -> main.post { keyboard.show(o) }
                 "updateKeyboard" -> main.post { keyboard.update(o) }
                 "hideKeyboard" -> main.post { keyboard.hide() }
+                "video" -> main.post { if (!disposed) video.handle(o) }
                 "deviceOrientation" -> if (!o.optBoolean("initial")) { val v = o.optString("value"); main.post { lockOrientation(v) } }
                 "error" -> Log.w("mini-game", e)
                 "hostCall" -> {
