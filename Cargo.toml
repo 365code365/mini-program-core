@@ -22,11 +22,13 @@ crate-type = ["cdylib", "staticlib", "rlib"]
 [features]
 # 默认同时编进 CPU 与 GPU 两个后端，运行时选（交互窗体 auto；无头与回归脚本 cpu）。
 # 只要 CPU：`cargo build --release --no-default-features --features desktop,audio,h264`
-default = ["desktop", "audio", "h264", "gpu", "game"]
+default = ["desktop", "audio", "h264", "gpu", "game", "game-audio"]
 # 桌面宿主（自带窗口、上屏、剪贴板）
 desktop = ["winit", "softbuffer", "arboard", "dep:rfd"]
 # 内置音频播放（video 组件的声音）
 audio = ["rodio"]
+# 小游戏的音频输出（cpal：Android AAudio、iOS / macOS CoreAudio，game-doc/06 D-4 = A）。关掉时小游戏音频只走离线（静音，时钟与事件照常）
+game-audio = ["game", "dep:cpal"]
 # 内置 H.264 软解（<video> 的画面帧）。移动端建议关掉：交给系统播放器硬解更省电，
 # 而且 openh264-sys2 在 iOS **模拟器**目标上编不过（build.rs 不认 target_env="sim"）。
 h264 = ["openh264"]
@@ -82,6 +84,8 @@ winit = { version = "0.30", optional = true }
 softbuffer = { version = "0.4", optional = true }
 arboard = { version = "3", optional = true }
 rodio = { version = "0.22", optional = true }
+# 与 rodio 0.22 用的同一个版本（Cargo.lock 里已有），小游戏直接用它开输出流
+cpal = { version = "=0.17.3", optional = true }
 # ── GPU 合成后端（可选，feature `gpu`）──
 # 版本锁死：wgpu 大约一季度一个破坏性大版本，升级要单独立项并重跑全部 GPU 判据。
 # 传递依赖由入库的 Cargo.lock 锁定，`cargo update` 只能单独提交。

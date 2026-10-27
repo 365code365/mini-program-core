@@ -3,7 +3,7 @@
 //! ```text
 //!  0. 帧时刻：宿主 vsync（µs）→ 游戏时刻（clock.rs）；定时器时钟跟它走
 //!  1. 输入：排队的触摸 / 键鼠按到达顺序派发（input.rs）
-//!  1b. 图片：后台解码完的交回 onload / onerror（image_events.rs）
+//!  1b. 图片：后台解码完的交回 onload / onerror（image_events.rs）；音频：离线渲染、回报、事件（audio_events.rs）
 //!  2~4. 逻辑层：定时器、回包、微任务（MiniApp::update）
 //!  5. rAF：节拍器（raf_pacer.rs）说这是 rAF 帧，就以同一个时间戳跑完当前这一批
 //!  6. 主画布这一帧画过 → FRAME_NEW（像素在后备缓冲里，宿主要的时候再转格式）
@@ -63,6 +63,7 @@ impl GameEngine {
         // 1 输入；图片的 onload / onerror
         self.dispatch_input();
         self.dispatch_images();
+        self.dispatch_audio(t);
 
         // 2~4 逻辑层
         self.guards.watchdog.arm();
@@ -109,7 +110,7 @@ impl GameEngine {
 
         // 7 要不要下一帧
         let near_timer = self.app.next_timer_due_ms().map(|ms| ms <= NEAR_TIMER_MS).unwrap_or(false);
-        if raf_waiting || (!self.backgrounded && (near_timer || self.app.has_pending_host_work() || self.images.borrow().loading())) {
+        if raf_waiting || (!self.backgrounded && (near_timer || self.app.has_pending_host_work() || self.images.borrow().loading() || self.audio.borrow().busy())) {
             flags |= FRAME_WANTS_MORE;
         } else if self.app.next_timer_due_ms().is_some() {
             flags |= FRAME_WAKE_AT;
@@ -141,6 +142,7 @@ impl GameEngine {
                 // 微信切后台：按着的手指收到 touchcancel（GT-T4）
                 self.cancel_touches();
             }
+            self.audio.borrow_mut().set_background(bg);
             self.backgrounded = bg;
             if !bg {
                 self.pacer.borrow_mut().reset();

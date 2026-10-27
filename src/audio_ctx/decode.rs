@@ -40,10 +40,15 @@ pub fn load(src: &str) -> Result<Pcm, (i32, String)> {
         let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("").to_ascii_lowercase();
         (bytes, ext)
     };
+    decode_bytes(bytes, &ext)
+}
+
+/// 已经读进内存的音频（WAV 自己解析，其余交给 symphonia）；失败码 10004（格式）
+pub fn decode_bytes(bytes: Vec<u8>, ext: &str) -> Result<Pcm, (i32, String)> {
     if bytes.len() >= 12 && &bytes[0..4] == b"RIFF" && &bytes[8..12] == b"WAVE" {
         return wav(&bytes).ok_or((10004, "unsupported wav".into()));
     }
-    decode(bytes, &ext).map_err(|e| (10004, e))
+    decode(bytes, ext).map_err(|e| (10004, e))
 }
 
 fn decode(bytes: Vec<u8>, ext: &str) -> Result<Pcm, String> {

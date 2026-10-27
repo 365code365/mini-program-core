@@ -186,6 +186,8 @@ const GAME_EXTRA: &[Prelude] = prelude![
     "game-canvas" => "game-canvas.js",
     // wx.onTouch* / onMouse* / onWheel 的监听表与派发（原生在 game/touch.rs、game/pc_input.rs）
     "game-input" => "game-input.js",
+    // InnerAudioContext 接小游戏自己的混音器与真设备（game/audio）：只换掉原生入口，外壳仍是 audio.js
+    "game-audio" => "game-audio.js",
 ];
 
 /// 一个应用种类实际执行的段（按顺序）

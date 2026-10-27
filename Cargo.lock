@@ -1711,6 +1711,7 @@ dependencies = [
  "brotli",
  "brotli-decompressor",
  "cbindgen",
+ "cpal",
  "encoding_rs",
  "flate2",
  "fontdue 0.9.3",
