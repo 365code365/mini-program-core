@@ -6,6 +6,7 @@
 //!   （小程序那条路要记日志是为了布局重建后重放；游戏画布不会因布局重建，不需要）。
 
 pub mod compose;
+mod image_ops;
 mod natives;
 
 use crate::renderer::components::Canvas2DContext;

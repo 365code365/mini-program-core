@@ -66,6 +66,9 @@ pub use video::{
 };
 /// 控制条的状态 / 几何、全屏那一层（两种播放器共用，见 video/ui.rs、chrome.rs、fullscreen.rs）
 pub use video::{chrome as video_chrome, fullscreen as video_fullscreen, ui as video_ui};
+pub use canvas::image2d::ImageRects;
+/// 小游戏 drawImage 的分段表等（canvas/image2d.rs）
+pub use canvas::image2d as canvas_image;
 pub use canvas::{CanvasComponent, Canvas2DContext, CanvasContextManager, LinearGradient, RadialGradient, execute_canvas_draw, ensure_canvas_context, take_canvas_dirty, canvas_key, canvas_measure_text};
 // 单测直接看画布后备缓冲：页面合成结果依赖进程级的 CANVAS_DIRTY，并行的别的用例 pump 时
 // 可能先把它取走，拿页面像素断言会偶发失败

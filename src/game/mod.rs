@@ -10,6 +10,8 @@
 pub mod canvas;
 mod clock;
 pub mod config;
+pub mod image;
+mod image_events;
 mod input;
 pub mod pc_input;
 pub mod touch;
@@ -106,6 +108,7 @@ pub struct GameEngine {
     backgrounded: bool,
     touch: touch::TouchInput,
     pc: pc_input::PcInput,
+    images: std::rc::Rc<std::cell::RefCell<image::ImageStore>>,
 }
 
 impl GameEngine {
@@ -138,10 +141,12 @@ impl GameEngine {
         let canvases = std::rc::Rc::new(std::cell::RefCell::new(canvas::GameCanvases::new((width, height))));
         let pacer = std::rc::Rc::new(std::cell::RefCell::new(raf_pacer::RafPacer::default()));
         let clock = std::rc::Rc::new(std::cell::RefCell::new(clock::GameClock::new(opts.fixed_clock)));
+        let images = std::rc::Rc::new(std::cell::RefCell::new(image::ImageStore::new(root.clone())));
         {
             let rt = app.js_runtime();
             let rt = rt.lock().unwrap();
-            canvas::register(&rt, canvases.clone())?;
+            canvas::register(&rt, canvases.clone(), images.clone())?;
+            image::register(&rt, images.clone())?;
             frame::register(&rt, pacer.clone(), clock.clone())?;
         }
         app.init_profile(PreludeProfile::MiniGame)?;
@@ -163,7 +168,7 @@ impl GameEngine {
         let mut engine = Self { app, config, root, width, height, dpr, events: VecDeque::new(), logs: logs::LogPump::new(opts.log_all), guards,
             fault: opts.fault.clone().or_else(|| std::env::var("MINI_GAME_FAULT").ok()),
             canvases, pacer, clock, frame: frame::FrameOut::default(), backgrounded: false,
-            touch: Default::default(), pc: Default::default() };
+            touch: Default::default(), pc: Default::default(), images };
         let log = std::env::var("MINI_GAME_LOG").is_ok();
         if opts.app_id.is_none() {
             engine.host_log(&format!("⚠️ 创建选项没给 appId，数据命名空间回落成包目录名 {app_id:?}：换了解包目录名存档就会丢"));

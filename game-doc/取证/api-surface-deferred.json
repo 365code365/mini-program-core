@@ -40,7 +40,6 @@
    "updateKeyboard"
   ],
   "G4": [
-   "createImage",
    "getTextLineHeight",
    "loadFont"
   ],

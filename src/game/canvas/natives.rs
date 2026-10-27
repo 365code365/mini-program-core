@@ -14,6 +14,7 @@
 //! 30 fillStyle 31 strokeStyle 32 lineWidth 33 globalAlpha 34 font 35 textAlign 36 textBaseline
 //! 37 lineCap 38 lineJoin 39 miterLimit 40 setLineDash 41 lineDashOffset 42 shadow 43 composite
 //! 44 gradient/pattern（JSON 描述，fill 或 stroke） 45 getImageData 46 putImageData
+//! 47 drawImage 48 图案（源是 Image / Canvas，见 image_ops.rs）
 
 use super::GameCanvases;
 use crate::js::binary::{array_buffer, require_bytes};
@@ -38,7 +39,7 @@ fn finite(xs: &[f32]) -> bool {
     xs.iter().all(|x| x.is_finite())
 }
 
-pub fn register(rt: &JsRuntime, canvases: Rc<RefCell<GameCanvases>>) -> Result<(), String> {
+pub fn register(rt: &JsRuntime, canvases: Rc<RefCell<GameCanvases>>, images: Rc<RefCell<crate::game::image::ImageStore>>) -> Result<(), String> {
     let c = canvases.clone();
     rt.register_raw("__game_canvas_new", move |ctx, _args| {
         let (id, w, h, main) = c.borrow_mut().create();
@@ -133,6 +134,21 @@ pub fn register(rt: &JsRuntime, canvases: Rc<RefCell<GameCanvases>>) -> Result<(
         let a = &args.0[2.min(args.0.len())..];
         let mut cs = c.borrow_mut();
         let is_main = cs.is_main(id);
+        if op == 47 || op == 48 {
+            // 源（Image / 另一块画布）要在拿目标画布之前取
+            let src = super::image_ops::source(&mut cs, &mut images.borrow_mut(), num(a.first()) as i32, num(a.get(1)) as u32, id);
+            let Some(slot) = cs.get(id) else { return Ok(Value::new_undefined(ctx)) };
+            let Some(src) = src else { return false.into_js(&ctx) };
+            if op == 47 {
+                super::image_ops::draw_image(&mut slot.ctx, &src, a);
+                if is_main {
+                    cs.main_dirty = true;
+                }
+                return Ok(Value::new_undefined(ctx));
+            }
+            let stroke = a.get(3).and_then(|v| v.as_bool()).unwrap_or(false);
+            return super::image_ops::set_pattern(&mut slot.ctx, &src, &text(a.get(2)).unwrap_or_default(), stroke).into_js(&ctx);
+        }
         let Some(slot) = cs.get(id) else { return Ok(Value::new_undefined(ctx)) };
         let r = op_2d(&ctx, &mut slot.ctx, op, a)?;
         // 只有真的会改像素的调用才把主画布标脏

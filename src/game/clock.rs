@@ -54,6 +54,11 @@ impl GameClock {
         self.frame_us
     }
 
+    /// 是不是固定时钟（无头）
+    pub fn is_fixed(&self) -> bool {
+        self.fixed
+    }
+
     /// 「此刻」对应的 Instant：固定时钟停在最近一帧（创建时是 0），宿主时钟就是墙上时钟。
     /// 帧与帧之间（game.js 顶层、输入回调）登记的定时器按它起算
     pub fn current_instant(&self) -> Instant {

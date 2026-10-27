@@ -29,7 +29,7 @@ pub struct GameHarness {
     pub log: Vec<String>,
     /// 宿主事件里的错误（原样 JSON）
     pub errors: Vec<Value>,
-    dir: PathBuf,
+    pub dir: PathBuf,
 }
 
 fn repo() -> PathBuf {

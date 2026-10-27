@@ -236,6 +236,12 @@ impl Canvas2DContext {
         self.state_stack.len()
     }
 
+    /// 图案填充 / 描边，源是已经解码的 RGBA（小游戏的 createPattern(Image | Canvas)）
+    pub fn set_pattern_source(&mut self, stroke: bool, rgba: std::sync::Arc<Vec<u8>>, w: u32, h: u32, repeat_x: bool, repeat_y: bool) {
+        let src = Some(super::fx2d::Source::Pattern { rgba, w, h, repeat_x, repeat_y });
+        if stroke { self.fx.stroke = src } else { self.fx.fill = src }
+    }
+
     /// 当前字号（逻辑 px，measureText 用）
     pub fn font_size_px(&self) -> f32 {
         self.font_size

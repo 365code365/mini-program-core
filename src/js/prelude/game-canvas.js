@@ -45,7 +45,14 @@
                     if (!(offset >= 0 && offset <= 1)) throw new RangeError('addColorStop: offset 必须在 0~1（IndexSizeError）');
                     this.__stops.push([offset, String(color)]);
                 };
-                function Pattern(src, rep) { this.__src = src; this.__rep = rep; }
+                // 图案：源是 Image（种类 1）或 Canvas（种类 2），原生按 id 取像素（game/canvas/image_ops.rs）
+                function Pattern(kind, sid, rep) { this.__kind = kind; this.__sid = sid; this.__rep = rep; }
+                // drawImage / createPattern 的源：[种类, id]；不是 Image / Canvas 返回 null
+                function imageSource(img) {
+                    if (img instanceof __GameImage) return [1, img.__id];
+                    if (img instanceof GameCanvas) return [2, img.__id];
+                    return null;
+                }
 
                 var SAVED = ['fillStyle', 'strokeStyle', 'lineWidth', 'globalAlpha', 'font', 'textAlign', 'textBaseline', 'lineCap',
                     'lineJoin', 'miterLimit', 'lineDashOffset', 'shadowBlur', 'shadowColor', 'shadowOffsetX', 'shadowOffsetY',
@@ -78,8 +85,8 @@
                             st[name] = v; return;
                         }
                         if (v instanceof Pattern) {
-                            N(id, 44, JSON.stringify({ src: v.__src, repetition: v.__rep }), op === 31);
-                            st[name] = v; return;
+                            if (N(id, 48, v.__kind, v.__sid, v.__rep, op === 31)) st[name] = v;
+                            return;
                         }
                         if (typeof v !== 'string') return;
                         // 存原串、读时才规范化：游戏每帧设几百次 fillStyle 而几乎不读，规范化（正则 + toLowerCase）
@@ -104,7 +111,7 @@
                         shadowOffsetX: function(v) { v = Number(v); if (isFinite(v)) { st.shadowOffsetX = v; shadow(); } },
                         shadowOffsetY: function(v) { v = Number(v); if (isFinite(v)) { st.shadowOffsetY = v; shadow(); } },
                         globalCompositeOperation: function(v) { if (typeof v === 'string') { st.globalCompositeOperation = v; N(id, 43, v); } },
-                        // 平滑开关只影响 drawImage 的缩放（G4 接 Image 时生效）
+                        // 平滑开关：drawImage 每次调用时带给原生（开 = 双线性，关 = 最近邻）
                         imageSmoothingEnabled: function(v) { st.imageSmoothingEnabled = !!v; }
                     };
                     Object.keys(props).forEach(function(k) {
@@ -165,10 +172,22 @@
                         return new Gradient('radial', [x0, y0, r0, x1, y1, r1].map(Number));
                     };
                     this.createConicGradient = function(angle, x, y) { return new Gradient('conic', [angle, x, y].map(Number)); };
-                    // 图案的源在 G4 接 Image 对象；现在只认带 src 的对象（包内路径）
+                    // HTML：repetition 只认四种（空串 / null 当 repeat），别的抛 SyntaxError；图还没加载完返回 null
                     this.createPattern = function(img, rep) {
-                        var src = img && (img.__src || img.src);
-                        return src ? new Pattern(String(src), rep === undefined || rep === null || rep === '' ? 'repeat' : String(rep)) : null;
+                        var s = imageSource(img);
+                        if (!s) throw new TypeError('createPattern: 第一个参数不是 Image / Canvas');
+                        rep = rep === undefined || rep === null || rep === '' ? 'repeat' : String(rep);
+                        if (['repeat', 'repeat-x', 'repeat-y', 'no-repeat'].indexOf(rep) < 0) throw new SyntaxError('createPattern: repetition 无效（' + rep + '）');
+                        if (s[0] === 1 && !(img.complete && img.width > 0)) return null;
+                        return new Pattern(s[0], s[1], rep);
+                    };
+                    // drawImage(img, dx, dy) / (img, dx, dy, dw, dh) / (img, sx, sy, sw, sh, dx, dy, dw, dh)
+                    this.drawImage = function(img, a, b, c, d, e, f, g, h) {
+                        var s = imageSource(img);
+                        if (!s) throw new TypeError('drawImage: 第一个参数不是 Image / Canvas');
+                        var n = arguments.length;
+                        if (n !== 3 && n !== 5 && n !== 9) throw new TypeError('drawImage: 参数个数只能是 3 / 5 / 9（实际 ' + n + '）');
+                        N(id, 47, s[0], s[1], st.imageSmoothingEnabled !== false, n, a, b, c, d, e, f, g, h);
                     };
                     this.createImageData = newImageData;
                     this.getImageData = function(x, y, w, h) {

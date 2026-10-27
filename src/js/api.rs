@@ -180,6 +180,8 @@ const GAME_EXTRA: &[Prelude] = prelude![
     "game-surface" => "game-surface.js",
     // requestAnimationFrame / cancelAnimationFrame / setPreferredFramesPerSecond / performance.now（帧时钟）
     "game-raf" => "game-raf.js",
+    // wx.createImage（解码在原生后台线程，game/image）；要在 game-canvas 之前：drawImage 认 __GameImage
+    "game-image" => "game-image.js",
     // wx.createCanvas、Canvas、CanvasRenderingContext2D（立即模式，原生在 game/canvas/natives.rs）
     "game-canvas" => "game-canvas.js",
     // wx.onTouch* / onMouse* / onWheel 的监听表与派发（原生在 game/touch.rs、game/pc_input.rs）

@@ -119,6 +119,8 @@ mod text2d;
 pub mod fx2d;
 /// 2D 新接口补的那几条：setTransform、ellipse / arcTo、putImageData、像素读回、精确量宽
 mod extra2d;
+/// drawImage 的 HTML 语义（源是解码好的 RGBA、9 参数、仿射、平滑开关；小游戏用）
+pub mod image2d;
 
 /// 渐变对象（线性 / 径向）
 mod gradient;

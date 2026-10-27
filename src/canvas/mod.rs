@@ -135,6 +135,12 @@ fn zeroed_pixels(n: usize) -> Vec<Color> {
     }
 }
 
+/// 像素当成 `R,G,B,A` 字节读（小游戏 drawImage 以另一块画布为源）
+pub(crate) fn color_bytes(px: &[Color]) -> &[u8] {
+    // SAFETY: 同 color_bytes_mut（四个 u8、对齐 1、无填充），只读
+    unsafe { std::slice::from_raw_parts(px.as_ptr() as *const u8, px.len() * 4) }
+}
+
 /// 像素当成 `R,G,B,A` 字节写（整行拷贝 RGBA 源数据用）
 pub(crate) fn color_bytes_mut(px: &mut [Color]) -> &mut [u8] {
     // SAFETY: `Color` 是 #[repr(C)] 的四个 u8，尺寸 4、对齐 1（`zeroed_pixels` 里的 const 断言守着），

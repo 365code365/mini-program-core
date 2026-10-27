@@ -17,6 +17,8 @@ fn serial() -> std::sync::MutexGuard<'static, ()> {
 // 按主题分出去的用例（同一个测试二进制；放子目录里 cargo 才不会把它当成另一个测试目标）
 #[path = "game_cases/input.rs"]
 mod input;
+#[path = "game_cases/image.rs"]
+mod image_cases;
 
 /// GT-R1 / R5 / S4：game.js 执行一次，console、onError、onUnhandledRejection、GameGlobal
 #[test]
