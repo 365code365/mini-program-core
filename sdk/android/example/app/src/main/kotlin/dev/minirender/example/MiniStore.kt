@@ -42,15 +42,21 @@ class MiniStore(ctx: Context, val baseUrl: String = DEFAULT_URL) {
         val developer: String = "",
         val iconUrl: String = "",
         val downloads: Int = 0,
+        /** "miniprogram" | "game"（服务器 meta 的 kind；老服务器没有 = 小程序）；小游戏另带 orientation */
+        val kind: String = KIND_MINI,
+        val orientation: String = "",
     ) {
         /** 深链 / 跳转用的 key：有 AppID 用 AppID */
         val key: String get() = appId.ifEmpty { id }
+        val isGame: Boolean get() = kind == KIND_GAME
+        /** 包根上的清单：装没装好就看它在不在 */
+        val manifest: String get() = if (isGame) "game.json" else "app.json"
 
         fun toJson(): String = JSONObject()
             .put("id", id).put("appId", appId).put("name", name).put("description", description).put("version", version)
             .put("sha256", sha256).put("size", size).put("packageUrl", packageUrl)
             .put("category", category).put("tags", org.json.JSONArray(tags)).put("developer", developer)
-            .put("iconUrl", iconUrl).put("downloads", downloads).toString()
+            .put("iconUrl", iconUrl).put("downloads", downloads).put("kind", kind).put("orientation", orientation).toString()
 
         companion object {
             fun fromJson(j: JSONObject) = App(
@@ -67,6 +73,8 @@ class MiniStore(ctx: Context, val baseUrl: String = DEFAULT_URL) {
                 developer = j.optString("developer"),
                 iconUrl = j.optString("iconUrl"),
                 downloads = j.optInt("downloads"),
+                kind = j.optString("kind").ifEmpty { KIND_MINI },
+                orientation = j.optString("orientation"),
             )
         }
     }
@@ -85,7 +93,7 @@ class MiniStore(ctx: Context, val baseUrl: String = DEFAULT_URL) {
     fun list(): Listing {
         val cache = File(root, "index.json")
         return try {
-            val body = get("$baseUrl/api/apps").toString(Charsets.UTF_8)
+            val body = get("$baseUrl/api/apps?kind=all").toString(Charsets.UTF_8)
             val apps = parse(body)
             cache.writeText(body)
             Listing(apps, false, null)
@@ -97,7 +105,7 @@ class MiniStore(ctx: Context, val baseUrl: String = DEFAULT_URL) {
 
     /** 搜索（服务器 `/api/apps?q=&category=`）：关键词每段都要命中，按相关度 + 热度排。返回 (结果, 总数) */
     fun search(q: String, category: String = ""): Pair<List<App>, Int> {
-        val url = "$baseUrl/api/apps?q=${enc(q)}&category=${enc(category)}&limit=100"
+        val url = "$baseUrl/api/apps?q=${enc(q)}&category=${enc(category)}&limit=100&kind=all"
         val body = JSONObject(get(url, connectMs = 6000).toString(Charsets.UTF_8))
         return parse(body.toString()) to body.optInt("total")
     }
@@ -111,7 +119,7 @@ class MiniStore(ctx: Context, val baseUrl: String = DEFAULT_URL) {
 
     /** 分类与数量（`name to count`），服务器的固定顺序 */
     fun categories(): List<Pair<String, Int>> {
-        val a = JSONObject(get("$baseUrl/api/categories", connectMs = 6000).toString(Charsets.UTF_8)).getJSONArray("categories")
+        val a = JSONObject(get("$baseUrl/api/categories?kind=all", connectMs = 6000).toString(Charsets.UTF_8)).getJSONArray("categories")
         return (0 until a.length()).map { a.getJSONObject(it).let { o -> o.getString("name") to o.optInt("count") } }
     }
 
@@ -139,7 +147,7 @@ class MiniStore(ctx: Context, val baseUrl: String = DEFAULT_URL) {
     fun local(key: String): App? = root.listFiles { f -> f.isFile && f.name.endsWith(".json") && f.name != "index.json" }
         .orEmpty()
         .mapNotNull { f -> runCatching { App.fromJson(JSONObject(f.readText())) }.getOrNull() }
-        .firstOrNull { (it.id == key || it.appId == key) && File(root, "${it.id}/app.json").isFile }
+        .firstOrNull { (it.id == key || it.appId == key) && File(root, "${it.id}/${it.manifest}").isFile }
 
     /**
      * 打开前的准备：问服务器最新版 → 本地不是这一版就下载解包 → 返回目录。
@@ -217,7 +225,8 @@ class MiniStore(ctx: Context, val baseUrl: String = DEFAULT_URL) {
                 out.outputStream().use { zip.copyTo(it) }
             }
         }
-        if (!File(tmp, "app.json").isFile) throw IOException("包里没有 app.json")
+        if (!File(tmp, app.manifest).isFile) throw IOException("包里没有 ${app.manifest}")
+        if (app.isGame && !File(tmp, "game.js").isFile) throw IOException("小游戏包里没有 game.js")
         val dir = File(root, app.id)
         dir.deleteRecursively()
         if (!tmp.renameTo(dir)) throw IOException("换上新版失败")
@@ -225,6 +234,9 @@ class MiniStore(ctx: Context, val baseUrl: String = DEFAULT_URL) {
     }
 
     companion object {
+        const val KIND_MINI = "miniprogram"
+        const val KIND_GAME = "game"
+
         /** 测试服务器（明文 HTTP，见 res/xml/network_security_config.xml） */
         const val DEFAULT_URL = "http://64.83.22.217:9630"
 

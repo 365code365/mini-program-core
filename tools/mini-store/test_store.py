@@ -39,6 +39,11 @@ def _zip(name):
     return buf.getvalue()
 
 
+def _json(d, name):
+    with open(os.path.join(d, name), encoding='utf-8') as f:
+        return json.load(f)
+
+
 class StoreTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -103,6 +108,70 @@ class StoreTest(unittest.TestCase):
         self.assertEqual((q['total'], len(q['apps'])), (N_APPS, 4))
         legacy, _ = self.get_json('/api/apps?q=%E6%B5%8B%E8%AF%95&limit=200')
         self.assertEqual(len(legacy['apps']), N_APPS)
+
+    # ── 小游戏：sample-game/play-* 的真包上架，标成 kind=game；默认列表不给（老客户端只会开 app.json） ──
+    def test_game_packages(self):
+        root = os.path.join(os.path.dirname(os.path.dirname(HERE)), 'sample-game')
+        games = sorted(d for d in os.listdir(root) if d.startswith('play-')) if os.path.isdir(root) else []
+        if not games:
+            self.skipTest('没有 sample-game/play-*')
+        for g in games:
+            d = os.path.join(root, g)
+            meta, proj = _json(d, 'store.meta.json'), _json(d, 'project.config.json')
+            self.assertEqual(proj['compileType'], 'game', g)
+            buf = io.BytesIO()
+            with zipfile.ZipFile(buf, 'w') as z:            # 包一层目录：Finder「压缩」出来的布局
+                for base, _, files in os.walk(d):
+                    for f in files:
+                        z.write(os.path.join(base, f), os.path.join(g, os.path.relpath(os.path.join(base, f), d)))
+            m = store_pkg.save_app(g, buf.getvalue(), meta['name'], meta['description'], None,
+                                   {'category': meta['category'], 'tags': ','.join(meta['tags'])})
+            self.assertEqual((m['kind'], m['kindLabel'], m['appId'], m['category'], m['pages']),
+                             ('game', '小游戏', proj['appid'], '游戏', 0), g)
+            self.assertTrue(m['hasIcon'], g)
+            ori = _json(d, 'game.json').get('deviceOrientation', 'portrait')
+            self.assertEqual(m['orientation'], ori, g)
+            with zipfile.ZipFile(os.path.join(_TMP, 'apps', g, 'package.zip')) as z:
+                self.assertIn('game.js', z.namelist())
+                self.assertEqual(json.loads(z.read('project.config.json'))['compileType'], 'game')
+        default, _ = self.get_json('/api/apps')
+        self.assertFalse([a for a in default['apps'] if a['kind'] == 'game'])
+        self.assertTrue(all(a['kindLabel'] == '小程序' for a in default['apps']))
+        only, _ = self.get_json('/api/apps?kind=game')
+        self.assertEqual(sorted(a['id'] for a in only['apps']), games)
+        both, _ = self.get_json('/api/apps?kind=all&page=1&pageSize=100')
+        self.assertEqual(both['total'], N_APPS + len(games))
+        found, _ = self.get_json('/api/apps?kind=game&q=%E8%B4%AA%E5%90%83%E8%9B%87')    # 贪吃蛇
+        self.assertEqual([a['id'] for a in found['apps']], ['play-snake'])
+        cats, _ = self.get_json('/api/categories')
+        self.assertNotIn('游戏', [c['name'] for c in cats['categories']])
+        cats, _ = self.get_json('/api/categories?kind=all')
+        self.assertIn({'name': '游戏', 'count': len(games)}, cats['categories'])
+        one, _ = self.get_json(f'/api/apps/{games[0]}')         # 按 id 取单个不看 kind：打开 / 升级检查照常
+        self.assertEqual(one['kind'], 'game')
+        self.assertEqual(self.req('/api/apps?kind=nope')[0], 400)
+
+    def test_game_package_rejects(self):
+        def z(files):
+            buf = io.BytesIO()
+            with zipfile.ZipFile(buf, 'w') as w:
+                for k, v in files.items():
+                    w.writestr(k, v)
+            return buf.getvalue()
+        cases = {
+            'game.js': {'game.json': '{}'},
+            'deviceOrientation': {'game.json': '{"deviceOrientation":"sideways"}', 'game.js': ''},
+            '同时有': {'game.json': '{}', 'game.js': '', 'app.json': '{"pages":["a"]}'},
+        }
+        for want, files in cases.items():
+            with self.assertRaises(store_pkg.HttpError) as cm:
+                store_pkg.save_app('bad-game', z(files), 'x', '', None)
+            self.assertIn(want, cm.exception.message)
+        # 同一个 id 不许在小程序 / 小游戏之间换
+        with self.assertRaises(store_pkg.HttpError) as cm:
+            store_pkg.save_app('app-00', z({'game.json': '{}', 'game.js': ''}), 'x', '', None)
+        self.assertEqual(cm.exception.status, 409)
+        self.assertIsNone(store_pkg.load_meta('bad-game'))
 
     # ── 任务 A：演示接口 ──
     def test_demo_movies_paging(self):

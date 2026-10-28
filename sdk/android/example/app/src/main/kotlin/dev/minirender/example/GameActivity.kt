@@ -8,7 +8,8 @@ import dev.minirender.MiniGameView
 import java.io.File
 
 /**
- * 小游戏示例页：打开 APK 里 `assets/game/<名字>/` 的一个夹具（sample-game/，构建时拷进来）。
+ * 小游戏示例页：打开 APK 里 `assets/game/<名字>/` 的一个夹具（sample-game/，构建时拷进来），
+ * 或商店下载解好的小游戏目录（[storeIntent]：MainActivity 准备好包之后转过来）。
  *
  *     adb shell am start -n dev.minirender.example/.GameActivity --es game g-square --es query "max=600"
  *
@@ -19,14 +20,19 @@ class GameActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val storeDir = intent.getStringExtra(EXTRA_DIR)
         val name = intent.getStringExtra("game") ?: "g-square"
-        val query = intent.getStringExtra("query") ?: ""
-        val dir = GameAssets.unpack(this, name)
-        val q = org.json.JSONObject()
-        query.split('&').filter { it.contains('=') }.forEach { kv -> q.put(kv.substringBefore('='), kv.substringAfter('=')) }
+        val dir = storeDir?.let { File(it) } ?: GameAssets.unpack(this, name)
+        val launch = intent.getStringExtra(EXTRA_LAUNCH)?.let { org.json.JSONObject(it) } ?: run {
+            val q = org.json.JSONObject()
+            (intent.getStringExtra("query") ?: "").split('&').filter { it.contains('=') }
+                .forEach { kv -> q.put(kv.substringBefore('='), kv.substringAfter('=')) }
+            org.json.JSONObject().put("query", q).put("scene", 1001)
+        }
         val opts = org.json.JSONObject()
-            .put("appId", "wxdemo-$name")
-            .put("launchOptions", org.json.JSONObject().put("query", q).put("scene", 1001))
+            // 存档按 appId 分：商店的用真 AppID（换了解包目录也不丢档），夹具用 wxdemo-<名字>
+            .put("appId", intent.getStringExtra(EXTRA_APP_ID) ?: "wxdemo-$name")
+            .put("launchOptions", launch)
             // --ez rotate true：横屏包在竖屏里由引擎自己转（G6.4）
             .put("rotateInEngine", intent.getBooleanExtra("rotate", false))
         val v = MiniGameView(this, dir.absolutePath, File(filesDir, "game-data").absolutePath, opts.toString())
@@ -61,6 +67,17 @@ class GameActivity : Activity() {
         view?.dispose()
         view = null
         super.onDestroy()
+    }
+
+    companion object {
+        const val EXTRA_DIR = "dir"
+        const val EXTRA_APP_ID = "appId"
+        const val EXTRA_LAUNCH = "launchOptions"
+
+        /** 商店里的小游戏：[dir] 是解好的包（含 game.json），[launch] 是 StoreLink 的 launchOptions（scene / query / referrerInfo） */
+        fun storeIntent(ctx: android.content.Context, dir: File, appId: String, launch: org.json.JSONObject) =
+            android.content.Intent(ctx, GameActivity::class.java)
+                .putExtra(EXTRA_DIR, dir.absolutePath).putExtra(EXTRA_APP_ID, appId).putExtra(EXTRA_LAUNCH, launch.toString())
     }
 }
 

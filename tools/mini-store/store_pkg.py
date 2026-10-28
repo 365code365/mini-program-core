@@ -27,8 +27,27 @@ MAX_FILES = 20000
 ID_RE = re.compile(r'^[a-z0-9][a-z0-9._-]{0,63}$')
 APPID_RE = re.compile(r'^wx[0-9a-f]{16}$')
 SKIP_NAMES = {'.DS_Store', 'Thumbs.db'}
-# 分类是固定的一组（商店首页按它分栏、搜索页按它筛）：与示例小程序 store.meta.json 的 category 同一组
-CATEGORIES = ['美食', '购物', '出行', '生活服务', '医疗健康', '金融', '工具', '教育', '娱乐', '资讯', '政务', '其他']
+# 分类是固定的一组（商店首页按它分栏、搜索页按它筛）：与示例小程序 store.meta.json 的 category 同一组。
+# 「游戏」给小游戏用（sample-game/play-*）；客户端的分类表里还没有它，但客户端默认也拿不到小游戏（见 KINDS）
+CATEGORIES = ['美食', '购物', '出行', '生活服务', '医疗健康', '金融', '工具', '教育', '娱乐', '游戏', '资讯', '政务', '其他']
+# 包的种类：小程序（app.json + pages）与小游戏（game.json + game.js）。
+# 公开列表 / 搜索 / 分类默认只给小程序：现有的三端示例 App 按 app.json 开包，拿到小游戏只会报「包里没有 app.json」；
+# 要小游戏的调用方显式带 kind=game 或 kind=all（管理页就这么带）
+KINDS = ('miniprogram', 'game')
+KIND_LABEL = {'miniprogram': '小程序', 'game': '小游戏'}
+ORIENTATIONS = ('portrait', 'landscape', 'landscapeLeft', 'landscapeRight')
+
+
+def kind_filter(raw):
+    """查询参数 kind → 允许的种类集合：空 = 只要小程序（老客户端的口径）；all = 全部"""
+    raw = (raw or '').strip()
+    if raw == 'all':
+        return set(KINDS)
+    if raw in KINDS:
+        return {raw}
+    if not raw:
+        return {'miniprogram'}
+    raise HttpError(400, 'kind 只能是 miniprogram、game 或 all')
 ICON_NAME = 'icon.png'          # 包根上的商店图标（144×144 PNG），上传时取出来单独存
 MAX_ICON = 512 << 10
 WRITE_LOCK = threading.Lock()
@@ -65,6 +84,8 @@ def load_meta(app_id):
 def public_meta(meta):
     """对外的 meta：带上下载地址与图标地址（`?v=` 让中间缓存按版本区分）、累计打开次数"""
     out = dict(meta, packageUrl=f"/api/apps/{meta['id']}/package?v={meta['version']}")
+    out.setdefault('kind', 'miniprogram')       # 加 kind 之前上架的都是小程序
+    out['kindLabel'] = KIND_LABEL.get(out['kind'], out['kind'])
     out.setdefault('category', '其他')
     out.setdefault('tags', [])
     out.setdefault('developer', '')
@@ -123,8 +144,9 @@ def all_metas():
     return out
 
 
-def list_apps():
-    return [public_meta(m) for m in all_metas()]
+def list_apps(kinds=None):
+    kinds = kinds or {'miniprogram'}
+    return [pm for pm in (public_meta(m) for m in all_metas()) if pm['kind'] in kinds]
 
 
 def find(key):
@@ -134,10 +156,22 @@ def find(key):
     return load_meta(key) if ID_RE.match(key) else None
 
 
-def normalize_zip(data):
-    """校验上传的 zip。返回 (条目列表 [(相对路径, 字节)], 文件数, 解开后大小, app.json, project.config.json 或 None)。
+MANIFEST = {'miniprogram': 'app.json', 'game': 'game.json'}
 
-    允许两种布局：app.json 在根上；或整个小程序在唯一一层子目录里（Finder「压缩」出来就是这样）。
+
+def _manifest_kind(names, prefix):
+    """这一层是小程序还是小游戏。两个都有就拒（引擎也拒：同一个目录不能两种都是）"""
+    has = {k for k, f in MANIFEST.items() if prefix + f in names}
+    if len(has) > 1:
+        raise HttpError(400, '包里同时有 app.json 和 game.json：分不清是小程序还是小游戏')
+    return next(iter(has), None)
+
+
+def normalize_zip(data):
+    """校验上传的 zip。返回 (条目列表 [(相对路径, 字节)], 文件数, 解开后大小, 清单信息, project.config.json 或 None)。
+
+    清单信息 = {kind, pages, orientation, title}：小程序看 app.json 的 pages，小游戏看 game.json 的 deviceOrientation。
+    允许两种布局：清单（app.json / game.json）在根上；或整个包在唯一一层子目录里（Finder「压缩」出来就是这样）。
     拒绝绝对路径与 `..`（客户端照这份解包，路径穿越就是写到沙盒外面）"""
     try:
         zf = zipfile.ZipFile(io.BytesIO(data))
@@ -155,16 +189,29 @@ def normalize_zip(data):
             raise HttpError(400, f'包里有非法路径：{name}')
         entries.append((name, info))
     names = {n for n, _ in entries}
-    if 'app.json' in names:
-        prefix = ''
-    else:
+    prefix = ''
+    kind = _manifest_kind(names, prefix)
+    if kind is None:
         tops = {n.split('/')[0] for n in names}
-        if len(tops) != 1 or f'{next(iter(tops))}/app.json' not in names:
-            raise HttpError(400, '包里没有 app.json（要在 zip 根上，或在唯一一层子目录里）')
-        prefix = next(iter(tops)) + '/'
-    app_json = _read_json(zf, prefix + 'app.json', 'app.json')
-    if not isinstance(app_json, dict) or not app_json.get('pages'):
-        raise HttpError(400, 'app.json 里没有 pages')
+        if len(tops) == 1:
+            prefix = next(iter(tops)) + '/'
+            kind = _manifest_kind(names, prefix)
+        if kind is None:
+            raise HttpError(400, '包里没有 app.json（小程序）或 game.json（小游戏）：要在 zip 根上，或在唯一一层子目录里')
+    manifest = _read_json(zf, prefix + MANIFEST[kind], MANIFEST[kind])
+    if not isinstance(manifest, dict):
+        raise HttpError(400, f'{MANIFEST[kind]} 要是 JSON 对象')
+    if kind == 'miniprogram':
+        if not manifest.get('pages'):
+            raise HttpError(400, 'app.json 里没有 pages')
+        info_ = {'kind': kind, 'pages': len(manifest['pages']), 'title': (manifest.get('window') or {}).get('navigationBarTitleText')}
+    else:
+        if prefix + 'game.js' not in names:
+            raise HttpError(400, '小游戏包里没有 game.js（入口要在 game.json 旁边）')
+        ori = manifest.get('deviceOrientation', 'portrait')
+        if ori not in ORIENTATIONS:
+            raise HttpError(400, f"game.json 的 deviceOrientation 只能是：{'、'.join(ORIENTATIONS)}")
+        info_ = {'kind': kind, 'pages': 0, 'orientation': ori, 'title': None}
     project = _read_json(zf, prefix + 'project.config.json', 'project.config.json') \
         if prefix + 'project.config.json' in names else None
     out, total = [], 0
@@ -175,7 +222,7 @@ def normalize_zip(data):
         if total > MAX_UNPACKED or len(out) >= MAX_FILES:
             raise HttpError(413, '包解开后太大')
         out.append((name[len(prefix):], info.date_time, zf.read(info)))
-    return out, len(out), total, app_json, project if isinstance(project, dict) else None
+    return out, len(out), total, info_, project if isinstance(project, dict) else None
 
 
 def _read_json(zf, path, label):
@@ -205,18 +252,24 @@ def _pick_appid(app_id, explicit, project, old):
 
 
 def save_app(app_id, data, name, description, appid=None, store_fields=None):
-    entries, files, unpacked, app_json, project = normalize_zip(data)
+    entries, files, unpacked, info_, project = normalize_zip(data)
+    kind = info_['kind']
     icon = next((c for rel, _, c in entries if rel == ICON_NAME), None)
     if icon is not None and (len(icon) > MAX_ICON or not icon.startswith(b'\x89PNG')):
         raise HttpError(400, 'icon.png 要是 PNG、不超过 512KB')
     d = app_dir(app_id)
     with WRITE_LOCK:
         old = load_meta(app_id) or {}
+        # 同一个 id 不许换种类：装过旧版的客户端按旧种类开包，升级后直接打不开
+        old_kind = old.get('kind', 'miniprogram') if old else None
+        if old_kind and old_kind != kind:
+            raise HttpError(409, f"「{old.get('name', app_id)}」（{app_id}）是{KIND_LABEL[old_kind]}，"
+                                 f"不能用{KIND_LABEL[kind]}包升级：换一个 id 上传")
         chosen = _pick_appid(app_id, (appid or '').strip().lower(), project, old)
-        title = (app_json.get('window') or {}).get('navigationBarTitleText')
-        final_name = name or old.get('name') or (project or {}).get('projectname') or title or app_id
-        # AppID 写回 project.config.json（保留包里原有的其它字段）
-        proj = dict(project or {}, appid=chosen)
+        final_name = name or old.get('name') or (project or {}).get('projectname') or info_['title'] or app_id
+        # AppID 写回 project.config.json（保留包里原有的其它字段）；compileType 按包的实际种类写正，
+        # 开发者工具据它决定按小程序还是小游戏打开
+        proj = dict(project or {}, appid=chosen, compileType=kind)
         proj.setdefault('projectname', app_id)
         proj_bytes = json.dumps(proj, ensure_ascii=False, indent=2).encode('utf-8')
         buf = io.BytesIO()
@@ -249,7 +302,8 @@ def save_app(app_id, data, name, description, appid=None, store_fields=None):
             'size': len(pkg),
             'unpackedSize': unpacked,
             'files': files + (0 if project is not None else 1),
-            'pages': len(app_json.get('pages') or []),
+            'kind': kind,
+            'pages': info_['pages'],
             'updatedAt': int(time.time() * 1000),
             'order': old.get('order', 1000),
             'hasIcon': icon is not None or (old.get('hasIcon', False) and os.path.isfile(os.path.join(d, 'icon.png'))),
@@ -258,6 +312,8 @@ def save_app(app_id, data, name, description, appid=None, store_fields=None):
             'developer': old.get('developer', ''),
             'createdAt': old.get('createdAt', int(time.time() * 1000)),
         }
+        if kind == 'game':
+            meta['orientation'] = info_['orientation']
         meta.update(clean_store_fields(store_fields or {}))
         write_json(os.path.join(d, 'meta.json'), meta)
     return public_meta(meta)
