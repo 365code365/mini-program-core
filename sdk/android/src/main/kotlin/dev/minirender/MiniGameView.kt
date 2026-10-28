@@ -57,6 +57,8 @@ class MiniGameView(
     private var pendingTouchNanos = 0L
 
     @Volatile private var disposed = false
+    /** 主线程：实例已经按真尺寸开始建了（start() 只跑一次） */
+    private var started = false
 
     /**
      * 引擎交给宿主的事件（日志、audioSession 之外的：`exit` / `restart`（wx.exitMiniProgram / restartMiniProgram）、
@@ -181,7 +183,9 @@ class MiniGameView(
     /** 尺寸变了（转屏、分屏）：告诉引擎新的逻辑尺寸与方向（派发 wx.onWindowResize / onDeviceOrientationChange） */
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
-        if (oldw == 0 && oldh == 0) return // 第一次布局：start() 按它建实例
+        if (w == 0 || h == 0) return
+        // 还没建实例：现在才有尺寸，按它建（Flutter 平台视图第一次布局可能是 0×0，start() 那时只能先等着）
+        if (!started) { start(); return }
         val d = resources.displayMetrics.density
         val rot = (if (Build.VERSION.SDK_INT >= 30) display?.rotation else null) ?: android.view.Surface.ROTATION_0
         val orient = when (rot) {
@@ -202,7 +206,11 @@ class MiniGameView(
 
     /** 尺寸要等第一次布局之后才知道：逻辑尺寸 = 视图像素 / density（与小程序同一口径） */
     private fun start() {
-        if (disposed) return
+        if (disposed || started) return
+        // 宽高还是 0（Flutter 平台视图第一次布局前常见）：别按 1×1 建实例 —— 之前就这么建出 2×2 的 WebGL 表面，
+        // 拉满全屏一片糊。等 onSizeChanged 拿到真尺寸再建
+        if (width == 0 || height == 0) return
+        started = true
         val dpr = resources.displayMetrics.density
         val w = (width / dpr).toInt().coerceAtLeast(1)
         val h = (height / dpr).toInt().coerceAtLeast(1)

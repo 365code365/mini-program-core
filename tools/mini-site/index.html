@@ -13,6 +13,7 @@
   <a class="brand" href="#top"><img src="shots/icon-flutter.png" alt=""><span>灵犀</span></a>
   <nav>
     <a href="#features">能力</a>
+    <a href="#games" class="hot">小游戏</a>
     <a href="#apps">演示 App</a>
     <a href="#samples">示例小程序</a>
     <a href="#download" class="cta">下载</a>
@@ -34,6 +35,7 @@
         <li><b>48+</b><span>可下载的示例小程序</span></li>
         <li><b>90Hz</b><span>贴住刷新率的滑动</span></li>
         <li><b>2</b><span>渲染后端（CPU / GPU）</span></li>
+        <li><b>60fps</b><span>3D 小游戏真机帧率</span></li>
       </ul>
     </div>
     <div class="hero-phones" aria-hidden="true">
@@ -54,6 +56,29 @@
     </div>
   </section>
 
+  <section id="games" class="games">
+    <div class="games-in">
+      <p class="eyebrow">新 · 微信小游戏</p>
+      <h2>不止小程序，<span class="grad2">3D 小游戏也能跑</span></h2>
+      <p class="sub">给一个 <code>game.json</code> + <code>game.js</code> 的包，引擎切到小游戏模式：整屏画布直接上屏、跟 vsync 的 requestAnimationFrame、多点触控、低延迟音频、WebGL 1 / 2、WXWebAssembly。
+        three.js、PixiJS、Phaser 不改一行。下面的动画都是引擎自己画的，两个演示 App 的商店里都能直接玩。</p>
+      <div class="gifs">
+        <figure class="big"><img src="shots/game_island.gif" alt="萌宠小岛：3D 小岛经营" loading="lazy"><figcaption><b>萌宠小岛</b>3D 经营 · 建造升级 · 宠物抽卡 · 内购广告</figcaption></figure>
+        <figure><img src="shots/game_runner.gif" alt="3D 跑酷" loading="lazy"><figcaption><b>3D 跑酷</b>换道 · 跳跃 · 下滑</figcaption></figure>
+        <figure><img src="shots/game_bowling.gif" alt="3D 保龄球" loading="lazy"><figcaption><b>3D 保龄球</b>物理碰撞 · 十局计分</figcaption></figure>
+        <figure><img src="shots/game_stack.gif" alt="3D 叠方块" loading="lazy"><figcaption><b>3D 叠方块</b>对准落下 · 越叠越高</figcaption></figure>
+        <figure><img src="shots/game_flappy.gif" alt="飞翔小鸟" loading="lazy"><figcaption><b>飞翔小鸟</b>点一下扑一下</figcaption></figure>
+        <figure><img src="shots/game_g2048.gif" alt="2048" loading="lazy"><figcaption><b>2048</b>滑动合并数字</figcaption></figure>
+      </div>
+      <ul class="gstats">
+        <li><b>96.6%</b><span>WebGL 一致性（Khronos CTS 子集 169/175）</span></li>
+        <li><b>2 像素</b><span>three.js 同一场景对 Chrome 的差异（共 250 125）</span></li>
+        <li><b>60fps</b><span>three.js / PixiJS / Phaser 真机，重复帧 0</span></li>
+        <li><b>+0.2MB</b><span>真机连续 30 分钟内存增长</span></li>
+      </ul>
+    </div>
+  </section>
+
   <section id="apps" class="section alt">
     <h2>两个演示 App</h2>
     <div class="grid apps">
@@ -61,14 +86,14 @@
         <img src="shots/icon-flutter.png" alt="灵犀图标">
         <div>
           <h3>灵犀 <small>Flutter 版</small></h3>
-          <p>Flutter 插件 <code>mini_render</code> 的完整示例：微信式下拉小程序面板、最近使用 / 我的小程序、长按收藏与删除、胶囊「•••」底部菜单、小程序商店。</p>
+          <p>Flutter 插件 <code>mini_render</code> 的完整示例：微信式下拉小程序面板、最近使用 / 我的小程序、长按收藏与删除、胶囊「•••」底部菜单、小程序商店，商店里的小游戏走 <code>MiniGameView</code>。</p>
         </div>
       </article>
       <article class="app">
         <img src="shots/icon-native.png" alt="灵犀原生图标">
         <div>
           <h3>灵犀原生 <small>Android 原生版</small></h3>
-          <p>只用 Android 框架自带的类（不依赖 AndroidX）：一个 <code>MiniProgramView</code> 就是一个小程序。同一套商店、面板与菜单。</p>
+          <p>只用 Android 框架自带的类（不依赖 AndroidX）：一个 <code>MiniProgramView</code> 就是一个小程序。同一套商店、面板与菜单；小游戏用 <code>MiniGameView</code> 全屏运行。</p>
         </div>
       </article>
     </div>

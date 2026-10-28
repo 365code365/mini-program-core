@@ -68,7 +68,42 @@ h2 { font-size: 30px; margin: 0 0 10px; }
 
 footer { text-align: center; color: var(--muted); font-size: 14px; padding: 30px 20px 40px; border-top: 1px solid var(--line); }
 
+.nav nav a.hot { color: #db2777; font-weight: 600; }
+.nav nav a.hot::after { content: "NEW"; margin-left: 4px; font-size: 10px; color: #fff; background: #ec4899; padding: 1px 4px; border-radius: 4px; vertical-align: 1px; }
+
+/* 小游戏：一块深紫夜景，GIF 排成手机屏的样子 */
+.games { position: relative; overflow: hidden; color: #f1ecff;
+  background: radial-gradient(60% 40% at 50% 0%, rgba(168, 85, 247, .35), transparent 70%), radial-gradient(40% 30% at 90% 80%, rgba(236, 72, 153, .22), transparent 70%), linear-gradient(180deg, #120726, #1b0a33 60%, #0d0618); }
+.games::after { content: ""; position: absolute; left: -20%; right: -20%; bottom: -1px; height: 220px; pointer-events: none;
+  background-image: linear-gradient(rgba(236, 72, 153, .45) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 211, 238, .35) 1px, transparent 1px);
+  background-size: 56px 56px; transform: perspective(300px) rotateX(60deg); transform-origin: 50% 100%;
+  -webkit-mask-image: linear-gradient(to top, #000, transparent); mask-image: linear-gradient(to top, #000, transparent); animation: groll 2.4s linear infinite; }
+@keyframes groll { to { background-position: 0 56px; } }
+.games-in { position: relative; z-index: 1; max-width: 1120px; margin: 0 auto; padding: 72px 20px 90px; text-align: center; }
+.games .eyebrow { color: #f9a8d4; }
+.games h2 { font-size: clamp(28px, 4vw, 40px); color: #fff; }
+.grad2 { background: linear-gradient(90deg, #22d3ee, #a855f7, #ec4899, #fbbf24); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.games .sub { color: #c9bfe6; max-width: 46em; margin: 0 auto 36px; }
+.games code { background: rgba(255, 255, 255, .1); color: #fbcfe8; }
+.gifs { display: grid; grid-template-columns: 1.35fr 1fr 1fr 1fr; grid-auto-rows: auto; gap: 18px; align-items: start; }
+.gifs figure { margin: 0; }
+.gifs .big { grid-row: span 2; }
+.gifs img { display: block; width: 100%; aspect-ratio: 9 / 16; object-fit: cover; border-radius: 22px; background: #1a0f2e;
+  border: 4px solid rgba(255, 255, 255, .14); box-shadow: 0 20px 50px -18px rgba(0, 0, 0, .8), 0 0 40px -10px rgba(168, 85, 247, .7); transition: transform .3s; }
+.gifs img:hover { transform: translateY(-4px) scale(1.02); }
+.gifs figcaption { margin-top: 10px; font-size: 13px; color: #bfb3dd; }
+.gifs figcaption b { display: block; color: #fff; font-size: 15px; }
+.gstats { list-style: none; padding: 0; margin: 40px 0 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.gstats li { background: rgba(255, 255, 255, .05); border: 1px solid rgba(255, 255, 255, .12); border-radius: 16px; padding: 16px; }
+.gstats b { display: block; font-size: 26px; color: #fff; text-shadow: 0 0 20px rgba(168, 85, 247, .8); }
+.gstats span { font-size: 13px; color: #bfb3dd; }
+@media (prefers-reduced-motion: reduce) { .games::after { animation: none; } }
+
 @media (max-width: 860px) {
+  .gifs { grid-template-columns: 1fr 1fr; }
+  .gifs .big { grid-column: span 2; grid-row: auto; }
+  .gifs .big img { aspect-ratio: 9 / 13; }
+  .gstats { grid-template-columns: 1fr 1fr; }
   .hero { grid-template-columns: 1fr; padding-top: 40px; }
   .hero-phones { height: 420px; }
   .phone { width: 190px; }

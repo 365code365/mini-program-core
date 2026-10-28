@@ -18,8 +18,9 @@ PORT=9640
 FLUTTER_APK="${1:-sdk/flutter/example/build/app/outputs/flutter-apk/app-release.apk}"
 NATIVE_APK="${2:-sdk/android/example/app/build/outputs/apk/release/app-release.apk}"
 for f in "$FLUTTER_APK" "$NATIVE_APK"; do [ -f "$f" ] || { echo "❌ 没有 $f（先构建）"; exit 1; }; done
-if [ -n "${SSHPASS:-}" ]; then S=(sshpass -e); else S=(); fi
-R() { "${S[@]}" ssh -o ConnectTimeout=15 "$HOST" "$@"; }
+# 走密码时只用密码：本机 ~/.ssh 里钥匙多的话，ssh 先挨个试钥匙，试满服务器的 MaxAuthTries 就断开，轮不到密码
+if [ -n "${SSHPASS:-}" ]; then S=(sshpass -e); O=(-o PreferredAuthentications=password -o PubkeyAuthentication=no); else S=(); O=(); fi
+R() { "${S[@]}" ssh -o ConnectTimeout=15 "${O[@]}" "$HOST" "$@"; }
 
 VER_F=$(sed -n 's/^version: *\([^+ ]*\).*/\1/p' sdk/flutter/example/pubspec.yaml)
 VER_N=$(sed -n 's/.*versionName *= *"\(.*\)".*/\1/p' sdk/android/example/app/build.gradle.kts)
@@ -42,9 +43,9 @@ def meta(file, title, icon, note, ver):
             'size': os.path.getsize(p), 'sha256': h, 'date': time.strftime('%Y-%m-%d')}
 files = [
     meta(f'lingxi-flutter-{vf}.apk', '灵犀（Flutter 版）', 'shots/icon-flutter.png',
-         'Flutter 插件 mini_render 的完整示例：下拉小程序面板、收藏、商店、胶囊菜单。', vf),
+         'Flutter 插件 mini_render 的完整示例：下拉小程序面板、收藏、商店、胶囊菜单；商店里的 3D 小游戏直接玩。', vf),
     meta(f'lingxi-native-{vn}.apk', '灵犀原生（Android 原生版）', 'shots/icon-native.png',
-         '纯 Android 原生集成（MiniProgramView），不依赖 AndroidX。', vn),
+         '纯 Android 原生集成（MiniProgramView / MiniGameView），不依赖 AndroidX；含 3D 小游戏。', vn),
 ]
 json.dump({'files': files, 'updatedAt': int(time.time() * 1000)}, open(os.path.join(w, 'downloads.json'), 'w'), ensure_ascii=False, indent=1)
 for f in files:

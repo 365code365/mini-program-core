@@ -52,6 +52,13 @@ pub fn run(dir: &Path, opts: GameRun) -> i32 {
     // 脚本比 --frames 长就跑到最后一个事件之后一帧，抬手那一帧的回调也要跑到
     let frames = (opts.frames as u64).max(opts.input.last().map(|e| e.frame + 1).unwrap_or(0));
     let mut input = opts.input.iter().peekable();
+    // MINI_GAME_RECORD=<N>（配 --snapshot）：每 N 帧另存一张 rec_<帧号>.jpg（逻辑尺寸，做演示 GIF / 视频用）。
+    // 只在无头跑里存，按固定时钟，所以同一份参数每次存出来的序列一样
+    let record_every: u64 = std::env::var("MINI_GAME_RECORD").ok().and_then(|v| v.parse().ok()).unwrap_or(0);
+    let rec_dir = opts.snapshot.as_ref().filter(|_| record_every > 0);
+    if let Some(d) = rec_dir {
+        std::fs::create_dir_all(d).ok();
+    }
     for n in 1..=frames {
         // 固定时钟：不用真等，帧时刻就是 n / hz
         let t = n * 1_000_000 / hz;
@@ -62,6 +69,13 @@ pub fn run(dir: &Path, opts: GameRun) -> i32 {
         engine.pump_ex(t);
         pump_us.push(t0.elapsed().as_micros() as u64);
         had_error |= drain(&mut engine);
+        if let Some(d) = rec_dir.filter(|_| n % record_every == 0) {
+            let (lw, lh) = (w.max(1), h.max(1));
+            let px = engine.frame_rgba_scaled(lw, lh);
+            if let Some(img) = image::RgbaImage::from_raw(lw, lh, px) {
+                let _ = image::DynamicImage::ImageRgba8(img).to_rgb8().save(d.join(format!("rec_{n:05}.jpg")));
+            }
+        }
     }
     if pump_us.len() >= 10 {
         let mut s = pump_us.clone();
