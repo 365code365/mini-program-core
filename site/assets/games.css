@@ -149,6 +149,29 @@
 }
 .gm-engines li:nth-child(even) { color: #ffe0f1; background: rgba(255, 63, 164, .08); border-color: rgba(255, 63, 164, .38); box-shadow: 0 0 22px -6px rgba(255, 63, 164, .55); }
 
+/* ── 横屏一条：拳魂三张截图，斜着错开叠放，悬停的那张抬起来 ── */
+.gm-wide { margin: clamp(48px, 6vw, 80px) 0 0; }
+.gm-wide-head { text-align: center; max-width: 72ch; margin: 0 auto 26px; }
+.gm-wide-head h3 { font-size: clamp(22px, 2.6vw, 30px); letter-spacing: -.02em; margin: 0 0 10px; color: var(--strong); }
+.gm-wide-head p { margin: 0; color: var(--dim); font-size: 15px; }
+.gm-wide-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; perspective: 1400px; padding: 10px 4% 20px; }
+.gm-wide-shot {
+  margin: 0 -6%; border-radius: 16px; overflow: hidden; position: relative;
+  transform: rotateY(calc((1 - var(--k)) * 16deg)) translateZ(calc(var(--k) * 0px - (var(--k) - 1) * (var(--k) - 1) * 60px));
+  z-index: calc(2 - (var(--k) - 1) * (var(--k) - 1));
+  border: 1px solid rgba(255, 255, 255, .18);
+  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, .85), 0 0 50px -12px rgba(255, 63, 164, .6);
+  transition: transform .45s cubic-bezier(.2, .7, .2, 1), box-shadow .45s;
+}
+.gm-wide-shot:hover { transform: translateZ(80px) scale(1.03); z-index: 5; box-shadow: 0 40px 80px -20px rgba(0, 0, 0, .9), 0 0 70px -10px rgba(34, 211, 238, .7); }
+.gm-wide-shot img { display: block; width: 100%; height: auto; }
+.gm-wide-shot::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(115deg, rgba(255, 255, 255, .18), transparent 40%); }
+@media (max-width: 720px) {
+  .gm-wide-row { grid-template-columns: 1fr; gap: 12px; perspective: none; padding: 0; }
+  .gm-wide-shot { margin: 0; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) { .gm-wide-shot, .gm-wide-shot:hover { transform: none; transition: none; } }
+
 /* ── 数字 ── */
 .gm-stats {
   margin: clamp(40px, 5vw, 64px) 0 0; display: grid; gap: 14px;
