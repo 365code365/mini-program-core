@@ -44,7 +44,7 @@
  "show.lede": "チャット、カンバン、列車予約、株価、レシピなど、複雑なサンプルミニプログラムを Android SDK 上で動かし、端末から 1 画面ずつキャプチャしました。どの画面も WebView ではなく、このエンジンが描いています。",
  "show.fallback": "このブラウザではここで再生できません。直接開く ↗",
  "show.cap": "60 秒 · 1280×720 · Android エミュレータのスクリーンショット、音楽はスクリプトで合成",
- "game.eyebrow": "新機能 · WeChat ミニゲーム",
+ "game.eyebrow": "新機能 · ミニゲーム",
  "game.h2": "ミニプログラムだけじゃない。<br><span class=\"grad gm-grad\">本格 3D ミニゲームも、同じエンジンで。</span>",
  "game.lede": "<code>game.json</code> + <code>game.js</code> のパッケージを渡すと、エンジンはゲームモードに切り替わります。全画面キャンバスをそのまま画面へ、vsync に同期した <code>requestAnimationFrame</code>、マルチタッチ、低遅延オーディオ、WebGL 1 / 2、<code>WXWebAssembly</code>。three.js・PixiJS・Phaser は無改造で動きます。下の画面はすべてこのエンジンが描いたものです。",
  "game.n.island": "ペットアイランド · 3D 経営",

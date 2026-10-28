@@ -44,7 +44,7 @@
  "show.lede": "แชต คันบัง ตั๋วรถไฟ หุ้น สูตรอาหาร และอื่น ๆ: มินิโปรแกรมตัวอย่างที่ซับซ้อนรันบน Android SDK บันทึกจากอุปกรณ์ทีละหน้าจอ ทุกหน้าจอวาดด้วยเอนจินนี้ ไม่ใช่ WebView",
  "show.fallback": "เบราว์เซอร์นี้เล่นวิดีโอตรงนี้ไม่ได้ เปิดไฟล์โดยตรง ↗",
  "show.cap": "60 วินาที · 1280×720 · ภาพหน้าจอจาก Android emulator ดนตรีสังเคราะห์ด้วยสคริปต์",
- "game.eyebrow": "ใหม่ · มินิเกม WeChat",
+ "game.eyebrow": "ใหม่ · มินิเกม",
  "game.h2": "ไม่ใช่แค่มินิโปรแกรม<br><span class=\"grad gm-grad\">มินิเกม 3D เต็มรูปแบบ ด้วยเอนจินเดียวกัน</span>",
  "game.lede": "ส่งแพ็กเกจ <code>game.json</code> + <code>game.js</code> ให้ แล้วเอนจินจะเข้าโหมดเกม: แคนวาสเต็มจอส่งตรงขึ้นจอ, <code>requestAnimationFrame</code> ที่ล็อกกับ vsync, มัลติทัช, เสียงหน่วงต่ำ, WebGL 1 / 2 และ <code>WXWebAssembly</code> three.js, PixiJS และ Phaser รันได้โดยไม่ต้องแก้ ทุกหน้าจอด้านล่างวาดโดยเอนจินนี้",
  "game.n.island": "Pet Island · สร้างเกาะ 3D",

@@ -44,7 +44,7 @@
  "show.lede": "Chat, kanban, billetes de tren, bolsa, recetas y más: miniprogramas de ejemplo complejos ejecutándose sobre el SDK de Android, capturados pantalla a pantalla en el dispositivo. Cada pantalla la dibuja este motor, no un WebView.",
  "show.fallback": "Este navegador no puede reproducir el vídeo aquí. Abrirlo directamente ↗",
  "show.cap": "60 s · 1280×720 · capturas del emulador de Android, música sintetizada por script",
- "game.eyebrow": "Nuevo · minijuegos de WeChat",
+ "game.eyebrow": "Nuevo · minijuegos",
  "game.h2": "No solo miniprogramas.<br><span class=\"grad gm-grad\">Minijuegos 3D completos, el mismo motor.</span>",
  "game.lede": "Dale un paquete <code>game.json</code> + <code>game.js</code> y el motor pasa a modo juego: un lienzo a pantalla completa enviado directamente a la pantalla, un <code>requestAnimationFrame</code> sincronizado con la vsync, multitáctil, audio de baja latencia, WebGL 1 / 2 y <code>WXWebAssembly</code>. three.js, PixiJS y Phaser funcionan sin cambios. Cada pantalla de abajo la dibujó este motor.",
  "game.n.island": "Pet Island · construcción 3D",

@@ -44,7 +44,7 @@
  "show.lede": "Chat, kanban, tiket kereta, saham, resep, dan lainnya: contoh program mini yang kompleks berjalan di SDK Android, direkam layar demi layar dari perangkat. Setiap layar digambar oleh mesin ini, bukan oleh WebView.",
  "show.fallback": "Browser ini tidak bisa memutar video di sini. Buka langsung ↗",
  "show.cap": "60 dtk · 1280×720 · tangkapan layar dari emulator Android, musik disintesis dengan skrip",
- "game.eyebrow": "Baru · mini game WeChat",
+ "game.eyebrow": "Baru · mini game",
  "game.h2": "Bukan cuma mini program.<br><span class=\"grad gm-grad\">Mini game 3D utuh, mesin yang sama.</span>",
  "game.lede": "Berikan paket <code>game.json</code> + <code>game.js</code> dan mesin beralih ke mode game: satu kanvas layar penuh langsung ke layar, <code>requestAnimationFrame</code> yang terkunci ke vsync, multisentuh, audio latensi rendah, WebGL 1 / 2, dan <code>WXWebAssembly</code>. three.js, PixiJS, dan Phaser berjalan tanpa diubah. Setiap layar di bawah digambar oleh mesin ini.",
  "game.n.island": "Pet Island · bangun 3D",

@@ -44,7 +44,7 @@
  "show.lede": "Sohbet, kanban, tren bileti, borsa, tarifler ve daha fazlası: Android SDK üzerinde çalışan karmaşık örnek mini programlar, cihazdan ekran ekran yakalandı. Her ekranı bir WebView değil, bu motor çiziyor.",
  "show.fallback": "Bu tarayıcı videoyu burada oynatamıyor. Doğrudan aç ↗",
  "show.cap": "60 sn · 1280×720 · Android emülatöründen ekran görüntüleri, müzik betikle sentezlendi",
- "game.eyebrow": "Yeni · WeChat mini oyunları",
+ "game.eyebrow": "Yeni · mini oyunlar",
  "game.h2": "Sadece mini programlar değil.<br><span class=\"grad gm-grad\">Tam 3D mini oyunlar, aynı motor.</span>",
  "game.lede": "Ona bir <code>game.json</code> + <code>game.js</code> paketi verin, motor oyun moduna geçsin: doğrudan ekrana giden tam ekran bir tuval, vsync'e kilitli <code>requestAnimationFrame</code>, çoklu dokunma, düşük gecikmeli ses, WebGL 1 / 2 ve <code>WXWebAssembly</code>. three.js, PixiJS ve Phaser değiştirilmeden çalışır. Aşağıdaki her ekranı bu motor çizdi.",
  "game.n.island": "Pet Island · 3D inşa",

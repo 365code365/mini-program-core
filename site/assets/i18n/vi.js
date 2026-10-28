@@ -44,7 +44,7 @@
  "show.lede": "Chat, kanban, vé tàu, chứng khoán, công thức nấu ăn và hơn thế: các mini program mẫu phức tạp chạy trên Android SDK, chụp từng màn hình từ thiết bị. Mọi màn hình đều do engine này vẽ, không phải WebView.",
  "show.fallback": "Trình duyệt này không phát được video ở đây. Mở trực tiếp ↗",
  "show.cap": "60 giây · 1280×720 · ảnh chụp từ trình giả lập Android, nhạc tổng hợp bằng script",
- "game.eyebrow": "Mới · mini game WeChat",
+ "game.eyebrow": "Mới · mini game",
  "game.h2": "Không chỉ mini program.<br><span class=\"grad gm-grad\">Mini game 3D hoàn chỉnh, cùng một engine.</span>",
  "game.lede": "Đưa cho nó một gói <code>game.json</code> + <code>game.js</code>, engine chuyển sang chế độ game: một canvas toàn màn hình đưa thẳng lên màn hình, <code>requestAnimationFrame</code> khóa theo vsync, cảm ứng đa điểm, âm thanh độ trễ thấp, WebGL 1 / 2 và <code>WXWebAssembly</code>. three.js, PixiJS và Phaser chạy không cần sửa. Mỗi màn hình dưới đây đều do engine này vẽ.",
  "game.n.island": "Pet Island · xây dựng 3D",

@@ -212,7 +212,7 @@
     'pipe.note': '产物是一个普通的 Rust 库（<code>cdylib</code> / <code>staticlib</code> / <code>rlib</code>）。落地条件只有一条：<strong>给我一块可写的像素缓冲</strong> —— 所以 Android、iOS、Windows、macOS、Linux 跑同一份代码，没有屏幕的 CI 里也能直接出 PNG。',
 
     /* ── 小游戏 ── */
-    'game.eyebrow': '新 · 微信小游戏',
+    'game.eyebrow': '新 · 小游戏',
     'game.h2': '不止小程序。<br><span class="grad gm-grad">完整的 3D 小游戏，同一个引擎。</span>',
     'game.lede': '给它一个 <code>game.json</code> + <code>game.js</code> 的包，引擎就切到小游戏模式：一整屏画布直接上屏、跟 vsync 走的 <code>requestAnimationFrame</code>、多点触控、低延迟音频、WebGL 1 / 2 与 <code>WXWebAssembly</code>。three.js、PixiJS、Phaser 不改一行就能跑。下面每一屏都是这个引擎画的。',
     'game.n.island': '萌宠小岛 · 3D 经营',
