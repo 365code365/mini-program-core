@@ -55,6 +55,8 @@ image = "0.25"
 fontdue = { path = "vendor/fontdue", features = ["std"] }
 # 字体文件只读映射（text/load.rs）：文件页按需进内存、可回收，同一个 TTC 的几个字面共用
 memmap2 = "=0.9.11"
+# COLR 彩色 emoji（emoji_colr）：解析 COLR/CPAL 并遍历 v1 绘制指令；Cargo.lock 里本来就有这一版（dev 依赖），不新增下载
+ttf-parser = "=0.25.1"
 # 内存分项（host/engine_memory.rs）：mincore 量每块缓冲真正驻留了多少页、madvise 把用不到的页还给系统
 libc = "0.2"
 rquickjs = { version = "0.12", features = ["classes", "properties"] }

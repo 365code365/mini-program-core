@@ -16,6 +16,7 @@ pub mod text_system;
 pub mod text_faces;
 // 彩色 Emoji 位图字形（Apple sbix）
 pub mod emoji;
+pub mod emoji_colr;
 // 小程序资源根目录（图片等相对路径解析）
 pub mod assets;
 

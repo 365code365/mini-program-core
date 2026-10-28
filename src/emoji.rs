@@ -1,4 +1,4 @@
-//! 彩色 Emoji 位图字形（Apple `sbix`）解码。
+//! 彩色 Emoji 位图字形（Apple `sbix`）解码；COLR 矢量字体（Android）在 `emoji_colr`，下面的公开函数两套都查。
 //!
 //! 为什么需要单独一套：Apple Color Emoji 是**位图**字体（`sbix` 表里存的是 PNG），
 //! 而 `fontdue` 只能光栅化轮廓字形（`glyf`/`CFF`）。把它塞给 fontdue 的结果是
@@ -61,23 +61,33 @@ pub fn shared() -> Option<&'static ColorEmojiFont> {
     SHARED.get_or_init(ColorEmojiFont::load_system).as_ref()
 }
 
-/// 该码点是否有彩色位图字形可用。
+// 两套彩色字体：macOS 的 Apple `sbix` 位图（本文件）优先，没有时用 COLR 矢量字体（Android 的 Noto，emoji_colr）
+
+/// 该码点是否有彩色字形可用。
 pub fn has_color_glyph(ch: char) -> bool {
-    shared().map(|f| f.glyph_index(ch).is_some()).unwrap_or(false)
+    shared().is_some_and(|f| f.glyph_index(ch).is_some()) || crate::emoji_colr::shared().is_some_and(|f| f.glyph(ch).is_some())
 }
 
 /// 取指定字号下的彩色字形位图（含绘制所需的偏移与前进宽度）。
 pub fn glyph_bitmap(ch: char, size: f32) -> Option<Arc<EmojiBitmap>> {
-    let font = shared()?;
-    let gid = font.glyph_index(ch)?;
-    font.bitmap(gid, size)
+    if let Some(font) = shared() {
+        if let Some(gid) = font.glyph_index(ch) {
+            return font.bitmap(gid, size);
+        }
+    }
+    let f = crate::emoji_colr::shared()?;
+    f.bitmap(f.glyph(ch)?, size)
 }
 
-/// 取指定字号下的前进宽度（无位图时返回 None）。
+/// 取指定字号下的前进宽度（无彩色字形时返回 None）。
 pub fn advance(ch: char, size: f32) -> Option<f32> {
-    let font = shared()?;
-    let gid = font.glyph_index(ch)?;
-    Some(font.advance_px(gid, size))
+    if let Some(font) = shared() {
+        if let Some(gid) = font.glyph_index(ch) {
+            return Some(font.advance_px(gid, size));
+        }
+    }
+    let f = crate::emoji_colr::shared()?;
+    Some(f.advance(f.glyph(ch)?, size))
 }
 
 /// 零宽控制码点：变体选择符 / ZWJ / 肤色修饰前缀等，不参与绘制与度量。
