@@ -59,6 +59,9 @@ class MiniGameView(
     @Volatile private var disposed = false
     /** 主线程：实例已经按真尺寸开始建了（start() 只跑一次） */
     private var started = false
+    /** 主线程：game.json 要横屏（引擎内旋转算 false）；等方向的时间到了就不再等 */
+    private var wantLandscape = false
+    private var orientationWaitOver = false
 
     /**
      * 引擎交给宿主的事件（日志、audioSession 之外的：`exit` / `restart`（wx.exitMiniProgram / restartMiniProgram）、
@@ -118,7 +121,10 @@ class MiniGameView(
         // rotateInEngine：宿主不转（引擎自己把横屏画面转进竖屏，game/rotate.rs），锁竖屏
         val inEngine = try { org.json.JSONObject(options).optBoolean("rotateInEngine") } catch (_: Exception) { false }
         lockOrientation(if (inEngine) "portrait" else o)
+        wantLandscape = !inEngine && o.startsWith("landscape")
         post { start() }
+        // 兜底：设备转不过来（分屏、平板锁了方向、系统关了自动旋转对 App 也生效的机型）就按现有尺寸开，别一直黑着
+        postDelayed({ orientationWaitOver = true; start() }, 1500)
         post { keyboard }
     }
 
@@ -207,9 +213,10 @@ class MiniGameView(
     /** 尺寸要等第一次布局之后才知道：逻辑尺寸 = 视图像素 / density（与小程序同一口径） */
     private fun start() {
         if (disposed || started) return
-        // 宽高还是 0（Flutter 平台视图第一次布局前常见）：别按 1×1 建实例 —— 之前就这么建出 2×2 的 WebGL 表面，
-        // 拉满全屏一片糊。等 onSizeChanged 拿到真尺寸再建
+        // 宽高还是 0（Flutter 平台视图第一次布局前）：按 1×1 建会得到 2×2 的 WebGL 表面、拉满全屏一片糊。等 onSizeChanged
         if (width == 0 || height == 0) return
+        // 方向还没转过来就按竖屏尺寸建的话，游戏启动时读一次 windowWidth/Height 定死画布，转过来后整屏被拉伸；等转完（最多 1.5s）
+        if (!orientationWaitOver && (width > height) != wantLandscape) return
         started = true
         val dpr = resources.displayMetrics.density
         val w = (width / dpr).toInt().coerceAtLeast(1)
