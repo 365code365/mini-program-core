@@ -85,6 +85,21 @@ impl JsRuntime {
         result
     }
     
+    /// 同 [`Self::eval`]，但大脚本走字节码缓存（js/bytecode_cache.rs）。返回 (结果, 是否命中缓存)
+    pub fn eval_cached(&self, code: &str) -> (Result<String, String>, bool) {
+        let (result, hit) = self.context.with(|ctx| {
+            let (r, hit) = super::bytecode_cache::eval(&ctx, code);
+            let r = match r {
+                Ok(val) => Ok(js_value_to_string(&val)),
+                Err(rquickjs::Error::Exception) => Err(format!("JS Exception: {}", describe_exception(&ctx))),
+                Err(e) => Err(format!("{:?}", e)),
+            };
+            (r, hit)
+        });
+        self.pump_jobs();
+        (result, hit)
+    }
+
     /// 执行 JS 文件
     pub fn eval_file(&self, path: &str) -> Result<String, String> {
         let code = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
@@ -113,7 +128,8 @@ impl JsRuntime {
             "__defineModule({:?}, function(module, exports, require) {{\n{}\n}});",
             path, source
         );
-        self.eval(&code).map(|_| ())
+        // 大文件（uni-app 的 vendor 几百 KB）走字节码缓存，冷启动少一次解析
+        self.eval_cached(&code).0.map(|_| ())
     }
     
     /// 加载（require）一个模块，触发其工厂函数执行

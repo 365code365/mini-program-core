@@ -36,6 +36,7 @@ internal object MiniDiag {
         "no_prefetch" to "MINI_NO_PREFETCH",
         // JS 运行时退回 QuickJS 默认分配器（对照分档池分配器，js/pool_alloc.rs）
         "js_system_alloc" to "MINI_JS_SYSTEM_ALLOC",
+        "no_js_cache" to "MINI_NO_JS_CACHE",
     )
 
     /** 上一次由宿主（[MiniProgramView.diagnostics]）打开的：这次没再给的要关掉（环境变量是进程级的） */

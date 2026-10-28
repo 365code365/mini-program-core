@@ -526,4 +526,10 @@ impl MiniApp {
         let rt = self.runtime.lock().unwrap();
         rt.eval(code)
     }
+
+    /// 同 [`Self::eval`]，大脚本走字节码缓存（小游戏加载包时用）。返回 (结果, 是否命中)
+    pub fn eval_cached(&self, code: &str) -> (Result<String, String>, bool) {
+        let rt = self.runtime.lock().unwrap();
+        rt.eval_cached(code)
+    }
 }

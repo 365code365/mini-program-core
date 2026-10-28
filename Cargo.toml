@@ -59,7 +59,7 @@ memmap2 = "=0.9.11"
 ttf-parser = "=0.25.1"
 # 内存分项（host/engine_memory.rs）：mincore 量每块缓冲真正驻留了多少页、madvise 把用不到的页还给系统
 libc = "0.2"
-rquickjs = { version = "0.12", features = ["classes", "properties", "allocator"] }
+rquickjs = { version = "0.12", features = ["classes", "properties", "allocator", "disable-assertions"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 taffy = "0.12"

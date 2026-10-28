@@ -176,9 +176,12 @@ impl Tracker {
 
     /// 画 `vertices` 个顶点、`instances` 个实例够不够得着（不够 = INVALID_OPERATION）
     fn check_attribs(&mut self, vertices: i64, instances: i64) -> bool {
-        let used = self.programs.get(&self.cur_program).cloned().unwrap_or_default();
-        let attribs = self.vao().attribs.clone();
-        for loc in used {
+        // 只借不拷：每次 draw 都走这里（Cocos 一帧上百次），从前把程序的 attrib 表和 VAO 的 attrib 表各克隆一份
+        self.vao();
+        let empty = Vec::new();
+        let used = self.programs.get(&self.cur_program).unwrap_or(&empty);
+        let attribs = &self.vaos[&self.cur_vao].attribs;
+        for &loc in used {
             let Some(a) = attribs.get(loc as usize) else { continue };
             if !a.enabled {
                 continue;

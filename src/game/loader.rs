@@ -20,13 +20,14 @@ pub struct ModuleError {
     pub message: String,
 }
 
-/// 递归注册包内全部 `.js`（键 = 相对包根、去掉 `.js`）。返回注册个数与失败的模块
-pub fn register_modules(app: &MiniApp, root: &Path) -> (usize, Vec<ModuleError>) {
+/// 递归注册包内全部 `.js`（键 = 相对包根、去掉 `.js`）。返回注册个数、命中字节码缓存的个数与失败的模块。
+/// 大文件走字节码缓存（js/bytecode_cache.rs）：包装后的整段源码是缓存键，包更新了自然换键
+pub fn register_modules(app: &MiniApp, root: &Path) -> (usize, usize, Vec<ModuleError>) {
     let mut files = Vec::new();
     collect(root, root, &mut files);
     // 排序：注册顺序稳定，出错时的报告顺序也稳定（read_dir 的顺序随文件系统变）
     files.sort();
-    let mut ok = 0;
+    let (mut ok, mut cached) = (0, 0);
     let mut errors = Vec::new();
     for (key, path) in files {
         let source = match std::fs::read_to_string(&path) {
@@ -36,12 +37,16 @@ pub fn register_modules(app: &MiniApp, root: &Path) -> (usize, Vec<ModuleError>)
                 continue;
             }
         };
-        match app.eval(&wrap("__defineModule", &key, &source)) {
-            Ok(_) => ok += 1,
+        let (r, hit) = app.eval_cached(&wrap("__defineModule", &key, &source));
+        match r {
+            Ok(_) => {
+                ok += 1;
+                cached += hit as usize;
+            }
             Err(message) => errors.push(ModuleError { key, message }),
         }
     }
-    (ok, errors)
+    (ok, cached, errors)
 }
 
 fn collect(root: &Path, dir: &Path, out: &mut Vec<(String, std::path::PathBuf)>) {
@@ -61,7 +66,7 @@ fn collect(root: &Path, dir: &Path, out: &mut Vec<(String, std::path::PathBuf)>)
 
 /// 以模块作用域执行一段源码（`game.js`、分包入口）。不缓存：与 `__runAsModule` 同语义
 pub fn run_module(app: &MiniApp, key: &str, source: &str) -> Result<(), String> {
-    app.eval(&wrap("__runAsModule", key, source)).map(|_| ())
+    app.eval_cached(&wrap("__runAsModule", key, source)).0.map(|_| ())
 }
 
 #[cfg(test)]

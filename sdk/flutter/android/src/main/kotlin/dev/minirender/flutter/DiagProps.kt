@@ -34,6 +34,7 @@ internal object DiagProps {
         "img_log" to "MINI_IMG_LOG",
         "no_prefetch" to "MINI_NO_PREFETCH",
         "js_system_alloc" to "MINI_JS_SYSTEM_ALLOC",
+        "no_js_cache" to "MINI_NO_JS_CACHE",
     )
 
     /** `debug.mini.fps` 开着：宿主这边也每秒打一行上屏耗时（[EngineHost.present]） */

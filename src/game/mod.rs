@@ -269,12 +269,14 @@ impl GameEngine {
         if log && !engine.config.unknown_fields.is_empty() {
             engine.host_log(&format!("🎮 game.json 未知字段：{:?}", engine.config.unknown_fields));
         }
-        let (n, errors) = loader::register_modules(&engine.app, &engine.root);
+        let t_load = std::time::Instant::now();
+        let (n, cached, errors) = loader::register_modules(&engine.app, &engine.root);
+        let load_ms = t_load.elapsed().as_millis();
         for e in errors {
             engine.report_error("module", &format!("模块 {} 注册失败：{}", e.key, e.message));
         }
         if log {
-            engine.host_log(&format!("🎮 小游戏：{}（{}，{n} 个模块）", engine.root.display(), engine.config.device_orientation.as_str()));
+            engine.host_log(&format!("🎮 小游戏：{}（{}，{n} 个模块，注册 {load_ms}ms，字节码缓存命中 {cached}）", engine.root.display(), engine.config.device_orientation.as_str()));
         }
         // game.js 顶层登记的定时器从游戏时间轴的此刻起算（固定时钟下是 0），不是墙上时钟
         let at = engine.clock.borrow().current_instant();

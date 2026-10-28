@@ -414,11 +414,12 @@ class MiniGameView(
         }
         val t2 = System.nanoTime()
         if (f and MiniGame.FRAME_NEW != 0) boost?.report(t2 - t0)
-        // 与小程序 🩹 / ⏱ 同一道线：8ms。等缓冲（lock 阻塞到上一块缓冲被释放）是 vsync 背压，不是工作量，扣掉再判
+        // 线按 60fps 的帧预算 16.7ms（小程序的 8ms 是 120Hz 页面的线；游戏每帧十几毫秒是常态，按 8ms 会每帧写一行 logcat，
+        // 真机上 Log.println + writev 占游戏线程 0.5% 左右）。等缓冲是 vsync 背压，不是工作量，扣掉再判
         val st = if (blit == 1) MiniGame.nativeBlitStats(handle) else 0L
         val waitMs = (st ushr 32) / 1000.0
         val workMs = (t2 - t0) / 1e6 - waitMs
-        if (workMs > 8.0 || slowLog) {
+        if (workMs > 16.7 || slowLog) {
             val postMs = if (blit == 1) MiniGame.nativeBlitPostUs(handle) / 1000.0 else 0.0
             Log.i("mini-render", "⏱ [GAME] 工作 %.1fms（逻辑+rAF %.1f，上屏拷贝 %.1f 其中提交 %.1f）等缓冲 %.1f".format(workMs, (t1 - t0) / 1e6, (st and 0xffffffffL) / 1000.0, postMs, waitMs))
         }
