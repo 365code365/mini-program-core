@@ -102,7 +102,7 @@
   ['.sec-head', '.card', '.steps li', '.shot', '.bar-row', '.doc', '.deps li',
    '.stats > div', '.table-scroll', '.callout', '.tabs', '.split > div', '.flow',
    '.metric', '.twin-tile', '.phone-device', '.be-points li',
-   '.sky-cov > div', '.tag-group', '.sky-shots .phone', '.plat']
+   '.sky-cov > div', '.tag-group', '.sky-shots .phone', '.plat', '.gm-stats > div']
     .forEach(function (sel) {
       Array.prototype.push.apply(targets, document.querySelectorAll(sel));
     });

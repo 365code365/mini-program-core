@@ -9,6 +9,7 @@
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/style.css">
 <link rel="stylesheet" href="assets/fx.css">
+<link rel="stylesheet" href="assets/games.css">
 <link rel="alternate" hreflang="en" href="https://365code365.github.io/mini-program-core/">
 <link rel="alternate" hreflang="zh-Hans" href="https://365code365.github.io/mini-program-core/?lang=zh">
 <link rel="alternate" hreflang="zh-Hant" href="https://365code365.github.io/mini-program-core/?lang=zh-tw">
@@ -57,6 +58,7 @@
     </a>
     <nav class="head-nav" aria-label="Page navigation" data-i18n-aria="nav.aria">
       <a href="#showcase" data-i18n="nav.showcase">Demo</a>
+      <a href="#games" class="nav-hot" data-i18n="nav.games">Mini-games</a>
       <a href="#platforms" data-i18n="nav.platforms">Platforms</a>
       <a href="#skyline" data-i18n="nav.skyline">Skyline</a>
       <a href="#pipeline" data-i18n="nav.pipeline">Pipeline</a>
@@ -230,6 +232,98 @@
         </div>
       </div>
       <p class="sc-cap" data-i18n="show.cap">60 s · 1280×720 · screenshots from the Android emulator, music synthesized by script</p>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────  小游戏：同一个引擎跑 3D 小游戏  ─────────────────────────
+       截图由引擎自己画（mini-app-window 无头模式，sample-game/ 的示例游戏），见 assets/shots/game_*.webp。
+       动效在 assets/games.{css,js}：3D 转盘、合成波纹地平线、指针视差；没有 JS / 不要动画时是一排静态卡片。 -->
+  <section class="band game-band" id="games">
+    <div class="gm-sky" aria-hidden="true">
+      <i class="gm-dust"></i><i class="gm-dust gm-dust-2"></i>
+    </div>
+    <div class="wrap">
+      <header class="sec-head gm-head">
+        <p class="eyebrow eyebrow-pill gm-pill"><span class="pulse-dot" aria-hidden="true"></span><span data-i18n="game.eyebrow">New · WeChat mini-games</span></p>
+        <h2 data-i18n="game.h2">Not just mini-programs.<br><span class="grad gm-grad">Full 3D mini-games, same engine.</span></h2>
+        <p class="sec-lede" data-i18n="game.lede">
+          Point it at a <code>game.json</code> + <code>game.js</code> package and the engine switches to game mode:
+          one full-screen canvas presented straight to the display, a vsync-locked <code>requestAnimationFrame</code>,
+          multi-touch, low-latency audio, WebGL 1 / 2 and <code>WXWebAssembly</code>. three.js, PixiJS and Phaser
+          run unmodified. Every screen below was drawn by this engine.
+        </p>
+      </header>
+
+      <div class="gm-stage" data-gm>
+        <div class="gm-scene" aria-hidden="true"><i class="gm-sun"></i><div class="gm-floor"><i></i></div></div>
+        <div class="gm-orbit">
+          <div class="gm-ring">
+            <figure class="gm-card" style="--i:0"><img src="assets/shots/game_island.webp" width="500" height="889" alt="Pet Island: a 3D island builder with farms, workshops and villagers" data-i18n-alt="game.alt.island" loading="lazy" decoding="async"><figcaption data-i18n="game.n.island">Pet Island · 3D builder</figcaption></figure>
+            <figure class="gm-card" style="--i:1"><img src="assets/shots/game_runner.webp" width="500" height="889" alt="3D endless runner on a city street" data-i18n-alt="game.alt.runner" loading="lazy" decoding="async"><figcaption data-i18n="game.n.runner">3D Runner</figcaption></figure>
+            <figure class="gm-card" style="--i:2"><img src="assets/shots/game_bowling.webp" width="500" height="889" alt="3D bowling lane with pins falling" data-i18n-alt="game.alt.bowling" loading="lazy" decoding="async"><figcaption data-i18n="game.n.bowling">3D Bowling</figcaption></figure>
+            <figure class="gm-card" style="--i:3"><img src="assets/shots/game_island_pets.webp" width="500" height="889" alt="Pet Island: hatching a pet egg" data-i18n-alt="game.alt.pets" loading="lazy" decoding="async"><figcaption data-i18n="game.n.pets">Pet Island · hatching</figcaption></figure>
+            <figure class="gm-card" style="--i:4"><img src="assets/shots/game_stack.webp" width="500" height="889" alt="3D stacking-blocks tower" data-i18n-alt="game.alt.stack" loading="lazy" decoding="async"><figcaption data-i18n="game.n.stack">3D Stack</figcaption></figure>
+            <figure class="gm-card" style="--i:5"><img src="assets/shots/game_flappy.webp" width="500" height="889" alt="Flappy bird between green pipes" data-i18n-alt="game.alt.flappy" loading="lazy" decoding="async"><figcaption data-i18n="game.n.flappy">Flappy Bird</figcaption></figure>
+            <figure class="gm-card" style="--i:6"><img src="assets/shots/game_island_shop.webp" width="500" height="889" alt="Pet Island: in-game shop with gem packs" data-i18n-alt="game.alt.shop" loading="lazy" decoding="async"><figcaption data-i18n="game.n.shop">Pet Island · shop</figcaption></figure>
+            <figure class="gm-card" style="--i:7"><img src="assets/shots/game_2048.webp" width="500" height="889" alt="2048 number-merging board" data-i18n-alt="game.alt.g2048" loading="lazy" decoding="async"><figcaption>2048</figcaption></figure>
+          </div>
+        </div>
+        <ul class="gm-engines" aria-label="Engines that run unmodified" data-i18n-aria="game.enginesAria">
+          <li>three.js r160</li><li>PixiJS 7.4</li><li>Phaser 3.80</li><li>WebGL 1 · 2</li><li>WXWebAssembly</li><li>QuickJS</li>
+        </ul>
+      </div>
+
+      <dl class="gm-stats">
+        <div><dt data-i18n="game.s1.k">WebGL conformance</dt><dd><span data-count="96.6">96.6</span><small>%</small></dd><p data-i18n="game.s1.v">Khronos CTS subset, 169 of 175 applicable pages</p></div>
+        <div><dt data-i18n="game.s2.k">three.js vs Chrome</dt><dd><span data-count="2">2</span><small data-i18n="game.s2.u">px</small></dd><p data-i18n="game.s2.v">different pixels out of 250 125, same scene</p></div>
+        <div><dt data-i18n="game.s3.k">On a real phone</dt><dd><span data-count="60">60</span><small>fps</small></dd><p data-i18n="game.s3.v">three.js, PixiJS, Phaser: 0 repeated frames</p></div>
+        <div><dt data-i18n="game.s4.k">30-minute soak</dt><dd>+<span data-count="0.2">0.2</span><small>MB</small></dd><p data-i18n="game.s4.v">RSS growth on the phone, no crash, no slowdown</p></div>
+        <div><dt data-i18n="game.s5.k">Touch to game</dt><dd><span data-count="15.4">15.4</span><small>ms</small></dd><p data-i18n="game.s5.v">median, unbuffered dispatch, multi-touch</p></div>
+        <div><dt data-i18n="game.s6.k">Whole WebGL stack</dt><dd><span data-count="0.28">0.28</span><small>MB</small></dd><p data-i18n="game.s6.v">arm64, on top of the system GLES driver</p></div>
+      </dl>
+
+      <div class="grid-3 gm-feats">
+        <article class="card spot gm-feat">
+          <i class="gm-ico" aria-hidden="true">◆</i>
+          <h3 data-i18n="game.f1.h">Straight to the display</h3>
+          <p data-i18n="game.f1.p">The main WebGL canvas swaps buffers directly into the Android <code>SurfaceView</code> from the engine thread. Toasts and modals are composited on the GPU on top of it, so a spinning cube still runs at 57 fps while a toast is up.</p>
+        </article>
+        <article class="card spot gm-feat">
+          <i class="gm-ico" aria-hidden="true">✦</i>
+          <h3 data-i18n="game.f2.h">Your engine, unmodified</h3>
+          <p data-i18n="game.f2.p">three.js, PixiJS and Phaser (WebGL and Canvas renderers) load through their usual adapters. WebGL 2 brings VAOs, instancing, uniform blocks and 3D textures; a lost context is reported and restored like in WeChat.</p>
+        </article>
+        <article class="card spot gm-feat">
+          <i class="gm-ico" aria-hidden="true">✋</i>
+          <h3 data-i18n="game.f3.h">Fingers and ears</h3>
+          <p data-i18n="game.f3.p">Every pointer with its full history, dispatched before the next <code>requestAnimationFrame</code>. Audio runs in low-latency game mode at 28–32 ms output latency, with focus loss and phone calls handled.</p>
+        </article>
+        <article class="card spot gm-feat">
+          <i class="gm-ico" aria-hidden="true">⚙</i>
+          <h3 data-i18n="game.f4.h">WebAssembly everywhere</h3>
+          <p data-i18n="game.f4.p"><code>WXWebAssembly</code> runs on wasmi, a pure-Rust interpreter, so it also works on iOS where apps cannot JIT. Memory is zero-copy, i64 is BigInt, traps become <code>RuntimeError</code>; it adds about 1.8 MB.</p>
+        </article>
+        <article class="card spot gm-feat">
+          <i class="gm-ico" aria-hidden="true">★</i>
+          <h3 data-i18n="game.f5.h">A real game, end to end</h3>
+          <p data-i18n="game.f5.p">Pet Island is a full 3D builder: buildings, upgrades, a pet gacha with published odds, daily quests, sign-in, offline earnings, in-app purchases and rewarded ads through host APIs, saves with migration and checksums.</p>
+        </article>
+        <article class="card spot gm-feat">
+          <i class="gm-ico" aria-hidden="true">▣</i>
+          <h3 data-i18n="game.f6.h">A few lines to host it</h3>
+          <p data-i18n="game.f6.p">Drop a <code>MiniGameView</code> into an Android activity or a Flutter page. It locks orientation from <code>game.json</code>, pauses in the background, and tells you when the first frame is on screen so the loading cover leaves without a black flash.</p>
+        </article>
+      </div>
+
+      <div class="gm-code">
+        <pre data-i18n="game.code"><code>// Android
+val v = MiniGameView(activity, gameDir, dataDir, """{"appId":"wx…"}""")
+v.onFirstFrame = { loadingCover.hide() }       // no black flash on launch
+setContentView(v)
+
+// Flutter
+MiniGameView(gameDir: dir, options: {'appId': id}, onFirstFrame: hideCover)</code></pre>
+      </div>
     </div>
   </section>
 
@@ -1465,6 +1559,7 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
 <script src="assets/i18n.js" defer></script>
 <script src="assets/app.js" defer></script>
 <script src="assets/fx.js" defer></script>
+<script src="assets/games.js" defer></script>
 <script src="assets/theme.js" defer></script>
 </body>
 </html>
