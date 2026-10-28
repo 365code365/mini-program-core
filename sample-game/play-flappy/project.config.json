@@ -1,0 +1,34 @@
+{
+  "appid": "wx29c2cae124c78e5c",
+  "projectname": "play-flappy",
+  "description": "飞翔小鸟：点一下扑一下，穿过水管得分。经典单指操作，越飞越上头",
+  "compileType": "game",
+  "libVersion": "3.6.0",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": false,
+    "minified": true,
+    "uglifyFileName": false,
+    "ignoreUploadUnusedFiles": true
+  },
+  "packOptions": {
+    "ignore": [
+      {
+        "type": "file",
+        "value": "README.md"
+      },
+      {
+        "type": "file",
+        "value": "store.meta.json"
+      }
+    ],
+    "include": []
+  },
+  "condition": {},
+  "editorSetting": {
+    "tabIndent": "insertSpaces",
+    "tabSize": 2
+  }
+}

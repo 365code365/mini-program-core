@@ -1,0 +1,34 @@
+{
+  "appid": "wxefc75368b03953bc",
+  "projectname": "play-breakout",
+  "description": "打砖块：拖动挡板接球打碎砖块，五种关卡、四种道具，越打越快",
+  "compileType": "game",
+  "libVersion": "3.6.0",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": false,
+    "minified": true,
+    "uglifyFileName": false,
+    "ignoreUploadUnusedFiles": true
+  },
+  "packOptions": {
+    "ignore": [
+      {
+        "type": "file",
+        "value": "README.md"
+      },
+      {
+        "type": "file",
+        "value": "store.meta.json"
+      }
+    ],
+    "include": []
+  },
+  "condition": {},
+  "editorSetting": {
+    "tabIndent": "insertSpaces",
+    "tabSize": 2
+  }
+}

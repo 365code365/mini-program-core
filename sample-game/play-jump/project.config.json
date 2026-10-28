@@ -1,0 +1,34 @@
+{
+  "appid": "wx05c8f01b2b47edbf",
+  "projectname": "play-jump",
+  "description": "跳一跳：按住蓄力、松开起跳，落在方块正中心连击加分",
+  "compileType": "game",
+  "libVersion": "3.6.0",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": false,
+    "minified": true,
+    "uglifyFileName": false,
+    "ignoreUploadUnusedFiles": true
+  },
+  "packOptions": {
+    "ignore": [
+      {
+        "type": "file",
+        "value": "README.md"
+      },
+      {
+        "type": "file",
+        "value": "store.meta.json"
+      }
+    ],
+    "include": []
+  },
+  "condition": {},
+  "editorSetting": {
+    "tabIndent": "insertSpaces",
+    "tabSize": 2
+  }
+}

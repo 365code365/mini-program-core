@@ -1,0 +1,34 @@
+{
+  "appid": "wxcf3c6b9d4a5bded3",
+  "projectname": "play-2048",
+  "description": "2048：上下左右滑动合并相同数字，凑出 2048。自动存档，随时接着玩",
+  "compileType": "game",
+  "libVersion": "3.6.0",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": false,
+    "minified": true,
+    "uglifyFileName": false,
+    "ignoreUploadUnusedFiles": true
+  },
+  "packOptions": {
+    "ignore": [
+      {
+        "type": "file",
+        "value": "README.md"
+      },
+      {
+        "type": "file",
+        "value": "store.meta.json"
+      }
+    ],
+    "include": []
+  },
+  "condition": {},
+  "editorSetting": {
+    "tabIndent": "insertSpaces",
+    "tabSize": 2
+  }
+}
