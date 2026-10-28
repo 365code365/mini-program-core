@@ -1,0 +1,21 @@
+{
+ "generatedBy": "doubao-seedream-4-5-251128",
+ "files": [
+  "ballast",
+  "sleeper",
+  "concrete",
+  "hazard",
+  "metal",
+  "facade_a",
+  "facade_b",
+  "facade_c",
+  "facade_d",
+  "train_side",
+  "train_front",
+  "coin",
+  "sky",
+  "cover"
+ ],
+ "fog": "#d3dddd",
+ "skyTop": "#5888bf"
+}

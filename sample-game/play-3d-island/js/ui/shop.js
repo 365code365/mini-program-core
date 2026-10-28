@@ -43,7 +43,7 @@ function make(G) {
         U.costRow(c, icons, { gem: it.gems, coin: it.coin }, 116, y + 56, 14);
         if (G.thumbs) G.thumbs.draw(c, G.thumbs.pet(it.pet), 116, y + 68, 44);
         U.text(c, '+ 史诗宠物「' + D.PETS.filter(function (p) { return p.id === it.pet; })[0].name + '」', 160, y + 90, 13, '#9b5de5', 'left', true);
-        if (st.show) { U.text(c, '剩余 ' + E.fmtClock(st.left), 20, y + 140, 14, '#e5383b', 'left', true); v.hit('starter', v.w - 150, y + 118, 126, 48); U.button(c, v.w - 150, y + 118, 126, 48, '¥' + it.price, T.orange); }
+        if (st.show) { v.hit('starter', v.w - 150, y + 118, 126, 48); U.button(c, v.w - 150, y + 118, 126, 48, '¥' + it.price, T.orange); }
         else U.text(c, s.shop.starterBought ? '已购买' : '已下架', v.w - 40, y + 140, 15, T.mute, 'right', true);
         y += 190;
         var mo = G.shop.monthly(), M = D.SHOP.monthly;
@@ -79,6 +79,12 @@ function make(G) {
       else if (id === 'share') { var r = G.shop.share(); if (r) G.reward(r, '分享奖励 +'); else G.ui.toast('今天的分享奖励已经领过了'); }
       v.markDirty();
     } });
+  // 新手礼包的「剩余 h:mm:ss」走单独的小条（kit.ticker）：整块商店面板每秒重画一次，真机上每秒顿 70ms
+  var starterLeft = false;
+  ui.ticker(v, 'shop-clock', 14, 112 + 129, 170, 22, function (c) {
+    var st = G.shop.starter(); starterLeft = st.show;
+    U.text(c, '剩余 ' + E.fmtClock(st.left), 6, 11, 14, '#e5383b', 'left', true);
+  }, function () { return tab === 'deals' && G.shop.starter().show; });
   function tabs(c, v, y) {
     var tw = (v.w - 24) / TABS.length;
     TABS.forEach(function (t, i) {
@@ -102,7 +108,8 @@ function make(G) {
   }
   return {
     open: function (t) { if (t) tab = t; v.markDirty(); v.scrollTo(0); v.show(); },
-    step: function () { if (v.shown && tab === 'deals' && Math.floor(Date.now() / 1000) !== v.data.sec) { v.data.sec = Math.floor(Date.now() / 1000); v.markDirty(); } }
+    // 礼包过期的那一刻面板要换成「已下架」：只在 show 翻转时重画
+    step: function () { if (v.shown && tab === 'deals' && G.shop.starter().show !== starterLeft) { starterLeft = !starterLeft; v.markDirty(); } }
   };
 }
 

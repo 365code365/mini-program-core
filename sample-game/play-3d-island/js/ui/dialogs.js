@@ -51,13 +51,19 @@ function make(G) {
   var boost = dialog('boost', 300, function (c, v) {
     U.panel(c, v.w, v.h, '产量翻倍', T.orange); U.closeBtn(c, icons, v);
     icons.draw(c, 'boost', v.w / 2 - 48, 64, 96);
-    var left = (G.state.boostUntil - Date.now()) / 1000;
-    U.text(c, left > 0 ? '双倍中，还剩 ' + E.fmtClock(left) : '看一段视频，全岛产量翻倍 30 分钟', v.w / 2, 182, 14, T.ink, 'center', true);
+    var left = (G.state.boostUntil - Date.now()) / 1000; boostOn = left > 0; boostFull = left > 3.5 * 3600;
+    if (!boostOn) U.text(c, '看一段视频，全岛产量翻倍 30 分钟', v.w / 2, 182, 14, T.ink, 'center', true);
     U.text(c, '可叠加，最多 4 小时', v.w / 2, 204, 12, T.ink2, 'center');
     v.hit('watch', v.w / 2 - 100, 222, 200, 56); U.button(c, v.w / 2 - 100, 222, 200, 56, left > 3.5 * 3600 ? '已叠满' : '看视频', left > 3.5 * 3600 ? T.gray : T.green, { icon: 'video', icons: icons });
   }, function (id, v) {
     if (id === 'watch') G.shop.adBoost().then(function (ok) { if (ok) { G.ui.toast('全岛产量翻倍 30 分钟！', 'boost'); G.save(); } v.markDirty(); });
   });
+
+  // 「还剩 m:ss」走小条（kit.ticker），对话框只在开始 / 结束翻倍、叠满时重画
+  var boostOn = false, boostFull = false;
+  ui.ticker(boost, 'boost-clock', boost.w / 2 - 120, 171, 240, 22, function (c) {
+    U.text(c, '双倍中，还剩 ' + E.fmtClock((G.state.boostUntil - Date.now()) / 1000), 120, 11, 14, T.ink, 'center', true);
+  }, function () { return G.state.boostUntil > Date.now(); });
 
   // ───────── 欢迎回来 ─────────
   var away = null;
@@ -190,8 +196,8 @@ function make(G) {
     sell: function () { qty = {}; sell.markDirty(); sell.show(); },
     settings: function () { settings.markDirty(); settings.show(); },
     step: function () {
-      var sec = Math.floor(Date.now() / 1000);
-      [boost, signin].forEach(function (v) { if (v.shown && v.data.sec !== sec) { v.data.sec = sec; v.markDirty(); } });
+      // 签到页上没有按秒走的东西（v4 之前每秒整页重画一次，白白卡 30ms）；跨天由 onShow / 领取时重画
+      if (boost.shown) { var left = (G.state.boostUntil - Date.now()) / 1000; if ((left > 0) !== boostOn || (left > 3.5 * 3600) !== boostFull) boost.markDirty(); }
     }
   };
 }

@@ -116,9 +116,16 @@ function make(THREE, renderer, W, H, dpr) {
     place(it.mesh, x, y, w, h);
   }
 
+  // 整张图（封面）：tex 是现成的 THREE.Texture，裁切（repeat / offset）由调用方设好
+  function image(key, tex, x, y, w, h, alpha) {
+    var it = get('i:' + key, function () { return { mesh: new THREE.Mesh(plane, basic({ map: tex })) }; });
+    it.mesh.material.opacity = alpha === undefined ? 1 : alpha;
+    place(it.mesh, x, y, w, h);
+  }
+
   return {
     begin: function () { frame++; order = 0; },
-    rect: rect, text: text, button: button, panel: panel,
+    rect: rect, text: text, button: button, panel: panel, image: image,
     // 叠在 3D 上画：不清颜色，只清深度
     render: function () {
       for (var k in items) if (items[k].used !== frame) items[k].mesh.visible = false;

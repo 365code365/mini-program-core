@@ -39,7 +39,7 @@ function make(THREE, renderer, W, H, dpr) {
   //      anim: 'up' | 'pop' | 'fade' | 'right'，onBackdrop() }
   function view(id, o) {
     var v = { id: id, x: o.x, y: o.y, w: o.w, h: o.h, z: o.z || 0, draw: o.draw, onTap: o.onTap, modal: !!o.modal, anim: o.anim || 'fade',
-      onBackdrop: o.onBackdrop, follow: o.follow || null, contentH: o.contentH || o.h, scrollY: 0, vy: 0, hits: [], dirty: true, shown: false, t: 0, target: 0, data: o.data || {} };
+      onBackdrop: o.onBackdrop, partial: o.partial || null, follow: o.follow || null, contentH: o.contentH || o.h, scrollY: 0, vy: 0, hits: [], dirty: true, shown: false, t: 0, target: 0, data: o.data || {} };
     v.cv = wx.createCanvas();
     v.mesh = new THREE.Mesh(plane, mat({ color: 0xffffff }));
     v.mesh.visible = false;
@@ -55,6 +55,16 @@ function make(THREE, renderer, W, H, dpr) {
     views.sort(function (a, b) { return a.z - b.z; });
     return v;
   }
+  // 倒计时小条：盖在父视图上的一小块画布，每秒只重画自己（几百像素）。
+  // 父面板（任务 / 商店 700×2000 的画布）每秒整块重画 + 整张贴图重传，真机上一次 60~110ms，就是 v4 每秒顿一下的来源。
+  // (x, y) 是父视图内容坐标，跟着父视图滚；when() 为假时不显示；不收触摸（passive）。
+  var tickers = [];
+  function ticker(parent, id, x, y, w, h, draw, when) {
+    var t = view(id, { x: parent.x + x, y: parent.y + y, w: w, h: h, z: parent.z + 0.5, follow: parent, draw: draw });
+    t.passive = true; t.scrollWith = true; t.when = when || null; t.sec = -1;
+    tickers.push(t);
+    return t;
+  }
   // draw 里可以 setContent 改内容高度：改了就按新高度再画一遍（否则画布还是旧高度，显示时被拉伸成「放大」的样子）
   function redraw(v) {
     var before = v.contentH;
@@ -64,24 +74,30 @@ function make(THREE, renderer, W, H, dpr) {
   function redrawOnce(v) {
     var ch = Math.max(v.h, v.contentH), sd = Math.min(SD, 4096 / ch);
     var pw = Math.ceil(v.w * sd), ph = Math.ceil(ch * sd);
-    if (v.cv.width !== pw || v.cv.height !== ph || !v.tex) {
+    var keep = !!v.tex && v.cv.width === pw && v.cv.height === ph;
+    if (!keep) {
       v.cv.width = pw; v.cv.height = ph;
       if (v.tex) v.tex.dispose();
       v.tex = newTex(v.cv); v.mesh.material.map = v.tex; v.mesh.material.needsUpdate = true;
     }
     var c = v.cv.getContext('2d');
+    // partial(c, v)：画布尺寸没变时只擦 / 画变了的那几块（hud-top），hits 留着上次整画的；返回 false 就照常整块重画
+    if (v.partial && v.drawn && keep) {
+      c.setTransform(sd, 0, 0, sd, 0, 0);
+      if (v.partial(c, v)) { v.tex.needsUpdate = true; v.dirty = false; return; }
+    }
     c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, pw, ph);
     c.setTransform(sd, 0, 0, sd, 0, 0);
     v.hits = [];
     v.draw(c, v);
     v.tex.needsUpdate = true;
-    v.dirty = false;
+    v.dirty = false; v.drawn = true;
   }
   function ease(t) { var c1 = 1.4, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }   // easeOutBack
   // 视图在屏上的位置（含动画）
   function frameOf(v) {
     // 跟随视图（follow）：嵌在父视图里的滚动列表，位置 / 缩放 / 透明度全跟父视图走（一起滑入，不会错位）
-    if (v.follow) { var p = v.follow, pf = frameOf(p); return { x: pf.x + (v.x - p.x) * pf.s, y: pf.y + (v.y - p.y) * pf.s, w: v.w * pf.s, h: v.h * pf.s, s: pf.s, a: pf.a }; }
+    if (v.follow) { var p = v.follow, pf = frameOf(p); return { x: pf.x + (v.x - p.x) * pf.s, y: pf.y + (v.y - p.y - (v.scrollWith ? p.scrollY : 0)) * pf.s, w: v.w * pf.s, h: v.h * pf.s, s: pf.s, a: pf.a }; }
     var k = v.t, e = v.target ? ease(k) : k, dx = 0, dy = 0, s = 1;
     if (v.anim === 'up') dy = (1 - e) * (H - v.y);
     else if (v.anim === 'right') dx = (1 - e) * (W - v.x);
@@ -94,7 +110,8 @@ function make(THREE, renderer, W, H, dpr) {
   var active = null;
   function topAt(x, y) {
     for (var i = views.length - 1; i >= 0; i--) {
-      var v = views[i]; if (!v.shown || v.t < 0.6) { if (v.shown && v.modal) return { v: v, inside: false }; continue; }
+      var v = views[i]; if (v.passive) continue;
+      if (!v.shown || v.t < 0.6) { if (v.shown && v.modal) return { v: v, inside: false }; continue; }
       var f = frameOf(v);
       if (x >= f.x && x <= f.x + f.w && y >= f.y && y <= f.y + f.h) return { v: v, inside: true, f: f };
       if (v.modal) return { v: v, inside: false };
@@ -159,13 +176,18 @@ function make(THREE, renderer, W, H, dpr) {
 
   var api = {
     prof: {},   // 本帧各视图重画耗时（game.js 的 prof=1 打出来后清空）
-    view: view, get: function (id) { return byId[id]; }, down: down, move: move, up: up, toast: toast, fly: fly, icons: null,
+    view: view, ticker: ticker, get: function (id) { return byId[id]; }, down: down, move: move, up: up, toast: toast, fly: fly, icons: null,
     anyModal: function () { return views.some(function (v) { return v.shown && v.modal; }); },
     hideAll: function (except) { views.forEach(function (v) { if (v.modal && v.id !== except) v.hide(); }); },
     step: function (dt) {
       if (toastT > 0) { toastT -= dt; if (toastT <= 0) toastView.hide(); }
+      var sec = Math.floor(Date.now() / 1000);
+      tickers.forEach(function (t) { if (t.follow.shown && t.sec !== sec) { t.sec = sec; t.dirty = true; } });
       views.forEach(function (v) {
         if (v.follow) { if (v.follow.shown && !v.shown) v.dirty = true; v.shown = v.follow.shown; v.target = v.follow.target; v.t = v.follow.t; }   // 父视图 z 更小，先更新过了
+        // 刚打开、还没画过：这一帧先不动，等 render 把面板画好（大面板 60~110ms），下一帧再开始滑入。
+        // 否则长帧正好落在入场动画第一帧，面板一下子跳出半截 —— 点了之后慢 0.1 秒没人察觉，动画跳一下一眼就看出来
+        else if (v.target && v.t === 0 && v.dirty) { /* 等首帧画好 */ }
         else v.t += (v.target - v.t) * Math.min(1, dt * (v.target ? 9 : 14));
         if (!v.target && v.t < 0.02) v.t = 0;
         // 惯性滚动 + 回弹
@@ -188,11 +210,15 @@ function make(THREE, renderer, W, H, dpr) {
     render: function () {
       var z = 0;
       views.forEach(function (v) {
-        var vis = v.t > 0.01;
+        // 贴图也在这一帧传上去（initTexture）：不然要等第一次可见才上传，长帧又落回动画第一帧
+        if (v.shown && v.t === 0 && v.dirty && !v.passive) { var t1 = Date.now(); redraw(v); if (renderer.initTexture) renderer.initTexture(v.tex); api.prof[v.id] = (api.prof[v.id] || 0) + Date.now() - t1; }
+        var vis = v.t > 0.01 && (!v.when || v.when()), f;
+        // 跟着父视图滚的小条：滚出父视图的可见窗口就不画（没有裁剪，半截露在面板外面更难看）
+        if (vis && v.scrollWith) { f = frameOf(v); var pf = frameOf(v.follow); vis = f.y >= pf.y - 0.5 && f.y + f.h <= pf.y + pf.h + 0.5; }
         v.mesh.visible = vis; if (v.dim) v.dim.visible = vis;
         if (!vis) return;
         if (v.dirty) { var t0 = Date.now(); redraw(v); api.prof[v.id] = (api.prof[v.id] || 0) + Date.now() - t0; }
-        var f = frameOf(v);
+        f = frameOf(v);
         if (v.dim) { v.dim.material.opacity = 0.7 * Math.min(1, v.t * 1.4); v.dim.position.z = z++ * 0.01; place(v.dim, 0, 0, W, H); }
         v.mesh.position.z = z++ * 0.01;
         place(v.mesh, f.x, f.y, f.w, f.h);

@@ -18,10 +18,6 @@ function make(G) {
         if (b[t[0]]) U.badge(c, 12 + i * tw + tw - 14, 66);
         v.hit('tab:' + t[0], 12 + i * tw, 62, tw, 40);
       });
-      if (tab === 'daily') {
-        var now = new Date(), mid = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-        U.text(c, '刷新倒计时 ' + E.fmtClock((mid - now) / 1000), v.w / 2, 116, 12, T.ink2, 'center', true);
-      }
       list.forEach(function (q, i) {
         var y = 130 + i * ROW, d = q.def, reward, prog, target, title, state;
         if (tab === 'daily') { reward = d.reward; prog = q.progress; target = d.n; title = d.name; state = q.claimed ? 'claimed' : q.done ? 'claim' : 'go'; }
@@ -52,12 +48,23 @@ function make(G) {
         else if (k === 'build' || k === 'upgrade') G.open('build'); else G.ui.toast('点建筑头顶的图标收获', 'wheat');
       }
     } });
+  // 刷新倒计时走单独的小条（kit.ticker），面板只在任务进度变了时重画
+  ui.ticker(v, 'quests-clock', v.w / 2 - 110, 106, 220, 20, function (c) {
+    var now = new Date(), mid = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    U.text(c, '刷新倒计时 ' + E.fmtClock((mid - now) / 1000), 110, 10, 12, T.ink2, 'center', true);
+  }, function () { return tab === 'daily'; });
   var lastSig = '';
   return {
     open: function (t) { if (t) tab = t; v.markDirty(); v.scrollTo(0); v.show(); },
     step: function () {
       if (!v.shown) return;
-      var s = JSON.stringify(G.state.daily.counts) + JSON.stringify(G.state.ach) + Math.floor(Date.now() / 1000);
+      // 只比当前页签上「显示出来的」东西（格式化后的进度、状态、两个红点）：成就计数器（累计产出之类）随被动产出一直在涨，
+      // 拿原始 G.state.ach 当签名时面板开着就每 0.5 秒整块重画一次（真机 60ms 一次）。
+      var list = tab === 'daily' ? G.meta.dailyList() : G.meta.achList();
+      var s = tab + list.map(function (q) {
+        return tab === 'daily' ? E.fmt(q.progress) + (q.claimed ? 'c' : q.done ? 'd' : '')
+          : E.fmt(Math.min(q.value, q.target || q.value)) + ':' + q.tier + (q.maxed ? 'm' : q.done ? 'd' : '');
+      }).join(',') + G.meta.dailyList().some(function (q) { return q.done && !q.claimed; }) + G.meta.achList().some(function (a) { return a.done; });
       if (s !== lastSig) { lastSig = s; v.markDirty(); }
     }
   };

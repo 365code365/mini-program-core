@@ -15,10 +15,13 @@ function make(state, eco, bus, saveNow, opts) {
   if (!state.shop.starterUntil) state.shop.starterUntil = state.created + D.SHOP.starter.hours * 3600000;
 
   function unhosted(err) { return !!err && (/未实现|not support|no advertisement/.test(err.errMsg || '') || err.errCode === 1004); }
+  // 模拟支付那条路上 loading 会被收两次（弹确认框前一次、结束时一次）：第二次没有 loading 可收，
+  // 不带回调的 hideLoading 返回的 Promise 被拒，真机日志里多一条「未处理的 Promise 拒绝」。给个空 fail 接住
+  function hideLoading() { wx.hideLoading({ fail: function () {} }); }
   function confirm(title, content, okText) {
     if (opts.auto) return Promise.resolve(true);
     // 「支付中」的 loading 还开着：先收掉，不然它压在确认框正中间，把正文挡住一半
-    wx.hideLoading();
+    hideLoading();
     return new Promise(function (resolve) {
       wx.showModal({ title: title, content: content, confirmText: okText || '确定', cancelText: '取消',
         success: function (r) { resolve(!!r.confirm); }, fail: function () { resolve(false); } });
@@ -88,7 +91,7 @@ function make(state, eco, bus, saveNow, opts) {
       var cancel = err && (err.errCode === 1 || /cancel/.test(err.errMsg || ''));
       console.log('[pay] 未发货 ' + kind + ':' + id + ' ' + ((err && err.errMsg) || ''));
       throw { errMsg: cancel ? '已取消支付' : '支付失败：' + ((err && err.errMsg) || '未知错误'), cancel: cancel };
-    }).then(function (g) { if (!opts.auto) wx.hideLoading(); return g; }, function (e) { if (!opts.auto) wx.hideLoading(); throw e; });
+    }).then(function (g) { if (!opts.auto) hideLoading(); return g; }, function (e) { if (!opts.auto) hideLoading(); throw e; });
   }
   // 启动时补单：已付没发的补发；没付的丢掉
   function recover() {

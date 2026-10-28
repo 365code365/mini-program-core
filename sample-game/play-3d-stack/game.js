@@ -27,19 +27,30 @@ var q = (wx.getLaunchOptionsSync && wx.getLaunchOptionsSync().query) || {};
 var AUTO = q.auto === '1';
 
 var state, tower, moving, chunks, score, combo, best = Number(B.load('stack.best', 0)) || 0, camY = 0, clock = 0;
-var hueBase = Math.random() * 360, overAt = 0, againBtn = null, flash = 0, newBest = false, autoWait = 0;
+var hueBase = Math.random() * 360, overAt = 0, playAt = 0, againBtn = null, flash = 0, newBest = false, autoWait = 0;
 
 function color(level) { return new THREE.Color().setHSL(((hueBase + level * 5) % 360) / 360, 0.55, 0.6); }
+// 材质池：方块的材质用完放回池里、下次改个颜色接着用，**不 dispose**。
+// 为什么不每块 new 一个、用完 dispose：three.js 在最后一个用某着色器的材质 dispose 时会把那个 program 删掉，
+// 重开一局 clear() 把所有方块的材质都 dispose 了，下一帧就要重新编译 Lambert 着色器（模拟器上每次重开 25~200ms 一顿）；
+// 新材质第一次画也要走一遍 initMaterial。池子的大小就是同时在场的方块数（塔 ≤ 60 层 + 正在掉的碎块）
+var matPool = [];
+function mat(level) {
+  var m = matPool.pop() || new THREE.MeshLambertMaterial();
+  m.color.copy(color(level));
+  return m;
+}
+function release(mesh) { scene.remove(mesh); matPool.push(mesh.material); }
 function slab(x, z, w, d, level) {
-  var m = new THREE.Mesh(box, new THREE.MeshLambertMaterial({ color: color(level) }));
+  var m = new THREE.Mesh(box, mat(level));
   m.scale.set(w, SLAB, d);
   m.position.set(x, level * SLAB, z);
   scene.add(m);
   return { mesh: m, x: x, z: z, w: w, d: d, level: level };
 }
 function clear() {
-  (tower || []).concat(chunks || []).forEach(function (s) { scene.remove(s.mesh); s.mesh.material.dispose(); });
-  if (moving) { scene.remove(moving.mesh); moving.mesh.material.dispose(); }
+  (tower || []).concat(chunks || []).forEach(function (s) { release(s.mesh); });
+  if (moving) release(moving.mesh);
 }
 function reset() {
   clear();
@@ -65,8 +76,13 @@ function spawn() {
 }
 
 function drop() {
-  if (state === 'over') { if (clock - overAt > 0.6) reset(); return; }
-  if (state === 'ready') state = 'play';
+  // 「再来一局」直接开局（方块马上滑起来），不回标题页再等一下点
+  if (state === 'over') { if (clock - overAt > 0.6) { reset(); start(); } return; }
+  // 开局那一下只开始滑，不放：方块这时还停在塔外 RANGE 处，当场放下必然整块落空（从前每局都是 0 分就结束）
+  if (state === 'ready') { start(); return; }
+  // 开局后 0.35s 内的点按不算：连点两下（点「再来一局」/ 开局时手指多点了一下）的第二下会落在方块还没滑到塔上的时候，
+  // 一下就整块落空结束，看起来就是「还没开始就结束了」
+  if (clock - playAt < 0.35) return;
   if (!moving) return;
   var top = tower[tower.length - 1], s = moving, ax = s.axis, size = ax === 'x' ? 'w' : 'd';
   var delta = s[ax] - top[ax], overlap = top[size] - Math.abs(delta);
@@ -89,7 +105,7 @@ function drop() {
     var cut = Math.abs(delta), keepC = top[ax] + delta / 2, side = delta > 0 ? 1 : -1;
     s[size] = overlap; s[ax] = keepC;
     var cx = ax === 'x' ? keepC + side * (overlap / 2 + cut / 2) : s.x, cz = ax === 'z' ? keepC + side * (overlap / 2 + cut / 2) : s.z;
-    var piece = new THREE.Mesh(box, s.mesh.material.clone());
+    var piece = new THREE.Mesh(box, mat(s.level));
     piece.scale.set(ax === 'x' ? cut : s.w, SLAB, ax === 'z' ? cut : s.d);
     piece.position.set(cx, s.mesh.position.y, cz);
     scene.add(piece);
@@ -101,9 +117,10 @@ function drop() {
   tower.push(s);
   moving = null;
   score++;
-  if (tower.length > 60) { var old = tower.splice(1, 1)[0]; scene.remove(old.mesh); old.mesh.material.dispose(); }   // 远在镜头外的老层回收
+  if (tower.length > 60) { var old = tower.splice(1, 1)[0]; release(old.mesh); }   // 远在镜头外的老层回收
   spawn();
 }
+function start() { state = 'play'; playAt = clock; }
 function gameOver() {
   state = 'over'; overAt = clock;
   B.beep(160, 0.4, 'sawtooth', 0.12, 0.5); B.buzz();
@@ -132,7 +149,7 @@ function update(dt) {
   });
   chunks = chunks.filter(function (c) {
     if (c.mesh.position.y > camY - 30) return true;
-    scene.remove(c.mesh); c.mesh.material.dispose(); return false;
+    release(c.mesh); return false;
   });
   // 镜头跟塔顶往上走；结束时往后拉远，看整座塔
   var topY = tower[tower.length - 1].level * SLAB;

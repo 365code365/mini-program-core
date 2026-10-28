@@ -5,6 +5,9 @@
 //   auto=1    自动驾驶（无头长稳 / 演示：自己玩，界面挨个打开）
 //   speed=N   时间加速 N 倍（只给测试用：产量、施工、广告双倍都按加速后的时间算）
 //   fresh=1   不读存档，从头开始
+//   open=<界面>&sub=<页签>  一进来就打开某个界面（build / shop / pets / quests / signin / sell / settings）
+//   demo=1    满岛存档（js/demo.js）；cam=x,z,距离,方位 摆镜头；look=<建筑类型>[,距离] 镜头对准那种建筑
+//   prof=1    一帧超过 profms（默认 30）毫秒时打 [prof] 各段耗时与各视图重画耗时（真机 logcat 里找长帧是谁）
 var B = require('js/base.js');
 var canvas = require('js/adapter.js');
 var THREE = require('libs/three.js');
@@ -242,7 +245,7 @@ function render() {
   renderer.render(scene, G.camera.cam); lap('gl');
   sceneInfo.calls = renderer.info.render.calls; sceneInfo.tris = renderer.info.render.triangles;
   G.ui.render(); lap('uiDraw');
-  if (PROF && Date.now() - pf > 30) console.log('[prof] ' + (Date.now() - pf) + 'ms ' + Object.keys(pt).filter(function (k) { return pt[k] >= 2; }).map(function (k) { return k + '=' + pt[k]; }).join(' ') + ' prog=' + renderer.info.programs.length + ' views ' + JSON.stringify(G.ui.prof));
+  if (PROF && Date.now() - pf > (Number(q.profms) || 30)) console.log('[prof] ' + (Date.now() - pf) + 'ms ' + Object.keys(pt).filter(function (k) { return pt[k] >= 2; }).map(function (k) { return k + '=' + pt[k]; }).join(' ') + ' prog=' + renderer.info.programs.length + ' views ' + JSON.stringify(G.ui.prof));
   if (PROF) G.ui.prof = {};
 }
 
