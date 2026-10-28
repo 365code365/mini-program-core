@@ -145,3 +145,32 @@ globalThis.step = function (n) {
     assert_eq!(mem.len(), 1, "全被引用还超：告警一次，不重复：{mem:?}");
     assert_eq!(mem[0]["level"], 10);
 }
+
+/// Cocos Creator 3.x 的图片下载器只用 `addEventListener('load' | 'error')`（不设 onload）：
+/// 之前 GameImage 没有这个方法，`new Image()` 后第一行就 TypeError，整个游戏卡在启动（真机 farm001 打不开）。
+/// 判据：两个监听都收到、onload 先于监听、回调里 removeEventListener 自己不影响下一个、移除的不再收到、失败走 error
+#[test]
+fn i_add_event_listener() {
+    let _g = serial();
+    let js = r#"
+        var png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==';
+        var order = [], img = wx.createImage();
+        function a(e) { order.push('a:' + e.type + ':' + (e.target === img)); img.removeEventListener('load', a); }
+        function b() { order.push('b'); }
+        function gone() { order.push('gone'); }
+        img.onload = function () { order.push('onload'); };
+        img.addEventListener('load', a); img.addEventListener('load', b); img.addEventListener('load', gone);
+        img.removeEventListener('load', gone);
+        img.addEventListener('load', function () { console.log('T:EV load ' + JSON.stringify({ order: order, w: img.width })); });
+        var bad = wx.createImage();
+        bad.addEventListener('error', function (e) { console.log('T:EV err ' + JSON.stringify({ type: e.type, msg: !!e.errMsg })); });
+        img.src = png; bad.src = 'nope.png';
+    "#;
+    let mut h = GameHarness::open_inline("img-listener", js, Opts::default());
+    h.until("T:EV load", 120).until("T:EV err", 120);
+    h.assert_no_fail();
+    let l = &h.events("load")[0];
+    assert_eq!(l["order"], serde_json::json!(["onload", "a:load:true", "b"]), "{l}");
+    assert_eq!(l["w"], 1);
+    assert_eq!(h.events("err")[0], serde_json::json!({ "type": "error", "msg": true }));
+}

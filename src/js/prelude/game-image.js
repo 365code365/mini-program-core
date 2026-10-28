@@ -31,13 +31,30 @@
                     Object.defineProperty(this, 'complete', { get: function() { return done; }, enumerable: true });
                     Object.defineProperty(this, 'naturalWidth', { get: function() { return nw; }, enumerable: true });
                     Object.defineProperty(this, 'naturalHeight', { get: function() { return nh; }, enumerable: true });
+                    // addEventListener('load' | 'error')：Cocos Creator 3.x 的图片下载器（Ax）只用这个、不设 onload，
+                    // 没有它 `new Image()` 之后第一行就 TypeError，游戏卡在启动。顺序同浏览器：先 onxxx，再按注册顺序的监听
+                    var listeners = { load: [], error: [] };
+                    this.addEventListener = function(type, fn) {
+                        var l = listeners[type];
+                        if (l && typeof fn === 'function' && l.indexOf(fn) < 0) l.push(fn);
+                    };
+                    this.removeEventListener = function(type, fn) {
+                        var l = listeners[type], i = l ? l.indexOf(fn) : -1;
+                        if (i >= 0) l.splice(i, 1);
+                    };
+                    function fire(type, ev) {
+                        var h = type === 'load' ? self.onload : self.onerror;
+                        if (typeof h === 'function') __gameCall(h, self, [ev]);
+                        // 拷一份再派：回调里 removeEventListener 自己（Cocos 就这么写）不能跳过下一个
+                        listeners[type].slice().forEach(function(fn) { __gameCall(fn, self, [ev]); });
+                    }
                     this.__done = function(r) {
                         done = true;
                         if (r.ok) {
                             nw = r.w; nh = r.h; self.width = r.w; self.height = r.h;
-                            if (typeof self.onload === 'function') __gameCall(self.onload, self, [{ type: 'load' }]);
-                        } else if (typeof self.onerror === 'function') {
-                            __gameCall(self.onerror, self, [{ errMsg: r.errMsg }]);
+                            fire('load', { type: 'load', target: self });
+                        } else {
+                            fire('error', { type: 'error', target: self, errMsg: r.errMsg });
                         }
                     };
                     if (reg) reg.register(this, id);
