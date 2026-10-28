@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""把 sample/ 下的小程序打包上传到 mini-store（新建或升级，版本号 +1）。
+"""把 sample/ 下的小程序、sample-game/ 下的小游戏打包上传到 mini-store（新建或升级，版本号 +1）。
 
     python3 tools/mini-store/upload_samples.py music train ...        # 指定示例目录名
+    python3 tools/mini-store/upload_samples.py play-flappy play-2048  # 小游戏（在 sample-game/ 里找）
     MINI_STORE_URL=http://host:9630 MINI_STORE_USER=admin MINI_STORE_PASS=… python3 tools/mini-store/upload_samples.py music
 
 账户默认从 sample/测试服务器.txt 读（第 5 行管理地址、第 6 行用户名、第 7 行密码），环境变量优先。
@@ -57,13 +58,22 @@ def pack(app_dir):
     return buf.getvalue()
 
 
+def sample_dir(name):
+    """先找 sample/<name>（小程序），再找 sample-game/<name>（小游戏）；store.meta.json 是上架的必备信息"""
+    for base in ('sample', 'sample-game'):
+        d = os.path.join(ROOT, base, name)
+        if os.path.isfile(os.path.join(d, 'store.meta.json')):
+            return d
+    sys.exit(f'找不到 {name}：sample/ 与 sample-game/ 下都没有带 store.meta.json 的这个目录')
+
+
 def main(names):
     url, user, pw = account()
     login = call('POST', url + '/api/login', json.dumps({'username': user, 'password': pw}).encode(),
                  {'Content-Type': 'application/json'})
     auth = {'Authorization': 'Bearer ' + login['token']}
     for name in names:
-        d = os.path.join(ROOT, 'sample', name)
+        d = sample_dir(name)
         meta = json.load(open(os.path.join(d, 'store.meta.json'), encoding='utf-8'))
         appid = json.load(open(os.path.join(d, 'project.config.json'), encoding='utf-8'))['appid']
         q = urllib.parse.urlencode({
@@ -74,7 +84,8 @@ def main(names):
         body = pack(d)
         r = call('PUT', f'{url}/api/admin/apps/{urllib.parse.quote(name)}?{q}', body,
                  dict(auth, **{'Content-Type': 'application/zip'}))
-        print(f"{name:12} {r['appId']}  v{r['version']}  {r['files']} 个文件  {r['size'] // 1024}KB  {r['name']}（{r.get('category')}）")
+        shape = f"{r.get('kindLabel', '小游戏')}·{r.get('orientation')}" if r.get('kind') == 'game' else f"{r['pages']} 页"
+        print(f"{name:12} {r['appId']}  v{r['version']}  {r['files']} 个文件  {shape}  {r['size'] // 1024}KB  {r['name']}（{r.get('category')}）")
 
 
 if __name__ == '__main__':

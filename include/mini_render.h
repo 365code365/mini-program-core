@@ -155,6 +155,10 @@ void   mr_app_pointer_up(MRApp* app, float x, float y);
 void   mr_app_pointer_cancel(MRApp* app);
 /* 第二根手指（0 按下 / 1 移动 / 2 抬起 / 其它 取消）：只有图片预览认它（双指缩放），页面仍是单指 */
 void   mr_app_pointer2(MRApp* app, int phase, float x, float y);
+// 每根指针一次的触摸（与 mr_game_touch 同形）：phase 0 下 / 1 移 / 2 抬 / 3 取消，id 宿主指针 id，坐标逻辑像素，
+// t_ms 事件时刻（与 mr_app_pump 同一个钟，<=0 = 不知道）。第一根映射到 pointer_*、第二根到 pointer2、第三根起丢掉。
+// 与上面的 pointer_* 二选一，不要混着调
+void   mr_app_touch(MRApp* app, int phase, int id, float x, float y, float force, double t_ms);
 /* 手机朝向（0 竖 / 90 左侧朝下 / -90 右侧朝下）：全屏视频没指定 direction 时跟着转 */
 void   mr_app_set_device_orientation(MRApp* app, int deg);
 void   mr_app_wheel(MRApp* app, float delta_y, int precise);
@@ -329,6 +333,64 @@ int mr_native_view_frame_rgba(const char* key, uint32_t width, uint32_t height, 
 // 在逻辑层执行一段 JS，返回结果的字符串形式；抛异常返回 NULL（原因见 mr_app_last_error）。
 // 指针活到下一次对同一 app 调用 mr_app_*。注入深链参数、集成测试断言页面数据用。
 const char* mr_app_eval(MRApp* app, const char* code);
+
+// ───────────── 小游戏（src/ffi_game.rs）─────────────
+// 与 MRApp 平级的独立句柄。所有 mr_game_* 必须在同一条线程上调（与 mr_app_* 同一约定）。
+// 每个入口都有 panic 防护：引擎内部出错时实例进入「失效」状态，之后的调用返回失败值，
+// 事件队列里留一条 {"type":"error","kind":"panic"}，宿主应销毁重建（mr_game_is_poisoned 查询）。
+typedef struct MRGame MRGame;
+// 包种类：0 = 认不出（没有 / 同时有 app.json 与 game.json），1 = 小程序，2 = 小游戏
+int mr_package_kind(const char* dir);
+// 本库编进了哪些能力（JSON：game / webgl / audio / wasm / gpu / version / sdkVersion）。静态字符串，不用释放
+const char* mr_capabilities(void);
+// 建实例并执行 game.js。options_json 可为 NULL：{"appId","systemInfo","launchOptions","watchdogMs","jsMemoryLimitMB"}。
+// appId 决定数据命名空间（<data_dir>/game/<appId>/），请务必给。不是小游戏包 / game.json 坏了返回 NULL
+MRGame* mr_game_create(const char* app_dir, const char* data_dir, uint32_t width, uint32_t height, float dpr, const char* options_json);
+void mr_game_destroy(MRGame* game);
+// 跑一帧，返回 MR_FRAME_* 位（与 mr_app_pump_ex 同一套，另加 MR_FRAME_WAKE_AT = 128：只剩远期定时器，
+// 按 mr_game_next_wake_us 定时唤醒即可）。now_us 是宿主 vsync 时刻，单位**微秒**，0 = 引擎自己取
+int mr_game_pump_ex(MRGame* game, uint64_t now_us);
+// 取一条事件（JSON：log / error），没有了返回 NULL。指针活到下一次对同一实例调用 mr_game_*
+const char* mr_game_poll_event(MRGame* game);
+// 执行一段 JS（诊断用）。抛异常返回 NULL（原因见 mr_game_last_error）
+const char* mr_game_eval(MRGame* game, const char* code);
+const char* mr_game_last_error(MRGame* game);
+// 1 = 实例已因内部错误失效（或句柄为空）
+int mr_game_is_poisoned(MRGame* game);
+// 前后台：非 0 = 进后台（不跑 rAF、不要帧），0 = 回前台（不补帧）
+void mr_game_set_background(MRGame* game, int background);
+// 系统音频打断：非 0 = 开始（来电、闹钟、别的 App 拿走独占焦点），0 = 结束。引擎暂停全部音频后派发
+// wx.onAudioInterruptionBegin / End，结束时不自动续播。wx.setInnerAudioOption 的结果以 {"type":"audioSession",…} 事件交给宿主
+void mr_game_audio_interruption(MRGame* game, int begin);
+// 窗口变了（转屏、分屏、折叠屏）：逻辑尺寸、像素比、方向（"portrait" / "landscape" / "landscapeReverse"，NULL = 按宽高推）。
+// 引擎派发 wx.onWindowResize / onDeviceOrientationChange；主画布尺寸不变（游戏自己改）。
+// 建实例后会有一条 {"type":"deviceOrientation","value":…,"initial":true} 事件：宿主按它锁方向；wx.setDeviceOrientation 发同样的事件
+void mr_game_resize(MRGame* game, uint32_t width, uint32_t height, float dpr, const char* orientation);
+// 系统内存告警：level 5 / 10 / 15 派发 wx.onMemoryWarning（Android 前台三档），其它值只回收（图片缓存、JS GC）
+void mr_game_memory_warning(MRGame* game, int level);
+// 宿主推事件给 wx.onXxx：键盘 keyboardInput / keyboardConfirm / keyboardComplete {"value"}、keyboardHeightChange {"height"}、
+// 传感器（accelerometerChange …）、网络等，名字与 mr_app_dispatch_event 相同。返回收到它的监听者个数。
+// 键盘相关的宿主事件：{"type":"showKeyboard",defaultValue,maxLength,multiple,confirmHold,confirmType} / updateKeyboard {value} / hideKeyboard
+int mr_game_dispatch_event(MRGame* game, const char* name, const char* payload_json);
+// 创建选项 hostApis 点名的 wx.* / 对象方法（login、BannerAd.show …）调用时发 {"type":"hostCall","id","api","args"}，宿主用它回结果
+int mr_game_host_reply(MRGame* game, uint32_t id, int ok, const char* result_json);
+// rAF 目标帧率（1~60）：宿主据此请求显示刷新率（60 的整数倍）
+int mr_game_preferred_fps(MRGame* game);
+// pump_ex 返回 MR_FRAME_WAKE_AT（128）时：多久之后再 pump（微秒），-1 = 没有定时器
+int64_t mr_game_next_wake_us(MRGame* game);
+// 主画布像素尺寸：宿主把 surface 缓冲设成这个尺寸，由系统缩放到全屏（不要在 CPU 上缩放）
+void mr_game_frame_size(MRGame* game, uint32_t* width, uint32_t* height);
+// 当前帧（不透明）写进 buf：stride 字节一行，format 0 = RGBA8、1 = BGRA8。返回写入的行数，0 = 没写
+int mr_game_pixels_into(MRGame* game, uint8_t* buf, size_t len, size_t stride, int format);
+// 一个指针事件，宿主每个指针调一次：phase 0 下 / 1 移 / 2 抬 / 3 取消；id 宿主指针 id；x, y 视图内逻辑像素；
+// force 0~1（没有给 0）；t_us 事件时刻（微秒，与 mr_game_pump_ex 同一时钟，0 = 此刻）。只排队，下一次 pump 在 rAF 之前派发
+void mr_game_touch(MRGame* game, int phase, int id, float x, float y, float force, uint64_t t_us);
+// PC 鼠标：phase 0 下 / 1 移 / 2 抬；button 0 左 1 中 2 右
+void mr_game_mouse(MRGame* game, int phase, int button, float x, float y, uint64_t t_us);
+// PC 滚轮：deltaX / deltaY / deltaZ（像素）
+void mr_game_wheel(MRGame* game, float dx, float dy, float dz, float x, float y, uint64_t t_us);
+// 键盘：down 非 0 = 按下；key 如 "a" / "Enter"，code 如 "KeyA"
+void mr_game_key(MRGame* game, int down, const char* key, const char* code, uint64_t t_us);
 
 #ifdef __cplusplus
 }

@@ -70,7 +70,7 @@ object StoreWidgets {
         setPadding(dp(a, 16f), dp(a, 12f), dp(a, 16f), dp(a, 12f))
         isClickable = true
         isFocusable = true
-        contentDescription = "打开小程序 ${app.name}"
+        contentDescription = "打开${if (app.isGame) "小游戏" else "小程序"} ${app.name}"
         setBackgroundResource(android.R.drawable.list_selector_background)
         addView(StoreIcons.view(store, app, 48f))
         val col = LinearLayout(a).apply {
@@ -85,7 +85,7 @@ object StoreWidgets {
             setTextColor(Color.BLACK)
         })
         col.addView(TextView(a).apply {
-            text = listOf(app.category, app.developer).filter { it.isNotEmpty() }.joinToString(" · ")
+            text = listOf(if (app.isGame) "小游戏" else "", app.category, app.developer).filter { it.isNotEmpty() }.joinToString(" · ")
             textSize = 12f
             setTextColor(SUB)
             visibility = if (text.isEmpty()) View.GONE else View.VISIBLE

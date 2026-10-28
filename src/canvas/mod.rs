@@ -105,6 +105,8 @@ mod images;
 mod paths;
 /// 像素级读写与混合
 mod pixels;
+/// 轴对齐矩形的抗锯齿填充（fill_path 的等价特化）
+mod rect_aa;
 /// 基本图形
 mod shapes;
 
@@ -131,6 +133,12 @@ fn zeroed_pixels(n: usize) -> Vec<Color> {
         }
         Vec::from_raw_parts(p, n, n)
     }
+}
+
+/// 像素当成 `R,G,B,A` 字节读（小游戏 drawImage 以另一块画布为源）
+pub(crate) fn color_bytes(px: &[Color]) -> &[u8] {
+    // SAFETY: 同 color_bytes_mut（四个 u8、对齐 1、无填充），只读
+    unsafe { std::slice::from_raw_parts(px.as_ptr() as *const u8, px.len() * 4) }
 }
 
 /// 像素当成 `R,G,B,A` 字节写（整行拷贝 RGBA 源数据用）
@@ -193,6 +201,11 @@ impl Canvas {
     /// 获取像素数据引用
     pub fn pixels(&self) -> &[Color] {
         &self.pixels
+    }
+
+    /// 有没有设裁剪矩形（快路要知道：它们不复刻裁剪，有就走通用路径）
+    pub fn has_clip_rect(&self) -> bool {
+        self.clip_rect.is_some()
     }
 
     /// 获取像素数据可变引用

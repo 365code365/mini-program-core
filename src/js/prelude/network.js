@@ -3,6 +3,44 @@
             // 响应由宿主每帧取回后调 __resolveRequest。
             var __requestSeq = 0;
             var __requestTasks = {};
+            // 没给 timeout 时的默认（毫秒）：小游戏实例按 game.json 的 networkTimeout 设 globalThis.__networkTimeout
+            // （game/mod.rs）；小程序不设，照旧交给原生的 60s 默认
+            function __defTimeout(o, k) {
+                if (o && o.timeout) return o.timeout;
+                var t = globalThis.__networkTimeout;
+                return (t && t[k]) || 0;
+            }
+            // 任务对象上的 on/off（RequestTask / DownloadTask / UploadTask 共用）
+            function __on(task, k) { return function(cb) { if (typeof cb === 'function') task.listeners[k].push(cb); }; }
+            function __off(task, k) { return function(cb) { task.listeners[k] = typeof cb === 'function' ? task.listeners[k].filter(function(f) { return f !== cb; }) : []; }; }
+            function __emit(task, k, arg) {
+                var l = task.listeners && task.listeners[k];
+                if (!l) return;
+                l = l.slice();
+                for (var i = 0; i < l.length; i++) { try { l[i](arg); } catch (e) { console.error(e); } }
+            }
+            // 原生的过程事件（MiniApp::update 在处理完成结果之前调）：headers / chunk / progress
+            globalThis.__netEvent = function(id, kind, json) {
+                var task = __requestTasks[id];
+                if (!task || task.aborted) {
+                    // 没人要的分块也得取走，否则一直占着原生的字节仓
+                    if (kind === 'chunk' && typeof __net_take_chunk === 'function') __net_take_chunk(id);
+                    return;
+                }
+                if (kind === 'chunk') {
+                    var buf = typeof __net_take_chunk === 'function' ? __net_take_chunk(id) : null;
+                    if (buf) __emit(task, 'chunk', { data: buf });
+                    return;
+                }
+                var p = JSON.parse(json);
+                if (kind === 'headers') {
+                    __emit(task, 'headers', { header: p.header, statusCode: p.statusCode, cookies: [] });
+                } else if (kind === 'progress') {
+                    var exp = p.expected || 0;
+                    __emit(task, 'progress', { progress: exp > 0 ? Math.min(100, Math.floor(p.written * 100 / exp)) : 0,
+                        totalBytesWritten: p.written, totalBytesExpectedToWrite: exp });
+                }
+            };
 
             wx.request = function(options) {
                 options = options || {};
@@ -47,6 +85,9 @@
                     id: id,
                     kind: 'request',
                     aborted: false,
+                    // responseType:'arraybuffer'：正文不进 JSON，回调时按 id 直接取 ArrayBuffer（src/net_stream.rs）
+                    binary: options.responseType === 'arraybuffer',
+                    listeners: { headers: [], chunk: [] },
                     success: options.success,
                     fail: options.fail,
                     complete: options.complete,
@@ -58,17 +99,17 @@
 
                 if (typeof __native_request === 'function') {
                     __native_request(String(id), method, url, JSON.stringify(header), body,
-                                     String(options.timeout || 0));
+                                     String(__defTimeout(options, 'request')), String((task.binary ? 1 : 0) | (options.enableChunked ? 2 : 0)));
                 } else {
                     // 没有原生桥（纯 JS 单测环境）：立刻失败，不要让调用方一直等
                     __resolveRequest(id, 0, '{}', '', 'request:fail 原生网络桥未注册');
                 }
 
-                // 返回 RequestTask（微信语义：可 abort）
+                // 返回 RequestTask（微信语义：可 abort；onHeadersReceived 在 success 之前，onChunkReceived 要 enableChunked）
                 return {
                     abort: function() { task.abort(); },
-                    onHeadersReceived: function() {},
-                    offHeadersReceived: function() {}
+                    onHeadersReceived: __on(task, 'headers'), offHeadersReceived: __off(task, 'headers'),
+                    onChunkReceived: __on(task, 'chunk'), offChunkReceived: __off(task, 'chunk')
                 };
             };
 
@@ -94,7 +135,9 @@
                     return true;
                 }
                 var data = body;
-                if (task.dataType === 'json') {
+                if (task.binary) {
+                    data = typeof __net_take_bytes === 'function' ? (__net_take_bytes(id) || new ArrayBuffer(0)) : new ArrayBuffer(0);
+                } else if (task.dataType === 'json') {
                     try { data = JSON.parse(body); } catch (e) { /* 不是 JSON 就原样给字符串 */ }
                 }
                 var res = {
@@ -128,13 +171,14 @@
                     },
                     fail: function(r) { options.fail && options.fail(r); options.complete && options.complete(r); },
                     complete: null,
+                    listeners: { headers: [], progress: [] },
                     abort: function() { this.aborted = true; }
                 };
                 __requestTasks[id] = task;
                 return { id: id, api: {
                     abort: function() { task.abort(); },
-                    onProgressUpdate: function() {}, offProgressUpdate: function() {},
-                    onHeadersReceived: function() {}, offHeadersReceived: function() {}
+                    onProgressUpdate: __on(task, 'progress'), offProgressUpdate: __off(task, 'progress'),
+                    onHeadersReceived: __on(task, 'headers'), offHeadersReceived: __off(task, 'headers')
                 } };
             }
             wx.downloadFile = function(options) {
@@ -147,7 +191,7 @@
                 });
                 if (typeof __native_download === 'function') {
                     __native_download(String(t.id), String(options.url || ''), JSON.stringify(options.header || {}),
-                                      String(options.filePath || ''), String(options.timeout || 0));
+                                      String(options.filePath || ''), String(__defTimeout(options, 'downloadFile')));
                 } else {
                     __resolveRequest(t.id, 0, '{}', '', 'downloadFile:fail 原生网络桥未注册');
                 }
@@ -160,7 +204,7 @@
                 });
                 if (typeof __native_upload === 'function') {
                     __native_upload(String(t.id), String(options.url || ''), String(options.filePath || ''), String(options.name || 'file'),
-                                    JSON.stringify(options.header || {}), JSON.stringify(options.formData || {}), String(options.timeout || 0));
+                                    JSON.stringify(options.header || {}), JSON.stringify(options.formData || {}), String(__defTimeout(options, 'uploadFile')));
                 } else {
                     __resolveRequest(t.id, 0, '{}', '', 'uploadFile:fail 原生网络桥未注册');
                 }

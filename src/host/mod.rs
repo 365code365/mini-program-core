@@ -107,6 +107,8 @@ pub mod edge_back;
 pub mod gesture;
 /// 指针输入的平台无关核心（触摸派发 / 手势仲裁 / 惯性收尾），窗体与 SDK 共用
 pub mod input;
+/// `mr_app_touch`：每根指针一次的触摸 → 小程序的单指状态机 + 第二指（G3.2）
+pub mod touch_adapter;
 pub mod navigation;
 pub mod page_loader;
 pub mod picker_sheet;

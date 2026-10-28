@@ -207,3 +207,43 @@ mod tests {
         assert!(ctx.line_dash.is_empty());
     }
 }
+
+impl Canvas2DContext {
+    /// 一次绘制（小游戏的直调路径，game/canvas）：有裁剪区时与 JSON 解释器（commands.rs）同样先拍快照、画完按蒙版混合，
+    /// 所以两条路的像素结果相同。只对绘制类调用用（DRAW_OPS 里那些），设状态的调用直接调方法
+    pub fn draw_op(&mut self, f: impl FnOnce(&mut Self)) {
+        if self.has_clip() {
+            let before = self.clip_snapshot();
+            f(self);
+            if let Some(b) = before {
+                self.clip_apply(b);
+            }
+        } else {
+            f(self);
+        }
+    }
+
+    /// 执行一条与 JSON 解释器同格式的指令（渐变 / 图案 / 阴影 / 合成模式这类不在热路径上的设置，
+    /// 小游戏直接复用解释器那份解析，免得两份实现漂移）
+    pub fn run_json_command(&mut self, cmd: &serde_json::Value) {
+        super::commands::run_command(self, cmd);
+    }
+}
+
+impl Canvas2DContext {
+    /// save() 栈当前的深度（小游戏限 1024 层，game/canvas/natives.rs）
+    pub fn save_depth(&self) -> usize {
+        self.state_stack.len()
+    }
+
+    /// 图案填充 / 描边，源是已经解码的 RGBA（小游戏的 createPattern(Image | Canvas)）
+    pub fn set_pattern_source(&mut self, stroke: bool, rgba: std::sync::Arc<Vec<u8>>, w: u32, h: u32, repeat_x: bool, repeat_y: bool) {
+        let src = Some(super::fx2d::Source::Pattern { rgba, w, h, repeat_x, repeat_y });
+        if stroke { self.fx.stroke = src } else { self.fx.fill = src }
+    }
+
+    /// 当前字号（逻辑 px，measureText 用）
+    pub fn font_size_px(&self) -> f32 {
+        self.font_size
+    }
+}

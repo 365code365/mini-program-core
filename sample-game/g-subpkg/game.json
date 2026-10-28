@@ -1,0 +1,9 @@
+{
+  "deviceOrientation": "portrait",
+  "subpackages": [
+    { "name": "stage1", "root": "stage1/" },
+    { "name": "one", "root": "one.js" },
+    { "name": "indep", "root": "indep/", "independent": true },
+    { "name": "broken", "root": "broken.js" }
+  ]
+}

@@ -78,12 +78,16 @@ def _term_score(term, m):
     return 0
 
 
-def search(q='', category='', limit=50, record=True, offset=0):
-    """返回 (结果列表, 总数)。q 为空时按分类列出（热度排序）；offset 给管理页翻页用"""
+def search(q='', category='', limit=50, record=True, offset=0, kinds=None):
+    """返回 (结果列表, 总数)。q 为空时按分类列出（热度排序）；offset 给管理页翻页用；
+    kinds = 允许的包种类（store_pkg.kind_filter），不给 = 只要小程序"""
+    kinds = kinds or {'miniprogram'}
     terms = [t for t in (q or '').split() if t][:6]
     out = []
     for m in all_metas():
         pm = public_meta(m)
+        if pm['kind'] not in kinds:
+            continue
         if category and pm.get('category') != category:
             continue
         score = 0
@@ -109,10 +113,13 @@ def search(q='', category='', limit=50, record=True, offset=0):
     return [pm for _, pm in out[offset:offset + limit]], len(out)
 
 
-def categories():
-    """每个分类有几个小程序（没有的不列），按固定顺序"""
+def categories(kinds=None):
+    """每个分类有几个小程序（没有的不列），按固定顺序；kinds 同 search"""
+    kinds = kinds or {'miniprogram'}
     counts = {}
     for m in all_metas():
+        if m.get('kind', 'miniprogram') not in kinds:
+            continue
         c = m.get('category') or '其他'
         counts[c] = counts.get(c, 0) + 1
     return [{'name': c, 'count': counts[c]} for c in CATEGORIES if counts.get(c)]

@@ -19,6 +19,7 @@ mod embolden;
 pub use embolden::strength as faux_bold_strength;
 /// 字体占了多少内存（memory_report）
 pub mod mem;
+mod metrics; // 字体 / 墨迹度量（小游戏 measureText），text/metrics.rs
 
 /// CSS `line-height: normal` 的等效系数（含中日韩字符的行）。
 ///

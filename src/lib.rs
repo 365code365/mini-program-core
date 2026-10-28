@@ -22,8 +22,19 @@ pub mod assets;
 /// 示例小程序目录的定位（裸名字 / `sample/xxx` / 任意路径都能解析）
 pub mod app_dir;
 
+/// 包种类探测：小程序（app.json）还是小游戏（game.json），两者都有 / 都没有报错
+pub mod app_profile;
+
+/// 小游戏运行实例（game.json + game.js；与 `host::MiniEngine` 平级，见 game-doc/02 §2）
+#[cfg(feature = "game")]
+pub mod game;
+
 /// `wx.request` 等网络 API 的原生实现（后台线程 + 按帧取回）
 pub mod net;
+/// wx.request 的流式部分：二进制正文、响应头 / 分块 / 下载进度事件
+pub mod net_stream;
+/// 长连接的二进制直通（不经 base64）
+pub mod bin_stash;
 
 /// 引擎的可写数据目录（storage 落盘、图片磁盘缓存），由宿主指定
 pub mod data_dir;
@@ -114,12 +125,20 @@ pub use ffi_backend::*;
 mod ffi_embed;
 pub use ffi_embed::*;
 
+/// 小游戏的 C ABI（`mr_game_*`、`mr_package_kind`、`mr_capabilities`），入口都有 panic 防护
+mod ffi_game;
+pub use ffi_game::*;
+
 /// Android 的 JNI 入口（只在 android 目标编译）
 #[cfg(target_os = "android")]
 mod ffi_jni;
 /// Android 的 JNI 入口：嵌入宿主那组新接口 + Bitmap / ANativeWindow 两条像素出口
 #[cfg(target_os = "android")]
 mod ffi_jni_embed;
+
+/// Android：小游戏的 JNI（Kotlin `dev.minirender.MiniGame`）
+#[cfg(all(target_os = "android", feature = "game"))]
+mod ffi_jni_game;
 
 // 单元测试
 #[cfg(test)]

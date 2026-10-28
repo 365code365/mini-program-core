@@ -143,6 +143,102 @@ const PRELUDE: &[Prelude] = prelude![
     "api-probe" => "api-probe.js",
 ];
 
+/// 应用种类决定装哪些前置代码（game-doc/02 §3.1）。
+///
+/// 小程序装**整张表、原顺序**（与引入 profile 之前逐字节相同的执行序列）；
+/// 小游戏只装 [`GAME_CORE`] 里的通用段，同样按表的顺序，再接小游戏自己的那几段（G1 起）。
+/// 不把表拆成两张：顺序本身有意义（见文件头），拆开以后两张表的相对顺序就没人守了。
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PreludeProfile {
+    MiniProgram,
+    MiniGame,
+}
+
+/// 小游戏也要的通用段（名字须在 `PRELUDE` 里，测试守着）。页面栈、组件、路由、tabBar、
+/// WXML 查询这类只对小程序有意义的段不在这里。`api-probe` 仍然最后装（表里它就在最后）。
+pub const GAME_CORE: &[&str] = &[
+    "module", "console", "fake-clock", "wx-object", "codec", "timer", "storage", "ui", "device", "network",
+    "host", "system", "socket", "fs", "audio", "app-info", "host-capabilities", "base-ext", "net-socket",
+    "media-ext", "webaudio", "api-probe",
+];
+
+fn in_profile(name: &str, profile: PreludeProfile) -> bool {
+    match profile {
+        PreludeProfile::MiniProgram => true,
+        PreludeProfile::MiniGame => GAME_CORE.contains(&name),
+    }
+}
+
+/// 只装进小游戏的段（顺序即执行顺序），插在通用段之后、`api-probe` 之前。
+/// 不进 `PRELUDE`：小程序的那张表一个字节都不能变（G0.4 的等价证明守着）
+const GAME_EXTRA: &[Prelude] = prelude![
+    // GameGlobal、console 缓冲泄漏的止血、wx.onError / onUnhandledRejection、回调守卫 __gameCall
+    "game-global" => "game-global.js",
+    // wx.encode / wx.decode、原生 base64（二进制桥，js/bridge_bin.rs）
+    "game-compat" => "game-compat.js",
+    // 官方 API 表面的宿主代理 / 监听型补齐与小游戏版 canIUse（game-doc/10；延期项见 取证/api-surface-deferred.json）
+    "game-surface" => "game-surface.js",
+    // requestAnimationFrame / cancelAnimationFrame / setPreferredFramesPerSecond / performance.now（帧时钟）
+    "game-raf" => "game-raf.js",
+    // wx.createImage（解码在原生后台线程，game/image）；要在 game-canvas 之前：drawImage 认 __GameImage
+    "game-image" => "game-image.js",
+    // wx.createCanvas、Canvas、CanvasRenderingContext2D（立即模式，原生在 game/canvas/natives.rs）
+    "game-canvas" => "game-canvas.js",
+    // WebGL / WebGL2（G8，原生在 game/webgl）：常量表、两个版本共有的方法与扩展、WebGL2 独有的方法
+    "game-webgl-consts" => "game-webgl-consts.js",
+    "game-webgl" => "game-webgl.js",
+    "game-webgl2" => "game-webgl2.js",
+    // WXWebAssembly（G10，原生在 game/wasm）
+    "game-wasm" => "game-wasm.js",
+    // 主域的开放数据域入口 wx.getOpenDataContext（G9.7）；开放数据域自己的环境（game-opendata-env / -wx）不进这张表，game/opendata.rs 按名字取
+    "game-opendata" => "game-opendata.js",
+    "game-opendata-env" => "game-opendata-env.js",
+    "game-opendata-wx" => "game-opendata-wx.js",
+    // wx.onTouch* / onMouse* / onWheel 的监听表与派发（原生在 game/touch.rs、game/pc_input.rs）
+    "game-input" => "game-input.js",
+    // InnerAudioContext 接小游戏自己的混音器与真设备（game/audio）：只换掉原生入口，外壳仍是 audio.js
+    "game-audio" => "game-audio.js",
+    // wx.onShow / onHide、exit / restartMiniProgram、loadSubpackage（G6.1 / G6.2；分包表由原生在 game.js 之前设）
+    "game-lifecycle" => "game-lifecycle.js",
+    // wx.onWindowResize（小游戏形状）/ onDeviceOrientationChange / setDeviceOrientation（G6.3，原生在 game/window.rs）
+    "game-window" => "game-window.js",
+    // Worker 消息的结构化克隆（Worker 线程上同一份，game/worker/thread.rs 按名字取）
+    "game-worker-codec" => "game-worker-codec.js",
+    // wx.createWorker 真线程（G6.5，原生在 game/worker）
+    "game-worker" => "game-worker.js",
+    // 键盘（showKeyboard / updateKeyboard / hideKeyboard、onKeyboardInput / Confirm / Complete）与宿主事件入口 __gameHostEvent（G7.2）
+    "game-keyboard" => "game-keyboard.js",
+    // 原生按钮（UserInfo / OpenSetting / Feedback / GameClub / GameRecorderShare，G7.3，原生在 game/buttons.rs）；要在 game-image 之后
+    "game-buttons" => "game-buttons.js",
+    // 宿主承载的对象（广告、相机、录屏、GameServerManager…）、setMenuStyle / setStatusBarStyle（G7.4 / G7.6）
+    "game-proxies" => "game-proxies.js",
+    // wx.createWebAudioContext 换成真混音图（game/audio/graph + web）；没编进去时（__game_webaudio 不存在）保留 webaudio.js 那份
+    "game-webaudio" => "game-webaudio.js",
+    // PC 端的指针锁定 / 手柄 / 光标（G3 延后项）；要在 game-keyboard 之后（接 __gameHostEvent）
+    "game-pc" => "game-pc.js",
+];
+
+/// 按名字取一段通用前置代码的源码（Worker 线程的运行时要单独装 module.js 之类）
+pub fn prelude_source(name: &str) -> Option<&'static str> {
+    PRELUDE.iter().find(|p| p.name == name).map(|p| p.source)
+}
+/// 按名字取一段小游戏专用前置代码的源码；名字不在表里是编程错误（panic）
+pub fn game_prelude_source(name: &str) -> &'static str {
+    GAME_EXTRA.iter().find(|p| p.name == name).map(|p| p.source).unwrap_or_else(|| panic!("GAME_EXTRA 里没有 {name}"))
+}
+/// 一个应用种类实际执行的段（按顺序）
+fn sequence(profile: PreludeProfile) -> Vec<&'static Prelude> {
+    let base = PRELUDE.iter().filter(|p| in_profile(p.name, profile));
+    match profile {
+        PreludeProfile::MiniProgram => base.collect(),
+        PreludeProfile::MiniGame => {
+            let (probe, rest): (Vec<_>, Vec<_>) = base.partition(|p| p.name == "api-probe");
+            // game-opendata-env / -wx 只装进开放数据域的运行时（game/opendata.rs）
+            rest.into_iter().chain(GAME_EXTRA.iter().filter(|p| !p.name.starts_with("game-opendata-"))).chain(probe).collect()
+        }
+    }
+}
+
 /// 小程序 API
 pub struct MiniAppApi {
     runtime: Arc<Mutex<JsRuntime>>,
@@ -158,16 +254,28 @@ impl MiniAppApi {
     /// 每段单独一次 `eval` 并单独持锁：出错时能报出域名，也避免长时间独占运行时。
     /// 分段不改变语义 —— `var` / `function` 声明都落在全局，后一段照样看得见前一段。
     pub fn init(&self) -> Result<(), String> {
-        for p in PRELUDE {
+        self.init_profile(PreludeProfile::MiniProgram)
+    }
+
+    /// 按应用种类注入前置代码（见 [`PreludeProfile`]）
+    pub fn init_profile(&self, profile: PreludeProfile) -> Result<(), String> {
+        let mut n = 0;
+        for p in sequence(profile) {
             let rt = self.runtime.lock().unwrap();
             rt.eval(p.source).map_err(|e| format!("{}: {e}", p.name))?;
+            n += 1;
         }
-        println!("    prelude: {} 段 JS 已注入", PRELUDE.len());
+        println!("    prelude: {} 段 JS 已注入", n);
         Ok(())
     }
 
     /// 前置代码的域名列表（诊断与测试用：确认注册表没被漏掉一段）
     pub fn prelude_names() -> Vec<&'static str> {
-        PRELUDE.iter().map(|p| p.name).collect()
+        Self::prelude_names_for(PreludeProfile::MiniProgram)
+    }
+
+    /// 某个应用种类实际装的段（按执行顺序）
+    pub fn prelude_names_for(profile: PreludeProfile) -> Vec<&'static str> {
+        sequence(profile).into_iter().map(|p| p.name).collect()
     }
 }

@@ -38,16 +38,12 @@ pub(super) fn register(rt: &JsRuntime, storage: Arc<Mutex<HashMap<String, String
         s.lock().unwrap().iter().map(|(k, v)| k.len() + v.len()).sum::<usize>().to_string()
     })?;
 
-    // ── TCP：(id, address, port, timeoutMs) / (id, b64) ──
+    // ── TCP：(id, address, port, timeoutMs)；写入走 bin_stash.rs 的 __native_tcp_write_bin ──
     rt.register_function("__native_tcp_connect", move |args| {
         let a = |i: usize| args.get(i).cloned().unwrap_or_default();
         crate::net_socket::tcp_connect(a(0).parse().unwrap_or(0), &a(1), a(2).parse().unwrap_or(0), a(3).parse().unwrap_or(2000))
             .err()
             .unwrap_or_default()
-    })?;
-    rt.register_function("__native_tcp_write", move |args| {
-        let a = |i: usize| args.get(i).cloned().unwrap_or_default();
-        crate::net_socket::tcp_write(a(0).parse().unwrap_or(0), &a(1)).err().unwrap_or_default()
     })?;
     rt.register_function("__native_net_close", move |args| {
         crate::net_socket::close(args.first().and_then(|s| s.parse().ok()).unwrap_or(0)).err().unwrap_or_default()
@@ -60,19 +56,9 @@ pub(super) fn register(rt: &JsRuntime, storage: Arc<Mutex<HashMap<String, String
             Err(e) => format!("err:{e}"),
         }
     })?;
-    rt.register_function("__native_udp_send", move |args| {
-        let a = |i: usize| args.get(i).cloned().unwrap_or_default();
-        crate::net_socket::udp_send(a(0).parse().unwrap_or(0), &a(1), a(2).parse().unwrap_or(0), &a(3), a(4) == "1")
-            .err()
-            .unwrap_or_default()
-    })?;
     rt.register_function("__native_udp_connect", move |args| {
         let a = |i: usize| args.get(i).cloned().unwrap_or_default();
         crate::net_socket::udp_connect(a(0).parse().unwrap_or(0), &a(1), a(2).parse().unwrap_or(0)).err().unwrap_or_default()
-    })?;
-    rt.register_function("__native_udp_write", move |args| {
-        let a = |i: usize| args.get(i).cloned().unwrap_or_default();
-        crate::net_socket::udp_write(a(0).parse().unwrap_or(0), &a(1)).err().unwrap_or_default()
     })?;
     rt.register_function("__native_udp_ttl", move |args| {
         let a = |i: usize| args.get(i).cloned().unwrap_or_default();

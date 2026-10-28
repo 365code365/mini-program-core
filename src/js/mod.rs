@@ -27,15 +27,23 @@
 
 /// QuickJS 运行时封装（求值、注册原生函数、模块作用域）
 mod runtime;
+/// 运行时守护：看门狗、内存上限、未处理的 Promise 拒绝（小游戏用）
+mod guards;
+pub use guards::{Guards, Watchdog};
 /// `wx.*` 的 JS 前置代码注册表（真正的实现在 `src/js/prelude/*.js`）
 mod api;
+pub use api::{game_prelude_source, prelude_source};
 /// JS ↔ Rust 桥：原生函数入口与事件队列
 mod bridge;
 /// WebSocket / 文件系统 / 音频 / 图片信息这组同步桥入口（从 bridge.rs 拆出）
 mod bridge_io;
 /// 随机数、本机 IP、storage 全量键、TCP / UDP、视频信息、离屏画布这组桥入口（与 bridge_io 同一种写法）
 mod bridge_ext;
+/// 二进制过桥的工具（ArrayBuffer / TypedArray ↔ 字节）
+pub mod binary;
+/// 走二进制桥的原生函数（wx.encode / decode、原生 base64）
+mod bridge_bin;
 
 pub use runtime::JsRuntime;
-pub use api::MiniAppApi;
+pub use api::{MiniAppApi, PreludeProfile, GAME_CORE};
 pub use bridge::{JsBridge, BridgeEvent};

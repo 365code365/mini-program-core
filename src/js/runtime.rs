@@ -22,6 +22,15 @@ impl JsRuntime {
         self.runtime.run_gc();
     }
 
+    /// 底层运行时（守护装在这上面，见 guards.rs）
+    pub(crate) fn raw_runtime(&self) -> &Runtime {
+        &self.runtime
+    }
+
+    pub(crate) fn raw_context(&self) -> &Context {
+        &self.context
+    }
+
     pub fn new() -> Result<Self, String> {
         let runtime = Runtime::new().map_err(|e| e.to_string())?;
         let context = Context::full(&runtime).map_err(|e| e.to_string())?;
@@ -138,12 +147,69 @@ impl JsRuntime {
         })
     }
     
-    /// 调用 JS 函数
+    /// 注册全局函数（**原值版**，game-doc/02 §6）：参数按 JS 原值交给 Rust（ArrayBuffer / TypedArray 可借出字节，
+    /// 见 js/binary.rs），返回值也是 JS 原值。`register_function` 那条只有字符串的路照旧给老代码用
+    pub fn register_raw<F>(&self, name: &str, func: F) -> Result<(), String>
+    where
+        F: for<'js> Fn(Ctx<'js>, Rest<Value<'js>>) -> JsResult<Value<'js>> + 'static,
+    {
+        // 单独一个带具名 'js 的函数：闭包里写 `Ctx<'_>` 时参数与返回值的生命周期推不到一起
+        fn make<'js, F>(ctx: &Ctx<'js>, f: Rc<F>) -> JsResult<Function<'js>>
+        where
+            F: for<'a> Fn(Ctx<'a>, Rest<Value<'a>>) -> JsResult<Value<'a>> + 'static,
+        {
+            Function::new(ctx.clone(), move |c: Ctx<'js>, args: Rest<Value<'js>>| -> JsResult<Value<'js>> { f(c, args) })
+        }
+        let func = Rc::new(func);
+        self.context.with(|ctx| {
+            let js_func = make(&ctx, func.clone()).map_err(|e| e.to_string())?;
+            ctx.globals().set(name, js_func).map_err(|e| e.to_string())
+        })
+    }
+
+    /// 直接调一个全局函数（数字参数、返回数字），**不经 eval**：每帧都要调的那几个（rAF、计数）走这里。
+    /// eval 每次都要把字符串重新解析编译一遍——一加 PLY110 上每帧几次 eval，解析器（next_token / resolve_variables …）
+    /// 在游戏线程上占到可观的一截（simpleperf 实测）。调完照常泵微任务。函数不存在或抛错返回 Err
+    pub fn call_num(&self, name: &str, args: &[f64]) -> Result<f64, String> {
+        let r = self.context.with(|ctx| {
+            let f: Function = ctx.globals().get(name).map_err(|e| format!("{name}: {e}"))?;
+            let v: JsResult<Value> = match args.len() {
+                0 => f.call(()),
+                1 => f.call((args[0],)),
+                2 => f.call((args[0], args[1])),
+                _ => f.call((args[0], args[1], args[2])),
+            };
+            match v {
+                Ok(v) => Ok(v.as_number().unwrap_or(0.0)),
+                Err(rquickjs::Error::Exception) => Err(format!("JS Exception: {}", describe_exception(&ctx))),
+                Err(e) => Err(format!("{e:?}")),
+            }
+        });
+        self.pump_jobs();
+        r
+    }
+
+    /// 与 [`call_num`](Self::call_num) 相同，但参数是两个字符串（小游戏输入事件：类型 + JSON），同样不经 eval
+    pub fn call_str2(&self, name: &str, a: &str, b: &str) -> Result<f64, String> {
+        let r = self.context.with(|ctx| {
+            let f: Function = ctx.globals().get(name).map_err(|e| format!("{name}: {e}"))?;
+            match f.call::<_, Value>((a, b)) {
+                Ok(v) => Ok(v.as_number().unwrap_or(0.0)),
+                Err(rquickjs::Error::Exception) => Err(format!("JS Exception: {}", describe_exception(&ctx))),
+                Err(e) => Err(format!("{e:?}")),
+            }
+        });
+        self.pump_jobs();
+        r
+    }
+
+    /// 调用 JS 函数（`name` 由调用方保证是合法的标识符 / 成员表达式；参数一律按字符串传）
     pub fn call_function(&self, name: &str, args: &[&str]) -> Result<String, String> {
-        // 构建调用代码
+        // 参数用 JSON 字符串字面量注入（JSON 是 JS 字面量的子集，含 U+2028 在 ES2019 起也合法）。
+        // 从前只转义了 `"`：参数里的 `\`、换行会改写字面量，等于能往 eval 里注入代码（game-doc/04 G0.7）
         let args_str = args
             .iter()
-            .map(|s| format!("\"{}\"", s.replace("\"", "\\\"")))
+            .map(|s| serde_json::Value::String((*s).to_string()).to_string())
             .collect::<Vec<_>>()
             .join(", ");
         

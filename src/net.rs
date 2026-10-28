@@ -64,7 +64,7 @@ fn log_enabled() -> bool {
 /// 已完成的只看 `owner` 自己的：已销毁实例迟到的响应没人取，算进来会让宿主永远续帧
 /// （「在飞」计数仍是进程级，最多拖到那条请求超时）
 pub fn has_pending(owner: u64) -> bool {
-    *in_flight().lock().unwrap() > 0 || done().lock().unwrap().iter().any(|(o, _)| *o == owner)
+    *in_flight().lock().unwrap() > 0 || done().lock().unwrap().iter().any(|(o, _)| *o == owner) || crate::net_stream::has_pending(owner)
 }
 
 /// 实例销毁：丢掉它还没取的响应，之后迟到的也不再入队（[`push_done`] 只收活着的实例）
@@ -75,6 +75,7 @@ pub fn forget_owner(owner: u64) {
     if let Ok(mut q) = done().lock() {
         q.retain(|(o, _)| *o != owner);
     }
+    crate::net_stream::forget_owner(owner);
 }
 
 /// 还活着的实例号
@@ -106,6 +107,21 @@ pub fn submit(
     body: &str,
     timeout_ms: u64,
 ) {
+    submit_ex(owner, id, method, url, headers_json, body, timeout_ms, Default::default())
+}
+
+/// 同 [`submit`]，带流式选项（`responseType:'arraybuffer'` / `enableChunked`，见 net_stream.rs）
+#[allow(clippy::too_many_arguments)]
+pub fn submit_ex(
+    owner: u64,
+    id: u32,
+    method: &str,
+    url: &str,
+    headers_json: &str,
+    body: &str,
+    timeout_ms: u64,
+    opts: crate::net_stream::StreamOpts,
+) {
     let method = method.to_uppercase();
     let url = url.to_string();
     let body = body.to_string();
@@ -134,7 +150,7 @@ pub fn submit(
     // 页面级用量远达不到需要线程池的规模，换来的是实现简单、没有共享状态。
     std::thread::spawn(move || {
         let started = std::time::Instant::now();
-        let resp = perform(&method, &url, &headers, &body, timeout);
+        let resp = perform(owner, id, &method, &url, &headers, &body, timeout, opts);
         let ms = started.elapsed().as_millis();
         if log_enabled() {
             match &resp.error {
@@ -173,12 +189,16 @@ fn parse_headers(json: &str) -> Vec<(String, String)> {
 }
 
 /// 真正发请求。返回的 `id` 字段是占位，由调用方填。
+#[allow(clippy::too_many_arguments)]
 fn perform(
+    owner: u64,
+    id: u32,
     method: &str,
     url: &str,
     headers: &[(String, String)],
     body: &str,
     timeout: Duration,
+    opts: crate::net_stream::StreamOpts,
 ) -> NetResponse {
     let config = ureq::Agent::config_builder()
         .timeout_global(Some(timeout))
@@ -225,13 +245,14 @@ fn perform(
     };
 
     match agent.run(request) {
-        Ok(resp) => collect(resp, None),
+        Ok(resp) => collect(owner, id, resp, opts),
         Err(e) => NetResponse {
             id: 0,
             status: 0,
             headers: Vec::new(),
             body: String::new(),
-            error: Some(format!("request:fail {}", e)),
+            // 超时与微信同一个文案（`request:fail timeout`），别的错误带上 ureq 的原因
+            error: Some(if matches!(e, ureq::Error::Timeout(_)) { "request:fail timeout".to_string() } else { format!("request:fail {}", e) }),
         },
     }
 }
@@ -313,14 +334,19 @@ pub fn submit_download(owner: u64, id: u32, url: &str, headers_json: &str, file_
     };
     let (url, headers) = (url.to_string(), parse_headers(headers_json));
     let timeout = Duration::from_millis(if timeout_ms == 0 { 60_000 } else { timeout_ms });
-    spawn_job(owner, id, format!("GET {url} → {}", dest.0), move || match fetch_bytes("GET", &url, &headers, Vec::new(), timeout) {
-        Ok((status, hdrs, bytes)) => {
+    // 边收边写盘（大文件不整份进内存），每块报一次进度（DownloadTask.onProgressUpdate，GT-N4）
+    spawn_job(owner, id, format!("GET {url} → {}", dest.0), move || match crate::net_stream::run("GET", &url, &headers, Vec::new(), timeout) {
+        Ok(mut resp) => {
+            let status = resp.status().as_u16();
+            let hdrs: Vec<(String, String)> = resp
+                .headers()
+                .iter()
+                .filter_map(|(n, v)| v.to_str().ok().map(|v| (n.as_str().to_lowercase(), v.to_string())))
+                .collect();
+            crate::net_stream::push_event(owner, id, crate::net_stream::NetEvent::Headers { status, headers: hdrs.clone() });
             let (uri, path, key) = dest;
-            if let Some(dir) = path.parent() {
-                let _ = std::fs::create_dir_all(dir);
-            }
-            match std::fs::write(&path, &bytes) {
-                Ok(()) => {
+            match crate::net_stream::download_to(owner, id, &mut resp, &path) {
+                Ok(_) => {
                     let mut m = serde_json::Map::new();
                     m.insert(key.to_string(), serde_json::Value::String(uri));
                     NetResponse { id, status, headers: hdrs, body: serde_json::Value::Object(m).to_string(), error: None }
@@ -384,23 +410,19 @@ pub(crate) fn multipart(form: &[(String, String)], file_field: &str, filename: &
     (out, boundary)
 }
 
-fn collect(mut resp: ureq::http::Response<ureq::Body>, error: Option<String>) -> NetResponse {
+fn collect(owner: u64, id: u32, mut resp: ureq::http::Response<ureq::Body>, opts: crate::net_stream::StreamOpts) -> NetResponse {
     let status = resp.status().as_u16();
     let headers: Vec<(String, String)> = resp
         .headers()
         .iter()
         .filter_map(|(n, v)| v.to_str().ok().map(|v| (n.as_str().to_lowercase(), v.to_string())))
         .collect();
+    // 响应头先到（RequestTask.onHeadersReceived，GT-N3）：在正文读完之前就排进过程事件
+    crate::net_stream::push_event(owner, id, crate::net_stream::NetEvent::Headers { status, headers: headers.clone() });
     // 读不出正文时给空串而不是报错：微信在这种情况下也会回 success + 空 data。
-    // `lossy_utf8` 让非 UTF-8 的响应也能读出来（替换非法字节），
-    // 而不是整个正文丢成空串。
-    let body = resp
-        .body_mut()
-        .with_config()
-        .lossy_utf8(true)
-        .read_to_string()
-        .unwrap_or_default();
-    NetResponse { id: 0, status, headers, body, error }
+    // 文本按 UTF-8 读、替换非法字节（而不是整个正文丢成空串）；arraybuffer 原样进字节仓（net_stream.rs）
+    let body = crate::net_stream::read_body(owner, id, &mut resp, opts).unwrap_or_default();
+    NetResponse { id: 0, status, headers, body, error: None }
 }
 
 /// 有没有请求在飞（供宿主的动画/续帧判断）

@@ -137,6 +137,9 @@
   .tags { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
   .tag { font-size: 12px; line-height: 20px; padding: 0 7px; border-radius: 4px; background: #fafafa; border: 1px solid var(--line2); color: var(--t2); }
   .cat { font-size: 12px; line-height: 20px; padding: 0 7px; border-radius: 4px; background: var(--brand-l); border: 1px solid #b7ebcf; color: #08a04f; font-weight: normal; }
+  /* 小游戏标记：与分类标签同一尺寸，紫色区分；横竖屏跟在后面 */
+  .kind { font-size: 12px; line-height: 20px; padding: 0 7px; border-radius: 4px; background: #f4f0ff; border: 1px solid #d3c6ff; color: #6a3de8; font-weight: normal; }
+  .stat .sub { color: var(--t3); font-size: 12px; margin-top: 2px; }
   .ver { font-size: 12px; line-height: 20px; padding: 0 7px; border-radius: 4px; background: #e6f4ff; border: 1px solid #91caff; color: var(--blue); }
   .badge { min-width: 20px; height: 20px; line-height: 20px; padding: 0 6px; border-radius: 10px; background: rgba(255,255,255,.15); font-size: 12px; text-align: center; }
   .badge:empty { display: none; }
@@ -251,7 +254,7 @@
       <!-- 概览 -->
       <section id="view-overview" data-title="概览">
         <div class="stats">
-          <div class="stat"><div class="ic" style="background:#e8f8ef;color:#07c160"><svg class="i"><use href="#i-apps"/></svg></div><div><div class="lb">已上架小程序</div><div id="stApps" class="v">-</div></div></div>
+          <div class="stat"><div class="ic" style="background:#e8f8ef;color:#07c160"><svg class="i"><use href="#i-apps"/></svg></div><div><div class="lb">已上架</div><div id="stApps" class="v">-</div><div id="stKinds" class="sub"></div></div></div>
           <div class="stat"><div class="ic" style="background:#e6f4ff;color:#1677ff"><svg class="i"><use href="#i-tag"/></svg></div><div><div class="lb">分类</div><div id="stCats" class="v">-</div></div></div>
           <div class="stat"><div class="ic" style="background:#fff7e6;color:#fa8c16"><svg class="i"><use href="#i-eye"/></svg></div><div><div class="lb">累计打开</div><div id="stDl" class="v">-</div></div></div>
           <div class="stat"><div class="ic" style="background:#fff1f0;color:#f5222d"><svg class="i"><use href="#i-bug"/></svg></div><div><div class="lb">诊断日志</div><div id="stDiag" class="v">-</div></div></div>
@@ -266,19 +269,20 @@
       <!-- 小程序管理 -->
       <section id="view-apps" data-title="小程序管理" class="hidden">
         <div class="page-h"><h1>小程序管理<span id="count" class="desc"></span></h1>
-          <button class="primary" type="button" data-go="upload"><svg class="i"><use href="#i-up"/></svg>上传小程序</button></div>
+          <button class="primary" type="button" data-go="upload"><svg class="i"><use href="#i-up"/></svg>上传小程序 / 小游戏</button></div>
         <div class="card">
           <div class="toolbar">
             <div class="search"><svg class="i"><use href="#i-search"/></svg><input id="q" type="text" placeholder="搜索名称 / 标签 / 开发者 / 描述" aria-label="搜索"></div>
+            <select id="fkind" aria-label="按类型筛选"><option value="all">全部类型</option><option value="miniprogram">小程序</option><option value="game">小游戏</option></select>
             <select id="fcat" aria-label="按分类筛选"><option value="">全部分类</option></select>
             <span class="sp"></span>
             <button type="button" id="reloadApps"><svg class="i"><use href="#i-refresh"/></svg>刷新</button>
           </div>
           <div class="tbl-wrap"><table>
-            <thead><tr><th>小程序</th><th>开发者</th><th>版本</th><th>大小</th><th>打开</th><th>更新时间</th><th>操作</th></tr></thead>
+            <thead><tr><th>名称</th><th>开发者</th><th>版本</th><th>大小</th><th>打开</th><th>更新时间</th><th>操作</th></tr></thead>
             <tbody id="list"></tbody>
           </table></div>
-          <div id="emptyApps" class="empty hidden"><svg class="i"><use href="#i-box"/></svg>没有匹配的小程序</div>
+          <div id="emptyApps" class="empty hidden"><svg class="i"><use href="#i-box"/></svg>没有匹配的小程序或小游戏</div>
           <div id="pager" class="pager hidden" role="navigation" aria-label="分页"></div>
         </div>
       </section>
@@ -292,7 +296,7 @@
             <div class="card-b">
               <div class="grid">
                 <div class="field"><label class="f" for="uid"><span class="req">*</span>ID</label><input id="uid" type="text" required pattern="[a-z0-9][a-z0-9._\-]{0,63}" placeholder="如 news-app"><div class="help">目录名：小写字母 / 数字 / . _ -</div></div>
-                <div class="field"><label class="f" for="uname">名称</label><input id="uname" type="text" maxlength="200" placeholder="不填用 app.json 的导航栏标题"></div>
+                <div class="field"><label class="f" for="uname">名称</label><input id="uname" type="text" maxlength="200" placeholder="不填用 store.meta.json / app.json 的标题"></div>
               </div>
               <div class="field"><label class="f" for="udesc">描述</label><input id="udesc" type="text" maxlength="200" placeholder="一句话介绍"></div>
               <div class="grid">
@@ -309,8 +313,8 @@
               </div>
               <div id="drop" class="drop">
                 <svg class="i"><use href="#i-up"/></svg>
-                <div id="dropT1" class="t1">点击或拖入小程序文件夹</div>
-                <div id="dropT2" class="t2">选含 app.json 的那一层；会在浏览器里打成 zip 再上传</div>
+                <div id="dropT1" class="t1">点击或拖入小程序 / 小游戏文件夹</div>
+                <div id="dropT2" class="t2">选含 app.json（小程序）或 game.json（小游戏）的那一层；会在浏览器里打成 zip 再上传</div>
                 <div id="picked" class="picked"></div>
                 <input id="udir" type="file" webkitdirectory multiple aria-label="小程序文件夹">
                 <input id="uzip" type="file" accept=".zip,application/zip" class="hidden" aria-label="小程序 zip">

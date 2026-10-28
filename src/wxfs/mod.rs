@@ -12,9 +12,11 @@
 //! 路径里不许有 `..`。
 //!
 //! 返回值一律是 JSON：成功 `{"ok":true,…}`，失败 `{"ok":false,"err":"no such file or directory, open <路径>"}`，
-//! JS 侧拼成 `<api>:fail <err>`（同步版 throw 同样的消息）。二进制内容按 base64 过桥。
+//! JS 侧拼成 `<api>:fail <err>`（同步版 throw 同样的消息）。二进制内容直接过桥（`__native_fs_raw`，见 extra.rs）。
 
 pub mod codec;
+/// 二进制直通、readCompressedFile、readZipEntry、用户文件配额
+pub mod extra;
 pub mod image;
 mod ops;
 /// `wx.getVideoInfo`：读 MP4 / MOV 的盒子结构

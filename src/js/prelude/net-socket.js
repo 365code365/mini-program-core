@@ -1,7 +1,7 @@
             // ───────── TCP / UDP（官方 api/network/tcp、api/network/udp）与本机 IP ─────────
             // 连接与收发在原生线程里（src/net_socket.rs），事件由宿主每帧取回后调
-            // __resolveNetSocket(id, type, json)。数据按 base64 过桥：write / send 收 string（按 UTF-8）
-            // 或 ArrayBuffer / TypedArray，onMessage 的 message 是 ArrayBuffer（与微信一致）。
+            // __resolveNetSocket(id, type, json)。write / send 收 string（按 UTF-8）或 ArrayBuffer / TypedArray，
+            // 字节直接过桥（几个 _bin 结尾的原生入口，src/bin_stash.rs）；onMessage 的 message 是 ArrayBuffer（与微信一致），同样不经 base64。
             var __netSeq = 0, __netSockets = {};
             function __netBytes(data, offset, length) {
                 var b = typeof data === 'string' ? __utf8encode(data) : __toBytes(data);
@@ -9,7 +9,7 @@
                     var o = Number(offset) || 0;
                     b = b.subarray(o, length === undefined ? b.length : o + Number(length));
                 }
-                return __b64encode(b);
+                return b;
             }
             function __netEmitter(kinds) {
                 var ls = {}, obj = { __ls: ls };
@@ -38,7 +38,7 @@
                     var timeout = (o.timeout === undefined ? 2 : Number(o.timeout)) * 1000;
                     __netError(s, __native_tcp_connect(String(id), String(o.address || ''), String(o.port || 0), String(Math.max(1, timeout))));
                 };
-                s.write = function(data) { __netError(s, __native_tcp_write(String(id), __netBytes(data))); };
+                s.write = function(data) { __netError(s, __native_tcp_write_bin(id, __netBytes(data))); };
                 s.close = function() { __native_net_close(String(id)); };
                 // 只有 Android 微信有：本引擎不管多网卡，直接报成功
                 s.bindWifi = function() { setTimeout(function() { __netFire(s, 'bindWifi', {}); }, 0); };
@@ -56,13 +56,13 @@
                 };
                 s.send = function(o) {
                     o = o || {};
-                    __netError(s, __native_udp_send(String(id), String(o.address || ''), String(o.port || 0),
-                        __netBytes(o.message === undefined ? '' : o.message, o.offset, o.length), o.setBroadcast ? '1' : '0'));
+                    __netError(s, __native_udp_send_bin(id, String(o.address || ''), Number(o.port || 0),
+                        __netBytes(o.message === undefined ? '' : o.message, o.offset, o.length), !!o.setBroadcast));
                 };
                 s.connect = function(o) { o = o || {}; __netError(s, __native_udp_connect(String(id), String(o.address || ''), String(o.port || 0))); };
                 s.write = function(o) {
                     o = o || {};
-                    __netError(s, __native_udp_write(String(id), __netBytes(o.message === undefined ? '' : o.message, o.offset, o.length)));
+                    __netError(s, __native_udp_write_bin(id, __netBytes(o.message === undefined ? '' : o.message, o.offset, o.length)));
                 };
                 s.setTTL = function(ttl) { __netError(s, __native_udp_ttl(String(id), String(ttl))); };
                 s.close = function() { __native_net_close(String(id)); };
@@ -75,7 +75,8 @@
                 if (!s) return;
                 var res = {};
                 try { res = JSON.parse(json || '{}'); } catch (e) {}
-                if (type === 'message') res.message = __b64decode(res.message || '');
+                if (type === 'message') res.message = res.bin ? (__native_bin_take(2, id) || new ArrayBuffer(0)) : __b64decode(res.message || '');
+                delete res.bin;
                 if (type === 'close') delete __netSockets[id];
                 __netFire(s, type, res);
             };

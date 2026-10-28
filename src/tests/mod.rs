@@ -41,6 +41,8 @@ pub mod text_edit_tests;
 pub mod textarea_render_tests;
 /// 移动端 SDK（MiniEngine）的指针链路：手势仲裁 / tabBar / picker / Modal
 pub mod engine_input_tests;
+/// GT-T9：mr_app_touch（每根指针一次）与老接口逐字节相同
+mod touch_adapter_tests;
 pub mod engine_slider_tests;
 /// 移动端 SDK 的出帧：页面画布按内容扩容、条带内滚动只重新合成
 pub mod engine_render_tests;
@@ -66,3 +68,50 @@ pub mod swiper_tests;
 pub mod switch_checkbox_tests;
 /// Skyline 新组件：grid-view（网格 / 瀑布流）、cover-image、未接管原生组件的占位与默认尺寸
 pub mod skyline_component_tests;
+/// 小游戏 G0：前置代码按应用种类分组、包种类入口、call_function 转义
+pub mod game_profile_tests;
+
+/// 拿着包根读锁的 `MiniEngine`（见 `data_dir::ROOT_TEST_LOCK`）：用法与 `MiniEngine` 相同（Deref）。
+/// 同一条线程上同时活着几个（GT-T9 一次起两个对照）只真锁一次：std 的 RwLock 同线程重复读锁可能死锁（有写者在等时）
+pub(crate) struct LockedEngine {
+    pub e: crate::host::MiniEngine,
+    _g: RootGuard,
+}
+
+pub(crate) struct RootGuard(Option<std::sync::RwLockReadGuard<'static, ()>>);
+
+thread_local! {
+    static ROOT_DEPTH: std::cell::Cell<u32> = const { std::cell::Cell::new(0) };
+}
+
+impl Drop for RootGuard {
+    fn drop(&mut self) {
+        ROOT_DEPTH.with(|d| d.set(d.get() - 1));
+    }
+}
+
+impl LockedEngine {
+    pub(crate) fn lock() -> RootGuard {
+        let first = ROOT_DEPTH.with(|d| {
+            d.set(d.get() + 1);
+            d.get() == 1
+        });
+        RootGuard(first.then(|| crate::data_dir::ROOT_TEST_LOCK.read().unwrap_or_else(|e| e.into_inner())))
+    }
+    pub(crate) fn new(e: crate::host::MiniEngine, g: RootGuard) -> Self {
+        Self { e, _g: g }
+    }
+}
+
+impl std::ops::Deref for LockedEngine {
+    type Target = crate::host::MiniEngine;
+    fn deref(&self) -> &Self::Target {
+        &self.e
+    }
+}
+
+impl std::ops::DerefMut for LockedEngine {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.e
+    }
+}

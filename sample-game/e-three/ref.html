@@ -1,0 +1,11 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000;overflow:hidden}canvas{display:block}</style></head>
+<body><canvas id="c" style="width:375px;height:667px"></canvas>
+<script src="scene.js"></script>
+<script type="module">
+// Chrome 对照页（A8.2）：同一份 scene.js，dpr 1，画到第 N 帧（?frames=N）
+import * as THREE from './three.module.js';
+var n = Number(new URLSearchParams(location.search).get('frames') || 30);
+var s = build(THREE, document.getElementById('c'), 375, 667, 1);
+for (var i = 0; i < n; i++) s.step(i);
+document.title = 'done';
+</script></body></html>

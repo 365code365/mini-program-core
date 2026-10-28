@@ -1,7 +1,7 @@
 // 管理页：登录态走 HttpOnly Cookie；改数据的请求带 X-Mini-Store 头（服务器据此挡 CSRF）
 'use strict';
 const $ = (id) => document.getElementById(id);
-const CATEGORIES = ['美食', '购物', '出行', '生活服务', '医疗健康', '金融', '工具', '教育', '娱乐', '资讯', '政务', '其他'];
+const CATEGORIES = ['美食', '购物', '出行', '生活服务', '医疗健康', '金融', '工具', '教育', '娱乐', '游戏', '资讯', '政务', '其他'];
 for (const id of ['ucat', 'fcat', 'ecat']) {
   for (const c of CATEGORIES) $(id).append(new Option(c, c));
 }
@@ -98,8 +98,9 @@ function syncSrc() {
   const dir = $('srcDir').checked;
   $('udir').classList.toggle('hidden', !dir);
   $('uzip').classList.toggle('hidden', dir);
-  $('dropT1').textContent = dir ? '点击或拖入小程序文件夹' : '点击或拖入 zip 文件';
-  $('dropT2').textContent = dir ? '选含 app.json 的那一层；会在浏览器里打成 zip 再上传' : 'app.json 在 zip 根上或唯一一层子目录里';
+  $('dropT1').textContent = dir ? '点击或拖入小程序 / 小游戏文件夹' : '点击或拖入 zip 文件';
+  $('dropT2').textContent = dir ? '选含 app.json（小程序）或 game.json（小游戏）的那一层；会在浏览器里打成 zip 再上传'
+    : 'app.json / game.json 在 zip 根上或唯一一层子目录里';
   $('picked').textContent = pickedText();
 }
 for (const r of document.querySelectorAll('input[name=src]')) r.addEventListener('change', syncSrc);
@@ -148,7 +149,7 @@ $('uploadForm').addEventListener('submit', async (e) => {
     const meta = await api('PUT', `/api/admin/apps/${encodeURIComponent($('uid').value.trim())}?${q}`, blob,
       { 'Content-Type': 'application/zip' });
     msg.className = 'msg ok';
-    msg.textContent = `已上架「${meta.name}」v${meta.version}（${meta.files} 个文件，${meta.pages} 页）`;
+    msg.textContent = `已上架${meta.kindLabel || ''}「${meta.name}」v${meta.version}（${meta.files} 个文件，${pkgShape(meta)}）`;
     toast(`已上架「${meta.name}」v${meta.version}`);
     refresh().catch(fail);
   } catch (err) {
@@ -166,7 +167,7 @@ const listState = { page: 1, pageSize: Number(localStorage.getItem('ms_page_size
 let searchTimer = 0;
 // 搜索词、分类一变就回第 1 页：留在第 5 页而结果只有 1 页，看到的会是一张空表
 $('q').addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => { listState.page = 1; refresh().catch(fail); }, 200); });
-$('fcat').addEventListener('change', () => { listState.page = 1; refresh().catch(fail); });
+for (const id of ['fcat', 'fkind']) $(id).addEventListener('change', () => { listState.page = 1; refresh().catch(fail); });
 $('reloadApps').addEventListener('click', () => refresh().then(() => toast('已刷新'), fail));
 $('reloadDiag').addEventListener('click', () => refreshDiag().then(() => toast('已刷新'), fail));
 
@@ -192,10 +193,19 @@ function el(tag, cls, text) {
   return e;
 }
 
+// 小程序报页数，小游戏报横竖屏
+const ORI = { portrait: '竖屏', landscape: '横屏', landscapeLeft: '横屏', landscapeRight: '横屏' };
+const pkgShape = (a) => (a.kind === 'game' ? ORI[a.orientation] || '竖屏' : `${a.pages} 页`);
+// 小游戏在名字后面挂「小游戏 · 横屏」；小程序不挂（老数据都是小程序，挂了满屏一样的标签）
+function kindBadge(a) {
+  return a.kind === 'game' ? el('span', 'kind', `小游戏 · ${pkgShape(a)}`) : null;
+}
 const fmtTime = (t) => new Date(t).toLocaleString('zh-CN', { hour12: false });
 
 function renderOverview(all, cats, hot) {
   $('stApps').textContent = all.length;
+  const games = all.filter((a) => a.kind === 'game').length;
+  $('stKinds').textContent = `小程序 ${all.length - games} · 小游戏 ${games}`;
   $('stCats').textContent = cats.length;
   $('stDl').textContent = all.reduce((n, a) => n + (a.downloads || 0), 0).toLocaleString();
   $('navApps').textContent = all.length || '';
@@ -213,7 +223,9 @@ function renderOverview(all, cats, hot) {
   $('recent').replaceChildren(...(recent.length ? recent.map((a) => {
     const li = el('li');
     const meta = el('div', 'meta');
-    meta.append(el('div', 'name', a.name), el('div', 'id', `${a.id} · v${a.version}`));
+    const nm = el('div', 'name', a.name);
+    if (kindBadge(a)) nm.append(' ', kindBadge(a));
+    meta.append(nm, el('div', 'id', `${a.id} · v${a.version}`));
     li.append(appIcon(a), meta, el('span', 't', fmtTime(a.updatedAt)));
     return li;
   }) : [el('li', 'empty', '暂无小程序')]));
@@ -225,12 +237,12 @@ function renderOverview(all, cats, hot) {
 }
 
 async function refresh() {
-  const q = new URLSearchParams({ q: $('q').value.trim(), category: $('fcat').value,
+  const q = new URLSearchParams({ q: $('q').value.trim(), category: $('fcat').value, kind: $('fkind').value,
     page: String(listState.page), pageSize: String(listState.pageSize) });
   const [{ apps, total }, all, cats, hot] = await Promise.all([
     api('GET', `/api/apps?${q}`),
-    api('GET', '/api/apps'),
-    api('GET', '/api/categories'),
+    api('GET', '/api/apps?kind=all'),
+    api('GET', '/api/categories?kind=all'),
     api('GET', '/api/search/hot'),
   ]);
   renderOverview(all.apps, cats.categories, hot.keywords);
@@ -256,6 +268,7 @@ async function refresh() {
     const info = el('div');
     const name = el('div', 'name');
     name.append(el('span', '', a.name), el('span', 'cat', a.category || '其他'));
+    if (kindBadge(a)) name.append(kindBadge(a));
     info.append(name, el('div', 'id', `${a.id}${a.appId ? ` · ${a.appId}` : ''}`));
     if (a.description) info.append(el('div', 'desc-t', a.description));
     if ((a.tags || []).length) {

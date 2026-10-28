@@ -139,6 +139,14 @@ class MainActivity : Activity() {
                     if (isDestroyed || gen != generation) return@runOnUiThread
                     val why = p.stale?.let { "连不上服务器，用本地版（${it.message}）" } ?: if (p.updated) "已更新" else "已是最新"
                     Log.i(TAG, "[商店] 打开 ${p.app.id} ${p.app.appId} v${p.app.version} $why → ${p.dir} 起始页 ${link.route ?: "首页"}")
+                    // 小游戏不走 MiniProgramView：交给 GameActivity（整屏主画布、按 game.json 锁方向），这一页让出去
+                    if (p.app.isGame) {
+                        startActivity(GameActivity.storeIntent(this, p.dir, p.app.key, link.launchOptions()))
+                        @Suppress("DEPRECATION")
+                        overridePendingTransition(0, 0)
+                        super.finish()
+                        return@runOnUiThread
+                    }
                     currentAppId = p.app.appId
                     currentStoreApp = p.app
                     currentApp = JSONObject(p.app.toJson()).put("route", link.route ?: JSONObject.NULL)

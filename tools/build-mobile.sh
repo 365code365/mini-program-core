@@ -27,16 +27,19 @@
 set -eu
 cd "$(dirname "$0")/.."
 MODE="${1:-check}"
-FLAGS=(--release --lib --no-default-features --features bindgen)
+# 小游戏音频（cpal：AAudio / CoreAudio）默认编进去；GAME_AUDIO=0 去掉（小游戏音频只走静音的离线模式）
+# 小游戏 + 音频输出 + WebGL（不链接 GL 库，运行时加载 EGL，src/game/webgl/egl.rs）+ WXWebAssembly（wasmi）
+GA=$([ "${GAME_AUDIO:-1}" = 0 ] && echo game,webgl,wasm || echo game,game-audio,webgl,wasm)
+FLAGS=(--release --lib --no-default-features --features "bindgen,$GA")
 if [ "${ANDROID_GPU:-1}" = 0 ]; then
     ANDROID_FLAGS=("${FLAGS[@]}")
 else
-    ANDROID_FLAGS=(--release --lib --no-default-features --features bindgen,gpu)
+    ANDROID_FLAGS=(--release --lib --no-default-features --features "bindgen,gpu,$GA")
 fi
 if [ "${IOS_GPU:-1}" = 0 ]; then
     IOS_FLAGS=("${FLAGS[@]}")
 else
-    IOS_FLAGS=(--release --lib --no-default-features --features bindgen,gpu)
+    IOS_FLAGS=(--release --lib --no-default-features --features "bindgen,gpu,$GA")
 fi
 export IPHONEOS_DEPLOYMENT_TARGET="${IPHONEOS_DEPLOYMENT_TARGET:-13.0}"
 
@@ -156,7 +159,7 @@ build_ios() {
 # 与 iOS 的区别：不要 bindgen（rquickjs-sys 预生成了 darwin 的绑定）；带 h264 / audio（桌面上软解 <video>、
 # 自己出声，与 mini-app-window 一样）；不带 desktop（窗口、上屏、剪贴板都归宿主）。
 build_macos() {
-    local flags=(--release --lib --no-default-features --features gpu,h264,audio)
+    local flags=(--release --lib --no-default-features --features gpu,h264,audio,game)
     local lto="${MOBILE_LTO:-thin}" incr=false
     [ "$lto" = false ] && incr=true
     local targets=(aarch64-apple-darwin)

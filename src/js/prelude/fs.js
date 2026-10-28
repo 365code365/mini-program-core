@@ -3,17 +3,25 @@
             // 每个操作一次同步桥调用 __native_fs(op, json) → {ok, …} / {ok:false, err}。
             // 异步版走 success / fail / complete（下一轮事件循环回调，与微信一样不是同步回调）；
             // 同步版（xxxSync）失败时 throw Error('xxxSync:fail <原因>')。
-            // 二进制：写入的 ArrayBuffer 换成 {__b64}，读出没给 encoding 时还原成 ArrayBuffer。
+            // 二进制直接过桥（src/wxfs/extra.rs）：写入的 ArrayBuffer 作为第三个参数交给 __native_fs_raw，读出（没给 encoding）
+            // 的字节作为第二个返回值回来（r.__bin）。没有直通入口的环境（纯 JS 单测）退回 base64。
+            var __fsRaw = typeof __native_fs_raw === 'function';
             function __fsCall(op, args) {
-                var a = {};
+                var a = {}, bytes;
                 for (var k in args) {
                     if (!args.hasOwnProperty(k) || typeof args[k] === 'function') continue;
                     var v = args[k];
-                    if (k === 'data' && v !== null && typeof v === 'object') v = { __b64: __b64encode(v) };
+                    if (k === 'data' && v !== null && typeof v === 'object') {
+                        if (__fsRaw) { bytes = v; v = { __raw: true }; } else v = { __b64: __b64encode(v) };
+                    }
                     a[k] = v;
                 }
+                if (__fsRaw && op === 'readFile') a.raw = true;
                 var r;
-                try { r = JSON.parse(__native_fs(op, JSON.stringify(a))); } catch (e) { r = { ok: false, err: String(e) }; }
+                try {
+                    if (__fsRaw) { var out = __native_fs_raw(op, JSON.stringify(a), bytes); r = JSON.parse(out[0]); r.__bin = out[1]; }
+                    else r = JSON.parse(__native_fs(op, JSON.stringify(a)));
+                } catch (e) { r = { ok: false, err: String(e && e.message ? e.message : e) }; }
                 return r;
             }
             function __fsStats(st) {
@@ -24,7 +32,18 @@
             }
             // op 的结果 → 回给页面的 res（异步）/ 返回值（同步）
             var __fsShape = {
-                readFile: function(r) { return { data: r.b64 !== undefined ? __b64decode(r.b64) : r.data }; },
+                readFile: function(r) { return { data: r.raw ? r.__bin : (r.b64 !== undefined ? __b64decode(r.b64) : r.data) }; },
+                readCompressedFile: function(r) { return { data: r.__bin }; },
+                readZipEntry: function(r) {
+                    var out = {};
+                    for (var k in r.entries) {
+                        var e = r.entries[k];
+                        if (e.bin !== undefined) out[k] = { data: r.__bin.slice(r.binOffsets[e.bin], r.binOffsets[e.bin] + r.binLens[e.bin]), errMsg: 'readZipEntry:ok' };
+                        else if (e.errMsg) out[k] = { errMsg: 'readZipEntry:fail ' + e.errMsg };
+                        else out[k] = { data: e.data, errMsg: 'readZipEntry:ok' };
+                    }
+                    return { entries: out };
+                },
                 readdir: function(r) { return { files: r.files }; },
                 stat: function(r) {
                     if (r.list) return { stats: r.list.map(function(x) { return { path: x.path, stats: __fsStats(x.stats) }; }) };
@@ -38,7 +57,7 @@
                 write: function(r) { return { bytesWritten: r.bytesWritten }; }
             };
             // 同步版返回值：只有一个字段的直接给那个值（readFileSync 给内容、readdirSync 给数组…）
-            var __fsSyncPick = { readFile: 'data', readdir: 'files', stat: 'stats', fstat: 'stats', saveFile: 'savedFilePath', open: 'fd' };
+            var __fsSyncPick = { readFile: 'data', readdir: 'files', stat: 'stats', fstat: 'stats', saveFile: 'savedFilePath', open: 'fd', readCompressedFile: 'data' };
             // 同步版的位置参数 → 参数对象（微信同步 API 多数是位置参数，fd 类是对象）
             var __fsPos = {
                 access: ['path'], appendFile: ['filePath', 'data', 'encoding'], copyFile: ['srcPath', 'destPath'],
@@ -95,12 +114,10 @@
                     m[op + 'Sync'] = __fsSync(op, op + 'Sync');
                 });
                 ['getFileInfo', 'getSavedFileList', 'removeSavedFile', 'unzip'].forEach(function(op) { m[op] = __fsAsync(op, op); });
-                m.readCompressedFile = m.readZipEntry = function(o) {
-                    o = o || {};
-                    var res = { errMsg: 'fail not supported' };
-                    setTimeout(function() { o.fail && o.fail(res); o.complete && o.complete(res); }, 0);
-                };
-                m.readCompressedFileSync = function() { throw new Error('readCompressedFileSync:fail not supported'); };
+                // readCompressedFile({filePath, compressionAlgorithm:'br'})（同步版参数也是对象）、readZipEntry({filePath, entries, encoding})
+                m.readCompressedFile = __fsAsync('readCompressedFile', 'readCompressedFile');
+                m.readCompressedFileSync = __fsSync('readCompressedFile', 'readCompressedFileSync');
+                m.readZipEntry = __fsAsync('readZipEntry', 'readZipEntry');
                 __fsManager = m;
                 return m;
             };

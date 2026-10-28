@@ -106,6 +106,11 @@ impl Shadow {
 
 impl Fx {
     /// 纯色 + source-over + 无阴影：走原来的直接光栅化（逐字节与旧基线一致）
+    /// drawImage 用：图自己就是源，填充 / 描边样式（渐变、图案）与它无关，只看合成模式与阴影
+    pub fn trivial_for_image(&self) -> bool {
+        self.composite == Composite::SourceOver && !self.shadow.visible()
+    }
+
     pub fn trivial(&self, stroke: bool) -> bool {
         let src = if stroke { &self.stroke } else { &self.fill };
         src.is_none() && self.composite == Composite::SourceOver && !self.shadow.visible()

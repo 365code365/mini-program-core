@@ -8,6 +8,7 @@
 //! 与 JS 运行时同线程（thread_local）：rodio 的设备句柄不是 Send，而且所有调用都来自逻辑层所在线程。
 
 pub mod decode;
+mod mp4_edit;
 mod output;
 
 use serde_json::{json, Value};

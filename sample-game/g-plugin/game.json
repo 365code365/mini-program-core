@@ -1,0 +1,7 @@
+{
+  "deviceOrientation": "portrait",
+  "plugins": {
+    "eng": { "provider": "wxeng000000000000", "version": "1.2.3", "path": "local-eng" },
+    "ghost": { "provider": "wxghost00000000000", "version": "9.9.9" }
+  }
+}

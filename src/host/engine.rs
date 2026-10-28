@@ -131,6 +131,8 @@ pub struct MiniEngine {
     /// 这一个时钟 —— 从前按下用墙上时钟、长按计时用宿主时钟，两者差几个数量级，
     /// 宿主一传 `now_ms` 长按就永远触发不了。
     pub(super) host_clock: Option<(u64, Instant)>,
+    /// 测试用：时钟只认宿主给的时刻，不加「之后流逝的真实时间」（见 [`MiniEngine::freeze_clock_for_test`]）
+    pub(super) clock_frozen: bool,
     pub(super) last_pump_ms: u64,
     /// 宿主帧时间 → `Instant` 的锚点（`frame_clock`：动画按 vsync 取样，不按画的那一刻）
     pub(super) frame_anchor: crate::frame_clock::Anchor,
@@ -241,6 +243,8 @@ impl MiniEngine {
         env: HostEnv,
         opts: EngineOptions,
     ) -> Result<Self, String> {
+        // 认不出包种类就报错（从前没有 app.json 时静默套默认配置，小游戏包会被当成空白小程序打开）
+        crate::app_profile::require_mini_program(std::path::Path::new(app_dir))?;
         for w in env.warnings(HostKind::Sdk) {
             diag::emit(&w);
         }
@@ -250,6 +254,8 @@ impl MiniEngine {
         if let Some(d) = data_dir {
             crate::data_dir::set_data_dir(d);
         }
+        // 小程序的数据仍按包目录名区分（同一进程里先开过小游戏的话，这里把它的 appId 命名空间清掉）
+        crate::data_dir::set_app_scope(None);
         page_loader::set_app_path(std::path::PathBuf::from(app_dir));
         let (width, height) = (width.max(1), height.max(1));
         let dpr = if dpr > 0.1 { dpr } else { 1.0 };
@@ -361,6 +367,7 @@ impl MiniEngine {
             input_queue: Default::default(),
             clock_origin: Instant::now(),
             host_clock: None,
+            clock_frozen: false,
             last_pump_ms: 0,
             frame_anchor: Default::default(),
             page_scroll_handler: None,

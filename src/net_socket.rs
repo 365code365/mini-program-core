@@ -2,7 +2,8 @@
 //! 事件进全局队列，宿主每帧取回（`MiniApp::process_io_events` → `__resolveNetSocket`）。
 //!
 //! 与 `websocket.rs` 同一个模式：读设 15ms 超时，超时就回头看一眼命令队列 —— 一个线程同时
-//! 管读与写，不用 async 运行时。数据在 JS 与这里之间按 base64 走（桥上只有字符串）。
+//! 管读与写，不用 async 运行时。收到的数据进 `bin_stash`（事件里只带 `bin: true`），
+//! 发送有直收 ArrayBuffer 的 `*_bytes` 版；base64 的入口保留给老外壳与测试。
 //!
 //! 与微信的对应（官方 api/network/tcp、api/network/udp）：
 //! - TCP：`connect` 之后 `onConnect` / `onError`；`write` 排进发送队列；对端关闭或 `close()` 发 `onClose`；
@@ -11,6 +12,7 @@
 //!   `setBroadcast`；`connect` 之后 `write` 不用再带地址；`setTTL`。
 //! - `onMessage` 的 `remoteInfo` / `localInfo` 字段名与微信一致（`address` `family` `port` `size`）。
 
+#[cfg(test)]
 use base64::Engine as _;
 use std::collections::HashMap;
 use std::io::{ErrorKind, Read, Write};
@@ -46,10 +48,12 @@ fn push(id: u32, ty: &'static str, json: serde_json::Value) {
     events().lock().unwrap().push((id, (ty, json.to_string())));
 }
 
+#[cfg(test)]
 fn b64(bytes: &[u8]) -> String {
     base64::engine::general_purpose::STANDARD.encode(bytes)
 }
 
+#[cfg(test)] // 老的 base64 入口：JS 已改走 *_bytes（bin_stash.rs），只留给单测
 fn unb64(s: &str) -> Result<Vec<u8>, String> {
     base64::engine::general_purpose::STANDARD.decode(s.as_bytes()).map_err(|e| e.to_string())
 }
@@ -166,7 +170,8 @@ fn tcp_run(id: u32, address: &str, port: u16, timeout: Duration, rx: Receiver<Cm
                 return;
             }
             Ok(n) => {
-                let mut ev = serde_json::json!({ "message": b64(&buf[..n]) });
+                crate::bin_stash::stash(crate::bin_stash::NET, id, buf[..n].to_vec());
+                let mut ev = serde_json::json!({ "bin": true });
                 if let Some(r) = &remote {
                     ev["remoteInfo"] = info(r, Some(n));
                 }
@@ -185,8 +190,13 @@ fn tcp_run(id: u32, address: &str, port: u16, timeout: Duration, rx: Receiver<Cm
     }
 }
 
+#[cfg(test)] // 老的 base64 入口：JS 已改走 *_bytes（bin_stash.rs），只留给单测
 pub fn tcp_write(id: u32, data_b64: &str) -> Result<(), String> {
-    command(id, Cmd::Write(unb64(data_b64)?), "write")
+    tcp_write_bytes(id, unb64(data_b64)?)
+}
+
+pub fn tcp_write_bytes(id: u32, bytes: Vec<u8>) -> Result<(), String> {
+    command(id, Cmd::Write(bytes), "write")
 }
 
 pub fn close(id: u32) -> Result<(), String> {
@@ -253,7 +263,10 @@ fn udp_run(id: u32, sock: UdpSocket, local: SocketAddr, rx: Receiver<Cmd>) {
             Ok((n, from)) => push(
                 id,
                 "message",
-                serde_json::json!({ "message": b64(&buf[..n]), "remoteInfo": info(&from, Some(n)), "localInfo": info(&local, None) }),
+                {
+                    crate::bin_stash::stash(crate::bin_stash::NET, id, buf[..n].to_vec());
+                    serde_json::json!({ "bin": true, "remoteInfo": info(&from, Some(n)), "localInfo": info(&local, None) })
+                },
             ),
             Err(e) if matches!(e.kind(), ErrorKind::WouldBlock | ErrorKind::TimedOut | ErrorKind::Interrupted) => {}
             // Windows 上对端端口不可达会让下一次 recv 报 ConnectionReset：报错但不关
@@ -262,16 +275,26 @@ fn udp_run(id: u32, sock: UdpSocket, local: SocketAddr, rx: Receiver<Cmd>) {
     }
 }
 
+#[cfg(test)] // 老的 base64 入口：JS 已改走 *_bytes（bin_stash.rs），只留给单测
 pub fn udp_send(id: u32, address: &str, port: u16, data_b64: &str, broadcast: bool) -> Result<(), String> {
-    command(id, Cmd::SendTo(unb64(data_b64)?, address.to_string(), port, broadcast), "send")
+    udp_send_bytes(id, address, port, unb64(data_b64)?, broadcast)
+}
+
+pub fn udp_send_bytes(id: u32, address: &str, port: u16, bytes: Vec<u8>, broadcast: bool) -> Result<(), String> {
+    command(id, Cmd::SendTo(bytes, address.to_string(), port, broadcast), "send")
 }
 
 pub fn udp_connect(id: u32, address: &str, port: u16) -> Result<(), String> {
     command(id, Cmd::Connect(address.to_string(), port), "connect")
 }
 
+#[cfg(test)] // 老的 base64 入口：JS 已改走 *_bytes（bin_stash.rs），只留给单测
 pub fn udp_write(id: u32, data_b64: &str) -> Result<(), String> {
-    command(id, Cmd::Write(unb64(data_b64)?), "write")
+    udp_write_bytes(id, unb64(data_b64)?)
+}
+
+pub fn udp_write_bytes(id: u32, bytes: Vec<u8>) -> Result<(), String> {
+    command(id, Cmd::Write(bytes), "write")
 }
 
 pub fn udp_set_ttl(id: u32, ttl: u32) -> Result<(), String> {
@@ -313,7 +336,8 @@ mod tests {
         udp_send(9001, "127.0.0.1", b, &b64(b"ping"), false).unwrap();
         let msg = wait_for(9002, "message", 2000).expect("b 收到");
         let v: serde_json::Value = serde_json::from_str(&msg).unwrap();
-        assert_eq!(unb64(v["message"].as_str().unwrap()).unwrap(), b"ping");
+        assert_eq!(v["bin"], true);
+        assert_eq!(crate::bin_stash::take(crate::bin_stash::NET, 9002).unwrap(), b"ping");
         assert_eq!(v["remoteInfo"]["port"], a);
         assert_eq!(v["remoteInfo"]["size"], 4);
         close(9001).unwrap();
@@ -336,7 +360,8 @@ mod tests {
         tcp_write(9101, &b64(b"hello")).unwrap();
         let msg = wait_for(9101, "message", 2000).expect("收到回包");
         let v: serde_json::Value = serde_json::from_str(&msg).unwrap();
-        assert_eq!(unb64(v["message"].as_str().unwrap()).unwrap(), b"world");
+        assert_eq!(v["bin"], true);
+        assert_eq!(crate::bin_stash::take(crate::bin_stash::NET, 9101).unwrap(), b"world");
         server.join().unwrap();
         assert!(wait_for(9101, "close", 2000).is_some(), "对端关了要报 close");
     }

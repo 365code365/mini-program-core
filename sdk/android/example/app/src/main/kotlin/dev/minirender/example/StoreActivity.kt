@@ -289,7 +289,7 @@ class StoreActivity : Activity() {
     /** 分类按列表现算（离线时用缓存的列表也能出来），顺序跟服务器的固定分类表走 */
     private fun showCategories(apps: List<MiniStore.App>) {
         catBox.removeAllViews()
-        val order = listOf("美食", "购物", "出行", "生活服务", "医疗健康", "金融", "工具", "教育", "娱乐", "资讯", "政务", "其他")
+        val order = listOf("美食", "购物", "出行", "生活服务", "医疗健康", "金融", "工具", "教育", "娱乐", "游戏", "资讯", "政务", "其他")
         val counts = apps.groupingBy { it.category.ifEmpty { "其他" } }.eachCount()
         order.filter { (counts[it] ?: 0) > 0 }.forEach { c ->
             catBox.addView(StoreWidgets.chip(this, "$c ${counts[c]}") { SearchActivity.start(this, store.baseUrl, c) })

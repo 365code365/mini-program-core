@@ -49,6 +49,8 @@ pub struct MRApp {
     /// 卸载 / 重挂 / destroy 时**先**放掉合成器、再 release
     #[cfg(target_os = "android")]
     pub(crate) gpu_window: usize,
+    /// `mr_app_touch` 的指针分配（第一根 / 第二根），见 host/touch_adapter.rs
+    pub(crate) touch: crate::host::touch_adapter::TouchAdapter,
 }
 
 impl MRApp {
@@ -65,6 +67,7 @@ impl MRApp {
             cpu_window_size: (0, 0),
             #[cfg(target_os = "android")]
             gpu_window: 0,
+            touch: Default::default(),
         }
     }
 }
@@ -235,6 +238,16 @@ pub extern "C" fn mr_app_pointer_cancel(app: *mut MRApp) {
 #[no_mangle]
 pub extern "C" fn mr_app_pointer2(app: *mut MRApp, phase: c_int, x: f32, y: f32) {
     with_app!(app, (), |a| a.engine.pointer2(phase, x, y))
+}
+
+/// 每根指针一次的触摸（与 `mr_game_touch` 同形，game-doc/02 §7.1）：`phase` 0 下 / 1 移 / 2 抬 / 3 取消，`id` 宿主指针 id，
+/// 坐标逻辑像素，`force` 暂不用，`t_ms` 事件时刻（与 `mr_app_pump` 同一个钟的毫秒，≤0 = 不知道）。
+/// 映射到上面的老接口：第一根 → pointer_*，第二根 → pointer2，第三根起丢掉（规则见 host/touch_adapter.rs）。
+/// 宿主二选一，不要两套混着调（各自记着手指，混用会重复）
+#[no_mangle]
+pub extern "C" fn mr_app_touch(app: *mut MRApp, phase: c_int, id: c_int, x: f32, y: f32, force: f32, t_ms: f64) {
+    let _ = force;
+    with_app!(app, (), |a| a.touch.apply(&mut a.engine, phase, id, x, y, t_ms))
 }
 
 /// 手机朝向（方向传感器：0 竖 / 90 左侧朝下 / -90 右侧朝下）。全屏视频没指定 `direction` 时跟着转

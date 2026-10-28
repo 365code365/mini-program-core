@@ -23,7 +23,7 @@ android {
         java.srcDirs("src/main/kotlin", "../../src/main/kotlin")
         jniLibs.srcDirs("../../src/main/jniLibs")
         // 演示小程序与 Flutter 示例共用（assets/demo/…），启动时解包到 filesDir
-        assets.srcDirs("../../../flutter/example/assets")
+        assets.srcDirs("../../../flutter/example/assets", layout.buildDirectory.dir("generated/gameAssets"))
     }
     buildTypes {
         // 量流畅度装 release（`./gradlew installRelease`）：debug 包是 DEBUGGABLE，ART 不做 AOT、
@@ -39,3 +39,15 @@ android {
 kotlin {
     compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
 }
+
+// 小游戏夹具（仓库的 sample-game/）拷进 assets/game/：GameActivity 打开它们（game-doc/05 §2.1）。
+// 不用软链：AssetManager 解包后软链会失效
+val copyGameAssets by tasks.registering(Copy::class) {
+    from("../../../../sample-game")
+    into(layout.buildDirectory.dir("generated/gameAssets/game"))
+    exclude("**/README.md")
+    // AAPT 默认丢掉以 _ 开头的资源目录（ignoreAssetsPattern 含 `_*`）：_lib 打包成 shared-lib，GameAssets 解包时还原
+    eachFile { path = path.replace("_lib/", "shared-lib/") }
+    includeEmptyDirs = false
+}
+tasks.named("preBuild") { dependsOn(copyGameAssets) }

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# 把一个小程序目录打包上传到 mini-store（同 ID 再传 = 升级，版本号 +1）。
+# 把一个小程序或小游戏目录打包上传到 mini-store（同 ID 再传 = 升级，版本号 +1）。
+# 小程序目录根上是 app.json，小游戏目录根上是 game.json + game.js（服务器据此标成「小游戏」）。
 #
 #   MINI_STORE_PASS=… bash tools/mini-store/upload.sh <小程序目录> <id> [名称] [描述]
 #
@@ -11,14 +12,14 @@
 #
 # 环境变量：MINI_STORE_URL（默认 http://64.83.22.217:9630）、MINI_STORE_USER（默认 admin）、MINI_STORE_PASS（必填）
 set -euo pipefail
-DIR="${1:?用法：upload.sh <小程序目录> <id> [名称] [描述]}"
+DIR="${1:?用法：upload.sh <小程序或小游戏目录> <id> [名称] [描述]}"
 ID="${2:?缺 id}"
 NAME="${3:-}"
 DESC="${4:-}"
 URL="${MINI_STORE_URL:-http://64.83.22.217:9630}"
 USER_="${MINI_STORE_USER:-admin}"
 : "${MINI_STORE_PASS:?要 MINI_STORE_PASS}"
-[ -f "$DIR/app.json" ] || { echo "✗ $DIR 下没有 app.json，不是小程序目录" >&2; exit 1; }
+[ -f "$DIR/app.json" ] || [ -f "$DIR/game.json" ] || { echo "✗ $DIR 下没有 app.json / game.json，不是小程序或小游戏目录" >&2; exit 1; }
 
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
@@ -56,4 +57,5 @@ python3 -c '
 import json, sys
 m = json.load(open(sys.argv[1]))
 if "error" in m: sys.exit("✗ 上传失败：" + m["error"])
-print("✓ %s「%s」%s v%d  %d 个文件  %d 页  %.2f MB" % (m["id"], m["name"], m.get("appId", ""), m["version"], m["files"], m["pages"], m["size"] / 1048576))' "$TMP/put.json"
+shape = ("%s %s" % (m.get("kindLabel", "小游戏"), m.get("orientation", "portrait"))) if m.get("kind") == "game" else ("%d 页" % m["pages"])
+print("✓ %s「%s」%s v%d  %d 个文件  %s  %.2f MB" % (m["id"], m["name"], m.get("appId", ""), m["version"], m["files"], shape, m["size"] / 1048576))' "$TMP/put.json"

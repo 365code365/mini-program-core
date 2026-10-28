@@ -5,6 +5,7 @@ mod app;
 mod app_io;
 /// 宿主事件与 hostCall（从 app.rs 拆出）
 mod app_host;
+mod app_clock;
 /// 页面生命周期的调用入口（异常不再被吞）
 mod page_hooks;
 mod window;

@@ -47,7 +47,7 @@ class SearchActivity : Activity() {
         local = StoreLocal(this)
         category = intent.getStringExtra(EXTRA_CATEGORY).orEmpty()
         input = EditText(this).apply {
-            hint = "搜索小程序"
+            hint = "搜索小程序 / 小游戏"
             textSize = 15f
             isSingleLine = true
             imeOptions = EditorInfo.IME_ACTION_SEARCH
@@ -220,7 +220,7 @@ class SearchActivity : Activity() {
                     status.text = when {
                         total == 0 && q.isNotEmpty() -> "没有找到「$q」相关的小程序，换个词试试"
                         total == 0 -> "这个分类下还没有小程序"
-                        else -> "共 $total 个小程序"
+                        else -> "共 $total 个结果"
                     }
                     apps.forEach { body.addView(StoreWidgets.resultRow(this, store, it, q)) }
                 }.onFailure { status.text = "搜索失败：${it.message ?: it.javaClass.simpleName}" }

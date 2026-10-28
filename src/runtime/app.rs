@@ -40,7 +40,8 @@ pub enum UiEvent {
 
 /// 小程序应用
 pub struct MiniApp {
-    runtime: Arc<Mutex<JsRuntime>>,
+    /// app_clock.rs 要直接调全局函数
+    pub(super) runtime: Arc<Mutex<JsRuntime>>,
     /// app_host.rs 要取宿主事件队列
     pub(super) bridge: Arc<JsBridge>,
     api: MiniAppApi,
@@ -48,18 +49,22 @@ pub struct MiniApp {
     height: u32,
     running: bool,
     last_frame: Instant,
-    timers: HashMap<u32, TimerState>,
+    /// app_clock.rs 要算最近一个到点的定时器
+    pub(super) timers: HashMap<u32, TimerState>,
     ui_events: Vec<UiEvent>,
     /// `wx.pageScrollTo` 的请求（JSON 对象），宿主每帧取走
     page_scroll_requests: Vec<serde_json::Value>,
     /// 通用宿主请求 (种类, 参数)，按发生顺序；宿主按种类取走（见 `take_host_requests`）
     host_requests: Vec<(String, serde_json::Value)>,
+    /// 定时器用的时钟：`None` = 墙上时钟（小程序，与从前一样）；小游戏每帧设成帧时刻（game-doc/02 §4.4），
+    /// 同一帧里 rAF 与定时器看到同一个时间，无头按 `--hz` 跑时结果逐帧可复现
+    pub(super) timer_clock: Option<Instant>,
 }
 
-struct TimerState {
-    delay_ms: u32,
+pub(super) struct TimerState {
+    pub(super) delay_ms: u32,
     repeat: bool,
-    last_trigger: Instant,
+    pub(super) last_trigger: Instant,
 }
 
 impl MiniApp {
@@ -80,18 +85,24 @@ impl MiniApp {
             ui_events: Vec::new(),
             page_scroll_requests: Vec::new(),
             host_requests: Vec::new(),
+            timer_clock: None,
         })
     }
     
     /// 初始化应用
     pub fn init(&mut self) -> Result<(), String> {
+        self.init_profile(crate::js::PreludeProfile::MiniProgram)
+    }
+
+    /// 按应用种类初始化（小游戏只装通用段，见 `js::api::GAME_CORE`）
+    pub fn init_profile(&mut self, profile: crate::js::PreludeProfile) -> Result<(), String> {
         // 先初始化桥接（注册 native 函数）
         println!("  Initializing Bridge...");
         self.bridge.init().map_err(|e| format!("Bridge init failed: {}", e))?;
         
         // 再初始化 API（使用 native 函数）
         println!("  Initializing API...");
-        self.api.init().map_err(|e| format!("API init failed: {}", e))?;
+        self.api.init_profile(profile).map_err(|e| format!("API init failed: {}", e))?;
         // 本线程上的渲染层从此能调 wxs 模块（`{{m.f(x)}}`）；渲染与逻辑层同线程
         crate::parser::expr::wxs::set_host(Some(std::rc::Rc::new(super::wxs_host::AppWxsHost::new(&self.runtime))));
         
@@ -265,6 +276,8 @@ impl MiniApp {
     /// 把后台线程完成的 HTTP 响应喂回 JS 的 `__resolveRequest`
     fn process_network_responses(&mut self) -> Result<(), String> {
         let done = crate::net::take_completed(self.bridge.net_owner());
+        // 过程事件在完成结果之后取、之前派发：事件总先于结果入队，先拍下结果再取事件就一个不漏（app_io.rs）
+        self.process_net_events();
         if done.is_empty() {
             return Ok(());
         }
@@ -348,7 +361,7 @@ impl MiniApp {
     }
     
     fn process_timers(&mut self) -> Result<(), String> {
-        let now = Instant::now();
+        let now = self.timer_now();
         // 每帧都走：先判有没有到点的，没有就不建那两个 Vec（真机 jemalloc 带锁，滚动时每帧两次分配）
         if !self.timers.values().any(|s| now.duration_since(s.last_trigger).as_millis() as u32 >= s.delay_ms) {
             return Ok(());
@@ -394,7 +407,7 @@ impl MiniApp {
                     self.timers.insert(id, TimerState {
                         delay_ms: delay,
                         repeat,
-                        last_trigger: Instant::now(),
+                        last_trigger: self.timer_now(),
                     });
                 }
                 BridgeEvent::ClearTimer(id) => {
@@ -502,6 +515,11 @@ impl MiniApp {
     }
 
     // 宿主事件与 hostCall（take_host_events / install_host_apis / resolve_host_call）在 app_host.rs
+
+    /// JS 运行时本身（小游戏在上面装守护，见 js/guards.rs）
+    pub fn js_runtime(&self) -> Arc<Mutex<JsRuntime>> {
+        self.runtime.clone()
+    }
 
     /// 执行 JS 代码
     pub fn eval(&self, code: &str) -> Result<String, String> {

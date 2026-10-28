@@ -382,7 +382,8 @@ Headless image output (for CI / regression):
 
 Common action flags (executed in the order written, repeatable): `--touch x,y` /
 `--swipe x1,y1,x2,y2` / `--drag px×frames` / `--type text` / `--key enter` / `--wheel` /
-`--wait seconds` / `--frames N`. In the window, `wx.chooseImage` / `chooseMedia` / `chooseVideo` /
+`--wait seconds` / `--frames N`. On a mini-game package, `--touch` / `--click` / `--press` / `--swipe` / `--wait` drive
+`wx.onTouch*` (game logical pixels); multi-touch uses `--multitouch "7:100,200@0;7:110,200@16;u7@48"` (`id:x,y@ms`, `u` up, `c` cancel). In the window, `wx.chooseImage` / `chooseMedia` / `chooseVideo` /
 `chooseMessageFile` open the system file dialog and saving to the album opens "Save As" (macOS / Windows);
 headless runs use `MINI_PICK_FILES=/a.png,/b.jpg` as the picked files and `MINI_SAVE_DIR=<dir>` as the
 save target, and fail with `:fail cancel` when neither is set. Full list via `--help`. Diagnostic switches
@@ -411,6 +412,16 @@ and the log says why:
 | `MINI_GPU_LOG=1` | Verbose GPU log: init time, self-test samples, surface format, per-frame composite mode (layered / passthrough) and upload bytes |
 | `MINI_GPU_VERIFY=1` | Headless: read back every GPU frame and compare it byte-for-byte with the CPU composite of the same layers; exits with code 5 on mismatch |
 | `MINI_GPU_FAULT=init\|selftest\|tint\|lost@N\|surface-lost@N\|timeout@N` | Fault injection for the fallback paths |
+| `MINI_GAME_LOG=1` | Mini-game (`game.json`) diagnostics: unknown `game.json` fields, module count, orientation |
+| `MINI_GAME_LOG_ALL=1` | Mini-game: disable the per-frame console limit (500 lines/frame, 4KB/line) |
+| `MINI_WEBGL=auto\|angle\|swiftshader\|system\|off` | Mini-game WebGL backend (overrides the `webgl` creation option): auto tries ANGLE first when interactive (Metal on macOS) and SwiftShader first when headless (deterministic); Android tries ANGLE then the system GLES driver; off makes `getContext('webgl')` return null. The chosen backend and any fallback reason go to the game log |
+| `MINI_ANGLE_DIR=<dir>` | Mini-game WebGL: directory with the ANGLE libraries (libEGL / libGLESv2); defaults to next to the executable, `../Frameworks`, then `third_party/angle/<platform>/` (fetched by `tools/fetch-angle.sh`) |
+| `MINI_GPU_FAULT=lost@N` (mini-game) | In a mini-game it applies to WebGL: the main canvas context is lost at the N-th present and `webglcontextlost` is dispatched |
+| `MINI_GAME_WATCHDOG_MS=<ms>` | Mini-game: time limit for one entry into JS (default 5000); exceeded → `InternalError: interrupted`, `wx.onError`, host `error{kind:"watchdog"}` |
+| `MINI_GAME_FAULT=panic@pump\|panic@eval` | Mini-game fault injection: verifies the FFI panic guard (instance becomes poisoned, host process survives) |
+| `MINI_RAF_LOG=1` | Mini-game: one line per `requestAnimationFrame` round (timestamp, target fps, measured display period, uneven-cadence warning) |
+| `adb shell setprop debug.mini.game_log 1` | Android mini-game view: log every frame's engine work / copy / submit / buffer-wait (default: only frames over 8ms) |
+| `adb shell setprop debug.mini.touch_log 1` | Android mini-game view: per frame, how long the oldest queued touch waited before the pump that dispatched it (`👆 [GAME]`) |
 
 How `auto` decides: the adapter must be an integrated or discrete GPU (software adapters such as
 llvmpipe never count), on Metal / Vulkan / DX12 (GLES only when `gpu` is forced); a start-up

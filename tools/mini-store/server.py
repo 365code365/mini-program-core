@@ -5,12 +5,15 @@
 
     config.json               账户（PBKDF2 哈希）与会话签名密钥
     apps/<id>/meta.json       AppID、名称、描述、版本号、sha256、大小……
-    apps/<id>/package.zip     规整过的包：app.json 在 zip 根上，project.config.json 里的 appid 与 meta 一致
+    apps/<id>/package.zip     规整过的包：app.json（小程序）或 game.json（小游戏）在 zip 根上，
+                              project.config.json 里的 appid 与 meta 一致、compileType 与包的种类一致
 
 包的校验、AppID 分配见 store_pkg.py；H5 落地页见 landing.py。
 
 接口（<key> = AppID 或 id）：
     GET    /api/apps?q=&category=&limit= 公开：小程序列表 / 搜索（示例 App 用；q 为空 = 全部，按热度）
+           &kind=miniprogram|game|all    包的种类，不给 = 只要小程序（现有 App 只会开 app.json 的包）；
+                                         每条带 kind / kindLabel，小游戏另带 orientation
            &page=&pageSize=              给了任一个才分页（pageSize 1~100，默认 20），回 {apps, total, page, pageSize}；
                                          不给保持全量（App 依赖全量列表）
     GET    /api/demo/…                   公开：示例小程序的演示数据（CORS *；完整说明见 demo_api.py 文件头）
@@ -20,7 +23,7 @@
            music/playlists?tag=   music/playlists/<id>   music/songs?q=   music/songs/<id>（lrc + audioUrl）   music/charts
            photos?tag=&q=   photos/<id>   img/<kind>/<name>.jpg   audio/<n>.wav
            图片 / 音频由 make_demo_assets.py 在本机生成到 demo_assets/，随 deploy.sh 上传
-    GET    /api/categories               公开：分类与各分类的数量
+    GET    /api/categories?kind=         公开：分类与各分类的数量（kind 同上）
     GET    /api/search/hot               公开：热搜词
     GET    /api/search/suggest?q=        公开：输入联想
     GET    /api/apps/<key>/icon          公开：商店图标（包根上的 icon.png）
@@ -62,7 +65,7 @@ import demo_api
 import diag
 import landing
 import store_search
-from store_pkg import (DATA, HttpError, app_dir, bump_downloads, delete_app, find, list_apps, patch_app,
+from store_pkg import (DATA, HttpError, app_dir, bump_downloads, delete_app, find, kind_filter, list_apps, patch_app,
                        public_meta, save_app, write_json)
 
 PORT = int(os.environ.get('MINI_STORE_PORT', '9630'))
@@ -207,7 +210,7 @@ class Handler(BaseHTTPRequestHandler):
             status, page = landing.render(appid, self.query.get('path', ''), self.query.get('query', ''))
             return self.send_html(page, status)
         if method == 'GET' and p == ['api', 'categories']:
-            return self.send_json({'categories': store_search.categories()})
+            return self.send_json({'categories': store_search.categories(kind_filter(self.query.get('kind')))})
         if method == 'GET' and p == ['api', 'search', 'hot']:
             return self.send_json({'keywords': store_search.hot_keywords()})
         if method == 'GET' and p == ['api', 'search', 'suggest']:
@@ -262,21 +265,22 @@ class Handler(BaseHTTPRequestHandler):
     def list_apps_api(self):
         """GET /api/apps：分页参数给了才分页 —— App 拿的是全量（不带参数），管理页按页拉"""
         q, cat = self.query.get('q', ''), self.query.get('category', '')
+        kinds = kind_filter(self.query.get('kind'))
         paged = 'page' in self.query or 'pageSize' in self.query
         page = _int_arg(self.query.get('page'), 1, 1, 100_000)
         size = _int_arg(self.query.get('pageSize'), 20, 1, 100)
         now = int(time.time() * 1000)
         if not q and not cat:
-            apps = list_apps()
+            apps = list_apps(kinds)
             if not paged:
                 return self.send_json({'apps': apps, 'serverTime': now})
             return self.send_json({'apps': apps[(page - 1) * size:page * size], 'total': len(apps), 'page': page,
                                    'pageSize': size, 'serverTime': now})
         if paged:
-            apps, total = store_search.search(q, cat, size, offset=(page - 1) * size)
+            apps, total = store_search.search(q, cat, size, offset=(page - 1) * size, kinds=kinds)
             return self.send_json({'apps': apps, 'total': total, 'page': page, 'pageSize': size, 'q': q,
                                    'category': cat, 'serverTime': now})
-        apps, total = store_search.search(q, cat, _int_arg(self.query.get('limit'), 50, 1, 200))
+        apps, total = store_search.search(q, cat, _int_arg(self.query.get('limit'), 50, 1, 200), kinds=kinds)
         return self.send_json({'apps': apps, 'total': total, 'q': q, 'category': cat, 'serverTime': now})
 
     # ── 鉴权 ──
