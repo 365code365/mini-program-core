@@ -92,35 +92,93 @@ fn box_down(src: &[u8], w: usize, h: usize, n: usize) -> Vec<u8> {
 }
 
 /// 覆盖率图 → 宽 2r 的轮廓环（以字形边缘为中线）：外扩 r 的膨胀减去内缩 r 的腐蚀。
-/// 邻点权重 `clamp(r − d + 1, 0, 1)`：r < 1 的细线（默认 lineWidth 1）也有一圈半透明的环，而不是整圈消失
+/// 邻点权重 `clamp(r − d + 1, 0, 1)`：r < 1 的细线（默认 lineWidth 1）也有一圈半透明的环，而不是整圈消失。
+///
+/// 为什么用距离变换而不是逐像素扫一个圆盘：后者是 O(像素 × r²)。Cocos 的 Label 描边就是 strokeText，
+/// 粗描边在 4 倍超采样上 r 有二三十像素，一个标签几百万像素 × 两千个邻点，真机打开一个弹窗卡 860ms（farm001）。
+/// 覆盖率按 128 二值化后：外面的点 = clamp(r − 到最近里点的距离 + 1)，里面的点 = clamp(r − 到最近外点的距离 + 1)，
+/// 与圆盘扫描在二值图上逐点相同；灰度边缘的差别在 4×4 面积平均之后看不出来（单测量了与旧算法的差）
 fn outline(cov: &[u8], w: usize, h: usize, r: f32) -> Vec<u8> {
-    let k = r.ceil().max(1.0) as i32;
-    let mut taps = Vec::new();
-    for dy in -k..=k {
-        for dx in -k..=k {
-            let d = ((dx * dx + dy * dy) as f32).sqrt();
-            let wgt = (r - d + 1.0).clamp(0.0, 1.0);
-            if wgt > 0.0 && (dx, dy) != (0, 0) {
-                taps.push((dx, dy, wgt));
-            }
+    // 四周各补一圈「外面」：图外按外面算（与旧算法越界取 0 一致），贴边的笔画外侧也有描边
+    let (pw, ph) = (w + 2, h + 2);
+    let mut inside = vec![false; pw * ph];
+    for y in 0..h {
+        for x in 0..w {
+            inside[(y + 1) * pw + x + 1] = cov[y * w + x] >= 128;
         }
     }
-    let at = |x: i32, y: i32| if x < 0 || y < 0 || x >= w as i32 || y >= h as i32 { 0.0 } else { cov[y as usize * w + x as usize] as f32 / 255.0 };
-    let mut out = vec![0u8; cov.len()];
-    for y in 0..h as i32 {
-        for x in 0..w as i32 {
-            let c = at(x, y);
-            let (mut dil, mut ero_gap) = (c, 1.0 - c);
-            for &(dx, dy, wgt) in &taps {
-                let n = at(x + dx, y + dy);
-                dil = dil.max(n * wgt);
-                ero_gap = ero_gap.max((1.0 - n) * wgt);
-            }
-            let ring = (dil - (1.0 - ero_gap)).clamp(0.0, 1.0);
-            out[y as usize * w + x as usize] = (ring * 255.0).round() as u8;
+    let d_in = edt(&inside, pw, ph, true);
+    let d_out = edt(&inside, pw, ph, false);
+    let mut out = vec![0u8; w * h];
+    for y in 0..h {
+        for x in 0..w {
+            let i = (y + 1) * pw + x + 1;
+            let d = if inside[i] { d_out[i] } else { d_in[i] }.sqrt();
+            out[y * w + x] = ((r - d + 1.0).clamp(0.0, 1.0) * 255.0).round() as u8;
         }
     }
     out
+}
+
+/// 精确欧氏距离变换（Felzenszwalb & Huttenlocher，两遍一维下包络）：每个点到最近 `mask == want` 的点的**距离平方**
+fn edt(mask: &[bool], w: usize, h: usize, want: bool) -> Vec<f32> {
+    const INF: f32 = 1e20;
+    let mut g: Vec<f32> = mask.iter().map(|&m| if m == want { 0.0 } else { INF }).collect();
+    let n = w.max(h);
+    let (mut f, mut d, mut v, mut z) = (vec![0f32; n], vec![0f32; n], vec![0usize; n], vec![0f32; n + 1]);
+    let mut pass = |g: &mut Vec<f32>, len: usize, count: usize, at: &dyn Fn(usize, usize) -> usize| {
+        for line in 0..count {
+            for i in 0..len {
+                f[i] = g[at(line, i)];
+            }
+            dt1(&f[..len], &mut d[..len], &mut v, &mut z);
+            for i in 0..len {
+                g[at(line, i)] = d[i];
+            }
+        }
+    };
+    pass(&mut g, h, w, &|x, y| y * w + x);
+    pass(&mut g, w, h, &|y, x| y * w + x);
+    g
+}
+
+fn dt1(f: &[f32], d: &mut [f32], v: &mut [usize], z: &mut [f32]) {
+    let n = f.len();
+    let mut k = 0usize;
+    v[0] = 0;
+    z[0] = f32::NEG_INFINITY;
+    z[1] = f32::INFINITY;
+    for q in 1..n {
+        loop {
+            let p = v[k];
+            let s = ((f[q] + (q * q) as f32) - (f[p] + (p * p) as f32)) / (2.0 * (q as f32 - p as f32));
+            if s <= z[k] && k > 0 {
+                k -= 1;
+                continue;
+            }
+            if s <= z[k] {
+                // k == 0 且新抛物线整个更低：替换掉
+                v[0] = q;
+                z[0] = f32::NEG_INFINITY;
+                z[1] = f32::INFINITY;
+                break;
+            }
+            k += 1;
+            v[k] = q;
+            z[k] = s;
+            z[k + 1] = f32::INFINITY;
+            break;
+        }
+    }
+    k = 0;
+    for q in 0..n {
+        while z[k + 1] < q as f32 {
+            k += 1;
+        }
+        let p = v[k];
+        let dq = q as f32 - p as f32;
+        d[q] = dq * dq + f[p];
+    }
 }
 
 #[cfg(test)]
@@ -135,6 +193,52 @@ mod tests {
         assert!(o[5 * w + 2] > 100, "块左边缘有描边：{}", o[5 * w + 2]);
         assert!(o[5 * w + 1] > 0, "边缘外侧一像素也有半透明：{}", o[5 * w + 1]);
         assert_eq!(o[5 * w + 0], 0, "离远了没有");
+    }
+
+    /// 距离变换版与逐点扫圆盘的旧版在二值图上逐点相同（r 取整数与半整数各几档）
+    #[test]
+    fn 距离变换与圆盘扫描一致() {
+        let (w, h) = (64usize, 40usize);
+        // 一个环 + 一条斜线 + 一个点：内外边缘都有
+        let cov: Vec<u8> = (0..w * h)
+            .map(|i| {
+                let (x, y) = ((i % w) as f32, (i / w) as f32);
+                let d = ((x - 20.0).powi(2) + (y - 20.0).powi(2)).sqrt();
+                let on = (8.0..14.0).contains(&d) || ((x - y - 20.0).abs() < 2.0 && x > 36.0) || (x == 58.0 && y == 5.0);
+                if on { 255 } else { 0 }
+            })
+            .collect();
+        for r in [0.5f32, 1.0, 2.5, 6.0, 11.0] {
+            let a = super::outline(&cov, w, h, r);
+            let b = brute(&cov, w, h, r);
+            let bad = a.iter().zip(&b).filter(|(x, y)| (**x as i32 - **y as i32).abs() > 1).count();
+            assert_eq!(bad, 0, "r={r}：{bad} 个点不一样");
+        }
+    }
+
+    /// 旧算法（逐点扫圆盘），只给对照用
+    fn brute(cov: &[u8], w: usize, h: usize, r: f32) -> Vec<u8> {
+        let k = r.ceil().max(1.0) as i32;
+        let at = |x: i32, y: i32| if x < 0 || y < 0 || x >= w as i32 || y >= h as i32 { 0.0 } else { cov[y as usize * w + x as usize] as f32 / 255.0 };
+        let mut out = vec![0u8; cov.len()];
+        for y in 0..h as i32 {
+            for x in 0..w as i32 {
+                let c = at(x, y);
+                let (mut dil, mut gap) = (c, 1.0 - c);
+                for dy in -k..=k {
+                    for dx in -k..=k {
+                        let wgt = (r - ((dx * dx + dy * dy) as f32).sqrt() + 1.0).clamp(0.0, 1.0);
+                        if wgt > 0.0 && (dx, dy) != (0, 0) {
+                            let n = at(x + dx, y + dy);
+                            dil = dil.max(n * wgt);
+                            gap = gap.max((1.0 - n) * wgt);
+                        }
+                    }
+                }
+                out[y as usize * w + x as usize] = ((dil - (1.0 - gap)).clamp(0.0, 1.0) * 255.0).round() as u8;
+            }
+        }
+        out
     }
 }
 
