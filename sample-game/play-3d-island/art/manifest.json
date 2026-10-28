@@ -1,0 +1,208 @@
+{
+ "textures": {
+  "grass": 0,
+  "sand": 1,
+  "cliff": 2,
+  "cobble": 3,
+  "planks": 4,
+  "roof": 5,
+  "plaster": 6,
+  "rock": 7,
+  "field": 8,
+  "leaves": 9,
+  "bark": 10,
+  "hay": 11,
+  "brick": 12,
+  "hillgrass": 13,
+  "metal": 14,
+  "white": 15
+ },
+ "icons": {
+  "coin": [
+   0,
+   0
+  ],
+  "gem": [
+   128,
+   0
+  ],
+  "wheat": [
+   256,
+   0
+  ],
+  "wood": [
+   384,
+   0
+  ],
+  "stone": [
+   512,
+   0
+  ],
+  "bread": [
+   640,
+   0
+  ],
+  "fish": [
+   768,
+   0
+  ],
+  "honey": [
+   896,
+   0
+  ],
+  "xp": [
+   0,
+   128
+  ],
+  "hammer": [
+   128,
+   128
+  ],
+  "egg": [
+   256,
+   128
+  ],
+  "gift": [
+   384,
+   128
+  ],
+  "bag": [
+   512,
+   128
+  ],
+  "scroll": [
+   640,
+   128
+  ],
+  "paw": [
+   768,
+   128
+  ],
+  "calendar": [
+   896,
+   128
+  ],
+  "gear": [
+   0,
+   256
+  ],
+  "video": [
+   128,
+   256
+  ],
+  "share": [
+   256,
+   256
+  ],
+  "boost": [
+   384,
+   256
+  ],
+  "crown": [
+   512,
+   256
+  ],
+  "lock": [
+   640,
+   256
+  ],
+  "clock": [
+   768,
+   256
+  ],
+  "island": [
+   896,
+   256
+  ]
+ },
+ "portraits": {
+  "pet_chick": [
+   0,
+   0
+  ],
+  "pet_bunny": [
+   256,
+   0
+  ],
+  "pet_pup": [
+   512,
+   0
+  ],
+  "pet_piggy": [
+   768,
+   0
+  ],
+  "pet_cat": [
+   1024,
+   0
+  ],
+  "pet_panda": [
+   1280,
+   0
+  ],
+  "pet_frog": [
+   0,
+   256
+  ],
+  "pet_fox": [
+   256,
+   256
+  ],
+  "pet_owl": [
+   512,
+   256
+  ],
+  "pet_unicorn": [
+   768,
+   256
+  ],
+  "pet_dragon": [
+   1024,
+   256
+  ],
+  "bld_farm": [
+   1280,
+   256
+  ],
+  "bld_lumber": [
+   0,
+   512
+  ],
+  "bld_quarry": [
+   256,
+   512
+  ],
+  "bld_warehouse": [
+   512,
+   512
+  ],
+  "bld_market": [
+   768,
+   512
+  ],
+  "bld_bakery": [
+   1024,
+   512
+  ],
+  "bld_dock": [
+   1280,
+   512
+  ],
+  "bld_pethouse": [
+   0,
+   768
+  ],
+  "bld_lighthouse": [
+   256,
+   768
+  ],
+  "bld_apiary": [
+   512,
+   768
+  ]
+ },
+ "portraitSize": 256,
+ "iconSize": 128,
+ "cover": true,
+ "generatedBy": "doubao-seedream-4-5-251128"
+}

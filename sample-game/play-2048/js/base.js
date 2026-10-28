@@ -5,7 +5,9 @@
 // 主画布的 2D 上下文**用到才拿**（B.ctx 第一次被读时）：一块画布只能有一种上下文，
 // WebGL 的游戏（play-jump）要对同一块主画布 getContext('webgl')，先拿了 2D 就拿不到了
 var sys = wx.getSystemInfoSync();
-var canvas = wx.createCanvas();          // 第一次调用拿到的是上屏的主画布
+// 第一次 wx.createCanvas() 拿到的是上屏的主画布，之后的都是离屏的：与 js/adapter.js（three.js 的游戏）共用同一块，
+// 谁先 require 谁建，存在 GameGlobal.__mainCanvas
+var canvas = GameGlobal.__mainCanvas || (GameGlobal.__mainCanvas = wx.createCanvas());
 var ctx = null;
 function ctx2d() { return ctx || (ctx = canvas.getContext('2d')); }
 var W = sys.windowWidth, H = sys.windowHeight;

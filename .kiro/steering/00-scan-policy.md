@@ -15,6 +15,7 @@ dist-news/**       # 编译产物
 doc/gallery/**     # 画廊截图
 target/**          # 构建产物
 assets/**          # 字体等二进制素材
+sample-game/**     # 小游戏源码
 *.png *.jpg *.ttf *.otf *.zip
 ```
 

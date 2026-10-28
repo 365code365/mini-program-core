@@ -53,6 +53,9 @@ function addNext() {
 }
 function reset() {
   score = 0; combo = 0; newBest = false; fx = []; dust = []; ripple = null; spring = null;
+  // 上一局的下落 / 空中 / 蓄力状态必须清掉：fall 留着的话 press() 的 !fall 判断永远不让蓄力，
+  // update() 里小人继续往下掉，一进 play 就又结束了 ——「再玩一局」点了没反应就是这个
+  jump = null; fall = null; holding = false; hold = 0; autoHoldFor = 0;
   var first = makeBlock(0, 0, 0); first.w = 1.0; first.shape = 'cube'; first.colors = PALETTE[0];
   blocks = [first]; cur = first;
   addNext();
