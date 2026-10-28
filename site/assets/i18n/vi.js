@@ -42,6 +42,7 @@
  "show.eyebrow": "Demo",
  "show.h2": "Mười hai mini program,<br><span class=\"grad\">một engine, một phút</span>",
  "show.lede": "Chat, kanban, vé tàu, chứng khoán, công thức nấu ăn và hơn thế: các mini program mẫu phức tạp chạy trên Android SDK, chụp từng màn hình từ thiết bị. Mọi màn hình đều do engine này vẽ, không phải WebView.",
+ "show.fallback": "Trình duyệt này không phát được video ở đây. Mở trực tiếp ↗",
  "show.cap": "60 giây · 1280×720 · ảnh chụp từ trình giả lập Android, nhạc tổng hợp bằng script",
  "game.eyebrow": "Mới · mini game WeChat",
  "game.h2": "Không chỉ mini program.<br><span class=\"grad gm-grad\">Mini game 3D hoàn chỉnh, cùng một engine.</span>",

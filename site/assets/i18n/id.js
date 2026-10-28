@@ -42,6 +42,7 @@
  "show.eyebrow": "Demo",
  "show.h2": "Dua belas program mini,<br><span class=\"grad\">satu mesin, satu menit</span>",
  "show.lede": "Chat, kanban, tiket kereta, saham, resep, dan lainnya: contoh program mini yang kompleks berjalan di SDK Android, direkam layar demi layar dari perangkat. Setiap layar digambar oleh mesin ini, bukan oleh WebView.",
+ "show.fallback": "Browser ini tidak bisa memutar video di sini. Buka langsung ↗",
  "show.cap": "60 dtk · 1280×720 · tangkapan layar dari emulator Android, musik disintesis dengan skrip",
  "game.eyebrow": "Baru · mini game WeChat",
  "game.h2": "Bukan cuma mini program.<br><span class=\"grad gm-grad\">Mini game 3D utuh, mesin yang sama.</span>",

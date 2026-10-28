@@ -24,17 +24,36 @@
 
     // 有 JS 才摘掉原生控件，换成自己的播放按钮；真开始播再把控件还回去
     video.removeAttribute('controls');
+    var fallback = stage.querySelector('.sc-fallback');
+    // 放不出来（浏览器不认 H.264 / VP9，比如没带专有解码器的 Electron 内嵌浏览器；或者网络断了）：
+    // 别让人对着一张静止的海报干点，给一个直接打开视频文件的链接
+    var broken = function () { if (fallback) fallback.hidden = false; };
+    // <source> 的 error 不冒泡，捕获阶段才收得到；一个源失败浏览器会去试下一个（mp4 → webm），
+    // 只有全部失败（NETWORK_NO_SOURCE）或解码出错（video.error）才算放不了
+    video.addEventListener('error', function () {
+      setTimeout(function () { if (video.error || video.networkState === 3) broken(); }, 0);
+    }, true);
     var play = function () {
       if (stage.classList.contains('is-playing')) return;
       stage.classList.add('is-playing');
       stage.classList.remove('is-tilting');
+      state('landed');
       video.controls = true;
+      // preload="none" 时 Safari 有时不会因为 play() 去拉数据：先显式 load 一次
+      if (video.readyState === 0 && video.networkState !== 2) video.load();
       var p = video.play();
-      if (p && p.catch) p.catch(function () { /* 自动播放被拦：控件已经在，让用户自己点 */ });
+      if (p && p.catch) p.catch(function (e) {
+        // 被自动播放策略拦下（NotAllowedError）：控件已经在，让用户自己点；别的错误多半是放不了
+        if (e && e.name !== 'NotAllowedError' && (video.error || video.networkState === 3)) broken();
+      });
     };
-    playBtn.addEventListener('click', play);
-    card.addEventListener('click', function (ev) {
-      if (!stage.classList.contains('is-playing') && stage.getAttribute('data-sc') === 'landed' && ev.target !== playBtn) play();
+    // 点舞台里任何地方都算：卡片在 3D 里倾斜，有的浏览器（WebKit）把点击命中到旁边的装饰层上，
+    // 只挂在按钮上的话就成了「按钮在那儿、点了没反应」。播放之后交给原生控件，不再拦
+    stage.addEventListener('click', function (ev) {
+      if (stage.classList.contains('is-playing')) return;
+      if (ev.target === fallback) return;
+      ev.preventDefault();
+      play();
     });
 
     var land = function () { state('landed'); };
@@ -83,6 +102,8 @@
           if (!e.isIntersecting && !video.paused) video.pause();
         });
       }, { threshold: [0, 0.2] }).observe(band.querySelector('.sc-stage'));
+      // 兜底：滚到了却一直没起飞（嵌入式浏览器的 IntersectionObserver 不可靠），8 秒后直接落定
+      setTimeout(function () { if (stage.getAttribute('data-sc') === 'armed' && band.getBoundingClientRect().top < innerHeight) land(); }, 8000);
     }
 
     /* 落定后的 3D 倾斜 + 高光跟着指针 */

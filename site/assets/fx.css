@@ -157,6 +157,16 @@
 @keyframes sc-ripple { from { transform: scale(1); opacity: .9; } to { transform: scale(1.9); opacity: 0; } }
 .sc-play:hover { transform: scale(1.08); box-shadow: 0 0 0 1px rgba(56, 189, 248, .6), 0 0 60px rgba(56, 189, 248, .8), inset 0 0 20px rgba(255, 255, 255, .2); }
 .sc-play:focus-visible { outline: 2px solid #7dd3fc; outline-offset: 6px; }
+/* 按钮在 3D 里也要排在细边（translateZ 1px）和参数牌前面：WebKit 按深度命中，平面上的按钮会被它们挡住点击 */
+.sc-stage[data-sc="landed"] .sc-play { transform: translateZ(4px); }
+.sc-stage[data-sc="landed"] .sc-play:hover { transform: translateZ(4px) scale(1.08); }
+/* 放不了时的直链 */
+.sc-fallback {
+  position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%) translateZ(5px); z-index: 3;
+  padding: 8px 14px; border-radius: 999px; font-size: 13px; color: #e0f2fe; text-decoration: none; white-space: nowrap;
+  background: rgba(6, 10, 22, .82); border: 1px solid rgba(125, 211, 252, .5);
+}
+.sc-fallback[hidden] { display: none; }
 
 /* 光环：卡片后面一大团彩色的光（静态配色，只做呼吸：缩放不重绘） */
 .sc-halo {

@@ -42,6 +42,7 @@
  "show.eyebrow": "Demo",
  "show.h2": "Doce miniprogramas,<br><span class=\"grad\">un motor, un minuto</span>",
  "show.lede": "Chat, kanban, billetes de tren, bolsa, recetas y más: miniprogramas de ejemplo complejos ejecutándose sobre el SDK de Android, capturados pantalla a pantalla en el dispositivo. Cada pantalla la dibuja este motor, no un WebView.",
+ "show.fallback": "Este navegador no puede reproducir el vídeo aquí. Abrirlo directamente ↗",
  "show.cap": "60 s · 1280×720 · capturas del emulador de Android, música sintetizada por script",
  "game.eyebrow": "Nuevo · minijuegos de WeChat",
  "game.h2": "No solo miniprogramas.<br><span class=\"grad gm-grad\">Minijuegos 3D completos, el mismo motor.</span>",

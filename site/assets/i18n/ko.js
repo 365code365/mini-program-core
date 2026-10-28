@@ -42,6 +42,7 @@
  "show.eyebrow": "데모",
  "show.h2": "미니 프로그램 12개,<br><span class=\"grad\">엔진 하나, 1분</span>",
  "show.lede": "채팅, 칸반, 기차표, 주식, 레시피 등 복잡한 샘플 미니 프로그램을 Android SDK에서 실행하고 기기에서 한 화면씩 캡처했습니다. 모든 화면은 WebView가 아니라 이 엔진이 그립니다.",
+ "show.fallback": "이 브라우저에서는 여기서 재생할 수 없습니다. 직접 열기 ↗",
  "show.cap": "60초 · 1280×720 · Android 에뮬레이터 스크린샷, 음악은 스크립트로 합성",
  "game.eyebrow": "신규 · WeChat 미니게임",
  "game.h2": "미니프로그램만이 아닙니다.<br><span class=\"grad gm-grad\">완전한 3D 미니게임도, 같은 엔진으로.</span>",

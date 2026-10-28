@@ -264,6 +264,7 @@
     'show.aria': '演示视频',
     'show.play': '播放演示',
     'show.cap': '60 秒 · 1280×720 · Android 模拟器截图，配乐由脚本合成',
+    'show.fallback': '这个浏览器在这里放不了视频，直接打开 ↗',
     'dev.eyebrow': '真机',
     'dev.h2': '90Hz 真机上的顺滑，<br><span class="grad">逐帧量出来</span>',
     'dev.lede': '同一个引擎跑在 Flutter 插件和 Android / iOS 原生 View 里。下面的数字来自一加 PLY110（90Hz、Adreno 810、Vulkan）上 Flutter 示例与原生 Android 示例（同一个演示小程序）的 release 包，判据是 SurfaceFlinger 给屏上每一帧打的时间戳，不是 App 自己的日志。',

@@ -42,6 +42,7 @@
  "show.eyebrow": "デモ",
  "show.h2": "12 本のミニプログラム、<br><span class=\"grad\">1 つのエンジンで 1 分間</span>",
  "show.lede": "チャット、カンバン、列車予約、株価、レシピなど、複雑なサンプルミニプログラムを Android SDK 上で動かし、端末から 1 画面ずつキャプチャしました。どの画面も WebView ではなく、このエンジンが描いています。",
+ "show.fallback": "このブラウザではここで再生できません。直接開く ↗",
  "show.cap": "60 秒 · 1280×720 · Android エミュレータのスクリーンショット、音楽はスクリプトで合成",
  "game.eyebrow": "新機能 · WeChat ミニゲーム",
  "game.h2": "ミニプログラムだけじゃない。<br><span class=\"grad gm-grad\">本格 3D ミニゲームも、同じエンジンで。</span>",

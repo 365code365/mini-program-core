@@ -207,7 +207,8 @@
               <video class="sc-video" controls preload="none" playsinline
                      poster="assets/video/showcase.jpg" width="1280" height="720"
                      aria-label="Showcase video" data-i18n-aria="show.aria">
-                <source src="assets/video/showcase.mp4" type="video/mp4">
+                <source src="assets/video/showcase.mp4" type='video/mp4; codecs="avc1.640028, mp4a.40.2"'>
+                <source src="assets/video/showcase.webm" type='video/webm; codecs="vp9, opus"'>
               </video>
               <div class="sc-paper" aria-hidden="true"></div>
               <div class="sc-hud" aria-hidden="true">
@@ -217,6 +218,7 @@
                 <span class="sc-scan"></span>
               </div>
               <div class="sc-glare" aria-hidden="true"></div>
+              <a class="sc-fallback" href="assets/video/showcase.mp4" target="_blank" rel="noopener" hidden data-i18n="show.fallback">This browser can't play the video here. Open it directly ↗</a>
               <button type="button" class="sc-play" aria-label="Play the demo" data-i18n-aria="show.play">
                 <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path fill="currentColor" d="M8 5.2v13.6a.8.8 0 0 0 1.2.7l10.6-6.8a.8.8 0 0 0 0-1.4L9.2 4.5A.8.8 0 0 0 8 5.2Z"/></svg>
               </button>

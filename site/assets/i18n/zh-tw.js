@@ -42,6 +42,7 @@
  "show.eyebrow": "示範",
  "show.h2": "十二個小程式，<br><span class=\"grad\">一個引擎，一分鐘</span>",
  "show.lede": "聊天、看板、火車票、股票、食譜……這些複雜的範例小程式跑在 Android SDK 上，逐畫面從裝置擷取下來。每一個畫面都是本引擎繪製的，不是 WebView。",
+ "show.fallback": "這個瀏覽器在這裡無法播放影片，直接開啟 ↗",
  "show.cap": "60 秒 · 1280×720 · Android 模擬器截圖，配樂由腳本合成",
  "game.eyebrow": "新 · 微信小遊戲",
  "game.h2": "不只小程式。<br><span class=\"grad gm-grad\">完整的 3D 小遊戲，同一個引擎。</span>",

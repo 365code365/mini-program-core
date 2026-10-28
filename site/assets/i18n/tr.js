@@ -42,6 +42,7 @@
  "show.eyebrow": "Demo",
  "show.h2": "On iki mini program,<br><span class=\"grad\">tek motor, bir dakika</span>",
  "show.lede": "Sohbet, kanban, tren bileti, borsa, tarifler ve daha fazlası: Android SDK üzerinde çalışan karmaşık örnek mini programlar, cihazdan ekran ekran yakalandı. Her ekranı bir WebView değil, bu motor çiziyor.",
+ "show.fallback": "Bu tarayıcı videoyu burada oynatamıyor. Doğrudan aç ↗",
  "show.cap": "60 sn · 1280×720 · Android emülatöründen ekran görüntüleri, müzik betikle sentezlendi",
  "game.eyebrow": "Yeni · WeChat mini oyunları",
  "game.h2": "Sadece mini programlar değil.<br><span class=\"grad gm-grad\">Tam 3D mini oyunlar, aynı motor.</span>",
