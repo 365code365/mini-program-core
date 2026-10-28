@@ -103,7 +103,7 @@ class _StoreSectionState extends State<StoreSection> {
 
   Widget _cell(StoreApp app) => Semantics(
         button: true,
-        label: '打开小程序 ${app.name}${_fav.contains(app.id) ? '（已收藏）' : ''}',
+        label: '打开${app.isGame ? '小游戏' : '小程序'} ${app.name}${_fav.contains(app.id) ? '（已收藏）' : ''}',
         hint: '长按更多操作',
         excludeSemantics: true,
         child: InkWell(

@@ -34,6 +34,7 @@ class MiniGameView(
     private val options: String = "{}",
 ) : FrameLayout(context) {
     private val main = Handler(Looper.getMainLooper())
+    private val createdNanos = System.nanoTime()
     private val thread = HandlerThread("mini-game").apply { start() }
     private val engine = Handler(thread.looper)
 
@@ -62,6 +63,14 @@ class MiniGameView(
      * 数据上报 `report` 等），在主线程上回调：type 与原始 JSON
      */
     var onHostEvent: ((type: String, event: org.json.JSONObject) -> Unit)? = null
+
+    /**
+     * 第一帧真正上屏了（主线程，只回调一次）。建实例 + 跑 game.js + 第一帧在真机上要 0.5s 上下，
+     * 这段时间 SurfaceView 里什么都没有、透出来是黑的：宿主的 loading 层要盖到这里再撤，别按「视图建好了」撤
+     */
+    var onFirstFrame: (() -> Unit)? = null
+    /** 引擎线程：第一帧报过了 */
+    private var firstFrameSent = false
 
     /** 原生输入条 + 输入法（[GameKeyboard]，主线程上用） */
     private val keyboard: GameKeyboard by lazy {
@@ -385,6 +394,11 @@ class MiniGameView(
         if (surface != null && (f and MiniGame.FRAME_NEW != 0 || forceBlit)) {
             blit = MiniGame.nativeBlit(handle)
             if (blit == 1) forceBlit = false else if (blit < 0) Log.w(TAG, "上屏失败（$blit）")
+            if (blit == 1 && !firstFrameSent) {
+                firstFrameSent = true
+                Log.i(TAG, "🎮 第一帧上屏（建视图后 ${(System.nanoTime() - createdNanos) / 1_000_000}ms）")
+                main.post { if (!disposed) onFirstFrame?.invoke() }
+            }
         }
         val t2 = System.nanoTime()
         if (f and MiniGame.FRAME_NEW != 0) boost?.report(t2 - t0)

@@ -141,7 +141,7 @@ class MainActivity : Activity() {
                     Log.i(TAG, "[商店] 打开 ${p.app.id} ${p.app.appId} v${p.app.version} $why → ${p.dir} 起始页 ${link.route ?: "首页"}")
                     // 小游戏不走 MiniProgramView：交给 GameActivity（整屏主画布、按 game.json 锁方向），这一页让出去
                     if (p.app.isGame) {
-                        startActivity(GameActivity.storeIntent(this, p.dir, p.app.key, link.launchOptions()))
+                        startActivity(GameActivity.storeIntent(this, p.dir, p.app, link.launchOptions()))
                         @Suppress("DEPRECATION")
                         overridePendingTransition(0, 0)
                         super.finish()

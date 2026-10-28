@@ -10,6 +10,7 @@ library;
 export 'src/capsule.dart' show MiniCapsule, CapsulePainter;
 export 'src/controller.dart' show MiniProgramController;
 export 'src/events.dart';
+export 'src/game_view.dart' show MiniGameView, MiniGameController, MiniGameHostEvent;
 export 'src/media.dart' show MiniBuiltinHostApis;
 export 'src/same_layer.dart' show MiniNativeViewTap;
 export 'src/scaffold.dart' show MiniProgramScaffold;

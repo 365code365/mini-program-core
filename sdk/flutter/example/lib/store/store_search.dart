@@ -324,8 +324,8 @@ class _StoreSearchState extends State<StoreSearchPage> {
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   _highlight(a.name, _q, const TextStyle(fontSize: 16, color: Colors.black)),
-                  if (a.category.isNotEmpty || a.developer.isNotEmpty)
-                    Text([a.category, a.developer].where((t) => t.isNotEmpty).join(' · '),
+                  if (a.isGame || a.category.isNotEmpty || a.developer.isNotEmpty)
+                    Text([if (a.isGame) '小游戏', a.category, a.developer].where((t) => t.isNotEmpty).join(' · '),
                         style: const TextStyle(fontSize: 12, color: Colors.black54)),
                   if (a.description.isNotEmpty)
                     Text(a.description,

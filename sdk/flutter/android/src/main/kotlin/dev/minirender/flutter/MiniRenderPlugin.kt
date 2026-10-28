@@ -23,7 +23,12 @@ class MiniRenderPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Activit
     companion object {
         /** 独立图层的平台视图类型（与 Dart 侧 `MiniProgramView` 同一个字符串） */
         const val VIEW_TYPE = "dev.minirender/engine-view"
+        /** 小游戏的平台视图类型（与 Dart 侧 `MiniGameView` 同一个字符串） */
+        const val GAME_VIEW_TYPE = "dev.minirender/game-view"
     }
+
+    /** 小游戏锁方向要用（MiniGameView 改 Activity.requestedOrientation） */
+    private var activity: android.app.Activity? = null
 
     private lateinit var channel: MethodChannel
     private lateinit var binding: FlutterPlugin.FlutterPluginBinding
@@ -39,6 +44,9 @@ class MiniRenderPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Activit
         channel.setMethodCallHandler(this)
         // 独立图层上屏（EngineView.kt）：Dart 在 create 回了 view=true 时建这个平台视图
         flutterPluginBinding.platformViewRegistry.registerViewFactory(VIEW_TYPE, EngineViewFactory { host })
+        // 小游戏（GameView.kt）：每个视图一个 MiniGameView 实例，不占上面那个「单实例」小程序
+        flutterPluginBinding.platformViewRegistry.registerViewFactory(
+            GAME_VIEW_TYPE, GameViewFactory(flutterPluginBinding.binaryMessenger) { activity })
     }
 
     override fun onDetachedFromEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
@@ -47,13 +55,19 @@ class MiniRenderPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Activit
         host = null
     }
 
-    override fun onAttachedToActivity(b: ActivityPluginBinding) = picker.attach(b)
+    override fun onAttachedToActivity(b: ActivityPluginBinding) {
+        activity = b.activity
+        picker.attach(b)
+    }
 
-    override fun onDetachedFromActivityForConfigChanges() = picker.detach()
+    override fun onDetachedFromActivityForConfigChanges() {
+        activity = null
+        picker.detach()
+    }
 
-    override fun onReattachedToActivityForConfigChanges(b: ActivityPluginBinding) = picker.attach(b)
+    override fun onReattachedToActivityForConfigChanges(b: ActivityPluginBinding) = onAttachedToActivity(b)
 
-    override fun onDetachedFromActivity() = picker.detach()
+    override fun onDetachedFromActivity() = onDetachedFromActivityForConfigChanges()
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {

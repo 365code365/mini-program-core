@@ -40,7 +40,12 @@ class StoreApp {
     this.developer = '',
     this.iconUrl = '',
     this.downloads = 0,
+    this.kind = kindMini,
+    this.orientation = '',
   });
+
+  static const kindMini = 'miniprogram';
+  static const kindGame = 'game';
 
   factory StoreApp.fromJson(Map<String, dynamic> j) => StoreApp(
         id: j['id'] as String,
@@ -56,6 +61,8 @@ class StoreApp {
         developer: (j['developer'] as String?) ?? '',
         iconUrl: (j['iconUrl'] as String?) ?? '',
         downloads: (j['downloads'] as num?)?.toInt() ?? 0,
+        kind: ((j['kind'] as String?) ?? '').isEmpty ? kindMini : j['kind'] as String,
+        orientation: (j['orientation'] as String?) ?? '',
       );
 
   Map<String, Object> toJson() => {
@@ -72,6 +79,8 @@ class StoreApp {
         'developer': developer,
         'iconUrl': iconUrl,
         'downloads': downloads,
+        'kind': kind,
+        'orientation': orientation,
       };
 
   final String id;
@@ -92,8 +101,17 @@ class StoreApp {
   final String iconUrl;
   final int downloads;
 
+  /// "miniprogram" | "game"（服务器 meta 的 kind；老服务器没有 = 小程序）；小游戏另带 orientation
+  final String kind;
+  final String orientation;
+
   /// 深链 / 跳转用的 key：有 AppID 用 AppID
   String get key => appId.isNotEmpty ? appId : id;
+
+  bool get isGame => kind == kindGame;
+
+  /// 包根上的清单：装没装好就看它在不在
+  String get manifest => isGame ? 'game.json' : 'app.json';
 }
 
 /// 一次列表的结果：[offline] = 服务器连不上，用的是上次缓存的列表
@@ -153,7 +171,8 @@ class MiniStore {
   Future<StoreList> list() async {
     final cache = File('${await _rootDir()}/index.json');
     try {
-      final body = await _getText('$baseUrl/api/apps', const Duration(seconds: 10));
+      // kind=all：服务器的列表 / 搜索 / 分类缺省只给小程序（老客户端拿到小游戏会报「包里没有 app.json」）
+      final body = await _getText('$baseUrl/api/apps?kind=all', const Duration(seconds: 10));
       final apps = _parse(body);
       await cache.writeAsString(body);
       return StoreList(apps);
@@ -173,7 +192,7 @@ class MiniStore {
 
   /// 搜索（`/api/apps?q=&category=`）：关键词每段都要命中，按相关度 + 热度排。返回 (结果, 总数)
   Future<(List<StoreApp>, int)> search(String q, {String category = ''}) async {
-    final u = Uri.parse('$baseUrl/api/apps').replace(queryParameters: {'q': q, 'category': category, 'limit': '100'});
+    final u = Uri.parse('$baseUrl/api/apps').replace(queryParameters: {'q': q, 'category': category, 'limit': '100', 'kind': 'all'});
     final body = await _getText('$u', const Duration(seconds: 8));
     return (_parse(body), ((jsonDecode(body) as Map)['total'] as num?)?.toInt() ?? 0);
   }
@@ -188,7 +207,7 @@ class MiniStore {
 
   /// 分类与数量，服务器的固定顺序
   Future<List<(String, int)>> categories() async {
-    final body = await _getText('$baseUrl/api/categories', const Duration(seconds: 6));
+    final body = await _getText('$baseUrl/api/categories?kind=all', const Duration(seconds: 6));
     return [
       for (final c in ((jsonDecode(body) as Map)['categories'] as List).cast<Map>())
         ('${c['name']}', (c['count'] as num?)?.toInt() ?? 0),
@@ -297,7 +316,7 @@ class MiniStore {
       if (f.path.endsWith('/index.json')) continue;
       try {
         final app = StoreApp.fromJson(jsonDecode(f.readAsStringSync()) as Map<String, dynamic>);
-        if ((app.id == key || app.appId == key) && File('$root/${app.id}/app.json').existsSync()) return app;
+        if ((app.id == key || app.appId == key) && File('$root/${app.id}/${app.manifest}').existsSync()) return app;
       } catch (_) {}
     }
     return null;
@@ -379,7 +398,8 @@ class MiniStore {
       await out.parent.create(recursive: true);
       await out.writeAsBytes(f.content as List<int>, flush: false);
     }
-    if (!File('$base/app.json').existsSync()) throw const FormatException('包里没有 app.json');
+    if (!File('$base/${app.manifest}').existsSync()) throw FormatException('包里没有 ${app.manifest}');
+    if (app.isGame && !File('$base/game.js').existsSync()) throw const FormatException('小游戏包里没有 game.js');
     final dir = Directory('$root/${app.id}');
     if (dir.existsSync()) await dir.delete(recursive: true);
     await tmp.rename(dir.path);

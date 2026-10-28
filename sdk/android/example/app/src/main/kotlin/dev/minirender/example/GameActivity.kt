@@ -35,16 +35,31 @@ class GameActivity : Activity() {
             .put("launchOptions", launch)
             // --ez rotate true：横屏包在竖屏里由引擎自己转（G6.4）
             .put("rotateInEngine", intent.getBooleanExtra("rotate", false))
+            // 示例宿主接的能力：支付、激励视频、分享、登录（GameHostApis：演示实现，正式接入换成真 SDK）
+            .put("hostApis", org.json.JSONArray(GameHostApis.APIS))
         val v = MiniGameView(this, dir.absolutePath, File(filesDir, "game-data").absolutePath, opts.toString())
         // wx.exitMiniProgram 关掉这一页；wx.restartMiniProgram 重建（新实例从 game.js 重新跑）
-        v.onHostEvent = { type, _ ->
+        val hosts = GameHostApis(this) { view }
+        v.onHostEvent = { type, ev ->
             when (type) {
                 "exit" -> finish()
                 "restart" -> recreate()
+                "hostCall" -> if (!hosts.handle(ev)) v.hostReply(ev.optInt("id"), false, org.json.JSONObject().put("errMsg", ev.optString("api") + ":fail 示例宿主未实现").toString())
             }
         }
         view = v
-        setContentView(v)
+        // loading 层盖到第一帧上屏：MainActivity 的 loading 页在转过来时就 finish 了，建实例 + 跑 game.js + 第一帧
+        // 这 0.5s 上下 SurfaceView 是空的、透出黑底（「打开游戏黑一下」）。与商店 loading 同一个样子，接上看不出换了页
+        val root = android.widget.FrameLayout(this)
+        root.addView(v)
+        val cover = StoreViews.LoadingCover(this, intent.getStringExtra(EXTRA_ICON_ID) ?: name, intent.getStringExtra(EXTRA_NAME) ?: name) { finish() }
+        root.addView(cover)
+        var covered = true
+        val reveal = { if (covered) { covered = false; cover.hide() } }
+        v.onFirstFrame = reveal
+        // 兜底：游戏一直不出帧（脚本报错、卡在加载）也别让 loading 永远盖着
+        root.postDelayed(reveal, 10_000)
+        setContentView(root)
         window.decorView.post {
             window.insetsController?.let {
                 it.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
@@ -73,11 +88,15 @@ class GameActivity : Activity() {
         const val EXTRA_DIR = "dir"
         const val EXTRA_APP_ID = "appId"
         const val EXTRA_LAUNCH = "launchOptions"
+        /** loading 层的图标（商店 id）与名字 */
+        const val EXTRA_ICON_ID = "iconId"
+        const val EXTRA_NAME = "name"
 
         /** 商店里的小游戏：[dir] 是解好的包（含 game.json），[launch] 是 StoreLink 的 launchOptions（scene / query / referrerInfo） */
-        fun storeIntent(ctx: android.content.Context, dir: File, appId: String, launch: org.json.JSONObject) =
+        fun storeIntent(ctx: android.content.Context, dir: File, app: MiniStore.App, launch: org.json.JSONObject) =
             android.content.Intent(ctx, GameActivity::class.java)
-                .putExtra(EXTRA_DIR, dir.absolutePath).putExtra(EXTRA_APP_ID, appId).putExtra(EXTRA_LAUNCH, launch.toString())
+                .putExtra(EXTRA_DIR, dir.absolutePath).putExtra(EXTRA_APP_ID, app.key).putExtra(EXTRA_LAUNCH, launch.toString())
+                .putExtra(EXTRA_ICON_ID, app.id).putExtra(EXTRA_NAME, app.name)
     }
 }
 

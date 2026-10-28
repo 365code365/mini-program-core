@@ -163,7 +163,7 @@ class _PanelCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Semantics(
         button: true,
-        label: '打开小程序 ${app.name}',
+        label: '打开${app.isGame ? '小游戏' : '小程序'} ${app.name}',
         hint: '长按更多操作',
         excludeSemantics: true,
         child: InkWell(

@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 
 import '../main.dart' show MiniAppPage;
+import 'game_page.dart';
 import 'mini_store.dart';
 import 'store_links.dart';
 
@@ -147,7 +148,15 @@ class _LaunchState extends State<MiniStoreLaunchPage> {
   Widget build(BuildContext context) {
     final app = _app;
     return Stack(children: [
-      if (_dir != null)
+      // 小游戏（game.json + game.js）走 MiniGameView，与原生示例 MainActivity → GameActivity 同一处分岔：按商店 meta 的 kind
+      if (_dir != null && _app != null && _app!.isGame)
+        MiniGamePage(
+          gameDir: _dir!,
+          app: _app!,
+          launchOptions: widget.link.launchOptions,
+          onReady: () => mounted ? setState(() => _ready = true) : null,
+        )
+      else if (_dir != null)
         MiniAppPage(
           appDir: _dir!,
           route: widget.link.route,
