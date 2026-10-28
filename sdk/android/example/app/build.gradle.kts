@@ -13,8 +13,8 @@ android {
         // 与 SDK（sdk/android/build.gradle.kts）、tools/build-mobile.sh 的 NDK API level 一致
         minSdk = 24
         targetSdk = 35
-        versionCode = 7
-        versionName = "1.1.5"
+        versionCode = 8
+        versionName = "1.1.6"
         // 真机与 Apple 芯片上的模拟器都是 arm64；三个 ABI 全打进去 APK 要大一百多 MB，装包也慢
         ndk { abiFilters += listOf("arm64-v8a") }
     }
