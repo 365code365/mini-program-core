@@ -27,6 +27,8 @@
 
 /// QuickJS 运行时封装（求值、注册原生函数、模块作用域）
 mod runtime;
+// QuickJS 的分档池分配器（省掉默认分配器的 malloc_usable_size 记账）
+mod pool_alloc;
 /// 运行时守护：看门狗、内存上限、未处理的 Promise 拒绝（小游戏用）
 mod guards;
 pub use guards::{Guards, Watchdog};

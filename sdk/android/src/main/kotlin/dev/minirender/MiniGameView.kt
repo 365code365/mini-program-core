@@ -60,8 +60,7 @@ class MiniGameView(
     /** 主线程：实例已经按真尺寸开始建了（start() 只跑一次） */
     private var started = false
     /** 主线程：game.json 要横屏（引擎内旋转算 false）；等方向的时间到了就不再等 */
-    private var wantLandscape = false
-    private var orientationWaitOver = false
+    private var wantLandscape = false; private var orientationWaitOver = false
 
     /**
      * 引擎交给宿主的事件（日志、audioSession 之外的：`exit` / `restart`（wx.exitMiniProgram / restartMiniProgram）、
@@ -69,10 +68,7 @@ class MiniGameView(
      */
     var onHostEvent: ((type: String, event: org.json.JSONObject) -> Unit)? = null
 
-    /**
-     * 第一帧真正上屏了（主线程，只回调一次）。建实例 + 跑 game.js + 第一帧在真机上要 0.5s 上下，
-     * 这段时间 SurfaceView 里什么都没有、透出来是黑的：宿主的 loading 层要盖到这里再撤，别按「视图建好了」撤
-     */
+    /** 第一帧真正上屏了（主线程，只回调一次）：之前 SurfaceView 是空的、透出黑底（真机 0.5s 上下），loading 层盖到这里再撤 */
     var onFirstFrame: (() -> Unit)? = null
     /** 引擎线程：第一帧报过了 */
     private var firstFrameSent = false
@@ -224,6 +220,7 @@ class MiniGameView(
         engine.post {
             choreographer = Choreographer.getInstance()
             boost = FrameBoost.forCurrentThread(context)
+            MiniDiag.apply() // debug.mini.* 系统属性 → 环境变量（引擎建实例时读）
             val t0 = System.nanoTime()
             handle = MiniGame.nativeCreate(dir, dataDir, w, h, dpr, withBenchmark(options))
             if (handle != 0L) sensors = GameSensors(context, engine) { name, json ->

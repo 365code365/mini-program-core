@@ -34,6 +34,8 @@ internal object MiniDiag {
         "draw_log" to "MINI_DRAW_LOG",
         "img_log" to "MINI_IMG_LOG",
         "no_prefetch" to "MINI_NO_PREFETCH",
+        // JS 运行时退回 QuickJS 默认分配器（对照分档池分配器，js/pool_alloc.rs）
+        "js_system_alloc" to "MINI_JS_SYSTEM_ALLOC",
     )
 
     /** 上一次由宿主（[MiniProgramView.diagnostics]）打开的：这次没再给的要关掉（环境变量是进程级的） */

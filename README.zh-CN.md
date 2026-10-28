@@ -321,7 +321,7 @@ cargo build --release
 不给时无头一律 `:fail cancel`。
 完整列表 `--help`；诊断开关（`MINI_SCROLL_LOG` / `MINI_FPS` / `MINI_FONT_LOG` / `MINI_SLIDER_LOG` …，移动端 SDK 另有
 `MINI_DAMAGE_LOG` 每帧重画多少（GPU 上屏时行尾带准备 / CPU 合成 / 等 surface / 上传量）、`MINI_NO_DAMAGE` 关掉局部重画做对照、`MINI_NO_STYLE_MEMO` 关掉样式落地的记忆表做对照（setData 重建时没变的节点不再重算选择器）、`MINI_NO_INCREMENTAL_LAYOUT` 关掉 setData 增量布局（每次整棵重建）、`MINI_NO_SCROLL_TILES` 关掉嵌在容器里的 scroll-view 的分块缓存（滚动时逐帧重画可见子节点）、`MINI_LAYOUT_VERIFY` 每次增量布局之后整棵重建一遍逐节点比（测试用）、`MINI_MEM_LOG` 每次进后台打一行引擎内存分项（各块缓冲驻留 / 分配多少）、
-`MINI_NO_RESAMPLE` 关掉页面拖动的按事件时间重采样做对照、`MINI_PACE` 打每帧交帧时刻（配 `tools/pace-check.py` 看屏上每个 vsync 是哪一帧）、`MINI_CPU_PIN=0` 不把 Android 上的引擎线程绑大核（只在交互或连续出帧时绑）、`MINI_EMOJI_FONT=<字体路径>` 指定 COLR 彩色 emoji 字体（缺省 Android 用系统的 `NotoColorEmoji.ttf`，macOS 用 Apple Color Emoji）；Flutter 插件在 Android 上读
+`MINI_NO_RESAMPLE` 关掉页面拖动的按事件时间重采样做对照、`MINI_PACE` 打每帧交帧时刻（配 `tools/pace-check.py` 看屏上每个 vsync 是哪一帧）、`MINI_CPU_PIN=0` 不把 Android 上的引擎线程绑大核（只在交互或连续出帧时绑）、`MINI_JS_SYSTEM_ALLOC=1` 让 JS 运行时退回 QuickJS 默认分配器（对照分档池分配器）、`MINI_EMOJI_FONT=<字体路径>` 指定 COLR 彩色 emoji 字体（缺省 Android 用系统的 `NotoColorEmoji.ttf`，macOS 用 Apple Color Emoji）；Flutter 插件在 Android 上读
 `adb shell setprop debug.mini.fps 1` / `debug.mini.damage_log 1` 这类系统属性，不用重新打包，见集成指南）见
 [`doc/引擎测试说明.md`](doc/引擎测试说明.md) 与
 [`doc/架构与实现原理.md`](doc/架构与实现原理.md#帧成本是怎么压下来的)。
