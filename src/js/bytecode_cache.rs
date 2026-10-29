@@ -109,7 +109,7 @@ pub fn precompile(sources: &[String], cache_dir: &Path) -> (usize, usize) {
         let mut g = m.lock().unwrap_or_else(|e| e.into_inner());
         todo.iter().filter(|(_, k, _)| g.insert(*k)).map(|(_, k, _)| Done(*k)).collect()
     };
-    let Ok(rt) = rquickjs::Runtime::new_with_alloc(super::pool_alloc::PoolAllocator::default()) else { return (big.len(), 0) };
+    let Ok(rt) = super::qjs_runtime::new_runtime() else { return (big.len(), 0) };
     let Ok(ctx) = rquickjs::Context::full(&rt) else { return (big.len(), 0) };
     let mut done = 0;
     ctx.with(|ctx| {

@@ -34,8 +34,10 @@ internal object MiniDiag {
         "draw_log" to "MINI_DRAW_LOG",
         "img_log" to "MINI_IMG_LOG",
         "no_prefetch" to "MINI_NO_PREFETCH",
-        // JS 运行时退回 QuickJS 默认分配器（对照分档池分配器，js/pool_alloc.rs）
+        // JS 运行时退回 QuickJS 默认分配器（对照 QuickJS 里的小块池，js/qjs_runtime.rs）
         "js_system_alloc" to "MINI_JS_SYSTEM_ALLOC",
+        // 关掉 QuickJS 属性读写的内联缓存（对照）
+        "js_no_ic" to "MINI_JS_NO_IC",
         // 小游戏 WebGL 的原生入口退回 rquickjs 的闭包包装（对照借参数的快速入口，js/fast_fn.rs）
         "gl_slow_call" to "MINI_GL_SLOW_CALL",
         "no_js_cache" to "MINI_NO_JS_CACHE",
