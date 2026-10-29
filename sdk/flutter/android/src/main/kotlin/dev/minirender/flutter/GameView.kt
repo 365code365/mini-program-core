@@ -52,7 +52,10 @@ internal class GameView(
     /** 游戏锁方向之前 Activity 的方向：退出时还原 */
     private val savedOrientation = activity?.requestedOrientation
     private val channel = MethodChannel(messenger, "dev.minirender/game_$viewId")
-    private val view = MiniGameView(context, dir, dataDir, options)
+    // 不改窗口的刘海模式（layoutInCutout = false）：Flutter 的 surface 建好之后再改窗口属性，横屏游戏再进时整屏黑（GameChrome.kt）
+    private val view = MiniGameView(context, dir, dataDir, try {
+        org.json.JSONObject(options).apply { if (!has("layoutInCutout")) put("layoutInCutout", false) }.toString()
+    } catch (_: Exception) { options })
     private var disposed = false
 
     private val lifecycle = object : Application.ActivityLifecycleCallbacks {

@@ -17,7 +17,7 @@ import android.widget.FrameLayout
  *   微信的 statusBarHeight 也是这么报的），再并上刘海。横屏时顶上只算刘海：手机横过来状态栏收起，iPhone 横屏也没有状态栏；
  * - 报给引擎的是逻辑像素（`/ density`），引擎按方向算 safeArea 与胶囊位置（src/game/chrome.rs），胶囊按引擎给的矩形摆。
  */
-internal class GameChrome(private val host: FrameLayout, capsuleOn: Boolean, onCapsule: (action: String) -> Unit) {
+internal class GameChrome(private val host: FrameLayout, capsuleOn: Boolean, cutout: Boolean, onCapsule: (action: String) -> Unit) {
     private val density = host.resources.displayMetrics.density
     private val activity = host.context as? Activity
     private var savedCutout: Int? = null
@@ -31,7 +31,9 @@ internal class GameChrome(private val host: FrameLayout, capsuleOn: Boolean, onC
             it.visibility = android.view.View.GONE
             host.addView(it, FrameLayout.LayoutParams(0, 0))
         }
-        if (Build.VERSION.SDK_INT >= 28) activity?.window?.let { w ->
+        // cutout = false：Flutter 平台视图里不改（窗口属性在 Flutter 自己的 surface 已经建好之后改，横屏再进游戏时整屏黑着，
+        // 一加 PLY110 实测；Flutter 的窗口要不要进刘海由宿主 App 自己的主题定）
+        if (cutout && Build.VERSION.SDK_INT >= 28) activity?.window?.let { w ->
             val a = w.attributes
             savedCutout = a.layoutInDisplayCutoutMode
             a.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES

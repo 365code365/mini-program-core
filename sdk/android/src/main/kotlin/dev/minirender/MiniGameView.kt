@@ -112,7 +112,7 @@ class MiniGameView(
     }
 
     /** 安全区与右上角胶囊（[GameChrome]，主线程）。引擎内旋转时胶囊的坐标系是转过的，不画；`"menuButton": false` 也不画 */
-    private val chrome = GameChrome(this, capsuleOn = optBool("menuButton", true) && !optBool("rotateInEngine", false)) { action ->
+    private val chrome = GameChrome(this, optBool("menuButton", true) && !optBool("rotateInEngine", false), optBool("layoutInCutout", true)) { action ->
         onHostEvent?.invoke("menuButton", org.json.JSONObject().put("type", "menuButton").put("action", action))
     }
 
