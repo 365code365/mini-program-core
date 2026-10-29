@@ -69,6 +69,8 @@ pub fn order(pref: &str, headless: bool) -> Vec<Backend> {
         // 无头：SwiftShader 是确定性的（逐字节基线），硬件只在交互运行时用
         // Android 没有随包的 SwiftShader：ANGLE（包里带了才有）→ 系统驱动
         _ if cfg!(target_os = "android") => vec![Backend::Angle, Backend::System],
+        // iOS 只有 App 里嵌的 ANGLE（Metal 后端）：没有 SwiftShader、没有系统 EGL
+        _ if cfg!(target_os = "ios") => vec![Backend::Angle],
         _ if headless => vec![Backend::SwiftShader, Backend::Angle, Backend::System],
         _ => vec![Backend::Angle, Backend::SwiftShader, Backend::System],
     }
@@ -110,6 +112,13 @@ fn candidates(b: Backend) -> Vec<String> {
                 // 包里带的优先（jniLibs），再试系统的（Android 10+ 系统镜像里常有，能不能加载看链接器命名空间）
                 v.push("libEGL_angle.so".into());
                 v.push("/system/lib64/libEGL_angle.so".into());
+            } else if cfg!(target_os = "ios") {
+                // App 的 Frameworks/ 里嵌的 ANGLE 动态框架（tools/fetch-angle-ios.sh 拉取，SDK 的 Package.swift / podspec 负责嵌进去）。
+                // @rpath 先（App 链接时已经加载过，dlopen 拿到同一个句柄），再按 .app/Frameworks 的绝对路径找一次
+                v.push("@rpath/libEGL.framework/libEGL".into());
+                if let Some(app) = std::env::current_exe().ok().and_then(|p| p.parent().map(|p| p.to_path_buf())) {
+                    v.push(format!("{}/Frameworks/libEGL.framework/libEGL", app.display()));
+                }
             } else {
                 for d in angle_dirs() {
                     v.push(format!("{d}/{}", if cfg!(target_os = "macos") { "libEGL.dylib" } else if cfg!(windows) { "libEGL.dll" } else { "libEGL.so" }));

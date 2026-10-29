@@ -128,6 +128,12 @@ final class MiniViewController: UIViewController {
         generation += 1
         let gen = generation
         link = l
+        // 游戏页弹着时来了新链接：先同步关掉游戏（不连带收起本页）
+        if let g = game {
+            game = nil
+            g.gameView.close()
+            g.dismiss(animated: false)
+        }
         if opened { replaceView() }
         cover?.removeFromSuperview()
         // 深链只带 AppID：装过的话先用本地记录的名字 / 图标画 loading（读一个小 JSON，不等网络）
@@ -162,6 +168,8 @@ final class MiniViewController: UIViewController {
                     cur["stale"] = p.stale?.localizedDescription ?? NSNull()
                     self.currentApp = cur
                     c.setIdentity(id: p.app.id, name: p.app.name)
+                    // 小游戏包（game.json）：开全屏的游戏页，loading 层跟过去盖到第一帧
+                    if MiniGame.packageKind(p.dir.path) == 2 { return self.openGame(p, link: l, cover: c) }
                     self.mini.launchOptions = l.launchOptions
                     self.mini.open(appDir: p.dir, route: l.route)
                     self.opened = true
@@ -172,6 +180,50 @@ final class MiniViewController: UIViewController {
             }
         }
     }
+
+    /// 小游戏：全屏弹出 [MiniGameViewController]（转屏要由被弹出的控制器决定，放在导航栈里转不了）。
+    /// 与 Android 示例的 GameActivity 一样：示例宿主接支付 / 激励视频 / 分享 / 登录，loading 盖到第一帧（10s 兜底），
+    /// 游戏退出（wx.exitMiniProgram）连本页一起收起
+    private func openGame(_ p: MiniStore.Prepared, link l: StoreLink, cover c: LoadingCover) {
+        // 已经解好的包：后台编字节码（与马上建实例并行也安全，实例会等正在编的那段）
+        MiniGame.precompile(dir: p.dir.path)
+        let vc = MiniGameViewController(gameDir: p.dir.path, options: [
+            // 存档按 appId 分：用商店的真 AppID，换了解包目录也不丢档
+            "appId": p.app.key,
+            "launchOptions": l.launchOptions,
+            // 跑不满 60 时稳在 30（帧间隔均匀，比 40fps 上下跳更顺）
+            "adaptiveFps": true,
+            "hostApis": GameHostApis.apis,
+        ])
+        let hosts = GameHostApis(presenter: vc) { [weak vc] in vc?.gameView }
+        vc.onHostEvent = { [weak vc] type, ev in
+            NSLog("[小游戏] %@ %@", p.app.id, type)
+            guard type == "hostCall", let v = vc?.gameView, !hosts.handle(ev) else { return }
+            v.hostReply((ev["id"] as? NSNumber)?.intValue ?? 0, ok: false, result: ["errMsg": "\(ev["api"] ?? ""):fail 示例宿主未实现"])
+        }
+        vc.loadViewIfNeeded()
+        cover = nil
+        c.removeFromSuperview()
+        let gc = LoadingCover(id: p.app.id, name: p.app.name) { [weak vc] in vc?.close() }
+        gc.frame = vc.view.bounds
+        gc.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        vc.view.addSubview(gc)
+        var covered = true
+        let reveal = { if covered { covered = false; gc.hide() } }
+        vc.onFirstFrame = reveal
+        DispatchQueue.main.asyncAfter(deadline: .now() + 10, execute: reveal)
+        vc.onClose = { [weak self] in
+            guard let self, self.game === vc else { return }
+            self.game = nil
+            self.close()
+        }
+        game = vc
+        opened = true
+        present(vc, animated: false)
+    }
+
+    /// 弹着的游戏页（外部链接换小程序时先关掉它）
+    private var game: MiniGameViewController?
 
     /// 胶囊菜单「重新进入小程序」：商店的走 [openStore]（先关后开）；内置示例同样换一个新视图再开
     private func relaunch() {

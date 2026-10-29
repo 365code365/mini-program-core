@@ -34,3 +34,6 @@ migrate_working_dir/
 
 # 引擎的 XCFramework：tools/build-mobile.sh ios 放的软链（指向 sdk/ios/MiniRender.xcframework）
 /ios/MiniRender.xcframework
+# ANGLE（iOS WebGL）：tools/fetch-angle-ios.sh 放的软链
+/ios/libEGL.xcframework
+/ios/libGLESv2.xcframework

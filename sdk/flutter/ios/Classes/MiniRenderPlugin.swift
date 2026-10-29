@@ -21,6 +21,8 @@ public class MiniRenderPlugin: NSObject, FlutterPlugin {
         let channel = FlutterMethodChannel(name: "dev.minirender/engine", binaryMessenger: registrar.messenger())
         let instance = MiniRenderPlugin(channel: channel, textures: registrar.textures())
         registrar.addMethodCallDelegate(instance, channel: channel)
+        // 小游戏：平台视图（每个视图一个实例，不受「同一时刻一个小程序」的限制）
+        registrar.register(GameViewFactory(messenger: registrar.messenger()), withId: "dev.minirender/game-view")
     }
 
     public func detachFromEngine(for registrar: FlutterPluginRegistrar) {
@@ -42,6 +44,12 @@ public class MiniRenderPlugin: NSObject, FlutterPlugin {
             result(["files": files.path, "cache": cache.path, "external": ""])
         case "create":
             create(call, result: result)
+        // 小游戏下载 / 解包完：后台编字节码（dataDir 空 = MiniGame.defaultDataDir，与视图的默认一致）
+        case "precompileGame":
+            let a = call.arguments as? [String: Any] ?? [:]
+            let data = (a["dataDir"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+            MiniGame.precompile(dir: a["dir"] as? String ?? "", dataDir: data)
+            result(nil)
         // 不碰引擎实例：文件直接写进 hostCall 给的 tempDir
         case "pickMedia", "pickFiles", "saveToAlbum", "openDocument":
             picker.handle(call, result: result)

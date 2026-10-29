@@ -19,11 +19,13 @@ Pod::Spec.new do |s|
   s.source       = { :git => 'https://github.com/your-org/mini-render.git', :tag => s.version.to_s }
 
   s.source_files        = 'Sources/MiniRender/**/*.swift'
-  s.vendored_frameworks = 'MiniRender.xcframework'
+  # Angle/：小游戏 WebGL 用的 ANGLE 动态框架（引擎运行时 dlopen，build-mobile.sh 调 tools/fetch-angle-ios.sh 拉）
+  s.vendored_frameworks = 'MiniRender.xcframework', 'Angle/libEGL.xcframework', 'Angle/libGLESv2.xcframework'
   s.swift_version       = '5.9'
 
   # QuickJS / openh264 是 C/C++，需要 C++ 运行时
   s.libraries = 'c++', 'z'
-  # GPU 后端（wgpu 的 Metal，画到视图的 CAMetalLayer）：静态库不带框架依赖
-  s.frameworks = 'Metal', 'QuartzCore', 'CoreGraphics'
+  # GPU 后端（wgpu 的 Metal，画到视图的 CAMetalLayer）：静态库不带框架依赖；
+  # 小游戏：AVFoundation（音频会话、wx.createVideo）、CoreMotion / CoreLocation（传感器、罗盘）
+  s.frameworks = 'Metal', 'QuartzCore', 'CoreGraphics', 'AVFoundation', 'CoreMotion', 'CoreLocation'
 end

@@ -31,6 +31,10 @@ final class MiniStore {
         var developer = ""
         var iconUrl = ""
         var downloads = 0
+        /// "game" = 小游戏（game.json 包，开 MiniGameViewController）；其余是小程序
+        var kind = ""
+
+        var isGame: Bool { kind == "game" }
 
         /// 深链 / 跳转用的 key：有 AppID 用 AppID
         var key: String { appId.isEmpty ? id : appId }
@@ -38,7 +42,7 @@ final class MiniStore {
         var json: [String: Any] {
             ["id": id, "appId": appId, "name": name, "description": description, "version": version, "sha256": sha256,
              "size": size, "packageUrl": packageUrl, "category": category, "tags": tags, "developer": developer,
-             "iconUrl": iconUrl, "downloads": downloads]
+             "iconUrl": iconUrl, "downloads": downloads, "kind": kind]
         }
 
         init?(json j: [String: Any]) {
@@ -56,6 +60,7 @@ final class MiniStore {
             developer = j["developer"] as? String ?? ""
             iconUrl = j["iconUrl"] as? String ?? ""
             downloads = (j["downloads"] as? NSNumber)?.intValue ?? 0
+            kind = j["kind"] as? String ?? ""
         }
 
         static func == (a: App, b: App) -> Bool { a.id == b.id && a.version == b.version && a.sha256 == b.sha256 }
@@ -107,7 +112,7 @@ final class MiniStore {
     func list() -> Listing {
         let cache = root.appendingPathComponent("index.json")
         do {
-            let body = try get("\(baseUrl)/api/apps")
+            let body = try get("\(baseUrl)/api/apps?kind=all")
             let apps = try Self.parse(body)
             try? body.write(to: cache)
             return Listing(apps: apps, offline: false, error: nil)
@@ -119,7 +124,7 @@ final class MiniStore {
 
     /// 搜索（服务器 `/api/apps?q=&category=`）：关键词每段都要命中，按相关度 + 热度排。返回 (结果, 总数)
     func search(_ q: String, category: String = "") throws -> ([App], Int) {
-        let body = try get("\(baseUrl)/api/apps?q=\(Self.enc(q))&category=\(Self.enc(category))&limit=100", timeout: 6)
+        let body = try get("\(baseUrl)/api/apps?q=\(Self.enc(q))&category=\(Self.enc(category))&limit=100&kind=all", timeout: 6)
         let total = (Self.object(body)["total"] as? NSNumber)?.intValue ?? 0
         return (try Self.parse(body), total)
     }
@@ -176,7 +181,9 @@ final class MiniStore {
         let names = (try? fm.contentsOfDirectory(atPath: root.path)) ?? []
         for n in names where n.hasSuffix(".json") && n != "index.json" {
             guard let d = try? Data(contentsOf: root.appendingPathComponent(n)), let app = App(json: Self.object(d)) else { continue }
-            if (app.id == key || app.appId == key), fm.fileExists(atPath: root.appendingPathComponent("\(app.id)/app.json").path) {
+            let d0 = root.appendingPathComponent(app.id)
+            if (app.id == key || app.appId == key),
+               fm.fileExists(atPath: d0.appendingPathComponent("app.json").path) || fm.fileExists(atPath: d0.appendingPathComponent("game.json").path) {
                 return app
             }
         }
@@ -245,7 +252,10 @@ final class MiniStore {
         try? fm.removeItem(at: tmp)
         try fm.createDirectory(at: tmp, withIntermediateDirectories: true)
         try ZipReader.extract(bytes, to: tmp)
-        guard fm.fileExists(atPath: tmp.appendingPathComponent("app.json").path) else { throw StoreError(message: "包里没有 app.json") }
+        // 小程序包根上有 app.json，小游戏包有 game.json（打开时按 MiniGame.packageKind 分流）
+        guard fm.fileExists(atPath: tmp.appendingPathComponent("app.json").path) || fm.fileExists(atPath: tmp.appendingPathComponent("game.json").path) else {
+            throw StoreError(message: "包里没有 app.json / game.json")
+        }
         let dir = root.appendingPathComponent(app.id, isDirectory: true)
         try? fm.removeItem(at: dir)
         do { try fm.moveItem(at: tmp, to: dir) } catch { throw StoreError(message: "换上新版失败") }

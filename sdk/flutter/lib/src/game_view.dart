@@ -4,7 +4,10 @@
 // 与 [MiniProgramView] 不同：触摸不经 Flutter 转成引擎事件，而是让平台视图直接收 MotionEvent
 // （MiniGameView.onTouchEvent 自己拆多指、带历史采样），所以这里用 EagerGestureRecognizer 把整块区域的指针全交出去。
 //
-// iOS 还没有小游戏宿主（原生 iOS SDK 也没有），这里画一行提示，不黑屏。
+// iOS 上嵌原生 iOS SDK 的 MiniGameView（插件 GameViewFactory.swift）：引擎线程上屏，WebGL 主画布经 ANGLE 直接 swap 进
+// CAMetalLayer。转屏要由 Dart 做（Flutter 的控制器只认 SystemChrome 设的方向）：原生读 game.json / wx.setDeviceOrientation
+// 之后发 `orientation`，这里 setPreferredOrientations，退出时还原成 App 的默认（空列表 = Info.plist 里的那几种）。
+// 其它平台画一行提示，不黑屏。
 import 'dart:convert';
 import 'dart:io' show Platform;
 
@@ -65,7 +68,7 @@ class MiniGameView extends StatefulWidget {
   /// 下载 / 解包完就在后台把包里的大脚本编成字节码（第一次打开也不用解析）。立刻返回；马上打开也没关系，
   /// 实例碰到正在编的脚本会等它编完。[dataDir] 与之后建视图给的同一个（不给用默认的 game-data）
   static Future<void> precompile(String gameDir, {String? dataDir}) async {
-    if (kIsWeb || !Platform.isAndroid) return;
+    if (kIsWeb || !(Platform.isAndroid || Platform.isIOS)) return;
     await const MethodChannel('dev.minirender/engine').invokeMethod<void>('precompileGame', {'dir': gameDir, 'dataDir': dataDir ?? ''});
   }
 
@@ -76,11 +79,31 @@ class MiniGameView extends StatefulWidget {
 class _MiniGameViewState extends State<MiniGameView> {
   MethodChannel? _ch;
 
+  /// iOS：游戏要的方向（game.json / wx.setDeviceOrientation）→ SystemChrome
+  bool _oriented = false;
+
+  void _orient(Object? value) {
+    if (!Platform.isIOS || !mounted) return;
+    _oriented = true;
+    SystemChrome.setPreferredOrientations(switch ('$value') {
+      'landscape' => const [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight],
+      // 官方：landscapeLeft = home 键在左；Flutter 引擎在 iOS 上把 DeviceOrientation.landscapeLeft 直接映射成
+      // UIInterfaceOrientationMaskLandscapeLeft（也是 home 键在左）
+      'landscapeLeft' => const [DeviceOrientation.landscapeLeft],
+      'landscapeRight' => const [DeviceOrientation.landscapeRight],
+      _ => const [DeviceOrientation.portraitUp],
+    });
+  }
+
   void _attach(int id) {
     final ch = MethodChannel('dev.minirender/game_$id');
     ch.setMethodCallHandler((call) async {
       if (call.method == 'firstFrame') {
         if (mounted) widget.onFirstFrame?.call();
+        return;
+      }
+      if (call.method == 'orientation') {
+        _orient((call.arguments as Map?)?['value']);
         return;
       }
       if (call.method != 'event') return;
@@ -95,6 +118,8 @@ class _MiniGameViewState extends State<MiniGameView> {
     });
     _ch = ch;
     widget.controller?._ch = ch;
+    // 初始方向原生建视图时就从 game.json 读好了，那时通道还没接上：问一次
+    if (Platform.isIOS) ch.invokeMethod<String>('orientation').then(_orient, onError: (_) {});
   }
 
   @override
@@ -110,15 +135,43 @@ class _MiniGameViewState extends State<MiniGameView> {
   void dispose() {
     _ch?.setMethodCallHandler(null);
     widget.controller?._ch = null;
+    // 还原成 App 的默认方向（Android 由 GameView.kt 还原 Activity 的 requestedOrientation）
+    if (_oriented) SystemChrome.setPreferredOrientations(const []);
     super.dispose();
   }
 
+  Map<String, Object?> get _creationParams => {
+        'dir': widget.gameDir,
+        'dataDir': widget.dataDir ?? '',
+        'options': jsonEncode(widget.options),
+      };
+
   @override
   Widget build(BuildContext context) {
+    if (!kIsWeb && Platform.isIOS) {
+      return UiKitView(
+        viewType: MiniGameView.viewType,
+        creationParams: _creationParams,
+        creationParamsCodec: const StandardMessageCodec(),
+        // 指针一按下就整个交给原生视图（同 Android）：不等 Flutter 的手势竞技场裁决
+        gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
+          Factory<OneSequenceGestureRecognizer>(() => EagerGestureRecognizer()),
+        },
+        onPlatformViewCreated: (id) {
+          if (mounted) _attach(id);
+        },
+      );
+    }
     if (kIsWeb || !Platform.isAndroid) {
+      // 外面多半没有 Material：不给 DefaultTextStyle 的话 Text 带调试用的黄色双下划线
       return const ColoredBox(
         color: Colors.black,
-        child: Center(child: Text('这个平台还不支持小游戏（目前只有 Android）', style: TextStyle(color: Colors.white70))),
+        child: Center(
+          child: DefaultTextStyle(
+            style: TextStyle(color: Colors.white70, fontSize: 14, decoration: TextDecoration.none),
+            child: Text('这个平台还不支持小游戏（目前有 Android 与 iOS）'),
+          ),
+        ),
       );
     }
     return PlatformViewLink(
@@ -135,11 +188,7 @@ class _MiniGameViewState extends State<MiniGameView> {
         id: params.id,
         viewType: MiniGameView.viewType,
         layoutDirection: TextDirection.ltr,
-        creationParams: {
-          'dir': widget.gameDir,
-          'dataDir': widget.dataDir ?? '',
-          'options': jsonEncode(widget.options),
-        },
+        creationParams: _creationParams,
         creationParamsCodec: const StandardMessageCodec(),
       )
         ..addOnPlatformViewCreatedListener((id) {

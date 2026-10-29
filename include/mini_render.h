@@ -391,6 +391,27 @@ void mr_game_mouse(MRGame* game, int phase, int button, float x, float y, uint64
 void mr_game_wheel(MRGame* game, float dx, float dy, float dz, float x, float y, uint64_t t_us);
 // 键盘：down 非 0 = 按下；key 如 "a" / "Enter"，code 如 "KeyA"
 void mr_game_key(MRGame* game, int down, const char* key, const char* code, uint64_t t_us);
+// mr_game_pump_ex 的返回位：只剩远期定时器，按 mr_game_next_wake_us 定时唤醒
+#define MR_FRAME_WAKE_AT 128
+// 预编译包里的大脚本（JS 字节码缓存）：下载 / 解包完就在**后台线程**调（任意线程，不占实例的那条线程）。
+// data_dir 与之后 mr_game_create 的同一个；与实例并行也安全（实例碰到正在编的脚本会等它编完）。返回新编的段数，-1 = 参数不对
+int mr_game_precompile(const char* app_dir, const char* data_dir);
+
+// ── 主画布直接上屏到原生图层（iOS：CAMetalLayer，经 ANGLE 的 EGL 窗口 surface；src/ffi_game/surface.rs）──
+// 主画布是 WebGL 时不读回、不经 CPU。2D 主画布 / 拿不到 EGL 时 mr_game_present_layer 返回 MR_GAME_PRESENT_CPU，
+// 宿主改用 mr_game_pixels_into（画在另一块图层上：EGL 用过的图层不要再拿来放 CPU 帧）
+#define MR_GAME_PRESENT_CPU 2
+// 挂上图层（宿主持有它直到 mr_game_detach_layer 返回）。1 = 挂上了
+int mr_game_attach_layer(MRGame* game, void* layer);
+// 同步放手（之后引擎不再碰它）。mr_game_destroy 会自己调
+void mr_game_detach_layer(MRGame* game);
+// 宿主在主线程把图层的像素尺寸（bounds × contentsScale）设好了之后报回来
+void mr_game_layer_size(MRGame* game, uint32_t width, uint32_t height);
+// mr_game_present_layer 返回 -1 时引擎要的图层像素尺寸
+void mr_game_layer_want(MRGame* game, uint32_t* width, uint32_t* height);
+// 1 = 已 swap；0 = 这一帧没有新画面；-1 = 图层尺寸不对（按 mr_game_layer_want 改好再调）；-2 = 出错；
+// MR_GAME_PRESENT_CPU = 走 mr_game_pixels_into
+int mr_game_present_layer(MRGame* game);
 
 #ifdef __cplusplus
 }

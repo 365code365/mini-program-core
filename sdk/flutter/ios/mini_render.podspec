@@ -20,9 +20,11 @@ mini-render 是 Rust 自绘的小程序渲染引擎（对标 Skyline）。这个
   s.source_files     = 'Classes/**/*'
   s.dependency 'Flutter'
   s.platform = :ios, '13.0'
-  s.vendored_frameworks = 'MiniRender.xcframework'
-  # Photos / PhotosUI / AVFoundation / MobileCoreServices：插件自带的选图、选文件、存相册（Classes/MediaPicker.swift）
-  s.frameworks = 'CoreVideo', 'QuartzCore', 'Photos', 'PhotosUI', 'AVFoundation', 'MobileCoreServices'
+  # Angle/：小游戏 WebGL 用的 ANGLE 动态框架（引擎运行时 dlopen；tools/fetch-angle-ios.sh 放的两个软链，同 MiniRender.xcframework；软链整个目录 CocoaPods 不认）
+  s.vendored_frameworks = 'MiniRender.xcframework', 'libEGL.xcframework', 'libGLESv2.xcframework'
+  # Photos / PhotosUI / AVFoundation / MobileCoreServices：插件自带的选图、选文件、存相册（Classes/MediaPicker.swift）；
+  # Metal / CoreMotion / CoreLocation：小游戏（Classes/Game/ 软链到 sdk/ios 的 MiniGameView 一套：EGL 图层、传感器、罗盘）
+  s.frameworks = 'CoreVideo', 'QuartzCore', 'Photos', 'PhotosUI', 'AVFoundation', 'MobileCoreServices', 'Metal', 'CoreMotion', 'CoreLocation'
   # QuickJS / openh264 是 C/C++，需要 C++ 运行时
   s.libraries = 'c++', 'z'
   # XCFramework 只有 arm64 真机 + arm64 模拟器两片

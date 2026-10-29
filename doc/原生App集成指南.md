@@ -928,6 +928,33 @@ setContentView(view)   // onResume / onPause 转给 view，onDestroy 调 view.di
 | 重度游戏跑不满 60 | 创建选项 `"adaptiveFps": true`：最近 30 帧里有 20 帧工作超过 15ms 就把 rAF 降到 30（帧间隔均匀，比 40fps 上下跳顺），在 30 档跑满 90 帧且 p90 < 11.7ms 再回 60；切档打一行 `🎚 自适应帧率`。默认关（微信语义：rAF 跟屏幕刷新率）；游戏自己 `wx.setPreferredFramesPerSecond` 设的上限照样生效 |
 | 首次打开慢（大脚本现编字节码） | 下载解包完就调 `MiniGame.precompileAsync(gameDir, dataDir)`（Flutter：`MiniGameView.precompile(dir)`）：后台线程把大脚本编成字节码写进 `<dataDir>/jscache/`，打一行 `📦 预编译`；实例建得比它早时等着那一段编完，不重复编 |
 
+### iOS
+
+```swift
+import MiniRender
+
+let vc = MiniGameViewController(gameDir: dir, options: ["appId": "wx123", "hostApis": ["login"], "adaptiveFps": true])
+vc.onHostEvent = { type, ev in            // exit / restart 已经处理好（关掉本页 / 换一个新实例）
+    if type == "hostCall" { vc.gameView.hostReply((ev["id"] as? NSNumber)?.intValue ?? 0, ok: true, result: ["code": "..."]) }
+}
+vc.onFirstFrame = { /* 撤 loading */ }
+present(vc, animated: false)             // 要弹出：转屏由被弹出的控制器决定，放进导航栈里转不了
+```
+
+- 只要视图不要控制器：`MiniGameView(gameDir:dataDir:options:)`，宿主控制器的 `supportedInterfaceOrientations`
+  返回 `view.orientationMask`，`onOrientationChange` 里请求转屏（iOS 16 起 `requestGeometryUpdate`）；
+  页面关掉时调 `close()`。
+- 下载解包完就调 `MiniGame.precompile(dir:)`；`MiniGame.packageKind(dir)` 判包种类（2 = 小游戏）。
+- 存档默认在 `Application Support/game-data`（`MiniGame.defaultDataDir`）。
+- WebGL 用 ANGLE（Metal 后端）的动态框架：`bash tools/build-mobile.sh ios` 会调 `tools/fetch-angle-ios.sh`
+  放进 `sdk/ios/Angle/`，SPM（Package.swift 的两个 binaryTarget）与 CocoaPods 都会把它们嵌进 App 的 `Frameworks/`，
+  引擎运行时 dlopen。框架的最低系统是 iOS 15，更早的系统 `getContext('webgl')` 返回 null（2D 游戏不受影响）。
+  主画布是 WebGL 时经 EGL 窗口 surface 直接 swap 进视图的 CAMetalLayer（`mr_game_present_layer`），不读回。
+- 传感器（CoreMotion、罗盘）、`wx.showKeyboard` 的输入条、`wx.createVideo`（AVPlayerLayer）、音频会话与打断、
+  内存告警都由 SDK 处理，与 Android 同一套事件。
+- Flutter 插件在 iOS 上嵌的是同一个 `MiniGameView`（`sdk/flutter/ios/Classes/Game/` 是软链），转屏由 Dart 的
+  `SystemChrome.setPreferredOrientations` 做，退出时还原。
+
 ### 渲染
 
 - 2D 画布在 CPU 上画，主画布按自己的分辨率交给 SurfaceView，系统缩放器拉满屏；

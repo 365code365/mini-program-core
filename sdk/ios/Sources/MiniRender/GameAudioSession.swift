@@ -9,9 +9,11 @@
 // - 类别要在会话**非激活**时改（06 §22）：先 setActive(false, .notifyOthersOnDeactivation) 再改、再激活。
 //
 // 所有调用都在小游戏的引擎线程上（与 mr_game_* 同一条线程）：通知在系统的线程上来，经 `post` 投递回去。
-// 还没有 iOS 的小游戏视图（G2.8）：这个类由那个视图持有；在那之前只做编译检查，没有真机验证。
+// 由 GameSession（MiniGameView 的引擎侧）持有。
 import AVFoundation
+#if canImport(MiniRenderFFI)
 import MiniRenderFFI
+#endif
 
 final class GameAudioSession {
     private let session = AVAudioSession.sharedInstance()
@@ -37,6 +39,13 @@ final class GameAudioSession {
 
     deinit {
         if let o = observer { NotificationCenter.default.removeObserver(o) }
+    }
+
+    /// 前后台（与 Android 的 GameAudioSession.setForeground 对应）：回前台重新激活会话（别的 App 可能在后台期间拿走了它），
+    /// 进后台不主动放手（引擎已经暂停全部音频；放手会让别的 App 的音乐被打断后又恢复一次）
+    func setForeground(_ fg: Bool) {
+        guard fg else { return }
+        try? session.setActive(true)
     }
 
     /// 引擎的 audioSession 事件（JSON 已解析）

@@ -149,6 +149,8 @@ build_ios() {
     # Flutter 插件（sdk/flutter）的 podspec 用同一份：CocoaPods 的 vendored 路径不能越出
     # podspec 所在目录，所以放一个软链过去（已在 sdk/flutter/.gitignore 里）
     ln -sfn ../../ios/MiniRender.xcframework sdk/flutter/ios/MiniRender.xcframework
+    # 小游戏 WebGL 的 ANGLE 动态框架（sdk/ios/Angle，Package.swift / 两个 podspec 都嵌它）
+    bash tools/fetch-angle-ios.sh
     echo "✅ $out"
     echo "   Swift 里 import MiniRenderFFI；SPM 用 sdk/ios/Package.swift，CocoaPods 用 MiniRender.podspec"
     echo "   Flutter 插件：sdk/flutter/ios/MiniRender.xcframework 已软链到这里"

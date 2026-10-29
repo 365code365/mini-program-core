@@ -30,6 +30,8 @@ pub struct MRGame {
     eval_buf: CString,
     /// poisoned 之后还要交给宿主的那条 panic 事件
     panic_event: Option<String>,
+    /// 宿主挂上的原生图层（iOS 的 CAMetalLayer），0 = 没挂；尺寸见 surface.rs
+    layer: surface::Layer,
 }
 
 fn cstr(p: *const c_char) -> Option<String> {
@@ -59,10 +61,10 @@ pub extern "C" fn mr_capabilities() -> *const c_char {
     CAPS.get_or_init(|| {
         let v = serde_json::json!({
             "game": cfg!(feature = "game"),
-            // 下面三项随实现进度改（G8 WebGL、G5 移动端音频、G10 wasm）
-            "webgl": false,
+            // 编进来了才报 true。webgl 还要运行时拿得到 EGL（ANGLE / 系统驱动），拿不到时 getContext('webgl') 返回 null
+            "webgl": cfg!(feature = "webgl"),
             "audio": cfg!(feature = "audio"),
-            "wasm": false,
+            "wasm": cfg!(feature = "wasm"),
             "gpu": cfg!(feature = "gpu"),
             "version": env!("CARGO_PKG_VERSION"),
             "sdkVersion": SDK_VERSION,
@@ -120,6 +122,7 @@ pub extern "C" fn mr_game_create(
             event_buf: CString::default(),
             eval_buf: CString::default(),
             panic_event: None,
+            layer: Default::default(),
         })),
         Ok(Err(e)) => {
             eprintln!("❌ mr_game_create 失败: {e}");
@@ -138,6 +141,8 @@ pub extern "C" fn mr_game_destroy(game: *mut MRGame) {
     if game.is_null() {
         return;
     }
+    // 先拆图层上的 EGL 窗口 surface（它引用着宿主的图层），再析构引擎
+    mr_game_detach_layer(game);
     let g = unsafe { Box::from_raw(game) };
     // 析构里也可能 panic（中毒的锁）：吞掉，不能 abort 宿主
     let _ = catch_unwind(AssertUnwindSafe(move || drop(g)));
@@ -404,6 +409,11 @@ pub(crate) fn mr_game_with_frame<R>(game: *mut MRGame, f: impl FnOnce(u32, u32, 
         Some(f(w, h, px))
     })
 }
+
+#[cfg(feature = "game")]
+mod surface;
+#[cfg(feature = "game")]
+pub use surface::*;
 
 #[cfg(all(test, feature = "game"))]
 mod tests;
