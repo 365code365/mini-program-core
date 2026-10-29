@@ -2,7 +2,7 @@ import AppKit
 
 /// 发现 → 小程序（PC 微信的小程序面板）：顶上「小程序」+ 搜索、内置示例两个按钮；底下一张张白卡片 ——
 /// 最近使用（更多 >）、我的常用（我的小程序 >）、小游戏、按分类的全部小程序。点开在独立窗口，右键出操作单。
-/// `gamesOnly`：发现 → 游戏，只看「娱乐」分类。
+/// `gamesOnly`：发现 → 游戏，只看小游戏（商店的 kind = game，game.json 包）。
 final class HubView: NSView {
     private unowned let main: MainWindowController
     private let gamesOnly: Bool
@@ -95,7 +95,7 @@ final class HubView: NSView {
         col.arrangedSubviews.forEach { $0.removeFromSuperview() }
         let local = StoreLocal()
         let favIds = Set(local.favorites().map(\.id))
-        let apps = gamesOnly ? main.apps.filter { $0.category == "娱乐" } : main.apps
+        let apps = gamesOnly ? main.apps.filter(\.isGame) : main.apps
         if let off = main.offlineReason {
             let warn = label("⚠ 服务器连不上，显示上次的列表（\(off)）", 12, NSColor(argb: 0xFFE64340))
             col.addArrangedSubview(warn)
@@ -112,14 +112,14 @@ final class HubView: NSView {
                                                    : tileRow(fav.prefix(6).map { tile($0, scene: 1104) }))
             add(c2)
         }
-        let games = main.apps.filter { $0.category == "娱乐" }
+        let games = main.apps.filter(\.isGame)
         if !games.isEmpty, !gamesOnly {
             let c3 = Card(title: "小游戏", more: "全部小游戏") { [weak main] in main?.showHub(gamesOnly: true) }
             c3.body.addArrangedSubview(tileRow(games.prefix(6).map { gameTile($0) }))
             add(c3)
         }
         // 全部：按服务器的固定分类顺序分组
-        let order = ["美食", "购物", "出行", "生活服务", "医疗健康", "金融", "工具", "教育", "娱乐", "资讯", "政务", "其他"]
+        let order = ["游戏", "美食", "购物", "出行", "生活服务", "医疗健康", "金融", "工具", "教育", "娱乐", "资讯", "政务", "其他"]
         var groups: [String: [MiniStore.App]] = [:]
         for a in apps { groups[a.category.isEmpty ? "其他" : a.category, default: []].append(a) }
         for c in order {

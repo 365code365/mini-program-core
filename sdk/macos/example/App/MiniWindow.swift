@@ -24,16 +24,18 @@ final class MiniWindowController: NSWindowController, NSWindowDelegate {
         c.load(link: link, hint: hint)
     }
 
-    private let store: MiniStore
-    private var mini: MiniProgramView?
-    private var link: StoreLink?
-    private var currentApp: MiniStore.App?
+    let store: MiniStore
+    var mini: MiniProgramView?
+    /// 小游戏包（game.json）开的是这个，不是 MiniProgramView（GameWindow.swift）
+    var game: MiniGameView?
+    private(set) var link: StoreLink?
+    var currentApp: MiniStore.App?
     private var currentRoute: String?
     private var generation = 0
     private var cover: NSView?
     private var coverStatus: NSTextField?
     /// 红绿灯那一行的高度：交给引擎当状态栏
-    private let titleBarH: CGFloat = 28
+    let titleBarH: CGFloat = 28
 
     private init(store: MiniStore) {
         self.store = store
@@ -60,6 +62,8 @@ final class MiniWindowController: NSWindowController, NSWindowDelegate {
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
     func windowWillClose(_ notification: Notification) {
+        game?.close()
+        game = nil
         mini?.close()
         mini?.removeFromSuperview()
         mini = nil
@@ -71,6 +75,7 @@ final class MiniWindowController: NSWindowController, NSWindowDelegate {
     // MARK: - 打开
 
     private func newView() -> MiniProgramView {
+        closeGame()
         mini?.close()
         mini?.removeFromSuperview()
         let diag = UserDefaults.standard.bool(forKey: "diag")
@@ -166,7 +171,7 @@ final class MiniWindowController: NSWindowController, NSWindowDelegate {
         }
     }
 
-    private func load(link l: StoreLink?, hint: MiniStore.App?) {
+    func load(link l: StoreLink?, hint: MiniStore.App?) {
         generation += 1
         let gen = generation
         link = l
@@ -198,6 +203,8 @@ final class MiniWindowController: NSWindowController, NSWindowDelegate {
                     NSLog("[商店] 打开 %@ %@ v%d → %@ 起始页 %@", p.app.id, p.app.appId, p.app.version, p.dir.path, l.route ?? "首页")
                     self.currentApp = p.app
                     StoreLocal().touch(p.app)
+                    // 小游戏包：换成 MiniGameView（GameWindow.swift），loading 层盖到第一帧
+                    if MiniGame.packageKind(p.dir.path) == 2 { return self.openGame(p, link: l) }
                     v.launchOptions = l.launchOptions
                     v.open(appDir: p.dir, route: l.route)
                 case let .failure(e):
@@ -230,7 +237,7 @@ final class MiniWindowController: NSWindowController, NSWindowDelegate {
         coverStatus = status
     }
 
-    private func hideCover() {
+    func hideCover() {
         guard let c = cover else { return }
         cover = nil
         NSAnimationContext.runAnimationGroup({ ctx in
@@ -239,10 +246,11 @@ final class MiniWindowController: NSWindowController, NSWindowDelegate {
         }, completionHandler: { c.removeFromSuperview() })
     }
 
-    private func relaunch() { load(link: link, hint: currentApp) }
+    func relaunch() { load(link: link, hint: currentApp) }
 
     /// 引擎当前这一帧（截图验收；画面在 CAMetalLayer 上，窗口截图截不到）
     func snapshot(_ done: @escaping (NSImage?) -> Void) {
+        if let game { return game.snapshot(done) }
         guard let mini else { return done(nil) }
         mini.snapshot(done)
     }

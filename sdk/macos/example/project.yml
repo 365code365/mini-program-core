@@ -56,7 +56,22 @@ targets:
       properties:
         # 不开沙盒：示例要直连测试商店、把小程序解到 Application Support（开沙盒还要再声明网络客户端）
         com.apple.security.app-sandbox: false
+    # 小游戏的 WebGL：ANGLE（Metal 后端）的 dylib 拷进 Contents/Frameworks（引擎在 可执行文件/../Frameworks 里 dlopen，
+    # src/game/webgl/egl.rs）。来源是 tools/fetch-angle.sh 拉的那份（build-mobile.sh macos 会先跑它）；没有就跳过，
+    # 那时 getContext('webgl') 返回 null，2D 游戏照常
+    postBuildScripts:
+      - name: 嵌 ANGLE（小游戏 WebGL）
+        basedOnDependencyAnalysis: false
+        script: |
+          SRC="$SRCROOT/../../../third_party/angle/macos-arm64"
+          DST="$TARGET_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH"
+          mkdir -p "$DST"
+          for f in libEGL.dylib libGLESv2.dylib; do
+            if [ -f "$SRC/$f" ]; then cp -f "$SRC/$f" "$DST/$f" && codesign --force --sign - "$DST/$f"; else echo "warning: 没有 $SRC/$f（先跑 tools/fetch-angle.sh）"; fi
+          done
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.minirender.mac
         PRODUCT_NAME: 灵犀
+        # 上面那段脚本要读仓库里的 third_party/（Xcode 15 起脚本默认在沙盒里，读不到工程目录外的文件）
+        ENABLE_USER_SCRIPT_SANDBOXING: NO

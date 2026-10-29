@@ -160,8 +160,11 @@ build_ios() {
 # 给 sdk/macos 的 MiniProgramView（AppKit 宿主，PC 微信式示例在 sdk/macos/example）用的静态库。
 # 与 iOS 的区别：不要 bindgen（rquickjs-sys 预生成了 darwin 的绑定）；带 h264 / audio（桌面上软解 <video>、
 # 自己出声，与 mini-app-window 一样）；不带 desktop（窗口、上屏、剪贴板都归宿主）。
+# 小游戏与手机同一组（$GA：game-audio / webgl / wasm）；WebGL 用 tools/fetch-angle.sh 拉的 ANGLE dylib，
+# 示例 App 编完把它们拷进 Contents/Frameworks（sdk/macos/example/project.yml 的 postBuildScripts）
 build_macos() {
-    local flags=(--release --lib --no-default-features --features gpu,h264,audio,game)
+    local flags=(--release --lib --no-default-features --features "gpu,h264,audio,$GA")
+    bash tools/fetch-angle.sh
     local lto="${MOBILE_LTO:-thin}" incr=false
     [ "$lto" = false ] && incr=true
     local targets=(aarch64-apple-darwin)

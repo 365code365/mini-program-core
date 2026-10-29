@@ -957,6 +957,12 @@ present(vc, animated: false)             // 要弹出：转屏由被弹出的控
 - Flutter 插件在 iOS 上嵌的是同一个 `MiniGameView`（`sdk/flutter/ios/Classes/Game/` 是软链），转屏由 Dart 的
   `SystemChrome.setPreferredOrientations` 做，退出时还原。
 
+### macOS
+
+`sdk/macos` 的 `MiniGameView`（NSView）：同一套事件与胶囊；鼠标左键同时报成触摸与 `wx.onMouse*`，滚轮 / 键盘报 `wx.onWheel` /
+`onKeyDown`；`topInset`（标题栏那一行）报成安全区内缩；横屏游戏由宿主把窗口开成横的。ANGLE dylib 要拷进 `Contents/Frameworks/`。
+细节见 `sdk/macos/README.md` 的「小游戏」一节。
+
 ### 渲染
 
 - 2D 画布在 CPU 上画，主画布按自己的分辨率交给 SurfaceView，系统缩放器拉满屏；
