@@ -29,6 +29,8 @@
 mod runtime;
 // QuickJS 的分档池分配器（省掉默认分配器的 malloc_usable_size 记账）
 mod pool_alloc;
+// 热路径原生函数（借用参数、不经 rquickjs 的闭包包装）：WebGL 的 __game_gl
+mod fast_fn;
 // 大脚本的字节码缓存（小游戏加载包：Cocos 引擎脚本 3MB，解析一次 370ms）
 pub mod bytecode_cache;
 /// 运行时守护：看门狗、内存上限、未处理的 Promise 拒绝（小游戏用）

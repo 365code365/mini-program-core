@@ -8,6 +8,8 @@ use std::rc::Rc;
 pub struct JsRuntime {
     runtime: Runtime,
     context: Context,
+    /// `register_fast` 注册的闭包（放在最后：比运行时与上下文晚释放）
+    fast_fns: super::fast_fn::FastFns,
 }
 
 impl JsRuntime {
@@ -42,7 +44,7 @@ impl JsRuntime {
         .map_err(|e| e.to_string())?;
         let context = Context::full(&runtime).map_err(|e| e.to_string())?;
         
-        Ok(Self { runtime, context })
+        Ok(Self { runtime, context, fast_fns: Default::default() })
     }
     
     /// 泵出所有待处理的微任务（Promise / async 的 job 队列）
@@ -187,6 +189,18 @@ impl JsRuntime {
         self.context.with(|ctx| {
             let js_func = make(&ctx, func.clone()).map_err(|e| e.to_string())?;
             ctx.globals().set(name, js_func).map_err(|e| e.to_string())
+        })
+    }
+
+    /// 与 [`register_raw`](Self::register_raw) 同语义，但参数是借来的切片、不经 rquickjs 的闭包包装（js/fast_fn.rs）：
+    /// 每帧调几百次的原生入口（WebGL 的 `__game_gl`）用这个
+    pub fn register_fast<F>(&self, name: &str, func: F) -> Result<(), String>
+    where
+        F: for<'js> Fn(Ctx<'js>, &[Value<'js>]) -> JsResult<Value<'js>> + 'static,
+    {
+        self.context.with(|ctx| {
+            let f = self.fast_fns.make(&ctx, Box::new(func)).map_err(|e| e.to_string())?;
+            ctx.globals().set(name, f).map_err(|e| e.to_string())
         })
     }
 

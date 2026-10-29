@@ -108,38 +108,53 @@ pub fn register(rt: &JsRuntime, gl: Rc<RefCell<WebGl>>, canvases: Rc<RefCell<Gam
     // WEBGL_lose_context.restoreContext / 丢失后游戏 preventDefault：重建上下文（旧对象全部作废，JS 换代）
     let (g, c) = (gl.clone(), canvases.clone());
     rt.register_raw("__game_gl_restore", move |ctx, args| g.borrow_mut().restore(&c, A(&args.0).u(0)).into_js(&ctx))?;
-    rt.register_raw("__game_gl", move |ctx, args| {
-        let a = A(&args.0);
-        let id = a.u(0);
-        let Some(&op) = ALL.get(a.u(1) as usize) else { return null(&ctx) };
-        let rest = A(&args.0[2.min(args.0.len())..]);
-        let mut w = gl.borrow_mut();
-        let Some(c) = w.current(id) else { return null(&ctx) };
-        if c.lost {
-            return lost_result(&ctx, c, op);
-        }
-        let env = Env { ctx: ctx.clone(), canvases: &canvases, images: &images };
-        // glow 对驱动没给的函数是 panic（「called glXxx but it was not loaded」）：不能让它穿过 QuickJS 的 C 栈帧，
-        // 接住后按 INVALID_OPERATION 处理并记一行日志
-        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            ops_state::call(c, &env, op, &rest)
-                .or_else(|| ops_buffer::call(c, &env, op, &rest))
-                .or_else(|| ops_shader::call(c, &env, op, &rest))
-                .or_else(|| ops_texture::call(c, &env, op, &rest))
-                .or_else(|| ops_fbo::call(c, &env, op, &rest))
-                .or_else(|| ops_gl2::call(c, &env, op, &rest))
-        }));
-        match r {
-            Ok(r) => r.unwrap_or_else(|| null(&ctx)),
-            Err(p) => {
-                let msg = p.downcast_ref::<String>().cloned().or_else(|| p.downcast_ref::<&str>().map(|s| s.to_string())).unwrap_or_default();
-                c.error(glow::INVALID_OPERATION);
-                w.notes.push(format!("⚠️ WebGL {op:?}：驱动缺这个函数（{msg}），按 INVALID_OPERATION 处理"));
-                null(&ctx)
-            }
-        }
-    })?;
+    // 每帧几百次：走 register_fast（参数借用、不建 Vec，js/fast_fn.rs）。MINI_GL_SLOW_CALL=1 退回 register_raw 做对照
+    let st = Rc::new(State { gl, canvases, images });
+    if std::env::var("MINI_GL_SLOW_CALL").is_ok_and(|v| v == "1") {
+        rt.register_raw("__game_gl", move |ctx, args| dispatch(&st, ctx, &args.0))?;
+    } else {
+        rt.register_fast("__game_gl", move |ctx, args| dispatch(&st, ctx, args))?;
+    }
     Ok(())
+}
+
+struct State {
+    gl: Rc<RefCell<WebGl>>,
+    canvases: Rc<RefCell<GameCanvases>>,
+    images: Rc<RefCell<ImageStore>>,
+}
+
+/// `__game_gl(画布 id, op, ...参数)` 的本体
+fn dispatch<'js>(st: &State, ctx: Ctx<'js>, args: &[Value<'js>]) -> JsResult<Value<'js>> {
+    let a = A(args);
+    let id = a.u(0);
+    let Some(&op) = ALL.get(a.u(1) as usize) else { return null(&ctx) };
+    let rest = A(&args[2.min(args.len())..]);
+    let mut w = st.gl.borrow_mut();
+    let Some(c) = w.current(id) else { return null(&ctx) };
+    if c.lost {
+        return lost_result(&ctx, c, op);
+    }
+    let env = Env { ctx: ctx.clone(), canvases: &st.canvases, images: &st.images };
+    // glow 对驱动没给的函数是 panic（「called glXxx but it was not loaded」）：不能让它穿过 QuickJS 的 C 栈帧，
+    // 接住后按 INVALID_OPERATION 处理并记一行日志
+    let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        ops_state::call(c, &env, op, &rest)
+            .or_else(|| ops_buffer::call(c, &env, op, &rest))
+            .or_else(|| ops_shader::call(c, &env, op, &rest))
+            .or_else(|| ops_texture::call(c, &env, op, &rest))
+            .or_else(|| ops_fbo::call(c, &env, op, &rest))
+            .or_else(|| ops_gl2::call(c, &env, op, &rest))
+    }));
+    match r {
+        Ok(r) => r.unwrap_or_else(|| null(&ctx)),
+        Err(p) => {
+            let msg = p.downcast_ref::<String>().cloned().or_else(|| p.downcast_ref::<&str>().map(|s| s.to_string())).unwrap_or_default();
+            c.error(glow::INVALID_OPERATION);
+            w.notes.push(format!("⚠️ WebGL {op:?}：驱动缺这个函数（{msg}），按 INVALID_OPERATION 处理"));
+            null(&ctx)
+        }
+    }
 }
 
 /// 上下文丢失时：getError 报一次 CONTEXT_LOST_WEBGL，is* 报 false，其余 null（WebGL 规范 §5.15.2）
