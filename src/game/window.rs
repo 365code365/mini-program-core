@@ -56,6 +56,8 @@ impl GameEngine {
         info["deviceOrientation"] = json!(if self.orientation == "portrait" { "portrait" } else { "landscape" });
         info["platform"] = json!(super::target_platform());
         info["SDKVersion"] = json!(super::GAME_SDK_VERSION);
+        // 宿主报了屏幕内缩：按当前方向重算安全区与胶囊（chrome.rs）
+        super::chrome::apply(&mut info, &self.system_info_opts, self.safe_area, self.width > self.height);
         crate::host::engine_options::install_system_info(&self.app, &info);
     }
 

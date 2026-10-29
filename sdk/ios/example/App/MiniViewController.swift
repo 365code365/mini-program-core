@@ -196,8 +196,10 @@ final class MiniViewController: UIViewController {
             "hostApis": GameHostApis.apis,
         ])
         let hosts = GameHostApis(presenter: vc) { [weak vc] in vc?.gameView }
-        vc.onHostEvent = { [weak vc] type, ev in
+        vc.onHostEvent = { [weak self, weak vc] type, ev in
             NSLog("[小游戏] %@ %@", p.app.id, type)
+            // 胶囊「•••」（「⊙」控制器自己处理成退出）：与小程序同一个微信式底部菜单
+            if type == "menuButton", let vc { self?.showGameMenu(vc, p.app); return }
             guard type == "hostCall", let v = vc?.gameView, !hosts.handle(ev) else { return }
             v.hostReply((ev["id"] as? NSNumber)?.intValue ?? 0, ok: false, result: ["errMsg": "\(ev["api"] ?? ""):fail 示例宿主未实现"])
         }
@@ -220,6 +222,31 @@ final class MiniViewController: UIViewController {
         game = vc
         opened = true
         present(vc, animated: false)
+    }
+
+    /// 小游戏胶囊「•••」：顶上游戏名，转发 / 收藏、重新进入 / 关于（与 Android 示例 GameActivity.showGameMenu 同一份内容）
+    private func showGameMenu(_ vc: MiniGameViewController, _ app: MiniStore.App) {
+        let local = StoreLocal()
+        let fav = local.isFavorite(app.id)
+        let about = {
+            let a = UIAlertController(title: app.name, message: "小游戏 · \(app.appId)\nv\(app.version)，由 mini-render 引擎运行", preferredStyle: .alert)
+            a.addAction(UIAlertAction(title: "确定", style: .cancel))
+            vc.present(a, animated: true)
+        }
+        StoreSheets.capsuleMenu(
+            vc, icon: IconView(store: store, app: app, size: 30), name: app.name, subtitle: "小游戏 · v\(app.version)",
+            onHeader: about,
+            top: [
+                StoreSheets.Item(glyph: "↗", label: "转发给朋友") { StoreSheets.copyLink(app, route: nil) },
+                StoreSheets.Item(glyph: fav ? "★" : "☆", label: fav ? "取消收藏" : "添加到\n我的小程序", active: fav) {
+                    let now = local.toggleFavorite(app)
+                    StoreSheets.toast(now ? "已添加到「我的小程序」，入口页下拉可见" : "已从「我的小程序」移除")
+                },
+            ],
+            bottom: [
+                StoreSheets.Item(glyph: "↻", label: "重新进入\n小游戏") { [weak vc] in vc?.restart() },
+                StoreSheets.Item(glyph: "ⓘ", label: "关于", onTap: about),
+            ])
     }
 
     /// 弹着的游戏页（外部链接换小程序时先关掉它）

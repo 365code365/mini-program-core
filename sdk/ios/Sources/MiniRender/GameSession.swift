@@ -54,6 +54,8 @@ protocol GameSessionUI: AnyObject {
     func gameShowLayer(metal: Bool)
     func gameCpuFrame(_ image: CGImage)
     func gameFirstFrame()
+    /// 胶囊的矩形（逻辑像素，与 wx.getMenuButtonBoundingClientRect 同一个数）：建实例、转屏、安全区变了之后各来一次
+    func gameMenuButton(_ rect: CGRect)
     func gameEvents(_ events: [[String: Any]])
 }
 
@@ -124,6 +126,7 @@ final class GameSession: NSObject {
             l.add(to: RunLoop.current, forMode: .default)
             link = l
             applyFrameRate(h, force: true)
+            reportMenuButton(h)
             forcePresent = true
             drainEvents(h)
             requestFrame()
@@ -203,7 +206,16 @@ final class GameSession: NSObject {
             } else {
                 mr_game_resize(h, max(1, width), max(1, height), dpr, nil)
             }
+            self.reportMenuButton(h)
             self.forcePresent = true
+        }
+    }
+
+    /// 屏幕内缩变了（转屏、横条显隐）：引擎重算 safeArea / statusBarHeight / 胶囊位置（src/game/chrome.rs）
+    func setSafeArea(_ i: UIEdgeInsets) {
+        run { h in
+            mr_game_set_safe_area(h, Float(i.top), Float(i.right), Float(i.bottom), Float(i.left))
+            self.reportMenuButton(h)
         }
     }
 
@@ -235,6 +247,13 @@ final class GameSession: NSObject {
     }
 
     // ───────────────────────── 引擎线程 ─────────────────────────
+
+    private func reportMenuButton(_ h: OpaquePointer) {
+        var x: Float = 0, y: Float = 0, w: Float = 0, hh: Float = 0
+        mr_game_menu_button(h, &x, &y, &w, &hh)
+        let r = CGRect(x: CGFloat(x), y: CGFloat(y), width: CGFloat(w), height: CGFloat(hh))
+        DispatchQueue.main.async { [weak self] in self?.ui?.gameMenuButton(r) }
+    }
 
     private func afterCommand(_ h: OpaquePointer) {
         drainEvents(h)

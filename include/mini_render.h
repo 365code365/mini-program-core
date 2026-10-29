@@ -397,6 +397,13 @@ void mr_game_key(MRGame* game, int down, const char* key, const char* code, uint
 // data_dir 与之后 mr_game_create 的同一个；与实例并行也安全（实例碰到正在编的脚本会等它编完）。返回新编的段数，-1 = 参数不对
 int mr_game_precompile(const char* app_dir, const char* data_dir);
 
+// ── 安全区与胶囊（src/game/chrome.rs）──
+// 建实例时给创建选项 "safeArea": {"top","right","bottom","left"}（屏幕内缩，逻辑像素）：引擎按方向算 statusBarHeight /
+// safeArea / safeAreaInsets / getMenuButtonBoundingClientRect。转屏、横条显隐后用这个报新的（不派发事件）
+void mr_game_set_safe_area(MRGame* game, float top, float right, float bottom, float left);
+// 胶囊（右上角「••• | ⊙」）的矩形（逻辑像素），与 wx.getMenuButtonBoundingClientRect 同一个数：宿主按它摆原生胶囊
+void mr_game_menu_button(MRGame* game, float* x, float* y, float* width, float* height);
+
 // ── 主画布直接上屏到原生图层（iOS：CAMetalLayer，经 ANGLE 的 EGL 窗口 surface；src/ffi_game/surface.rs）──
 // 主画布是 WebGL 时不读回、不经 CPU。2D 主画布 / 拿不到 EGL 时 mr_game_present_layer 返回 MR_GAME_PRESENT_CPU，
 // 宿主改用 mr_game_pixels_into（画在另一块图层上：EGL 用过的图层不要再拿来放 CPU 帧）

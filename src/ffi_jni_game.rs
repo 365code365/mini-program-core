@@ -219,6 +219,30 @@ pub extern "system" fn Java_dev_minirender_MiniGame_nativeAudioStats(env: JNIEnv
     env.new_string(s).map(|s| s.into_raw()).unwrap_or(std::ptr::null_mut())
 }
 
+/// 屏幕内缩变了（见 `mr_game_set_safe_area`，逻辑像素）
+#[no_mangle]
+pub extern "system" fn Java_dev_minirender_MiniGame_nativeSetSafeArea(_e: JNIEnv, _c: JClass, h: jlong, top: f32, right: f32, bottom: f32, left: f32) {
+    if let Some(hd) = handle(h) {
+        crate::ffi_game::mr_game_set_safe_area(hd.game, top, right, bottom, left);
+    }
+}
+
+/// 胶囊矩形 [x, y, w, h]（逻辑像素，见 `mr_game_menu_button`）
+#[no_mangle]
+pub extern "system" fn Java_dev_minirender_MiniGame_nativeMenuButton(env: JNIEnv, _c: JClass, h: jlong) -> jni::sys::jfloatArray {
+    let (mut x, mut y, mut w, mut hh) = (0f32, 0f32, 0f32, 0f32);
+    if let Some(hd) = handle(h) {
+        crate::ffi_game::mr_game_menu_button(hd.game, &mut x, &mut y, &mut w, &mut hh);
+    }
+    match env.new_float_array(4) {
+        Ok(a) => {
+            let _ = env.set_float_array_region(&a, 0, &[x, y, w, hh]);
+            a.into_raw()
+        }
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
 /// rAF 目标帧率（宿主据此 `Surface.setFrameRate`）
 #[no_mangle]
 pub extern "system" fn Java_dev_minirender_MiniGame_nativePreferredFps(_e: JNIEnv, _c: JClass, h: jlong) -> jint {

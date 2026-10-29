@@ -411,6 +411,10 @@ pub(crate) fn mr_game_with_frame<R>(game: *mut MRGame, f: impl FnOnce(u32, u32, 
 }
 
 #[cfg(feature = "game")]
+mod chrome;
+#[cfg(feature = "game")]
+pub use chrome::*;
+#[cfg(feature = "game")]
 mod surface;
 #[cfg(feature = "game")]
 pub use surface::*;

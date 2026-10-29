@@ -111,6 +111,13 @@ class MiniGameView(
         })
     }
 
+    /** 安全区与右上角胶囊（[GameChrome]，主线程）。引擎内旋转时胶囊的坐标系是转过的，不画；`"menuButton": false` 也不画 */
+    private val chrome = GameChrome(this, capsuleOn = optBool("menuButton", true) && !optBool("rotateInEngine", false)) { action ->
+        onHostEvent?.invoke("menuButton", org.json.JSONObject().put("type", "menuButton").put("action", action))
+    }
+
+    private fun optBool(k: String, d: Boolean) = try { org.json.JSONObject(options).optBoolean(k, d) } catch (_: Exception) { d }
+
     init {
         // 建实例之前就按 game.json 锁方向：否则第一帧拿到竖屏尺寸，横屏包要先错一次再 resize（G6.3）
         val o = try { org.json.JSONObject(java.io.File(dir, "game.json").readText()).optString("deviceOrientation", "portrait") } catch (_: Exception) { "portrait" }
@@ -147,6 +154,7 @@ class MiniGameView(
         // 传感器由 SDK 采集（GameSensors）：那几个 start / stop 交给宿主
         val apis = o.optJSONArray("hostApis") ?: org.json.JSONArray().also { o.put("hostApis", it) }
         GameSensors.APIS.forEach { apis.put(it) }
+        chrome.withSafeArea(o)
         if (!si.has("benchmarkLevel")) {
             val mi = android.app.ActivityManager.MemoryInfo()
             (context.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager).getMemoryInfo(mi)
@@ -170,6 +178,24 @@ class MiniGameView(
         @Deprecated("系统接口")
         override fun onLowMemory() = onTrimMemory(android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL)
         override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {}
+    }
+
+    /** 刘海、横条、转屏后的侧边：报给引擎重算安全区，胶囊跟着挪 */ override fun onApplyWindowInsets(insets: android.view.WindowInsets): android.view.WindowInsets {
+        // 引擎线程上取最新的那份（转屏途中会先来一份半新不旧的：方向变了、导航栏还在底下）
+        if (chrome.onInsets(insets) != null) engine.post {
+            val v = chrome.insets
+            if (handle == 0L || v == null) return@post
+            MiniGame.nativeSetSafeArea(handle, v[0], v[1], v[2], v[3])
+            placeCapsule()
+        }
+        return super.onApplyWindowInsets(insets)
+    }
+
+    /** 引擎线程：按引擎算的矩形摆胶囊（与 wx.getMenuButtonBoundingClientRect 同一个数），日志里带内缩 */
+    private fun placeCapsule() {
+        if (chrome.capsule == null || handle == 0L) return
+        val r = MiniGame.nativeMenuButton(handle)
+        Log.i(TAG, "🎮 胶囊 ${r?.joinToString()}（内缩 ${chrome.insets?.joinToString()}）"); main.post { if (!disposed) chrome.placeCapsule(r) }
     }
 
     override fun onAttachedToWindow() {
@@ -197,9 +223,13 @@ class MiniGameView(
         }
         val lw = (w / d).toInt().coerceAtLeast(1)
         val lh = (h / d).toInt().coerceAtLeast(1)
+        // 转屏后的内缩：Flutter 平台视图里 onApplyWindowInsets 不一定分发到这一层，尺寸变了就自己再取一次
+        rootWindowInsets?.let { chrome.onInsets(it) }
         engine.post {
             if (handle == 0L) return@post
+            chrome.insets?.let { MiniGame.nativeSetSafeArea(handle, it[0], it[1], it[2], it[3]) }
             MiniGame.nativeResize(handle, lw, lh, d, orient)
+            placeCapsule()
             drainEvents()
             forceBlit = true
             requestFrame()
@@ -217,12 +247,16 @@ class MiniGameView(
         val dpr = resources.displayMetrics.density
         val w = (width / dpr).toInt().coerceAtLeast(1)
         val h = (height / dpr).toInt().coerceAtLeast(1)
+        // 第一次布局时内缩可能还没分发过：先取一次（建实例的选项里要带 safeArea）
+        rootWindowInsets?.let { chrome.onInsets(it) }
+        val opts = withBenchmark(options)
         engine.post {
             choreographer = Choreographer.getInstance()
             boost = FrameBoost.forCurrentThread(context)
             MiniDiag.apply() // debug.mini.* 系统属性 → 环境变量（引擎建实例时读）
             val t0 = System.nanoTime()
-            handle = MiniGame.nativeCreate(dir, dataDir, w, h, dpr, withBenchmark(options))
+            handle = MiniGame.nativeCreate(dir, dataDir, w, h, dpr, opts)
+            placeCapsule()
             if (handle != 0L) sensors = GameSensors(context, engine) { name, json ->
                 if (handle != 0L) { MiniGame.nativeDispatchEvent(handle, name, json); drainEvents(); requestFrame() }
             }
@@ -272,6 +306,7 @@ class MiniGameView(
     fun dispose() {
         if (disposed) return
         disposed = true
+        chrome.release()
         main.post { video.release() }
         engine.post {
             choreographer?.removeFrameCallback(frame)
@@ -285,57 +320,20 @@ class MiniGameView(
         }
     }
 
-    /**
-     * 触摸（game-doc/02 §7.1）：一个 MotionEvent 拆成「每根指针一次」——POINTER_DOWN / UP 只报那一根，
-     * MOVE 把全部历史采样按时间顺序、每根指针各报一次（游戏算手势速度要采样密度），CANCEL 报全部指针。
-     * UI 线程上只打包，一次 post 到引擎线程、一次 JNI；派发在下一帧 pump 的 rAF 之前。
-     */
+    /** 触摸（game-doc/02 §7.1）：UI 线程上按指针打包（[GameTouch]），一次 post 到引擎线程、一次 JNI；派发在下一帧 pump 的 rAF 之前 */
     override fun onTouchEvent(e: MotionEvent): Boolean {
-        val d = resources.displayMetrics.density
-        val n = e.pointerCount
-        val buf = FloatArray(6 * n * (e.historySize + 1))
-        var k = 0
-        val baseNanos = eventNanos(e)
-        fun add(phase: Int, i: Int, x: Float, y: Float, p: Float, tNanos: Long) {
-            buf[k++] = phase.toFloat(); buf[k++] = e.getPointerId(i).toFloat()
-            buf[k++] = x / d; buf[k++] = y / d; buf[k++] = p.coerceIn(0f, 1f)
-            buf[k++] = ((tNanos - baseNanos) / 1e6).toFloat()
-        }
-        when (e.actionMasked) {
-            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
-                // 不要系统按 vsync 攒批的 MOVE：攒批要等到 UI 线程的下一个 vsync 才交出来，再 post 到引擎线程
-                // 又错过引擎这一帧，实测事件 → 派发中位 25ms（1.5 个 vsync）。游戏自己按帧消费，来一个收一个
-                if (e.actionMasked == MotionEvent.ACTION_DOWN && Build.VERSION.SDK_INT >= 30) requestUnbufferedDispatch(e)
-                val i = e.actionIndex
-                add(0, i, e.getX(i), e.getY(i), e.getPressure(i), baseNanos)
-            }
-            MotionEvent.ACTION_MOVE -> {
-                for (h in 0 until e.historySize) {
-                    val t = e.getHistoricalEventTime(h) * 1_000_000
-                    for (i in 0 until n) add(1, i, e.getHistoricalX(i, h), e.getHistoricalY(i, h), e.getHistoricalPressure(i, h), t)
-                }
-                for (i in 0 until n) add(1, i, e.getX(i), e.getY(i), e.getPressure(i), baseNanos)
-            }
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
-                val i = e.actionIndex
-                add(2, i, e.getX(i), e.getY(i), 0f, baseNanos)
-            }
-            MotionEvent.ACTION_CANCEL -> for (i in 0 until n) add(3, i, e.getX(i), e.getY(i), 0f, baseNanos)
-            else -> return true
-        }
-        val count = k / 6
+        // 不要系统按 vsync 攒批的 MOVE：攒批要等到 UI 线程的下一个 vsync 才交出来，再 post 到引擎线程
+        // 又错过引擎这一帧，实测事件 → 派发中位 25ms（1.5 个 vsync）。游戏自己按帧消费，来一个收一个
+        if (e.actionMasked == MotionEvent.ACTION_DOWN && Build.VERSION.SDK_INT >= 30) requestUnbufferedDispatch(e)
+        val b = GameTouch.pack(e, resources.displayMetrics.density) ?: return true
         engine.post {
             if (handle == 0L) return@post
-            MiniGame.nativeTouchBatch(handle, buf, count, baseNanos / 1000)
-            if (pendingTouchNanos == 0L) pendingTouchNanos = baseNanos
+            MiniGame.nativeTouchBatch(handle, b.data, b.count, b.baseNanos / 1000)
+            if (pendingTouchNanos == 0L) pendingTouchNanos = b.baseNanos
             requestFrame()
         }
         return true
     }
-
-    /** 事件时刻（ns）：API 34 起有纳秒精度的版本 */
-    private fun eventNanos(e: MotionEvent): Long =
-        if (Build.VERSION.SDK_INT >= 34) e.eventTimeNanos else e.eventTime * 1_000_000
 
     /** 诊断：在逻辑层执行 JS（结果回到主线程） */
     fun eval(js: String, cb: (String?) -> Unit) = engine.post {
@@ -458,6 +456,8 @@ class MiniGameView(
                 "updateKeyboard" -> main.post { keyboard.update(o) }
                 "hideKeyboard" -> main.post { keyboard.hide() }
                 "video" -> main.post { if (!disposed) video.handle(o) }
+                // wx.setMenuStyle：深色胶囊（白图标）/ 浅色
+                "menuStyle" -> { val dark = o.optString("style") == "dark"; main.post { chrome.capsule?.dark = dark } }
                 "deviceOrientation" -> if (!o.optBoolean("initial")) { val v = o.optString("value"); main.post { lockOrientation(v) } }
                 "error" -> Log.w("mini-game", e)
                 "hostCall" -> {

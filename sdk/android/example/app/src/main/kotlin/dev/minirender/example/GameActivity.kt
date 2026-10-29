@@ -46,6 +46,8 @@ class GameActivity : Activity() {
             when (type) {
                 "exit" -> finish()
                 "restart" -> recreate()
+                // 右上角胶囊：「⊙」退出，「•••」弹微信式底部菜单
+                "menuButton" -> if (ev.optString("action") == "close") finish() else showGameMenu(name)
                 "hostCall" -> if (!hosts.handle(ev)) v.hostReply(ev.optInt("id"), false, org.json.JSONObject().put("errMsg", ev.optString("api") + ":fail 示例宿主未实现").toString())
             }
         }
@@ -68,6 +70,30 @@ class GameActivity : Activity() {
                 it.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             }
         }
+    }
+
+    /** 胶囊「•••」：顶上游戏名，转发（复制链接）/ 重新进入 / 关于，与小程序的胶囊菜单（MenuSheet.kt）同一个样子 */
+    private fun showGameMenu(fixture: String) {
+        val title = intent.getStringExtra(EXTRA_NAME) ?: fixture
+        val key = intent.getStringExtra(EXTRA_APP_ID)
+        val about = {
+            android.app.AlertDialog.Builder(this).setTitle(title)
+                .setMessage("小游戏 · ${key ?: "wxdemo-$fixture"}\n由 mini-render 引擎运行").setPositiveButton("确定", null).show()
+            Unit
+        }
+        StoreSheets.capsuleMenu(
+            this, StoreViews.icon(this, intent.getStringExtra(EXTRA_ICON_ID) ?: fixture, title, 30f), title,
+            subtitle = "小游戏", onHeader = about,
+            top = listOf(StoreSheets.Item("↗", "转发给朋友", enabled = key != null) {
+                val link = "minirender://open?" + android.net.Uri.Builder().appendQueryParameter("appid", key).build().encodedQuery
+                (getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager).setPrimaryClip(android.content.ClipData.newPlainText(title, link))
+                StoreSheets.toast(this, "链接已复制：在别的 App 或浏览器里打开即可进入「$title」")
+            }),
+            bottom = listOf(
+                StoreSheets.Item("↻", "重新进入\n小游戏") { recreate() },
+                StoreSheets.Item("ⓘ", "关于") { about() },
+            ),
+        )
     }
 
     override fun onResume() {

@@ -925,6 +925,8 @@ setContentView(view)   // onResume / onPause 转给 view，onDestroy 调 view.di
 | 关系链 / 登录 / 广告等要账号体系的 API | 创建选项 `hostApis` 点名，`onHostEvent("hostCall")` 里处理，`view.hostReply(id, ok, json)` 回结果；没点名的一律 fail（与「无权限」同形） |
 | 开放数据域 | game.json 写了 `openDataContext` 就会在主域第一次 `wx.getOpenDataContext()` 后启动；好友数据走 `openData.*` 的 hostCall |
 | 手柄 / 指针锁定 | `view.dispatchEvent("gamepad", json)`、`dispatchEvent("pointerLockChange", {"locked":true})` |
+| 安全区（刘海、挖孔、横条、横屏侧边） | SDK 自己报：Android 按「状态栏 / 导航栏不管显没显示都算」并上刘海（横屏顶上只算刘海），窗口设成铺进刘海（SHORT_EDGES，退出时还原）；iOS 用 `safeAreaInsets`。转屏后再报（`mr_game_set_safe_area`），引擎按方向算 `safeArea` / `statusBarHeight` / `getMenuButtonBoundingClientRect`（src/game/chrome.rs）。宿主自己在 `systemInfo` 里给了的字段以宿主为准 |
+| 右上角胶囊「••• \| ⊙」 | SDK 用原生视图画在游戏上面（Android `GameCapsule.kt`、iOS `GameCapsule.swift`），位置取引擎的 `mr_game_menu_button`（与 `wx.getMenuButtonBoundingClientRect` 同一个数；竖屏在状态栏下 4 / Android 8，横屏距顶 8、右边让开刘海）。点了发宿主事件 `menuButton {action: "menu" \| "close"}`：示例里「⊙」退出、「•••」弹微信式底部菜单。`wx.setMenuStyle('dark')` 换深色。创建选项 `"menuButton": false` 不画；`rotateInEngine` 时不画 |
 | 重度游戏跑不满 60 | 创建选项 `"adaptiveFps": true`：最近 30 帧里有 20 帧工作超过 15ms 就把 rAF 降到 30（帧间隔均匀，比 40fps 上下跳顺），在 30 档跑满 90 帧且 p90 < 11.7ms 再回 60；切档打一行 `🎚 自适应帧率`。默认关（微信语义：rAF 跟屏幕刷新率）；游戏自己 `wx.setPreferredFramesPerSecond` 设的上限照样生效 |
 | 首次打开慢（大脚本现编字节码） | 下载解包完就调 `MiniGame.precompileAsync(gameDir, dataDir)`（Flutter：`MiniGameView.precompile(dir)`）：后台线程把大脚本编成字节码写进 `<dataDir>/jscache/`，打一行 `📦 预编译`；实例建得比它早时等着那一段编完，不重复编 |
 

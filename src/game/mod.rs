@@ -21,6 +21,7 @@ mod opendata;
 #[cfg(feature = "webgl")]
 mod overlay_layer;
 mod buttons;
+mod chrome;
 mod plugin;
 pub mod rotate;
 mod window;
@@ -57,6 +58,9 @@ pub struct GameOptions {
     pub app_id: Option<String>,
     /// 合并进 `wx.getSystemInfoSync()` 的字段（与小程序的 `systemInfo` 选项同义）
     pub system_info: serde_json::Map<String, Value>,
+    /// 屏幕内缩（`"safeArea": {"top","right","bottom","left"}`，逻辑像素）：引擎按方向算 safeArea / 胶囊位置（chrome.rs）。
+    /// 转屏后宿主用 `mr_game_set_safe_area` 报新的
+    pub safe_area: Option<crate::host::SafeAreaInsets>,
     /// 启动参数（`wx.getLaunchOptionsSync()`）
     pub launch_options: Option<Value>,
     /// 关掉每帧日志限流（`MINI_GAME_LOG_ALL=1` 同义，调试用）
@@ -112,6 +116,7 @@ impl GameOptions {
         Ok(Self {
             app_id: v.get("appId").and_then(|x| x.as_str()).map(str::to_string),
             system_info: v.get("systemInfo").and_then(|x| x.as_object()).cloned().unwrap_or_default(),
+            safe_area: v.get("safeArea").and_then(chrome::parse_insets),
             launch_options: v.get("launchOptions").cloned(),
             log_all: v.get("logAll").and_then(|x| x.as_bool()).unwrap_or(false),
             watchdog_ms: v.get("watchdogMs").and_then(|x| x.as_u64()),
@@ -153,6 +158,8 @@ pub struct GameEngine {
     orientation: String,
     /// 宿主给的系统信息覆盖项（resize 时重算系统信息要用）
     system_info_opts: serde_json::Map<String, Value>,
+    /// 宿主报的屏幕内缩（chrome.rs）；None = 没报，系统信息按老口径
+    safe_area: Option<crate::host::SafeAreaInsets>,
     /// 引擎内旋转（rotate.rs）；None = 宿主自己转
     rotation: Option<rotate::Rotation>,
     workers: std::rc::Rc<std::cell::RefCell<worker::Workers>>,
@@ -243,6 +250,7 @@ impl GameEngine {
         let host_platform = info.get("platform").and_then(|v| v.as_str()).map(str::to_string);
         info["platform"] = json!(target_platform());
         info["SDKVersion"] = json!(GAME_SDK_VERSION);
+        chrome::apply(&mut info, &opts.system_info, opts.safe_area, width > height);
         crate::host::engine_options::install_system_info(&app, &info);
         crate::host::engine_options::install_launch_context(&app, &app_id, opts.launch_options.as_ref());
         // game.json 的 networkTimeout：request / connectSocket / uploadFile / downloadFile 没给 timeout 时的默认（GT-N6）
@@ -260,7 +268,7 @@ impl GameEngine {
             canvases, pacer, clock, frame: frame::FrameOut::default(), backgrounded: false,
             touch: Default::default(), pc: Default::default(), images, audio,
             orientation: if config_landscape { "landscape".into() } else { "portrait".into() },
-            system_info_opts: opts.system_info.clone(), rotation, workers, overlay: Default::default(), buttons: btns,
+            system_info_opts: opts.system_info.clone(), safe_area: opts.safe_area, rotation, workers, overlay: Default::default(), buttons: btns,
             od, od_rt: None, host_apis: opts.host_apis.clone(),
             #[cfg(feature = "webgl")]
             webgl };

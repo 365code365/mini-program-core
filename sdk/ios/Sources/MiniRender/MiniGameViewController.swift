@@ -49,6 +49,9 @@ open class MiniGameViewController: UIViewController {
             switch type {
             case "exit": self.close()
             case "restart": self.restart()
+            // 胶囊「⊙」= 退出（与微信一致）；「•••」交给宿主，宿主没接就弹一个最小的菜单（重新进入 / 退出）
+            case "menuButton" where ev["action"] as? String == "close": self.close()
+            case "menuButton" where self.onHostEvent == nil: self.showDefaultMenu()
             default:
                 if let cb = self.onHostEvent { return cb(type, ev) }
                 if type == "hostCall" {
@@ -59,6 +62,15 @@ open class MiniGameViewController: UIViewController {
         view.insertSubview(v, at: 0)
         gameView = v
         applyOrientation()
+    }
+
+    private func showDefaultMenu() {
+        let a = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
+        a.addAction(UIAlertAction(title: "重新进入小游戏", style: .default) { [weak self] _ in self?.restart() })
+        a.addAction(UIAlertAction(title: "退出", style: .destructive) { [weak self] _ in self?.close() })
+        a.addAction(UIAlertAction(title: "取消", style: .cancel))
+        a.popoverPresentationController?.sourceView = view
+        present(a, animated: true)
     }
 
     /// wx.restartMiniProgram：旧实例同步销毁，新视图从 game.js 重新跑

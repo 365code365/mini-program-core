@@ -1,6 +1,7 @@
 // 商店里的小游戏页：对应原生示例的 GameActivity —— 全屏沉浸（藏状态栏、导航栏，边缘上滑临时呼出），
 // 包的 game.json 方向由插件锁（退出时还原）；wx.exitMiniProgram 关掉这一页，wx.restartMiniProgram 换一个新实例。
-// 与原生示例一样没有胶囊菜单：游戏全屏，返回键 / 返回手势退出。
+// 右上角胶囊由插件的原生视图画（与 wx.getMenuButtonBoundingClientRect 同一个位置，横竖屏都避开刘海 / 横条）：
+// 「⊙」退出本页，「•••」弹与小程序同一个微信式底部菜单（转发 / 重新进入 / 关于）。返回键 / 返回手势也退出。
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -8,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:mini_render/mini_render.dart';
 
 import 'mini_store.dart';
+import 'store_sheets.dart';
 
 class MiniGamePage extends StatefulWidget {
   const MiniGamePage({super.key, required this.gameDir, required this.app, required this.launchOptions, this.onReady});
@@ -59,9 +61,34 @@ class _MiniGamePageState extends State<MiniGamePage> {
         Navigator.of(context).maybePop();
       case 'restart':
         setState(() => _generation++);
+      case 'menuButton':
+        if (e['action'] == 'close') {
+          Navigator.of(context).maybePop();
+        } else {
+          _showMenu();
+        }
       default:
         debugPrint('[小游戏] ${widget.app.id} $type $e');
     }
+  }
+
+  /// 胶囊「•••」：与小程序页（main.dart 的 _showMenu）同一个底部菜单
+  void _showMenu() {
+    final app = widget.app;
+    void about() => showDialog<void>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text(app.name),
+            content: Text('小游戏 · ${app.key}\nv${app.version}，由 mini-render 引擎运行'),
+            actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('确定'))],
+          ),
+        );
+    showCapsuleMenu(context, id: app.id, name: app.name, subtitle: '小游戏 · v${app.version}', onHeader: about, top: [
+      CapsuleMenuItem(Icons.share_outlined, '转发给朋友', () => copyMiniLink(context, app), glyph: '↗'),
+    ], bottom: [
+      CapsuleMenuItem(Icons.refresh, '重新进入\n小游戏', () => setState(() => _generation++), glyph: '↻'),
+      CapsuleMenuItem(Icons.info_outline, '关于', about, glyph: 'ⓘ'),
+    ]);
   }
 
   @override

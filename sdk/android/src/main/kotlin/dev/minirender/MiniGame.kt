@@ -45,6 +45,10 @@ object MiniGame {
     external fun nativeMemoryWarning(handle: Long, level: Int)
     /** 窗口变了：逻辑尺寸、像素比、方向（portrait / landscape / landscapeReverse，可为 null） */
     external fun nativeResize(handle: Long, width: Int, height: Int, dpr: Float, orientation: String?)
+    /** 屏幕内缩（逻辑像素）：引擎按方向重算 safeArea / statusBarHeight / 胶囊位置（game/chrome.rs） */
+    external fun nativeSetSafeArea(handle: Long, top: Float, right: Float, bottom: Float, left: Float)
+    /** 胶囊矩形 [x, y, w, h]（逻辑像素），与 wx.getMenuButtonBoundingClientRect 同一个数 */
+    external fun nativeMenuButton(handle: Long): FloatArray?
     /** 系统音频打断开始（true）/ 结束（false）：引擎暂停全部音频后派发 wx.onAudioInterruptionBegin / End */
     external fun nativeAudioInterruption(handle: Long, begin: Boolean)
     /**

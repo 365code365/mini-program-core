@@ -43,6 +43,8 @@ public final class MiniGameView: UIView, GameSessionUI {
     private var layerPixels = CGSize.zero
     /// 触摸 → 引擎的小整数 id
     private var touchIds: [ObjectIdentifier: Int32] = [:]
+    /// 右上角胶囊（`"menuButton": false` / 引擎内旋转时不要）
+    private var capsule: GameCapsule?
     private lazy var keyboard = GameKeyboard(host: self) { [weak self] n, j in self?.dispatchEvent(n, json: j) }
     private lazy var video = GameVideo(host: self, dir: gameDir) { [weak self] n, j in self?.dispatchEvent(n, json: j) }
 
@@ -71,6 +73,14 @@ public final class MiniGameView: UIView, GameSessionUI {
         metalLayer.contentsScale = 1
         metalLayer.pixelFormat = .bgra8Unorm
         session.ui = self
+        // 胶囊：「•••」/「⊙」交给宿主（onHostEvent("menuButton", {action})）。引擎内旋转时坐标系是转过的，不画
+        if options["menuButton"] as? Bool ?? true, !(options["rotateInEngine"] as? Bool ?? false) {
+            let c = GameCapsule(frame: .zero)
+            c.isHidden = true
+            c.onTap = { [weak self] a in self?.onHostEvent?("menuButton", ["type": "menuButton", "action": a]) }
+            addSubview(c)
+            capsule = c
+        }
         try? FileManager.default.createDirectory(atPath: self.dataDir, withIntermediateDirectories: true)
         // 建实例之前就按 game.json 定方向（rotateInEngine：引擎自己把横屏画面转进竖屏，宿主锁竖屏）
         let o = Self.gameOrientation(gameDir)
@@ -162,12 +172,10 @@ public final class MiniGameView: UIView, GameSessionUI {
         apis.append(contentsOf: GameSensors.apis.filter { !apis.contains($0) })
         o["hostApis"] = apis
         var si = o["systemInfo"] as? [String: Any] ?? [:]
-        let w = bounds.width, h = bounds.height, i = safeAreaInsets
-        if si["safeArea"] == nil {
-            si["statusBarHeight"] = i.top
-            si["safeArea"] = ["left": i.left, "right": w - i.right, "top": i.top, "bottom": h - i.bottom,
-                              "width": w - i.left - i.right, "height": h - i.top - i.bottom]
-        }
+        // 屏幕内缩：引擎按方向算 safeArea / statusBarHeight / 胶囊位置（src/game/chrome.rs），转屏后 safeAreaInsetsDidChange 再报
+        let i = safeAreaInsets
+        reportedInsets = i
+        if o["safeArea"] == nil { o["safeArea"] = ["top": i.top, "right": i.right, "bottom": i.bottom, "left": i.left] }
         si["brand"] = si["brand"] ?? "Apple"
         si["model"] = si["model"] ?? MiniGame.model
         si["system"] = si["system"] ?? "iOS \(UIDevice.current.systemVersion)"
@@ -181,6 +189,17 @@ public final class MiniGameView: UIView, GameSessionUI {
         }
         o["systemInfo"] = si
         return GameSensors.json(o)
+    }
+
+    /// 最近一次报给引擎的内缩（同一份不重复报）
+    private var reportedInsets: UIEdgeInsets?
+
+    public override func safeAreaInsetsDidChange() {
+        super.safeAreaInsetsDidChange()
+        let i = safeAreaInsets
+        guard started, reportedInsets != i else { return }
+        reportedInsets = i
+        session.setSafeArea(i)
     }
 
     // ───────────────────────── 方向 ─────────────────────────
@@ -236,6 +255,13 @@ public final class MiniGameView: UIView, GameSessionUI {
 
     func gameFirstFrame() { onFirstFrame?() }
 
+    func gameMenuButton(_ rect: CGRect) {
+        guard let c = capsule else { return }
+        c.frame = rect
+        c.isHidden = rect.width <= 0 || rect.height <= 0
+        bringSubviewToFront(c)
+    }
+
     func gameEvents(_ events: [[String: Any]]) {
         for ev in events {
             let type = ev["type"] as? String ?? ""
@@ -244,6 +270,8 @@ public final class MiniGameView: UIView, GameSessionUI {
             case "updateKeyboard": keyboard.update(ev)
             case "hideKeyboard": keyboard.hide()
             case "video": video.handle(ev)
+            // wx.setMenuStyle：深色胶囊（白图标）/ 浅色
+            case "menuStyle": capsule?.dark = ev["style"] as? String == "dark"
             // initial 的那条建实例之前已经按 game.json 定过了；wx.setDeviceOrientation 的才要转
             case "deviceOrientation":
                 if !(ev["initial"] as? Bool ?? false) { setOrientation(ev["value"] as? String ?? "portrait") }
