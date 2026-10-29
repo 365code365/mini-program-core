@@ -185,3 +185,8 @@ ttf-parser = "0.25"
 brotli = "=8.0.4"
 # WXWebAssembly 用例（tests/game_cases/wasm.rs）：现场把 WAT 编成 .wasm
 wat = "=1.262.0"
+
+# QuickJS 用仓库里的一份（third_party/rquickjs-sys，基于 rquickjs-sys 0.12.1 / quickjs-ng 0.15.1）：
+# 解释器热路径按小游戏的实测 profile 改过，改了什么见 third_party/rquickjs-sys/PATCHES.md
+[patch.crates-io]
+rquickjs-sys = { path = "third_party/rquickjs-sys" }

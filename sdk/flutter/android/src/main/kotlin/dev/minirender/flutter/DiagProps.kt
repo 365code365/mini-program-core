@@ -34,6 +34,7 @@ internal object DiagProps {
         "img_log" to "MINI_IMG_LOG",
         "no_prefetch" to "MINI_NO_PREFETCH",
         "js_system_alloc" to "MINI_JS_SYSTEM_ALLOC",
+        "js_no_ic" to "MINI_JS_NO_IC",
         "gl_slow_call" to "MINI_GL_SLOW_CALL",
         "no_js_cache" to "MINI_NO_JS_CACHE",
     )

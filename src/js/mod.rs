@@ -27,8 +27,8 @@
 
 /// QuickJS 运行时封装（求值、注册原生函数、模块作用域）
 mod runtime;
-// QuickJS 的分档池分配器（省掉默认分配器的 malloc_usable_size 记账）
-mod pool_alloc;
+// 建 QuickJS 运行时：小块池与内联缓存的对照开关（MINI_JS_SYSTEM_ALLOC / MINI_JS_NO_IC）
+mod qjs_runtime;
 // 热路径原生函数（借用参数、不经 rquickjs 的闭包包装）：WebGL 的 __game_gl
 mod fast_fn;
 // 大脚本的字节码缓存（小游戏加载包：Cocos 引擎脚本 3MB，解析一次 370ms）

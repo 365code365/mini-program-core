@@ -34,16 +34,10 @@ impl JsRuntime {
     }
 
     pub fn new() -> Result<Self, String> {
-        // 分档池分配器（js/pool_alloc.rs）：省掉默认分配器每次的 malloc_usable_size 记账与大部分系统 malloc / free。
-        // MINI_JS_SYSTEM_ALLOC=1 退回 QuickJS 默认分配器做对照
-        let runtime = if std::env::var("MINI_JS_SYSTEM_ALLOC").is_ok_and(|v| v == "1") {
-            Runtime::new()
-        } else {
-            Runtime::new_with_alloc(super::pool_alloc::PoolAllocator::default())
-        }
-        .map_err(|e| e.to_string())?;
+        // 小块池与内联缓存在改过的 QuickJS 里（js/qjs_runtime.rs）；MINI_JS_SYSTEM_ALLOC=1 / MINI_JS_NO_IC=1 对照
+        let runtime = super::qjs_runtime::new_runtime().map_err(|e| e.to_string())?;
         let context = Context::full(&runtime).map_err(|e| e.to_string())?;
-        
+        super::qjs_runtime::apply_flags(&context);
         Ok(Self { runtime, context, fast_fns: Default::default() })
     }
     

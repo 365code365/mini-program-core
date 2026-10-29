@@ -1,0 +1,1256 @@
+diff -ruN -x . a/build.rs b/build.rs
+--- a/build.rs	2026-10-30 00:37:04
++++ b/build.rs	2026-10-30 00:37:05
+@@ -117,6 +117,10 @@
+         println!("cargo:rerun-if-env-changed={}", feature_to_cargo(feature));
+     }
+     println!("cargo:rerun-if-env-changed=CARGO_CFG_SANITIZE");
++    // mini-render：QuickJS 源码在仓库里改（PATCHES.md），改了要重编 —— 原版只盯环境变量，源码变了 cargo 不会重跑这里
++    println!("cargo:rerun-if-changed=quickjs");
++    println!("cargo:rerun-if-changed=quickjs.bind.h");
++    println!("cargo:rerun-if-changed=build.rs");
+ 
+     let src_dir = Path::new("quickjs");
+ 
+diff -ruN -x . a/quickjs/quickjs-opcode.h b/quickjs/quickjs-opcode.h
+--- a/quickjs/quickjs-opcode.h	2026-10-30 00:37:04
++++ b/quickjs/quickjs-opcode.h	2026-10-30 00:37:05
+@@ -371,6 +371,12 @@
+ DEF(        is_null, 1, 1, 1, none)
+ DEF(typeof_is_undefined, 1, 1, 1, none)
+ DEF( typeof_is_function, 1, 1, 1, none)
++/* mini-render：带内联缓存的属性读写。函数第一次被调用时由 js_bytecode_init_ic() 把
++   get_field / get_field2 / put_field 原地改写成下面三个，操作数从原子换成内联缓存槽的下标
++   （原子挪进槽里）。只出现在内存里的字节码中：写出字节码时换回原指令，读入时拒收 */
++DEF(   get_field_ic, 5, 1, 1, u32)
++DEF(  get_field2_ic, 5, 1, 2, u32)
++DEF(   put_field_ic, 5, 2, 0, u32)
+ 
+ #undef DEF
+ #undef def
+diff -ruN -x . a/quickjs/quickjs.c b/quickjs/quickjs.c
+--- a/quickjs/quickjs.c	2026-10-30 00:37:04
++++ b/quickjs/quickjs.c	2026-10-30 00:37:05
+@@ -267,9 +267,17 @@
+     JSValueConst value;
+ } JSValueLink;
+ 
++/* mini-render：运行时自带的小块池（见 js_pool_alloc）。≤ 512 字节按 16 字节分 32 档，每档一条侵入式空闲链表 */
++#define JS_POOL_HDR      16
++#define JS_POOL_MAX      512
++#define JS_POOL_NCLASS   (JS_POOL_MAX / 16)
++#define JS_POOL_MAX_FREE 4096
+ struct JSRuntime {
+     JSMallocFunctions mf;
+     JSMallocState malloc_state;
++    bool pool;
++    void *pool_free[JS_POOL_NCLASS];
++    uint32_t pool_nfree[JS_POOL_NCLASS];
+     const char *rt_info;
+ 
+     int atom_hash_size; /* power of two */
+@@ -279,7 +287,11 @@
+     uint32_t *atom_hash;
+     JSAtomStruct **atom_array;
+     int atom_free_index; /* 0 = none */
+-
++    /* mini-render：原型链内联缓存的纪元。原型对象的结构变化（加 / 删属性、改属性类型、换原型）时加一，
++       所有「在原型上找到」的缓存项随之失效 */
++    uint32_t ic_epoch;
++    uint32_t shape_uid; /* 最近发出的形状身份号 */
++    bool ic_disabled;
+     JSClassID js_class_id_alloc; /* counter for user defined classes */
+     int class_count;    /* size of class_array */
+     JSClass *class_array;
+@@ -481,6 +493,10 @@
+ struct JSContext {
+     JSGCObjectHeader header; /* must come first */
+     JSRuntime *rt;
++    /* mini-render：类型化数组的 length 快路径（OP_get_length），按类各记一个「验证过的接收者形状」：
++       那个形状的对象上没有自有 length、原型链上的 length 是内置的 getter；ic_epoch 变了就重验 */
++    uint32_t ta_len_uid[JS_CLASS_FLOAT64_ARRAY - JS_CLASS_UINT8C_ARRAY + 1];
++    uint32_t ta_len_epoch[JS_CLASS_FLOAT64_ARRAY - JS_CLASS_UINT8C_ARRAY + 1];
+     struct list_head link;
+ 
+     uint16_t binary_object_count;
+@@ -790,6 +806,8 @@
+     uint8_t super_allowed : 1;
+     uint8_t arguments_allowed : 1;
+     uint8_t backtrace_barrier : 1; /* stop backtrace on this function */
++    uint8_t ic_ready : 1; /* mini-render：已经做过内联缓存改写（成功与否） */
++    uint8_t trivial_kind : 2; /* mini-render：0 = 还没看；1 = 是 `return this.<trivial_atom>` 这种 getter；2 = 不是 */
+     /* XXX: 5 bits available */
+     uint8_t *byte_code_buf; /* (self pointer) */
+     int byte_code_len;
+@@ -812,8 +830,56 @@
+     int pc2line_len;
+     uint8_t *pc2line_buf;
+     char *source;
++    struct JSInlineCache *ic; /* mini-render：内联缓存槽，ic_count 个 */
++    uint32_t ic_count;
++    JSAtom trivial_atom;  /* trivial_kind == 1 时：读的属性（原子归字节码 / 缓存槽所有，这里不另加引用） */
++    JSAtom trivial_atom2; /* `return this.a.b` 的第二段；只有一段时是 JS_ATOM_NULL */
++    uint32_t ic_proto_count; /* ic_proto 用了几个 */
++    uint32_t ic_proto_size;  /* ic_proto 分配了几个 */
++    struct JSInlineCacheProto *ic_proto;
+ } JSFunctionBytecode;
+ 
++/* mini-render：一条 get_field / get_field2 / put_field 指令的内联缓存。
++   own_idx 是「自有属性在形状里的下标」提示：命中时校验该下标上的原子，不依赖形状指针，换了形状只要布局相同照样命中；
++   holder 一组是「在原型链上找到」的结果，要接收者形状的身份号与 ic_epoch 都对得上才用 */
++/* 原型链缓存两路：同一处读常有两三种接收者（Cocos 的不同组件类、属性顺序不同的同类对象），一路会来回顶掉 */
++#define JS_IC_WAYS 2
++
++typedef struct JSInlineCacheWay {
++    JSObject *holder;
++    uint32_t holder_idx;
++    uint32_t shape_uid; /* 接收者形状的身份号 */
++    uint32_t epoch;     /* 0 = 空 */
++    /* 持有者上是「只读 this 上属性」的 getter（js_trivial_getter_atom）时：那个属性在接收者形状里的下标，
++       命中时直接读 p->prop[inner_idx]，连 getter 的字节码都不用碰。UINT32_MAX = 不能内联（照常调用） */
++    uint32_t inner_idx;
++    JSAtom inner_atom2; /* `return this.a.b` 的 b；JS_ATOM_NULL = 只有一段 */
++    uint32_t unused;
++} JSInlineCacheWay;
++
++/* 原型链那部分单独放（JSFunctionBytecode.ic_proto，用到才分配）：多数读写点只碰自有属性，
++   槽要小 —— Cocos 的引擎脚本有几万个读写点，槽大了光缓存本身就把 L1 / L2 挤满（真机实测 64 字节一槽时 IPC 掉了 3%） */
++typedef struct JSInlineCacheProto {
++    JSInlineCacheWay way[JS_IC_WAYS];
++    uint8_t next; /* 下一次填哪一路 */
++} JSInlineCacheProto;
++
++typedef struct JSInlineCache {
++    JSAtom atom;
++    uint32_t own_idx;
++    /* 自有属性命中时那个形状的身份号：对得上就直接读 p->prop[own_idx]，不用再碰形状的属性表（真机上那一行常不在缓存里）。
++       身份号一样意味着属性表与每条属性的标志都没变（原地改标志前 js_shape_prepare_update 换号）。0 = 没有 */
++    uint32_t own_uid;
++    uint16_t proto;    /* 原型链缓存在 ic_proto 里的下标 + 1；0 = 没有 */
++    uint8_t atom_kind; /* 0 = 还没算；1 = 不是规范数字串（类型化数组上按普通属性查）；2 = 是 */
++    uint8_t unused;
++} JSInlineCache;
++
++static inline void js_ic_invalidate(JSRuntime *rt)
++{
++    if (unlikely(++rt->ic_epoch == 0))
++        rt->ic_epoch = 1;
++}
+ typedef struct JSBoundFunction {
+     JSValue func_obj;
+     JSValue this_val;
+@@ -1035,11 +1101,23 @@
+     int prop_size; /* allocated properties */
+     int prop_count; /* include deleted properties */
+     int deleted_prop_count;
++    /* mini-render：形状的身份号（运行时内单调递增，原来的填充位）。新建、克隆、搬家、压缩、原地追加属性、
++       原地换原型都换一个新号 —— 内联缓存按号认接收者形状：内存被别的形状重用、原地多了属性都对不上 */
++    uint32_t uid;
+     JSShape *shape_hash_next; /* in JSRuntime.shape_hash[h] list */
+     JSObject *proto;
+     JSShapeProperty prop[]; /* prop_size elements */
+ };
+ 
++/* 发一个新身份号；32 位用完绕回时所有原型链缓存一起作废（旧号可能再发出去） */
++static inline void js_shape_new_uid(JSRuntime *rt, JSShape *sh)
++{
++    if (unlikely(++rt->shape_uid == 0)) {
++        rt->shape_uid = 1;
++        js_ic_invalidate(rt);
++    }
++    sh->uid = rt->shape_uid;
++}
+ struct JSObject {
+     union {
+         JSGCObjectHeader header;
+@@ -1190,6 +1268,9 @@
+                                int atom_type);
+ static void JS_FreeAtomStruct(JSRuntime *rt, JSAtomStruct *p);
+ static void free_function_bytecode(JSRuntime *rt, JSFunctionBytecode *b);
++static no_inline void js_bytecode_init_ic(JSRuntime *rt, JSFunctionBytecode *b);
++static int JS_AtomIsNumericIndex(JSContext *ctx, JSAtom atom);
++static JSValue js_typed_array_get_length(JSContext *ctx, JSValueConst this_val);
+ static JSValue js_call_c_function(JSContext *ctx, JSValueConst func_obj,
+                                   JSValueConst this_obj,
+                                   int argc, JSValueConst *argv, int flags);
+@@ -1369,6 +1450,10 @@
+                                              int classid, uint32_t len);
+ static bool is_typed_array(JSClassID class_id);
+ static bool typed_array_is_immutable(JSObject *p);
++/* mini-render：进程里出现过不可变 ArrayBuffer（sliceToImmutable / transferToImmutable / JS_SetImmutableArrayBuffer）。
++   OP_put_array_el 写类型化数组的快路径不查 buffer 是否不可变（要多追三层指针）—— 只要出现过一个，就整体退回原路径。
++   只会从 false 变 true，别的线程上的运行时晚一点看到也只是多走几次原路径 */
++static bool js_ab_immutable_seen;
+ static bool typed_array_is_oob(JSObject *p);
+ static uint32_t typed_array_length(JSObject *p);
+ static int typed_array_init(JSContext *ctx, JSValue obj, JSValue buffer,
+@@ -1605,7 +1690,85 @@
+ {
+     return 0;
+ }
++/* mini-render：小块池。
++   为什么在这里做：QuickJS 每次分配 / 释放都经 rt->mf 的函数指针进宿主分配器，还要再调一次 js_malloc_usable_size 记账；
++   宿主是 Rust 时还要多穿一层 rquickjs 的包装（dyn 分发）。一加 PLY110 上 farm001 这些合计约占游戏线程 3.6%。
++   JS 对象、属性表、形状、字符串大多是几十字节、生命周期很短：按 16 字节分档放进空闲链表，绝大多数分配连函数调用都没有。
++   布局：池开着时 js_*_rt 给出的每一块前面都有 16 字节的头记「可用大小」（大块也有，释放时按大小区分），
++   usable_size 直接读头。每档最多留 JS_POOL_MAX_FREE 块，多的还给宿主分配器；JS_FreeRuntime 时全部还掉。
++   池只能在建运行时之前决定开不开（头是每一块都带的），JS_SetSmallBlockPoolDefault() 设进程默认值 */
++static bool js_pool_default = true;
+ 
++void JS_SetSmallBlockPoolDefault(bool enabled)
++{
++    js_pool_default = enabled;
++}
++
++static inline size_t js_pool_round(size_t size)
++{
++    return size ? (size + 15) & ~(size_t)15 : 16;
++}
++
++static inline size_t js_pool_usable(const void *ptr)
++{
++    return *(const size_t *)((const uint8_t *)ptr - JS_POOL_HDR);
++}
++
++static void *js_pool_alloc(JSRuntime *rt, size_t size, bool zero)
++{
++    size_t u = js_pool_round(size);
++    uint8_t *base;
++    if (u <= JS_POOL_MAX) {
++        int c = (int)(u >> 4) - 1;
++        void *p = rt->pool_free[c];
++        if (likely(p)) {
++            rt->pool_free[c] = *(void **)p;
++            rt->pool_nfree[c]--;
++            if (zero)
++                memset(p, 0, u);
++            return p;
++        }
++    }
++    if (zero)
++        base = rt->mf.js_calloc(rt->malloc_state.opaque, 1, u + JS_POOL_HDR);
++    else
++        base = rt->mf.js_malloc(rt->malloc_state.opaque, u + JS_POOL_HDR);
++    if (unlikely(!base))
++        return NULL;
++    *(size_t *)base = u;
++    return base + JS_POOL_HDR;
++}
++
++static void js_pool_release(JSRuntime *rt, void *ptr)
++{
++    size_t u = js_pool_usable(ptr);
++    if (u <= JS_POOL_MAX) {
++        int c = (int)(u >> 4) - 1;
++        if (likely(rt->pool_nfree[c] < JS_POOL_MAX_FREE)) {
++            *(void **)ptr = rt->pool_free[c];
++            rt->pool_free[c] = ptr;
++            rt->pool_nfree[c]++;
++            return;
++        }
++    }
++    rt->mf.js_free(rt->malloc_state.opaque, (uint8_t *)ptr - JS_POOL_HDR);
++}
++
++static void js_pool_drain(JSRuntime *rt)
++{
++    int c;
++    for(c = 0; c < JS_POOL_NCLASS; c++) {
++        void *p = rt->pool_free[c];
++        while (p) {
++            void *next = *(void **)p;
++            rt->mf.js_free(rt->malloc_state.opaque, (uint8_t *)p - JS_POOL_HDR);
++            p = next;
++        }
++        rt->pool_free[c] = NULL;
++        rt->pool_nfree[c] = 0;
++    }
++}
++
+ void *js_calloc_rt(JSRuntime *rt, size_t count, size_t size)
+ {
+     void *ptr;
+@@ -1623,10 +1786,17 @@
+     if (unlikely(s->malloc_size + (count * size) > s->malloc_limit - 1))
+         return NULL;
+ 
++    if (rt->pool) {
++        ptr = js_pool_alloc(rt, count * size, true);
++        if (!ptr)
++            return NULL;
++        s->malloc_count++;
++        s->malloc_size += js_pool_usable(ptr) + MALLOC_OVERHEAD;
++        return ptr;
++    }
+     ptr = rt->mf.js_calloc(s->opaque, count, size);
+     if (!ptr)
+         return NULL;
+-
+     s->malloc_count++;
+     s->malloc_size += rt->mf.js_malloc_usable_size(ptr) + MALLOC_OVERHEAD;
+     return ptr;
+@@ -1646,10 +1816,17 @@
+     if (unlikely(s->malloc_size + size > s->malloc_limit - 1))
+         return NULL;
+ 
++    if (rt->pool) {
++        ptr = js_pool_alloc(rt, size, false);
++        if (!ptr)
++            return NULL;
++        s->malloc_count++;
++        s->malloc_size += js_pool_usable(ptr) + MALLOC_OVERHEAD;
++        return ptr;
++    }
+     ptr = rt->mf.js_malloc(s->opaque, size);
+     if (!ptr)
+         return NULL;
+-
+     s->malloc_count++;
+     s->malloc_size += rt->mf.js_malloc_usable_size(ptr) + MALLOC_OVERHEAD;
+     return ptr;
+@@ -1663,14 +1840,17 @@
+         return;
+ 
+     s = &rt->malloc_state;
+-    size_t free_size = rt->mf.js_malloc_usable_size(ptr) + MALLOC_OVERHEAD;
++    size_t free_size = (rt->pool ? js_pool_usable(ptr) : rt->mf.js_malloc_usable_size(ptr)) + MALLOC_OVERHEAD;
+     if (unlikely(free_size > s->malloc_size)) {
+         printf("js_free_rt: malloc_size underflow: freeing %zu but only %zu tracked\n", free_size, s->malloc_size);
+         abort();
+     }
+     s->malloc_count--;
+     s->malloc_size -= free_size;
+-    rt->mf.js_free(s->opaque, ptr);
++    if (rt->pool)
++        js_pool_release(rt, ptr);
++    else
++        rt->mf.js_free(s->opaque, ptr);
+ }
+ 
+ void *js_realloc_rt(JSRuntime *rt, void *ptr, size_t size)
+@@ -1687,6 +1867,32 @@
+         js_free_rt(rt, ptr);
+         return NULL;
+     }
++    if (rt->pool) {
++        size_t new_u = js_pool_round(size);
++        void *np;
++        old_size = js_pool_usable(ptr);
++        if (new_u == old_size)
++            return ptr;
++        s = &rt->malloc_state;
++        if (s->malloc_size + new_u - old_size > s->malloc_limit - 1)
++            return NULL;
++        if (old_size > JS_POOL_MAX && new_u > JS_POOL_MAX) {
++            /* 两头都是大块：交给宿主的 realloc（大数组 / 字符串增长时可能原地扩） */
++            uint8_t *base = rt->mf.js_realloc(s->opaque, (uint8_t *)ptr - JS_POOL_HDR, new_u + JS_POOL_HDR);
++            if (!base)
++                return NULL;
++            *(size_t *)base = new_u;
++            np = base + JS_POOL_HDR;
++        } else {
++            np = js_pool_alloc(rt, size, false);
++            if (!np)
++                return NULL;
++            memcpy(np, ptr, old_size < new_u ? old_size : new_u);
++            js_pool_release(rt, ptr);
++        }
++        s->malloc_size += new_u - old_size;
++        return np;
++    }
+     old_size = rt->mf.js_malloc_usable_size(ptr);
+     s = &rt->malloc_state;
+     /* When malloc_limit is 0 (unlimited), malloc_limit - 1 will be SIZE_MAX. */
+@@ -1703,6 +1909,8 @@
+ 
+ size_t js_malloc_usable_size_rt(JSRuntime *rt, const void *ptr)
+ {
++    if (rt->pool)
++        return ptr ? js_pool_usable(ptr) : 0;
+     return rt->mf.js_malloc_usable_size(ptr);
+ }
+ 
+@@ -1969,6 +2177,7 @@
+     if (!rt)
+         return NULL;
+     rt->mf = *mf;
++    rt->pool = js_pool_default;
+     if (!rt->mf.js_malloc_usable_size) {
+         /* use dummy function if none provided */
+         rt->mf.js_malloc_usable_size = js_malloc_usable_size_unknown;
+@@ -1978,7 +2187,7 @@
+     ms.malloc_size += rt->mf.js_malloc_usable_size(rt) + MALLOC_OVERHEAD;
+     rt->malloc_state = ms;
+     rt->malloc_gc_threshold = 256 * 1024;
+-
++    rt->ic_epoch = 1;
+     init_list_head(&rt->context_list);
+     init_list_head(&rt->gc_obj_list);
+     init_list_head(&rt->gc_zero_ref_count_list);
+@@ -2482,6 +2691,7 @@
+ 
+     leak &= check_dump_flag(rt, JS_ABORT_ON_LEAKS);
+ 
++    js_pool_drain(rt);
+     {
+         JSMallocState *ms = &rt->malloc_state;
+         rt->mf.js_free(ms->opaque, rt);
+@@ -5317,9 +5527,14 @@
+     sh = get_shape_from_alloc(sh_alloc, hash_size);
+     sh->header.ref_count = 1;
+     add_gc_object(rt, &sh->header, JS_GC_OBJ_TYPE_SHAPE);
+-    if (proto)
++    if (proto) {
+         js_dup(JS_MKPTR(JS_TAG_OBJECT, proto));
++        /* mini-render：凡是当过形状原型的对象都打上标记（原来只有 setPrototypeOf 才打），
++           它的结构一变就让原型链内联缓存失效 */
++        proto->is_prototype = true;
++    }
+     sh->proto = proto;
++    js_shape_new_uid(rt, sh);
+     memset(prop_hash_end(sh) - hash_size, 0, sizeof(prop_hash_end(sh)[0]) *
+            hash_size);
+     sh->prop_hash_mask = hash_size - 1;
+@@ -5414,6 +5629,7 @@
+     sh->header.ref_count = 1;
+     add_gc_object(ctx->rt, &sh->header, JS_GC_OBJ_TYPE_SHAPE);
+     sh->is_hashed = false;
++    js_shape_new_uid(ctx->rt, sh);
+     if (sh->proto) {
+         js_dup(JS_MKPTR(JS_TAG_OBJECT, sh->proto));
+     }
+@@ -5526,6 +5742,7 @@
+     }
+     *psh = sh;
+     sh->prop_size = new_size;
++    js_shape_new_uid(ctx->rt, sh);
+     return 0;
+ }
+ 
+@@ -5541,7 +5758,6 @@
+ 
+     sh = p->shape;
+     assert(!sh->is_hashed);
+-
+     new_size = max_int(JS_PROP_INITIAL_SIZE,
+                        sh->prop_count - sh->deleted_prop_count);
+     assert(new_size <= sh->prop_size);
+@@ -5586,7 +5802,7 @@
+     sh->prop_size = new_size;
+     sh->deleted_prop_count = 0;
+     sh->prop_count = j;
+-
++    js_shape_new_uid(ctx->rt, sh);
+     p->shape = sh;
+     js_free(ctx, get_alloc_from_shape(old_sh));
+ 
+@@ -5637,6 +5853,7 @@
+     h = atom & hash_mask;
+     pr->hash_next = prop_hash_end(sh)[-h - 1];
+     prop_hash_end(sh)[-h - 1] = sh->prop_count;
++    js_shape_new_uid(rt, sh);
+     return 0;
+ }
+ 
+@@ -5977,6 +6194,7 @@
+         }
+         js_shape_hash_link(rt, sh);
+         sh->prop_count = count;
++        js_shape_new_uid(rt, sh);
+     }
+     return obj;
+ }
+@@ -8314,6 +8532,8 @@
+     if (sh->proto)
+         JS_FreeValue(ctx, JS_MKPTR(JS_TAG_OBJECT, sh->proto));
+     sh->proto = proto;
++    /* mini-render：形状原地换了原型（是原型对象的话 prepare_update 里已经让纪元加一） */
++    js_shape_new_uid(ctx->rt, sh);
+     if (proto)
+         proto->is_prototype = true;
+     if (p->is_prototype) {
+@@ -9706,8 +9926,9 @@
+                                 JSObject *p, JSAtom prop, int prop_flags)
+ {
+     JSShape *sh, *new_sh;
+-
+     if (unlikely(p->is_prototype)) {
++        /* mini-render：原型上多了属性，可能遮住更远处的同名属性 */
++        js_ic_invalidate(ctx->rt);
+         /* track addition of small integer properties to
+            Array.prototype and Object.prototype */
+         if (unlikely((p == JS_VALUE_GET_OBJ(ctx->class_proto[JS_CLASS_ARRAY]) ||
+@@ -10720,7 +10941,9 @@
+ {
+     JSShape *sh;
+     uint32_t idx = 0;    /* prevent warning */
+-
++    /* mini-render：原型的属性要删 / 改类型 / 换原型了 */
++    if (unlikely(p->is_prototype))
++        js_ic_invalidate(ctx->rt);
+     sh = p->shape;
+     if (sh->is_hashed) {
+         if (sh->header.ref_count != 1) {
+@@ -10739,6 +10962,8 @@
+             sh->is_hashed = false;
+         }
+     }
++    /* mini-render：调用方接着要原地改属性标志 / 删属性：换个身份号，按号缓存的自有属性项随之失效 */
++    js_shape_new_uid(ctx->rt, p->shape);
+     return 0;
+ }
+ 
+@@ -10849,6 +11074,10 @@
+                         }
+                     }
+                 }
++                /* mini-render：原型上换了 getter / setter 函数（类型没变、不经 prepare_update）：
++                   OP_get_length 的类型化数组快路径按「是不是内置 getter」缓存过，要重验 */
++                if (p->is_prototype && (flags & (JS_PROP_HAS_GET | JS_PROP_HAS_SET)))
++                    js_ic_invalidate(ctx->rt);
+                 if (flags & JS_PROP_HAS_GET) {
+                     if (pr->u.getset.getter)
+                         JS_FreeValue(ctx, JS_MKPTR(JS_TAG_OBJECT, pr->u.getset.getter));
+@@ -17546,6 +17775,164 @@
+     return !find_own_property1(p, JS_ATOM_stack);
+ }
+ 
++
++/* mini-render：内联缓存里能不能把这个 exotic 对象当普通对象看（只看具名属性 ic->atom 时）。
++   数组没有 exotic 方法，只在整数下标与 length 上特殊（length 是它的自有属性，走形状）；
++   类型化数组只在「规范数字串」上特殊（"1.5"、"-0"、"Infinity" 这些）。其余 exotic（Proxy、arguments、String、模块命名空间）不行 */
++static inline bool js_ic_exotic_plain(JSContext *ctx, JSInlineCache *ic, JSObject *p)
++{
++    if (p->class_id == JS_CLASS_ARRAY)
++        return !__JS_AtomIsTaggedInt(ic->atom);
++    if (p->class_id >= JS_CLASS_UINT8C_ARRAY && p->class_id <= JS_CLASS_FLOAT64_ARRAY) {
++        if (unlikely(ic->atom_kind == 0)) {
++            int r = __JS_AtomIsTaggedInt(ic->atom) ? 1 : JS_AtomIsNumericIndex(ctx, ic->atom);
++            if (r < 0) {
++                JS_FreeValue(ctx, JS_GetException(ctx));
++                return false;
++            }
++            ic->atom_kind = r ? 2 : 1;
++        }
++        return ic->atom_kind == 1;
++    }
++    return false;
++}
++
++/* 给这个槽配一份原型链缓存（不够了就把 ic_proto 放大一半）；分配不到返回 NULL，这次就不记 */
++static JSInlineCacheProto *js_ic_proto_get(JSRuntime *rt, JSFunctionBytecode *b, JSInlineCache *ic)
++{
++    JSInlineCacheProto *e;
++    if (likely(ic->proto))
++        return &b->ic_proto[ic->proto - 1];
++    if (b->ic_proto_count >= 0xffff)
++        return NULL;
++    if (b->ic_proto_count == b->ic_proto_size) {
++        uint32_t n = b->ic_proto_size ? b->ic_proto_size + b->ic_proto_size / 2 + 1 : 4;
++        e = js_realloc_rt(rt, b->ic_proto, sizeof(*e) * n);
++        if (!e)
++            return NULL;
++        b->ic_proto = e;
++        b->ic_proto_size = n;
++    }
++    e = &b->ic_proto[b->ic_proto_count++];
++    memset(e, 0, sizeof(*e));
++    ic->proto = b->ic_proto_count;
++    return e;
++}
++
++/* mini-render：这个函数是不是 `get x() { return this._x; }` / `return this.a.b` 这种只读 this 上属性的 getter。
++   Cocos / TypeScript 编出来的引擎里这种 getter 成千上万（node.position、comp.enabled…），每次都要建一个完整的调用帧
++   （farm001 实测：原型链缓存命中的 getter 调用里 2/3 是这一种）。认出来之后直接在接收者上读，省掉整次调用；
++   读不到「自有的普通数据属性」就照常调用 getter —— 所以不会有任何可观察的差别（异常栈、副作用都还是原来那次调用产生的）。
++   认的字节码（原子可能已被改写成缓存槽）：
++     [push_this][put_loc0][get_loc0] get_field a [get_field b] return   —— 严格模式下 this 先存进局部变量 0
++     [push_this]                     get_field a [get_field b] return */
++static bool js_bc_field_atom(JSFunctionBytecode *b, const uint8_t *bc, JSAtom *pa)
++{
++    if (bc[0] == OP_get_field)
++        *pa = get_u32(bc + 1);
++    else if (bc[0] == OP_get_field_ic)
++        *pa = b->ic[get_u32(bc + 1)].atom;
++    else
++        return false;
++    return true;
++}
++
++static JSAtom js_trivial_getter_atom(JSFunctionBytecode *b)
++{
++    if (unlikely(b->trivial_kind == 0)) {
++        const uint8_t *bc = b->byte_code_buf;
++        int len = b->byte_code_len, k = 0;
++        JSAtom a = JS_ATOM_NULL, a2 = JS_ATOM_NULL;
++        b->trivial_kind = 2;
++        if (!bc || b->func_kind != JS_FUNC_NORMAL || b->arg_count != 0 || len < 7 || bc[0] != OP_push_this)
++            return JS_ATOM_NULL;
++        k = 1;
++        if (b->var_count == 1 && len >= 9 && bc[1] == OP_put_loc0 && bc[2] == OP_get_loc0)
++            k = 3;
++        else if (b->var_count != 0)
++            return JS_ATOM_NULL;
++        if (!js_bc_field_atom(b, bc + k, &a))
++            return JS_ATOM_NULL;
++        k += 5;
++        if (k + 6 == len && js_bc_field_atom(b, bc + k, &a2))
++            k += 5;
++        if (k + 1 != len || bc[k] != OP_return)
++            return JS_ATOM_NULL;
++        b->trivial_atom = a;
++        b->trivial_atom2 = a2;
++        b->trivial_kind = 1;
++    }
++    return b->trivial_kind == 1 ? b->trivial_atom : JS_ATOM_NULL;
++}
++
++/* 自有的普通数据属性（不走原型、不调 getter）；没有就返回 NULL */
++#if defined(__GNUC__) || defined(__clang__)
++__attribute__((always_inline))
++#endif
++static inline JSValue *js_own_data(JSValueConst v, JSAtom atom)
++{
++    JSProperty *pr;
++    JSShapeProperty *prs;
++    if (JS_VALUE_GET_TAG(v) != JS_TAG_OBJECT)
++        return NULL;
++    prs = find_own_property(&pr, JS_VALUE_GET_OBJ(v), atom);
++    if (!prs || (prs->flags & JS_PROP_TMASK))
++        return NULL;
++    return &pr->u.value;
++}
++
++/* 命中时用：只读已经算好的 atom_kind，不分配、不抛 */
++static inline bool js_ic_exotic_plain_known(JSInlineCache *ic, JSObject *p)
++{
++    if (p->class_id == JS_CLASS_ARRAY)
++        return !__JS_AtomIsTaggedInt(ic->atom);
++    if (p->class_id >= JS_CLASS_UINT8C_ARRAY && p->class_id <= JS_CLASS_FLOAT64_ARRAY)
++        return ic->atom_kind == 1;
++    return false;
++}
++
++/* 类型化数组的 length 是不是内置那个（自有属性里没有 length，原型链上找到的是 js_typed_array_get_length） */
++static bool js_typed_array_length_is_std(JSObject *p)
++{
++    JSProperty *pr;
++    JSShapeProperty *prs;
++    if (find_own_property(&pr, p, JS_ATOM_length))
++        return false;
++    for (p = p->shape->proto; p; p = p->shape->proto) {
++        prs = find_own_property(&pr, p, JS_ATOM_length);
++        if (prs) {
++            JSObject *g;
++            if ((prs->flags & JS_PROP_TMASK) != JS_PROP_GETSET)
++                return false;
++            g = pr->u.getset.getter;
++            return g && g->class_id == JS_CLASS_C_FUNCTION &&
++                g->u.cfunc.c_function.getter == js_typed_array_get_length;
++        }
++        if (p->is_exotic)
++            return false;
++    }
++    return false;
++}
++
++
++/* mini-render：数组下标是整数值的浮点数（x * 4 + 1 这类算出来的）时也当整数下标用 */
++static inline bool js_index_value(JSValueConst key, uint32_t *pidx)
++{
++    uint32_t tag = JS_VALUE_GET_TAG(key);
++    if (likely(tag == JS_TAG_INT)) {
++        *pidx = JS_VALUE_GET_INT(key);
++        return true;
++    }
++    if (JS_TAG_IS_FLOAT64(tag)) {
++        double d = JS_VALUE_GET_FLOAT64(key);
++        if (d >= 0 && d < 2147483647.0 && (double)(uint32_t)d == d) {
++            *pidx = (uint32_t)d;
++            return true;
++        }
++    }
++    return false;
++}
++
+ /* argv[] is modified if (flags & JS_CALL_FLAG_COPY_ARGV) = 0. */
+ static JSValue JS_CallInternal(JSContext *caller_ctx, JSValueConst func_obj,
+                                JSValueConst this_obj, JSValueConst new_target,
+@@ -17627,7 +18014,8 @@
+                          argv, flags);
+     }
+     b = p->u.func.function_bytecode;
+-
++    if (unlikely(!b->ic_ready))
++        js_bytecode_init_ic(rt, b);
+     if (unlikely(argc < b->arg_count || (flags & JS_CALL_FLAG_COPY_ARGV))) {
+         arg_allocated_size = b->arg_count;
+     } else {
+@@ -17738,10 +18126,23 @@
+                 JSShapeProperty *prs;
+ 
+                 atom = JS_ATOM_length;
+-
+                 obj = sp[-1];
+                 if (likely(JS_VALUE_GET_TAG(obj) == JS_TAG_OBJECT)) {
+                     p = JS_VALUE_GET_OBJ(obj);
++                    /* mini-render：类型化数组的 length 原来要走 JS_GetPropertyInternal（判一遍数字下标）再调 C getter */
++                    if (p->class_id >= JS_CLASS_UINT8C_ARRAY && p->class_id <= JS_CLASS_FLOAT64_ARRAY) {
++                        int c = p->class_id - JS_CLASS_UINT8C_ARRAY;
++                        if (likely(p->shape->uid == ctx->ta_len_uid[c] && ctx->ta_len_epoch[c] == rt->ic_epoch)) {
++                            val = js_int32(p->u.array.count);
++                            goto get_length_done;
++                        }
++                        if (js_typed_array_length_is_std(p)) {
++                            ctx->ta_len_uid[c] = p->shape->uid;
++                            ctx->ta_len_epoch[c] = rt->ic_epoch;
++                            val = js_int32(p->u.array.count);
++                            goto get_length_done;
++                        }
++                    }
+                     for(;;) {
+                         prs = find_own_property(&pr, p, atom);
+                         if (prs) {
+@@ -17768,6 +18169,7 @@
+                     if (unlikely(JS_IsException(val)))
+                         goto exception;
+                 }
++            get_length_done:
+                 JS_FreeValue(ctx, sp[-1]);
+                 sp[-1] = val;
+             }
+@@ -19187,6 +19589,244 @@
+             }
+             BREAK;
+ 
++        /* mini-render：带内联缓存的 get_field / get_field2（语义与上面两条逐条相同，只是先查缓存）。
++           1. 自有属性：缓存的是下标，校验接收者当前形状这个下标上是不是同一个原子 —— 形状换了只要布局一样照样命中，
++              对不上就当没缓存，所以永远不会读错。
++           2. 原型链上的属性（方法、getter）：接收者形状的身份号（JSShape.uid）与 rt->ic_epoch 都对得上才直接读持有者；
++              原型对象的结构一变（加 / 删属性、改类型、换原型）纪元就加一，见 js_ic_invalidate */
++        CASE(OP_get_field_ic):
++        CASE(OP_get_field2_ic):
++            {
++                JSValue val, obj;
++                JSObject *p, *p1;
++                JSShape *sh;
++                JSProperty *pr;
++                JSShapeProperty *prs;
++                JSInlineCache *ic;
++                JSInlineCacheWay *e;
++                uint32_t idx;
++                int w;
++                ic = &b->ic[get_u32(pc)];
++                pc += 4;
++                obj = sp[-1];
++                if (unlikely(JS_VALUE_GET_TAG(obj) != JS_TAG_OBJECT))
++                    goto get_field_ic_slow;
++                p = JS_VALUE_GET_OBJ(obj);
++                sh = p->shape;
++                idx = ic->own_idx;
++                if (likely(sh->uid == ic->own_uid)) {
++                    val = js_dup(p->prop[idx].u.value);
++                    goto get_field_ic_done;
++                }
++                if (idx < (uint32_t)sh->prop_count && sh->prop[idx].atom == ic->atom) {
++                    if (unlikely(sh->prop[idx].flags & JS_PROP_TMASK))
++                        goto get_field_ic_slow;
++                    ic->own_uid = sh->uid;
++                    val = js_dup(p->prop[idx].u.value);
++                    goto get_field_ic_done;
++                }
++                if (ic->proto) for (w = 0; w < JS_IC_WAYS; w++) {
++                    e = &b->ic_proto[ic->proto - 1].way[w];
++                    if (sh->uid == e->shape_uid && e->epoch == rt->ic_epoch &&
++                        (likely(!p->is_exotic) || js_ic_exotic_plain_known(ic, p))) {
++                        p1 = e->holder;
++                        idx = e->holder_idx;
++                        prs = &p1->shape->prop[idx];
++                        if (likely((prs->flags & JS_PROP_TMASK) == JS_PROP_NORMAL)) {
++                            val = js_dup(p1->prop[idx].u.value);
++                            goto get_field_ic_done;
++                        }
++                        if ((prs->flags & JS_PROP_TMASK) == JS_PROP_GETSET) {
++                            JSObject *getter = p1->prop[idx].u.getset.getter;
++                            if (!getter) {
++                                val = JS_UNDEFINED;
++                            } else {
++                                JSValue *pv = NULL;
++                                if (e->inner_idx != UINT32_MAX) {
++                                    /* 只读 this 上属性的 getter：接收者形状对得上，那个属性的下标就是填的时候那个 */
++                                    pv = &p->prop[e->inner_idx].u.value;
++                                    if (e->inner_atom2 != JS_ATOM_NULL)
++                                        pv = js_own_data(*pv, e->inner_atom2);
++                                }
++                                if (pv) {
++                                    val = js_dup(*pv);
++                                    goto get_field_ic_done;
++                                }
++                                sf->cur_pc = pc;
++                                val = JS_CallFree(ctx, js_dup(JS_MKPTR(JS_TAG_OBJECT, getter)), obj, 0, NULL);
++                                if (unlikely(JS_IsException(val)))
++                                    goto exception;
++                            }
++                            goto get_field_ic_done;
++                        }
++                        goto get_field_ic_slow;
++                    }
++                }
++                /* 没命中：与 get_field 的快路径一样沿原型链找，顺手记下来（数组 / 类型化数组对具名属性按普通对象走） */
++                p1 = p;
++                for(;;) {
++                    prs = find_own_property(&pr, p1, ic->atom);
++                    if (prs) {
++                        idx = prs - p1->shape->prop;
++                        if (p1 == p) {
++                            /* own_idx 与 own_uid 必须一起换：号对得上就按 own_idx 直接读 */
++                            ic->own_uid = 0;
++                            ic->own_idx = idx;
++                            if (unlikely(prs->flags & JS_PROP_TMASK))
++                                goto get_field_ic_slow;
++                            ic->own_uid = sh->uid;
++                            val = js_dup(pr->u.value);
++                            break;
++                        }
++                        if ((prs->flags & JS_PROP_TMASK) == JS_PROP_NORMAL ||
++                            (prs->flags & JS_PROP_TMASK) == JS_PROP_GETSET) {
++                            JSInlineCacheProto *ep = js_ic_proto_get(rt, b, ic);
++                            if (ep) {
++                                e = &ep->way[ep->next];
++                                ep->next = (ep->next + 1) % JS_IC_WAYS;
++                                e->shape_uid = sh->uid;
++                                e->holder = p1;
++                                e->holder_idx = idx;
++                                e->epoch = rt->ic_epoch;
++                                e->inner_idx = UINT32_MAX;
++                                e->inner_atom2 = JS_ATOM_NULL;
++                                if ((prs->flags & JS_PROP_TMASK) == JS_PROP_GETSET && pr->u.getset.getter &&
++                                    pr->u.getset.getter->class_id == JS_CLASS_BYTECODE_FUNCTION) {
++                                    JSFunctionBytecode *gb = pr->u.getset.getter->u.func.function_bytecode;
++                                    JSAtom ta = js_trivial_getter_atom(gb);
++                                    JSProperty *pr2;
++                                    JSShapeProperty *prs2;
++                                    if (ta != JS_ATOM_NULL && (prs2 = find_own_property(&pr2, p, ta)) &&
++                                        !(prs2->flags & JS_PROP_TMASK)) {
++                                        e->inner_idx = prs2 - sh->prop;
++                                        e->inner_atom2 = gb->trivial_atom2;
++                                    }
++                                }
++                            }
++                        }
++                        if (unlikely(prs->flags & JS_PROP_TMASK))
++                            goto get_field_ic_slow;
++                        val = js_dup(pr->u.value);
++                        break;
++                    }
++                    if (unlikely(p1->is_exotic) && !js_ic_exotic_plain(ctx, ic, p1)) {
++                        obj = JS_MKPTR(JS_TAG_OBJECT, p1);
++                        goto get_field_ic_slow;
++                    }
++                    p1 = p1->shape->proto;
++                    if (!p1) {
++                        val = JS_UNDEFINED;
++                        break;
++                    }
++                }
++                goto get_field_ic_done;
++            get_field_ic_slow:
++                sf->cur_pc = pc;
++                val = JS_GetPropertyInternal(ctx, obj, ic->atom, sp[-1], false);
++                if (unlikely(JS_IsException(val)))
++                    goto exception;
++            get_field_ic_done:
++                if (opcode == OP_get_field_ic) {
++                    JS_FreeValue(ctx, sp[-1]);
++                    sp[-1] = val;
++                } else {
++                    *sp++ = val;
++                }
++            }
++            BREAK;
++        /* mini-render：带内联缓存的 put_field：只缓存「改已有的可写数据属性」这一种（与 put_field 的快路径相同） */
++        CASE(OP_put_field_ic):
++            {
++                int ret;
++                JSValue obj;
++                JSObject *p;
++                JSShape *sh;
++                JSProperty *pr;
++                JSShapeProperty *prs;
++                JSInlineCache *ic;
++                uint32_t idx;
++                ic = &b->ic[get_u32(pc)];
++                pc += 4;
++                obj = sp[-2];
++                if (likely(JS_VALUE_GET_TAG(obj) == JS_TAG_OBJECT)) {
++                    p = JS_VALUE_GET_OBJ(obj);
++                    sh = p->shape;
++                    idx = ic->own_idx;
++                    if (likely(sh->uid == ic->own_uid)) {
++                        /* 记号时确认过是可写数据属性（见下），号没变标志就没变 */
++                        set_value(ctx, &p->prop[idx].u.value, sp[-1]);
++                        JS_FreeValue(ctx, obj);
++                        sp -= 2;
++                        BREAK;
++                    }
++                    if (likely(idx < (uint32_t)sh->prop_count && sh->prop[idx].atom == ic->atom)) {
++                        prs = &sh->prop[idx];
++                        pr = &p->prop[idx];
++                    } else {
++                        prs = find_own_property(&pr, p, ic->atom);
++                        if (!prs) {
++                            /* 加一个新属性（构造函数里 this.x = … 一类，farm001 每帧上万次）：
++                               记过「这个接收者形状 + 当前纪元下，整条原型链上都没有这个属性」就直接加，
++                               不再走 JS_SetPropertyInternal2 把原型链逐层查一遍有没有 setter / 只读属性 */
++                            if (ic->proto && likely(p->extensible && !p->is_exotic)) {
++                                JSInlineCacheProto *ep = &b->ic_proto[ic->proto - 1];
++                                int w;
++                                for (w = 0; w < JS_IC_WAYS; w++) {
++                                    if (ep->way[w].shape_uid == sh->uid && ep->way[w].epoch == rt->ic_epoch) {
++                                        pr = add_property(ctx, p, ic->atom, JS_PROP_C_W_E);
++                                        if (unlikely(!pr))
++                                            goto exception;
++                                        pr->u.value = sp[-1]; /* 值的所有权交给属性 */
++                                        JS_FreeValue(ctx, obj);
++                                        sp -= 2;
++                                        BREAK;
++                                    }
++                                }
++                            }
++                            if (p->extensible && !p->is_exotic) {
++                                JSObject *q;
++                                for (q = p->shape->proto; q; q = q->shape->proto) {
++                                    if (q->is_exotic || find_own_property(&pr, q, ic->atom))
++                                        break;
++                                }
++                                if (!q) {
++                                    JSInlineCacheProto *ep = js_ic_proto_get(rt, b, ic);
++                                    if (ep) {
++                                        JSInlineCacheWay *e = &ep->way[ep->next];
++                                        ep->next = (ep->next + 1) % JS_IC_WAYS;
++                                        e->holder = NULL;
++                                        e->holder_idx = 0;
++                                        e->shape_uid = sh->uid;
++                                        e->epoch = rt->ic_epoch;
++                                    }
++                                }
++                            }
++                            goto put_field_ic_slow;
++                        }
++                        ic->own_uid = 0;
++                        ic->own_idx = prs - sh->prop;
++                    }
++                    if (likely((prs->flags & (JS_PROP_TMASK | JS_PROP_WRITABLE |
++                                              JS_PROP_LENGTH)) == JS_PROP_WRITABLE)) {
++                        ic->own_uid = sh->uid;
++                        set_value(ctx, &pr->u.value, sp[-1]);
++                    } else {
++                        goto put_field_ic_slow;
++                    }
++                    JS_FreeValue(ctx, obj);
++                    sp -= 2;
++                } else {
++                put_field_ic_slow:
++                    sf->cur_pc = pc;
++                    ret = JS_SetPropertyInternal2(ctx, obj, ic->atom, sp[-1], obj,
++                                                  JS_PROP_THROW_STRICT);
++                    JS_FreeValue(ctx, obj);
++                    sp -= 2;
++                    if (unlikely(ret < 0))
++                        goto exception;
++                }
++            }
++            BREAK;
+         CASE(OP_private_symbol):
+             {
+                 JSAtom atom;
+@@ -19368,7 +20008,28 @@
+         CASE(OP_get_array_el):
+             {
+                 JSValue val;
+-
++                /* mini-render：数组与 Float32Array 的整数下标就地取（原来要经 JS_GetPropertyValue →
++                   js_get_fast_array_element 两层调用；Cocos 的矩阵 / 顶点全是 Float32Array） */
++                uint32_t idx;
++                if (likely(JS_VALUE_GET_TAG(sp[-2]) == JS_TAG_OBJECT &&
++                           js_index_value(sp[-1], &idx))) {
++                    JSObject *p = JS_VALUE_GET_OBJ(sp[-2]);
++                    if (p->class_id == JS_CLASS_FLOAT32_ARRAY) {
++                        if (likely(idx < p->u.array.count)) {
++                            val = js_float64(p->u.array.u.float_ptr[idx]);
++                            goto get_array_el_fast;
++                        }
++                    } else if (p->class_id == JS_CLASS_ARRAY) {
++                        if (likely(idx < p->u.array.count)) {
++                            val = js_dup(p->u.array.u.values[idx]);
++                            goto get_array_el_fast;
++                        }
++                    } else if (p->class_id >= JS_CLASS_UINT8C_ARRAY && p->class_id <= JS_CLASS_FLOAT64_ARRAY &&
++                               js_get_fast_array_element(ctx, p, idx, &val)) {
++                        /* 只有类型化数组才值得在这里试（普通对象 this[i] 这类再试一次是白调，见 Octane Crypto） */
++                        goto get_array_el_fast;
++                    }
++                }
+                 sf->cur_pc = pc;
+                 val = JS_GetPropertyValue(ctx, sp[-2], sp[-1]);
+                 JS_FreeValue(ctx, sp[-2]);
+@@ -19376,13 +20037,32 @@
+                 sp--;
+                 if (unlikely(JS_IsException(val)))
+                     goto exception;
++                BREAK;
++            get_array_el_fast:
++                /* 下标是数字（不用释放），只放掉对象 */
++                JS_FreeValue(ctx, sp[-2]);
++                sp[-2] = val;
++                sp--;
+             }
+             BREAK;
+-
+         CASE(OP_get_array_el2):
+             {
+                 JSValue val;
+-
++                uint32_t idx;
++                if (likely(JS_VALUE_GET_TAG(sp[-2]) == JS_TAG_OBJECT &&
++                           js_index_value(sp[-1], &idx))) {
++                    JSObject *p = JS_VALUE_GET_OBJ(sp[-2]);
++                    if (p->class_id == JS_CLASS_ARRAY) {
++                        if (likely(idx < p->u.array.count)) {
++                            sp[-1] = js_dup(p->u.array.u.values[idx]);
++                            BREAK;
++                        }
++                    } else if (p->class_id >= JS_CLASS_UINT8C_ARRAY && p->class_id <= JS_CLASS_FLOAT64_ARRAY &&
++                               js_get_fast_array_element(ctx, p, idx, &val)) {
++                        sp[-1] = val;
++                        BREAK;
++                    }
++                }
+                 sf->cur_pc = pc;
+                 val = JS_GetPropertyValue(ctx, sp[-2], sp[-1]);
+                 sp[-1] = val;
+@@ -19451,6 +20131,48 @@
+                             sp -= 3;
+                             BREAK;
+                         }
++                        /* mini-render：Float32Array / Float64Array 写数字就地写（原来走 JS_SetPropertyValue） */
++                        if ((p->class_id == JS_CLASS_FLOAT32_ARRAY || p->class_id == JS_CLASS_FLOAT64_ARRAY) &&
++                            idx < (uint32_t)p->u.array.count && likely(!js_ab_immutable_seen)) {
++                            double d;
++                            uint32_t vtag = JS_VALUE_GET_TAG(val);
++                            if (vtag == JS_TAG_INT) {
++                                d = JS_VALUE_GET_INT(val);
++                            } else if (JS_TAG_IS_FLOAT64(vtag)) {
++                                d = JS_VALUE_GET_FLOAT64(val);
++                            } else {
++                                goto put_array_el_slow;
++                            }
++                            if (p->class_id == JS_CLASS_FLOAT32_ARRAY)
++                                p->u.array.u.float_ptr[idx] = d;
++                            else
++                                p->u.array.u.double_ptr[idx] = d;
++                            JS_FreeValue(ctx, sp[-3]);
++                            sp -= 3;
++                            BREAK;
++                        }
++                        /* 整数类型化数组（索引缓冲 Uint16Array、颜色 Uint8Array…）写整数：按位截断即 ToUint8/ToInt16 等 */
++                        if (p->class_id >= JS_CLASS_INT8_ARRAY && p->class_id <= JS_CLASS_UINT32_ARRAY &&
++                            idx < (uint32_t)p->u.array.count && JS_VALUE_GET_TAG(val) == JS_TAG_INT &&
++                            likely(!js_ab_immutable_seen)) {
++                            int32_t v = JS_VALUE_GET_INT(val);
++                            switch (p->class_id) {
++                            case JS_CLASS_INT8_ARRAY:
++                            case JS_CLASS_UINT8_ARRAY:
++                                p->u.array.u.uint8_ptr[idx] = (uint8_t)v;
++                                break;
++                            case JS_CLASS_INT16_ARRAY:
++                            case JS_CLASS_UINT16_ARRAY:
++                                p->u.array.u.uint16_ptr[idx] = (uint16_t)v;
++                                break;
++                            default: /* INT32 / UINT32 */
++                                p->u.array.u.uint32_ptr[idx] = (uint32_t)v;
++                                break;
++                            }
++                            JS_FreeValue(ctx, sp[-3]);
++                            sp -= 3;
++                            BREAK;
++                        }
+                         if (likely(p->class_id == JS_CLASS_ARRAY &&
+                                    idx == (uint32_t)p->u.array.count &&
+                                    p->fast_array &&
+@@ -19475,6 +20197,7 @@
+                         }
+                     }
+                 }
++            put_array_el_slow:
+                 sf->cur_pc = pc;
+                 ret = JS_SetPropertyValue(ctx, sp[-3], sp[-2], sp[-1], JS_PROP_THROW_STRICT);
+                 JS_FreeValue(ctx, sp[-3]);
+@@ -21843,6 +22566,52 @@
+     opcode_info[(op) >= OP_TEMP_START ? \
+                 (op) + (OP_TEMP_END - OP_TEMP_START) : (op)]
+ 
++/* mini-render：函数第一次被调用时把 get_field / get_field2 / put_field 改写成带内联缓存的版本（见 quickjs-opcode.h）。
++   生成器 / async 函数的函数体不经这里（它们的调用走 class call），保持原指令。
++   分配失败就不改写，照原指令跑。JS_SetInlineCacheEnabled(rt, false) 之后新函数也不改写（对照用） */
++static no_inline void js_bytecode_init_ic(JSRuntime *rt, JSFunctionBytecode *b)
++{
++    uint8_t *bc = b->byte_code_buf;
++    int pos, len, op;
++    uint32_t n, i;
++    JSInlineCache *ic;
++    b->ic_ready = 1;
++    if (rt->ic_disabled || !bc)
++        return;
++    n = 0;
++    for(pos = 0; pos < b->byte_code_len; pos += len) {
++        op = bc[pos];
++        len = short_opcode_info(op).size;
++        if (op == OP_get_field || op == OP_get_field2 || op == OP_put_field)
++            n++;
++    }
++    if (n == 0)
++        return;
++    ic = js_malloc_rt(rt, sizeof(*ic) * n);
++    if (!ic)
++        return;
++    i = 0;
++    for(pos = 0; pos < b->byte_code_len; pos += len) {
++        op = bc[pos];
++        len = short_opcode_info(op).size;
++        if (op == OP_get_field || op == OP_get_field2 || op == OP_put_field) {
++            memset(&ic[i], 0, sizeof(ic[i]));
++            ic[i].atom = get_u32(bc + pos + 1);
++            ic[i].own_idx = UINT32_MAX;
++            bc[pos] = op == OP_get_field ? OP_get_field_ic :
++                      op == OP_get_field2 ? OP_get_field2_ic : OP_put_field_ic;
++            put_u32(bc + pos + 1, i);
++            i++;
++        }
++    }
++    b->ic = ic;
++    b->ic_count = n;
++}
++
++void JS_SetInlineCacheEnabled(JSRuntime *rt, bool enabled)
++{
++    rt->ic_disabled = !enabled;
++}
+ static void json_free_token(JSParseState *s, JSToken *token) {
+     // Only free actual allocated values
+     switch(token->val) {
+@@ -36318,7 +37087,15 @@
+ 
+     if (b->byte_code_buf)
+         free_bytecode_atoms(rt, b->byte_code_buf, b->byte_code_len, true);
+-
++    if (b->ic) {
++        /* 改写时原子挪进了缓存槽（字节码里那 4 字节已是槽号） */
++        for(i = 0; i < b->ic_count; i++)
++            JS_FreeAtomRT(rt, b->ic[i].atom);
++        js_free_rt(rt, b->ic);
++        b->ic = NULL;
++    }
++    js_free_rt(rt, b->ic_proto);
++    b->ic_proto = NULL;
+     if (b->vardefs) {
+         for(i = 0; i < b->arg_count + b->var_count; i++) {
+             JS_FreeAtomRT(rt, b->vardefs[i].var_name);
+@@ -37842,11 +38619,22 @@
+     if (!bc_buf)
+         return -1;
+     memcpy(bc_buf, b->byte_code_buf, bc_len);
+-
+     pos = 0;
+     while (pos < bc_len) {
+         op = bc_buf[pos];
+         len = short_opcode_info(op).size;
++        /* mini-render：内联缓存指令写回原指令 + 原子（序列化格式与原版一致） */
++        if (op >= OP_get_field_ic && op <= OP_put_field_ic) {
++            uint32_t slot = get_u32(bc_buf + pos + 1);
++            atom = b->ic[slot].atom;
++            bc_buf[pos] = op == OP_get_field_ic ? OP_get_field :
++                          op == OP_get_field2_ic ? OP_get_field2 : OP_put_field;
++            if (bc_atom_to_idx(s, &val, atom))
++                goto fail;
++            put_u32(bc_buf + pos + 1, val);
++            pos += len;
++            continue;
++        }
+         switch(short_opcode_info(op).fmt) {
+         case OP_FMT_atom:
+         case OP_FMT_atom_u8:
+@@ -38750,11 +39538,16 @@
+     if (bc_get_buf(s, bc_buf, bc_len))
+         return -1;
+     b->byte_code_buf = bc_buf;
+-
+     pos = 0;
+     while (pos < bc_len) {
+         op = bc_buf[pos];
+         len = short_opcode_info(op).size;
++        /* mini-render：内联缓存指令只存在于内存里，序列化数据里出现就是坏数据（槽号会越界） */
++        if (op >= OP_get_field_ic && op <= OP_put_field_ic) {
++            b->byte_code_len = pos;
++            JS_ThrowSyntaxError(s->ctx, "invalid opcode in bytecode");
++            return -1;
++        }
+         switch(short_opcode_info(op).fmt) {
+         case OP_FMT_atom:
+         case OP_FMT_atom_u8:
+@@ -38923,6 +39716,15 @@
+         goto fail;
+ 
+     memcpy(b, &bc, sizeof(*b));
++    b->ic = NULL;
++    b->ic_count = 0;
++    b->ic_ready = 0;
++    b->ic_proto = NULL;
++    b->ic_proto_count = 0;
++    b->ic_proto_size = 0;
++    b->trivial_kind = 0;
++    b->trivial_atom = JS_ATOM_NULL;
++    b->trivial_atom2 = JS_ATOM_NULL;
+     bc.func_name = JS_ATOM_NULL;
+     b->header.ref_count = 1;
+     if (local_count != 0) {
+@@ -58068,6 +58870,8 @@
+     if (!abuf)
+         return -1;
+     abuf->immutable = immutable;
++    if (immutable)
++        js_ab_immutable_seen = true;
+     return 0;
+ }
+ 
+@@ -58223,6 +59027,7 @@
+         if (!abuf)
+             return JS_EXCEPTION;
+         abuf->immutable = true;
++        js_ab_immutable_seen = true;
+     }
+     return ret;
+ }
+@@ -58356,6 +59161,8 @@
+     }
+     memcpy(new_abuf->data, abuf->data + start, new_len);
+     new_abuf->immutable = immutable;
++    if (immutable)
++        js_ab_immutable_seen = true;
+     return new_obj;
+  fail:
+     JS_FreeValue(ctx, new_obj);
+diff -ruN -x . a/quickjs/quickjs.h b/quickjs/quickjs.h
+--- a/quickjs/quickjs.h	2026-10-30 00:37:04
++++ b/quickjs/quickjs.h	2026-10-30 00:37:05
+@@ -488,6 +488,10 @@
+ typedef struct JSGCObjectHeader JSGCObjectHeader;
+ 
+ JS_EXTERN JSRuntime *JS_NewRuntime(void);
++/* mini-render：属性读写的内联缓存（默认开；关掉只影响之后第一次被调用的函数） */
++JS_EXTERN void JS_SetInlineCacheEnabled(JSRuntime *rt, bool enabled);
++/* mini-render：之后新建的运行时用不用自带的小块池（默认用；只能在建运行时之前设） */
++JS_EXTERN void JS_SetSmallBlockPoolDefault(bool enabled);
+ /* info lifetime must exceed that of rt */
+ JS_EXTERN void JS_SetRuntimeInfo(JSRuntime *rt, const char *info);
+ /* use 0 to disable memory limit */
