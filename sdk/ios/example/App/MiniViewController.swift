@@ -212,7 +212,18 @@ final class MiniViewController: UIViewController {
         vc.view.addSubview(gc)
         var covered = true
         let reveal = { if covered { covered = false; gc.hide() } }
-        vc.onFirstFrame = reveal
+        // 验收：`-gameReopen <秒>` 第一帧之后这么久关掉游戏（同「⊙」），再在同一进程里打开同一个（查「关了还在响」「再进黑屏」）
+        let reopen = UserDefaults.standard.double(forKey: "gameReopen")
+        vc.onFirstFrame = { [weak self, weak vc] in
+            reveal()
+            guard reopen > 0, !Self.reopened else { return }
+            Self.reopened = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + reopen) {
+                guard vc != nil else { return }
+                NSLog("[验收] 关掉游戏再进")
+                self?.openStore(l) // 先同步关掉弹着的游戏（与外部链接换小程序同一条路），再开新的
+            }
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 10, execute: reveal)
         vc.onClose = { [weak self] in
             guard let self, self.game === vc else { return }
@@ -248,6 +259,9 @@ final class MiniViewController: UIViewController {
                 StoreSheets.Item(glyph: "ⓘ", label: "关于", onTap: about),
             ])
     }
+
+    /// `-gameReopen` 只做一次
+    private static var reopened = false
 
     /// 弹着的游戏页（外部链接换小程序时先关掉它）
     private var game: MiniGameViewController?

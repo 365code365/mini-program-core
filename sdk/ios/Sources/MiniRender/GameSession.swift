@@ -240,6 +240,8 @@ final class GameSession: NSObject {
             if let h = handle {
                 mr_game_detach_layer(h)
                 mr_game_destroy(h)
+                // 验收看这一行：页面关了实例就该没了（声音、定时器跟着停）
+                NSLog("🎮 关掉实例 %@", dir)
             }
             handle = nil
         }

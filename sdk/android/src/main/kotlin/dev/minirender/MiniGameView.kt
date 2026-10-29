@@ -313,7 +313,7 @@ class MiniGameView(
             audioSession?.release()
             sensors?.release()
             audioSession = null
-            if (handle != 0L) MiniGame.nativeDestroy(handle)
+            if (handle != 0L) { MiniGame.nativeDestroy(handle); Log.i(TAG, "🎮 关掉实例 $dir") }
             handle = 0L
             boost?.close()
             thread.quitSafely()

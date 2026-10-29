@@ -133,6 +133,8 @@ class _MiniGameViewState extends State<MiniGameView> {
 
   @override
   void dispose() {
+    // iOS：让原生马上销毁实例（Android 的 PlatformView.dispose 由 Flutter 同步调，不用这一句）
+    if (Platform.isIOS) _ch?.invokeMethod<void>('dispose').catchError((_) {});
     _ch?.setMethodCallHandler(null);
     widget.controller?._ch = null;
     // 还原成 App 的默认方向（Android 由 GameView.kt 还原 Activity 的 requestedOrientation）

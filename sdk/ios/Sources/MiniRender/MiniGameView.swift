@@ -100,7 +100,12 @@ public final class MiniGameView: UIView, GameSessionUI {
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-    deinit { NotificationCenter.default.removeObserver(self) }
+    /// 宿主忘了 close 也不留着跑（声音、定时器、引擎线程）：视图没了实例就没了
+    /// （只停引擎：键盘、视频是 lazy 的，析构里再建它们会对正在释放的 self 取弱引用、直接崩）
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+        if !closed { session.dispose() }
+    }
 
     // ───────────────────────── 对外 ─────────────────────────
 
@@ -260,7 +265,20 @@ public final class MiniGameView: UIView, GameSessionUI {
         c.frame = rect
         c.isHidden = rect.width <= 0 || rect.height <= 0
         bringSubviewToFront(c)
+        // 诊断（验收用）：启动参数 `-miniGameCapsuleTap close@6` = 胶囊摆好 6 秒后当作点了「⊙」（menu = 「•••」），
+        // 走与真点击同一条路（onHostEvent → 宿主 / Flutter 关页面）。模拟器上点不准胶囊时用它查「关了还在响」
+        if !capsuleTapScheduled, let spec = UserDefaults.standard.string(forKey: "miniGameCapsuleTap"), let at = spec.firstIndex(of: "@") {
+            capsuleTapScheduled = true
+            let action = String(spec[..<at])
+            let sec = Double(spec[spec.index(after: at)...]) ?? 5
+            DispatchQueue.main.asyncAfter(deadline: .now() + sec) { [weak c] in
+                NSLog("[验收] 胶囊 %@", action)
+                c?.onTap?(action)
+            }
+        }
     }
+
+    private var capsuleTapScheduled = false
 
     func gameEvents(_ events: [[String: Any]]) {
         for ev in events {

@@ -79,9 +79,10 @@ public final class MiniGameView: NSView, GameSessionUI {
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
+    // 只停引擎：键盘条是 lazy 的，析构里再建它会对正在释放的 self 取弱引用
     deinit {
         NotificationCenter.default.removeObserver(self)
-        close()
+        if !closed { session.dispose() }
     }
 
     public override var isFlipped: Bool { true }

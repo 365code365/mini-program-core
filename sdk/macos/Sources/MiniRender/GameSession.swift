@@ -170,6 +170,7 @@ final class GameSession: NSObject {
             if let h = handle {
                 mr_game_detach_layer(h)
                 mr_game_destroy(h)
+                NSLog("🎮 关掉实例 %@", dir)
             }
             handle = nil
         }

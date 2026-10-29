@@ -74,6 +74,11 @@ final class GamePlatformView: NSObject, FlutterPlatformView {
         // 建视图时 Dart 还拿不到方向（初始方向在原生读 game.json）：Dart 建好通道就来问一次
         case "orientation":
             result(Self.name(game.orientationMask))
+        // Dart 的 MiniGameView 析构时调：页面一关就销毁实例（声音、定时器、引擎线程跟着停），
+        // 不等 Flutter 什么时候放掉这个 FlutterPlatformView 对象（它晚放 / 不放的话游戏会在后台一直响）
+        case "dispose":
+            game.close()
+            result(nil)
         default:
             result(FlutterMethodNotImplemented)
         }
