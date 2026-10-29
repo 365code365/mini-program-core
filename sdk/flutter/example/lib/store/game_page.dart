@@ -75,6 +75,8 @@ class _MiniGamePageState extends State<MiniGamePage> {
           // 存档按 appId 分：用商店的真 AppID，换了解包目录也不丢档（与原生示例一致）
           'appId': widget.app.key,
           'launchOptions': widget.launchOptions,
+          // 跑不满 60 时稳在 30（帧间隔均匀，比 40fps 上下跳更顺）
+          'adaptiveFps': true,
         },
         onHostEvent: _onHostEvent,
         onFirstFrame: _ready,

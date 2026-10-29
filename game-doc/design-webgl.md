@@ -61,3 +61,12 @@ src/js/prelude/game-webgl.js   WebGLRenderingContext / WebGL2RenderingContext、
 | ANGLE + SwiftShader（Chrome 自带的 `libvk_swiftshader.dylib`） | 初始化 1.0s，`OpenGL ES 3.1`，同上 |
 
 库来源：`tools/fetch-angle.sh` 从 PyPI 拉 comfy-angle（BSD-3，sha256 写死），SwiftShader（Apache-2.0）从本机 Chrome 拷；目录 `third_party/angle/<平台>/`，不入库。
+
+## 7. JS 层不做 GL 状态缓存（2026-10-29 实测后放弃）
+
+想法是在 `prelude/game-webgl.js` 里记住当前程序 / 纹理 / 混合 / 开关，跳过重复的 `useProgram` / `bindTexture` 这类调用。
+先量了冗余：一加 PLY110 上 farm001（Cocos 3.x）主场景稳态每帧约 350~600 次 GL 调用，按「与上一次设的值相同」统计，
+重复的只有 `cullFace` 每帧 1 次、`bindBuffer` 每帧约 1 次；`useProgram`（55~94 次）、`bindTexture`（46~108 次）、
+`blendFuncSeparate`、`enable` / `disable`、`activeTexture` 重复都是 0。Cocos 的 WebGL 设备层自己就缓存了这些状态，
+引擎再缓存一层只会多一次比较，还要在丢上下文 / 删对象 / 解绑时维护失效，收益不到 1%。
+用手写 WebGL 的游戏若重复调用多，再按同一个探针（包一层原型方法、按值去重计数）量过之后再做。

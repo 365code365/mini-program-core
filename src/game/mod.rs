@@ -36,8 +36,11 @@ pub mod touch;
 mod frame;
 pub use frame::FRAME_WAKE_AT;
 mod loader;
+/// 预编译小游戏包的大脚本（字节码缓存，宿主下载 / 解包后在后台调）
+pub use loader::precompile_package;
 mod logs;
 pub mod raf_pacer;
+mod fps_governor;
 
 use crate::app_profile::{detect, AppProfile};
 use crate::js::PreludeProfile;
@@ -70,6 +73,8 @@ pub struct GameOptions {
     pub entry_subpackage: Option<String>,
     /// 宿主转不了方向时（竖屏锁定的页面里嵌横屏游戏）引擎自己转：输出帧转 90°、触点反变换（G6.4，rotate.rs）
     pub rotate_in_engine: bool,
+    /// 自适应帧率（fps_governor.rs）：跑不满 60 时降到 30。默认关（微信语义）；固定时钟下不生效
+    pub adaptive_fps: bool,
     /// 引擎插件目录：`<pluginDir>/<provider>/<version>/`（G6.7，plugin.rs）
     pub plugin_dir: Option<String>,
     /// 宿主实现的 `wx.*` 与对象方法（`login`、`BannerAd.show` …）：调用变成 hostCall 宿主事件，宿主 `mr_game_host_reply` 回结果
@@ -115,6 +120,7 @@ impl GameOptions {
             fixed_clock: v.get("fixedClock").and_then(|x| x.as_bool()).unwrap_or(false),
             entry_subpackage: v.get("entrySubpackage").and_then(|x| x.as_str()).map(str::to_string),
             rotate_in_engine: v.get("rotateInEngine").and_then(|x| x.as_bool()).unwrap_or(false),
+            adaptive_fps: v.get("adaptiveFps").and_then(|x| x.as_bool()).unwrap_or(false),
             plugin_dir: v.get("pluginDir").and_then(|x| x.as_str()).map(str::to_string),
             webgl: v.get("webgl").and_then(|x| x.as_str()).map(str::to_string),
             host_apis: v.get("hostApis").and_then(|x| x.as_array()).map(|a| a.iter().filter_map(|s| s.as_str().map(str::to_string)).collect()).unwrap_or_default(),
@@ -196,6 +202,9 @@ impl GameEngine {
         // 小游戏自己的原生函数要在前置代码之前注册（game-canvas.js 加载时就取 __game_2d）
         let canvases = std::rc::Rc::new(std::cell::RefCell::new(canvas::GameCanvases::new((width, height))));
         let pacer = std::rc::Rc::new(std::cell::RefCell::new(raf_pacer::RafPacer::default()));
+        if opts.adaptive_fps && !opts.fixed_clock {
+            pacer.borrow_mut().enable_adaptive();
+        }
         let clock = std::rc::Rc::new(std::cell::RefCell::new(clock::GameClock::new(opts.fixed_clock)));
         let images = std::rc::Rc::new(std::cell::RefCell::new(image::ImageStore::new(root.clone())));
         // 无头（固定时钟）不开声卡：混音器按帧时钟离线渲染，逐样本可复现

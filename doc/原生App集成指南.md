@@ -925,6 +925,8 @@ setContentView(view)   // onResume / onPause 转给 view，onDestroy 调 view.di
 | 关系链 / 登录 / 广告等要账号体系的 API | 创建选项 `hostApis` 点名，`onHostEvent("hostCall")` 里处理，`view.hostReply(id, ok, json)` 回结果；没点名的一律 fail（与「无权限」同形） |
 | 开放数据域 | game.json 写了 `openDataContext` 就会在主域第一次 `wx.getOpenDataContext()` 后启动；好友数据走 `openData.*` 的 hostCall |
 | 手柄 / 指针锁定 | `view.dispatchEvent("gamepad", json)`、`dispatchEvent("pointerLockChange", {"locked":true})` |
+| 重度游戏跑不满 60 | 创建选项 `"adaptiveFps": true`：最近 30 帧里有 20 帧工作超过 15ms 就把 rAF 降到 30（帧间隔均匀，比 40fps 上下跳顺），在 30 档跑满 90 帧且 p90 < 11.7ms 再回 60；切档打一行 `🎚 自适应帧率`。默认关（微信语义：rAF 跟屏幕刷新率）；游戏自己 `wx.setPreferredFramesPerSecond` 设的上限照样生效 |
+| 首次打开慢（大脚本现编字节码） | 下载解包完就调 `MiniGame.precompileAsync(gameDir, dataDir)`（Flutter：`MiniGameView.precompile(dir)`）：后台线程把大脚本编成字节码写进 `<dataDir>/jscache/`，打一行 `📦 预编译`；实例建得比它早时等着那一段编完，不重复编 |
 
 ### 渲染
 

@@ -87,6 +87,14 @@ class MiniRenderPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Activit
                 )
             }
             "create" -> create(call, result)
+            // 小游戏的字节码预编译：后台线程，立刻返回（与 GameView 默认数据目录同一处）
+            "precompileGame" -> {
+                val dir = call.argument<String>("dir") ?: ""
+                val data = call.argument<String>("dataDir")?.takeIf { it.isNotEmpty() }
+                    ?: File(binding.applicationContext.filesDir, "game-data").apply { mkdirs() }.absolutePath
+                if (dir.isNotEmpty()) dev.minirender.MiniGame.precompileAsync(dir, data)
+                result.success(null)
+            }
             // 不碰引擎实例：文件直接写进 hostCall 给的 tempDir
             "pickMedia", "pickFiles", "saveToAlbum", "openDocument" -> picker.handle(call, result)
             else -> {

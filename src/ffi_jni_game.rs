@@ -71,6 +71,13 @@ fn out_str(env: &JNIEnv, p: *const std::ffi::c_char) -> jstring {
     env.new_string(text).map(|s| s.into_raw()).unwrap_or(std::ptr::null_mut())
 }
 
+/// 预编译（mr_game_precompile）：任意线程，不需要实例
+#[no_mangle]
+pub extern "system" fn Java_dev_minirender_MiniGame_nativePrecompile(mut env: JNIEnv, _c: JClass, dir: JString, data: JString) -> jint {
+    let (Some(dir), Some(data)) = (jstr(&mut env, &dir), jstr(&mut env, &data)) else { return -1 };
+    crate::ffi_game::mr_game_precompile(dir.as_ptr(), data.as_ptr())
+}
+
 #[no_mangle]
 pub extern "system" fn Java_dev_minirender_MiniGame_nativeCreate(
     mut env: JNIEnv,

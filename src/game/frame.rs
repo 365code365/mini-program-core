@@ -58,6 +58,7 @@ impl GameEngine {
     /// 跑一帧。`now_us` 是宿主 vsync 时刻（**微秒**，任意原点的单调钟；0 = 引擎自己取）。返回 `FRAME_*` 位
     pub fn pump_ex(&mut self, now_us: u64) -> u32 {
         self.inject("panic@pump");
+        let t_work = std::time::Instant::now();
         let t = self.clock.borrow_mut().begin_frame(now_us);
         self.app.set_timer_clock(Some(self.clock.borrow().instant_at(t)));
         let mut flags = 0;
@@ -111,6 +112,13 @@ impl GameEngine {
         // 6 主画布（WebGL 的先读回后备缓冲）
         #[cfg(feature = "webgl")]
         self.webgl_frame_end();
+        // 自适应帧率（fps_governor.rs，没开时 note_work 直接返回）：只看 rAF 帧
+        if raf_frame {
+            let msg = self.pacer.borrow_mut().note_work(t_work.elapsed().as_micros() as u64);
+            if let Some(m) = msg {
+                self.host_log(&m);
+            }
+        }
         let t_ms = t / 1000;
         if std::mem::take(&mut self.canvases.borrow_mut().main_dirty) {
             self.frame.stale = true;

@@ -13,6 +13,9 @@
 //! 目录 `<数据目录>/jscache/`，总量超过 [`MAX_TOTAL`] 时按修改时间删最旧的。
 //! `MINI_NO_JS_CACHE=1` 关掉（对照 / 排查用）。
 //!
+//! 预编译（[`precompile`]）：宿主在下载 / 解包之后就在后台线程上编好，第一次打开也命中。预编译与游戏实例并行时
+//! （商店解包完马上打开游戏），实例读到「正在编」的键就等它编完（最多 [`INFLIGHT_WAIT`]），不重复编。
+//!
 //! 安全：QuickJS 的字节码读取器不防恶意输入，所以缓存只放在宿主给的私有数据目录里，
 //! 而且只读本进程自己写出、头部校验通过的文件。
 use rquickjs::{qjs, Ctx, Value};
@@ -49,6 +52,91 @@ fn dir() -> PathBuf {
     crate::data_dir::data_dir().join("jscache")
 }
 
+/// 预编译线程正在编的键：实例读到这些键时等一下
+const INFLIGHT_WAIT: std::time::Duration = std::time::Duration::from_secs(15);
+fn inflight() -> &'static (std::sync::Mutex<std::collections::HashSet<u64>>, std::sync::Condvar) {
+    static I: std::sync::OnceLock<(std::sync::Mutex<std::collections::HashSet<u64>>, std::sync::Condvar)> = std::sync::OnceLock::new();
+    I.get_or_init(Default::default)
+}
+fn wait_inflight(key: u64) {
+    let (m, cv) = inflight();
+    let Ok(mut g) = m.lock() else { return };
+    let deadline = std::time::Instant::now() + INFLIGHT_WAIT;
+    while g.contains(&key) {
+        let left = deadline.saturating_duration_since(std::time::Instant::now());
+        if left.is_zero() {
+            return;
+        }
+        g = match cv.wait_timeout(g, left) {
+            Ok((g, _)) => g,
+            Err(_) => return,
+        };
+    }
+}
+/// 从「正在编」里摘掉（编完、编失败、线程 panic 都摘）
+struct Done(u64);
+impl Drop for Done {
+    fn drop(&mut self) {
+        let (m, cv) = inflight();
+        if let Ok(mut g) = m.lock() {
+            g.remove(&self.0);
+        }
+        cv.notify_all();
+    }
+}
+
+/// 预编译一组脚本（每段是**包装后**、与实例里 eval 的一模一样的源码）到 `cache_dir`。
+/// 已有缓存的跳过；返回 (够大要缓存的段数, 这次新编的段数)。在任意线程调（自己建一个运行时，不碰游戏的）
+pub fn precompile(sources: &[String], cache_dir: &Path) -> (usize, usize) {
+    if !enabled() {
+        return (0, 0);
+    }
+    let big: Vec<(&String, u64, PathBuf)> = sources
+        .iter()
+        .filter(|s| s.len() >= MIN_BYTES)
+        .map(|s| {
+            let k = key_of(s);
+            (s, k, cache_dir.join(format!("{k:016x}.qbc")))
+        })
+        .collect();
+    let todo: Vec<_> = big.iter().filter(|(_, _, p)| !p.exists()).collect();
+    if todo.is_empty() {
+        return (big.len(), 0);
+    }
+    // 先把要编的键全部登记：实例那边可能马上就要读第一个
+    let guards: Vec<Done> = {
+        let (m, _) = inflight();
+        let mut g = m.lock().unwrap_or_else(|e| e.into_inner());
+        todo.iter().filter(|(_, k, _)| g.insert(*k)).map(|(_, k, _)| Done(*k)).collect()
+    };
+    let Ok(rt) = rquickjs::Runtime::new_with_alloc(super::pool_alloc::PoolAllocator::default()) else { return (big.len(), 0) };
+    let Ok(ctx) = rquickjs::Context::full(&rt) else { return (big.len(), 0) };
+    let mut done = 0;
+    ctx.with(|ctx| {
+        for ((src, key, path), guard) in todo.iter().zip(guards) {
+            if let Some(fun) = compile(&ctx, src) {
+                write_to(&ctx, path, *key, src.len(), &fun, cache_dir);
+                done += 1;
+            }
+            drop(guard);
+        }
+    });
+    (big.len(), done)
+}
+
+/// 只编不跑；语法错误返回 None（异常留在上下文里，调用方自己 catch / 交给 rquickjs 取）
+fn compile<'js>(ctx: &Ctx<'js>, src: &str) -> Option<Value<'js>> {
+    let csrc = std::ffi::CString::new(src).ok()?;
+    let raw = ctx.as_raw().as_ptr();
+    // SAFETY: raw 是当前上下文；源码以 NUL 结尾、长度不含 NUL；返回值所有权归我们
+    let fun = unsafe {
+        qjs::JS_Eval(raw, csrc.as_ptr(), src.len() as _, FILENAME.as_ptr() as *const _, (qjs::JS_EVAL_TYPE_GLOBAL | qjs::JS_EVAL_FLAG_COMPILE_ONLY) as i32)
+    };
+    // SAFETY: fun 是刚拿到的、引用计数归我们的值
+    let fun = unsafe { Value::from_raw(ctx.clone(), fun) };
+    (!fun.is_exception()).then_some(fun)
+}
+
 /// 执行一段脚本（全局作用域，与 `ctx.eval` 同义），能用缓存就用缓存。
 /// 返回 (结果, 是否命中)。异常照常以 `Err(rquickjs::Error::Exception)` 返回
 pub fn eval<'js>(ctx: &Ctx<'js>, src: &str) -> (rquickjs::Result<Value<'js>>, bool) {
@@ -57,23 +145,20 @@ pub fn eval<'js>(ctx: &Ctx<'js>, src: &str) -> (rquickjs::Result<Value<'js>>, bo
     }
     let key = key_of(src);
     let path = dir().join(format!("{key:016x}.qbc"));
+    // 预编译线程正在编这一段：等它编完再读（不重复编）
+    wait_inflight(key);
     if let Some(fun) = read(ctx, &path, key, src.len()) {
         return (run(ctx, fun), true);
     }
     // 编译（只编不跑）→ 落盘 → 跑
-    let Ok(csrc) = std::ffi::CString::new(src) else { return (ctx.eval(src), false) };
-    let raw = ctx.as_raw().as_ptr();
-    // SAFETY: raw 是当前上下文；源码以 NUL 结尾、长度不含 NUL；返回值所有权归我们
-    let fun = unsafe {
-        qjs::JS_Eval(raw, csrc.as_ptr(), src.len() as _, FILENAME.as_ptr() as *const _, (qjs::JS_EVAL_TYPE_GLOBAL | qjs::JS_EVAL_FLAG_COMPILE_ONLY) as i32)
-    };
-    // SAFETY: fun 是刚拿到的、引用计数归我们的值
-    let fun = unsafe { Value::from_raw(ctx.clone(), fun) };
-    if fun.is_exception() {
+    if std::ffi::CString::new(src).is_err() {
+        return (ctx.eval(src), false);
+    }
+    let Some(fun) = compile(ctx, src) else {
         // 语法错误：交给 rquickjs 把异常取出来（与 ctx.eval 同一个错误形状）
         return (Err(rquickjs::Error::Exception), false);
-    }
-    write(ctx, &path, key, src.len(), &fun);
+    };
+    write_to(ctx, &path, key, src.len(), &fun, &dir());
     (run(ctx, fun), false)
 }
 
@@ -117,7 +202,7 @@ fn read<'js>(ctx: &Ctx<'js>, path: &Path, key: u64, src_len: usize) -> Option<Va
     Some(v)
 }
 
-fn write(ctx: &Ctx<'_>, path: &Path, key: u64, src_len: usize, fun: &Value<'_>) {
+fn write_to(ctx: &Ctx<'_>, path: &Path, key: u64, src_len: usize, fun: &Value<'_>, d: &Path) {
     let raw = ctx.as_raw().as_ptr();
     let mut size: qjs::size_t = 0;
     // SAFETY: fun 是有效的函数对象；返回的缓冲由 js_malloc 分配，用完 js_free
@@ -135,14 +220,13 @@ fn write(ctx: &Ctx<'_>, path: &Path, key: u64, src_len: usize, fun: &Value<'_>) 
     out.extend_from_slice(body);
     // SAFETY: 与 JS_WriteObject 同一个上下文分配的
     unsafe { qjs::js_free(raw, p as *mut _) };
-    let d = dir();
-    if std::fs::create_dir_all(&d).is_err() {
+    if std::fs::create_dir_all(d).is_err() {
         return;
     }
     // 先写临时文件再改名：写到一半被杀，下次读到的也不会是半个文件
     let tmp = path.with_extension("tmp");
     if std::fs::write(&tmp, &out).is_ok() && std::fs::rename(&tmp, path).is_ok() {
-        prune(&d);
+        prune(d);
     }
 }
 
@@ -197,5 +281,22 @@ mod tests {
         let (e, _) = rt.eval_cached(&bad);
         assert!(e.unwrap_err().contains("SyntaxError"));
         let _ = std::fs::remove_file(&file);
+    }
+
+    /// 预编译（另一个运行时、另一个线程）写出的缓存，实例这边直接命中、结果正确
+    #[test]
+    fn 预编译之后第一次就命中() {
+        let rt = crate::js::JsRuntime::new().unwrap();
+        let pad = format!("/* pre {} {} */", std::process::id(), "y".repeat(super::MIN_BYTES));
+        let src = format!("{pad}\n6 * 7");
+        let srcs = vec![src.clone(), "1 + 1".to_string()];
+        let d = super::dir();
+        let (big, done) = std::thread::spawn(move || super::precompile(&srcs, &d)).join().unwrap();
+        assert_eq!((big, done), (1, 1), "只有够大的那段要编");
+        let (r, hit) = rt.eval_cached(&src);
+        assert_eq!((r.as_deref(), hit), (Ok("42"), true));
+        // 再预编译一次：已有缓存，跳过
+        assert_eq!(super::precompile(&[src.clone()], &super::dir()), (1, 0));
+        let _ = std::fs::remove_file(super::dir().join(format!("{:016x}.qbc", super::key_of(&src))));
     }
 }

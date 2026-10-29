@@ -35,6 +35,8 @@ class GameActivity : Activity() {
             .put("launchOptions", launch)
             // --ez rotate true：横屏包在竖屏里由引擎自己转（G6.4）
             .put("rotateInEngine", intent.getBooleanExtra("rotate", false))
+            // 跑不满 60 时稳在 30（帧间隔均匀，比 40fps 上下跳更顺）；--ez adaptiveFps false 关掉对比
+            .put("adaptiveFps", intent.getBooleanExtra("adaptiveFps", true))
             // 示例宿主接的能力：支付、激励视频、分享、登录（GameHostApis：演示实现，正式接入换成真 SDK）
             .put("hostApis", org.json.JSONArray(GameHostApis.APIS))
         val v = MiniGameView(this, dir.absolutePath, File(filesDir, "game-data").absolutePath, opts.toString())

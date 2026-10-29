@@ -72,6 +72,27 @@ pub extern "C" fn mr_capabilities() -> *const c_char {
     .as_ptr()
 }
 
+/// 预编译小游戏包里的大脚本（JS 字节码缓存，js/bytecode_cache.rs）：宿主下载 / 解包完就在**后台线程**调，
+/// 第一次打开也不用再解析（Cocos 的 3MB 引擎脚本真机解析 370ms）。`data_dir` 与之后 `mr_game_create` 给的同一个。
+/// 与实例并行也安全：实例碰到正在编的脚本会等它编完。返回新编的段数，参数不对返回 -1
+#[cfg(feature = "game")]
+#[no_mangle]
+pub extern "C" fn mr_game_precompile(app_dir: *const c_char, data_dir: *const c_char) -> i32 {
+    if app_dir.is_null() || data_dir.is_null() {
+        return -1;
+    }
+    // SAFETY: 调用方保证是 NUL 结尾的 C 字符串
+    let (dir, data) = unsafe { (std::ffi::CStr::from_ptr(app_dir).to_string_lossy().into_owned(), std::ffi::CStr::from_ptr(data_dir).to_string_lossy().into_owned()) };
+    let r = std::panic::catch_unwind(|| crate::game::precompile_package(std::path::Path::new(&dir), std::path::Path::new(&data)));
+    match r {
+        Ok((big, done, ms)) => {
+            crate::compositor::diag::emit(&format!("📦 预编译 {dir}：{big} 段大脚本，新编 {done} 段，{ms}ms"));
+            done as i32
+        }
+        Err(_) => -1,
+    }
+}
+
 /// 建小游戏实例并执行 `game.js`。失败（不是小游戏包、game.json 坏了）返回 NULL，原因打到 stderr。
 /// `options_json` 见 `GameOptions::from_json`（`appId`、`systemInfo`、`launchOptions`、`watchdogMs`、`jsMemoryLimitMB`）。
 /// game.js 顶层抛错**不算**失败：实例照常返回，错误在事件队列里

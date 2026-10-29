@@ -20,6 +20,17 @@ object MiniGame {
 
     /** options：`{"appId","systemInfo","launchOptions","watchdogMs","jsMemoryLimitMB"}`。失败返回 0（原因在 logcat） */
     external fun nativeCreate(dir: String, dataDir: String, width: Int, height: Int, dpr: Float, options: String): Long
+    /** 预编译包里的大脚本（JS 字节码缓存）：**任意线程**，不需要实例。dataDir 与之后 nativeCreate 的同一个。返回新编的段数 */
+    external fun nativePrecompile(dir: String, dataDir: String): Int
+
+    /**
+     * 下载 / 解包完就在后台把字节码编好（第一次打开也不用解析；Cocos 的 3MB 引擎脚本真机解析 370ms）。
+     * 马上就打开也没关系：实例碰到正在编的脚本会等它编完，不重复编
+     */
+    @JvmStatic
+    fun precompileAsync(dir: String, dataDir: String) {
+        Thread({ nativePrecompile(dir, dataDir) }, "mini-game-precompile").apply { isDaemon = true; start() }
+    }
     external fun nativeDestroy(handle: Long)
     /** nowUs：Choreographer 的 frameTimeNanos / 1000（**微秒**） */
     external fun nativePump(handle: Long, nowUs: Long): Int

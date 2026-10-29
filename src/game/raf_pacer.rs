@@ -26,6 +26,10 @@ pub struct RafPacer {
     last_vsync_us: Option<u64>,
     /// 锁相模式下上一次 rAF 帧的 vsync 时刻
     last_fire_us: Option<u64>,
+    /// 游戏要的帧率（`wx.setPreferredFramesPerSecond`）；`fps` = min(它, 自适应上限)
+    requested: u32,
+    /// 自适应帧率（fps_governor.rs）；None = 没开
+    governor: Option<super::fps_governor::FpsGovernor>,
 }
 
 pub const DEFAULT_FPS: u32 = 60;
@@ -38,7 +42,8 @@ impl Default for RafPacer {
 
 impl RafPacer {
     pub fn new(fps: u32) -> Self {
-        Self { fps: fps.clamp(1, 60), ideal_us: None, intervals: [0; 16], n_intervals: 0, last_vsync_us: None, last_fire_us: None }
+        let fps = fps.clamp(1, 60);
+        Self { fps, ideal_us: None, intervals: [0; 16], n_intervals: 0, last_vsync_us: None, last_fire_us: None, requested: fps, governor: None }
     }
 
     pub fn fps(&self) -> u32 {
@@ -47,7 +52,25 @@ impl RafPacer {
 
     /// `wx.setPreferredFramesPerSecond`：夹到 1~60。改了立刻生效：理想时刻从下一次 rAF 帧重新算
     pub fn set_fps(&mut self, fps: u32) {
-        let fps = fps.clamp(1, 60);
+        self.requested = fps.clamp(1, 60);
+        self.apply();
+    }
+
+    /// 开自适应帧率（宿主创建选项 `adaptiveFps`）
+    pub fn enable_adaptive(&mut self) {
+        self.governor = Some(Default::default());
+    }
+
+    /// 一个 rAF 帧做完了，工作 `work_us`：自适应上限变了返回说明（日志用）
+    pub fn note_work(&mut self, work_us: u64) -> Option<String> {
+        let msg = self.governor.as_mut()?.note(work_us)?;
+        self.apply();
+        Some(msg)
+    }
+
+    fn apply(&mut self) {
+        let cap = self.governor.as_ref().map(|g| g.cap()).unwrap_or(60);
+        let fps = self.requested.min(cap);
         if fps != self.fps {
             self.fps = fps;
             self.ideal_us = None;

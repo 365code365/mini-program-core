@@ -49,6 +49,25 @@ pub fn register_modules(app: &MiniApp, root: &Path) -> (usize, usize, Vec<Module
     (ok, cached, errors)
 }
 
+/// 预编译一个小游戏包（js/bytecode_cache.rs 的 precompile）：与 [`register_modules`] / [`run_module`] 包装成一模一样的源码，
+/// 缓存键才对得上。`data_dir` = 之后建实例时给的数据目录。任意线程调；返回 (要缓存的段数, 新编的段数, 毫秒)
+pub fn precompile_package(root: &Path, data_dir: &Path) -> (usize, usize, u128) {
+    let t = std::time::Instant::now();
+    let mut files = Vec::new();
+    collect(root, root, &mut files);
+    files.sort();
+    let mut srcs: Vec<String> = files
+        .iter()
+        .filter_map(|(key, path)| std::fs::read_to_string(path).ok().map(|src| wrap("__defineModule", key, &src)))
+        .collect();
+    // game.js 还会以模块作用域再执行一次（run_module）：那一段也编上
+    if let Ok(src) = std::fs::read_to_string(root.join("game.js")) {
+        srcs.push(wrap("__runAsModule", "game", &src));
+    }
+    let (big, done) = crate::js::bytecode_cache::precompile(&srcs, &data_dir.join("jscache"));
+    (big, done, t.elapsed().as_millis())
+}
+
 fn collect(root: &Path, dir: &Path, out: &mut Vec<(String, std::path::PathBuf)>) {
     let Ok(entries) = std::fs::read_dir(dir) else { return };
     for e in entries.flatten() {

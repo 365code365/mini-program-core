@@ -62,6 +62,13 @@ class MiniGameView extends StatefulWidget {
 
   static const viewType = 'dev.minirender/game-view';
 
+  /// 下载 / 解包完就在后台把包里的大脚本编成字节码（第一次打开也不用解析）。立刻返回；马上打开也没关系，
+  /// 实例碰到正在编的脚本会等它编完。[dataDir] 与之后建视图给的同一个（不给用默认的 game-data）
+  static Future<void> precompile(String gameDir, {String? dataDir}) async {
+    if (kIsWeb || !Platform.isAndroid) return;
+    await const MethodChannel('dev.minirender/engine').invokeMethod<void>('precompileGame', {'dir': gameDir, 'dataDir': dataDir ?? ''});
+  }
+
   @override
   State<MiniGameView> createState() => _MiniGameViewState();
 }

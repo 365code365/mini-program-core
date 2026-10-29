@@ -2,7 +2,10 @@
 //
 // loading 页的流程与微信一致：先盖一层「图标 + 名字 + 三个跳动的点」，后面同时下载、解包、建引擎；
 // 引擎的第一条 page 事件到了才把这层淡出 —— 冷启动加载字体那几百毫秒也在 loading 底下，不露白屏。
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:mini_render/mini_render.dart' show MiniGameView;
 
 import '../main.dart' show MiniAppPage;
 import 'game_page.dart';
@@ -132,6 +135,8 @@ class _LaunchState extends State<MiniStoreLaunchPage> {
       debugPrint('[商店] 打开 ${p.app.id} ${p.app.appId} v${p.app.version} $why → ${p.dir} 起始页 ${widget.link.route ?? '首页'}');
       StoreLinks.currentAppId = p.app.appId;
       widget.store.touch(p.app);
+      // 小游戏：字节码在后台编，与平台视图建实例并行
+      if (p.app.isGame) unawaited(MiniGameView.precompile(p.dir));
       if (mounted) {
         setState(() {
           _app = p.app;
