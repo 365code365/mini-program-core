@@ -1,6 +1,6 @@
 import Foundation
 
-/// 把随 SDK 带的中文字体（思源黑体 CN 常规 / 粗体，Fonts/）交给引擎：建引擎实例之前设 `MINI_MAIN_FONT` / `MINI_BOLD_FONT`。
+/// 把随 SDK 带的中文字体（思源黑体 CN Regular / Medium，Fonts/）交给引擎：建引擎实例之前设 `MINI_MAIN_FONT` / `MINI_BOLD_FONT`。
 ///
 /// 为什么要自带字体：iOS 的苹方在 `FontServices.framework/CorePrivate/PingFangUI.ttc`，是苹果私有的 `hvgl` 轮廓格式
 /// （没有 glyf / CFF 表），引擎的光栅化器读不了；系统里也没有别的中文黑体（只有日文的 Hiragino）。
@@ -16,7 +16,9 @@ enum MiniFonts {
             return
         }
         setenv("MINI_MAIN_FONT", regular, 0)
-        if let bold = find("SourceHanSansCN-Bold") {
+        // 粗体用 Medium 而不是 Bold：微信 iOS 的粗体是苹方中粗（Semibold）。按每字墨量量过（48px）：
+        // 苹方 Semibold 905、思源 Bold 1019（黑出 13%，整段标题糊成一片）、思源 Medium 828 —— Medium 最接近
+        if let bold = find("SourceHanSansCN-Medium") {
             setenv("MINI_BOLD_FONT", bold, 0)
         }
     }()
