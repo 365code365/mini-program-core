@@ -11,6 +11,21 @@ App({
     console.log('📰 头条新闻 启动');
     this.settings = this.getSettings();
   },
+  /// 自定义导航栏的几何（navigationStyle: custom 的页面用）：与胶囊上下对齐、右边给胶囊让位。
+  /// statusBar 状态栏高、navHeight 导航条高（不含状态栏）、capsuleSpace 胶囊左边到屏幕右沿的距离（px）
+  navMetrics: function () {
+    if (this._nav) { return this._nav; }
+    var info = wx.getSystemInfoSync();
+    var sb = info.statusBarHeight || 20;
+    var mb = wx.getMenuButtonBoundingClientRect ? wx.getMenuButtonBoundingClientRect() : null;
+    var nav = { statusBar: sb, navHeight: 44, capsuleSpace: 96, windowWidth: info.windowWidth || 375 };
+    if (mb && mb.height) {
+      nav.navHeight = (mb.top - sb) * 2 + mb.height;
+      nav.capsuleSpace = nav.windowWidth - mb.left + 8;
+    }
+    this._nav = nav;
+    return nav;
+  },
 
   // ==================== 设置 ====================
 

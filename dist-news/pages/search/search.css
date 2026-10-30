@@ -2,11 +2,13 @@
 /* 搜索页 */
 .snav {
   background-color: #D43C33;
+  box-sizing: content-box;
   height: 44px;
   display: flex;
   flex-direction: row;
   align-items: center;
-  padding: 0 12px;
+  /* 自定义导航栏：右侧给胶囊按钮（约 87px + 边距）让位，否则「搜索」被压在胶囊下 */
+  padding: 0 95px 0 8px;
 }
 .snav-back {
   width: 28px;

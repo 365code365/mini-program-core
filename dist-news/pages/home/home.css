@@ -1,126 +1,148 @@
 /* 由 home.wxss 编译 */
-/* 频道栏 */
+/* 固定顶栏：状态栏 + 品牌 / 搜索 + 频道栏，一整块红色，信息流在下面滚 */
+.top-fixed {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 100;
+  background: linear-gradient(to bottom, #DC443A, #CF362E);
+}
+.top-fixed .nav-bar {
+  background: none;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+/* 频道栏（在红色顶栏里：白字，当前频道加粗加大、白色下划线） */
 .channel-bar {
-  background-color: #fff;
   white-space: nowrap;
   height: 42px;
-  border-bottom: 0.500px solid #EDEDED;
 }
-
 .channel-item {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 42px;
-  padding: 0 13px;
+  padding: 0 12px;
 }
-
 .channel-text {
   font-size: 15px;
-  color: #4A4A4A;
+  color: rgba(255, 255, 255, 0.78);
 }
-
 .channel-active .channel-text {
-  color: #D43C33;
+  color: #fff;
   font-weight: bold;
-  font-size: 16px;
+  font-size: 17px;
 }
-
 .channel-underline {
-  width: 18px;
+  width: 16px;
   height: 3px;
   border-radius: 1.500px;
-  background-color: #D43C33;
-  margin-top: 3px;
+  background-color: #fff;
+  margin-top: 2px;
 }
-
+/* 不在当前频道：下划线占位但不显示（切频道时文字不上下跳） */
+.channel-underline-off {
+  background-color: transparent;
+}
+/* 左右滑切频道：新频道的内容从滑动方向进来 */
+@keyframes slideInLeft { from { transform: translateX(48px); opacity: 0.4; } to { transform: translateX(0); opacity: 1; } }
+@keyframes slideInRight { from { transform: translateX(-48px); opacity: 0.4; } to { transform: translateX(0); opacity: 1; } }
+.slide-in-left {
+  animation: slideInLeft .22s ease-out both;
+}
+.slide-in-right {
+  animation: slideInRight .22s ease-out both;
+}
 /* 置顶要闻 */
 .top-news {
-  background-color: #FFF8F7;
-  padding: 9px 12px;
+  background-color: #fff;
+  padding: 11px 16px;
   display: flex;
   flex-direction: row;
   align-items: center;
-  border-bottom: 0.500px solid #F4E3E1;
+  border-bottom: 0.500px solid #F0F0F0;
 }
-
 .top-badge {
   font-size: 10px;
-  color: #fff;
-  background-color: #D43C33;
-  border-radius: 2px;
-  padding: 1.500px 5px;
-  margin-right: 7px;
+  color: #D43C33;
+  border: 0.500px solid #D43C33;
+  border-radius: 3px;
+  padding: 0 4px;
+  line-height: 15px;
+  margin-right: 8px;
 }
-
 .top-title {
   flex: 1;
-  font-size: 14px;
-  color: #1A1A1A;
+  font-size: 15px;
+  color: #222222;
   font-weight: bold;
 }
-
+/* 信息流：与上方要闻区留一道灰缝 */
+.feed {
+  margin-top: 8px;
+}
 /* 大图卡片 */
 .big-title {
   display: block;
-  font-size: 17px;
-  line-height: 23px;
-  color: #1A1A1A;
+  font-size: 18px;
+  line-height: 26px;
+  color: #222222;
   font-weight: bold;
 }
-
 .big-cover {
   width: 100%;
-  height: 170px;
-  border-radius: 4px;
-  margin-top: 8px;
+  height: 180px;
+  border-radius: 6px;
+  margin-top: 10px;
   background-color: #F0F0F0;
 }
-
 /* 左文右图 */
 .row-card {
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
+  align-items: stretch;
 }
-
 .row-left {
   flex: 1;
-  margin-right: 9px;
+  margin-right: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
-
 .row-title {
   display: block;
-  font-size: 15px;
-  line-height: 21px;
-  color: #1A1A1A;
+  font-size: 16px;
+  line-height: 23px;
+  color: #222222;
 }
-
 .row-thumb {
-  width: 110px;
-  height: 75px;
-  border-radius: 4px;
+  width: 114px;
+  height: 76px;
+  border-radius: 5px;
   background-color: #F0F0F0;
   flex-shrink: 0;
 }
-
 /* 三图 */
 .triple-imgs {
   display: flex;
   flex-direction: row;
-  margin-top: 8px;
+  margin-top: 9px;
+  /* 每张图右侧留 4px 缝，整行往右多伸 4px 抵掉最后一张的缝 */
+  margin-right: -4px;
 }
-
 .triple-img {
-  width: 108px;
+  flex: 1;
   height: 75px;
-  border-radius: 3px;
-  margin-right: 5px;
+  border-radius: 4px;
+  margin-right: 4px;
   background-color: #F0F0F0;
 }
-
 /* 热榜 */
+.hot-card {
+  margin-top: 8px;
+}
 .hot-head {
   display: flex;
   flex-direction: row;
@@ -128,90 +150,86 @@
   align-items: center;
   margin-bottom: 4px;
 }
-
 .hot-title {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: bold;
-  color: #1A1A1A;
+  color: #222222;
 }
-
 .hot-more {
   font-size: 12px;
-  color: #8A8A8A;
+  color: #999999;
 }
-
 .hot-item {
   display: flex;
   flex-direction: row;
   align-items: center;
-  padding: 8px 0;
+  padding: 10px 0;
   border-bottom: 0.500px solid #F5F5F5;
 }
-
 .hot-rank {
   width: 20px;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: bold;
   text-align: center;
 }
-
-.rank-top {
+.rank-1 {
   color: #D43C33;
 }
-
+.rank-2 {
+  color: #F0612E;
+}
+.rank-3 {
+  color: #F2A12E;
+}
 .rank-normal {
   color: #B5B5B5;
 }
-
 .hot-text {
   flex: 1;
   font-size: 14px;
-  color: #2A2A2A;
-  margin-left: 6px;
+  color: #222222;
+  margin-left: 8px;
 }
-
 .hot-heat {
   font-size: 11px;
-  color: #B5B5B5;
+  color: #B0B0B0;
 }
-
 .bottom-space {
   height: 55px;
 }
-
-/* ── 新增：要闻轮播 / 刷新提示 / 收藏动作 ── */
+/* ── 要闻轮播 / 刷新提示 / 收藏动作 ── */
 @keyframes spinRing { to { transform: rotate(360deg); } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
 .nav-hot {
   width: 28px;
   height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-left: 4px;
+  margin-left: 6px;
 }
 .focus-swiper {
   width: 100%;
-  height: 160px;
+  height: 170px;
   background-color: #fff;
 }
 .focus-item {
   width: 100%;
-  height: 160px;
+  height: 170px;
   position: relative;
 }
 .focus-img {
   width: 100%;
-  height: 160px;
+  height: 170px;
 }
 .focus-shade {
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
-  padding: 12px;
-  background-color: rgba(0, 0, 0, 0.35);
+  /* 底部留出 24px 给指示点，标题不再压在点上 */
+  padding: 32px 16px 24px;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.62));
   display: flex;
   flex-direction: column;
   /* 纵向 flex 的交叉轴默认 stretch，会把「要闻」标签拉成和标题一样宽
@@ -222,12 +240,14 @@
   font-size: 10px;
   color: #fff;
   background-color: #D43C33;
-  border-radius: 2px;
-  padding: 2px 5px;
-  margin-bottom: 5px;
+  border-radius: 3px;
+  padding: 0 5px;
+  line-height: 16px;
+  margin-bottom: 6px;
 }
 .focus-title {
-  font-size: 15px;
+  font-size: 16px;
+  line-height: 22px;
   color: #fff;
   font-weight: bold;
 }
@@ -249,12 +269,12 @@
 }
 .refresh-tx {
   font-size: 12px;
-  color: #8A8A8A;
+  color: #999999;
   margin-left: 7px;
 }
 .refreshed {
   background-color: #FFF3F2;
-  padding: 8px 12px;
+  padding: 8px 16px;
 }
 .anim-fade {
   animation: fadeIn .35s ease-out both;
@@ -273,6 +293,6 @@
 }
 .act-tx {
   font-size: 11px;
-  color: #8A8A8A;
+  color: #999999;
   margin-left: 3px;
 }

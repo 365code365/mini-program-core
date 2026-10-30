@@ -324,33 +324,95 @@ async function refreshDiag() {
   }));
 }
 
+// ── 编辑：展示信息 + 可选换代码包 ──
+// 不用 dialog 的 onclose：换包要上传几秒，失败时弹窗得留着显示错误，所以拦 submit、成功了再手动关
+let editing = null;
+let editPkg = null; // { kind: 'dir' | 'zip', files: File[] }
+
+function syncEditPkg() {
+  const p = $('epicked');
+  let text = '不换包，只改展示信息';
+  if (editPkg?.kind === 'dir') text = `文件夹「${editPkg.files[0].webkitRelativePath.split('/')[0]}」，${editPkg.files.length} 个文件`;
+  if (editPkg?.kind === 'zip') text = `${editPkg.files[0].name}（${(editPkg.files[0].size / 1048576).toFixed(2)} MB）`;
+  p.textContent = text;
+  p.classList.toggle('on', !!editPkg);
+  $('eclear').classList.toggle('hidden', !editPkg);
+  if (editing) $('ever').textContent = editPkg ? `v${editing.version} → v${editing.version + 1}` : `当前 v${editing.version}`;
+}
+
+for (const [id, kind] of [['epkgDir', 'dir'], ['epkgZip', 'zip']]) {
+  $(id).addEventListener('change', () => {
+    const files = [...$(id).files];
+    // 两个 input 只认最后选的那个：另一个清掉，免得保存时拿错
+    $(kind === 'dir' ? 'epkgZip' : 'epkgDir').value = '';
+    editPkg = files.length ? { kind, files } : null;
+    syncEditPkg();
+  });
+}
+$('eclear').addEventListener('click', () => {
+  $('epkgDir').value = '';
+  $('epkgZip').value = '';
+  editPkg = null;
+  syncEditPkg();
+});
+
 function edit(a) {
+  editing = a;
   $('ename').value = a.name;
   $('edesc').value = a.description || '';
   $('ecat').value = a.category || '其他';
   $('etags').value = (a.tags || []).join(', ');
   $('edev').value = a.developer || '';
   $('eorder').value = String(a.order ?? 1000);
-  const dlg = $('editDlg');
-  dlg.returnValue = '';
-  dlg.onclose = async () => {
-    if (dlg.returnValue !== 'ok') return;
-    const body = {
-      name: $('ename').value.trim(), description: $('edesc').value.trim(), category: $('ecat').value,
-      tags: $('etags').value, developer: $('edev').value.trim(),
-    };
-    const order = parseInt($('eorder').value, 10);
-    if (Number.isFinite(order)) body.order = order;
-    try {
-      await api('PATCH', `/api/admin/apps/${a.id}`, JSON.stringify(body), { 'Content-Type': 'application/json' });
-      toast('已保存');
-      await refresh();
-    } catch (err) {
-      fail(err);
-    }
-  };
-  dlg.showModal();
+  $('epkgDir').value = '';
+  $('epkgZip').value = '';
+  editPkg = null;
+  $('editMsg').className = 'msg';
+  $('editMsg').textContent = '';
+  $('esave').disabled = false;
+  syncEditPkg();
+  $('editDlg').showModal();
 }
+
+$('editForm').addEventListener('submit', async (e) => {
+  // 取消按钮（value=cancel）照常走 method=dialog 关掉
+  if (e.submitter?.value !== 'ok' || !editing) return;
+  e.preventDefault();
+  const a = editing;
+  const msg = $('editMsg');
+  msg.className = 'msg';
+  const body = {
+    name: $('ename').value.trim(), description: $('edesc').value.trim(), category: $('ecat').value,
+    tags: $('etags').value, developer: $('edev').value.trim(),
+  };
+  const order = parseInt($('eorder').value, 10);
+  if (Number.isFinite(order)) body.order = order;
+  $('esave').disabled = true;
+  try {
+    let version = null;
+    if (editPkg) {
+      let blob = editPkg.files[0];
+      if (editPkg.kind === 'dir') {
+        msg.textContent = `打包 ${editPkg.files.length} 个文件…`;
+        blob = await buildZip(editPkg.files);
+      }
+      msg.textContent = `上传 ${(blob.size / 1048576).toFixed(1)} MB…`;
+      // 先换包（版本号 +1），再 PATCH 展示信息：包里 store.meta.json 的字段不会盖掉弹窗里填的
+      const meta = await api('PUT', `/api/admin/apps/${encodeURIComponent(a.id)}`, blob, { 'Content-Type': 'application/zip' });
+      version = meta.version;
+    }
+    await api('PATCH', `/api/admin/apps/${encodeURIComponent(a.id)}`, JSON.stringify(body), { 'Content-Type': 'application/json' });
+    $('editDlg').close();
+    toast(version ? `已升级到 v${version}` : '已保存');
+    await refresh();
+  } catch (err) {
+    if (err.status === 401) { $('editDlg').close(); show('login'); return; }
+    msg.className = 'msg err';
+    msg.textContent = err.message;
+  } finally {
+    $('esave').disabled = false;
+  }
+});
 
 async function remove(a) {
   if (!await confirmDanger('删除小程序', `删除「${a.name}」（${a.id}）？客户端已下载的不受影响，列表里不再出现。`)) return;

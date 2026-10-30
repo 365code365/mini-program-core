@@ -178,6 +178,13 @@
   .msg.err { color: var(--danger); }
   .msg.ok { color: var(--brand); }
   .upload-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+  /* 编辑弹窗里换代码包：label 冒充按钮去点隐藏的 file input */
+  .pkg-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .btn-like { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid var(--line2); border-radius: 6px; background: #fff; cursor: pointer; font-size: 13px; color: var(--t1); }
+  .btn-like:hover { border-color: var(--brand); color: var(--brand); }
+  .btn-like .i { width: 15px; height: 15px; }
+  .pkg-picked { color: var(--t3); font-size: 13px; }
+  .pkg-picked.on { color: var(--brand); font-weight: 500; }
   .tips { margin: 0; padding-left: 18px; color: var(--t2); font-size: 13px; }
   .tips li { margin-bottom: 8px; }
 
@@ -358,7 +365,7 @@
 
 <dialog id="editDlg">
   <form method="dialog" id="editForm">
-    <div class="dlg-h">编辑展示信息</div>
+    <div class="dlg-h">编辑小程序</div>
     <div class="dlg-b">
       <div class="field"><label class="f" for="ename"><span class="req">*</span>名称</label><input id="ename" type="text" maxlength="200" required></div>
       <div class="field"><label class="f" for="edesc">描述</label><input id="edesc" type="text" maxlength="200"></div>
@@ -368,8 +375,21 @@
       </div>
       <div class="field"><label class="f" for="etags">搜索标签</label><input id="etags" type="text" maxlength="200" placeholder="逗号分隔"></div>
       <div class="field"><label class="f" for="edev">开发者</label><input id="edev" type="text" maxlength="60"></div>
+      <div class="field">
+        <label class="f">代码包<span class="help" id="ever" style="margin-left:8px"></span></label>
+        <div class="pkg-row">
+          <label class="btn-like" for="epkgDir"><svg class="i"><use href="#i-up"/></svg>选择文件夹</label>
+          <label class="btn-like" for="epkgZip"><svg class="i"><use href="#i-box"/></svg>选择 zip</label>
+          <span id="epicked" class="pkg-picked">不换包，只改展示信息</span>
+          <button id="eclear" type="button" class="link hidden">清除</button>
+        </div>
+        <input id="epkgDir" type="file" webkitdirectory multiple class="hidden" aria-label="新代码包文件夹">
+        <input id="epkgZip" type="file" accept=".zip,application/zip" class="hidden" aria-label="新代码包 zip">
+        <div class="help">选了新包，保存时上传并升级版本号；小程序 / 小游戏不能互换</div>
+      </div>
+      <div id="editMsg" class="msg" role="status"></div>
     </div>
-    <div class="dlg-f"><button value="cancel" formnovalidate>取消</button><button class="primary" value="ok">保存</button></div>
+    <div class="dlg-f"><button value="cancel" formnovalidate>取消</button><button id="esave" class="primary" value="ok">保存</button></div>
   </form>
 </dialog>
 <dialog id="confirmDlg">

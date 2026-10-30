@@ -3,77 +3,70 @@
 #app {
   background-color: #F4F5F6;
 }
-
 /* 顶部品牌栏（红底 + 搜索框） */
 .nav-bar {
   background-color: #D43C33;
-  padding: 8px 12px;
+  background: linear-gradient(to bottom, #DC443A, #CF362E);
+  padding: 8px 14px 9px;
   display: flex;
   flex-direction: row;
   align-items: center;
 }
-
 .nav-logo {
-  font-size: 17px;
+  font-size: 19px;
   font-weight: bold;
   color: #fff;
-  margin-right: 8px;
+  letter-spacing: 1px;
+  margin-right: 10px;
 }
-
 .nav-search {
   flex: 1;
-  background-color: rgba(255, 255, 255, 0.92);
-  border-radius: 15px;
-  height: 30px;
+  background-color: #ffffff;
+  border-radius: 16px;
+  height: 32px;
   display: flex;
   flex-direction: row;
   align-items: center;
-  padding: 0 10px;
+  padding: 0 12px;
 }
-
 .nav-search-text {
   font-size: 13px;
-  color: #9A9A9A;
-  margin-left: 5px;
+  color: #A3A3A3;
+  margin-left: 6px;
 }
-
 /* 卡片通用 */
 .card {
   background-color: #fff;
-  padding: 12px;
-  border-bottom: 0.500px solid #EDEDED;
+  padding: 14px 16px;
+  border-bottom: 0.500px solid #F0F0F0;
 }
-
 .meta-row {
   display: flex;
   flex-direction: row;
   align-items: center;
-  margin-top: 7px;
+  margin-top: 8px;
 }
-
 .meta-source {
   font-size: 11px;
-  color: #8A8A8A;
+  color: #999999;
 }
-
 .meta-dot {
-  width: 3px;
-  height: 3px;
+  width: 2px;
+  height: 2px;
   border-radius: 50%;
-  background-color: #CFCFCF;
+  background-color: #C4C4C4;
   margin: 0 6px;
 }
-
 .meta-comment {
   font-size: 11px;
-  color: #8A8A8A;
+  color: #999999;
 }
-
 .tag {
   font-size: 10px;
   color: #D43C33;
-  border: 0.500px solid #F0BDB9;
-  border-radius: 2px;
-  padding: 1px 4px;
-  margin-right: 5px;
+  border: 0.500px solid #F2B8B3;
+  border-radius: 3px;
+  padding: 0 4px;
+  line-height: 15px;
+  margin-right: 6px;
 }

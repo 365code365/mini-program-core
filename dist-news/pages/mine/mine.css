@@ -1,7 +1,8 @@
 /* 由 mine.wxss 编译 */
 .user-header {
   background-color: #D43C33;
-  padding: 22px 14px;
+  background: linear-gradient(to bottom, #DC443A, #C9322B);
+  padding: 24px 16px 48px;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -11,6 +12,7 @@
   width: 58px;
   height: 58px;
   border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.7);
   background-color: rgba(255, 255, 255, 0.35);
   flex-shrink: 0;
 }
@@ -31,7 +33,7 @@
   display: block;
   font-size: 12px;
   color: rgba(255, 255, 255, 0.85);
-  margin-top: 5px;
+  margin-top: 6px;
 }
 
 .user-arrow {
@@ -42,9 +44,12 @@
 /* 统计 */
 .stat-card {
   background-color: #fff;
-  margin: 10px;
-  border-radius: 7px;
-  padding: 13px 0;
+  /* 上浮压住红色头部，形成层次 */
+  margin: -32px 12px 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  padding: 15px 0;
+  position: relative;
   display: flex;
   flex-direction: row;
   justify-content: space-around;
@@ -58,30 +63,31 @@
 }
 
 .stat-value {
-  font-size: 19px;
-  color: #1A1A1A;
+  font-size: 20px;
+  color: #222222;
   font-weight: bold;
 }
 
 .stat-label {
   font-size: 11px;
-  color: #9A9A9A;
+  color: #999999;
   margin-top: 4px;
 }
 
 /* 菜单 */
 .menu-card {
   background-color: #fff;
-  margin: 0 10px 10px;
-  border-radius: 7px;
-  padding: 4px 12px 2px;
+  margin: 0 12px 10px;
+  border-radius: 8px;
+  padding: 4px 14px 2px;
 }
 
 .menu-head {
   display: block;
-  font-size: 13px;
-  color: #9A9A9A;
-  padding: 8px 0 4px;
+  font-size: 14px;
+  color: #222222;
+  font-weight: bold;
+  padding: 10px 0 4px;
 }
 
 .menu-item {
@@ -95,8 +101,8 @@
 .menu-text {
   flex: 1;
   font-size: 15px;
-  color: #2A2A2A;
-  margin-left: 9px;
+  color: #333333;
+  margin-left: 10px;
 }
 
 .menu-badge {
@@ -125,7 +131,7 @@
 
 .switch-label {
   font-size: 15px;
-  color: #2A2A2A;
+  color: #333333;
 }
 
 .slider-row {
@@ -133,7 +139,7 @@
 }
 
 .logout-wrap {
-  padding: 10px;
+  padding: 6px 12px 10px;
 }
 
 .logout-btn {

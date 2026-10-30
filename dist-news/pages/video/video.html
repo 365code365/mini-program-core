@@ -40,7 +40,7 @@
     </div>
     <div class="wx-view video-card">
       <div class="wx-view cover-wrap" data-tap="onPlay" data-ds-id="501">
-        <img class="wx-image cover" style="object-fit:cover" src="/assets/p_phone.jpg">
+        <img class="wx-image cover" style="object-fit:cover" src="/assets/n_flight_sunset.jpg">
         <div class="wx-view duration">
           <span class="wx-text duration-text">03:24</span>
         </div>
@@ -63,7 +63,7 @@
     </div>
     <div class="wx-view video-card">
       <div class="wx-view cover-wrap" data-tap="onPlay" data-ds-id="502">
-        <img class="wx-image cover" style="object-fit:cover" src="/assets/p_watch.jpg">
+        <img class="wx-image cover" style="object-fit:cover" src="/assets/n_ev.jpg">
         <div class="wx-view duration">
           <span class="wx-text duration-text">02:58</span>
         </div>
@@ -86,7 +86,7 @@
     </div>
     <div class="wx-view video-card">
       <div class="wx-view cover-wrap" data-tap="onPlay" data-ds-id="503">
-        <img class="wx-image cover" style="object-fit:cover" src="/assets/p_coffee.jpg">
+        <img class="wx-image cover" style="object-fit:cover" src="/assets/n_street1.jpg">
         <div class="wx-view duration">
           <span class="wx-text duration-text">05:12</span>
         </div>
@@ -125,8 +125,8 @@ if(href){e.preventDefault();e.stopPropagation();window.location.href=href;}
 <script>
 window.__PAGE_ROUTE__ = "pages/video/video";
 window.__PAGE_PULL_DOWN__ = false;
-window.__APP_ABOUT__ = {"appId":"","description":"","engine":"mini-render 0.1.0","entryPage":"pages/home/home","name":"头条新闻","pageCount":6};
-window.__WXML__ = [{"a":{"class":"page"},"c":[{"a":{"class":"nav-bar"},"c":[{"a":{"class":"nav-logo"},"c":[{"t":"tx","x":"视频"}],"n":"text","t":"el"},{"a":{"bindtap":"onSearchTap","class":"nav-search"},"c":[{"a":{"color":"#9A9A9A","size":"14","type":"search"},"c":[],"n":"icon","t":"el"},{"a":{"class":"nav-search-text"},"c":[{"t":"tx","x":"搜索短视频"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"filter-row"},"c":[{"a":{"bindtap":"onSelectFilter","class":"filter-chip {{currentFilter == item.id ? 'chip-active' : ''}}","data-id":"{{item.id}}","wx:for":"{{filters}}","wx:key":"id"},"c":[{"a":{"class":"chip-text"},"c":[{"t":"tx","x":"{{item.name}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"grow"},"c":[],"n":"view","t":"el"},{"a":{"class":"auto-line"},"c":[{"a":{"class":"auto-tx"},"c":[{"t":"tx","x":"自动播放"}],"n":"text","t":"el"},{"a":{"bindchange":"onAutoPlayChange","checked":"{{autoPlay}}","color":"#D43C33"},"c":[],"n":"switch","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"video-card","wx:for":"{{videos}}","wx:key":"id"},"c":[{"a":{"autoplay":"{{true}}","class":"player","controls":"{{true}}","loop":"{{false}}","muted":"{{false}}","src":"{{item.src}}","wx:if":"{{playingId === item.id}}"},"c":[],"n":"video","t":"el"},{"a":{"bindtap":"onPlay","class":"cover-wrap","data-id":"{{item.id}}","wx:else":""},"c":[{"a":{"class":"cover","mode":"aspectFill","src":"{{item.cover}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"duration"},"c":[{"a":{"class":"duration-text"},"c":[{"t":"tx","x":"{{item.duration}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"play-badge"},"c":[{"a":{"class":"play-icon"},"c":[{"t":"tx","x":"▶"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onOpenArticle","class":"video-title","data-id":"{{item.id}}"},"c":[{"t":"tx","x":"{{item.title}}"}],"n":"text","t":"el"},{"a":{"class":"meta-row"},"c":[{"a":{"class":"meta-source"},"c":[{"t":"tx","x":"{{item.author}}"}],"n":"text","t":"el"},{"a":{"class":"meta-dot"},"c":[],"n":"view","t":"el"},{"a":{"class":"meta-comment"},"c":[{"t":"tx","x":"{{item.plays}}次播放"}],"n":"text","t":"el"},{"a":{"class":"meta-dot"},"c":[],"n":"view","t":"el"},{"a":{"class":"meta-comment"},"c":[{"t":"tx","x":"{{item.comments}}评论"}],"n":"text","t":"el"},{"a":{"class":"grow"},"c":[],"n":"view","t":"el"},{"a":{"catchtap":"onToggleFav","class":"act","data-id":"{{item.id}}","data-title":"{{item.title}}"},"c":[{"a":{"color":"{{favMap['a' + item.id] ? '#D43C33' : '#bbbbbb'}}","size":"14","type":"{{favMap['a' + item.id] ? 'star' : 'star_o'}}"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"bottom-space"},"c":[],"n":"view","t":"el"}],"n":"view","t":"el"}];
+window.__APP_ABOUT__ = {"appId":"wx3b7d9f1a2c4e6b80","description":"头条新闻：资讯示例小程序","engine":"mini-render 0.1.0","entryPage":"pages/home/home","name":"news-app","pageCount":6};
+window.__WXML__ = [{"a":{"class":"page"},"c":[{"a":{"class":"nav-bar"},"c":[{"a":{"class":"nav-logo"},"c":[{"t":"tx","x":"视频"}],"n":"text","t":"el"},{"a":{"bindtap":"onSearchTap","class":"nav-search"},"c":[{"a":{"color":"#9A9A9A","size":"14","type":"search"},"c":[],"n":"icon","t":"el"},{"a":{"class":"nav-search-text"},"c":[{"t":"tx","x":"搜索短视频"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"filter-row"},"c":[{"a":{"bindtap":"onSelectFilter","class":"filter-chip {{currentFilter == item.id ? 'chip-active' : ''}}","data-id":"{{item.id}}","wx:for":"{{filters}}","wx:key":"id"},"c":[{"a":{"class":"chip-text"},"c":[{"t":"tx","x":"{{item.name}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"grow"},"c":[],"n":"view","t":"el"},{"a":{"class":"auto-line"},"c":[{"a":{"class":"auto-tx"},"c":[{"t":"tx","x":"自动播放"}],"n":"text","t":"el"},{"a":{"bindchange":"onAutoPlayChange","checked":"{{autoPlay}}","color":"#D43C33"},"c":[],"n":"switch","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"video-card","wx:for":"{{videos}}","wx:key":"id"},"c":[{"a":{"autoplay":"{{true}}","class":"player","controls":"{{true}}","loop":"{{false}}","muted":"{{false}}","src":"{{item.src}}","wx:if":"{{playingId === item.id}}"},"c":[],"n":"video","t":"el"},{"a":{"bindtap":"onPlay","class":"cover-wrap","data-id":"{{item.id}}","wx:else":"true"},"c":[{"a":{"class":"cover","mode":"aspectFill","src":"{{item.cover}}"},"c":[],"n":"image","t":"el"},{"a":{"class":"duration"},"c":[{"a":{"class":"duration-text"},"c":[{"t":"tx","x":"{{item.duration}}"}],"n":"text","t":"el"}],"n":"view","t":"el"},{"a":{"class":"play-badge"},"c":[{"a":{"class":"play-icon"},"c":[{"t":"tx","x":"▶"}],"n":"text","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"bindtap":"onOpenArticle","class":"video-title","data-id":"{{item.id}}"},"c":[{"t":"tx","x":"{{item.title}}"}],"n":"text","t":"el"},{"a":{"class":"meta-row"},"c":[{"a":{"class":"meta-source"},"c":[{"t":"tx","x":"{{item.author}}"}],"n":"text","t":"el"},{"a":{"class":"meta-dot"},"c":[],"n":"view","t":"el"},{"a":{"class":"meta-comment"},"c":[{"t":"tx","x":"{{item.plays}}次播放"}],"n":"text","t":"el"},{"a":{"class":"meta-dot"},"c":[],"n":"view","t":"el"},{"a":{"class":"meta-comment"},"c":[{"t":"tx","x":"{{item.comments}}评论"}],"n":"text","t":"el"},{"a":{"class":"grow"},"c":[],"n":"view","t":"el"},{"a":{"catchtap":"onToggleFav","class":"act","data-id":"{{item.id}}","data-title":"{{item.title}}"},"c":[{"a":{"color":"{{favMap['a' + item.id] ? '#D43C33' : '#bbbbbb'}}","size":"14","type":"{{favMap['a' + item.id] ? 'star' : 'star_o'}}"},"c":[],"n":"icon","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"}],"n":"view","t":"el"},{"a":{"class":"bottom-space"},"c":[],"n":"view","t":"el"}],"n":"view","t":"el"}];
 </script>
 <script src="../../common/runtime.js"></script>
 <script src="../../common/app.js"></script>
