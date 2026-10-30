@@ -50,7 +50,7 @@ if [ "${MINI_APP:-flutter}" = native ]; then
   # `STORE_APP=news-app`：量从服务器下载的小程序（与入口页点图标同一条路：MainActivity 带 storeApp 起来，
   # 盖 loading 层、下载解包、打开）。列表从商店服务取（STORE_URL 可换），已是最新版就不再下载
   if [ -n "${STORE_APP:-}" ]; then
-    STORE_URL="${STORE_URL:-http://64.83.22.217:9630}"
+    STORE_URL="${STORE_URL:-https://mini-program.51aihelp.com}"
     STORE_JSON=$(curl -s -m 8 "$STORE_URL/api/apps" | python3 -c "import json,sys; a=[x for x in json.load(sys.stdin)['apps'] if x['id']=='$STORE_APP']; print(json.dumps(a[0],ensure_ascii=True,separators=(',',':')) if a else '')")
     [ -n "$STORE_JSON" ] || { echo "⚠ 商店里没有 $STORE_APP（或连不上 $STORE_URL）"; exit 1; }
     # `STORE_PATH=pages/detail/detail?id=101`：直接打开到这一页（深链同一条路：storeLink 带 path / query）
@@ -71,7 +71,7 @@ else
   LAUNCH(){ D shell monkey -p $PKG -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; }
   # Flutter 示例也能量商店里的小程序：按 AppID 走深链（minirender://open，与外部 App / H5 拉起同一条路）
   if [ -n "${STORE_APP:-}" ]; then
-    STORE_URL="${STORE_URL:-http://64.83.22.217:9630}"
+    STORE_URL="${STORE_URL:-https://mini-program.51aihelp.com}"
     STORE_KEY=$(curl -s -m 8 "$STORE_URL/api/apps/$STORE_APP" | python3 -c "import json,sys; print(json.load(sys.stdin).get('appId',''))")
     [ -n "$STORE_KEY" ] || { echo "⚠ 商店里没有 $STORE_APP（或连不上 $STORE_URL）"; exit 1; }
     OPEN_TAP=""

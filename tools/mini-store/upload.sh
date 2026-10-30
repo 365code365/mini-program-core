@@ -10,13 +10,13 @@
 # AppID 取包里 project.config.json 的 appid；没有就沿用这个 id 上次的，再没有就由服务器分配
 # （服务器会把最终的 AppID 写回包里的 project.config.json）。要强制指定：MINI_STORE_APPID=wx…
 #
-# 环境变量：MINI_STORE_URL（默认 http://64.83.22.217:9630）、MINI_STORE_USER（默认 admin）、MINI_STORE_PASS（必填）
+# 环境变量：MINI_STORE_URL（默认 https://mini-program.51aihelp.com）、MINI_STORE_USER（默认 admin）、MINI_STORE_PASS（必填）
 set -euo pipefail
 DIR="${1:?用法：upload.sh <小程序或小游戏目录> <id> [名称] [描述]}"
 ID="${2:?缺 id}"
 NAME="${3:-}"
 DESC="${4:-}"
-URL="${MINI_STORE_URL:-http://64.83.22.217:9630}"
+URL="${MINI_STORE_URL:-https://mini-program.51aihelp.com}"
 USER_="${MINI_STORE_USER:-admin}"
 : "${MINI_STORE_PASS:?要 MINI_STORE_PASS}"
 [ -f "$DIR/app.json" ] || [ -f "$DIR/game.json" ] || { echo "✗ $DIR 下没有 app.json / game.json，不是小程序或小游戏目录" >&2; exit 1; }

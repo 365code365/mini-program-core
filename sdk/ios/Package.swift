@@ -27,6 +27,8 @@ let package = Package(
             name: "MiniRender",
             dependencies: ["MiniRenderFFI", "libEGL", "libGLESv2"],
             path: "Sources/MiniRender",
+            // 随包中文字体（思源黑体，OFL）：iOS 的苹方是私有轮廓格式，引擎读不了（MiniFonts.swift）
+            resources: [.copy("Fonts")],
             linkerSettings: [
                 // QuickJS / openh264 需要 C++ 运行时；网络走 ureq，需要系统库
                 .linkedLibrary("c++"),

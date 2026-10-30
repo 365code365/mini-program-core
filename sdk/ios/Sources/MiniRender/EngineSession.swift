@@ -126,6 +126,7 @@ final class EngineSession: NSObject {
         thread.perform { [self] in
             // 字体（约 0.35s）与 GPU（约 0.5s）跟建引擎并行。宽高 / dpr 必须与下面的 create_ex 一致，否则认领不上
             _ = mr_warmup(width, height, dpr, backend, device.totalMem, device.lowRam ? 1 : 0, device.osMajor)
+            MiniFonts.install() // 随包中文字体（iOS 的苹方引擎读不了，见 MiniFonts.swift）
             guard let h = mr_app_create_ex(appDir, dataDir, width, height, dpr, options) else {
                 NSLog("❌ mini-render：小程序打不开 \(appDir)（建引擎失败）")
                 return

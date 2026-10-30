@@ -18,6 +18,8 @@ mini-render 是 Rust 自绘的小程序渲染引擎（对标 Skyline）。这个
   s.author           = { 'mini-render' => 'dev@example.com' }
   s.source           = { :path => '.' }
   s.source_files     = 'Classes/**/*'
+  # 随包中文字体（思源黑体，OFL；Fonts/ 里是指向 sdk/ios 的软链）：iOS 的苹方是私有轮廓格式，引擎读不了（MiniFonts.swift）
+  s.resource_bundles = { 'MiniRenderFonts' => ['Fonts/*'] }
   s.dependency 'Flutter'
   s.platform = :ios, '13.0'
   # Angle/：小游戏 WebGL 用的 ANGLE 动态框架（引擎运行时 dlopen；tools/fetch-angle-ios.sh 放的两个软链，同 MiniRender.xcframework；软链整个目录 CocoaPods 不认）

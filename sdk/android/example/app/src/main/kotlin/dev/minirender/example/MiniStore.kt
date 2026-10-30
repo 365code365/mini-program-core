@@ -237,8 +237,8 @@ class MiniStore(ctx: Context, val baseUrl: String = DEFAULT_URL) {
         const val KIND_MINI = "miniprogram"
         const val KIND_GAME = "game"
 
-        /** 测试服务器（明文 HTTP，见 res/xml/network_security_config.xml） */
-        const val DEFAULT_URL = "http://64.83.22.217:9630"
+        /** 商店服务（HTTPS 域名，nginx 反代到 9630，见 tools/mini-store/nginx-mini-program.conf） */
+        const val DEFAULT_URL = "https://mini-program.51aihelp.com"
 
         /** 与服务器同一条规则：id 要当目录名用 */
         private val ID_RE = Regex("^[a-z0-9][a-z0-9._-]{0,63}$")

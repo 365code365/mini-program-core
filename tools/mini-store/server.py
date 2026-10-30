@@ -229,7 +229,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_package(p[2])
         if p == ['api', 'diag'] and method == 'POST':
             raw = self.read_body(diag.MAX_BODY)
-            return self.send_json(diag.receive(raw, self.headers.get('Content-Encoding', ''), self.client_address[0]))
+            return self.send_json(diag.receive(raw, self.headers.get('Content-Encoding', ''), self.client_ip()))
         if p == ['api', 'login'] and method == 'POST':
             return self.login()
         if p == ['api', 'logout'] and method == 'POST':
@@ -357,6 +357,14 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('Content-Security-Policy', "default-src 'self'; style-src 'self' 'unsafe-inline'")
         self.end_headers()
         self.wfile.write(data)
+
+    def client_ip(self):
+        # 域名走本机 nginx 反代（tools/mini-store/nginx-mini-program.conf）时对端永远是 127.0.0.1：
+        # 只信本机代理给的 X-Real-IP，外网直连 9630 时伪造这个头没用
+        ip = self.client_address[0]
+        if ip in ('127.0.0.1', '::1'):
+            return self.headers.get('X-Real-IP', '').strip() or ip
+        return ip
 
     def send_static(self, name, ctype):
         with open(os.path.join(STATIC, name), 'rb') as f:

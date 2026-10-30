@@ -96,6 +96,8 @@ pub struct TextRenderer {
     bold_font: OnceLock<Option<Font>>,
     /// 粗体字面的来源字体文件；`None` 表示这份渲染器没有可探测的文件（如内嵌字节）
     bold_src: Option<String>,
+    /// 粗体字面单独一个文件时（`MINI_BOLD_FONT`，iOS SDK 带的思源黑体 Bold）：不在主字体集合里探测，直接用它
+    bold_file: Option<String>,
     /// Emoji 字体
     emoji_font: Option<Font>,
     /// 符号字体（✕ ✓ ★ 等主字体缺失的字形）。
@@ -138,6 +140,7 @@ impl TextRenderer {
             main_font: font,
             bold_font: OnceLock::new(),
             bold_src: None,
+            bold_file: None,
             emoji_font: None,
             symbol_font: OnceLock::new(),
             fallback: None,
@@ -207,6 +210,9 @@ impl TextRenderer {
         self.bold_font
             .get_or_init(|| {
                 // 同一个字体文件（TTC）里的别的字面：与常规字面共用那份字节（mmap，见 text/load.rs）
+                if let Some(path) = &self.bold_file {
+                    return Self::face_from_file(path);
+                }
                 self.bold_src.as_ref()?;
                 Self::detect_bold_face(self.main_font.bytes(), &self.main_font)
             })

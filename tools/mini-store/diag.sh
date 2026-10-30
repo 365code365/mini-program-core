@@ -6,11 +6,11 @@
 #   bash tools/mini-store/diag.sh log <id|latest>      # 只打印日志正文（可接 grep）
 #   bash tools/mini-store/diag.sh rm <id>
 #
-# 环境变量：MINI_STORE_URL（默认 http://64.83.22.217:9630）、MINI_STORE_USER（默认 admin）、
+# 环境变量：MINI_STORE_URL（默认 https://mini-program.51aihelp.com）、MINI_STORE_USER（默认 admin）、
 # MINI_STORE_PASS（不给就读 sample/测试服务器.txt 第 7 行 —— 那个文件在 .gitignore 里，不进仓库）
 set -euo pipefail
 cd "$(dirname "$0")/../.."
-URL="${MINI_STORE_URL:-http://64.83.22.217:9630}"
+URL="${MINI_STORE_URL:-https://mini-program.51aihelp.com}"
 USER_="${MINI_STORE_USER:-admin}"
 if [ -z "${MINI_STORE_PASS:-}" ] && [ -f sample/测试服务器.txt ]; then
   MINI_STORE_PASS="$(sed -n 7p sample/测试服务器.txt)"

@@ -57,6 +57,11 @@ const IOS: &[&str] = &[
 pub fn main_font_candidates() -> Vec<Candidate> {
     #[allow(unused_mut)]
     let mut out = Vec::new();
+    // 宿主指定的字体排第一（iOS SDK 随包带的思源黑体，见 sdk/ios/Fonts/README.md）：
+    // iOS 的苹方是私有的 hvgl 轮廓格式，开源光栅化器都读不了，系统里也没有别的中文黑体
+    if let Some(p) = std::env::var_os("MINI_MAIN_FONT") {
+        out.push(Candidate::new(&p.to_string_lossy(), 0, false));
+    }
     #[cfg(target_os = "android")]
     {
         if let Ok(xml) = std::fs::read_to_string("/system/etc/fonts.xml") {

@@ -100,6 +100,12 @@ impl TextRenderer {
         None
     }
 
+    /// 单独文件里的粗体字面（读不出来就返回 None，调用方退回 faux-bold）
+    pub(super) fn face_from_file(path: &str) -> Option<Font> {
+        let data = map_font_file(path).ok()?;
+        Font::from_shared(data, settings(0)).ok()
+    }
+
     /// 从文件路径加载字体
     pub fn from_file(path: &str) -> Result<Self, String> {
         let font_data = map_font_file(path).map_err(|e| format!("Failed to read font file: {}", e))?;
@@ -196,6 +202,7 @@ impl TextRenderer {
                     println!("✅ Main font: {}", c.path);
                     // 粗体字面懒加载：多数页面首屏并不需要它，而它要多占一份完整字体
                     r.bold_src = Some(c.path);
+                    r.bold_file = std::env::var("MINI_BOLD_FONT").ok().filter(|_| std::env::var_os("MINI_MAIN_FONT").is_some());
                     renderer = Some(r);
                     break;
                 }

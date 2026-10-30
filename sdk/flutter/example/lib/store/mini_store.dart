@@ -16,8 +16,8 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart' show ValueNotifier;
 import 'package:mini_render/mini_render.dart';
 
-/// 服务地址：`flutter build apk --dart-define=MINI_STORE=http://host:port` 换
-const kMiniStoreUrl = String.fromEnvironment('MINI_STORE', defaultValue: 'http://64.83.22.217:9630');
+/// 服务地址：`flutter build apk --dart-define=MINI_STORE=https://host` 换
+const kMiniStoreUrl = String.fromEnvironment('MINI_STORE', defaultValue: 'https://mini-program.51aihelp.com');
 
 /// 与服务器同一条规则：id 要当目录名用
 final _idRe = RegExp(r'^[a-z0-9][a-z0-9._-]{0,63}$');

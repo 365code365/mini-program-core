@@ -13,8 +13,8 @@ import Foundation
 ///
 /// 全部是阻塞调用，放后台队列跑。
 final class MiniStore {
-    /// 测试服务器（明文 HTTP，Info.plist 的 NSAllowsArbitraryLoads 放行）。启动参数 `-store http://…` 可以换
-    static let defaultURL = "http://64.83.22.217:9630"
+    /// 商店服务（HTTPS 域名，nginx 反代，见 tools/mini-store/nginx-mini-program.conf）。启动参数 `-store https://…` 可以换
+    static let defaultURL = "https://mini-program.51aihelp.com"
 
     struct App: Equatable {
         var id: String
