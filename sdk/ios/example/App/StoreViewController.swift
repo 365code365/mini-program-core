@@ -26,6 +26,9 @@ final class StoreViewController: UIViewController {
     private var apps: [MiniStore.App] = []
     private var drawerOpen = false
 
+    /// 只竖屏（见 SceneDelegate 的 PortraitNavigationController）
+    override var supportedInterfaceOrientations: UIInterfaceOrientationMask { .portrait }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         // 白底：状态栏那一截跟标题栏连成一片；内容区的灰底在 scroll 上

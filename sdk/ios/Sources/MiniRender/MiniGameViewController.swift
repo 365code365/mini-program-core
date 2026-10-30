@@ -80,14 +80,47 @@ open class MiniGameViewController: UIViewController {
         newGame()
     }
 
-    /// 关掉本页（销毁实例）
+    /// 关掉本页（销毁实例）。多次调用只关一次
+    ///
+    /// 顺序：先收起本页，收起完了再转回竖屏、再调 [onClose]。从前先调 onClose：宿主在里面收起它自己那一页
+    /// （iOS 示例的 MiniViewController 就是），而那一刻它还弹着本页 —— UIKit 把「收起自己」当成「收起它弹出的那一页」，
+    /// 结果只收起了游戏，宿主那一页留在屏上：白屏（萌宠小岛点「⊙」）。
+    /// 转屏同理：本页还在最上面时它要横屏，退出前转不回去；收起之后按底下那一页要的方向转（iOS 16 起要显式请求，
+    /// 底下那页支持横屏的话系统不会自己转回竖屏 —— 玩完横屏游戏回来还是横的）
     public func close() {
+        guard !closing else { return }
+        closing = true
         gameView.close()
-        onClose?()
+        let done = onClose
         if let nav = navigationController, nav.viewControllers.first !== self {
             nav.popViewController(animated: true)
+            Self.restoreOrientation(for: nav)
+            done?()
+        } else if let p = presentingViewController {
+            p.dismiss(animated: true) {
+                Self.restoreOrientation(for: p)
+                done?()
+            }
         } else {
-            presentingViewController?.dismiss(animated: true)
+            done?()
+        }
+    }
+
+    private var closing = false
+
+    /// 游戏退出后转回 `vc` 要的方向：它支持竖屏就转竖屏（与微信一致，玩完横屏游戏回到竖着的页面）
+    public static func restoreOrientation(for vc: UIViewController) {
+        let mask = vc.supportedInterfaceOrientations
+        let want: UIInterfaceOrientationMask = mask.contains(.portrait) ? .portrait : mask
+        if #available(iOS 16.0, *) {
+            vc.setNeedsUpdateOfSupportedInterfaceOrientations()
+            guard let scene = vc.view.window?.windowScene else { return }
+            scene.requestGeometryUpdate(.iOS(interfaceOrientations: want)) { e in
+                NSLog("[mini-game] 转回竖屏没成功：%@", e.localizedDescription)
+            }
+        } else if want.contains(.portrait) {
+            UIDevice.current.setValue(UIInterfaceOrientation.portrait.rawValue, forKey: "orientation")
+            UIViewController.attemptRotationToDeviceOrientation()
         }
     }
 

@@ -11,7 +11,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard let windowScene = scene as? UIWindowScene else { return }
         let window = UIWindow(windowScene: windowScene)
-        let root = UINavigationController(rootViewController: StoreViewController())
+        let root = PortraitNavigationController(rootViewController: StoreViewController())
         root.setNavigationBarHidden(true, animated: false)
         window.rootViewController = root
         window.makeKeyAndVisible()
@@ -57,4 +57,9 @@ extension URLComponents {
         edit(&c)
         return c
     }
+}
+
+/// 入口页只竖屏（横屏只给小游戏）。UINavigationController 默认支持横屏，不锁的话玩完横屏游戏退回来还是横的
+final class PortraitNavigationController: UINavigationController {
+    override var supportedInterfaceOrientations: UIInterfaceOrientationMask { .portrait }
 }

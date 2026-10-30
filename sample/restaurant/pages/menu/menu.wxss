@@ -41,7 +41,7 @@ page { background: #ffffff; }
 .dot-badge-t { color: #ffffff; font-size: 20rpx; padding: 0 6rpx; }
 .dish-tail { height: 120rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; }
 
-.cartbar-wrap { position: fixed; left: 0; right: 0; bottom: 100rpx; z-index: 30; }
+.cartbar-wrap { position: fixed; left: 0; right: 0; bottom: calc(100rpx + env(safe-area-inset-bottom)); z-index: 30; }
 .promo { height: 56rpx; background: #fff6ef; display: flex; flex-direction: row; align-items: center; padding: 0 28rpx; }
 .promo-track { position: relative; width: 200rpx; height: 12rpx; border-radius: 6rpx; background: #ffe0cc; margin-right: 20rpx; }
 .promo-fill { height: 12rpx; border-radius: 6rpx; background: linear-gradient(90deg, #ffa04d, #ff5a1f); }
@@ -96,7 +96,7 @@ page { background: #ffffff; }
 
 .spec-mask { z-index: 70; }
 .spec {
-  position: fixed; left: 0; right: 0; bottom: 100rpx; z-index: 71; background: #ffffff;
+  position: fixed; left: 0; right: 0; bottom: calc(100rpx + env(safe-area-inset-bottom)); z-index: 71; background: #ffffff;
   border-radius: 28rpx 28rpx 0 0; padding: 32rpx 32rpx 40rpx 32rpx;
 }
 .spec-head { display: flex; flex-direction: row; align-items: center; }

@@ -58,7 +58,7 @@
 .tb-seat { font-size: 22rpx; color: #8a8f99; margin-top: 4rpx; }
 .foot-space { height: 260rpx; }
 .bottom {
-  position: fixed; left: 0; right: 0; bottom: 100rpx; padding: 20rpx 32rpx;
+  position: fixed; left: 0; right: 0; bottom: calc(100rpx + env(safe-area-inset-bottom)); padding: 20rpx 32rpx;
   background: #ffffff; border-top: 1rpx solid #eeeff1;
 }
 .scan-layer {

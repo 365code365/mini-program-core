@@ -3,7 +3,7 @@
   flex-direction: row;
   align-items: center;
   width: 100%;
-  height: 100rpx;
+  height: calc(100rpx + env(safe-area-inset-bottom));
   background: #ffffff;
   border-top: 1rpx solid #eeeff2;
   padding-bottom: env(safe-area-inset-bottom);

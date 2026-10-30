@@ -6,7 +6,7 @@
 //
 // iOS 上嵌原生 iOS SDK 的 MiniGameView（插件 GameViewFactory.swift）：引擎线程上屏，WebGL 主画布经 ANGLE 直接 swap 进
 // CAMetalLayer。转屏要由 Dart 做（Flutter 的控制器只认 SystemChrome 设的方向）：原生读 game.json / wx.setDeviceOrientation
-// 之后发 `orientation`，这里 setPreferredOrientations，退出时还原成 App 的默认（空列表 = Info.plist 里的那几种）。
+// 之后发 `orientation`，这里 setPreferredOrientations，退出时先转回竖屏、再还原成 App 的默认（空列表 = Info.plist 里的那几种）。
 // 其它平台画一行提示，不黑屏。
 import 'dart:convert';
 import 'dart:io' show Platform;
@@ -137,8 +137,13 @@ class _MiniGameViewState extends State<MiniGameView> {
     if (Platform.isIOS) _ch?.invokeMethod<void>('dispose').catchError((_) {});
     _ch?.setMethodCallHandler(null);
     widget.controller?._ch = null;
-    // 还原成 App 的默认方向（Android 由 GameView.kt 还原 Activity 的 requestedOrientation）
-    if (_oriented) SystemChrome.setPreferredOrientations(const []);
+    // 还原成 App 的默认方向（Android 由 GameView.kt 还原 Activity 的 requestedOrientation）。
+    // iOS 上直接给空列表（= Info.plist 里的那几种，含横屏）不会转回来：iOS 16 起只有当前方向不被支持时才转，
+    // 玩完横屏游戏回来还是横的。先要一次竖屏把它转回来，转完再放开成 App 的默认
+    if (_oriented) {
+      SystemChrome.setPreferredOrientations(const [DeviceOrientation.portraitUp]);
+      Future.delayed(const Duration(milliseconds: 800), () => SystemChrome.setPreferredOrientations(const []));
+    }
     super.dispose();
   }
 

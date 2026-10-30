@@ -31,6 +31,8 @@ final class MiniWindowController: NSWindowController, NSWindowDelegate {
     private(set) var link: StoreLink?
     var currentApp: MiniStore.App?
     private var currentRoute: String?
+    /// 当前视图的宿主 API 实现（见 newView：不留着就被释放）
+    private var hostApiImpl: DemoHostApis?
     private var generation = 0
     private var cover: NSView?
     private var coverStatus: NSTextField?
@@ -84,7 +86,10 @@ final class MiniWindowController: NSWindowController, NSWindowDelegate {
         let v = MiniProgramView(frame: window!.contentView!.bounds)
         v.autoresizingMask = [.width, .height]
         v.topInset = titleBarH
-        v.hostApis = DemoHostApis(window: window) { [weak self] args in self?.navigateToMiniProgram(args) }.apis
+        // 实例要留住：apis 里的闭包是 [weak self]，只取 .apis 的话它当场就释放了（iOS 示例同一个坑）
+        let hosts = DemoHostApis(window: window) { [weak self] args in self?.navigateToMiniProgram(args) }
+        hostApiImpl = hosts
+        v.hostApis = hosts.apis
         v.onAbout = { [weak self] about in self?.showMenu(about) }
         v.onClose = { [weak self] in self?.close() }
         v.onEvent = { [weak self] ev in

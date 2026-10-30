@@ -67,6 +67,9 @@ final class MiniViewController: UIViewController {
     }
 
     override var prefersHomeIndicatorAutoHidden: Bool { false }
+    /// 小程序页只竖屏（横屏只给小游戏，由 MiniGameViewController 要）：不锁的话玩完横屏游戏回来，
+    /// 系统看本页也支持横屏就不转回去（iOS 16 起只有当前方向不被支持时才自动转）
+    override var supportedInterfaceOrientations: UIInterfaceOrientationMask { .portrait }
 
     /// 外部链接来了（SceneDelegate 收到 `minirender://`）：就地换小程序
     func handle(_ l: StoreLink) { openStore(l) }
@@ -86,7 +89,11 @@ final class MiniViewController: UIViewController {
         let v = MiniProgramView(frame: view.bounds)
         v.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         // 登录、支付、定位、扫码……要 App 自己接的 wx.*
-        v.hostApis = DemoHostApis(presenter: self) { [weak self] args in self?.navigateToMiniProgram(args) }.apis
+        // 实例要留住：apis 里的闭包都是 [weak self]，只取 .apis 的话它当场就释放了，
+        // 之后每个要弹框的接口都回「fail host gone」（跳转中心点了没反应就是这个）
+        let hosts = DemoHostApis(presenter: self) { [weak self] args in self?.navigateToMiniProgram(args) }
+        hostApiImpl = hosts
+        v.hostApis = hosts.apis
         // 胶囊「•••」：微信式底部菜单（转发、收藏 / 重新进入、上传诊断日志、关于）
         v.onAbout = { [weak self] about in self?.showCapsuleMenu(about) }
         // 胶囊「⊙」：收起本页（从下往下退，与打开成对）
@@ -132,7 +139,9 @@ final class MiniViewController: UIViewController {
         if let g = game {
             game = nil
             g.gameView.close()
-            g.dismiss(animated: false)
+            g.dismiss(animated: false) { [weak self] in
+                if let self { MiniGameViewController.restoreOrientation(for: self) }
+            }
         }
         if opened { replaceView() }
         cover?.removeFromSuperview()
@@ -259,6 +268,9 @@ final class MiniViewController: UIViewController {
                 StoreSheets.Item(glyph: "ⓘ", label: "关于", onTap: about),
             ])
     }
+
+    /// 当前视图的宿主 API 实现（见 newMiniView：不留着就被释放）
+    private var hostApiImpl: DemoHostApis?
 
     /// `-gameReopen` 只做一次
     private static var reopened = false
