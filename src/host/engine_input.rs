@@ -72,10 +72,11 @@ impl MiniEngine {
         let hit = if on_fixed {
             self.interaction.hit_test_fixed(x, y).cloned()
         } else {
-            self.interaction
-                .hit_test(x, y)
-                .or_else(|| self.interaction.hit_test(x, actual_y))
-                .cloned()
+            // 正常流的元素按内容坐标登记，只能拿内容坐标（加了页面滚动量）去找。
+            // 从前先拿视口 y 找、找不到才用内容 y：页面滚过之后视口 y 几乎总能落在某个元素上 ——
+            // 正好是手指上方「滚动量」那么远的那一个，于是按下面那行、亮的是上面那行（iOS 真机，示例首页）。
+            // 点击本身走 tap.rs（一直用的内容坐标），所以跳转是对的、只有按压态亮错
+            self.interaction.hit_test_flow(x, actual_y).cloned()
         };
         if let Some(el) = hit {
             use crate::ui::interaction::InteractionType;

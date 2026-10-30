@@ -117,7 +117,8 @@ impl crate::MiniAppWindow {
                 // 只在覆盖层自己的元素里找（不能全局 hit_test 再过滤 —— 见 hit_test_fixed）
                 self.interaction.hit_test_fixed(x, y).cloned()
             } else {
-                self.interaction.hit_test(x, y).or_else(|| self.interaction.hit_test(x, actual_y)).cloned()
+                // 正常流只认内容坐标（与 SDK 的 engine_input.rs 同一条规则，那里写了为什么）
+                self.interaction.hit_test_flow(x, actual_y).cloned()
             };
             if let Some(el) = hit {
                 use mini_render::ui::interaction::InteractionType;
