@@ -1,7 +1,7 @@
 // 跑酷的模型工厂：角色、障碍（矮栏 / 高栏 / 地铁）、金币、楼房、路灯。都在开局前建好，游戏中途只从对象池里拿。
 // 贴图来自 js/art.js（AI 生成）；哪张没有就用纯色（tex() 返回 null，材质只吃 color）。
 //
-// draw call 是这里的预算：几何按「一个物体一种材质」来拼。
+// draw call 是这里的预算：几何按「一个物体一种材质」来拼；成批的（金币、楼房、路灯）在 world.js 里用 InstancedMesh 一种材质一次。
 // - 楼房：盒子五个面都贴同一张立面（顶面、底面从相机高度 4.3m 看不到 —— 楼最矮 7m），一栋一次；
 // - 金币：圆柱侧面的 UV 全挤到贴图边缘的一个金色点上，侧面与正面同一张图，一枚一次（三组材质就是三次）；
 // - 地铁：车身三组（侧面 / 车头 / 顶），其余零件纯色。
@@ -41,6 +41,32 @@ function make(THREE, art) {
   var metal = mat(0xb8bec8, 'metal', { shiny: 40, spec: 0x666666 }), dark = mat(0x30343c);
   function part(g, mt, sx, sy, sz, x, y, z, par) { var o = new THREE.Mesh(g, mt); o.scale.set(sx, sy, sz); o.position.set(x, y, z); par.add(o); return o; }
   function at(g, mt, x, y, z, par) { return part(g, mt, 1, 1, 1, x, y, z, par); }
+  // 一个障碍里同一种材质的零件拼成一块几何：矮栏 8 块 → 4 次 draw call、高栏 7 → 4、地铁 8 → 5
+  // （零件的位置 / 尺寸是死的，烘进顶点；整组照样按 Group 挪）
+  function bake(grp) {
+    grp.updateMatrixWorld(true);
+    var byMat = new Map(), keep = [];
+    grp.children.slice().forEach(function (o) {
+      if (!o.isMesh || Array.isArray(o.material)) { keep.push(o); return; }
+      var g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+      o.updateMatrix(); g.applyMatrix4(o.matrix);
+      if (!byMat.has(o.material)) byMat.set(o.material, []);
+      byMat.get(o.material).push(g);
+      grp.remove(o);
+    });
+    byMat.forEach(function (list, m) {
+      var merged = new THREE.BufferGeometry(), names = ['position', 'normal', 'uv'];
+      names.forEach(function (n) {
+        var total = 0, size = list[0].attributes[n].itemSize;
+        list.forEach(function (g) { total += g.attributes[n].count; });
+        var arr = new Float32Array(total * size), off = 0;
+        list.forEach(function (g) { arr.set(g.attributes[n].array, off); off += g.attributes[n].array.length; });
+        merged.setAttribute(n, new THREE.BufferAttribute(arr, size));
+      });
+      grp.add(new THREE.Mesh(merged, m));
+    });
+    return grp;
+  }
   function low() {
     var grp = new THREE.Group();
     part(boxG, mat(0xe63946, 'hazard', { rx: 2.4, ry: 0.5 }), 1.9, 0.38, 0.12, 0, 0.78, 0, grp);
@@ -50,7 +76,7 @@ function make(THREE, art) {
       part(boxG, dark, 0.14, 0.06, 0.7, x, 0.03, 0, grp);                                    // 脚
       at(new THREE.SphereGeometry(0.07, 8, 6), mat(0xffb703, null, { emissive: 0xcc6a00 }), x, 1.05, 0, grp);   // 警示灯
     });
-    return grp;
+    return bake(grp);
   }
   function high() {
     var grp = new THREE.Group();
@@ -61,7 +87,7 @@ function make(THREE, art) {
       part(boxG, metal, 0.12, 2.25, 0.12, x, 1.12, 0, grp);
       part(boxG, dark, 0.3, 0.08, 0.5, x, 0.04, 0, grp);
     });
-    return grp;
+    return bake(grp);
   }
   // 地铁：车身盒子的六个面按 [侧, 侧, 顶, 底, 车头, 车尾] 分组；BoxGeometry 自带的六组正好是这个顺序，把材质数组排成三种就行
   function train() {
@@ -77,7 +103,7 @@ function make(THREE, art) {
     });
     var shadow = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 13), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: 0.32, depthWrite: false }));
     shadow.rotation.x = -Math.PI / 2; shadow.position.y = 0.03; grp.add(shadow);
-    return grp;
+    return bake(grp);
   }
 
   // ───────── 金币：正面贴 AI 画的金币，侧面 UV 压到贴图上沿一个金色点 ─────────
@@ -87,28 +113,25 @@ function make(THREE, art) {
   coinG.clearGroups();
   var coinM = img.coin ? new THREE.MeshPhongMaterial({ map: tex('coin'), emissive: 0x3a2400, shininess: 60, specular: 0x886622 })
     : new THREE.MeshLambertMaterial({ color: 0xffd23f, emissive: 0x553300 });
-  function coin() { var c = new THREE.Mesh(coinG, coinM); c.rotation.x = Math.PI / 2; return c; }
+  // 金币、楼房、路灯在 world.js 里各用 InstancedMesh 画（一种材质一次 draw call），这里只给几何与材质
 
   // ───────── 楼房：四种立面，比例约束在立面图附近（宽:高 ≈ 1:2），不然窗户被拉扁 ─────────
   var FACADES = ['facade_a', 'facade_b', 'facade_c', 'facade_d'], FALL = [0xf4a261, 0xc8553d, 0x5b8fb8, 0x8fd1b8];
   var facadeMats = FACADES.map(function (n, k) { return mat(FALL[k], n); });
-  function building() { return new THREE.Mesh(boxG, facadeMats[0]); }
+  // 一栋楼 = 一条记录（位置、尺寸、用哪种立面），画的时候按立面归到四个 InstancedMesh 里
+  function building() { return { position: new THREE.Vector3(), scale: new THREE.Vector3(1, 1, 1), kind: 0, userData: {} }; }
   function shapeBuilding(m) {
     var d = 4.5 + Math.random() * 3, h = d * (1.6 + Math.random() * 0.9), w = d * (0.85 + Math.random() * 0.3);
     m.scale.set(w, h, d);
-    m.material = facadeMats[Math.floor(Math.random() * facadeMats.length)];
+    m.kind = Math.floor(Math.random() * facadeMats.length);
     return m;
   }
   // 路灯：站台外沿一排，给速度感一个近处的参照
   var poleM = mat(0x5c6370, null, { shiny: 20 }), lampM = mat(0xfff4d6, null, { emissive: 0xffe9a8 });
   var poleG = new THREE.CylinderGeometry(0.06, 0.08, 4.2, 8), armG = new THREE.BoxGeometry(0.9, 0.08, 0.1), headG = new THREE.BoxGeometry(0.36, 0.1, 0.22);
-  function lamp(side) {
-    var g = new THREE.Group();
-    var p = new THREE.Mesh(poleG, poleM); p.position.y = 2.1; g.add(p);
-    var a = new THREE.Mesh(armG, poleM); a.position.set(-side * 0.4, 4.15, 0); g.add(a);
-    var h = new THREE.Mesh(headG, lampM); h.position.set(-side * 0.8, 4.08, 0); g.add(h);
-    return g;
-  }
-  return { tex: tex, mat: mat, hero: hero, low: low, high: high, train: train, coin: coin, building: building, shapeBuilding: shapeBuilding, lamp: lamp, has: function (n) { return !!img[n]; } };
+  // 一盏灯三个零件：[几何, 材质, 相对灯座的 x（乘 -side）, y]
+  var lampParts = [[poleG, poleM, 0, 2.1], [armG, poleM, 0.4, 4.15], [headG, lampM, 0.8, 4.08]];
+  return { tex: tex, mat: mat, hero: hero, low: low, high: high, train: train, building: building, shapeBuilding: shapeBuilding,
+    boxG: boxG, facadeMats: facadeMats, coinG: coinG, coinM: coinM, lampParts: lampParts, has: function (n) { return !!img[n]; } };
 }
 module.exports = { make: make };

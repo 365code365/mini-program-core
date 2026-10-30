@@ -41,6 +41,26 @@ function make(THREE, aspect, art) {
   if (THREE.SRGBColorSpace) roadTex.colorSpace = THREE.SRGBColorSpace;
   var road = new THREE.Mesh(new THREE.PlaneGeometry(TRACK_W, ROAD_L), new THREE.MeshLambertMaterial({ map: roadTex }));
   road.rotation.x = -Math.PI / 2; road.position.z = -ROAD_L / 2 + 20; scene.add(road);
+  // 脚下的枕木 0.925m 一根，60fps 下每帧走 speed/60 米：14m/s 时是间距的 1/4，跑到 28m/s 正好半个间距 ——
+  // 马车轮效应，枕木看着停住、倒走、一顿一顿（「脚下特别卡」）。帧率本身是稳的（真机 60.0fps、没有掉帧），
+  // 是采样不够。做法同电影的运动模糊：叠一张沿跑动方向糊开的同一张道床，按每帧位移淡入，快了就看不清单根枕木
+  var tb = wx.createCanvas(); tb.width = 512; tb.height = 512;
+  var gb = tb.getContext('2d'), TAPS = 12, SPAN = 56;
+  for (var t = 0; t < TAPS; t++) {
+    var dy = (t / (TAPS - 1)) * SPAN;
+    gb.globalAlpha = 1 / (t + 1);                    // 逐张叠成平均（第 t 张占 1/(t+1)）
+    gb.drawImage(tc, 0, dy - 512); gb.drawImage(tc, 0, dy);
+  }
+  gb.globalAlpha = 1;
+  var blurTex = new THREE.CanvasTexture(tb);
+  blurTex.wrapS = THREE.ClampToEdgeWrapping; blurTex.wrapT = THREE.RepeatWrapping; blurTex.repeat.set(1, ROAD_REP); blurTex.anisotropy = 4;
+  if (THREE.SRGBColorSpace) blurTex.colorSpace = THREE.SRGBColorSpace;
+  var blurMat = new THREE.MeshLambertMaterial({ map: blurTex, transparent: true, opacity: 0, depthWrite: false,
+    polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+  var roadBlur = new THREE.Mesh(road.geometry, blurMat);
+  roadBlur.rotation.x = road.rotation.x; roadBlur.position.copy(road.position); roadBlur.visible = false; scene.add(roadBlur);
+  var SLEEPER = TRACK_W / 8, blurA = 0;
+  var lq = (wx.getLaunchOptionsSync && wx.getLaunchOptionsSync().query) || {}, BLUR = lq.blur !== '0';   // blur=0：关掉（对照用）
   // 钢轨：每条道两根，沿 z 一样，所以不卷
   var railG = new THREE.BoxGeometry(0.09, 0.14, ROAD_L), railM = M.mat(0xc9ced6, 'metal', { shiny: 80, spec: 0xaaaaaa });
   [-1, 0, 1].forEach(function (l) { [-0.72, 0.72].forEach(function (o) { var r = new THREE.Mesh(railG, railM); r.position.set(l * LANE + o, 0.07, road.position.z); scene.add(r); }); });
@@ -67,13 +87,53 @@ function make(THREE, aspect, art) {
   }
   [-1, 1].forEach(function (side) {
     farZ[side] = KILL_Z + 4;
-    while (farZ[side] > SPAWN_Z - 30) { var m = M.building(); m.userData.side = side; placeBuilding(m, side); scene.add(m); buildings.push(m); }
+    while (farZ[side] > SPAWN_Z - 30) { var m = M.building(); m.userData.side = side; placeBuilding(m, side); buildings.push(m); }
   });
   var lamps = [], LAMP_GAP = 16;
   for (var li = 0; li < 20; li++) {
-    var side = li % 2 ? 1 : -1, lp = M.lamp(side);
-    lp.position.set(side * (TRACK_W / 2 + PLAT_W - 0.5), 0.4, KILL_Z - (li >> 1) * LAMP_GAP - (side > 0 ? LAMP_GAP / 2 : 0));
-    scene.add(lp); lamps.push(lp);
+    var side = li % 2 ? 1 : -1;
+    lamps.push({ side: side, position: new THREE.Vector3(side * (TRACK_W / 2 + PLAT_W - 0.5), 0.4, KILL_Z - (li >> 1) * LAMP_GAP - (side > 0 ? LAMP_GAP / 2 : 0)) });
+  }
+
+  // ───────── 成批的东西一种材质一次 draw call（InstancedMesh）─────────
+  // 从前楼房、路灯（三个零件）、金币一个网格一次：一帧 230~300 次 draw call，three.js 每次都要在 JS 里设程序、传矩阵、
+  // 绑属性 —— iPhone 上 3D 那一段 5.4ms，线程被系统排到能效核上时 16ms，60fps 撑不住、掉到 30（「一卡一卡」）。
+  // 现在楼房 4 次（四种立面）、路灯 3 次、金币 1 次。实例每帧整体重写矩阵（几十个，JS 里很便宜）；
+  // 包围球按实例算不划算（每帧都在动），关掉视锥剔除，画面外的实例由 GPU 裁掉
+  function instanced(geo, mat, n) {
+    var im = new THREE.InstancedMesh(geo, mat, n);
+    im.frustumCulled = false; im.count = 0; im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    scene.add(im); return im;
+  }
+  var bIM = M.facadeMats.map(function (m) { return instanced(M.boxG, m, buildings.length); });
+  var lIM = M.lampParts.map(function (pt) { return instanced(pt[0], pt[1], lamps.length); });
+  var COIN_MAX = 96, cIM = instanced(M.coinG, M.coinM, COIN_MAX);
+  var tmpM = new THREE.Matrix4(), tmpQ = new THREE.Quaternion(), tmpE = new THREE.Euler(), tmpV = new THREE.Vector3(), ONE = new THREE.Vector3(1, 1, 1);
+  function syncInstances() {
+    var counts = [0, 0, 0, 0];
+    tmpQ.identity();
+    for (var i = 0; i < buildings.length; i++) {
+      var b = buildings[i], k = b.kind;
+      tmpM.compose(b.position, tmpQ, b.scale); bIM[k].setMatrixAt(counts[k]++, tmpM);
+    }
+    for (var j = 0; j < bIM.length; j++) { bIM[j].count = counts[j]; bIM[j].instanceMatrix.needsUpdate = true; }
+    for (var pi = 0; pi < lIM.length; pi++) {
+      var pt = M.lampParts[pi];
+      for (var li2 = 0; li2 < lamps.length; li2++) {
+        var lp2 = lamps[li2];
+        tmpV.set(lp2.position.x - lp2.side * pt[2], lp2.position.y + pt[3], lp2.position.z);
+        tmpM.compose(tmpV, tmpQ, ONE); lIM[pi].setMatrixAt(li2, tmpM);
+      }
+      lIM[pi].count = lamps.length; lIM[pi].instanceMatrix.needsUpdate = true;
+    }
+    var nc = 0;
+    for (var ci = 0; ci < coins.length && nc < COIN_MAX; ci++) {
+      var c = coins[ci];
+      if (!c.visible) continue;
+      tmpE.set(Math.PI / 2, 0, c.rotation.z); tmpQ.setFromEuler(tmpE);
+      tmpM.compose(c.position, tmpQ, ONE); cIM.setMatrixAt(nc++, tmpM);
+    }
+    cIM.count = nc; cIM.instanceMatrix.needsUpdate = true;
   }
 
   // ───────── 障碍与金币的对象池 ─────────
@@ -87,9 +147,10 @@ function make(THREE, aspect, art) {
     return o;
   }
   var coinPool = [];
+  // 一枚金币 = 一条记录，画在 cIM 里（syncInstances）
   function takeCoin() {
     var c = coinPool.pop();
-    if (!c) { c = M.coin(); scene.add(c); }
+    if (!c) c = { position: new THREE.Vector3(), rotation: { z: 0 }, visible: false, userData: {} };
     c.visible = true; coins.push(c);
     return c;
   }
@@ -136,6 +197,11 @@ function make(THREE, aspect, art) {
   function scroll(dz) {
     roadScroll += dz;
     roadTex.offset.y = (roadScroll / TRACK_W) % 1;
+    blurTex.offset.y = roadTex.offset.y;
+    // 每帧位移占枕木间距的比例：0.3 以下看得清单根（开局 14m/s 是 0.25），0.45 起全糊（0.5 就是马车轮效应的折返点）
+    var want = Math.min(1, Math.max(0, (Math.abs(dz) / SLEEPER - 0.3) / 0.15));
+    blurA += (want - blurA) * 0.1;                     // 慢慢跟：加速是渐变的，透明度别一帧一跳
+    blurMat.opacity = blurA; roadBlur.visible = BLUR && blurA > 0.01;
     if (platTex) platTex.offset.y = (roadScroll / 4) % 1;
     farZ['-1'] += dz; farZ['1'] += dz;                 // 先挪「最远处」：回收的楼接在挪过之后的末尾
     for (var i = 0; i < buildings.length; i++) {
@@ -152,6 +218,7 @@ function make(THREE, aspect, art) {
       camShake = 0; pose.reset();
       for (var z = -40; z > SPAWN_Z; z -= 22) spawnRow(z);
       nextAt = 0;
+      syncInstances();
     },
     // 推进一帧：返回 true = 撞上了
     step: function (dt, speed, p, onCoin) {
@@ -182,6 +249,7 @@ function make(THREE, aspect, art) {
         return true;
       });
       if (hit) camShake = 0.4;
+      syncInstances();
       return hit;
     },
     // 前方 range 格内这条道上最近的障碍（自动驾驶用）

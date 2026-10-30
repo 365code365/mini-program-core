@@ -90,6 +90,8 @@ final class GameSession: NSObject {
     private var wakeTimer: Timer?
     private var sensors: GameSensors?
     private var audio: GameAudioSession?
+    /// 帧统计（`-gameStats 1`，GameFrameStats.swift）；不开时是 nil
+    private let stats: GameFrameStats? = GameFrameStats.enabled ? GameFrameStats() : nil
 
     init(dir: String) {
         self.dir = dir
@@ -277,7 +279,10 @@ final class GameSession: NSObject {
         appliedFps = fps
         if #available(iOS 15.0, *) {
             let f = Float(fps)
-            l.preferredFrameRateRange = CAFrameRateRange(minimum: min(f, 30), maximum: f, preferred: f)
+            // 下限 = 目标：要的就是这个帧率，不让系统按「掉到 30 也行」去排。
+            // 注意它管不住调度：系统照样会把这条线程挪到能效核、降频（iPhone 16 Pro Max 上同一帧 JS 5.8ms ↔ 16ms），
+            // 掉不掉到 30 由自适应帧率决定（src/game/fps_governor.rs：真超一帧才降，降了会试探着回来）
+            l.preferredFrameRateRange = CAFrameRateRange(minimum: f, maximum: f, preferred: f)
         } else {
             l.preferredFramesPerSecond = Int(fps)
         }
@@ -285,12 +290,21 @@ final class GameSession: NSObject {
 
     @objc private func tick(_ l: CADisplayLink) {
         guard let h = handle, running else { return }
+        let t0 = stats != nil ? CACurrentMediaTime() : 0
         let f = mr_game_pump_ex(h, UInt64(l.timestamp * 1_000_000))
-        if f & Int32(MR_FRAME_NEW) != 0 || forcePresent { present(h) }
+        let t1 = stats != nil ? CACurrentMediaTime() : 0
+        let presenting = f & Int32(MR_FRAME_NEW) != 0 || forcePresent
+        if presenting { present(h) }
+        if let st = stats {
+            let t2 = CACurrentMediaTime()
+            // 间隔按 vsync 时刻（l.timestamp）算：做完的时刻随 pump 长短抖，看着像掉帧、其实赶上了同一个 vsync
+            st.record(pumpMs: (t1 - t0) * 1000, presentMs: presenting ? (t2 - t1) * 1000 : nil, at: l.timestamp, target: appliedFps)
+        }
         if f & Int32(MR_FRAME_EVENTS) != 0 { drainEvents(h) }
         applyFrameRate(h, force: false)
         if f & Int32(MR_FRAME_WANTS_MORE) != 0 || forcePresent { return }
         l.isPaused = true
+        stats?.idle()
         if f & Int32(MR_FRAME_WAKE_AT) != 0 {
             let us = mr_game_next_wake_us(h)
             if us >= 0 {

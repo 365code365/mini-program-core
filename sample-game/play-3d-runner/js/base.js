@@ -116,6 +116,11 @@ function beep(freq, dur, type, vol, slide) {
     s.start();
   } catch (e) { ac = null; }
 }
+// 开局先把要用的音合成好：第一次合成在 JS 里逐个采样算（0.5 秒的音 1 万多个点），放在撞车那一帧就是一次掉帧
+function prepare(list) {
+  if (!ac) return;
+  list.forEach(function (a) { try { tone(Math.round(a[0] / 5) * 5, a[1], a[2] || 'square', a[3] || 0.15, a[4]); } catch (e) {} });
+}
 function buzz() { try { wx.vibrateShort && wx.vibrateShort({ type: 'light' }); } catch (e) {} }
 
 // ───────── 存档：读坏了当没有 ─────────
@@ -161,7 +166,7 @@ module.exports = {
   sys: sys, canvas: canvas, W: W, H: H, dpr: dpr, safe: safe, hudTop: hudTop,
   loop: loop, on: on, held: held,
   onHide: function (f) { hideCbs.push(f); }, onShow: function (f) { showCbs.push(f); },
-  beep: beep, buzz: buzz, setMuted: function (m) { muted = m; }, isMuted: function () { return muted; },
+  beep: beep, prepare: prepare, buzz: buzz, setMuted: function (m) { muted = m; }, isMuted: function () { return muted; },
   load: load, save: save,
   text: text, rrect: rrect, button: button, hit: hit, clamp: clamp, rand: rand
 };

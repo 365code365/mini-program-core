@@ -7,9 +7,10 @@ var THREE = require('libs/three.js');
 var Hud = require('js/hud.js');
 var World = require('js/world.js');
 var Art = require('js/art.js');
-var W = B.W, H = B.H, PR = B.sys.pixelRatio || 2;
+var q = (wx.getLaunchOptionsSync && wx.getLaunchOptionsSync().query) || {};
+var W = B.W, H = B.H, PR = Number(q.pr) || B.sys.pixelRatio || 2;   // pr= / aa=0：对照用
 
-var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: q.aa !== '0' });
 renderer.setPixelRatio(PR);
 renderer.setSize(W, H, false);
 var hud = Hud.make(THREE, renderer, W, H, PR);
@@ -19,7 +20,6 @@ var LANE = 2.2, GRAV = 40, JUMP_V = 13, SLIDE_T = 0.7;
 // 换道：临界阻尼弹簧（ω = 20/s）。从静止起步、平滑减速停在道中央，约 0.19s 走完 90%；
 // 中途再滑一下只改目标，速度接着用，不会顿一下。之前是 x += (目标 - x)·(1 - e^(-14dt))：第一帧就是最大速度，起步像被拽过去
 var LANE_W = 20;
-var q = (wx.getLaunchOptionsSync && wx.getLaunchOptionsSync().query) || {};
 var AUTO = q.auto === '1';
 
 var state, p, coverOut = 1, speed, dist, coins, best = Number(B.load('runner.best', 0)) || 0, clock = 0, overAt = 0, newBest = false, againBtn = null;
@@ -92,8 +92,43 @@ function autopilot() {
   else if (look.kind === 'high' && !p.slide && look.z > -speed * 0.3) act('down');
 }
 
+// 启动参数 prof=1：每 120 帧打一行各段 JS 耗时（更新 / 3D / 界面）与 draw call 数，真机上找慢在哪
+var PROF = q.prof === '1';
+var prof = { n: 0, up: 0, sc: 0, hud: 0, upMax: 0, scMax: 0, hudMax: 0 };
+// 数回收器跑了几次：每帧挂一个自环对象（引用计数放不掉，只有循环回收才收得走），被收走的回调按帧去重
+var gcFrame = 0, gcLast = -1, gcRuns = 0;
+var gcReg = PROF && typeof FinalizationRegistry === 'function' ? new FinalizationRegistry(function () { if (gcLast !== gcFrame) { gcLast = gcFrame; gcRuns++; } }) : null;
+function pnow() { return typeof performance === 'object' ? performance.now() : Date.now(); }   // 毫秒，墙上时钟
+function profLog() {
+  var n = prof.n, info = renderer.info.render;
+  console.log('[prof] ' + state + ' speed ' + speed.toFixed(1) + ' 节点 ' + prof.objs + ' draw ' + prof.calls + ' 三角形 ' + prof.tris + ' 矩阵 ' + (prof.mw / n).toFixed(2) +
+    ' | 更新 ' + (prof.up / n).toFixed(2) + '/' + prof.upMax.toFixed(1) + ' 3D ' + (prof.sc / n).toFixed(2) + '/' + prof.scMax.toFixed(1) +
+    ' 界面 ' + (prof.hud / n).toFixed(2) + '/' + prof.hudMax.toFixed(1) + 'ms' + (gcReg ? ' 回收 ' + gcRuns + ' 次' : ''));
+  gcRuns = 0;
+  prof = { n: 0, up: 0, sc: 0, hud: 0, upMax: 0, scMax: 0, hudMax: 0 };
+}
 function render() {
+  var t0 = PROF ? pnow() : 0;
+  if (PROF) {
+    // 矩阵更新单独计时：先手动更新一遍，render 里就不再更新（matrixWorldAutoUpdate 关着）
+    world.scene.matrixWorldAutoUpdate = false;
+    world.scene.updateMatrixWorld(); world.cam.updateMatrixWorld();
+    prof.mw = (prof.mw || 0) + (pnow() - t0);
+  }
   renderer.render(world.scene, world.cam);
+  if (PROF) {
+    var d = pnow() - t0; prof.sc += d; prof.scMax = Math.max(prof.scMax, d); t0 = pnow();
+    prof.calls = renderer.info.render.calls; prof.tris = renderer.info.render.triangles;
+    if (!prof.objs) { var n = 0, vis = 0; world.scene.traverse(function (o) { n++; if (o.visible) vis++; }); prof.objs = n + '/' + vis; }
+  }
+  render2d();
+  if (PROF) {
+    var d2 = pnow() - t0; prof.hud += d2; prof.hudMax = Math.max(prof.hudMax, d2);
+    if (gcReg) { var o = {}; o.self = o; gcReg.register(o, 0); gcFrame++; }
+    if (++prof.n >= 120) profLog();
+  }
+}
+function render2d() {
   hud.begin();
   if (cover && coverOut > 0) hud.image('cover', cover, 0, 0, W, H, coverOut);
   var y = B.hudTop + 14;
@@ -132,7 +167,10 @@ Art.load().then(function (art) {
     if (ia > sa) { t.repeat.set(sa / ia, 1); t.offset.set((1 - sa / ia) / 2, 0); } else { t.repeat.set(1, ia / sa); t.offset.set(0, (1 - ia / sa) / 2); }
     cover = t;
   }
+  // 与 act() / die() / 吃金币里的 B.beep 一一对应
+  B.prepare([[500, 0.05, 'sine', 0.07], [620, 0.08, 'triangle', 0.08, 1.5], [260, 0.08, 'sine', 0.07],
+    [1200, 0.06, 'triangle', 0.08], [140, 0.5, 'sawtooth', 0.14, 0.4]]);
   reset();
   if (AUTO) { state = 'play'; coverOut = 0; }
-  B.loop(update, render);
+  B.loop(PROF ? function (dt) { var t0 = pnow(); update(dt); var d = pnow() - t0; prof.up += d; prof.upMax = Math.max(prof.upMax, d); } : update, render);
 });

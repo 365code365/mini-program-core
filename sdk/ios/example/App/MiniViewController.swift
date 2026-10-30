@@ -201,7 +201,7 @@ final class MiniViewController: UIViewController {
             "appId": p.app.key,
             "launchOptions": l.launchOptions,
             // 跑不满 60 时稳在 30（帧间隔均匀，比 40fps 上下跳更顺）
-            "adaptiveFps": true,
+            "adaptiveFps": UserDefaults.standard.string(forKey: "adaptiveFps") != "0",   // `-adaptiveFps 0` 关（对照）
             "hostApis": GameHostApis.apis,
         ])
         let hosts = GameHostApis(presenter: vc) { [weak vc] in vc?.gameView }
