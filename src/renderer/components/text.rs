@@ -408,13 +408,16 @@ impl TextComponent {
             
             if multiline {
                 // 多行：顶部对齐换行绘制（在内容区内）
+                // 首行基线：iOS 按 WebKit 的半行距放（text/ios_box.rs），其余平台沿用「行顶 + 字号」
+                let first = crate::text::ios_baseline(size, line_height.max(size)).unwrap_or(size);
                 draw_text_wrapped_advanced(
-                    canvas, tr, text, cx, cy + size, size, cw, chh,
+                    canvas, tr, text, cx, cy + first, size, cw, chh,
                     line_height, letter_spacing, real_bold, &node.style, &paint
                 );
             } else {
                 // 单行：在内容区内垂直居中（基线 ≈ 内容区中心 + 0.34*字号）
-                let baseline = cy + chh / 2.0 + size * 0.34;
+                // iOS 按 SF 的上 / 下伸放（= 中心 + (上伸 − 下伸)/2，见 text/ios_box.rs）
+                let baseline = cy + crate::text::ios_baseline(size, chh).unwrap_or(chh / 2.0 + size * 0.34);
                 // 水平对齐：text-align center/right 时在内容区内做水平偏移
                 let align_dx = if cw > text_w {
                     match node.style.text_align {
@@ -477,6 +480,8 @@ fn draw_text_wrapped_advanced(
     
     // 确保 line_height 至少等于 font_size（默认已是字体自然行高）
     let actual_line_height = line_height.max(size);
+    // y 是首行基线；盒顶按调用方同一口径倒推（省略号判「下一行放不放得下」用）
+    let top = y - crate::text::ios_baseline(size, actual_line_height).unwrap_or(size);
     
     let mut current_y = y;
     let use_ellipsis = matches!(style.text_overflow, TextOverflow::Ellipsis);
@@ -504,7 +509,7 @@ fn draw_text_wrapped_advanced(
             // 仅当设置了 text-overflow:ellipsis 且下一行超出容器高度时，用省略号截断并停止；
             // 否则正常继续换行（宁可纵向溢出也不横向溢出/挤成一行）。
             if has_more && use_ellipsis && max_height > 0.0
-                && current_y + actual_line_height > (y - size) + max_height
+                && current_y + actual_line_height > top + max_height
             {
                 let rest: String = chars[*ls_i..].iter().collect();
                 draw_text_with_ellipsis(canvas, tr, &rest, x, current_y, size, max_width, letter_spacing, bold, paint);

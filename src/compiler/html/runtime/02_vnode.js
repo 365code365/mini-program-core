@@ -372,7 +372,10 @@
     if (tag === "progress") {
       var pct = Math.max(0, Math.min(100, parseFloat(interp(a["percent"], scope)) || 0));
       var color = interp(a["activeColor"] || a["active-color"] || a["color"] || "#09bb07", scope);
-      var h = '<div class="wx-progress-outer"><div class="wx-progress-inner" style="width:' + pct + "%;background:" + color + '"></div></div>';
+      // stroke-width / backgroundColor 与微信一致地生效（transpile/inner.rs 的编译期那份同一套）
+      var sw = parseFloat(interp(a["stroke-width"], scope)) || 6;
+      var bg = interp(a["backgroundColor"] || a["background-color"] || "#ebebeb", scope);
+      var h = '<div class="wx-progress-outer" style="height:' + sw + "px;background:" + bg + '"><div class="wx-progress-inner" style="width:' + pct + "%;background:" + color + '"></div></div>';
       if (truthy(evalWhole(a["show-info"], scope))) h += '<span class="wx-progress-info">' + Math.round(pct) + "%</span>";
       return h;
     }

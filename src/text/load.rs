@@ -29,6 +29,16 @@ fn settings(index: u32) -> FontSettings {
     FontSettings { scale: 40.0, collection_index: index, ..Default::default() }
 }
 
+/// 同上，可变字体取 `weight` 那一档（0 = 默认实例）
+fn settings_w(index: u32, weight: f32) -> FontSettings {
+    FontSettings { weight, ..settings(index) }
+}
+
+/// 同上，再取 `opsz` 那一档
+fn settings_wo(index: u32, weight: f32, opsz: f32) -> FontSettings {
+    FontSettings { opsz, ..settings_w(index, weight) }
+}
+
 impl TextRenderer {
     /// 共用一份字体字节建渲染器（mmap 的文件 / 内嵌字体），取第 `index` 个字面
     pub(crate) fn from_shared_index(bytes: FontBytes, index: u32) -> Result<Self, String> {
@@ -101,9 +111,10 @@ impl TextRenderer {
     }
 
     /// 单独文件里的粗体字面（读不出来就返回 None，调用方退回 faux-bold）
-    pub(super) fn face_from_file(path: &str) -> Option<Font> {
+    pub(super) fn face_from_file(spec: &str) -> Option<Font> {
+        let (path, weight, opsz) = crate::text_system::font_spec(spec);
         let data = map_font_file(path).ok()?;
-        Font::from_shared(data, settings(0)).ok()
+        Font::from_shared(data, settings_wo(0, weight, opsz)).ok()
     }
 
     /// 从文件路径加载字体
@@ -194,7 +205,8 @@ impl TextRenderer {
                 continue;
             }
             let Ok(data) = map_font_file(&c.path) else { continue };
-            match Self::from_shared_index(data, c.index) {
+            let parsed = Font::from_shared(data, settings_w(c.index, c.weight)).map(Self::with_main_font).map_err(|e| e.to_string());
+            match parsed {
                 Ok(mut r) => {
                     if c.need_cjk && !r.main_has_glyph('国') {
                         continue;
@@ -203,6 +215,7 @@ impl TextRenderer {
                     // 粗体字面懒加载：多数页面首屏并不需要它，而它要多占一份完整字体
                     r.bold_src = Some(c.path);
                     r.bold_file = std::env::var("MINI_BOLD_FONT").ok().filter(|_| std::env::var_os("MINI_MAIN_FONT").is_some());
+                    r.latin = super::latin::Latin::from_env();
                     renderer = Some(r);
                     break;
                 }

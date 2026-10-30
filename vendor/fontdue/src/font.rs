@@ -174,6 +174,12 @@ pub struct FontSettings {
     /// i.e. `Font::raserize_indexed`, as singular characters do not have enough context to be
     /// substituted.
     pub load_substitutions: bool,
+    /// 可变字体的字重轴（`wght`）取值；0 = 不设，用字体的默认实例。
+    /// mini-render：iOS 带的思源黑体是一个可变字体文件，常规 / 粗体从同一份字节里按字重取（对标苹方的各档字重）
+    pub weight: f32,
+    /// 可变字体的光学尺寸轴（`opsz`）取值；0 = 不设。iOS 的系统字体 SFUI.ttf 默认实例是 opsz 28（Display），
+    /// 正文字号要按 CoreText 的口径取 opsz = 字号（下限 17，即 Text 设计）
+    pub opsz: f32,
 }
 
 impl Default for FontSettings {
@@ -182,6 +188,8 @@ impl Default for FontSettings {
             collection_index: 0,
             scale: 40.0,
             load_substitutions: true,
+            weight: 0.0,
+            opsz: 0.0,
         }
     }
 }
@@ -296,10 +304,17 @@ impl Font {
         // mmap 进来的字体就整个进了物理内存（Hiragino 23MB），而引擎从来不问它
         let hash = OnceLock::new();
 
-        let face = match Face::parse(bytes, settings.collection_index) {
+        let mut face = match Face::parse(bytes, settings.collection_index) {
             Ok(f) => f,
             Err(e) => return Err(convert_error(e)),
         };
+        if settings.weight > 0.0 {
+            // 不是可变字体（没有 wght 轴）时 set_variation 返回 None，照默认实例画
+            let _ = face.set_variation(Tag::from_bytes(b"wght"), settings.weight);
+        }
+        if settings.opsz > 0.0 {
+            let _ = face.set_variation(Tag::from_bytes(b"opsz"), settings.opsz);
+        }
         let name = convert_name(&face);
 
         // Optionally get kerning values for the font. This should be a try block in the future.

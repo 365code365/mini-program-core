@@ -108,7 +108,7 @@ final class EngineHost: NSObject {
                 options: String, result: @escaping FlutterResult, onFailed: @escaping () -> Void) {
         textureId = textures.register(texture)
         thread.perform { [self] in
-            MiniFonts.install() // 随包中文字体（iOS 的苹方引擎读不了，见 MiniFonts.swift）
+            MiniFonts.install(dpr: dpr) // 字体与 iOS 排字口径（见 MiniFonts.swift）
             let created = mr_app_create_ex(appDir, dataDir, UInt32(max(1, width)), UInt32(max(1, height)), dpr, options)
             guard let h = created, mr_app_launch(h, route) == 1 else {
                 if let c = created { mr_app_destroy(c) } // 建出来了但首页打不开：别留着

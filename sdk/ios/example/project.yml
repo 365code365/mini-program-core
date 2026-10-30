@@ -13,7 +13,7 @@ name: MiniRenderExample
 options:
   bundleIdPrefix: dev.minirender
   deploymentTarget:
-    iOS: "13.0"
+    iOS: "15.0"  # Xcode 27 起最低 15.0
   createIntermediateGroups: true
 packages:
   MiniRender:

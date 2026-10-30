@@ -99,7 +99,10 @@ impl E {
     }
     /// 点第 `row` 行里靠左上的位置（控件都贴着行的左上角）
     fn tap_row(&mut self, row: usize) {
-        let (x, y) = (10.0, row as f32 * ROW + 10.0);
+        self.tap_at(10.0, row);
+    }
+    fn tap_at(&mut self, x: f32, row: usize) {
+        let y = row as f32 * ROW + 10.0;
         self.e.pointer_down(x, y);
         self.frames(1);
         self.e.pointer_up(x, y);
@@ -142,7 +145,8 @@ fn submit_reflects_user_edits_then_reset_clears_them() {
     e.tap_row(1);
     e.tap_row(4);
     e.tap_row(5);
-    e.tap_row(0);
+    // input 没有默认内边距（与微信一致），字从盒子左沿开始：点 x=1 才是第一个字之前
+    e.tap_at(1.0, 0);
     e.e.text_input("X");
     e.frames(2);
     e.tap_row(SUBMIT);

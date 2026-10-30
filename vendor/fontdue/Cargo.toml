@@ -52,7 +52,7 @@ optional = true
 
 [dependencies.ttf-parser]
 version = "0.21"
-features = ["opentype-layout"]
+features = ["opentype-layout", "variable-fonts", "gvar-alloc"]
 default-features = false
 
 [features]

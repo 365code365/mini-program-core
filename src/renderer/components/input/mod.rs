@@ -343,8 +343,17 @@ impl InputComponent {
             ts.flex_shrink = 1.0;
         }
         
-        // 默认 padding（要先定 padding，高度按「行高 + 上下内边距」推）
-        if !has_custom_padding {
+        // 默认 padding（要先定 padding，高度按「行高 + 上下内边距」推）。
+        // 单行 input 没有内边距（微信的 wx-input 与 H5 的 `.wx-input` 都是），文字贴着盒子左沿：
+        // 从前也给 12px，news 搜索页的占位文字比 iOS WebKit 参考右移 12px（@3x 量出 36 物理像素）。
+        // textarea 仍沿用旧的默认值
+        if !has_custom_padding && !is_textarea {
+            ts.padding = Rect { top: length(0.0), right: length(0.0), bottom: length(0.0), left: length(0.0) };
+            ns.padding_top = 0.0;
+            ns.padding_bottom = 0.0;
+            ns.padding_left = 0.0;
+            ns.padding_right = 0.0;
+        } else if !has_custom_padding {
             ts.padding = Rect { 
                 top: length(8.0 * sf), 
                 right: length(12.0 * sf), 

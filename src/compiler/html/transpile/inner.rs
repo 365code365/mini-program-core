@@ -113,9 +113,16 @@ pub(super) fn custom_inner_html(node: &WxmlNode) -> String {
                 .or_else(|| node.get_attr("active-color"))
                 .or_else(|| node.get_attr("color"))
                 .unwrap_or("#09bb07");
+            // stroke-width / backgroundColor 与微信一致地生效（从前写死 6px 高、#ebebeb 底：
+            // stroke-width="4" 的进度条在 H5 端粗出 2px，双端对比把这 2px 算成原生的错）
+            let stroke = node.get_attr("stroke-width")
+                .and_then(|v| v.trim().parse::<f32>().ok()).unwrap_or(6.0);
+            let bg = node.get_attr("backgroundColor")
+                .or_else(|| node.get_attr("background-color"))
+                .unwrap_or("#ebebeb");
             let mut s = format!(
-                "<div class=\"wx-progress-outer\"><div class=\"wx-progress-inner\" style=\"width:{}%;background:{}\"></div></div>",
-                percent, color
+                "<div class=\"wx-progress-outer\" style=\"height:{}px;background:{}\"><div class=\"wx-progress-inner\" style=\"width:{}%;background:{}\"></div></div>",
+                stroke, bg, percent, color
             );
             if is_truthy(node.get_attr("show-info")) {
                 s.push_str(&format!("<span class=\"wx-progress-info\">{}%</span>", percent as i32));

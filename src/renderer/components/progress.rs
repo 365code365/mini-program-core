@@ -57,9 +57,11 @@ impl ProgressComponent {
             ns.text_color = Some(active_color);
         }
         
-        // 进度条高度 - 使用固定的容器高度，内部绘制时使用 stroke_width
+        // 容器高度 = stroke-width（微信的 wx-progress 是 flex 行，条高就是 stroke-width，上下不留白）。
+        // 从前是 stroke+4 再加 4px 的 margin-bottom：news 热榜页进度条下面那行字比 iOS WebKit 参考低 7px。
+        // 带百分比文字时沿用旧高度，给 12px 的字留出位置
         if !has_custom_height {
-            let container_height = (stroke_width + 4.0) * sf;
+            let container_height = if show_info { stroke_width + 4.0 } else { stroke_width } * sf;
             ts.size.height = length(container_height);
         }
         
@@ -71,11 +73,6 @@ impl ProgressComponent {
         ts.flex_direction = FlexDirection::Row;
         if ts.align_items.is_none() {
             ts.align_items = Some(AlignItems::CENTER);
-        }
-        
-        // 默认底部间距
-        if lpa_length(ts.margin.bottom) == Some(0.0) {
-            ts.margin.bottom = length(4.0 * sf);
         }
         
         ns.custom_data = pct.clamp(0.0, 100.0);

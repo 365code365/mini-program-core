@@ -37,6 +37,12 @@ pub const LATIN_LINE_HEIGHT_FACTOR: f32 = 1.1777;
 /// 兼容旧调用点的默认系数（按含 CJK 处理，与小程序界面以中文为主的现实一致）。
 pub const NORMAL_LINE_HEIGHT_FACTOR: f32 = CJK_LINE_HEIGHT_FACTOR;
 
+mod ios_box; // iOS WebKit 的行盒与基线（MINI_LINE_BOX=ios@dpr），text/ios_box.rs
+mod latin; // iOS 西文直接用系统 SF（MINI_LATIN_FONT），text/latin.rs
+pub use ios_box::ios_baseline;
+use ios_box::ios_line_box;
+
+
 /// 该字符是否会让行盒采用 CJK 字体度量（中日韩及全角标点）。
 pub fn is_cjk_char(ch: char) -> bool {
     matches!(ch as u32,
@@ -98,6 +104,8 @@ pub struct TextRenderer {
     bold_src: Option<String>,
     /// 粗体字面单独一个文件时（`MINI_BOLD_FONT`，iOS SDK 带的思源黑体 Bold）：不在主字体集合里探测，直接用它
     bold_file: Option<String>,
+    /// iOS：西文字面用系统 SF（text/latin.rs）；None = 西文也走主字体
+    latin: Option<latin::Latin>,
     /// Emoji 字体
     emoji_font: Option<Font>,
     /// 符号字体（✕ ✓ ★ 等主字体缺失的字形）。
@@ -141,6 +149,7 @@ impl TextRenderer {
             bold_font: OnceLock::new(),
             bold_src: None,
             bold_file: None,
+            latin: None,
             emoji_font: None,
             symbol_font: OnceLock::new(),
             fallback: None,
@@ -227,6 +236,9 @@ impl TextRenderer {
     /// 按字重选择字体：粗体优先用真实粗体字面（主字体集合内的 W6 等），
     /// 该字面缺字形时回退到常规选择链。
     fn font_for_weight(&self, ch: char, bold: bool) -> &Font {
+        if let Some(font) = self.latin_face(ch, bold) {
+            return font;
+        }
         if bold {
             if let Some(font) = self.bold_face() {
                 if font.lookup_glyph_index(ch) != 0 {
@@ -324,6 +336,9 @@ impl TextRenderer {
         if !Self::is_emoji(ch) {
             return None;
         }
+        if let Some((e_size, e_extra, _)) = ios_box::ios_emoji(size) {
+            return crate::emoji::advance(ch, e_size).map(|a| a + e_extra);
+        }
         crate::emoji::advance(ch, size)
     }
 
@@ -350,9 +365,11 @@ impl TextRenderer {
                 continue;
             }
             // 彩色 emoji：走位图 blit（轮廓光栅化画不出位图字形，会变豆腐块）
-            if let Some(bitmap) = Self::color_emoji(ch, size) {
-                let draw_x = cursor_x + bitmap.left;
-                let draw_y = y - bitmap.bottom - bitmap.draw_h;
+            // iOS 把小字号的 emoji 放大画、前进宽度加宽（text/ios_box.rs 的 ios_emoji）；别的平台按字号原样画
+            let (e_size, e_extra, e_drop) = ios_box::ios_emoji(size).unwrap_or((size, 0.0, 0.0));
+            if let Some(bitmap) = Self::color_emoji(ch, e_size) {
+                let draw_x = cursor_x + e_extra / 2.0 + bitmap.left;
+                let draw_y = y + e_drop - bitmap.bottom - bitmap.draw_h;
                 canvas.draw_image(
                     &bitmap.rgba,
                     bitmap.width,
@@ -364,7 +381,7 @@ impl TextRenderer {
                     "scaleToFill",
                     0.0,
                 );
-                cursor_x += bitmap.advance + letter_spacing;
+                cursor_x += bitmap.advance + e_extra + letter_spacing;
                 continue;
             }
             // 先尝试从缓存获取（快速路径）
@@ -392,7 +409,7 @@ impl TextRenderer {
             };
             
             if metrics.width == 0 || metrics.height == 0 {
-                cursor_x += metrics.advance_width + letter_spacing;
+                cursor_x += self.advance_of(ch, size, bold, metrics.advance_width) + letter_spacing;
                 continue;
             }
 
@@ -403,7 +420,7 @@ impl TextRenderer {
             let rows: Vec<i32> = (0..metrics.height).map(|gy| (glyph_y + gy as f32).round() as i32).collect();
             canvas.blend_coverage(&cols, &rows, &bitmap, &alpha_lut, paint.color);
 
-            cursor_x += metrics.advance_width + letter_spacing;
+            cursor_x += self.advance_of(ch, size, bold, metrics.advance_width) + letter_spacing;
         }
     }
 
@@ -467,7 +484,7 @@ impl TextRenderer {
             return advance;
         }
         let bold = bold && self.has_bold_face();
-        self.font_for_weight(ch, bold).metrics(ch, size).advance_width
+        self.advance_of(ch, size, bold, self.font_for_weight(ch, bold).metrics(ch, size).advance_width)
     }
     
     /// 测量文本高度
@@ -500,6 +517,9 @@ impl TextRenderer {
     }
 
     fn line_height_with_factor(&self, size: f32, factor: f32) -> f32 {
+        if let Some(h) = ios_line_box(size) {
+            return h.max(size);
+        }
         // 至少一个字号高，避免异常字体度量导致行高塌陷
         (size * factor).max(size)
     }

@@ -18,11 +18,13 @@ pub struct Candidate {
     pub path: String,
     pub index: u32,
     pub need_cjk: bool,
+    /// 可变字体的字重（`wght` 轴）；0 = 字体默认实例
+    pub weight: f32,
 }
 
 impl Candidate {
     fn new(path: &str, index: u32, need_cjk: bool) -> Self {
-        Self { path: path.to_string(), index, need_cjk }
+        Self { path: path.to_string(), index, need_cjk, weight: 0.0 }
     }
 }
 
@@ -59,8 +61,9 @@ pub fn main_font_candidates() -> Vec<Candidate> {
     let mut out = Vec::new();
     // 宿主指定的字体排第一（iOS SDK 随包带的思源黑体，见 sdk/ios/Fonts/README.md）：
     // iOS 的苹方是私有的 hvgl 轮廓格式，开源光栅化器都读不了，系统里也没有别的中文黑体
-    if let Some(p) = std::env::var_os("MINI_MAIN_FONT") {
-        out.push(Candidate::new(&p.to_string_lossy(), 0, false));
+    if let Ok(spec) = std::env::var("MINI_MAIN_FONT") {
+        let (path, weight, _) = font_spec(&spec);
+        out.push(Candidate { weight, ..Candidate::new(path, 0, false) });
     }
     #[cfg(target_os = "android")]
     {
@@ -73,6 +76,17 @@ pub fn main_font_candidates() -> Vec<Candidate> {
     out.extend(IOS.iter().map(|p| Candidate::new(p, 0, false)));
     out.extend(MACOS.iter().map(|p| Candidate::new(p, 0, false)));
     out
+}
+
+/// 宿主给的字体：`路径`、`路径@字重` 或 `路径@字重@光学尺寸`（可变字体按 `wght` / `opsz` 轴取那一档，
+/// 如 `…/SourceHanSansCN-VF.otf@430`、iOS 系统的 `…/SFUI.ttf@400@17`）。返回 (路径, 字重, 光学尺寸)，0 = 不设
+pub fn font_spec(spec: &str) -> (&str, f32, f32) {
+    let num = |s: &str| s.parse::<f32>().ok().filter(|v| *v > 0.0);
+    let Some((rest, last)) = spec.rsplit_once('@').filter(|(_, v)| num(v).is_some()) else { return (spec, 0.0, 0.0) };
+    match rest.rsplit_once('@').filter(|(_, v)| num(v).is_some()) {
+        Some((path, w)) => (path, num(w).unwrap_or(0.0), num(last).unwrap_or(0.0)),
+        None => (rest, num(last).unwrap_or(0.0), 0.0),
+    }
 }
 
 /// 从 Android 的 `fonts.xml` 里取候选：先 `sans-serif` 家族的常规字面（须带汉字才用 ——

@@ -105,7 +105,7 @@ final class GameSession: NSObject {
         thread.perform { [self] in
             guard !disposed else { return }
             let t0 = CACurrentMediaTime()
-            MiniFonts.install() // 随包中文字体（画布 fillText 用，见 MiniFonts.swift）
+            MiniFonts.install(dpr: dpr) // 字体与 iOS 排字口径（画布 fillText 也用，见 MiniFonts.swift）
             guard let h = mr_game_create(dir, dataDir, max(1, width), max(1, height), dpr, options) else {
                 NSLog("❌ mini-game：建实例失败 \(dir)")
                 return

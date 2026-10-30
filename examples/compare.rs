@@ -33,7 +33,12 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 const VIEWPORT_WIDTH: u32 = 375;
 const VIEWPORT_HEIGHT: u32 = 667;
-const DEVICE_SCALE: u32 = 2;
+/// 设备像素比：默认 2（基线都按 2 定的）。`MINI_COMPARE_DPR=3` 按 iPhone 的 3 倍屏比（iOS 字体对照用，
+/// 窗体快照那边同样要 `--scale 3`）
+fn device_scale() -> u32 {
+    static S: std::sync::OnceLock<u32> = std::sync::OnceLock::new();
+    *S.get_or_init(|| std::env::var("MINI_COMPARE_DPR").ok().and_then(|v| v.parse().ok()).filter(|v| (1..=4).contains(v)).unwrap_or(2))
+}
 // 外壳窗口宽度：需明显超过 Chrome headless 的最小窗口宽度，令内嵌 375px iframe 不受影响。
 // iframe 自身建立精确 375px 视口，position:fixed 因而相对 375 解析（与原生一致），
 // 规避了直接加载时 Chrome 用 ~510px 布局视口导致的固定层居中偏移。
@@ -282,9 +287,9 @@ fn run() -> Result<(), String> {
         viewport: ViewportReport {
             css_width: VIEWPORT_WIDTH,
             css_height: VIEWPORT_HEIGHT,
-            device_scale_factor: DEVICE_SCALE,
-            expected_pixel_width: VIEWPORT_WIDTH * DEVICE_SCALE,
-            expected_pixel_height: VIEWPORT_HEIGHT * DEVICE_SCALE,
+            device_scale_factor: device_scale(),
+            expected_pixel_width: VIEWPORT_WIDTH * device_scale(),
+            expected_pixel_height: VIEWPORT_HEIGHT * device_scale(),
         },
         pixel_threshold: config.pixel_threshold,
         pages: page_reports,
@@ -548,11 +553,11 @@ fn render_rust_page(app: &AppSource, page: &PageSource, output: &Path) -> Result
         stylesheet,
         VIEWPORT_WIDTH as f32,
         VIEWPORT_HEIGHT as f32,
-        DEVICE_SCALE as f32,
+        device_scale() as f32,
     );
     let mut canvas = Canvas::new(
-        VIEWPORT_WIDTH * DEVICE_SCALE,
-        VIEWPORT_HEIGHT * DEVICE_SCALE,
+        VIEWPORT_WIDTH * device_scale(),
+        VIEWPORT_HEIGHT * device_scale(),
     );
     canvas.clear(Color::from_hex(0xf5f6f8));
 
@@ -609,7 +614,7 @@ fn render_custom_tab_bar(
         stylesheet,
         VIEWPORT_WIDTH as f32,
         VIEWPORT_HEIGHT as f32,
-        DEVICE_SCALE as f32,
+        device_scale() as f32,
     );
     renderer.render(canvas, &nodes, &data);
     Ok(())
@@ -651,7 +656,7 @@ fn capture_html_page(
     let screenshot_arg = format!("--screenshot={}", raw_output.display());
     let profile_arg = format!("--user-data-dir={}", absolute_profile.display());
     let window_arg = format!("--window-size={CAPTURE_SHELL_WIDTH},{VIEWPORT_HEIGHT}");
-    let scale_arg = format!("--force-device-scale-factor={DEVICE_SCALE}");
+    let scale_arg = format!("--force-device-scale-factor={}", device_scale());
     let wait_arg = format!("--virtual-time-budget={settle_ms}");
 
     // 某些 macOS Chrome 版本写完截图后仍会被 updater 后台任务挂住，不能直接
@@ -732,8 +737,8 @@ fn capture_html_page(
     let raw = image::open(&raw_output)
         .map_err(|error| format!("读取 Chrome 原始截图 {} 失败: {error}", raw_output.display()))?
         .to_rgba8();
-    let expected_width = VIEWPORT_WIDTH * DEVICE_SCALE;
-    let expected_height = VIEWPORT_HEIGHT * DEVICE_SCALE;
+    let expected_width = VIEWPORT_WIDTH * device_scale();
+    let expected_height = VIEWPORT_HEIGHT * device_scale();
     if raw.width() < expected_width || raw.height() < expected_height {
         let _ = fs::remove_file(&raw_output);
         return Err(format!(

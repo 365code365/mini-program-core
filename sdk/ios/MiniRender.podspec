@@ -19,7 +19,7 @@ Pod::Spec.new do |s|
   s.source       = { :git => 'https://github.com/your-org/mini-render.git', :tag => s.version.to_s }
 
   s.source_files        = 'Sources/MiniRender/**/*.swift'
-  # 随包中文字体（思源黑体，OFL）：iOS 的苹方是私有轮廓格式，引擎读不了（MiniFonts.swift）
+  # 随包中文字体 MiniRender Sans（思源黑体 + Inter，OFL，tools/ios-fonts）：iOS 的苹方是私有轮廓格式，引擎读不了（MiniFonts.swift）
   s.resource_bundles    = { 'MiniRenderFonts' => ['Sources/MiniRender/Fonts/*'] }
   # Angle/：小游戏 WebGL 用的 ANGLE 动态框架（引擎运行时 dlopen，build-mobile.sh 调 tools/fetch-angle-ios.sh 拉）
   s.vendored_frameworks = 'MiniRender.xcframework', 'Angle/libEGL.xcframework', 'Angle/libGLESv2.xcframework'
