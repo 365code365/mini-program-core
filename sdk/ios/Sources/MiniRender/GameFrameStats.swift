@@ -13,6 +13,14 @@ final class GameFrameStats {
         UserDefaults.standard.bool(forKey: "gameStats") || ProcessInfo.processInfo.environment["MINI_GAME_STATS"] == "1"
     }()
 
+    init() {
+        // 引擎库的加载基址：真机 xctrace 的样本只有地址时，拿它和 `atos -l <基址>` 符号化
+        var info = Dl_info()
+        if let sym = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "mr_game_pump_ex"), dladdr(sym, &info) != 0, let base = info.dli_fbase {
+            NSLog("⏱ [GAME] 引擎库 %@ 基址 %@", String(cString: info.dli_fname), String(describing: base))
+        }
+    }
+
     private var pumps: [Double] = []
     private var presents: [Double] = []
     private var gaps: [Double] = []
