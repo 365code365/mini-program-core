@@ -17,6 +17,12 @@ enum MiniFonts {
         lock.lock(); defer { lock.unlock() }
         guard !done else { return }
         done = true
+        // 彩色 emoji：iOS 的 Apple Color Emoji 不在 macOS 那个路径（在 Fonts/CoreAddition 下，字形是 emjc，
+        // 引擎 emoji_emjc.rs），按 CoreText 问到的路径告诉引擎。从前找不到，emoji 全画成豆腐块（farm001 商店的「🌱 种子」）
+        if ProcessInfo.processInfo.environment["MINI_EMOJI_FONT"] == nil,
+           let url = CTFontCopyAttribute(CTFontCreateWithName("AppleColorEmoji" as CFString, 17, nil), kCTFontURLAttribute) as? URL {
+            setenv("MINI_EMOJI_FONT", url.path, 0)
+        }
         guard ProcessInfo.processInfo.environment["MINI_MAIN_FONT"] == nil else { return }
         guard let regular = find("MiniRenderSans-Regular") else {
             NSLog("⚠️ mini-render：没找到随包字体 MiniRenderSans-Regular.ttf，中文会退到内置字体")

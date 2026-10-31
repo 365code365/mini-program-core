@@ -17,6 +17,8 @@ pub mod text_faces;
 // 彩色 Emoji 位图字形（Apple sbix）
 pub mod emoji;
 pub mod emoji_colr;
+/// iOS 彩色 emoji 的 `emjc` 字形解码
+pub mod emoji_emjc;
 // 小程序资源根目录（图片等相对路径解析）
 pub mod assets;
 

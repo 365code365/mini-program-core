@@ -95,3 +95,30 @@ fn f1_f5_字体与文字() {
     let narrow = ink(&mut h, 150, 360, 250, 420).expect("maxWidth 的字没画出来");
     assert!(narrow.2 - narrow.0 <= 11, "maxWidth=10：墨迹宽 ≤ 10，实际 {narrow:?}");
 }
+
+/// 画布 fillText 里的 emoji 画成彩色字形（不是豆腐块）：iOS 上 Apple Color Emoji 的字形是 emjc（emoji_emjc.rs），
+/// 这里在有彩色 emoji 字体的机器上跑同一条路（macOS 是 PNG），CPU / GPU 两个后端都判
+#[test]
+fn f6_emoji_彩色() {
+    if !mini_render::emoji::has_color_glyph('🌱') {
+        eprintln!("跳过：本机没有彩色 emoji 字体");
+        return;
+    }
+    let _g = serial();
+    for mode in ["cpu", "gpu"] {
+        let js = r#"var T = require('_lib/t.js'); var c = wx.createCanvas(), g = c.getContext('2d');
+g.fillStyle = '#fff'; g.fillRect(0, 0, 375, 667); g.font = '32px sans-serif'; g.fillStyle = '#333';
+function color(y) { var d = g.getImageData(10, y - 40, 340, 50).data, n = 0;
+  for (var k = 0; k < d.length; k += 4) { var mx = Math.max(d[k], d[k+1], d[k+2]), mn = Math.min(d[k], d[k+1], d[k+2]); if (mx - mn > 60) n++; } return n; }
+g.fillText('🌱 种子', 20, 60); g.fillText('每季利润约 💰', 20, 120); g.fillText('□ 种子', 20, 180);
+T.ev('emoji', { seed: color(60), coin: color(120), box: color(180) });
+T.ready('f6');"#;
+        let mut h = GameHarness::open_inline(&format!("f6-{mode}"), js, Opts { canvas2d: Some(mode), ..Default::default() });
+        h.vsyncs(2);
+        h.assert_no_fail();
+        let e = &h.events("emoji")[0];
+        let n = |k: &str| e[k].as_u64().unwrap();
+        assert!(n("seed") > 100 && n("coin") > 100, "{mode}：emoji 该是彩色字形：{e}");
+        assert_eq!(n("box"), 0, "{mode}：对照（灰字）没有彩色像素：{e}");
+    }
+}

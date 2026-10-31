@@ -16,11 +16,15 @@ use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::sync::{Arc, Mutex, OnceLock};
 
-/// 候选彩色 emoji 字体（按优先级）
+/// 候选彩色 emoji 字体（按优先级；`MINI_EMOJI_FONT` 最先，iOS 宿主按 CoreText 问到的路径设它，见 MiniFonts.swift）。
+/// iOS 的那份在 CoreAddition 下、字形是 `emjc`（emoji_emjc.rs），macOS 的是 PNG
 const EMOJI_FONT_PATHS: &[&str] = &[
     "/System/Library/Fonts/Apple Color Emoji.ttc",
     "/Library/Fonts/Apple Color Emoji.ttc",
     "/System/Library/Fonts/AppleColorEmoji.ttf",
+    "/System/Library/Fonts/CoreAddition/AppleColorEmoji-160px.ttc",
+    "/System/Library/Fonts/Core/AppleColorEmoji.ttc",
+    "/System/Library/Fonts/CoreAddition/AppleColorEmoji.ttc",
 ];
 
 /// 一枚按目标字号解码好的彩色字形位图
@@ -98,7 +102,8 @@ pub fn is_zero_width(ch: char) -> bool {
 
 impl ColorEmojiFont {
     fn load_system() -> Option<ColorEmojiFont> {
-        for path in EMOJI_FONT_PATHS {
+        let env = std::env::var("MINI_EMOJI_FONT").ok();
+        for path in env.iter().map(String::as_str).chain(EMOJI_FONT_PATHS.iter().copied()) {
             if !std::path::Path::new(path).exists() {
                 continue;
             }
@@ -240,10 +245,16 @@ impl ColorEmojiFont {
 
     fn build_bitmap(&self, gid: u16, size: f32) -> Option<EmojiBitmap> {
         let (ppem, strike) = self.pick_strike(size);
-        let (origin_x, origin_y, png) = self.glyph_png(strike, gid, 0)?;
-
-        let decoded = image::load_from_memory(&png).ok()?;
-        let rgba = decoded.to_rgba8();
+        let (origin_x, origin_y, png, flip) = self.glyph_png(strike, gid, 0)?;
+        let mut rgba = if png.starts_with(b"emj1") {
+            let (w, h, px) = crate::emoji_emjc::decode(&png)?;
+            image::RgbaImage::from_raw(w, h, px)?
+        } else {
+            image::load_from_memory(&png).ok()?.to_rgba8()
+        };
+        if flip {
+            image::imageops::flip_horizontal_in_place(&mut rgba);
+        }
         let (src_w, src_h) = (rgba.width(), rgba.height());
         if src_w == 0 || src_h == 0 {
             return None;
@@ -276,7 +287,8 @@ impl ColorEmojiFont {
     }
 
     /// 读取某 strike 下字形的图片数据：(originOffsetX, originOffsetY, 图片字节)
-    fn glyph_png(&self, strike: u64, gid: u16, depth: u8) -> Option<(i16, i16, Vec<u8>)> {
+    /// 返回的 bool：要不要左右翻（'flip' 字形）
+    fn glyph_png(&self, strike: u64, gid: u16, depth: u8) -> Option<(i16, i16, Vec<u8>, bool)> {
         if depth > 2 || gid >= self.num_glyphs {
             return None;
         }
@@ -296,7 +308,13 @@ impl ColorEmojiFont {
         let origin_y = be_i16(&data, 2);
         let graphic = &data[4..8];
         match graphic {
-            b"png " | b"jpg " | b"tiff" => Some((origin_x, origin_y, data[8..].to_vec())),
+            // iOS 的 'emjc'：苹果私有压缩格式，数据以 "emj1" 开头（emoji_emjc.rs）
+            b"png " | b"jpg " | b"tiff" | b"emjc" => Some((origin_x, origin_y, data[8..].to_vec(), false)),
+            // 'flip'：另一个字形左右翻过来
+            b"flip" if data.len() >= 10 => {
+                let alias = be_u16(&data, 8);
+                self.glyph_png(strike, alias, depth + 1).map(|(x, y, d, f)| (x, y, d, !f))
+            }
             // 'dupe'：数据是另一个字形号，复用其位图
             b"dupe" if data.len() >= 10 => {
                 let alias = be_u16(&data, 8);
