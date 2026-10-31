@@ -92,6 +92,8 @@ pub struct GameOptions {
     pub webgl: Option<String>,
     /// 高性能+ 模式的渲染端（remote/）：不执行 game.js，只回放页面（WKWebView）发来的画布 / WebGL 命令
     pub remote: bool,
+    /// 2D 画布后端：auto / cpu / gpu（`MINI_2D` 优先，canvas/gpu2d）
+    pub canvas2d: Option<String>,
 }
 
 /// 游戏实例报给 `wx.getSystemInfoSync().SDKVersion` 的基础库版本（决策 D-9 未定：取证后按已实现的 API 集合选定，
@@ -136,6 +138,7 @@ impl GameOptions {
             plugin_dir: v.get("pluginDir").and_then(|x| x.as_str()).map(str::to_string),
             webgl: v.get("webgl").and_then(|x| x.as_str()).map(str::to_string),
             remote: v.get("remote").and_then(|x| x.as_bool()).unwrap_or(false),
+            canvas2d: v.get("canvas2d").and_then(|x| x.as_str()).map(str::to_string),
             host_apis: v.get("hostApis").and_then(|x| x.as_array()).map(|a| a.iter().filter_map(|s| s.as_str().map(str::to_string)).collect()).unwrap_or_default(),
         })
     }
@@ -218,6 +221,13 @@ impl GameEngine {
         let mut app = MiniApp::new(width, height)?;
         // 小游戏自己的原生函数要在前置代码之前注册（game-canvas.js 加载时就取 __game_2d）
         let canvases = std::rc::Rc::new(std::cell::RefCell::new(canvas::GameCanvases::new((width, height))));
+        {
+            let mut cs = canvases.borrow_mut();
+            cs.mode2d = canvas::Mode2d::parse(opts.canvas2d.as_deref());
+            // 引擎内旋转（输出帧在 CPU 上转）、无头（逐字节基线）：auto 不走 GPU
+            cs.cpu_output = rotation.is_some() || opts.fixed_clock;
+            cs.gl_pref = std::env::var("MINI_WEBGL").ok().or(opts.webgl.clone()).unwrap_or_else(|| "auto".into());
+        }
         let pacer = std::rc::Rc::new(std::cell::RefCell::new(raf_pacer::RafPacer::default()));
         if opts.adaptive_fps && !opts.fixed_clock {
             pacer.borrow_mut().enable_adaptive();

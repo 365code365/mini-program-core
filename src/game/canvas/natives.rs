@@ -82,11 +82,17 @@ pub fn register(rt: &JsRuntime, canvases: Rc<RefCell<GameCanvases>>, images: Rc<
         let mut cs = c.borrow_mut();
         let ok = match cs.get(id) {
             Some(s) if kind != 0 && (s.kind == 0 || s.kind == kind) => {
-                if s.kind == 0 {
+                let first = s.kind == 0;
+                if first {
                     // HTML 默认基线是 alphabetic（小程序老接口的默认是 middle，这里按 HTML Canvas 来）
                     s.ctx.set_text_baseline("alphabetic");
                 }
                 s.kind = kind;
+                // 2D 后端在第一次拿上下文时定（gpu2d：MINI_2D / 创建选项 canvas2d）
+                #[cfg(feature = "webgl")]
+                if first {
+                    cs.choose_2d(id);
+                }
                 true
             }
             _ => false,
@@ -100,6 +106,8 @@ pub fn register(rt: &JsRuntime, canvases: Rc<RefCell<GameCanvases>>, images: Rc<
         let jpeg = text(args.0.get(1)).map(|t| t.contains("jpeg") || t.contains("jpg")).unwrap_or(false);
         let q = num(args.0.get(2));
         let mut cs = c.borrow_mut();
+        #[cfg(feature = "webgl")]
+        cs.sync_cpu(id);
         let out = match cs.get(id) {
             Some(s) if s.w > 0 && s.h > 0 => match s.ctx.encode(jpeg, if q.is_finite() { q } else { 0.92 }, None, (0, 0), (1.0, 1.0)) {
                 Ok(b) => format!("data:image/{};base64,{}", if jpeg { "jpeg" } else { "png" }, crate::wxfs::codec::b64(&b)),
@@ -119,6 +127,8 @@ pub fn register(rt: &JsRuntime, canvases: Rc<RefCell<GameCanvases>>, images: Rc<
         let jpeg = o.get("fileType").and_then(|v| v.as_str()) == Some("jpg");
         let region = (f("width") > 0.0 && f("height") > 0.0).then(|| (f("x") as f32, f("y") as f32, f("width") as u32, f("height") as u32));
         let mut cs = c.borrow_mut();
+        #[cfg(feature = "webgl")]
+        cs.sync_cpu(id);
         let r = match cs.get(id) {
             Some(s) => s.ctx.encode(jpeg, o.get("quality").and_then(|v| v.as_f64()).unwrap_or(1.0) as f32, region, (f("destWidth") as u32, f("destHeight") as u32), (1.0, 1.0)),
             None => Err("canvas not found".into()),
@@ -147,9 +157,45 @@ pub fn register(rt: &JsRuntime, canvases: Rc<RefCell<GameCanvases>>, images: Rc<
         let a = &args.0[2.min(args.0.len())..];
         let mut cs = c.borrow_mut();
         let is_main = cs.is_main(id);
+        // GPU 画布（gpu2d）：能在 GPU 上画的直接画；其余先把 GPU 上新画的读回，CPU 画完标「CPU 那边新」
+        #[cfg(feature = "webgl")]
+        let gpu = cs.is_gpu(id) && matches!(op, 1..=3 | 14 | 15 | 25 | 26 | 45..=47);
+        #[cfg(not(feature = "webgl"))]
+        let gpu = false;
+        #[cfg(feature = "webgl")]
+        if gpu {
+            let done = if op == 47 { cs.gpu_draw_image(&mut images.borrow_mut(), id, a) } else { cs.gpu_op(id, op, a) };
+            if done {
+                if is_main {
+                    cs.main_dirty = true;
+                }
+                return Ok(Value::new_undefined(ctx));
+            }
+            cs.sync_cpu(id);
+        }
+        let r = dispatch_cpu(&ctx, &mut cs, &images, id, op, a, is_main);
+        // CPU 改了像素：内容代数加一（GPU 画布另外标「CPU 那边新」）
+        if matches!(op, 1..=3 | 14 | 15 | 25 | 26 | 46 | 47) {
+            #[cfg(feature = "webgl")]
+            cs.cpu_wrote(id);
+            #[cfg(not(feature = "webgl"))]
+            if let Some(s) = cs.get(id) {
+                s.gen += 1;
+            }
+        }
+        let _ = gpu;
+        r
+    })?;
+    Ok(())
+}
+
+/// CPU 那条路（参考实现）
+fn dispatch_cpu<'js>(ctx: &Ctx<'js>, cs: &mut GameCanvases, images: &Rc<RefCell<crate::game::image::ImageStore>>, id: u32, op: i32, a: &[Value<'js>], is_main: bool) -> JsResult<Value<'js>> {
+    {
+        let ctx = ctx.clone();
         if op == 47 || op == 48 {
             // 源（Image / 另一块画布）要在拿目标画布之前取
-            let src = super::image_ops::source(&mut cs, &mut images.borrow_mut(), num(a.first()) as i32, num(a.get(1)) as u32, id);
+            let src = super::image_ops::source(cs, &mut images.borrow_mut(), num(a.first()) as i32, num(a.get(1)) as u32, id);
             let Some(slot) = cs.get(id) else { return Ok(Value::new_undefined(ctx)) };
             let Some(src) = src else { return false.into_js(&ctx) };
             if op == 47 {
@@ -177,8 +223,7 @@ pub fn register(rt: &JsRuntime, canvases: Rc<RefCell<GameCanvases>>, images: Rc<
             cs.main_dirty = true;
         }
         Ok(r)
-    })?;
-    Ok(())
+    }
 }
 
 fn op_2d<'js>(ctx: &Ctx<'js>, g: &mut crate::renderer::components::Canvas2DContext, op: i32, a: &[Value<'js>]) -> JsResult<Value<'js>> {

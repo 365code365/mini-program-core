@@ -129,6 +129,8 @@ pub mod image2d;
 pub mod text_font;
 /// 旋转 / 压缩 / 描边文字：离屏光栅再按矩阵贴回
 mod text_raster;
+/// 小游戏 GPU 2D 后端要看的状态与临时层（game/canvas/gpu2d）
+pub mod gpu_view;
 
 /// 渐变对象（线性 / 径向）
 mod gradient;

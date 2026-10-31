@@ -6,6 +6,9 @@
 //!   （小程序那条路要记日志是为了布局重建后重放；游戏画布不会因布局重建，不需要）。
 
 pub mod compose;
+/// 2D 画布走 GPU（MINI_2D，见文件头）
+#[cfg(feature = "webgl")]
+pub mod gpu2d;
 mod image_ops;
 mod natives;
 mod text_ops;
@@ -28,11 +31,49 @@ pub struct Slot {
     pub kind: u8,
     /// 当前 `font`（解析好的；save / restore 由 JS 外壳在 restore 之后重设）
     pub font: crate::renderer::components::FontSpec,
+    /// 内容代数：像素每变一次加一（GPU 2D 把 CPU 画布当纹理源时据此判断要不要重传，gpu2d）
+    pub gen: u64,
+    /// 走 GPU 的 2D 画布（gpu2d）：哪一边的像素是新的；None = CPU 画布
+    pub gpu: Option<Auth>,
+}
+
+/// GPU 2D 画布（gpu2d）的像素哪边是新的
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Auth {
+    /// 两边一样
+    Both,
+    /// GPU 画过、CPU 后备缓冲是旧的
+    Gpu,
+    /// CPU 画过、纹理是旧的
+    Cpu,
+}
+
+/// 2D 画布用哪个后端（`MINI_2D` / 创建选项 `canvas2d`）
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub enum Mode2d {
+    /// 全部 CPU（参考实现）
+    Cpu,
+    /// 全部 2D 画布走 GPU（建不了上下文就整个回退 CPU）
+    Gpu,
+    /// 移动端（iOS / Android）的主画布走 GPU、离屏画布 CPU；桌面与无头全 CPU
+    #[default]
+    Auto,
+}
+
+impl Mode2d {
+    pub fn parse(s: Option<&str>) -> Self {
+        let env = std::env::var("MINI_2D").ok();
+        match env.as_deref().or(s).map(str::trim) {
+            Some("cpu") | Some("off") => Self::Cpu,
+            Some("gpu") => Self::Gpu,
+            _ => Self::Auto,
+        }
+    }
 }
 
 impl Slot {
     fn new(id: u32, w: u32, h: u32) -> Self {
-        Self { ctx: Canvas2DContext::new_with_dpr(&format!("game#{id}"), w.max(1), h.max(1), 1.0), w, h, kind: 0, font: Default::default() }
+        Self { ctx: Canvas2DContext::new_with_dpr(&format!("game#{id}"), w.max(1), h.max(1), 1.0), w, h, kind: 0, font: Default::default(), gen: 0, gpu: None }
     }
 }
 
@@ -46,6 +87,18 @@ pub struct GameCanvases {
     pub window: (u32, u32),
     /// 主域与开放数据域共享的 sharedCanvas（G9.7，game/opendata.rs）
     pub shared: Option<u32>,
+    /// 2D 后端（gpu2d）
+    pub mode2d: Mode2d,
+    /// 引擎内旋转 / 无头：auto 模式下主画布不走 GPU（输出帧要在 CPU 上转 / 逐字节基线）
+    pub cpu_output: bool,
+    /// WebGL 后端偏好（GPU 2D 用同一套顺序选 display）
+    pub gl_pref: String,
+    #[cfg(feature = "webgl")]
+    pub gpu2d: Option<Box<gpu2d::Gpu2d>>,
+    /// GPU 2D 建不了 / 丢了：这个实例里不再试
+    pub gpu2d_failed: bool,
+    /// 要进游戏日志的说明（后端、回退原因）
+    pub notes: Vec<String>,
 }
 
 impl GameCanvases {
@@ -85,9 +138,16 @@ impl GameCanvases {
         let clamp = |v: f64| if v.is_finite() && v > 0.0 { (v as u64).min(MAX_SIDE as u64) as u32 } else { 0 };
         let (w, h) = (clamp(w), clamp(h));
         let slot = self.slots.get_mut(id as usize)?.as_mut()?;
-        let kind = slot.kind;
+        let (kind, gen, gpu) = (slot.kind, slot.gen, slot.gpu);
         *slot = Slot::new(id, w, h);
         slot.kind = kind;
+        slot.gen = gen + 1;
+        // GPU 画布：纹理按新尺寸重建（清空），两边都是空的
+        slot.gpu = gpu.map(|_| Auth::Both);
+        #[cfg(feature = "webgl")]
+        if let Some(g) = self.gpu2d.as_mut() {
+            g.free(id);
+        }
         if self.main == Some(id) {
             self.main_dirty = true;
         }
@@ -111,6 +171,10 @@ impl GameCanvases {
         if self.main != Some(id) {
             if let Some(s) = self.slots.get_mut(id as usize) {
                 *s = None;
+            }
+            #[cfg(feature = "webgl")]
+            if let Some(g) = self.gpu2d.as_mut() {
+                g.free(id);
             }
         }
     }

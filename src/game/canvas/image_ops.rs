@@ -25,6 +25,9 @@ pub fn source(cs: &mut GameCanvases, images: &mut ImageStore, kind: i32, sid: u3
     match kind {
         1 => images.get(sid).map(ImgSource::Image),
         2 => {
+            // 源是 GPU 画布（gpu2d）：GPU 上新画的先读回后备缓冲
+            #[cfg(feature = "webgl")]
+            cs.sync_cpu(sid);
             let slot = cs.get(sid)?;
             if slot.w == 0 || slot.h == 0 {
                 return None;

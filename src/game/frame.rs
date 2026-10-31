@@ -121,6 +121,9 @@ impl GameEngine {
         if self.remote.is_none() {
             self.webgl_frame_end();
         }
+        // GPU 2D 画布（canvas/gpu2d）：攒着的画掉，让 GPU 早点开工
+        #[cfg(feature = "webgl")]
+        self.canvases.borrow_mut().gpu_frame_end();
         // 自适应帧率（fps_governor.rs，没开时 note_work 直接返回）：只看 rAF 帧
         if raf_frame {
             let msg = self.pacer.borrow_mut().note_work(t_work.elapsed().as_micros() as u64);
@@ -205,6 +208,7 @@ impl GameEngine {
     /// 主画布的不透明 RGBA（主画布分辨率，压黑底）。只有画过之后第一次取才转换
     pub fn frame_rgba(&mut self) -> (u32, u32, &[u8]) {
         if self.frame.stale || self.frame.rgba.is_empty() {
+            self.sync_main_cpu();
             let cs = self.canvases.borrow();
             match cs.main_slot() {
                 // 覆盖层弹着：在引擎里合成（overlay.rs），输出按 min(dpr, 2) 放大
@@ -247,6 +251,7 @@ impl GameEngine {
     /// 拿主画布的原始像素（宽、高、`Color` 行优先）跑一段宿主侧上屏代码：热路径直写宿主缓冲，
     /// 不经 [`frame_rgba`](Self::frame_rgba) 的中间缓冲（`compose::write_opaque_rows`）。还没有主画布返回 None
     pub fn with_main_pixels<R>(&self, f: impl FnOnce(u32, u32, &[crate::Color]) -> R) -> Option<R> {
+        self.sync_main_cpu();
         let cs = self.canvases.borrow();
         let canvas = cs.main_slot()?.ctx.get_canvas();
         let c = canvas.lock().ok()?;
@@ -265,7 +270,19 @@ impl GameEngine {
         self.scaled_unrotated(w, h)
     }
 
+    /// 主画布是 GPU 2D 画布（canvas/gpu2d）时，CPU 要读它的像素之前读回（GPU 直接上屏时不走这里）
+    fn sync_main_cpu(&self) {
+        #[cfg(feature = "webgl")]
+        {
+            let mut cs = self.canvases.borrow_mut();
+            if let Some(m) = cs.main_id() {
+                cs.sync_cpu(m);
+            }
+        }
+    }
+
     pub(super) fn scaled_unrotated(&self, w: u32, h: u32) -> Vec<u8> {
+        self.sync_main_cpu();
         let cs = self.canvases.borrow();
         let mut out = Vec::new();
         match cs.main_slot() {

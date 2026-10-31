@@ -67,6 +67,8 @@ pub use video::{
 /// 控制条的状态 / 几何、全屏那一层（两种播放器共用，见 video/ui.rs、chrome.rs、fullscreen.rs）
 pub use video::{chrome as video_chrome, fullscreen as video_fullscreen, ui as video_ui};
 pub use canvas::image2d::ImageRects;
+/// 小游戏 GPU 2D 后端（game/canvas/gpu2d）看的合成模式
+pub use canvas::gpu_view::GpuBlend;
 /// 小游戏 drawImage 的分段表等（canvas/image2d.rs）
 pub use canvas::image2d as canvas_image;
 pub use canvas::text_font::{FontSpec, TextMetrics2D};

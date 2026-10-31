@@ -245,6 +245,10 @@ fn canvas_sub_upload(c: &mut GlCtx, e: &Env<'_, '_>, a: &A<'_, '_>, lv: i32, x: 
     let id = a.u(7);
     let tex = bound_2d(c);
     let mut cs = e.canvases.borrow_mut();
+    // 源是 GPU 2D 画布：读回会把 2D 的上下文切成 current，读完切回本上下文
+    if cs.sync_cpu(id) {
+        c.make_current();
+    }
     let Some(slot) = cs.get(id) else {
         c.uploads.forget(tex);
         return c.error(glow::INVALID_OPERATION);
@@ -283,6 +287,9 @@ fn source(c: &mut GlCtx, e: &Env<'_, '_>, a: &A<'_, '_>, at: usize, f: u32, ty: 
         }
         2 => {
             let mut cs = e.canvases.borrow_mut();
+            if cs.sync_cpu(a.u(at + 1)) {
+                c.make_current();
+            }
             let slot = cs.get(a.u(at + 1))?;
             let canvas = slot.ctx.get_canvas();
             let cv = canvas.lock().ok()?;

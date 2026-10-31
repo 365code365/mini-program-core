@@ -50,6 +50,9 @@ mod engine_cases;
 mod webgl_cases;
 #[path = "game_cases/overlay.rs"]
 mod overlay_cases;
+// 2D 画布走 GPU（canvas/gpu2d）与 CPU 逐像素比
+#[path = "game_cases/canvas_gpu.rs"]
+mod canvas_gpu_cases;
 // 高性能模式（游戏 JS 跑在 WebView 里；headless Chrome 驱动，找不到 Chrome 时跳过）
 #[path = "game_cases/web.rs"]
 mod web_cases;

@@ -94,6 +94,7 @@ impl GlCtx {
             }
         };
         d.egl.make_current(d.dpy, Some(surface), Some(surface), Some(context)).map_err(|e| format!("eglMakeCurrent: {e}"))?;
+        egl::set_owner(egl::OWNER_WEBGL);
         let gl = unsafe { glow::Context::from_loader_function(|s| egl::proc_address(d, s)) };
         let check = (!d.webgl_compat).then(super::validate::Tracker::default);
         let mut c = Self { d, cfg, context, surface, gl, version, attrs, got, w, h, errors: Vec::new(), lost: false, lost_reported: false,
@@ -134,8 +135,10 @@ impl GlCtx {
         if self.d.egl.make_current(self.d.dpy, Some(s), Some(s), Some(self.context)).is_err() {
             // EGL_CONTEXT_LOST / BAD_*：都按丢失处理，游戏收 webglcontextlost
             self.lose();
+            egl::set_owner(0);
             return false;
         }
+        egl::set_owner(egl::OWNER_WEBGL);
         true
     }
 
@@ -304,6 +307,7 @@ impl Drop for GlCtx {
         let d = self.d;
         // 同步对象、缓冲、纹理……随上下文一起释放（eglDestroyContext），不必逐个删
         let _ = d.egl.make_current(d.dpy, None, None, None);
+        egl::set_owner(0);
         let _ = d.egl.destroy_surface(d.dpy, self.surface);
         let _ = d.egl.destroy_context(d.dpy, self.context);
     }

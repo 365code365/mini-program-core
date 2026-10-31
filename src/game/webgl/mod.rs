@@ -117,7 +117,8 @@ impl WebGl {
 
     /// 拿某块画布的上下文并设成 current
     pub fn current(&mut self, id: u32) -> Option<&mut GlCtx> {
-        let switch = self.current != Some(id);
+        // 别人（GPU 2D 画布、上屏辅助上下文）切走过 current：缓存的 self.current 不作数
+        let switch = self.current != Some(id) || egl::owner() != egl::OWNER_WEBGL;
         let c = self.ctxs.get_mut(&id)?;
         if switch {
             if !c.make_current() && c.lost {
@@ -254,7 +255,9 @@ impl crate::game::GameEngine {
 
     /// 每段 JS 之后：建上下文时的后端说明 / 回退原因进游戏日志
     pub(in crate::game) fn webgl_notes(&mut self) {
-        let notes = std::mem::take(&mut self.webgl.borrow_mut().notes);
+        let mut notes = std::mem::take(&mut self.webgl.borrow_mut().notes);
+        // GPU 2D 画布（canvas/gpu2d）的后端说明 / 回退原因也走这里
+        notes.append(&mut self.canvases.borrow_mut().notes);
         for n in notes {
             self.host_log(&n);
         }
@@ -265,7 +268,7 @@ impl crate::game::GameEngine {
     pub fn webgl_present_window(&mut self, win: usize, cpu_locked: bool, geometry: &mut dyn FnMut(u32, u32) -> bool) -> Option<i32> {
         let main = self.canvases.borrow().main_id()?;
         if !self.webgl.borrow().has(main) {
-            return None;
+            return self.gpu2d_present_window(main, win, cpu_locked, geometry);
         }
         let pending = self.webgl.borrow().rgba_pending || self.rotation.is_some();
         let overlay = self.overlay_visible();
@@ -282,9 +285,42 @@ impl crate::game::GameEngine {
         r
     }
 
+    /// 主画布是 GPU 2D 画布（canvas/gpu2d）时上屏：引擎内旋转 / CPU 锁过的窗口 / 建不了 surface → 主画布降回 CPU、返回 None
+    fn gpu2d_present_window(&mut self, main: u32, win: usize, cpu_locked: bool, geometry: &mut dyn FnMut(u32, u32) -> bool) -> Option<i32> {
+        if !self.canvases.borrow().main_is_gpu() {
+            return None;
+        }
+        if cpu_locked || win == 0 || self.rotation.is_some() {
+            self.canvases.borrow_mut().demote(main, "主画布上屏走 CPU（窗口被 CPU 锁过 / 引擎内旋转）");
+            self.webgl_notes();
+            return None;
+        }
+        let overlay = self.overlay_visible().then(|| self.overlay_layer());
+        let r = {
+            let mut cs = self.canvases.borrow_mut();
+            // 主画布最近一笔是 CPU 画的（回退的调用）、或还没在 GPU 上画过：先传上去
+            cs.gpu_ready_main();
+            let gp = cs.gpu2d.as_mut()?;
+            gp.present_window(main, win, overlay, geometry)
+        };
+        if r.is_none() {
+            self.canvases.borrow_mut().demote(main, "建不了窗口 surface");
+        }
+        self.webgl_notes();
+        r
+    }
+
     /// 宿主的 surface 要没了
     pub fn webgl_detach_window(&mut self) {
         self.webgl.borrow_mut().detach_window();
+        if let Some(g) = self.canvases.borrow_mut().gpu2d.as_mut() {
+            g.detach_window();
+        }
+    }
+
+    /// 诊断 / 测试：GPU 2D 画布（canvas/gpu2d）累计的 (draw call, 临时层上传, 整张读回)；没用 GPU 2D 时 None
+    pub fn gpu2d_stats(&self) -> Option<(u64, u64, u64)> {
+        self.canvases.borrow().gpu2d.as_ref().map(|g| (g.draws, g.tile_uploads, g.readbacks))
     }
 
     /// 诊断 / 测试：主画布用的 WebGL 后端

@@ -176,6 +176,7 @@ impl WebGl {
         if d.egl.make_current(d.dpy, Some(s), Some(s), Some(hp.ctx)).is_err() {
             return -2;
         }
+        egl::set_owner(0);
         unsafe {
             let gl = &hp.gl;
             gl.disable(glow::BLEND);
@@ -234,6 +235,7 @@ fn helper(d: &'static egl::Display, cfg: k::Config) -> Result<Helper, String> {
     // 先在一块 1×1 的 pbuffer 上建资源（窗口 surface 由调用方随后绑上）
     let pb = egl::create_pbuffer(d, cfg, 1, 1)?;
     d.egl.make_current(d.dpy, Some(pb), Some(pb), Some(ctx)).map_err(|e| e.to_string())?;
+    egl::set_owner(0);
     let gl = unsafe { glow::Context::from_loader_function(|s| egl::proc_address(d, s)) };
     let r = unsafe {
         let sh = |t: u32, src: &str| -> Result<glow::NativeShader, String> {

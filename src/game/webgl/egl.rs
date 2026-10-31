@@ -301,6 +301,24 @@ pub fn create_pbuffer(d: &Display, cfg: egl::Config, w: u32, h: u32) -> Result<e
     d.egl.create_pbuffer_surface(d.dpy, cfg, &[egl::WIDTH, w.max(1) as i32, egl::HEIGHT, h.max(1) as i32, egl::NONE]).map_err(|e| format!("eglCreatePbufferSurface: {e}"))
 }
 
+thread_local! {
+    /// 引擎线程上最后一次 eglMakeCurrent 是谁做的：0 = 没有 / 不知道，1 = WebGL（哪个上下文由 `WebGl::current` 自己记），
+    /// 2 = GPU 2D 画布（game/canvas/gpu2d）。两边各自缓存「我是 current」，另一边切走之后要据此重新 make current，
+    /// 否则 GL 调用落到别人的上下文上
+    static OWNER: std::cell::Cell<u8> = const { std::cell::Cell::new(0) };
+}
+
+pub const OWNER_WEBGL: u8 = 1;
+pub const OWNER_2D: u8 = 2;
+
+pub fn owner() -> u8 {
+    OWNER.with(|o| o.get())
+}
+
+pub fn set_owner(v: u8) {
+    OWNER.with(|o| o.set(v));
+}
+
 pub fn proc_address(d: &Display, name: &str) -> *const c_void {
     d.egl.get_proc_address(name).map_or(std::ptr::null(), |p| p as *const c_void)
 }

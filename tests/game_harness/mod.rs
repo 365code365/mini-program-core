@@ -23,11 +23,13 @@ pub struct Opts {
     pub host_apis: &'static [&'static str],
     /// WebGL 后端（创建选项 webgl；None = 无头默认 swiftshader）
     pub webgl: Option<&'static str>,
+    /// 2D 画布后端（创建选项 canvas2d：cpu / gpu；None = 默认，无头即 cpu）
+    pub canvas2d: Option<&'static str>,
 }
 
 impl Default for Opts {
     fn default() -> Self {
-        Self { hz: 60, query: "", watchdog_ms: 5000, entry: None, rotate: false, plugin_dir: None, host_apis: &[], webgl: None }
+        Self { hz: 60, query: "", watchdog_ms: 5000, entry: None, rotate: false, plugin_dir: None, host_apis: &[], webgl: None, canvas2d: None }
     }
 }
 
@@ -108,6 +110,7 @@ impl GameHarness {
             host_apis: opts.host_apis.iter().map(|s| s.to_string()).collect(),
             plugin_dir: opts.plugin_dir.as_ref().map(|p| p.to_string_lossy().to_string()),
             webgl: opts.webgl.map(str::to_string),
+            canvas2d: opts.canvas2d.map(str::to_string),
             ..Default::default()
         };
         let data = dir.with_extension("data");
