@@ -76,6 +76,8 @@ pub struct GlCtx {
     pub bound_rbo: u32,
     /// 当前当默认帧缓冲用的窗口 surface（window.rs 建、毁；None = pbuffer）
     window: Option<k::Surface>,
+    /// 2D 画布 → 纹理的增量上传（upload_cache.rs）
+    pub uploads: super::upload_cache::UploadCache,
 }
 
 impl GlCtx {
@@ -96,7 +98,7 @@ impl GlCtx {
         let check = (!d.webgl_compat).then(super::validate::Tracker::default);
         let mut c = Self { d, cfg, context, surface, gl, version, attrs, got, w, h, errors: Vec::new(), lost: false, lost_reported: false,
             unpack: Unpack::default(), pack_alignment: 4, drew: false, needs_clear: false, draw_fb_default: true, read_fb_default: true,
-            enabled: Vec::new(), check, scratch: Vec::new(), syncs: Default::default(), next_sync: 0, window: None, ds_rbos: Default::default(), bound_rbo: 0 };
+            enabled: Vec::new(), check, scratch: Vec::new(), syncs: Default::default(), next_sync: 0, window: None, ds_rbos: Default::default(), bound_rbo: 0, uploads: Default::default() };
         unsafe {
             // WebGL：视口与裁剪框的初值 = 画布尺寸（GL 也是 surface 尺寸，pbuffer 就是画布尺寸）
             c.gl.viewport(0, 0, w as i32, h as i32);

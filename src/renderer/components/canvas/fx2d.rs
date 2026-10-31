@@ -10,6 +10,7 @@
 //! 径向渐变在非等比缩放下应是椭圆，这里按平均缩放画成圆（取舍）。
 
 use super::*;
+use super::fx_composite::{composite, composite_region};
 
 /// 渐变 / 图案（用户坐标）
 #[derive(Clone, Debug)]
@@ -65,7 +66,7 @@ impl Composite {
     }
 
     /// 这几种会动到形状**之外**的像素（目标在源覆盖率为 0 处也变）
-    fn clears_outside(self) -> bool {
+    pub(super) fn clears_outside(self) -> bool {
         matches!(self, Self::SourceIn | Self::SourceOut | Self::DestinationIn | Self::DestinationAtop | Self::Copy)
     }
 }
@@ -145,7 +146,7 @@ pub(super) enum DeviceSource {
 
 impl DeviceSource {
     /// 像素中心 (x, y) 的颜色（RGBA 0~255，未预乘）。None：图案不重复时落在外面（透明）
-    fn sample(&self, x: f32, y: f32) -> [f32; 4] {
+    pub(super) fn sample(&self, x: f32, y: f32) -> [f32; 4] {
         match self {
             Self::Solid(c) => *c,
             Self::Linear { p0, d, len2, stops } => {
@@ -233,16 +234,57 @@ impl Canvas2DContext {
 
     /// 走蒙版的绘制：`draw_mask` 往一张透明画布上用白色画出形状
     pub(super) fn paint_with_fx(&mut self, stroke: bool, draw_mask: impl FnOnce(&mut Canvas)) {
+        self.paint_with_fx_in(stroke, None, draw_mask)
+    }
+
+    /// 同上；`bounds` 给了形状的设备坐标外接框（必须保守：光栅器只会写在框外扩 2px 以内）时，
+    /// 画蒙版裁剪到这个框、只在框里找包围盒 —— 1320×2868 的 UI 画布上整张扫一遍要 1ms 往上
+    /// （iPhone 萌宠小岛 Time Profiler：fill 里四分之一的样本在扫蒙版）。裁剪只是兜底：
+    /// 框真漏了，结果是形状被切一块，而不是缓存的蒙版里留下脏像素去污染之后的绘制
+    pub(super) fn paint_with_fx_in(&mut self, stroke: bool, bounds: Option<(f32, f32, f32, f32)>, draw_mask: impl FnOnce(&mut Canvas)) {
+        let _t = crate::game::slow_frame::enabled().then(SubTimer::start);
         let Ok(mut canvas) = self.canvas.lock() else { return };
         let (w, h) = (canvas.width(), canvas.height());
-        let mut mask = Canvas::new(w, h);
-        mask.clear(Color::TRANSPARENT);
-        draw_mask(&mut mask);
-        let cov: Vec<u8> = mask.pixels().iter().map(|p| p.a).collect();
-        drop(mask);
         let alpha = self.global_alpha;
         let op = self.fx.composite;
         let sh = self.fx.shadow;
+        // 常见情形（渐变 / 图案填充、文字，source-over 这类只动形状内的模式，无阴影）：只在被写过的
+        // 包围盒里取覆盖率与合成（见 fx_mask.rs 文件头）。阴影的模糊会把覆盖率摊到框外、
+        // clears_outside 的模式要动框外像素，这两种仍走整画布
+        let fast = !sh.visible() && !op.clears_outside();
+        let full = (0, 0, w as usize, h as usize);
+        let region = match bounds {
+            Some(b) if fast => super::fx_mask::pixel_region(b, w, h),
+            _ => full,
+        };
+        if region.2 <= region.0 || region.3 <= region.1 {
+            return;
+        }
+        let mut mask = super::fx_mask::take(w, h);
+        let clipped = region != full;
+        if clipped {
+            let (x0, y0, x1, y1) = region;
+            mask.clip_rect(crate::Rect::new(x0 as f32, y0 as f32, (x1 - x0) as f32, (y1 - y0) as f32));
+        }
+        draw_mask(&mut mask);
+        if clipped {
+            mask.reset_clip();
+        }
+        if fast {
+            if let Some(bb) = super::fx_mask::dirty_bbox(&mask, region) {
+                let cov = super::fx_mask::coverage(&mask, bb);
+                super::fx_mask::clear_rect(&mut mask, bb);
+                super::fx_mask::give_back(mask);
+                let src = self.device_source(stroke);
+                composite_region(&mut canvas, &cov, bb, &src, alpha, op);
+            } else {
+                super::fx_mask::give_back(mask);
+            }
+            return;
+        }
+        let cov: Vec<u8> = mask.pixels().iter().map(|p| p.a).collect();
+        mask.clear(Color::TRANSPARENT);
+        super::fx_mask::give_back(mask);
         if sh.visible() {
             let blurred = blur_mask(&cov, w as usize, h as usize, sh.blur * self.dpr / 2.0);
             let (dx, dy) = ((sh.ox * self.dpr).round() as i64, (sh.oy * self.dpr).round() as i64);
@@ -252,6 +294,21 @@ impl Canvas2DContext {
         }
         let src = self.device_source(stroke);
         composite(&mut canvas, &cov, &src, alpha, op);
+    }
+}
+
+/// 慢帧归因（`MINI_GAME_SLOW_MS`）里的「fx 蒙版」一项
+struct SubTimer(std::time::Instant);
+
+impl SubTimer {
+    fn start() -> Self {
+        Self(std::time::Instant::now())
+    }
+}
+
+impl Drop for SubTimer {
+    fn drop(&mut self) {
+        crate::game::slow_frame::note_sub(true, self.0.elapsed().as_nanos() as u64);
     }
 }
 
@@ -316,53 +373,6 @@ fn shift_mask(m: &[u8], w: usize, h: usize, dx: i64, dy: i64) -> Vec<u8> {
     out
 }
 
-/// 按合成模式把「源 × 覆盖率 × alpha」叠到画布上（预乘空间里算 Porter-Duff）
-fn composite(canvas: &mut Canvas, cov: &[u8], src: &DeviceSource, alpha: f32, op: Composite) {
-    let w = canvas.width() as usize;
-    let pixels = canvas.pixels_mut();
-    for (i, px) in pixels.iter_mut().enumerate() {
-        let c = cov[i];
-        if c == 0 && !op.clears_outside() {
-            continue;
-        }
-        let (x, y) = ((i % w) as f32 + 0.5, (i / w) as f32 + 0.5);
-        let s = if c == 0 { [0.0; 4] } else { src.sample(x, y) };
-        let sa = s[3] / 255.0 * (c as f32 / 255.0) * alpha;
-        let (sr, sg, sb) = (s[0] / 255.0 * sa, s[1] / 255.0 * sa, s[2] / 255.0 * sa);
-        let da = px.a as f32 / 255.0;
-        let (dr, dg, db) = (px.r as f32 / 255.0 * da, px.g as f32 / 255.0 * da, px.b as f32 / 255.0 * da);
-        // Porter-Duff 的两个系数：结果 = 源 × fa + 目标 × fb
-        let pd = |fa: f32, fb: f32| ([sr * fa + dr * fb, sg * fa + dg * fb, sb * fa + db * fb], sa * fa + da * fb);
-        let blend = |f: fn(f32, f32) -> f32| {
-            // 可分离混合：结果 = (1-da)·s + (1-sa)·d + sa·da·B(s, d)（未预乘的 s/d 代入 B）
-            let un = |v: f32, a: f32| if a > 0.0 { v / a } else { 0.0 };
-            let ch = |s: f32, d: f32| (1.0 - da) * s + (1.0 - sa) * d + sa * da * f(un(s, sa), un(d, da));
-            ([ch(sr, dr), ch(sg, dg), ch(sb, db)], sa + da - sa * da)
-        };
-        let (rgb, a) = match op {
-            Composite::SourceOver => pd(1.0, 1.0 - sa),
-            Composite::SourceIn => pd(da, 0.0),
-            Composite::SourceOut => pd(1.0 - da, 0.0),
-            Composite::SourceAtop => pd(da, 1.0 - sa),
-            Composite::DestinationOver => pd(1.0 - da, 1.0),
-            Composite::DestinationIn => pd(0.0, sa),
-            Composite::DestinationOut => pd(0.0, 1.0 - sa),
-            Composite::DestinationAtop => pd(1.0 - da, sa),
-            Composite::Lighter => ([(sr + dr).min(1.0), (sg + dg).min(1.0), (sb + db).min(1.0)], (sa + da).min(1.0)),
-            Composite::Copy => pd(1.0, 0.0),
-            Composite::Xor => pd(1.0 - da, 1.0 - sa),
-            Composite::Multiply => blend(|s, d| s * d),
-            Composite::Screen => blend(|s, d| s + d - s * d),
-            Composite::Darken => blend(f32::min),
-            Composite::Lighten => blend(f32::max),
-            Composite::Difference => blend(|s, d| (s - d).abs()),
-        };
-        let a = a.clamp(0.0, 1.0);
-        let unp = |v: f32| if a > 0.0 { (v / a * 255.0).round().clamp(0.0, 255.0) as u8 } else { 0 };
-        *px = Color::new(unp(rgb[0]), unp(rgb[1]), unp(rgb[2]), (a * 255.0).round() as u8);
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -412,6 +422,49 @@ mod tests {
         ctx.fill_rect(25.0, 0.0, 15.0, 40.0);
         assert_eq!(px(&ctx, 30, 10), [0, 0, 255, 255], "source-in：只在已有内容上");
         assert_eq!(px(&ctx, 22, 10)[3], 0, "source-in 清掉形状外的已有内容");
+    }
+
+    /// 包围盒快路与整画布合成逐字节相同，且缓存的蒙版用完是干净的（第二次画不残留第一次的形状）
+    #[test]
+    fn bbox_fast_path_matches_full_canvas_composite() {
+        let grad = || Some(Source::Linear { p0: (0.0, 0.0), p1: (80.0, 30.0), stops: vec![(0.0, Color::rgb(255, 0, 0)), (1.0, Color::new(0, 0, 255, 128))] });
+        let draw = |ctx: &mut Canvas2DContext| {
+            ctx.set_fill_style("#336699");
+            ctx.fill_rect(0.0, 0.0, 80.0, 60.0);
+            ctx.fx.fill = grad();
+            ctx.begin_path();
+            ctx.arc(30.0, 25.0, 13.3, 0.0, 6.0, false);
+            ctx.fill();
+            ctx.fill_rect(41.5, 33.25, 50.0, 40.0);
+        };
+        let mut a = Canvas2DContext::new("a", 80, 60);
+        draw(&mut a);
+        let mut b = Canvas2DContext::new("b", 80, 60);
+        draw(&mut b);
+        assert_eq!(a.get_image_data(), b.get_image_data(), "复用的蒙版没清干净");
+        // 参照：同一形状走整画布合成（Lighter 也只动形状内，但这里直接调整画布版本）
+        let mut c = Canvas2DContext::new("c", 80, 60);
+        c.set_fill_style("#336699");
+        c.fill_rect(0.0, 0.0, 80.0, 60.0);
+        c.fx.fill = grad();
+        for shape in 0..2 {
+            let src = c.device_source(false);
+            let mut mask = Canvas::new(80, 60);
+            mask.clear(Color::TRANSPARENT);
+            let paint = crate::Paint::new().with_color(Color::WHITE).with_anti_alias(true).with_style(crate::PaintStyle::Fill);
+            let path = if shape == 0 {
+                c.begin_path();
+                c.arc(30.0, 25.0, 13.3, 0.0, 6.0, false);
+                c.build_path()
+            } else {
+                c.rect_path(41.5, 33.25, 50.0, 40.0)
+            };
+            mask.draw_path(&path, &paint);
+            let cov: Vec<u8> = mask.pixels().iter().map(|p| p.a).collect();
+            let canvas = c.canvas.clone();
+            composite(&mut canvas.lock().unwrap(), &cov, &src, 1.0, Composite::SourceOver);
+        }
+        assert_eq!(a.get_image_data(), c.get_image_data(), "包围盒快路与整画布合成不一致");
     }
 
     /// 默认状态必须走直接光栅化：曾因 `Shadow` derive 了 Default（不透明黑）而永远绕进蒙版，

@@ -156,7 +156,9 @@ impl Canvas2DContext {
     /// 走 fx 蒙版画一条路径：`stroke` 给线宽时是描边，否则填充
     fn fx_path(&mut self, path: &Path, stroke: Option<f32>) {
         let (cap, join) = (self.line_cap, self.line_join);
-        self.paint_with_fx(stroke.is_some(), |mask| {
+        // 填充给外接框（只在框里扫蒙版）；描边的斜接没上限，不给
+        let bounds = if stroke.is_none() { super::fx_mask::path_hull(path) } else { None };
+        self.paint_with_fx_in(stroke.is_some(), bounds, |mask| {
             let mut paint = Paint::new().with_color(Color::WHITE).with_anti_alias(true);
             paint = match stroke {
                 Some(lw) => paint.with_style(PaintStyle::Stroke).with_stroke_width(lw),

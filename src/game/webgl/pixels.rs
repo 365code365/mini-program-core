@@ -134,6 +134,28 @@ pub fn read_back(c: &mut GlCtx, slot: &mut Slot) {
 /// DOM 一类的来源（Image / 2D 画布 / ImageData）：直通 alpha 的 RGBA8 → 按 format/type 排好、紧密排列（对齐 1）。
 /// 认不得的组合返回 None（INVALID_OPERATION）
 pub fn convert_source(rgba: &[u8], w: u32, h: u32, flip_y: bool, premultiply: bool, format: u32, ty: u32) -> Option<Vec<u8>> {
+    // 快路径：RGBA8（three.js 的 CanvasTexture / Texture 默认就是它）按行整块拷，要翻转就倒着拷，要预乘再逐行乘。
+    // 从前一律走下面的逐像素分派：iPhone 上一张全屏 UI 画布（1320×2868）传一次 12~47ms，
+    // 萌宠小岛开一次菜单就是一个长帧（MINI_GAME_SLOW_MS 的「🐢 慢帧」里 `_texSubImage2DSource` 排第一）
+    if ty == glow::UNSIGNED_BYTE && matches!(format, glow::RGBA | 0x8C42) {
+        let row = w as usize * 4;
+        let mut out = vec![0u8; row * h as usize];
+        for (y, dst) in out.chunks_exact_mut(row).enumerate() {
+            let sy = if flip_y { h as usize - 1 - y } else { y };
+            dst.copy_from_slice(&rgba[sy * row..][..row]);
+            if premultiply {
+                for p in dst.chunks_exact_mut(4) {
+                    let a = p[3] as u32;
+                    if a != 255 {
+                        p[0] = ((p[0] as u32 * a + 127) / 255) as u8;
+                        p[1] = ((p[1] as u32 * a + 127) / 255) as u8;
+                        p[2] = ((p[2] as u32 * a + 127) / 255) as u8;
+                    }
+                }
+            }
+        }
+        return Some(out);
+    }
     let bpp = bytes_per_pixel(format, ty)?;
     let mut out = Vec::with_capacity(w as usize * h as usize * bpp);
     for y in 0..h as usize {
@@ -227,4 +249,27 @@ pub fn repack_view(data: &[u8], w: i32, h: i32, bpp: usize, s: &Store, flip_y: b
         }
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// RGBA8 快路径与逐像素的老算法逐字节相同（翻转 × 预乘四种组合；RGB 仍走老路，拿它当参照）
+    #[test]
+    fn rgba8_快路径与逐像素一致() {
+        let (w, h) = (3u32, 2u32);
+        let src: Vec<u8> = (0..w * h * 4).map(|i| (i * 37 % 256) as u8).collect();
+        for flip in [false, true] {
+            for premul in [false, true] {
+                let fast = convert_source(&src, w, h, flip, premul, glow::RGBA, glow::UNSIGNED_BYTE).unwrap();
+                let rgb = convert_source(&src, w, h, flip, premul, glow::RGB, glow::UNSIGNED_BYTE).unwrap();
+                let alpha = convert_source(&src, w, h, flip, premul, glow::ALPHA, glow::UNSIGNED_BYTE).unwrap();
+                for i in 0..(w * h) as usize {
+                    assert_eq!(&fast[i * 4..i * 4 + 3], &rgb[i * 3..i * 3 + 3], "flip={flip} premul={premul} 第 {i} 像素");
+                    assert_eq!(fast[i * 4 + 3], alpha[i], "flip={flip} premul={premul} 第 {i} 像素的 alpha");
+                }
+            }
+        }
+    }
 }

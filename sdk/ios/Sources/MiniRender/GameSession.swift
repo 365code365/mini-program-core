@@ -108,6 +108,8 @@ final class GameSession: NSObject {
             guard !disposed else { return }
             let t0 = CACurrentMediaTime()
             MiniFonts.install(dpr: dpr) // 字体与 iOS 排字口径（画布 fillText 也用，见 MiniFonts.swift）
+            // 帧统计开着时顺带开慢帧归因：pump 超过 25ms 打一行「🐢 慢帧」，说清时间花在 JS 的哪段、哪种 GL 调用上
+            if GameFrameStats.enabled { setenv("MINI_GAME_SLOW_MS", "25", 0) }
             guard let h = mr_game_create(dir, dataDir, max(1, width), max(1, height), dpr, options) else {
                 NSLog("❌ mini-game：建实例失败 \(dir)")
                 return

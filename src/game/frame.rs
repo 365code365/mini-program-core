@@ -59,6 +59,10 @@ impl GameEngine {
     pub fn pump_ex(&mut self, now_us: u64) -> u32 {
         self.inject("panic@pump");
         let t_work = std::time::Instant::now();
+        let slow = super::slow_frame::enabled();
+        if slow {
+            super::slow_frame::begin();
+        }
         let t = self.clock.borrow_mut().begin_frame(now_us);
         self.app.set_timer_clock(Some(self.clock.borrow().instant_at(t)));
         let mut flags = 0;
@@ -69,6 +73,7 @@ impl GameEngine {
         self.dispatch_audio(t);
         self.dispatch_workers();
 
+        if slow { super::slow_frame::phase("输入"); }
         // 2~4 逻辑层
         self.guards.watchdog.arm();
         let r = self.app.update();
@@ -83,6 +88,7 @@ impl GameEngine {
             flags |= FRAME_NEW;
         }
 
+        if slow { super::slow_frame::phase("定时器"); }
         // 5 rAF（后台不跑：微信切后台后 rAF 不回调）
         let raf_frame = !self.backgrounded && self.pacer.borrow_mut().on_vsync(t);
         // 4.5 开放数据域（opendata.rs）：在主域的 rAF 之前画 sharedCanvas，主域这一帧 drawImage 拿到的是新的
@@ -109,6 +115,7 @@ impl GameEngine {
             }
         }
 
+        if slow { super::slow_frame::phase("rAF"); }
         // 6 主画布（WebGL 的先读回后备缓冲）
         #[cfg(feature = "webgl")]
         self.webgl_frame_end();
@@ -137,6 +144,16 @@ impl GameEngine {
             flags |= FRAME_WANTS_MORE;
         } else if self.app.next_timer_due_ms().is_some() {
             flags |= FRAME_WAKE_AT;
+        }
+        if slow {
+            super::slow_frame::phase("收尾");
+            #[cfg(feature = "webgl")]
+            let names = super::webgl::op_names();
+            #[cfg(not(feature = "webgl"))]
+            let names: &[&str] = &[];
+            if let Some(line) = super::slow_frame::end(t_work.elapsed().as_secs_f64() * 1000.0, names) {
+                self.host_log(&line);
+            }
         }
         if !self.events.is_empty() {
             flags |= FRAME_EVENTS;

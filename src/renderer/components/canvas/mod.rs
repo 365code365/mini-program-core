@@ -117,6 +117,10 @@ mod path2d;
 mod text2d;
 /// 渐变 / 图案填充、阴影、合成模式（走覆盖率蒙版）
 pub mod fx2d;
+/// fx 蒙版的线程内缓存与包围盒（只在被画到的那块合成）
+mod fx_mask;
+/// fx 蒙版路径的逐像素合成（按行 / 列取样、复用上一个像素）
+mod fx_composite;
 /// 2D 新接口补的那几条：setTransform、ellipse / arcTo、putImageData、像素读回、精确量宽
 mod extra2d;
 /// drawImage 的 HTML 语义（源是解码好的 RGBA、9 参数、仿射、平滑开关；小游戏用）

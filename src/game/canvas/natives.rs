@@ -140,8 +140,10 @@ pub fn register(rt: &JsRuntime, canvases: Rc<RefCell<GameCanvases>>, images: Rc<
     })?;
     let c = canvases;
     rt.register_raw("__game_2d", move |ctx, args| {
-        let id = num(args.0.first()) as u32;
         let op = num(args.0.get(1)) as i32;
+        // 慢帧归因（slow_frame.rs）：每种 2D 调用的次数与耗时
+        let _t = crate::game::slow_frame::enabled().then(|| crate::game::slow_frame::Timer2d::start(op));
+        let id = num(args.0.first()) as u32;
         let a = &args.0[2.min(args.0.len())..];
         let mut cs = c.borrow_mut();
         let is_main = cs.is_main(id);

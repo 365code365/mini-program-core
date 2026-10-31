@@ -54,6 +54,10 @@ targets:
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
         # ProMotion 上要 120Hz（MiniProgramView 的 CADisplayLink 才拿得到高刷）
         CADisableMinimumFrameDurationOnPhone: true
+        # 游戏模式（iOS 18+）：前台全屏时系统把 CPU / GPU 优先给本 App、压后台任务。小游戏线程被排到能效核、
+        # 同一帧从 5.8ms 涨到 16ms 是卡顿的主因（tools/ios-game-sweep.sh 实测），这是苹果给游戏的正门
+        GCSupportsGameMode: true
+        LSSupportsGameMode: true
         # demo 小程序请求本地测试服务器（http）
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: true

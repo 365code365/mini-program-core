@@ -138,6 +138,7 @@ fn dispatch<'js>(st: &State, ctx: Ctx<'js>, args: &[Value<'js>]) -> JsResult<Val
     let env = Env { ctx: ctx.clone(), canvases: &st.canvases, images: &st.images };
     // glow 对驱动没给的函数是 panic（「called glXxx but it was not loaded」）：不能让它穿过 QuickJS 的 C 栈帧，
     // 接住后按 INVALID_OPERATION 处理并记一行日志
+    let t0 = crate::game::slow_frame::enabled().then(std::time::Instant::now);
     let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         ops_state::call(c, &env, op, &rest)
             .or_else(|| ops_buffer::call(c, &env, op, &rest))
@@ -146,6 +147,9 @@ fn dispatch<'js>(st: &State, ctx: Ctx<'js>, args: &[Value<'js>]) -> JsResult<Val
             .or_else(|| ops_fbo::call(c, &env, op, &rest))
             .or_else(|| ops_gl2::call(c, &env, op, &rest))
     }));
+    if let Some(t0) = t0 {
+        crate::game::slow_frame::note_gl(op as usize, t0.elapsed().as_nanos() as u64);
+    }
     match r {
         Ok(r) => r.unwrap_or_else(|| null(&ctx)),
         Err(p) => {

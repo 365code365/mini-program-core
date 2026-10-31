@@ -32,9 +32,9 @@ pub fn call<'js>(c: &mut GlCtx, e: &Env<'_, 'js>, op: Op, a: &A<'_, 'js>) -> Opt
                 if t == glow::FRAMEBUFFER || t == glow::DRAW_FRAMEBUFFER { c.draw_fb_default = id == 0; }
                 if t == glow::FRAMEBUFFER || t == glow::READ_FRAMEBUFFER { c.read_fb_default = id == 0; }
             }
-            framebufferTexture2D => c.gl.framebuffer_texture_2d(a.u(0), a.u(1), a.u(2), tex(a.u(3)), a.i(4)),
+            framebufferTexture2D => { c.uploads.attach(a.u(3)); c.gl.framebuffer_texture_2d(a.u(0), a.u(1), a.u(2), tex(a.u(3)), a.i(4)) }
             framebufferRenderbuffer => c.gl.framebuffer_renderbuffer(a.u(0), a.u(1), a.u(2), rbo(a.u(3))),
-            framebufferTextureLayer => c.gl.framebuffer_texture_layer(a.u(0), a.u(1), tex(a.u(2)), a.i(3), a.i(4)),
+            framebufferTextureLayer => { c.uploads.attach(a.u(2)); c.gl.framebuffer_texture_layer(a.u(0), a.u(1), tex(a.u(2)), a.i(3), a.i(4)) }
             checkFramebufferStatus => return Some(c.gl.check_framebuffer_status(a.u(0)).into_js(ctx)),
             getFramebufferAttachmentParameter => {
                 let (t, at, p) = (a.u(0), a.u(1), a.u(2));

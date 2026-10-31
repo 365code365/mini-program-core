@@ -250,8 +250,14 @@ impl Canvas {
             span.fill(color);
             return;
         }
+        // 同色底上的一段（面板压在面板上、遮罩压在纯色背景上）：上一个像素的结果直接复用，结果逐位相同
+        let (mut last_dst, mut last_out) = (span[0], color.blend(&span[0]));
         for px in span.iter_mut() {
-            *px = color.blend(px);
+            if *px != last_dst {
+                last_dst = *px;
+                last_out = color.blend(px);
+            }
+            *px = last_out;
         }
     }
 

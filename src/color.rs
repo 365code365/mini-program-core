@@ -44,6 +44,10 @@ impl Color {
     pub fn blend(&self, dst: &Color) -> Color {
         // 如果源完全透明，返回目标色
         if self.a == 0 { return *dst; }
+        // 目标完全透明：下面的通用公式算出来就是源色本身（out_a = src_a，颜色 = src·src_a / src_a），
+        // 省掉三次按 out_a 的除法。透明底的离屏画布（小游戏的界面层、2D 的 UI 画布）大面积都是这种：
+        // 萌宠小岛开一次菜单，铺一块半透明面板就是几百万次，iPhone 上一次 fill 4ms
+        if dst.a == 0 { return *self; }
         
         // 针对目标是完全不透明的常见情况（如背景）进行优化
         if dst.a == 255 {

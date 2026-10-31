@@ -22,7 +22,7 @@ mkdir -p "$OUT"
 for g in $GAMES; do
     log="$OUT/$g.log"
     ( timeout $((SECS + 15)) xcrun devicectl device process launch --console --terminate-existing --device "$UDID" \
-        dev.minirender.example.native -- -open "$g" -route "?auto=1" -gameStats 1 >"$log" 2>&1 & )
+        dev.minirender.example.native -- -open "$g" -route "?auto=1" -gameStats 1 ${IOS_ARGS:-} >"$log" 2>&1 & )
     sleep $((SECS + 17))
     python3 - "$g" "$log" <<'PY' | tee -a "$OUT/summary.txt"
 import re, sys, statistics as st

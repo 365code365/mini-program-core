@@ -42,6 +42,7 @@ pub use loader::precompile_package;
 mod logs;
 pub mod raf_pacer;
 mod fps_governor;
+pub(crate) mod slow_frame;
 
 use crate::app_profile::{detect, AppProfile};
 use crate::js::PreludeProfile;

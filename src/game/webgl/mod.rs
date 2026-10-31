@@ -15,6 +15,7 @@ mod ops_shader;
 mod ops_state;
 mod ops_texture;
 mod params;
+mod upload_cache;
 pub mod pixels;
 mod validate;
 mod window;
@@ -25,6 +26,10 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 
 pub use natives::register;
+/// GL op 名字表（慢帧归因用，slow_frame.rs）
+pub fn op_names() -> &'static [&'static str] {
+    natives::NAMES
+}
 
 pub struct WebGl {
     ctxs: HashMap<u32, GlCtx>,

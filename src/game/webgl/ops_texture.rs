@@ -14,10 +14,20 @@ use rquickjs::{IntoJs, Result as JsResult, Value};
 pub fn call<'js>(c: &mut GlCtx, e: &Env<'_, 'js>, op: Op, a: &A<'_, 'js>) -> Option<JsResult<Value<'js>>> {
     use Op::*;
     let ctx = &e.ctx;
+    // 改纹理内容的调用：忘掉这个纹理的增量上传记录（upload_cache.rs）。画布来源的 texSubImage2D 自己管
+    let canvas_sub = op == _texSubImage2DSource && a.i(6) == 2;
+    if !canvas_sub && a.u(0) == glow::TEXTURE_2D && matches!(op, _texImage2D | _texSubImage2D | _texImage2DSource | _texSubImage2DSource
+        | copyTexImage2D | copyTexSubImage2D | _compressedTexImage2D | _compressedTexSubImage2D | texStorage2D) {
+        let t = bound_2d(c);
+        c.uploads.forget(t);
+    }
     unsafe {
         match op {
             createTexture => return Some(c.gl.create_texture().map(|t| t.0.get()).map_or_else(|_| null(ctx), |n| js(ctx, n))),
-            deleteTexture => { if let Some(t) = tex(a.u(0)) { c.gl.delete_texture(t) } }
+            deleteTexture => {
+                c.uploads.deleted(a.u(0));
+                if let Some(t) = tex(a.u(0)) { c.gl.delete_texture(t) }
+            }
             bindTexture => c.gl.bind_texture(a.u(0), tex(a.u(1))),
             texParameterf => c.gl.tex_parameter_f32(a.u(0), a.u(1), a.f(2)),
             texParameteri => c.gl.tex_parameter_i32(a.u(0), a.u(1), a.i(2)),
@@ -56,6 +66,7 @@ pub fn call<'js>(c: &mut GlCtx, e: &Env<'_, 'js>, op: Op, a: &A<'_, 'js>) -> Opt
                     tight(c, |gl| gl.tex_image_2d(t, lv, ifmt, w as i32, h as i32, 0, f, ty, glow::PixelUnpackData::Slice(Some(&data))));
                 }
             }
+            _texSubImage2DSource if canvas_sub && a.u(0) == glow::TEXTURE_2D => canvas_sub_upload(c, e, a, a.i(1), a.i(2), a.i(3), a.u(4), a.u(5)),
             _texSubImage2DSource => {
                 let (t, lv, x, y, f, ty) = (a.u(0), a.i(1), a.i(2), a.i(3), a.u(4), a.u(5));
                 if let Some((data, w, h)) = source(c, e, a, 6, f, ty) {
@@ -220,6 +231,46 @@ fn tight(c: &GlCtx, f: impl FnOnce(&glow::Context)) {
             if pbo != 0 { gl.bind_buffer(glow::PIXEL_UNPACK_BUFFER, super::args::buf(pbo as u32)); }
         }
     }
+}
+
+fn bound_2d(c: &GlCtx) -> u32 {
+    unsafe { c.gl.get_parameter_i32(glow::TEXTURE_BINDING_2D) as u32 }
+}
+
+/// 2D 画布 → 当前 TEXTURE_2D 纹理：同一张画布再传到同一位置时只传变了的行（upload_cache.rs），
+/// 结果逐字节等于整张重传
+fn canvas_sub_upload(c: &mut GlCtx, e: &Env<'_, '_>, a: &A<'_, '_>, lv: i32, x: i32, y: i32, f: u32, ty: u32) {
+    use super::upload_cache::{dest_row, Key, Plan};
+    let (flip, premul) = (c.unpack.flip_y, c.unpack.premultiply);
+    let id = a.u(7);
+    let tex = bound_2d(c);
+    let mut cs = e.canvases.borrow_mut();
+    let Some(slot) = cs.get(id) else {
+        c.uploads.forget(tex);
+        return c.error(glow::INVALID_OPERATION);
+    };
+    let canvas = slot.ctx.get_canvas();
+    let Ok(cv) = canvas.lock() else { return };
+    let (w, h) = (cv.width(), cv.height());
+    let bytes = crate::canvas::color_bytes(cv.pixels());
+    let key = Key { canvas: id, level: lv, x, y, w, h, format: f, ty, flip, premul };
+    let plan = c.uploads.plan(tex, key, bytes);
+    if crate::game::slow_frame::enabled() {
+        let (k, n) = match plan { Plan::Full => (0, h as usize), Plan::Rows(r0, r1) => (1, r1 - r0), Plan::Skip => (2, 0) };
+        crate::game::slow_frame::note_upload(k, n, h as usize);
+    }
+    let (r0, r1) = match plan {
+        Plan::Skip => return,
+        Plan::Full => (0, h as usize),
+        Plan::Rows(r0, r1) => (r0, r1),
+    };
+    let row = w as usize * 4;
+    let Some(data) = pixels::convert_source(&bytes[r0 * row..r1 * row], w, (r1 - r0) as u32, flip, premul, f, ty) else {
+        c.uploads.forget(tex);
+        return c.error(glow::INVALID_OPERATION);
+    };
+    let dy = dest_row(&key, r0, r1);
+    tight(c, |gl| unsafe { gl.tex_sub_image_2d(glow::TEXTURE_2D, lv, x, dy, w as i32, (r1 - r0) as i32, f, ty, glow::PixelUnpackData::Slice(Some(&data))) });
 }
 
 /// Image / 画布 / ImageData → 按 format/type 排好的紧密数据与宽高

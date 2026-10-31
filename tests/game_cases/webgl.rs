@@ -128,6 +128,50 @@ T.ready('wg2');
     assert!(h.events("drawn").iter().all(|e| e["err"] == 0), "{:?}", h.events("drawn"));
 }
 
+/// WG2b：同一张 2D 画布反复 texSubImage2D 到同一纹理（增量上传，upload_cache.rs）—— 只改中间一行、一行不改、
+/// 中间插进别的来源写同一纹理，屏上都要与整张重传一样（FLIP_Y 开着，验证翻转后落的行）
+#[test]
+fn wg2b_画布增量上传() {
+    let _g = serial();
+    let mut h = open("wg2b", r#"
+var c = wx.createCanvas(), gl = c.getContext('webgl');
+var p = prog(gl, VS, 'precision mediump float; varying vec2 uv; uniform sampler2D t; void main(){ gl_FragColor = texture2D(t, uv); }');
+quad(gl, -1, -1, 1, 1);
+var t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 4, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+// 画布 4 行：红 绿 蓝 白（FLIP_Y：画布顶 = 屏幕顶）
+var a = wx.createCanvas(); a.width = 1; a.height = 4; var g = a.getContext('2d');
+['#ff0000', '#00ff00', '#0000ff', '#ffffff'].forEach(function(s, i) { g.fillStyle = s; g.fillRect(0, i, 1, 1); });
+var b = wx.createCanvas(); b.width = 1; b.height = 4; var gb = b.getContext('2d'); gb.fillStyle = '#000000'; gb.fillRect(0, 0, 1, 4);
+function up(src) { gl.bindTexture(gl.TEXTURE_2D, t); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, src); }
+function draw() { gl.useProgram(p); gl.bindTexture(gl.TEXTURE_2D, t); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); T.ev('drawn', { err: gl.getError() }); }
+globalThis.step = function(i) {
+    if (i == 0) up(a);
+    if (i == 1) { g.fillStyle = '#ffff00'; g.fillRect(0, 2, 1, 1); up(a); }
+    if (i == 2) up(a);
+    if (i == 3) { up(b); up(a); }
+    if (i == 4) { gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 3, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([255, 0, 255, 255]));
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true); up(a); }
+    requestAnimationFrame(draw);
+};
+step(0);
+T.ready('wg2b');
+"#);
+    h.assert_no_fail();
+    let rows = |h: &mut _| [80, 250, 420, 590].map(|y| px(h, 187, y));
+    let (r, g, b, w, y) = ([255, 0, 0], [0, 255, 0], [0, 0, 255], [255, 255, 255], [255, 255, 0]);
+    assert_eq!(rows(&mut h), [r, g, b, w], "第一次整张");
+    for (i, want) in [(1, [r, g, y, w]), (2, [r, g, y, w]), (3, [r, g, y, w]), (4, [r, g, y, w])] {
+        h.engine.eval(&format!("step({i})")).unwrap();
+        h.vsyncs(2);
+        assert_eq!(rows(&mut h), want, "第 {i} 步");
+    }
+    assert!(h.events("drawn").iter().all(|e| e["err"] == 0), "{:?}", h.events("drawn"));
+}
+
 /// WG3：WebGL 的错误语义 —— 越界绘制、别的上下文的对象、已删对象、readPixels 目标太短、类型不匹配、uniform 位置不属于当前程序
 #[test]
 fn wg3_错误语义() {

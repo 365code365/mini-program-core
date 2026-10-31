@@ -135,7 +135,7 @@ impl Canvas2DContext {
     }
 
     /// 合成模式 / 阴影不是默认值：把图当成「不重复的图案」填目标矩形，走 fx 蒙版（`paint_with_fx`）。
-    /// 要拷一份源像素给图案（这条路本来就要整画布大小的蒙版，不在热路径上）。
+    /// 要拷一份源像素给图案（不在热路径上）。
     /// 变换临时换成「源图像素坐标 → 设备」，让图案的反算落到源图上
     fn draw_image_fx(&mut self, rgba: &[u8], iw: u32, ih: u32, r: ImageRects) {
         let saved = (self.transform, self.fx.fill.clone());
