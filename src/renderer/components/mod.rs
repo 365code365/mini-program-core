@@ -68,7 +68,7 @@ pub use video::{
 pub use video::{chrome as video_chrome, fullscreen as video_fullscreen, ui as video_ui};
 pub use canvas::image2d::ImageRects;
 /// 小游戏 GPU 2D 后端（game/canvas/gpu2d）看的合成模式
-pub use canvas::gpu_view::GpuBlend;
+pub use canvas::gpu_view::{GpuBlend, GpuGradient};
 /// 小游戏 drawImage 的分段表等（canvas/image2d.rs）
 pub use canvas::image2d as canvas_image;
 pub use canvas::text_font::{FontSpec, TextMetrics2D};

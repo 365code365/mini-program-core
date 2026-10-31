@@ -78,6 +78,14 @@ pub struct GlCtx {
     window: Option<k::Surface>,
     /// 2D 画布 → 纹理的增量上传（upload_cache.rs）
     pub uploads: super::upload_cache::UploadCache,
+    /// 在 display 级纹理共享组里（GPU 2D 画布能直接画进本上下文的纹理，game/canvas/gpu2d/share.rs）
+    pub shared_tex: bool,
+    /// TEXTURE_2D 纹理 0 级的尺寸（名 → 宽高，texImage2D / texStorage2D / copyTexImage2D 时记，ops_texture.rs）：
+    /// texSubImage2D(GPU 2D 画布) 只有整块落在里面才走 GPU 拷贝（越界要报 INVALID_VALUE，那种交给 CPU 那条）
+    pub gpu_tex: std::collections::HashMap<u32, (u32, u32)>,
+    /// 纹理名 → 上一次 GPU 直拷进来的（画布, 内容代数, 位置, FLIP_Y, 预乘）：完全相同就跳过（游戏常每帧
+    /// texSubImage2D 一张没变的整屏 UI 画布；CPU 那条有 upload_cache 逐行比，GPU 这条按代数比）
+    pub share_src: std::collections::HashMap<u32, (u32, u64, (i32, i32), bool, bool)>,
 }
 
 impl GlCtx {
@@ -85,7 +93,7 @@ impl GlCtx {
         let es3 = version == 2;
         let want = Want { alpha: attrs.alpha, depth: attrs.depth, stencil: attrs.stencil, antialias: attrs.antialias, es3 };
         let (cfg, got) = egl::choose_config(d, &want).ok_or("没有合用的 EGL config")?;
-        let context = egl::create_context(d, cfg, es3, true)?;
+        let (context, shared_tex) = egl::create_context_ex(d, cfg, es3, true, true)?;
         let surface = match egl::create_pbuffer(d, cfg, w, h) {
             Ok(s) => s,
             Err(e) => {
@@ -99,7 +107,7 @@ impl GlCtx {
         let check = (!d.webgl_compat).then(super::validate::Tracker::default);
         let mut c = Self { d, cfg, context, surface, gl, version, attrs, got, w, h, errors: Vec::new(), lost: false, lost_reported: false,
             unpack: Unpack::default(), pack_alignment: 4, drew: false, needs_clear: false, draw_fb_default: true, read_fb_default: true,
-            enabled: Vec::new(), check, scratch: Vec::new(), syncs: Default::default(), next_sync: 0, window: None, ds_rbos: Default::default(), bound_rbo: 0, uploads: Default::default() };
+            enabled: Vec::new(), check, scratch: Vec::new(), syncs: Default::default(), next_sync: 0, window: None, ds_rbos: Default::default(), bound_rbo: 0, uploads: Default::default(), shared_tex, gpu_tex: Default::default(), share_src: Default::default() };
         unsafe {
             // WebGL：视口与裁剪框的初值 = 画布尺寸（GL 也是 surface 尺寸，pbuffer 就是画布尺寸）
             c.gl.viewport(0, 0, w as i32, h as i32);

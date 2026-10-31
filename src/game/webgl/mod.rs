@@ -323,6 +323,11 @@ impl crate::game::GameEngine {
         self.canvases.borrow().gpu2d.as_ref().map(|g| (g.draws, g.tile_uploads, g.readbacks))
     }
 
+    /// 诊断 / 测试：GPU 2D 画布在 GPU 上直接拷给 WebGL 纹理的次数（canvas/gpu2d/share.rs）
+    pub fn gpu2d_share_copies(&self) -> u64 {
+        self.canvases.borrow().gpu2d.as_ref().map(|g| g.share_copies).unwrap_or(0)
+    }
+
     /// 诊断 / 测试：主画布用的 WebGL 后端
     pub fn webgl_backend(&self) -> Option<&'static str> {
         let main = self.canvases.borrow().main_id()?;

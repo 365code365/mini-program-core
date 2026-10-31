@@ -243,11 +243,17 @@ fn sample_affine(canvas: &mut Canvas, rgba: &[u8], iw: u32, m: [f32; 6], r: Imag
     if !(lx.is_finite() && ly.is_finite() && hx.is_finite() && hy.is_finite()) {
         return;
     }
+    // 旋转 / 斜切：四条边做抗锯齿（浏览器一样）。像素中心到每条边的设备距离 d，覆盖率 = Π clamp(d + 0.5, 0, 1)：
+    // 边落在像素边界上时（90° 整数位置）内侧 d ≥ 0.5 恰为 1、外侧 d ≤ -0.5 恰为 0，与不做抗锯齿逐字节相同。
+    // 轴对齐的缩放 / 平移不做（不改既有基线；那种边与像素格平行，硬边看不出锯齿）。
+    // GPU 2D（game/canvas/gpu2d/gl.rs 的 v_e）用同一个式子
+    let edges = (m[1] != 0.0 || m[2] != 0.0).then(|| aa_edges(corners[0], corners[1], corners[2])).flatten();
+    let pad = if edges.is_some() { 1.0 } else { 0.0 };
     let (bx0, bx1, by0, by1) = canvas.draw_bounds();
-    let x0 = (lx.floor() as i32).max(bx0);
-    let x1 = (hx.ceil() as i32).min(bx1);
-    let y0 = (ly.floor() as i32).max(by0);
-    let y1 = (hy.ceil() as i32).min(by1);
+    let x0 = ((lx - pad).floor() as i32).max(bx0);
+    let x1 = ((hx + pad).ceil() as i32).min(bx1);
+    let y0 = ((ly - pad).floor() as i32).max(by0);
+    let y1 = ((hy + pad).ceil() as i32).min(by1);
     if x1 <= x0 || y1 <= y0 {
         return;
     }
@@ -271,7 +277,16 @@ fn sample_affine(canvas: &mut Canvas, rgba: &[u8], iw: u32, m: [f32; 6], r: Imag
             let ux = inv[0] * cx + inv[2] * cy + inv[4];
             let uy = inv[1] * cx + inv[3] * cy + inv[5];
             let (tx, ty) = (ux - r.dx, uy - r.dy);
-            if tx < 0.0 || ty < 0.0 || tx >= r.dw || ty >= r.dh {
+            let cov = match edges {
+                Some((hs, ht)) => {
+                    let (s, t) = (tx / r.dw, ty / r.dh);
+                    let c = |d: f32| (d + 0.5).clamp(0.0, 1.0);
+                    c(s * hs) * c((1.0 - s) * hs) * c(t * ht) * c((1.0 - t) * ht)
+                }
+                None if tx < 0.0 || ty < 0.0 || tx >= r.dw || ty >= r.dh => 0.0,
+                None => 1.0,
+            };
+            if cov <= 0.0 {
                 continue;
             }
             let (u, v) = (r.sx + tx * ku, r.sy + ty * kv);
@@ -294,9 +309,18 @@ fn sample_affine(canvas: &mut Canvas, rgba: &[u8], iw: u32, m: [f32; 6], r: Imag
             // 去预乘回直通 alpha
             let k = 255.0 / s[3];
             let c = [(s[0] * k).round().clamp(0.0, 255.0) as u8, (s[1] * k).round().clamp(0.0, 255.0) as u8, (s[2] * k).round().clamp(0.0, 255.0) as u8, s[3].round().clamp(0.0, 255.0) as u8];
-            put(&mut px[y as usize * cw + x as usize], c, alpha);
+            put(&mut px[y as usize * cw + x as usize], c, alpha * cov);
         }
     }
+}
+
+/// 平行四边形 p0（目标矩形左上）、p1（右上）、p3（左下）：沿 s（p0→p1）、t（p0→p3）方向每单位对应的
+/// 设备像素距离 (hs, ht)（到对边的距离 = 面积 / 边长）。退化（面积 0）返回 None
+pub fn aa_edges(p0: (f32, f32), p1: (f32, f32), p3: (f32, f32)) -> Option<(f32, f32)> {
+    let (e1, e2) = ((p1.0 - p0.0, p1.1 - p0.1), (p3.0 - p0.0, p3.1 - p0.1));
+    let area = (e1.0 * e2.1 - e1.1 * e2.0).abs();
+    let (l1, l2) = ((e1.0 * e1.0 + e1.1 * e1.1).sqrt(), (e2.0 * e2.0 + e2.1 * e2.1).sqrt());
+    (area > 1e-6 && l1 > 0.0 && l2 > 0.0).then(|| (area / l2, area / l1))
 }
 
 #[cfg(test)]
@@ -393,5 +417,30 @@ mod image2d_tests {
         // 源 (u=3, v=0) → 设备 (x = 2 - 0.5 → 1, y = 3)
         let s = &src[(0 * 4 + 3) * 4..(0 * 4 + 3) * 4 + 4];
         assert_eq!(c.get_pixel(1, 3), Color::new(s[0], s[1], s[2], s[3]));
+    }
+
+    /// 旋转的边做抗锯齿：90° 整数位置与「中心在内就画」逐字节相同；30° 的边上有半覆盖的像素，离边 1px 以外全满、全空
+    #[test]
+    fn 旋转的边抗锯齿_九十度不变() {
+        let src = Arc::new([255u8, 0, 0, 255].repeat(16 * 16));
+        let r = ImageRects { sx: 0.0, sy: 0.0, sw: 16.0, sh: 16.0, dx: -8.0, dy: -8.0, dw: 16.0, dh: 16.0 };
+        let draw = |m: [f32; 6]| {
+            let mut c = Canvas::new(40, 40);
+            c.clear(Color::TRANSPARENT);
+            sample_affine(&mut c, &src, 16, m, r, true, 1.0);
+            c
+        };
+        let c90 = draw([0.0, 1.0, -1.0, 0.0, 20.0, 20.0]);
+        let alphas: Vec<u8> = c90.pixels().iter().map(|p| p.a).collect();
+        assert!(alphas.iter().all(|&a| a == 0 || a == 255), "90° 整数位置不该有半覆盖");
+        assert_eq!(alphas.iter().filter(|&&a| a == 255).count(), 256);
+        let (sn, cs) = (0.5f32.sin(), 0.5f32.cos());
+        let c30 = draw([cs, sn, -sn, cs, 20.0, 20.0]);
+        let partial = c30.pixels().iter().filter(|p| p.a > 0 && p.a < 255).count();
+        assert!(partial > 40, "旋转的边应当有半覆盖：{partial}");
+        assert_eq!(c30.get_pixel(20, 20).a, 255, "中心全满");
+        assert_eq!(c30.get_pixel(1, 1).a, 0, "远处全空");
+        let total: f32 = c30.pixels().iter().map(|p| p.a as f32 / 255.0).sum();
+        assert!((total - 256.0).abs() < 4.0, "覆盖率之和 ≈ 面积 256：{total}");
     }
 }

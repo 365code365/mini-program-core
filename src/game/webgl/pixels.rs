@@ -73,6 +73,8 @@ pub fn image_bytes(w: i32, h: i32, d: i32, bpp: usize, s: &Store) -> Option<usiz
 
 /// 主画布 / 当作源的画布：默认帧缓冲读回后备缓冲（行翻转；预乘的还原成直通 alpha；alpha:false 补成不透明）
 pub fn read_back(c: &mut GlCtx, slot: &mut Slot) {
+    // 后备缓冲要变：内容代数加一（GPU 2D 把它当 drawImage 源时按代数判断要不要重传，canvas/gpu2d）
+    slot.gen += 1;
     if slot.w == 0 || slot.h == 0 {
         return;
     }

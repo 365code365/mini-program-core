@@ -61,15 +61,18 @@ impl GameCanvases {
         let want = match self.mode2d {
             Mode2d::Cpu => false,
             Mode2d::Gpu => true,
-            Mode2d::Auto => main && !self.cpu_output && cfg!(any(target_os = "ios", target_os = "android")),
+            // 离屏画布：要有纹理共享组才值得（多半当 WebGL 纹理源，GPU 上直接拷；没有的话每次都要读回）
+            Mode2d::Auto => !self.cpu_output && cfg!(any(target_os = "ios", target_os = "android")),
         };
+        let need_share = self.mode2d == Mode2d::Auto && !main;
         if !want || self.gpu2d_failed {
             return;
         }
         if self.gpu2d.is_none() {
             match Gpu2d::new(&self.gl_pref, self.cpu_output) {
                 Ok(g) => {
-                    self.notes.push(format!("🎨 2D 画布后端 gpu（{}）{}", g.backend, if self.mode2d == Mode2d::Gpu { "：MINI_2D=gpu，全部 2D 画布" } else { "：主画布" }));
+                    self.notes.push(format!("🎨 2D 画布后端 gpu（{}，纹理共享组{}）{}", g.backend, if g.shared { "有" } else { "没有" },
+                        if self.mode2d == Mode2d::Gpu { "：MINI_2D=gpu，全部 2D 画布" } else if g.shared { "：auto，主画布与离屏画布" } else { "：auto，只有主画布" }));
                     self.gpu2d = Some(Box::new(g));
                 }
                 Err(e) => {
@@ -78,6 +81,9 @@ impl GameCanvases {
                     return;
                 }
             }
+        }
+        if need_share && !self.gpu2d.as_ref().is_some_and(|g| g.shared) {
+            return;
         }
         if let Some(s) = self.get(id) {
             s.gpu = Some(Auth::Both);
@@ -154,6 +160,26 @@ impl GameCanvases {
         true
     }
 
+    /// WebGL `texImage2D / texSubImage2D(画布)` 的 GPU 直拷（share.rs）。画布是 GPU 画布、两边在纹理共享组里时做，
+    /// 返回画布尺寸；None = 走不了（调用方照旧读回 + 上传）。动过 GL：调用方要切回自己的上下文
+    /// `same(代数)`：调用方判断这张纹理里是不是已经是这一代的内容（是就不拷，直接返回尺寸）
+    pub fn gpu_copy_to_webgl(&mut self, sid: u32, tex: u32, at: Option<(i32, i32)>, flip: bool, premul: bool, same: impl FnOnce(u64) -> bool) -> Option<(u32, u32)> {
+        if !self.is_gpu(sid) || !self.gpu2d.as_ref().is_some_and(|g| g.shared) {
+            return None;
+        }
+        // 纹理在、GPU 那边是新的：不碰内容代数（sync_gpu 的快路会加一，那是给画用的）
+        let ready = self.get(sid).is_some_and(|s| s.gpu == Some(Auth::Gpu)) && self.gpu2d.as_ref().is_some_and(|g| g.has(sid));
+        // CPU 那边新（回退的调用画过）/ 还没有纹理：先传上去
+        if !ready && !self.sync_gpu(sid) {
+            return None;
+        }
+        let (gen, dims) = self.get(sid).map(|s| (s.gen, (s.ctx.width, s.ctx.height)))?;
+        if same(gen) {
+            return Some(dims);
+        }
+        self.gpu2d.as_mut()?.copy_to(sid, tex, at, flip, premul)
+    }
+
     /// 一块画布降回 CPU（上屏用不了 GPU 时）：GPU 上新画的先读回
     pub fn demote(&mut self, id: u32, why: &str) {
         if !self.is_gpu(id) {
@@ -192,6 +218,15 @@ impl GameCanvases {
     pub fn gpu_frame_end(&mut self) {
         if let Some(g) = self.gpu2d.as_mut() {
             g.end_frame();
+            if crate::game::slow_frame::enabled() {
+                g.period[6] += 1;
+                if g.period[6] >= 120 {
+                    let p = std::mem::take(&mut g.period);
+                    let mb = |b: u64| b as f64 / 1048576.0;
+                    self.notes.push(format!("🎨 GPU 2D {} 帧：draw call {}（提交 {:.2}ms/帧、顶点 {:.2}MB/帧）、临时层 {:.1}MB、裁剪蒙版 {} 次 {:.1}MB、读回 {}、直拷 {}",
+                        p[6], p[0], p[7] as f64 / 1e6 / p[6] as f64, mb(p[8]) / p[6] as f64, mb(p[1]), p[2], mb(p[3]), p[4], p[5]));
+                }
+            }
             if g.lost {
                 self.lost_all("上下文丢失");
             }
@@ -211,7 +246,7 @@ impl GameCanvases {
                     return true;
                 }
                 let Some(b) = self.get(id).map(|s| s.ctx.gpu_rect_bounds(x, y, w, h, false)) else { return true };
-                self.layer(id, b, |g| g.fill_rect(x, y, w, h))
+                self.layer(id, b, false, |g| g.fill_rect(x, y, w, h))
             }
             2 => {
                 let (x, y, w, h) = (n(0), n(1), n(2), n(3));
@@ -219,7 +254,7 @@ impl GameCanvases {
                     return true;
                 }
                 let Some(b) = self.get(id).map(|s| s.ctx.gpu_rect_bounds(x, y, w, h, true)) else { return true };
-                self.layer(id, b, |g| g.stroke_rect(x, y, w, h))
+                self.layer(id, b, true, |g| g.stroke_rect(x, y, w, h))
             }
             3 => {
                 let (x, y, w, h) = (n(0), n(1), n(2), n(3));
@@ -229,7 +264,7 @@ impl GameCanvases {
                 let stroke = op == 15;
                 let Some(b) = self.get(id).map(|s| s.ctx.gpu_path_bounds(stroke)) else { return true };
                 let Some(b) = b else { return true };
-                self.layer(id, b, |g| if stroke { g.stroke() } else { g.fill() })
+                self.layer(id, b, stroke, |g| if stroke { g.stroke() } else { g.fill() })
             }
             25 | 26 => {
                 let t = a.first().and_then(|v| v.as_string()).and_then(|s| s.to_string().ok()).unwrap_or_default();
@@ -242,24 +277,37 @@ impl GameCanvases {
                 let Some(slot) = self.get(id) else { return true };
                 let font = slot.font.clone();
                 let b = slot.ctx.gpu_text_bounds(font.size, t.chars().count(), mw, stroke)(x, y);
-                self.layer(id, b, |g| g.fill_text_font(&font, &t, x, y, mw, stroke))
+                self.layer(id, b, stroke, |g| g.fill_text_font(&font, &t, x, y, mw, stroke))
             }
             _ => false,
         }
     }
 
-    /// fillRect 的 GPU 直画：纯色、轴对齐、无阴影
+    /// fillRect 的 GPU 直画：纯色或渐变、轴对齐、无阴影（整屏渐变底不再每帧在 CPU 上算一遍、传一整张）
     fn fill_rect_fast(&mut self, id: u32, x: f32, y: f32, w: f32, h: f32) -> bool {
         let Some(s) = self.get(id) else { return false };
         let g = &s.ctx;
         let m = g.gpu_transform();
-        let (Some(c), Some(blend)) = (g.gpu_solid_fill(), g.gpu_blend()) else { return false };
+        let Some(blend) = g.gpu_blend() else { return false };
         if m[1] != 0.0 || m[2] != 0.0 || g.gpu_shadow().is_some() || (g.gpu_clip().is_some() && blend.clears_outside()) {
             return false;
         }
         let alpha = g.gpu_alpha();
-        // 与 CPU 的 apply_alpha 同一个取整（截断）
-        let c = if alpha >= 1.0 { c } else { Color::new(c.r, c.g, c.b, (c.a as f32 * alpha) as u8) };
+        let grad = match g.gpu_solid_fill() {
+            Some(_) => None,
+            None => match g.gpu_gradient(false, super::gl::MAX_STOPS) {
+                Some(gr) => Some(gr),
+                None => return false,
+            },
+        };
+        let c = match (g.gpu_solid_fill(), &grad) {
+            // 与 CPU 的 apply_alpha 同一个取整（截断）
+            (Some(c), _) if alpha >= 1.0 => c,
+            (Some(c), _) => Color::new(c.r, c.g, c.b, (c.a as f32 * alpha) as u8),
+            // 渐变：CPU 的 fx 合成里 globalAlpha 是浮点乘上去的，这里不取整
+            _ => Color::new(255, 255, 255, 255),
+        };
+        let galpha = alpha;
         let (ax, ay) = g.gpu_tp(x, y);
         let (bx, by) = g.gpu_tp(x + w, y + h);
         let r = (ax.min(bx), ay.min(by), ax.max(bx), ay.max(by));
@@ -268,7 +316,7 @@ impl GameCanvases {
             return false;
         }
         if let Some(gp) = self.gpu2d.as_mut() {
-            gp.rect(id, r, c, blend, clip.as_ref());
+            gp.rect(id, r, c, grad.as_ref(), galpha, blend, clip.as_ref());
         }
         true
     }
@@ -300,12 +348,16 @@ impl GameCanvases {
     }
 
     /// CPU 照原样把这一笔画进透明临时层（裁剪到 `bounds` 外扩 2px），被画到的那块交给 GPU 按合成模式叠上去
-    fn layer(&mut self, id: u32, bounds: (f32, f32, f32, f32), draw: impl FnOnce(&mut Canvas2DContext)) -> bool {
+    /// `stroke`：这一笔用描边的源（strokeRect / stroke / strokeText）。源是渐变、没有阴影时 CPU 只画白色覆盖率，
+    /// 渐变在 GPU 上算（种类 5），CPU 不再逐像素插值
+    fn layer(&mut self, id: u32, bounds: (f32, f32, f32, f32), stroke: bool, draw: impl FnOnce(&mut Canvas2DContext)) -> bool {
         let Some(s) = self.get(id) else { return true };
         let g = &s.ctx;
         let Some(blend) = g.gpu_blend() else { return false };
         let shadow = g.gpu_shadow();
         let clip = g.gpu_clip().cloned();
+        let grad = if shadow.is_none() { g.gpu_gradient(stroke, super::gl::MAX_STOPS) } else { None };
+        let alpha = g.gpu_alpha();
         if (shadow.is_some() && blend != GpuBlend::SourceOver) || (clip.is_some() && blend.clears_outside()) {
             return false;
         }
@@ -330,7 +382,11 @@ impl GameCanvases {
         layer.clip_rect(crate::Rect::new(x0 as f32, y0 as f32, (x1 - x0) as f32, (y1 - y0) as f32));
         s.ctx.swap_backing(&mut layer);
         // 裁剪交给 GPU 乘（gl.rs 文件头）：这里不经 draw_op，CPU 不再按蒙版插值一遍
-        s.ctx.with_source_over(draw);
+        if grad.is_some() {
+            s.ctx.with_white_source(stroke, draw);
+        } else {
+            s.ctx.with_source_over(draw);
+        }
         s.ctx.swap_backing(&mut layer);
         layer.reset_clip();
         let stride = w as usize;
@@ -344,7 +400,7 @@ impl GameCanvases {
                 row.fill(Color::TRANSPARENT);
             }
             if let Some(gp) = self.gpu2d.as_mut() {
-                gp.tile(id, region, &t, blend, clip.as_ref());
+                gp.tile(id, region, &t, grad.as_ref(), alpha, blend, clip.as_ref());
             }
         });
         give_layer(layer);
@@ -392,6 +448,8 @@ impl GameCanvases {
             return true;
         }
         let clip = g.gpu_clip().cloned();
+        let m = g.gpu_transform();
+        let aa = m[1] != 0.0 || m[2] != 0.0;
         let quad = [g.gpu_tp(r.dx, r.dy), g.gpu_tp(r.dx + r.dw, r.dy), g.gpu_tp(r.dx + r.dw, r.dy + r.dh), g.gpu_tp(r.dx, r.dy + r.dh)];
         let (u0, u1, v0, v1) = (r.sx / iwf, (r.sx + r.sw) / iwf, r.sy / ihf, (r.sy + r.sh) / ihf);
         let uv = [(u0, v0), (u1, v0), (u1, v1), (u0, v1)];
@@ -411,14 +469,14 @@ impl GameCanvases {
         let Some(gp) = gpu2d.as_mut() else { return false };
         let inset = [iu0, iu1, iv0, iv1];
         match (&img, src_gpu) {
-            (Some(d), _) => gp.image(id, &Src::Image(d), quad, uv, inset, alpha, smooth, blend, clip.as_ref()),
-            (None, true) => gp.image(id, &Src::Gpu(sid), quad, uv, inset, alpha, smooth, blend, clip.as_ref()),
+            (Some(d), _) => gp.image(id, &Src::Image(d), quad, uv, inset, alpha, smooth, aa, blend, clip.as_ref()),
+            (None, true) => gp.image(id, &Src::Gpu(sid), quad, uv, inset, alpha, smooth, aa, blend, clip.as_ref()),
             (None, false) => {
                 let Some(ss) = slots.get(sid as usize).and_then(|s| s.as_ref()) else { return true };
                 let canvas = ss.ctx.get_canvas();
                 let c = canvas.lock().unwrap();
                 let src = Src::Cpu { id: sid, gen: ss.gen, rgba: crate::canvas::color_bytes(c.pixels()), w: c.width(), h: c.height() };
-                gp.image(id, &src, quad, uv, inset, alpha, smooth, blend, clip.as_ref());
+                gp.image(id, &src, quad, uv, inset, alpha, smooth, aa, blend, clip.as_ref());
             }
         }
         true

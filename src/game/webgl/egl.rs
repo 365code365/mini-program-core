@@ -264,8 +264,21 @@ pub fn choose_config(d: &Display, w: &Want) -> Option<(egl::Config, Got)> {
 /// 建上下文。WebGL 兼容 / 关扩展 / 资源零初始化 / 不自动生成名字 / 不许客户端数组 / robust access 能开就开，
 /// 驱动不认就逐个去掉再试
 pub fn create_context(d: &Display, cfg: egl::Config, es3: bool, webgl: bool) -> Result<egl::Context, String> {
+    create_context_ex(d, cfg, es3, webgl, false).map(|(c, _)| c)
+}
+
+/// EGL_ANGLE_display_texture_share_group：开了的上下文共用 display 上的一张纹理表（纹理名在它们之间通用）
+const DISPLAY_TEXTURE_SHARE_GROUP: i32 = 0x33AF;
+
+/// 同 [`create_context`]；`share_tex` = 能开就开 display 级的纹理共享组（GPU 2D 画布与 WebGL 互相直接读写纹理，
+/// game/canvas/gpu2d）。返回 (上下文, 共享组真的开上了)
+pub fn create_context_ex(d: &Display, cfg: egl::Config, es3: bool, webgl: bool, share_tex: bool) -> Result<(egl::Context, bool), String> {
     d.egl.bind_api(egl::OPENGL_ES_API).map_err(|e| e.to_string())?;
     let mut opt: Vec<(i32, i32)> = Vec::new();
+    // 放最前面：建不了时从后往前去掉可选项，它最后才被去掉
+    if share_tex && d.has_ext("EGL_ANGLE_display_texture_share_group") {
+        opt.push((DISPLAY_TEXTURE_SHARE_GROUP, 1));
+    }
     if d.webgl_compat && webgl {
         opt.push((0x33AC, 1));
         if d.has_ext("EGL_ANGLE_create_context_extensions_enabled") { opt.push((0x345F, 0)); }
@@ -286,7 +299,7 @@ pub fn create_context(d: &Display, cfg: egl::Config, es3: bool, webgl: bool) -> 
         }
         attrs.push(egl::NONE);
         match d.egl.create_context(d.dpy, cfg, None, &attrs) {
-            Ok(c) => return Ok(c),
+            Ok(c) => return Ok((c, opt.first().map(|o| o.0) == Some(DISPLAY_TEXTURE_SHARE_GROUP))),
             Err(e) => {
                 // 先去掉 robustness（最常见的不认），再去掉其余可选项
                 if opt.pop().is_none() {

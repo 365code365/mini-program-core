@@ -48,7 +48,7 @@ impl Gpu2d {
             gl.active_texture(glow::TEXTURE0);
             gl.bind_texture(glow::TEXTURE_2D, Some(tex));
             gl::set_filter(gl, glow::NEAREST);
-            self.prog.blit(gl, true, true);
+            self.prog.blit(gl, true, 1);
             if let Some((ow, oh, px)) = overlay.filter(|o| o.0 > 0 && o.1 > 0) {
                 let t = match self.window.as_ref().and_then(|x| x.overlay) {
                     Some(t) => t,
@@ -61,7 +61,7 @@ impl Gpu2d {
                 gl::upload_rgba(gl, ow, oh, &px);
                 gl.enable(glow::BLEND);
                 gl.blend_func(glow::ONE, glow::ONE_MINUS_SRC_ALPHA);
-                self.prog.blit(gl, true, false);
+                self.prog.blit(gl, true, 0);
             }
         }
         self.draws += 1;

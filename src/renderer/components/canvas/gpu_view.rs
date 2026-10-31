@@ -4,8 +4,19 @@
 //! （`swap_backing` 换进来），画完把被写过的那块当纹理交给 GPU 按合成模式叠上去。所以它要知道的只是
 //! 「这一笔会落在哪」（外接框）与「这一笔怎么叠」（合成模式、裁剪、阴影），都在这里给出，不碰别的字段。
 
-use super::fx2d::Composite;
+use super::fx2d::{Composite, DeviceSource};
 use super::*;
+
+/// 设备坐标里的渐变（GPU 2D 的片元按它算，式子与 `fx2d::DeviceSource::sample` 相同）
+#[derive(Clone, Debug, PartialEq)]
+pub struct GpuGradient {
+    /// 0 线性（g0 = p0.x, p0.y, d.x, d.y；g1 = |d|²）、1 径向（g0 = 圆心 x, y, r0, r1）、2 锥形（g0 = 圆心 x, y, 起始角）
+    pub kind: i32,
+    pub g0: [f32; 4],
+    pub g1: f32,
+    /// (位置, RGBA 0~1 非预乘)
+    pub stops: Vec<(f32, [f32; 4])>,
+}
 
 /// 合成模式里 GPU 能用固定管线混合函数表达的那几种（预乘空间的 Porter-Duff）；其余（multiply 这类要读目标色的）走 CPU
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -105,6 +116,37 @@ impl Canvas2DContext {
             let pts = [self.tp(x0, y0), self.tp(x1, y0), self.tp(x1, y1), self.tp(x0, y1)];
             pts.iter().fold((f32::MAX, f32::MAX, f32::MIN, f32::MIN), |b, p| (b.0.min(p.0), b.1.min(p.1), b.2.max(p.0), b.3.max(p.1)))
         }
+    }
+
+    /// 填充（`stroke` = 描边）的源是渐变、色标不超过 `max_stops` 个时给出 GPU 版；纯色 / 图案 / 色标太多 None
+    pub fn gpu_gradient(&self, stroke: bool, max_stops: usize) -> Option<GpuGradient> {
+        let src = if stroke { &self.fx.stroke } else { &self.fx.fill };
+        if !matches!(src, Some(fx2d::Source::Linear { .. } | fx2d::Source::Radial { .. } | fx2d::Source::Conic { .. })) {
+            return None;
+        }
+        let conv = |st: &[(f32, Color)]| -> Option<Vec<(f32, [f32; 4])>> {
+            (!st.is_empty() && st.len() <= max_stops).then(|| st.iter().map(|(p, c)| (*p, [c.r as f32 / 255.0, c.g as f32 / 255.0, c.b as f32 / 255.0, c.a as f32 / 255.0])).collect())
+        };
+        Some(match self.device_source(stroke) {
+            DeviceSource::Linear { p0, d, len2, stops } => GpuGradient { kind: 0, g0: [p0.0, p0.1, d.0, d.1], g1: len2, stops: conv(&stops)? },
+            DeviceSource::Radial { c0, r0, c1, r1, stops } => {
+                // 同心近似：两个圆心重合用 c1，否则取中点（与 sample 一致）
+                let c = if (c0.0 - c1.0).abs() < 0.01 && (c0.1 - c1.1).abs() < 0.01 { c1 } else { (c0.0 + (c1.0 - c0.0) * 0.5, c0.1 + (c1.1 - c0.1) * 0.5) };
+                GpuGradient { kind: 1, g0: [c.0, c.1, r0, r1], g1: 0.0, stops: conv(&stops)? }
+            }
+            DeviceSource::Conic { angle, c, stops } => GpuGradient { kind: 2, g0: [c.0, c.1, angle, 0.0], g1: 0.0, stops: conv(&stops)? },
+            _ => return None,
+        })
+    }
+
+    /// 临时换成「白色、不透明、无渐变、source-over」跑 `f`：画出来的就是这一笔的覆盖率（GPU 再乘渐变与 globalAlpha）
+    pub fn with_white_source<R>(&mut self, stroke: bool, f: impl FnOnce(&mut Self) -> R) -> R {
+        let saved = (self.fx.fill.take(), self.fx.stroke.take(), self.fill_style, self.stroke_style, self.global_alpha, std::mem::take(&mut self.fx.composite));
+        let _ = stroke;
+        (self.fill_style, self.stroke_style, self.global_alpha) = (Color::WHITE, Color::WHITE, 1.0);
+        let r = f(self);
+        (self.fx.fill, self.fx.stroke, self.fill_style, self.stroke_style, self.global_alpha, self.fx.composite) = saved;
+        r
     }
 
     /// 后备缓冲换成 `c`（同尺寸）：GPU 后端拿一张透明临时层换进来画一笔，画完再换回去

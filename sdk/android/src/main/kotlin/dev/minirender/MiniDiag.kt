@@ -28,6 +28,10 @@ internal object MiniDiag {
         "layout_log" to "MINI_LAYOUT_LOG",
         "input_log" to "MINI_INPUT_LOG",
         "backend" to "MINI_BACKEND",
+        // 小游戏 2D 画布后端 auto / cpu / gpu（game/canvas/gpu2d）
+        "canvas2d" to "MINI_2D",
+        // 小游戏慢帧归因阈值（ms，game/slow_frame.rs）：超过的帧打一行「🐢 慢帧」
+        "game_slow_ms" to "MINI_GAME_SLOW_MS",
         "no_resample" to "MINI_NO_RESAMPLE",
         "pace" to "MINI_PACE",
         "cpu_pin" to "MINI_CPU_PIN",
@@ -64,7 +68,7 @@ internal object MiniDiag {
             return
         }
         // `[debug.mini.fps]: [1]`
-        val re = Regex("""^\[debug\.mini\.([a-z_]+)]: \[(.*)]$""")
+        val re = Regex("""^\[debug\.mini\.([a-z0-9_]+)]: \[(.*)]$""")
         for (line in props.lineSequence()) {
             val m = re.find(line.trim()) ?: continue
             val env = KEYS[m.groupValues[1]] ?: continue

@@ -20,12 +20,37 @@ pub fn call<'js>(c: &mut GlCtx, e: &Env<'_, 'js>, op: Op, a: &A<'_, 'js>) -> Opt
         | copyTexImage2D | copyTexSubImage2D | _compressedTexImage2D | _compressedTexSubImage2D | texStorage2D) {
         let t = bound_2d(c);
         c.uploads.forget(t);
+        // 画布来源的 texImage2D 由 gpu_canvas_copy 自己比代数（走不了 GPU 时下面照旧上传，记录在那里作废）
+        if !(op == _texImage2DSource && a.i(5) == 2) {
+            c.share_src.remove(&t);
+        }
+    }
+    // 记下 0 级的尺寸（texSubImage2D(GPU 2D 画布) 要据此判断落没落在纹理里，canvas/gpu2d/share.rs）
+    if a.u(0) == glow::TEXTURE_2D && matches!(op, _texImage2D | texStorage2D | copyTexImage2D | _compressedTexImage2D) {
+        let t = bound_2d(c);
+        let wh = |w: i32, h: i32| (w.max(0) as u32, h.max(0) as u32);
+        match op {
+            _texImage2D if a.i(1) == 0 => { c.gpu_tex.insert(t, wh(a.i(3), a.i(4))); }
+            texStorage2D => { c.gpu_tex.insert(t, wh(a.i(3), a.i(4))); }
+            copyTexImage2D if a.i(1) == 0 => { c.gpu_tex.insert(t, wh(a.i(5), a.i(6))); }
+            // 压缩纹理画不进去
+            _compressedTexImage2D if a.i(1) == 0 => { c.gpu_tex.remove(&t); }
+            _ => {}
+        }
+    }
+    // GPU 2D 画布当源：纹理共享组里直接在 GPU 上拷（canvas/gpu2d/share.rs），走不了再照旧读回 + 上传
+    if c.shared_tex && a.u(0) == glow::TEXTURE_2D && a.i(1) == 0 && matches!(op, _texImage2DSource | _texSubImage2DSource) {
+        if let Some(r) = gpu_canvas_copy(c, e, op, a) {
+            return Some(r);
+        }
     }
     unsafe {
         match op {
             createTexture => return Some(c.gl.create_texture().map(|t| t.0.get()).map_or_else(|_| null(ctx), |n| js(ctx, n))),
             deleteTexture => {
                 c.uploads.deleted(a.u(0));
+                c.gpu_tex.remove(&a.u(0));
+                c.share_src.remove(&a.u(0));
                 if let Some(t) = tex(a.u(0)) { c.gl.delete_texture(t) }
             }
             bindTexture => c.gl.bind_texture(a.u(0), tex(a.u(1))),
@@ -64,6 +89,10 @@ pub fn call<'js>(c: &mut GlCtx, e: &Env<'_, 'js>, op: Op, a: &A<'_, 'js>) -> Opt
                 let (t, lv, ifmt, f, ty) = (a.u(0), a.i(1), a.i(2), a.u(3), a.u(4));
                 if let Some((data, w, h)) = source(c, e, a, 5, f, ty) {
                     tight(c, |gl| gl.tex_image_2d(t, lv, ifmt, w as i32, h as i32, 0, f, ty, glow::PixelUnpackData::Slice(Some(&data))));
+                    if t == glow::TEXTURE_2D && lv == 0 {
+                        let b = bound_2d(c);
+                        c.gpu_tex.insert(b, (w, h));
+                    }
                 }
             }
             _texSubImage2DSource if canvas_sub && a.u(0) == glow::TEXTURE_2D => canvas_sub_upload(c, e, a, a.i(1), a.i(2), a.i(3), a.u(4), a.u(5)),
@@ -231,6 +260,51 @@ fn tight(c: &GlCtx, f: impl FnOnce(&glow::Context)) {
             if pbo != 0 { gl.bind_buffer(glow::PIXEL_UNPACK_BUFFER, super::args::buf(pbo as u32)); }
         }
     }
+}
+
+/// `_texImage2DSource (t, 0, ifmt, f, ty, 2, id)` / `_texSubImage2DSource (t, 0, x, y, f, ty, 2, id)`：源是 GPU 2D 画布、RGBA8 时
+/// 在 GPU 上拷。None = 不归这里（调用方照旧）
+fn gpu_canvas_copy<'js>(c: &mut GlCtx, e: &Env<'_, 'js>, op: super::natives::Op, a: &A<'_, 'js>) -> Option<JsResult<Value<'js>>> {
+    let sub = op == super::natives::Op::_texSubImage2DSource;
+    let (f, ty, kind, id) = if sub { (a.u(4), a.u(5), a.i(6), a.u(7)) } else { (a.u(3), a.u(4), a.i(5), a.u(6)) };
+    if kind != 2 || f != glow::RGBA || ty != glow::UNSIGNED_BYTE || (!sub && a.u(2) != glow::RGBA) {
+        return None;
+    }
+    let tex = bound_2d(c);
+    let (w, h) = { let mut cs = e.canvases.borrow_mut(); let s = cs.get(id)?; (s.ctx.width, s.ctx.height) };
+    let at = if sub {
+        let (x, y) = (a.i(2), a.i(3));
+        // 只往尺寸已知的纹理里拷，而且要整块落在里面（越界照旧走 CPU 那条，由它报 INVALID_VALUE）
+        let &(tw, th) = c.gpu_tex.get(&tex)?;
+        if x < 0 || y < 0 || x as u32 + w > tw || y as u32 + h > th {
+            return None;
+        }
+        Some((x, y))
+    } else {
+        None
+    };
+    // texImage2D 且纹理已经是画布尺寸：与 texSubImage2D(0, 0) 结果相同，按同一个键比
+    let pos = at.unwrap_or((0, 0));
+    let same_size = sub || c.gpu_tex.get(&tex) == Some(&(w, h));
+    let (flip, premul) = (c.unpack.flip_y, c.unpack.premultiply);
+    let last = c.share_src.get(&tex).copied();
+    let mut gen_now = 0;
+    let r = e.canvases.borrow_mut().gpu_copy_to_webgl(id, tex, at, flip, premul, |gen| {
+        gen_now = gen;
+        same_size && last == Some((id, gen, pos, flip, premul))
+    });
+    // 2D 的上下文成了 current：切回本上下文（就算没拷成，sync 也可能动过 GL）
+    c.make_current();
+    let Some((w, h)) = r else {
+        c.share_src.remove(&tex);
+        return None;
+    };
+    c.uploads.forget(tex);
+    c.share_src.insert(tex, (id, gen_now, pos, flip, premul));
+    if !sub {
+        c.gpu_tex.insert(tex, (w, h));
+    }
+    Some(undef(&e.ctx))
 }
 
 fn bound_2d(c: &GlCtx) -> u32 {

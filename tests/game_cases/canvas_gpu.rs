@@ -11,7 +11,7 @@ const HEAD: &str = "var T = require('_lib/t.js'); var c = wx.createCanvas(); var
 /// (场景, 差 > 2 级的像素比例上限, 最大通道差上限)
 /// 实测（2026-10-31，SwiftShader）：rects / text / fx / mixed 差 > 2 的像素 0、最大差 1~2；paths 0.14%、最大 6（半透明形状边缘
 /// 两次取整）；images 0.15%、最大 204（旋转的 drawImage：CPU 的边缘有抗锯齿，GPU 的四边形边缘没有，只在旋转图的轮廓上）
-const LIMITS: &[(&str, f64, u8)] = &[("rects", 0.0001, 4), ("paths", 0.002, 8), ("text", 0.0001, 4), ("fx", 0.0001, 4), ("images", 0.002, 255), ("mixed", 0.0001, 4)];
+const LIMITS: &[(&str, f64, u8)] = &[("rects", 0.0001, 4), ("paths", 0.002, 8), ("text", 0.0001, 4), ("fx", 0.0001, 4), ("images", 0.004, 12), ("mixed", 0.0001, 4), ("grad", 0.002, 8)];
 
 fn scene(name: &str) -> String {
     let body = match name {
@@ -75,6 +75,23 @@ g.fillStyle = '#0f0'; g.fillRect(310, 610, 30, 30); g.beginPath(); g.arc(200, 30
 var u = c.toDataURL(); T.ev('url', { ok: u.indexOf('data:image/png;base64,') == 0, n: u.length });
 var e = g.getImageData(320, 620, 1, 1); T.ev('px2', { d: Array.prototype.slice.call(e.data) });
 "#,
+        // 渐变在 GPU 上算（种类 4 / 5）：整屏渐变底、锥形、渐变描边与文字、globalAlpha、多色标、超过 8 个色标（回到 CPU 临时层）
+        "grad" => r#"
+var bg = g.createLinearGradient(0, 0, 0, 667); bg.addColorStop(0, '#1a2a6c'); bg.addColorStop(0.5, '#b21f1f'); bg.addColorStop(1, '#fdbb2d');
+g.fillStyle = bg; g.fillRect(0, 0, 375, 667);
+var h = g.createLinearGradient(20, 0, 355, 0); h.addColorStop(0, 'rgba(255,255,255,0)'); h.addColorStop(1, 'rgba(255,255,255,0.9)');
+g.globalAlpha = 0.7; g.fillStyle = h; g.fillRect(20.5, 40.25, 335, 60); g.globalAlpha = 1;
+var cg = g.createConicGradient ? g.createConicGradient(0.3, 120, 220) : null;
+if (cg) { cg.addColorStop(0, '#f00'); cg.addColorStop(0.33, '#0f0'); cg.addColorStop(0.66, '#00f'); cg.addColorStop(1, '#f00'); g.fillStyle = cg; g.beginPath(); g.arc(120, 220, 70, 0, 7); g.fill(); }
+var rg = g.createRadialGradient(280, 220, 0, 280, 220, 70); rg.addColorStop(0, '#fff'); rg.addColorStop(0.4, '#ff0'); rg.addColorStop(1, 'rgba(255,0,0,0)');
+g.fillStyle = rg; g.fillRect(200, 140, 160, 160);
+var sg = g.createLinearGradient(20, 330, 355, 400); sg.addColorStop(0, '#0ff'); sg.addColorStop(1, '#f0f');
+g.strokeStyle = sg; g.lineWidth = 8; g.beginPath(); g.moveTo(20, 340); g.bezierCurveTo(120, 300, 250, 440, 355, 360); g.stroke(); g.strokeRect(30, 420, 140, 60);
+g.fillStyle = sg; g.font = 'bold 40px sans-serif'; g.fillText('渐变 Text', 30, 540);
+var many = g.createLinearGradient(0, 560, 375, 560); for (var i = 0; i <= 10; i++) many.addColorStop(i / 10, i % 2 ? '#000' : '#fff');
+g.fillStyle = many; g.fillRect(0, 560, 375, 40);
+g.save(); g.translate(250, 620); g.rotate(0.4); g.fillStyle = bg; g.fillRect(-60, -20, 120, 40); g.restore();
+"#,
         _ => unreachable!(),
     };
     format!("{HEAD}{body}\nT.ready('{name}');\n")
@@ -125,6 +142,10 @@ fn g2d_gpu与cpu逐像素对比() {
         if name == "rects" {
             // 300 个矩形 + 清屏：合批（不是一个矩形一次 draw call），只在取帧时读回一次
             assert!(draws <= 6 && tiles == 0 && reads == 1, "rects：draw {draws} 临时层 {tiles} 读回 {reads}");
+        }
+        if name == "grad" {
+            // 整屏渐变底、横向渐变条、径向方块走种类 4（不传临时层）；其余（路径、描边、文字、11 个色标、旋转）各一块临时层
+            assert!(tiles <= 7, "grad：临时层 {tiles}");
         }
         if name == "mixed" {
             for ev in ["px", "px2"] {
@@ -179,7 +200,18 @@ var t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c2);
-requestAnimationFrame(function () { gl.useProgram(p); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); T.ev('drawn', { err: gl.getError() }); });
+function draw() { gl.useProgram(p); gl.bindTexture(gl.TEXTURE_2D, t); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); T.ev('drawn', { err: gl.getError() }); }
+requestAnimationFrame(draw);
+// step 1：2D 画布改了（左边半透明品红）再 texSubImage2D；step 2：竖着 1×2（上红下蓝）FLIP_Y 上传
+globalThis.step = function (i) {
+  if (i == 1) { g2.clearRect(0, 0, 1, 1); g2.fillStyle = 'rgba(255,0,255,0.5)'; g2.fillRect(0, 0, 1, 1); gl.bindTexture(gl.TEXTURE_2D, t); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, c2); }
+  if (i == 2) { c2.width = 1; c2.height = 2; g2.fillStyle = '#f00'; g2.fillRect(0, 0, 1, 1); g2.fillStyle = '#00f'; g2.fillRect(0, 1, 1, 1);
+    gl.bindTexture(gl.TEXTURE_2D, t); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c2); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false); }
+  // step 3：画布没变，同样的参数再传两次（每帧重传没变的 UI 画布的游戏）：不拷
+  if (i == 3) { gl.bindTexture(gl.TEXTURE_2D, t); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, c2);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c2); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false); }
+  requestAnimationFrame(draw);
+};
 T.ready('wgx');
 "#;
     let mut h = GameHarness::open_inline("g2d-webgl", js, Opts { canvas2d: Some("gpu"), ..Default::default() });
@@ -190,5 +222,35 @@ T.ready('wgx');
     let (w, _, p) = h.engine.frame_rgba();
     let at = |x: u32, y: u32| { let i = ((y * w + x) * 4) as usize; [p[i], p[i + 1], p[i + 2]] };
     assert_eq!((at(90, 300), at(280, 300)), ([255, 255, 0], [0, 255, 255]), "左黄右青");
+    // 有纹理共享组（ANGLE）时走 GPU 直拷，没有读回
+    let shared = h.has("纹理共享组有");
+    if shared {
+        assert_eq!(h.engine.gpu2d_share_copies(), 1, "texImage2D 走 GPU 直拷");
+        assert_eq!(h.engine.gpu2d_stats().unwrap().2, 0, "2D 画布一次也没读回 CPU");
+    }
+    h.engine.eval("step(1)").unwrap();
+    h.vsyncs(2);
+    let (w, _, p) = h.engine.frame_rgba();
+    let at = |x: u32, y: u32| { let i = ((y * w + x) * 4) as usize; [p[i], p[i + 1], p[i + 2]] };
+    // 非预乘上传、着色器原样输出，上屏压黑底：(255,0,255) × 0.5 ≈ (128,0,128)
+    let l = at(90, 300);
+    assert!(l[0].abs_diff(128) <= 2 && l[1] == 0 && l[2].abs_diff(128) <= 2 && at(280, 300) == [0, 255, 255], "texSubImage2D 之后：{l:?}");
+    h.engine.eval("step(2)").unwrap();
+    h.vsyncs(2);
+    let (w, _, p) = h.engine.frame_rgba();
+    let at = |x: u32, y: u32| { let i = ((y * w + x) * 4) as usize; [p[i], p[i + 1], p[i + 2]] };
+    // FLIP_Y：画布顶（红）进纹理顶 = uv.y 大 = 屏幕上方
+    assert_eq!((at(187, 150), at(187, 500)), ([255, 0, 0], [0, 0, 255]), "FLIP_Y");
+    h.engine.eval("step(3)").unwrap();
+    h.vsyncs(2);
+    let (w, _, p) = h.engine.frame_rgba();
+    let at = |x: u32, y: u32| { let i = ((y * w + x) * 4) as usize; [p[i], p[i + 1], p[i + 2]] };
+    assert_eq!((at(187, 150), at(187, 500)), ([255, 0, 0], [0, 0, 255]), "没变的画布再传：内容不变");
+    if shared {
+        assert_eq!(h.engine.gpu2d_share_copies(), 3, "没变的画布不再拷");
+        assert_eq!(h.engine.gpu2d_stats().unwrap().2, 0, "texSubImage2D / FLIP_Y 也不读回");
+    }
+    eprintln!("WebGL 读 GPU 画布：纹理共享组 {shared}，直拷 {} 次、读回 {:?}", h.engine.gpu2d_share_copies(), h.engine.gpu2d_stats());
 }
+
 
