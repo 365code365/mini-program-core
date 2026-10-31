@@ -27,11 +27,15 @@ final class GameViewFactory: NSObject, FlutterPlatformViewFactory {
 }
 
 final class GamePlatformView: NSObject, FlutterPlatformView {
-    private let game: MiniGameView
+    private let game: MiniGameHosting
     private let channel: FlutterMethodChannel
 
     init(frame: CGRect, id: Int64, dir: String, dataDir: String?, options: [String: Any], messenger: FlutterBinaryMessenger) {
-        game = MiniGameView(gameDir: dir, dataDir: dataDir, options: options)
+        // 运行模式与原生示例同一套规则（game.json 的 iOSHighPerformance、选项 highPerformance、启动参数 -gameMode）
+        let mode: MiniGameMode = (options["highPerformance"] as? Bool).map { $0 ? .highPerformance : .standard } ?? .auto
+        game = MiniGameMode.resolve(mode, dir: dir) == .highPerformance
+            ? MiniWebGameView(gameDir: dir, dataDir: dataDir, options: options)
+            : MiniGameView(gameDir: dir, dataDir: dataDir, options: options)
         game.frame = frame
         channel = FlutterMethodChannel(name: "dev.minirender/game_\(id)", binaryMessenger: messenger)
         super.init()

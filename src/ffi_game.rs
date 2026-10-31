@@ -419,5 +419,10 @@ mod surface;
 #[cfg(feature = "game")]
 pub use surface::*;
 
+/// 高性能模式（`mr_wg_*`：游戏 JS 跑在宿主的 WebView 里，game/web）
+#[cfg(feature = "game")]
+mod web;
+#[cfg(feature = "game")]
+pub use web::*;
 #[cfg(all(test, feature = "game"))]
 mod tests;

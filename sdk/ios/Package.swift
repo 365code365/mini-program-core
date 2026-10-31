@@ -41,6 +41,8 @@ let package = Package(
                 .linkedFramework("AVFoundation"),
                 .linkedFramework("CoreMotion"),
                 .linkedFramework("CoreLocation"),
+                // 小游戏高性能模式（MiniWebGameView：游戏 JS 跑在 WKWebView 里）
+                .linkedFramework("WebKit"),
             ]
         ),
     ]

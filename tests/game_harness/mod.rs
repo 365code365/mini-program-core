@@ -224,3 +224,4 @@ impl Drop for GameHarness {
         let _ = std::fs::remove_dir_all(self.dir.with_extension("data"));
     }
 }
+pub mod web;

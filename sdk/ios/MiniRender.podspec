@@ -29,5 +29,5 @@ Pod::Spec.new do |s|
   s.libraries = 'c++', 'z'
   # GPU 后端（wgpu 的 Metal，画到视图的 CAMetalLayer）：静态库不带框架依赖；
   # 小游戏：AVFoundation（音频会话、wx.createVideo）、CoreMotion / CoreLocation（传感器、罗盘）
-  s.frameworks = 'Metal', 'QuartzCore', 'CoreGraphics', 'AVFoundation', 'CoreMotion', 'CoreLocation'
+  s.frameworks = 'Metal', 'QuartzCore', 'CoreGraphics', 'AVFoundation', 'CoreMotion', 'CoreLocation', 'WebKit'
 end

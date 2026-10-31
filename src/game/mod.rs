@@ -43,6 +43,8 @@ mod logs;
 pub mod raf_pacer;
 mod fps_governor;
 pub(crate) mod slow_frame;
+/// 高性能模式（游戏 JS 跑在系统 WebView 里，iOS 的 WKWebView：JIT + WebKit 的 GPU 画布），game-doc/12
+pub mod web;
 
 use crate::app_profile::{detect, AppProfile};
 use crate::js::PreludeProfile;

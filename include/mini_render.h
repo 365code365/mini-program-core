@@ -420,6 +420,35 @@ void mr_game_layer_want(MRGame* game, uint32_t* width, uint32_t* height);
 // MR_GAME_PRESENT_CPU = 走 mr_game_pixels_into
 int mr_game_present_layer(MRGame* game);
 
+// ─── 小游戏高性能模式（mr_wg_*，src/ffi_game/web.rs）：游戏 JS 跑在宿主的 WebView（WKWebView）里，这里只做原生侧 ───
+// 页面：宿主加载 wxgame://app/__wg.html，协议处理器把 URL 的路径（含查询串）交给 mr_wg_resource；
+// 页面的同步调用 prompt('__wg', 消息) → mr_wg_call，异步消息 webkit.messageHandlers.wg → mr_wg_post；
+// mr_wg_take_js 的结果 evaluateJavaScript 回页面；mr_wg_take_event 的宿主事件与 mr_game_poll_event 同形。
+// 实例在 Mutex 里，任意线程可调；返回的字符串用 mr_wg_free_string、字节用 mr_wg_free_bytes 释放。
+typedef struct MRWebGame MRWebGame;
+MRWebGame* mr_wg_create(const char* app_dir, const char* data_dir, uint32_t width, uint32_t height, float dpr, const char* options_json);
+void mr_wg_destroy(MRWebGame* h);
+// 找不到返回 NULL；*mime 是静态串（不用释放）
+uint8_t* mr_wg_resource(MRWebGame* h, const char* path, size_t* len, const char** mime);
+void mr_wg_free_bytes(uint8_t* p, size_t len);
+void mr_wg_free_string(char* p);
+char* mr_wg_call(MRWebGame* h, const char* msg);
+void mr_wg_post(MRWebGame* h, const char* msg);
+char* mr_wg_take_js(MRWebGame* h);
+char* mr_wg_take_event(MRWebGame* h);
+// 1 = 还有异步活（网络请求在飞、有待执行的 JS），宿主继续每个 vsync 取 mr_wg_take_js
+int mr_wg_pending(MRWebGame* h);
+void mr_wg_resize(MRWebGame* h, uint32_t width, uint32_t height, float dpr, const char* orientation);
+void mr_wg_set_safe_area(MRWebGame* h, float top, float right, float bottom, float left);
+void mr_wg_set_background(MRWebGame* h, int bg);
+void mr_wg_dispatch_event(MRWebGame* h, const char* name, const char* json);
+void mr_wg_host_reply(MRWebGame* h, uint32_t id, int ok, const char* result_json);
+void mr_wg_menu_button(MRWebGame* h, float* x, float* y, float* w, float* hh);
+// 0 = 支持；1 = 用了开放数据域；2 = 用了插件；-1 = 不是小游戏包
+int mr_wg_support(const char* app_dir);
+// game.json 的 iOSHighPerformance / iOSHighPerformance+：1 = 要高性能模式，0 = 不要，-1 = 读不出
+int mr_wg_wanted(const char* app_dir);
+
 #ifdef __cplusplus
 }
 #endif

@@ -50,6 +50,11 @@ mod engine_cases;
 mod webgl_cases;
 #[path = "game_cases/overlay.rs"]
 mod overlay_cases;
+// 高性能模式（游戏 JS 跑在 WebView 里；headless Chrome 驱动，找不到 Chrome 时跳过）
+#[path = "game_cases/web.rs"]
+mod web_cases;
+#[path = "game_cases/web2.rs"]
+mod web2_cases;
 
 /// GT-R1 / R5 / S4：game.js 执行一次，console、onError、onUnhandledRejection、GameGlobal
 #[test]

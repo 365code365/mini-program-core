@@ -63,7 +63,7 @@ impl MiniApp {
 }
 
 /// `hostCall` 事件补 `tempDir` 与 `files`
-fn annotate_host_call(v: &mut Value) {
+pub(crate) fn annotate_host_call(v: &mut Value) {
     let mut files = Map::new();
     if let Some(args) = v.get("args") {
         collect_wxfiles(args, &mut files);
@@ -89,7 +89,7 @@ fn collect_wxfiles(v: &Value, out: &mut Map<String, Value>) {
 }
 
 /// 回包里的 `file://…` → `wxfile://tmp/…`。不是 JSON、或一个 `file://` 都没有时原样返回
-fn import_reply_files(result_json: &str) -> String {
+pub(crate) fn import_reply_files(result_json: &str) -> String {
     // 先按字面量筛只能筛 `file:`：宿主的 JSON 库常把 `/` 转义成 `\/`（Android 的 org.json、iOS 的
     // JSONSerialization 默认都这样），回包原文里是 `file:\/\/\/data\/…`。从前筛 `file://`，原生 Android 视图
     // 选的图原样以 `file:///…` 交给了小程序，`<image>` 显示不出来

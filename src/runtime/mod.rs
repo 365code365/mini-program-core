@@ -14,3 +14,5 @@ mod wxs_host;
 
 pub use app::{MiniApp, UiEvent};
 pub use window::Window;
+/// 小游戏高性能模式（game/web）的宿主回包与 hostCall 走同一套文件翻译
+pub(crate) use app_host::{annotate_host_call, import_reply_files};

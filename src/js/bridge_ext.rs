@@ -114,7 +114,7 @@ pub(super) fn register(rt: &JsRuntime, storage: Arc<Mutex<HashMap<String, String
 }
 
 /// 按文件头认常见格式（`createBufferURL` 给出的路径要带对扩展名，播放器 / 解码器有的认扩展名）
-fn sniff_ext(b: &[u8]) -> &'static str {
+pub(crate) fn sniff_ext(b: &[u8]) -> &'static str {
     match b {
         [0x89, b'P', b'N', b'G', ..] => "png",
         [0xff, 0xd8, 0xff, ..] => "jpg",

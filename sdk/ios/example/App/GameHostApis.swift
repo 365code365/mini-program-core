@@ -15,9 +15,9 @@ final class GameHostApis {
                        "RewardedVideoAd.create", "RewardedVideoAd.load", "RewardedVideoAd.show", "RewardedVideoAd.destroy"]
 
     private weak var presenter: UIViewController?
-    private let view: () -> MiniGameView?
+    private let view: () -> MiniGameHosting?
 
-    init(presenter: UIViewController, view: @escaping () -> MiniGameView?) {
+    init(presenter: UIViewController, view: @escaping () -> MiniGameHosting?) {
         self.presenter = presenter
         self.view = view
     }

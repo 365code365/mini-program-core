@@ -42,6 +42,17 @@ pub fn register(rt: &JsRuntime, root: PathBuf) -> Result<(), String> {
     Ok(())
 }
 
+/// 只取字族名、不登记（高性能模式：字体由 WebKit 自己加载，game/web/natives.rs）
+pub(crate) fn family_of(src: &str, root: &Path) -> Result<String, String> {
+    let path = if src.starts_with(crate::wxfile::SCHEME) {
+        crate::wxfile::to_path(src).ok_or("无效的 wxfile 路径")?
+    } else {
+        super::image::loader::package_path(src, root).ok_or("路径不能跑出包根")?
+    };
+    let bytes = std::fs::read(&path).map_err(|e| format!("读不出 {}：{e}", path.display()))?;
+    Ok(family_name(&bytes).unwrap_or_else(|| path.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default()))
+}
+
 fn load_font(src: &str, root: &Path) -> Result<String, String> {
     let path = if src.starts_with(crate::wxfile::SCHEME) {
         crate::wxfile::to_path(src).ok_or("无效的 wxfile 路径")?

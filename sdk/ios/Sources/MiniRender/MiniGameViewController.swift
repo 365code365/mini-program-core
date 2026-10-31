@@ -1,4 +1,53 @@
 import UIKit
+#if canImport(MiniRenderFFI)
+import MiniRenderFFI
+#endif
+
+/// 小游戏宿主视图的公共接口：QuickJS 模式的 [MiniGameView] 与高性能模式的 [MiniWebGameView] 都实现它，
+/// 宿主（支付、广告、登录这些 hostCall 的处理）不用管当前是哪种模式
+public protocol MiniGameHosting: UIView {
+    var onHostEvent: ((_ type: String, _ event: [String: Any]) -> Void)? { get set }
+    var onFirstFrame: (() -> Void)? { get set }
+    var onOrientationChange: ((UIInterfaceOrientationMask) -> Void)? { get set }
+    var orientationMask: UIInterfaceOrientationMask { get }
+    func hostReply(_ id: Int, ok: Bool, result: [String: Any])
+    func dispatchEvent(_ name: String, json: String)
+    func eval(_ js: String, _ done: @escaping (String?) -> Void)
+    func close()
+}
+
+extension MiniGameView: MiniGameHosting {}
+extension MiniWebGameView: MiniGameHosting {}
+
+/// 小游戏的运行模式（对标微信 iOS 的普通模式 / 高性能模式）
+public enum MiniGameMode: String {
+    /// 按 game.json：`iOSHighPerformance`（或 `iOSHighPerformance+`）为 true 走高性能模式，否则普通模式。
+    /// 启动参数 `-gameMode web | native` 可以强制（对照用）
+    case auto
+    /// 普通模式：JS 在 QuickJS 里（解释执行），WebGL 经 ANGLE、2D 画布 CPU 光栅（[MiniGameView]）
+    case standard
+    /// 高性能模式：JS 在 WKWebView 里（JIT），WebGL / 2D 是 WebKit 的 GPU 实现（[MiniWebGameView]）。
+    /// 包里用了开放数据域 / 引擎插件时回落普通模式（日志一行）
+    case highPerformance
+
+    /// 这个包实际走哪种
+    public static func resolve(_ mode: MiniGameMode, dir: String) -> MiniGameMode {
+        var want = mode
+        // 启动参数 -gameMode web | native 优先（对照用），其次宿主给的，最后看 game.json
+        switch UserDefaults.standard.string(forKey: "gameMode") {
+        case "web": want = .highPerformance
+        case "native": want = .standard
+        default: if want == .auto { want = mr_wg_wanted(dir) == 1 ? .highPerformance : .standard }
+        }
+        guard want == .highPerformance else { return .standard }
+        switch mr_wg_support(dir) {
+        case 0: return .highPerformance
+        case 1: NSLog("[mini-game] 用了开放数据域，高性能模式不支持，走普通模式"); return .standard
+        case 2: NSLog("[mini-game] 用了引擎插件，高性能模式不支持，走普通模式"); return .standard
+        default: return .standard
+        }
+    }
+}
 
 /// 全屏跑一个小游戏的控制器（与 Android 示例的 GameActivity 对应）：藏状态栏与 home 横条、按游戏要的方向转屏、
 /// `wx.exitMiniProgram` 关掉本页、`wx.restartMiniProgram` 换一个新实例（从 game.js 重新跑）。
@@ -9,7 +58,9 @@ open class MiniGameViewController: UIViewController {
     public let gameDir: String
     public let dataDir: String?
     public let options: [String: Any]
-    public private(set) var gameView: MiniGameView!
+    /// 实际的运行模式（[MiniGameMode.resolve] 之后的）
+    public let mode: MiniGameMode
+    public private(set) var gameView: MiniGameHosting!
     /// 引擎事件（exit / restart 之外的，含 hostCall）：宿主据此接支付、广告、登录 …（用 [gameView] 的 hostReply 回）
     public var onHostEvent: ((_ type: String, _ event: [String: Any]) -> Void)?
     /// 第一帧上屏（只回调一次；restart 之后的新实例不再回调）
@@ -18,10 +69,12 @@ open class MiniGameViewController: UIViewController {
     public var onClose: (() -> Void)?
     private var firstFrameSent = false
 
-    public init(gameDir: String, dataDir: String? = nil, options: [String: Any] = [:]) {
+    public init(gameDir: String, dataDir: String? = nil, options: [String: Any] = [:], mode: MiniGameMode = .auto) {
         self.gameDir = gameDir
         self.dataDir = dataDir
         self.options = options
+        self.mode = MiniGameMode.resolve(mode, dir: gameDir)
+        NSLog("[mini-game] 运行模式：%@", self.mode == .highPerformance ? "高性能（WKWebView）" : "普通（QuickJS）")
         super.init(nibName: nil, bundle: nil)
         modalPresentationStyle = .fullScreen
     }
@@ -35,7 +88,9 @@ open class MiniGameViewController: UIViewController {
     }
 
     private func newGame() {
-        let v = MiniGameView(gameDir: gameDir, dataDir: dataDir, options: options)
+        let v: MiniGameHosting = mode == .highPerformance
+            ? MiniWebGameView(gameDir: gameDir, dataDir: dataDir, options: options)
+            : MiniGameView(gameDir: gameDir, dataDir: dataDir, options: options)
         v.frame = view.bounds
         v.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         v.onOrientationChange = { [weak self] _ in self?.applyOrientation() }

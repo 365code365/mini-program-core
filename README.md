@@ -420,6 +420,8 @@ and the log says why:
 | `MINI_GAME_WATCHDOG_MS=<ms>` | Mini-game: time limit for one entry into JS (default 5000); exceeded → `InternalError: interrupted`, `wx.onError`, host `error{kind:"watchdog"}` |
 | `MINI_GAME_FAULT=panic@pump\|panic@eval` | Mini-game fault injection: verifies the FFI panic guard (instance becomes poisoned, host process survives) |
 | `MINI_RAF_LOG=1` | Mini-game: one line per `requestAnimationFrame` round (timestamp, target fps, measured display period, uneven-cadence warning) |
+| iOS launch argument `-gameMode web\|native` | Mini-game runtime: `web` = high-performance mode (game JS runs in WKWebView: JIT plus WebKit's GPU canvas, the counterpart of WeChat's `iOSHighPerformance`), `native` = standard mode (QuickJS); without it the host and game.json decide, see [game-doc/12](game-doc/12-高性能模式.md) |
+| `MINI_CHROME=<path>` / `MINI_CHROME_FLAGS` | Which Chrome the high-performance-mode desktop tests use (`cargo test --test game_e2e web`, `examples/web_game_check`) and extra flags; those tests are skipped when no Chrome is found |
 | `adb shell setprop debug.mini.game_log 1` | Android mini-game view: log every frame's engine work / copy / submit / buffer-wait (default: only frames over 8ms) |
 | `adb shell setprop debug.mini.touch_log 1` | Android mini-game view: per frame, how long the oldest queued touch waited before the pump that dispatched it (`👆 [GAME]`) |
 

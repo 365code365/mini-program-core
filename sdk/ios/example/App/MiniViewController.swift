@@ -204,12 +204,12 @@ final class MiniViewController: UIViewController {
             "adaptiveFps": UserDefaults.standard.string(forKey: "adaptiveFps") != "0",   // `-adaptiveFps 0` 关（对照）
             "hostApis": GameHostApis.apis,
         ])
-        let hosts = GameHostApis(presenter: vc) { [weak vc] in vc?.gameView }
+        let hosts = GameHostApis(presenter: vc) { [weak vc] () -> MiniGameHosting? in vc.flatMap { $0.gameView } }
         vc.onHostEvent = { [weak self, weak vc] type, ev in
             NSLog("[小游戏] %@ %@", p.app.id, type)
             // 胶囊「•••」（「⊙」控制器自己处理成退出）：与小程序同一个微信式底部菜单
             if type == "menuButton", let vc { self?.showGameMenu(vc, p.app); return }
-            guard type == "hostCall", let v = vc?.gameView, !hosts.handle(ev) else { return }
+            guard type == "hostCall", let v: MiniGameHosting = vc.flatMap({ $0.gameView }), !hosts.handle(ev) else { return }
             v.hostReply((ev["id"] as? NSNumber)?.intValue ?? 0, ok: false, result: ["errMsg": "\(ev["api"] ?? ""):fail 示例宿主未实现"])
         }
         vc.loadViewIfNeeded()
