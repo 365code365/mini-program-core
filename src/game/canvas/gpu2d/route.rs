@@ -68,6 +68,11 @@ impl GameCanvases {
         if !want || self.gpu2d_failed {
             return;
         }
+        // 离屏画布要纹理共享组：display 上没有这个扩展（Android 系统驱动）就别为它建上下文 ——
+        // 从前 WebGL 游戏在 Android 上照样建一个用不上的 2D 上下文（多编一套着色器、多一次 make current）
+        if need_share && self.gpu2d.is_none() && !Gpu2d::share_available(&self.gl_pref, self.cpu_output) {
+            return;
+        }
         if self.gpu2d.is_none() {
             match Gpu2d::new(&self.gl_pref, self.cpu_output) {
                 Ok(g) => {

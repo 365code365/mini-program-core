@@ -135,6 +135,11 @@ impl Gpu2d {
         Err(if why.is_empty() { "没有可用的 EGL 后端".into() } else { why.join("；") })
     }
 
+    /// 按同一套后端顺序找到的第一个 display 有没有纹理共享组（不建上下文）
+    pub fn share_available(pref: &str, headless: bool) -> bool {
+        egl::order(pref, headless).into_iter().find_map(|b| egl::display(b).ok()).is_some_and(|d| d.has_ext("EGL_ANGLE_display_texture_share_group"))
+    }
+
     fn on(d: &'static Display) -> Result<Self, String> {
         let want = Want { alpha: true, depth: false, stencil: false, antialias: false, es3: false };
         let (cfg, _) = egl::choose_config(d, &want).ok_or("没有合用的 EGL config")?;

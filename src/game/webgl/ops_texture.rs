@@ -39,7 +39,7 @@ pub fn call<'js>(c: &mut GlCtx, e: &Env<'_, 'js>, op: Op, a: &A<'_, 'js>) -> Opt
         }
     }
     // GPU 2D 画布当源：纹理共享组里直接在 GPU 上拷（canvas/gpu2d/share.rs），走不了再照旧读回 + 上传
-    if c.shared_tex && a.u(0) == glow::TEXTURE_2D && a.i(1) == 0 && matches!(op, _texImage2DSource | _texSubImage2DSource) {
+    if c.shared_tex && share_on() && a.u(0) == glow::TEXTURE_2D && a.i(1) == 0 && matches!(op, _texImage2DSource | _texSubImage2DSource) {
         if let Some(r) = gpu_canvas_copy(c, e, op, a) {
             return Some(r);
         }
@@ -305,6 +305,12 @@ fn gpu_canvas_copy<'js>(c: &mut GlCtx, e: &Env<'_, 'js>, op: super::natives::Op,
         c.gpu_tex.insert(tex, (w, h));
     }
     Some(undef(&e.ctx))
+}
+
+/// `MINI_2D_SHARE=0`：关掉 GPU 2D 画布 → WebGL 纹理的 GPU 直拷（对照 / 排查，照旧读回 + 上传）
+fn share_on() -> bool {
+    static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *ON.get_or_init(|| std::env::var("MINI_2D_SHARE").map(|v| v != "0").unwrap_or(true))
 }
 
 fn bound_2d(c: &GlCtx) -> u32 {

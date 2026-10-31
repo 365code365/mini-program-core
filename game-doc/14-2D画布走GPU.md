@@ -58,6 +58,12 @@ Porter-Duff 模式，临时层按 source-over 画出「源 × 覆盖率」，GPU
 与 WebGL 共用 EGL：线程上记最后是谁 make current 的（`egl::owner`）。两边各自缓存「我是 current」，被对方切走后
 重新 make current。WebGL 读 GPU 2D 画布当纹理时，拷完 / 读回之后切回自己的上下文（`ops_texture.rs`）。
 
+**共享组里的 2D 上下文也要开资源零初始化**（`EGL_ANGLE_robust_resource_initialization`，egl.rs）：ANGLE 把「这一级还没
+初始化」记在纹理上。Cocos 的文字图集是 WebGL 用 `texImage2D(null)` 建的空纹理，再把文字画布 `texSubImage2D` 到偏移处；
+2D 上下文（第一版没开这一项）画进去之后标记不清，WebGL 下一次采样时按「没初始化」把整张清成 0 —— farm001 iOS 真机上
+所有文字都没了，macOS 的 ANGLE-Metal 同样复现（`MINI_2D_SHARE=0` 一关就回来）。现在 2D 上下文与 WebGL 一样开着它，
+建不出来就不算有共享组（走读回）。测试 `g2d_webgl读gpu画布` 的 step 4 守着这个（去掉这一项时失败：图集那一块读出来是 0）。
+
 **别为帧末收尾切上下文**：ANGLE 的 Metal 后端切走一个上下文时要等它的命令缓冲排进队列。第一版帧末无条件切到 2D
 上下文 flush 一次，主画布是 WebGL 时每帧多切两次，那一下等待落进 WebGL 的 swap：iPhone 上 present 0.1 → 6ms，
 发热后 10~14ms，farm001 掉到 50fps（40 秒 203 次掉帧）。现在帧末只在 2D 上下文正好是 current 时 flush，
@@ -137,5 +143,6 @@ cpu 4.2ms、gpu 2.8ms，GPU 批次提交 0.25ms/帧。差在 CPU 频率：gpu �
 
 - 图案（createPattern）填充仍在 CPU 上算（临时层）；超过 8 个色标的渐变、带阴影的渐变也走临时层。
 - Android 系统驱动没有纹理共享组，离屏 2D 画布当 WebGL 纹理时要读回，所以 Android auto 不把离屏画布放到 GPU。
+  没有共享组时也不为离屏画布建 2D 上下文（第一版在 Android 上照样建一个用不上的）。
   Android 包里带 ANGLE（`libEGL_angle.so`）的话自动用上。
 - `putImageData` 走 CPU，之后的第一笔 GPU 调用要整张传上去。每帧 putImageData 的游戏应当选 `cpu`。

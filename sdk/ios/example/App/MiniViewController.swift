@@ -55,9 +55,13 @@ final class MiniViewController: UIViewController {
         view.backgroundColor = .white
         mini = newMiniView()
         view.addSubview(mini)
-        // 屏幕左缘侧滑 = 小程序返回；页面栈见底了才收起本页（与 Android 的返回键同一条规则）
+        // 屏幕左缘侧滑：二级页及以上交给引擎（跟手推出、不够阈值回弹，与微信 iOS 一样，host/edge_back.rs）；
+        // 只有栈底那一页由这里接（收起本页，与 Android 的返回键同一条规则）。
+        // 从前这个识别器每一页都接：它一认出手势，UIKit 就把交给引擎视图的触摸 cancel 掉，引擎的侧滑刚推出几个像素
+        // 就收回去，之后页面不跟手、半路松手不回弹，划过 60pt 直接 goBack 跳转（「侧滑返回回弹没了」）
         let edge = UIScreenEdgePanGestureRecognizer(target: self, action: #selector(edgeBack(_:)))
         edge.edges = .left
+        edge.delegate = self
         view.addGestureRecognizer(edge)
         if let link {
             openStore(link, hint: hint)
@@ -102,6 +106,7 @@ final class MiniViewController: UIViewController {
             guard let self else { return }
             NSLog("[事件] %@", self.summarize(ev))
             // 第一页出来了才收起 loading（冷启动加载字体那几百毫秒也盖在底下，不露白屏）
+            if ev["type"] as? String == "page" { self.pageDepth = (ev["depth"] as? NSNumber)?.intValue ?? self.pageDepth }
             if ev["type"] as? String == "page", let c = self.cover {
                 self.cover = nil
                 c.hide()
@@ -318,6 +323,9 @@ final class MiniViewController: UIViewController {
         if !mini.goBack() { close() }
     }
 
+    /// 当前页面栈深度（引擎的 page 事件带 depth）：栈底（1）之上的侧滑归引擎
+    private var pageDepth = 1
+
     // MARK: - 胶囊菜单（MenuSheet.kt）
 
     /// 胶囊「•••」的底部菜单。SDK 只留口子，展示什么由宿主定；示例照微信：
@@ -369,5 +377,13 @@ final class MiniViewController: UIViewController {
         copy.removeValue(forKey: "type")
         let json = (try? JSONSerialization.data(withJSONObject: copy)).map { String(decoding: $0, as: UTF8.self) } ?? "\(copy)"
         return "\(type) \(json)"
+    }
+}
+
+extension MiniViewController: UIGestureRecognizerDelegate {
+    /// 左缘侧滑只在栈底那一页由宿主接（收起小程序）；更深的页交给引擎自己的侧滑返回（见 viewDidLoad）
+    func gestureRecognizerShouldBegin(_ g: UIGestureRecognizer) -> Bool {
+        guard g is UIScreenEdgePanGestureRecognizer else { return true }
+        return pageDepth <= 1
     }
 }

@@ -278,6 +278,13 @@ pub fn create_context_ex(d: &Display, cfg: egl::Config, es3: bool, webgl: bool, 
     // 放最前面：建不了时从后往前去掉可选项，它最后才被去掉
     if share_tex && d.has_ext("EGL_ANGLE_display_texture_share_group") {
         opt.push((DISPLAY_TEXTURE_SHARE_GROUP, 1));
+        // 共享组里**每个**上下文都要开资源零初始化（WebGL 那边本来就开）。ANGLE 把「这张图还没初始化」记在纹理上：
+        // WebGL 用 texImage2D(null) 建的纹理（Cocos 的文字图集）被不开这项的 2D 上下文画进去，标记不会清掉，
+        // WebGL 下一次采样时按「没初始化」把它清成 0 —— farm001 的文字全没了（iOS 真机、macOS ANGLE-Metal 都复现）。
+        // 开了之后 2D 上下文往里画之前先按规则把整张清零再画、并把它标成已初始化，结果与 WebGL 自己上传一致
+        if !webgl && d.has_ext("EGL_ANGLE_robust_resource_initialization") {
+            opt.push((0x3453, 1));
+        }
     }
     if d.webgl_compat && webgl {
         opt.push((0x33AC, 1));
@@ -299,7 +306,12 @@ pub fn create_context_ex(d: &Display, cfg: egl::Config, es3: bool, webgl: bool, 
         }
         attrs.push(egl::NONE);
         match d.egl.create_context(d.dpy, cfg, None, &attrs) {
-            Ok(c) => return Ok((c, opt.first().map(|o| o.0) == Some(DISPLAY_TEXTURE_SHARE_GROUP))),
+            // 共享组算开上了：共享组属性还在；2D 上下文（非 WebGL）还要零初始化也在（见上，缺了它共享就会丢内容）
+            Ok(c) => {
+                let has = |k: i32| opt.iter().any(|o| o.0 == k);
+                let shared = has(DISPLAY_TEXTURE_SHARE_GROUP) && (webgl || !d.has_ext("EGL_ANGLE_robust_resource_initialization") || has(0x3453));
+                return Ok((c, shared));
+            }
             Err(e) => {
                 // 先去掉 robustness（最常见的不认），再去掉其余可选项
                 if opt.pop().is_none() {

@@ -54,10 +54,26 @@ pub(super) fn register(rt: &JsRuntime, pacer: Rc<RefCell<RafPacer>>, clock: Rc<R
     Ok(())
 }
 
+/// `MINI_GAME_DUMP` 数到第几次 pump 了（进程级：一个进程一般只跑一个游戏，探查用）
+static DUMP_PUMPS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+fn dump_at() -> Option<u64> {
+    static AT: std::sync::OnceLock<Option<u64>> = std::sync::OnceLock::new();
+    *AT.get_or_init(|| std::env::var("MINI_GAME_DUMP").ok().and_then(|v| v.parse().ok()))
+}
+
+/// 这一次 pump 是不是 `MINI_GAME_DUMP` 要的那一帧
+fn dump_due() -> bool {
+    dump_at().is_some_and(|at| DUMP_PUMPS.load(std::sync::atomic::Ordering::Relaxed) == at)
+}
+
 impl GameEngine {
     /// 跑一帧。`now_us` 是宿主 vsync 时刻（**微秒**，任意原点的单调钟；0 = 引擎自己取）。返回 `FRAME_*` 位
     pub fn pump_ex(&mut self, now_us: u64) -> u32 {
         self.inject("panic@pump");
+        if dump_at().is_some() {
+            DUMP_PUMPS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        }
         let t_work = std::time::Instant::now();
         let slow = super::slow_frame::enabled();
         if slow {
@@ -119,11 +135,19 @@ impl GameEngine {
         // 6 主画布（WebGL 的先读回后备缓冲）。高性能+ 的渲染端只在页面说「这一帧画完了」时收尾（remote/mod.rs）
         #[cfg(feature = "webgl")]
         if self.remote.is_none() {
+            // WebGL 主画布要截的话在 present（标「待清」）之前读回：之后绘图缓冲就不归这一帧了
+            if dump_due() {
+                let main = self.canvases.borrow().main_id();
+                if let Some(m) = main.filter(|&m| self.webgl.borrow().has(m)) {
+                    self.webgl.borrow_mut().sync(&self.canvases, m);
+                }
+            }
             self.webgl_frame_end();
         }
         // GPU 2D 画布（canvas/gpu2d）：攒着的画掉，让 GPU 早点开工
         #[cfg(feature = "webgl")]
         self.canvases.borrow_mut().gpu_frame_end();
+        self.dump_if_asked();
         // 自适应帧率（fps_governor.rs，没开时 note_work 直接返回）：只看 rAF 帧
         if raf_frame {
             let msg = self.pacer.borrow_mut().note_work(t_work.elapsed().as_micros() as u64);
@@ -164,6 +188,25 @@ impl GameEngine {
             flags |= FRAME_EVENTS;
         }
         flags
+    }
+
+    /// `MINI_GAME_DUMP=<第几次 pump>`：到那一帧把输出帧存成 PNG（系统临时目录下 `mini-game-dump.png`）。
+    /// 真机上画面在 CAMetalLayer / EGL surface 里，截屏工具拿不到：iOS 用
+    /// `xcrun devicectl device copy from --domain-type appDataContainer --domain-identifier <bundle id> --source tmp/mini-game-dump.png`
+    /// 取回，看的就是引擎这一帧（含 WebGL 读回、GPU 2D 读回、覆盖层）
+    fn dump_if_asked(&mut self) {
+        if !dump_due() {
+            return;
+        }
+        self.frame.stale = true;
+        let (w, h, px) = self.frame_rgba();
+        let path = std::env::temp_dir().join("mini-game-dump.png");
+        let r = image::save_buffer(&path, px, w, h, image::ColorType::Rgba8);
+        let line = match r {
+            Ok(()) => format!("📸 MINI_GAME_DUMP：{w}×{h} → {}", path.display()),
+            Err(e) => format!("⚠️ MINI_GAME_DUMP 写不了 {}：{e}", path.display()),
+        };
+        self.host_log(&line);
     }
 
     fn raf_pending(&self) -> usize {

@@ -207,6 +207,13 @@ globalThis.step = function (i) {
   if (i == 1) { g2.clearRect(0, 0, 1, 1); g2.fillStyle = 'rgba(255,0,255,0.5)'; g2.fillRect(0, 0, 1, 1); gl.bindTexture(gl.TEXTURE_2D, t); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, c2); }
   if (i == 2) { c2.width = 1; c2.height = 2; g2.fillStyle = '#f00'; g2.fillRect(0, 0, 1, 1); g2.fillStyle = '#00f'; g2.fillRect(0, 1, 1, 1);
     gl.bindTexture(gl.TEXTURE_2D, t); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c2); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false); }
+  // step 4：Cocos 的文字图集 —— WebGL 先 texImage2D(null) 建一张大的空纹理，再把画布 texSubImage2D 到偏移处。
+  // 纹理是 WebGL 上下文（开着资源零初始化）建的：2D 上下文画进去之后 WebGL 不能再把它当「没初始化」清掉
+  if (i == 4) { var at = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, at);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 4, 4, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    c2.width = 2; c2.height = 1; g2.fillStyle = '#ffff00'; g2.fillRect(0, 0, 1, 1); g2.fillStyle = '#00ffff'; g2.fillRect(1, 0, 1, 1);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, 2, 3, gl.RGBA, gl.UNSIGNED_BYTE, c2); t = at; }
   // step 3：画布没变，同样的参数再传两次（每帧重传没变的 UI 画布的游戏）：不拷
   if (i == 3) { gl.bindTexture(gl.TEXTURE_2D, t); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, c2);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c2); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false); }
@@ -250,7 +257,19 @@ T.ready('wgx');
         assert_eq!(h.engine.gpu2d_share_copies(), 3, "没变的画布不再拷");
         assert_eq!(h.engine.gpu2d_stats().unwrap().2, 0, "texSubImage2D / FLIP_Y 也不读回");
     }
+    h.engine.eval("step(4)").unwrap();
+    h.vsyncs(2);
+    let (w, hh, p) = h.engine.frame_rgba();
+    let at = |x: u32, y: u32| { let i = ((y * w + x) * 4) as usize; [p[i], p[i + 1], p[i + 2]] };
+    // 4×4 的纹理铺满屏：uv.y = 屏幕自下往上，纹理第 3 行 = 屏幕最上面那 1/4；第 2、3 列 = 右半
+    let (cx, cy) = (|col: u32| col * w / 4 + w / 8, |row: u32| hh - (row * hh / 4 + hh / 8));
+    assert_eq!((at(cx(2), cy(3)), at(cx(3), cy(3))), ([255, 255, 0], [0, 255, 255]), "WebGL 建的空纹理里 texSubImage2D(画布) 的内容要在");
+    assert_eq!(at(cx(0), cy(0)), [0, 0, 0], "没写到的地方是 0");
+    if shared {
+        assert_eq!(h.engine.gpu2d_share_copies(), 4, "图集的 texSubImage2D 也走 GPU 直拷");
+    }
     eprintln!("WebGL 读 GPU 画布：纹理共享组 {shared}，直拷 {} 次、读回 {:?}", h.engine.gpu2d_share_copies(), h.engine.gpu2d_stats());
 }
+
 
 
