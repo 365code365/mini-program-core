@@ -98,12 +98,12 @@ pub struct GameAudio {
 }
 
 impl GameAudio {
-    /// `offline`：无头 / 测试（不开设备，按帧时钟渲染）
-    pub fn new(root: PathBuf, offline: bool) -> Self {
+    /// `offline`：无头 / 测试（不开设备，按帧时钟渲染）。`fault`：创建选项 fault（`stall@N`，见 output.rs）
+    pub fn new(root: PathBuf, offline: bool, fault: Option<&str>) -> Self {
         let offline = offline || std::env::var("MINI_AUDIO_OFFLINE").is_ok();
         let clocks: Arc<graph::Clocks> = Arc::new(std::array::from_fn(|_| Default::default()));
         let gc = clocks.clone();
-        let (opened, ends) = output::open(offline, |rate, channels| {
+        let (opened, ends) = output::open(offline, fault, |rate, channels| {
             let (cp, cc) = ring(1024);
             let (rp, rc) = ring(4096);
             let (tp, tc) = ring(4096);
@@ -392,7 +392,7 @@ impl GameAudio {
     pub fn tick(&mut self, t_us: u64) {
         self.drain_backlog();
         self.out.advance(t_us, self.rate);
-        if let Some(l) = self.out.poll() {
+        if let Some(l) = self.out.poll(self.suspended || self.interrupted) {
             self.logs.push(l);
         }
         while self.ends.retire.pop().is_some() {}
@@ -485,13 +485,6 @@ impl GameAudio {
     }
 
     /// 诊断 JSON：输出帧数、延迟、回调块、回调次数、欠载、采样率、是否真设备、在播几路、WebAudio 的节点数与占着的槽位
-    pub fn stats_json(&self) -> Value {
-        let (l, b, n) = self.out.stats();
-        json!({ "frames": self.out.frames(), "latencyMs": l as f64 / 1000.0, "block": b, "callbacks": n, "xruns": self.out.xruns(),
-            "rate": self.rate, "device": self.out.is_device(), "voices": self.slots.iter().filter(|s| s.is_some()).count(),
-            "webNodes": self.web.nodes.len(), "webSlots": self.web.slot_owner.len() })
-    }
-
     pub fn is_device(&self) -> bool {
         self.out.is_device()
     }

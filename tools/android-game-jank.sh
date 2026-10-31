@@ -3,6 +3,8 @@
 #
 #   bash tools/android-game-jank.sh <夹具> [秒数] [install] [query]
 #     夹具：sample-game/ 下的目录名（g-square、g-bench-sprites …）；query 例 "n=500"
+#     不是 sample-game/ 下的目录就当商店里的小游戏（farm001、play-3d-island …）：经深链 minirender://open 打开，
+#     先等 WARM 秒（默认 12：检查更新 / 解包 / 建实例 / 进场景）再开始量
 #
 # 判据（game-doc/05 §5.1，不看平均帧率）：
 #   ① 屏上：SurfaceFlinger --latency 量游戏那一层的上屏时刻；「重复」按 **rAF 目标间隔**（60fps = 16.67ms）算，
@@ -28,8 +30,13 @@ D shell setprop debug.mini.game_log 1
 D shell am force-stop $PKG
 D logcat -c
 # query 里的 & 要在远端 shell 里也引起来（adb shell 把参数拼成一行交给远端 sh，不引的话 & 把命令切成后台）
-D shell "am start -W -n $PKG/.GameActivity --es game '$GAME' --es query '${QUERY:-max=1000000000}'" >/dev/null
-sleep 1.5
+if [ -d "sample-game/$GAME" ]; then
+  D shell "am start -W -n $PKG/.GameActivity --es game '$GAME' --es query '${QUERY:-max=1000000000}'" >/dev/null
+  sleep 1.5
+else
+  D shell "am start -a android.intent.action.VIEW -d 'minirender://open?appid=$GAME' $PKG" >/dev/null 2>&1
+  sleep "${WARM:-12}"
+fi
 D shell dumpsys window </dev/null | grep -m1 mCurrentFocus | grep -q "$PKG/$PKG.GameActivity" || { echo "⚠ 前台不是 GameActivity"; D shell setprop debug.mini.game_log '""'; exit 1; }
 L=$(D shell dumpsys SurfaceFlinger --list </dev/null | tr -d '\r' | grep "SurfaceView\[$PKG/$PKG.GameActivity" | grep BLAST | sed 's/^RequestedLayerState{//; s/ parentId=.*$//' | head -1)
 [ -n "$L" ] || { echo "⚠ 找不到游戏的 SurfaceView 层"; exit 1; }

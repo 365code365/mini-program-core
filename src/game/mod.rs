@@ -235,7 +235,7 @@ impl GameEngine {
         let clock = std::rc::Rc::new(std::cell::RefCell::new(clock::GameClock::new(opts.fixed_clock)));
         let images = std::rc::Rc::new(std::cell::RefCell::new(image::ImageStore::new(root.clone())));
         // 无头（固定时钟）不开声卡：混音器按帧时钟离线渲染，逐样本可复现
-        let audio = std::rc::Rc::new(std::cell::RefCell::new(audio::GameAudio::new(root.clone(), opts.fixed_clock)));
+        let audio = std::rc::Rc::new(std::cell::RefCell::new(audio::GameAudio::new(root.clone(), opts.fixed_clock, opts.fault.as_deref())));
         let workers = std::rc::Rc::new(std::cell::RefCell::new(worker::Workers::new(root.clone(), &config)));
         let btns: std::rc::Rc<std::cell::RefCell<buttons::Buttons>> = Default::default();
         let od: std::rc::Rc<std::cell::RefCell<opendata::Shared>> = Default::default();

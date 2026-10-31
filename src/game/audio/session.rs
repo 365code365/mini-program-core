@@ -94,4 +94,16 @@ impl GameAudio {
     pub fn session_options(&self) -> SessionOptions {
         self.session
     }
+
+    /// 诊断：输出统计（宿主的音频日志、Android nativeAudioStats / iOS mr_game_audio_stats）。从 mod.rs 搬来（500 行上限）
+    pub fn stats_json(&self) -> Value {
+        let (l, b, n) = self.out.stats();
+        // peak：上次读以来设备收到的样本峰值（读一次清零）；suspended / interrupted：混音器为什么在出静音
+        json!({ "frames": self.out.frames(), "latencyMs": l as f64 / 1000.0, "block": b, "callbacks": n, "xruns": self.out.xruns(),
+            "rate": self.rate, "device": self.out.is_device(), "voices": self.slots.iter().filter(|s| s.is_some()).count(),
+            "webNodes": self.web.nodes.len(), "webSlots": self.web.slot_owner.len(),
+            "peak": (self.out.take_peak() * 1000.0).round() / 1000.0, "suspended": self.suspended, "interrupted": self.interrupted,
+            "playing": self.ctxs.values().filter(|c| c.playing).count(), "obeyMuteSwitch": self.session.obey_mute_switch,
+            "restarts": self.out.watch_state().0, "stallMs": self.out.watch_state().1 as u64 })
+    }
 }

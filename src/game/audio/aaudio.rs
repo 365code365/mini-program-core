@@ -115,6 +115,7 @@ extern "C" fn on_data(_s: *mut Stream, user: *mut c_void, data: *mut c_void, fra
     // SAFETY: AAudio 给的输出缓冲是 frames × channels 个 f32（格式在 open 时定为 PCM_FLOAT）
     let out = unsafe { std::slice::from_raw_parts_mut(data as *mut f32, n) };
     st.mixer.render(out);
+    st.stats.note_peak(out);
     st.stats.block_frames.store(frames as u32, Ordering::Relaxed);
     st.stats.callbacks.fetch_add(1, Ordering::Relaxed);
     st.stats.frames.fetch_add(frames as u64, Ordering::Relaxed);

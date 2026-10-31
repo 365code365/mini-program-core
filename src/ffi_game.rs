@@ -32,6 +32,8 @@ pub struct MRGame {
     panic_event: Option<String>,
     /// 宿主挂上的原生图层（iOS 的 CAMetalLayer），0 = 没挂；尺寸见 surface.rs
     layer: surface::Layer,
+    /// mr_game_audio_stats 返回的那串（活到下一次调用）
+    stats_buf: CString,
 }
 
 fn cstr(p: *const c_char) -> Option<String> {
@@ -123,6 +125,7 @@ pub extern "C" fn mr_game_create(
             eval_buf: CString::default(),
             panic_event: None,
             layer: Default::default(),
+            stats_buf: CString::default(),
         })),
         Ok(Err(e)) => {
             eprintln!("❌ mr_game_create 失败: {e}");
@@ -259,6 +262,22 @@ pub extern "C" fn mr_game_set_background(game: *mut MRGame, background: c_int) {
 #[no_mangle]
 pub extern "C" fn mr_game_audio_interruption(game: *mut MRGame, begin: c_int) {
     guarded(game, (), |e| e.audio_interruption(begin != 0));
+}
+/// 音频输出统计（JSON：frames / callbacks / latencyMs / rate / device / peak / suspended / interrupted / playing / obeyMuteSwitch …，
+/// 见 GameAudio::stats_json），诊断「没声音」用：callbacks 在涨 = 设备在拉数据，peak > 0 = 交出去的不是静音。
+/// 返回的指针活到下一次对同一实例调用本函数；实例为空 / 失效时 NULL
+#[cfg(feature = "game")]
+#[no_mangle]
+pub extern "C" fn mr_game_audio_stats(game: *mut MRGame) -> *const c_char {
+    let s = mr_game_with_engine(game, |e| e.audio_stats().to_string());
+    let Some(g) = (unsafe { game.as_mut() }) else { return std::ptr::null() };
+    match s {
+        Some(s) => {
+            g.stats_buf = CString::new(s.replace('\0', "")).unwrap_or_default();
+            g.stats_buf.as_ptr()
+        }
+        None => std::ptr::null(),
+    }
 }
 /// 窗口变了（转屏、分屏、折叠屏）：逻辑尺寸、像素比、方向（"portrait" / "landscape" / "landscapeReverse"，NULL = 按宽高推）。
 /// 引擎更新系统信息、派发 wx.onWindowResize / onDeviceOrientationChange；主画布尺寸不变（游戏自己改，见 game/window.rs）

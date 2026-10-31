@@ -131,3 +131,35 @@ T.ready('au');
     assert!(h.has("被抢占"), "抢占要打日志");
     assert_eq!(h.engine.audio_stats()["device"], false, "固定时钟下不开声卡");
 }
+
+/// GT-AU10：设备输出被系统停掉（iOS 上宿主停用音频会话、来电打断后 RemoteIO 不再回调，cpal 不知道）→ 引擎的看门狗
+/// 0.6 秒内发现、重启输出，回调重新涨起来。用创建选项 `fault: "stall@5"` 让设备第 5 次回调之后不再计数来模拟。
+/// 要真的声卡（不走固定时钟）：这台机器打不开输出设备就跳过
+#[test]
+fn au10_设备输出停了看门狗重启() {
+    let _g = serial();
+    let dir = std::env::temp_dir().join(format!("game-au10-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    std::fs::write(dir.join("game.json"), "{}").unwrap();
+    std::fs::write(dir.join("game.js"), "requestAnimationFrame(function f() { requestAnimationFrame(f); });").unwrap();
+    let opts = mini_render::game::GameOptions { fault: Some("stall@5".into()), ..Default::default() };
+    let mut e = mini_render::game::GameEngine::new(dir.to_str().unwrap(), Some(dir.join("data").to_str().unwrap()), 375, 667, 2.0, opts).unwrap();
+    if e.audio_stats()["device"] != true {
+        eprintln!("跳过：这台机器打不开音频输出设备");
+        return;
+    }
+    let mut logs = Vec::new();
+    let t0 = std::time::Instant::now();
+    while t0.elapsed() < std::time::Duration::from_millis(1500) {
+        e.pump_ex(0);
+        while let Some(ev) = e.poll_event() {
+            logs.push(ev);
+        }
+        std::thread::sleep(std::time::Duration::from_millis(16));
+    }
+    let s = e.audio_stats();
+    assert!(s["restarts"].as_u64().unwrap() >= 1, "停了 1.5 秒没重启：{s}");
+    assert!(logs.iter().any(|l| l.contains("没拉数据") && l.contains("已重启")), "要有一行重启日志：{logs:?}");
+    let _ = std::fs::remove_dir_all(&dir);
+}

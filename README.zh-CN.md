@@ -345,6 +345,8 @@ GPU 初始化失败、自检不一致、运行中设备丢失或 surface 无法�
 | `MINI_2D=auto\|cpu\|gpu` | 小游戏 2D 画布后端（压过创建选项 `canvas2d`，见 [game-doc/14](game-doc/14-2D画布走GPU.md)）：auto = iOS / Android 上主画布走 GPU（与 WebGL 同一个 EGL display，直接上屏到图层 / 窗口）；EGL display 有纹理共享组时离屏画布也走 GPU（iOS 随包的 ANGLE 有，Android 系统驱动没有），WebGL `texImage2D(画布)` 在 GPU 上直接拷、不读回；桌面与无头全走 CPU。gpu = 所有 2D 画布走 GPU，cpu = CPU 参考实现。建不了上下文、窗口建不了 EGL surface、上下文丢失一律回退 CPU，选了哪个、为什么回退都进游戏日志（🎨 / ℹ / ⚠ 开头） |
 | `MINI_2D_SHARE=0` | 关掉 GPU 2D 画布 → WebGL 纹理的 GPU 直拷（`texImage2D(画布)` 改回读回 + 上传），画布纹理看着不对时对照用 |
 | `MINI_GAME_DUMP=<n>` | 小游戏：第 n 次 pump 时把输出帧（WebGL 在上屏前读回、GPU 2D 读回、覆盖层）存成系统临时目录下的 `mini-game-dump.png`。iOS 真机用 `xcrun devicectl device copy from --domain-type appDataContainer --domain-identifier <bundle id> --source tmp/mini-game-dump.png` 取回：画面在 CAMetalLayer 里，脚本截不到 |
+| `MINI_AUDIO_LOG=1` | iOS 小游戏：SDK 每 2 秒打一行 `🔊 [GAME] 音频 {…}`，前半是引擎的输出统计（`mr_game_audio_stats`：`callbacks`、`peak`、`suspended` / `interrupted`、`restarts`），后半是 AVAudioSession（类别、音量、输出路由、别的 App 在不在放）。`callbacks` 不涨 = 设备不拉数据了；`peak` 为 0 = 混音器交出去的全是静音。引擎要出声而回调停了 600ms，引擎自己重启输出流（日志「🔊 音频输出 …ms 没拉数据…已重启」） |
+| `MINI_AUDIO_FAULT=open\|stall@N` | 小游戏音频故障注入（创建选项 `fault` 优先）：`open` = 当作设备打不开（静音的离线模式）；`stall@N` = 设备第 N 次回调之后不再计数，看门狗看到的就是输出停了（iOS / 桌面，测试 `au10`） |
 | `MINI_EMOJI_FONT=<路径>` | 彩色 emoji 字体（先于内置候选；Android 上同一个开关选 COLR 字体，格式不对的那套自动跳过）。iOS SDK 按 CoreText 问到的路径设它：iOS 的 Apple Color Emoji 在 `Fonts/CoreAddition/` 下，`sbix` 字形是苹果私有的 `emjc`（`src/emoji_emjc.rs` 解码；macOS 那份是 PNG）。从前找不到，iOS 上 emoji 全画成豆腐块 |
 | `MINI_ANGLE_DIR=<目录>` | 小游戏 WebGL：ANGLE 动态库（libEGL / libGLESv2）所在目录；默认找可执行文件旁、`../Frameworks`、仓库 `third_party/angle/<平台>/`（`tools/fetch-angle.sh` 拉） |
 | `MINI_GPU_FAULT=lost@N`（小游戏） | 小游戏里作用于 WebGL：第 N 次上屏时让主画布的上下文丢失，派发 `webglcontextlost`（A8.4） |

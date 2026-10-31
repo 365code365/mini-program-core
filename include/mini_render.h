@@ -362,6 +362,8 @@ void mr_game_set_background(MRGame* game, int background);
 // 系统音频打断：非 0 = 开始（来电、闹钟、别的 App 拿走独占焦点），0 = 结束。引擎暂停全部音频后派发
 // wx.onAudioInterruptionBegin / End，结束时不自动续播。wx.setInnerAudioOption 的结果以 {"type":"audioSession",…} 事件交给宿主
 void mr_game_audio_interruption(MRGame* game, int begin);
+// 音频输出统计（JSON），诊断「没声音」用；指针活到下一次调用，实例失效时 NULL
+const char* mr_game_audio_stats(MRGame* game);
 // 窗口变了（转屏、分屏、折叠屏）：逻辑尺寸、像素比、方向（"portrait" / "landscape" / "landscapeReverse"，NULL = 按宽高推）。
 // 引擎派发 wx.onWindowResize / onDeviceOrientationChange；主画布尺寸不变（游戏自己改）。
 // 建实例后会有一条 {"type":"deviceOrientation","value":…,"initial":true} 事件：宿主按它锁方向；wx.setDeviceOrientation 发同样的事件

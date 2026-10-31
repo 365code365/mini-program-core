@@ -27,11 +27,27 @@ pub struct Stats {
     pub callbacks: AtomicU64,
     /// 已输出帧数（播放时钟）
     pub frames: AtomicU64,
+    /// 上次读走以来输出样本 |s| 的最大值（f32 的位；非负浮点的位按整数比大小与按数值比一致，所以能 fetch_max）。
+    /// 诊断「设备在跑、为什么没声」：峰值 0 = 混音器出的是静音，峰值有 = 数据交给系统了，问题在会话 / 路由 / 静音键
+    pub peak_bits: AtomicU32,
+}
+
+impl Stats {
+    /// 回调里记峰值（一块几百个样本求最大值，不分配、不加锁）
+    pub fn note_peak(&self, out: &[f32]) {
+        let m = out.iter().fold(0f32, |m, s| m.max(s.abs()));
+        self.peak_bits.fetch_max(m.to_bits(), Ordering::Relaxed);
+    }
+
+    /// 读走峰值并清零（引擎线程）
+    pub fn take_peak(&self) -> f32 {
+        f32::from_bits(self.peak_bits.swap(0, Ordering::Relaxed))
+    }
 }
 
 pub enum Output {
     #[cfg(all(feature = "game-audio", not(target_os = "android")))]
-    Device { _stream: cpal::Stream, stats: Arc<Stats> },
+    Device { _stream: cpal::Stream, stats: Arc<Stats>, watch: Watch },
     #[cfg(all(feature = "game-audio", target_os = "android"))]
     Android(super::aaudio::Out),
     Offline { mixer: Box<Mixer>, done: u64, origin_us: Option<u64>, buf: Vec<f32>, dump: Option<std::fs::File>, channels: usize },
@@ -49,10 +65,14 @@ pub struct Opened {
 
 /// `make(rate, channels)` 在知道设备格式之后建混音器与引擎线程那一侧的队列端点 `E`。
 /// 设备启动失败时混音器已经交给 cpal 了拿不回来：再调一次 `make` 给离线模式建一套新的
-pub fn open<E>(offline: bool, mut make: impl FnMut(u32, usize) -> (Mixer, E)) -> (Opened, E) {
+/// `fault`：创建选项 fault 或 `MINI_AUDIO_FAULT`（前者优先）。`stall@N` = 设备第 N 次回调之后不再计数（看门狗看到的就是
+/// 「系统停了 I/O」，验它会重启）；`open` = 当作设备打不开
+pub fn open<E>(offline: bool, fault: Option<&str>, mut make: impl FnMut(u32, usize) -> (Mixer, E)) -> (Opened, E) {
+    let fault = fault.map(str::to_string).or_else(|| std::env::var("MINI_AUDIO_FAULT").ok()).unwrap_or_default();
+    let _ = &fault;
     #[cfg(feature = "game-audio")]
     if !offline {
-        if std::env::var("MINI_AUDIO_FAULT").as_deref() == Ok("open") {
+        if fault == "open" {
             return offline_out(make, "设备打开失败（故障注入 MINI_AUDIO_FAULT=open），静音模式".into());
         }
         #[cfg(target_os = "android")]
@@ -73,8 +93,10 @@ pub fn open<E>(offline: bool, mut make: impl FnMut(u32, usize) -> (Mixer, E)) ->
         #[cfg(not(target_os = "android"))]
         let (mixer, ends) = make(rate, channels);
         #[cfg(not(target_os = "android"))]
-        return match dev.start(mixer) {
-            Ok((stream, stats, note)) => (Opened { out: Output::Device { _stream: stream, stats }, rate, channels, note }, ends),
+        let stall = fault.strip_prefix("stall@").and_then(|n| n.parse().ok());
+        #[cfg(not(target_os = "android"))]
+        return match dev.start(mixer, stall) {
+            Ok((stream, stats, note)) => (Opened { out: Output::Device { _stream: stream, stats, watch: Watch::default() }, rate, channels, note }, ends),
             Err(e) => offline_out(make, format!("设备启动失败（{e}），静音模式")),
         };
     }
@@ -107,11 +129,28 @@ impl Output {
         }
     }
 
-    /// 设备模式的维护（Android：设备断开重开、延迟估计）；有要记的日志就返回
-    pub fn poll(&mut self) -> Option<String> {
+    /// 设备模式的维护（Android：设备断开重开、延迟估计；iOS / 桌面：输出停了就重启）；有要记的日志就返回。
+    /// `quiet` = 引擎这边本来就不要声音（后台 / 系统打断中）：这时候设备停着是对的，不去拉它
+    pub fn poll(&mut self, quiet: bool) -> Option<String> {
+        let _ = quiet;
         match self {
             #[cfg(all(feature = "game-audio", target_os = "android"))]
             Output::Android(o) => o.poll(),
+            #[cfg(all(feature = "game-audio", not(target_os = "android")))]
+            Output::Device { _stream, stats, watch } => {
+                use cpal::traits::StreamTrait;
+                let now = std::time::Instant::now();
+                let stalled_ms = watch.check(stats.callbacks.load(Ordering::Relaxed), now, quiet)?;
+                // pause 再 play = AudioUnitStop + Start：cpal 记着「在放」时单调 play 什么都不做，而系统停掉的 I/O 它不知道
+                let _ = _stream.pause();
+                let r = _stream.play();
+                watch.restarts += 1;
+                // 前几次都报，之后每 30 次报一次（会话一直起不来时别刷屏）
+                (watch.restarts <= 3 || watch.restarts % 30 == 0).then(|| match r {
+                    Ok(()) => format!("🔊 音频输出 {stalled_ms}ms 没拉数据（系统停了 I/O：会话被停用 / 打断 / 路由变了），已重启（第 {} 次）", watch.restarts),
+                    Err(e) => format!("⚠️ 音频输出停了，重启失败（第 {} 次）：{e}", watch.restarts),
+                })
+            }
             _ => None,
         }
     }
@@ -132,9 +171,11 @@ impl Output {
             #[cfg(all(feature = "game-audio", target_os = "android"))]
             Output::Android(o) => o.set_paused(paused),
             #[cfg(all(feature = "game-audio", not(target_os = "android")))]
-            Output::Device { _stream, .. } => {
+            Output::Device { _stream, watch, .. } => {
                 use cpal::traits::StreamTrait;
                 if paused { let _ = _stream.pause(); } else { let _ = _stream.play(); }
+                // 回前台：从现在起重新计时，别把后台那段算成「停了」
+                watch.reset();
             }
             _ => {}
         }
@@ -162,6 +203,20 @@ impl Output {
         }
     }
 
+    /// 看门狗：(重启过几次, 回调多少毫秒没涨)；离线 / Android (0, 0)
+    pub fn watch_state(&self) -> (u32, u128) {
+        match self {
+            #[cfg(all(feature = "game-audio", not(target_os = "android")))]
+            Output::Device { watch, .. } => (watch.restarts, watch.since.map(|t| t.elapsed().as_millis()).unwrap_or(0)),
+            _ => (0, 0),
+        }
+    }
+
+    /// 上次读走以来的输出峰值（离线 0）
+    pub fn take_peak(&self) -> f32 {
+        self.device_stats().map(Stats::take_peak).unwrap_or(0.0)
+    }
+
     /// (延迟 µs, 回调块帧数, 回调次数)；离线全 0
     pub fn stats(&self) -> (u32, u32, u64) {
         match self.device_stats() {
@@ -172,6 +227,65 @@ impl Output {
 
     pub fn is_device(&self) -> bool {
         !matches!(self, Output::Offline { .. })
+    }
+}
+
+/// 设备输出的看门狗：回调次数超过 [`Watch::STALL_MS`] 没涨（引擎又不是故意静音）就说它停了。
+///
+/// 为什么要有：iOS 上 RemoteIO 会被系统停掉而 cpal 不知道 —— 宿主停用了音频会话（从前 GameAudioSession 改类别前先
+/// setActive(false)，正好在引擎开设备之后：真机上设备回调 32 次、0.68 秒后就再也不来，背景音乐和音效全没声）、
+/// 来电 / 闹钟打断、媒体服务重置。停了之后 cpal 的 `play()` 是空操作（它记着「在放」），只能 pause + play 重启
+#[derive(Default)]
+pub struct Watch {
+    last_cb: u64,
+    since: Option<std::time::Instant>,
+    pub restarts: u32,
+}
+
+impl Watch {
+    pub const STALL_MS: u128 = 600;
+
+    fn reset(&mut self) {
+        self.since = None;
+    }
+
+    /// 停了多少毫秒（够判定「停了」时返回，并从现在重新计时）；`quiet` 时不判、只记下当前值
+    fn check(&mut self, cb: u64, now: std::time::Instant, quiet: bool) -> Option<u128> {
+        if quiet || cb != self.last_cb || self.since.is_none() {
+            self.last_cb = cb;
+            self.since = Some(now);
+            return None;
+        }
+        let ms = now.duration_since(self.since?).as_millis();
+        if ms < Self::STALL_MS {
+            return None;
+        }
+        self.since = Some(now);
+        Some(ms)
+    }
+}
+
+#[cfg(test)]
+mod watch_tests {
+    use super::Watch;
+    use std::time::{Duration, Instant};
+
+    #[test]
+    fn 回调不涨才算停_故意静音时不算() {
+        let t0 = Instant::now();
+        let at = |ms: u64| t0 + Duration::from_millis(ms);
+        let mut w = Watch::default();
+        assert_eq!(w.check(10, at(0), false), None, "第一次只记下");
+        assert_eq!(w.check(20, at(500), false), None, "在涨");
+        assert_eq!(w.check(20, at(900), false), None, "停了 400ms，还不够");
+        assert_eq!(w.check(20, at(1200), false), Some(700), "停了 700ms：判定");
+        assert_eq!(w.check(20, at(1500), false), None, "判过之后重新计时");
+        assert_eq!(w.check(20, at(1900), false), Some(700));
+        // 后台 / 打断中：设备停着是对的
+        assert_eq!(w.check(20, at(5000), true), None);
+        assert_eq!(w.check(20, at(5300), false), None, "从安静状态出来重新计时");
+        w.reset();
+        assert_eq!(w.check(20, at(9000), false), None, "reset 之后第一次只记下");
     }
 }
 
@@ -201,7 +315,8 @@ mod device {
     }
 
     impl Dev {
-        pub fn start(self, mixer: Mixer) -> Result<(cpal::Stream, Arc<Stats>, String), String> {
+        /// `stall`：故障注入，第 N 次回调之后不再计数（见 [`super::open`]）
+        pub fn start(self, mixer: Mixer, stall: Option<u64>) -> Result<(cpal::Stream, Arc<Stats>, String), String> {
             let stats = Arc::new(Stats::default());
             let st = stats.clone();
             let ch = self.channels;
@@ -213,7 +328,8 @@ mod device {
                     &self.config,
                     move |out: &mut [f32], info: &cpal::OutputCallbackInfo| {
                         mixer.render(out);
-                        note_cb(&st, info, out.len() / ch);
+                        st.note_peak(out);
+                        note_cb(&st, info, out.len() / ch, stall);
                     },
                     err,
                     None,
@@ -226,11 +342,12 @@ mod device {
                             for part in out.chunks_mut(MAX_BLOCK * ch) {
                                 let s = &mut scratch[..part.len()];
                                 mixer.render(s);
+                                st.note_peak(s);
                                 for (o, v) in part.iter_mut().zip(s.iter()) {
                                     *o = (v * 32767.0) as i16;
                                 }
                             }
-                            note_cb(&st, info, out.len() / ch);
+                            note_cb(&st, info, out.len() / ch, stall);
                         },
                         err,
                         None,
@@ -244,7 +361,11 @@ mod device {
         }
     }
 
-    fn note_cb(st: &Stats, info: &cpal::OutputCallbackInfo, frames: usize) {
+    fn note_cb(st: &Stats, info: &cpal::OutputCallbackInfo, frames: usize, stall: Option<u64>) {
+        // 故障注入 stall@N：之后不再计数，看门狗看到的就是「系统停了 I/O」
+        if stall.is_some_and(|n| st.callbacks.load(Ordering::Relaxed) >= n) {
+            return;
+        }
         let ts = info.timestamp();
         if let Some(d) = ts.playback.duration_since(&ts.callback) {
             st.latency_us.store(d.as_micros().min(u32::MAX as u128) as u32, Ordering::Relaxed);

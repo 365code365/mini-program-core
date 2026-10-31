@@ -114,6 +114,15 @@ final class GameSession: NSObject {
             MiniFonts.install(dpr: dpr) // 字体与 iOS 排字口径（画布 fillText 也用，见 MiniFonts.swift）
             // 帧统计开着时顺带开慢帧归因：pump 超过 25ms 打一行「🐢 慢帧」，说清时间花在 JS 的哪段、哪种 GL 调用上
             if GameFrameStats.enabled { setenv("MINI_GAME_SLOW_MS", "25", 0) }
+            // 音频会话要在引擎开声卡**之前**配好、激活：引擎建实例时就起 RemoteIO（game/audio/output.rs）。
+            // 从前在建好实例之后才建 GameAudioSession，它改类别前先 setActive(false)，把刚起来的 I/O 停了：
+            // 真机上设备回调 0.68 秒后再也不来，背景音乐、音效全没声
+            audio = GameAudioSession(game: { [weak self] in self?.handle }, post: { [weak self] b in
+                self?.thread.perform {
+                    b()
+                    if let g = self?.handle { self?.afterCommand(g) }
+                }
+            })
             guard let h = mr_game_create(dir, dataDir, max(1, width), max(1, height), dpr, options) else {
                 NSLog("❌ mini-game：建实例失败 \(dir)")
                 return
@@ -125,12 +134,6 @@ final class GameSession: NSObject {
                 _ = mr_game_dispatch_event(g, name, json)
                 afterCommand(g)
             }
-            audio = GameAudioSession(game: { [weak self] in self?.handle }, post: { [weak self] b in
-                self?.thread.perform {
-                    b()
-                    if let g = self?.handle { self?.afterCommand(g) }
-                }
-            })
             let l = CADisplayLink(target: self, selector: #selector(tick(_:)))
             l.add(to: RunLoop.current, forMode: .default)
             link = l
@@ -187,9 +190,10 @@ final class GameSession: NSObject {
         thread.perform { [self] in
             running = true
             guard let h = handle else { return }
+            // 先激活会话再让引擎恢复输出（后台期间别的 App 可能拿走了会话，没激活时 AudioUnitStart 起不来）
+            audio?.setForeground(true)
             mr_game_set_background(h, 0)
             sensors?.resumeAll()
-            audio?.setForeground(true)
             forcePresent = true
             afterCommand(h)
         }
@@ -332,6 +336,7 @@ final class GameSession: NSObject {
         let t0 = stats != nil ? CACurrentMediaTime() : 0
         let f = mr_game_pump_ex(h, UInt64(l.timestamp * 1_000_000))
         let t1 = stats != nil ? CACurrentMediaTime() : 0
+        audio?.logIfAsked(h, now: l.timestamp)
         let presenting = f & Int32(MR_FRAME_NEW) != 0 || forcePresent
         if presenting { present(h) }
         if let st = stats {
