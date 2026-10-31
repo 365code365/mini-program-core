@@ -446,8 +446,12 @@ void mr_wg_host_reply(MRWebGame* h, uint32_t id, int ok, const char* result_json
 void mr_wg_menu_button(MRWebGame* h, float* x, float* y, float* w, float* hh);
 // 0 = 支持；1 = 用了开放数据域；2 = 用了插件；-1 = 不是小游戏包
 int mr_wg_support(const char* app_dir);
-// game.json 的 iOSHighPerformance / iOSHighPerformance+：1 = 要高性能模式，0 = 不要，-1 = 读不出
+// game.json 要哪种模式：2 = 高性能+（iOSHighPerformance+）、1 = 高性能（iOSHighPerformance）、0 = 普通、-1 = 读不出
 int mr_wg_wanted(const char* app_dir);
+// 高性能+：回放页面发来的一包画布 / WebGL 命令（实例用 mr_game_create 建，选项带 "remote": true；不执行 game.js）。
+// *out_flags：1 = 主画布这一帧画过、要上屏（宿主调 mr_game_present_layer），2 = 这包以帧尾结束（回页面 __wgrAck()）。
+// 返回同步调用的结果 JSON（mr_wg_free_string 释放），没有返回 NULL。与 mr_game_pump_ex 同一条线程上调
+char* mr_game_replay(MRGame* game, const uint8_t* data, size_t len, int* out_flags);
 
 #ifdef __cplusplus
 }

@@ -93,8 +93,12 @@ final class GameSession: NSObject {
     /// 帧统计（`-gameStats 1`，GameFrameStats.swift）；不开时是 nil
     private let stats: GameFrameStats? = GameFrameStats.enabled ? GameFrameStats() : nil
 
-    init(dir: String) {
+    /// 高性能+ 的渲染端（game/remote）：不跑游戏 JS，只回放页面（WKWebView）发来的命令；DisplayLink 只用来取图片解码完的回调
+    let remote: Bool
+
+    init(dir: String, remote: Bool = false) {
         self.dir = dir
+        self.remote = remote
         super.init()
         thread.name = "mini-game"
         thread.qualityOfService = .userInteractive
@@ -262,6 +266,32 @@ final class GameSession: NSObject {
         DispatchQueue.main.async { [weak self] in self?.ui?.gameMenuButton(r) }
     }
 
+    /// 高性能+：回放页面发来的一包命令（base64）。`done` 收同步调用的结果（主线程）；帧尾时上屏并回页面 ack
+    func replay(_ b64: String, done: ((String) -> Void)? = nil) {
+        thread.perform { [self] in
+            guard let h = handle, let data = Data(base64Encoded: b64) else {
+                if let done { DispatchQueue.main.async { done("") } }
+                return
+            }
+            var flags: Int32 = 0
+            let t0 = stats != nil ? CACurrentMediaTime() : 0
+            let p = data.withUnsafeBytes { buf in mr_game_replay(h, buf.bindMemory(to: UInt8.self).baseAddress, buf.count, &flags) }
+            let result = p.map { String(cString: $0) } ?? ""
+            mr_wg_free_string(p)
+            if flags & 1 != 0 || (flags & 2 != 0 && forcePresent), running {
+                let t1 = stats != nil ? CACurrentMediaTime() : 0
+                present(h)
+                if let st = stats {
+                    st.record(pumpMs: (t1 - t0) * 1000, presentMs: (CACurrentMediaTime() - t1) * 1000, at: CACurrentMediaTime(), target: 60)
+                }
+            }
+            drainEvents(h)
+            requestFrame()
+            if flags & 2 != 0 { DispatchQueue.main.async { [weak self] in self?.ui?.gameEvents([["type": "wgr", "js": "__wgrAck()"]]) } }
+            if let done { DispatchQueue.main.async { done(result) } }
+        }
+    }
+
     private func afterCommand(_ h: OpaquePointer) {
         drainEvents(h)
         requestFrame()
@@ -292,6 +322,13 @@ final class GameSession: NSObject {
 
     @objc private func tick(_ l: CADisplayLink) {
         guard let h = handle, running else { return }
+        if remote {
+            // 回放端：帧由页面的 rAF 驱动（replay），这里只取异步完成的活（图片解码、日志），不上屏
+            let f = mr_game_pump_ex(h, UInt64(l.timestamp * 1_000_000))
+            if f & Int32(MR_FRAME_EVENTS) != 0 { drainEvents(h) }
+            if f & Int32(MR_FRAME_WANTS_MORE) == 0 { l.isPaused = true }
+            return
+        }
         let t0 = stats != nil ? CACurrentMediaTime() : 0
         let f = mr_game_pump_ex(h, UInt64(l.timestamp * 1_000_000))
         let t1 = stats != nil ? CACurrentMediaTime() : 0

@@ -150,7 +150,7 @@ pub extern "C" fn mr_game_destroy(game: *mut MRGame) {
 
 /// 在没中毒的实例上跑 `f`；panic 时把实例标成 poisoned。实例为空 / 已中毒返回 `fail`
 #[cfg(feature = "game")]
-fn guarded<R>(game: *mut MRGame, fail: R, f: impl FnOnce(&mut GameEngine) -> R) -> R {
+pub(crate) fn guarded<R>(game: *mut MRGame, fail: R, f: impl FnOnce(&mut GameEngine) -> R) -> R {
     let Some(g) = (unsafe { game.as_mut() }) else { return fail };
     if g.poisoned {
         return fail;

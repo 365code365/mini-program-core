@@ -81,7 +81,7 @@ impl WebGame {
         let (path, query) = path.split_once('?').unwrap_or((path, ""));
         let path = percent_decode(path);
         match path.as_str() {
-            "/__wg.html" | "/" => return Some(Resource::text(super::boot::boot_html(), "text/html; charset=utf-8")),
+            "/__wg.html" | "/" => return Some(Resource::text(super::boot::boot_html(self.plus), "text/html; charset=utf-8")),
             "/__wg/boot.js" => return Some(Resource::text(self.boot_js(), "application/javascript; charset=utf-8")),
             "/__wg/entry.js" => return Some(Resource::text(self.entry_js(), "application/javascript; charset=utf-8")),
             "/__wg/proxy" => return proxy(query),

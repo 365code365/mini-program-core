@@ -45,6 +45,8 @@ mod fps_governor;
 pub(crate) mod slow_frame;
 /// 高性能模式（游戏 JS 跑在系统 WebView 里，iOS 的 WKWebView：JIT + WebKit 的 GPU 画布），game-doc/12
 pub mod web;
+/// 高性能+ 的渲染端：回放页面发来的画布 / WebGL 命令（游戏 JS 在 WKWebView 里，画面由这里经 ANGLE 上屏）
+pub mod remote;
 
 use crate::app_profile::{detect, AppProfile};
 use crate::js::PreludeProfile;
@@ -88,6 +90,8 @@ pub struct GameOptions {
     pub host_apis: Vec<String>,
     /// WebGL 后端偏好：auto / angle / swiftshader / system / off（`MINI_WEBGL` 优先，webgl/egl.rs）
     pub webgl: Option<String>,
+    /// 高性能+ 模式的渲染端（remote/）：不执行 game.js，只回放页面（WKWebView）发来的画布 / WebGL 命令
+    pub remote: bool,
 }
 
 /// 游戏实例报给 `wx.getSystemInfoSync().SDKVersion` 的基础库版本（决策 D-9 未定：取证后按已实现的 API 集合选定，
@@ -131,6 +135,7 @@ impl GameOptions {
             adaptive_fps: v.get("adaptiveFps").and_then(|x| x.as_bool()).unwrap_or(false),
             plugin_dir: v.get("pluginDir").and_then(|x| x.as_str()).map(str::to_string),
             webgl: v.get("webgl").and_then(|x| x.as_str()).map(str::to_string),
+            remote: v.get("remote").and_then(|x| x.as_bool()).unwrap_or(false),
             host_apis: v.get("hostApis").and_then(|x| x.as_array()).map(|a| a.iter().filter_map(|s| s.as_str().map(str::to_string)).collect()).unwrap_or_default(),
         })
     }
@@ -178,6 +183,8 @@ pub struct GameEngine {
     webgl: std::rc::Rc<std::cell::RefCell<webgl::WebGl>>,
     /// 原生按钮（UserInfoButton 等，buttons.rs）
     buttons: std::rc::Rc<std::cell::RefCell<buttons::Buttons>>,
+    /// 高性能+ 的回放状态（remote/）；None = 普通实例
+    remote: Option<Box<remote::Remote>>,
 }
 
 impl GameEngine {
@@ -272,7 +279,7 @@ impl GameEngine {
             touch: Default::default(), pc: Default::default(), images, audio,
             orientation: if config_landscape { "landscape".into() } else { "portrait".into() },
             system_info_opts: opts.system_info.clone(), safe_area: opts.safe_area, rotation, workers, overlay: Default::default(), buttons: btns,
-            od, od_rt: None, host_apis: opts.host_apis.clone(),
+            od, od_rt: None, host_apis: opts.host_apis.clone(), remote: opts.remote.then(Default::default),
             #[cfg(feature = "webgl")]
             webgl };
         engine.announce_orientation();
@@ -288,6 +295,11 @@ impl GameEngine {
         }
         if log && !engine.config.unknown_fields.is_empty() {
             engine.host_log(&format!("🎮 game.json 未知字段：{:?}", engine.config.unknown_fields));
+        }
+        if engine.remote.is_some() {
+            // 高性能+：游戏 JS 在页面里跑，这里只装回放用的转发（remote/mod.rs），不注册、不执行包里的脚本
+            engine.remote_init();
+            return Ok(engine);
         }
         let t_load = std::time::Instant::now();
         let (n, cached, errors) = loader::register_modules(&engine.app, &engine.root);

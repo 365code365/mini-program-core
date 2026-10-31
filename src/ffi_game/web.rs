@@ -202,12 +202,32 @@ pub extern "C" fn mr_wg_support(app_dir: *const c_char) -> c_int {
     }
 }
 
-/// game.json 要不要高性能模式（`iOSHighPerformance` / `iOSHighPerformance+` 为 true）：1 要、0 不要、-1 读不出
+/// game.json 要哪种模式：2 = 高性能+（`iOSHighPerformance+`）、1 = 高性能（`iOSHighPerformance`）、0 = 普通、-1 读不出
 #[no_mangle]
 pub extern "C" fn mr_wg_wanted(app_dir: *const c_char) -> c_int {
     let Some(d) = cstr(app_dir) else { return -1 };
     let Ok(text) = std::fs::read_to_string(std::path::Path::new(&d).join("game.json")) else { return -1 };
     let Ok(c) = crate::game::config::GameConfig::parse(&text) else { return -1 };
     let on = |k: &str| c.raw.get(k).and_then(|v| v.as_bool()).unwrap_or(false);
-    (on("iOSHighPerformance") || on("iOSHighPerformance+")) as c_int
+    if on("iOSHighPerformance+") {
+        2
+    } else {
+        on("iOSHighPerformance") as c_int
+    }
+}
+
+/// 高性能+：回放页面发来的一包命令（game/remote）。`out_flags`：1 = 主画布这一帧画过、要上屏，2 = 这包以帧尾结束（回页面一个 ack）。
+/// 返回同步调用的结果（JSON，用 mr_wg_free_string 释放）；没有返回 NULL。在引擎线程上调（与 mr_game_pump_ex 同一条）
+#[no_mangle]
+pub extern "C" fn mr_game_replay(game: *mut super::MRGame, data: *const u8, len: usize, out_flags: *mut c_int) -> *mut c_char {
+    if data.is_null() && len > 0 {
+        return std::ptr::null_mut();
+    }
+    let bytes = if len == 0 { &[][..] } else { unsafe { std::slice::from_raw_parts(data, len) } };
+    let r = super::guarded(game, None, |e| Some(e.replay(bytes)));
+    let Some(r) = r else { return std::ptr::null_mut() };
+    if !out_flags.is_null() {
+        unsafe { *out_flags = (r.present as c_int) | ((r.frame_end as c_int) << 1) };
+    }
+    out(r.result)
 }

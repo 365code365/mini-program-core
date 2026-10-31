@@ -15,10 +15,12 @@ pub struct WebOpts {
     pub app_id: &'static str,
     /// 视口（CSS 像素）；None = 按 game.json 的方向给 375×667 / 667×375
     pub size: Option<(u32, u32)>,
+    /// 高性能+：画布 / WebGL 交回渲染端回放（game/remote），像素从渲染端取
+    pub plus: bool,
 }
 impl Default for WebOpts {
     fn default() -> Self {
-        Self { query: "", host_apis: &[], app_id: "wxweb000000000000", size: None }
+        Self { query: "", host_apis: &[], app_id: "wxweb000000000000", size: None, plus: false }
     }
 }
 
@@ -98,6 +100,7 @@ impl WebHarness {
             app_id: Some(opts.app_id.into()),
             launch_options: Some(serde_json::json!({ "query": query, "scene": 1001 })),
             host_apis: opts.host_apis.iter().map(|s| s.to_string()).collect(),
+            remote: opts.plus,
             ..Default::default()
         };
         let land = std::fs::read_to_string(dir.join("game.json")).ok()
@@ -183,6 +186,20 @@ impl WebHarness {
 
     pub fn tap(&mut self, x: f32, y: f32) {
         self.chrome.tap(x, y).unwrap();
+    }
+
+    /// 高性能+ 渲染端的输出帧里 (x, y)（逻辑像素；主画布可能是 dpr 倍，按尺寸换算）
+    pub fn native_pixel(&self, x: u32, y: u32) -> [u8; 3] {
+        let (w, h, px) = self.srv.renderer.as_ref().expect("不是高性能+").frame();
+        let (sx, sy) = (w as f32 / self.size.0 as f32, h as f32 / self.size.1 as f32);
+        let i = (((y as f32 * sy) as u32).min(h - 1) * w + ((x as f32 * sx) as u32).min(w - 1)) as usize * 4;
+        [px[i], px[i + 1], px[i + 2]]
+    }
+
+    /// 渲染端输出帧的颜色数（画出东西了没有）
+    pub fn native_colors(&self) -> usize {
+        let (_, _, px) = self.srv.renderer.as_ref().expect("不是高性能+").frame();
+        px.chunks_exact(4).map(|c| [c[0], c[1], c[2]]).collect::<std::collections::HashSet<_>>().len()
     }
 
     /// 截图里 (x, y)（CSS 像素）的颜色

@@ -16,15 +16,20 @@
         scheduled = 0;
         // 跳帧：离上一次跑过不到一个目标周期（留 2ms 余量吸收 vsync 抖动）就等下一个 vsync
         if (fps < 60 && lastRun >= 0 && ts - lastRun < 1000 / fps - 2) { schedule(); return; }
+        // 高性能+：App 还没回放完前两帧，这个 vsync 先不跑（wg-remote.js 的流控）
+        if (G.__wgrBusy && G.__wgrBusy()) { schedule(); return; }
         lastRun = ts;
         var batch = queue, t0 = performance.now(); queue = []; cancelled = {};
+        if (G.__wgrInTick) G.__wgrInTick(true);
         for (var i = 0; i < batch.length; i++) {
             if (cancelled[batch[i][0]]) continue;
             __gameCall(batch[i][1], null, [ts]);
         }
         cancelled = {};
-        // 第一帧：宿主据此撤 loading（与 QuickJS 模式「第一帧上屏」同一时机）
-        if (!firstSent && batch.length) { firstSent = true; __native_host_event(JSON.stringify({ type: 'firstFrame' })); }
+        // 高性能+：这一帧录下的画布 / WebGL 命令发出去（帧尾 → App 上屏）
+        if (G.__wgrInTick) { G.__wgrInTick(false); G.__wgrFlush(true); }
+        // 第一帧：宿主据此撤 loading（与 QuickJS 模式「第一帧上屏」同一时机；高性能+ 由 App 真正上屏的那一帧报）
+        if (!firstSent && batch.length && !__wgBoot.plus) { firstSent = true; __native_host_event(JSON.stringify({ type: 'firstFrame' })); }
         if (G.__wgStats) stat(ts, performance.now() - t0);
         __wgFlushLogs();
         schedule();

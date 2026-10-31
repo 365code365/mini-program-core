@@ -18,8 +18,10 @@
     var N = G.__wgNative = {
         XHR: G.XMLHttpRequest, fetch: G.fetch.bind(G), WebSocket: G.WebSocket, Image: G.Image, Worker: G.Worker,
         AudioContext: G.AudioContext || G.webkitAudioContext, FontFace: G.FontFace, WebAssembly: G.WebAssembly,
-        createElement: function(tag) { return Document.prototype.createElement.call(document, tag); }
+        createElement: (function(ce) { return function(tag) { return ce.call(document, tag); }; })(Document.prototype.createElement)
     };
+    // 浏览器自己的 rAF（wg-frame.js 会把全局的换成小游戏语义的那份）
+    G.__wgNativeRaf = G.requestAnimationFrame.bind(G);
     var ios = !!(G.webkit && G.webkit.messageHandlers && G.webkit.messageHandlers.wg);
 
     // ---------------- 消息通道 ----------------
@@ -126,7 +128,7 @@
     // ---------------- GameGlobal / window / self 的代理 ----------------
     // 写进影子表的：location（真赋值会跳页）与写不进真全局的（只读的 document、navigator、top …：Reflect.set 返回 false）。
     // 可替换的（frames、screen、parent …）照常写到真全局上：游戏 `globalThis.frames = fn` 之后宿主 eval 也看得见
-    var UNSAFE = { location: 1 };
+    var UNSAFE = Object.assign(Object.create(null), { location: 1 });
     var shadow = Object.create(null), boundCache = new WeakMap(), nativeRe = /\{\s*\[native code\]\s*\}\s*$/;
     function isNative(f) {
         var r = boundCache.get(f);
@@ -140,23 +142,27 @@
     }
     // 代理的目标是一个空对象而不是 window 本身：Proxy 的不变式按「目标」检查 —— 目标若是 window，`document` 这种
     // 不可配置、没有 setter 的属性，set 陷阱返回 true 就抛 TypeError（Chrome / WebKit 都这样），影子表就写不进去
+    // 微信的 GameGlobal 上没有 DOM 的事件方法：适配层按「有没有 addEventListener」决定自己装一套（weapp-adapter 的 listen），
+    // 让它看见 window 的原生 dispatchEvent 就会把普通对象当事件派发 → TypeError（Pixi 收不到点击）
+    var HIDE = Object.assign(Object.create(null), { addEventListener: 1, removeEventListener: 1, dispatchEvent: 1 });
     var P = new Proxy(Object.create(null), {
         get: function(t, k) {
             if (typeof k === 'string' && k in shadow) return shadow[k];
+            if (HIDE[k]) return undefined;
             if (k === 'window' || k === 'self' || k === 'GameGlobal' || k === 'globalThis') return P;
             var v = G[k];
             if (typeof v === 'function') { var b = isNative(v); if (b) return b; }
             return v;
         },
         set: function(t, k, v) {
-            if (typeof k === 'string' && (UNSAFE[k] || k === 'window' || k === 'self' || k === 'GameGlobal' || k === 'globalThis')) { shadow[k] = v; return true; }
+            if (typeof k === 'string' && (UNSAFE[k] || HIDE[k] || k === 'window' || k === 'self' || k === 'GameGlobal' || k === 'globalThis')) { shadow[k] = v; return true; }
             var ok = false;
             try { ok = Reflect.set(G, k, v); } catch (e) { ok = false; }
             if (!ok) shadow[k] = v;
             else if (typeof k === 'string') delete shadow[k];
             return true;
         },
-        has: function(t, k) { return k in shadow || k in G; },
+        has: function(t, k) { return k in shadow || (!HIDE[k] && k in G); },
         deleteProperty: function(t, k) { delete shadow[k]; try { Reflect.deleteProperty(G, k); } catch (e) {} return true; },
         defineProperty: function(t, k, d) {
             if (typeof k === 'string' && !UNSAFE[k]) { try { if (Reflect.defineProperty(G, k, d)) return true; } catch (e) {} }

@@ -58,8 +58,10 @@ pub struct WebGame {
     storage: std::collections::HashMap<String, String>,
     storage_dirty: bool,
     /// 当前窗口（逻辑宽、高、dpr）与方向值（portrait / landscape / landscapeReverse）
-    size: (u32, u32, f32),
+    pub(crate) size: (u32, u32, f32),
     orientation: String,
+    /// 高性能+（创建选项 `remote`）：画布 / WebGL 交回 App 回放（game/remote），页面只跑 JS、画覆盖层
+    pub(crate) plus: bool,
 }
 
 impl WebGame {
@@ -95,6 +97,7 @@ impl WebGame {
             storage_dirty: false,
             size: (width.max(1), height.max(1), if dpr > 0.1 { dpr } else { 1.0 }),
             orientation: if width > height { "landscape".into() } else { "portrait".into() },
+            plus: opts.remote,
         };
         g.info = g.system_info(width, height, dpr);
         Ok(g)
@@ -203,6 +206,11 @@ impl WebGame {
         // 一次交一整批：每段 evaluateJavaScript 都是一次进程间往返
         let all: Vec<String> = self.js.drain(..).collect();
         Some(all.join("\n"))
+    }
+
+    /// 排一段要在页面里执行的 JS（高性能+ 渲染端的回调：图片解码完、上下文丢失……）
+    pub fn push_js(&mut self, js: &str) {
+        self.js.push_back(js.to_string());
     }
 
     /// 取一条宿主事件（JSON，type 与 QuickJS 模式相同：hostCall / exit / restart / showKeyboard / vibrate …）

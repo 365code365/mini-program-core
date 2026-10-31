@@ -42,12 +42,16 @@ public final class MiniWebGameView: UIView, WKScriptMessageHandler, WKUIDelegate
     private let ioQueue = DispatchQueue(label: "mini-game-web.io", qos: .userInitiated, attributes: .concurrent)
     private lazy var keyboard = GameKeyboard(host: self) { [weak self] n, j in self?.dispatchEvent(n, json: j) }
     private lazy var video = GameVideo(host: self, dir: gameDir) { [weak self] n, j in self?.dispatchEvent(n, json: j) }
+    /// 高性能+：画面由 App 端回放（[WebGamePlusRenderer]），页面透明、只画覆盖层
+    public let plus: Bool
+    private var renderer: WebGamePlusRenderer?
     private lazy var sensors = GameSensors(post: { b in DispatchQueue.main.async(execute: b) }) { [weak self] n, j in self?.dispatchEvent(n, json: j) }
 
-    public init(gameDir: String, dataDir: String? = nil, options: [String: Any] = [:]) {
+    public init(gameDir: String, dataDir: String? = nil, options: [String: Any] = [:], plus: Bool = false) {
         self.gameDir = gameDir
         self.dataDir = dataDir ?? MiniGame.defaultDataDir
         self.options = options
+        self.plus = plus
         super.init(frame: .zero)
         backgroundColor = .black
         if options["menuButton"] as? Bool ?? true {
@@ -120,8 +124,11 @@ public final class MiniWebGameView: UIView, WKScriptMessageHandler, WKUIDelegate
         keyboard.hide()
         video.release()
         sensors.release()
+        renderer?.dispose()
+        renderer = nil
         if let w = web {
             w.configuration.userContentController.removeScriptMessageHandler(forName: "wg")
+            if plus { w.configuration.userContentController.removeScriptMessageHandler(forName: "wgr") }
             w.stopLoading()
             w.removeFromSuperview()
         }
@@ -138,6 +145,7 @@ public final class MiniWebGameView: UIView, WKScriptMessageHandler, WKUIDelegate
     public override func layoutSubviews() {
         super.layoutSubviews()
         web?.frame = bounds
+        renderer?.layout(bounds)
         keyboard.layout()
         video.relayout()
         let s = bounds.size
@@ -146,6 +154,7 @@ public final class MiniWebGameView: UIView, WKScriptMessageHandler, WKUIDelegate
         if !started { return startIfReady() }
         guard let h = handle else { return }
         mr_wg_resize(h, UInt32(s.width), UInt32(s.height), Float(window?.screen.scale ?? UIScreen.main.scale), currentOrientation())
+        renderer?.resize(width: UInt32(s.width), height: UInt32(s.height), dpr: Float(window?.screen.scale ?? UIScreen.main.scale), orientation: currentOrientation())
         placeCapsule()
         pump()
     }
@@ -156,7 +165,8 @@ public final class MiniWebGameView: UIView, WKScriptMessageHandler, WKUIDelegate
         started = true
         let dpr = Float(window?.screen.scale ?? UIScreen.main.scale)
         let t0 = CACurrentMediaTime()
-        guard let h = mr_wg_create(gameDir, dataDir, UInt32(bounds.width), UInt32(bounds.height), dpr, optionsJson()) else {
+        let opts = optionsJson()
+        guard let h = mr_wg_create(gameDir, dataDir, UInt32(bounds.width), UInt32(bounds.height), dpr, opts) else {
             NSLog("❌ mini-game（高性能模式）：建实例失败 \(gameDir)")
             return
         }
@@ -164,6 +174,21 @@ public final class MiniWebGameView: UIView, WKScriptMessageHandler, WKUIDelegate
         let cfg = WKWebViewConfiguration()
         cfg.setURLSchemeHandler(self, forURLScheme: "wxgame")
         cfg.userContentController.add(WeakHandler(self), name: "wg")
+        if plus {
+            // 回放端：与页面同一个包、同一份选项（remote:true 已在 optionsJson 里），先建好再加载页面
+            let r = WebGamePlusRenderer(host: self, dir: gameDir)
+            r.evalJS = { [weak self] js in self?.web?.evaluateJavaScript(js) }
+            r.onFirstFrame = { [weak self] in
+                guard let self, !self.firstFrameSent else { return }
+                self.firstFrameSent = true
+                NSLog("🎮 第一帧上屏（高性能+）")
+                self.onFirstFrame?()
+            }
+            r.start(dataDir: dataDir, width: UInt32(bounds.width), height: UInt32(bounds.height), dpr: dpr, options: opts)
+            r.layout(bounds)
+            renderer = r
+            cfg.userContentController.add(WeakHandler(self), name: "wgr")
+        }
         // 帧统计（-gameStats 1）：页面每 2 秒一行，与 QuickJS 模式同一格式（tools/ios-game-sweep.sh 两种模式一起比）
         if GameFrameStats.enabled {
             cfg.userContentController.addUserScript(WKUserScript(source: "window.__wgStats = true;", injectionTime: .atDocumentStart, forMainFrameOnly: true))
@@ -173,9 +198,10 @@ public final class MiniWebGameView: UIView, WKScriptMessageHandler, WKUIDelegate
         cfg.suppressesIncrementalRendering = false
         if #available(iOS 14.0, *) { cfg.defaultWebpagePreferences.allowsContentJavaScript = true }
         let w = WKWebView(frame: bounds, configuration: cfg)
-        w.isOpaque = true
-        w.backgroundColor = .black
-        w.scrollView.backgroundColor = .black
+        // 高性能+：画面在下面的 Metal 图层上，页面透明
+        w.isOpaque = !plus
+        w.backgroundColor = plus ? .clear : .black
+        w.scrollView.backgroundColor = plus ? .clear : .black
         w.scrollView.isScrollEnabled = false
         w.scrollView.bounces = false
         w.scrollView.contentInsetAdjustmentBehavior = .never
@@ -184,9 +210,10 @@ public final class MiniWebGameView: UIView, WKScriptMessageHandler, WKUIDelegate
         w.uiDelegate = self
         w.navigationDelegate = self
         if #available(iOS 16.4, *) { w.isInspectable = options["inspectable"] as? Bool ?? true }
-        insertSubview(w, at: 0)
+        // 高性能+：网页要盖在回放端的图层之上（那两块图层垫在最底下）
+        if plus { addSubview(w) } else { insertSubview(w, at: 0) }
         web = w
-        NSLog("🎮 建实例（高性能模式）%.0fms（%d×%d@%.1f，%@）", (CACurrentMediaTime() - t0) * 1000, Int(bounds.width), Int(bounds.height), dpr, gameDir)
+        NSLog(plus ? "🎮 建实例（高性能+）%.0fms（%d×%d@%.1f，%@）" : "🎮 建实例（高性能模式）%.0fms（%d×%d@%.1f，%@）", (CACurrentMediaTime() - t0) * 1000, Int(bounds.width), Int(bounds.height), dpr, gameDir)
         w.load(URLRequest(url: URL(string: "wxgame://app/__wg.html")!))
         placeCapsule()
         let l = CADisplayLink(target: WeakTarget(self), selector: #selector(WeakTarget.tick))
@@ -196,6 +223,7 @@ public final class MiniWebGameView: UIView, WKScriptMessageHandler, WKUIDelegate
 
     private func optionsJson() -> String {
         var o = options
+        if plus { o["remote"] = true }
         var apis = o["hostApis"] as? [String] ?? []
         apis.append(contentsOf: GameSensors.apis.filter { !apis.contains($0) })
         o["hostApis"] = apis
@@ -223,6 +251,7 @@ public final class MiniWebGameView: UIView, WKScriptMessageHandler, WKUIDelegate
         guard let h = handle, reportedInsets != i else { return }
         reportedInsets = i
         mr_wg_set_safe_area(h, Float(i.top), Float(i.right), Float(i.bottom), Float(i.left))
+        renderer?.setSafeArea(i)
         placeCapsule()
         pump()
     }
@@ -263,6 +292,8 @@ public final class MiniWebGameView: UIView, WKScriptMessageHandler, WKUIDelegate
     /// 异步消息（webkit.messageHandlers.wg.postMessage）
     public func userContentController(_ uc: WKUserContentController, didReceive message: WKScriptMessage) {
         guard let h = handle, let s = message.body as? String else { return }
+        // 高性能+ 的一帧命令（base64）：交给回放端
+        if message.name == "wgr" { renderer?.replay(s); return }
         mr_wg_post(h, s)
         pump()
     }
@@ -270,6 +301,10 @@ public final class MiniWebGameView: UIView, WKScriptMessageHandler, WKUIDelegate
     /// 同步调用（prompt('__wg', 消息)）：WKUIDelegate 的 completionHandler 回什么，页面里的 prompt 就返回什么
     public func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String, defaultText: String?,
                         initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (String?) -> Void) {
+        if prompt == "__wgr", let r = renderer {
+            // 同步调用连同之前没发出去的命令：回放端在它的线程上执行完、主线程回给页面（页面那边一直等着）
+            return r.replay(defaultText ?? "") { completionHandler($0) }
+        }
         guard prompt == "__wg", let h = handle else { return completionHandler(nil) }
         let p = mr_wg_call(h, defaultText ?? "")
         let r = p.map { String(cString: $0) } ?? ""
@@ -394,6 +429,7 @@ public final class MiniWebGameView: UIView, WKScriptMessageHandler, WKUIDelegate
     @objc private func onForeground() {
         guard let h = handle, !closed else { return }
         sensors.resumeAll()
+        renderer?.foreground()
         mr_wg_set_background(h, 0)
         pump()
     }
@@ -401,6 +437,7 @@ public final class MiniWebGameView: UIView, WKScriptMessageHandler, WKUIDelegate
     @objc private func onBackground() {
         guard let h = handle, !closed else { return }
         sensors.pauseAll()
+        renderer?.background()
         mr_wg_set_background(h, 1)
         pump()
     }

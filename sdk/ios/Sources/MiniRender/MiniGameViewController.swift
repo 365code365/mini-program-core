@@ -29,6 +29,9 @@ public enum MiniGameMode: String {
     /// 高性能模式：JS 在 WKWebView 里（JIT），WebGL / 2D 是 WebKit 的 GPU 实现（[MiniWebGameView]）。
     /// 包里用了开放数据域 / 引擎插件时回落普通模式（日志一行）
     case highPerformance
+    /// 高性能+：JS 在 WKWebView 里（JIT），画布 / WebGL 命令每帧交回 App、经 ANGLE 直接上屏（[WebGamePlusRenderer]）。
+    /// 与微信的「高性能+」同一个思路：渲染挪回宿主进程，不经 WebKit 的 GPU 进程与合成器
+    case highPerformancePlus
 
     /// 这个包实际走哪种
     public static func resolve(_ mode: MiniGameMode, dir: String) -> MiniGameMode {
@@ -36,12 +39,20 @@ public enum MiniGameMode: String {
         // 启动参数 -gameMode web | native 优先（对照用），其次宿主给的，最后看 game.json
         switch UserDefaults.standard.string(forKey: "gameMode") {
         case "web": want = .highPerformance
+        case "plus": want = .highPerformancePlus
         case "native": want = .standard
-        default: if want == .auto { want = mr_wg_wanted(dir) == 1 ? .highPerformance : .standard }
+        default:
+            if want == .auto {
+                switch mr_wg_wanted(dir) {
+                case 2: want = .highPerformancePlus
+                case 1: want = .highPerformance
+                default: want = .standard
+                }
+            }
         }
-        guard want == .highPerformance else { return .standard }
+        guard want == .highPerformance || want == .highPerformancePlus else { return .standard }
         switch mr_wg_support(dir) {
-        case 0: return .highPerformance
+        case 0: return want
         case 1: NSLog("[mini-game] 用了开放数据域，高性能模式不支持，走普通模式"); return .standard
         case 2: NSLog("[mini-game] 用了引擎插件，高性能模式不支持，走普通模式"); return .standard
         default: return .standard
@@ -74,7 +85,7 @@ open class MiniGameViewController: UIViewController {
         self.dataDir = dataDir
         self.options = options
         self.mode = MiniGameMode.resolve(mode, dir: gameDir)
-        NSLog("[mini-game] 运行模式：%@", self.mode == .highPerformance ? "高性能（WKWebView）" : "普通（QuickJS）")
+        NSLog("[mini-game] 运行模式：%@", self.mode == .highPerformance ? "高性能（WKWebView）" : self.mode == .highPerformancePlus ? "高性能+（WKWebView + ANGLE）" : "普通（QuickJS）")
         super.init(nibName: nil, bundle: nil)
         modalPresentationStyle = .fullScreen
     }
@@ -88,9 +99,9 @@ open class MiniGameViewController: UIViewController {
     }
 
     private func newGame() {
-        let v: MiniGameHosting = mode == .highPerformance
-            ? MiniWebGameView(gameDir: gameDir, dataDir: dataDir, options: options)
-            : MiniGameView(gameDir: gameDir, dataDir: dataDir, options: options)
+        let v: MiniGameHosting = mode == .standard
+            ? MiniGameView(gameDir: gameDir, dataDir: dataDir, options: options)
+            : MiniWebGameView(gameDir: gameDir, dataDir: dataDir, options: options, plus: mode == .highPerformancePlus)
         v.frame = view.bounds
         v.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         v.onOrientationChange = { [weak self] _ in self?.applyOrientation() }

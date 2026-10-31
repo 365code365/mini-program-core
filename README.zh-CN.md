@@ -346,7 +346,7 @@ GPU 初始化失败、自检不一致、运行中设备丢失或 surface 无法�
 | `MINI_GPU_FAULT=lost@N`（小游戏） | 小游戏里作用于 WebGL：第 N 次上屏时让主画布的上下文丢失，派发 `webglcontextlost`（A8.4） |
 | `MINI_GAME_WATCHDOG_MS=<毫秒>` | 小游戏：单次进入 JS 的时间上限（默认 5000），超时中断抛 `InternalError: interrupted`，交给 `wx.onError` 并发宿主 `error{kind:"watchdog"}` |
 | `MINI_GAME_FAULT=panic@pump\|panic@eval` | 小游戏故障注入：验证 FFI 的 panic 防护（实例失效、宿主进程不崩） |
-| iOS 启动参数 `-gameMode web\|native` | 小游戏运行模式：`web` = 高性能模式（JS 跑在 WKWebView 里：JIT、WebKit 的 GPU 画布，对标微信 `iOSHighPerformance`），`native` = 普通模式（QuickJS）；不给时按宿主与 game.json，见 [game-doc/12](game-doc/12-高性能模式.md) |
+| iOS 启动参数 `-gameMode web\|plus\|native` | 小游戏运行模式：`web` = 高性能模式（JS 跑在 WKWebView 里：JIT、WebKit 的 GPU 画布，对标微信 `iOSHighPerformance`），`plus` = 高性能+（JS 留在 WKWebView 拿 JIT，画布 / WebGL 调用每帧打包交回 App，由引擎在 ANGLE 上回放上屏，game.json `iOSHighPerformance+`），`native` = 普通模式（QuickJS）；不给时按宿主与 game.json，见 [game-doc/12](game-doc/12-高性能模式.md)、[game-doc/13](game-doc/13-高性能加模式.md) |
 | `MINI_CHROME=<路径>` / `MINI_CHROME_FLAGS` | 高性能模式的桌面测试（`cargo test --test game_e2e web`、`examples/web_game_check`）用哪个 Chrome、追加哪些启动参数；找不到 Chrome 时那组用例跳过 |
 | `MINI_RAF_LOG=1` | 小游戏：每轮 `requestAnimationFrame` 一行（时间戳、目标帧率、实测显示周期、节拍不均匀告警） |
 | `adb shell setprop debug.mini.game_log 1` | Android 小游戏视图：每帧都打引擎工作 / 拷贝 / 提交 / 等缓冲（默认只打超过 8ms 的帧） |

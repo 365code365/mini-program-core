@@ -116,9 +116,11 @@ impl GameEngine {
         }
 
         if slow { super::slow_frame::phase("rAF"); }
-        // 6 主画布（WebGL 的先读回后备缓冲）
+        // 6 主画布（WebGL 的先读回后备缓冲）。高性能+ 的渲染端只在页面说「这一帧画完了」时收尾（remote/mod.rs）
         #[cfg(feature = "webgl")]
-        self.webgl_frame_end();
+        if self.remote.is_none() {
+            self.webgl_frame_end();
+        }
         // 自适应帧率（fps_governor.rs，没开时 note_work 直接返回）：只看 rAF 帧
         if raf_frame {
             let msg = self.pacer.borrow_mut().note_work(t_work.elapsed().as_micros() as u64);
@@ -127,7 +129,7 @@ impl GameEngine {
             }
         }
         let t_ms = t / 1000;
-        if std::mem::take(&mut self.canvases.borrow_mut().main_dirty) {
+        if self.remote.is_none() && std::mem::take(&mut self.canvases.borrow_mut().main_dirty) {
             self.frame.stale = true;
             self.frame.count += 1;
             flags |= FRAME_NEW;

@@ -55,6 +55,8 @@ mod overlay_cases;
 mod web_cases;
 #[path = "game_cases/web2.rs"]
 mod web2_cases;
+#[path = "game_cases/web3.rs"]
+mod web3_cases;
 
 /// GT-R1 / R5 / S4：game.js 执行一次，console、onError、onUnhandledRejection、GameGlobal
 #[test]

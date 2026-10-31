@@ -23,8 +23,12 @@ pub const SEGMENTS: &[&str] = &[
     "game-proxies", "game-pc",
 ];
 
+/// 高性能+ 多装的普通模式那几层（画布 / 图片 / WebGL 的 JS 语义），它们的原生入口由 wg-remote.js 录下来交回 App
+pub const PLUS_SEGMENTS: &[&str] = &["game-image", "game-canvas", "game-webgl-consts", "game-webgl", "game-webgl2"];
+
 /// DOM 层（`js/web_game/`），在基础库之后装：覆盖掉基础库里依赖原生画布 / 混音器的那几个 wx.*
 const WEB_LAYER: &[(&str, &str)] = &[
+    ("wg-remote", include_str!("../../js/web_game/wg-remote.js")),
     ("wg-canvas", include_str!("../../js/web_game/wg-canvas.js")),
     ("wg-input", include_str!("../../js/web_game/wg-input.js")),
     ("wg-frame", include_str!("../../js/web_game/wg-frame.js")),
@@ -49,10 +53,27 @@ canvas{display:block}
 /// `/__wg.html`：每段一个 `<script>`（按顺序同步执行）。不拼成一个文件、也不包 try：
 /// 每段都是独立的全局代码，与 QuickJS 模式一段一 `eval` 的作用域完全相同（块里的函数声明、顶层 let 不会变味），
 /// 一段抛错只停它自己，`window.onerror` 带着段名报上来
-pub fn boot_html() -> String {
+pub fn boot_html(plus: bool) -> String {
     let mut out = String::from(HEAD);
+    if plus {
+        // 画面在下面的原生图层上（App 经 ANGLE 上屏），页面只画覆盖层：背景透明
+        out = out.replace("background:#000;", "background:transparent;");
+    }
     out.push_str("<script src=\"/__wg/boot.js\"></script>\n");
-    for name in SEGMENTS.iter().chain(WEB_LAYER.iter().map(|(n, _)| n)) {
+    let mut names: Vec<&str> = SEGMENTS.to_vec();
+    for (n, _) in WEB_LAYER {
+        match *n {
+            // wg-remote 要在普通模式那几层之前装（它们加载时就取原生入口）；DOM 画布只有高性能模式要
+            "wg-remote" if plus => {
+                names.push(n);
+                names.extend_from_slice(PLUS_SEGMENTS);
+            }
+            "wg-remote" => {}
+            "wg-canvas" if plus => {}
+            _ => names.push(n),
+        }
+    }
+    for name in names {
         out.push_str(&format!("<script src=\"/__wg/seg/{name}.js\"></script>\n"));
     }
     out.push_str("<script>__wgStart();</script>\n</body></html>\n");
@@ -64,7 +85,7 @@ pub fn segment_js(name: &str) -> Option<String> {
     if let Some((_, src)) = WEB_LAYER.iter().find(|(n, _)| *n == name) {
         return Some(format!("{src}\n//# sourceURL=/__wg/{name}.js"));
     }
-    if !SEGMENTS.contains(&name) {
+    if !SEGMENTS.contains(&name) && !PLUS_SEGMENTS.contains(&name) {
         return None;
     }
     Some(format!("{}\n//# sourceURL=/__wg/prelude/{name}.js", segment_source(name)))
@@ -104,6 +125,8 @@ impl WebGame {
             "modules": self.module_keys(),
             "orientation": self.config.device_orientation.as_str(),
             "workers": self.config.workers,
+            "plus": self.plus,
+            "glOps": gl_ops(),
         })
     }
 
@@ -187,6 +210,17 @@ const WORKER_ENV: &str = r#"
     g.onmessage = function(e) { listeners.slice().forEach(function(cb) { try { cb(e.data); } catch (err) { report(err); } }); };
 })();
 "#;
+
+fn gl_ops() -> Vec<&'static str> {
+    #[cfg(feature = "webgl")]
+    {
+        crate::game::webgl::op_names().to_vec()
+    }
+    #[cfg(not(feature = "webgl"))]
+    {
+        Vec::new()
+    }
+}
 
 /// 包装头与源码第一行同一行（行号与源文件一致）；结尾换行防 `// 注释` 吃掉右括号
 fn wrap(head: &str, key: &str, src: &str) -> String {

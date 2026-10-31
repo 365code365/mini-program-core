@@ -21,6 +21,88 @@ pub type Shared = Arc<Mutex<WebGame>>;
 pub struct DevServer {
     pub port: u16,
     pub game: Shared,
+    /// 高性能+：扮演 App 那一端的渲染实例（game/remote，自己一条线程）
+    pub renderer: Option<Arc<Renderer>>,
+}
+
+/// 高性能+ 的渲染端（`GameEngine` 不是 Send：建在自己的线程上，按命令干活）
+pub struct Renderer {
+    tx: std::sync::mpsc::Sender<Cmd>,
+}
+
+enum Cmd {
+    Replay(Vec<u8>, std::sync::mpsc::Sender<crate::game::remote::ReplayOut>),
+    Frame(std::sync::mpsc::Sender<(u32, u32, Vec<u8>)>),
+}
+
+impl Renderer {
+    /// `dir` 等与页面那一端同一个包、同一份尺寸（创建选项带 remote:true）
+    fn spawn(dir: String, data: Option<String>, size: (u32, u32, f32), game: Shared, on_event: Arc<dyn Fn(&str) + Send + Sync>) -> std::io::Result<Self> {
+        let (tx, rx) = std::sync::mpsc::channel::<Cmd>();
+        let (ready_tx, ready_rx) = std::sync::mpsc::channel::<Result<(), String>>();
+        std::thread::Builder::new().name("wg-renderer".into()).spawn(move || {
+            let opts = crate::game::GameOptions { remote: true, webgl: Some("swiftshader".into()), ..Default::default() };
+            let mut e = match crate::game::GameEngine::new(&dir, data.as_deref(), size.0, size.1, size.2, opts) {
+                Ok(e) => {
+                    let _ = ready_tx.send(Ok(()));
+                    e
+                }
+                Err(err) => {
+                    let _ = ready_tx.send(Err(err));
+                    return;
+                }
+            };
+            let drain = |e: &mut crate::game::GameEngine| {
+                while let Some(ev) = e.poll_event() {
+                    let v: serde_json::Value = serde_json::from_str(&ev).unwrap_or_default();
+                    if v["type"] == "wgr" {
+                        if let Some(js) = v["js"].as_str() {
+                            game.lock().unwrap_or_else(|x| x.into_inner()).push_js(js);
+                        }
+                    } else {
+                        on_event(&ev);
+                    }
+                }
+            };
+            loop {
+                match rx.recv_timeout(std::time::Duration::from_millis(8)) {
+                    Ok(Cmd::Replay(b, reply)) => {
+                        let r = e.replay(&b);
+                        drain(&mut e);
+                        let _ = reply.send(r);
+                    }
+                    Ok(Cmd::Frame(reply)) => {
+                        let (w, h, px) = e.frame_rgba();
+                        let _ = reply.send((w, h, px.to_vec()));
+                    }
+                    Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
+                        // 图片解码完的回调、日志：与宿主的 CADisplayLink 一样定时取（不上屏）
+                        e.pump_ex(0);
+                        drain(&mut e);
+                    }
+                    Err(_) => break,
+                }
+            }
+        })?;
+        match ready_rx.recv() {
+            Ok(Ok(())) => Ok(Self { tx }),
+            Ok(Err(e)) => Err(std::io::Error::other(e)),
+            Err(e) => Err(std::io::Error::other(e.to_string())),
+        }
+    }
+
+    pub fn replay(&self, b: Vec<u8>) -> crate::game::remote::ReplayOut {
+        let (tx, rx) = std::sync::mpsc::channel();
+        let _ = self.tx.send(Cmd::Replay(b, tx));
+        rx.recv().unwrap_or_default()
+    }
+
+    /// 渲染端当前的输出帧（主画布，不透明 RGBA）
+    pub fn frame(&self) -> (u32, u32, Vec<u8>) {
+        let (tx, rx) = std::sync::mpsc::channel();
+        let _ = self.tx.send(Cmd::Frame(tx));
+        rx.recv().unwrap_or_default()
+    }
 }
 
 /// 页面的异步消息按批编号（`/__wg/post?seq=N`，fetch 发、可能乱序到）：按编号顺序落地；
@@ -45,18 +127,25 @@ impl DevServer {
         *ORDER.lock().unwrap_or_else(|e| e.into_inner()) = Some(Order::default());
         let listener = TcpListener::bind("127.0.0.1:0")?;
         let port = listener.local_addr()?.port();
+        let plus = game.plus;
+        let spec = (game.root().to_string_lossy().into_owned(), game.size);
         let game: Shared = Arc::new(Mutex::new(game));
-        let g = game.clone();
-        let on_event = Arc::new(on_event);
+        let on_event: Arc<dyn Fn(&str) + Send + Sync> = Arc::new(on_event);
+        let renderer = if plus {
+            Some(Arc::new(Renderer::spawn(spec.0, Some(crate::data_dir::data_dir().to_string_lossy().into_owned()), spec.1, game.clone(), on_event.clone())?))
+        } else {
+            None
+        };
+        let (g, r2) = (game.clone(), renderer.clone());
         std::thread::Builder::new().name("wg-devserver".into()).spawn(move || {
             for conn in listener.incoming().flatten() {
-                let (g, ev) = (g.clone(), on_event.clone());
+                let (g, ev, r) = (g.clone(), on_event.clone(), r2.clone());
                 std::thread::spawn(move || {
-                    let _ = handle(conn, &g, &*ev);
+                    let _ = handle(conn, &g, &*ev, r.as_deref());
                 });
             }
         })?;
-        Ok(Self { port, game })
+        Ok(Self { port, game, renderer })
     }
 
     pub fn url(&self) -> String {
@@ -64,7 +153,7 @@ impl DevServer {
     }
 }
 
-fn handle(mut s: TcpStream, g: &Shared, on_event: &dyn Fn(&str)) -> std::io::Result<()> {
+fn handle(mut s: TcpStream, g: &Shared, on_event: &dyn Fn(&str), renderer: Option<&Renderer>) -> std::io::Result<()> {
     s.set_read_timeout(Some(std::time::Duration::from_secs(30)))?;
     let mut r = BufReader::new(s.try_clone()?);
     let mut line = String::new();
@@ -83,10 +172,25 @@ fn handle(mut s: TcpStream, g: &Shared, on_event: &dyn Fn(&str)) -> std::io::Res
             }
         }
     }
-    let mut body = vec![0u8; len];
-    r.read_exact(&mut body)?;
-    let body = String::from_utf8_lossy(&body).into_owned();
+    let mut raw = vec![0u8; len];
+    r.read_exact(&mut raw)?;
     let route = path.split('?').next().unwrap_or("").to_string();
+    // 高性能+ 的命令包（二进制）：交给渲染端回放，同步调用的结果原样回页面
+    if method == "POST" && route == "/__wg/rcall" {
+        let out = renderer.map(|r| r.replay(raw)).unwrap_or_default();
+        {
+            let mut game = g.lock().unwrap_or_else(|e| e.into_inner());
+            while let Some(e) = game.take_event() {
+                on_event(&e);
+            }
+        }
+        let body = out.result.unwrap_or_default().into_bytes();
+        let head = format!("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n", body.len());
+        s.write_all(head.as_bytes())?;
+        s.write_all(&body)?;
+        return s.flush();
+    }
+    let body = String::from_utf8_lossy(&raw).into_owned();
     if method == "POST" && route == "/__wg/post" {
         // 按编号排队：前面的批还没到就先存着
         let n = query_num(&path, "seq").unwrap_or(0);
