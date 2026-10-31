@@ -2,7 +2,7 @@
    「小游戏」这一节（index.html #games）：不论站点主题，都是一块合成波（synthwave）夜景。
    - 背景：整节两层飘动的像素尘；转盘后面一轮条纹落日 + 往前滚的霓虹网格地面（只铺在转盘这一块，不压下面的文字）；
    - 中间：8 张游戏截图排成一个 3D 转盘，慢慢转，指针悬停时停住、跟着指针倾斜、可以拖着转（assets/games.js 逐帧写 .gm-ring 的 transform）；
-   - 下面：数字卡（计数动画沿用 app.js 的 data-count）、特性卡、接入代码。
+   - 下面：横屏格斗三连图、iOS 三种运行模式（.gm-modes）、数字卡（计数动画沿用 app.js 的 data-count）、特性卡、接入代码。
    只动 transform / opacity / background-position，不触发重排。
    不要动画（prefers-reduced-motion）或窄屏：转盘拆成一排可横滑的静态卡片。
    ============================================================ */
@@ -171,6 +171,27 @@
   .gm-wide-shot { margin: 0; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) { .gm-wide-shot, .gm-wide-shot:hover { transform: none; transition: none; } }
+
+/* ── iOS 的三种运行模式：三张卡并排，高性能+ 那张描霓虹边（数字是同一台 iPhone 上的同一款游戏） ── */
+.gm-modes { margin: clamp(48px, 6vw, 80px) 0 0; }
+.gm-mode-row { display: grid; gap: 14px; grid-template-columns: repeat(3, 1fr); }
+.gm-mode {
+  position: relative; padding: 20px 20px 18px; border-radius: var(--r);
+  background: linear-gradient(180deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, .02));
+  border: 1px solid var(--line);
+}
+.gm-mode h4 { margin: 0 0 6px; font-size: 16px; letter-spacing: -.01em; color: var(--strong); }
+.gm-mode-how { margin: 0; min-height: 2.9em; font-size: 13px; color: var(--faint); }
+.gm-mode-v {
+  display: block; margin: 12px 0 4px; font-size: clamp(30px, 3.4vw, 42px); font-weight: 800; letter-spacing: -.02em;
+  color: var(--strong); font-variant-numeric: tabular-nums;
+}
+.gm-mode-v small { font-size: .42em; font-weight: 700; margin-left: 4px; color: #ffb8e0; }
+.gm-mode > p:last-child { margin: 0; font-size: 13.5px; color: var(--dim); }
+.gm-mode-hot { border-color: rgba(255, 63, 164, .5); box-shadow: 0 0 0 1px rgba(255, 63, 164, .22), 0 20px 50px -24px rgba(168, 85, 247, .9); }
+.gm-mode-hot .gm-mode-v { text-shadow: 0 0 24px rgba(255, 63, 164, .6); }
+.gm-mode-foot { margin: 14px auto 0; max-width: 84ch; text-align: center; font-size: 13px; color: var(--faint); }
+@media (max-width: 720px) { .gm-mode-row { grid-template-columns: 1fr; } .gm-mode-how { min-height: 0; } }
 
 /* ── 数字 ── */
 .gm-stats {

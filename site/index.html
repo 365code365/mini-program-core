@@ -175,7 +175,7 @@
         <div><dt data-i18n="stat.2.k">Repeated frames, 90 Hz phone</dt><dd><span data-count="1.5">1.5</span><small>%</small></dd><p data-i18n="stat.2.v">list scrolling with setData, down from 11.2%</p></div>
         <div><dt data-i18n="stat.3.k">GPU vs CPU</dt><dd><span data-count="34">34</span><small>/34</small></dd><p data-i18n="stat.3.v">scenes byte-identical, fallback included</p></div>
         <div><dt data-i18n="stat.4.k">Difference vs Chrome</dt><dd><span data-count="4.57">4.57</span><small>%</small></dd><p data-i18n="stat.4.v">15 pages of the same source, per pixel</p></div>
-        <div><dt data-i18n="stat.5.k">Automated tests</dt><dd><span data-count="1055">1055</span><small></small></dd><p data-i18n="stat.5.v">plus 65 byte-reproducible baselines</p></div>
+        <div><dt data-i18n="stat.5.k">Automated tests</dt><dd><span data-count="1526">1526</span><small></small></dd><p data-i18n="stat.5.v">plus 65 byte-reproducible baselines</p></div>
         <div><dt data-i18n="stat.6.k">Official wx.* APIs</dt><dd><span data-count="503">503</span><small>/503</small></dd><p data-i18n="stat.6.v">every name in the index, plus 57 component tags</p></div>
       </dl>
     </div>
@@ -251,8 +251,8 @@
         <p class="sec-lede" data-i18n="game.lede">
           Point it at a <code>game.json</code> + <code>game.js</code> package and the engine switches to game mode:
           one full-screen canvas presented straight to the display, a vsync-locked <code>requestAnimationFrame</code>,
-          multi-touch, low-latency audio, WebGL 1 / 2 and <code>WXWebAssembly</code>. three.js, PixiJS and Phaser
-          run unmodified. Every screen below was drawn by this engine.
+          multi-touch, low-latency audio, WebGL 1 / 2 and <code>WXWebAssembly</code>, on Android, iOS, macOS and inside
+          Flutter. three.js, PixiJS, Phaser and Cocos Creator games run unmodified. Every screen below was drawn by this engine.
         </p>
       </header>
 
@@ -271,7 +271,7 @@
           </div>
         </div>
         <ul class="gm-engines" aria-label="Engines that run unmodified" data-i18n-aria="game.enginesAria">
-          <li>three.js r160</li><li>PixiJS 7.4</li><li>Phaser 3.80</li><li>WebGL 1 · 2</li><li>WXWebAssembly</li><li>QuickJS</li>
+          <li>three.js r160</li><li>PixiJS 7.4</li><li>Phaser 3.80</li><li>Cocos Creator 3.x</li><li>WebGL 1 · 2</li><li>WXWebAssembly</li><li>QuickJS</li>
         </ul>
       </div>
 
@@ -287,6 +287,35 @@
         </div>
       </div>
 
+      <!-- iOS 的三种运行模式（game-doc/12、13）：数字是 iPhone 16 Pro Max 上的萌宠小岛 -->
+      <div class="gm-modes">
+        <header class="gm-wide-head">
+          <h3 data-i18n="game.md.h">JIT on iPhone: <span class="grad gm-grad">high-performance+</span></h3>
+          <p data-i18n="game.md.p">iOS apps cannot JIT, so by default a game's JS runs in QuickJS, an interpreter. Put <code>"iOSHighPerformance+": true</code> in <code>game.json</code>, the same switch as WeChat, and the JS moves into a WKWebView where JavaScriptCore can JIT. Every canvas and WebGL call is recorded each frame and replayed by the engine on ANGLE, so drawing still takes the engine's own path to Metal.</p>
+        </header>
+        <div class="gm-mode-row">
+          <article class="gm-mode">
+            <h4 data-i18n="game.md1.k">Default</h4>
+            <p class="gm-mode-how" data-i18n="game.md1.how">QuickJS, no JIT · the engine draws through ANGLE on Metal</p>
+            <b class="gm-mode-v">60<small>fps</small></b>
+            <p data-i18n="game.md1.v">but the game's JS already takes 8–16 ms of every 16.7 ms frame</p>
+          </article>
+          <article class="gm-mode">
+            <h4 data-i18n="game.md2.k">High-performance</h4>
+            <p class="gm-mode-how" data-i18n="game.md2.how"><code>iOSHighPerformance</code> · JIT in WKWebView · WebKit draws</p>
+            <b class="gm-mode-v">~38<small>fps</small></b>
+            <p data-i18n="game.md2.v">fast JS, but WebKit's WebGL path becomes the bottleneck</p>
+          </article>
+          <article class="gm-mode gm-mode-hot">
+            <h4 data-i18n="game.md3.k">High-performance+</h4>
+            <p class="gm-mode-how" data-i18n="game.md3.how"><code>iOSHighPerformance+</code> · JIT in WKWebView · the engine draws</p>
+            <b class="gm-mode-v">60<small>fps</small></b>
+            <p data-i18n="game.md3.v">and the game's JS needs only about 2 ms a frame</p>
+          </article>
+        </div>
+        <p class="gm-mode-foot" data-i18n="game.md.note">Pet Island on an iPhone 16 Pro Max. High-performance+ also holds a 60 fps median on 3D Bowling, 3D Runner and a Cocos Creator farm game, where high-performance mode gets 38–42 fps. Packages with an open data context or plugins fall back to the default mode.</p>
+      </div>
+
       <dl class="gm-stats">
         <div><dt data-i18n="game.s1.k">WebGL conformance</dt><dd><span data-count="96.6">96.6</span><small>%</small></dd><p data-i18n="game.s1.v">Khronos CTS subset, 169 of 175 applicable pages</p></div>
         <div><dt data-i18n="game.s2.k">three.js vs Chrome</dt><dd><span data-count="2">2</span><small data-i18n="game.s2.u">px</small></dd><p data-i18n="game.s2.v">different pixels out of 250 125, same scene</p></div>
@@ -300,17 +329,17 @@
         <article class="card spot gm-feat">
           <i class="gm-ico" aria-hidden="true">◆</i>
           <h3 data-i18n="game.f1.h">Straight to the display</h3>
-          <p data-i18n="game.f1.p">The main WebGL canvas swaps buffers directly into the Android <code>SurfaceView</code> from the engine thread. Toasts and modals are composited on the GPU on top of it, so a spinning cube still runs at 57 fps while a toast is up.</p>
+          <p data-i18n="game.f1.p">The main canvas swaps buffers from the engine thread straight into an Android <code>SurfaceView</code>, or into a <code>CAMetalLayer</code> through ANGLE on Metal on iOS and macOS. Toasts and modals are composited on the GPU on top of it, so a spinning cube still runs at 57 fps while a toast is up.</p>
         </article>
         <article class="card spot gm-feat">
           <i class="gm-ico" aria-hidden="true">✦</i>
           <h3 data-i18n="game.f2.h">Your engine, unmodified</h3>
-          <p data-i18n="game.f2.p">three.js, PixiJS and Phaser (WebGL and Canvas renderers) load through their usual adapters. WebGL 2 brings VAOs, instancing, uniform blocks and 3D textures; a lost context is reported and restored like in WeChat.</p>
+          <p data-i18n="game.f2.p">three.js, PixiJS, Phaser (WebGL and Canvas renderers) and Cocos Creator 3.x builds load through their usual adapters. WebGL 2 brings VAOs, instancing, uniform blocks and 3D textures; a lost context is reported and restored like in WeChat.</p>
         </article>
         <article class="card spot gm-feat">
           <i class="gm-ico" aria-hidden="true">✋</i>
           <h3 data-i18n="game.f3.h">Fingers and ears</h3>
-          <p data-i18n="game.f3.p">Every pointer with its full history, dispatched before the next <code>requestAnimationFrame</code>. Audio runs in low-latency game mode at 28–32 ms output latency, with focus loss and phone calls handled.</p>
+          <p data-i18n="game.f3.p">Every pointer with its full history, dispatched before the next <code>requestAnimationFrame</code>. On Android audio runs in low-latency mode at 28–32 ms output latency; on iOS it follows the silent switch like WeChat unless the game calls <code>wx.setInnerAudioOption</code>. Focus loss and phone calls are handled on both.</p>
         </article>
         <article class="card spot gm-feat">
           <i class="gm-ico" aria-hidden="true">⚙</i>
@@ -325,7 +354,22 @@
         <article class="card spot gm-feat">
           <i class="gm-ico" aria-hidden="true">▣</i>
           <h3 data-i18n="game.f6.h">A few lines to host it</h3>
-          <p data-i18n="game.f6.p">Drop a <code>MiniGameView</code> into an Android activity or a Flutter page. It locks orientation from <code>game.json</code>, pauses in the background, and tells you when the first frame is on screen so the loading cover leaves without a black flash.</p>
+          <p data-i18n="game.f6.p">Drop a <code>MiniGameView</code> into an Android activity, a UIKit or AppKit view, or a Flutter page. It locks orientation from <code>game.json</code>, reports the safe area and draws the capsule button, pauses in the background, and tells you when the first frame is on screen so the loading cover leaves without a black flash.</p>
+        </article>
+        <article class="card spot gm-feat">
+          <i class="gm-ico" aria-hidden="true">▦</i>
+          <h3 data-i18n="game.f7.h">2D canvases on the GPU</h3>
+          <p data-i18n="game.f7.p">On iOS and Android the main 2D canvas draws on the GPU: batched anti-aliased rects and sprites, gradients in the shader, everything else rasterized on the CPU and blended in. On an iPhone a full-resolution frame presents in 0.3 ms instead of 6 ms. The CPU renderer stays the reference and the fallback.</p>
+        </article>
+        <article class="card spot gm-feat">
+          <i class="gm-ico" aria-hidden="true">»</i>
+          <h3 data-i18n="game.f8.h">A faster interpreter</h3>
+          <p data-i18n="game.f8.p">QuickJS stays an interpreter, so it runs where JIT is not allowed. A pooled allocator for the small objects JS churns through took a Cocos Creator game on a OnePlus phone from 25.5 to 13.4 ms a frame, and inline caches cut another 14% of CPU cycles. All 81 122 test262 cases give the same results as upstream.</p>
+        </article>
+        <article class="card spot gm-feat">
+          <i class="gm-ico" aria-hidden="true">☺</i>
+          <h3 data-i18n="game.f9.h">Color emoji everywhere</h3>
+          <p data-i18n="game.f9.p">Emoji in canvas text and in pages draw in color on every platform, rasterized by the engine itself: COLR v0 / v1 fonts on Android, and on iOS Apple Color Emoji, whose private <code>emjc</code> bitmaps the engine decodes.</p>
         </article>
       </div>
 
@@ -334,6 +378,11 @@
 val v = MiniGameView(activity, gameDir, dataDir, """{"appId":"wx…"}""")
 v.onFirstFrame = { loadingCover.hide() }       // no black flash on launch
 setContentView(v)
+
+// iOS: mode .auto picks the JS engine from game.json
+let vc = MiniGameViewController(gameDir: dir, options: ["appId": "wx…"])
+vc.onFirstFrame = { cover.hide() }
+present(vc, animated: true)
 
 // Flutter
 MiniGameView(gameDir: dir, options: {'appId': id}, onFirstFrame: hideCover)</code></pre>
@@ -355,10 +404,10 @@ MiniGameView(gameDir: dir, options: {'appId': id}, onFirstFrame: hideCover)</cod
       </header>
       <div class="plat-grid">
         <article class="plat plat-ios spot">
-          <div class="plat-mock"><div class="os-phone "><div class="phone-screen"><img src="assets/shots/demo_skyline.webp" width="500" height="1090" alt="Skyline demo page rendered by the engine" data-i18n-alt="plat.ios.alt" loading="lazy" decoding="async"></div></div></div>
+          <div class="plat-mock"><div class="os-phone "><div class="phone-screen"><img src="assets/shots/ios_fitness_card.webp" width="500" height="1087" alt="Fitness-club membership card from the mini-program store, open in the iOS example app" data-i18n-alt="plat.ios.alt" loading="lazy" decoding="async"></div></div></div>
           <div class="plat-info">
-            <h3><span class="plat-dot" aria-hidden="true"></span>iOS · iPadOS<em class="plat-st ok" data-i18n="plat.ios.st">SDK ready</em></h3>
-            <p class="plat-how" data-i18n="plat.ios.how">Swift Package / CocoaPods · <code>MiniProgramView</code> (UIKit)</p>
+            <h3><span class="plat-dot" aria-hidden="true"></span>iOS · iPadOS<em class="plat-st ok" data-i18n="plat.ios.st">Tested on iPhone</em></h3>
+            <p class="plat-how" data-i18n="plat.ios.how">Swift Package / CocoaPods · <code>MiniProgramView</code> + <code>MiniGameView</code> (UIKit)</p>
             <p class="plat-gpu" data-i18n="plat.ios.gpu">CAMetalLayer → Metal · CPU fallback</p>
           </div>
         </article>
@@ -437,8 +486,9 @@ XComponent({ type: <span class="s">'surface'</span>,
         </article>
       </div>
       <p class="plat-note" data-i18n="plat.note">
-        Status is what we have verified ourselves: Android on a OnePlus 90 Hz phone and an emulator; the iOS SDK builds for
-        device and simulator and its Metal path is covered by tests; the desktop window and headless snapshots run daily on macOS.
+        Status is what we have verified ourselves: Android on a OnePlus 90 Hz phone and an emulator; iOS on an iPhone 16 Pro Max
+        and the simulator, mini-programs and mini-games alike, with left-edge swipe back covered by a UI test; the desktop window
+        and headless snapshots run daily on macOS.
         Windows and Linux build from the same winit / wgpu code but have no CI job yet. HarmonyOS has a documented C ABI path
         (XComponent + <code>OH_NativeWindow</code>, see the integration guide); a packaged ArkTS SDK is still being built.
       </p>
@@ -1467,7 +1517,7 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
         <article class="card">
           <h3 data-i18n="stack.reg.h">Regression suite<small>all green on every change</small></h3>
           <table class="kv"><tbody>
-            <tr><th scope="row" data-i18n="stack.reg.r1k">Rust tests</th><td>1055</td></tr>
+            <tr><th scope="row" data-i18n="stack.reg.r1k">Rust tests</th><td>1526</td></tr>
             <tr><th scope="row" data-i18n="stack.reg.r2k">Scene gallery</th><td data-i18n="stack.reg.r2v">65 images, byte-reproducible</td></tr>
             <tr><th scope="row" data-i18n="stack.reg.r3k">Partial-repaint check</th><td data-i18n="stack.reg.r3v">5 desktop scenes + 12 SDK cases, frame by frame</td></tr>
             <tr><th scope="row" data-i18n="stack.reg.r4k">SDK vs desktop</th><td data-i18n="stack.reg.r4v">sample 15/15, news 6/6 pixel-identical</td></tr>
