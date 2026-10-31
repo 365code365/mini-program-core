@@ -27,7 +27,7 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   integration_test: 4a889634ef21a45d28d50d622cf412dc6d9f586e
-  mini_render: 8c94aa3f9d25dba89a5fd571c1f08d757791340b
+  mini_render: 965f2755e4f8af421ba731386131bf34807cc054
   video_player_avfoundation: 3453f792138786248960ca029747fcd9f318ef52
 
 PODFILE CHECKSUM: 787642926a45cf9ee9d753ebcdf05df7ac677b6a
