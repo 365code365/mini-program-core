@@ -166,6 +166,10 @@ pub(crate) fn guarded<R>(game: *mut MRGame, fail: R, f: impl FnOnce(&mut GameEng
             g.poisoned = true;
             g.last_error = format!("引擎内部错误（panic），实例已失效，请销毁重建：{msg}");
             g.panic_event = Some(serde_json::json!({ "type": "error", "kind": "panic", "message": msg }).to_string());
+            // 只先关掉音频设备：实例 forget 之后音频线程上的混音器照样回调，游戏卡死了、退出了，背景音乐还响到进程结束
+            if let Some(e) = g.engine.as_ref() {
+                let _ = catch_unwind(AssertUnwindSafe(|| e.silence()));
+            }
             // 状态可能不一致：不再碰它（连析构都可能再 panic，留给 destroy 的 catch_unwind）
             std::mem::forget(g.engine.take());
             fail

@@ -66,4 +66,12 @@ impl GameEngine {
     pub fn audio_stats(&self) -> serde_json::Value {
         self.audio.borrow().stats_json()
     }
+
+    /// 关掉音频设备（实例销毁的第一步、实例中毒时 ffi_game 的 guarded）：之后不再出声。
+    /// 不借 RefCell 的 panic 版本：中毒那一刻借用状态说不准，借不到就算了
+    pub(crate) fn silence(&self) {
+        if let Ok(mut a) = self.audio.try_borrow_mut() {
+            a.close_device();
+        }
+    }
 }

@@ -236,6 +236,16 @@ impl Out {
         None
     }
 
+    /// 关流（实例销毁 / 中毒，见 output.rs 的 close）：close 返回之后回调不会再来；state 留给 Drop 放
+    pub fn close(&mut self) {
+        if let (Ok(a), false) = (api(), self.stream.is_null()) {
+            unsafe { (a.close)(self.stream) };
+            self.stream = std::ptr::null_mut();
+        }
+        // 关之前刚断开过的话，别让 poll 再把它重开
+        self.lost.store(false, Ordering::Relaxed);
+    }
+
     /// 进后台：停掉回调（后台还每 4ms 回调一次输出静音是白耗电）；回前台重新开始
     pub fn set_paused(&mut self, paused: bool) {
         if let (Ok(a), false) = (api(), self.stream.is_null()) {

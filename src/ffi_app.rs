@@ -380,6 +380,7 @@ mod tests {
 
     #[test]
     fn create_launch_pump_and_read_pixels() {
+        let _root = crate::tests::LockedEngine::lock(); // 包根读锁：拿写锁的用例（建游戏实例、storage_file）会把包根换走，见 data_dir::ROOT_TEST_LOCK
         let Some(dir) = sample() else { return };
         let data = CString::new(
             crate::data_dir::subdir("ffi-test").to_string_lossy().to_string(),

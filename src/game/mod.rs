@@ -424,6 +424,9 @@ impl Drop for GameEngine {
     /// 小程序（或并行跑的测试）会把 storage 写进这个游戏的目录（踩过：lib 测试并行时 storage 用例读到了游戏的路径）
     fn drop(&mut self) {
         crate::data_dir::set_app_scope(None);
+        // 先关音频设备：字段的析构从 JS 运行时拆起（大游戏几十毫秒），GameAudio 要等最后一个闭包放手才析构，
+        // 而闭包万一被漏掉（踩过：字节码缓存漏上下文引用，bytecode_cache.rs 的 run）设备就永远开着、退出了还在响
+        self.silence();
     }
 }
 

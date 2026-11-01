@@ -182,6 +182,21 @@ impl Output {
         let _ = paused;
     }
 
+    /// 关掉设备，之后不再出声（实例销毁 / 中毒；离线模式什么都不做）。不等 Drop 的原因：
+    /// 销毁要先拆 JS 运行时（大游戏几十毫秒），设备等到最后才关，退出那一下还响一小截；中毒的实例整个 forget，等不到 Drop
+    pub fn close(&mut self) {
+        match self {
+            #[cfg(all(feature = "game-audio", target_os = "android"))]
+            Output::Android(o) => o.close(),
+            #[cfg(all(feature = "game-audio", not(target_os = "android")))]
+            Output::Device { _stream, .. } => {
+                use cpal::traits::StreamTrait;
+                let _ = _stream.pause();
+            }
+            _ => {}
+        }
+    }
+
     /// 欠载次数（Android 有，其它 0）
     pub fn xruns(&self) -> i32 {
         match self {

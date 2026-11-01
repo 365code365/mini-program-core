@@ -779,6 +779,7 @@ All documents under `doc/` are in Chinese.
 | [`doc/踩坑记录.md`](doc/踩坑记录.md) | 13 classes of "what was once wrong": symptom → root cause → current approach → regression criterion |
 | [`doc/滑动顿挫避坑清单.md`](doc/滑动顿挫避坑清单.md) | On-device scroll jank ("repeated frames on screen"): the criterion, pitfalls in host presentation / engine invalidation / measurement tooling, current numbers for the Flutter and native examples |
 | [`doc/引擎测试说明.md`](doc/引擎测试说明.md) | Capability matrix, T1–T29 test checklists and criteria, measured memory breakdown, known gaps |
+| [`doc/测试场景总表.md`](doc/测试场景总表.md) | Every test scenario (the 9-step desktop regression, 1529 automated tests by feature, device / emulator scripts, on-demand checks) with command, duration, criterion and when it must run, plus a per-round result log |
 | [`doc/原生App集成指南.md`](doc/原生App集成指南.md) | Minimal integration, the host's nine jobs, C ABI, iOS/Android/HarmonyOS steps, acceptance checklist |
 | [`doc/触控对齐测试报告.md`](doc/触控对齐测试报告.md) | Item-by-item measurements of swipe/tap/longpress/gesture against WeChat |
 | [`doc/实现组件说明.md`](doc/实现组件说明.md) | Per-component implementation status |

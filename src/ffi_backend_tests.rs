@@ -92,6 +92,7 @@ fn constants_match_the_header() {
 
 #[test]
 fn default_is_cpu_and_first_frame_is_just_new() {
+    let _root = crate::tests::LockedEngine::lock(); // 包根读锁：拿写锁的用例（建游戏实例、storage_file）会把包根换走，见 data_dir::ROOT_TEST_LOCK
     // 走真正的 mr_app_create（读进程环境）：没挂 surface，不管环境怎么设都是 CPU
     let Some(dir) = sample_dir() else { return };
     let dir = CString::new(dir).unwrap();
@@ -116,6 +117,7 @@ fn default_is_cpu_and_first_frame_is_just_new() {
 
 #[test]
 fn bad_params_return_zero_and_write_last_error() {
+    let _root = crate::tests::LockedEngine::lock(); // 包根读锁：拿写锁的用例（建游戏实例、storage_file）会把包根换走，见 data_dir::ROOT_TEST_LOCK
     let Some(app) = app_with("bad-params", HostEnv::default()) else { return };
     let mut x = 0u64;
     assert_eq!(mr_app_set_backend(app, 7), 0);
@@ -139,6 +141,7 @@ fn bad_params_return_zero_and_write_last_error() {
 #[cfg(not(feature = "gpu"))]
 #[test]
 fn attach_without_gpu_feature_stays_cpu_and_says_not_compiled() {
+    let _root = crate::tests::LockedEngine::lock(); // 包根读锁：拿写锁的用例（建游戏实例、storage_file）会把包根换走，见 data_dir::ROOT_TEST_LOCK
     let Some(app) = app_with("not-compiled", HostEnv::default()) else { return };
     let Some(kind) = supported_kind() else { return mr_app_destroy(app) };
     let mut x = 0u64;
@@ -163,6 +166,7 @@ fn attach_without_gpu_feature_stays_cpu_and_says_not_compiled() {
 #[cfg(feature = "gpu")]
 #[test]
 fn attach_with_gpu_compiled_but_cpu_pref_never_touches_the_pointer() {
+    let _root = crate::tests::LockedEngine::lock(); // 包根读锁：拿写锁的用例（建游戏实例、storage_file）会把包根换走，见 data_dir::ROOT_TEST_LOCK
     // 编了 gpu：attach 会把指针交给引擎去建 GPU 合成器 —— 所以这里**只能**在偏好 cpu 时
     // 传假指针（门槛第一关就拦下，指针连看都不看）。真 surface 的上屏 / 回退 / 重挂在
     // tests/embed_gpu.rs（macOS 上现建 CAMetalLayer）。
@@ -182,6 +186,7 @@ fn attach_with_gpu_compiled_but_cpu_pref_never_touches_the_pointer() {
 
 #[test]
 fn mini_backend_env_beats_set_backend() {
+    let _root = crate::tests::LockedEngine::lock(); // 包根读锁：拿写锁的用例（建游戏实例、storage_file）会把包根换走，见 data_dir::ROOT_TEST_LOCK
     let env = HostEnv { backend: EnvValue::Valid(BackendPref::Cpu), ..HostEnv::default() };
     let Some(app) = app_with("env-wins", env) else { return };
     assert_eq!(mr_app_set_backend(app, MR_BACKEND_GPU), 1, "调用本身是成功的");
@@ -192,6 +197,7 @@ fn mini_backend_env_beats_set_backend() {
 
 #[test]
 fn pump_agrees_with_pump_ex_new_bit() {
+    let _root = crate::tests::LockedEngine::lock(); // 包根读锁：拿写锁的用例（建游戏实例、storage_file）会把包根换走，见 data_dir::ROOT_TEST_LOCK
     // 同一帧没法调两次，所以分两部分：
     // ① 逼出帧的那几帧（on_show 置重绘）两个入口都必须报「有新画面」；
     // ② 其余帧各自只会在 {0,1} / {0,NEW} 里取值。mr_app_pump 本身就是 `pump_ex & NEW`。

@@ -50,6 +50,7 @@ fn 空句柄与坏参数不崩() {
 /// 判据：任意行跨度、两种格式写出来的像素，换回 RGBA 后与 `mr_app_pixels` 逐字节相同
 #[test]
 fn pixels_into_与_mr_app_pixels_逐字节一致() {
+    let _root = crate::tests::LockedEngine::lock(); // 包根读锁：拿写锁的用例（建游戏实例、storage_file）会把包根换走，见 data_dir::ROOT_TEST_LOCK
     let Some(app) = sample_app("pixels") else { return };
     assert_eq!(mr_app_pump(app, 1), 1);
     let (mut w, mut h) = (0u32, 0u32);
@@ -89,6 +90,7 @@ fn pixels_into_与_mr_app_pixels_逐字节一致() {
 
 #[test]
 fn 启动后有页面事件_改尺寸后像素尺寸跟着变() {
+    let _root = crate::tests::LockedEngine::lock(); // 包根读锁：拿写锁的用例（建游戏实例、storage_file）会把包根换走，见 data_dir::ROOT_TEST_LOCK
     let Some(app) = sample_app("resize") else { return };
     let flags = mr_app_pump_ex(app, 1);
     assert!(flags & MR_FRAME_EVENTS != 0, "启动后队列里应有 page 事件，flags={flags}");

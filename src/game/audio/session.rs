@@ -95,6 +95,11 @@ impl GameAudio {
         self.session
     }
 
+    /// 实例销毁 / 中毒：关掉输出设备（GameEngine::silence）。之后混音器不再被回调，在播的声音当场停
+    pub fn close_device(&mut self) {
+        self.out.close();
+    }
+
     /// 诊断：输出统计（宿主的音频日志、Android nativeAudioStats / iOS mr_game_audio_stats）。从 mod.rs 搬来（500 行上限）
     pub fn stats_json(&self) -> Value {
         let (l, b, n) = self.out.stats();

@@ -166,7 +166,15 @@ fn run<'js>(ctx: &Ctx<'js>, fun: Value<'js>) -> rquickjs::Result<Value<'js>> {
     let raw = ctx.as_raw().as_ptr();
     // SAFETY: JS_EvalFunction 接管（并释放）fun 的那一份引用：交出去之后 forget，免得 Value 的 Drop 再减一次
     let r = unsafe { qjs::JS_EvalFunction(raw, fun.as_raw()) };
+    // forget 掉的 Value 里还捏着一份 Ctx 引用（from_raw 时 ctx.clone() 加的），要单独还（与 rquickjs 自己的
+    // into_js_value、fast_fn.rs 的跳板同一做法）。从前只 forget：每段走缓存的脚本漏一份上下文引用，
+    // 上下文永远不释放 —— 销毁实例时全局对象和挂在上面的原生闭包一个都不析构，闭包捏着的 GameAudio 也跟着漏掉，
+    // Android 上 AAudio 流一直开着：退出游戏背景音乐还在响（Flutter 安卓示例 2026-11 踩过；≥16KB 的脚本才走这里，
+    // 所以单文件小夹具测不出来，真游戏全中）
+    let fun_ctx = fun.ctx().as_raw().as_ptr();
     std::mem::forget(fun);
+    // SAFETY: 调用方的 ctx 还持有引用，上下文不会在这里被释放
+    unsafe { qjs::JS_FreeContext(fun_ctx) };
     // SAFETY: 返回值所有权归我们
     let v = unsafe { Value::from_raw(ctx.clone(), r) };
     if v.is_exception() {

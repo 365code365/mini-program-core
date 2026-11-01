@@ -54,6 +54,14 @@ pub(crate) fn call(out: &mut Vec<u8>, f: u8, sync: bool, args: &[A]) {
     }
 }
 
+/// 建游戏实例会改进程级的数据命名空间**与包根**（game/mod.rs 的 set_app_path）：两把锁都要拿（同 ffi_game/tests.rs）。
+/// 从前只拿了命名空间锁：并行跑的 MiniEngine 用例在 launch 之前包根被换成这里的临时目录，
+/// 报「app.js 不存在 … 页面不存在」（2026-11-01 全量撞上 engine_input_tests 的 picker 用例，单跑必过）
+fn locks() -> (std::sync::MutexGuard<'static, ()>, std::sync::RwLockWriteGuard<'static, ()>) {
+    (crate::data_dir::SCOPE_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner()),
+     crate::data_dir::ROOT_TEST_LOCK.write().unwrap_or_else(|e| e.into_inner()))
+}
+
 fn engine(name: &str) -> GameEngine {
     let dir = std::env::temp_dir().join(format!("remote-test-{name}-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
@@ -76,7 +84,7 @@ fn errors(e: &mut GameEngine) -> Vec<String> {
 
 #[test]
 fn 回放二维_帧尾才上屏_不执行_game_js() {
-    let _scope = crate::data_dir::SCOPE_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _locks = locks();
     let mut e = engine("2d");
     assert!(errors(&mut e).is_empty(), "game.js 不该被执行");
     let mut b = Vec::new();
@@ -116,7 +124,7 @@ fn 回放二维_帧尾才上屏_不执行_game_js() {
 #[cfg(feature = "webgl")]
 #[test]
 fn 回放_webgl_页面号换成_gl_名字_删除后忘掉() {
-    let _scope = crate::data_dir::SCOPE_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _locks = locks();
     let mut e = engine("gl");
     let names = crate::game::webgl::op_names();
     let op = |n: &str| names.iter().position(|x| *x == n).unwrap() as i32;
