@@ -67,3 +67,10 @@ impl MiniApp {
         }
     }
 }
+
+impl Drop for MiniApp {
+    /// 实例销毁（退出小程序）：音频上下文是线程局部的，不在这里停，退出之后声音还会响到引擎线程退出为止
+    fn drop(&mut self) {
+        crate::audio_ctx::reset();
+    }
+}

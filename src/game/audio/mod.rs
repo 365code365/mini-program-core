@@ -1,5 +1,5 @@
 //! 小游戏的音频（game-doc/02 §8、04 G5）：InnerAudioContext 接真混音器（mixer.rs）与真设备（output.rs，cpal）。
-//! 小程序的 `audio_ctx` 不动（它按墙上时钟算位置、移动端不出声）；小游戏实例的 `__native_audio` 换成这里的 `__game_audio`，
+//! 小程序的 `audio_ctx` 仍按墙上时钟算位置，移动端只借这里的混音器与设备出声（sink.rs）；小游戏实例的 `__native_audio` 换成这里的 `__game_audio`，
 //! JS 外壳（audio.js 的 `__makeAudio`）与事件派发（`__resolveAudio`）两边共用，事件名与顺序也与 audio_ctx 一致：
 //! 设 src → 后台解码 → `canplay`（autoplay / 之前调过 play 的随即开播）→ `play` → `timeUpdate`（每 250ms 源时间）… → `ended`。
 //!
@@ -17,6 +17,9 @@ mod mixer;
 mod output;
 mod ring;
 mod session;
+/// 小程序 InnerAudioContext 的出声（移动端没有 rodio 时由 `audio_ctx/output.rs` 用）
+#[cfg(all(feature = "game-audio", not(feature = "audio")))]
+pub(crate) mod sink;
 mod web;
 
 pub use js::register;

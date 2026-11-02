@@ -220,8 +220,17 @@ pub fn call(op: &str, id: u32, args_json: &str) -> String {
     })
 }
 
+/// 小程序实例销毁：停掉全部声音、清掉上下文（设备也关掉）。
+/// 移动端一个引擎一条线程，线程退出时线程局部的设备才会被放掉 —— 那之前退出小程序，声音还在响
+pub fn reset() {
+    output::stop_all();
+    CTXS.with(|c| c.borrow_mut().clear());
+    EVENTS.with(|e| e.borrow_mut().clear());
+}
+
 /// 每帧推进：加载完成 → canplay（+ 自动播放）；播放中 → timeUpdate / ended / loop
 pub fn tick() {
+    output::tick();
     CTXS.with(|ctxs| {
         let mut ctxs = ctxs.borrow_mut();
         for (&id, c) in ctxs.iter_mut() {

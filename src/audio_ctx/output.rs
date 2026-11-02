@@ -1,8 +1,8 @@
 //! 音频上声卡：每个 InnerAudioContext 一个 rodio `Player`，共用一个设备 sink 的混音器。
 //!
 //! 与 `<video>` 的 `video_audio` 分开：那边一次只播一段（换视频就停），这里要多路同时出声
-//! （背景音乐 + 点击音效是常见写法）。关掉 `audio` 特性（移动端）时是空实现：
-//! 播放时钟照走、事件照发，只是不出声 —— 移动端的声音应交给宿主的系统播放器。
+//! （背景音乐 + 点击音效是常见写法）。移动端不带 `audio` 特性：有 `game-audio` 时借小游戏的混音器与设备出声；
+//! 两个都没有时是空实现（播放时钟照走、事件照发，只是不出声）。从前移动端一律是空实现，手机上小程序放音频没有声音。
 
 #[cfg(feature = "audio")]
 mod backend {
@@ -93,14 +93,87 @@ mod backend {
             }
         });
     }
+
+    pub fn stop_all() {
+        PLAYERS.with(|p| {
+            for (_, pl) in p.borrow_mut().drain() {
+                pl.stop();
+            }
+        });
+    }
+
+    pub fn tick() {}
 }
 
-#[cfg(not(feature = "audio"))]
+/// 移动端（没有 rodio、有小游戏的音频输出）：借小游戏的混音器 + 设备（Android AAudio / iOS cpal，`game/audio/sink.rs`）。
+/// 设备第一次开播时才打开（不放音频的小程序不占音频流）
+#[cfg(all(not(feature = "audio"), feature = "game-audio"))]
+mod backend {
+    use crate::game::audio::sink::Sink;
+    use std::cell::RefCell;
+    use std::sync::Arc;
+
+    thread_local! {
+        // 与 JS 运行时同线程；Android 的 AAudio 流句柄与 iOS 的 cpal 流都不是 Send
+        static SINK: RefCell<Option<Sink>> = const { RefCell::new(None) };
+    }
+
+    pub fn start(id: u32, samples: Arc<Vec<f32>>, rate: u32, channels: u16, from_sec: f64, volume: f32, speed: f32) {
+        SINK.with(|s| {
+            let mut s = s.borrow_mut();
+            let sink = s.get_or_insert_with(|| {
+                let k = Sink::open();
+                if std::env::var("MINI_AUDIO_LOG").is_ok() {
+                    eprintln!("🔈 小程序音频输出：{}", k.note);
+                }
+                k
+            });
+            sink.start(id, samples, rate, channels, from_sec, volume, speed);
+        });
+    }
+
+    fn with(f: impl FnOnce(&mut Sink)) {
+        SINK.with(|s| {
+            if let Some(k) = s.borrow_mut().as_mut() {
+                f(k);
+            }
+        });
+    }
+
+    pub fn stop(id: u32) {
+        with(|k| k.stop(id));
+    }
+
+    pub fn set_volume(id: u32, v: f32) {
+        with(|k| k.set_volume(id, v));
+    }
+
+    /// 全停并关掉设备（小程序实例销毁）：留着的话退出小程序之后声音还在放
+    pub fn stop_all() {
+        SINK.with(|s| {
+            if let Some(mut k) = s.borrow_mut().take() {
+                k.stop_all();
+            }
+        });
+    }
+
+    pub fn tick() {
+        with(|k| {
+            if let Some(l) = k.tick() {
+                eprintln!("{l}");
+            }
+        });
+    }
+}
+
+#[cfg(all(not(feature = "audio"), not(feature = "game-audio")))]
 mod backend {
     use std::sync::Arc;
     pub fn start(_id: u32, _s: Arc<Vec<f32>>, _r: u32, _c: u16, _from: f64, _v: f32, _speed: f32) {}
     pub fn stop(_id: u32) {}
     pub fn set_volume(_id: u32, _v: f32) {}
+    pub fn stop_all() {}
+    pub fn tick() {}
 }
 
-pub use backend::{set_volume, start, stop};
+pub use backend::{set_volume, start, stop, stop_all, tick};
