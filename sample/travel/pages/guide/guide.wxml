@@ -1,0 +1,41 @@
+<view class="hero" style="background: linear-gradient(160deg, {{city.color}}, #1c2230);">
+  <text class="h-name">{{city.name}}</text>
+  <text class="h-prov">{{city.prov}} · {{city.tag}}</text>
+  <text class="h-desc">{{city.desc}}</text>
+</view>
+<view class="card facts">
+  <view class="fact"><text class="f-v">{{g.days}} 天</text><text class="sub">建议游玩</text></view>
+  <view class="fact"><text class="f-v">¥{{g.cost}}</text><text class="sub">人均每天</text></view>
+  <view class="fact"><text class="f-v">¥{{budgetText}}</text><text class="sub">人均总花费</text></view>
+</view>
+<view class="card">
+  <view class="kv"><text class="k">最佳季节</text><text class="v">{{g.season}}</text></view>
+  <view class="kv"><text class="k">交通</text><text class="v">{{g.traffic}}</text></view>
+  <view class="kv kv-last"><text class="k">必吃</text><text class="v">{{g.food}}</text></view>
+</view>
+<view class="card">
+  <text class="title">必去景点</text>
+  <view class="sp" wx:for="{{spots}}" wx:key="name">
+    <view class="sp-no"><text class="sp-no-t">{{index + 1}}</text></view>
+    <view class="sp-info">
+      <text class="sp-t">{{item.name}}</text>
+      <text class="sub">{{item.type}} · 建议 {{item.hours}} 小时 · 门票 {{item.ticket}}</text>
+    </view>
+  </view>
+</view>
+<view class="card">
+  <text class="title">我的{{city.name}}行程</text>
+  <view wx:if="{{!trips.length}}" class="none"><text class="sub">还没有规划过{{city.name}}，点下方「规划行程」开始</text></view>
+  <view class="tp" wx:for="{{trips}}" wx:key="id" data-id="{{item.id}}" bindtap="openTrip">
+    <view class="tp-info">
+      <text class="tp-t">{{item.title}}</text>
+      <text class="sub">{{item.range}} · {{item.days}} 天</text>
+    </view>
+    <view class="arrow"></view>
+  </view>
+</view>
+<view class="space"></view>
+<view class="bottom">
+  <view class="wish {{wish ? 'wish-on' : ''}}" bindtap="onWish"><text>{{wish ? '已想去' : '想去'}}</text></view>
+  <view class="btn plan-btn" bindtap="plan"><text>规划 {{g.days}} 天行程</text></view>
+</view>

@@ -1,0 +1,35 @@
+<view class="page">
+  <view class="card row">
+    <image class="cv" src="/images/svc/wash.png"></image>
+    <view class="flex1">
+      <text class="t">{{summary}}</text>
+      <text class="sub">订单 {{id}}</text>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="dim row" wx:for="{{dims}}" wx:key="key">
+      <text class="d-l">{{item.name}}</text>
+      <star-rating value="{{item.value}}" size="{{26}}" data-i="{{index}}" bindchange="onStar"></star-rating>
+    </view>
+    <view class="row overall"><text class="sub">综合评分</text><text class="ov-n">{{overallText}}</text></view>
+  </view>
+
+  <view class="card">
+    <text class="title">印象标签</text>
+    <checkbox-group class="tags" bindchange="onTags">
+      <label wx:for="{{tagOpts}}" wx:key="name" class="tg row {{item.on ? 'tg-on' : ''}} {{item.bad ? 'tg-bad' : ''}}">
+        <checkbox value="{{item.name}}" checked="{{item.on}}" color="#1e8cf0"></checkbox>
+        <text class="tg-t">{{item.name}}</text>
+      </label>
+    </checkbox-group>
+    <textarea class="ta" value="{{text}}" maxlength="200" placeholder="说说洗护效果、取送员服务，帮助更多人选择" bindinput="onText"></textarea>
+    <view class="row between"><text class="err">{{err}}</text><text class="sub">{{text.length}}/200</text></view>
+    <view class="row between anon">
+      <text>匿名评价</text>
+      <switch checked="{{anon}}" color="#1e8cf0" bindchange="onAnon"></switch>
+    </view>
+  </view>
+
+  <view class="op"><view class="btn" hover-class="hover" bindtap="submit"><text>提交评价</text></view></view>
+</view>

@@ -1,0 +1,27 @@
+<view wx:if="{{!o}}" class="empty"><view class="empty-ic">单</view><text class="empty-t">没有找到这笔订单</text><view class="btn empty-btn" bindtap="goHome">返回首页</view></view>
+<block wx:else>
+  <view class="top">
+    <icon type="success" size="64" color="#ffffff"></icon>
+    <text class="t">支付成功</text>
+    <text class="pay">¥{{o.pay}}</text>
+    <text class="s">{{o.payWay}} · {{eta}}</text>
+  </view>
+  <view class="card">
+    <view class="kv"><text class="k">订单号</text><text class="v" selectable>{{o.no}}</text></view>
+    <view class="kv"><text class="k">配送</text><text class="v">{{o.delivery}} · {{o.addr.name}} {{o.addr.phone}}</text></view>
+    <view class="kv"><text class="k">地址</text><text class="v">{{o.addr.region[1]}}{{o.addr.region[2]}} {{o.addr.detail}}</text></view>
+    <view wx:if="{{o.rxNo}}" class="kv"><text class="k">处方</text><text class="v">{{o.rxNo}}（已审核）</text></view>
+    <text class="muted tip">药房正在拣货，出库后可在「我的订单」查看配送进度</text>
+  </view>
+  <view wx:if="{{meds.length}}" class="card">
+    <text class="h">按时吃药，设置用药提醒</text>
+    <view class="md" wx:for="{{meds}}" wx:key="id">
+      <text class="md-n">{{item.brand}} {{item.name}}</text>
+      <text class="md-b" data-name="{{item.brand}} {{item.name}}" bindtap="remind">设提醒</text>
+    </view>
+  </view>
+  <view class="ops">
+    <view class="btn-o op" bindtap="goHome">继续购物</view>
+    <view class="btn op" bindtap="goOrders">查看订单</view>
+  </view>
+</block>

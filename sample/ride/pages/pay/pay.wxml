@@ -1,0 +1,87 @@
+<view wx:if="{{!trip}}" class="empty-wrap">
+  <view class="empty-ic"><text class="empty-ic-t">¥</text></view>
+  <text class="sub">订单不存在或已被清理</text>
+  <view class="btn-primary empty-btn" bindtap="onHome">返回首页</view>
+</view>
+<view wx:elif="{{paid}}" class="empty-wrap">
+  <view class="empty-ic"><text class="empty-ic-t">¥</text></view>
+  <text class="sub">这笔订单已经支付过了</text>
+  <view class="btn-primary empty-btn" bindtap="onDetail">查看行程</view>
+</view>
+<block wx:else>
+  <view class="hero">
+    <text class="hero-label">{{trip.cancelled ? '取消费待支付' : '行程已结束，请支付车费'}}</text>
+    <view class="hero-price"><text class="hero-num">{{due}}</text><text class="hero-unit">元</text></view>
+    <text class="hero-sub">{{trip.date}} · {{trip.type}} · {{trip.driver}}</text>
+  </view>
+  <view class="card overlap">
+    <view class="row"><view class="dot dot-green"></view><text class="route-text">{{trip.from.name}}</text></view>
+    <view class="route-line"></view>
+    <view class="row"><view class="dot dot-orange"></view><text class="route-text">{{trip.to.name}}</text></view>
+    <view wx:if="{{trip.cancelled}}" class="why">
+      <text class="why-line">取消原因：{{trip.cancelReason}}</text>
+      <text class="why-line">{{cancelWhy}}，收取 ¥{{trip.cancelFee}} 补偿司机空驶</text>
+    </view>
+  </view>
+  <view class="card">
+    <text class="title-sm">费用明细</text>
+    <view class="fee row between" wx:for="{{lines}}" wx:key="name">
+      <text>{{item.name}}</text>
+      <text class="{{item.cut ? 'orange' : ''}}">{{item.value}}</text>
+    </view>
+    <view wx:if="{{!trip.cancelled}}" class="fee row between coupon-row" bindtap="onCoupon">
+      <text>优惠券</text>
+      <view class="row">
+        <text class="{{cut ? 'orange' : 'sub'}}">{{cut ? couponName + ' -¥' + cut : coupons.length ? coupons.length + ' 张可用，未使用' : '暂无可用'}}</text>
+        <view class="chev"></view>
+      </view>
+    </view>
+    <view class="total row between"><text class="total-label">应付</text><text class="total-num">¥{{due}}</text></view>
+  </view>
+  <view class="card">
+    <text class="title-sm">支付方式</text>
+    <view class="way row way-wallet {{enough ? '' : 'way-off'}}" data-k="wallet" bindtap="onPayBy">
+      <view class="way-icon wallet-ic"><text class="way-glyph">钱</text></view>
+      <view class="flex1">
+        <text class="way-name">钱包余额</text>
+        <text class="sub way-sub">{{enough ? '可用 ¥' + balance : '余额 ¥' + balance + '，不够支付这一单'}}</text>
+      </view>
+      <text wx:if="{{!enough}}" class="way-link" catchtap="onRecharge">去充值</text>
+      <view class="check {{payBy === 'wallet' ? 'check-on' : ''}}"><view wx:if="{{payBy === 'wallet'}}" class="tick"></view></view>
+    </view>
+    <view class="way row way-wechat" data-k="wechat" bindtap="onPayBy">
+      <view class="way-icon wechat-ic"><text class="way-glyph">微</text></view>
+      <view class="flex1">
+        <text class="way-name">微信支付</text>
+        <text class="sub way-sub">支付完成后可在「电子发票」开票</text>
+      </view>
+      <view class="check {{payBy === 'wechat' ? 'check-on' : ''}}"><view wx:if="{{payBy === 'wechat'}}" class="tick"></view></view>
+    </view>
+  </view>
+  <view class="bar-gap"></view>
+  <view class="bar row">
+    <view class="flex1 row bar-sum"><text class="sub">应付</text><text class="bar-num">¥{{due}}</text></view>
+    <view class="btn-primary pay-btn" bindtap="onPay">{{payBy === 'wallet' ? '钱包支付' : '微信支付'}} ¥{{due}}</view>
+  </view>
+  <block wx:if="{{sheet}}">
+    <view class="mask" bindtap="onCloseSheet"></view>
+    <view class="sheet-panel" catchtap="noop">
+      <view class="row between sheet-head">
+        <text class="sheet-title">选择优惠券</text>
+        <text class="sheet-close" bindtap="onCloseSheet">关闭</text>
+      </view>
+      <view class="cp row" wx:for="{{coupons}}" wx:key="id" data-id="{{item.id}}" bindtap="onPickCoupon">
+        <view class="cp-amt"><text class="cp-yen">¥</text><text class="cp-num">{{item.cut}}</text></view>
+        <view class="flex1">
+          <text class="cp-name">{{item.name}}</text>
+          <text class="sub cp-sub">{{item.cond}} · {{item.scope}}</text>
+        </view>
+        <view class="check {{couponId === item.id ? 'check-on' : ''}}"><view wx:if="{{couponId === item.id}}" class="tick"></view></view>
+      </view>
+      <view class="cp row cp-none" data-id="" bindtap="onPickCoupon">
+        <text class="flex1 cp-name">不使用优惠券</text>
+        <view class="check {{couponId ? '' : 'check-on'}}"><view wx:if="{{!couponId}}" class="tick"></view></view>
+      </view>
+    </view>
+  </block>
+</block>

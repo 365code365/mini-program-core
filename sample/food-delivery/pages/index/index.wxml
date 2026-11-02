@@ -8,16 +8,16 @@
   </view>
   <view class="search row">
     <view class="search-icon"></view>
-    <input class="search-input" placeholder="搜索商家、菜品" placeholder-class="ph" value="{{keyword}}" bindinput="onInput" confirm-type="search" />
+    <input id="kw{{kwSeq}}" class="search-input" placeholder="搜索商家、菜品" placeholder-class="ph" value="{{keyword}}" bindinput="onInput" bindconfirm="onSearch" confirm-type="search" />
     <view wx:if="{{keyword}}" class="search-clear" bindtap="onClear">×</view>
-    <view class="search-btn">搜索</view>
+    <view class="search-btn" bindtap="onSearch">搜索</view>
   </view>
 </view>
 
 <view class="kingkong">
   <view class="kk-item" wx:for="{{categories}}" wx:key="name" data-name="{{item.name}}" bindtap="onCategory">
-    <view class="kk-icon glyph" style="background: linear-gradient(135deg, {{item.c1}}, {{item.c2}});">{{item.glyph}}</view>
-    <text class="kk-name">{{item.name}}</text>
+    <view class="kk-icon glyph {{category === item.name ? 'kk-icon-on' : ''}}" style="background: linear-gradient(135deg, {{item.c1}}, {{item.c2}});">{{item.glyph}}</view>
+    <text class="kk-name {{category === item.name ? 'kk-name-on' : ''}}">{{item.name}}</text>
   </view>
 </view>
 

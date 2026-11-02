@@ -1,4 +1,7 @@
-<view class="empty" wx:if="{{missing}}">订单不存在</view>
+<view class="empty missing" wx:if="{{missing}}">
+  <text class="miss-t">订单不存在或已被清理</text>
+  <view class="btn-primary miss-btn" bindtap="goOrders">查看全部订单</view>
+</view>
 <block wx:else>
   <view class="ok-wrap">
     <view class="ok-ic"><view class="tick"></view></view>

@@ -1,0 +1,25 @@
+<view class="card movie">
+  <image class="poster" src="{{m.poster}}" mode="aspectFill"></image>
+  <view class="flex1 info">
+    <text class="title">{{m.title}}</text>
+    <text class="sub">{{m.genre}} · {{m.duration}}分钟</text>
+    <text class="sub">导演 {{m.director}}</text>
+  </view>
+</view>
+<view class="card">
+  <text class="block-title">你的评分</text>
+  <view class="row stars">
+    <text wx:for="{{starList}}" wx:key="*this" class="star {{item <= star ? 'star-on' : ''}}" data-n="{{item}}" bindtap="onStar">★</text>
+    <text class="star-text">{{starText}}</text>
+  </view>
+  <text class="block-title tag-title">印象标签（最多 3 个）</text>
+  <view class="tags">
+    <view class="tg {{item.on ? 'tg-on' : ''}}" wx:for="{{tags}}" wx:key="name" data-i="{{index}}" bindtap="onTag"><text>{{item.name}}</text></view>
+  </view>
+  <textarea class="ta" placeholder="说说这部电影哪里打动你（至少 6 个字）" placeholder-class="ph" maxlength="200" value="{{text}}" bindinput="onText"></textarea>
+  <text class="count">{{text.length}}/200</text>
+</view>
+<view class="btns">
+  <view class="btn-primary" bindtap="onSubmit"><text>{{editing ? '保存修改' : '发布影评'}}</text></view>
+  <view wx:if="{{editing}}" class="del" bindtap="onDelete"><text>删除这条影评</text></view>
+</view>

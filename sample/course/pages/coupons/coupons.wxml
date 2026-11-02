@@ -1,0 +1,20 @@
+<view class="card ex row">
+  <view class="ex-main"><text class="ex-t">积分兑好券</text><text class="muted">我的积分 {{points}} · {{ex.cost}} 积分换 ¥{{ex.cut}} 无门槛券</text></view>
+  <view class="ex-btn" bindtap="exchange"><text>兑换</text></view>
+</view>
+<view class="tabs row">
+  <view class="tb {{tab === 'ok' ? 'on' : ''}}" data-t="ok" bindtap="onTab"><text>可使用（{{okCount}}）</text></view>
+  <view class="tb {{tab === 'used' ? 'on' : ''}}" data-t="used" bindtap="onTab"><text>已使用（{{usedCount}}）</text></view>
+</view>
+<view wx:if="{{!list.length}}" class="empty"><text>{{tab === 'ok' ? '没有可用的优惠券' : '还没有用过优惠券'}}</text></view>
+<view wx:for="{{list}}" wx:key="id" class="cp row {{item.used ? 'used' : ''}}">
+  <view class="cp-l"><text class="cp-y">¥</text><text class="cp-n">{{item.cut}}</text></view>
+  <view class="cp-m">
+    <text class="cp-t">{{item.name}}</text>
+    <text class="muted">{{item.min ? '满 ' + item.min + ' 元可用' : '无门槛'}}</text>
+    <text class="muted">有效期至 {{item.until}}</text>
+  </view>
+  <view wx:if="{{!item.used}}" class="cp-go" bindtap="use"><text>去使用</text></view>
+  <text wx:else class="cp-st">已使用</text>
+</view>
+<view class="gap"></view>

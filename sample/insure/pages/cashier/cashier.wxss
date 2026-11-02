@@ -1,0 +1,14 @@
+.cs-top { display: flex; flex-direction: column; align-items: center; padding: 64rpx 40rpx 48rpx; background: #ffffff; }
+.cs-title { font-size: 28rpx; color: #5c6370; }
+.cs-amt { margin-top: 20rpx; align-items: flex-end; }
+.cs-yen { font-size: 40rpx; font-weight: bold; margin-bottom: 10rpx; margin-right: 6rpx; }
+.cs-num { font-size: 80rpx; font-weight: bold; }
+.cs-tip { margin-top: 20rpx; font-size: 22rpx; color: #a0a6ae; text-align: center; }
+.cs-card { background: #ffffff; margin: 24rpx; border-radius: 24rpx; padding: 0 28rpx; }
+.cs-way { display: flex; flex-direction: row; align-items: center; padding: 28rpx 0; border-bottom: 1rpx solid #f0f1f4; }
+.cs-logo { width: 64rpx; height: 64rpx; border-radius: 16rpx; color: #ffffff; font-size: 28rpx; font-weight: bold; display: flex; align-items: center; justify-content: center; margin-right: 20rpx; }
+.cs-mid { flex: 1; min-width: 0; }
+.cs-name { display: block; font-size: 28rpx; color: #1f2329; }
+.cs-sub { display: block; font-size: 22rpx; color: #a0a6ae; margin-top: 4rpx; }
+.cs-btn { margin: 48rpx 40rpx 0; height: 92rpx; border-radius: 46rpx; background: #07c160; color: #ffffff; font-size: 32rpx; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+.cs-cancel { text-align: center; color: #8a9099; font-size: 26rpx; margin-top: 32rpx; }

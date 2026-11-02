@@ -7,7 +7,9 @@
     "pages/detail/detail",
     "pages/spots/spots",
     "pages/budget/budget",
-    "pages/packing/packing"
+    "pages/packing/packing",
+    "pages/import/import",
+    "pages/guide/guide"
   ],
   "window": {
     "navigationBarTitleText": "途简行程",

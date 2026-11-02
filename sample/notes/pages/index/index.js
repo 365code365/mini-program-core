@@ -12,6 +12,12 @@ Page({
     sortName: ''
   },
   onShow() {
+    // 标签管理页点了某个标签：回来按它筛选
+    const g = getApp().globalData
+    if (g.tagFilter) {
+      this.setData({ tagId: g.tagFilter, kw: '' })
+      g.tagFilter = ''
+    }
     this.refresh()
   },
   refresh() {
@@ -80,6 +86,7 @@ Page({
           wx.showToast({ title: n.pinned ? '已置顶' : '已取消置顶', icon: 'none' })
         } else if (res.tapIndex === 1) {
           n.deleted = true
+          n.deletedAt = Date.now()
           n.pinned = false
           wx.showToast({ title: '已移到回收站', icon: 'none' })
         }

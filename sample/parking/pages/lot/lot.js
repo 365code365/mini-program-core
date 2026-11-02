@@ -1,12 +1,13 @@
 const { DURATIONS, lotById } = require('../../utils/data.js')
 const F = require('../../utils/fee.js')
 const S = require('../../utils/store.js')
+const host = require('../../utils/host.js')
 
 Page({
   data: {
     lot: null, free: 0, rules: [], plates: [], carIdx: 0,
     arrive: '18:00', durations: DURATIONS.map(d => d.text), durIdx: 1,
-    fee: 0, feeText: '', leaveText: '', err: ''
+    fee: 0, feeText: '', leaveText: '', err: '', card: null
   },
   onLoad(query) {
     const lot = lotById(query.id || 1)
@@ -15,7 +16,16 @@ Page({
     this.calc()
   },
   onShow() {
-    if (this.data.lot) this.setData({ free: S.freeOf(this.data.lot.id) })
+    if (!this.data.lot) return
+    // 名下有本场的有效月卡就显示有效期（取第一辆）
+    const card = S.cars().map(c => S.cardFor(c.plate, this.data.lot.id)).filter(Boolean)[0] || null
+    this.setData({ free: S.freeOf(this.data.lot.id), card })
+  },
+  onNav() { host.openMap(this.data.lot) },
+  onCall() { host.call(this.data.lot.phone) },
+  goCard() {
+    const plate = this.data.card ? this.data.card.plate : (this.data.plates[this.data.carIdx] || '')
+    wx.navigateTo({ url: '/pages/card/card?lot=' + this.data.lot.id + '&plate=' + encodeURIComponent(plate) })
   },
   // 预约费用 = 按预约时长套同一套计费规则
   calc() {

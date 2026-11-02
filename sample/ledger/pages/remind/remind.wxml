@@ -1,0 +1,31 @@
+<view class="page">
+  <view class="card row between">
+    <view class="flex1">
+      <view class="t"><text>每日记账提醒</text></view>
+      <view class="muted"><text>到点提醒你把今天的花销记下来</text></view>
+    </view>
+    <switch class="sw-daily" checked="{{on}}" color="#f57c34" bindchange="onSwitch" />
+  </view>
+  <view wx:if="{{on}}" class="card menu">
+    <picker mode="time" value="{{time}}" bindchange="onTime">
+      <view class="row item">
+        <text class="flex1 item-t">提醒时间</text>
+        <text class="val">{{time}}</text><view class="arrow"></view>
+      </view>
+    </picker>
+    <view class="row item last">
+      <text class="flex1 item-t">重复</text>
+      <view class="chip {{days === 'everyday' ? 'chip-on' : ''}}" data-d="everyday" bindtap="onDays"><text>每天</text></view>
+      <view class="chip {{days === 'workday' ? 'chip-on' : ''}}" data-d="workday" bindtap="onDays"><text>工作日</text></view>
+    </view>
+  </view>
+  <view wx:if="{{nextText}}" class="next muted"><text>{{nextText}}</text></view>
+  <view class="card row between">
+    <view class="flex1">
+      <view class="t"><text>预算提醒</text></view>
+      <view class="muted"><text>本月支出用到 80% 时提醒，超支时一定提醒</text></view>
+    </view>
+    <switch class="sw-budget" checked="{{budgetRemind}}" color="#f57c34" bindchange="onBudgetRemind" />
+  </view>
+  <view class="save btn-primary" hover-class="save-hover" bindtap="onSave"><text>保存</text></view>
+</view>

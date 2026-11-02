@@ -1,0 +1,94 @@
+<view wx:if="{{o}}">
+  <view class="head">
+    <text class="h-st">{{st.text}}</text>
+    <text class="h-tip">{{st.tip}}</text>
+    <view wx:if="{{steps.length}}" class="steps">
+      <view wx:for="{{steps}}" wx:key="name" class="step {{item.done ? 'on' : ''}}">
+        <view class="s-bar"></view>
+        <text class="s-tx">{{item.name}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{o.kind === 'service' && o.status === 'booked'}}" class="card code">
+    <text class="muted">到店核销码</text>
+    <text class="code-v">{{o.code}}</text>
+    <text class="muted">请出示给门店店员，开始前 2 小时可免费取消</text>
+  </view>
+
+  <view wx:if="{{st.canRate}}" class="card rate">
+    <text class="sec-title">{{o.kind === 'goods' ? '评价商品' : '评价这次服务'}}</text>
+    <view class="row stars">
+      <text wx:for="{{starList}}" wx:key="*this" class="star {{item <= stars ? 'on' : ''}}" data-n="{{item}}" bindtap="onStar">★</text>
+      <text class="star-t">{{starText}}</text>
+    </view>
+    <textarea id="rate{{formSeq}}" class="rate-in" placeholder="说说{{o.kind === 'goods' ? '毛孩子喜不喜欢' : '店员的服务怎么样'}}（选填）" placeholder-class="ph" maxlength="100" value="{{rateText}}" bindinput="onRateText"></textarea>
+    <view class="btn rate-btn" bindtap="submitRate"><text>提交评价</text></view>
+  </view>
+  <view wx:elif="{{o.rating}}" class="card">
+    <view class="row between"><text class="sec-title">我的评价</text><text class="muted">{{o.rating.time}}</text></view>
+    <view class="row stars"><text wx:for="{{starList}}" wx:key="*this" class="star {{item <= o.rating.stars ? 'on' : ''}}">★</text></view>
+    <text wx:if="{{o.rating.text}}" class="rate-tx">{{o.rating.text}}</text>
+  </view>
+
+  <block wx:if="{{o.kind === 'goods'}}">
+    <view class="card addr">
+      <view class="pin"><view class="pin-in"></view></view>
+      <view class="addr-m">
+        <text class="addr-t">{{o.addr.name}} {{o.addr.phone}}</text>
+        <text class="muted">{{o.addr.text}}</text>
+      </view>
+    </view>
+    <view class="card">
+      <view class="it" wx:for="{{o.items}}" wx:key="id">
+        <image class="it-img" src="{{item.img}}" mode="aspectFill"></image>
+        <view class="it-m">
+          <text class="it-n">{{item.name}}</text>
+          <text class="it-spec">{{item.spec}}</text>
+        </view>
+        <view class="it-r"><text>¥{{item.price}}</text><text class="muted">×{{item.qty}}</text></view>
+      </view>
+    </view>
+  </block>
+  <block wx:else>
+    <view class="card">
+      <text class="sec-title svc-title">{{o.petName}} · {{o.svcNames}}</text>
+      <view class="kv"><text class="k">预约时间</text><text class="v">{{o.date}} {{o.week}} {{o.time}}</text></view>
+      <view wx:if="{{o.nights}}" class="kv"><text class="k">寄养</text><text class="v">{{o.nights}} 晚</text></view>
+      <view class="kv"><text class="k">上门接送</text><text class="v">{{o.pickup ? '需要（3km 内）' : '不需要'}}</text></view>
+      <view wx:if="{{o.remark}}" class="kv"><text class="k">备注</text><text class="v">{{o.remark}}</text></view>
+      <view class="svc" wx:for="{{o.svcs}}" wx:key="id"><text class="muted">{{item.name}}</text><text>¥{{item.price}}{{o.nights ? ' ×' + o.nights + ' 晚' : ''}}</text></view>
+    </view>
+    <view class="card shop">
+      <view class="shop-m">
+        <text class="shop-n">{{store.name}}</text>
+        <text class="muted">{{store.addr}}</text>
+        <text class="muted">营业 {{store.open}} · {{store.phone}}</text>
+      </view>
+      <view class="shop-ops">
+        <text class="s-op s-nav" bindtap="onNav">导航</text>
+        <text class="s-op s-call" bindtap="onCallStore">电话</text>
+      </view>
+    </view>
+  </block>
+
+  <view class="card">
+    <view class="kv" wx:for="{{lines}}" wx:key="k"><text class="k">{{item.k}}</text><text class="v {{item.cut ? 'cut' : ''}}">{{item.v}}</text></view>
+    <view class="kv paid"><text>实付</text><text class="price">¥{{o.pay}}</text></view>
+  </view>
+  <view class="card">
+    <view class="kv"><text class="k">订单号</text><view class="row"><text class="v">{{o.id}}</text><text class="copy" bindtap="onCopy">复制</text></view></view>
+    <view class="kv"><text class="k">下单时间</text><text class="v">{{time}}</text></view>
+    <view wx:if="{{paidTime}}" class="kv"><text class="k">支付方式</text><text class="v">{{o.pay > 0 ? '微信支付' : ''}}{{o.pay > 0 && o.cardUsed ? ' + ' : ''}}{{o.cardUsed ? '洗护次卡' : ''}}</text></view>
+    <view wx:if="{{o.express}}" class="kv"><text class="k">物流单号</text><text class="v">中通 {{o.express}}</text></view>
+  </view>
+  <view style="height: 200rpx;"></view>
+  <view class="bar">
+    <view class="bar-btn ghost op-service" bindtap="onService"><text>联系客服</text></view>
+    <view wx:if="{{st.canCancel}}" class="bar-btn ghost op-cancel" bindtap="onCancel"><text>{{o.kind === 'goods' ? '取消订单' : '取消预约'}}</text></view>
+    <view wx:if="{{st.canPay}}" class="btn bar-btn op-pay" bindtap="onPay"><text>去支付 ¥{{o.pay}}</text></view>
+    <view wx:elif="{{st.canConfirm}}" class="btn bar-btn op-confirm" bindtap="onConfirm"><text>确认收货</text></view>
+    <view wx:elif="{{o.status === 'done' || o.status === 'cancel'}}" class="btn bar-btn op-again" bindtap="onAgain"><text>{{o.kind === 'goods' ? '再来一单' : '再次预约'}}</text></view>
+  </view>
+</view>
+<view wx:else class="none"><text class="muted">订单不存在或已被清理</text></view>

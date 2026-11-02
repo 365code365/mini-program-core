@@ -1,0 +1,12 @@
+.head { padding: 20rpx 28rpx 0; }
+.it { background: #ffffff; margin: 20rpx 24rpx 0; padding: 20rpx; border-radius: 20rpx; align-items: flex-start; }
+.it-img { width: 150rpx; height: 200rpx; border-radius: 10rpx; flex-shrink: 0; }
+.it-info { margin-left: 20rpx; }
+.it-t { font-size: 28rpx; font-weight: bold; line-height: 40rpx; }
+.it-l { margin-top: 8rpx; }
+.sale { font-size: 22rpx; padding: 2rpx 12rpx; border-radius: 6rpx; }
+.sale-on { color: #ffffff; background: #ff3b5c; }
+.sale-soon { color: #ff9f43; background: #fff4e6; }
+.rm { font-size: 22rpx; color: #20bf6b; margin-left: 12rpx; }
+.it-foot { margin-top: 14rpx; }
+.rmv { font-size: 22rpx; color: #8a8d96; border: 1rpx solid #d6d7dc; border-radius: 24rpx; padding: 4rpx 18rpx; }

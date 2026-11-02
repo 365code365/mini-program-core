@@ -15,9 +15,23 @@
   </picker>
 </view>
 <view class="card cells">
+  <view class="cell row export" bindtap="onExport">
+    <text class="flex1 cell-label">导出日程</text>
+    <text class="cell-value">复制到剪贴板</text>
+    <view class="chev"></view>
+  </view>
+  <view class="cell row import" bindtap="onImport">
+    <text class="flex1 cell-label">从剪贴板导入</text>
+    <text class="cell-value">追加，不覆盖</text>
+    <view class="chev"></view>
+  </view>
+  <view class="cell row restore" bindtap="onRestore">
+    <text class="flex1 cell-label">恢复示例日程</text>
+    <view class="chev"></view>
+  </view>
   <view class="cell row cell-last clear" bindtap="onClear">
     <text class="flex1 cell-label danger">清空全部日程</text>
     <text class="cell-value">{{count}} 条</text>
   </view>
 </view>
-<text class="sub tip">日程只保存在本机，卸载小程序后会丢失</text>
+<text class="sub tip">日程只保存在本机，卸载小程序后会丢失；换手机前先「导出日程」</text>

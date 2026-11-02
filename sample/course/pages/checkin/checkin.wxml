@@ -2,6 +2,7 @@
   <text class="h-label">已连续打卡</text>
   <view class="row h-row"><text class="h-num">{{streak}}</text><text class="h-unit">天</text></view>
   <text class="h-sub">累计打卡 {{total}} 天 · 本月 {{monthCount}} 天</text>
+  <view class="h-pts" bindtap="goPoints"><text>积分 {{points}} · 去兑换</text></view>
   <view class="h-btn {{todayDone ? 'done' : ''}}" bindtap="checkin"><text>{{todayDone ? '今日已打卡' : '立即打卡'}}</text></view>
   <view class="h-deco"></view>
 </view>
@@ -29,7 +30,7 @@
   <view class="task row" wx:for="{{tasks}}" wx:key="key" data-k="{{item.key}}" bindtap="onTask">
     <view class="tk-ic"><text>+{{item.pts}}</text></view>
     <view class="tk-main"><text class="tk-name">{{item.name}}</text><text class="muted">{{item.sub}}</text></view>
-    <view class="tk-btn {{item.done ? 'done' : ''}}"><text>{{item.done ? '已完成' : '去完成'}}</text></view>
+    <view class="tk-btn {{item.claimed ? 'done' : (item.done ? 'claim' : '')}}"><text>{{item.claimed ? '已领取' : (item.done ? '领取' : '去完成')}}</text></view>
   </view>
 </view>
 <view class="tab-gap"></view>

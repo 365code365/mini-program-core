@@ -56,12 +56,21 @@ impl CompileTarget for HtmlTarget {
         files.push(EmittedFile::text("common/app.js", app.app_js.clone()));
         // 内置图标表（编译期从 icon_data 那张 WeUI 字形表生成）拼在运行时前面，
         // 保证运行时动态创建的 <icon> 与编译期静态输出的完全一样。
+        // wx 的中立别名 nb / gb / mb（与 QuickJS 同一份 api-alias.js），以及按函数名认出的 `xx.*`
+        // （js/api_alias.rs，整个小程序的源码一起认）。都拼在运行时 IIFE 之后：runtime.js 先于 app.js / 页面 js 加载；
+        // 不拼进开发者的 js，免得挪了行号、废掉开头的 "use strict"；也不进 RUNTIME_JS（那是 runtime/ 目录分片的逐字节拼接）
+        let alias_srcs = std::iter::once(app.app_js.as_str())
+            .chain(app.pages.iter().map(|p| p.js.as_str()))
+            .chain(app.custom_tab_bar.iter().map(|b| b.js.as_str()));
+        let alias = crate::js::api_alias::guess_script(alias_srcs).map(|s| format!("\n{s}\n")).unwrap_or_default();
         files.push(EmittedFile::text(
             "common/runtime.js",
             format!(
-                "{}\n{}",
+                "{}\n{}\n{}{}",
                 crate::renderer::components::icon_data::icon_svg_js_table(),
-                RUNTIME_JS
+                RUNTIME_JS,
+                crate::js::prelude_source("api-alias").unwrap_or_default(),
+                alias
             ),
         ));
 

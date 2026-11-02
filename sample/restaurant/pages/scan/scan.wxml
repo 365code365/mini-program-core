@@ -30,7 +30,7 @@
   <view class="card">
     <text class="title">手动输入桌号</text>
     <view class="input-row">
-      <input class="input" value="{{input}}" placeholder="如 A05" maxlength="3" bindinput="onInput" bindconfirm="onConfirmInput" />
+      <input id="tbl{{inputSeq}}" class="input" value="{{input}}" focus="{{inputFocus}}" placeholder="如 A05" maxlength="3" bindinput="onInput" bindconfirm="onConfirmInput" bindblur="onInputBlur" />
       <view class="btn small-btn" bindtap="onConfirmInput"><text>校验</text></view>
     </view>
     <text class="error" wx:if="{{error}}">{{error}}</text>
@@ -72,6 +72,10 @@
       <view class="scan-line"></view>
     </view>
     <text class="scan-hint">正在识别桌贴二维码…</text>
-    <view class="scan-cancel" bindtap="cancelScan"><text>取消</text></view>
+    <text class="scan-note">当前环境调不起摄像头，正在识别演示桌贴</text>
+    <view class="row scan-btns">
+      <view class="scan-cancel" bindtap="cancelScan"><text>取消</text></view>
+      <view class="scan-cancel scan-manual" bindtap="manualInput"><text>手动输入桌号</text></view>
+    </view>
   </view>
 </view>

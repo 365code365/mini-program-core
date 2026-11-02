@@ -1,7 +1,7 @@
 const D = require('../../utils/data.js')
-
+const S = require('../../utils/store.js')
+const host = require('../../utils/host.js')
 const LABELS = ['实景', '户型', '卧室']
-
 Page({
   data: {
     h: null,
@@ -10,9 +10,10 @@ Page({
     cur: 0,
     facts: [],
     faved: false,
-    bookedCount: 0
+    bookedCount: 0,
+    pending: null,
+    monthly: 0
   },
-
   onLoad(q) {
     const h = D.get(q.id || 'h1')
     this.id = h.id
@@ -27,53 +28,60 @@ Page({
       { k: '区域', v: h.district }
     ]
     if (h.type === 'second') facts.splice(4, 0, { k: '单价', v: h.unit + ' 元/㎡' })
+    // 参考月供：三成首付、商贷 30 年、3.5% 等额本息（租房没有）
+    let monthly = 0
+    if (h.type !== 'rent') {
+      const loan = h.price * 10000 * 0.7
+      const r = 0.035 / 12
+      const n = 360
+      monthly = Math.round(loan * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1))
+    }
     this.setData({
-      h, facts,
+      h, facts, monthly,
       agent: D.AGENTS[h.agent],
       imgs: h.images.map((n, i) => ({ src: '/images/' + n + '.png', label: LABELS[i] }))
     })
     wx.setNavigationBarTitle({ title: h.community })
-    const hist = (wx.getStorageSync('house_history') || []).filter(id => id !== h.id)
-    hist.unshift(h.id)
-    wx.setStorageSync('house_history', hist.slice(0, 20))
+    S.pushHistory(h.id)
   },
-
   onShow() {
-    const booked = D.getBookings().filter(b => b.houseId === this.id).length
-    this.setData({ faved: D.getFavs().indexOf(this.id) >= 0, bookedCount: 23 + booked })
+    const booked = S.getBookings().filter(b => b.houseId === this.id && b.status !== 'cancelled').length
+    this.setData({ faved: S.isFav(this.id), bookedCount: 23 + booked, pending: S.pendingFor(this.id) })
   },
-
   onSwiper(e) {
     this.setData({ cur: e.detail.current })
   },
-
   onGTab(e) {
     this.setData({ cur: Number(e.currentTarget.dataset.i) })
   },
-
   onPreview(e) {
     wx.previewImage({
       current: this.data.imgs[Number(e.currentTarget.dataset.i)].src,
       urls: this.data.imgs.map(i => i.src)
     })
   },
-
   onFav() {
-    const on = D.toggleFav(this.id)
+    const on = S.toggleFav(this.id)
     this.setData({ faved: on })
     wx.showToast({ title: on ? '已加入收藏' : '已取消收藏', icon: 'none' })
   },
-
   onShare() {
+    const h = this.data.h
     wx.showActionSheet({
-      itemList: ['发送给朋友', '生成房源海报', '复制房源链接'],
+      itemList: ['复制房源链接', '复制房源信息'],
       success: res => {
-        if (res.tapIndex === 2) wx.setClipboardData({ data: 'https://anju.example.com/house/' + this.id })
-        else wx.showToast({ title: '已生成', icon: 'none' })
+        if (res.tapIndex === 0) host.copy('https://anju.example.com/house/' + this.id, '链接已复制，去粘贴给朋友吧')
+        else host.copy(h.title + '\n' + h.brief + '\n' + h.priceMain + h.priceUnit + '\n' + h.addr, '房源信息已复制')
       }
     })
   },
-
+  onMap() {
+    const h = this.data.h
+    host.openMap({ lat: h.lat, lng: h.lng, name: h.community, addr: '杭州市' + h.addr, extra: h.subway })
+  },
+  onCalc() {
+    wx.navigateTo({ url: '/pages/calc/calc?price=' + this.data.h.price })
+  },
   onChat() {
     wx.showModal({
       title: this.data.agent.name,
@@ -83,12 +91,12 @@ Page({
       success: r => r.confirm && this.onBook()
     })
   },
-
   onCall() {
-    wx.makePhoneCall({ phoneNumber: '4008106688', fail() {} })
+    host.call(this.data.agent.phone, '经纪人 ' + this.data.agent.name)
   },
-
   onBook() {
+    // 这套已经约过还没去看：去预约记录（那里能改约 / 取消），别再约一次
+    if (this.data.pending) return wx.navigateTo({ url: '/pages/bookings/bookings' })
     wx.navigateTo({ url: '/pages/booking/booking?id=' + this.id })
   }
 })

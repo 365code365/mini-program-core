@@ -2,25 +2,24 @@
   <text class="hero-title">住进风景里</text>
   <text class="hero-sub">全国 32 万家酒店民宿 · 低价保障 · 到店无忧</text>
 </view>
-
 <view class="search card">
   <view class="kinds">
-    <view wx:for="{{kinds}}" wx:key="*this" class="kind {{kind === index ? 'kind-on' : ''}}" data-idx="{{index}}" bindtap="onKind">{{item}}</view>
+    <view wx:for="{{kinds}}" wx:key="*this" class="kind {{s.kind === index ? 'kind-on' : ''}}" data-idx="{{index}}" bindtap="onKind"><text>{{item}}</text></view>
   </view>
-  <picker mode="selector" range="{{cities}}" value="{{cityIdx}}" bindchange="onCity">
-    <view class="line row between">
-      <text class="city">{{s.city}}</text>
-      <view class="row"><text class="sub">我的位置</text><view class="loc"></view></view>
-    </view>
-  </picker>
-  <view class="line row dates">
+  <view class="line row between">
+    <picker class="flex1" mode="selector" range="{{cities}}" value="{{cityIdx}}" bindchange="onCity">
+      <view class="row"><text class="city">{{s.city}}</text><view class="dn"></view></view>
+    </picker>
+    <view class="row locate" bindtap="onLocate"><text class="sub">我的位置</text><view class="loc"></view></view>
+  </view>
+  <view wx:if="{{s.kind !== 2}}" class="line row dates">
     <picker mode="date" value="{{s.checkin}}" start="{{today}}" end="{{maxDate}}" bindchange="onCheckin">
       <view class="date">
         <text class="date-label">入住</text>
         <view class="row"><text class="date-val">{{inShort}}</text><text class="date-week">{{inWeek}}</text></view>
       </view>
     </picker>
-    <view class="nights">共{{nights}}晚</view>
+    <view class="nights"><text>共{{nights}}晚</text></view>
     <picker mode="date" value="{{s.checkout}}" start="{{minOut}}" end="{{maxDate}}" bindchange="onCheckout">
       <view class="date right">
         <text class="date-label">离店</text>
@@ -28,34 +27,45 @@
       </view>
     </picker>
   </view>
+  <view wx:else class="line row dates">
+    <picker mode="date" value="{{s.checkin}}" start="{{today}}" end="{{maxDate}}" bindchange="onCheckin">
+      <view class="date">
+        <text class="date-label">入住日期</text>
+        <view class="row"><text class="date-val">{{inShort}}</text><text class="date-week">{{inWeek}}</text></view>
+      </view>
+    </picker>
+    <view class="nights"><text>4 小时 · 当天离店</text></view>
+  </view>
+  <view class="line row between people" bindtap="onPeople">
+    <text class="people-t">{{people}}</text>
+    <view class="row"><text class="sub">房间与人数</text><view class="chev"></view></view>
+  </view>
   <view class="line">
     <input class="kw" placeholder="关键字 / 位置 / 酒店名" value="{{s.keyword}}" bindinput="onKeyword" confirm-type="search" bindconfirm="onSearch" />
   </view>
   <view class="filter-title">价格</view>
   <view class="chips">
-    <view wx:for="{{prices}}" wx:key="*this" class="chip {{s.price === index ? 'chip-on' : ''}}" data-idx="{{index}}" bindtap="onPrice">{{item}}</view>
+    <view wx:for="{{prices}}" wx:key="*this" class="chip {{s.price === index ? 'chip-on' : ''}}" data-idx="{{index}}" bindtap="onPrice"><text>{{item}}</text></view>
   </view>
   <view class="filter-title">星级 / 类型</view>
   <view class="chips">
-    <view wx:for="{{stars}}" wx:key="*this" class="chip {{s.star === index ? 'chip-on' : ''}}" data-idx="{{index}}" bindtap="onStar">{{item}}</view>
+    <view wx:for="{{stars}}" wx:key="*this" class="chip {{s.star === index ? 'chip-on' : ''}}" data-idx="{{index}}" bindtap="onStar"><text>{{item}}</text></view>
   </view>
-  <view class="btn-primary search-btn" bindtap="onSearch">查找酒店</view>
+  <view class="btn-primary search-btn" bindtap="onSearch">{{s.kind === 2 ? '查找钟点房' : '查找酒店'}}</view>
 </view>
-
 <view class="perks">
-  <view class="perk" wx:for="{{perks}}" wx:key="t">
+  <view class="perk" wx:for="{{perks}}" wx:key="t" data-i="{{index}}" bindtap="onPerk">
     <view class="perk-icon" style="background:{{item.bg}}"><text class="perk-glyph">{{item.g}}</text></view>
     <text class="perk-t">{{item.t}}</text>
     <text class="perk-s">{{item.s}}</text>
   </view>
 </view>
-
-<view class="section-title">为你推荐 · 杭州</view>
+<view class="section-title">为你推荐 · {{s.city}}</view>
 <scroll-view scroll-x class="rec-scroll" show-scrollbar="{{false}}">
   <view class="rec-row">
     <view class="rec" wx:for="{{recs}}" wx:key="id" data-id="{{item.id}}" bindtap="onHotel">
-      <image class="rec-img" src="{{item.img}}" mode="aspectFill"></image>
-      <view class="rec-badge">{{item.starText}}</view>
+      <image class="rec-img" src="{{item.img}}" mode="aspectFill" />
+      <view class="rec-badge"><text>{{item.starText}}</text></view>
       <view class="rec-body">
         <text class="rec-name">{{item.name}}</text>
         <view class="row rec-meta"><text class="score">{{item.score}}</text><text class="sub rec-area">{{item.area}}</text></view>
@@ -65,3 +75,35 @@
   </view>
 </scroll-view>
 <view class="gap"></view>
+
+<block wx:if="{{panel}}">
+  <view class="mask" bindtap="closePanel"></view>
+  <view class="sheet pp-dialog" catchtap="noop">
+    <text class="sheet-title">房间与人数</text>
+    <view class="pp-row row between">
+      <view><text class="pp-t">房间</text><text class="sub pp-s">每间至少 1 位成人</text></view>
+      <view class="row">
+        <view class="stp {{pp.rooms <= 1 ? 'stp-off' : ''}}" data-k="rooms" data-d="-1" bindtap="ppStep"><view class="stp-h"></view></view>
+        <text class="stp-n">{{pp.rooms}}</text>
+        <view class="stp {{pp.rooms >= 5 ? 'stp-off' : ''}}" data-k="rooms" data-d="1" bindtap="ppStep"><view class="stp-h"></view><view class="stp-v"></view></view>
+      </view>
+    </view>
+    <view class="pp-row row between">
+      <view><text class="pp-t">成人</text><text class="sub pp-s">18 岁及以上</text></view>
+      <view class="row">
+        <view class="stp {{pp.adults <= pp.rooms ? 'stp-off' : ''}}" data-k="adults" data-d="-1" bindtap="ppStep"><view class="stp-h"></view></view>
+        <text class="stp-n">{{pp.adults}}</text>
+        <view class="stp {{pp.adults >= 10 ? 'stp-off' : ''}}" data-k="adults" data-d="1" bindtap="ppStep"><view class="stp-h"></view><view class="stp-v"></view></view>
+      </view>
+    </view>
+    <view class="pp-row row between">
+      <view><text class="pp-t">儿童</text><text class="sub pp-s">0-17 岁</text></view>
+      <view class="row">
+        <view class="stp {{pp.children <= 0 ? 'stp-off' : ''}}" data-k="children" data-d="-1" bindtap="ppStep"><view class="stp-h"></view></view>
+        <text class="stp-n">{{pp.children}}</text>
+        <view class="stp {{pp.children >= 5 ? 'stp-off' : ''}}" data-k="children" data-d="1" bindtap="ppStep"><view class="stp-h"></view><view class="stp-v"></view></view>
+      </view>
+    </view>
+    <view class="btn-primary pp-ok" bindtap="onPeopleOk">完成</view>
+  </view>
+</block>

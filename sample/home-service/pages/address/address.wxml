@@ -1,0 +1,32 @@
+<view class="wrap">
+  <view class="card ad {{cur === item.id ? 'ad-cur' : ''}}" wx:for="{{list}}" wx:key="id">
+    <view class="row" data-id="{{item.id}}" bindtap="onTap">
+      <view class="col flex1">
+        <view class="row">
+          <text class="tag" wx:if="{{item.tag}}">{{item.tag}}</text>
+          <text class="ad-tx">{{item.full}}</text>
+        </view>
+        <text class="sub">{{item.name}} {{item.phone}}</text>
+      </view>
+      <text class="green" wx:if="{{select && cur === item.id}}">当前</text>
+    </view>
+    <view class="line"></view>
+    <view class="between">
+      <view class="row" data-id="{{item.id}}" bindtap="setDefault">
+        <checkbox checked="{{item.isDefault}}" color="#13a86b"></checkbox>
+        <text class="sub ck-tx">{{item.isDefault ? '默认地址' : '设为默认'}}</text>
+      </view>
+      <view class="row">
+        <text class="op" data-id="{{item.id}}" bindtap="edit">编辑</text>
+        <text class="op" data-id="{{item.id}}" bindtap="remove">删除</text>
+      </view>
+    </view>
+  </view>
+  <view class="empty" wx:if="{{!list.length}}">
+    <text class="empty-tx">还没有服务地址</text>
+  </view>
+  <view class="bar-gap"></view>
+</view>
+<view class="footer-bar">
+  <view class="btn flex1" bindtap="add">+ 新增地址</view>
+</view>

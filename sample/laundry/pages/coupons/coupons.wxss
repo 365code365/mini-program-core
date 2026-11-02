@@ -1,0 +1,15 @@
+.tabs { display: flex; flex-direction: row; background: #ffffff; height: 88rpx; align-items: center; }
+.tab { flex: 1; text-align: center; font-size: 26rpx; color: #4a5260; height: 88rpx; line-height: 88rpx; }
+.tab-on { color: #1e8cf0; font-weight: 600; border-bottom: 4rpx solid #1e8cf0; box-sizing: border-box; }
+.cl { padding: 20rpx 0 4rpx; }
+.cl-t { display: block; font-size: 28rpx; margin-bottom: 4rpx; }
+.cp { margin: 24rpx 24rpx 0; background: #ffffff; border-radius: 20rpx; padding: 24rpx; }
+.cp-l { width: 170rpx; display: flex; flex-direction: column; align-items: center; border-right: 2rpx dashed #ffd0c4; margin-right: 24rpx; }
+.cp-amt { align-items: flex-end; }
+.cp-y { font-size: 26rpx; color: #ff5a36; margin-bottom: 8rpx; }
+.cp-n { font-size: 56rpx; font-weight: 700; color: #ff5a36; }
+.cp-min { font-size: 20rpx; color: #ff7a5a; }
+.cp-t { display: block; font-size: 28rpx; font-weight: 600; margin-bottom: 6rpx; }
+.cp-off .cp-n, .cp-off .cp-y, .cp-off .cp-min { color: #b8bec8; }
+.cp-off .cp-l { border-right: 2rpx dashed #e1e4e9; }
+.cp-go { margin-left: 12rpx; }

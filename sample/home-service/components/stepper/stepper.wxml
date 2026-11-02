@@ -1,0 +1,9 @@
+<view class="st">
+  <view class="st-btn {{value <= min ? 'st-off' : ''}}" data-d="-1" bindtap="change">
+    <text class="st-sym">−</text>
+  </view>
+  <text class="st-val">{{value}}{{unit}}</text>
+  <view class="st-btn {{value >= max ? 'st-off' : ''}}" data-d="1" bindtap="change">
+    <text class="st-sym">+</text>
+  </view>
+</view>

@@ -1,7 +1,5 @@
 const data = require('../../utils/data.js');
-const cart = require('../../utils/cart.js');
-
-const FREE_LINE = 39;
+const store = require('../../utils/store.js');
 
 Page({
   data: {
@@ -25,60 +23,52 @@ Page({
   },
 
   onShow() {
-    this.setData({ address: getApp().globalData.address });
+    const a = store.currentAddr();
+    this.setData({ address: a ? a.detail : '请添加收货地址' });
     this.refresh();
   },
 
   refresh() {
-    const raw = cart.get();
-    let total = 0;
-    let origin = 0;
-    let checkedCount = 0;
-    const list = raw.map(x => {
-      const g = data.findGoods(x.id);
-      const unit = cart.unitPrice(x.id, x.spec);
-      if (x.checked) {
-        total += unit * x.qty;
-        origin += (g.origin + (unit - (data.flashOf(x.id) ? data.flashOf(x.id).price : g.price))) * x.qty;
-        checkedCount += x.qty;
-      }
-      return { key: x.id + '|' + x.spec, id: x.id, name: g.name, img: g.img, spec: x.spec, qty: x.qty,
-        checked: x.checked, unit, flash: !!data.flashOf(x.id) };
-    });
-    total = cart.round2(total);
-    const freeGap = cart.round2(FREE_LINE - total);
+    const raw = store.getCart();
+    const list = raw.map(store.expand);
+    const on = list.filter(x => x.checked);
+    const total = store.round2(on.reduce((n, x) => n + x.total, 0));
+    const origin = store.round2(on.reduce((n, x) => n + (x.origin + (x.unit - (data.flashOf(x.id) ? data.flashOf(x.id).price : data.findGoods(x.id).price))) * x.qty, 0));
+    const freeGap = store.round2(store.FREE_LINE - total);
     const inCart = raw.map(x => x.id);
     const recs = data.goods.filter(g => inCart.indexOf(g.id) < 0).sort((a, b) => b.sales - a.sales).slice(0, 4);
     this.setData({
       list,
       total,
-      saved: cart.round2(origin - total),
-      checkedCount,
+      saved: store.round2(origin - total),
+      checkedCount: on.reduce((n, x) => n + x.qty, 0),
       allChecked: raw.length > 0 && raw.every(x => x.checked),
       freeGap,
-      freeText: total === 0 ? `满 ¥${FREE_LINE} 免运费，不满收 ¥5` : freeGap > 0 ? `再买 ¥${freeGap} 免运费（运费 ¥5）` : '已满 ¥39，本单免运费',
+      freeText: total === 0 ? `满 ¥${store.FREE_LINE} 免运费，不满收 ¥${store.SHIP_FEE}` : freeGap > 0 ? `再买 ¥${freeGap} 免运费（运费 ¥${store.SHIP_FEE}）` : `已满 ¥${store.FREE_LINE}，本单免运费`,
       recs
     });
+    // 自定义 tabBar：微信里每个 tab 页一个实例，选中态与购物车角标要各自设
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) this.getTabBar().setData({ selected: 2, cartCount: store.cartCount(raw) });
   },
 
   onCheck(e) {
-    const raw = cart.get();
+    const raw = store.getCart();
     const i = Number(e.currentTarget.dataset.index);
     raw[i].checked = !raw[i].checked;
-    cart.save(raw);
+    store.saveCart(raw);
     this.refresh();
   },
 
   onCheckAll() {
-    const raw = cart.get();
+    const raw = store.getCart();
     const to = !this.data.allChecked;
     raw.forEach(x => { x.checked = to; });
-    cart.save(raw);
+    store.saveCart(raw);
     this.refresh();
   },
 
   onMinus(e) {
-    const raw = cart.get();
+    const raw = store.getCart();
     const i = Number(e.currentTarget.dataset.index);
     if (raw[i].qty <= 1) {
       wx.showModal({
@@ -88,7 +78,7 @@ Page({
         success: (res) => {
           if (res.confirm) {
             raw.splice(i, 1);
-            cart.save(raw);
+            store.saveCart(raw);
             this.refresh();
           }
         }
@@ -96,15 +86,20 @@ Page({
       return;
     }
     raw[i].qty -= 1;
-    cart.save(raw);
+    store.saveCart(raw);
     this.refresh();
   },
 
   onPlus(e) {
-    const raw = cart.get();
+    const raw = store.getCart();
     const i = Number(e.currentTarget.dataset.index);
+    if (store.flashRoom(raw[i].id, raw) <= 0) {
+      wx.showToast({ title: `秒杀价每单限购 ${data.FLASH_LIMIT} 件`, icon: 'none' });
+      return;
+    }
+    if (raw[i].qty >= 99) return;
     raw[i].qty += 1;
-    cart.save(raw);
+    store.saveCart(raw);
     this.refresh();
   },
 
@@ -112,8 +107,12 @@ Page({
     this.setData({ editing: !this.data.editing });
   },
 
+  onAddress() {
+    wx.navigateTo({ url: '/pages/address/address?select=1' });
+  },
+
   onDelete() {
-    const raw = cart.get();
+    const raw = store.getCart();
     if (!raw.some(x => x.checked)) {
       wx.showToast({ title: '请先勾选商品', icon: 'none' });
       return;
@@ -123,32 +122,21 @@ Page({
       content: `确定删除选中的 ${raw.filter(x => x.checked).length} 种商品吗？`,
       success: (res) => {
         if (!res.confirm) return;
-        cart.save(raw.filter(x => !x.checked));
+        store.saveCart(raw.filter(x => !x.checked));
         this.setData({ editing: false });
         this.refresh();
       }
     });
   },
 
+  // 去结算：勾选的商品写进结算单，结算页下单后再从购物车里移掉
   onSettle() {
     if (!this.data.checkedCount) {
       wx.showToast({ title: '请选择要结算的商品', icon: 'none' });
       return;
     }
-    const fee = this.data.freeGap > 0 ? 5 : 0;
-    wx.showModal({
-      title: '确认下单',
-      content: `共 ${this.data.checkedCount} 件，商品 ¥${this.data.total}，运费 ¥${fee}\n预计 30 分钟内送达 ${this.data.address}`,
-      confirmText: '微信支付',
-      success: (res) => {
-        if (!res.confirm) return;
-        cart.save(cart.get().filter(x => !x.checked));
-        const n = (wx.getStorageSync('fm_order_count') || 0) + 1;
-        wx.setStorageSync('fm_order_count', n);
-        wx.showToast({ title: '下单成功', icon: 'success' });
-        this.refresh();
-      }
-    });
+    store.setCheckout(store.getCart().filter(x => x.checked), 'cart');
+    wx.navigateTo({ url: '/pages/checkout/checkout' });
   },
 
   onGoShop() {
@@ -160,8 +148,8 @@ Page({
   },
 
   onAddRec(e) {
-    cart.add(e.currentTarget.dataset.id, 1);
+    const r = store.addToCart(e.currentTarget.dataset.id, 1);
     this.refresh();
-    wx.showToast({ title: '已加入购物车', icon: 'success' });
+    wx.showToast({ title: r.msg || '已加入购物车', icon: r.msg ? 'none' : 'success' });
   }
 });

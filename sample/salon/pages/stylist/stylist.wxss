@@ -1,0 +1,31 @@
+.head { background: #2d2430; padding: 40rpx 32rpx 80rpx; display: flex; flex-direction: row; align-items: center; }
+.av { width: 140rpx; height: 140rpx; border-radius: 70rpx; border: 4rpx solid #c0846a; margin-right: 24rpx; flex-shrink: 0; }
+.n { font-size: 38rpx; color: #ffffff; font-weight: bold; margin-right: 12rpx; }
+.lv { font-size: 22rpx; color: #2d2430; background: #e8c39e; border-radius: 6rpx; padding: 2rpx 10rpx; }
+.r { margin: 10rpx 0; }
+.sub { color: #cdb9ad; font-size: 24rpx; }
+.fav { font-size: 24rpx; color: #f3d9c6; border: 2rpx solid #8d7468; border-radius: 28rpx; padding: 8rpx 20rpx; flex-shrink: 0; }
+.fav-on { background: #c0846a; border-color: #c0846a; color: #ffffff; }
+.intro { margin-top: -50rpx; position: relative; }
+.it { font-size: 26rpx; line-height: 1.6; color: #4a3d40; display: block; margin-bottom: 16rpx; }
+.tags { flex-wrap: wrap; }
+.tabs { margin: 24rpx 24rpx 0; background: #ffffff; border-radius: 20rpx; padding: 8rpx; }
+.tb { flex: 1; text-align: center; padding: 14rpx 0; font-size: 26rpx; color: #6f625c; border-radius: 14rpx; }
+.tb-on { background: #f8ece4; color: #c0846a; font-weight: bold; }
+.wgrid { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-between; }
+.w { width: 308rpx; margin-bottom: 20rpx; }
+.wimg { width: 308rpx; height: 308rpx; border-radius: 16rpx; }
+.wt { font-size: 24rpx; display: block; margin-top: 8rpx; }
+.sum { margin-bottom: 20rpx; }
+.avg { font-size: 72rpx; font-weight: bold; color: #e8902f; margin-right: 24rpx; }
+.fl { margin-bottom: 12rpx; }
+.fi { font-size: 24rpx; padding: 6rpx 20rpx; border-radius: 24rpx; background: #f6efea; color: #6f625c; margin-right: 16rpx; }
+.fi-on { background: #c0846a; color: #ffffff; }
+.rv { padding: 20rpx 0; border-bottom: 1rpx solid #f3ece8; }
+.ru { font-size: 26rpx; font-weight: bold; margin-right: 12rpx; }
+.rs { margin: 8rpx 0; }
+.rt { font-size: 26rpx; line-height: 1.55; color: #4a3d40; }
+.sv { padding: 18rpx 0; border-bottom: 1rpx solid #f3ece8; }
+.svn { font-size: 28rpx; display: block; margin-bottom: 4rpx; }
+.sv-b { margin-left: 20rpx; }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; background: #ffffff; padding: 20rpx 32rpx calc(20rpx + env(safe-area-inset-bottom)); border-top: 1rpx solid #efe8e3; }

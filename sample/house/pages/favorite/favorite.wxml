@@ -2,10 +2,13 @@
   <view class="seg-item {{tab === 0 ? 'on' : ''}}" bindtap="onTab" data-t="0">收藏房源 {{favs.length}}</view>
   <view class="seg-item {{tab === 1 ? 'on' : ''}}" bindtap="onTab" data-t="1">浏览足迹 {{history.length}}</view>
 </view>
-
+<view class="tip row" wx:if="{{shown.length}}">
+  <text class="sub flex1">长按房源可{{tab === 0 ? '取消收藏' : '删除足迹'}}</text>
+  <text class="clear" wx:if="{{tab === 1}}" bindtap="onClear">清空足迹</text>
+</view>
 <view class="card list" wx:if="{{shown.length}}">
   <view class="h-card" wx:for="{{shown}}" wx:key="id" bindtap="onOpen" data-id="{{item.id}}" bindlongpress="onLong">
-    <image class="h-img" src="{{item.cover}}" mode="aspectFill"></image>
+    <image class="h-img" src="{{item.cover}}" mode="aspectFill" />
     <view class="h-main">
       <text class="h-title">{{item.title}}</text>
       <text class="h-brief">{{item.brief}}</text>
@@ -15,7 +18,8 @@
         <text class="h-price-sub">{{item.priceSub}}</text>
       </view>
       <view class="ops row">
-        <text class="op-tag">{{item.typeText}}</text>
+        <text class="type-tag">{{item.typeText}}</text>
+        <text class="type-tag faved" wx:if="{{tab === 1 && item.faved}}">已收藏</text>
         <view class="flex1"></view>
         <text class="op" wx:if="{{tab === 0}}" catchtap="onRemove" data-id="{{item.id}}">取消收藏</text>
         <text class="op main" catchtap="onBook" data-id="{{item.id}}">约看</text>
@@ -23,12 +27,10 @@
     </view>
   </view>
 </view>
-
 <view class="empty" wx:else>
-  <view class="heart"><image class="heart-img" src="/images/tab-fav-on.png"></image></view>
+  <view class="heart"><image class="heart-img" src="/images/tab-fav-on.png" /></view>
   <text class="empty-title">{{tab === 0 ? '还没有收藏的房源' : '还没有浏览记录'}}</text>
   <text class="sub">看到心仪的房子，点详情页底部的「收藏」</text>
   <view class="go" bindtap="onGo">去逛逛</view>
 </view>
-
 <view class="tab-safe"></view>

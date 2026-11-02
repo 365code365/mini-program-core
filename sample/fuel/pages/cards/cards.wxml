@@ -1,0 +1,64 @@
+<view class="tabs">
+  <text class="tab {{tab === 'card' ? 'tab-on' : ''}}" data-t="card" bindtap="switchTab">电子油卡</text>
+  <text class="tab {{tab === 'coupon' ? 'tab-on' : ''}}" data-t="coupon" bindtap="switchTab">优惠券 {{unusedCount ? '(' + unusedCount + ')' : ''}}</text>
+</view>
+
+<block wx:if="{{tab === 'card'}}">
+  <view class="oc">
+    <text class="oc-brand">易加油电子油卡</text>
+    <text class="oc-k">余额（元）</text>
+    <text class="oc-v">{{balance}}</text>
+    <text class="oc-no">{{card.no}}</text>
+  </view>
+  <view class="card">
+    <text class="sec-title">充值</text>
+    <view class="presets">
+      <view class="pre {{amount === item.v ? 'pre-on' : ''}}" wx:for="{{presets}}" wx:key="v" data-v="{{item.v}}" bindtap="pickPreset">
+        <text class="pre-v">¥{{item.v}}</text>
+        <text class="pre-g">{{item.gift ? '送 ¥' + item.gift : '无赠送'}}</text>
+      </view>
+    </view>
+    <view class="cust">
+      <text class="cust-k">其他金额</text>
+      <input class="cust-in" type="digit" placeholder="50 ~ 5000 元" value="{{custom}}" bindinput="onCustom" maxlength="7" />
+    </view>
+    <text class="err" wx:if="{{err}}">{{err}}</text>
+    <text class="muted rule">充值满 500 送 5 元、满 1000 送 20 元；油卡付款在易加油自营站再享 98 折。余额不可提现。</text>
+    <view class="btn pay" hover-class="btn-hover" bindtap="recharge">充值 ¥{{amount || '0'}}{{giftText}}</view>
+  </view>
+  <view class="card">
+    <text class="sec-title">余额明细</text>
+    <view class="lg" wx:for="{{logs}}" wx:key="at">
+      <view class="lg-mid"><text class="lg-tx">{{item.text}}</text><text class="muted">{{item.time}}</text></view>
+      <text class="lg-v {{item.plus ? 'lg-plus' : ''}}">{{item.plus ? '+' : ''}}{{item.delta}}</text>
+    </view>
+    <text class="muted" wx:if="{{!logs.length}}">暂无明细，充值后可在加油时用油卡付款</text>
+  </view>
+</block>
+
+<block wx:else>
+  <view class="seg">
+    <text class="sg {{cpTab === item.k ? 'sg-on' : ''}}" wx:for="{{cpTabs}}" wx:key="k" data-k="{{item.k}}" bindtap="switchCp">{{item.t}}</text>
+  </view>
+  <view wx:if="{{cpTab === 'center'}}">
+    <view class="cp" wx:for="{{center}}" wx:key="id">
+      <view class="cp-l"><text class="cp-cut">¥{{item.cut}}</text><text class="cp-min">满{{item.min}}可用</text></view>
+      <view class="cp-mid"><text class="cp-title">{{item.title}}</text><text class="muted">领取后 {{item.days}} 天内有效</text></view>
+      <view class="cp-btn {{item.held ? 'cp-btn-off' : ''}}" data-id="{{item.id}}" bindtap="claim"><text class="cp-btn-tx">{{item.held ? '已领取' : '领取'}}</text></view>
+    </view>
+  </view>
+  <view wx:else>
+    <view class="empty" wx:if="{{!mine.length}}">
+      <image class="empty-img" src="/images/misc/empty.png" mode="aspectFit"></image>
+      <text class="empty-tx">{{cpTab === 'unused' ? '没有可用的券，去领券中心看看' : '这里空空的'}}</text>
+    </view>
+    <view class="cp {{item.status !== 'unused' ? 'cp-gray' : ''}}" wx:for="{{mine}}" wx:key="id">
+      <view class="cp-l"><text class="cp-cut">¥{{item.cut}}</text><text class="cp-min">满{{item.min}}可用</text></view>
+      <view class="cp-mid"><text class="cp-title">{{item.title}}</text><text class="muted">{{item.expireText}} 到期</text></view>
+      <view class="cp-btn" wx:if="{{item.status === 'unused'}}" bindtap="useNow"><text class="cp-btn-tx">去使用</text></view>
+      <text class="cp-st" wx:else>{{item.status === 'used' ? '已使用' : '已过期'}}</text>
+    </view>
+  </view>
+</block>
+
+<cashier show="{{cashier}}" amount="{{payAmount}}" order-no="{{orderNo}}" card-balance="{{-1}}" bind:paid="onPaid" bind:cancel="onPayCancel"></cashier>

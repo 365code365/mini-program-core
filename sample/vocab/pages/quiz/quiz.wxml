@@ -1,0 +1,62 @@
+<view class="wrap">
+  <view class="seg row">
+    <view class="seg-it {{mode === 'choice' ? 'seg-on' : ''}}" data-m="choice" bindtap="onMode"><text>四选一</text></view>
+    <view class="seg-it {{mode === 'spell' ? 'seg-on' : ''}}" data-m="spell" bindtap="onMode"><text>拼写</text></view>
+  </view>
+
+  <view class="empty" wx:if="{{loading}}"><text class="empty-tx">正在出题…</text></view>
+
+  <view class="empty" wx:elif="{{empty}}">
+    <view class="empty-ic"><text>✓</text></view>
+    <text class="empty-tx">{{srcName}}里没有可以测的词</text>
+    <view class="btn e-btn" hover-class="btn-press" bindtap="goLearn">去学新词</view>
+  </view>
+
+  <block wx:elif="{{!done}}">
+    <view class="between pg">
+      <text class="muted">第 {{i + 1}} / {{qs.length}} 题 · 来自{{srcName}}</text>
+      <text class="muted">答对 {{score}}</text>
+    </view>
+    <progress percent="{{(i + 1) * 100 / qs.length}}" stroke-width="6" activeColor="#4f6bed" backgroundColor="#e6eaf7" border-radius="3"></progress>
+
+    <view class="qcard" wx:if="{{mode === 'choice'}}">
+      <text class="qw">{{q.item.w}}</text>
+      <view class="row"><text class="ph">{{q.item.ph}}</text><view class="speaker" bindtap="onSpeak"><text>🔊</text></view></view>
+      <view class="opts">
+        <view wx:for="{{q.opts}}" wx:key="w" data-k="{{index}}" bindtap="onPick" hover-class="btn-press"
+              class="opt {{picked >= 0 && index === q.answer ? 'opt-ok' : ''}} {{picked === index && index !== q.answer ? 'opt-bad' : ''}}">
+          <text class="opt-k">{{item.k}}</text><text class="opt-tx">{{item.mean}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="qcard" wx:else>
+      <text class="muted">根据释义拼写单词</text>
+      <text class="qmean">{{q.item.mean}}</text>
+      <view class="row"><text class="ph">{{q.item.ph}}</text><view class="speaker" bindtap="onSpeak"><text>🔊</text></view></view>
+      <text class="hint">提示：{{q.hint}}（{{q.len}} 个字母）</text>
+      <input class="spell {{spellState === 'ok' ? 'spell-ok' : ''}} {{spellState === 'bad' ? 'spell-bad' : ''}}" value="{{spell}}" placeholder="输入单词" maxlength="20"
+             confirm-type="done" bindinput="onSpellInput" bindconfirm="onSpellSubmit" disabled="{{!!spellState}}"></input>
+      <view class="fb fb-ok" wx:if="{{spellState === 'ok'}}"><text class="fb-tx">拼对了！{{q.item.w}}</text></view>
+      <view class="fb fb-bad" wx:if="{{spellState === 'bad'}}"><text class="fb-tx">正确拼写：{{q.item.w}}</text></view>
+      <view class="row sp-ops">
+        <view class="btn-ghost sp-half" hover-class="btn-press" bindtap="onSkip">{{spellState ? '下一题' : '不会，看答案'}}</view>
+        <view class="btn sp-half" hover-class="btn-press" bindtap="onSpellSubmit">{{spellState ? '下一题' : '提交'}}</view>
+      </view>
+    </view>
+  </block>
+
+  <view class="card result" wx:if="{{done}}">
+    <text class="h1">本轮得分 {{score}} / {{qs.length}}</text>
+    <text class="muted r-sub">{{score === qs.length ? '全部答对，太稳了！' : '答错的词已放进错题本，过几天再来巩固'}}</text>
+    <view class="wl" wx:if="{{wrongList.length}}">
+      <view class="wl-it between" wx:for="{{wrongList}}" wx:key="w" data-w="{{item.w}}" bindtap="goWord">
+        <text class="wl-w">{{item.w}}</text><text class="muted">{{item.mean}}</text>
+      </view>
+    </view>
+    <view class="row r-ops">
+      <view class="btn-ghost r-half" hover-class="btn-press" bindtap="goWrong">查看错题本</view>
+      <view class="btn r-half" hover-class="btn-press" bindtap="onAgain">再测一轮</view>
+    </view>
+  </view>
+</view>

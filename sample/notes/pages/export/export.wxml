@@ -1,0 +1,34 @@
+<view class="row between head">
+  <text class="sec-t">选择笔记（{{selected.length}}/{{notes.length}}）</text>
+  <text class="all" bindtap="onAll">{{selected.length === notes.length ? '全不选' : '全选'}}</text>
+</view>
+<view class="card">
+  <checkbox-group class="pick-group" bindchange="onPick">
+    <label class="pick row" wx:for="{{notes}}" wx:key="id">
+      <checkbox class="pick-cb" value="{{item.id}}" checked="{{item.on}}" color="#f5a623" />
+      <text class="flex1 pick-title">{{item.title}}</text>
+      <text class="sub">{{item.time}}</text>
+    </label>
+  </checkbox-group>
+  <text class="sub" wx:if="{{!notes.length}}">没有可导出的笔记</text>
+</view>
+<text class="sec-t pad">格式</text>
+<view class="card">
+  <radio-group class="fmt-group" bindchange="onFormat">
+    <label class="fmt row" wx:for="{{formats}}" wx:key="key">
+      <radio class="fmt-rd" value="{{item.key}}" checked="{{format === item.key}}" color="#f5a623" />
+      <text class="fmt-name">{{item.name}}</text>
+    </label>
+  </radio-group>
+</view>
+<text class="sec-t pad">预览 · {{size}} 字符</text>
+<view class="card">
+  <scroll-view class="preview" scroll-y>
+    <text class="preview-text">{{preview || '（未选择笔记）'}}</text>
+  </scroll-view>
+</view>
+<view class="row btns">
+  <view class="btn flex1 import" bindtap="onImport">从剪贴板导入</view>
+  <view class="btn btn-primary flex1 copy" bindtap="onCopy">复制到剪贴板</view>
+</view>
+<view class="safe"></view>

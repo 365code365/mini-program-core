@@ -1,0 +1,61 @@
+<view class="head" style="background: {{theme.color}};">
+  <text class="h-name">{{item.name}}</text>
+  <view class="row h-tags">
+    <text class="h-tag">{{item.level}}</text>
+    <text class="h-tag">{{theme.name}}</text>
+    <text class="h-tag">事项编码 {{item.id}}</text>
+  </view>
+  <text class="h-dept">实施主体：云川{{item.dept}}</text>
+</view>
+
+<view class="card info">
+  <view class="kv"><text class="k">承诺时限</text><text class="v">{{item.promise ? item.promise + ' 个工作日' : '即时办结'}}</text></view>
+  <view class="kv"><text class="k">法定时限</text><text class="v">{{item.legal ? item.legal + ' 个工作日' : '当场办结'}}</text></view>
+  <view class="kv"><text class="k">到场次数</text><text class="v">{{item.visits}} 次</text></view>
+  <view class="kv"><text class="k">收费标准</text><text class="v">{{item.fee}}</text></view>
+  <view class="kv"><text class="k">办理地点</text><text class="v">{{item.window}}</text></view>
+</view>
+
+<view class="tabs row">
+  <text class="tb-i {{tab === 'cond' ? 'on' : ''}}" data-t="cond" bindtap="switchTab">办理条件</text>
+  <text class="tb-i {{tab === 'mat' ? 'on' : ''}}" data-t="mat" bindtap="switchTab">所需材料 {{item.materials.length}}</text>
+  <text class="tb-i {{tab === 'flow' ? 'on' : ''}}" data-t="flow" bindtap="switchTab">办理流程</text>
+</view>
+
+<view class="card" wx:if="{{tab === 'cond'}}">
+  <view class="cond row" wx:for="{{item.conditions}}" wx:key="*this">
+    <text class="cond-n">{{index + 1}}</text><text class="cond-t">{{item}}</text>
+  </view>
+</view>
+
+<view class="card" wx:if="{{tab === 'mat'}}">
+  <view class="mat" wx:for="{{item.materials}}" wx:key="name">
+    <view class="row between">
+      <text class="mat-n">{{item.name}}</text>
+      <text class="tag {{item.required ? 'req' : 'opt'}}">{{item.required ? '必交' : '容缺'}}</text>
+    </view>
+    <text class="muted">{{item.copies}}{{item.note ? ' · ' + item.note : ''}}</text>
+  </view>
+</view>
+
+<view class="card flow" wx:if="{{tab === 'flow'}}">
+  <block wx:for="{{item.steps}}" wx:for-item="s" wx:key="*this">
+    <view class="fl-node" style="border-color: {{theme.color}};">
+      <view class="fl-n" style="background: {{theme.color}};">{{index + 1}}</view>
+      <text class="fl-t">{{s}}</text>
+    </view>
+    <view class="fl-link" wx:if="{{index < item.steps.length - 1}}">
+      <view class="fl-line" style="background: {{theme.color}};"></view>
+      <view class="fl-head" style="border-top-color: {{theme.color}};"></view>
+    </view>
+  </block>
+  <text class="muted fl-tip">全程约 {{item.promise ? item.promise + ' 个工作日' : '即时办结'}}，可在「我的办件」查看每个环节的处理时间</text>
+</view>
+
+<view class="safe-bar"></view>
+<view class="bar row">
+  <view class="bar-i" bindtap="toggleFav"><text class="star {{fav ? 'on' : ''}}">{{fav ? '★' : '☆'}}</text><text>{{fav ? '已收藏' : '收藏'}}</text></view>
+  <view class="bar-i" bindtap="download"><icon type="download" size="20" color="#5b6575"></icon><text>指南</text></view>
+  <view class="btn ghost bar-b" hover-class="tap" bindtap="appoint">预约取号</view>
+  <view class="btn bar-b" hover-class="tap" bindtap="apply">{{item.online ? '在线申报' : '窗口办理'}}</view>
+</view>

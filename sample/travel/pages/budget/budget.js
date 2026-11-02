@@ -14,13 +14,14 @@ function cleanMoney(v) {
 }
 
 Page({
-  data: { total: '', items: [], sumText: '0', leftText: '0', pct: 0, over: false, overText: '', perText: '0', people: 1, segs: [] },
+  data: { rec: null, records: [], actual: [], spentText: '0', spentNote: '', spentOver: false, dayNames: [], total: '', items: [], sumText: '0', leftText: '0', pct: 0, over: false, overText: '', perText: '0', people: 1, segs: [] },
   onLoad(q) {
     this.id = q.id || (T.all()[0] || {}).id;
     if (!this.id) return;
     this.trip = T.get(this.id);
     this.vals = Object.assign({}, this.trip.budget.items);
-    this.setData({ total: this.trip.budget.total || '', people: this.trip.people });
+    const dayNames = this.trip.plan.map((d, i) => '第' + (i + 1) + '天 ' + T.md(T.addDays(this.trip.start, i)));
+    this.setData({ total: this.trip.budget.total || '', people: this.trip.people, dayNames });
     this.calc();
   },
   onUnload() { this.persist(); },
@@ -40,6 +41,54 @@ Page({
       leftText: T.money(Math.max(0, total - sum)), overText: over ? T.money(sum - total) : '',
       perText: T.money(sum / this.data.people),
       segs: items.filter(i => i.w > 0).map(i => ({ k: i.k, color: i.color, w: i.w }))
+    });
+    this.calcSpent();
+  },
+  // —— 记账：实际花费与计划对比 ——
+  calcSpent() {
+    const t = T.get(this.id);
+    const by = T.expenseByCat(t);
+    const spent = T.expenseSum(t);
+    const total = Number(this.data.total || 0);
+    const actual = BUDGET_ITEMS.map(b => {
+      const plan = Number(this.vals[b.k] || 0);
+      const v = by[b.k] || 0;
+      return { k: b.k, t: b.t, color: b.color, spent: T.money(v), plan: plan ? T.money(plan) : '', over: plan > 0 && v > plan };
+    });
+    const names = this.data.dayNames || [];
+    const records = T.expenses(t).map(e => {
+      const b = BUDGET_ITEMS.find(x => x.k === e.k) || BUDGET_ITEMS[5];
+      return { id: e.id, t: b.t, color: b.color, note: e.note, amountText: T.money(e.amount), dayText: (names[e.day] || '').trim() };
+    });
+    let spentNote = '还没设总预算';
+    if (total) spentNote = spent > total ? '超出总预算 ¥' + T.money(spent - total) : '总预算还剩 ¥' + T.money(total - spent);
+    this.setData({ actual, records, spentText: T.money(spent), spentOver: total > 0 && spent > total, spentNote });
+  },
+  openRec() {
+    // 默认记到「今天」所在的那一天（还没出发 / 已结束就记第 1 天）
+    const d = T.diff(this.trip.start, T.toStr(T.today()));
+    const day = d >= 0 && d < this.trip.plan.length ? d : 0;
+    this.setData({ rec: { k: 'food', amount: '', note: '', day } });
+  },
+  closeRec() { this.setData({ rec: null }); },
+  noop() {},
+  onRecCat(e) { this.setData({ 'rec.k': e.currentTarget.dataset.k }); },
+  onRecAmount(e) { const v = cleanMoney(e.detail.value); this.setData({ 'rec.amount': v }); return v; },
+  onRecNote(e) { this.setData({ 'rec.note': e.detail.value.slice(0, 20) }); },
+  onRecDay(e) { this.setData({ 'rec.day': Number(e.detail.value) }); },
+  saveRec() {
+    const r = this.data.rec;
+    if (!(Number(r.amount) > 0)) { wx.showToast({ title: '请输入金额', icon: 'none' }); return; }
+    T.addExpense(this.id, { k: r.k, amount: r.amount, note: r.note.trim(), day: r.day, at: T.toStr(T.today()) });
+    this.setData({ rec: null });
+    this.calcSpent();
+    wx.showToast({ title: '已记账 ¥' + T.money(r.amount), icon: 'none' });
+  },
+  delRec(e) {
+    const id = e.currentTarget.dataset.id;
+    wx.showModal({
+      title: '删除这笔记账', content: '删除后实际花费会相应减少', confirmText: '删除', confirmColor: '#f5222d',
+      success: r => { if (r.confirm) { T.removeExpense(this.id, id); this.calcSpent(); } }
     });
   },
   onTotal(e) {

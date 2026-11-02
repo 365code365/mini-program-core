@@ -21,11 +21,11 @@ Page({
       { text: '二手房', glyph: '二', bg: 'linear-gradient(135deg, #ffa95c, #ff6a1f)', type: 'second' },
       { text: '新房', glyph: '新', bg: 'linear-gradient(135deg, #6aa1ff, #2f6bff)', type: 'new' },
       { text: '租房', glyph: '租', bg: 'linear-gradient(135deg, #4fd6a2, #19a974)', type: 'rent' },
-      { text: '地图找房', glyph: '图', bg: 'linear-gradient(135deg, #b18cff, #7c4dff)' },
-      { text: '房贷计算', glyph: '算', bg: 'linear-gradient(135deg, #ff8fa3, #f2456b)' },
-      { text: '查房价', glyph: '价', bg: 'linear-gradient(135deg, #ffd35c, #f5a300)' },
-      { text: '卖房估价', glyph: '估', bg: 'linear-gradient(135deg, #5fd3e6, #1a9fc0)' },
-      { text: '我的预约', glyph: '约', bg: 'linear-gradient(135deg, #9aa7bd, #5f6b80)' }
+      { text: '地图找房', glyph: '图', bg: 'linear-gradient(135deg, #b18cff, #7c4dff)', url: '/pages/map/map' },
+      { text: '房贷计算', glyph: '算', bg: 'linear-gradient(135deg, #ff8fa3, #f2456b)', url: '/pages/calc/calc' },
+      { text: '查房价', glyph: '价', bg: 'linear-gradient(135deg, #ffd35c, #f5a300)', url: '/pages/price/price' },
+      { text: '卖房估价', glyph: '估', bg: 'linear-gradient(135deg, #5fd3e6, #1a9fc0)', url: '/pages/sell/sell' },
+      { text: '我的预约', glyph: '约', bg: 'linear-gradient(135deg, #9aa7bd, #5f6b80)', url: '/pages/bookings/bookings' }
     ],
     houses: []
   },
@@ -35,8 +35,7 @@ Page({
   },
 
   onShow() {
-    const tb = this.getTabBar && this.getTabBar()
-    if (tb) tb.setData({ selected: 0 })
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) this.getTabBar().setData({ selected: 0 })
   },
 
   refresh() {
@@ -48,9 +47,12 @@ Page({
   },
 
   onCity(e) {
+    // 房源只覆盖杭州：选了别的城市就说明一下、留在杭州（标题与列表保持一致）
     const i = Number(e.detail.value)
-    this.setData({ cityIndex: i })
-    if (i !== 0) wx.showToast({ title: this.data.cities[i] + '房源整理中，先看看杭州吧', icon: 'none' })
+    if (i !== 0) {
+      wx.showModal({ title: this.data.cities[i], content: '安居找房目前只有杭州的房源，其他城市的经纪门店还在入驻。', showCancel: false, confirmText: '看杭州', confirmColor: '#ff5a1f' })
+    }
+    this.setData({ cityIndex: 0 })
   },
 
   onKw(e) {
@@ -75,21 +77,12 @@ Page({
 
   onEntry(e) {
     const it = this.data.entries[Number(e.currentTarget.dataset.i)]
-    if (it.type) {
-      wx.navigateTo({ url: '/pages/list/list?type=' + it.type })
-    } else if (it.text === '房贷计算') {
-      // 商贷 300 万 30 年 等额本息 LPR 3.5%
-      const r = 0.035 / 12
-      const n = 360
-      const pay = Math.round(3000000 * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1))
-      wx.showModal({ title: '房贷计算', content: '商贷 300 万 · 30 年 · 利率 3.5%\n等额本息 月供 ' + pay + ' 元', showCancel: false, confirmColor: '#ff5a1f' })
-    } else if (it.text === '我的预约') {
-      wx.switchTab({ url: '/pages/mine/mine' })
-    } else {
-      wx.showToast({ title: it.text + ' 即将上线', icon: 'none' })
-    }
+    if (it.type) wx.navigateTo({ url: '/pages/list/list?type=' + it.type })
+    else wx.navigateTo({ url: it.url })
   },
-
+  onMarket() {
+    wx.navigateTo({ url: '/pages/price/price' })
+  },
   onMore() {
     wx.navigateTo({ url: '/pages/list/list?type=' + this.data.type })
   },

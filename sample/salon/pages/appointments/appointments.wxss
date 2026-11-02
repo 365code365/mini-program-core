@@ -1,0 +1,26 @@
+.ap-tabs { display: flex; flex-direction: row; background: #ffffff; }
+.ap-tab { flex: 1; text-align: center; padding: 26rpx 0; color: #6f625c; position: relative; }
+.ap-tab.on { color: #2d2430; font-weight: bold; }
+.ap-line { position: absolute; left: 50%; bottom: 8rpx; width: 40rpx; margin-left: -20rpx; height: 6rpx; border-radius: 3rpx; background: #c0846a; }
+.ap-date { font-size: 30rpx; font-weight: bold; }
+.ap-st { font-size: 22rpx; padding: 4rpx 12rpx; border-radius: 8rpx; }
+.st-upcoming { color: #a0694f; background: #f8ece4; }
+.st-done { color: #12a150; background: #e8f8ee; }
+.st-cancelled { color: #8a8a8a; background: #f2f2f2; }
+.ap-body { margin-top: 20rpx; }
+.ap-av { width: 88rpx; height: 88rpx; border-radius: 44rpx; margin-right: 20rpx; flex-shrink: 0; }
+.ap-svc { display: block; font-size: 28rpx; margin-bottom: 6rpx; }
+.ap-code { margin-top: 20rpx; background: #faf6f3; border-radius: 12rpx; padding: 14rpx 20rpx; font-size: 24rpx; color: #6f625c; }
+.ap-cn { font-size: 32rpx; font-weight: bold; color: #2d2430; letter-spacing: 6rpx; margin-left: 10rpx; }
+.ap-review { margin-top: 16rpx; display: flex; flex-direction: row; align-items: center; }
+.ap-rt { font-size: 24rpx; color: #6f625c; margin-left: 12rpx; flex: 1; min-width: 0; }
+.ap-ops { justify-content: flex-end; margin-top: 24rpx; }
+.ap-gap { margin-left: 16rpx; }
+.ap-eb { padding: 0 60rpx; }
+.ap-mask { position: fixed; left: 0; top: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.45); z-index: 90; }
+.ap-sheet { position: fixed; left: 0; right: 0; bottom: 0; background: #ffffff; border-radius: 32rpx 32rpx 0 0; padding: 36rpx 32rpx calc(36rpx + env(safe-area-inset-bottom)); z-index: 91; }
+.ap-stars { margin: 28rpx 0 20rpx; }
+.ap-tags { flex-wrap: wrap; }
+.ap-tag { font-size: 24rpx; padding: 10rpx 22rpx; border-radius: 30rpx; background: #f6f1ee; color: #6f625c; margin: 0 16rpx 16rpx 0; }
+.ap-tag.on { background: #c0846a; color: #ffffff; }
+.ap-ta { width: 100%; height: 160rpx; background: #faf6f3; border-radius: 12rpx; padding: 16rpx; box-sizing: border-box; font-size: 26rpx; margin-bottom: 28rpx; }

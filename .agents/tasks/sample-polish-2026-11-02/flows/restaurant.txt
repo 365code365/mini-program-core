@@ -1,0 +1,222 @@
+# 禾味食堂：每页能开；扫码（宿主没有扫码能力 → 页内取景框 / 手动输入 / 选桌）→ 规格点餐 → 打包 / 备注 → 饭卡支付 → 催单 → 开做前取消（退回饭卡）
+# → 再来一单 → 微信支付 → 加菜 → 出餐 → 取餐 → 评价 → 余额不足去充值再回来付 → 我的（饭卡明细 / 满减 / 帮助与反馈 / 联系食堂 / 离桌 / 清数据）→ 扫码直达
+smoke pages/pay/pay?id=none pages/progress/progress?id=H101 pages/card/card?need=1200
+
+# 选桌：格式校验、占用的桌点不了、点空桌
+open
+type .input => d1
+tap .small-btn
+expect getCurrentPages()[0].data.error.indexOf('格式应为') === 0 && getCurrentPages()[0].data.canConfirm === false
+tapn 2 .tb
+toast A03 已占用
+tapn 4 .tb
+expect getCurrentPages()[0].data.selected === 'A05' && getCurrentPages()[0].data.input === 'A05' && getCurrentPages()[0].data.inputSeq === 1 && getCurrentPages()[0].data.error === ''
+# 扫码：wx.scanCode 在本地 fail（不是用户取消）→ 页内取景框，识别演示桌贴 → B06
+tap .scan-btn
+expect getCurrentPages()[0].data.scanning === true
+shot target/_polish_shots/rs-scan-layer.png
+wait 1800
+expect getCurrentPages()[0].data.scanning === false && getCurrentPages()[0].data.selected === 'B06' && getCurrentPages()[0].data.zoneIdx === 1
+toast 识别成功：B06
+# 取景框里也能改成手动输入
+tap .scan-btn
+tap .scan-manual
+expect getCurrentPages()[0].data.scanning === false && getCurrentPages()[0].data.inputFocus === true
+blur
+wait 1800
+expect getCurrentPages()[0].data.selected === 'B06'
+shot target/_polish_shots/rs-scan.png
+tap .bottom .btn
+route pages/menu/menu
+expect getCurrentPages()[0].data.table === 'B06'
+
+# 点餐：招牌小炒黄牛肉 大份 + 特辣 + 加煎蛋；手撕包菜、番茄炒蛋各 1
+tapn 0 .spec-btn
+expect getCurrentPages()[0].data.spec.id === 'd01'
+tapn 2 .opt
+tapn 6 .opt
+tapn 7 .opt
+expect getCurrentPages()[0].data.spec && getCurrentPages()[0].data.sizeId === 'l' && getCurrentPages()[0].data.spicy === '特辣' && getCurrentPages()[0].data.specPrice === '32'
+tap .spec-add
+expect getCurrentPages()[0].data.spec === null && getCurrentPages()[0].data.sum.count === 1
+tapn 1 .cat
+wait 400
+tapn 0 .step-btn
+tapn 2 .step-btn
+expect getCurrentPages()[0].data.sum.amount === 5500 && getCurrentPages()[0].data.sum.discount === 500 && getCurrentPages()[0].data.sum.count === 3
+tap .bag
+count 3 .ci
+shot target/_polish_shots/rs-menu-cart.png
+tap .bag
+tap .cb-go
+route pages/confirm/confirm
+
+# 确认：打包（每份 1 元）+ 快捷备注
+tapn 1 .seg-i
+tapn 0 .tag
+expect getCurrentPages().slice(-1)[0].data.dine === '打包' && getCurrentPages().slice(-1)[0].data.payText === '53'
+expect getCurrentPages().slice(-1)[0].data.remark === '少放辣' && getCurrentPages().slice(-1)[0].data.remarkSeq === 1
+shot target/_polish_shots/rs-confirm.png
+tap .submit
+wait 800
+route pages/pay/pay
+expect getCurrentPages().slice(-1)[0].data.payText === '53' && getCurrentPages().slice(-1)[0].data.balanceEnough === true
+
+# 饭卡支付：确认 → 扣款记账
+tapn 1 .pm
+expect getCurrentPages().slice(-1)[0].data.method === 'card'
+tap .actions .btn
+modal?
+modal ok
+wait 300
+route pages/progress/progress
+expect wx.getStorageSync('rs_balance') === 3350 && wx.getStorageSync('rs_card_log')[0].amount === -5300
+expect getCurrentPages().slice(-1)[0].data.stage === 0 && getCurrentPages().slice(-1)[0].data.canCancel === true && getCurrentPages().slice(-1)[0].data.o.payMethod === '饭卡'
+# 催单：催一次成功，马上再催被拦
+tap .act-urge
+toast 已提醒后厨加急
+expect getCurrentPages().slice(-1)[0].data.urged !== '' && wx.getStorageSync('rs_orders')[0].urgeCount === 1
+tap .act-urge
+toast 刚催过了
+shot target/_polish_shots/rs-progress-going.png
+# 后厨开做前取消：钱退回饭卡
+tap .act-cancel
+modal?
+modal ok
+expect getCurrentPages().slice(-1)[0].data.o.status === 'canceled' && getCurrentPages().slice(-1)[0].data.o.cancelReason.indexOf('已退回饭卡') > 0
+expect wx.getStorageSync('rs_balance') === 8650 && wx.getStorageSync('rs_card_log')[0].type === 'refund'
+shot target/_polish_shots/rs-progress-canceled.png
+tap .act-again
+route pages/menu/menu
+expect getCurrentPages()[0].data.sum.count === 3
+
+# 第二单：堂食、微信支付（宿主没有支付能力：退回页内确认框）
+tap .cb-go
+route pages/confirm/confirm
+expect getCurrentPages().slice(-1)[0].data.payText === '50'
+tap .submit
+wait 800
+route pages/pay/pay
+tap .actions .btn
+modal?
+modal ok
+wait 300
+route pages/progress/progress
+expect getCurrentPages().slice(-1)[0].data.o.payMethod === '微信支付' && wx.getStorageSync('rs_balance') === 8650
+# 加菜：回点餐页，桌号不变
+tap .act-add
+route pages/menu/menu
+expect getCurrentPages()[0].data.table === 'B06'
+eval wx.switchTab({ url: '/pages/orders/orders' })
+route pages/orders/orders
+tapn 1 .tab
+count 1 .order
+tap .order
+route pages/progress/progress
+# 时间往后拨 50 秒：出餐 → 我已取餐 → 评价
+eval (function () { var l = wx.getStorageSync('rs_orders'); l[0].paidAt -= 50000; wx.setStorageSync('rs_orders', l); getCurrentPages().slice(-1)[0].render(true); })()
+expect getCurrentPages().slice(-1)[0].data.canPickup === true && getCurrentPages().slice(-1)[0].data.canCancel === false
+tap .act-pickup
+modal ok
+expect getCurrentPages().slice(-1)[0].data.o.status === 'done'
+wait 500
+tapn 3 .star
+expect getCurrentPages().slice(-1)[0].data.stars === 4
+tapn 1 .tag
+type .rate-input => 牛肉很嫩，出餐也快
+blur
+tap .rate-btn
+toast 感谢评价
+expect getCurrentPages().slice(-1)[0].data.rating.stars === 4 && getCurrentPages().slice(-1)[0].data.rating.tags[0] === '分量足'
+expect wx.getStorageSync('rs_orders')[0].rating.text === '牛肉很嫩，出餐也快'
+shot target/_polish_shots/rs-progress-rated.png
+
+# 第三单：牛肉加到 3 份（¥107 > 饭卡 ¥86.5）→ 饭卡余额不足 → 去充值 → 够了自动回来 → 饭卡支付
+tap .act-again
+route pages/menu/menu
+tap .bag
+tapn 1 .ci .step-btn
+tapn 1 .ci .step-btn
+expect getCurrentPages()[0].data.sum.amount === 11900 && getCurrentPages()[0].data.sum.pay === 10700
+tap .bag
+tap .cb-go
+route pages/confirm/confirm
+tap .submit
+wait 800
+route pages/pay/pay
+tapn 1 .pm
+modal?
+modal ok
+route pages/card/card
+expect getCurrentPages().slice(-1)[0].data.need === 2050 && getCurrentPages().slice(-1)[0].data.pick === 0
+shot target/_polish_shots/rs-card-need.png
+tap .go
+modal?
+modal ok
+wait 1400
+route pages/pay/pay
+expect wx.getStorageSync('rs_balance') === 13650 && getCurrentPages().slice(-1)[0].data.balanceEnough === true
+tapn 1 .pm
+tap .actions .btn
+modal ok
+wait 300
+route pages/progress/progress
+expect wx.getStorageSync('rs_balance') === 2950 && getCurrentPages().slice(-1)[0].data.o.payMethod === '饭卡'
+
+# 我的：饭卡明细 / 满减 / 帮助与反馈 / 联系食堂 / 离开餐桌 / 清除数据
+eval wx.switchTab({ url: '/pages/mine/mine' })
+route pages/mine/mine
+expect getCurrentPages()[0].data.balanceText === '29.5' && getCurrentPages()[0].data.orders === 13
+shot target/_polish_shots/rs-mine.png
+tapn 1 .stat
+route pages/card/card
+expect getCurrentPages().slice(-1)[0].data.logs[0].type === 'pay' && getCurrentPages().slice(-1)[0].data.logs[1].type === 'recharge' && getCurrentPages().slice(-1)[0].data.logs[2].type === 'refund'
+shot target/_polish_shots/rs-card.png
+back
+tapn 2 .stat
+modal?
+modal cancel
+nomodal
+tap .cell-help
+route pages/help/help
+tapn 1 .q-row
+expect getCurrentPages().slice(-1)[0].data.faqs[1].open === true
+tap .fb-btn
+toast 请选择反馈类型
+tapn 0 .type
+tap .fb-btn
+toast 至少写 5 个字
+type .fb-text => 番茄炒蛋偏甜，希望少放点糖
+blur
+tap .fb-btn
+toast 已提交
+expect wx.getStorageSync('rs_feedback').length === 1 && getCurrentPages().slice(-1)[0].data.seq === 1 && getCurrentPages().slice(-1)[0].data.text === ''
+count 1 .fb
+shot target/_polish_shots/rs-help.png
+tap .call
+modal?
+modal ok
+back
+expect getCurrentPages()[0].data.feedback === 1
+tap .cell-call
+modal?
+modal ok
+tapn 0 .cell-last
+modal ok
+expect getCurrentPages()[0].data.table === '' && wx.getStorageSync('rs_table') === ''
+tapn 1 .cell-last
+modal ok
+expect getCurrentPages()[0].data.balanceText === '86.5' && getCurrentPages()[0].data.orders === 11 && getCurrentPages()[0].data.feedback === 0
+
+# 微信里扫桌贴小程序码直接打开首页（?table=C02）；扫到别家的二维码报认不出
+open pages/scan/scan?table=C02
+expect getCurrentPages()[0].data.selected === 'C02' && getCurrentPages()[0].data.zoneIdx === 2
+# （onLoad 里弹的 toast 早于探针装钩子，记不进 __ui；日志里有「[Toast] 已识别桌号：C02」）
+eval getCurrentPages()[0].useScanned('https://pay.example.com/qr?id=9')
+modal?
+modal ok
+expect getCurrentPages()[0].data.selected === 'C02'
+tap .bottom .btn
+route pages/menu/menu
+expect wx.getStorageSync('rs_table') === 'C02'
+noerr

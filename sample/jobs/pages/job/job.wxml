@@ -1,6 +1,9 @@
 <view class="head card">
   <text class="j-title">{{job.title}}</text>
-  <text class="j-salary">{{job.salary}}</text>
+  <view class="row between">
+    <text class="j-salary">{{job.salary}}</text>
+    <view class="share" bindtap="onShare"><text class="share-t">分享职位</text></view>
+  </view>
   <view class="row meta">
     <view class="meta-item row"><view class="ic ic-pin"></view><text class="meta-t">{{job.city}}·{{job.area}}</text></view>
   </view>
@@ -11,7 +14,7 @@
 </view>
 
 <view class="card row hr">
-  <view class="avatar big" style="background: {{job.hrInfo.bg}}">{{job.hrInfo.ch}}</view>
+  <view class="avatar big" style="background: {{job.hrInfo.bg}}"><text>{{job.hrInfo.ch}}</text></view>
   <view class="col flex1 hr-info">
     <view class="row">
       <text class="hr-name">{{job.hrInfo.name}}</text>
@@ -36,16 +39,20 @@
 </view>
 
 <view class="card row co" bindtap="onCompany">
-  <view class="logo" style="background: {{job.co.color}}">{{job.co.short}}</view>
+  <view class="logo" style="background: {{job.co.color}}"><text>{{job.co.short}}</text></view>
   <view class="col flex1 co-info">
     <text class="co-name">{{job.co.name}}</text>
     <text class="sub">{{job.co.industry}}·{{job.co.stage}}·{{job.co.size}}</text>
   </view>
+  <text class="sub follow-tip" wx:if="{{followed}}">已关注</text>
   <view class="chev"></view>
 </view>
 
-<view class="card">
-  <text class="section-title">工作地点</text>
+<view class="card loc" bindtap="onMap">
+  <view class="row between">
+    <text class="section-title">工作地点</text>
+    <view class="row"><text class="sub">查看地图</text><view class="chev"></view></view>
+  </view>
   <view class="mini-map">
     <view class="road r1"></view><view class="road r2"></view><view class="road r3"></view>
     <view class="pin"><view class="pin-dot"></view></view>
@@ -59,5 +66,6 @@
     <view class="star {{fav ? 'on' : ''}}"></view>
     <text class="fav-t {{fav ? 'blue' : ''}}">{{fav ? '已收藏' : '收藏'}}</text>
   </view>
-  <view class="btn-primary flex1 {{applied ? 'done' : ''}}" bindtap="onApply">{{applied ? '已投递，等待 HR 查看' : '立即投递'}}</view>
+  <view class="chat-big" bindtap="onChat"><text class="chat-big-t">聊一聊</text></view>
+  <view class="btn-primary flex1 {{applied ? 'done' : ''}}" bindtap="onApply"><text>{{applied ? '已投递 · ' + app.statusText : '立即投递'}}</text></view>
 </view>

@@ -1,0 +1,22 @@
+<view class="tabs">
+  <view class="tab {{tab === 'fav' ? 'tab-on' : ''}}" data-k="fav" bindtap="onTab"><text>我的收藏({{favN}})</text><view class="tab-line" wx:if="{{tab === 'fav'}}"></view></view>
+  <view class="tab {{tab === 'view' ? 'tab-on' : ''}}" data-k="view" bindtap="onTab"><text>浏览记录({{viewN}})</text><view class="tab-line" wx:if="{{tab === 'view'}}"></view></view>
+</view>
+<view wx:if="{{tab === 'view' && list.length}}" class="clear-row row between"><text class="sub">最近看过的 {{viewN}} 家</text><text class="clear" bindtap="onClear">清空</text></view>
+<view class="card h row" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onOpen">
+  <image class="h-img" src="{{item.img}}" mode="aspectFill" />
+  <view class="flex1 h-info">
+    <text class="h-name">{{item.name}}</text>
+    <view class="row h-meta"><text class="score">{{item.score}}</text><text class="sub h-area">{{item.city}} · {{item.area}} · {{item.starText}}</text></view>
+    <view class="row h-foot">
+      <text class="price-color h-price">¥{{item.price}}</text><text class="sub">起</text>
+      <view class="flex1"></view>
+      <view class="fav-btn {{item.fav ? 'fav-on' : ''}}" data-id="{{item.id}}" catchtap="onFav"><text>{{item.fav ? '已收藏' : '收藏'}}</text></view>
+    </view>
+  </view>
+</view>
+<view wx:if="{{!list.length}}" class="empty">
+  <text class="sub">{{tab === 'fav' ? '还没有收藏的酒店' : '还没有浏览记录'}}</text>
+  <view class="go" bindtap="onGo"><text>去逛逛</text></view>
+</view>
+<view class="gap"></view>

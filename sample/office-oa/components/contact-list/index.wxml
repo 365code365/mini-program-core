@@ -1,0 +1,38 @@
+<view class="cl">
+  <view class="head">
+    <view class="search row">
+      <text class="s-ic">⌕</text>
+      <input class="s-ipt flex1" value="{{kw}}" placeholder="搜索姓名、拼音、职位或手机号" bindinput="onKw"></input>
+      <text class="s-x" wx:if="{{kw}}" bindtap="clearKw">×</text>
+    </view>
+    <scroll-view scroll-x class="depts" show-scrollbar="{{false}}">
+      <view class="depts-in row">
+        <view class="dp {{dept === item.id ? 'dp-on' : ''}}" wx:for="{{depts}}" wx:key="id" data-id="{{item.id}}" bindtap="pickDept">{{item.name}}</view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <scroll-view class="list" scroll-y scroll-into-view="{{toView}}">
+    <view class="empty" wx:if="{{total === 0}}">
+      <view class="empty-ic">?</view>
+      <text class="empty-tx">没有找到「{{kw}}」</text>
+    </view>
+    <view wx:for="{{groups}}" wx:for-item="g" wx:key="letter">
+      <view class="gl" id="L-{{g.letter}}">{{g.letter}}</view>
+      <view class="it row" wx:for="{{g.items}}" wx:key="id" data-id="{{item.id}}" bindtap="tapItem" hover-class="it-hover">
+        <view class="ava" style="background: {{item.color}};">{{item.ini}}</view>
+        <view class="col flex1 it-in">
+          <text class="nm">{{item.name}}</text>
+          <text class="muted">{{item.deptName}} · {{item.title}}</text>
+        </view>
+        <text class="pick" wx:if="{{pick}}">选择</text>
+      </view>
+    </view>
+    <view class="foot" wx:if="{{total}}">共 {{total}} 位同事</view>
+  </scroll-view>
+
+  <view class="bar" style="top: {{barTop}}px;" bindtouchstart="onBarStart" bindtouchmove="onBarMove" bindtouchend="onBarEnd" bindtouchcancel="onBarEnd">
+    <view class="bl {{hint === item ? 'bl-on' : ''}}" wx:for="{{letters}}" wx:key="*this" style="height: {{itemH}}px; line-height: {{itemH}}px;">{{item}}</view>
+  </view>
+  <view class="hint" wx:if="{{hint}}">{{hint}}</view>
+</view>

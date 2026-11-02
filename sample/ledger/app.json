@@ -5,7 +5,11 @@
     "pages/mine/mine",
     "pages/add/add",
     "pages/detail/detail",
-    "pages/budget/budget"
+    "pages/budget/budget",
+    "pages/books/books",
+    "pages/cats/cats",
+    "pages/export/export",
+    "pages/remind/remind"
   ],
   "window": {
     "navigationBarTitleText": "小鹿记账",

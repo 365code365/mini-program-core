@@ -1,0 +1,42 @@
+<view wx:if="{{ok}}">
+  <view class="tip row">
+    <text class="tip-tag">PLUS</text>
+    <text class="flex1 tip-text">坏单极速退款：提交即退，无需退回商品</text>
+  </view>
+
+  <view class="card">
+    <text class="title">选择售后商品</text>
+    <view class="item row {{item.refunded ? 'item-off' : ''}}" wx:for="{{items}}" wx:key="key" data-i="{{index}}" bindtap="onItem">
+      <view class="check {{item.on ? 'check-on' : ''}}"><view wx:if="{{item.on}}" class="check-mark"></view></view>
+      <image class="item-img" src="{{item.img}}" mode="aspectFill"></image>
+      <view class="flex1">
+        <text class="item-name ellipsis">{{item.name}}</text>
+        <text class="sub">{{item.spec}} ×{{item.qty}}</text>
+      </view>
+      <text wx:if="{{item.refunded}}" class="done-tag">已退款</text>
+      <text wx:else class="item-refund">可退 ¥{{item.refund}}</text>
+    </view>
+  </view>
+
+  <view class="card">
+    <text class="title">售后原因</text>
+    <view class="reasons row">
+      <text wx:for="{{reasons}}" wx:key="*this" class="reason {{reason === item ? 'reason-on' : ''}}" data-r="{{item}}" bindtap="onReason">{{item}}</text>
+    </view>
+    <textarea class="note" placeholder="补充说明（选填），例如：蓝莓有 3 颗压坏了" placeholder-class="ph" maxlength="100" value="{{note}}" bindinput="onNote"></textarea>
+  </view>
+  <view class="bottom-gap"></view>
+
+  <view class="bar row">
+    <view class="flex1">
+      <text class="bar-k">退款金额 </text>
+      <text class="bar-v">¥{{amount}}</text>
+      <text class="bar-to">原路退回{{payTo}}</text>
+    </view>
+    <view class="submit {{picked && reason ? '' : 'submit-off'}}" bindtap="onSubmit">提交申请</view>
+  </view>
+</view>
+<view wx:else class="none">
+  <text class="sub">这一单暂时不能申请售后（未送达、已超过 7 天或已全部退款）</text>
+  <view class="btn none-btn" bindtap="onBack">返回</view>
+</view>

@@ -47,6 +47,29 @@ impl TemplateEngine {
         }
     }
 
+    /// 宿主承载的原生组件（`map` 的 `markers` / `polyline` / `circles`、`live-player` …）的属性：
+    /// 整个属性值就是一个表达式、求出来是数组 / 对象时给**标准 JSON**。
+    ///
+    /// 通用插值把对象转成单引号 JSON（`[{'id':1}]`，见 `render_value`），引擎里读它的几处自己换回双引号；
+    /// 可这些属性是原样交给宿主的（`sameLayerViews` / `nativeViews` 的 `attrs`），宿主只能按标准 JSON 解 ——
+    /// 而且换引号在文字里带撇号（`callout.content: "Tom's"`）时就坏了。只对这几个标签这么做：
+    /// 别的标签的对象属性（picker 的 `range`、rich-text 的 `nodes`）引擎自己按单引号读，不动
+    pub(super) fn interpolate_native_attr(key: &str, value: &str, data: &JsonValue) -> String {
+        let t = value.trim();
+        if let Some(inner) = t.strip_prefix("{{").and_then(|s| s.strip_suffix("}}")).filter(|i| !i.contains("{{")) {
+            let v = expr::eval_str(inner.trim(), data);
+            if v.is_array() || v.is_object() {
+                return v.to_string();
+            }
+        }
+        Self::interpolate_attr(key, value, data)
+    }
+
+    /// 属性原样交给宿主的原生组件（见 [`Self::interpolate_native_attr`]）
+    pub(super) fn native_json_tag(tag: &str) -> bool {
+        matches!(tag, "map" | "live-player" | "live-pusher" | "web-view" | "camera")
+    }
+
     /// 文本/属性插值：替换所有 {{ ... }} 片段
     pub(super) fn interpolate(template: &str, data: &JsonValue) -> String {
         if !template.contains("{{") {

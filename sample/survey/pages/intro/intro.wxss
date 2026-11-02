@@ -1,0 +1,23 @@
+.top { padding: 40rpx 32rpx 56rpx; margin-bottom: -32rpx; }
+.top .kind { background: rgba(255, 255, 255, 0.9); }
+.state { font-size: 20rpx; color: #fff; background: rgba(255, 255, 255, 0.25); border-radius: 6rpx; padding: 4rpx 12rpx; margin-left: 12rpx; }
+.state.end { background: rgba(0, 0, 0, 0.25); }
+.t-title { display: block; color: #fff; font-size: 40rpx; font-weight: bold; line-height: 56rpx; margin-top: 20rpx; }
+.t-author { display: block; color: rgba(255, 255, 255, 0.85); font-size: 24rpx; margin-top: 12rpx; }
+.facts { justify-content: space-around; }
+.fact { align-items: center; }
+.fact-n { font-size: 40rpx; font-weight: bold; color: #6C5CE7; }
+.sec-t { display: block; font-size: 28rpx; font-weight: bold; margin-bottom: 12rpx; }
+.desc { display: block; font-size: 26rpx; color: #3a3f47; line-height: 42rpx; margin-bottom: 16rpx; }
+.info { padding: 12rpx 0; border-top: 1rpx solid #f2f2f6; }
+.info-k { width: 140rpx; flex-shrink: 0; }
+.info-v { flex: 1; font-size: 26rpx; color: #3a3f47; line-height: 40rpx; }
+.tip { margin: 0 24rpx 20rpx; background: #efedff; border-radius: 16rpx; padding: 20rpx 24rpx; }
+.tip-dot { width: 14rpx; height: 14rpx; border-radius: 7rpx; background: #FF7A1A; margin-right: 14rpx; }
+.tip-dot.ok { background: #19BE6B; }
+.tip-t { font-size: 24rpx; color: #4b3fb8; }
+.ops { padding: 12rpx 32rpx 60rpx; }
+.restart { margin-top: 20rpx; }
+.sub-ops { justify-content: center; margin-top: 28rpx; }
+.sub-op { font-size: 26rpx; color: #6C5CE7; padding: 10rpx 28rpx; margin: 0 12rpx; background: #fff; border-radius: 30rpx; }
+.sub-op.on { color: #FF7A1A; }

@@ -1,0 +1,85 @@
+<view class="card leg" wx:for="{{legs}}" wx:key="tag">
+  <view class="row">
+    <text class="tag">{{item.tag}}</text>
+    <text class="leg-d">{{item.dateText}}</text>
+    <text class="muted small flex1 leg-no">{{item.flight.airlineName}}{{item.flight.no}}</text>
+  </view>
+  <view class="row leg-mid">
+    <view class="col"><text class="leg-t">{{item.flight.depText}}</text><text class="muted small">{{item.flight.depAirport}}</text></view>
+    <view class="col leg-c"><text class="muted small">{{item.flight.durText}}</text><view class="leg-line"></view></view>
+    <view class="col leg-r"><text class="leg-t">{{item.flight.arrText}}</text><text class="muted small">{{item.flight.arrAirport}}</text></view>
+  </view>
+  <view class="row between">
+    <text class="small">{{item.cabin.name}} · {{item.cabin.bag}}</text>
+    <text class="blue small" data-i="{{index}}" bindtap="showRule">退改规则 ›</text>
+  </view>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="card-title">乘机人</text>
+    <text class="muted small">儿童 / 婴儿按证件自动识别</text>
+  </view>
+  <view wx:for="{{pax}}" wx:key="id" class="pax row">
+    <text class="pax-x" data-id="{{item.id}}" bindtap="removePax">−</text>
+    <view class="col flex1">
+      <view class="row"><text class="pax-n">{{item.name}}</text><text class="tag">{{item.age}}</text></view>
+      <text class="muted small">{{item.typeName}} {{item.masked}}</text>
+    </view>
+  </view>
+  <view class="add row" bindtap="choosePax"><text class="blue">+ 选择 / 新增乘机人</text></view>
+  <text wx:if="{{errors.pax}}" class="err">{{errors.pax}}</text>
+</view>
+
+<view class="card">
+  <text class="card-title">联系人</text>
+  <view class="field row">
+    <text class="f-l">姓名</text>
+    <input class="flex1" placeholder="用于接收出票通知" value="{{contact.name}}" data-k="name" bindinput="onContact" maxlength="20"></input>
+  </view>
+  <text wx:if="{{errors.name}}" class="err">{{errors.name}}</text>
+  <view class="field row">
+    <text class="f-l">手机号</text>
+    <input class="flex1" type="number" placeholder="航班变动会短信通知" value="{{contact.phone}}" data-k="phone" bindinput="onContact" maxlength="11"></input>
+  </view>
+  <text wx:if="{{errors.phone}}" class="err">{{errors.phone}}</text>
+</view>
+
+<view class="card">
+  <text class="card-title">出行保障</text>
+  <view class="ins row">
+    <view class="col flex1">
+      <view class="row"><text>{{INS.acc.name}}</text><text class="price small ins-p">¥{{INS.acc.price}}/人/段</text></view>
+      <text class="muted small">{{INS.acc.desc}}</text>
+    </view>
+    <switch checked="{{ins.acc}}" color="#1f6fff" data-k="acc" bindchange="onIns"></switch>
+  </view>
+  <view class="ins row">
+    <view class="col flex1">
+      <view class="row"><text>{{INS.delay.name}}</text><text class="price small ins-p">¥{{INS.delay.price}}/人/段</text></view>
+      <text class="muted small">{{INS.delay.desc}}</text>
+    </view>
+    <switch checked="{{ins.delay}}" color="#1f6fff" data-k="delay" bindchange="onIns"></switch>
+  </view>
+</view>
+
+<view wx:if="{{showDetail}}" class="card">
+  <text class="card-title">价格明细</text>
+  <view wx:for="{{rows}}" wx:key="k" class="row between d-row">
+    <text class="small">{{item.label}}</text>
+    <text class="small">¥{{item.value}} × {{item.n}}</text>
+  </view>
+</view>
+<view class="tip"><text class="muted small">提交即表示已阅读并同意《机票预订须知》与所选运价的退改规则。</text></view>
+<view class="bar-space"></view>
+
+<view class="foot row">
+  <view class="col flex1" bindtap="toggleDetail">
+    <view class="row"><text class="small">订单总额 </text><text class="price-sym">¥</text><text class="price total">{{total}}</text></view>
+    <text class="blue small">{{showDetail ? '收起明细' : '查看明细'}}</text>
+  </view>
+  <view class="btn btn-orange submit" hover-class="btn-hover" bindtap="submit"><text>提交订单</text></view>
+</view>
+
+<cashier show="{{cashier}}" order-id="{{orderId}}" amount="{{total}}" expire-at="{{expireAt}}" reason="{{payReason}}"
+         bind:paid="onPaid" bind:close="onCashierClose" bind:timeout="onTimeout"></cashier>

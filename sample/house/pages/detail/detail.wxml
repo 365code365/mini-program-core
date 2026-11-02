@@ -1,7 +1,7 @@
 <view class="gallery">
   <swiper class="swiper" current="{{cur}}" bindchange="onSwiper" circular="true">
     <swiper-item wx:for="{{imgs}}" wx:key="src">
-      <image class="slide" src="{{item.src}}" mode="aspectFill" bindtap="onPreview" data-i="{{index}}"></image>
+      <image class="slide" src="{{item.src}}" mode="aspectFill" bindtap="onPreview" data-i="{{index}}" />
     </swiper-item>
   </swiper>
   <view class="g-tabs row">
@@ -32,6 +32,11 @@
   <view class="h-tags">
     <text class="h-tag {{index === 0 ? 'hot' : ''}}" wx:for="{{h.tags}}" wx:key="*this">{{item}}</text>
   </view>
+  <view class="loan row" wx:if="{{monthly}}" bindtap="onCalc">
+    <text class="loan-text flex1">三成首付 · 商贷 30 年 · 月供 <text class="loan-num">{{monthly}}</text> 元</text>
+    <text class="loan-go">算一算</text>
+    <view class="chev"></view>
+  </view>
 </view>
 
 <view class="card">
@@ -41,6 +46,16 @@
       <text class="t-k">{{item.k}}</text>
       <text class="t-v">{{item.v}}</text>
     </view>
+  </view>
+</view>
+<view class="card">
+  <view class="row between">
+    <text class="title">位置与交通</text>
+    <view class="more-link" bindtap="onMap"><text>查看地图</text><view class="chev"></view></view>
+  </view>
+  <view class="addr row" bindtap="onMap">
+    <view class="pin"><view class="pin-dot"></view></view>
+    <text class="addr-text flex1">杭州市{{h.addr}}</text>
   </view>
   <view class="subway row">
     <view class="sw-badge">铁</view>
@@ -70,7 +85,7 @@
   </view>
   <view class="heat row">
     <view class="heat-item flex1"><text class="heat-val">{{h.views}}</text><text class="sub">浏览</text></view>
-    <view class="heat-item flex1"><text class="heat-val">{{h.follow}}</text><text class="sub">关注</text></view>
+    <view class="heat-item flex1"><text class="heat-val">{{h.follow}}</text><text class="sub">人关注</text></view>
     <view class="heat-item flex1"><text class="heat-val">{{bookedCount}}</text><text class="sub">带看</text></view>
   </view>
 </view>
@@ -78,12 +93,12 @@
 <view class="bar-gap"></view>
 <view class="bar row">
   <view class="fav" bindtap="onFav">
-    <image class="fav-icon" src="{{faved ? '/images/tab-fav-on.png' : '/images/tab-fav.png'}}"></image>
+    <image class="fav-icon" src="{{faved ? '/images/tab-fav-on.png' : '/images/tab-fav.png'}}" />
     <text class="fav-text {{faved ? 'on' : ''}}">{{faved ? '已收藏' : '收藏'}}</text>
   </view>
   <view class="fav" bindtap="onShare">
-    <image class="fav-icon" src="/images/share.png"></image>
+    <image class="fav-icon" src="/images/share.png" />
     <text class="fav-text">分享</text>
   </view>
-  <view class="book flex1" bindtap="onBook">预约看房</view>
+  <view class="book flex1 {{pending ? 'booked' : ''}}" bindtap="onBook"><text>{{pending ? '已预约 · ' + pending.time : '预约看房'}}</text></view>
 </view>

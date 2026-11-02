@@ -1,0 +1,43 @@
+<view class="wrap">
+  <view class="card tot row">
+    <view class="t"><text class="t-v">{{totals.learned}}</text><text class="muted">已学</text></view>
+    <view class="t"><text class="t-v c-g">{{totals.mastered}}</text><text class="muted">已掌握</text></view>
+    <view class="t"><text class="t-v c-o">{{totals.stars}}</text><text class="muted">生词</text></view>
+    <view class="t"><text class="t-v">{{totals.days}}</text><text class="muted">打卡天</text></view>
+  </view>
+
+  <view class="card">
+    <view class="between">
+      <text class="h2">每日学习量</text>
+      <view class="seg row">
+        <text class="seg-it {{range === 7 ? 'seg-on' : ''}}" data-r="7" bindtap="onRange">近 7 天</text>
+        <text class="seg-it {{range === 30 ? 'seg-on' : ''}}" data-r="30" bindtap="onRange">近 30 天</text>
+      </view>
+    </view>
+    <view class="chart row">
+      <view class="bar-col" wx:for="{{bars}}" wx:key="ds">
+        <text class="bar-n" wx:if="{{range === 7}}">{{item.v}}</text>
+        <view class="bar {{range === 30 ? 'bar-thin' : ''}}">
+          <view class="bar-r" style="height: {{item.hr}}rpx;"></view>
+          <view class="bar-l" style="height: {{item.hl}}rpx;"></view>
+        </view>
+        <text class="bar-lb">{{item.lb}}</text>
+      </view>
+    </view>
+    <view class="legend row">
+      <view class="lg row"><view class="lg-dot lg-l"></view><text class="muted">新学 {{sumLearn}}</text></view>
+      <view class="lg row"><view class="lg-dot lg-r"></view><text class="muted">复习 {{sumReview}}</text></view>
+      <text class="muted">日均 {{avg}} 词</text>
+    </view>
+    <text class="muted best" wx:if="{{best}}">学得最多的一天：{{best.label}}，共 {{best.v}} 词</text>
+  </view>
+
+  <view class="card">
+    <text class="h2">记忆阶段分布</text>
+    <view class="st row" wx:for="{{stages}}" wx:key="name">
+      <text class="st-name">{{item.name}}</text>
+      <progress class="st-pg" percent="{{item.pct}}" stroke-width="8" activeColor="{{index === 5 ? '#22b07d' : '#4f6bed'}}" backgroundColor="#eef0f5" border-radius="4"></progress>
+      <text class="st-n">{{item.n}}</text>
+    </view>
+  </view>
+</view>

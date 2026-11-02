@@ -1,0 +1,10 @@
+<view class="card" wx:if="{{n}}">
+  <text class="nd-t">{{n.title}}</text>
+  <view class="row nd-meta"><text class="tag">{{n.type}}</text><text class="muted">{{n.dept}} · {{n.date}}</text></view>
+  <text class="nd-p" wx:for="{{paras}}" wx:key="*this" user-select>{{item}}</text>
+  <view class="row nd-ops">
+    <view class="btn-sm ghost" bindtap="copy">复制全文</view>
+    <button class="btn-sm nd-share" open-type="share">转发给同学</button>
+  </view>
+</view>
+<include src="../common/footer.wxml"></include>

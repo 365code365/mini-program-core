@@ -1,0 +1,29 @@
+<view class="page {{theme}}">
+  <view class="top">
+    <view class="medal"><text class="medal-t">✓</text></view>
+    <text class="d-title">{{title}}</text>
+    <text class="d-sub">{{subtitle}}</text>
+  </view>
+  <view class="card row stats">
+    <view class="st"><text class="st-n">{{durText}}</text><text class="sub">本次时长</text></view>
+    <view class="st"><text class="st-n">{{streak}}</text><text class="sub">连续打卡（天）</text></view>
+    <view class="st"><text class="st-n">{{count}}</text><text class="sub">累计练习（次）</text></view>
+  </view>
+  <view wx:if="{{nextTitle}}" class="card row next" bindtap="goNext" hover-class="btn-hover">
+    <view class="flex1">
+      <text class="cont-k">已解锁下一节</text>
+      <text class="n-t">{{nextTitle}}</text>
+    </view>
+    <text class="go">去收听</text>
+  </view>
+  <view class="card">
+    <text class="q">练完感觉怎么样？</text>
+    <view class="row feel">
+      <view wx:for="{{feels}}" wx:key="*this" class="chip {{feel === item ? 'on' : ''}}" data-v="{{item}}" bindtap="onFeel"><text>{{item}}</text></view>
+    </view>
+  </view>
+  <view class="ops">
+    <view class="btn" hover-class="btn-hover" bindtap="writeMood"><text>写下此刻的心情</text></view>
+    <view class="btn-ghost back" hover-class="btn-hover" bindtap="goBack"><text>{{backText}}</text></view>
+  </view>
+</view>

@@ -194,3 +194,8 @@
   font-size: 30rpx;
   font-weight: bold;
 }
+.stepper { }
+.step { width: 52rpx; height: 52rpx; border-radius: 26rpx; border: 2rpx solid #c9d6f5; display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.step-t { font-size: 32rpx; color: #2f6bff; font-weight: bold; line-height: 40rpx; }
+.stepper .weight { margin: 0 20rpx; min-width: 96rpx; text-align: center; }
+.cut { color: #ff6a1a; }

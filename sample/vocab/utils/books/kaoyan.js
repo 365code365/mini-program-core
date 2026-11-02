@@ -1,0 +1,27 @@
+// 考研英语大纲词（精选）：[单词, 音标, 释义, 例句, 例句译文]
+module.exports = [
+  ['abolish', '/əˈbɒlɪʃ/', 'v. 废除；废止', 'The law was abolished in 1990.', '这项法律于 1990 年被废除。'],
+  ['absurd', '/əbˈsɜːd/', 'adj. 荒谬的', "It's absurd to blame the weather.", '怪天气是荒谬的。'],
+  ['acknowledge', '/əkˈnɒlɪdʒ/', 'v. 承认；致谢', 'He acknowledged his mistake.', '他承认了自己的错误。'],
+  ['adolescent', '/ˌædəˈlesnt/', 'n./adj. 青少年；青春期的', 'Adolescents need plenty of sleep.', '青少年需要充足的睡眠。'],
+  ['aesthetic', '/iːsˈθetɪk/', 'adj. 审美的；美学的', 'The building has great aesthetic value.', '这座建筑具有很高的审美价值。'],
+  ['alleviate', '/əˈliːvieɪt/', 'v. 减轻；缓解', 'The medicine helped alleviate the pain.', '这药帮助缓解了疼痛。'],
+  ['amend', '/əˈmend/', 'v. 修正；修订', 'The contract was amended twice.', '合同修改过两次。'],
+  ['apparatus', '/ˌæpəˈreɪtəs/', 'n. 器械；装置', 'The lab bought new breathing apparatus.', '实验室购置了新的呼吸器械。'],
+  ['articulate', '/ɑːˈtɪkjuleɪt/', 'v. 清楚表达', 'She articulated her ideas clearly.', '她把自己的想法表达得很清楚。'],
+  ['ascertain', '/ˌæsəˈteɪn/', 'v. 查明；确定', 'Police are trying to ascertain the cause.', '警方正设法查明原因。'],
+  ['bias', '/ˈbaɪəs/', 'n. 偏见；偏向', 'The report showed no political bias.', '该报道没有政治偏见。'],
+  ['coherent', '/kəʊˈhɪərənt/', 'adj. 连贯的；条理清楚的', 'Write a coherent paragraph.', '写一段条理清楚的文字。'],
+  ['commodity', '/kəˈmɒdəti/', 'n. 商品；有用之物', 'Oil is a valuable commodity.', '石油是宝贵的商品。'],
+  ['conceive', '/kənˈsiːv/', 'v. 构想；设想', 'He conceived the idea on a train.', '他在火车上想出了这个主意。'],
+  ['confront', '/kənˈfrʌnt/', 'v. 面对；对抗', 'We must confront the problem directly.', '我们必须直面这个问题。'],
+  ['constrain', '/kənˈstreɪn/', 'v. 限制；约束', 'Our plans are constrained by budget.', '我们的计划受预算限制。'],
+  ['contemplate', '/ˈkɒntəmpleɪt/', 'v. 沉思；考虑', 'She contemplated moving abroad.', '她考虑过移居国外。'],
+  ['conventional', '/kənˈvenʃənl/', 'adj. 传统的；常规的', 'This is a conventional method.', '这是一种常规方法。'],
+  ['cumulative', '/ˈkjuːmjələtɪv/', 'adj. 累积的', 'The cumulative effect of small changes is large.', '小改变累积起来效果很大。'],
+  ['deficiency', '/dɪˈfɪʃnsi/', 'n. 缺乏；不足', 'Vitamin deficiency can cause illness.', '缺乏维生素会致病。'],
+  ['discrepancy', '/dɪˈskrepənsi/', 'n. 差异；不一致', 'There is a discrepancy between the two reports.', '两份报告之间有出入。'],
+  ['distort', '/dɪˈstɔːt/', 'v. 歪曲；扭曲', 'The media distorted his words.', '媒体歪曲了他的话。'],
+  ['empirical', '/ɪmˈpɪrɪkl/', 'adj. 实证的；经验主义的', 'We need empirical evidence.', '我们需要实证证据。'],
+  ['exemplify', '/ɪɡˈzemplɪfaɪ/', 'v. 例证；是…的典型', 'This case exemplifies the problem.', '这个案例是该问题的典型。']
+];

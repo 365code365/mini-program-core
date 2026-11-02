@@ -1,0 +1,49 @@
+<view class="hero">
+  <view class="row between">
+    <view class="col">
+      <text class="greet">{{greet}}，{{me.name}}</text>
+      <text class="date">{{dateText}} · {{company.name}}</text>
+    </view>
+    <view class="ava me-ava" style="background: {{me.color}};">{{me.ini}}</view>
+  </view>
+  <view class="todo row">
+    <view class="td col" data-tab="todo" bindtap="goTodo"><text class="td-v red">{{todo.needMe}}</text><text class="td-k">待我审批</text></view>
+    <view class="td col" data-tab="mine" bindtap="goTodo"><text class="td-v">{{todo.mineIng}}</text><text class="td-k">我发起·审批中</text></view>
+    <view class="td col" bindtap="goRooms"><text class="td-v">{{todo.meetings}}</text><text class="td-k">今日会议</text></view>
+  </view>
+</view>
+
+<view class="card att row" bindtap="goAttend">
+  <view class="att-ic">卡</view>
+  <view class="col flex1">
+    <text class="att-t">今日考勤 · 09:00-18:00</text>
+    <text class="muted" wx:if="{{!today || !today.in}}">还没有打上班卡</text>
+    <text class="muted" wx:elif="{{!today.out}}">上班 {{today.in}} · 下班未打卡</text>
+    <text class="muted" wx:else>上班 {{today.in}} · 下班 {{today.out}}</text>
+  </view>
+  <view class="att-btn">{{!today || !today.in ? '去打卡' : (!today.out ? '下班打卡' : '查看')}}</view>
+</view>
+
+<view class="card">
+  <view class="sec-title">快捷入口</view>
+  <view class="entries">
+    <view class="en col" style="width: {{entryW}};" wx:for="{{entries}}" wx:key="id" data-id="{{item.id}}" bindtap="goEntry" hover-class="en-hover">
+      <view class="en-ic" style="background: {{item.color}};">{{item.ic}}</view>
+      <text class="en-n">{{item.name}}</text>
+    </view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="row between"><text class="sec-title">今日日程</text><text class="sec-more" bindtap="goRooms">订会议室 ›</text></view>
+  <view class="empty sm" wx:if="{{meetings.length === 0}}"><text class="empty-tx">今天没有会议，专心做事</text></view>
+  <view class="mt row" wx:for="{{meetings}}" wx:key="id">
+    <view class="mt-time col"><text class="mt-s">{{item.time}}</text></view>
+    <view class="mt-line"></view>
+    <view class="col flex1">
+      <text class="mt-n">{{item.subject}}</text>
+      <text class="muted">{{item.roomName}}（{{item.room}}）· 组织者 {{item.mine ? '我' : item.ownerName}}</text>
+    </view>
+  </view>
+</view>
+<view class="tab-pad"></view>

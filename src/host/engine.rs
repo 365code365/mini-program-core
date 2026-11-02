@@ -93,6 +93,10 @@ pub struct MiniEngine {
     pub(crate) scroll_pos_at_press: f32,
     /// 这次触摸是用来「停住惯性滚动」的：抬手时不该再算一次点击
     pub(crate) tap_stops_fling: bool,
+    /// 这串触摸交给了同层渲染组件自己的手势（地图平移 / 捏合，engine_native_touch.rs）
+    pub(super) native_touch: Option<super::engine_native_touch::NativeTouch>,
+    /// `<web-view>` 里网页 postMessage 攒下的消息（按页面栈层，engine_webview.rs）
+    pub(super) webview: super::engine_webview::WebViewState,
     pub(crate) toast: Option<ToastState>,
     pub(crate) loading: Option<LoadingState>,
     pub(crate) modal: Option<ModalState>,
@@ -275,6 +279,7 @@ impl MiniEngine {
         let app_id = crate::app_about::project_app_id(&page_loader::get_app_path());
         engine_options::install_launch_context(&app, &app_id, opts.launch_options.as_ref());
         app.install_host_apis(&opts.host_apis);
+        engine_options::install_native_flags(&app, &opts);
         // 之后解析的样式表（自定义 tabBar、页面）看到宿主给的安全区
         Self::apply_env_context(&opts, width, height);
         // 先把包内所有 .js 注册成 CommonJS 模块：uni-app / TS 产物第一行就 require
@@ -344,6 +349,8 @@ impl MiniEngine {
             edge_back_tick: None,
             scroll_pos_at_press: 0.0,
             tap_stops_fling: false,
+            native_touch: None,
+            webview: Default::default(),
             toast: None,
             loading: None,
             modal: None,

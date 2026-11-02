@@ -1,9 +1,13 @@
 const D = require('../../utils/data.js')
-
+const S = require('../../utils/store.js')
+const host = require('../../utils/host.js')
 Page({
   data: {
     no: '',
+    noSeq: 0,
+    focus: false,
     detected: null,
+    history: [],
     entries: [
       { text: '寄快递', glyph: '寄', bg: 'linear-gradient(135deg, #ffa95c, #ff6a1a)' },
       { text: '扫一扫', glyph: '扫', bg: 'linear-gradient(135deg, #6aa1ff, #2f6bff)' },
@@ -21,76 +25,94 @@ Page({
     shown: [],
     total: 0
   },
-
   onShow() {
-    const tb = this.getTabBar && this.getTabBar()
-    if (tb) tb.setData({ selected: 0 })
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) this.getTabBar().setData({ selected: 0 })
+    // 「我的 → 在途」切过来时带着筛选（switchTab 不能带参数）
+    const app = getApp()
+    if (app.globalData.filter) {
+      this.setData({ filter: app.globalData.filter })
+      app.globalData.filter = ''
+    }
     this.refresh()
   },
-
   refresh() {
-    const list = D.loadList().map(D.decorate)
+    const list = S.getList().map(D.decorate)
     const f = this.data.filter
     this.setData({
       total: list.length,
+      history: S.history(),
       shown: f === 'all' ? list : list.filter(i => i.status === f)
     })
   },
-
   onInput(e) {
     const no = e.detail.value
     const key = D.detectCarrier(no)
     this.setData({ no, detected: key ? D.CARRIERS[key] : null })
   },
-
-  onQuery() {
-    const no = (this.data.no || '').trim().toUpperCase()
-    if (no.length < 8) {
+  onBlur() { this.setData({ focus: false }) },
+  query(raw) {
+    const no = String(raw || '').trim().toUpperCase()
+    if (!/^[0-9A-Z]{8,20}$/.test(no)) {
       wx.showToast({ title: '请输入正确的快递单号', icon: 'none' })
       return
     }
-    const list = D.loadList()
-    if (!list.some(i => i.no === no)) {
-      list.unshift(D.mockTrack(no, D.detectCarrier(no)))
-      D.saveList(list)
-    }
-    this.setData({ no: '', detected: null })
+    S.query(no)
+    this.setData({ no: '', noSeq: this.data.noSeq + 1, detected: null })
     wx.navigateTo({ url: '/pages/detail/detail?no=' + no })
   },
-
+  onQuery() { this.query(this.data.no) },
+  onHistory(e) { this.query(e.currentTarget.dataset.no) },
+  onClearHistory() {
+    S.clearHistory()
+    this.setData({ history: [] })
+  },
   onFilter(e) {
-    this.setData({ filter: e.currentTarget.dataset.key })
+    this.setData({ filter: String(e.currentTarget.dataset.key) })
     this.refresh()
   },
-
   onOpen(e) {
     wx.navigateTo({ url: '/pages/detail/detail?no=' + e.currentTarget.dataset.no })
   },
-
   onEntry(e) {
     const i = Number(e.currentTarget.dataset.i)
-    if (i === 0) {
-      wx.switchTab({ url: '/pages/send/send' })
-    } else if (i === 1) {
-      // 演示：扫码直接填入一张面单
-      const no = 'SF1609283374410'
-      this.setData({ no, detected: D.CARRIERS.sf })
-      wx.showToast({ title: '已识别面单', icon: 'success' })
-    } else if (i === 2) {
-      wx.showModal({
-        title: '运费时效',
-        content: '杭州 → 上海\n顺丰标快 ¥18 起，次日达\n中通 ¥8 起，1-2 天\n京东特快 ¥16 起，次日达',
-        showCancel: false,
-        confirmText: '知道了'
-      })
-    } else {
-      wx.showActionSheet({
-        itemList: ['顺丰 文三路营业点 0.6km', '中通 学院路网点 1.1km', '菜鸟驿站 文二西路店 0.3km'],
-        success: res => wx.showToast({ title: '已为你导航', icon: 'none' })
-      })
-    }
+    if (i === 0) this.goSend()
+    else if (i === 1) this.scan()
+    else if (i === 2) this.prices()
+    else this.outlets()
   },
-
+  goSend() { wx.switchTab({ url: '/pages/send/send' }) },
+  // 扫面单条码；宿主不能扫码时把光标放进输入框，让用户手动输入
+  scan() {
+    host.scan().then(no => {
+      if (no === '') return
+      if (no === null) {
+        this.setData({ focus: true })
+        wx.showToast({ title: '当前环境无法打开摄像头，请手动输入单号', icon: 'none' })
+        return
+      }
+      const key = D.detectCarrier(no)
+      this.setData({ no, noSeq: this.data.noSeq + 1, detected: key ? D.CARRIERS[key] : null })
+    })
+  },
+  // 运费时效：从默认寄件地址出发，各快递 1kg 的首重价与时效
+  prices() {
+    const a = S.defaultAddr()
+    const from = a ? S.cityOf(a) : '杭州'
+    wx.showModal({
+      title: '运费时效（' + from + '出发 · 1kg）',
+      content: D.PRODUCTS.map(p => p.name + ' ¥' + p.first + ' 起，' + p.eta + '，续重 ¥' + p.extra + '/kg').join('\n'),
+      confirmText: '去寄件',
+      cancelText: '关闭',
+      confirmColor: '#2f6bff',
+      success: r => { if (r.confirm) this.goSend() }
+    })
+  },
+  outlets() {
+    wx.showActionSheet({
+      itemList: D.OUTLETS.map(o => o.name + ' ' + o.dist),
+      success: r => host.openMap(D.OUTLETS[r.tapIndex])
+    })
+  },
   onPullDownRefresh() {
     this.refresh()
     wx.stopPullDownRefresh()

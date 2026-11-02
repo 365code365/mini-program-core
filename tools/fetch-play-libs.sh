@@ -18,7 +18,7 @@ get() { # 包 版本 包内路径 sha256 目标…
 THREE_SUM=b2350ed1fdef4cbb22daffb337187e86f09652198f0d3a35a613d9ebe97b30f6
 get three 0.160.0 build/three.cjs $THREE_SUM \
     sample-game/play-3d-stack/libs/three.js sample-game/play-3d-runner/libs/three.js sample-game/play-3d-bowling/libs/three.js \
-    sample-game/play-3d-island/libs/three.js
+    sample-game/play-3d-island/libs/three.js sample-game/play-3d-maze/libs/three.js
 get cannon-es 0.20.0 dist/cannon-es.cjs.js 58255a3214dfcddd41e4d5dbc47e3fb39e5679da67c1f47ca5ce0c788c9eef3f \
     sample-game/play-3d-bowling/libs/cannon-es.js
 # cannon-es 的 CJS 版是给 Node 打的：`require('perf_hooks')` 拿 performance（Node 内置模块），小游戏里没有这个模块

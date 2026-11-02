@@ -1,0 +1,56 @@
+<view class="card">
+  <text class="sec-t">办件进度查询</text>
+  <view class="fi"><text class="fl">办件编号</text><input class="fv" placeholder="如 YC2026110300418" value="{{no}}" bindinput="onNo"></input></view>
+  <view class="fi"><text class="fl">申请人姓名</text><input class="fv" placeholder="与申报时一致" value="{{name}}" bindinput="onName"></input></view>
+  <view class="btn qb" hover-class="tap" bindtap="query">查询</view>
+  <view class="mine" wx:if="{{mine.length}}">
+    <text class="muted">我的办件：</text>
+    <text class="mi {{order.id === item.id ? 'on' : ''}}" wx:for="{{mine}}" wx:key="id" data-id="{{item.id}}" bindtap="pick">{{item.name}}</text>
+  </view>
+</view>
+
+<view class="card nf" wx:if="{{notFound}}">
+  <icon type="warn" size="40" color="#ea580c"></icon>
+  <text class="nf-t">未查到该办件</text>
+  <text class="muted">请核对办件编号与申请人姓名，或拨打 12345 咨询</text>
+</view>
+
+<block wx:if="{{order}}">
+  <view class="card">
+    <view class="row between">
+      <text class="o-name">{{order.name}}</text>
+      <text class="st" style="color: {{st.color}}; border-color: {{st.color}};">{{st.text}}</text>
+    </view>
+    <view class="kv"><text class="k">办件编号</text><text class="v">{{order.id}}</text></view>
+    <view class="kv"><text class="k">承办部门</text><text class="v">{{dept}}</text></view>
+    <view class="kv"><text class="k">承诺时限</text><text class="v">{{promise}}（预计 {{deadline}} 前）</text></view>
+    <view class="note row" wx:if="{{order.status === 'supplement'}}">
+      <icon type="info" size="16" color="#dc2626"></icon><text>{{order.note}}</text>
+    </view>
+  </view>
+
+  <view class="card">
+    <text class="sec-t">办理过程</text>
+    <view class="tl">
+      <view class="tl-i" wx:for="{{steps}}" wx:key="time">
+        <view class="tl-axis">
+          <view class="tl-dot {{index === 0 ? 'cur' : ''}}"></view>
+          <view class="tl-line" wx:if="{{index < steps.length - 1}}"></view>
+        </view>
+        <view class="tl-body">
+          <text class="tl-t {{index === 0 ? 'cur' : ''}}">{{item.title}}</text>
+          <text class="tl-d">{{item.desc}}</text>
+          <text class="muted">{{item.time}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="acts row">
+    <view class="btn ghost a" hover-class="tap" bindtap="call">咨询 12345</view>
+    <view class="btn a" wx:if="{{order.status === 'submitted'}}" hover-class="tap" bindtap="withdraw">撤回申请</view>
+    <view class="btn a" wx:if="{{order.status === 'supplement'}}" hover-class="tap" bindtap="supplement">补正材料</view>
+    <view class="btn a" wx:if="{{order.status === 'reviewing'}}" hover-class="tap" bindtap="urge">催办</view>
+  </view>
+</block>
+<view style="height: 60rpx;"></view>

@@ -1,0 +1,34 @@
+<view class="head">
+  <view class="row">
+    <text class="s-no">{{train.no}}</text>
+    <text class="s-kind">{{kindText}}</text>
+  </view>
+  <text class="s-line">{{train.from}} → {{train.to}} · {{dateText}} · 全程 {{train.durText}}</text>
+</view>
+<view class="card">
+  <view class="th row">
+    <text class="c-idx">站序</text>
+    <text class="c-name flex1">站名</text>
+    <text class="c-time">到达</text>
+    <text class="c-time">出发</text>
+    <text class="c-stay">停留</text>
+  </view>
+  <view class="tr row {{item.role ? 'tr-end' : ''}}" wx:for="{{list}}" wx:key="idx">
+    <view class="c-idx"><view class="dot {{item.role ? 'dot-end' : ''}}"><text class="dot-t">{{item.idx}}</text></view></view>
+    <view class="c-name flex1 row">
+      <text class="st-name">{{item.name}}</text>
+      <text class="tag st-tag" wx:if="{{item.role === 'from'}}">上车</text>
+      <text class="tag st-tag" wx:if="{{item.role === 'to'}}">下车</text>
+    </view>
+    <view class="c-time row"><text class="t">{{item.arrText}}</text><text class="plus" wx:if="{{item.nextDay}}">+1</text></view>
+    <text class="c-time t">{{item.depText}}</text>
+    <text class="c-stay sub">{{item.stayText}}</text>
+  </view>
+</view>
+<view class="card note">
+  <text class="sub">时刻为计划时刻，以车站公告为准；开车前 3 分钟停止检票，请提前到站候车。</text>
+</view>
+<view class="bottom-space"></view>
+<view class="footer" wx:if="{{canBook}}">
+  <view class="btn book-btn" bindtap="onBook"><text class="btn-text">预订 {{train.no}}</text></view>
+</view>

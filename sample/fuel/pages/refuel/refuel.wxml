@@ -1,0 +1,86 @@
+<view class="netbar" wx:if="{{!net.isConnected}}"><text class="netbar-tx">网络不可用，恢复后再付款</text></view>
+<view class="card st">
+  <image class="st-logo" src="{{st.logo}}" mode="aspectFit"></image>
+  <view class="st-mid">
+    <text class="st-name">{{st.name}}</text>
+    <text class="muted">请确认已到站，并告知加油员「易加油付款」</text>
+  </view>
+</view>
+
+<view class="card">
+  <text class="sec-title">油号</text>
+  <view class="chips">
+    <text class="chip {{item === oil ? 'chip-on' : ''}}" wx:for="{{oils}}" wx:key="*this" data-oil="{{item}}" bindtap="pickOil">{{item}}</text>
+  </view>
+  <view class="row between"><text class="sec-title">油枪号</text><text class="muted">油枪上贴有编号</text></view>
+  <view class="chips">
+    <view class="gun {{item === gun ? 'gun-on' : ''}}" wx:for="{{guns}}" wx:key="*this" data-gun="{{item}}" bindtap="pickGun" hover-class="btn-hover"><text class="gun-tx">{{item}}号</text></view>
+  </view>
+  <text class="err" wx:if="{{err.gun}}">{{err.gun}}</text>
+</view>
+
+<view class="card">
+  <text class="sec-title">加油金额</text>
+  <view class="amt {{kb ? 'amt-on' : ''}}" bindtap="openKb">
+    <text class="amt-yen">¥</text>
+    <text class="amt-v {{amount ? '' : 'amt-ph'}}">{{amount || '请输入金额'}}</text>
+    <view class="cursor" wx:if="{{kb}}"></view>
+  </view>
+  <view class="chips">
+    <text class="chip {{amount === item ? 'chip-on' : ''}}" wx:for="{{quick}}" wx:key="*this" data-v="{{item}}" bindtap="pickQuick">¥{{item}}</text>
+  </view>
+  <text class="err" wx:if="{{err.amount}}">{{err.amount}}</text>
+  <view class="calc" wx:if="{{calc}}">
+    <view class="cl"><text class="muted">约加 {{oil}}</text><text>{{calc.liters}} 升</text></view>
+    <view class="cl"><text class="muted">挂牌价 ¥{{calc.list}} → 到站价 ¥{{calc.ours}}</text><text class="price">-¥{{calc.discount}}</text></view>
+    <view class="cl" bindtap="openCoupon">
+      <text class="muted">优惠券</text>
+      <text class="{{calc.couponCut > 0 ? 'price' : 'muted'}}">{{couponText}} ›</text>
+    </view>
+  </view>
+</view>
+<view style="height: {{kb ? 560 : 180}}rpx;"></view>
+
+<view class="bar" wx:if="{{!kb}}">
+  <view class="bar-l">
+    <view class="row"><text>实付 </text><text class="price bar-p">¥{{calc ? calc.pay : '0.00'}}</text></view>
+    <text class="muted" wx:if="{{calc}}">共省 ¥{{calc.saved}}</text>
+  </view>
+  <view class="bar-btn {{calc ? '' : 'bar-off'}}" hover-class="btn-hover" bindtap="submit"><text class="bar-btn-tx">立即支付</text></view>
+</view>
+
+<!-- 自定义数字键盘：fixed 在底部；小数点只能一个、最多两位小数、单笔上限 -->
+<view class="kb" wx:if="{{kb}}">
+  <view class="kb-top"><text class="muted">单笔最高 ¥{{max}}，支持两位小数</text><text class="kb-done" bindtap="closeKb">收起</text></view>
+  <view class="kb-body">
+    <view class="kb-keys">
+      <view class="key" wx:for="{{keys}}" wx:key="*this" data-k="{{item}}" bindtap="press" hover-class="key-hover" hover-stay-time="80">
+        <text class="key-tx">{{item === 'del' ? '⌫' : item}}</text>
+      </view>
+    </view>
+    <view class="kb-side">
+      <view class="key key-clear" data-k="clear" bindtap="press" hover-class="key-hover"><text class="key-tx key-small">清空</text></view>
+      <view class="key key-ok {{amount ? '' : 'key-ok-off'}}" bindtap="confirmKb" hover-class="key-ok-hover"><text class="key-ok-tx">确定</text></view>
+    </view>
+  </view>
+</view>
+
+<!-- 选券面板 -->
+<view class="mask" wx:if="{{cpShow}}" bindtap="closeCoupon"></view>
+<view class="cp" wx:if="{{cpShow}}">
+  <view class="row between cp-head"><text class="sec-title">选择优惠券</text><text class="muted" bindtap="closeCoupon">✕</text></view>
+  <radio-group class="cp-list" bindchange="onCoupon">
+    <label class="cp-it" wx:for="{{usable}}" wx:key="id" data-id="{{item.id}}" bindtap="pickCoupon">
+      <view class="cp-l"><text class="cp-cut">¥{{item.cut}}</text><text class="cp-min">满{{item.min}}可用</text></view>
+      <view class="cp-mid"><text class="cp-title">{{item.title}}</text><text class="muted">{{item.expireText}} 到期</text></view>
+      <radio value="{{item.id}}" checked="{{couponId === item.id}}" color="#13a874"></radio>
+    </label>
+    <label class="cp-it cp-none" data-id="" bindtap="pickCoupon">
+      <view class="cp-mid"><text class="cp-title">不使用优惠券</text></view>
+      <radio value="" checked="{{!couponId}}" color="#13a874"></radio>
+    </label>
+  </radio-group>
+  <text class="muted cp-empty" wx:if="{{!usable.length}}">本单金额暂无可用券，可去「油卡与优惠券」领取</text>
+</view>
+
+<cashier show="{{cashier}}" amount="{{calc ? calc.pay : '0.00'}}" order-no="{{orderNo}}" card-balance="{{cardBalance}}" bind:paid="onPaid" bind:cancel="onPayCancel"></cashier>

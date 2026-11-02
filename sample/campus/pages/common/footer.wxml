@@ -1,0 +1,5 @@
+<!-- 公共页脚：各页 <include src="../common/footer.wxml"/> -->
+<view class="ft">
+  <text class="ft-t">云川大学信息化中心 · 技术支持 0838-6612000</text>
+  <text class="ft-t">数据每日 6:00 与教务系统同步</text>
+</view>

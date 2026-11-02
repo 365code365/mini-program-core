@@ -1,6 +1,6 @@
 <view class="top row">
   <view class="loc row"><view class="loc-dot"></view><text class="loc-t">杭州·西溪</text></view>
-  <view class="search row flex1" bindtap="onSearchTap">
+  <view class="search row flex1">
     <view class="search-icon"></view>
     <input class="search-input flex1" placeholder="搜索电站 / 地址" placeholder-class="ph" value="{{keyword}}" bindinput="onSearch" />
   </view>
@@ -40,6 +40,11 @@
   <text class="flex1 tip-t">正在充电 {{session.terminal}}，点击查看进度</text>
   <view class="chev"></view>
 </view>
+<view class="charging-tip unpaid-tip row" wx:if="{{unpaid}}" bindtap="onUnpaid">
+  <view class="pulse warn"></view>
+  <text class="flex1 tip-t warn-t">有一笔充电订单待支付 ¥{{unpaid.pay}}，点击去支付</text>
+  <view class="chev"></view>
+</view>
 
 <scroll-view scroll-x class="filters" enable-flex>
   <view class="filters-in row">
@@ -68,6 +73,12 @@
   <view class="row">
     <text class="tag tag-green">{{item.open}}</text>
     <text class="tag tag-gray">{{item.parking}}</text>
+    <view class="flex1"></view>
+    <view class="nav-btn row" data-id="{{item.id}}" catchtap="onNav"><view class="nav-ar"></view><text class="nav-btn-t">导航</text></view>
   </view>
+</view>
+<view wx:if="{{list.length === 0}}" class="empty col">
+  <view class="empty-ic"><text class="empty-ic-t">桩</text></view>
+  <text class="sub">{{emptyText}}</text>
 </view>
 <view class="tabbar-space"></view>

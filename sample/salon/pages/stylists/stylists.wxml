@@ -1,0 +1,34 @@
+<view class="bar">
+  <view class="row">
+    <view wx:for="{{filters}}" wx:key="id" class="f {{filter === item.id ? 'f-on' : ''}}" data-id="{{item.id}}" bindtap="onFilter">{{item.name}}</view>
+  </view>
+  <view class="row sort">
+    <text class="s {{sort === 'rating' ? 's-on' : ''}}" data-k="rating" bindtap="onSort">评分最高</text>
+    <text class="s {{sort === 'orders' ? 's-on' : ''}}" data-k="orders" bindtap="onSort">服务最多</text>
+    <text class="s {{sort === 'years' ? 's-on' : ''}}" data-k="years" bindtap="onSort">从业最久</text>
+  </view>
+</view>
+
+<view class="empty" wx:if="{{!list.length}}">
+  <icon type="info" size="56" color="#d9cfc9"></icon>
+  <text class="empty-tx">还没有收藏的发型师，去主页点「收藏」吧</text>
+  <view class="btn-line" bindtap="goAll">看看全部发型师</view>
+</view>
+
+<view class="card st" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="goStylist" hover-class="press">
+  <view class="row">
+    <image class="av" src="{{item.avatar}}"></image>
+    <view class="flex1">
+      <view class="row"><text class="n">{{item.name}}</text><text class="tag">{{item.title}}</text></view>
+      <view class="row r"><rating-stars value="{{item.rating}}" size="24" show-score="{{true}}"></rating-stars><text class="muted"> · 服务 {{item.orders}} 次</text></view>
+      <text class="muted">从业 {{item.years}} 年 · 擅长 {{item.catText}}</text>
+    </view>
+    <view class="fav {{item.fav ? 'fav-on' : ''}}" data-id="{{item.id}}" catchtap="toggleFav">{{item.fav ? '已收藏' : '收藏'}}</view>
+  </view>
+  <view class="row tags"><text class="tag" wx:for="{{item.tags}}" wx:for-item="t" wx:key="*this">{{t}}</text></view>
+  <view class="row between foot">
+    <text class="intro ellipsis flex1">{{item.intro}}</text>
+    <view class="btn-book" data-id="{{item.id}}" catchtap="book">预约</view>
+  </view>
+</view>
+<view class="tab-gap"></view>

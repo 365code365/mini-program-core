@@ -1,0 +1,34 @@
+{
+  "appid": "wx19ecbdd5f4a2441b",
+  "projectname": "play-3d-maze",
+  "description": "3D 迷宫：每关随机生成的迷宫，摇杆或重力感应操控小球，集齐宝石赶在倒计时前找到出口",
+  "compileType": "game",
+  "libVersion": "3.6.0",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": false,
+    "minified": true,
+    "uglifyFileName": false,
+    "ignoreUploadUnusedFiles": true
+  },
+  "packOptions": {
+    "ignore": [
+      {
+        "type": "file",
+        "value": "README.md"
+      },
+      {
+        "type": "file",
+        "value": "store.meta.json"
+      }
+    ],
+    "include": []
+  },
+  "condition": {},
+  "editorSetting": {
+    "tabIndent": "insertSpaces",
+    "tabSize": 2
+  }
+}

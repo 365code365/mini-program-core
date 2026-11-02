@@ -1,0 +1,41 @@
+<view class="top">
+  <view class="search row">
+    <text class="s-ic">⌕</text>
+    <input class="s-ipt flex1" value="{{kw}}" placeholder="搜索合同名称，如 租赁、借款" confirm-type="search" bindinput="onKw"></input>
+    <text class="s-x" wx:if="{{kw}}" bindtap="clearKw">×</text>
+  </view>
+  <view class="cats row">
+    <text class="c {{cat === item ? 'c-on' : ''}}" wx:for="{{cats}}" wx:key="*this" data-c="{{item}}" bindtap="pickCat">{{item}}</text>
+  </view>
+</view>
+
+<view class="card" wx:if="{{drafts.length}}">
+  <view class="row between"><text class="sec-title">我的草稿</text><text class="sec-more">长按管理</text></view>
+  <view class="dr row" wx:for="{{drafts}}" wx:key="id" data-id="{{item.id}}" bindtap="openDraft" bindlongpress="draftMenu">
+    <text class="dr-ic">稿</text>
+    <view class="col flex1">
+      <text class="dr-n">{{item.name}}</text>
+      <text class="muted">{{item.words}} 字 · {{item.updatedAt}}</text>
+    </view>
+    <text class="go">›</text>
+  </view>
+</view>
+
+<view class="card">
+  <view class="sec-title">模板库</view>
+  <view class="empty" wx:if="{{list.length === 0}}">
+    <view class="empty-ic">∅</view>
+    <text class="empty-tx">没有找到「{{kw}}」相关的模板</text>
+  </view>
+  <view class="tp row" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="open" hover-class="tp-hover">
+    <view class="tp-cover col"><text class="tp-cat">{{item.cat}}</text><text class="tp-pg">{{item.pages}} 页</text></view>
+    <view class="col flex1">
+      <text class="tp-n">{{item.name}}</text>
+      <text class="muted tp-d">{{item.desc}}</text>
+      <text class="tp-u">{{item.uses}} 人已使用</text>
+    </view>
+    <view class="use">使用</view>
+  </view>
+</view>
+<view class="disclaimer"><text>模板仅供参考，签署前建议请律师结合具体情况审查（「找律师」→ 文书审查）。</text></view>
+<view class="tab-pad"></view>

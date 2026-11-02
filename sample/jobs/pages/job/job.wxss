@@ -39,3 +39,9 @@
 .star.on { background: #2E6BFF; border-color: #2E6BFF; }
 .fav-t { font-size: 22rpx; color: #6b717a; }
 .btn-primary.done { background: #c9d7f7; }
+.share { border: 1rpx solid #d5dbe6; border-radius: 24rpx; padding: 4rpx 18rpx; }
+.share-t { font-size: 22rpx; color: #5c6370; }
+.follow-tip { margin-right: 8rpx; }
+.chat-big { height: 88rpx; padding: 0 36rpx; border-radius: 44rpx; background: #eef3ff; display: flex; flex-direction: row; align-items: center; justify-content: center; margin-right: 20rpx; }
+.chat-big-t { color: #2E6BFF; font-size: 30rpx; font-weight: bold; white-space: nowrap; }
+.btn-primary.done { background: #c9d7f7; color: #2E6BFF; }

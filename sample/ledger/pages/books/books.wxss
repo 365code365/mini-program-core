@@ -1,0 +1,33 @@
+.tip { margin: 24rpx 32rpx 0; }
+.book { padding: 0 28rpx; }
+.book-main { padding: 28rpx 0; border-bottom: 1rpx solid #f0f1f4; }
+.book-hover { opacity: 0.6; }
+.book-mid { margin-left: 20rpx; overflow: hidden; }
+.book-name { font-size: 30rpx; font-weight: bold; color: #1f2329; white-space: nowrap; }
+.cur-tag { margin-left: 12rpx; font-size: 20rpx; padding: 2rpx 12rpx; border-radius: 16rpx; background: #fff1e6; color: #f57c34; white-space: nowrap; }
+/* 勾：旋转的 L 形边框（✓ 字形画不出来） */
+.tick { width: 14rpx; height: 26rpx; border-right: 4rpx solid #f57c34; border-bottom: 4rpx solid #f57c34; transform: rotate(45deg); margin: -8rpx 10rpx 0 0; }
+.book-acts { justify-content: flex-end; padding: 16rpx 0; }
+.op { font-size: 24rpx; color: #5c6066; padding: 8rpx 24rpx; border-radius: 28rpx; background: #f5f6f8; margin-left: 16rpx; white-space: nowrap; }
+.op-del { color: #f04848; background: #fff2f2; }
+.default-mark { font-size: 24rpx; color: #b8bcc4; padding: 8rpx 24rpx; white-space: nowrap; }
+.op-hover { opacity: 0.6; }
+.new { margin: 40rpx 24rpx 0; }
+.new-hover { opacity: 0.8; }
+.bottom-space { height: 60rpx; }
+.mask { position: fixed; left: 0; top: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.45); }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; background: #ffffff; border-radius: 32rpx 32rpx 0 0; padding: 36rpx 32rpx calc(32rpx + env(safe-area-inset-bottom)); }
+.sheet-title { font-size: 32rpx; font-weight: bold; text-align: center; margin-bottom: 28rpx; }
+.field { background: #f5f6f8; border-radius: 16rpx; padding: 0 24rpx; }
+.field-input { height: 88rpx; font-size: 28rpx; }
+.ph { color: #b8bcc4; }
+.color-lbl { margin-top: 28rpx; }
+.colors { margin-top: 16rpx; justify-content: space-between; }
+/* 选中的颜色外面套一圈环：直接给色块加白边会在圆边露出一道细线 */
+.color { width: 64rpx; height: 64rpx; border-radius: 32rpx; box-sizing: border-box; border: 4rpx solid #ffffff; padding: 4rpx; }
+.color-on { border: 4rpx solid #1f2329; }
+.dot { width: 48rpx; height: 48rpx; border-radius: 24rpx; }
+.sheet-btns { margin-top: 40rpx; }
+.s-btn { flex: 1; height: 84rpx; line-height: 84rpx; text-align: center; border-radius: 42rpx; font-size: 30rpx; }
+.s-cancel { background: #f5f6f8; color: #5c6066; margin-right: 24rpx; }
+.s-ok { height: 84rpx; line-height: 84rpx; }

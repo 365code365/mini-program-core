@@ -1,11 +1,15 @@
-<view wx:if="{{!card}}" class="missing">卡片不存在或已删除</view>
+<view wx:if="{{!card}}" class="missing">
+  <view class="missing-ic"><view class="missing-sheet"></view></view>
+  <text class="missing-text">卡片不存在或已删除</text>
+  <view class="btn btn-primary missing-back" bindtap="onBackBoard">回到看板</view>
+</view>
 <block wx:else>
   <view class="card-box head">
     <view class="row">
       <text class="col-tag">{{colName}}</text>
       <text class="late-tag" wx:if="{{overdue}}">已逾期</text>
     </view>
-    <input class="f-title" value="{{card.title}}" placeholder="卡片标题" bindinput="onTitle" />
+    <input class="f-title" value="{{card.title}}" placeholder="卡片标题" bindinput="onTitle" bindfocus="onTitleFocus" bindblur="onTitleBlur" />
     <textarea class="f-desc" value="{{card.desc}}" placeholder="补充描述…" maxlength="500" bindinput="onDesc" />
   </view>
   <view class="card-box cells">
@@ -50,5 +54,23 @@
   </view>
   <view class="btn btn-ghost btn-move" bindtap="onMove">移动到…</view>
   <view class="btn btn-danger btn-del" bindtap="onDelete">删除卡片</view>
+  <view class="card-box comments">
+    <view class="row between">
+      <text class="box-title">评论</text>
+      <text class="sub">{{comments.length}} 条</text>
+    </view>
+    <view class="row cm-new">
+      <input class="cm-input flex1" value="{{commentDraft}}" placeholder="说点什么，@同事请写名字" maxlength="200" confirm-type="send" bindinput="onCommentDraft" bindconfirm="onComment" />
+      <view class="cm-send {{commentDraft ? 'on' : ''}}" bindtap="onComment">发送</view>
+    </view>
+    <view class="cm row" wx:for="{{comments}}" wx:key="id" data-id="{{item.id}}" bindlongpress="onCommentLong">
+      <view class="avatar cm-avatar" style="background: {{item.color}}">{{item.initial}}</view>
+      <view class="flex1">
+        <view class="row between"><text class="cm-name">{{item.name}}</text><text class="sub">{{item.time}}</text></view>
+        <text class="cm-text">{{item.text}}</text>
+      </view>
+    </view>
+    <text class="sub cm-empty" wx:if="{{!comments.length}}">还没有评论，长按评论可复制或删除</text>
+  </view>
   <view class="safe"></view>
 </block>

@@ -1,0 +1,28 @@
+<view class="card">
+  <text class="section-title">常见问题</text>
+  <view class="faq" wx:for="{{faq}}" wx:key="q" data-i="{{index}}" bindtap="onQ">
+    <view class="row between"><text class="q flex1">{{item.q}}</text><view class="chev {{open === index ? 'down' : ''}}"></view></view>
+    <text class="a" wx:if="{{open === index}}">{{item.a}}</text>
+  </view>
+</view>
+<view class="card">
+  <text class="section-title">意见反馈</text>
+  <view class="types row">
+    <view class="ty {{type === index ? 'on' : ''}}" wx:for="{{types}}" wx:key="*this" data-i="{{index}}" bindtap="onType"><text class="ty-t">{{item}}</text></view>
+  </view>
+  <textarea id="fb{{seq}}" class="fb" value="{{text}}" maxlength="200" placeholder="说说遇到的问题或建议（至少 5 个字）" bindinput="onInput" />
+  <view class="btn-primary" bindtap="onSubmit">提交反馈</view>
+</view>
+<view class="card" wx:if="{{list.length}}">
+  <text class="section-title">我的反馈</text>
+  <view class="fb-item" wx:for="{{list}}" wx:key="id">
+    <view class="row between"><text class="fb-type">{{item.type}}</text><text class="state st-orange">{{item.status}}</text></view>
+    <text class="fb-text">{{item.text}}</text>
+    <text class="sub">{{item.time}}</text>
+  </view>
+</view>
+<view class="card row service" bindtap="onCall">
+  <view class="col flex1"><text class="q">联系客服</text><text class="sub">工作日 9:00-21:00 · 400-600-8899</text></view>
+  <view class="chev"></view>
+</view>
+<view class="safe-bottom"></view>

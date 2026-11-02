@@ -260,14 +260,28 @@ page {
 }
 
 .review-name {
-  display: block;
   font-size: 26rpx;
   font-weight: bold;
 }
 
+.mine-tag {
+  font-size: 18rpx;
+  line-height: 28rpx;
+  padding: 0 8rpx;
+  margin-left: 10rpx;
+  border-radius: 6rpx;
+  background: #e8f1ff;
+  color: #1677ff;
+}
+
 .review-star {
-  display: block;
   font-size: 20rpx;
+  line-height: 28rpx;
+  color: #dfe2e8;
+  margin-right: 2rpx;
+}
+
+.review-star-on {
   color: #ff8a00;
 }
 
@@ -283,13 +297,65 @@ page {
 }
 
 .info-row {
-  height: 88rpx;
+  min-height: 88rpx;
   border-bottom: 1rpx solid #f0f1f4;
   font-size: 26rpx;
 }
 
+.info-k {
+  width: 140rpx;
+  flex-shrink: 0;
+}
+
+.info-v {
+  text-align: right;
+}
+
+.info-op {
+  margin-left: 16rpx;
+  padding: 0 18rpx;
+  line-height: 44rpx;
+  border-radius: 22rpx;
+  background: #e8f1ff;
+  font-size: 22rpx;
+  flex-shrink: 0;
+}
+
 .link {
   color: #1677ff;
+}
+
+/* 列表上多规格菜品：「选规格」按钮 + 已选份数角标 */
+.spec-btn {
+  position: relative;
+  height: 48rpx;
+  line-height: 48rpx;
+  padding: 0 20rpx;
+  border-radius: 24rpx;
+  background: #1677ff;
+}
+
+.spec-btn-t {
+  color: #ffffff;
+  font-size: 22rpx;
+  white-space: nowrap;
+}
+
+.spec-badge {
+  position: absolute;
+  right: -10rpx;
+  top: -14rpx;
+  min-width: 32rpx;
+  height: 32rpx;
+  line-height: 30rpx;
+  border-radius: 16rpx;
+  background: #ff4d2d;
+  border: 2rpx solid #ffffff;
+  color: #ffffff;
+  font-size: 18rpx;
+  text-align: center;
+  padding: 0 6rpx;
+  box-sizing: border-box;
 }
 
 .mask {
@@ -316,14 +382,169 @@ page {
   border-bottom: 1rpx solid #f0f1f4;
 }
 
+.panel-clear {
+  padding: 8rpx 0 8rpx 20rpx;
+}
+
 .panel-item {
-  height: 96rpx;
+  min-height: 96rpx;
   font-size: 28rpx;
   border-bottom: 1rpx solid #f5f6f8;
 }
 
+.panel-name {
+  display: block;
+  font-size: 28rpx;
+}
+
+.panel-spec {
+  display: block;
+  font-size: 22rpx;
+  color: #8a8f99;
+}
+
 .panel-price {
   margin: 0 24rpx;
+}
+
+/* 规格面板 */
+.spec-mask {
+  z-index: 40;
+}
+
+.spec {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 41;
+  background: #ffffff;
+  border-radius: 28rpx 28rpx 0 0;
+  padding: 32rpx 32rpx calc(32rpx + env(safe-area-inset-bottom));
+}
+
+.spec-head {
+  align-items: flex-start;
+}
+
+.spec-img {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 16rpx;
+  font-size: 48rpx;
+  margin-right: 20rpx;
+  flex-shrink: 0;
+}
+
+.spec-name {
+  display: block;
+}
+
+.spec-desc {
+  display: block;
+  margin-top: 6rpx;
+}
+
+.spec-x {
+  position: relative;
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 24rpx;
+  background: #f0f1f4;
+  flex-shrink: 0;
+}
+
+.x1,
+.x2 {
+  position: absolute;
+  left: 12rpx;
+  top: 22rpx;
+  width: 24rpx;
+  height: 4rpx;
+  border-radius: 2rpx;
+  background: #8a8f99;
+}
+
+.x1 {
+  transform: rotate(45deg);
+}
+
+.x2 {
+  transform: rotate(-45deg);
+}
+
+.spec-group {
+  margin-top: 24rpx;
+}
+
+.spec-label {
+  display: block;
+  font-size: 26rpx;
+  font-weight: bold;
+  color: #3a3f47;
+}
+
+.opts {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.opt {
+  height: 60rpx;
+  line-height: 56rpx;
+  padding: 0 24rpx;
+  margin: 14rpx 16rpx 0 0;
+  border-radius: 12rpx;
+  border: 2rpx solid #f5f6f8;
+  background: #f5f6f8;
+  box-sizing: border-box;
+}
+
+.opt-on {
+  border-color: #1677ff;
+  background: #e8f1ff;
+}
+
+.opt-t {
+  font-size: 24rpx;
+  color: #1f2329;
+  white-space: nowrap;
+}
+
+.opt-on .opt-t {
+  color: #1677ff;
+  font-weight: bold;
+}
+
+.spec-sel {
+  margin-top: 28rpx;
+  padding: 14rpx 20rpx;
+  border-radius: 12rpx;
+  background: #f7f8fa;
+}
+
+.spec-foot {
+  margin-top: 24rpx;
+}
+
+.spec-price {
+  font-size: 40rpx;
+}
+
+.step-off {
+  border-color: #d4d7dd;
+}
+
+.step-off .minus-bar {
+  background: #d4d7dd;
+}
+
+.spec-add {
+  margin-top: 24rpx;
+  height: 84rpx;
+  line-height: 84rpx;
+  font-size: 30rpx;
 }
 
 .cart-bar {

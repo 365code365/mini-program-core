@@ -1,0 +1,35 @@
+<page-meta background-text-style="dark">
+  <navigation-bar title="预约凭证" front-color="#ffffff" background-color="#a45c34"></navigation-bar>
+</page-meta>
+<view class="top"></view>
+<view wx:if="{{!b}}" class="empty"><view class="empty-ic">票</view><text class="empty-t">没有找到这张预约</text><view class="btn empty-btn" bindtap="home">返回首页</view></view>
+<view wx:else class="tk">
+  <view wx:if="{{isNew && b.status === '待使用'}}" class="ok"><icon type="success" size="22" color="#2f8f5a"></icon><text class="ok-t">预约成功，请按时段入馆</text></view>
+  <view class="tk-h">
+    <text class="tk-n">云川博物院 · 参观预约</text>
+    <text class="st st-{{b.status === '待使用' ? 'on' : 'off'}}">{{b.status}}</text>
+  </view>
+  <view class="qr-box">
+    <view class="qr {{b.status === '待使用' ? '' : 'qr-off'}}">
+      <view class="qr-r" wx:for="{{qr}}" wx:key="k" wx:for-item="r">
+        <view wx:for="{{r.cells}}" wx:key="k" wx:for-item="c" class="qc {{c.v ? 'qc-on' : ''}}"></view>
+      </view>
+    </view>
+    <view wx:if="{{b.status !== '待使用'}}" class="qr-mask"><text class="qr-mt">{{b.status}}</text></view>
+  </view>
+  <view class="code" bindtap="copyCode"><text class="code-t" selectable>{{b.code}}</text><text class="code-c">复制</text></view>
+  <text class="muted center">入馆时向闸机出示入馆码，或报预约号 + 证件核验</text>
+  <view class="dash"></view>
+  <view class="kv"><text class="k">参观日期</text><text class="v">{{b.date}} {{b.wk}}</text></view>
+  <view class="kv"><text class="k">入馆时段</text><text class="v">{{b.slot}}</text></view>
+  <view class="kv"><text class="k">参观人数</text><text class="v">{{b.visitors.length}} 人</text></view>
+  <view class="ps">
+    <view class="p" wx:for="{{b.visitors}}" wx:key="id"><text class="p-n">{{item.name}}</text><text class="muted">{{item.id}}</text></view>
+  </view>
+</view>
+<view wx:if="{{b}}" class="ops">
+  <view class="btn-ghost op" bindtap="guide">到馆指引</view>
+  <view wx:if="{{b.status === '待使用'}}" class="btn-ghost op op-red" bindtap="cancel">取消预约</view>
+  <view wx:else class="btn-ghost op" bindtap="rebook">重新预约</view>
+</view>
+<view wx:if="{{b}}" class="foot"><view class="btn" bindtap="home">返回首页</view></view>

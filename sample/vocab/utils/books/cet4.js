@@ -1,0 +1,27 @@
+// 大学英语四级高频词（精选）：[单词, 音标, 释义, 例句, 例句译文]
+module.exports = [
+  ['abandon', '/əˈbændən/', 'v. 放弃；抛弃', 'He refused to abandon his dream of becoming a doctor.', '他不肯放弃当医生的梦想。'],
+  ['ability', '/əˈbɪləti/', 'n. 能力；才能', 'She has the ability to explain hard ideas simply.', '她能把难懂的道理讲得很简单。'],
+  ['abroad', '/əˈbrɔːd/', 'adv. 在国外；到国外', 'My cousin is going abroad to study next year.', '我表哥明年要出国读书。'],
+  ['absorb', '/əbˈzɔːb/', 'v. 吸收；吸引（注意力）', 'Plants absorb water through their roots.', '植物通过根吸收水分。'],
+  ['academic', '/ˌækəˈdemɪk/', 'adj. 学术的；学业的', 'Her academic performance improved a lot this term.', '这学期她的学业成绩进步很大。'],
+  ['accept', '/əkˈsept/', 'v. 接受；认可', 'I accept your apology.', '我接受你的道歉。'],
+  ['accompany', '/əˈkʌmpəni/', 'v. 陪同；伴随', 'Children must be accompanied by an adult.', '儿童须由成人陪同。'],
+  ['account', '/əˈkaʊnt/', 'n. 账户；描述', 'I opened a bank account last week.', '我上周开了一个银行账户。'],
+  ['achieve', '/əˈtʃiːv/', 'v. 实现；达到', 'You can achieve your goal if you keep trying.', '坚持下去你就能实现目标。'],
+  ['acquire', '/əˈkwaɪə(r)/', 'v. 获得；习得', 'Children acquire language very quickly.', '孩子习得语言非常快。'],
+  ['adapt', '/əˈdæpt/', 'v. 适应；改编', 'It took him a month to adapt to the new school.', '他用了一个月才适应新学校。'],
+  ['adequate', '/ˈædɪkwət/', 'adj. 足够的；适当的', 'Make sure you get adequate sleep before the exam.', '考试前一定要保证充足的睡眠。'],
+  ['adjust', '/əˈdʒʌst/', 'v. 调整；适应', 'You can adjust the height of the chair.', '你可以调节椅子的高度。'],
+  ['admire', '/ədˈmaɪə(r)/', 'v. 钦佩；欣赏', 'I really admire her courage.', '我非常钦佩她的勇气。'],
+  ['advance', '/ədˈvɑːns/', 'n./v. 进步；前进', 'Advances in medicine have saved many lives.', '医学的进步挽救了许多生命。'],
+  ['advantage', '/ədˈvɑːntɪdʒ/', 'n. 优势；好处', 'Living near the school is a big advantage.', '住在学校附近是一大优势。'],
+  ['affect', '/əˈfekt/', 'v. 影响', 'The heavy rain affected the traffic.', '大雨影响了交通。'],
+  ['afford', '/əˈfɔːd/', 'v. 买得起；负担得起', "We can't afford a new car this year.", '我们今年买不起新车。'],
+  ['agriculture', '/ˈæɡrɪkʌltʃə(r)/', 'n. 农业', 'Agriculture is still important in this region.', '农业在这个地区仍然很重要。'],
+  ['alarm', '/əˈlɑːm/', 'n. 闹钟；警报', 'I set my alarm for six o\'clock.', '我把闹钟定在六点。'],
+  ['alternative', '/ɔːlˈtɜːnətɪv/', 'n./adj. 替代方案；可供选择的', 'Cycling is a healthy alternative to driving.', '骑车是代替开车的健康选择。'],
+  ['ambition', '/æmˈbɪʃn/', 'n. 抱负；雄心', 'His ambition is to open his own restaurant.', '他的抱负是开一家自己的餐馆。'],
+  ['analyse', '/ˈænəlaɪz/', 'v. 分析', 'We need to analyse the data carefully.', '我们需要仔细分析这些数据。'],
+  ['anxious', '/ˈæŋkʃəs/', 'adj. 焦虑的；渴望的', 'She felt anxious before the interview.', '面试前她感到很焦虑。']
+];

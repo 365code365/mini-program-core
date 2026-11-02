@@ -1,0 +1,40 @@
+<view class="page">
+  <scroll-view scroll-x class="chips" enable-flex>
+    <view class="chips-in row">
+      <view wx:for="{{scenics}}" wx:key="id" class="chip {{sid === item.id ? 'chip-on' : ''}}" data-id="{{item.id}}" bindtap="onScenic"><text>{{item.short}}</text></view>
+    </view>
+  </scroll-view>
+
+  <view class="head between">
+    <view class="col"><text class="h2">{{s.name}}</text><text class="muted">{{spots.length}} 个讲解点 · 上下滑动切换</text></view>
+    <text class="brand link" bindtap="goRoute">路线地图 ›</text>
+  </view>
+
+  <swiper class="sw" vertical current="{{cur}}" bindchange="onSwipe" previous-margin="0" next-margin="80rpx">
+    <swiper-item wx:for="{{spots}}" wx:key="id">
+      <view class="spot {{cur === index ? 'spot-on' : ''}}">
+        <image class="sp-img" src="{{item.img}}" mode="aspectFill"></image>
+        <view class="sp-no"><text class="sp-no-tx">{{index + 1}} / {{spots.length}}</text></view>
+        <view class="sp-body">
+          <view class="between"><text class="sp-name">{{item.name}}</text><text class="muted">讲解 {{item.durText}}</text></view>
+          <text class="sp-tip">📍 {{item.tip}}</text>
+          <text class="sp-text">{{item.text}}</text>
+        </view>
+      </view>
+    </swiper-item>
+  </swiper>
+
+  <view class="player">
+    <view class="between">
+      <text class="pl-name">{{spots[cur].name}}{{mode === 'bg' ? ' · 全程连播中' : ''}}</text>
+      <text class="muted">{{pos}} / {{dur}}</text>
+    </view>
+    <progress percent="{{pct}}" stroke-width="4" activeColor="#13a07b" backgroundColor="#e1e8e4" border-radius="2"></progress>
+    <view class="row ctl">
+      <view class="c-sm {{cur === 0 ? 'c-off' : ''}}" bindtap="onPrev"><text>上一个</text></view>
+      <view class="c-play" hover-class="press" bindtap="onToggle"><text class="c-play-tx">{{playing ? '❚❚' : '▶'}}</text></view>
+      <view class="c-sm {{cur === spots.length - 1 ? 'c-off' : ''}}" bindtap="onNext"><text>下一个</text></view>
+      <view class="c-all {{mode === 'bg' ? 'c-all-on' : ''}}" hover-class="press" bindtap="onAll"><text>{{mode === 'bg' ? '停止连播' : '全程连播'}}</text></view>
+    </view>
+  </view>
+</view>

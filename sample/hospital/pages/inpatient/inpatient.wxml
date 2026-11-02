@@ -1,0 +1,74 @@
+<view class="head">
+  <view class="row between">
+    <view class="row">
+      <view class="h-av"><text>{{sx}}</text></view>
+      <view class="h-main">
+        <text class="h-name">{{ip.patient}}</text>
+        <text class="h-sub">住院号 {{ip.id}}</text>
+      </view>
+    </view>
+    <text class="h-st {{ip.status === 'out' ? 'out' : ''}}">{{ip.status === 'in' ? '住院中' : '已出院'}}</text>
+  </view>
+  <view class="h-grid">
+    <view class="hg"><text class="hg-v">{{ip.dept}}</text><text class="hg-k">科室</text></view>
+    <view class="hg"><text class="hg-v">{{ip.bed}}</text><text class="hg-k">{{ip.ward}}</text></view>
+    <view class="hg"><text class="hg-v">{{sum.days}} 天</text><text class="hg-k">{{ip.inDate}} 入院</text></view>
+  </view>
+  <text class="h-doc">主治医生 {{ip.doctor}} · 护士站 021-6438 2212</text>
+</view>
+<view class="card money">
+  <view class="m-i"><text class="m-v">¥{{sum.deposit}}</text><text class="m-k">已交预交金</text></view>
+  <view class="m-line"></view>
+  <view class="m-i"><text class="m-v">¥{{sum.total}}</text><text class="m-k">累计费用</text></view>
+  <view class="m-line"></view>
+  <view class="m-i"><text class="m-v {{sum.balance < 0 ? 'neg' : (low ? 'warn' : '')}}">¥{{sum.balance}}</text><text class="m-k">{{sum.balance < 0 ? '已欠费' : '预交金余额'}}</text></view>
+</view>
+<view wx:if="{{low}}" class="warn-bar"><text>预交金余额不足 ¥1000，为不影响治疗用药，请及时补缴</text></view>
+<view wx:if="{{ip.status === 'in'}}" class="card">
+  <text class="sec-title">预交金补缴</text>
+  <view class="amts">
+    <view class="amt {{amtIdx === index ? 'on' : ''}}" wx:for="{{amounts}}" wx:key="*this" data-i="{{index}}" bindtap="onAmt"><text>¥{{item}}</text></view>
+  </view>
+  <view class="custom row">
+    <text class="c-k">其他金额</text>
+    <input id="amt{{formSeq}}" class="c-in" type="number" placeholder="100~50000 的整数" placeholder-class="ph" value="{{custom}}" maxlength="5" bindinput="onCustom" />
+  </view>
+  <view class="btn-primary topup" bindtap="onTopup"><text>微信支付补缴</text></view>
+</view>
+<view wx:else class="card settle">
+  <text class="sec-title">出院结算</text>
+  <view class="kv"><text class="k">出院日期</text><text class="v">{{ip.outDate}}</text></view>
+  <view class="kv"><text class="k">住院总费用</text><text class="v">¥{{ip.settle.total}}</text></view>
+  <view class="kv"><text class="k">预交金合计</text><text class="v">¥{{ip.settle.deposit}}</text></view>
+  <view class="kv" wx:if="{{ip.settle.extra}}"><text class="k">结算补缴</text><text class="v">¥{{ip.settle.extra}}</text></view>
+  <view class="kv" wx:if="{{ip.settle.refund}}"><text class="k">退还预交金</text><text class="v ok">¥{{ip.settle.refund}}（原路退回）</text></view>
+  <view class="kv"><text class="k">结算时间</text><text class="v">{{settleTime}}</text></view>
+</view>
+<view class="card">
+  <view class="row between">
+    <text class="sec-title">每日费用清单</text>
+    <text class="muted">点开看明细</text>
+  </view>
+  <view class="day" wx:for="{{days}}" wx:key="k">
+    <view class="row between day-h" data-k="{{item.k}}" bindtap="onToggleDay">
+      <text class="day-d">{{item.date}} · 第 {{item.k + 1}} 天</text>
+      <view class="row"><text class="day-t">¥{{item.total}}</text><view class="chev {{openK === item.k ? 'chev-down' : ''}}"></view></view>
+    </view>
+    <view wx:if="{{openK === item.k}}" class="day-items">
+      <view class="di" wx:for="{{item.items}}" wx:key="name" wx:for-item="x"><text class="di-n">{{x.name}}</text><text class="di-v">¥{{x.amount}}</text></view>
+    </view>
+  </view>
+</view>
+<view class="card">
+  <view class="row between">
+    <text class="sec-title">预交金记录</text>
+    <view class="link" bindtap="goBills"><text>缴费记录</text><view class="chev"></view></view>
+  </view>
+  <view class="dp" wx:for="{{deposits}}" wx:key="time"><text class="muted">{{item.time}} · 微信支付</text><text class="dp-v">+¥{{item.amount}}</text></view>
+</view>
+<view style="height: 200rpx;"></view>
+<view class="bar">
+  <view class="bar-btn ghost" bindtap="onCall"><text>联系护士站</text></view>
+  <view wx:if="{{ip.status === 'in'}}" class="btn-primary bar-btn settle-btn" bindtap="onSettle"><text>办理出院结算</text></view>
+  <view wx:else class="btn-primary bar-btn" bindtap="goBills"><text>查看缴费记录</text></view>
+</view>

@@ -1,5 +1,5 @@
 const data = require('../../utils/data.js');
-const cart = require('../../utils/cart.js');
+const store = require('../../utils/store.js');
 
 const HIS_KEY = 'fm_search_history';
 
@@ -101,7 +101,7 @@ Page({
   },
 
   onAdd(e) {
-    const n = cart.add(e.currentTarget.dataset.id, 1);
-    wx.showToast({ title: `已加入购物车（${n}）`, icon: 'none' });
+    const r = store.addToCart(e.currentTarget.dataset.id, 1);
+    wx.showToast({ title: r.ok ? r.msg || `已加入购物车（${r.count}）` : r.msg, icon: 'none' });
   }
 });

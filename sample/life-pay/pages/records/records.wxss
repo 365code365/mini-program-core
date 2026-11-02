@@ -17,3 +17,8 @@
 .r-amt { font-size: 30rpx; font-weight: bold; color: #1e2329; }
 .r-st { margin-top: 4rpx; font-size: 20rpx; color: #14a06f; }
 .r-save { margin-top: 4rpx; font-size: 20rpx; color: #f2603d; }
+.s-row { justify-content: space-between; margin-top: 4rpx; }
+.s-inv { font-size: 22rpx; color: #ffffff; background: rgba(255, 255, 255, 0.2); padding: 6rpx 18rpx; border-radius: 22rpx; }
+.chev.w { border-color: rgba(255, 255, 255, 0.9); }
+.empty { display: flex; flex-direction: column; align-items: center; }
+.empty-go { margin-top: 28rpx; text-align: center; width: 220rpx; height: 68rpx; line-height: 68rpx; border-radius: 34rpx; border: 2rpx solid #14a06f; color: #14a06f; font-size: 26rpx; }

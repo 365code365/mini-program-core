@@ -1,0 +1,23 @@
+<view class="tabs">
+  <view class="tb {{tab === item.key ? 'tb-on' : ''}}" wx:for="{{tabs}}" wx:key="text" data-k="{{item.key}}" bindtap="switchTab">
+    <view class="row">
+      <text class="tb-tx">{{item.text}}</text>
+      <text class="tb-n" wx:if="{{item.key && counts[item.key]}}">{{counts[item.key]}}</text>
+    </view>
+    <view class="tb-bar" wx:if="{{tab === item.key}}"></view>
+  </view>
+</view>
+<view class="wrap list">
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中…</text>
+  </view>
+  <view class="empty" wx:elif="{{!list.length}}">
+    <image class="empty-ic" src="/images/svc/daily.png"></image>
+    <text class="empty-tx">{{tab ? '这个状态下还没有订单' : '还没有订单，约一次保洁试试'}}</text>
+    <view class="btn-line" bindtap="goHome">去预约服务</view>
+  </view>
+  <view wx:else bind:action="onAction">
+    <order-card class="oc-item" wx:for="{{list}}" wx:key="id" order="{{item}}"></order-card>
+  </view>
+  <view class="tab-gap"></view>
+</view>

@@ -1,0 +1,31 @@
+<view class="page">
+  <view wx:if="{{!m}}" class="empty">
+    <text class="empty-text">这条记录已经删除了</text>
+    <view class="btn-ghost back" bindtap="toAlbum">回到相册</view>
+  </view>
+  <block wx:else>
+    <view wx:if="{{isNew}}" class="ok">
+      <text class="ok-title">已保存到成长相册</text>
+      <text class="ok-sub">以后在「相册」里按月份就能找到它</text>
+    </view>
+    <image class="photo" src="{{m.photo}}" mode="aspectFill" bindtap="preview"></image>
+    <view class="card">
+      <view class="between">
+        <text class="date">{{dateText}}</text>
+        <text class="tag">{{m.tag}}</text>
+      </view>
+      <text class="muted age">{{ageText}}</text>
+      <text class="cap">{{m.caption}}</text>
+      <view wx:if="{{m.voice}}" class="voice" bindtap="togglePlay" hover-class="btn-hover">
+        <view class="v-ic {{playing ? 'v-on' : ''}}">{{playing ? '停' : '听'}}</view>
+        <text class="flex1">{{playing ? '正在播放…' : '语音日记'}}</text>
+        <text class="muted">{{m.voice.duration}}″</text>
+      </view>
+    </view>
+    <view class="row ops">
+      <view class="btn-ghost flex1" bindtap="setAvatar" hover-class="btn-hover">{{isAvatar ? '已是宝宝头像' : '设为宝宝头像'}}</view>
+      <view class="btn-ghost flex1 del" bindtap="del" hover-class="btn-hover">删除</view>
+    </view>
+    <view class="btn done" bindtap="toAlbum" hover-class="btn-hover">回到相册</view>
+  </block>
+</view>

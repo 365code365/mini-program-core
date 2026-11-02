@@ -112,4 +112,52 @@ function view(c) {
   }
 }
 
-module.exports = { KEY, COLS, PRIOS, MEMBERS, fmt, dayOffset, today, isOverdue, dueLabel, member, load, save, find, update, nextId, progress, view }
+// ───── 团队动态（kb_log）与评论：「我」固定是林晓（产品经理，看板的创建人） ─────
+const LOG_KEY = 'kb_log'
+const LOG_MAX = 200
+const ME = 'm1'
+const LOG_TYPES = [
+  { key: 'create', name: '新建' },
+  { key: 'move', name: '移动' },
+  { key: 'edit', name: '修改' },
+  { key: 'comment', name: '评论' },
+  { key: 'delete', name: '删除' }
+]
+function seedLog() {
+  const H = 3600 * 1000
+  const now = Date.now()
+  const raw = [
+    [50, 'm1', 'create', 1, '首页改版需求评审', '新建了卡片'],
+    [30, 'm4', 'edit', 2, '登录页埋点方案', '勾选了子任务「梳理事件」'],
+    [26, 'm2', 'move', 4, '订单列表虚拟滚动', '从「待办」移到「进行中」'],
+    [20, 'm1', 'move', 8, '发布 2.3.0', '从「进行中」移到「已完成」'],
+    [6, 'm3', 'comment', 6, '新版插画', '评论：草图已发群里，等确认配色'],
+    [2, 'm2', 'move', 10, '修复 iOS 键盘遮挡', '从「进行中」移到「已完成」']
+  ]
+  return raw.map((r, i) => ({ id: i + 1, at: now - r[0] * H, who: r[1], type: r[2], cardId: r[3], title: r[4], text: r[5] }))
+}
+function loadLog() {
+  let list = wx.getStorageSync(LOG_KEY)
+  if (!Array.isArray(list)) {
+    list = seedLog()
+    wx.setStorageSync(LOG_KEY, list)
+  }
+  return list
+}
+// 记一条动态（最新的在最后，最多留 LOG_MAX 条）
+function log(type, card, text) {
+  const list = loadLog()
+  const id = list.reduce((m, i) => Math.max(m, i.id), 0) + 1
+  list.push({ id, at: Date.now(), who: ME, type, cardId: card.id, title: card.title, text })
+  wx.setStorageSync(LOG_KEY, list.slice(-LOG_MAX))
+}
+function colName(key) {
+  const c = COLS.find(i => i.key === key)
+  return c ? c.name : key
+}
+// 「10-25 14:03」
+function timeText(ts) {
+  const d = new Date(ts)
+  return pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes())
+}
+module.exports = { KEY, COLS, LOG_KEY, LOG_TYPES, ME, loadLog, log, colName, timeText, PRIOS, MEMBERS, fmt, dayOffset, today, isOverdue, dueLabel, member, load, save, find, update, nextId, progress, view }

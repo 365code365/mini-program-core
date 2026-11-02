@@ -1,0 +1,12 @@
+.od-way { margin-right: 48rpx; font-size: 28rpx; }
+.od-addr { margin-top: 24rpx; padding-top: 24rpx; border-top: 1rpx solid #f0f1f4; }
+.od-an { display: block; font-size: 28rpx; font-weight: bold; margin-bottom: 6rpx; }
+.od-face { margin-top: 24rpx; padding-top: 24rpx; border-top: 1rpx solid #f0f1f4; display: flex; flex-direction: column; font-size: 26rpx; }
+.od-cover { width: 140rpx; height: 140rpx; border-radius: 12rpx; margin-right: 20rpx; flex-shrink: 0; }
+.od-t { display: block; font-size: 28rpx; margin-bottom: 12rpx; }
+.od-kv { padding: 14rpx 0; font-size: 26rpx; }
+.od-remark { background: #f4f5f7; height: 72rpx; border-radius: 12rpx; padding: 0 20rpx; font-size: 26rpx; }
+.od-safe { margin: 24rpx 32rpx; }
+.od-st { margin-left: 10rpx; }
+.od-bar { position: fixed; left: 0; right: 0; bottom: 0; background: #ffffff; display: flex; flex-direction: row; align-items: center; padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom)); box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.05); }
+.od-pay { width: 260rpx; }

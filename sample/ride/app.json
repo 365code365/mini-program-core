@@ -3,10 +3,15 @@
     "pages/index/index",
     "pages/place/place",
     "pages/calling/calling",
+    "pages/pay/pay",
     "pages/trips/trips",
     "pages/trip-detail/trip-detail",
     "pages/mine/mine",
-    "pages/coupons/coupons"
+    "pages/coupons/coupons",
+    "pages/wallet/wallet",
+    "pages/address/address",
+    "pages/contacts/contacts",
+    "pages/invoice/invoice"
   ],
   "window": {
     "navigationBarTitleText": "滴达出行",

@@ -1,0 +1,32 @@
+.head { background: #13a874; padding: 10rpx 28rpx 40rpx; display: flex; flex-direction: row; align-items: center; }
+.logo { width: 96rpx; height: 96rpx; border-radius: 20rpx; background: #ffffff; }
+.hd-mid { flex: 1; margin-left: 20rpx; display: flex; flex-direction: column; }
+.name { color: #ffffff; font-size: 34rpx; font-weight: bold; }
+.sub { color: rgba(255,255,255,0.85); font-size: 24rpx; margin-top: 6rpx; }
+.addr { display: flex; flex-direction: row; align-items: center; margin-top: -20rpx; }
+.addr-mid { flex: 1; display: flex; flex-direction: column; }
+.addr-tx { font-size: 27rpx; line-height: 1.5; }
+.addr-op { width: 90rpx; display: flex; flex-direction: column; align-items: center; }
+.addr-ic { font-size: 36rpx; }
+.addr-op-tx { font-size: 20rpx; color: #4d565f; }
+.pt-head { display: flex; flex-direction: row; margin-top: 18rpx; padding: 12rpx 0; background: #f6f8f9; border-radius: 10rpx; }
+.pt-row { display: flex; flex-direction: row; padding: 20rpx 0; border-bottom: 1rpx solid #f0f2f4; border-radius: 10rpx; }
+.pt-on { background: #e3f6ee; }
+.pt-c { flex: 1; text-align: center; font-size: 26rpx; }
+.pt-k { font-weight: bold; }
+.pt-list { color: #8b939b; }
+.pt-cut { color: #f2542d; }
+.pt-tip { margin-top: 14rpx; }
+.pm { display: flex; flex-direction: row; align-items: center; margin-top: 16rpx; }
+.pm-ic { font-size: 20rpx; color: #ffffff; background: #f2542d; border-radius: 6rpx; padding: 2rpx 8rpx; }
+.pm-tx { font-size: 26rpx; margin-left: 12rpx; }
+.fac { display: flex; flex-direction: row; flex-wrap: wrap; margin-top: 10rpx; }
+.fac-it { width: 25%; display: flex; flex-direction: column; align-items: center; margin-top: 16rpx; }
+.fac-off { opacity: 0.3; }
+.fac-ic { font-size: 40rpx; }
+.fac-tx { font-size: 22rpx; color: #4d565f; margin-top: 4rpx; }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; height: 120rpx; padding: 0 24rpx env(safe-area-inset-bottom); background: #ffffff; display: flex; flex-direction: row; align-items: center; border-top: 1rpx solid #eceff1; }
+.bar-l { flex: 1; display: flex; flex-direction: column; }
+.bar-p { font-size: 40rpx; }
+.bar-btn { background: #13a874; border-radius: 40rpx; height: 84rpx; padding: 0 56rpx; }
+.bar-btn-tx { color: #ffffff; font-size: 30rpx; font-weight: bold; line-height: 84rpx; }

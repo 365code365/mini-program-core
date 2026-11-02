@@ -1,0 +1,15 @@
+.cover { width: 702rpx; height: 340rpx; border-radius: 24rpx; }
+.title { display: block; font-size: 40rpx; font-weight: bold; line-height: 1.4; margin: 28rpx 0 16rpx; }
+.meta { margin-bottom: 24rpx; }
+.gap { margin-left: 20rpx; }
+.body { display: flex; flex-direction: column; }
+.para { font-size: 30rpx; line-height: 1.8; color: #3a3033; margin-bottom: 20rpx; }
+.tip { background: #fff7e6; border-radius: 20rpx; padding: 24rpx 28rpx; margin-bottom: 16rpx; display: flex; flex-direction: column; }
+.tip-h { font-size: 26rpx; color: #d88a12; font-weight: bold; margin-bottom: 8rpx; }
+.tip-t { font-size: 28rpx; color: #7a5a20; line-height: 1.6; }
+.note { display: block; margin: 8rpx 0 24rpx; }
+.rel { display: flex; flex-direction: row; align-items: center; padding: 22rpx 0; border-bottom: 1rpx solid #f5f0f2; }
+.rel-t { font-size: 28rpx; }
+.bar { display: flex; flex-direction: row; align-items: center; margin-top: 8rpx; }
+.faved { background: #ff7a8a; color: #ffffff; }
+.share { flex: 1; margin-left: 20rpx; height: 80rpx; line-height: 80rpx; border-radius: 40rpx; background: #2fae93; color: #ffffff; font-size: 28rpx; padding: 0; }

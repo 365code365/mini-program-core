@@ -1,0 +1,66 @@
+<view wx:if="{{!car}}" class="none">
+  <view class="none-ic"><text class="none-ic-t">寻</text></view>
+  <text class="sub">没有在场的车辆，车辆入场后可以在这里记录停车位置</text>
+  <view class="btn-primary none-btn" bindtap="goHome">返回首页</view>
+</view>
+<block wx:else>
+  <view class="card top-gap">
+    <picker class="pk-car" range="{{plates}}" value="{{idx}}" bindchange="onCar">
+      <view class="row">
+        <view class="plate-tag"><text class="plate-t">{{car.plate}}</text></view>
+        <text class="flex1 sub">{{car.inTime}} 入场</text>
+        <text class="sw-t" wx:if="{{cars.length > 1}}">切换车辆</text>
+        <view class="chev"></view>
+      </view>
+    </picker>
+    <text class="lot-name">{{lot.name}}</text>
+    <text class="sub">{{lot.addr}}</text>
+  </view>
+  <view class="card spot-card" wx:if="{{spot && !editing}}">
+    <text class="sub">停车位置 · {{timeText}}</text>
+    <view class="row spot-row">
+      <text class="spot-big">{{spot.floor}}</text>
+      <text class="spot-sep">·</text>
+      <text class="spot-big">{{spot.zone}} 区</text>
+      <text class="spot-sep">·</text>
+      <text class="spot-big">{{spot.no}} 号</text>
+    </view>
+    <text class="spot-note" wx:if="{{spot.note}}">备注：{{spot.note}}</text>
+    <view class="guide row">
+      <view class="g-ic"><text class="g-ic-t">行</text></view>
+      <text class="flex1 g-t">{{guide}}</text>
+    </view>
+    <view class="row ops">
+      <view class="op op-edit" bindtap="onEdit"><text>修改位置</text></view>
+      <view class="op op-clear" bindtap="onClear"><text>已取车，清除</text></view>
+    </view>
+  </view>
+  <view class="card form" wx:else>
+    <view class="row between">
+      <text class="title">记录停车位置</text>
+      <text class="scan" bindtap="onScan">扫柱子上的寻车码</text>
+    </view>
+    <picker wx:if="{{!road}}" class="pk-floor" range="{{floors}}" value="{{floorIdx}}" bindchange="onFloor">
+      <view class="cell row"><text class="flex1 cell-label">楼层</text><text class="cell-value">{{floors[floorIdx]}}</text><view class="chev"></view></view>
+    </picker>
+    <view wx:else class="cell row"><text class="flex1 cell-label">楼层</text><text class="cell-value">路侧泊位</text></view>
+    <picker class="pk-zone" range="{{zones}}" value="{{zoneIdx}}" bindchange="onZone">
+      <view class="cell row"><text class="flex1 cell-label">区域</text><text class="cell-value">{{zones[zoneIdx]}} 区</text><view class="chev"></view></view>
+    </picker>
+    <view class="cell row">
+      <text class="cell-label lbl">车位号</text>
+      <input id="no-{{seq}}" class="ipt flex1 no-input" type="number" maxlength="4" placeholder="柱子或地面上的数字，如 086" value="{{no}}" bindinput="onNo" />
+    </view>
+    <view class="cell row cell-last">
+      <text class="cell-label lbl">备注</text>
+      <input id="note-{{seq}}" class="ipt flex1 note-input" maxlength="30" placeholder="选填，如：靠近充电桩、2 号电梯旁" value="{{note}}" bindinput="onNote" />
+    </view>
+    <text class="err" wx:if="{{err}}">{{err}}</text>
+    <view class="btn-primary save-btn" bindtap="onSave">记下位置</view>
+  </view>
+  <view class="row acts">
+    <view class="act act-nav" bindtap="onNav"><text>导航到停车场</text></view>
+    <view class="act act-pay" bindtap="onPay"><text>缴费离场</text></view>
+  </view>
+  <text class="sub foot">停车位置只保存在本机，缴费离场后自动清除</text>
+</block>

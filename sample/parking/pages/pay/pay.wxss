@@ -11,3 +11,5 @@
 .pay-amt { font-size: 44rpx; font-weight: bold; color: #ff5a1f; margin-left: 12rpx; }
 .pay-btn { width: 260rpx; height: 84rpx; line-height: 84rpx; text-align: center; border-radius: 42rpx; background: #1677ff; color: #ffffff; font-size: 30rpx; font-weight: bold; }
 .pay-off { background: #c4c9d2; }
+.card-link { margin: 0 24rpx 20rpx; background: #eef5ff; border-radius: 16rpx; padding: 18rpx 20rpx; }
+.pay-space { height: 140rpx; }

@@ -1,0 +1,4 @@
+<view class="sr">
+  <text class="sr-star {{on ? 'sr-on' : ''}}" wx:for="{{stars}}" wx:for-item="on" wx:key="index" data-v="{{index + 1}}" style="font-size: {{size}}rpx;" bindtap="onTap">★</text>
+  <text class="sr-word" wx:if="{{showText}}">{{word}}</text>
+</view>

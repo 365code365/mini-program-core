@@ -10,8 +10,13 @@
   margin-right: 12rpx;
 }
 
+.addr-pick {
+  height: 88rpx;
+}
+
 .addr-v {
   font-weight: bold;
+  max-width: 480rpx;
 }
 
 .edit {

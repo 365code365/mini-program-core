@@ -1,4 +1,8 @@
 .map { position: relative; height: 640rpx; background: #eef1ec; overflow: hidden; }
+/* 选了目的地：地图让出高度，预估价和呼叫按钮整块露在 tabBar 上面 */
+.map-short { height: 400rpx; }
+.map-short .pin-wrap { top: 96rpx; }
+.map-short .locate { bottom: 100rpx; }
 .block { position: absolute; border-radius: 16rpx; }
 .park { background: #d3e8c8; }
 .bld { background: #e4e2dc; }
@@ -14,7 +18,9 @@
 .car-icon { position: absolute; width: 36rpx; height: 20rpx; border-radius: 6rpx; background: #3a3f47; border: 3rpx solid #fff; }
 .car-icon.v { width: 20rpx; height: 36rpx; }
 .pin-wrap { position: absolute; left: 0; right: 0; top: 150rpx; display: flex; flex-direction: column; align-items: center; }
-.bubble { background: #fff; padding: 14rpx 26rpx; border-radius: 32rpx; font-size: 26rpx; box-shadow: 0 6rpx 20rpx rgba(0, 0, 0, 0.12); margin-bottom: 18rpx; }
+/* 嵌套 <text> 前后的空格会被引擎吞掉，改用 flex + 外边距留空 */
+.bubble { background: #fff; padding: 14rpx 26rpx; border-radius: 32rpx; font-size: 26rpx; box-shadow: 0 6rpx 20rpx rgba(0, 0, 0, 0.12); margin-bottom: 18rpx; display: flex; flex-direction: row; }
+.bubble-name { margin: 0 8rpx; }
 .pulse { position: absolute; top: 96rpx; width: 120rpx; height: 120rpx; border-radius: 60rpx; background: rgba(255, 122, 26, 0.18); animation: pulse 2.4s ease-out infinite; }
 @keyframes pulse { 0% { transform: scale(0.4); opacity: 1; } 100% { transform: scale(1.6); opacity: 0; } }
 .pin { width: 56rpx; height: 56rpx; border-radius: 28rpx; background: #FF7A1A; display: flex; align-items: center; justify-content: center; box-shadow: 0 6rpx 14rpx rgba(255, 122, 26, 0.45); margin-top: 28rpx; }
@@ -24,37 +30,77 @@
 .locate-ring { width: 32rpx; height: 32rpx; border-radius: 16rpx; border: 4rpx solid #1f2329; display: flex; align-items: center; justify-content: center; }
 .locate-dot { width: 10rpx; height: 10rpx; border-radius: 5rpx; background: #1f2329; }
 .notice { position: absolute; left: 24rpx; right: 24rpx; top: 20rpx; background: rgba(255, 255, 255, 0.96); border-radius: 16rpx; padding: 14rpx 20rpx; display: flex; flex-direction: row; align-items: center; box-shadow: 0 4rpx 14rpx rgba(0, 0, 0, 0.06); }
-.notice-tag { font-size: 20rpx; color: #19BE6B; background: #e7f8ef; padding: 2rpx 12rpx; border-radius: 8rpx; margin-right: 14rpx; }
-.notice-text { font-size: 24rpx; color: #4e5969; }
-
+.notice-tag { font-size: 20rpx; color: #19BE6B; background: #e7f8ef; padding: 2rpx 12rpx; border-radius: 8rpx; margin-right: 14rpx; flex-shrink: 0; }
+.notice-text { flex: 1; font-size: 24rpx; color: #4e5969; }
 .panel { position: relative; margin: -80rpx 24rpx 0; background: #fff; border-radius: 24rpx; padding: 24rpx 28rpx 32rpx; box-shadow: 0 -4rpx 24rpx rgba(0, 0, 0, 0.06); }
+/* 进行中 / 待支付横条 */
+.live { background: #FFF2E8; border-radius: 14rpx; padding: 18rpx 20rpx; margin-bottom: 20rpx; }
+.live-dot { width: 14rpx; height: 14rpx; border-radius: 7rpx; background: #19BE6B; margin-right: 14rpx; flex-shrink: 0; }
+.pay-dot { background: #FF6A1A; }
+.live-text { flex: 1; min-width: 0; font-size: 26rpx; color: #1f2329; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.live-go { font-size: 24rpx; color: #FF6A1A; font-weight: bold; margin-left: 12rpx; white-space: nowrap; }
 .types { display: flex; flex-direction: row; background: #f5f6f8; border-radius: 16rpx; padding: 6rpx; margin-bottom: 20rpx; }
 .type { flex: 1; text-align: center; padding: 12rpx 0; border-radius: 12rpx; display: flex; flex-direction: column; align-items: center; }
 .type-on { background: #fff; box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.06); }
 .type-name { font-size: 30rpx; font-weight: bold; color: #4e5969; }
 .type-on .type-name { color: #FF7A1A; }
-.type-desc { font-size: 20rpx; color: #9aa0a6; margin-top: 4rpx; }
+.type-desc { font-size: 20rpx; color: #9aa0a6; margin-top: 4rpx; white-space: nowrap; }
+.type-on .type-desc { color: #FF7A1A; }
 .addr { display: flex; flex-direction: row; align-items: center; padding: 18rpx 0; }
-.addr-body { flex: 1; margin-left: 22rpx; display: flex; flex-direction: column; }
+.addr-body { flex: 1; min-width: 0; margin-left: 22rpx; display: flex; flex-direction: column; }
 .addr-main { font-size: 32rpx; font-weight: bold; }
 .addr-main.placeholder { color: #b5b9bf; font-weight: normal; font-size: 34rpx; }
 .addr-sub { font-size: 24rpx; color: #8a9099; margin-top: 4rpx; }
+.addr-clear { width: 56rpx; height: 56rpx; border-radius: 28rpx; background: #f2f3f5; display: flex; align-items: center; justify-content: center; margin-left: 16rpx; flex-shrink: 0; }
+.addr-x { font-size: 30rpx; color: #8a9099; }
 .addr-line { height: 1rpx; background: #eef0f2; margin-left: 38rpx; }
 .estimate { margin-top: 12rpx; border-top: 1rpx solid #eef0f2; padding-top: 20rpx; }
+.opts { display: flex; flex-direction: row; margin-bottom: 18rpx; }
+.opt { display: flex; flex-direction: row; align-items: center; height: 56rpx; padding: 0 22rpx; margin-right: 16rpx; border-radius: 28rpx; background: #f5f6f8; border: 2rpx solid #f5f6f8; }
+.opt-on { background: #FFF2E8; border-color: #FF9A3C; }
+.opt-text { font-size: 24rpx; color: #4e5969; white-space: nowrap; }
+.opt-on .opt-text { color: #FF6A1A; font-weight: bold; }
+.caret { width: 10rpx; height: 10rpx; border-right: 3rpx solid #8a9099; border-bottom: 3rpx solid #8a9099; transform: rotate(45deg); margin: -6rpx 0 0 12rpx; }
+.opt-on .caret { border-color: #FF6A1A; }
 .price-row { display: flex; flex-direction: row; align-items: flex-end; justify-content: center; margin: 12rpx 0 24rpx; }
 .price-label { font-size: 26rpx; color: #4e5969; margin-right: 8rpx; margin-bottom: 10rpx; }
 .price { font-size: 64rpx; font-weight: bold; color: #1f2329; }
 .price-unit { font-size: 26rpx; color: #4e5969; margin-left: 6rpx; margin-bottom: 10rpx; }
-
 .services { display: flex; flex-direction: row; justify-content: space-between; margin: 20rpx 24rpx 0; background: #fff; border-radius: 20rpx; padding: 28rpx 24rpx; }
 .svc { display: flex; flex-direction: column; align-items: center; width: 140rpx; }
 .svc-icon { width: 88rpx; height: 88rpx; border-radius: 28rpx; display: flex; align-items: center; justify-content: center; }
 .svc-glyph { color: #fff; font-size: 34rpx; font-weight: bold; }
-.svc-name { font-size: 24rpx; color: #4e5969; margin-top: 12rpx; }
+.svc-name { font-size: 24rpx; color: #4e5969; margin-top: 12rpx; white-space: nowrap; }
 .banner { margin: 24rpx; height: 160rpx; border-radius: 20rpx; background: linear-gradient(110deg, #FFB067, #FF6A1A); display: flex; flex-direction: row; align-items: center; justify-content: space-between; padding: 0 32rpx; }
 .banner-title { display: block; color: #fff; font-size: 36rpx; font-weight: bold; }
 .banner-sub { display: block; color: rgba(255, 255, 255, 0.9); font-size: 24rpx; margin-top: 8rpx; }
-.banner-btn { background: #fff; color: #FF6A1A; font-size: 24rpx; font-weight: bold; padding: 12rpx 24rpx; border-radius: 30rpx; }
-/* 嵌套 <text> 前后的空格会被引擎吞掉，改用 flex + 外边距留空 */
-.bubble { display: flex; flex-direction: row; }
-.bubble-name { margin: 0 8rpx; }
+.banner-btn { background: #fff; color: #FF6A1A; font-size: 24rpx; font-weight: bold; padding: 12rpx 24rpx; border-radius: 30rpx; margin-left: 20rpx; white-space: nowrap; }
+/* 面板里的分段（今天 / 明天、送机 / 接机） */
+.seg { display: flex; flex-direction: row; background: #f5f6f8; border-radius: 14rpx; padding: 6rpx; margin-bottom: 24rpx; }
+.seg-item { flex: 1; height: 60rpx; line-height: 60rpx; text-align: center; border-radius: 10rpx; font-size: 26rpx; color: #4e5969; }
+.seg-on { background: #fff; color: #FF6A1A; font-weight: bold; box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06); }
+.slots { min-height: 152rpx; }
+.sheet-line { display: block; margin-top: 12rpx; line-height: 36rpx; }
+.hub { padding: 20rpx 0; border-bottom: 1rpx solid #f0f1f3; }
+.hub-icon { width: 64rpx; height: 64rpx; border-radius: 20rpx; background: linear-gradient(135deg, #6BA8FF, #3D7BFF); display: flex; align-items: center; justify-content: center; margin-right: 20rpx; flex-shrink: 0; }
+.hub-train { background: linear-gradient(135deg, #5FD99A, #19BE6B); }
+.hub-glyph { color: #fff; font-size: 28rpx; font-weight: bold; }
+.hub-name { display: block; font-size: 28rpx; font-weight: bold; }
+.hub-sub { display: block; margin-top: 4rpx; }
+/* 距离单独放右列：和地址写在一行时「公里」两个字会被拆到两行 */
+.hub-right { display: flex; flex-direction: column; align-items: flex-end; margin-left: 16rpx; flex-shrink: 0; }
+.hub-price { font-size: 26rpx; font-weight: bold; color: #FF6A1A; white-space: nowrap; }
+.hub-here { font-size: 24rpx; color: #4e5969; white-space: nowrap; }
+.hub-km { margin-top: 4rpx; white-space: nowrap; }
+.who { height: 88rpx; border-bottom: 1rpx solid #f0f1f3; }
+.who-name { font-size: 28rpx; margin-left: 20rpx; }
+.who-sub { margin-left: 16rpx; }
+.import { font-size: 24rpx; color: #FF6A1A; padding: 8rpx 0 8rpx 20rpx; white-space: nowrap; }
+.sheet-btn { margin-top: 28rpx; }
+.fare-line { height: 64rpx; font-size: 28rpx; color: #4e5969; }
+.fare-total { border-top: 1rpx dashed #e3e5e8; margin-top: 8rpx; padding-top: 20rpx; }
+.fare-total-k { font-size: 30rpx; font-weight: bold; }
+.fare-total-v { font-size: 36rpx; font-weight: bold; }
+.rules { margin-top: 12rpx; }
+.rule-line { display: block; line-height: 38rpx; }
+.fare-coupon { margin-top: 20rpx; padding-top: 20rpx; border-top: 1rpx solid #f0f1f3; }

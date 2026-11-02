@@ -1,0 +1,15 @@
+.head { display: flex; flex-direction: row; align-items: center; padding: 48rpx 40rpx 80rpx; background: linear-gradient(120deg, #2fd08a, #0f8a56); }
+.av { width: 120rpx; height: 120rpx; border-radius: 60rpx; border: 4rpx solid rgba(255, 255, 255, 0.8); }
+.who { display: flex; flex-direction: column; margin-left: 28rpx; }
+.nick { font-size: 38rpx; font-weight: bold; color: #ffffff; }
+.phone { font-size: 24rpx; color: rgba(255, 255, 255, 0.85); margin-top: 8rpx; }
+.stat { display: flex; flex-direction: row; margin-top: -56rpx; position: relative; }
+.st { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.sv { font-size: 36rpx; font-weight: bold; color: #1f2329; }
+.sk { font-size: 22rpx; color: #8a9099; margin-top: 6rpx; }
+.list { padding: 0 28rpx; }
+.li { display: flex; flex-direction: row; align-items: center; height: 104rpx; border-bottom: 1rpx solid #f0f0f0; }
+.li-ic { width: 40rpx; height: 40rpx; margin-right: 20rpx; }
+.li-t { font-size: 30rpx; flex: 1; }
+.li-v { font-size: 24rpx; color: #8a9099; max-width: 340rpx; text-align: right; }
+.ver { display: block; text-align: center; font-size: 22rpx; color: #a0a4ab; margin: 40rpx 0 60rpx; }

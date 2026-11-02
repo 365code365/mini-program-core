@@ -1,0 +1,20 @@
+<view class="card">
+  <picker range="{{buildings}}" value="{{b}}" bindchange="onB">
+    <view class="cell"><text class="cell-l">教学楼</text><text class="cell-r">{{buildings[b]}}</text><view class="chev"></view></view>
+  </picker>
+  <picker mode="date" value="{{date}}" start="{{start}}" end="{{end}}" bindchange="onDate">
+    <view class="cell"><text class="cell-l">日期</text><text class="cell-r">{{date}}</text><view class="chev"></view></view>
+  </picker>
+  <view class="rm-slots">
+    <view class="rm-slot {{slot === index ? 'on' : ''}}" wx:for="{{slots}}" wx:key="*this" data-i="{{index}}" bindtap="pickSlot">{{item}}</view>
+  </view>
+  <view class="cell"><text class="flex1">只看 100 人以上大教室</text><switch checked="{{minCap}}" color="#14937f" bindchange="onCap"></switch></view>
+</view>
+<view class="sec"><text class="sec-title">空闲教室 {{list.length}} 间</text></view>
+<view class="rm-grid">
+  <view class="rm-room" wx:for="{{list}}" wx:key="no" data-no="{{item.no}}" bindtap="reserve" hover-class="btn-hover">
+    <text class="rm-no">{{item.no}}</text><text class="muted">{{item.cap}} 座</text>
+  </view>
+</view>
+<view class="empty" wx:if="{{!list.length}}"><view class="empty-ic">🏫</view><text>这个时段没有空教室，换个时段试试</text></view>
+<include src="../common/footer.wxml"></include>

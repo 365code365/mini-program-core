@@ -1,0 +1,72 @@
+/* 全局样式：主题色 #14937f */
+page { background: #f3f6f5; color: #1f2329; font-size: 28rpx; }
+.card { background: #ffffff; border-radius: 24rpx; margin: 24rpx 24rpx 0; padding: 28rpx; }
+.sec { display: flex; flex-direction: row; align-items: center; justify-content: space-between; margin: 36rpx 24rpx 0; }
+.sec-title { font-size: 32rpx; font-weight: bold; color: #1f2329; }
+.muted { color: #8a9099; font-size: 24rpx; }
+.row { display: flex; flex-direction: row; align-items: center; }
+.col { display: flex; flex-direction: column; }
+.between { justify-content: space-between; }
+.center { justify-content: center; }
+.flex1 { flex: 1; min-width: 0; }
+.wrap { flex-wrap: wrap; }
+.bold { font-weight: bold; }
+.ellipsis { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.chev { width: 14rpx; height: 14rpx; border-top: 3rpx solid #c3c7cf; border-right: 3rpx solid #c3c7cf; transform: rotate(45deg); margin-left: 12rpx; flex-shrink: 0; }
+.cell { display: flex; flex-direction: row; align-items: center; padding: 28rpx 0; border-bottom: 1rpx solid #f0f1f4; }
+.cell:last-child { border-bottom: none; }
+.cell-l { width: 170rpx; color: #5c6370; flex-shrink: 0; }
+.cell-r { flex: 1; min-width: 0; text-align: right; color: #1f2329; }
+.btn { background: #14937f; color: #ffffff; border-radius: 44rpx; height: 88rpx; display: flex; align-items: center; justify-content: center; font-size: 30rpx; font-weight: bold; }
+.btn-hover { opacity: 0.82; }
+.btn-ghost { border: 2rpx solid #14937f; color: #14937f; border-radius: 44rpx; height: 84rpx; display: flex; align-items: center; justify-content: center; font-size: 30rpx; }
+.btn-sm { height: 56rpx; padding: 0 28rpx; border-radius: 28rpx; font-size: 24rpx; display: flex; align-items: center; justify-content: center; background: #14937f; color: #ffffff; }
+.btn-sm.ghost { background: #ffffff; color: #14937f; border: 2rpx solid #14937f; }
+.btn-sm.gray { background: #f2f3f5; color: #5c6370; }
+.btn.disabled { background: #c9cdd4; }
+.primary { color: #14937f; }
+.price { color: #f53f3f; font-weight: bold; }
+.yen { font-size: 22rpx; }
+.del { color: #a0a6ae; font-size: 22rpx; text-decoration: line-through; margin-left: 10rpx; }
+.tag { font-size: 20rpx; color: #14937f; background: #e4f5f1; padding: 4rpx 12rpx; border-radius: 8rpx; margin-right: 10rpx; }
+.tag.red { color: #f53f3f; background: #fff0f0; }
+.tag.green { color: #12a150; background: #e8f8ee; }
+.tag.gray { color: #6b7280; background: #f2f3f5; }
+.tag.orange { color: #e37318; background: #fff3e6; }
+.badge { min-width: 32rpx; height: 32rpx; line-height: 32rpx; border-radius: 16rpx; padding: 0 8rpx; background: #f53f3f; color: #ffffff; font-size: 20rpx; text-align: center; }
+.empty { display: flex; flex-direction: column; align-items: center; padding: 120rpx 0; color: #a0a6ae; font-size: 26rpx; }
+.empty-ic { width: 160rpx; height: 160rpx; border-radius: 80rpx; background: #eef0f3; display: flex; align-items: center; justify-content: center; font-size: 64rpx; margin-bottom: 24rpx; }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; background: #ffffff; padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom)); display: flex; flex-direction: row; align-items: center; box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.05); z-index: 50; }
+.bar-space { height: calc(140rpx + env(safe-area-inset-bottom)); }
+.tab-space { height: 40rpx; }
+.tabs { display: flex; flex-direction: row; background: #ffffff; }
+.tabs-item { flex: 1; text-align: center; padding: 24rpx 0 20rpx; color: #5c6370; font-size: 28rpx; position: relative; }
+.tabs-item.on { color: #14937f; font-weight: bold; }
+.tabs-line { position: absolute; left: 50%; bottom: 6rpx; width: 40rpx; margin-left: -20rpx; height: 6rpx; border-radius: 3rpx; background: #14937f; }
+.input { background: #f5f6f8; border-radius: 16rpx; height: 80rpx; padding: 0 24rpx; font-size: 28rpx; }
+.field { display: flex; flex-direction: row; align-items: center; padding: 22rpx 0; border-bottom: 1rpx solid #f0f1f4; }
+.field-l { width: 170rpx; color: #5c6370; flex-shrink: 0; }
+.field-i { flex: 1; height: 56rpx; font-size: 28rpx; }
+.err { color: #f53f3f; font-size: 22rpx; margin-top: 8rpx; }
+.mask { position: fixed; left: 0; top: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.45); z-index: 90; }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; background: #ffffff; border-radius: 32rpx 32rpx 0 0; padding: 32rpx 32rpx calc(32rpx + env(safe-area-inset-bottom)); z-index: 91; }
+.sheet-title { font-size: 32rpx; font-weight: bold; text-align: center; margin-bottom: 24rpx; }
+.steps { display: flex; flex-direction: row; align-items: center; }
+.dot { width: 16rpx; height: 16rpx; border-radius: 8rpx; background: #14937f; flex-shrink: 0; }
+.line-v { width: 2rpx; background: #e5e6eb; flex: 1; }
+.grid4 { display: flex; flex-direction: row; flex-wrap: wrap; }
+.grid4-item { width: 25%; display: flex; flex-direction: column; align-items: center; padding: 18rpx 0; }
+.gi-ic { width: 88rpx; height: 88rpx; border-radius: 28rpx; display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 36rpx; font-weight: bold; }
+.gi-tx { font-size: 24rpx; color: #3d434d; margin-top: 12rpx; }
+/* 课程卡片模板（pages/common/course-card.wxml） */
+.cc { display: flex; flex-direction: row; align-items: center; background: #ffffff; border-left: 8rpx solid #14937f; border-radius: 12rpx; padding: 20rpx 24rpx; margin-top: 16rpx; box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.04); }
+.cc-l { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.cc-name { font-size: 30rpx; font-weight: bold; }
+.cc-sub { font-size: 24rpx; color: #8a9099; margin-top: 6rpx; }
+.cc-r { display: flex; flex-direction: column; align-items: flex-end; }
+.cc-time { font-size: 24rpx; color: #5c6370; }
+.cc-state { font-size: 20rpx; color: #14937f; background: #e4f5f1; padding: 2rpx 10rpx; border-radius: 6rpx; margin-top: 8rpx; }
+/* 公共页脚（pages/common/footer.wxml） */
+.ft { display: flex; flex-direction: column; align-items: center; padding: 40rpx 0 24rpx; }
+.ft-t { font-size: 20rpx; color: #b0b6be; line-height: 1.8; }
+.lv-a { color: #12a150; } .lv-b { color: #14937f; } .lv-c { color: #e37318; } .lv-d { color: #f53f3f; }

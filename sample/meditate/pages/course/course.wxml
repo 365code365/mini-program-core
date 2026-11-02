@@ -1,0 +1,44 @@
+<view class="page {{theme}}">
+  <view class="head">
+    <image class="head-img" src="{{c.cover}}" mode="aspectFill"></image>
+    <view class="head-mask">
+      <text class="head-t">{{c.title}}</text>
+      <text class="head-s">{{c.level}} · {{c.chapters.length}} 节 · {{learnersText}} 人在练</text>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="row between">
+      <view class="row">
+        <view class="avatar"><text class="avatar-t">{{teacherInitial}}</text></view>
+        <view class="col">
+          <text class="t-name">{{c.teacher}}</text>
+          <text class="sub">{{c.teacherIntro}}</text>
+        </view>
+      </view>
+    </view>
+    <text class="desc">{{c.desc}}</text>
+    <view class="row between prog-row">
+      <text class="sub">已完成 {{doneN}}/{{c.chapters.length}} 节</text>
+      <view class="fav {{fav ? 'fav-on' : ''}}" bindtap="toggleFav"><text>{{fav ? '已收藏' : '收藏'}}</text></view>
+    </view>
+  </view>
+
+  <view class="sec-head"><text class="sec-title">课程章节</text><text class="more">完成上一节解锁下一节</text></view>
+  <view class="card chapters">
+    <view class="chap row" wx:for="{{chapters}}" wx:key="title" data-idx="{{index}}" bindtap="onChapter" hover-class="btn-hover">
+      <view class="no {{item.done ? 'no-done' : ''}}"><text>{{item.done ? '✓' : index + 1}}</text></view>
+      <view class="flex1 col">
+        <text class="chap-t {{item.locked ? 'locked' : ''}}">{{item.title}}</text>
+        <text class="sub">{{item.mins}} 分钟 · {{item.done ? '已完成' : (item.locked ? '未解锁' : '可收听')}}</text>
+      </view>
+      <view wx:if="{{item.locked}}" class="lock"><view class="lock-top"></view><view class="lock-body"></view></view>
+      <view wx:else class="mini-play"><image class="tri" src="/images/play-w.png"></image></view>
+    </view>
+  </view>
+  <text class="note">内置为 25 秒示范音频，完整课程音频以正式版为准</text>
+
+  <view class="bar">
+    <view class="btn" hover-class="btn-hover" bindtap="start"><text>{{startText}}</text></view>
+  </view>
+</view>

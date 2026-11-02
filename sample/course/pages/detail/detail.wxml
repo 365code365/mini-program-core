@@ -14,6 +14,7 @@
     </view>
     <text class="muted">{{stu}}人在学 · {{c.rating}} 分</text>
   </view>
+  <view wx:if="{{pg}}" class="row my-pg"><view class="bar pg-bar"><view class="bar-in" style="width: {{pg.pct}}%;"></view></view><text class="pg-tx">已学 {{pg.done}}/{{pg.total}} 节</text></view>
 </view>
 
 <view class="tabs">
@@ -34,12 +35,13 @@
   </view>
   <view class="card">
     <text class="sec-title">讲师介绍</text>
-    <view class="row teacher">
+    <view class="row teacher" bindtap="goTeacher">
       <view class="avatar" style="background: {{t.color}};"><text>{{t.sx}}</text></view>
       <view class="t-main">
         <text class="t-name">{{t.name}}</text>
         <text class="t-title">{{t.title}} · {{t.courses}} 门课 · {{t.fans}} 关注</text>
       </view>
+      <view class="chev t-chev"></view>
     </view>
     <text class="desc">{{t.intro}}</text>
   </view>
@@ -56,8 +58,8 @@
       <view class="arrow {{item.open ? 'up' : ''}}"></view>
     </view>
     <view wx:if="{{item.open}}" class="lessons">
-      <view class="lesson row" wx:for="{{item.lessons}}" wx:for-item="l" wx:key="id" data-free="{{l.free}}" data-title="{{l.title}}" bindtap="onLesson">
-        <view class="play {{owned || l.free ? 'ok' : ''}}"><view class="tri"></view></view>
+      <view class="lesson row" wx:for="{{item.lessons}}" wx:for-item="l" wx:key="id" data-id="{{l.id}}" data-free="{{l.free}}" data-title="{{l.title}}" bindtap="onLesson">
+        <view class="play {{l.done ? 'done' : (owned || l.free ? 'ok' : '')}}"><view wx:if="{{l.done}}" class="tick"></view><view wx:else class="tri"></view></view>
         <text class="l-title">{{l.title}}</text>
         <text wx:if="{{l.free && !owned}}" class="free">试看</text>
         <text class="l-mins">{{l.mins}} 分钟</text>
@@ -68,6 +70,17 @@
 
 <view wx:if="{{tab === 'review'}}" class="card">
   <view class="row between"><text class="sec-title">学员评价</text><text class="score">{{c.rating}}<text class="score-u"> 分</text></text></view>
+  <view class="rv-btn" bindtap="openReview"><text>{{mine ? '修改我的评价' : (owned ? '写评价' : '购买后可评价')}}</text></view>
+  <view wx:if="{{mine}}" class="review mine-rv">
+    <view class="row">
+      <view class="avatar r-av" style="background: {{mine.color}};"><text>{{mine.sx}}</text></view>
+      <view class="r-main">
+        <text class="r-name">我的评价</text>
+        <view class="row stars"><view wx:for="{{mine.stars}}" wx:for-item="s" wx:key="*this" class="star {{s ? 'on' : ''}}"></view><text class="r-time">{{mine.time}}</text></view>
+      </view>
+    </view>
+    <text class="r-text">{{mine.text}}</text>
+  </view>
   <view class="review" wx:for="{{reviews}}" wx:key="name">
     <view class="row">
       <view class="avatar r-av" style="background: {{item.color}};"><text>{{item.sx}}</text></view>
@@ -85,4 +98,14 @@
   <view class="f-btn" bindtap="toggleFav"><view class="heart {{fav ? 'on' : ''}}"></view><text class="f-tx {{fav ? 'on' : ''}}">{{fav ? '已收藏' : '收藏'}}</text></view>
   <view class="f-btn" bindtap="consult"><view class="bubble"></view><text class="f-tx">咨询</text></view>
   <view class="buy {{owned ? 'owned' : ''}}" bindtap="buy"><text>{{owned ? '开始学习' : (c.price === 0 ? '免费领取' : '立即购买 ¥' + c.price)}}</text></view>
+</view>
+<view wx:if="{{panel}}" class="mask" bindtap="closeReview"></view>
+<view wx:if="{{panel}}" class="sheet" catchtap="noop">
+  <view class="sh-t"><text>评价这门课</text></view>
+  <view class="row sh-stars">
+    <view wx:for="{{stars5}}" wx:key="*this" class="big-star {{item <= score ? 'on' : ''}}" data-n="{{item}}" bindtap="onStar"></view>
+    <text class="sh-score">{{score}} 分</text>
+  </view>
+  <textarea id="rv{{formSeq}}" class="rv-ta" value="{{rvText}}" maxlength="200" placeholder="说说这门课对你的帮助，至少 5 个字" bindinput="onRv" />
+  <view class="btn-primary sh-ok" bindtap="submitReview"><text>发布评价</text></view>
 </view>

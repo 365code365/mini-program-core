@@ -1,0 +1,42 @@
+<view class="page">
+  <view class="card plan-card">
+    <view class="between pad">
+      <text class="sec-title">两室两厅 · 89㎡</text>
+      <text class="muted">{{savedAt ? '已自动保存 ' + savedAt : '拖动家具试试摆放'}}</text>
+    </view>
+    <movable-area class="plan">
+      <image class="plan-img" src="/images/plan.png"></image>
+      <text wx:for="{{rooms}}" wx:key="name" class="room" style="left: {{item.x}}px; top: {{item.y}}px;">{{item.name}}</text>
+      <movable-view wx:for="{{items}}" wx:key="id" class="fur {{sel === item.id ? 'fur-on' : ''}}" data-id="{{item.id}}"
+        direction="all" out-of-bounds inertia="{{false}}" x="{{item.x}}" y="{{item.y}}"
+        scale scale-min="0.5" scale-max="2" scale-value="{{item.scale}}"
+        style="width: {{item.w}}px; height: {{item.h}}px; background: {{item.color}};" bindchange="onMove">
+        <view class="fur-in" data-id="{{item.id}}" bindtouchstart="select">
+          <text class="fur-tx">{{item.name}}</text>
+        </view>
+      </movable-view>
+    </movable-area>
+    <view class="sel pad">
+      <text wx:if="{{sel}}" class="sel-t">已选：{{selName}}（{{selPos}}）</text>
+      <text wx:else class="muted">点一下家具选中它，再用下面的按钮旋转或缩放</text>
+    </view>
+    <view class="row tools pad">
+      <view class="tool" bindtap="zoomOut" hover-class="item-hover">缩小</view>
+      <view class="tool" bindtap="zoomIn" hover-class="item-hover">放大</view>
+      <view class="tool" bindtap="rotate" hover-class="item-hover">旋转 90°</view>
+      <view class="tool" bindtap="reset" hover-class="item-hover">恢复默认</view>
+    </view>
+  </view>
+
+  <view class="card tips">
+    <text class="sec-title">摆放小建议</text>
+    <text class="tip">· 沙发与电视柜间距 2.5~3 米看电视最舒服</text>
+    <text class="tip">· 床两侧至少留 50cm 走道，衣柜门前留 60cm 以上</text>
+    <text class="tip">· 拖出户型外松手会弹回，位置会自动保存</text>
+  </view>
+
+  <view class="row acts">
+    <view class="btn-ghost flex1" bindtap="save" hover-class="btn-hover">保存方案</view>
+    <view class="btn flex1 act-main" bindtap="book" hover-class="btn-hover">请设计师出方案</view>
+  </view>
+</view>

@@ -11,6 +11,7 @@
     <view class="card info">
       <view class="row between info-row"><text class="muted lbl">分类</text><text class="val">{{typeText}} · {{rec.cat}}</text></view>
       <view class="row between info-row"><text class="muted lbl">日期</text><text class="val">{{dateText}}</text></view>
+      <view class="row between info-row"><text class="muted lbl">账本</text><text class="val">{{bookName}}</text></view>
       <view class="row between info-row"><text class="muted lbl">备注</text><text class="val">{{rec.note || '无'}}</text></view>
       <view class="row between info-row last"><text class="muted lbl">本月同类</text><text class="val">{{sameCatCount}} 笔 · ¥{{sameCatText}}</text></view>
     </view>

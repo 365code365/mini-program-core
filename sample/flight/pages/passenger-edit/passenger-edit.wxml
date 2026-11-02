@@ -1,0 +1,28 @@
+<view class="card form">
+  <view class="field row">
+    <text class="f-l">姓名</text>
+    <input class="flex1" placeholder="与证件一致，如 张三 或 ZHANG/SAN" value="{{name}}" bindinput="onName" maxlength="30"></input>
+  </view>
+  <text wx:if="{{errors.name}}" class="err">{{errors.name}}</text>
+  <picker range="{{types}}" value="{{idType}}" bindchange="onType">
+    <view class="field row">
+      <text class="f-l">证件类型</text>
+      <text class="flex1">{{typeName}}</text>
+      <text class="muted">›</text>
+    </view>
+  </picker>
+  <view class="field row">
+    <text class="f-l">证件号码</text>
+    <input class="flex1" type="{{idType === 0 ? 'idcard' : 'text'}}" maxlength="{{maxlen}}" placeholder="请输入{{typeName}}号码" value="{{idNo}}" bindinput="onIdNo" bindblur="checkIdNo"></input>
+    <text wx:if="{{age}}" class="tag">{{age}}</text>
+  </view>
+  <text wx:if="{{errors.idNo}}" class="err">{{errors.idNo}}</text>
+  <view class="field row">
+    <text class="f-l">手机号</text>
+    <input class="flex1" type="number" maxlength="11" placeholder="选填，用于接收航变通知" value="{{phone}}" bindinput="onPhone"></input>
+  </view>
+  <text wx:if="{{errors.phone}}" class="err">{{errors.phone}}</text>
+</view>
+<view class="tips"><text class="muted small">乘机人姓名、证件号需与登机所持证件完全一致；12 周岁以下按儿童票、2 周岁以下按婴儿票出票。</text></view>
+<view class="btn save" hover-class="btn-hover" bindtap="save"><text>保存</text></view>
+<view wx:if="{{id && !self}}" class="del" bindtap="remove"><text class="red">删除该乘机人</text></view>

@@ -1,0 +1,33 @@
+<view class="tabs row">
+  <view wx:for="{{tabs}}" wx:key="key" class="tb {{tab === item.key ? 'tb-on' : ''}}" data-k="{{item.key}}" bindtap="switchTab">
+    <text class="tb-t">{{item.text}} {{counts[item.key] || 0}}</text>
+    <view wx:if="{{tab === item.key}}" class="tb-bar"></view>
+  </view>
+</view>
+<view class="list">
+  <view wx:if="{{loading}}" class="loading"><text class="muted">加载中…</text></view>
+  <view wx:elif="{{!list.length}}" class="empty">
+    <view class="empty-ic"><text class="empty-ic-t">◎</text></view>
+    <text class="empty-t">{{tab === 'all' ? '还没有订场记录，去找块场地动起来' : '这里还没有订单'}}</text>
+    <view class="btn-ghost empty-btn" bindtap="toHome"><text>去订场</text></view>
+  </view>
+  <view wx:for="{{list}}" wx:key="id" class="od" data-id="{{item.id}}" bindtap="open">
+    <view class="row od-hd">
+      <text class="od-n flex1">{{item.venueName}}</text>
+      <text class="od-st" style="color: {{item.stColor}};">{{item.stText}}</text>
+    </view>
+    <view class="row od-bd">
+      <image class="od-img" src="{{item.photo}}" mode="aspectFill"></image>
+      <view class="col flex1 od-info">
+        <text class="od-d">{{item.dateText}} · {{item.sportName}}</text>
+        <text class="muted od-seg">{{item.segText}}</text>
+        <text class="muted">{{item.payText}} · {{item.payMethod === 'times' ? item.hours + ' 次' : '¥' + item.paid}}</text>
+      </view>
+    </view>
+    <view class="row od-ft">
+      <view class="flex1"></view>
+      <view wx:if="{{item.canPass}}" class="btn-main od-btn" data-id="{{item.id}}" catchtap="pass"><text>入场码</text></view>
+      <view wx:else class="btn-ghost od-btn2" data-v="{{item.venueId}}" catchtap="again"><text>再订一场</text></view>
+    </view>
+  </view>
+</view>

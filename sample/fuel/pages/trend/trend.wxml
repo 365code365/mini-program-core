@@ -1,0 +1,36 @@
+<view class="head">
+  <view class="oils">
+    <text class="oil {{item === oil ? 'oil-on' : ''}}" wx:for="{{oils}}" wx:key="*this" data-oil="{{item}}" bindtap="pickOil">{{item}}</text>
+  </view>
+  <view class="row cur">
+    <text class="cur-k">浙江 {{oil}} 挂牌价</text>
+  </view>
+  <view class="row cur-row">
+    <text class="cur-v">{{cur}}</text><text class="cur-u">元/升</text>
+    <text class="chg {{changeUp ? 'chg-up' : 'chg-down'}}">较上轮 {{change}}</text>
+  </view>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="sec-title">2026 年调价走势</text>
+    <text class="muted">{{picked ? picked.d + '：¥' + picked.v : '点按曲线看每一轮'}}</text>
+  </view>
+  <canvas wx:if="{{canvasOk}}" type="2d" id="trend" class="cv" bindtouchstart="onTouch" bindtouchmove="onTouch"></canvas>
+  <view wx:else class="cv-fail"><text class="muted">当前环境不支持画布，下方列出最近几轮价格</text></view>
+  <view class="row hl">
+    <view class="hl-it"><text class="hl-k">年内最高</text><text class="hl-v up">{{high}}</text></view>
+    <view class="hl-it"><text class="hl-k">年内最低</text><text class="hl-v down">{{low}}</text></view>
+    <view class="hl-it"><text class="hl-k">下次调价</text><text class="hl-v">{{next}}</text></view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="row between"><text class="sec-title">最近 6 轮</text><text class="btn-ghost rm" bindtap="remind">调价提醒</text></view>
+  <view class="tr" wx:for="{{rows}}" wx:key="d">
+    <text class="tr-d">{{item.d}}</text>
+    <text class="tr-v">¥{{item.v}}</text>
+    <text class="tr-diff {{item.diff > 0 ? 'up' : 'down'}}">{{item.diff > 0 ? '+' + item.diff : item.diff}}</text>
+  </view>
+</view>
+<view class="tabbar-gap"></view>

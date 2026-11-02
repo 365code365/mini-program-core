@@ -1,0 +1,24 @@
+.page { min-height: 100vh; background: #13a07b; }
+.tk { background: #ffffff; border-radius: 28rpx; overflow: hidden; margin-top: 12rpx; }
+.tk-top { padding: 36rpx 36rpx 24rpx; display: flex; flex-direction: column; }
+.tk-name { font-size: 38rpx; font-weight: bold; }
+.tk-date { font-size: 26rpx; color: #4a544f; margin-top: 8rpx; }
+.tk-cut { height: 40rpx; position: relative; }
+.hole { width: 40rpx; height: 40rpx; border-radius: 20rpx; background: #13a07b; }
+.hole-l { margin-left: -20rpx; }
+.hole-r { margin-right: -20rpx; }
+.dash { flex: 1; border-top: 2rpx dashed #d5ddd9; margin: 0 12rpx; }
+.tk-qr { display: flex; flex-direction: column; align-items: center; padding: 20rpx 36rpx 30rpx; position: relative; }
+.qr { margin-bottom: 20rpx; }
+.used { position: absolute; top: 160rpx; padding: 10rpx 30rpx; border: 4rpx solid #e5484d; border-radius: 12rpx; background: rgba(255, 255, 255, 0.9); }
+.used-tx { color: #e5484d; font-size: 34rpx; font-weight: bold; }
+.code { font-size: 32rpx; font-weight: bold; letter-spacing: 2rpx; }
+.tip { margin-top: 10rpx; }
+.ops { margin-top: 24rpx; }
+.op { padding: 14rpx 28rpx; border-radius: 32rpx; background: #e3f4ee; margin: 0 12rpx; }
+.op-tx { font-size: 24rpx; color: #13a07b; }
+.tk-ps { border-top: 1rpx solid #edf1ef; padding: 12rpx 36rpx 20rpx; }
+.ps { padding: 14rpx 0; }
+.ps-n { font-size: 28rpx; font-weight: bold; }
+.link { text-align: center; padding: 30rpx; }
+.link-tx { color: #ffffff; font-size: 26rpx; }

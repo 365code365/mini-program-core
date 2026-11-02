@@ -1,0 +1,18 @@
+<view class="card">
+  <text class="sec-title">问题类型</text>
+  <view class="kinds">
+    <view wx:for="{{kinds}}" wx:key="*this" class="kd {{kind === item ? 'on' : ''}}" data-k="{{item}}" bindtap="onKind"><text>{{item}}</text></view>
+  </view>
+  <textarea id="fb{{formSeq}}" class="ta" value="{{text}}" maxlength="200" placeholder="请描述你遇到的问题，缴费问题请写上户号和缴费时间" bindinput="onText" />
+  <view class="row ct"><text class="ct-l">回复方式</text><input class="ct-in" value="{{contact}}" placeholder="手机号或邮箱" bindinput="onContact" /></view>
+</view>
+<view class="act"><view class="btn-primary" bindtap="submit"><text>提交反馈</text></view></view>
+<view wx:if="{{list.length}}" class="card">
+  <text class="sec-title">我的反馈</text>
+  <view wx:for="{{list}}" wx:key="id" class="fb">
+    <view class="row between"><text class="fb-k">{{item.kind}}</text><text class="fb-st">{{item.status}}</text></view>
+    <view class="fb-t"><text>{{item.text}}</text></view>
+    <text class="muted">{{item.time}}</text>
+  </view>
+</view>
+<view class="gap"></view>

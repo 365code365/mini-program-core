@@ -1,0 +1,10 @@
+<view class="ring" style="width: {{size}}px; height: {{size}}px;">
+  <canvas type="2d" id="ring" class="ring-cv" style="width: {{size}}px; height: {{size}}px;"></canvas>
+  <view class="ring-mid" style="width: {{size}}px; height: {{size}}px;">
+    <view class="ring-num-row">
+      <text class="ring-num">{{value}}</text>
+      <text class="ring-total">/{{total}}</text>
+    </view>
+    <text class="ring-lb">{{label}}</text>
+  </view>
+</view>

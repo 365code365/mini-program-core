@@ -1,0 +1,29 @@
+<view class="tip"><text class="sub">离店后由酒店开具电子发票，发送到预订手机号</text></view>
+<view class="card v row" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onPick">
+  <view class="v-ic {{item.type === 1 ? 'v-co' : ''}}"><text>{{item.type === 1 ? '企' : '个'}}</text></view>
+  <view class="flex1">
+    <text class="v-title">{{item.title}}</text>
+    <text class="sub">{{item.type === 1 ? '税号 ' + item.taxNo : '个人抬头'}}</text>
+  </view>
+  <view class="edit" data-id="{{item.id}}" catchtap="onEdit"><text>编辑</text></view>
+</view>
+<view wx:if="{{!list.length}}" class="empty-tip"><text>还没有发票抬头</text></view>
+<view class="fbar-gap"></view>
+<view class="fbar row">
+  <view class="btn-ghost f-imp" bindtap="onImport"><text>导入微信抬头</text></view>
+  <view class="btn-primary f-add" bindtap="onAdd">新增抬头</view>
+</view>
+
+<block wx:if="{{panel}}">
+  <view class="mask" bindtap="close"></view>
+  <view class="sheet" catchtap="noop">
+    <text class="sheet-title">{{form.id ? '编辑发票抬头' : '新增发票抬头'}}</text>
+    <view class="row types">
+      <view wx:for="{{types}}" wx:key="*this" class="ty {{form.type === index ? 'ty-on' : ''}}" data-i="{{index}}" bindtap="onType"><text>{{item}}</text></view>
+    </view>
+    <view class="f-row row"><text class="f-label">抬头</text><input id="vt{{seq}}" class="f-input v-title-in" placeholder="{{form.type === 1 ? '公司全称' : '个人姓名'}}" value="{{form.title}}" maxlength="40" bindinput="onTitle" /></view>
+    <view wx:if="{{form.type === 1}}" class="f-row row"><text class="f-label">税号</text><input id="vx{{seq}}" class="f-input v-tax-in" placeholder="纳税人识别号" value="{{form.taxNo}}" maxlength="20" bindinput="onTax" /></view>
+    <view class="btn-primary v-save" bindtap="onSave">保存</view>
+    <view wx:if="{{form.id}}" class="v-del" bindtap="onDel"><text>删除抬头</text></view>
+  </view>
+</block>

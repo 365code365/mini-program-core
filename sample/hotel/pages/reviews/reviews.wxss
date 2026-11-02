@@ -1,0 +1,24 @@
+.sum { margin-top: 24rpx; }
+.sum-l { display: flex; flex-direction: column; align-items: center; padding-right: 24rpx; margin-right: 24rpx; border-right: 1rpx solid #DCE6F7; }
+.sum-score { font-size: 56rpx; font-weight: bold; color: #1E6FFF; }
+.sum-word { font-size: 22rpx; color: #1E6FFF; }
+.sum-r { display: flex; flex-direction: column; }
+.sum-name { display: block; font-size: 30rpx; font-weight: bold; margin-bottom: 6rpx; }
+.filters { margin: 0 24rpx 16rpx; }
+.ft { height: 60rpx; padding: 0 28rpx; margin-right: 16rpx; border-radius: 30rpx; background: #fff; font-size: 26rpx; color: #4e5969; display: flex; flex-direction: row; align-items: center; }
+.ft-on { background: #1E6FFF; color: #fff; font-weight: bold; white-space: nowrap; }
+.tags { display: flex; flex-direction: row; flex-wrap: wrap; margin: 0 24rpx 8rpx; }
+.tg { height: 52rpx; padding: 0 20rpx; margin: 0 14rpx 14rpx 0; border-radius: 10rpx; background: #fff; border: 2rpx solid #fff; font-size: 24rpx; color: #4e5969; display: flex; flex-direction: row; align-items: center; }
+.tg-on { background: #EAF2FF; border-color: #A9C8FF; color: #1E6FFF; }
+.rv-avatar { width: 64rpx; height: 64rpx; border-radius: 32rpx; background: linear-gradient(135deg, #A6C8FF, #5A8CFF); display: flex; align-items: center; justify-content: center; }
+.rv-me { background: linear-gradient(135deg, #FFC35C, #F08A24); }
+.rv-avatar-t { color: #fff; font-size: 26rpx; font-weight: bold; }
+.rv-head { margin-left: 16rpx; display: flex; flex-direction: column; }
+.rv-user { font-size: 28rpx; font-weight: bold; }
+.rv-score { font-size: 24rpx; color: #1E6FFF; font-weight: bold; }
+.rv-text { display: block; font-size: 26rpx; color: #4e5969; line-height: 42rpx; margin-top: 14rpx; }
+.rv-tags { margin-top: 14rpx; flex-wrap: wrap; }
+.stars { margin-top: 6rpx; }
+.rate-star.sm { font-size: 28rpx; line-height: 40rpx; margin-right: 4rpx; }
+.pending { height: 60rpx; padding: 0 24rpx; border-radius: 30rpx; background: #FFF1E6; color: #E8743B; font-size: 24rpx; font-weight: bold; display: flex; flex-direction: row; align-items: center; flex-shrink: 0; }
+.gap { height: 40rpx; }

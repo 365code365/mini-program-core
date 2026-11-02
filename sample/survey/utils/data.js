@@ -52,8 +52,8 @@ function getMine() {
 // 用户发布的投票也能被作答：转成和内置问卷一样的结构
 function toSurvey(m) {
   return {
-    id: m.id, kind: '投票', title: m.title, desc: m.anonymous ? '匿名投票，发起人看不到你的选择' : '实名投票', author: '我', glyph: '投',
-    bg: 'linear-gradient(135deg, #A08CFF, #6C5CE7)', joined: m.counts.reduce((a, b) => a + b, 0), deadline: m.deadline,
+    id: m.id, kind: '投票', title: m.title, desc: (m.desc ? m.desc + ' · ' : '') + (m.anonymous ? '匿名投票，发起人看不到你的选择' : '实名投票'), author: '我', glyph: '投',
+    bg: 'linear-gradient(135deg, #A08CFF, #6C5CE7)', joined: m.counts.reduce((a, b) => a + b, 0), deadline: m.deadline, closed: !!m.closed, mine: true,
     questions: [{ id: 'a', type: m.multi ? 'multi' : 'single', title: m.multi ? '可多选' : '请选择一项', required: true, options: m.options, base: m.counts }]
   };
 }
@@ -75,4 +75,29 @@ function today() {
 
 function fmtNum(n) { return n >= 10000 ? (n / 10000).toFixed(1) + '万' : String(n); }
 
-module.exports = { today, surveys, getMine, getSurvey, getAnswers, fmtNum, toSurvey };
+// 截止：过了截止日期（当天还能答）或被发起人提前结束
+function isEnded(sv) {
+  return !!sv.closed || sv.deadline < today();
+}
+// 作答草稿：中途退出再进来接着答（sv_drafts：{ 问卷 id: { step, answers } }），提交后清掉
+function getDraft(id) { return (wx.getStorageSync('sv_drafts') || {})[id] || null; }
+function saveDraft(id, draft) {
+  const all = wx.getStorageSync('sv_drafts') || {};
+  if (draft) all[id] = draft;
+  else delete all[id];
+  wx.setStorageSync('sv_drafts', all);
+}
+// 收藏（sv_favs：id 数组，新收藏的在前）
+function getFavs() { return wx.getStorageSync('sv_favs') || []; }
+function toggleFav(id) {
+  const favs = getFavs();
+  const on = favs.indexOf(id) < 0;
+  wx.setStorageSync('sv_favs', on ? [id].concat(favs) : favs.filter(x => x !== id));
+  return on;
+}
+// 估算用时：选择题 10 秒、评分 8 秒、填空 30 秒，向上取整到分钟
+function minutes(sv) {
+  const sec = sv.questions.reduce((m, q) => m + (q.type === 'text' ? 30 : q.type === 'rate' ? 8 : 10), 0);
+  return Math.max(1, Math.ceil(sec / 60));
+}
+module.exports = { today, surveys, getMine, getSurvey, getAnswers, fmtNum, toSurvey, isEnded, getDraft, saveDraft, getFavs, toggleFav, minutes };

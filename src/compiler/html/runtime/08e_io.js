@@ -256,7 +256,9 @@
     var comps = ["view", "block", "scroll-view", "swiper", "swiper-item", "text", "rich-text", "icon", "image", "video", "canvas", "button", "input",
       "textarea", "switch", "slider", "progress", "checkbox", "checkbox-group", "radio", "radio-group", "picker", "picker-view", "picker-view-column", "form", "navigator", "label", "map"];
     wx.canIUse = function (schema) {
-      var parts = String(schema || "").split("."), head = parts[0] === "wx" ? parts[1] : parts[0];
+      // nb.request / gb.xxx 等别名开头（js/prelude/api-alias.js）与 wx. 同样处理
+      var parts = String(schema || "").split("."), isNs = parts[0] === "wx" || (typeof __wxIsAlias === "function" && __wxIsAlias(parts[0]));
+      var head = isNs ? parts[1] : parts[0];
       if (!head) return false;
       if (comps.indexOf(head) >= 0) return true;
       var f = wx[head];

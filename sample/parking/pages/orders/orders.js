@@ -30,11 +30,20 @@ Page({
   goPay(e) {
     wx.navigateTo({ url: '/pages/pay/pay?plate=' + encodeURIComponent(e.currentTarget.dataset.plate) })
   },
+  // 在场的车点进缴费页；订单点进详情
+  onOrder(e) {
+    const id = String(e.currentTarget.dataset.id)
+    if (id.indexOf('S-') === 0) return this.goPay(e)
+    wx.navigateTo({ url: '/pages/order/order?id=' + id })
+  },
+  goInvoice() {
+    wx.navigateTo({ url: '/pages/invoice/invoice' })
+  },
   cancel(e) {
     const id = e.currentTarget.dataset.id
     wx.showModal({
       title: '取消预约',
-      content: '取消后车位将释放给其他车主，预约费用原路退回',
+      content: '取消后车位将释放给其他车主（预约不预收费用，到场按实际停车时长计费）',
       confirmText: '取消预约',
       cancelText: '再想想',
       success: r => {

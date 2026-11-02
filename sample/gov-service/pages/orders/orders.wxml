@@ -1,0 +1,40 @@
+<view class="tabs row">
+  <text class="t {{tab === item.k ? 'on' : ''}}" wx:for="{{tabs}}" wx:key="k" data-k="{{item.k}}" bindtap="switchTab">{{item.t}}</text>
+</view>
+
+<view class="empty" wx:if="{{loading}}">加载中…</view>
+
+<block wx:elif="{{tab !== 'appoint'}}">
+  <view class="card o" wx:for="{{list}}" wx:key="id" hover-class="tap" data-id="{{item.id}}" bindtap="open">
+    <view class="row between">
+      <text class="o-n">{{item.name}}</text>
+      <text class="st" style="color: {{item.st.color}}; border-color: {{item.st.color}};">{{item.st.text}}</text>
+    </view>
+    <text class="muted o-l">办件编号 {{item.id}}</text>
+    <text class="muted o-l">提交于 {{item.time}} · 最新：{{item.last}}</text>
+    <view class="warn row" wx:if="{{item.status === 'supplement'}}"><icon type="warn" size="14" color="#dc2626"></icon><text>材料需补正，点击处理</text></view>
+  </view>
+  <view class="empty" wx:if="{{!list.length}}">
+    <text>暂无办件</text>
+    <view class="btn ghost eb" bindtap="goHome">去办事</view>
+  </view>
+</block>
+
+<block wx:else>
+  <view class="card o" wx:for="{{appoints}}" wx:key="id">
+    <view class="row between">
+      <text class="o-n">{{item.no}} · {{item.item}}</text>
+      <text class="ast {{item.status}}">{{item.stText}}</text>
+    </view>
+    <text class="muted o-l">{{item.hall}}</text>
+    <text class="muted o-l">{{item.date}}（{{item.wd}}）{{item.time}}</text>
+    <view class="row ab" wx:if="{{item.status === 'booked'}}">
+      <text class="ac" data-id="{{item.id}}" bindtap="cancelAppoint">取消预约</text>
+    </view>
+  </view>
+  <view class="empty" wx:if="{{!appoints.length}}">
+    <text>还没有预约记录</text>
+    <view class="btn ghost eb" bindtap="goAppoint">去预约取号</view>
+  </view>
+</block>
+<view class="safe-bottom"></view>

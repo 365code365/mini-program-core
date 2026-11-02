@@ -1,0 +1,54 @@
+<view class="page">
+  <view class="night">
+    <block wx:if="{{running}}">
+      <text class="n-sub">{{startText}} 入睡，已经睡了</text>
+      <text class="n-time">{{elapsed}}</text>
+      <view class="row n-ops">
+        <view class="n-btn n-ghost" bindtap="cancelSleep" hover-class="btn-hover">取消</view>
+        <view class="n-btn" bindtap="wake" hover-class="btn-hover">醒了，保存</view>
+      </view>
+    </block>
+    <block wx:else>
+      <text class="n-sub">近 7 天平均每天睡</text>
+      <text class="n-time">{{avg}}</text>
+      <view class="n-btn n-wide" bindtap="startSleep" hover-class="btn-hover">宝宝睡着了，开始计时</view>
+    </block>
+  </view>
+
+  <view class="card">
+    <view class="between"><text class="sec-title">近 7 天</text><text class="muted">按自然日统计</text></view>
+    <view class="bars">
+      <view class="bar-col" wx:for="{{bars}}" wx:key="key">
+        <text class="bar-v">{{item.hours}}</text>
+        <view class="bar" style="height: {{item.h}}rpx;"></view>
+        <text class="bar-l">{{item.label}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <text class="sec-title">补录一段睡眠</text>
+    <picker mode="date" value="{{date}}" end="{{today}}" bindchange="onDate">
+      <view class="field"><text class="field-label">入睡日期</text><text class="field-value">{{date}}</text><text class="arrow">›</text></view>
+    </picker>
+    <picker mode="time" value="{{start}}" bindchange="onStart">
+      <view class="field"><text class="field-label">入睡时间</text><text class="field-value">{{start}}</text><text class="arrow">›</text></view>
+    </picker>
+    <picker mode="time" value="{{end}}" bindchange="onEnd">
+      <view class="field"><text class="field-label">醒来时间</text><text class="field-value">{{cross ? '次日 ' : ''}}{{end}}</text><text class="arrow">›</text></view>
+    </picker>
+    <text wx:if="{{err}}" class="err">{{err}}</text>
+    <view class="btn save" bindtap="saveManual" hover-class="btn-hover">保存</view>
+  </view>
+
+  <view class="card">
+    <text class="sec-title">睡眠明细</text>
+    <view wx:if="{{!list.length}}" class="empty"><text class="empty-text">还没有睡眠记录</text></view>
+    <view wx:for="{{list}}" wx:key="id" class="rec" hover-class="item-hover" data-id="{{item.id}}" bindtap="onItem">
+      <text class="rec-day">{{item.day}}</text>
+      <text class="tag {{item.night ? '' : 'tag-mint'}}">{{item.night ? '夜觉' : '小睡'}}</text>
+      <text class="flex1 rec-range">{{item.range}}</text>
+      <text class="rec-len">{{item.len}}</text>
+    </view>
+  </view>
+</view>

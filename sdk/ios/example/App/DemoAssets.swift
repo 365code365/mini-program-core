@@ -14,9 +14,16 @@ enum DemoAssets {
         let base = try fm.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
         let dst = base.appendingPathComponent("demo", isDirectory: true)
         let stamp = base.appendingPathComponent("demo.stamp")
-        let infoPlist = Bundle.main.bundleURL.appendingPathComponent("Info.plist")
-        let version = ((try? fm.attributesOfItem(atPath: infoPlist.path)[.modificationDate]) as? Date)
-            .map { String($0.timeIntervalSince1970) } ?? "0"
+        // 版本 = 包里 demo/ 下最新那个文件的修改时间：增量构建不一定重写 Info.plist（只改了小程序文件时就不会），
+        // 从前按 Info.plist 记，加了新页面装上去还是旧的那份，深链到新页面「首页没打开」
+        var newest = 0.0
+        if let e = fm.enumerator(at: src, includingPropertiesForKeys: [.contentModificationDateKey]) {
+            for case let u as URL in e {
+                let t = (try? u.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate)?.timeIntervalSince1970 ?? 0
+                newest = max(newest, t)
+            }
+        }
+        let version = String(newest)
         if fm.fileExists(atPath: dst.path), (try? String(contentsOf: stamp, encoding: .utf8)) == version {
             return dst
         }

@@ -1,0 +1,14 @@
+.radio { width: 36rpx; height: 36rpx; border-radius: 18rpx; border: 2rpx solid #c8ced8; margin-right: 20rpx; box-sizing: border-box; }
+.radio-on { border: 10rpx solid #1e8cf0; }
+.nm { font-size: 30rpx; font-weight: 600; margin-right: 16rpx; }
+.def { background: #e6f1fd; color: #1e8cf0; margin-left: 12rpx; }
+.ad-d { display: block; font-size: 26rpx; color: #4a5260; margin-top: 6rpx; }
+.op { font-size: 24rpx; color: #1e8cf0; margin-left: 20rpx; }
+.del { color: #ff4d3a; }
+.ops { margin: 40rpx 24rpx 0; }
+.add { margin-left: 24rpx; height: 64rpx; line-height: 64rpx; font-size: 26rpx; }
+.f { padding: 24rpx 0; border-bottom: 1rpx solid #f0f2f5; }
+.fl { width: 170rpx; font-size: 28rpx; }
+.fi { font-size: 28rpx; }
+.ph { color: #a0a7b2; }
+.ferr { display: block; margin-top: 16rpx; }

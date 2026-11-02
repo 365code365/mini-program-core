@@ -15,7 +15,8 @@
 
 <view class="notice row" bindtap="notice">
   <text class="n-tag">公告</text>
-  <text class="n-tx">文三路片区本周六夜间计划停水，请提前储水</text>
+  <text class="n-tx">{{noticeTx}}</text>
+  <text wx:if="{{noticeNew}}" class="n-new">新</text>
   <view class="chev"></view>
 </view>
 
@@ -24,6 +25,7 @@
     <view class="row"><view class="dot"></view><text class="sec-title">待缴提醒</text></view>
     <text class="muted">{{dues.length}} 笔 · 合计 <text class="owe">¥{{dueTotal}}</text></text>
   </view>
+  <view class="row between due-sub"><text class="muted">{{remindTx}}</text><view class="all-btn" bindtap="payAll"><text>一键缴清</text></view></view>
   <view class="due-item row" wx:for="{{dues}}" wx:key="id">
     <view class="ic sm" style="background: {{item.bg}};"><text>{{item.ch}}</text></view>
     <view class="d-main">

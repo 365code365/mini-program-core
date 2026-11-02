@@ -1,0 +1,44 @@
+.map-card { padding: 0 0 28rpx; overflow: hidden; }
+/* 示意地图：纯 CSS 的街区与定位针（真地图交给系统地图 wx.openLocation） */
+.map { height: 300rpx; position: relative; overflow: hidden; background: #e8f0f8; border-radius: 20rpx 20rpx 0 0; }
+.road { position: absolute; background: #ffffff; }
+.r1 { left: 0; right: 0; top: 120rpx; height: 28rpx; }
+.r2 { top: 0; bottom: 0; left: 210rpx; width: 24rpx; }
+.r3 { top: 0; bottom: 0; left: 500rpx; width: 18rpx; }
+.block { position: absolute; border-radius: 10rpx; background: #d6e4f2; }
+.b1 { left: 30rpx; top: 30rpx; width: 150rpx; height: 70rpx; }
+.b2 { left: 260rpx; top: 176rpx; width: 210rpx; height: 90rpx; background: #cfe8dc; }
+.b3 { left: 540rpx; top: 30rpx; width: 120rpx; height: 66rpx; }
+.pin { position: absolute; left: 340rpx; top: 150rpx; width: 44rpx; height: 44rpx; border-radius: 22rpx 22rpx 22rpx 4rpx; transform: rotate(-45deg); background: #ff5a36; }
+.pin-in { position: absolute; left: 14rpx; top: 14rpx; width: 16rpx; height: 16rpx; border-radius: 8rpx; background: #ffffff; }
+.pin-label { position: absolute; left: 270rpx; top: 96rpx; padding: 4rpx 16rpx; border-radius: 20rpx; background: #1d2330; color: #ffffff; font-size: 22rpx; white-space: nowrap; }
+.map-hint { position: absolute; right: 20rpx; bottom: 16rpx; padding: 4rpx 16rpx; border-radius: 20rpx; background: rgba(255, 255, 255, 0.9); color: #1f7cf0; font-size: 22rpx; white-space: nowrap; }
+.h-name { display: block; margin: 24rpx 28rpx 0; font-size: 32rpx; font-weight: bold; color: #1d2330; }
+.h-line { display: block; margin: 8rpx 28rpx 0; }
+.ops { display: flex; flex-direction: row; margin: 24rpx 28rpx 0; }
+.op { flex: 1; height: 68rpx; margin-right: 16rpx; border-radius: 34rpx; border: 2rpx solid #d5dae2; color: #3a4252; font-size: 26rpx; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
+.op:last-child { margin-right: 0; }
+.op.pri { background: linear-gradient(90deg, #3b8cff, #1f7cf0); border: none; color: #ffffff; font-weight: bold; }
+.tr { display: flex; flex-direction: row; align-items: flex-start; margin-top: 20rpx; }
+.tr-k { flex-shrink: 0; margin-right: 16rpx; padding: 2rpx 12rpx; border-radius: 8rpx; background: #eaf2ff; color: #1f7cf0; font-size: 22rpx; }
+.tr-v { flex: 1; font-size: 26rpx; color: #3a4252; line-height: 38rpx; }
+.goal { margin-top: 20rpx; padding: 18rpx 22rpx; border-radius: 14rpx; background: #e8f8f6; display: flex; flex-direction: column; }
+.goal-k { font-size: 22rpx; color: #13a8a8; }
+.goal-v { margin-top: 4rpx; font-size: 28rpx; font-weight: bold; color: #0c7f7f; }
+.fl { border-bottom: 1rpx solid #f0f2f5; }
+.fl:last-child { border-bottom: none; }
+.fl-h { display: flex; flex-direction: row; align-items: center; padding: 22rpx 0; }
+.fl-no { width: 72rpx; height: 52rpx; border-radius: 12rpx; background: #f2f4f8; color: #3a4252; font-size: 26rpx; font-weight: bold; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.fl-open .fl-no { background: #eaf2ff; color: #1f7cf0; }
+.fl-no.fl-no-on { background: #13a8a8; color: #ffffff; }
+.fl-sum { flex: 1; margin-left: 20rpx; font-size: 26rpx; color: #5a6475; }
+.chev-down { transform: rotate(135deg); }
+.fl-body { padding: 0 0 20rpx 92rpx; }
+.dp { display: flex; flex-direction: row; align-items: center; justify-content: space-between; padding: 14rpx 20rpx; margin-bottom: 10rpx; border-radius: 12rpx; background: #f7f9fc; }
+.dp-on { background: #e8f8f6; border: 2rpx solid #13a8a8; }
+.dp-n { font-size: 26rpx; color: #1d2330; }
+.dp-on .dp-n { font-weight: bold; color: #0c7f7f; }
+.dp-a { font-size: 22rpx; color: #8a93a3; }
+.fac { margin-top: 10rpx; display: flex; flex-direction: row; }
+.fac-k { flex-shrink: 0; font-size: 22rpx; color: #c27c0e; margin-right: 12rpx; }
+.fac-v { flex: 1; font-size: 22rpx; color: #5a6475; line-height: 34rpx; }

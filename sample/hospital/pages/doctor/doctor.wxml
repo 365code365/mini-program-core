@@ -29,8 +29,8 @@
 
 <view class="card sched">
   <view class="row between">
-    <text class="sec-title">出诊排班</text>
-    <text class="muted">号源每日 08:00 更新</text>
+    <text class="sec-title">{{today ? '今日号源' : '出诊排班'}}</text>
+    <text class="muted">{{today ? '当日挂号 · 请当天到院签到' : '号源每日 08:00 更新'}}</text>
   </view>
   <scroll-view class="days" scroll-x="{{true}}" show-scrollbar="{{false}}">
     <view class="day {{dayIdx === index ? 'on' : ''}} {{item.total ? '' : 'full'}}" wx:for="{{days}}" wx:key="key" data-index="{{index}}" bindtap="pickDay">
@@ -45,7 +45,7 @@
     <view class="slots">
       <view class="slot {{item.left > 0 ? '' : 'dis'}} {{slot === item.time ? 'on' : ''}}" wx:for="{{h.slots}}" wx:key="time" data-time="{{item.time}}" data-left="{{item.left}}" bindtap="pickSlot">
         <text class="s-time">{{item.time}}</text>
-        <text class="s-left">{{item.left > 0 ? '余 ' + item.left : (item.left === 0 ? '约满' : '停诊')}}</text>
+        <text class="s-left">{{item.text}}</text>
       </view>
     </view>
   </view>

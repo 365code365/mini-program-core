@@ -21,4 +21,8 @@
 .fee { color: #FF7A1A; }
 .o-foot { margin-top: 18rpx; }
 .empty { align-items: center; padding: 100rpx 0; }
-.empty-ic { width: 120rpx; height: 120rpx; border-radius: 60rpx; background: #e1f5ec; margin-bottom: 20rpx; }
+.empty-ic { width: 120rpx; height: 120rpx; border-radius: 60rpx; background: #e1f5ec; margin-bottom: 20rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.empty-ic-t { color: #00A36C; font-size: 44rpx; font-weight: bold; }
+.o-st.unpaid { color: #FF7A1A; font-weight: bold; }
+.inv-link { padding-bottom: 14rpx; }
+.inv-t { font-size: 26rpx; color: #00A36C; white-space: nowrap; }

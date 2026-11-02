@@ -40,9 +40,15 @@
 
 <view class="card">
   <text class="title">宿主承载的原生组件（map）</text>
-  <text class="desc">nativeComponents 里点名的标签由宿主用自己的控件盖在画面上，引擎每帧报位置与被遮挡的区域；宿主回传的事件派发到节点自己的 bind 上。</text>
-  <map id="map1" class="map" latitude="{{lat}}" longitude="{{lng}}" scale="14" bindmarkertap="onMarker"></map>
+  <text class="desc">地图由宿主画（瓦片、标记都是宿主的绘制），同层渲染进页面：滚动时就是页面里的一块像素，与上下的卡片一起走。这一张关了拖动与缩放（enable-scroll / enable-zoom 为 false），在它上面拖照样滚页面（滑动顿挫与错位量这一页）；点标记宿主回传 markertap。</text>
+  <map id="map1" class="map" latitude="{{lat}}" longitude="{{lng}}" scale="14" markers="{{hostMarkers}}" enable-satellite="{{true}}"
+    enable-scroll="{{false}}" enable-zoom="{{false}}" bindmarkertap="onMarker" bindtap="onMapTap"></map>
   <view class="result"><text>{{mapResult}}</text></view>
+  <view class="btns">
+    <view class="btn-s" bindtap="openNative" data-url="/pages/map/map">完整的地图 ›</view>
+    <view class="btn-s" bindtap="openNative" data-url="/pages/webview/webview">web-view ›</view>
+    <view class="btn-s" bindtap="openNative" data-url="/pages/live/live">live-player ›</view>
+  </view>
 </view>
 
 <view class="card">

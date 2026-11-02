@@ -1,0 +1,28 @@
+.tabs { background: #fff; padding: 20rpx 32rpx 0; margin-bottom: 20rpx; }
+.tab { margin-right: 56rpx; display: flex; flex-direction: column; align-items: center; padding-bottom: 14rpx; }
+.tab-t { font-size: 28rpx; color: #6b717a; white-space: nowrap; }
+.tab.on .tab-t { color: #1f2329; font-weight: bold; }
+.tab-line { width: 40rpx; height: 6rpx; border-radius: 3rpx; background: #00B87A; margin-top: 10rpx; }
+.redeem { padding: 16rpx 16rpx 16rpx 28rpx; }
+.code-input { height: 72rpx; font-size: 30rpx; }
+.ph { color: #b0b5bc; font-size: 26rpx; }
+.redeem-btn { background: #00B87A; border-radius: 36rpx; padding: 14rpx 36rpx; }
+.redeem-t { color: #fff; font-size: 26rpx; font-weight: bold; white-space: nowrap; }
+.cp { margin: 0 24rpx 20rpx; background: #fff; border-radius: 20rpx; overflow: hidden; }
+.cp-l { border-radius: 20rpx 0 0 20rpx; width: 200rpx; height: 170rpx; background: linear-gradient(135deg, #FF9B4D, #FF7A1A); align-items: center; justify-content: center; }
+.cp.off .cp-l { background: #c4c7cc; }
+.cp-amt { align-items: flex-end; }
+.cp-y { color: #fff; font-size: 26rpx; font-weight: bold; margin-bottom: 8rpx; }
+.cp-big { color: #fff; font-size: 60rpx; font-weight: bold; line-height: 70rpx; }
+.cp-u { color: #fff; font-size: 26rpx; font-weight: bold; margin-bottom: 8rpx; }
+.cp-cond { color: rgba(255, 255, 255, 0.9); font-size: 20rpx; margin-top: 4rpx; }
+.cp-r { padding: 0 20rpx 0 24rpx; }
+.cp-title { font-size: 28rpx; font-weight: bold; margin-bottom: 8rpx; }
+.cp.off .cp-title { color: #8a9099; }
+.cp-use { border: 2rpx solid #FF7A1A; border-radius: 26rpx; padding: 6rpx 20rpx; margin-right: 24rpx; }
+.cp-use-t { color: #FF7A1A; font-size: 24rpx; white-space: nowrap; }
+.cp-used { color: #9aa0a6; font-size: 24rpx; margin-right: 28rpx; white-space: nowrap; }
+.tip { display: block; padding: 8rpx 36rpx 40rpx; }
+.empty { align-items: center; padding: 100rpx 0; }
+.empty-ic { width: 120rpx; height: 120rpx; border-radius: 60rpx; background: #fff4ea; margin-bottom: 20rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.empty-ic-t { color: #FF7A1A; font-size: 44rpx; font-weight: bold; }

@@ -22,9 +22,15 @@
 .qr-cell.on { background: #1f2329; }
 .code-label { font-size: 22rpx; color: #9aa0a6; margin-top: 20rpx; }
 .code { font-size: 44rpx; font-weight: bold; letter-spacing: 6rpx; margin: 4rpx 0 10rpx; }
-.t-ops { margin-top: 24rpx; width: 100%; border-top: 1rpx solid #f0f1f3; padding-top: 22rpx; }
-.t-op { flex: 1; text-align: center; font-size: 26rpx; color: #4e5969; }
+.t-acts { margin-top: 24rpx; width: 100%; border-top: 1rpx solid #f0f1f3; padding-top: 22rpx; }
+.t-act { flex: 1; text-align: center; font-size: 26rpx; color: #4e5969; }
 .empty { display: flex; flex-direction: column; align-items: center; padding: 160rpx 0; }
 .empty-t { color: #9aa0a6; }
 .empty-btn { margin-top: 24rpx; color: #F0384D; border: 2rpx solid #F0384D; border-radius: 30rpx; padding: 10rpx 40rpx; font-size: 26rpx; }
 .gap { height: 32rpx; }
+.t-act-off { color: #c4c7cc; }
+.tabs { background: #fff; padding: 0 12rpx; }
+.tab { flex: 1; text-align: center; padding: 22rpx 0; font-size: 27rpx; color: #8a9099; border-bottom: 4rpx solid #ffffff; white-space: nowrap; }
+.tab-on { color: #F0384D; font-weight: bold; border-bottom: 4rpx solid #F0384D; }
+.st-refunded { color: #9aa0a6; background: #f2f3f5; }
+.refunded .t-title { color: #8a9099; }

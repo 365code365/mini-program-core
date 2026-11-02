@@ -47,6 +47,32 @@ pub fn on_tap(renderer: &WxmlRenderer, interaction: &InteractionManager, x: f32,
     true
 }
 
+/// 按在一个要自己处理手势的同层组件上（`sameLayerGestures`）：返回它的键、标签与框在**页面视口**里的左上角。
+/// `y` 是页面视口坐标，`scroll` 是页面滚动量（正常流的框按内容坐标登记）。fixed 的优先（画在上面）。
+/// 地图写了 `enable-scroll="false"` 且 `enable-zoom="false"` 的不接：它不动，拖动照样滚页面
+pub(super) fn gesture_view_at(
+    renderer: &WxmlRenderer,
+    interaction: &InteractionManager,
+    x: f32,
+    y: f32,
+    scroll: f32,
+) -> Option<(String, String, f32, f32)> {
+    if host_view::tags().iter().all(|t| !host_view::wants_gestures(t)) {
+        return None;
+    }
+    let off = |v: &QueryHit, k: &str| v.attrs.get(k).map(|s| matches!(s.trim(), "false" | "0")).unwrap_or(false);
+    let all = views(renderer, interaction);
+    let pick = |fixed: bool| {
+        let p = crate::Point::new(x, if fixed { y } else { y + scroll });
+        all.iter().rev().find(|(_, tag, v)| {
+            v.is_fixed == fixed && host_view::wants_gestures(tag) && v.rect.contains(&p) && !(off(v, "enable-scroll") && off(v, "enable-zoom"))
+        })
+    };
+    let (key, tag, v) = pick(true).or_else(|| pick(false))?;
+    let top = if v.is_fixed { v.rect.y } else { v.rect.y - scroll };
+    Some((key.clone(), tag.clone(), v.rect.x, top))
+}
+
 impl MiniEngine {
     /// 每次 pump 末尾（`sync_host_events`）
     pub(super) fn sync_host_views(&mut self) {

@@ -1,0 +1,69 @@
+<view class="page">
+  <view wx:if="{{!p}}" class="empty">
+    <text class="empty-text">没有找到这个装修项目</text>
+  </view>
+  <block wx:else>
+    <view wx:if="{{isNew}}" class="ok">
+      <text class="ok-t">预约成功</text>
+      <text class="ok-s">设计师会在 2 小时内电话联系您确认上门时间</text>
+    </view>
+
+    <view class="head">
+      <view class="between">
+        <text class="h-t">{{done ? '已完工' : (p.stage === 0 ? '待上门量房' : '当前：' + stages[p.stage].name)}}</text>
+        <text class="h-pc">{{percent}}%</text>
+      </view>
+      <progress class="h-bar" percent="{{percent}}" stroke-width="8" border-radius="8" activeColor="#ffffff" backgroundColor="rgba(255,255,255,0.3)"></progress>
+      <text class="h-s">{{p.community}} · {{p.area}}㎡ {{p.houseType}}</text>
+      <text class="h-s">预约单号 {{p.no}}</text>
+    </view>
+
+    <view class="card">
+      <view class="between"><text class="sec-title">预约信息</text><text class="muted">预算 {{p.budget}}</text></view>
+      <view class="kv"><text class="k">联系人</text><text class="v">{{p.name}} {{p.phone}}</text></view>
+      <view class="kv"><text class="k">量房时间</text><text class="v">{{p.date}} {{p.slot}}</text></view>
+      <view class="kv" wx:if="{{p.remark}}"><text class="k">需求备注</text><text class="v">{{p.remark}}</text></view>
+      <view wx:if="{{designer}}" class="ds" bindtap="goDesigner" hover-class="item-hover">
+        <image class="ds-av" src="{{designer.avatar}}"></image>
+        <text class="flex1">设计师 {{designer.name}} · {{designer.title}}</text>
+        <text class="arrow">›</text>
+      </view>
+      <view wx:else class="kv"><text class="k">设计师</text><text class="v">平台分配中</text></view>
+    </view>
+
+    <view class="card">
+      <text class="sec-title">施工节点</text>
+      <view class="tl">
+        <view wx:for="{{stages}}" wx:key="i" class="node">
+          <view class="dot dot-{{item.state}}"></view>
+          <text class="n-name n-{{item.state}} flex1">{{item.name}}</text>
+          <text class="muted">{{item.state === 'todo' ? '' : item.time}}</text>
+        </view>
+      </view>
+      <view wx:if="{{!done}}" class="row ops">
+        <view wx:if="{{p.stage === 0}}" class="btn-ghost op-cancel" bindtap="cancel" hover-class="btn-hover">取消预约</view>
+        <view wx:else class="btn-ghost op-cancel" bindtap="call" hover-class="btn-hover">联系项目经理</view>
+        <view class="btn flex1" bindtap="advance" hover-class="btn-hover">确认：{{next}}</view>
+      </view>
+      <text wx:else class="green fin">全部节点已验收，祝您住得舒心</text>
+    </view>
+
+    <view class="card">
+      <text class="sec-title">装修日记</text>
+      <textarea class="ta" value="{{text}}" maxlength="300" placeholder="记录今天工地的进展、踩过的坑…" placeholder-class="placeholder" bindinput="onText"></textarea>
+      <text wx:if="{{err}}" class="err err0">{{err}}</text>
+      <view class="row">
+        <view wx:if="{{photo}}" class="ph"><image class="ph-img" src="{{photo}}" mode="aspectFill"></image><text class="ph-x" bindtap="dropPhoto">×</text></view>
+        <view wx:else class="ph-add" bindtap="addPhoto" hover-class="item-hover"><text class="muted">+ 照片</text></view>
+        <view class="flex1"></view>
+        <view class="btn post" bindtap="addDiary" hover-class="btn-hover">发布</view>
+      </view>
+      <view wx:if="{{!diaries.length}}" class="empty small"><text class="empty-text">还没有日记，开工后记录每个节点吧</text></view>
+      <view wx:for="{{diaries}}" wx:key="id" class="dy">
+        <view class="between"><text class="tag">{{item.stageName}}</text><text class="muted">{{item.time}}</text></view>
+        <text class="dy-t">{{item.text}}</text>
+        <image wx:if="{{item.photo}}" class="dy-img" src="{{item.photo}}" mode="aspectFill" data-src="{{item.photo}}" bindtap="preview"></image>
+      </view>
+    </view>
+  </block>
+</view>

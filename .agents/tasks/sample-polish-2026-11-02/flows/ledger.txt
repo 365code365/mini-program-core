@@ -1,0 +1,200 @@
+# 小鹿记账：每页能开 + 记一笔（键盘、分类、备注）/ 预算 80% 与超支提醒 / 编辑删除 / 账本切换新建删除 / 分类管理 / 导出复制 / 记账提醒
+smoke pages/add/add?id=r1 pages/detail/detail?id=r1 pages/cats/cats?type=in
+open
+expect getCurrentPages()[0].data.bookName === '日常账本'
+shot target/_polish_shots/index.png
+# 预算设成「再花 300 正好用到 85%」：本月支出 out，预算 B = (out + 300) / 0.85
+eval (function () { var p = getCurrentPages()[0]; var out = +p.data.outText; globalThis.__out = out; wx.setStorageSync('ledger_budget', Math.round((out + 300) / 0.85)); })()
+# 记一笔：交通 300，备注
+tap .add-btn
+route pages/add/add
+shot target/_polish_shots/add.png
+tapn 1 .grid-item
+expect getCurrentPages().slice(-1)[0].data.cat === '交通'
+tapn 2 .key
+tapn 13 .key
+tapn 13 .key
+expect getCurrentPages().slice(-1)[0].data.amount === '300'
+type .form-input => 打车去机场
+tapn 15 .key
+modal?
+expect __ui.filter(function (x) { return x.k === 'modal'; }).slice(-1)[0].content.indexOf('已用 85%') > 0
+modal ok
+wait 300
+route pages/index/index
+expect getCurrentPages()[0].data.outText === (globalThis.__out + 300).toFixed(2)
+expect getCurrentPages()[0].data.budgetWarn === true
+expect wx.getStorageSync('ledger_records').filter(function (r) { return r.note === '打车去机场'; })[0].book === 'b1'
+# 再记：1000，跨过 100% → 超支提醒，留在记账页、金额清零
+tap .add-btn
+tapn 0 .key
+tapn 13 .key
+tapn 13 .key
+tapn 13 .key
+tapn 11 .key
+modal?
+expect __ui.filter(function (x) { return x.k === 'modal'; }).slice(-1)[0].content.indexOf('超出预算') > 0
+modal ok
+route pages/add/add
+expect getCurrentPages().slice(-1)[0].data.amount === '0'
+# 金额 0 不能保存
+tapn 15 .key
+toast 请输入金额
+# 收入：小数键盘 38.5
+tapn 1 .seg-item
+expect getCurrentPages().slice(-1)[0].data.cat === '工资'
+tapn 2 .key
+tapn 9 .key
+tapn 12 .key
+tapn 5 .key
+expect getCurrentPages().slice(-1)[0].data.amount === '38.5'
+tapn 15 .key
+toast 记账成功
+wait 800
+route pages/index/index
+expect getCurrentPages()[0].data.budgetOver === true
+# 编辑：首页第一笔 → 详情 → 编辑金额为 5 → 详情刷新；删除
+tapn 0 .rec
+route pages/detail/detail
+eval globalThis.__rid = getCurrentPages().slice(-1)[0].data.id
+expect getCurrentPages().slice(-1)[0].data.bookName === '日常账本'
+shot target/_polish_shots/detail.png
+tap .act-edit
+route pages/add/add
+tapn 7 .key
+tapn 5 .key
+tapn 15 .key
+toast 已修改
+wait 800
+route pages/detail/detail
+expect getCurrentPages().slice(-1)[0].data.rec.amount === 5
+tap .act-del
+modal ok
+wait 800
+route pages/index/index
+expect !wx.getStorageSync('ledger_records').some(function (r) { return r.id === globalThis.__rid; })
+# 账本：切到旅行账本，记一笔只进这个账本；预算按账本
+tap .book-chip
+route pages/books/books
+count 2 .book
+wait 1600
+shot target/_polish_shots/books.png
+tapn 1 .book-main
+toast 旅行账本
+wait 700
+route pages/index/index
+expect getCurrentPages()[0].data.bookName === '旅行账本'
+expect getCurrentPages()[0].data.budgetText === '2000'
+tap .add-btn
+tapn 4 .key
+tapn 4 .key
+tapn 15 .key
+wait 800
+expect wx.getStorageSync('ledger_records').filter(function (r) { return r.book === 'b2'; }).length === 6
+# 新建账本：空名校验、建好、重命名、删除
+tap .book-chip
+tap .new
+tap .s-ok
+toast 请输入账本名称
+type .field-input => 装修账本
+tapn 2 .color
+shot target/_polish_shots/books-panel.png
+tap .s-ok
+toast 账本已创建
+count 3 .book
+expect wx.getStorageSync('ledger_books')[2].name === '装修账本' && wx.getStorageSync('ledger_books')[2].color === '#2fbf8f'
+tapn 3 .op
+expect getCurrentPages().slice(-1)[0].data.name === '装修账本'
+tap .s-cancel
+absent .sheet
+tapn 4 .op
+modal ok
+count 2 .book
+# 切回日常账本
+tapn 0 .book-main
+wait 700
+expect getCurrentPages()[0].data.bookName === '日常账本'
+# 分类管理：记账页「管理」→ 加「宠物」→ 回来就能选
+tap .add-btn
+tap .grid-manage
+route pages/cats/cats
+type .new-row input => 餐饮
+tap .add-btn
+toast 已有同名分类
+tap .new-row input
+key backspace
+key backspace
+type .new-row input => 宠物
+tapn 3 .color
+tap .add-btn
+toast 已添加
+expect wx.getStorageSync('ledger_cats_custom').out[0].name === '宠物'
+exists .del
+shot target/_polish_shots/cats.png
+back
+expect getCurrentPages().slice(-1)[0].data.cats[9].name === '宠物'
+tapn 9 .grid-item
+tapn 0 .key
+tapn 13 .key
+tapn 15 .key
+wait 800
+expect wx.getStorageSync('ledger_records').filter(function (r) { return r.cat === '宠物'; }).length === 1
+# 我的：统计数字可点、分类数、删分类 → 账单归入其他
+eval wx.switchTab({ url: '/pages/mine/mine' })
+route pages/mine/mine
+expect getCurrentPages()[0].data.catTotal === 17
+wait 1600
+shot target/_polish_shots/mine.png
+tapn 2 .num
+route pages/stats/stats
+expect getCurrentPages()[0].data.bookName === '日常账本'
+eval wx.switchTab({ url: '/pages/mine/mine' })
+tapn 1 .item
+route pages/cats/cats
+tap .del
+modal ok
+expect wx.getStorageSync('ledger_records').filter(function (r) { return r.cat === '宠物'; }).length === 0
+expect wx.getStorageSync('ledger_cats_custom').out.length === 0
+back
+# 导出：本月 / 全部，复制 CSV、复制摘要
+tapn 5 .item
+route pages/export/export
+expect getCurrentPages().slice(-1)[0].data.count > 0
+expect getCurrentPages().slice(-1)[0].data.preview[0] === '日期,收支,分类,金额,备注'
+tapn 2 .seg-item
+expect getCurrentPages().slice(-1)[0].data.count === wx.getStorageSync('ledger_records').filter(function (r) { return (r.book || 'b1') === 'b1'; }).length
+tap .btn-primary
+toast CSV
+expect wx.getStorageSync('ledger_export_last').what === 'CSV'
+tap .btn-ghost
+toast 摘要
+exists .foot
+wait 1600
+shot target/_polish_shots/export.png
+back
+# 记账提醒：改时间、工作日、关掉预算提醒
+tapn 4 .item
+route pages/remind/remind
+picker picker
+pickrow 0 2 1
+pickok
+expect getCurrentPages().slice(-1)[0].data.time === '22:00'
+tapn 1 .chip
+tap .sw-budget
+expect getCurrentPages().slice(-1)[0].data.budgetRemind === false
+expect getCurrentPages().slice(-1)[0].data.nextText.indexOf('22:00') > 0
+wait 1000
+shot target/_polish_shots/remind.png
+tap .save
+toast 提醒已开启
+wait 800
+route pages/mine/mine
+expect wx.getStorageSync('ledger_reminder').days === 'workday' && wx.getStorageSync('ledger_remind') === false
+expect getCurrentPages()[0].data.remindText === '工作日 22:00'
+# 清空本账本：取消什么都不做
+tapn 7 .item
+modal cancel
+expect getCurrentPages()[0].data.total > 0
+tapn 0 .item
+route pages/books/books
+back

@@ -1,0 +1,12 @@
+page { background: #ffffff; }
+.art { padding: 32rpx 32rpx 40rpx; background: #ffffff; }
+.a-title { display: block; font-size: 40rpx; font-weight: bold; color: #1d2330; line-height: 56rpx; }
+.a-meta { margin-top: 16rpx; }
+.a-tag { font-size: 20rpx; border: 1rpx solid; border-radius: 6rpx; padding: 0 8rpx; margin-right: 12rpx; }
+.a-pic { margin-top: 28rpx; height: 260rpx; border-radius: 20rpx; display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 56rpx; font-weight: bold; }
+.a-p { display: block; margin-top: 28rpx; font-size: 30rpx; color: #3a4252; line-height: 52rpx; }
+.a-btn { margin-top: 40rpx; }
+.card { background: #f7f9fc; box-shadow: none; }
+.m-item { display: flex; flex-direction: row; align-items: center; padding: 24rpx 0; border-bottom: 1rpx solid #eef0f4; }
+.m-item:last-child { border-bottom: none; }
+.m-title { flex: 1; font-size: 28rpx; color: #1d2330; line-height: 40rpx; }

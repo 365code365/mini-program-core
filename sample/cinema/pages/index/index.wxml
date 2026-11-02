@@ -9,6 +9,7 @@
   <view class="tabs row">
     <view class="tab {{tab === 'now' ? 'tab-on' : ''}}" data-tab="now" bindtap="onTab"><text>正在热映</text><view class="tab-line" wx:if="{{tab === 'now'}}"></view></view>
     <view class="tab {{tab === 'soon' ? 'tab-on' : ''}}" data-tab="soon" bindtap="onTab"><text>即将上映</text><view class="tab-line" wx:if="{{tab === 'soon'}}"></view></view>
+    <view class="tab {{tab === 'cinema' ? 'tab-on' : ''}}" data-tab="cinema" bindtap="onTab"><text>影院</text><view class="tab-line" wx:if="{{tab === 'cinema'}}"></view></view>
   </view>
 </view>
 
@@ -27,7 +28,23 @@
 </swiper>
 </view>
 
-<view wx:if="{{!list.length}}" class="empty">没有找到「{{keyword}}」相关的电影</view>
+<block wx:if="{{tab === 'cinema'}}">
+  <view wx:if="{{!cinemas.length}}" class="empty">没有找到「{{keyword}}」相关的影院</view>
+  <view class="cinema" wx:for="{{cinemas}}" wx:key="id" data-id="{{item.id}}" bindtap="onCinema">
+    <view class="row between">
+      <text class="c-name">{{item.name}}</text>
+      <text class="c-price">¥{{item.base}} 起</text>
+    </view>
+    <text class="sub c-addr">{{item.addr}}</text>
+    <view class="row c-foot">
+      <text class="tag" wx:for="{{item.tags}}" wx:key="*this" wx:for-item="t">{{t}}</text>
+      <text class="c-fav" wx:if="{{item.fav}}">常去</text>
+      <view class="flex1"></view>
+      <text class="sub">{{item.dist}}</text>
+    </view>
+  </view>
+</block>
+<view wx:elif="{{!list.length}}" class="empty">没有找到「{{keyword}}」相关的电影</view>
 
 <block wx:if="{{tab === 'now'}}">
   <view class="movie" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onMovie">
@@ -48,7 +65,7 @@
   </view>
 </block>
 
-<view wx:else class="soon-grid">
+<view wx:elif="{{tab === 'soon'}}" class="soon-grid">
   <view class="soon" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onMovie">
     <view class="soon-poster-wrap">
       <image class="soon-poster" src="{{item.poster}}" mode="aspectFill"></image>

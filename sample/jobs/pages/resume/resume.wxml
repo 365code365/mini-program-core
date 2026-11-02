@@ -56,6 +56,20 @@
 </view>
 
 <view class="card form">
+  <view class="row between">
+    <text class="section-title">工作经历</text>
+    <view class="add" bindtap="onAddWork"><text class="add-t">+ 添加</text></view>
+  </view>
+  <view class="work row" wx:for="{{r.works}}" wx:key="id">
+    <view class="col flex1">
+      <text class="w-co">{{item.company}}</text>
+      <text class="sub">{{item.title}} · {{item.from}} - {{item.to}}</text>
+    </view>
+    <text class="w-del" data-id="{{item.id}}" bindtap="onDelWork">删除</text>
+  </view>
+  <view class="w-empty" wx:if="{{!r.works.length}}"><text class="sub">还没有工作经历，应届生可以跳过</text></view>
+</view>
+<view class="card form">
   <text class="section-title">求职期望</text>
   <view class="field row">
     <text class="label">期望职位</text>
@@ -91,5 +105,32 @@
 </view>
 
 <view class="save-wrap">
-  <view class="btn-primary" bindtap="onSave">保存简历</view>
+  <view class="btn-primary save-btn" bindtap="onSave">保存简历</view>
+</view>
+<view class="mask" wx:if="{{showWork}}" bindtap="onCloseWork"></view>
+<view class="sheet" wx:if="{{showWork}}" catchtap="noop">
+  <text class="sheet-title">添加工作经历</text>
+  <view class="field row">
+    <text class="label">公司名称</text>
+    <input id="wco{{wSeq}}" class="flex1 ival w-company" value="{{w.company}}" placeholder="如：杭州某科技公司" data-k="company" bindinput="onWInput" />
+  </view>
+  <view class="field row">
+    <text class="label">职位名称</text>
+    <input id="wti{{wSeq}}" class="flex1 ival w-title" value="{{w.title}}" placeholder="如：前端开发工程师" data-k="title" bindinput="onWInput" />
+  </view>
+  <picker mode="selector" range="{{fromYears}}" value="{{w.from}}" data-k="from" bindchange="onWPick">
+    <view class="field row">
+      <text class="label">入职年份</text>
+      <text class="flex1 val">{{fromYears[w.from]}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <picker mode="selector" range="{{toYears}}" value="{{w.to}}" data-k="to" bindchange="onWPick">
+    <view class="field row last">
+      <text class="label">离职年份</text>
+      <text class="flex1 val">{{toYears[w.to]}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <view class="btn-primary w-save" bindtap="onSaveWork">保存</view>
 </view>

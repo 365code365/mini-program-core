@@ -1,0 +1,40 @@
+<view class="ct-trade" wx:if="{{item}}">
+  <image class="ct-cover" src="{{item.cover}}" mode="aspectFill" bindtap="goItem"></image>
+  <view class="flex1" bindtap="goItem">
+    <text class="ct-title">{{item.title}}</text>
+    <view class="row"><text class="price"><text class="yen">¥</text>{{item.price}}</text><text class="muted ct-st">{{order ? '订单' + order.statusText : item.sold ? '已卖出' : '在售'}}</text></view>
+  </view>
+  <view class="ct-buy" bindtap="buyAt">{{order ? '看订单' : '立即购买'}}</view>
+</view>
+<scroll-view scroll-y class="ct-list" scroll-into-view="{{last}}" scroll-with-animation>
+  <view class="ct-tip">交易前请勿脱离平台转账，确认收货后货款才会打给卖家</view>
+  <view wx:for="{{msgs}}" wx:key="key" id="{{item.key}}">
+    <view class="ct-sys" wx:if="{{item.type === 'status'}}">{{item.text}}</view>
+    <view class="ct-row {{item.from === 'me' ? 'me' : ''}}" wx:else>
+      <image class="avatar" src="{{item.from === 'me' ? me.avatar : peer.avatar}}"></image>
+      <view class="ct-bubble" wx:if="{{item.type === 'text'}}">{{item.text}}</view>
+      <view class="ct-offer" wx:else>
+        <text class="ct-ol">{{item.from === 'me' ? '我的出价' : '卖家还价'}}</text>
+        <text class="ct-op">¥{{item.price}}</text>
+        <text class="ct-os os-{{item.state}}">{{item.state === 'pending' ? '等待卖家回复' : item.state === 'accepted' ? '卖家已同意' : item.state === 'counter' ? '接受这个价格？' : '卖家未接受'}}</text>
+        <view class="ct-ob" wx:if="{{item.state === 'accepted' || item.state === 'counter'}}" data-price="{{item.price}}" bindtap="buyAt">按 ¥{{item.price}} 购买</view>
+      </view>
+    </view>
+    <text class="ct-time">{{item.timeText}}</text>
+  </view>
+</scroll-view>
+<view class="ct-bar">
+  <view class="ct-offbtn" bindtap="openOffer">出价</view>
+  <input class="ct-input" value="{{text}}" placeholder="想问点什么…" confirm-type="send" confirm-hold bindinput="onInput" bindconfirm="send"></input>
+  <view class="ct-send {{text ? 'on' : ''}}" bindtap="send">发送</view>
+</view>
+<view class="ct-mask" wx:if="{{offerShow}}" bindtap="closeOffer"></view>
+<view class="ct-sheet" wx:if="{{offerShow}}">
+  <text class="ct-sh">给卖家出个价</text>
+  <text class="muted">标价 ¥{{item.price}}，卖家同意后按出价购买</text>
+  <view class="row ct-quick">
+    <view class="ct-q" wx:for="{{quickList}}" wx:key="label" data-v="{{item.v}}" bindtap="quick">{{item.label}} ¥{{item.v}}</view>
+  </view>
+  <input class="ct-oin" type="number" placeholder="输入你的出价（元）" value="{{offerPrice}}" bindinput="onOffer"></input>
+  <view class="btn" bindtap="sendOffer">发送出价</view>
+</view>

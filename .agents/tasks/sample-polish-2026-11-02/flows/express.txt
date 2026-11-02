@@ -1,0 +1,100 @@
+# 快递100查：每页能开 + 查件 / 扫码降级 / 寄件下单支付 / 取消退券 / 再寄一单 / 地址簿 / 券 / 我的
+smoke pages/detail/detail?no=SF1428391027645 pages/order/order?id=none pages/address/address?select=sender
+
+open
+type .search-input => SF1609288373645
+tap .search-btn
+wait 300
+print getCurrentPages().slice(-1)[0].route
+expect wx.getStorageSync('express_history')[0] === 'SF1609288373645'
+expect wx.getStorageSync('express_list').some(function (i) { return i.no === 'SF1609288373645'; })
+shot target/_polish_shots/ex-after-query.png
+eval wx.reLaunch({ url: '/pages/index/index' })
+# 扫码：宿主没有扫码能力 → 降级
+tapn 1 .entry
+wait 300
+print JSON.stringify(__ui.slice(-2))
+eval wx.reLaunch({ url: '/pages/index/index' })
+tapn 2 .entry
+wait 300
+print JSON.stringify(__ui.slice(-1))
+modal ok
+eval wx.reLaunch({ url: '/pages/index/index' })
+
+# 寄件：默认寄件人、自动挑最省的券、重量 +1、换快递产品 → 预付运费（宿主不支持支付 → 页内确认）
+eval wx.switchTab({ url: '/pages/send/send' })
+route pages/send/send
+expect getCurrentPages().slice(-1)[0].data.sender && getCurrentPages().slice(-1)[0].data.receiver
+print [getCurrentPages().slice(-1)[0].data.fee, getCurrentPages().slice(-1)[0].data.cut, getCurrentPages().slice(-1)[0].data.pay]
+tap .step-plus
+expect getCurrentPages().slice(-1)[0].data.weight === 3
+tapn 1 .carrier
+expect getCurrentPages().slice(-1)[0].data.carrier === 1
+expect getCurrentPages().slice(-1)[0].data.pay === Math.round((getCurrentPages().slice(-1)[0].data.fee - getCurrentPages().slice(-1)[0].data.cut) * 100) / 100
+shot target/_polish_shots/ex-send.png
+tap .submit
+modal?
+modal ok
+wait 400
+route pages/order/order
+expect wx.getStorageSync('express_orders').length === 1
+eval globalThis.OID = wx.getStorageSync('express_orders')[0].id
+eval globalThis.CID = wx.getStorageSync('express_orders')[0].couponId
+expect !CID || wx.getStorageSync('express_coupons').find(function (c) { return c.id === CID; }).status === 'used'
+shot target/_polish_shots/ex-order.png
+# 取消：券退回
+tap .op-cancel
+modal ok
+expect wx.getStorageSync('express_orders')[0].status === 'cancelled'
+expect !CID || wx.getStorageSync('express_coupons').find(function (c) { return c.id === CID; }).status === 'valid'
+# 再寄一单：带着人、物回到寄件页
+tap .op-again
+route pages/send/send
+expect getCurrentPages().slice(-1)[0].data.weight === 3 && getCurrentPages().slice(-1)[0].data.carrier === 1
+
+# 寄件记录
+eval wx.navigateTo({ url: '/pages/orders/orders' })
+route pages/orders/orders
+count 1 .ord
+shot target/_polish_shots/ex-orders.png
+back
+
+# 地址簿：新增（校验 → 保存）
+eval wx.navigateTo({ url: '/pages/address/address' })
+route pages/address/address
+eval globalThis.N0 = wx.getStorageSync('express_addr').length
+tap .add
+tap .f-save
+toast 请填写联系人
+type .f-name => 周小满
+type .f-phone => 13912345678
+blur
+picker .f-region
+pickok
+wait 400
+type .f-detail => 科技园南区 8 栋 1203
+blur
+tap .f-save
+expect wx.getStorageSync('express_addr').length === N0 + 1
+shot target/_polish_shots/ex-address.png
+tapn 0 .op
+sheet 1 3
+toast 已复制
+back
+
+# 券、我的
+eval wx.navigateTo({ url: '/pages/coupons/coupons' })
+route pages/coupons/coupons
+exists .cp-btn
+tap .cp-btn
+route pages/send/send
+eval wx.switchTab({ url: '/pages/mine/mine' })
+route pages/mine/mine
+shot target/_polish_shots/ex-mine.png
+tap .me-set
+sheet 1 2
+print wx.getStorageSync('express_settings')
+tapn 3 .menu-item
+modal?
+modal ok
+noerr

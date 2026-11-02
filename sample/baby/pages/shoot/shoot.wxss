@@ -1,0 +1,31 @@
+.wrap-page { min-height: 100vh; }
+.dark { background: #1f1a1c; }
+.cam-box { position: relative; width: 750rpx; height: 860rpx; }
+.cam { width: 750rpx; height: 860rpx; }
+.cam-err { position: absolute; left: 0; top: 0; width: 750rpx; height: 860rpx; background: #2b2427; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.ce-title { color: #ffffff; font-size: 32rpx; font-weight: bold; margin-bottom: 16rpx; }
+.ce-sub { color: #b8aeb2; font-size: 24rpx; margin-top: 8rpx; padding: 0 60rpx; text-align: center; }
+.cam-bar { display: flex; flex-direction: row; align-items: center; justify-content: space-around; padding: 40rpx 0 24rpx; }
+.cb-side { width: 160rpx; height: 64rpx; border-radius: 32rpx; background: rgba(255, 255, 255, 0.12); display: flex; align-items: center; justify-content: center; }
+.cb-tx { color: #ffffff; font-size: 24rpx; }
+.shutter { width: 136rpx; height: 136rpx; border-radius: 68rpx; border: 8rpx solid #ffffff; display: flex; align-items: center; justify-content: center; }
+.shutter-in { width: 104rpx; height: 104rpx; border-radius: 52rpx; background: #ff7a8a; }
+.alt { justify-content: center; padding-bottom: 40rpx; }
+.alt-btn { color: #ffffff; font-size: 26rpx; padding: 16rpx 32rpx; margin: 0 16rpx; border-radius: 32rpx; border: 1rpx solid rgba(255, 255, 255, 0.4); }
+.pv { position: relative; margin-bottom: 24rpx; }
+.pv-img { width: 702rpx; height: 480rpx; border-radius: 24rpx; }
+.pv-re { position: absolute; right: 20rpx; bottom: 20rpx; background: rgba(0, 0, 0, 0.5); color: #ffffff; font-size: 24rpx; padding: 10rpx 24rpx; border-radius: 28rpx; }
+.cap { width: 100%; height: 160rpx; font-size: 28rpx; line-height: 1.6; }
+.err0 { padding-left: 0; }
+.arrow { color: #c0b6ba; margin-left: 12rpx; font-size: 32rpx; }
+.tags { display: flex; flex-direction: row; align-items: flex-start; padding-top: 24rpx; }
+.tags .field-label { line-height: 56rpx; }
+.chip { font-size: 24rpx; color: #7a7075; background: #f5f0f2; padding: 10rpx 24rpx; border-radius: 28rpx; margin: 0 14rpx 14rpx 0; }
+.chip-on { background: #ff7a8a; color: #ffffff; }
+.voice { display: flex; flex-direction: row; align-items: center; margin-top: 20rpx; }
+.v-play { background: #e6f7f3; color: #2fae93; font-size: 26rpx; padding: 14rpx 28rpx; border-radius: 30rpx; margin-right: 20rpx; }
+.v-on { background: #2fae93; color: #ffffff; }
+.v-len { font-size: 26rpx; color: #5a5055; }
+.v-del { font-size: 24rpx; color: #f0506e; padding: 10rpx; }
+.rec-btn { margin-top: 20rpx; height: 84rpx; border-radius: 42rpx; border: 2rpx dashed #ffb3bd; color: #ff6f82; font-size: 28rpx; display: flex; align-items: center; justify-content: center; }
+.rec-on { background: #ff7a8a; color: #ffffff; border-color: #ff7a8a; }

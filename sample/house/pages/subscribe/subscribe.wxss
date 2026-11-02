@@ -1,0 +1,36 @@
+.s-item {
+  margin-top: 24rpx;
+  padding-top: 24rpx;
+  border-top: 1rpx solid #f0f1f4;
+}
+.s-main {
+  overflow: hidden;
+  margin-right: 8rpx;
+}
+.s-text {
+  display: block;
+  font-size: 28rpx;
+  font-weight: bold;
+  margin-bottom: 6rpx;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hl {
+  color: #ff5a1f;
+  font-weight: bold;
+}
+.s-empty {
+  padding: 32rpx 0 8rpx;
+  text-align: center;
+}
+.form-head {
+  min-height: 88rpx;
+}
+.preview {
+  display: block;
+  margin: 0 32rpx 20rpx;
+}
+.add {
+  margin: 0 24rpx;
+}

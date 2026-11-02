@@ -36,14 +36,16 @@
       <text class="clock-num">{{ss}}</text>
     </view>
     <view class="flex1"></view>
-    <text class="flash-more" bindtap="onFlashMore">更多</text>
-    <view class="arrow"></view>
+    <view class="row flash-more" bindtap="onFlashMore"><text>更多场次</text><view class="arrow"></view></view>
   </view>
   <scroll-view class="flash-list" scroll-x="{{true}}">
     <view class="row flash-inner">
-      <view class="f-item" wx:for="{{flashList}}" wx:key="id" data-id="{{item.id}}" bindtap="onDetail">
-        <image class="f-img" src="{{item.img}}" mode="aspectFill"></image>
-        <view class="f-bar"><view class="f-bar-in" style="width: {{item.stock}}%;"></view><text class="f-bar-text">已抢{{item.stock}}%</text></view>
+      <view class="f-item {{item.out ? 'f-out' : ''}}" wx:for="{{flashList}}" wx:key="id" data-id="{{item.id}}" bindtap="onDetail">
+        <view class="f-img-box">
+          <image class="f-img" src="{{item.img}}" mode="aspectFill"></image>
+          <view wx:if="{{item.out}}" class="f-mask glyph"><text>已抢光</text></view>
+        </view>
+        <view class="f-bar"><view class="f-bar-in" style="width: {{item.stock}}%;"></view><text class="f-bar-text">{{item.out ? '已抢光' : '已抢' + item.stock + '%'}}</text></view>
         <view class="price-row f-price"><text class="p-sym">¥</text><text class="p-num">{{item.flashPrice}}</text></view>
         <text class="f-origin">¥{{item.price}}</text>
       </view>

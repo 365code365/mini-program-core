@@ -1,0 +1,17 @@
+.mi-head { display: flex; flex-direction: row; align-items: center; padding: 40rpx 32rpx 90rpx; background: #2d2430; }
+.mi-av { width: 112rpx; height: 112rpx; border-radius: 56rpx; border: 4rpx solid #f3d9c6; }
+.mi-info { margin-left: 24rpx; display: flex; flex-direction: column; }
+.mi-name { color: #ffffff; font-size: 34rpx; font-weight: bold; }
+.mi-sub { color: rgba(255, 255, 255, 0.6); font-size: 22rpx; margin-top: 8rpx; }
+.mi-lv { color: #2d2430; background: #f3d9c6; font-size: 22rpx; padding: 8rpx 18rpx; border-radius: 24rpx; }
+.mi-assets { display: flex; flex-direction: row; margin-top: -60rpx; }
+.mi-ai { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.mi-num { font-size: 34rpx; font-weight: bold; margin-bottom: 6rpx; }
+.mi-favs { white-space: nowrap; }
+.mi-fav { display: inline-flex; flex-direction: column; align-items: center; margin-right: 28rpx; }
+.mi-fav-av { width: 96rpx; height: 96rpx; border-radius: 48rpx; }
+.mi-fav-n { font-size: 22rpx; margin-top: 8rpx; }
+.mi-link { color: #c0846a; font-size: 24rpx; }
+.mi-menu { padding-top: 0; padding-bottom: 0; }
+.mi-cell { display: flex; flex-direction: row; justify-content: space-between; align-items: center; padding: 30rpx 0; border-bottom: 1rpx solid #f3eeea; }
+.mi-addr { max-width: 400rpx; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }

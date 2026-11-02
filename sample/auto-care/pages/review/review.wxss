@@ -1,0 +1,8 @@
+.stars { margin: 28rpx 0 20rpx; }
+.star { font-size: 60rpx; color: #d9dde6; margin-right: 12rpx; }
+.star-on { color: #ffb020; }
+.word { font-size: 28rpx; color: #f07a12; margin-left: 12rpx; }
+.tags { flex-wrap: wrap; }
+.tg { font-size: 24rpx; color: #4b5567; background: #f3f5f9; border-radius: 30rpx; padding: 8rpx 22rpx; margin: 0 16rpx 16rpx 0; }
+.tg-on { color: #1f6fff; background: #ebf2ff; }
+.ta { width: 100%; height: 220rpx; background: #f6f8fc; border-radius: 12rpx; padding: 16rpx; box-sizing: border-box; font-size: 26rpx; margin-top: 8rpx; }

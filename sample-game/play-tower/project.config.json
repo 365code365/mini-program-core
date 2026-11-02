@@ -1,0 +1,38 @@
+{
+  "appid": "wxc43ea2fd242b624c",
+  "projectname": "play-tower",
+  "description": "塔防守卫：箭、炮、冰、电四种塔各三级，守住十波敌人，三张关卡图依次解锁",
+  "compileType": "game",
+  "libVersion": "3.6.0",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": false,
+    "minified": true,
+    "uglifyFileName": false,
+    "ignoreUploadUnusedFiles": true
+  },
+  "packOptions": {
+    "ignore": [
+      {
+        "type": "file",
+        "value": "README.md"
+      },
+      {
+        "type": "file",
+        "value": "store.meta.json"
+      },
+      {
+        "type": "file",
+        "value": "wasm/combat.wat"
+      }
+    ],
+    "include": []
+  },
+  "condition": {},
+  "editorSetting": {
+    "tabIndent": "insertSpaces",
+    "tabSize": 2
+  }
+}

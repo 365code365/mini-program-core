@@ -31,6 +31,11 @@
 
 <text class="group">数据</text>
 <view class="card cells">
+  <view class="cell row to-records" bindtap="onRecords">
+    <text class="flex1 cell-label">专注记录</text>
+    <text class="sub">查看 / 补录 / 删除</text>
+    <view class="chev"></view>
+  </view>
   <view class="cell row" bindtap="onExport">
     <text class="flex1 cell-label">导出专注记录</text>
     <text class="sub">{{sessionCount}} 条</text>

@@ -9,7 +9,7 @@
 .sort-on { color: #1E6FFF; font-weight: bold; }
 .chips-scroll { width: 702rpx; }
 .chips { display: flex; flex-direction: row; padding-bottom: 20rpx; }
-.chip { height: 40rpx; line-height: 40rpx; flex-shrink: 0; font-size: 24rpx; color: #4e5969; background: #f5f6f8; padding: 8rpx 20rpx; border-radius: 28rpx; margin-right: 14rpx; border: 2rpx solid #f5f6f8; white-space: nowrap; }
+.chip { line-height: 40rpx; flex-shrink: 0; font-size: 24rpx; color: #4e5969; background: #f5f6f8; padding: 4rpx 20rpx; border-radius: 28rpx; margin-right: 14rpx; border: 2rpx solid #f5f6f8; white-space: nowrap; }
 .chip-on { color: #1E6FFF; background: #EAF2FF; border-color: #A9C8FF; }
 .count { margin: 20rpx 28rpx; }
 .hotel { display: flex; flex-direction: row; padding: 20rpx; }
@@ -21,7 +21,7 @@
 .h-line { margin-top: 8rpx; }
 .h-tags { margin-top: 12rpx; flex-wrap: wrap; }
 .h-price-row { margin-top: auto; align-items: flex-end; }
-.h-fav { font-size: 20rpx; color: #E8743B; }
+.h-faved { font-size: 20rpx; color: #E8743B; }
 .yen { font-size: 22rpx; margin-bottom: 6rpx; }
 .h-price { font-size: 40rpx; font-weight: bold; margin-right: 4rpx; }
 .empty { display: flex; flex-direction: column; align-items: center; padding: 100rpx 0; }

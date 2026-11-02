@@ -1,0 +1,31 @@
+.seg { background: #e6eaf7; border-radius: 40rpx; padding: 6rpx; margin-bottom: 28rpx; }
+.seg-it { flex: 1; height: 68rpx; border-radius: 34rpx; display: flex; align-items: center; justify-content: center; font-size: 28rpx; color: #4a5060; }
+.seg-on { background: #ffffff; color: #4f6bed; font-weight: bold; }
+.pg { margin-bottom: 12rpx; }
+.qcard { background: #ffffff; border-radius: 32rpx; padding: 40rpx 36rpx; margin-top: 32rpx; display: flex; flex-direction: column; }
+.qw { font-size: 64rpx; font-weight: bold; margin-bottom: 8rpx; }
+.opts { margin-top: 36rpx; }
+.opt { display: flex; flex-direction: row; align-items: center; padding: 26rpx 24rpx; border-radius: 20rpx; background: #f4f6fb; margin-bottom: 18rpx; border: 2rpx solid #f4f6fb; }
+.opt-k { width: 44rpx; height: 44rpx; border-radius: 22rpx; background: #ffffff; font-size: 24rpx; color: #4f6bed; text-align: center; line-height: 44rpx; margin-right: 18rpx; }
+.opt-tx { flex: 1; font-size: 28rpx; color: #2d3340; }
+.opt-ok { background: #def7ee; border-color: #22b07d; }
+.opt-bad { background: #fde6e9; border-color: #f0566a; }
+.qmean { font-size: 40rpx; font-weight: bold; margin: 20rpx 0 12rpx; }
+.hint { font-size: 26rpx; color: #8a90a0; margin: 24rpx 0 16rpx; }
+.spell { height: 96rpx; border-radius: 20rpx; background: #f4f6fb; padding: 0 28rpx; font-size: 36rpx; border: 2rpx solid #e6eaf7; }
+.spell-ok { border-color: #22b07d; background: #def7ee; }
+.spell-bad { border-color: #f0566a; background: #fde6e9; }
+.fb { margin-top: 16rpx; padding: 14rpx 20rpx; border-radius: 12rpx; }
+.fb-ok { background: #def7ee; }
+.fb-bad { background: #fde6e9; }
+.fb-tx { font-size: 26rpx; color: #2d3340; }
+.sp-ops { justify-content: space-between; margin-top: 32rpx; }
+.sp-half { width: 47%; }
+.result { margin-top: 20rpx; display: flex; flex-direction: column; }
+.r-sub { margin: 10rpx 0 24rpx; }
+.wl { background: #f4f6fb; border-radius: 16rpx; padding: 8rpx 24rpx; margin-bottom: 28rpx; }
+.wl-it { padding: 18rpx 0; border-bottom: 1rpx solid #e6eaf7; }
+.wl-w { font-size: 28rpx; font-weight: bold; color: #f0566a; }
+.r-ops { justify-content: space-between; }
+.r-half { width: 47%; }
+.e-btn { width: 360rpx; }

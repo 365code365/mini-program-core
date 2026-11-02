@@ -1,0 +1,72 @@
+<view class="wrap">
+  <view class="top between">
+    <text class="muted">{{bookName}}{{extra ? ' · 加学一组' : ''}}</text>
+    <text class="muted">{{done ? total : idx + 1}} / {{total}}</text>
+  </view>
+  <progress percent="{{pct}}" stroke-width="6" activeColor="#4f6bed" backgroundColor="#e6eaf7" border-radius="3" active active-mode="forwards"></progress>
+
+  <block wx:if="{{!done && cur}}">
+    <view class="stage">
+      <view class="hint hint-l" id="hint-l"><text class="hint-tx">不认识</text></view>
+      <view class="hint hint-r" id="hint-r"><text class="hint-tx">认识</text></view>
+      <horizontal-drag-gesture-handler on-gesture-event="onCardDrag">
+        <view class="wcard" id="card">
+          <view class="between">
+            <text class="tag">新词</text>
+            <text class="star {{starred ? 'star-on' : ''}}" bindtap="onStar">{{starred ? '★ 生词本' : '☆ 生词本'}}</text>
+          </view>
+          <view class="word-row row">
+            <text class="word">{{cur.w}}</text>
+          </view>
+          <view class="row">
+            <text class="ph">{{cur.ph}}</text>
+            <view class="speaker" hover-class="btn-press" bindtap="onSpeak"><text>🔊</text></view>
+          </view>
+          <view class="body" wx:if="{{revealed}}">
+            <text class="mean">{{cur.mean}}</text>
+            <view class="ex">
+              <text class="ex-en">{{cur.ex}}</text>
+              <text class="ex-zh">{{cur.exZh}}</text>
+            </view>
+            <text class="link" bindtap="onDetail">查看单词详情 ›</text>
+          </view>
+          <view class="cover" wx:else bindtap="onReveal">
+            <text class="cover-tx">先想一想意思，点这里看释义</text>
+            <text class="muted">← 左滑不认识 · 右滑认识 →</text>
+          </view>
+        </view>
+      </horizontal-drag-gesture-handler>
+    </view>
+
+    <view class="ops row" wx:if="{{!pending}}">
+      <view class="op op-u" hover-class="btn-press" bindtap="onUnknown"><text class="op-tx">不认识</text></view>
+      <view class="op op-f" hover-class="btn-press" bindtap="onFuzzy"><text class="op-tx">模糊</text></view>
+      <view class="op op-k" hover-class="btn-press" bindtap="onKnown"><text class="op-tx">认识</text></view>
+    </view>
+    <view class="btn next" wx:else hover-class="btn-press" bindtap="onNext">记住了，下一个</view>
+  </block>
+
+  <view class="card result" wx:if="{{done && total}}">
+    <text class="h1">本组学完了 🎉</text>
+    <text class="muted res-sub">{{total}} 个新词已排进复习计划，明天开始按 1 / 2 / 4 / 7 / 15 天间隔提醒</text>
+    <view class="res-row row">
+      <view class="res-cell"><text class="res-n c-k">{{counts.known}}</text><text class="muted">认识</text></view>
+      <view class="res-cell"><text class="res-n c-f">{{counts.fuzzy}}</text><text class="muted">模糊</text></view>
+      <view class="res-cell"><text class="res-n c-u">{{counts.unknown}}</text><text class="muted">不认识</text></view>
+    </view>
+    <view class="btn" wx:if="{{canCheck}}" hover-class="btn-press" bindtap="onCheck">今日打卡</view>
+    <view class="btn-ghost res-btn" wx:if="{{checked}}">今日已打卡 ✓</view>
+    <view class="btn" wx:if="{{!checked && !canCheck && dueLeft}}" hover-class="btn-press" bindtap="goReview">复习完 {{dueLeft}} 个到期词就能打卡</view>
+    <view class="row res-two">
+      <view class="btn-ghost res-half" hover-class="btn-press" bindtap="goQuiz">测一测</view>
+      <view class="btn-ghost res-half" hover-class="btn-press" bindtap="onMore">再学一组</view>
+    </view>
+  </view>
+
+  <view class="empty" wx:if="{{done && !total}}">
+    <view class="empty-ic"><text>✓</text></view>
+    <text class="empty-tx">今天的 {{bookLeft ? '新词计划已完成' : '词书已全部学完'}}，去复习巩固一下吧</text>
+    <view class="btn empty-btn" hover-class="btn-press" bindtap="goReview">去复习</view>
+    <view class="btn-ghost empty-btn" hover-class="btn-press" bindtap="onMore">{{bookLeft ? '再学一组（5 个）' : '换一本词书'}}</view>
+  </view>
+</view>

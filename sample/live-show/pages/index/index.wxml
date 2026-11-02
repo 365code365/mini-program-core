@@ -1,0 +1,103 @@
+<view class="top row">
+  <view class="city row" bindtap="chooseCity">
+    <text class="city-t">{{city}}</text>
+    <text class="city-arrow">▾</text>
+  </view>
+  <view class="flex1"></view>
+  <text class="muted">更新于 {{updated}}</text>
+  <view class="refresh" bindtap="refresh"><text class="refresh-t">刷新</text></view>
+</view>
+
+<view wx:if="{{loading}}" class="loading col">
+  <view class="sk sk-banner"></view>
+  <view class="sk sk-line"></view>
+  <view class="sk sk-line short"></view>
+  <text class="muted loading-t">正在加载演出…</text>
+</view>
+
+<block wx:else>
+  <!-- 3D 卡片轮播：当前张放大，两侧缩小露边 -->
+  <swiper wx:if="{{hot.length}}" class="hot" previous-margin="90rpx" next-margin="90rpx" circular="{{hot.length > 2}}" autoplay interval="4000" current="{{cur}}" bindchange="onSwiper">
+    <swiper-item wx:for="{{hot}}" wx:key="id">
+      <view class="hot-card {{index === cur ? 'hot-on' : ''}}" data-id="{{item.id}}" bindtap="open">
+        <image class="hot-img" src="{{item.poster}}" mode="aspectFill"></image>
+        <view class="hot-mask col">
+          <text class="hot-title">{{item.title}}</text>
+          <view class="row hot-meta">
+            <text class="hot-date">{{item.dates}}</text>
+            <view class="flex1"></view>
+            <text class="hot-price">¥{{item.from}}起</text>
+          </view>
+        </view>
+      </view>
+    </swiper-item>
+  </swiper>
+  <view wx:if="{{hot.length}}" class="dots row">
+    <view wx:for="{{hot}}" wx:key="id" class="dot {{index === cur ? 'dot-on' : ''}}"></view>
+  </view>
+
+  <!-- 开售日历 -->
+  <view class="card cal">
+    <view class="row">
+      <text class="sec-title">开售日历</text>
+      <view class="flex1"></view>
+      <text class="muted">设提醒，开票不错过</text>
+    </view>
+    <view class="days row">
+      <view wx:for="{{days}}" wx:key="md" class="day col {{index === dayIdx ? 'day-on' : ''}}" data-i="{{index}}" bindtap="pickDay">
+        <text class="day-l">{{item.label}}</text>
+        <text class="day-md">{{item.md}}</text>
+        <view class="day-dot {{item.n ? '' : 'day-dot-none'}}"></view>
+      </view>
+    </view>
+    <view wx:if="{{daySales.length}}">
+      <view wx:for="{{daySales}}" wx:key="id" class="sale row" data-id="{{item.id}}" bindtap="open">
+        <text class="sale-time">{{item.time}}</text>
+        <view class="flex1 col">
+          <text class="sale-title">{{item.title}}</text>
+          <text class="muted">{{item.city}}</text>
+        </view>
+        <text class="sale-st {{item.reminded ? 'sale-st-on' : ''}}">{{item.past ? '已开售' : (item.reminded ? '已提醒' : '去设提醒')}}</text>
+      </view>
+    </view>
+    <view wx:else class="sale-none"><text class="muted">当天暂无开售的演出</text></view>
+  </view>
+
+  <!-- 分类 -->
+  <scroll-view class="cats" scroll-x enable-flex>
+    <view class="cats-in row">
+      <view wx:for="{{cats}}" wx:key="id" class="cat {{cat === item.id ? 'cat-on' : ''}}" data-id="{{item.id}}" bindtap="pickCat">
+        <text>{{item.name}}</text>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view id="list-head" class="list-head row">
+    <text class="sec-title">{{city}}演出</text>
+    <text class="muted list-n">共 {{list.length}} 场</text>
+  </view>
+
+  <view wx:if="{{list.length}}">
+    <view wx:for="{{list}}" wx:key="id" class="show row" data-id="{{item.id}}" bindtap="open">
+      <image class="show-img" src="{{item.poster}}" mode="aspectFill"></image>
+      <view class="show-info col">
+        <text class="show-title">{{item.title}}</text>
+        <text class="muted show-line">{{item.dates}}</text>
+        <text class="muted show-line">{{item.venue}}</text>
+        <view class="row show-foot">
+          <text class="price">¥{{item.from}}</text>
+          <text class="muted">起</text>
+          <view class="flex1"></view>
+          <text class="badge {{item.badgeCls}}">{{item.badge}}</text>
+        </view>
+        <text wx:if="{{item.saleText}}" class="soon-t">{{item.saleText}}</text>
+      </view>
+    </view>
+  </view>
+  <view wx:else class="empty">
+    <view class="empty-ic"><text class="empty-ic-t">♪</text></view>
+    <text class="empty-t">{{city}}暂时没有这类演出</text>
+    <view class="btn-ghost empty-btn" bindtap="toShanghai"><text>看看上海的演出</text></view>
+  </view>
+</block>
+<view class="tabbar-space"></view>

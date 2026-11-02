@@ -2,8 +2,10 @@
 .me-av { width: 120rpx; height: 120rpx; border-radius: 60rpx; background: linear-gradient(135deg, #FFD59A, #FF9F2E); border: 4rpx solid rgba(255, 255, 255, 0.8); display: flex; flex-direction: row; align-items: center; justify-content: center; margin-right: 24rpx; }
 .me-av-t { color: #fff; font-size: 48rpx; font-weight: bold; }
 .me-name { color: #fff; font-size: 38rpx; font-weight: bold; }
-.me-sub { color: rgba(255, 255, 255, 0.85); font-size: 24rpx; margin-top: 8rpx; }
-.edit { background: rgba(255, 255, 255, 0.2); border-radius: 28rpx; padding: 10rpx 22rpx; }
+.me-sub { color: rgba(255, 255, 255, 0.85); font-size: 24rpx; margin-top: 8rpx; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 求职状态长（「在职 · 考虑机会」）时副标题会钻到「编辑简历」底下：信息列可收缩、单行省略，按钮不收缩 */
+.me-info { min-width: 0; margin-right: 16rpx; }
+.edit { background: rgba(255, 255, 255, 0.2); border-radius: 28rpx; padding: 10rpx 22rpx; flex-shrink: 0; }
 .edit-t { color: #fff; font-size: 24rpx; }
 .stats { margin-top: 40rpx; }
 .stat { flex: 1; align-items: center; }

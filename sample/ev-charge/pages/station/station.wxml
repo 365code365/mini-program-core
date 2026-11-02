@@ -7,6 +7,7 @@
   </view>
   <view class="row h-addr">
     <text class="flex1 h-addr-t">{{st.addr}}</text>
+    <view class="nav col" bindtap="onCall"><view class="nav-ic call-ic"><view class="call-dot"></view></view><text class="nav-t call-t">电话</text></view>
     <view class="nav col" bindtap="onNav"><view class="nav-ic"><view class="nav-arrow"></view></view><text class="nav-t">{{st.distText}}</text></view>
   </view>
   <view class="park-note row"><text class="p-badge">P</text><text class="p-t">{{st.parking}}</text></view>
@@ -50,14 +51,14 @@
     <view class="lg row"><view class="lg-dot fault"></view><text class="sub">故障 {{count.fault}}</text></view>
   </view>
   <view class="grid">
-    <view wx:for="{{terms}}" wx:key="no" class="term {{item.status}}" data-no="{{item.no}}" bindtap="onTerm">
+    <view wx:for="{{terms}}" wx:key="no" class="term {{item.status}} {{item.mine ? 'mine' : ''}}" data-no="{{item.no}}" bindtap="onTerm">
       <view class="row between">
         <text class="t-no">{{item.short}}</text>
         <text class="t-kind {{item.power > 7 ? 'k-fast' : 'k-slow'}}">{{item.power > 7 ? '快' : '慢'}}</text>
       </view>
       <text class="t-power">{{item.power}}kW</text>
       <view wx:if="{{item.status === 'busy'}}" class="soc-bg"><view class="soc-fg" style="width: {{item.soc}}%"></view></view>
-      <text class="t-st">{{item.status === 'idle' ? '空闲可用' : item.status === 'busy' ? '充电中 ' + item.soc + '%' : '维护中'}}</text>
+      <text class="t-st">{{item.mine ? '我的充电 ' + item.soc + '%' : item.status === 'idle' ? '空闲可用' : item.status === 'busy' ? '充电中 ' + item.soc + '%' : '维护中'}}</text>
     </view>
   </view>
 </view>

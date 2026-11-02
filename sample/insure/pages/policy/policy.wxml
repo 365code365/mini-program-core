@@ -1,0 +1,59 @@
+<view wx:if="{{p}}" class="wrap">
+  <view class="ep">
+    <view class="row between">
+      <text class="ep-co">{{p.insurer}}</text>
+      <text class="ep-st">{{st.text}}</text>
+    </view>
+    <text class="ep-name">{{p.productName}}</text>
+    <view class="ep-no" bindtap="copy">{{p.policyNo ? '保单号 ' + p.policyNo : '投保单号 ' + p.id}}　复制</view>
+    <view class="row ep-grid">
+      <view class="ep-cell"><text class="ep-k">保障额度</text><text class="ep-v">{{p.amountText}}</text></view>
+      <view class="ep-cell"><text class="ep-k">保障期限</text><text class="ep-v">{{p.term}}</text></view>
+      <view class="ep-cell"><text class="ep-k">保费</text><text class="ep-v">¥{{premiumText}}</text></view>
+    </view>
+    <image wx:if="{{p.policyNo}}" class="ep-seal" src="/images/seal.png" mode="aspectFit"></image>
+  </view>
+
+  <view class="card">
+    <view class="sec-head"><text class="sec-title">投保信息</text></view>
+    <view class="kv"><text class="kv-k">投保人 / 被保险人</text><text class="kv-v">{{p.holder.name}}</text></view>
+    <view class="kv"><text class="kv-k">证件号码</text><text class="kv-v">{{idMasked}}</text></view>
+    <view class="kv"><text class="kv-k">手机号</text><text class="kv-v">{{phoneMasked}}</text></view>
+    <view class="kv"><text class="kv-k">职业类别</text><text class="kv-v">{{p.holder.occupation}}</text></view>
+    <view class="kv" wx:if="{{p.startDate}}"><text class="kv-k">保障期间</text><text class="kv-v">{{p.startDate}} 至 {{p.endDate}}</text></view>
+    <view class="kv" wx:if="{{p.payMethod}}"><text class="kv-k">支付方式</text><text class="kv-v">{{p.payMethod}}</text></view>
+    <view class="kv row" wx:if="{{p.policyNo && p.term === '1年'}}">
+      <text class="kv-k">到期自动续保</text>
+      <switch checked="{{p.autoRenew}}" color="#2f6bff" bindchange="renew"></switch>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{coverage.length}}">
+    <view class="sec-head"><text class="sec-title">保障责任</text></view>
+    <view class="kv" wx:for="{{coverage}}" wx:key="name"><text class="kv-k">{{item.name}}</text><text class="kv-v">{{item.amount}}</text></view>
+  </view>
+
+  <view class="card" wx:if="{{claims.length}}">
+    <view class="sec-head"><text class="sec-title">理赔记录</text></view>
+    <view class="kv" wx:for="{{claims}}" wx:key="id" data-id="{{item.id}}" bindtap="openClaim">
+      <text class="kv-k">{{item.type}} · {{item.createdText}}</text>
+      <text class="kv-v primary">{{item.statusText}} ›</text>
+    </view>
+  </view>
+  <view class="bar-pad"></view>
+</view>
+<view class="empty" wx:else><text class="empty-tx">保单不存在或已被删除</text></view>
+
+<view class="bottom-bar" wx:if="{{p}}">
+  <block wx:if="{{st.key === 'pending'}}">
+    <view class="btn btn-ghost pb-btn" bindtap="cancel">取消投保</view>
+    <view class="btn btn-primary pb-btn pb-gap" hover-class="btn-hover" bindtap="pay">继续支付 ¥{{premiumText}}</view>
+  </block>
+  <block wx:elif="{{st.key === 'active' || st.key === 'expired'}}">
+    <view class="btn btn-ghost pb-btn" bindtap="rebuy">再次投保</view>
+    <view class="btn btn-primary pb-btn pb-gap" hover-class="btn-hover" bindtap="claim">申请理赔</view>
+  </block>
+  <block wx:else>
+    <view class="btn btn-primary pb-btn" hover-class="btn-hover" bindtap="rebuy">{{st.key === 'waiting' ? '查看产品条款' : '重新投保'}}</view>
+  </block>
+</view>

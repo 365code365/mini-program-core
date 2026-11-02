@@ -1,0 +1,11 @@
+.gr-sum { display: flex; flex-direction: row; background: linear-gradient(135deg, #3fb4a0, #16766a); }
+.gr-si { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.gr-n { font-size: 44rpx; font-weight: bold; color: #ffffff; }
+.gr-l { font-size: 22rpx; color: rgba(255, 255, 255, 0.8); margin-top: 6rpx; }
+.gr-h { margin: 32rpx 28rpx 0; }
+.gr-row { display: flex; flex-direction: row; align-items: center; padding: 22rpx 0; border-bottom: 1rpx solid #f0f1f4; }
+.gr-name { display: block; font-size: 28rpx; margin-bottom: 6rpx; }
+.gr-sc { display: flex; flex-direction: column; align-items: flex-end; }
+.gr-score { font-size: 40rpx; font-weight: bold; }
+.gr-lv { font-size: 20rpx; }
+.gr-warn { display: block; text-align: center; color: #f53f3f; font-size: 24rpx; margin-top: 24rpx; }

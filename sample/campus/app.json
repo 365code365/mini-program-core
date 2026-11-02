@@ -1,0 +1,52 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/timetable/timetable",
+    "pages/notices/notices",
+    "pages/mine/mine",
+    "pages/notice/notice",
+    "pages/grades/grades",
+    "pages/library/library",
+    "pages/card/card",
+    "pages/rooms/rooms"
+  ],
+  "window": {
+    "navigationBarTitleText": "云川大学",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f3f6f5"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#9aa0ab",
+    "selectedColor": "#14937f",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "images/tab/home.png",
+        "selectedIconPath": "images/tab/home-on.png"
+      },
+      {
+        "pagePath": "pages/timetable/timetable",
+        "text": "课表",
+        "iconPath": "images/tab/calendar.png",
+        "selectedIconPath": "images/tab/calendar-on.png"
+      },
+      {
+        "pagePath": "pages/notices/notices",
+        "text": "通知",
+        "iconPath": "images/tab/bell.png",
+        "selectedIconPath": "images/tab/bell-on.png"
+      },
+      {
+        "pagePath": "pages/mine/mine",
+        "text": "我的",
+        "iconPath": "images/tab/user.png",
+        "selectedIconPath": "images/tab/user-on.png"
+      }
+    ]
+  }
+}

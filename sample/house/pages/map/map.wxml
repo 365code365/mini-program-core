@@ -1,0 +1,39 @@
+<view class="seg row">
+  <view class="seg-item {{type === item.key ? 'on' : ''}}" wx:for="{{types}}" wx:key="key" bindtap="onType" data-key="{{item.key}}">{{item.text}}</view>
+</view>
+<view class="map">
+  <view class="road r1"></view>
+  <view class="road r2"></view>
+  <view class="road r3"></view>
+  <view class="lake"><text class="geo">西湖</text></view>
+  <view class="river"><text class="geo river-name">钱塘江</text></view>
+  <view class="bubble {{district === item.name ? 'on' : ''}} {{item.n ? '' : 'none'}}" wx:for="{{bubbles}}" wx:key="name"
+        style="left: {{item.left}}rpx; top: {{item.top}}rpx" bindtap="onBubble" data-name="{{item.name}}">
+    <text class="b-name">{{item.name}} {{item.n}}套</text>
+    <text class="b-avg">{{item.avg}}</text>
+  </view>
+  <view class="locate" bindtap="onLocate">
+    <view class="loc-ring"><view class="loc-dot"></view></view>
+  </view>
+</view>
+<view class="card list" wx:if="{{district}}">
+  <view class="row between head">
+    <text class="title">{{district}} · {{houses.length}} 套</text>
+    <view class="more-link" wx:if="{{houses.length}}" bindtap="onAll"><text>列表筛选</text><view class="chev"></view></view>
+  </view>
+  <view class="h-card" wx:for="{{houses}}" wx:key="id" bindtap="onOpen" data-id="{{item.id}}">
+    <image class="h-img" src="{{item.cover}}" mode="aspectFill" />
+    <view class="h-main">
+      <text class="h-title">{{item.title}}</text>
+      <text class="h-brief">{{item.brief}}</text>
+      <view class="h-price">
+        <text class="h-price-main">{{item.priceMain}}</text>
+        <text class="h-price-unit">{{item.priceUnit}}</text>
+        <text class="h-price-sub">{{item.priceSub}}</text>
+      </view>
+    </view>
+  </view>
+  <view class="none-tip" wx:if="{{!houses.length}}"><text class="sub">这个区暂时没有在售的{{typeText}}，换个区看看</text></view>
+</view>
+<view class="tip" wx:else><text class="sub">点地图上的区域气泡，查看该区房源</text></view>
+<view class="safe"></view>

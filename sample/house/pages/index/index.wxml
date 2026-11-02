@@ -1,6 +1,6 @@
 <view class="top">
   <view class="row">
-    <picker mode="selector" range="{{cities}}" value="{{cityIndex}}" bindchange="onCity">
+    <picker class="city-picker" mode="selector" range="{{cities}}" value="{{cityIndex}}" bindchange="onCity">
       <view class="city row">
         <text class="city-name">{{cities[cityIndex]}}</text>
         <view class="caret"></view>
@@ -24,7 +24,7 @@
     <view class="banner-item" style="background: {{item.bg}}" bindtap="onBanner" data-i="{{index}}">
       <text class="banner-title">{{item.title}}</text>
       <text class="banner-sub">{{item.sub}}</text>
-      <view class="banner-btn">{{item.btn}}</view>
+      <view class="banner-btn"><text>{{item.btn}}</text></view>
     </view>
   </swiper-item>
 </swiper>
@@ -36,9 +36,9 @@
   </view>
 </view>
 
-<view class="card market row">
+<view class="card market row" bindtap="onMarket">
   <view class="flex1">
-    <text class="m-title">杭州 10 月房价参考</text>
+    <view class="row between"><text class="m-title">杭州 10 月房价参考</text><view class="more-link"><text>各区房价</text><view class="chev"></view></view></view>
     <view class="row m-nums">
       <view class="m-num"><text class="m-val">38,612</text><text class="sub">二手均价 元/㎡</text></view>
       <view class="m-num"><text class="m-val down">-0.6%</text><text class="sub">环比上月</text></view>
@@ -53,7 +53,7 @@
 </view>
 <view class="card list">
   <view class="h-card" wx:for="{{houses}}" wx:key="id" bindtap="onOpen" data-id="{{item.id}}">
-    <image class="h-img" src="{{item.cover}}" mode="aspectFill"></image>
+    <image class="h-img" src="{{item.cover}}" mode="aspectFill" />
     <view class="h-main">
       <text class="h-title">{{item.title}}</text>
       <text class="h-brief">{{item.brief}}</text>

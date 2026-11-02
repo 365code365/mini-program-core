@@ -1,0 +1,8 @@
+.fv-item { align-items: flex-start; }
+.fv-sold { opacity: 0.55; }
+.fv-cover { width: 180rpx; height: 180rpx; border-radius: 12rpx; margin-right: 20rpx; flex-shrink: 0; }
+.fv-t { display: block; font-size: 28rpx; margin-bottom: 12rpx; line-height: 1.4; }
+.fv-tag { margin-left: 12rpx; }
+.fv-seller { margin-top: 14rpx; }
+.fv-av { width: 36rpx; height: 36rpx; border-radius: 18rpx; margin-right: 10rpx; }
+.fv-un { font-size: 22rpx; color: #8a9099; border: 2rpx solid #e6e8eb; border-radius: 24rpx; padding: 6rpx 16rpx; margin-left: 12rpx; }

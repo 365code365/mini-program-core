@@ -1,0 +1,44 @@
+<view class="page {{theme}}">
+  <view class="card">
+    <text class="q">此刻的心情</text>
+    <view class="row moods">
+      <view wx:for="{{moods}}" wx:key="key" class="m {{mood === item.key ? 'm-on' : ''}}" data-k="{{item.key}}" bindtap="pickMood">
+        <view class="m-dot" style="background: {{item.color}};"></view>
+        <text class="m-t">{{item.name}}</text>
+      </view>
+    </view>
+    <text class="q q2">和什么有关（可多选）</text>
+    <checkbox-group class="tags" bindchange="onTags">
+      <label wx:for="{{tagOpts}}" wx:key="name" class="tag {{item.on ? 'tag-on' : ''}}">
+        <checkbox value="{{item.name}}" checked="{{item.on}}" color="#6c63d9"></checkbox>
+        <text class="tag-t">{{item.name}}</text>
+      </label>
+    </checkbox-group>
+    <textarea class="ta" value="{{text}}" maxlength="300" placeholder="写点什么吧：今天发生了什么，身体有什么感受……" bindinput="onInput" auto-height="true"></textarea>
+    <view class="row between">
+      <text class="err">{{err}}</text>
+      <text class="sub">{{text.length}}/300</text>
+    </view>
+    <view class="btn save" hover-class="btn-hover" bindtap="save"><text>保存日记</text></view>
+  </view>
+
+  <view class="sec-head"><text class="sec-title">我的日记</text><text class="more">共 {{list.length}} 篇</text></view>
+  <view wx:if="{{list.length === 0}}" class="empty">
+    <view class="empty-ic"></view>
+    <text class="empty-tx">还没有日记，记下第一篇吧</text>
+  </view>
+  <view wx:for="{{list}}" wx:key="id" class="card entry">
+    <view class="row between">
+      <view class="row">
+        <view class="m-dot sm" style="background: {{item.color}};"></view>
+        <text class="e-m">{{item.moodName}}</text>
+        <text class="sub e-time">{{item.date}} {{item.time}}</text>
+      </view>
+      <text class="del" data-id="{{item.id}}" bindtap="remove">删除</text>
+    </view>
+    <text wx:if="{{item.text}}" class="e-text">{{item.text}}</text>
+    <view wx:if="{{item.tags.length}}" class="row e-tags">
+      <text wx:for="{{item.tags}}" wx:for-item="t" wx:key="*this" class="e-tag">#{{t}}</text>
+    </view>
+  </view>
+</view>

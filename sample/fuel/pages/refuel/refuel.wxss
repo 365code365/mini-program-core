@@ -1,0 +1,54 @@
+.st { display: flex; flex-direction: row; align-items: center; }
+.st-logo { width: 72rpx; height: 72rpx; border-radius: 16rpx; }
+.st-mid { flex: 1; margin-left: 18rpx; display: flex; flex-direction: column; }
+.st-name { font-size: 29rpx; font-weight: bold; }
+.chips { display: flex; flex-direction: row; flex-wrap: wrap; margin: 18rpx 0 6rpx; }
+.gun { width: 140rpx; height: 72rpx; border-radius: 12rpx; background: #f1f3f5; margin: 0 18rpx 18rpx 0; border: 2rpx solid #f1f3f5; }
+.gun-on { background: #e3f6ee; border-color: #13a874; }
+.gun-tx { font-size: 28rpx; text-align: center; line-height: 72rpx; color: #4d565f; }
+.gun-on .gun-tx { color: #13a874; font-weight: bold; }
+.err { font-size: 22rpx; color: #f2542d; }
+.amt { display: flex; flex-direction: row; align-items: center; height: 110rpx; border-bottom: 2rpx solid #e6e9ec; margin-top: 10rpx; }
+.amt-on { border-bottom-color: #13a874; }
+.amt-yen { font-size: 44rpx; font-weight: bold; }
+.amt-v { font-size: 56rpx; font-weight: bold; margin-left: 12rpx; }
+.amt-ph { font-size: 32rpx; color: #b4bac0; font-weight: normal; }
+.cursor { width: 4rpx; height: 56rpx; background: #13a874; margin-left: 6rpx; }
+.calc { margin-top: 10rpx; background: #f7f9fa; border-radius: 12rpx; padding: 6rpx 20rpx; }
+.cl { display: flex; flex-direction: row; justify-content: space-between; align-items: center; height: 68rpx; font-size: 26rpx; }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; height: 120rpx; padding: 0 24rpx env(safe-area-inset-bottom); background: #ffffff; display: flex; flex-direction: row; align-items: center; border-top: 1rpx solid #eceff1; }
+.bar-l { flex: 1; display: flex; flex-direction: column; font-size: 26rpx; }
+.bar-p { font-size: 42rpx; }
+.bar-btn { background: #13a874; border-radius: 40rpx; height: 84rpx; padding: 0 56rpx; }
+.bar-off { opacity: 0.5; }
+.bar-btn-tx { color: #ffffff; font-size: 30rpx; font-weight: bold; line-height: 84rpx; }
+
+.kb { position: fixed; left: 0; right: 0; bottom: 0; background: #eef0f2; padding-bottom: env(safe-area-inset-bottom); z-index: 50; }
+.kb-top { display: flex; flex-direction: row; justify-content: space-between; align-items: center; height: 64rpx; padding: 0 24rpx; background: #f7f8f9; }
+.kb-done { color: #13a874; font-size: 26rpx; }
+.kb-body { display: flex; flex-direction: row; padding: 12rpx; }
+.kb-keys { width: 540rpx; display: flex; flex-direction: row; flex-wrap: wrap; }
+.key { width: 168rpx; height: 96rpx; margin: 0 12rpx 12rpx 0; background: #ffffff; border-radius: 12rpx; display: flex; align-items: center; justify-content: center; }
+.key-hover { background: #d9dde1; }
+.key-tx { font-size: 40rpx; color: #1d2329; }
+.key-small { font-size: 28rpx; }
+.kb-side { flex: 1; display: flex; flex-direction: column; }
+.kb-side .key { width: auto; margin-right: 0; }
+.key-clear { height: 96rpx; }
+.key-ok { flex: 1; background: #13a874; border-radius: 12rpx; display: flex; align-items: center; justify-content: center; margin-bottom: 12rpx; }
+.key-ok-off { background: #8fd5bb; }
+.key-ok-hover { background: #0e8a5f; }
+.key-ok-tx { color: #ffffff; font-size: 32rpx; font-weight: bold; }
+
+.mask { position: fixed; left: 0; top: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.45); z-index: 60; }
+.cp { position: fixed; left: 0; right: 0; bottom: 0; z-index: 61; background: #ffffff; border-top-left-radius: 24rpx; border-top-right-radius: 24rpx; padding: 24rpx 24rpx calc(30rpx + env(safe-area-inset-bottom)); }
+.cp-head { margin-bottom: 10rpx; }
+.cp-list { display: flex; flex-direction: column; }
+.cp-it { display: flex; flex-direction: row; align-items: center; background: #fff7f3; border-radius: 14rpx; padding: 18rpx; margin-top: 16rpx; }
+.cp-none { background: #f6f7f8; }
+.cp-l { width: 150rpx; display: flex; flex-direction: column; align-items: center; border-right: 2rpx dashed #f8c9b8; margin-right: 18rpx; }
+.cp-cut { font-size: 40rpx; color: #f2542d; font-weight: bold; }
+.cp-min { font-size: 20rpx; color: #f2542d; }
+.cp-mid { flex: 1; display: flex; flex-direction: column; }
+.cp-title { font-size: 27rpx; }
+.cp-empty { margin-top: 20rpx; }

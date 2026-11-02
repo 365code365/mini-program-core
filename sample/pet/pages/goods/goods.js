@@ -1,6 +1,6 @@
 const data = require('../../utils/data.js');
 const cart = require('../../utils/cart.js');
-
+const store = require('../../utils/store.js');
 Page({
   data: {
     g: {}, gallery: ['#fff7ef', '#f3f8ff', '#f4fbf6'], spec: '', qty: 1, fav: false, cartCount: 0, saved: 0,
@@ -11,20 +11,16 @@ Page({
   },
   onLoad(q) {
     const g = data.findGoods(q.id || 'g1') || data.goods[0];
-    const favs = wx.getStorageSync('pet_favs') || [];
-    this.setData({ g, spec: g.specs[0], fav: favs.indexOf(g.id) >= 0, saved: Math.round((g.orig - g.price) * 10) / 10 });
+    this.setData({ g, spec: g.specs[0], fav: store.getFavs().indexOf(g.id) >= 0, saved: Math.round((g.orig - g.price) * 10) / 10 });
   },
   onShow() { this.setData({ cartCount: cart.count() }); },
   pickSpec(e) { this.setData({ spec: e.currentTarget.dataset.s }); },
   inc() { if (this.data.qty < 99) this.setData({ qty: this.data.qty + 1 }); },
   dec() { if (this.data.qty > 1) this.setData({ qty: this.data.qty - 1 }); },
   toggleFav() {
-    let favs = wx.getStorageSync('pet_favs') || [];
-    const on = !this.data.fav;
-    favs = on ? favs.concat(this.data.g.id) : favs.filter(x => x !== this.data.g.id);
-    wx.setStorageSync('pet_favs', favs);
+    const on = store.toggleFav(this.data.g.id);
     this.setData({ fav: on });
-    wx.showToast({ title: on ? '已收藏' : '已取消收藏', icon: 'none' });
+    wx.showToast({ title: on ? '已收藏，可在「我的 - 收藏」查看' : '已取消收藏', icon: 'none' });
   },
   addCart() {
     this.setData({ cartCount: cart.add(this.data.g.id, this.data.spec, this.data.qty) });

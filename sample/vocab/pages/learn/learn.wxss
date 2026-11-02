@@ -1,0 +1,38 @@
+.top { margin-bottom: 12rpx; }
+.stage { position: relative; margin: 36rpx 0 32rpx; min-height: 800rpx; }
+.hint { position: absolute; top: 340rpx; width: 120rpx; height: 120rpx; border-radius: 60rpx; display: flex; align-items: center; justify-content: center; opacity: 0; }
+.hint-l { left: 0; background: #fde6e9; }
+.hint-r { right: 0; background: #def7ee; }
+.hint-tx { font-size: 26rpx; color: #4a5060; }
+.wcard { background: #ffffff; border-radius: 32rpx; padding: 36rpx; min-height: 800rpx; box-sizing: border-box; box-shadow: 0 12rpx 40rpx rgba(79, 107, 237, 0.12); }
+.star { font-size: 24rpx; color: #8a90a0; padding: 8rpx 0 8rpx 20rpx; }
+.star-on { color: #ff8a4c; }
+.word-row { margin: 60rpx 0 12rpx; }
+.word { font-size: 72rpx; font-weight: bold; color: #1f2430; }
+.body { margin-top: 48rpx; display: flex; flex-direction: column; }
+.mean { font-size: 34rpx; color: #1f2430; margin-bottom: 28rpx; }
+.ex { background: #f4f6fb; border-radius: 16rpx; padding: 24rpx; display: flex; flex-direction: column; }
+.ex-en { font-size: 28rpx; color: #2d3340; line-height: 42rpx; }
+.ex-zh { font-size: 26rpx; color: #8a90a0; margin-top: 10rpx; line-height: 38rpx; }
+.link { font-size: 26rpx; color: #4f6bed; margin-top: 28rpx; }
+.cover { margin-top: 60rpx; height: 240rpx; border-radius: 20rpx; border: 2rpx dashed #c9d1f0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.cover-tx { font-size: 28rpx; color: #4f6bed; margin-bottom: 14rpx; }
+.ops { justify-content: space-between; }
+.op { width: 31%; height: 96rpx; border-radius: 24rpx; display: flex; align-items: center; justify-content: center; }
+.op-tx { font-size: 30rpx; color: #ffffff; }
+.op-u { background: #f0566a; }
+.op-f { background: #ffb340; }
+.op-k { background: #22b07d; }
+.next { margin-top: 8rpx; }
+.result { margin-top: 40rpx; display: flex; flex-direction: column; }
+.res-sub { margin: 12rpx 0 32rpx; line-height: 36rpx; }
+.res-row { justify-content: space-around; margin-bottom: 40rpx; }
+.res-cell { display: flex; flex-direction: column; align-items: center; }
+.res-n { font-size: 56rpx; font-weight: bold; }
+.c-k { color: #22b07d; }
+.c-f { color: #ffb340; }
+.c-u { color: #f0566a; }
+.res-btn { margin-top: 0; }
+.res-two { justify-content: space-between; margin-top: 20rpx; }
+.res-half { width: 47%; }
+.empty-btn { width: 420rpx; margin-bottom: 20rpx; }

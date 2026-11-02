@@ -1,0 +1,41 @@
+<view class="wrap" wx:if="{{order}}">
+  <view class="card ok">
+    <icon type="success" size="64" color="#13a86b"></icon>
+    <text class="ok-tt">预约成功</text>
+    <text class="sub">{{staff.name}}师傅将于 {{order.date}} {{order.time}} 上门</text>
+    <text class="sub">上门前 30 分钟会电话联系你</text>
+  </view>
+  <view class="card">
+    <view class="between kv">
+      <text class="muted">服务项目</text>
+      <text>{{order.svcName}} · {{order.specName}} × {{order.qty}}{{order.unit}}</text>
+    </view>
+    <view class="between kv">
+      <text class="muted">服务地址</text>
+      <text class="kv-v">{{order.addr.full}}</text>
+    </view>
+    <view class="between kv">
+      <text class="muted">应付金额</text>
+      <text class="price">¥{{order.pay}}</text>
+    </view>
+    <view class="between kv" wx:if="{{order.photos.length}}">
+      <text class="muted">现场照片</text>
+      <text>{{order.photos.length}} 张{{localPhotos ? '（网络不可用，已保存在本机）' : ''}}</text>
+    </view>
+  </view>
+  <view class="row ops">
+    <view class="btn-gray flex1" bindtap="goHome">返回首页</view>
+    <view class="btn flex1 op-r" bindtap="goDetail">查看订单</view>
+  </view>
+</view>
+<view class="wrap" wx:else>
+  <view class="card ok">
+    <icon type="warn" size="64" color="#f08c00"></icon>
+    <text class="ok-tt">没有找到这笔订单</text>
+    <text class="sub">可能已被删除，到订单列表看看</text>
+  </view>
+  <view class="row ops">
+    <view class="btn-gray flex1" bindtap="goHome">返回首页</view>
+    <view class="btn flex1 op-r" bindtap="goOrders">我的订单</view>
+  </view>
+</view>

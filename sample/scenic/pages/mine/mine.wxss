@@ -1,0 +1,14 @@
+.mn-head { display: flex; flex-direction: row; align-items: center; padding: 40rpx 32rpx 90rpx; background: linear-gradient(135deg, #2bbf94, #0f7f62); }
+.mn-av { width: 112rpx; height: 112rpx; border-radius: 56rpx; background: #ffffff; color: #13a07b; font-size: 48rpx; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+.mn-info { margin-left: 24rpx; }
+.mn-name { color: #ffffff; font-size: 34rpx; font-weight: bold; }
+.mn-sub { color: rgba(255, 255, 255, 0.85); font-size: 22rpx; margin-top: 8rpx; }
+.mn-wrap { padding-top: 0; }
+.mn-stat { margin-top: -60rpx; }
+.mn-si { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.mn-n { font-size: 36rpx; font-weight: bold; margin-bottom: 6rpx; }
+.mn-favs { white-space: nowrap; }
+.mn-fav { display: inline-flex; flex-direction: column; align-items: center; margin-right: 20rpx; }
+.mn-fc { width: 180rpx; height: 120rpx; border-radius: 12rpx; }
+.mn-fn { font-size: 24rpx; margin-top: 8rpx; }
+.mn-cell { padding: 22rpx 0; border-bottom: 1rpx solid #edf1ef; }

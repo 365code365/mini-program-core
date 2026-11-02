@@ -31,3 +31,11 @@
 .bottom-space { height: calc(150rpx + env(safe-area-inset-bottom)); }
 .bar { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; padding: 16rpx 32rpx calc(16rpx + env(safe-area-inset-bottom)); }
 .btn-stop { background: #F5455C; color: #fff; font-size: 30rpx; font-weight: bold; height: 88rpx; line-height: 88rpx; text-align: center; border-radius: 44rpx; }
+.fee-line { padding: 10rpx 0; }
+.fee-v { font-size: 26rpx; color: #3a3f47; white-space: nowrap; }
+.fee-note { display: block; margin-top: 8rpx; }
+.none { align-items: center; padding: 160rpx 60rpx 0; }
+.none-ic { width: 140rpx; height: 140rpx; border-radius: 70rpx; background: #e1f5ec; display: flex; flex-direction: row; align-items: center; justify-content: center; margin-bottom: 28rpx; }
+.none-ic-t { color: #00A36C; font-size: 52rpx; font-weight: bold; }
+.none-t { font-size: 32rpx; font-weight: bold; margin-bottom: 12rpx; }
+.none-btn { width: 400rpx; margin-top: 48rpx; }

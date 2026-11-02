@@ -1,0 +1,29 @@
+<view class="top row">
+  <view class="seg row flex1">
+    <view class="seg-item {{range === index ? 'on' : ''}}" wx:for="{{ranges}}" wx:key="text" data-i="{{index}}" bindtap="onRange">{{item.text}}</view>
+  </view>
+  <view class="add-btn" bindtap="onAdd">＋ 补录</view>
+</view>
+<text class="sub total">{{count}} 次专注 · 共 {{minutes}} 分钟 · 长按一条可删除</text>
+<view wx:for="{{groups}}" wx:for-item="g" wx:key="date">
+  <view class="g-head row between">
+    <text class="g-label">{{g.label}}</text>
+    <text class="sub">{{g.items.length}} 个 · {{g.minutes}} 分钟</text>
+  </view>
+  <view class="card list">
+    <view class="rec row" wx:for="{{g.items}}" wx:key="k" data-k="{{item.k}}" bindlongpress="onLong" hover-class="rec-down">
+      <text class="rec-at">{{item.at}}</text>
+      <view class="flex1 rec-main">
+        <text class="rec-title">{{item.title}}</text>
+        <text class="rec-tag" wx:if="{{item.manual}}">补录</text>
+      </view>
+      <text class="rec-min">{{item.minutes}} 分钟</text>
+    </view>
+  </view>
+</view>
+<view class="empty" wx:if="{{!groups.length}}">
+  <text class="empty-ic">🍅</text>
+  <text class="empty-text">这段时间还没有专注记录</text>
+  <view class="empty-btn" bindtap="onAdd">补录一条</view>
+</view>
+<view class="safe"></view>

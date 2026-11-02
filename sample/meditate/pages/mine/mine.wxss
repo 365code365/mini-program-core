@@ -1,0 +1,19 @@
+.user { padding: 40rpx 32rpx 8rpx; }
+.avatar { width: 120rpx; height: 120rpx; border-radius: 60rpx; margin-right: 28rpx; }
+.name { display: block; font-size: 36rpx; font-weight: 600; margin-bottom: 8rpx; }
+.stats { justify-content: space-around; }
+.st { display: flex; flex-direction: column; align-items: center; }
+.st-n { font-size: 38rpx; font-weight: 700; color: #6c63d9; margin-bottom: 4rpx; }
+.dark .st-n { color: #b4aefc; }
+.c-title { display: block; font-size: 30rpx; font-weight: 600; }
+.theme-opts { margin: 20rpx 0 12rpx; }
+.t-opt { margin-right: 36rpx; }
+.t-tx { font-size: 28rpx; margin-left: 4rpx; }
+.list { padding-top: 4rpx; padding-bottom: 4rpx; }
+.li { padding: 26rpx 0; border-bottom: 1rpx solid #f0eff6; font-size: 28rpx; }
+.dark .li { border-bottom: 1rpx solid #2e2f4d; }
+.li.last { border-bottom: none; }
+.danger { color: #e0604f; }
+.r-t { display: block; font-size: 28rpx; margin-bottom: 4rpx; }
+.r-type { font-size: 22rpx; color: #6c63d9; background: #ecebfb; padding: 4rpx 16rpx; border-radius: 20rpx; }
+.dark .r-type { background: #2e2f52; color: #b4aefc; }

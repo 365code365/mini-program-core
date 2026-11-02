@@ -2,6 +2,12 @@
   <view class="head" style="background: linear-gradient(150deg, {{trip.color}}, #1e78ff);">
     <text class="head-t">{{trip.title}}</text>
     <text class="head-s">{{trip.range}} · {{trip.days}} 天 · {{trip.people}} 人 · {{trip.type}}</text>
+    <view class="acts">
+      <view class="act" bindtap="edit"><text>编辑</text></view>
+      <view class="act" bindtap="share"><text>分享</text></view>
+      <view class="act" bindtap="copy"><text>复制一份</text></view>
+      <view class="act" bindtap="remove"><text>删除</text></view>
+    </view>
   </view>
 
   <view class="entries">
@@ -9,6 +15,7 @@
       <view class="row between"><text class="entry-t">预算</text><view class="arrow"></view></view>
       <view class="row entry-v-row"><text class="entry-v {{budget.over ? 'danger' : ''}}">¥{{budget.sumText}}</text><text class="sub"> / {{budget.totalText}}</text></view>
       <view class="track"><view class="fill {{budget.over ? 'fill-over' : ''}}" style="width: {{budget.pct}}%;"></view></view>
+      <text class="sub entry-foot">已记账 ¥{{budget.spentText}}</text>
     </view>
     <view class="entry" bindtap="goPacking">
       <view class="row between"><text class="entry-t">行李清单</text><view class="arrow"></view></view>
@@ -35,7 +42,7 @@
     <view class="spot" wx:for="{{spots}}" wx:key="name">
       <view class="no"><text class="no-t">{{item.no}}</text></view>
       <view class="line" wx:if="{{!item.last}}"></view>
-      <view class="spot-info">
+      <view class="spot-info" data-i="{{item.idx}}" bindtap="openMove">
         <text class="spot-t">{{item.name}}</text>
         <text class="sub">{{item.type}} · {{item.hours}} 小时 · 门票 {{item.ticket}}</text>
       </view>
@@ -57,4 +64,17 @@
     <text class="undo-t">已移除「{{undo.name}}」</text>
     <view class="undo-btn" bindtap="undoDel"><text>撤销</text></view>
   </view>
+  <block wx:if="{{move}}">
+    <view class="mask" bindtap="closeMove"></view>
+    <view class="sheet" catchtap="noop">
+      <text class="sheet-t">把「{{move.name}}」移到</text>
+      <view class="days">
+        <view wx:for="{{dayTabs}}" wx:key="i" class="d-op {{index === day ? 'd-off' : ''}}" data-i="{{index}}" bindtap="moveTo">
+          <text class="d-t">{{item.label}}</text>
+          <text class="d-s">{{item.date}}</text>
+        </view>
+      </view>
+      <view class="btn btn-ghost sheet-cancel" bindtap="closeMove"><text>取消</text></view>
+    </view>
+  </block>
 </view>

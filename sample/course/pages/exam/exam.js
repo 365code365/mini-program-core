@@ -1,4 +1,5 @@
 const data = require('../../utils/data.js');
+const store = require('../../utils/store.js');
 const LETTERS = ['A', 'B', 'C', 'D'];
 Page({
   data: { idx: 0, total: 0, q: null, picked: -1, answers: [], finished: false, score: 0, right: 0, pct: 0, review: [] },
@@ -34,8 +35,8 @@ Page({
     const review = qs.map((q, i) => ({ i: i + 1, ok: answers[i] === q.ans, mine: LETTERS[answers[i]], ans: LETTERS[q.ans] }));
     wx.showModal({ title: '确认交卷', content: '共 ' + qs.length + ' 题，已全部作答。交卷后将显示成绩。', confirmText: '交卷', success: r => {
       if (!r.confirm) return;
-      wx.setStorageSync('zx_exam_today', true);
-      const best = wx.getStorageSync('zx_exam_best') || 0;
+      wx.setStorageSync('zx_exam_today', store.today());
+      const best = Number(wx.getStorageSync('zx_exam_best')) || 0;
       if (score > best) wx.setStorageSync('zx_exam_best', score);
       this.setData({ finished: true, score, right, review });
     } });

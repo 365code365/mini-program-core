@@ -1,0 +1,26 @@
+.letters { flex-wrap: wrap; margin-bottom: 12rpx; }
+.lt { width: 48rpx; height: 48rpx; line-height: 48rpx; text-align: center; font-size: 24rpx; color: #4b5567; border-radius: 24rpx; margin: 0 8rpx 8rpx 0; background: #f3f5f9; }
+.lt-on { background: #1f6fff; color: #ffffff; }
+.brands { white-space: nowrap; height: 150rpx; }
+.br { display: inline-flex; flex-direction: column; align-items: center; width: 120rpx; margin-right: 8rpx; padding: 10rpx 0; border-radius: 14rpx; }
+.br-on { background: #ebf2ff; }
+.br-logo { width: 76rpx; height: 76rpx; border-radius: 38rpx; background: linear-gradient(135deg, #e8eefb 0%, #c9d6f0 100%); display: flex; align-items: center; justify-content: center; }
+.br-on .br-logo { background: linear-gradient(135deg, #4d8dff 0%, #1f6fff 100%); }
+.br-l { font-size: 30rpx; font-weight: bold; color: #39425a; }
+.br-on .br-l { color: #ffffff; }
+.br-nm { font-size: 24rpx; margin-top: 6rpx; }
+.f-row { min-height: 88rpx; border-bottom: 1rpx solid #f0f2f6; }
+.f-label { width: 170rpx; color: #4b5567; }
+.f-ipt { flex: 1; text-align: right; font-size: 28rpx; }
+.cl { font-size: 24rpx; color: #4b5567; border: 2rpx solid #d3d8e2; border-radius: 30rpx; padding: 4rpx 18rpx; margin-left: 12rpx; }
+.cl-on { color: #1f6fff; border-color: #1f6fff; background: #ebf2ff; }
+.plate { margin-bottom: 8rpx; }
+.pl-box { width: 80rpx; height: 80rpx; border-radius: 12rpx; background: #1f4fbf; display: flex; align-items: center; justify-content: center; margin-right: 12rpx; }
+.pl-tx { color: #ffffff; font-size: 32rpx; font-weight: bold; }
+.pl-ipt { height: 80rpx; background: #f3f5f9; border-radius: 12rpx; padding: 0 20rpx; font-size: 32rpx; letter-spacing: 4rpx; }
+.scan { font-size: 24rpx; color: #ffffff; background: #1f6fff; border-radius: 24rpx; padding: 4rpx 18rpx; margin-left: 16rpx; }
+.del { text-align: center; color: #f0443a; padding: 32rpx 0; }
+.d-sub { display: block; margin: 8rpx 0 24rpx; }
+.d-ops { margin-top: 32rpx; }
+.d-btn { height: 76rpx; line-height: 72rpx; text-align: center; }
+.d-ok { margin-left: 20rpx; line-height: 76rpx; }

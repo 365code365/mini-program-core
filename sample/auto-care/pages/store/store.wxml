@@ -1,0 +1,65 @@
+<view wx:if="{{store}}">
+  <image class="cover" src="{{store.img}}" mode="aspectFill"></image>
+  <view class="wrap top">
+    <view class="card">
+      <text class="title">{{store.name}}</text>
+      <view class="row meta">
+        <text class="orange">★ {{store.rating}}</text>
+        <text class="sub gap">已服务 {{store.orders}} 单</text>
+        <text class="sub gap">{{store.bays}} 个工位</text>
+      </view>
+      <view class="row">
+        <text class="tag" wx:for="{{store.tags}}" wx:key="*this">{{item}}</text>
+      </view>
+      <view class="line"></view>
+      <view class="row addr" bindlongpress="copyAddr">
+        <view class="col flex1">
+          <text class="addr-tx">{{store.address}}</text>
+          <text class="sub">营业时间 {{store.hours}}{{dist ? ' · 距你 ' + dist : ''}}</text>
+        </view>
+        <view class="op" bindtap="nav">
+          <text class="op-tx">导航</text>
+        </view>
+        <view class="op" bindtap="call">
+          <text class="op-tx">电话</text>
+        </view>
+      </view>
+      <view class="notice">
+        <text>{{store.notice}}</text>
+      </view>
+    </view>
+
+    <view class="card">
+      <text class="sec-title">服务项目</text>
+      <view wx:for="{{groups}}" wx:for-item="g" wx:key="id">
+        <text class="g-name">{{g.name}}</text>
+        <view class="svc between" wx:for="{{g.items}}" wx:key="id" data-id="{{item.id}}" bindtap="pickService">
+          <view class="col flex1">
+            <text class="svc-name">{{item.name}}</text>
+            <text class="sub">{{item.desc}}</text>
+          </view>
+          <text class="price">{{item.price ? '¥' + item.price : '免费'}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="card">
+      <text class="sec-title">车主评价</text>
+      <view class="rv" wx:for="{{reviews}}" wx:key="date">
+        <view class="between">
+          <text class="rv-user">{{item.user}}</text>
+          <text class="sub">{{item.date}}</text>
+        </view>
+        <text class="orange rv-star">{{item.star === 5 ? '★★★★★' : '★★★★☆'}}</text>
+        <text class="rv-tx">{{item.text}}</text>
+      </view>
+    </view>
+    <view class="bar-gap"></view>
+  </view>
+  <view class="footer-bar">
+    <view class="col flex1">
+      <text class="sub">营业时间 {{store.hours}} · 可约 7 天内</text>
+    </view>
+    <view class="btn book" bindtap="book">立即预约</view>
+  </view>
+</view>

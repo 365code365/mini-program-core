@@ -1,0 +1,48 @@
+<view class="netbar" wx:if="{{!net.isConnected}}"><text class="netbar-tx">网络不可用，价格可能不是最新</text></view>
+<view class="head">
+  <image class="logo" src="{{st.logo}}" mode="aspectFit"></image>
+  <view class="hd-mid">
+    <text class="name">{{st.name}}</text>
+    <text class="sub">{{st.brand}} · {{st.hours}} · {{st.rating}} 分</text>
+  </view>
+</view>
+<view class="card addr">
+  <view class="addr-mid">
+    <text class="addr-tx">{{st.address}}</text>
+    <text class="muted">距你 {{distText}}{{fallback ? '（按默认位置计算）' : ''}}</text>
+  </view>
+  <view class="addr-op" bindtap="call"><text class="addr-ic">📞</text><text class="addr-op-tx">电话</text></view>
+  <view class="addr-op" bindtap="navigate"><text class="addr-ic">🧭</text><text class="addr-op-tx">导航</text></view>
+</view>
+
+<view class="card">
+  <view class="row between"><text class="sec-title">今日油价</text><text class="muted">单位：元/升</text></view>
+  <view class="pt-head">
+    <text class="pt-c pt-k">油号</text><text class="pt-c">挂牌价</text><text class="pt-c">易加油价</text><text class="pt-c">每升省</text>
+  </view>
+  <view class="pt-row {{item.oil === oil ? 'pt-on' : ''}}" wx:for="{{prices}}" wx:key="oil" data-oil="{{item.oil}}" bindtap="pickOil">
+    <text class="pt-c pt-k">{{item.oil}}</text>
+    <text class="pt-c pt-list">{{item.list}}</text>
+    <text class="pt-c price">{{item.ours}}</text>
+    <text class="pt-c pt-cut">{{item.cut}}</text>
+  </view>
+  <text class="muted pt-tip">价格随国家发改委调价窗口调整，下次调价 {{next}}</text>
+</view>
+
+<view class="card">
+  <text class="sec-title">优惠活动</text>
+  <view class="pm" wx:for="{{st.promos}}" wx:key="*this"><text class="pm-ic">惠</text><text class="pm-tx">{{item}}</text></view>
+</view>
+
+<view class="card">
+  <text class="sec-title">站内设施</text>
+  <view class="fac">
+    <view class="fac-it {{item.on ? '' : 'fac-off'}}" wx:for="{{facilities}}" wx:key="name"><text class="fac-ic">{{item.ic}}</text><text class="fac-tx">{{item.name}}</text></view>
+  </view>
+</view>
+<view style="height: 160rpx;"></view>
+
+<view class="bar">
+  <view class="bar-l"><text class="muted">{{oil}} 到站价</text><view class="row"><text class="price bar-p">¥{{curOurs}}</text><text class="muted">/升</text></view></view>
+  <view class="bar-btn" hover-class="btn-hover" bindtap="refuel"><text class="bar-btn-tx">{{oil}} 去加油</text></view>
+</view>

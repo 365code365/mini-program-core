@@ -1,0 +1,15 @@
+.oc { background: #ffffff; border-radius: 20rpx; padding: 24rpx 28rpx; margin-bottom: 24rpx; }
+.oc-hd { display: flex; flex-direction: row; justify-content: space-between; align-items: center; }
+.oc-name { font-size: 30rpx; font-weight: bold; color: #1c2521; line-height: 1.5; }
+.oc-st { font-size: 26rpx; line-height: 1.5; }
+.oc-bd { display: flex; flex-direction: row; margin: 18rpx 0; }
+.oc-img { width: 150rpx; height: 150rpx; border-radius: 14rpx; flex-shrink: 0; }
+.oc-info { flex: 1; margin-left: 20rpx; display: flex; flex-direction: column; }
+.oc-spec { font-size: 26rpx; color: #2b3430; line-height: 1.5; }
+.oc-sub { font-size: 24rpx; color: #8b958f; line-height: 1.5; }
+.oc-left { font-size: 24rpx; color: #13a86b; line-height: 1.5; }
+.oc-ft { display: flex; flex-direction: row; align-items: center; justify-content: flex-end; }
+.oc-pay { flex: 1; display: flex; flex-direction: row; align-items: baseline; }
+.oc-amt { font-size: 30rpx; font-weight: bold; color: #e5484d; line-height: 1.5; }
+.oc-btn { font-size: 24rpx; color: #4a544f; border: 2rpx solid #d5dbd8; border-radius: 30rpx; padding: 6rpx 22rpx; margin-left: 16rpx; line-height: 1.5; }
+.oc-btn-p { color: #13a86b; border-color: #13a86b; }

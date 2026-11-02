@@ -21,12 +21,28 @@ Page({
     city: '', cityOk: false, sugs: [], showSug: false, focus: false,
     start: '', end: '', minDate: '', maxDate: '', startText: '', endText: '', days: 0,
     dateErr: '', people: 2, types: TYPES, type: TYPES[0], title: '', titleTouched: false,
-    canSubmit: false, cityErr: ''
+    canSubmit: false, cityErr: '', editing: false
   },
   onLoad(q) {
     const t0 = T.toStr(T.today());
+    // 编辑：带 id 进来，表单填上原值
+    const old = q && q.id ? T.get(q.id) : null;
+    if (old) {
+      this.editId = old.id;
+      wx.setNavigationBarTitle({ title: '编辑行程' });
+      // 已经开始的行程，出发日期可能早于今天：最早可选放到原出发日
+      const minDate = old.start < t0 ? old.start : t0;
+      this.setData({
+        editing: true, minDate, maxDate: T.addDays(t0, 365), start: old.start, end: old.end,
+        people: old.people, type: old.type, title: old.title, titleTouched: true
+      });
+      this.pickCity(old.city);
+      return;
+    }
     const start = T.addDays(t0, 7);
-    const end = T.addDays(t0, 10);
+    // 从城市攻略来的带建议天数（1~15），返回日期按它预填
+    const want = Math.min(15, Math.max(1, Number(q && q.days) || 4));
+    const end = T.addDays(start, want - 1);
     this.setData({ minDate: t0, maxDate: T.addDays(t0, 365), start, end });
     if (q && q.city) this.pickCity(decodeURIComponent(q.city));
     this.check();
@@ -44,7 +60,7 @@ Page({
   onCityBlur() {
     // 失焦稍等一下再收起，否则点下拉项时下拉先没了
     setTimeout(() => {
-      const err = this.data.city && !this.data.cityOk ? '暂不支持「' + this.data.city + '」，请从下拉列表中选择' : '';
+      const err = this.data.city && !this.data.cityOk ? '「' + this.data.city + '」不在可选城市里，请从下拉列表中选择' : '';
       this.setData({ showSug: false, cityErr: err });
     }, 200);
   },
@@ -84,6 +100,7 @@ Page({
       return;
     }
     const d = this.data;
+    if (this.editId) { this.saveEdit(); return; }
     const trip = T.put(T.newTrip({ city: d.city, start: d.start, end: d.end, people: d.people, type: d.type, title: d.title || d.city + ' ' + d.days + ' 日游' }));
     const ch = typeof this.getOpenerEventChannel === 'function' ? this.getOpenerEventChannel() : null;
     if (ch && ch.emit) ch.emit('created', { id: trip.id, title: trip.title });
@@ -93,5 +110,24 @@ Page({
     const prev = pages.length > 1 ? pages[pages.length - 2].route : '';
     if (prev === 'pages/trips/trips') wx.navigateBack();
     else wx.switchTab({ url: '/pages/trips/trips' });
+  },
+  // 编辑保存：天数变少时被砍掉那几天的景点并到最后一天，先问一句
+  saveEdit() {
+    const d = this.data;
+    const t = T.get(this.editId);
+    if (!t) { wx.navigateBack(); return; }
+    const apply = () => {
+      const moved = T.resizePlan(t, d.start, d.end);
+      Object.assign(t, { city: d.city, people: d.people, type: d.type, title: (d.title || '').trim() || d.city + ' ' + d.days + ' 日游' });
+      T.put(t);
+      wx.showToast({ title: moved ? '已保存，' + moved + ' 个景点并入第' + d.days + '天' : '已保存', icon: 'none' });
+      wx.navigateBack();
+    };
+    const dropped = T.droppedSpots(t, d.start, d.end);
+    if (!dropped) { apply(); return; }
+    wx.showModal({
+      title: '行程缩短为 ' + d.days + ' 天', content: '第' + (d.days + 1) + '天及以后的 ' + dropped + ' 个景点会并入第' + d.days + '天，可在详情里再调整',
+      confirmText: '保存', success: r => { if (r.confirm) apply(); }
+    });
   }
 });

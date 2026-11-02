@@ -1,0 +1,4 @@
+.logo.small { width: 80rpx; height: 80rpx; border-radius: 18rpx; font-size: 34rpx; flex-shrink: 0; }
+.rec-body { margin-left: 20rpx; overflow: hidden; }
+.rec-title { font-size: 30rpx; font-weight: bold; margin-bottom: 6rpx; margin-right: 12rpx; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rec-foot { margin-top: 20rpx; padding-top: 18rpx; border-top: 1rpx solid #f3f4f6; }

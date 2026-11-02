@@ -1,0 +1,17 @@
+.head { background: #ffffff; padding: 40rpx 32rpx; }
+.big { width: 120rpx; height: 120rpx; line-height: 120rpx; border-radius: 28rpx; font-size: 38rpx; margin-right: 24rpx; }
+.nm { font-size: 36rpx; font-weight: bold; margin-bottom: 6rpx; }
+.tt { font-size: 22rpx; color: #86909c; margin-top: 4rpx; }
+.go { color: #c9cdd4; font-size: 36rpx; }
+.sts { margin-top: 24rpx; }
+.st { flex: 1; align-items: center; }
+.sv { font-size: 36rpx; font-weight: bold; }
+.o { color: #ff7d00; }
+.r { color: #f53f3f; }
+.sk { font-size: 22rpx; color: #86909c; margin-top: 4rpx; }
+.menu { padding-top: 4rpx; padding-bottom: 4rpx; }
+.mi { height: 96rpx; border-bottom: 1rpx solid #f2f3f5; font-size: 28rpx; }
+.danger { color: #f53f3f; }
+.kv { padding: 14rpx 0; }
+.k { width: 140rpx; font-size: 26rpx; color: #86909c; }
+.v { font-size: 26rpx; }

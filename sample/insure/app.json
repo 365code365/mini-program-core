@@ -1,0 +1,54 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/products/products",
+    "pages/policies/policies",
+    "pages/mine/mine",
+    "pages/detail/detail",
+    "pages/calc/calc",
+    "pages/apply/apply",
+    "pages/result/result",
+    "pages/policy/policy",
+    "pages/claim/claim",
+    "pages/cashier/cashier"
+  ],
+  "window": {
+    "navigationBarTitleText": "安心保",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f4f6fb"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#9aa0ab",
+    "selectedColor": "#2f6bff",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "images/tab/home.png",
+        "selectedIconPath": "images/tab/home-on.png"
+      },
+      {
+        "pagePath": "pages/products/products",
+        "text": "产品",
+        "iconPath": "images/tab/shield.png",
+        "selectedIconPath": "images/tab/shield-on.png"
+      },
+      {
+        "pagePath": "pages/policies/policies",
+        "text": "保单",
+        "iconPath": "images/tab/doc.png",
+        "selectedIconPath": "images/tab/doc-on.png"
+      },
+      {
+        "pagePath": "pages/mine/mine",
+        "text": "我的",
+        "iconPath": "images/tab/user.png",
+        "selectedIconPath": "images/tab/user-on.png"
+      }
+    ]
+  }
+}

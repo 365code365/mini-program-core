@@ -1,29 +1,31 @@
+<!-- 点击绑在头部里那一行上，不绑整个 .header：下面的资产卡片用负 margin 盖住 .header 的下半截，
+     引擎会把落在重叠区的点击同时派给盖在上面的卡片和底下的兄弟 .header（微信只派给上面那个） -->
 <view class="header">
-  <view class="avatar"><text class="avatar-text">林</text></view>
-  <view class="flex1 info">
-    <text class="nick">林晓舟</text>
-    <view class="row"><text class="phone">138****6621</text><text class="level">黄金会员</text></view>
+  <view class="header-row" bindtap="onProfile">
+    <view class="avatar"><text class="avatar-text">{{initial}}</text></view>
+    <view class="flex1 info">
+      <text class="nick">{{nick}}</text>
+      <view class="row"><text class="phone">{{phoneMask}}</text><text class="level">{{level.name}}会员</text></view>
+    </view>
+    <view class="chev white"></view>
   </view>
-  <view class="chev white"></view>
 </view>
-
 <view class="wallet">
-  <view class="w-item" bindtap="onWallet"><text class="w-num">{{balance}}</text><text class="w-label">余额(元)</text></view>
-  <view class="w-item" bindtap="onCoupons"><text class="w-num">{{couponCount}}</text><text class="w-label">优惠券</text></view>
-  <view class="w-item"><text class="w-num">2380</text><text class="w-label">积分</text></view>
-  <view class="w-item"><text class="w-num">3</text><text class="w-label">礼品卡</text></view>
+  <view class="w-item w-balance" bindtap="onWallet"><text class="w-num">{{balance}}</text><text class="w-label">余额(元)</text></view>
+  <view class="w-item w-coupon" bindtap="onCoupons"><text class="w-num">{{couponCount}}</text><text class="w-label">优惠券</text></view>
+  <view class="w-item w-trips" bindtap="onTrips"><text class="w-num">{{tripCount}}</text><text class="w-label">行程</text></view>
+  <view class="w-item w-invoice" bindtap="onInvoice"><text class="w-num">{{invoiceAmount}}</text><text class="w-label">可开票(元)</text></view>
 </view>
-
-<view class="vip card">
-  <view>
-    <text class="vip-title">滴达会员 · 黄金</text>
-    <text class="vip-sub">再完成 6 单升级铂金，享专车 9 折</text>
+<view class="vip card" bindtap="onLevel">
+  <view class="row between">
+    <text class="vip-title">滴达会员 · {{level.name}}</text>
+    <text class="vip-rule">等级说明</text>
   </view>
-  <view class="vip-bar"><view class="vip-fill"></view></view>
+  <text class="vip-sub">{{level.top ? '已是最高等级，感谢一路同行' : '已完成 ' + done + ' 单，再完成 ' + level.need + ' 单升级' + level.next}}</text>
+  <view class="vip-bar"><view class="vip-fill" style="width: {{level.percent}}%;"></view></view>
 </view>
-
 <view class="card menu">
-  <view class="menu-item" wx:for="{{menus}}" wx:key="name" data-idx="{{index}}" bindtap="onMenu">
+  <view class="menu-item" wx:for="{{menus}}" wx:key="key" data-idx="{{index}}" bindtap="onMenu">
     <view class="m-icon" style="background:{{item.bg}}"><text class="m-glyph">{{item.glyph}}</text></view>
     <text class="m-name">{{item.name}}</text>
     <text class="sub">{{item.extra}}</text>
@@ -31,6 +33,35 @@
   </view>
 </view>
 <view class="card setting row between">
-  <text>夜间行程自动分享给紧急联系人</text>
-  <switch checked="{{autoShare}}" color="#FF7A1A" bindchange="onShare" />
+  <view class="flex1">
+    <text class="set-name">夜间行程自动分享</text>
+    <text class="sub set-sub">22:00-05:00 上车后自动把行程发给紧急联系人</text>
+  </view>
+  <switch class="sw-share" checked="{{autoShare}}" color="#FF7A1A" bindchange="onShare" />
 </view>
+<view style="height: {{tabGap + 12}}px;"></view>
+
+<block wx:if="{{profile}}">
+  <view class="mask" bindtap="onCloseProfile"></view>
+  <view class="sheet-panel" style="bottom: {{tabGap}}px;" catchtap="noop">
+    <view class="row between sheet-head">
+      <text class="sheet-title">个人资料</text>
+      <text class="sheet-close" bindtap="onCloseProfile">关闭</text>
+    </view>
+    <!-- 输入框 id 跟着 formSeq 变：引擎里用户打过字的输入框，页面再 setData 改 value 不会重画（框里留着旧字、wx:if 重建也一样），换 id 就是一份新的输入状态 -->
+    <view class="field row">
+      <text class="field-label">昵称</text>
+      <input id="nick-{{formSeq}}" class="field-input nick-input" placeholder="最多 12 个字" placeholder-class="ph" value="{{nickInput}}" maxlength="12" bindinput="onNick" />
+    </view>
+    <view class="field row">
+      <text class="field-label">手机号</text>
+      <text class="flex1">{{phoneMask}}</text>
+      <text class="sub">已绑定</text>
+    </view>
+    <view class="field row">
+      <text class="field-label">会员等级</text>
+      <text class="flex1">{{level.name}}会员 · 已完成 {{done}} 单</text>
+    </view>
+    <view class="btn-primary save-btn" bindtap="onSaveProfile">保存</view>
+  </view>
+</block>

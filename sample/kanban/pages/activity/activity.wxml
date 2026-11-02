@@ -1,0 +1,28 @@
+<scroll-view class="types" scroll-x>
+  <view class="type-row">
+    <view class="type {{type === item.key ? 'on' : ''}}" wx:for="{{types}}" wx:key="key" data-key="{{item.key}}" bindtap="onType">{{item.name}} {{item.count}}</view>
+  </view>
+</scroll-view>
+<view wx:for="{{groups}}" wx:for-item="g" wx:key="day">
+  <text class="sec">{{g.label}}</text>
+  <view class="card-box">
+    <view class="act row" wx:for="{{g.items}}" wx:key="id" data-id="{{item.cardId}}" data-gone="{{item.gone}}" bindtap="onOpen">
+      <view class="avatar act-avatar" style="background: {{item.color}}">{{item.initial}}</view>
+      <view class="flex1">
+        <view class="row between">
+          <text class="act-who">{{item.who}}</text>
+          <text class="sub">{{item.time}}</text>
+        </view>
+        <view class="row act-line">
+          <view class="act-dot" style="background: {{item.dot}}"></view>
+          <text class="act-title {{item.gone ? 'gone' : ''}}">{{item.title}}</text>
+        </view>
+        <text class="act-text">{{item.text}}</text>
+      </view>
+    </view>
+  </view>
+</view>
+<view class="empty-box" wx:if="{{!total}}">
+  <text class="sub">还没有这类动态</text>
+</view>
+<view class="safe"></view>

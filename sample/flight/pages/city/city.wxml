@@ -1,0 +1,44 @@
+<view class="sbar row">
+  <view class="sbox row flex1">
+    <text class="s-ic">搜</text>
+    <input class="s-in flex1" placeholder="城市名 / 拼音 / 三字码，如 cd、CTU" value="{{keyword}}" bindinput="onInput" confirm-type="search"></input>
+    <text wx:if="{{keyword}}" class="s-x" bindtap="clear">×</text>
+  </view>
+</view>
+
+<scroll-view wx:if="{{keyword}}" scroll-y class="body">
+  <view wx:if="{{!results.length}}" class="empty"><text class="muted">没有找到「{{keyword}}」相关的城市或机场</text></view>
+  <view wx:for="{{results}}" wx:key="code" class="res col" data-code="{{item.code}}" bindtap="choose" hover-class="hover">
+    <view class="row"><text class="res-name">{{item.name}}</text><text class="muted res-code">{{item.code}}</text></view>
+    <text class="muted small">{{item.ap}}</text>
+  </view>
+</scroll-view>
+
+<scroll-view wx:else scroll-y class="body" scroll-into-view="{{intoView}}" scroll-with-animation>
+  <view wx:if="{{recent.length}}" class="sec">
+    <text class="sec-t">最近选择</text>
+    <view class="chips row">
+      <view wx:for="{{recent}}" wx:key="code" class="chip" data-code="{{item.code}}" bindtap="choose"><text>{{item.name}}</text></view>
+    </view>
+  </view>
+  <view class="sec" id="L-hot">
+    <text class="sec-t">热门城市</text>
+    <view class="chips row">
+      <view wx:for="{{hot}}" wx:key="code" class="chip {{item.code === current ? 'chip-on' : ''}}" data-code="{{item.code}}" bindtap="choose"><text>{{item.name}}</text></view>
+    </view>
+  </view>
+  <view wx:for="{{groups}}" wx:key="letter" wx:for-item="g">
+    <view class="g-h" id="L-{{g.letter}}"><text>{{g.letter}}</text></view>
+    <view wx:for="{{g.list}}" wx:key="code" class="item row" data-code="{{item.code}}" bindtap="choose" hover-class="hover">
+      <text class="item-name">{{item.name}}</text>
+      <text class="muted small flex1">{{item.ap}}</text>
+    </view>
+  </view>
+  <view style="height: 60rpx;"></view>
+</scroll-view>
+
+<view wx:if="{{!keyword}}" class="idx col">
+  <text class="idx-l" data-l="hot" bindtap="jump">热</text>
+  <text wx:for="{{letters}}" wx:key="*this" class="idx-l" data-l="{{item}}" bindtap="jump">{{item}}</text>
+</view>
+<view wx:if="{{bubble}}" class="bubble"><text>{{bubble}}</text></view>

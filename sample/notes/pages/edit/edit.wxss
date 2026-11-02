@@ -61,3 +61,21 @@
 .del {
   margin: 16rpx 24rpx;
 }
+.tools {
+  padding: 0 28rpx;
+}
+.tool-row {
+  height: 88rpx;
+  border-bottom: 1rpx solid #f3efe6;
+}
+.tool-row.last {
+  border-bottom: 0;
+}
+.tool-label {
+  font-size: 28rpx;
+}
+.chev {
+  color: #c4bfb3;
+  font-size: 32rpx;
+  margin-left: 12rpx;
+}

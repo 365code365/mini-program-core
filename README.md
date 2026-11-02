@@ -213,6 +213,12 @@ What remains is concentrated in bold glyph shapes and subpixel text positioning.
 - **All 503 official `wx.*` APIs exist** (host-only ones fail immediately until the host claims them in `hostApis`),
   plus the Skyline-era components: `grid-view`, `movable-view`, `page-container`, gesture handlers, `draggable-sheet`,
   `this.animate`, `wx.worklet` and `applyAnimatedStyle` (see `doc/原生App集成指南.md` for the documented degradations);
+- **Host native components** (Android / iOS SDKs, Flutter Android plugin): `<map>` is a built-in tile map (`MiniMapView`,
+  same-layer rendered: markers, callouts, labels, polylines, circles, polygons, satellite, pan / fling / pinch via
+  `sameLayerGestures`, `regionchange` / `markertap`, 14 MapContext methods); `<web-view>` is the system WebView with the
+  `wx.miniProgram.*` JSSDK and WeChat's deliver-on-back `bindmessage`; `<live-player>` plays HLS / mp4 with the system
+  player, same-layer rendered, with `bindstatechange` codes and LivePlayerContext. Device checks:
+  `tools/android-native-components.sh`, `tools/ios-native-components.sh`;
 - **24 component tags** (containers / text and media / form controls, including `swiper`,
   `scroll-view`, `picker-view`);
 - **Events**: six binding prefixes (`bind` / `catch` / `capture-bind` / `capture-catch` /
@@ -634,6 +640,7 @@ target. `<video>` still takes part in layout and hit testing, it just produces n
 | WXML | wx:for / wx:if / elif / else / for-item / for-index / wx:key, block, expression engine (with spread and shorthand properties), class and style bindings, template / import / include, wxs modules (`<wxs src>` / inline / require), custom components (usingComponents: one instance per use site, named and default slots) |
 | WXSS | tag / class / id / attribute / pseudo-class selectors, descendant and child combinators, specificity cascade, `:first/last/only-child`, `:nth-child(An+B)`, `:active`, `@import`, `@keyframes`, `@media`, `@font-face`, CSS variables, rpx, gradients, shadows, transform, transition/animation |
 | wx.\* (72) | request (with abort), downloadFile / uploadFile, the full storage set, showToast / showLoading / showModal / showActionSheet, previewImage, pull-to-refresh, pageScrollTo, createSelectorQuery / createIntersectionObserver / nextTick, createVideoContext, createAnimation, createCanvasContext and canvas 2d nodes, the tabBar runtime APIs, clipboard, vibration, loadFontFace, navigation-bar APIs, the full device-info set, five routing APIs, app-level listeners (onError etc.); host capabilities such as login / chooseImage go to the host via hostApis |
+| API namespace | `nb.*` / `gb.*` / `mb.*` are the same object as `wx.*` (`nb === wx`; `canIUse('nb.request')` works). An undeclared `xx` that is used with at least two wx function names (e.g. `xx.request` + `xx.showToast`) is pointed at wx too, with one `[API 别名]` console line. Other platforms' names (`my` / `tt` / `qq` / `swan` / `uni` / `Taro` …) and existing globals are never taken. `MINI_API_ALIAS=foo,bar` adds explicit aliases, `MINI_API_ALIAS_GUESS=0` turns name matching off (`src/js/api_alias.rs`; applies to mini-programs, mini-games, the open-data context, the mini-game web mode and the H5 export) |
 | Interaction | Inertial scrolling with critically damped bounce, gesture arbitration (axis lock / inner-outer handoff), left-edge swipe back (desktop and mobile SDK), pull-to-refresh, picker sheet, action sheet, image preview, fullscreen video, partial repaint (damage regions) |
 
 **Icons** use WeUI's official vector data (`success` is a filled circle with a check-shaped hole

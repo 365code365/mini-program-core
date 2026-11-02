@@ -1,0 +1,24 @@
+<view class="oc" wx:if="{{order}}">
+  <view class="oc-hd" bindtap="onOpen">
+    <text class="oc-name">{{order.svcName}}</text>
+    <text class="oc-st" style="color: {{color}};">{{statusText}}</text>
+  </view>
+  <view class="oc-bd" bindtap="onOpen">
+    <image class="oc-img" src="{{order.cover}}" mode="aspectFill"></image>
+    <view class="oc-info">
+      <text class="oc-spec">{{order.specText}}</text>
+      <text class="oc-sub">{{order.date}} {{order.time}} 上门</text>
+      <text class="oc-sub">{{order.addrShort}}</text>
+      <text class="oc-left" wx:if="{{left}}">{{left}}</text>
+    </view>
+  </view>
+  <view class="oc-ft">
+    <view class="oc-pay">
+      <text class="oc-sub">实付 </text>
+      <text class="oc-amt">{{payText}}</text>
+    </view>
+    <view class="oc-btn {{item.primary ? 'oc-btn-p' : ''}}" wx:for="{{actions}}" wx:key="type" data-type="{{item.type}}" catchtap="onAction">
+      <text>{{item.text}}</text>
+    </view>
+  </view>
+</view>

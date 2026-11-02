@@ -1,0 +1,13 @@
+.top-gap { height: 20rpx; }
+.form { padding: 0 28rpx; }
+.field { min-height: 104rpx; border-bottom: 1rpx solid #f2f3f5; }
+.field.last { border-bottom: none; }
+.f-label { width: 170rpx; font-size: 28rpx; color: #3a3f47; }
+/* input 的 font-size 恰好 14px(28rpx) 时引擎当成「没写」改用 16px，所以写 30rpx */
+.f-input { height: 104rpx; font-size: 30rpx; }
+.f-val { font-size: 30rpx; }
+.ph { color: #b0b5bc; }
+.kb { font-size: 24rpx; color: #00A36C; border: 2rpx solid #a9e8cf; border-radius: 24rpx; padding: 6rpx 18rpx; white-space: nowrap; }
+.tip { display: block; padding: 8rpx 36rpx; }
+.btns { padding: 40rpx 32rpx; }
+.del { margin-top: 24rpx; color: #F5455C; border-color: #f7b5bf; }

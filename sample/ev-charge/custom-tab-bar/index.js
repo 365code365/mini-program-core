@@ -7,7 +7,8 @@ Component({
     list: [
       { pagePath: '/pages/index/index', text: '找桩', iconPath: '/images/tab-home.png', selectedIconPath: '/images/tab-home-on.png' },
       { pagePath: '/pages/orders/orders', text: '订单', iconPath: '/images/tab-orders.png', selectedIconPath: '/images/tab-orders-on.png' },
-      { pagePath: '/pages/wallet/wallet', text: '钱包', iconPath: '/images/tab-wallet.png', selectedIconPath: '/images/tab-wallet-on.png' }
+      { pagePath: '/pages/wallet/wallet', text: '钱包', iconPath: '/images/tab-wallet.png', selectedIconPath: '/images/tab-wallet-on.png' },
+      { pagePath: '/pages/mine/mine', text: '我的', iconPath: '/images/tab-mine.png', selectedIconPath: '/images/tab-mine-on.png' }
     ]
   },
   methods: {

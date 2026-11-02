@@ -1,0 +1,94 @@
+.summary {
+  margin: 20rpx 24rpx 0;
+  padding: 28rpx;
+  border-radius: 20rpx;
+  background: linear-gradient(120deg, #ff6fa2, #e8487c);
+  color: #ffffff;
+}
+.sum-left {
+  align-items: flex-end;
+}
+.sum-num {
+  font-size: 56rpx;
+  line-height: 64rpx;
+  font-weight: bold;
+  margin-right: 10rpx;
+}
+.sum-label {
+  font-size: 26rpx;
+  line-height: 40rpx;
+  padding-bottom: 6rpx;
+}
+.pending {
+  height: 56rpx;
+  padding: 0 24rpx;
+  border-radius: 28rpx;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+.pending-t {
+  color: #e8487c;
+  font-size: 24rpx;
+  font-weight: bold;
+  white-space: nowrap;
+}
+.r-head {
+  margin-bottom: 8rpx;
+}
+.r-logo {
+  width: 52rpx;
+  height: 52rpx;
+  border-radius: 12rpx;
+  font-size: 24rpx;
+  margin-right: 14rpx;
+  flex-shrink: 0;
+}
+.r-shop {
+  font-size: 28rpx;
+  font-weight: bold;
+}
+.stars {
+  margin-top: 4rpx;
+}
+.star {
+  font-size: 30rpx;
+  color: #e3e5e8;
+  margin-right: 6rpx;
+}
+.star-on {
+  color: #ffb400;
+}
+.r-tags {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin-top: 8rpx;
+}
+.r-tag {
+  font-size: 22rpx;
+  line-height: 40rpx;
+  padding: 0 16rpx;
+  margin: 8rpx 12rpx 0 0;
+  border-radius: 20rpx;
+  background: #fff0f5;
+  color: #e8487c;
+}
+.r-text {
+  display: block;
+  font-size: 28rpx;
+  line-height: 42rpx;
+  margin-top: 14rpx;
+}
+.r-dishes {
+  display: block;
+  font-size: 22rpx;
+  color: #8a8f99;
+  margin-top: 12rpx;
+}
+.empty {
+  padding: 200rpx 80rpx 0;
+  text-align: center;
+}
+.gap {
+  height: 48rpx;
+}

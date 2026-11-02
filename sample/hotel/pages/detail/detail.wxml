@@ -1,78 +1,99 @@
 <view class="gallery">
   <swiper class="swiper" indicator-dots="{{false}}" autoplay="{{false}}" circular bindchange="onSwiper">
     <swiper-item wx:for="{{h.images}}" wx:key="*this">
-      <image class="swiper-img" src="{{item}}" mode="aspectFill"></image>
+      <image class="swiper-img" src="{{item}}" mode="aspectFill" bindtap="onPreview" />
     </swiper-item>
   </swiper>
-  <view class="counter">{{cur + 1}}/{{h.images.length}}</view>
+  <view class="counter"><text>{{cur + 1}}/{{h.images.length}}</text></view>
 </view>
-
 <view class="info card">
   <text class="name">{{h.name}}</text>
   <view class="row star-row">
     <text class="tag orange">{{h.starText}}</text>
     <text class="tag" wx:for="{{h.tags}}" wx:key="*this">{{item}}</text>
   </view>
-  <view class="row score-row">
+  <view class="row score-row" bindtap="onReviews">
     <view class="score-box">
       <text class="score-num">{{h.score}}</text>
       <text class="score-word">{{h.score >= 4.8 ? '超棒' : '很好'}}</text>
     </view>
     <view class="flex1 score-text">
       <text class="score-line">“{{reviews[0].text}}”</text>
-      <text class="sub">{{h.reviews}} 条点评 · 卫生 4.9 · 服务 4.8</text>
+      <text class="sub">{{rvCount}} 条点评 · 卫生 4.9 · 服务 4.8</text>
     </view>
+    <view class="chev"></view>
   </view>
-  <view class="row addr-row" bindtap="onMap">
+  <view class="row addr-row">
     <view class="flex1">
-      <text class="addr">{{h.addr}}</text>
+      <text class="addr">{{h.city}}{{h.addr}}</text>
       <text class="sub addr-dist">{{h.dist}}</text>
     </view>
-    <view class="map-btn"><view class="map-pin"></view><text class="map-t">地图</text></view>
+    <view class="map-btn" bindtap="onMap"><view class="map-pin"></view><text class="map-t">导航</text></view>
   </view>
 </view>
-
 <view class="card">
   <view class="row between"><text class="block-title">设施服务</text><text class="sub">共 {{h.facilities.length}} 项</text></view>
   <view class="facs">
     <view class="fac" wx:for="{{h.facilities}}" wx:key="*this"><view class="fac-dot"></view><text class="fac-t">{{item}}</text></view>
   </view>
 </view>
-
-<view class="card dates row" bindtap="onDates">
-  <view class="flex1 row">
-    <text class="d-val">{{inShort}}</text><text class="d-week">{{inWeek}}</text>
-    <text class="d-sep">—</text>
-    <text class="d-val">{{outShort}}</text><text class="d-week">{{outWeek}}</text>
-  </view>
-  <text class="d-n">共{{nights}}晚</text>
-  <view class="chev"></view>
+<view class="card dates row">
+  <picker mode="date" value="{{s.checkin}}" start="{{today}}" end="{{maxDate}}" bindchange="onCheckin">
+    <view class="row d-pick"><text class="d-label">{{hourly ? '入住' : '住'}}</text><text class="d-val">{{inShort}}</text><text class="d-week">{{inWeek}}</text></view>
+  </picker>
+  <text class="d-sep">—</text>
+  <picker wx:if="{{!hourly}}" mode="date" value="{{s.checkout}}" start="{{minOut}}" end="{{maxDate}}" bindchange="onCheckout">
+    <view class="row d-pick"><text class="d-label">离</text><text class="d-val">{{outShort}}</text><text class="d-week">{{outWeek}}</text></view>
+  </picker>
+  <text wx:else class="d-val">4 小时</text>
+  <view class="flex1"></view>
+  <text class="d-n">{{hourly ? '钟点房' : '共' + nights + '晚'}}</text>
 </view>
-
 <view class="card rooms">
-  <text class="block-title">房型</text>
-  <view class="room" wx:for="{{h.rooms}}" wx:key="id">
-    <image class="room-img" src="{{item.img}}" mode="aspectFill"></image>
-    <view class="room-body">
-      <text class="room-name">{{item.name}}</text>
-      <text class="sub room-line">{{item.size}} · {{item.bed}} · {{item.breakfast}}</text>
-      <view class="row room-tags"><text class="tag green">免费取消</text><text class="tag orange" wx:if="{{item.left <= 3}}">仅剩{{item.left}}间</text></view>
+  <view class="row between"><text class="block-title">{{hourly ? '钟点房' : '房型'}}</text><text class="sub">{{people}}</text></view>
+  <block wx:if="{{!hourly}}">
+    <view class="room" wx:for="{{rooms}}" wx:key="id">
+      <image class="room-img" src="{{item.img}}" mode="aspectFill" />
+      <view class="room-body">
+        <text class="room-name">{{item.name}}</text>
+        <text class="sub room-line">{{item.size}} · {{item.bed}} · {{item.breakfast}}</text>
+        <view class="row room-tags">
+          <text class="tag green">免费取消</text>
+          <text class="tag {{item.fit ? '' : 'orange'}}">可住{{item.max}}人</text>
+          <text class="tag orange" wx:if="{{item.left <= 3}}">仅剩{{item.left}}间</text>
+        </view>
+      </view>
+      <view class="room-right">
+        <view class="row price-row"><text class="price-color yen">¥</text><text class="price-color room-price">{{item.price}}</text></view>
+        <view class="book-btn" data-rid="{{item.id}}" catchtap="onBook"><text>预订</text></view>
+      </view>
     </view>
-    <view class="room-right">
-      <view class="row price-row"><text class="price-color yen">¥</text><text class="price-color room-price">{{item.price}}</text></view>
-      <view class="book-btn" data-rid="{{item.id}}" catchtap="onBook">预订</view>
+  </block>
+  <view wx:if="{{hourRooms.length}}" class="{{hourly ? '' : 'hour-sec'}}">
+    <text wx:if="{{!hourly}}" class="sub hour-title">钟点房 · 当天入住，4 小时内离店</text>
+    <view class="room" wx:for="{{hourRooms}}" wx:key="id">
+      <image class="room-img" src="{{item.img}}" mode="aspectFill" />
+      <view class="room-body">
+        <text class="room-name">{{item.name}}</text>
+        <text class="sub room-line">{{item.size}} · {{item.bed}} · 时段自选</text>
+        <view class="row room-tags"><text class="tag green">开始前可取消</text><text class="tag">可住{{item.max}}人</text></view>
+      </view>
+      <view class="room-right">
+        <view class="row price-row"><text class="price-color yen">¥</text><text class="price-color room-price">{{item.price}}</text></view>
+        <view class="book-btn" data-rid="{{item.id}}" catchtap="onBook"><text>预订</text></view>
+      </view>
     </view>
   </view>
+  <view wx:if="{{hourly && !hourRooms.length}}" class="sub no-hour">这家酒店暂不提供钟点房</view>
 </view>
-
 <view class="card">
-  <view class="row between"><text class="block-title">住客点评</text><text class="sub blue">{{h.reviews}} 条</text></view>
+  <view class="row between" bindtap="onReviews"><text class="block-title">住客点评</text><view class="row"><text class="sub blue">{{rvCount}} 条</text><view class="chev"></view></view></view>
   <view class="rv-tags">
-    <text class="rv-tag">位置绝佳 286</text><text class="rv-tag">早餐丰富 174</text><text class="rv-tag">服务热情 152</text><text class="rv-tag">隔音好 63</text>
+    <text class="rv-tag" wx:for="{{tagCounts}}" wx:key="t" data-tag="{{item.t}}" bindtap="onReviews">{{item.t}} {{item.n}}</text>
   </view>
-  <view class="review" wx:for="{{reviews}}" wx:key="user">
+  <view class="review" wx:for="{{reviews}}" wx:key="k">
     <view class="row">
-      <view class="rv-avatar"><text class="rv-avatar-t">{{item.avatar}}</text></view>
+      <view class="rv-avatar {{item.mine ? 'rv-me' : ''}}"><text class="rv-avatar-t">{{item.avatar}}</text></view>
       <view class="flex1 rv-head">
         <text class="rv-user">{{item.user}}</text>
         <text class="sub">{{item.date}} · {{item.room}}</text>
@@ -81,9 +102,9 @@
     </view>
     <text class="rv-text">{{item.text}}</text>
   </view>
+  <view class="rv-more" bindtap="onReviews"><text>查看全部 {{rvCount}} 条点评</text></view>
 </view>
 <view class="bottom-space"></view>
-
 <view class="bar">
   <view class="bar-ico" bindtap="onFav">
     <text class="heart {{fav ? 'heart-on' : ''}}">★</text>
@@ -93,7 +114,7 @@
     <view class="phone"></view>
     <text class="bar-t">咨询</text>
   </view>
-  <view class="bar-btn" data-rid="{{h.rooms[0].id}}" bindtap="onBook">
-    <text class="bar-btn-t">¥{{h.price}} 起 · 立即预订</text>
+  <view class="bar-btn" bindtap="onBookFirst">
+    <text class="bar-btn-t">{{hourly && hourRooms.length ? '¥' + hourRooms[0].price + ' · 预订钟点房' : '¥' + h.price + ' 起 · 立即预订'}}</text>
   </view>
 </view>

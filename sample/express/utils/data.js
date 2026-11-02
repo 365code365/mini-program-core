@@ -85,19 +85,6 @@ function decorate(item) {
   })
 }
 
-function loadList() {
-  let list = wx.getStorageSync('express_list')
-  if (!list || !list.length) {
-    list = SEED
-    wx.setStorageSync('express_list', list)
-  }
-  return list
-}
-
-function saveList(list) {
-  wx.setStorageSync('express_list', list)
-}
-
 // 新查询的单号：生成一条可信的物流轨迹
 function mockTrack(no, carrier) {
   const c = CARRIERS[carrier]
@@ -112,20 +99,23 @@ function mockTrack(no, carrier) {
   }
 }
 
+// 地址簿示例（手机号存全号，页面上打码显示）
 const ADDRESSES = [
-  { id: 1, name: '林小鹿', phone: '138****6630', region: '浙江省 杭州市 西湖区', detail: '文三路 478 号华星时代广场 A 座 1203', tag: '公司', isDefault: true },
-  { id: 2, name: '林小鹿', phone: '138****6630', region: '浙江省 杭州市 余杭区', detail: '五常街道 西溪北苑 12 幢 2 单元 501', tag: '家', isDefault: false },
-  { id: 3, name: '林建华', phone: '139****2087', region: '福建省 厦门市 思明区', detail: '莲前西路 168 号 瑞景新村 8 号楼 602', tag: '父母', isDefault: false },
-  { id: 4, name: '苏晴', phone: '186****9015', region: '上海市 上海市 徐汇区', detail: '漕溪北路 88 号 圣爱广场 2201 室', tag: '朋友', isDefault: false }
+  { id: 1, name: '林小鹿', phone: '13857126630', region: '浙江省 杭州市 西湖区', detail: '文三路 478 号华星时代广场 A 座 1203', tag: '公司', isDefault: true },
+  { id: 2, name: '林小鹿', phone: '13857126630', region: '浙江省 杭州市 余杭区', detail: '五常街道 西溪北苑 12 幢 2 单元 501', tag: '家', isDefault: false },
+  { id: 3, name: '林建华', phone: '13950232087', region: '福建省 厦门市 思明区', detail: '莲前西路 168 号 瑞景新村 8 号楼 602', tag: '父母', isDefault: false },
+  { id: 4, name: '苏晴', phone: '18621669015', region: '上海市 上海市 徐汇区', detail: '漕溪北路 88 号 圣爱广场 2201 室', tag: '朋友', isDefault: false }
 ]
-
-function loadAddresses() {
-  let list = wx.getStorageSync('express_addr')
-  if (!list || !list.length) {
-    list = ADDRESSES
-    wx.setStorageSync('express_addr', list)
-  }
-  return list
-}
-
-module.exports = { CARRIERS, STATUS, detectCarrier, decorate, loadList, saveList, mockTrack, loadAddresses }
+// 寄件可选的快递产品：首重 first 元（1kg），续重每 kg extra 元；同城首重减 2 元
+const PRODUCTS = [
+  { key: 'sf', name: '顺丰标快', eta: '次日达', first: 18, extra: 6 },
+  { key: 'jd', name: '京东特快', eta: '次日达', first: 16, extra: 5 },
+  { key: 'zto', name: '中通快递', eta: '1-2 天', first: 8, extra: 3 }
+]
+// 附近网点（首页「附近网点」）
+const OUTLETS = [
+  { name: '菜鸟驿站·文二西路店', addr: '西湖区文二西路 2 号 1 楼', dist: '0.3km', lat: 30.2806, lng: 120.1309, phone: '0571-8521 3306' },
+  { name: '顺丰速运 文三路营业点', addr: '西湖区文三路 259 号昌地火炬大厦 1 楼', dist: '0.6km', lat: 30.2771, lng: 120.1352, phone: '95338' },
+  { name: '中通快递 学院路网点', addr: '西湖区学院路 77 号黄龙万科中心 B1', dist: '1.1km', lat: 30.2712, lng: 120.1395, phone: '95311' }
+]
+module.exports = { CARRIERS, STATUS, SEED, ADDRESSES, PRODUCTS, OUTLETS, detectCarrier, decorate, mockTrack }

@@ -1,0 +1,40 @@
+<view class="head row" bindtap="goCard">
+  <view class="ava big" style="background: {{me.color}};">{{me.ini}}</view>
+  <view class="col flex1">
+    <text class="nm">{{me.name}}</text>
+    <text class="tt">{{company.full}}</text>
+    <text class="tt">{{me.deptName}} · {{me.title}} · 工号 {{me.id}}</text>
+  </view>
+  <text class="go">›</text>
+</view>
+
+<view class="card" bindtap="goAttend">
+  <view class="row between"><text class="sec-title">本月考勤</text><text class="sec-more">打卡 ›</text></view>
+  <view class="sts row" wx:if="{{stat}}">
+    <view class="st col"><text class="sv">{{stat.present}}</text><text class="sk">出勤</text></view>
+    <view class="st col"><text class="sv o">{{stat.late}}</text><text class="sk">迟到</text></view>
+    <view class="st col"><text class="sv r">{{stat.missing}}</text><text class="sk">缺卡</text></view>
+    <view class="st col"><text class="sv">{{stat.avgHours}}h</text><text class="sk">日均工时</text></view>
+  </view>
+  <view class="loading" wx:else>统计中…</view>
+</view>
+
+<view class="card menu">
+  <view class="mi row" bindtap="goMine"><text class="flex1">我发起的审批</text><text class="muted">{{counts.ing}} 张审批中 / 共 {{counts.mine}} ›</text></view>
+  <view class="mi row" bindtap="goRooms"><text class="flex1">我的会议室预订</text><text class="muted">{{counts.book}} 个 ›</text></view>
+  <view class="mi row" bindtap="goCard"><text class="flex1">我的名片</text><text class="muted">›</text></view>
+</view>
+
+<view class="card">
+  <text class="sec-title">设备信息</text>
+  <view class="kv row"><text class="k">设备</text><text class="v flex1">{{dev.model}}</text></view>
+  <view class="kv row"><text class="k">系统</text><text class="v flex1">{{dev.system}}</text></view>
+  <view class="kv row"><text class="k">基础库</text><text class="v flex1">{{dev.sdk}}</text></view>
+  <view class="kv row"><text class="k">窗口</text><text class="v flex1">{{win.width}} × {{win.height}}（像素比 {{dev.pixel}}）</text></view>
+</view>
+
+<view class="card menu">
+  <view class="mi row" bindtap="clear"><text class="flex1 danger">清除本地数据</text><text class="muted">›</text></view>
+  <view class="mi row" bindtap="logout"><text class="flex1">退出登录</text><text class="muted">›</text></view>
+</view>
+<view class="tab-pad"></view>

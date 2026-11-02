@@ -1,0 +1,55 @@
+<view class="page tab-page">
+  <view class="head">
+    <view class="h-av"><text class="h-av-t">{{initial}}</text></view>
+    <view class="col flex1">
+      <text class="h-n">{{user.nick || '未登录业主'}}</text>
+      <text class="h-s">{{maskedPhone || '预约量房后自动保存联系方式'}}</text>
+    </view>
+  </view>
+
+  <view class="card stats">
+    <view class="st" bindtap="goDiary" hover-class="item-hover"><text class="st-v">{{projects}}</text><text class="muted">装修项目</text></view>
+    <view class="st" bindtap="goIndex" hover-class="item-hover"><text class="st-v">{{favs.length}}</text><text class="muted">收藏案例</text></view>
+    <view class="st"><text class="st-v">{{follows.length}}</text><text class="muted">关注设计师</text></view>
+    <view class="st" bindtap="goBudget" hover-class="item-hover"><text class="st-v">{{budgets.length}}</text><text class="muted">预算方案</text></view>
+  </view>
+
+  <view class="card">
+    <view class="between"><text class="sec-title">收藏的案例</text><text class="muted">{{favs.length}} 套</text></view>
+    <view wx:if="{{!favs.length}}" class="empty small"><text class="empty-text">在案例详情双击图片就能收藏</text></view>
+    <scroll-view wx:else scroll-x class="favs" enable-flex>
+      <view class="row fav-row">
+        <view wx:for="{{favs}}" wx:key="id" class="fav" data-id="{{item.id}}" bindtap="openCase" hover-class="item-hover">
+          <image class="fav-img" src="{{item.cover}}" mode="aspectFill"></image>
+          <text class="fav-t">{{item.title}}</text>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <view wx:if="{{follows.length}}" class="card">
+    <text class="sec-title">关注的设计师</text>
+    <view wx:for="{{follows}}" wx:key="id" class="mi" data-id="{{item.id}}" bindtap="openDesigner" hover-class="item-hover">
+      <image class="mi-av" src="{{item.avatar}}"></image>
+      <text class="flex1">{{item.name}} · {{item.title}}</text>
+      <text class="arrow">›</text>
+    </view>
+  </view>
+
+  <view class="card menu">
+    <view class="mi" bindtap="goLayout" hover-class="item-hover">
+      <view class="col flex1"><text class="mi-t">我的户型方案</text><text class="muted">{{layoutAt ? '上次保存 ' + layoutAt : '还没有保存过方案'}}</text></view>
+      <text class="arrow">›</text>
+    </view>
+    <view class="mi" bindtap="goBudget" hover-class="item-hover">
+      <view class="col flex1">
+        <text class="mi-t">预算记录</text>
+        <text wx:if="{{!budgets.length}}" class="muted">在「算预算」里保存方案</text>
+        <text wx:for="{{budgets}}" wx:key="ts" class="muted">{{item.time}} · {{item.area}}㎡ {{item.gradeName}} · {{item.wan}} 万</text>
+      </view>
+      <text class="arrow">›</text>
+    </view>
+    <view class="mi" bindtap="service" hover-class="item-hover"><text class="flex1 mi-t">联系客服</text><text class="arrow">›</text></view>
+    <view class="mi" bindtap="clear" hover-class="item-hover"><text class="flex1 mi-t danger">清除本机数据</text><text class="arrow">›</text></view>
+  </view>
+</view>

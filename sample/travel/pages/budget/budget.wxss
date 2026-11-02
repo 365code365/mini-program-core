@@ -21,3 +21,27 @@
 .it-track .fill { height: 8rpx; }
 .space { height: 180rpx; }
 .bottom { position: fixed; left: 0; right: 0; bottom: 0; padding: 20rpx 32rpx 32rpx 32rpx; background: #ffffff; border-top: 1rpx solid #edf0f5; }
+.rec-add { height: 56rpx; line-height: 56rpx; padding: 0 26rpx; border-radius: 28rpx; background: #1e78ff; color: #ffffff; font-size: 24rpx; font-weight: bold; white-space: nowrap; }
+.spent-row { align-items: flex-end; margin-top: 18rpx; }
+.spent-v { font-size: 48rpx; font-weight: bold; white-space: nowrap; }
+.spent-s { margin-left: 16rpx; margin-bottom: 8rpx; }
+.acts-grid { display: flex; flex-direction: row; flex-wrap: wrap; margin-top: 20rpx; }
+.ac { width: 200rpx; margin: 0 15rpx 15rpx 0; padding: 18rpx; box-sizing: border-box; border-radius: 14rpx; background: #f7f8fb; display: flex; flex-direction: column; }
+.ac-t { font-size: 24rpx; color: #4e5566; }
+.ac-v { font-size: 30rpx; font-weight: bold; margin: 8rpx 0 4rpx 0; white-space: nowrap; }
+.rec-empty { padding: 32rpx 0; display: flex; flex-direction: row; justify-content: center; }
+.rec { display: flex; flex-direction: row; align-items: center; padding: 22rpx 0; border-top: 1rpx solid #f2f3f5; }
+.rec-info { flex: 1; display: flex; flex-direction: column; }
+.rec-t { font-size: 28rpx; margin-bottom: 4rpx; }
+.rec-v { font-size: 30rpx; font-weight: bold; white-space: nowrap; }
+.rec-del { padding: 10rpx 0 10rpx 24rpx; }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; background: #ffffff; border-radius: 28rpx 28rpx 0 0; padding: 32rpx 32rpx calc(32rpx + env(safe-area-inset-bottom)) 32rpx; }
+.sheet-t { display: block; font-size: 32rpx; font-weight: bold; text-align: center; margin-bottom: 24rpx; }
+.cats { display: flex; flex-direction: row; flex-wrap: wrap; }
+.cat { height: 60rpx; line-height: 60rpx; padding: 0 28rpx; border-radius: 30rpx; background: #f4f6fa; color: #4e5566; font-size: 26rpx; margin: 0 16rpx 16rpx 0; white-space: nowrap; }
+.cat-on { background: #1e78ff; color: #ffffff; }
+.f-row { display: flex; flex-direction: row; align-items: center; height: 96rpx; border-bottom: 1rpx solid #f2f3f5; }
+.f-l { width: 110rpx; font-size: 28rpx; color: #4e5566; }
+.f-in { flex: 1; height: 96rpx; font-size: 30rpx; }
+.f-v { flex: 1; font-size: 30rpx; }
+.rec-ok { margin-top: 32rpx; }

@@ -5,7 +5,18 @@
     "pages/detail/detail",
     "pages/cart/cart",
     "pages/search/search",
-    "pages/mine/mine"
+    "pages/mine/mine",
+    "pages/flash/flash",
+    "pages/checkout/checkout",
+    "pages/orders/orders",
+    "pages/order-detail/order-detail",
+    "pages/aftersale/aftersale",
+    "pages/address/address",
+    "pages/address-edit/address-edit",
+    "pages/coupons/coupons",
+    "pages/wallet/wallet",
+    "pages/beans/beans",
+    "pages/favs/favs"
   ],
   "window": {
     "navigationBarTitleText": "鲜到家超市",

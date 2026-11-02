@@ -7,6 +7,7 @@
 }
 
 .tab-item {
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -22,4 +23,23 @@
 .tab-text {
   font-size: 20rpx;
   margin-top: 4rpx;
+}
+
+/* 购物车件数：各 tab 页 onShow 里 getTabBar().setData({ cartCount }) */
+.tab-badge {
+  position: absolute;
+  top: 6rpx;
+  left: 50%;
+  margin-left: 14rpx;
+  min-width: 30rpx;
+  height: 30rpx;
+  line-height: 30rpx;
+  padding: 0 8rpx;
+  box-sizing: border-box;
+  border-radius: 15rpx;
+  background: #ff4d2d;
+  color: #ffffff;
+  font-size: 18rpx;
+  text-align: center;
+  white-space: nowrap;
 }

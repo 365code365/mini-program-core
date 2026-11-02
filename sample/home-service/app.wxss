@@ -1,0 +1,34 @@
+/* 全局样式：好管家绿 #13a86b */
+page { background: #f4f6f5; color: #1c2521; font-size: 28rpx; line-height: 1.5; }
+/* 引擎里 page 的 line-height 传不到 text，显式给一份，否则多行 text 上下挤在一起 */
+text { line-height: 1.5; }
+.wrap { padding: 24rpx 24rpx 40rpx; }
+.card { background: #ffffff; border-radius: 20rpx; padding: 28rpx; margin-bottom: 24rpx; }
+.row { display: flex; flex-direction: row; align-items: center; }
+.between { display: flex; flex-direction: row; align-items: center; justify-content: space-between; }
+.col { display: flex; flex-direction: column; }
+.flex1 { flex: 1; }
+.title { display: block; font-size: 32rpx; font-weight: bold; line-height: 48rpx; }
+.sub { font-size: 24rpx; color: #8b958f; }
+.muted { color: #8b958f; }
+.green { color: #13a86b; }
+.red { color: #e5484d; }
+.orange { color: #f08c00; }
+.price { color: #e5484d; font-weight: bold; }
+.tag { font-size: 20rpx; color: #13a86b; background: #e7f6ef; border-radius: 6rpx; padding: 2rpx 10rpx; margin-right: 10rpx; }
+.btn { background: #13a86b; color: #ffffff; border-radius: 44rpx; height: 84rpx; line-height: 84rpx; text-align: center; font-size: 30rpx; }
+.btn-off { background: #9fd9bf; }
+.btn-line { border: 2rpx solid #13a86b; color: #13a86b; border-radius: 40rpx; height: 64rpx; line-height: 60rpx; padding: 0 28rpx; font-size: 26rpx; text-align: center; }
+.btn-gray { border: 2rpx solid #d5dbd8; color: #4a544f; border-radius: 40rpx; height: 64rpx; line-height: 60rpx; padding: 0 28rpx; font-size: 26rpx; text-align: center; }
+.sec-title { font-size: 30rpx; font-weight: bold; }
+.empty { padding: 120rpx 0; display: flex; flex-direction: column; align-items: center; }
+.empty-tx { color: #8b958f; font-size: 28rpx; margin: 20rpx 0 32rpx; }
+.loading { padding: 80rpx 0; text-align: center; color: #8b958f; }
+.footer-bar { position: fixed; left: 0; right: 0; bottom: 0; background: #ffffff; padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom)); display: flex; flex-direction: row; align-items: center; border-top: 1rpx solid #eceef2; z-index: 20; }
+.tab-gap { height: calc(120rpx + env(safe-area-inset-bottom)); }
+.bar-gap { height: calc(150rpx + env(safe-area-inset-bottom)); }
+.line { height: 1rpx; background: #eef1ef; margin: 20rpx 0; }
+.mask { position: fixed; left: 0; right: 0; top: 0; bottom: 0; background: rgba(0, 0, 0, 0.45); z-index: 50; }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; background: #ffffff; border-radius: 28rpx 28rpx 0 0; padding: 32rpx 32rpx calc(32rpx + env(safe-area-inset-bottom)); z-index: 51; }
+.ipt { font-size: 28rpx; width: 100%; }
+.err { color: #e5484d; font-size: 24rpx; }

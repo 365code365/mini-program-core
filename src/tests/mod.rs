@@ -70,6 +70,7 @@ pub mod switch_checkbox_tests;
 pub mod skyline_component_tests;
 /// 小游戏 G0：前置代码按应用种类分组、包种类入口、call_function 转义
 pub mod game_profile_tests;
+pub mod api_alias_tests;
 
 /// 拿着包根读锁的 `MiniEngine`（见 `data_dir::ROOT_TEST_LOCK`）：用法与 `MiniEngine` 相同（Deref）。
 /// 同一条线程上同时活着几个（GT-T9 一次起两个对照）只真锁一次：std 的 RwLock 同线程重复读锁可能死锁（有写者在等时）

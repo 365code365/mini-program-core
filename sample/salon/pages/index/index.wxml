@@ -1,0 +1,86 @@
+<view class="hero">
+  <image class="hero-img" src="/images/store.jpg" mode="aspectFill"></image>
+  <view class="hero-mask"></view>
+  <view class="hero-tx">
+    <text class="hero-name">{{store.name}}</text>
+    <view class="row hero-sub">
+      <rating-stars value="{{store.rating}}" size="24" show-score="{{true}}"></rating-stars>
+      <text class="hero-rv">{{store.reviews}} 条评价</text>
+    </view>
+  </view>
+</view>
+
+<view class="card info">
+  <view class="row info-line">
+    <text class="info-k">营业</text><text class="flex1">{{store.hours}}</text>
+    <text class="info-open">营业中</text>
+  </view>
+  <view class="row info-line">
+    <text class="info-k">地址</text><text class="flex1 info-addr">{{store.address}}</text>
+  </view>
+  <view class="row tags">
+    <text class="tag" wx:for="{{store.tags}}" wx:key="*this">{{item}}</text>
+  </view>
+  <view class="row info-btns">
+    <view class="ib" hover-class="press" bindtap="navStore">到店导航</view>
+    <view class="ib" hover-class="press" bindtap="callStore">致电门店</view>
+    <view class="ib ib-main" hover-class="press" bindtap="goBooking">立即预约</view>
+  </view>
+</view>
+
+<view class="card next" wx:if="{{upcoming}}" hover-class="press" bindtap="goAppts">
+  <icon type="waiting" size="22" color="#c0846a"></icon>
+  <view class="flex1 next-tx">
+    <text class="next-t">{{upcoming.dateText}} {{upcoming.time}} · {{upcoming.serviceName}}</text>
+    <text class="muted">发型师 {{upcoming.stylistName}}，请提前 10 分钟到店</text>
+  </view>
+  <view class="chev"></view>
+</view>
+
+<view class="grid card">
+  <view class="g" hover-class="press" bindtap="goBooking"><image class="g-ic" src="/images/svc/cut.jpg"></image><text>在线预约</text></view>
+  <view class="g" hover-class="press" bindtap="goServices"><image class="g-ic" src="/images/svc/dye.jpg"></image><text>全部项目</text></view>
+  <view class="g" hover-class="press" bindtap="goStylists"><image class="g-ic" src="/images/svc/perm.jpg"></image><text>发型师</text></view>
+  <view class="g" hover-class="press" bindtap="goMember"><image class="g-ic" src="/images/svc/care.jpg"></image><text>{{level}}</text></view>
+</view>
+
+<view class="card">
+  <view class="sec-head"><text class="sec-title">作品集</text><text class="sec-more">{{swiperCur + 1}} / {{works.length}}</text></view>
+  <swiper class="works" autoplay interval="3500" circular previous-margin="60rpx" next-margin="60rpx" bindchange="onSwiper">
+    <swiper-item wx:for="{{works}}" wx:key="id">
+      <view class="work {{swiperCur === index ? 'work-on' : ''}}" data-i="{{index}}" bindtap="previewWork">
+        <image class="work-img" src="{{item.src}}" mode="aspectFill"></image>
+        <view class="work-cap"><text class="work-t">{{item.title}}</text><text class="work-by">{{item.stylistName}}</text></view>
+      </view>
+    </swiper-item>
+  </swiper>
+</view>
+
+<view class="card">
+  <view class="sec-head"><text class="sec-title">热门项目</text><text class="sec-more" bindtap="goServices">全部项目</text></view>
+  <view class="svc row" wx:for="{{hot}}" wx:key="id" data-id="{{item.id}}" hover-class="press" bindtap="goService">
+    <image class="svc-img" src="{{item.cover}}"></image>
+    <view class="flex1">
+      <text class="svc-n">{{item.name}}</text>
+      <text class="muted svc-d ellipsis">{{item.desc}}</text>
+      <view class="row between">
+        <text class="price">¥{{item.price}}</text>
+        <text class="muted">{{item.duration}} 分钟 · 已售 {{item.sold}}</text>
+      </view>
+    </view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="sec-head"><text class="sec-title">明星发型师</text><text class="sec-more" bindtap="goStylists">查看全部</text></view>
+  <scroll-view scroll-x class="sty-scroll" enhanced show-scrollbar="{{false}}">
+    <view class="sty-row">
+      <view class="sty" wx:for="{{stylists}}" wx:key="id" data-id="{{item.id}}" hover-class="press" bindtap="goStylist">
+        <image class="sty-av" src="{{item.avatar}}"></image>
+        <text class="sty-n">{{item.name}}</text>
+        <text class="muted">{{item.title}}</text>
+      </view>
+    </view>
+  </scroll-view>
+</view>
+<view class="tab-gap"></view>

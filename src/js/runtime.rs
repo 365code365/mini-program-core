@@ -107,6 +107,7 @@ impl JsRuntime {
     /// `path` 是该文件相对小程序根目录的路径（如 `app`、`pages/index/index`），
     /// 决定了里面相对 `require` 的解析基准目录。不缓存 —— 页面 js 每次进入都要重跑。
     pub fn run_as_module(&self, path: &str, source: &str) -> Result<String, String> {
+        self.guess_api_alias(source);
         let code = format!(
             "__runAsModule({:?}, function(module, exports, require) {{\n{}\n}});",
             path, source
@@ -119,6 +120,7 @@ impl JsRuntime {
     /// `path` 为相对项目根目录的路径（可带或不带 .js 后缀），
     /// `source` 为模块源码。源码会被包裹进 `function(module, exports, require)`。
     pub fn define_module(&self, path: &str, source: &str) -> Result<(), String> {
+        self.guess_api_alias(source);
         // path 用 {:?} 生成带转义的合法 JS 字符串字面量；source 作为原始代码注入函数体
         let code = format!(
             "__defineModule({:?}, function(module, exports, require) {{\n{}\n}});",
@@ -128,6 +130,16 @@ impl JsRuntime {
         self.eval_cached(&code).0.map(|_| ())
     }
     
+    /// 源码里用到的 `xx.函数名` 若认得出是 wx 的别名，先把 `xx` 装上（js/api_alias.rs）。
+    /// 单独一次 eval、不拼进模块源码：字节码缓存的键与异常栈的行号都不受影响。
+    /// 前置代码没装（`__wxAliasGuess` 不存在）时那行是空操作；失败只记日志，不挡模块加载
+    pub fn guess_api_alias(&self, source: &str) {
+        if let Some(s) = super::api_alias::guess_script([source]) {
+            if let Err(e) = self.eval(&s) {
+                eprintln!("⚠ [API 别名] 按函数名认别名失败：{e}");
+            }
+        }
+    }
     /// 加载（require）一个模块，触发其工厂函数执行
     pub fn require_module(&self, path: &str) -> Result<(), String> {
         let code = format!("__require('', {:?});", path);

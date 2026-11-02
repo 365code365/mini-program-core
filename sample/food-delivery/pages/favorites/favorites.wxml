@@ -1,0 +1,26 @@
+<view wx:if="{{list.length}}" class="head-tip sub">共收藏 {{list.length}} 家店铺</view>
+<view class="card shop row" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onShop">
+  <view class="logo glyph" style="background: linear-gradient(135deg, {{item.c1}}, {{item.c2}});"><text>{{item.logo}}</text></view>
+  <view class="flex1 info">
+    <text class="name ellipsis">{{item.name}}</text>
+    <view class="row meta">
+      <text class="star">★ {{item.rating}}</text>
+      <text class="gap-l">月售 {{item.sales}}</text>
+      <text class="gap-l">{{item.time}}分钟 {{item.distance}}</text>
+    </view>
+    <view class="row meta2">
+      <text>起送 ¥{{item.minOrder}}</text>
+      <text class="gap-l">配送 ¥{{item.deliveryFee}}</text>
+    </view>
+    <view class="tags">
+      <text class="tag" wx:for="{{item.tags}}" wx:for-item="t" wx:key="*this">{{t}}</text>
+    </view>
+  </view>
+  <view class="unfav" data-id="{{item.id}}" catchtap="onUnfav">取消收藏</view>
+</view>
+<view wx:if="{{!list.length}}" class="empty">
+  <view class="empty-heart glyph">藏</view>
+  <text class="sub">还没有收藏的店铺，在店铺页点「+ 收藏」就会出现在这里</text>
+  <view class="btn-primary empty-btn" bindtap="onGoHome">去首页逛逛</view>
+</view>
+<view class="bottom-gap"></view>

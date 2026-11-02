@@ -1,0 +1,23 @@
+<view class="tabs">
+  <view wx:for="{{tabs}}" wx:key="k" class="tab {{tab === item.k ? 'tab-on' : ''}}" data-k="{{item.k}}" bindtap="onTab">
+    <text>{{item.n}}</text>
+    <view class="tab-line" wx:if="{{tab === item.k}}"></view>
+  </view>
+</view>
+<view class="cp row {{item.status !== 'valid' ? 'cp-off' : ''}}" wx:for="{{list}}" wx:key="id">
+  <view class="cp-l">
+    <view class="row cp-amt-row"><text class="cp-sym">¥</text><text class="cp-amt">{{item.amount}}</text></view>
+    <text class="cp-min">满 {{item.min}} 可用</text>
+  </view>
+  <view class="flex1 cp-r">
+    <text class="cp-title">{{item.title}}</text>
+    <text class="sub cp-cond">{{item.cond}}</text>
+    <view class="row between cp-foot">
+      <text class="sub">{{item.status === 'expired' ? '已于 ' + item.expire + ' 过期' : '有效期至 ' + item.expire}}</text>
+      <view wx:if="{{item.status === 'valid'}}" class="cp-use" data-id="{{item.id}}" bindtap="onUse"><text>去使用</text></view>
+      <text wx:else class="cp-stamp">{{item.status === 'used' ? '已使用' : '已过期'}}</text>
+    </view>
+  </view>
+</view>
+<view wx:if="{{!list.length}}" class="empty-tip"><text>这里空空如也</text></view>
+<view class="note"><text class="sub">一单限用一张券，可与金卡折扣、积分抵扣同享；取消订单券会退回</text></view>

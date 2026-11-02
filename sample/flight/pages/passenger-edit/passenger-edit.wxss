@@ -1,0 +1,6 @@
+.form { padding-top: 8rpx; padding-bottom: 8rpx; }
+.field { height: 100rpx; border-bottom: 1rpx solid #eef1f6; }
+.f-l { width: 160rpx; color: #5b6478; }
+.tips { padding: 8rpx 32rpx 0; }
+.save { margin: 40rpx 32rpx 0; }
+.del { margin-top: 32rpx; display: flex; justify-content: center; }

@@ -1,0 +1,26 @@
+.hero { height: 300rpx; padding: 40rpx 32rpx; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-end; }
+.h-name { color: #ffffff; font-size: 56rpx; font-weight: bold; }
+.h-prov { color: rgba(255, 255, 255, 0.85); font-size: 24rpx; margin-top: 6rpx; }
+.h-desc { color: #ffffff; font-size: 28rpx; margin-top: 16rpx; }
+.facts { display: flex; flex-direction: row; padding: 28rpx 0; }
+.fact { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.f-v { font-size: 36rpx; font-weight: bold; color: #1e78ff; margin-bottom: 6rpx; }
+.kv { display: flex; flex-direction: row; padding: 18rpx 0; border-bottom: 1rpx solid #f0f2f5; }
+.kv-last { border-bottom: none; }
+.k { width: 140rpx; flex-shrink: 0; font-size: 26rpx; color: #8a91a0; }
+.v { flex: 1; font-size: 26rpx; color: #1c2230; line-height: 40rpx; }
+.sp { display: flex; flex-direction: row; align-items: center; padding: 20rpx 0; border-bottom: 1rpx solid #f0f2f5; }
+.sp-no { width: 44rpx; height: 44rpx; border-radius: 22rpx; background: #eaf2ff; display: flex; align-items: center; justify-content: center; margin-right: 20rpx; }
+.sp-no-t { font-size: 22rpx; color: #1e78ff; font-weight: bold; }
+.sp-info { flex: 1; display: flex; flex-direction: column; }
+.sp-t { font-size: 28rpx; margin-bottom: 4rpx; }
+.title { display: block; margin-bottom: 8rpx; }
+.none { padding: 24rpx 0 8rpx 0; }
+.tp { display: flex; flex-direction: row; align-items: center; padding: 22rpx 0; border-bottom: 1rpx solid #f0f2f5; }
+.tp-info { flex: 1; display: flex; flex-direction: column; }
+.tp-t { font-size: 28rpx; margin-bottom: 4rpx; }
+.space { height: 180rpx; }
+.bottom { position: fixed; left: 0; right: 0; bottom: 0; background: #ffffff; padding: 20rpx 24rpx 36rpx 24rpx; display: flex; flex-direction: row; align-items: center; box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.05); }
+.wish { width: 180rpx; height: 88rpx; border-radius: 44rpx; border: 2rpx solid #1e78ff; color: #1e78ff; display: flex; align-items: center; justify-content: center; font-size: 28rpx; margin-right: 20rpx; box-sizing: border-box; }
+.wish-on { background: #eaf2ff; font-weight: bold; }
+.plan-btn { flex: 1; }

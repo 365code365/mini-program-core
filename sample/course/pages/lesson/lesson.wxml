@@ -1,0 +1,50 @@
+<view class="player" style="background: {{c.cover}};">
+  <text class="p-mark">{{c.mark}}</text>
+  <view class="p-btn" bindtap="togglePlay">
+    <view wx:if="{{!playing}}" class="p-play"></view>
+    <view wx:else class="row"><view class="p-bar"></view><view class="p-bar"></view></view>
+  </view>
+  <view class="p-foot row">
+    <text class="p-time">{{posTx}}</text>
+    <view class="p-track"><view class="p-in" style="width: {{pct}}%;"></view></view>
+    <text class="p-time">{{durTx}}</text>
+    <view class="p-speed" bindtap="onSpeed"><text>{{speed}}x</text></view>
+  </view>
+</view>
+<view class="card info">
+  <view class="row">
+    <text wx:if="{{cur.free && !owned}}" class="free">试看</text>
+    <text class="l-t">{{cur.title}}</text>
+  </view>
+  <text class="muted">{{cur.chapter}} · {{cur.mins}} 分钟 · {{progressTx}}</text>
+  <view class="row ctrls">
+    <view class="op" bindtap="prev"><text>上一节</text></view>
+    <view class="op op-main {{list[idx].done ? 'op-done' : ''}}" bindtap="finish"><text>{{list[idx].done ? '已学完' : '标记学完'}}</text></view>
+    <view class="op" bindtap="next"><text>下一节</text></view>
+  </view>
+</view>
+<view class="card">
+  <view class="row between"><text class="sec-title">本节笔记</text><text class="muted">{{notes.length}} 条</text></view>
+  <view class="row note-in">
+    <input id="note{{formSeq}}" class="n-input" value="{{noteText}}" maxlength="100" placeholder="记下这一刻的要点（会带上播放时间）" bindinput="onNote" />
+    <view class="n-save" bindtap="addNote"><text>保存</text></view>
+  </view>
+  <view wx:for="{{notes}}" wx:key="id" class="note">
+    <view class="row between"><text class="n-pos">{{item.pos}}</text><text class="n-del" data-id="{{item.id}}" bindtap="delNote">删除</text></view>
+    <view class="n-text"><text>{{item.text}}</text></view>
+  </view>
+</view>
+<view class="card">
+  <view class="row between"><text class="sec-title">课程目录</text><text class="muted">{{list.length}} 节</text></view>
+  <view wx:for="{{list}}" wx:key="id" class="ls row {{item.on ? 'ls-on' : ''}}" data-id="{{item.id}}" bindtap="onPick">
+    <view class="ls-st {{item.done ? 'ls-done' : ''}}"><view wx:if="{{item.done}}" class="ls-tick"></view><view wx:elif="{{item.locked}}" class="ls-lock"></view></view>
+    <view class="ls-main">
+      <text class="ls-t">{{item.title}}</text>
+      <text class="muted">{{item.chapter}} · {{item.mins}} 分钟</text>
+    </view>
+    <text wx:if="{{item.on}}" class="ls-now">学习中</text>
+    <text wx:elif="{{item.locked}}" class="ls-x">未解锁</text>
+    <text wx:elif="{{item.free && !owned}}" class="free">试看</text>
+  </view>
+</view>
+<view class="gap"></view>

@@ -42,7 +42,7 @@
   </view>
   <view wx:else class="recommend row">
     <text class="sub">推荐座位</text>
-    <view class="rec-btn" wx:for="{{[1,2,3,4]}}" wx:key="*this" data-n="{{item}}" bindtap="onRecommend">{{item}}人</view>
+    <view class="rec-btn" wx:for="{{recs}}" wx:key="*this" data-n="{{item}}" bindtap="onRecommend">{{item}}人</view>
   </view>
   <view class="btn-primary {{selected.length ? '' : 'disabled'}}" bindtap="onConfirm">
     {{selected.length ? '¥' + total + ' 确认选座' : '请先选座'}}

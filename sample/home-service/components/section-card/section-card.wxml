@@ -1,0 +1,15 @@
+<view class="sc custom-class {{extClass}}">
+  <view class="sc-hd" wx:if="{{title}}" bindtap="onHead">
+    <view class="sc-tt-box">
+      <text class="sc-tt title-class">{{title}}</text>
+      <text class="sc-sub" wx:if="{{sub}}">{{sub}}</text>
+    </view>
+    <slot name="extra"></slot>
+  </view>
+  <view class="sc-bd">
+    <slot></slot>
+  </view>
+  <view class="sc-ft" wx:if="{{footer}}">
+    <slot name="footer"></slot>
+  </view>
+</view>

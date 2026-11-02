@@ -1,0 +1,16 @@
+.mn-head { display: flex; flex-direction: row; align-items: center; background: #ffda44; padding: 40rpx 32rpx 90rpx; }
+.mn-av { width: 112rpx; height: 112rpx; border-radius: 56rpx; border: 4rpx solid #ffffff; }
+.mn-info { margin-left: 24rpx; display: flex; flex-direction: column; }
+.mn-name { font-size: 34rpx; font-weight: bold; }
+.mn-sub { font-size: 22rpx; color: #6b5a00; margin-top: 8rpx; }
+.mn-share { margin: 0; padding: 0 24rpx; height: 56rpx; line-height: 56rpx; font-size: 24rpx; border-radius: 28rpx; background: #1f2329; color: #ffda44; }
+.mn-stat { margin-top: -60rpx; }
+.mn-si { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.mn-n { font-size: 34rpx; font-weight: bold; margin-bottom: 6rpx; }
+.mn-sec { margin-bottom: 24rpx; }
+.mn-st { font-size: 30rpx; font-weight: bold; }
+.mn-ic { font-size: 40rpx; }
+.mn-l { font-size: 24rpx; color: #4e5560; margin-top: 8rpx; }
+.mn-data { margin-top: 24rpx; }
+.mn-menu { padding-top: 0; padding-bottom: 0; }
+.mn-cell { display: flex; flex-direction: row; justify-content: space-between; align-items: center; padding: 30rpx 0; border-bottom: 1rpx solid #f0f1f4; }

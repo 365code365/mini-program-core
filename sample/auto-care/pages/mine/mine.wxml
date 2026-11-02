@@ -1,0 +1,74 @@
+<view class="hd">
+  <view class="row">
+    <view class="avatar">
+      <text class="av-tx">车</text>
+    </view>
+    <view class="col">
+      <text class="name">陈先生</text>
+      <text class="hd-sub">{{car ? '默认车辆 ' + car.plateText : '还没有添加车辆'}}</text>
+    </view>
+  </view>
+  <view class="stats row">
+    <view class="stat" bindtap="goGarage">
+      <text class="st-num">{{cars}}</text>
+      <text class="st-tx">爱车</text>
+    </view>
+    <view class="stat" data-k="all" bindtap="goOrders">
+      <text class="st-num">{{orders}}</text>
+      <text class="st-tx">订单</text>
+    </view>
+    <view class="stat">
+      <text class="st-num">¥{{spent}}</text>
+      <text class="st-tx">累计消费</text>
+    </view>
+  </view>
+</view>
+<view class="wrap">
+  <view class="card">
+    <view class="between">
+      <text class="title">我的订单</text>
+      <text class="sub" data-k="all" bindtap="goOrders">全部 ›</text>
+    </view>
+    <view class="row ops">
+      <view class="op" data-k="pending" bindtap="goOrders">
+        <text class="op-num blue">{{counts.pending || 0}}</text>
+        <text class="sub">待服务</text>
+      </view>
+      <view class="op" data-k="serving" bindtap="goOrders">
+        <text class="op-num green">{{counts.serving || 0}}</text>
+        <text class="sub">服务中</text>
+      </view>
+      <view class="op" data-k="done" bindtap="goOrders">
+        <text class="op-num orange">{{counts.done || 0}}</text>
+        <text class="sub">待评价</text>
+      </view>
+      <view class="op" data-k="reviewed" bindtap="goOrders">
+        <text class="op-num">{{counts.reviewed || 0}}</text>
+        <text class="sub">已完成</text>
+      </view>
+    </view>
+  </view>
+  <view class="card menu">
+    <view class="mi between" bindtap="goGarage">
+      <text>爱车档案</text>
+      <text class="muted">{{cars}} 辆 ›</text>
+    </view>
+    <view class="mi between" bindtap="goViolation">
+      <text>违章查询</text>
+      <text class="muted">›</text>
+    </view>
+    <view class="mi between" bindtap="setAddr">
+      <text>常用取送车地址</text>
+      <text class="muted mi-v">{{addr || '未设置'}} ›</text>
+    </view>
+    <view class="mi between" bindtap="hotline">
+      <text>客服热线</text>
+      <text class="muted">400-826-8899 ›</text>
+    </view>
+    <view class="mi between" bindtap="about">
+      <text>关于车管家</text>
+      <text class="muted">›</text>
+    </view>
+  </view>
+  <view class="tab-gap"></view>
+</view>

@@ -1,0 +1,10 @@
+.iv { margin-top: 20rpx; }
+.iv.focus { box-shadow: 0 0 0 3rpx #2E6BFF; }
+.logo.small { width: 80rpx; height: 80rpx; border-radius: 18rpx; font-size: 34rpx; flex-shrink: 0; }
+.iv-head { margin-left: 20rpx; }
+.iv-title { font-size: 30rpx; font-weight: bold; margin-bottom: 6rpx; }
+.info { margin-top: 20rpx; background: #f7f8fa; border-radius: 14rpx; padding: 12rpx 20rpx; }
+.info-row { align-items: flex-start; padding: 8rpx 0; }
+.info-k { width: 140rpx; font-size: 24rpx; color: #8a9099; flex-shrink: 0; }
+.info-v { font-size: 25rpx; color: #1f2329; }
+.iv-foot { margin-top: 20rpx; }

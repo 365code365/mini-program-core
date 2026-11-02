@@ -1,0 +1,18 @@
+.head { background: linear-gradient(135deg, #13a874, #0d7f8f); padding: 36rpx 32rpx 70rpx; display: flex; flex-direction: row; align-items: center; }
+.av { width: 108rpx; height: 108rpx; border-radius: 54rpx; background: rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center; }
+.av-tx { color: #ffffff; font-size: 44rpx; font-weight: bold; }
+.hd-mid { flex: 1; margin-left: 24rpx; display: flex; flex-direction: column; }
+.nick { color: #ffffff; font-size: 34rpx; font-weight: bold; }
+.sub { color: rgba(255,255,255,0.85); font-size: 22rpx; margin-top: 6rpx; }
+.assets { display: flex; flex-direction: row; background: #ffffff; margin: -44rpx 24rpx 0; border-radius: 20rpx; padding: 26rpx 0; }
+.as { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.as-n { font-size: 34rpx; font-weight: bold; }
+.as-k { font-size: 22rpx; color: #8b939b; margin-top: 4rpx; }
+.mi { display: flex; flex-direction: row; justify-content: space-between; align-items: center; height: 96rpx; border-bottom: 1rpx solid #f0f2f4; }
+.mi-last { border-bottom: none; }
+.mi-k { font-size: 28rpx; }
+.mi-v { font-size: 25rpx; color: #8b939b; }
+.mi-in { flex: 1; text-align: right; font-size: 27rpx; height: 60rpx; margin-left: 30rpx; }
+.off { color: #f2542d; }
+.menu { padding-top: 0; padding-bottom: 0; }
+.err { font-size: 22rpx; color: #f2542d; }

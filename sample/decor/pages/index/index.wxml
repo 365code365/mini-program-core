@@ -1,0 +1,73 @@
+<view class="page tab-page">
+  <view class="hero">
+    <text class="hero-t">装修不踩坑，先看真实案例</text>
+    <text class="hero-s">杭州 2300+ 户业主的家 · 设计师免费上门量房</text>
+    <view class="btn btn-wood hero-btn" bindtap="goBooking" hover-class="btn-hover">免费预约量房</view>
+  </view>
+
+  <view class="entries">
+    <view class="entry" bindtap="goBudget" hover-class="press-hover">
+      <image class="e-ic" src="/images/tab/budget-on.png"></image>
+      <text class="e-t">算预算</text><text class="muted">30 秒出报价</text>
+    </view>
+    <view class="entry" bindtap="goLayout" hover-class="press-hover">
+      <image class="e-ic" src="/images/tab/home-on.png"></image>
+      <text class="e-t">户型布置</text><text class="muted">拖家具试摆</text>
+    </view>
+    <view class="entry" bindtap="goDesigners" hover-class="press-hover">
+      <image class="e-ic" src="/images/tab/designer-on.png"></image>
+      <text class="e-t">找设计师</text><text class="muted">6 位在线</text>
+    </view>
+  </view>
+
+  <view wx:if="{{ongoing}}" class="card going" bindtap="goProgress" hover-class="item-hover">
+    <view class="col flex1">
+      <text class="going-t">我家正在装修 · {{ongoing.stage}}</text>
+      <text class="muted">{{ongoing.community}}</text>
+      <progress class="going-bar" percent="{{ongoing.percent}}" stroke-width="5" border-radius="5" activeColor="#3a7d6c" backgroundColor="#e9e5de"></progress>
+    </view>
+    <text class="going-pc">{{ongoing.percent}}%</text>
+  </view>
+
+  <view class="between head">
+    <text class="sec-title">精选案例</text>
+    <text class="muted">{{count}} 套</text>
+  </view>
+  <scroll-view scroll-x class="styles" enable-flex>
+    <view class="row">
+      <text wx:for="{{styles}}" wx:key="*this" class="chip {{style === item ? 'chip-on' : ''}}" data-s="{{item}}" bindtap="pickStyle">{{item}}</text>
+    </view>
+  </scroll-view>
+
+  <view wx:if="{{!count}}" class="empty"><text class="empty-text">这个风格的案例正在拍摄中，先看看别的吧</text></view>
+  <view class="fall">
+    <view class="col-l">
+      <view wx:for="{{left}}" wx:key="id" id="{{item.id}}" data-id="{{item.id}}" class="case {{shown[item.id] ? 'case-in' : ''}}" bindtap="open" hover-class="press-hover">
+        <image class="cover" src="{{item.cover}}" mode="aspectFill" style="height: {{item.h}}rpx;"></image>
+        <view class="info">
+          <text class="c-title">{{item.title}}</text>
+          <view class="row c-tags"><text class="tag">{{item.style}}</text><text class="tag tag-wood">{{item.budget}}万</text></view>
+          <view class="row">
+            <image class="c-av" src="{{item.avatar}}"></image>
+            <text class="muted flex1">{{item.dname}}</text>
+            <text class="muted {{item.fav ? 'faved' : ''}}">{{item.fav ? '已收藏' : item.likes + ' 赞'}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+    <view class="col-r">
+      <view wx:for="{{right}}" wx:key="id" id="{{item.id}}" data-id="{{item.id}}" class="case {{shown[item.id] ? 'case-in' : ''}}" bindtap="open" hover-class="press-hover">
+        <image class="cover" src="{{item.cover}}" mode="aspectFill" style="height: {{item.h}}rpx;"></image>
+        <view class="info">
+          <text class="c-title">{{item.title}}</text>
+          <view class="row c-tags"><text class="tag">{{item.style}}</text><text class="tag tag-wood">{{item.budget}}万</text></view>
+          <view class="row">
+            <image class="c-av" src="{{item.avatar}}"></image>
+            <text class="muted flex1">{{item.dname}}</text>
+            <text class="muted {{item.fav ? 'faved' : ''}}">{{item.fav ? '已收藏' : item.likes + ' 赞'}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

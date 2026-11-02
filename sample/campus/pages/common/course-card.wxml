@@ -1,0 +1,13 @@
+<!-- 课程卡片模板：首页「今日课程」与课表页的「本周课程」共用（<import> 引入，<template is="course-card" data="{{...item}}">） -->
+<template name="course-card">
+  <view class="cc" style="border-left-color: {{color}};">
+    <view class="cc-l">
+      <text class="cc-name">{{name}}</text>
+      <text class="cc-sub">{{room}} · {{teacher}}</text>
+    </view>
+    <view class="cc-r">
+      <text class="cc-time">{{timeText}}</text>
+      <text class="cc-state" wx:if="{{state}}">{{state}}</text>
+    </view>
+  </view>
+</template>

@@ -1,0 +1,104 @@
+<view class="head">
+  <view class="row">
+    <text class="brand">田园直供</text>
+    <text class="slogan" space="ensp">产地直发 · 48h 到家</text>
+  </view>
+  <!-- space="nbsp" 保留连续空格、decode 解实体。引擎目前两者都没实现（&nbsp; 原样显示），
+       所以这里只用普通空格，不写实体：两边显示一致 -->
+  <text class="promise" decode="{{true}}" space="nbsp">✓ 满49包邮   ✓ 坏果包赔   ✓ 全程冷链</text>
+</view>
+
+<swiper class="story" indicator-dots="{{true}}" indicator-color="rgba(255,255,255,0.5)" indicator-active-color="#ffffff"
+  autoplay="{{true}}" interval="4000" duration="600" circular="{{true}}" easing-function="easeInOutCubic" bindchange="onStoryChange">
+  <swiper-item wx:for="{{stories}}" wx:key="id" data-id="{{item.id}}" bindtap="openStory">
+    <image class="story-img" src="{{item.img}}" mode="aspectFill"></image>
+    <view class="story-mask">
+      <text class="story-tag">产地故事</text>
+      <text class="story-title">{{item.title}}</text>
+      <text class="story-sub">{{item.sub}}</text>
+    </view>
+  </swiper-item>
+</swiper>
+
+<view class="live card" hover-class="btn-hover" bindtap="goLive">
+  <image class="live-cover" src="{{live.cover}}" mode="aspectFill"></image>
+  <view class="live-info">
+    <view class="row">
+      <view class="live-dot"></view>
+      <text class="live-on">直播中</text>
+      <text class="muted live-view">{{live.viewersText}} 人在看</text>
+    </view>
+    <text class="live-title">{{live.title}}</text>
+    <text class="muted live-sub">{{live.farmerName}} · {{live.farmerTitle}}</text>
+  </view>
+  <text class="live-go">进入 ›</text>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="sec-title">时令推荐</text>
+    <text class="muted">{{monthText}}当季 · 左右滑动</text>
+  </view>
+  <scroll-view class="season" scroll-x="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}">
+    <view class="season-row">
+      <view class="season-item" wx:for="{{season}}" wx:key="id" data-id="{{item.id}}" bindtap="openGoods">
+        <image class="season-img" src="{{item.cover}}" mode="aspectFill"></image>
+        <text class="season-name">{{item.short}}</text>
+        <text class="price season-price">¥{{item.price}}</text>
+      </view>
+    </view>
+  </scroll-view>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <view class="row">
+      <text class="sec-title">限时拼团</text>
+      <text class="grp-hint">{{groupHint}}</text>
+    </view>
+    <text class="muted" bindtap="goGroupHall">拼团大厅 ›</text>
+  </view>
+  <view class="grp" wx:for="{{groups}}" wx:key="id" data-id="{{item.goodsId}}" bindtap="openGoods">
+    <image class="grp-img" src="{{item.cover}}" mode="aspectFill"></image>
+    <view class="grp-body">
+      <text class="grp-name">{{item.name}}</text>
+      <view class="row">
+        <text class="tag">{{item.size}}人团</text>
+        <text class="muted">已拼 {{item.soldText}} 件</text>
+      </view>
+      <view class="row grp-bottom">
+        <text class="price">¥{{item.groupPrice}}</text>
+        <text class="del">¥{{item.price}}</text>
+        <view class="cd" wx:if="{{item.cd}}">
+          <text class="cd-tx">剩</text><text class="cd-n">{{item.cd.h}}</text><text class="cd-c">:</text><text class="cd-n">{{item.cd.m}}</text><text class="cd-c">:</text><text class="cd-n">{{item.cd.s}}</text>
+        </view>
+        <text class="muted" wx:else>本场已结束</text>
+      </view>
+    </view>
+  </view>
+</view>
+
+<view class="all-title row between">
+  <text class="sec-title">全部好物</text>
+  <view class="row">
+    <text class="sort {{sort === 'hot' ? 'sort-on' : ''}}" data-s="hot" bindtap="setSort">销量</text>
+    <text class="sort {{sort === 'low' ? 'sort-on' : ''}}" data-s="low" bindtap="setSort">价格↑</text>
+  </view>
+</view>
+<view class="grid">
+  <view class="gi" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="openGoods" hover-class="btn-hover">
+    <image class="gi-img" src="{{item.cover}}" mode="aspectFill"></image>
+    <view class="gi-body">
+      <text class="gi-name">{{item.name}}</text>
+      <text class="muted gi-origin">{{item.origin}}</text>
+      <view class="row between">
+        <view class="row">
+          <text class="price">¥{{item.price}}</text>
+          <text class="muted gi-sold">{{item.soldText}}人买过</text>
+        </view>
+        <view class="gi-add" data-id="{{item.id}}" catchtap="quickAdd"><text class="gi-add-tx">+</text></view>
+      </view>
+    </view>
+  </view>
+</view>
+<view class="tabbar-gap"></view>

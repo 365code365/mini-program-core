@@ -1,0 +1,21 @@
+.filter { position: sticky; top: 0; z-index: 10; background: #ffffff; }
+.cats { white-space: nowrap; display: flex; flex-direction: row; padding: 20rpx 12rpx 8rpx; }
+.cat { display: inline-block; padding: 10rpx 28rpx; margin: 0 8rpx; font-size: 28rpx; color: #4a5263; border-radius: 30rpx; background: #f3f5f9; flex-shrink: 0; }
+.cat-on { color: #ffffff; background: #2f6bff; }
+.bar { display: flex; flex-direction: row; align-items: center; padding: 12rpx 24rpx 18rpx; border-bottom: 1rpx solid #eef0f5; }
+.sort { font-size: 26rpx; color: #4a5263; margin-right: 36rpx; }
+.sort-on { color: #2f6bff; font-weight: bold; }
+.age { margin-left: auto; }
+.age-v { font-size: 26rpx; color: #4a5263; }
+.list { padding-top: 20rpx; }
+.count { margin-bottom: 16rpx; }
+.item { padding: 24rpx; }
+.item-top { display: flex; flex-direction: row; }
+.item-img { width: 160rpx; height: 160rpx; border-radius: 12rpx; flex-shrink: 0; }
+.item-info { flex: 1; margin-left: 22rpx; display: flex; flex-direction: column; }
+.item-n { font-size: 30rpx; font-weight: bold; }
+.item-t { font-size: 22rpx; color: #8a93a3; margin-top: 8rpx; }
+.item-foot { display: flex; flex-direction: row; justify-content: space-between; align-items: center; margin-top: 18rpx; padding-top: 16rpx; border-top: 1rpx solid #f0f2f6; }
+.item-foot .price { font-size: 32rpx; }
+.calc-btn { margin-left: 16rpx; font-size: 22rpx; color: #2f6bff; border: 2rpx solid #2f6bff; border-radius: 24rpx; padding: 4rpx 16rpx; }
+.insurer { display: block; margin-top: 8rpx; font-size: 20rpx; }

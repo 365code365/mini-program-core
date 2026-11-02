@@ -1,0 +1,39 @@
+<view class="vcard">
+  <view class="row between">
+    <text class="v-title">光影会员卡</text>
+    <text class="v-badge {{vip ? 'v-on' : ''}}">{{vip ? '会员生效中' : '未开通会员'}}</text>
+  </view>
+  <text class="v-label">卡内余额（元）</text>
+  <text class="v-balance">{{balance}}</text>
+  <text class="v-no">NO. 6621 0820 1688</text>
+</view>
+<view class="card">
+  <view class="row between">
+    <text class="block-title">会员权益</text>
+    <view class="open {{vip ? 'open-done' : ''}}" bindtap="onOpen"><text>{{vip ? '已开通' : '¥' + vipPrice + '/月 开通'}}</text></view>
+  </view>
+  <view class="row perks">
+    <view class="perk"><text class="perk-n">免</text><text class="perk-t">购票免服务费</text></view>
+    <view class="perk"><text class="perk-n">券</text><text class="perk-t">会员观影券</text></view>
+    <view class="perk"><text class="perk-n">赠</text><text class="perk-t">充值送余额</text></view>
+  </view>
+</view>
+<view class="card">
+  <text class="block-title">储值充值</text>
+  <view class="row opts">
+    <view class="opt {{pick === index ? 'opt-on' : ''}}" wx:for="{{opts}}" wx:key="amount" data-i="{{index}}" bindtap="onPick">
+      <text class="opt-a">¥{{item.amount}}</text>
+      <text class="opt-g">送 ¥{{item.gift}}</text>
+    </view>
+  </view>
+  <view class="btn-primary pay" bindtap="onRecharge"><text>立即充值 ¥{{opts[pick].amount}}</text></view>
+</view>
+<view class="card">
+  <text class="block-title">余额明细</text>
+  <view wx:if="{{!logs.length}}" class="sub empty">还没有记录</view>
+  <view class="log row" wx:for="{{logs}}" wx:key="index">
+    <view class="flex1 log-l"><text class="log-t">{{item.title}}</text><text class="sub">{{item.time}}</text></view>
+    <text class="log-a {{item.plus ? 'plus' : ''}}">{{item.amount}}</text>
+  </view>
+</view>
+<view class="gap"></view>

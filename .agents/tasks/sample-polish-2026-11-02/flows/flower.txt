@@ -1,0 +1,212 @@
+# 花语鲜花：每页能开 + 纪念日提醒 → 详情选规格写贺卡 → 结算（换地址、换券、会员折扣、第二束半价、改贺卡）
+# → 支付降级 → 订单详情 → 取消退券 → 再来一单 → 签收评价（出现在花束详情）→ 地址增删改 → 纪念日增删改 → 券 / 客服
+smoke pages/detail/detail?id=f4 pages/confirm/confirm?from=cart pages/order-detail/order-detail?no=none pages/address/address?select=1 pages/address-edit/address-edit?id=a1 pages/anniv/anniv?id=d1
+
+open
+expect getCurrentPages()[0].data.loc === '上海 · 徐汇区'
+shot target/_polish_shots/index.png
+# 妈妈生日 5 天后：首页提醒，点了按「生日」筛好
+exists .remind
+tap .remind
+wait 400
+expect getCurrentPages()[0].data.use === 'birthday'
+expect getCurrentPages()[0].data.count === 2
+
+# 向日葵：19 枝 ×2，用贺卡模板
+tapn 1 .goods
+route pages/detail/detail
+expect getCurrentPages().slice(-1)[0].data.p.id === 'f4'
+tapn 1 .opt
+expect getCurrentPages().slice(-1)[0].data.unit === 219
+tapn 1 .st-btn
+expect getCurrentPages().slice(-1)[0].data.total === 438
+tapn 0 .tpl
+expect getCurrentPages().slice(-1)[0].data.card === '生日快乐，岁岁平安！'
+shot target/_polish_shots/detail.png
+tap .f-buy
+route pages/confirm/confirm
+# 第二束半价 109.5、银卡 9.5 折、自动挑最省的满 299 减 40
+print getCurrentPages().slice(-1)[0].data.p
+expect getCurrentPages().slice(-1)[0].data.p.activityCut === 109.5
+expect getCurrentPages().slice(-1)[0].data.p.memberCut === 16.43
+expect getCurrentPages().slice(-1)[0].data.p.coupon.id === 'c2'
+expect getCurrentPages().slice(-1)[0].data.p.total === 272.07
+expect getCurrentPages().slice(-1)[0].data.addr.name === '苏晚晴'
+# 换收花地址
+tap .addr
+route pages/address/address
+count 2 .radio
+tapn 1 .addr
+route pages/confirm/confirm
+expect getCurrentPages().slice(-1)[0].data.addr.name === '王秀兰'
+# 换券：满 199 减 20；探望券不满足条件
+tap .coupon
+sheet 2 4
+toast 不满足
+tap .coupon
+sheet 0 4
+expect getCurrentPages().slice(-1)[0].data.p.couponCut === 20
+expect getCurrentPages().slice(-1)[0].data.p.total === 292.07
+# 改贺卡
+tap .l-card
+exists .sheet
+tapn 1 .tpl
+tap .card-ok
+absent .sheet
+expect getCurrentPages().slice(-1)[0].data.lines[0].card === '谢谢你一直在我身边。'
+shot target/_polish_shots/confirm.png
+# 支付：宿主没有支付能力，退回页面内确认框
+tap .pay
+modal?
+modal ok
+wait 300
+route pages/order-detail/order-detail
+expect getCurrentPages().slice(-1)[0].data.o.total === 292.07
+expect getCurrentPages().slice(-1)[0].data.o.receiver === '王秀兰'
+expect getCurrentPages().slice(-1)[0].data.o.items[0].card === '谢谢你一直在我身边。'
+expect getCurrentPages().slice(-1)[0].data.st.canCancel === true
+expect wx.getStorageSync('fl_used_coupons').indexOf('c1') >= 0
+expect wx.getStorageSync('fl_checkout') === ''
+shot target/_polish_shots/order-detail.png
+# 取消：券退回
+tap .h-cancel
+modal ok
+wait 300
+expect getCurrentPages().slice(-1)[0].data.o.status === 'cancel'
+expect wx.getStorageSync('fl_used_coupons').indexOf('c1') < 0
+toast 已取消
+# 再来一单：原规格回到购物车
+tap .h-again
+route pages/cart/cart
+expect getCurrentPages().slice(-1)[0].data.list.some(function (x) { return x.key === 'f4-19-mist' && x.qty === 2 && x.card === '谢谢你一直在我身边。'; })
+shot target/_polish_shots/cart.png
+
+# 已签收的订单：评价，评价出现在花束详情里
+eval wx.switchTab({ url: '/pages/orders/orders' })
+route pages/orders/orders
+tapn 3 .tab
+exists .act-rate
+shot target/_polish_shots/orders.png
+tap .act-rate
+route pages/order-detail/order-detail
+tapn 3 .star
+tapn 0 .tag
+type .rate-input => 百合很香，奶奶很喜欢
+blur
+tap .rate-btn
+expect getCurrentPages().slice(-1)[0].data.o.rating.stars === 4
+expect getCurrentPages().slice(-1)[0].data.o.rating.tags[0] === '花材新鲜'
+toast 感谢评价
+shot target/_polish_shots/rated.png
+tap .it
+route pages/detail/detail
+expect getCurrentPages().slice(-1)[0].data.reviews[0].mine === true
+back
+back
+route pages/orders/orders
+
+# 收花地址：新增 → 编辑 → 删除
+eval wx.navigateTo({ url: '/pages/address/address' })
+route pages/address/address
+count 2 .addr
+tap .b-add
+route pages/address-edit/address-edit
+type .f-name => 周小满
+type .f-phone => 13912345678
+blur
+picker .f-region
+pickok
+type .f-detail => 阜通东大街 6 号 2 号楼 301
+blur
+tapn 2 .chip
+shot target/_polish_shots/address-edit.png
+tap .save
+wait 600
+route pages/address/address
+count 3 .addr
+expect wx.getStorageSync('fl_addrs')[0].name === '周小满'
+expect wx.getStorageSync('fl_addrs')[0].tag === '医院'
+expect wx.getStorageSync('fl_addrs')[0].region.length === 3
+shot target/_polish_shots/address.png
+tapn 0 .edit
+route pages/address-edit/address-edit
+tap .del
+modal ok
+wait 400
+route pages/address/address
+count 2 .addr
+back
+
+# 纪念日：新增 → 改名 → 删除；「去订花」按用途筛
+eval wx.switchTab({ url: '/pages/mine/mine' })
+route pages/mine/mine
+count 2 .date
+tap .d-add
+route pages/anniv/anniv
+tapn 1 .q-chip
+expect getCurrentPages().slice(-1)[0].data.kind === 'birthday'
+picker .f-date
+pickok
+tap .save
+wait 600
+route pages/mine/mine
+count 3 .date
+expect wx.getStorageSync('fl_dates').some(function (d) { return d.name === '爸爸生日' && d.kind === 'birthday'; })
+expect getCurrentPages().slice(-1)[0].data.dates[1].name === '爸爸生日'
+expect getCurrentPages().slice(-1)[0].data.dates[1].left === 7
+shot target/_polish_shots/mine.png
+tapn 1 .date
+route pages/anniv/anniv
+type .f-name => 六十大寿
+tapn 0 .k-chip
+tap .save
+wait 600
+route pages/mine/mine
+expect getCurrentPages().slice(-1)[0].data.dates[1].name === '爸爸生日六十大寿'
+expect getCurrentPages().slice(-1)[0].data.dates[1].kind === 'love'
+tapn 1 .date
+shot target/_polish_shots/anniv.png
+tap .del
+modal ok
+wait 600
+route pages/mine/mine
+count 2 .date
+tapn 1 .d-go
+route pages/index/index
+expect getCurrentPages()[0].data.use === 'love'
+eval wx.switchTab({ url: '/pages/mine/mine' })
+
+# 券、会员、客服
+tapn 3 .o
+route pages/coupons/coupons
+count 3 .cp
+tapn 2 .tab
+count 1 .cp
+shot target/_polish_shots/coupons.png
+back
+tapn 2 .mi
+modal?
+modal ok
+tapn 3 .mi
+sheet 4 5
+modal?
+modal ok
+tapn 3 .mi
+sheet 0 5
+modal?
+modal ok
+
+# 结算时取消支付：留在结算页、不生成订单；探望花束自动用上探望券
+eval wx.navigateTo({ url: '/pages/detail/detail?id=f6' })
+route pages/detail/detail
+tap .f-buy
+route pages/confirm/confirm
+expect getCurrentPages().slice(-1)[0].data.p.coupon.id === 'c3'
+expect getCurrentPages().slice(-1)[0].data.p.total === 168.55
+tap .pay
+modal?
+modal cancel
+toast 已取消支付
+route pages/confirm/confirm
+expect wx.getStorageSync('fl_orders').length === 3
+noerr

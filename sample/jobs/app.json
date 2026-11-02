@@ -4,8 +4,15 @@
     "pages/job/job",
     "pages/company/company",
     "pages/messages/messages",
+    "pages/chat/chat",
     "pages/resume/resume",
-    "pages/mine/mine"
+    "pages/mine/mine",
+    "pages/applications/applications",
+    "pages/interviews/interviews",
+    "pages/favs/favs",
+    "pages/intent/intent",
+    "pages/settings/settings",
+    "pages/help/help"
   ],
   "window": {
     "navigationBarTitleText": "职聘直通",
@@ -20,9 +27,24 @@
     "backgroundColor": "#ffffff",
     "borderStyle": "white",
     "list": [
-      { "pagePath": "pages/index/index", "text": "职位", "iconPath": "images/tab-home.png", "selectedIconPath": "images/tab-home-on.png" },
-      { "pagePath": "pages/messages/messages", "text": "消息", "iconPath": "images/tab-msg.png", "selectedIconPath": "images/tab-msg-on.png" },
-      { "pagePath": "pages/mine/mine", "text": "我的", "iconPath": "images/tab-mine.png", "selectedIconPath": "images/tab-mine-on.png" }
+      {
+        "pagePath": "pages/index/index",
+        "text": "职位",
+        "iconPath": "images/tab-home.png",
+        "selectedIconPath": "images/tab-home-on.png"
+      },
+      {
+        "pagePath": "pages/messages/messages",
+        "text": "消息",
+        "iconPath": "images/tab-msg.png",
+        "selectedIconPath": "images/tab-msg-on.png"
+      },
+      {
+        "pagePath": "pages/mine/mine",
+        "text": "我的",
+        "iconPath": "images/tab-mine.png",
+        "selectedIconPath": "images/tab-mine-on.png"
+      }
     ]
   }
 }

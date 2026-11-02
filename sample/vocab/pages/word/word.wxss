@@ -1,0 +1,10 @@
+.head { display: flex; flex-direction: column; }
+.w { font-size: 64rpx; font-weight: bold; margin-bottom: 8rpx; }
+.mean { font-size: 32rpx; margin: 24rpx 0 12rpx; }
+.ex { background: #f4f6fb; border-radius: 16rpx; padding: 24rpx; margin-top: 16rpx; display: flex; flex-direction: column; }
+.ex-en { font-size: 28rpx; line-height: 42rpx; color: #2d3340; }
+.ex-zh { font-size: 26rpx; color: #8a90a0; margin-top: 8rpx; line-height: 38rpx; }
+.kv { padding: 18rpx 0; border-bottom: 1rpx solid #eef0f5; font-size: 26rpx; }
+.bad { color: #f0566a; }
+.ops { justify-content: space-between; }
+.half { width: 47%; }

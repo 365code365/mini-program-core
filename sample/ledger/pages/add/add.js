@@ -5,8 +5,9 @@ const KEYS = ['1', '2', '3', 'del', '4', '5', '6', 'clear', '7', '8', '9', 'agai
 Page({
   data: {
     editId: '',
+    formSeq: 0,
     type: 'out',
-    cats: store.CATS.out,
+    cats: [],
     cat: '餐饮',
     amount: '0',
     note: '',
@@ -20,12 +21,19 @@ Page({
       const r = store.get(q.id)
       if (r) {
         wx.setNavigationBarTitle({ title: '编辑账单' })
-        this.setData({ editId: r.id, type: r.type, cats: store.CATS[r.type], cat: r.cat, amount: String(r.amount), note: r.note || '', date: r.date, dateText: this.fmt(r.date) })
+        this.setData({ editId: r.id, type: r.type, cat: r.cat, amount: String(r.amount), note: r.note || '', date: r.date, dateText: this.fmt(r.date) })
         return
       }
     }
     this.setData({ date: today, dateText: this.fmt(today) })
   },
+  // 分类管理页回来：重读分类；选中的分类被删了就退回第一个
+  onShow() {
+    const cats = store.cats(this.data.type)
+    const keep = cats.some(c => c.name === this.data.cat) || (this.data.editId && this.data.cat)
+    this.setData({ cats: cats, cat: keep ? this.data.cat : cats[0].name })
+  },
+  onManage() { wx.navigateTo({ url: '/pages/cats/cats?type=' + this.data.type }) },
   fmt(ds) {
     const d = store.parseDate(ds)
     const label = ds === store.today() ? '今天' : store.WEEK[d.getDay()]
@@ -34,7 +42,8 @@ Page({
   onType(e) {
     const t = e.currentTarget.dataset.t
     if (t === this.data.type) return
-    this.setData({ type: t, cats: store.CATS[t], cat: store.CATS[t][0].name })
+    const cats = store.cats(t)
+    this.setData({ type: t, cats: cats, cat: cats[0].name })
   },
   onCat(e) { this.setData({ cat: e.currentTarget.dataset.name }) },
   onNote(e) { this.setData({ note: e.detail.value }) },
@@ -61,10 +70,22 @@ Page({
   save(again) {
     const v = parseFloat(this.data.amount)
     if (!(v > 0)) { wx.showToast({ title: '请输入金额', icon: 'none' }); return }
+    const before = store.monthUsage()
     store.upsert({ id: this.data.editId || undefined, type: this.data.type, cat: this.data.cat, amount: Math.round(v * 100) / 100, note: this.data.note.trim(), date: this.data.date })
+    const after = store.monthUsage()
+    // 这一笔让本月支出跨过 80% / 100%：弹预算提醒（预算页的「超支提醒」关掉就只在跨 100% 时提醒）
+    const remind = wx.getStorageSync('ledger_remind') !== false
+    let warn = ''
+    if (before < 1 && after >= 1) warn = '本月支出已超出预算 ¥' + store.money((after - 1) * store.getBudget())
+    else if (remind && before < 0.8 && after >= 0.8) warn = '本月预算已用 ' + Math.round(after * 100) + '%，剩余 ¥' + store.money((1 - after) * store.getBudget())
     if (again) {
-      wx.showToast({ title: '已记下，继续', icon: 'success' })
-      this.setData({ amount: '0', note: '' })
+      this.setData({ amount: '0', note: '', formSeq: (this.data.formSeq || 0) + 1 })
+      if (warn) wx.showModal({ title: '预算提醒', content: warn, showCancel: false, confirmText: '知道了' })
+      else wx.showToast({ title: '已记下，继续', icon: 'success' })
+      return
+    }
+    if (warn) {
+      wx.showModal({ title: '预算提醒', content: warn, showCancel: false, confirmText: '知道了', complete: () => wx.navigateBack() })
       return
     }
     wx.showToast({ title: this.data.editId ? '已修改' : '记账成功', icon: 'success' })

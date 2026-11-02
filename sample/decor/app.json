@@ -1,0 +1,34 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/designers/designers",
+    "pages/budget/budget",
+    "pages/diary/diary",
+    "pages/mine/mine",
+    "pages/case/case",
+    "pages/designer/designer",
+    "pages/layout/layout",
+    "pages/booking/booking",
+    "pages/progress/progress"
+  ],
+  "window": {
+    "navigationBarTitleText": "好宅装修",
+    "navigationBarBackgroundColor": "#f6f4f0",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f6f4f0"
+  },
+  "tabBar": {
+    "color": "#a3a9b3",
+    "selectedColor": "#3a7d6c",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "首页", "iconPath": "images/tab/home.png", "selectedIconPath": "images/tab/home-on.png" },
+      { "pagePath": "pages/designers/designers", "text": "设计师", "iconPath": "images/tab/designer.png", "selectedIconPath": "images/tab/designer-on.png" },
+      { "pagePath": "pages/budget/budget", "text": "算预算", "iconPath": "images/tab/budget.png", "selectedIconPath": "images/tab/budget-on.png" },
+      { "pagePath": "pages/diary/diary", "text": "装修日记", "iconPath": "images/tab/diary.png", "selectedIconPath": "images/tab/diary-on.png" },
+      { "pagePath": "pages/mine/mine", "text": "我的", "iconPath": "images/tab/user.png", "selectedIconPath": "images/tab/user-on.png" }
+    ],
+    "custom": true
+  }
+}

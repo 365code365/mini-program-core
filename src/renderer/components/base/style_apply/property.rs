@@ -38,7 +38,7 @@ pub(super) fn apply_style_property(
                 if matches!(value, StyleValue::Auto) {
                     // margin: auto -> 居中
                     ts.margin = Rect { top: auto(), right: auto(), bottom: auto(), left: auto() };
-                } else if let Some([t, r, b, l]) = box_sides_px(value, ctx) {
+                } else if let Some(m) = margin_sides_with_auto(value, ctx, sf) { ts.margin = m; } else if let Some([t, r, b, l]) = box_sides_px(value, ctx) {
                     ts.margin = Rect {
                         top: length(t * sf), right: length(r * sf),
                         bottom: length(b * sf), left: length(l * sf),

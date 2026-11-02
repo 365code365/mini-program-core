@@ -1,0 +1,39 @@
+<view class="hd">
+  <image class="av" src="/images/avatar.jpg" mode="aspectFill"></image>
+  <view class="hd-b"><text class="nm">云川观众</text><text class="hd-s">本馆实行实名预约 · 免费开放</text></view>
+</view>
+<view class="stats">
+  <view class="s" bindtap="onF" data-i="1"><text class="s-n">{{stats.book}}</text><text class="s-t">待使用</text></view>
+  <view class="s" bindtap="openFav"><text class="s-n">{{stats.fav}}</text><text class="s-t">收藏</text></view>
+  <view class="s" bindtap="openHis"><text class="s-n">{{stats.his}}</text><text class="s-t">足迹</text></view>
+  <view class="s" bindtap="openCal"><text class="s-n">{{events.length}}</text><text class="s-t">活动报名</text></view>
+</view>
+
+<view class="sec-h"><text class="sec-t">我的预约</text><text class="sec-more" bindtap="book">新预约 ›</text></view>
+<view class="fs">
+  <text wx:for="{{filters}}" wx:key="*this" class="f {{f === index ? 'f-on' : ''}}" data-i="{{index}}" bindtap="onF">{{item}}</text>
+</view>
+<view wx:if="{{!shown.length}}" class="card none">
+  <text class="muted">{{bookings.length ? '没有' + filters[f] + '的预约' : '还没有预约记录，预约后凭入馆码进馆'}}</text>
+  <view wx:if="{{!bookings.length}}" class="btn-ghost none-b" bindtap="book">去预约</view>
+</view>
+<view wx:for="{{shown}}" wx:key="id" class="card bk" data-id="{{item.id}}" bindtap="openTicket">
+  <view class="bk-l">
+    <text class="bk-t">{{item.date}} {{item.slot}}</text>
+    <text class="muted">{{item.visitors.length}} 人 · 预约号 {{item.code}}</text>
+  </view>
+  <text class="st {{item.status === '待使用' ? 'st-on' : ''}}">{{item.status}}</text>
+</view>
+
+<view class="sec-h"><text class="sec-t">已报名活动</text></view>
+<view wx:if="{{!events.length}}" class="card none"><text class="muted">还没有报名活动，去展览日历看看</text></view>
+<view wx:for="{{events}}" wx:key="k" class="card ev" bindtap="openCal">
+  <text class="ev-t">{{item.title}}</text>
+  <text class="muted">{{item.date}} {{item.time}} · {{item.place}}</text>
+</view>
+
+<view class="card menu">
+  <view class="mi" bindtap="call"><text>联系服务台</text><text class="muted">0571-88886666 ›</text></view>
+  <view class="mi" bindtap="clearAll"><text>清除本地数据</text><text class="muted">›</text></view>
+</view>
+<view class="tab-gap"></view>

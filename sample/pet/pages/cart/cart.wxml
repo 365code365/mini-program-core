@@ -1,18 +1,19 @@
 <view class="addr" bindtap="pickAddr">
   <view class="pin"><view class="pin-in"></view></view>
-  <view class="addr-m">
+  <view wx:if="{{addr}}" class="addr-m">
     <text class="addr-t">{{addr.name}} {{addr.phone}}</text>
     <text class="muted">{{addr.text}}</text>
   </view>
+  <view wx:else class="addr-m"><text class="addr-t">添加收货地址</text><text class="muted">下单前请先填写收货地址</text></view>
   <view class="chev"></view>
 </view>
 
 <view class="card list" wx:if="{{items.length}}">
   <view class="it" wx:for="{{items}}" wx:key="key">
     <view class="ck {{item.checked ? 'on' : ''}}" data-index="{{index}}" bindtap="toggle"><view class="ck-v" wx:if="{{item.checked}}"></view></view>
-    <image class="it-img" src="{{item.g.img}}" mode="aspectFill"></image>
+    <image class="it-img" src="{{item.g.img}}" mode="aspectFill" data-id="{{item.id}}" bindtap="goGoods"></image>
     <view class="it-m">
-      <text class="it-n">{{item.g.name}}</text>
+      <text class="it-n" data-id="{{item.id}}" bindtap="goGoods">{{item.g.name}}</text>
       <text class="it-spec">{{item.spec}}</text>
       <view class="row between">
         <text class="price"><text class="yen">¥</text>{{item.g.price}}</text>

@@ -1,0 +1,27 @@
+<view class="bg">
+  <view wx:if="{{!o}}" class="empty">
+    <view class="empty-ic"><text class="empty-ic-t">?</text></view>
+    <text class="empty-t">没有找到入场码，请到订单里查看</text>
+    <view class="btn-ghost empty-btn ghost-w" bindtap="toOrders"><text>我的订单</text></view>
+  </view>
+  <view wx:else class="ticket col">
+    <text class="t-n">{{o.venueName}}</text>
+    <text class="muted">{{o.dateText}} · {{o.sportName}}</text>
+    <view class="segs">
+      <text wx:for="{{o.segments}}" wx:key="text" class="seg">{{item.courtLabel}} {{item.text}}</text>
+    </view>
+    <view class="qr-box">
+      <canvas type="2d" id="qr" class="qr" style="width: {{size}}px; height: {{size}}px;" bindtap="refresh"></canvas>
+      <view wx:if="{{!valid}}" class="qr-mask"><text class="qr-mask-t">{{o.stText}}</text></view>
+    </view>
+    <text class="code">{{o.code}}</text>
+    <text wx:if="{{valid}}" class="muted">{{sec}} 秒后自动刷新 · 点码立即刷新</text>
+    <text wx:else class="muted">此码已失效</text>
+    <view class="dash"></view>
+    <view class="row tips">
+      <text class="muted flex1">联系人 {{o.contact.name}}</text>
+      <text class="link" bindtap="toOrder">订单详情 ›</text>
+    </view>
+    <view wx:if="{{valid}}" class="btn-ghost in" bindtap="checkin"><text>前台已核验，我已入场</text></view>
+  </view>
+</view>

@@ -1,0 +1,45 @@
+<view class="head">
+  <view class="between h-row" bindtap="switchStore">
+    <text class="h-label">服务门店</text>
+    <text class="h-val">{{store ? store.short : '定位中…'}} ›</text>
+  </view>
+  <view class="between h-row" bindtap="switchCar">
+    <text class="h-label">服务车辆</text>
+    <text class="h-val">{{car ? car.plateText + ' ' + car.name : '添加车辆 ›'}}</text>
+  </view>
+</view>
+<view class="body row">
+  <view class="side">
+    <view class="side-item {{cat === item.id ? 'side-on' : ''}}" wx:for="{{cats}}" wx:key="id" data-id="{{item.id}}" bindtap="onCat">
+      <text>{{item.name}}</text>
+    </view>
+  </view>
+  <view class="list flex1">
+    <view class="it row" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="toggle">
+      <view class="col flex1">
+        <view class="row">
+          <text class="it-name">{{item.name}}</text>
+          <text class="hot" wx:if="{{item.hot}}">热门</text>
+        </view>
+        <text class="sub">{{item.desc}}</text>
+        <view class="row it-ft">
+          <text class="price">{{item.price ? '¥' + item.price : '免费'}}</text>
+          <text class="sub it-mins">约 {{item.mins}} 分钟</text>
+        </view>
+      </view>
+      <view class="ck {{item.on ? 'ck-on' : ''}}">
+        <text class="ck-tx" wx:if="{{item.on}}">✓</text>
+      </view>
+    </view>
+  </view>
+</view>
+<view class="footer-bar">
+  <view class="col flex1">
+    <view class="row">
+      <text>已选 {{count}} 项 · 合计 </text>
+      <text class="price">¥{{total}}</text>
+    </view>
+    <text class="sub">预计占用工位 {{mins}} 分钟，到店付款</text>
+  </view>
+  <view class="btn nx {{count ? '' : 'nx-off'}}" bindtap="next">去预约</view>
+</view>

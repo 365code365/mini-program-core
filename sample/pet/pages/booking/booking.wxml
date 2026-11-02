@@ -1,6 +1,9 @@
+<view class="segs">
+  <view class="seg {{cat === item.key ? 'on' : ''}}" wx:for="{{cats}}" wx:key="key" data-k="{{item.key}}" bindtap="pickCat"><text>{{item.name}}</text></view>
+</view>
 <view class="card">
   <text class="sec-title">为谁预约</text>
-  <view class="pets">
+  <view wx:if="{{pets.length}}" class="pets">
     <view class="pc {{petId === item.id ? 'on' : ''}}" wx:for="{{pets}}" wx:key="id" data-id="{{item.id}}" bindtap="pickPet">
       <view class="pet-av sm" style="background: {{item.color}};"><text>{{item.sx}}</text></view>
       <view class="pc-m">
@@ -10,12 +13,12 @@
       <view class="ok" wx:if="{{petId === item.id}}"><view class="ok-v"></view></view>
     </view>
   </view>
+  <view wx:else class="no-pet" bindtap="goAddPet"><text>还没有宠物档案，先添加一只</text><view class="chev"></view></view>
 </view>
-
 <view class="card">
   <view class="row between">
     <text class="sec-title">服务项目</text>
-    <text class="muted">可多选</text>
+    <text class="muted">{{cat === 'stay' ? '按晚计费' : '可多选'}}</text>
   </view>
   <view class="svc {{item.on ? 'on' : ''}}" wx:for="{{svcs}}" wx:key="id" data-index="{{index}}" bindtap="toggleSvc">
     <view class="box {{item.on ? 'on' : ''}}"><view class="box-v" wx:if="{{item.on}}"></view></view>
@@ -23,28 +26,37 @@
       <text class="svc-n">{{item.name}}</text>
       <text class="muted">{{item.desc}}</text>
     </view>
-    <text class="price"><text class="yen">¥</text>{{item.price}}</text>
+    <text class="price"><text class="yen">¥</text>{{item.price}}{{item.perNight ? '/晚' : ''}}</text>
   </view>
 </view>
-
 <view class="card form">
   <view class="f">
     <text class="f-k">服务门店</text>
-    <picker class="f-pk" mode="selector" range="{{storeNames}}" value="{{storeIdx}}" bindchange="onStore">
-      <view class="f-v"><text>{{storeNames[storeIdx]}}</text><view class="chev"></view></view>
+    <picker class="f-pk f-store" mode="selector" range="{{storeNames}}" value="{{storeIdx}}" bindchange="onStore">
+      <view class="f-v"><text class="f-vt">{{storeNames[storeIdx]}}</text><view class="chev"></view></view>
     </picker>
   </view>
   <view class="f">
-    <text class="f-k">预约日期</text>
-    <picker class="f-pk" mode="date" value="{{date}}" start="{{today}}" end="{{maxDate}}" bindchange="onDate">
+    <text class="f-k">{{cat === 'stay' ? '入住日期' : '预约日期'}}</text>
+    <picker class="f-pk f-date" mode="date" value="{{date}}" start="{{today}}" end="{{maxDate}}" bindchange="onDate">
       <view class="f-v"><text>{{date}} {{week}}</text><view class="chev"></view></view>
     </picker>
   </view>
   <view class="f">
     <text class="f-k">到店时间</text>
-    <picker class="f-pk" mode="time" value="{{time}}" start="09:00" end="20:00" bindchange="onTime">
+    <picker class="f-pk f-time" mode="time" value="{{time}}" start="{{timeStart}}" end="{{timeEnd}}" bindchange="onTime">
       <view class="f-v"><text>{{time}}</text><view class="chev"></view></view>
     </picker>
+  </view>
+  <view wx:if="{{cat === 'stay'}}" class="f">
+    <text class="f-k">寄养晚数</text>
+    <view class="f-sw">
+      <view class="stepper">
+        <view class="st-b n-dec" bindtap="nightsDec"><text>－</text></view>
+        <text class="st-v">{{nights}}</text>
+        <view class="st-b n-inc" bindtap="nightsInc"><text>＋</text></view>
+      </view>
+    </view>
   </view>
   <view class="f">
     <text class="f-k">上门接送</text>
@@ -55,12 +67,31 @@
     <input class="f-in" placeholder="如：怕吹风机、有皮肤病史" placeholder-style="color: #c4bcb4;" value="{{remark}}" bindinput="onRemark" maxlength="40" />
   </view>
 </view>
+<view wx:if="{{hasS1}}" class="card">
+  <text class="sec-title">支付方式</text>
+  <view class="pay-way {{payBy === 'wechat' ? 'on' : ''}}" data-by="wechat" bindtap="pickPay">
+    <view class="pw-ic wx"><text>微</text></view>
+    <view class="pw-m"><text class="pw-n">微信支付</text><text wx:if="{{newbie}}" class="muted">新客首单基础洗护立减 ¥30</text></view>
+    <view class="radio {{payBy === 'wechat' ? 'on' : ''}}"><view class="radio-in"></view></view>
+  </view>
+  <view class="pay-way {{payBy === 'card' ? 'on' : ''}} {{cardLeft ? '' : 'dis'}}" data-by="card" bindtap="pickPay">
+    <view class="pw-ic card"><text>卡</text></view>
+    <view class="pw-m"><text class="pw-n">洗护次卡（余 {{cardLeft}} 次）</text><text class="muted">抵扣 1 次基础洗护，其余项目微信支付</text></view>
+    <view class="radio {{payBy === 'card' ? 'on' : ''}}"><view class="radio-in"></view></view>
+  </view>
+</view>
+<view class="card lines">
+  <view class="line"><text class="muted">服务金额</text><text>¥{{base}}</text></view>
+  <view wx:if="{{pickup}}" class="line"><text class="muted">上门接送</text><text>¥20</text></view>
+  <view wx:if="{{newbieCut}}" class="line"><text class="muted">新客洗护首单立减</text><text class="cut">-¥{{newbieCut}}</text></view>
+  <view wx:if="{{cardCut}}" class="line"><text class="muted">洗护次卡抵扣 1 次</text><text class="cut">-¥{{cardCut}}</text></view>
+  <text class="muted note">服务开始前 2 小时可免费取消，费用原路退回、洗护卡次数退回</text>
+</view>
 <view style="height: 200rpx;"></view>
-
 <view class="bar">
   <view class="bar-l">
-    <view class="row"><text class="muted">合计 </text><text class="price total"><text class="yen">¥</text>{{total}}</text></view>
-    <text class="muted">预计 {{totalMin}} 分钟 · 到店支付</text>
+    <view class="row"><text class="muted">实付 </text><text class="price total"><text class="yen">¥</text>{{pay}}</text></view>
+    <text class="muted">{{cat === 'stay' ? '共 ' + nights + ' 晚' : '预计 ' + totalMin + ' 分钟'}}</text>
   </view>
-  <view class="btn bar-btn" bindtap="submit"><text>提交预约</text></view>
+  <view class="btn bar-btn" bindtap="submit"><text>{{pay > 0 ? '支付并预约' : '确认预约'}}</text></view>
 </view>

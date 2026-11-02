@@ -1,0 +1,32 @@
+<view class="seg row">
+  <view class="seg-item {{tab === index ? 'on' : ''}}" wx:for="{{tabs}}" wx:key="key" bindtap="onTab" data-i="{{index}}">{{item.text}} {{counts[item.key]}}</view>
+</view>
+<view class="card bk" wx:for="{{shown}}" wx:key="id">
+  <view class="row top" bindtap="onHouse" data-id="{{item.id}}">
+    <image class="bk-img" src="{{item.cover}}" mode="aspectFill" />
+    <view class="flex1 bk-main">
+      <view class="row between">
+        <text class="bk-name">{{item.community}}</text>
+        <text class="badge {{item.status === 'done' ? 'done' : (item.status === 'cancelled' ? 'gray' : '')}}">{{item.statusText}}</text>
+      </view>
+      <text class="sub">{{item.layout}} · {{item.area}}㎡ · 经纪人 {{item.agent}}</text>
+      <text class="bk-time {{item.status === 'cancelled' ? 'del' : ''}}">{{item.time}}</text>
+    </view>
+  </view>
+  <view class="bk-who">
+    <text class="sub">{{item.name}}{{item.gender ? ' 女士' : ' 先生'}} · {{item.phone}} · {{item.people}}{{item.pickup ? ' · 需接送' : ''}}</text>
+    <text class="sub note" wx:if="{{item.note}}">备注：{{item.note}}</text>
+  </view>
+  <view class="bk-foot row">
+    <view class="flex1"></view>
+    <text class="op" bindtap="onCall" data-id="{{item.id}}">联系经纪人</text>
+    <text class="op" wx:if="{{item.status === 'pending'}}" bindtap="onCancel" data-id="{{item.id}}">取消预约</text>
+    <text class="op main" wx:if="{{item.status === 'pending'}}" bindtap="onReschedule" data-id="{{item.id}}">改约</text>
+    <text class="op main" wx:if="{{item.status !== 'pending'}}" bindtap="onAgain" data-id="{{item.id}}">再次预约</text>
+  </view>
+</view>
+<view class="empty-box" wx:if="{{!shown.length}}">
+  <text class="sub">{{tab === 0 ? '还没有看房预约' : '没有' + tabs[tab].text + '的预约'}}</text>
+  <view class="empty-btn" bindtap="onGo">去找房</view>
+</view>
+<view class="safe"></view>

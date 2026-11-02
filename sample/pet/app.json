@@ -6,7 +6,14 @@
     "pages/mine/mine",
     "pages/booking/booking",
     "pages/goods/goods",
-    "pages/cart/cart"
+    "pages/cart/cart",
+    "pages/pet-edit/pet-edit",
+    "pages/record-edit/record-edit",
+    "pages/orders/orders",
+    "pages/order-detail/order-detail",
+    "pages/favs/favs",
+    "pages/address/address",
+    "pages/address-edit/address-edit"
   ],
   "window": {
     "navigationBarTitleText": "萌宠家",

@@ -1,5 +1,5 @@
 <view class="top row">
-  <view class="loc row"><view class="pin"></view><text class="loc-tx">上海 · 徐汇区</text></view>
+  <view class="loc row" bindtap="onLoc"><view class="pin"></view><text class="loc-tx">{{loc}}</text><view class="loc-dn"></view></view>
   <view class="promise row"><text class="pm">3 小时送达</text><text class="pm">不满意包退</text></view>
 </view>
 <view class="banner-wrap">
@@ -11,12 +11,20 @@
           <text class="b-sub">{{item.sub}}</text>
           <view class="b-btn"><text>{{item.btn}}</text></view>
         </view>
-        <image class="b-img" src="{{item.img}}" mode="aspectFill"></image>
+        <image class="b-img" src="{{item.img}}" mode="aspectFill" />
       </view>
     </swiper-item>
   </swiper>
 </view>
 
+<view wx:if="{{remind}}" class="remind row" bindtap="onRemind">
+  <view class="rm-ic"><text>{{remind.left ? remind.left : '今'}}</text></view>
+  <view class="flex1">
+    <text class="rm-t">{{remind.left ? remind.name + '还有 ' + remind.left + ' 天' : '今天是' + remind.name}}</text>
+    <text class="rm-s">提前订花不错过 · 为你挑好了{{remind.useName}}鲜花</text>
+  </view>
+  <text class="rm-go">去挑选</text>
+</view>
 <view class="uses">
   <view class="use {{use === item.key ? 'on' : ''}}" wx:for="{{uses}}" wx:key="key" data-k="{{item.key}}" bindtap="onUse">
     <view class="use-ic" style="background: {{item.bg}};"><text>{{item.name}}</text></view>
@@ -33,7 +41,7 @@
 <view class="cols">
   <view class="col">
     <view class="goods" wx:for="{{left}}" wx:key="id" data-id="{{item.id}}" bindtap="goDetail">
-      <image class="g-img" src="{{item.img}}" mode="aspectFill"></image>
+      <image class="g-img" src="{{item.img}}" mode="aspectFill" />
       <view class="g-body">
         <text class="g-name">{{item.name}}</text>
         <view class="row g-tags"><text wx:if="{{item.tag}}" class="g-tag">{{item.tag}}</text><text class="g-sold">已售 {{item.soldTx}}</text></view>
@@ -46,7 +54,7 @@
   </view>
   <view class="col">
     <view class="goods" wx:for="{{right}}" wx:key="id" data-id="{{item.id}}" bindtap="goDetail">
-      <image class="g-img" src="{{item.img}}" mode="aspectFill"></image>
+      <image class="g-img" src="{{item.img}}" mode="aspectFill" />
       <view class="g-body">
         <text class="g-name">{{item.name}}</text>
         <view class="row g-tags"><text wx:if="{{item.tag}}" class="g-tag">{{item.tag}}</text><text class="g-sold">已售 {{item.soldTx}}</text></view>
@@ -60,6 +68,6 @@
 </view>
 <view class="tab-gap"></view>
 <view class="float-cart" bindtap="goCart">
-  <image class="fc-ic" src="/images/tab/cart.png"></image>
+  <image class="fc-ic" src="/images/tab/cart.png" />
   <view wx:if="{{cartCount > 0}}" class="badge"><text>{{cartCount}}</text></view>
 </view>

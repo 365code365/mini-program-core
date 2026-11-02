@@ -7,7 +7,7 @@
     <text class="sum-num">{{weekHours}}<text class="sum-unit">h</text></text>
     <text class="sum-label">专注时长</text>
   </view>
-  <view class="sum-card flex1" style="background: linear-gradient(135deg, #3fd09a, #19a974)">
+  <view class="sum-card flex1 to-done" style="background: linear-gradient(135deg, #3fd09a, #19a974)" bindtap="onDone">
     <text class="sum-num">{{doneCount}}</text>
     <text class="sum-label">完成待办</text>
   </view>
@@ -48,7 +48,10 @@
 </view>
 
 <view class="card">
-  <text class="title">专注分布</text>
+  <view class="row between">
+    <text class="title">专注分布</text>
+    <text class="sub link to-records" bindtap="onRecords">全部记录 ›</text>
+  </view>
   <view class="dist" wx:for="{{dist}}" wx:key="title">
     <view class="row between">
       <text class="dist-title">{{item.title}}</text>
@@ -56,5 +59,6 @@
     </view>
     <view class="dist-bar"><view class="dist-fill" style="width: {{item.pct}}%; background: {{item.color}}"></view></view>
   </view>
+  <text class="sub dist-empty" wx:if="{{!dist.length}}">本周还没有专注记录，去「专注」开始第一个番茄</text>
 </view>
 <view class="tab-safe"></view>

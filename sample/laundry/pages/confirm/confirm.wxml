@@ -1,0 +1,80 @@
+<view class="page">
+  <view class="card addr row" bindtap="pickAddr" hover-class="hover">
+    <view class="a-ic"><text>取</text></view>
+    <view wx:if="{{addr}}" class="flex1">
+      <view class="row"><text class="a-name">{{addr.name}}</text><text class="sub">{{addr.phoneMask}}</text></view>
+      <text class="a-d">{{addr.region}} {{addr.community}} {{addr.room}}</text>
+    </view>
+    <view wx:else class="flex1"><text class="a-empty">添加上门取件地址</text></view>
+    <text class="sub">›</text>
+  </view>
+
+  <view class="card row" bindtap="openTime" hover-class="hover">
+    <text class="l">上门取件时间</text>
+    <text class="flex1 v {{timeText ? '' : 'ph'}}">{{timeText || '请选择时段'}}</text>
+    <text class="sub">›</text>
+  </view>
+
+  <view class="card">
+    <view class="row between"><text class="title">衣物清单</text><text class="sub" bindtap="editItems">修改</text></view>
+    <view class="ln row" wx:for="{{sum.lines}}" wx:key="id">
+      <text class="flex1">{{item.name}}</text>
+      <text class="sub ln-q">×{{item.qty}}</text>
+      <text class="ln-p">¥{{item.sum}}</text>
+    </view>
+    <text class="sub tip">实际件数以取件员现场清点为准，多退少补</text>
+  </view>
+
+  <view class="card">
+    <text class="title">加购服务</text>
+    <checkbox-group bindchange="onAddons">
+      <label class="ad row" wx:for="{{addons}}" wx:key="key">
+        <checkbox value="{{item.key}}" checked="{{item.on}}" color="#1e8cf0"></checkbox>
+        <text class="flex1 ad-t">{{item.name}}</text>
+        <text class="{{item.price ? 'price' : 'sub'}}">{{item.price ? '+¥' + item.price : '免费'}}</text>
+      </label>
+    </checkbox-group>
+  </view>
+
+  <view class="card">
+    <view class="row" bindtap="pickCoupon" hover-class="hover">
+      <text class="l">优惠券</text>
+      <text class="flex1 v {{coupon ? 'cp-on' : 'ph'}}">{{coupon ? coupon.title + ' -¥' + coupon.amount : (usableN ? usableN + ' 张可用' : '暂无可用')}}</text>
+      <text class="sub">›</text>
+    </view>
+    <view class="row fee"><text class="flex1 sub">衣物</text><text>¥{{sum.total}}</text></view>
+    <view class="row fee" wx:if="{{addonFee}}"><text class="flex1 sub">加购服务</text><text>¥{{addonFee}}</text></view>
+    <view class="row fee"><text class="flex1 sub">上门取送费</text><text>{{shipFee ? '¥' + shipFee : '免'}}</text></view>
+    <view class="row fee" wx:if="{{coupon}}"><text class="flex1 sub">优惠</text><text class="price">-¥{{coupon.amount}}</text></view>
+  </view>
+
+  <view class="card">
+    <text class="title">备注</text>
+    <textarea class="ta" value="{{remark}}" maxlength="120" placeholder="如：白衬衫领口有油渍、到了请先电话联系" bindinput="onRemark"></textarea>
+    <text class="sub cnt">{{remark.length}}/120</text>
+  </view>
+  <view class="foot-space"></view>
+
+  <view class="bar row">
+    <view class="flex1 row"><text class="sub">实付</text><text class="price pay">¥{{payable}}</text></view>
+    <view class="go" hover-class="hover" bindtap="submit"><text>提交订单</text></view>
+  </view>
+
+  <view wx:if="{{showTime}}" class="mask" bindtap="closeTime"></view>
+  <view wx:if="{{showTime}}" class="sheet">
+    <view class="row between sh-h">
+      <text class="sub" bindtap="closeTime">取消</text>
+      <text class="title">选择取件时段</text>
+      <text class="ok" bindtap="confirmTime">确定</text>
+    </view>
+    <picker-view class="pv" indicator-style="height: 44px;" value="{{pv}}" bindchange="onPv">
+      <picker-view-column>
+        <view class="pv-i" wx:for="{{days}}" wx:key="date"><text>{{item.label}}</text></view>
+      </picker-view-column>
+      <picker-view-column>
+        <view class="pv-i" wx:for="{{slots}}" wx:key="*this"><text>{{item}}</text></view>
+      </picker-view-column>
+    </picker-view>
+    <text class="sub sh-tip">{{todayTip}}</text>
+  </view>
+</view>

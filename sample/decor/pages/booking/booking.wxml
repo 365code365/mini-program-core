@@ -1,0 +1,63 @@
+<view class="page">
+  <view class="top">
+    <text class="top-t">设计师免费上门量房</text>
+    <text class="top-s">量完 3 个工作日内出平面方案与报价，不满意不收费</text>
+  </view>
+
+  <view wx:if="{{caseTitle}}" class="card from"><text class="muted">参考案例：</text><text class="from-t flex1">{{caseTitle}}</text></view>
+
+  <view class="card">
+    <view class="field">
+      <text class="field-label">称呼</text>
+      <input class="field-input" value="{{f.name}}" data-k="name" maxlength="10" placeholder="如：林女士" placeholder-class="placeholder" bindinput="onInput"></input>
+    </view>
+    <text wx:if="{{errs.name}}" class="err">{{errs.name}}</text>
+    <view class="field">
+      <text class="field-label">手机号</text>
+      <input class="field-input" type="number" value="{{f.phone}}" data-k="phone" maxlength="11" placeholder="设计师会电话联系您" placeholder-class="placeholder" bindinput="onInput"></input>
+    </view>
+    <text wx:if="{{errs.phone}}" class="err">{{errs.phone}}</text>
+    <view class="field">
+      <text class="field-label">小区</text>
+      <input class="field-input" value="{{f.community}}" data-k="community" maxlength="30" placeholder="如：滨江 春晓府" placeholder-class="placeholder" bindinput="onInput"></input>
+    </view>
+    <text wx:if="{{errs.community}}" class="err">{{errs.community}}</text>
+    <view class="field">
+      <text class="field-label">面积</text>
+      <input class="field-input" type="digit" value="{{f.area}}" data-k="area" placeholder="建筑面积" placeholder-class="placeholder" bindinput="onInput"></input>
+      <text class="muted">㎡</text>
+    </view>
+    <text wx:if="{{errs.area}}" class="err">{{errs.area}}</text>
+    <picker mode="selector" range="{{houses}}" value="{{houseIdx}}" bindchange="onHouse">
+      <view class="field"><text class="field-label">户型</text><text class="field-value">{{houses[houseIdx]}}</text><text class="arrow">›</text></view>
+    </picker>
+    <picker mode="selector" range="{{budgets}}" value="{{budgetIdx}}" bindchange="onBudget">
+      <view class="field"><text class="field-label">预算</text><text class="field-value">{{customBudget || budgets[budgetIdx]}}</text><text class="arrow">›</text></view>
+    </picker>
+  </view>
+
+  <view class="card">
+    <picker mode="date" value="{{date}}" start="{{start}}" end="{{end}}" bindchange="onDate">
+      <view class="field"><text class="field-label">量房日期</text><text class="field-value">{{date}}</text><text class="arrow">›</text></view>
+    </picker>
+    <view class="slot-box">
+      <text class="field-label">时间段</text>
+      <radio-group class="col flex1" bindchange="onSlot">
+        <label wx:for="{{slots}}" wx:key="*this" class="row slot"><radio value="{{index}}" checked="{{slot === index}}" color="#3a7d6c"></radio><text>{{item}}</text></label>
+      </radio-group>
+    </view>
+    <view class="field" bindtap="pickDesigner" hover-class="item-hover">
+      <text class="field-label">设计师</text>
+      <text class="field-value">{{designer ? designer.name + '（' + designer.title + '）' : '由平台推荐'}}</text>
+      <text class="arrow">›</text>
+    </view>
+    <textarea class="remark" value="{{f.remark}}" data-k="remark" maxlength="120" placeholder="其他需求，如：家里有老人、想做开放式厨房" placeholder-class="placeholder" bindinput="onInput"></textarea>
+  </view>
+
+  <checkbox-group class="agree" bindchange="onAgree">
+    <label class="row"><checkbox value="ok" checked="{{agree}}" color="#3a7d6c"></checkbox><text class="muted">我已阅读并同意</text></label>
+    <text class="link" bindtap="showTerms">《量房服务说明》</text>
+  </checkbox-group>
+  <text wx:if="{{errs.agree}}" class="err err0">{{errs.agree}}</text>
+  <view class="btn submit" bindtap="submit" hover-class="btn-hover">提交预约</view>
+</view>

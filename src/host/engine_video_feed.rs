@@ -122,17 +122,24 @@ impl MiniEngine {
         let fs = video_fullscreen::fullscreen_ref();
         let (pw, ph) = self.pixel_size();
         let mut keys = Vec::new();
-        let views: Vec<Value> = r
-            .query_selector("video", true, &self.interaction)
+        let mut hits = r.query_selector("video", true, &self.interaction);
+        // 同层渲染的直播（engine_live_player.rs）排在视频后面，同一份列表、多一个 `tag`
+        let live_from = hits.len();
+        if host_feed::host_feeds_live() {
+            hits.extend(r.query_selector("live-player", true, &self.interaction));
+        }
+        let views: Vec<Value> = hits
             .into_iter()
-            .filter_map(|v| {
+            .enumerate()
+            .filter_map(|(i, v)| {
                 let key = host_feed::video_key(&v.attrs);
                 if key.is_empty() || keys.contains(&key) {
                     return None;
                 }
                 keys.push(key.clone());
                 let src = v.attrs.get("src").map(|s| s.trim()).unwrap_or("");
-                let mut attrs = v.attrs.clone();
+                let live = i >= live_from;
+                let mut attrs = if live { super::engine_live_player::feed_attrs(&v.attrs, &key) } else { v.attrs.clone() };
                 // 用户按过控制条的静音键：以它为准（宿主按 attrs 里的 muted 设音量）
                 let muted = video_ui::effective_muted(&key, video_ui::attr_flag(&v.attrs, "muted", false));
                 attrs.insert("muted".into(), muted.to_string());
@@ -145,7 +152,11 @@ impl MiniEngine {
                     }
                     None => [(v.rect.width * dpr).round(), (v.rect.height * dpr).round()],
                 };
-                Some(json!({ "key": key, "url": resolve_url(src, &page_dir), "attrs": attrs, "box": bx }))
+                let mut view = json!({ "key": key, "url": resolve_url(src, &page_dir), "attrs": attrs, "box": bx });
+                if live {
+                    view["tag"] = json!("live-player");
+                }
+                Some(view)
             })
             .collect();
         let mut views = views;
@@ -179,8 +190,17 @@ impl MiniEngine {
         }
         let Some(r) = self.renderer.take() else { return false };
         let hit = r.query_selector("video", true, &self.interaction).into_iter().find(|v| host_feed::video_key(&v.attrs) == key);
+        // 不是视频：可能是同层渲染的直播，播放器事件翻成直播的状态码（engine_live_player.rs）
+        let live = if hit.is_none() && host_feed::host_feeds_live() {
+            r.query_selector("live-player", true, &self.interaction).into_iter().find(|v| host_feed::video_key(&v.attrs) == key)
+        } else {
+            None
+        };
         let mut found = false;
-        if let Some(v) = hit {
+        if let Some(v) = live {
+            found = self.live_feed_event(&r, &v, key, name, &detail);
+            self.app.pump_jobs();
+        } else if let Some(v) = hit {
             // 控制条的播放键 / 进度变了：版本号加一，下一帧只重画这个框（wxml_renderer/animated_image.rs）
             host_feed::note_event(key, name, &detail);
             let t = self.mono_ms();
@@ -198,7 +218,7 @@ impl MiniEngine {
 
 /// 网络地址原样；包内路径解析成本地文件的绝对路径（`/` 开头按小程序根，否则先当前页目录再根）。
 /// 找不到就原样给宿主（它会回 `error`）
-fn resolve_url(src: &str, page_dir: &str) -> String {
+pub(super) fn resolve_url(src: &str, page_dir: &str) -> String {
     // `wxfile://`（下载 / 选的文件）也要解析成本地路径，只有网络地址原样
     if src.is_empty() || src.starts_with("http://") || src.starts_with("https://") {
         return src.to_string();

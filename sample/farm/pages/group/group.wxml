@@ -1,0 +1,69 @@
+<!-- 拼团详情（带 id，自己开 / 参的团） -->
+<block wx:if="{{grp}}">
+  <view class="card gd" bindtap="openGoods" data-id="{{grp.goodsId}}">
+    <image class="gd-img" src="{{goods.cover}}" mode="aspectFill"></image>
+    <view class="gd-mid">
+      <text class="gd-name">{{goods.name}}</text>
+      <text class="muted">{{skuText}}</text>
+      <view class="row"><text class="price">¥{{price}}</text><text class="tag gd-size">{{grp.size}}人团</text></view>
+    </view>
+  </view>
+  <view class="card center">
+    <text class="st st-{{grp.status}}">{{statusText}}</text>
+    <view class="cd" wx:if="{{grp.status === 'ongoing' && cd}}">
+      <text class="cd-n">{{cd.h}}</text><text class="cd-c">:</text><text class="cd-n">{{cd.m}}</text><text class="cd-c">:</text><text class="cd-n">{{cd.s}}</text><text class="cd-tx">后结束</text>
+    </view>
+    <view class="mems">
+      <view class="mem" wx:for="{{slots}}" wx:key="index">
+        <image wx:if="{{item}}" class="mem-av" src="{{item.avatar}}" mode="scaleToFill"></image>
+        <view wx:else class="mem-av mem-empty"><text class="mem-q">?</text></view>
+        <text class="mem-lead" wx:if="{{index === 0}}">团长</text>
+        <text class="mem-name">{{item ? item.name : '待加入'}}</text>
+      </view>
+    </view>
+    <text class="muted" wx:if="{{grp.status === 'ongoing'}}">已推荐到拼团大厅，也可以分享给好友更快成团</text>
+    <button wx:if="{{grp.status === 'ongoing'}}" class="share" open-type="share" hover-class="btn-hover">邀请好友参团</button>
+    <view class="btn-ghost link" bindtap="goOrder">查看订单</view>
+  </view>
+</block>
+
+<!-- 拼团大厅 -->
+<block wx:else>
+  <view class="tabs">
+    <text class="tab {{tab === 'hall' ? 'tab-on' : ''}}" data-t="hall" bindtap="switchTab">正在拼团</text>
+    <text class="tab {{tab === 'mine' ? 'tab-on' : ''}}" data-t="mine" bindtap="switchTab">我的拼团 {{mine.length ? '(' + mine.length + ')' : ''}}</text>
+  </view>
+  <view wx:if="{{tab === 'hall'}}">
+    <view class="card hg" wx:for="{{hall}}" wx:key="id">
+      <view class="row" data-id="{{item.goodsId}}" bindtap="openGoods">
+        <image class="hg-img" src="{{item.cover}}" mode="aspectFill"></image>
+        <view class="gd-mid">
+          <text class="gd-name">{{item.name}}</text>
+          <view class="row"><text class="price">¥{{item.groupPrice}}</text><text class="del">¥{{item.price}}</text><text class="tag gd-size">{{item.size}}人团</text></view>
+        </view>
+      </view>
+      <view class="og" wx:for="{{item.groups}}" wx:key="id" wx:for-item="og">
+        <image class="og-av" src="{{og.avatar}}" mode="scaleToFill"></image>
+        <text class="og-name">{{og.name}}</text>
+        <text class="og-lack">差 {{og.lack}} 人</text>
+        <text class="muted og-cd">{{og.cd ? og.cd.text : '已结束'}}</text>
+        <view class="og-btn" hover-class="btn-hover" data-goods="{{item.goodsId}}" data-id="{{og.id}}" bindtap="join"><text class="og-btn-tx">参团</text></view>
+      </view>
+    </view>
+  </view>
+  <view wx:else>
+    <view class="empty" wx:if="{{!mine.length}}">
+      <image class="empty-img" src="/images/misc/empty.png" mode="aspectFit"></image>
+      <text class="empty-tx">还没有参与拼团</text>
+      <view class="btn-ghost empty-go" bindtap="showHall">去拼团大厅看看</view>
+    </view>
+    <view class="card mg" wx:for="{{mine}}" wx:key="id" data-id="{{item.id}}" bindtap="openGroup" hover-class="btn-hover">
+      <image class="hg-img" src="{{item.cover}}" mode="aspectFill"></image>
+      <view class="gd-mid">
+        <text class="gd-name">{{item.name}}</text>
+        <text class="muted">{{item.members.length}}/{{item.size}} 人 · 团长 {{item.leader}}</text>
+        <text class="st-s st-{{item.status}}">{{item.statusText}}</text>
+      </view>
+    </view>
+  </view>
+</block>

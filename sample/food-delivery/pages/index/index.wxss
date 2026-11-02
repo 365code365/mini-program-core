@@ -111,6 +111,17 @@
   font-size: 22rpx;
   color: #3a3f47;
   margin-top: 10rpx;
+  white-space: nowrap;
+}
+
+/* 当前筛选的分类：图标外圈一道蓝光、文字变蓝（引擎的 box-shadow 只认一层，不写逗号分隔的多层） */
+.kk-icon-on {
+  box-shadow: 0 0 0 6rpx rgba(22, 119, 255, 0.3);
+}
+
+.kk-name-on {
+  color: #1677ff;
+  font-weight: bold;
 }
 
 .banner-wrap {

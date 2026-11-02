@@ -1,0 +1,20 @@
+.head { display: flex; flex-direction: column; align-items: center; padding: 36rpx 0 8rpx; }
+.pet-av.big { width: 136rpx; height: 136rpx; border-radius: 68rpx; font-size: 56rpx; border: 6rpx solid #ffffff; }
+.colors { display: flex; flex-direction: row; margin-top: 24rpx; }
+.color { width: 52rpx; height: 52rpx; border-radius: 26rpx; margin: 0 12rpx; border: 4rpx solid #f7f5f2; box-sizing: border-box; }
+.color.on { border-color: #2a2522; }
+.form { padding-top: 4rpx; padding-bottom: 4rpx; }
+.f { display: flex; flex-direction: row; align-items: center; min-height: 100rpx; border-bottom: 1rpx solid #f3efea; }
+.f.last { border-bottom: none; }
+.f-k { width: 150rpx; font-size: 28rpx; color: #5a4f47; flex-shrink: 0; }
+/* 引擎把 padding 为 0 当成「没写」，套 12px 默认内边距，所以写 1rpx */
+.f-in { flex: 1; height: 100rpx; font-size: 28rpx; padding: 0 0 0 1rpx; }
+.ph { color: #c4bcb4; }
+.chips { flex: 1; display: flex; flex-direction: row; }
+.chip { padding: 10rpx 28rpx; margin-right: 16rpx; border-radius: 28rpx; background: #f7f3ef; border: 2rpx solid #f7f3ef; font-size: 26rpx; color: #5a4f47; white-space: nowrap; }
+.chip.on { background: #fff4ea; border-color: #ff8a3d; color: #ff8a3d; font-weight: bold; }
+.f-sw { flex: 1; display: flex; flex-direction: row; justify-content: flex-end; }
+.f-pk { flex: 1; }
+.f-v { display: flex; flex-direction: row; align-items: center; justify-content: space-between; font-size: 28rpx; }
+.save { margin: 40rpx 24rpx 0; }
+.del { margin: 24rpx 24rpx 0; height: 88rpx; border-radius: 44rpx; background: #ffffff; color: #ff5b35; font-size: 28rpx; display: flex; align-items: center; justify-content: center; }

@@ -1,0 +1,15 @@
+.it { display: flex; flex-direction: row; }
+.it-img { width: 110rpx; height: 110rpx; border-radius: 10rpx; }
+.it-mid { flex: 1; margin-left: 16rpx; display: flex; flex-direction: column; }
+.it-name { font-size: 27rpx; font-weight: bold; }
+.rg { display: flex; flex-direction: column; margin-top: 10rpx; }
+.rl { display: flex; flex-direction: row; align-items: center; height: 76rpx; }
+.rl-tx { font-size: 27rpx; margin-left: 10rpx; }
+.amt { display: flex; flex-direction: row; align-items: center; border-bottom: 1rpx solid #eceee8; margin: 16rpx 0 10rpx; }
+.amt-yen { font-size: 40rpx; font-weight: bold; }
+.amt-in { flex: 1; font-size: 44rpx; height: 90rpx; margin-left: 10rpx; font-weight: bold; }
+.desc-t { margin-top: 30rpx; }
+.ta { width: 100%; height: 180rpx; background: #f6f7f4; border-radius: 12rpx; padding: 16rpx; margin-top: 14rpx; font-size: 26rpx; box-sizing: border-box; }
+.ta-n { text-align: right; }
+.err { font-size: 22rpx; color: #e4572e; margin-top: 8rpx; }
+.ops { padding: 40rpx 24rpx 60rpx; }

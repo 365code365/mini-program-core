@@ -1,0 +1,27 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/unlock/unlock",
+    "pages/riding/riding",
+    "pages/settle/settle",
+    "pages/trips/trips",
+    "pages/trip/trip",
+    "pages/wallet/wallet",
+    "pages/fault/fault",
+    "pages/mine/mine",
+    "pages/pricing/pricing"
+  ],
+  "window": {
+    "navigationBarTitleText": "青桔骑行",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f4f6f8"
+  },
+  "permission": {
+    "scope.userLocation": { "desc": "用于查找附近车辆、记录骑行轨迹" }
+  },
+  "requiredPrivateInfos": ["getLocation"],
+  "usingComponents": {
+    "cashier": "/components/cashier/index"
+  }
+}

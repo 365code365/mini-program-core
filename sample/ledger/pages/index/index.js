@@ -14,7 +14,10 @@ Page({
     groups: [],
     empty: false
   },
-  onShow() { this.refresh() },
+  onShow() {
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) this.getTabBar().setData({ selected: 0 })
+    this.refresh()
+  },
   refresh() {
     const now = new Date()
     const y = now.getFullYear()
@@ -40,10 +43,12 @@ Page({
       return { date: g.date, label: g.label, items: g.items, outText: store.money(g.out), inText: store.money(g.inc), hasIn: g.inc > 0, hasOut: g.out > 0 }
     })
     this.setData({
-      monthText: y + '年' + m + '月',
+      monthText: m + '月',
+      bookName: store.curBook().name,
       outText: store.money(out),
       inText: store.money(inc),
       leftText: store.money(inc - out),
+      leftYuan: store.yuan(inc - out),
       budgetText: String(budget),
       budgetLeftText: store.money(Math.abs(left)),
       budgetOver: left < 0,
@@ -56,5 +61,7 @@ Page({
   },
   onAdd() { wx.navigateTo({ url: '/pages/add/add' }) },
   onBudget() { wx.navigateTo({ url: '/pages/budget/budget' }) },
+  onBooks() { wx.navigateTo({ url: '/pages/books/books' }) },
+  onStats() { wx.switchTab({ url: '/pages/stats/stats' }) },
   onItem(e) { wx.navigateTo({ url: '/pages/detail/detail?id=' + e.currentTarget.dataset.id }) }
 })

@@ -1,0 +1,45 @@
+<view class="page tab-page">
+  <view class="notice row">
+    <text class="n-t">满 49 元免上门费 · 预约后 2 小时内上门取件 · 72 小时送回</text>
+  </view>
+
+  <!-- 吸顶分类：position: sticky；引擎不支持 sticky 时由 onPageScroll 显示下面那份 fixed 的副本 -->
+  <view id="tabs" class="tabs sticky">
+    <view wx:for="{{cats}}" wx:key="key" class="tab {{cur === item.key ? 'tab-on' : ''}}" data-key="{{item.key}}" bindtap="onTab">
+      <text>{{item.name}}</text>
+    </view>
+  </view>
+  <view wx:if="{{fixedTabs}}" class="tabs tabs-fixed">
+    <view wx:for="{{cats}}" wx:key="key" class="tab {{cur === item.key ? 'tab-on' : ''}}" data-key="{{item.key}}" bindtap="onTab">
+      <text>{{item.name}}</text>
+    </view>
+  </view>
+
+  <view wx:for="{{sections}}" wx:key="key" wx:for-item="sec" id="sec-{{sec.key}}" class="sec">
+    <view class="sec-h row">
+      <image class="sec-ic" src="{{sec.icon}}"></image>
+      <view class="flex1">
+        <text class="sec-t">{{sec.name}}</text>
+        <text class="sub">{{sec.tip}}</text>
+      </view>
+    </view>
+    <view class="it row" wx:for="{{sec.items}}" wx:key="id">
+      <view class="flex1">
+        <text class="it-n">{{item.name}}</text>
+        <text wx:if="{{item.desc}}" class="sub">{{item.desc}}</text>
+      </view>
+      <view class="row it-p"><text class="price">¥{{item.price}}</text><text class="sub">/{{item.unit}}</text></view>
+      <stepper value="{{qty[item.id] || 0}}" max="{{item.unit === '㎡' ? 60 : 30}}" data-id="{{item.id}}" bindchange="onQty"></stepper>
+    </view>
+  </view>
+  <view class="foot-space"></view>
+
+  <view class="bar row">
+    <view class="flex1">
+      <view class="row"><text class="bar-l">合计</text><text class="price bar-p">¥{{sum.total}}</text></view>
+      <text class="sub">{{sum.count ? '共 ' + sum.count + ' 件' : '请选择要洗的衣物'}}{{sum.total > 0 && sum.total < 49 ? ' · 差 ¥' + (49 - sum.total) + ' 免上门费' : ''}}</text>
+    </view>
+    <text wx:if="{{sum.count}}" class="clear" bindtap="clear">清空</text>
+    <view class="go {{sum.count ? '' : 'go-dis'}}" hover-class="hover" bindtap="checkout"><text>去下单</text></view>
+  </view>
+</view>

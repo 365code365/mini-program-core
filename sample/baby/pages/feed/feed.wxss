@@ -1,0 +1,21 @@
+.seg { margin-bottom: 24rpx; }
+.timer { display: flex; flex-direction: column; align-items: center; }
+.total { font-size: 80rpx; font-weight: bold; color: #ff6f82; margin: 8rpx 0 28rpx; }
+.sides { display: flex; flex-direction: row; width: 100%; }
+.side { flex: 1; margin: 0 12rpx; border-radius: 24rpx; background: #fff4f6; padding: 32rpx 0; display: flex; flex-direction: column; align-items: center; border: 4rpx solid #fff4f6; }
+.side-on { background: #ffe6ea; border-color: #ff7a8a; }
+.side-name { font-size: 30rpx; font-weight: bold; color: #5a4045; }
+.side-time { font-size: 48rpx; color: #ff6f82; font-weight: bold; margin: 12rpx 0; }
+.side-act { font-size: 22rpx; color: #a08085; }
+.ops { width: 100%; margin-top: 32rpx; }
+.ops-main { margin-left: 20rpx; }
+.hint { margin-top: 28rpx; }
+.ml { font-size: 48rpx; font-weight: bold; color: #ff6f82; margin-right: 6rpx; }
+.slider { margin: 24rpx 0 8rpx; }
+.arrow { color: #c0b6ba; margin-left: 12rpx; font-size: 32rpx; }
+.save { margin-top: 32rpx; }
+.rec { display: flex; flex-direction: row; align-items: center; padding: 22rpx 0; border-bottom: 1rpx solid #f5f0f2; }
+.rec-when { width: 110rpx; }
+.rec-day { font-size: 24rpx; color: #5a5055; }
+.rec-body { margin-left: 20rpx; }
+.rec-title { font-size: 28rpx; margin-bottom: 4rpx; }

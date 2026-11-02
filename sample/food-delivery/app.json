@@ -5,7 +5,15 @@
     "pages/checkout/checkout",
     "pages/orders/orders",
     "pages/order-detail/order-detail",
-    "pages/mine/mine"
+    "pages/mine/mine",
+    "pages/address/address",
+    "pages/address-edit/address-edit",
+    "pages/coupons/coupons",
+    "pages/wallet/wallet",
+    "pages/beans/beans",
+    "pages/favorites/favorites",
+    "pages/reviews/reviews",
+    "pages/service/service"
   ],
   "window": {
     "navigationBarTitleText": "饱了么外卖",

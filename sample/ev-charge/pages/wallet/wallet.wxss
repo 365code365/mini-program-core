@@ -34,3 +34,7 @@
 .log-t { font-size: 28rpx; margin-bottom: 4rpx; }
 .log-v { font-size: 30rpx; color: #1f2329; }
 .log-v.in { color: #00A36C; }
+.bal-coupon { margin-right: 36rpx; }
+.bal-coupon .bal-s { margin-right: 0; }
+.bal-chev { border-color: #9ff0d0; width: 10rpx; height: 10rpx; margin-left: 8rpx; }
+.log-empty { display: block; padding: 40rpx 0; text-align: center; }

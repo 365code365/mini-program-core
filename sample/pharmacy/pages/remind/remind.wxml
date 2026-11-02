@@ -1,0 +1,29 @@
+<view class="top">
+  <text class="tp-d">{{today}}</text>
+  <text class="tp-n">{{doses.length ? '今日已服 ' + done + ' / ' + doses.length + ' 次' : '今天没有需要服用的药'}}</text>
+  <view wx:if="{{doses.length}}" class="tp-bar"><view class="tp-fill" style="width: {{done * 100 / doses.length}}%;"></view></view>
+</view>
+
+<view class="sec-h"><text class="sec-t">今日待服</text></view>
+<view wx:if="{{!doses.length}}" class="card none"><text class="muted">{{list.length ? '今天不在提醒的服药日里' : '还没有用药提醒，点下方按钮新增'}}</text></view>
+<view wx:for="{{doses}}" wx:key="k" class="card ds {{item.taken ? 'ds-ok' : ''}}">
+  <text class="ds-t {{item.late ? 'late' : ''}}">{{item.time}}</text>
+  <view class="ds-b">
+    <text class="ds-n">{{item.drug}}</text>
+    <text class="muted">{{item.dose}}{{item.note ? ' · ' + item.note : ''}}{{item.late ? ' · 已过时间' : ''}}</text>
+  </view>
+  <text class="ds-btn {{item.taken ? 'ds-done' : ''}}" data-k="{{item.k}}" bindtap="take">{{item.taken ? '已服 ✓' : '打卡'}}</text>
+</view>
+
+<view class="sec-h"><text class="sec-t">全部提醒（{{list.length}}）</text></view>
+<view wx:if="{{!list.length}}" class="empty">
+  <view class="empty-ic">⏰</view><text class="empty-t">设置提醒，按时吃药不漏服</text>
+</view>
+<view wx:for="{{list}}" wx:key="id" class="card rm">
+  <view class="rm-b" data-id="{{item.id}}" bindtap="edit">
+    <text class="rm-n">{{item.drug}}</text>
+    <text class="muted">{{item.daysText}} · {{item.timesText}} · 每次 {{item.dose}}</text>
+  </view>
+  <switch checked="{{item.on}}" color="#12a37f" data-id="{{item.id}}" bindchange="onSwitch"></switch>
+</view>
+<view class="foot"><view class="btn" bindtap="add">新增用药提醒</view></view>

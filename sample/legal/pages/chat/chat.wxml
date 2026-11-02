@@ -1,0 +1,60 @@
+<view class="wrap" style="padding-bottom: {{kb}}px;">
+  <view class="top row between">
+    <view class="col flex1">
+      <text class="top-t">{{c.service}} · {{c.cat}}</text>
+      <text class="muted">订单 {{c.id}} · 已付 ¥{{c.amount}}</text>
+    </view>
+    <text class="st st-{{c.status}}">{{statusText}}</text>
+    <view class="end" wx:if="{{c.status === 'active'}}" bindtap="finish">结束咨询</view>
+    <view class="end" wx:if="{{c.status === 'done'}}" bindtap="openRate">去评价</view>
+  </view>
+
+  <scroll-view class="list" scroll-y scroll-into-view="{{toView}}" scroll-with-animation>
+    <view class="list-in">
+      <view class="tip">律师回复仅供参考，不构成法律意见</view>
+      <block wx:for="{{msgs}}" wx:key="id">
+        <view id="{{item.id}}" class="sys" wx:if="{{item.from === 'sys'}}"><text class="sys-t">{{item.content}}</text></view>
+        <view id="{{item.id}}" class="msg row {{item.from === 'me' ? 'me' : ''}}" wx:else>
+          <image class="av" wx:if="{{item.from === 'lawyer'}}" src="{{c.avatar}}"></image>
+          <view class="col body {{item.from === 'me' ? 'end-col' : ''}}">
+            <text class="time">{{item.time}}</text>
+            <image wx:if="{{item.type === 'image'}}" class="pic" src="{{item.content}}" mode="aspectFill" data-src="{{item.content}}" bindtap="preview"></image>
+            <view wx:else class="bubble {{item.from === 'me' ? 'b-me' : 'b-l'}}" data-id="{{item.id}}" bindlongpress="msgMenu"><text class="b-t">{{item.content}}</text></view>
+          </view>
+          <view class="av me-av" wx:if="{{item.from === 'me'}}">我</view>
+        </view>
+      </block>
+      <view id="typing" class="msg row" wx:if="{{typing}}">
+        <image class="av" src="{{c.avatar}}"></image>
+        <view class="bubble b-l typing">对方正在输入…</view>
+      </view>
+      <view class="rated" wx:if="{{c.status === 'rated'}}">
+        <text>你的评价：{{c.rating.star}} 星</text>
+        <text wx:if="{{c.rating.tags.length}}"> · {{c.rating.tags[0]}}</text>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="bar row" wx:if="{{c.status === 'active'}}">
+    <view class="tool" bindtap="sendImage">图</view>
+    <input class="ipt flex1" value="{{text}}" placeholder="继续追问，长按消息可复制" adjust-position="{{false}}" cursor-spacing="20"
+      confirm-type="send" confirm-hold="{{true}}" maxlength="500" bindinput="onInput" bindconfirm="send"></input>
+    <view class="tool" bindtap="paste">贴</view>
+    <view class="send {{text ? '' : 'send-off'}}" bindtap="send">发送</view>
+  </view>
+  <view class="bar closed" wx:else>本次咨询已结束</view>
+</view>
+
+<view class="mask" wx:if="{{rating}}" bindtap="closeRate"></view>
+<view class="sheet" wx:if="{{rating}}">
+  <view class="sec-title">评价 {{c.lawyerName}} 律师</view>
+  <view class="stars row">
+    <text class="star" wx:for="{{stars}}" wx:key="*this" data-s="{{item}}" bindtap="setStar" style="color: {{item <= star ? '#e0a020' : '#dde1e8'}};">★</text>
+    <text class="muted">{{star >= 5 ? '非常满意' : (star >= 4 ? '满意' : (star >= 3 ? '一般' : '不满意'))}}</text>
+  </view>
+  <view class="tags row">
+    <view class="rt {{item.on ? 'rt-on' : ''}}" wx:for="{{tags}}" wx:key="t" data-i="{{index}}" bindtap="toggleTag">{{item.t}}</view>
+  </view>
+  <textarea class="rta" value="{{rateText}}" show-confirm-bar="{{false}}" maxlength="200" placeholder="说说律师帮你解决了什么问题（选填）" bindinput="onRateText"></textarea>
+  <view class="btn" bindtap="submitRate">提交评价</view>
+</view>

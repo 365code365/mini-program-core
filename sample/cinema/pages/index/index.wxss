@@ -41,3 +41,9 @@
 .wish-on { color: #fff; background: #FFB400; }
 .empty { text-align: center; color: #9aa0a6; padding: 100rpx 0; }
 .gap { height: 32rpx; }
+.cinema { background: #fff; margin: 16rpx 24rpx 0; border-radius: 20rpx; padding: 26rpx 28rpx; display: flex; flex-direction: column; }
+.c-name { flex: 1; font-size: 30rpx; font-weight: bold; margin-right: 20rpx; }
+.c-price { font-size: 26rpx; color: #F0384D; font-weight: bold; white-space: nowrap; }
+.c-addr { margin-top: 10rpx; }
+.c-foot { margin-top: 14rpx; }
+.c-fav { font-size: 20rpx; color: #fff; background: #FFB400; padding: 2rpx 10rpx; border-radius: 6rpx; }

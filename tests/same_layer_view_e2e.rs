@@ -169,3 +169,84 @@ fn 点在框里交给宿主_回传事件派发给节点的绑定() {
     assert_eq!(e.eval("JSON.stringify(getCurrentPages()[0].data.ev)").unwrap(), r#"["marker1"]"#);
     host_view::retain(&[]);
 }
+
+/// 宿主点名 `sameLayerGestures: ["map"]`（真地图要自己平移 / 捏合缩放）：
+/// 1. 按在地图上的这一串触摸（含第二根手指）整串交给宿主：`nativeViewTouch` 的 start / move / end，框内逻辑坐标；
+/// 2. 页面一个像素不滚、不派 `nativeViewTap`（点击由宿主从这串触摸里自己判）；
+/// 3. 按在地图外照旧滚页面；地图写了 `enable-scroll="false" enable-zoom="false"` 的不接手势；
+/// 4. `markers` 这类数组属性交给宿主的是**标准 JSON**（文字里带撇号也不坏）。
+#[test]
+fn 地图自己的手势_整串触摸交给宿主_页面不滚_数组属性是标准json() {
+    let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let root = fixture("gesture");
+    std::fs::write(
+        root.join("pages/p/p.wxml"),
+        r#"<view class="hd">卡片标题</view>
+<map id="map1" class="map" latitude="22.54" longitude="114.05" markers="{{markers}}"></map>
+<map id="map2" class="map" enable-scroll="false" enable-zoom="false"></map>
+<view wx:for="{{rows}}" wx:key="*this" class="row">第 {{item}} 行</view>"#,
+    )
+    .unwrap();
+    std::fs::write(
+        root.join("pages/p/p.js"),
+        r#"Page({ data: { rows: Array.from({length: 30}, (_, i) => i + 1),
+  markers: [{ id: 7, latitude: 22.54, longitude: 114.05, callout: { content: "Tom's 咖啡" } }] } });"#,
+    )
+    .unwrap();
+    let opts = EngineOptions {
+        same_layer: vec!["map".into()],
+        same_layer_gestures: vec!["map".into()],
+        ..Default::default()
+    };
+    let mut e = MiniEngine::new_with_options(&root.to_string_lossy(), Some(&root.join("_data").to_string_lossy()), W, H, DPR, HostEnv::default(), opts)
+        .expect("创建引擎");
+    e.set_animation_clock(0.0);
+    e.launch(None).expect("打开首页");
+    e.pump_ex(1000);
+    let evs = events(&mut e);
+    let views = evs.iter().find(|v| v["type"] == "sameLayerViews").expect("sameLayerViews");
+    let m = views["views"].as_array().unwrap().iter().find(|v| v["key"] == "map1").unwrap();
+    let markers: Value = serde_json::from_str(m["attrs"]["markers"].as_str().unwrap()).expect("markers 是标准 JSON");
+    assert_eq!(markers[0]["callout"]["content"], "Tom's 咖啡");
+    assert_eq!(markers[0]["id"], 7);
+
+    // 拖地图：整串交给宿主，页面不滚
+    let (x0, y0) = (MX + 100.0, MY + 150.0);
+    e.pointer_down(x0, y0);
+    e.pump_ex(1016);
+    for i in 1..=6 {
+        e.pointer_move(x0 + 5.0 * i as f32, y0 - 20.0 * i as f32);
+        e.pump_ex(1016 + 16 * i);
+    }
+    e.pointer2(0, x0 + 80.0, y0 - 40.0);
+    e.pointer2(1, x0 + 90.0, y0 - 50.0);
+    e.pointer2(2, x0 + 90.0, y0 - 50.0);
+    e.pointer_up(x0 + 30.0, y0 - 120.0);
+    e.pump_ex(1200);
+    let touches: Vec<Value> = events(&mut e).into_iter().filter(|v| v["type"] == "nativeViewTouch").collect();
+    let phases: Vec<String> = touches.iter().map(|v| format!("{}{}", v["phase"].as_str().unwrap(), v["pointer"])).collect();
+    assert_eq!(phases.first().map(String::as_str), Some("start0"), "{phases:?}");
+    assert_eq!(phases.last().map(String::as_str), Some("end0"), "{phases:?}");
+    assert_eq!(phases.iter().filter(|p| *p == "move0").count(), 6, "{phases:?}");
+    assert!(phases.contains(&"start1".to_string()) && phases.contains(&"move1".to_string()) && phases.contains(&"end1".to_string()), "第二根手指也交给地图：{phases:?}");
+    assert!(touches.iter().all(|v| v["key"] == "map1"));
+    let s = &touches[0];
+    assert!((s["x"].as_f64().unwrap() - 100.0).abs() < 0.5 && (s["y"].as_f64().unwrap() - 150.0).abs() < 0.5, "框内坐标：{s}");
+    let last_move = touches.iter().filter(|v| v["phase"] == "move" && v["pointer"] == 0).last().unwrap();
+    assert!((last_move["y"].as_f64().unwrap() - 30.0).abs() < 0.5, "原点在按下时定，页面没滚：{last_move}");
+    assert!(e.scroll_position().abs() < 0.01, "拖地图页面不滚：{}", e.scroll_position());
+
+    // 不接手势的地图上拖：照旧滚页面，不发 nativeViewTouch
+    let (gx, gy) = (MX + 100.0, MY + MH + 100.0); // map2：不接手势的那张
+    e.pointer_down(gx, gy);
+    e.pump_ex(1500);
+    for i in 1..=8 {
+        e.pointer_move(gx, gy - 25.0 * i as f32);
+        e.pump_ex(1500 + 16 * i);
+    }
+    e.pointer_up(gx, gy - 200.0);
+    e.pump_ex(1700);
+    assert!(!events(&mut e).iter().any(|v| v["type"] == "nativeViewTouch"), "enable-scroll / enable-zoom 都关了的地图不接手势");
+    assert!(e.scroll_position() > 50.0, "按在不接手势的地图上拖：页面照滚 {}", e.scroll_position());
+    host_view::retain(&[]);
+}

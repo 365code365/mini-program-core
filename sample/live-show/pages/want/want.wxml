@@ -1,0 +1,27 @@
+<view wx:if="{{list.length}}" class="head row">
+  <text class="muted">共 {{list.length}} 场想看 · {{remindN}} 场已设开售提醒</text>
+</view>
+<view wx:if="{{list.length}}">
+  <view wx:for="{{list}}" wx:key="id" class="it row" data-id="{{item.id}}" bindtap="open">
+    <image class="it-img" src="{{item.poster}}" mode="aspectFill"></image>
+    <view class="col flex1 it-info">
+      <text class="it-t">{{item.title}}</text>
+      <text class="muted it-l">{{item.date}} · {{item.venue}}</text>
+      <view class="row it-l">
+        <text class="sale {{item.sale ? 'sale-on' : 'sale-soon'}}">{{item.saleText}}</text>
+        <text wx:if="{{item.remind}}" class="rm">{{item.remind}}</text>
+      </view>
+      <view class="row it-foot">
+        <text class="price">¥{{item.from}}起</text>
+        <view class="flex1"></view>
+        <text class="rmv" data-id="{{item.id}}" catchtap="remove">取消想看</text>
+      </view>
+    </view>
+  </view>
+</view>
+<view wx:else class="empty">
+  <view class="empty-ic"><text class="empty-ic-t">♡</text></view>
+  <text class="empty-t">还没有想看的演出，点详情页的「想看」收藏</text>
+  <view class="btn-ghost empty-btn" bindtap="goHome"><text>去发现演出</text></view>
+</view>
+<view class="tabbar-space"></view>

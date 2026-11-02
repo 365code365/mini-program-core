@@ -1,0 +1,46 @@
+<view class="wrap">
+  <view class="hello between">
+    <view class="col">
+      <text class="h1">{{greeting}}</text>
+      <text class="muted">{{dateText}} · 已连续打卡 {{streak}} 天</text>
+    </view>
+    <view class="check {{checked ? 'check-done' : ''}}" hover-class="btn-press" bindtap="onCheck">
+      <text class="check-tx">{{checked ? '已打卡' : '打卡'}}</text>
+    </view>
+  </view>
+
+  <view class="remind" wx:if="{{remindTip}}" bindtap="goLearn"><text class="remind-tx">⏰ {{remindTip}}</text></view>
+
+  <view class="card today">
+    <ring value="{{todayNew}}" total="{{plan}}" size="{{116}}" label="今日新词"></ring>
+    <view class="today-right col">
+      <view class="kv between"><text class="muted">待复习</text><text class="kv-v brand">{{due}} 个</text></view>
+      <view class="kv between"><text class="muted">生词本</text><text class="kv-v">{{stars}} 个</text></view>
+      <view class="kv between"><text class="muted">每日计划</text><text class="kv-v">{{plan}} 个新词</text></view>
+    </view>
+  </view>
+
+  <view class="card book row" hover-class="btn-press" bindtap="goBooks">
+    <image class="book-cover" src="{{book.cover}}" mode="aspectFill"></image>
+    <view class="book-info col">
+      <view class="between"><text class="h2">{{book.name}}</text><text class="muted">换书 ›</text></view>
+      <text class="muted book-lv">{{book.level}}</text>
+      <progress class="book-pg" percent="{{bookPct}}" stroke-width="6" activeColor="#4f6bed" backgroundColor="#e6eaf7" border-radius="3"></progress>
+      <text class="muted">已学 {{learned}} / {{total}} 词 · {{bookPct}}%</text>
+    </view>
+  </view>
+
+  <view class="btn main-btn" hover-class="btn-press" bindtap="goLearn">开始学习新词</view>
+  <view class="two row">
+    <view class="btn-ghost half" hover-class="btn-press" bindtap="goReview">复习 {{due}} 词</view>
+    <view class="btn-ghost half" hover-class="btn-press" bindtap="goQuiz">词义测验</view>
+  </view>
+
+  <view class="card grid row">
+    <view class="cell" hover-class="btn-press" bindtap="goCalendar"><view class="cell-ic c1"><text class="cell-ic-tx">历</text></view><text class="cell-tx">打卡日历</text></view>
+    <view class="cell" hover-class="btn-press" bindtap="goStats"><view class="cell-ic c2"><text class="cell-ic-tx">统</text></view><text class="cell-tx">学习统计</text></view>
+    <view class="cell" hover-class="btn-press" bindtap="goWrong"><view class="cell-ic c3"><text class="cell-ic-tx">错</text></view><text class="cell-tx">错题本</text></view>
+    <view class="cell" hover-class="btn-press" bindtap="goBooks"><view class="cell-ic c4"><text class="cell-ic-tx">书</text></view><text class="cell-tx">选词书</text></view>
+  </view>
+  <view style="height: 120rpx;"></view>
+</view>

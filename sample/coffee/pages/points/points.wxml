@@ -1,0 +1,52 @@
+<view class="top">
+  <view class="row between">
+    <text class="top-label">我的积分</text>
+    <text class="top-rule" bindtap="onRule">积分规则</text>
+  </view>
+  <text class="top-num">{{points}}</text>
+  <text class="top-tip">100 积分可抵 1 元 · 也能兑换下面的券和周边</text>
+</view>
+<view class="tabs row">
+  <view class="tab {{tab === 'mall' ? 'tab-on' : ''}}" data-tab="mall" bindtap="onTab">兑换商城</view>
+  <view class="tab {{tab === 'log' ? 'tab-on' : ''}}" data-tab="log" bindtap="onTab">积分明细</view>
+  <view class="tab {{tab === 'record' ? 'tab-on' : ''}}" data-tab="record" bindtap="onTab">兑换记录</view>
+</view>
+<view wx:if="{{tab === 'mall'}}" class="grid row">
+  <view wx:for="{{mall}}" wx:key="id" class="goods">
+    <view class="g-pic glyph" style="background: linear-gradient(135deg, {{item.c1}}, {{item.c2}});">
+      <text class="g-glyph">{{item.glyph}}</text>
+      <text class="g-kind">{{item.type === 'coupon' ? '优惠券' : '限量周边'}}</text>
+    </view>
+    <text class="g-name ellipsis">{{item.name}}</text>
+    <view class="row between g-foot">
+      <text class="g-points">{{item.points}}<text class="g-unit"> 积分</text></text>
+      <view class="g-btn {{points < item.points ? 'g-btn-off' : ''}}" data-id="{{item.id}}" bindtap="onExchange">{{points < item.points ? '积分不足' : '兑换'}}</view>
+    </view>
+  </view>
+</view>
+<view wx:if="{{tab === 'log'}}" class="card">
+  <view class="log row" wx:for="{{logs}}" wx:key="k">
+    <view class="flex1">
+      <text class="log-title ellipsis">{{item.title}}</text>
+      <text class="sub">{{item.time}}</text>
+    </view>
+    <text class="log-amt {{item.delta > 0 ? 'log-in' : ''}}">{{item.sign}}{{item.delta}}</text>
+  </view>
+</view>
+<view wx:if="{{tab === 'record'}}" class="card">
+  <view class="log row" wx:for="{{records}}" wx:key="id">
+    <view class="flex1">
+      <text class="log-title ellipsis">{{item.name}}</text>
+      <text class="sub">{{item.time}} · {{item.store}}</text>
+    </view>
+    <view class="rec-code">
+      <text class="sub">兑换码</text>
+      <text class="rec-num">{{item.code}}</text>
+    </view>
+  </view>
+  <view wx:if="{{!records.length}}" class="none">
+    <text class="sub">兑换的周边会出现在这里，券类直接放进</text>
+    <text class="link" bindtap="onCoupons">我的优惠券</text>
+  </view>
+</view>
+<view class="gap"></view>

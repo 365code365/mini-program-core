@@ -78,6 +78,13 @@ Page({
     this.build()
   },
 
+  onRecords() {
+    wx.navigateTo({ url: '/pages/records/records' })
+  },
+  onDone() {
+    getApp().globalData.todoTab = 2
+    wx.switchTab({ url: '/pages/todo/todo' })
+  },
   onBar(e) {
     this.setData({ sel: Number(e.currentTarget.dataset.i) })
   }

@@ -1,0 +1,40 @@
+<view class="page tab-page {{theme}}">
+  <scroll-view class="tabs" scroll-x="true" enhanced="true" show-scrollbar="false">
+    <view class="tabs-in">
+      <view wx:for="{{cats}}" wx:key="key" class="chip {{cur === item.key ? 'on' : ''}}" data-key="{{item.key}}" bindtap="onCat">
+        <text>{{item.name}}</text>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view wx:if="{{loading}}">
+    <view class="card row" wx:for="{{skel}}" wx:key="*this">
+      <view class="skeleton sk-img"></view>
+      <view class="flex1">
+        <view class="skeleton sk-line"></view>
+        <view class="skeleton sk-line short"></view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:elif="{{list.length === 0}}" class="empty">
+    <view class="empty-ic"></view>
+    <text class="empty-tx">{{cur === 'fav' ? '还没有收藏的课程' : '这个分类暂时没有课程'}}</text>
+    <view class="btn-ghost empty-btn" bindtap="showAll"><text>去看看全部课程</text></view>
+  </view>
+
+  <view wx:else>
+    <view class="card item row" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="open" hover-class="btn-hover">
+      <image class="item-img" src="{{item.cover}}" mode="aspectFill"></image>
+      <view class="flex1 item-body">
+        <text class="item-t">{{item.title}}</text>
+        <text class="sub">{{item.teacher}} · {{item.level}}</text>
+        <view class="row item-foot">
+          <view class="prog-bg"><view class="prog" style="width: {{item.pct}}%;"></view></view>
+          <text class="sub">{{item.doneN}}/{{item.chapters.length}} 节</text>
+        </view>
+        <text class="sub">{{item.learnersText}} 人在练</text>
+      </view>
+    </view>
+  </view>
+</view>

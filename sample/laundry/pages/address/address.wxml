@@ -1,0 +1,39 @@
+<view class="page">
+  <view wx:if="{{!editing}}">
+    <view wx:if="{{list.length === 0}}" class="empty">
+      <view class="empty-ic"></view>
+      <text class="empty-tx">还没有地址，添加一个上门取件地址吧</text>
+    </view>
+    <view wx:for="{{list}}" wx:key="id" class="card ad row" data-id="{{item.id}}" bindtap="onPick" hover-class="hover">
+      <view wx:if="{{select}}" class="radio {{item.id === selId ? 'radio-on' : ''}}"></view>
+      <view class="flex1">
+        <view class="row"><text class="nm">{{item.name}}</text><text class="sub">{{item.phoneMask}}</text><text wx:if="{{item.id === selId}}" class="tag def">默认</text></view>
+        <text class="ad-d">{{item.region}} {{item.community}} {{item.room}}</text>
+      </view>
+      <text class="op" data-id="{{item.id}}" catchtap="edit">编辑</text>
+      <text class="op del" data-id="{{item.id}}" catchtap="remove">删除</text>
+    </view>
+    <view class="ops row">
+      <view class="btn-gray flex1" bindtap="fromWx"><text>导入微信地址</text></view>
+      <view class="btn flex1 add" bindtap="add"><text>新增地址</text></view>
+    </view>
+  </view>
+
+  <view wx:else class="card">
+    <view class="f row"><text class="fl">联系人</text><input class="flex1 fi" value="{{form.name}}" placeholder="取件时怎么称呼你" data-k="name" bindinput="onField"></input></view>
+    <view class="f row"><text class="fl">手机号</text><input class="flex1 fi" type="number" maxlength="11" value="{{form.phone}}" placeholder="11 位手机号" data-k="phone" bindinput="onField"></input></view>
+    <view class="f row">
+      <text class="fl">所在地区</text>
+      <picker class="flex1" mode="region" value="{{form.regionArr}}" bindchange="onRegion">
+        <view class="fi {{form.region ? '' : 'ph'}}"><text>{{form.region || '选择省 / 市 / 区'}}</text></view>
+      </picker>
+    </view>
+    <view class="f row"><text class="fl">小区 / 楼栋</text><input class="flex1 fi" value="{{form.community}}" placeholder="如：金鸡湖花园 7 幢" data-k="community" bindinput="onField"></input></view>
+    <view class="f row"><text class="fl">门牌号</text><input class="flex1 fi" value="{{form.room}}" placeholder="如：1203 室" data-k="room" bindinput="onField"></input></view>
+    <text class="err ferr">{{err}}</text>
+    <view class="ops row">
+      <view class="btn-gray flex1" bindtap="cancelEdit"><text>取消</text></view>
+      <view class="btn flex1 add" bindtap="save"><text>保存</text></view>
+    </view>
+  </view>
+</view>

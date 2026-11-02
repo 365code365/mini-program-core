@@ -1,0 +1,32 @@
+.top { margin-bottom: 12rpx; }
+.quit { font-size: 26rpx; color: #4f6bed; padding: 6rpx 0 6rpx 20rpx; }
+.rcard { background: #ffffff; border-radius: 32rpx; padding: 40rpx 36rpx; margin: 36rpx 0 32rpx; min-height: 560rpx; display: flex; flex-direction: column; align-items: flex-start; }
+.word { font-size: 68rpx; font-weight: bold; margin: 50rpx 0 12rpx; }
+.ans { margin-top: 44rpx; display: flex; flex-direction: column; }
+.mean { font-size: 34rpx; margin-bottom: 24rpx; }
+.ex { font-size: 28rpx; color: #2d3340; line-height: 42rpx; }
+.ex-zh { font-size: 26rpx; color: #8a90a0; margin-top: 8rpx; line-height: 38rpx; }
+.peek { margin-top: 70rpx; width: 100%; height: 200rpx; border-radius: 20rpx; background: #f4f6fb; display: flex; align-items: center; justify-content: center; }
+.peek-tx { font-size: 30rpx; color: #4f6bed; }
+.ops { justify-content: space-between; }
+.op { width: 47%; height: 96rpx; border-radius: 24rpx; display: flex; align-items: center; justify-content: center; }
+.op-tx { color: #ffffff; font-size: 30rpx; }
+.op-bad { background: #f0566a; }
+.op-ok { background: #22b07d; }
+.done { background: #def7ee; display: flex; flex-direction: column; }
+.done-sub { margin-top: 8rpx; }
+.head { display: flex; flex-direction: column; }
+.big { font-size: 72rpx; font-weight: bold; color: #4f6bed; }
+.unit { margin: 30rpx 0 0 8rpx; }
+.start { width: 220rpx; }
+.start-off { background: #c9d1f0; }
+.rule { margin-top: 16rpx; line-height: 36rpx; }
+.item { padding: 22rpx 0; border-bottom: 1rpx solid #eef0f5; }
+.iw { font-size: 30rpx; font-weight: bold; margin-bottom: 4rpx; }
+.empty { padding: 50rpx 28rpx; }
+.e-btn { width: 220rpx; margin: 0 12rpx; }
+.up { justify-content: space-between; align-items: flex-end; height: 220rpx; margin-top: 20rpx; }
+.up-col { width: 13%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
+.up-n { font-size: 22rpx; color: #4a5060; margin-bottom: 6rpx; }
+.up-bar { width: 36rpx; border-radius: 8rpx; background: linear-gradient(180deg, #7b8cff, #4f6bed); }
+.up-lb { font-size: 20rpx; color: #8a90a0; margin-top: 8rpx; }

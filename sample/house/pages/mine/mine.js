@@ -1,54 +1,72 @@
-const D = require('../../utils/data.js')
-
-const SEED_BOOKING = {
-  id: 1, houseId: 'h2', community: '西溪诚园', cover: '/images/h2_living.png', layout: '2室1厅1卫', area: 89,
-  time: '10-19 周六 14:00-16:00', agent: '陆明轩', status: '已带看'
-}
-
+const S = require('../../utils/store.js')
+const host = require('../../utils/host.js')
 Page({
   data: {
+    profile: { name: '', need: '' },
+    initial: '',
     favCount: 0,
     historyCount: 0,
+    bookingCount: 0,
+    pendingCount: 0,
+    subCount: 0,
     bookings: [],
-    menus: [
-      { text: '房贷计算器', glyph: '算', bg: '#ff6a1f', hint: 'LPR 3.5%' },
-      { text: '我要卖房', glyph: '卖', bg: '#3a86ff', hint: '免费估价' },
-      { text: '房源订阅', glyph: '订', bg: '#19a974', hint: '滨江 · 三房' },
-      { text: '联系客服', glyph: '服', bg: '#8b5cf6', hint: '400-810-6688' }
-    ]
+    menus: []
   },
-
   onShow() {
-    const tb = this.getTabBar && this.getTabBar()
-    if (tb) tb.setData({ selected: 2 })
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) this.getTabBar().setData({ selected: 2 })
+    const bookings = S.getBookings()
+    const subs = S.getSubs()
+    const entrusts = S.getEntrusts().filter(e => e.status !== 'withdrawn')
     this.setData({
-      favCount: D.getFavs().length,
-      historyCount: (wx.getStorageSync('house_history') || []).length,
-      bookings: D.getBookings().concat([SEED_BOOKING])
+      profile: S.getProfile(),
+      initial: S.getProfile().name.slice(0, 1),
+      favCount: S.getFavs().length,
+      historyCount: S.getHistory().length,
+      bookingCount: bookings.length,
+      pendingCount: bookings.filter(b => b.status === 'pending').length,
+      subCount: subs.length,
+      // 卡片里只放最近两条，其余去「全部」
+      bookings: bookings.slice(0, 2),
+      menus: [
+        { key: 'calc', text: '房贷计算器', glyph: '算', bg: '#ff6a1f', hint: 'LPR 3.5%' },
+        { key: 'sell', text: '我要卖房', glyph: '卖', bg: '#3a86ff', hint: entrusts.length ? entrusts.length + ' 条委托' : '免费估价' },
+        { key: 'sub', text: '房源订阅', glyph: '订', bg: '#19a974', hint: subs.length ? (subs[0].text + (subs.length > 1 ? ' 等' : '')) : '未订阅' },
+        { key: 'price', text: '查房价', glyph: '价', bg: '#f5a300', hint: '各区均价' },
+        { key: 'service', text: '联系客服', glyph: '服', bg: '#8b5cf6', hint: '400-810-6688' }
+      ]
     })
   },
-
   onFavTab() {
+    getApp().globalData.favTab = 0
     wx.switchTab({ url: '/pages/favorite/favorite' })
   },
-
+  onHistoryTab() {
+    getApp().globalData.favTab = 1
+    wx.switchTab({ url: '/pages/favorite/favorite' })
+  },
+  onBookings() {
+    wx.navigateTo({ url: '/pages/bookings/bookings' })
+  },
+  onSubs() {
+    wx.navigateTo({ url: '/pages/subscribe/subscribe' })
+  },
   onEdit() {
+    const needs = S.NEEDS
     wx.showActionSheet({
-      itemList: ['刚需首套', '改善置换', '投资', '租房'],
-      success: () => wx.showToast({ title: '已更新购房需求', icon: 'none' })
+      itemList: needs,
+      success: res => {
+        S.setNeed(needs[res.tapIndex])
+        this.setData({ profile: S.getProfile() })
+        wx.showToast({ title: '已更新购房需求', icon: 'none' })
+      }
     })
   },
-
   onMenu(e) {
-    const i = Number(e.currentTarget.dataset.i)
-    if (i === 0) {
-      const r = 0.035 / 12, n = 360
-      const pay = Math.round(3000000 * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1))
-      wx.showModal({ title: '房贷计算器', content: '贷款 300 万 · 30 年 · 等额本息\n月供约 ' + pay + ' 元', showCancel: false, confirmColor: '#ff5a1f' })
-    } else if (i === 3) {
-      wx.makePhoneCall({ phoneNumber: '4008106688', fail() {} })
-    } else {
-      wx.showToast({ title: '已提交，顾问稍后联系您', icon: 'none' })
-    }
+    const key = e.currentTarget.dataset.key
+    if (key === 'calc') wx.navigateTo({ url: '/pages/calc/calc' })
+    else if (key === 'sell') wx.navigateTo({ url: '/pages/sell/sell' })
+    else if (key === 'sub') wx.navigateTo({ url: '/pages/subscribe/subscribe' })
+    else if (key === 'price') wx.navigateTo({ url: '/pages/price/price' })
+    else host.call('400 810 6688', '安居找房客服')
   }
 })

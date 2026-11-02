@@ -1,0 +1,20 @@
+.wrap { position: relative; }
+.map { width: 100%; height: 560rpx; background: #e8eef0; }
+.status { position: absolute; left: 24rpx; right: 24rpx; top: 20rpx; background: #13a868; color: #ffffff; font-size: 26rpx; padding: 18rpx 24rpx; border-radius: 14rpx; }
+.st-lock { background: #de6e12; }
+.catchup { position: absolute; left: 24rpx; right: 24rpx; top: 110rpx; background: rgba(31, 35, 41, 0.8); color: #ffffff; font-size: 24rpx; padding: 14rpx 24rpx; border-radius: 12rpx; }
+.panel { background: #ffffff; border-radius: 32rpx 32rpx 0 0; margin-top: -32rpx; position: relative; padding: 36rpx 32rpx 48rpx; display: flex; flex-direction: column; }
+.dur-box { display: flex; flex-direction: column; align-items: center; }
+.dur { font-size: 88rpx; font-weight: bold; color: #1f2329; letter-spacing: 2rpx; }
+.dur-k { font-size: 24rpx; color: #8a9099; }
+.stats { display: flex; flex-direction: row; margin-top: 32rpx; }
+.stat { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.sv { font-size: 40rpx; font-weight: bold; color: #1f2329; }
+.sk { font-size: 22rpx; color: #8a9099; margin-top: 6rpx; }
+.disc { margin-top: 24rpx; background: #e3f7ee; color: #13a868; font-size: 24rpx; padding: 14rpx 20rpx; border-radius: 10rpx; text-align: center; }
+.from { margin-top: 20rpx; text-align: center; }
+.ops { display: flex; flex-direction: row; margin-top: 36rpx; }
+.op { flex: 1; margin: 0 10rpx; }
+.links { display: flex; flex-direction: row; justify-content: center; margin-top: 28rpx; }
+.link { font-size: 24rpx; color: #576b95; }
+.empty-btn { width: 360rpx; margin-top: 40rpx; }

@@ -1,0 +1,53 @@
+<view class="page tab-page {{theme}}">
+  <view class="user row">
+    <image class="avatar" src="/images/me.jpg"></image>
+    <view class="flex1">
+      <text class="name">静心用户</text>
+      <text class="sub">已陪伴你 {{streak.totalDays}} 天 · 最长连续 {{streak.best}} 天</text>
+    </view>
+  </view>
+
+  <view class="card row stats">
+    <view class="st"><text class="st-n">{{stats.minutes}}</text><text class="sub">累计分钟</text></view>
+    <view class="st"><text class="st-n">{{stats.count}}</text><text class="sub">练习次数</text></view>
+    <view class="st"><text class="st-n">{{streak.streak}}</text><text class="sub">连续打卡</text></view>
+    <view class="st"><text class="st-n">{{doneChapters}}</text><text class="sub">完成章节</text></view>
+  </view>
+
+  <view class="card">
+    <text class="c-title">外观</text>
+    <radio-group class="row theme-opts" bindchange="onTheme">
+      <label wx:for="{{themeOpts}}" wx:key="value" class="t-opt row">
+        <radio value="{{item.value}}" checked="{{mode === item.value}}" color="#6c63d9"></radio>
+        <text class="t-tx">{{item.name}}</text>
+      </label>
+    </radio-group>
+    <text class="sub">「跟随系统」时随手机的深色模式自动切换</text>
+  </view>
+
+  <view class="card list">
+    <view class="li row" bindtap="goFav" hover-class="btn-hover"><text class="flex1">我的收藏</text><text class="sub">{{favN}} 门课程 ›</text></view>
+    <view class="li row" bindtap="goMood" hover-class="btn-hover"><text class="flex1">心情日记</text><text class="sub">{{moodN}} 篇 ›</text></view>
+    <view class="li row" bindtap="goBreath" hover-class="btn-hover"><text class="flex1">呼吸练习</text><text class="sub">已练 {{stats.breath}} 次 ›</text></view>
+    <view class="li row">
+      <text class="flex1">切到后台时继续播白噪音</text>
+      <switch checked="{{settings.noiseOnHide}}" color="#6c63d9" bindchange="onNoiseHide"></switch>
+    </view>
+    <view class="li row last" bindtap="clearData" hover-class="btn-hover"><text class="flex1 danger">清除本地数据</text><text class="sub">›</text></view>
+  </view>
+
+  <view class="sec-head"><text class="sec-title">最近练习</text></view>
+  <view wx:if="{{recent.length === 0}}" class="empty">
+    <view class="empty-ic"></view>
+    <text class="empty-tx">还没有练习记录，去听一节课吧</text>
+  </view>
+  <view wx:else class="card list">
+    <view wx:for="{{recent}}" wx:key="ts" class="li row {{index === recent.length - 1 ? 'last' : ''}}">
+      <view class="flex1">
+        <text class="r-t">{{item.title}}</text>
+        <text class="sub">{{item.date}} · {{item.durText}}</text>
+      </view>
+      <text class="r-type">{{item.type === 'breath' ? '呼吸' : '课程'}}</text>
+    </view>
+  </view>
+</view>

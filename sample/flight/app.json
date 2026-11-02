@@ -1,0 +1,34 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/orders/orders",
+    "pages/mine/mine",
+    "pages/city/city",
+    "pages/calendar/calendar",
+    "pages/list/list",
+    "pages/flight/flight",
+    "pages/order-fill/order-fill",
+    "pages/passengers/passengers",
+    "pages/passenger-edit/passenger-edit",
+    "pages/pay-result/pay-result",
+    "pages/order-detail/order-detail"
+  ],
+  "window": {
+    "navigationBarTitleText": "云翼机票",
+    "navigationBarBackgroundColor": "#1f6fff",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f2f5fa"
+  },
+  "tabBar": {
+    "color": "#9aa3b2",
+    "selectedColor": "#1f6fff",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "custom": true,
+    "list": [
+      { "pagePath": "pages/index/index", "text": "机票", "iconPath": "images/tab/home.png", "selectedIconPath": "images/tab/home-on.png" },
+      { "pagePath": "pages/orders/orders", "text": "订单", "iconPath": "images/tab/order.png", "selectedIconPath": "images/tab/order-on.png" },
+      { "pagePath": "pages/mine/mine", "text": "我的", "iconPath": "images/tab/user.png", "selectedIconPath": "images/tab/user-on.png" }
+    ]
+  }
+}

@@ -1,0 +1,69 @@
+.form {
+  padding-top: 4rpx;
+  padding-bottom: 4rpx;
+}
+.f-row {
+  min-height: 100rpx;
+  border-bottom: 1rpx solid #f0f1f4;
+  font-size: 28rpx;
+}
+.no-border {
+  border-bottom: 0;
+}
+.f-label {
+  width: 160rpx;
+  color: #5c6370;
+  flex-shrink: 0;
+}
+.f-label-strong {
+  display: block;
+  font-size: 28rpx;
+}
+.f-hint {
+  display: block;
+}
+.f-input {
+  height: 64rpx;
+  font-size: 28rpx;
+}
+.ph {
+  color: #b0b4bc;
+}
+.chip {
+  height: 52rpx;
+  line-height: 50rpx;
+  padding: 0 28rpx;
+  margin-right: 16rpx;
+  border-radius: 26rpx;
+  background: #f5f6f8;
+  border: 1rpx solid #f5f6f8;
+  font-size: 24rpx;
+  color: #5c6370;
+  white-space: nowrap;
+}
+.chip-g {
+  padding: 0 20rpx;
+  margin: 0 0 0 12rpx;
+}
+.chip-on {
+  background: #e8f1ff;
+  border-color: #1677ff;
+  color: #1677ff;
+  font-weight: bold;
+}
+.save {
+  margin: 48rpx 24rpx 0;
+  height: 88rpx;
+  line-height: 88rpx;
+  font-size: 30rpx;
+}
+.del {
+  margin: 24rpx 24rpx 40rpx;
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  border-radius: 44rpx;
+  background: #ffffff;
+  color: #ff4d2d;
+  font-size: 28rpx;
+}

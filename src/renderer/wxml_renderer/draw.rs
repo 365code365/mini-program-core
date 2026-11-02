@@ -194,6 +194,9 @@ impl WxmlRenderer {
         // 同层渲染的原生组件（`<map>` 这类，宿主画好帧交过来）：画在框的背景之上、子节点之下
         if crate::renderer::components::host_view::is_same_layer(node.tag.as_str()) {
             crate::renderer::components::host_view::draw(node, ctx.canvas, x, y, w, h);
+        } else if node.tag == "live-player" && crate::renderer::components::host_feed::host_feeds_live() {
+            // 同层渲染的直播：宿主播放器交来的帧（components::live_player）
+            crate::renderer::components::live_player::draw(node, ctx.canvas, x, y, w, h);
         } else if crate::renderer::components::native_placeholder::label_of(node.tag.as_str()).is_some()
             && !self.is_host_native(node.tag.as_str())
         {

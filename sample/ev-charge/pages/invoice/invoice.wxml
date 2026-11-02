@@ -1,0 +1,79 @@
+<view class="tabs row">
+  <view class="tab tab-order {{tab === 'order' ? 'tab-on' : ''}}" data-k="order" bindtap="onTab"><text class="tab-t">按订单开票</text></view>
+  <view class="tab tab-list {{tab === 'list' ? 'tab-on' : ''}}" data-k="list" bindtap="onTab"><text class="tab-t">开票记录（{{records.length}}）</text></view>
+</view>
+<block wx:if="{{tab === 'order'}}">
+  <view wx:if="{{!orders.length}}" class="empty col">
+    <view class="empty-ic"><text class="empty-ic-t">票</text></view>
+    <text class="sub">没有可开票的订单，充电支付完成后可以在这里开票</text>
+    <view class="btn-ghost empty-btn" bindtap="onGoOrders">查看订单</view>
+  </view>
+  <block wx:else>
+    <view class="card list">
+      <view class="it row {{index === orders.length - 1 ? 'last' : ''}}" wx:for="{{orders}}" wx:key="id" data-id="{{item.id}}" bindtap="onToggle">
+        <view class="check {{item.on ? 'check-on' : ''}}"><view wx:if="{{item.on}}" class="tick"></view></view>
+        <view class="flex1 it-body col">
+          <text class="it-name">{{item.name}}</text>
+          <text class="sub">{{item.date}}·{{item.kwh}} 度</text>
+        </view>
+        <text class="it-pay">¥{{item.pay}}</text>
+      </view>
+    </view>
+    <view class="card form">
+      <view class="row between f-head">
+        <text class="section-title">发票信息</text>
+        <text class="import" bindtap="onImportTitle">导入微信抬头</text>
+      </view>
+      <view class="field row">
+        <text class="f-label">抬头类型</text>
+        <view class="row flex1">
+          <text class="chip kind-company {{kind === 'company' ? 'chip-on' : ''}}" data-k="company" bindtap="onKind">企业单位</text>
+          <text class="chip kind-person {{kind === 'person' ? 'chip-on' : ''}}" data-k="person" bindtap="onKind">个人 / 非企业</text>
+        </view>
+      </view>
+      <!-- 输入框 id 跟着 formSeq 变：导入抬头后让输入框重建（引擎里打过字的输入框 setData 改 value 不重画） -->
+      <view class="field row">
+        <text class="f-label">发票抬头</text>
+        <input id="i-title-{{formSeq}}" class="f-input i-title flex1" placeholder="{{kind === 'company' ? '公司全称' : '个人姓名'}}" placeholder-class="ph" value="{{title}}" maxlength="40" bindinput="onTitle" />
+      </view>
+      <view wx:if="{{kind === 'company'}}" class="field row">
+        <text class="f-label">税号</text>
+        <input id="i-tax-{{formSeq}}" class="f-input i-tax flex1" placeholder="纳税人识别号 15-20 位" placeholder-class="ph" value="{{taxNo}}" maxlength="20" bindinput="onTaxNo" />
+      </view>
+      <view class="field row no-line">
+        <text class="f-label">接收邮箱</text>
+        <input class="f-input i-email flex1" placeholder="用于接收电子发票" placeholder-class="ph" value="{{email}}" maxlength="40" bindinput="onEmail" />
+      </view>
+    </view>
+    <text class="hint">按实付金额开票（券抵扣部分不开票）；多笔订单合开一张，开票后不能再单独开。</text>
+    <view class="gap"></view>
+    <view class="bar row">
+      <view class="all row" bindtap="onAll">
+        <view class="check {{allOn ? 'check-on' : ''}}"><view wx:if="{{allOn}}" class="tick"></view></view>
+        <text class="all-t">全选</text>
+      </view>
+      <view class="flex1 bar-sum col">
+        <text class="sub">{{count}} 笔订单</text>
+        <text class="bar-num">¥{{amount}}</text>
+      </view>
+      <view class="btn-primary submit-btn {{count ? '' : 'btn-off'}}" bindtap="onSubmit">开具发票</view>
+    </view>
+  </block>
+</block>
+<block wx:else>
+  <view wx:if="{{!records.length}}" class="empty col">
+    <view class="empty-ic"><text class="empty-ic-t">票</text></view>
+    <text class="sub">还没有开过发票</text>
+  </view>
+  <view class="card rec" wx:for="{{records}}" wx:key="id" data-i="{{index}}" bindtap="onRecord">
+    <view class="row between">
+      <text class="rec-title">{{item.title}}</text>
+      <text class="rec-amt">¥{{item.amountText}}</text>
+    </view>
+    <view class="row between rec-meta">
+      <text class="sub">{{item.kindName}}·{{item.n}} 笔订单·{{item.time}}</text>
+      <text class="rec-status">已开具</text>
+    </view>
+    <text class="sub">发送至 {{item.email}}</text>
+  </view>
+</block>

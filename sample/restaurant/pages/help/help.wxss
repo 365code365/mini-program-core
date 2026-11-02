@@ -1,0 +1,28 @@
+.faq { border-bottom: 1rpx solid #f5f6f8; }
+.faq:last-child { border-bottom: 0; }
+.q-row { display: flex; flex-direction: row; align-items: center; min-height: 96rpx; }
+.q-mark { width: 36rpx; height: 36rpx; line-height: 36rpx; text-align: center; border-radius: 8rpx; background: #fff1ea; color: #ff6a2b; font-size: 22rpx; font-weight: bold; margin-right: 16rpx; flex-shrink: 0; }
+.q-text { flex: 1; min-width: 0; font-size: 28rpx; }
+/* 字体里的 › 在引擎里画不出来，箭头用边框画 */
+.arrow { width: 14rpx; height: 14rpx; border-top: 3rpx solid #b4b8bf; border-right: 3rpx solid #b4b8bf; margin: 0 6rpx 0 12rpx; flex-shrink: 0; }
+.arrow-down { transform: rotate(135deg); }
+.arrow-up { transform: rotate(-45deg); }
+.a-text { display: block; font-size: 24rpx; line-height: 40rpx; color: #5c6370; padding: 0 0 24rpx 52rpx; }
+.call { display: flex; flex-direction: row; align-items: center; }
+.call-ic { width: 72rpx; height: 72rpx; border-radius: 36rpx; background: linear-gradient(135deg, #8bd17c, #3ea35a); display: flex; flex-direction: row; align-items: center; justify-content: center; margin-right: 20rpx; flex-shrink: 0; }
+.call-ic-t { color: #ffffff; font-size: 30rpx; font-weight: bold; }
+.call-info { flex: 1; min-width: 0; }
+.call-t { font-size: 28rpx; font-weight: bold; }
+.call-btn { padding: 0 30rpx; height: 56rpx; border-radius: 28rpx; background: #ff6a2b; color: #ffffff; font-size: 24rpx; font-weight: bold; display: flex; flex-direction: row; align-items: center; flex-shrink: 0; }
+.types { display: flex; flex-direction: row; flex-wrap: wrap; margin-top: 12rpx; }
+.type { padding: 10rpx 22rpx; border-radius: 28rpx; border: 2rpx solid #e3e5e8; font-size: 24rpx; color: #5c6370; margin: 16rpx 16rpx 0 0; white-space: nowrap; }
+.type-on { border-color: #ff6a2b; color: #ff6a2b; background: #fff1ea; }
+.fb-text { width: 100%; height: 200rpx; background: #f5f6f8; border-radius: 16rpx; padding: 20rpx; margin-top: 24rpx; font-size: 28rpx; box-sizing: border-box; }
+.fb-foot { display: flex; flex-direction: row; align-items: center; justify-content: space-between; margin-top: 20rpx; }
+.fb-btn { width: 220rpx; height: 72rpx; font-size: 28rpx; }
+.fb { padding: 24rpx 0; border-bottom: 1rpx solid #f5f6f8; }
+.fb:last-child { border-bottom: 0; }
+.fb-type { font-size: 24rpx; color: #ff6a2b; background: #fff1ea; border-radius: 8rpx; padding: 2rpx 12rpx; }
+.fb-content { display: block; font-size: 28rpx; line-height: 42rpx; margin-top: 12rpx; }
+.fb-status { display: block; margin-top: 8rpx; }
+.gap { height: 48rpx; }

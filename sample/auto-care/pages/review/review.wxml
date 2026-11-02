@@ -1,0 +1,23 @@
+<view class="wrap" wx:if="{{order}}">
+  <view class="card">
+    <text class="title">{{order.storeName}}</text>
+    <text class="sub">{{order.date}} · {{order.items.length}} 个项目 · ¥{{order.total}}</text>
+    <view class="row stars">
+      <text class="star {{item <= star ? 'star-on' : ''}}" wx:for="{{stars}}" wx:key="*this" data-n="{{item}}" bindtap="onStar">★</text>
+      <text class="word">{{word}}</text>
+    </view>
+    <view class="row tags">
+      <text class="tg {{item.on ? 'tg-on' : ''}}" wx:for="{{tags}}" wx:key="name" data-i="{{index}}" bindtap="onTag">{{item.name}}</text>
+    </view>
+    <textarea class="ta" value="{{text}}" maxlength="200" placeholder="说说技师的服务、等待时长、价格是否透明…" bindinput="onText"></textarea>
+    <view class="between">
+      <text class="err">{{err}}</text>
+      <text class="sub">{{text.length}}/200</text>
+    </view>
+  </view>
+  <view class="btn" bindtap="submit">提交评价</view>
+</view>
+<view class="empty" wx:if="{{!order}}">
+  <text class="empty-tx">没有找到要评价的订单</text>
+  <view class="btn-ghost" bindtap="goOrders">查看我的订单</view>
+</view>

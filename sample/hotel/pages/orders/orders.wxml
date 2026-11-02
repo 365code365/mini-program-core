@@ -7,18 +7,18 @@
 <view wx:if="{{!list.length}}" class="empty">
   <view class="empty-ico"><view class="empty-roof"></view><view class="empty-box"></view></view>
   <text class="empty-t">暂无相关订单</text>
-  <view class="empty-btn" bindtap="onGo">去逛逛</view>
+  <view class="empty-btn" bindtap="onGo"><text>去逛逛</text></view>
 </view>
-<view class="order card" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onOpen">
-  <view class="row between o-head">
-    <text class="o-type">酒店</text>
-    <text class="o-status st-{{item.status}}">{{statusText[item.status]}}</text>
+<view class="order card" wx:for="{{list}}" wx:key="id">
+  <view class="row between o-head" data-id="{{item.id}}" bindtap="onOpen">
+    <text class="o-type">{{item.type}}</text>
+    <text class="o-status st-{{item.key}}">{{item.text}}</text>
   </view>
-  <view class="row o-main">
-    <image class="o-img" src="{{item.img}}" mode="aspectFill"></image>
+  <view class="row o-main" data-id="{{item.id}}" bindtap="onOpen">
+    <image class="o-img" src="{{item.img}}" mode="aspectFill" />
     <view class="flex1 o-info">
       <text class="o-name">{{item.hotel}}</text>
-      <text class="sub o-line">{{item.inShort}} - {{item.outShort}} · {{item.nights}}晚 · {{item.count}}间</text>
+      <text class="sub o-line">{{item.when}} · {{item.count}}间</text>
       <text class="sub o-line">{{item.room}}</text>
       <text class="sub o-line">入住人：{{item.guests}}</text>
     </view>
@@ -26,9 +26,10 @@
   <view class="row o-foot">
     <text class="sub">实付</text><text class="o-total">¥{{item.total}}</text>
     <view class="flex1"></view>
-    <view wx:if="{{item.status === 'wait'}}" class="o-btn" data-id="{{item.id}}" catchtap="onCancel">取消订单</view>
-    <view wx:if="{{item.status === 'wait'}}" class="o-btn primary" data-id="{{item.id}}" catchtap="onContact">联系酒店</view>
-    <view wx:if="{{item.status !== 'wait'}}" class="o-btn primary" data-hid="{{item.hid}}" catchtap="onRebook">再次预订</view>
+    <view wx:if="{{item.canCancel}}" class="o-btn o-cancel" data-id="{{item.id}}" bindtap="onCancel"><text>取消订单</text></view>
+    <view wx:if="{{item.key === 'wait' || item.key === 'in'}}" class="o-btn primary o-contact" data-hid="{{item.hid}}" bindtap="onContact"><text>联系酒店</text></view>
+    <view wx:if="{{item.canRate}}" class="o-btn primary o-rate" data-id="{{item.id}}" bindtap="onRate"><text>写点评</text></view>
+    <view wx:if="{{item.key === 'done' || item.key === 'cancel'}}" class="o-btn primary o-rebook" data-hid="{{item.hid}}" bindtap="onRebook"><text>再次预订</text></view>
   </view>
 </view>
 <view class="gap"></view>

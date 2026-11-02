@@ -1,0 +1,26 @@
+<view class="seg row">
+  <view class="seg-item {{tab === index ? 'on' : ''}}" wx:for="{{tabs}}" wx:key="*this" bindtap="onTab" data-i="{{index}}">{{item}} {{counts[index]}}</view>
+</view>
+<view class="card rec" wx:for="{{shown}}" wx:key="id">
+  <view class="row" data-id="{{item.id}}" bindtap="onJob">
+    <view class="logo small" style="background: {{item.co.color}}"><text>{{item.co.short}}</text></view>
+    <view class="col flex1 rec-body">
+      <view class="row between">
+        <text class="rec-title">{{item.title}}</text>
+        <text class="state {{item.cls}}">{{item.statusText}}</text>
+      </view>
+      <text class="sub">{{item.co.name}} · {{item.salary}} · {{item.time}}投递</text>
+    </view>
+  </view>
+  <view class="row rec-foot">
+    <text class="sub flex1">{{item.status === 0 ? '等待 HR 查看' : (item.status === 1 ? 'HR 已查看你的简历' : (item.status === 2 ? 'HR 邀请你面试' : '感谢关注，岗位暂不匹配'))}}</text>
+    <text class="op" wx:if="{{item.status < 2}}" data-id="{{item.id}}" bindtap="onWithdraw">撤回</text>
+    <text class="op" data-id="{{item.id}}" bindtap="onChat">联系 HR</text>
+    <text class="op main" wx:if="{{item.status === 2}}" data-id="{{item.id}}" bindtap="onInterview">看面试</text>
+  </view>
+</view>
+<view class="empty-box" wx:if="{{!shown.length}}">
+  <text class="sub">{{tab === 0 ? '还没有投递记录' : '没有「' + tabs[tab] + '」的投递'}}</text>
+  <view class="empty-btn" bindtap="onGo"><text>去看看职位</text></view>
+</view>
+<view class="safe-bottom"></view>

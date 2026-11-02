@@ -1,0 +1,44 @@
+<view class="wrap" style="height: {{h}}px;">
+  <scroll-view class="left" scroll-y scroll-into-view="{{leftInto}}" style="height: {{h}}px;">
+    <view wx:for="{{depts}}" wx:key="id" id="l-{{index}}" class="li {{active === index ? 'li-on' : ''}}" data-i="{{index}}" bindtap="onLeft">
+      <view wx:if="{{active === index}}" class="li-bar"></view>
+      <text>{{item.name}}</text>
+    </view>
+  </scroll-view>
+  <scroll-view class="right" scroll-y scroll-into-view="{{intoView}}" scroll-with-animation bindscroll="onScroll" style="height: {{h}}px;">
+    <view class="search" bindtap="goSearch"><text class="muted">⌕ 搜索药品</text></view>
+    <view wx:for="{{groups}}" wx:key="id" wx:for-item="g" class="sec" id="sec-{{g.id}}">
+      <text class="sec-n">{{g.name}} · {{g.items.length}}</text>
+      <view wx:for="{{g.items}}" wx:key="id" class="it" data-id="{{item.id}}" bindtap="openDrug">
+        <image class="it-img" src="{{item.img}}" mode="aspectFill"></image>
+        <view class="it-b">
+          <view class="it-n"><text class="{{item.tagCls}}">{{item.tagText}}</text><text class="it-nt">{{item.name}}</text></view>
+          <text class="muted">{{item.brand}} · {{item.specs[0].s}}</text>
+          <text class="muted">月售 {{item.sales}}</text>
+          <view class="it-f">
+            <text class="price">¥{{item.from}}</text>
+            <view class="add" data-id="{{item.id}}" catchtap="addCart">＋</view>
+          </view>
+        </view>
+      </view>
+    </view>
+    <view class="end">已经到底了，找不到的药可以问药师 0571-87001234</view>
+  </scroll-view>
+</view>
+
+<view class="cbar">
+  <view class="cb-ic" id="cartIcon" bindtap="goCart">
+    <image class="cb-img" src="/images/tab/cart-on.png"></image>
+    <text wx:if="{{count}}" class="cb-badge">{{count > 99 ? '99+' : count}}</text>
+  </view>
+  <view class="cb-m" bindtap="goCart">
+    <text wx:if="{{count}}" class="price cb-total">¥{{total}}</text>
+    <text wx:else class="muted">购物车是空的</text>
+    <text class="muted cb-tip">满 49 元免运费</text>
+  </view>
+  <view class="cb-go {{count ? '' : 'cb-dis'}}" bindtap="goCart">去结算</view>
+</view>
+
+<view wx:if="{{ball.on}}" class="ball-x" style="left: {{ball.x}}px; top: {{ball.y}}px;" animation="{{ballX}}">
+  <view class="ball" animation="{{ballY}}"></view>
+</view>

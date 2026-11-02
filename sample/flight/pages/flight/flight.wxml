@@ -1,0 +1,72 @@
+<view class="hd">
+  <view class="row hd-top">
+    <image class="logo" src="{{f.logo}}"></image>
+    <text class="hd-al">{{f.airlineName}} {{f.no}}</text>
+    <text class="hd-date">{{dateText}}</text>
+  </view>
+  <view class="row hd-mid">
+    <view class="col side">
+      <text class="t">{{f.depText}}</text>
+      <text class="ap">{{f.depAirport}}</text>
+    </view>
+    <view class="col mid">
+      <text class="mid-tx">{{f.durText}}</text>
+      <view class="mid-line"></view>
+      <text class="mid-tx">{{f.stop ? '经停' + f.stop : '直飞'}}</text>
+    </view>
+    <view class="col side side-r">
+      <view class="row"><text class="t">{{f.arrText}}</text><text wx:if="{{f.cross}}" class="cross">+1天</text></view>
+      <text class="ap">{{f.arrAirport}}</text>
+    </view>
+  </view>
+  <view class="row hd-foot">
+    <text class="hd-tag">{{f.aircraft}}</text>
+    <text class="hd-tag">{{f.meal}}</text>
+    <text class="hd-tag">准点率 {{f.onTime}}%</text>
+    <text class="hd-tag">航程 {{f.dist}}km</text>
+  </view>
+</view>
+
+<view class="tabs row">
+  <view class="tab {{tab === 0 ? 'tab-on' : ''}}" data-t="0" bindtap="setTab"><text>经济舱</text></view>
+  <view class="tab {{tab === 1 ? 'tab-on' : ''}}" data-t="1" bindtap="setTab"><text>公务舱 / 头等舱</text></view>
+</view>
+
+<view class="fare" wx:for="{{fares}}" wx:key="id">
+  <view class="row between">
+    <view class="col flex1">
+      <text class="fare-name">{{item.name}}</text>
+      <text class="muted small fare-bag">{{item.bag}}</text>
+      <view class="row fare-rule" data-i="{{index}}" bindtap="openRules">
+        <text class="blue small">{{item.refundFrom ? '退票¥' + item.refundFrom + '起' : '免费退票'}} · {{item.changeFrom ? '改签¥' + item.changeFrom + '起' : '免费改签'}} · {{item.endorse}} ›</text>
+      </view>
+    </view>
+    <view class="col fare-r">
+      <view class="row"><text class="price-sym">¥</text><text class="price fare-p">{{item.price}}</text></view>
+      <text class="muted small">{{item.discount}}</text>
+      <view class="btn btn-orange book" hover-class="btn-hover" data-i="{{index}}" bindtap="book"><text>{{trip === 'round' && leg === 1 ? '选为去程' : '预订'}}</text></view>
+      <text wx:if="{{item.seats <= 5}}" class="seats">仅剩{{item.seats}}张</text>
+    </view>
+  </view>
+</view>
+<view class="tip"><text class="muted small">票价不含民航发展基金与燃油附加费（本航线共 ¥{{tax}}/人），以下单页为准。</text></view>
+
+<view wx:if="{{showRules}}" class="mask" bindtap="closeRules" catchtouchmove="noop"></view>
+<view wx:if="{{showRules}}" class="sheet">
+  <view class="row between">
+    <text class="card-title">{{rules.name}} · 退改签规则</text>
+    <text class="muted" bindtap="closeRules">关闭</text>
+  </view>
+  <text class="muted small r-sub">票面价 ¥{{rules.price}} · {{rules.endorse}} · {{rules.bag}}</text>
+  <view class="r-table">
+    <view class="r-row r-head row">
+      <text class="r-c1">申请时间</text><text class="r-c">退票费</text><text class="r-c">同舱改期费</text>
+    </view>
+    <view class="r-row row" wx:for="{{rules.rows}}" wx:key="win">
+      <text class="r-c1">{{item.win}}</text>
+      <text class="r-c">{{item.refund ? '¥' + item.refund + '/人' : '免费'}}</text>
+      <text class="r-c">{{item.change ? '¥' + item.change + '/人' : '免费'}}</text>
+    </view>
+  </view>
+  <text class="muted small r-note">改期如有票价差额需另补；民航发展基金与燃油附加费未使用可全额退还。</text>
+</view>

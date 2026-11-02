@@ -138,6 +138,33 @@ pub(super) fn box_sides_px(value: &StyleValue, ctx: &ComponentContext) -> Option
     }
 }
 
+/// 带 `auto` 的多值 `margin`（`0 auto`、`60rpx auto 0`、`0 auto 20rpx`…）按 1-4 值语法展开，`auto` 保留成 auto。
+///
+/// [`box_sides_px`] 只认长度，从前 `auto` 被它当成无法解析的词滤掉：`margin: 0 auto` 剩一个 0（四边 0，不居中），
+/// `margin: 60rpx auto 0` 剩两个值（上下 60、左右 0，连下边距都错）。示例里只好在外面套一层 flex 居中绕开。
+/// 不含 `auto` 的写法返回 None，照旧走 [`box_sides_px`]（结果不变）；有一个词既不是 auto 也不是长度时整条不认（同浏览器）
+pub(super) fn margin_sides_with_auto(value: &StyleValue, ctx: &ComponentContext, sf: f32) -> Option<Rect<LengthPercentageAuto>> {
+    let StyleValue::String(s) = value else { return None };
+    let words: Vec<&str> = s.split_whitespace().collect();
+    if words.len() < 2 || words.len() > 4 || !words.contains(&"auto") {
+        return None;
+    }
+    let mut v = Vec::with_capacity(4);
+    for w in &words {
+        if *w == "auto" {
+            v.push(auto());
+        } else {
+            v.push(length(to_px(&parse_inline_value(w), ctx.screen_width, ctx.screen_height)? * sf));
+        }
+    }
+    let [t, r, b, l] = match v.len() {
+        2 => [v[0], v[1], v[0], v[1]],
+        3 => [v[0], v[1], v[2], v[1]],
+        _ => [v[0], v[1], v[2], v[3]],
+    };
+    Some(Rect { top: t, right: r, bottom: b, left: l })
+}
+
 /// 解析内联样式值
 pub(super) fn parse_inline_value(value: &str) -> StyleValue {
     let value = value.trim();

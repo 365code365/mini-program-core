@@ -1,0 +1,15 @@
+page { padding-top: 24rpx; }
+.rv { display: flex; flex-direction: column; }
+.poster { width: 96rpx; height: 134rpx; border-radius: 10rpx; }
+.info { margin-left: 20rpx; display: flex; flex-direction: column; }
+.title { font-size: 30rpx; font-weight: bold; margin-bottom: 8rpx; }
+.star { font-size: 24rpx; color: #e3e5e8; }
+.star-on { color: #FFB400; }
+.star-text { font-size: 22rpx; color: #FFB400; margin-left: 10rpx; }
+.text { font-size: 26rpx; line-height: 40rpx; margin-top: 18rpx; }
+.tags { margin-top: 14rpx; flex-wrap: wrap; }
+.acts { margin-top: 16rpx; border-top: 1rpx solid #f0f1f3; padding-top: 16rpx; }
+.op { font-size: 24rpx; color: #4e5969; border: 2rpx solid #e3e5e8; border-radius: 26rpx; padding: 6rpx 26rpx; margin-left: 16rpx; white-space: nowrap; }
+.empty { display: flex; flex-direction: column; align-items: center; padding: 200rpx 0; }
+.empty-btn { margin-top: 24rpx; color: #F0384D; border: 2rpx solid #F0384D; border-radius: 30rpx; padding: 10rpx 40rpx; font-size: 26rpx; }
+.gap { height: 24rpx; }

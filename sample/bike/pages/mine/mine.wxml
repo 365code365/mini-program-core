@@ -1,0 +1,52 @@
+<view class="head">
+  <image class="av" src="/images/avatar.png"></image>
+  <view class="who">
+    <text class="nick">绿色出行家</text>
+    <text class="phone">138****6271 · 免押金用户</text>
+  </view>
+</view>
+<view class="stat card">
+  <view class="st"><text class="sv">{{stat.count}}</text><text class="sk">骑行次数</text></view>
+  <view class="st"><text class="sv">{{stat.km}}</text><text class="sk">累计公里</text></view>
+  <view class="st"><text class="sv">{{stat.hours}}</text><text class="sk">骑行小时</text></view>
+  <view class="st"><text class="sv">{{stat.carbon}}</text><text class="sk">减碳（kg）</text></view>
+</view>
+
+<view class="card list">
+  <view class="li" data-url="/pages/wallet/wallet" bindtap="go">
+    <image class="li-ic" src="/images/ic-wallet.png"></image><text class="li-t">我的钱包</text>
+    <text class="li-v">余额 ¥{{balance}}</text><view class="chev"></view>
+  </view>
+  <view class="li" data-url="/pages/wallet/wallet" bindtap="go">
+    <image class="li-ic" src="/images/ic-price.png"></image><text class="li-t">骑行卡</text>
+    <text class="li-v">{{cardTx}}</text><view class="chev"></view>
+  </view>
+  <view class="li" data-url="/pages/trips/trips" bindtap="go">
+    <image class="li-ic" src="/images/ic-trip.png"></image><text class="li-t">行程记录</text>
+    <text class="li-v">{{stat.count}} 次</text><view class="chev"></view>
+  </view>
+  <view class="li" data-url="/pages/fault/fault" bindtap="go">
+    <image class="li-ic" src="/images/ic-fault.png"></image><text class="li-t">故障上报</text>
+    <text class="li-v">{{faults ? faults + ' 条处理中' : ''}}</text><view class="chev"></view>
+  </view>
+  <view class="li" data-url="/pages/pricing/pricing" bindtap="go">
+    <image class="li-ic" src="/images/ic-price.png"></image><text class="li-t">计费说明</text>
+    <text class="li-v"></text><view class="chev"></view>
+  </view>
+  <view class="li" bindtap="onService">
+    <image class="li-ic" src="/images/ic-user.png"></image><text class="li-t">联系客服</text>
+    <text class="li-v">400-000-0999</text><view class="chev"></view>
+  </view>
+</view>
+
+<view class="card list">
+  <view class="li">
+    <text class="li-t">开锁 / 还车震动提示</text>
+    <switch checked="{{settings.vibrate}}" color="#13a868" data-k="vibrate" bindchange="onSwitch"></switch>
+  </view>
+  <view class="li">
+    <text class="li-t">骑行中屏幕常亮</text>
+    <switch checked="{{settings.keepOn}}" color="#13a868" data-k="keepOn" bindchange="onSwitch"></switch>
+  </view>
+</view>
+<text class="ver">青桔骑行 v3.8.2 · 文明骑行，规范停车</text>

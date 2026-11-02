@@ -1,0 +1,6 @@
+.sc { background: #ffffff; border-radius: 20rpx; padding: 28rpx; margin-bottom: 24rpx; }
+.sc-hd { display: flex; flex-direction: row; align-items: center; justify-content: space-between; margin-bottom: 16rpx; }
+.sc-tt-box { display: flex; flex-direction: row; align-items: baseline; }
+.sc-tt { font-size: 30rpx; font-weight: bold; color: #1c2521; line-height: 1.5; }
+.sc-sub { font-size: 22rpx; color: #8b958f; margin-left: 12rpx; line-height: 1.5; }
+.sc-ft { border-top: 1rpx solid #eef1ef; margin-top: 20rpx; padding-top: 20rpx; }

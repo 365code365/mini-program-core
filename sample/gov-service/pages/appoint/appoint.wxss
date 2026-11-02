@@ -1,0 +1,33 @@
+.link { font-size: 24rpx; color: #1d64d8; }
+.hall { margin-top: 20rpx; padding: 16rpx; border: 2rpx solid #eef1f6; border-radius: 14rpx; }
+.hall.on { border-color: #1d64d8; background: #f5f8ff; }
+.h-img { width: 120rpx; height: 90rpx; border-radius: 10rpx; flex-shrink: 0; }
+.h-main { flex: 1; margin: 0 16rpx; display: flex; flex-direction: column; }
+.h-n { font-size: 27rpx; font-weight: 600; margin-bottom: 4rpx; }
+.sel { margin-top: 16rpx; height: 84rpx; padding: 0 20rpx; background: #f6f8fb; border-radius: 12rpx; font-size: 27rpx; }
+.arr { font-size: 36rpx; color: #c4cad6; }
+.dates { white-space: nowrap; margin-top: 16rpx; }
+.d { display: inline-flex; flex-direction: column; align-items: center; width: 116rpx; padding: 14rpx 0; margin-right: 14rpx; border-radius: 12rpx; background: #f6f8fb; }
+.d.on { background: #1d64d8; }
+.d-w { font-size: 24rpx; color: #5b6575; }
+.d-md { font-size: 26rpx; font-weight: 600; margin-top: 4rpx; }
+.d.on .d-w, .d.on .d-md { color: #fff; }
+.st { display: block; margin-top: 28rpx; }
+.slots { display: flex; flex-direction: row; flex-wrap: wrap; margin-top: 8rpx; }
+.s { width: 200rpx; margin: 12rpx 14rpx 0 0; padding: 12rpx 0; border-radius: 10rpx; border: 2rpx solid #dfe5ee; display: flex; flex-direction: column; align-items: center; }
+.s.on { border-color: #1d64d8; background: #e8f0fe; }
+.s.off { background: #f3f4f6; border-color: #f3f4f6; }
+.s-t { font-size: 24rpx; }
+.s-l { font-size: 20rpx; color: #16a34a; margin-top: 2rpx; }
+.s.off .s-t, .s.off .s-l { color: #b4bccb; }
+.tk { border: 2rpx solid #bbf7d0; }
+.tk-ok { margin-left: 10rpx; font-size: 30rpx; font-weight: 600; color: #16a34a; }
+.tk-no { display: block; text-align: center; font-size: 96rpx; font-weight: 700; color: #1d64d8; letter-spacing: 8rpx; margin: 16rpx 0 4rpx; }
+.kv { display: flex; flex-direction: row; padding: 8rpx 0; }
+.k { width: 140rpx; color: #8a94a6; font-size: 25rpx; flex-shrink: 0; }
+.v { flex: 1; font-size: 25rpx; }
+.tk-tip { display: block; margin-top: 12rpx; font-size: 22rpx; color: #ea580c; }
+.tk-b { margin-top: 20rpx; }
+.a { flex: 1; margin: 0 8rpx; height: 72rpx; line-height: 72rpx; font-size: 27rpx; }
+.safe-bar { height: calc(140rpx + env(safe-area-inset-bottom)); }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; padding: 16rpx 32rpx calc(16rpx + env(safe-area-inset-bottom)); background: #fff; border-top: 1rpx solid #e6eaf0; }

@@ -1,0 +1,20 @@
+<scroll-view scroll-x class="nt-types">
+  <view class="nt-type {{type === item ? 'on' : ''}}" wx:for="{{types}}" wx:key="*this" data-t="{{item}}" bindtap="pick">{{item}}</view>
+</scroll-view>
+<view class="row between nt-bar">
+  <text class="muted">{{refreshedAt ? refreshedAt + ' 已刷新' : '下拉可刷新'}}</text>
+  <view class="row"><text class="nt-op" bindtap="manualRefresh">刷新</text><text class="nt-op" bindtap="readAll">全部已读</text></view>
+</view>
+<view class="card nt-item" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="open" hover-class="btn-hover" hover-stay-time="100">
+  <view class="row">
+    <text class="tag" wx:if="{{item.top}}">置顶</text>
+    <text class="tag gray">{{item.type}}</text>
+    <view class="flex1"></view>
+    <view class="nt-dot" wx:if="{{item.unread}}"></view>
+  </view>
+  <text class="nt-t {{item.unread ? 'bold' : ''}}">{{item.title}}</text>
+  <text class="muted">{{item.dept}} · {{item.date}}</text>
+</view>
+<view class="empty" wx:if="{{!list.length}}"><view class="empty-ic">📭</view><text>这个分类下暂无通知</text></view>
+<include src="../common/footer.wxml"></include>
+<view class="tab-space"></view>

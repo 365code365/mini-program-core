@@ -59,6 +59,8 @@ fn feeds() -> &'static Mutex<HashMap<String, Feed>> {
 thread_local! {
     /// 这个引擎（线程）里 `<video>` 走同层渲染。thread_local 的理由同 `HOST_OWNS_VIDEO`
     static ON: Cell<bool> = const { Cell::new(false) };
+    /// `<live-player>` 也走同层渲染（同一个帧表、同一套 `videos` / `videoCommand`，见 host/engine_live_player.rs）
+    static LIVE: Cell<bool> = const { Cell::new(false) };
     /// 引擎线程上攒的、要发给宿主的播放命令（点击 / VideoContext），`MiniEngine` 每帧取走
     static COMMANDS: RefCell<Vec<serde_json::Value>> = const { RefCell::new(Vec::new()) };
 }
@@ -70,6 +72,16 @@ pub fn set_host_feeds_video(on: bool) {
 
 pub fn host_feeds_video() -> bool {
     ON.with(|c| c.get())
+}
+
+/// `MiniEngine` 换页重建渲染器时设（选项 `sameLayer` 同时有 video 与 live-player）
+pub fn set_host_feeds_live(on: bool) {
+    LIVE.with(|c| c.set(on));
+}
+
+/// `<live-player>` 由宿主的播放器解码、帧交给引擎画
+pub fn host_feeds_live() -> bool {
+    LIVE.with(|c| c.get()) && host_feeds_video()
 }
 
 /// 节点的键：`id`，没有就是 `src`

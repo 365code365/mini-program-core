@@ -1,0 +1,13 @@
+.hero { width: 750rpx; display: block; }
+.title { font-size: 38rpx; font-weight: bold; }
+.author { margin: 20rpx 0; }
+.av { width: 72rpx; height: 72rpx; border-radius: 36rpx; }
+.author-mid { flex: 1; margin-left: 16rpx; display: flex; flex-direction: column; }
+.name { font-size: 26rpx; font-weight: bold; }
+.followed { color: #8a9186; border-color: #d5d9d1; }
+.body { font-size: 28rpx; line-height: 1.8; color: #3b4537; }
+.gl { display: flex; flex-direction: row; margin-top: 20rpx; }
+.gl-img { width: 150rpx; height: 150rpx; border-radius: 12rpx; }
+.gl-mid { flex: 1; margin-left: 18rpx; display: flex; flex-direction: column; justify-content: space-between; }
+.gl-name { font-size: 28rpx; font-weight: bold; }
+.gl-single { margin-left: 10rpx; }

@@ -1,0 +1,4 @@
+.sr { display: flex; flex-direction: row; align-items: center; }
+.sr-star { color: #dde2df; margin-right: 8rpx; line-height: 1.2; }
+.sr-on { color: #ffb020; }
+.sr-word { font-size: 26rpx; color: #f08c00; margin-left: 12rpx; line-height: 1.5; }

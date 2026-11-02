@@ -1,0 +1,73 @@
+<block wx:if="{{mode === 'form'}}">
+  <view class="wrap" wx:if="{{p}}">
+    <view class="card">
+      <text class="muted">理赔保单</text>
+      <text class="cl-pname">{{p.productName}}</text>
+      <text class="muted">保单号 {{p.policyNo}} · 被保险人 {{p.holder.name}}</text>
+    </view>
+    <view class="card">
+      <picker range="{{types}}" value="{{type}}" bindchange="onType">
+        <view class="cl-field"><text class="cl-k">出险类型</text><text class="cl-v">{{types[type]}} ›</text></view>
+      </picker>
+      <picker mode="date" value="{{date}}" start="{{p.startDate}}" end="{{today}}" bindchange="onDate">
+        <view class="cl-field"><text class="cl-k">出险日期</text><text class="cl-v">{{date}} ›</text></view>
+      </picker>
+      <view class="cl-field">
+        <text class="cl-k">申请金额</text>
+        <input class="cl-in" type="digit" placeholder="医疗费用合计（元）" value="{{amount}}" bindinput="onAmount"></input>
+      </view>
+      <text class="err" wx:if="{{errors.amount}}">{{errors.amount}}</text>
+      <view class="cl-field"><text class="cl-k">收款账户</text><input class="cl-in" value="{{account}}" bindinput="onAccount"></input></view>
+    </view>
+    <view class="card">
+      <text class="sec-title">出险经过</text>
+      <textarea class="cl-ta" auto-height maxlength="300" placeholder="何时、何地、因何原因就医 / 受伤，治疗情况如何" value="{{desc}}" bindinput="onDesc"></textarea>
+      <view class="row between"><text class="err">{{errors.desc}}</text><text class="muted">{{desc.length}}/300</text></view>
+    </view>
+    <view class="card">
+      <view class="row between"><text class="sec-title">理赔材料</text><text class="muted">病历、发票、费用清单，最多 6 张</text></view>
+      <view class="cl-imgs">
+        <view class="cl-img" wx:for="{{images}}" wx:key="*this">
+          <image src="{{item}}" mode="aspectFill" data-src="{{item}}" bindtap="preview"></image>
+          <view class="cl-x" data-i="{{index}}" catchtap="removeImage">×</view>
+        </view>
+        <view class="cl-add" wx:if="{{images.length < 6}}" bindtap="addImage">＋</view>
+      </view>
+      <text class="err" wx:if="{{errors.images}}">{{errors.images}}</text>
+    </view>
+    <view class="btn btn-primary cl-submit" hover-class="btn-hover" bindtap="submit">{{submitting ? '提交中…' : '提交理赔申请'}}</view>
+    <view class="cl-call" bindtap="call">遇到问题？拨打理赔专线 400-820-6688</view>
+  </view>
+  <view class="empty" wx:else><text class="empty-tx">请从保单页发起理赔</text></view>
+</block>
+
+<view class="wrap" wx:else>
+  <view class="card cl-head" wx:if="{{c}}">
+    <text class="cl-status">{{c.statusText}}</text>
+    <text class="muted">案件号 {{c.id}}</text>
+    <view class="row cl-sum">
+      <view class="cl-sumi"><text class="muted">申请金额</text><text class="cl-num">¥{{amountText}}</text></view>
+      <view class="cl-sumi"><text class="muted">核定赔付</text><text class="cl-num primary">{{c.cur >= 2 ? '¥' + approvedText : '核定中'}}</text></view>
+    </view>
+  </view>
+  <view class="card" wx:if="{{c}}">
+    <text class="sec-title">理赔进度</text>
+    <view class="tl">
+      <view class="tl-item" wx:for="{{c.steps}}" wx:key="name">
+        <view class="tl-axis"><view class="tl-dot tl-{{item.state}}"></view><view class="tl-line" wx:if="{{index < c.steps.length - 1}}"></view></view>
+        <view class="tl-body">
+          <text class="tl-name tl-n-{{item.state}}">{{item.name}}</text>
+          <text class="muted" wx:if="{{item.note}}">{{item.note}}</text>
+          <text class="tl-time" wx:if="{{item.time}}">{{item.time}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+  <view class="card" wx:if="{{c}}">
+    <view class="kv"><text class="kv-k">理赔保单</text><text class="kv-v">{{c.productName}}</text></view>
+    <view class="kv"><text class="kv-k">出险类型</text><text class="kv-v">{{c.type}} · {{c.date}}</text></view>
+    <view class="kv"><text class="kv-k">收款账户</text><text class="kv-v">{{c.account}}</text></view>
+  </view>
+  <view class="btn btn-ghost" wx:if="{{c && !c.finished}}" bindtap="revoke">撤销申请</view>
+  <view class="cl-call" bindtap="call">理赔专线 400-820-6688</view>
+</view>

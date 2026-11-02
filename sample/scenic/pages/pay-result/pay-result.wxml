@@ -1,0 +1,29 @@
+<view class="wrap" wx:if="{{o}}">
+  <view class="top">
+    <view class="ok"><text class="ok-tx">✓</text></view>
+    <text class="h1">支付成功</text>
+    <text class="muted sub">出票成功，入园当天刷身份证或出示电子票即可</text>
+    <text class="price amt">¥{{o.total}}</text>
+    <text class="muted" wx:if="{{o.payWay === 'mock'}}">（模拟支付）</text>
+  </view>
+
+  <view class="card">
+    <view class="kv between"><text class="muted">景区</text><text>{{o.scenicName}}</text></view>
+    <view class="kv between"><text class="muted">入园日期</text><text>{{o.date}}</text></view>
+    <view class="kv between" wx:for="{{o.items}}" wx:key="id"><text class="muted">{{item.name}}</text><text>¥{{item.price}} × {{item.n}}</text></view>
+    <view class="kv between"><text class="muted">游客</text>
+      <view class="row"><text class="pp" wx:for="{{o.people}}" wx:key="idTail">{{item.name}}</text></view>
+    </view>
+    <view class="kv between"><text class="muted">订单号</text><text class="mono">{{o.no}}</text></view>
+  </view>
+
+  <view class="btn" hover-class="press" bindtap="goTicket">查看电子票</view>
+  <view class="row two">
+    <view class="btn-ghost half" hover-class="press" bindtap="goOrder">订单详情</view>
+    <view class="btn-ghost half" hover-class="press" bindtap="goGuide">先听听讲解</view>
+  </view>
+  <text class="home" bindtap="goHome">返回首页</text>
+</view>
+<view class="empty" wx:else>
+  <text class="empty-tx">没有找到这笔订单</text>
+</view>

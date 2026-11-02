@@ -1,0 +1,61 @@
+<view class="wrap">
+  <section-card title="选择订单" sub="服务完成后可开票" footer="{{orders.length > 0}}">
+    <text slot="extra" class="green sub" wx:if="{{!single && orders.length > 1}}" bindtap="pickAll">{{picked.length < orders.length ? '全选' : '全不选'}}</text>
+    <view class="empty-s" wx:if="{{!orders.length}}">
+      <text class="sub">暂无可开票的订单（已完成且未开过票的才能开）</text>
+    </view>
+    <checkbox-group bindchange="onPick">
+      <label class="od row" wx:for="{{orders}}" wx:key="id">
+        <checkbox value="{{item.id}}" checked="{{item.on}}" disabled="{{single}}" color="#13a86b"></checkbox>
+        <view class="col flex1 od-info">
+          <text>{{item.name}}</text>
+          <text class="sub">{{item.date}} · {{item.id}}</text>
+        </view>
+        <text class="price">¥{{item.pay}}</text>
+      </label>
+    </checkbox-group>
+    <view slot="footer" class="between">
+      <text class="sub">已选 {{picked.length}} 笔</text>
+      <view class="row">
+        <text>开票金额 </text>
+        <text class="price big">¥{{total}}</text>
+      </view>
+    </view>
+  </section-card>
+  <form-group id="invForm" title="发票信息" wx:if="{{orders.length}}">
+    <view class="ty between">
+      <text class="ty-lb">抬头类型</text>
+      <radio-group class="row" bindchange="onType">
+        <label class="row ty-it">
+          <radio value="personal" checked="{{form.type === 'personal'}}" color="#13a86b"></radio>
+          <text>个人</text>
+        </label>
+        <label class="row ty-it">
+          <radio value="company" checked="{{form.type === 'company'}}" color="#13a86b"></radio>
+          <text>企业</text>
+        </label>
+      </radio-group>
+    </view>
+    <form-item class="fi" label="发票抬头" name="title" required value="{{form.title}}" rules="{{rules.title}}">
+      <input class="ipt" value="{{form.title}}" placeholder="{{form.type === 'company' ? '公司全称' : '个人姓名'}}" maxlength="40" data-k="title" bindinput="onInput" />
+    </form-item>
+    <form-item class="fi" wx:if="{{form.type === 'company'}}" label="税号" name="taxNo" required value="{{form.taxNo}}" rules="{{rules.taxNo}}">
+      <input class="ipt" value="{{form.taxNo}}" placeholder="统一社会信用代码" maxlength="20" data-k="taxNo" bindinput="onInput" />
+    </form-item>
+    <form-item class="fi" label="接收邮箱" name="email" required value="{{form.email}}" rules="{{rules.email}}">
+      <input class="ipt" value="{{form.email}}" placeholder="电子发票发到这个邮箱" maxlength="60" data-k="email" bindinput="onInput" />
+    </form-item>
+    <text class="sub note">发票内容：家政服务费 · 电子普通发票，与纸质发票同等效力</text>
+  </form-group>
+  <view class="btn {{picked.length ? '' : 'btn-off'}}" wx:if="{{orders.length}}" bindtap="submit">提交开票</view>
+  <section-card title="开票记录" wx:if="{{history.length}}" custom-class="his" ext-class="his">
+    <view class="hi" wx:for="{{history}}" wx:key="id">
+      <view class="between">
+        <text class="hi-tt">{{item.title}}</text>
+        <text class="price">¥{{item.amount}}</text>
+      </view>
+      <text class="sub">{{item.typeText}} · {{item.n}} 笔订单 · {{item.t}} · 已发送至 {{item.email}}</text>
+    </view>
+  </section-card>
+  <view class="bar-gap"></view>
+</view>

@@ -48,4 +48,49 @@ function view(a) {
   return Object.assign({}, a, { tname: t.name, ch: t.ch, bg: t.bg, color: t.color, light: t.light, noTx: fmtNo(a.no), oweTx: money(a.owe), balTx: money(a.balance || 0) });
 }
 
-module.exports = { getAccounts, saveAccounts, getRecords, saveRecords, addRecord, fmtNo, view, money, stamp };
+function getRecord(id) { return getRecords().find(r => String(r.id) === String(id)) || null; }
+function updateRecord(id, patch) {
+  const list = getRecords();
+  const r = list.find(x => String(x.id) === String(id));
+  if (r) Object.assign(r, patch);
+  saveRecords(list);
+  return r;
+}
+// 缴清一个户号：多缴的部分记进余额；返回缴费记录
+function settle(accId, amt, extra) {
+  const accs = getAccounts();
+  const raw = accs.find(x => x.id === accId);
+  const t = data.typeOf(raw.type);
+  raw.balance = Math.round(((raw.balance || 0) + amt - raw.owe) * 100) / 100;
+  raw.owe = 0;
+  raw.period = '';
+  saveAccounts(accs);
+  const rec = addRecord(Object.assign({ type: raw.type, title: t.name, target: raw.no, amount: amt, paid: amt, unit: raw.unit, owner: raw.owner, accId: raw.id }, extra || {}));
+  wx.setStorageSync('lp_last', rec);
+  return rec;
+}
+// 自动缴费：{ cap: 单笔上限, ids: [开通的户号 id] }
+function getAuto() {
+  const v = wx.getStorageSync('lp_autopay');
+  return v && typeof v === 'object' && Array.isArray(v.ids) ? v : { cap: 500, ids: [] };
+}
+function saveAuto(v) { wx.setStorageSync('lp_autopay', v); wx.setStorageSync('lp_auto', v.ids.length > 0); }
+// 账单：按户号生成可复现的近 6 期账单（当期 = 欠费），用量 = 金额 / 单价
+const PRICE = { water: { p: 4.2, u: '吨' }, power: { p: 0.538, u: '度' }, gas: { p: 3.0, u: '立方米' }, net: { p: 0, u: '' } };
+function bills(a) {
+  const seed = Number(String(a.no).slice(-4)) || 1;
+  const now = new Date();
+  const pr = PRICE[a.type] || PRICE.power;
+  const list = [];
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - 1 - i, 1);
+    let amt;
+    if (i === 0 && a.owe > 0) amt = a.owe;
+    else if (a.type === 'net') amt = 199;
+    else amt = Math.round((60 + ((seed * (i + 3)) % 140)) * 100) / 100;
+    const use = pr.p ? Math.round(amt / pr.p * 10) / 10 : 0;
+    list.push({ ym: d.getFullYear() + '年' + (d.getMonth() + 1) + '月', amt, amtTx: money(amt), use, useTx: pr.p ? use + ' ' + pr.u : '包月套餐', price: pr.p ? pr.p + ' 元/' + pr.u : '', paid: !(i === 0 && a.owe > 0) });
+  }
+  return list;
+}
+module.exports = { getAccounts, saveAccounts, getRecords, saveRecords, addRecord, getRecord, updateRecord, settle, getAuto, saveAuto, bills, fmtNo, view, money, stamp };

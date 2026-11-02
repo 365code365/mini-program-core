@@ -1,0 +1,8 @@
+{
+  "navigationBarTitleText": "开具发票",
+  "usingComponents": {
+    "form-group": "../../components/form-group/form-group",
+    "form-item": "../../components/form-item/form-item",
+    "section-card": "../../components/section-card/section-card"
+  }
+}

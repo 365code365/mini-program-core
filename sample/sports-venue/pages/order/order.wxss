@@ -1,0 +1,19 @@
+.head { padding: 36rpx 32rpx 100rpx; background: linear-gradient(160deg, #18c287, #0e8f5f); }
+.head-used { background: linear-gradient(160deg, #5b9bf0, #3a7bd5); }
+.head-ended, .head-cancelled { background: linear-gradient(160deg, #a3a6ad, #7f838b); }
+.h-t { color: #ffffff; font-size: 40rpx; font-weight: bold; }
+.h-left { color: #ffffff; font-size: 22rpx; background: rgba(255, 255, 255, 0.22); border-radius: 20rpx; padding: 2rpx 16rpx; margin-left: 16rpx; }
+.h-s { color: #e6f7f0; font-size: 24rpx; margin-top: 8rpx; }
+.top { margin-top: -70rpx; position: relative; }
+.v-img { width: 120rpx; height: 120rpx; border-radius: 12rpx; flex-shrink: 0; }
+.v-info { margin-left: 20rpx; }
+.v-n { font-size: 30rpx; font-weight: bold; margin-bottom: 6rpx; }
+.v-ops { margin-top: 20rpx; padding-top: 16rpx; border-top: 1rpx solid #f0f2f1; }
+.v-op { flex: 1; text-align: center; color: #13b37b; font-size: 26rpx; }
+.seg { margin-top: 16rpx; }
+.seg-c { font-size: 26rpx; font-weight: bold; width: 150rpx; }
+.seg-t { font-size: 26rpx; }
+.kv { margin-top: 16rpx; font-size: 26rpx; }
+.f-link { color: #8a8d96; font-size: 26rpx; }
+.f-btn { margin-right: 16rpx; }
+.f-main { width: 220rpx; height: 72rpx; line-height: 72rpx; }

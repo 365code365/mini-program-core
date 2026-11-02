@@ -1,0 +1,39 @@
+<view wx:if="{{it}}">
+  <view class="card">
+    <radio-group class="row" bindchange="onWay">
+      <label class="row od-way"><radio value="express" checked="{{way === 'express'}}" color="#1f2329"></radio><text>快递邮寄</text></label>
+      <label class="row od-way"><radio value="face" checked="{{way === 'face'}}" color="#1f2329"></radio><text>当面交易</text></label>
+    </radio-group>
+    <picker wx:if="{{way === 'express'}}" range="{{addrs}}" range-key="detail" value="{{addrIdx}}" bindchange="onAddr">
+      <view class="row od-addr">
+        <view class="flex1">
+          <text class="od-an">{{addrs[addrIdx].name}} {{addrs[addrIdx].phone}}</text>
+          <text class="muted">{{addrs[addrIdx].region}} {{addrs[addrIdx].detail}}</text>
+        </view>
+        <view class="chev"></view>
+      </view>
+    </picker>
+    <view class="od-face" wx:else>
+      <text>卖家在 {{it.sellerInfo.city}}，付款后在私信里约时间地点。</text>
+      <text class="muted">当面验货满意再在订单里「确认收货」。</text>
+    </view>
+  </view>
+  <view class="card row">
+    <image class="od-cover" src="{{it.cover}}" mode="aspectFill"></image>
+    <view class="flex1">
+      <text class="od-t">{{it.title}}</text>
+      <view class="row"><text class="tag">{{it.cond}}</text><text class="muted">{{it.sellerInfo.name}}</text></view>
+    </view>
+  </view>
+  <view class="card">
+    <view class="row between od-kv"><text class="muted">宝贝价格</text><text>¥{{price}}{{price < it.price ? '（议价后，原价 ¥' + it.price + '）' : ''}}</text></view>
+    <view class="row between od-kv"><text class="muted">运费</text><text>{{ship ? '¥' + ship : (way === 'express' ? '包邮' : '无')}}</text></view>
+    <view class="od-kv"><input class="od-remark" placeholder="给卖家留言（选填）" maxlength="60" value="{{remark}}" bindinput="onRemark"></input></view>
+  </view>
+  <view class="od-safe row"><text>🛡</text><text class="muted od-st">担保交易：确认收货前货款由平台保管，收到货不满意可申请退款</text></view>
+  <view class="safe-bottom"></view>
+  <view class="od-bar">
+    <view class="flex1"><text>合计 </text><text class="price"><text class="yen">¥</text>{{total}}</text></view>
+    <view class="btn od-pay" bindtap="submit">{{paying ? '支付中…' : '确认购买'}}</view>
+  </view>
+</view>

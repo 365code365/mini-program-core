@@ -1,0 +1,33 @@
+<view class="page tab-page">
+  <view class="search">
+    <input class="s-input" value="{{kw}}" placeholder="搜索：辅食、发烧、睡眠…" placeholder-class="placeholder" confirm-type="search" bindinput="onKw"></input>
+    <text wx:if="{{kw}}" class="s-clear" bindtap="clearKw">清除</text>
+  </view>
+
+  <scroll-view scroll-x class="stages" enable-flex>
+    <view class="st-row">
+      <view wx:for="{{stages}}" wx:key="key" class="st {{!favOnly && !kw && stage === item.key ? 'st-on' : ''}}" data-k="{{item.key}}" bindtap="pickStage">
+        <text>{{item.name}}</text>
+        <text wx:if="{{item.key === mine}}" class="st-mine">当前</text>
+      </view>
+      <view class="st {{favOnly && !kw ? 'st-on' : ''}}" bindtap="toggleFav"><text>我的收藏 {{favCount}}</text></view>
+    </view>
+  </scroll-view>
+
+  <view wx:if="{{!list.length}}" class="empty">
+    <text class="empty-text">{{kw ? '没有找到「' + kw + '」相关的文章' : (favOnly ? '还没有收藏，读到有用的文章点「收藏」吧' : '这个阶段的文章正在整理')}}</text>
+  </view>
+
+  <view wx:for="{{list}}" wx:key="id" class="card art" data-id="{{item.id}}" bindtap="open" hover-class="item-hover">
+    <image class="cover" src="{{item.cover}}" mode="aspectFill"></image>
+    <view class="col flex1">
+      <text class="title">{{item.title}}</text>
+      <text class="sum">{{item.summary}}</text>
+      <view class="row meta">
+        <text class="tag">{{item.tag}}</text>
+        <text class="muted m-gap">约 {{item.mins}} 分钟读完</text>
+        <text wx:if="{{item.fav}}" class="muted m-gap pink">已收藏</text>
+      </view>
+    </view>
+  </view>
+</view>

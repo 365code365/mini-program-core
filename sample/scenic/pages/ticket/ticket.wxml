@@ -1,0 +1,28 @@
+<view class="page">
+  <view class="wrap" wx:if="{{o}}">
+    <view class="tk">
+      <view class="tk-top">
+        <text class="tk-name">{{o.scenicName}}</text>
+        <text class="tk-date">入园日期 {{o.date}} · {{o.count}} 人</text>
+      </view>
+      <view class="tk-cut row"><view class="hole hole-l"></view><view class="dash"></view><view class="hole hole-r"></view></view>
+      <view class="tk-qr">
+        <canvas canvas-id="qr" class="qr" style="width: {{size}}px; height: {{size}}px;"></canvas>
+        <view class="used" wx:if="{{used}}"><text class="used-tx">{{o.statusText}}</text></view>
+        <text class="code" bindtap="onCopy">入园码 {{codeText}}</text>
+        <text class="muted tip">{{used ? '该票已' + o.statusText + '，二维码已失效' : '请向检票员出示二维码，或在闸机刷身份证'}}</text>
+        <view class="row ops" wx:if="{{!used}}">
+          <view class="op" hover-class="press" bindtap="onToggleBright"><text class="op-tx">{{bright ? '☀ 已调到最亮' : '☀ 调亮屏幕'}}</text></view>
+          <view class="op" hover-class="press" bindtap="onSave"><text class="op-tx">保存到相册</text></view>
+        </view>
+      </view>
+      <view class="tk-ps">
+        <view class="ps between" wx:for="{{o.people}}" wx:key="idTail">
+          <text class="ps-n">{{item.name}}</text><text class="muted">{{item.idMask}}</text>
+        </view>
+      </view>
+    </view>
+    <view class="link" bindtap="goOrder"><text class="link-tx">查看订单详情 ›</text></view>
+  </view>
+  <view class="empty" wx:else><text class="empty-tx">电子票不存在或已删除</text></view>
+</view>

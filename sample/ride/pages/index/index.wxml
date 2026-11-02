@@ -1,4 +1,4 @@
-<view class="map">
+<view class="map {{to ? 'map-short' : ''}}">
   <view class="block park" style="left:40rpx;top:60rpx;width:220rpx;height:150rpx;"></view>
   <view class="block park" style="left:520rpx;top:380rpx;width:200rpx;height:200rpx;"></view>
   <view class="block bld" style="left:300rpx;top:40rpx;width:160rpx;height:120rpx;"></view>
@@ -24,17 +24,32 @@
     <view class="pin-stick"></view>
   </view>
   <view class="locate" bindtap="onLocate"><view class="locate-ring"><view class="locate-dot"></view></view></view>
-  <view class="notice"><text class="notice-tag">安全</text><text class="notice-text">行程全程录音保护中，紧急情况一键报警</text></view>
+  <view class="notice" bindtap="onSafety">
+    <text class="notice-tag">安全</text>
+    <text class="notice-text">{{recording ? '行程全程录音保护中，紧急情况一键报警' : '行程录音保护已关闭，点这里去安全中心'}}</text>
+    <view class="chev"></view>
+  </view>
 </view>
-
 <view class="panel">
+  <view wx:if="{{ongoing}}" class="live row" bindtap="onOngoing">
+    <view class="live-dot"></view>
+    <text class="live-text">{{ongoing.text}}</text>
+    <text class="live-go">查看</text>
+    <view class="chev"></view>
+  </view>
+  <view wx:elif="{{unpaid}}" class="live live-pay row" bindtap="onUnpaid">
+    <view class="live-dot pay-dot"></view>
+    <text class="live-text">{{unpaid.text}} ¥{{unpaid.due}}</text>
+    <text class="live-go">去支付</text>
+    <view class="chev"></view>
+  </view>
   <view class="types">
     <view wx:for="{{types}}" wx:key="key" class="type {{carType === item.key ? 'type-on' : ''}}" data-key="{{item.key}}" bindtap="onType">
       <text class="type-name">{{item.name}}</text>
-      <text class="type-desc">{{item.desc}}</text>
+      <text class="type-desc">{{item.sub}}</text>
     </view>
   </view>
-  <view class="addr" bindtap="onPick" data-type="from">
+  <view class="addr addr-from" bindtap="onPick" data-type="from">
     <view class="dot dot-green"></view>
     <view class="addr-body">
       <text class="addr-main">{{from.name}}</text>
@@ -42,40 +57,132 @@
     </view>
   </view>
   <view class="addr-line"></view>
-  <view class="addr" bindtap="onPick" data-type="to">
+  <view class="addr addr-to" bindtap="onPick" data-type="to">
     <view class="dot dot-orange"></view>
     <view class="addr-body">
       <text class="addr-main {{to ? '' : 'placeholder'}}">{{to ? to.name : '你要去哪儿'}}</text>
       <text class="addr-sub" wx:if="{{to}}">{{to.addr}}</text>
     </view>
+    <view wx:if="{{to}}" class="addr-clear" catchtap="onClearTo"><text class="addr-x">×</text></view>
   </view>
   <view wx:if="{{to}}" class="estimate">
-    <view class="row between">
-      <text class="sub">约 {{km}} 公里 · {{min}} 分钟</text>
-      <text class="sub">已减 ¥5 新客券</text>
+    <view class="opts">
+      <view class="opt opt-when {{when ? 'opt-on' : ''}}" bindtap="openBook">
+        <text class="opt-text">{{when ? whenText + ' 出发' : '现在出发'}}</text>
+        <view class="caret"></view>
+      </view>
+      <view class="opt opt-who {{passenger ? 'opt-on' : ''}}" bindtap="openProxy">
+        <text class="opt-text">{{passenger ? '乘车人 ' + passenger.name : '本人乘车'}}</text>
+        <view class="caret"></view>
+      </view>
     </view>
-    <view class="price-row">
-      <text class="price-label">预估</text>
-      <text class="price">{{price}}</text>
-      <text class="price-unit">元</text>
+    <view class="est-tap" bindtap="onOpenFare">
+      <view class="row between">
+        <text class="sub">约 {{km}} 公里 · {{min}} 分钟</text>
+        <view class="row">
+          <text class="sub {{cut ? 'orange' : ''}}">{{cut ? couponName + ' 已抵 ' + cut + ' 元' : '暂无可用优惠券'}}</text>
+          <view class="chev"></view>
+        </view>
+      </view>
+      <view class="price-row">
+        <text class="price-label">{{cut ? '券后约' : '预估'}}</text>
+        <text class="price">{{price}}</text>
+        <text class="price-unit">元</text>
+      </view>
     </view>
-    <view class="btn-primary" bindtap="onCall">呼叫{{typeName}}</view>
+    <view class="btn-primary call-btn" bindtap="onCall">{{ongoing ? '查看当前行程' : callText}}</view>
   </view>
 </view>
-
 <view wx:if="{{!to}}">
   <view class="section-title">更多出行</view>
   <view class="services">
-    <view class="svc" wx:for="{{services}}" wx:key="name" data-name="{{item.name}}" bindtap="onService">
+    <view class="svc" wx:for="{{services}}" wx:key="key" data-key="{{item.key}}" bindtap="onService">
       <view class="svc-icon" style="background:{{item.bg}}"><text class="svc-glyph">{{item.glyph}}</text></view>
       <text class="svc-name">{{item.name}}</text>
     </view>
   </view>
-  <view class="banner" bindtap="onCoupons">
-    <view>
-      <text class="banner-title">周末出行 5 折起</text>
-      <text class="banner-sub">领 3 张快车券，最高抵 15 元</text>
+  <view class="banner" bindtap="onBanner">
+    <view class="flex1">
+      <text class="banner-title">周末快车券礼包</text>
+      <text class="banner-sub">{{claimed ? '已放进优惠券，叫快车时自动抵扣' : '3 张快车券共 15 元，领取后 30 天内有效'}}</text>
     </view>
-    <view class="banner-btn">立即领取</view>
+    <view class="banner-btn">{{claimed ? '去查看' : '立即领取'}}</view>
   </view>
 </view>
+<view style="height: {{tabGap + 12}}px;"></view>
+
+<block wx:if="{{sheet}}">
+  <view class="mask" bindtap="onCloseSheet"></view>
+  <view class="sheet-panel" style="bottom: {{tabGap}}px;" catchtap="noop">
+    <view class="row between sheet-head">
+      <text class="sheet-title">{{sheetTitle}}</text>
+      <text class="sheet-close" bindtap="onCloseSheet">关闭</text>
+    </view>
+    <block wx:if="{{sheet === 'book'}}">
+      <view class="seg">
+        <view wx:for="{{slotDays}}" wx:key="name" class="seg-item day-tab {{slotDay === index ? 'seg-on' : ''}}" data-i="{{index}}" bindtap="onSlotDay"><text>{{item.name}}</text></view>
+      </view>
+      <view class="chips slots">
+        <text wx:if="{{slotDay === 0}}" class="chip slot-now {{when ? '' : 'chip-on'}}" bindtap="onNow">现在出发</text>
+        <text wx:for="{{slotDays[slotDay].list}}" wx:key="ts" class="chip slot {{when === item.ts ? 'chip-on' : ''}}" data-ts="{{item.ts}}" bindtap="onSlot">{{item.text}}</text>
+      </view>
+      <text wx:if="{{!slotDays[slotDay].list.length}}" class="sub sheet-line">今天已经没有可预约的时段，可以预约明天</text>
+      <text class="sub sheet-line">下单即派司机，司机提前 15 分钟出发；出发前取消免费</text>
+    </block>
+    <block wx:elif="{{sheet === 'hub'}}">
+      <view class="seg">
+        <view class="seg-item hub-mode {{hubMode === 'to' ? 'seg-on' : ''}}" data-mode="to" bindtap="onHubMode"><text>送机 / 送站</text></view>
+        <view class="seg-item hub-mode {{hubMode === 'from' ? 'seg-on' : ''}}" data-mode="from" bindtap="onHubMode"><text>接机 / 接站</text></view>
+      </view>
+      <view class="hub row" wx:for="{{hubs}}" wx:key="name" data-i="{{index}}" bindtap="onHub">
+        <view class="hub-icon {{item.airport ? '' : 'hub-train'}}"><text class="hub-glyph">{{item.airport ? '机' : '站'}}</text></view>
+        <view class="flex1">
+          <text class="hub-name">{{item.name}}</text>
+          <text class="sub hub-sub">{{item.addr}}</text>
+        </view>
+        <view class="hub-right">
+          <text wx:if="{{hubMode === 'to'}}" class="hub-price">约 ¥{{item.price}}</text>
+          <text wx:else class="hub-here">在这里上车</text>
+          <text class="sub hub-km">{{item.km}} 公里</text>
+        </view>
+      </view>
+    </block>
+    <block wx:elif="{{sheet === 'proxy'}}">
+      <view class="who row who-self" bindtap="onSelf">
+        <view class="check {{passenger ? '' : 'check-on'}}"><view wx:if="{{!passenger}}" class="tick"></view></view>
+        <text class="who-name">本人乘车</text>
+      </view>
+      <view class="who row who-contact" wx:for="{{contacts}}" wx:key="phone" data-i="{{index}}" bindtap="onPickContact">
+        <view class="check {{passenger && passenger.phone === item.phone ? 'check-on' : ''}}"><view wx:if="{{passenger && passenger.phone === item.phone}}" class="tick"></view></view>
+        <text class="who-name">{{item.name}}</text>
+        <text class="sub who-sub">{{item.relation}} · {{item.mask}}</text>
+      </view>
+      <!-- 输入框 id 跟着 formSeq 变：引擎里用户打过字的输入框，页面再 setData 改 value 不会重画（框里留着旧字、wx:if 重建也一样），换 id 就是一份新的输入状态 -->
+      <view class="field row">
+        <text class="field-label">乘车人</text>
+        <input id="p-name-{{formSeq}}" class="field-input p-name" placeholder="乘车人姓名" placeholder-class="ph" value="{{pName}}" maxlength="10" bindinput="onPName" />
+        <text class="import" bindtap="onImportContact">通讯录</text>
+      </view>
+      <view class="field row">
+        <text class="field-label">手机号</text>
+        <input id="p-phone-{{formSeq}}" class="field-input p-phone" type="number" placeholder="司机会联系这个号码" placeholder-class="ph" value="{{pPhone}}" maxlength="11" bindinput="onPPhone" />
+      </view>
+      <view class="btn-primary sheet-btn p-ok" bindtap="onProxyOk">帮 TA 叫车</view>
+    </block>
+    <block wx:elif="{{sheet === 'fare'}}">
+      <view class="fare-line row between" wx:for="{{fareLines}}" wx:key="name">
+        <text class="fare-name">{{item.name}}</text>
+        <text class="{{item.cut ? 'orange' : ''}}">{{item.value}}</text>
+      </view>
+      <view class="fare-total row between">
+        <text class="fare-total-k">{{cut ? '券后预估' : '预估车费'}}</text>
+        <text class="fare-total-v">¥{{price}}</text>
+      </view>
+      <view class="rules">
+        <text wx:for="{{rules}}" wx:key="*this" class="sub rule-line">· {{item}}</text>
+        <text class="sub rule-line">· 实际车费按行程结束时的里程与时长计算</text>
+      </view>
+      <view class="fare-coupon row" bindtap="onCoupons"><text class="sub flex1">查看我的优惠券</text><view class="chev"></view></view>
+    </block>
+  </view>
+</block>

@@ -1,0 +1,23 @@
+.sum { background: #13a874; padding: 16rpx 24rpx 30rpx; }
+.mon { display: flex; flex-direction: row; align-items: center; }
+.mon-tx { color: #ffffff; font-size: 30rpx; font-weight: bold; }
+.mon-arrow { color: #ffffff; font-size: 22rpx; margin-left: 8rpx; }
+.sum-row { display: flex; flex-direction: row; margin-top: 20rpx; }
+.sum-it { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.sum-n { color: #ffffff; font-size: 34rpx; font-weight: bold; }
+.sum-k { color: rgba(255,255,255,0.8); font-size: 22rpx; margin-top: 4rpx; }
+.bars { display: flex; flex-direction: row; align-items: flex-end; height: 240rpx; margin-top: 16rpx; }
+.bar-it { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 240rpx; }
+.bar-v { font-size: 18rpx; color: #8b939b; }
+.bar-col { width: 44rpx; background: #bfe9d8; border-radius: 8rpx 8rpx 0 0; margin-top: 4rpx; }
+.bar-on { background: #13a874; }
+.bar-m { font-size: 22rpx; color: #8b939b; margin-top: 8rpx; }
+.bar-m-on { color: #13a874; font-weight: bold; }
+.loading { padding: 60rpx 0; display: flex; justify-content: center; }
+.empty-go { margin-top: 24rpx; }
+.rc-name { font-size: 28rpx; font-weight: bold; }
+.rc-sub { margin-top: 8rpx; }
+.rc-ops { justify-content: flex-end; margin-top: 16rpx; }
+.rc-op { font-size: 24rpx; color: #4d565f; border: 2rpx solid #d5dade; border-radius: 26rpx; height: 52rpx; line-height: 48rpx; padding: 0 22rpx; margin-left: 16rpx; }
+.rc-op-main { color: #13a874; border-color: #13a874; }
+.rc-op-done { color: #8b939b; }

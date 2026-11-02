@@ -1,12 +1,19 @@
 <view class="top-bg"></view>
 
-<view class="card addr" bindtap="onAddress">
-  <view class="row">
-    <text class="addr-tag">{{address.tag}}</text>
-    <text class="addr-detail flex1">{{address.detail}}</text>
+<view class="card addr">
+  <view wx:if="{{address}}" class="addr-main" bindtap="onAddress">
+    <view class="row">
+      <text wx:if="{{address.tag}}" class="addr-tag">{{address.tag}}</text>
+      <text class="addr-detail flex1">{{address.text}}</text>
+      <view class="arrow"></view>
+    </view>
+    <text class="addr-user">{{address.name}}{{address.gender}}  {{address.phone}}</text>
+  </view>
+  <view wx:else class="row addr-none" bindtap="onAddress">
+    <text class="addr-plus">+</text>
+    <text class="flex1 addr-none-t">添加收货地址</text>
     <view class="arrow"></view>
   </view>
-  <text class="addr-user">{{address.name}}  {{address.phone}}</text>
   <view class="divider"></view>
   <picker mode="selector" range="{{times}}" value="{{timeIdx}}" bindchange="onTime">
     <view class="row between time-row">
@@ -24,10 +31,11 @@
     <view class="mini-logo glyph" style="background: linear-gradient(135deg, {{shop.c1}}, {{shop.c2}});">{{shop.logo}}</view>
     <text class="title flex1 ellipsis">{{shop.name}}</text>
   </view>
-  <view class="item row" wx:for="{{items}}" wx:key="id">
+  <view class="item row" wx:for="{{items}}" wx:key="key">
     <view class="item-img glyph" style="background: linear-gradient(135deg, {{item.c1}}, {{item.c2}});">{{item.glyph}}</view>
     <view class="flex1">
       <text class="item-name ellipsis">{{item.name}}</text>
+      <text wx:if="{{item.spec}}" class="item-spec ellipsis">{{item.spec}}</text>
       <text class="sub">× {{item.qty}}</text>
     </view>
     <text class="item-price">¥{{item.total}}</text>
@@ -37,15 +45,26 @@
     <text class="go-shop" bindtap="onBack">去点菜</text>
   </view>
   <view class="fee row between"><text>打包费</text><text>¥{{packFee}}</text></view>
-  <view class="fee row between"><text>配送费</text><text>¥{{shop.deliveryFee}}</text></view>
+  <view class="fee row between"><text>配送费</text><text>¥{{deliveryFee}}</text></view>
   <view class="fee row between">
     <view class="row"><text class="badge-red">减</text><text>店铺满减</text></view>
-    <text class="minus-price">-¥{{fullCut}}</text>
+    <text class="{{fullCut ? 'cut-price' : 'sub'}}">{{fullCut ? '-¥' + fullCut : '未满足满减条件'}}</text>
   </view>
-  <view class="fee row between" bindtap="onCoupon">
+  <view wx:if="{{newCut}}" class="fee row between">
+    <view class="row"><text class="badge-red badge-new">新</text><text>新客立减</text></view>
+    <text class="cut-price">-¥{{newCut}}</text>
+  </view>
+  <view class="fee row between fee-pick" bindtap="onShopCoupon">
+    <view class="row"><text class="badge-red badge-shop">券</text><text>商家代金券</text></view>
+    <view class="row">
+      <text class="{{shopCut ? 'cut-price' : 'sub'}}">{{shopText}}</text>
+      <view class="arrow"></view>
+    </view>
+  </view>
+  <view class="fee row between fee-pick fee-red" bindtap="onRed">
     <view class="row"><text class="badge-red">红</text><text>红包</text></view>
     <view class="row">
-      <text class="{{coupon.amount ? 'minus-price' : 'sub'}}">{{coupon.amount ? '-¥' + coupon.amount : couponHint}}</text>
+      <text class="{{redCut ? 'cut-price' : 'sub'}}">{{redText}}</text>
       <view class="arrow"></view>
     </view>
   </view>
@@ -57,31 +76,49 @@
 </view>
 
 <view class="card form">
-  <picker mode="selector" range="{{remarks}}" value="{{remarkIdx}}" bindchange="onRemark">
-    <view class="form-row row between">
+  <view class="form-row remark-row">
+    <view class="row between remark-head">
       <text>备注</text>
-      <view class="row"><text class="{{remarkIdx ? '' : 'sub'}}">{{remarks[remarkIdx]}}</text><view class="arrow"></view></view>
+      <text class="sub">{{remark.length}}/{{maxRemark}}</text>
     </view>
-  </picker>
+    <input id="remark{{remarkSeq}}" class="remark-input" placeholder="口味、偏好等要求" placeholder-class="ph" value="{{remark}}" maxlength="{{maxRemark}}" bindinput="onRemark" />
+    <view class="remark-tags">
+      <text wx:for="{{remarkTags}}" wx:key="t" class="r-tag {{item.on ? 'r-tag-on' : ''}}" data-t="{{item.t}}" bindtap="onRemarkTag">{{item.t}}</text>
+    </view>
+  </view>
   <picker mode="selector" range="{{tableware}}" value="{{tablewareIdx}}" bindchange="onTableware">
-    <view class="form-row row between">
+    <view class="form-row row between ware-row">
       <text>餐具份数</text>
       <view class="row"><text>{{tableware[tablewareIdx]}}</text><view class="arrow"></view></view>
     </view>
   </picker>
-  <view class="form-row row between">
+  <view class="form-row row between no-border">
     <view>
       <text>号码保护</text>
       <text class="form-tip">对商家和骑手隐藏真实号码</text>
     </view>
     <switch checked="{{protect}}" color="#1677ff" bindchange="onProtect" />
   </view>
-  <view class="form-row row between no-border">
-    <text>支付方式</text>
-    <text>微信支付</text>
+</view>
+
+<view class="card form">
+  <text class="pay-title">支付方式</text>
+  <view class="pay-way row" data-by="wechat" bindtap="onPayBy">
+    <view class="pw-icon pw-wx glyph">微</view>
+    <text class="flex1">微信支付</text>
+    <view class="radio {{payBy === 'wechat' ? 'radio-on' : ''}}"><view class="radio-in"></view></view>
+  </view>
+  <view class="pay-way row no-border" data-by="wallet" bindtap="onPayBy">
+    <view class="pw-icon pw-wallet glyph">余</view>
+    <view class="flex1">
+      <text class="pw-name">余额支付</text>
+      <text class="form-tip {{balance < pay ? 'pw-short' : ''}}">可用 ¥{{balance}}{{balance < pay ? '，余额不足' : ''}}</text>
+    </view>
+    <view class="radio {{payBy === 'wallet' ? 'radio-on' : ''}}"><view class="radio-in"></view></view>
   </view>
 </view>
 
+<view class="earn-tip sub">支付后预计得 {{earn}} 个吃货豆</view>
 <view class="bottom-space"></view>
 
 <view class="pay-bar row">

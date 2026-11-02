@@ -1,0 +1,59 @@
+<view class="seg row">
+  <view class="seg-item {{kind === index ? 'on' : ''}}" wx:for="{{kinds}}" wx:key="*this" bindtap="onKind" data-i="{{index}}">{{item}}</view>
+</view>
+<view class="card cells">
+  <view class="cell row">
+    <text class="label">房屋总价</text>
+    <input id="price{{formSeq}}" class="flex1 field f-price" type="digit" maxlength="6" placeholder="请输入总价" value="{{price}}" bindinput="onPrice" />
+    <text class="unit">万元</text>
+  </view>
+  <picker mode="selector" range="{{ratioText}}" value="{{ratioIndex}}" bindchange="onRatio">
+    <view class="cell row">
+      <text class="label">首付比例</text>
+      <text class="flex1 field">{{ratioText[ratioIndex]}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <picker mode="selector" range="{{yearText}}" value="{{yearIndex}}" bindchange="onYear">
+    <view class="cell row">
+      <text class="label">贷款年限</text>
+      <text class="flex1 field">{{yearText[yearIndex]}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <view class="cell row">
+    <text class="label">贷款利率</text>
+    <text class="flex1 field">{{rate}}%</text>
+    <text class="sub">{{kind === 0 ? 'LPR 5 年期以上' : '首套公积金'}}</text>
+  </view>
+  <view class="cell row last">
+    <text class="label">还款方式</text>
+    <view class="flex1"></view>
+    <view class="mini-seg row">
+      <view class="ms {{method === index ? 'on' : ''}}" wx:for="{{methods}}" wx:key="*this" bindtap="onMethod" data-i="{{index}}">{{item}}</view>
+    </view>
+  </view>
+</view>
+<view class="card result" wx:if="{{res}}">
+  <text class="r-label">{{res.equal ? '每月月供（元）' : '首月月供（元）'}}</text>
+  <text class="r-main">{{res.first}}</text>
+  <text class="r-dec" wx:if="{{!res.equal}}">每月递减，最后一月 {{res.last}} 元</text>
+  <view class="r-grid row">
+    <view class="r-item flex1"><text class="r-val">{{res.down}}</text><text class="sub">首付（元）</text></view>
+    <view class="r-item flex1"><text class="r-val">{{res.loan}}</text><text class="sub">贷款（元）</text></view>
+  </view>
+  <view class="r-grid row">
+    <view class="r-item flex1"><text class="r-val">{{res.interest}}</text><text class="sub">支付利息（元）</text></view>
+    <view class="r-item flex1"><text class="r-val">{{res.months}}</text><text class="sub">还款月数</text></view>
+  </view>
+  <text class="r-tip" wx:if="{{res.capped}}">公积金贷款上限 120 万，超出部分需申请商业贷款</text>
+</view>
+<view class="card result" wx:else>
+  <text class="sub">输入房屋总价即可计算月供</text>
+</view>
+<view class="btns row">
+  <view class="b-ghost flex1" bindtap="onReset">重置</view>
+  <view class="btn-primary flex1 b-main" bindtap="onFind">按预算找房</view>
+</view>
+<text class="disclaim sub">计算结果仅供参考，以银行审批为准</text>
+<view class="safe"></view>

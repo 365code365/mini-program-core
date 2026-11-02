@@ -77,7 +77,7 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }
 | 诊断开关（Android） | `adb shell setprop debug.mini.fps 1`（`damage_log` / `backend` / `cpu_pin` …同 Flutter 插件），重开小程序生效 |
 | 上屏（iOS） | 引擎线程 + `CADisplayLink`（要 120Hz），画面画进自己的 `CAMetalLayer`，后端默认 auto（GPU 合成），失败回退 CPU（`CGImage`）；`backend` / `activeBackend` / `backendReason` |
 | 宿主能力 | `hostApis["login"] = …`（两端都有）：点了名的 `wx.*` 交给宿主、回包走 `MiniHostReply`；Android 另**自带**选图 / 拍照 / 选视频 / 选文件 / 存相册 / 打开文档（`builtinHostApis`，透明的 `MiniMediaActivity` 代办，宿主不用转发 `onActivityResult`；清单要有它与 `MiniFileProvider`，AAR 自带） |
-| 原生组件（Android） | `sameLayerViews["map"] = { MyMap() }`：宿主画、引擎画进页面（同层渲染），滑动时不错开；`<video>` 默认同层渲染（`sameLayerVideo`） |
+| 原生组件 | `<map>` 自带瓦片地图（`MiniMapView`，同层渲染 + 手势 + MapContext，`sameLayerViews["map"]` 可换成自己的）、`<video>` / `<live-player>` 同层渲染（`sameLayerVideo`）、`<web-view>` 系统 WebView（`webView`）；Android 与 iOS 都有 |
 | 沙盒目录 | 自动指到 `filesDir` / `Caches`，storage 与图片磁盘缓存才生效 |
 | 生命周期 | 前后台切换、内存告警转发（Android 跟着 Activity 自动接，`autoLifecycle`）；重复报的同一状态引擎只派发一次 |
 | 宿主推事件 | `mini.dispatchEvent("locationChange", json)`（Android，与 Flutter 插件的 `dispatchEvent` 同一组名字）：传感器、定位变化、蓝牙发现等 `wx.onXxx` 监听；返回监听者个数。iOS 还没有 |
@@ -609,7 +609,8 @@ Flutter 插件已经这样做（`native_layer.dart`，`MiniProgramController.nat
 盖上去的视频照样错开。同层渲染把视频**画进页面**：宿主只解码，每一帧交给引擎，滚动时视频就是页面画布里的一块像素。
 Android 的 `MiniProgramView`（`sameLayerVideo`，默认开）与 Flutter 插件（`sameLayerVideo`）都自带播放器
 （`sdk/android/.../VideoHost.kt`：`MediaPlayer` 硬解带声音，`SurfaceTexture` + GLES 读回 RGBA，见 `GlFrameReader.kt`
-里为什么不用 `ImageReader`）。iOS 还没有：Flutter 仍是盖上去的控件，原生视图是引擎软解。自己接的话：
+里为什么不用 `ImageReader`）；iOS 的 `MiniProgramView`（`sameLayerVideo`，默认开）用 AVPlayer 解码、NV12 帧交 `mr_video_frame_yuv`
+（`sdk/ios/.../VideoHost.swift`）。Flutter iOS 仍是盖上去的控件。自己接的话：
 
 1. 创建选项 `"sameLayer": ["video"]`（`nativeComponents` 里也列了 `video` 时同层渲染优先，不再报进 `nativeViews`）。
 2. 收 `videos`：按 `key` 建 / 换片源 / 释放播放器，`attrs` 里 `autoplay` `loop` `muted` `initial-time` 照着设。
@@ -632,12 +633,49 @@ Android 的 `MiniProgramView`（`sameLayerVideo`，默认开）与 Flutter 插�
 3. 内容变了就按 `box` 画一帧，调 `mr_native_view_frame_rgba(key, w, h, stride, rgba)`（任何线程；JNI `nativeViewFrameRgba`），
    再让引擎出一帧：引擎只重画这一块（框的背景照画，帧拉满画在上面，圆角照节点的）。
 4. 收 `nativeViewTap {key, tag, x, y}`（框里的本地逻辑坐标）：自己判点到了什么，照旧 `mr_app_native_view_event` 回传
-   （`markertap {markerId}` → 节点的 `bindmarkertap`）。拖动从框里开始照样滚页面；地图自己的平移 / 缩放手势没有转。
+   （`markertap {markerId}` → 节点的 `bindmarkertap`）。默认拖动从框里开始照样滚页面。
+5. 要自己处理手势的（地图平移 / 捏合缩放）：创建选项 `"sameLayerGestures": ["map"]`。按在框里的**整串**触摸（含第二根手指）交给宿主：
+   `nativeViewTouch {key, tag, phase: start|move|end|cancel, pointer: 0|1, x, y, t}`（框内逻辑坐标、原点按下时定），页面不滚、
+   不派 tap（点击宿主从这串触摸里自己判）。写了 `enable-scroll="false" enable-zoom="false"` 的地图不接，拖动照样滚页面。
+6. 节点的 `bindtap` 只派宿主回传的那一次（map 的 detail 是 `{latitude, longitude}`），引擎不再按普通节点另派一次 `{x, y}`；祖先照常冒泡。
+7. 数组 / 对象属性（`markers` / `polyline` / `circles` / `polygons` / `include-points`）在 `attrs` 里是**标准 JSON 字符串**（别的标签沿用单引号写法）。
+8. 上下文对象（`wx.createMapContext(id)` 的方法）走 hostCall：宿主在 `hostApis` 里点名带点的名字（`MapContext.getCenterLocation`），
+   `args.contextId` 是节点 `id`（组件里的是 `id@实例键`），回包字段照官方。
 
-现成的：Android `MiniProgramView.sameLayerViews["map"] = { MyMap() }`（`MiniSameLayerView`：`onDraw` 画进 Canvas、
-`onTap`、`emit`、`invalidate`，示例 `DemoMapView.kt`）；Flutter `MiniProgramController(sameLayerViews: ['map'])`
+**SDK 自带的地图**（`MiniMapView`：Android `sdk/android/.../MiniMapView.kt`，iOS `sdk/ios/.../MiniMapView.swift`，Flutter Android 插件同一份 Kotlin；
+`MiniProgramView` 默认登记在 `sameLayerViews["map"]`，宿主登记同名的就用自己的）：Web 墨卡托瓦片（默认高德公开瓦片，GCJ-02，与微信 map 的坐标一致；
+`MiniMapView.tileSource` 换源，内存 + 磁盘缓存），`markers`（`iconPath` 包内 / 网络图、`width` `height` `anchor` `rotate` `alpha`、
+`callout` 的 `ALWAYS` / `BYCLICK`、`label`）、`polyline`（`dottedLine` `arrowLine` `borderColor`）、`circles`、`polygons`、`include-points`、
+`scale` / `min-scale` / `max-scale`、`enable-satellite`、`show-scale`、`enable-scroll` / `enable-zoom`；
+手势：拖动、惯性、捏合、双击放大；事件：`tap {latitude, longitude}`、`markertap` / `callouttap` / `labeltap {markerId}`、
+`regionchange`（`begin` / `end`，`causedBy` 是 gesture / drag / scale / update，end 带 `scale` `centerLocation` `region`）、`updated`；
+MapContext：`getCenterLocation` `getRegion` `getScale` `getRotate` `getSkew` `moveToLocation` `includePoints` `translateMarker` `moveAlong`
+`addMarkers` `removeMarkers` `toScreenLocation` `fromScreenLocation` `setCenterOffset`。没做：定位蓝点（`show-location`，要定位权限）、
+旋转 / 倾斜 / 3D、路况、个性化样式、点聚合、`openMapApp`（回 fail）。iOS 不用 MKMapView：它是 Metal 画的 UIView，离屏截不到画面。
+
+自己画的同层组件：Android `MiniSameLayerView`（`onDraw` 画进 Canvas、`onTap` / `onTouch` / `wantsGestures`、`onContextCall`、`emit`、`invalidate`）；
+iOS `MiniSameLayerView`（`draw(in: CGContext…)`，同一组回调）；Flutter `MiniProgramController(sameLayerViews: ['map'])`
 （Android：`nativeViewBuilder` 造的控件在一棵离屏渲染树里 build / paint、`toImage` 读回，点击在离屏树上派发，
-`same_layer.dart`；只适合纯 Flutter 画的控件，平台视图离屏画不出来）。iOS 两个视图还没有。判据见 `tests/same_layer_view_e2e.rs`。
+`same_layer.dart`；只适合纯 Flutter 画的控件，平台视图离屏画不出来）。判据见 `tests/same_layer_view_e2e.rs`。
+
+**`<live-player>`**（创建选项 `sameLayer` 同时有 `video` 与 `live-player`）：走同层视频那一套。页面上的直播也进 `videos`，多一个
+`"tag": "live-player"`（`object-fit` 的 `fillCrop` 已翻成 `cover`，`loop` 恒为 false，`muted` 以 `LivePlayerContext.mute` 为准）；
+播放命令照样是 `videoCommand`；宿主回传的还是播放器事件，引擎翻成 `bindstatechange` 的状态码（`loadedmetadata` → 2001 / 2002 / 2008 / 2009，
+第一次 `play` → 2003 / 2004，`waiting` → 2007，`ended` → 2006，`error` → -2301），`timeupdate` 每秒折成一次 `bindnetstatus`
+（`videoWidth` / `videoHeight`，码率帧率系统播放器不报、给 0）。`LivePlayerContext` 的 `play` / `pause` / `resume` / `stop` / `mute`（切换）/
+`requestFullScreen`（借视频全屏那一层、控制条关掉）/ `exitFullScreen` / `snapshot`（引擎取最新一帧存 PNG，`quality: 'compressed'` 缩一半）由引擎处理，
+小窗 / 投屏 / 后台播放回 fail。已经接了同层视频的宿主不用改：系统播放器认 HLS 与 mp4，RTMP / FLV 播不了（报 -2301）。
+判据见 `tests/same_layer_video_e2e.rs`。
+
+**`<web-view>`**（创建选项 `nativeComponents` 含 `web-view`）：系统 WebView **盖**在引擎画面上（它铺满整页、自己滚，页面不滚，没有错开的问题），
+位置照 `nativeViews`，多一个解析好的 `url`（网络地址原样；包内的离线 H5 是本地绝对路径，`?query` / `#hash` 接在后面）。
+网页里的 JSSDK 由宿主在文档开始时注入（`wx.miniProgram.*`、`WeixinJSBridge.invoke('invokeMiniProgramAPI')`、`window.__wxjs_environment = 'miniprogram'`），
+调用转成 `mr_app_native_view_event(key, name, detail)`：`load {src}` → `bindload`、`error {src, errMsg}` → `binderror`、
+`message {data}`（网页 postMessage，**引擎攒着**，在后退、`redirectTo` / `reLaunch` / `switchTab` 离开这一页之前一次派给 `bindmessage`，
+`e.detail.data` 是数组 —— 与微信一致）、`miniProgram {api, arg}`（网页里的 `navigateTo` / `navigateBack` / `redirectTo` / `switchTab` / `reLaunch`）、
+`titlechange {title}`（网页标题当导航栏标题）。返回键先让网页后退。现成的：Android `MiniWebViews.kt`、iOS `MiniWebViews.swift`（WKWebView）、
+Flutter Android 插件同一份（盖在引擎那块平台视图上，`builtinWebView`）；`MiniProgramView.webView = false` 关掉。判据见 `tests/embed_host.rs` 的 web-view 用例。
+真机三样一起验：`bash tools/android-native-components.sh`（`MINI_APP=flutter` 验 Flutter 示例）、`bash tools/ios-native-components.sh`。
 
 控制条、中间的播放键、全屏都在引擎里（与引擎自己的播放器同一套：`video/chrome.rs` 画、`ui.rs` 管状态、`fullscreen.rs`），
 照微信：点画面切换控制条显隐（`bindcontrolstoggle {show}`），播放中 3 秒没碰自动收起，收起后底部一条细进度
@@ -879,7 +917,7 @@ Linux 上如果要嵌 WebView（`web-view` 组件）才需要 GTK；纯渲染不
 | G-4/G-5 | `scroll-view` 只读 `scroll-x`，不派发 `bindscroll`/`scrolltolower` | 内层容器驱动的无限列表加载不了下一页（页面级 `onReachBottom` 可用） |
 | G-6 | `video` 只读 `src`/`autoplay`/`loop`，不派发播放事件 | 视频类小程序需要先补 |
 | G-10 | `wx.login` / `requestPayment` / `getLocation` 等要宿主接（选图 / 选文件 / 存相册 Flutter 插件、原生 Android 视图与桌面窗体已自带） | 涉及登录与支付的小程序要宿主在 `hostApis` 里接上自己的 SDK（三个视图都有 `hostApis`）；原生 iOS 视图还没自带选图 / 选文件那一组 |
-| — | `web-view` 组件本身还没有 | 见第 7 条，要连原生层回调一起做 |
+| — | `web-view` 由 SDK 的系统 WebView 承载（Android / iOS / Flutter Android） | 网页里的 JSSDK 只有 `wx.miniProgram.*` 那几个；别的 JSSDK 接口（分享、支付、选图）网页里调不到 |
 | — | 字体内存 | 见第 9 条，移动端的硬约束 |
 | — | 2026-10 对照补齐时写明的降级 | `snapshot.takeSnapshot` 失败；`editor` 只有纯文本；手势组件单指（scale 恒为 1、force-press 不触发）；`movable-view` 不能双指缩放；`page-meta` 的 page-style / root-font-size 不生效；Worker 与页面同一个 QuickJS；`sticky-*` 不吸顶；WebAudio 只有声源出声（滤波 / 压缩 / 声像节点不改变声音）、`createMediaAudioPlayer` 无声；`wx.router` 的自定义转场不参与（照常用默认转场）；worklet 跑在逻辑线程（共享值改动经一次 setData 上屏） |
 

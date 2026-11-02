@@ -1,0 +1,1 @@
+{ "navigationBarTitleText": "通讯录", "disableScroll": true, "usingComponents": { "contact-list": "/components/contact-list/index" } }

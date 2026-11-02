@@ -4,7 +4,10 @@
     "pages/detail/detail",
     "pages/send/send",
     "pages/address/address",
-    "pages/mine/mine"
+    "pages/mine/mine",
+    "pages/orders/orders",
+    "pages/order/order",
+    "pages/coupons/coupons"
   ],
   "window": {
     "navigationBarTitleText": "快递100查",

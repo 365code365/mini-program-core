@@ -1,0 +1,83 @@
+<view class="hero">
+  <image class="hero-img" src="/images/banner.jpg" mode="aspectFill"></image>
+  <view class="hero-tx col">
+    <text class="hero-t1">去远方，云翼带你飞</text>
+    <text class="hero-t2">46 城直飞 · 低价日历 · 退改规则透明</text>
+  </view>
+</view>
+
+<view class="search">
+  <view class="trip row">
+    <view class="trip-item trip-l {{trip === 'one' ? 'trip-on' : ''}}" data-t="one" bindtap="setTrip"><text>单程</text></view>
+    <view class="trip-item trip-r {{trip === 'round' ? 'trip-on' : ''}}" data-t="round" bindtap="setTrip"><text>往返</text></view>
+  </view>
+  <view class="sbody">
+    <view class="cities row">
+      <view class="city col" data-type="from" bindtap="pickCity">
+        <text id="from-name" class="city-name">{{from.name}}</text>
+        <text class="muted">{{from.code}} · 出发</text>
+      </view>
+      <image id="swap" class="swap" src="/images/swap.png" bindtap="swap"></image>
+      <view class="city city-r col" data-type="to" bindtap="pickCity">
+        <text id="to-name" class="city-name">{{to.name}}</text>
+        <text class="muted">{{to.code}} · 到达</text>
+      </view>
+    </view>
+    <view class="line"></view>
+    <view class="dates row" bindtap="pickDate">
+      <view class="row">
+        <text class="date">{{depMd}}</text>
+        <text class="wk">{{depWk}}</text>
+      </view>
+      <view wx:if="{{trip === 'round'}}" class="row">
+        <text class="nights">{{nights}}天</text>
+        <text class="date">{{retMd}}</text>
+        <text class="wk">{{retWk}}</text>
+      </view>
+      <text wx:else class="muted add-ret">低价日历 ›</text>
+    </view>
+    <view class="line"></view>
+    <view class="row between" bindtap="pickCabin">
+      <text class="cabin">{{cabinName}}</text>
+      <text class="muted">更换舱位 ›</text>
+    </view>
+    <view class="btn btn-orange go" hover-class="btn-hover" bindtap="search"><text>搜索机票</text></view>
+    <view wx:if="{{history.length}}" class="his row">
+      <scroll-view scroll-x class="his-scroll">
+        <view class="row">
+          <view class="his-item" wx:for="{{history}}" wx:key="from" data-i="{{index}}" bindtap="useHistory">
+            <text>{{item.fromName}}{{item.trip === 'round' ? ' ⇌ ' : ' → '}}{{item.toName}}</text>
+          </view>
+        </view>
+      </scroll-view>
+      <text class="his-clear" bindtap="clearHistory">清除</text>
+    </view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="card-title">{{from.name}}出发 · 特价目的地</text>
+    <text class="muted">未来 30 天最低价</text>
+  </view>
+  <view class="deals row">
+    <view class="deal" wx:for="{{deals}}" wx:key="code" data-i="{{index}}" bindtap="goDeal" hover-class="btn-hover">
+      <image class="deal-img" src="{{item.img}}" mode="aspectFill"></image>
+      <view class="deal-info col">
+        <view class="row between">
+          <text class="deal-name">{{item.name}}</text>
+          <view class="row"><text class="price-sym">¥</text><text class="price">{{item.price}}</text><text class="muted small">起</text></view>
+        </view>
+        <text class="muted small">{{item.tip}} · {{item.dateText}}</text>
+      </view>
+    </view>
+  </view>
+</view>
+
+<view class="card svc row">
+  <view class="svc-item col" bindtap="goOrders"><text class="svc-ic">单</text><text class="svc-tx">我的订单</text></view>
+  <view class="svc-item col" bindtap="goPax"><text class="svc-ic">人</text><text class="svc-tx">常用乘机人</text></view>
+  <view class="svc-item col" bindtap="showRules"><text class="svc-ic">退</text><text class="svc-tx">退改说明</text></view>
+  <view class="svc-item col" bindtap="callService"><text class="svc-ic">客</text><text class="svc-tx">客服热线</text></view>
+</view>
+<view class="tab-space"></view>

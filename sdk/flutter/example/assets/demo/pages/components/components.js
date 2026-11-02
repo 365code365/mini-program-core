@@ -2,7 +2,7 @@ const catalog = require('../../utils/catalog.js');
 
 Page({
   data: {
-    groups: catalog.pick(['comp']),
+    groups: catalog.pick(['comp', 'native']),
     icons: ['success', 'info', 'warn', 'waiting', 'search', 'download', 'star', 'heart']
   },
   go(e) {

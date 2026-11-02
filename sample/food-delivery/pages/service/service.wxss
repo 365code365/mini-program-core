@@ -1,0 +1,129 @@
+.hero {
+  padding: 36rpx 32rpx 44rpx;
+  background: linear-gradient(180deg, #1677ff, #3d9bff);
+  color: #ffffff;
+}
+.hero-title {
+  display: block;
+  font-size: 36rpx;
+  font-weight: bold;
+}
+.hero-sub {
+  display: block;
+  font-size: 24rpx;
+  margin-top: 8rpx;
+  color: rgba(255, 255, 255, 0.88);
+}
+.more {
+  padding: 6rpx 0 6rpx 20rpx;
+}
+.recent {
+  margin-top: 20rpx;
+  align-items: flex-start;
+}
+.r-logo {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 18rpx;
+  font-size: 36rpx;
+  margin-right: 20rpx;
+  flex-shrink: 0;
+}
+.r-name {
+  font-size: 28rpx;
+  font-weight: bold;
+}
+.r-status {
+  font-size: 24rpx;
+  color: #1677ff;
+  margin-left: 12rpx;
+  white-space: nowrap;
+}
+.r-sum {
+  display: block;
+  font-size: 24rpx;
+  color: #5c6370;
+  margin: 4rpx 0;
+}
+.r-foot {
+  margin-top: 20rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid #f0f1f4;
+}
+.r-btn {
+  height: 56rpx;
+  line-height: 54rpx;
+  padding: 0 26rpx;
+  border-radius: 28rpx;
+  border: 1rpx solid #1677ff;
+  color: #1677ff;
+  font-size: 24rpx;
+  white-space: nowrap;
+}
+.none {
+  padding: 32rpx 0 8rpx;
+}
+.faq-item {
+  border-bottom: 1rpx solid #f0f1f4;
+}
+.faq-item:last-child {
+  border-bottom: 0;
+}
+.q-row {
+  min-height: 96rpx;
+}
+.q-mark {
+  width: 36rpx;
+  height: 36rpx;
+  line-height: 36rpx;
+  text-align: center;
+  border-radius: 8rpx;
+  background: #e8f1ff;
+  color: #1677ff;
+  font-size: 22rpx;
+  font-weight: bold;
+  margin-right: 16rpx;
+  flex-shrink: 0;
+}
+.q-text {
+  font-size: 28rpx;
+}
+.arrow-down {
+  transform: rotate(135deg);
+}
+.arrow-up {
+  transform: rotate(-45deg);
+}
+.a-text {
+  display: block;
+  font-size: 24rpx;
+  line-height: 40rpx;
+  color: #5c6370;
+  padding: 0 0 24rpx 52rpx;
+}
+.call-icon {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 36rpx;
+  background: linear-gradient(135deg, #8fe0a0, #2eaa5b);
+  font-size: 30rpx;
+  margin-right: 20rpx;
+}
+.call-title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: bold;
+}
+.call-btn {
+  height: 56rpx;
+  line-height: 56rpx;
+  padding: 0 30rpx;
+  border-radius: 28rpx;
+  background: linear-gradient(90deg, #3d9bff, #1677ff);
+  color: #ffffff;
+  font-size: 24rpx;
+  font-weight: bold;
+}
+.gap {
+  height: 48rpx;
+}

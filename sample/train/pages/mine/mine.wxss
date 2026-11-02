@@ -58,12 +58,39 @@
   font-size: 24rpx;
   padding: 8rpx 16rpx;
 }
+.head-todo {
+  font-size: 22rpx;
+  color: #2b6de8;
+  background: #ffffff;
+  padding: 6rpx 18rpx;
+  border-radius: 20rpx;
+  white-space: nowrap;
+}
+.tag-type {
+  margin-left: 8rpx;
+  background: #fff1e6;
+  color: #ff7a00;
+}
 .links {
   display: flex;
   flex-direction: column;
+  padding-top: 8rpx;
+  padding-bottom: 8rpx;
 }
 .link {
-  font-size: 26rpx;
-  color: #5c6370;
-  padding: 16rpx 0;
+  font-size: 28rpx;
+  color: #1d2129;
+  height: 88rpx;
+}
+.link .sub {
+  margin-right: 12rpx;
+}
+/* 「›」画不出来，箭头用边框转 45° */
+.arrow {
+  width: 14rpx;
+  height: 14rpx;
+  border-top: 3rpx solid #c5cdda;
+  border-right: 3rpx solid #c5cdda;
+  transform: rotate(45deg);
+  margin-left: 12rpx;
 }

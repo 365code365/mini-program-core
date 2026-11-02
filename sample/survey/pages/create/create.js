@@ -25,6 +25,18 @@ Page({
   },
   onShow() {
     if (typeof this.getTabBar === 'function' && this.getTabBar()) this.getTabBar().setData({ selected: 1 });
+    // 「我的」里点「再发一次」：带着原来的标题和选项过来，截止日期重新从今天起算
+    const g = getApp().globalData;
+    if (g && g.repost) {
+      const m = g.repost;
+      g.repost = null;
+      this.setData({
+        title: m.title, desc: m.desc || '', multi: !!m.multi, anonymous: !!m.anonymous, deadline: addDays(this.data.today, 7),
+        options: m.options.map(t => ({ key: ++seq, text: t }))
+      });
+      this.check();
+      wx.showToast({ title: '已带入上次的内容', icon: 'none' });
+    }
   },
   check() {
     const validCount = this.data.options.filter(o => o.text.trim()).length;
@@ -60,7 +72,7 @@ Page({
       success: (r) => {
         if (!r.confirm) return;
         const t = today();
-        const item = { id: 'u' + Date.now(), kind: '投票', title, options: opts, counts: opts.map(() => 0), deadline: this.data.deadline, anonymous: this.data.anonymous, multi: this.data.multi, created: t.slice(5) };
+        const item = { id: 'u' + Date.now(), kind: '投票', title, desc: this.data.desc.trim(), options: opts, counts: opts.map(() => 0), deadline: this.data.deadline, anonymous: this.data.anonymous, multi: this.data.multi, created: t.slice(5) };
         wx.setStorageSync('sv_mine', [item].concat(wx.getStorageSync('sv_mine') || []));
         this.setData({ title: '', desc: '', options: [{ key: ++seq, text: '' }, { key: ++seq, text: '' }], validCount: 0, ready: false });
         wx.showToast({ title: '发布成功', icon: 'success' });

@@ -1,0 +1,46 @@
+<view class="tip"><text>选择不舒服的部位和症状（可多选），为您推荐就诊科室。结果仅供参考，病情危急请直接到急诊。</text></view>
+<view class="card">
+  <text class="sec-title">哪里不舒服</text>
+  <view class="areas">
+    <view class="area {{area === index ? 'on' : ''}}" wx:for="{{areas}}" wx:key="key" data-i="{{index}}" bindtap="pickArea">
+      <text class="area-tx">{{item.name}}</text>
+      <view wx:if="{{item.n}}" class="area-n"><text>{{item.n}}</text></view>
+    </view>
+  </view>
+  <view class="syms">
+    <view class="sym {{item.on ? 'on' : ''}}" wx:for="{{syms}}" wx:key="id" data-id="{{item.id}}" bindtap="toggleSym"><text class="sym-tx">{{item.n}}</text></view>
+  </view>
+</view>
+<view wx:if="{{picked.length}}" class="card">
+  <view class="row between">
+    <text class="sec-title">已选症状</text>
+    <text class="clear" bindtap="clearAll">清空</text>
+  </view>
+  <view class="picked">
+    <view class="pk" wx:for="{{picked}}" wx:key="id" data-id="{{item.id}}" bindtap="toggleSym"><text class="pk-tx">{{item.n}} ×</text></view>
+  </view>
+</view>
+<view wx:if="{{urgent}}" class="urgent">
+  <text class="u-t">「{{urgent}}」可能是急症</text>
+  <text class="u-s">请不要等待门诊号源，立即到门诊楼 1 楼东侧急诊（24 小时）就诊，或拨打急诊电话。</text>
+  <view class="row u-ops">
+    <view class="u-btn" bindtap="callEmergency"><text>拨打急诊电话</text></view>
+    <view class="u-btn ghost" bindtap="goNavi"><text>怎么去急诊</text></view>
+  </view>
+</view>
+<view wx:if="{{recs.length}}" class="card">
+  <text class="sec-title">推荐科室</text>
+  <view class="rec" wx:for="{{recs}}" wx:key="id" data-id="{{item.id}}" bindtap="goDept">
+    <view class="rec-main">
+      <view class="row">
+        <text class="rec-name">{{item.name}}</text>
+        <text wx:if="{{item.best}}" class="rec-best">最匹配</text>
+      </view>
+      <text class="muted rec-line">匹配 {{item.hit}} 个症状 · {{item.room}}</text>
+      <text class="muted rec-line">擅长：{{item.desc}}</text>
+    </view>
+    <view class="rec-go"><text>去挂号</text></view>
+  </view>
+</view>
+<view wx:else class="none"><text>先选一个症状，推荐科室会出现在这里</text></view>
+<view style="height: 60rpx;"></view>

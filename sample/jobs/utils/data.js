@@ -1,18 +1,18 @@
 // 职聘直通：离线演示数据（职位、公司、会话）
 const companies = {
-  c1: { id: 'c1', name: '字节跳动', short: '字', color: 'linear-gradient(135deg, #3C8CFF, #1F5FE0)', industry: '互联网·内容社区', size: '10000人以上', stage: '已上市', addr: '杭州市余杭区文一西路 998 号海创园 5 号楼', intro: '公司致力于用技术连接人与信息，旗下产品覆盖内容、社交、企业协作等多个领域，在杭州设有研发中心，团队氛围开放，重视工程质量与数据驱动。', welfare: ['六险一金', '免费三餐', '弹性工作', '年度体检', '租房补贴', '带薪年假 15 天'], jobs: ['j1', 'j5'] },
-  c2: { id: 'c2', name: '网易严选', short: '网', color: 'linear-gradient(135deg, #FF6B6B, #E03C4A)', industry: '电子商务·新零售', size: '1000-9999人', stage: '已上市', addr: '杭州市滨江区网商路 599 号网易大厦', intro: '以「好的生活，没那么贵」为理念的自营电商品牌，覆盖居家、服饰、美食等品类，供应链与设计团队实力雄厚。', welfare: ['五险一金', '年终奖', '员工折扣', '下午茶', '定期团建'], jobs: ['j2'] },
-  c3: { id: 'c3', name: '蚂蚁集团', short: '蚁', color: 'linear-gradient(135deg, #2BC4A9, #0E9C86)', industry: '金融科技', size: '10000人以上', stage: '不需要融资', addr: '杭州市西湖区西溪路 556 号蚂蚁 A 空间', intro: '以科技推动普惠服务，业务涵盖数字支付、数字金融科技平台与数字化服务，技术栈覆盖分布式、隐私计算与大模型。', welfare: ['六险一金', '股票期权', '免费班车', '健身房', '子女教育补贴'], jobs: ['j3', 'j6'] },
-  c4: { id: 'c4', name: '有赞科技', short: '赞', color: 'linear-gradient(135deg, #FFA23A, #F06A00)', industry: '企业服务·SaaS', size: '1000-9999人', stage: '已上市', addr: '杭州市西湖区西斗门路 3 号天堂软件园 E 幢', intro: '帮助商家网上开店、社交营销的 SaaS 服务商，工程师文化浓厚，鼓励开源与技术分享。', welfare: ['五险一金', '餐补', '弹性工作', '技术大会门票'], jobs: ['j4'] },
-  c5: { id: 'c5', name: '米哈游', short: '米', color: 'linear-gradient(135deg, #9A7BFF, #6B4FE0)', industry: '游戏', size: '1000-9999人', stage: '未融资', addr: '上海市徐汇区宜山路 700 号普天信息产业园', intro: '技术宅拯救世界。专注原创内容与高品质游戏研发，美术、程序、策划团队都是行业顶尖水平。', welfare: ['六险一金', '免费三餐', '十三薪', '节日福利', '员工宿舍'], jobs: ['j7'] }
+  c1: { id: 'c1', lat: 30.2797, lng: 120.006, name: '字节跳动', short: '字', color: 'linear-gradient(135deg, #3C8CFF, #1F5FE0)', industry: '互联网·内容社区', size: '10000人以上', stage: '已上市', addr: '杭州市余杭区文一西路 998 号海创园 5 号楼', intro: '公司致力于用技术连接人与信息，旗下产品覆盖内容、社交、企业协作等多个领域，在杭州设有研发中心，团队氛围开放，重视工程质量与数据驱动。', welfare: ['六险一金', '免费三餐', '弹性工作', '年度体检', '租房补贴', '带薪年假 15 天'], jobs: ['j1', 'j5'] },
+  c2: { id: 'c2', lat: 30.1903, lng: 120.1982, name: '网易严选', short: '网', color: 'linear-gradient(135deg, #FF6B6B, #E03C4A)', industry: '电子商务·新零售', size: '1000-9999人', stage: '已上市', addr: '杭州市滨江区网商路 599 号网易大厦', intro: '以「好的生活，没那么贵」为理念的自营电商品牌，覆盖居家、服饰、美食等品类，供应链与设计团队实力雄厚。', welfare: ['五险一金', '年终奖', '员工折扣', '下午茶', '定期团建'], jobs: ['j2'] },
+  c3: { id: 'c3', lat: 30.2689, lng: 120.0997, name: '蚂蚁集团', short: '蚁', color: 'linear-gradient(135deg, #2BC4A9, #0E9C86)', industry: '金融科技', size: '10000人以上', stage: '不需要融资', addr: '杭州市西湖区西溪路 556 号蚂蚁 A 空间', intro: '以科技推动普惠服务，业务涵盖数字支付、数字金融科技平台与数字化服务，技术栈覆盖分布式、隐私计算与大模型。', welfare: ['六险一金', '股票期权', '免费班车', '健身房', '子女教育补贴'], jobs: ['j3', 'j6'] },
+  c4: { id: 'c4', lat: 30.295, lng: 120.1253, name: '有赞科技', short: '赞', color: 'linear-gradient(135deg, #FFA23A, #F06A00)', industry: '企业服务·SaaS', size: '1000-9999人', stage: '已上市', addr: '杭州市西湖区西斗门路 3 号天堂软件园 E 幢', intro: '帮助商家网上开店、社交营销的 SaaS 服务商，工程师文化浓厚，鼓励开源与技术分享。', welfare: ['五险一金', '餐补', '弹性工作', '技术大会门票'], jobs: ['j4'] },
+  c5: { id: 'c5', lat: 31.1716, lng: 121.4091, name: '米哈游', short: '米', color: 'linear-gradient(135deg, #9A7BFF, #6B4FE0)', industry: '游戏', size: '1000-9999人', stage: '未融资', addr: '上海市徐汇区宜山路 700 号普天信息产业园', intro: '技术宅拯救世界。专注原创内容与高品质游戏研发，美术、程序、策划团队都是行业顶尖水平。', welfare: ['六险一金', '免费三餐', '十三薪', '节日福利', '员工宿舍'], jobs: ['j7'] }
 };
 
 const hrs = {
-  h1: { name: '王女士', title: '招聘经理', bg: 'linear-gradient(135deg, #FFB3C1, #FF7A98)', ch: '王', online: true },
-  h2: { name: '陈先生', title: '技术总监', bg: 'linear-gradient(135deg, #9EC9FF, #4C8DFF)', ch: '陈', online: false },
-  h3: { name: '李女士', title: 'HRBP', bg: 'linear-gradient(135deg, #A6EBD4, #2BC49C)', ch: '李', online: true },
-  h4: { name: '赵先生', title: '前端负责人', bg: 'linear-gradient(135deg, #FFD59A, #FF9F2E)', ch: '赵', online: true },
-  h5: { name: '周女士', title: '人事主管', bg: 'linear-gradient(135deg, #D5C2FF, #9A7BFF)', ch: '周', online: false }
+  h1: { name: '王女士', phone: '0571 8866 1201', title: '招聘经理', bg: 'linear-gradient(135deg, #FFB3C1, #FF7A98)', ch: '王', online: true },
+  h2: { name: '陈先生', phone: '0571 8866 1202', title: '技术总监', bg: 'linear-gradient(135deg, #9EC9FF, #4C8DFF)', ch: '陈', online: false },
+  h3: { name: '李女士', phone: '0571 8866 1203', title: 'HRBP', bg: 'linear-gradient(135deg, #A6EBD4, #2BC49C)', ch: '李', online: true },
+  h4: { name: '赵先生', phone: '0571 8866 1204', title: '前端负责人', bg: 'linear-gradient(135deg, #FFD59A, #FF9F2E)', ch: '赵', online: true },
+  h5: { name: '周女士', phone: '0571 8866 1205', title: '人事主管', bg: 'linear-gradient(135deg, #D5C2FF, #9A7BFF)', ch: '周', online: false }
 };
 
 const jobs = [
@@ -26,11 +26,23 @@ const jobs = [
 ];
 
 const chats = [
-  { id: 's1', hr: 'h4', company: 'c1', job: 'j1', last: '您好，看了您的简历，方便明天下午聊一下吗？', time: '10:32', unread: 2 },
-  { id: 's2', hr: 'h1', company: 'c2', job: 'j2', last: '岗位还在招的，欢迎投递简历～', time: '09:15', unread: 1 },
-  { id: 's3', hr: 'h2', company: 'c3', job: 'j3', last: '[面试邀请] 10月28日 14:00 视频面试', time: '昨天', unread: 0 },
-  { id: 's4', hr: 'h3', company: 'c4', job: 'j4', last: '作品集收到了，我们评估后尽快回复您', time: '周二', unread: 0 },
-  { id: 's5', hr: 'h5', company: 'c3', job: 'j6', last: '好的，谢谢您的关注', time: '10/19', unread: 0 }
+  // ago：最后一条消息距现在多少分钟；history：从旧到新，me 是我发的
+  { id: 's1', hr: 'h4', company: 'c1', job: 'j1', unread: 2, ago: 40, history: [
+    { me: false, text: '你好，我是字节跳动前端团队的负责人，对你的小程序性能优化经历很感兴趣。' },
+    { me: false, text: '您好，看了您的简历，方便明天下午聊一下吗？' }] },
+  { id: 's2', hr: 'h1', company: 'c2', job: 'j2', unread: 1, ago: 120, history: [
+    { me: true, text: '您好，请问电商运营专员这个岗位还在招吗？' },
+    { me: false, text: '岗位还在招的，欢迎投递简历～' }] },
+  { id: 's3', hr: 'h2', company: 'c3', job: 'j3', unread: 0, ago: 1500, history: [
+    { me: true, text: '[简历] 林晓的在线简历' },
+    { me: false, text: '简历看过了，背景挺匹配的，给你发个面试邀请。' },
+    { me: false, invite: 'iv1', text: '[面试邀请] 视频面试' }] },
+  { id: 's4', hr: 'h3', company: 'c4', job: 'j4', unread: 0, ago: 7200, history: [
+    { me: true, text: '您好，这是我的作品集链接，麻烦您看一下。' },
+    { me: false, text: '作品集收到了，我们评估后尽快回复您' }] },
+  { id: 's5', hr: 'h5', company: 'c3', job: 'j6', unread: 0, ago: 20160, history: [
+    { me: true, text: '您好，我对支付方向的产品岗位很感兴趣，想了解一下团队情况。' },
+    { me: false, text: '好的，谢谢您的关注' }] }
 ];
 
 function decorate(j) {
@@ -44,4 +56,29 @@ function getJob(id) {
   return decorate(j);
 }
 
-module.exports = { companies, hrs, jobs, chats, decorate, getJob };
+// 筛选项：经验 / 学历 / 薪资（按月薪 K 的区间求交）
+const EXPS = ['不限', '1-3年', '3-5年'];
+const EDUS = ['不限', '大专', '本科', '硕士'];
+const SALARIES = [{ text: '不限' }, { text: '15K 以下', max: 15 }, { text: '15-30K', min: 15, max: 30 }, { text: '30K 以上', min: 30 }];
+// 首页城市下拉与求职意向共用（下标存在 jobs_intent.cityIdx）
+const CITIES = ['杭州', '上海', '北京', '深圳', '全国'];
+const INTENTS = ['前端开发工程师', 'Java 后端', '产品经理', 'UI/UX 设计师', '数据分析师', '电商运营'];
+// 求职意向 → 推荐时优先的关键词
+const INTENT_KEYS = { '前端开发工程师': ['前端', 'React', '小程序'], 'Java 后端': ['Java', '后端'], '产品经理': ['产品'], 'UI/UX 设计师': ['设计', 'Figma'], '数据分析师': ['数据', 'SQL'], '电商运营': ['运营', '电商'] };
+function salaryRange(j) {
+  const m = /(\d+)-(\d+)K/.exec(j.salary);
+  return m ? { low: Number(m[1]), high: Number(m[2]) } : { low: 0, high: 0 };
+}
+function matchSalary(j, si) {
+  const s = SALARIES[si] || {};
+  const r = salaryRange(j);
+  if (s.max && r.low >= s.max) return false;
+  if (s.min && r.high <= s.min) return false;
+  return true;
+}
+function intentScore(j, intent) {
+  const keys = INTENT_KEYS[intent] || [];
+  const text = j.title + j.tags.join(' ');
+  return keys.some(k => text.indexOf(k) >= 0) ? 1 : 0;
+}
+module.exports = { companies, hrs, jobs, chats, decorate, getJob, EXPS, EDUS, SALARIES, CITIES, INTENTS, matchSalary, intentScore };

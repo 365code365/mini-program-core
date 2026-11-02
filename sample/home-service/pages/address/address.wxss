@@ -1,0 +1,5 @@
+.ad { border: 2rpx solid #ffffff; }
+.ad-cur { border-color: #13a86b; }
+.ad-tx { flex: 1; font-size: 28rpx; font-weight: bold; }
+.ck-tx { margin-left: 8rpx; }
+.op { font-size: 26rpx; color: #4a544f; margin-left: 32rpx; }

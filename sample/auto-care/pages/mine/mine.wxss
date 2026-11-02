@@ -1,0 +1,15 @@
+.hd { background: linear-gradient(160deg, #1f6fff 0%, #5b98ff 100%); padding: 40rpx 32rpx 32rpx; color: #ffffff; }
+.avatar { width: 112rpx; height: 112rpx; border-radius: 56rpx; background: #ffffff; display: flex; align-items: center; justify-content: center; margin-right: 24rpx; }
+.av-tx { font-size: 48rpx; color: #1f6fff; font-weight: bold; }
+.name { font-size: 36rpx; font-weight: bold; }
+.hd-sub { font-size: 24rpx; color: #e1ebff; }
+.stats { margin-top: 36rpx; }
+.stat { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.st-num { font-size: 36rpx; font-weight: bold; }
+.st-tx { font-size: 24rpx; color: #e1ebff; }
+.ops { margin-top: 24rpx; }
+.op { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.op-num { font-size: 36rpx; font-weight: bold; }
+.menu { padding: 0 28rpx; }
+.mi { height: 100rpx; border-bottom: 1rpx solid #f0f2f6; }
+.mi-v { max-width: 380rpx; }

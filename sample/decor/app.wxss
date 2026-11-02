@@ -1,0 +1,33 @@
+page { background: #f6f4f0; color: #2a2723; font-size: 28rpx; }
+.page { padding: 24rpx 24rpx 40rpx; }
+.tab-page { padding-bottom: 160rpx; }
+.card { background: #ffffff; border-radius: 20rpx; padding: 28rpx; margin-bottom: 24rpx; }
+.row { display: flex; flex-direction: row; align-items: center; }
+.between { display: flex; flex-direction: row; align-items: center; justify-content: space-between; }
+.col { display: flex; flex-direction: column; }
+.wrap { display: flex; flex-direction: row; flex-wrap: wrap; }
+.flex1 { flex: 1; }
+.sec-title { font-size: 32rpx; font-weight: bold; color: #2a2723; }
+.muted { color: #9a948c; font-size: 24rpx; }
+.green { color: #3a7d6c; }
+.wood { color: #b8763e; }
+.btn { background: #3a7d6c; color: #ffffff; border-radius: 44rpx; height: 88rpx; display: flex; align-items: center; justify-content: center; font-size: 30rpx; font-weight: bold; }
+.btn-wood { background: #c8894f; }
+.btn-ghost { background: #edf4f1; color: #3a7d6c; border-radius: 44rpx; height: 80rpx; display: flex; align-items: center; justify-content: center; font-size: 28rpx; }
+.btn-hover { opacity: 0.75; }
+.item-hover { background: #f4f1ec; }
+.press-hover { transform: scale(0.97); opacity: 0.9; }
+.chip { font-size: 24rpx; color: #6a645c; background: #ffffff; padding: 10rpx 26rpx; border-radius: 30rpx; margin-right: 14rpx; flex-shrink: 0; }
+.chip-on { background: #3a7d6c; color: #ffffff; }
+.tag { font-size: 20rpx; padding: 4rpx 12rpx; border-radius: 8rpx; background: #edf4f1; color: #3a7d6c; margin-right: 10rpx; }
+.tag-wood { background: #f8eee4; color: #b8763e; }
+.field { display: flex; flex-direction: row; align-items: center; min-height: 96rpx; border-bottom: 1rpx solid #f1ede7; }
+.field-label { width: 170rpx; color: #5a544c; font-size: 28rpx; }
+.field-input { flex: 1; font-size: 28rpx; }
+.field-value { flex: 1; font-size: 28rpx; text-align: right; }
+.arrow { color: #c4bdb3; margin-left: 12rpx; font-size: 32rpx; }
+.placeholder { color: #c4bdb3; }
+.err { color: #d9534f; font-size: 22rpx; padding: 8rpx 0 0 170rpx; }
+.empty { padding: 80rpx 0; display: flex; flex-direction: column; align-items: center; }
+.empty-text { color: #a39d94; font-size: 26rpx; margin-top: 12rpx; text-align: center; }
+.stars { color: #e3a33b; font-size: 24rpx; }

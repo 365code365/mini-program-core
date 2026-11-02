@@ -1,0 +1,18 @@
+<view class="card">
+  <radio-group class="types" bindchange="onType">
+    <label class="ty" data-v="company" bindtap="pickType"><radio value="company" checked="{{type === 'company'}}" color="#13a874"></radio><text class="ty-tx">企业单位</text></label>
+    <label class="ty" data-v="person" bindtap="pickType"><radio value="person" checked="{{type === 'person'}}" color="#13a874"></radio><text class="ty-tx">个人 / 非企业</text></label>
+  </radio-group>
+  <view class="fl"><text class="fl-k">抬头名称</text><input class="fl-in" placeholder="{{type === 'company' ? '与营业执照一致' : '如：张三'}}" value="{{name}}" data-k="name" bindinput="onInput" maxlength="50" /></view>
+  <text class="err" wx:if="{{err.name}}">{{err.name}}</text>
+  <block wx:if="{{type === 'company'}}">
+    <view class="fl"><text class="fl-k">税号</text><input class="fl-in" placeholder="15~20 位纳税人识别号" value="{{taxNo}}" data-k="taxNo" bindinput="onInput" maxlength="20" /></view>
+    <text class="err" wx:if="{{err.taxNo}}">{{err.taxNo}}</text>
+    <view class="fl"><text class="fl-k">开户银行</text><input class="fl-in" placeholder="选填" value="{{bank}}" data-k="bank" bindinput="onInput" /></view>
+    <view class="fl"><text class="fl-k">银行账号</text><input class="fl-in" type="number" placeholder="选填" value="{{account}}" data-k="account" bindinput="onInput" /></view>
+  </block>
+  <view class="fl"><text class="fl-k">常用邮箱</text><input class="fl-in" placeholder="选填，用于接收发票" value="{{email}}" data-k="email" bindinput="onInput" /></view>
+  <text class="err" wx:if="{{err.email}}">{{err.email}}</text>
+  <view class="fl fl-last"><text class="fl-k fl-wide">设为默认抬头</text><switch checked="{{isDefault}}" color="#13a874" bindchange="onDefault"></switch></view>
+</view>
+<view class="ops"><view class="btn" hover-class="btn-hover" bindtap="save">保存</view></view>

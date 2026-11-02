@@ -1,0 +1,42 @@
+<view class="filter">
+  <scroll-view class="cats" scroll-x enable-flex>
+    <view class="cat {{cat === item.key ? 'cat-on' : ''}}" wx:for="{{cats}}" wx:key="key" data-key="{{item.key}}" bindtap="onCat">{{item.name}}</view>
+  </scroll-view>
+  <view class="bar">
+    <view class="sort {{sort === item.key ? 'sort-on' : ''}}" wx:for="{{sorts}}" wx:key="key" data-key="{{item.key}}" bindtap="onSort">{{item.name}}</view>
+    <picker class="age" mode="selector" range="{{ageNames}}" value="{{ageIdx}}" bindchange="onAge">
+      <view class="age-v {{ageIdx > 0 ? 'sort-on' : ''}}">{{ageNames[ageIdx]}} ▾</view>
+    </picker>
+  </view>
+</view>
+
+<view class="wrap list">
+  <view class="loading" wx:if="{{loading}}">正在为您筛选产品…</view>
+  <block wx:else>
+    <view class="empty" wx:if="{{!list.length}}">
+      <image class="empty-ic" src="/images/tab/shield.png"></image>
+      <text class="empty-tx">没有符合条件的产品，换个条件试试</text>
+      <view class="empty-btn" bindtap="resetFilter">清空筛选</view>
+    </view>
+    <view class="muted count" wx:else>共 {{list.length}} 款产品</view>
+    <view class="card item" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="openDetail" hover-class="btn-hover">
+      <view class="item-top">
+        <image class="item-img" src="{{item.cover}}" mode="aspectFill"></image>
+        <view class="item-info">
+          <text class="item-n">{{item.name}}</text>
+          <text class="item-t">{{item.tagline}}</text>
+          <view class="tags"><text class="tag" wx:for="{{item.tags}}" wx:for-item="t" wx:key="*this">{{t}}</text></view>
+        </view>
+      </view>
+      <view class="item-foot">
+        <text class="muted">{{item.catName}} · {{item.ages}} · 已售 {{item.salesText}}</text>
+        <view class="row">
+          <text class="price">¥{{item.price}}</text><text class="price-unit">{{item.unit}}起</text>
+          <text class="calc-btn" data-id="{{item.id}}" catchtap="openCalc">测保费</text>
+        </view>
+      </view>
+      <text class="muted insurer">承保：{{item.insurer}}</text>
+    </view>
+  </block>
+</view>
+<view class="tab-pad"></view>

@@ -1,0 +1,42 @@
+<view class="top">
+  <view class="types">
+    <view class="ty {{type === 'goods' ? 'on' : ''}}" data-t="goods" bindtap="setType"><text>商城订单</text></view>
+    <view class="ty {{type === 'service' ? 'on' : ''}}" data-t="service" bindtap="setType"><text>服务预约</text></view>
+  </view>
+  <view class="tabs">
+    <view class="tab {{tab === item.key ? 'on' : ''}}" wx:for="{{tabs}}" wx:key="key" data-k="{{item.key}}" bindtap="setTab">
+      <text>{{item.name}}</text>
+      <view wx:if="{{tab === item.key}}" class="tab-line"></view>
+    </view>
+  </view>
+</view>
+<view class="card od" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="goDetail">
+  <view class="row between od-h">
+    <text class="muted">{{type === 'goods' ? '下单' : '预约'}} {{item.time}}</text>
+    <text class="od-st st-{{item.status}}">{{item.st.text}}</text>
+  </view>
+  <view wx:if="{{type === 'goods'}}" class="row od-b">
+    <image wx:for="{{item.imgs}}" wx:for-item="img" wx:key="*this" class="od-img" src="{{img}}" mode="aspectFill"></image>
+    <text class="od-sum">{{item.summary}}</text>
+  </view>
+  <view wx:else class="od-b od-svc">
+    <text class="od-t">{{item.title}}</text>
+    <text class="muted">{{item.sub}}</text>
+  </view>
+  <view class="row between od-f">
+    <text class="muted">{{item.footText}}</text>
+    <text>实付 <text class="price">¥{{item.pay}}</text></text>
+  </view>
+  <view class="row od-ops">
+    <view wx:if="{{item.st.canCancel}}" class="op op-cancel" data-id="{{item.id}}" catchtap="onCancel"><text>{{type === 'goods' ? '取消订单' : '取消预约'}}</text></view>
+    <view wx:if="{{item.st.canPay}}" class="op pri op-pay" data-id="{{item.id}}" catchtap="onPay"><text>去支付</text></view>
+    <view wx:if="{{item.st.canConfirm}}" class="op pri op-confirm" data-id="{{item.id}}" catchtap="onConfirm"><text>确认收货</text></view>
+    <view wx:if="{{item.st.canRate}}" class="op op-rate" data-id="{{item.id}}" catchtap="onRate"><text>去评价</text></view>
+    <view wx:if="{{item.status === 'done' || item.status === 'cancel'}}" class="op pri op-again" data-id="{{item.id}}" catchtap="onAgain"><text>{{type === 'goods' ? '再来一单' : '再次预约'}}</text></view>
+  </view>
+</view>
+<view wx:if="{{!list.length}}" class="empty">
+  <text class="muted">{{type === 'goods' ? '这里还没有订单' : '这里还没有预约'}}</text>
+  <view class="btn empty-btn" bindtap="goShop"><text>{{type === 'goods' ? '去商城逛逛' : '去预约服务'}}</text></view>
+</view>
+<view style="height: 40rpx;"></view>

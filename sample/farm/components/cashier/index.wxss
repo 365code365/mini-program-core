@@ -1,0 +1,19 @@
+.cs-mask { position: fixed; left: 0; top: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 900; }
+.cs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 901; background: #ffffff; border-top-left-radius: 24rpx; border-top-right-radius: 24rpx; padding: 0 32rpx calc(32rpx + env(safe-area-inset-bottom)); display: flex; flex-direction: column; }
+.cs-head { height: 96rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; position: relative; }
+.cs-x { position: absolute; left: 0; top: 24rpx; font-size: 34rpx; color: #8a9186; padding: 0 10rpx; }
+.cs-title { font-size: 30rpx; font-weight: bold; }
+.cs-tip { font-size: 22rpx; color: #c07a10; background: #fff6e5; border-radius: 8rpx; padding: 10rpx 16rpx; text-align: center; }
+.cs-amount { display: flex; flex-direction: row; align-items: baseline; justify-content: center; margin-top: 28rpx; }
+.cs-yen { font-size: 36rpx; font-weight: bold; }
+.cs-num { font-size: 72rpx; font-weight: bold; }
+.cs-no { font-size: 22rpx; color: #8a9186; text-align: center; margin-top: 6rpx; }
+.cs-ways { margin-top: 28rpx; }
+.cs-way { display: flex; flex-direction: row; align-items: center; padding: 22rpx 0; border-bottom: 1rpx solid #f0f1ee; }
+.cs-way-ic { width: 52rpx; height: 52rpx; border-radius: 12rpx; color: #ffffff; font-size: 26rpx; text-align: center; line-height: 52rpx; }
+.cs-way-mid { flex: 1; margin-left: 20rpx; display: flex; flex-direction: column; }
+.cs-way-name { font-size: 28rpx; }
+.cs-way-sub { font-size: 22rpx; color: #8a9186; }
+.cs-btn { margin-top: 36rpx; height: 88rpx; border-radius: 44rpx; background: #2aae67; display: flex; align-items: center; justify-content: center; }
+.cs-btn-hover { opacity: 0.8; }
+.cs-btn-tx { color: #ffffff; font-size: 30rpx; font-weight: bold; }

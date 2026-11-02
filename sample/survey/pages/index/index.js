@@ -5,7 +5,10 @@ Page({
   onShow() {
     if (typeof this.getTabBar === 'function' && this.getTabBar()) this.getTabBar().setData({ selected: 0 });
     const mine = data.getMine().map(m => ({ id: m.id, title: m.title, total: m.counts.reduce((a, b) => a + b, 0), ended: !!m.closed || m.deadline < data.today() }));
-    this.setData({ mine });
+    // 广场总参与人数：各问卷参与数之和（加上自己参与过的）
+    const ans = data.getAnswers();
+    const people = data.surveys.reduce((m, x) => m + x.joined + (ans[x.id] ? 1 : 0), 0);
+    this.setData({ mine, todayText: data.fmtNum(people) });
     this.refresh();
   },
   refresh() {
@@ -18,20 +21,15 @@ Page({
       .map(x => ({
         id: x.id, kind: x.kind, title: x.title, desc: x.desc, bg: x.bg, glyph: x.glyph, hot: x.hot,
         done: !!ans[x.id], joinedText: data.fmtNum(x.joined + (ans[x.id] ? 1 : 0)), qCount: x.questions.length,
-        deadlineShort: x.deadline.slice(5).replace('-', '/')
+        deadlineShort: x.deadline.slice(5).replace('-', '/'), ended: data.isEnded(x)
       }));
     this.setData({ list });
   },
   onSearch(e) { this.setData({ keyword: e.detail.value }); this.refresh(); },
   onSeg(e) { this.setData({ sIdx: e.currentTarget.dataset.idx }); this.refresh(); },
+  // 先进介绍页：看题量、截止、是否已参与，再决定作答 / 看结果
   onOpen(e) {
-    const id = e.currentTarget.dataset.id;
-    if (data.getAnswers()[id]) {
-      wx.showModal({ title: '你已参与过', content: '要直接查看统计结果吗？', confirmText: '看结果', cancelText: '重新作答', confirmColor: '#6C5CE7',
-        success: (r) => wx.navigateTo({ url: r.confirm ? '/pages/result/result?id=' + id : '/pages/answer/answer?id=' + id }) });
-      return;
-    }
-    wx.navigateTo({ url: '/pages/answer/answer?id=' + id });
+    wx.navigateTo({ url: '/pages/intro/intro?id=' + e.currentTarget.dataset.id });
   },
   onResult(e) { wx.navigateTo({ url: '/pages/result/result?id=' + e.currentTarget.dataset.id }); },
   onCreate() { wx.switchTab({ url: '/pages/create/create' }); },

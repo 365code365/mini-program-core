@@ -1,0 +1,33 @@
+.head { background: #ffffff; padding: 28rpx 32rpx; border-bottom: 1rpx solid #f2f3f5; }
+.h-ic { width: 72rpx; height: 72rpx; border-radius: 18rpx; color: #fff; font-size: 30rpx; line-height: 72rpx; text-align: center; margin-right: 20rpx; }
+.h-t { font-size: 32rpx; font-weight: bold; margin-bottom: 4rpx; }
+.form { background: #ffffff; margin-top: 20rpx; padding: 0 32rpx; }
+.fi { min-height: 100rpx; border-bottom: 1rpx solid #f2f3f5; padding: 18rpx 0; box-sizing: border-box; }
+.fi-col { display: flex; flex-direction: column; }
+.lb { width: 200rpx; font-size: 28rpx; color: #1d2129; flex-shrink: 0; }
+.req { color: #f53f3f; margin-right: 4rpx; }
+.ipt { font-size: 28rpx; text-align: right; height: 60rpx; }
+.unit { font-size: 26rpx; color: #86909c; margin-left: 8rpx; }
+.ta { width: 100%; height: 160rpx; margin-top: 16rpx; background: #f7f8fa; border-radius: 12rpx; padding: 16rpx; box-sizing: border-box; font-size: 28rpx; }
+.pv { font-size: 28rpx; text-align: right; color: #1d2129; }
+.ph { color: #c9cdd4; }
+.calc { color: #1677ff; font-weight: bold; }
+.rg { display: flex; flex-direction: row; flex-wrap: wrap; margin-top: 16rpx; }
+.rl { margin: 0 36rpx 12rpx 0; font-size: 26rpx; }
+.rg-in { flex: 1; justify-content: flex-end; margin-top: 0; }
+.rg-in .rl { margin: 0 0 0 32rpx; }
+.sw { justify-content: flex-end; }
+.sw .muted { margin-right: 16rpx; }
+.ap { justify-content: flex-end; }
+.ap-n { font-size: 28rpx; text-align: right; }
+.ap .muted { text-align: right; }
+.ap-ch { font-size: 24rpx; color: #1677ff; margin-left: 16rpx; }
+.fe { display: block; padding: 8rpx 0 0; }
+.fl { margin-top: 24rpx; }
+.fn { align-items: center; width: 140rpx; }
+.fd { width: 48rpx; height: 48rpx; border-radius: 24rpx; background: #e5e6eb; color: #4e5969; font-size: 24rpx; line-height: 48rpx; text-align: center; }
+.on { background: #1677ff; color: #fff; }
+.fx { font-size: 22rpx; color: #4e5969; margin-top: 8rpx; }
+.fline { flex: 1; height: 2rpx; background: #e5e6eb; margin-bottom: 36rpx; }
+.foot { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; padding: 16rpx 32rpx calc(16rpx + env(safe-area-inset-bottom)); border-top: 1rpx solid #f2f3f5; }
+.dis { background: #94bfff; }

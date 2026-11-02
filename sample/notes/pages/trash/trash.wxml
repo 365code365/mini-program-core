@@ -1,12 +1,12 @@
 <view class="bar row">
-  <text class="sub flex1">回收站里的笔记不会出现在列表与搜索里</text>
+  <text class="sub flex1">回收站保留 30 天，到期自动彻底删除</text>
   <view class="clear {{items.length ? '' : 'off'}}" bindtap="onClear">清空</view>
 </view>
 <view class="card item" wx:for="{{items}}" wx:key="id">
   <text class="item-title">{{item.title}}</text>
   <text class="item-body" wx:if="{{item.body}}">{{item.body}}</text>
   <view class="row ops">
-    <text class="sub flex1">{{item.time}}</text>
+    <text class="sub flex1">{{item.time}} 删除 · <text class="{{item.left <= 3 ? 'soon' : ''}}">{{item.leftText}}</text></text>
     <view class="op restore" data-id="{{item.id}}" bindtap="onRestore">恢复</view>
     <view class="op purge" data-id="{{item.id}}" bindtap="onPurge">彻底删除</view>
   </view>

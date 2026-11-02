@@ -1,11 +1,16 @@
 <view class="tabs">
-  <view wx:for="{{tabs}}" wx:key="key" class="tab {{tab === item.key ? 'tab-on' : ''}}" data-key="{{item.key}}" bindtap="onTab">{{item.name}}</view>
+  <view wx:for="{{tabs}}" wx:key="key" class="tab {{tab === item.key ? 'tab-on' : ''}}" data-key="{{item.key}}" bindtap="onTab"><text>{{item.name}}（{{counts[item.key]}}）</text></view>
 </view>
 <view class="exchange">
-  <input class="ex-input" placeholder="输入兑换码" value="{{code}}" bindinput="onCode" />
+  <!-- id 跟着 exSeq 变：引擎里用户打过字的输入框，页面 setData 清空 value 不会重画（框里留着旧字），
+       换一个 id 就是一份新的输入状态；微信里 value 绑定本来就会清空，换 id 无副作用 -->
+  <input id="ex-code-{{exSeq}}" class="ex-input" placeholder="输入兑换码，如 DIDA2026" placeholder-class="ph" value="{{code}}" maxlength="16" bindinput="onCode" />
   <view class="ex-btn" bindtap="onExchange">兑换</view>
 </view>
-<view wx:if="{{!list.length}}" class="empty">暂无优惠券</view>
+<view wx:if="{{!list.length}}" class="empty-wrap">
+  <view class="empty-ic"><text class="empty-ic-t">券</text></view>
+  <text class="sub">{{tab === 'ok' ? '暂无可用的优惠券' : tab === 'used' ? '还没有用过优惠券' : '没有过期的优惠券'}}</text>
+</view>
 <view class="coupon {{tab !== 'ok' ? 'gray' : ''}}" wx:for="{{list}}" wx:key="id">
   <view class="c-left">
     <view class="row amount-row"><text class="c-yen">¥</text><text class="c-amount">{{item.amount}}</text></view>
@@ -13,7 +18,10 @@
   </view>
   <view class="c-split"></view>
   <view class="c-right">
-    <text class="c-name">{{item.name}}</text>
+    <view class="row">
+      <text class="c-name">{{item.name}}</text>
+      <text wx:if="{{tab === 'ok' && pick === item.id}}" class="c-pick">优先使用</text>
+    </view>
     <text class="c-date">{{item.date}}</text>
     <view class="row between">
       <text class="c-tag">{{item.scope}}</text>
@@ -22,3 +30,4 @@
     </view>
   </view>
 </view>
+<view class="tip"><text>优惠券在行程结束付款时自动抵扣，同一单只能用一张；取消订单不消耗优惠券。</text></view>

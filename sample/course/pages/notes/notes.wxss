@@ -1,0 +1,8 @@
+.empty { display: flex; flex-direction: column; align-items: center; }
+.go { margin-top: 24rpx; width: 200rpx; height: 60rpx; line-height: 60rpx; text-align: center; border-radius: 30rpx; border: 2rpx solid #3d6cf6; color: #3d6cf6; font-size: 24rpx; }
+.g-t { font-size: 30rpx; font-weight: bold; }
+.note { margin-top: 20rpx; padding: 18rpx 20rpx; background: #fffaf0; border-radius: 12rpx; }
+.n-l { font-size: 24rpx; color: #ff8a1d; font-weight: bold; }
+.n-text { margin: 8rpx 0; font-size: 26rpx; color: #2b3140; }
+.n-del { font-size: 22rpx; color: #9aa0ab; }
+.gap { height: 60rpx; }

@@ -1,0 +1,27 @@
+<view wx:if="{{!o}}" class="empty"><text class="empty-t">订单不存在</text><view class="btn-ghost empty-btn" bindtap="toHome"><text>返回首页</text></view></view>
+<block wx:else>
+<view class="res col">
+  <view class="ok"><text class="ok-t">✓</text></view>
+  <text class="res-t">支付成功</text>
+  <text class="muted res-s">已出票 {{count}} 张，电子票已放入票夹</text>
+  <text class="res-amt">¥{{o.amount}}</text>
+</view>
+<view class="card">
+  <text class="sec-title">{{o.title}}</text>
+  <view class="kv row"><text class="k">场次</text><text class="v">{{o.sessionText}}</text></view>
+  <view class="kv row"><text class="k">场馆</text><text class="v">{{o.city}} · {{o.venue}}</text></view>
+  <view class="kv row"><text class="k">票品</text>
+    <view class="v col"><text wx:for="{{o.items}}" wx:key="index">{{item.label}} ¥{{item.price}}</text></view>
+  </view>
+</view>
+<view class="tips card">
+  <text class="tips-t">入场提示：开演前 60 分钟开放检票，请携带观演人证件原件，在票夹出示电子票二维码入场。</text>
+</view>
+<view class="btns">
+  <view class="btn-main" bindtap="toTicket"><text>查看电子票</text></view>
+  <view class="row btns2">
+    <view class="btn-ghost flex1" bindtap="toWallet"><text>去票夹</text></view>
+    <view class="btn-ghost flex1 gap" bindtap="toHome"><text>继续逛逛</text></view>
+  </view>
+</view>
+</block>

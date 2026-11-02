@@ -1,0 +1,17 @@
+.ok { align-items: center; padding: 48rpx 0 90rpx; background: linear-gradient(160deg, #18c287, #0e8f5f); }
+.ok-t { color: #ffffff; font-size: 40rpx; font-weight: bold; margin-top: 16rpx; }
+.ok-s { color: #d9f4e9; font-size: 24rpx; margin-top: 6rpx; }
+.info { margin-top: -60rpx; position: relative; }
+.v-n { display: block; font-size: 32rpx; font-weight: bold; margin-bottom: 4rpx; }
+.seg { margin-top: 14rpx; }
+.seg-c { font-size: 26rpx; font-weight: bold; width: 150rpx; }
+.seg-t { font-size: 26rpx; }
+.code { margin-top: 24rpx; padding-top: 20rpx; border-top: 1rpx dashed #dfe2e0; }
+.code-v { font-size: 40rpx; font-weight: bold; letter-spacing: 6rpx; color: #13b37b; }
+.ops { margin: 32rpx 24rpx 0; }
+.op { flex: 1; height: 88rpx; line-height: 84rpx; padding: 0; }
+.op-main { margin-left: 24rpx; line-height: 88rpx; }
+.more-s { display: block; margin-top: 8rpx; }
+.more-ops { margin-top: 20rpx; }
+.share-btn { margin: 0 0 0 20rpx; height: 64rpx; line-height: 64rpx; padding: 0 28rpx; font-size: 26rpx; color: #ffffff; background: #ff7a1a; border-radius: 32rpx; border: none; }
+.home { text-align: center; padding: 40rpx 0; }

@@ -1,0 +1,40 @@
+<map id="map" class="map" latitude="{{latitude}}" longitude="{{longitude}}" scale="{{scale}}" min-scale="5" max-scale="19"
+  markers="{{markers}}" polyline="{{polyline}}" circles="{{circles}}" polygons="{{polygons}}"
+  show-location="{{true}}" show-scale="{{true}}" enable-satellite="{{satellite}}" enable-traffic="{{traffic}}"
+  bindtap="onTap" bindmarkertap="onMarkerTap" bindcallouttap="onCalloutTap" bindlabeltap="onLabelTap"
+  bindregionchange="onRegion" bindupdated="onUpdated"></map>
+<view class="card">
+  <text class="title">MapContext</text>
+  <text class="desc">地图由宿主画（瓦片、标记、折线都是宿主自己的绘制），同层渲染进页面：在地图上拖动、双指缩放拖的是地图，拖地图以外的地方滚页面。下面的方法经 hostCall 交给宿主的地图。</text>
+  <view class="btns">
+    <view class="btn-s" bindtap="center">getCenterLocation</view>
+    <view class="btn-s" bindtap="region">getRegion</view>
+    <view class="btn-s" bindtap="getScale">getScale</view>
+    <view class="btn-s" bindtap="moveHome">moveToLocation</view>
+    <view class="btn-s" bindtap="include">includePoints</view>
+    <view class="btn-s" bindtap="translate">translateMarker</view>
+    <view class="btn-o" bindtap="addMarker">addMarkers</view>
+    <view class="btn-o" bindtap="removeMarker">removeMarkers</view>
+    <view class="btn-o" bindtap="toScreen">toScreenLocation</view>
+  </view>
+  <view class="result"><text>{{ctxResult}}</text></view>
+</view>
+<view class="card">
+  <text class="title">属性</text>
+  <view class="btns">
+    <view class="btn-o" bindtap="zoom" data-d="1">scale +1</view>
+    <view class="btn-o" bindtap="zoom" data-d="-1">scale −1</view>
+    <view class="btn-o" bindtap="toggle" data-k="satellite">{{satellite ? '标准地图' : '卫星图'}}</view>
+    <view class="btn-o" bindtap="toggle" data-k="traffic">{{traffic ? '关路况' : '开路况'}}</view>
+    <view class="btn-o" bindtap="toggleRoute">{{polyline.length ? '收起路线' : '显示路线'}}</view>
+  </view>
+  <view class="kv"><text class="kv-k">中心</text><text class="kv-v">{{centerText}}</text></view>
+  <view class="kv"><text class="kv-k">缩放</text><text class="kv-v">{{scaleText}}</text></view>
+</view>
+<view class="card">
+  <text class="title">事件</text>
+  <text class="desc">bindtap 带经纬度；点标记 markertap，点气泡 callouttap，点标签 labeltap；拖动 / 缩放发 regionchange（begin / end，causedBy 是 gesture / scale / drag / update）。</text>
+  <view class="log">
+    <text class="log-line" wx:for="{{logs}}" wx:key="*this">{{item}}</text>
+  </view>
+</view>

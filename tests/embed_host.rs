@@ -438,3 +438,58 @@ fn picker_面板贴着真实视口底边() {
     assert_eq!(js(&e, "String(getCurrentPages()[0].data.v)"), "0", "确定没点中（面板位置还按 667 算？）");
     assert_eq!(js(&e, "getCurrentPages()[0].data.t"), "number", "selector 的 detail.value 是 number");
 }
+
+/// `<web-view>`（宿主盖系统 WebView，`nativeComponents` 含 web-view）：
+/// 1. `nativeViews` 报它铺满页面、带解析好的 `url`（包内 H5 → 本地文件绝对路径）；
+/// 2. 宿主回传 `load` 派给 `bindload`；网页标题（`titlechange`）当导航栏标题；
+/// 3. 网页 `postMessage` 的消息**攒着**，不实时派；网页里 `wx.miniProgram.navigateBack()`（宿主转成 `miniProgram`）
+///    退回上一页，退之前一次派给 `bindmessage`，`e.detail.data` 是两次 postMessage 的 data 组成的数组，且先于 onUnload。
+#[test]
+fn web_view_消息攒到离开时一次派_网页里的跳转与标题() {
+    let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let root = fixture(
+        "web-view",
+        "<view>首页</view>",
+        "",
+        "Page({data:{}});",
+        "{}",
+        &[
+            ("pages/q/q.wxml", r#"<web-view src="/h5/index.html" bindmessage="onMsg" bindload="onWebLoad"></web-view>"#),
+            (
+                "pages/q/q.js",
+                "Page({ onMsg(e) { getApp().msg = e.detail.data; }, onWebLoad(e) { getApp().loaded = e.detail.src; },
+                  onUnload() { getApp().unloadSawMsg = !!getApp().msg; } });",
+            ),
+            ("h5/index.html", "<!doctype html><title>网页标题</title><p>离线页</p>"),
+        ],
+    );
+    let opts = EngineOptions { native_components: vec!["web-view".into()], ..Default::default() };
+    let mut e = engine(&root, 375, 667, 2.0, opts);
+    e.pump(17);
+    events(&mut e);
+    e.navigate("/pages/q/q").expect("进 web-view 页");
+    e.pump(34);
+    let evs = events(&mut e);
+    let nv = evs.iter().rev().find(|v| v["type"] == "nativeViews").expect("报 web-view 的位置");
+    let w = nv["views"].as_array().unwrap().iter().find(|v| v["tag"] == "web-view").expect("web-view 在列表里");
+    let key = w["key"].as_str().unwrap().to_string();
+    assert!(w["url"].as_str().unwrap().ends_with("h5/index.html") && w["url"].as_str().unwrap().starts_with('/'), "包内 H5 解析成本地路径：{w}");
+    assert_eq!((w["width"].as_f64(), w["y"].as_f64()), (Some(375.0), Some(0.0)), "铺满页面：{w}");
+
+    assert!(e.dispatch_native_view_event(&key, "load", serde_json::json!({"src": "/h5/index.html"})));
+    assert_eq!(js(&e, "getApp().loaded"), "/h5/index.html");
+    assert!(e.dispatch_native_view_event(&key, "titlechange", serde_json::json!({"title": "网页标题"})));
+    e.pump(51);
+    assert!(events(&mut e).iter().any(|v| v["type"] == "navigationBar" && v["title"] == "网页标题"), "网页标题当导航栏标题");
+
+    assert!(e.dispatch_native_view_event(&key, "message", serde_json::json!({"data": {"a": 1}})));
+    assert!(e.dispatch_native_view_event(&key, "message", serde_json::json!({"data": "b"})));
+    assert_eq!(js(&e, "String(getApp().msg)"), "undefined", "postMessage 不实时送达");
+    assert!(e.dispatch_native_view_event(&key, "miniProgram", serde_json::json!({"api": "navigateBack", "arg": {}})));
+    for _ in 0..3 {
+        e.pump(68);
+    }
+    assert_eq!(e.current_route(), "pages/p/p", "网页里 navigateBack 退回上一页");
+    assert_eq!(js(&e, "JSON.stringify(getApp().msg)"), r#"[{"a":1},"b"]"#);
+    assert_eq!(js(&e, "String(getApp().unloadSawMsg)"), "true", "bindmessage 先于 onUnload");
+}

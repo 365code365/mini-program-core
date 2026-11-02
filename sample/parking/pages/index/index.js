@@ -100,5 +100,8 @@ Page({
   },
   goLots() { wx.navigateTo({ url: '/pages/lots/lots' }) },
   goPay() { wx.navigateTo({ url: '/pages/pay/pay' }) },
-  goOrders() { wx.navigateTo({ url: '/pages/orders/orders' }) }
+  goOrders() { wx.navigateTo({ url: '/pages/orders/orders' }) },
+  goCard() { wx.navigateTo({ url: '/pages/card/card' }) },
+  goFind() { wx.navigateTo({ url: '/pages/findcar/findcar' }) },
+  goInvoice() { wx.navigateTo({ url: '/pages/invoice/invoice' }) }
 })

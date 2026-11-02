@@ -1,0 +1,47 @@
+<view wx:if="{{!o}}" class="empty col">
+  <view class="empty-ic"><text class="empty-ic-t">单</text></view>
+  <text class="sub">订单不存在或已删除</text>
+  <view class="btn-ghost empty-btn" bindtap="onOrders">查看全部订单</view>
+</view>
+<block wx:else>
+  <view class="head {{o.status === 'unpaid' ? 'head-warn' : ''}}">
+    <text class="h-st">{{o.status === 'unpaid' ? '待支付' : '充电完成'}}</text>
+    <text class="h-tip">{{o.status === 'unpaid' ? '账户余额不足，请补缴本次充电费用' : o.invoiced ? '本单已开具电子发票' : '感谢使用易充电，本单可开具电子发票'}}</text>
+    <view class="row h-amt"><text class="h-y">¥</text><text class="h-n money">{{o.payText}}</text></view>
+  </view>
+  <view class="card">
+    <view class="row st-row" bindtap="onStation">
+      <view class="col flex1">
+        <text class="st-name">{{st.name}}</text>
+        <text class="sub">{{st.addr}}</text>
+      </view>
+      <view class="chev"></view>
+    </view>
+    <view class="kv row"><text class="k">充电终端</text><text class="v">{{o.terminal}}</text></view>
+    <view class="kv row"><text class="k">车辆</text><text class="v">{{o.plate}}</text></view>
+    <view class="kv row"><text class="k">开始时间</text><text class="v">{{o.date}}</text></view>
+    <view class="kv row"><text class="k">充电时长</text><text class="v">{{o.minutes}} 分钟</text></view>
+    <view class="kv row"><text class="k">电量变化</text><text class="v">{{o.startSoc}}% 至 {{o.endSoc}}%</text></view>
+  </view>
+  <view class="card">
+    <text class="section-title">费用明细</text>
+    <view class="kv row"><text class="k">充电量</text><text class="v">{{o.kwh}} 度（{{o.period}}时段 ¥{{o.priceText}}/度）</text></view>
+    <view class="kv row"><text class="k">电费</text><text class="v">¥{{o.elecFeeText}}</text></view>
+    <view class="kv row"><text class="k">服务费</text><text class="v">¥{{o.serviceFeeText}}</text></view>
+    <view class="kv row" wx:if="{{o.cut}}"><text class="k">充电券</text><text class="v orange">{{o.couponTitle}} -¥{{o.cutText}}</text></view>
+    <view class="kv row total"><text class="k">{{o.status === 'unpaid' ? '待支付' : '实付'}}</text><text class="v money total-v">¥{{o.payText}}</text></view>
+    <view class="kv row" wx:if="{{payBy}}"><text class="k">支付方式</text><text class="v">{{payBy}}</text></view>
+    <text class="sub auto-note" wx:if="{{o.toppedText}}">本单结算前已为你免密自动充值 ¥{{o.toppedText}}</text>
+  </view>
+  <view class="card">
+    <view class="kv row no-top"><text class="k">订单编号</text><text class="v">{{o.id}}</text><text class="copy" bindtap="onCopy">复制</text></view>
+    <view class="kv row"><text class="k">结束时间</text><text class="v">{{o.endAt || o.date}}</text></view>
+  </view>
+  <view class="bottom-space"></view>
+  <view class="bar row">
+    <view class="btn-ghost bar-btn op-service" bindtap="onService">联系客服</view>
+    <view class="btn-ghost bar-btn op-again" bindtap="onStation">再次充电</view>
+    <view wx:if="{{o.status === 'unpaid'}}" class="btn-primary flex1 op-pay" bindtap="onPay">去支付 ¥{{o.payText}}</view>
+    <view wx:elif="{{o.pay > 0}}" class="btn-primary flex1 op-invoice" bindtap="onInvoice">{{o.invoiced ? '查看发票' : '开具发票'}}</view>
+  </view>
+</block>

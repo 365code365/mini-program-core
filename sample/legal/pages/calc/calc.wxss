@@ -1,0 +1,22 @@
+.tabs { background: #ffffff; padding: 0 24rpx; }
+.tb { flex: 1; text-align: center; height: 88rpx; line-height: 88rpx; font-size: 28rpx; color: #556070; }
+.tb-on { color: #1f4fb4; font-weight: bold; border-bottom: 4rpx solid #1f4fb4; }
+.fi { padding: 22rpx 0; border-bottom: 1rpx solid #eef0f4; }
+.k { width: 200rpx; font-size: 28rpx; color: #39424f; flex-shrink: 0; }
+.v { font-size: 28rpx; color: #1f2633; text-align: right; height: 48rpx; line-height: 48rpx; }
+.unit { font-size: 26rpx; color: #8a93a3; margin-left: 8rpx; }
+.rg { margin-top: 16rpx; }
+.rl { margin-right: 40rpx; font-size: 26rpx; }
+.calc { margin-top: 32rpx; }
+.res { text-align: left; }
+.total { display: block; text-align: center; font-size: 64rpx; font-weight: bold; color: #d64545; margin: 8rpx 0 16rpx; }
+.rr { padding: 14rpx 0; border-top: 1rpx dashed #e3e6ec; }
+.rk { font-size: 26rpx; color: #556070; }
+.rv { font-size: 26rpx; color: #1f2633; margin-left: 16rpx; }
+.note { display: block; font-size: 22rpx; color: #a5740f; margin-top: 12rpx; line-height: 34rpx; }
+.acts { margin-top: 24rpx; }
+.act { height: 76rpx; line-height: 76rpx; font-size: 28rpx; margin: 0 8rpx; }
+/* 样式放在外层 view：rich-text 自身带 display:block 时引擎把它压成一字一行 */
+.law-t { margin-top: 12rpx; font-size: 26rpx; color: #39424f; line-height: 42rpx; }
+.res-k { display: block; text-align: center; }
+.para { margin-bottom: 10rpx; }

@@ -1,0 +1,7 @@
+.field-label { width: 200rpx; }
+.err { padding-left: 200rpx; }
+.unit { color: #9a9095; font-size: 26rpx; margin-left: 12rpx; }
+.arrow { color: #c0b6ba; margin-left: 12rpx; font-size: 32rpx; }
+.hint { display: block; margin-top: 20rpx; }
+.tips { display: flex; flex-direction: column; }
+.tip { font-size: 24rpx; color: #7a7075; margin-top: 14rpx; line-height: 1.6; }

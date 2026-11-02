@@ -1,0 +1,78 @@
+<view class="gallery">
+  <swiper class="sw" circular bindchange="onSwiper">
+    <swiper-item wx:for="{{photos}}" wx:key="index">
+      <image class="sw-img" src="{{item}}" mode="aspectFill" data-src="{{item}}" bindtap="preview"></image>
+    </swiper-item>
+  </swiper>
+  <view class="sw-n"><text>{{cur + 1}}/{{photos.length}}</text></view>
+</view>
+
+<view class="card head">
+  <text class="name">{{v.name}}</text>
+  <view class="row head-l">
+    <text class="rate">{{v.rating}}分</text>
+    <text class="muted gap">{{sport}} · {{v.courts}} 片场地</text>
+    <view class="flex1"></view>
+    <text class="link" bindtap="toPrice">查看价格 ›</text>
+  </view>
+  <view class="row head-l">
+    <text class="muted">营业时间 {{v.open}}</text>
+  </view>
+  <view class="row addr">
+    <view class="col flex1" bindtap="addrMore">
+      <text class="addr-t">{{v.addr}}</text>
+      <text class="muted addr-d">距你 {{distText}} · 点击导航</text>
+    </view>
+    <view class="call" bindtap="call"><text class="call-t">电话</text></view>
+  </view>
+</view>
+
+<view id="price" class="card">
+  <text class="sec-title">场地价格</text>
+  <view class="prices row">
+    <view class="pr col flex1">
+      <text class="pr-l">平时</text>
+      <view class="row"><text class="pr-v">¥{{v.price}}</text><text class="muted">/小时</text></view>
+      <text class="muted pr-s">工作日 18:00 前</text>
+    </view>
+    <view class="pr pr-peak col flex1">
+      <text class="pr-l">高峰</text>
+      <view class="row"><text class="pr-v peak">¥{{v.peak}}</text><text class="muted">/小时</text></view>
+      <text class="muted pr-s">工作日 18:00 后、周末 9:00 后</text>
+    </view>
+  </view>
+</view>
+
+<view class="card">
+  <text class="sec-title">场馆设施</text>
+  <view class="facs">
+    <text class="fac" wx:for="{{v.facilities}}" wx:key="*this">{{item}}</text>
+  </view>
+</view>
+
+<view class="card">
+  <text class="sec-title">场馆实拍</text>
+  <grid-view class="wall" type="masonry" cross-axis-count="2" main-axis-gap="8" cross-axis-gap="8">
+    <view wx:for="{{wall}}" wx:key="index" class="wi" data-src="{{item.src}}" bindtap="preview">
+      <image class="wi-img" src="{{item.src}}" mode="aspectFill" style="height: {{item.h}}rpx;"></image>
+      <text class="wi-t">{{item.t}}</text>
+    </view>
+  </grid-view>
+</view>
+
+<view class="card">
+  <text class="sec-title">订场须知</text>
+  <view class="notice"><text class="notice-t">{{v.notice}}</text></view>
+</view>
+<view class="bottom-space"></view>
+
+<view class="foot">
+  <button class="share col" open-type="share" plain>
+    <text class="share-ic">↗</text>
+    <text class="share-t">约朋友</text>
+  </button>
+  <view class="col flex1 foot-p">
+    <view class="row"><text class="price big">¥{{v.price}}</text><text class="muted">/小时起</text></view>
+  </view>
+  <view class="btn-main bk" bindtap="book"><text>立即订场</text></view>
+</view>

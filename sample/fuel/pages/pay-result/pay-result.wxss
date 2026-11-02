@@ -1,0 +1,10 @@
+.top { background: linear-gradient(180deg, #13a874, #1fc28c); display: flex; flex-direction: column; align-items: center; padding: 44rpx 0 50rpx; }
+.t1 { color: #ffffff; font-size: 34rpx; font-weight: bold; margin-top: 16rpx; }
+.t-amt { align-items: baseline; margin-top: 8rpx; }
+.t-yen { color: #ffffff; font-size: 36rpx; font-weight: bold; }
+.t-num { color: #ffffff; font-size: 72rpx; font-weight: bold; }
+.t2 { color: rgba(255,255,255,0.88); font-size: 24rpx; }
+.line { display: flex; flex-direction: row; justify-content: space-between; align-items: center; min-height: 68rpx; font-size: 26rpx; }
+.ops { display: flex; flex-direction: row; padding: 40rpx 24rpx; }
+.op { flex: 1; margin: 0 10rpx; height: 80rpx; line-height: 76rpx; }
+.btn.op { line-height: 80rpx; }

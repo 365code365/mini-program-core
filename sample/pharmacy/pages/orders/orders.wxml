@@ -1,0 +1,46 @@
+<scroll-view class="tabs" scroll-x>
+  <text wx:for="{{tabs}}" wx:key="*this" class="t {{tab === index ? 't-on' : ''}}" data-i="{{index}}" bindtap="onTab">{{item}}</text>
+</scroll-view>
+
+<view wx:if="{{!list.length}}" class="empty">
+  <view class="empty-ic">单</view><text class="empty-t">{{tab ? '没有' + tabs[tab] + '的订单' : '还没有订单'}}</text>
+  <view class="btn empty-btn" bindtap="goShop">去选购</view>
+</view>
+
+<view class="card od" wx:for="{{list}}" wx:key="id" wx:for-item="o">
+  <view class="od-h" data-id="{{o.id}}" bindtap="toggle">
+    <text class="muted">{{o.time}} · {{o.delivery}}</text>
+    <text class="st st-{{o.stc}}">{{o.status}}</text>
+  </view>
+  <view class="od-it" wx:for="{{o.items}}" wx:key="id" data-id="{{o.id}}" bindtap="toggle">
+    <image class="od-img" src="{{item.img}}" mode="aspectFill"></image>
+    <view class="od-b"><text class="od-n">{{item.brand}} {{item.name}}</text><text class="muted">{{item.spec}} ×{{item.qty}}</text></view>
+    <text class="od-p">¥{{item.priceText}}</text>
+  </view>
+  <view class="od-sum" data-id="{{o.id}}" bindtap="toggle"><text class="muted">{{open === o.id ? '收起详情 ▴' : '订单详情 ▾'}}</text><view class="od-pay"><text>共 {{o.count}} 件 实付 </text><text class="price">¥{{o.pay}}</text></view></view>
+
+  <view wx:if="{{open === o.id}}" class="dt">
+    <view class="kv"><text class="k">订单号</text><text class="v" selectable>{{o.no}}</text></view>
+    <view class="kv"><text class="k">收货人</text><text class="v">{{o.addr.name}} {{o.addr.phone}}</text></view>
+    <view class="kv"><text class="k">地址</text><text class="v">{{o.addr.region[0]}}{{o.addr.region[1]}}{{o.addr.region[2]}} {{o.addr.detail}}</text></view>
+    <view wx:if="{{o.rxNo}}" class="kv"><text class="k">处方</text><text class="v">{{o.rxNo}}</text></view>
+    <view class="kv"><text class="k">金额</text><text class="v">商品 ¥{{o.goods}} + 运费 ¥{{o.freight}} - 优惠 ¥{{o.discount}}</text></view>
+    <view wx:if="{{o.remark}}" class="kv"><text class="k">备注</text><text class="v">{{o.remark}}</text></view>
+    <view class="line">
+      <view class="ln" wx:for="{{o.line}}" wx:key="t"><view class="ln-dot"></view><text class="ln-t">{{item.t}}</text><text class="muted">{{item.at}}</text></view>
+    </view>
+  </view>
+
+  <view class="ops">
+    <block wx:if="{{o.status === '待发货'}}">
+      <text class="op" data-id="{{o.id}}" bindtap="cancel">取消订单</text>
+      <text class="op op-g" bindtap="urge">催发货</text>
+    </block>
+    <text wx:if="{{o.status === '配送中'}}" class="op op-g" data-id="{{o.id}}" bindtap="receive">确认收货</text>
+    <block wx:if="{{o.status === '已完成' || o.status === '已取消'}}">
+      <text wx:if="{{o.status === '已完成'}}" class="op" data-name="{{o.items[0].brand}} {{o.items[0].name}}" bindtap="remind">用药提醒</text>
+      <text class="op op-g" data-id="{{o.id}}" bindtap="rebuy">再次购买</text>
+    </block>
+  </view>
+</view>
+<view class="gap"></view>

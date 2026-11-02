@@ -1,0 +1,14 @@
+.tabs { background: #fff; }
+.tb { flex: 1; text-align: center; height: 88rpx; line-height: 88rpx; font-size: 28rpx; color: #556070; }
+.tb-on { color: #1f4fb4; font-weight: bold; border-bottom: 4rpx solid #1f4fb4; }
+.st { font-size: 22rpx; border-radius: 8rpx; padding: 4rpx 12rpx; }
+.st-active { color: #1f4fb4; background: #eaf0fc; }
+.st-done { color: #a5740f; background: #fbf3e2; }
+.st-rated { color: #2c9a7a; background: #e4f5ef; }
+.body { margin-top: 20rpx; }
+.av { width: 80rpx; height: 80rpx; border-radius: 40rpx; margin-right: 16rpx; }
+.t { font-size: 28rpx; font-weight: bold; }
+.last { font-size: 24rpx; color: #556070; margin-top: 6rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 520rpx; }
+.foot { margin-top: 20rpx; padding-top: 16rpx; border-top: 1rpx solid #eef0f4; }
+.op { font-size: 24rpx; color: #1f4fb4; border: 2rpx solid #1f4fb4; border-radius: 24rpx; padding: 4rpx 20rpx; }
+.find { width: 300rpx; margin-top: 32rpx; }

@@ -1,0 +1,13 @@
+.addr { display: flex; flex-direction: row; align-items: center; }
+.radio { width: 40rpx; height: 40rpx; border-radius: 20rpx; border: 3rpx solid #d9d2cb; box-sizing: border-box; display: flex; align-items: center; justify-content: center; margin-right: 20rpx; flex-shrink: 0; }
+.radio.on { border-color: #ff8a3d; background: #ff8a3d; }
+.radio-in { width: 14rpx; height: 14rpx; border-radius: 7rpx; background: #ffffff; }
+.a-m { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.a-tag { font-size: 20rpx; padding: 0 10rpx; line-height: 32rpx; margin-right: 10rpx; border-radius: 6rpx; background: #fff1e4; color: #e0782f; flex-shrink: 0; }
+.a-tag.def { background: #ff8a3d; color: #ffffff; }
+.a-detail { display: block; margin: 6rpx 0 4rpx; font-size: 30rpx; font-weight: bold; line-height: 44rpx; }
+.edit { height: 52rpx; padding: 0 22rpx; margin-left: 16rpx; border-radius: 26rpx; border: 2rpx solid #e6ded6; color: #5a4f47; font-size: 24rpx; display: flex; align-items: center; flex-shrink: 0; }
+.none { padding-top: 240rpx; text-align: center; }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; background: #ffffff; padding: 20rpx 24rpx; padding-bottom: calc(20rpx + env(safe-area-inset-bottom)); display: flex; flex-direction: row; box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.05); }
+.bar-btn { flex: 1; height: 84rpx; border-radius: 42rpx; display: flex; align-items: center; justify-content: center; font-size: 28rpx; }
+.ghost { margin-right: 20rpx; border: 2rpx solid #ffc69a; color: #ff8a3d; box-sizing: border-box; }

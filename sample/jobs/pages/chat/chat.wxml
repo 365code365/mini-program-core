@@ -1,0 +1,48 @@
+<view class="job-card row" bindtap="onJob">
+  <view class="col flex1 jc-main">
+    <text class="jc-title">{{job.title}}</text>
+    <text class="sub">{{job.co.name}} · {{job.city}} · {{job.exp}} · {{job.edu}}</text>
+  </view>
+  <view class="col jc-right">
+    <text class="salary">{{job.salary}}</text>
+    <text class="state {{app ? (app.status === 3 ? 'st-gray' : (app.status === 2 ? 'st-green' : 'st-blue')) : 'st-orange'}}">{{app ? app.statusText : '未投递'}}</text>
+  </view>
+</view>
+<view class="msgs">
+  <view wx:for="{{msgs}}" wx:key="id" class="m-wrap">
+    <text class="m-time" wx:if="{{item.showTime}}">{{item.time}}</text>
+    <view class="sys" wx:if="{{item.from === 'sys'}}"><text class="sys-t">{{item.text}}</text></view>
+    <view class="row m-row {{item.from === 'me' ? 'me' : ''}}" wx:if="{{item.from !== 'sys' && !item.invite}}">
+      <view class="avatar m-av" wx:if="{{item.from === 'hr'}}" style="background: {{s.hrInfo.bg}}"><text>{{s.hrInfo.ch}}</text></view>
+      <view class="bubble {{item.from === 'me' ? 'mine' : ''}} {{item.resume ? 'resume' : ''}}">
+        <text class="b-t">{{item.text}}</text>
+        <view class="b-call" wx:if="{{item.phone}}" data-phone="{{item.phone}}" bindtap="onCall"><text class="b-call-t">拨打电话</text></view>
+      </view>
+    </view>
+    <view class="row m-row" wx:if="{{item.invite}}">
+      <view class="avatar m-av" style="background: {{s.hrInfo.bg}}"><text>{{s.hrInfo.ch}}</text></view>
+      <view class="invite" data-id="{{item.invite}}" bindtap="onInvite">
+        <view class="row between">
+          <text class="iv-title">面试邀请</text>
+          <text class="state {{item.iv.status === 'accepted' ? 'st-green' : (item.iv.status === 'declined' ? 'st-gray' : 'st-orange')}}">{{item.iv.statusText}}</text>
+        </view>
+        <text class="iv-line">{{item.iv.title}}</text>
+        <text class="iv-line">时间：{{item.iv.when}}</text>
+        <text class="iv-line">方式：{{item.iv.mode}}</text>
+        <view class="iv-go row"><text class="iv-go-t">{{item.iv.status === 'pending' ? '去确认' : '查看详情'}}</text><view class="chev"></view></view>
+      </view>
+    </view>
+  </view>
+</view>
+<view class="bottom-space"></view>
+<view class="bar">
+  <view class="acts row">
+    <view class="act" bindtap="onResume"><text class="act-t">发简历</text></view>
+    <view class="act" bindtap="onPhone"><text class="act-t">换电话</text></view>
+    <view class="act" bindtap="onPhrase"><text class="act-t">常用语</text></view>
+  </view>
+  <view class="row in-row">
+    <input id="msg{{seq}}" class="flex1 in" placeholder="和 HR 聊聊这个职位" placeholder-class="ph" value="{{text}}" bindinput="onInput" bindconfirm="onSend" confirm-type="send" adjust-position="true" />
+    <view class="send" bindtap="onSend"><text class="send-t">发送</text></view>
+  </view>
+</view>

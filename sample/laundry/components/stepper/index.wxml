@@ -1,0 +1,5 @@
+<view class="sp">
+  <view wx:if="{{value > 0}}" class="sp-btn sp-minus" hover-class="sp-hover" catchtap="minus"><view class="bar-h"></view></view>
+  <text wx:if="{{value > 0}}" class="sp-n">{{value}}</text>
+  <view class="sp-btn sp-plus {{value >= max ? 'sp-dis' : ''}}" hover-class="sp-hover" catchtap="plus"><view class="bar-h w"></view><view class="bar-v"></view></view>
+</view>

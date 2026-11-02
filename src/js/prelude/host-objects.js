@@ -66,10 +66,45 @@
                 return o;
             };
 
+            // LivePlayerContext：宿主开了同层渲染的直播（`__sameLayerLive`，创建选项 sameLayer 含 live-player）时，
+            // 播放类命令交给引擎（按 id 找到节点、转成 videoCommand 给宿主的播放器，host/engine_live_player.rs），
+            // 结果经 __liveReply 回来；其余方法（小窗、投屏、后台播放）与宿主盖控件的情形照旧走 hostCall
+            var __liveSeq = 0, __liveCbs = {};
+            globalThis.__liveReply = function(seq, ok, res) {
+                var c = __liveCbs[seq];
+                if (!c) return false;
+                delete __liveCbs[seq];
+                var o = c.opt;
+                try {
+                    if (ok) { if (typeof o.success === 'function') o.success(res); }
+                    else if (typeof o.fail === 'function') o.fail(res);
+                    if (typeof o.complete === 'function') o.complete(res);
+                } catch (e) { console.error(e); }
+                if (c.resolve) (ok ? c.resolve : c.reject)(res);
+                return true;
+            };
+            function __liveCmd(id, type, opt) {
+                opt = opt || {};
+                var seq = ++__liveSeq;
+                var req = { id: id, type: type, seq: seq };
+                ['direction', 'quality', 'sourceType'].forEach(function(k) { if (opt[k] !== undefined) req[k] = opt[k]; });
+                var cb = typeof opt.success === 'function' || typeof opt.fail === 'function' || typeof opt.complete === 'function';
+                var entry = { opt: opt };
+                var p = cb ? undefined : new Promise(function(resolve, reject) { entry.resolve = resolve; entry.reject = reject; });
+                __liveCbs[seq] = entry;
+                __native_host_request('livePlayer', JSON.stringify(req));
+                return p;
+            }
             wx.createLivePlayerContext = function(playerId, cmp) {
-                return __hostObject('LivePlayerContext', __ctxId(playerId, cmp), ['exitBackgroundPlayback', 'exitCasting', 'exitFullScreen',
+                var o = __hostObject('LivePlayerContext', __ctxId(playerId, cmp), ['exitBackgroundPlayback', 'exitCasting', 'exitFullScreen',
                     'exitPictureInPicture', 'mute', 'pause', 'play', 'reconnectCasting', 'requestBackgroundPlayback', 'requestFullScreen',
                     'resume', 'snapshot', 'startCasting', 'stop', 'switchCasting']);
+                if (globalThis.__sameLayerLive && typeof __native_host_request === 'function') {
+                    ['play', 'stop', 'pause', 'resume', 'mute', 'requestFullScreen', 'exitFullScreen', 'snapshot'].forEach(function(m) {
+                        o[m] = function(opt) { return __liveCmd(String(playerId || ''), m, opt); };
+                    });
+                }
+                return o;
             };
 
             wx.createLivePusherContext = function(cmp) {

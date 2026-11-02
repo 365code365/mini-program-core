@@ -1,0 +1,21 @@
+.seg-s { width: 280rpx; }
+.curve { width: 100%; height: 520rpx; margin-top: 20rpx; }
+.legend { margin-top: 12rpx; }
+.lg-line { width: 32rpx; height: 6rpx; border-radius: 3rpx; margin-right: 8rpx; }
+.lg-baby { background: #ff7a8a; }
+.lg-h { background: #4a9ef0; }
+.lg-p50 { background: #2fae93; }
+.lg-band { width: 32rpx; height: 20rpx; background: rgba(47, 174, 147, 0.25); margin-right: 8rpx; border-radius: 4rpx; }
+.lg-tx { font-size: 22rpx; color: #7a7075; margin-right: 24rpx; }
+.eval { display: flex; flex-direction: row; margin-top: 20rpx; }
+.ev-cell { flex: 1; display: flex; flex-direction: column; }
+.ev-num { font-size: 44rpx; font-weight: bold; margin-right: 6rpx; }
+.blue { color: #4a9ef0; }
+.ev-tx { font-size: 22rpx; color: #2fae93; margin-top: 8rpx; padding-right: 16rpx; }
+.warn { color: #f08a24; }
+.th { padding: 20rpx 0 12rpx; border-bottom: 1rpx solid #f3eef0; color: #9a9095; font-size: 24rpx; }
+.tr { padding: 18rpx 0; border-bottom: 1rpx solid #f5f0f2; }
+.c-date { width: 220rpx; }
+.d { font-size: 26rpx; }
+.c { flex: 1; text-align: center; font-size: 26rpx; }
+.add { margin-top: 8rpx; }

@@ -1,0 +1,33 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/price/price",
+    "pages/orders/orders",
+    "pages/mine/mine",
+    "pages/confirm/confirm",
+    "pages/pay-result/pay-result",
+    "pages/order-detail/order-detail",
+    "pages/review/review",
+    "pages/coupons/coupons",
+    "pages/address/address"
+  ],
+  "window": {
+    "navigationBarTitleText": "净衣到家",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f4f6f9"
+  },
+  "tabBar": {
+    "color": "#9aa0a8",
+    "selectedColor": "#1e8cf0",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "custom": true,
+    "list": [
+      { "pagePath": "pages/index/index", "text": "首页", "iconPath": "images/tab/home.png", "selectedIconPath": "images/tab/home-on.png" },
+      { "pagePath": "pages/price/price", "text": "价目表", "iconPath": "images/tab/tag.png", "selectedIconPath": "images/tab/tag-on.png" },
+      { "pagePath": "pages/orders/orders", "text": "订单", "iconPath": "images/tab/list.png", "selectedIconPath": "images/tab/list-on.png" },
+      { "pagePath": "pages/mine/mine", "text": "我的", "iconPath": "images/tab/user.png", "selectedIconPath": "images/tab/user-on.png" }
+    ]
+  }
+}

@@ -1,0 +1,160 @@
+.tip {
+  margin: 20rpx 24rpx 0;
+  padding: 18rpx 24rpx;
+  border-radius: 16rpx;
+  background: linear-gradient(110deg, #26292f, #43403a);
+}
+
+.tip-tag {
+  font-size: 20rpx;
+  line-height: 32rpx;
+  padding: 0 10rpx;
+  border-radius: 6rpx;
+  background: #ffe2b0;
+  color: #4a3410;
+  font-weight: bold;
+  margin-right: 14rpx;
+}
+
+.tip-text {
+  font-size: 24rpx;
+  color: #ffe2b0;
+}
+
+.item {
+  margin-top: 24rpx;
+}
+
+.item-off {
+  opacity: 0.55;
+}
+
+.item-img {
+  width: 104rpx;
+  height: 104rpx;
+  border-radius: 12rpx;
+  margin: 0 18rpx;
+  flex-shrink: 0;
+}
+
+.item-name {
+  display: block;
+  font-size: 28rpx;
+  line-height: 40rpx;
+}
+
+.item-refund {
+  margin-left: 12rpx;
+  font-size: 24rpx;
+  color: #ff5a1f;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.done-tag {
+  margin-left: 12rpx;
+  font-size: 22rpx;
+  color: #8a8f99;
+}
+
+.reasons {
+  flex-wrap: wrap;
+  margin-top: 18rpx;
+}
+
+.reason {
+  height: 60rpx;
+  line-height: 60rpx;
+  padding: 0 26rpx;
+  margin: 0 16rpx 16rpx 0;
+  border-radius: 30rpx;
+  background: #f3f4f6;
+  border: 2rpx solid #f3f4f6;
+  font-size: 24rpx;
+  white-space: nowrap;
+}
+
+.reason-on {
+  background: #e6f8ee;
+  border-color: #12b76a;
+  color: #12b76a;
+  font-weight: bold;
+}
+
+.note {
+  width: 100%;
+  height: 150rpx;
+  padding: 16rpx 20rpx;
+  box-sizing: border-box;
+  border-radius: 14rpx;
+  background: #f7f8fa;
+  font-size: 26rpx;
+}
+
+.ph {
+  color: #b0b4bc;
+}
+
+.bottom-gap {
+  height: 160rpx;
+}
+
+.bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 112rpx;
+  padding: 0 24rpx env(safe-area-inset-bottom) 32rpx;
+  background: #ffffff;
+  box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.06);
+}
+
+.bar-k {
+  font-size: 26rpx;
+}
+
+.bar-v {
+  font-size: 38rpx;
+  color: #ff5a1f;
+  font-weight: bold;
+}
+
+.bar-to {
+  display: block;
+  font-size: 20rpx;
+  color: #8a8f99;
+}
+
+.submit {
+  width: 240rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  border-radius: 40rpx;
+  text-align: center;
+  background: linear-gradient(90deg, #3ddc84, #12b76a);
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.submit-off {
+  background: #c8ccd4;
+}
+
+.none {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 240rpx 60rpx 0;
+  text-align: center;
+}
+
+.none-btn {
+  margin-top: 28rpx;
+  width: 200rpx;
+  height: 72rpx;
+  line-height: 72rpx;
+  font-size: 26rpx;
+}

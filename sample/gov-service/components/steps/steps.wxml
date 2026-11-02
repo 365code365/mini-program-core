@@ -1,0 +1,10 @@
+<view class="st">
+  <view class="st-item" wx:for="{{steps}}" wx:key="*this" data-i="{{index}}" bindtap="onTap">
+    <view class="st-line {{index <= current ? 'on' : ''}}" wx:if="{{index > 0}}"></view>
+    <view class="st-dot {{index < current ? 'done' : (index === current ? 'cur' : '')}}">
+      <icon wx:if="{{index < current}}" type="success_no_circle" size="14" color="#ffffff"></icon>
+      <text wx:else>{{index + 1}}</text>
+    </view>
+    <text class="st-tx {{index <= current ? 'on' : ''}}">{{item}}</text>
+  </view>
+</view>

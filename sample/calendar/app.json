@@ -4,7 +4,9 @@
     "pages/edit/edit",
     "pages/detail/detail",
     "pages/list/list",
-    "pages/settings/settings"
+    "pages/settings/settings",
+    "pages/search/search",
+    "pages/remind/remind"
   ],
   "window": {
     "navigationBarTitleText": "日程本",

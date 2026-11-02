@@ -1,0 +1,101 @@
+.head {
+  background: linear-gradient(180deg, #2b6de8, #4a8bff);
+  padding: 32rpx 40rpx 36rpx;
+}
+.s-no {
+  color: #ffffff;
+  font-size: 44rpx;
+  font-weight: bold;
+}
+.s-kind {
+  margin-left: 16rpx;
+  font-size: 22rpx;
+  color: #2b6de8;
+  background: #ffffff;
+  border-radius: 6rpx;
+  padding: 2rpx 10rpx;
+}
+.s-line {
+  display: block;
+  margin-top: 12rpx;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 24rpx;
+}
+.th {
+  height: 64rpx;
+  font-size: 24rpx;
+  color: #8a909c;
+  border-bottom: 1rpx solid #f0f1f5;
+}
+.tr {
+  height: 88rpx;
+  border-bottom: 1rpx solid #f5f6f8;
+}
+.c-idx {
+  width: 80rpx;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.c-name {
+  font-size: 28rpx;
+}
+.c-time {
+  width: 112rpx;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.c-stay {
+  width: 80rpx;
+  text-align: right;
+}
+.dot {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 20rpx;
+  background: #e8ecf3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dot-end {
+  background: #2b6de8;
+}
+.dot-t {
+  font-size: 20rpx;
+  color: #5c6370;
+}
+.dot-end .dot-t {
+  color: #ffffff;
+}
+.st-name {
+  font-size: 28rpx;
+}
+.tr-end .st-name {
+  color: #2b6de8;
+  font-weight: bold;
+}
+.st-tag {
+  margin-left: 10rpx;
+}
+.t {
+  font-size: 26rpx;
+}
+.plus {
+  font-size: 18rpx;
+  color: #ff7d00;
+  margin-left: 2rpx;
+}
+.note {
+  padding: 20rpx 28rpx;
+}
+.footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #ffffff;
+  padding: 20rpx 32rpx 32rpx;
+  box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.05);
+}

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>京城漫步 · 攻略</title>
+<style>
+  body { margin: 0; font: 16px/1.75 -apple-system, "PingFang SC", "Noto Sans CJK SC", sans-serif; color: #1f2933; background: #f4f6f8; }
+  header { padding: 28px 20px 22px; color: #fff; background: linear-gradient(135deg, #1c3d5a, #2b6c8f); }
+  header h1 { margin: 0 0 6px; font-size: 24px; }
+  header p { margin: 0; font-size: 13px; opacity: .85; }
+  article { margin: 14px; padding: 18px; background: #fff; border-radius: 12px; }
+  h2 { margin: 18px 0 6px; font-size: 18px; color: #1c3d5a; }
+  h2:first-child { margin-top: 0; }
+  ol { padding-left: 20px; margin: 6px 0; }
+  .bar { position: sticky; bottom: 0; display: flex; gap: 10px; padding: 12px 14px calc(12px + env(safe-area-inset-bottom)); background: #fff; border-top: 1px solid #e6eaee; }
+  .bar button { flex: 1; padding: 12px; font-size: 15px; border-radius: 22px; border: 1px solid #1c3d5a; background: #fff; color: #1c3d5a; }
+  .bar button.solid { background: #1c3d5a; color: #fff; }
+  #toast { position: fixed; left: 50%; top: 40%; transform: translateX(-50%); padding: 10px 18px; border-radius: 8px; background: rgba(0,0,0,.75); color: #fff; font-size: 14px; display: none; }
+  .note { font-size: 13px; color: #8a94a0; text-align: center; margin: 8px 0 0; }
+</style>
+</head>
+<body>
+<header><h1 id="t">攻略</h1><p id="s"></p></header>
+<article id="a"></article>
+<p class="note" id="env"></p>
+<div id="toast"></div>
+<div class="bar">
+  <button onclick="fav()">收藏本地点</button>
+  <button class="solid" onclick="done()">读完了，返回</button>
+</div>
+<script>
+  // 攻略正文（与小程序 utils/spots.js 的 id 对应）。H5 里的脚本写在页面里：包里的 .js 会被当成小程序模块注册
+  var G = {
+    1: { t: '故宫一日：中轴线 + 东六宫', s: '午门进 · 神武门出 · 全程约 4 公里', p: [
+      ['路线', ['午门 → 太和门 → 太和殿 → 中和殿 → 保和殿', '乾清宫 → 坤宁宫 → 御花园', '东六宫（钟粹宫、景阳宫）→ 珍宝馆 → 神武门']],
+      ['怎么省力', ['先走中轴线，人多的三大殿趁早', '午饭可以在冰窖餐厅解决', '出神武门直接上景山看全景']]] },
+    2: { t: '天安门广场：升旗与周边', s: '升旗时间随日出变化 · 建议提前 1 小时', p: [
+      ['看什么', ['人民英雄纪念碑', '国家博物馆（需预约）', '正阳门城楼']],
+      ['注意', ['进广场要安检，带好身份证', '升旗后人流大，可往前门方向疏散']]] },
+    3: { t: '国博三小时', s: '古代中国展 · 复兴之路', p: [
+      ['必看', ['后母戊鼎', '四羊方尊', '金缕玉衣']], ['顺序', ['B1 古代中国（按年代走）', '2 层复兴之路', '有余力再看临展']]] },
+    4: { t: '景山看日落', s: '万春亭 · 俯瞰紫禁城', p: [
+      ['时间', ['日落前 40 分钟进北门', '沿东侧台阶上万春亭']], ['拍照', ['长焦压缩故宫屋顶', '向南是中轴线，向北是钟鼓楼']]] },
+    5: { t: '南锣鼓巷胡同散步', s: '主街 + 东棉花 + 帽儿胡同', p: [
+      ['路线', ['南口进主街', '拐进东棉花胡同看中戏', '帽儿胡同 → 可园 → 北口出']], ['吃', ['文宇奶酪', '胡同里的小馆子比主街安静']]] },
+    6: { t: '北海划船', s: '琼华岛 · 白塔 · 五龙亭', p: [
+      ['玩法', ['东门进，先上琼华岛', '码头租船到五龙亭', '北门出接什刹海']], ['门票', ['旺季 10 元，白塔联票另算']]] },
+    7: { t: '前门老字号', s: '全聚德 · 都一处 · 大北照相', p: [
+      ['吃喝', ['全聚德前门店（老墙在）', '都一处烧麦', '大碗茶']], ['逛', ['铛铛车一程 20 元', '大栅栏、杨梅竹斜街在西侧']]] },
+    8: { t: '首都博物馆', s: '京城旧事 · 古都北京', p: [
+      ['重点展厅', ['古都北京·历史文化篇', '京城旧事·老北京民俗展']], ['交通', ['地铁 1 号线木樨地站 C1 口']]] }
+  };
+  var id = Number((location.search.match(/id=(\d+)/) || [])[1] || 1);
+  var g = G[id] || G[1];
+  document.getElementById('t').textContent = g.t;
+  document.getElementById('s').textContent = g.s;
+  document.title = g.t;
+  var html = '';
+  g.p.forEach(function (sec) {
+    html += '<h2>' + sec[0] + '</h2><ol>' + sec[1].map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ol>';
+  });
+  document.getElementById('a').innerHTML = html;
+  function mp() { return window.wx && window.wx.miniProgram; }
+  function env() { document.getElementById('env').textContent = mp() ? '在小程序里打开（wx.miniProgram 可用）' : '在浏览器里打开'; }
+  env();
+  document.addEventListener('WeixinJSBridgeReady', env, false);
+  function toast(t) {
+    var el = document.getElementById('toast');
+    el.textContent = t; el.style.display = 'block';
+    clearTimeout(toast.h); toast.h = setTimeout(function () { el.style.display = 'none'; }, 1500);
+  }
+  function fav() {
+    if (!mp()) return toast('请在小程序里打开');
+    mp().postMessage({ data: { spotId: id, action: 'fav', title: g.t } });
+    toast('已收藏，返回后生效');
+  }
+  function done() {
+    if (!mp()) return history.back();
+    mp().postMessage({ data: { spotId: id, action: 'read', title: g.t } });
+    mp().navigateBack();
+  }
+</script>
+</body>
+</html>

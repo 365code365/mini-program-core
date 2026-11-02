@@ -16,7 +16,7 @@
 <view class="card owe-card">
   <view class="row between">
     <text class="muted">{{a.owe > 0 ? '当前欠费' : '账户余额'}}</text>
-    <view class="row" bindtap="bill"><text class="muted">账单明细</text><view class="chev"></view></view>
+    <view class="row bill-link" bindtap="bill"><text class="muted">账单明细</text><view class="chev"></view></view>
   </view>
   <view class="row owe-row">
     <text class="owe-y {{a.owe > 0 ? 'red' : ''}}">¥</text>
@@ -24,6 +24,10 @@
   </view>
   <text wx:if="{{a.owe > 0}}" class="owe-p">{{a.period}} · 请在月底前缴清，避免产生违约金</text>
   <text wx:else class="owe-p ok">当前无欠费，可预存费用</text>
+  <view class="auto-tip row" bindtap="goAuto">
+    <text class="auto-tx">{{auto ? '已开通自动缴费 · 出账后自动扣款（单笔 ≤ ¥' + autoCap + '）' : '开通自动缴费，出账后自动扣款'}}</text>
+    <view class="chev"></view>
+  </view>
 </view>
 
 <view class="card">
@@ -37,7 +41,7 @@
   </view>
   <view wx:if="{{custom}}" class="custom row">
     <text class="c-y">¥</text>
-    <input class="c-in" type="digit" focus="{{true}}" value="{{amount}}" placeholder="请输入缴费金额" bindinput="onInput" />
+    <input id="amt{{amtSeq}}" class="c-in" type="digit" focus="{{true}}" value="{{amount}}" placeholder="请输入缴费金额" bindinput="onInput" />
   </view>
   <picker mode="selector" range="{{ways}}" value="{{payWay}}" bindchange="onWay">
     <view class="way row between"><text class="way-l">支付方式</text><view class="row"><text class="way-v">{{ways[payWay]}}</text><view class="chev"></view></view></view>

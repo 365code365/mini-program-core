@@ -1,0 +1,36 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/category/category",
+    "pages/cart/cart",
+    "pages/mine/mine",
+    "pages/drug/drug",
+    "pages/search/search",
+    "pages/rx/rx",
+    "pages/confirm/confirm",
+    "pages/result/result",
+    "pages/orders/orders",
+    "pages/remind/remind",
+    "pages/remind-edit/remind-edit",
+    "pages/article/article"
+  ],
+  "window": {
+    "navigationBarTitleText": "康源大药房",
+    "navigationBarBackgroundColor": "#12a37f",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f3f6f5"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#9aa0a8",
+    "selectedColor": "#12a37f",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "首页", "iconPath": "images/tab/home.png", "selectedIconPath": "images/tab/home-on.png" },
+      { "pagePath": "pages/category/category", "text": "分类", "iconPath": "images/tab/cat.png", "selectedIconPath": "images/tab/cat-on.png" },
+      { "pagePath": "pages/cart/cart", "text": "购物车", "iconPath": "images/tab/cart.png", "selectedIconPath": "images/tab/cart-on.png" },
+      { "pagePath": "pages/mine/mine", "text": "我的", "iconPath": "images/tab/user.png", "selectedIconPath": "images/tab/user-on.png" }
+    ]
+  }
+}

@@ -1,0 +1,4 @@
+<view class="wrap">
+  <view class="tip">请选择直属主管或部门负责人作为审批人</view>
+  <contact-list class="cl" pick="{{true}}" exclude="e001" bindselect="onSelect"></contact-list>
+</view>

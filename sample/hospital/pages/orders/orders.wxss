@@ -7,7 +7,9 @@
 .o-st { font-size: 24rpx; }
 .st-wait { color: #1f7cf0; }
 .st-done { color: #13a8a8; }
-.st-cancel { color: #a0a7b4; }
+.st-cancel, .st-miss { color: #a0a7b4; }
+.st-checked { color: #ff8240; }
+.o-tip { margin-top: 20rpx; padding: 14rpx 20rpx; border-radius: 12rpx; background: #fff6ec; color: #c27c0e; font-size: 24rpx; }
 .o-body { padding-top: 20rpx; align-items: flex-start; }
 .o-no { width: 112rpx; height: 112rpx; border-radius: 16rpx; background: #eaf2ff; display: flex; flex-direction: row; align-items: baseline; justify-content: center; padding-top: 22rpx; box-sizing: border-box; margin-right: 22rpx; flex-shrink: 0; }
 .o-no-v { font-size: 48rpx; font-weight: bold; color: #1f7cf0; }

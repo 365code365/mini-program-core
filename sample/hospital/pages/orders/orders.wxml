@@ -4,14 +4,13 @@
     <view class="tab-line" wx:if="{{tab === item.key}}"></view>
   </view>
 </view>
-
-<view class="card ord" wx:for="{{list}}" wx:key="id">
+<view class="card ord" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="goDetail">
   <view class="row between o-head">
     <text class="o-date">{{item.date}} {{item.time}}</text>
-    <text class="o-st st-{{item.status}}">{{statusText[item.status]}}</text>
+    <text class="o-st st-{{item.status}}">{{item.st.status}}</text>
   </view>
   <view class="row o-body">
-    <view class="o-no" wx:if="{{item.status === 'wait'}}">
+    <view class="o-no" wx:if="{{item.status === 'wait' || item.status === 'checked'}}">
       <text class="o-no-v">{{item.no}}</text>
       <text class="o-no-k">号</text>
     </view>
@@ -21,15 +20,19 @@
       <text class="muted">{{item.room}}</text>
     </view>
   </view>
+  <view wx:if="{{item.status === 'checked' || item.st.unpaid}}" class="o-tip"><text>{{item.st.tip}}</text></view>
   <view class="o-foot" wx:if="{{item.status === 'wait'}}">
-    <view class="o-btn" data-id="{{item.id}}" bindtap="cancel"><text>取消预约</text></view>
-    <view class="o-btn pri" data-id="{{item.id}}" bindtap="checkin"><text>就诊签到</text></view>
+    <view class="o-btn" data-id="{{item.id}}" catchtap="cancel"><text>取消预约</text></view>
+    <view class="o-btn pri" data-id="{{item.id}}" catchtap="checkin"><text>就诊签到</text></view>
+  </view>
+  <view class="o-foot" wx:elif="{{item.status === 'checked'}}">
+    <view class="o-btn pri" data-id="{{item.id}}" catchtap="goDetail"><text>查看叫号</text></view>
   </view>
   <view class="o-foot" wx:else>
-    <view class="o-btn" bindtap="again"><text>再次挂号</text></view>
+    <view wx:if="{{item.st.unpaid}}" class="o-btn pri" catchtap="goBills"><text>去缴费</text></view>
+    <view class="o-btn" data-id="{{item.id}}" catchtap="again"><text>再次挂号</text></view>
   </view>
 </view>
-
 <view wx:if="{{!list.length}}" class="empty-box">
   <view class="empty-ic"><view class="e1"></view><view class="e2"></view><view class="e3"></view></view>
   <text class="empty-tx">暂无{{tabName}}的挂号记录</text>

@@ -33,3 +33,6 @@
 .tk-name { font-size: 28rpx; font-weight: bold; margin-bottom: 4rpx; }
 .tk-btn { height: 56rpx; padding: 0 24rpx; border-radius: 28rpx; background: linear-gradient(90deg, #5b8cff, #3d6cf6); color: #ffffff; font-size: 24rpx; display: flex; flex-direction: row; align-items: center; }
 .tk-btn.done { background: #f2f4f8; color: #9aa0ab; }
+.tk-btn.claim { background: linear-gradient(90deg, #ffc46b, #ff8a3d); }
+.tk-btn { white-space: nowrap; }
+.h-pts { margin-top: 16rpx; align-self: flex-start; font-size: 22rpx; color: #ffffff; background: rgba(255, 255, 255, 0.22); padding: 6rpx 18rpx; border-radius: 22rpx; }

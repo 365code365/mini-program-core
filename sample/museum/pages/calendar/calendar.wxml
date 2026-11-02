@@ -1,0 +1,45 @@
+<view class="cal">
+  <view class="cal-h">
+    <text class="arr {{canPrev ? '' : 'arr-dis'}}" data-d="-1" bindtap="shift">‹</text>
+    <text class="ym">{{y}} 年 {{m + 1}} 月</text>
+    <text class="arr {{canNext ? '' : 'arr-dis'}}" data-d="1" bindtap="shift">›</text>
+  </view>
+  <view class="wk"><text class="wk-i" wx:for="{{weeks}}" wx:key="*this">{{item}}</text></view>
+  <view class="days">
+    <view wx:for="{{cells}}" wx:key="k" class="cell" data-date="{{item.date}}" bindtap="onDay">
+      <view wx:if="{{!item.blank}}" class="d {{item.date === sel ? 'd-sel' : ''}} {{item.today ? 'd-today' : ''}} {{item.past ? 'd-past' : ''}}">
+        <text class="d-n">{{item.d}}</text>
+        <text wx:if="{{item.closed}}" class="d-m d-closed">闭馆</text>
+        <text wx:elif="{{item.start}}" class="d-m d-start">开展</text>
+        <view wx:elif="{{item.ev}}" class="d-dot"></view>
+      </view>
+    </view>
+  </view>
+  <view class="legend"><view class="d-dot lg-dot"></view><text class="muted">有社教活动</text><text class="lg-s">开展</text><text class="muted">特展开幕</text><text class="lg-c">闭馆</text><text class="muted">每周一</text></view>
+</view>
+
+<view class="sec-h"><text class="sec-t">{{info.title}}</text><text class="sec-more">{{info.closed ? '闭馆日' : '09:00-17:00'}}</text></view>
+<view wx:if="{{info.closed}}" class="card closed">本馆每周一闭馆（法定节假日除外），请选择其他日期。</view>
+<block wx:else>
+  <view wx:if="{{info.bookable}}" class="card bk">
+    <view class="bk-l"><text class="bk-t">预约当日参观</text><text class="muted">实名预约 · 分时段入馆</text></view>
+    <view class="bk-b" bindtap="book">去预约</view>
+  </view>
+  <view class="sub">当日展出的特展</view>
+  <view wx:for="{{info.expos}}" wx:key="id" class="card ex" data-id="{{item.id}}" bindtap="openExpo">
+    <image class="ex-img" src="{{item.cover}}" mode="aspectFill"></image>
+    <view class="ex-b"><text class="ex-t">{{item.title}}</text><text class="muted">{{item.sub}}</text><text class="muted">{{item.place}} · 至 {{item.end}}</text></view>
+  </view>
+  <view wx:if="{{!info.expos.length}}" class="card none">当日没有特展，常设展厅照常开放。</view>
+  <view wx:if="{{info.soon.length}}" class="soon">即将开展：<text wx:for="{{info.soon}}" wx:key="id" class="soon-i" data-id="{{item.id}}" bindtap="openExpo">「{{item.title}}」{{item.start}} </text></view>
+  <view class="sub">社教活动</view>
+  <view wx:for="{{info.events}}" wx:key="id" class="card ev">
+    <view class="ev-l">
+      <view class="ev-r"><text class="tag">{{item.tag}}</text><text class="ev-t">{{item.title}}</text></view>
+      <text class="muted">{{item.time}} · {{item.place}} · 余 {{item.left}} / {{item.quota}}</text>
+    </view>
+    <view class="ev-b {{item.signed ? 'ev-on' : ''}} {{info.past || !item.left ? 'ev-dis' : ''}}" data-id="{{item.id}}" data-title="{{item.title}}" data-time="{{item.time}}" bindtap="signup">{{item.signed ? '已报名' : info.past ? '已结束' : item.left ? '报名' : '已满'}}</view>
+  </view>
+  <view wx:if="{{!info.events.length}}" class="card none">当日没有社教活动，周三、周五、周末活动最多。</view>
+</block>
+<view class="tab-gap"></view>

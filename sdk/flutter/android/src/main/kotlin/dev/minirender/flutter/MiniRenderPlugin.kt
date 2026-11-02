@@ -153,6 +153,8 @@ class MiniRenderPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Activit
             onTexture = { channel.invokeMethod("texture", it) },
             // "view"（缺省）：自己的 SurfaceView，系统直接合成；"texture"：Flutter 外部纹理（旧路）
             viewMode = call.argument<String>("presentation") != "texture",
+            builtinMap = call.argument<Boolean>("builtinMap") ?: false,
+            builtinWebView = call.argument<Boolean>("builtinWebView") ?: false,
         )
         host = h
         h.create(

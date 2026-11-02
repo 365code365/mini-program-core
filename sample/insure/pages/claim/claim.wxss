@@ -1,0 +1,33 @@
+.cl-pname { display: block; font-size: 32rpx; font-weight: bold; margin: 10rpx 0; }
+.cl-field { display: flex; flex-direction: row; align-items: center; padding: 24rpx 0; border-bottom: 1rpx solid #f0f1f4; }
+.cl-k { width: 160rpx; color: #5c6370; flex-shrink: 0; }
+.cl-v { flex: 1; text-align: right; color: #1f2633; }
+.cl-in { flex: 1; text-align: right; height: 48rpx; font-size: 28rpx; }
+.cl-ta { width: 100%; min-height: 160rpx; margin-top: 20rpx; font-size: 28rpx; background: #f6f7f9; border-radius: 12rpx; padding: 16rpx; box-sizing: border-box; }
+.cl-imgs { margin-top: 20rpx; display: flex; flex-direction: row; flex-wrap: wrap; }
+.cl-img { position: relative; width: 196rpx; height: 196rpx; margin: 0 16rpx 16rpx 0; border-radius: 12rpx; overflow: hidden; }
+.cl-img image { width: 196rpx; height: 196rpx; }
+.cl-x { position: absolute; right: 0; top: 0; width: 44rpx; height: 44rpx; background: rgba(0, 0, 0, 0.5); color: #ffffff; text-align: center; line-height: 40rpx; font-size: 32rpx; border-radius: 0 0 0 12rpx; }
+.cl-add { width: 196rpx; height: 196rpx; border-radius: 12rpx; background: #f6f7f9; border: 2rpx dashed #c9cdd4; color: #a0a6ae; font-size: 64rpx; display: flex; align-items: center; justify-content: center; }
+.cl-submit { margin-top: 16rpx; }
+.cl-call { text-align: center; color: #8a93a3; font-size: 24rpx; margin-top: 28rpx; }
+.cl-head { display: flex; flex-direction: column; }
+.cl-status { font-size: 40rpx; font-weight: bold; color: #2f6bff; margin-bottom: 8rpx; }
+.cl-sum { margin-top: 24rpx; }
+.cl-sumi { flex: 1; display: flex; flex-direction: column; }
+.cl-num { font-size: 36rpx; font-weight: bold; margin-top: 6rpx; }
+.tl { margin-top: 24rpx; }
+.tl-item { display: flex; flex-direction: row; }
+.tl-axis { width: 40rpx; display: flex; flex-direction: column; align-items: center; }
+.tl-dot { width: 20rpx; height: 20rpx; border-radius: 10rpx; background: #d4d8de; margin-top: 8rpx; }
+.tl-done { background: #2f6bff; }
+.tl-doing { background: #ffffff; border: 4rpx solid #2f6bff; width: 14rpx; height: 14rpx; }
+.tl-stop { background: #f0524a; }
+.tl-line { flex: 1; width: 2rpx; background: #e5e6eb; margin: 6rpx 0; min-height: 60rpx; }
+.tl-body { flex: 1; padding: 0 0 32rpx 16rpx; display: flex; flex-direction: column; }
+.tl-name { font-size: 28rpx; color: #8a93a3; }
+.tl-n-done { color: #1f2633; font-weight: bold; }
+.tl-n-doing { color: #2f6bff; }
+.tl-time { font-size: 22rpx; color: #b0b6be; margin-top: 4rpx; }
+.err { color: #f0524a; font-size: 22rpx; }
+.primary { color: #2f6bff; }

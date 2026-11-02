@@ -1,0 +1,7 @@
+.g-title { display: block; font-size: 26rpx; color: #8a9099; margin: 28rpx 36rpx 14rpx; }
+.g-sub { display: block; margin: -6rpx 36rpx 14rpx; }
+.form { padding-top: 4rpx; padding-bottom: 4rpx; }
+.field { padding: 18rpx 0; }
+.val { font-size: 28rpx; margin-bottom: 4rpx; }
+.logo.small { width: 64rpx; height: 64rpx; border-radius: 16rpx; font-size: 28rpx; flex-shrink: 0; }
+.c-body { margin-left: 20rpx; }

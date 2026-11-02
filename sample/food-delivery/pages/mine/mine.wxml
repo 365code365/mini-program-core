@@ -4,14 +4,14 @@
     <view class="flex1">
       <text class="nick">陈小饱</text>
       <view class="row">
-        <text class="vip">超级会员</text>
+        <text class="vip {{vip.active ? '' : 'vip-off'}}">{{vip.active ? '超级会员' : '普通会员'}}</text>
         <text class="phone">138****6620</text>
       </view>
     </view>
     <text class="setting" bindtap="onSetting">设置</text>
   </view>
   <view class="stats row">
-    <view class="stat" wx:for="{{stats}}" wx:key="name" data-name="{{item.name}}" bindtap="onStat">
+    <view class="stat" wx:for="{{stats}}" wx:key="key" data-key="{{item.key}}" bindtap="onStat">
       <text class="stat-num">{{item.value}}</text>
       <text class="stat-name">{{item.name}}</text>
     </view>
@@ -20,16 +20,26 @@
 
 <view class="vip-card row" bindtap="onVip">
   <view class="flex1">
-    <text class="vip-title">超级会员 · 本月已省 ¥{{saved}}</text>
-    <text class="vip-desc">还有 2 张 ¥5 无门槛红包待使用，10-31 到期</text>
+    <block wx:if="{{vip.active}}">
+      <text class="vip-title">超级会员 · 本月已省 ¥{{saved}}</text>
+      <text class="vip-desc">{{vipLeft ? '还有 ' + vipLeft + ' 张 ¥5 无门槛红包待使用，' + vipExpire + ' 到期' : '本月会员红包已用完，续费再得 4 张'}}</text>
+    </block>
+    <block wx:else>
+      <text class="vip-title">开通超级会员 · 首月 ¥1</text>
+      <text class="vip-desc">立得 4 张 ¥5 无门槛红包，本月已帮你省 ¥{{saved}}</text>
+    </block>
   </view>
-  <view class="vip-btn">去使用</view>
+  <view wx:if="{{vip.active}}" class="vip-renew" catchtap="onRenew">续费</view>
+  <view class="vip-btn">{{vip.active ? '去使用' : '立即开通'}}</view>
 </view>
 
 <view class="card">
-  <text class="title">我的订单</text>
+  <view class="row between">
+    <text class="title">我的订单</text>
+    <view class="row all-orders" bindtap="onAllOrders"><text class="sub">全部订单</text><view class="arrow"></view></view>
+  </view>
   <view class="row order-entries">
-    <view class="entry" wx:for="{{orderEntries}}" wx:key="name" bindtap="onOrders">
+    <view class="entry" wx:for="{{orderEntries}}" wx:key="key" data-key="{{item.key}}" bindtap="onOrders">
       <view class="entry-icon glyph" style="background: {{item.color}};">{{item.glyph}}</view>
       <text class="entry-name">{{item.name}}</text>
       <view wx:if="{{item.badge}}" class="entry-badge">{{item.badge}}</view>
@@ -38,7 +48,7 @@
 </view>
 
 <view class="card menu">
-  <view class="menu-item row" wx:for="{{menus}}" wx:key="name" data-name="{{item.name}}" bindtap="onMenu">
+  <view class="menu-item row" wx:for="{{menus}}" wx:key="key" data-key="{{item.key}}" bindtap="onMenu">
     <view class="menu-icon glyph" style="background: {{item.color}};">{{item.glyph}}</view>
     <text class="flex1">{{item.name}}</text>
     <text class="sub">{{item.extra}}</text>

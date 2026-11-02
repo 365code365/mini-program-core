@@ -1,6 +1,7 @@
 <view class="hero">
   <view class="search">
-    <input class="search-input" placeholder="输入或粘贴快递单号" placeholder-class="ph" value="{{no}}" bindinput="onInput" confirm-type="search" bindconfirm="onQuery" />
+    <!-- id 跟着 noSeq 变：扫码回填 / 查询后清空时让输入框重建（引擎里打过字的输入框 setData 改 value 不重画） -->
+    <input id="no{{noSeq}}" class="search-input" placeholder="输入或粘贴快递单号" placeholder-class="ph" value="{{no}}" focus="{{focus}}" bindinput="onInput" bindblur="onBlur" confirm-type="search" bindconfirm="onQuery" />
     <view class="search-btn" bindtap="onQuery">查询</view>
   </view>
   <view class="detect" wx:if="{{detected}}">
@@ -9,6 +10,15 @@
   </view>
   <view class="detect" wx:else>
     <text class="detect-text dim">支持顺丰、京东、中通、圆通、韵达等 1500+ 家快递公司</text>
+  </view>
+  <view class="his row" wx:if="{{history.length}}">
+    <text class="his-l">最近查询</text>
+    <scroll-view class="his-scroll flex1" scroll-x="true">
+      <view class="his-in row">
+        <view class="his-chip" wx:for="{{history}}" wx:key="*this" data-no="{{item}}" bindtap="onHistory"><text class="his-t">{{item}}</text></view>
+      </view>
+    </scroll-view>
+    <text class="his-clr" bindtap="onClearHistory">清空</text>
   </view>
 </view>
 

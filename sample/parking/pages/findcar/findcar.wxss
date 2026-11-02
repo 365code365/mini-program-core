@@ -1,0 +1,29 @@
+.top-gap { margin-top: 20rpx; }
+.plate-tag { background: #1d4ed8; border-radius: 8rpx; padding: 6rpx 16rpx; margin-right: 20rpx; }
+.plate-t { color: #ffffff; font-size: 28rpx; font-weight: bold; }
+.sw-t { font-size: 24rpx; color: #1677ff; }
+.lot-name { display: block; font-size: 32rpx; font-weight: bold; margin: 24rpx 0 6rpx; }
+.spot-row { margin: 20rpx 0 8rpx; }
+.spot-big { font-size: 52rpx; font-weight: bold; color: #1677ff; }
+.spot-sep { font-size: 40rpx; color: #c4c9d2; margin: 0 16rpx; }
+.spot-note { display: block; font-size: 26rpx; color: #5c6370; margin-top: 8rpx; }
+.guide { background: #f0f6ff; border-radius: 16rpx; padding: 20rpx; margin-top: 20rpx; align-items: flex-start; }
+.g-ic { width: 44rpx; height: 44rpx; border-radius: 22rpx; background: #1677ff; display: flex; align-items: center; justify-content: center; margin-right: 16rpx; flex-shrink: 0; }
+.g-ic-t { color: #ffffff; font-size: 22rpx; font-weight: bold; }
+.g-t { font-size: 26rpx; color: #1f2329; line-height: 40rpx; }
+.ops { margin-top: 24rpx; }
+.op { flex: 1; height: 72rpx; border-radius: 36rpx; border: 2rpx solid #b7d3ff; color: #1677ff; font-size: 26rpx; display: flex; align-items: center; justify-content: center; }
+.op-clear { margin-left: 20rpx; border-color: #e3e6ec; color: #5c6370; }
+.scan { font-size: 24rpx; color: #1677ff; }
+.form .cell { padding: 0 4rpx; }
+.lbl { width: 120rpx; }
+.err { display: block; color: #f2453d; font-size: 24rpx; margin-top: 12rpx; }
+.save-btn { margin-top: 20rpx; }
+.acts { margin: 8rpx 24rpx 0; }
+.act { flex: 1; height: 84rpx; border-radius: 16rpx; background: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 28rpx; color: #1677ff; }
+.act-pay { margin-left: 20rpx; }
+.foot { display: block; text-align: center; margin: 24rpx 40rpx 40rpx; }
+.none { display: flex; flex-direction: column; align-items: center; padding: 160rpx 60rpx 0; }
+.none-ic { width: 120rpx; height: 120rpx; border-radius: 60rpx; background: #e8f1ff; display: flex; align-items: center; justify-content: center; margin-bottom: 24rpx; }
+.none-ic-t { color: #1677ff; font-size: 44rpx; font-weight: bold; }
+.none-btn { width: 400rpx; margin-top: 40rpx; }

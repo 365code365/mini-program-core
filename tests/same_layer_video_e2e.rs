@@ -276,3 +276,84 @@ fn 宿主交来的_yuv_帧照样画出来() {
     assert!(red(px(&mut e, VX + 40.0, VY + 30.0)), "{:?}", px(&mut e, VX + 40.0, VY + 30.0));
     host_feed::retain(&[]);
 }
+
+/// `<live-player>`（`sameLayer: ["video", "live-player"]`）借同层视频那一套：
+/// 1. 进 `videos` 列表，带 `tag: "live-player"`，`object-fit` 的 `fillCrop` 翻成 `cover`、`loop` 恒为 false；
+/// 2. 交来一帧只重画那个框（与整帧逐字节相同），画面铺满（fillCrop）；
+/// 3. 宿主回传的播放器事件翻成直播状态码：loadedmetadata → 2001/2002/2008/2009，第一次 play → 2003/2004，
+///    waiting → 2007，error → -2301；
+/// 4. `LivePlayerContext.play / pause / stop` 变成 `videoCommand`，`mute` 改 `videos` 里的 muted，
+///    `snapshot` 拿到 PNG 的临时路径；找不到 id 的走 fail。
+#[test]
+fn 直播走同层视频那一套_状态码_播放命令_截图() {
+    let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let root = fixture("live");
+    std::fs::write(
+        root.join("pages/p/p.wxml"),
+        r#"<view class="hd">卡片标题</view>
+<live-player id="lp" class="v" src="https://example.com/live/stream.m3u8" mode="live" autoplay object-fit="fillCrop" bindstatechange="onState" bindnetstatus="onNet"></live-player>
+<view wx:for="{{rows}}" wx:key="*this" class="row">第 {{item}} 行</view>"#,
+    )
+    .unwrap();
+    std::fs::write(
+        root.join("pages/p/p.js"),
+        r#"Page({ data: { rows: Array.from({length: 30}, (_, i) => i + 1), codes: [], net: 0, res: [] },
+  onState(e) { this.data.codes.push(e.detail.code); },
+  onNet(e) { this.data.net = e.detail.info.videoWidth; },
+  run(m, o) { const c = wx.createLivePlayerContext(o || 'lp'); c[m]({ success: r => this.data.res.push(m + ':' + (r.tempImagePath ? 'png' : r.errMsg)), fail: r => this.data.res.push(r.errMsg) }); } });"#,
+    )
+    .unwrap();
+    let mk = |no_damage: bool| {
+        let opts = EngineOptions { same_layer: vec!["video".into(), "live-player".into()], ..Default::default() };
+        let env = HostEnv { no_damage, ..HostEnv::default() };
+        let mut e = MiniEngine::new_with_options(&root.to_string_lossy(), Some(&root.join("_data").to_string_lossy()), W, H, DPR, env, opts)
+            .expect("创建引擎");
+        e.set_animation_clock(0.0);
+        e.launch(None).expect("打开首页");
+        e
+    };
+    let (mut a, mut b) = (mk(false), mk(true));
+    a.pump_ex(1000);
+    b.pump_ex(1000);
+    let evs = events(&mut a);
+    events(&mut b);
+    let vids = evs.iter().find(|v| v["type"] == "videos").expect("直播也进 videos 列表");
+    let lp = &vids["views"][0];
+    assert_eq!((lp["key"].as_str(), lp["tag"].as_str()), (Some("lp"), Some("live-player")), "{lp}");
+    assert_eq!(lp["url"], "https://example.com/live/stream.m3u8");
+    assert_eq!((lp["attrs"]["object-fit"].as_str(), lp["attrs"]["loop"].as_str()), (Some("cover"), Some("false")));
+    assert_eq!(lp["box"], serde_json::json!([VW * DPR, VH * DPR]));
+
+    // 交一帧：只重画直播框，fillCrop 铺满（4:3 的帧盖满 3:2 的框）
+    assert!(host_feed::push_rgba("lp", 8, 6, 32, &solid([255, 0, 0])));
+    a.pump_ex(1016);
+    b.pump_ex(1016);
+    assert_eq!(a.last_frame_kind(), FrameKind::Damage, "新帧只重画直播框");
+    assert!(a.rgba() == b.rgba(), "局部重画与整帧重画不一致");
+    assert!(red(px(&mut a, VX + 2.0, VY + 2.0)) && red(px(&mut a, VX + VW - 2.0, VY + VH - 2.0)), "fillCrop 铺满");
+
+    // 播放器事件 → 状态码
+    for (n, d) in [
+        ("loadedmetadata", serde_json::json!({"width": 1280, "height": 720, "duration": 0})),
+        ("play", serde_json::json!({})),
+        ("waiting", serde_json::json!({})),
+        ("play", serde_json::json!({})),
+        ("timeupdate", serde_json::json!({"currentTime": 1.0})),
+        ("error", serde_json::json!({"errMsg": "x"})),
+    ] {
+        assert!(a.dispatch_native_view_event("lp", n, d), "{n} 派给 bindstatechange / bindnetstatus");
+    }
+    assert_eq!(a.eval("JSON.stringify(getCurrentPages()[0].data.codes)").unwrap(), "[2001,2002,2008,2009,2003,2004,2007,2004,-2301]");
+    assert_eq!(a.eval("String(getCurrentPages()[0].data.net)").unwrap(), "1280", "netstatus 带画面宽");
+
+    // LivePlayerContext：播放命令 → videoCommand；mute 改 muted；截图；找不到 id 走 fail
+    a.eval("const p = getCurrentPages()[0]; p.run('pause'); p.run('play'); p.run('mute'); p.run('snapshot'); p.run('stop', 'nope')").unwrap();
+    a.pump_ex(1100);
+    let evs = events(&mut a);
+    let cmds: Vec<&str> = evs.iter().filter(|v| v["type"] == "videoCommand").map(|v| v["command"].as_str().unwrap()).collect();
+    assert_eq!(cmds, ["pause", "play"], "{evs:?}");
+    assert!(evs.iter().any(|v| v["type"] == "videos" && v["views"][0]["attrs"]["muted"] == "true"), "mute 之后重发列表、muted 为真");
+    let res = a.eval("JSON.stringify(getCurrentPages()[0].data.res)").unwrap();
+    assert!(res.contains("pause:pause:ok") && res.contains("snapshot:png") && res.contains("stop:fail"), "{res}");
+    host_feed::retain(&[]);
+}

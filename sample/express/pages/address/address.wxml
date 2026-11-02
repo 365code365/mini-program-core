@@ -2,6 +2,7 @@
   <text>点击地址选为{{selectRole === 'sender' ? '寄件人' : '收件人'}}</text>
 </view>
 <view class="top-gap"></view>
+<view class="empty" wx:if="{{!list.length}}"><text class="sub">地址簿是空的，添加一个常用地址吧</text></view>
 
 <view class="card addr" wx:for="{{list}}" wx:key="id" bindtap="onSelect" data-i="{{index}}">
   <view class="row">
@@ -9,7 +10,7 @@
       <view class="row">
         <text class="addr-tag" style="background: {{tagColors[item.tag] || '#8a919f'}}">{{item.tag}}</text>
         <text class="addr-name">{{item.name}}</text>
-        <text class="sub">{{item.phone}}</text>
+        <text class="sub">{{item.phoneText}}</text>
       </view>
       <text class="addr-detail">{{item.region}} {{item.detail}}</text>
     </view>
@@ -24,13 +25,17 @@
 </view>
 
 <view class="card form" wx:if="{{showForm}}">
-  <text class="title">新增地址</text>
-  <view class="f-row"><text class="f-label">联系人</text><input class="f-input" placeholder="姓名" value="{{form.name}}" bindinput="onField" data-k="name" /></view>
-  <view class="f-row"><text class="f-label">手机号</text><input class="f-input" type="number" maxlength="11" placeholder="11 位手机号" value="{{form.phone}}" bindinput="onField" data-k="phone" /></view>
-  <picker mode="region" value="{{form.regionArr}}" bindchange="onRegion">
+  <view class="row between form-head">
+    <text class="title">{{form.id ? '编辑地址' : '新增地址'}}</text>
+    <text class="import" bindtap="onImport">导入微信地址</text>
+  </view>
+  <!-- 输入框 id 跟着 formSeq 变：编辑 / 导入时让输入框重建（引擎里打过字的输入框 setData 改 value 不重画） -->
+  <view class="f-row"><text class="f-label">联系人</text><input id="f-name-{{formSeq}}" class="f-input f-name" placeholder="姓名" value="{{form.name}}" bindinput="onField" data-k="name" /></view>
+  <view class="f-row"><text class="f-label">手机号</text><input id="f-phone-{{formSeq}}" class="f-input f-phone" type="number" maxlength="11" placeholder="11 位手机号" value="{{form.phone}}" bindinput="onField" data-k="phone" /></view>
+  <picker class="f-region" mode="region" value="{{form.regionArr}}" bindchange="onRegion">
     <view class="f-row"><text class="f-label">所在地区</text><text class="f-input {{form.region ? '' : 'ph'}}">{{form.region || '省 / 市 / 区'}}</text></view>
   </picker>
-  <view class="f-row"><text class="f-label">详细地址</text><input class="f-input" placeholder="街道、楼牌号" value="{{form.detail}}" bindinput="onField" data-k="detail" /></view>
+  <view class="f-row"><text class="f-label">详细地址</text><input id="f-detail-{{formSeq}}" class="f-input f-detail" placeholder="街道、楼牌号" value="{{form.detail}}" bindinput="onField" data-k="detail" /></view>
   <view class="f-row last">
     <text class="f-label">标签</text>
     <view class="row">
@@ -39,7 +44,7 @@
   </view>
   <view class="row form-btns">
     <view class="btn-ghost flex1" bindtap="onCancel">取消</view>
-    <view class="btn-primary flex1" bindtap="onSave">保存</view>
+    <view class="btn-primary flex1 f-save" bindtap="onSave">保存</view>
   </view>
 </view>
 

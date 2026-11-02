@@ -1,0 +1,26 @@
+.draft { background: #fff4d6; color: #b26a00; font-size: 24rpx; padding: 16rpx 28rpx; }
+.draft-clr { text-decoration: underline; }
+.imgs { display: flex; flex-direction: row; flex-wrap: wrap; }
+.im { width: 196rpx; height: 196rpx; margin: 0 14rpx 14rpx 0; border-radius: 12rpx; position: relative; overflow: hidden; }
+.im-img { width: 196rpx; height: 196rpx; }
+.im-del { position: absolute; top: 0; right: 0; width: 44rpx; height: 44rpx; background: rgba(0, 0, 0, 0.5); color: #ffffff; font-size: 32rpx; line-height: 40rpx; text-align: center; border-bottom-left-radius: 12rpx; }
+.im-cover { position: absolute; left: 0; bottom: 0; right: 0; background: rgba(0, 0, 0, 0.45); color: #ffffff; font-size: 20rpx; text-align: center; line-height: 36rpx; }
+.im-add { background: #f6f7f9; border: 2rpx dashed #d0d4da; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; }
+.add-plus { font-size: 60rpx; color: #9aa0a8; line-height: 64rpx; }
+.add-tx { font-size: 22rpx; color: #9aa0a8; }
+.t-ipt { height: 88rpx; font-size: 30rpx; font-weight: bold; border-bottom: 1rpx solid #f0f1f3; margin-top: 10rpx; }
+.d-ipt { width: 100%; height: 220rpx; font-size: 28rpx; line-height: 42rpx; margin-top: 18rpx; }
+.cnt { display: block; text-align: right; font-size: 22rpx; color: #b3b8bf; }
+.err { display: block; color: #ff4d2d; font-size: 22rpx; margin-top: 6rpx; }
+.f-row { display: flex; flex-direction: row; align-items: center; min-height: 96rpx; border-bottom: 1rpx solid #f0f1f3; }
+.f-last { border-bottom: none; }
+.f-l { width: 100rpx; font-size: 28rpx; font-weight: bold; flex-shrink: 0; }
+.f-l2 { font-size: 26rpx; color: #6b7280; margin: 0 12rpx 0 20rpx; }
+.f-yen { color: #ff4d2d; font-weight: bold; margin-right: 6rpx; }
+.f-ipt { flex: 1; height: 80rpx; font-size: 30rpx; color: #ff4d2d; }
+.ph { color: #b3b8bf; }
+.conds { display: flex; flex-direction: row; flex-wrap: wrap; flex: 1; padding: 14rpx 0 0; }
+.cond { font-size: 24rpx; padding: 8rpx 20rpx; background: #f2f3f5; color: #4e5560; border-radius: 26rpx; margin: 0 12rpx 14rpx 0; }
+.cond-on { background: #ffda44; color: #1f2329; font-weight: bold; }
+.tips { font-size: 22rpx; color: #9aa0a8; line-height: 34rpx; padding: 20rpx 36rpx 0; }
+.pub { margin: 28rpx 32rpx 0; }

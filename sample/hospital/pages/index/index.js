@@ -1,6 +1,6 @@
 const data = require('../../utils/data.js');
 const store = require('../../utils/store.js');
-
+const host = require('../../utils/host.js');
 Page({
   data: {
     hospital: data.hospital,
@@ -14,52 +14,73 @@ Page({
       { key: 'patients', name: '就诊人', ch: '人', bg: 'linear-gradient(135deg, #7fd88e, #3cb35a)' },
       { key: 'guide', name: '智能导诊', ch: '导', bg: 'linear-gradient(135deg, #ffd36b, #f5a623)' }
     ],
+    // go：点横幅（或横幅上的按钮）去哪
     banners: [
-      { title: '秋季流感疫苗开约', sub: '成人四价 · 门诊 1 楼预防接种门诊', btn: '立即预约', bg: 'linear-gradient(120deg, #3b8cff, #22c1c3)' },
-      { title: '护心行动 · 免费义诊', sub: '本周六 08:30 门诊大厅 心内科专家', btn: '查看详情', bg: 'linear-gradient(120deg, #ff8a5b, #ff5f7e)' },
-      { title: '体检报告免费解读', sub: '全科医生在线 1 对 1 · 30 分钟内回复', btn: '去咨询', bg: 'linear-gradient(120deg, #7b6cf6, #4f8cff)' }
+      { title: '秋季流感疫苗开约', sub: '成人四价 · 门诊 1 楼预防接种门诊', btn: '立即预约', bg: 'linear-gradient(120deg, #3b8cff, #22c1c3)', go: '/pages/doctors/doctors?dept=ym' },
+      { title: '护心行动 · 免费义诊', sub: '本周六 08:30 门诊大厅 心内科专家', btn: '查看详情', bg: 'linear-gradient(120deg, #ff8a5b, #ff5f7e)', go: '/pages/news/news?id=2' },
+      { title: '体检报告免费解读', sub: '全科医生在线 1 对 1 · 30 分钟内回复', btn: '去咨询', bg: 'linear-gradient(120deg, #7b6cf6, #4f8cff)', go: '/pages/consult/consult' }
     ],
     experts: [],
     news: data.news,
-    noticeText: ''
+    noticeText: '',
+    noticeTag: '提醒',
+    badges: {}
   },
   onLoad() {
-    const experts = data.doctors.filter(d => d.title === '主任医师').map(d => Object.assign({}, d, { deptName: data.findDept(d.dept).name }));
+    const experts = data.doctors.filter(d => d.star).map(d => Object.assign({}, d, { deptName: data.findDept(d.dept).name }));
     this.setData({ experts });
   },
   onShow() {
-    const pending = store.getOrders().filter(o => o.status === 'wait');
-    const text = pending.length
-      ? '待就诊 ' + pending.length + ' 个：' + pending[0].date.slice(5) + ' ' + pending[0].time.slice(0, 5) + ' ' + pending[0].dept + ' ' + pending[0].doctor
-      : '就诊当天请携带医保卡，提前 15 分钟到诊区签到';
-    this.setData({ noticeText: text });
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) this.getTabBar().setData({ selected: 0 });
+    store.tick();
+    const unpaid = store.unpaidBills();
+    const active = store.getOrders().filter(store.isActive);
+    const checked = active.find(o => o.status === 'checked');
+    let text = '就诊当天请携带医保卡，提前 15 分钟到诊区签到';
+    let tag = '提醒';
+    this.noticeGo = '';
+    if (unpaid.length) {
+      tag = '缴费';
+      text = '有 ' + unpaid.length + ' 笔待缴费用：' + unpaid[0].title + ' ¥' + unpaid[0].self;
+      this.noticeGo = '/pages/bills/bills';
+    } else if (checked) {
+      const st = store.stageOf(checked);
+      tag = '候诊';
+      text = checked.patient + ' · ' + checked.dept + '：' + st.tip;
+      this.noticeGo = '/pages/order-detail/order-detail?id=' + checked.id;
+    } else if (active.length) {
+      const o = active[0];
+      text = '待就诊 ' + active.length + ' 个：' + o.date.slice(5) + ' ' + o.time.slice(0, 5) + ' ' + o.dept + ' ' + o.doctor;
+      this.noticeGo = '/pages/order-detail/order-detail?id=' + o.id;
+    }
+    this.setData({
+      noticeText: text,
+      noticeTag: tag,
+      badges: { pay: unpaid.length, report: store.unreadReports() }
+    });
   },
   onEntry(e) {
     const key = e.currentTarget.dataset.key;
-    if (key === 'book' || key === 'today' || key === 'guide') {
-      wx.switchTab({ url: '/pages/dept/dept' });
-    } else if (key === 'patients') {
-      wx.navigateTo({ url: '/pages/patients/patients' });
-    } else if (key === 'report') {
-      wx.showModal({ title: '报告查询', content: '张明远 · 2024-10-15 血常规报告已出，建议复诊时携带。', confirmText: '知道了', showCancel: false });
-    } else if (key === 'consult') {
-      wx.showActionSheet({
-        itemList: ['图文问诊 ¥19 起', '视频问诊 ¥39 起', '复诊续方'],
-        success: (res) => { wx.showToast({ title: '已为您匹配医生', icon: 'success' }); }
-      });
-    } else if (key === 'pay') {
-      wx.showToast({ title: '暂无待缴费用', icon: 'none' });
-    } else {
-      wx.showToast({ title: '住院服务即将上线', icon: 'none' });
-    }
+    const pages = {
+      today: '/pages/doctors/doctors?today=1',
+      report: '/pages/reports/reports',
+      consult: '/pages/consult/consult',
+      pay: '/pages/bills/bills',
+      inpatient: '/pages/inpatient/inpatient',
+      patients: '/pages/patients/patients',
+      guide: '/pages/guide/guide'
+    };
+    if (pages[key]) wx.navigateTo({ url: pages[key] });
+    else wx.switchTab({ url: '/pages/dept/dept' });
   },
   goDept() { wx.switchTab({ url: '/pages/dept/dept' }); },
-  goOrders() { wx.switchTab({ url: '/pages/orders/orders' }); },
-  goDoctor(e) { wx.navigateTo({ url: '/pages/doctor/doctor?id=' + e.currentTarget.dataset.id }); },
-  callHos() {
-    wx.showModal({ title: '拨打医院电话', content: data.hospital.phone, confirmText: '呼叫' });
+  goNotice() {
+    if (this.noticeGo) wx.navigateTo({ url: this.noticeGo });
+    else wx.switchTab({ url: '/pages/orders/orders' });
   },
-  openNews(e) {
-    wx.showModal({ title: '健康资讯', content: e.currentTarget.dataset.title, showCancel: false });
-  }
+  goDoctor(e) { wx.navigateTo({ url: '/pages/doctor/doctor?id=' + e.currentTarget.dataset.id }); },
+  onBanner(e) { wx.navigateTo({ url: this.data.banners[e.currentTarget.dataset.i].go }); },
+  callHos() { host.call(data.hospital.phone, '医院总机'); },
+  goNavi() { wx.navigateTo({ url: '/pages/navi/navi' }); },
+  openNews(e) { wx.navigateTo({ url: '/pages/news/news?id=' + e.currentTarget.dataset.id }); }
 });

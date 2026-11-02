@@ -1,0 +1,80 @@
+<view wx:if="{{p}}">
+  <view class="hero">
+    <image class="hero-img" src="{{p.cover}}" mode="aspectFill"></image>
+    <view class="hero-mask">
+      <text class="hero-n">{{p.name}}</text>
+      <text class="hero-t">{{p.tagline}}</text>
+    </view>
+  </view>
+
+  <view class="wrap body">
+    <view class="card">
+      <view class="tags"><text class="tag" wx:for="{{p.tags}}" wx:key="*this">{{item}}</text></view>
+      <view class="kv"><text class="kv-k">投保年龄</text><text class="kv-v">{{p.ages}}</text></view>
+      <view class="kv"><text class="kv-k">保障期间</text><text class="kv-v">{{termText}}</text></view>
+      <view class="kv"><text class="kv-k">等待期</text><text class="kv-v">{{p.wait}}</text></view>
+      <view class="kv"><text class="kv-k">承保公司</text><text class="kv-v">{{p.insurer}}</text></view>
+    </view>
+
+    <view class="card quote">
+      <view class="sec-head">
+        <text class="sec-title">{{fromCalc ? '我的测算结果' : '参考保费'}}</text>
+        <text class="quote-re" bindtap="openCalc">{{fromCalc ? '重新测算' : '测算我的保费'}} ›</text>
+      </view>
+      <view class="quote-row">
+        <text class="quote-cond">{{quote.age}}岁 · {{quote.genderText}} · 保额{{quote.amountText}} · {{quote.term}}</text>
+        <view><text class="price quote-v">¥{{quote.premiumText}}</text><text class="price-unit">/{{quote.period}}</text></view>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="sec-head"><text class="sec-title">保障责任</text><text class="sec-more">点击查看详情</text></view>
+      <view class="cov-h"><text class="cov-c1">保障项目</text><text class="cov-c2">保额</text><text class="cov-c3">说明</text></view>
+      <view class="cov-r" wx:for="{{p.coverage}}" wx:key="name" data-i="{{index}}" bindtap="openCov" hover-class="cov-hover">
+        <text class="cov-c1 cov-name">{{item.name}}</text>
+        <text class="cov-c2 cov-amt">{{item.amount}}</text>
+        <text class="cov-c3">{{item.brief}} ›</text>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="sec-head"><text class="sec-title">保险条款（节选）</text></view>
+      <view class="clause" wx:for="{{p.clauses}}" wx:key="*this">
+        <rich-text nodes="{{item}}"></rich-text>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="sec-head"><text class="sec-title">常见问题</text></view>
+      <view class="faq" wx:for="{{faqs}}" wx:key="q">
+        <view class="faq-q" data-i="{{index}}" bindtap="toggleFaq">
+          <text class="faq-qt">Q：{{item.q}}</text>
+          <text class="faq-arr">{{item.open ? '−' : '+'}}</text>
+        </view>
+        <view class="faq-a" wx:if="{{item.open}}">{{item.a}}</view>
+      </view>
+    </view>
+  </view>
+  <view class="bar-pad"></view>
+
+  <view class="bottom-bar">
+    <view class="bb-price">
+      <text class="price bb-v">¥{{quote.premiumText}}</text>
+      <text class="muted">/{{quote.period}}</text>
+    </view>
+    <view class="btn btn-ghost bb-btn" bindtap="openCalc" hover-class="btn-hover">保费测算</view>
+    <view class="btn btn-primary bb-btn" bindtap="apply" hover-class="btn-hover">立即投保</view>
+  </view>
+
+  <page-container show="{{showCov}}" position="bottom" round bind:clickoverlay="closeCov">
+    <view class="sheet" wx:if="{{cov}}">
+      <view class="sheet-head">
+        <text class="sheet-t">{{cov.name}}</text>
+        <text class="sheet-x" bindtap="closeCov">×</text>
+      </view>
+      <view class="sheet-amt"><text class="muted">保障额度</text><text class="price sheet-v">{{cov.amount}}</text></view>
+      <text class="sheet-d">{{cov.detail}}</text>
+      <view class="btn btn-primary sheet-btn" bindtap="closeCov">我知道了</view>
+    </view>
+  </page-container>
+</view>

@@ -10,7 +10,11 @@
 .lv { font-size: 20rpx; color: #ffffff; background: linear-gradient(90deg, #ff9a3d, #ff6a3d); padding: 2rpx 12rpx; border-radius: 8rpx; margin-right: 12rpx; }
 .hos-branch { font-size: 24rpx; color: #5a6475; }
 .hos-addr { margin-top: 8rpx; font-size: 24rpx; color: #8a93a3; }
+.hos-ops { display: flex; flex-direction: column; flex-shrink: 0; }
 .hos-call { width: 88rpx; height: 56rpx; border-radius: 28rpx; background: #eaf2ff; color: #1f7cf0; font-size: 24rpx; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.hos-navi { margin-top: 16rpx; background: #e8f8f6; color: #13a8a8; }
+.cell { position: relative; }
+.cell-badge { position: absolute; top: -6rpx; left: 50%; margin-left: 26rpx; min-width: 32rpx; height: 32rpx; padding: 0 8rpx; border-radius: 16rpx; background: #ff4d4f; color: #ffffff; font-size: 20rpx; display: flex; align-items: center; justify-content: center; box-sizing: border-box; border: 2rpx solid #ffffff; }
 .hos-hours { background: #f2f7ff; border-radius: 0 0 24rpx 24rpx; padding: 16rpx 28rpx; font-size: 22rpx; color: #4f6b99; }
 .grid { display: flex; flex-direction: row; flex-wrap: wrap; padding: 24rpx 8rpx 8rpx; }
 .cell { width: 25%; display: flex; flex-direction: column; align-items: center; margin-bottom: 24rpx; }

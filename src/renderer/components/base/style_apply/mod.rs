@@ -28,6 +28,6 @@ pub use base_style::build_base_style;
 pub use units::{to_dimension, to_px};
 use order::sorted_cascade;
 use property::apply_style_property;
-use units::{box_sides_px, color_value, parse_inline_value, set_inset};
+use units::{box_sides_px, color_value, margin_sides_with_auto, parse_inline_value, set_inset};
 
 pub use crate::renderer::components::gradient::draw_linear_gradient;

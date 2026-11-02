@@ -140,6 +140,32 @@
   display: block;
   line-height: 48rpx;
 }
+.sign-dots {
+  margin-top: 24rpx;
+  justify-content: space-between;
+}
+.sign-dot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.dot-ball {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 32rpx;
+  background: #f3ece4;
+  color: #b8a99a;
+  font-size: 20rpx;
+}
+.sign-dot-on .dot-ball {
+  background: linear-gradient(135deg, #c98b4e, #8a5a3b);
+  color: #ffffff;
+}
+.dot-day {
+  font-size: 20rpx;
+  color: #9b9087;
+  margin-top: 6rpx;
+}
 
 .sign-desc {
   display: block;

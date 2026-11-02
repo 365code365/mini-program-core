@@ -1,0 +1,36 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/publish/publish",
+    "pages/messages/messages",
+    "pages/mine/mine",
+    "pages/search/search",
+    "pages/detail/detail",
+    "pages/chat/chat",
+    "pages/order/order",
+    "pages/order-detail/order-detail",
+    "pages/orders/orders",
+    "pages/my-items/my-items",
+    "pages/favorites/favorites"
+  ],
+  "window": {
+    "navigationBarTitleText": "闲转",
+    "navigationBarBackgroundColor": "#ffda44",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f4f5f7",
+    "backgroundTextStyle": "dark"
+  },
+  "tabBar": {
+    "color": "#9aa0a8",
+    "selectedColor": "#1f2329",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "custom": true,
+    "list": [
+      { "pagePath": "pages/index/index", "text": "首页", "iconPath": "images/tab/home.png", "selectedIconPath": "images/tab/home-on.png" },
+      { "pagePath": "pages/publish/publish", "text": "发闲置", "iconPath": "images/tab/publish.png", "selectedIconPath": "images/tab/publish-on.png" },
+      { "pagePath": "pages/messages/messages", "text": "消息", "iconPath": "images/tab/msg.png", "selectedIconPath": "images/tab/msg-on.png" },
+      { "pagePath": "pages/mine/mine", "text": "我的", "iconPath": "images/tab/user.png", "selectedIconPath": "images/tab/user-on.png" }
+    ]
+  }
+}

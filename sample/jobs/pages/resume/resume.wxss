@@ -12,3 +12,10 @@
 .save-wrap { padding: 20rpx 32rpx calc(40rpx + env(safe-area-inset-bottom)); }
 /* input 的 font-size 恰好 14px(28rpx) 时引擎当成「没写」改用 16px，所以写 27rpx */
 .ival { font-size: 27rpx; color: #1f2329; text-align: right; height: 96rpx; margin-right: 26rpx; }
+.add { padding: 4rpx 18rpx; border-radius: 24rpx; background: #eef3ff; }
+.add-t { font-size: 24rpx; color: #2E6BFF; font-weight: bold; }
+.work { padding: 20rpx 0; border-bottom: 1rpx solid #f0f1f3; }
+.w-co { font-size: 28rpx; font-weight: bold; margin-bottom: 4rpx; }
+.w-del { font-size: 24rpx; color: #F5455C; padding: 8rpx 0 8rpx 20rpx; }
+.w-empty { padding: 20rpx 0; }
+.w-save { margin-top: 28rpx; }

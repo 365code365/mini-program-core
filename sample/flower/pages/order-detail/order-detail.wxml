@@ -1,0 +1,75 @@
+<view wx:if="{{o}}">
+  <view class="head head-{{o.status}}">
+    <text class="h-status">{{st.text}}</text>
+    <text class="h-tip">{{st.tip}}</text>
+    <view wx:if="{{steps.length}}" class="h-steps row">
+      <view wx:for="{{steps}}" wx:key="n" class="h-step {{item.on ? 'h-step-on' : ''}}">
+        <view class="h-bar"></view>
+        <text>{{item.n}}</text>
+      </view>
+    </view>
+    <view class="row h-acts">
+      <view wx:if="{{st.canCancel}}" class="h-op h-cancel" bindtap="onCancel"><text>取消订单</text></view>
+      <view wx:if="{{o.status === 'shipping'}}" class="h-op h-courier" bindtap="onCourier"><text>联系配送员</text></view>
+      <view class="h-op h-service" bindtap="onService"><text>联系客服</text></view>
+      <view class="h-op h-op-main h-again" bindtap="onAgain"><text>再来一单</text></view>
+    </view>
+  </view>
+
+  <view wx:if="{{o.status === 'done'}}" class="card rate">
+    <block wx:if="{{o.rating}}">
+      <view class="row between"><text class="sec-title">我的评价</text><text class="muted">{{o.rating.time}}</text></view>
+      <view class="row stars"><text wx:for="{{starList}}" wx:key="*this" class="star {{item <= o.rating.stars ? 'star-on' : ''}}">★</text></view>
+      <view wx:if="{{o.rating.tags.length}}" class="row tags"><text wx:for="{{o.rating.tags}}" wx:key="*this" class="tag tag-on">{{item}}</text></view>
+      <text wx:if="{{o.rating.text}}" class="rate-text">{{o.rating.text}}</text>
+    </block>
+    <block wx:else>
+      <text class="sec-title">评价这束花</text>
+      <view class="row stars">
+        <text wx:for="{{starList}}" wx:key="*this" class="star {{item <= stars ? 'star-on' : ''}}" data-n="{{item}}" bindtap="onStar">★</text>
+        <text class="star-text">{{starText}}</text>
+      </view>
+      <view class="row tags">
+        <text wx:for="{{tags}}" wx:key="n" class="tag {{item.on ? 'tag-on' : ''}}" data-i="{{index}}" bindtap="onTag">{{item.n}}</text>
+      </view>
+      <textarea class="rate-input" placeholder="花材、包装、配送怎么样？（选填）" maxlength="100" value="{{rateText}}" bindinput="onRateText" />
+      <view class="btn-primary rate-btn" bindtap="onSubmitRate"><text>提交评价</text></view>
+    </block>
+  </view>
+
+  <view class="card">
+    <view class="row"><text class="sec-title">收花人</text><text wx:if="{{o.anonymous}}" class="anon">匿名送花</text></view>
+    <view class="row r-line"><text class="r-name">{{o.receiver}}</text><text class="muted">{{o.phone}}</text></view>
+    <text class="r-addr">{{o.addr}}</text>
+    <view class="r-meta">
+      <view class="row between m-row"><text class="muted">送达时间</text><text class="m-v">{{o.date}} {{o.slot}}</text></view>
+      <view class="row between m-row"><text class="muted">送达方式</text><text class="m-v">{{o.callFirst ? '送达前电话联系' : '直接送达（惊喜模式）'}}</text></view>
+      <view class="row between m-row"><text class="muted">贺卡署名</text><text class="m-v">{{o.anonymous ? '不署名' : (o.sender || '不署名')}}</text></view>
+    </view>
+  </view>
+
+  <view class="card">
+    <text class="sec-title">花束清单</text>
+    <view class="it row" wx:for="{{items}}" wx:key="id" data-id="{{item.id}}" bindtap="onProduct">
+      <image class="it-img" src="{{item.img}}" mode="aspectFill" />
+      <view class="flex1 it-main">
+        <text class="it-name">{{item.name}}</text>
+        <text class="muted">{{item.spec}} · ×{{item.qty}}</text>
+        <text wx:if="{{item.card}}" class="it-card">贺卡：{{item.card}}</text>
+      </view>
+      <text class="price it-p">¥{{item.sum}}</text>
+    </view>
+    <view class="lines">
+      <view class="ln row between" wx:for="{{lines}}" wx:key="n"><text class="muted ln-n">{{item.n}}</text><text class="{{item.cut ? 'price' : ''}}">{{item.v}}</text></view>
+      <view class="ln row between paid"><text>实付</text><text class="price paid-v">¥{{o.total}}</text></view>
+    </view>
+  </view>
+
+  <view class="card info">
+    <view class="row between i-row"><text class="muted">订单号</text><view class="row"><text>{{o.no}}</text><text class="copy" bindtap="onCopy">复制</text></view></view>
+    <view class="row between i-row"><text class="muted">下单时间</text><text>{{o.time}}</text></view>
+    <view class="row between i-row"><text class="muted">支付方式</text><text>微信支付</text></view>
+  </view>
+  <view class="gap"></view>
+</view>
+<view wx:else class="empty"><text>订单不存在或已被清理</text></view>

@@ -1,0 +1,11 @@
+.bar { margin-bottom: 20rpx; }
+.clear { font-size: 26rpx; color: #f0566a; padding: 6rpx 0 6rpx 20rpx; }
+.list { padding: 8rpx 28rpx; }
+.item { padding: 24rpx 0; border-bottom: 1rpx solid #eef0f5; }
+.main { flex: 1; }
+.w { font-size: 32rpx; font-weight: bold; }
+.times { font-size: 22rpx; color: #f0566a; background: #fde6e9; border-radius: 8rpx; padding: 2rpx 12rpx; margin-left: 14rpx; }
+.mean { font-size: 26rpx; color: #4a5060; margin: 6rpx 0; }
+.ok { padding: 10rpx 20rpx; border-radius: 24rpx; background: #def7ee; }
+.ok-tx { font-size: 22rpx; color: #22b07d; }
+.e-btn { width: 360rpx; }

@@ -1,0 +1,17 @@
+.cover { width: 750rpx; height: 420rpx; display: block; }
+.head { margin-top: -40rpx; position: relative; }
+.name { font-size: 38rpx; font-weight: bold; display: block; }
+.desc { display: block; color: #6f625c; font-size: 26rpx; margin: 12rpx 0 20rpx; line-height: 1.5; }
+.big { font-size: 40rpx; }
+.mp { font-size: 22rpx; color: #8a6a3a; background: #f8ecd6; border-radius: 6rpx; padding: 4rpx 10rpx; margin-left: 16rpx; }
+.step { padding: 12rpx 0; font-size: 26rpx; }
+.dot { width: 40rpx; height: 40rpx; border-radius: 20rpx; background: #f8ece4; color: #c0846a; font-size: 22rpx; text-align: center; line-height: 40rpx; margin-right: 20rpx; flex-shrink: 0; }
+.sty { padding: 16rpx 0; border-bottom: 1rpx solid #f3ece8; }
+.av { width: 88rpx; height: 88rpx; border-radius: 44rpx; margin-right: 20rpx; flex-shrink: 0; }
+.sn { font-size: 28rpx; font-weight: bold; margin-right: 12rpx; }
+.sr { margin-top: 8rpx; }
+.nt { align-items: flex-start; padding: 8rpx 0; }
+.nt-tx { font-size: 24rpx; color: #6f625c; margin-left: 12rpx; line-height: 1.5; }
+.rel { padding: 18rpx 0; border-bottom: 1rpx solid #f3ece8; font-size: 26rpx; }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; background: #ffffff; padding: 20rpx 24rpx calc(20rpx + env(safe-area-inset-bottom)); border-top: 1rpx solid #efe8e3; }
+.bar-btn { width: 260rpx; }

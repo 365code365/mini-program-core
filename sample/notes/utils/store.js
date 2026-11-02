@@ -106,7 +106,43 @@ function wordCount(text) {
   return String(text || '').replace(/\s/g, '').length
 }
 
+// ───── 历史版本（notes_history：{ 笔记 id: [{ ts, title, body }] }，新的在前，每篇最多 10 个） ─────
+const KEY_HISTORY = 'notes_history'
+const VERSION_MAX = 10
+function loadAllVersions() {
+  return wx.getStorageSync(KEY_HISTORY) || {}
+}
+function loadVersions(id) {
+  return loadAllVersions()[id] || []
+}
+function pushVersion(id, title, body) {
+  const all = loadAllVersions()
+  all[id] = [{ ts: Date.now(), title, body }].concat(all[id] || []).slice(0, VERSION_MAX)
+  wx.setStorageSync(KEY_HISTORY, all)
+}
+function dropVersions(ids) {
+  const all = loadAllVersions()
+  ids.forEach(id => { delete all[id] })
+  wx.setStorageSync(KEY_HISTORY, all)
+}
+// ───── 回收站保留 30 天：deletedAt 缺省（老数据、种子）按 updated 算 ─────
+const TRASH_DAYS = 30
+const DAY = 24 * 3600 * 1000
+function trashDaysLeft(n) {
+  const since = Math.floor((Date.now() - (n.deletedAt || n.updated)) / DAY)
+  return Math.max(0, TRASH_DAYS - since)
+}
+// 删掉过期的，返回删了几篇
+function purgeExpired() {
+  const list = loadNotes()
+  const gone = list.filter(n => n.deleted && trashDaysLeft(n) <= 0).map(n => n.id)
+  if (!gone.length) return 0
+  saveNotes(list.filter(n => gone.indexOf(n.id) < 0))
+  dropVersions(gone)
+  return gone.length
+}
 module.exports = {
+  KEY_HISTORY, loadVersions, pushVersion, dropVersions, trashDaysLeft, purgeExpired, TRASH_DAYS,
   COLORS, SORTS, KEY_NOTES, KEY_TAGS, KEY_SETTINGS,
   fmtTime, colorHex, loadNotes, saveNotes, loadTags, saveTags, loadSettings, saveSettings,
   nextId, sortNotes, wordCount

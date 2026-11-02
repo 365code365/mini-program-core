@@ -1,0 +1,31 @@
+<view class="top">
+  <view class="row">
+    <view class="avatar t-av" style="background: {{t.color}};"><text>{{t.sx}}</text></view>
+    <view class="t-main">
+      <text class="t-name">{{t.name}}</text>
+      <text class="t-title">{{t.title}} · {{t.field}}</text>
+    </view>
+    <view class="fl {{followed ? 'fl-on' : ''}}" bindtap="follow"><text>{{followed ? '已关注' : '+ 关注'}}</text></view>
+  </view>
+  <view class="row nums">
+    <view class="num"><text class="num-n">{{t.fans}}</text><text class="num-l">粉丝</text></view>
+    <view class="num"><text class="num-n">{{t.courses}}</text><text class="num-l">开设课程</text></view>
+    <view class="num"><text class="num-n">{{list.length}}</text><text class="num-l">本平台在售</text></view>
+  </view>
+</view>
+<view class="card">
+  <text class="sec-title">讲师简介</text>
+  <view class="intro"><text>{{t.intro}}</text></view>
+</view>
+<view class="card">
+  <text class="sec-title">TA 的课程</text>
+  <view wx:for="{{list}}" wx:key="id" class="row course" data-id="{{item.id}}" bindtap="goCourse">
+    <view class="cv" style="background: {{item.cover}};"><text>{{item.mark}}</text></view>
+    <view class="c-main">
+      <text class="c-title">{{item.title}}</text>
+      <text class="muted">{{item.lessons}} 节 · {{item.stu}}人在学</text>
+    </view>
+    <text class="c-price {{item.owned ? 'c-own' : ''}}">{{item.owned ? '已拥有' : (item.price ? '¥' + item.price : '免费')}}</text>
+  </view>
+</view>
+<view class="gap"></view>

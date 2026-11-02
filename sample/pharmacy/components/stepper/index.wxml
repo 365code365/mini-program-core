@@ -1,0 +1,5 @@
+<view class="st st-{{size}}">
+  <view class="b {{value <= min ? 'dis' : ''}}" catchtap="minus">－</view>
+  <input class="n" type="number" value="{{text}}" bindblur="onBlur" bindconfirm="onBlur" />
+  <view class="b {{value >= max ? 'dis' : ''}}" catchtap="plus">＋</view>
+</view>

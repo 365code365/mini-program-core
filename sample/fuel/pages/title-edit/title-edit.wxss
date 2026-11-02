@@ -1,0 +1,10 @@
+.types { display: flex; flex-direction: row; padding-bottom: 12rpx; }
+.ty { display: flex; flex-direction: row; align-items: center; margin-right: 40rpx; }
+.ty-tx { font-size: 27rpx; margin-left: 8rpx; }
+.fl { display: flex; flex-direction: row; align-items: center; min-height: 96rpx; border-bottom: 1rpx solid #f0f2f4; }
+.fl-last { border-bottom: none; }
+.fl-k { width: 160rpx; font-size: 27rpx; }
+.fl-wide { flex: 1; }
+.fl-in { flex: 1; font-size: 27rpx; height: 60rpx; }
+.err { font-size: 22rpx; color: #f2542d; padding: 6rpx 0 0 160rpx; }
+.ops { padding: 40rpx 24rpx; }

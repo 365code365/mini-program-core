@@ -171,6 +171,8 @@ impl GameEngine {
         for name in ["game-opendata-env", "game-image", "game-canvas", "game-opendata-wx"] {
             rt.eval(crate::js::game_prelude_source(name))?;
         }
+        // 开放数据域的 wx 也认 nb / gb / mb 与按函数名认出的别名（js/api_alias.rs）
+        rt.eval(crate::js::prelude_source("api-alias").ok_or("缺 api-alias 前置代码")?)?;
         rt.eval(crate::js::prelude_source("module").ok_or("缺 module 前置代码")?)?;
         let root = self.root.clone();
         let mut files = Vec::new();
@@ -178,6 +180,7 @@ impl GameEngine {
         files.sort();
         for (key, path) in files {
             let src = std::fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?;
+            rt.guess_api_alias(&src);
             rt.eval(&format!("__defineModule({key:?}, function(module, exports, require) {{{src}\n}});"))?;
         }
         let entry = format!("{}/index.js", dir.trim_end_matches('/'));

@@ -1,0 +1,44 @@
+<view class="wrapper" wx:if="{{d}}">
+  <view class="head">
+    <image class="av" src="{{d.avatar}}"></image>
+    <view class="col flex1">
+      <view class="row"><text class="name">{{d.name}}</text><text class="title">{{d.title}}</text></view>
+      <text class="h-sub">擅长 {{d.styles[0]}}{{d.styles[1] ? ' / ' + d.styles[1] : ''}}</text>
+    </view>
+    <view class="follow {{follow ? 'followed' : ''}}" bindtap="toggleFollow" hover-class="btn-hover">{{follow ? '已关注' : '+ 关注'}}</view>
+  </view>
+  <view class="page">
+    <view class="card stats">
+      <view class="st"><text class="st-v">{{d.years}}年</text><text class="muted">从业</text></view>
+      <view class="st"><text class="st-v">{{works.length}}套</text><text class="muted">案例</text></view>
+      <view class="st"><text class="st-v">{{d.rating}}</text><text class="muted">评分</text></view>
+      <view class="st"><text class="st-v wood">{{d.fee}}</text><text class="muted">元/㎡</text></view>
+    </view>
+    <view class="card">
+      <text class="sec-title">设计理念</text>
+      <text class="intro">{{d.intro}}</text>
+    </view>
+    <view class="card">
+      <text class="sec-title">代表作品</text>
+      <view wx:for="{{works}}" wx:key="id" class="work" data-id="{{item.id}}" bindtap="openCase" hover-class="item-hover">
+        <image class="w-img" src="{{item.cover}}" mode="aspectFill"></image>
+        <view class="col flex1">
+          <text class="w-t">{{item.title}}</text>
+          <view class="row w-tags"><text class="tag">{{item.style}}</text><text class="tag tag-wood">{{item.budget}}万</text></view>
+          <text class="muted">{{item.likes}} 人觉得不错</text>
+        </view>
+      </view>
+    </view>
+    <view class="card">
+      <text class="sec-title">业主评价（{{d.reviews.length}}）</text>
+      <view wx:for="{{d.reviews}}" wx:key="user" class="rv">
+        <view class="between"><text class="rv-u">{{item.user}}</text><text class="stars">{{item.stars}}</text></view>
+        <text class="rv-t">{{item.text}}</text>
+      </view>
+    </view>
+  </view>
+  <view class="bar">
+    <view class="btn-ghost consult" bindtap="consult" hover-class="btn-hover">咨询</view>
+    <view class="btn flex1" bindtap="book" hover-class="btn-hover">预约 {{d.name}} 上门量房</view>
+  </view>
+</view>

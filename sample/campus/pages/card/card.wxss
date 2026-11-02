@@ -1,0 +1,13 @@
+.cd { margin: 24rpx; border-radius: 28rpx; padding: 36rpx; background: linear-gradient(135deg, #3fb4a0, #16766a); color: #ffffff; display: flex; flex-direction: column; }
+.cd-lost { background: linear-gradient(135deg, #9aa0ab, #5c6370); }
+.cd-org { font-size: 26rpx; opacity: 0.9; }
+.cd-st { font-size: 22rpx; background: rgba(255, 255, 255, 0.2); padding: 4rpx 14rpx; border-radius: 8rpx; }
+.cd-k { font-size: 24rpx; opacity: 0.8; margin-top: 40rpx; }
+.cd-b { font-size: 72rpx; font-weight: bold; margin-top: 6rpx; }
+.cd-no { font-size: 22rpx; opacity: 0.8; margin-top: 24rpx; }
+.cd-amts { margin: 24rpx 0; }
+.cd-amt { flex: 1; text-align: center; padding: 20rpx 0; margin-right: 16rpx; border-radius: 12rpx; background: #f3f6f5; font-size: 30rpx; }
+.cd-amt:last-child { margin-right: 0; }
+.cd-amt.on { background: #e4f5f1; color: #14937f; font-weight: bold; border: 2rpx solid #14937f; }
+.cd-rt { display: block; font-size: 28rpx; margin-bottom: 4rpx; }
+.cd-lostbtn { text-align: center; color: #f53f3f; font-size: 26rpx; margin-top: 32rpx; }

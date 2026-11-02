@@ -1,3 +1,6 @@
+<view class="change-bar" wx:if="{{change}}">
+  <text class="change-t">改签：原车票 {{change.no}} {{change.dateText}} {{change.depText}} {{change.seat}}，请选择新的车次</text>
+</view>
 <view class="datebar row">
   <text class="day-btn prev-day {{canPrev ? '' : 'off'}}" bindtap="onPrevDay">前一天</text>
   <text class="flex1 day-text">{{dateText}}</text>
@@ -33,7 +36,8 @@
     </view>
     <view class="tprice">
       <text class="price">¥{{item.minPrice}}</text>
-      <text class="sub">起</text>
+      <text class="wait-tag" wx:if="{{item.soldOut}}">{{change ? '已售罄' : '可候补'}}</text>
+      <text class="sub" wx:else>起</text>
     </view>
   </view>
   <view class="seats row">

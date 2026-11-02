@@ -1,0 +1,14 @@
+.hd { position: relative; height: 300rpx; overflow: hidden; }
+.hd-bg { position: absolute; left: 0; top: 0; width: 750rpx; height: 300rpx; }
+.hd-mask { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(10, 60, 52, 0.15), rgba(10, 60, 52, 0.65)); }
+.hd-in { position: absolute; left: 32rpx; bottom: 70rpx; display: flex; flex-direction: column; }
+.hd-g { color: #ffffff; font-size: 40rpx; font-weight: bold; }
+.hd-s { color: rgba(255, 255, 255, 0.85); font-size: 24rpx; margin-top: 8rpx; }
+.gd { margin-top: -48rpx; position: relative; padding: 12rpx 0; }
+.gd-press { opacity: 0.6; }
+.ix-list { padding: 0 24rpx; }
+.ix-empty { background: #ffffff; border-radius: 12rpx; padding: 40rpx; text-align: center; color: #8a9099; margin-top: 16rpx; }
+.ix-nt { padding-top: 8rpx; padding-bottom: 8rpx; }
+.ix-n { display: flex; flex-direction: row; align-items: center; padding: 20rpx 0; border-bottom: 1rpx solid #f0f1f4; }
+.ix-nt-t { font-size: 26rpx; }
+.ix-dot { width: 14rpx; height: 14rpx; border-radius: 7rpx; background: #f53f3f; margin-left: 12rpx; }

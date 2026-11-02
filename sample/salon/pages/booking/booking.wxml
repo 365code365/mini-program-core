@@ -1,0 +1,119 @@
+<view class="steps row">
+  <view class="st st-on"><text class="st-n">1</text><text>选项目</text></view>
+  <view class="st-line"></view>
+  <view class="st st-on"><text class="st-n">2</text><text>选发型师</text></view>
+  <view class="st-line"></view>
+  <view class="st st-on"><text class="st-n">3</text><text>选时间</text></view>
+  <view class="st-line"></view>
+  <view class="st {{sheetOpen ? 'st-on' : ''}}"><text class="st-n">4</text><text>确认</text></view>
+</view>
+
+<view class="card" wx:if="{{mode === 'reschedule'}}">
+  <view class="row"><icon type="info" size="16" color="#c0846a"></icon><text class="resc">改约只修改发型师与时间，项目、联系人沿用原预约</text></view>
+</view>
+
+<view class="card">
+  <view class="sec-head"><text class="sec-title">1 · 选择项目</text><text class="sec-more" wx:if="{{svc}}">{{svc.duration}} 分钟</text></view>
+  <view class="row cats" wx:if="{{mode !== 'reschedule'}}">
+    <view wx:for="{{cats}}" wx:key="id" class="cat {{cat === item.id ? 'cat-on' : ''}}" data-id="{{item.id}}" bindtap="onCat">{{item.name}}</view>
+  </view>
+  <view wx:for="{{services}}" wx:key="id" wx:if="{{mode !== 'reschedule' || item.id === serviceId}}"
+        class="svc row {{serviceId === item.id ? 'svc-on' : ''}}" data-id="{{item.id}}" bindtap="onService">
+    <view class="radio {{serviceId === item.id ? 'radio-on' : ''}}"></view>
+    <view class="flex1"><text class="svc-n">{{item.name}}</text><text class="muted">{{item.desc}}</text></view>
+    <text class="price">¥{{item.price}}</text>
+  </view>
+</view>
+
+<view class="card">
+  <view class="sec-head"><text class="sec-title">2 · 选择发型师</text><text class="sec-more">左右滑动查看</text></view>
+  <scroll-view scroll-x class="sty-scroll" scroll-into-view="{{stylistView}}" scroll-with-animation show-scrollbar="{{false}}">
+    <view class="sty-row">
+      <view wx:for="{{stylists}}" wx:key="id" id="sty-{{item.id}}" data-id="{{item.id}}" bindtap="onStylist"
+            class="sty {{stylistId === item.id ? 'sty-on' : ''}} {{item.ok ? '' : 'sty-off'}}">
+        <image class="sty-av" src="{{item.avatar}}"></image>
+        <text class="sty-n">{{item.name}}</text>
+        <text class="sty-t">{{item.ok ? item.title : '不做此项目'}}</text>
+        <view class="sty-r" wx:if="{{item.rating}}"><rating-stars value="{{item.rating}}" size="18"></rating-stars></view>
+      </view>
+    </view>
+  </scroll-view>
+</view>
+
+<view class="card">
+  <view class="sec-head"><text class="sec-title">3 · 选择时间</text><text class="sec-more">上下滑动选择</text></view>
+  <view class="pv-head row"><text class="flex1">日期</text><text class="flex1">时段</text></view>
+  <picker-view class="pv" value="{{pv}}" indicator-style="height: 80rpx;" bindchange="onPv">
+    <picker-view-column>
+      <view class="pv-it" wx:for="{{days}}" wx:key="date">{{item.text}}</view>
+    </picker-view-column>
+    <picker-view-column>
+      <view class="pv-it {{item.state !== 'free' ? 'pv-off' : ''}}" wx:for="{{slots}}" wx:key="time">{{item.label}}</view>
+    </picker-view-column>
+  </picker-view>
+  <view class="slot-tip row">
+    <icon type="{{slotState === 'free' ? 'success' : 'warn'}}" size="16" color="{{slotState === 'free' ? '#3aa776' : '#e86a4f'}}"></icon>
+    <text class="flex1 slot-tx {{slotState === 'free' ? '' : 'slot-bad'}}">{{slotText}}</text>
+  </view>
+</view>
+<view style="height: 180rpx;"></view>
+
+<view class="bar row">
+  <view class="flex1">
+    <text class="price big">¥{{svc.price}}</text>
+    <text class="muted"> {{level.name}}储值卡支付 ¥{{cardPrice}}</text>
+  </view>
+  <view class="btn-main bar-btn {{slotState === 'free' ? '' : 'bar-dis'}}" hover-class="press" bindtap="openSheet">{{mode === 'reschedule' ? '确认改约' : '确认预约'}}</view>
+</view>
+
+<!-- 确认面板：外层撑满屏幕，点面板以外的地方关闭；draggable-sheet 拖动改高度，松手吸附到 0.4 / 0.7 / 0.92 -->
+<view class="sheet-host" wx:if="{{sheetOpen}}" bindtap="closeSheet">
+  <draggable-sheet id="sheet" class="sheet" initial-child-size="0.7" min-child-size="0.4" max-child-size="0.92"
+                   snap="{{true}}" snap-sizes="{{[0.7]}}" bind:sizeupdate="onSheetSize">
+    <view class="panel" catchtap="onPanelTap">
+      <view class="grip-wrap" catchtap="toggleExpand"><view class="grip"></view></view>
+      <view class="row between ph">
+        <text class="sec-title">{{mode === 'reschedule' ? '确认改约信息' : '确认预约信息'}}</text>
+        <text class="close" catchtap="closeSheet">关闭</text>
+      </view>
+      <scroll-view scroll-y class="pscroll">
+        <view class="sum">
+          <view class="kv row"><text class="k">项目</text><text class="v">{{svc.name}}（{{svc.duration}} 分钟）</text></view>
+          <view class="kv row"><text class="k">发型师</text><text class="v">{{styText}}</text></view>
+          <view class="kv row"><text class="k">时间</text><text class="v">{{days[pv[0]].text}} {{slots[pv[1]].time}} - {{endText}}</text></view>
+          <view class="kv row"><text class="k">门店</text><text class="v">型格美业·万象城店</text></view>
+        </view>
+        <view class="fld">
+          <text class="fk">到店人</text>
+          <input class="fi" placeholder="请输入姓名" value="{{form.name}}" data-k="name" bindinput="onField" disabled="{{mode === 'reschedule'}}"></input>
+        </view>
+        <text class="err" wx:if="{{errors.name}}">{{errors.name}}</text>
+        <view class="fld">
+          <text class="fk">手机号</text>
+          <input class="fi" type="number" maxlength="11" placeholder="用于接收预约短信" value="{{form.phone}}" data-k="phone" bindinput="onField" disabled="{{mode === 'reschedule'}}"></input>
+        </view>
+        <text class="err" wx:if="{{errors.phone}}">{{errors.phone}}</text>
+        <view class="fld">
+          <text class="fk">备注</text>
+          <input class="fi" placeholder="如：想剪短一点、对染膏过敏" value="{{form.remark}}" data-k="remark" bindinput="onField" maxlength="60"></input>
+        </view>
+        <text class="sub-t">支付方式</text>
+        <radio-group bindchange="onPay">
+          <label class="pay row">
+            <radio value="store" checked="{{pay === 'store'}}" color="#c0846a"></radio>
+            <view class="flex1"><text>到店支付</text><text class="muted">  服务完成后前台结算</text></view>
+            <text class="price">¥{{svc.price}}</text>
+          </label>
+          <label class="pay row">
+            <radio value="card" checked="{{pay === 'card'}}" color="#c0846a"></radio>
+            <view class="flex1"><text>储值卡抵扣</text><text class="muted">  余额 ¥{{balance}} · {{level.name}}折扣</text></view>
+            <text class="price">¥{{cardPrice}}</text>
+          </label>
+        </radio-group>
+      </scroll-view>
+      <view class="pfoot">
+        <view class="btn-main" hover-class="press" catchtap="submit">{{mode === 'reschedule' ? '提交改约' : '提交预约'}} · ¥{{pay === 'card' ? cardPrice : svc.price}}</view>
+      </view>
+    </view>
+  </draggable-sheet>
+</view>

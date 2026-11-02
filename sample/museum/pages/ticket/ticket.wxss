@@ -1,0 +1,32 @@
+.top { height: 160rpx; background: #a45c34; }
+.tk { margin: -130rpx 28rpx 0; background: #ffffff; border-radius: 24rpx; padding: 32rpx; position: relative; display: flex; flex-direction: column; }
+.ok { display: flex; flex-direction: row; align-items: center; background: #e9f6ee; border-radius: 12rpx; padding: 14rpx 20rpx; margin-bottom: 20rpx; }
+.ok-t { color: #2f8f5a; font-size: 26rpx; margin-left: 12rpx; }
+.tk-h { display: flex; flex-direction: row; align-items: center; justify-content: space-between; }
+.tk-n { font-size: 32rpx; font-weight: bold; }
+.st { font-size: 22rpx; padding: 4rpx 14rpx; border-radius: 6rpx; }
+.st-on { color: #2f8f5a; background: #e5f4ea; }
+.st-off { color: #8a7f74; background: #efebe6; }
+.qr-box { position: relative; align-self: center; margin-top: 32rpx; }
+.qr { padding: 16rpx; background: #ffffff; border: 2rpx solid #efe8e0; border-radius: 12rpx; }
+.qr-off { opacity: 0.25; }
+.qr-r { display: flex; flex-direction: row; }
+.qc { width: 16rpx; height: 16rpx; }
+.qc-on { background: #1f1a16; }
+.qr-mask { position: absolute; left: 0; top: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; }
+.qr-mt { font-size: 40rpx; color: #8a7f74; font-weight: bold; border: 4rpx solid #8a7f74; padding: 8rpx 24rpx; border-radius: 12rpx; }
+.code { display: flex; flex-direction: row; align-items: center; justify-content: center; margin-top: 20rpx; }
+.code-t { font-size: 34rpx; font-weight: bold; letter-spacing: 2rpx; }
+.code-c { font-size: 22rpx; color: #a45c34; margin-left: 16rpx; }
+.center { text-align: center; margin-top: 8rpx; }
+.dash { border-top: 2rpx dashed #e3d9ce; margin: 28rpx 0 12rpx; }
+.kv { display: flex; flex-direction: row; justify-content: space-between; margin-top: 14rpx; }
+.k { color: #9a8f84; font-size: 26rpx; }
+.v { font-size: 26rpx; font-weight: bold; }
+.ps { margin-top: 16rpx; background: #faf7f3; border-radius: 12rpx; padding: 8rpx 20rpx; }
+.p { display: flex; flex-direction: row; justify-content: space-between; padding: 12rpx 0; }
+.p-n { font-size: 26rpx; }
+.ops { display: flex; flex-direction: row; margin: 28rpx 18rpx 0; }
+.op { flex: 1; margin: 0 10rpx; }
+.op-red { border-color: #c0392b; color: #c0392b; }
+.foot { padding: 24rpx 28rpx 60rpx; }

@@ -1,0 +1,48 @@
+.head { margin: 24rpx 24rpx 0; padding: 32rpx; border-radius: 24rpx; background: linear-gradient(160deg, #63c2ff, #2a7df4); color: #ffffff; }
+.h-av { width: 88rpx; height: 88rpx; border-radius: 44rpx; background: rgba(255, 255, 255, 0.25); border: 3rpx solid rgba(255, 255, 255, 0.7); font-size: 36rpx; font-weight: bold; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.h-main { margin-left: 20rpx; display: flex; flex-direction: column; }
+.h-name { font-size: 34rpx; font-weight: bold; }
+.h-sub { margin-top: 4rpx; font-size: 22rpx; color: rgba(255, 255, 255, 0.85); }
+.h-st { font-size: 24rpx; padding: 6rpx 18rpx; border-radius: 20rpx; background: #ffffff; color: #1f7cf0; font-weight: bold; }
+.h-st.out { background: rgba(255, 255, 255, 0.25); color: #ffffff; }
+.h-grid { display: flex; flex-direction: row; margin-top: 28rpx; padding: 20rpx 0; border-radius: 18rpx; background: rgba(255, 255, 255, 0.16); }
+.hg { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.hg-v { font-size: 28rpx; font-weight: bold; white-space: nowrap; }
+.hg-k { margin-top: 4rpx; font-size: 20rpx; color: rgba(255, 255, 255, 0.8); white-space: nowrap; }
+.h-doc { display: block; margin-top: 20rpx; font-size: 22rpx; color: rgba(255, 255, 255, 0.85); }
+.money { display: flex; flex-direction: row; align-items: center; padding: 28rpx 0; }
+.m-i { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.m-v { font-size: 34rpx; font-weight: bold; color: #1d2330; }
+.m-v.warn { color: #ff8240; }
+.m-v.neg { color: #ff4d4f; }
+.m-k { margin-top: 6rpx; font-size: 22rpx; color: #8a93a3; }
+.m-line { width: 1rpx; height: 56rpx; background: #eef0f4; }
+.warn-bar { margin: 20rpx 24rpx 0; padding: 18rpx 24rpx; border-radius: 14rpx; background: #fff1eb; color: #e5562a; font-size: 24rpx; }
+.amts { display: flex; flex-direction: row; margin-top: 20rpx; }
+.amt { flex: 1; height: 80rpx; margin-right: 16rpx; border-radius: 14rpx; background: #f5f8ff; border: 2rpx solid #f5f8ff; display: flex; align-items: center; justify-content: center; font-size: 28rpx; font-weight: bold; color: #1d2330; }
+.amt:last-child { margin-right: 0; }
+.amt.on { background: #eaf2ff; border-color: #1f7cf0; color: #1f7cf0; }
+.custom { margin-top: 20rpx; height: 88rpx; padding: 0 20rpx; border-radius: 14rpx; background: #f7f9fc; }
+.c-k { width: 150rpx; font-size: 26rpx; color: #3a4252; flex-shrink: 0; }
+.c-in { flex: 1; height: 88rpx; font-size: 28.1rpx; padding: 0 0 0 1rpx; }
+.ph { color: #b8bec8; }
+.topup { margin-top: 24rpx; }
+.kv { display: flex; flex-direction: row; justify-content: space-between; align-items: center; padding: 18rpx 0 0; }
+.k { font-size: 26rpx; color: #8a93a3; }
+.v { font-size: 26rpx; color: #1d2330; }
+.v.ok { color: #13a8a8; }
+.day { border-bottom: 1rpx solid #f0f2f5; }
+.day:last-child { border-bottom: none; }
+.day-h { padding: 24rpx 0; }
+.day-d { font-size: 26rpx; color: #1d2330; }
+.day-t { font-size: 28rpx; font-weight: bold; color: #1d2330; }
+.chev-down { transform: rotate(135deg); }
+.day-items { padding: 4rpx 20rpx 16rpx; margin-bottom: 16rpx; border-radius: 12rpx; background: #f7f9fc; }
+.di { display: flex; flex-direction: row; justify-content: space-between; padding: 10rpx 0; }
+.di-n { font-size: 24rpx; color: #5a6475; }
+.di-v { font-size: 24rpx; color: #1d2330; }
+.dp { display: flex; flex-direction: row; justify-content: space-between; align-items: center; padding: 18rpx 0 0; }
+.dp-v { font-size: 28rpx; font-weight: bold; color: #13a8a8; }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; background: #ffffff; padding: 20rpx 32rpx; padding-bottom: calc(20rpx + env(safe-area-inset-bottom)); display: flex; flex-direction: row; align-items: center; box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.05); }
+.bar-btn { flex: 1; height: 84rpx; border-radius: 42rpx; display: flex; align-items: center; justify-content: center; font-size: 28rpx; font-weight: bold; }
+.ghost { border: 2rpx solid #d5dae2; color: #3a4252; box-sizing: border-box; font-weight: normal; margin-right: 20rpx; }

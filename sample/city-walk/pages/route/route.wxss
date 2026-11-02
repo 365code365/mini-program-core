@@ -1,0 +1,10 @@
+.map { width: 100%; height: 520rpx; background-color: #e8eef5; }
+.between { justify-content: space-between; }
+.stop { display: flex; flex-direction: row; align-items: center; padding: 20rpx 0; border-bottom: 1rpx solid #eef1f4; }
+.no { width: 44rpx; height: 44rpx; border-radius: 22rpx; margin-right: 20rpx; background: #1c3d5a; color: #ffffff; font-size: 22rpx; line-height: 44rpx; text-align: center; }
+.stop-body { flex: 1; display: flex; flex-direction: column; }
+.stop-name { font-size: 28rpx; }
+.mini { margin-left: 12rpx; padding: 6rpx 16rpx; border-radius: 20rpx; border: 1rpx solid #c3ccd5; color: #52606d; font-size: 22rpx; }
+.del { border-color: #ffa8a8; color: #e03131; }
+.ops { display: flex; flex-direction: row; padding: 0 24rpx; }
+.op { flex: 1; margin: 0 8rpx; }

@@ -1,0 +1,34 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/lawyers/lawyers",
+    "pages/contracts/contracts",
+    "pages/mine/mine",
+    "pages/lawyer/lawyer",
+    "pages/order/order",
+    "pages/chat/chat",
+    "pages/editor/editor",
+    "pages/calc/calc",
+    "pages/qa/qa",
+    "pages/consults/consults"
+  ],
+  "window": {
+    "navigationBarTitleText": "律安心",
+    "navigationBarBackgroundColor": "#1f4fb4",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f4f6fa"
+  },
+  "tabBar": {
+    "color": "#9aa0a8",
+    "selectedColor": "#1f4fb4",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "首页", "iconPath": "images/tab/home.png", "selectedIconPath": "images/tab/home-on.png" },
+      { "pagePath": "pages/lawyers/lawyers", "text": "找律师", "iconPath": "images/tab/lawyer.png", "selectedIconPath": "images/tab/lawyer-on.png" },
+      { "pagePath": "pages/contracts/contracts", "text": "合同", "iconPath": "images/tab/doc.png", "selectedIconPath": "images/tab/doc-on.png" },
+      { "pagePath": "pages/mine/mine", "text": "我的", "iconPath": "images/tab/user.png", "selectedIconPath": "images/tab/user-on.png" }
+    ],
+    "custom": true
+  }
+}

@@ -1,0 +1,16 @@
+.top { background: linear-gradient(180deg, #3f9a3c, #5fb85a); display: flex; flex-direction: column; align-items: center; padding: 50rpx 0 60rpx; }
+.t1 { color: #ffffff; font-size: 38rpx; font-weight: bold; margin-top: 20rpx; }
+.t2 { color: rgba(255,255,255,0.85); font-size: 24rpx; margin-top: 8rpx; }
+.mems { display: flex; flex-direction: row; flex-wrap: wrap; margin: 24rpx 0 10rpx; }
+.mem { width: 140rpx; display: flex; flex-direction: column; align-items: center; margin-bottom: 12rpx; }
+.mem-av { width: 96rpx; height: 96rpx; border-radius: 48rpx; }
+.mem-empty { border: 3rpx dashed #c4c8c0; display: flex; align-items: center; justify-content: center; }
+.mem-q { color: #c4c8c0; font-size: 36rpx; }
+.mem-name { font-size: 22rpx; color: #5d6858; margin-top: 6rpx; }
+.cd { margin-bottom: 20rpx; }
+.share { background: #e4572e; color: #ffffff; border-radius: 40rpx; font-size: 28rpx; margin-top: 10rpx; }
+.link { margin-top: 20rpx; }
+.info { margin-top: 10rpx; line-height: 1.5; }
+.ops { padding: 40rpx 24rpx; }
+.op { flex: 1; margin: 0 10rpx; height: 80rpx; line-height: 76rpx; }
+.op-main { line-height: 80rpx; }

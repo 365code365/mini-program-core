@@ -1,0 +1,78 @@
+<scroll-view class="days" scroll-x enable-flex>
+  <view class="days-in row">
+    <view wx:for="{{days}}" wx:key="key" class="day col {{day === index ? 'day-on' : ''}}" data-i="{{index}}" bindtap="pickDay">
+      <text class="day-t">{{item.top}}</text>
+      <text class="day-md">{{item.md}}</text>
+      <text wx:if="{{item.weekend}}" class="day-w">周末</text>
+    </view>
+  </view>
+</scroll-view>
+
+<view class="legend row">
+  <view class="lg row"><view class="lg-b lg-free"></view><text class="lg-t">可订</text></view>
+  <view class="lg row"><view class="lg-b lg-sold"></view><text class="lg-t">已订</text></view>
+  <view class="lg row"><view class="lg-b lg-on"></view><text class="lg-t">已选</text></view>
+  <view class="lg row"><text class="lg-peak">峰</text><text class="lg-t">高峰价 ¥{{v.peak}}</text></view>
+  <view class="flex1"></view>
+  <text class="muted">平时 ¥{{v.price}}/时</text>
+</view>
+
+<!-- 时段网格：横向是 scroll-x（时段列在它外面 = 冻结首列）；纵向跟页面滚，表头滚出视口后换成 fixed 的那份（冻结首行）。
+     表头不是 scroll-view，而是裁剪 + translateX 跟着表体的 scrollLeft 走，避免两个滚动区互相推。 -->
+<view class="grid">
+  <view id="ghead" class="g-head row">
+    <view class="corner"><text class="corner-t">时段</text></view>
+    <view class="head-clip">
+      <view class="head-in row" style="width: {{gridW}}px; transform: translateX(-{{sl}}px);">
+        <view wx:for="{{courts}}" wx:key="*this" class="hc"><text class="hc-t">{{item}}</text></view>
+      </view>
+    </view>
+  </view>
+  <view wx:if="{{fixHead}}" class="g-head g-fixed row">
+    <view class="corner"><text class="corner-t">时段</text></view>
+    <view class="head-clip">
+      <view class="head-in row" style="width: {{gridW}}px; transform: translateX(-{{sl}}px);">
+        <view wx:for="{{courts}}" wx:key="*this" class="hc"><text class="hc-t">{{item}}</text></view>
+      </view>
+    </view>
+  </view>
+  <view class="row body-in">
+    <view class="times">
+      <view wx:for="{{rows}}" wx:key="h" class="tm"><text class="tm-t">{{item.label}}</text></view>
+    </view>
+    <scroll-view class="cells-sv" scroll-x bindscroll="onHScroll">
+      <view style="width: {{gridW}}px;">
+        <view wx:for="{{rows}}" wx:for-item="r" wx:for-index="ri" wx:key="h" class="crow row">
+          <view wx:for="{{r.cells}}" wx:for-item="c" wx:for-index="ci" wx:key="key" class="cell" data-r="{{ri}}" data-c="{{ci}}" bindtap="tapCell">
+            <view class="cell-in col st-{{c.state}} {{c.on ? 'st-on' : ''}}">
+              <text class="cell-p">{{c.state === 'free' ? '¥' + c.price : (c.state === 'past' ? '已过' : (c.state === 'mine' ? '我的' : '已订'))}}</text>
+              <text wx:if="{{c.on}}" class="cell-ok">已选</text>
+            </view>
+            <text wx:if="{{c.peak && c.state === 'free'}}" class="peak-mk">峰</text>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+</view>
+<view class="panel-space"></view>
+
+<view class="panel">
+  <view wx:if="{{segs.length}}" class="segs">
+    <view wx:for="{{segs}}" wx:key="text" class="seg row">
+      <text class="seg-c">{{item.courtLabel}}</text>
+      <text class="seg-t">{{item.text}}</text>
+      <text class="muted seg-h">{{item.hours}} 小时{{item.peakHours ? '（含高峰 ' + item.peakHours + ' 小时）' : ''}}</text>
+      <view class="flex1"></view>
+      <text class="seg-a">¥{{item.amount}}</text>
+    </view>
+  </view>
+  <view wx:else class="segs-none"><text class="muted">点表格里的空闲时段选场，同一场地连续时段会自动合并</text></view>
+  <view class="row panel-foot">
+    <view class="col flex1">
+      <view class="row"><text class="muted">{{count}} 小时 · 合计 </text><text class="price total">¥{{total}}</text></view>
+      <text wx:if="{{count}}" class="clear" bindtap="clear">清空已选</text>
+    </view>
+    <view class="btn-main go {{count ? '' : 'btn-dis'}}" bindtap="submit"><text>立即预订</text></view>
+  </view>
+</view>

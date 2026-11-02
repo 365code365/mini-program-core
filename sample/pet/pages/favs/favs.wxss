@@ -1,0 +1,11 @@
+.fv { display: flex; flex-direction: row; align-items: center; }
+.fv-img { width: 150rpx; height: 150rpx; border-radius: 16rpx; flex-shrink: 0; }
+.fv-m { flex: 1; margin-left: 20rpx; display: flex; flex-direction: column; min-width: 0; }
+.fv-n { font-size: 26rpx; font-weight: bold; line-height: 36rpx; }
+.fv-s { margin: 6rpx 0 8rpx; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fv-o { margin-left: 10rpx; font-size: 20rpx; color: #c4bcb4; text-decoration: line-through; }
+.fv-ops { display: flex; flex-direction: column; margin-left: 16rpx; flex-shrink: 0; }
+.fv-btn { height: 52rpx; padding: 0 20rpx; margin: 6rpx 0; border-radius: 26rpx; background: linear-gradient(90deg, #ffb547, #ff7b54); color: #ffffff; font-size: 22rpx; display: flex; align-items: center; justify-content: center; white-space: nowrap; }
+.fv-btn.ghost { background: #f7f3ef; color: #7a7069; }
+.empty { display: flex; flex-direction: column; align-items: center; padding-top: 220rpx; }
+.empty-btn { margin-top: 32rpx; width: 300rpx; height: 80rpx; font-size: 28rpx; }

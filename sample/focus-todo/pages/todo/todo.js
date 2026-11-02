@@ -20,12 +20,18 @@ Page({
   onShow() {
     const tb = this.getTabBar && this.getTabBar()
     if (tb) tb.setData({ selected: 0 })
+    // 统计页点「完成待办」过来：切到「已完成」
+    const g = getApp().globalData
+    if (g.todoTab !== undefined && g.todoTab !== null) {
+      this.setData({ tab: g.todoTab })
+      g.todoTab = null
+    }
     this.refresh()
   },
 
   refresh() {
     const t = S.today()
-    const all = S.loadTodos().map(i => Object.assign({}, i, { color: S.PRIORITY[i.priority].color }))
+    const all = S.loadTodos().map(i => Object.assign({}, i, { color: S.PRIORITY[i.priority].color, repeatText: i.repeat ? S.REPEATS[i.repeat] : '' }))
     const todayAll = all.filter(i => i.date === t)
     const todayLeft = todayAll.filter(i => !i.done)
     const plan = all.filter(i => !i.done && i.date > t)
@@ -67,8 +73,10 @@ Page({
     const it = list.find(i => i.id === id)
     if (!it) return
     it.done = !it.done
+    const next = it.done ? S.spawnNext(list, it) : null
     S.saveTodos(list)
-    if (it.done) wx.showToast({ title: '完成一项 👏', icon: 'none' })
+    if (next) wx.showToast({ title: '已完成，下一次：' + S.label(next.date), icon: 'none' })
+    else if (it.done) wx.showToast({ title: '完成一项 👏', icon: 'none' })
     this.refresh()
   },
 

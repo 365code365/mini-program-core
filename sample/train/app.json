@@ -6,7 +6,9 @@
     "pages/city/city",
     "pages/list/list",
     "pages/book/book",
-    "pages/passenger/passenger"
+    "pages/passenger/passenger",
+    "pages/order-detail/order-detail",
+    "pages/stops/stops"
   ],
   "window": {
     "navigationBarTitleText": "畅行火车票",

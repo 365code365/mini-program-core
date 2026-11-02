@@ -1,0 +1,57 @@
+<view class="page tab-page {{theme}}">
+  <view class="hero">
+    <text class="hero-date">{{dateText}}</text>
+    <text class="hero-hi">{{greet.hi}}</text>
+    <text class="hero-tip">{{greet.tip}}</text>
+  </view>
+
+  <view class="card streak">
+    <view class="row between">
+      <view class="row">
+        <view class="badge" animation="{{badgeAnim}}"><text class="badge-n">{{streak.streak}}</text></view>
+        <view class="streak-txt">
+          <text class="streak-t">连续打卡 {{streak.streak}} 天</text>
+          <text class="sub">最长 {{streak.best}} 天 · 累计 {{streak.totalDays}} 天</text>
+        </view>
+      </view>
+      <view wx:if="{{streak.todayDone}}" class="done-tag"><text>今日已完成</text></view>
+      <view wx:else class="btn-ghost" hover-class="btn-hover" bindtap="goPractice"><text>去练习</text></view>
+    </view>
+    <view class="week row">
+      <view class="day" wx:for="{{streak.week}}" wx:key="index">
+        <view class="dot {{item.on ? 'dot-on' : ''}}"></view>
+        <text class="day-l">{{item.label}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="quick row">
+    <view class="q" wx:for="{{quick}}" wx:key="key" data-key="{{item.key}}" bindtap="onQuick" hover-class="btn-hover">
+      <view class="q-ic" style="background: {{item.bg}};"><text class="q-ic-t">{{item.mark}}</text></view>
+      <text class="q-t">{{item.name}}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{lastCourse}}" class="card cont row" bindtap="onContinue" hover-class="btn-hover">
+    <image class="cont-img" src="{{lastCourse.cover}}" mode="aspectFill"></image>
+    <view class="flex1">
+      <text class="cont-k">继续收听</text>
+      <text class="cont-t">{{lastCourse.title}}</text>
+      <text class="sub">{{lastChapter}}</text>
+    </view>
+    <view class="play-ic"><image class="tri" src="/images/play-w.png"></image></view>
+  </view>
+
+  <view class="sec-head">
+    <text class="sec-title">{{greet.recTitle}}</text>
+    <text class="more" bindtap="goAll">全部课程</text>
+  </view>
+  <view class="card rec row" wx:for="{{recs}}" wx:key="id" data-id="{{item.id}}" bindtap="openCourse" hover-class="btn-hover">
+    <image class="rec-img" src="{{item.cover}}" mode="aspectFill"></image>
+    <view class="flex1 rec-body">
+      <text class="rec-t">{{item.title}}</text>
+      <text class="sub">{{item.teacher}} · {{item.chapters.length}} 节 · {{item.level}}</text>
+      <text class="rec-d">{{item.desc}}</text>
+    </view>
+  </view>
+</view>

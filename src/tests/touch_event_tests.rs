@@ -255,3 +255,77 @@ fn fixed_scope_and_flow_scope_are_separate() {
     assert_eq!(flow, vec!["pageTap"], "正常流作用域只该看到页面自己");
 }
 
+
+/// 画一页再画覆盖层（宿主运行态那条路：覆盖层的绑定与遮挡区由 render_fixed_elements 登记）
+fn render_with_overlay(css: &str, wxml: &str) -> WxmlRenderer {
+    let ss = WxssParser::new(css).parse().unwrap_or_default();
+    let mut r = WxmlRenderer::new_with_scale(ss, 375.0, 667.0, 1.0);
+    let nodes = WxmlParser::new(wxml).parse().unwrap();
+    let mut page_canvas = Canvas::new(375, 667);
+    r.render(&mut page_canvas, &nodes, &json!({}));
+    let mut overlay = Canvas::new(375, 667);
+    let mut interaction = crate::ui::interaction::InteractionManager::new();
+    r.render_fixed_elements(&mut overlay, &nodes, &json!({}), &mut interaction, 667.0);
+    r
+}
+
+fn tap_handlers(r: &WxmlRenderer, x: f32, y: f32) -> Vec<String> {
+    r.dispatch_chain(x, y, "tap", Some(true)).iter().map(|b| b.handler.clone()).collect()
+}
+
+/// 遮罩与底部面板是**兄弟**（微信最常见的写法，面板上没写 catchtap）：
+/// 点面板里的选项只到选项自己，不冒泡到遮罩的 close —— 遮罩不是面板的祖先。
+/// 从前按包围盒面积找「祖先」，整屏的遮罩被当成最外层：选个规格面板就关了（拾光咖啡、商城详情页）
+#[test]
+fn sibling_mask_is_not_an_ancestor_of_the_sheet() {
+    let css = ".mask{position:fixed;left:0;top:0;right:0;bottom:0;}\
+               .sheet{position:fixed;left:0;right:0;bottom:0;height:300px;}\
+               .opt{width:100px;height:40px;margin-top:20px;}";
+    let wxml = r#"
+        <view>
+            <view class="page" bindtap="pageTap"></view>
+            <view class="mask" bindtap="onClose"></view>
+            <view class="sheet"><view class="opt" bindtap="onSize"></view></view>
+        </view>"#;
+    let r = render_with_overlay(css, wxml);
+    // 选项在面板顶上 20px 处：(10..110, 387..427)
+    assert_eq!(tap_handlers(&r, 50.0, 400.0), vec!["onSize"], "选项只发自己的 tap");
+    let target = r.innermost_binding_at(50.0, 400.0, Some(true)).map(|b| b.handler);
+    assert_eq!(target.as_deref(), Some("onSize"), "target 是选项");
+    // 面板空白处：落在覆盖层上（不穿透），但没有任何处理函数
+    assert!(r.fixed_layer_hit(300.0, 600.0));
+    assert!(tap_handlers(&r, 300.0, 600.0).is_empty(), "点面板空白处不该关面板");
+    // 面板上方的遮罩：照常关
+    assert_eq!(tap_handlers(&r, 200.0, 100.0), vec!["onClose"]);
+}
+
+/// 页面根上的 fixed 遮罩里**套着** fixed 对话框：对话框是遮罩的 DOM 子节点，点它照常冒泡到遮罩
+/// （与微信一致，所以这种写法要在对话框上写 catchtap）
+#[test]
+fn nested_fixed_child_still_bubbles_to_its_fixed_parent() {
+    let css = ".mask{position:fixed;left:0;top:0;right:0;bottom:0;}\
+               .dialog{position:fixed;left:40px;right:40px;top:200px;height:200px;}\
+               .btn{width:100px;height:40px;}";
+    let wxml = r#"
+        <view class="mask" bindtap="onClose">
+            <view class="dialog" bindtap="onDialog"><view class="btn" bindtap="onOk"></view></view>
+        </view>"#;
+    let r = render_with_overlay(css, wxml);
+    assert_eq!(tap_handlers(&r, 60.0, 220.0), vec!["onOk", "onDialog", "onClose"]);
+    assert_eq!(tap_handlers(&r, 200.0, 100.0), vec!["onClose"]);
+}
+
+/// 兄弟遮罩上的 `catchtouchmove`（锁住下层页面滚动）管不到盖在它上面的面板：面板里照样能滑
+#[test]
+fn sibling_mask_catchtouchmove_does_not_lock_the_sheet() {
+    let css = ".mask{position:fixed;left:0;top:0;right:0;bottom:0;}\
+               .sheet{position:fixed;left:0;right:0;bottom:0;height:300px;}";
+    let wxml = r#"
+        <view>
+            <view class="mask" bindtap="onClose" catchtouchmove="noop"></view>
+            <view class="sheet"></view>
+        </view>"#;
+    let r = render_with_overlay(css, wxml);
+    assert!(r.has_catch_for(200.0, 100.0, "touchmove"), "遮罩上照样锁住");
+    assert!(!r.has_catch_for(200.0, 500.0, "touchmove"), "面板上不该被兄弟遮罩锁住");
+}

@@ -1,0 +1,25 @@
+.face { margin: 20rpx 24rpx 0; padding: 32rpx; border-radius: 24rpx; background: linear-gradient(135deg, #1d2b3a 0%, #2f4a5f 60%, #13b37b 140%); display: flex; flex-direction: column; }
+.f-brand { color: #e0f5ec; font-size: 26rpx; font-weight: bold; }
+.f-rule { color: #b9c7d1; font-size: 22rpx; }
+.f-l { color: #b9c7d1; font-size: 22rpx; margin-top: 36rpx; }
+.f-bal { color: #ffffff; font-size: 64rpx; font-weight: bold; margin-top: 4rpx; }
+.f-s { color: #b9c7d1; font-size: 22rpx; margin-top: 8rpx; }
+.tc { margin-top: 20rpx; }
+.tc-n { font-size: 28rpx; }
+.tc-left { font-size: 24rpx; color: #13b37b; }
+.kinds { background: #f3f5f4; border-radius: 30rpx; padding: 6rpx; margin-bottom: 12rpx; }
+.kd { flex: 1; text-align: center; height: 60rpx; line-height: 60rpx; border-radius: 26rpx; font-size: 26rpx; color: #5a5d66; }
+.kd-on { background: #ffffff; color: #13b37b; font-weight: bold; }
+.pl { padding: 22rpx 20rpx; border: 2rpx solid #eceef0; border-radius: 16rpx; margin-top: 16rpx; }
+.pl-on { border-color: #13b37b; background: #f0fbf6; }
+.pl-n { font-size: 28rpx; font-weight: bold; margin-bottom: 4rpx; }
+.pl-hot { font-size: 18rpx; color: #ffffff; background: #ff6a3d; border-radius: 6rpx; padding: 0 8rpx; margin-left: 10rpx; }
+.pl-give { font-size: 18rpx; color: #ff6a3d; border: 1rpx solid #ff6a3d; border-radius: 6rpx; padding: 0 8rpx; margin-left: 10rpx; }
+.pl-p { font-size: 34rpx; font-weight: bold; color: #1d1d22; }
+.buy { margin-top: 28rpx; }
+.rec-none { display: flex; flex-direction: row; padding: 24rpx 0 8rpx; }
+.link { color: #13b37b; font-size: 24rpx; }
+.rec { padding: 16rpx 0; border-bottom: 1rpx solid #f0f2f1; }
+.rec-t { font-size: 26rpx; }
+.rec-in { color: #13b37b; font-weight: bold; }
+.rec-out { color: #1d1d22; }

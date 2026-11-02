@@ -1,0 +1,290 @@
+# 健康挂号：每页能开 + 预约→支付→待就诊→签到→候诊→完成→缴费→报告→问诊；取消退款；就诊人增删改默认；导诊；导航；住院；我的
+smoke pages/doctors/doctors?dept=xxg pages/doctor/doctor?id=d1 pages/confirm/confirm?id=d1 pages/order-detail/order-detail?id=none pages/report-detail/report-detail?id=RP1 pages/news/news?id=1 pages/navi/navi?dept=yk pages/patient-edit/patient-edit?id=p2
+
+open
+expect getCurrentPages()[0].data.badges.report === 2
+shot target/_polish_shots/index.png
+# 首页入口都有去处
+tapn 7 .cell
+route pages/guide/guide
+back
+tapn 5 .cell
+route pages/inpatient/inpatient
+back
+tap .hos-navi
+route pages/navi/navi
+back
+tap .hos-call
+modal?
+modal ok
+tapn 0 .news-item
+route pages/news/news
+tap .a-btn
+route pages/doctors/doctors
+expect getCurrentPages().slice(-1)[0].data.dept.id === 'ym'
+back
+back
+
+# 预约挂号：心血管内科 → 陈立华 → 后天下午 → 确认 → 支付
+tapn 0 .cell
+route pages/dept/dept
+tapn 0 .d-item
+route pages/doctors/doctors
+expect getCurrentPages().slice(-1)[0].data.dept.id === 'xxg'
+tapn 0 .doc
+route pages/doctor/doctor
+expect getCurrentPages().slice(-1)[0].data.doc.id === 'd1'
+tapn 2 .day
+expect getCurrentPages().slice(-1)[0].data.dayIdx === 2
+tapn 0 .slot
+toast 停诊
+tapn 4 .slot
+expect getCurrentPages().slice(-1)[0].data.slot === '13:30-14:30'
+tap .bar-btn
+route pages/confirm/confirm
+tap .bar-btn
+toast 挂号须知
+tap .agree
+expect getCurrentPages().slice(-1)[0].data.agree === true
+shot target/_polish_shots/confirm.png
+tap .bar-btn
+modal?
+modal ok
+wait 1300
+route pages/orders/orders
+expect wx.getStorageSync('hs_orders')[0].doctorId === 'd1' && wx.getStorageSync('hs_orders')[0].status === 'wait'
+expect wx.getStorageSync('hs_bills').some(function (b) { return b.orderId === wx.getStorageSync('hs_orders')[0].id && b.kind === 'reg' && b.status === 'paid'; })
+count 2 .ord
+# 号源扣掉自己挂的这一个
+eval wx.navigateTo({ url: '/pages/doctor/doctor?id=d1' })
+tapn 2 .day
+expect getCurrentPages().slice(-1)[0].data.halves[1].slots[0].left === 2
+back
+
+# 取消预约（眼科那一单）：挂号费原路退回
+tapn 2 .o-btn
+modal?
+modal ok
+expect wx.getStorageSync('hs_orders')[1].status === 'cancel'
+expect wx.getStorageSync('hs_bills').some(function (b) { return b.id === 'BD1' && b.status === 'refund'; })
+count 1 .ord
+
+# 签到：不是就诊当天只提示；到了当天（把日期改成今天）→ 定位不可用改为手动确认
+tapn 1 .o-btn
+toast 就诊当天
+eval (function () { var l = wx.getStorageSync('hs_orders'); var d = new Date(); var p = function (n) { return n < 10 ? '0' + n : '' + n; }; l[0].date = d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); wx.setStorageSync('hs_orders', l); getCurrentPages().slice(-1)[0].refresh(); })()
+tapn 1 .o-btn
+modal?
+modal ok
+expect wx.getStorageSync('hs_orders')[0].status === 'checked'
+tap .ord
+route pages/order-detail/order-detail
+expect getCurrentPages().slice(-1)[0].data.st.ahead === 3
+exists .qr
+shot target/_polish_shots/order-checked.png
+tap .op-navi
+route pages/navi/navi
+expect getCurrentPages().slice(-1)[0].data.target.id === 'xxg' && getCurrentPages().slice(-1)[0].data.open === 3
+back
+
+# 叫号：时间往后拨 7 分钟 → 就诊完成，医生开了检查与药 → 去缴费 → 出报告
+eval (function () { var l = wx.getStorageSync('hs_orders'); l[0].checkedAt -= 7 * 60000; wx.setStorageSync('hs_orders', l); getCurrentPages().slice(-1)[0].load(); })()
+expect getCurrentPages().slice(-1)[0].data.order.status === 'done'
+expect getCurrentPages().slice(-1)[0].data.st.unpaid === true
+expect getCurrentPages().slice(-1)[0].data.bill.status === 'unpaid'
+shot target/_polish_shots/order-done.png
+tap .op-pay
+route pages/bills/bills
+count 1 .pay-btn
+tap .pay-btn
+modal?
+modal ok
+wait 300
+expect wx.getStorageSync('hs_bills').filter(function (b) { return b.status === 'unpaid'; }).length === 0
+toast 检查报告已生成
+expect wx.getStorageSync('hs_reports').length === 4
+tapn 1 .tab
+expect getCurrentPages().slice(-1)[0].data.list.length >= 6
+shot target/_polish_shots/bills.png
+# 电子发票：挂号费开票
+tapn 0 .inv-btn
+exists .sheet
+type .inv-email => zhang@example.com
+blur
+tap .inv-save
+expect wx.getStorageSync('hs_bills').some(function (b) { return b.invoice && b.invoice.email === 'zhang@example.com'; })
+toast 发票已开具
+
+# 报告：新出的两份排最前，看过就不算未读 → 带着报告去问诊
+eval wx.navigateTo({ url: '/pages/reports/reports' })
+route pages/reports/reports
+count 4 .rp
+expect getCurrentPages().slice(-1)[0].data.unread === 4
+tapn 0 .rp
+route pages/report-detail/report-detail
+expect wx.getStorageSync('hs_reports')[0].read === true
+shot target/_polish_shots/report.png
+tap .btn-primary
+route pages/consult/consult
+expect getCurrentPages().slice(-1)[0].data.desc.indexOf('请帮我解读') === 0
+tap .submit
+modal?
+modal ok
+wait 300
+expect wx.getStorageSync('hs_consults').length === 1
+expect wx.getStorageSync('hs_bills').some(function (b) { return b.kind === 'consult' && b.status === 'paid'; })
+tap .cs-cancel
+modal ok
+expect wx.getStorageSync('hs_consults')[0].status === 'cancel'
+expect wx.getStorageSync('hs_bills').some(function (b) { return b.kind === 'consult' && b.status === 'refund'; })
+# 再问一次：描述要自己写（提交后输入框清空）；1 分钟后医生回复 → 结束问诊
+tap .submit
+toast 至少用 10 个字
+type .desc => 最近两周上楼时偶尔胸闷，休息几分钟能缓解，需要做什么检查
+blur
+tap .submit
+modal?
+modal ok
+wait 300
+expect getCurrentPages().slice(-1)[0].data.desc === '' && getCurrentPages().slice(-1)[0].data.formSeq === 2
+eval (function () { var l = wx.getStorageSync('hs_consults'); l[0].createdAt -= 2 * 60000; wx.setStorageSync('hs_consults', l); getCurrentPages().slice(-1)[0].refresh(); })()
+expect wx.getStorageSync('hs_consults')[0].status === 'reply'
+shot target/_polish_shots/consult.png
+tap .cs-finish
+expect wx.getStorageSync('hs_consults')[0].status === 'done'
+
+# 就诊人：新增（身份证带出生日与性别）→ 编辑手机号 → 设为默认 → 删除；住院中的不能删
+eval wx.reLaunch({ url: '/pages/patients/patients' })
+route pages/patients/patients
+count 3 .pt
+tap .add
+route pages/patient-edit/patient-edit
+tap .save
+toast 中文姓名
+type .f-name => 王雅琴
+type .f-idcard => 310104199203154628
+blur
+expect getCurrentPages().slice(-1)[0].data.form.birth === '1992-03-15' && getCurrentPages().slice(-1)[0].data.form.gender === '女'
+picker .f-rel
+pickrow 0 1 1
+pickok
+# 面板收起动画按墙上时钟走，机器忙时 300ms 不够：等它收完再点下半屏
+wait 400
+expect getCurrentPages().slice(-1)[0].data.relIdx === 1
+type .f-phone => 13788886666
+blur
+shot target/_polish_shots/patient-add.png
+tap .save
+wait 900
+route pages/patients/patients
+count 4 .pt
+expect wx.getStorageSync('hs_patients')[3].name === '王雅琴' && wx.getStorageSync('hs_patients')[3].relation === '配偶' && wx.getStorageSync('hs_patients')[3].phone === '137****6666'
+tapn 3 .pt
+sheet 0 3
+route pages/patient-edit/patient-edit
+expect getCurrentPages().slice(-1)[0].data.editing === true
+type .f-phone => 13900001111
+blur
+shot target/_polish_shots/patient-edit.png
+tap .save
+wait 900
+route pages/patients/patients
+expect wx.getStorageSync('hs_patients')[3].phone === '139****1111'
+tapn 3 .pt
+sheet 1 3
+expect wx.getStorageSync('hs_patients').filter(function (p) { return p.isDefault; }).map(function (p) { return p.name; }).join() === '王雅琴'
+shot target/_polish_shots/patients.png
+tapn 3 .pt
+sheet 2 3
+modal?
+modal ok
+count 3 .pt
+expect wx.getStorageSync('hs_patients').some(function (p) { return p.isDefault; })
+tapn 2 .pt
+sheet 2 3
+modal ok
+# 第二个弹窗在第一个的回调里同步弹出，harness 扫按钮时会顺手点掉它：看记录
+expect __ui.slice(-1)[0].title === '暂时不能删除' && __ui.slice(-1)[0].content.indexOf('正在住院') > 0
+count 3 .pt
+
+# 智能导诊：胸痛 → 急诊提示；再勾胸闷心慌 → 心血管内科匹配 2 个
+eval wx.reLaunch({ url: '/pages/guide/guide' })
+tapn 1 .area
+tapn 2 .sym
+expect getCurrentPages().slice(-1)[0].data.urgent === '胸痛'
+tapn 1 .sym
+expect getCurrentPages().slice(-1)[0].data.recs[0].id === 'xxg' && getCurrentPages().slice(-1)[0].data.recs[0].hit === 2
+tapn 0 .area
+tapn 0 .sym
+expect getCurrentPages().slice(-1)[0].data.picked.length === 3 && getCurrentPages().slice(-1)[0].data.areas[1].n === 2
+shot target/_polish_shots/guide.png
+tap .u-btn
+modal?
+modal ok
+tapn 0 .rec-go
+route pages/doctors/doctors
+expect getCurrentPages().slice(-1)[0].data.dept.id === 'xxg'
+
+# 医院导航：系统地图不可用 → 弹地址与交通；拨号不可用 → 弹号码
+eval wx.reLaunch({ url: '/pages/navi/navi?dept=yk' })
+expect getCurrentPages().slice(-1)[0].data.open === 2
+exists .dp-on
+tap .go-map
+modal?
+modal ok
+tap .go-call
+modal?
+modal ok
+shot target/_polish_shots/navi.png
+tapn 0 .fl-h
+expect getCurrentPages().slice(-1)[0].data.open === 7
+
+# 住院：预交金不足提醒 → 补缴 2000 → 出院结算退余额
+eval wx.reLaunch({ url: '/pages/inpatient/inpatient' })
+expect getCurrentPages().slice(-1)[0].data.low === true
+tapn 2 .amt
+tap .topup
+modal?
+modal ok
+wait 300
+expect wx.getStorageSync('hs_inpatient').deposits.length === 3
+toast 已到账
+expect getCurrentPages().slice(-1)[0].data.low === false
+tapn 0 .day-h
+expect getCurrentPages().slice(-1)[0].data.openK === getCurrentPages().slice(-1)[0].data.days[0].k
+wait 1600
+shot target/_polish_shots/inpatient.png
+tap .settle-btn
+modal?
+modal ok
+expect wx.getStorageSync('hs_inpatient').status === 'out'
+expect wx.getStorageSync('hs_bills').some(function (b) { return b.kind === 'settle' && b.status === 'refund'; })
+shot target/_polish_shots/inpatient-out.png
+
+# 我的：计数与入口、电子就诊卡、客服拨号
+eval wx.switchTab({ url: '/pages/mine/mine' })
+route pages/mine/mine
+expect getCurrentPages().slice(-1)[0].data.reportCount === 4 && getCurrentPages().slice(-1)[0].data.patientCount === 3
+tap .qr-btn
+exists .sheet
+tapn 1 .person
+expect getCurrentPages().slice(-1)[0].data.cardIdx === 1
+shot target/_polish_shots/mine-card.png
+tap .card-ok
+absent .sheet
+tap .m-call
+modal?
+modal ok
+tapn 3 .num
+route pages/reports/reports
+back
+tapn 2 .num
+route pages/doctors/doctors
+expect getCurrentPages().slice(-1)[0].data.mode === 'follow'
+back
+tapn 6 .m-item
+route pages/inpatient/inpatient
+back
+wait 1600
+shot target/_polish_shots/mine.png
+noerr

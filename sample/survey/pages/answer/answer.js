@@ -9,7 +9,29 @@ Page({
     this.answers = {};
     wx.setNavigationBarTitle({ title: sv.kind === '投票' ? '参与投票' : '填写问卷' });
     this.setData({ sv, total: sv.questions.length });
+    // 已截止：不让作答，直接去看结果
+    if (data.isEnded(sv)) {
+      this.show(0);
+      wx.showModal({
+        title: '已截止', content: '「' + sv.title + '」已于 ' + sv.deadline + ' 截止，不能再作答', showCancel: false, confirmText: '看结果', confirmColor: '#6C5CE7',
+        success: () => wx.redirectTo({ url: '/pages/result/result?id=' + sv.id })
+      });
+      return;
+    }
+    // 上次没答完：接着答
+    const draft = data.getDraft(sv.id);
+    if (draft && draft.answers) {
+      this.answers = draft.answers;
+      this.show(Math.min(draft.step || 0, sv.questions.length - 1));
+      wx.showToast({ title: '已恢复上次的作答', icon: 'none' });
+      return;
+    }
     this.show(0);
+  },
+  // 每次改答案 / 翻题都落一份草稿（提交成功后清掉）
+  keep() {
+    if (this.submitted || data.isEnded(this.data.sv)) return;
+    data.saveDraft(this.data.sv.id, { step: this.data.step, answers: this.answers });
   },
   show(step) {
     const q = this.data.sv.questions[step];
@@ -21,8 +43,9 @@ Page({
       multiCount: sel.length,
       rateWord: q.type === 'rate' && typeof cur === 'number' ? RATE_WORDS[cur] : '拖动滑块打分'
     });
+    if (Object.keys(this.answers).length) this.keep();
   },
-  set(v) { this.answers[this.data.q.id] = v; },
+  set(v) { this.answers[this.data.q.id] = v; this.keep(); },
   onSingle(e) { const i = e.currentTarget.dataset.idx; this.set(i); this.setData({ cur: i, err: '' }); },
   onMulti(e) {
     const i = e.currentTarget.dataset.idx;
@@ -59,6 +82,8 @@ Page({
     const all = data.getAnswers();
     all[this.data.sv.id] = this.answers;
     wx.setStorageSync('sv_answers', all);
+    this.submitted = true;
+    data.saveDraft(this.data.sv.id, null);
     wx.showToast({ title: '提交成功', icon: 'success' });
     setTimeout(() => wx.redirectTo({ url: '/pages/result/result?id=' + this.data.sv.id + '&fresh=1' }), 700);
   }

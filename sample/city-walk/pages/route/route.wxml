@@ -1,0 +1,23 @@
+<map id="routeMap" class="map" latitude="{{lat}}" longitude="{{lng}}" scale="13" markers="{{markers}}" polyline="{{polyline}}"
+  include-points="{{points}}" bindmarkertap="onMarker"></map>
+<view class="card">
+  <view class="row between">
+    <text class="h">{{stops.length}} 站 · 约 {{total}}</text>
+    <text class="sub">步行约 {{walk}}</text>
+  </view>
+  <view class="stop" wx:for="{{stops}}" wx:key="id">
+    <text class="no">{{index + 1}}</text>
+    <view class="stop-body" data-id="{{item.id}}" bindtap="open">
+      <text class="stop-name">{{item.name}}</text>
+      <text class="sub" wx:if="{{item.leg}}">距上一站 {{item.leg}}</text>
+    </view>
+    <view class="mini" wx:if="{{index > 0}}" data-index="{{index}}" bindtap="up">上移</view>
+    <view class="mini del" data-index="{{index}}" bindtap="remove">移除</view>
+  </view>
+  <view class="empty" wx:if="{{!stops.length}}">还没有地点，去地图上挑几个「加入路线」吧</view>
+</view>
+<view class="ops" wx:if="{{stops.length >= 2}}">
+  <view class="btn-ghost op" bindtap="fit">看全程</view>
+  <view class="btn op" bindtap="play">{{playing ? '游览中…' : '模拟游览'}}</view>
+</view>
+<view style="height: 140rpx;"></view>

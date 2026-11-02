@@ -1,0 +1,26 @@
+<view class="preview">
+  <text class="pv-name">{{name || '未命名纪念日'}}</text>
+  <text class="pv-date">{{dateText}} · 每年提醒</text>
+  <view class="row pv-left"><text class="pv-l">{{left ? '还有' : '就是'}}</text><text class="pv-n">{{left ? left : '今天'}}</text><text wx:if="{{left}}" class="pv-l">天</text></view>
+</view>
+<view class="card form">
+  <view class="f row">
+    <text class="f-l">名称</text>
+    <input id="name{{nameSeq}}" class="f-in f-name" placeholder="例如：妈妈生日" placeholder-class="ph" value="{{name}}" maxlength="10" bindinput="onName" />
+  </view>
+  <view class="quick">
+    <view wx:for="{{quick}}" wx:key="*this" class="q-chip {{name === item ? 'q-on' : ''}}" data-t="{{item}}" bindtap="onQuick"><text>{{item}}</text></view>
+  </view>
+  <picker mode="date" value="{{dateValue}}" bindchange="onDate">
+    <view class="f row f-date"><text class="f-l">日期</text><text class="f-in f-val">{{dateText}}</text><view class="chev"></view></view>
+  </picker>
+  <view class="f row last">
+    <text class="f-l">送什么花</text>
+    <view class="row flex1 kinds">
+      <view wx:for="{{kinds}}" wx:key="key" class="k-chip {{kind === item.key ? 'k-on' : ''}}" data-k="{{item.key}}" bindtap="onKind"><text>{{item.name}}</text></view>
+    </view>
+  </view>
+</view>
+<view class="tip"><text class="muted">打开「我的」页的纪念日提醒后，临近 7 天会在首页提醒你提前订花</text></view>
+<view class="btn-primary save" bindtap="onSave"><text>保存纪念日</text></view>
+<view wx:if="{{id}}" class="del" bindtap="onDelete"><text>删除纪念日</text></view>

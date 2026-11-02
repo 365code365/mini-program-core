@@ -1,0 +1,35 @@
+<view class="empty" wx:if="{{!has}}">
+  <image class="empty-ic" src="/images/ic-trip.png"></image>
+  <text>当前没有进行中的骑行</text>
+  <view class="btn empty-btn" bindtap="goHome">去扫码用车</view>
+</view>
+
+<view class="wrap" wx:else>
+  <map id="rideMap" class="map" latitude="{{cur.latitude}}" longitude="{{cur.longitude}}" scale="17"
+       markers="{{markers}}" polyline="{{polyline}}" enable-rotate="{{false}}"></map>
+  <cover-view class="status {{locked ? 'st-lock' : ''}}">{{locked ? '临时锁车中 · 照常计费' : '骑行中 · ' + name + ' ' + ride.no}}</cover-view>
+  <cover-view class="catchup" wx:if="{{catchUpTip}}">{{catchUpTip}}</cover-view>
+
+  <view class="panel">
+    <view class="dur-box">
+      <text class="dur">{{dur}}</text>
+      <text class="dur-k">骑行时长</text>
+    </view>
+    <view class="stats">
+      <view class="stat"><text class="sv">{{km}}</text><text class="sk">里程（公里）</text></view>
+      <view class="stat"><text class="sv price">{{fee}}</text><text class="sk">费用（元）</text></view>
+      <view class="stat" wx:if="{{ride.type === 'ebike'}}"><text class="sv">{{battery}}%</text><text class="sk">剩余电量</text></view>
+      <view class="stat" wx:else><text class="sv">{{speed}}</text><text class="sk">时速（km/h）</text></view>
+    </view>
+    <view class="disc" wx:if="{{discount > 0}}"><text>骑行卡已抵扣 ¥{{discount}}，结束后自动结算</text></view>
+    <view class="from"><text class="muted">从 {{ride.from}} 出发 · 临时锁车期间不累计里程</text></view>
+
+    <view class="ops">
+      <view class="btn-ghost op" bindtap="onLockTap">{{locked ? '开锁继续骑' : '临时锁车'}}</view>
+      <view class="btn op" bindtap="onEndTap">结束骑行</view>
+    </view>
+    <view class="links">
+      <text class="link" bindtap="onFaultTap">车辆有问题？故障上报</text>
+    </view>
+  </view>
+</view>

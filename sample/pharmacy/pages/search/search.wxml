@@ -1,0 +1,38 @@
+<view class="bar">
+  <view class="box">
+    <text class="ic">⌕</text>
+    <input class="ipt" placeholder="药名、品牌或症状" value="{{kw}}" focus confirm-type="search" bindinput="onInput" bindconfirm="onConfirm"/>
+    <text wx:if="{{kw}}" class="x" bindtap="clear">×</text>
+  </view>
+</view>
+
+<block wx:if="{{!searched}}">
+  <view wx:if="{{history.length}}" class="blk">
+    <view class="blk-h"><text class="blk-t">搜索历史</text><text class="muted" bindtap="clearHistory">清空</text></view>
+    <view class="chips"><text wx:for="{{history}}" wx:key="*this" class="chip" data-k="{{item}}" bindtap="onHot">{{item}}</text></view>
+  </view>
+  <view class="blk">
+    <view class="blk-h"><text class="blk-t">大家都在搜</text></view>
+    <view class="chips"><text wx:for="{{hot}}" wx:key="*this" class="chip {{index < 3 ? 'chip-hot' : ''}}" data-k="{{item}}" bindtap="onHot">{{item}}</text></view>
+  </view>
+</block>
+
+<block wx:else>
+  <view class="sorts">
+    <text class="so {{sort === 'default' ? 'so-on' : ''}}" data-s="default" bindtap="onSort">综合</text>
+    <text class="so {{sort === 'sales' ? 'so-on' : ''}}" data-s="sales" bindtap="onSort">销量</text>
+    <text class="so {{sort === 'price' ? 'so-on' : ''}}" data-s="price" bindtap="onSort">价格从低到高</text>
+  </view>
+  <view wx:if="{{!results.length}}" class="empty">
+    <view class="empty-ic">⌕</view><text class="empty-t">没有找到「{{kw}}」相关的药品</text>
+    <text class="muted">换个关键词试试，或拨打药师热线 0571-87001234</text>
+  </view>
+  <view wx:for="{{results}}" wx:key="id" class="card it" data-id="{{item.id}}" bindtap="openDrug">
+    <image class="it-img" src="{{item.img}}" mode="aspectFill"></image>
+    <view class="it-b">
+      <view class="it-n"><text class="{{item.tagCls}}">{{item.tagText}}</text><text class="it-nt">{{item.brand}} {{item.name}}</text></view>
+      <text class="muted it-d">{{item.ind}}</text>
+      <view class="it-f"><text class="price">¥{{item.from}}</text><text class="add" data-id="{{item.id}}" catchtap="addCart">加入购物车</text></view>
+    </view>
+  </view>
+</block>

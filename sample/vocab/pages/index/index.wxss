@@ -1,0 +1,27 @@
+.hello { margin: 8rpx 0 28rpx; }
+.check { width: 128rpx; height: 64rpx; border-radius: 32rpx; background: #4f6bed; display: flex; align-items: center; justify-content: center; }
+.check-done { background: #e9edfd; }
+.check-tx { font-size: 26rpx; color: #ffffff; }
+.check-done .check-tx { color: #4f6bed; }
+.remind { background: #fff4e5; border-radius: 16rpx; padding: 18rpx 24rpx; margin-bottom: 24rpx; }
+.remind-tx { font-size: 24rpx; color: #b26a00; }
+.today { display: flex; flex-direction: row; align-items: center; }
+.today-right { flex: 1; margin-left: 36rpx; }
+.kv { padding: 12rpx 0; }
+.kv-v { font-size: 28rpx; font-weight: bold; }
+.book-cover { width: 120rpx; height: 160rpx; border-radius: 12rpx; }
+.book-info { flex: 1; margin-left: 24rpx; }
+.book-lv { margin: 6rpx 0 16rpx; }
+.book-pg { margin-bottom: 10rpx; }
+.main-btn { margin: 8rpx 0 20rpx; }
+.two { justify-content: space-between; margin-bottom: 24rpx; }
+.half { width: 47%; }
+.grid { justify-content: space-between; padding: 28rpx 16rpx; }
+.cell { width: 25%; display: flex; flex-direction: column; align-items: center; }
+.cell-ic { width: 84rpx; height: 84rpx; border-radius: 26rpx; display: flex; align-items: center; justify-content: center; margin-bottom: 12rpx; }
+.cell-ic-tx { color: #ffffff; font-size: 32rpx; font-weight: bold; }
+.c1 { background: linear-gradient(135deg, #7b8cff, #4f6bed); }
+.c2 { background: linear-gradient(135deg, #3fd0b4, #13a89e); }
+.c3 { background: linear-gradient(135deg, #ff9a7a, #f0566a); }
+.c4 { background: linear-gradient(135deg, #ffc35a, #ff8a4c); }
+.cell-tx { font-size: 24rpx; color: #4a5060; }

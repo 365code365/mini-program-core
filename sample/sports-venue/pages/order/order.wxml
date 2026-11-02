@@ -1,0 +1,58 @@
+<view wx:if="{{!o}}" class="empty">
+  <view class="empty-ic"><text class="empty-ic-t">?</text></view>
+  <text class="empty-t">订单不存在或已清除</text>
+  <view class="btn-ghost empty-btn" bindtap="toOrders"><text>返回订单列表</text></view>
+</view>
+<block wx:else>
+  <view class="head head-{{o.st}} col">
+    <view class="row">
+      <text class="h-t">{{o.stText}}</text>
+      <text wx:if="{{left}}" class="h-left">{{left}}</text>
+    </view>
+    <text class="h-s">{{head}}</text>
+  </view>
+  <view class="card top">
+    <view class="row">
+      <image class="v-img" src="{{o.photo}}" mode="aspectFill"></image>
+      <view class="col flex1 v-info">
+        <text class="v-n">{{o.venueName}}</text>
+        <text class="muted">{{v.addr}}</text>
+      </view>
+    </view>
+    <view class="row v-ops">
+      <view class="v-op" bindtap="nav"><text>导航</text></view>
+      <view class="v-op" bindtap="call"><text>电话</text></view>
+    </view>
+  </view>
+  <view class="card">
+    <text class="sec-title">{{o.dateText}} · {{o.sportName}}</text>
+    <view wx:for="{{o.segments}}" wx:key="text" class="seg row">
+      <text class="seg-c">{{item.courtLabel}}</text>
+      <text class="seg-t">{{item.text}}</text>
+      <view class="flex1"></view>
+      <text class="muted">{{item.hours}} 小时 · ¥{{item.amount}}</text>
+    </view>
+    <view class="kv row"><text class="muted flex1">场地费</text><text>¥{{o.total}}</text></view>
+    <view class="kv row"><text class="muted flex1">支付方式</text><text>{{o.payText}}</text></view>
+    <view class="kv row"><text class="muted flex1">{{o.st === 'cancelled' ? '已退' : '实付'}}</text><text class="price">{{o.payMethod === 'times' ? o.hours + ' 次' : '¥' + o.paid}}</text></view>
+    <view class="kv row" wx:if="{{o.cancelReason}}"><text class="muted flex1">取消原因</text><text>{{o.cancelReason}}</text></view>
+  </view>
+  <view class="card">
+    <view class="kv row"><text class="muted flex1">联系人</text><text>{{o.contact.name}} {{o.contact.phone}}</text></view>
+    <view class="kv row" bindtap="copy"><text class="muted flex1">订单号</text><text>{{o.id}} 复制</text></view>
+    <view class="kv row"><text class="muted flex1">下单时间</text><text>{{created}}</text></view>
+  </view>
+  <view class="bottom-space"></view>
+  <view class="foot">
+    <block wx:if="{{o.st === 'paid'}}">
+      <text class="f-link" bindtap="cancel">取消订单</text>
+      <view class="flex1"></view>
+      <view class="btn-ghost f-btn" bindtap="toTeam"><text>发起约球</text></view>
+      <view class="btn-main f-main" bindtap="toPass"><text>入场码</text></view>
+    </block>
+    <block wx:else>
+      <view class="flex1"></view>
+      <view class="btn-main f-main" bindtap="again"><text>再订一场</text></view>
+    </block>
+  </view>
+</block>

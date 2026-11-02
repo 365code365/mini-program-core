@@ -1,0 +1,66 @@
+<view class="netbar" wx:if="{{!net.isConnected}}"><text class="netbar-tx">网络不可用，当前显示的是上次加载的油价</text></view>
+<view class="top">
+  <view class="loc" bindtap="relocate">
+    <text class="loc-ic">📍</text>
+    <text class="loc-tx">{{loc.name}}</text>
+    <text class="loc-tip">{{loc.fallback ? '定位失败，点击重试' : '重新定位'}}</text>
+  </view>
+  <text class="net">{{netText}}</text>
+</view>
+
+<image class="banner" src="/images/misc/banner.jpg" mode="scaleToFill" bindtap="goCoupons"></image>
+
+<view class="filter">
+  <picker mode="selector" range="{{oils}}" value="{{oilIndex}}" bindchange="onOil">
+    <view class="oil"><text class="oil-tx">{{oils[oilIndex]}}</text><text class="oil-arrow">▾</text></view>
+  </picker>
+  <text class="sort {{sort === 'distance' ? 'sort-on' : ''}}" data-s="distance" bindtap="setSort">距离最近</text>
+  <text class="sort {{sort === 'price' ? 'sort-on' : ''}}" data-s="price" bindtap="setSort">价格最低</text>
+  <view class="mode" bindtap="toggleMode"><text class="mode-tx">{{mode === 'list' ? '地图模式' : '列表模式'}}</text></view>
+</view>
+
+<view wx:if="{{mode === 'map'}}" class="mapwrap">
+  <map id="stationMap" class="map" latitude="{{loc.latitude}}" longitude="{{loc.longitude}}" scale="13" markers="{{markers}}" show-location="{{true}}"
+    bindmarkertap="onMarker" bindcallouttap="onMarker" bindregionchange="onRegion"></map>
+  <scroll-view class="map-cards" scroll-x="{{true}}" show-scrollbar="{{false}}" scroll-into-view="{{intoView}}" scroll-with-animation="{{true}}">
+    <view class="map-row">
+      <view class="mc {{item.id === activeId ? 'mc-on' : ''}}" wx:for="{{list}}" wx:key="id" id="mc-{{item.id}}" data-id="{{item.id}}" bindtap="pickCard">
+        <view class="row"><image class="mc-logo" src="{{item.logo}}" mode="aspectFit"></image><text class="mc-name">{{item.short}}</text></view>
+        <view class="row between mc-b">
+          <text class="price">¥{{item.ours}}</text>
+          <text class="muted">{{item.distText}}</text>
+        </view>
+        <view class="row mc-ops">
+          <text class="mc-op" data-id="{{item.id}}" catchtap="navigate">导航</text>
+          <text class="mc-op mc-op-main" data-id="{{item.id}}" catchtap="refuel">加油</text>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+</view>
+
+<view wx:else>
+  <view class="empty" wx:if="{{!list.length}}">
+    <image class="empty-img" src="/images/misc/empty.png" mode="aspectFit"></image>
+    <text class="empty-tx">附近 10 公里内没有供应 {{oils[oilIndex]}} 的油站</text>
+  </view>
+  <view class="card st" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="openStation" hover-class="btn-hover">
+    <image class="st-logo" src="{{item.logo}}" mode="aspectFit"></image>
+    <view class="st-mid">
+      <text class="st-name">{{item.name}}</text>
+      <text class="muted st-addr">{{item.address}}</text>
+      <view class="row st-tags">
+        <text class="tag" wx:if="{{item.cheapest}}">附近最低</text>
+        <text class="tag tag-blue">{{item.hours}}</text>
+        <text class="muted">{{item.distText}} · {{item.rating}}分</text>
+      </view>
+    </view>
+    <view class="st-right">
+      <view class="row st-p"><text class="price st-yen">¥</text><text class="price st-ours">{{item.ours}}</text></view>
+      <text class="st-list">挂牌 ¥{{item.listPrice}}</text>
+      <text class="st-cut">降 {{item.cut}}</text>
+      <view class="st-go" data-id="{{item.id}}" catchtap="refuel" hover-class="btn-hover"><text class="st-go-tx">去加油</text></view>
+    </view>
+  </view>
+</view>
+<view class="tabbar-gap"></view>

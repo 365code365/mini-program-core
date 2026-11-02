@@ -1,0 +1,263 @@
+# 萌宠家：每页能开 + 宠物档案增删改（上限 5 只）、健康记录增删 / 到期提醒、记体重；服务预约（新客立减 / 洗护卡 / 寄养查疫苗）→ 支付 → 取消退款 / 完成后档案自动更新 / 评价；商城下单 → 待付款 → 支付 → 发货 → 收货 → 评价 / 取消退款 / 再来一单；收藏；地址；地区；客服
+smoke pages/goods/goods?id=g2 pages/booking/booking?cat=med&svc=s6 pages/pet-edit/pet-edit?id=p1 pages/record-edit/record-edit?pet=p1 pages/orders/orders?type=service pages/order-detail/order-detail?id=none pages/address/address?select=1 pages/address-edit/address-edit?id=a1
+
+open
+expect getCurrentPages()[0].data.pets.length === 2 && getCurrentPages()[0].data.canAdd === true
+expect getCurrentPages()[0].data.pets[0].remind.due === 2
+shot target/_polish_shots/index.png
+# 地区：换到古荡，宠物医院最近
+tap .loc
+sheet 2 3
+expect getCurrentPages()[0].data.area === '杭州 · 古荡' && getCurrentPages()[0].data.stores[0].id === 'st3'
+toast 已切换
+# 医疗入口：24h 急诊拨号（宿主不能拨号 → 弹号码）
+tapn 2 .en
+sheet 2 3
+modal?
+modal ok
+tapn 0 .st-m
+modal?
+modal ok
+
+# 宠物档案：到期提醒、添加第 3 只（校验）、记一条疫苗、记体重、编辑、删除
+eval wx.switchTab({ url: '/pages/pet/pet' })
+route pages/pet/pet
+expect getCurrentPages().slice(-1)[0].data.records.length === 5 && getCurrentPages().slice(-1)[0].data.records[0].status === 'due'
+shot target/_polish_shots/pet.png
+tap .add
+route pages/pet-edit/pet-edit
+tap .save
+toast 起个名字
+type .f-name => 麻薯
+blur
+tapn 1 .chip
+tapn 4 .chip
+type .f-breed => 比熊
+blur
+picker .f-birth
+pickrow 0 3 -2
+pickok
+# 面板收起动画按墙上时钟走，机器忙时 300ms 不够：等它收完再点下半屏
+wait 400
+expect getCurrentPages().slice(-1)[0].data.form.birth.length === 10
+type .f-weight => 5.2
+blur
+shot target/_polish_shots/pet-add.png
+tap .save
+wait 900
+route pages/pet/pet
+expect getCurrentPages().slice(-1)[0].data.pet.name === '麻薯' && getCurrentPages().slice(-1)[0].data.pets.length === 3
+expect wx.getStorageSync('pet_pets')[2].kind === '狗' && wx.getStorageSync('pet_pets')[2].gender === '母' && wx.getStorageSync('pet_pets')[2].weight === 5.2
+count 0 .tl-i
+tap .add-rec
+route pages/record-edit/record-edit
+tapn 0 .q
+expect getCurrentPages().slice(-1)[0].data.name === '犬八联'
+tapn 2 .chip.sm
+expect getCurrentPages().slice(-1)[0].data.cycle === 180
+shot target/_polish_shots/record-add.png
+tap .save
+wait 900
+route pages/pet/pet
+count 1 .tl-i
+expect wx.getStorageSync('pet_pets')[2].records[0].name === '犬八联' && wx.getStorageSync('pet_pets')[2].records[0].cycle === 180
+tap .add-w
+route pages/record-edit/record-edit
+type .f-weight => 5.6
+blur
+tap .save
+wait 900
+route pages/pet/pet
+expect getCurrentPages().slice(-1)[0].data.pet.weight === 5.6 && getCurrentPages().slice(-1)[0].data.weights.length === 1
+tap .pf-edit
+route pages/pet-edit/pet-edit
+tap switch
+tapn 3 .color
+tap .save
+wait 900
+expect wx.getStorageSync('pet_pets')[2].neutered === true && wx.getStorageSync('pet_pets')[2].color === getCurrentPages()[0].data.pet.color
+# 上限 5 只
+eval (function () { var l = wx.getStorageSync('pet_pets'); while (l.length < 5) { var p = JSON.parse(JSON.stringify(l[0])); p.id = 'px' + l.length; p.name = '小' + l.length; l.push(p); } wx.setStorageSync('pet_pets', l); getCurrentPages().slice(-1)[0].load(); })()
+tap .add
+toast 最多添加 5 只
+eval (function () { wx.setStorageSync('pet_pets', wx.getStorageSync('pet_pets').slice(0, 3)); getCurrentPages().slice(-1)[0].load(); })()
+# 删除麻薯
+tap .pf-edit
+tap .del
+modal?
+modal ok
+wait 900
+route pages/pet/pet
+expect getCurrentPages().slice(-1)[0].data.pets.length === 2 && getCurrentPages().slice(-1)[0].data.pet.id === 'p1'
+# 团子：把过期的体外驱虫标记为今天已完成（猫三联留着，后面寄养要用它查疫苗）、删除一条记录
+tapn 1 .act-done
+modal?
+expect __ui.slice(-1)[0].content.indexOf('体外驱虫') > 0
+modal ok
+expect getCurrentPages().slice(-1)[0].data.remind.due === 1
+tapn 4 .tl-head
+sheet 1 2
+modal ok
+count 4 .tl-i
+toast 已删除
+
+# 服务预约 A：新客基础洗护立减 30 → 支付 → 取消，原路退回
+eval wx.navigateTo({ url: '/pages/booking/booking?cat=care&svc=s1' })
+route pages/booking/booking
+expect getCurrentPages().slice(-1)[0].data.newbieCut === 30 && getCurrentPages().slice(-1)[0].data.pay === 58
+shot target/_polish_shots/booking.png
+tap .bar-btn
+modal?
+modal ok
+wait 1000
+route pages/order-detail/order-detail
+expect wx.getStorageSync('pet_orders')[0].status === 'booked' && wx.getStorageSync('pet_orders')[0].pay === 58
+exists .code-v
+shot target/_polish_shots/order-service.png
+tap .op-cancel
+modal?
+modal ok
+expect wx.getStorageSync('pet_orders')[0].status === 'cancel' && wx.getStorageSync('pet_orders')[0].refund === 58
+
+# 服务预约 B：用洗护卡抵扣（实付 0）
+eval wx.redirectTo({ url: '/pages/booking/booking?cat=care&svc=s1' })
+tapn 1 .pay-way
+expect getCurrentPages().slice(-1)[0].data.payBy === 'card' && getCurrentPages().slice(-1)[0].data.pay === 0
+tap .bar-btn
+modal?
+modal ok
+wait 1000
+route pages/order-detail/order-detail
+expect wx.getStorageSync('pet_orders')[0].cardUsed === true && wx.getStorageSync('pet_orders')[0].status === 'booked'
+
+# 服务预约 C：寄养要疫苗有效 → 先去约疫苗（古荡宠物医院）→ 到了时间自动完成，档案里的猫三联顺延 → 评价
+eval wx.redirectTo({ url: '/pages/booking/booking?cat=stay&pet=p1' })
+route pages/booking/booking
+tap .n-inc
+expect getCurrentPages().slice(-1)[0].data.nights === 2 && getCurrentPages().slice(-1)[0].data.pay === 178
+tap .bar-btn
+modal?
+expect __ui.slice(-1)[0].title === '疫苗已过期'
+modal ok
+wait 600
+route pages/booking/booking
+expect getCurrentPages().slice(-1)[0].data.cat === 'med' && getCurrentPages().slice(-1)[0].data.stores[0].id === 'st3' && getCurrentPages().slice(-1)[0].data.pay === 120
+tap .bar-btn
+modal ok
+wait 1000
+route pages/order-detail/order-detail
+eval (function () { var l = wx.getStorageSync('pet_orders'); var d = new Date(Date.now() - 2 * 86400000); var p = function (n) { return n < 10 ? '0' + n : '' + n; }; l[0].date = d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); wx.setStorageSync('pet_orders', l); getCurrentPages().slice(-1)[0].load(); })()
+expect wx.getStorageSync('pet_orders')[0].status === 'done'
+expect wx.getStorageSync('pet_pets')[0].records.filter(function (r) { return r.name === '猫三联 第 3 针'; })[0].date === wx.getStorageSync('pet_orders')[0].date
+tapn 3 .star
+type .rate-in => 医生很耐心，打针一点没叫
+blur
+tap .rate-btn
+expect wx.getStorageSync('pet_orders')[0].rating.stars === 4
+shot target/_polish_shots/order-rated.png
+
+# 商城 E：结算 → 没付（待付款）→ 去支付 → 2 分钟后发货 → 确认收货 → 评价
+eval wx.reLaunch({ url: '/pages/cart/cart' })
+route pages/cart/cart
+expect getCurrentPages().slice(-1)[0].data.total === 198.8 && getCurrentPages().slice(-1)[0].data.freight === 0
+tap .addr
+route pages/address/address
+tapn 1 .addr
+route pages/cart/cart
+expect getCurrentPages().slice(-1)[0].data.addr.text.indexOf('文三路') > 0
+shot target/_polish_shots/cart.png
+tap .pay
+modal?
+modal cancel
+wait 1000
+route pages/order-detail/order-detail
+expect wx.getStorageSync('pet_orders')[0].kind === 'goods' && wx.getStorageSync('pet_orders')[0].status === 'unpaid'
+expect wx.getStorageSync('pet_cart').length === 0
+tap .op-pay
+modal ok
+wait 300
+expect wx.getStorageSync('pet_orders')[0].status === 'paid'
+eval (function () { var l = wx.getStorageSync('pet_orders'); l[0].paidAt -= 3 * 60000; wx.setStorageSync('pet_orders', l); getCurrentPages().slice(-1)[0].load(); })()
+expect getCurrentPages().slice(-1)[0].data.st.text === '待收货'
+tap .op-confirm
+modal ok
+expect wx.getStorageSync('pet_orders')[0].status === 'done'
+tap .rate-btn
+expect wx.getStorageSync('pet_orders')[0].rating.stars === 5
+shot target/_polish_shots/order-goods.png
+
+# 商城 F：立即购买 → 付款 → 待发货时取消，原路退回 → 再来一单
+eval wx.reLaunch({ url: '/pages/goods/goods?id=g2' })
+tap .b-buy
+route pages/cart/cart
+expect getCurrentPages().slice(-1)[0].data.total === 77
+tap .pay
+modal ok
+wait 1000
+route pages/order-detail/order-detail
+tap .op-cancel
+modal ok
+expect wx.getStorageSync('pet_orders')[0].status === 'cancel' && wx.getStorageSync('pet_orders')[0].refund === 77
+tap .op-again
+route pages/cart/cart
+expect getCurrentPages().slice(-1)[0].data.items.length === 1
+
+# 收藏
+eval wx.reLaunch({ url: '/pages/goods/goods?id=g5' })
+tap .fav
+expect wx.getStorageSync('pet_favs').indexOf('g5') >= 0
+eval wx.reLaunch({ url: '/pages/mine/mine' })
+route pages/mine/mine
+expect getCurrentPages().slice(-1)[0].data.favCount === 1
+expect getCurrentPages().slice(-1)[0].data.points === 2998 && getCurrentPages().slice(-1)[0].data.cardLeft === 2 && getCurrentPages().slice(-1)[0].data.bookedCount === 1
+shot target/_polish_shots/mine.png
+tapn 3 .sti
+route pages/favs/favs
+count 1 .fv
+tap .fv-add
+toast 已加入购物车
+tap .fv-del
+count 0 .fv
+back
+
+# 我的：订单入口、预约取消、地址新增、客服
+tapn 0 .o
+route pages/orders/orders
+expect getCurrentPages().slice(-1)[0].data.type === 'goods' && getCurrentPages().slice(-1)[0].data.tab === 'unpaid'
+tapn 0 .tab
+count 2 .od
+tapn 1 .ty
+expect getCurrentPages().slice(-1)[0].data.type === 'service'
+count 3 .od
+shot target/_polish_shots/orders.png
+back
+tap .bk-x
+modal?
+modal ok
+expect getCurrentPages().slice(-1)[0].data.bookedCount === 0 && getCurrentPages().slice(-1)[0].data.cardLeft === 3
+tap .m-addr
+route pages/address/address
+tap .add-addr
+route pages/address-edit/address-edit
+type .f-name => 林大满
+type .f-phone => 13600002222
+blur
+picker .f-region
+pickok
+# 面板收起动画按墙上时钟走，机器忙时 300ms 不够：等它收完再点下半屏
+wait 400
+type .f-detail => 古墩路 83 号 3 幢 501
+blur
+tap .save
+wait 700
+route pages/address/address
+count 3 .addr
+back
+tap .m-call
+sheet 0 2
+modal?
+modal ok
+tap .hd-m
+modal?
+modal ok
+noerr

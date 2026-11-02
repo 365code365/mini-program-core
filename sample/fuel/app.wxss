@@ -1,0 +1,19 @@
+page { background: #f4f6f8; color: #1d2329; font-size: 28rpx; }
+.card { background: #ffffff; border-radius: 20rpx; margin: 20rpx 24rpx 0; padding: 24rpx; }
+.row { display: flex; flex-direction: row; align-items: center; }
+.between { justify-content: space-between; }
+.muted { color: #8b939b; font-size: 24rpx; }
+.price { color: #f2542d; font-weight: bold; }
+.sec-title { font-size: 31rpx; font-weight: bold; }
+.btn { background: #13a874; color: #ffffff; border-radius: 40rpx; font-size: 28rpx; text-align: center; height: 80rpx; line-height: 80rpx; }
+.btn-ghost { background: #ffffff; color: #13a874; border: 2rpx solid #13a874; border-radius: 40rpx; font-size: 26rpx; text-align: center; height: 64rpx; line-height: 60rpx; padding: 0 28rpx; }
+.btn-hover { opacity: 0.75; }
+.chip { font-size: 24rpx; color: #4d565f; background: #f1f3f5; border-radius: 26rpx; padding: 8rpx 24rpx; margin: 0 14rpx 14rpx 0; }
+.chip-on { color: #13a874; background: #e3f6ee; font-weight: bold; }
+.tag { font-size: 20rpx; color: #13a874; background: #e3f6ee; border-radius: 6rpx; padding: 2rpx 10rpx; margin-right: 10rpx; }
+.empty { display: flex; flex-direction: column; align-items: center; padding: 80rpx 0; }
+.empty-img { width: 240rpx; height: 180rpx; }
+.empty-tx { color: #8b939b; font-size: 26rpx; margin-top: 16rpx; }
+.netbar { background: #fff4e5; padding: 14rpx 28rpx; display: flex; flex-direction: row; align-items: center; }
+.netbar-tx { color: #c27400; font-size: 24rpx; }
+.tabbar-gap { height: 40rpx; }

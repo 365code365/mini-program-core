@@ -1,0 +1,19 @@
+.head { background: linear-gradient(135deg, #1677ff, #3d9bff); padding: 36rpx 32rpx 44rpx; margin-bottom: 20rpx; }
+.head-canceled { background: linear-gradient(135deg, #8f95a3, #b3b8c2); }
+.head-ongoing { background: linear-gradient(135deg, #ff8a1f, #ffaa55); }
+.h-st { display: block; color: #ffffff; font-size: 38rpx; font-weight: bold; }
+.h-sub { display: block; color: rgba(255, 255, 255, 0.88); font-size: 24rpx; margin-top: 8rpx; }
+.h-amt { display: block; color: #ffffff; font-size: 60rpx; font-weight: bold; margin-top: 16rpx; white-space: nowrap; }
+.cells { padding: 0 24rpx; }
+.lot-name { font-weight: bold; }
+.off { color: #ff5a1f; }
+.pay { color: #ff5a1f; font-weight: bold; }
+.copy { font-size: 24rpx; color: #1677ff; margin-left: 16rpx; }
+.ops { margin: 0 24rpx; }
+.op { flex: 1; background: #ffffff; border-radius: 16rpx; height: 88rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; font-size: 28rpx; color: #1677ff; margin-right: 20rpx; }
+.op-call { margin-right: 0; }
+.btns { padding: 28rpx 32rpx 60rpx; }
+.btn-ghost { height: 88rpx; line-height: 88rpx; text-align: center; border-radius: 44rpx; border: 2rpx solid #f2453d; color: #f2453d; font-size: 30rpx; }
+.missing { padding-top: 200rpx; }
+.miss-t { display: block; margin-bottom: 40rpx; }
+.miss-btn { margin: 0 120rpx; }

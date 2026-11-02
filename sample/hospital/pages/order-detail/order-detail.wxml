@@ -1,0 +1,79 @@
+<view wx:if="{{order}}">
+  <view class="head">
+    <view class="row between">
+      <text class="h-status">{{st.status}}</text>
+      <text wx:if="{{st.stage >= 0 && st.stage < 3}}" class="h-no">第 {{order.no}} 号</text>
+    </view>
+    <text class="h-tip">{{st.tip}}</text>
+    <view wx:if="{{steps.length}}" class="h-steps row">
+      <view wx:for="{{steps}}" wx:key="name" class="h-step {{item.done ? 'h-step-on' : ''}}">
+        <view class="h-bar"></view>
+        <text class="h-step-tx">{{item.name}}</text>
+      </view>
+    </view>
+    <view wx:if="{{st.ahead}}" class="queue row">
+      <text class="q-k">前面还有</text>
+      <text class="q-v">{{st.ahead}}</text>
+      <text class="q-k">人 · 预计 {{st.ahead}} 分钟后叫号</text>
+    </view>
+  </view>
+  <view wx:if="{{st.stage >= 0 && st.stage < 3}}" class="card code row">
+    <view class="qr">
+      <view class="qf qf1"><view class="qi"></view></view>
+      <view class="qf qf2"><view class="qi"></view></view>
+      <view class="qf qf3"><view class="qi"></view></view>
+      <view class="qd" wx:for="{{qr}}" wx:key="k" style="left: {{item.x}}rpx; top: {{item.y}}rpx;"></view>
+    </view>
+    <view class="code-r">
+      <text class="code-t">电子就诊凭证</text>
+      <text class="muted code-s">到院后在诊区自助机扫码签到、取号</text>
+      <text class="code-no">{{order.id}}</text>
+    </view>
+  </view>
+  <view class="card">
+    <text class="sec-title">就诊信息</text>
+    <view class="kv"><text class="k">就诊人</text><text class="v">{{order.patient}}</text></view>
+    <view class="kv"><text class="k">就诊科室</text><text class="v">{{order.dept}}</text></view>
+    <view class="kv"><text class="k">医生</text><text class="v">{{order.doctor}} {{order.title}}</text></view>
+    <view class="kv"><text class="k">就诊时间</text><text class="v">{{order.date}} {{order.time}}</text></view>
+    <view class="kv" bindtap="onNavi"><text class="k">就诊地点</text><view class="row"><text class="v">{{order.room}}</text><text class="go">导航</text></view></view>
+    <view class="kv"><text class="k">医保类型</text><text class="v">{{payType}}</text></view>
+    <view class="kv" wx:if="{{order.desc}}"><text class="k">病情描述</text><text class="v desc">{{order.desc}}</text></view>
+  </view>
+  <view wx:if="{{bill}}" class="card">
+    <view class="row between">
+      <text class="sec-title">处方与检查</text>
+      <text class="b-st {{bill.status === 'unpaid' ? 'b-unpaid' : ''}}">{{bill.status === 'unpaid' ? '待缴费' : '已缴费'}}</text>
+    </view>
+    <view class="kv" wx:for="{{bill.items}}" wx:key="name"><text class="k">{{item.cat}} · {{item.name}}</text><text class="v">¥{{item.price}} ×{{item.qty}}</text></view>
+    <view class="kv"><text class="k">合计（医保统筹 ¥{{bill.insured}}）</text><text class="v price">自付 ¥{{bill.self}}</text></view>
+    <view class="b-ops row">
+      <view wx:if="{{bill.status === 'unpaid'}}" class="mini pri" bindtap="onBills"><text>去缴费</text></view>
+      <view wx:elif="{{reports}}" class="mini" bindtap="onReports"><text>查看报告（{{reports}} 份）</text></view>
+    </view>
+  </view>
+  <view class="card">
+    <text class="sec-title">订单信息</text>
+    <view class="kv"><text class="k">挂号单号</text><view class="row"><text class="v">{{order.id}}</text><text class="copy" bindtap="onCopy">复制</text></view></view>
+    <view class="kv" wx:if="{{created}}"><text class="k">下单时间</text><text class="v">{{created}}</text></view>
+    <view class="kv"><text class="k">挂号费</text><text class="v">¥{{order.fee}}（微信支付）</text></view>
+    <view class="kv" wx:if="{{order.refund}}"><text class="k">退款</text><text class="v price">¥{{order.refund}} 已原路退回</text></view>
+  </view>
+  <view style="height: 200rpx;"></view>
+  <view class="bar">
+    <block wx:if="{{order.status === 'wait'}}">
+      <view class="bar-btn ghost op-cancel" bindtap="onCancel"><text>取消预约</text></view>
+      <view class="btn-primary bar-btn op-checkin" bindtap="onCheckin"><text>就诊签到</text></view>
+    </block>
+    <block wx:elif="{{order.status === 'checked'}}">
+      <view class="bar-btn ghost op-call" bindtap="onCall"><text>联系医院</text></view>
+      <view class="btn-primary bar-btn op-navi" bindtap="onNavi"><text>院内导航</text></view>
+    </block>
+    <block wx:else>
+      <view class="bar-btn ghost op-again" bindtap="onAgain"><text>再次挂号</text></view>
+      <view wx:if="{{st.unpaid}}" class="btn-primary bar-btn op-pay" bindtap="onBills"><text>去缴费</text></view>
+      <view wx:else class="btn-primary bar-btn op-call" bindtap="onCall"><text>联系医院</text></view>
+    </block>
+  </view>
+</view>
+<view wx:else class="empty"><text>挂号单不存在或已被清理</text></view>

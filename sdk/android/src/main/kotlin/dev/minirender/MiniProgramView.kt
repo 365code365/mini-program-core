@@ -86,7 +86,12 @@ class MiniProgramView @JvmOverloads constructor(
     )
     /** 底部留给系统导航栏的那一截（NavBarReserve.kt）：引擎只画上面那部分 */
     private val navReserve = NavBarReserve(this)
-    private val sameLayer = SameLayerViews(session) { resources.displayMetrics.density }
+    private val sameLayer = SameLayerViews(context, { b -> session.run(b) }) { resources.displayMetrics.density }.also {
+        // SDK 自带的地图（瓦片 + 标记 / 折线 / 手势 / MapContext，MiniMapView.kt）；宿主登记同名的就用宿主的
+        it.factories["map"] = { MiniMapView() }
+    }
+    /** `<web-view>`：系统 WebView 盖在画面上（MiniWebViews.kt） */
+    private val webViews by lazy { MiniWebViews(this) { b -> session.run(b) } }
 
     /** SurfaceView 的建 / 换 / 定尺寸（MiniSurfaceHost.kt，只在主线程读写） */
     private val surfaces: MiniSurfaceHost by lazy { MiniSurfaceHost(this, session) }
@@ -118,6 +123,12 @@ class MiniProgramView @JvmOverloads constructor(
      * false = 引擎自己软解（openh264，手机上没有声音、耗 CPU）
      */
     var sameLayerVideo = true
+
+    /**
+     * `<web-view>` 由 SDK 用系统 WebView 承载（默认开，`open` 之前设）：铺满页面，网页里的 JSSDK（`wx.miniProgram.*`）、
+     * postMessage → `bindmessage`、网页标题当导航栏标题、返回键先让网页后退。关掉的话 web-view 画占位
+     */
+    var webView = true
 
     /**
      * 替宿主把窗口铺满整屏（透明状态栏 / 导航条、刘海区也画；默认开，挂到窗口时生效）：引擎按 insets 算状态栏高度、
@@ -205,6 +216,7 @@ class MiniProgramView @JvmOverloads constructor(
     /** 打开一个解包后的小程序目录。可指定起始页（深链）。一个视图只开一个小程序 */
     fun open(dir: File, route: String? = null) {
         appDir = dir
+        sameLayer.appDir = dir
         startRoute = route
         if (width > 0 && height > 0) createEngine()
     }
@@ -228,7 +240,7 @@ class MiniProgramView @JvmOverloads constructor(
      * 注意这是同步等结果的（要立刻决定 `finish()` 还是不动），所以内部做了一次
      * 跨线程等待；返回键是低频操作，代价可以忽略。
      */
-    fun goBack(): Boolean = session.call(false) { MiniEngine.nativeBack(it) }
+    fun goBack(): Boolean = webViews.goBack() || session.call(false) { MiniEngine.nativeBack(it) }
 
     /**
      * 回前台。所在 Activity 的 resume / pause / destroy 与内存告警 SDK 已经自己跟着转了（[autoLifecycle]），
@@ -237,6 +249,7 @@ class MiniProgramView @JvmOverloads constructor(
     fun onHostResume() {
         if (!background) return
         background = false
+        webViews.resume()
         session.lifecycle(0)
     }
 
@@ -244,6 +257,7 @@ class MiniProgramView @JvmOverloads constructor(
     fun onHostPause() {
         if (background) return
         background = true
+        webViews.pause()
         session.lifecycle(1)
     }
 
@@ -258,6 +272,7 @@ class MiniProgramView @JvmOverloads constructor(
     fun close() {
         lifecycle?.unregister()
         lifecycle = null
+        webViews.destroy()
         session.dispose()
     }
 
@@ -341,14 +356,20 @@ class MiniProgramView @JvmOverloads constructor(
             .put("routeAnimation", routeAnimation)
             .put("launchOptions", launchOptions ?: JSONObject.NULL)
             // 点了名的 wx.* 才交给宿主（hostCall 事件）；没点名的照旧立刻 fail
-            .put("hostApis", JSONArray(hostCalls.names()))
+            // 同层组件的上下文方法（`MapContext.getCenterLocation` …）也交给宿主（SameLayerViews.contextCall）
+            .put("hostApis", JSONArray((hostCalls.names() + sameLayer.contextApis()).distinct()))
         // 同层渲染：宿主画 / 解码，引擎画进页面，滚动时与页面在同一张图里走。
         // - 视频：帧由 VideoHost 交（EngineSession 接 `videos` / `videoCommand`）；
         // - 登记了的组件（[sameLayerViews]，如 map）：宿主画（`sameLayerViews` / `nativeViewTap` 事件）
+        // - 直播（live-player）：与视频同一个播放器（VideoHost 认 `videos` 里 tag 为 live-player 的那几路）
         val same = JSONArray()
-        if (sameLayerVideo) same.put("video")
+        if (sameLayerVideo) same.put("video").put("live-player")
         sameLayer.tags().filter { it != "video" }.forEach { same.put(it) }
         if (same.length() > 0) options.put("sameLayer", same)
+        // 自己处理手势的（地图）：按在框里的整串触摸交给它（nativeViewTouch）
+        sameLayer.gestureTags().takeIf { it.isNotEmpty() }?.let { options.put("sameLayerGestures", JSONArray(it)) }
+        // web-view 盖在画面上（MiniWebViews.kt），引擎报位置（nativeViews）
+        if (webView) options.put("nativeComponents", JSONArray().put("web-view"))
         rootWindowInsets?.let { options.put("safeArea", safeArea(it)) }
         session.create(dir.absolutePath, data.absolutePath, startRoute, lw, lh, dpr, options.toString(), backend, HostChrome.deviceInfo(context), diagnostics)
     }
@@ -376,12 +397,18 @@ class MiniProgramView @JvmOverloads constructor(
         onEvent?.invoke(ev)
         when (ev.optString("type")) {
             "app" -> about = MiniProgramAbout.fromJson(ev.optJSONObject("about"))
-            "page" -> setBackgroundColor(NavBarReserve.color(ev)) // 导航栏那一截与 SurfaceView 第一帧之前露出的底色
+            "page" -> {
+                setBackgroundColor(NavBarReserve.color(ev)) // 导航栏那一截与 SurfaceView 第一帧之前露出的底色
+                sameLayer.route = ev.optString("route")
+                if (webView) webViews.onPage(ev)
+            }
+            "nativeViews" -> if (webView) webViews.onViews(ev)
+            "nativeViewTouch" -> sameLayer.onTouch(ev)
             "menuButton" -> when (ev.optString("action")) {
                 "menu" -> showAbout()
                 "close" -> requestClose()
             }
-            "hostCall" -> hostCalls.dispatch(ev, activity())
+            "hostCall" -> hostCalls.dispatch(ev, activity()) { call, reply -> sameLayer.contextCall(call, reply) }
             "vibrate" -> if (hapticFeedback) HostChrome.vibrate(this, ev)
             "inputFocus" -> { ime.onFocus(ev); keyboard.onFocus(ev) }
             "inputBlur" -> { ime.onBlur(); keyboard.onBlur() }

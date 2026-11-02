@@ -1,0 +1,60 @@
+<view class="ok" wx:if="{{submitted}}">
+  <view class="ok-ic">✓</view>
+  <text class="ok-title">上报成功</text>
+  <text class="ok-sub">工单号 {{submitted.id}}，车辆 {{submitted.no}} 已暂停投放，运维将在 2 小时内处理</text>
+  <view class="ok-btns">
+    <view class="btn-ghost ok-b" bindtap="onAgain">继续上报</view>
+    <view class="btn ok-b" bindtap="goHome">返回首页</view>
+  </view>
+</view>
+
+<view wx:else>
+  <view class="card">
+    <text class="label">车辆编号</text>
+    <input class="no-input" type="number" maxlength="9" value="{{no}}" placeholder="车头二维码下方的 9 位数字" bindinput="onNo"></input>
+    <text class="muted">当前位置：{{place || '定位中…'}}</text>
+  </view>
+
+  <view class="card">
+    <view class="row between"><text class="label">故障部位（可多选）</text><text class="muted">已选 {{picked.length}} 项</text></view>
+    <checkbox-group class="parts" bindchange="onParts">
+      <label class="part {{item.checked ? 'part-on' : ''}}" wx:for="{{parts}}" wx:key="name">
+        <checkbox class="part-cb" value="{{item.name}}" checked="{{item.checked}}" color="#13a868"></checkbox>
+        <text class="part-tx">{{item.name}}</text>
+      </label>
+    </checkbox-group>
+  </view>
+
+  <view class="card">
+    <text class="label">问题描述（选填）</text>
+    <textarea class="desc" maxlength="200" value="{{desc}}" placeholder="例如：后轮刹车失灵，捏到底也刹不住" bindinput="onDesc"></textarea>
+    <text class="count">{{desc.length}}/200</text>
+    <text class="label">现场照片（选填，最多 3 张）</text>
+    <view class="photos">
+      <view class="ph" wx:for="{{photos}}" wx:key="*this">
+        <image class="ph-img" src="{{item}}" mode="aspectFill" data-src="{{item}}" bindtap="onPreview"></image>
+        <view class="ph-del" data-i="{{index}}" catchtap="onDelPhoto">×</view>
+      </view>
+      <view class="ph ph-add" wx:if="{{photos.length < 3}}" bindtap="onPhoto"><text class="plus">+</text><text class="ph-tx">拍照</text></view>
+    </view>
+  </view>
+
+  <text class="err" wx:if="{{err}}">{{err}}</text>
+  <view class="foot"><view class="btn" bindtap="onSubmit">提交上报</view></view>
+
+  <view class="card" wx:if="{{history.length}}">
+    <text class="sec-title">我的上报</text>
+    <view class="h-item" wx:for="{{history}}" wx:key="id">
+      <view class="row between">
+        <text class="h-no">车辆 {{item.no}}</text>
+        <text class="h-st h-{{item.status}}">{{item.statusTx}}</text>
+      </view>
+      <text class="h-parts">{{item.partsTx}}{{item.desc ? '：' + item.desc : ''}}</text>
+      <view class="row between">
+        <text class="muted">{{item.at}} · {{item.id}}</text>
+        <text class="h-revoke" wx:if="{{item.status === 'pending'}}" data-id="{{item.id}}" bindtap="onRevoke">撤销</text>
+      </view>
+    </view>
+  </view>
+  <view style="height: 60rpx;"></view>
+</view>

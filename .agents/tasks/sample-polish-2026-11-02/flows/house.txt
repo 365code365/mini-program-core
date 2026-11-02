@@ -1,0 +1,240 @@
+# 安居找房：每页能开 + 地图找房 / 详情（地图、电话降级、收藏、月供）/ 预约 → 改约 → 取消 / 收藏长按 / 足迹 / 我的 / 卖房委托 / 订阅 / 查房价 / 列表筛选
+smoke pages/detail/detail?id=h3 pages/booking/booking?id=h1 pages/list/list?type=rent&l=2 pages/map/map?type=rent pages/calc/calc?price=412 pages/sell/sell?mode=rent
+open
+shot target/_polish_shots/index.png
+# 城市：只有杭州，选别的城市说明后留在杭州
+picker .city-picker
+pickrow 0 1 2
+pickok
+modal?
+modal ok
+expect getCurrentPages().slice(-1)[0].data.cityIndex === 0
+# 金刚区：地图找房（示意地图气泡 → 区内房源）
+tapn 3 .g-item
+route pages/map/map
+tapn 2 .bubble
+expect getCurrentPages().slice(-1)[0].data.district === '滨江'
+expect getCurrentPages().slice(-1)[0].data.houses.length === 1
+tapn 2 .seg-item
+expect getCurrentPages().slice(-1)[0].data.houses.length === 1 && getCurrentPages().slice(-1)[0].data.houses[0].id === 'h6'
+tapn 0 .seg-item
+tapn 4 .bubble
+expect getCurrentPages().slice(-1)[0].data.houses.length === 0
+exists .none-tip
+# 定位：宿主没有定位 → 退回滨江
+tap .locate
+toast 暂时无法定位
+expect getCurrentPages().slice(-1)[0].data.district === '滨江'
+shot target/_polish_shots/map.png
+tap .h-card
+route pages/detail/detail
+expect getCurrentPages().slice(-1)[0].data.h.id === 'h1'
+expect wx.getStorageSync('house_history')[0] === 'h1'
+shot target/_polish_shots/detail.png
+# 详情：查看地图（openLocation 宿主没有 → 页内弹地址，可复制）
+tap .more-link
+modal?
+expect __ui.slice(-1)[0].title === '龙湖春江天玺' && __ui.slice(-1)[0].content.indexOf('江陵路') >= 0
+modal cancel
+# 电话联系经纪人：makePhoneCall 宿主没有 → 弹号码
+tapn 1 .a-btn
+modal?
+expect __ui.slice(-1)[0].title === '经纪人 沈嘉怡' && __ui.slice(-1)[0].content === '138 0571 2368'
+modal cancel
+# 收藏
+tapn 0 .fav
+expect wx.getStorageSync('house_favs')[0] === 'h1'
+expect getCurrentPages().slice(-1)[0].data.faved === true
+# 分享：复制链接
+tapn 1 .fav
+sheet 0 2
+toast 链接已复制
+# 月供 → 房贷计算器（带总价）
+tap .loan
+route pages/calc/calc
+expect getCurrentPages().slice(-1)[0].data.price === '568'
+eval globalThis.M0 = getCurrentPages().slice(-1)[0].data.res.first
+tapn 1 .ms
+expect getCurrentPages().slice(-1)[0].data.res.equal === false && getCurrentPages().slice(-1)[0].data.res.first !== M0
+tapn 1 .seg-item
+expect getCurrentPages().slice(-1)[0].data.rate === 2.85 && getCurrentPages().slice(-1)[0].data.res.capped === true
+tap .f-price
+key backspace
+key backspace
+key backspace
+type .f-price => 120
+expect getCurrentPages().slice(-1)[0].data.res.loan === '840,000' && getCurrentPages().slice(-1)[0].data.res.capped === false
+shot target/_polish_shots/calc.png
+tap .b-main
+route pages/list/list
+expect getCurrentPages().slice(-1)[0].data.pIndex === 1
+back
+back
+# 预约看房：校验 → 提交 → 预约记录
+tap .book
+route pages/booking/booking
+tap .submit
+toast 请填写联系人
+type .f-name => 周一凡
+type .f-phone => 1375711
+tap .submit
+toast 11 位手机号
+type .f-phone => 2345
+tapn 1 .slot
+toast 已约满
+tapn 3 .slot
+tap .submit
+modal?
+modal ok
+route pages/bookings/bookings
+expect wx.getStorageSync('house_bookings').length === 2
+expect wx.getStorageSync('house_bookings')[0].status === 'pending' && wx.getStorageSync('house_bookings')[0].slot === 3
+expect wx.getStorageSync('house_contact').phone === '13757112345'
+count 2 .bk
+shot target/_polish_shots/bookings.png
+# 改约：换一天
+tapn 0 .op.main
+route pages/booking/booking
+expect getCurrentPages().slice(-1)[0].data.rebook === true && getCurrentPages().slice(-1)[0].data.name === '周一凡'
+tapn 3 .day
+tap .submit
+modal ok
+route pages/bookings/bookings
+expect wx.getStorageSync('house_bookings').length === 2
+expect wx.getStorageSync('house_bookings')[0].day === getCurrentPages().slice(-1)[0].data.all[0].day && wx.getStorageSync('house_bookings')[0].day > wx.getStorageSync('house_bookings')[1].day
+eval globalThis.D3 = wx.getStorageSync('house_bookings')[0].day
+# 待带看分段
+tapn 1 .seg-item
+count 1 .bk
+# 取消预约
+tapn 1 .op
+modal?
+modal ok
+expect wx.getStorageSync('house_bookings')[0].status === 'cancelled'
+count 0 .bk
+exists .empty-box
+tapn 3 .seg-item
+count 1 .bk
+# 已取消的可以再次预约
+tap .op.main
+route pages/booking/booking
+expect getCurrentPages().slice(-1)[0].data.rebook === false && getCurrentPages().slice(-1)[0].data.phone === '13757112345'
+back
+# 详情页：已收藏、没有待带看 → 底部是「预约看房」
+back
+route pages/detail/detail
+expect getCurrentPages().slice(-1)[0].data.pending === null
+# 收藏页：长按取消收藏
+eval wx.switchTab({ url: '/pages/favorite/favorite' })
+route pages/favorite/favorite
+count 1 .h-card
+shot target/_polish_shots/favorite.png
+long .h-card
+sheet 0 2
+expect wx.getStorageSync('house_favs').length === 0
+exists .empty
+# 足迹：长按加入收藏、删除这条
+tapn 1 .seg-item
+count 1 .h-card
+long .h-card
+sheet 1 3
+expect wx.getStorageSync('house_favs')[0] === 'h1'
+exists .type-tag.faved
+long .h-card
+sheet 0 3
+expect wx.getStorageSync('house_history').length === 0
+# 我的：购房需求、统计跳转、菜单
+eval wx.switchTab({ url: '/pages/mine/mine' })
+route pages/mine/mine
+expect getCurrentPages().slice(-1)[0].data.favCount === 1 && getCurrentPages().slice(-1)[0].data.bookingCount === 2 && getCurrentPages().slice(-1)[0].data.subCount === 2
+tap .edit
+sheet 1 4
+expect wx.getStorageSync('house_profile').need === '改善置换'
+expect getCurrentPages().slice(-1)[0].data.profile.need === '改善置换'
+shot target/_polish_shots/mine.png
+tapn 1 .stat
+route pages/favorite/favorite
+expect getCurrentPages().slice(-1)[0].data.tab === 1
+eval wx.switchTab({ url: '/pages/mine/mine' })
+tapn 2 .stat
+route pages/bookings/bookings
+back
+# 卖房委托：校验 → 估价 → 提交 → 撤销
+tapn 1 .m-item
+route pages/sell/sell
+tap .est-btn
+toast 请填写小区名称
+type .f-community => 江南名府
+tap .est-btn
+toast 面积
+type .f-area => 76
+tap .est-btn
+expect getCurrentPages().slice(-1)[0].data.est && getCurrentPages().slice(-1)[0].data.expect.length > 0
+shot target/_polish_shots/sell-est.png
+tap .submit
+modal?
+modal ok
+expect wx.getStorageSync('house_entrusts').length === 1 && wx.getStorageSync('house_entrusts')[0].community === '江南名府' && wx.getStorageSync('house_entrusts')[0].status === 'reviewing'
+expect getCurrentPages().slice(-1)[0].data.est === null && getCurrentPages().slice(-1)[0].data.community === ''
+count 1 .en
+shot target/_polish_shots/sell.png
+tapn 1 .op
+modal ok
+expect wx.getStorageSync('house_entrusts')[0].status === 'withdrawn'
+# 出租委托
+tapn 1 .seg-item
+type .f-community => 来福士中心
+type .f-area => 52
+tap .est-btn
+expect getCurrentPages().slice(-1)[0].data.est.unit === '元/月'
+tap .submit
+modal ok
+expect wx.getStorageSync('house_entrusts').length === 2 && wx.getStorageSync('house_entrusts')[0].mode === 'rent'
+back
+# 房源订阅：新增（同条件不重复）→ 看房源 → 取消订阅
+tapn 2 .m-item
+route pages/subscribe/subscribe
+count 2 .s-item
+picker .f-type
+pickrow 0 1 2
+pickok
+expect getCurrentPages().slice(-1)[0].data.tIndex === 2
+wait 400
+tap .add
+toast 订阅成功
+count 3 .s-item
+expect wx.getStorageSync('house_subs').length === 3
+shot target/_polish_shots/subscribe.png
+tapn 0 .op.main
+route pages/list/list
+expect getCurrentPages().slice(-1)[0].data.type === 'rent'
+back
+tapn 0 .op
+modal ok
+count 2 .s-item
+back
+# 查房价 → 区 → 列表带区域
+tapn 3 .m-item
+route pages/price/price
+tapn 1 .st
+expect getCurrentPages().slice(-1)[0].data.districts[0].name === '滨江'
+type .search-input => 西溪
+count 1 .c-row
+shot target/_polish_shots/price.png
+tap .d-row
+route pages/list/list
+expect getCurrentPages().slice(-1)[0].data.dIndex > 0 && getCurrentPages().slice(-1)[0].data.houses.every(function (h) { return h.district === '滨江'; })
+# 列表：订阅当前条件（重复给提示）
+tap .sub-btn
+modal?
+modal cancel
+tap .sub-btn
+toast 已经订阅过了
+shot target/_polish_shots/list.png
+back
+back
+# 客服电话降级
+tapn 4 .m-item
+modal?
+modal cancel
+noerr

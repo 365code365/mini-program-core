@@ -11,18 +11,18 @@
 
 <view class="card info">
   <view class="kv"><text class="k">上课时间</text><text class="v">{{dateText}} {{c.time}}-{{endTime}}</text></view>
-  <view class="kv"><text class="k">上课门店</text><text class="v">燃动 · 科技园店（科苑南路 3099 号 2F）</text></view>
+  <view class="kv" bindtap="openShop"><text class="k">上课门店</text><view class="row v-r"><text class="v">{{shop.name}}</text><text class="go">导航</text></view></view>
   <view class="kv">
     <text class="k">预约人数</text>
     <view class="row">
       <view class="avs"><view class="av" wx:for="{{avatars}}" wx:key="*this" style="background: {{item}};"></view></view>
-      <text class="v">{{c.booked}}/{{c.cap}} 人</text>
+      <text class="v">{{booked}}/{{c.cap}} 人</text>
     </view>
   </view>
   <view class="kv">
     <text class="k">强度</text>
     <view class="row">
-      <view class="fire {{index < c.level ? 'on' : ''}}" wx:for="{{[1,2,3]}}" wx:key="*this"></view>
+      <view class="fire {{index < c.level ? 'on' : ''}}" wx:for="{{levels}}" wx:key="*this"></view>
     </view>
   </view>
 </view>
@@ -52,8 +52,9 @@
 
 <view class="bar">
   <view class="bar-l">
-    <text class="bar-v">{{c.left ? '剩余 ' + c.left + ' 个名额' : '已满员'}}</text>
+    <text class="bar-v">{{state === 'booked' ? '已预约 · ' + c.time + ' 开课' : (state === 'wait' ? '候补第 ' + rank + ' 位' : (left > 0 ? '剩余 ' + left + ' 个名额' : '已满员'))}}</text>
     <text class="muted">会员卡免费 · 非会员 ¥79/次</text>
   </view>
-  <view class="btn bar-btn {{mine ? 'gray' : ''}}" bindtap="book"><text>{{mine ? '取消预约' : (c.left ? '立即预约' : '加入候补')}}</text></view>
+  <view wx:if="{{canSign}}" class="btn bar-btn sign-btn" bindtap="sign"><text>到店签到</text></view>
+  <view wx:else class="btn bar-btn book-btn {{state === 'open' || state === 'full' ? '' : 'gray'}}" bindtap="book"><text>{{state === 'booked' ? '取消预约' : (state === 'wait' ? '取消候补' : (state === 'open' ? '立即预约' : (state === 'full' ? '加入候补' : (state === 'done' ? '已上课' : (state === 'miss' ? '已爽约' : '已开课')))))}}</text></view>
 </view>

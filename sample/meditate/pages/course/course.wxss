@@ -1,0 +1,31 @@
+.head { position: relative; height: 420rpx; }
+.head-img { width: 750rpx; height: 420rpx; }
+.head-mask { position: absolute; left: 0; right: 0; bottom: 0; padding: 40rpx 32rpx 32rpx; background: linear-gradient(180deg, rgba(0,0,0,0), rgba(20,18,50,0.65)); display: flex; flex-direction: column; }
+.head-t { font-size: 44rpx; font-weight: 700; color: #ffffff; }
+.head-s { font-size: 24rpx; color: rgba(255,255,255,0.85); margin-top: 8rpx; }
+.col { display: flex; flex-direction: column; }
+.avatar { width: 80rpx; height: 80rpx; border-radius: 40rpx; background: linear-gradient(135deg, #a59cf0, #6c63d9); display: flex; align-items: center; justify-content: center; margin-right: 20rpx; }
+.avatar-t { color: #ffffff; font-size: 32rpx; }
+.t-name { font-size: 30rpx; font-weight: 600; margin-bottom: 4rpx; }
+.desc { display: block; font-size: 26rpx; line-height: 1.7; margin-top: 24rpx; color: #5d5b78; }
+.dark .desc { color: #b3b2cf; }
+.prog-row { margin-top: 24rpx; }
+.fav { font-size: 24rpx; padding: 8rpx 28rpx; border-radius: 30rpx; border: 1rpx solid #c9c5f3; color: #6c63d9; }
+.fav-on { background: #6c63d9; color: #ffffff; border-color: #6c63d9; }
+.chapters { padding: 8rpx 28rpx; margin-bottom: 0; }
+.chap { padding: 24rpx 0; border-bottom: 1rpx solid #f0eff6; }
+.dark .chap { border-bottom: 1rpx solid #2e2f4d; }
+.no { width: 56rpx; height: 56rpx; border-radius: 28rpx; background: #ecebfb; color: #6c63d9; font-size: 24rpx; display: flex; align-items: center; justify-content: center; margin-right: 20rpx; }
+.dark .no { background: #2e2f52; color: #b4aefc; }
+.no-done { background: #3faa83; color: #ffffff; }
+.dark .no-done { background: #3faa83; color: #ffffff; }
+.chap-t { font-size: 28rpx; margin-bottom: 4rpx; }
+.locked { color: #a5a4ba; }
+.lock { width: 36rpx; height: 40rpx; display: flex; flex-direction: column; align-items: center; }
+.lock-top { width: 20rpx; height: 16rpx; border: 4rpx solid #b3b2c8; border-bottom: none; border-radius: 12rpx 12rpx 0 0; }
+.lock-body { width: 36rpx; height: 24rpx; background: #b3b2c8; border-radius: 6rpx; }
+.mini-play { width: 52rpx; height: 52rpx; border-radius: 26rpx; background: #6c63d9; display: flex; align-items: center; justify-content: center; }
+.tri { width: 28rpx; height: 28rpx; margin-left: 4rpx; }
+.note { display: block; text-align: center; font-size: 22rpx; color: #a5a4ba; margin: 24rpx 0 180rpx; }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; padding: 20rpx 32rpx calc(20rpx + env(safe-area-inset-bottom)); background: rgba(246,245,251,0.96); }
+.dark .bar { background: rgba(23,24,44,0.96); }

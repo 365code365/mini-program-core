@@ -1,0 +1,27 @@
+<view class="tabs">
+  <view class="tab {{cur === index ? 'tab-on' : ''}}" wx:for="{{types}}" wx:key="k" data-i="{{index}}" bindtap="onTab">{{item.name}}</view>
+</view>
+<view class="card">
+  <view class="big">
+    <text class="big-v">{{types[cur].start}}</text><text class="big-u">元 / 起步 15 分钟</text>
+  </view>
+  <text class="muted">杭州市区标准，超出后每 15 分钟 {{types[cur].unit}} 元</text>
+  <view class="rule" wx:for="{{types[cur].rules}}" wx:key="*this"><view class="dot"></view><text class="rule-tx">{{item}}</text></view>
+</view>
+<view class="card">
+  <text class="sec-title">费用举例</text>
+  <view class="tb-h"><text class="c1">骑行时长</text><text class="c2">单车</text><text class="c2">电单车</text></view>
+  <view class="tb-r" wx:for="{{examples}}" wx:key="t"><text class="c1">{{item.t}}</text><text class="c2">¥{{item.bike}}</text><text class="c2">¥{{item.ebike}}</text></view>
+</view>
+<view class="card">
+  <view class="row between"><text class="sec-title">骑行卡</text><text class="link" bindtap="goWallet">去购买 ›</text></view>
+  <view class="cd" wx:for="{{cards}}" wx:key="id"><text class="cd-n">{{item.name}} · ¥{{item.price}}</text><text class="muted">{{item.desc}}</text></view>
+</view>
+<view class="card">
+  <text class="sec-title">停车规范</text>
+  <view class="rule"><view class="dot"></view><text class="rule-tx">请停入路边白色停车框或青桔推荐停车点（地图蓝色 P 区）</text></view>
+  <view class="rule"><view class="dot"></view><text class="rule-tx">停车点外还车收取调度费：单车 5 元、电单车 10 元</text></view>
+  <view class="rule"><view class="dot"></view><text class="rule-tx">禁止停放在盲道、消防通道、小区内及地铁口 10 米范围内</text></view>
+  <view class="rule"><view class="dot"></view><text class="rule-tx">电单车禁止载人，未满 16 周岁不得骑行</text></view>
+</view>
+<view style="height: 60rpx;"></view>

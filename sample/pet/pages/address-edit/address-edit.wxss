@@ -1,0 +1,15 @@
+.form { padding-top: 4rpx; padding-bottom: 4rpx; }
+.f { display: flex; flex-direction: row; align-items: center; min-height: 100rpx; border-bottom: 1rpx solid #f3efea; }
+.f.last { border-bottom: none; }
+.f-k { width: 150rpx; font-size: 28rpx; color: #5a4f47; flex-shrink: 0; }
+/* 引擎把 padding 为 0 当成「没写」，套 12px 默认内边距，所以写 1rpx */
+.f-in { flex: 1; height: 100rpx; font-size: 28rpx; padding: 0 0 0 1rpx; }
+.f-t { flex: 1; font-size: 28rpx; }
+.ph { color: #c4bcb4; }
+.chips { flex: 1; display: flex; flex-direction: row; }
+.chip { padding: 8rpx 28rpx; margin-right: 16rpx; border-radius: 26rpx; background: #f7f3ef; border: 2rpx solid #f7f3ef; font-size: 24rpx; color: #5a4f47; white-space: nowrap; }
+.chip.on { background: #fff4ea; border-color: #ff8a3d; color: #ff8a3d; font-weight: bold; }
+.f-sw { flex: 1; display: flex; flex-direction: row; align-items: center; justify-content: flex-end; }
+.f-sw .muted { margin-right: 16rpx; }
+.save { margin: 48rpx 24rpx 0; }
+.del { margin: 24rpx 24rpx 0; height: 88rpx; border-radius: 44rpx; background: #ffffff; color: #ff5b35; font-size: 28rpx; display: flex; align-items: center; justify-content: center; }

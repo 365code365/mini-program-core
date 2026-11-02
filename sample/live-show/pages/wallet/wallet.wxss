@@ -1,0 +1,18 @@
+.tabs { background: #ffffff; height: 88rpx; }
+.tab { flex: 1; height: 88rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; font-size: 26rpx; color: #5a5d66; border-bottom: 4rpx solid transparent; }
+.tab-on { color: #ff3b5c; font-weight: bold; border-bottom-color: #ff3b5c; }
+.tab-n { font-size: 20rpx; margin-left: 6rpx; color: #ff3b5c; }
+.od { background: #ffffff; margin: 20rpx 24rpx 0; border-radius: 20rpx; padding: 20rpx 24rpx; }
+.od-head { padding-bottom: 14rpx; border-bottom: 1rpx solid #f0f0f3; }
+.od-st { font-size: 24rpx; }
+.od-unpaid { color: #ff9f43; }
+.od-paid { color: #ff3b5c; }
+.od-refunded, .od-cancelled { color: #8a8d96; }
+.od-body { margin-top: 18rpx; align-items: flex-start; }
+.od-img { width: 120rpx; height: 160rpx; border-radius: 10rpx; flex-shrink: 0; }
+.od-info { margin-left: 20rpx; }
+.od-t { font-size: 28rpx; font-weight: bold; line-height: 40rpx; }
+.od-l { margin-top: 8rpx; }
+.od-act { margin-top: 16rpx; }
+.od-btn { font-size: 24rpx; color: #ff3b5c; border: 1rpx solid #ff3b5c; border-radius: 28rpx; padding: 8rpx 24rpx; }
+.od-btn-pay { background: #ff3b5c; color: #ffffff; }

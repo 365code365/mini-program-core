@@ -1,0 +1,56 @@
+<view class="head">
+  <view class="search" bindtap="goSearch">
+    <view class="s-ic"></view>
+    <text class="s-ph">搜索 iPhone 13 / 考研资料 / 公路车</text>
+    <view class="s-btn">搜索</view>
+  </view>
+</view>
+<view class="cats">
+  <view class="cat" wx:for="{{cats}}" wx:key="key" data-i="{{index}}" bindtap="goCat">
+    <image class="cat-ic" src="{{item.icon}}" mode="aspectFit"></image>
+    <text class="cat-tx">{{item.name}}</text>
+  </view>
+</view>
+<view class="tabs">
+  <view class="tab {{tab === item.k ? 'tab-on' : ''}}" wx:for="{{tabs}}" wx:key="k" data-k="{{item.k}}" bindtap="onTab">{{item.t}}</view>
+  <text class="tab-tip">长按宝贝可反馈</text>
+</view>
+<view class="feed">
+  <view class="col-w">
+    <view class="fcard" wx:for="{{left}}" wx:key="id" data-id="{{item.id}}" data-col="l" bindtap="onCard" bindlongpress="onLongPress">
+      <image class="cimg {{item.shown ? 'on' : ''}}" src="{{item.err ? fail : item.cover}}" mode="widthFix" lazy-load binderror="onImgErr" data-id="{{item.id}}" data-col="l"></image>
+      <view class="cbody">
+        <view class="ctitle">{{item.title}}</view>
+        <view class="row ctags"><text class="tag" wx:if="{{item.mine}}">我发布的</text><text class="tag tag-g">{{item.cond}}</text><text class="tag" wx:if="{{item.free}}">包邮</text></view>
+        <view class="row between">
+          <text class="price"><text class="yen">¥</text>{{item.price}}</text>
+          <text class="muted">{{item.wants}}人想要</text>
+        </view>
+        <view class="row cseller"><image class="cav" src="{{item.avatar}}" mode="aspectFill"></image><text class="cname">{{item.name}}</text></view>
+      </view>
+    </view>
+  </view>
+  <view class="col-w">
+    <view class="fcard" wx:for="{{right}}" wx:key="id" data-id="{{item.id}}" data-col="r" bindtap="onCard" bindlongpress="onLongPress">
+      <image class="cimg {{item.shown ? 'on' : ''}}" src="{{item.err ? fail : item.cover}}" mode="widthFix" lazy-load binderror="onImgErr" data-id="{{item.id}}" data-col="r"></image>
+      <view class="cbody">
+        <view class="ctitle">{{item.title}}</view>
+        <view class="row ctags"><text class="tag" wx:if="{{item.mine}}">我发布的</text><text class="tag tag-g">{{item.cond}}</text><text class="tag" wx:if="{{item.free}}">包邮</text></view>
+        <view class="row between">
+          <text class="price"><text class="yen">¥</text>{{item.price}}</text>
+          <text class="muted">{{item.wants}}人想要</text>
+        </view>
+        <view class="row cseller"><image class="cav" src="{{item.avatar}}" mode="aspectFill"></image><text class="cname">{{item.name}}</text></view>
+      </view>
+    </view>
+  </view>
+</view>
+<view class="empty" wx:if="{{!left.length && !right.length && !loading}}">
+  <view class="empty-ic">○</view>
+  <text>这里暂时没有宝贝</text>
+  <view class="empty-btn" data-k="rec" bindtap="onTab">看看猜你喜欢</view>
+</view>
+<view class="loading-more" wx:if="{{left.length || right.length}}">{{loading ? '正在加载…' : (noMore ? '— 没有更多了，下拉换一批 —' : '上滑加载更多')}}</view>
+<view class="expose">本次浏览已曝光 {{exposed}} / {{total}} 件宝贝</view>
+<view class="safe-bottom"></view>
+<view class="top-btn" wx:if="{{showTop}}" bindtap="toTop"><view class="top-arrow"></view><text class="top-tx">顶部</text></view>

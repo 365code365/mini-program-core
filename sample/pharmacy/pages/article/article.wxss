@@ -1,0 +1,15 @@
+.cover { width: 750rpx; height: 400rpx; }
+.body { margin-top: -30rpx; position: relative; display: flex; flex-direction: column; }
+.t { font-size: 38rpx; font-weight: bold; line-height: 54rpx; margin-bottom: 10rpx; }
+.p { font-size: 28rpx; color: #33423e; line-height: 48rpx; margin-top: 24rpx; }
+.note { margin-top: 28rpx; font-size: 22rpx; }
+.dg { display: flex; flex-direction: row; align-items: center; }
+.dg-img { width: 110rpx; height: 110rpx; border-radius: 10rpx; margin-right: 18rpx; }
+.dg-b { flex: 1; display: flex; flex-direction: column; }
+.dg-n { display: flex; flex-direction: row; align-items: flex-start; font-size: 26rpx; font-weight: bold; line-height: 36rpx; margin-bottom: 6rpx; }
+.dg-n .rx, .dg-n .otc, .dg-n .dev { flex-shrink: 0; margin-top: 2rpx; line-height: 32rpx; }
+.dg-nt { flex: 1; }
+.arrow { color: #b7c2be; font-size: 40rpx; }
+.ops { display: flex; flex-direction: row; padding: 40rpx 14rpx 80rpx; }
+.op { flex: 1; margin: 0 10rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }
+.btn-o.op { line-height: 76rpx; }

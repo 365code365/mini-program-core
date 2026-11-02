@@ -1,0 +1,19 @@
+.bar { background: #ffffff; padding-bottom: 12rpx; }
+.chips { white-space: nowrap; height: 88rpx; }
+.chips-in { padding: 16rpx 16rpx 0; }
+.chip { flex-shrink: 0; padding: 0 26rpx; height: 56rpx; line-height: 56rpx; border-radius: 28rpx; background: #f1f3f7; color: #556070; font-size: 26rpx; margin-right: 16rpx; }
+.chip-on { background: #1f4fb4; color: #ffffff; }
+.filters { padding: 12rpx 24rpx 0; }
+.f-city { font-size: 24rpx; color: #1f2633; margin-right: 24rpx; }
+.arrow { margin-left: 6rpx; color: #8a93a3; }
+.f-sort { font-size: 24rpx; color: #8a93a3; margin-right: 24rpx; }
+.f-on { color: #1f4fb4; font-weight: bold; }
+.av { width: 112rpx; height: 112rpx; border-radius: 56rpx; margin-right: 20rpx; }
+.n { font-size: 32rpx; font-weight: bold; margin-right: 12rpx; }
+.fav { color: #d6587f; font-size: 26rpx; }
+.firm { margin-top: 8rpx; }
+.fd { font-size: 24rpx; color: #556070; margin-top: 6rpx; }
+.foot { margin-top: 20rpx; padding-top: 18rpx; border-top: 1rpx solid #eef0f4; }
+.star { color: #e0a020; font-size: 24rpx; margin-right: 12rpx; }
+.ask { background: #1f4fb4; color: #ffffff; font-size: 24rpx; border-radius: 28rpx; height: 56rpx; line-height: 56rpx; padding: 0 24rpx; }
+.reset { margin-top: 24rpx; color: #1f4fb4; font-size: 26rpx; border: 2rpx solid #1f4fb4; border-radius: 28rpx; padding: 8rpx 32rpx; }

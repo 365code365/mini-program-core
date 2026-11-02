@@ -20,7 +20,10 @@ Page({
     const now = new Date()
     this.setData({ y: now.getFullYear(), m: now.getMonth() + 1 })
   },
-  onShow() { this.refresh() },
+  onShow() {
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) this.getTabBar().setData({ selected: 1 })
+    this.refresh()
+  },
   onPrev() {
     let { y, m } = this.data
     m -= 1; if (m < 1) { m = 12; y -= 1 }
@@ -77,6 +80,7 @@ Page({
     })
     this.setData({
       isCurrent,
+      bookName: store.curBook().name,
       monthText: y + '年' + m + '月',
       totalText: store.money(total),
       otherText: store.money(other),

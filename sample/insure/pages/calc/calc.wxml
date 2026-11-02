@@ -1,0 +1,61 @@
+<view class="wrap">
+  <view class="card prod">
+    <text class="muted">测算产品</text>
+    <picker wx:if="{{!fromDetail}}" mode="selector" range="{{productNames}}" value="{{productIdx}}" bindchange="onProduct">
+      <view class="prod-n">{{name}} <text class="prod-sw">切换 ▾</text></view>
+    </picker>
+    <view wx:else class="prod-n">{{name}}</view>
+  </view>
+
+  <view class="card">
+    <view class="field">
+      <text class="f-label">被保人性别</text>
+      <view class="chips">
+        <view class="chip {{gender === 'M' ? 'chip-on' : ''}}" data-v="M" bindtap="onGender">男</view>
+        <view class="chip {{gender === 'F' ? 'chip-on' : ''}}" data-v="F" bindtap="onGender">女</view>
+      </view>
+    </view>
+    <view class="field">
+      <view class="row between">
+        <text class="f-label">被保人年龄</text>
+        <view class="row">
+          <text class="step" data-d="-1" bindtap="ageStep">−</text>
+          <text class="age-v">{{age}} 岁</text>
+          <text class="step" data-d="1" bindtap="ageStep">+</text>
+        </view>
+      </view>
+      <slider class="slider" min="{{ages[0]}}" max="{{ages[1]}}" value="{{age}}" activeColor="#2f6bff" block-size="22" bindchanging="onAgeChanging" bindchange="onAge"></slider>
+      <view class="row between muted"><text>{{ages[0]}} 岁</text><text>{{ages[1]}} 岁</text></view>
+    </view>
+    <view class="field">
+      <text class="f-label">{{pid === 'p06' ? '境外医疗保额' : '保额'}}</text>
+      <view class="chips">
+        <view class="chip {{amount === item.v ? 'chip-on' : ''}}" wx:for="{{amounts}}" wx:key="v" data-v="{{item.v}}" bindtap="onAmount">{{item.t}}</view>
+      </view>
+    </view>
+    <view class="field last">
+      <text class="f-label">{{pid === 'p06' ? '旅行天数' : '保障期间'}}</text>
+      <view class="chips">
+        <view class="chip {{term === item ? 'chip-on' : ''}}" wx:for="{{terms}}" wx:key="*this" data-v="{{item}}" bindtap="onTerm">{{item}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="card result">
+    <text class="r-label">{{period === '每次' ? '本次保费' : '首年保费'}}</text>
+    <view class="r-row"><text class="r-cur">¥</text><text class="r-v">{{result}}</text><text class="r-unit">/{{period}}</text></view>
+    <text class="r-day">折合每天约 ¥{{perDay}}</text>
+    <text class="r-tip" wx:if="{{compare}}">{{compare}}</text>
+  </view>
+
+  <view class="card">
+    <view class="sec-head"><text class="sec-title">保费随投保年龄变化</text><text class="sec-more">当前条件</text></view>
+    <canvas type="2d" id="chart" class="chart"></canvas>
+    <text class="muted">保费按投保时的周岁计算，年龄越大保费越高；以上为测算结果，最终以核保结果为准。</text>
+  </view>
+</view>
+<view class="bar-pad"></view>
+<view class="bottom-bar">
+  <view class="btn btn-ghost bb-btn" wx:if="{{!fromDetail}}" bindtap="openDetail" hover-class="btn-hover">产品详情</view>
+  <view class="btn btn-primary bb-main" bindtap="useResult" hover-class="btn-hover">{{fromDetail ? '用这个结果投保' : '按此方案投保'}}</view>
+</view>

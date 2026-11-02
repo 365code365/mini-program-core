@@ -1,0 +1,37 @@
+<view class="mn-head">
+  <image class="mn-av" src="/images/avatar.png"></image>
+  <view class="mn-info">
+    <text class="mn-name">安心保用户</text>
+    <text class="mn-sub">安心保已守护您 {{days}} 天</text>
+  </view>
+</view>
+<view class="card mn-stat">
+  <view class="mn-si" bindtap="goPolicies"><text class="mn-num">{{stat.policies}}</text><text class="muted">全部保单</text></view>
+  <view class="mn-si" bindtap="goPolicies"><text class="mn-num">{{stat.active}}</text><text class="muted">保障中</text></view>
+  <view class="mn-si"><text class="mn-num">{{stat.cover}}</text><text class="muted">总保额</text></view>
+</view>
+<view class="card">
+  <view class="sec-head"><text class="sec-title">我的理赔</text><text class="sec-more">{{claims.length}} 件</text></view>
+  <view class="kv" wx:for="{{claims}}" wx:key="id" data-id="{{item.id}}" bindtap="openClaim">
+    <text class="kv-k">{{item.productName}} · {{item.type}}</text>
+    <text class="kv-v mn-cst">{{item.statusText}} ›</text>
+  </view>
+  <text class="muted" wx:if="{{!claims.length}}">暂无理赔记录。保单生效后出险，可在保单页一键申请。</text>
+</view>
+<view class="card mn-menu">
+  <view class="mn-cell" bindtap="editReferral"><text>推荐码</text><text class="muted">{{referral || '未填写'}} ›</text></view>
+  <view class="mn-cell" bindtap="call"><text>客服热线</text><text class="muted">400-820-6688 ›</text></view>
+  <view class="mn-cell" bindtap="about"><text>关于安心保</text><text class="muted">v{{version}} ›</text></view>
+  <view class="mn-cell" bindtap="clear"><text class="mn-danger">清除本地数据</text><text class="muted">›</text></view>
+</view>
+<view class="tab-pad"></view>
+
+<view class="mn-mask" wx:if="{{showRef}}" bindtap="closeRef"></view>
+<view class="mn-sheet" wx:if="{{showRef}}">
+  <text class="sec-title">填写推荐码</text>
+  <input class="mn-input" placeholder="6 位推荐码（选填）" maxlength="6" value="{{refInput}}" focus bindinput="onRefInput"></input>
+  <view class="row mn-sbtns">
+    <view class="btn btn-ghost mn-sb" bindtap="closeRef">取消</view>
+    <view class="btn btn-primary mn-sb mn-sgap" bindtap="confirmRef">保存</view>
+  </view>
+</view>

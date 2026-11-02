@@ -9,6 +9,8 @@
 <view class="tools row">
   <view class="tool today-btn" bindtap="onToday">回到今天</view>
   <view class="tool to-list" bindtap="onList">列表</view>
+  <view class="tool to-search" bindtap="onSearch">搜索</view>
+  <view class="tool to-remind" bindtap="onRemind">{{remindCount ? '提醒 · ' + remindCount : '提醒'}}</view>
   <view class="tool to-settings" bindtap="onSettings">设置</view>
 </view>
 <view class="grid-card" bindtouchstart="onTouchStart" bindtouchend="onTouchEnd">

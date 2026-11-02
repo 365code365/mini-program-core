@@ -1,0 +1,39 @@
+.head { padding: 32rpx 32rpx 96rpx; background: linear-gradient(160deg, #19b878 0%, #0f8f5a 100%); display: flex; flex-direction: column; }
+.head-serving { background: linear-gradient(160deg, #42a5f5 0%, #1e78d0 100%); }
+.head-review { background: linear-gradient(160deg, #ffb74a 0%, #f08c00 100%); }
+.head-done { background: linear-gradient(160deg, #7d8a84 0%, #5b6762 100%); }
+.head-cancelled { background: #a3aca7; }
+.h-t { font-size: 40rpx; font-weight: bold; color: #ffffff; }
+.h-s { font-size: 24rpx; color: #eefaf4; }
+.steps { margin-top: 28rpx; }
+.stp { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.stp-dot { width: 20rpx; height: 20rpx; border-radius: 10rpx; background: rgba(255, 255, 255, 0.4); }
+.stp-on { background: #ffffff; }
+.stp-tx { font-size: 22rpx; color: rgba(255, 255, 255, 0.6); margin-top: 6rpx; }
+.stp-tx-on { color: #ffffff; }
+.top { margin-top: -64rpx; }
+.av { width: 96rpx; height: 96rpx; border-radius: 48rpx; }
+.av-info { margin-left: 20rpx; }
+.av-nm { font-size: 30rpx; font-weight: bold; margin-right: 10rpx; }
+.kv { padding: 8rpx 0; align-items: flex-start; }
+.kv-v { max-width: 460rpx; text-align: right; }
+.strong { font-weight: bold; }
+.big { font-size: 36rpx; }
+.phs { flex-wrap: wrap; margin-top: 12rpx; }
+.ph { width: 140rpx; height: 140rpx; border-radius: 10rpx; margin: 0 14rpx 14rpx 0; }
+.rv-star { display: block; font-size: 26rpx; margin-top: 10rpx; }
+.rv-tx { font-size: 26rpx; color: #2b3430; }
+.tl { align-items: flex-start; padding: 10rpx 0; }
+.tl-dot { width: 18rpx; height: 18rpx; border-radius: 9rpx; background: #cbd3cf; margin: 14rpx 20rpx 0 4rpx; }
+.tl-on { background: #13a86b; }
+.ops .btn-gray { margin-left: 16rpx; }
+.svc { padding: 0 8rpx; }
+.act { width: 240rpx; margin-left: 16rpx; height: 72rpx; line-height: 72rpx; }
+.sh-sub { display: block; margin: 6rpx 0 16rpx; }
+.rd { padding: 16rpx 0; border-bottom: 1rpx solid #eef1ef; }
+.rd-tx { margin-left: 12rpx; }
+.other { background: #f6f8f7; border-radius: 12rpx; height: 76rpx; padding: 0 20rpx; margin-top: 16rpx; font-size: 26rpx; }
+.sh-ops { margin-top: 28rpx; }
+.sh-ok { margin-left: 20rpx; height: 72rpx; line-height: 72rpx; }
+.sh-ops .btn-gray { height: 72rpx; line-height: 68rpx; }
+.sh-ops .btn-gray { padding: 0; }

@@ -1,0 +1,35 @@
+<view class="head">
+  <text class="hello">京城漫步者</text>
+  <text class="stat">收藏 {{favs.length}} · 截图 {{shots.length}} · 去过 {{trail.length}}</text>
+</view>
+<view class="card">
+  <text class="h">收藏的地点</text>
+  <view class="fav" wx:for="{{favs}}" wx:key="id" data-id="{{item.id}}" bindtap="open">
+    <image class="fav-img" src="{{item.cover}}" mode="aspectFill"></image>
+    <view class="fav-body">
+      <text class="fav-name">{{item.name}}</text>
+      <text class="sub">{{item.price}}</text>
+    </view>
+  </view>
+  <view class="empty" wx:if="{{!favs.length}}">还没有收藏，详情页右上角点「收藏」</view>
+</view>
+<view class="card">
+  <text class="h">实况截图</text>
+  <view class="shots">
+    <view class="shot-box" wx:for="{{shots}}" wx:key="at" data-index="{{index}}" bindtap="preview">
+      <image class="shot" src="{{item.path}}" mode="aspectFill"></image>
+      <text class="shot-tx">{{item.name}}</text>
+    </view>
+  </view>
+  <view class="empty" wx:if="{{!shots.length}}">在实况页点「截一张」</view>
+</view>
+<view class="card">
+  <text class="h">足迹</text>
+  <view class="trail" wx:for="{{trail}}" wx:key="id" data-id="{{item.id}}" bindtap="open">
+    <text>{{item.name}}</text>
+    <text class="sub">{{item.at}}</text>
+  </view>
+  <view class="empty" wx:if="{{!trail.length}}">看过的地点会记在这里</view>
+  <view class="btn-ghost clear" wx:if="{{trail.length}}" bindtap="clearTrail">清空足迹</view>
+</view>
+<view style="height: 140rpx;"></view>

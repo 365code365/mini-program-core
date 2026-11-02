@@ -48,10 +48,11 @@
   </scroll-view>
 </view>
 
-<!-- 购物车抽屉（第一层弹层） -->
-<!-- 面板嵌在遮罩里并 catchtap：遮罩与面板做成兄弟 fixed 节点时，引擎里点面板会连带触发遮罩的 tap -->
-<view class="mask cart-mask" wx:if="{{showCart}}" bindtap="closeCart">
-<view class="drawer" catchtap="noop">
+<!-- 购物车抽屉（第一层弹层）：遮罩与面板是兄弟节点，面板再 catchtap 一道。
+     不要把 fixed 面板嵌进 fixed 遮罩里：那样 boundingClientRect 把面板里的节点按 top:0 算（画面与点击是对的），
+     按节点位置去点的脚本会点歪 -->
+<view class="mask cart-mask" wx:if="{{showCart}}" bindtap="closeCart"></view>
+<view class="drawer" wx:if="{{showCart}}" catchtap="noop">
   <view class="drawer-head">
     <text class="title">已选菜品</text>
     <view class="clear" bindtap="askClear"><view class="bin"></view><text class="sub">清空</text></view>
@@ -71,7 +72,6 @@
       </view>
     </view>
   </scroll-view>
-</view>
 </view>
 
 <!-- 底部：满减进度 + 购物车条 -->
@@ -111,8 +111,8 @@
 </view>
 
 <!-- 规格弹层 -->
-<view class="mask spec-mask" wx:if="{{spec}}" bindtap="closeSpec">
-<view class="spec" catchtap="noop">
+<view class="mask spec-mask" wx:if="{{spec}}" bindtap="closeSpec"></view>
+<view class="spec" wx:if="{{spec}}" catchtap="noop">
   <view class="spec-head">
     <view class="spec-thumb" style="background: {{spec.bg}};"><text class="thumb-t">{{spec.ch}}</text></view>
     <view class="col spec-hinfo">
@@ -147,5 +147,4 @@
     </view>
   </view>
   <view class="btn spec-add" bindtap="addSpec"><text>加入购物车</text></view>
-</view>
 </view>

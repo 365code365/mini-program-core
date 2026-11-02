@@ -1,0 +1,27 @@
+.top { margin: 24rpx 24rpx 0; border-radius: 24rpx; background: linear-gradient(135deg, #2b2f3a, #14161c); display: flex; flex-direction: row; padding: 36rpx 0; }
+.t-i { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.t-v { font-size: 44rpx; font-weight: bold; color: #ffffff; }
+.t-k { margin-top: 6rpx; font-size: 22rpx; color: #9aa0ab; white-space: nowrap; }
+.chart { height: 260rpx; margin-top: 20rpx; display: flex; flex-direction: row; align-items: flex-end; }
+.col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
+.col-v { font-size: 20rpx; color: #8b909a; margin-bottom: 6rpx; }
+.col-bar { width: 32rpx; border-radius: 16rpx 16rpx 6rpx 6rpx; background: linear-gradient(180deg, #ff7a3d, #ffd2c0); }
+.col-d { margin-top: 10rpx; font-size: 20rpx; color: #a0a5ae; }
+.form { padding-bottom: 28rpx; }
+.f { display: flex; flex-direction: row; align-items: center; min-height: 96rpx; border-bottom: 1rpx solid #f2f3f5; }
+.f.last { border-bottom: none; }
+.f-k { width: 150rpx; font-size: 28rpx; color: #5c616b; flex-shrink: 0; }
+/* 引擎把 padding 为 0 当成「没写」，套 12px 默认内边距，所以写 1rpx */
+.f-in { flex: 1; height: 96rpx; font-size: 28rpx; padding: 0 0 0 1rpx; }
+.unit { font-size: 26rpx; color: #8b909a; margin-left: 12rpx; }
+.ph { color: #b8bcc4; }
+.f-pk { flex: 1; }
+.f-v { display: flex; flex-direction: row; align-items: center; justify-content: space-between; font-size: 28rpx; }
+.save { margin-top: 20rpx; height: 80rpx; font-size: 28rpx; }
+.r { display: flex; flex-direction: row; align-items: center; padding: 22rpx 0; border-bottom: 1rpx solid #f2f3f5; }
+.r:last-child { border-bottom: none; }
+.r-d { width: 200rpx; font-size: 26rpx; color: #5c616b; flex-shrink: 0; }
+.r-w { width: 150rpx; font-size: 28rpx; font-weight: bold; color: #1c1f26; flex-shrink: 0; }
+.r-f { flex: 1; font-size: 24rpx; color: #8b909a; }
+.r-b { font-size: 24rpx; color: #8b909a; flex-shrink: 0; }
+.none { padding: 40rpx 0 12rpx; text-align: center; }

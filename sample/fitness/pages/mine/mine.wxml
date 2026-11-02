@@ -1,55 +1,56 @@
 <view class="hd">
-  <view class="av"><text>陈</text></view>
+  <view class="av"><text>{{initial}}</text></view>
   <view class="hd-m">
-    <text class="nm">陈一鸣</text>
-    <view class="row"><text class="lv">黑金会员</text><text class="muted">ID 20310457</text></view>
+    <text class="nm">{{profile.name}}</text>
+    <view class="row"><text class="lv">黑金会员</text><text class="muted hd-sub">ID 20310457 · {{profile.goal}}</text></view>
   </view>
-  <view class="edit" bindtap="editProfile"><text>编辑资料</text></view>
+  <view class="edit" bindtap="goProfile"><text>编辑资料</text></view>
 </view>
-
 <view class="vip" bindtap="goCard">
   <view>
-    <text class="vip-t">黑金年卡</text>
-    <text class="vip-s">全国 86 家门店通用 · 团课无限约</text>
+    <text class="vip-t">{{card.name}}</text>
+    <text class="vip-s">{{card.valid ? '有效期至 ' + card.expire + ' · 剩余 ' + card.left + ' 天' : '已于 ' + card.expire + ' 过期，续费后恢复团课预约'}}</text>
   </view>
-  <view class="vip-btn"><text>查看权益</text></view>
+  <view class="vip-btn"><text>{{card.valid ? '续费 / 权益' : '立即续费'}}</text></view>
 </view>
-
 <view class="card">
   <view class="row between">
     <text class="sec-title">身体数据</text>
-    <text class="muted">BMI {{bmi}} · {{bmiText}}</text>
+    <view class="link body-link" bindtap="goBody"><text>{{body ? 'BMI ' + bmi.v + ' · ' + bmi.text : '去记录'}}</text><view class="chev"></view></view>
   </view>
-  <view class="body">
-    <view class="b-i"><text class="b-v">{{height}}</text><text class="b-k">身高 cm</text></view>
-    <view class="b-i"><text class="b-v">{{weight}}</text><text class="b-k">体重 kg</text></view>
-    <view class="b-i"><text class="b-v">18.6</text><text class="b-k">体脂率 %</text></view>
+  <view class="body" bindtap="goBody">
+    <view class="b-i"><text class="b-v">{{profile.height}}</text><text class="b-k">身高 cm</text></view>
+    <view class="b-i"><text class="b-v">{{body ? body.weight : '--'}}</text><text class="b-k">体重 kg</text></view>
+    <view class="b-i"><text class="b-v">{{body && body.fat ? body.fat : '--'}}</text><text class="b-k">体脂率 %</text></view>
   </view>
-  <text class="sl-t">更新体重</text>
-  <slider min="40" max="120" step="0.5" value="{{weight}}" activeColor="#ff5a36" block-size="22" show-value="{{true}}" bindchange="onWeight" />
+  <text class="muted b-date">{{body ? '最近一次记录 ' + body.date + '，点开可记录、看趋势、删除' : '还没有身体数据'}}</text>
 </view>
-
 <view class="card">
   <view class="row between">
     <text class="sec-title">我的预约</text>
-    <text class="muted">{{bookings.length}} 节</text>
+    <view class="link all-bk" bindtap="goBookings"><text>全部 {{todoCount}} 节</text><view class="chev"></view></view>
   </view>
-  <view class="bk" wx:for="{{bookings}}" wx:key="id">
+  <view class="bk" wx:for="{{bookings}}" wx:key="bid">
     <view class="bk-d"><text>{{item.time}}</text></view>
-    <view class="bk-m">
+    <view class="bk-m" data-id="{{item.bid}}" bindtap="goBookings">
       <text class="bk-n">{{item.name}}</text>
-      <text class="muted">{{item.dateText}} · {{item.room}}</text>
+      <text class="muted">{{item.sub}}</text>
     </view>
+    <view wx:if="{{item.canSign}}" class="bk-op pri bk-sign" data-id="{{item.bid}}" bindtap="onSign"><text>签到</text></view>
+    <view wx:else class="bk-op bk-cancel" data-id="{{item.bid}}" bindtap="onCancel"><text>{{item.wait ? '取消候补' : '取消'}}</text></view>
   </view>
   <view wx:if="{{!bookings.length}}" class="bk-empty" bindtap="goClasses"><text>还没有预约，去看看今天的团课</text><view class="chev"></view></view>
+  <text wx:if="{{strikes}}" class="strike">近 30 天爽约 {{strikes}} 次，满 3 次暂停预约 7 天</text>
 </view>
-
 <view class="card menu">
   <view class="m">
     <text class="m-t">上课前 1 小时提醒</text>
     <switch checked="{{remind}}" color="#ff5a36" bindchange="onRemind" />
   </view>
-  <view class="m" bindtap="goCard"><text class="m-t">会员卡与续费</text><view class="chev"></view></view>
-  <view class="m" bindtap="contact"><text class="m-t">联系门店</text><text class="muted">0755-8666 2031</text><view class="chev"></view></view>
+  <view class="m m-plan" bindtap="goPlan"><text class="m-t">训练计划</text><text class="muted">{{plan || '去选一个'}}</text><view class="chev"></view></view>
+  <view class="m m-rec" bindtap="goRecords"><text class="m-t">训练记录</text><text class="muted">{{workoutCount}} 条</text><view class="chev"></view></view>
+  <view class="m m-orders" bindtap="goOrders"><text class="m-t">我的订单</text><text class="muted">{{orderCount}} 笔</text><view class="chev"></view></view>
+  <view class="m m-card" bindtap="goCard"><text class="m-t">会员卡与续费</text><view class="chev"></view></view>
+  <view class="m m-call" bindtap="contact"><text class="m-t">联系门店</text><text class="muted">{{shop.short}} {{shop.phone}}</text><view class="chev"></view></view>
 </view>
 <view style="height: 40rpx;"></view>

@@ -1,0 +1,22 @@
+.stage { position: relative; width: 520rpx; height: 520rpx; margin: 40rpx auto 0; display: flex; align-items: center; justify-content: center; }
+.ring { position: absolute; left: 0; top: 0; width: 520rpx; height: 520rpx; border-radius: 260rpx; border: 4rpx solid rgba(108,99,217,0.25); box-sizing: border-box; }
+.ring-on { animation: glow 3s ease-in-out infinite; }
+@keyframes glow { 0% { opacity: 0.3; transform: scale(0.96); } 50% { opacity: 1; transform: scale(1); } 100% { opacity: 0.3; transform: scale(0.96); } }
+.ball { position: absolute; left: 130rpx; top: 130rpx; width: 260rpx; height: 260rpx; border-radius: 130rpx; background: linear-gradient(135deg, #a59cf0, #6c63d9); opacity: 0.9; }
+.center { position: relative; display: flex; flex-direction: column; align-items: center; }
+.phase { font-size: 40rpx; font-weight: 600; color: #ffffff; }
+.count { font-size: 30rpx; color: rgba(255,255,255,0.9); margin-top: 6rpx; }
+.steps { justify-content: center; margin-top: 24rpx; }
+.step { width: 150rpx; display: flex; flex-direction: column; align-items: center; opacity: 0.45; }
+.step-on { opacity: 1; }
+.step-n { font-size: 44rpx; font-weight: 700; color: #6c63d9; }
+.dark .step-n { color: #b4aefc; }
+.step-t { font-size: 24rpx; }
+.opt-t { font-size: 28rpx; }
+.rounds { margin-top: 20rpx; }
+.vib { margin-top: 24rpx; }
+.g-t { display: block; font-size: 28rpx; font-weight: 600; margin-bottom: 10rpx; }
+.g-d { display: block; font-size: 24rpx; line-height: 1.7; color: #6f6e88; }
+.dark .g-d { color: #a3a3c2; }
+.bottom { margin: 40rpx 32rpx 0; }
+.btn-stop { background: #e07a6a; }

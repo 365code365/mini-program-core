@@ -1,6 +1,6 @@
 <view class="page">
   <view class="card ring-card">
-    <text class="muted">每月预算（元）</text>
+    <text class="muted">{{bookName}} · 每月预算（元）</text>
     <view class="big-num"><text>{{budget}}</text></view>
     <view class="bar-track track">
       <view class="bar-fill" style="width: {{pct}}%; background: {{over ? 'linear-gradient(90deg,#ff8a8a,#f04848)' : 'linear-gradient(90deg,#ffc06b,#f5733b)'}};"></view>

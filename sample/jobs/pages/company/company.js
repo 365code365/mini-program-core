@@ -1,20 +1,28 @@
 const data = require('../../utils/data.js');
-
+const S = require('../../utils/store.js');
+const host = require('../../utils/host.js');
 Page({
   data: { co: null, jobs: [], followed: false },
   onLoad(q) {
     const co = data.companies[q.id] || data.companies.c1;
     wx.setNavigationBarTitle({ title: co.name });
-    const follows = wx.getStorageSync('jobs_follow') || [];
-    this.setData({ co, jobs: co.jobs.map(data.getJob), followed: follows.indexOf(co.id) >= 0 });
+    this.setData({ co });
+  },
+  onShow() {
+    const applied = S.getApps().map(a => a.id);
+    this.setData({
+      jobs: this.data.co.jobs.map(data.getJob).map(j => Object.assign({}, j, { applied: applied.indexOf(j.id) >= 0 })),
+      followed: S.isFollow(this.data.co.id)
+    });
   },
   onFollow() {
-    let follows = wx.getStorageSync('jobs_follow') || [];
-    const followed = !this.data.followed;
-    follows = followed ? follows.concat([this.data.co.id]) : follows.filter(x => x !== this.data.co.id);
-    wx.setStorageSync('jobs_follow', follows);
+    const followed = S.toggleFollow(this.data.co.id);
     this.setData({ followed });
-    wx.showToast({ title: followed ? '关注成功' : '已取消关注', icon: 'none' });
+    wx.showToast({ title: followed ? '关注成功，有新职位会通知你' : '已取消关注', icon: 'none' });
+  },
+  onMap() {
+    const c = this.data.co;
+    host.openMap({ lat: c.lat, lng: c.lng, name: c.name, addr: c.addr });
   },
   onJob(e) { wx.navigateTo({ url: '/pages/job/job?id=' + e.currentTarget.dataset.id }); }
 });

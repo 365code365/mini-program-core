@@ -51,6 +51,7 @@ Page({
     lat: 39.908823,
     lng: 116.39747,
     mapResult: '点地图上的标记，宿主回传 markertap',
+    hostMarkers: [{ id: 1, latitude: 39.908823, longitude: 116.39747, title: '天安门', callout: { content: '天安门', display: 'ALWAYS' } }],
     clipResult: '',
     tabResult: '',
     barHidden: false,
@@ -193,6 +194,14 @@ Page({
   // ── 原生 map ──
   onMarker(e) {
     this.setData({ mapResult: '宿主回传 markertap：' + JSON.stringify(e.detail) });
+  },
+  onMapTap(e) {
+    // 宿主没接地图（桌面预览）时引擎按普通节点派，detail 只有 x / y
+    if (typeof e.detail.latitude !== 'number') return this.setData({ mapResult: '点在地图上（宿主没接地图，没有经纬度）' });
+    this.setData({ mapResult: '点在地图上：' + e.detail.latitude.toFixed(5) + ', ' + e.detail.longitude.toFixed(5) });
+  },
+  openNative(e) {
+    wx.navigateTo({ url: e.currentTarget.dataset.url });
   },
   // ── 剪贴板 / 振动 ──
   copy() {

@@ -1,0 +1,26 @@
+<view class="summary row">
+  <view class="flex1 row sum-left">
+    <text class="sum-num">{{list.length}}</text>
+    <text class="sum-label">条评价{{avg ? ' · 平均 ' + avg + ' 星' : ''}}</text>
+  </view>
+  <view wx:if="{{pending}}" class="pending row" bindtap="onPending"><text class="pending-t">{{pending}} 单待评价</text></view>
+</view>
+<view class="card review" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onDetail">
+  <view class="row r-head">
+    <view class="r-logo glyph" style="background: linear-gradient(135deg, {{item.shop.c1}}, {{item.shop.c2}});">{{item.shop.logo}}</view>
+    <text class="flex1 r-shop ellipsis" data-shop="{{item.shop.id}}" catchtap="onShop">{{item.shop.name}}</text>
+    <text class="sub">{{item.time}}</text>
+  </view>
+  <view class="row stars">
+    <text wx:for="{{starList}}" wx:for-item="n" wx:key="*this" class="star {{n <= item.stars ? 'star-on' : ''}}">★</text>
+  </view>
+  <view wx:if="{{item.tags.length}}" class="r-tags">
+    <text wx:for="{{item.tags}}" wx:for-item="t" wx:key="*this" class="r-tag">{{t}}</text>
+  </view>
+  <text wx:if="{{item.text}}" class="r-text">{{item.text}}</text>
+  <text class="r-dishes ellipsis">{{item.dishes}}</text>
+</view>
+<view wx:if="{{!list.length}}" class="empty">
+  <text class="sub">还没有评价过订单，送达后在订单详情里评价可得 20 个吃货豆</text>
+</view>
+<view class="gap"></view>

@@ -1,0 +1,31 @@
+<view class="page" wx:if="{{route}}">
+  <map id="map" class="map" latitude="{{lat}}" longitude="{{lng}}" scale="{{scale}}" markers="{{markers}}" polyline="{{polyline}}"
+       show-location show-scale bindmarkertap="onMarker" bindcallouttap="onCallout"></map>
+
+  <view class="wrap">
+    <view class="tabs row">
+      <view wx:for="{{s.routes}}" wx:key="name" class="tab {{ri === index ? 'tab-on' : ''}}" data-i="{{index}}" bindtap="onRoute">
+        <text class="tab-n">{{item.name}}</text><text class="tab-t">{{item.time}}</text>
+      </view>
+    </view>
+    <text class="muted loc">{{located}}</text>
+
+    <view class="card">
+      <view class="stop row" wx:for="{{route.stops}}" wx:key="i" data-i="{{index}}" bindtap="onStop">
+        <view class="axis">
+          <view class="dot {{sel === index ? 'dot-on' : ''}}"><text class="dot-tx">{{index + 1}}</text></view>
+          <view class="bar" wx:if="{{index < route.stops.length - 1}}"></view>
+        </view>
+        <view class="col st-r">
+          <text class="st-n {{sel === index ? 'brand' : ''}}">{{item.name}}</text>
+          <text class="muted">{{item.note}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="row ops">
+      <view class="btn-ghost half" hover-class="press" bindtap="onCopy">复制路线</view>
+      <view class="btn half" hover-class="press" bindtap="goGuide">边走边听讲解</view>
+    </view>
+  </view>
+</view>

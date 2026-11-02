@@ -28,8 +28,9 @@ impl MiniEngine {
         if self.overlay_pointer_down(x, y) {
             return;
         }
-        // 引擎画的导航栏（返回键）：画面坐标，之后一律换成页面视口坐标（engine_navbar.rs）
-        if self.nav_pointer_down(x, y) {
+        // 引擎画的导航栏（返回键）：画面坐标，之后一律换成页面视口坐标（engine_navbar.rs）。
+        // 按在地图这类自己处理手势的同层组件上：整串触摸交给宿主（engine_native_touch.rs）
+        if self.nav_pointer_down(x, y) || self.native_touch_down(x, y) {
             return;
         }
         let y = self.unshift_y(y) - self.nav_height();
@@ -106,7 +107,7 @@ impl MiniEngine {
     pub fn pointer_move(&mut self, x: f32, y: f32) {
         // 不带时间戳的移动：不重采样（`pointer_move_at` 转进来的除外，engine_resample.rs）
         self.resample_untimed_move();
-        if self.route.swallowing() || self.overlay_pointer_move(x, y) || self.nav_pointer_move(x, y) {
+        if self.route.swallowing() || self.overlay_pointer_move(x, y) || self.nav_pointer_move(x, y) || self.native_touch_move(x, y) {
             return;
         }
         let y = self.unshift_y(y) - self.nav_height();
@@ -165,7 +166,7 @@ impl MiniEngine {
 
     /// 手指抬起
     pub fn pointer_up(&mut self, x: f32, y: f32) {
-        if self.route.swallow_end() || self.overlay_pointer_up(x, y) || self.nav_pointer_up(x, y) {
+        if self.route.swallow_end() || self.overlay_pointer_up(x, y) || self.nav_pointer_up(x, y) || self.native_touch_up(x, y) {
             return;
         }
         let y = self.unshift_y(y) - self.nav_height();
@@ -213,7 +214,7 @@ impl MiniEngine {
     /// 手势被系统打断（来电、返回手势接管…）
     pub fn pointer_cancel(&mut self) {
         if self.route.swallow_end() || self.nav_pointer_cancel() { return; } // 转场中 / 导航栏上的那串
-        if self.capsule_cancel() { return; } // 按在胶囊上的那串（engine_capsule.rs）
+        if self.capsule_cancel() || self.native_touch_cancel() { return; } // 胶囊上的 / 交给地图这类同层组件的那串
         // 全屏视频里拖到一半的进度照样落下去
         crate::renderer::components::video_fullscreen::fullscreen_cancel();
         // 与按下/抬起对称：面板弹着时这串触摸根本没进页面的状态机

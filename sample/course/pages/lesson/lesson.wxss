@@ -1,0 +1,36 @@
+.player { height: 420rpx; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.p-mark { position: absolute; left: 32rpx; top: 24rpx; font-size: 40rpx; font-weight: bold; color: rgba(255, 255, 255, 0.6); }
+.p-btn { width: 120rpx; height: 120rpx; border-radius: 60rpx; background: rgba(0, 0, 0, 0.3); display: flex; align-items: center; justify-content: center; }
+/* 播放键：旋转的 L 形边框（透明边拼的三角画不出来） */
+.p-play { width: 30rpx; height: 30rpx; border-top: 8rpx solid #ffffff; border-right: 8rpx solid #ffffff; transform: rotate(45deg); margin-left: -14rpx; }
+.p-bar { width: 10rpx; height: 40rpx; background: #ffffff; border-radius: 4rpx; margin: 0 7rpx; }
+.p-foot { position: absolute; left: 0; right: 0; bottom: 0; padding: 16rpx 24rpx; background: rgba(0, 0, 0, 0.28); }
+.p-time { font-size: 22rpx; color: #ffffff; white-space: nowrap; }
+.p-track { flex: 1; height: 6rpx; margin: 0 16rpx; background: rgba(255, 255, 255, 0.35); border-radius: 3rpx; overflow: hidden; }
+.p-in { height: 6rpx; background: #ffd25c; }
+.p-speed { margin-left: 16rpx; font-size: 22rpx; color: #ffffff; border: 2rpx solid rgba(255, 255, 255, 0.7); border-radius: 18rpx; padding: 2rpx 14rpx; white-space: nowrap; }
+.info { display: flex; flex-direction: column; }
+.l-t { font-size: 32rpx; font-weight: bold; margin-bottom: 8rpx; }
+.free { font-size: 20rpx; color: #ff7a3d; border: 1rpx solid #ffb48a; padding: 0 10rpx; border-radius: 6rpx; margin-right: 12rpx; white-space: nowrap; }
+.ctrls { margin-top: 24rpx; }
+.op { flex: 1; height: 72rpx; line-height: 72rpx; text-align: center; border-radius: 36rpx; background: #f2f4f8; color: #4b5263; font-size: 26rpx; white-space: nowrap; }
+.op-main { flex: 1.4; margin: 0 16rpx; background: linear-gradient(90deg, #5b8cff, #3d6cf6); color: #ffffff; font-weight: bold; }
+.op-done { background: #e8f8f1; color: #20a37a; }
+.note-in { margin-top: 20rpx; }
+.n-input { flex: 1; height: 72rpx; padding: 0 20rpx; background: #f6f8fc; border-radius: 12rpx; font-size: 26rpx; }
+.n-save { margin-left: 16rpx; height: 64rpx; line-height: 64rpx; padding: 0 26rpx; border-radius: 32rpx; background: #edf2ff; color: #3d6cf6; font-size: 26rpx; white-space: nowrap; }
+.note { margin-top: 20rpx; padding: 18rpx 20rpx; background: #fffaf0; border-radius: 12rpx; }
+.n-pos { font-size: 22rpx; color: #ff8a1d; font-weight: bold; }
+.n-del { font-size: 22rpx; color: #9aa0ab; }
+.n-text { margin-top: 6rpx; font-size: 26rpx; color: #2b3140; }
+.ls { padding: 22rpx 0; border-bottom: 1rpx solid #f2f3f6; }
+.ls-on .ls-t { color: #3d6cf6; font-weight: bold; }
+.ls-st { width: 40rpx; height: 40rpx; border-radius: 20rpx; background: #e6e9ef; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ls-done { background: #20b486; }
+.ls-tick { width: 16rpx; height: 9rpx; border-left: 4rpx solid #ffffff; border-bottom: 4rpx solid #ffffff; transform: rotate(-45deg); margin-top: -4rpx; }
+.ls-lock { width: 14rpx; height: 12rpx; border-radius: 3rpx; background: #9aa0ab; }
+.ls-main { flex: 1; margin-left: 18rpx; display: flex; flex-direction: column; min-width: 0; }
+.ls-t { font-size: 26rpx; color: #2b3140; margin-bottom: 4rpx; }
+.ls-now { font-size: 22rpx; color: #3d6cf6; white-space: nowrap; }
+.ls-x { font-size: 22rpx; color: #b3b8c2; white-space: nowrap; }
+.gap { height: 60rpx; }

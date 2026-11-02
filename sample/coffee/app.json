@@ -5,7 +5,13 @@
     "pages/cart/cart",
     "pages/pickup/pickup",
     "pages/coupons/coupons",
-    "pages/mine/mine"
+    "pages/mine/mine",
+    "pages/orders/orders",
+    "pages/order-detail/order-detail",
+    "pages/wallet/wallet",
+    "pages/points/points",
+    "pages/address/address",
+    "pages/address-edit/address-edit"
   ],
   "window": {
     "navigationBarTitleText": "拾光咖啡",

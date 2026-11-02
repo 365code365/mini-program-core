@@ -1,0 +1,16 @@
+.head { background: linear-gradient(160deg, #1f4fb4, #2f6fe0); padding: 40rpx 32rpx 80rpx; }
+.av { width: 112rpx; height: 112rpx; border-radius: 56rpx; background: #ffc552; color: #5a3b00; font-size: 44rpx; line-height: 112rpx; text-align: center; margin-right: 24rpx; font-weight: bold; }
+.nick { color: #fff; font-size: 36rpx; font-weight: bold; }
+.sub { color: #d6e2ff; font-size: 24rpx; margin-top: 8rpx; }
+.stats { background: #fff; margin: -50rpx 24rpx 0; border-radius: 20rpx; padding: 28rpx 0; }
+.st { flex: 1; align-items: center; }
+.v { font-size: 36rpx; font-weight: bold; color: #1f2633; }
+.k { font-size: 22rpx; color: #8a93a3; margin-top: 6rpx; }
+.r-av { width: 80rpx; height: 80rpx; border-radius: 40rpx; margin-right: 16rpx; }
+.r-t { font-size: 28rpx; font-weight: bold; }
+.r-q { margin-top: 6rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 420rpx; }
+.menu { padding-top: 8rpx; padding-bottom: 8rpx; }
+.mi { height: 96rpx; border-bottom: 1rpx solid #eef0f4; }
+.mi-t { font-size: 28rpx; }
+.danger { color: #d64545; }
+.go { color: #b4bac5; font-size: 34rpx; }

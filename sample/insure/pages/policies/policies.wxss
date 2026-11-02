@@ -1,0 +1,15 @@
+.pl-head { background: linear-gradient(135deg, #3d7bff, #1f4fd8); padding: 40rpx 32rpx 48rpx; }
+.pl-h1 { display: block; color: #ffffff; font-size: 40rpx; font-weight: bold; }
+.pl-h2 { display: block; color: rgba(255, 255, 255, 0.75); font-size: 22rpx; margin-top: 10rpx; }
+.pl-tabs { white-space: nowrap; background: #ffffff; display: flex; flex-direction: row; }
+.pl-tab { display: inline-block; padding: 24rpx 28rpx; font-size: 28rpx; color: #5c6370; }
+.pl-tab.on { color: #2f6bff; font-weight: bold; }
+.pl-cnt { font-size: 22rpx; }
+.pl-card { padding-bottom: 20rpx; }
+.pl-name { font-size: 30rpx; font-weight: bold; flex: 1; min-width: 0; margin-right: 16rpx; }
+.pl-st { font-size: 22rpx; padding: 4rpx 14rpx; border-radius: 8rpx; flex-shrink: 0; }
+.st-active { color: #12a150; background: #e8f8ee; }
+.st-waiting { color: #2f6bff; background: #eaf0ff; }
+.st-pending { color: #e37318; background: #fff3e6; }
+.st-expired, .st-cancelled { color: #8a93a3; background: #f2f3f5; }
+.pl-foot { margin-top: 10rpx; padding-top: 16rpx; border-top: 1rpx solid #f0f1f4; }

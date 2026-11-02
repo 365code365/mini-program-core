@@ -1,0 +1,49 @@
+<view wx:if="{{!pet}}" class="none"><text class="muted">先添加一只宠物再来记录吧</text></view>
+<block wx:elif="{{mode === 'weight'}}">
+  <view class="card form">
+    <view class="f">
+      <text class="f-k">体重</text>
+      <input class="f-in f-weight" type="digit" placeholder="单位 kg，如 4.7" placeholder-class="ph" value="{{weight}}" maxlength="5" bindinput="onWeight" />
+      <text class="unit">kg</text>
+    </view>
+    <view class="f last">
+      <text class="f-k">称重日期</text>
+      <picker class="f-pk f-date" mode="date" value="{{date}}" end="{{today}}" bindchange="onDate">
+        <view class="f-v"><text>{{date}}</text><view class="chev"></view></view>
+      </picker>
+    </view>
+  </view>
+  <text class="hint">{{last}}。同一天记多次只保留最后一次。</text>
+  <view class="btn save" bindtap="save"><text>保存体重</text></view>
+</block>
+<block wx:else>
+  <view class="card form">
+    <view class="f">
+      <text class="f-k">类型</text>
+      <view class="chips">
+        <text wx:for="{{types}}" wx:key="*this" class="chip {{type === item ? 'on' : ''}}" data-t="{{item}}" bindtap="pickType">{{item}}</text>
+      </view>
+    </view>
+    <view class="f">
+      <text class="f-k">名称</text>
+      <input id="name{{nameSeq}}" class="f-in f-name" placeholder="如：猫三联 第 1 针" placeholder-class="ph" value="{{name}}" maxlength="16" bindinput="onName" />
+    </view>
+    <view class="quick">
+      <text wx:for="{{names}}" wx:key="*this" class="q {{name === item ? 'on' : ''}}" data-n="{{item}}" bindtap="pickName">{{item}}</text>
+    </view>
+    <view class="f">
+      <text class="f-k">做的日期</text>
+      <picker class="f-pk f-date" mode="date" value="{{date}}" end="{{today}}" bindchange="onDate">
+        <view class="f-v"><text>{{date}}</text><view class="chev"></view></view>
+      </picker>
+    </view>
+    <view class="f last">
+      <text class="f-k">提醒周期</text>
+      <view class="chips">
+        <text wx:for="{{cycles}}" wx:key="d" class="chip sm {{cycle === item.d ? 'on' : ''}}" data-d="{{item.d}}" bindtap="pickCycle">{{item.n}}</text>
+      </view>
+    </view>
+  </view>
+  <text class="hint">下次提醒：{{next}}（{{type}}到期前 30 天开始提醒）</text>
+  <view class="btn save" bindtap="save"><text>保存记录</text></view>
+</block>

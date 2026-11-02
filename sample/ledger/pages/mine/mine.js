@@ -1,8 +1,9 @@
 const store = require('../../utils/store.js')
 
 Page({
-  data: { total: 0, days: 0, streak: 0, budget: 0, balanceText: '0.00' },
+  data: { total: 0, days: 0, streak: 0, budget: 0, balanceText: '0.00', bookName: '', bookTotal: 1, catTotal: 0, remindText: '' },
   onShow() {
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) this.getTabBar().setData({ selected: 2 })
     const list = store.all()
     const daySet = {}
     list.forEach(r => { daySet[r.date] = 1 })
@@ -19,24 +20,29 @@ Page({
       days: Object.keys(daySet).length,
       streak,
       budget: store.getBudget(),
+      bookName: store.curBook().name,
+      bookTotal: store.books().length,
+      catTotal: store.cats('out').length + store.cats('in').length,
+      remindText: this.remindText(store.reminder()),
       balanceText: store.money(store.sum(month, 'in') - store.sum(month, 'out'))
     })
   },
+  remindText(r) {
+    if (!r.on) return '已关闭'
+    return (r.days === 'workday' ? '工作日 ' : '每天 ') + r.time
+  },
   onBudget() { wx.navigateTo({ url: '/pages/budget/budget' }) },
   onAdd() { wx.navigateTo({ url: '/pages/add/add' }) },
-  onExport() {
-    wx.showActionSheet({
-      itemList: ['导出本月账单（CSV）', '导出全部账单（CSV）', '生成年度报告'],
-      success: (res) => {
-        wx.showToast({ title: res.tapIndex === 2 ? '报告生成中' : '已导出到本地', icon: 'success' })
-      }
-    })
-  },
-  onReminder() { wx.showToast({ title: '每晚 21:00 提醒记账', icon: 'none' }) },
+  onBooks() { wx.navigateTo({ url: '/pages/books/books' }) },
+  onCats() { wx.navigateTo({ url: '/pages/cats/cats' }) },
+  onExport() { wx.navigateTo({ url: '/pages/export/export' }) },
+  onReminder() { wx.navigateTo({ url: '/pages/remind/remind' }) },
+  onList() { wx.switchTab({ url: '/pages/index/index' }) },
+  onStats() { wx.switchTab({ url: '/pages/stats/stats' }) },
   onClear() {
     wx.showModal({
-      title: '清空全部账单？',
-      content: '共 ' + this.data.total + ' 笔记录，清空后无法恢复',
+      title: '清空本账本账单？',
+      content: '「' + this.data.bookName + '」共 ' + this.data.total + ' 笔记录，清空后无法恢复',
       confirmText: '清空',
       confirmColor: '#f04848',
       success: (res) => {

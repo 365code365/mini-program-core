@@ -1,0 +1,26 @@
+.wrap { padding-bottom: 60rpx; }
+.head { background: linear-gradient(180deg, #fff3e6, #f4f6f8); padding: 48rpx 32rpx 24rpx; display: flex; flex-direction: column; align-items: center; }
+.head-ok { background: linear-gradient(180deg, #dcf5e9, #f4f6f8); }
+.h-state { font-size: 30rpx; color: #464c55; }
+.h-amt { display: flex; flex-direction: row; align-items: baseline; margin-top: 12rpx; }
+.h-yen { font-size: 40rpx; font-weight: bold; margin-right: 6rpx; }
+.h-num { font-size: 84rpx; font-weight: bold; }
+.h-sub { font-size: 24rpx; color: #8a9099; margin-top: 10rpx; }
+.route { margin: 24rpx 0 8rpx; }
+.r-line { display: flex; flex-direction: row; align-items: center; padding: 8rpx 0; }
+.r-dot { width: 16rpx; height: 16rpx; border-radius: 8rpx; margin-right: 18rpx; }
+.r-a { background: #13a868; }
+.r-b { background: #f05246; }
+.r-tx { font-size: 28rpx; color: #1f2329; }
+.nums { display: flex; flex-direction: row; padding: 20rpx 0; }
+.num { flex: 1; display: flex; flex-direction: column; }
+.nv { font-size: 34rpx; font-weight: bold; }
+.nk { font-size: 22rpx; color: #8a9099; margin-top: 6rpx; }
+.total { border-top: 1rpx solid #eeeeee; margin-top: 10rpx; padding-top: 22rpx; }
+.pm { display: flex; flex-direction: row; align-items: center; justify-content: space-between; padding: 22rpx 0; border-bottom: 1rpx solid #f0f0f0; }
+.pm-l { display: flex; flex-direction: column; }
+.pm-name { font-size: 30rpx; margin-bottom: 6rpx; }
+.recharge { display: block; margin-top: 20rpx; font-size: 26rpx; color: #576b95; }
+.foot { margin: 40rpx 32rpx 0; }
+.foot-2 { margin-top: 24rpx; }
+.empty-btn { width: 360rpx; margin-top: 40rpx; }

@@ -1,0 +1,31 @@
+<view class="head">
+  <view class="row between">
+    <text class="head-label">饭卡余额（元）</text>
+    <text class="head-rule" bindtap="onRule">说明</text>
+  </view>
+  <text class="head-num">{{balanceText}}</text>
+  <text class="head-sub">林晓岚 · 工号 HW20318</text>
+</view>
+<view class="card">
+  <text class="title">充值金额</text>
+  <view wx:if="{{need}}" class="need"><text>本单还差 ¥{{needText}}，充值够了会自动回到支付页</text></view>
+  <view class="amts">
+    <view wx:for="{{options}}" wx:key="fen" class="amt {{pick === index ? 'amt-on' : ''}}" data-i="{{index}}" bindtap="onPick">
+      <text class="amt-t">{{item.text}} 元</text>
+    </view>
+  </view>
+  <view class="btn go" bindtap="onRecharge"><text>微信支付 ¥{{options[pick].text}}，立即到账</text></view>
+</view>
+<view class="card">
+  <text class="title">饭卡明细</text>
+  <view class="log" wx:for="{{logs}}" wx:key="id">
+    <text class="log-type log-{{item.type}}">{{item.typeName}}</text>
+    <view class="log-info">
+      <text class="log-title">{{item.title}}</text>
+      <text class="sub log-time">{{item.time}}</text>
+    </view>
+    <text class="log-amt {{item.plus ? 'log-in' : ''}}">{{item.sign}}{{item.abs}}</text>
+  </view>
+  <view wx:if="{{!logs.length}}" class="empty"><text class="sub">还没有饭卡记录</text></view>
+</view>
+<view class="gap"></view>

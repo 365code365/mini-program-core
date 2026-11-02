@@ -74,6 +74,45 @@ function trains(from, to, date) {
     }
   })
 }
+// 城市经纬度（约值），只用来挑「顺路」的经停站
+const GEO = {
+  北京: [116.4, 39.9], 保定: [115.5, 38.9], 蚌埠: [117.4, 32.9], 成都: [104.1, 30.7], 长沙: [113, 28.2], 重庆: [106.5, 29.6],
+  常州: [119.9, 31.8], 广州: [113.3, 23.1], 贵阳: [106.7, 26.6], 杭州: [120.2, 30.3], 合肥: [117.3, 31.8], 哈尔滨: [126.6, 45.8],
+  济南: [117, 36.7], 金华: [119.6, 29.1], 南京: [118.8, 32.1], 南昌: [115.9, 28.7], 宁波: [121.5, 29.9], 上海: [121.5, 31.2],
+  深圳: [114.1, 22.5], 苏州: [120.6, 31.3], 沈阳: [123.4, 41.8], 天津: [117.2, 39.1], 太原: [112.5, 37.9], 武汉: [114.3, 30.6],
+  无锡: [120.3, 31.5], 温州: [120.7, 28], 西安: [108.9, 34.3], 厦门: [118.1, 24.5], 徐州: [117.2, 34.3], 郑州: [113.6, 34.7], 珠海: [113.6, 22.3]
+}
+// 经停站：只挑落在出发地与目的地连线附近、且在两者之间的城市，按沿途先后排；高铁停得少、普速全停。
+// 到站时刻按沿途位置占全程的比例算，停站高铁 2 分钟、动车 3 分钟、普速 6~12 分钟。同一趟车每次生成的一样
+function stops(t) {
+  const h = hash(t.no + t.from + t.to)
+  const a = GEO[t.from] || [0, 0]
+  const b = GEO[t.to] || [1, 1]
+  const dx = b[0] - a[0], dy = b[1] - a[1]
+  const len2 = dx * dx + dy * dy || 1
+  const width = Math.max(1.2, Math.sqrt(len2) * 0.22)
+  let mids = ALL.filter(c => c !== t.from && c !== t.to && GEO[c]).map(c => {
+    const px = GEO[c][0] - a[0], py = GEO[c][1] - a[1]
+    const k = (px * dx + py * dy) / len2
+    const off = Math.abs(px * dy - py * dx) / Math.sqrt(len2)
+    return { name: c, k, off }
+  }).filter(m => m.k > 0.06 && m.k < 0.94 && m.off < width)
+  const max = t.type === 'G' ? 1 + (h % 3) : t.type === 'D' ? 2 + (h % 3) : 6
+  mids = mids.sort((x, y) => x.off - y.off).slice(0, max).sort((x, y) => x.k - y.k)
+  const wait = t.type === 'G' ? 2 : t.type === 'D' ? 3 : 6
+  const list = [{ name: t.from, arrText: '----', depText: t.depText, stayText: '始发', role: 'from' }]
+  let prev = t.dep
+  mids.forEach((m, i) => {
+    // 相邻两站离得近时至少隔 6 分钟；挤不进终到前的站就不停
+    const arr = Math.max(t.dep + Math.round(t.dur * m.k), prev + 6)
+    const stay = wait + (t.type === 'K' ? (h + i) % 7 : 0)
+    if (arr + stay > t.dep + t.dur - 6) return
+    prev = arr + stay
+    list.push({ name: m.name, arrText: hm(arr), depText: hm(arr + stay), stayText: stay + '分', role: '', nextDay: arr >= 1440 })
+  })
+  list.push({ name: t.to, arrText: t.arrText, depText: '----', stayText: '终到', role: 'to', nextDay: t.nextDay })
+  return list.map((s, i) => Object.assign(s, { idx: i + 1 }))
+}
 function isHighSpeed(t) {
   return t.type === 'G' || t.type === 'D'
 }
@@ -100,4 +139,4 @@ function dateLabel(s) {
   const tag = s === t ? '今天' : s === addDays(t, 1) ? '明天' : s === addDays(t, 2) ? '后天' : WEEK[parse(s).getDay()]
   return Number(p[1]) + '月' + Number(p[2]) + '日 ' + tag
 }
-module.exports = { CITIES, HOT, ALL, PERIODS, SORTS, trains, isHighSpeed, today, addDays, dateLabel, hm }
+module.exports = { CITIES, HOT, ALL, PERIODS, SORTS, trains, stops, isHighSpeed, today, addDays, dateLabel, hm }

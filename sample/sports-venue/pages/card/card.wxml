@@ -1,0 +1,52 @@
+<view class="face">
+  <view class="row">
+    <text class="f-brand flex1">约场 · 运动会员</text>
+    <text class="f-rule" bindtap="rule">说明 ⓘ</text>
+  </view>
+  <text class="f-l">储值余额（元）</text>
+  <text class="f-bal">{{card.balance}}</text>
+  <text class="f-s">全场馆通用 · {{times.length ? '另有 ' + times.length + ' 张次卡' : '暂无次卡'}}</text>
+</view>
+<view class="card" wx:if="{{times.length}}">
+  <text class="sec-title">我的次卡</text>
+  <view wx:for="{{times}}" wx:key="planId" class="tc">
+    <view class="row">
+      <text class="tc-n flex1">{{item.name}}</text>
+      <text class="tc-left">剩 {{item.left}}/{{item.total}} 次</text>
+    </view>
+    <progress percent="{{item.pct}}" stroke-width="6" border-radius="3" activeColor="#13b37b" backgroundColor="#e9ecea" active></progress>
+    <text class="muted">有效期至 {{item.expText}}</text>
+  </view>
+</view>
+<view class="card">
+  <view class="kinds row">
+    <view class="kd {{kind === 'stored' ? 'kd-on' : ''}}" data-k="stored" bindtap="setKind"><text>储值卡</text></view>
+    <view class="kd {{kind === 'times' ? 'kd-on' : ''}}" data-k="times" bindtap="setKind"><text>次卡</text></view>
+  </view>
+  <view wx:for="{{plans}}" wx:key="id" class="pl row {{pick === item.id ? 'pl-on' : ''}}" data-id="{{item.id}}" bindtap="pickPlan">
+    <view class="col flex1">
+      <view class="row">
+        <text class="pl-n">{{item.name}}</text>
+        <text wx:if="{{item.hot}}" class="pl-hot">最划算</text>
+        <text wx:if="{{item.give}}" class="pl-give">送 ¥{{item.give}}</text>
+      </view>
+      <text class="muted">{{item.desc}}</text>
+    </view>
+    <text class="pl-p">¥{{item.pay}}</text>
+  </view>
+  <view class="btn-main buy {{buying ? 'btn-dis' : ''}}" bindtap="buy"><text>立即购买</text></view>
+</view>
+<view class="card">
+  <text class="sec-title">收支明细</text>
+  <view wx:if="{{!records.length}}" class="rec-none">
+    <text class="muted">还没有记录，</text><text class="link" bindtap="toBook">去订一场 ›</text>
+  </view>
+  <view wx:for="{{records}}" wx:key="id" class="rec row">
+    <view class="col flex1">
+      <text class="rec-t">{{item.title}}</text>
+      <text class="muted">{{item.at}}</text>
+    </view>
+    <text class="{{item.amount > 0 ? 'rec-in' : 'rec-out'}}">{{item.amt}}</text>
+  </view>
+</view>
+<view class="tabbar-space"></view>

@@ -1,0 +1,18 @@
+.redeem { background: #fff; padding: 20rpx 24rpx; }
+.r-input { flex: 1; height: 72rpx; background: #f5f6f8; border-radius: 36rpx; padding: 0 28rpx; font-size: 26rpx; }
+.r-btn { margin-left: 18rpx; height: 72rpx; line-height: 72rpx; padding: 0 36rpx; border-radius: 36rpx; background: linear-gradient(90deg, #FF5A6E, #E8243F); color: #fff; font-size: 26rpx; font-weight: bold; }
+.tabs { background: #fff; border-top: 1rpx solid #f0f1f3; margin-bottom: 20rpx; }
+.tab { flex: 1; text-align: center; padding: 22rpx 0; font-size: 28rpx; color: #8a9099; border-bottom: 4rpx solid #ffffff; white-space: nowrap; }
+.tab-on { color: #F0384D; font-weight: bold; border-bottom: 4rpx solid #F0384D; }
+.cp { margin: 0 24rpx 20rpx; background: #fff; border-radius: 20rpx; display: flex; flex-direction: row; align-items: center; padding: 26rpx 24rpx 26rpx 0; }
+.cp-left { width: 190rpx; display: flex; flex-direction: column; align-items: center; border-right: 2rpx dashed #FFD0D6; }
+.cp-yen { color: #F0384D; font-size: 26rpx; font-weight: bold; }
+.cp-off { font-size: 56rpx; }
+.cp-min { font-size: 20rpx; color: #F0384D; margin-top: 4rpx; }
+.cp-mid { margin-left: 24rpx; display: flex; flex-direction: column; }
+.cp-name { font-size: 30rpx; font-weight: bold; margin-bottom: 6rpx; }
+.cp-use { font-size: 24rpx; color: #fff; background: linear-gradient(90deg, #FF5A6E, #E8243F); border-radius: 26rpx; padding: 8rpx 24rpx; white-space: nowrap; }
+.cp-used { opacity: 0.55; }
+.cp-done { font-size: 24rpx; color: #9aa0a6; white-space: nowrap; }
+.empty { display: block; text-align: center; padding: 120rpx 0; }
+.gap { height: 24rpx; }

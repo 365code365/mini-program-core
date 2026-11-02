@@ -1,0 +1,36 @@
+<view class="sum">
+  <view class="sum-i"><text class="sum-v">{{sum.count}}</text><text class="sum-k">累计骑行（次）</text></view>
+  <view class="sum-i"><text class="sum-v">{{sum.km}}</text><text class="sum-k">累计里程（公里）</text></view>
+  <view class="sum-i"><text class="sum-v">{{sum.spend}}</text><text class="sum-k">累计花费（元）</text></view>
+</view>
+<view class="tabs">
+  <view class="tab {{tab === item.k ? 'tab-on' : ''}}" wx:for="{{tabs}}" wx:key="k" data-k="{{item.k}}" bindtap="onTab">{{item.t}}</view>
+</view>
+
+<view class="loading" wx:if="{{loading}}">
+  <view class="sk" wx:for="{{[1, 2, 3]}}" wx:key="*this"><view class="sk-a"></view><view class="sk-b"></view><view class="sk-c"></view></view>
+</view>
+<view class="empty" wx:elif="{{!list.length}}">
+  <image class="empty-ic" src="/images/ic-trip.png"></image>
+  <text>还没有{{tab === 'ebike' ? '电单车' : (tab === 'bike' ? '单车' : '')}}骑行记录</text>
+  <view class="btn empty-btn" bindtap="goHome">去扫码骑行</view>
+</view>
+<view class="list" wx:else>
+  <view class="item" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" data-status="{{item.status}}" bindtap="onItem">
+    <view class="row between">
+      <view class="row">
+        <text class="tag {{item.type === 'ebike' ? 'tag-ebike' : 'tag-bike'}}">{{item.type === 'ebike' ? '电单车' : '单车'}}</text>
+        <text class="date">{{item.date}}</text>
+      </view>
+      <text class="{{item.status === 'unpaid' ? 'st-unpaid' : 'st-paid'}}">{{item.status === 'unpaid' ? '待支付' : '已完成'}}</text>
+    </view>
+    <view class="route">
+      <text class="pl">{{item.from}}</text><text class="arrow">→</text><text class="pl">{{item.to}}</text>
+    </view>
+    <view class="row between">
+      <text class="muted">{{item.dur}} · {{item.km}} 公里</text>
+      <text class="price">¥{{item.paid}}</text>
+    </view>
+  </view>
+  <text class="end">仅展示最近 90 天的行程</text>
+</view>

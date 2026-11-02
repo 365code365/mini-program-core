@@ -38,3 +38,18 @@
   border-radius: 20rpx;
   background: #fdeceb;
 }
+.tag-op {
+  font-size: 24rpx;
+  color: #8f6a1d;
+  padding: 6rpx 18rpx;
+  border-radius: 20rpx;
+  background: #fbf1dc;
+  margin-right: 12rpx;
+}
+.rename-input {
+  height: 64rpx;
+  font-size: 28rpx;
+  padding: 0 0 0 1rpx;
+  border-bottom: 2rpx solid #f5a623;
+  margin-right: 16rpx;
+}

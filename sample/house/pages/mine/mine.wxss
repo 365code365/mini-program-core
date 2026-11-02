@@ -118,3 +118,13 @@
 .m-text {
   font-size: 28rpx;
 }
+.bk-status.gray {
+  color: #8a919f;
+  background: #f0f1f4;
+}
+.m-hint {
+  max-width: 300rpx;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

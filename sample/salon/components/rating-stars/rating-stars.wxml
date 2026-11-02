@@ -1,0 +1,5 @@
+<view class="rs">
+  <image wx:for="{{stars}}" wx:key="index" class="rs-star" data-i="{{index}}" bindtap="onTap"
+         style="width:{{size}}rpx;height:{{size}}rpx;margin-right:{{readonly ? 4 : 14}}rpx;" src="/images/star-{{item}}.png"></image>
+  <text wx:if="{{showScore}}" class="rs-score" style="font-size:{{size * 0.85}}rpx;">{{scoreText}}</text>
+</view>

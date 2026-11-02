@@ -1,0 +1,12 @@
+.top { display: flex; flex-direction: column; align-items: center; padding: 56rpx 48rpx 32rpx; background: #fff; }
+.t { margin-top: 24rpx; font-size: 38rpx; font-weight: 700; }
+.s { margin-top: 14rpx; font-size: 25rpx; color: #5b6575; text-align: center; line-height: 1.6; }
+.kv { display: flex; flex-direction: row; align-items: center; padding: 12rpx 0; }
+.k { width: 150rpx; color: #8a94a6; font-size: 26rpx; flex-shrink: 0; }
+.v { flex: 1; font-size: 26rpx; }
+.no { font-weight: 600; color: #1d64d8; }
+.copy { font-size: 24rpx; color: #1d64d8; padding: 4rpx 16rpx; border: 1rpx solid #1d64d8; border-radius: 20rpx; }
+.st { color: #1d64d8; }
+.tip { display: block; margin-top: 12rpx; font-size: 24rpx; color: #5b6575; line-height: 1.6; }
+.btns { padding: 24rpx 48rpx 60rpx; }
+.b2 { margin-top: 24rpx; }

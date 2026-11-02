@@ -1,0 +1,8 @@
+.tabs { position: fixed; left: 0; right: 0; top: 0; z-index: 10; background: #ffffff; display: flex; flex-direction: row; height: 88rpx; border-bottom: 1rpx solid #eef1ef; }
+.tb { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+.tb-tx { font-size: 28rpx; color: #4a544f; }
+.tb-on .tb-tx { color: #13a86b; font-weight: bold; }
+.tb-n { font-size: 18rpx; color: #ffffff; background: #e5484d; border-radius: 14rpx; min-width: 28rpx; height: 28rpx; line-height: 28rpx; text-align: center; margin-left: 4rpx; padding: 0 6rpx; }
+.tb-bar { position: absolute; bottom: 0; width: 48rpx; height: 6rpx; border-radius: 3rpx; background: #13a86b; }
+.list { padding-top: 112rpx; }
+.empty-ic { width: 120rpx; height: 120rpx; opacity: 0.6; }

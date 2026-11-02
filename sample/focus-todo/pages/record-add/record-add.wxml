@@ -1,0 +1,38 @@
+<view class="card cells top-gap">
+  <picker class="pk-date" mode="date" value="{{date}}" start="2024-01-01" end="{{today}}" bindchange="onDate">
+    <view class="cell row">
+      <view class="ic" style="background: #ff6250">日</view>
+      <text class="flex1 cell-label">日期</text>
+      <text class="cell-value">{{date}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <picker class="pk-time" mode="time" value="{{at}}" bindchange="onTime">
+    <view class="cell row">
+      <view class="ic" style="background: #3a86ff">时</view>
+      <text class="flex1 cell-label">开始时间</text>
+      <text class="cell-value">{{at}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <picker class="pk-task" mode="selector" range="{{taskNames}}" value="{{taskIndex}}" bindchange="onTask">
+    <view class="cell row last">
+      <view class="ic" style="background: #19a974">事</view>
+      <text class="flex1 cell-label">专注于</text>
+      <text class="cell-value task-v">{{taskNames[taskIndex]}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+</view>
+<view class="card">
+  <view class="row between">
+    <text class="title">时长</text>
+    <text class="min-v">{{minutes}} 分钟</text>
+  </view>
+  <slider class="min-slider" min="5" max="120" step="5" value="{{minutes}}" activeColor="#ff6250" backgroundColor="#f0f1f4" block-size="22" bindchanging="onMinutes" bindchange="onMinutes" />
+  <text class="sub">关联任务的话，任务上的番茄数加一</text>
+</view>
+<text class="err" wx:if="{{err}}">{{err}}</text>
+<view class="save-wrap">
+  <view class="btn-primary submit" bindtap="onSubmit">保存记录</view>
+</view>

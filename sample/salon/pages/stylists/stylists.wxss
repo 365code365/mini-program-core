@@ -1,0 +1,15 @@
+.bar { background: #ffffff; padding: 20rpx 24rpx 12rpx; }
+.f { padding: 10rpx 28rpx; margin-right: 16rpx; border-radius: 30rpx; font-size: 26rpx; background: #f6efea; color: #6f625c; }
+.f-on { background: #2d2430; color: #f3d9c6; font-weight: bold; }
+.sort { margin-top: 16rpx; }
+.s { font-size: 24rpx; color: #a39189; margin-right: 32rpx; }
+.s-on { color: #c0846a; font-weight: bold; }
+.av { width: 120rpx; height: 120rpx; border-radius: 60rpx; margin-right: 24rpx; flex-shrink: 0; }
+.n { font-size: 32rpx; font-weight: bold; margin-right: 12rpx; }
+.r { margin: 8rpx 0; }
+.fav { font-size: 22rpx; color: #a39189; border: 2rpx solid #e3d8d2; border-radius: 24rpx; padding: 6rpx 18rpx; flex-shrink: 0; }
+.fav-on { color: #c0846a; border-color: #c0846a; background: #fff7f1; }
+.tags { margin-top: 16rpx; flex-wrap: wrap; }
+.foot { margin-top: 16rpx; padding-top: 16rpx; border-top: 1rpx solid #f3ece8; }
+.intro { font-size: 24rpx; color: #6f625c; margin-right: 20rpx; }
+.btn-book { font-size: 24rpx; color: #ffffff; background: #c0846a; border-radius: 26rpx; padding: 8rpx 28rpx; flex-shrink: 0; }

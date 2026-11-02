@@ -1,0 +1,35 @@
+<view class="tabs row">
+  <view wx:for="{{tabs}}" wx:key="key" class="tab {{tab === item.key ? 'tab-on' : ''}}" data-key="{{item.key}}" bindtap="onTab">
+    <text class="tab-name">{{item.name}}</text>
+    <view wx:if="{{tab === item.key}}" class="tab-line"></view>
+  </view>
+</view>
+
+<view class="order card" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onOpen">
+  <view class="row between o-head">
+    <text class="o-shop">鲜到家 · 望京前置仓</text>
+    <text class="o-status {{item.st.active ? 'o-status-on' : ''}}">{{item.st.status}}</text>
+  </view>
+  <view class="row o-body">
+    <image wx:for="{{item.imgs}}" wx:for-item="img" wx:key="*this" class="o-img" src="{{img}}" mode="aspectFill"></image>
+    <text wx:if="{{item.summary}}" class="flex1 o-summary">{{item.summary}}</text>
+  </view>
+  <view class="row between o-foot">
+    <text class="sub">{{item.time}}</text>
+    <text class="o-sum">共 {{item.count}} 件 实付 <text class="o-pay">¥{{item.pay}}</text></text>
+  </view>
+  <view wx:if="{{item.refund}}" class="o-refund"><text>已退款 ¥{{item.refund}}</text></view>
+  <view class="row o-ops">
+    <view wx:if="{{item.st.stage === 2}}" class="o-op" catchtap="onCall">联系骑手</view>
+    <view wx:if="{{item.st.canConfirm}}" class="o-op o-op-main" data-id="{{item.id}}" catchtap="onConfirm">确认收货</view>
+    <view wx:if="{{item.st.canPay}}" class="o-op o-op-main" data-id="{{item.id}}" catchtap="onPay">去支付</view>
+    <view wx:if="{{item.st.canRate}}" class="o-op" data-id="{{item.id}}" catchtap="onRate">去评价</view>
+    <view wx:if="{{!item.st.canPay}}" class="o-op {{item.st.canPay || item.st.canConfirm ? '' : 'o-op-main'}}" data-id="{{item.id}}" catchtap="onAgain">再来一单</view>
+  </view>
+</view>
+
+<view wx:if="{{!list.length}}" class="empty">
+  <text class="sub">{{tab === 'all' ? '还没有订单，去挑点新鲜的吧' : '这里空空如也'}}</text>
+  <view class="btn empty-btn" bindtap="onGoShop">去逛逛</view>
+</view>
+<view class="gap"></view>

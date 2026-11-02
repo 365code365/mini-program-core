@@ -1,0 +1,38 @@
+<view class="seg row">
+  <view class="seg-item {{tab === 0 ? 'on' : ''}}" bindtap="onTab" data-i="0">收藏职位 {{jobs.length}}</view>
+  <view class="seg-item {{tab === 1 ? 'on' : ''}}" bindtap="onTab" data-i="1">关注公司 {{cos.length}}</view>
+</view>
+<block wx:if="{{tab === 0}}">
+  <view class="card item" wx:for="{{jobs}}" wx:key="id">
+    <view class="row between" data-id="{{item.id}}" bindtap="onJob">
+      <text class="i-title flex1">{{item.title}}</text>
+      <text class="salary">{{item.salary}}</text>
+    </view>
+    <text class="sub i-sub">{{item.co.name}} · {{item.city}} · {{item.exp}} · {{item.edu}}</text>
+    <view class="row i-foot">
+      <text class="state {{item.applied ? 'st-green' : 'st-orange'}}">{{item.applied ? '已投递' : '未投递'}}</text>
+      <view class="flex1"></view>
+      <text class="op" data-id="{{item.id}}" bindtap="onUnfav">取消收藏</text>
+      <text class="op main" data-id="{{item.id}}" bindtap="onJob">{{item.applied ? '查看' : '去投递'}}</text>
+    </view>
+  </view>
+  <view class="empty-box" wx:if="{{!jobs.length}}">
+    <text class="sub">还没有收藏的职位，在职位详情点「收藏」</text>
+    <view class="empty-btn" bindtap="onGo"><text>去看看职位</text></view>
+  </view>
+</block>
+<block wx:else>
+  <view class="card item row" wx:for="{{cos}}" wx:key="id">
+    <view class="logo" style="background: {{item.color}}" data-id="{{item.id}}" bindtap="onCompany"><text>{{item.short}}</text></view>
+    <view class="col flex1 c-body" data-id="{{item.id}}" bindtap="onCompany">
+      <text class="i-title">{{item.name}}</text>
+      <text class="sub">{{item.industry}} · {{item.count}} 个在招职位</text>
+    </view>
+    <text class="op" data-id="{{item.id}}" bindtap="onUnfollow">取消关注</text>
+  </view>
+  <view class="empty-box" wx:if="{{!cos.length}}">
+    <text class="sub">还没有关注的公司，在公司主页点「关注」</text>
+    <view class="empty-btn" bindtap="onGo"><text>去看看职位</text></view>
+  </view>
+</block>
+<view class="safe-bottom"></view>

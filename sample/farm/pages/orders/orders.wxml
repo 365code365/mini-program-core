@@ -1,0 +1,32 @@
+<scroll-view class="tabs" scroll-x="{{true}}" show-scrollbar="{{false}}">
+  <view class="tabs-row">
+    <view class="tab {{tab === item.k ? 'tab-on' : ''}}" wx:for="{{tabs}}" wx:key="k" data-k="{{item.k}}" bindtap="switchTab">
+      <text class="tab-tx">{{item.t}}</text>
+      <text class="tab-n" wx:if="{{item.n}}">{{item.n}}</text>
+    </view>
+  </view>
+</scroll-view>
+<view class="loading" wx:if="{{loading}}"><text class="muted">加载中…</text></view>
+<view class="empty" wx:elif="{{!list.length}}">
+  <image class="empty-img" src="/images/misc/empty.png" mode="aspectFit"></image>
+  <text class="empty-tx">这里还没有订单</text>
+  <view class="btn-ghost empty-go" bindtap="goHome">去挑点时令好物</view>
+</view>
+<view class="card od" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="open" hover-class="btn-hover">
+  <view class="row between">
+    <text class="muted">{{item.timeText}} · {{item.modeText}}</text>
+    <text class="od-st od-{{item.status}}">{{item.statusText}}</text>
+  </view>
+  <view class="od-it" wx:for="{{item.items}}" wx:key="key" wx:for-item="it">
+    <image class="od-img" src="{{it.cover}}" mode="aspectFill"></image>
+    <view class="od-mid">
+      <text class="od-name">{{it.name}}</text>
+      <text class="muted">{{it.skuText}} × {{it.qty}}</text>
+    </view>
+    <text class="od-price">¥{{it.price}}</text>
+  </view>
+  <view class="row between od-foot">
+    <view class="row"><text class="od-total">实付 </text><text class="price">¥{{item.total}}</text></view>
+    <view class="od-btn" wx:if="{{item.act}}" data-id="{{item.id}}" data-act="{{item.act}}" catchtap="doAct"><text class="od-btn-tx">{{item.actText}}</text></view>
+  </view>
+</view>

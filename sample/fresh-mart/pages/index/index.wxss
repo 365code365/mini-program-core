@@ -187,10 +187,37 @@
   flex-direction: column;
 }
 
+.f-img-box {
+  position: relative;
+  width: 180rpx;
+  height: 180rpx;
+}
+
 .f-img {
   width: 180rpx;
   height: 180rpx;
   border-radius: 14rpx;
+}
+
+/* 已抢光：盖一层灰，按日常价卖 */
+.f-mask {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 180rpx;
+  height: 180rpx;
+  border-radius: 14rpx;
+  background: rgba(31, 35, 41, 0.45);
+  color: #ffffff;
+  font-size: 26rpx;
+}
+
+.f-out .f-bar-in {
+  background: #c8ccd4;
+}
+
+.f-out .f-price {
+  color: #8a8f99;
 }
 
 .f-bar {

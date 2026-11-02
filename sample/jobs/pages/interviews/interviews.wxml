@@ -1,0 +1,36 @@
+<view class="card iv {{focus === item.id ? 'focus' : ''}}" wx:for="{{list}}" wx:key="id">
+  <view class="row between">
+    <view class="row">
+      <view class="logo small" style="background: {{item.co.color}}"><text>{{item.co.short}}</text></view>
+      <view class="col iv-head">
+        <text class="iv-title">{{item.title}}</text>
+        <text class="sub">{{item.co.name}} · {{item.salary}}</text>
+      </view>
+    </view>
+    <text class="state {{item.status === 'accepted' ? 'st-green' : (item.status === 'declined' ? 'st-gray' : 'st-orange')}}">{{item.past && item.status === 'pending' ? '已过期' : item.statusText}}</text>
+  </view>
+  <view class="info">
+    <view class="row info-row"><text class="info-k">面试时间</text><text class="info-v flex1">{{item.when}}</text></view>
+    <view class="row info-row"><text class="info-k">面试方式</text><text class="info-v flex1">{{item.mode}}</text></view>
+    <view class="row info-row"><text class="info-k">{{item.mode === '现场面试' ? '面试地点' : '会议信息'}}</text><text class="info-v flex1">{{item.place}}</text></view>
+    <view class="row info-row"><text class="info-k">面试官</text><text class="info-v flex1">{{item.hrInfo.name}} · {{item.hrInfo.title}}</text></view>
+    <view class="row info-row" wx:if="{{item.reason}}"><text class="info-k">拒绝原因</text><text class="info-v flex1">{{item.reason}}</text></view>
+  </view>
+  <view class="row iv-foot">
+    <text class="sub flex1">{{item.remind ? '已设开始前 30 分钟提醒' : ''}}</text>
+    <text class="op" data-id="{{item.id}}" bindtap="onChat">联系 HR</text>
+    <block wx:if="{{item.status === 'pending' && !item.past}}">
+      <text class="op" data-id="{{item.id}}" bindtap="onDecline">拒绝</text>
+      <text class="op main" data-id="{{item.id}}" bindtap="onAccept">接受</text>
+    </block>
+    <block wx:if="{{item.status === 'accepted'}}">
+      <text class="op" data-id="{{item.id}}" bindtap="onRoute">{{item.mode === '现场面试' ? '查看路线' : '复制会议号'}}</text>
+      <text class="op main" wx:if="{{!item.remind}}" data-id="{{item.id}}" bindtap="onCalendar">设提醒</text>
+    </block>
+  </view>
+</view>
+<view class="empty-box" wx:if="{{!list.length}}">
+  <text class="sub">还没有面试邀请，多投几份简历试试</text>
+  <view class="empty-btn" bindtap="onGo"><text>去看看职位</text></view>
+</view>
+<view class="safe-bottom"></view>

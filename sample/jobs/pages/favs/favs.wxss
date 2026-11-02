@@ -1,0 +1,4 @@
+.i-title { font-size: 30rpx; font-weight: bold; margin-right: 16rpx; }
+.i-sub { display: block; margin-top: 10rpx; }
+.i-foot { margin-top: 18rpx; }
+.c-body { margin-left: 20rpx; }

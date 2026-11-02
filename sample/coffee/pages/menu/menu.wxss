@@ -399,3 +399,22 @@ page {
   line-height: 88rpx;
   font-size: 30rpx;
 }
+.s-label-sub {
+  font-size: 22rpx;
+  font-weight: normal;
+  color: #9b9087;
+}
+.opt-addon {
+  min-width: 0;
+  white-space: nowrap;
+}
+.s-promo {
+  font-size: 20rpx;
+  line-height: 32rpx;
+  padding: 0 10rpx;
+  margin-left: 12rpx;
+  margin-bottom: 8rpx;
+  border-radius: 6rpx;
+  background: #fbe9dd;
+  color: #b5562a;
+}

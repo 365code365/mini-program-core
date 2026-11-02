@@ -1,0 +1,15 @@
+.form { padding-top: 6rpx; padding-bottom: 6rpx; }
+.fl { display: flex; flex-direction: row; align-items: center; min-height: 96rpx; border-bottom: 1rpx solid #f2f3ef; }
+.fl-top { align-items: flex-start; padding-top: 28rpx; padding-bottom: 20rpx; }
+.fl-last { border-bottom: none; }
+.fl-k { width: 160rpx; font-size: 28rpx; }
+.fl-wide { flex: 1; }
+.fl-in { flex: 1; font-size: 28rpx; height: 60rpx; }
+.fl-v { flex: 1; font-size: 28rpx; }
+.ph { color: #b3b8af; }
+.fl-ta { flex: 1; font-size: 28rpx; height: 120rpx; padding: 0; }
+.err { font-size: 22rpx; color: #e4572e; padding: 6rpx 0 0 160rpx; }
+.chip { font-size: 24rpx; padding: 6rpx 24rpx; border-radius: 24rpx; background: #f3f4f1; margin-right: 16rpx; color: #5d6858; }
+.chip-on { background: #eaf5e3; color: #3f9a3c; }
+.ops { padding: 40rpx 24rpx; }
+.del { text-align: center; color: #e4572e; font-size: 26rpx; margin-top: 30rpx; }

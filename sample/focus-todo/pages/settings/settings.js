@@ -51,6 +51,7 @@ Page({
 
   onExport() {
     const s = S.loadSessions()
+    if (!s.length) return wx.showToast({ title: '还没有专注记录', icon: 'none' })
     const text = s.map(i => i.date + ' ' + i.at + ' ' + i.title + ' ' + i.minutes + '分钟').join('\n')
     wx.setClipboardData({
       data: text,
@@ -71,15 +72,29 @@ Page({
     })
   },
 
+  onRecords() {
+    wx.navigateTo({ url: '/pages/records/records' })
+  },
+  // 清空：写成空数组（删掉键的话下次打开会重新铺示例数据），再二次确认
   onClear() {
     wx.showActionSheet({
       itemList: ['清空专注记录', '清空全部待办和记录'],
       itemColor: '#f2453d',
       success: res => {
-        wx.removeStorageSync('ft_sessions')
-        if (res.tapIndex === 1) wx.removeStorageSync('ft_todos')
-        wx.showToast({ title: '已清空', icon: 'success' })
-        this.onShow()
+        const all = res.tapIndex === 1
+        wx.showModal({
+          title: all ? '清空全部数据' : '清空专注记录',
+          content: all ? '待办和 ' + this.data.sessionCount + ' 条专注记录都会删除，无法恢复' : '将删除 ' + this.data.sessionCount + ' 条专注记录，无法恢复',
+          confirmText: '清空',
+          confirmColor: '#f2453d',
+          success: r => {
+            if (!r.confirm) return
+            S.saveSessions([])
+            if (all) S.saveTodos([])
+            wx.showToast({ title: '已清空', icon: 'success' })
+            this.onShow()
+          }
+        })
       }
     })
   }

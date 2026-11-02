@@ -1,0 +1,104 @@
+<view class="hero">
+  <view class="between">
+    <view class="row">
+      <text class="hero-loc">{{locName}}</text>
+    </view>
+    <text class="hero-link" bindtap="goGarage">爱车档案 ›</text>
+  </view>
+  <text class="hero-hi">你好，车主</text>
+</view>
+
+<swiper class="cars" display-multiple-items="{{1}}" previous-margin="40rpx" next-margin="40rpx" current="{{current}}" bindchange="onCarChange">
+  <swiper-item wx:for="{{cars}}" wx:key="id">
+    <view class="car-card" data-id="{{item.id}}" bindtap="goCar">
+      <view class="between">
+        <view class="col">
+          <view class="row">
+            <text class="car-name">{{item.name}}</text>
+            <text class="tag" wx:if="{{item.isDefault}}">默认</text>
+          </view>
+          <text class="car-year">{{item.year}}</text>
+        </view>
+        <text class="car-plate">{{item.plateText}}</text>
+      </view>
+      <image class="car-img" src="{{item.img}}" mode="aspectFit"></image>
+      <text class="car-km">已行驶 {{item.mileage}} km</text>
+    </view>
+  </swiper-item>
+  <swiper-item>
+    <view class="car-card car-add" bindtap="addCar">
+      <text class="add-plus">+</text>
+      <text class="add-tx">添加爱车</text>
+      <text class="sub">记录保养，按时提醒</text>
+    </view>
+  </swiper-item>
+</swiper>
+
+<view class="wrap">
+  <view class="card pend" wx:if="{{pending}}" bindtap="goPending">
+    <view class="between">
+      <text class="pend-tt">{{pending.status === 'serving' ? '爱车正在服务中' : '你有一个待服务的预约'}}</text>
+      <text class="blue">查看 ›</text>
+    </view>
+    <text class="sub">{{pending.storeName}} · {{pending.date}} {{pending.time}}</text>
+  </view>
+
+  <view class="card" wx:if="{{car}}">
+    <view class="between">
+      <text class="title">保养提醒</text>
+      <text class="sub">每 10000 km 或 6 个月</text>
+    </view>
+    <view class="remind row">
+      <view class="col flex1">
+        <text class="r-num {{car.leftKm <= 1000 ? 'red' : 'blue'}}">{{car.leftKm > 0 ? car.leftKm : 0}}</text>
+        <text class="sub">距下次保养（km）</text>
+      </view>
+      <view class="col flex1">
+        <text class="r-num {{car.leftDays <= 15 ? 'red' : 'blue'}}">{{car.leftDays > 0 ? car.leftDays : 0}}</text>
+        <text class="sub">剩余天数</text>
+      </view>
+      <view class="col flex1">
+        <text class="r-date">{{car.nextDate}}</text>
+        <text class="sub">建议保养日期</text>
+      </view>
+    </view>
+    <progress percent="{{car.used}}" stroke-width="6" activeColor="{{car.due ? '#f0443a' : '#1f6fff'}}" backgroundColor="#e6ebf5" border-radius="6"></progress>
+    <view class="between remind-ft">
+      <text class="sub">上次保养 {{car.lastCareDate}} · {{car.lastCareKm}} km</text>
+      <view class="btn-ghost" bindtap="bookCare">预约保养</view>
+    </view>
+  </view>
+
+  <view class="card grid">
+    <view class="g-item" wx:for="{{cats}}" wx:key="id" data-id="{{item.id}}" bindtap="goCat">
+      <image class="g-ic" src="{{item.icon}}"></image>
+      <text class="g-tx">{{item.name}}</text>
+    </view>
+    <view class="g-item" bindtap="goViolation">
+      <image class="g-ic" src="/images/svc/ticket.png"></image>
+      <text class="g-tx">违章查询</text>
+    </view>
+    <view class="g-item" bindtap="rescue">
+      <image class="g-ic" src="/images/svc/rescue.png"></image>
+      <text class="g-tx">道路救援</text>
+    </view>
+  </view>
+
+  <view class="between">
+    <text class="sec-title">附近门店</text>
+    <text class="sub" bindtap="goStores">全部门店 ›</text>
+  </view>
+  <view class="card store" wx:for="{{near}}" wx:key="id" data-id="{{item.id}}" bindtap="goStore">
+    <image class="st-img" src="{{item.img}}" mode="aspectFill"></image>
+    <view class="col flex1 st-info">
+      <text class="st-name">{{item.name}}</text>
+      <view class="row">
+        <text class="orange">★ {{item.rating}}</text>
+        <text class="sub st-gap">已服务 {{item.orders}} 单</text>
+      </view>
+      <text class="sub">{{item.hours}} · 距你 {{item.dist}} km</text>
+    </view>
+  </view>
+  <view class="loading" wx:if="{{!near.length}}">正在查找附近门店…</view>
+  <view class="tab-gap"></view>
+</view>

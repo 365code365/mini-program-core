@@ -72,9 +72,33 @@
       <view class="step-btn step-plus" bindtap="onPlus"><view class="bar-h"></view><view class="bar-v"></view></view>
     </view>
   </view>
-  <view class="opt-row row no-border">
+  <view wx:if="{{flash}}" class="opt-row row">
+    <text class="opt-k">限购</text>
+    <text class="flex1 opt-v">秒杀价每单限购 {{limit}} 件，超出请分开下单</text>
+  </view>
+  <view class="opt-row row no-border" bindtap="onAddress">
     <text class="opt-k">配送</text>
     <text class="flex1 opt-v">送至 {{address}}，现在下单 <text class="green">{{eta}}</text> 前送达</text>
+    <view class="arrow"></view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="title">用户评价（{{reviewCount}}）</text>
+    <text class="sub">好评率 98%</text>
+  </view>
+  <view class="review" wx:for="{{reviews}}" wx:key="index">
+    <view class="row">
+      <view class="r-avatar glyph {{item.mine ? 'r-mine' : ''}}"><text>{{item.user[0]}}</text></view>
+      <text class="r-user">{{item.user}}</text>
+      <view class="row">
+        <text wx:for="{{starList}}" wx:for-item="s" wx:key="*this" class="r-star {{s <= item.stars ? 'r-star-on' : ''}}">★</text>
+      </view>
+      <view class="flex1"></view>
+      <text class="sub">{{item.time}}</text>
+    </view>
+    <text class="r-text">{{item.text}}</text>
   </view>
 </view>
 

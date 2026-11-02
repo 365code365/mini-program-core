@@ -1,0 +1,24 @@
+<view class="top">
+  <view class="row between">
+    <text class="top-label">我的鲜豆</text>
+    <text class="top-rule" bindtap="onRule">鲜豆规则</text>
+  </view>
+  <text class="top-num">{{beans}}</text>
+  <text class="top-tip">可抵 ¥{{yuan}} · 结算时 100 鲜豆抵 1 元</text>
+  <view class="row top-ops">
+    <view class="top-btn {{signed ? 'top-btn-off' : ''}}" bindtap="onSign">{{signed ? '今日已签到' : '签到领 20 鲜豆'}}</view>
+    <view class="top-btn top-btn-ghost" bindtap="onUse">去购物车使用</view>
+  </view>
+</view>
+<view class="card">
+  <text class="title">鲜豆明细</text>
+  <view class="log row" wx:for="{{logs}}" wx:key="k">
+    <view class="flex1">
+      <text class="log-title ellipsis">{{item.title}}</text>
+      <text class="sub">{{item.time}}</text>
+    </view>
+    <text class="log-amt {{item.delta > 0 ? 'log-in' : ''}}">{{item.sign}}{{item.delta}}</text>
+  </view>
+  <view wx:if="{{!logs.length}}" class="none"><text class="sub">还没有鲜豆记录</text></view>
+</view>
+<view class="gap"></view>

@@ -1,0 +1,14 @@
+page { background: #f3f6fb; color: #1f2733; font-size: 28rpx; font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif; }
+.card { background: #fff; border-radius: 20rpx; margin: 20rpx 24rpx; padding: 24rpx 28rpx; }
+.sec-t { font-size: 30rpx; font-weight: 600; color: #1f2733; }
+.muted { color: #8a94a6; font-size: 24rpx; }
+.row { display: flex; flex-direction: row; align-items: center; }
+.between { justify-content: space-between; }
+.btn { height: 84rpx; line-height: 84rpx; border-radius: 42rpx; text-align: center; font-size: 30rpx; background: #1d64d8; color: #fff; }
+.btn.ghost { background: #fff; color: #1d64d8; border: 2rpx solid #1d64d8; }
+.btn.gray { background: #eef1f6; color: #5b6575; }
+.btn.dis { background: #a9c1ee; }
+.tag { font-size: 20rpx; padding: 2rpx 12rpx; border-radius: 6rpx; }
+.tap { opacity: 0.6; }
+.empty { padding: 80rpx 0; text-align: center; color: #8a94a6; font-size: 26rpx; }
+.safe-bottom { height: calc(140rpx + env(safe-area-inset-bottom)); }

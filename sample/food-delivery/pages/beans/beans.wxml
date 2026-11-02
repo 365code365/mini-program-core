@@ -1,0 +1,50 @@
+<view class="top">
+  <view class="row between">
+    <text class="top-label">我的吃货豆</text>
+    <text class="top-rule" bindtap="onRule">规则</text>
+  </view>
+  <text class="top-num">{{beans}}</text>
+  <text class="top-tip">每实付 1 元得 1 个，评价订单再得 20 个</text>
+</view>
+<view class="tabs row">
+  <view class="tab {{tab === 'mall' ? 'tab-on' : ''}}" data-tab="mall" bindtap="onTab">
+    <text>兑红包</text>
+    <view wx:if="{{tab === 'mall'}}" class="tab-line"></view>
+  </view>
+  <view class="tab {{tab === 'log' ? 'tab-on' : ''}}" data-tab="log" bindtap="onTab">
+    <text>吃货豆明细</text>
+    <view wx:if="{{tab === 'log'}}" class="tab-line"></view>
+  </view>
+</view>
+<view wx:if="{{tab === 'mall'}}">
+  <view class="good row" wx:for="{{goods}}" wx:key="id">
+    <view class="g-left">
+      <view class="row g-amount-row">
+        <text class="g-sym">¥</text>
+        <text class="g-amount">{{item.amount}}</text>
+      </view>
+      <text class="g-cond">{{item.cond}}</text>
+    </view>
+    <view class="flex1 g-mid">
+      <text class="g-title ellipsis">{{item.title}}</text>
+      <text class="g-beans">{{item.beans}} 吃货豆</text>
+    </view>
+    <view class="g-btn {{item.short ? 'g-btn-off' : ''}}" data-id="{{item.id}}" bindtap="onExchange">{{item.short ? '豆不够' : '兑换'}}</view>
+  </view>
+  <view class="to-coupons row" bindtap="onCoupons">
+    <text class="flex1 sub">兑换的红包放在「红包卡券」，下单时自动抵扣</text>
+    <text class="link">去查看</text>
+    <view class="arrow"></view>
+  </view>
+</view>
+<view wx:if="{{tab === 'log'}}" class="card">
+  <view class="log row" wx:for="{{logs}}" wx:key="k">
+    <view class="flex1">
+      <text class="log-title ellipsis">{{item.title}}</text>
+      <text class="sub log-time">{{item.time}}</text>
+    </view>
+    <text class="log-amt {{item.delta > 0 ? 'log-in' : ''}}">{{item.sign}}{{item.delta}}</text>
+  </view>
+  <view wx:if="{{!logs.length}}" class="none"><text class="sub">还没有吃货豆记录</text></view>
+</view>
+<view class="gap"></view>

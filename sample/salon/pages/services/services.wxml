@@ -1,0 +1,39 @@
+<view class="top">
+  <view class="search row">
+    <input class="flex1 s-in" placeholder="搜索项目，如：空气烫、猫眼" value="{{keyword}}" confirm-type="search"
+           bindinput="onInput" bindconfirm="onSearch"></input>
+    <text wx:if="{{keyword}}" class="s-clear" bindtap="clearKw">清除</text>
+    <text class="s-btn" bindtap="onSearch">搜索</text>
+  </view>
+  <scroll-view scroll-x class="cats" scroll-into-view="{{catView}}" scroll-with-animation show-scrollbar="{{false}}">
+    <view class="cat-row">
+      <view wx:for="{{cats}}" wx:key="id" id="cat-{{item.id}}" class="cat {{cat === item.id ? 'cat-on' : ''}}"
+            data-id="{{item.id}}" bindtap="onCat">{{item.name}}</view>
+    </view>
+  </scroll-view>
+</view>
+
+<view class="loading" wx:if="{{loading}}">正在加载项目…</view>
+<block wx:else>
+  <view class="empty" wx:if="{{!list.length}}">
+    <icon type="search" size="56" color="#d9cfc9"></icon>
+    <text class="empty-tx">没有找到「{{keyword}}」相关的项目</text>
+    <view class="btn-line" bindtap="clearKw">查看全部项目</view>
+  </view>
+  <view class="item card row" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" hover-class="press" bindtap="goService">
+    <image class="cover" src="{{item.cover}}"></image>
+    <view class="flex1">
+      <view class="row"><text class="name">{{item.name}}</text><text wx:if="{{item.hot}}" class="hot">热门</text></view>
+      <text class="desc">{{item.desc}}</text>
+      <text class="muted">{{item.catName}} · {{item.duration}} 分钟 · 已售 {{item.sold}}</text>
+      <view class="row between foot">
+        <view class="row">
+          <text class="price">¥{{item.price}}</text>
+          <text class="mp">金卡 ¥{{item.memberPrice}}</text>
+        </view>
+        <view class="btn-book" data-id="{{item.id}}" catchtap="book">预约</view>
+      </view>
+    </view>
+  </view>
+</block>
+<view class="tab-gap"></view>

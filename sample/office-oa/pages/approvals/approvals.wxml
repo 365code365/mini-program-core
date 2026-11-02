@@ -1,0 +1,35 @@
+<view class="types row">
+  <view class="ty row" wx:for="{{types}}" wx:key="id" data-type="{{item.id}}" bindtap="create" hover-class="ty-hover">
+    <view class="ty-ic" style="background: {{item.color}};">{{item.ic}}</view>
+    <view class="col"><text class="ty-n">发起{{item.name}}</text><text class="ty-d">{{item.desc}}</text></view>
+  </view>
+</view>
+<view class="tabs row">
+  <view class="tb {{tab === item.id ? 'tb-on' : ''}}" wx:for="{{tabs}}" wx:key="id" data-id="{{item.id}}" bindtap="pickTab">
+    <text>{{item.name}}</text><text class="tb-c" wx:if="{{counts[item.id]}}">{{counts[item.id]}}</text>
+  </view>
+</view>
+
+<view class="loading" wx:if="{{loading}}">加载中…</view>
+<block wx:else>
+  <view class="empty" wx:if="{{list.length === 0}}">
+    <view class="empty-ic">✓</view>
+    <text class="empty-tx">{{tab === 'todo' ? '待审批的都处理完了' : (tab === 'mine' ? '还没有发起过审批' : '还没有处理过审批')}}</text>
+  </view>
+  <view class="card it" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="open">
+    <view class="row between">
+      <view class="row">
+        <view class="ava sm" style="background: {{item.applicantColor}};">{{item.applicantIni}}</view>
+        <text class="t">{{item.mine ? '我' : item.applicantName}}的{{item.typeName}}申请</text>
+      </view>
+      <text class="badge st-{{item.status}}">{{item.statusText}}</text>
+    </view>
+    <text class="sum">{{item.summary}}</text>
+    <text class="reason">{{item.values.reason}}</text>
+    <view class="row between foot">
+      <text class="muted">{{item.createdAt}} 提交</text>
+      <text class="muted" wx:if="{{item.status === 'pending'}}">当前：{{item.needMe ? '等我审批' : item.current + ' 审批中'}}</text>
+    </view>
+  </view>
+</block>
+<view class="tab-pad"></view>

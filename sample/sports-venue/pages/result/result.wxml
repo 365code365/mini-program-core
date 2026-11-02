@@ -1,0 +1,37 @@
+<view wx:if="{{!o}}" class="empty">
+  <view class="empty-ic"><text class="empty-ic-t">?</text></view>
+  <text class="empty-t">没有找到这笔订单</text>
+  <view class="btn-ghost empty-btn" bindtap="toOrders"><text>查看我的订单</text></view>
+</view>
+<block wx:else>
+  <view class="ok col">
+    <icon type="success" size="64" color="#ffffff"></icon>
+    <text class="ok-t">预订成功</text>
+    <text class="ok-s">{{o.payMethod === 'times' ? '已用次卡抵扣 ' + o.hours + ' 次' : o.payText + ' ¥' + o.paid}}</text>
+  </view>
+  <view class="card info">
+    <text class="v-n">{{o.venueName}}</text>
+    <text class="muted">{{o.dateText}}</text>
+    <view wx:for="{{o.segments}}" wx:key="text" class="seg row">
+      <text class="seg-c">{{item.courtLabel}}</text>
+      <text class="seg-t">{{item.text}}</text>
+    </view>
+    <view class="code row">
+      <text class="muted flex1">入场核销码</text>
+      <text class="code-v">{{o.code}}</text>
+    </view>
+  </view>
+  <view class="ops row">
+    <view class="btn-ghost op" bindtap="toOrder"><text>订单详情</text></view>
+    <view class="btn-main op op-main" bindtap="toPass"><text>出示入场码</text></view>
+  </view>
+  <view class="card more">
+    <text class="sec-title">人不够？</text>
+    <text class="muted more-s">把场地挂到约球广场，球友报名后 AA 分摊场地费</text>
+    <view class="row more-ops">
+      <view class="btn-ghost" bindtap="toTeam"><text>发起约球</text></view>
+      <button class="share-btn" open-type="share"><text>分享给球友</text></button>
+    </view>
+  </view>
+  <view class="home" bindtap="toHome"><text class="muted">返回首页</text></view>
+</block>

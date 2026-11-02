@@ -1,0 +1,20 @@
+.slots { margin-top: 24rpx; padding-top: 8rpx; padding-bottom: 8rpx; }
+.list { padding-top: 8rpx; padding-bottom: 8rpx; margin-top: 16rpx; }
+.slot { padding: 22rpx 0; border-bottom: 1rpx solid #f0f1f3; }
+.slot:last-child { border-bottom: none; }
+.s-icon { width: 64rpx; height: 64rpx; border-radius: 20rpx; display: flex; align-items: center; justify-content: center; margin-right: 20rpx; flex-shrink: 0; }
+.home-ic { background: linear-gradient(135deg, #FFB067, #FF7A1A); }
+.work-ic { background: linear-gradient(135deg, #6BA8FF, #3D7BFF); }
+.star-ic { background: linear-gradient(135deg, #FFD36B, #FFB400); }
+.s-glyph { color: #fff; font-size: 28rpx; font-weight: bold; }
+.s-body { display: flex; flex-direction: column; }
+.s-name { font-size: 30rpx; font-weight: bold; }
+.s-empty { color: #FF7A1A; }
+.s-addr { margin-top: 4rpx; }
+.s-op { font-size: 24rpx; color: #4e5969; border: 2rpx solid #e3e5e8; border-radius: 26rpx; padding: 6rpx 20rpx; margin-left: 16rpx; white-space: nowrap; }
+.s-del { color: #F5455C; border-color: #FFD0D6; }
+.none { padding: 36rpx 0; text-align: center; }
+.hint { display: block; margin: 0 32rpx; font-size: 22rpx; color: #9aa0a6; }
+.gap { height: 200rpx; }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; padding: 20rpx 28rpx calc(20rpx + env(safe-area-inset-bottom)); box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.05); }
+.add-btn { height: 84rpx; line-height: 84rpx; font-size: 30rpx; border-radius: 42rpx; }

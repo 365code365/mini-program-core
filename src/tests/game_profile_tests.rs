@@ -11,6 +11,8 @@ const MINI_PROGRAM_ORDER: &[&str] = &[
     "host", "host-media", "system", "tabbar", "socket", "fs", "audio", "app-info", "host-capabilities",
     "base-ext", "host-objects", "net-socket", "route-ext", "page-ext", "media-ext", "worker-mq", "animate",
     "worklet", "webaudio", "component", "component-tree", "wxs", "api-probe",
+    // 2026-11：wx 的中立别名 nb / gb / mb（js/api_alias.rs），要指向探针包好的 wx，所以在探针之后
+    "api-alias",
 ];
 
 #[test]
@@ -32,7 +34,7 @@ fn 小游戏的通用段都在表里且按表的顺序() {
     // 顺序跟着表走，不跟着 GAME_CORE 的书写顺序走
     let idx: Vec<usize> = from_table.iter().map(|n| all.iter().position(|a| a == n).unwrap()).collect();
     assert!(idx.windows(2).all(|w| w[0] < w[1]), "小游戏段必须保持表内相对顺序：{game:?}");
-    assert_eq!(game.last(), Some(&"api-probe"), "api-probe 必须最后装");
+    assert_eq!(game[game.len() - 2..], ["api-probe", "api-alias"], "api-probe 与紧随其后的 api-alias 必须最后装");
     for n in ["app-page", "route", "tabbar", "component", "query", "wxs"] {
         assert!(!game.contains(&n), "小程序专属段 {n} 不该装进小游戏");
     }

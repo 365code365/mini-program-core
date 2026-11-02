@@ -4,12 +4,26 @@ page { background: #f7f5f6; color: #26222a; font-size: 28rpx; }
 .muted { color: #958d96; font-size: 24rpx; }
 .row { display: flex; flex-direction: row; align-items: center; }
 .between { justify-content: space-between; }
+.flex1 { flex: 1; min-width: 0; }
+.ellipsis { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .chev { width: 14rpx; height: 14rpx; border-top: 3rpx solid #bdb5be; border-right: 3rpx solid #bdb5be; transform: rotate(45deg); margin-left: 10rpx; flex-shrink: 0; }
 .price { color: #ef3f66; font-weight: bold; }
 .yen { font-size: 22rpx; }
-.btn-primary { background: linear-gradient(90deg, #ff7f9c, #ef4f76); color: #ffffff; border-radius: 44rpx; height: 88rpx; line-height: 88rpx; text-align: center; font-size: 30rpx; font-weight: bold; }
+.btn-primary { background: linear-gradient(90deg, #ff7f9c, #ef4f76); color: #ffffff; border-radius: 44rpx; height: 88rpx; display: flex; align-items: center; justify-content: center; font-size: 30rpx; font-weight: bold; }
+.btn-ghost { border: 2rpx solid #ef5b7e; color: #ef4f76; background: #ffffff; border-radius: 44rpx; height: 88rpx; display: flex; align-items: center; justify-content: center; font-size: 30rpx; box-sizing: border-box; }
+.btn-off { background: #e3dce1; }
 .tab-gap { height: calc(100rpx + env(safe-area-inset-bottom) + 24rpx); }
 .empty { padding: 100rpx 0; text-align: center; color: #a89fa9; font-size: 26rpx; }
 .check { width: 40rpx; height: 40rpx; border-radius: 20rpx; border: 3rpx solid #d3cbd4; box-sizing: border-box; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .check.on { background: #ef5b7e; border-color: #ef5b7e; }
 .check-in { width: 16rpx; height: 9rpx; border-left: 3rpx solid #ffffff; border-bottom: 3rpx solid #ffffff; transform: rotate(-45deg); margin-top: -4rpx; }
+.pill { font-size: 20rpx; line-height: 32rpx; padding: 0 10rpx; border-radius: 6rpx; color: #ef4f76; background: #fff0f4; white-space: nowrap; flex-shrink: 0; }
+.star { font-size: 44rpx; line-height: 56rpx; color: #ece6ea; margin-right: 10rpx; }
+.star-on { color: #ffb42b; }
+/* 底部固定操作条（非 tab 页） */
+.fbar { position: fixed; left: 0; right: 0; bottom: 0; background: #ffffff; padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom)); box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.05); }
+.fbar-gap { height: calc(140rpx + env(safe-area-inset-bottom)); }
+/* 底部弹出面板：遮罩与面板是兄弟节点，面板上 catchtap 兜底 */
+.mask { position: fixed; left: 0; top: 0; right: 0; bottom: 0; background: rgba(20, 10, 16, 0.45); }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; background: #ffffff; border-radius: 28rpx 28rpx 0 0; padding: 32rpx 32rpx calc(28rpx + env(safe-area-inset-bottom)); }
+.sheet-title { font-size: 32rpx; font-weight: bold; text-align: center; margin-bottom: 24rpx; }

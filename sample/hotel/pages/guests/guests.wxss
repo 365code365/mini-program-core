@@ -1,0 +1,16 @@
+.tip { padding: 24rpx 32rpx 16rpx; }
+.g { padding: 26rpx 28rpx; }
+.ck { width: 40rpx; height: 40rpx; border-radius: 20rpx; border: 3rpx solid #c4c7cc; box-sizing: border-box; display: flex; align-items: center; justify-content: center; margin-right: 18rpx; flex-shrink: 0; }
+.ck-on { background: #1E6FFF; border-color: #1E6FFF; }
+/* 勾：「✓」画不出来，用旋转的 L 形边框 */
+.ck-in { width: 16rpx; height: 9rpx; border-left: 3rpx solid #fff; border-bottom: 3rpx solid #fff; transform: rotate(-45deg); margin-top: -4rpx; }
+.g-av { width: 72rpx; height: 72rpx; border-radius: 36rpx; background: linear-gradient(135deg, #A6C8FF, #5A8CFF); color: #fff; font-size: 30rpx; font-weight: bold; display: flex; align-items: center; justify-content: center; margin-right: 20rpx; flex-shrink: 0; }
+.g-name { display: block; font-size: 30rpx; font-weight: bold; margin-bottom: 4rpx; }
+.edit { height: 52rpx; padding: 0 22rpx; border-radius: 26rpx; border: 2rpx solid #d5d8dc; font-size: 24rpx; color: #4e5969; display: flex; flex-direction: row; align-items: center; flex-shrink: 0; }
+.f-add { flex: 1; height: 84rpx; font-size: 28rpx; }
+.f-ok { flex: 1.3; margin-left: 20rpx; height: 84rpx; line-height: 84rpx; font-size: 28rpx; }
+.f-row { min-height: 100rpx; border-bottom: 1rpx solid #f0f1f3; }
+.f-label { width: 140rpx; font-size: 28rpx; color: #4e5969; flex-shrink: 0; }
+.f-input { flex: 1; min-width: 0; height: 100rpx; font-size: 28rpx; }
+.g-save { margin-top: 32rpx; }
+.g-del { margin-top: 16rpx; height: 80rpx; color: #FF5A36; font-size: 28rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; }

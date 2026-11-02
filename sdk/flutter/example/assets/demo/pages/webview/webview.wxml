@@ -1,0 +1,22 @@
+<view class="card">
+  <text class="title">web-view</text>
+  <text class="desc">网页由宿主的系统 WebView 承载（Android WebView / iOS WKWebView），铺满整个页面。网页里能用 JSSDK：wx.miniProgram.postMessage / navigateTo / navigateBack / redirectTo / switchTab / reLaunch / getEnv，也认 WeixinJSBridge 的 invokeMiniProgramAPI。网页的标题就是导航栏标题。</text>
+</view>
+<view class="section-title">打开网页</view>
+<view class="entries">
+  <view class="entry" hover-class="entry-hover" wx:for="{{links}}" wx:key="url" data-url="{{item.url}}" bindtap="open">
+    <view class="entry-icon" style="background-color: {{item.color}};">{{item.icon}}</view>
+    <view class="entry-body">
+      <text class="entry-name">{{item.name}}</text>
+      <text class="entry-desc">{{item.url}}</text>
+    </view>
+    <icon type="arrow" size="14" color="#c8c8cd"/>
+  </view>
+</view>
+<view class="card">
+  <text class="title">网页发来的消息（bindmessage）</text>
+  <text class="desc">和微信一样，postMessage 不是实时送达：网页里发的消息攒着，在后退、组件销毁时一次派给 bindmessage，e.detail.data 是每次 postMessage 的 data 组成的数组。</text>
+  <view class="result"><text>{{messages}}</text></view>
+  <view class="kv"><text class="kv-k">bindload</text><text class="kv-v">{{loaded}}</text></view>
+  <view class="kv"><text class="kv-k">binderror</text><text class="kv-v">{{error}}</text></view>
+</view>

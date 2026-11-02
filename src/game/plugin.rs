@@ -69,6 +69,7 @@ pub fn install(app: &MiniApp, root: &Path, plugin_dir: Option<&Path>, cfg: &Game
         for (rel, path) in files {
             let Ok(src) = std::fs::read_to_string(&path) else { continue };
             let key = format!("{NS}/{}/{rel}", f.name);
+            super::loader::guess_alias(app, &src);
             match app.eval(&format!("__defineModule({key:?}, function(module, exports, require) {{{src}\n}});")) {
                 Ok(_) => n += 1,
                 Err(e) => logs.push(format!("⚠ 插件 {} 的 {rel}.js 注册失败：{e}", f.name)),

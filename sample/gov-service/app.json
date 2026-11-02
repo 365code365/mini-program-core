@@ -1,0 +1,35 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/orders/orders",
+    "pages/license/license",
+    "pages/mine/mine",
+    "pages/detail/detail",
+    "pages/apply/apply",
+    "pages/result/result",
+    "pages/progress/progress",
+    "pages/appoint/appoint"
+  ],
+  "window": {
+    "navigationBarTitleText": "云川办事",
+    "navigationBarBackgroundColor": "#1d64d8",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f3f6fb"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#9aa3b0",
+    "selectedColor": "#1d64d8",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "首页", "iconPath": "images/tab/home.png", "selectedIconPath": "images/tab/home-on.png" },
+      { "pagePath": "pages/orders/orders", "text": "我的办件", "iconPath": "images/tab/doc.png", "selectedIconPath": "images/tab/doc-on.png" },
+      { "pagePath": "pages/license/license", "text": "证照夹", "iconPath": "images/tab/card.png", "selectedIconPath": "images/tab/card-on.png" },
+      { "pagePath": "pages/mine/mine", "text": "我的", "iconPath": "images/tab/user.png", "selectedIconPath": "images/tab/user-on.png" }
+    ]
+  },
+  "usingComponents": {
+    "gov-steps": "/components/steps/steps"
+  }
+}

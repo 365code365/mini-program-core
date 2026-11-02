@@ -72,6 +72,16 @@ pub struct EventBinding {
     /// 覆盖层的坐标是视口坐标（不含滚动偏移），而且它在页面之上 ——
     /// 命中判定必须先只看覆盖层，命中就到此为止，否则点击会穿透到下层。
     pub is_fixed: bool,
+    /// 覆盖层里属于哪一层：所在 fixed 子树根的遮挡区在 `fixed_hit_regions` 里的下标（越大越靠上）。
+    /// 正常流、以及零尺寸的 fixed 根（没登记遮挡区）是 None —— 不参与分层判定。
+    ///
+    /// 为什么要它：底部面板与全屏遮罩是**兄弟**（`<view class="mask" bindtap="close"/><view class="sheet">…`，
+    /// 微信最常见的写法）。只按包围盒找祖先时，遮罩把整屏都包住，被当成面板的最外层祖先 ——
+    /// 点面板里任何一项都会冒泡到遮罩的 close，面板一点就关（拾光咖啡选规格、商城选规格、外卖购物车）。
+    pub fixed_layer: Option<u32>,
+    /// 这一层的 fixed 根本身嵌在另一层 fixed 根里（页面根上的 fixed 节点里又写了 fixed 子节点）时，
+    /// 外面那一层的下标。外层是真正的 DOM 祖先，事件照常冒泡上去
+    pub fixed_parent: Option<u32>,
 }
 
 /// 一个 `<picker>` 在本帧的可点区域与它的选择器配置。
@@ -219,10 +229,12 @@ pub struct WxmlRenderer {
     js_animations: HashMap<u64, f32>,
     /// 正在绘制 `position: fixed` 覆盖层（此期间注册的事件绑定标记为 fixed）
     registering_fixed: bool,
-    /// 覆盖层各子树根在视口中的逻辑包围盒。
+    /// 覆盖层各子树根在视口中的逻辑包围盒，按绘制顺序（下标越大越靠上，见 `EventBinding::fixed_layer`）。
     /// 落在这些区域内的点击一律由覆盖层消费 —— 即使那里没有事件处理器
     /// （比如只写了半透明遮罩），也不能穿透到下层页面。
     fixed_hit_regions: Vec<GeoRect>,
+    /// 正在画的那棵 fixed 子树属于哪一层、外层是哪一层（登记事件绑定时写进 `EventBinding`）
+    fixed_layer_now: Option<(u32, Option<u32>)>,
     /// 本帧登记的 `<picker>`（宿主据此弹出原生选择面板）
     picker_regions: Vec<PickerBinding>,
     /// 本帧登记的输入框属性（宿主据此弹对应类型的软键盘，见 host_regions.rs）
@@ -368,6 +380,7 @@ impl WxmlRenderer {
             js_animations: HashMap::new(),
             registering_fixed: false,
             fixed_hit_regions: Vec::new(),
+            fixed_layer_now: None,
             picker_regions: Vec::new(),
             input_regions: Vec::new(),
             native_regions: Vec::new(),

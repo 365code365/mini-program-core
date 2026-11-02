@@ -1,0 +1,49 @@
+<view class="card">
+  <text class="sec-title">问诊方式</text>
+  <view class="types">
+    <view class="ty {{typeIdx === index ? 'on' : ''}}" wx:for="{{types}}" wx:key="key" data-i="{{index}}" bindtap="pickType">
+      <text class="ty-n">{{item.name}}</text>
+      <text class="ty-p">¥{{item.price}}</text>
+      <text class="ty-s">{{item.sub}}</text>
+    </view>
+  </view>
+</view>
+<view class="card form">
+  <view class="f-row">
+    <text class="f-k">就诊人</text>
+    <picker class="f-pk c-patient" mode="selector" range="{{patientNames}}" value="{{pIdx}}" bindchange="onPatient">
+      <view class="row f-pv"><text>{{patientNames[pIdx]}}</text><view class="chev"></view></view>
+    </picker>
+  </view>
+  <view wx:if="{{types[typeIdx].key !== 'renew'}}" class="f-row">
+    <text class="f-k">问诊科室</text>
+    <picker class="f-pk c-dept" mode="selector" range="{{deptNames}}" value="{{deptIdx}}" bindchange="onDept">
+      <view class="row f-pv"><text>{{deptNames[deptIdx]}}</text><view class="chev"></view></view>
+    </picker>
+  </view>
+  <view wx:if="{{renewHint}}" class="hint"><text>{{renewHint}}</text></view>
+  <textarea wx:if="{{types[typeIdx].key !== 'renew'}}" id="desc{{formSeq}}" class="desc" placeholder="请描述症状、持续时间、已用药物（至少 10 个字）" placeholder-class="ph" maxlength="200" value="{{desc}}" bindinput="onDesc"></textarea>
+  <view class="btn-primary submit" bindtap="submit"><text>提交并支付 ¥{{types[typeIdx].price}}</text></view>
+</view>
+<view class="card">
+  <view class="row between">
+    <text class="sec-title">我的问诊</text>
+    <text class="muted">{{list.length}} 条</text>
+  </view>
+  <view class="cs" wx:for="{{list}}" wx:key="id">
+    <view class="row between">
+      <text class="cs-t">{{item.typeName}} · {{item.dept}}</text>
+      <text class="cs-st st-{{item.status}}">{{item.statusText}}</text>
+    </view>
+    <text class="muted">{{item.patient}} · {{item.time}} · ¥{{item.price}}</text>
+    <view class="bubble me"><text>{{item.desc}}</text></view>
+    <view wx:if="{{item.reply}}" class="bubble doc"><text class="who">接诊医生：</text><text>{{item.reply}}</text></view>
+    <view class="cs-ops row">
+      <view wx:if="{{item.status === 'wait'}}" class="mini cs-cancel" data-id="{{item.id}}" bindtap="onCancel"><text>取消问诊</text></view>
+      <view wx:if="{{item.unpaid}}" class="mini pri" bindtap="goBills"><text>去缴费取药</text></view>
+      <view wx:if="{{item.status === 'reply'}}" class="mini cs-finish" data-id="{{item.id}}" bindtap="onFinish"><text>结束问诊</text></view>
+    </view>
+  </view>
+  <view wx:if="{{!list.length}}" class="none"><text class="muted">还没有问诊记录</text></view>
+</view>
+<view style="height: 60rpx;"></view>

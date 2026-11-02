@@ -1,0 +1,7 @@
+.ring { position: relative; }
+.ring-cv { position: absolute; left: 0; top: 0; }
+.ring-mid { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.ring-num-row { display: flex; flex-direction: row; align-items: flex-end; }
+.ring-num { font-size: 56rpx; font-weight: bold; color: #1f2430; line-height: 64rpx; }
+.ring-total { font-size: 26rpx; color: #8a90a0; line-height: 50rpx; margin-left: 4rpx; }
+.ring-lb { font-size: 22rpx; color: #8a90a0; margin-top: 4rpx; }

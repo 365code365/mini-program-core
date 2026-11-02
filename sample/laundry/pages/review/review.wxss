@@ -1,0 +1,13 @@
+.cv { width: 96rpx; height: 96rpx; border-radius: 20rpx; margin-right: 20rpx; }
+.t { display: block; font-size: 28rpx; font-weight: 600; margin-bottom: 4rpx; }
+.dim { padding: 18rpx 0; }
+.d-l { width: 160rpx; font-size: 28rpx; }
+.overall { justify-content: flex-end; margin-top: 8rpx; }
+.ov-n { font-size: 32rpx; font-weight: 700; color: #ff9f1a; margin-left: 12rpx; }
+.tags { display: flex; flex-direction: row; flex-wrap: wrap; margin-top: 16rpx; }
+.tg { margin: 0 20rpx 16rpx 0; }
+.tg-t { font-size: 26rpx; margin-left: 2rpx; }
+.tg-bad .tg-t { color: #c0563f; }
+.ta { width: 100%; height: 180rpx; background: #f4f6f9; border-radius: 12rpx; padding: 16rpx 20rpx; box-sizing: border-box; font-size: 26rpx; margin-top: 8rpx; }
+.anon { margin-top: 20rpx; font-size: 28rpx; }
+.op { margin: 40rpx 24rpx 0; }

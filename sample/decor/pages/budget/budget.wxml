@@ -1,0 +1,56 @@
+<view class="page tab-page">
+  <view class="card">
+    <view class="between">
+      <text class="sec-title">房屋面积</text>
+      <view class="row"><text class="area">{{area}}</text><text class="muted">㎡</text></view>
+    </view>
+    <slider min="40" max="300" step="5" value="{{area}}" show-value activeColor="#3a7d6c" block-color="#3a7d6c" block-size="24" bindchanging="onAreaChanging" bindchange="onArea"></slider>
+    <view class="between muted"><text>40㎡</text><text>按建筑面积计算</text><text>300㎡</text></view>
+  </view>
+
+  <view class="card">
+    <text class="sec-title">装修档次</text>
+    <radio-group class="grades" bindchange="onGrade">
+      <label wx:for="{{grades}}" wx:key="key" class="grade {{grade === index ? 'grade-on' : ''}}">
+        <view class="row"><radio value="{{index}}" checked="{{grade === index}}" color="#3a7d6c"></radio><text class="g-n">{{item.name}}</text></view>
+        <text class="g-d">{{item.desc}}</text>
+      </label>
+    </radio-group>
+  </view>
+
+  <view class="card">
+    <text class="sec-title">选配项目</text>
+    <view wx:for="{{options}}" wx:key="key" class="opt">
+      <view class="col flex1"><text class="o-n">{{item.name}}</text><text class="muted">{{item.desc}}</text></view>
+      <switch checked="{{on[item.key]}}" data-k="{{item.key}}" color="#3a7d6c" bindchange="onSwitch"></switch>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="between">
+      <text class="sec-title">预算结果</text>
+      <text class="muted">约 {{res.perSqm}} 元/㎡</text>
+    </view>
+    <view class="res">
+      <canvas type="2d" id="pie" class="pie"></canvas>
+      <view class="legend flex1">
+        <view wx:for="{{res.items}}" wx:key="name" class="lg">
+          <view class="lg-dot" style="background: {{item.color}};"></view>
+          <text class="lg-n flex1">{{item.name}}</text>
+          <text class="lg-v">{{item.wan}}万</text>
+        </view>
+      </view>
+    </view>
+    <view wx:for="{{res.items}}" wx:key="name" class="bar-row">
+      <text class="br-n">{{item.name}}</text>
+      <progress class="flex1" percent="{{item.percent}}" stroke-width="6" border-radius="6" activeColor="{{item.color}}" backgroundColor="#efebe5"></progress>
+      <text class="br-p">{{item.percent}}%</text>
+    </view>
+    <text class="muted note">按杭州 2024 年市场均价估算，实际以设计师上门量房后的报价为准。</text>
+  </view>
+
+  <view class="row acts">
+    <view class="btn-ghost save" bindtap="save" hover-class="btn-hover">保存方案{{saved ? '（' + saved + '）' : ''}}</view>
+    <view class="btn flex1" bindtap="book" hover-class="btn-hover">按此预算预约量房</view>
+  </view>
+</view>

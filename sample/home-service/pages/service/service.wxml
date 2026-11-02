@@ -1,0 +1,60 @@
+<view wx:if="{{svc}}">
+  <image class="cover" src="{{svc.cover}}" mode="aspectFill"></image>
+  <view class="wrap top">
+    <view class="card">
+      <text class="title">{{svc.name}}</text>
+      <text class="sub">{{svc.slogan}}</text>
+      <view class="between meta">
+        <view class="row">
+          <text class="price big">¥{{svc.price}}</text>
+          <text class="sub">/{{svc.unit}} 起</text>
+        </view>
+        <text class="sub">已服务 {{svc.sold}} 次 · 好评 {{svc.rate}}</text>
+      </view>
+    </view>
+
+    <section-card title="价格表" sub="点选规格">
+      <view class="spec between {{specIdx === index ? 'spec-on' : ''}}" wx:for="{{svc.specs}}" wx:key="id" data-i="{{index}}" bindtap="pickSpec">
+        <text>{{item.name}}</text>
+        <text class="{{specIdx === index ? 'green' : ''}}">¥{{item.price}}/{{svc.type === 'hourly' ? '小时' : svc.unit}}</text>
+      </view>
+      <text slot="footer" class="sub">{{svc.type === 'hourly' ? '最少 ' + svc.minQty + ' 小时，' : ''}}价格含上门费与基础工具，无隐形收费</text>
+    </section-card>
+
+    <section-card title="服务标准" title-class="std-title" ext-class="">
+      <view class="li row" wx:for="{{svc.standard}}" wx:key="*this">
+        <text class="li-dot green">●</text>
+        <text class="li-tx">{{item}}</text>
+      </view>
+    </section-card>
+
+    <section-card title="预约须知">
+      <view class="li row" wx:for="{{svc.notice}}" wx:key="*this">
+        <text class="li-no">{{index + 1}}</text>
+        <text class="li-tx">{{item}}</text>
+      </view>
+    </section-card>
+
+    <section-card title="{{prefer ? '指定' : '推荐'}}{{staff.title}}" footer="{{true}}">
+      <view class="row">
+        <image class="av" src="{{staff.avatar}}" mode="aspectFill"></image>
+        <view class="col flex1 av-info">
+          <text class="av-nm">{{staff.name}}</text>
+          <text class="sub">{{staff.home}} · 从业 {{staff.years}} 年 · 好评 {{staff.good}}</text>
+        </view>
+      </view>
+      <text slot="footer" class="sub">{{staff.intro}}</text>
+    </section-card>
+    <view class="bar-gap"></view>
+  </view>
+  <view class="footer-bar">
+    <view class="col flex1">
+      <view class="row">
+        <text>已选 {{svc.specs[specIdx].name}} </text>
+        <text class="price">¥{{svc.specs[specIdx].price}}</text>
+      </view>
+      <text class="sub">不满意 24 小时内免费返工</text>
+    </view>
+    <view class="btn bk" bindtap="book">立即预约</view>
+  </view>
+</view>

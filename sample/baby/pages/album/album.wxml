@@ -1,0 +1,40 @@
+<view class="page tab-page">
+  <view class="top">
+    <view class="col flex1">
+      <text class="top-title">{{name}}的成长瞬间</text>
+      <text class="top-sub">已记录 {{count}} 个瞬间 · {{voiceCount}} 段语音</text>
+    </view>
+    <view class="shot" bindtap="add" hover-class="btn-hover">
+      <image class="shot-ic" src="/images/quick/camera.png"></image>
+      <text class="shot-tx">记一笔</text>
+    </view>
+  </view>
+
+  <view wx:if="{{!count}}" class="empty">
+    <image class="empty-ic" src="/images/quick/heart.png"></image>
+    <text class="empty-text">还没有照片，点「记一笔」留下第一个瞬间</text>
+  </view>
+
+  <view wx:for="{{groups}}" wx:for-item="g" wx:key="key" class="month">
+    <view class="row m-head">
+      <view class="m-dot"></view>
+      <text class="m-title">{{g.title}}</text>
+      <text class="tag">{{g.age}}</text>
+    </view>
+    <view class="m-body">
+      <view wx:for="{{g.items}}" wx:key="id" class="mo" data-id="{{item.id}}" bindtap="open" hover-class="btn-hover">
+        <image class="mo-img" src="{{item.photo}}" mode="aspectFill"></image>
+        <view class="mo-info">
+          <view class="between">
+            <text class="mo-day">{{item.day}} · 第 {{item.dayN}} 天</text>
+            <view class="row">
+              <text wx:if="{{item.voice}}" class="tag tag-mint mo-tag">语音</text>
+              <text class="tag mo-tag">{{item.tag}}</text>
+            </view>
+          </view>
+          <text class="mo-cap">{{item.caption}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

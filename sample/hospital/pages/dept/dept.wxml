@@ -2,12 +2,13 @@
   <view class="top">
     <view class="search">
       <view class="search-icon"></view>
-      <input class="search-in" placeholder="搜索科室或症状，如：咳嗽" value="{{kw}}" bindinput="onInput" confirm-type="search" />
+      <input id="kw{{kwSeq}}" class="search-in" placeholder="搜索科室或症状，如：咳嗽" value="{{kw}}" bindinput="onInput" confirm-type="search" />
       <text wx:if="{{kw}}" class="clear" bindtap="clearKw">取消</text>
     </view>
   </view>
 
-  <view wx:if="{{kw}}" class="result">
+  <scroll-view wx:if="{{kw}}" class="result" scroll-y="{{true}}">
+    <text wx:if="{{results.length}}" class="r-h">科室</text>
     <view class="r-item" wx:for="{{results}}" wx:key="id" data-id="{{item.id}}" bindtap="goDoctors">
       <view>
         <text class="r-name">{{item.name}}</text>
@@ -15,8 +16,14 @@
       </view>
       <text class="r-desc">{{item.desc}}</text>
     </view>
-    <view wx:if="{{!results.length}}" class="empty">没有找到「{{kw}}」相关科室</view>
-  </view>
+    <text wx:if="{{docResults.length}}" class="r-h">医生</text>
+    <view class="r-doc" wx:for="{{docResults}}" wx:key="id" data-id="{{item.id}}" bindtap="goDoctor">
+      <view class="r-av" style="background: {{item.color}};"><text>{{item.sx}}</text></view>
+      <text class="r-name">{{item.name}}</text>
+      <text class="r-title">{{item.title}} · {{item.dept}}</text>
+    </view>
+    <view wx:if="{{!results.length && !docResults.length}}" class="empty"><text>没有找到「{{kw}}」相关科室或医生</text></view>
+  </scroll-view>
 
   <view wx:else class="body">
     <scroll-view class="left" scroll-y="{{true}}">

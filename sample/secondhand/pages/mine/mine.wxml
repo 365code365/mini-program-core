@@ -1,0 +1,35 @@
+<view class="mn-head">
+  <image class="mn-av" src="{{me.avatar}}"></image>
+  <view class="flex1 mn-info"><text class="mn-name">{{me.name}}</text><text class="mn-sub">{{me.city}} · 信用极好</text></view>
+  <button class="mn-share" open-type="share">邀请好友</button>
+</view>
+<view class="card row mn-stat">
+  <view class="mn-si" bindtap="goMyItems"><text class="mn-n">{{stat.on}}</text><text class="muted">在售</text></view>
+  <view class="mn-si" bindtap="goMyItems"><text class="mn-n">{{stat.sold}}</text><text class="muted">卖出</text></view>
+  <view class="mn-si" data-tab="done" bindtap="goOrders"><text class="mn-n">{{stat.bought}}</text><text class="muted">买到</text></view>
+  <view class="mn-si" bindtap="goFavs"><text class="mn-n">{{stat.fav}}</text><text class="muted">收藏</text></view>
+</view>
+<view class="card">
+  <view class="row between mn-sec" data-tab="all" bindtap="goOrders"><text class="mn-st">我买到的</text><view class="row"><text class="muted">全部订单</text><view class="chev"></view></view></view>
+  <view class="row">
+    <view class="mn-si" data-tab="paid" bindtap="goOrders"><text class="mn-ic">📦</text><text class="mn-l">待发货{{orderCounts.paid ? ' ' + orderCounts.paid : ''}}</text></view>
+    <view class="mn-si" data-tab="shipped" bindtap="goOrders"><text class="mn-ic">🚚</text><text class="mn-l">待收货{{orderCounts.shipped ? ' ' + orderCounts.shipped : ''}}</text></view>
+    <view class="mn-si" data-tab="done" bindtap="goOrders"><text class="mn-ic">✅</text><text class="mn-l">已完成</text></view>
+    <view class="mn-si" data-tab="closed" bindtap="goOrders"><text class="mn-ic">↩️</text><text class="mn-l">退款</text></view>
+  </view>
+</view>
+<view class="card">
+  <text class="mn-st">我的数据</text>
+  <view class="row mn-data">
+    <view class="mn-si"><text class="mn-n">{{expose}}</text><text class="muted">宝贝曝光次数</text></view>
+    <view class="mn-si"><text class="mn-n">¥{{earned}}</text><text class="muted">累计卖出</text></view>
+  </view>
+</view>
+<view class="card mn-menu">
+  <view class="mn-cell" bindtap="goMyItems"><text>我的发布</text><view class="chev"></view></view>
+  <view class="mn-cell" bindtap="goFavs"><text>我的收藏</text><view class="chev"></view></view>
+  <view class="mn-cell" bindtap="goMessages"><text>私信</text><view class="chev"></view></view>
+  <view class="mn-cell" bindtap="rules"><text>交易规则</text><view class="chev"></view></view>
+  <view class="mn-cell" bindtap="clearHistory"><text>清除搜索历史</text><view class="chev"></view></view>
+</view>
+<view class="safe-bottom"></view>

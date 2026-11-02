@@ -1,19 +1,22 @@
 <view class="page">
   <view class="hero">
     <view class="row between">
-      <text class="hero-month">{{monthText}} · 支出</text>
+      <view class="row book-chip" hover-class="book-chip-hover" bindtap="onBooks">
+        <text class="hero-month">{{bookName}} · {{monthText}}支出</text>
+        <view class="down"></view>
+      </view>
       <view class="hero-chip" bindtap="onBudget"><text>预算 ¥{{budgetText}}</text></view>
     </view>
     <view class="hero-amount"><text><text class="hero-yen">¥</text>{{outText}}</text></view>
     <view class="row hero-sub">
-      <view class="flex1">
+      <view class="flex1 hero-stat" bindtap="onStats">
         <view class="hero-label"><text>本月收入</text></view>
         <view class="hero-val"><text><text>¥</text>{{inText}}</text></view>
       </view>
       <view class="hero-split"></view>
-      <view class="flex1 hero-right">
+      <view class="flex1 hero-right hero-stat" bindtap="onStats">
         <view class="hero-label"><text>本月结余</text></view>
-        <view class="hero-val"><text><text>¥</text>{{leftText}}</text></view>
+        <view class="hero-val"><text>{{leftYuan}}</text></view>
       </view>
     </view>
     <view class="add-btn" hover-class="add-btn-hover" bindtap="onAdd">
@@ -43,7 +46,7 @@
 
   <view wx:if="{{empty}}" class="card empty">
     <view class="empty-icon"><text>账</text></view>
-    <view class="muted"><text>这个月还没有记账，点右下角记一笔吧</text></view>
+    <view class="muted"><text>这个月还没有记账，点上方「记一笔」开始吧</text></view>
   </view>
 
   <view wx:for="{{groups}}" wx:key="date" class="card group">

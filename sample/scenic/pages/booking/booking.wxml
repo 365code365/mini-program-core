@@ -1,0 +1,60 @@
+<view class="wrap" wx:if="{{s}}">
+  <view class="card head row">
+    <image class="cover" src="{{s.cover}}" mode="aspectFill"></image>
+    <view class="col head-r"><text class="h2">{{s.name}}</text><text class="muted">{{s.open}}</text></view>
+  </view>
+
+  <view class="card">
+    <text class="sec-title">入园日期</text>
+    <view class="row days">
+      <view wx:for="{{quick}}" wx:key="d" class="day {{date === item.d ? 'day-on' : ''}}" data-d="{{item.d}}" bindtap="onQuick">
+        <text class="day-l">{{item.label}}</text><text class="day-s">{{item.sub}}</text>
+      </view>
+      <picker mode="date" value="{{date}}" start="{{start}}" end="{{end}}" bindchange="onDate">
+        <view class="day day-more {{date !== quick[0].d && date !== quick[1].d && date !== quick[2].d ? 'day-on' : ''}}">
+          <text class="day-l">更多日期</text><text class="day-s">30 天内</text>
+        </view>
+      </picker>
+    </view>
+    <text class="muted">已选 {{dateText}}</text>
+    <text class="err" wx:if="{{errors.date}}">{{errors.date}}</text>
+  </view>
+
+  <view class="card">
+    <text class="sec-title">选择票种</text>
+    <view class="tk between" wx:for="{{tickets}}" wx:key="id">
+      <view class="col tk-l"><text class="tk-n">{{item.name}}</text><text class="muted">{{item.desc}}</text></view>
+      <text class="price tk-p">¥{{item.price}}</text>
+      <stepper value="{{item.n}}" min="0" max="5" key="{{item.id}}" bindchange="onStep"></stepper>
+    </view>
+    <text class="err" wx:if="{{errors.tickets}}">{{errors.tickets}}</text>
+  </view>
+
+  <view class="card">
+    <view class="between"><text class="sec-title">游客信息（需 {{count}} 位）</text><text class="brand add" bindtap="goTourists">+ 新增 / 管理</text></view>
+    <checkbox-group bindchange="onPick">
+      <label class="ps row" wx:for="{{tourists}}" wx:key="id">
+        <checkbox value="{{item.id}}" checked="{{item.on}}" color="#13a07b"></checkbox>
+        <view class="col ps-r"><text class="ps-n">{{item.name}}</text><text class="muted">身份证 {{item.idMask}} · {{item.age}} 岁</text></view>
+      </label>
+    </checkbox-group>
+    <view class="empty-ps" wx:if="{{!tourists.length}}" bindtap="goTourists"><text class="brand">还没有常用游客，点这里添加</text></view>
+    <text class="err" wx:if="{{errors.people}}">{{errors.people}}</text>
+  </view>
+
+  <view class="card">
+    <text class="sec-title">联系电话</text>
+    <input class="in" type="number" maxlength="11" placeholder="接收入园短信的手机号" value="{{phone}}" bindinput="onPhone"></input>
+    <text class="err" wx:if="{{errors.phone}}">{{errors.phone}}</text>
+  </view>
+
+  <checkbox-group bindchange="onAgree">
+    <label class="agree row"><checkbox value="ok" checked="{{agree}}" color="#13a07b"></checkbox><text class="muted">我已阅读并同意《预订须知》《退改规则》：未使用可随时全额退</text></label>
+  </checkbox-group>
+  <view style="height: 150rpx;"></view>
+
+  <view class="bottom row">
+    <view class="col"><view class="row"><text class="muted">合计 </text><text class="price b-p">¥{{total}}</text></view><text class="muted">{{count}} 张 · {{date}}</text></view>
+    <view class="btn-warm b-btn {{submitting ? 'press' : ''}}" hover-class="press" bindtap="onSubmit">{{submitting ? '支付中…' : '提交订单'}}</view>
+  </view>
+</view>

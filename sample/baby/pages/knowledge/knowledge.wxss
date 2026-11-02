@@ -1,0 +1,14 @@
+.search { display: flex; flex-direction: row; align-items: center; background: #ffffff; border-radius: 40rpx; height: 76rpx; padding: 0 28rpx; margin-bottom: 20rpx; }
+.s-input { flex: 1; font-size: 26rpx; }
+.s-clear { font-size: 24rpx; color: #9a9095; margin-left: 16rpx; }
+.stages { width: 100%; white-space: nowrap; margin-bottom: 20rpx; }
+.st-row { display: flex; flex-direction: row; }
+.st { display: flex; flex-direction: row; align-items: center; flex-shrink: 0; padding: 12rpx 26rpx; border-radius: 32rpx; background: #ffffff; color: #6a6065; font-size: 26rpx; margin-right: 16rpx; }
+.st-on { background: #ff7a8a; color: #ffffff; }
+.st-mine { font-size: 18rpx; margin-left: 8rpx; padding: 2rpx 8rpx; border-radius: 10rpx; background: rgba(255, 200, 80, 0.9); color: #6a4a00; }
+.art { display: flex; flex-direction: row; padding: 24rpx; }
+.cover { width: 200rpx; height: 150rpx; border-radius: 16rpx; margin-right: 22rpx; flex-shrink: 0; }
+.title { font-size: 29rpx; font-weight: bold; line-height: 1.4; }
+.sum { font-size: 24rpx; color: #8a8085; margin-top: 8rpx; line-height: 1.5; }
+.meta { margin-top: 10rpx; }
+.m-gap { margin-left: 16rpx; font-size: 22rpx; }

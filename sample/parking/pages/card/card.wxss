@@ -1,0 +1,23 @@
+.sec-t { padding: 24rpx 32rpx 12rpx; font-size: 28rpx; font-weight: bold; }
+.mc { margin: 0 24rpx 20rpx; background: #ffffff; border-radius: 20rpx; overflow: hidden; }
+.mc-top { background: linear-gradient(135deg, #1d4ed8, #3d8bff); padding: 28rpx; }
+.mc-off { background: linear-gradient(135deg, #8f95a3, #b3b8c2); }
+.mc-lot { color: #ffffff; font-size: 30rpx; font-weight: bold; }
+.mc-st { color: #ffffff; font-size: 22rpx; border: 2rpx solid rgba(255, 255, 255, 0.7); border-radius: 18rpx; padding: 2rpx 14rpx; white-space: nowrap; }
+.mc-plate { display: block; color: #ffffff; font-size: 40rpx; font-weight: bold; margin: 16rpx 0 8rpx; letter-spacing: 2rpx; }
+.mc-end { display: block; color: rgba(255, 255, 255, 0.85); font-size: 24rpx; }
+.mc-foot { padding: 18rpx 28rpx; }
+.mc-renew { font-size: 24rpx; color: #1677ff; border: 2rpx solid #1677ff; border-radius: 24rpx; padding: 6rpx 24rpx; }
+.cells { padding: 0 24rpx 24rpx; }
+.plans { margin-top: 24rpx; }
+.plan { flex: 1; margin-right: 16rpx; border: 2rpx solid #d6dbe6; border-radius: 16rpx; padding: 18rpx 0; display: flex; flex-direction: column; align-items: center; }
+.plan:last-child { margin-right: 0; }
+.plan-on { border-color: #1677ff; background: #f0f6ff; }
+.plan-n { font-size: 26rpx; color: #5c6370; }
+.plan-p { font-size: 34rpx; font-weight: bold; color: #1f2329; margin: 6rpx 0; white-space: nowrap; }
+.plan-on .plan-p { color: #1677ff; }
+.plan-d { font-size: 22rpx; color: #a3a8b3; }
+.note { display: block; padding: 0 32rpx; font-size: 22rpx; color: #a3a8b3; line-height: 34rpx; }
+.foot { margin: 28rpx 24rpx 60rpx; background: #ffffff; border-radius: 20rpx; padding: 20rpx 24rpx; }
+.total { display: block; font-size: 40rpx; font-weight: bold; color: #ff5a1f; white-space: nowrap; }
+.buy-btn { width: 240rpx; height: 80rpx; line-height: 80rpx; }

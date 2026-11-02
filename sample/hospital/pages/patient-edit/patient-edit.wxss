@@ -1,0 +1,17 @@
+.tip { padding: 20rpx 32rpx; background: #fff7e8; color: #c27c0e; font-size: 24rpx; line-height: 36rpx; }
+.form { padding-top: 4rpx; padding-bottom: 4rpx; }
+.f-row { display: flex; flex-direction: row; align-items: center; min-height: 100rpx; border-bottom: 1rpx solid #f0f2f5; }
+.f-row.last { border-bottom: none; }
+.f-k { width: 160rpx; font-size: 28rpx; color: #3a4252; flex-shrink: 0; }
+/* 引擎把 font-size 恰为 14px、padding 为 0 当成「没写」，套 16px 字号与 12px 内边距，所以写 28.1rpx 与 1rpx */
+.f-in { flex: 1; height: 100rpx; font-size: 28.1rpx; padding: 0 0 0 1rpx; }
+.f-ro { flex: 1; font-size: 28rpx; color: #8a93a3; }
+.f-pk { flex: 1; }
+.f-pv { justify-content: space-between; font-size: 28rpx; color: #1d2330; }
+.ph { color: #b8bec8; }
+.f-radios { flex: 1; }
+.f-radio { margin-right: 48rpx; font-size: 28rpx; }
+.f-sw { flex: 1; display: flex; flex-direction: row; align-items: center; justify-content: flex-end; }
+.f-hint { margin-right: 16rpx; }
+.save { margin: 40rpx 24rpx 0; }
+.del { margin: 28rpx 24rpx 0; height: 88rpx; border-radius: 44rpx; background: #ffffff; color: #ff5a36; font-size: 30rpx; display: flex; align-items: center; justify-content: center; }

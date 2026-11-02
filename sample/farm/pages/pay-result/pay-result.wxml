@@ -1,0 +1,26 @@
+<view class="top">
+  <icon type="success" size="64" color="#ffffff"></icon>
+  <text class="t1">{{title}}</text>
+  <text class="t2">实付 ¥{{order.total}} · {{order.no}}</text>
+</view>
+<view class="card" wx:if="{{grp}}">
+  <text class="sec-title">{{grp.status === 'success' ? '拼团成功，商家准备发货' : '还差 ' + lack + ' 人成团'}}</text>
+  <view class="mems">
+    <view class="mem" wx:for="{{slots}}" wx:key="index">
+      <image wx:if="{{item}}" class="mem-av" src="{{item.avatar}}" mode="scaleToFill"></image>
+      <view wx:else class="mem-av mem-empty"><text class="mem-q">?</text></view>
+      <text class="mem-name">{{item ? item.name : '待加入'}}</text>
+    </view>
+  </view>
+  <text class="muted cd" wx:if="{{grp.status === 'ongoing' && cd}}">剩余 {{cd.text}} 结束，超时未满员自动退款</text>
+  <button wx:if="{{grp.status === 'ongoing'}}" class="share" open-type="share" hover-class="btn-hover">邀请好友参团</button>
+  <view class="btn-ghost link" bindtap="goGroup">查看拼团详情</view>
+</view>
+<view class="card" wx:else>
+  <text class="sec-title">预计 {{order.date}} {{order.slot}} 送达</text>
+  <text class="muted info">{{order.address.name}} {{order.address.region[1]}}{{order.address.region[2]}} {{order.address.detail}}</text>
+</view>
+<view class="row ops">
+  <view class="btn-ghost op" hover-class="btn-hover" bindtap="goOrder">查看订单</view>
+  <view class="btn op op-main" hover-class="btn-hover" bindtap="goHome">继续逛逛</view>
+</view>

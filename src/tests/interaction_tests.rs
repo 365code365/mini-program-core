@@ -259,6 +259,20 @@ fn flow_scope_click_ignores_fixed_element() {
     }
 }
 
+/// 页面滚过之后，正常流的点击（内容坐标）不能撞上按视口坐标登记的覆盖层元素：
+/// 底部固定输入条在视口 600~650，页面滚了 436，点内容 y=626 处的卡片不该聚焦输入框
+#[test]
+fn flow_scope_click_never_hits_fixed_element_by_coincidence() {
+    let mut im = InteractionManager::new();
+    let mut input = elem(InteractionType::Input, "input_24_600", 24.0, 600.0, 270.0, 50.0);
+    input.is_fixed = true;
+    im.register_element(input);
+    assert!(im.handle_click(100.0, 626.0).is_none(), "正常流这一点上没有交互元素");
+    assert!(!im.has_focused_input(), "不该聚焦覆盖层的输入框");
+    // 覆盖层作用域照常命中
+    assert!(matches!(im.handle_click_scoped(100.0, 626.0, true), Some(InteractionResult::Focus { .. })));
+}
+
 /// 滚动区里盖着一张卡片时，滚轮仍应交给滚动区（而不是被卡片挡掉）
 #[test]
 fn scroll_area_hit_ignores_cards_on_top() {

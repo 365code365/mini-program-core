@@ -8,6 +8,8 @@
   <view class="row hero-links">
     <view class="hero-link go-stats" bindtap="goStats">📊 统计</view>
     <view class="hero-link go-members" bindtap="goMembers">👥 成员</view>
+    <view class="hero-link go-search" bindtap="goSearch">🔍 筛选</view>
+    <view class="hero-link go-activity" bindtap="goActivity">🕒 动态</view>
   </view>
 </view>
 <scroll-view class="board" scroll-x>

@@ -1,0 +1,29 @@
+.types { display: flex; flex-direction: row; margin-top: 20rpx; }
+.ty { flex: 1; margin-right: 16rpx; padding: 22rpx 0; border-radius: 16rpx; background: #f7f9fc; border: 3rpx solid #f7f9fc; display: flex; flex-direction: column; align-items: center; }
+.ty:last-child { margin-right: 0; }
+.ty.on { background: #fff6ec; border-color: #ff8240; }
+.ty-n { font-size: 28rpx; font-weight: bold; color: #1d2330; white-space: nowrap; }
+.ty-p { margin-top: 6rpx; font-size: 32rpx; font-weight: bold; color: #ff5a36; }
+.ty-s { margin-top: 4rpx; font-size: 20rpx; color: #8a93a3; white-space: nowrap; }
+.form { padding-top: 4rpx; }
+.f-row { display: flex; flex-direction: row; align-items: center; min-height: 100rpx; border-bottom: 1rpx solid #f0f2f5; }
+.f-k { width: 160rpx; font-size: 28rpx; color: #3a4252; flex-shrink: 0; }
+.f-pk { flex: 1; }
+.f-pv { justify-content: space-between; font-size: 28rpx; color: #1d2330; }
+.hint { margin-top: 20rpx; padding: 16rpx 20rpx; border-radius: 12rpx; background: #fff7e8; color: #c27c0e; font-size: 24rpx; }
+.desc { width: 100%; height: 180rpx; margin-top: 24rpx; padding: 18rpx 20rpx; box-sizing: border-box; border-radius: 14rpx; background: #f7f9fc; font-size: 26rpx; }
+.ph { color: #b8bec8; }
+.submit { margin-top: 28rpx; }
+.cs { margin-top: 24rpx; padding-top: 24rpx; border-top: 1rpx solid #f0f2f5; }
+.cs-t { font-size: 28rpx; font-weight: bold; color: #1d2330; }
+.cs-st { font-size: 24rpx; color: #ff8240; }
+.st-reply { color: #1f7cf0; }
+.st-done, .st-cancel { color: #a0a7b4; }
+.bubble { margin-top: 14rpx; padding: 16rpx 20rpx; border-radius: 14rpx; font-size: 26rpx; line-height: 40rpx; color: #3a4252; }
+.bubble.me { background: #f2f4f8; }
+.bubble.doc { background: #eaf2ff; color: #1d4f99; }
+.who { font-weight: bold; }
+.cs-ops { justify-content: flex-end; margin-top: 16rpx; }
+.mini { height: 56rpx; padding: 0 26rpx; margin-left: 16rpx; border-radius: 28rpx; border: 2rpx solid #d5dae2; color: #3a4252; font-size: 24rpx; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
+.mini.pri { border-color: #1f7cf0; color: #1f7cf0; }
+.none { padding: 40rpx 0 12rpx; text-align: center; }

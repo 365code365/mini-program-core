@@ -1,0 +1,55 @@
+<view class="wrap">
+  <view class="search row">
+    <text class="s-ic">🔍</text>
+    <input class="s-in" placeholder="搜索景区 / 城市，如 黄山、北京" value="{{kw}}" bindinput="onInput" confirm-type="search"></input>
+    <text class="s-x" wx:if="{{kw}}" bindtap="onClear">✕</text>
+  </view>
+
+  <swiper class="banner" autoplay interval="4000" circular indicator-dots indicator-color="rgba(255,255,255,0.5)" indicator-active-color="#ffffff">
+    <swiper-item wx:for="{{banners}}" wx:key="id">
+      <view class="bn" data-id="{{item.id}}" bindtap="goDetail">
+        <image class="bn-img" src="{{item.cover}}" mode="aspectFill"></image>
+        <view class="bn-mask">
+          <text class="bn-name">{{item.name}}</text>
+          <text class="bn-slogan">{{item.slogan}}</text>
+        </view>
+      </view>
+    </swiper-item>
+  </swiper>
+
+  <view class="up row" wx:if="{{upcoming}}" hover-class="press" bindtap="goTicket">
+    <view class="up-ic"><text class="up-ic-tx">票</text></view>
+    <view class="col up-main">
+      <text class="up-t">{{upcoming.name}} · {{upcoming.count}} 张待使用</text>
+      <text class="muted">入园日期 {{upcoming.date}}，点这里出示电子票</text>
+    </view>
+    <text class="brand">›</text>
+  </view>
+
+  <scroll-view scroll-x class="cats" enable-flex>
+    <view class="cats-in row">
+      <view wx:for="{{cats}}" wx:key="*this" class="cat {{cat === index ? 'cat-on' : ''}}" data-i="{{index}}" bindtap="onCat"><text>{{item}}</text></view>
+    </view>
+  </scroll-view>
+
+  <view class="item" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="goDetail" hover-class="press">
+    <image class="it-img" src="{{item.cover}}" mode="aspectFill"></image>
+    <view class="it-body">
+      <view class="between">
+        <text class="h2">{{item.name}}</text>
+        <view class="row"><text class="lv">{{item.level}}</text><text class="tag">{{item.tag}}</text></view>
+      </view>
+      <text class="muted it-city">{{item.city}} · {{item.intro}}</text>
+      <view class="between">
+        <view class="row"><text class="score">★ {{item.score}}</text><text class="muted">（{{item.comments}} 条点评）</text></view>
+        <view class="row"><text class="price">¥{{item.from}}</text><text class="muted"> 起</text></view>
+      </view>
+    </view>
+  </view>
+
+  <view class="empty" wx:if="{{!list.length}}">
+    <view class="empty-ic"><text>?</text></view>
+    <text class="empty-tx">没有找到「{{kw}}」相关的景区，换个关键词试试</text>
+  </view>
+  <view style="height: 120rpx;"></view>
+</view>

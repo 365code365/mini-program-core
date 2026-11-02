@@ -10,7 +10,9 @@
 //! | `videos` | 同层渲染（`sameLayer` 含 video）时页面上的视频变了（换页、`wx:if`、改了 `src` 等属性、框变了） | `views[]`：`key` `url`（网络地址原样；包内路径已解析成本地文件绝对路径）`attrs` `box`（框的设备像素 `[宽, 高]`：按它与 `object-fit` 缩好再交帧，引擎只拷贝） |
 //! | `videoCommand` | 同层渲染的视频被点了（控制条 / 中间的播放键）或调了 `wx.createVideoContext` | `key` `command`（`play` / `pause` / `stop` / `seek` / `playbackRate`）`position`（秒）`rate`；静音不走命令，看 `videos` 里 `attrs.muted` |
 //! | `videoFullscreen` | 视频进 / 出全屏（控制条的全屏键、`requestFullScreen`、返回键退出；两种播放器都有） | `fullScreen` `direction`（0 竖屏 / 90 / -90 横屏，引擎自己把画面转过来画）`key`。宿主据此收起 / 放出状态栏与导航条 |
-//! | `nativeViews` | 原生组件的摆放、遮挡或页面滚动速度变了 | `views[]`：`key` `tag` `x` `y` `width` `height` `attrs` `fixed` `clip` `holes` `mask`（遮挡三项见 `native_occlusion.rs`）；这一帧的滚动取样 `frameTime`（vsync 毫秒，宿主时钟）`scroll` `velocity`（逻辑像素 / 毫秒）`decay`（惯性的每毫秒衰减率，拖动时 0）`period`（vsync 周期毫秒）`dpr`，以及正常流的可见区 `area`（见 `native_motion.rs`） |
+//! | `nativeViews` | 原生组件的摆放、遮挡或页面滚动速度变了 | `views[]`：`key` `tag` `x` `y` `width` `height` `attrs` `fixed` `clip` `holes` `mask`（遮挡三项见 `native_occlusion.rs`；web-view 另有解析好的 `url`，见 engine_webview.rs）；这一帧的滚动取样 `frameTime`（vsync 毫秒，宿主时钟）`scroll` `velocity`（逻辑像素 / 毫秒）`decay`（惯性的每毫秒衰减率，拖动时 0）`period`（vsync 周期毫秒）`dpr`，以及正常流的可见区 `area`（见 `native_motion.rs`） |
+//! | `sameLayerViews` / `nativeViewTap` | 同层渲染的通用组件（`<map>` 这类）有哪些 / 点在了哪 | 见 engine_host_views.rs |
+//! | `nativeViewTouch` | 按在 `sameLayerGestures` 点名的同层组件上的那串触摸 | `key` `tag` `phase`（start / move / end / cancel）`pointer`（0 / 1）`x` `y`（框内逻辑坐标）`t`，见 engine_native_touch.rs |
 //! | `hostCall` | 调了宿主实现的 `wx.*` | `id` `api` `args` `tempDir`（宿主可直接写的临时目录）`files`（`args` 里的 `wxfile://` → 真实路径，没有就不带；见 `runtime/app_host.rs`） |
 //! | `clipboard` | `wx.setClipboardData`、输入框里 `copy` / `cut`（宿主写系统剪贴板） | `data` |
 //! | `vibrate` | `wx.vibrateShort` / `vibrateLong` | `duration`（`short` / `long`）`style` |
@@ -326,6 +328,8 @@ impl MiniEngine {
         let regions = self.renderer.as_ref().map(|r| r.native_regions()).unwrap_or(&[]);
         let covers = if regions.is_empty() { Default::default() } else { self.native_covers() };
         let rect = |r: &crate::Rect| json!({ "x": r.x, "y": r.y, "width": r.width, "height": r.height });
+        let route = if regions.iter().any(|n| n.tag == "web-view") { self.current_route() } else { String::new() };
+        let page_dir = route.rsplit_once('/').map(|(d, _)| d).unwrap_or("");
         let views: Vec<Value> = regions
             .iter()
             .filter_map(|n| {
@@ -341,14 +345,23 @@ impl MiniEngine {
                 }
                 // 遮挡在平移之前算：覆盖层也跟着整帧一起挪，相对关系不变
                 let vis = covers.visibility(view, area, n.is_fixed).shifted(dx, visible_right);
-                Some(json!({
+                let mut v = json!({
                     "key": n.key, "tag": n.tag,
                     "x": b.x + dx, "y": y, "width": b.width, "height": b.height,
                     "fixed": n.is_fixed, "attrs": n.attrs,
                     "clip": rect(&vis.clip),
                     "holes": vis.holes.iter().map(rect).collect::<Vec<_>>(),
                     "mask": vis.mask,
-                }))
+                });
+                // web-view 的 `src`：网络地址原样，包内的 H5（离线页）解析成本地文件绝对路径（与视频的 url 同一规则）
+                if n.tag == "web-view" {
+                    let src = n.attrs.get("src").map(|s| s.trim()).unwrap_or("");
+                    // 包内地址带的 `?query` / `#hash` 不是文件名的一部分：解析路径后原样接回去
+                    let cut = src.find(['?', '#']).filter(|_| !src.contains("://")).unwrap_or(src.len());
+                    let url = super::engine_video_feed::resolve_url(&src[..cut], &page_dir) + &src[cut..];
+                    v["url"] = json!(url);
+                }
+                Some(v)
             })
             .collect();
         // 没有控件可摆时速度无意义：不然滚动别处的每一帧都要报一条空列表
@@ -386,6 +399,17 @@ impl MiniEngine {
             }
             return self.video_feed_event(key, name, detail);
         };
+        // 网页那边的消息 / 跳转 / 标题（engine_webview.rs）
+        if region.tag == "web-view" {
+            if let Some(done) = self.webview_event(&region, name, &detail) {
+                return done;
+            }
+        }
+        self.dispatch_region_event(&region, name, detail)
+    }
+
+    /// 按盖上去的控件节点上的 `bind<name>` 派发。返回是否找到了绑定
+    pub(super) fn dispatch_region_event(&mut self, region: &crate::renderer::NativeRegion, name: &str, detail: Value) -> bool {
         let Some((_, handler, owner, data)) = region.events.iter().find(|e| e.0 == name).cloned() else {
             return false;
         };

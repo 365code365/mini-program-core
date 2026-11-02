@@ -1,0 +1,15 @@
+.addr-tx { flex: 1; font-size: 30rpx; font-weight: bold; }
+.cv { width: 120rpx; height: 120rpx; border-radius: 14rpx; }
+.cv-info { margin-left: 20rpx; }
+.f-row { min-height: 92rpx; border-bottom: 1rpx solid #eef1ef; }
+.f-lb { color: #4a544f; }
+.ta { width: 100%; min-height: 120rpx; background: #f6f8f7; border-radius: 12rpx; padding: 16rpx; box-sizing: border-box; font-size: 26rpx; margin-top: 16rpx; }
+.cnt { display: block; text-align: right; font-size: 22rpx; color: #a3aca7; margin-top: 6rpx; }
+.ph-hd { margin-top: 20rpx; }
+.ph-list { flex-wrap: wrap; margin-top: 16rpx; }
+.ph { width: 150rpx; height: 150rpx; border-radius: 12rpx; margin: 0 16rpx 16rpx 0; }
+.ph-add { background: #f6f8f7; border: 2rpx dashed #c9d2cd; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; }
+.ph-plus { font-size: 48rpx; color: #9aa59f; line-height: 1.2; }
+.sample { font-size: 24rpx; }
+.big { font-size: 38rpx; }
+.sb { width: 260rpx; }

@@ -1,0 +1,6 @@
+.av-box { display: flex; flex-direction: column; align-items: center; padding: 20rpx 0 32rpx; }
+.av { width: 160rpx; height: 160rpx; border-radius: 80rpx; border: 6rpx solid #ffffff; }
+.av-tx { margin-top: 12rpx; }
+.radio { margin-right: 40rpx; font-size: 28rpx; }
+.unit { color: #9a9095; font-size: 26rpx; margin-left: 12rpx; }
+.arrow { color: #c0b6ba; margin-left: 12rpx; font-size: 32rpx; }

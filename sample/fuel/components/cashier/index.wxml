@@ -1,0 +1,21 @@
+<view class="cs-mask" wx:if="{{show}}" catchtap="cancel" catchtouchmove="noop"></view>
+<view class="cs" wx:if="{{show}}">
+  <view class="cs-head">
+    <text class="cs-x" bindtap="cancel">✕</text>
+    <text class="cs-title">易加油收银台</text>
+  </view>
+  <text class="cs-tip">当前环境无法拉起微信支付，以下为模拟收银台</text>
+  <view class="cs-amount"><text class="cs-yen">¥</text><text class="cs-num">{{amount}}</text></view>
+  <text class="cs-no">订单号 {{orderNo}}</text>
+  <radio-group class="cs-ways" bindchange="onWay">
+    <label class="cs-way {{item.off ? 'cs-off' : ''}}" wx:for="{{ways}}" wx:key="id" data-id="{{item.id}}" bindtap="pickWay">
+      <text class="cs-way-ic" style="background: {{item.color}};">{{item.ic}}</text>
+      <view class="cs-way-mid">
+        <text class="cs-way-name">{{item.name}}</text>
+        <text class="cs-way-sub">{{item.sub}}</text>
+      </view>
+      <radio value="{{item.id}}" checked="{{item.id === way}}" disabled="{{item.off}}" color="#13a874"></radio>
+    </label>
+  </radio-group>
+  <view class="cs-btn" hover-class="cs-btn-hover" bindtap="confirm"><text class="cs-btn-tx">{{paying ? '支付中…' : '确认支付 ¥' + amount}}</text></view>
+</view>

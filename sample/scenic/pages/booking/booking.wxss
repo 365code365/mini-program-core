@@ -1,0 +1,23 @@
+.head { padding: 20rpx; }
+.cover { width: 140rpx; height: 100rpx; border-radius: 12rpx; }
+.head-r { flex: 1; margin-left: 20rpx; }
+.days { margin-bottom: 14rpx; }
+.day { width: 140rpx; height: 100rpx; border-radius: 16rpx; background: #f0f4f2; margin-right: 16rpx; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2rpx solid #f0f4f2; }
+.day-on { background: #e3f4ee; border-color: #13a07b; }
+.day-l { font-size: 26rpx; font-weight: bold; }
+.day-s { font-size: 22rpx; color: #86908b; margin-top: 4rpx; }
+.day-more { margin-right: 0; }
+.tk { padding: 18rpx 0; border-bottom: 1rpx solid #edf1ef; }
+.tk-l { flex: 1; margin-right: 16rpx; }
+.tk-n { font-size: 28rpx; font-weight: bold; margin-bottom: 4rpx; }
+.tk-p { font-size: 30rpx; margin-right: 16rpx; }
+.add { font-size: 26rpx; margin-bottom: 16rpx; }
+.ps { padding: 16rpx 0; border-bottom: 1rpx solid #edf1ef; }
+.ps-r { margin-left: 16rpx; }
+.ps-n { font-size: 28rpx; font-weight: bold; }
+.empty-ps { padding: 24rpx 0; }
+.in { height: 84rpx; background: #f5f8f6; border-radius: 16rpx; padding: 0 24rpx; font-size: 30rpx; }
+.agree { padding: 0 8rpx; align-items: flex-start; }
+.bottom { position: fixed; left: 0; right: 0; bottom: 0; background: #ffffff; padding: 16rpx 28rpx calc(16rpx + env(safe-area-inset-bottom)); border-top: 1rpx solid #edf1ef; justify-content: space-between; }
+.b-p { font-size: 40rpx; }
+.b-btn { width: 300rpx; }

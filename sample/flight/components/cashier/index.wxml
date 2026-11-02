@@ -1,0 +1,26 @@
+<view wx:if="{{show}}" class="mask" catchtouchmove="noop"></view>
+<view wx:if="{{show}}" class="ca">
+  <view class="row between">
+    <text class="ca-x" bindtap="close">×</text>
+    <text class="ca-t">云翼收银台</text>
+    <view class="ca-x"></view>
+  </view>
+  <text wx:if="{{reason}}" class="ca-reason">{{reason}}</text>
+  <view class="ca-amt row">
+    <text class="ca-sym">¥</text>
+    <text class="ca-num">{{amount}}</text>
+  </view>
+  <view class="row ca-left"><text class="muted small">支付剩余时间 </text><text class="red small">{{left}}</text></view>
+  <text class="muted small ca-no">订单号 {{orderId}}</text>
+  <radio-group class="ca-ms" bindchange="onMethod">
+    <label wx:for="{{methods}}" wx:key="k" class="ca-m row">
+      <view class="col flex1">
+        <text class="ca-mn">{{item.name}}</text>
+        <text class="muted small">{{item.desc}}</text>
+      </view>
+      <radio value="{{item.k}}" checked="{{item.k === method}}" color="#1f6fff"></radio>
+    </label>
+  </radio-group>
+  <view class="btn ca-pay" hover-class="btn-hover" bindtap="pay"><text>确认支付 ¥{{amount}}</text></view>
+  <text class="muted small ca-tip">模拟收银台：仅演示支付流程，不会产生真实扣款</text>
+</view>

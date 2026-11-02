@@ -1,0 +1,11 @@
+.t { display: block; font-size: 36rpx; font-weight: bold; line-height: 52rpx; margin: 16rpx 0 8rpx; }
+/* 样式放在外层 view：rich-text 自身带 display:block 时引擎把它压成一字一行 */
+.ans { margin-top: 24rpx; font-size: 28rpx; line-height: 46rpx; color: #2a3446; }
+.acts { margin-top: 28rpx; }
+.a { font-size: 24rpx; color: #556070; border: 2rpx solid #dde1e8; border-radius: 28rpx; padding: 8rpx 28rpx; margin-right: 20rpx; }
+.a-on { color: #1f4fb4; border-color: #1f4fb4; }
+.av { width: 80rpx; height: 80rpx; border-radius: 40rpx; margin-right: 16rpx; }
+.n { font-size: 26rpx; font-weight: bold; margin-bottom: 4rpx; }
+.go { background: #1f4fb4; color: #fff; font-size: 24rpx; border-radius: 26rpx; padding: 0 20rpx; height: 52rpx; line-height: 52rpx; }
+.rq { padding: 22rpx 0; font-size: 28rpx; color: #1f4fb4; border-bottom: 1rpx solid #eef0f4; }
+.para { margin-bottom: 12rpx; }

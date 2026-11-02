@@ -1,0 +1,92 @@
+<view class="wrap">
+  <view class="card">
+    <view class="between">
+      <text class="title">{{store.name}}</text>
+      <text class="sub">{{store.hours}}</text>
+    </view>
+    <text class="sub">{{store.address}}</text>
+    <view class="line"></view>
+    <view class="between it" wx:for="{{items}}" wx:key="id">
+      <text>{{item.name}}</text>
+      <text>{{item.price ? '¥' + item.price : '免费'}}</text>
+    </view>
+    <view class="between it">
+      <text class="sub">预计 {{mins}} 分钟 · 到店付款</text>
+      <view class="row">
+        <text>合计 </text>
+        <text class="price">¥{{total}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <text class="sec-title">服务车辆</text>
+    <picker mode="selector" range="{{cars}}" range-key="name" value="{{carIdx}}" bindchange="onCar">
+      <view class="between f-row">
+        <text>{{cars[carIdx].plateText}} {{cars[carIdx].name}}</text>
+        <text class="muted">更换 ›</text>
+      </view>
+    </picker>
+  </view>
+
+  <view class="card">
+    <text class="sec-title">到店日期</text>
+    <scroll-view scroll-x class="days" enhanced show-scrollbar="{{false}}">
+      <view class="day {{dayIdx === index ? 'day-on' : ''}}" wx:for="{{days}}" wx:key="date" data-i="{{index}}" bindtap="onDay">
+        <text class="day-w">{{item.week}}</text>
+        <text class="day-d">{{item.md}}</text>
+      </view>
+    </scroll-view>
+    <picker mode="time" value="{{time || range.start}}" start="{{range.start}}" end="{{range.end}}" bindchange="onTime">
+      <view class="between f-row">
+        <text>到店时间</text>
+        <text class="{{time ? '' : 'muted'}}">{{time || '请选择（' + range.start + '~' + range.end + '）'}} ›</text>
+      </view>
+    </picker>
+    <text class="err" wx:if="{{errors.time}}">{{errors.time}}</text>
+  </view>
+
+  <view class="card">
+    <text class="sec-title">联系信息</text>
+    <view class="between f-row">
+      <text class="f-label">联系人</text>
+      <input class="f-ipt" value="{{contact}}" placeholder="请输入姓名" maxlength="12" data-k="contact" bindinput="onInput" />
+    </view>
+    <text class="err" wx:if="{{errors.contact}}">{{errors.contact}}</text>
+    <view class="between f-row">
+      <text class="f-label">手机号</text>
+      <input class="f-ipt" type="number" value="{{phone}}" placeholder="用于接收到店提醒" maxlength="11" data-k="phone" bindinput="onInput" />
+    </view>
+    <text class="err" wx:if="{{errors.phone}}">{{errors.phone}}</text>
+    <view class="between f-row">
+      <view class="col">
+        <text>上门取送车</text>
+        <text class="sub">5 km 内免费，代驾司机持证上岗</text>
+      </view>
+      <switch checked="{{pickup}}" color="#1f6fff" bindchange="onPickup" />
+    </view>
+    <view wx:if="{{pickup}}">
+      <view class="between f-row" wx:if="{{!manualAddr}}" bindtap="chooseAddr">
+        <text class="f-label">取车地址</text>
+        <text class="{{pickupAddr ? '' : 'muted'}}">{{pickupAddr || '选择地址'}} ›</text>
+      </view>
+      <view class="between f-row" wx:else>
+        <text class="f-label">取车地址</text>
+        <input class="f-ipt" value="{{pickupAddr}}" placeholder="小区 / 写字楼 + 停车位置" data-k="pickupAddr" bindinput="onInput" />
+      </view>
+      <text class="err" wx:if="{{errors.pickupAddr}}">{{errors.pickupAddr}}</text>
+    </view>
+    <textarea class="remark" value="{{remark}}" placeholder="备注：如车辆异响、需要的配件品牌等（选填）" maxlength="100" data-k="remark" bindinput="onInput"></textarea>
+  </view>
+  <view class="bar-gap"></view>
+</view>
+<view class="footer-bar">
+  <view class="col flex1">
+    <view class="row">
+      <text>到店付款 </text>
+      <text class="price">¥{{total}}</text>
+    </view>
+    <text class="sub">可免费取消，服务开始前不收取费用</text>
+  </view>
+  <view class="btn sb" bindtap="submit">提交预约</view>
+</view>

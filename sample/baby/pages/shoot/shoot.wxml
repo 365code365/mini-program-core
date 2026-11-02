@@ -1,0 +1,57 @@
+<view class="wrap-page {{step === 'camera' ? 'dark' : ''}}">
+  <!-- 第一步：拍照 -->
+  <block wx:if="{{step === 'camera'}}">
+    <view class="cam-box">
+      <camera class="cam" device-position="{{pos}}" flash="{{flash}}" binderror="onCamError" bindinitdone="onCamReady"></camera>
+      <view wx:if="{{camError}}" class="cam-err">
+        <text class="ce-title">相机暂时用不了</text>
+        <text class="ce-sub">{{camError}}</text>
+        <text class="ce-sub">可以从相册选一张，或先用示例照片体验</text>
+      </view>
+    </view>
+    <view class="cam-bar">
+      <view class="cb-side" bindtap="toggleFlash" hover-class="btn-hover"><text class="cb-tx">闪光 {{flash === 'off' ? '关' : '开'}}</text></view>
+      <view class="shutter" bindtap="take" hover-class="btn-hover"><view class="shutter-in"></view></view>
+      <view class="cb-side" bindtap="flip" hover-class="btn-hover"><text class="cb-tx">{{pos === 'back' ? '切前置' : '切后置'}}</text></view>
+    </view>
+    <view class="row alt">
+      <view class="alt-btn" bindtap="fromAlbum" hover-class="btn-hover">从相册选择</view>
+      <view class="alt-btn" bindtap="useSample" hover-class="btn-hover">使用示例照片</view>
+    </view>
+  </block>
+
+  <!-- 第二步：写下这个瞬间 -->
+  <view wx:else class="page">
+    <view class="pv">
+      <image class="pv-img" src="{{photo}}" mode="aspectFill"></image>
+      <view class="pv-re" bindtap="retake" hover-class="btn-hover">重拍</view>
+    </view>
+    <view class="card">
+      <textarea class="cap" value="{{caption}}" maxlength="100" placeholder="今天发生了什么？比如：第一次自己翻身" placeholder-class="placeholder" bindinput="onCaption"></textarea>
+      <text wx:if="{{err}}" class="err err0">{{err}}</text>
+      <picker mode="date" value="{{date}}" start="{{start}}" end="{{today}}" bindchange="onDate">
+        <view class="field"><text class="field-label">日期</text><text class="field-value">{{date}}</text><text class="arrow">›</text></view>
+      </picker>
+      <view class="tags">
+        <text class="field-label">标签</text>
+        <view class="wrap flex1">
+          <text wx:for="{{tags}}" wx:key="*this" class="chip {{tag === item ? 'chip-on' : ''}}" data-t="{{item}}" bindtap="onTag">{{item}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="between"><text class="sec-title">语音日记</text><text class="muted">最长 60 秒</text></view>
+      <view wx:if="{{voice}}" class="voice">
+        <view class="v-play {{playing ? 'v-on' : ''}}" bindtap="togglePlay" hover-class="btn-hover">{{playing ? '停止播放' : '播放'}}</view>
+        <text class="flex1 v-len">{{voice.duration}}″{{voice.sample ? '（示例语音）' : ''}}</text>
+        <text class="v-del" bindtap="dropVoice">删除</text>
+      </view>
+      <view wx:else class="rec-btn {{recording ? 'rec-on' : ''}}" bindtap="toggleRecord" hover-class="btn-hover">
+        {{recording ? '录音中 ' + recSec + '″，点击结束' : '点击开始录音'}}
+      </view>
+    </view>
+
+    <view class="btn" bindtap="save" hover-class="btn-hover">保存到相册</view>
+  </view>
+</view>

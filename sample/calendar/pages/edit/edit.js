@@ -23,13 +23,18 @@ Page({
   },
   onLoad(query) {
     const ev = query.id ? S.getEvent(query.id) : null
+    // ?copy=<id>：详情页「复制为新日程」，按那条预填、当新建保存
+    const tpl = !ev && query.copy ? S.getEvent(query.copy) : null
     const settings = S.loadSettings()
-    const form = ev ? Object.assign({}, ev) : {
+    let form
+    if (ev) form = Object.assign({}, ev)
+    else if (tpl) form = Object.assign({}, tpl, { id: 0, date: query.date || tpl.date })
+    else form = {
       id: 0, title: '', allDay: false, start: '09:00', end: '10:00',
       date: query.date || S.today(), repeat: 0, remind: settings.defaultRemind, color: 1, note: ''
     }
     this.setData({ isNew: !ev, form, dateLabel: D.longLabel(form.date) })
-    wx.setNavigationBarTitle({ title: ev ? '编辑日程' : '新建日程' })
+    wx.setNavigationBarTitle({ title: ev ? '编辑日程' : tpl ? '复制日程' : '新建日程' })
   },
   fail(msg) {
     this.setData({ err: msg })

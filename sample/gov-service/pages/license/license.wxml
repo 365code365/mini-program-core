@@ -1,0 +1,50 @@
+<view class="hd">
+  <text class="hd-t">我的电子证照 {{cards.length}} 张</text>
+  <text class="hd-s">与实体证照具有同等效力，可在政务服务、酒店入住、交通出行等场景出示</text>
+</view>
+
+<view class="lc" wx:for="{{cards}}" wx:key="id" style="background: linear-gradient(120deg, {{item.c1}}, {{item.c2}});">
+  <view class="row" data-id="{{item.id}}" bindtap="toggle">
+    <view class="lc-ch">{{item.ch}}</view>
+    <view class="lc-main">
+      <text class="lc-t">{{item.type}}</text>
+      <text class="lc-no">{{showFull[item.id] ? item.no : item.masked}}</text>
+    </view>
+    <text class="lc-arr">{{openId === item.id ? '收起' : '详情'}}</text>
+  </view>
+  <view class="lc-more" wx:if="{{openId === item.id}}">
+    <text class="lc-l" wx:if="{{item.extra}}">{{item.extra}}</text>
+    <text class="lc-l">签发机关：{{item.issuer}}</text>
+    <text class="lc-l">有效期限：{{item.valid}}</text>
+    <view class="row lc-b">
+      <view class="lc-btn" data-id="{{item.id}}" bindtap="toggleNo">{{showFull[item.id] ? '隐藏号码' : '显示号码'}}</view>
+      <view class="lc-btn solid" data-id="{{item.id}}" bindtap="showCard">亮证</view>
+    </view>
+  </view>
+</view>
+<view class="empty" wx:if="{{!cards.length}}">还没有电子证照，可在下方领取</view>
+
+<view class="card" wx:if="{{pending.length}}">
+  <text class="sec-t">可领取的证照</text>
+  <view class="pd row" wx:for="{{pending}}" wx:key="id">
+    <view class="pd-ch" style="background: {{item.c1}};">{{item.ch}}</view>
+    <view class="pd-main"><text class="pd-t">{{item.type}}</text><text class="muted">{{item.issuer}}</text></view>
+    <view class="pd-b" hover-class="tap" data-id="{{item.id}}" bindtap="claim">领取</view>
+  </view>
+</view>
+<view class="safe-bottom"></view>
+
+<view class="mask" wx:if="{{show}}" bindtap="closeShow">
+  <view class="sh" catchtap="noop" style="background: linear-gradient(140deg, {{show.c1}}, {{show.c2}});">
+    <text class="sh-t">{{show.type}}</text>
+    <text class="sh-n">{{show.no}}</text>
+    <text class="sh-l">持证人：{{holder}}</text>
+    <view class="sh-code">
+      <text class="sh-cl">动态核验码</text>
+      <text class="sh-c">{{code}}</text>
+      <text class="sh-cl">{{left}} 秒后刷新 · {{stamp}}</text>
+    </view>
+    <text class="sh-w">仅限本人出示，截图无效</text>
+  </view>
+  <text class="sh-x">点击空白处关闭</text>
+</view>

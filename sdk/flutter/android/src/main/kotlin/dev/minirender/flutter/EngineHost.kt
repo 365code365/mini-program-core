@@ -34,7 +34,12 @@ internal class EngineHost(
      * false：画到 Flutter 的外部纹理（SurfaceProducer）。为什么默认前者见 EngineView.kt
      */
     private val viewMode: Boolean,
+    /** 插件自带的地图 / web-view（Dart 的 builtinMap / builtinWebView，见 NativeComponents.kt） */
+    builtinMap: Boolean = false,
+    builtinWebView: Boolean = false,
 ) {
+    private val natives: NativeComponents =
+        NativeComponents(context, { b: (Long) -> Unit -> core.run(b); Unit }, builtinMap, builtinWebView && viewMode) { view?.overlay }
     private val core = EngineCore(
         context,
         object : EngineCore.Hooks {
@@ -42,7 +47,8 @@ internal class EngineHost(
                 view?.reveal()
             }
             override fun newSurface() = replaceProducer()
-            override fun onEvents(list: List<String>) = this@EngineHost.onEvents(list)
+            // 归插件自带原生组件的先在这里处理掉，剩下的交给 Dart
+            override fun onEvents(list: List<String>) = this@EngineHost.onEvents(natives.filter(list))
             override fun onPresented() = scheduleFlutterFrame()
             // 纹理没换，但实际后端变了：告诉 Dart（create 的返回早于挂载）
             override fun onGpuAttached() {
@@ -89,8 +95,9 @@ internal class EngineHost(
         onFailed: () -> Unit,
     ) {
         val p = if (viewMode) null else newProducer()
+        natives.setAppDir(appDir)
         core.start(
-            appDir, dataDir, route, width, height, dpr, options, backend,
+            appDir, dataDir, route, width, height, dpr, natives.options(options), backend,
             EngineCore.DeviceInfo(device.totalMem, device.lowRam, device.api),
         ) { error ->
             if (error != null) {
@@ -225,7 +232,8 @@ internal class EngineHost(
                 run { MiniEngine.nativeNavigate(it, call.argument<String>("url") ?: "") }
                 result.success(null)
             }
-            "back" -> engine.post {
+            // web-view 里的网页能后退先后退（与微信一致）
+            "back" -> if (natives.goBack()) result.success(true) else engine.post {
                 val ok = handle != 0L && MiniEngine.nativeBack(handle)
                 requestFrame()
                 main.post { result.success(ok) }
@@ -278,6 +286,7 @@ internal class EngineHost(
             "lifecycle" -> {
                 // 0 进前台（补画当前帧）/ 1 进后台（停止出帧、视频停下）/ 2 内存告警：与原生视图同一份（EngineCore.lifecycle）
                 core.lifecycle(i("what"))
+                natives.lifecycle(i("what"))
                 result.success(null)
             }
             "hostReply" -> {
@@ -359,6 +368,7 @@ internal class EngineHost(
     /** 主线程调：先让引擎线程放手 Surface 并销毁引擎，再放 SurfaceProducer */
     fun dispose() {
         if (disposed) return
+        natives.dispose()
         core.dispose()
         producer?.release()
         producer = null

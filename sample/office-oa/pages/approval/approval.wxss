@@ -1,0 +1,24 @@
+.head { background: #ffffff; padding: 32rpx; }
+.h-in { margin-left: 20rpx; }
+.h-t { font-size: 32rpx; font-weight: bold; margin-bottom: 6rpx; }
+.stamp { font-size: 26rpx; font-weight: bold; padding: 8rpx 20rpx; border-radius: 8rpx; }
+.no { margin-top: 20rpx; }
+.copy { font-size: 24rpx; color: #1677ff; margin-left: 16rpx; }
+.kv { padding: 14rpx 0; align-items: flex-start; }
+.k { width: 200rpx; font-size: 26rpx; color: #86909c; flex-shrink: 0; }
+.v { font-size: 26rpx; color: #1d2129; line-height: 38rpx; }
+.nd { align-items: stretch; margin-top: 24rpx; }
+.nd-l { align-items: center; width: 64rpx; }
+.sm { width: 56rpx; height: 56rpx; line-height: 56rpx; border-radius: 28rpx; font-size: 22rpx; }
+.nd-line { width: 2rpx; flex: 1; background: #e5e6eb; margin-top: 8rpx; min-height: 40rpx; }
+.nd-in { margin-left: 16rpx; padding-bottom: 12rpx; }
+.nd-n { font-size: 28rpx; }
+.nd-s { font-size: 24rpx; }
+.s-done { color: #00b42a; }
+.s-pending { color: #ff7d00; }
+.s-wait { color: #86909c; }
+.s-rejected { color: #f53f3f; }
+.s-cancel { color: #86909c; }
+.cm { margin-top: 10rpx; background: #f7f8fa; border-radius: 8rpx; padding: 12rpx 16rpx; font-size: 24rpx; color: #4e5969; }
+.foot { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom)); border-top: 1rpx solid #f2f3f5; }
+.fb { margin: 0 8rpx; }

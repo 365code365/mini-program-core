@@ -1,0 +1,34 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/halls/halls",
+    "pages/calendar/calendar",
+    "pages/mine/mine",
+    "pages/hall/hall",
+    "pages/exhibit/exhibit",
+    "pages/expo/expo",
+    "pages/booking/booking",
+    "pages/ticket/ticket",
+    "pages/favorites/favorites"
+  ],
+  "window": {
+    "navigationBarTitleText": "云川博物院",
+    "navigationBarBackgroundColor": "#f6f2ec",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f6f2ec",
+    "backgroundTextStyle": "dark"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#9aa0a8",
+    "selectedColor": "#a45c34",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "首页", "iconPath": "images/tab/home.png", "selectedIconPath": "images/tab/home-on.png" },
+      { "pagePath": "pages/halls/halls", "text": "展厅", "iconPath": "images/tab/hall.png", "selectedIconPath": "images/tab/hall-on.png" },
+      { "pagePath": "pages/calendar/calendar", "text": "日历", "iconPath": "images/tab/cal.png", "selectedIconPath": "images/tab/cal-on.png" },
+      { "pagePath": "pages/mine/mine", "text": "我的", "iconPath": "images/tab/user.png", "selectedIconPath": "images/tab/user-on.png" }
+    ]
+  }
+}

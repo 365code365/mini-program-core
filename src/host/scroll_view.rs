@@ -323,6 +323,8 @@ impl super::engine::MiniEngine {
             redraw = true;
             self.dmg.compose_dirty = true;
         }
+        // LivePlayerContext 的命令（同层渲染的直播，engine_live_player.rs）
+        self.tick_live_players();
         // 全屏那一层（画在合成那一步）：新帧 / 控制条变了只重新合成
         self.sync_fullscreen(now_ms);
         // SelectorQuery / ScrollViewContext / IntersectionObserver（与桌面共用）

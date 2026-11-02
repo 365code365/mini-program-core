@@ -1,0 +1,34 @@
+/* 全局样式：车管家蓝 #1f6fff */
+page { background: #f3f5f9; color: #1d2433; font-size: 28rpx; line-height: 1.5; }
+/* 引擎里 page 上的 line-height 传不到 text，显式给一份，否则多行 text 上下挤在一起 */
+text { line-height: 1.5; }
+.wrap { padding: 24rpx 24rpx 40rpx; }
+.card { background: #ffffff; border-radius: 20rpx; padding: 28rpx; margin-bottom: 24rpx; }
+.row { display: flex; flex-direction: row; align-items: center; }
+.between { display: flex; flex-direction: row; align-items: center; justify-content: space-between; }
+.col { display: flex; flex-direction: column; }
+.flex1 { flex: 1; }
+.title { display: block; font-size: 32rpx; line-height: 48rpx; font-weight: bold; color: #1d2433; }
+.sub { font-size: 24rpx; color: #8a93a6; }
+.muted { color: #8a93a6; }
+.blue { color: #1f6fff; }
+.red { color: #f0443a; }
+.orange { color: #f07a12; }
+.green { color: #13a26b; }
+.price { color: #f0443a; font-weight: bold; }
+.tag { font-size: 20rpx; color: #1f6fff; background: #ebf2ff; border-radius: 6rpx; padding: 2rpx 10rpx; margin-right: 10rpx; }
+.btn { background: #1f6fff; color: #ffffff; border-radius: 44rpx; height: 80rpx; line-height: 80rpx; text-align: center; font-size: 30rpx; }
+.btn-ghost { border: 2rpx solid #1f6fff; color: #1f6fff; border-radius: 40rpx; height: 64rpx; line-height: 60rpx; padding: 0 28rpx; font-size: 26rpx; }
+.btn-gray { border: 2rpx solid #d3d8e2; color: #4b5567; border-radius: 40rpx; height: 64rpx; line-height: 60rpx; padding: 0 28rpx; font-size: 26rpx; }
+.sec-title { font-size: 30rpx; font-weight: bold; margin: 8rpx 0 20rpx; }
+.empty { padding: 120rpx 0; display: flex; flex-direction: column; align-items: center; }
+.empty-tx { color: #8a93a6; font-size: 28rpx; margin: 20rpx 0 32rpx; }
+.loading { padding: 80rpx 0; text-align: center; color: #8a93a6; }
+.footer-bar { position: fixed; left: 0; right: 0; bottom: 0; background: #ffffff; padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom)); display: flex; flex-direction: row; align-items: center; border-top: 1rpx solid #e8ebf0; }
+.tab-gap { height: calc(120rpx + env(safe-area-inset-bottom)); }
+.bar-gap { height: calc(140rpx + env(safe-area-inset-bottom)); }
+.line { height: 1rpx; background: #eef0f4; margin: 20rpx 0; }
+.mask { position: fixed; left: 0; right: 0; top: 0; bottom: 0; background: rgba(0, 0, 0, 0.45); z-index: 50; }
+.dialog { position: fixed; left: 60rpx; right: 60rpx; top: 30%; background: #ffffff; border-radius: 24rpx; padding: 40rpx 36rpx; z-index: 51; }
+.ipt { background: #f3f5f9; border-radius: 12rpx; height: 80rpx; padding: 0 24rpx; font-size: 28rpx; }
+.err { color: #f0443a; font-size: 24rpx; margin-top: 8rpx; }

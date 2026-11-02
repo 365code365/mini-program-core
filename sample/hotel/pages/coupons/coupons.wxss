@@ -1,0 +1,19 @@
+.tabs { display: flex; flex-direction: row; background: #fff; margin-bottom: 8rpx; }
+.tab { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 26rpx 0 14rpx; font-size: 28rpx; color: #8a9099; }
+.tab-on { color: #1f2329; font-weight: bold; }
+.tab-line { width: 40rpx; height: 6rpx; border-radius: 3rpx; background: #1E6FFF; margin-top: 10rpx; }
+.cp { margin: 20rpx 24rpx 0; background: #fff; border-radius: 20rpx; overflow: hidden; height: 180rpx; }
+.cp-l { width: 200rpx; height: 180rpx; background: linear-gradient(150deg, #6BA8FF, #1E5BFF); display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; flex-shrink: 0; }
+.cp-off .cp-l { background: linear-gradient(150deg, #d5d8dc, #b5b9bf); }
+.cp-amt-row { align-items: baseline; }
+.cp-sym { font-size: 28rpx; font-weight: bold; }
+.cp-amt { font-size: 60rpx; font-weight: bold; }
+.cp-min { font-size: 20rpx; margin-top: 4rpx; }
+.cp-r { padding: 0 24rpx; display: flex; flex-direction: column; }
+.cp-title { font-size: 30rpx; font-weight: bold; }
+.cp-cond { margin-top: 6rpx; }
+.cp-foot { margin-top: 18rpx; }
+.cp-use { height: 52rpx; padding: 0 24rpx; border-radius: 26rpx; background: linear-gradient(90deg, #FF8A4C, #FF5A36); color: #fff; font-size: 24rpx; display: flex; flex-direction: row; align-items: center; flex-shrink: 0; }
+.cp-stamp { font-size: 24rpx; color: #b5b9bf; font-weight: bold; }
+.cp-off .cp-title { color: #9aa0a6; }
+.note { padding: 32rpx 24rpx; text-align: center; }

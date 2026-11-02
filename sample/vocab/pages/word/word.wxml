@@ -1,0 +1,31 @@
+<view class="wrap" wx:if="{{it}}">
+  <view class="card head">
+    <text class="w">{{it.w}}</text>
+    <view class="row">
+      <text class="ph">美 {{it.ph}}</text>
+      <view class="speaker" hover-class="btn-press" bindtap="onSpeak"><text>🔊</text></view>
+    </view>
+    <text class="mean">{{it.mean}}</text>
+    <text class="muted">出自《{{bookName}}》</text>
+  </view>
+
+  <view class="card">
+    <text class="h2">例句</text>
+    <view class="ex">
+      <text class="ex-en">{{it.ex}}</text>
+      <text class="ex-zh">{{it.exZh}}</text>
+    </view>
+  </view>
+
+  <view class="card">
+    <text class="h2">我的记录</text>
+    <view class="kv between"><text class="muted">学习状态</text><text>{{state}}</text></view>
+    <view class="kv between" wx:if="{{next}}"><text class="muted">复习计划</text><text>{{next}}</text></view>
+    <view class="kv between"><text class="muted">测验答错</text><text class="{{wrongTimes ? 'bad' : ''}}">{{wrongTimes}} 次</text></view>
+  </view>
+
+  <view class="row ops">
+    <view class="btn-ghost half" hover-class="btn-press" bindtap="onCopy">复制单词</view>
+    <view class="{{star ? 'btn-ghost' : 'btn'}} half" hover-class="btn-press" bindtap="onStar">{{star ? '移出生词本' : '加入生词本'}}</view>
+  </view>
+</view>

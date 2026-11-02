@@ -10,7 +10,8 @@ Page({
     bg: '#ffffff',
     words: 0,
     saveState: '',
-    saveCount: 0
+    saveCount: 0,
+    versionCount: 0
   },
   onLoad(query) {
     const list = S.loadNotes()
@@ -20,7 +21,9 @@ Page({
     const form = n ? Object.assign({}, n) : {
       id: S.nextId(list), title: '', body: '', tags: [], color: 'white', pinned: false, created: now, updated: now, deleted: false
     }
-    this.setData({ isNew: !n, form })
+    this.setData({ isNew: !n, form, versionCount: n ? S.loadVersions(n.id).length : 0 })
+    // 打开时的内容：本次第一次落盘前把它存成一个历史版本
+    this._before = n ? { title: n.title, body: n.body } : null
     wx.setNavigationBarTitle({ title: n ? '编辑笔记' : '新建笔记' })
     this.syncDerived()
   },
@@ -52,13 +55,18 @@ Page({
       this.setData({ saveState: '' })
       return
     }
+    if (this._before) {
+      const b = this._before
+      this._before = null
+      if (b.title !== f.title || b.body !== f.body) S.pushVersion(f.id, b.title, b.body)
+    }
     const list = S.loadNotes()
     const k = list.findIndex(i => i.id === f.id)
     const rec = Object.assign({}, f, { updated: Date.now() })
     if (k >= 0) list[k] = rec
     else list.push(rec)
     S.saveNotes(list)
-    this.setData({ isNew: false, saveState: '已保存', saveCount: this.data.saveCount + 1, 'form.updated': rec.updated })
+    this.setData({ isNew: false, saveState: '已保存', saveCount: this.data.saveCount + 1, 'form.updated': rec.updated, versionCount: S.loadVersions(f.id).length })
   },
   onTitle(e) {
     this.setData({ 'form.title': e.detail.value })
@@ -81,6 +89,43 @@ Page({
     this.syncDerived()
     this.schedule()
   },
+  onPin(e) {
+    this.setData({ 'form.pinned': e.detail.value })
+    this.schedule()
+    wx.showToast({ title: e.detail.value ? '已置顶' : '已取消置顶', icon: 'none' })
+  },
+  // 去历史版本前先落盘：那边恢复时以存档为准
+  onHistory() {
+    this.flush()
+    wx.navigateTo({ url: '/pages/history/history?id=' + this.data.form.id })
+  },
+  onShow() {
+    // 从历史版本恢复回来：表单换成存档里的内容
+    if (!this._shown) {
+      this._shown = true
+      return
+    }
+    const n = S.loadNotes().find(i => i.id === this.data.form.id && !i.deleted)
+    if (n && n.updated !== this.data.form.updated) {
+      this.setData({ form: Object.assign({}, n) })
+      this._before = { title: n.title, body: n.body }
+      this.syncDerived()
+    }
+    this.setData({ versionCount: S.loadVersions(this.data.form.id).length })
+  },
+  flush() {
+    if (this._timer) {
+      clearTimeout(this._timer)
+      this._timer = null
+      this.save()
+    }
+  },
+  onCopy() {
+    const f = this.data.form
+    const text = (f.title ? f.title + '\n\n' : '') + f.body
+    if (!text.trim()) return wx.showToast({ title: '还没有内容', icon: 'none' })
+    wx.setClipboardData({ data: text })
+  },
   onTrash() {
     if (this._timer) {
       clearTimeout(this._timer)
@@ -90,6 +135,7 @@ Page({
     const n = list.find(i => i.id === this.data.form.id)
     if (n) {
       n.deleted = true
+      n.deletedAt = Date.now()
       n.pinned = false
       S.saveNotes(list)
     }

@@ -1,0 +1,13 @@
+.cars { white-space: nowrap; background: #ffffff; padding: 20rpx 24rpx; box-sizing: border-box; }
+.car { display: inline-flex; flex-direction: column; padding: 12rpx 24rpx; border: 2rpx solid #d3d8e2; border-radius: 14rpx; margin-right: 16rpx; }
+.car-on { border-color: #1f6fff; background: #ebf2ff; }
+.car-pl { font-size: 28rpx; font-weight: bold; }
+.car-nm { font-size: 22rpx; color: #8a93a6; }
+.sum { background: linear-gradient(135deg, #ff7a5c 0%, #f0443a 100%); margin: 24rpx 24rpx 0; border-radius: 20rpx; padding: 28rpx 0; }
+.sum-it { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.sum-n { font-size: 44rpx; font-weight: bold; color: #ffffff; }
+.sum-t { font-size: 22rpx; color: #ffe3dc; }
+.act { display: block; font-size: 28rpx; font-weight: bold; margin: 10rpx 0 4rpx; }
+.ft { margin-top: 16rpx; }
+.pts { font-size: 26rpx; color: #f07a12; margin-left: 20rpx; }
+.note { display: block; font-size: 22rpx; color: #a0a8b8; text-align: center; margin-top: 12rpx; }

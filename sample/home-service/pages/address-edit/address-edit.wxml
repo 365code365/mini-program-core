@@ -1,0 +1,42 @@
+<view class="wrap">
+  <form-group id="addrForm" title="联系人与地址">
+    <form-item class="fi" label="联系人" name="name" required value="{{form.name}}" rules="{{rules.name}}">
+      <input class="ipt" value="{{form.name}}" placeholder="姓名" maxlength="12" data-k="name" bindinput="onInput" />
+    </form-item>
+    <form-item class="fi" label="手机号" name="phone" required value="{{form.phone}}" rules="{{rules.phone}}">
+      <input class="ipt" type="number" value="{{form.phone}}" placeholder="师傅上门前会联系你" maxlength="11" data-k="phone" bindinput="onInput" />
+    </form-item>
+    <form-item class="fi" label="所在地区" name="region" required value="{{form.region}}" rules="{{rules.region}}">
+      <picker mode="region" value="{{form.region}}" bindchange="onRegion">
+        <view class="between">
+          <text class="{{form.region.length ? '' : 'muted'}}">{{form.region.length ? form.region[0] + ' ' + form.region[1] + ' ' + form.region[2] : '省 / 市 / 区'}}</text>
+          <text class="muted">›</text>
+        </view>
+      </picker>
+    </form-item>
+    <form-item class="fi" label="详细地址" name="detail" required column value="{{form.detail}}" rules="{{rules.detail}}">
+      <textarea class="ta" auto-height maxlength="80" value="{{form.detail}}" placeholder="街道、小区、楼栋号、门牌号" data-k="detail" bindinput="onInput"></textarea>
+    </form-item>
+  </form-group>
+
+  <view class="card">
+    <view class="between">
+      <text class="lb">标签</text>
+      <view class="row">
+        <text class="tg {{form.tag === item ? 'tg-on' : ''}}" wx:for="{{tags}}" wx:key="*this" data-t="{{item}}" bindtap="onTag">{{item}}</text>
+      </view>
+    </view>
+    <view class="line"></view>
+    <view class="between">
+      <view class="col">
+        <text class="lb">设为默认地址</text>
+        <text class="sub">下单时自动选中</text>
+      </view>
+      <switch checked="{{form.isDefault}}" color="#13a86b" bindchange="onDefault" />
+    </view>
+  </view>
+  <view class="btn" bindtap="save">保存地址</view>
+  <view class="del" wx:if="{{isEdit}}" bindtap="remove">
+    <text>删除地址</text>
+  </view>
+</view>

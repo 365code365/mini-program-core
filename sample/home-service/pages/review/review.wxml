@@ -1,0 +1,63 @@
+<view class="wrap" wx:if="{{!order}}">
+  <view class="card empty">
+    <icon type="warn" size="56" color="#f08c00"></icon>
+    <text class="empty-tx">订单不存在或已删除，无法评价</text>
+    <view class="btn-line" bindtap="goOrders">查看我的订单</view>
+  </view>
+</view>
+<view class="wrap" wx:elif="{{order.review}}">
+  <view class="card done">
+    <icon type="success" size="56" color="#13a86b"></icon>
+    <text class="done-tt">这单已经评价过了</text>
+    <text class="sub">{{order.review.star}} 星 · {{order.review.t}}</text>
+  </view>
+</view>
+<view class="wrap" wx:else>
+  <view class="card row">
+    <image class="av" src="{{staff.avatar}}" mode="aspectFill"></image>
+    <view class="col flex1 av-info">
+      <text class="av-nm">{{staff.name}} · {{staff.title}}</text>
+      <text class="sub">{{order.svcName}} · {{order.date}} {{order.time}}</text>
+    </view>
+  </view>
+  <view class="card">
+    <text class="sec-title">服务满意度</text>
+    <view class="rate" bind:change="onRateBubble">
+      <star-rate id="star" value="{{star}}" size="{{60}}" bind:change="onStar"></star-rate>
+    </view>
+    <text class="sub" wx:if="{{rateTimes}}">已调整 {{rateTimes}} 次评分</text>
+    <checkbox-group class="tags" bindchange="onTags">
+      <label class="tg {{item.on ? 'tg-on' : ''}}" wx:for="{{tags}}" wx:key="t">
+        <checkbox value="{{item.t}}" checked="{{item.on}}" color="#f08c00"></checkbox>
+        <text class="tg-tx">{{item.t}}</text>
+      </label>
+    </checkbox-group>
+  </view>
+  <view class="card">
+    <form-item id="rvText" label="{{star <= 3 ? '不满意的地方' : '说说体验'}}" name="text" column required="{{star <= 3}}" value="{{text}}" rules="{{rules}}">
+      <textarea class="ta" auto-height maxlength="{{maxText}}" value="{{text}}" placeholder="{{star <= 3 ? '哪里没做好？如：卫生间角落没擦、迟到半小时' : '阿姨干活细不细、准不准时，给其他人参考'}}" bindinput="onText"></textarea>
+    </form-item>
+    <text class="cnt {{text.length > maxText - 20 ? 'orange' : ''}}">{{text.length}}/{{maxText}}</text>
+    <view class="row ph-list">
+      <view class="ph-box" wx:for="{{photos}}" wx:key="*this">
+        <image class="ph" src="{{item}}" mode="aspectFill" data-src="{{item}}" bindtap="preview"></image>
+        <text class="ph-del" data-i="{{index}}" catchtap="delPhoto">×</text>
+      </view>
+      <view class="ph ph-add" wx:if="{{photos.length < 3}}" bindtap="addPhoto">
+        <text class="ph-plus">+</text>
+        <text class="sub">晒效果图</text>
+      </view>
+    </view>
+    <text class="sample green" wx:if="{{photos.length < 3}}" bindtap="useSample">没有照片？用示例图</text>
+    <view class="line"></view>
+    <view class="between">
+      <view class="col">
+        <text>匿名评价</text>
+        <text class="sub">师傅看不到你的姓名和地址</text>
+      </view>
+      <switch checked="{{anonymous}}" color="#13a86b" bindchange="onAnon" />
+    </view>
+  </view>
+  <view class="btn" bindtap="submit">提交评价</view>
+  <view class="bar-gap"></view>
+</view>

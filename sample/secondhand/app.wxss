@@ -1,0 +1,22 @@
+page { background: #f4f5f7; color: #1f2329; font-size: 28rpx; }
+.row { display: flex; flex-direction: row; align-items: center; }
+.between { justify-content: space-between; }
+.col { display: flex; flex-direction: column; }
+.flex1 { flex: 1; min-width: 0; }
+.card { background: #ffffff; border-radius: 20rpx; margin: 20rpx 24rpx 0; padding: 24rpx; }
+.muted { color: #8a9099; font-size: 24rpx; }
+.price { color: #ff4d2d; font-weight: bold; }
+.yen { font-size: 22rpx; }
+.orig { color: #b3b8bf; font-size: 22rpx; text-decoration: line-through; margin-left: 10rpx; }
+.tag { font-size: 20rpx; color: #b26a00; background: #fff4d6; padding: 2rpx 10rpx; border-radius: 6rpx; margin-right: 8rpx; }
+.tag-g { color: #1a8f5a; background: #e6f6ee; }
+.btn { background: #ffda44; color: #1f2329; border-radius: 44rpx; height: 84rpx; display: flex; align-items: center; justify-content: center; font-size: 30rpx; font-weight: bold; }
+.btn-ghost { border: 2rpx solid #d9dce1; color: #4e5560; border-radius: 40rpx; height: 60rpx; padding: 0 26rpx; display: flex; align-items: center; justify-content: center; font-size: 24rpx; margin-left: 16rpx; }
+.btn-dis { background: #e6e8eb; color: #a3a8b0; }
+.chev { width: 14rpx; height: 14rpx; border-top: 3rpx solid #c4c8ce; border-right: 3rpx solid #c4c8ce; transform: rotate(45deg); margin-left: 10rpx; }
+.avatar { width: 64rpx; height: 64rpx; border-radius: 50%; flex-shrink: 0; }
+.empty { padding: 120rpx 0; display: flex; flex-direction: column; align-items: center; color: #9aa0a8; font-size: 26rpx; }
+.empty-ic { width: 160rpx; height: 160rpx; border-radius: 50%; background: #eceef1; display: flex; align-items: center; justify-content: center; font-size: 64rpx; color: #c4c8ce; margin-bottom: 24rpx; }
+.empty-btn { margin-top: 28rpx; background: #ffda44; color: #1f2329; padding: 14rpx 40rpx; border-radius: 36rpx; font-size: 26rpx; }
+.loading-more { text-align: center; color: #9aa0a8; font-size: 24rpx; padding: 30rpx 0 40rpx; }
+.safe-bottom { height: calc(140rpx + env(safe-area-inset-bottom)); }

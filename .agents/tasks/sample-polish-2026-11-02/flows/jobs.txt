@@ -1,0 +1,217 @@
+# 职聘直通：每页能开 + 意向推荐 / 搜索 / 筛选 / 职位详情（收藏、分享、地图、公司关注、投递）/ 沟通（HR 回复推进状态、面试邀请）/ 面试接受拒绝 / 投递记录撤回 / 收藏关注 / 简历工作经历 / 求职偏好 / 隐私屏蔽 / 帮助反馈
+smoke pages/job/job?id=j3 pages/company/company?id=c3 pages/chat/chat?sid=s3 pages/interviews/interviews?id=iv1 pages/favs/favs?tab=1 pages/applications/applications?tab=3
+open
+expect getCurrentPages().slice(-1)[0].data.list.length === 6
+expect getCurrentPages().slice(-1)[0].data.list[0].id === 'j1' && getCurrentPages().slice(-1)[0].data.list[0].match === true
+shot target/_polish_shots/index.png
+# 切换求职意向 → 推荐排序跟着变，并持久化
+tap .intent-add
+sheet 1 6
+expect getCurrentPages().slice(-1)[0].data.intent === 'Java 后端' && getCurrentPages().slice(-1)[0].data.list[0].id === 'j3'
+expect wx.getStorageSync('jobs_intent').intent === 'Java 后端'
+# 城市：全国多出上海的职位
+picker .city-picker
+pickrow 0 1 4
+pickok
+expect getCurrentPages().slice(-1)[0].data.list.length === 7 && wx.getStorageSync('jobs_intent').cityIdx === 4
+# 筛选面板：经验 3-5 年 + 月薪 15-30K
+wait 400
+tap .filter-btn
+waitfor getCurrentPages().slice(-1)[0].data.showFilter === true 2000
+tapn 2 .opt
+tapn 9 .opt
+tap .f-ok
+expect getCurrentPages().slice(-1)[0].data.fCount === 2
+expect getCurrentPages().slice(-1)[0].data.list.length > 0 && getCurrentPages().slice(-1)[0].data.list.every(function (j) { return j.exp === '3-5年'; })
+print getCurrentPages().slice(-1)[0].data.list.map(function (j) { return j.id + ' ' + j.salary; }).join(' | ')
+shot target/_polish_shots/index-filter.png
+tap .filter-btn
+tap .f-reset
+tap .f-ok
+expect getCurrentPages().slice(-1)[0].data.fCount === 0 && getCurrentPages().slice(-1)[0].data.list.length === 7
+# 搜索 → 职位详情
+type .search-input => 前端
+count 1 .job
+tap .job
+route pages/job/job
+expect getCurrentPages().slice(-1)[0].data.job.id === 'j1' && getCurrentPages().slice(-1)[0].data.applied === false
+tap .fav
+expect wx.getStorageSync('jobs_fav')[0] === 'j1'
+tap .share
+toast 职位链接已复制
+# 工作地点：openLocation 宿主没有 → 弹地址
+tap .loc
+modal?
+expect __ui.slice(-1)[0].title === '字节跳动'
+modal cancel
+# 公司主页：关注
+tap .co
+route pages/company/company
+tap .follow
+expect wx.getStorageSync('jobs_follow')[0] === 'c1'
+toast 关注成功
+shot target/_polish_shots/company.png
+back
+# 投递 → 会话里留简历，HR 回复后变「被查看」
+tap .bar .btn-primary
+modal?
+modal ok
+expect wx.getStorageSync('jobs_applied')[0].id === 'j1' && wx.getStorageSync('jobs_applied')[0].status === 0
+expect getCurrentPages().slice(-1)[0].data.applied === true
+shot target/_polish_shots/job.png
+tap .chat-big
+route pages/chat/chat
+expect getCurrentPages().slice(-1)[0].sid === 's1'
+waitfor wx.getStorageSync('jobs_applied')[0].status === 1 3000
+expect getCurrentPages().slice(-1)[0].data.msgs.slice(-1)[0].from === 'hr'
+# 再聊一句 → HR 发面试邀请
+type .in => 明天下午可以，几点方便？
+tap .send
+blur
+waitfor wx.getStorageSync('jobs_interviews').length === 2 3000
+expect wx.getStorageSync('jobs_applied')[0].status === 2
+count 1 .invite
+# 交换电话：HR 回电话号码，能拨（宿主没有 → 弹号码）
+tapn 1 .act
+waitfor getCurrentPages().slice(-1)[0].data.msgs.slice(-1)[0].phone === '0571 8866 1204' 3000
+tap .b-call
+modal?
+modal cancel
+# 常用语
+eval globalThis.N0 = getCurrentPages().slice(-1)[0].data.msgs.length
+tapn 2 .act
+sheet 1 5
+expect getCurrentPages().slice(-1)[0].data.msgs.length === N0 + 1
+waitfor getCurrentPages().slice(-1)[0].data.msgs.length === N0 + 2 3000
+wait 300
+shot target/_polish_shots/chat.png
+# 面试邀请 → 接受（新邀请）+ 设提醒；拒绝（明天那场）
+wait 300
+tap .invite
+route pages/interviews/interviews
+count 2 .iv
+tapn 1 .op.main
+modal?
+modal ok
+expect wx.getStorageSync('jobs_interviews')[1].status === 'accepted'
+tapn 1 .op.main
+modal?
+modal ok
+expect wx.getStorageSync('jobs_interviews')[1].remind === true
+tapn 1 .op
+sheet 0 4
+expect wx.getStorageSync('jobs_interviews')[0].status === 'declined' && wx.getStorageSync('jobs_interviews')[0].reason === '时间冲突，希望改期'
+shot target/_polish_shots/interviews.png
+back
+expect getCurrentPages().slice(-1)[0].data.msgs.some(function (m) { return m.text.indexOf('[已接受面试]') === 0; })
+back
+route pages/job/job
+expect getCurrentPages().slice(-1)[0].data.app.status === 2
+# 消息：未读 / 面试筛选、全部已读、小助手
+eval wx.switchTab({ url: '/pages/messages/messages' })
+route pages/messages/messages
+count 5 .item
+tapn 1 .chip
+count 1 .item
+tap .read-all
+count 0 .item
+tapn 2 .chip
+count 2 .item
+tapn 0 .chip
+shot target/_polish_shots/messages.png
+tap .notice
+route pages/applications/applications
+back
+# 我的：统计 → 投递记录、撤回
+eval wx.switchTab({ url: '/pages/mine/mine' })
+route pages/mine/mine
+expect getCurrentPages().slice(-1)[0].data.stats.applied === 4 && getCurrentPages().slice(-1)[0].data.stats.interview === 2 && getCurrentPages().slice(-1)[0].data.stats.fav === 1
+shot target/_polish_shots/mine.png
+tapn 0 .stat
+route pages/applications/applications
+count 4 .rec
+tapn 2 .seg-item
+count 1 .rec
+tap .op
+modal?
+modal ok
+expect !wx.getStorageSync('jobs_applied').some(function (a) { return a.id === 'j4'; })
+exists .empty-box
+tapn 0 .seg-item
+count 3 .rec
+shot target/_polish_shots/applications.png
+back
+# 收藏 / 关注
+tapn 3 .stat
+route pages/favs/favs
+count 1 .item
+tap .op
+expect wx.getStorageSync('jobs_fav').length === 0
+exists .empty-box
+tapn 1 .seg-item
+count 1 .item
+tap .op
+modal ok
+expect wx.getStorageSync('jobs_follow').length === 0
+back
+# 在线简历：工作经历添加（校验）/ 删除，保存
+tapn 0 .m-item
+route pages/resume/resume
+eval globalThis.W0 = wx.getStorageSync('jobs_resume').works.length
+tap .add
+tap .w-save
+toast 请填写公司名称
+type .w-company => 阿里云
+type .w-title => 前端工程师
+tap .w-save
+expect wx.getStorageSync('jobs_resume').works.length === W0 + 1 && wx.getStorageSync('jobs_resume').works[0].company === '阿里云'
+shot target/_polish_shots/resume.png
+tapn 0 .w-del
+modal ok
+expect wx.getStorageSync('jobs_resume').works.length === W0
+tap .save-btn
+toast 保存成功
+wait 1000
+route pages/mine/mine
+# 求职偏好
+tapn 3 .m-item
+route pages/intent/intent
+picker .p-intent
+pickrow 0 1 1
+pickok
+tapn 1 .ty
+tap .btn-primary
+expect wx.getStorageSync('jobs_intent').intent === '产品经理' && wx.getStorageSync('jobs_intent').type === 1
+expect wx.getStorageSync('jobs_resume').position === '产品经理'
+shot target/_polish_shots/intent.png
+back
+# 隐私设置：屏蔽字节跳动 → 首页不再出现它的职位
+tapn 4 .m-item
+route pages/settings/settings
+tapn 3 switch
+expect wx.getStorageSync('jobs_settings').blocked.indexOf('c1') >= 0
+tapn 1 switch
+expect wx.getStorageSync('jobs_settings').hidePhone === true
+shot target/_polish_shots/settings.png
+back
+eval wx.switchTab({ url: '/pages/index/index' })
+route pages/index/index
+expect getCurrentPages().slice(-1)[0].data.blockedCount === 2 && !getCurrentPages().slice(-1)[0].data.list.some(function (j) { return j.company === 'c1'; })
+expect getCurrentPages().slice(-1)[0].data.intent === '产品经理'
+# 帮助与反馈
+eval wx.switchTab({ url: '/pages/mine/mine' })
+tapn 5 .m-item
+route pages/help/help
+tapn 0 .faq
+expect getCurrentPages().slice(-1)[0].data.open === 0
+tap .btn-primary
+toast 至少写 5 个字
+type .fb => 希望增加薪资对比功能
+tap .btn-primary
+expect wx.getStorageSync('jobs_feedback').length === 1
+count 1 .fb-item
+shot target/_polish_shots/help.png
+tap .service
+modal?
+modal cancel
+noerr

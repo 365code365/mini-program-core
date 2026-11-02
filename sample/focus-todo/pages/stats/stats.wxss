@@ -150,3 +150,10 @@
   height: 12rpx;
   border-radius: 6rpx;
 }
+.link {
+  color: #ff6250;
+}
+.dist-empty {
+  display: block;
+  margin-top: 24rpx;
+}

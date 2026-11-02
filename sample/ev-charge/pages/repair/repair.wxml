@@ -1,0 +1,58 @@
+<view class="tabs row">
+  <view class="tab {{tab === 'form' ? 'tab-on' : ''}}" data-k="form" bindtap="onTab"><text class="tab-t">我要报修</text></view>
+  <view class="tab tab-list {{tab === 'list' ? 'tab-on' : ''}}" data-k="list" bindtap="onTab"><text class="tab-t">我的报修（{{records.length}}）</text></view>
+</view>
+<block wx:if="{{tab === 'form'}}">
+  <view class="card">
+    <text class="section-title">终端编号</text>
+    <input id="no-{{seq}}" class="ipt no-input" placeholder="桩身上的编号，如 XX0128-02" placeholder-class="ph" value="{{no}}" maxlength="12" bindinput="onNo" />
+    <text class="ok-t" wx:if="{{stationName}}">{{stationName}}</text>
+    <text class="err-t" wx:if="{{noErr}}">{{noErr}}</text>
+  </view>
+  <view class="card">
+    <text class="section-title">问题类型</text>
+    <view class="types">
+      <view wx:for="{{types}}" wx:key="*this" class="ty {{type === item ? 'ty-on' : ''}}" data-t="{{item}}" bindtap="onType"><text>{{item}}</text></view>
+    </view>
+  </view>
+  <view class="card">
+    <view class="row between"><text class="section-title">问题描述</text><text class="sub">{{desc.length}}/200</text></view>
+    <textarea id="desc-{{seq}}" class="desc" placeholder="{{type === '其他问题' ? '请说明遇到的情况（至少 5 个字）' : '选填，例如：插枪后屏幕提示 ERR 07'}}" placeholder-class="ph" value="{{desc}}" maxlength="200" bindinput="onDesc" />
+    <view class="row photos">
+      <view class="ph-item" wx:for="{{photos}}" wx:key="*this">
+        <image class="ph-img" src="{{item}}" mode="aspectFill" data-i="{{index}}" bindtap="onPreview" />
+        <view class="ph-del" data-i="{{index}}" catchtap="onDelPhoto"><text class="ph-del-t">×</text></view>
+      </view>
+      <view class="ph-add col" wx:if="{{photos.length < 3}}" bindtap="onAddPhoto"><text class="ph-plus">+</text><text class="sub">拍照</text></view>
+    </view>
+    <text class="sample" bindtap="onSample">使用示例图</text>
+  </view>
+  <view class="card">
+    <text class="section-title">联系电话</text>
+    <input id="phone-{{seq}}" class="ipt phone-input" type="number" placeholder="留空则使用账号手机 138****6620" placeholder-class="ph" value="{{phone}}" maxlength="11" bindinput="onPhone" />
+  </view>
+  <text class="err-t form-err" wx:if="{{err}}">{{err}}</text>
+  <view class="btn-primary submit-btn" bindtap="onSubmit">提交报修</view>
+  <text class="sub foot">紧急情况（冒烟、漏电）请远离充电桩并拨打 400-820-1234</text>
+</block>
+<block wx:else>
+  <view wx:if="{{!records.length}}" class="empty col">
+    <view class="empty-ic"><text class="empty-ic-t">修</text></view>
+    <text class="sub">还没有报修记录</text>
+  </view>
+  <view class="card rec" wx:for="{{records}}" wx:key="id" data-i="{{index}}" bindtap="onRecord">
+    <view class="row between">
+      <text class="rec-no">{{item.no}} · {{item.type}}</text>
+      <text class="rec-st st-{{item.step}}">{{item.stepText}}</text>
+    </view>
+    <text class="sub rec-line">{{item.station}} · {{item.time}}{{item.photoCount ? ' · ' + item.photoCount + ' 张照片' : ''}}</text>
+    <view class="row steps">
+      <view class="sp row" wx:for="{{[0, 1, 2]}}" wx:key="*this" wx:for-item="s">
+        <view class="sp-dot {{s <= item.step ? 'sp-on' : ''}}"></view>
+        <view class="sp-line {{s < item.step ? 'sp-on' : ''}}" wx:if="{{s < 2}}"></view>
+      </view>
+    </view>
+    <text class="rec-note">{{item.note}}</text>
+  </view>
+</block>
+<view class="bottom-space"></view>

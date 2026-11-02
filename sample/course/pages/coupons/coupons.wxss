@@ -1,0 +1,16 @@
+.ex-main { flex: 1; display: flex; flex-direction: column; }
+.ex-t { font-size: 30rpx; font-weight: bold; margin-bottom: 4rpx; }
+.ex-btn { height: 60rpx; line-height: 60rpx; padding: 0 32rpx; border-radius: 30rpx; background: linear-gradient(90deg, #ffc46b, #ff8a3d); color: #ffffff; font-size: 26rpx; font-weight: bold; white-space: nowrap; }
+.tabs { margin: 24rpx 24rpx 0; background: #ffffff; border-radius: 20rpx; }
+.tb { flex: 1; height: 84rpx; line-height: 84rpx; text-align: center; font-size: 28rpx; color: #6b7282; white-space: nowrap; }
+.tb.on { color: #3d6cf6; font-weight: bold; }
+.cp { margin: 20rpx 24rpx 0; background: #ffffff; border-radius: 20rpx; overflow: hidden; }
+.cp-l { width: 180rpx; height: 150rpx; background: linear-gradient(135deg, #ff9a3d, #ff5a3d); color: #ffffff; display: flex; flex-direction: row; align-items: baseline; justify-content: center; padding-top: 44rpx; box-sizing: border-box; }
+.used .cp-l { background: #d5d9e1; }
+.cp-y { font-size: 28rpx; font-weight: bold; }
+.cp-n { font-size: 56rpx; font-weight: bold; }
+.cp-m { flex: 1; padding: 0 20rpx; display: flex; flex-direction: column; min-width: 0; }
+.cp-t { font-size: 28rpx; font-weight: bold; margin-bottom: 6rpx; }
+.cp-go { margin-right: 24rpx; height: 56rpx; line-height: 56rpx; padding: 0 22rpx; border-radius: 28rpx; border: 2rpx solid #ff5a3d; color: #ff5a3d; font-size: 24rpx; white-space: nowrap; }
+.cp-st { margin-right: 24rpx; font-size: 24rpx; color: #9aa0ab; }
+.gap { height: 60rpx; }

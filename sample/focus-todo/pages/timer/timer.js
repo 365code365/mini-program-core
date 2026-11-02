@@ -125,6 +125,7 @@ Page({
       S.addSession({
         date: S.today(), minutes: Math.round(this.data.total / 60),
         title: taskId ? this.data.taskNames[this.data.taskIndex] : '自由专注',
+        taskId: taskId || 0,
         at: S.pad(d.getHours()) + ':' + S.pad(d.getMinutes())
       })
       if (taskId) {

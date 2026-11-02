@@ -1,0 +1,18 @@
+.tabs { position: fixed; left: 0; right: 0; top: 0; height: 88rpx; background: #ffffff; z-index: 10; border-bottom: 1rpx solid #eceef0; }
+.tb { flex: 1; height: 88rpx; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+.tb-t { font-size: 26rpx; color: #5a5d66; }
+.tb-on .tb-t { color: #13b37b; font-weight: bold; }
+.tb-bar { position: absolute; bottom: 0; width: 48rpx; height: 6rpx; border-radius: 3rpx; background: #13b37b; }
+.list { padding: 88rpx 0 40rpx; }
+.loading { padding: 80rpx 0; text-align: center; }
+.od { background: #ffffff; border-radius: 20rpx; margin: 20rpx 24rpx 0; padding: 24rpx; }
+.od-n { font-size: 28rpx; font-weight: bold; }
+.od-st { font-size: 24rpx; }
+.od-bd { margin-top: 16rpx; align-items: flex-start; }
+.od-img { width: 140rpx; height: 110rpx; border-radius: 10rpx; flex-shrink: 0; }
+.od-info { margin-left: 18rpx; }
+.od-d { font-size: 26rpx; margin-bottom: 4rpx; }
+.od-seg { margin-bottom: 4rpx; }
+.od-ft { margin-top: 16rpx; }
+.od-btn { height: 60rpx; line-height: 60rpx; padding: 0 30rpx; font-size: 24rpx; }
+.od-btn2 { height: 56rpx; line-height: 52rpx; font-size: 24rpx; }

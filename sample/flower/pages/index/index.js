@@ -9,10 +9,22 @@ Page({
     ],
     uses: data.uses,
     use: '',
-    left: [], right: [], count: 0, cartCount: 0
+    left: [], right: [], count: 0, cartCount: 0, loc: '', remind: null
   },
   onLoad() { this.refresh(); },
-  onShow() { this.setData({ cartCount: store.cartCount() }); },
+  onShow() {
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) this.getTabBar().setData({ selected: 0 });
+    // 「我的」页的纪念日点了「去订花」：按它的用途筛好
+    const pick = wx.getStorageSync(store.K.usePick);
+    if (pick) { wx.removeStorageSync(store.K.usePick); this.setData({ use: pick }); this.refresh(); }
+    const a = store.currentAddr();
+    const soon = wx.getStorageSync('fl_remind') === false ? null : store.datesView().find(d => d.left <= 7);
+    this.setData({
+      cartCount: store.cartCount(),
+      loc: a ? a.region[1].replace(/市$/, '') + ' · ' + a.region[2] : '选择收花地址',
+      remind: soon ? { name: soon.name, left: soon.left, kind: soon.kind, useName: soon.useName } : null
+    });
+  },
   refresh() {
     const list = data.products.filter(p => !this.data.use || p.use === this.data.use)
       .map(p => Object.assign({}, p, { soldTx: p.sold >= 10000 ? (p.sold / 10000).toFixed(1) + '万' : p.sold }));
@@ -24,17 +36,19 @@ Page({
     this.setData({ use: this.data.use === k ? '' : k });
     this.refresh();
   },
+  // 收花地址决定送到哪座城市：点定位去选地址
+  onLoc() { wx.navigateTo({ url: '/pages/address/address?select=1' }); },
+  onRemind() {
+    this.setData({ use: this.data.remind.kind });
+    this.refresh();
+  },
   goDetail(e) { wx.navigateTo({ url: '/pages/detail/detail?id=' + e.currentTarget.dataset.id }); },
   quickAdd(e) {
     const id = e.currentTarget.dataset.id;
-    store.addToCart({ id, stems: 11, pack: 'mist', date: store.dayAfter(1), slot: '15:00-18:00', card: data.productOf(id).words, qty: 1 });
+    const fx = store.fixSlot(store.dayAfter(1), '15:00-18:00');
+    store.addToCart({ id, stems: 11, pack: 'mist', date: fx.date, slot: fx.slot, card: data.productOf(id).words, qty: 1 });
     this.setData({ cartCount: store.cartCount() });
     wx.showToast({ title: '已加入购物车', icon: 'success' });
   },
-  goCart() { wx.switchTab({ url: '/pages/cart/cart' }); },
-  onService() {
-    wx.showActionSheet({ itemList: ['在线客服', '拨打 400-660-5520', '企业团购咨询'], success: r => {
-      wx.showToast({ title: ['花艺师马上为您服务', '正在呼叫…', '商务顾问将在 1 小时内联系您'][r.tapIndex], icon: 'none' });
-    } });
-  }
+  goCart() { wx.switchTab({ url: '/pages/cart/cart' }); }
 });

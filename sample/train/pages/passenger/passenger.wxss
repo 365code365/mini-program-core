@@ -34,3 +34,18 @@
 .save-btn {
   margin: 40rpx 48rpx;
 }
+.locked {
+  font-size: 28rpx;
+  color: #8a909c;
+}
+.del-btn {
+  margin: 0 48rpx;
+  height: 88rpx;
+  border-radius: 44rpx;
+  border: 1rpx solid #f2453d;
+  color: #f2453d;
+  font-size: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

@@ -19,7 +19,8 @@ internal class HostCallRouter(context: Context, private val session: EngineSessi
     /** 建引擎时交给 `hostApis` 选项的名字：点了名的 `wx.*` 才交给宿主，没点名的照旧立刻 fail */
     fun names(): List<String> = (apis.keys + if (builtin) MiniMediaApis.NAMES else emptyList()).distinct()
 
-    fun dispatch(ev: JSONObject, activity: Activity?) {
+    /** [fallback]：宿主与自带的都没接的（同层组件的上下文方法 `MapContext.*`），接了返回 true */
+    fun dispatch(ev: JSONObject, activity: Activity?, fallback: (MiniHostCall, MiniHostReply) -> Boolean = { _, _ -> false }) {
         val call = MiniHostCall.fromJson(ev)
         val reply = replyFor(call)
         val api = apis[call.api]
@@ -31,6 +32,7 @@ internal class HostCallRouter(context: Context, private val session: EngineSessi
                 reply.fail("${call.api}:fail ${e.message ?: e}")
             }
             builtin && call.api in MiniMediaApis.NAMES -> media.handle(activity, call, reply)
+            fallback(call, reply) -> {}
             else -> reply.fail("${call.api}:fail 宿主没有实现")
         }
     }

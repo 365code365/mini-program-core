@@ -1,0 +1,69 @@
+<view class="hero">
+  <view class="search row" bindtap="goSearch">
+    <text class="search-ic">⌕</text>
+    <text class="search-tx">搜索律师、擅长领域</text>
+  </view>
+  <view class="hero-row row">
+    <view class="hero-main col flex1" bindtap="quickAsk">
+      <text class="hero-t">快速咨询</text>
+      <text class="hero-s">执业律师 · 平均 8 分钟回复</text>
+      <view class="hero-btn">立即提问 ¥39 起</view>
+    </view>
+    <view class="hero-side col">
+      <view class="hero-mini row" bindtap="goContracts"><text class="mini-ic">约</text><text class="mini-tx">合同模板</text></view>
+      <view class="hero-mini row" bindtap="goCalc"><text class="mini-ic">算</text><text class="mini-tx">赔偿计算</text></view>
+    </view>
+  </view>
+</view>
+
+<view class="ongoing row between" wx:if="{{active > 0}}" bindtap="goConsults">
+  <text class="ongoing-tx">你有 {{active}} 个咨询正在进行</text>
+  <text class="ongoing-go">去查看 ›</text>
+</view>
+
+<view class="card">
+  <view class="sec-title">咨询分类</view>
+  <view class="cats">
+    <view class="cat col" wx:for="{{cats}}" wx:key="id" data-id="{{item.id}}" bindtap="goCat" hover-class="cat-hover">
+      <view class="cat-ic" style="background: {{item.color}};">{{item.ic}}</view>
+      <text class="cat-n">{{item.name}}</text>
+      <text class="cat-d">{{item.desc}}</text>
+    </view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="sec-title">热门问答</text>
+    <text class="sec-more">每日更新</text>
+  </view>
+  <view class="qa row" wx:for="{{qa}}" wx:key="id" data-id="{{item.id}}" bindtap="goQa">
+    <text class="qa-q">问</text>
+    <view class="col flex1">
+      <text class="qa-t">{{item.title}}</text>
+      <text class="muted">{{item.views}} 人看过</text>
+    </view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="sec-title">推荐律师</text>
+    <text class="sec-more" bindtap="goSearch">全部 ›</text>
+  </view>
+  <view class="lw row" wx:for="{{lawyers}}" wx:key="id" data-id="{{item.id}}" bindtap="goLawyer">
+    <image class="lw-av" src="{{item.avatar}}" mode="aspectFill"></image>
+    <view class="col flex1">
+      <view class="row"><text class="lw-n">{{item.name}}</text><text class="tag tag-gold">执业 {{item.years}} 年</text></view>
+      <text class="muted lw-f">{{item.firm}}</text>
+      <text class="lw-fd">擅长：{{item.fieldText}}</text>
+    </view>
+    <view class="col lw-r">
+      <text class="lw-star">★ {{item.rating}}</text>
+      <text class="price">¥{{item.price.text}}</text>
+    </view>
+  </view>
+</view>
+
+<view class="disclaimer"><text>{{disclaimer}}</text></view>
+<view class="tab-pad"></view>

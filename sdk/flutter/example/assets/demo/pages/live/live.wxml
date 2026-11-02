@@ -1,0 +1,33 @@
+<live-player id="player" class="player" src="{{src}}" mode="live" autoplay="{{true}}" muted="{{muted}}" object-fit="{{fit}}"
+  bindstatechange="onState" bindnetstatus="onNet" bindfullscreenchange="onFullscreen"></live-player>
+<view class="card">
+  <text class="title">拉流地址</text>
+  <view class="src {{index === current ? 'src-on' : ''}}" wx:for="{{sources}}" wx:key="url" data-index="{{index}}" bindtap="pick">
+    <text class="src-name">{{item.name}}</text>
+    <text class="src-url">{{item.url}}</text>
+  </view>
+  <text class="hint">画面由宿主的系统播放器解码（Android MediaPlayer / iOS AVPlayer），帧交给引擎画进页面：滚动时与页面一起走。系统播放器认 HLS（m3u8）与 mp4；RTMP / FLV 宿主播不了时会报 -2301。</text>
+</view>
+<view class="card">
+  <text class="title">LivePlayerContext</text>
+  <view class="btns">
+    <view class="btn-s" bindtap="cmd" data-m="play">play</view>
+    <view class="btn-s" bindtap="cmd" data-m="pause">pause</view>
+    <view class="btn-s" bindtap="cmd" data-m="resume">resume</view>
+    <view class="btn-s" bindtap="cmd" data-m="stop">stop</view>
+    <view class="btn-o" bindtap="cmd" data-m="mute">mute（切换）</view>
+    <view class="btn-o" bindtap="full">requestFullScreen</view>
+    <view class="btn-o" bindtap="snap">snapshot</view>
+    <view class="btn-o" bindtap="toggleFit">object-fit: {{fit}}</view>
+  </view>
+  <view class="result"><text>{{ctxResult}}</text></view>
+  <image wx:if="{{shot}}" class="shot" src="{{shot}}" mode="aspectFit"></image>
+</view>
+<view class="card">
+  <text class="title">状态</text>
+  <view class="kv"><text class="kv-k">画面</text><text class="kv-v">{{size}}</text></view>
+  <view class="kv"><text class="kv-k">全屏</text><text class="kv-v">{{fullscreen}}</text></view>
+  <view class="log">
+    <text class="log-line" wx:for="{{logs}}" wx:key="*this">{{item}}</text>
+  </view>
+</view>

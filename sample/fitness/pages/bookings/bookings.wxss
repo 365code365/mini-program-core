@@ -1,0 +1,16 @@
+.tabs { display: flex; flex-direction: row; background: #ffffff; height: 88rpx; }
+.tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; font-size: 26rpx; color: #5c616b; white-space: nowrap; }
+.tab.on { color: #ff5a36; font-weight: bold; }
+.tab-line { position: absolute; bottom: 8rpx; width: 48rpx; height: 6rpx; border-radius: 3rpx; background: #ff5a36; }
+.warn { margin: 20rpx 24rpx 0; padding: 16rpx 24rpx; border-radius: 14rpx; background: #fff3e6; color: #d9731a; font-size: 24rpx; line-height: 36rpx; }
+.bk-n { flex: 1; min-width: 0; font-size: 30rpx; font-weight: bold; color: #1c1f26; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bk-st { flex-shrink: 0; margin-left: 12rpx; font-size: 24rpx; font-weight: bold; color: #ff5a36; }
+.st-wait { color: #8b909a; }
+.st-done { color: #2fb57a; }
+.st-miss, .st-cancel { color: #a0a5ae; }
+.bk-l { display: block; margin-top: 8rpx; }
+.ops { justify-content: flex-end; margin-top: 18rpx; }
+.op { height: 56rpx; padding: 0 26rpx; margin-left: 16rpx; border-radius: 28rpx; border: 2rpx solid #e5e6ea; color: #5c616b; font-size: 24rpx; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
+.op.pri { border: none; background: linear-gradient(90deg, #ff7a3d, #ff3d6e); color: #ffffff; }
+.empty { display: flex; flex-direction: column; align-items: center; padding-top: 200rpx; }
+.empty-btn { margin-top: 32rpx; width: 280rpx; height: 80rpx; font-size: 28rpx; }

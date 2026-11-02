@@ -1,0 +1,345 @@
+# 易充电：每页能开 + 找桩筛选 / 收藏 / 导航降级 / 扫码降级为输入桩号 / 充电推进 / 结算（券 + 余额）/ 余额不足待支付 / 补缴 / 开票 / 充值 / 免密 / 券兑换 / 车辆增删改
+smoke pages/station/station?id=s1 pages/order-detail/order-detail?id=EV20261022183012 pages/vehicle-edit/vehicle-edit?id=car1 pages/invoice/invoice?ids=EV20261022183012
+open
+eval globalThis.P = function () { return getCurrentPages().slice(-1)[0]; }
+count 5 .st
+# 筛选：有快充空闲
+tapn 1 .chip
+expect P().data.list.length === 4 && P().data.list.every(function (s) { return s.fastFree > 0; })
+# 我的收藏：空态
+drag 300 334 -260 0
+tapn 5 .chip
+count 0 .st
+exists .empty
+drag 60 334 300 0
+tapn 0 .chip
+# 搜索
+type .search-input => 国网
+expect P().data.list.length === 1 && P().data.list[0].id === 's2'
+tap .search-input
+key selectall
+key backspace
+blur
+expect P().data.list.length === 5
+# 点地图上的电站：排到列表第一
+tapn 4 .marker
+expect P().data.selId === 's5' && P().data.list[0].id === 's5'
+tapn 4 .marker
+expect P().data.selId === ''
+# 定位（宿主没有定位：按默认位置）
+tap .locate
+toast 杭州·西溪
+# 列表上的导航（宿主没有地图：弹地址，可复制）
+tapn 0 .nav-btn
+modal?
+expect __ui.slice(-1)[0].title === '星联充电·西溪银泰城站' && __ui.slice(-1)[0].content.indexOf('0.8km') > 0
+modal ok
+nomodal
+# 电站详情：收藏 / 电话 / 导航
+tapn 0 .st
+route pages/station/station
+tap .fav
+expect wx.getStorageSync('ev_fav').length === 1 && P().data.fav === true
+toast 已收藏
+tapn 0 .nav
+modal?
+expect __ui.slice(-1)[0].content === '0571-8812 6601'
+modal ok
+tapn 1 .nav
+modal?
+modal cancel
+# 终端：故障 / 占用
+tapn 9 .term
+modal?
+expect __ui.slice(-1)[0].title.indexOf('维护中') > 0
+modal cancel
+tapn 0 .term
+toast 正在使用
+back
+drag 300 334 -260 0
+tapn 5 .chip
+count 1 .st
+drag 60 334 300 0
+tapn 0 .chip
+# 扫码：宿主没有摄像头 → 提示输入桩号
+tap .scan-bar
+route pages/scan/scan
+tapn 0 .tool
+toast 请输入桩身编号
+type .code-input => xx0128-01
+expect P().data.found.terminal.no === 'XX0128-01'
+tap .start
+expect P().data.error === '该终端正在被使用'
+tap .code-input
+key selectall
+key backspace
+type .code-input => AB1234-99
+tap .start
+expect P().data.error.indexOf('未找到该终端') === 0
+tapn 0 .r-chip
+expect P().data.found.terminal.no === 'XX0128-02' && P().data.found.terminal.status === 'idle'
+shot target/_polish_shots/scan-found.png
+tap .start
+route pages/charging/charging
+expect wx.getStorageSync('ev_session').no === 'XX0128-02' && wx.getStorageSync('ev_session').plate === '浙A·D88520'
+expect wx.getStorageSync('ev_session').startSoc === 42 && wx.getStorageSync('ev_session').battery === 82.5
+# 充电中：电站详情里这根桩是「我的充电」，空闲数少 1
+eval wx.navigateTo({ url: '/pages/station/station?id=s1' })
+route pages/station/station
+expect P().data.st.list[1].mine === true && P().data.st.fastFree === 2
+tapn 1 .term
+route pages/charging/charging
+back
+back
+# 推进到 60 秒：14.4 度
+eval P().stopTimer(); P().s.elapsed = 60; P().tick();
+expect P().data.kwhText === '14.40' && P().data.feeText === '26.21' && P().data.elecText === '14.69' && P().data.serviceText === '11.52'
+expect P().data.soc === 59
+shot target/_polish_shots/charging.png
+# 结束：服务费 8 折券（省 2.30）比满 50 减 5 更合适（不满 50），余额扣 23.91
+tap .btn-stop
+modal?
+modal ok
+wait 1200
+route pages/order-detail/order-detail
+expect P().data.o.status === 'paid' && P().data.o.fee === 26.21 && P().data.o.cut === 2.3 && P().data.o.pay === 23.91 && P().data.o.couponTitle === '服务费 8 折券'
+expect wx.getStorageSync('ev_wallet').balance === 62.49
+expect wx.getStorageSync('ev_session') === ''
+expect wx.getStorageSync('ev_coupons').find(function (c) { return c.id === 'c1'; }).status === 'used'
+shot target/_polish_shots/order-paid.png
+# 再充一次到充满附近：47.85 度 → 87.09，满 50 减 5 → 82.09 > 余额 62.49 → 待支付
+eval wx.reLaunch({ url: '/pages/scan/scan?no=GW2210-01' })
+route pages/scan/scan
+expect P().data.found.terminal.no === 'GW2210-01'
+tap .start
+route pages/charging/charging
+eval P().s.elapsed = 2000; P().tick();
+expect P().data.soc === 100 && P().data.kwhText === '47.85'
+wait 1500
+waitfor getCurrentPages().slice(-1)[0].route === 'pages/order-detail/order-detail' 4000
+expect P().data.o.status === 'unpaid' && P().data.o.fee === 87.09 && P().data.o.cut === 5 && P().data.o.pay === 82.09
+expect wx.getStorageSync('ev_wallet').balance === 62.49
+shot target/_polish_shots/order-unpaid.png
+# 有欠款不能开始新的充电
+eval wx.reLaunch({ url: '/pages/index/index' })
+route pages/index/index
+exists .unpaid-tip
+tap .scan-bar
+tapn 0 .r-chip
+tap .start
+modal?
+expect __ui.slice(-1)[0].title === '有未支付订单'
+modal ok
+route pages/order-detail/order-detail
+# 补缴：余额不够 → 提示充值；改用微信支付（宿主没有支付：页内确认）
+tap .op-pay
+sheet 0 2
+modal?
+expect __ui.slice(-1)[0].title === '余额不足'
+modal cancel
+tap .op-pay
+sheet 1 2
+modal?
+modal ok
+wait 300
+expect P().data.o.status === 'paid' && P().data.payBy === '微信支付'
+expect wx.getStorageSync('ev_wallet').balance === 62.49
+toast 支付成功
+# 开票：本单预选，企业抬头
+tap .op-invoice
+route pages/invoice/invoice
+expect P().data.count === 1 && P().data.amount === '82.09'
+tap .submit-btn
+toast 请填写公司抬头
+type .i-title => 杭州易行科技有限公司
+type .i-tax => 91330100mA2KX1234Y
+type .i-email => bad
+blur
+tap .submit-btn
+toast 邮箱
+tap .i-email
+key selectall
+key backspace
+type .i-email => fin@yixing.com
+blur
+tapn 1 .it
+expect P().data.count === 2
+tap .submit-btn
+modal?
+modal ok
+expect P().data.tab === 'list' && P().data.records.length === 1 && P().data.records[0].amount === 106
+expect wx.getStorageSync('ev_orders').filter(function (o) { return o.invoiced; }).length === 3
+expect wx.getStorageSync('ev_invoices')[0].taxNo === '91330100MA2KX1234Y'
+shot target/_polish_shots/invoice-list.png
+tapn 0 .rec
+modal?
+modal ok
+toast 已重新发送
+# 订单列表：待支付为空、已开票
+eval wx.switchTab({ url: '/pages/orders/orders' })
+route pages/orders/orders
+expect P().data.sum.count === 6
+tapn 1 .tab
+count 0 .order
+exists .empty
+tapn 0 .tab
+expect P().data.shown[0].stText === '已开票'
+tapn 0 .order
+route pages/order-detail/order-detail
+expect P().data.o.invoiced === true
+back
+# 钱包：充 200 送 10（宿主没有支付：页内确认）
+eval wx.switchTab({ url: '/pages/wallet/wallet' })
+route pages/wallet/wallet
+expect P().data.couponCount === 0
+tapn 3 .amt
+tap .btn-primary
+modal?
+modal ok
+wait 300
+expect wx.getStorageSync('ev_wallet').balance === 272.49
+expect P().data.logs[0].amount === 210
+toast 到账
+# 自定义金额越界
+type .custom-input => 5
+tap .btn-primary
+toast 10~2000
+tapn 0 .amt
+expect P().data.custom === '' && P().data.payText === '20'
+# 免密自动充值开关
+tap switch
+expect wx.getStorageSync('ev_autopay') === true
+shot target/_polish_shots/wallet-after.png
+# 充电券：兑换码
+tap .bal-coupon
+route pages/coupons/coupons
+count 0 .cp
+exists .empty
+type .code-input => ev2026
+tap .redeem-btn
+toast 兑换成功
+count 1 .cp
+type .code-input => EV2026
+tap .redeem-btn
+toast 已使用
+tap .code-input
+key selectall
+key backspace
+type .code-input => NOPE
+tap .redeem-btn
+toast 不存在
+tapn 1 .tab
+count 3 .cp
+shot target/_polish_shots/coupons-used.png
+# 我的：车辆增删改
+eval wx.switchTab({ url: '/pages/mine/mine' })
+route pages/mine/mine
+expect P().data.balance === '272.49' && P().data.couponCount === 1 && P().data.count === 6
+tap .car-card
+route pages/vehicles/vehicles
+count 1 .car
+tap .add-btn
+route pages/vehicle-edit/vehicle-edit
+tap .kb
+toast 车牌键盘
+type .f-plate => 沪A12
+blur
+tap .save
+toast 车牌
+tap .f-plate
+key selectall
+key backspace
+type .f-plate => 沪af 12345
+blur
+tap .save
+toast 车型
+picker .f-model
+pickrow 0 1 3
+pickok
+wait 400
+expect P().data.mIdx === 3 && P().data.battery === '78.4'
+tap switch
+tap .save
+wait 800
+route pages/vehicles/vehicles
+count 2 .car
+expect wx.getStorageSync('ev_cars')[1].plate === '沪A·F12345' && wx.getStorageSync('ev_cars')[1].isDefault === true && wx.getStorageSync('ev_cars')[0].isDefault === false
+shot target/_polish_shots/vehicles-2.png
+tapn 0 .def
+expect wx.getStorageSync('ev_cars')[0].isDefault === true
+tapn 1 .op-edit
+route pages/vehicle-edit/vehicle-edit
+expect P().data.plate === '沪A·F12345' && P().data.editing === true
+tap .f-battery
+key selectall
+key backspace
+type .f-battery => 80
+blur
+tap .save
+wait 800
+route pages/vehicles/vehicles
+expect wx.getStorageSync('ev_cars')[1].battery === 80
+tapn 1 .op-del
+modal?
+modal ok
+count 1 .car
+back
+# 收藏电站 → 找桩页的收藏筛选
+tapn 3 .m-item
+route pages/index/index
+expect P().data.fIdx === 5
+count 1 .st
+eval wx.switchTab({ url: '/pages/mine/mine' })
+# 故障报修入口
+tapn 4 .m-item
+route pages/repair/repair
+back
+# 帮助与客服
+tapn 5 .m-item
+sheet 1 6
+modal?
+expect __ui.slice(-1)[0].title === '充电费用怎么算'
+modal ok
+tapn 5 .m-item
+sheet 5 6
+modal?
+expect __ui.slice(-1)[0].content === '400-820-1234'
+modal ok
+# 删光车辆后不能开始充电：引导去添加
+eval wx.setStorageSync('ev_cars', [])
+eval wx.navigateTo({ url: '/pages/scan/scan?no=GW2210-01' })
+route pages/scan/scan
+expect P().data.car === null
+tap .start
+modal?
+expect __ui.slice(-1)[0].title === '还没有车辆'
+modal ok
+route pages/vehicle-edit/vehicle-edit
+expect P().data.isDefault === true
+# 余额不足 10 元：没开免密 → 引导充值
+open pages/scan/scan?no=GW2210-01
+eval globalThis.P = function () { return getCurrentPages().slice(-1)[0]; }
+eval wx.setStorageSync('ev_wallet', { balance: 5, logs: [] }); P().onShow();
+expect P().data.balance === '5.00'
+tap .start
+modal?
+expect __ui.slice(-1)[0].title === '余额不足'
+modal ok
+route pages/wallet/wallet
+# 开了免密：可以开始，结算时先自动充 100 再扣款
+tap switch
+expect wx.getStorageSync('ev_autopay') === true
+eval wx.navigateTo({ url: '/pages/scan/scan?no=GW2210-01' })
+route pages/scan/scan
+tap .start
+route pages/charging/charging
+eval P().stopTimer(); P().s.elapsed = 60; P().tick();
+tap .btn-stop
+modal ok
+wait 1200
+route pages/order-detail/order-detail
+expect P().data.o.status === 'paid' && P().data.o.pay === 23.91 && P().data.o.topped === 100
+expect wx.getStorageSync('ev_wallet').balance === 81.09
+expect wx.getStorageSync('ev_wallet').logs[1].title === '免密自动充值'
+exists .auto-note
+noerr

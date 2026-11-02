@@ -1,0 +1,34 @@
+{
+  "appid": "wx4db94fa6399e9876",
+  "projectname": "play-gomoku",
+  "description": "五子棋：15 路棋盘人机对战，三档 AI（评分 + α-β 剪枝，Worker 里算），悔棋、认输、连五高亮",
+  "compileType": "game",
+  "libVersion": "3.6.0",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": false,
+    "minified": true,
+    "uglifyFileName": false,
+    "ignoreUploadUnusedFiles": true
+  },
+  "packOptions": {
+    "ignore": [
+      {
+        "type": "file",
+        "value": "README.md"
+      },
+      {
+        "type": "file",
+        "value": "store.meta.json"
+      }
+    ],
+    "include": []
+  },
+  "condition": {},
+  "editorSetting": {
+    "tabIndent": "insertSpaces",
+    "tabSize": 2
+  }
+}

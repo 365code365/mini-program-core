@@ -34,9 +34,10 @@
       </view>
       <view class="flex1 item-main">
         <view class="title-wrap"><text class="item-title">{{item.title}}</text><view class="strike" wx:if="{{item.done}}"></view></view>
-        <view class="row meta" wx:if="{{item.time || item.note || item.pomos}}">
+        <view class="row meta" wx:if="{{item.time || item.note || item.pomos || item.repeatText}}">
           <text class="meta-time {{item.remind ? 'remind' : ''}}" wx:if="{{item.time}}">{{item.remind ? '⏰ ' : ''}}{{item.time}}</text>
           <text class="meta-pomo" wx:if="{{item.pomos}}">🍅 ×{{item.pomos}}</text>
+          <text class="meta-repeat" wx:if="{{item.repeatText}}">🔁 {{item.repeatText}}</text>
           <text class="meta-note" wx:if="{{item.note}}">{{item.note}}</text>
         </view>
       </view>

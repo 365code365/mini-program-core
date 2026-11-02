@@ -1,0 +1,70 @@
+<page-meta background-text-style="dark" page-style="{{viewer ? 'overflow: hidden;' : ''}}" scroll-top="{{scrollTop}}" scroll-duration="300">
+  <navigation-bar title="{{ex.name}}" front-color="#000000" background-color="#f6f2ec"></navigation-bar>
+</page-meta>
+
+<view class="pic" bindtap="openViewer">
+  <image class="pic-img" src="{{ex.img}}" mode="aspectFill" show-menu-by-longpress></image>
+  <text class="pic-tip">点击看大图 · 长按保存</text>
+</view>
+
+<view class="card info">
+  <view class="row"><text class="name">{{ex.name}}</text><text class="tag">{{ex.level}}</text></view>
+  <text class="muted">{{ex.era}} · 陈列于{{ex.hallName}}</text>
+  <view class="kv"><text class="k">材质</text><text class="v">{{ex.material}}</text></view>
+  <view class="kv"><text class="k">尺寸</text><text class="v">{{ex.size}}</text></view>
+  <view class="kv"><text class="k">来源</text><text class="v">{{ex.origin}}</text></view>
+</view>
+
+<view class="card guide">
+  <view class="g-play" bindtap="togglePlay">{{playing ? '❚❚' : '▶'}}</view>
+  <view class="g-b">
+    <text class="g-t">语音讲解 · {{ex.name}}</text>
+    <view class="g-bar"><view class="g-fill" style="width: {{pct}}%;"></view></view>
+    <view class="g-row">
+      <text class="muted">{{cur}} / {{dur}}</text>
+      <view class="rates">
+        <text wx:for="{{rates}}" wx:key="*this" class="rate {{rate === item ? 'rate-on' : ''}}" data-r="{{item}}" catchtap="setRate">{{item}}x</text>
+      </view>
+    </view>
+  </view>
+</view>
+
+<view class="card">
+  <text class="h">器物介绍</text>
+  <rich-text class="rt" nodes="{{ex.desc}}"></rich-text>
+</view>
+
+<view class="card">
+  <view class="row"><text class="h">铭文 · 题跋释文</text><text class="copy" bindtap="copyIns">复制</text></view>
+  <text class="ins" selectable user-select>{{ex.inscription}}</text>
+  <text class="muted">长按文字可选择复制</text>
+</view>
+
+<view class="sec-h"><text class="sec-t">其他展厅的镇馆之宝</text></view>
+<scroll-view class="rel" scroll-x>
+  <view class="rel-it" wx:for="{{related}}" wx:key="id" data-id="{{item.id}}" bindtap="openExhibit">
+    <image class="rel-img" src="{{item.img}}" mode="aspectFill"></image>
+    <text class="rel-n">{{item.name}}</text>
+    <text class="muted">{{item.hallName}}</text>
+  </view>
+</scroll-view>
+<view class="bar-gap"></view>
+
+<view class="bar">
+  <view class="bar-it" bindtap="toggleFav"><text class="bar-ic {{faved ? 'on' : ''}}">{{faved ? '★' : '☆'}}</text><text class="bar-t">{{faved ? '已收藏' : '收藏'}}</text></view>
+  <view class="bar-it" bindtap="preview"><text class="bar-ic">□</text><text class="bar-t">原图预览</text></view>
+  <view class="bar-it" bindtap="backTop"><text class="bar-ic">↑</text><text class="bar-t">{{showTop ? '回到顶部' : '顶部'}}</text></view>
+</view>
+
+<root-portal wx:if="{{viewer}}">
+  <view class="viewer" bindtap="closeViewer">
+    <text class="v-idx">{{vIdx + 1}} / {{gallery.length}} · {{gallery[vIdx].name}}</text>
+    <image class="v-img" src="{{gallery[vIdx].img}}" mode="aspectFit" show-menu-by-longpress></image>
+    <view class="v-ops">
+      <view class="v-op" catchtap="prevImg">上一件</view>
+      <view class="v-op" catchtap="preview">原图</view>
+      <view class="v-op" catchtap="nextImg">下一件</view>
+    </view>
+    <text class="v-tip">点击空白处关闭</text>
+  </view>
+</root-portal>

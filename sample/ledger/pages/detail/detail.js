@@ -17,6 +17,7 @@ Page({
     this.setData({
       rec: store.decorate(r),
       missing: false,
+      bookName: (store.books().filter(b => b.id === (r.book || 'b1'))[0] || store.curBook()).name,
       typeText: r.type === 'out' ? '支出' : '收入',
       dateText: d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + store.WEEK[d.getDay()],
       sameCatText: store.money(store.sum(same, r.type)),

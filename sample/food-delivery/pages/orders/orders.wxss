@@ -10,8 +10,9 @@
   height: 88rpx;
   line-height: 88rpx;
   text-align: center;
-  font-size: 28rpx;
+  font-size: 27rpx;
   color: #5c6370;
+  white-space: nowrap;
 }
 
 .tab-on {
@@ -65,8 +66,28 @@
   font-weight: bold;
 }
 
+.status-paid {
+  color: #1677ff;
+  font-weight: bold;
+}
+
+.status-unpaid {
+  color: #ff4d2d;
+  font-weight: bold;
+}
+
 .status-refund {
   color: #ff8a00;
+}
+
+.status-cancelled {
+  color: #b0b4bc;
+}
+
+.left {
+  font-size: 24rpx;
+  color: #ff4d2d;
+  margin-right: 4rpx;
 }
 
 .goods {

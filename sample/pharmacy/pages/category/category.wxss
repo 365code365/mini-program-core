@@ -1,0 +1,28 @@
+.wrap { display: flex; flex-direction: row; }
+.left { width: 180rpx; background: #f3f6f5; }
+.li { position: relative; height: 100rpx; line-height: 100rpx; text-align: center; font-size: 26rpx; color: #55625e; }
+.li-on { background: #ffffff; color: #12a37f; font-weight: bold; }
+.li-bar { position: absolute; left: 0; top: 32rpx; width: 6rpx; height: 36rpx; background: #12a37f; border-radius: 3rpx; }
+.right { flex: 1; background: #ffffff; }
+.search { margin: 16rpx 20rpx 0; height: 60rpx; line-height: 60rpx; background: #f3f6f5; border-radius: 30rpx; padding-left: 24rpx; }
+.sec { padding: 0 20rpx; }
+.sec-n { display: block; font-size: 26rpx; font-weight: bold; color: #33423e; padding: 24rpx 0 8rpx; }
+.it { display: flex; flex-direction: row; padding: 16rpx 0; border-bottom: 1rpx solid #f0f3f2; }
+.it-img { width: 160rpx; height: 160rpx; border-radius: 12rpx; margin-right: 16rpx; }
+.it-b { flex: 1; display: flex; flex-direction: column; }
+.it-n { display: flex; flex-direction: row; align-items: flex-start; font-size: 26rpx; font-weight: bold; line-height: 36rpx; margin-bottom: 4rpx; }
+.it-n .otc, .it-n .rx, .it-n .dev { flex-shrink: 0; line-height: 32rpx; margin-top: 2rpx; }
+.it-nt { flex: 1; }
+.it-f { display: flex; flex-direction: row; align-items: center; justify-content: space-between; margin-top: auto; }
+.it-f .price { font-size: 30rpx; }
+.add { width: 48rpx; height: 48rpx; border-radius: 24rpx; background: #12a37f; color: #ffffff; text-align: center; line-height: 48rpx; font-size: 30rpx; }
+.end { text-align: center; font-size: 22rpx; color: #a3aeaa; padding: 40rpx 0 60rpx; }
+.cbar { position: fixed; left: 0; right: 0; bottom: calc(100rpx + env(safe-area-inset-bottom)); height: 100rpx; background: #ffffff; border-top: 1rpx solid #e6ecea; display: flex; flex-direction: row; align-items: center; padding: 0 24rpx; }
+.cb-ic { position: relative; width: 76rpx; height: 76rpx; border-radius: 38rpx; background: #e3f3ee; display: flex; align-items: center; justify-content: center; }
+.cb-img { width: 46rpx; height: 46rpx; }
+.cb-badge { position: absolute; right: -6rpx; top: -6rpx; min-width: 30rpx; height: 30rpx; line-height: 30rpx; border-radius: 15rpx; padding: 0 6rpx; background: #f04a3e; color: #ffffff; font-size: 18rpx; text-align: center; }
+.cb-m { flex: 1; display: flex; flex-direction: column; margin-left: 20rpx; }
+.cb-total { font-size: 32rpx; }
+.cb-tip { font-size: 20rpx; }
+.cb-go { background: #12a37f; color: #ffffff; font-size: 28rpx; border-radius: 36rpx; padding: 0 40rpx; height: 72rpx; line-height: 72rpx; }
+.cb-dis { background: #b9d9cf; }

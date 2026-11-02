@@ -1,0 +1,34 @@
+{
+  "appid": "wx35e6af401908de70",
+  "projectname": "play-piano",
+  "description": "钢琴块：四轨黑块跟着曲子落下，踩准节拍弹完小星星、欢乐颂、致爱丽丝等六首名曲，越弹越快",
+  "compileType": "game",
+  "libVersion": "3.6.0",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": false,
+    "minified": true,
+    "uglifyFileName": false,
+    "ignoreUploadUnusedFiles": true
+  },
+  "packOptions": {
+    "ignore": [
+      {
+        "type": "file",
+        "value": "README.md"
+      },
+      {
+        "type": "file",
+        "value": "store.meta.json"
+      }
+    ],
+    "include": []
+  },
+  "condition": {},
+  "editorSetting": {
+    "tabIndent": "insertSpaces",
+    "tabSize": 2
+  }
+}

@@ -68,4 +68,24 @@ const ZONES = [
   { id: 'C', name: '包间', count: 6, occupied: [4] }
 ];
 
-module.exports = { CATS, DISHES, SIZES, SPICY, EXTRAS, ZONES };
+const CANTEEN = { name: '禾味食堂 · 二楼', phone: '0571-8697 2210', hours: '10:30-14:00 / 17:00-20:30' };
+
+// 宿主没有扫码能力时，页内模拟取景框「识别」的那张演示桌贴（内容与真桌贴同一格式）
+const DEMO_STICKER = 'https://hewei.example.com/canteen/t?table=B06';
+
+// 饭卡充值档位（分）
+const RECHARGES = [5000, 10000, 20000];
+
+const RATE_TAGS = ['味道好', '分量足', '出餐快', '干净卫生', '服务热情'];
+
+const FEEDBACK_TYPES = ['菜品口味', '分量价格', '环境卫生', '服务态度', '其他建议'];
+
+const FAQS = [
+  { q: '怎么扫码点餐？', a: '在「首页」点「扫桌贴二维码点餐」，对准桌角的二维码即可识别桌号；扫不出来时，手动输入桌贴下方印的桌号（如 B06），或在下方直接选一张空闲桌。' },
+  { q: '下单后还能取消吗？', a: '待支付的订单随时可以取消；已付款的订单在后厨开做前（订单详情显示「已下单」）可以取消，饭卡支付的钱立即退回饭卡，微信支付原路退回，开做之后就不能取消了。' },
+  { q: '可以加菜吗？', a: '可以。在订单详情点「加菜」回到点餐页，桌号不变，加的菜单独成一单、单独出餐。' },
+  { q: '饭卡怎么充值？', a: '「我的」→「饭卡」选金额后微信支付即可，到账后马上能用；每一笔充值、消费、退款都在饭卡明细里。' },
+  { q: '打包要收费吗？', a: '堂食不收费；选「打包」每份收 1 元打包盒费用，满减照常享受。' }
+];
+
+module.exports = { CATS, DISHES, SIZES, SPICY, EXTRAS, ZONES, CANTEEN, DEMO_STICKER, RECHARGES, RATE_TAGS, FEEDBACK_TYPES, FAQS };

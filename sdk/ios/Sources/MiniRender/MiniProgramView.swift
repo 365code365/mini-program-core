@@ -80,6 +80,17 @@ public final class MiniProgramView: UIView, EngineSessionUI {
     /// 宿主实现的 `wx.*`（`open` 之前登记；登录、支付、定位、扫码……）。登记了名字的 API 调用时交给它（主线程），
     /// 没登记的照旧立刻 `fail`（errMsg 写明「宿主可接管」）
     public var hostApis: [String: MiniHostApi] = [:]
+    /// 同层渲染的原生组件（`open` 之前登记）：标签 → 工厂。默认带 SDK 自己的地图（`map` → [MiniMapView]，瓦片 + 标记 +
+    /// 手势 + MapContext）；登记同名的就用宿主的。宿主画（[MiniSameLayerView.draw]），引擎把那一帧画进页面
+    public var sameLayerViews: [String: () -> MiniSameLayerView] {
+        get { sameLayer.factories }
+        set { sameLayer.factories = newValue }
+    }
+    /// `<video>` / `<live-player>` 走同层渲染（默认开，`open` 之前设）：AVPlayer 解码，帧交给引擎画进页面，
+    /// 控制条、全屏由引擎画。关掉的话引擎自己解（iOS 的引擎库不带 h264，等于没有画面）
+    public var sameLayerVideo = true
+    /// `<web-view>` 由 SDK 用 WKWebView 承载（默认开，`open` 之前设）：铺满页面，网页里能用 JSSDK（`wx.miniProgram.*`）
+    public var webView = true
     /// 胶囊「•••」：查看关于。nil = 默认弹框
     public var onAbout: ((MiniProgramAbout) -> Void)?
     /// 胶囊「⊙」：返回宿主。nil = 默认 pop / dismiss 所在的控制器
@@ -90,6 +101,11 @@ public final class MiniProgramView: UIView, EngineSessionUI {
     public private(set) var about: MiniProgramAbout?
 
     private let session = EngineSession()
+    // 原生组件（地图 / 视频 / 直播 / web-view）：MiniProgramView+Native.swift
+    lazy var sameLayer = makeSameLayer()
+    lazy var videoHost = VideoHost(run: { [session] b in session.run(b) })
+    lazy var webViews = MiniWebViews(parent: self, run: { [session] b in session.run(b) })
+    func onEngine(_ b: @escaping (OpaquePointer) -> Void) { session.run(b) }
     private let imageLayer = CALayer()
     private var metalLayer: CAMetalLayer?
     private var pixel = (0, 0)
@@ -161,6 +177,8 @@ public final class MiniProgramView: UIView, EngineSessionUI {
         if closed { return }
         closed = true
         keyboard?.onBlur()
+        videoHost.releaseAll()
+        webViews.destroyAll()
         // 先卸 Metal 层、销毁引擎，层这时才能放（引擎不持有 CAMetalLayer）
         session.dispose()
     }
@@ -169,6 +187,8 @@ public final class MiniProgramView: UIView, EngineSessionUI {
     public func open(appDir: URL, route: String? = nil) {
         self.appDir = appDir
         self.startRoute = route
+        sameLayer.appDir = appDir
+        webViews.appDir = appDir
         createEngineIfPossible()
     }
 
@@ -183,6 +203,8 @@ public final class MiniProgramView: UIView, EngineSessionUI {
     public func goBack() -> Bool {
         // 关过的视图引擎线程已停：不等那 2 秒的超时
         if closed { return false }
+        // web-view 里的网页能后退先后退（与微信一致）
+        if webViews.goBack() { return true }
         return session.call(false) { mr_app_back($0) != 0 }
     }
 
@@ -225,8 +247,10 @@ public final class MiniProgramView: UIView, EngineSessionUI {
             "navigationBar": navigationBar,
             "routeAnimation": routeAnimation,
             // 点了名的 wx.* 才交给宿主（hostCall 事件）；没点名的照旧立刻 fail
-            "hostApis": Array(hostApis.keys),
+            // 同层组件的上下文方法（`MapContext.getCenterLocation` …）也交给宿主（SameLayerViews.contextCall）
+            "hostApis": Array(Set(Array(hostApis.keys) + sameLayer.contextApis)),
         ]
+        nativeOptions(&options)
         if let lo = launchOptions, JSONSerialization.isValidJSONObject(lo) { options["launchOptions"] = lo }
         let json = (try? JSONSerialization.data(withJSONObject: options)).flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
         logicalSize = (UInt32(bounds.width), UInt32(bounds.height))
@@ -317,6 +341,8 @@ public final class MiniProgramView: UIView, EngineSessionUI {
             }
         case "hostCall":
             onHostCall(MiniHostCall(json: ev))
+        case "page", "nativeViews", "sameLayerViews", "nativeViewTap", "nativeViewTouch", "videos", "videoCommand":
+            nativeEvent(ev)
         case "clipboard":
             // wx.setClipboardData、输入框里的 copy / cut：引擎自己存一份并弹 Toast，系统剪贴板由宿主写
             UIPasteboard.general.string = ev["data"] as? String ?? ""
@@ -334,6 +360,7 @@ public final class MiniProgramView: UIView, EngineSessionUI {
             session.run { _ = mr_app_host_reply($0, id, ok ? 1 : 0, json) }
         }
         guard let api = hostApis[call.api] else {
+            if sameLayer.contextCall(call, reply) { return }
             return reply.fail("\(call.api):fail 宿主没有实现")
         }
         api(call, reply)
@@ -458,6 +485,7 @@ public final class MiniProgramView: UIView, EngineSessionUI {
 
     /// 进后台：派发 `App.onHide` 并**停掉 DisplayLink**（继续出帧纯属耗电，Metal 在后台提交还会被杀进程）
     @objc private func onBackground() {
+        videoHost.pauseAll()
         session.background()
     }
 

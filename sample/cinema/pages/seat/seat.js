@@ -1,14 +1,16 @@
-const app = getApp();
+const D = require('../../utils/data.js');
+const store = require('../../utils/store.js');
 const ROWS = 9, COLS = 14;
 const AISLE = [3, 12]; // 这两列之前留过道
 
 function hash(s) { let h = 7; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 100003; return h; }
 
 Page({
-  data: { rows: [], selected: [], total: 0, m: null, c: null, pick: {} },
+  data: { recs: [1, 2, 3, 4], rows: [], selected: [], total: 0, m: null, c: null, pick: {} },
   onLoad(q) {
     const pick = wx.getStorageSync('cinema_pick') || { mid: q.mid || 'm1', cid: q.cid || 'c1', day: '今天', time: q.time || '19:10', lang: '国语IMAX', hall: 'IMAX厅', price: 69, end: '21:38' };
-    const m = app.getMovie(pick.mid), c = app.getCinema(pick.cid);
+    const m = D.getMovie(pick.mid), c = D.getCinema(pick.cid);
+    if (!pick.ts) pick.ts = Date.now() + 3 * 3600000;
     this.setData({ pick, m, c });
     wx.setNavigationBarTitle({ title: c.name.replace(/（.*）/, '') });
     this.sold = {};
@@ -18,6 +20,10 @@ Page({
       const centerBias = (r >= 4 && r <= 7 && col >= 5 && col <= 10) ? 22 : 0;
       if (v < 18 + centerBias) this.sold[r + '-' + col] = true;
     }
+    // 自己已经买下的同一场座位也算已售
+    store.tickets().filter(t => t.status === 'unused' && t.mid === pick.mid && t.cid === pick.cid && t.ts === pick.ts).forEach(t => {
+      t.seats.forEach(s => { const m2 = /(\d+)排(\d+)座/.exec(s); if (m2) this.sold[m2[1] + '-' + m2[2]] = true; });
+    });
     this.sel = [];
     this.render();
   },
@@ -48,8 +54,9 @@ Page({
     this.render();
   },
   onRecommend(e) {
-    const n = e.currentTarget.dataset.n;
-    const order = [5, 6, 4, 7, 3, 8, 2, 9, 1];
+    const n = Number(e.currentTarget.dataset.n);
+    // 「我的 - 观影偏好」选了后排就从后往前找
+    const order = store.pref().indexOf('后排') >= 0 ? [8, 7, 9, 6, 5, 4, 3, 2, 1] : [5, 6, 4, 7, 3, 8, 2, 9, 1];
     for (const r of order) {
       for (let start = 5; start >= 1; start--) {
         for (const s of [7 - Math.floor(n / 2) + (5 - start), 7 - Math.floor(n / 2) - (5 - start)]) {

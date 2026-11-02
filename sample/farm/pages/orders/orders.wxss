@@ -1,0 +1,20 @@
+.tabs { background: #ffffff; white-space: nowrap; }
+.tabs-row { display: flex; flex-direction: row; padding: 0 12rpx; }
+.tab { padding: 0 24rpx; height: 88rpx; display: flex; flex-direction: row; align-items: center; flex-shrink: 0; }
+.tab-tx { font-size: 27rpx; color: #5d6858; }
+.tab-on .tab-tx { color: #3f9a3c; font-weight: bold; }
+.tab-on { border-bottom: 4rpx solid #3f9a3c; }
+.tab-n { font-size: 18rpx; color: #ffffff; background: #e4572e; border-radius: 14rpx; padding: 0 8rpx; margin-left: 6rpx; }
+.loading { padding: 80rpx 0; display: flex; justify-content: center; }
+.empty-go { margin-top: 24rpx; }
+.od-st { font-size: 26rpx; color: #e4572e; }
+.od-done, .od-cancelled, .od-refunded { color: #8a9186; }
+.od-it { display: flex; flex-direction: row; margin-top: 18rpx; }
+.od-img { width: 120rpx; height: 120rpx; border-radius: 10rpx; }
+.od-mid { flex: 1; margin-left: 16rpx; display: flex; flex-direction: column; }
+.od-name { font-size: 27rpx; }
+.od-price { font-size: 26rpx; }
+.od-foot { margin-top: 18rpx; }
+.od-total { font-size: 26rpx; }
+.od-btn { border: 2rpx solid #e4572e; border-radius: 30rpx; padding: 0 26rpx; height: 56rpx; }
+.od-btn-tx { color: #e4572e; font-size: 24rpx; line-height: 52rpx; }

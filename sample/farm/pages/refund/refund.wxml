@@ -1,0 +1,42 @@
+<view class="card">
+  <view class="it" wx:for="{{o.items}}" wx:key="key">
+    <image class="it-img" src="{{item.cover}}" mode="aspectFill"></image>
+    <view class="it-mid"><text class="it-name">{{item.name}}</text><text class="muted">{{item.skuText}} × {{item.qty}}</text></view>
+  </view>
+</view>
+<view class="card">
+  <text class="sec-title">售后类型</text>
+  <radio-group class="rg" bindchange="onType">
+    <label class="rl" wx:for="{{types}}" wx:key="v" data-v="{{item.v}}" bindtap="pickType">
+      <radio value="{{item.v}}" checked="{{type === item.v}}" color="#3f9a3c"></radio>
+      <text class="rl-tx">{{item.t}}</text>
+    </label>
+  </radio-group>
+</view>
+<view class="card">
+  <text class="sec-title">退款原因</text>
+  <radio-group class="rg" bindchange="onReason">
+    <label class="rl" wx:for="{{reasons}}" wx:key="*this" data-v="{{item}}" bindtap="pickReason">
+      <radio value="{{item}}" checked="{{reason === item}}" color="#3f9a3c"></radio>
+      <text class="rl-tx">{{item}}</text>
+    </label>
+  </radio-group>
+  <text class="err" wx:if="{{err.reason}}">{{err.reason}}</text>
+</view>
+<view class="card">
+  <view class="row between">
+    <text class="sec-title">退款金额</text>
+    <text class="muted">最多 ¥{{max}}</text>
+  </view>
+  <view class="amt">
+    <text class="amt-yen">¥</text>
+    <input class="amt-in" type="digit" value="{{amount}}" bindinput="onAmount" placeholder="0.00" />
+  </view>
+  <text class="muted" wx:if="{{type === 'part'}}">坏果部分赔付按坏果数量 / 总数估算，可修改</text>
+  <text class="err" wx:if="{{err.amount}}">{{err.amount}}</text>
+  <text class="sec-title desc-t">问题描述</text>
+  <textarea class="ta" placeholder="请描述坏果数量、外观等情况（至少 6 个字）" maxlength="200" value="{{desc}}" bindinput="onDesc"></textarea>
+  <text class="muted ta-n">{{desc.length}}/200</text>
+  <text class="err" wx:if="{{err.desc}}">{{err.desc}}</text>
+</view>
+<view class="ops"><view class="btn" hover-class="btn-hover" bindtap="submit">提交申请</view></view>

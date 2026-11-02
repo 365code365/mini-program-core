@@ -1,0 +1,9 @@
+.st { display: flex; flex-direction: row; padding: 28rpx 12rpx 20rpx; background: #fff; }
+.st-item { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; }
+.st-line { position: absolute; top: 22rpx; right: 50%; width: 100%; height: 4rpx; margin-right: 24rpx; background: #dfe5ee; }
+.st-line.on { background: #1d64d8; }
+.st-dot { width: 48rpx; height: 48rpx; border-radius: 24rpx; background: #dfe5ee; color: #8a94a6; font-size: 24rpx; display: flex; align-items: center; justify-content: center; position: relative; }
+.st-dot.cur { background: #1d64d8; color: #fff; }
+.st-dot.done { background: #1d64d8; }
+.st-tx { margin-top: 10rpx; font-size: 22rpx; color: #8a94a6; }
+.st-tx.on { color: #1d64d8; }

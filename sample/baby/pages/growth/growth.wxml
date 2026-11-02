@@ -1,0 +1,45 @@
+<view class="page tab-page">
+  <view class="card">
+    <view class="between">
+      <view class="seg seg-s">
+        <view class="seg-item {{metric === 'weight' ? 'seg-on' : ''}}" data-m="weight" bindtap="switchMetric">体重</view>
+        <view class="seg-item {{metric === 'height' ? 'seg-on' : ''}}" data-m="height" bindtap="switchMetric">身长</view>
+      </view>
+      <text class="muted">WHO 标准 · {{sexText}}</text>
+    </view>
+    <canvas type="2d" id="curve" class="curve"></canvas>
+    <view class="row legend">
+      <view class="lg-line lg-baby {{metric === 'height' ? 'lg-h' : ''}}"></view><text class="lg-tx">{{baby.name}}</text>
+      <view class="lg-line lg-p50"></view><text class="lg-tx">P50 中位数</text>
+      <view class="lg-band"></view><text class="lg-tx">P15~P85</text>
+    </view>
+  </view>
+
+  <view wx:if="{{latest}}" class="card">
+    <view class="between"><text class="sec-title">最近一次测量</text><text class="muted">{{latest.date}}</text></view>
+    <view class="eval">
+      <view class="ev-cell">
+        <view class="row"><text class="ev-num pink">{{latest.weight}}</text><text class="muted">kg</text></view>
+        <text class="ev-tx {{latest.w.level !== 'normal' ? 'warn' : ''}}">体重{{latest.w.text}}</text>
+      </view>
+      <view class="ev-cell">
+        <view class="row"><text class="ev-num blue">{{latest.height}}</text><text class="muted">cm</text></view>
+        <text class="ev-tx {{latest.h.level !== 'normal' ? 'warn' : ''}}">身长{{latest.h.text}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="between"><text class="sec-title">测量记录</text><text class="muted">共 {{list.length}} 次</text></view>
+    <view wx:if="{{!list.length}}" class="empty"><text class="empty-text">还没有身高体重记录，去量一量吧</text></view>
+    <view wx:else class="row th">
+      <text class="c-date">日期</text><text class="c">体重kg</text><text class="c">身长cm</text><text class="c">头围cm</text>
+    </view>
+    <view wx:for="{{list}}" wx:key="id" class="row tr" hover-class="item-hover" data-id="{{item.id}}" data-date="{{item.date}}" bindtap="onItem">
+      <view class="col c-date"><text class="d">{{item.date}}</text><text class="muted">{{item.age}}</text></view>
+      <text class="c">{{item.weight}}</text><text class="c">{{item.height}}</text><text class="c">{{item.head}}</text>
+    </view>
+  </view>
+
+  <view class="btn add" bindtap="add" hover-class="btn-hover">记录身高体重</view>
+</view>

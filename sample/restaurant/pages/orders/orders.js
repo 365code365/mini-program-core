@@ -35,7 +35,8 @@ Page({
     return {
       id: o.id, no: o.no, table: o.table, status: o.status, statusText: S.statusText(o), time: S.fmtTime(o.createdAt),
       names: o.items.slice(0, 3).map(i => i.name).join('、') + (o.items.length > 3 ? ' 等' : ''),
-      thumbs: o.items.slice(0, 4).map(i => ({ bg: i.bg, ch: i.ch, k: i.key })), count: n, payText: S.yuan(o.pay), left
+      thumbs: o.items.slice(0, 4).map(i => ({ bg: i.bg, ch: i.ch, k: i.key })), count: n, payText: S.yuan(o.pay), left,
+      canRate: o.status === 'done' && !o.rating
     };
   },
   // keep=true 时保留已加载的页数（定时刷新不把用户翻过的页收回去）
@@ -73,6 +74,7 @@ Page({
   },
   open(e) { wx.navigateTo({ url: '/pages/progress/progress?id=' + e.currentTarget.dataset.id }); },
   pay(e) { wx.navigateTo({ url: '/pages/pay/pay?id=' + e.currentTarget.dataset.id }); },
+  rate(e) { wx.navigateTo({ url: '/pages/progress/progress?rate=1&id=' + e.currentTarget.dataset.id }); },
   again(e) {
     const o = S.getOrder(e.currentTarget.dataset.id);
     S.reorder(o);

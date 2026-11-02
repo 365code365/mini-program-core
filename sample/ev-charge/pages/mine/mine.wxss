@@ -1,0 +1,26 @@
+.hero { background: linear-gradient(160deg, #1a6b4f, #0f3d2e); padding: 40rpx 24rpx 32rpx; margin-bottom: 20rpx; }
+.user { padding: 0 12rpx 32rpx; }
+.avatar { width: 112rpx; height: 112rpx; border-radius: 56rpx; background: #22D193; display: flex; flex-direction: row; align-items: center; justify-content: center; margin-right: 24rpx; border: 4rpx solid rgba(255, 255, 255, 0.4); }
+.avatar-t { color: #fff; font-size: 44rpx; font-weight: bold; }
+.u-name { color: #fff; font-size: 36rpx; font-weight: bold; }
+.u-sub { color: #9ff0d0; font-size: 24rpx; margin-top: 6rpx; }
+.car-card { background: #fff; border-radius: 20rpx; padding: 24rpx; }
+.car-ic { width: 72rpx; height: 72rpx; border-radius: 36rpx; background: #eaf3fe; display: flex; flex-direction: row; align-items: center; justify-content: center; margin-right: 20rpx; }
+.car-ic-t { color: #2D8CF0; font-size: 28rpx; font-weight: bold; }
+.car-plate { font-size: 32rpx; font-weight: bold; margin-bottom: 4rpx; }
+.car-op { font-size: 24rpx; color: #00A36C; white-space: nowrap; }
+.stats { padding: 28rpx 0; }
+.stat { flex: 1; align-items: center; }
+.stat-n { font-size: 38rpx; font-weight: bold; margin-bottom: 4rpx; white-space: nowrap; }
+.menu { padding: 0 28rpx; }
+.m-item { height: 104rpx; border-bottom: 1rpx solid #f2f3f5; }
+.m-item.last { border-bottom: none; }
+.m-ic { width: 52rpx; height: 52rpx; border-radius: 14rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; margin-right: 20rpx; }
+.m-ic-t { color: #fff; font-size: 24rpx; font-weight: bold; }
+.ic-car { background: #2D8CF0; }
+.ic-coupon { background: #FF7A1A; }
+.ic-inv { background: #7B61FF; }
+.ic-fav { background: #F5455C; }
+.ic-help { background: #00B87A; }
+.ic-repair { background: #6b7785; }
+.m-t { font-size: 28rpx; }

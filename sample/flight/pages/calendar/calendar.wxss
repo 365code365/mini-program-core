@@ -1,0 +1,17 @@
+page { background: #ffffff; }
+.head { position: sticky; top: 0; background: #ffffff; padding: 20rpx 24rpx 0; z-index: 5; border-bottom: 1rpx solid #eef1f6; }
+.hint { font-size: 30rpx; font-weight: bold; color: #1f6fff; }
+.week { margin-top: 16rpx; }
+.wk { width: 100rpx; text-align: center; font-size: 24rpx; color: #5b6478; height: 60rpx; line-height: 60rpx; }
+.wk-end { color: #ff6a00; }
+.m-title { padding: 24rpx; font-size: 30rpx; font-weight: bold; }
+.grid { flex-wrap: wrap; padding: 0 25rpx; }
+.cell { width: 100rpx; height: 104rpx; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 10rpx; }
+.c-day { font-size: 30rpx; color: #1d2433; }
+.c-price { font-size: 20rpx; color: #8a93a6; margin-top: 4rpx; }
+.c-tag { font-size: 20rpx; color: #ffffff; margin-top: 4rpx; }
+.cheap { color: #12b76a; }
+.past .c-day { color: #c6ccd8; }
+.sel-single, .sel-start, .sel-end { background: #1f6fff; }
+.sel-single .c-day, .sel-start .c-day, .sel-end .c-day, .sel-single .c-price { color: #ffffff; }
+.sel-in { background: #eaf1ff; border-radius: 0; }

@@ -1,6 +1,6 @@
 <block wx:if="{{!adding}}">
-  <view class="head row between"><text class="muted">已绑定 {{list.length}} 个户号</text><text class="muted">长按或点「···」管理</text></view>
-  <view class="card acc row" wx:for="{{list}}" wx:key="id" bindlongpress="more" data-id="{{item.id}}">
+  <view class="head row between"><text class="muted">已绑定 {{list.length}} 个户号</text><text class="muted">点卡片看账单，点「···」管理</text></view>
+  <view class="card acc row" wx:for="{{list}}" wx:key="id" bindtap="bill" bindlongpress="more" data-id="{{item.id}}">
     <view class="ic" style="background: {{item.bg}};"><text>{{item.ch}}</text></view>
     <view class="a-main">
       <view class="row"><text class="a-t">{{item.tname}}</text><text class="a-tag" style="color: {{item.color}}; background: {{item.light}};">{{item.tag}}</text></view>
@@ -32,7 +32,7 @@
     </picker>
     <view class="fi row">
       <text class="fl">户号</text>
-      <input class="fin" type="number" maxlength="12" value="{{no}}" placeholder="请输入 8~12 位户号" bindinput="onNo" />
+      <input id="no{{formSeq}}" class="fin" type="number" maxlength="12" value="{{no}}" placeholder="请输入 8~12 位户号" bindinput="onNo" />
       <text class="help" bindtap="help">如何查找</text>
     </view>
     <view class="fi row last">

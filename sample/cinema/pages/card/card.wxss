@@ -1,0 +1,28 @@
+.vcard { margin: 24rpx; border-radius: 24rpx; padding: 34rpx 36rpx; background: linear-gradient(120deg, #2A2238, #57406A); display: flex; flex-direction: column; }
+.v-title { color: #F6D9A4; font-size: 32rpx; font-weight: bold; }
+.v-badge { font-size: 20rpx; color: rgba(255, 255, 255, 0.7); border: 1rpx solid rgba(255, 255, 255, 0.4); border-radius: 18rpx; padding: 4rpx 16rpx; white-space: nowrap; }
+.v-on { color: #3A2A00; background: linear-gradient(90deg, #F6D9A4, #E0A95A); border: 1rpx solid #F6D9A4; }
+.v-label { color: rgba(255, 255, 255, 0.6); font-size: 22rpx; margin-top: 36rpx; }
+.v-balance { color: #fff; font-size: 64rpx; font-weight: bold; margin-top: 6rpx; }
+.v-no { color: rgba(255, 255, 255, 0.45); font-size: 22rpx; letter-spacing: 4rpx; margin-top: 18rpx; }
+.block-title { display: block; font-size: 30rpx; font-weight: bold; }
+.open { font-size: 24rpx; font-weight: bold; color: #3A2A00; background: linear-gradient(90deg, #F6D9A4, #E0A95A); border-radius: 28rpx; padding: 8rpx 26rpx; white-space: nowrap; }
+.open-done { color: #9aa0a6; background: #f2f3f5; }
+.perks { margin-top: 24rpx; }
+.perk { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.perk-n { width: 64rpx; height: 64rpx; line-height: 64rpx; text-align: center; border-radius: 32rpx; background: #FFF1F3; color: #E8243F; font-size: 26rpx; font-weight: bold; }
+.perk-t { font-size: 22rpx; color: #4e5969; margin-top: 10rpx; white-space: nowrap; }
+.opts { margin-top: 20rpx; }
+.opt { flex: 1; margin: 0 8rpx; border: 2rpx solid #e3e5e8; border-radius: 16rpx; padding: 20rpx 0; display: flex; flex-direction: column; align-items: center; }
+.opt-on { border: 2rpx solid #E8243F; background: #FFF1F3; }
+.opt-a { font-size: 34rpx; font-weight: bold; white-space: nowrap; }
+.opt-g { font-size: 22rpx; color: #F0384D; margin-top: 6rpx; white-space: nowrap; }
+.pay { margin-top: 28rpx; }
+.log { padding: 18rpx 0; border-bottom: 1rpx solid #f0f1f3; }
+.log:last-child { border-bottom: none; }
+.log-l { display: flex; flex-direction: column; }
+.log-t { font-size: 26rpx; margin-bottom: 4rpx; }
+.log-a { font-size: 30rpx; font-weight: bold; }
+.plus { color: #F0384D; }
+.empty { display: block; text-align: center; padding: 30rpx 0 10rpx; }
+.gap { height: 24rpx; }

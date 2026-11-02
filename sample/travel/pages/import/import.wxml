@@ -1,0 +1,21 @@
+<view class="card">
+  <view class="row between">
+    <text class="title">分享文字</text>
+    <view class="paste" bindtap="paste"><text>粘贴剪贴板</text></view>
+  </view>
+  <textarea id="txt{{seq}}" class="txt" value="{{text}}" maxlength="2000" placeholder="把好友发来的「【途简行程】…」整段文字粘贴到这里" bindinput="onText" />
+  <text class="err" wx:if="{{text && !preview}}">没认出行程：需要从「【途简行程】」开头的整段文字</text>
+</view>
+<view class="card" wx:if="{{preview}}">
+  <text class="title">{{preview.title}}</text>
+  <text class="sub pv-s">{{preview.city}} · {{preview.range}} · {{preview.days}} 天 · {{preview.people}} 人 · {{preview.type}}</text>
+  <view wx:for="{{preview.dayList}}" wx:key="i" class="pv-day">
+    <text class="pv-d">{{item.label}}</text>
+    <text class="pv-n">{{item.names}}</text>
+  </view>
+  <text class="sub pv-b" wx:if="{{preview.budget}}">{{preview.budget}}</text>
+</view>
+<view class="space"></view>
+<view class="bottom">
+  <view class="btn {{preview ? '' : 'btn-disabled'}}" bindtap="doImport"><text>{{preview ? '导入为我的行程' : '先粘贴分享文字'}}</text></view>
+</view>

@@ -1,0 +1,25 @@
+.course { align-items: flex-start; }
+.cv { width: 150rpx; height: 112rpx; border-radius: 14rpx; display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 40rpx; font-weight: bold; flex-shrink: 0; }
+.c-main { flex: 1; margin-left: 20rpx; display: flex; flex-direction: column; min-width: 0; }
+.c-title { font-size: 28rpx; font-weight: bold; line-height: 40rpx; margin-bottom: 8rpx; }
+.kv { padding: 18rpx 0; }
+.k { font-size: 28rpx; color: #4b5263; flex-shrink: 0; }
+.v { font-size: 28rpx; color: #1f2430; }
+.red { color: #ff5a3d; }
+.gray { color: #9aa0ab; }
+.total { border-top: 1rpx solid #f0f2f5; margin-top: 8rpx; padding-top: 24rpx; }
+.pay { font-size: 36rpx; font-weight: bold; color: #ff5a3d; white-space: nowrap; }
+.tip { display: block; margin: 24rpx 40rpx 0; font-size: 22rpx; color: #a0a7b4; }
+.foot-gap { height: calc(140rpx + env(safe-area-inset-bottom)); }
+.foot { position: fixed; left: 0; right: 0; bottom: 0; background: #ffffff; padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom)); box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.05); }
+.f-sum { flex: 1; }
+.f-btn { width: 260rpx; height: 84rpx; border-radius: 42rpx; background: linear-gradient(90deg, #ff9a3d, #ff5a3d); color: #ffffff; font-size: 30rpx; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+.ok-top { background: #ffffff; padding: 60rpx 0 48rpx; display: flex; flex-direction: column; align-items: center; }
+.ok { width: 120rpx; height: 120rpx; border-radius: 60rpx; background: linear-gradient(135deg, #6f9bff, #3d6cf6); display: flex; align-items: center; justify-content: center; }
+.tick { width: 48rpx; height: 26rpx; border-left: 8rpx solid #ffffff; border-bottom: 8rpx solid #ffffff; transform: rotate(-45deg); margin-top: -12rpx; }
+.ok-t { margin: 24rpx 0 8rpx; font-size: 36rpx; font-weight: bold; }
+.btns { margin: 48rpx 32rpx 0; }
+.ghost { width: 240rpx; height: 88rpx; border-radius: 44rpx; border: 2rpx solid #3d6cf6; color: #3d6cf6; font-size: 30rpx; display: flex; align-items: center; justify-content: center; box-sizing: border-box; margin-right: 20rpx; }
+.go { flex: 1; }
+.f-sum { align-items: baseline; }
+.f-pay { margin-left: 10rpx; }

@@ -1,0 +1,20 @@
+<view class="card od" wx:for="{{list}}" wx:key="id">
+  <view class="row between">
+    <view class="row od-l">
+      <text class="od-kind {{item.kind === 'card' ? 'k-card' : ''}}">{{item.kind === 'card' ? '会员卡' : '单次课'}}</text>
+      <text class="od-t">{{item.title}}</text>
+    </view>
+    <text class="od-p {{item.status === 'refund' ? 'refund' : ''}}">¥{{item.price}}</text>
+  </view>
+  <text class="muted od-sub">{{item.sub}}</text>
+  <view class="row between od-f">
+    <text class="muted">{{item.time}} · {{item.statusText}}</text>
+    <view wx:if="{{item.canRefund}}" class="op op-refund" data-id="{{item.id}}" bindtap="onRefund"><text>申请退款</text></view>
+  </view>
+</view>
+<view wx:if="{{!list.length}}" class="empty">
+  <text class="muted">还没有订单</text>
+  <view class="btn empty-btn" bindtap="goCard"><text>看看会员卡</text></view>
+</view>
+<text wx:if="{{list.length}}" class="muted tip">会员卡购买 7 天内可申请全额退款；单次团课取消预约时自动退款</text>
+<view style="height: 40rpx;"></view>

@@ -1,0 +1,24 @@
+<view class="floors">
+  <view wx:for="{{floors}}" wx:key="*this" class="fl {{floor === index ? 'fl-on' : ''}}" data-i="{{index}}" bindtap="onFloor">{{item}}</view>
+  <text class="upd">客流更新于 {{updated}}</text>
+</view>
+<scroll-view class="sv" style="height: {{svH}}px;" scroll-y
+  refresher-enabled refresher-threshold="60" refresher-default-style="black" refresher-background="#efe6dc"
+  refresher-triggered="{{triggered}}" bindrefresherrefresh="onRefresh">
+  <view class="tip">下拉刷新各展厅实时客流</view>
+  <view class="hall" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="openHall" hover-class="hall-on">
+    <image class="hall-img" src="{{item.cover}}" mode="aspectFill"></image>
+    <view class="hall-badge">{{item.area}}</view>
+    <view class="hall-body">
+      <view class="hall-row">
+        <text class="hall-n">{{item.name}}</text>
+        <text class="hall-th">「{{item.theme}}」</text>
+        <view class="cr cr{{item.crowd.lv}}">{{item.crowd.level}} · {{item.crowd.n}} 人</view>
+      </view>
+      <text class="hall-in">{{item.intro}}</text>
+      <text class="muted">精选展品 {{item.exhibits.length}} 件{{item.favN ? ' · 已收藏 ' + item.favN + ' 件' : ''}} · 含语音导览</text>
+    </view>
+  </view>
+  <view wx:if="{{!list.length}}" class="empty"><view class="empty-ic">厅</view><text class="empty-t">该楼层暂无开放展厅</text></view>
+  <view class="tab-gap"></view>
+</scroll-view>

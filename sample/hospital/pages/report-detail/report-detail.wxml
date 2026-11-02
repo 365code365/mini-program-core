@@ -1,0 +1,44 @@
+<view wx:if="{{r}}">
+  <view class="head">
+    <view class="row between">
+      <text class="h-name">{{t.name}}</text>
+      <text class="h-kind">{{t.kind}}报告</text>
+    </view>
+    <text class="h-sub">{{r.patient}} · {{r.dept}} {{r.doctor}}</text>
+    <text class="h-sub">报告日期 {{r.date}} · 华康仁和医院检验科</text>
+  </view>
+  <view wx:if="{{t.items}}" class="card">
+    <view class="row between">
+      <text class="sec-title">检验结果</text>
+      <text class="muted">{{abnormal ? abnormal + ' 项异常' : '全部正常'}}</text>
+    </view>
+    <view class="th row">
+      <text class="c-n">项目</text>
+      <text class="c-v">结果</text>
+      <text class="c-r">参考范围</text>
+    </view>
+    <view class="tr row" wx:for="{{t.items}}" wx:key="n">
+      <view class="c-n"><text class="n-tx">{{item.n}}</text></view>
+      <view class="c-v row">
+        <text class="v-tx {{item.f ? 'v-bad' : ''}}">{{item.v}}</text>
+        <text wx:if="{{item.f}}" class="flag {{item.f === '高' ? 'f-hi' : 'f-lo'}}">{{item.f}}</text>
+      </view>
+      <view class="c-r"><text class="r-tx">{{item.r}} {{item.u}}</text></view>
+    </view>
+  </view>
+  <view wx:else class="card">
+    <text class="sec-title">检查所见</text>
+    <text class="para">{{t.findings}}</text>
+  </view>
+  <view class="card">
+    <text class="sec-title">{{t.items ? '结果提示' : '诊断意见'}}</text>
+    <text class="para">{{t.conclusion}}</text>
+    <text class="muted note">本报告仅供临床参考，请以医生面诊意见为准。</text>
+  </view>
+  <view style="height: 200rpx;"></view>
+  <view class="bar">
+    <view class="bar-btn ghost" bindtap="onRevisit"><text>预约复诊</text></view>
+    <view class="btn-primary bar-btn" bindtap="onConsult"><text>在线问诊解读</text></view>
+  </view>
+</view>
+<view wx:else class="empty"><text>报告不存在</text></view>

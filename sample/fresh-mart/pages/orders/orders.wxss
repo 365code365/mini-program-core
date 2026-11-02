@@ -1,0 +1,136 @@
+.tabs {
+  height: 88rpx;
+  background: #ffffff;
+}
+
+.tab {
+  position: relative;
+  flex: 1;
+  height: 88rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 27rpx;
+  color: #5c6370;
+}
+
+.tab-name {
+  white-space: nowrap;
+}
+
+.tab-on {
+  color: #12b76a;
+  font-weight: bold;
+}
+
+.tab-line {
+  position: absolute;
+  bottom: 8rpx;
+  width: 40rpx;
+  height: 6rpx;
+  border-radius: 3rpx;
+  background: #12b76a;
+}
+
+.o-head {
+  padding-bottom: 18rpx;
+  border-bottom: 1rpx solid #f3f4f6;
+}
+
+.o-shop {
+  font-size: 28rpx;
+  font-weight: bold;
+}
+
+.o-status {
+  font-size: 26rpx;
+  color: #8a8f99;
+  flex-shrink: 0;
+}
+
+.o-status-on {
+  color: #ff5a1f;
+  font-weight: bold;
+}
+
+.o-body {
+  padding: 20rpx 0;
+}
+
+.o-img {
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: 12rpx;
+  margin-right: 14rpx;
+  flex-shrink: 0;
+}
+
+.o-summary {
+  font-size: 26rpx;
+  color: #3a3f47;
+  margin-left: 6rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.o-sum {
+  font-size: 26rpx;
+}
+
+.o-pay {
+  color: #ff5a1f;
+  font-weight: bold;
+}
+
+.o-refund {
+  margin-top: 12rpx;
+  padding: 10rpx 16rpx;
+  border-radius: 10rpx;
+  background: #f7f8fa;
+  font-size: 22rpx;
+  color: #5c6370;
+}
+
+.o-ops {
+  justify-content: flex-end;
+  margin-top: 20rpx;
+}
+
+.o-op {
+  height: 56rpx;
+  line-height: 56rpx;
+  padding: 0 26rpx;
+  margin-left: 16rpx;
+  border-radius: 28rpx;
+  border: 1rpx solid #d4d7dd;
+  font-size: 24rpx;
+  color: #3a3f47;
+  white-space: nowrap;
+}
+
+.o-op-main {
+  border-color: #12b76a;
+  color: #12b76a;
+  font-weight: bold;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 200rpx;
+}
+
+.empty-btn {
+  margin-top: 28rpx;
+  width: 240rpx;
+  height: 72rpx;
+  line-height: 72rpx;
+  font-size: 26rpx;
+}
+
+.gap {
+  height: 40rpx;
+}

@@ -100,6 +100,8 @@ impl MiniEngine {
         crate::renderer::components::host_feed::set_host_feeds_video(self.opts.same_layer_video());
         // 同层渲染的 `<map>` 这类：换了渲染器，页面上有哪些要重新报（engine_host_views.rs）
         crate::renderer::components::host_view::set_tags(self.opts.same_layer_views());
+        crate::renderer::components::host_view::set_gesture_tags(self.opts.same_layer_gestures.clone());
+        crate::renderer::components::host_feed::set_host_feeds_live(self.opts.same_layer_live());
         // 换了渲染器：页面上有哪些视频要重新报（engine_video_feed.rs）
         self.video_feed.stale = true;
         let Some(page) = self.page_stack.last() else { return };

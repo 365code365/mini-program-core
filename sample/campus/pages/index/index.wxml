@@ -1,0 +1,35 @@
+<import src="../common/course-card.wxml"></import>
+<view class="hd">
+  <image class="hd-bg" src="/images/banner.jpg" mode="aspectFill"></image>
+  <view class="hd-mask"></view>
+  <view class="hd-in">
+    <text class="hd-g">{{greeting}}，林同学</text>
+    <text class="hd-s">{{today}} · 第 {{week}} 教学周</text>
+  </view>
+</view>
+<view class="card gd">
+  <view class="grid4">
+    <view class="grid4-item" wx:for="{{grid}}" wx:key="key" data-key="{{item.key}}" bindtap="go" hover-class="gd-press" hover-stay-time="120">
+      <view class="gi-ic" style="background: {{item.bg}};">{{item.ch}}</view>
+      <text class="gi-tx">{{item.name}}</text>
+    </view>
+  </view>
+</view>
+<view class="sec"><text class="sec-title">今日课程</text><text class="muted" bindtap="goTimetable">完整课表 ›</text></view>
+<view class="ix-list">
+  <block wx:for="{{todayCourses}}" wx:key="id"><template is="course-card" data="{{...item}}"></template></block>
+  <view class="ix-empty" wx:if="{{!todayCourses.length}}">今天没有课，去图书馆充充电吧 📚</view>
+</view>
+<view class="sec"><text class="sec-title">校园通知</text></view>
+<view class="card ix-nt">
+  <view class="ix-n" wx:for="{{notices}}" wx:key="id" data-id="{{item.id}}" bindtap="openNotice" hover-class="gd-press">
+    <text class="tag">{{item.type}}</text>
+    <text class="flex1 ellipsis ix-nt-t {{item.unread ? 'bold' : ''}}">{{item.title}}</text>
+    <view class="ix-dot" wx:if="{{item.unread}}"></view>
+  </view>
+</view>
+<view class="card row between" bindtap="go" data-key="card">
+  <text>校园卡余额</text><text class="primary bold">¥{{balance}} ›</text>
+</view>
+<include src="../common/footer.wxml"></include>
+<view class="tab-space"></view>

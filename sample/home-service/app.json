@@ -1,0 +1,34 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/orders/orders",
+    "pages/mine/mine",
+    "pages/service/service",
+    "pages/order-form/order-form",
+    "pages/order-result/order-result",
+    "pages/order-detail/order-detail",
+    "pages/address/address",
+    "pages/address-edit/address-edit",
+    "pages/review/review",
+    "pages/coupons/coupons",
+    "pages/invoice/invoice"
+  ],
+  "window": {
+    "navigationBarTitleText": "好管家",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f4f6f5"
+  },
+  "tabBar": {
+    "color": "#a0a7b4",
+    "selectedColor": "#13a86b",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "custom": true,
+    "list": [
+      { "pagePath": "pages/index/index", "text": "首页", "iconPath": "images/tab/home.png", "selectedIconPath": "images/tab/home-on.png" },
+      { "pagePath": "pages/orders/orders", "text": "订单", "iconPath": "images/tab/order.png", "selectedIconPath": "images/tab/order-on.png" },
+      { "pagePath": "pages/mine/mine", "text": "我的", "iconPath": "images/tab/user.png", "selectedIconPath": "images/tab/user-on.png" }
+    ]
+  }
+}

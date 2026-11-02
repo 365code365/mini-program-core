@@ -1,0 +1,74 @@
+<view class="page" wx:if="{{s}}">
+  <view class="vbox">
+    <video id="promo" class="video" src="{{s.video}}" poster="{{s.cover}}" controls show-center-play-btn="{{false}}" object-fit="cover"
+           bindplay="onPlay" bindpause="onPause" bindtimeupdate="onTime" bindended="onEnded" binderror="onVideoError"></video>
+    <view class="v-end" wx:if="{{ended}}" bindtap="onPlayToggle"><text class="v-end-tx">↻ 重新播放宣传片</text></view>
+  </view>
+  <view class="vbar row">
+    <view class="vb-play" hover-class="press" bindtap="onPlayToggle"><text class="vb-play-tx">{{playing ? '暂停' : ended ? '重播' : '播放'}}</text></view>
+    <view class="row vb-ch">
+      <view wx:for="{{chapters}}" wx:key="t" class="ch {{chapter === index && (playing || pct > 0) ? 'ch-on' : ''}}" data-i="{{index}}" bindtap="onChapter"><text>{{item.name}}</text></view>
+    </view>
+    <text class="muted">{{cur}} / {{dur}}</text>
+  </view>
+  <progress percent="{{pct}}" stroke-width="3" activeColor="#13a07b" backgroundColor="#dfe7e3"></progress>
+
+  <view class="wrap">
+    <view class="card">
+      <view class="between">
+        <text class="h1">{{s.name}}</text>
+        <text class="fav {{fav ? 'fav-on' : ''}}" bindtap="onFav">{{fav ? '♥ 已收藏' : '♡ 收藏'}}</text>
+      </view>
+      <view class="row meta">
+        <text class="lv">{{s.level}}</text><text class="tag">{{s.tag}}</text>
+        <text class="score">★ {{s.score}}</text><text class="muted">{{s.comments}} 条点评</text>
+      </view>
+      <text class="intro">{{s.intro}}</text>
+      <view class="kv row"><text class="k">开放</text><text class="v">{{s.open}}</text></view>
+      <view class="kv row" bindtap="onAddr"><text class="k">地址</text><text class="v">{{s.addr}}</text><text class="brand go">导航 ›</text></view>
+    </view>
+
+    <view class="row quick">
+      <view class="q" hover-class="press" bindtap="goGuide"><text class="q-ic">🎧</text><text class="q-tx">语音导览</text><text class="muted">{{s.spots.length}} 个讲解点</text></view>
+      <view class="q" hover-class="press" bindtap="goRoute"><text class="q-ic">🗺</text><text class="q-tx">游览路线</text><text class="muted">{{s.routes.length}} 条推荐</text></view>
+    </view>
+
+    <view class="card">
+      <text class="sec-title">门票</text>
+      <view class="tk between" wx:for="{{s.tickets}}" wx:key="id">
+        <view class="col tk-l">
+          <text class="tk-n">{{item.name}}</text>
+          <text class="muted">{{item.desc}}</text>
+          <text class="tk-tag">今日可订 · 刷身份证入园 · 未使用随时退</text>
+        </view>
+        <view class="col tk-r">
+          <text class="price tk-p">¥{{item.price}}</text>
+          <view class="tk-b" hover-class="press" data-t="{{item.id}}" bindtap="goBook"><text class="tk-b-tx">预订</text></view>
+        </view>
+      </view>
+    </view>
+
+    <view class="card">
+      <text class="sec-title">预订须知</text>
+      <view class="nt row" wx:for="{{s.notice}}" wx:key="*this"><text class="nt-d">·</text><text class="nt-t">{{item}}</text></view>
+    </view>
+
+    <view class="card">
+      <view class="between"><text class="sec-title">游客点评</text><text class="muted">好评率 {{s.score * 20}}%</text></view>
+      <view class="rv" wx:for="{{reviews}}" wx:key="user">
+        <view class="row">
+          <view class="av"><text class="av-tx">{{item.av}}</text></view>
+          <view class="col rv-h"><text class="rv-u">{{item.user}}</text><text class="rv-s">{{item.stars}}</text></view>
+          <text class="muted">{{item.date}}</text>
+        </view>
+        <text class="rv-t">{{item.text}}</text>
+      </view>
+    </view>
+    <view style="height: 140rpx;"></view>
+  </view>
+
+  <view class="bottom row">
+    <view class="col b-price"><view class="row"><text class="price b-p">¥{{from}}</text><text class="muted"> 起</text></view><text class="muted">{{s.short}}门票</text></view>
+    <view class="btn-warm b-btn" hover-class="press" bindtap="goBook">立即预订</view>
+  </view>
+</view>

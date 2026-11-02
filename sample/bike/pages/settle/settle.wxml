@@ -1,0 +1,63 @@
+<view class="empty" wx:if="{{!trip}}">
+  <image class="empty-ic" src="/images/ic-trip.png"></image>
+  <text>没有找到这笔行程</text>
+  <view class="btn empty-btn" bindtap="goHome">返回首页</view>
+</view>
+
+<view class="wrap" wx:else>
+  <view class="head {{trip.status === 'paid' ? 'head-ok' : ''}}">
+    <text class="h-state">{{trip.status === 'paid' ? '支付成功' : '骑行已结束，待支付'}}</text>
+    <view class="h-amt"><text class="h-yen">¥</text><text class="h-num">{{view.paid}}</text></view>
+    <text class="h-sub" wx:if="{{trip.status === 'paid'}}">{{view.payBy}} · 本次骑行减少碳排放约 {{view.carbon}} kg</text>
+    <text class="h-sub" wx:else>请在 24 小时内完成支付，未支付将影响下次用车</text>
+  </view>
+
+  <view class="card">
+    <view class="row between">
+      <text class="sec-title">{{view.name}}</text>
+      <text class="muted">车号 {{trip.no}}</text>
+    </view>
+    <view class="route">
+      <view class="r-line"><view class="r-dot r-a"></view><text class="r-tx">{{trip.from}}</text></view>
+      <view class="r-line"><view class="r-dot r-b"></view><text class="r-tx">{{trip.to}}</text></view>
+    </view>
+    <view class="nums">
+      <view class="num"><text class="nv">{{view.dur}}</text><text class="nk">骑行时长</text></view>
+      <view class="num"><text class="nv">{{view.km}} 公里</text><text class="nk">骑行里程</text></view>
+    </view>
+    <text class="muted">{{view.time}}</text>
+  </view>
+
+  <view class="card">
+    <text class="sec-title">费用明细</text>
+    <view class="kv"><text class="kv-k">起步价（含 15 分钟）</text><text class="kv-v">¥{{view.start}}</text></view>
+    <view class="kv"><text class="kv-k">超时费</text><text class="kv-v">¥{{view.extra}}</text></view>
+    <view class="kv" wx:if="{{trip.discount > 0}}"><text class="kv-k">{{trip.card || '骑行卡'}}抵扣</text><text class="kv-v green">-¥{{view.discount}}</text></view>
+    <view class="kv total"><text class="kv-k">实付</text><text class="price">¥{{view.paid}}</text></view>
+  </view>
+
+  <view class="card" wx:if="{{trip.status !== 'paid'}}">
+    <text class="sec-title">支付方式</text>
+    <radio-group bindchange="onMethod">
+      <label class="pm">
+        <view class="pm-l"><text class="pm-name">余额支付</text><text class="muted">可用余额 ¥{{balance}}{{enough ? '' : '（不足）'}}</text></view>
+        <radio value="balance" checked="{{method === 'balance'}}" color="#13a868"></radio>
+      </label>
+      <label class="pm">
+        <view class="pm-l"><text class="pm-name">微信支付</text><text class="muted">使用微信零钱或银行卡</text></view>
+        <radio value="wechat" checked="{{method === 'wechat'}}" color="#13a868"></radio>
+      </label>
+    </radio-group>
+    <text class="recharge" wx:if="{{!enough}}" bindtap="goRecharge">余额不足？去充值 ›</text>
+  </view>
+
+  <view class="foot">
+    <view class="btn" wx:if="{{trip.status !== 'paid'}}" bindtap="onPay"><text>确认支付 ¥{{view.paid}}</text></view>
+    <block wx:else>
+      <view class="btn" bindtap="goDetail">查看行程详情</view>
+      <view class="btn-ghost foot-2" bindtap="goHome">返回首页</view>
+    </block>
+  </view>
+
+  <cashier show="{{cashier.show}}" amount="{{cashier.amount}}" title="{{cashier.title}}" bindconfirm="onCashierConfirm" bindcancel="onCashierCancel"></cashier>
+</view>

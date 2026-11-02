@@ -144,3 +144,10 @@
   height: 24rpx;
 }
 .bottom-gap { height: calc(140rpx + env(safe-area-inset-bottom)); }
+.his { margin-top: 18rpx; }
+.his-l { font-size: 22rpx; color: rgba(255, 255, 255, 0.8); margin-right: 12rpx; white-space: nowrap; }
+.his-scroll { white-space: nowrap; }
+.his-in { padding-right: 12rpx; }
+.his-chip { background: rgba(255, 255, 255, 0.18); border-radius: 22rpx; padding: 6rpx 18rpx; margin-right: 12rpx; flex-shrink: 0; }
+.his-t { font-size: 22rpx; color: #ffffff; white-space: nowrap; }
+.his-clr { font-size: 22rpx; color: rgba(255, 255, 255, 0.8); margin-left: 8rpx; white-space: nowrap; }

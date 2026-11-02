@@ -1,8 +1,15 @@
+<view wx:if="{{none}}" class="none col">
+  <view class="none-ic"><text class="none-ic-t">充</text></view>
+  <text class="none-t">当前没有进行中的充电</text>
+  <text class="sub">扫描充电桩上的二维码，或输入桩身编号开始充电</text>
+  <view class="btn-primary none-btn" bindtap="onScan">扫码充电</view>
+</view>
+<block wx:else>
 <view class="top">
   <view class="row st-line">
     <view class="live"></view>
     <text class="st-t flex1">{{stationName}}</text>
-    <text class="term-t">{{no}}</text>
+    <text class="term-t">{{plate}}·{{no}}</text>
   </view>
 
   <!-- 圆环：48 个刻度点按角度摆放（CSS 不支持 conic-gradient，点阵环最稳） -->
@@ -32,14 +39,18 @@
     <view class="g-item col"><text class="g-n">{{amp}}<text class="g-u"> A</text></text><text class="sub">输出电流</text></view>
     <view class="g-item col"><text class="g-n">{{price}}<text class="g-u"> 元/度</text></text><text class="sub">当前电价</text></view>
   </view>
+  <view class="fee-line row between"><text class="sub">电费</text><text class="fee-v">¥{{elecText}}</text></view>
+  <view class="fee-line row between"><text class="sub">服务费</text><text class="fee-v">¥{{serviceText}}</text></view>
+  <text class="sub fee-note">结束后自动使用最省的充电券，从账户余额扣款</text>
 </view>
 
 <view class="card tips">
   <view class="row tip"><view class="tip-dot"></view><text class="tip-t">充电期间请勿强行拔枪，结束后先在小程序内停止充电</text></view>
-  <view class="row tip"><view class="tip-dot"></view><text class="tip-t">费用按实际充电量结算，从账户余额扣除</text></view>
+  <view class="row tip"><view class="tip-dot"></view><text class="tip-t">充满后自动结束；费用按实际充电量结算，余额不足时可在订单里补缴</text></view>
 </view>
 
 <view class="bottom-space"></view>
 <view class="bar">
   <view class="btn-stop" bindtap="onStop">结束充电</view>
 </view>
+</block>

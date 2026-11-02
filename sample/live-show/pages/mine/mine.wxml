@@ -1,0 +1,26 @@
+<view class="hd row">
+  <image class="av" src="/images/avatar.png"></image>
+  <view class="col hd-info">
+    <text class="nick">现场观众</text>
+    <text class="ph">{{phone}}</text>
+  </view>
+</view>
+<view class="stats row">
+  <view wx:for="{{stats}}" wx:key="k" class="stat col" data-to="{{item.to}}" bindtap="go">
+    <text class="stat-v">{{item.v}}</text>
+    <text class="stat-k">{{item.k}}</text>
+  </view>
+</view>
+<view class="card menu">
+  <view class="mi row" bindtap="viewers"><text class="flex1">观演人管理</text><text class="muted">{{viewerN}} 位 ›</text></view>
+  <view class="mi row" data-to="wallet" bindtap="go"><text class="flex1">我的订单</text><text class="muted">›</text></view>
+  <view class="mi row" data-to="want" bindtap="go"><text class="flex1">开售提醒</text><text class="muted">›</text></view>
+  <view class="mi row" bindtap="notice"><text class="flex1">购票须知</text><text class="muted">›</text></view>
+</view>
+<view class="card menu">
+  <view class="mi row" bindtap="service"><text class="flex1">联系客服</text><text class="muted">›</text></view>
+  <button class="mi mi-btn row" open-type="share" plain><text class="flex1 mi-l">推荐给朋友</text><text class="muted">›</text></button>
+  <view class="mi row" bindtap="about"><text class="flex1">关于现场</text><text class="muted">v1.4.0 ›</text></view>
+  <view class="mi row" bindtap="clear"><text class="flex1 danger">清除本地数据</text><text class="muted">›</text></view>
+</view>
+<view class="tabbar-space"></view>

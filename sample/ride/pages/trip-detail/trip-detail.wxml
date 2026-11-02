@@ -1,41 +1,84 @@
-<view class="hero">
-  <text class="hero-label">{{trip.status === 'done' ? (paid ? '支付成功' : '行程已完成') : '行程已取消'}}</text>
-  <view class="hero-price" wx:if="{{trip.status === 'done'}}"><text class="hero-num">{{fee.total}}</text><text class="hero-unit">元</text></view>
-  <text class="hero-sub">{{trip.date}} · {{trip.type}}</text>
+<view wx:if="{{!trip}}" class="empty-wrap">
+  <view class="empty-ic"><text class="empty-ic-t">程</text></view>
+  <text class="sub">行程不存在或已被清理</text>
 </view>
-
-<view class="card overlap">
-  <view class="route">
-    <view class="row"><view class="dot dot-green"></view><text class="route-text">{{trip.from}}</text></view>
-    <view class="route-line"></view>
-    <view class="row"><view class="dot dot-orange"></view><text class="route-text">{{trip.to}}</text></view>
+<block wx:else>
+  <view class="hero">
+    <text class="hero-label">{{hero.label}}</text>
+    <view class="hero-price" wx:if="{{hero.num !== ''}}"><text class="hero-num">{{hero.num}}</text><text class="hero-unit">元</text></view>
+    <text class="hero-sub">{{hero.sub}}</text>
   </view>
-  <view class="driver row" wx:if="{{trip.status === 'done'}}">
-    <view class="avatar"><text class="avatar-text">{{surname}}</text></view>
-    <view class="flex1 ml">
-      <text class="driver-name">{{trip.driver}} · {{trip.plate}}</text>
-      <text class="sub block">{{trip.car}}</text>
+  <view class="card overlap">
+    <view class="route">
+      <view class="row"><view class="dot dot-green"></view><text class="route-text">{{trip.from.name}}</text></view>
+      <view class="route-line"></view>
+      <view class="row"><view class="dot dot-orange"></view><text class="route-text">{{trip.to.name}}</text></view>
     </view>
-    <view class="rate-btn" bindtap="onRate">{{rated ? '已评价' : '评价'}}</view>
+    <view class="driver row" wx:if="{{surname}}">
+      <view class="avatar"><text class="avatar-text">{{surname}}</text></view>
+      <view class="flex1 ml">
+        <text class="driver-name">{{trip.driver}} · {{trip.plate}}</text>
+        <text class="sub block">{{trip.car}}</text>
+      </view>
+      <view wx:if="{{canCall}}" class="mini-btn call-driver" bindtap="onCallDriver">联系司机</view>
+    </view>
+    <view class="again row">
+      <text class="sub flex1">{{trip.passenger ? '乘车人 ' + trip.passenger.name : trip.km + ' 公里 · ' + trip.min + ' 分钟'}}</text>
+      <view class="mini-btn again-btn" data-back="no" bindtap="onAgain">再叫一单</view>
+      <view wx:if="{{trip.status === 'done'}}" class="mini-btn back-btn" data-back="yes" bindtap="onAgain">返程</view>
+    </view>
   </view>
-</view>
-
-<view class="card" wx:if="{{trip.status === 'done'}}">
-  <view class="row between head"><text class="title-sm">费用明细</text><view class="row" bindtap="onRule"><text class="sub">计价规则</text><view class="chev"></view></view></view>
-  <view class="fee row between"><text>起步价</text><text>¥{{fee.base}}</text></view>
-  <view class="fee row between"><text>里程费（{{trip.km}}公里）</text><text>¥{{fee.mileage}}</text></view>
-  <view class="fee row between"><text>时长费（{{trip.min}}分钟）</text><text>¥{{fee.time}}</text></view>
-  <view class="fee row between" wx:if="{{fee.far > 0}}"><text>远途费</text><text>¥{{fee.far}}</text></view>
-  <view class="fee row between" wx:if="{{fee.coupon > 0}}"><text>快车券</text><text class="orange">-¥{{fee.coupon}}</text></view>
-  <view class="total row between"><text class="total-label">实付金额</text><text class="total-num">¥{{fee.total}}</text></view>
-  <text class="sub">已通过 微信支付 支付</text>
-</view>
-
-<view class="card" wx:else>
-  <text class="sub">该行程在司机接单前取消，未产生任何费用。</text>
-</view>
-
-<view class="ops" wx:if="{{trip.status === 'done'}}">
-  <view class="btn-ghost flex1" bindtap="onInvoice">开具发票</view>
-  <view class="btn-ghost flex1 ml" bindtap="onComplain">投诉与反馈</view>
-</view>
+  <view wx:if="{{trip.status === 'unpaid'}}" class="card">
+    <block wx:if="{{trip.cancelled}}"><text wx:for="{{cancelLines}}" wx:key="*this" class="unpaid-text">{{item}}</text></block>
+    <text wx:else class="unpaid-text">行程已结束，支付后可以评价、开发票</text>
+    <view class="btn-primary go-pay" bindtap="onPay">去支付 ¥{{due}}</view>
+  </view>
+  <view wx:if="{{trip.status === 'done'}}" class="card rate">
+    <block wx:if="{{trip.rating}}">
+      <view class="row between"><text class="title-sm">我的评价</text><text class="sub">{{trip.rating.time}}</text></view>
+      <view class="row stars"><text wx:for="{{starList}}" wx:key="*this" class="star {{item <= trip.rating.stars ? 'star-on' : ''}}">★</text></view>
+      <view wx:if="{{trip.rating.tags.length}}" class="chips"><text wx:for="{{trip.rating.tags}}" wx:key="*this" class="said-tag">{{item}}</text></view>
+      <text wx:if="{{trip.rating.text}}" class="rate-said">{{trip.rating.text}}</text>
+    </block>
+    <block wx:else>
+      <view class="row between"><text class="title-sm">评价{{trip.driver}}</text><text class="sub">匿名评价，司机看不到你的信息</text></view>
+      <view class="row stars">
+        <text wx:for="{{starList}}" wx:key="*this" class="star {{item <= stars ? 'star-on' : ''}}" data-n="{{item}}" bindtap="onStar">★</text>
+        <text class="star-text">{{starText}}</text>
+      </view>
+      <view class="chips"><text wx:for="{{rateTags}}" wx:key="name" class="chip rate-tag {{item.on ? 'chip-on' : ''}}" data-i="{{index}}" bindtap="onRateTag">{{item.name}}</text></view>
+      <textarea class="rate-input" placeholder="说说这次乘车的感受（选填）" placeholder-class="ph" maxlength="100" value="{{rateText}}" bindinput="onRateText"></textarea>
+      <view class="btn-primary rate-btn" bindtap="onSubmitRate">提交评价</view>
+    </block>
+  </view>
+  <view class="card" wx:if="{{trip.status === 'done'}}">
+    <view class="row between head"><text class="title-sm">费用明细</text><view class="row rule" bindtap="onRule"><text class="sub">计价规则</text><view class="chev"></view></view></view>
+    <view class="fee row between" wx:for="{{lines}}" wx:key="name"><text>{{item.name}}</text><text class="{{item.cut ? 'orange' : ''}}">{{item.value}}</text></view>
+    <view class="total row between"><text class="total-label">实付金额</text><text class="total-num">¥{{trip.pay}}</text></view>
+    <text class="sub">{{payName}}支付{{paidTime ? ' · ' + paidTime : ''}}</text>
+  </view>
+  <view class="card" wx:if="{{trip.status === 'cancel'}}">
+    <text class="title-sm">取消说明</text>
+    <view class="cancel-box"><text wx:for="{{cancelLines}}" wx:key="*this" class="cancel-text">{{item}}</text></view>
+    <text wx:if="{{trip.cancelFee && paidTime}}" class="sub">{{payName}}支付 · {{paidTime}}</text>
+  </view>
+  <view wx:if="{{trip.complaint}}" class="card complaint row" bindtap="onComplain">
+    <text class="cp-tag">{{trip.complaint.status}}</text>
+    <text class="flex1 cp-text">已反馈「{{trip.complaint.reason}}」，客服 24 小时内联系你</text>
+    <view class="chev"></view>
+  </view>
+  <view class="card info">
+    <view class="info-row row between">
+      <text class="sub">订单号</text>
+      <view class="row"><text>{{trip.id}}</text><text class="copy" bindtap="onCopy">复制</text></view>
+    </view>
+    <view class="info-row row between"><text class="sub">出发时间</text><text>{{trip.date}}</text></view>
+    <view class="info-row row between"><text class="sub">车型</text><text>{{trip.type}}</text></view>
+    <view wx:if="{{trip.status === 'done'}}" class="info-row row between"><text class="sub">发票</text><text>{{invoice ? '已开票 · ' + invoice.email : '未开票'}}</text></view>
+  </view>
+  <view class="ops" wx:if="{{trip.status === 'done'}}">
+    <view class="btn-ghost flex1 op-invoice" bindtap="onInvoice">{{invoice ? '查看发票' : '开具发票'}}</view>
+    <view class="btn-ghost flex1 ml op-complain" bindtap="onComplain">{{trip.complaint ? '投诉进度' : '投诉与反馈'}}</view>
+  </view>
+  <view class="gap"></view>
+</block>

@@ -151,21 +151,30 @@ pub fn blit_transformed(
     let src_pixels = src.pixels();
     let sw = src.width() as i32;
     let sh = src.height() as i32;
+    // x0..x1 / y0..y1 已经与画布边界、裁剪区（draw_bounds，与 set_pixel 同一套取整）求过交：
+    // 直接写像素，省掉 set_pixel 每个点的 8 次比较与裁剪矩形的浮点截断（混合公式与 set_pixel 相同）
+    let dw = dst.width() as usize;
+    let out = dst.pixels_mut();
 
     for py in y0..y1 {
+        // 只随行变的那几项提到行外：同一个表达式、同样的求值次序，结果逐位不变
+        let dy = py as f32 + 0.5 - center.1 - t.translate_y;
+        let (ib_dy, id_dy) = (ib * dy, id * dy);
+        let row = py as usize * dw;
         for px in x0..x1 {
             // 目标像素中心 → 逆变换 → 源画布坐标
             let dx = px as f32 + 0.5 - center.0 - t.translate_x;
-            let dy = py as f32 + 0.5 - center.1 - t.translate_y;
-            let ux = center.0 + ia * dx + ib * dy - src_pos.0;
-            let uy = center.1 + ic * dx + id * dy - src_pos.1;
+            let ux = center.0 + ia * dx + ib_dy - src_pos.0;
+            let uy = center.1 + ic * dx + id_dy - src_pos.1;
             if ux < -0.5 || uy < -0.5 || ux > src_w + 0.5 || uy > src_h + 0.5 {
                 continue;
             }
             if let Some(color) = sample_bilinear(src_pixels, sw, sh, ux - 0.5, uy - 0.5) {
                 let alpha = (color.a as f32 * opacity).round().clamp(0.0, 255.0) as u8;
                 if alpha > 0 {
-                    dst.set_pixel(px, py, Color::new(color.r, color.g, color.b, alpha));
+                    let c = Color::new(color.r, color.g, color.b, alpha);
+                    let idx = row + px as usize;
+                    out[idx] = if alpha == 255 { c } else { c.blend(&out[idx]) };
                 }
             }
         }
@@ -173,6 +182,7 @@ pub fn blit_transformed(
 }
 
 /// 双线性采样（按 alpha 加权，避免透明边缘把黑色带进来）
+#[inline]
 fn sample_bilinear(pixels: &[Color], w: i32, h: i32, fx: f32, fy: f32) -> Option<Color> {
     if w <= 0 || h <= 0 {
         return None;
@@ -182,15 +192,30 @@ fn sample_bilinear(pixels: &[Color], w: i32, h: i32, fx: f32, fy: f32) -> Option
     let tx = fx - x0 as f32;
     let ty = fy - y0 as f32;
 
-    let at = |x: i32, y: i32| -> Color {
-        let x = x.clamp(0, w - 1);
-        let y = y.clamp(0, h - 1);
-        pixels[(y * w + x) as usize]
+    let (p00, p10, p01, p11) = if x0 >= 0 && y0 >= 0 && x0 + 1 < w && y0 + 1 < h {
+        // 2x2 全在画布里（绝大多数点）：不必逐个夹边
+        let i = (y0 * w + x0) as usize;
+        let j = i + w as usize;
+        (pixels[i], pixels[i + 1], pixels[j], pixels[j + 1])
+    } else {
+        let at = |x: i32, y: i32| -> Color {
+            let x = x.clamp(0, w - 1);
+            let y = y.clamp(0, h - 1);
+            pixels[(y * w + x) as usize]
+        };
+        (at(x0, y0), at(x0 + 1, y0), at(x0, y0 + 1), at(x0 + 1, y0 + 1))
     };
-    let p00 = at(x0, y0);
-    let p10 = at(x0 + 1, y0);
-    let p01 = at(x0, y0 + 1);
-    let p11 = at(x0 + 1, y0 + 1);
+    // 两条捷径，结果与下面的通用公式逐字节相同（改动时拿旧实现对 400 组随机缩放 / 旋转 / 倾斜 / 裁剪 / 透明度逐字节比过）：
+    // - 四个都全透明：通用公式算出 a = 0 < 0.5，同样返回 None；
+    // - 四个是同一个颜色：权重和与 1 只差几个 ulp，a 与各通道离整数不到 1e-3，四舍五入回到原值。
+    // 离屏子树大片是透明底或纯色（光晕、圆形封面的描边与四角），这些点不必走四次乘除。
+    // 静心播放页（缩放的光晕 + 旋转的封面）一加 PLY110 上每帧 43ms 画在这里
+    if (p00.a | p10.a | p01.a | p11.a) == 0 {
+        return None;
+    }
+    if p00 == p10 && p00 == p01 && p00 == p11 {
+        return Some(p00);
+    }
 
     let w00 = (1.0 - tx) * (1.0 - ty);
     let w10 = tx * (1.0 - ty);

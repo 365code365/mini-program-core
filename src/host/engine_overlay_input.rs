@@ -48,6 +48,10 @@ impl MiniEngine {
     /// 第二根手指（`phase` 0 按下 / 1 移动 / 2 抬起 / 其它 取消，逻辑坐标）。
     /// 页面的触摸状态机是单指的（与从前一样只认第一根）：只有图片预览认它（双指捏合缩放），其余时候丢掉
     pub fn pointer2(&mut self, phase: i32, x: f32, y: f32) {
+        // 第一根手指按在地图这类同层组件上：第二根也交给它（捏合缩放，engine_native_touch.rs）
+        if self.native_touch_pointer2(phase, x, y) {
+            return;
+        }
         let vp = self.viewport_logical();
         if ui_overlay::image_preview::on_pointer2(phase, vp, x, y) {
             self.dmg.compose_dirty = true;

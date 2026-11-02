@@ -1,0 +1,30 @@
+<view class="os-tabs">
+  <view class="os-tab {{tab === 'on' ? 'on' : ''}}" data-k="on" bindtap="switchTab">在售 {{counts.on}}</view>
+  <view class="os-tab {{tab === 'off' ? 'on' : ''}}" data-k="off" bindtap="switchTab">已下架 {{counts.off}}</view>
+</view>
+<view class="card" wx:for="{{list}}" wx:key="id">
+  <view class="row" data-id="{{item.id}}" bindtap="open">
+    <image class="mi-cover" src="{{item.cover}}" mode="aspectFill"></image>
+    <view class="flex1">
+      <text class="mi-t">{{item.title}}</text>
+      <view class="row"><text class="price"><text class="yen">¥</text>{{item.price}}</text><text class="orig" wx:if="{{item.orig}}">¥{{item.orig}}</text></view>
+      <text class="muted">{{item.postedText}}发布 · {{item.views}} 浏览 · {{item.wants}} 人想要 · 曝光 {{item.expose}}</text>
+    </view>
+  </view>
+  <view class="row mi-ops">
+    <block wx:if="{{tab === 'on'}}">
+      <view class="btn-ghost {{item.polishedToday ? 'mi-dis' : ''}}" data-id="{{item.id}}" bindtap="polish">{{item.polishedToday ? '已擦亮' : '擦亮'}}</view>
+      <view class="btn-ghost" data-id="{{item.id}}" bindtap="cut">降价</view>
+      <view class="btn-ghost" data-id="{{item.id}}" bindtap="toggle">下架</view>
+    </block>
+    <block wx:else>
+      <view class="btn-ghost" data-id="{{item.id}}" bindtap="remove">删除</view>
+      <view class="btn-ghost" data-id="{{item.id}}" bindtap="toggle">重新上架</view>
+    </block>
+  </view>
+</view>
+<view class="empty" wx:if="{{!list.length}}">
+  <view class="empty-ic">📦</view>
+  <text>{{tab === 'on' ? '还没有在售的宝贝' : '没有下架的宝贝'}}</text>
+  <view class="empty-btn" bindtap="goPublish">发布闲置</view>
+</view>

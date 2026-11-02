@@ -1,6 +1,8 @@
 const D = require('../../utils/data.js')
+const S = require('../../utils/store.js')
 Page({
   data: {
+    change: null,
     from: '',
     to: '',
     date: '',
@@ -14,9 +16,19 @@ Page({
     total: 0
   },
   onLoad(q) {
-    const date = q.date || D.today()
+    let date = q.date || D.today()
+    // 改签：change=<订单号>，同一线路换车次，从原发车日开始挑
+    const o = q.change ? S.findOrder(q.change) : null
+    if (o && S.canChange(o)) {
+      this.changeId = o.id
+      this.setData({ change: { no: o.no, dateText: D.dateLabel(o.date), depText: o.depText, seat: o.seat } })
+      q.from = o.from
+      q.to = o.to
+      if (!q.date) date = o.date
+    }
+    if (date < D.today()) date = D.today()
     this.setData({ from: q.from || '北京', to: q.to || '上海', highSpeed: q.gd === '1' })
-    wx.setNavigationBarTitle({ title: this.data.from + ' → ' + this.data.to })
+    wx.setNavigationBarTitle({ title: (this.changeId ? '改签 ' : '') + this.data.from + ' → ' + this.data.to })
     this.setDate(date)
   },
   setDate(date) {
@@ -33,6 +45,7 @@ Page({
       .filter(t => !on.length || on.some(p => t.dep >= p.from && t.dep < p.to))
       .slice()
       .sort((a, b) => (key === 'dep' ? a.dep - b.dep : key === 'dur' ? a.dur - b.dur || a.dep - b.dep : a.minPrice - b.minPrice || a.dep - b.dep))
+      .map(t => Object.assign({}, t, { soldOut: t.seats.every(s => s.left === 0) }))
     this.setData({ trains: list, total: list.length })
   },
   onPrevDay() {
@@ -58,13 +71,14 @@ Page({
     this.setData({ sort: Number(e.currentTarget.dataset.index) })
     this.refresh()
   },
+  // 全部售罄的车次：购票时进下单页提交候补；改签不能候补
   onTrain(e) {
     const t = this.data.trains[Number(e.currentTarget.dataset.index)]
-    if (t.seats.every(s => s.left === 0)) {
-      wx.showToast({ title: t.no + ' 已售罄', icon: 'none' })
+    if (this.changeId && t.seats.every(s => s.left === 0)) {
+      wx.showToast({ title: t.no + ' 已售罄，请改签其他车次', icon: 'none' })
       return
     }
     getApp().globalData.train = t
-    wx.navigateTo({ url: '/pages/book/book?no=' + t.no })
+    wx.navigateTo({ url: '/pages/book/book?no=' + t.no + (this.changeId ? '&change=' + this.changeId : '') })
   }
 })

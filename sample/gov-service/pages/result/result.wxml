@@ -1,0 +1,22 @@
+<view class="top">
+  <icon type="success" size="64" color="#16a34a"></icon>
+  <text class="t">申报提交成功</text>
+  <text class="s">{{dept}}将在 {{promise}}，结果将通过短信通知 {{order.applicant.phone}}</text>
+</view>
+<view class="card">
+  <view class="kv"><text class="k">办件编号</text><text class="v no">{{order.id}}</text><text class="copy" bindtap="copyNo">复制</text></view>
+  <view class="kv"><text class="k">办理事项</text><text class="v">{{order.name}}</text></view>
+  <view class="kv"><text class="k">申请人</text><text class="v">{{order.applicant.name}}</text></view>
+  <view class="kv"><text class="k">提交时间</text><text class="v">{{time}}</text></view>
+  <view class="kv"><text class="k">当前状态</text><text class="v st">待受理</text></view>
+</view>
+<view class="card tips">
+  <text class="sec-t">温馨提示</text>
+  <text class="tip">1. 可凭办件编号在「进度查询」中随时查看审批环节。</text>
+  <text class="tip">2. 受理前可在「我的办件」中撤回申请；如材料需补正，会短信提醒。</text>
+  <text class="tip">3. 咨询或投诉请拨打 12345 政务服务便民热线。</text>
+</view>
+<view class="btns">
+  <view class="btn" hover-class="tap" bindtap="goProgress">查看办理进度</view>
+  <view class="btn ghost b2" hover-class="tap" bindtap="goHome">返回首页</view>
+</view>

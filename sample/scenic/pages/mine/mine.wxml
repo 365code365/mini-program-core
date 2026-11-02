@@ -1,0 +1,32 @@
+<view class="mn-head">
+  <view class="mn-av">游</view>
+  <view class="col mn-info">
+    <text class="mn-name">游山河旅行家</text>
+    <text class="mn-sub">累计出行花费 ¥{{spent}} · 去过 {{stat.used}} 个景区</text>
+  </view>
+</view>
+<view class="wrap mn-wrap">
+  <view class="card row mn-stat">
+    <view class="mn-si" bindtap="goOrders"><text class="mn-n">{{stat.paid}}</text><text class="muted">待使用</text></view>
+    <view class="mn-si" bindtap="goOrders"><text class="mn-n">{{stat.used}}</text><text class="muted">已使用</text></view>
+    <view class="mn-si" bindtap="goOrders"><text class="mn-n">{{stat.refunded}}</text><text class="muted">已退款</text></view>
+  </view>
+  <view class="card">
+    <text class="sec-title">收藏的景区</text>
+    <scroll-view scroll-x class="mn-favs" wx:if="{{favs.length}}">
+      <view class="mn-fav" wx:for="{{favs}}" wx:key="id" data-id="{{item.id}}" bindtap="goScenic">
+        <image class="mn-fc" src="{{item.cover}}" mode="aspectFill"></image>
+        <text class="mn-fn">{{item.short}}</text>
+      </view>
+    </scroll-view>
+    <view class="between" wx:else><text class="muted">还没有收藏，去景区详情页点「收藏」</text><text class="brand" bindtap="goHome">去逛逛</text></view>
+  </view>
+  <view class="card">
+    <view class="between mn-cell" bindtap="goTourists"><text>常用游客</text><text class="muted">{{touristCount}} 人 ›</text></view>
+    <view class="between mn-cell"><text>讲解切换提示音</text><switch checked="{{set.chime}}" color="#13a07b" bindchange="onChime"></switch></view>
+    <view class="between mn-cell"><text>讲完自动播放下一段</text><switch checked="{{set.autoNext}}" color="#13a07b" bindchange="onAutoNext"></switch></view>
+    <view class="between mn-cell" bindtap="call"><text>联系客服</text><text class="muted">›</text></view>
+    <view class="between mn-cell" bindtap="clear"><text>清除本地数据</text><text class="muted">{{cache}} ›</text></view>
+  </view>
+</view>
+<view style="height: calc(120rpx + env(safe-area-inset-bottom));"></view>

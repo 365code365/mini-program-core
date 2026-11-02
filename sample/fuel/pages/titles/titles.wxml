@@ -1,0 +1,25 @@
+<view class="empty" wx:if="{{!list.length}}">
+  <image class="empty-img" src="/images/misc/empty.png" mode="aspectFit"></image>
+  <text class="empty-tx">还没有发票抬头</text>
+</view>
+<view class="card tt" wx:for="{{list}}" wx:key="id">
+  <view class="tt-main" data-id="{{item.id}}" bindtap="onPick">
+    <view class="row">
+      <text class="tt-name">{{item.name}}</text>
+      <text class="tag" wx:if="{{item.type === 'company'}}">企业</text><text class="tag tag-gray" wx:else>个人</text>
+      <text class="def" wx:if="{{item.isDefault}}">默认</text>
+    </view>
+    <text class="muted" wx:if="{{item.taxNo}}">税号 {{item.taxNo}}</text>
+    <text class="muted" wx:if="{{item.email}}">邮箱 {{item.email}}</text>
+  </view>
+  <view class="row ops">
+    <text class="op" data-id="{{item.id}}" bindtap="setDefault">{{item.isDefault ? '默认抬头' : '设为默认'}}</text>
+    <text class="op" data-id="{{item.id}}" bindtap="edit">编辑</text>
+    <text class="op" data-id="{{item.id}}" bindtap="remove">删除</text>
+  </view>
+</view>
+<view style="height: 180rpx;"></view>
+<view class="bar">
+  <view class="btn-ghost bar-b" hover-class="btn-hover" bindtap="fromWechat">导入微信抬头</view>
+  <view class="btn bar-b" hover-class="btn-hover" bindtap="add">+ 新增抬头</view>
+</view>

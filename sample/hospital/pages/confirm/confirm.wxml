@@ -8,7 +8,7 @@
   </view>
   <view class="kv"><text class="k">就诊日期</text><text class="v">{{date}} {{week}}</text></view>
   <view class="kv"><text class="k">就诊时段</text><text class="v">{{time}}</text></view>
-  <view class="kv"><text class="k">就诊地点</text><text class="v">门诊 3 楼 B 区 · 307 诊室</text></view>
+  <view class="kv"><text class="k">就诊地点</text><text class="v">{{room}}</text></view>
   <view class="kv"><text class="k">挂号费用</text><text class="v price">¥{{doc.fee}}.00</text></view>
 </view>
 

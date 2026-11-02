@@ -1,0 +1,49 @@
+<view wx:if="{{!a}}" class="empty"><text>户号不存在或已删除</text></view>
+<block wx:else>
+  <view class="card">
+    <view class="row between">
+      <view class="row"><view class="ic sm" style="background: {{a.bg}};"><text>{{a.ch}}</text></view><view class="b-main"><text class="b-t">{{a.tname}} · {{a.tag}}</text><text class="muted">户号 {{a.noTx}}</text></view></view>
+      <view class="q-btn" bindtap="query"><text>重新查询</text></view>
+    </view>
+    <view class="b-cur">
+      <text class="muted">{{a.owe > 0 ? cur.ym + '账单 · 待缴' : '当前无欠费'}}</text>
+      <view class="row amt-row"><text class="b-y {{a.owe > 0 ? 'owe' : ''}}">¥</text><text class="b-amt {{a.owe > 0 ? 'owe' : ''}}">{{a.owe > 0 ? a.oweTx : '0.00'}}</text></view>
+      <text wx:if="{{queriedAt}}" class="muted">最近查询 {{queriedAt}}</text>
+    </view>
+    <view wx:if="{{a.owe > 0}}" class="split">
+      <view class="kv row between"><text class="k">计费周期</text><text class="v">{{cur.ym}}</text></view>
+      <view class="kv row between"><text class="k">本期用量</text><text class="v">{{cur.useTx}}</text></view>
+      <view wx:if="{{cur.price}}" class="kv row between"><text class="k">单价</text><text class="v">{{cur.price}}</text></view>
+      <view class="kv row between"><text class="k">用量费用</text><text class="v">¥{{a.oweTx}}</text></view>
+      <view class="kv row between"><text class="k">违约金</text><text class="v">¥0.00</text></view>
+      <view class="kv row between"><text class="k">缴费截止</text><text class="v">本月最后一天</text></view>
+    </view>
+    <view wx:if="{{a.balance}}" class="kv row between"><text class="k">账户余额</text><text class="v">¥{{a.balTx}}（下期自动抵扣）</text></view>
+  </view>
+  <view class="card">
+    <text class="sec-title">近 6 期账单</text>
+    <view class="chart row">
+      <view wx:for="{{bills}}" wx:key="ym" class="col">
+        <text class="col-v">{{item.amtTx}}</text>
+        <view class="col-track"><view class="col-bar {{item.paid ? '' : 'col-owe'}}" style="height: {{item.h}}%;"></view></view>
+        <text class="col-l">{{item.short}}</text>
+      </view>
+    </view>
+    <view wx:for="{{bills}}" wx:key="ym" class="kv row between">
+      <text class="k">{{item.ym}} · {{item.useTx}}</text>
+      <text class="v {{item.paid ? '' : 'owe'}}">¥{{item.amtTx}} {{item.paid ? '已结清' : '待缴'}}</text>
+    </view>
+  </view>
+  <view class="card">
+    <text class="sec-title">我在这里的缴费</text>
+    <view wx:if="{{!recs.length}}" class="muted none"><text>还没有通过本服务缴过这个户号</text></view>
+    <view wx:for="{{recs}}" wx:key="id" class="kv row between r-line" data-id="{{item.id}}" bindtap="rec">
+      <text class="k">{{item.time}}</text>
+      <view class="row"><text class="v">¥{{item.paidTx}}</text><view class="chev"></view></view>
+    </view>
+  </view>
+  <view class="foot-gap"></view>
+  <view class="foot">
+    <view class="btn-primary" bindtap="pay"><text>{{a.owe > 0 ? '去缴费 ¥' + a.oweTx : '预存费用'}}</text></view>
+  </view>
+</block>

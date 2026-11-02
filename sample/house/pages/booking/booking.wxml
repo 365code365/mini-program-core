@@ -1,5 +1,5 @@
 <view class="card house row">
-  <image class="h-img small" src="{{h.cover}}" mode="aspectFill"></image>
+  <image class="h-img small" src="{{h.cover}}" mode="aspectFill" />
   <view class="flex1 h-main">
     <text class="one">{{h.title}}</text>
     <text class="h-brief">{{h.brief}}</text>
@@ -29,7 +29,7 @@
 <view class="card cells">
   <view class="cell row">
     <text class="label">联系人</text>
-    <input class="flex1 field" placeholder="怎么称呼您" value="{{name}}" bindinput="onName" />
+    <input class="flex1 field f-name" placeholder="怎么称呼您" value="{{name}}" bindinput="onName" />
     <view class="gender row">
       <view class="g {{gender === 0 ? 'on' : ''}}" bindtap="onGender" data-g="0">先生</view>
       <view class="g {{gender === 1 ? 'on' : ''}}" bindtap="onGender" data-g="1">女士</view>
@@ -37,7 +37,7 @@
   </view>
   <view class="cell row">
     <text class="label">手机号</text>
-    <input class="flex1 field" type="number" maxlength="11" placeholder="经纪人会提前联系您" value="{{phone}}" bindinput="onPhone" />
+    <input class="flex1 field f-phone" type="number" maxlength="11" placeholder="经纪人会提前联系您" value="{{phone}}" bindinput="onPhone" />
   </view>
   <picker mode="selector" range="{{people}}" value="{{peopleIndex}}" bindchange="onPeople">
     <view class="cell row">
@@ -62,5 +62,5 @@
   <text class="sub">我已阅读并同意《看房服务协议》，号码仅用于本次带看</text>
 </view>
 
-<view class="submit btn-primary {{canSubmit ? '' : 'disabled'}}" bindtap="onSubmit">提交预约</view>
+<view class="submit btn-primary {{canSubmit ? '' : 'disabled'}}" bindtap="onSubmit">{{rebook ? '确认改约' : '提交预约'}}</view>
 <view class="safe"></view>

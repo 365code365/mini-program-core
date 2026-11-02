@@ -1,0 +1,66 @@
+<view class="card row sum">
+  <image class="sum-img" src="{{show.poster}}" mode="aspectFill"></image>
+  <view class="col flex1 sum-info">
+    <text class="sum-t">{{show.title}}</text>
+    <text class="muted sum-l">{{ses.date}} {{ses.week}} {{ses.time}}</text>
+    <text class="muted sum-l">{{show.city}} · {{show.venue}}</text>
+  </view>
+</view>
+
+<view class="card">
+  <view class="row"><text class="sec-title">票品</text><view class="flex1"></view><text class="muted">共 {{items.length}} 张</text></view>
+  <view wx:for="{{items}}" wx:key="index" class="it row">
+    <text class="it-l">{{item.label}}</text>
+    <text class="muted it-t">{{item.seatId ? item.tierName : '电子票'}}</text>
+    <view class="flex1"></view>
+    <text class="it-p">¥{{item.price}}</text>
+  </view>
+</view>
+
+<view class="card">
+  <view class="row">
+    <text class="sec-title">观演人</text>
+    <text class="muted need">需选 {{need}} 位（已选 {{chosen}}）</text>
+    <view class="flex1"></view>
+    <text class="link" bindtap="addViewer">新增 / 管理 ›</text>
+  </view>
+  <view wx:if="{{viewers.length}}">
+    <view wx:for="{{viewers}}" wx:key="id" class="vw row" data-id="{{item.id}}" bindtap="toggleViewer">
+      <view class="ck {{item.on ? 'ck-on' : ''}}"><text wx:if="{{item.on}}" class="ck-t">✓</text></view>
+      <view class="col flex1">
+        <text class="vw-n">{{item.name}}</text>
+        <text class="muted">{{item.type}} {{item.mask}}</text>
+      </view>
+    </view>
+  </view>
+  <view wx:else class="vw-none" bindtap="addViewer"><text class="muted">还没有观演人，点这里添加（需与入场证件一致）</text></view>
+</view>
+
+<view class="card">
+  <text class="sec-title">联系方式</text>
+  <view class="row field">
+    <text class="f-l">手机号</text>
+    <input class="f-in" type="number" maxlength="11" placeholder="用于接收购票短信" value="{{phone}}" bindinput="onPhone" bindblur="checkPhone" />
+  </view>
+  <text wx:if="{{phoneErr}}" class="err">{{phoneErr}}</text>
+  <view class="row field">
+    <text class="f-l">取票方式</text>
+    <text class="f-v">电子票 · 无需取票，凭二维码入场</text>
+  </view>
+</view>
+
+<view class="agree row">
+  <checkbox-group bindchange="onAgree">
+    <checkbox value="ok" checked="{{agree}}" color="#ff3b5c" />
+  </checkbox-group>
+  <text class="muted">我已阅读并同意</text>
+  <text class="link" bindtap="showNotice">《购票须知》</text>
+</view>
+<view class="bottom-space"></view>
+
+<view class="foot">
+  <view class="col flex1">
+    <view class="row"><text class="muted">实付 </text><text class="price amt">¥{{total}}</text></view>
+  </view>
+  <view class="btn-main submit {{submitting ? 'btn-dis' : ''}}" bindtap="submit"><text>{{submitting ? '提交中…' : '提交订单'}}</text></view>
+</view>

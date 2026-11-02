@@ -1,0 +1,6 @@
+.rm-slots { display: flex; flex-direction: row; flex-wrap: wrap; padding: 20rpx 0 8rpx; }
+.rm-slot { padding: 10rpx 22rpx; border-radius: 28rpx; background: #f3f6f5; color: #5c6370; font-size: 24rpx; margin: 0 14rpx 14rpx 0; }
+.rm-slot.on { background: #14937f; color: #ffffff; }
+.rm-grid { display: flex; flex-direction: row; flex-wrap: wrap; padding: 8rpx 18rpx 0; }
+.rm-room { width: 218rpx; margin: 6rpx; background: #ffffff; border-radius: 16rpx; padding: 24rpx 0; display: flex; flex-direction: column; align-items: center; }
+.rm-no { font-size: 28rpx; font-weight: bold; margin-bottom: 6rpx; }

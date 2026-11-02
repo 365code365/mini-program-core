@@ -1,0 +1,32 @@
+<view class="empty missing" wx:if="{{!o}}">
+  <text class="miss-t">订单不存在或已被清理</text>
+  <view class="btn-primary miss-btn" bindtap="goOrders">查看全部订单</view>
+</view>
+<block wx:else>
+  <view class="head head-{{o.status}}">
+    <text class="h-st">{{o.statusText}}</text>
+    <text class="h-sub">{{o.type === 'reserve' ? (o.status === 'ongoing' ? '车位已为你保留，请按时到达' : '预约已取消，车位已释放') : (o.amount > 0 ? '缴费成功，请在 15 分钟内离场' : '本次免费离场')}}</text>
+    <text class="h-amt" wx:if="{{o.type === 'pay'}}">{{o.amountText}}</text>
+  </view>
+  <view class="card cells">
+    <view class="cell row lot-cell" bindtap="onLot"><text class="flex1 cell-label lot-name">{{lot.name}}</text><view class="chev"></view></view>
+    <view class="cell row"><text class="flex1 cell-label">车牌</text><text class="cell-value">{{o.plate}}</text></view>
+    <view class="cell row"><text class="flex1 cell-label">{{o.type === 'reserve' ? '预约' : '停车'}}</text><text class="cell-value">{{o.desc}}</text></view>
+    <block wx:if="{{o.type === 'pay'}}">
+      <view class="cell row"><text class="flex1 cell-label">停车费</text><text class="cell-value">{{o.feeText}}</text></view>
+      <view class="cell row" wx:if="{{o.coupon}}"><text class="flex1 cell-label">{{o.coupon === '月卡' ? '月卡抵扣' : o.coupon}}</text><text class="cell-value off">{{o.offText}}</text></view>
+      <view class="cell row"><text class="flex1 cell-label">实付</text><text class="cell-value pay">{{o.amountText}}</text></view>
+    </block>
+    <view class="cell row" wx:else><text class="flex1 cell-label">预计费用</text><text class="cell-value">{{o.amountText}}（到场后按实际时长计费）</text></view>
+    <view class="cell row cell-last"><text class="flex1 cell-label">订单号</text><text class="cell-value">{{o.id}}</text><text class="copy" bindtap="onCopy">复制</text></view>
+  </view>
+  <view class="ops row">
+    <view class="op op-nav" bindtap="onNav"><text>导航</text></view>
+    <view class="op op-call" bindtap="onCall"><text>联系停车场</text></view>
+  </view>
+  <view class="btns">
+    <view wx:if="{{o.type === 'reserve' && o.status === 'ongoing'}}" class="btn-ghost op-cancel" bindtap="onCancel">取消预约</view>
+    <view wx:elif="{{o.type === 'reserve'}}" class="btn-primary op-again" bindtap="onLot">再次预约</view>
+    <view wx:elif="{{o.amount > 0}}" class="btn-primary op-invoice" bindtap="onInvoice">{{invoiced ? '查看发票' : '开具发票'}}</view>
+  </view>
+</block>

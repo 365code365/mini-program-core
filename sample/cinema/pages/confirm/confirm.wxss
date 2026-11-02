@@ -10,7 +10,7 @@
 .block-title { display: block; font-size: 30rpx; font-weight: bold; }
 .seats { display: flex; flex-direction: row; flex-wrap: wrap; margin-top: 16rpx; }
 /* 粗体且含数字/西文的文字，引擎按收缩宽度排版时量得偏窄会折行，这里给定宽 */
-.seat-chip { width: 150rpx; text-align: center; font-size: 26rpx; font-weight: bold; background: #f5f6f8; border-radius: 10rpx; padding: 10rpx 0; margin: 0 14rpx 14rpx 0; }
+.seat-tag { width: 150rpx; text-align: center; font-size: 26rpx; font-weight: bold; background: #f5f6f8; border-radius: 10rpx; padding: 10rpx 0; margin: 0 14rpx 14rpx 0; }
 .note { margin-top: 6rpx; }
 .dot-g { width: 12rpx; height: 12rpx; border-radius: 6rpx; background: #1E9E6A; margin-right: 10rpx; }
 .form { padding: 0 28rpx; }
@@ -26,3 +26,12 @@
 .yen { font-size: 26rpx; margin: 0 0 6rpx 8rpx; }
 .total { font-size: 48rpx; font-weight: bold; }
 .pay { width: 260rpx; height: 88rpx; line-height: 88rpx; text-align: center; border-radius: 44rpx; background: linear-gradient(90deg, #FF5A6E, #E8243F); color: #fff; font-size: 30rpx; font-weight: bold; }
+.pw-i { width: 44rpx; height: 44rpx; border-radius: 12rpx; display: flex; align-items: center; justify-content: center; margin-right: 18rpx; }
+.pw-wx { background: #07C160; }
+.pw-card { background: linear-gradient(135deg, #57406A, #2A2238); }
+.pw-g { color: #fff; font-size: 22rpx; font-weight: bold; }
+.pw-mid { display: flex; flex-direction: column; }
+.pw-link { font-size: 24rpx; color: #F0384D; padding: 10rpx 20rpx; white-space: nowrap; }
+.radio { width: 36rpx; height: 36rpx; border-radius: 18rpx; border: 2rpx solid #c4c7cc; display: flex; align-items: center; justify-content: center; }
+.radio-on { border: 2rpx solid #E8243F; }
+.radio-dot { width: 20rpx; height: 20rpx; border-radius: 10rpx; background: #E8243F; }

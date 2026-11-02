@@ -1,0 +1,145 @@
+# 停车宝（补齐部分）：每页能开 + 月卡办理 / 续费 / 月卡车免费离场 / 微信支付降级 / 优惠券用完 / 订单详情 / 发票 / 预约详情取消 / 停车场导航与电话
+smoke pages/lot/lot?id=1 pages/pay/pay?plate=京A12345&now=18:30 pages/result/result?id=P1000 pages/orders/orders?tab=1 pages/order/order?id=P1000 pages/card/card?lot=1 pages/invoice/invoice?ids=P1000
+open
+eval globalThis.P = function () { return getCurrentPages().slice(-1)[0]; }
+count 6 .entry
+shot target/_polish_shots/index.png
+# 月卡：P1 季卡（360 × 2.8）
+tap .go-card
+route pages/card/card
+exists .empty
+expect P().data.lotNames.length === 5 && P().data.priceText === '¥360.00'
+tapn 1 .plan
+expect P().data.priceText === '¥1008.00'
+tap .buy-btn
+modal?
+expect __ui.slice(-1)[0].content.indexOf('¥1008.00') > 0
+modal ok
+wait 300
+expect wx.getStorageSync('pk_cards').length === 1 && wx.getStorageSync('pk_cards')[0].plate === '京A12345' && wx.getStorageSync('pk_cards')[0].lotId === 1
+count 1 .mc
+toast 季卡已生效
+eval globalThis.END1 = wx.getStorageSync('pk_cards')[0].end
+# 续费一个月：顺延，不新开卡
+tap .mc-renew
+sheet 0 3
+modal?
+modal ok
+wait 300
+expect wx.getStorageSync('pk_cards').length === 1 && wx.getStorageSync('pk_cards')[0].logs.length === 2 && wx.getStorageSync('pk_cards')[0].end > END1
+shot target/_polish_shots/card.png
+# 宿主没有支付时取消：不办卡
+tapn 2 .plan
+tap .buy-btn
+modal cancel
+expect wx.getStorageSync('pk_cards')[0].logs.length === 2
+# 停车场详情显示月卡；导航 / 电话
+eval wx.navigateTo({ url: '/pages/lot/lot?id=1' })
+route pages/lot/lot
+expect P().data.card && P().data.card.plate === '京A12345'
+tap .h-nav
+modal?
+expect __ui.slice(-1)[0].content.indexOf('距你 400m') > 0
+modal cancel
+tap .h-call
+modal?
+expect __ui.slice(-1)[0].content === '0571-8670 2281'
+modal ok
+shot target/_polish_shots/lot.png
+# 月卡车缴费：21 元全免，确认离场
+eval wx.redirectTo({ url: '/pages/pay/pay?plate=京A12345&now=18:30' })
+route pages/pay/pay
+expect P().data.fee === 21 && P().data.pay === 0 && P().data.card !== null
+shot target/_polish_shots/pay-card.png
+tap .pay-btn
+modal?
+expect __ui.slice(-1)[0].title === '确认离场'
+modal ok
+route pages/result/result
+expect wx.getStorageSync('pk_orders')[0].amount === 0 && wx.getStorageSync('pk_orders')[0].coupon === '月卡' && wx.getStorageSync('pk_orders')[0].statusText === '免费离场'
+expect wx.getStorageSync('pk_sessions').length === 1
+# 另一辆在市民中心：用 5 元无门槛（只有 1 张），微信支付降级
+eval wx.redirectTo({ url: '/pages/pay/pay?plate=沪AD12345&now=18:30' })
+route pages/pay/pay
+picker .pk-coupon
+pickrow 0 1 2
+pickok
+wait 300
+expect P().data.couponIdx === 2 && P().data.pay === 25
+tap .pay-btn
+modal?
+expect __ui.slice(-1)[0].title === '确认支付' && __ui.slice(-1)[0].content.indexOf('¥25.00') > 0
+modal ok
+wait 300
+route pages/result/result
+expect wx.getStorageSync('pk_coupon_used')['2'] === 1
+expect wx.getStorageSync('pk_orders')[0].id === 'P1003' && wx.getStorageSync('pk_orders')[0].coupon === '5 元无门槛'
+# 再进场一次：这张券已用完
+eval wx.setStorageSync('pk_sessions', [{ plate: '沪AD12345', lotId: 5, inTime: '16:00' }])
+eval wx.redirectTo({ url: '/pages/pay/pay?plate=沪AD12345&now=18:30' })
+route pages/pay/pay
+expect P().data.coupons[2] === '5 元无门槛（已用完）'
+picker .pk-coupon
+pickrow 0 1 2
+pickok
+wait 300
+toast 已用完
+expect P().data.couponIdx === 0 && P().data.pay === 6
+# 订单列表 → 详情 → 开发票
+eval wx.redirectTo({ url: '/pages/orders/orders?tab=1' })
+route pages/orders/orders
+expect P().data.list[0].id === 'P1003'
+tapn 0 .order
+route pages/order/order
+expect P().data.o.id === 'P1003' && P().data.o.amountText === '¥25.00' && P().data.o.offText === '-¥5.00'
+shot target/_polish_shots/order.png
+tap .op-call
+modal?
+expect __ui.slice(-1)[0].content === '0571-8282 1100'
+modal ok
+tap .op-invoice
+route pages/invoice/invoice
+expect P().data.orders.length === 4 && P().data.count === 1 && P().data.amount === '25.00'
+tap .kind-person
+type .i-title => 周小停
+type .i-email => zhou@park.cn
+blur
+tapn 0 .it
+expect P().data.count === 2 && P().data.amount === '1033.00'
+tap .submit-btn
+modal?
+modal ok
+expect P().data.tab === 'list' && P().data.records.length === 1
+expect wx.getStorageSync('pk_invoiced').length === 2
+shot target/_polish_shots/invoice.png
+back
+expect P().data.invoiced === true
+# 预约 → 订单详情里取消
+eval wx.navigateTo({ url: '/pages/lot/lot?id=3' })
+route pages/lot/lot
+expect P().data.free === 113
+tap .reserve
+modal ok
+route pages/orders/orders
+expect P().data.tab === 0
+eval globalThis.RID = P().data.list.filter(function (o) { return o.kind === 'reserve'; })[0].id
+expect wx.getStorageSync('pk_free')['3'] === 112
+tapn 1 .order
+route pages/order/order
+expect P().data.o.id === RID && P().data.o.status === 'ongoing'
+shot target/_polish_shots/order-reserve.png
+tap .op-nav
+modal?
+modal cancel
+tap .op-cancel
+modal?
+modal ok
+expect P().data.o.status === 'canceled'
+expect wx.getStorageSync('pk_free')['3'] === 113
+exists .op-again
+back
+expect P().data.counts[0] === 1
+# 在场的车：点卡片直接去缴费
+tapn 0 .order
+route pages/pay/pay
+noerr

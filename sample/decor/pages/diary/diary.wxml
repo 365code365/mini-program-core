@@ -1,0 +1,40 @@
+<view class="page tab-page">
+  <view class="tabs">
+    <text class="tb {{tab === 'mine' ? 'tb-on' : ''}}" data-t="mine" bindtap="setTab">我的项目 {{projects.length}}</text>
+    <text class="tb {{tab === 'feed' ? 'tb-on' : ''}}" data-t="feed" bindtap="setTab">日记 {{feed.length}}</text>
+  </view>
+
+  <block wx:if="{{tab === 'mine'}}">
+    <view wx:if="{{!projects.length}}" class="empty">
+      <text class="empty-text">还没有装修项目</text>
+      <text class="empty-text">预约设计师上门量房后，这里会跟进每个施工节点</text>
+      <view class="btn go" bindtap="book" hover-class="btn-hover">预约免费量房</view>
+    </view>
+    <view wx:for="{{projects}}" wx:key="id" class="card pj" data-id="{{item.id}}" bindtap="open" hover-class="item-hover">
+      <view class="between">
+        <text class="pj-t">{{item.community}}</text>
+        <text class="tag {{item.waiting ? 'tag-wood' : ''}}">{{item.stage}}</text>
+      </view>
+      <text class="muted">{{item.area}}㎡ {{item.houseType}} · 单号 {{item.no}}</text>
+      <view class="row pj-bar">
+        <progress class="flex1" percent="{{item.percent}}" stroke-width="6" border-radius="6" activeColor="#3a7d6c" backgroundColor="#efebe5"></progress>
+        <text class="pj-pc">{{item.percent}}%</text>
+      </view>
+      <text class="muted">{{item.count}} 篇日记 · 点击查看进度</text>
+    </view>
+    <view wx:if="{{projects.length}}" class="btn-ghost more" bindtap="book" hover-class="btn-hover">再预约一套房子</view>
+  </block>
+
+  <block wx:else>
+    <view wx:if="{{!feed.length}}" class="empty">
+      <text class="empty-text">还没有日记，进入项目后可以记录工地进展</text>
+      <view class="btn-ghost go" bindtap="goCases" hover-class="btn-hover">先去看看案例</view>
+    </view>
+    <view wx:for="{{feed}}" wx:key="id" class="card dy" data-id="{{item.pid}}" bindtap="open" hover-class="item-hover">
+      <view class="between"><text class="tag">{{item.stageName}}</text><text class="muted">{{item.time}}</text></view>
+      <text class="dy-t">{{item.text}}</text>
+      <image wx:if="{{item.photo}}" class="dy-img" src="{{item.photo}}" mode="aspectFill" data-src="{{item.photo}}" catchtap="preview"></image>
+      <text class="muted dy-w">{{item.where}}</text>
+    </view>
+  </block>
+</view>

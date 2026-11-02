@@ -1,0 +1,6 @@
+.st { display: flex; flex-direction: row; align-items: center; }
+.st-b { width: 52rpx; height: 52rpx; border-radius: 26rpx; background: #13a07b; display: flex; align-items: center; justify-content: center; }
+.st-off { background: #cfd8d4; }
+.st-press { opacity: 0.7; }
+.st-s { color: #ffffff; font-size: 34rpx; line-height: 52rpx; }
+.st-v { width: 64rpx; text-align: center; font-size: 30rpx; font-weight: bold; }

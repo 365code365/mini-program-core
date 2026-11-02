@@ -1,0 +1,17 @@
+.fr { min-height: 88rpx; border-bottom: 1rpx solid #f0f2f1; }
+.fl { font-size: 28rpx; color: #5a5d66; width: 150rpx; }
+.fl-s { width: 80rpx; }
+.fv { font-size: 28rpx; color: #1d1d22; }
+.lock { color: #13b37b; }
+.arr { color: #b0b3ba; font-size: 30rpx; margin-left: 8rpx; }
+.two-r { margin-left: 24rpx; }
+.need { font-size: 30rpx; font-weight: bold; color: #13b37b; }
+.lv { margin: 12rpx 0 8rpx; flex-wrap: wrap; }
+.lv-it { margin-right: 28rpx; }
+.lv-t { font-size: 26rpx; margin-left: 6rpx; }
+.link { color: #13b37b; font-size: 24rpx; margin-left: 16rpx; }
+.ta { width: 100%; min-height: 120rpx; background: #f6f8f7; border-radius: 12rpx; padding: 16rpx; box-sizing: border-box; font-size: 26rpx; margin-top: 16rpx; }
+.cnt { display: block; text-align: right; font-size: 22rpx; color: #a6a9b0; margin-top: 6rpx; }
+.err-box { margin: 20rpx 24rpx 0; }
+.err { color: #e5484d; font-size: 24rpx; }
+.sl { margin: 16rpx 0 28rpx; }

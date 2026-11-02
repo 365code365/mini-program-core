@@ -9,6 +9,16 @@
 .fav.on .heart { background: #ef4f76; border-color: #ef4f76; }
 .name { display: block; margin-top: 14rpx; font-size: 34rpx; font-weight: bold; }
 .flowers { display: block; margin-top: 10rpx; font-size: 24rpx; color: #7d747f; }
+.act-tip { margin-top: 14rpx; }
+.act-t { margin-left: 12rpx; font-size: 24rpx; color: #ef4f76; }
+.rv { padding: 22rpx 0 4rpx; border-top: 1rpx solid #f3eef1; margin-top: 20rpx; }
+.rv-av { width: 48rpx; height: 48rpx; border-radius: 24rpx; background: linear-gradient(135deg, #ffc2d0, #ef7f9c); color: #ffffff; font-size: 22rpx; font-weight: bold; display: flex; align-items: center; justify-content: center; margin-right: 12rpx; }
+.rv-me { background: linear-gradient(135deg, #ffd27a, #ff9a3d); }
+.rv-user { font-size: 24rpx; color: #4d4550; margin-right: 12rpx; }
+.rv-star { font-size: 22rpx; color: #ece6ea; }
+.rv-star.star-on { color: #ffb42b; }
+.rv-time { margin-left: auto; font-size: 22rpx; }
+.rv-text { display: block; margin-top: 10rpx; font-size: 26rpx; line-height: 40rpx; color: #4d4550; }
 .promise { margin-top: 20rpx; background: #fff7f9; border-radius: 12rpx; padding: 14rpx 16rpx; justify-content: space-between; }
 .pr { font-size: 22rpx; color: #c4486a; }
 .opts { display: flex; flex-direction: row; justify-content: space-between; margin-top: 16rpx; }

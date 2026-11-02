@@ -1,0 +1,13 @@
+.tabs { white-space: nowrap; padding: 24rpx 0 0; }
+.tabs-in { display: flex; flex-direction: row; padding: 0 32rpx; }
+.sk-img { width: 168rpx; height: 168rpx; margin-right: 24rpx; }
+.sk-line { height: 32rpx; margin-bottom: 20rpx; width: 360rpx; }
+.sk-line.short { width: 220rpx; }
+.empty-btn { margin-top: 32rpx; }
+.item-img { width: 168rpx; height: 168rpx; border-radius: 20rpx; margin-right: 24rpx; }
+.item-body { display: flex; flex-direction: column; }
+.item-t { font-size: 30rpx; font-weight: 600; margin-bottom: 8rpx; }
+.item-foot { margin: 16rpx 0 8rpx; }
+.prog-bg { width: 220rpx; height: 10rpx; border-radius: 5rpx; background: #ecebf3; margin-right: 16rpx; }
+.dark .prog-bg { background: #34355a; }
+.prog { height: 10rpx; border-radius: 5rpx; background: #6c63d9; }

@@ -13,3 +13,6 @@
 .btns { margin: 48rpx 32rpx 0; }
 .ghost { width: 260rpx; height: 88rpx; border-radius: 44rpx; border: 2rpx solid #14a06f; color: #14a06f; font-size: 30rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; box-sizing: border-box; margin-right: 20rpx; }
 .home { flex: 1; }
+.copy { margin-left: 14rpx; font-size: 22rpx; color: #14a06f; white-space: nowrap; }
+.inv-st { font-size: 26rpx; color: #14a06f; }
+.inv-done { color: #8a919c; }

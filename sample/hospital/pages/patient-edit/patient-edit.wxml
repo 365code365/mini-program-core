@@ -1,0 +1,45 @@
+<view class="tip"><text>{{editing ? '姓名与身份证号已实名，不能修改；信息有误请删除后重新添加' : '请填写与身份证一致的信息，用于挂号实名与医保结算'}}</text></view>
+<view class="card form">
+  <view class="f-row">
+    <text class="f-k">姓名</text>
+    <text wx:if="{{editing}}" class="f-ro">{{form.name}}</text>
+    <input wx:else class="f-in f-name" placeholder-style="font-size: 28.1rpx; color: #b8bec8;" placeholder="请输入真实姓名" value="{{form.name}}" maxlength="15" data-f="name" bindinput="onField" />
+  </view>
+  <view class="f-row">
+    <text class="f-k">身份证号</text>
+    <text wx:if="{{editing}}" class="f-ro">{{idMasked}}</text>
+    <input wx:else class="f-in f-idcard" placeholder-style="font-size: 28.1rpx; color: #b8bec8;" placeholder="18 位身份证号码" maxlength="18" type="idcard" value="{{form.idcard}}" bindinput="onIdcard" />
+  </view>
+  <view class="f-row">
+    <text class="f-k">关系</text>
+    <picker class="f-pk f-rel" mode="selector" range="{{relations}}" value="{{relIdx}}" bindchange="onRel">
+      <view class="row f-pv"><text class="{{relIdx >= 0 ? '' : 'ph'}}">{{relIdx >= 0 ? relations[relIdx] : '请选择与本人关系'}}</text><view class="chev"></view></view>
+    </picker>
+  </view>
+  <view class="f-row">
+    <text class="f-k">性别</text>
+    <text wx:if="{{editing}}" class="f-ro">{{form.gender}}</text>
+    <radio-group wx:else class="row f-radios" bindchange="onGender">
+      <label class="row f-radio"><radio value="男" checked="{{form.gender === '男'}}" color="#1f7cf0" /><text>男</text></label>
+      <label class="row f-radio"><radio value="女" checked="{{form.gender === '女'}}" color="#1f7cf0" /><text>女</text></label>
+    </radio-group>
+  </view>
+  <view class="f-row">
+    <text class="f-k">出生日期</text>
+    <text wx:if="{{editing}}" class="f-ro">{{form.birth || '未登记'}}</text>
+    <picker wx:else class="f-pk f-birth" mode="date" value="{{form.birth}}" start="1920-01-01" end="{{today}}" bindchange="onBirth">
+      <view class="row f-pv"><text class="{{form.birth ? '' : 'ph'}}">{{form.birth || '填身份证后自动带出'}}</text><view class="chev"></view></view>
+    </picker>
+  </view>
+  <view class="f-row">
+    <text class="f-k">手机号</text>
+    <input class="f-in f-phone" placeholder-style="font-size: 28.1rpx; color: #b8bec8;" placeholder="{{editing ? '原号码 ' + oldPhone + '，不改可不填' : '用于接收就诊短信'}}" maxlength="11" type="number" value="{{form.phone}}" data-f="phone" bindinput="onField" />
+  </view>
+  <view class="f-row last">
+    <text class="f-k">设为默认</text>
+    <view class="f-sw"><text class="muted f-hint">挂号时默认选中</text><switch checked="{{form.isDefault}}" color="#1f7cf0" bindchange="onDefault" /></view>
+  </view>
+</view>
+<view class="btn-primary save" bindtap="save"><text>{{editing ? '保存修改' : '保存就诊人'}}</text></view>
+<view wx:if="{{editing}}" class="del" bindtap="remove"><text>删除就诊人</text></view>
+<view style="height: 60rpx;"></view>

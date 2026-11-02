@@ -1,0 +1,53 @@
+.head { padding: 24rpx 28rpx 8rpx; background: linear-gradient(180deg, #f3f8ee, #f5f6f2); }
+.brand { font-size: 40rpx; font-weight: bold; color: #2f7d32; }
+.slogan { font-size: 24rpx; color: #5d7a55; margin-left: 16rpx; }
+.promise { font-size: 22rpx; color: #6b8a62; margin-top: 8rpx; }
+
+.story { height: 320rpx; margin: 16rpx 24rpx 0; border-radius: 20rpx; overflow: hidden; }
+.story-img { width: 100%; height: 320rpx; }
+.story-mask { position: absolute; left: 0; right: 0; bottom: 0; padding: 60rpx 28rpx 40rpx; background: linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,0.45)); display: flex; flex-direction: column; }
+.story-tag { font-size: 20rpx; color: #ffffff; background: #3f9a3c; border-radius: 6rpx; padding: 2rpx 10rpx; align-self: flex-start; }
+.story-title { font-size: 34rpx; color: #ffffff; font-weight: bold; margin-top: 10rpx; }
+.story-sub { font-size: 24rpx; color: rgba(255,255,255,0.85); margin-top: 4rpx; }
+
+.live { display: flex; flex-direction: row; align-items: center; padding: 20rpx; }
+.live-cover { width: 180rpx; height: 120rpx; border-radius: 12rpx; }
+.live-info { flex: 1; margin-left: 20rpx; display: flex; flex-direction: column; overflow: hidden; }
+.live-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.live-dot { width: 14rpx; height: 14rpx; border-radius: 7rpx; background: #e4572e; }
+.live-on { color: #e4572e; font-size: 24rpx; margin-left: 8rpx; font-weight: bold; }
+.live-view { margin-left: 12rpx; }
+.live-title { font-size: 28rpx; font-weight: bold; margin: 6rpx 0; lines: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.live-go { color: #3f9a3c; font-size: 24rpx; }
+
+.season { margin-top: 20rpx; white-space: nowrap; }
+.season-row { display: flex; flex-direction: row; }
+.season-item { width: 200rpx; margin-right: 20rpx; display: flex; flex-direction: column; flex-shrink: 0; }
+.season-img { width: 200rpx; height: 200rpx; border-radius: 14rpx; }
+.season-name { font-size: 26rpx; margin-top: 10rpx; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.season-price { font-size: 26rpx; }
+
+.grp-hint { font-size: 22rpx; color: #e4572e; margin-left: 12rpx; }
+.grp { display: flex; flex-direction: row; margin-top: 24rpx; }
+.grp-img { width: 170rpx; height: 170rpx; border-radius: 14rpx; }
+.grp-body { flex: 1; margin-left: 20rpx; display: flex; flex-direction: column; justify-content: space-between; }
+.grp-name { font-size: 28rpx; font-weight: bold; }
+.grp-bottom { align-items: baseline; }
+.del { font-size: 22rpx; color: #a7ada3; text-decoration: line-through; margin-left: 10rpx; }
+.cd { display: flex; flex-direction: row; align-items: center; margin-left: auto; }
+.cd-tx { font-size: 22rpx; color: #e4572e; margin-right: 6rpx; }
+.cd-n { font-size: 22rpx; color: #ffffff; background: #e4572e; border-radius: 6rpx; padding: 0 6rpx; }
+.cd-c { font-size: 22rpx; color: #e4572e; margin: 0 4rpx; }
+
+.all-title { margin: 36rpx 28rpx 0; }
+.sort { font-size: 24rpx; color: #8a9186; margin-left: 24rpx; }
+.sort-on { color: #3f9a3c; font-weight: bold; }
+.grid { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-between; padding: 0 24rpx; }
+.gi { width: 340rpx; background: #ffffff; border-radius: 18rpx; margin-top: 20rpx; overflow: hidden; }
+.gi-img { width: 340rpx; height: 340rpx; }
+.gi-body { padding: 16rpx 18rpx 20rpx; }
+.gi-name { font-size: 27rpx; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gi-origin { margin: 4rpx 0 8rpx; }
+.gi-sold { font-size: 20rpx; margin-left: 8rpx; }
+.gi-add { width: 44rpx; height: 44rpx; border-radius: 22rpx; background: #3f9a3c; display: flex; align-items: center; justify-content: center; }
+.gi-add-tx { color: #ffffff; font-size: 32rpx; line-height: 40rpx; }

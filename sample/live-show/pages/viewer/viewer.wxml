@@ -1,0 +1,48 @@
+<view class="tip"><text class="tip-t">根据演出实名制要求，观演人信息需与入场时出示的证件一致，一个证件同一场次限购一张。</text></view>
+
+<view wx:if="{{list.length}}" class="card list">
+  <view wx:for="{{list}}" wx:key="id" class="vw row">
+    <view wx:if="{{pickN}}" class="ck {{item.on ? 'ck-on' : ''}}" data-id="{{item.id}}" bindtap="toggle"><text wx:if="{{item.on}}" class="ck-t">✓</text></view>
+    <view class="col flex1" data-id="{{item.id}}" bindtap="toggle">
+      <text class="vw-n">{{item.name}}</text>
+      <text class="muted">{{item.type}} {{item.mask}}</text>
+    </view>
+    <text class="del" data-id="{{item.id}}" bindtap="remove">删除</text>
+  </view>
+</view>
+<view wx:elif="{{!adding}}" class="empty">
+  <view class="empty-ic"><text class="empty-ic-t">人</text></view>
+  <text class="empty-t">还没有观演人</text>
+</view>
+
+<view wx:if="{{adding}}" class="card form">
+  <text class="sec-title">新增观演人</text>
+  <view class="row field">
+    <text class="f-l">姓名</text>
+    <input class="f-in" placeholder="与证件一致" value="{{name}}" bindinput="onName" maxlength="20" />
+  </view>
+  <text wx:if="{{errs.name}}" class="err">{{errs.name}}</text>
+  <picker range="{{types}}" value="{{typeIdx}}" bindchange="onType">
+    <view class="row field">
+      <text class="f-l">证件类型</text>
+      <text class="f-v flex1">{{types[typeIdx]}}</text>
+      <text class="muted">›</text>
+    </view>
+  </picker>
+  <view class="row field">
+    <text class="f-l">证件号码</text>
+    <input class="f-in" type="idcard" placeholder="请输入证件号码" value="{{no}}" bindinput="onNo" maxlength="18" />
+  </view>
+  <text wx:if="{{errs.no}}" class="err">{{errs.no}}</text>
+  <view class="row form-btns">
+    <view class="btn-ghost flex1" bindtap="cancelAdd"><text>取消</text></view>
+    <view class="btn-main flex1 save" bindtap="save"><text>保存</text></view>
+  </view>
+</view>
+<view wx:else class="add" bindtap="openAdd"><text class="add-t">＋ 新增观演人</text></view>
+<view class="bottom-space"></view>
+
+<view wx:if="{{pickN}}" class="foot">
+  <text class="muted flex1">本单需 {{pickN}} 位，已选 {{picked.length}} 位</text>
+  <view class="btn-main done" bindtap="done"><text>完成</text></view>
+</view>

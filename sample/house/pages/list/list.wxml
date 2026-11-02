@@ -24,12 +24,15 @@
 
 <view class="result row between">
   <text class="sub">共找到 <text class="hl">{{houses.length}}</text> 套{{typeText}}</text>
-  <text class="reset" wx:if="{{dIndex || pIndex || lIndex || kw}}" bindtap="onReset">清空筛选</text>
+  <view class="row">
+    <text class="reset" wx:if="{{dIndex || pIndex || lIndex || kw}}" bindtap="onReset">清空筛选</text>
+    <text class="sub-btn" bindtap="onSubscribe">订阅此条件</text>
+  </view>
 </view>
 
 <view class="card list" wx:if="{{houses.length}}">
   <view class="h-card" wx:for="{{houses}}" wx:key="id" bindtap="onOpen" data-id="{{item.id}}">
-    <image class="h-img" src="{{item.cover}}" mode="aspectFill"></image>
+    <image class="h-img" src="{{item.cover}}" mode="aspectFill" />
     <view class="h-main">
       <text class="h-title">{{item.title}}</text>
       <text class="h-brief">{{item.brief}}</text>

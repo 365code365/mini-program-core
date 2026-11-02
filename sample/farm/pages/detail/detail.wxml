@@ -1,0 +1,120 @@
+<view class="media">
+  <video wx:if="{{tab === 'video'}}" id="originVideo" class="media-box" src="{{video}}" poster="{{g.cover}}" object-fit="cover"
+    show-center-play-btn="{{true}}" controls="{{true}}" bindplay="onPlay" bindpause="onPause" bindended="onEnded" binderror="onVideoError"></video>
+  <swiper wx:else class="media-box" indicator-dots="{{true}}" indicator-active-color="#3f9a3c" circular="{{true}}" bindchange="onImgChange">
+    <swiper-item wx:for="{{g.imgs}}" wx:key="*this">
+      <image class="media-box" src="{{item}}" mode="{{index === 0 ? 'aspectFit' : 'aspectFill'}}" data-i="{{index}}" bindtap="preview"></image>
+    </swiper-item>
+  </swiper>
+  <view class="media-tabs">
+    <text class="mt {{tab === 'video' ? 'mt-on' : ''}}" data-t="video" bindtap="switchMedia">产地视频</text>
+    <text class="mt {{tab === 'img' ? 'mt-on' : ''}}" data-t="img" bindtap="switchMedia">图集 {{imgIndex + 1}}/{{g.imgs.length}}</text>
+  </view>
+</view>
+
+<view class="pricebar">
+  <view class="pb-left">
+    <view class="row pb-row">
+      <text class="pb-label">{{g.groupSize}}人拼团价</text>
+      <text class="pb-yen">¥</text><text class="pb-price">{{g.groupPrice}}</text>
+      <text class="pb-single">单买 ¥{{g.price}}</text>
+    </view>
+    <text class="pb-sold">已拼 {{g.sold}} 件 · 产季 {{g.season}}</text>
+  </view>
+  <view class="pb-save"><text class="pb-save-tx">拼团省</text><text class="pb-save-n">¥{{saveText}}</text></view>
+</view>
+
+<view class="card">
+  <text class="name">{{g.name}}</text>
+  <view class="row tags">
+    <text class="tag" wx:for="{{g.tags}}" wx:key="*this">{{item}}</text>
+    <text class="muted">产地：{{g.origin}}</text>
+  </view>
+  <view class="row between sku-line" bindtap="openSku" data-mode="cart">
+    <text class="muted">已选</text>
+    <text class="sku-chosen">{{chosenText}}</text>
+    <text class="muted">›</text>
+  </view>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="sec-title">{{groups.length}} 个团正在拼，可直接参与</text>
+    <text class="muted" bindtap="goGroupHall">更多 ›</text>
+  </view>
+  <view class="og" wx:for="{{groups}}" wx:key="id">
+    <image class="og-av" src="{{item.avatar}}" mode="scaleToFill"></image>
+    <view class="og-mid">
+      <text class="og-name">{{item.name}}</text>
+      <view class="row">
+        <text class="og-lack">还差 {{item.lack}} 人成团</text>
+        <text class="muted og-cd">{{item.cd ? '剩余 ' + item.cd.text : '已结束'}}</text>
+      </view>
+    </view>
+    <view class="og-btn" hover-class="btn-hover" data-id="{{item.id}}" bindtap="joinGroup"><text class="og-btn-tx">去参团</text></view>
+  </view>
+  <view class="empty-line" wx:if="{{!groups.length}}"><text class="muted">暂时没有可参与的团，发起一个吧</text></view>
+</view>
+
+<view class="card farmer">
+  <image class="fm-av" src="{{farmer.avatar}}" mode="scaleToFill"></image>
+  <view class="fm-mid">
+    <text class="fm-name">{{farmer.name}}</text>
+    <text class="muted">{{farmer.title}}</text>
+  </view>
+  <view class="btn-ghost" hover-class="btn-hover" bindtap="callFarmer">联系果农</view>
+</view>
+
+<view class="card">
+  <text class="sec-title">产地说明</text>
+  <text class="desc">{{g.desc}}</text>
+  <image class="desc-img" wx:for="{{g.imgs}}" wx:key="*this" src="{{item}}" mode="widthFix"></image>
+  <view class="rule">
+    <text class="rule-t">拼团规则</text>
+    <text class="rule-tx">1. 开团或参团后 24 小时内凑满 {{g.groupSize}} 人即拼团成功，按成团顺序发货；</text>
+    <text class="rule-tx">2. 超时未满员自动退款，款项 1~3 个工作日原路退回；</text>
+    <text class="rule-tx">3. 生鲜签收 48 小时内发现坏果，拍照申请售后即可按比例赔付。</text>
+  </view>
+</view>
+<view class="bottom-gap"></view>
+
+<view class="bar">
+  <view class="bar-ic" bindtap="toggleFav"><text class="bar-ic-sym {{fav ? 'fav-on' : ''}}">{{fav ? '♥' : '♡'}}</text><text class="bar-ic-tx">{{fav ? '已收藏' : '收藏'}}</text></view>
+  <view class="bar-ic" bindtap="goCart">
+    <text class="bar-ic-sym">🛒</text><text class="bar-ic-tx">购物车</text>
+    <view class="bar-badge" wx:if="{{cartCount}}"><text class="bar-badge-tx">{{cartCount}}</text></view>
+  </view>
+  <view class="bar-btn bar-cart" hover-class="btn-hover" data-mode="cart" bindtap="openSku"><text class="bar-btn-t">加入购物车</text></view>
+  <view class="bar-btn bar-single" hover-class="btn-hover" data-mode="single" bindtap="openSku"><text class="bar-btn-p">¥{{g.price}}</text><text class="bar-btn-t">单独购买</text></view>
+  <view class="bar-btn bar-group" hover-class="btn-hover" data-mode="group" bindtap="openSku"><text class="bar-btn-p">¥{{g.groupPrice}}</text><text class="bar-btn-t">发起拼团</text></view>
+</view>
+
+<page-container show="{{skuShow}}" position="bottom" round="{{true}}" bind:clickoverlay="closeSku" bind:afterleave="onSkuLeave">
+  <view class="sku">
+    <view class="row sku-head">
+      <image class="sku-img" src="{{g.cover}}" mode="aspectFill"></image>
+      <view class="sku-hd-mid">
+        <view class="row"><text class="pb-yen sku-yen">¥</text><text class="sku-price">{{skuPrice}}</text><text class="tag sku-mode">{{modeText}}</text></view>
+        <text class="muted">{{skuStock}}</text>
+        <text class="sku-sel">{{chosenText}}</text>
+      </view>
+      <text class="sku-x" bindtap="closeSku">✕</text>
+    </view>
+    <view class="dim" wx:for="{{dims}}" wx:key="name" wx:for-item="d" wx:for-index="di">
+      <text class="dim-name">{{d.name}}</text>
+      <view class="opts">
+        <view class="opt {{o.on ? 'opt-on' : ''}} {{o.off ? 'opt-off' : ''}}" wx:for="{{d.opts}}" wx:key="label" wx:for-item="o" wx:for-index="oi"
+          data-d="{{di}}" data-o="{{oi}}" bindtap="pick"><text class="opt-tx">{{o.label}}{{o.off ? '（缺货）' : ''}}</text></view>
+      </view>
+    </view>
+    <view class="row between qty-line">
+      <text class="dim-name">数量</text>
+      <view class="row">
+        <view class="step {{qty <= 1 ? 'step-off' : ''}}" data-d="-1" bindtap="stepQty"><text>−</text></view>
+        <text class="qty">{{qty}}</text>
+        <view class="step {{qty >= maxQty ? 'step-off' : ''}}" data-d="1" bindtap="stepQty"><text>+</text></view>
+      </view>
+    </view>
+    <view class="btn sku-ok {{skuKey ? '' : 'sku-ok-off'}}" hover-class="btn-hover" bindtap="confirmSku">{{skuKey ? okText : '请选择完整规格'}}</view>
+  </view>
+</page-container>

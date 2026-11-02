@@ -1,0 +1,19 @@
+.tabs { display: flex; flex-direction: row; background: #fff; margin-bottom: 20rpx; }
+.tab { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 26rpx 0 14rpx; font-size: 28rpx; color: #8a9099; }
+.tab-on { color: #1f2329; font-weight: bold; }
+.tab-line { width: 40rpx; height: 6rpx; border-radius: 3rpx; background: #1E6FFF; margin-top: 10rpx; }
+.clear-row { margin: 0 32rpx 16rpx; }
+.clear { font-size: 24rpx; color: #1E6FFF; padding: 6rpx 0 6rpx 20rpx; }
+.h { padding: 20rpx; align-items: stretch; }
+.h-img { width: 180rpx; height: 180rpx; border-radius: 14rpx; flex-shrink: 0; }
+.h-info { margin-left: 20rpx; display: flex; flex-direction: column; }
+.h-name { font-size: 28rpx; font-weight: bold; line-height: 40rpx; }
+.h-meta { margin-top: 10rpx; }
+.h-area { margin-left: 10rpx; }
+.h-foot { margin-top: auto; align-items: flex-end; }
+.h-price { font-size: 34rpx; font-weight: bold; margin-right: 4rpx; }
+.fav-btn { height: 52rpx; padding: 0 22rpx; border-radius: 26rpx; border: 2rpx solid #d5d8dc; font-size: 24rpx; color: #4e5969; display: flex; flex-direction: row; align-items: center; }
+.fav-on { border-color: #FFC2A8; color: #FF5A36; }
+.empty { display: flex; flex-direction: column; align-items: center; padding: 120rpx 0; }
+.go { margin-top: 24rpx; height: 64rpx; padding: 0 40rpx; border-radius: 32rpx; border: 2rpx solid #1E6FFF; color: #1E6FFF; font-size: 26rpx; display: flex; flex-direction: row; align-items: center; }
+.gap { height: 40rpx; }

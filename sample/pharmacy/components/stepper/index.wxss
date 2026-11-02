@@ -1,0 +1,7 @@
+.st { display: flex; flex-direction: row; align-items: center; border: 1rpx solid #dfe5e3; border-radius: 8rpx; height: 56rpx; }
+.b { width: 56rpx; height: 56rpx; line-height: 56rpx; text-align: center; font-size: 28rpx; color: #2b3a36; }
+.dis { color: #c9d1ce; }
+.n { width: 72rpx; height: 56rpx; text-align: center; font-size: 26rpx; border-left: 1rpx solid #dfe5e3; border-right: 1rpx solid #dfe5e3; }
+.st-small { height: 48rpx; }
+.st-small .b { width: 48rpx; height: 48rpx; line-height: 48rpx; font-size: 24rpx; }
+.st-small .n { width: 60rpx; height: 48rpx; font-size: 24rpx; }

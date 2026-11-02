@@ -1,0 +1,34 @@
+<view class="page">
+  <view class="seg-wrap"><view class="seg">
+    <view wx:for="{{ranges}}" wx:key="k" class="seg-item {{range === item.k ? 'seg-on' : ''}}" data-k="{{item.k}}" bindtap="onRange"><text>{{item.t}}</text></view>
+  </view></view>
+  <view class="card">
+    <view class="row between">
+      <text class="card-title">{{rangeText}}</text>
+      <text class="muted">{{bookName}}</text>
+    </view>
+    <view class="sums">
+      <view class="sum-cell"><view class="muted"><text>笔数</text></view><view class="sum-v"><text>{{count}}</text></view></view>
+      <view class="sum-cell"><view class="muted"><text>支出</text></view><view class="sum-v"><text>{{outText}}</text></view></view>
+      <view class="sum-cell"><view class="muted"><text>收入</text></view><view class="sum-v"><text>{{inText}}</text></view></view>
+      <view class="sum-cell"><view class="muted"><text>结余</text></view><view class="sum-v"><text>{{leftText}}</text></view></view>
+    </view>
+  </view>
+  <view class="card">
+    <view class="row between">
+      <text class="card-title">CSV 预览</text>
+      <text class="muted">可直接粘贴进 Excel / Numbers</text>
+    </view>
+    <view wx:if="{{empty}}" class="empty muted"><text>这段时间没有账单</text></view>
+    <view wx:else class="csv">
+      <view wx:for="{{preview}}" wx:key="*this" class="csv-line {{index === 0 ? 'csv-head' : ''}}"><text>{{item}}</text></view>
+      <view wx:if="{{more > 0}}" class="muted csv-rest"><text>…还有 {{more}} 行</text></view>
+    </view>
+  </view>
+  <view class="btns">
+    <view class="btn-primary" hover-class="btn-hover" bindtap="onCopyCsv"><text>复制 CSV（{{count}} 笔）</text></view>
+    <view class="btn-ghost" hover-class="btn-hover" bindtap="onCopyText"><text>复制文字摘要</text></view>
+  </view>
+  <view wx:if="{{last}}" class="foot muted"><text>上次：{{last}}</text></view>
+  <view class="bottom-space"></view>
+</view>

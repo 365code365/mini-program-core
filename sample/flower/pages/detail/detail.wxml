@@ -1,4 +1,4 @@
-<image class="hero" src="{{p.img}}" mode="aspectFill"></image>
+<image class="hero" src="{{p.img}}" mode="aspectFill" />
 <view class="card info">
   <view class="row between">
     <view class="row price-row"><text class="price yen">¥</text><text class="price big">{{unit}}</text><text class="origin">¥{{p.origin + unit - p.price}}</text></view>
@@ -6,6 +6,7 @@
   </view>
   <text class="name">{{p.name}}</text>
   <text class="flowers">花材：{{p.flowers}}</text>
+  <view wx:if="{{half}}" class="act-tip row"><text class="pill">活动</text><text class="act-t">同一单第 2 束半价，结算时自动减</text></view>
   <view class="row promise">
     <text class="pr">鲜花实拍</text><text class="pr">花艺师手作</text><text class="pr">准时送达</text><text class="pr">免费贺卡</text>
   </view>
@@ -53,10 +54,22 @@
     <view class="tpl" wx:for="{{cardTpls}}" wx:key="*this" data-t="{{item}}" bindtap="useTpl"><text>{{item}}</text></view>
   </scroll-view>
 </view>
+<view class="card">
+  <view class="row between"><text class="sec-title">买家评价</text><text class="muted">{{rateCount}} 条 · 好评率 98%</text></view>
+  <view class="rv" wx:for="{{reviews}}" wx:key="k">
+    <view class="row">
+      <view class="rv-av {{item.mine ? 'rv-me' : ''}}"><text>{{item.av}}</text></view>
+      <text class="rv-user">{{item.user}}</text>
+      <text wx:for="{{starList}}" wx:for-item="n" wx:key="*this" class="rv-star {{n <= item.stars ? 'star-on' : ''}}">★</text>
+      <text wx:if="{{item.time}}" class="muted rv-time">{{item.time}}</text>
+    </view>
+    <text class="rv-text">{{item.text}}</text>
+  </view>
+</view>
 <view class="foot-gap"></view>
 <view class="foot row">
   <view class="f-cart" bindtap="goCart">
-    <image class="f-ic" src="/images/tab/cart.png"></image>
+    <image class="f-ic" src="/images/tab/cart.png" />
     <text class="f-tx">购物车</text>
     <view wx:if="{{cartCount > 0}}" class="badge"><text>{{cartCount}}</text></view>
   </view>

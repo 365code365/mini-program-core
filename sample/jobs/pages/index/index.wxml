@@ -4,7 +4,7 @@
       <text class="intent">{{intent}}</text>
       <view class="intent-add" bindtap="onIntent"><text class="intent-add-t">切换</text></view>
     </view>
-    <picker mode="selector" range="{{cities}}" value="{{cityIdx}}" bindchange="onCity">
+    <picker class="city-picker" mode="selector" range="{{cities}}" value="{{cityIdx}}" bindchange="onCity">
       <view class="row city">
         <text class="city-t">{{cities[cityIdx]}}</text>
         <view class="tri"></view>
@@ -24,17 +24,24 @@
     <view class="tab-line" wx:if="{{tabIdx === index}}"></view>
   </view>
   <view class="flex1"></view>
-  <text class="sub">共 {{list.length}} 个职位</text>
+  <view class="filter-btn row {{fCount ? 'on' : ''}}" bindtap="onOpenFilter">
+    <text class="filter-t">筛选{{fCount ? ' · ' + fCount : ''}}</text>
+  </view>
+</view>
+<view class="count row">
+  <text class="sub">共 {{list.length}} 个职位{{blockedCount ? '（已屏蔽 ' + blockedCount + ' 个）' : ''}}</text>
 </view>
 
 <view class="list">
   <view wx:for="{{list}}" wx:key="id" class="card job" data-id="{{item.id}}" bindtap="onJob">
     <view class="row between">
       <text class="job-title flex1">{{item.title}}</text>
+      <text class="mark" wx:if="{{item.applied}}">已投递</text>
       <text class="salary">{{item.salary}}</text>
     </view>
     <view class="row co-line">
       <text class="co-name">{{item.co.name}}</text>
+      <text class="match" wx:if="{{item.match}}">匹配意向</text>
       <text class="sub co-meta">{{item.co.stage}}·{{item.co.size}}</text>
     </view>
     <view class="tags">
@@ -44,7 +51,7 @@
     </view>
     <view class="row between hr-line">
       <view class="row">
-        <view class="avatar" style="background: {{item.hrInfo.bg}}">{{item.hrInfo.ch}}</view>
+        <view class="avatar" style="background: {{item.hrInfo.bg}}"><text>{{item.hrInfo.ch}}</text></view>
         <text class="hr-name">{{item.hrInfo.name}}·{{item.hrInfo.title}}</text>
         <view class="online" wx:if="{{item.hrInfo.online}}"></view>
       </view>
@@ -53,7 +60,29 @@
   </view>
   <view wx:if="{{list.length === 0}}" class="empty">
     <view class="empty-circle"></view>
-    <text class="sub">没有找到「{{keyword}}」相关的职位</text>
+    <text class="sub">{{keyword ? '没有找到「' + keyword + '」相关的职位' : '没有符合筛选条件的职位'}}</text>
+    <view class="empty-btn" wx:if="{{keyword || fCount}}" bindtap="onClearFilter"><text>清空条件</text></view>
   </view>
 </view>
 <view class="tabbar-space"></view>
+<view class="mask" wx:if="{{showFilter}}" bindtap="onCloseFilter"></view>
+<!-- 从顶部落下：tab 页底部是 tabBar，底部面板会和它叠在一起（引擎里点面板底部的按钮会点到 tabBar） -->
+<view class="sheet drop" wx:if="{{showFilter}}" catchtap="noop">
+  <text class="sheet-title">筛选职位</text>
+  <text class="f-h">工作经验</text>
+  <view class="opts">
+    <view class="opt {{draft.exp === index ? 'on' : ''}}" wx:for="{{exps}}" wx:key="*this" data-k="exp" data-i="{{index}}" bindtap="onPickOpt"><text class="opt-t">{{item}}</text></view>
+  </view>
+  <text class="f-h">学历要求</text>
+  <view class="opts">
+    <view class="opt {{draft.edu === index ? 'on' : ''}}" wx:for="{{edus}}" wx:key="*this" data-k="edu" data-i="{{index}}" bindtap="onPickOpt"><text class="opt-t">{{item}}</text></view>
+  </view>
+  <text class="f-h">月薪</text>
+  <view class="opts">
+    <view class="opt {{draft.sal === index ? 'on' : ''}}" wx:for="{{salaries}}" wx:key="text" data-k="sal" data-i="{{index}}" bindtap="onPickOpt"><text class="opt-t">{{item.text}}</text></view>
+  </view>
+  <view class="row f-btns">
+    <view class="f-reset" bindtap="onResetFilter"><text>重置</text></view>
+    <view class="btn-primary flex1 f-ok" bindtap="onApplyFilter">确定</view>
+  </view>
+</view>

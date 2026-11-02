@@ -1,0 +1,62 @@
+# 悦听音乐：每页能开 + 迷你条（模板 mini-bar 的 onMiniTap / onMiniToggle 真能点）→ 定时关闭（播完本首 / 30 分钟 / 取消）
+#          + 歌单收藏 → 我的「收藏歌单」→ 取消收藏
+smoke pages/playlist/playlist?id=p2 pages/player/player?id=3
+open
+shot target/_polish_shots/discover-top.png
+tapn 1 .daily
+expect getCurrentPages()[0].data.mini.id === 5 && getCurrentPages()[0].data.miniPlaying === true
+tap .mini-btn
+expect getCurrentPages()[0].data.miniPlaying === false
+route pages/discover/discover
+shot target/_polish_shots/discover.png
+tap .mini-info
+route pages/player/player
+expect getCurrentPages().slice(-1)[0].data.playing === false
+tap .play-btn
+expect getCurrentPages().slice(-1)[0].data.playing === true
+# 定时关闭：播完本首就停，不切歌
+tap .sleep-btn
+sheet 3 5
+expect getCurrentPages().slice(-1)[0].data.sleepText === '播完本首关闭'
+toast 播完本首
+shot target/_polish_shots/player-sleep.png
+eval getCurrentPages().slice(-1)[0].onSeek({ detail: { value: 999 } })
+wait 2300
+expect getCurrentPages().slice(-1)[0].data.playing === false
+expect getCurrentPages().slice(-1)[0].data.song.id === 5
+expect getCurrentPages().slice(-1)[0].data.sleepText === ''
+toast 定时关闭
+tap .sleep-btn
+sheet 1 5
+expect getCurrentPages().slice(-1)[0].data.sleepText === '30 分钟后关闭'
+tap .sleep-btn
+sheet 4 5
+expect getCurrentPages().slice(-1)[0].data.sleepText === ''
+toast 已取消定时关闭
+back
+# 歌单收藏
+tapn 1 .pl
+route pages/playlist/playlist
+expect getCurrentPages().slice(-1)[0].data.pl.id === 'p2' && getCurrentPages().slice(-1)[0].data.plFav === false
+tap .pl-fav
+expect getCurrentPages().slice(-1)[0].data.plFav === true
+expect JSON.stringify(wx.getStorageSync('mu_pl_favs')) === '["p2"]'
+toast 已收藏
+shot target/_polish_shots/playlist.png
+back
+eval wx.switchTab({ url: '/pages/mine/mine' })
+route pages/mine/mine
+expect getCurrentPages()[0].data.plCount === 1
+tapn 2 .tab
+expect getCurrentPages()[0].data.tab === 2
+count 1 .mine-pl
+shot target/_polish_shots/mine-pl.png
+tap .mine-pl
+route pages/playlist/playlist
+expect getCurrentPages().slice(-1)[0].data.plFav === true
+tap .pl-fav
+toast 已取消收藏歌单
+back
+expect getCurrentPages()[0].data.plCount === 0
+count 0 .mine-pl
+noerr

@@ -13,7 +13,11 @@
 .bk-m { font-size: 20rpx; color: #e0985f; }
 .bk-c { flex: 1; margin-left: 20rpx; display: flex; flex-direction: column; min-width: 0; }
 .bk-s { font-size: 28rpx; font-weight: bold; margin-bottom: 6rpx; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bk-x { padding: 8rpx 20rpx; border-radius: 24rpx; border: 2rpx solid #e6ded6; font-size: 22rpx; color: #7a7069; margin-left: 12rpx; }
+.bk-x { padding: 8rpx 20rpx; border-radius: 24rpx; border: 2rpx solid #e6ded6; font-size: 22rpx; color: #7a7069; margin-left: 12rpx; flex-shrink: 0; }
+.bk-x.off { color: #c4bcb4; border-color: #f0ebe6; }
+.bk-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.all-bk { margin-right: 24rpx; }
+.orders .os { margin-top: 28rpx; }
 .none { margin-top: 20rpx; padding: 24rpx; background: #faf7f4; border-radius: 16rpx; display: flex; flex-direction: row; justify-content: space-between; align-items: center; font-size: 26rpx; color: #9a928b; }
 .os { display: flex; flex-direction: row; margin-top: 24rpx; }
 .o { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; }

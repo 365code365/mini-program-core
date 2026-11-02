@@ -1,0 +1,365 @@
+# 饱了么外卖：每页能开；A 下单链路（搜索 / 分类 / 规格 / 购物车 / 结算 / 支付 / 状态推进 / 催单 / 退款 / 余额支付 / 取消 / 确认收货 / 评价）
+# B 我的（余额充值 / 吃货豆兑红包 / 兑换码 / 超级会员 / 收藏 / 我的评价 / 地址增删改 / 客服 / 邀请 / 设置）
+smoke pages/shop/shop?id=s4 pages/checkout/checkout?shop=s1 pages/order-detail/order-detail?id=none pages/address/address?select=1 pages/coupons/coupons?select=red&base=30
+
+open
+expect getCurrentPages()[0].data.list.length === 11
+type .search-input => 酸菜鱼
+expect getCurrentPages()[0].data.list.length === 1 && getCurrentPages()[0].data.list[0].id === 's4'
+tap .search-clear
+expect getCurrentPages()[0].data.keyword === '' && getCurrentPages()[0].data.list.length === 11 && getCurrentPages()[0].data.kwSeq === 1
+tapn 4 .kk-item
+wait 500
+expect getCurrentPages()[0].data.category === '看病买药' && getCurrentPages()[0].data.list.length === 1
+shot target/_polish_shots/fd-index-filter.png
+tapn 4 .kk-item
+wait 500
+expect getCurrentPages()[0].data.category === '' && getCurrentPages()[0].data.list.length === 11
+tapn 1 .sort
+expect getCurrentPages()[0].data.list[0].id === 's5'
+tapn 0 .sort
+
+# 店铺：酸菜鱼选规格（双人份 + 特辣），加料三样
+tapn 3 .shop
+route pages/shop/shop
+expect getCurrentPages().slice(-1)[0].data.shop.id === 's4'
+tapn 0 .spec-btn
+expect getCurrentPages().slice(-1)[0].data.sheet.id === 'd401'
+tapn 1 .opt
+expect getCurrentPages().slice(-1)[0].data.sheet && getCurrentPages().slice(-1)[0].data.picks[0] === 1
+tapn 4 .opt
+expect getCurrentPages().slice(-1)[0].data.picks[1] === 2 && getCurrentPages().slice(-1)[0].data.specTotal === 69.9
+shot target/_polish_shots/fd-shop-spec.png
+tap .spec-add
+expect getCurrentPages().slice(-1)[0].data.sheet === null && getCurrentPages().slice(-1)[0].data.cart.count === 1
+tapn 1 .cat
+tapn 0 .step-plus
+tapn 1 .step-plus
+tapn 2 .step-plus
+expect getCurrentPages().slice(-1)[0].data.cart.count === 4 && getCurrentPages().slice(-1)[0].data.cart.amount === 88.9
+expect getCurrentPages().slice(-1)[0].data.canSubmit === true
+tap .cart-text
+expect getCurrentPages().slice(-1)[0].data.showCart === true
+count 4 .panel-item
+shot target/_polish_shots/fd-shop-cart.png
+tap .mask
+expect getCurrentPages().slice(-1)[0].data.showCart === false
+tap .cart-go
+route pages/checkout/checkout
+
+# 结算：满 80 减 28 → 鱼你在一起代金券 10 → 大额红包 12；打包 4 × 2、配送 5
+expect getCurrentPages().slice(-1)[0].data.goods === 88.9 && getCurrentPages().slice(-1)[0].data.fullCut === 28
+expect getCurrentPages().slice(-1)[0].data.shopCut === 10 && getCurrentPages().slice(-1)[0].data.redCut === 12
+expect getCurrentPages().slice(-1)[0].data.packFee === 8 && getCurrentPages().slice(-1)[0].data.pay === 51.9
+# 手动换成 6 元红包
+tap .fee-red
+route pages/coupons/coupons
+count 4 .coupon
+shot target/_polish_shots/fd-coupons-select.png
+tapn 1 .coupon
+route pages/checkout/checkout
+expect getCurrentPages().slice(-1)[0].data.red.id === 'r3' && getCurrentPages().slice(-1)[0].data.pay === 57.9
+# 送到「家」
+tap .addr-main
+route pages/address/address
+tapn 1 .addr
+route pages/checkout/checkout
+expect getCurrentPages().slice(-1)[0].data.address.tag === '家'
+# 快捷备注 + 不要餐具
+tapn 0 .r-tag
+tapn 1 .r-tag
+expect getCurrentPages().slice(-1)[0].data.remark === '少辣，不要香菜' && getCurrentPages().slice(-1)[0].data.remarkSeq === 2
+picker .ware-row
+pickrow 0 1 1
+pickok
+expect getCurrentPages().slice(-1)[0].data.tablewareIdx === 1
+shot target/_polish_shots/fd-checkout.png
+# 微信支付（宿主没有支付能力：退回页内确认框）
+tap .pay-btn
+modal?
+modal ok
+wait 300
+route pages/order-detail/order-detail
+expect getCurrentPages().slice(-1)[0].data.order.status === 'paid' && getCurrentPages().slice(-1)[0].data.st.stage === 0
+expect getCurrentPages().slice(-1)[0].data.order.redId === 'r3' && getCurrentPages().slice(-1)[0].data.order.shopCouponId === 'k2'
+expect getCurrentPages().slice(-1)[0].data.order.remark === '少辣，不要香菜' && getCurrentPages().slice(-1)[0].data.order.tableware === '不需要餐具（环保）'
+expect getCurrentPages().slice(-1)[0].data.order.address.tag === '家'
+expect wx.getStorageSync('fd_used_coupons').indexOf('r3') >= 0 && wx.getStorageSync('fd_beans') === 1317
+expect wx.getStorageSync('fd_cart').lines.length === 0
+
+# 时间往后拨 2 分钟：商家已接单 → 能催单、能退款
+eval (function () { var l = wx.getStorageSync('fd_orders'); l[0].startAt -= 2 * 60000; l[0].etaAt -= 2 * 60000; wx.setStorageSync('fd_orders', l); getCurrentPages().slice(-1)[0].reload(); })()
+expect getCurrentPages().slice(-1)[0].data.st.stage === 1 && getCurrentPages().slice(-1)[0].data.st.canRefund === true
+tap .op-urge
+toast 已催单
+expect getCurrentPages().slice(-1)[0].data.urged !== ''
+tap .op-urge
+toast 刚刚催过了
+shot target/_polish_shots/fd-detail-going.png
+# 申请退款：原因 → 确认 → 红包、代金券、吃货豆退回
+tap .op-refund
+sheet 1 5
+modal?
+modal ok
+expect getCurrentPages().slice(-1)[0].data.order.status === 'refund' && getCurrentPages().slice(-1)[0].data.order.refundReason === '商家出餐太慢'
+expect wx.getStorageSync('fd_used_coupons').indexOf('r3') < 0 && wx.getStorageSync('fd_used_coupons').indexOf('k2') < 0
+expect wx.getStorageSync('fd_beans') === 1260
+shot target/_polish_shots/fd-detail-refund.png
+
+# 再来一单 → 余额支付 → 商家接单前取消，钱退回余额
+tap .op-again
+route pages/shop/shop
+expect getCurrentPages().slice(-1)[0].data.cart.count === 4
+tap .cart-go
+route pages/checkout/checkout
+expect getCurrentPages().slice(-1)[0].data.pay === 51.9 && getCurrentPages().slice(-1)[0].data.address.tag === '家'
+tapn 1 .pay-way
+expect getCurrentPages().slice(-1)[0].data.payBy === 'wallet'
+tap .pay-btn
+modal?
+modal ok
+wait 300
+route pages/order-detail/order-detail
+expect getCurrentPages().slice(-1)[0].data.order.payBy === 'wallet' && wx.getStorageSync('fd_wallet').balance === 36.1
+tap .op-cancel
+modal ok
+expect getCurrentPages().slice(-1)[0].data.order.status === 'cancelled'
+expect wx.getStorageSync('fd_wallet').balance === 88 && wx.getStorageSync('fd_wallet').logs[0].type === 'refund'
+expect wx.getStorageSync('fd_used_coupons').length === 0 && wx.getStorageSync('fd_beans') === 1260
+
+# 进行中的老订单：骑手已取餐 → 确认收货 → 评价得 20 吃货豆
+eval wx.switchTab({ url: '/pages/orders/orders' })
+route pages/orders/orders
+tapn 2 .tab
+count 1 .order
+shot target/_polish_shots/fd-orders.png
+tap .order
+route pages/order-detail/order-detail
+expect getCurrentPages().slice(-1)[0].data.st.canConfirm === true
+tap .op-confirm
+modal ok
+expect getCurrentPages().slice(-1)[0].data.order.status === 'done' && getCurrentPages().slice(-1)[0].data.st.canRate === true
+tapn 3 .star
+expect getCurrentPages().slice(-1)[0].data.stars === 4
+tapn 0 .rate-tag
+type .rate-input => 鸡汤很鲜，送得也快
+blur
+tap .rate-btn
+toast 吃货豆 +20
+expect getCurrentPages().slice(-1)[0].data.rating.stars === 4 && getCurrentPages().slice(-1)[0].data.rating.tags[0] === '味道赞'
+expect getCurrentPages().slice(-1)[0].data.rating.text === '鸡汤很鲜，送得也快' && wx.getStorageSync('fd_beans') === 1280
+shot target/_polish_shots/fd-detail-rated.png
+
+
+open pages/mine/mine
+expect getCurrentPages()[0].data.stats[0].value === 4 && getCurrentPages()[0].data.stats[2].value === '¥88' && getCurrentPages()[0].data.stats[3].value === 1260
+shot target/_polish_shots/fd-mine.png
+
+# 余额：充 100 送 5（宿主没有支付能力：退回页内确认框）
+tapn 2 .stat
+route pages/wallet/wallet
+expect getCurrentPages().slice(-1)[0].data.balance === 88
+tapn 1 .opt
+tap .go
+modal?
+modal ok
+wait 300
+toast 到账
+expect getCurrentPages().slice(-1)[0].data.balance === 193 && wx.getStorageSync('fd_wallet').balance === 193
+expect getCurrentPages().slice(-1)[0].data.logs[0].type === 'recharge' && getCurrentPages().slice(-1)[0].data.logs[0].amount === 105
+shot target/_polish_shots/fd-wallet.png
+back
+expect getCurrentPages()[0].data.stats[2].value === '¥193'
+
+# 吃货豆：300 豆兑 2 元无门槛红包；1500 豆的不够
+tapn 3 .stat
+route pages/beans/beans
+expect getCurrentPages().slice(-1)[0].data.beans === 1260
+tapn 0 .g-btn
+modal ok
+toast 红包已放入卡包
+expect getCurrentPages().slice(-1)[0].data.beans === 960 && wx.getStorageSync('fd_beans') === 960
+tapn 2 .g-btn
+toast 还差 540 个
+nomodal
+shot target/_polish_shots/fd-beans.png
+tapn 1 .tab
+expect getCurrentPages().slice(-1)[0].data.logs[0].delta === -300
+back
+expect getCurrentPages()[0].data.stats[0].value === 5 && getCurrentPages()[0].data.stats[3].value === 960
+
+# 兑换码：兑一次成功、输入框清空；同一个码再兑报错
+tapn 0 .stat
+route pages/coupons/coupons
+count 5 .coupon
+tap .redeem-entry
+type .redeem-input => baole8
+blur
+tap .redeem-btn
+toast 兑换成功
+expect getCurrentPages().slice(-1)[0].data.code === '' && getCurrentPages().slice(-1)[0].data.codeSeq === 1
+count 6 .coupon
+type .redeem-input => BAOLE8
+blur
+tap .redeem-btn
+toast 用过了
+shot target/_polish_shots/fd-coupons.png
+tapn 2 .tab
+count 1 .coupon
+back
+
+# 超级会员：首月 ¥1，付款后 4 张 5 元红包
+tap .vip-card
+modal?
+modal ok
+wait 300
+toast 开通成功
+expect getCurrentPages()[0].data.vip.active === true && getCurrentPages()[0].data.vipLeft === 4
+expect getCurrentPages()[0].data.stats[0].value === 10
+
+# 收藏：店铺页收藏 → 我的收藏 → 进店 → 取消收藏
+eval wx.navigateTo({ url: '/pages/shop/shop?id=s5' })
+route pages/shop/shop
+tap .fav
+expect getCurrentPages().slice(-1)[0].data.faved === true
+back
+expect getCurrentPages()[0].data.menus[1].extra === '1 家'
+tapn 1 .menu-item
+route pages/favorites/favorites
+count 1 .shop
+shot target/_polish_shots/fd-favorites.png
+tap .shop
+route pages/shop/shop
+expect getCurrentPages().slice(-1)[0].data.shop.id === 's5'
+back
+tap .unfav
+modal ok
+count 0 .shop
+exists .empty
+expect wx.getStorageSync('fd_favs').length === 0
+shot target/_polish_shots/fd-favorites-empty.png
+back
+
+# 我的评价：老订单里 1 条；待评价 1 单 → 去评 → 变 2 条
+tapn 2 .menu-item
+route pages/reviews/reviews
+count 1 .review
+expect getCurrentPages().slice(-1)[0].data.pending === 1
+shot target/_polish_shots/fd-reviews.png
+tap .pending
+route pages/orders/orders
+expect getCurrentPages()[0].data.tab === 'rate'
+count 1 .order
+tap .op-rate
+route pages/order-detail/order-detail
+wait 500
+tap .rate-btn
+toast 吃货豆 +20
+eval wx.switchTab({ url: '/pages/mine/mine' })
+route pages/mine/mine
+tapn 2 .menu-item
+route pages/reviews/reviews
+count 2 .review
+expect getCurrentPages().slice(-1)[0].data.pending === 0
+back
+
+# 地址：校验 → 新增（设为家）→ 编辑页删除
+tapn 0 .menu-item
+route pages/address/address
+count 3 .addr
+tap .bar-add
+route pages/address-edit/address-edit
+tap .save
+toast 请填写联系人
+type .f-name => 王小满
+type .f-phone => 1390000
+blur
+tap .save
+toast 11 位手机号
+type .f-phone => 1111
+blur
+picker .f-region
+pickok
+type .f-detail => 望京西园四区
+type .f-house => 3 号楼 1201
+blur
+tapn 0 .chip-t
+tap .save
+wait 600
+route pages/address/address
+count 4 .addr
+expect wx.getStorageSync('fd_addrs')[0].name === '王小满' && wx.getStorageSync('fd_addrs')[0].phone === '13900001111' && wx.getStorageSync('fd_addrs')[0].tag === '家'
+expect wx.getStorageSync('fd_addrs')[0].region.length === 3
+shot target/_polish_shots/fd-address.png
+tapn 0 .edit
+route pages/address-edit/address-edit
+expect getCurrentPages().slice(-1)[0].data.name === '王小满'
+shot target/_polish_shots/fd-address-edit.png
+tap .del
+modal ok
+route pages/address/address
+count 3 .addr
+back
+
+# 客服中心：常见问题展开、电话（宿主没有拨号能力：弹号码）、最近订单去处理
+tapn 4 .menu-item
+route pages/service/service
+expect getCurrentPages().slice(-1)[0].data.recent !== null
+tapn 0 .q-row
+expect getCurrentPages().slice(-1)[0].data.faqs[0].open === true
+count 1 .a-text
+shot target/_polish_shots/fd-service.png
+tap .call
+modal?
+modal ok
+tap .r-btn
+route pages/order-detail/order-detail
+back
+back
+
+# 店铺「评价」「商家」：导航 / 电话（宿主没有地图、拨号能力：弹地址、号码）
+eval wx.navigateTo({ url: '/pages/shop/shop?id=s1' })
+route pages/shop/shop
+tapn 1 .tab
+count 3 .review
+tapn 2 .tab
+tapn 0 .info-row
+modal?
+modal ok
+tapn 2 .info-row
+modal?
+modal ok
+shot target/_polish_shots/fd-shop-info.png
+back
+# 配送中的订单：联系骑手、联系客服菜单（按状态给 6 项）→ 联系商家 / 常见问题
+eval wx.navigateTo({ url: '/pages/order-detail/order-detail' })
+route pages/order-detail/order-detail
+expect getCurrentPages().slice(-1)[0].data.order.status === 'paid' && getCurrentPages().slice(-1)[0].data.st.stage === 3
+tap .call
+modal?
+modal ok
+tap .op-service
+expect __ui.slice(-1)[0].items.length === 6 && __ui.slice(-1)[0].items[2] === '联系商家'
+sheet 2 6
+modal?
+modal ok
+tap .op-service
+sheet 4 6
+route pages/service/service
+back
+back
+
+# 邀请好友 / 通知开关 / 设置（号码保护默认关、清除缓存）
+tapn 3 .menu-item
+sheet 0 2
+toast 已复制
+tap switch
+expect wx.getStorageSync('fd_notify') === false
+tap .setting
+sheet 0 3
+expect wx.getStorageSync('fd_protect') === false
+tap .setting
+sheet 1 3
+modal ok
+expect getCurrentPages()[0].data.stats[2].value === '¥88' && getCurrentPages()[0].data.vip.active === false && getCurrentPages()[0].data.stats[0].value === 4
+noerr

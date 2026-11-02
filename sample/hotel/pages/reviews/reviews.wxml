@@ -1,0 +1,45 @@
+<block wx:if="{{!mine}}">
+  <view class="card sum row">
+    <view class="sum-l">
+      <text class="sum-score">{{h.score}}</text>
+      <text class="sum-word">{{h.score >= 4.8 ? '超棒' : '很好'}}</text>
+    </view>
+    <view class="flex1 sum-r">
+      <text class="sum-name">{{h.name}}</text>
+      <text class="sub">{{count}} 条点评 · 卫生 4.9 · 服务 4.8 · 位置 4.9 · 设施 4.7</text>
+    </view>
+  </view>
+  <view class="filters row">
+    <view wx:for="{{filters}}" wx:key="k" class="ft {{filter === item.k ? 'ft-on' : ''}}" data-k="{{item.k}}" bindtap="onFilter"><text>{{item.n}}</text></view>
+  </view>
+  <view class="tags">
+    <view wx:for="{{tags}}" wx:key="*this" class="tg {{tag === item ? 'tg-on' : ''}}" data-t="{{item}}" bindtap="onTag"><text>{{item}}</text></view>
+  </view>
+  <view class="card review" wx:for="{{list}}" wx:key="k">
+    <view class="row">
+      <view class="rv-avatar {{item.mine ? 'rv-me' : ''}}"><text class="rv-avatar-t">{{item.avatar}}</text></view>
+      <view class="flex1 rv-head">
+        <text class="rv-user">{{item.user}}</text>
+        <text class="sub">{{item.date}} · {{item.room}}</text>
+      </view>
+      <text class="rv-score">{{item.score}}.0 分</text>
+    </view>
+    <text class="rv-text">{{item.text}}</text>
+    <view wx:if="{{item.tags.length}}" class="row rv-tags"><text wx:for="{{item.tags}}" wx:for-item="t" wx:key="*this" class="tag">{{t}}</text></view>
+  </view>
+  <view wx:if="{{!list.length}}" class="empty-tip"><text>没有符合条件的点评</text></view>
+</block>
+<block wx:else>
+  <view class="card sum row">
+    <view class="flex1"><text class="sum-name">已点评 {{count}} 次</text><text class="sub">每条点评得 50 积分</text></view>
+    <view wx:if="{{pending}}" class="pending" bindtap="onPending"><text>{{pending}} 单待点评</text></view>
+  </view>
+  <view class="card review" wx:for="{{list}}" wx:key="k" data-id="{{item.id}}" bindtap="onOrder">
+    <view class="row between"><text class="rv-user">{{item.hotel}}</text><text class="sub">{{item.date}}</text></view>
+    <view class="row stars"><text wx:for="{{starList}}" wx:for-item="n" wx:key="*this" class="rate-star sm {{n <= item.score ? 'rate-on' : ''}}">★</text><text class="sub">{{item.room}}</text></view>
+    <text wx:if="{{item.text}}" class="rv-text">{{item.text}}</text>
+    <view wx:if="{{item.tags.length}}" class="row rv-tags"><text wx:for="{{item.tags}}" wx:for-item="t" wx:key="*this" class="tag">{{t}}</text></view>
+  </view>
+  <view wx:if="{{!list.length}}" class="empty-tip"><text>还没有点评过，离店后在订单详情里点评可得 50 积分</text></view>
+</block>
+<view class="gap"></view>

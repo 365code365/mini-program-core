@@ -1,0 +1,3 @@
+<view class="wrap">
+  <contact-list class="cl"></contact-list>
+</view>

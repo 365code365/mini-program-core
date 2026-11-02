@@ -36,7 +36,7 @@
   <picker mode="selector" range="{{groupNames}}" value="{{addGroup}}" bindchange="onGroupPick">
     <view class="add-g"><text>{{groupNames[addGroup]}}</text><view class="dn"></view></view>
   </picker>
-  <input class="add-in" value="{{newItem}}" placeholder="添加自定义物品" bindinput="onNewItem" bindconfirm="addItem" />
+  <input id="new{{seq}}" class="add-in" value="{{newItem}}" placeholder="添加自定义物品" bindinput="onNewItem" bindconfirm="addItem" />
   <view class="add-btn {{newItem ? '' : 'add-off'}}" bindtap="addItem"><text>添加</text></view>
 </view>
 <view class="space"></view>

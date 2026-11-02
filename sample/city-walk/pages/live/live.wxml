@@ -1,0 +1,26 @@
+<live-player id="cam" class="player" src="{{src}}" mode="live" autoplay="{{true}}" muted="{{muted}}" object-fit="fillCrop"
+  bindstatechange="onState" bindnetstatus="onNet" bindfullscreenchange="onFull"></live-player>
+<view class="bar">
+  <text class="badge {{playing ? 'on' : ''}}">{{playing ? '● 直播中' : status}}</text>
+  <text class="res">{{size}}</text>
+</view>
+<view class="card">
+  <text class="h">{{spot.name}} · 实况</text>
+  <text class="sub">慢直播演示信号（景区摄像头接入后替换为实况地址）。画面由手机的系统播放器解码，画进页面里，滑动时跟着页面走。</text>
+  <view class="ops">
+    <view class="btn-ghost op" bindtap="toggle">{{paused ? '继续' : '暂停'}}</view>
+    <view class="btn-ghost op" bindtap="mute">{{muted ? '开声音' : '静音'}}</view>
+    <view class="btn-ghost op" bindtap="full">全屏</view>
+    <view class="btn op" bindtap="snap">截一张</view>
+  </view>
+</view>
+<view class="card" wx:if="{{shots.length}}">
+  <text class="h">刚截的图</text>
+  <view class="shots">
+    <image class="shot" wx:for="{{shots}}" wx:key="path" src="{{item.path}}" mode="aspectFill" data-index="{{index}}" bindtap="preview"></image>
+  </view>
+</view>
+<view class="card">
+  <text class="h">状态</text>
+  <text class="log" wx:for="{{logs}}" wx:key="*this">{{item}}</text>
+</view>

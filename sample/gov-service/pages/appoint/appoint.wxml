@@ -1,0 +1,54 @@
+<view class="card tk" wx:if="{{ticket}}">
+  <view class="row"><icon type="success" size="22" color="#16a34a"></icon><text class="tk-ok">预约成功</text></view>
+  <text class="tk-no">{{ticket.no}}</text>
+  <text class="muted">到场后在取号机刷身份证或出示本页面即可取号</text>
+  <view class="kv"><text class="k">办理事项</text><text class="v">{{ticket.item}}</text></view>
+  <view class="kv"><text class="k">网点</text><text class="v">{{ticket.hall}}</text></view>
+  <view class="kv"><text class="k">地址</text><text class="v">{{ticket.addr}}</text></view>
+  <view class="kv"><text class="k">时间</text><text class="v">{{ticket.date}}（{{ticket.wd}}）{{ticket.time}}</text></view>
+  <text class="tk-tip">请在预约时段开始前 15 分钟至结束前到场取号，迟到需重新取普通号。</text>
+  <view class="row tk-b">
+    <view class="btn gray a" hover-class="tap" bindtap="cancel">取消预约</view>
+    <view class="btn a" hover-class="tap" bindtap="goOrders">我的预约</view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="row between"><text class="sec-t">选择网点</text><text class="link" bindtap="openMap">查看地址</text></view>
+  <view class="hall row {{hallIdx === index ? 'on' : ''}}" wx:for="{{halls}}" wx:key="id" data-i="{{index}}" bindtap="pickHall">
+    <image class="h-img" src="{{item.img}}" mode="aspectFill"></image>
+    <view class="h-main">
+      <text class="h-n">{{item.name}}</text>
+      <text class="muted">{{item.addr}}</text>
+      <text class="muted">{{item.time}}</text>
+    </view>
+    <icon wx:if="{{hallIdx === index}}" type="success" size="20" color="#1d64d8"></icon>
+  </view>
+</view>
+
+<view class="card">
+  <text class="sec-t">办理事项</text>
+  <picker mode="selector" range="{{items}}" value="{{itemIdx}}" bindchange="pickItem">
+    <view class="sel row between"><text>{{items[itemIdx]}}</text><text class="arr">›</text></view>
+  </picker>
+</view>
+
+<view class="card">
+  <text class="sec-t">预约日期</text>
+  <scroll-view class="dates" scroll-x="true">
+    <view class="d {{dateIdx === index ? 'on' : ''}}" wx:for="{{dates}}" wx:key="key" data-i="{{index}}" bindtap="pickDate">
+      <text class="d-w">{{item.wd}}</text><text class="d-md">{{item.md}}</text>
+    </view>
+  </scroll-view>
+  <text class="sec-t st">预约时段</text>
+  <view class="slots">
+    <view class="s {{item.off ? 'off' : ''}} {{slotIdx === index ? 'on' : ''}}" wx:for="{{slots}}" wx:key="time" data-i="{{index}}" bindtap="pickSlot">
+      <text class="s-t">{{item.time}}-{{item.end}}</text>
+      <text class="s-l">{{item.past ? '已过' : (item.off ? '约满' : '余 ' + item.left)}}</text>
+    </view>
+  </view>
+  <view class="empty" wx:if="{{!slots.length}}">当日暂无可预约时段</view>
+</view>
+
+<view class="safe-bar"></view>
+<view class="bar"><view class="btn {{slotIdx < 0 ? 'dis' : ''}}" hover-class="tap" bindtap="submit">确认预约</view></view>

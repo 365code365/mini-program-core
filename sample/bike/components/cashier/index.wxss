@@ -1,0 +1,15 @@
+.mask { position: fixed; left: 0; top: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 100; display: flex; flex-direction: column; justify-content: flex-end; }
+.sheet { background: #ffffff; border-radius: 24rpx 24rpx 0 0; padding: 0 40rpx calc(40rpx + env(safe-area-inset-bottom)); display: flex; flex-direction: column; }
+.head { height: 100rpx; display: flex; flex-direction: row; align-items: center; justify-content: space-between; }
+.h-title { font-size: 32rpx; font-weight: bold; color: #1f2329; }
+.close { font-size: 28rpx; color: #576b95; width: 80rpx; }
+.hide { opacity: 0; }
+.sub { font-size: 26rpx; color: #646a73; text-align: center; margin-top: 12rpx; }
+.amt { display: flex; flex-direction: row; align-items: baseline; justify-content: center; margin: 20rpx 0 36rpx; }
+.yen { font-size: 40rpx; font-weight: bold; color: #1f2329; margin-right: 6rpx; }
+.num { font-size: 72rpx; font-weight: bold; color: #1f2329; }
+.line { display: flex; flex-direction: row; justify-content: space-between; padding: 26rpx 0; border-top: 1rpx solid #eeeeee; border-bottom: 1rpx solid #eeeeee; }
+.lk { font-size: 28rpx; color: #646a73; }
+.lv { font-size: 28rpx; color: #1f2329; }
+.note { font-size: 22rpx; color: #a0a4ab; margin: 20rpx 0 36rpx; line-height: 1.5; }
+.pay { height: 92rpx; border-radius: 12rpx; background: #07c160; color: #ffffff; font-size: 32rpx; font-weight: bold; display: flex; align-items: center; justify-content: center; }

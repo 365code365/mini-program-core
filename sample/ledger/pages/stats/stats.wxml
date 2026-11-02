@@ -11,7 +11,7 @@
   </view></view>
 
   <view class="card summary">
-    <text class="muted">{{type === 'out' ? '总支出' : '总收入'}}（元）</text>
+    <text class="muted">{{bookName}} · {{type === 'out' ? '总支出' : '总收入'}}（元）</text>
     <view class="sum-val"><text>{{totalText}}</text></view>
     <view class="row sum-sub">
       <view class="flex1"><view class="muted"><text>笔数</text></view><view class="sub-v"><text>{{count}}</text></view></view>

@@ -1,0 +1,24 @@
+<view class="top">
+  <scroll-view class="people" scroll-x="{{true}}" show-scrollbar="{{false}}">
+    <view class="person {{pid === item.id ? 'on' : ''}}" wx:for="{{people}}" wx:key="id" data-id="{{item.id}}" bindtap="pickPerson"><text>{{item.name}}</text></view>
+  </scroll-view>
+  <text class="muted top-sub">共 {{list.length}} 份报告{{unread ? '，' + unread + ' 份未读' : ''}} · 报告保存 15 年</text>
+</view>
+<view class="card rp" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="goDetail">
+  <view class="rp-ic {{item.kind === '检验' ? '' : 'k-exam'}}"><text>{{item.kind === '检验' ? '验' : '查'}}</text></view>
+  <view class="rp-main">
+    <view class="row">
+      <text class="rp-name">{{item.name}}</text>
+      <text wx:if="{{!item.read}}" class="rp-new">新</text>
+    </view>
+    <text class="muted">{{item.patient}} · {{item.dept}} {{item.doctor}}</text>
+    <text class="muted">报告日期 {{item.date}}{{item.abnormal ? ' · ' + item.abnormal + ' 项异常' : ''}}</text>
+  </view>
+  <view class="chev"></view>
+</view>
+<view wx:if="{{!list.length}}" class="empty-box">
+  <text class="empty-tx">暂无检查检验报告</text>
+  <text class="muted">缴纳检查费用后报告会自动出现在这里</text>
+  <view class="btn-primary empty-btn" bindtap="goBills"><text>去门诊缴费</text></view>
+</view>
+<view style="height: 40rpx;"></view>

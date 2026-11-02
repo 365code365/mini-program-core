@@ -1,0 +1,64 @@
+<view class="hd row">
+  <view class="av">
+    <text class="av-tx">{{user ? user.initial : '客'}}</text>
+  </view>
+  <view class="col flex1 hd-info">
+    <text class="hd-nm">{{user ? user.name : '好管家用户'}}</text>
+    <text class="hd-ph">{{user ? user.phone : '添加服务地址后显示联系人'}}</text>
+  </view>
+  <view class="hd-tag" bindtap="guarantee">
+    <text>服务保障</text>
+  </view>
+</view>
+<view class="wrap top">
+  <view class="card stats row">
+    <view class="sts" bindtap="goCoupons">
+      <text class="sts-n">{{couponN}}</text>
+      <text class="sub">可用优惠券</text>
+    </view>
+    <view class="sts" bindtap="goOrders" data-k="all">
+      <text class="sts-n">¥{{saved}}</text>
+      <text class="sub">累计节省</text>
+    </view>
+    <view class="sts" bindtap="goAddr">
+      <text class="sts-n">{{addrN}}</text>
+      <text class="sub">服务地址</text>
+    </view>
+  </view>
+  <section-card title="我的订单" footer="{{false}}">
+    <view slot="extra" class="row" bindtap="goOrders" data-k="all">
+      <text class="sub">全部订单 ›</text>
+    </view>
+    <view class="row ents">
+      <view class="ent" wx:for="{{entries}}" wx:key="key" data-k="{{item.key}}" bindtap="goOrders">
+        <image class="ent-ic" src="{{item.icon}}"></image>
+        <text class="ent-tx">{{item.text}}</text>
+        <text class="ent-n" wx:if="{{counts[item.key]}}">{{counts[item.key]}}</text>
+      </view>
+    </view>
+  </section-card>
+  <view class="card menu">
+    <view class="mi between" bindtap="goCoupons">
+      <text>优惠券</text>
+      <text class="sub">{{couponN}} 张可用 ›</text>
+    </view>
+    <view class="mi between" bindtap="goInvoice">
+      <text>发票管理</text>
+      <text class="sub">{{canInvoice ? canInvoice + ' 笔可开票' : (invoiceN ? '已开 ' + invoiceN + ' 张' : '')}} ›</text>
+    </view>
+    <view class="mi between" bindtap="goAddr">
+      <text>服务地址</text>
+      <text class="sub">›</text>
+    </view>
+    <view class="mi between" bindtap="callService">
+      <text>联系客服</text>
+      <text class="sub">400-820-5566 ›</text>
+    </view>
+    <view class="mi between mi-last" bindtap="reset">
+      <text>恢复演示数据</text>
+      <text class="sub">›</text>
+    </view>
+  </view>
+  <text class="ver">好管家 v2.3.0 · 上海好管家家庭服务有限公司</text>
+  <view class="tab-gap"></view>
+</view>

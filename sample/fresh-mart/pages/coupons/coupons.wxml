@@ -1,0 +1,28 @@
+<view class="tabs row">
+  <view wx:for="{{tabs}}" wx:key="key" class="tab {{tab === item.key ? 'tab-on' : ''}}" data-key="{{item.key}}" bindtap="onTab">
+    <text>{{item.name}}</text>
+    <view wx:if="{{tab === item.key}}" class="tab-line"></view>
+  </view>
+</view>
+
+<view class="list">
+  <view class="coupon row {{item.status !== 'valid' ? 'coupon-off' : ''}}" wx:for="{{list}}" wx:key="id">
+    <view class="c-left {{item.kind === 'ship' ? 'c-ship' : ''}}">
+      <view class="row c-amount-row">
+        <text class="c-sym">¥</text>
+        <text class="c-amount">{{item.amount}}</text>
+      </view>
+      <text class="c-cond">{{item.kind === 'ship' ? '运费券' : (item.min ? '满' + item.min + '可用' : '无门槛')}}</text>
+    </view>
+    <view class="flex1 c-right">
+      <text class="c-title ellipsis">{{item.title}}</text>
+      <text class="c-desc ellipsis">{{item.cond}}</text>
+      <view class="row between c-foot">
+        <text class="c-expire">有效期至 {{item.expire}}</text>
+        <view wx:if="{{item.status === 'valid'}}" class="c-use" data-id="{{item.id}}" bindtap="onUse">去使用</view>
+      </view>
+    </view>
+    <view wx:if="{{item.status !== 'valid'}}" class="stamp glyph"><text>{{item.status === 'used' ? '已使用' : '已过期'}}</text></view>
+  </view>
+  <view wx:if="{{!list.length}}" class="empty sub">这里空空如也</view>
+</view>

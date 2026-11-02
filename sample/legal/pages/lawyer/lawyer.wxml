@@ -1,0 +1,62 @@
+<view class="head">
+  <view class="row">
+    <image class="av" src="{{l.avatar}}" mode="aspectFill"></image>
+    <view class="col flex1">
+      <view class="row"><text class="n">{{l.name}}</text><text class="badge">执业认证</text></view>
+      <text class="firm">{{l.firm}}</text>
+      <text class="firm">{{l.city}} · 执业 {{l.years}} 年</text>
+    </view>
+  </view>
+  <view class="stats row">
+    <view class="st col"><text class="st-v">{{l.rating}}</text><text class="st-k">综合评分</text></view>
+    <view class="st col"><text class="st-v">{{l.consults}}</text><text class="st-k">服务人数</text></view>
+    <view class="st col"><text class="st-v">{{l.years}} 年</text><text class="st-k">执业年限</text></view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="sec-title">擅长领域</view>
+  <view class="row tags"><text class="tag" wx:for="{{fieldNames}}" wx:key="*this">{{item}}</text></view>
+  <text class="intro">{{l.intro}}</text>
+</view>
+
+<view class="card">
+  <view class="sec-title">服务项目</view>
+  <view class="svc row" wx:for="{{services}}" wx:key="id" data-s="{{item.id}}" bindtap="order" hover-class="svc-hover">
+    <view class="col flex1">
+      <text class="svc-n">{{item.name}}</text>
+      <text class="muted">{{item.desc}}</text>
+    </view>
+    <text class="price">¥{{item.price}}</text>
+    <text class="go">›</text>
+  </view>
+</view>
+
+<view class="card">
+  <view class="sec-title">代表案例</view>
+  <view class="case row" wx:for="{{l.cases}}" wx:key="*this"><text class="dot">●</text><text class="case-t flex1">{{item}}</text></view>
+</view>
+
+<view class="card">
+  <view class="row between"><text class="sec-title">用户评价</text><text class="sec-more">{{reviews.length}} 条</text></view>
+  <view class="rv" wx:for="{{reviews}}" wx:key="index">
+    <view class="row between">
+      <view class="row">
+        <text class="rv-u">{{item.user}}</text>
+        <text class="rv-s" wx:for="{{stars}}" wx:for-item="s" wx:key="*this" style="color: {{s <= item.star ? '#e0a020' : '#dde1e8'}};">★</text>
+      </view>
+      <text class="muted">{{item.date}}</text>
+    </view>
+    <text class="rv-t">{{item.text}}</text>
+  </view>
+</view>
+<view class="disclaimer"><text>律师回复仅供参考，不构成法律意见。</text></view>
+<view style="height: 140rpx;"></view>
+
+<view class="foot row">
+  <view class="fav col" bindtap="toggleFav">
+    <text class="fav-ic" style="color: {{fav ? '#d6587f' : '#8a93a3'}};">★</text>
+    <text class="fav-t">{{fav ? '已收藏' : '收藏'}}</text>
+  </view>
+  <view class="btn flex1" data-s="text" bindtap="order">图文咨询 ¥{{l.price.text}}</view>
+</view>

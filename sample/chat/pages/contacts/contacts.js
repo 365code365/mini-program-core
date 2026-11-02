@@ -8,6 +8,7 @@ Page({
     this.letterH = Math.round(40 * this.rpx);
   },
   onShow() {
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) this.getTabBar().setData({ selected: 1 });
     store.syncTabBadge(this, 1);
     this.build();
   },

@@ -1,0 +1,17 @@
+.wrap { padding-bottom: 60rpx; }
+.map { width: 100%; height: 420rpx; background: #e8eef0; }
+.top { margin-top: -40rpx; position: relative; }
+.tg { margin-left: 14rpx; }
+.stats { display: flex; flex-direction: row; margin-top: 28rpx; }
+.st { flex: 1; display: flex; flex-direction: column; }
+.sv { font-size: 32rpx; font-weight: bold; }
+.sk { font-size: 22rpx; color: #8a9099; margin-top: 6rpx; }
+.tl { display: flex; flex-direction: row; align-items: flex-start; padding: 12rpx 0; }
+.tl-dot { width: 18rpx; height: 18rpx; border-radius: 9rpx; margin: 12rpx 20rpx 0 0; }
+.tl-a { background: #13a868; }
+.tl-b { background: #f05246; }
+.tl-body { display: flex; flex-direction: column; }
+.tl-place { font-size: 30rpx; margin-bottom: 6rpx; }
+.ops { display: flex; flex-direction: row; margin: 36rpx 14rpx 0; }
+.op { flex: 1; margin: 0 10rpx; }
+.empty-btn { width: 360rpx; margin-top: 40rpx; }

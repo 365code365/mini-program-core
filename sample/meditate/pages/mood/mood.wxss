@@ -1,0 +1,22 @@
+.q { display: block; font-size: 28rpx; font-weight: 600; }
+.q2 { margin-top: 28rpx; }
+.moods { justify-content: space-between; margin-top: 20rpx; }
+.m { display: flex; flex-direction: column; align-items: center; width: 116rpx; padding: 14rpx 0; border-radius: 20rpx; }
+.m-on { background: #ecebfb; }
+.dark .m-on { background: #2e2f52; }
+.m-dot { width: 64rpx; height: 64rpx; border-radius: 32rpx; }
+.m-dot.sm { width: 28rpx; height: 28rpx; border-radius: 14rpx; margin-right: 12rpx; }
+.m-t { font-size: 24rpx; margin-top: 8rpx; }
+.tags { display: flex; flex-direction: row; flex-wrap: wrap; margin-top: 16rpx; }
+.tag { display: flex; flex-direction: row; align-items: center; margin: 0 24rpx 16rpx 0; }
+.tag-t { font-size: 26rpx; margin-left: 4rpx; }
+.ta { width: 100%; min-height: 160rpx; background: #f4f3fa; border-radius: 16rpx; padding: 20rpx; box-sizing: border-box; font-size: 26rpx; margin-top: 12rpx; }
+.dark .ta { background: #2a2b47; color: #e7e6f5; }
+.err { font-size: 24rpx; color: #e0604f; }
+.save { margin-top: 24rpx; }
+.e-m { font-size: 28rpx; font-weight: 600; margin-right: 16rpx; }
+.e-time { margin-left: 4rpx; }
+.del { font-size: 24rpx; color: #e0604f; }
+.e-text { display: block; font-size: 26rpx; line-height: 1.7; margin-top: 16rpx; }
+.e-tags { flex-wrap: wrap; margin-top: 12rpx; }
+.e-tag { font-size: 22rpx; color: #6c63d9; margin-right: 16rpx; }

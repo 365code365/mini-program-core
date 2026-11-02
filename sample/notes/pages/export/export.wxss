@@ -1,0 +1,13 @@
+.head { padding: 24rpx 32rpx 12rpx; }
+.sec-t { font-size: 24rpx; color: #8f8a7e; }
+.sec-t.pad { display: block; padding: 0 32rpx 12rpx; }
+.all { font-size: 24rpx; color: #f5a623; }
+.pick { height: 80rpx; border-bottom: 1rpx solid #f3efe6; }
+.pick-title { font-size: 28rpx; margin-left: 8rpx; }
+.fmt-group { display: flex; flex-direction: row; flex-wrap: wrap; }
+.fmt { margin: 8rpx 28rpx 8rpx 0; }
+.fmt-name { font-size: 26rpx; margin-left: 6rpx; }
+.preview { height: 280rpx; }
+.preview-text { font-size: 24rpx; line-height: 38rpx; color: #5a564c; }
+.btns { padding: 0 24rpx; }
+.import { margin-right: 20rpx; }

@@ -1,0 +1,5 @@
+<view class="st">
+  <view class="st-b {{value <= min ? 'st-off' : ''}}" hover-class="st-press" bindtap="onMinus"><text class="st-s">−</text></view>
+  <text class="st-v">{{value}}</text>
+  <view class="st-b {{value >= max ? 'st-off' : ''}}" hover-class="st-press" bindtap="onPlus"><text class="st-s">+</text></view>
+</view>

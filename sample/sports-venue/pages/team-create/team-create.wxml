@@ -1,0 +1,50 @@
+<view class="card">
+  <picker mode="selector" range="{{sports}}" range-key="name" value="{{si}}" disabled="{{locked}}" bindchange="onSport">
+    <view class="fr row"><text class="fl">运动项目</text><text class="fv flex1">{{sports[si].name}}</text><text wx:if="{{!locked}}" class="arr">›</text></view>
+  </picker>
+  <view wx:if="{{locked}}" class="fr row"><text class="fl">场地</text><text class="fv flex1 lock">{{lockText}}</text></view>
+  <block wx:else>
+    <picker mode="selector" range="{{venues}}" range-key="name" value="{{vi}}" bindchange="onVenue">
+      <view class="fr row"><text class="fl">场馆</text><text class="fv flex1">{{venues[vi].name}}</text><text class="arr">›</text></view>
+    </picker>
+    <picker mode="selector" range="{{days}}" range-key="label" value="{{di}}" bindchange="onDay">
+      <view class="fr row"><text class="fl">日期</text><text class="fv flex1">{{days[di].label}}</text><text class="arr">›</text></view>
+    </picker>
+    <view class="row two">
+      <picker class="flex1" mode="selector" range="{{hours}}" range-key="label" value="{{hi}}" bindchange="onHour">
+        <view class="fr row"><text class="fl">开始</text><text class="fv flex1">{{hours.length ? hours[hi].label : '无'}}</text><text class="arr">›</text></view>
+      </picker>
+      <picker class="flex1 two-r" mode="selector" range="{{durs}}" value="{{du}}" bindchange="onDur">
+        <view class="fr row"><text class="fl fl-s">时长</text><text class="fv flex1">{{durs[du]}}</text><text class="arr">›</text></view>
+      </picker>
+    </view>
+  </block>
+</view>
+<view class="card">
+  <view class="row"><text class="fl flex1">招募人数（含自己）</text><text class="need">{{need}} 人</text></view>
+  <slider class="sl" min="2" max="{{maxNeed}}" step="1" value="{{need}}" activeColor="#13b37b" block-size="22" bindchanging="onNeed" bindchange="onNeed"></slider>
+  <text class="fl">水平要求</text>
+  <radio-group class="row lv" bindchange="onLevel">
+    <label wx:for="{{levels}}" wx:key="*this" class="row lv-it">
+      <radio value="{{index}}" checked="{{level === index}}" color="#13b37b"></radio>
+      <text class="lv-t">{{item}}</text>
+    </label>
+  </radio-group>
+  <view class="fr row">
+    <text class="fl">AA 费</text>
+    <input class="fv flex1" type="number" value="{{fee}}" maxlength="3" placeholder="每人" bindinput="onFee" />
+    <text class="muted">元/人</text>
+    <text wx:if="{{!feeAuto}}" class="link" bindtap="resetFee">按场地价算</text>
+  </view>
+  <text class="muted">{{feeAuto ? '已按场地价和人数自动分摊' : '已手动修改'}}</text>
+</view>
+<view class="card">
+  <text class="fl">组局说明</text>
+  <textarea class="ta" auto-height maxlength="80" value="{{note}}" placeholder="打法、带不带球、穿什么颜色球衣…" bindinput="onNote"></textarea>
+  <text class="cnt">{{note.length}}/80</text>
+</view>
+<view wx:if="{{err}}" class="err-box"><text class="err">{{err}}</text></view>
+<view class="bottom-space"></view>
+<view class="foot">
+  <view class="btn-main flex1" bindtap="submit"><text>发布组局</text></view>
+</view>

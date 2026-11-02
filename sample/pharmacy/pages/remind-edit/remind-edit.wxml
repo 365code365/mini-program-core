@@ -1,0 +1,52 @@
+<view class="card">
+  <text class="h">药品名称</text>
+  <input class="ipt" placeholder="如：络活喜 苯磺酸氨氯地平片" value="{{drug}}" bindinput="onDrug" maxlength="30"/>
+  <text wx:if="{{errs.drug}}" class="err">{{errs.drug}}</text>
+  <view wx:if="{{bought.length}}" class="chips wrap">
+    <text class="muted lb">买过的药：</text>
+    <text wx:for="{{bought}}" wx:key="*this" class="chip {{drug === item ? 'chip-on' : ''}}" data-n="{{item}}" bindtap="pickDrug">{{item}}</text>
+  </view>
+</view>
+
+<view class="card">
+  <text class="h">每次剂量</text>
+  <view class="chips wrap"><text wx:for="{{doses}}" wx:key="*this" class="chip {{dose === item ? 'chip-on' : ''}}" data-d="{{item}}" bindtap="pickDose">{{item}}</text></view>
+  <input class="ipt" placeholder="其他剂量，如 0.5 片" value="{{dose}}" bindinput="onDose" maxlength="10"/>
+  <text wx:if="{{errs.dose}}" class="err">{{errs.dose}}</text>
+</view>
+
+<view class="card">
+  <view class="row"><text class="h0">服药时间</text><text class="add" bindtap="addTime">＋ 添加时间</text></view>
+  <view wx:for="{{times}}" wx:key="index" class="tm">
+    <picker mode="time" value="{{item}}" start="05:00" end="23:30" data-i="{{index}}" bindchange="onTime">
+      <view class="tm-v"><text class="tm-t">{{item}}</text><text class="muted">点击修改 ›</text></view>
+    </picker>
+    <text class="tm-del" data-i="{{index}}" bindtap="delTime">删除</text>
+  </view>
+  <text wx:if="{{errs.times}}" class="err">{{errs.times}}</text>
+</view>
+
+<view class="card">
+  <view class="row">
+    <text class="h0">每周服药日</text>
+    <view class="qk"><text class="q" data-k="all" bindtap="quick">每天</text><text class="q" data-k="work" bindtap="quick">工作日</text><text class="q" data-k="end" bindtap="quick">周末</text></view>
+  </view>
+  <checkbox-group class="wk" bindchange="onDays">
+    <label wx:for="{{week}}" wx:key="v" class="wd {{item.on ? 'wd-on' : ''}}">
+      <checkbox value="{{item.v}}" checked="{{item.on}}" color="#12a37f"/>
+      <text class="wd-t">{{item.t}}</text>
+    </label>
+  </checkbox-group>
+  <text wx:if="{{errs.days}}" class="err">{{errs.days}}</text>
+</view>
+
+<view class="card">
+  <text class="h">备注（选填）</text>
+  <input class="ipt" placeholder="如：饭后服用、避免与西柚汁同服" value="{{note}}" bindinput="onNote" maxlength="30"/>
+  <view class="row cal"><view class="cal-b"><text class="h0">同步到手机日历</text><text class="muted">锁屏也能收到提醒</text></view><switch checked="{{cal}}" color="#12a37f" bindchange="onCal"></switch></view>
+</view>
+
+<view class="foot">
+  <view class="btn" bindtap="save">保存提醒</view>
+  <view wx:if="{{id}}" class="del" bindtap="remove">删除这条提醒</view>
+</view>

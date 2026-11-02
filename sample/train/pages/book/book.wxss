@@ -33,12 +33,20 @@
   font-size: 22rpx;
   margin-top: 6rpx;
 }
+.hdate-row {
+  margin-top: 20rpx;
+}
 .hdate {
   display: block;
   color: rgba(255, 255, 255, 0.85);
   font-size: 24rpx;
-  margin-top: 20rpx;
-  text-align: center;
+}
+.stops-link {
+  color: #ffffff;
+  font-size: 24rpx;
+  padding: 4rpx 18rpx;
+  border-radius: 20rpx;
+  background: rgba(255, 255, 255, 0.18);
 }
 .sec {
   display: block;
@@ -118,6 +126,37 @@
   border-color: #2b6de8;
   color: #ffffff;
 }
+.change-bar {
+  margin: 24rpx 24rpx 0;
+  padding: 18rpx 24rpx;
+  border-radius: 16rpx;
+  background: #fff6ec;
+}
+.change-t {
+  font-size: 24rpx;
+  color: #c76a00;
+}
+.seat-wait {
+  font-size: 22rpx;
+  color: #ff7a00;
+  margin-right: 24rpx;
+}
+.tag-type {
+  margin-left: 8rpx;
+  background: #fff1e6;
+  color: #ff7a00;
+}
+.rule-link {
+  font-size: 24rpx;
+  color: #2b6de8;
+  margin-bottom: 12rpx;
+}
+.wait-line {
+  display: block;
+  font-size: 24rpx;
+  color: #5c6370;
+  line-height: 40rpx;
+}
 .footer {
   position: fixed;
   left: 0;
@@ -127,6 +166,18 @@
   background: #ffffff;
   padding: 0 24rpx;
   box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.06);
+}
+/* 合计一行、明细一行：三段文字挤在一行时窄屏会折成三行冲出底栏 */
+.sum {
+  display: flex;
+  flex-direction: column;
+}
+.sum-line {
+  align-items: baseline;
+}
+.sum-sub {
+  margin-top: 2rpx;
+  white-space: nowrap;
 }
 .total-label {
   font-size: 26rpx;

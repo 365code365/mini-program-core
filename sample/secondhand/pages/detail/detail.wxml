@@ -1,0 +1,70 @@
+<view wx:if="{{!it}}" class="empty">
+  <view class="empty-ic">!</view>
+  <text>宝贝不存在或已被删除</text>
+  <view class="empty-btn" bindtap="goHome">回首页逛逛</view>
+</view>
+<block wx:else>
+  <view class="gal">
+    <swiper class="gal-sw" current="{{cur}}" bindchange="onSwiper">
+      <swiper-item wx:for="{{it.imgs}}" wx:key="*this">
+        <image class="gal-img" src="{{item}}" mode="aspectFill" data-i="{{index}}" bindtap="preview"></image>
+      </swiper-item>
+    </swiper>
+    <view class="gal-no">{{cur + 1}}/{{it.imgs.length}}</view>
+    <view class="sold-mask" wx:if="{{it.sold}}"><text class="sold-tx">已卖出</text></view>
+  </view>
+  <view class="card">
+    <view class="row between">
+      <view class="row"><text class="price big"><text class="yen">¥</text>{{it.price}}</text><text class="orig">原价 ¥{{it.orig}}</text></view>
+      <button class="share-btn" open-type="share">分享</button>
+    </view>
+    <view class="title">{{it.title}}</view>
+    <view class="row tags">
+      <text class="tag tag-g">{{it.cond}}</text>
+      <text class="tag">{{it.free ? '包邮' : '邮费另议 / 可自提'}}</text>
+      <text class="muted">{{it.wants}}人想要 · {{it.views}}次浏览 · {{it.postedText}}</text>
+    </view>
+    <view class="desc">{{it.desc}}</view>
+    <image class="desc-img" wx:for="{{it.imgs}}" wx:key="*this" src="{{item}}" mode="widthFix" lazy-load></image>
+  </view>
+  <view class="card row seller">
+    <image class="avatar av-l" src="{{it.sellerInfo.avatar}}" mode="aspectFill"></image>
+    <view class="flex1">
+      <view class="s-name">{{it.sellerInfo.name}}<text class="credit" wx:if="{{it.sellerInfo.credit}}">{{it.sellerInfo.credit}}</text></view>
+      <text class="muted">{{it.sellerInfo.city}} · {{it.mine ? '这是你自己' : '回复率 ' + it.sellerInfo.reply + ' · ' + it.sellerInfo.joined}}</text>
+    </view>
+    <text class="muted">在售 {{onSaleCount}} 件</text>
+  </view>
+  <view class="card" wx:if="{{others.length}}">
+    <text class="sec-t">TA 还在卖</text>
+    <scroll-view scroll-x class="others">
+      <view class="o-it" wx:for="{{others}}" wx:key="id" data-id="{{item.id}}" bindtap="goOther">
+        <image class="o-img" src="{{item.cover}}" mode="aspectFill"></image>
+        <text class="price o-p">¥{{item.price}}</text>
+      </view>
+    </scroll-view>
+  </view>
+  <view class="card">
+    <view class="row between"><text class="sec-t">留言 {{comments.length}}</text><text class="muted" bindtap="focusComment">我要留言</text></view>
+    <view class="c-empty" wx:if="{{!comments.length}}">还没有人留言，问问卖家宝贝的细节吧</view>
+    <view class="cmt" wx:for="{{comments}}" wx:key="index">
+      <image class="avatar" src="{{item.avatar}}" mode="aspectFill"></image>
+      <view class="flex1 c-body">
+        <view class="row between"><text class="c-user">{{item.user}}</text><text class="muted">{{item.time}}</text></view>
+        <text class="c-text">{{item.text}}</text>
+        <view class="c-reply" wx:if="{{item.reply}}">卖家回复：{{item.reply}}</view>
+      </view>
+    </view>
+    <view class="c-bar">
+      <input class="c-ipt" value="{{cText}}" focus="{{cFocus}}" placeholder="问问更多细节…" confirm-type="send" maxlength="100" bindinput="onCInput" bindconfirm="sendComment" bindblur="onCBlur" />
+      <view class="c-send" bindtap="sendComment">发送</view>
+    </view>
+  </view>
+  <view class="foot-sp"></view>
+  <view class="foot">
+    <view class="f-ic" bindtap="toggleFav"><text class="f-star {{fav ? 'f-on' : ''}}">{{fav ? '★' : '☆'}}</text><text class="f-tx">{{fav ? '已收藏' : '收藏'}}</text></view>
+    <view class="f-ic" bindtap="focusComment"><text class="f-star">✎</text><text class="f-tx">留言</text></view>
+    <view class="f-btn f-chat" bindtap="chat">聊一聊</view>
+    <view class="f-btn {{it.sold && !order ? 'btn-dis' : ''}}" bindtap="buy">{{order ? '查看订单' : (it.mine ? '管理宝贝' : (it.sold ? '已卖出' : '我想要'))}}</view>
+  </view>
+</block>

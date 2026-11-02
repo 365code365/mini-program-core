@@ -14,12 +14,16 @@
       <view class="cat-icon big {{cat === item.name ? '' : 'dim'}}" style="background: {{cat === item.name ? item.color : '#f0f1f4'}}; color: {{cat === item.name ? '#ffffff' : item.color}};"><text>{{item.ch}}</text></view>
       <text class="grid-name {{cat === item.name ? 'grid-name-on' : ''}}">{{item.name}}</text>
     </view>
+    <view class="grid-item grid-manage" bindtap="onManage">
+      <view class="cat-icon big manage-icon"><text>+</text></view>
+      <text class="grid-name">管理</text>
+    </view>
   </view>
 
   <view class="card form">
     <view class="row form-row">
       <text class="form-label">备注</text>
-      <input class="flex1 form-input" placeholder="写点什么，例如：和同事午饭" placeholder-class="ph" value="{{note}}" maxlength="30" bindinput="onNote" />
+      <input id="note{{formSeq}}" class="flex1 form-input" placeholder="写点什么，例如：和同事午饭" placeholder-class="ph" value="{{note}}" maxlength="30" bindinput="onNote" />
     </view>
     <picker mode="date" value="{{date}}" start="2020-01-01" end="2030-12-31" bindchange="onDate">
       <view class="row form-row last">

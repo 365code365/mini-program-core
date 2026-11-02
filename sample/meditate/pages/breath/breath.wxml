@@ -1,0 +1,41 @@
+<view class="page breath {{theme}}">
+  <view class="stage">
+    <view class="ring {{running ? 'ring-on' : ''}}"></view>
+    <view id="ball" class="ball"></view>
+    <view class="center">
+      <text class="phase">{{phaseText}}</text>
+      <text class="count">{{countText}}</text>
+    </view>
+  </view>
+
+  <view class="steps row">
+    <view class="step {{phase === 'in' ? 'step-on' : ''}}"><text class="step-n">4</text><text class="step-t">吸气</text></view>
+    <view class="step {{phase === 'hold' ? 'step-on' : ''}}"><text class="step-n">7</text><text class="step-t">屏息</text></view>
+    <view class="step {{phase === 'out' ? 'step-on' : ''}}"><text class="step-n">8</text><text class="step-t">呼气</text></view>
+  </view>
+
+  <view class="card">
+    <view class="row between">
+      <text class="opt-t">练习轮数</text>
+      <text class="sub">每轮 19 秒 · 共 {{totalText}}</text>
+    </view>
+    <view class="row rounds">
+      <view wx:for="{{roundOpts}}" wx:key="*this" class="chip {{rounds === item ? 'on' : ''}}" data-n="{{item}}" bindtap="setRounds">
+        <text>{{item}} 轮</text>
+      </view>
+    </view>
+    <view class="row between vib">
+      <text class="opt-t">换气时震动提示</text>
+      <switch checked="{{vibrate}}" color="#6c63d9" bindchange="onVibrate"></switch>
+    </view>
+  </view>
+
+  <view class="guide card">
+    <text class="g-t">怎么练</text>
+    <text class="g-d">用鼻子安静地吸气 4 秒，屏住呼吸 7 秒，再用嘴缓缓呼气 8 秒。新手建议每次 4 轮，感到头晕就停下来正常呼吸。</text>
+  </view>
+
+  <view class="bottom">
+    <view class="btn {{running ? 'btn-stop' : ''}}" hover-class="btn-hover" bindtap="toggle"><text>{{running ? '结束练习' : '开始练习'}}</text></view>
+  </view>
+</view>

@@ -1,0 +1,7 @@
+.lb-search { padding: 20rpx 24rpx 0; }
+.lb-book { align-items: flex-start; }
+.lb-cover { width: 120rpx; height: 168rpx; border-radius: 8rpx; margin-right: 20rpx; flex-shrink: 0; }
+.lb-t { display: block; font-size: 30rpx; font-weight: bold; margin-bottom: 6rpx; }
+.lb-call { display: block; font-size: 24rpx; color: #14937f; margin: 8rpx 0; }
+.lb-ops { justify-content: flex-end; margin-top: 20rpx; }
+.lb-gap { margin-left: 16rpx; }

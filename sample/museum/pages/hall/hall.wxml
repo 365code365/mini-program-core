@@ -1,0 +1,31 @@
+<page-meta background-text-style="dark" background-color="#f6f2ec">
+  <navigation-bar title="{{hall.name}}" front-color="#000000" background-color="#f6f2ec"></navigation-bar>
+</page-meta>
+<image class="cover" src="{{hall.cover}}" mode="aspectFill"></image>
+<view class="card head">
+  <view class="row"><text class="n">{{hall.name}}</text><text class="tag">{{hall.area}}</text></view>
+  <text class="th">「{{hall.theme}}」</text>
+  <text class="in" user-select>{{hall.intro}}</text>
+</view>
+
+<view class="sec-h"><text class="sec-t">展厅导览</text><text class="sec-more">{{played ? (playing ? '播放中' : '已暂停') : '约 5 秒 · 配乐导览'}}</text></view>
+<view class="card au-box">
+  <audio id="hallAudio" src="/audio/hall.wav" poster="{{hall.cover}}" name="{{hall.name}} · 展厅导览" author="云川博物院讲解组" controls
+    bindplay="onPlay" bindpause="onPause" bindended="onEnded" binderror="onAudioError"></audio>
+  <view class="au-ops">
+    <view class="btn-ghost op" bindtap="toggle">{{playing ? '暂停' : '播放'}}</view>
+    <view class="btn-ghost op" bindtap="replay">从头播放</view>
+  </view>
+</view>
+
+<view class="sec-h"><text class="sec-t">精选展品</text><text class="sec-more">{{items.length}} 件</text></view>
+<view class="ex" wx:for="{{items}}" wx:key="id" data-id="{{item.id}}" bindtap="openExhibit" hover-class="ex-on">
+  <image class="ex-img" src="{{item.img}}" mode="aspectFill"></image>
+  <view class="ex-b">
+    <text class="ex-n">{{item.name}}</text>
+    <text class="muted">{{item.era}} · {{item.material}}</text>
+    <view class="ex-tags"><text class="tag">{{item.level}}</text><text wx:if="{{item.faved}}" class="tag">已收藏</text></view>
+  </view>
+  <text class="arrow">›</text>
+</view>
+<view class="foot"><view class="btn" bindtap="goBook">预约参观</view></view>

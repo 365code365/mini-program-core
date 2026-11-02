@@ -1,0 +1,23 @@
+<wxs module="fmt" src="../../utils/fmt.wxs"></wxs>
+<view class="cd {{lost ? 'cd-lost' : ''}}" wx:if="{{c}}">
+  <view class="row between"><text class="cd-org">云川大学 校园一卡通</text><text class="cd-st">{{lost ? '已挂失' : '正常'}}</text></view>
+  <text class="cd-k">余额（元）</text>
+  <text class="cd-b">{{fmt.money(c.balance) || c.balanceText}}</text>
+  <text class="cd-no" bindtap="copyNo">卡号 {{c.no}} · 林同学</text>
+</view>
+<view class="card">
+  <text class="sec-title">充值</text>
+  <view class="row cd-amts">
+    <view class="cd-amt {{pick === index ? 'on' : ''}}" wx:for="{{amounts}}" wx:key="*this" data-i="{{index}}" bindtap="pickAmt">¥{{item}}</view>
+  </view>
+  <view class="btn" hover-class="btn-hover" bindtap="recharge">立即充值 ¥{{amounts[pick]}}</view>
+</view>
+<view class="card">
+  <text class="sec-title">消费流水</text>
+  <view class="cell" wx:for="{{c.records}}" wx:key="id">
+    <view class="flex1"><text class="cd-rt">{{item.title}}</text><text class="muted">{{item.time}}</text></view>
+    <text class="{{item.amount > 0 ? 'primary bold' : 'bold'}}">{{item.amount > 0 ? '+' : ''}}{{fmt.money(item.amount) || item.amountText}}</text>
+  </view>
+</view>
+<view class="cd-lostbtn" bindtap="toggleLost">{{lost ? '解除挂失' : '卡片丢了？立即挂失'}}</view>
+<include src="../common/footer.wxml"></include>

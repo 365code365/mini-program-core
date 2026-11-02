@@ -67,8 +67,8 @@
 </view>
 
 <view class="card">
-  <text class="title">原生组件占位 + cover-view / cover-image</text>
-  <text class="desc">宿主没接管的 map / camera / live-player 按官方默认尺寸画占位；cover-view、cover-image 盖在上面。</text>
+  <text class="title">原生组件 + cover-view / cover-image</text>
+  <text class="desc">map / live-player 不写宽高按官方默认尺寸（300×150、300×225）；宿主接了就是真地图、真直播（不写 src 的 live-player 只有黑底），没接管的（这里的 camera）画占位。cover-view、cover-image 盖在 map 上。</text>
   <map class="ph-map">
     <cover-view class="cv"><cover-image class="cv-img" src="/images/avatar.jpg"></cover-image><text class="cv-t">cover-view 盖在 map 上</text></cover-view>
   </map>

@@ -1,0 +1,40 @@
+<view class="card sub-card row top-gap">
+  <view class="flex1">
+    <text class="cell-label">微信提醒</text>
+    <text class="sub sub-desc">{{subscribed ? '已开启，到点通过服务通知提醒' : '开启后到点通过服务通知提醒'}}</text>
+  </view>
+  <view class="sub-btn {{subscribed ? 'on' : ''}}" bindtap="onSubscribe">{{subscribed ? '关闭' : '开启'}}</view>
+</view>
+<view class="head row between">
+  <text class="title">待提醒 · {{range}}</text>
+  <text class="sub ack-all" wx:if="{{pending.length}}" bindtap="onAckAll">全部已知晓</text>
+</view>
+<view class="card list" wx:if="{{pending.length}}">
+  <view class="r-item row" wx:for="{{pending}}" wx:key="key">
+    <view class="ev-bar" style="background: {{item.color}}"></view>
+    <view class="flex1" data-id="{{item.id}}" bindtap="onOpen">
+      <view class="row">
+        <text class="r-title">{{item.title}}</text>
+        <text class="due-tag" wx:if="{{item.due}}">已到点</text>
+      </view>
+      <text class="sub r-sub">{{item.remindText}}</text>
+      <text class="sub r-sub">日程：{{item.evTime}}</text>
+    </view>
+    <view class="ack" data-key="{{item.key}}" bindtap="onAck">知道了</view>
+  </view>
+</view>
+<view class="card empty" wx:else>未来 7 天没有待处理的提醒</view>
+<block wx:if="{{handled.length}}">
+  <view class="head row"><text class="title">已知晓（{{handled.length}}）</text></view>
+  <view class="card list">
+    <view class="r-item row done" wx:for="{{handled}}" wx:key="key">
+      <view class="ev-bar" style="background: {{item.color}}"></view>
+      <view class="flex1" data-id="{{item.id}}" bindtap="onOpen">
+        <text class="r-title">{{item.title}}</text>
+        <text class="sub r-sub">{{item.remindText}}</text>
+      </view>
+      <view class="undo" data-key="{{item.key}}" bindtap="onUndo">撤销</view>
+    </view>
+  </view>
+</block>
+<text class="sub tip">提醒方式在新建 / 编辑日程时设置，默认值见「设置」</text>

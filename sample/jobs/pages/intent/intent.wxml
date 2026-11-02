@@ -1,0 +1,39 @@
+<view class="card form">
+  <picker class="p-intent" mode="selector" range="{{intents}}" value="{{iIdx}}" bindchange="onIntent">
+    <view class="field row">
+      <text class="label">期望职位</text>
+      <text class="flex1 val">{{v.intent}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <picker mode="selector" range="{{cities}}" value="{{v.cityIdx}}" data-k="cityIdx" bindchange="onPick">
+    <view class="field row">
+      <text class="label">工作城市</text>
+      <text class="flex1 val">{{cities[v.cityIdx]}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <picker mode="selector" range="{{salaries}}" value="{{v.salary}}" data-k="salary" bindchange="onPick">
+    <view class="field row">
+      <text class="label">期望月薪</text>
+      <text class="flex1 val">{{salaries[v.salary]}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <picker mode="selector" range="{{statuses}}" value="{{v.status}}" data-k="status" bindchange="onPick">
+    <view class="field row">
+      <text class="label">求职状态</text>
+      <text class="flex1 val">{{statuses[v.status]}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <view class="field row last">
+    <text class="label">工作性质</text>
+    <view class="flex1"></view>
+    <view class="types row">
+      <view class="ty {{v.type === index ? 'on' : ''}}" wx:for="{{types}}" wx:key="*this" data-i="{{index}}" bindtap="onType"><text class="ty-t">{{item}}</text></view>
+    </view>
+  </view>
+</view>
+<text class="tip sub">首页「推荐」会优先展示与期望职位匹配的岗位，城市默认按这里的设置</text>
+<view class="save-wrap"><view class="btn-primary {{dirty ? '' : 'idle'}}" bindtap="onSave">保存</view></view>

@@ -1,0 +1,27 @@
+<view class="rs" wx:if="{{a}}">
+  <view class="rs-ic" animation="{{anim}}"><icon type="success" size="70" color="#c0846a"></icon></view>
+  <text class="rs-t">{{mode === 'reschedule' ? '改约成功' : '预约成功'}}</text>
+  <text class="rs-s">{{a.dateText}} {{a.time}} 请准时到店，迟到 15 分钟以上可能需要重新排队</text>
+  <view class="rs-code">
+    <text class="muted">到店核销码</text>
+    <text class="rs-num">{{a.code}}</text>
+  </view>
+  <view class="card rs-card">
+    <view class="rs-kv"><text class="muted">服务项目</text><text>{{a.serviceName}}（约 {{a.duration}} 分钟）</text></view>
+    <view class="rs-kv"><text class="muted">发型师</text><text>{{a.stylistName}}</text></view>
+    <view class="rs-kv"><text class="muted">到店时间</text><text>{{a.date}} {{a.time}} - {{a.endTime}}</text></view>
+    <view class="rs-kv"><text class="muted">到店人</text><text>{{a.contact}} {{a.phone}}</text></view>
+    <view class="rs-kv"><text class="muted">支付方式</text><text>{{a.pay === 'card' ? '储值卡 ¥' + a.payPrice : '到店支付 ¥' + a.payPrice}}</text></view>
+    <view class="rs-kv"><text class="muted">门店</text><text class="rs-addr">{{shop.address}}</text></view>
+  </view>
+  <view class="rs-tip row" wx:if="{{sub}}"><icon type="info" size="14" color="#a0694f"></icon><text class="rs-tipt">已订阅提醒，开始前 2 小时会通知你</text></view>
+  <view class="rs-tip row" wx:else><icon type="warn" size="14" color="#e37318"></icon><text class="rs-tipt">未订阅提醒，可以把预约加到手机日历</text></view>
+  <view class="rs-btns">
+    <view class="btn-main" hover-class="press" bindtap="addCalendar">加入手机日历</view>
+    <view class="row rs-row">
+      <view class="btn-line rs-b" bindtap="goAppts">查看我的预约</view>
+      <view class="btn-gray rs-b rs-gap" bindtap="goHome">返回首页</view>
+    </view>
+  </view>
+</view>
+<view class="empty" wx:else><text class="empty-tx">预约不存在</text></view>

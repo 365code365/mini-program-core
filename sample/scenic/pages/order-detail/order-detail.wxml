@@ -1,0 +1,40 @@
+<view class="wrap" wx:if="{{o}}">
+  <view class="card od-head">
+    <text class="h1 od-st st-{{o.status}}">{{o.statusText}}</text>
+    <text class="muted" wx:if="{{o.status === 'paid'}}">{{daysLeft > 0 ? '距入园还有 ' + daysLeft + ' 天，' : '今天入园，'}}凭电子票或身份证入园</text>
+    <text class="muted" wx:elif="{{o.status === 'refunded'}}">已于 {{o.refundAt}} 退款 ¥{{o.total}}</text>
+    <text class="muted" wx:else>感谢游览，欢迎分享你的游记</text>
+    <view class="btn od-tk" wx:if="{{o.status === 'paid'}}" hover-class="press" bindtap="goTicket">出示电子票</view>
+  </view>
+  <view class="card row" bindtap="goScenic">
+    <image class="od-cover" src="{{o.cover}}" mode="aspectFill"></image>
+    <view class="col od-info">
+      <text class="h2">{{o.scenicName}}</text>
+      <text class="muted">入园日期 {{o.date}}</text>
+      <text class="muted" wx:if="{{s}}">{{s.open}}</text>
+    </view>
+  </view>
+  <view class="card">
+    <text class="sec-title">门票明细</text>
+    <view class="between od-kv" wx:for="{{o.items}}" wx:key="id"><text>{{item.name}} × {{item.n}}</text><text>¥{{item.price * item.n}}</text></view>
+    <view class="line"></view>
+    <view class="between"><text>实付</text><text class="price">¥{{o.total}}</text></view>
+  </view>
+  <view class="card">
+    <text class="sec-title">游客信息（{{o.people.length}} 人）</text>
+    <view class="between od-kv" wx:for="{{o.people}}" wx:key="idTail"><text>{{item.name}}</text><text class="muted">{{item.idMask}}</text></view>
+    <view class="between od-kv"><text class="muted">联系手机</text><text>{{o.phone}}</text></view>
+  </view>
+  <view class="card">
+    <view class="between od-kv" bindtap="copyNo"><text class="muted">订单号</text><text>{{o.no}} 复制</text></view>
+    <view class="between od-kv"><text class="muted">下单时间</text><text>{{o.created}}</text></view>
+    <view class="between od-kv"><text class="muted">支付方式</text><text>{{o.payWay === 'mock' ? '模拟支付' : '微信支付'}}</text></view>
+  </view>
+  <view class="row od-ops">
+    <view class="btn-ghost od-op" bindtap="call">联系客服</view>
+    <view class="btn-ghost od-op" wx:if="{{o.status === 'paid'}}" bindtap="refund">退票</view>
+    <view class="btn-ghost od-op" wx:if="{{o.status !== 'paid'}}" bindtap="remove">删除订单</view>
+    <view class="btn od-op" wx:if="{{o.status !== 'paid'}}" bindtap="rebuy">再次预订</view>
+  </view>
+</view>
+<view class="empty" wx:else><view class="empty-ic">票</view><text class="empty-tx">订单不存在或已删除</text></view>

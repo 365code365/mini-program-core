@@ -15,6 +15,9 @@
 .entry-ic { width: 72rpx; height: 72rpx; border-radius: 18rpx; display: flex; align-items: center; justify-content: center; }
 .ic-pay { background: #ff8a1f; }
 .ic-ord { background: #8e5cf7; }
+.ic-card { background: #1d4ed8; }
+.ic-inv { background: #19a974; }
+.ic-find { background: #0ea5e9; }
 .ic-t { color: #ffffff; font-size: 34rpx; font-weight: bold; }
 .entry-t { font-size: 24rpx; margin-top: 8rpx; }
 .sec-t { padding: 20rpx 32rpx 12rpx; font-size: 28rpx; font-weight: bold; }

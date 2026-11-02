@@ -1,0 +1,19 @@
+.top { background: linear-gradient(160deg, #5b8cff, #3d6cf6); padding: 40rpx 32rpx 32rpx; }
+.t-av { width: 120rpx; height: 120rpx; border-radius: 60rpx; font-size: 48rpx; border: 4rpx solid rgba(255, 255, 255, 0.7); }
+.t-main { flex: 1; margin-left: 24rpx; display: flex; flex-direction: column; }
+.t-name { font-size: 38rpx; font-weight: bold; color: #ffffff; }
+.t-title { margin-top: 8rpx; font-size: 24rpx; color: rgba(255, 255, 255, 0.85); }
+.fl { height: 60rpx; line-height: 60rpx; padding: 0 28rpx; border-radius: 30rpx; background: #ffffff; color: #3d6cf6; font-size: 26rpx; font-weight: bold; white-space: nowrap; }
+.fl-on { background: rgba(255, 255, 255, 0.25); color: #ffffff; }
+.nums { margin-top: 32rpx; background: rgba(255, 255, 255, 0.14); border-radius: 20rpx; padding: 22rpx 0; }
+.num { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.num-n { font-size: 34rpx; font-weight: bold; color: #ffffff; }
+.num-l { margin-top: 4rpx; font-size: 22rpx; color: rgba(255, 255, 255, 0.85); }
+.intro { margin-top: 16rpx; font-size: 26rpx; line-height: 44rpx; color: #4b5263; }
+.course { padding: 24rpx 0; border-bottom: 1rpx solid #f0f2f5; }
+.cv { width: 132rpx; height: 100rpx; border-radius: 14rpx; display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 34rpx; font-weight: bold; flex-shrink: 0; }
+.c-main { flex: 1; margin-left: 20rpx; display: flex; flex-direction: column; min-width: 0; }
+.c-title { font-size: 28rpx; font-weight: bold; margin-bottom: 6rpx; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.c-price { margin-left: 16rpx; font-size: 28rpx; font-weight: bold; color: #ff5a3d; white-space: nowrap; }
+.gap { height: 60rpx; }
+.c-own { color: #9aa0ab; font-weight: normal; font-size: 24rpx; }

@@ -1,0 +1,11 @@
+.tabs { background: #ffffff; }
+.tab { flex: 1; height: 88rpx; display: flex; align-items: center; justify-content: center; font-size: 26rpx; color: #5b6478; border-bottom: 4rpx solid #ffffff; }
+.tab-on { color: #1f6fff; font-weight: bold; border-bottom-color: #1f6fff; }
+.e-ic { font-size: 80rpx; color: #c6ccd8; margin-bottom: 20rpx; }
+.e-btn { width: 260rpx; height: 72rpx; font-size: 28rpx; margin-top: 30rpx; }
+.o-r { font-size: 32rpx; font-weight: bold; }
+.o-s { font-size: 24rpx; color: #1f6fff; }
+.o-s-unpaid { color: #f79009; }
+.o-s-refunded, .o-s-cancelled { color: #8a93a6; }
+.o-s-changed { color: #12b76a; }
+.o-w { margin: 14rpx 0; display: block; }

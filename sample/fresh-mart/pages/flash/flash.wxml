@@ -1,0 +1,39 @@
+<view class="head">
+  <view class="row slots">
+    <view wx:for="{{slots}}" wx:key="key" class="slot {{slotIdx === index ? 'slot-on' : ''}}" data-idx="{{index}}" bindtap="onSlot">
+      <text class="slot-time">{{item.label}}</text>
+      <text class="slot-state">{{item.nextDay ? '明日' : ''}}{{item.state}}</text>
+    </view>
+  </view>
+  <view class="row clock-row">
+    <text class="clock-label">{{slots[slotIdx].live ? '距本场结束' : '距开抢'}}</text>
+    <text class="clock-num">{{hh}}</text><text class="clock-sep">:</text>
+    <text class="clock-num">{{mm}}</text><text class="clock-sep">:</text>
+    <text class="clock-num">{{ss}}</text>
+    <view class="flex1"></view>
+    <text class="limit">秒杀价每单限购 2 件</text>
+  </view>
+</view>
+<view class="card item row" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onDetail">
+  <view class="img-box">
+    <image class="img" src="{{item.img}}" mode="aspectFill"></image>
+    <view wx:if="{{item.out}}" class="mask glyph"><text>已抢光</text></view>
+  </view>
+  <view class="flex1 info">
+    <text class="name ellipsis">{{item.name}}</text>
+    <text class="sub">{{item.spec}} · 立省 ¥{{item.save}}</text>
+    <view wx:if="{{slots[slotIdx].live}}" class="bar"><view class="bar-in" style="width: {{item.stock}}%;"></view><text class="bar-text">{{item.out ? '已抢光' : '已抢' + item.stock + '%'}}</text></view>
+    <view class="row foot">
+      <view class="price-row"><text class="p-sym">¥</text><text class="p-num">{{item.flashPrice}}</text></view>
+      <text class="p-origin">¥{{item.price}}</text>
+      <view class="flex1"></view>
+      <view wx:if="{{slots[slotIdx].live}}" class="buy {{item.out ? 'buy-off' : ''}}" data-id="{{item.id}}" catchtap="onBuy">{{item.out ? '已抢光' : (item.taken ? '再抢一件' : '马上抢')}}</view>
+      <view wx:else class="remind {{item.reminded ? 'remind-on' : ''}}" data-id="{{item.id}}" catchtap="onRemind">{{item.reminded ? '已设提醒' : '提醒我'}}</view>
+    </view>
+  </view>
+</view>
+<view class="gap"></view>
+<view wx:if="{{cartCount}}" class="cart-fab glyph" bindtap="onCart">
+  <text>购物车</text>
+  <view class="fab-badge"><text>{{cartCount}}</text></view>
+</view>

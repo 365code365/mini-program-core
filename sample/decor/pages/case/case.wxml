@@ -1,0 +1,82 @@
+<view class="wrapper" wx:if="{{c}}">
+  <!-- 图集：双击收藏 -->
+  <double-tap-gesture-handler on-gesture-event="onDoubleTap">
+    <view class="gallery">
+      <swiper class="sw" current="{{cur}}" bindchange="onSwiper" circular>
+        <swiper-item wx:for="{{c.gallery}}" wx:key="*this">
+          <image class="sw-img" src="{{item}}" mode="aspectFill"></image>
+        </swiper-item>
+      </swiper>
+      <view class="heart"><image class="heart-img" src="/images/heart.png"></image></view>
+      <text class="sw-idx">{{cur + 1}}/{{c.gallery.length}} · 双击收藏</text>
+    </view>
+  </double-tap-gesture-handler>
+
+  <view class="page">
+    <view class="card">
+      <text class="title">{{c.title}}</text>
+      <view class="facts">
+        <view class="fact"><text class="f-v">{{c.area}}㎡</text><text class="muted">建筑面积</text></view>
+        <view class="fact"><text class="f-v">{{c.layout}}</text><text class="muted">户型</text></view>
+        <view class="fact"><text class="f-v">{{c.style}}</text><text class="muted">风格</text></view>
+        <view class="fact"><text class="f-v wood">{{c.budget}}万</text><text class="muted">全包预算</text></view>
+      </view>
+      <text class="desc">{{c.desc}}</text>
+    </view>
+
+    <!-- 装修前后对比：横向拖动分割线 -->
+    <view class="card">
+      <view class="between"><text class="sec-title">装修前后对比</text><text class="muted">左右拖动分割线</text></view>
+      <pan-gesture-handler on-gesture-event="onComparePan">
+        <view class="cmp" id="cmp">
+          <image class="cmp-img" src="{{c.cover}}" mode="aspectFill"></image>
+          <view class="cmp-before">
+            <image class="cmp-img-fix" src="{{c.before}}" mode="aspectFill" style="width: {{cmpW}}px;"></image>
+          </view>
+          <view class="cmp-handle"><view class="cmp-line"></view><view class="cmp-knob"><text class="knob-tx">‹ ›</text></view></view>
+          <text class="cmp-lb cmp-lb-l">装修前</text>
+          <text class="cmp-lb cmp-lb-r">装修后</text>
+        </view>
+      </pan-gesture-handler>
+      <view class="row cmp-ops">
+        <text class="chip" data-side="before" bindtap="showSide">看毛坯</text>
+        <text class="chip" data-side="half" bindtap="showSide">各一半</text>
+        <text class="chip" data-side="after" bindtap="showSide">看完工</text>
+      </view>
+    </view>
+
+    <view class="card">
+      <text class="sec-title">预算拆分</text>
+      <view wx:for="{{splits}}" wx:key="name" class="sp">
+        <text class="sp-n">{{item.name}}</text>
+        <progress class="sp-bar flex1" percent="{{item.percent}}" stroke-width="8" border-radius="8" activeColor="#3a7d6c" backgroundColor="#efebe5"></progress>
+        <text class="sp-v">{{item.wan}}万</text>
+      </view>
+    </view>
+
+    <view class="card ds" bindtap="goDesigner" hover-class="item-hover">
+      <image class="ds-av" src="{{d.avatar}}"></image>
+      <view class="col flex1">
+        <view class="row"><text class="ds-n">{{d.name}}</text><text class="tag">{{d.title}}</text></view>
+        <text class="muted">从业 {{d.years}} 年 · 评分 {{d.rating}} · 设计费 {{d.fee}} 元/㎡</text>
+      </view>
+      <text class="arrow">›</text>
+    </view>
+
+    <view wx:if="{{others.length}}" class="card">
+      <text class="sec-title">TA 的其他作品</text>
+      <view class="row others">
+        <view wx:for="{{others}}" wx:key="id" class="ot" data-id="{{item.id}}" bindtap="openCase" hover-class="press-hover">
+          <image class="ot-img" src="{{item.cover}}" mode="aspectFill"></image>
+          <text class="ot-t">{{item.title}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="bar">
+    <view class="bar-fav {{fav ? 'bar-faved' : ''}}" bindtap="toggleFav" hover-class="btn-hover">{{fav ? '已收藏' : '收藏'}}</view>
+    <button class="bar-share" open-type="share" hover-class="btn-hover">分享</button>
+    <view class="btn flex1" bindtap="book" hover-class="btn-hover">预约同款设计</view>
+  </view>
+</view>

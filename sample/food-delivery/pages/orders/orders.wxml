@@ -25,9 +25,11 @@
     <view class="row between foot">
       <text class="sub">{{item.time}}</text>
       <view class="row">
-        <view wx:if="{{item.status === 'delivering'}}" class="op op-primary" data-id="{{item.id}}" catchtap="onDetail">查看配送</view>
-        <view wx:if="{{item.status === 'done'}}" class="op" data-id="{{item.id}}" catchtap="onReview">评价</view>
-        <view class="op op-primary" data-shop="{{item.shopId}}" catchtap="onAgain">再来一单</view>
+        <text wx:if="{{item.left}}" class="left">剩 {{item.left}}</text>
+        <view wx:if="{{item.status === 'unpaid'}}" class="op op-pay op-primary" data-id="{{item.id}}" catchtap="onDetail">去支付</view>
+        <view wx:if="{{item.status === 'paid'}}" class="op op-primary" data-id="{{item.id}}" catchtap="onDetail">查看配送</view>
+        <view wx:if="{{item.canRate}}" class="op op-rate" data-id="{{item.id}}" catchtap="onRate">评价</view>
+        <view wx:if="{{item.status !== 'unpaid' && item.status !== 'paid'}}" class="op op-primary op-again" data-id="{{item.id}}" catchtap="onAgain">再来一单</view>
       </view>
     </view>
   </view>

@@ -1,0 +1,3 @@
+.rs { display: flex; flex-direction: row; align-items: center; }
+.rs-star { flex-shrink: 0; }
+.rs-score { color: #e8902f; font-weight: bold; margin-left: 8rpx; }

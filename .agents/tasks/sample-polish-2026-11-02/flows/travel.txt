@@ -1,0 +1,172 @@
+# 途简行程：每页能开 → 新建（拼音联想、人数、类型）→ 编辑（缩短天数景点并入最后一天、改名、改人数）
+# → 按天排景点（添加推荐 + 自定义、上下移、删除撤销、移到其他天）→ 预算计划 + 记账（记一笔、校验、删除）
+# → 行李清单（勾选、整组、自定义增删）→ 分享文字 / 复制一份 / 导入好友分享 → 删除行程 → 我的统计
+smoke pages/detail/detail?id=seed1 pages/budget/budget?id=seed1 pages/packing/packing?id=seed1 pages/spots/spots?city=成都&day=1 pages/create/create?id=seed1 pages/import/import
+open
+eval globalThis.P = function () { return getCurrentPages().slice(-1)[0]; }; globalThis.TR = function (id) { return wx.getStorageSync('tv_trips').find(function (t) { return t.id === id; }); };
+count 2 .trip
+# 新建：输入首字母联想到厦门，3 人，美食之旅
+tap .new-btn
+route pages/create/create
+type .dest-input => xm
+count 1 .sug
+tap .sug
+expect P().data.city === '厦门' && P().data.cityOk
+tapn 1 .step-btn
+expect P().data.people === 3
+tapn 3 .type
+expect P().data.type === '美食之旅'
+expect P().data.title === '厦门 4 日游'
+tap .bottom .btn
+route pages/trips/trips
+count 3 .trip
+expect wx.getStorageSync('tv_trips')[0].city === '厦门' && wx.getStorageSync('tv_trips')[0].people === 3
+# 编辑成都行程：返回日期提前 1 天（4 天 → 3 天），第 4 天的 2 个景点并入第 3 天；改名、加 1 人
+tapn 1 .trip
+route pages/detail/detail
+expect P().data.trip.title === '成都 4 日游'
+tapn 0 .act
+route pages/create/create
+expect P().data.editing && P().data.city === '成都' && P().data.days === 4
+picker .date-r
+pickrow 2 3 -1
+pickok
+wait 400
+expect P().data.days === 3
+tap .name-input
+key delete-line-back
+type .name-input => 成都吃货 3 日
+expect P().data.title === '成都吃货 3 日'
+tapn 1 .step-btn
+tap .bottom .btn
+modal?
+modal ok
+route pages/detail/detail
+expect TR('seed1').plan.length === 3 && TR('seed1').plan[2].length === 3 && TR('seed1').people === 3 && TR('seed1').title === '成都吃货 3 日'
+expect P().data.dayTabs.length === 3 && P().data.trip.title === '成都吃货 3 日'
+shot target/_polish_shots/detail.png
+# 添加景点到第 1 天：已安排的点不了，选 2 个推荐 + 1 个自定义
+tap .add
+route pages/spots/spots
+tapn 0 .sp
+toast 已安排在第1天
+tapn 2 .sp
+tapn 8 .sp
+expect P().data.count === 2
+type .custom-in => 九眼桥酒吧街
+tap .custom-btn
+expect P().data.count === 3 && P().data.custom === '' && P().data.list[0].name === '九眼桥酒吧街'
+shot target/_polish_shots/spots.png
+tap .ok
+route pages/detail/detail
+toast 已添加 3 个景点
+count 5 .spot
+expect TR('seed1').plan[0].map(function (s) { return s.name; }).join(',') === '大熊猫繁育研究基地,宽窄巷子,九眼桥酒吧街,锦里古街,青城山'
+# 下移第 1 个、上移最后一个
+tapn 1 .op
+expect TR('seed1').plan[0][0].name === '宽窄巷子' && TR('seed1').plan[0][1].name === '大熊猫繁育研究基地'
+tapn 12 .op
+expect TR('seed1').plan[0][3].name === '青城山'
+# 删除可撤销
+tapn 0 .op-del
+count 4 .spot
+exists .undo
+tap .undo-btn
+count 5 .spot
+expect TR('seed1').plan[0][0].name === '宽窄巷子'
+# 点景点名：移到第 2 天
+tapn 2 .spot-info
+exists .sheet
+tapn 1 .d-op
+absent .sheet
+toast 已移到第2天
+count 4 .spot
+expect TR('seed1').plan[1].slice(-1)[0].name === '九眼桥酒吧街' && P().data.dayTabs[1].n === 4
+tapn 1 .tab
+count 4 .spot
+expect P().data.dayHours === 8.5
+shot target/_polish_shots/detail-day2.png
+# 预算：计划分项 + 记账
+tapn 0 .entry
+route pages/budget/budget
+expect P().data.records.length === 2 && P().data.spentText === '3540'
+tap .rec-add
+exists .sheet
+tap .rec-ok
+toast 请输入金额
+tapn 2 .cat
+type .rec-amount => 268.5
+type .rec-note => 蜀大侠火锅
+picker .rec-day
+pickrow 0 1 1
+pickok
+wait 400
+expect P().data.rec.day === 1 && P().data.rec.k === 'food'
+shot target/_polish_shots/budget-rec.png
+tap .rec-ok
+absent .sheet
+toast 已记账 ¥268.50
+expect TR('seed1').expenses.length === 3 && TR('seed1').expenses[0].note === '蜀大侠火锅' && TR('seed1').expenses[0].day === 1
+expect P().data.spentText === '3808.50' && P().data.actual[2].spent === '268.50'
+# 删掉一笔住宿
+tapn 2 .rec-del
+modal ok
+expect P().data.records.length === 2 && P().data.spentText === '2128.50'
+# 计划：购物填 500，总预算超了
+type .it-in-shopping => 500
+expect P().data.sumText === '5610' && P().data.items[4].val === '500'
+type .it-in-other => 1000
+expect P().data.over && P().data.overText === '610'
+shot target/_polish_shots/budget.png
+tap .bottom .btn
+route pages/detail/detail
+expect TR('seed1').budget.items.shopping === '500' && P().data.budget.over && P().data.budget.spentText === '2128.50'
+# 行李清单：勾选、整组勾选、自定义物品增删
+tapn 1 .entry
+route pages/packing/packing
+expect P().data.stat.done === 3 && P().data.stat.total === 24
+tapn 1 .it
+expect TR('seed1').packing.checked['证件|学生证 / 老年证'] === true && P().data.stat.done === 4
+tapn 4 .grp-head .check
+expect P().data.groups[4].full && P().data.stat.done === 8
+picker .add-g
+pickrow 0 1 2
+pickok
+wait 400
+type .add-in => 雨伞
+tap .add-btn
+expect TR('seed1').packing.custom['洗漱'][0] === '雨伞' && P().data.newItem === '' && P().data.stat.total === 25
+type .add-in => 雨伞
+tap .add-btn
+toast 洗漱里已经有了
+expect TR('seed1').packing.custom['洗漱'].length === 1
+shot target/_polish_shots/packing.png
+tap .rm
+expect TR('seed1').packing.custom['洗漱'].length === 0 && P().data.stat.total === 24
+back
+route pages/detail/detail
+expect P().data.pack.done === 8
+# 分享：复制行程文字
+tapn 1 .act
+print JSON.stringify(__ui.slice(-2))
+sheet 0 2
+wait 300
+print JSON.stringify(__ui.slice(-2))
+print wx.getClipboardData().data
+toast 内容已复制
+expect P().onShareAppMessage().path.indexOf('/pages/import/import?text=') === 0
+# 复制一份：景点与预算计划带上，勾选与记账不带
+tapn 2 .act
+modal ok
+route pages/detail/detail
+expect P().data.trip.title === '成都吃货 3 日（副本）'
+expect wx.getStorageSync('tv_trips').length === 4
+eval globalThis.CP = P().id
+expect TR(CP).plan[1].length === 4 && TR(CP).budget.items.shopping === '500' && TR(CP).expenses.length === 0 && Object.keys(TR(CP).packing.checked).length === 0
+# 删除副本
+tapn 3 .act
+modal ok
+route pages/trips/trips
+count 3 .trip
+expect !TR(CP)
+noerr

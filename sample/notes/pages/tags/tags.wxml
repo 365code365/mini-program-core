@@ -5,9 +5,17 @@
 <text class="error" wx:if="{{error}}">{{error}}</text>
 <view class="card list">
   <view class="tag-row row" wx:for="{{tags}}" wx:key="id">
-    <text class="tag-name flex1">#{{item.name}}</text>
-    <text class="tag-count">{{item.count}} 篇</text>
-    <view class="tag-del" data-id="{{item.id}}" bindtap="onDel">删除</view>
+    <block wx:if="{{editing === item.id}}">
+      <input class="rename-input flex1" value="{{draft}}" focus maxlength="8" placeholder="新名字" bindinput="onDraft" bindconfirm="onRenameSave" />
+      <view class="tag-op rename-save" bindtap="onRenameSave">保存</view>
+      <view class="tag-op rename-cancel" bindtap="onRenameCancel">取消</view>
+    </block>
+    <block wx:else>
+      <text class="tag-name flex1" data-id="{{item.id}}" bindtap="onBrowse">#{{item.name}}</text>
+      <text class="tag-count">{{item.count}} 篇</text>
+      <view class="tag-op tag-rename" data-id="{{item.id}}" bindtap="onRename">改名</view>
+      <view class="tag-del" data-id="{{item.id}}" bindtap="onDel">删除</view>
+    </block>
   </view>
   <text class="sub" wx:if="{{!tags.length}}">还没有标签</text>
 </view>

@@ -110,8 +110,156 @@
   margin-right: 12rpx;
 }
 
-.minus-price {
+.cut-price {
   color: #ff4d2d;
+}
+
+.badge-new {
+  background: #ff8a00;
+}
+
+.badge-shop {
+  background: #1677ff;
+}
+
+.addr-none {
+  height: 72rpx;
+}
+
+.addr-plus {
+  width: 44rpx;
+  height: 44rpx;
+  line-height: 40rpx;
+  border-radius: 22rpx;
+  background: #1677ff;
+  color: #ffffff;
+  text-align: center;
+  font-size: 34rpx;
+  margin-right: 16rpx;
+}
+
+.addr-none-t {
+  font-size: 32rpx;
+  font-weight: bold;
+}
+
+.item-spec {
+  display: block;
+  font-size: 22rpx;
+  color: #8a8f99;
+  margin-bottom: 4rpx;
+}
+
+.remark-row {
+  padding: 20rpx 0;
+}
+
+.remark-head {
+  font-size: 28rpx;
+}
+
+.remark-input {
+  height: 72rpx;
+  margin-top: 12rpx;
+  padding: 0 20rpx;
+  border-radius: 12rpx;
+  background: #f7f8fa;
+  font-size: 26rpx;
+}
+
+.ph {
+  color: #b0b4bc;
+}
+
+.remark-tags {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin-top: 4rpx;
+}
+
+.r-tag {
+  height: 48rpx;
+  line-height: 46rpx;
+  padding: 0 20rpx;
+  margin: 12rpx 14rpx 0 0;
+  border-radius: 24rpx;
+  border: 1rpx solid #e3e5e8;
+  font-size: 22rpx;
+  color: #5c6370;
+  white-space: nowrap;
+}
+
+.r-tag-on {
+  border-color: #1677ff;
+  background: #e8f1ff;
+  color: #1677ff;
+}
+
+.pay-title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: bold;
+  padding: 16rpx 0 4rpx;
+}
+
+.pay-way {
+  min-height: 100rpx;
+  border-bottom: 1rpx solid #f0f1f4;
+  font-size: 28rpx;
+}
+
+.pw-icon {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 12rpx;
+  font-size: 24rpx;
+  margin-right: 20rpx;
+}
+
+.pw-wx {
+  background: #07c160;
+}
+
+.pw-wallet {
+  background: #ff8a00;
+}
+
+.pw-name {
+  display: block;
+}
+
+.pw-short {
+  color: #ff4d2d;
+}
+
+.radio {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 20rpx;
+  border: 2rpx solid #c8ccd4;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.radio-on {
+  border-color: #1677ff;
+  background: #1677ff;
+}
+
+.radio-in {
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 7rpx;
+  background: #ffffff;
+}
+
+.earn-tip {
+  text-align: center;
+  margin-top: 24rpx;
 }
 
 .subtotal {

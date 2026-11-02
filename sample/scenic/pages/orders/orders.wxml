@@ -1,0 +1,29 @@
+<view class="tabs row">
+  <view wx:for="{{tabs}}" wx:key="k" class="tab {{cur === index ? 'tab-on' : ''}}" data-i="{{index}}" bindtap="onTab"><text>{{item.n}}</text></view>
+</view>
+<view class="wrap">
+  <view class="empty" wx:if="{{loading}}"><text class="empty-tx">加载中…</text></view>
+  <block wx:elif="{{list.length}}">
+    <view class="od" wx:for="{{list}}" wx:key="no" data-no="{{item.no}}" bindtap="goDetail" hover-class="press">
+      <view class="between od-h"><text class="muted">订单 {{item.no}}</text><text class="st st-{{item.status}}">{{item.statusText}}</text></view>
+      <view class="row">
+        <image class="od-img" src="{{item.cover}}" mode="aspectFill"></image>
+        <view class="col od-m">
+          <text class="od-n">{{item.scenicName}}</text>
+          <text class="muted">入园 {{item.date}} · {{item.summary}}</text>
+          <text class="muted">游客 {{item.count}} 位</text>
+        </view>
+      </view>
+      <view class="between od-f">
+        <view class="row"><text class="muted">实付 </text><text class="price">¥{{item.total}}</text></view>
+        <view class="od-b" wx:if="{{item.status === 'paid'}}" data-no="{{item.no}}" catchtap="goTicket"><text class="od-b-tx">出示电子票</text></view>
+      </view>
+    </view>
+  </block>
+  <view class="empty" wx:else>
+    <view class="empty-ic"><text>票</text></view>
+    <text class="empty-tx">暂无{{tabs[cur].n === '全部' ? '' : tabs[cur].n}}订单</text>
+    <view class="btn e-btn" hover-class="press" bindtap="goHome">去逛逛景区</view>
+  </view>
+  <view style="height: 120rpx;"></view>
+</view>

@@ -1,0 +1,55 @@
+<view class="wrap">
+  <view class="hero">
+    <image class="hero-img" src="{{bike && bike.type === 'ebike' ? '/images/hero-ebike.png' : '/images/hero-bike.png'}}" mode="aspectFit"></image>
+    <view class="hero-info" wx:if="{{bike}}">
+      <view class="row">
+        <text class="name">{{pricing.name}}</text>
+        <text class="tag {{bike.type === 'ebike' ? 'tag-ebike' : 'tag-bike'}}">{{bike.type === 'ebike' ? '电助力' : '人力'}}</text>
+      </view>
+      <text class="no">车辆编号 {{bike.no}}</text>
+      <text class="battery" wx:if="{{bike.type === 'ebike'}}">剩余电量 {{bike.battery}}% · 可骑行约 {{bike.range}} 公里</text>
+    </view>
+  </view>
+
+  <!-- 不能开锁 -->
+  <view class="card block" wx:if="{{phase === 'blocked'}}">
+    <text class="block-title">暂时无法开锁</text>
+    <text class="block-tx">{{blockReason}}</text>
+    <view class="btn" bindtap="onBack">换一辆车</view>
+  </view>
+
+  <block wx:else>
+    <view class="card">
+      <view class="row between">
+        <text class="sec-title">计费规则</text>
+        <view class="row" bindtap="onPricing"><text class="muted">详细说明</text><view class="chev"></view></view>
+      </view>
+      <view class="rule" wx:for="{{pricing.rules}}" wx:key="*this">
+        <view class="dot"></view><text class="rule-tx">{{item}}</text>
+      </view>
+      <view class="card-tip" wx:if="{{card}}">已有「{{card.name}}」，本次骑行自动抵扣</view>
+    </view>
+
+    <view class="card" wx:if="{{bike.type === 'ebike' && phase === 'confirm'}}">
+      <checkbox-group bindchange="onHelmet">
+        <label class="row helmet">
+          <checkbox value="yes" checked="{{helmet}}" color="#13a868"></checkbox>
+          <text class="helmet-tx">我已佩戴安全头盔，骑行时遵守交通规则</text>
+        </label>
+      </checkbox-group>
+    </view>
+
+    <view class="card steps" wx:if="{{phase !== 'confirm'}}">
+      <view class="step" wx:for="{{steps}}" wx:key="*this">
+        <view class="s-dot {{step > index || phase === 'done' ? 's-ok' : (step === index ? 's-cur' : '')}}">{{step > index || phase === 'done' ? '✓' : index + 1}}</view>
+        <text class="s-tx {{step >= index ? 's-tx-on' : ''}}">{{item}}{{step === index && phase === 'working' ? '…' : ''}}</text>
+      </view>
+      <text class="done-tx" wx:if="{{phase === 'done'}}">开锁成功，车锁已弹开，祝您骑行愉快</text>
+    </view>
+
+    <view class="foot">
+      <view class="btn {{phase !== 'confirm' ? 'btn-disabled' : ''}}" bindtap="onUnlock">{{phase === 'confirm' ? '确认开锁' : (phase === 'done' ? '开锁成功' : '开锁中…')}}</view>
+      <text class="foot-tip">开锁即表示同意《青桔骑行用户服务协议》</text>
+    </view>
+  </block>
+</view>

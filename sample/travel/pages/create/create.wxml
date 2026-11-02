@@ -59,6 +59,6 @@
   </view>
   <view class="space"></view>
   <view class="bottom">
-    <view class="btn {{canSubmit ? '' : 'btn-disabled'}}" bindtap="submit"><text>{{canSubmit ? '创建行程' : (dateErr ? '请修改日期' : '请选择目的地')}}</text></view>
+    <view class="btn {{canSubmit ? '' : 'btn-disabled'}}" bindtap="submit"><text>{{canSubmit ? (editing ? '保存修改' : '创建行程') : (dateErr ? '请修改日期' : '请选择目的地')}}</text></view>
   </view>
 </view>

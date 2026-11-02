@@ -1,0 +1,17 @@
+<view class="cs-top" wx:if="{{policy}}">
+  <text class="cs-title">{{policy.productName}}</text>
+  <view class="row cs-amt"><text class="cs-yen">¥</text><text class="cs-num">{{premiumText}}</text></view>
+  <text class="cs-tip">模拟收银台 · 当前环境未接入微信支付，确认后视为支付成功</text>
+</view>
+<view class="cs-card">
+  <view class="cs-way" wx:for="{{ways}}" wx:key="name" data-i="{{index}}" bindtap="pick">
+    <view class="cs-logo" style="background: {{item.color}};">{{item.name[0]}}</view>
+    <view class="cs-mid">
+      <text class="cs-name">{{item.name}}</text>
+      <text class="cs-sub">{{item.sub}}</text>
+    </view>
+    <icon type="{{way === index ? 'success' : 'circle'}}" size="22" color="#2f6bff"></icon>
+  </view>
+</view>
+<view class="cs-btn" hover-class="btn-hover" bindtap="pay">{{paying ? '支付中…' : '确认支付 ¥' + premiumText}}</view>
+<view class="cs-cancel" bindtap="cancel">暂不支付</view>

@@ -1,0 +1,32 @@
+.tabs { background: #ffffff; padding: 0 24rpx; }
+.tb { flex: 1; height: 88rpx; line-height: 88rpx; text-align: center; font-size: 28rpx; color: #5b626c; border-bottom: 4rpx solid #ffffff; white-space: nowrap; }
+.tb.on { color: #14a06f; font-weight: bold; border-bottom: 4rpx solid #14a06f; }
+.list { padding: 0 28rpx; }
+.it { padding: 26rpx 0; border-bottom: 1rpx solid #f0f2f5; }
+.it-ic { width: 72rpx; height: 72rpx; border-radius: 36rpx; font-size: 30rpx; }
+.it-main { flex: 1; margin-left: 20rpx; display: flex; flex-direction: column; min-width: 0; }
+.it-t { font-size: 28rpx; font-weight: bold; margin-bottom: 4rpx; }
+.it-op { font-size: 24rpx; color: #ffffff; background: linear-gradient(90deg, #2fc488, #14a06f); padding: 8rpx 24rpx; border-radius: 26rpx; white-space: nowrap; }
+.it-done { color: #14a06f; background: #e6f7f0; }
+.foot-tip { display: block; text-align: center; margin: 32rpx 0 60rpx; font-size: 22rpx; color: #a0a7b1; }
+.mask { position: fixed; left: 0; top: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.45); }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; background: #ffffff; border-radius: 28rpx 28rpx 0 0; padding: 36rpx 32rpx calc(32rpx + env(safe-area-inset-bottom)); }
+.sh-t { font-size: 32rpx; font-weight: bold; text-align: center; }
+.sh-sub { text-align: center; margin-top: 8rpx; margin-bottom: 12rpx; }
+.fi { padding: 26rpx 0; border-bottom: 1rpx solid #f0f2f5; }
+.fl { width: 150rpx; font-size: 28rpx; color: #5b626c; flex-shrink: 0; }
+.fin { flex: 1; font-size: 28rpx; height: 44rpx; }
+.kd { height: 52rpx; line-height: 52rpx; padding: 0 28rpx; margin-right: 16rpx; border-radius: 26rpx; background: #f2f4f7; color: #5b626c; font-size: 24rpx; white-space: nowrap; }
+.kd.on { background: #e6f7f0; color: #14a06f; font-weight: bold; }
+.sh-btn { margin-top: 40rpx; }
+.paper { border: 2rpx solid #f2c6b8; border-radius: 16rpx; padding: 8rpx 24rpx 12rpx; background: #fffaf7; }
+.p-head { text-align: center; font-size: 30rpx; font-weight: bold; color: #b5462a; padding: 16rpx 0; border-bottom: 2rpx solid #f2c6b8; margin-bottom: 8rpx; }
+.kv { padding: 12rpx 0; }
+.k { font-size: 26rpx; color: #8a919c; flex-shrink: 0; margin-right: 24rpx; }
+.v { font-size: 26rpx; color: #1e2329; text-align: right; }
+.p-sum { border-top: 1rpx dashed #f2c6b8; margin-top: 8rpx; padding-top: 16rpx; }
+.sent { text-align: center; margin-top: 20rpx; }
+.sh-btns { margin-top: 28rpx; }
+.ghost-btn { width: 240rpx; height: 88rpx; border-radius: 44rpx; border: 2rpx solid #14a06f; color: #14a06f; font-size: 30rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; box-sizing: border-box; margin-right: 20rpx; }
+.sh-ok { flex: 1; }
+.p-sum .v { color: #f2603d; font-weight: bold; }

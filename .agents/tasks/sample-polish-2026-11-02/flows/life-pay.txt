@@ -1,0 +1,226 @@
+# 生活缴费：每页能开 + 公告 / 账单明细与查询欠费 / 缴费（支付降级）/ 电子票据 / 自动缴费 / 一键缴清 / 记录与详情 / 话费 / 户号管理 / 提醒 / 反馈
+smoke pages/pay/pay?id=a1 pages/bill/bill?id=a1 pages/result/result?id=r1 pages/invoice/invoice?id=r1
+open
+expect getCurrentPages()[0].data.dues.length === 3 && getCurrentPages()[0].data.dueTotal === '398.25'
+expect getCurrentPages()[0].data.noticeNew === true
+shot target/_polish_shots/index.png
+# 公告：看过就不再标「新」；咨询电话（宿主没有拨号能力：弹出号码）
+tap .notice
+route pages/notice/notice
+count 3 .card
+shot target/_polish_shots/notice.png
+tapn 1 .call
+modal?
+expect __ui.slice(-1)[0].content.indexOf('95598') === 0
+modal ok
+back
+expect getCurrentPages()[0].data.noticeNew === false
+# 待缴 → 缴费页 → 账单明细（用量 × 单价）→ 重新查询 → 去缴费
+tapn 0 .d-btn
+route pages/pay/pay
+expect getCurrentPages().slice(-1)[0].data.a.id === 'a1' && getCurrentPages().slice(-1)[0].data.amount === '213.65'
+shot target/_polish_shots/pay.png
+tap .bill-link
+route pages/bill/bill
+expect getCurrentPages().slice(-1)[0].data.cur.amt === 213.65 && getCurrentPages().slice(-1)[0].data.bills.length === 6
+expect getCurrentPages().slice(-1)[0].data.cur.useTx === '397.1 度'
+tap .q-btn
+wait 700
+toast 查到欠费
+expect getCurrentPages().slice(-1)[0].data.queriedAt !== ''
+wait 1500
+shot target/_polish_shots/bill.png
+tap .foot .btn-primary
+route pages/pay/pay
+# 其他金额：少于欠费不让缴；250 → 多出的 36.35 进余额
+tapn 3 .q
+type .c-in => 100
+tap .foot .btn-primary
+toast 金额不能少于欠费
+tap .c-in
+key backspace
+key backspace
+key backspace
+type .c-in => 250
+expect getCurrentPages().slice(-1)[0].data.amount === '250'
+tap .foot .btn-primary
+modal?
+modal cancel
+route pages/pay/pay
+expect wx.getStorageSync('lp_accounts') === ''
+tap .foot .btn-primary
+modal ok
+wait 300
+route pages/result/result
+expect wx.getStorageSync('lp_accounts').filter(function (a) { return a.id === 'a1'; })[0].owe === 0
+expect wx.getStorageSync('lp_accounts').filter(function (a) { return a.id === 'a1'; })[0].balance === 36.35
+expect wx.getStorageSync('lp_records')[0].paid === 250 && wx.getStorageSync('lp_records')[0].accId === 'a1'
+shot target/_polish_shots/result.png
+# 电子票据：企业抬头要税号、邮箱要合法；开好可重发、复制链接
+tap .inv
+route pages/invoice/invoice
+expect getCurrentPages().slice(-1)[0].data.panel === 'apply'
+tapn 1 .kd
+tap .sh-btn
+toast 税号
+type .in-tax => 91330100ma2kxx001x
+tap .sh-btn
+toast 邮箱
+type .in-mail => zhang@example.com
+shot target/_polish_shots/invoice-apply.png
+tap .sh-btn
+toast 开票成功
+expect getCurrentPages().slice(-1)[0].data.panel === 'view'
+expect wx.getStorageSync('lp_records')[0].invoice.taxNo === '91330100MA2KXX001X'
+wait 1500
+shot target/_polish_shots/invoice-view.png
+tap .ghost-btn
+toast 已重新发送
+expect getCurrentPages().slice(-1)[0].data.cur.invoice.sent === 2
+tap .sh-ok
+toast 下载链接已复制
+tapxy 187 60
+expect getCurrentPages().slice(-1)[0].data.panel === ''
+expect getCurrentPages().slice(-1)[0].data.tab === 'done' && getCurrentPages().slice(-1)[0].data.doneCount === 1
+back
+route pages/result/result
+expect !!getCurrentPages().slice(-1)[0].data.r.invoice
+tap .home
+route pages/index/index
+expect getCurrentPages()[0].data.dues.length === 2 && getCurrentPages()[0].data.dueTotal === '184.60'
+# 自动缴费：给父母家电费（欠 98.2）开通 → 取消不开、同意就开并立即扣款
+eval wx.switchTab({ url: '/pages/mine/mine' })
+route pages/mine/mine
+tapn 6 .mi
+route pages/auto/auto
+count 5 .sw
+tapn 2 .cap
+expect wx.getStorageSync('lp_autopay').cap === 1000
+tapn 4 .sw
+modal?
+expect __ui.slice(-1)[0].content.indexOf('立即扣款') > 0
+modal cancel
+expect getCurrentPages().slice(-1)[0].data.list[4].on === false
+tapn 4 .sw
+modal ok
+toast 已自动缴清
+expect getCurrentPages().slice(-1)[0].data.list[4].on === true && getCurrentPages().slice(-1)[0].data.list[4].owe === 0
+expect wx.getStorageSync('lp_records')[0].auto === true && wx.getStorageSync('lp_records')[0].accId === 'a5'
+wait 1500
+shot target/_polish_shots/auto.png
+back
+expect getCurrentPages()[0].data.autoCount === 1
+# 提醒日期 → 首页待缴卡片
+picker picker
+pickrow 0 1 1
+pickok
+expect wx.getStorageSync('lp_remind_day') === 1
+eval wx.switchTab({ url: '/pages/index/index' })
+expect getCurrentPages()[0].data.remindTx === '每月提醒：10 日'
+# 一键缴清剩下的水费
+expect getCurrentPages()[0].data.dues.length === 1
+tap .all-btn
+modal ok
+wait 300
+toast 已缴清 1 笔
+expect getCurrentPages()[0].data.dues.length === 0
+expect wx.getStorageSync('lp_records').length === 10
+# 自动缴费的户号，缴费页上有标注
+drag 300 383 -420 0
+tapn 4 .acc
+route pages/pay/pay
+expect getCurrentPages().slice(-1)[0].data.auto === true
+back
+# 记录：详情 → 再缴一笔；筛选；去开票
+eval wx.switchTab({ url: '/pages/records/records' })
+route pages/records/records
+expect getCurrentPages()[0].data.count === 10
+shot target/_polish_shots/records.png
+tapn 0 .rec
+route pages/result/result
+expect getCurrentPages().slice(-1)[0].data.fromList === true
+tap .ghost
+route pages/pay/pay
+back
+back
+tapn 5 .f
+expect getCurrentPages()[0].data.count === 2
+tap .s-inv
+route pages/invoice/invoice
+expect getCurrentPages().slice(-1)[0].data.todoCount === 9 && getCurrentPages().slice(-1)[0].data.doneCount === 1
+shot target/_polish_shots/invoice.png
+back
+# 话费：号段识别、选面额、支付降级
+eval wx.switchTab({ url: '/pages/index/index' })
+tapn 4 .g
+route pages/mobile/mobile
+tap .clr
+type .ph => 12012345678
+exists .bad
+tap .clr
+type .ph => 13912345678
+expect getCurrentPages().slice(-1)[0].data.carrier === '中国移动'
+tapn 1 .fc
+tap .foot .btn-primary
+modal ok
+wait 300
+route pages/result/result
+expect wx.getStorageSync('lp_records')[0].type === 'phone' && wx.getStorageSync('lp_records')[0].paid === 19.96
+expect wx.getStorageSync('lp_recent_phone')[0] === '13912345678'
+back
+# 户号管理：改分组、复制、点卡片看账单、添加（查到欠费）、删除
+eval wx.navigateTo({ url: '/pages/accounts/accounts' })
+route pages/accounts/accounts
+count 5 .acc
+tapn 0 .more
+sheet 2 5
+sheet 2 4
+expect wx.getStorageSync('lp_accounts')[0].tag === '公司'
+tapn 0 .more
+sheet 3 5
+toast 户号已复制
+tapn 1 .acc
+route pages/bill/bill
+expect getCurrentPages().slice(-1)[0].data.a.id === 'a2'
+back
+tap .add-btn
+tapn 2 .tp
+type .fin => 2290331817
+tap .actions .btn-primary
+wait 900
+toast 查到 1 笔欠费
+count 6 .acc
+expect wx.getStorageSync('lp_accounts')[0].type === 'gas' && wx.getStorageSync('lp_accounts')[0].owe > 0
+tapn 0 .more
+sheet 4 5
+modal ok
+count 5 .acc
+back
+# 客服：拨号降级、意见反馈
+eval wx.switchTab({ url: '/pages/mine/mine' })
+tapn 7 .mi
+sheet 0 3
+modal?
+modal ok
+tapn 7 .mi
+sheet 2 3
+route pages/feedback/feedback
+tap .btn-primary
+toast 问题类型
+tapn 0 .kd
+type .ta => 未到账
+tap .btn-primary
+toast 至少
+type .ta => ，户号 1180662701
+tap .btn-primary
+toast 已提交
+count 1 .fb
+expect wx.getStorageSync('lp_feedback')[0].kind === '缴费未到账'
+shot target/_polish_shots/feedback.png
+back
+# 恢复演示数据：自动缴费、票据一并清掉
+tapn 8 .mi
+modal ok
+expect getCurrentPages()[0].data.autoCount === 0 && getCurrentPages()[0].data.recCount === 7
+wait 1500
+shot target/_polish_shots/mine.png

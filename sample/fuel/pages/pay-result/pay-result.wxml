@@ -1,0 +1,21 @@
+<view class="top">
+  <icon type="success" size="64" color="#ffffff"></icon>
+  <text class="t1">支付成功</text>
+  <view class="row t-amt"><text class="t-yen">¥</text><text class="t-num">{{r.pay}}</text></view>
+  <text class="t2">请向加油员出示本页 · {{r.gun}} 号油枪</text>
+</view>
+<view class="card">
+  <view class="line"><text class="muted">油站</text><text>{{r.stationName}}</text></view>
+  <view class="line"><text class="muted">油号 / 油枪</text><text>{{r.oil}} · {{r.gun}} 号枪</text></view>
+  <view class="line"><text class="muted">加油金额</text><text>¥{{r.amount}}</text></view>
+  <view class="line"><text class="muted">加油量</text><text>{{r.liters}} 升</text></view>
+  <view class="line"><text class="muted">直降优惠</text><text class="price">-¥{{r.discount}}</text></view>
+  <view class="line" wx:if="{{r.couponCut !== '0.00'}}"><text class="muted">优惠券</text><text class="price">-¥{{r.couponCut}}</text></view>
+  <view class="line"><text class="muted">支付方式</text><text>{{wayText}}</text></view>
+  <view class="line"><text class="muted">订单号</text><text>{{r.no}}</text></view>
+  <view class="line"><text class="muted">时间</text><text>{{timeText}}</text></view>
+</view>
+<view class="ops">
+  <view class="btn-ghost op" hover-class="btn-hover" bindtap="invoice">{{r.invoice ? '查看发票' : '开电子发票'}}</view>
+  <view class="btn op" hover-class="btn-hover" bindtap="done">完成</view>
+</view>

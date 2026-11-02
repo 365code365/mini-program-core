@@ -34,6 +34,12 @@
 .o-state.done {
   color: #8a909c;
 }
+.o-state.wait {
+  color: #2b6de8;
+}
+.o-note {
+  color: #ff7a00;
+}
 .o-line {
   font-size: 24rpx;
   color: #5c6370;
@@ -55,6 +61,13 @@
   border: 1rpx solid #c5cdda;
   font-size: 24rpx;
   color: #5c6370;
+  margin-left: 16rpx;
+  white-space: nowrap;
+}
+.change-btn,
+.again-btn {
+  border-color: #2b6de8;
+  color: #2b6de8;
 }
 .go {
   margin: 24rpx auto 0;

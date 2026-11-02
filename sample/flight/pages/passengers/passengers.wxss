@@ -1,0 +1,11 @@
+.add { background: #ffffff; height: 100rpx; justify-content: center; margin-bottom: 16rpx; }
+.p { background: #ffffff; padding: 28rpx 32rpx; border-bottom: 1rpx solid #eef1f6; }
+.hover { background: #f6f8fb; }
+.ck { width: 40rpx; height: 40rpx; border-radius: 20rpx; border: 2rpx solid #c6ccd8; margin-right: 24rpx; display: flex; align-items: center; justify-content: center; }
+.ck-on { background: #1f6fff; border-color: #1f6fff; }
+.ck-tx { color: #ffffff; font-size: 24rpx; }
+.p-n { font-size: 32rpx; font-weight: bold; margin-right: 12rpx; }
+.p-id { margin-top: 8rpx; }
+.edit { padding: 16rpx 0 16rpx 24rpx; }
+.foot { position: fixed; left: 0; right: 0; bottom: 0; height: 120rpx; background: #ffffff; padding: 0 32rpx; box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.06); }
+.ok { width: 240rpx; }

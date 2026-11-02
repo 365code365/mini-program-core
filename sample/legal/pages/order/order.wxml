@@ -1,0 +1,66 @@
+<view class="card row">
+  <image class="av" src="{{l.avatar}}" mode="aspectFill"></image>
+  <view class="col flex1">
+    <text class="n">{{l.name}} 律师</text>
+    <text class="muted">{{l.firm}} · {{l.reply}}</text>
+  </view>
+</view>
+
+<view class="card">
+  <view class="label">服务类型</view>
+  <radio-group bindchange="onService">
+    <label class="svc row" wx:for="{{services}}" wx:key="id">
+      <radio value="{{item.id}}" checked="{{service === item.id}}" color="#1f4fb4"></radio>
+      <view class="col flex1 svc-in">
+        <text class="svc-n">{{item.name}}</text>
+        <text class="muted">{{item.desc}}</text>
+      </view>
+      <text class="price">¥{{item.price}}</text>
+    </label>
+  </radio-group>
+</view>
+
+<view class="card">
+  <view class="label">问题类别</view>
+  <picker mode="selector" range="{{cats}}" range-key="name" value="{{catIdx}}" bindchange="onCat">
+    <view class="pick row between"><text>{{cats[catIdx].name}}</text><text class="muted">{{cats[catIdx].desc}} ▾</text></view>
+  </picker>
+
+  <view class="label mt">问题描述</view>
+  <textarea class="ta" value="{{desc}}" maxlength="500" show-confirm-bar="{{false}}" placeholder="请写清事情经过、时间、金额、对方身份，以及你想达到的结果" bindinput="onDesc"></textarea>
+  <view class="row between"><text class="err flex1">{{errors.desc}}</text><text class="muted">{{desc.length}}/500</text></view>
+
+  <view class="label mt">证据图片（选填，最多 3 张）</view>
+  <view class="imgs row">
+    <view class="img" wx:for="{{images}}" wx:key="index">
+      <image class="img-i" src="{{item}}" mode="aspectFill" data-i="{{index}}" bindtap="preview"></image>
+      <view class="img-x" data-i="{{index}}" catchtap="delImage">×</view>
+    </view>
+    <view class="img add col" wx:if="{{images.length < 3}}" bindtap="addImage"><text class="add-p">+</text><text class="add-t">添加图片</text></view>
+  </view>
+
+  <view class="label mt">联系手机</view>
+  <input class="ipt" type="number" maxlength="11" value="{{phone}}" placeholder="律师回复后短信提醒" bindinput="onPhone"></input>
+  <text class="err" wx:if="{{errors.phone}}">{{errors.phone}}</text>
+</view>
+
+<checkbox-group class="agree" bindchange="onAgree">
+  <label class="row"><checkbox value="ok" checked="{{agree}}" color="#1f4fb4"></checkbox><text class="muted">已阅读《咨询服务须知》：律师意见仅供参考，不构成正式法律意见</text></label>
+</checkbox-group>
+<view style="height: 150rpx;"></view>
+
+<view class="foot row">
+  <view class="col flex1"><text class="muted">应付</text><text class="price big">¥{{price}}</text></view>
+  <view class="btn pay" bindtap="submit">提交并支付</view>
+</view>
+
+<view class="mask" wx:if="{{cashier}}" bindtap="closeCashier"></view>
+<view class="sheet" wx:if="{{cashier}}">
+  <view class="row between"><text class="sec-title">律安心收银台</text><text class="x" bindtap="closeCashier">×</text></view>
+  <view class="amt">¥{{price}}</view>
+  <text class="muted center sub">{{l.name}}律师 · {{serviceName}}</text>
+  <view class="way row" data-w="wx" bindtap="pickWay"><text class="way-ic" style="background:#2aae67;">微</text><text class="flex1">微信支付</text><text class="ck">{{payWay === 'wx' ? '●' : '○'}}</text></view>
+  <view class="way row" data-w="balance" bindtap="pickWay"><text class="way-ic" style="background:#1f4fb4;">余</text><text class="flex1">账户余额（¥200.00）</text><text class="ck">{{payWay === 'balance' ? '●' : '○'}}</text></view>
+  <view class="btn {{paying ? 'btn-disabled' : ''}} mt" bindtap="confirmPay">{{paying ? '支付中…' : '确认支付 ¥' + price}}</view>
+  <text class="muted center tip">当前环境不能调起微信支付，此为模拟收银台</text>
+</view>

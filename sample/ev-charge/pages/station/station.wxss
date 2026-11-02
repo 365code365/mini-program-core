@@ -60,3 +60,9 @@
 .heart { width: 32rpx; height: 32rpx; border-radius: 16rpx; border: 4rpx solid #9aa0a6; margin: 4rpx 0 8rpx; }
 .heart.on { background: #FF7A1A; border-color: #FF7A1A; }
 .fav-t { font-size: 22rpx; color: #6b717a; }
+.nav { margin-left: 20rpx; }
+.call-ic { background: linear-gradient(135deg, #3FD7A0, #00B87A); }
+.call-dot { width: 18rpx; height: 18rpx; border-radius: 9rpx; border: 4rpx solid #fff; }
+.call-t { color: #00A36C; }
+.term.mine { border-color: #00B87A; background: #e6f8f0; }
+.mine .t-st { color: #00A36C; }

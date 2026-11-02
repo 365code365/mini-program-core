@@ -21,4 +21,5 @@
 .o-acts { margin-top: 20rpx; justify-content: flex-end; }
 .act { height: 60rpx; padding: 0 26rpx; border-radius: 30rpx; border: 2rpx solid #d9d1da; color: #4d4550; font-size: 24rpx; display: flex; flex-direction: row; align-items: center; margin-left: 16rpx; }
 .act.main { border-color: #ef5b7e; color: #ef4f76; }
+.act-rate { border-color: #ffb42b; color: #e08a00; }
 .e-btn { margin: 28rpx auto 0; width: 200rpx; height: 64rpx; border-radius: 32rpx; border: 2rpx solid #ef5b7e; color: #ef4f76; font-size: 26rpx; display: flex; align-items: center; justify-content: center; }

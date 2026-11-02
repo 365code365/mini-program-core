@@ -1,0 +1,73 @@
+<view class="tabs row">
+  <view class="tb {{tab === index ? 'tb-on' : ''}}" wx:for="{{tabs}}" wx:key="*this" data-i="{{index}}" bindtap="onTab">{{item}}</view>
+</view>
+
+<view class="card form">
+  <block wx:if="{{tab === 0}}">
+    <view class="fi row"><text class="k">伤残等级</text>
+      <picker class="flex1" mode="selector" range="{{levels}}" range-key="name" value="{{levelIdx}}" bindchange="onLevel">
+        <view class="v">{{levels[levelIdx].name}} ▾</view>
+      </picker>
+    </view>
+    <view class="fi row"><text class="k">本人月工资</text><input class="v flex1" type="digit" value="{{wage}}" data-k="wage" placeholder="受伤前 12 个月平均，元" bindinput="onField"></input></view>
+    <view class="fi row"><text class="k">停工留薪期</text><input class="v flex1" type="number" value="{{offMonths}}" data-k="offMonths" placeholder="月数" bindinput="onField"></input><text class="unit">个月</text></view>
+  </block>
+
+  <block wx:elif="{{tab === 1}}">
+    <view class="fi row"><text class="k">入职日期</text>
+      <picker class="flex1" mode="date" value="{{start}}" end="{{end}}" data-k="start" bindchange="onField"><view class="v">{{start}} ▾</view></picker>
+    </view>
+    <view class="fi row"><text class="k">离职日期</text>
+      <picker class="flex1" mode="date" value="{{end}}" start="{{start}}" data-k="end" bindchange="onField"><view class="v">{{end}} ▾</view></picker>
+    </view>
+    <view class="fi row"><text class="k">月平均工资</text><input class="v flex1" type="digit" value="{{sWage}}" data-k="sWage" placeholder="离职前 12 个月，含奖金津贴" bindinput="onField"></input></view>
+    <view class="fi row"><text class="k">当地社平工资</text><input class="v flex1" type="digit" value="{{avg}}" data-k="avg" placeholder="上年度职工月平均工资" bindinput="onField"></input></view>
+    <view class="fi col">
+      <text class="k">解除方式</text>
+      <radio-group class="rg row" data-k="type" bindchange="onField">
+        <label class="rl row"><radio value="legal" checked="{{type === 'legal'}}" color="#1f4fb4"></radio><text>依法解除</text></label>
+        <label class="rl row"><radio value="illegal" checked="{{type === 'illegal'}}" color="#1f4fb4"></radio><text>违法解除</text></label>
+      </radio-group>
+    </view>
+    <view class="fi col" wx:if="{{type === 'legal'}}">
+      <text class="k">是否提前 30 日书面通知</text>
+      <radio-group class="rg row" data-k="notified" bindchange="onField">
+        <label class="rl row"><radio value="yes" checked="{{notified === 'yes'}}" color="#1f4fb4"></radio><text>已通知</text></label>
+        <label class="rl row"><radio value="no" checked="{{notified === 'no'}}" color="#1f4fb4"></radio><text>未通知（+1）</text></label>
+      </radio-group>
+    </view>
+  </block>
+
+  <block wx:else>
+    <view class="fi row"><text class="k">案件类型</text>
+      <picker class="flex1" mode="selector" range="{{kinds}}" range-key="name" value="{{kindIdx}}" bindchange="onKind"><view class="v">{{kinds[kindIdx].name}} ▾</view></picker>
+    </view>
+    <view class="fi row" wx:if="{{kindIdx !== 1}}"><text class="k">{{kindIdx === 2 ? '财产总额' : '诉讼标的额'}}</text><input class="v flex1" type="digit" value="{{amount}}" data-k="amount" placeholder="元" bindinput="onField"></input></view>
+    <view class="fi col">
+      <text class="k">审理程序</text>
+      <radio-group class="rg row" data-k="simple" bindchange="onField">
+        <label class="rl row"><radio value="normal" checked="{{simple === 'normal'}}" color="#1f4fb4"></radio><text>普通程序</text></label>
+        <label class="rl row"><radio value="simple" checked="{{simple === 'simple'}}" color="#1f4fb4"></radio><text>简易程序（减半）</text></label>
+      </radio-group>
+    </view>
+  </block>
+  <text class="err" wx:if="{{err}}">{{err}}</text>
+  <view class="btn calc" bindtap="calc">开始计算</view>
+</view>
+
+<view class="card res" wx:if="{{res}}">
+  <text class="muted res-k">测算合计（元）</text>
+  <text class="total">¥{{res.totalText}}</text>
+  <view class="rr row between" wx:for="{{res.rows}}" wx:key="k"><text class="rk flex1">{{item.k}}</text><text class="rv" wx:if="{{item.v}}">{{item.v}}</text></view>
+  <text class="note">{{res.note}}</text>
+  <view class="row acts">
+    <view class="btn btn-ghost flex1 act" bindtap="copy">复制结果</view>
+    <view class="btn flex1 act" bindtap="ask">找律师确认</view>
+  </view>
+</view>
+
+<view class="card law">
+  <view class="sec-title">计算依据</view>
+  <view class="law-t"><view class="para" wx:for="{{law}}" wx:key="index"><rich-text nodes="{{item}}"></rich-text></view></view>
+</view>
+<view class="disclaimer"><text>计算结果按法定通用标准测算，仅供参考，不构成法律意见；各地口径以当地人社部门和法院为准。</text></view>

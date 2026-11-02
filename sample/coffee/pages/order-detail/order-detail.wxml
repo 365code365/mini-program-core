@@ -1,0 +1,105 @@
+<view wx:if="{{order}}">
+  <view class="head">
+    <view class="row between">
+      <text class="h-status">{{st.status}}</text>
+      <text wx:if="{{st.stage >= 0}}" class="h-code">{{order.mode === 'pickup' ? '取餐码' : '单号'}} {{order.code}}</text>
+    </view>
+    <text class="h-tip">{{st.tip}}</text>
+    <view wx:if="{{steps.length}}" class="h-steps row">
+      <view wx:for="{{steps}}" wx:key="name" class="h-step {{item.done ? 'h-step-on' : ''}}">
+        <view class="h-bar"></view>
+        <text>{{item.name}}</text>
+      </view>
+    </view>
+    <view class="row h-ops">
+      <view wx:if="{{st.canCancel}}" class="h-op h-cancel" bindtap="onCancel">取消订单</view>
+      <view wx:if="{{st.canConfirm}}" class="h-op h-op-main h-confirm" bindtap="onConfirm">{{order.mode === 'pickup' ? '我已取餐' : '确认收货'}}</view>
+      <view class="h-op h-call" bindtap="onCall">联系门店</view>
+      <view class="h-op h-again" bindtap="onAgain">再来一单</view>
+    </view>
+  </view>
+
+  <view wx:if="{{st.stage === 3}}" class="card rate">
+    <block wx:if="{{rating}}">
+      <view class="row between">
+        <text class="title">我的评价</text>
+        <text class="sub">{{rating.time}}</text>
+      </view>
+      <view class="row stars">
+        <text wx:for="{{starList}}" wx:key="*this" class="star {{item <= rating.stars ? 'star-on' : ''}}">★</text>
+      </view>
+      <view wx:if="{{rating.tags.length}}" class="row tags">
+        <text wx:for="{{rating.tags}}" wx:key="*this" class="tag tag-on">{{item}}</text>
+      </view>
+      <text wx:if="{{rating.text}}" class="rate-text">{{rating.text}}</text>
+    </block>
+    <block wx:else>
+      <text class="title">评价本单</text>
+      <view class="row stars">
+        <text wx:for="{{starList}}" wx:key="*this" class="star {{item <= stars ? 'star-on' : ''}}" data-n="{{item}}" bindtap="onStar">★</text>
+        <text class="star-text">{{starText}}</text>
+      </view>
+      <view class="row tags">
+        <text wx:for="{{rateTags}}" wx:key="name" class="tag {{item.on ? 'tag-on' : ''}}" data-i="{{index}}" bindtap="onRateTag">{{item.name}}</text>
+      </view>
+      <textarea class="rate-input" placeholder="说说这杯咖啡的味道吧（选填）" placeholder-class="ph" maxlength="100" value="{{rateText}}" bindinput="onRateText"></textarea>
+      <view class="btn rate-btn" bindtap="onSubmitRate">提交评价 · 得 20 积分</view>
+    </block>
+  </view>
+
+  <view class="card">
+    <view class="row">
+      <view class="store-icon glyph">店</view>
+      <view class="flex1">
+        <text class="s-name">{{store.name}}</text>
+        <text class="sub s-line">{{store.addr}}</text>
+        <text class="sub s-line">营业时间 {{store.hours}}</text>
+      </view>
+      <text class="s-nav" bindtap="onNav">导航</text>
+    </view>
+    <view wx:if="{{order.addr}}" class="deliver">
+      <text class="sub">送至</text>
+      <text class="deliver-text">{{order.addr.text}}</text>
+      <text class="sub">{{order.addr.name}} {{order.addr.phone}}</text>
+    </view>
+  </view>
+
+  <view class="card">
+    <text class="title">饮品明细</text>
+    <view class="item row" wx:for="{{order.items}}" wx:key="spec">
+      <image class="item-img" src="{{item.img}}" mode="aspectFill"></image>
+      <view class="flex1">
+        <text class="item-name">{{item.name}}</text>
+        <text class="item-spec">{{item.spec}}</text>
+      </view>
+      <text class="sub item-qty">×{{item.qty}}</text>
+      <text class="item-total">¥{{item.total}}</text>
+    </view>
+    <view class="lines">
+      <view class="line row between" wx:for="{{lines}}" wx:key="name">
+        <text class="sub">{{item.name}}</text>
+        <text class="{{item.cut ? 'cut' : ''}}">{{item.value}}</text>
+      </view>
+      <view class="line row between paid">
+        <text>实付</text>
+        <text class="price paid-num">¥{{order.pay}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card info">
+    <view class="info-row row between">
+      <text class="sub">订单号</text>
+      <view class="row"><text>{{order.id}}</text><text class="copy" bindtap="onCopy">复制</text></view>
+    </view>
+    <view class="info-row row between"><text class="sub">下单时间</text><text>{{time}}</text></view>
+    <view class="info-row row between"><text class="sub">取餐方式</text><text>{{order.mode === 'pickup' ? '到店自取' : '外卖送达'}}</text></view>
+    <view class="info-row row between"><text class="sub">{{order.mode === 'pickup' ? '取餐时间' : '送达时间'}}</text><text>{{order.pickTime}}</text></view>
+    <view class="info-row row between"><text class="sub">支付方式</text><text>{{payName}}</text></view>
+    <view class="info-row row between"><text class="sub">备注</text><text class="ellipsis remark">{{order.remark || '无'}}</text></view>
+  </view>
+  <view class="gap"></view>
+</view>
+<view wx:else class="none">
+  <text class="sub">订单不存在或已被清理</text>
+</view>

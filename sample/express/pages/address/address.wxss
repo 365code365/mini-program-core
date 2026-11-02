@@ -120,3 +120,6 @@
 .safe {
   height: calc(40rpx + env(safe-area-inset-bottom));
 }
+.form-head { margin-bottom: 8rpx; }
+.import { font-size: 24rpx; color: #2f6bff; }
+.empty { text-align: center; padding: 60rpx 0; }

@@ -1,0 +1,43 @@
+<view class="wrap">
+  <view class="sum row">
+    <view class="s"><text class="s-v">{{streak}}</text><text class="s-l">连续打卡</text></view>
+    <view class="s"><text class="s-v">{{monthDays}}</text><text class="s-l">本月打卡</text></view>
+    <view class="s"><text class="s-v">{{total}}</text><text class="s-l">累计打卡</text></view>
+  </view>
+
+  <view class="card">
+    <view class="between head">
+      <text class="nav" bindtap="onPrev">‹ 上月</text>
+      <text class="h2">{{y}} 年 {{m}} 月</text>
+      <text class="nav {{canNext ? '' : 'nav-off'}}" bindtap="onNext">下月 ›</text>
+    </view>
+    <view class="week row">
+      <text class="wk">日</text><text class="wk">一</text><text class="wk">二</text><text class="wk">三</text><text class="wk">四</text><text class="wk">五</text><text class="wk">六</text>
+    </view>
+    <view class="grid">
+      <view class="cell" wx:for="{{cells}}" wx:key="key" data-ds="{{item.ds}}" bindtap="onDay">
+        <view wx:if="{{item.d}}" class="day {{item.on ? 'day-on' : ''}} {{item.today ? 'day-today' : ''}} {{sel && sel.ds === item.ds ? 'day-sel' : ''}}">
+          <text class="day-tx {{item.on ? 'day-tx-on' : ''}} {{item.future ? 'day-future' : ''}}">{{item.d}}</text>
+          <view class="act" wx:if="{{item.act && !item.on}}"></view>
+        </view>
+      </view>
+    </view>
+    <view class="legend row">
+      <view class="lg row"><view class="lg-dot lg-on"></view><text class="muted">已打卡</text></view>
+      <view class="lg row"><view class="lg-dot lg-act"></view><text class="muted">有学习、未打卡</text></view>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{sel}}">
+    <view class="between">
+      <text class="h2">{{sel.label}}</text>
+      <text class="tag">{{sel.on ? '已打卡' : '未打卡'}}</text>
+    </view>
+    <view class="detail row">
+      <view class="dt"><text class="dt-v">{{sel.learn}}</text><text class="muted">新学</text></view>
+      <view class="dt"><text class="dt-v">{{sel.review}}</text><text class="muted">复习</text></view>
+      <view class="dt"><text class="dt-v">{{sel.quiz}}</text><text class="muted">测验题</text></view>
+    </view>
+  </view>
+  <view class="btn" wx:if="{{!checked}}" hover-class="btn-press" bindtap="goLearn">今天还没打卡，去学习</view>
+</view>

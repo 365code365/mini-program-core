@@ -1,0 +1,44 @@
+<view class="sum">
+  <picker mode="date" fields="month" value="{{month}}" start="2025-01" end="{{maxMonth}}" bindchange="onMonth">
+    <view class="mon"><text class="mon-tx">{{monthText}}</text><text class="mon-arrow">▾</text></view>
+  </picker>
+  <view class="sum-row">
+    <view class="sum-it"><text class="sum-n">¥{{stat.pay}}</text><text class="sum-k">实付</text></view>
+    <view class="sum-it"><text class="sum-n">{{stat.liters}}</text><text class="sum-k">加油量(升)</text></view>
+    <view class="sum-it"><text class="sum-n">{{stat.count}}</text><text class="sum-k">次数</text></view>
+    <view class="sum-it"><text class="sum-n">¥{{stat.saved}}</text><text class="sum-k">共省</text></view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="row between"><text class="sec-title">近 6 个月花费</text><text class="muted">点柱子切换月份</text></view>
+  <view class="bars">
+    <view class="bar-it" wx:for="{{bars}}" wx:key="m" data-m="{{item.m}}" bindtap="pickBar">
+      <text class="bar-v">{{item.v > 0 ? item.v : ''}}</text>
+      <view class="bar-col {{item.m === month ? 'bar-on' : ''}}" style="height: {{item.h}}rpx;"></view>
+      <text class="bar-m {{item.m === month ? 'bar-m-on' : ''}}">{{item.label}}</text>
+    </view>
+  </view>
+</view>
+
+<view class="loading" wx:if="{{loading}}"><text class="muted">加载中…</text></view>
+<view class="empty" wx:elif="{{!list.length}}">
+  <image class="empty-img" src="/images/misc/empty.png" mode="aspectFit"></image>
+  <text class="empty-tx">{{monthText}}没有加油记录</text>
+  <view class="btn-ghost empty-go" bindtap="goRefuel">去附近油站加油</view>
+</view>
+<view class="card rc" wx:for="{{list}}" wx:key="id">
+  <view class="row between">
+    <text class="rc-name">{{item.stationName}}</text>
+    <text class="price">¥{{item.pay}}</text>
+  </view>
+  <view class="row between rc-sub">
+    <text class="muted">{{item.timeText}} · {{item.oil}} · {{item.gun}}号枪 · {{item.liters}}升</text>
+    <text class="muted">省 ¥{{item.saved}}</text>
+  </view>
+  <view class="row rc-ops">
+    <text class="rc-op" data-id="{{item.id}}" bindtap="again">再加一次</text>
+    <text class="rc-op {{item.invoice ? 'rc-op-done' : 'rc-op-main'}}" data-id="{{item.id}}" bindtap="invoice">{{item.invoice ? '已开票' : '开发票'}}</text>
+  </view>
+</view>
+<view class="tabbar-gap"></view>

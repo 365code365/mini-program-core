@@ -7,17 +7,22 @@
 .sum-num { color: #fff; font-size: 38rpx; font-weight: bold; }
 .sum-label { color: rgba(255, 255, 255, 0.65); font-size: 22rpx; margin-top: 6rpx; }
 .sum-split { width: 1rpx; height: 56rpx; background: rgba(255, 255, 255, 0.2); }
+.live { background: #FFF2E8; box-shadow: none; }
+.live-dot { width: 16rpx; height: 16rpx; border-radius: 8rpx; background: #19BE6B; margin-right: 18rpx; flex-shrink: 0; }
+.live-title { display: block; font-size: 28rpx; font-weight: bold; }
+.live-text { display: block; font-size: 24rpx; color: #4e5969; margin-top: 4rpx; }
+.live-go { font-size: 24rpx; color: #FF6A1A; font-weight: bold; margin-left: 12rpx; }
 .trip { margin-top: 0; }
 .trip-type { font-size: 30rpx; font-weight: bold; }
 .trip-date { font-size: 24rpx; color: #9aa0a6; margin-left: 16rpx; }
 .status { font-size: 24rpx; }
 .status.done { color: #19BE6B; }
 .status.cancel { color: #9aa0a6; }
+.status.unpaid { color: #FF6A1A; font-weight: bold; }
 .route { margin-top: 22rpx; }
-.route-text { font-size: 28rpx; margin-left: 18rpx; color: #4e5969; }
+.route-text { flex: 1; min-width: 0; font-size: 28rpx; margin-left: 18rpx; color: #4e5969; }
 .route-line { width: 2rpx; height: 24rpx; background: #e3e5e8; margin: 6rpx 0 6rpx 7rpx; }
 .foot { margin-top: 22rpx; padding-top: 20rpx; border-top: 1rpx solid #f0f1f3; }
-.pay { font-size: 32rpx; font-weight: bold; }
-.empty { text-align: center; color: #9aa0a6; padding: 120rpx 0; }
-.bottom-gap { height: 24rpx; }
-.pay-label { margin-right: 6rpx; }
+.pay { font-size: 30rpx; font-weight: bold; }
+.rate-chip { font-size: 22rpx; color: #FF7A1A; border: 2rpx solid #FF9A3C; border-radius: 24rpx; padding: 4rpx 18rpx; margin-right: 16rpx; white-space: nowrap; }
+.bottom-gap { height: calc(150rpx + env(safe-area-inset-bottom)); }

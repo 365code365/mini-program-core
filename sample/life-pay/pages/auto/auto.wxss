@@ -1,0 +1,15 @@
+.head { display: flex; flex-direction: column; }
+.head .muted { margin-top: 6rpx; }
+.caps { margin-top: 24rpx; }
+.cap-l { font-size: 26rpx; color: #5b626c; margin-right: 16rpx; }
+.cap { height: 56rpx; line-height: 56rpx; padding: 0 24rpx; margin-right: 16rpx; border-radius: 28rpx; background: #f2f4f7; color: #5b626c; font-size: 24rpx; white-space: nowrap; }
+.cap.on { background: #e6f7f0; color: #14a06f; font-weight: bold; }
+.list { padding: 0 28rpx; }
+.it { padding: 26rpx 0; border-bottom: 1rpx solid #f0f2f5; }
+.it-ic { width: 72rpx; height: 72rpx; border-radius: 22rpx; font-size: 30rpx; }
+.it-main { flex: 1; margin-left: 20rpx; display: flex; flex-direction: column; min-width: 0; }
+.it-t { font-size: 28rpx; font-weight: bold; margin-bottom: 4rpx; }
+.sw { width: 96rpx; height: 56rpx; border-radius: 28rpx; background: #dfe3e8; padding: 4rpx; box-sizing: border-box; display: flex; flex-direction: row; justify-content: flex-start; }
+.sw-on { background: #14a06f; justify-content: flex-end; }
+.knob { width: 48rpx; height: 48rpx; border-radius: 24rpx; background: #ffffff; box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.15); }
+.tip { display: block; text-align: center; margin: 32rpx 40rpx 60rpx; font-size: 22rpx; color: #a0a7b1; }

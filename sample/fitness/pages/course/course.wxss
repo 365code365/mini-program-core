@@ -29,3 +29,5 @@
 .bar-l { flex: 1; display: flex; flex-direction: column; }
 .bar-v { font-size: 30rpx; font-weight: bold; color: #ff5a36; margin-bottom: 4rpx; }
 .bar-btn { width: 260rpx; }
+.v-r { justify-content: flex-end; min-width: 0; }
+.go { margin-left: 12rpx; font-size: 22rpx; color: #ff5a36; background: #fff0ea; padding: 2rpx 14rpx; border-radius: 16rpx; flex-shrink: 0; }

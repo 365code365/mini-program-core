@@ -1,0 +1,10 @@
+<view class="tb">
+  <view class="tb-item" wx:for="{{list}}" wx:key="pagePath" data-index="{{index}}" data-path="{{item.path}}" bindtap="switchTab">
+    <view class="tb-icw">
+      <image class="tb-ic" src="{{selected === index ? item.iconOn : item.icon}}"></image>
+      <view wx:if="{{item.badge > 0}}" class="tb-badge">{{item.badge > 99 ? '99+' : item.badge}}</view>
+      <view wx:elif="{{item.dot}}" class="tb-dot"></view>
+    </view>
+    <text class="tb-tx" style="color: {{selected === index ? selectedColor : color}};">{{item.text}}</text>
+  </view>
+</view>

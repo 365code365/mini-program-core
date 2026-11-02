@@ -1,3 +1,8 @@
+<view class="none" wx:if="{{!pkg}}">
+  <text class="sub">没有找到这个单号的记录</text>
+  <view class="act-btn none-btn" bindtap="onHome">返回查快递</view>
+</view>
+<block wx:else>
 <view class="head">
   <view class="row">
     <view class="logo" style="background: {{pkg.color}}">{{pkg.short}}</view>
@@ -57,8 +62,14 @@
   </view>
 </view>
 
+<view class="card links">
+  <view class="link row" wx:if="{{pkg.orderId}}" bindtap="onOrder"><text class="flex1 link-t">查看寄件订单</text><view class="chev"></view></view>
+  <view class="link row" bindtap="onCarrierCall"><text class="flex1 link-t">联系{{pkg.carrierName}}客服</text><view class="chev"></view></view>
+  <view class="link row last" bindtap="onRemove"><text class="flex1 link-t del-t">删除这条记录</text><view class="chev"></view></view>
+</view>
 <view class="actions row">
   <view class="act-btn ghost" bindtap="onRemark">修改备注</view>
   <view class="act-btn" bindtap="onSubscribe">{{subscribed ? '已开启推送' : '开启物流推送'}}</view>
 </view>
 <view class="safe"></view>
+</block>

@@ -1,0 +1,14 @@
+.hd { background: linear-gradient(180deg, #ff3b5c, #ff6b81); padding: 30rpx 32rpx 90rpx; }
+.av { width: 120rpx; height: 120rpx; border-radius: 60rpx; border: 4rpx solid rgba(255, 255, 255, 0.7); }
+.hd-info { margin-left: 24rpx; }
+.nick { color: #ffffff; font-size: 34rpx; font-weight: bold; }
+.ph { color: #ffe4ea; font-size: 24rpx; margin-top: 8rpx; }
+.stats { margin: -60rpx 24rpx 0; background: #ffffff; border-radius: 20rpx; padding: 28rpx 0; }
+.stat { flex: 1; align-items: center; }
+.stat-v { font-size: 36rpx; font-weight: bold; }
+.stat-k { font-size: 22rpx; color: #8a8d96; margin-top: 6rpx; }
+.menu { padding-top: 0; padding-bottom: 0; }
+.mi { height: 100rpx; border-bottom: 1rpx solid #f0f0f3; font-size: 28rpx; }
+.mi-btn { padding: 0; margin: 0; border: none; border-bottom: 1rpx solid #f0f0f3; background: transparent; border-radius: 0; text-align: left; line-height: 100rpx; display: flex; flex-direction: row; align-items: center; }
+.mi-l { font-size: 28rpx; color: #1d1d22; }
+.danger { color: #e5352b; }

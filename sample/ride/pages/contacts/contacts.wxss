@@ -1,0 +1,32 @@
+.alarm { margin: 24rpx 24rpx 0; padding: 28rpx; border-radius: 20rpx; background: linear-gradient(120deg, #FF6B7D, #F5455C); box-shadow: 0 8rpx 24rpx rgba(245, 69, 92, 0.25); }
+.alarm-ic { width: 88rpx; height: 88rpx; border-radius: 44rpx; background: rgba(255, 255, 255, 0.25); display: flex; align-items: center; justify-content: center; margin-right: 22rpx; flex-shrink: 0; }
+.alarm-t { color: #fff; font-size: 28rpx; font-weight: bold; white-space: nowrap; }
+.alarm-title { display: block; color: #fff; font-size: 32rpx; font-weight: bold; }
+.alarm-sub { display: block; color: rgba(255, 255, 255, 0.85); font-size: 22rpx; margin-top: 6rpx; }
+.list { margin-top: 16rpx; padding-top: 8rpx; padding-bottom: 8rpx; }
+.none { padding: 32rpx 0 12rpx; text-align: center; }
+.person { padding: 22rpx 0; border-bottom: 1rpx solid #f0f1f3; }
+.p-avatar { width: 72rpx; height: 72rpx; border-radius: 36rpx; background: linear-gradient(135deg, #FF8A8A, #F5455C); display: flex; align-items: center; justify-content: center; margin-right: 20rpx; flex-shrink: 0; }
+.p-initial { color: #fff; font-size: 30rpx; font-weight: bold; }
+.p-body { display: flex; flex-direction: column; }
+.p-name { font-size: 30rpx; font-weight: bold; }
+.p-rel { font-size: 20rpx; color: #F5455C; background: #FFEFF1; border-radius: 8rpx; padding: 2rpx 12rpx; margin-left: 12rpx; white-space: nowrap; }
+.p-op { font-size: 24rpx; color: #4e5969; border: 2rpx solid #e3e5e8; border-radius: 26rpx; padding: 6rpx 20rpx; margin-left: 16rpx; white-space: nowrap; }
+.p-del { color: #F5455C; border-color: #FFD0D6; }
+.form { padding-top: 8rpx; }
+.rel { padding: 20rpx 0 4rpx; border-bottom: 1rpx solid #f0f1f3; }
+/* chip 自带 16rpx 下外边距：标签也垫同样的高度，两边才对齐 */
+.rel .field-label { padding-bottom: 16rpx; }
+.form-btns { margin: 24rpx 0 16rpx; }
+.form-btns .btn-primary { height: 80rpx; line-height: 80rpx; font-size: 28rpx; border-radius: 40rpx; }
+.ml { margin-left: 20rpx; }
+.add-row { padding: 20rpx 0 12rpx; }
+.add-op { flex: 1; height: 76rpx; line-height: 76rpx; text-align: center; border-radius: 38rpx; font-size: 26rpx; color: #FF6A1A; background: #FFF2E8; }
+.add-import { margin-left: 20rpx; color: #4e5969; background: #f5f6f8; }
+.setting { margin-top: 16rpx; padding-top: 8rpx; padding-bottom: 8rpx; }
+.set { padding: 22rpx 0; border-bottom: 1rpx solid #f0f1f3; }
+.set:last-child { border-bottom: none; }
+.set .flex1 { margin-right: 20rpx; }
+.set-name { display: block; font-size: 28rpx; }
+.set-sub { display: block; margin-top: 4rpx; }
+.gap { height: 48rpx; }

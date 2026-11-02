@@ -1,0 +1,19 @@
+<view class="rs" wx:if="{{p}}">
+  <view class="rs-ic"><icon type="success" size="72" color="#2f6bff"></icon></view>
+  <text class="rs-t">投保成功</text>
+  <text class="rs-s">保单将于 {{p.startDate}} 零时生效，电子保单已发送至 {{p.holder.phone}}</text>
+  <view class="card rs-card">
+    <view class="kv"><text class="kv-k">产品名称</text><text class="kv-v">{{p.productName}}</text></view>
+    <view class="kv" bindtap="copyNo"><text class="kv-k">保单号</text><text class="kv-v">{{p.policyNo}} 复制</text></view>
+    <view class="kv"><text class="kv-k">被保险人</text><text class="kv-v">{{p.holder.name}}</text></view>
+    <view class="kv"><text class="kv-k">保障额度</text><text class="kv-v">{{p.amountText}}</text></view>
+    <view class="kv"><text class="kv-k">保障期间</text><text class="kv-v">{{p.startDate}} 至 {{p.endDate}}</text></view>
+    <view class="kv"><text class="kv-k">实付保费</text><text class="kv-v price">¥{{premiumText}}</text></view>
+    <view class="kv"><text class="kv-k">支付方式</text><text class="kv-v">{{p.payMethod}}</text></view>
+  </view>
+  <view class="rs-btns">
+    <view class="btn btn-primary" hover-class="btn-hover" bindtap="viewPolicy">查看电子保单</view>
+    <view class="btn btn-ghost rs-gap" hover-class="btn-hover" bindtap="goHome">返回首页</view>
+  </view>
+</view>
+<view class="empty" wx:else><text class="empty-tx">没有找到这张保单</text></view>

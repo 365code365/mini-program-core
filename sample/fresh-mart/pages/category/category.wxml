@@ -47,7 +47,8 @@
     </view>
     <view wx:if="{{!list.length}}" class="empty">
       <view class="empty-box glyph">{{cur.glyph}}</view>
-      <text class="sub">该分类商品正在补货中，敬请期待</text>
+      <text class="sub">「{{cur.name}}」{{sortIdx === 4 ? '今天暂无优惠商品' : '暂无商品'}}</text>
+      <view class="empty-btn" bindtap="onResetSort"><text>查看全部{{cur.name}}</text></view>
     </view>
     <view class="main-end"></view>
   </scroll-view>

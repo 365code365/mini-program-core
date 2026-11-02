@@ -5,7 +5,12 @@
     "pages/orders/orders",
     "pages/mine/mine",
     "pages/detail/detail",
-    "pages/confirm/confirm"
+    "pages/confirm/confirm",
+    "pages/order-detail/order-detail",
+    "pages/address/address",
+    "pages/address-edit/address-edit",
+    "pages/coupons/coupons",
+    "pages/anniv/anniv"
   ],
   "window": {
     "navigationBarTitleText": "花语鲜花",

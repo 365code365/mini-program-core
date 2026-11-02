@@ -1,0 +1,13 @@
+.head { display: flex; flex-direction: column; padding: 40rpx 32rpx; background: linear-gradient(135deg, #1c3d5a, #2b6c8f); }
+.hello { font-size: 40rpx; font-weight: bold; color: #ffffff; }
+.stat { margin-top: 8rpx; font-size: 24rpx; color: #d9e2ec; }
+.fav { display: flex; flex-direction: row; align-items: center; padding: 16rpx 0; border-bottom: 1rpx solid #eef1f4; }
+.fav-img { width: 120rpx; height: 90rpx; border-radius: 10rpx; margin-right: 20rpx; background: #dde3ea; }
+.fav-body { display: flex; flex-direction: column; }
+.fav-name { font-size: 28rpx; }
+.shots { display: flex; flex-direction: row; flex-wrap: wrap; margin-top: 12rpx; }
+.shot-box { width: 200rpx; margin: 0 12rpx 16rpx 0; }
+.shot { width: 200rpx; height: 120rpx; border-radius: 8rpx; background: #dde3ea; }
+.shot-tx { display: block; font-size: 20rpx; color: #8a94a0; }
+.trail { display: flex; flex-direction: row; justify-content: space-between; padding: 16rpx 0; border-bottom: 1rpx solid #eef1f4; font-size: 26rpx; }
+.clear { margin-top: 20rpx; }

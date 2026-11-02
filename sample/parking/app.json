@@ -5,7 +5,11 @@
     "pages/lot/lot",
     "pages/pay/pay",
     "pages/result/result",
-    "pages/orders/orders"
+    "pages/orders/orders",
+    "pages/order/order",
+    "pages/card/card",
+    "pages/invoice/invoice",
+    "pages/findcar/findcar"
   ],
   "window": {
     "navigationBarTitleText": "停车宝",

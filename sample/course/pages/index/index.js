@@ -1,5 +1,8 @@
 const data = require('../../utils/data.js');
 Page({
+  onShow() {
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) this.getTabBar().setData({ selected: 0 });
+  },
   data: {
     keyword: '',
     cats: data.categories,
@@ -29,12 +32,7 @@ Page({
   clearKw() { this.setData({ keyword: '' }); this.refresh(); },
   onCat(e) { this.setData({ cat: e.currentTarget.dataset.c }); this.refresh(); },
   goCourse(e) { wx.navigateTo({ url: '/pages/detail/detail?id=' + e.currentTarget.dataset.id }); },
-  onTeacher(e) {
-    const t = data.teachers.find(x => x.id === e.currentTarget.dataset.id);
-    wx.showModal({ title: t.name + ' · ' + t.title, content: t.intro, confirmText: '看课程', success: r => {
-      if (r.confirm) { this.setData({ cat: t.field, keyword: '' }); this.refresh(); }
-    } });
-  },
+  onTeacher(e) { wx.navigateTo({ url: '/pages/teacher/teacher?id=' + e.currentTarget.dataset.id }); },
   goExam() { wx.navigateTo({ url: '/pages/exam/exam' }); },
   goCheckin() { wx.switchTab({ url: '/pages/checkin/checkin' }); },
   goLearn() { wx.switchTab({ url: '/pages/learn/learn' }); }

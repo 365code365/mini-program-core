@@ -8,23 +8,23 @@
     <text class="me-set" bindtap="onSetting">设置</text>
   </view>
   <view class="stats row">
-    <view class="stat flex1" wx:for="{{stats}}" wx:key="label">
+    <view class="stat flex1" wx:for="{{stats}}" wx:key="label" data-k="{{item.key}}" bindtap="onStat">
       <text class="stat-num">{{item.num}}</text>
       <text class="stat-label">{{item.label}}</text>
     </view>
   </view>
 </view>
 
-<view class="card coupon row">
+<view class="card coupon row" wx:if="{{coupon}}" bindtap="onUseCoupon">
   <view class="coupon-left">
-    <text class="coupon-amt">¥5</text>
-    <text class="coupon-cond">无门槛</text>
+    <text class="coupon-amt">¥{{coupon.amount}}</text>
+    <text class="coupon-cond">{{coupon.min ? '满 ' + coupon.min + ' 可用' : '无门槛'}}</text>
   </view>
   <view class="flex1 coupon-main">
-    <text class="coupon-title">寄件立减券</text>
-    <text class="sub">11-30 前有效 · 全场通用</text>
+    <text class="coupon-title">{{coupon.title}}</text>
+    <text class="sub">{{coupon.expire}} 前有效 · 共 {{couponCount}} 张可用</text>
   </view>
-  <view class="coupon-btn" bindtap="onUseCoupon">去使用</view>
+  <view class="coupon-btn"><text>查看</text></view>
 </view>
 
 <view class="card menu">

@@ -1,0 +1,23 @@
+<view class="add row" bindtap="add" hover-class="hover"><text class="blue">+ 新增乘机人</text></view>
+<view wx:if="{{!list.length}}" class="empty">
+  <text class="muted">还没有常用乘机人</text>
+  <text class="muted small">添加后下单时一键选择，证件信息仅保存在本机</text>
+</view>
+<view wx:for="{{list}}" wx:key="id" class="p row" data-id="{{item.id}}" bindtap="tap" hover-class="hover">
+  <view wx:if="{{mode === 'select'}}" class="ck {{item.on ? 'ck-on' : ''}}"><text wx:if="{{item.on}}" class="ck-tx">✓</text></view>
+  <view class="col flex1">
+    <view class="row">
+      <text class="p-n">{{item.name}}</text>
+      <text class="tag">{{item.age}}</text>
+      <text wx:if="{{item.self}}" class="tag tag-orange">本人</text>
+    </view>
+    <text class="muted small p-id">{{item.type}} {{item.masked}}</text>
+    <text wx:if="{{item.phone}}" class="muted small">手机 {{item.phone}}</text>
+  </view>
+  <text class="edit blue small" data-id="{{item.id}}" catchtap="edit">编辑</text>
+</view>
+<view class="bar-space"></view>
+<view wx:if="{{mode === 'select'}}" class="foot row">
+  <text class="flex1">已选 {{count}} 人</text>
+  <view class="btn ok" hover-class="btn-hover" bindtap="confirm"><text>确定</text></view>
+</view>

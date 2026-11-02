@@ -1,0 +1,10 @@
+.ad-main { padding-bottom: 18rpx; border-bottom: 1rpx solid #f2f3ef; }
+.ad-name { font-size: 30rpx; font-weight: bold; margin-right: 16rpx; }
+.ad-phone { font-size: 26rpx; color: #5d6858; margin-right: 12rpx; }
+.ad-def { font-size: 20rpx; color: #e4572e; border: 1rpx solid #e4572e; border-radius: 6rpx; padding: 0 8rpx; }
+.ad-detail { font-size: 26rpx; color: #3b4537; margin-top: 10rpx; line-height: 1.5; }
+.ad-ops { padding-top: 16rpx; }
+.ad-op-tx { margin-left: 6rpx; }
+.ad-op { font-size: 26rpx; color: #5d6858; margin-left: 36rpx; }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; padding: 20rpx 24rpx calc(20rpx + env(safe-area-inset-bottom)); background: #ffffff; display: flex; flex-direction: row; }
+.bar-b { flex: 1; margin: 0 10rpx; height: 80rpx; line-height: 76rpx; }

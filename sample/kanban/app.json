@@ -4,7 +4,9 @@
     "pages/card/card",
     "pages/new/new",
     "pages/stats/stats",
-    "pages/members/members"
+    "pages/members/members",
+    "pages/search/search",
+    "pages/activity/activity"
   ],
   "window": {
     "navigationBarTitleText": "团队看板",

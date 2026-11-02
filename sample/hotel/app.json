@@ -5,7 +5,14 @@
     "pages/detail/detail",
     "pages/booking/booking",
     "pages/orders/orders",
-    "pages/mine/mine"
+    "pages/mine/mine",
+    "pages/order-detail/order-detail",
+    "pages/reviews/reviews",
+    "pages/guests/guests",
+    "pages/invoices/invoices",
+    "pages/coupons/coupons",
+    "pages/collect/collect",
+    "pages/points/points"
   ],
   "window": {
     "navigationBarTitleText": "途栖酒店民宿",

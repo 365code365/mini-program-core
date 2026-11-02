@@ -1,0 +1,15 @@
+.head { padding: 24rpx 32rpx 0; }
+.od-top { padding-bottom: 16rpx; border-bottom: 1rpx solid #f0f2f5; }
+.st { font-size: 24rpx; color: #3d6cf6; }
+.st.free { color: #20a37a; }
+.st.refunded { color: #9aa0ab; }
+.od-body { margin-top: 20rpx; }
+.cv { width: 132rpx; height: 100rpx; border-radius: 14rpx; display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 34rpx; font-weight: bold; flex-shrink: 0; }
+.od-main { flex: 1; margin-left: 20rpx; display: flex; flex-direction: column; min-width: 0; }
+.od-title { font-size: 28rpx; font-weight: bold; margin-bottom: 6rpx; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.od-pay { margin-left: 16rpx; font-size: 30rpx; font-weight: bold; white-space: nowrap; }
+.od-acts { justify-content: flex-end; margin-top: 20rpx; }
+.op { margin-left: 16rpx; height: 56rpx; line-height: 56rpx; padding: 0 26rpx; border-radius: 28rpx; border: 2rpx solid #d5d9e1; color: #4b5263; font-size: 24rpx; white-space: nowrap; }
+.op-main { border-color: #3d6cf6; color: #3d6cf6; }
+.gap { height: 60rpx; }
+.od-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

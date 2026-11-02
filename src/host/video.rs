@@ -71,9 +71,16 @@ pub fn tick(app: &mut MiniApp, renderer: Option<&WxmlRenderer>, interaction: &In
             }
         }
     }
+    let mut live: Option<Vec<QueryHit>> = None;
     for (key, name, detail) in ui::take_events() {
         if let Some(v) = videos.iter().find(|v| c::host_feed::video_key(&v.attrs) == key) {
             dispatch(app, r, v, name, detail, t_ms);
+        } else if c::host_feed::host_feeds_live() {
+            // 直播借视频全屏那一层（host/engine_live_player.rs）：fullscreenchange 派给 <live-player>
+            let hits = live.get_or_insert_with(|| r.query_selector("live-player", true, interaction));
+            if let Some(v) = hits.iter().find(|v| c::host_feed::video_key(&v.attrs) == key) {
+                dispatch(app, r, v, name, detail, t_ms);
+            }
         }
     }
     changed

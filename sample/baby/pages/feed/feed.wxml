@@ -1,0 +1,61 @@
+<view class="page">
+  <view class="seg">
+    <view class="seg-item {{mode === 'breast' ? 'seg-on' : ''}}" data-mode="breast" bindtap="switchMode">母乳亲喂</view>
+    <view class="seg-item {{mode === 'formula' ? 'seg-on' : ''}}" data-mode="formula" bindtap="switchMode">奶粉 · 瓶喂</view>
+  </view>
+
+  <!-- 母乳计时 -->
+  <view wx:if="{{mode === 'breast'}}" class="card timer">
+    <text class="muted">本次合计</text>
+    <text class="total">{{totalText}}</text>
+    <view class="sides">
+      <view class="side {{side === 'left' ? 'side-on' : ''}}" data-side="left" bindtap="tapSide" hover-class="btn-hover">
+        <text class="side-name">左侧</text>
+        <text class="side-time">{{leftText}}</text>
+        <text class="side-act">{{side === 'left' ? '点击暂停' : (hasTimer ? '点击切到左侧' : '点击开始')}}</text>
+      </view>
+      <view class="side {{side === 'right' ? 'side-on' : ''}}" data-side="right" bindtap="tapSide" hover-class="btn-hover">
+        <text class="side-name">右侧</text>
+        <text class="side-time">{{rightText}}</text>
+        <text class="side-act">{{side === 'right' ? '点击暂停' : (hasTimer ? '点击切到右侧' : '点击开始')}}</text>
+      </view>
+    </view>
+    <view wx:if="{{hasTimer}}" class="row ops">
+      <view class="btn-ghost flex1" bindtap="discard" hover-class="btn-hover">放弃</view>
+      <view class="btn flex1 ops-main" bindtap="finish" hover-class="btn-hover">结束并保存</view>
+    </view>
+    <text wx:else class="muted hint">离开页面或锁屏后计时不会中断，回来继续显示</text>
+  </view>
+
+  <!-- 奶粉 -->
+  <view wx:if="{{mode === 'formula'}}" class="card">
+    <view class="between">
+      <text class="sec-title">奶量</text>
+      <view class="row"><text class="ml">{{ml}}</text><text class="muted">ml</text></view>
+    </view>
+    <slider class="slider" min="30" max="300" step="10" value="{{ml}}" show-value activeColor="#ff7a8a" block-color="#ff7a8a" block-size="24" bindchange="onMl" bindchanging="onMlChanging"></slider>
+    <view class="between muted"><text>30ml</text><text>今日奶粉已喂 {{totalMl}}ml</text><text>300ml</text></view>
+    <picker mode="date" value="{{date}}" end="{{today}}" bindchange="onDate">
+      <view class="field"><text class="field-label">日期</text><text class="field-value">{{date}}</text><text class="arrow">›</text></view>
+    </picker>
+    <picker mode="time" value="{{time}}" bindchange="onTime">
+      <view class="field"><text class="field-label">喂奶时间</text><text class="field-value">{{time}}</text><text class="arrow">›</text></view>
+    </picker>
+    <view class="field">
+      <text class="field-label">备注</text>
+      <input class="field-input" value="{{note}}" maxlength="30" placeholder="如：奶粉品牌、吐奶情况" placeholder-class="placeholder" bindinput="onNote"></input>
+    </view>
+    <text wx:if="{{err}}" class="err">{{err}}</text>
+    <view class="btn save" bindtap="saveFormula" hover-class="btn-hover">保存这次喂奶</view>
+  </view>
+
+  <view class="card">
+    <text class="sec-title">最近喂养</text>
+    <view wx:if="{{!list.length}}" class="empty"><text class="empty-text">还没有喂养记录</text></view>
+    <view wx:for="{{list}}" wx:key="id" class="rec" hover-class="item-hover" data-id="{{item.id}}" bindtap="onItem">
+      <view class="col rec-when"><text class="rec-day">{{item.day}}</text><text class="muted">{{item.time}}</text></view>
+      <text class="tag {{item.breast ? '' : 'tag-mint'}}">{{item.breast ? '母乳' : '奶粉'}}</text>
+      <view class="col flex1 rec-body"><text class="rec-title">{{item.title}}</text><text class="muted">{{item.desc}}</text></view>
+    </view>
+  </view>
+</view>

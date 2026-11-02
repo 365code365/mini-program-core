@@ -1,0 +1,38 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/approvals/approvals",
+    "pages/contacts/contacts",
+    "pages/mine/mine",
+    "pages/apply/apply",
+    "pages/approval/approval",
+    "pages/attend/attend",
+    "pages/rooms/rooms",
+    "pages/employee/employee",
+    "pages/pick/pick"
+  ],
+  "workers": "workers",
+  "window": {
+    "navigationBarTitleText": "云协同",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f3f5f8"
+  },
+  "permission": {
+    "scope.userLocation": { "desc": "考勤打卡需要确认你在公司打卡范围内" }
+  },
+  "requiredPrivateInfos": ["getLocation"],
+  "tabBar": {
+    "color": "#9aa0a8",
+    "selectedColor": "#1677ff",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "工作台", "iconPath": "images/tab/work.png", "selectedIconPath": "images/tab/work-on.png" },
+      { "pagePath": "pages/approvals/approvals", "text": "审批", "iconPath": "images/tab/approve.png", "selectedIconPath": "images/tab/approve-on.png" },
+      { "pagePath": "pages/contacts/contacts", "text": "通讯录", "iconPath": "images/tab/contacts.png", "selectedIconPath": "images/tab/contacts-on.png" },
+      { "pagePath": "pages/mine/mine", "text": "我的", "iconPath": "images/tab/user.png", "selectedIconPath": "images/tab/user-on.png" }
+    ],
+    "custom": true
+  }
+}

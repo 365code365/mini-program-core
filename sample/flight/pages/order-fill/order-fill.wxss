@@ -1,0 +1,20 @@
+.leg-d { font-size: 26rpx; font-weight: bold; margin-right: 12rpx; }
+.leg-no { text-align: right; }
+.leg-mid { justify-content: space-between; margin: 20rpx 0; }
+.leg-t { font-size: 40rpx; font-weight: bold; }
+.leg-c { align-items: center; }
+.leg-line { width: 140rpx; height: 2rpx; background: #c6ccd8; margin-top: 8rpx; }
+.leg-r { align-items: flex-end; }
+.pax { padding: 20rpx 0; border-bottom: 1rpx solid #eef1f6; }
+.pax-x { width: 40rpx; height: 40rpx; border-radius: 20rpx; background: #f04438; color: #ffffff; text-align: center; line-height: 38rpx; font-size: 30rpx; margin-right: 20rpx; }
+.pax-n { font-size: 30rpx; margin-right: 12rpx; }
+.add { padding: 24rpx 0 4rpx; justify-content: center; }
+.field { height: 96rpx; border-bottom: 1rpx solid #eef1f6; }
+.f-l { width: 140rpx; color: #5b6478; }
+.ins { padding: 22rpx 0; border-bottom: 1rpx solid #eef1f6; }
+.ins-p { margin-left: 12rpx; }
+.d-row { padding: 12rpx 0; }
+.tip { padding: 8rpx 32rpx; }
+.foot { position: fixed; left: 0; right: 0; bottom: 0; height: 128rpx; background: #ffffff; padding: 0 24rpx; box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.06); }
+.total { font-size: 40rpx; }
+.submit { width: 260rpx; }

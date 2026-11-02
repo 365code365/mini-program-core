@@ -1,0 +1,29 @@
+.head { display: flex; flex-direction: row; align-items: center; padding: 40rpx 32rpx 30rpx; background: linear-gradient(135deg, #3f9a3c, #7cc35a); }
+.av { width: 112rpx; height: 112rpx; border-radius: 56rpx; border: 4rpx solid rgba(255,255,255,0.7); }
+.hd-mid { flex: 1; margin-left: 24rpx; display: flex; flex-direction: column; }
+.nick { color: #ffffff; font-size: 34rpx; font-weight: bold; }
+.lv { color: rgba(255,255,255,0.88); font-size: 22rpx; margin-top: 6rpx; }
+.sign { background: #ffffff; border-radius: 30rpx; height: 60rpx; padding: 0 22rpx; }
+.signed { background: rgba(255,255,255,0.3); }
+.sign-tx { color: #3f9a3c; font-size: 24rpx; line-height: 60rpx; }
+.signed .sign-tx { color: #ffffff; }
+.stats { display: flex; flex-direction: row; background: #ffffff; padding: 24rpx 0; }
+.st { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.st-n { font-size: 36rpx; font-weight: bold; }
+.st-k { font-size: 22rpx; color: #8a9186; }
+.ords { display: flex; flex-direction: row; margin-top: 24rpx; }
+.ord { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.ord-icw { position: relative; }
+.ord-ic { font-size: 44rpx; }
+.ord-badge { position: absolute; top: -6rpx; right: -18rpx; min-width: 28rpx; height: 28rpx; border-radius: 14rpx; background: #e4572e; padding: 0 6rpx; display: flex; align-items: center; justify-content: center; }
+.ord-badge-tx { color: #ffffff; font-size: 18rpx; }
+.ord-k { font-size: 23rpx; color: #3b4537; margin-top: 8rpx; }
+.fav { margin-top: 16rpx; white-space: nowrap; }
+.fav-row { display: flex; flex-direction: row; }
+.fav-it { width: 150rpx; margin-right: 18rpx; display: flex; flex-direction: column; flex-shrink: 0; }
+.fav-img { width: 150rpx; height: 150rpx; border-radius: 12rpx; }
+.fav-name { font-size: 22rpx; margin-top: 6rpx; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.menu { padding-top: 0; padding-bottom: 0; }
+.mi { display: flex; flex-direction: row; justify-content: space-between; align-items: center; height: 100rpx; border-bottom: 1rpx solid #f2f3ef; }
+.mi-last { border-bottom: none; }
+.mi-k { font-size: 28rpx; }

@@ -1,0 +1,22 @@
+<view wx:if="{{!certs.length}}" class="empty"><text>学完任意一门课程即可获得结业证书</text></view>
+<view wx:for="{{certs}}" wx:key="id" class="cert {{focus === item.id ? 'focus' : ''}}">
+  <view class="c-head row between"><text class="c-brand">知学课堂</text><text class="c-kind">结业证书</text></view>
+  <text class="c-name">林一帆</text>
+  <view class="c-body"><text>已完成「{{item.title}}」全部 {{item.lessons}} 节课程的学习，特发此证。</text></view>
+  <view class="row between c-foot">
+    <view class="c-meta"><text class="muted">讲师 {{item.teacher}} · {{item.date}}</text><text class="c-no">{{item.no}}</text></view>
+    <view class="seal"><text>知学</text></view>
+  </view>
+  <view class="c-copy" data-no="{{item.no}}" bindtap="copy"><text>复制证书编号</text></view>
+</view>
+<view wx:if="{{ing.length}}" class="card">
+  <text class="sec-title">即将获得</text>
+  <view wx:for="{{ing}}" wx:key="id" class="row ing">
+    <view class="ing-main">
+      <text class="ing-t">{{item.title}}</text>
+      <view class="row"><view class="bar ing-bar"><view class="bar-in" style="width: {{item.pct}}%;"></view></view><text class="muted ing-left">还差 {{item.left}} 节</text></view>
+    </view>
+    <view class="ing-go" data-id="{{item.id}}" bindtap="study"><text>去学习</text></view>
+  </view>
+</view>
+<view class="gap"></view>

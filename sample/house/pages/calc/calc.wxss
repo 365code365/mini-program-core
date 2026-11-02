@@ -1,0 +1,76 @@
+.mini-seg {
+  background: #f5f6f8;
+  border-radius: 12rpx;
+  padding: 4rpx;
+}
+.ms {
+  padding: 8rpx 18rpx;
+  font-size: 24rpx;
+  color: #6b7280;
+  border-radius: 10rpx;
+  white-space: nowrap;
+}
+.ms.on {
+  background: #ffffff;
+  color: #ff5a1f;
+  font-weight: bold;
+}
+.result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.r-label {
+  font-size: 26rpx;
+  color: #8a919f;
+}
+.r-main {
+  font-size: 64rpx;
+  font-weight: bold;
+  color: #f2453d;
+  margin-top: 8rpx;
+}
+.r-dec {
+  font-size: 24rpx;
+  color: #8a919f;
+  margin-top: 4rpx;
+}
+.r-grid {
+  width: 100%;
+  margin-top: 28rpx;
+}
+.r-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.r-val {
+  font-size: 32rpx;
+  font-weight: bold;
+}
+.r-tip {
+  margin-top: 24rpx;
+  font-size: 24rpx;
+  color: #e8590c;
+}
+.btns {
+  margin: 8rpx 24rpx 0;
+}
+.b-ghost {
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  border-radius: 44rpx;
+  background: #ffffff;
+  color: #4a505c;
+  font-size: 30rpx;
+  margin-right: 20rpx;
+}
+.b-main {
+  flex: 2;
+}
+.disclaim {
+  display: block;
+  text-align: center;
+  margin-top: 24rpx;
+}

@@ -1,0 +1,49 @@
+<view class="head">
+  <view class="pet-av big" style="background: {{form.color}};"><text>{{initial}}</text></view>
+  <view class="colors">
+    <view class="color {{form.color === item ? 'on' : ''}}" wx:for="{{colors}}" wx:key="*this" style="background: {{item}};" data-f="color" data-v="{{item}}" bindtap="pick"></view>
+  </view>
+</view>
+<view class="card form">
+  <view class="f">
+    <text class="f-k">名字</text>
+    <input class="f-in f-name" placeholder="如：团子" placeholder-class="ph" value="{{form.name}}" maxlength="8" data-f="name" bindinput="onField" />
+  </view>
+  <view class="f">
+    <text class="f-k">类别</text>
+    <view class="chips">
+      <text wx:for="{{kinds}}" wx:key="*this" class="chip {{form.kind === item ? 'on' : ''}}" data-f="kind" data-v="{{item}}" bindtap="pick">{{item}}</text>
+    </view>
+  </view>
+  <view class="f">
+    <text class="f-k">品种</text>
+    <input class="f-in f-breed" placeholder="如：英国短毛猫 · 蓝猫" placeholder-class="ph" value="{{form.breed}}" maxlength="16" data-f="breed" bindinput="onField" />
+  </view>
+  <view class="f">
+    <text class="f-k">性别</text>
+    <view class="chips">
+      <text wx:for="{{genders}}" wx:key="*this" class="chip {{form.gender === item ? 'on' : ''}}" data-f="gender" data-v="{{item}}" bindtap="pick">{{item === '公' ? '公 · 弟弟' : '母 · 妹妹'}}</text>
+    </view>
+  </view>
+  <view class="f">
+    <text class="f-k">已绝育</text>
+    <view class="f-sw"><switch checked="{{form.neutered}}" color="#ff8a3d" bindchange="onNeutered" /></view>
+  </view>
+  <view class="f">
+    <text class="f-k">生日</text>
+    <picker class="f-pk f-birth" mode="date" value="{{form.birth}}" start="2000-01-01" end="{{today}}" bindchange="onBirth">
+      <view class="f-v"><text class="{{form.birth ? '' : 'ph'}}">{{form.birth || '请选择生日'}}</text><view class="chev"></view></view>
+    </picker>
+  </view>
+  <view class="f">
+    <text class="f-k">体重</text>
+    <input class="f-in f-weight" type="digit" placeholder="单位 kg，如 4.6" placeholder-class="ph" value="{{form.weight}}" maxlength="5" data-f="weight" bindinput="onField" />
+  </view>
+  <view class="f last">
+    <text class="f-k">芯片号</text>
+    <input class="f-in f-chip" placeholder="选填，植入芯片的 15 位编号" placeholder-class="ph" value="{{form.chip}}" maxlength="20" data-f="chip" bindinput="onField" />
+  </view>
+</view>
+<view class="btn save" bindtap="save"><text>{{editing ? '保存修改' : '保存档案'}}</text></view>
+<view wx:if="{{editing}}" class="del" bindtap="remove"><text>删除这只宠物的档案</text></view>
+<view style="height: 60rpx;"></view>

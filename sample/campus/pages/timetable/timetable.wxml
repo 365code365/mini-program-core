@@ -1,0 +1,50 @@
+<wxs module="fmt" src="../../utils/fmt.wxs"></wxs>
+<!-- 页内 WXS：表头的星期名与「今天」高亮 -->
+<wxs module="tt">
+var NAMES = ['一', '二', '三', '四', '五', '六', '日'];
+function head(i) { return '周' + NAMES[i]; }
+function isToday(w, thisWeek, i, todayDay) { return w === thisWeek && i + 1 === todayDay; }
+module.exports = { head: head, isToday: isToday };
+</wxs>
+<view class="tt-bar">
+  <view class="tt-arrow" bindtap="prev" hover-class="tt-press">‹</view>
+  <view class="tt-title">
+    <text class="tt-w">第 {{cur + 1}} 周</text>
+    <text class="tt-sub" wx:if="{{cur + 1 !== thisWeek}}" bindtap="backToday">回到本周（第 {{thisWeek}} 周）</text>
+    <text class="tt-sub" wx:else>本周</text>
+  </view>
+  <view class="tt-arrow" bindtap="next" hover-class="tt-press">›</view>
+</view>
+<swiper class="tt-sw" current="{{cur}}" bindchange="onSwiper" style="height: {{rowH * 12 + 44}}px;">
+  <swiper-item wx:for="{{weeks}}" wx:key="w" wx:for-item="wk">
+    <!-- 本引擎的 display:grid 不排版（子项按块级堆叠），课表改用绝对定位：left = 列 × 列宽，top = 节次 × 行高 -->
+    <view wx:if="{{wk.near}}" class="tt-grid" style="height: {{rowH * 12 + 44}}px;">
+      <view class="tt-corner" style="left: 0; top: 0; width: 34px; height: 44px;">节</view>
+      <view class="tt-head {{(tt.isToday(wk.w, thisWeek, i, todayDay) || item.today) ? 'today' : ''}}" wx:for="{{wk.dates}}" wx:for-index="i" wx:key="ymd"
+        style="left: {{34 + i * colW}}px; top: 0; width: {{colW}}px; height: 44px;">
+        <text class="tt-hd">{{tt.head(i) || item.wd}}</text><text class="tt-hm">{{item.md}}</text>
+      </view>
+      <view class="tt-sec" wx:for="{{sections}}" wx:key="*this" style="left: 0; top: {{44 + index * rowH}}px; width: 34px; height: {{rowH}}px;">
+        <text class="tt-sn">{{index + 1}}</text><text class="tt-st">{{item}}</text>
+      </view>
+      <view class="tt-line" wx:for="{{sections}}" wx:key="*this" style="top: {{44 + index * rowH}}px;"></view>
+      <view class="tt-c" wx:for="{{wk.courses}}" wx:key="id" data-id="{{item.id}}" bindtap="open" hover-class="tt-press"
+        style="left: {{34 + (item.day - 1) * colW + 2}}px; top: {{44 + (item.start - 1) * rowH + 2}}px; width: {{colW - 4}}px; height: {{item.len * rowH - 4}}px; background: {{item.color}};">
+        <text class="tt-cn">{{item.name}}</text>
+        <text class="tt-cr">@{{item.room}}</text>
+      </view>
+    </view>
+  </swiper-item>
+</swiper>
+<view class="tab-space"></view>
+<view class="tab-space"></view>
+
+<view class="mask" wx:if="{{detail}}" bindtap="close"></view>
+<view class="sheet" wx:if="{{detail}}">
+  <view class="row"><view class="tt-dot" style="background: {{detail.color}};"></view><text class="sheet-title tt-dn">{{detail.name}}</text></view>
+  <view class="cell"><text class="cell-l">上课时间</text><text class="cell-r">{{fmt.weekday(detail.day) || detail.wd}} {{fmt.section(detail.start, detail.len) || detail.sec}}</text></view>
+  <view class="cell"><text class="cell-l">上课地点</text><text class="cell-r">{{detail.room}}</text></view>
+  <view class="cell"><text class="cell-l">任课教师</text><text class="cell-r">{{detail.teacher}}</text></view>
+  <view class="cell"><text class="cell-l">上课周次</text><text class="cell-r">第 {{detail.weeks[0]}}-{{detail.weeks[1]}} 周</text></view>
+  <view class="cell"><text class="cell-l">课程性质</text><text class="cell-r">{{detail.type}} · {{detail.credit}} 学分</text></view>
+</view>

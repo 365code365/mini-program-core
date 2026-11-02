@@ -1,0 +1,47 @@
+<view class="hd row">
+  <view class="col flex1">
+    <text class="hd-t">{{total}} 个局正在招人</text>
+    <text class="hd-s">报名免费，场地费 AA 到场结算</text>
+  </view>
+  <view class="hd-btn" bindtap="create"><text>+ 发起组局</text></view>
+</view>
+<scroll-view class="fl" scroll-x enable-flex>
+  <view class="fl-in row">
+    <view wx:for="{{filters}}" wx:key="id" class="chip {{filter === item.id ? 'chip-on' : ''}}" data-id="{{item.id}}" bindtap="pick">
+      <text>{{item.name}}</text>
+    </view>
+  </view>
+</scroll-view>
+<view wx:if="{{loading}}" class="loading"><text class="muted">加载中…</text></view>
+<view wx:elif="{{!list.length}}" class="empty">
+  <view class="empty-ic"><text class="empty-ic-t">+</text></view>
+  <text class="empty-t">{{filter === 'mine' ? '还没有参与组局' : '暂时没有这个项目的局，发起一个吧'}}</text>
+  <view class="btn-ghost empty-btn" bindtap="create"><text>发起组局</text></view>
+</view>
+<view wx:for="{{list}}" wx:key="id" class="tm">
+  <view class="row">
+    <text class="tm-sp">{{item.sportName}}</text>
+    <text class="tm-lv">{{item.levelText}}</text>
+    <text wx:if="{{item.booked}}" class="tm-lv tm-bk">场地已订</text>
+    <view class="flex1"></view>
+    <text class="tm-fee">¥{{item.fee}}</text><text class="muted">/人</text>
+  </view>
+  <text class="tm-time">{{item.dateText}} {{item.timeText}}</text>
+  <text class="muted tm-v" data-v="{{item.venueId}}" bindtap="venue">{{item.venueName}} ›</text>
+  <view class="tm-note"><text class="tm-note-t">{{item.note}}</text></view>
+  <view class="row tm-prog">
+    <progress class="flex1" percent="{{item.pct}}" stroke-width="6" border-radius="3" activeColor="{{item.full ? '#b0b3ba' : '#13b37b'}}" backgroundColor="#e9ecea"></progress>
+    <text class="tm-cnt">{{item.count}}/{{item.need}} 人</text>
+  </view>
+  <view class="row tm-ft">
+    <image class="tm-av" src="{{item.host.avatar}}"></image>
+    <view class="col flex1 tm-host">
+      <text class="tm-hn">{{item.host.name}} 发起</text>
+      <text class="muted">{{item.full ? '已满员' : '还差 ' + item.left + ' 人'}}</text>
+    </view>
+    <button class="tm-share" open-type="share" data-id="{{item.id}}"><text>邀请</text></button>
+    <view wx:if="{{item.inIt}}" class="btn-ghost tm-btn tm-quit" data-id="{{item.id}}" bindtap="quit"><text>{{item.mine ? '解散' : '退出'}}</text></view>
+    <view wx:else class="btn-main tm-btn {{item.full ? 'btn-dis' : ''}}" data-id="{{item.id}}" bindtap="join"><text>{{item.full ? '已满' : '报名'}}</text></view>
+  </view>
+</view>
+<view class="tabbar-space"></view>

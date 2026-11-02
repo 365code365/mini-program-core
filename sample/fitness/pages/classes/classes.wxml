@@ -10,7 +10,7 @@
   </scroll-view>
 </view>
 
-<view class="sum"><text class="muted">{{days[dayIdx].key}} · 燃动科技园店 · 共 {{list.length}} 节课</text></view>
+<view class="sum"><text class="muted">{{days[dayIdx].key}} · 燃动{{storeName}} · 共 {{list.length}} 节课 · 每天最多约 2 节</text></view>
 
 <view class="cc" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="goCourse">
   <view class="cc-time">
@@ -29,8 +29,8 @@
       <text class="cc-left {{item.left && item.left <= 3 ? 'warn' : ''}}">{{item.left ? '余 ' + item.left + ' 位' : '已满员'}}</text>
     </view>
   </view>
-  <view class="cc-btn {{item.mine ? 'mine' : ''}} {{!item.left && !item.mine ? 'full' : ''}}" catchtap="book" data-index="{{index}}">
-    <text>{{item.mine ? '已预约' : (item.left ? '预约' : '排队')}}</text>
+  <view class="cc-btn st-{{item.state}}" catchtap="book" data-index="{{index}}">
+    <text>{{item.btn}}</text>
   </view>
 </view>
 <view wx:if="{{!list.length}}" class="empty"><text>当天暂无「{{type}}」课程，换一天看看吧</text></view>

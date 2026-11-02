@@ -47,7 +47,26 @@ class MiniProgramController {
     this.sameLayerVideo = true,
     this.immersiveVideoFullscreen = true,
     this.sameLayerViews = const [],
+    this.builtinMap = true,
+    this.builtinWebView = true,
   });
+
+  /// 插件自带的 `<map>`（Android，默认开）：瓦片地图 + 标记 / 折线 / 圆 / 多边形，同层渲染进页面，拖动 / 捏合缩放、
+  /// `bindmarkertap` / `bindregionchange`、`wx.createMapContext` 都由插件的原生实现处理（与原生 SDK 的 MiniMapView 同一份）。
+  /// [nativeComponents] 或 [sameLayerViews] 里自己列了 `map`（用 [MiniProgramView.nativeViewBuilder] 造）时以宿主的为准。
+  /// iOS 上暂时没有（Flutter iOS 走纹理，map 画占位或交给 nativeViewBuilder）
+  final bool builtinMap;
+
+  /// 插件自带的 `<web-view>`（Android，默认开）：系统 WebView 盖在小程序画面上，网页里的 JSSDK、`bindmessage`、
+  /// 网页标题、返回键先让网页后退都由插件处理。[nativeComponents] 里自己列了 `web-view` 时以宿主的为准；
+  /// 只在独立图层（[androidSurfaceView]，默认）时有。iOS 上暂时没有
+  final bool builtinWebView;
+
+  bool get _builtinMap =>
+      builtinMap && defaultTargetPlatform == TargetPlatform.android && !nativeComponents.contains('map') && !sameLayerViews.contains('map');
+
+  bool get _builtinWebView =>
+      builtinWebView && defaultTargetPlatform == TargetPlatform.android && androidSurfaceView && !nativeComponents.contains('web-view');
 
   /// [nativeComponents] 里哪些标签走**同层渲染**（Android）：[MiniProgramView.nativeViewBuilder] 造的控件不再盖在
   /// 画面上，而是离屏画成一帧交给引擎画进页面 —— 滚动时它就是页面里的一块像素，跟页面一起动，不会像盖上去的控件
@@ -290,6 +309,8 @@ class MiniProgramController {
         'options': jsonEncode(options),
         'backend': backend.code,
         'presentation': androidSurfaceView ? 'view' : 'texture',
+        'builtinMap': _builtinMap,
+        'builtinWebView': _builtinWebView,
       });
     } catch (_) {
       // 失败了要让出「唯一实例」的位置，宿主才能换个目录再建

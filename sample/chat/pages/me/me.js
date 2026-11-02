@@ -3,6 +3,7 @@ const GENDER = { male: '男', female: '女', secret: '保密' };
 Page({
   data: { p: {}, initial: '', genderText: '', stats: [], notify: true, savedTip: '' },
   onShow() {
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) this.getTabBar().setData({ selected: 2 });
     store.syncTabBadge(this, 2);
     this.refresh();
   },

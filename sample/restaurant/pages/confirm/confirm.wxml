@@ -39,7 +39,7 @@
         <text class="sub clr" wx:if="{{remarkLen}}" bindtap="clearRemark">清空</text>
       </view>
     </view>
-    <textarea class="remark" value="{{remark}}" placeholder="口味、忌口等要求（最多 50 字）" maxlength="-1" bindinput="onRemark"></textarea>
+    <textarea id="rmk{{remarkSeq}}" class="remark" value="{{remark}}" placeholder="口味、忌口等要求（最多 50 字）" maxlength="-1" bindinput="onRemark"></textarea>
     <view class="tags">
       <view wx:for="{{tags}}" wx:key="t" class="tag {{item.on ? 'tag-on' : ''}}" data-t="{{item.t}}" bindtap="onTag"><text>{{item.t}}</text></view>
     </view>

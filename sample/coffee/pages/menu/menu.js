@@ -1,6 +1,5 @@
 const data = require('../../utils/data.js');
 const store = require('../../utils/store.js');
-
 Page({
   data: {
     store: data.stores[0],
@@ -13,16 +12,19 @@ Page({
     bodyHeight: 500,
     tabGap: 0,
     cart: { count: 0, amount: 0 },
+    promo: '新品第 2 杯半价 · 金豆会员周三 8 折',
     sheet: null,
     sizes: data.sizes,
     sugars: data.sugars,
+    sheetAddons: [],
     sizeIdx: 0,
     tempIdx: 0,
     sugarIdx: 0,
+    addonOn: {},
+    picked: '',
     qty: 1,
     unitPrice: 0
   },
-
   onLoad() {
     const info = wx.getWindowInfo();
     // 兼容：微信里 tab 页的 windowHeight 已经扣掉了 tabBar，position:fixed 的 bottom:0 贴在 tabBar 上沿；
@@ -33,12 +35,13 @@ Page({
     this.setData({ bodyHeight, tabGap });
     this.showCat('new');
   },
-
   onShow() {
-    const storeId = getApp().globalData.storeId;
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) this.getTabBar().setData({ selected: 1 });
+    const level = store.levelOf(store.cups());
     this.setData({
       mode: store.getMode(),
-      store: data.stores.find(s => s.id === storeId) || data.stores[0]
+      store: data.findStore(getApp().globalData.storeId),
+      promo: store.memberDay(level) ? '今天是会员日：饮品 8 折，新品第 2 杯半价' : '新品第 2 杯半价 · 金豆会员周三 8 折'
     });
     this.refreshCart();
     // 首页 banner / 推荐点进来：直接弹规格
@@ -50,7 +53,6 @@ Page({
       this.openSheet(d);
     }
   },
-
   showCat(id) {
     const cat = data.categories.find(c => c.id === id) || data.categories[0];
     this.setData({
@@ -60,23 +62,19 @@ Page({
       listTop: this.data.listTop === 0 ? 0.1 : 0
     });
   },
-
   refreshCart() {
     const s = store.summary();
     this.setData({ cart: { count: s.count, amount: s.amount } });
   },
-
   onCat(e) {
     this.showCat(e.currentTarget.dataset.id);
   },
-
   onMode(e) {
     const mode = e.currentTarget.dataset.mode;
     store.setMode(mode);
     this.setData({ mode });
     wx.showToast({ title: mode === 'pickup' ? '已切换为到店自取' : '已切换为外卖送达', icon: 'none' });
   },
-
   onStore() {
     wx.showActionSheet({
       itemList: data.stores.map(s => `${s.name}  ${s.distance}`),
@@ -88,48 +86,58 @@ Page({
       }
     });
   },
-
   onOpen(e) {
     this.openSheet(data.findDrink(e.currentTarget.dataset.id));
   },
-
   openSheet(d) {
-    // 记住每款饮品上次选的规格
+    // 记住每款饮品上次选的规格（含加料）
     const last = (wx.getStorageSync('cf_last_spec') || {})[d.id] || {};
-    const tempIdx = Math.min(last.tempIdx || 0, d.temps.length - 1);
+    const sheetAddons = data.addons.filter(a => !a.milkOnly || d.milk);
+    const addonOn = {};
+    (last.addons || []).forEach(id => { if (sheetAddons.some(a => a.id === id)) addonOn[id] = true; });
     this.setData({
       sheet: d,
+      sheetAddons,
       sizeIdx: last.sizeIdx || 0,
-      tempIdx,
+      tempIdx: Math.min(last.tempIdx || 0, d.temps.length - 1),
       sugarIdx: last.sugarIdx || 0,
+      addonOn,
       qty: 1
     });
     this.calc();
   },
-
+  pickedAddons() {
+    return this.data.sheetAddons.filter(a => this.data.addonOn[a.id]);
+  },
   calc() {
     const d = this.data.sheet;
     if (!d) return;
-    this.setData({ unitPrice: d.price + data.sizes[this.data.sizeIdx].add });
+    const addons = this.pickedAddons();
+    const unitPrice = d.price + data.sizes[this.data.sizeIdx].add + addons.reduce((s, a) => s + a.add, 0);
+    const picked = [data.sizes[this.data.sizeIdx].name, d.temps[this.data.tempIdx], data.sugars[this.data.sugarIdx]]
+      .concat(addons.map(a => a.name)).join(' / ');
+    this.setData({ unitPrice, picked });
   },
-
   onSize(e) {
     this.setData({ sizeIdx: Number(e.currentTarget.dataset.idx) });
     this.calc();
   },
-
   onTemp(e) {
     this.setData({ tempIdx: Number(e.currentTarget.dataset.idx) });
+    this.calc();
   },
-
   onSugar(e) {
     this.setData({ sugarIdx: Number(e.currentTarget.dataset.idx) });
+    this.calc();
   },
-
+  onAddon(e) {
+    const id = e.currentTarget.dataset.id;
+    this.setData({ ['addonOn.' + id]: !this.data.addonOn[id] });
+    this.calc();
+  },
   onQtyMinus() {
     if (this.data.qty > 1) this.setData({ qty: this.data.qty - 1 });
   },
-
   onQtyPlus() {
     if (this.data.qty >= 9) {
       wx.showToast({ title: '单款最多 9 杯', icon: 'none' });
@@ -137,30 +145,29 @@ Page({
     }
     this.setData({ qty: this.data.qty + 1 });
   },
-
   onClose() {
     this.setData({ sheet: null });
   },
-
   onAdd() {
     const d = this.data.sheet;
     const { sizeIdx, tempIdx, sugarIdx, qty, unitPrice } = this.data;
+    const addons = this.pickedAddons().map(a => a.id);
     store.addToCart({
       drinkId: d.id,
       size: data.sizes[sizeIdx].name,
       temp: d.temps[tempIdx],
       sugar: data.sugars[sugarIdx],
+      addons,
       qty,
       unit: unitPrice
     });
     const last = wx.getStorageSync('cf_last_spec') || {};
-    last[d.id] = { sizeIdx, tempIdx, sugarIdx };
+    last[d.id] = { sizeIdx, tempIdx, sugarIdx, addons };
     wx.setStorageSync('cf_last_spec', last);
     this.setData({ sheet: null });
     this.refreshCart();
     wx.showToast({ title: '已加入购物车', icon: 'success' });
   },
-
   onCart() {
     wx.navigateTo({ url: '/pages/cart/cart' });
   }

@@ -1,0 +1,67 @@
+<view class="tabs">
+  <view class="tab {{tab === item.key ? 'on' : ''}}" wx:for="{{tabs}}" wx:key="key" data-key="{{item.key}}" bindtap="setTab">
+    <text>{{item.name}}{{item.key === 'unpaid' && unpaidCount ? '（' + unpaidCount + '）' : ''}}</text>
+    <view class="tab-line" wx:if="{{tab === item.key}}"></view>
+  </view>
+</view>
+<view wx:if="{{tab === 'unpaid'}}" class="tip"><text>就诊后医生开具的检查、药品费用在这里缴纳，医保患者按统筹比例自动结算</text></view>
+<view class="card bill" wx:for="{{list}}" wx:key="id">
+  <view class="row between" data-id="{{item.id}}" bindtap="onToggle">
+    <view class="row b-left">
+      <text class="b-kind k-{{item.kind}}">{{item.kindName}}</text>
+      <text class="b-title">{{item.title}}</text>
+    </view>
+    <text class="b-amt {{item.status === 'refund' ? 'refund' : ''}}">{{item.status === 'refund' ? '退 ' : ''}}¥{{item.self}}</text>
+  </view>
+  <text class="muted b-sub">就诊人：{{item.patient}} · {{item.time}}</text>
+  <view wx:if="{{item.items && (tab === 'unpaid' || openId === item.id)}}" class="b-items">
+    <view class="b-row" wx:for="{{item.items}}" wx:key="name" wx:for-item="x">
+      <text class="b-n">{{x.cat}} · {{x.name}}</text>
+      <text class="b-p">¥{{x.price}} ×{{x.qty}}</text>
+    </view>
+    <view class="b-row" wx:if="{{item.insured}}"><text class="b-n">医保统筹支付</text><text class="b-p">-¥{{item.insured}}</text></view>
+  </view>
+  <view class="b-foot row">
+    <block wx:if="{{item.status === 'unpaid'}}">
+      <text class="muted b-sum">合计 ¥{{item.total}} · 自付</text>
+      <text class="price b-self">¥{{item.self}}</text>
+      <view class="b-btn pri pay-btn" data-id="{{item.id}}" bindtap="onPay"><text>立即缴费</text></view>
+    </block>
+    <block wx:else>
+      <text class="b-st st-{{item.status}}">{{item.status === 'refund' ? '已退款，原路退回' : '已缴费'}}{{item.invoice ? ' · 已开票' : ''}}</text>
+      <view wx:if="{{item.canInvoice}}" class="b-btn inv-btn" data-id="{{item.id}}" bindtap="onInvoice"><text>{{item.invoice ? '查看发票' : '开具发票'}}</text></view>
+    </block>
+  </view>
+</view>
+<view wx:if="{{!list.length}}" class="empty-box">
+  <text class="empty-tx">{{tab === 'unpaid' ? '暂无待缴费用' : '暂无缴费记录'}}</text>
+  <text wx:if="{{tab === 'unpaid'}}" class="muted">就诊结束后医生开具的处方与检查会出现在这里</text>
+</view>
+<view style="height: 60rpx;"></view>
+<view wx:if="{{inv}}" class="mask" bindtap="closeInvoice"></view>
+<view wx:if="{{inv}}" class="sheet" catchtap="noop">
+  <view class="row between">
+    <text class="sec-title">开具电子发票</text>
+    <text class="price">¥{{inv.amount}}</text>
+  </view>
+  <text class="muted s-sub">{{inv.name}}</text>
+  <view class="f-row">
+    <text class="f-k">抬头类型</text>
+    <view class="row">
+      <text wx:for="{{invTypes}}" wx:key="*this" class="chip {{invType === index ? 'on' : ''}}" data-i="{{index}}" bindtap="onInvType">{{item}}</text>
+    </view>
+  </view>
+  <view class="f-row">
+    <text class="f-k">发票抬头</text>
+    <input class="f-in inv-title" value="{{invTitle}}" data-f="invTitle" bindinput="onInvField" placeholder="个人姓名或单位全称" placeholder-class="ph" maxlength="40" />
+  </view>
+  <view wx:if="{{invType === 1}}" class="f-row">
+    <text class="f-k">税号</text>
+    <input class="f-in inv-tax" value="{{invTax}}" data-f="invTax" bindinput="onInvField" placeholder="纳税人识别号" placeholder-class="ph" maxlength="20" />
+  </view>
+  <view class="f-row last">
+    <text class="f-k">接收邮箱</text>
+    <input class="f-in inv-email" value="{{invEmail}}" data-f="invEmail" bindinput="onInvField" placeholder="用于接收电子发票" placeholder-class="ph" maxlength="40" />
+  </view>
+  <view class="btn-primary inv-save" bindtap="saveInvoice"><text>提交开票</text></view>
+</view>

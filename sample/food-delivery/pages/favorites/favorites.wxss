@@ -1,0 +1,84 @@
+.head-tip {
+  margin: 20rpx 32rpx 0;
+}
+.shop {
+  align-items: flex-start;
+}
+.logo {
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: 20rpx;
+  font-size: 44rpx;
+  margin-right: 20rpx;
+  flex-shrink: 0;
+}
+.info {
+  padding-top: 2rpx;
+}
+.name {
+  display: block;
+  font-size: 30rpx;
+  font-weight: bold;
+  line-height: 42rpx;
+}
+.meta {
+  font-size: 22rpx;
+  color: #5c6370;
+  margin-top: 6rpx;
+}
+.star {
+  color: #ff8a00;
+  font-weight: bold;
+}
+.gap-l {
+  margin-left: 16rpx;
+}
+.meta2 {
+  font-size: 22rpx;
+  color: #8a8f99;
+  margin-top: 4rpx;
+}
+/* 与首页同一套：flex 换行，标签按内容宽排开。Skyline 没有 inline 布局，块级 view 里的 text 各占一整行 */
+.tags {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin-top: 10rpx;
+}
+.unfav {
+  height: 48rpx;
+  line-height: 46rpx;
+  padding: 0 18rpx;
+  margin-left: 12rpx;
+  border-radius: 24rpx;
+  border: 1rpx solid #d4d7dd;
+  color: #5c6370;
+  font-size: 22rpx;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.empty {
+  padding: 200rpx 80rpx 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.empty-heart {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 60rpx;
+  background: linear-gradient(135deg, #ffd36b, #ff8a00);
+  font-size: 44rpx;
+  margin-bottom: 28rpx;
+}
+.empty-btn {
+  margin-top: 40rpx;
+  width: 300rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  font-size: 28rpx;
+}
+.bottom-gap {
+  height: 48rpx;
+}

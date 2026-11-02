@@ -1,25 +1,32 @@
 const data = require('../../utils/data.js');
-
+const store = require('../../utils/store.js');
+const SLOT_TEXT = { '0': '约满', '-1': '停诊', '-2': '已过' };
 Page({
-  data: { doc: {}, deptName: '', days: [], dayIdx: 0, halves: [], slot: '', followed: false },
+  data: { doc: {}, deptName: '', days: [], dayIdx: 0, halves: [], slot: '', followed: false, today: false },
   onLoad(q) {
     const doc = data.findDoctor(q.id || 'd1') || data.doctors[0];
-    const days = data.nextDays(7).map(d => {
-      const s = data.slotsFor(doc, d.idx);
-      return Object.assign(d, { total: s.reduce((a, x) => a + Math.max(0, x.left), 0) });
-    });
-    const firstOpen = Math.max(0, days.findIndex(d => d.total > 0));
-    const follows = wx.getStorageSync('hs_follow') || [];
     this.doc = doc;
-    this.setData({ doc, deptName: data.findDept(doc.dept).name, days, followed: follows.indexOf(doc.id) >= 0 });
-    this.loadDay(firstOpen);
+    this.today = q.today === '1';
+    this.setData({ doc, deptName: data.findDept(doc.dept).name, followed: store.getFollows().indexOf(doc.id) >= 0, today: this.today });
     wx.setNavigationBarTitle({ title: doc.name + ' ' + doc.title });
   },
-  loadDay(i) {
-    const s = data.slotsFor(this.doc, i);
+  // 每次回到这页重算余号：挂完号返回、取消预约后再进来，号源都要对得上
+  onShow() {
+    const orders = store.getOrders();
+    const days = data.nextDays(this.today ? 1 : 7).map(d => {
+      const s = store.slotsFor(this.doc, d.idx, orders);
+      return Object.assign(d, { total: s.reduce((a, x) => a + Math.max(0, x.left), 0) });
+    });
+    const keep = this.data.days.length ? this.data.dayIdx : Math.max(0, days.findIndex(d => d.total > 0));
+    this.setData({ days });
+    this.loadDay(keep, this.data.slot);
+  },
+  loadDay(i, keepSlot) {
+    const s = store.slotsFor(this.doc, i).map(x => Object.assign(x, { text: x.left > 0 ? '余 ' + x.left : SLOT_TEXT[String(x.left)] }));
+    const still = keepSlot && s.some(x => x.time === keepSlot && x.left > 0);
     this.setData({
       dayIdx: i,
-      slot: '',
+      slot: still ? keepSlot : '',
       halves: [{ name: '上午', slots: s.filter(x => x.half === '上午') }, { name: '下午', slots: s.filter(x => x.half === '下午') }]
     });
   },
@@ -27,13 +34,13 @@ Page({
   pickSlot(e) {
     const { time, left } = e.currentTarget.dataset;
     if (left <= 0) {
-      wx.showToast({ title: left === 0 ? '该时段已约满' : '该时段停诊', icon: 'none' });
+      wx.showToast({ title: { '0': '该时段已约满', '-1': '该时段停诊', '-2': '该时段已结束' }[String(left)], icon: 'none' });
       return;
     }
     this.setData({ slot: time });
   },
   toggleFollow() {
-    let f = wx.getStorageSync('hs_follow') || [];
+    let f = store.getFollows();
     const on = !this.data.followed;
     f = on ? f.concat(this.doc.id) : f.filter(x => x !== this.doc.id);
     wx.setStorageSync('hs_follow', f);

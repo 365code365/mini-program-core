@@ -1,0 +1,184 @@
+# 光影电影票：每页能开 + 影院 tab → 影院页选场 → 选座 → 会员卡充值 → 余额支付 → 电子票 → 退票（钱、券原路退）
+#            + 微信支付（降级）→ 改签 → 写影评 → 我的影评编辑 / 删除 → 优惠券兑换 → 开通会员免服务费 → 我的菜单
+smoke pages/movie/movie?id=m1 pages/seat/seat?mid=m3&cid=c1&time=19:10 pages/cinema/cinema?id=c2 pages/order/order?id=TK-seed-1 pages/review/review?mid=m1&tid=TK-seed-1
+open
+shot target/_polish_shots/index.png
+tapn 2 .tab
+expect getCurrentPages()[0].data.tab === 'cinema'
+count 4 .cinema
+shot target/_polish_shots/index-cinemas.png
+tapn 0 .cinema
+route pages/cinema/cinema
+expect getCurrentPages().slice(-1)[0].data.c.id === 'c1'
+tapn 2 .pm
+expect getCurrentPages().slice(-1)[0].data.mid === 'm3'
+tapn 1 .day
+expect getCurrentPages().slice(-1)[0].data.day === 1
+shot target/_polish_shots/cinema.png
+tapn 0 .show
+route pages/seat/seat
+tapn 1 .rec-btn
+expect getCurrentPages().slice(-1)[0].data.selected.length === 2
+tap .bar .btn-primary
+route pages/confirm/confirm
+print JSON.stringify(getCurrentPages().slice(-1)[0].data.couponNames)
+expect getCurrentPages().slice(-1)[0].data.discount === 20
+expect getCurrentPages().slice(-1)[0].data.service === 6
+tapn 1 .pay-way
+expect getCurrentPages().slice(-1)[0].data.payBy === 'card'
+tap .pay
+toast 余额不足
+shot target/_polish_shots/confirm.png
+# 去会员卡充 100 送 15
+tap .pw-link
+route pages/card/card
+tap .btn-primary
+modal ok
+wait 300
+expect wx.getStorageSync('cinema_card').balance === 115
+toast 到账
+shot target/_polish_shots/card.png
+back
+route pages/confirm/confirm
+expect getCurrentPages().slice(-1)[0].data.balance === 115
+eval globalThis.__total = getCurrentPages().slice(-1)[0].data.total
+print __total
+tap .pay
+modal ok
+wait 900
+route pages/order/order
+expect wx.getStorageSync('cinema_card').balance === 115 - __total
+expect wx.getStorageSync('cinema_used_coupons').indexOf('q2') >= 0
+expect getCurrentPages().slice(-1)[0].data.t.status === 'unused'
+expect getCurrentPages().slice(-1)[0].data.t.payBy === 'card'
+expect getCurrentPages().slice(-1)[0].data.qr.length === 21
+shot target/_polish_shots/order.png
+# 退票：扣 ¥2/张，余额退回会员卡，券退回
+tapn 0 .bar-btn
+modal ok
+wait 300
+expect getCurrentPages().slice(-1)[0].data.t.status === 'refunded'
+expect wx.getStorageSync('cinema_card').balance === 115 - 4
+expect wx.getStorageSync('cinema_used_coupons').indexOf('q2') < 0
+shot target/_polish_shots/order-refunded.png
+# 第二张票：微信支付（宿主没有支付能力 → 页内确认框）→ 改签补差价 → 只能改一次
+open pages/cinema/cinema?id=c1&mid=m3
+tapn 1 .day
+tapn 0 .show
+route pages/seat/seat
+tapn 0 .rec-btn
+tap .bar .btn-primary
+route pages/confirm/confirm
+expect getCurrentPages().slice(-1)[0].data.discount === 10
+tap .pay
+modal ok
+wait 900
+route pages/order/order
+expect getCurrentPages().slice(-1)[0].data.t.payBy === 'wx'
+expect getCurrentPages().slice(-1)[0].data.t.time === '10:20'
+eval globalThis.__t0 = getCurrentPages().slice(-1)[0].data.t.total
+tapn 1 .bar-btn
+sheet 0 6
+modal ok
+wait 300
+expect getCurrentPages().slice(-1)[0].data.t.time === '12:45'
+expect getCurrentPages().slice(-1)[0].data.t.total === __t0 + 20
+expect !!getCurrentPages().slice(-1)[0].data.t.changed
+toast 改签成功
+shot target/_polish_shots/order-changed.png
+tapn 1 .bar-btn
+toast 只能改签一次
+# 我的票：分栏，看过的写影评
+eval wx.switchTab({ url: '/pages/tickets/tickets' })
+route pages/tickets/tickets
+expect getCurrentPages()[0].data.list.length === 2
+shot target/_polish_shots/tickets.png
+tapn 2 .tab
+expect getCurrentPages()[0].data.list.length === 1 && getCurrentPages()[0].data.list[0].id === 'TK-seed-1'
+tap .fold
+route pages/review/review
+tapn 3 .star
+expect getCurrentPages().slice(-1)[0].data.star === 4
+tap .btn-primary
+toast 至少 6 个字
+tapn 0 .tg
+tapn 2 .tg
+type .ta => 渡口那场戏拍得太好了，张译的眼神绝了
+expect getCurrentPages().slice(-1)[0].data.tags[0].on && getCurrentPages().slice(-1)[0].data.tags[2].on
+shot target/_polish_shots/review.png
+tap .btn-primary
+wait 900
+route pages/tickets/tickets
+expect wx.getStorageSync('cinema_reviews').length === 1
+expect wx.getStorageSync('cinema_reviews')[0].tid === 'TK-seed-1'
+expect getCurrentPages()[0].data.list[0].reviewed === true
+# 影片详情里排在最前面
+eval wx.navigateTo({ url: '/pages/movie/movie?id=m1' })
+route pages/movie/movie
+expect getCurrentPages().slice(-1)[0].data.myCount === 1 && getCurrentPages().slice(-1)[0].data.reviews[0].mine
+show .rv
+shot target/_polish_shots/movie-reviews.png
+back
+# 我的：影评数、看过数 → 我的影评 编辑 / 删除
+eval wx.switchTab({ url: '/pages/mine/mine' })
+route pages/mine/mine
+expect getCurrentPages()[0].data.reviewCount === 1
+expect getCurrentPages()[0].data.seen === 23
+shot target/_polish_shots/mine.png
+tapn 2 .stat
+route pages/reviews/reviews
+shot target/_polish_shots/reviews.png
+tapn 0 .op
+route pages/review/review
+expect getCurrentPages().slice(-1)[0].data.editing === true
+tapn 4 .star
+tap .btn-primary
+wait 900
+route pages/reviews/reviews
+expect wx.getStorageSync('cinema_reviews')[0].star === 5
+tapn 1 .op
+modal ok
+wait 300
+expect getCurrentPages().slice(-1)[0].data.list.length === 0
+back
+# 优惠券：兑换码领券，重复兑换报错
+tapn 1 .menu-item
+route pages/coupons/coupons
+expect getCurrentPages().slice(-1)[0].data.usable.length === 2
+type .r-input => gy2026
+tap .r-btn
+toast 影迷福利券
+expect getCurrentPages().slice(-1)[0].data.usable.length === 3
+type .r-input => GY2026
+tap .r-btn
+toast 已经用过了
+tapn 1 .tab
+expect getCurrentPages().slice(-1)[0].data.used.length === 1
+tapn 0 .tab
+shot target/_polish_shots/coupons.png
+back
+# 会员：开通后购票免服务费
+tapn 2 .menu-item
+route pages/card/card
+tap .open
+modal ok
+wait 300
+expect wx.getStorageSync('cinema_vip') === true
+back
+expect getCurrentPages()[0].data.vip === true
+# 观影偏好 → 选座推荐从后排找
+tapn 4 .menu-item
+sheet 2 5
+expect wx.getStorageSync('cinema_pref') === '2D · 后排'
+tapn 5 .menu-item
+modal?
+modal ok
+eval wx.navigateTo({ url: '/pages/cinema/cinema?id=c2&mid=m2' })
+tapn 2 .day
+tapn 0 .show
+route pages/seat/seat
+tapn 1 .rec-btn
+expect getCurrentPages().slice(-1)[0].data.selected[0].r === 8
+tap .bar .btn-primary
+expect getCurrentPages().slice(-1)[0].data.service === 0
+noerr

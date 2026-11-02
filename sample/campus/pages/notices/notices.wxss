@@ -1,0 +1,8 @@
+.nt-types { white-space: nowrap; background: #ffffff; padding: 16rpx 12rpx; }
+.nt-type { display: inline-block; padding: 10rpx 26rpx; margin: 0 8rpx; border-radius: 30rpx; background: #f3f6f5; font-size: 26rpx; color: #5c6370; }
+.nt-type.on { background: #14937f; color: #ffffff; }
+.nt-bar { padding: 20rpx 28rpx 0; }
+.nt-op { color: #14937f; font-size: 24rpx; margin-left: 28rpx; }
+.nt-item { display: flex; flex-direction: column; }
+.nt-t { font-size: 30rpx; line-height: 1.5; margin: 14rpx 0 10rpx; }
+.nt-dot { width: 14rpx; height: 14rpx; border-radius: 7rpx; background: #f53f3f; }

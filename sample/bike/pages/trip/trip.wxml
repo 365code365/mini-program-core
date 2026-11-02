@@ -1,0 +1,46 @@
+<view class="empty" wx:if="{{!trip}}">
+  <image class="empty-ic" src="/images/ic-trip.png"></image>
+  <text>行程不存在或已被清理</text>
+  <view class="btn empty-btn" bindtap="goHome">返回首页</view>
+</view>
+<view class="wrap" wx:else>
+  <map id="tripMap" class="map" latitude="{{center.latitude}}" longitude="{{center.longitude}}" scale="14"
+       markers="{{markers}}" polyline="{{polyline}}"></map>
+  <view class="card top">
+    <view class="row between">
+      <view class="row">
+        <text class="sec-title">{{v.name}}</text>
+        <text class="tag {{trip.type === 'ebike' ? 'tag-ebike' : 'tag-bike'}} tg">{{trip.no}}</text>
+      </view>
+      <text class="price">¥{{v.paid}}</text>
+    </view>
+    <view class="stats">
+      <view class="st"><text class="sv">{{v.dur}}</text><text class="sk">时长</text></view>
+      <view class="st"><text class="sv">{{v.km}}</text><text class="sk">里程（公里）</text></view>
+      <view class="st"><text class="sv">{{v.speed}}</text><text class="sk">均速（km/h）</text></view>
+      <view class="st"><text class="sv">{{v.carbon}}</text><text class="sk">减碳（kg）</text></view>
+    </view>
+  </view>
+  <view class="card">
+    <view class="tl">
+      <view class="tl-dot tl-a"></view>
+      <view class="tl-body"><text class="tl-place">{{trip.from}}</text><text class="muted">{{v.begin}} 开锁</text></view>
+    </view>
+    <view class="tl">
+      <view class="tl-dot tl-b"></view>
+      <view class="tl-body"><text class="tl-place">{{trip.to}}</text><text class="muted">{{v.end}} 还车</text></view>
+    </view>
+  </view>
+  <view class="card">
+    <text class="sec-title">费用明细</text>
+    <view class="kv"><text class="kv-k">起步价</text><text class="kv-v">¥{{v.start}}</text></view>
+    <view class="kv"><text class="kv-k">超时费</text><text class="kv-v">¥{{v.extra}}</text></view>
+    <view class="kv" wx:if="{{trip.discount > 0}}"><text class="kv-k">骑行卡抵扣</text><text class="kv-v green">-¥{{v.discount}}</text></view>
+    <view class="kv"><text class="kv-k">支付方式</text><text class="kv-v">{{v.payBy}}</text></view>
+    <view class="kv"><text class="kv-k">支付时间</text><text class="kv-v">{{v.paidAt}}</text></view>
+  </view>
+  <view class="ops">
+    <view class="btn-ghost op" bindtap="onFault">车辆故障上报</view>
+    <view class="btn-ghost op" bindtap="onService">费用有疑问</view>
+  </view>
+</view>

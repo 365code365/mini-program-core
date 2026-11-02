@@ -43,6 +43,7 @@ Page({
     }
     list.push(card)
     S.save(list)
+    S.log('create', card, '新建了卡片（' + S.COLS[f.col].name + '）')
     wx.showToast({ title: '已创建', icon: 'success' })
     wx.navigateBack()
   }

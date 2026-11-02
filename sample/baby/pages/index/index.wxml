@@ -1,0 +1,96 @@
+<view class="page tab-page">
+  <!-- 宝宝卡片 -->
+  <view class="baby" hover-class="btn-hover" bindtap="goProfile">
+    <image class="avatar" src="{{baby.avatar}}" mode="aspectFill"></image>
+    <view class="col flex1">
+      <view class="row">
+        <text class="baby-name">{{baby.name}}</text>
+        <text class="sex {{baby.sex === 'girl' ? 'sex-girl' : ''}}">{{baby.sex === 'girl' ? '女宝' : '男宝'}}</text>
+      </view>
+      <text class="baby-age">{{age.label}} · 出生第 {{age.days + 1}} 天</text>
+      <text class="baby-birth">生日 {{baby.birthday}}</text>
+    </view>
+    <text class="edit">资料 ›</text>
+  </view>
+
+  <view wx:if="{{running}}" class="running" hover-class="btn-hover" bindtap="goRunning">
+    <view class="dot"></view>
+    <text class="flex1">{{running}}</text>
+    <text>去查看 ›</text>
+  </view>
+
+  <!-- 今日汇总 -->
+  <view class="card">
+    <view class="between"><text class="sec-title">今日汇总</text><text class="muted">{{timeline.length}} 条记录</text></view>
+    <view class="sum">
+      <view class="sum-cell">
+        <view class="row sum-num"><text class="num">{{sum.feedCount}}</text><text class="unit">次</text></view>
+        <text class="sum-label">喂奶</text>
+      </view>
+      <view class="sum-cell">
+        <view class="row sum-num"><text class="num">{{sum.ml}}</text><text class="unit">ml</text></view>
+        <text class="sum-label">奶粉</text>
+      </view>
+      <view class="sum-cell">
+        <view class="row sum-num"><text class="num">{{sum.breastMin}}</text><text class="unit">分钟</text></view>
+        <text class="sum-label">母乳</text>
+      </view>
+      <view class="sum-cell">
+        <view class="row sum-num"><text class="num">{{sum.sleep}}</text><text class="unit">小时</text></view>
+        <text class="sum-label">睡眠</text>
+      </view>
+      <view class="sum-cell">
+        <view class="row sum-num"><text class="num">{{sum.diaper}}</text><text class="unit">次</text></view>
+        <text class="sum-label">尿布</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 快捷记录 -->
+  <view class="card">
+    <text class="sec-title">快捷记录</text>
+    <view class="wrap quick">
+      <view class="q" wx:for="{{quick}}" wx:key="key" data-key="{{item.key}}" bindtap="onQuick" hover-class="btn-hover">
+        <image class="q-ic" src="{{item.icon}}"></image>
+        <text class="q-tx">{{item.text}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 下一针 -->
+  <view wx:if="{{nextVac}}" class="card vac" hover-class="item-hover" bindtap="goVaccine">
+    <image class="vac-ic" src="/images/quick/vaccine.png"></image>
+    <view class="col flex1">
+      <text class="vac-title">下一针：{{nextVac.name}}</text>
+      <text class="muted">建议接种日 {{nextVac.date}}</text>
+    </view>
+    <text class="vac-left {{nextVac.overdue ? 'over' : ''}}">{{nextVac.overdue ? '已逾期 ' + nextVac.leftAbs + ' 天' : (nextVac.left === 0 ? '今天' : nextVac.left + ' 天后')}}</text>
+  </view>
+
+  <!-- 今日时间轴 -->
+  <view class="card">
+    <view class="between"><text class="sec-title">今天的记录</text><text class="muted">点一条可删除</text></view>
+    <view wx:if="{{!timeline.length}}" class="empty">
+      <image class="empty-ic" src="/images/quick/heart.png"></image>
+      <text class="empty-text">今天还没有记录，点上面的快捷记录开始吧</text>
+    </view>
+    <view wx:for="{{timeline}}" wx:key="id" class="tl" hover-class="item-hover" data-id="{{item.id}}" data-key="{{item.key}}" data-title="{{item.title}}" bindtap="onItem">
+      <text class="tl-time">{{item.time}}</text>
+      <view class="tl-dot tl-{{item.kind}}"></view>
+      <view class="col flex1">
+        <text class="tl-title">{{item.title}}</text>
+        <text class="muted">{{item.desc}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 推荐知识 -->
+  <view wx:if="{{article}}" class="card art" hover-class="item-hover" bindtap="goArticle">
+    <view class="col flex1">
+      <text class="muted">{{age.months}} 个月宝宝推荐阅读</text>
+      <text class="art-title">{{article.title}}</text>
+      <text class="muted">{{article.summary}}</text>
+    </view>
+    <image class="art-cover" src="{{article.cover}}" mode="aspectFill"></image>
+  </view>
+</view>

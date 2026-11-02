@@ -1,0 +1,19 @@
+.tip { margin: 20rpx 24rpx 0; padding: 18rpx 22rpx; background: #fff7e6; border-radius: 14rpx; }
+.tip-t { font-size: 22rpx; color: #b8741a; line-height: 34rpx; }
+.list { padding-top: 8rpx; padding-bottom: 8rpx; }
+.vw { padding: 20rpx 0; border-bottom: 1rpx solid #f0f0f3; }
+.vw-n { font-size: 28rpx; }
+.ck { width: 40rpx; height: 40rpx; border-radius: 20rpx; border: 2rpx solid #c6c7cc; margin-right: 20rpx; display: flex; align-items: center; justify-content: center; }
+.ck-on { background: #ff3b5c; border-color: #ff3b5c; }
+.ck-t { color: #ffffff; font-size: 24rpx; }
+.del { color: #8a8d96; font-size: 24rpx; padding: 10rpx 0 10rpx 20rpx; }
+.field { margin-top: 16rpx; height: 80rpx; border-bottom: 1rpx solid #ececf0; }
+.f-l { width: 150rpx; font-size: 26rpx; color: #5a5d66; flex-shrink: 0; }
+.f-in { flex: 1; font-size: 28rpx; height: 80rpx; }
+.f-v { font-size: 28rpx; }
+.err { color: #e5352b; font-size: 22rpx; margin-top: 8rpx; }
+.form-btns { margin-top: 32rpx; }
+.save { margin-left: 20rpx; }
+.add { margin: 24rpx; height: 88rpx; border: 2rpx dashed #ff3b5c; border-radius: 16rpx; display: flex; align-items: center; justify-content: center; background: #ffffff; }
+.add-t { color: #ff3b5c; font-size: 28rpx; }
+.done { width: 200rpx; }

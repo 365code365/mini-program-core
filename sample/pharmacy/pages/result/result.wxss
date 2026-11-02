@@ -1,0 +1,15 @@
+.top { background: #12a37f; display: flex; flex-direction: column; align-items: center; padding: 56rpx 0 64rpx; }
+.t { color: #ffffff; font-size: 36rpx; font-weight: bold; margin-top: 20rpx; }
+.pay { color: #ffffff; font-size: 56rpx; font-weight: bold; margin-top: 10rpx; }
+.s { color: #d9f5ec; font-size: 24rpx; margin-top: 8rpx; }
+.kv { display: flex; flex-direction: row; padding: 10rpx 0; }
+.k { width: 110rpx; color: #8a9692; font-size: 26rpx; flex-shrink: 0; }
+.v { flex: 1; font-size: 26rpx; }
+.tip { display: block; margin-top: 12rpx; }
+.h { display: block; font-size: 28rpx; font-weight: bold; margin-bottom: 8rpx; }
+.md { display: flex; flex-direction: row; align-items: center; justify-content: space-between; padding: 14rpx 0; border-bottom: 1rpx solid #eef2f1; }
+.md-n { font-size: 26rpx; flex: 1; }
+.md-b { font-size: 24rpx; color: #12a37f; border: 2rpx solid #12a37f; border-radius: 26rpx; padding: 4rpx 20rpx; }
+.ops { display: flex; flex-direction: row; padding: 40rpx 14rpx; }
+.op { flex: 1; margin: 0 10rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }
+.btn-o.op { line-height: 76rpx; }

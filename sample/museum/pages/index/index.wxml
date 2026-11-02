@@ -1,0 +1,64 @@
+<view class="nav" style="height: {{navH}}px; background: rgba(246, 242, 236, {{navAlpha}}); box-shadow: 0 2rpx 0 rgba(0, 0, 0, {{navAlpha * 0.06}});">
+  <view class="nav-title" style="top: {{menuTop}}px; height: {{menuH}}px; line-height: {{menuH}}px; right: {{titleRight}}px; color: {{navDark ? '#2b2622' : '#ffffff'}};">云川博物院</view>
+</view>
+
+<view class="hero">
+  <image class="hero-img" src="/images/hero.jpg" mode="aspectFill"></image>
+  <view class="hero-mask"></view>
+  <view class="hero-tx">
+    <text class="hero-en">YUNCHUAN MUSEUM</text>
+    <text class="hero-cn">藏万年云川 · 见千载文明</text>
+  </view>
+</view>
+
+<view class="today">
+  <view class="today-l">
+    <view class="today-row">
+      <view class="dot {{state.open ? 'dot-on' : ''}}"></view>
+      <text class="today-st">{{state.text}}</text>
+    </view>
+    <text class="muted">{{state.tip}}</text>
+    <text class="today-left" bindtap="goTickets">{{leftText}} · 待使用 {{booked}} 张 ›</text>
+  </view>
+  <view class="today-btn" bindtap="goBook">预约参观</view>
+</view>
+
+<view class="entries">
+  <view class="entry" wx:for="{{entries}}" wx:key="k" data-k="{{item.k}}" bindtap="onEntry" hover-class="entry-on">
+    <view class="entry-ic">{{item.c}}</view>
+    <text class="entry-t">{{item.t}}</text>
+    <text class="entry-s">{{item.s}}</text>
+  </view>
+</view>
+
+<view class="sec-h"><text class="sec-t">展览推荐</text><text class="sec-more">{{cur + 1}} / {{expos.length}}</text></view>
+<swiper class="expo-sw" previous-margin="56rpx" next-margin="56rpx" circular bindchange="onSwiper" current="{{cur}}">
+  <swiper-item wx:for="{{expos}}" wx:key="id">
+    <view class="expo {{cur === index ? 'expo-cur' : ''}}" data-id="{{item.id}}" bindtap="openExpo">
+      <image class="expo-img" src="{{item.cover}}" mode="aspectFill"></image>
+      <view class="expo-info">
+        <text class="expo-st {{item.status === '展出中' ? 'st-on' : ''}}">{{item.status}}</text>
+        <text class="expo-t">{{item.title}}</text>
+        <text class="expo-s">{{item.sub}} · {{item.place}}</text>
+        <text class="expo-d">{{item.start}} 至 {{item.end}}</text>
+      </view>
+    </view>
+  </swiper-item>
+</swiper>
+
+<view class="sec-h"><text class="sec-t">镇馆之宝</text><text class="sec-more" bindtap="onEntry" data-k="hall">全部展厅 ›</text></view>
+<view class="treasures">
+  <view class="tr" wx:for="{{treasures}}" wx:key="id" data-id="{{item.id}}" bindtap="openExhibit">
+    <image class="tr-img" src="{{item.img}}" mode="aspectFill"></image>
+    <text class="tr-n">{{item.name}}</text>
+    <text class="tr-e">{{item.era}} · {{item.hallName}}</text>
+  </view>
+</view>
+
+<view class="sec-h"><text class="sec-t">参观须知</text></view>
+<view class="card notice">
+  <view class="nt" wx:for="{{notice}}" wx:key="*this">
+    <text class="nt-i">{{index + 1}}</text><text class="nt-t">{{item}}</text>
+  </view>
+</view>
+<view class="tab-gap"></view>

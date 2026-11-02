@@ -47,8 +47,18 @@ Page({
   },
   onHome() { wx.switchTab({ url: '/pages/index/index' }); },
   onShare() {
-    wx.showActionSheet({ itemList: ['发送给微信好友', '生成分享海报', '复制问卷链接'], success: (r) => {
-      wx.showToast({ title: ['已唤起分享', '海报已保存到相册', '链接已复制'][r.tapIndex], icon: 'none' });
+    const sv = this.data.sv;
+    wx.showActionSheet({ itemList: ['生成分享海报', '复制邀请文字', '转发给微信好友'], success: (r) => {
+      if (r.tapIndex === 0) wx.navigateTo({ url: '/pages/poster/poster?id=' + sv.id });
+      else if (r.tapIndex === 1) wx.setClipboardData({ data: '【问卷星球】' + sv.title + ' 微信搜索「问卷星球」，输入编号 ' + sv.id.toUpperCase() + ' 参与' });
+      else {
+        // 转发只能由用户点右上角菜单 / open-type="share" 按钮触发：打开菜单并提示
+        wx.showShareMenu({ withShareTicket: true, menus: ['shareAppMessage', 'shareTimeline'] });
+        wx.showModal({ title: '转发给好友', content: '点右上角「···」选择「发送给朋友」，或到分享海报页点「转发给好友」', showCancel: false, confirmColor: '#6C5CE7' });
+      }
     } });
+  },
+  onShareAppMessage() {
+    return { title: this.data.sv.title, path: '/pages/intro/intro?id=' + this.data.sv.id };
   }
 });

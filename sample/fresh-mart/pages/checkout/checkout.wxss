@@ -1,0 +1,278 @@
+.addr {
+  min-height: 120rpx;
+}
+
+.a-dot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 8rpx;
+  background: #12b76a;
+  margin-right: 20rpx;
+  flex-shrink: 0;
+}
+
+.a-tag {
+  font-size: 20rpx;
+  line-height: 32rpx;
+  padding: 0 10rpx;
+  margin-right: 10rpx;
+  border-radius: 6rpx;
+  background: #e6f8ee;
+  color: #12b76a;
+  flex-shrink: 0;
+}
+
+.a-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 30rpx;
+  font-weight: bold;
+  line-height: 42rpx;
+}
+
+.a-who {
+  display: block;
+  margin-top: 6rpx;
+}
+
+.a-warn {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #ff4d2d;
+}
+
+.a-empty {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #ff5a1f;
+}
+
+.slot-card {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.slot-row {
+  height: 96rpx;
+  font-size: 28rpx;
+}
+
+.slot-v {
+  color: #12b76a;
+  font-weight: bold;
+}
+
+.g-row {
+  margin-top: 24rpx;
+}
+
+.g-img {
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: 12rpx;
+  margin-right: 18rpx;
+  flex-shrink: 0;
+}
+
+.g-name {
+  display: block;
+  font-size: 28rpx;
+  line-height: 40rpx;
+}
+
+.flash-tag {
+  font-size: 20rpx;
+  line-height: 30rpx;
+  padding: 0 10rpx;
+  margin-left: 12rpx;
+  border-radius: 6rpx;
+  background: #fff1ea;
+  color: #ff5a1f;
+}
+
+.g-total {
+  margin-left: 16rpx;
+  font-size: 28rpx;
+  font-weight: bold;
+}
+
+.fees {
+  padding-top: 4rpx;
+  padding-bottom: 4rpx;
+}
+
+.fee-row {
+  min-height: 92rpx;
+  font-size: 28rpx;
+  border-bottom: 1rpx solid #f3f4f6;
+}
+
+.no-border {
+  border-bottom: 0;
+}
+
+.badge {
+  width: 34rpx;
+  height: 34rpx;
+  line-height: 34rpx;
+  border-radius: 8rpx;
+  background: #ff5a1f;
+  color: #ffffff;
+  font-size: 20rpx;
+  text-align: center;
+  margin-right: 12rpx;
+}
+
+.cut {
+  color: #ff5a1f;
+  font-weight: bold;
+}
+
+.remark {
+  flex: 1;
+  margin-left: 40rpx;
+  text-align: right;
+  font-size: 26rpx;
+  height: 60rpx;
+}
+
+.ph {
+  color: #b0b4bc;
+}
+
+.pay-way {
+  height: 100rpx;
+  border-bottom: 1rpx solid #f3f4f6;
+  font-size: 28rpx;
+}
+
+.way-icon {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 12rpx;
+  font-size: 24rpx;
+  color: #ffffff;
+  margin-right: 20rpx;
+}
+
+.way-wx {
+  background: #22b35e;
+}
+
+.way-wallet {
+  background: linear-gradient(135deg, #ffb64d, #ff8a00);
+}
+
+.way-name {
+  display: block;
+  line-height: 38rpx;
+}
+
+.way-sub {
+  display: block;
+  font-size: 22rpx;
+  color: #8a8f99;
+  line-height: 30rpx;
+}
+
+.way-low {
+  color: #ff4d2d;
+}
+
+.radio {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 20rpx;
+  border: 2rpx solid #c8ccd4;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.radio-on {
+  border-color: #12b76a;
+  background: #12b76a;
+}
+
+.radio-in {
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 7rpx;
+  background: #ffffff;
+}
+
+.bottom-gap {
+  height: 160rpx;
+}
+
+.pay-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 112rpx;
+  padding: 0 24rpx env(safe-area-inset-bottom) 32rpx;
+  background: #ffffff;
+  box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.06);
+}
+
+.pay-left {
+  align-items: flex-end;
+}
+
+.pay-label {
+  font-size: 26rpx;
+  padding-bottom: 6rpx;
+  margin-right: 6rpx;
+}
+
+.pay-sym {
+  font-size: 26rpx;
+  color: #ff5a1f;
+  font-weight: bold;
+  padding-bottom: 6rpx;
+}
+
+.pay-num {
+  font-size: 42rpx;
+  line-height: 1.2;
+  color: #ff5a1f;
+  font-weight: bold;
+}
+
+.pay-off {
+  font-size: 22rpx;
+  color: #8a8f99;
+  margin-left: 12rpx;
+  padding-bottom: 8rpx;
+}
+
+.submit {
+  width: 240rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  border-radius: 40rpx;
+  text-align: center;
+  background: linear-gradient(90deg, #3ddc84, #12b76a);
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 240rpx;
+}
+
+.empty-btn {
+  margin-top: 28rpx;
+  width: 240rpx;
+  height: 72rpx;
+  line-height: 72rpx;
+  font-size: 26rpx;
+}

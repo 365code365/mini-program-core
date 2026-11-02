@@ -14,6 +14,15 @@ fn wrap(head: &str, key: &str, source: &str) -> String {
     format!("{head}({key:?}, function(module, exports, require) {{{source}\n}});")
 }
 
+/// 源码里认得出的 `xx.函数名` 别名先装上（js/api_alias.rs）。单独一次 eval、不拼进包装：
+/// 字节码缓存的键（= 包装后的源码，precompile_package 要对得上）不变
+pub(crate) fn guess_alias(app: &MiniApp, source: &str) {
+    if let Some(s) = crate::js::api_alias::guess_script([source]) {
+        if let Err(e) = app.eval(&s) {
+            eprintln!("⚠ [API 别名] 按函数名认别名失败：{e}");
+        }
+    }
+}
 /// 一个注册失败的模块（语法错误之类）：不中断其余模块，交给调用方上报
 pub struct ModuleError {
     pub key: String,
@@ -37,6 +46,7 @@ pub fn register_modules(app: &MiniApp, root: &Path) -> (usize, usize, Vec<Module
                 continue;
             }
         };
+        guess_alias(app, &source);
         let (r, hit) = app.eval_cached(&wrap("__defineModule", &key, &source));
         match r {
             Ok(_) => {
@@ -85,6 +95,7 @@ fn collect(root: &Path, dir: &Path, out: &mut Vec<(String, std::path::PathBuf)>)
 
 /// 以模块作用域执行一段源码（`game.js`、分包入口）。不缓存：与 `__runAsModule` 同语义
 pub fn run_module(app: &MiniApp, key: &str, source: &str) -> Result<(), String> {
+    guess_alias(app, source);
     app.eval_cached(&wrap("__runAsModule", key, source)).0.map(|_| ())
 }
 

@@ -1,0 +1,48 @@
+<view class="tabs row">
+  <view class="tb {{tab === 'todo' ? 'on' : ''}}" data-t="todo" bindtap="onTab"><text>可开票（{{todoCount}}）</text></view>
+  <view class="tb {{tab === 'done' ? 'on' : ''}}" data-t="done" bindtap="onTab"><text>已开票（{{doneCount}}）</text></view>
+</view>
+<view wx:if="{{!list.length}}" class="empty"><text>{{tab === 'todo' ? '所有缴费都已开票' : '还没有开过票'}}</text></view>
+<view class="card list" wx:if="{{list.length}}">
+  <view wx:for="{{list}}" wx:key="id" class="it row" data-id="{{item.id}}" bindtap="onItem">
+    <view class="ic it-ic" style="background: {{item.bg}};"><text>{{item.ch}}</text></view>
+    <view class="it-main">
+      <text class="it-t">{{item.title}} · ¥{{item.paidTx}}</text>
+      <text class="muted">{{item.targetTx}} · {{item.time}}</text>
+    </view>
+    <text class="it-op {{item.invoice ? 'it-done' : ''}}">{{item.invoice ? '查看' : '开票'}}</text>
+  </view>
+</view>
+<text class="foot-tip">电子票据与纸质发票具有同等法律效力，可用于报销</text>
+
+<view wx:if="{{panel}}" class="mask" bindtap="close"></view>
+<view wx:if="{{panel === 'apply'}}" class="sheet" catchtap="noop">
+  <view class="sh-t"><text>申请电子票据</text></view>
+  <view class="sh-sub muted"><text>{{cur.title}} · ¥{{cur.paidTx}} · {{cur.time}}</text></view>
+  <view class="fi row">
+    <text class="fl">抬头类型</text>
+    <view class="kd {{kind === 'person' ? 'on' : ''}}" data-k="person" bindtap="onKind"><text>个人</text></view>
+    <view class="kd {{kind === 'company' ? 'on' : ''}}" data-k="company" bindtap="onKind"><text>企业</text></view>
+  </view>
+  <view class="fi row"><text class="fl">发票抬头</text><input id="t{{formSeq}}" class="fin in-title" value="{{title}}" placeholder="{{kind === 'company' ? '公司全称' : '个人姓名'}}" bindinput="onTitle" /></view>
+  <view wx:if="{{kind === 'company'}}" class="fi row"><text class="fl">税号</text><input id="x{{formSeq}}" class="fin in-tax" value="{{taxNo}}" maxlength="20" placeholder="纳税人识别号" bindinput="onTax" /></view>
+  <view class="fi row"><text class="fl">接收邮箱</text><input id="m{{formSeq}}" class="fin in-mail" value="{{email}}" placeholder="开好后发到这个邮箱" bindinput="onEmail" /></view>
+  <view class="btn-primary sh-btn" bindtap="submit"><text>提交开票</text></view>
+</view>
+<view wx:if="{{panel === 'view'}}" class="sheet" catchtap="noop">
+  <view class="paper">
+    <view class="p-head"><text>电子发票（普通发票）</text></view>
+    <view class="kv row between"><text class="k">发票号码</text><text class="v">{{cur.invoice.no}}</text></view>
+    <view class="kv row between"><text class="k">开票日期</text><text class="v">{{cur.invoice.at}}</text></view>
+    <view class="kv row between"><text class="k">购买方</text><text class="v">{{cur.invoice.title}}</text></view>
+    <view wx:if="{{cur.invoice.taxNo}}" class="kv row between"><text class="k">税号</text><text class="v">{{cur.invoice.taxNo}}</text></view>
+    <view class="kv row between"><text class="k">项目</text><text class="v">{{cur.title}}</text></view>
+    <view class="kv row between"><text class="k">销售方</text><text class="v">{{cur.seller}}</text></view>
+    <view class="kv row between p-sum"><text class="k">价税合计</text><text class="v">¥{{cur.paidTx}}</text></view>
+  </view>
+  <view class="muted sent"><text>已发送至 {{cur.invoice.email}}（{{cur.invoice.sent}} 次）</text></view>
+  <view class="row sh-btns">
+    <view class="ghost-btn" bindtap="resend"><text>重新发送</text></view>
+    <view class="btn-primary sh-ok" bindtap="copyLink"><text>复制下载链接</text></view>
+  </view>
+</view>

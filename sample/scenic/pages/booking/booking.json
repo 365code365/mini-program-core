@@ -1,0 +1,4 @@
+{
+  "navigationBarTitleText": "预订门票",
+  "usingComponents": { "stepper": "/components/stepper/stepper" }
+}

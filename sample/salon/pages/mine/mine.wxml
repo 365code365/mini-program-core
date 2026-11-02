@@ -1,0 +1,41 @@
+<view class="mi-head">
+  <image class="mi-av" src="/images/avatar/me.jpg" mode="aspectFill"></image>
+  <view class="flex1 mi-info">
+    <text class="mi-name">{{profile.name || '型格会员'}}</text>
+    <text class="mi-sub">{{profile.phone || '预约后自动记住到店人信息'}}</text>
+  </view>
+  <view class="mi-lv" bindtap="goMember">{{lv.cur.name}} ›</view>
+</view>
+<view class="card mi-assets" bindtap="goMember">
+  <view class="mi-ai"><text class="mi-num">¥{{m.balance}}</text><text class="muted">储值余额</text></view>
+  <view class="mi-ai"><text class="mi-num">{{m.points}}</text><text class="muted">积分</text></view>
+  <view class="mi-ai"><text class="mi-num">{{lv.percent}}%</text><text class="muted">升级进度</text></view>
+</view>
+<view class="card" wx:if="{{next}}" bindtap="goAppts">
+  <view class="sec-head"><text class="sec-title">即将到店</text><text class="sec-more">核销码 {{next.code}}</text></view>
+  <text>{{next.dateText}} {{next.time}} · {{next.serviceName}} · {{next.stylistName}}</text>
+</view>
+<view class="card">
+  <view class="sec-head" bindtap="goAppts"><text class="sec-title">我的预约</text><view class="row"><text class="sec-more">全部</text><view class="chev"></view></view></view>
+  <view class="row">
+    <view class="mi-ai" bindtap="goAppts"><text class="mi-num">{{counts.upcoming}}</text><text class="muted">待到店</text></view>
+    <view class="mi-ai" bindtap="goAppts"><text class="mi-num">{{counts.review}}</text><text class="muted">待评价</text></view>
+    <view class="mi-ai" bindtap="goAppts"><text class="mi-num">{{counts.done}}</text><text class="muted">已完成</text></view>
+  </view>
+</view>
+<view class="card">
+  <view class="sec-head"><text class="sec-title">收藏的发型师</text></view>
+  <scroll-view scroll-x class="mi-favs" wx:if="{{favs.length}}">
+    <view class="mi-fav" wx:for="{{favs}}" wx:key="id" data-id="{{item.id}}" bindtap="goStylist">
+      <image class="mi-fav-av" src="{{item.avatar}}" mode="aspectFill"></image>
+      <text class="mi-fav-n">{{item.name}}</text>
+    </view>
+  </scroll-view>
+  <view wx:else class="row between"><text class="muted">还没有收藏，去发型师主页点「收藏」</text><text class="mi-link" bindtap="goStylists">去看看</text></view>
+</view>
+<view class="card mi-menu">
+  <view class="mi-cell" bindtap="call"><text>门店电话</text><view class="row"><text class="muted">{{shop.phone}}</text><view class="chev"></view></view></view>
+  <view class="mi-cell" bindtap="nav"><text>到店导航</text><view class="row"><text class="muted mi-addr">{{shop.address}}</text><view class="chev"></view></view></view>
+  <view class="mi-cell" bindtap="editName"><text>隐私与数据</text><view class="chev"></view></view>
+</view>
+<view class="tab-gap"></view>

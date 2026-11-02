@@ -1,0 +1,50 @@
+<view class="wrap">
+  <view class="card car" wx:for="{{cars}}" wx:key="id">
+    <view class="row" data-id="{{item.id}}" bindtap="edit">
+      <image class="img" src="{{item.img}}" mode="aspectFit"></image>
+      <view class="col flex1 info">
+        <view class="row">
+          <text class="nm">{{item.name}}</text>
+          <text class="tag" wx:if="{{item.isDefault}}">默认</text>
+        </view>
+        <text class="sub">{{item.year}}</text>
+        <text class="plate">{{item.plateText}}</text>
+      </view>
+    </view>
+    <view class="row meta">
+      <view class="col flex1">
+        <text class="mv">{{item.mileage}} km</text>
+        <text class="sub">当前里程</text>
+      </view>
+      <view class="col flex1">
+        <text class="mv {{item.due ? 'red' : ''}}">{{item.nextDate}}</text>
+        <text class="sub">下次保养</text>
+      </view>
+      <view class="col flex1">
+        <text class="mv">{{item.buyDate}}</text>
+        <text class="sub">购车日期</text>
+      </view>
+    </view>
+    <view class="row ops">
+      <text class="sub vin">VIN {{item.vin || '未登记'}}</text>
+      <view class="btn-gray" wx:if="{{!item.isDefault}}" data-id="{{item.id}}" bindtap="setDefault">设为默认</view>
+      <view class="btn-gray op" data-id="{{item.id}}" bindtap="more">更多</view>
+    </view>
+  </view>
+  <view class="empty" wx:if="{{!cars.length}}">
+    <text class="empty-tx">还没有添加爱车</text>
+  </view>
+  <view class="btn" bindtap="add">+ 添加爱车</view>
+</view>
+
+<view class="mask" wx:if="{{editing}}" bindtap="closeKm"></view>
+<view class="dialog" wx:if="{{editing}}">
+  <text class="title">更新当前里程</text>
+  <text class="sub d-sub">{{editing.plateText}} · 上次记录 {{editing.mileage}} km</text>
+  <input class="ipt" type="number" value="{{km}}" focus maxlength="6" bindinput="onKm" placeholder="请输入仪表盘总里程" />
+  <text class="err" wx:if="{{kmErr}}">{{kmErr}}</text>
+  <view class="row d-ops">
+    <view class="btn-gray flex1 d-btn" bindtap="closeKm">取消</view>
+    <view class="btn flex1 d-btn d-ok" bindtap="saveKm">保存</view>
+  </view>
+</view>

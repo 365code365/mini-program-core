@@ -1,0 +1,38 @@
+<view class="hd">
+  <image class="av" src="/images/avatar.jpg" mode="aspectFill"></image>
+  <view wx:if="{{!editing}}" class="hd-b" bindtap="editNick">
+    <text class="nm">{{profile.nick}} ✎</text>
+    <text class="lv">{{profile.level}} · 每单满 99 减 10</text>
+  </view>
+  <view wx:else class="hd-e">
+    <input class="nk" value="{{nickInput}}" bindinput="onNick" maxlength="12" focus/>
+    <text class="nk-b" bindtap="saveNick">保存</text><text class="nk-c" bindtap="cancelNick">取消</text>
+  </view>
+</view>
+
+<view class="card ord">
+  <view class="ord-h" bindtap="goOrders"><text class="h0">我的订单</text><text class="muted">全部 {{counts.all}} ›</text></view>
+  <view class="ord-r">
+    <view class="oi" data-s="待发货" bindtap="goOrders"><text class="oi-n">{{counts.w}}</text><text class="oi-t">待发货</text></view>
+    <view class="oi" data-s="配送中" bindtap="goOrders"><text class="oi-n">{{counts.s}}</text><text class="oi-t">配送中</text></view>
+    <view class="oi" data-s="已完成" bindtap="goOrders"><text class="oi-n">{{counts.d}}</text><text class="oi-t">已完成</text></view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="ord-h" bindtap="goRx"><text class="h0">处方记录</text><text class="muted">上传 / 问诊 ›</text></view>
+  <text wx:if="{{!rx.length}}" class="muted">还没有处方记录，购买处方药时需先审方</text>
+  <view wx:for="{{rx}}" wx:key="no" class="rx-r">
+    <view class="rx-b"><text class="rx-n">{{item.no}} · {{item.method}}</text><text class="muted">{{item.date}} · {{item.patient}}</text></view>
+    <text class="rx-s {{item.valid ? 'ok' : ''}}">{{item.valid ? '有效' : '已过期'}}</text>
+  </view>
+</view>
+
+<view class="card menu">
+  <view class="mi" bindtap="goRemind"><text>用药提醒</text><text class="muted">{{reminders ? reminders + ' 条开启中' : '去设置'}} ›</text></view>
+  <view class="mi" bindtap="editAddr"><text>收货地址</text><text class="muted mi-v">{{addr ? addr.name + ' · ' + addr.detail : '未设置'}} ›</text></view>
+  <view class="mi" bindtap="call"><text>药师热线</text><text class="muted">0571-87001234 ›</text></view>
+  <view class="mi" bindtap="clearCache"><text>清除缓存</text><text class="muted">›</text></view>
+</view>
+<text class="lic">互联网药品信息服务资格证书（浙）-经营性-2024-0187 · 药品网络销售备案已登记</text>
+<view class="tab-gap"></view>

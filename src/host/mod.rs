@@ -35,6 +35,12 @@ mod engine_wants;
 pub mod engine_video_feed;
 /// 同层渲染的通用组件（`<map>` 这类）与宿主的约定（`sameLayerViews` / `nativeViewTap` 事件、回传事件）
 mod engine_host_views;
+/// 同层渲染组件自己的手势（地图平移 / 捏合）：这串触摸整串交给宿主（`nativeViewTouch` 事件）
+mod engine_native_touch;
+/// `<web-view>`：网页与小程序之间的消息、跳转、加载事件（宿主盖 WebView，见 engine_webview.rs）
+mod engine_webview;
+/// `<live-player>`：走同层渲染视频那一套（宿主播放器解码、引擎画），状态码与 LivePlayerContext
+mod engine_live_player;
 mod frame_laps;
 mod engine_damage_rects;
 /// 这一帧重画多少（只合成 / 局部 / 补条带 / 整帧）与整帧归因

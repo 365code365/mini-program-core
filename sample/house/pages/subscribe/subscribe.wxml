@@ -1,0 +1,51 @@
+<view class="card">
+  <view class="row between">
+    <text class="title">我的订阅</text>
+    <text class="sub">{{subs.length}} 个</text>
+  </view>
+  <view class="s-item row" wx:for="{{subs}}" wx:key="id">
+    <view class="flex1 s-main" bindtap="onOpen" data-id="{{item.id}}">
+      <text class="s-text">{{item.text}}</text>
+      <text class="sub">当前匹配 <text class="hl">{{item.count}}</text> 套 · {{item.date}} 订阅</text>
+    </view>
+    <text class="op" bindtap="onRemove" data-id="{{item.id}}">取消</text>
+    <text class="op main" bindtap="onOpen" data-id="{{item.id}}">看房源</text>
+  </view>
+  <view class="s-empty" wx:if="{{!subs.length}}"><text class="sub">还没有订阅，在下面选好条件订阅一个</text></view>
+</view>
+<view class="card cells">
+  <view class="cell row form-head">
+    <text class="title">新增订阅</text>
+  </view>
+  <picker class="f-type" mode="selector" range="{{typeNames}}" value="{{tIndex}}" bindchange="onType">
+    <view class="cell row">
+      <text class="label">房源类型</text>
+      <text class="flex1 field">{{typeNames[tIndex]}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <picker mode="selector" range="{{districts}}" value="{{dIndex}}" data-k="dIndex" bindchange="onPick">
+    <view class="cell row">
+      <text class="label">区域</text>
+      <text class="flex1 field">{{districts[dIndex]}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <picker mode="selector" range="{{layouts}}" value="{{lIndex}}" data-k="lIndex" bindchange="onPick">
+    <view class="cell row">
+      <text class="label">户型</text>
+      <text class="flex1 field">{{layouts[lIndex]}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <picker mode="selector" range="{{prices}}" value="{{pIndex}}" data-k="pIndex" bindchange="onPick">
+    <view class="cell row last">
+      <text class="label">价格</text>
+      <text class="flex1 field">{{prices[pIndex]}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+</view>
+<text class="preview sub">按这个条件现在有 {{preview}} 套房源</text>
+<view class="add btn-primary" bindtap="onAdd">订阅</view>
+<view class="safe"></view>

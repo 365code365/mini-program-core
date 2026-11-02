@@ -1,0 +1,30 @@
+<view class="empty" wx:if="{{missing}}">
+  <text class="empty-ic">🗒</text>
+  <text class="empty-text">笔记不存在或已在回收站</text>
+</view>
+<block wx:else>
+  <view class="card cur">
+    <text class="cur-title">{{title}}</text>
+    <text class="sub">当前版本 · {{current.time}} · {{current.words}} 字</text>
+  </view>
+  <view class="row between head">
+    <text class="sec-t">历史版本（{{versions.length}}）</text>
+    <text class="clear-all" wx:if="{{versions.length}}" bindtap="onClearAll">全部清除</text>
+  </view>
+  <view class="card ver" wx:for="{{versions}}" wx:key="i">
+    <view class="row" data-i="{{item.i}}" bindtap="onToggle">
+      <view class="flex1">
+        <text class="ver-title">{{item.title}}</text>
+        <text class="sub">{{item.time}} · {{item.words}} 字{{item.delta > 0 ? ' · 之后多了 ' + item.delta + ' 字' : item.delta < 0 ? ' · 之后少了 ' + (0 - item.delta) + ' 字' : ''}}</text>
+      </view>
+      <text class="arrow">{{open === item.i ? '收起' : '查看'}}</text>
+    </view>
+    <view class="ver-body" wx:if="{{open === item.i}}">
+      <text class="ver-text">{{item.body || '（正文为空）'}}</text>
+      <view class="btn btn-primary restore-ver" data-i="{{item.i}}" bindtap="onRestore">恢复到这个版本</view>
+    </view>
+  </view>
+  <view class="empty small" wx:if="{{!versions.length}}">
+    <text class="empty-text">还没有历史版本。每次打开编辑并改动后，改之前的内容会留一份在这里</text>
+  </view>
+</block>

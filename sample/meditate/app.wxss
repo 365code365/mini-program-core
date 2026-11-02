@@ -1,0 +1,35 @@
+/* 主色：静谧紫 #6c63d9；深色主题挂在每页根节点的 .dark 上 */
+page { background: #f6f5fb; color: #2d2b45; font-size: 28rpx; }
+.page { min-height: 100vh; background: #f6f5fb; color: #2d2b45; padding-bottom: 40rpx; box-sizing: border-box; }
+.page.dark { background: #17182c; color: #e7e6f5; }
+.tab-page { padding-bottom: calc(140rpx + env(safe-area-inset-bottom)); }
+
+.card { background: #ffffff; border-radius: 24rpx; margin: 24rpx 32rpx 0; padding: 28rpx; }
+.dark .card { background: #23243f; }
+.title { font-size: 34rpx; font-weight: 600; }
+.sub { font-size: 24rpx; color: #8b8aa3; }
+.dark .sub { color: #8f90b3; }
+.sec-head { display: flex; flex-direction: row; align-items: center; justify-content: space-between; margin: 40rpx 32rpx 0; }
+.sec-title { font-size: 32rpx; font-weight: 600; }
+.more { font-size: 24rpx; color: #8b8aa3; }
+.row { display: flex; flex-direction: row; align-items: center; }
+.between { justify-content: space-between; }
+.flex1 { flex: 1; }
+
+.btn { background: #6c63d9; color: #ffffff; border-radius: 44rpx; height: 88rpx; line-height: 88rpx; text-align: center; font-size: 30rpx; }
+.btn-ghost { background: #ecebfb; color: #6c63d9; border-radius: 44rpx; height: 72rpx; line-height: 72rpx; text-align: center; font-size: 26rpx; padding: 0 32rpx; }
+.dark .btn-ghost { background: #2e2f52; color: #b4aefc; }
+.btn-hover { opacity: 0.75; }
+
+.chip { padding: 12rpx 28rpx; border-radius: 32rpx; background: #ecebf3; color: #5d5b78; font-size: 26rpx; margin-right: 16rpx; }
+.chip.on { background: #6c63d9; color: #ffffff; }
+.dark .chip { background: #2a2b47; color: #a9a8c8; }
+.dark .chip.on { background: #6c63d9; color: #ffffff; }
+
+.empty { display: flex; flex-direction: column; align-items: center; padding: 80rpx 0; }
+.empty-ic { width: 120rpx; height: 120rpx; border-radius: 60rpx; background: #ecebfb; margin-bottom: 24rpx; }
+.dark .empty-ic { background: #2a2b47; }
+.empty-tx { font-size: 26rpx; color: #8b8aa3; }
+
+.skeleton { background: #ecebf3; border-radius: 16rpx; }
+.dark .skeleton { background: #2a2b47; }

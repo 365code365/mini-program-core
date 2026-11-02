@@ -2,7 +2,7 @@ const T = require('../../utils/store.js');
 const { PACKING } = require('../../utils/data.js');
 
 Page({
-  data: { groups: [], stat: {}, fold: {}, groupNames: PACKING.map(g => g.g), addGroup: 0, newItem: '', allDone: false },
+  data: { groups: [], stat: {}, fold: {}, groupNames: PACKING.map(g => g.g), addGroup: 0, newItem: '', allDone: false, seq: 0 },
   onLoad(q) {
     this.id = q.id || (T.all()[0] || {}).id;
     if (!this.id) return;
@@ -63,7 +63,8 @@ Page({
     const exist = PACKING[this.data.addGroup].items.concat(this.p.custom[g] || []);
     if (exist.indexOf(n) >= 0) { wx.showToast({ title: g + '里已经有了', icon: 'none' }); return; }
     this.p.custom[g] = (this.p.custom[g] || []).concat([n]);
-    this.setData({ newItem: '', ['fold.' + g]: false });
+    // 换个 id 让输入框重建，否则清空后画面上还是刚才的字
+    this.setData({ newItem: '', seq: this.data.seq + 1, ['fold.' + g]: false });
     this.save();
   },
   removeCustom(e) {

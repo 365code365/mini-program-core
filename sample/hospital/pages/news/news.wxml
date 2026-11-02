@@ -1,0 +1,18 @@
+<view class="art">
+  <text class="a-title">{{n.title}}</text>
+  <view class="row a-meta">
+    <text class="a-tag" style="color: {{n.color}}; border-color: {{n.color}};">{{n.tag}}</text>
+    <text class="muted">华康仁和医院 · {{n.date}} · {{n.read}} 阅读</text>
+  </view>
+  <view class="a-pic" style="background: linear-gradient(135deg, {{n.color}}, #b8e1ff);"><text>{{n.tag}}</text></view>
+  <text class="a-p" wx:for="{{n.body}}" wx:key="*this">{{item}}</text>
+  <view class="btn-primary a-btn" bindtap="onAction"><text>{{n.action.name}}</text></view>
+</view>
+<view class="card">
+  <text class="sec-title">更多资讯</text>
+  <view class="m-item" wx:for="{{more}}" wx:key="id" data-id="{{item.id}}" bindtap="openMore">
+    <text class="m-title">{{item.title}}</text>
+    <view class="chev"></view>
+  </view>
+</view>
+<view style="height: 60rpx;"></view>

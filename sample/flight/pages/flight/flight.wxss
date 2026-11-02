@@ -1,0 +1,35 @@
+.hd { background: linear-gradient(135deg, #1f6fff, #4b8dff); color: #ffffff; padding: 28rpx 32rpx 24rpx; }
+.hd-top { margin-bottom: 20rpx; }
+.logo { width: 40rpx; height: 40rpx; border-radius: 20rpx; background: #ffffff; margin-right: 12rpx; }
+.hd-al { font-size: 26rpx; flex: 1; }
+.hd-date { font-size: 26rpx; }
+.hd-mid { justify-content: space-between; }
+.side { width: 230rpx; }
+.side-r { align-items: flex-end; }
+.t { font-size: 52rpx; font-weight: bold; color: #ffffff; }
+.cross { font-size: 20rpx; color: #ffe1c2; margin-left: 4rpx; }
+.ap { font-size: 24rpx; color: #e1ebff; margin-top: 4rpx; }
+.mid { align-items: center; }
+.mid-tx { font-size: 22rpx; color: #e1ebff; }
+.mid-line { width: 150rpx; height: 2rpx; background: rgba(255, 255, 255, 0.6); margin: 8rpx 0; }
+.hd-foot { margin-top: 22rpx; flex-wrap: wrap; }
+.hd-tag { font-size: 20rpx; color: #ffffff; background: rgba(255, 255, 255, 0.18); border-radius: 6rpx; padding: 4rpx 12rpx; margin-right: 12rpx; }
+.tabs { background: #ffffff; }
+.tab { flex: 1; height: 88rpx; display: flex; align-items: center; justify-content: center; font-size: 28rpx; color: #5b6478; border-bottom: 4rpx solid #ffffff; }
+.tab-on { color: #1f6fff; font-weight: bold; border-bottom-color: #1f6fff; }
+.fare { background: #ffffff; margin: 16rpx 24rpx 0; border-radius: 16rpx; padding: 28rpx; }
+.fare-name { font-size: 30rpx; font-weight: bold; }
+.fare-bag { margin-top: 8rpx; }
+.fare-rule { margin-top: 12rpx; }
+.fare-r { align-items: flex-end; width: 180rpx; }
+.fare-p { font-size: 40rpx; }
+.book { width: 150rpx; height: 60rpx; font-size: 26rpx; margin-top: 10rpx; }
+.seats { font-size: 20rpx; color: #f04438; margin-top: 6rpx; }
+.tip { padding: 24rpx 32rpx 60rpx; }
+.r-sub { margin-top: 8rpx; }
+.r-table { margin-top: 20rpx; border: 1rpx solid #e6eaf0; border-radius: 12rpx; }
+.r-row { border-bottom: 1rpx solid #eef1f6; padding: 18rpx 16rpx; }
+.r-head { background: #f6f8fb; }
+.r-c1 { width: 300rpx; font-size: 24rpx; }
+.r-c { flex: 1; font-size: 24rpx; text-align: right; }
+.r-note { margin-top: 16rpx; }

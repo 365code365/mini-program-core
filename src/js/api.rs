@@ -16,7 +16,7 @@
 //! - `wx` 对象要在所有 `wx.xxx = ...` 之前建出来；
 //! - `app-page` 要早于 `lifecycle` / `page-components`：后两者要用它建好的页面栈与实例；
 //! - `api-probe` 必须**最后**装：它用 `Proxy` 包住已经注册完的 `wx`，早了就会把
-//!   后续注册的 API 也当成「未实现」。
+//!   后续注册的 API 也当成「未实现」。唯一排在它后面的是 `api-alias`：nb / gb / mb 要指向包好探针的 `wx`。
 
 use super::JsRuntime;
 use std::sync::{Arc, Mutex};
@@ -141,6 +141,9 @@ const PRELUDE: &[Prelude] = prelude![
     // 框架普遍用 `typeof wx.xxx === 'function'` 做能力探测，返回假函数会让它们
     // 走进不存在的分支。
     "api-probe" => "api-probe.js",
+    // 探针之后：nb / gb / mb 指向**包好探针的那个** wx，并装按函数名认 `xx.函数名` 的入口（js/api_alias.rs）。
+    // 早于探针的话别名拿到的是裸对象，`nb.未实现()` 就不报「未实现的 API」了
+    "api-alias" => "api-alias.js",
 ];
 
 /// 应用种类决定装哪些前置代码（game-doc/02 §3.1）。
@@ -159,7 +162,7 @@ pub enum PreludeProfile {
 pub const GAME_CORE: &[&str] = &[
     "module", "console", "fake-clock", "wx-object", "codec", "timer", "storage", "ui", "device", "network",
     "host", "system", "socket", "fs", "audio", "app-info", "host-capabilities", "base-ext", "net-socket",
-    "media-ext", "webaudio", "api-probe",
+    "media-ext", "webaudio", "api-probe", "api-alias",
 ];
 
 fn in_profile(name: &str, profile: PreludeProfile) -> bool {
@@ -226,13 +229,18 @@ pub fn prelude_source(name: &str) -> Option<&'static str> {
 pub fn game_prelude_source(name: &str) -> &'static str {
     GAME_EXTRA.iter().find(|p| p.name == name).map(|p| p.source).unwrap_or_else(|| panic!("GAME_EXTRA 里没有 {name}"))
 }
+/// 全部前置代码的源码（js/api_alias.rs 从里面收集 `wx.名字 = ...`，当作「wx 上有哪些 API」）
+pub(crate) fn all_sources() -> impl Iterator<Item = &'static str> {
+    PRELUDE.iter().chain(GAME_EXTRA.iter()).map(|p| p.source)
+}
 /// 一个应用种类实际执行的段（按顺序）
 fn sequence(profile: PreludeProfile) -> Vec<&'static Prelude> {
     let base = PRELUDE.iter().filter(|p| in_profile(p.name, profile));
     match profile {
         PreludeProfile::MiniProgram => base.collect(),
         PreludeProfile::MiniGame => {
-            let (probe, rest): (Vec<_>, Vec<_>) = base.partition(|p| p.name == "api-probe");
+            // api-probe 与它之后的 api-alias 一起挪到最后（表内两者的相对顺序不变）
+            let (probe, rest): (Vec<_>, Vec<_>) = base.partition(|p| p.name == "api-probe" || p.name == "api-alias");
             // game-opendata-env / -wx 只装进开放数据域的运行时（game/opendata.rs）
             rest.into_iter().chain(GAME_EXTRA.iter().filter(|p| !p.name.starts_with("game-opendata-"))).chain(probe).collect()
         }
@@ -264,6 +272,10 @@ impl MiniAppApi {
             let rt = self.runtime.lock().unwrap();
             rt.eval(p.source).map_err(|e| format!("{}: {e}", p.name))?;
             n += 1;
+        }
+        // MINI_API_ALIAS 额外点名的别名（默认的 nb / gb / mb 在 api-alias.js 里）
+        if let Some(s) = super::api_alias::extra_alias_script() {
+            self.runtime.lock().unwrap().eval(&s).map_err(|e| format!("api-alias: {e}"))?;
         }
         println!("    prelude: {} 段 JS 已注入", n);
         Ok(())

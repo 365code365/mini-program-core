@@ -13,10 +13,6 @@
 .arrow { width: 14rpx; height: 14rpx; border-top: 3rpx solid #b4b8bf; border-right: 3rpx solid #b4b8bf; transform: rotate(45deg); margin-left: 12rpx; }
 .danger { color: #f5222d; }
 .foot { display: block; text-align: center; margin-top: 40rpx; }
-.rc-mask { z-index: 20; }
-.rc { position: fixed; left: 0; right: 0; bottom: calc(100rpx + env(safe-area-inset-bottom)); z-index: 21; background: #ffffff; border-radius: 28rpx 28rpx 0 0; padding: 36rpx 32rpx 48rpx 32rpx; }
-.amts { display: flex; flex-direction: row; margin: 28rpx 0 36rpx 0; }
-.amt { flex: 1; height: 120rpx; margin: 0 10rpx; border-radius: 16rpx; border: 2rpx solid #e3e5e8; display: flex; flex-direction: row; align-items: center; justify-content: center; }
-.amt-on { border-color: #ff6a2b; background: #fff1ea; }
-.amt-t { font-size: 32rpx; font-weight: bold; }
 .cell-last { border-bottom: 0; }
+.wallet-info { flex: 1; }
+.tab-space { height: 140rpx; }

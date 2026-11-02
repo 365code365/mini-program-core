@@ -1,0 +1,174 @@
+# 畅行火车票：每页能开 + 学生票价 / 出票车厢座位 / 订单详情 / 改签差价 / 退票手续费分档 / 候补兑现与取消 / 乘车人编辑删除 / 客服
+smoke pages/city/city?field=to&current=上海 pages/list/list?from=北京&to=上海 pages/book/book?no= pages/order-detail/order-detail?id=none
+open
+eval globalThis.__d = function (n) { var d = new Date(); d.setDate(d.getDate() + n); var p = function (x) { return x < 10 ? '0' + x : '' + x; }; return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); }
+eval wx.setStorageSync('tr_passengers', [{ id: 1, name: '李明', idcard: '330106199003071236', phone: '13812345678', self: true }, { id: 2, name: '王小明', idcard: '440304200108154563', phone: '13700002222', self: false, type: '学生票' }])
+# 购票：明天北京→上海第 2 趟（高铁），二等座，勾上学生票的王小明，选两个座
+eval wx.navigateTo({ url: '/pages/list/list?from=北京&to=上海&date=' + __d(1) })
+route pages/list/list
+tapn 1 .train
+route pages/book/book
+expect getCurrentPages().slice(-1)[0].data.train.type !== 'K'
+tapn 2 .seat-opt
+expect getCurrentPages().slice(-1)[0].data.seatIdx === 2
+tapn 1 .p-item
+expect getCurrentPages().slice(-1)[0].data.count === 2
+expect getCurrentPages().slice(-1)[0].data.total === getCurrentPages().slice(-1)[0].data.price + Math.round(getCurrentPages().slice(-1)[0].data.price * 0.75)
+expect getCurrentPages().slice(-1)[0].data.discountText.indexOf('学生票 1 张') > 0
+tapn 0 .letter
+tapn 4 .letter
+expect getCurrentPages().slice(-1)[0].data.chosen.join('') === 'AF'
+shot target/_polish_shots/book.png
+tap .submit
+modal?
+modal ok
+wait 300
+route pages/orders/orders
+toast 购票成功
+expect wx.getStorageSync('tr_orders')[0].tickets.length === 2
+expect wx.getStorageSync('tr_orders')[0].tickets[0].seatNo.indexOf('A号') > 0
+expect wx.getStorageSync('tr_orders')[0].tickets[1].seatNo.indexOf('F号') > 0
+expect wx.getStorageSync('tr_orders')[0].types[1] === '学生票'
+expect getCurrentPages().slice(-1)[0].data.list[0].canChange === true
+shot target/_polish_shots/orders.png
+# 订单详情：车厢座位、检票口、现在退票的报价
+tap .order
+route pages/order-detail/order-detail
+expect getCurrentPages().slice(-1)[0].data.tickets.length === 2
+expect getCurrentPages().slice(-1)[0].data.gate.indexOf('检票口') === 0
+expect getCurrentPages().slice(-1)[0].data.quote.fee > 0
+shot target/_polish_shots/detail.png
+# 改签：换第 3 趟车，差价多退少补，改签后不能再改
+tap .change-btn
+route pages/list/list
+expect getCurrentPages().slice(-1)[0].data.change.no === wx.getStorageSync('tr_orders')[0].no
+shot target/_polish_shots/list-change.png
+tapn 2 .train
+route pages/book/book
+expect getCurrentPages().slice(-1)[0].data.change !== null
+expect getCurrentPages().slice(-1)[0].data.count === 2
+absent .add-p
+shot target/_polish_shots/book-change.png
+tap .submit
+modal?
+modal ok
+wait 300
+route pages/order-detail/order-detail
+toast 改签成功
+expect wx.getStorageSync('tr_orders')[0].changed.no !== wx.getStorageSync('tr_orders')[0].no
+expect wx.getStorageSync('tr_orders')[0].changed.diff === wx.getStorageSync('tr_orders')[0].total - wx.getStorageSync('tr_orders')[0].changed.total
+expect getCurrentPages().slice(-1)[0].data.canChange === false
+absent .change-btn
+shot target/_polish_shots/detail-changed.png
+# 退票：明天开车，收手续费，其余原路退回
+tap .refund-btn
+modal?
+modal ok
+expect wx.getStorageSync('tr_orders')[0].status === 'cancelled'
+expect wx.getStorageSync('tr_orders')[0].refund.fee > 0
+expect wx.getStorageSync('tr_orders')[0].refund.amount + wx.getStorageSync('tr_orders')[0].refund.fee === wx.getStorageSync('tr_orders')[0].total
+toast 已退款
+# 手续费分档：开车前 8 天以上免费；4 天后开车 5%（每张 553 × 5% = 27.65，尾数到 5 角 → 27.5）
+eval wx.setStorageSync('tr_orders', [{ id: 'F1', no: 'G101', from: '北京', to: '上海', date: __d(10), depText: '08:00', arrText: '12:30', seat: '二等座', price: 553, count: 1, total: 553, names: ['李明'], seats: [], status: 'paid' }, { id: 'F2', no: 'G103', from: '北京', to: '上海', date: __d(4), depText: '09:00', arrText: '13:30', seat: '二等座', price: 553, count: 2, total: 1106, names: ['李明', '王小明'], seats: ['A', 'B'], status: 'paid' }])
+eval wx.switchTab({ url: '/pages/orders/orders' })
+route pages/orders/orders
+count 2 .cancel-btn
+tapn 0 .cancel-btn
+modal ok
+expect wx.getStorageSync('tr_orders')[0].refund.fee === 0
+expect wx.getStorageSync('tr_orders')[0].refund.amount === 553
+tapn 0 .cancel-btn
+modal ok
+expect wx.getStorageSync('tr_orders')[1].refund.fee === 55
+expect wx.getStorageSync('tr_orders')[1].refund.amount === 1051
+# 候补：二等座没票 → 提交候补（预付）→ 1 分钟后兑现出票
+eval wx.navigateTo({ url: '/pages/list/list?from=北京&to=上海&date=' + __d(1) })
+eval getCurrentPages().slice(-1)[0].setData({ 'trains[1].seats[2].left': 0, 'trains[1].seats[2].leftText': '无' })
+tapn 1 .train
+route pages/book/book
+tapn 2 .seat-opt
+expect getCurrentPages().slice(-1)[0].data.wait === true
+absent .letter
+shot target/_polish_shots/book-wait.png
+tap .submit
+modal?
+modal ok
+wait 300
+route pages/orders/orders
+toast 候补已提交
+expect wx.getStorageSync('tr_orders')[0].status === 'waiting'
+expect getCurrentPages().slice(-1)[0].data.list[0].stateText === '候补中'
+shot target/_polish_shots/orders-wait.png
+eval (function () { var l = wx.getStorageSync('tr_orders'); l[0].created -= 61000; wx.setStorageSync('tr_orders', l); getCurrentPages().slice(-1)[0].refresh(); })()
+expect wx.getStorageSync('tr_orders')[0].status === 'paid'
+expect wx.getStorageSync('tr_orders')[0].tickets[0].text.indexOf('车 ') === 2
+expect getCurrentPages().slice(-1)[0].data.list[0].stateText === '待出行'
+# 再提交一个候补，然后在详情里取消：全额退
+eval wx.navigateTo({ url: '/pages/list/list?from=北京&to=上海&date=' + __d(2) })
+eval getCurrentPages().slice(-1)[0].setData({ 'trains[1].seats[0].left': 0, 'trains[1].seats[0].leftText': '无' })
+tapn 1 .train
+tapn 0 .seat-opt
+expect getCurrentPages().slice(-1)[0].data.wait === true
+tap .submit
+modal ok
+wait 300
+route pages/orders/orders
+tap .order
+route pages/order-detail/order-detail
+expect getCurrentPages().slice(-1)[0].data.waiting === true
+shot target/_polish_shots/detail-wait.png
+tap .refund-btn
+modal ok
+expect wx.getStorageSync('tr_orders')[0].status === 'cancelled'
+expect wx.getStorageSync('tr_orders')[0].refund.fee === 0
+expect wx.getStorageSync('tr_orders')[0].refund.amount === wx.getStorageSync('tr_orders')[0].total
+# 买返程：线路对调
+tap .back-btn
+route pages/list/list
+expect getCurrentPages().slice(-1)[0].data.from === '上海' && getCurrentPages().slice(-1)[0].data.to === '北京'
+# 乘车人：我的 → 编辑王小明（改手机号、学生票改成人票）
+eval wx.switchTab({ url: '/pages/mine/mine' })
+route pages/mine/mine
+tapn 1 .p
+route pages/passenger/passenger
+expect getCurrentPages().slice(-1)[0].data.editId === 2
+eval getCurrentPages().slice(-1)[0].setData({ phone: '' })
+type .phone-input => 13900002222
+blur
+picker .type-row
+pickrow 0 1 -1
+pickok
+expect getCurrentPages().slice(-1)[0].data.typeIdx === 0
+shot target/_polish_shots/passenger-edit.png
+tap .save-btn
+wait 300
+route pages/mine/mine
+toast 已保存
+expect wx.getStorageSync('tr_passengers')[1].phone === '13900002222'
+expect wx.getStorageSync('tr_passengers')[1].type === '成人票'
+# 本人：姓名、证件号锁定
+tapn 0 .p
+absent .name-input
+exists .phone-input
+back
+# 删除乘车人（编辑页里删）
+tapn 1 .p
+tap .del-btn
+modal ok
+wait 300
+route pages/mine/mine
+expect wx.getStorageSync('tr_passengers').length === 1
+shot target/_polish_shots/mine.png
+# 客服电话（宿主没有拨号能力：弹号码）/ 退改签规则 / 关于
+tapn 0 .link
+modal?
+modal ok
+tapn 1 .link
+modal?
+modal ok
+tapn 2 .link
+modal?
+modal ok
+tap .head
+route pages/orders/orders
+noerr

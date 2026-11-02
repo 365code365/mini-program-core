@@ -1,0 +1,74 @@
+<view class="page">
+  <view class="head {{o.cancelled ? 'head-gray' : ''}}">
+    <view class="row between">
+      <text class="h-st">{{statusName}}</text>
+      <text wx:if="{{!o.cancelled && o.step < 8}}" class="mode">{{pushMode === 'socket' ? '实时推送' : (pushMode === 'local' ? '模拟推送' : '连接中')}}</text>
+    </view>
+    <text class="h-d">{{o.cancelled ? '订单已取消，款项将原路退回' : stepDesc}}</text>
+    <view wx:if="{{!o.cancelled}}" class="nodes row">
+      <view wx:for="{{nodes}}" wx:key="name" class="node {{item.on ? 'node-on' : ''}}">
+        <view class="nd"></view>
+        <text class="nd-t">{{item.name}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <text class="title">订单进度</text>
+    <view class="tl row" wx:for="{{timeline}}" wx:key="text">
+      <view class="tl-dot {{index === 0 ? 'tl-now' : ''}}"></view>
+      <view class="flex1">
+        <view class="row between"><text class="tl-t {{index === 0 ? 'tl-t-now' : ''}}">{{item.text}}</text><text class="sub">{{item.time}}</text></view>
+        <text class="sub">{{item.desc}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{showQc}}">
+    <view class="row between"><text class="title">入厂质检</text><text class="sub">点击查看大图</text></view>
+    <view class="qc row">
+      <view class="qc-i" wx:for="{{qc}}" wx:key="src" data-i="{{index}}" bindtap="previewQc">
+        <image class="qc-img" src="{{item.src}}" mode="aspectFill"></image>
+      </view>
+    </view>
+    <view class="qc-n row" wx:for="{{qc}}" wx:key="src">
+      <text class="qc-k">图{{index + 1}}</text><text class="flex1 qc-v">{{item.note}}</text>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{o.review}}">
+    <view class="row between"><text class="title">我的评价</text><text class="sub">{{o.review.time}}</text></view>
+    <view class="rv row"><text class="rv-k">综合</text><star-rating value="{{o.review.score}}" size="{{18}}" readonly="{{true}}" show-text="{{true}}"></star-rating></view>
+    <text wx:if="{{o.review.text}}" class="rv-t">{{o.review.text}}</text>
+    <view class="row rv-tags" wx:if="{{o.review.tags.length}}"><text wx:for="{{o.review.tags}}" wx:key="*this" class="rv-tag">{{item}}</text></view>
+  </view>
+
+  <view class="card">
+    <view class="row between"><text class="title">衣物清单</text><text class="sub">共 {{o.count}} 件</text></view>
+    <view class="ln row" wx:for="{{o.lines}}" wx:key="id">
+      <text class="flex1">{{item.name}}</text><text class="sub ln-q">×{{item.qty}}</text><text class="ln-p">¥{{item.sum}}</text>
+    </view>
+    <view class="ln row" wx:for="{{o.addons}}" wx:key="name"><text class="flex1 sub">{{item.name}}</text><text class="ln-p">{{item.price ? '¥' + item.price : '免费'}}</text></view>
+    <view class="ln row"><text class="flex1 sub">上门取送费</text><text class="ln-p">{{o.shipFee ? '¥' + o.shipFee : '免'}}</text></view>
+    <view class="ln row" wx:if="{{o.coupon}}"><text class="flex1 sub">{{o.coupon.title}}</text><text class="ln-p price">-¥{{o.coupon.amount}}</text></view>
+    <view class="ln row total"><text class="flex1">实付</text><text class="price pay">¥{{o.payable}}</text></view>
+  </view>
+
+  <view class="card">
+    <view class="kv row"><text class="k">订单号</text><text class="v">{{o.id}}</text><text class="copy" bindtap="copyNo">复制</text></view>
+    <view class="kv row"><text class="k">袋码</text><text class="v">{{o.bagNo}}</text></view>
+    <view class="kv row"><text class="k">取件时间</text><text class="v">{{pickText}}</text></view>
+    <view class="kv row"><text class="k">地址</text><text class="v">{{o.addr.name}} {{o.addr.community}} {{o.addr.room}}</text></view>
+    <view class="kv row" wx:if="{{o.remark}}"><text class="k">备注</text><text class="v">{{o.remark}}</text></view>
+    <view class="kv row"><text class="k">下单时间</text><text class="v">{{createdText}}</text></view>
+  </view>
+  <view class="foot-space"></view>
+
+  <view class="bar row">
+    <view class="btn-gray" bindtap="contact"><text>联系我们</text></view>
+    <view wx:if="{{!o.cancelled && o.step < 2}}" class="btn-gray b-gap" bindtap="cancel"><text>取消订单</text></view>
+    <view wx:if="{{!o.cancelled && o.step === 7}}" class="btn-line b-gap" bindtap="confirmReceive"><text>确认收货</text></view>
+    <view wx:if="{{!o.cancelled && o.step === 8 && !o.review}}" class="btn-line b-gap" bindtap="goReview"><text>去评价</text></view>
+    <view wx:if="{{o.cancelled || o.step === 8}}" class="btn-line b-gap" bindtap="again"><text>再来一单</text></view>
+  </view>
+</view>

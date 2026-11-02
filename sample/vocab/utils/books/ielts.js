@@ -1,0 +1,27 @@
+// 雅思话题词（环境 / 教育 / 城市 / 健康）：[单词, 音标, 释义, 例句, 例句译文]
+module.exports = [
+  ['accommodation', '/əˌkɒməˈdeɪʃn/', 'n. 住处；膳宿', 'The price includes flights and accommodation.', '价格包含机票与住宿。'],
+  ['biodiversity', '/ˌbaɪəʊdaɪˈvɜːsəti/', 'n. 生物多样性', 'Rainforests are rich in biodiversity.', '雨林的生物多样性非常丰富。'],
+  ['commute', '/kəˈmjuːt/', 'v./n. 通勤', 'I commute to work by subway.', '我坐地铁通勤上班。'],
+  ['curriculum', '/kəˈrɪkjələm/', 'n. 课程（总称）', 'Coding is now part of the school curriculum.', '编程如今已纳入学校课程。'],
+  ['deforestation', '/diːˌfɒrɪˈsteɪʃn/', 'n. 森林砍伐', 'Deforestation threatens many species.', '森林砍伐威胁着许多物种。'],
+  ['demographic', '/ˌdeməˈɡræfɪk/', 'adj. 人口统计的', 'The country faces demographic change.', '这个国家正面临人口结构变化。'],
+  ['emission', '/iˈmɪʃn/', 'n. 排放；排放物', 'Cities must cut carbon emissions.', '城市必须削减碳排放。'],
+  ['endangered', '/ɪnˈdeɪndʒəd/', 'adj. 濒危的', 'The giant panda was once an endangered species.', '大熊猫曾是濒危物种。'],
+  ['globalisation', '/ˌɡləʊbəlaɪˈzeɪʃn/', 'n. 全球化', 'Globalisation has changed how we shop.', '全球化改变了我们的购物方式。'],
+  ['habitat', '/ˈhæbɪtæt/', 'n. 栖息地', 'Wetlands are an important habitat for birds.', '湿地是鸟类重要的栖息地。'],
+  ['infrastructure', '/ˈɪnfrəstrʌktʃə(r)/', 'n. 基础设施', 'The city invested heavily in infrastructure.', '这座城市在基础设施上投入巨大。'],
+  ['innovation', '/ˌɪnəˈveɪʃn/', 'n. 创新；新方法', 'Innovation drives economic growth.', '创新推动经济增长。'],
+  ['migrate', '/maɪˈɡreɪt/', 'v. 迁徙；移居', 'Many birds migrate south in winter.', '许多鸟类冬天向南迁徙。'],
+  ['obesity', '/əʊˈbiːsəti/', 'n. 肥胖', 'Childhood obesity is a growing problem.', '儿童肥胖问题日益严重。'],
+  ['pollutant', '/pəˈluːtənt/', 'n. 污染物', 'Cars release pollutants into the air.', '汽车向空气中排放污染物。'],
+  ['renewable', '/rɪˈnjuːəbl/', 'adj. 可再生的', 'Solar power is a renewable energy source.', '太阳能是一种可再生能源。'],
+  ['sustainable', '/səˈsteɪnəbl/', 'adj. 可持续的', 'We need a sustainable way of living.', '我们需要一种可持续的生活方式。'],
+  ['tuition', '/tjuˈɪʃn/', 'n. 学费；教学', 'Tuition fees have risen sharply.', '学费大幅上涨。'],
+  ['urban', '/ˈɜːbən/', 'adj. 城市的', 'More people now live in urban areas.', '如今更多人住在城市地区。'],
+  ['welfare', '/ˈwelfeə(r)/', 'n. 福利；幸福', 'The government cares about public welfare.', '政府关心公共福利。'],
+  ['vaccine', '/ˈvæksiːn/', 'n. 疫苗', 'The vaccine protects against flu.', '这种疫苗可预防流感。'],
+  ['unemployment', '/ˌʌnɪmˈplɔɪmənt/', 'n. 失业；失业率', 'Unemployment fell last year.', '去年失业率下降了。'],
+  ['recycle', '/ˌriːˈsaɪkl/', 'v. 回收利用', 'We recycle paper and plastic.', '我们回收纸张和塑料。'],
+  ['congestion', '/kənˈdʒestʃən/', 'n. 拥堵', 'Traffic congestion is worst at 8 a.m.', '早上八点交通最拥堵。']
+];

@@ -1,0 +1,34 @@
+<view class="bal">
+  <view class="row between">
+    <text class="bal-label">钱包余额（元）</text>
+    <text class="bal-rule" bindtap="onRule">说明</text>
+  </view>
+  <text class="bal-num">{{balance}}</text>
+  <view class="row bal-foot">
+    <text class="bal-tip">累计收入 ¥{{income}}</text>
+    <text class="bal-tip bal-gap">累计支出 ¥{{spend}}</text>
+  </view>
+</view>
+<view class="card">
+  <text class="title">选择充值金额</text>
+  <view class="opts row">
+    <view wx:for="{{options}}" wx:key="pay" class="opt {{pick === index ? 'opt-on' : ''}}" data-i="{{index}}" bindtap="onPick">
+      <text class="opt-pay">¥{{item.pay}}</text>
+      <text class="opt-bonus">{{item.bonus ? '送 ¥' + item.bonus : '不赠送'}}</text>
+    </view>
+  </view>
+  <view class="btn-primary go" bindtap="onRecharge">充值 ¥{{options[pick].pay}}，到账 ¥{{options[pick].pay + options[pick].bonus}}</view>
+</view>
+<view class="card">
+  <text class="title">收支明细</text>
+  <view class="log row" wx:for="{{logs}}" wx:key="k">
+    <text class="log-type log-{{item.type}}">{{item.typeName}}</text>
+    <view class="flex1">
+      <text class="log-title ellipsis">{{item.title}}</text>
+      <text class="sub">{{item.time}}</text>
+    </view>
+    <text class="log-amt {{item.amount > 0 ? 'log-in' : ''}}">{{item.sign}}{{item.abs}}</text>
+  </view>
+  <view wx:if="{{!logs.length}}" class="none"><text class="sub">还没有收支记录</text></view>
+</view>
+<view class="gap"></view>

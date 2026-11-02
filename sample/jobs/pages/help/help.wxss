@@ -1,0 +1,16 @@
+.card { margin-top: 20rpx; }
+.section-title { display: block; }
+.faq { padding: 22rpx 0; border-top: 1rpx solid #f3f4f6; }
+.q { font-size: 28rpx; color: #1f2329; }
+.chev.down { transform: rotate(135deg); }
+.a { display: block; margin-top: 12rpx; font-size: 25rpx; color: #5c6370; line-height: 40rpx; }
+.types { flex-wrap: wrap; }
+.ty { padding: 8rpx 22rpx; border-radius: 26rpx; background: #f2f4f7; margin: 0 14rpx 14rpx 0; }
+.ty.on { background: #eef3ff; }
+.ty-t { font-size: 24rpx; color: #5c6370; white-space: nowrap; }
+.ty.on .ty-t { color: #2E6BFF; font-weight: bold; }
+.fb { width: 100%; height: 180rpx; background: #f7f8fa; border-radius: 12rpx; padding: 18rpx; box-sizing: border-box; font-size: 26rpx; margin: 6rpx 0 24rpx; }
+.fb-item { padding: 18rpx 0; border-top: 1rpx solid #f3f4f6; }
+.fb-type { font-size: 26rpx; font-weight: bold; }
+.fb-text { display: block; font-size: 26rpx; color: #3a3f47; margin: 8rpx 0; }
+.service { padding: 28rpx; }

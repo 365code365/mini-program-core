@@ -1,0 +1,29 @@
+.hd { padding: 32rpx 32rpx 8rpx; }
+.hd-t { display: block; font-size: 34rpx; font-weight: 700; }
+.hd-s { display: block; margin-top: 8rpx; font-size: 23rpx; color: #8a94a6; line-height: 1.5; }
+.lc { margin: 20rpx 24rpx 0; padding: 28rpx; border-radius: 20rpx; box-shadow: 0 8rpx 24rpx rgba(20, 40, 90, 0.15); }
+.lc-ch { width: 76rpx; height: 76rpx; border-radius: 38rpx; background: rgba(255, 255, 255, 0.25); color: #fff; font-size: 34rpx; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.lc-main { flex: 1; margin-left: 20rpx; }
+.lc-t { display: block; font-size: 30rpx; color: #fff; font-weight: 600; }
+.lc-no { display: block; margin-top: 6rpx; font-size: 25rpx; color: rgba(255, 255, 255, 0.9); letter-spacing: 1rpx; }
+.lc-arr { font-size: 23rpx; color: rgba(255, 255, 255, 0.9); }
+.lc-more { margin-top: 20rpx; padding-top: 16rpx; border-top: 1rpx solid rgba(255, 255, 255, 0.3); }
+.lc-l { display: block; font-size: 24rpx; color: rgba(255, 255, 255, 0.92); margin-top: 6rpx; }
+.lc-b { margin-top: 18rpx; justify-content: flex-end; }
+.lc-btn { font-size: 24rpx; color: #fff; padding: 10rpx 28rpx; border: 1rpx solid rgba(255, 255, 255, 0.8); border-radius: 30rpx; margin-left: 16rpx; }
+.lc-btn.solid { background: #fff; color: #1d64d8; }
+.pd { padding: 20rpx 0; border-bottom: 1rpx solid #eef1f6; }
+.pd-ch { width: 64rpx; height: 64rpx; border-radius: 32rpx; color: #fff; font-size: 28rpx; display: flex; align-items: center; justify-content: center; }
+.pd-main { flex: 1; margin-left: 18rpx; display: flex; flex-direction: column; }
+.pd-t { font-size: 27rpx; }
+.pd-b { font-size: 24rpx; color: #1d64d8; padding: 8rpx 24rpx; border: 1rpx solid #1d64d8; border-radius: 26rpx; }
+.mask { position: fixed; left: 0; top: 0; right: 0; bottom: 0; background: rgba(10, 20, 40, 0.72); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
+.sh { width: 620rpx; padding: 40rpx; border-radius: 28rpx; display: flex; flex-direction: column; align-items: center; }
+.sh-t { font-size: 36rpx; font-weight: 700; color: #fff; }
+.sh-n { margin-top: 12rpx; font-size: 28rpx; color: #fff; text-align: center; }
+.sh-l { margin-top: 8rpx; font-size: 24rpx; color: rgba(255, 255, 255, 0.9); }
+.sh-code { margin-top: 32rpx; width: 100%; padding: 28rpx 0; background: #fff; border-radius: 18rpx; display: flex; flex-direction: column; align-items: center; }
+.sh-cl { font-size: 22rpx; color: #8a94a6; }
+.sh-c { font-size: 72rpx; font-weight: 700; letter-spacing: 12rpx; color: #1f2733; margin: 8rpx 0; }
+.sh-w { margin-top: 20rpx; font-size: 22rpx; color: rgba(255, 255, 255, 0.85); }
+.sh-x { margin-top: 32rpx; font-size: 24rpx; color: rgba(255, 255, 255, 0.7); }

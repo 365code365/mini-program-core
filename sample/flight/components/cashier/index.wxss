@@ -1,0 +1,24 @@
+.mask { position: fixed; left: 0; top: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 80; }
+.ca { position: fixed; left: 0; right: 0; bottom: 0; background: #ffffff; border-radius: 28rpx 28rpx 0 0; z-index: 81; padding: 28rpx 32rpx 48rpx; display: flex; flex-direction: column; }
+.row { display: flex; flex-direction: row; align-items: center; }
+.between { justify-content: space-between; }
+.flex1 { flex: 1; }
+.col { display: flex; flex-direction: column; }
+.muted { color: #8a93a6; }
+.small { font-size: 22rpx; }
+.red { color: #f04438; }
+.ca-x { width: 60rpx; font-size: 44rpx; color: #8a93a6; }
+.ca-t { font-size: 30rpx; font-weight: bold; }
+.ca-reason { font-size: 22rpx; color: #b54708; background: #fffaeb; border-radius: 8rpx; padding: 10rpx 16rpx; margin-top: 16rpx; }
+.ca-amt { justify-content: center; margin-top: 28rpx; }
+.ca-sym { font-size: 36rpx; font-weight: bold; margin-top: 12rpx; }
+.ca-num { font-size: 72rpx; font-weight: bold; }
+.ca-left { justify-content: center; margin-top: 8rpx; }
+.ca-no { text-align: center; margin-top: 6rpx; }
+.ca-ms { margin-top: 24rpx; }
+.ca-m { padding: 20rpx 0; border-bottom: 1rpx solid #eef1f6; }
+.ca-mn { font-size: 28rpx; }
+.btn { background: #1f6fff; color: #ffffff; border-radius: 44rpx; height: 88rpx; display: flex; align-items: center; justify-content: center; font-size: 32rpx; }
+.btn-hover { opacity: 0.8; }
+.ca-pay { margin-top: 32rpx; }
+.ca-tip { text-align: center; margin-top: 16rpx; }

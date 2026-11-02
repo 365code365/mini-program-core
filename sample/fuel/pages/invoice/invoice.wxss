@@ -1,0 +1,25 @@
+.done { display: flex; flex-direction: column; align-items: center; }
+.done-t { font-size: 30rpx; font-weight: bold; margin: 12rpx 0 10rpx; }
+.done .line { width: 100%; }
+.line { display: flex; flex-direction: row; justify-content: space-between; align-items: center; min-height: 70rpx; font-size: 26rpx; }
+.resend { margin-top: 20rpx; }
+.link { font-size: 24rpx; color: #13a874; }
+.tt { display: flex; flex-direction: row; align-items: center; border: 2rpx solid #e6e9ec; border-radius: 14rpx; padding: 18rpx 20rpx; margin-top: 16rpx; }
+.tt-on { border-color: #13a874; background: #f2fbf7; }
+.tt-mid { flex: 1; display: flex; flex-direction: column; }
+.tt-name { font-size: 27rpx; font-weight: bold; margin-right: 12rpx; }
+.tag-gray { color: #4d565f; background: #f1f3f5; }
+.tt-ck { color: #13a874; font-size: 32rpx; width: 40rpx; text-align: right; }
+.empty-line { padding: 20rpx 0 0; }
+.add { margin-top: 18rpx; }
+.add-tx { font-size: 26rpx; color: #13a874; }
+.err { font-size: 22rpx; color: #f2542d; margin-top: 8rpx; }
+.mail-in { flex: 1; text-align: right; font-size: 26rpx; height: 60rpx; margin-left: 30rpx; }
+.ops { padding: 40rpx 24rpx; }
+.seg { display: flex; flex-direction: row; align-items: center; padding: 20rpx 24rpx 0; }
+.sg { font-size: 24rpx; color: #4d565f; background: #ffffff; border-radius: 26rpx; padding: 8rpx 22rpx; margin-right: 14rpx; }
+.sg-on { background: #13a874; color: #ffffff; }
+.sg-link { margin-left: auto; font-size: 24rpx; color: #13a874; }
+.iv { display: flex; flex-direction: row; align-items: center; }
+.iv-mid { flex: 1; display: flex; flex-direction: column; }
+.iv-name { font-size: 27rpx; font-weight: bold; }

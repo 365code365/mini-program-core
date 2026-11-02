@@ -1,0 +1,36 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/trend/trend",
+    "pages/records/records",
+    "pages/mine/mine",
+    "pages/station/station",
+    "pages/refuel/refuel",
+    "pages/pay-result/pay-result",
+    "pages/cards/cards",
+    "pages/invoice/invoice",
+    "pages/titles/titles",
+    "pages/title-edit/title-edit"
+  ],
+  "window": {
+    "navigationBarTitleText": "易加油",
+    "navigationBarBackgroundColor": "#13a874",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f4f6f8"
+  },
+  "permission": { "scope.userLocation": { "desc": "用于查找附近的加油站并按距离排序" } },
+  "requiredPrivateInfos": ["getLocation", "chooseInvoiceTitle"],
+  "tabBar": {
+    "color": "#9aa0a8",
+    "selectedColor": "#13a874",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "custom": true,
+    "list": [
+      { "pagePath": "pages/index/index", "text": "加油", "iconPath": "images/tab/station.png", "selectedIconPath": "images/tab/station-on.png" },
+      { "pagePath": "pages/trend/trend", "text": "油价", "iconPath": "images/tab/trend.png", "selectedIconPath": "images/tab/trend-on.png" },
+      { "pagePath": "pages/records/records", "text": "记录", "iconPath": "images/tab/record.png", "selectedIconPath": "images/tab/record-on.png" },
+      { "pagePath": "pages/mine/mine", "text": "我的", "iconPath": "images/tab/user.png", "selectedIconPath": "images/tab/user-on.png" }
+    ]
+  }
+}

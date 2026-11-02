@@ -1,0 +1,11 @@
+.od { padding: 16rpx 0; border-bottom: 1rpx solid #eef1ef; }
+.od-info { margin-left: 12rpx; }
+.big { font-size: 34rpx; }
+.empty-s { padding: 24rpx 0; }
+.ty { min-height: 92rpx; border-bottom: 1rpx solid #eef1ef; }
+.ty-lb { font-size: 28rpx; color: #4a544f; }
+.ty-it { margin-left: 28rpx; }
+.note { display: block; padding: 18rpx 0; }
+.his { margin-top: 32rpx; }
+.hi { padding: 14rpx 0; border-bottom: 1rpx solid #eef1ef; }
+.hi-tt { font-weight: bold; }

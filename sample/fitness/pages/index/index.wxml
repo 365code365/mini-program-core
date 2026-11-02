@@ -1,13 +1,12 @@
 <view class="hello">
-  <view>
-    <text class="h1">{{greet}}，陈一鸣</text>
-    <text class="h2">已坚持训练 {{streak}} 天 · 燃动 · 科技园店</text>
+  <view class="hello-m">
+    <text class="h1">{{greet}}，{{name}}</text>
+    <text class="h2">已连续打卡 {{streak}} 天 · {{storeName}}</text>
   </view>
   <view class="store" bindtap="pickStore"><text>切换门店</text></view>
 </view>
-
 <view class="today">
-  <view class="ring">
+  <view class="ring" bindtap="goRecords">
     <view class="ring-half r"><view class="disc disc-l" style="transform: rotate({{rightDeg}}deg);"></view></view>
     <view class="ring-half l"><view class="disc disc-r" style="transform: rotate({{leftDeg}}deg);"></view></view>
     <view class="ring-in">
@@ -26,12 +25,39 @@
     </view>
     <view class="t-item">
       <view class="dot" style="background: #3d7bff;"></view>
-      <view class="t-line"><text class="t-v">{{today.steps}}</text><text class="t-u">步</text></view>
+      <view class="t-line"><text class="t-v">{{weekDays}}</text><text class="t-u">本周训练天数</text></view>
     </view>
-    <view class="goal-btn" bindtap="setGoal"><text>调整目标</text></view>
+    <view class="row">
+      <view class="goal-btn" bindtap="setGoal"><text>调整目标</text></view>
+      <view class="goal-btn add-w" bindtap="goWorkout"><text>记训练</text></view>
+    </view>
   </view>
 </view>
-
+<view wx:if="{{next}}" class="card next row" bindtap="goBookings">
+  <text class="next-tag {{next.wait ? 'wait' : ''}}">{{next.wait ? '候补' : '待上课'}}</text>
+  <text class="next-tx">{{next.text}}</text>
+  <view class="chev"></view>
+</view>
+<view class="card plan" bindtap="goPlan">
+  <block wx:if="{{plan}}">
+    <view class="row between">
+      <text class="sec-title">{{plan.name}}</text>
+      <text class="muted">第 {{plan.day}}/{{plan.days}} 天</text>
+    </view>
+    <view class="p-bar"><view class="p-in" style="width: {{plan.pct}}%;"></view></view>
+    <view class="row between p-foot">
+      <text class="p-today">{{plan.todayText}}</text>
+      <text class="p-go">去训练</text>
+    </view>
+  </block>
+  <view wx:else class="row between">
+    <view>
+      <text class="sec-title">训练计划</text>
+      <text class="muted p-sub">选一个计划，每天照着练，进度自动记录</text>
+    </view>
+    <text class="p-go">选计划</text>
+  </view>
+</view>
 <view class="card">
   <view class="row between">
     <text class="sec-title">{{month}}月打卡</text>
@@ -49,7 +75,6 @@
   </view>
   <view class="btn check-btn {{todayChecked ? 'gray' : ''}}" bindtap="checkIn"><text>{{todayChecked ? '今日已打卡 · 明天继续' : '训练完成，立即打卡'}}</text></view>
 </view>
-
 <view class="card">
   <view class="row between">
     <text class="sec-title">推荐课程</text>

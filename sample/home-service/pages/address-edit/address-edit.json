@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "新增地址",
+  "usingComponents": {
+    "form-group": "../../components/form-group/form-group",
+    "form-item": "../../components/form-item/form-item"
+  }
+}

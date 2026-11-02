@@ -1,0 +1,12 @@
+.ep { position: relative; background: linear-gradient(135deg, #3d7bff, #1f4fd8); border-radius: 24rpx; padding: 32rpx; margin-bottom: 24rpx; color: #ffffff; overflow: hidden; }
+.ep-co { font-size: 24rpx; opacity: 0.85; }
+.ep-st { font-size: 22rpx; background: rgba(255, 255, 255, 0.2); padding: 4rpx 14rpx; border-radius: 8rpx; }
+.ep-name { display: block; font-size: 36rpx; font-weight: bold; margin-top: 20rpx; }
+.ep-no { font-size: 22rpx; opacity: 0.8; margin-top: 12rpx; }
+.ep-grid { margin-top: 32rpx; }
+.ep-cell { flex: 1; display: flex; flex-direction: column; }
+.ep-k { font-size: 22rpx; opacity: 0.75; }
+.ep-v { font-size: 30rpx; font-weight: bold; margin-top: 6rpx; }
+.ep-seal { position: absolute; right: 24rpx; top: 60rpx; width: 150rpx; height: 150rpx; opacity: 0.85; }
+.pb-btn { flex: 1; }
+.pb-gap { margin-left: 20rpx; flex: 1.6; }

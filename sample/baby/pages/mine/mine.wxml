@@ -1,0 +1,42 @@
+<view class="page tab-page">
+  <view class="head" data-key="profile" bindtap="go" hover-class="btn-hover">
+    <image class="av" src="{{baby.avatar}}" mode="aspectFill"></image>
+    <view class="col flex1">
+      <text class="h-name">{{baby.name}}的家</text>
+      <text class="h-sub">{{baby.fullName ? baby.fullName + ' · ' : ''}}{{age}}</text>
+    </view>
+    <text class="h-op">编辑 ›</text>
+  </view>
+
+  <view class="card stats">
+    <view wx:for="{{stats}}" wx:key="k" class="stat" data-key="{{item.k}}" bindtap="go" hover-class="item-hover">
+      <text class="s-num">{{item.n}}</text>
+      <text class="muted">{{item.t}}</text>
+    </view>
+  </view>
+
+  <view class="card menu">
+    <view wx:for="{{menu}}" wx:key="key" class="mi" data-key="{{item.key}}" bindtap="go" hover-class="item-hover">
+      <view class="col flex1">
+        <text class="mi-t">{{item.text}}</text>
+        <text class="muted">{{item.sub}}</text>
+      </view>
+      <text class="arrow">›</text>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="between"><text class="sec-title">本机存储</text><text class="muted">{{storage.keys}} 项数据</text></view>
+    <progress class="bar" percent="{{storage.percent}}" stroke-width="6" border-radius="6" activeColor="#ff7a8a" backgroundColor="#f3eef0"></progress>
+    <text class="muted">已用 {{storage.used}}KB / {{storage.limit}}KB</text>
+    <view class="row ops">
+      <view class="btn-ghost flex1" bindtap="restore" hover-class="btn-hover">恢复示例数据</view>
+      <view class="btn-ghost flex1 danger" bindtap="clearRecords" hover-class="btn-hover">清空记录</view>
+    </view>
+  </view>
+
+  <view class="card mi" bindtap="about" hover-class="item-hover">
+    <text class="flex1 mi-t">关于宝贝成长记</text>
+    <text class="arrow">›</text>
+  </view>
+</view>

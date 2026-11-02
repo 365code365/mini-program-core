@@ -1,0 +1,17 @@
+<view class="mask" wx:if="{{show}}" catchtap="onCancel" catchtouchmove="noop">
+  <view class="sheet" catchtap="noop">
+    <view class="head">
+      <text class="close" catchtap="onCancel">取消</text>
+      <text class="h-title">微信支付</text>
+      <text class="close hide">取消</text>
+    </view>
+    <text class="sub">青桔骑行 · {{title}}</text>
+    <view class="amt"><text class="yen">¥</text><text class="num">{{amount}}</text></view>
+    <view class="line">
+      <text class="lk">付款方式</text>
+      <text class="lv">零钱（剩余 ¥286.40）</text>
+    </view>
+    <text class="note">当前环境未接入微信支付，这是模拟收银台：确认后按支付成功处理</text>
+    <view class="pay" catchtap="onConfirm">确认支付</view>
+  </view>
+</view>

@@ -1,0 +1,33 @@
+<view class="hero">
+  <view class="row user">
+    <view class="avatar"><text class="avatar-t">易</text></view>
+    <view class="col flex1">
+      <text class="u-name">易充用户 3721</text>
+      <text class="u-sub">138****6620·已充电 {{count}} 次</text>
+    </view>
+  </view>
+  <view class="car-card row" bindtap="onCars">
+    <view class="car-ic"><text class="car-ic-t">车</text></view>
+    <view class="col flex1" wx:if="{{car}}">
+      <text class="car-plate">{{car.plate}}</text>
+      <text class="sub">{{car.model}}·电池 {{car.battery}} 度</text>
+    </view>
+    <text class="flex1 sub" wx:else>还没有车辆，添加后才能充电</text>
+    <text class="car-op">{{car ? '我的车辆 ' + carCount : '去添加'}}</text>
+    <view class="chev"></view>
+  </view>
+</view>
+<view class="card stats row">
+  <view class="stat col" bindtap="onWallet"><text class="stat-n money">{{balance}}</text><text class="sub">余额(元)</text></view>
+  <view class="stat col" bindtap="onCoupons"><text class="stat-n">{{couponCount}}</text><text class="sub">充电券</text></view>
+  <view class="stat col" bindtap="onOrders"><text class="stat-n">{{count}}</text><text class="sub">充电订单</text></view>
+</view>
+<view class="card menu">
+  <view class="m-item row" bindtap="onCars"><view class="m-ic ic-car"><text class="m-ic-t">车</text></view><text class="m-t flex1">我的车辆</text><text class="sub">{{carCount}} 辆</text><view class="chev"></view></view>
+  <view class="m-item row" bindtap="onCoupons"><view class="m-ic ic-coupon"><text class="m-ic-t">券</text></view><text class="m-t flex1">充电券</text><text class="sub">{{couponCount}} 张可用</text><view class="chev"></view></view>
+  <view class="m-item row" bindtap="onInvoice"><view class="m-ic ic-inv"><text class="m-ic-t">票</text></view><text class="m-t flex1">开具发票</text><text class="sub">{{canInvoice}} 笔可开</text><view class="chev"></view></view>
+  <view class="m-item row" bindtap="onFavs"><view class="m-ic ic-fav"><text class="m-ic-t">藏</text></view><text class="m-t flex1">收藏电站</text><text class="sub">{{favCount}} 个</text><view class="chev"></view></view>
+  <view class="m-item row" bindtap="onRepair"><view class="m-ic ic-repair"><text class="m-ic-t">修</text></view><text class="m-t flex1">故障报修</text><text class="sub">{{repairPending ? repairPending + ' 单处理中' : '桩坏了点这里'}}</text><view class="chev"></view></view>
+  <view class="m-item row last" bindtap="onHelp"><view class="m-ic ic-help"><text class="m-ic-t">助</text></view><text class="m-t flex1">帮助与客服</text><view class="chev"></view></view>
+</view>
+<view class="tabbar-space"></view>

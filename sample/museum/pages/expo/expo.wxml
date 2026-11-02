@@ -1,0 +1,26 @@
+<page-meta background-text-style="dark">
+  <navigation-bar title="{{x.title}}" front-color="#000000" background-color="#f6f2ec"></navigation-bar>
+</page-meta>
+<image class="banner" src="{{x.cover}}" mode="aspectFill"></image>
+<view class="card head">
+  <text class="st {{status === '展出中' ? 'st-on' : ''}}">{{status}} · {{status === '展出中' ? '距闭展 ' + daysLeft + ' 天' : daysLeft + ' 天后开展'}}</text>
+  <text class="t">{{x.title}}</text>
+  <text class="s">{{x.sub}}</text>
+  <view class="kv"><text class="k">展期</text><text class="v">{{x.start}} 至 {{x.end}}</text></view>
+  <view class="kv"><text class="k">地点</text><text class="v">{{x.place}}</text></view>
+  <view class="kv"><text class="k">票价</text><text class="v">{{x.price}}</text></view>
+</view>
+<view class="card">
+  <text class="h">展览介绍</text>
+  <rich-text class="rt" nodes="{{x.intro}}"></rich-text>
+</view>
+<view class="sec-h"><text class="sec-t">重点展品</text></view>
+<view class="it" wx:for="{{items}}" wx:key="id" data-id="{{item.id}}" bindtap="openExhibit">
+  <image class="it-img" src="{{item.img}}" mode="aspectFill"></image>
+  <view class="it-b"><text class="it-n">{{item.name}}</text><text class="muted">{{item.era}} · {{item.level}}</text></view>
+  <text class="arrow">›</text>
+</view>
+<view class="foot">
+  <view wx:if="{{status === '展出中'}}" class="btn" bindtap="book">预约参观</view>
+  <view wx:else class="{{reminded ? 'btn-ghost' : 'btn'}}" bindtap="remind">{{reminded ? '已设提醒（点击取消）' : '开展提醒我'}}</view>
+</view>

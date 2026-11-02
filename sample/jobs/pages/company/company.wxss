@@ -24,3 +24,5 @@
 .w-t { font-size: 26rpx; color: #3a3f47; }
 .list-title { display: block; font-size: 30rpx; font-weight: bold; margin: 12rpx 32rpx 20rpx; }
 .job-title { font-size: 30rpx; font-weight: bold; margin-bottom: 10rpx; }
+.j-right { align-items: flex-end; }
+.j-mark { font-size: 20rpx; color: #19BE6B; margin-top: 8rpx; }

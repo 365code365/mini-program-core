@@ -1,0 +1,6 @@
+.st { display: flex; flex-direction: row; align-items: center; }
+.st-btn { width: 56rpx; height: 56rpx; border-radius: 28rpx; background: #e7f6ef; display: flex; align-items: center; justify-content: center; }
+.st-off { background: #f1f3f2; }
+.st-sym { font-size: 34rpx; color: #13a86b; line-height: 1; }
+.st-off .st-sym { color: #c3c9c6; }
+.st-val { min-width: 100rpx; text-align: center; font-size: 28rpx; color: #1c2521; line-height: 1.5; }

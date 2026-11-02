@@ -205,3 +205,78 @@
   line-height: 84rpx;
   font-size: 30rpx;
 }
+.addr {
+  min-height: 96rpx;
+  align-items: center;
+}
+.addr-main {
+  display: block;
+  line-height: 42rpx;
+}
+.addr-sub {
+  display: block;
+  font-size: 24rpx;
+  color: #9b9087;
+  line-height: 36rpx;
+}
+.addr-tag {
+  font-size: 20rpx;
+  padding: 0 10rpx;
+  margin-left: 12rpx;
+  border-radius: 6rpx;
+  background: #f3ece4;
+  color: #8a5a3b;
+}
+.addr-empty {
+  color: #b5562a;
+}
+.pay-way {
+  height: 100rpx;
+  border-bottom: 1rpx solid #f5f0ea;
+  font-size: 28rpx;
+}
+.no-border {
+  border-bottom: 0;
+}
+.way-icon {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 12rpx;
+  font-size: 24rpx;
+  margin-right: 20rpx;
+}
+.way-wx {
+  background: #4cb050;
+}
+.way-wallet {
+  background: linear-gradient(135deg, #c98b4e, #8a5a3b);
+}
+.way-sub {
+  display: block;
+  font-size: 22rpx;
+  color: #9b9087;
+  line-height: 30rpx;
+}
+.way-low {
+  color: #b5562a;
+}
+.radio {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 20rpx;
+  border: 2rpx solid #cfc5bb;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.radio-on {
+  border-color: #6b4226;
+  background: #6b4226;
+}
+.radio-in {
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 7rpx;
+  background: #ffffff;
+}

@@ -1,0 +1,17 @@
+.tabs { background: #ffffff; height: 88rpx; margin-bottom: 24rpx; }
+.tab { flex: 1; height: 88rpx; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+.tab-t { font-size: 28rpx; color: #5c6370; white-space: nowrap; }
+.tab.on .tab-t { color: #2f6bff; font-weight: bold; }
+.tab-line { position: absolute; bottom: 0; width: 48rpx; height: 6rpx; border-radius: 3rpx; background: #2f6bff; }
+.empty { text-align: center; padding: 120rpx 0; }
+.cp { padding: 0; overflow: hidden; }
+.cp-l { width: 180rpx; height: 160rpx; background: linear-gradient(135deg, #ffa95c, #ff6a1a); display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 20rpx 0 0 20rpx; }
+.off .cp-l { background: #c4c9d2; }
+.cp-amt { color: #ffffff; font-size: 52rpx; font-weight: bold; white-space: nowrap; }
+.cp-cond { color: rgba(255, 255, 255, 0.9); font-size: 22rpx; white-space: nowrap; }
+.cp-main { padding: 0 20rpx 0 24rpx; }
+.cp-title { display: block; font-size: 30rpx; font-weight: bold; margin-bottom: 8rpx; }
+.off .cp-title { color: #8a919f; }
+.cp-btn { font-size: 24rpx; color: #ff6a1a; background: #fff2e6; border-radius: 28rpx; padding: 10rpx 24rpx; margin-right: 24rpx; white-space: nowrap; }
+.cp-used { font-size: 24rpx; color: #a7adb8; margin-right: 28rpx; white-space: nowrap; }
+.note { display: block; padding: 0 36rpx 40rpx; font-size: 22rpx; color: #a7adb8; }

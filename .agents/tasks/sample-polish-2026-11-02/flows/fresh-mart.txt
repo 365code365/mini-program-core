@@ -1,0 +1,69 @@
+# 鲜到家超市：每页能开 + 秒杀页 / 收藏 / 鲜豆 / 加购结算支付 / 订单详情取消
+smoke pages/detail/detail?id=p1 pages/order-detail/order-detail?id=none pages/aftersale/aftersale?id=none pages/address/address?select=1
+
+open
+tap .flash-more
+route pages/flash/flash
+count 6 .item
+shot target/_polish_shots/fm-flash.png
+tapn 0 .buy
+toast 已抢到
+expect wx.getStorageSync('fm_cart').filter(function (x) { return x.id === 'p12'; }).length === 1
+tapn 0 .buy
+tapn 0 .buy
+toast 限购
+# 已抢光的那一件（p3）点不动
+expect getCurrentPages().slice(-1)[0].data.list[5].out === true
+# 预告场：设提醒
+tapn 1 .slot
+exists .remind
+absent .buy
+tapn 0 .remind
+toast 提醒你
+expect getCurrentPages().slice(-1)[0].data.list[0].reminded === true
+shot target/_polish_shots/fm-flash-next.png
+back
+
+# 收藏：详情页点收藏 → 我的 → 收藏
+eval wx.navigateTo({ url: '/pages/detail/detail?id=p1' })
+tap .fav
+expect wx.getStorageSync('fm_favs').indexOf('p1') >= 0
+back
+eval wx.switchTab({ url: '/pages/mine/mine' })
+eval getCurrentPages().slice(-1)[0].onMenu({ currentTarget: { dataset: { key: 'favs' } } })
+route pages/favs/favs
+count 1 .item
+tap .add-btn
+toast 已加入购物车
+shot target/_polish_shots/fm-favs.png
+tap .unfav
+modal ok
+count 0 .item
+exists .empty-btn
+back
+
+# 鲜豆：签到 + 明细
+eval wx.navigateTo({ url: '/pages/beans/beans' })
+expect getCurrentPages().slice(-1)[0].data.beans === 860
+tapn 0 .top-btn
+toast +20
+expect getCurrentPages().slice(-1)[0].data.beans === 880
+expect getCurrentPages().slice(-1)[0].data.logs[0].title === '每日签到'
+tapn 0 .top-btn
+toast 已经签过
+shot target/_polish_shots/fm-beans.png
+back
+
+# 购物车 → 结算 → 支付（宿主没有支付能力：页内确认）→ 订单详情
+eval wx.switchTab({ url: '/pages/cart/cart' })
+route pages/cart/cart
+tap .settle-btn
+route pages/checkout/checkout
+shot target/_polish_shots/fm-checkout.png
+tap .submit
+modal?
+modal ok
+wait 400
+print getCurrentPages().slice(-1)[0].route
+print wx.getStorageSync('fm_orders').length
+noerr

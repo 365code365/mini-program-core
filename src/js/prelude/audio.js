@@ -13,8 +13,10 @@
                 __native_audio('create', String(id), '{}');
                 var ctx = { __id: id, __ls: ls };
                 Object.keys(props).forEach(function(k) {
+                    // configurable：getBackgroundAudioManager 要在同一个对象上把 src 再包一层（设 src 即开播 + 通知宿主）。
+                    // 缺了它那一步 defineProperty 抛「property is not configurable」，背景音频管理器整个拿不到
                     Object.defineProperty(ctx, k, {
-                        enumerable: true,
+                        enumerable: true, configurable: true,
                         get: function() { return props[k]; },
                         set: function(v) {
                             props[k] = (k === 'src' || k === 'referrerPolicy') ? String(v == null ? '' : v) : v;

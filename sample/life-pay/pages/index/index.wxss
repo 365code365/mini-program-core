@@ -1,7 +1,8 @@
 .hero { background: linear-gradient(180deg, #14a06f 0%, #1cb07c 60%, #f4f6f8 100%); padding: 16rpx 24rpx 0; }
 .city { height: 56rpx; padding: 0 22rpx; border-radius: 28rpx; background: rgba(255, 255, 255, 0.18); }
 .city-tx { font-size: 26rpx; color: #ffffff; font-weight: bold; }
-.down { width: 0; height: 0; border-left: 9rpx solid transparent; border-right: 9rpx solid transparent; border-top: 11rpx solid #ffffff; margin-left: 10rpx; }
+/* 下拉箭头：旋转的 L 形边框（透明边拼的三角引擎里画成方块） */
+.down { width: 10rpx; height: 10rpx; border-right: 3rpx solid #ffffff; border-bottom: 3rpx solid #ffffff; transform: rotate(45deg); margin: -6rpx 0 0 12rpx; }
 .h-rec { font-size: 24rpx; color: rgba(255, 255, 255, 0.9); }
 .chev.w { border-color: rgba(255, 255, 255, 0.9); }
 .grid { margin-top: 24rpx; background: #ffffff; border-radius: 24rpx; display: flex; flex-direction: row; padding: 32rpx 8rpx 28rpx; box-shadow: 0 8rpx 24rpx rgba(20, 80, 60, 0.08); }
@@ -37,3 +38,6 @@
 .tip { margin-top: 18rpx; align-items: flex-start; }
 .tip-n { width: 36rpx; height: 36rpx; border-radius: 18rpx; background: #e6f7f0; color: #14a06f; font-size: 22rpx; line-height: 36rpx; text-align: center; flex-shrink: 0; margin-right: 14rpx; }
 .tip-t { flex: 1; font-size: 24rpx; color: #5b626c; line-height: 36rpx; }
+.n-new { font-size: 20rpx; color: #ffffff; background: #f2603d; padding: 0 10rpx; border-radius: 14rpx; margin-left: 10rpx; white-space: nowrap; }
+.due-sub { margin-top: 12rpx; }
+.all-btn { height: 52rpx; line-height: 52rpx; padding: 0 22rpx; border-radius: 26rpx; border: 2rpx solid #f2603d; color: #f2603d; font-size: 22rpx; white-space: nowrap; }

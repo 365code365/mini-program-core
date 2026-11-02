@@ -1,0 +1,28 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/route/route",
+    "pages/mine/mine",
+    "pages/spot/spot",
+    "pages/guide/guide",
+    "pages/live/live"
+  ],
+  "window": {
+    "navigationBarTitleText": "京城漫步",
+    "navigationBarBackgroundColor": "#1c3d5a",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f4f6f8"
+  },
+  "tabBar": {
+    "color": "#8a94a0",
+    "selectedColor": "#1c3d5a",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "custom": true,
+    "list": [
+      { "pagePath": "pages/index/index", "text": "地图", "iconPath": "images/tab/map.png", "selectedIconPath": "images/tab/map-on.png" },
+      { "pagePath": "pages/route/route", "text": "我的路线", "iconPath": "images/tab/route.png", "selectedIconPath": "images/tab/route-on.png" },
+      { "pagePath": "pages/mine/mine", "text": "我的", "iconPath": "images/tab/user.png", "selectedIconPath": "images/tab/user-on.png" }
+    ]
+  }
+}

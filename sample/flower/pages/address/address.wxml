@@ -1,0 +1,20 @@
+<view class="tip row"><text class="tip-t">收花人信息只用于配送，配送员看到的手机号是隐私号</text></view>
+<view class="card addr row" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onPick">
+  <view wx:if="{{select}}" class="radio {{pickedId === item.id ? 'radio-on' : ''}}"><view class="radio-in"></view></view>
+  <view class="flex1">
+    <view class="row">
+      <text class="a-name">{{item.name}}</text>
+      <text class="a-phone">{{item.phoneMask}}</text>
+      <text wx:if="{{item.isDefault}}" class="pill a-def">默认</text>
+      <text wx:if="{{item.tag}}" class="pill a-tag">{{item.tag}}</text>
+    </view>
+    <text class="a-text">{{item.text}}</text>
+  </view>
+  <view class="edit" data-id="{{item.id}}" catchtap="onEdit"><text>编辑</text></view>
+</view>
+<view wx:if="{{!list.length}}" class="empty"><text>还没有收花地址，先添加一个吧</text></view>
+<view class="fbar-gap"></view>
+<view class="fbar row">
+  <view class="btn-ghost b-imp" bindtap="onImport"><text>导入微信地址</text></view>
+  <view class="btn-primary b-add" bindtap="onAdd"><text>新增收花地址</text></view>
+</view>

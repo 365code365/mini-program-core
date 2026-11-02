@@ -1,0 +1,18 @@
+// WXS：在视图层做纯格式化（节次时间、星期、成绩等级），不用为了显示再 setData 一份
+var TIMES = ['08:00', '08:55', '10:00', '10:55', '14:00', '14:55', '16:00', '16:55', '19:00', '19:55', '20:50', '21:45'];
+var WEEK = ['', '周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+function section(start, len) {
+  var end = start + len - 1;
+  return '第' + start + '-' + end + '节 ' + TIMES[start - 1];
+}
+function weekday(d) { return WEEK[d] || ''; }
+function level(score) {
+  if (score >= 90) return '优秀';
+  if (score >= 80) return '良好';
+  if (score >= 70) return '中等';
+  if (score >= 60) return '及格';
+  return '不及格';
+}
+function levelClass(score) { return score >= 90 ? 'lv-a' : score >= 80 ? 'lv-b' : score >= 60 ? 'lv-c' : 'lv-d'; }
+function money(n) { return (Math.round(n * 100) / 100).toFixed(2); }
+module.exports = { section: section, weekday: weekday, level: level, levelClass: levelClass, money: money };

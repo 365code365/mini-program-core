@@ -1,0 +1,44 @@
+<view class="page">
+  <swiper class="sw" current="{{cur}}" previous-margin="110rpx" next-margin="110rpx" bindanimationfinish="onSwiperDone">
+    <swiper-item wx:for="{{list}}" wx:key="id">
+      <view class="slide {{cur === index ? 'slide-on' : ''}}">
+        <image class="cover" src="{{item.cover}}" mode="aspectFill"></image>
+        <view class="using" wx:if="{{item.id === using}}"><text class="using-tx">在学</text></view>
+      </view>
+    </swiper-item>
+  </swiper>
+  <view class="dots row">
+    <view class="dot {{cur === index ? 'dot-on' : ''}}" wx:for="{{list}}" wx:key="id"></view>
+  </view>
+
+  <view class="wrap">
+    <view class="card info" wx:if="{{info}}">
+      <view class="between">
+        <text class="h1">{{info.full}}</text>
+        <text class="tag">{{info.level}}</text>
+      </view>
+      <text class="desc">{{info.desc}}</text>
+      <view class="meta row">
+        <view class="m"><text class="m-v">{{info.total}}</text><text class="muted">精选词</text></view>
+        <view class="m"><text class="m-v">{{info.learned}}</text><text class="muted">已学</text></view>
+        <view class="m"><text class="m-v">{{info.pct}}%</text><text class="muted">进度</text></view>
+      </view>
+      <progress percent="{{info.pct}}" stroke-width="6" activeColor="#4f6bed" backgroundColor="#e6eaf7" border-radius="3"></progress>
+      <text class="muted learners">{{info.learners}}</text>
+      <view class="btn" hover-class="btn-press" bindtap="onUse">{{info.id === using ? '继续学习这本' : '使用这本词书'}}</view>
+    </view>
+
+    <view class="card">
+      <text class="h2">全部词书</text>
+      <view class="item row" wx:for="{{list}}" wx:key="id" data-i="{{index}}" bindtap="onPick" hover-class="btn-press">
+        <image class="it-cover" src="{{item.cover}}" mode="aspectFill"></image>
+        <view class="col it-main">
+          <text class="it-name">{{item.full}}</text>
+          <text class="muted">{{item.level}} · {{item.total}} 词 · 已学 {{item.learned}}</text>
+        </view>
+        <text class="brand" wx:if="{{item.id === using}}">在学</text>
+        <text class="muted" wx:elif="{{cur === index}}">已选</text>
+      </view>
+    </view>
+  </view>
+</view>

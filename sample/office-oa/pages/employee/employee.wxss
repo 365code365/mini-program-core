@@ -1,0 +1,15 @@
+.head { background: #ffffff; align-items: center; padding: 48rpx 32rpx 32rpx; }
+.big { width: 140rpx; height: 140rpx; line-height: 140rpx; border-radius: 32rpx; font-size: 44rpx; }
+.nm { font-size: 40rpx; font-weight: bold; margin-top: 20rpx; }
+.tt { font-size: 26rpx; color: #86909c; margin-top: 8rpx; }
+.busy { margin-top: 20rpx; font-size: 24rpx; color: #ff7d00; background: #fff7e8; border-radius: 8rpx; padding: 8rpx 20rpx; }
+.acts { background: #ffffff; padding: 8rpx 0 32rpx; border-bottom: 1rpx solid #f2f3f5; justify-content: center; }
+.ac { width: 180rpx; align-items: center; }
+.ac-ic { width: 88rpx; height: 88rpx; border-radius: 44rpx; color: #fff; font-size: 30rpx; line-height: 88rpx; text-align: center; }
+.ac-t { font-size: 24rpx; color: #4e5969; margin-top: 10rpx; }
+.kv { padding: 18rpx 0; border-bottom: 1rpx solid #f2f3f5; }
+.k { width: 160rpx; font-size: 26rpx; color: #86909c; }
+.v { font-size: 28rpx; color: #1d2129; }
+.peers { display: flex; flex-direction: row; flex-wrap: wrap; margin-top: 16rpx; }
+.pe { width: 25%; align-items: center; padding: 12rpx 0; }
+.pe-n { font-size: 24rpx; color: #4e5969; margin-top: 8rpx; }

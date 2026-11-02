@@ -1,0 +1,106 @@
+<view class="wrap">
+  <view class="card">
+    <view class="between">
+      <text class="sec-title">品牌</text>
+      <text class="blue" wx:if="{{brandIdx >= 0}}">{{brands[brandIdx].name}}</text>
+    </view>
+    <view class="letters row">
+      <text class="lt {{letter === item ? 'lt-on' : ''}}" wx:for="{{letters}}" wx:key="*this" data-l="{{item}}" bindtap="onLetter">{{item}}</text>
+    </view>
+    <scroll-view scroll-x class="brands" scroll-into-view="{{intoView}}" scroll-with-animation show-scrollbar="{{false}}" enhanced>
+      <view id="br-{{item.id}}" class="br {{brandIdx === index ? 'br-on' : ''}}" wx:for="{{brands}}" wx:key="id" data-i="{{index}}" bindtap="onBrand">
+        <view class="br-logo">
+          <text class="br-l">{{item.letter}}</text>
+        </view>
+        <text class="br-nm">{{item.name}}</text>
+      </view>
+    </scroll-view>
+    <text class="err" wx:if="{{errors.brand}}">{{errors.brand}}</text>
+    <picker wx:if="{{brandIdx >= 0}}" mode="selector" range="{{models}}" value="{{modelIdx}}" bindchange="onModel">
+      <view class="between f-row">
+        <text class="f-label">车型</text>
+        <text>{{models[modelIdx]}} ›</text>
+      </view>
+    </picker>
+    <view class="between f-row">
+      <text class="f-label">年款配置</text>
+      <input class="f-ipt" value="{{form.year}}" placeholder="如 2021 款 330TSI 精英版" data-k="year" bindinput="onInput" />
+    </view>
+    <view class="between f-row">
+      <text class="f-label">车身颜色</text>
+      <view class="row">
+        <text class="cl {{form.color === item.key ? 'cl-on' : ''}}" wx:for="{{colors}}" wx:key="key" data-k="{{item.key}}" bindtap="onColor">{{item.name}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <text class="sec-title">车牌与识别码</text>
+    <view class="row plate">
+      <picker mode="selector" range="{{provinces}}" value="{{form.prov}}" bindchange="onProv">
+        <view class="pl-box">
+          <text class="pl-tx">{{provinces[form.prov]}}</text>
+        </view>
+      </picker>
+      <picker mode="selector" range="{{cityLetters}}" value="{{form.city}}" bindchange="onCity">
+        <view class="pl-box">
+          <text class="pl-tx">{{cityLetters[form.city]}}</text>
+        </view>
+      </picker>
+      <input class="pl-ipt flex1" value="{{form.plateNo}}" maxlength="6" placeholder="5 位或新能源 6 位" data-k="plateNo" bindinput="onInput" />
+    </view>
+    <text class="err" wx:if="{{errors.plateNo}}">{{errors.plateNo}}</text>
+    <view class="between f-row">
+      <text class="f-label">车架号 VIN</text>
+      <input class="f-ipt" value="{{form.vin}}" maxlength="17" placeholder="17 位，见行驶证" data-k="vin" bindinput="onInput" />
+      <text class="scan" bindtap="scanVin">扫码</text>
+    </view>
+    <text class="err" wx:if="{{errors.vin}}">{{errors.vin}}</text>
+  </view>
+
+  <view class="card">
+    <text class="sec-title">用车信息</text>
+    <view class="between f-row">
+      <text class="f-label">当前里程</text>
+      <input class="f-ipt" type="digit" value="{{form.mileage}}" placeholder="km" data-k="mileage" bindinput="onInput" />
+    </view>
+    <text class="err" wx:if="{{errors.mileage}}">{{errors.mileage}}</text>
+    <picker mode="date" value="{{form.buyDate}}" end="{{today}}" data-k="buyDate" bindchange="onDate">
+      <view class="between f-row">
+        <text class="f-label">购车日期</text>
+        <text>{{form.buyDate}} ›</text>
+      </view>
+    </picker>
+    <text class="err" wx:if="{{errors.buyDate}}">{{errors.buyDate}}</text>
+    <picker mode="date" value="{{form.lastCareDate}}" end="{{today}}" data-k="lastCareDate" bindchange="onDate">
+      <view class="between f-row">
+        <text class="f-label">上次保养</text>
+        <text>{{form.lastCareDate}} ›</text>
+      </view>
+    </picker>
+    <view class="between f-row">
+      <text class="f-label">保养时里程</text>
+      <input class="f-ipt" type="digit" value="{{form.lastCareKm}}" placeholder="km，不清楚可不填" data-k="lastCareKm" bindinput="onInput" />
+    </view>
+    <text class="err" wx:if="{{errors.lastCareKm}}">{{errors.lastCareKm}}</text>
+    <view class="between f-row">
+      <text class="f-label">设为默认</text>
+      <switch checked="{{form.isDefault}}" color="#1f6fff" bindchange="onDefault" />
+    </view>
+  </view>
+  <view class="btn" bindtap="save">{{isEdit ? '保存修改' : '添加车辆'}}</view>
+  <view class="del" wx:if="{{isEdit}}" bindtap="remove">
+    <text>删除车辆</text>
+  </view>
+</view>
+
+<view class="mask" wx:if="{{vinDialog}}" bindtap="closeVin"></view>
+<view class="dialog" wx:if="{{vinDialog}}">
+  <text class="title">手动输入车架号</text>
+  <text class="sub d-sub">无法使用相机扫码，请对照行驶证「车辆识别代号」填写</text>
+  <input class="ipt" value="{{vinDraft}}" maxlength="17" focus placeholder="17 位字母数字" bindinput="onVinDraft" />
+  <view class="row d-ops">
+    <view class="btn-gray flex1 d-btn" bindtap="closeVin">取消</view>
+    <view class="btn flex1 d-btn d-ok" bindtap="confirmVin">确定</view>
+  </view>
+</view>

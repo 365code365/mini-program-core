@@ -29,8 +29,11 @@
   </view>
 </view>
 
-<view class="card">
-  <text class="section-title">公司地址</text>
+<view class="card" bindtap="onMap">
+  <view class="row between">
+    <text class="section-title">公司地址</text>
+    <view class="row"><text class="sub">查看地图</text><view class="chev"></view></view>
+  </view>
   <text class="intro">{{co.addr}}</text>
 </view>
 
@@ -40,6 +43,9 @@
     <text class="job-title">{{item.title}}</text>
     <text class="sub">{{item.city}}·{{item.exp}}·{{item.edu}}</text>
   </view>
-  <text class="salary">{{item.salary}}</text>
+  <view class="col j-right">
+    <text class="salary">{{item.salary}}</text>
+    <text class="j-mark" wx:if="{{item.applied}}">已投递</text>
+  </view>
 </view>
 <view style="height: 40rpx"></view>

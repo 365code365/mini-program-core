@@ -1,0 +1,42 @@
+<view class="top row between" wx:if="{{list.length}}">
+  <text class="muted">共 {{list.length}} 种商品 · 满 49 元包邮</text>
+  <text class="edit" bindtap="toggleEdit">{{editing ? '完成' : '管理'}}</text>
+</view>
+<view class="empty" wx:if="{{!list.length}}">
+  <image class="empty-img" src="/images/misc/empty.png" mode="aspectFit"></image>
+  <text class="empty-tx">购物车还是空的</text>
+  <view class="btn-ghost empty-go" bindtap="goHome">去逛逛时令好物</view>
+</view>
+<view class="card ci {{item.off ? 'ci-off' : ''}}" wx:for="{{list}}" wx:key="key">
+  <view class="ci-ck" data-i="{{index}}" bindtap="toggleOne">
+    <checkbox checked="{{item.checked}}" disabled="{{item.off && !editing}}" color="#3f9a3c"></checkbox>
+  </view>
+  <image class="ci-img" src="{{item.cover}}" mode="aspectFill" data-id="{{item.goodsId}}" bindtap="openGoods"></image>
+  <view class="ci-mid">
+    <text class="ci-name">{{item.name}}</text>
+    <text class="ci-sku">{{item.skuText}}</text>
+    <view class="row between">
+      <text class="price">{{item.off ? '已售罄' : '¥' + item.price}}</text>
+      <view class="row" wx:if="{{!item.off}}">
+        <view class="step {{item.qty <= 1 ? 'step-off' : ''}}" data-i="{{index}}" data-d="-1" bindtap="step"><text>−</text></view>
+        <text class="qty">{{item.qty}}</text>
+        <view class="step" data-i="{{index}}" data-d="1" bindtap="step"><text>+</text></view>
+      </view>
+    </view>
+  </view>
+</view>
+<view class="tabbar-gap"></view>
+<view class="bar" wx:if="{{list.length}}">
+  <view class="row" bindtap="toggleAll">
+    <checkbox checked="{{allChecked}}" color="#3f9a3c"></checkbox>
+    <text class="bar-all">全选</text>
+  </view>
+  <view class="bar-sum" wx:if="{{!editing}}">
+    <view class="row"><text>合计 </text><text class="price bar-total">¥{{total}}</text></view>
+    <text class="muted bar-tip">{{freightTip}}</text>
+  </view>
+  <view class="bar-sum" wx:else></view>
+  <view class="bar-btn {{editing ? 'bar-del' : ''}} {{count ? '' : 'bar-btn-off'}}" hover-class="btn-hover" bindtap="{{editing ? 'removeChecked' : 'checkout'}}">
+    <text class="bar-btn-tx">{{editing ? '删除' : '结算(' + count + ')'}}</text>
+  </view>
+</view>

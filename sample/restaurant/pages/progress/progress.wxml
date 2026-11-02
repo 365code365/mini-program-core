@@ -1,7 +1,8 @@
 <view class="page" wx:if="{{o}}">
   <view class="head">
     <text class="head-t">{{headline}}</text>
-    <text class="head-s" wx:if="{{eta}}">{{eta}}</text>
+    <text class="head-s" wx:if="{{eta}}">{{eta}}{{canCancel ? ' · 开做前可取消' : ''}}</text>
+    <text class="head-s" wx:if="{{urged && active}}">{{urged}} 已提醒后厨加急</text>
     <text class="head-s" wx:if="{{o.cancelReason}}">{{o.cancelReason}}</text>
     <view class="code-box" wx:if="{{o.status === 'paid' || o.status === 'done'}}">
       <text class="sub">取餐码</text>
@@ -20,6 +21,34 @@
     </view>
   </view>
 
+  <view class="card rate" wx:if="{{o.status === 'done'}}">
+    <block wx:if="{{rating}}">
+      <view class="row between">
+        <text class="title">我的评价</text>
+        <text class="sub">{{rating.time}}</text>
+      </view>
+      <view class="row stars">
+        <text wx:for="{{starList}}" wx:key="*this" class="star {{item <= rating.stars ? 'star-on' : ''}}">★</text>
+      </view>
+      <view class="tags" wx:if="{{rating.tags.length}}">
+        <text wx:for="{{rating.tags}}" wx:key="*this" class="tag tag-on">{{item}}</text>
+      </view>
+      <text class="rate-text" wx:if="{{rating.text}}">{{rating.text}}</text>
+    </block>
+    <block wx:else>
+      <text class="title">评价这一餐</text>
+      <view class="row stars">
+        <text wx:for="{{starList}}" wx:key="*this" class="star {{item <= stars ? 'star-on' : ''}}" data-n="{{item}}" bindtap="onStar">★</text>
+        <text class="star-text">{{starText}}</text>
+      </view>
+      <view class="tags">
+        <text wx:for="{{rateTags}}" wx:key="name" class="tag {{item.on ? 'tag-on' : ''}}" data-i="{{index}}" bindtap="onRateTag">{{item.name}}</text>
+      </view>
+      <textarea class="rate-input" placeholder="说说口味、分量和出餐速度（选填）" maxlength="100" value="{{rateText}}" bindinput="onRateText"></textarea>
+      <view class="btn rate-btn" bindtap="onSubmitRate"><text>提交评价</text></view>
+    </block>
+  </view>
+
   <view class="card">
     <text class="title">菜品明细</text>
     <view wx:for="{{items}}" wx:key="key" class="it">
@@ -30,8 +59,9 @@
       <text class="sub it-qty">x{{item.qty}}</text>
       <text class="it-price">¥{{item.lineText}}</text>
     </view>
+    <view class="line" wx:if="{{o.packText}}"><text class="sub">打包费</text><text>¥{{o.packText}}</text></view>
     <view class="line"><text class="sub">满减优惠</text><text class="brand">-¥{{o.discountText}}</text></view>
-    <view class="line"><text class="sub">实付</text><text class="price">¥{{o.payText}}</text></view>
+    <view class="line"><text class="sub">{{o.status === 'unpaid' ? '待支付' : o.refunded ? '已退款' : '实付'}}</text><text class="price">¥{{o.payText}}</text></view>
   </view>
 
   <view class="card">
@@ -42,9 +72,17 @@
   </view>
 
   <view class="actions">
-    <view wx:if="{{canPickup}}" class="btn" bindtap="pickup"><text>我已取餐</text></view>
-    <view wx:if="{{active && !canPickup}}" class="btn btn-ghost" bindtap="urge"><text>催一下后厨</text></view>
-    <view wx:if="{{o.status === 'unpaid'}}" class="btn" bindtap="goPay"><text>去支付</text></view>
-    <view wx:if="{{o.status === 'done' || o.status === 'canceled'}}" class="btn" bindtap="again"><text>再来一单</text></view>
+    <view wx:if="{{canPickup}}" class="btn act-pickup" bindtap="pickup"><text>我已取餐</text></view>
+    <view wx:if="{{o.status === 'unpaid'}}" class="btn act-pay" bindtap="goPay"><text>去支付</text></view>
+    <view wx:if="{{o.status === 'done' || o.status === 'canceled'}}" class="btn act-again" bindtap="again"><text>再来一单</text></view>
+    <view class="sub-acts" wx:if="{{active}}">
+      <view wx:if="{{canUrge}}" class="btn btn-ghost sub-act act-urge" bindtap="urge"><text>催一下后厨</text></view>
+      <view class="btn btn-ghost sub-act act-add" bindtap="addMore"><text>加菜</text></view>
+    </view>
+    <view wx:if="{{canCancel}}" class="link act-cancel" bindtap="cancel"><text class="sub">取消订单</text></view>
   </view>
+</view>
+<view wx:elif="{{missing}}" class="none">
+  <text class="sub">订单不存在或已被清理</text>
+  <view class="btn btn-ghost none-btn" bindtap="goOrders"><text>查看我的订单</text></view>
 </view>

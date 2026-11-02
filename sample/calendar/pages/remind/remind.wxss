@@ -1,0 +1,16 @@
+.top-gap { margin-top: 20rpx; }
+.sub-desc { display: block; margin-top: 6rpx; }
+.sub-btn { font-size: 26rpx; color: #ffffff; background: #3a6bf0; border-radius: 28rpx; padding: 10rpx 32rpx; }
+.sub-btn.on { color: #5c6370; background: #f1f3f8; }
+.head { padding: 12rpx 32rpx 16rpx; }
+.ack-all { color: #3a6bf0; }
+.list { padding: 0 24rpx; }
+.r-item { padding: 20rpx 0; border-bottom: 1rpx solid #f0f1f4; }
+.ev-bar { width: 8rpx; height: 72rpx; border-radius: 4rpx; margin-right: 20rpx; }
+.r-title { font-size: 30rpx; }
+.done .r-title { color: #a3a8b3; }
+.due-tag { font-size: 20rpx; color: #f2453d; background: #ffecea; border-radius: 6rpx; padding: 2rpx 10rpx; margin-left: 12rpx; }
+.r-sub { display: block; margin-top: 4rpx; }
+.ack { font-size: 24rpx; color: #3a6bf0; background: #eef3ff; border-radius: 24rpx; padding: 8rpx 20rpx; margin-left: 16rpx; }
+.undo { font-size: 24rpx; color: #8f95a3; padding: 8rpx 12rpx; margin-left: 16rpx; }
+.tip { display: block; text-align: center; margin: 12rpx 0 40rpx; }

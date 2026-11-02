@@ -24,6 +24,8 @@ mod video;
 pub mod video_audio;
 /// 同层渲染的通用原生组件（`sameLayer` 里除 video 以外的标签，如 `<map>`）：宿主画好帧交给引擎画进页面
 pub mod host_view;
+/// 同层渲染的 `<live-player>`（宿主播放器交帧，与同层视频同一个帧表）
+pub mod live_player;
 /// 宿主没接管的原生组件（map / camera / web-view ...）的占位与几类标签的默认样式
 pub mod native_placeholder;
 /// `<grid-view>`：对齐网格（taffy Grid）与瀑布流（布局后按最矮列放置）

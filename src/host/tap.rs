@@ -368,9 +368,12 @@ fn dispatch_tap_chain(
     let (identifier, time_ms) = tap_ctx;
     // tap 的 detail 是点击点坐标（微信语义）
     let detail = serde_json::json!({ "x": x, "y": hit_y });
-    let hit = super::touch::dispatch_to_js(
-        app, renderer, "tap", (x, hit_y), (x, hit_y), scope, identifier, time_ms, detail,
-    );
+    let mut chain = renderer.dispatch_chain(x, hit_y, "tap", scope);
+    // 同层渲染的地图这类：节点自己的 bindtap 由宿主判完再回传（map 的 detail 是 `{latitude, longitude}`），
+    // 这里再按普通节点派一次 `{x, y}` 就是同一下点了两次（祖先上的照常冒泡）
+    chain.retain(|b| !crate::renderer::components::host_view::is_same_layer(&b.tag));
+    let innermost = renderer.innermost_binding_at(x, hit_y, scope);
+    let hit = super::touch::dispatch_chain_to_js(app, &chain, innermost, "tap", (x, hit_y), identifier, time_ms, detail);
     if hit {
         println!("👆 tap");
     }

@@ -1,0 +1,16 @@
+<view class="os-tabs">
+  <view class="os-tab {{tab === item.k ? 'on' : ''}}" wx:for="{{tabs}}" wx:key="k" data-k="{{item.k}}" bindtap="switchTab">{{item.n}}</view>
+</view>
+<view class="card" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="open">
+  <view class="row between os-top"><text class="muted">{{item.timeText}} · {{item.way === 'express' ? '快递' : '面交'}}</text><text class="os-st">{{item.statusText}}</text></view>
+  <view class="row">
+    <image class="os-cover" src="{{item.item.cover}}" mode="aspectFill"></image>
+    <view class="flex1"><text class="os-t">{{item.item.title}}</text><view class="row"><text class="tag">{{item.item.cond}}</text></view></view>
+    <text class="price">¥{{item.total}}</text>
+  </view>
+</view>
+<view class="empty" wx:if="{{!list.length}}">
+  <view class="empty-ic">🛍</view>
+  <text>这里还没有订单</text>
+  <view class="empty-btn" bindtap="goHome">去逛逛</view>
+</view>

@@ -1,0 +1,49 @@
+.head { margin: 24rpx 24rpx 0; padding: 32rpx; border-radius: 28rpx; background: linear-gradient(135deg, #ffb547, #ff7b54); color: #ffffff; }
+.h-st { display: block; font-size: 40rpx; font-weight: bold; }
+.h-tip { display: block; margin-top: 8rpx; font-size: 24rpx; line-height: 36rpx; color: rgba(255, 255, 255, 0.92); }
+.steps { display: flex; flex-direction: row; margin-top: 26rpx; }
+.step { flex: 1; margin-right: 8rpx; font-size: 22rpx; color: rgba(255, 255, 255, 0.6); }
+.step:last-child { margin-right: 0; }
+.s-bar { height: 8rpx; border-radius: 4rpx; background: rgba(255, 255, 255, 0.3); margin-bottom: 8rpx; }
+.step.on { color: #ffffff; font-weight: bold; }
+.step.on .s-bar { background: #ffffff; }
+.s-tx { white-space: nowrap; }
+.code { display: flex; flex-direction: column; align-items: center; }
+.code-v { margin: 10rpx 0; font-size: 60rpx; font-weight: bold; letter-spacing: 12rpx; color: #2a2522; }
+.stars { margin-top: 16rpx; }
+.star { font-size: 44rpx; color: #e6ded6; margin-right: 12rpx; }
+.star.on { color: #ff8a3d; }
+.star-t { font-size: 24rpx; color: #9a928b; margin-left: 8rpx; }
+.rate-in { width: 100%; height: 160rpx; margin-top: 16rpx; padding: 18rpx 20rpx; box-sizing: border-box; border-radius: 16rpx; background: #faf7f4; font-size: 26rpx; }
+.ph { color: #c4bcb4; }
+.rate-btn { margin-top: 20rpx; height: 76rpx; font-size: 28rpx; }
+.rate-tx { display: block; margin-top: 12rpx; font-size: 26rpx; color: #5a4f47; line-height: 40rpx; }
+.addr { display: flex; flex-direction: row; align-items: center; }
+.pin { width: 56rpx; height: 56rpx; border-radius: 28rpx; background: linear-gradient(135deg, #ffb547, #ff7b54); position: relative; flex-shrink: 0; }
+.pin-in { position: absolute; left: 18rpx; top: 18rpx; width: 20rpx; height: 20rpx; border-radius: 10rpx; background: #ffffff; }
+.addr-m { flex: 1; margin-left: 20rpx; display: flex; flex-direction: column; min-width: 0; }
+.addr-t { font-size: 28rpx; font-weight: bold; margin-bottom: 6rpx; }
+.it { display: flex; flex-direction: row; align-items: center; padding: 14rpx 0; }
+.it-img { width: 120rpx; height: 120rpx; border-radius: 14rpx; flex-shrink: 0; }
+.it-m { flex: 1; margin-left: 20rpx; display: flex; flex-direction: column; min-width: 0; }
+.it-n { font-size: 26rpx; font-weight: bold; line-height: 36rpx; }
+.it-spec { align-self: flex-start; margin-top: 8rpx; font-size: 22rpx; color: #9a928b; background: #f7f3ef; padding: 2rpx 12rpx; border-radius: 6rpx; }
+.it-r { display: flex; flex-direction: column; align-items: flex-end; margin-left: 16rpx; font-size: 26rpx; flex-shrink: 0; }
+.kv { display: flex; flex-direction: row; justify-content: space-between; align-items: center; padding: 12rpx 0; font-size: 26rpx; }
+.k { color: #9a928b; flex-shrink: 0; margin-right: 24rpx; }
+.v { color: #2a2522; text-align: right; }
+.cut { color: #ff5b35; }
+.paid { margin-top: 8rpx; padding-top: 20rpx; border-top: 1rpx solid #f3efea; font-size: 28rpx; font-weight: bold; }
+.paid .price { font-size: 34rpx; }
+.svc { display: flex; flex-direction: row; justify-content: space-between; padding: 8rpx 0; font-size: 26rpx; }
+.shop { display: flex; flex-direction: row; align-items: center; }
+.shop-m { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.shop-n { font-size: 28rpx; font-weight: bold; margin-bottom: 6rpx; }
+.shop-ops { display: flex; flex-direction: column; margin-left: 16rpx; }
+.s-op { padding: 6rpx 22rpx; margin: 6rpx 0; border-radius: 24rpx; border: 2rpx solid #ffc69a; color: #ff8a3d; font-size: 22rpx; white-space: nowrap; }
+.copy { margin-left: 12rpx; font-size: 22rpx; color: #ff8a3d; border: 1rpx solid #ffc69a; padding: 0 12rpx; border-radius: 16rpx; line-height: 34rpx; }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; background: #ffffff; padding: 20rpx 24rpx; padding-bottom: calc(20rpx + env(safe-area-inset-bottom)); display: flex; flex-direction: row; align-items: center; justify-content: flex-end; box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.05); }
+.bar-btn { height: 76rpx; padding: 0 32rpx; margin-left: 16rpx; border-radius: 38rpx; display: flex; align-items: center; justify-content: center; font-size: 26rpx; white-space: nowrap; }
+.ghost { border: 2rpx solid #e6ded6; color: #5a4f47; box-sizing: border-box; background: #ffffff; }
+.none { padding: 240rpx 0; text-align: center; }
+.svc-title { display: block; margin-bottom: 8rpx; line-height: 44rpx; }

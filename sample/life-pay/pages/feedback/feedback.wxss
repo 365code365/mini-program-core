@@ -1,0 +1,13 @@
+.kinds { display: flex; flex-direction: row; flex-wrap: wrap; margin-top: 16rpx; }
+.kd { height: 56rpx; line-height: 56rpx; padding: 0 24rpx; margin: 0 16rpx 16rpx 0; border-radius: 28rpx; background: #f2f4f7; color: #5b626c; font-size: 24rpx; white-space: nowrap; }
+.kd.on { background: #e6f7f0; color: #14a06f; font-weight: bold; }
+.ta { width: 100%; height: 220rpx; margin-top: 8rpx; padding: 20rpx; box-sizing: border-box; background: #f8f9fb; border-radius: 12rpx; font-size: 26rpx; }
+.ct { margin-top: 20rpx; }
+.ct-l { width: 150rpx; font-size: 28rpx; color: #5b626c; flex-shrink: 0; }
+.ct-in { flex: 1; font-size: 28rpx; height: 44rpx; }
+.act { margin: 40rpx 32rpx 0; }
+.fb { padding: 20rpx 0; border-bottom: 1rpx solid #f0f2f5; }
+.fb-k { font-size: 26rpx; font-weight: bold; }
+.fb-st { font-size: 22rpx; color: #14a06f; }
+.fb-t { margin: 8rpx 0; font-size: 26rpx; color: #3a4049; }
+.gap { height: 60rpx; }

@@ -1,0 +1,24 @@
+<view class="head">
+  <view class="row between">
+    <text class="hint">{{hint}}</text>
+    <text class="muted small">价格为单程经济舱最低价，仅供参考</text>
+  </view>
+  <view class="week row">
+    <text wx:for="{{week}}" wx:key="*this" class="wk {{index === 0 || index === 6 ? 'wk-end' : ''}}">{{item}}</text>
+  </view>
+</view>
+<view class="month" wx:for="{{months}}" wx:key="title" wx:for-item="m">
+  <view class="m-title"><text>{{m.title}}</text></view>
+  <view class="grid row">
+    <view wx:for="{{m.cells}}" wx:key="key" class="cell {{item.past ? 'past' : ''}} {{item.sel ? 'sel-' + item.sel : ''}}"
+          data-d="{{item.past || item.empty ? '' : item.date}}" bindtap="tap">
+      <block wx:if="{{!item.empty}}">
+        <text class="c-day">{{item.today ? '今天' : item.day}}</text>
+        <text wx:if="{{item.sel === 'start'}}" class="c-tag">去程</text>
+        <text wx:elif="{{item.sel === 'end'}}" class="c-tag">返程</text>
+        <text wx:elif="{{item.price}}" class="c-price {{item.cheap ? 'cheap' : ''}}">¥{{item.price}}</text>
+      </block>
+    </view>
+  </view>
+</view>
+<view style="height: 40rpx;"></view>

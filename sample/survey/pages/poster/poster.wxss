@@ -1,0 +1,8 @@
+.wrap { align-items: center; padding: 32rpx 0 12rpx; }
+.poster { width: 600rpx; height: 880rpx; border-radius: 16rpx; box-shadow: 0 12rpx 40rpx rgba(60, 40, 160, 0.25); }
+.hint { margin-top: 20rpx; }
+.ops { padding: 16rpx 48rpx 60rpx; }
+.ops2 { margin-top: 20rpx; }
+.copy-link { margin-right: 20rpx; }
+.share-btn { background: #fff; padding: 0; margin: 0; font-size: 28rpx; height: 84rpx; line-height: 84rpx; border-radius: 42rpx; font-weight: normal; }
+.share-t { font-size: 28rpx; color: #6C5CE7; }

@@ -1,0 +1,37 @@
+<view class="page tab-page">
+  <scroll-view scroll-x class="styles" enable-flex>
+    <view class="row">
+      <text wx:for="{{styles}}" wx:key="*this" class="chip {{style === item ? 'chip-on' : ''}}" data-s="{{item}}" bindtap="pickStyle">{{item}}</text>
+    </view>
+  </scroll-view>
+  <view class="row sorts">
+    <text wx:for="{{sorts}}" wx:key="key" class="sort {{sort === item.key ? 'sort-on' : ''}}" data-k="{{item.key}}" bindtap="pickSort">{{item.name}}</text>
+  </view>
+
+  <view wx:if="{{!list.length}}" class="empty"><text class="empty-text">暂时没有擅长「{{style}}」的设计师</text></view>
+
+  <view wx:for="{{list}}" wx:key="id" class="card ds" data-id="{{item.id}}" bindtap="open" hover-class="item-hover">
+    <view class="row">
+      <image class="av" src="{{item.avatar}}"></image>
+      <view class="col flex1">
+        <view class="row">
+          <text class="name">{{item.name}}</text>
+          <text class="tag">{{item.title}}</text>
+          <text wx:if="{{item.follow}}" class="tag tag-wood">已关注</text>
+        </view>
+        <text class="muted">从业 {{item.years}} 年 · {{item.workCount}} 套案例 · 擅长 {{item.styleText}}</text>
+        <view class="row meta">
+          <text class="stars">★ {{item.rating}}</text>
+          <text class="fee">设计费 {{item.fee}} 元/㎡</text>
+        </view>
+      </view>
+    </view>
+    <view class="row works">
+      <image wx:for="{{item.works}}" wx:for-item="w" wx:key="id" class="work" src="{{w.cover}}" mode="aspectFill"></image>
+    </view>
+    <view class="row ops">
+      <text class="muted flex1">{{item.intro}}</text>
+      <view class="book" data-id="{{item.id}}" catchtap="book" hover-class="btn-hover">预约</view>
+    </view>
+  </view>
+</view>

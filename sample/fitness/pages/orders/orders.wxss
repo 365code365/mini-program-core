@@ -1,0 +1,12 @@
+.od-l { flex: 1; min-width: 0; }
+.od-kind { flex-shrink: 0; font-size: 20rpx; padding: 2rpx 10rpx; border-radius: 6rpx; margin-right: 12rpx; color: #3d7bff; background: #eaf1ff; }
+.od-kind.k-card { color: #b8872e; background: #fbf3e2; }
+.od-t { font-size: 28rpx; font-weight: bold; color: #1c1f26; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.od-p { flex-shrink: 0; margin-left: 16rpx; font-size: 32rpx; font-weight: bold; color: #ff5a36; }
+.od-p.refund { color: #a0a5ae; text-decoration: line-through; }
+.od-sub { display: block; margin-top: 10rpx; }
+.od-f { margin-top: 16rpx; }
+.op { height: 52rpx; padding: 0 24rpx; border-radius: 26rpx; border: 2rpx solid #ff5a36; color: #ff5a36; font-size: 24rpx; display: flex; align-items: center; justify-content: center; box-sizing: border-box; flex-shrink: 0; }
+.empty { display: flex; flex-direction: column; align-items: center; padding-top: 220rpx; }
+.empty-btn { margin-top: 32rpx; width: 280rpx; height: 80rpx; font-size: 28rpx; }
+.tip { display: block; margin: 24rpx 40rpx 0; text-align: center; line-height: 36rpx; }

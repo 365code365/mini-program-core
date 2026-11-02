@@ -1,0 +1,19 @@
+<view class="card head">
+  <text class="sec-title">已开通 {{onCount}} 个户号</text>
+  <text class="muted">出账后自动扣款，不怕忘缴产生违约金</text>
+  <view class="row caps">
+    <text class="cap-l">单笔上限</text>
+    <view wx:for="{{caps}}" wx:key="*this" class="cap {{cap === item ? 'on' : ''}}" data-v="{{item}}" bindtap="onCap"><text>¥{{item}}</text></view>
+  </view>
+</view>
+<view class="card list">
+  <view wx:for="{{list}}" wx:key="id" class="it row">
+    <view class="ic it-ic" style="background: {{item.bg}};"><text>{{item.ch}}</text></view>
+    <view class="it-main">
+      <text class="it-t">{{item.tname}} · {{item.tag}}</text>
+      <text class="muted">{{item.noTx}} · {{item.owe > 0 ? '欠费 ¥' + item.oweTx : '无欠费'}}</text>
+    </view>
+    <view class="sw {{item.on ? 'sw-on' : ''}}" data-id="{{item.id}}" bindtap="toggle"><view class="knob"></view></view>
+  </view>
+</view>
+<text class="tip">关闭后不再自动扣款，已扣的费用可在缴费记录里查看</text>

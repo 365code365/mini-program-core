@@ -7,7 +7,17 @@
     "pages/doctors/doctors",
     "pages/doctor/doctor",
     "pages/confirm/confirm",
-    "pages/patients/patients"
+    "pages/patients/patients",
+    "pages/patient-edit/patient-edit",
+    "pages/order-detail/order-detail",
+    "pages/bills/bills",
+    "pages/reports/reports",
+    "pages/report-detail/report-detail",
+    "pages/consult/consult",
+    "pages/inpatient/inpatient",
+    "pages/news/news",
+    "pages/guide/guide",
+    "pages/navi/navi"
   ],
   "window": {
     "navigationBarTitleText": "健康挂号",

@@ -1,0 +1,39 @@
+<view class="card form">
+  <view class="fl">
+    <text class="fl-k">收货人</text>
+    <input class="fl-in" placeholder="请填写真实姓名" value="{{name}}" maxlength="20" data-k="name" bindinput="onInput" />
+  </view>
+  <text class="err" wx:if="{{err.name}}">{{err.name}}</text>
+  <view class="fl">
+    <text class="fl-k">手机号</text>
+    <input class="fl-in" type="number" placeholder="11 位手机号" value="{{phone}}" maxlength="11" data-k="phone" bindinput="onInput" />
+  </view>
+  <text class="err" wx:if="{{err.phone}}">{{err.phone}}</text>
+  <picker mode="region" value="{{region}}" bindchange="onRegion">
+    <view class="fl">
+      <text class="fl-k">所在地区</text>
+      <text class="fl-v {{region.length ? '' : 'ph'}}">{{region.length ? region[0] + ' ' + region[1] + ' ' + region[2] : '省 / 市 / 区'}}</text>
+      <text class="muted">›</text>
+    </view>
+  </picker>
+  <text class="err" wx:if="{{err.region}}">{{err.region}}</text>
+  <view class="fl fl-top">
+    <text class="fl-k">详细地址</text>
+    <textarea class="fl-ta" placeholder="街道、楼栋号、门牌号" value="{{detail}}" maxlength="80" data-k="detail" bindinput="onInput"></textarea>
+  </view>
+  <text class="err" wx:if="{{err.detail}}">{{err.detail}}</text>
+  <view class="fl">
+    <text class="fl-k">标签</text>
+    <view class="row">
+      <text class="chip {{tag === t ? 'chip-on' : ''}}" wx:for="{{tags}}" wx:key="*this" wx:for-item="t" data-t="{{t}}" bindtap="onTag">{{t}}</text>
+    </view>
+  </view>
+  <view class="fl fl-last">
+    <text class="fl-k fl-wide">设为默认地址</text>
+    <switch checked="{{isDefault}}" color="#3f9a3c" bindchange="onDefault"></switch>
+  </view>
+</view>
+<view class="ops">
+  <view class="btn" hover-class="btn-hover" bindtap="save">保存</view>
+  <view class="del" wx:if="{{id}}" bindtap="remove">删除该地址</view>
+</view>

@@ -55,4 +55,19 @@
     <view class="btn-ghost empty-btn" bindtap="onGo">去广场看看</view>
   </view>
 </view>
+<view wx:if="{{tIdx === 2}}">
+  <view wx:for="{{favs}}" wx:key="id" class="card row j" data-id="{{item.id}}" bindtap="onFav">
+    <view class="glyph" style="background: {{item.bg}}"><text class="glyph-t">{{item.glyph}}</text></view>
+    <view class="col flex1 j-main">
+      <text class="j-title">{{item.title}}</text>
+      <text class="sub">{{item.kind}}·截止 {{item.deadline}}{{item.ended ? '·已截止' : ''}}{{item.done ? '·已参与' : ''}}</text>
+    </view>
+    <view class="unfav" data-id="{{item.id}}" catchtap="onUnfav"><text class="unfav-t">取消</text></view>
+  </view>
+  <view wx:if="{{favs.length === 0}}" class="empty col">
+    <view class="empty-ic"><view class="e-line l1"></view><view class="e-line l2"></view><view class="e-line l3"></view></view>
+    <text class="sub">还没有收藏，在问卷详情页点「收藏」</text>
+    <view class="btn-ghost empty-btn" bindtap="onGo">去广场看看</view>
+  </view>
+</view>
 <view class="tabbar-space"></view>

@@ -1,0 +1,2 @@
+.wrap { height: 100vh; display: flex; flex-direction: column; padding-bottom: 100rpx; box-sizing: border-box; }
+.cl { flex: 1; height: 0; display: flex; flex-direction: column; }

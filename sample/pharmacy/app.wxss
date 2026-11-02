@@ -1,0 +1,21 @@
+page { background: #f3f6f5; color: #1f2d29; font-size: 28rpx; font-family: -apple-system, "PingFang SC", sans-serif; }
+.card { background: #ffffff; border-radius: 20rpx; margin: 20rpx 24rpx 0; padding: 24rpx; }
+.sec-h { display: flex; flex-direction: row; align-items: center; justify-content: space-between; margin: 32rpx 24rpx 0; }
+.sec-t { font-size: 32rpx; font-weight: bold; }
+.sec-more { font-size: 24rpx; color: #8a9692; }
+.muted { color: #8a9692; font-size: 24rpx; }
+.price { color: #f04a3e; font-weight: bold; }
+.btn { background: #12a37f; color: #ffffff; border-radius: 44rpx; height: 88rpx; line-height: 88rpx; text-align: center; font-size: 30rpx; }
+.btn-o { border: 2rpx solid #12a37f; color: #12a37f; border-radius: 44rpx; height: 72rpx; line-height: 68rpx; text-align: center; font-size: 26rpx; }
+.btn-dis { background: #b9d9cf; }
+.rx { font-size: 20rpx; color: #ffffff; background: #f04a3e; border-radius: 6rpx; padding: 0 8rpx; margin-right: 8rpx; }
+.otc { font-size: 20rpx; color: #ffffff; background: #12a37f; border-radius: 6rpx; padding: 0 8rpx; margin-right: 8rpx; }
+.otc-b { background: #2f86d8; }
+.dev { font-size: 20rpx; color: #ffffff; background: #7a8b87; border-radius: 6rpx; padding: 0 8rpx; margin-right: 8rpx; }
+.empty { display: flex; flex-direction: column; align-items: center; padding: 100rpx 0; }
+.empty-ic { width: 120rpx; height: 120rpx; border-radius: 60rpx; background: #e3f3ee; display: flex; align-items: center; justify-content: center; font-size: 50rpx; color: #12a37f; }
+.empty-t { margin-top: 24rpx; color: #8a9692; font-size: 26rpx; }
+.empty-btn { margin-top: 32rpx; width: 280rpx; }
+.tab-gap { height: calc(120rpx + env(safe-area-inset-bottom)); }
+.ball-x { position: fixed; z-index: 999; width: 36rpx; height: 36rpx; }
+.ball { width: 36rpx; height: 36rpx; border-radius: 18rpx; background: #f04a3e; box-shadow: 0 4rpx 10rpx rgba(240, 74, 62, 0.4); }

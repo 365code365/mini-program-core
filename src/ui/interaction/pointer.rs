@@ -18,10 +18,16 @@ impl InteractionManager {
         // 是从后往前找，于是先撞上正常流的元素、再被 `is_fixed` 过滤掉，结果返回 None。
         // 表现就是：覆盖层里的输入框点不出焦点、开关拨不动 —— 而且只在「这一帧没重绘
         // 覆盖层」时才犯（重绘那一帧覆盖层元素刚好被追加到最后），所以偶发得像随机失灵。
+        //
+        // 反过来，正常流这一边也只能看正常流的元素（`hit_test_flow`）：调用方传的是**内容坐标**
+        // （加了页面滚动量），覆盖层元素按**视口坐标**登记。从前用全局 `hit_test`：页面滚过之后，
+        // 点正常流里的卡片，只要内容 y 恰好落在底部固定输入条的视口范围里，就被当成「聚焦输入框」，
+        // 卡片的 bindtap 没有派发（招聘示例聊天页：滚到 436 后点面试邀请卡片中间那几行没反应）。
+        // 落在覆盖层上的点击由 tap.rs 先按覆盖层作用域处理掉，走不到这里
         let element = if fixed_only {
             self.hit_test_fixed(x, y)?.clone()
         } else {
-            self.hit_test(x, y)?.clone()
+            self.hit_test_flow(x, y)?.clone()
         };
         
         match element.interaction_type {

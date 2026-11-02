@@ -1,0 +1,19 @@
+.cert { margin: 24rpx 24rpx 0; padding: 32rpx 36rpx 28rpx; border-radius: 20rpx; background: linear-gradient(160deg, #fffaf0, #fff1d6); border: 2rpx solid #f3d9a4; }
+.focus { border: 4rpx solid #ffad2e; }
+.c-head { padding-bottom: 16rpx; border-bottom: 2rpx solid #f3d9a4; }
+.c-brand { font-size: 26rpx; font-weight: bold; color: #b07a1d; }
+.c-kind { font-size: 32rpx; font-weight: bold; color: #8a5a00; letter-spacing: 6rpx; }
+.c-name { display: block; margin-top: 24rpx; font-size: 40rpx; font-weight: bold; color: #1f2430; }
+.c-body { margin-top: 12rpx; font-size: 26rpx; line-height: 42rpx; color: #4b5263; }
+.c-foot { margin-top: 20rpx; align-items: flex-end; }
+.c-meta { display: flex; flex-direction: column; }
+.c-no { margin-top: 6rpx; font-size: 24rpx; color: #8a5a00; font-weight: bold; }
+.seal { width: 100rpx; height: 100rpx; border-radius: 50rpx; border: 4rpx solid #e8573b; color: #e8573b; font-size: 26rpx; font-weight: bold; display: flex; align-items: center; justify-content: center; transform: rotate(-12deg); }
+.c-copy { margin-top: 20rpx; height: 64rpx; line-height: 64rpx; text-align: center; border-radius: 32rpx; background: rgba(255, 173, 46, 0.18); color: #8a5a00; font-size: 26rpx; }
+.ing { padding: 22rpx 0; border-bottom: 1rpx solid #f0f2f5; }
+.ing-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.ing-t { font-size: 28rpx; font-weight: bold; margin-bottom: 10rpx; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ing-bar { flex: 1; }
+.ing-left { margin-left: 14rpx; white-space: nowrap; }
+.ing-go { margin-left: 20rpx; height: 56rpx; line-height: 56rpx; padding: 0 24rpx; border-radius: 28rpx; background: #edf2ff; color: #3d6cf6; font-size: 24rpx; white-space: nowrap; }
+.gap { height: 60rpx; }

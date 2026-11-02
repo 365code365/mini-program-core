@@ -1,0 +1,22 @@
+<view class="hd col">
+  <view class="row">
+    <view class="av"><text class="av-tx">{{name ? '旅' : ''}}</text></view>
+    <view class="col">
+      <text class="hd-n">{{name}}</text>
+      <text class="hd-l">{{level}}</text>
+    </view>
+  </view>
+  <view class="stats row">
+    <view class="st col"><text class="st-v">{{legs}}</text><text class="st-k">已购航段</text></view>
+    <view class="st col"><text class="st-v">{{km}}</text><text class="st-k">累计里程 km</text></view>
+    <view class="st col"><text class="st-v">{{paxCount}}</text><text class="st-k">常用乘机人</text></view>
+  </view>
+</view>
+<view class="card list">
+  <view class="it row" bindtap="goOrders" hover-class="hv"><text class="flex1">全部订单</text><text class="muted">›</text></view>
+  <view class="it row" bindtap="goPax" hover-class="hv"><text class="flex1">常用乘机人</text><text class="muted">{{paxCount}} 人 ›</text></view>
+  <view class="it row" bindtap="clearHistory" hover-class="hv"><text class="flex1">清除搜索历史</text><text class="muted">{{hisCount}} 条 ›</text></view>
+  <view class="it row" bindtap="call" hover-class="hv"><text class="flex1">客服热线</text><text class="muted">400-820-7788 ›</text></view>
+  <view class="it row" bindtap="about" hover-class="hv"><text class="flex1">关于云翼机票</text><text class="muted">›</text></view>
+</view>
+<view class="tab-space"></view>

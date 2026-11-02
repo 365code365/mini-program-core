@@ -1,0 +1,52 @@
+<view class="empty" wx:if="{{!cars.length}}">
+  <text class="empty-tx">添加爱车后即可查询违章</text>
+  <view class="btn-ghost" bindtap="addCar">添加爱车</view>
+</view>
+<block wx:else>
+  <scroll-view scroll-x class="cars" show-scrollbar="{{false}}" enhanced>
+    <view class="car {{idx === index ? 'car-on' : ''}}" wx:for="{{cars}}" wx:key="id" data-i="{{index}}" bindtap="onCar">
+      <text class="car-pl">{{item.plateText}}</text>
+      <text class="car-nm">{{item.name}}</text>
+    </view>
+  </scroll-view>
+  <view class="sum row">
+    <view class="sum-it">
+      <text class="sum-n">{{sum.n}}</text>
+      <text class="sum-t">未处理（条）</text>
+    </view>
+    <view class="sum-it">
+      <text class="sum-n">{{sum.fine}}</text>
+      <text class="sum-t">罚款（元）</text>
+    </view>
+    <view class="sum-it">
+      <text class="sum-n">{{sum.points}}</text>
+      <text class="sum-t">记分</text>
+    </view>
+  </view>
+  <view class="wrap">
+    <view class="loading" wx:if="{{loading}}">正在查询交管数据…</view>
+    <block wx:else>
+      <view class="card" wx:for="{{list}}" wx:key="id">
+        <view class="between">
+          <text class="sub">{{item.time}}</text>
+          <text class="{{item.paid ? 'green' : 'red'}}">{{item.paid ? '已处理' : '未处理'}}</text>
+        </view>
+        <text class="act">{{item.act}}</text>
+        <text class="sub">{{item.place}}</text>
+        <view class="between ft">
+          <view class="row">
+            <text class="price">罚款 ¥{{item.fine}}</text>
+            <text class="pts">记 {{item.points}} 分</text>
+          </view>
+          <view class="btn-ghost" wx:if="{{!item.paid}}" data-id="{{item.id}}" bindtap="pay">去缴款</view>
+          <text class="sub" wx:else>处理于 {{item.paidAt}}</text>
+        </view>
+      </view>
+      <view class="empty" wx:if="{{queried && !list.length}}">
+        <icon type="success" size="56" color="#13a26b"></icon>
+        <text class="empty-tx">暂无违章记录，继续保持安全驾驶</text>
+      </view>
+      <text class="note">数据可能有 1~3 天延迟，以交管 12123 为准</text>
+    </block>
+  </view>
+</block>

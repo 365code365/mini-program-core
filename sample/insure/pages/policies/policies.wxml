@@ -1,0 +1,30 @@
+<view class="pl-head">
+  <text class="pl-h1">{{total}} 份保单保障中</text>
+  <text class="pl-h2">保单信息仅保存在本机，换设备需重新绑定</text>
+</view>
+<scroll-view scroll-x class="pl-tabs" enable-flex>
+  <view class="pl-tab {{tab === item.key ? 'on' : ''}}" wx:for="{{tabs}}" wx:key="key" data-key="{{item.key}}" bindtap="switchTab">
+    {{item.name}}<text wx:if="{{counts[item.key]}}" class="pl-cnt"> {{counts[item.key]}}</text>
+  </view>
+</scroll-view>
+<view class="wrap">
+  <view class="card pl-card" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="open" hover-class="btn-hover">
+    <view class="row between">
+      <text class="pl-name">{{item.productName}}</text>
+      <text class="pl-st st-{{item.st.key}}">{{item.st.text}}</text>
+    </view>
+    <view class="kv"><text class="kv-k">被保险人</text><text class="kv-v">{{item.holder.name}}</text></view>
+    <view class="kv"><text class="kv-k">保障额度</text><text class="kv-v">{{item.amountText}}</text></view>
+    <view class="kv" wx:if="{{item.startDate}}"><text class="kv-k">保障期间</text><text class="kv-v">{{item.startDate}} 至 {{item.endDate}}</text></view>
+    <view class="row between pl-foot">
+      <text class="muted">{{item.policyNo ? '保单号 ' + item.policyNo : '投保单 ' + item.id}}</text>
+      <text class="price">¥{{item.premiumText}}</text>
+    </view>
+  </view>
+  <view class="empty" wx:if="{{!list.length}}">
+    <image class="empty-ic" src="/images/tab/doc.png"></image>
+    <text class="empty-tx">{{tab === 'all' ? '还没有保单，挑一份适合自己的保障吧' : '这个状态下没有保单'}}</text>
+    <view class="empty-btn" bindtap="goBuy">去挑选保险</view>
+  </view>
+</view>
+<view class="tab-pad"></view>

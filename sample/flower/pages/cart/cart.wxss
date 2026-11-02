@@ -8,6 +8,7 @@
 .name { font-size: 28rpx; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .spec { margin-top: 8rpx; font-size: 22rpx; color: #7d747f; background: #f6f2f4; padding: 4rpx 12rpx; border-radius: 8rpx; align-self: flex-start; }
 .deliv { margin-top: 8rpx; font-size: 22rpx; color: #ef5b7e; }
+.half { margin-top: 6rpx; font-size: 22rpx; color: #ff8a1d; }
 .foot { margin-top: 12rpx; }
 .pr { align-items: baseline; }
 .p { font-size: 34rpx; }

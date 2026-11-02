@@ -1,0 +1,42 @@
+<view class="card">
+  <text class="title">常见问题</text>
+  <view class="faq" wx:for="{{faqs}}" wx:key="i">
+    <view class="q-row" data-i="{{item.i}}" bindtap="onFaq">
+      <text class="q-mark">Q</text>
+      <text class="q-text">{{item.q}}</text>
+      <view class="arrow {{item.open ? 'arrow-up' : 'arrow-down'}}"></view>
+    </view>
+    <text wx:if="{{item.open}}" class="a-text">{{item.a}}</text>
+  </view>
+</view>
+<view class="card call" bindtap="onCall">
+  <view class="call-ic"><text class="call-ic-t">话</text></view>
+  <view class="col call-info">
+    <text class="call-t">联系食堂</text>
+    <text class="sub">{{canteen.phone}}</text>
+  </view>
+  <view class="call-btn"><text>拨打</text></view>
+</view>
+<view class="card">
+  <text class="title">意见反馈</text>
+  <view class="types">
+    <view wx:for="{{types}}" wx:key="*this" class="type {{type === item ? 'type-on' : ''}}" data-t="{{item}}" bindtap="onType"><text>{{item}}</text></view>
+  </view>
+  <textarea id="fb{{seq}}" class="fb-text" value="{{text}}" placeholder="说说菜品、分量、卫生或服务上的问题和建议" maxlength="-1" bindinput="onText"></textarea>
+  <view class="fb-foot">
+    <text class="sub">{{textLen}}/{{max}}</text>
+    <view class="btn fb-btn" bindtap="onSubmit"><text>提交反馈</text></view>
+  </view>
+</view>
+<view class="card" wx:if="{{list.length}}">
+  <text class="title">我的反馈</text>
+  <view class="fb" wx:for="{{list}}" wx:key="id">
+    <view class="row between">
+      <text class="fb-type">{{item.type}}</text>
+      <text class="sub">{{item.timeText}}</text>
+    </view>
+    <text class="fb-content">{{item.text}}</text>
+    <text class="sub fb-status">已提交 · 食堂会在 1 个工作日内回复</text>
+  </view>
+</view>
+<view class="gap"></view>

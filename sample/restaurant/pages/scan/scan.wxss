@@ -74,7 +74,10 @@
 }
 @keyframes sweep { 0% { top: 20rpx; } 50% { top: 430rpx; } 100% { top: 20rpx; } }
 .scan-hint { color: #ffffff; font-size: 28rpx; margin-top: 48rpx; }
+.scan-note { color: rgba(255,255,255,0.6); font-size: 24rpx; margin-top: 12rpx; }
+.scan-btns { margin-top: 60rpx; }
 .scan-cancel {
-  margin-top: 60rpx; padding: 16rpx 64rpx; border-radius: 40rpx; border: 2rpx solid rgba(255,255,255,0.6);
-  color: #ffffff; font-size: 28rpx;
+  padding: 16rpx 48rpx; border-radius: 40rpx; border: 2rpx solid rgba(255,255,255,0.6);
+  color: #ffffff; font-size: 28rpx; white-space: nowrap;
 }
+.scan-manual { margin-left: 28rpx; background: #ff6a2b; border-color: #ff6a2b; }

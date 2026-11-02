@@ -1,0 +1,23 @@
+.hero { background: linear-gradient(160deg, #1677ff, #4096ff); padding: 32rpx 32rpx 40rpx; }
+.greet { color: #ffffff; font-size: 40rpx; font-weight: bold; }
+.date { color: #d6e6ff; font-size: 24rpx; margin-top: 8rpx; }
+.me-ava { width: 88rpx; height: 88rpx; line-height: 88rpx; border-radius: 44rpx; border: 4rpx solid rgba(255, 255, 255, 0.6); }
+.todo { margin-top: 32rpx; background: #ffffff; border-radius: 16rpx; padding: 24rpx 0; }
+.td { flex: 1; align-items: center; }
+.td-v { font-size: 44rpx; font-weight: bold; color: #1d2129; }
+.red { color: #f53f3f; }
+.td-k { font-size: 22rpx; color: #86909c; margin-top: 4rpx; }
+.att-ic { width: 80rpx; height: 80rpx; border-radius: 40rpx; background: #e8ffea; color: #00b42a; font-size: 30rpx; line-height: 80rpx; text-align: center; margin-right: 20rpx; }
+.att-t { font-size: 28rpx; font-weight: bold; margin-bottom: 6rpx; }
+.att-btn { background: #00b42a; color: #fff; font-size: 24rpx; border-radius: 28rpx; height: 56rpx; line-height: 56rpx; padding: 0 24rpx; }
+.entries { display: flex; flex-direction: row; flex-wrap: wrap; margin-top: 12rpx; }
+.en { align-items: center; padding: 20rpx 0; border-radius: 12rpx; }
+.en-hover { background: #f2f3f5; }
+.en-ic { width: 84rpx; height: 84rpx; border-radius: 24rpx; color: #ffffff; font-size: 32rpx; line-height: 84rpx; text-align: center; }
+.en-n { font-size: 24rpx; color: #4e5969; margin-top: 10rpx; }
+.sm { padding: 40rpx 0; }
+.mt { padding: 20rpx 0; align-items: flex-start; }
+.mt-time { width: 210rpx; }
+.mt-s { font-size: 26rpx; color: #1677ff; font-weight: bold; }
+.mt-line { width: 6rpx; height: 72rpx; border-radius: 3rpx; background: #1677ff; margin-right: 20rpx; }
+.mt-n { font-size: 28rpx; margin-bottom: 6rpx; }

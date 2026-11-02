@@ -1,0 +1,33 @@
+<view class="tabs row">
+  <view wx:for="{{tabs}}" wx:key="key" class="tab {{tab === item.key ? 'tab-on' : ''}}" data-key="{{item.key}}" bindtap="onTab">
+    <text>{{item.name}}</text>
+    <view wx:if="{{tab === item.key}}" class="tab-line"></view>
+  </view>
+</view>
+<view class="order card" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onOpen">
+  <view class="row between o-head">
+    <view class="row">
+      <text class="o-code">{{item.code}}</text>
+      <text class="o-mode">{{item.mode === 'pickup' ? '自取' : '外送'}}</text>
+      <text class="o-store ellipsis">{{item.storeName}}</text>
+    </view>
+    <text class="o-status {{item.st.active ? 'o-status-on' : ''}}">{{item.status}}</text>
+  </view>
+  <view class="row o-body">
+    <image wx:for="{{item.imgs}}" wx:for-item="img" wx:key="*this" class="o-img" src="{{img}}" mode="aspectFill"></image>
+    <text class="flex1 o-summary">{{item.summary}}</text>
+  </view>
+  <view class="row between o-foot">
+    <text class="sub">{{item.time}}</text>
+    <text>共 {{item.count}} 杯 实付 <text class="price">¥{{item.pay}}</text></text>
+  </view>
+  <view class="row o-ops">
+    <view wx:if="{{item.canRate}}" class="o-op" data-id="{{item.id}}" catchtap="onRate">去评价</view>
+    <view class="o-op o-op-main" data-id="{{item.id}}" catchtap="onAgain">再来一单</view>
+  </view>
+</view>
+<view wx:if="{{!list.length}}" class="empty">
+  <text class="sub">{{tab === 'all' ? '还没有订单' : '这里空空如也'}}</text>
+  <view class="btn empty-btn" bindtap="onGoMenu">去点一杯</view>
+</view>
+<view class="gap"></view>

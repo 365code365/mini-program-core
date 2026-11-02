@@ -1,0 +1,60 @@
+<view class="card top">
+  <view class="row between">
+    <view class="col">
+      <text class="o-n">{{office.name}}</text>
+      <text class="muted">{{office.addr}}</text>
+    </view>
+    <text class="re" bindtap="locate">重新定位</text>
+  </view>
+  <view class="punches row">
+    <view class="pc col"><text class="muted">上班 09:00</text><text class="pc-v {{today.in > '09:00' ? 'warn' : ''}}">{{today.in || '未打卡'}}</text></view>
+    <view class="pc col"><text class="muted">下班 18:00</text><text class="pc-v {{today.out && today.out < '18:00' ? 'warn' : ''}}">{{today.out || '未打卡'}}</text></view>
+  </view>
+  <view class="pbw">
+    <view class="pb col {{inRange ? '' : 'pb-off'}} {{today.in && today.out ? 'pb-done' : ''}}" bindtap="punch" hover-class="pb-hover">
+      <text class="pb-t">{{today.in && today.out ? '已完成' : (today.in ? '下班打卡' : '上班打卡')}}</text>
+      <text class="pb-c">{{clock}}</text>
+    </view>
+  </view>
+  <view class="loc row">
+    <text class="dot {{inRange ? 'ok' : (loc.state === 'locating' ? '' : 'bad')}}">●</text>
+    <text class="loc-t flex1">{{loc.text}}</text>
+  </view>
+  <view class="loc row" wx:if="{{wifi}}"><text class="dot ok">●</text><text class="loc-t">已连接公司 Wi-Fi：{{wifi}}</text></view>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="sec-title">月度统计</text>
+    <picker mode="date" fields="month" value="{{month}}" end="{{maxMonth}}" bindchange="onMonth">
+      <view class="mp">{{month}} ▾</view>
+    </picker>
+  </view>
+  <view class="loading" wx:if="{{statsLoading && !stats}}">统计中…</view>
+  <block wx:if="{{stats}}">
+    <view class="sts row">
+      <view class="sti col"><text class="sv">{{stats.present}}/{{stats.workdays}}</text><text class="sk">出勤天数</text></view>
+      <view class="sti col"><text class="sv warn">{{stats.late}}</text><text class="sk">迟到</text></view>
+      <view class="sti col"><text class="sv warn">{{stats.early}}</text><text class="sk">早退</text></view>
+      <view class="sti col"><text class="sv bad-c">{{stats.missing}}</text><text class="sk">缺卡</text></view>
+    </view>
+    <view class="sts row">
+      <view class="sti col"><text class="sv">{{stats.avgHours}}h</text><text class="sk">日均工时</text></view>
+      <view class="sti col"><text class="sv">{{stats.overtime}}h</text><text class="sk">加班时长</text></view>
+      <view class="sti col"><text class="sv">{{stats.lateMin}}′</text><text class="sk">迟到累计</text></view>
+    </view>
+    <view class="wk row"><text class="wd" wx:for="{{week}}" wx:key="*this">{{item}}</text></view>
+    <view class="cal">
+      <view class="cell" wx:for="{{cells}}" wx:key="key" data-key="{{item.key}}" bindtap="tapDay">
+        <view class="cd c-{{item.st}} {{item.key === todayKey ? 'c-now' : ''}}">{{item.d}}</view>
+      </view>
+    </view>
+    <view class="lg row">
+      <view class="lgi row"><text class="ld c-ok-d">●</text><text>正常</text></view>
+      <view class="lgi row"><text class="ld c-late-d">●</text><text>迟到 / 早退</text></view>
+      <view class="lgi row"><text class="ld c-miss-d">●</text><text>缺卡</text></view>
+    </view>
+    <text class="via">{{via}}</text>
+  </block>
+</view>
+<view style="height: 40rpx;"></view>

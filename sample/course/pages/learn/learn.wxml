@@ -24,7 +24,7 @@
       <view class="row pg"><view class="bar pg-bar"><view class="bar-in" style="width: {{cur.pct}}%;"></view></view><text class="pg-tx">{{cur.pct}}%</text></view>
     </view>
   </view>
-  <view class="btn-primary cont-btn" data-id="{{cur.id}}" bindtap="study"><text>继续学习 · 第 {{cur.done + 1}} 节</text></view>
+  <view class="btn-primary cont-btn" data-id="{{cur.id}}" bindtap="study"><text>继续学习 · 第 {{cur.nextNo}} 节</text></view>
 </view>
 
 <view class="card exam row" bindtap="goExam">

@@ -1,0 +1,75 @@
+<view class="stage">
+  <!-- 直播流：宿主接了 live-player 就出画面；没接（桌面 / 开发者工具）3 秒内拿不到「开始播放」就降级成封面 + 回放 -->
+  <live-player wx:if="{{mode === 'live'}}" id="farmLive" class="stage-box" src="{{src}}" mode="live" autoplay="{{true}}" muted="{{muted}}"
+    object-fit="fillCrop" bindstatechange="onLiveState" binderror="onLiveError"></live-player>
+  <block wx:else>
+    <video wx:if="{{replaying}}" id="replay" class="stage-box" src="{{replay}}" poster="{{cover}}" object-fit="cover" autoplay="{{true}}"
+      show-center-play-btn="{{true}}" loop="{{true}}" bindended="onReplayEnd"></video>
+    <view wx:else class="stage-box">
+      <image class="stage-box" src="{{cover}}" mode="aspectFill"></image>
+      <view class="fallback">
+        <text class="fb-t">{{fallbackText}}</text>
+        <view class="fb-row">
+          <view class="fb-btn" hover-class="btn-hover" bindtap="watchReplay"><text class="fb-btn-tx">看今日回放</text></view>
+          <view class="fb-btn fb-ghost" hover-class="btn-hover" bindtap="retryLive"><text class="fb-btn-tx">重新连接</text></view>
+        </view>
+      </view>
+    </view>
+  </block>
+  <view class="anchor">
+    <image class="an-av" src="{{farmer.avatar}}" mode="scaleToFill"></image>
+    <view class="an-mid">
+      <text class="an-name">{{farmer.name}}</text>
+      <text class="an-sub">{{viewersText}} 人在看 · {{likesText}} 赞</text>
+    </view>
+    <view class="an-follow {{followed ? 'an-followed' : ''}}" bindtap="toggleFollow"><text class="an-follow-tx">{{followed ? '已关注' : '关注'}}</text></view>
+  </view>
+  <view class="state-tag"><text class="state-tx">{{stateText}}</text></view>
+</view>
+
+<view class="title-bar row between">
+  <text class="lv-title">{{title}}</text>
+  <text class="mute" bindtap="toggleMute" wx:if="{{mode === 'live'}}">{{muted ? '🔇' : '🔊'}}</text>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="sec-title">直播间好物</text>
+    <text class="muted">点击商品查看详情</text>
+  </view>
+  <scroll-view class="bag" scroll-x="{{true}}" show-scrollbar="{{false}}">
+    <view class="bag-row">
+      <view class="bag-it" wx:for="{{bag}}" wx:key="id" data-id="{{item.id}}" bindtap="openGoods">
+        <image class="bag-img" src="{{item.cover}}" mode="aspectFill"></image>
+        <text class="bag-no">{{index + 1}}</text>
+        <text class="bag-name">{{item.short}}</text>
+        <view class="row"><text class="price">¥{{item.groupPrice}}</text><text class="bag-tag">拼</text></view>
+      </view>
+    </view>
+  </scroll-view>
+</view>
+
+<view class="card">
+  <text class="sec-title">评论</text>
+  <view class="cm" wx:for="{{comments}}" wx:key="id">
+    <text class="cm-name">{{item.name}}：</text><text class="cm-tx">{{item.text}}</text>
+  </view>
+  <view class="cm-input row">
+    <input class="cm-in" placeholder="说点什么…" value="{{draft}}" confirm-type="send" bindinput="onDraft" bindconfirm="send" maxlength="40" />
+    <view class="cm-send" bindtap="send"><text class="cm-send-tx">发送</text></view>
+    <view class="cm-like" bindtap="like"><text class="cm-like-tx">❤ {{myLikes || ''}}</text></view>
+  </view>
+</view>
+
+<view class="card">
+  <text class="sec-title">直播预告</text>
+  <view class="sc" wx:for="{{schedule}}" wx:key="id">
+    <view class="sc-time"><text class="sc-time-tx">{{item.time}}</text></view>
+    <view class="sc-mid">
+      <text class="sc-title">{{item.title}}</text>
+      <text class="muted">{{item.farmerName}}</text>
+    </view>
+    <view class="sc-btn {{item.on ? 'sc-btn-on' : ''}}" data-id="{{item.id}}" bindtap="toggleRemind"><text class="sc-btn-tx">{{item.on ? '已预约' : '预约'}}</text></view>
+  </view>
+</view>
+<view class="tabbar-gap"></view>

@@ -1,0 +1,21 @@
+<view class="tabs row">
+  <view wx:for="{{tabs}}" wx:key="*this" class="tab {{tab === index ? 'tab-on' : ''}}" data-i="{{index}}" bindtap="setTab"><text>{{item}}</text></view>
+</view>
+<view wx:if="{{loading}}" class="loading"><text class="muted">加载中…</text></view>
+<view wx:elif="{{!list.length}}" class="empty">
+  <text class="e-ic">✈</text>
+  <text class="muted">暂无相关订单</text>
+  <view class="btn e-btn" bindtap="goBook"><text>去订机票</text></view>
+</view>
+<view wx:for="{{list}}" wx:key="id" class="card o" data-id="{{item.id}}" bindtap="open" hover-class="btn-hover">
+  <view class="row between">
+    <view class="row"><text class="tag">{{item.trip}}</text><text class="o-r">{{item.route}}</text></view>
+    <text class="o-s o-s-{{item.status}}">{{item.statusText}}</text>
+  </view>
+  <text class="small o-w">{{item.when}} · {{item.no}}</text>
+  <view class="row between">
+    <text class="muted small">乘机人：{{item.pax}}</text>
+    <text class="price">¥{{item.total}}</text>
+  </view>
+</view>
+<view class="tab-space"></view>

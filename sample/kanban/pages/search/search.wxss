@@ -1,0 +1,19 @@
+.top { background: #ffffff; padding: 20rpx 24rpx 8rpx; }
+.kw-box { height: 72rpx; background: #f0f2f7; border-radius: 36rpx; padding: 0 24rpx; }
+.kw-ic { font-size: 26rpx; margin-right: 12rpx; }
+.kw-input { height: 72rpx; font-size: 28rpx; padding: 0 0 0 1rpx; }
+.f-label { display: block; font-size: 24rpx; color: #8c8c8c; margin: 20rpx 0 12rpx; }
+.chips { flex-wrap: wrap; }
+.chip { display: flex; flex-direction: row; align-items: center; font-size: 24rpx; color: #434343; background: #f0f2f7; border-radius: 28rpx; padding: 8rpx 20rpx; margin: 0 14rpx 14rpx 0; }
+.chip.on { color: #ffffff; background: #2f54eb; }
+.chip-dot { width: 14rpx; height: 14rpx; border-radius: 7rpx; margin-right: 8rpx; }
+.res-head { padding: 20rpx 32rpx 12rpx; }
+.reset { font-size: 24rpx; color: #2f54eb; }
+.res { padding: 20rpx 0; border-bottom: 1rpx solid #f0f0f0; }
+.res-prio { width: 64rpx; text-align: center; font-size: 20rpx; color: #ffffff; border-radius: 6rpx; padding: 2rpx 0; margin-right: 16rpx; flex-shrink: 0; }
+.res-title { display: block; font-size: 28rpx; }
+.res-sub { display: block; margin-top: 4rpx; }
+.res-due { font-size: 24rpx; color: #8c8c8c; margin-left: 12rpx; }
+.res-due.late { color: #f5222d; }
+.empty-box { padding: 100rpx 0; text-align: center; }
+.safe { height: 60rpx; }

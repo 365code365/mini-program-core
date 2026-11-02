@@ -1,0 +1,40 @@
+<view class="wrap">
+  <view class="search row">
+    <text class="s-ic">🔍</text>
+    <input class="s-in" placeholder="搜索单词或释义" value="{{kw}}" bindinput="onInput" confirm-type="search"></input>
+    <text class="s-x" wx:if="{{kw}}" bindtap="onClear">✕</text>
+  </view>
+
+  <view class="bar between">
+    <text class="muted">共 {{all.length}} 个生词</text>
+    <view class="row">
+      <text class="sort {{sort === 'new' ? 'sort-on' : ''}}" data-s="new" bindtap="onSort">最近加入</text>
+      <text class="sort {{sort === 'az' ? 'sort-on' : ''}}" data-s="az" bindtap="onSort">A-Z</text>
+    </view>
+  </view>
+
+  <view class="card list" wx:if="{{list.length}}">
+    <view class="item row" wx:for="{{list}}" wx:key="w" hover-class="btn-press">
+      <view class="it-main col" data-w="{{item.w}}" bindtap="goWord">
+        <view class="row"><text class="iw">{{item.w}}</text><text class="ph it-ph">{{item.ph}}</text></view>
+        <text class="it-mean">{{item.mean}}</text>
+        <text class="muted">{{item.state}}</text>
+      </view>
+      <view class="speaker" data-w="{{item.w}}" catchtap="onSpeak"><text>🔊</text></view>
+      <view class="del" data-w="{{item.w}}" catchtap="onRemove"><text class="del-tx">移出</text></view>
+    </view>
+  </view>
+
+  <view class="empty" wx:elif="{{kw}}">
+    <view class="empty-ic"><text>?</text></view>
+    <text class="empty-tx">没有找到「{{kw}}」相关的生词</text>
+  </view>
+  <view class="empty" wx:else>
+    <view class="empty-ic"><text>☆</text></view>
+    <text class="empty-tx">生词本还是空的，学习时点「不认识」会自动收进来</text>
+    <view class="btn e-btn" hover-class="btn-press" bindtap="goLearn">去学新词</view>
+  </view>
+
+  <view class="btn quiz" wx:if="{{all.length}}" hover-class="btn-press" bindtap="goQuiz">用生词本做测验</view>
+  <view style="height: 120rpx;"></view>
+</view>

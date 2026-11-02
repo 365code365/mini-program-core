@@ -1,5 +1,6 @@
 const data = require('../../utils/data.js');
 const store = require('../../utils/store.js');
+const host = require('../../utils/host.js');
 const TAGS = ['我家', '父母家', '公司', '出租房'];
 const PAY_TYPES = data.types.filter(t => t.k !== 'phone');
 Page({
@@ -26,7 +27,7 @@ Page({
     this.setData({ unitList: list, unitIdx: 0 });
   },
   openAdd() { this.setData({ adding: true }); wx.setNavigationBarTitle({ title: '添加户号' }); },
-  closeAdd() { this.setData({ adding: false, no: '' }); wx.setNavigationBarTitle({ title: '户号管理' }); },
+  closeAdd() { this.setData({ adding: false, no: '', formSeq: (this.data.formSeq || 0) + 1 }); wx.setNavigationBarTitle({ title: '户号管理' }); },
   onCity(e) { this.setData({ cityIdx: Number(e.detail.value) }); this.syncUnits(); },
   onType(e) { this.setData({ typeIdx: Number(e.currentTarget.dataset.i) }); this.syncUnits(); },
   onUnit(e) { this.setData({ unitIdx: Number(e.detail.value) }); },
@@ -53,18 +54,34 @@ Page({
       wx.showToast({ title: owe ? '添加成功，查到 1 笔欠费' : '添加成功', icon: 'none' });
     }, 500);
   },
+  bill(e) { wx.navigateTo({ url: '/pages/bill/bill?id=' + e.currentTarget.dataset.id }); },
   more(e) {
-    const id = e.currentTarget.dataset.id;
-    wx.showActionSheet({ itemList: ['去缴费', '复制户号', '删除户号'], success: r => {
+    const id = String(e.currentTarget.dataset.id);
+    const a = store.getAccounts().find(x => x.id === id);
+    if (!a) return;
+    wx.showActionSheet({ itemList: ['去缴费', '查看账单', '修改分组', '复制户号', '删除户号'], success: r => {
       if (r.tapIndex === 0) wx.navigateTo({ url: '/pages/pay/pay?id=' + id });
-      else if (r.tapIndex === 1) wx.showToast({ title: '户号已复制', icon: 'none' });
+      else if (r.tapIndex === 1) wx.navigateTo({ url: '/pages/bill/bill?id=' + id });
+      else if (r.tapIndex === 2) this.retag(id);
+      else if (r.tapIndex === 3) host.copy(a.no, '户号已复制');
       else this.remove(id);
+    } });
+  },
+  retag(id) {
+    wx.showActionSheet({ itemList: TAGS, success: r => {
+      const list = store.getAccounts();
+      list.forEach(x => { if (x.id === id) x.tag = TAGS[r.tapIndex]; });
+      store.saveAccounts(list);
+      this.refresh();
+      wx.showToast({ title: '已移到「' + TAGS[r.tapIndex] + '」', icon: 'none' });
     } });
   },
   remove(id) {
     wx.showModal({ title: '删除户号', content: '删除后将不再提醒该户号的欠费账单，确定删除？', confirmColor: '#f2603d', success: r => {
       if (!r.confirm) return;
       store.saveAccounts(store.getAccounts().filter(a => a.id !== id));
+      const auto = store.getAuto();
+      if (auto.ids.indexOf(id) >= 0) { auto.ids = auto.ids.filter(x => x !== id); store.saveAuto(auto); }
       this.refresh();
       wx.showToast({ title: '已删除', icon: 'none' });
     } });

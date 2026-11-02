@@ -1,0 +1,26 @@
+<view class="top-gap"></view>
+<view wx:if="{{cars.length === 0}}" class="empty col">
+  <view class="empty-ic"><text class="empty-ic-t">车</text></view>
+  <text class="sub">还没有车辆，添加后才能扫码充电</text>
+</view>
+<view wx:for="{{cars}}" wx:key="id" class="card car">
+  <view class="row">
+    <view class="plate"><text class="plate-t">{{item.plate}}</text></view>
+    <text class="tag tag-green" wx:if="{{item.isDefault}}">默认</text>
+  </view>
+  <text class="sub car-sub">{{item.model}}·电池容量 {{item.battery}} 度</text>
+  <view class="row ops">
+    <view class="row def" data-id="{{item.id}}" bindtap="onDefault">
+      <view class="radio {{item.isDefault ? 'on' : ''}}"><view class="radio-in" wx:if="{{item.isDefault}}"></view></view>
+      <text class="op-t">{{item.isDefault ? '默认车辆' : '设为默认'}}</text>
+    </view>
+    <view class="flex1"></view>
+    <text class="op op-edit" data-id="{{item.id}}" bindtap="onEdit">编辑</text>
+    <text class="op op-del" data-id="{{item.id}}" bindtap="onRemove">删除</text>
+  </view>
+</view>
+<text class="sub tip">充电时按默认车辆的电池容量估算剩余时间；部分电站凭车牌减免停车费。最多绑定 5 辆车。</text>
+<view class="bottom-space"></view>
+<view class="bar">
+  <view class="btn-primary add-btn" bindtap="onAdd">添加车辆</view>
+</view>

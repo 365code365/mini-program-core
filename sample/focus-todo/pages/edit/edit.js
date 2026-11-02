@@ -8,7 +8,7 @@ Page({
     prioColor: '#c4c9d2',
     dateLabel: '',
     noteLen: 0,
-    repeats: ['不重复', '每天', '工作日', '每周', '每月']
+    repeats: S.REPEATS
   },
 
   onLoad(query) {
@@ -42,10 +42,14 @@ Page({
   onRemind(e) {
     const on = e.detail.value
     this.setData({ 'form.remind': on })
-    if (on && !this.data.form.time) {
-      this.setData({ 'form.time': '09:00' })
-      wx.showToast({ title: '默认 09:00 提醒', icon: 'none' })
-    }
+    if (!on) return
+    if (!this.data.form.time) this.setData({ 'form.time': '09:00' })
+    // 准时提醒走订阅消息；拿不到授权时只在清单里显示 ⏰
+    wx.requestSubscribeMessage({
+      tmplIds: ['vT3kq8Rz1mXcB5nWfH0yJ2pLs7dGa9eUo4iKQhNwMrE'],
+      success: () => wx.showToast({ title: '将在 ' + this.data.form.time + ' 提醒你', icon: 'none' }),
+      fail: () => wx.showToast({ title: '未开通消息提醒，到点请留意清单里的 ⏰', icon: 'none' })
+    })
   },
 
   onFocus() {
@@ -54,21 +58,30 @@ Page({
   },
 
   onSave() {
-    const f = this.data.form
+    const f = Object.assign({}, this.data.form)
     if (!f.title || !f.title.trim()) {
       wx.showToast({ title: '先写下要做的事', icon: 'none' })
       return
     }
+    f.title = f.title.trim()
+    if (f.title.length > 40) {
+      wx.showToast({ title: '标题最多 40 个字', icon: 'none' })
+      return
+    }
+    // 设了提醒却没有时间：补上默认 09:00
+    if (f.remind && !f.time) f.time = '09:00'
     const list = S.loadTodos()
     if (this.data.isNew) {
       f.id = list.reduce((m, i) => Math.max(m, i.id), 0) + 1
       list.push(f)
     } else {
       const k = list.findIndex(i => i.id === f.id)
-      list[k] = f
+      if (k < 0) list.push(f)
+      else list[k] = f
     }
+    const next = f.done ? S.spawnNext(list, f) : null
     S.saveTodos(list)
-    wx.showToast({ title: '已保存', icon: 'success' })
+    wx.showToast({ title: next ? '已保存，下一次 ' + next.date.slice(5) : '已保存', icon: next ? 'none' : 'success' })
     setTimeout(() => wx.navigateBack(), 500)
   },
 

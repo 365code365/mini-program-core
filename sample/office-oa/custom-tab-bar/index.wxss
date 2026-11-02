@@ -1,0 +1,6 @@
+.tb { height: calc(100rpx + env(safe-area-inset-bottom)); background: #ffffff; display: flex; flex-direction: row; border-top: 1rpx solid #eceef2; padding-bottom: env(safe-area-inset-bottom); }
+.tb-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.tb-icw { width: 48rpx; height: 48rpx; position: relative; }
+.tb-ic { width: 48rpx; height: 48rpx; }
+.tb-dot { position: absolute; left: 34rpx; top: -8rpx; min-width: 30rpx; height: 30rpx; padding: 0 8rpx; box-sizing: border-box; border-radius: 15rpx; background: #f53f3f; color: #fff; font-size: 20rpx; line-height: 30rpx; text-align: center; }
+.tb-tx { font-size: 20rpx; margin-top: 4rpx; }

@@ -1,0 +1,16 @@
+.top { align-items: center; background: #ffffff; padding: 56rpx 0 40rpx; }
+.ok-ic { width: 120rpx; height: 120rpx; border-radius: 60rpx; background: #12b76a; display: flex; align-items: center; justify-content: center; }
+.ok-ic-wait { background: #f79009; }
+.ok-tx { color: #ffffff; font-size: 64rpx; font-weight: bold; }
+.top-t { font-size: 36rpx; font-weight: bold; margin-top: 24rpx; }
+.top-amt { font-size: 44rpx; color: #ff6a00; font-weight: bold; margin-top: 12rpx; }
+.top-m { font-size: 24rpx; color: #8a93a6; margin-left: 12rpx; margin-top: 16rpx; }
+.leg { padding: 8rpx 0 16rpx; }
+.leg-r { font-size: 32rpx; font-weight: bold; margin-bottom: 8rpx; }
+.px { padding: 8rpx 0; }
+.tips text { margin-bottom: 8rpx; }
+.btns { padding: 16rpx 24rpx; }
+.b2 { margin-left: 24rpx; }
+.home { padding: 24rpx 0 60rpx; text-align: center; }
+.e-ic { font-size: 80rpx; color: #c6ccd8; margin-bottom: 20rpx; }
+.e-btn { width: 260rpx; height: 72rpx; font-size: 28rpx; margin-top: 30rpx; }

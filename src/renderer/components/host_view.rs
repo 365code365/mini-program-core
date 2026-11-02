@@ -14,8 +14,10 @@
 //! - 引擎：框的背景照常画，最新一帧按框拉满画在上面（圆角照节点的）；新帧到了只重画这一块
 //!   （与动图换帧同一套，`wxml_renderer/animated_image.rs`）。滚动一个像素都不用宿主重画。
 //!
-//! 取舍：拖动从框里开始照样滚页面（与同层渲染的视频一致）；地图自己的平移 / 缩放手势没有转给宿主，
-//! 只转点击。键：节点 `id`，没有就是标签名（两个都没写 id 的同名组件共用一路画面）。
+//! 手势：默认拖动从框里开始照样滚页面（与同层渲染的视频一致），只转点击。宿主在创建选项
+//! `sameLayerGestures` 里点了名的标签（地图要自己平移 / 捏合缩放）按下去整串触摸交给宿主
+//! （`nativeViewTouch`，见 host/engine_native_touch.rs），页面不滚 —— 与微信里在地图上拖动拖的是地图一致。
+//! 键：节点 `id`，没有就是标签名（两个都没写 id 的同名组件共用一路画面）。
 use super::base::RenderNode;
 use super::host_feed::HostFrame;
 use crate::Canvas;
@@ -43,6 +45,19 @@ thread_local! {
     static TAPS: RefCell<Vec<serde_json::Value>> = const { RefCell::new(Vec::new()) };
     /// 换了渲染器：下一帧重新数一遍页面上的同层组件
     static STALE: Cell<bool> = const { Cell::new(false) };
+    /// 宿主自己处理手势的标签（创建选项 `sameLayerGestures`，典型是 `map`）：按在它们框里的这串触摸
+    /// 整串交给宿主（`nativeViewTouch`），页面不滚（host/engine_native_touch.rs）
+    static GESTURES: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
+}
+
+/// `MiniEngine` 换页重建渲染器时设（只认同时也在 `sameLayer` 里的标签）
+pub fn set_gesture_tags(tags: Vec<String>) {
+    GESTURES.with(|t| *t.borrow_mut() = tags);
+}
+
+/// 这个标签按下去整串触摸交给宿主
+pub fn wants_gestures(tag: &str) -> bool {
+    is_same_layer(tag) && GESTURES.with(|t| t.borrow().iter().any(|x| x == tag))
 }
 
 /// `MiniEngine` 换页重建渲染器时设（`sameLayer` 去掉 video）

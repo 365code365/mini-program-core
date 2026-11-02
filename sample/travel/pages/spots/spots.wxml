@@ -12,7 +12,7 @@
 </view>
 <view class="list">
   <view class="custom">
-    <input class="custom-in" value="{{custom}}" placeholder="没找到？输入自定义地点" bindinput="onCustom" bindconfirm="addCustom" />
+    <input id="custom{{seq}}" class="custom-in" value="{{custom}}" placeholder="没找到？输入自定义地点" bindinput="onCustom" bindconfirm="addCustom" />
     <view class="custom-btn {{custom ? '' : 'custom-off'}}" bindtap="addCustom"><text>添加</text></view>
   </view>
   <view wx:for="{{list}}" wx:key="name" class="sp {{item.takenDay ? 'sp-taken' : ''}}" data-name="{{item.name}}" bindtap="toggle">

@@ -1,0 +1,44 @@
+<view class="top" style="background: {{sv.bg}}">
+  <view class="row">
+    <text class="kind {{sv.kind === '投票' ? 'kind-v' : 'kind-q'}}">{{sv.kind}}</text>
+    <text class="state {{ended ? 'end' : ''}}">{{ended ? '已截止' : '进行中'}}</text>
+  </view>
+  <text class="t-title">{{sv.title}}</text>
+  <text class="t-author">{{sv.author}} 发起</text>
+</view>
+<view class="card facts row">
+  <view class="fact col"><text class="fact-n">{{sv.questions.length}}</text><text class="sub">题</text></view>
+  <view class="fact col"><text class="fact-n">{{minutes}}</text><text class="sub">分钟</text></view>
+  <view class="fact col"><text class="fact-n">{{joinedText}}</text><text class="sub">人参与</text></view>
+</view>
+<view class="card">
+  <text class="sec-t">说明</text>
+  <text class="desc">{{sv.desc}}</text>
+  <view class="row info"><text class="sub info-k">截止日期</text><text class="info-v">{{sv.deadline}}</text></view>
+  <view class="row info"><text class="sub info-k">题型</text><text class="info-v">{{typesText}}</text></view>
+  <view class="row info"><text class="sub info-k">必答</text><text class="info-v">{{requiredCount}} 题</text></view>
+</view>
+<view class="tip row" wx:if="{{hasDraft && !ended}}">
+  <view class="tip-dot"></view>
+  <text class="tip-t">上次答到第 {{draftStep}} 题，继续作答会接着填</text>
+</view>
+<view class="tip row" wx:if="{{done}}">
+  <view class="tip-dot ok"></view>
+  <text class="tip-t">你已参与过，可以查看统计结果</text>
+</view>
+<view class="ops">
+  <block wx:if="{{ended}}">
+    <view class="btn-primary go-result" bindtap="onResult">已截止 · 查看结果</view>
+  </block>
+  <block wx:elif="{{done}}">
+    <view class="btn-primary go-result" bindtap="onResult">查看统计结果</view>
+    <view class="btn-ghost restart" bindtap="onRestart">重新作答</view>
+  </block>
+  <block wx:else>
+    <view class="btn-primary start" bindtap="onStart">{{hasDraft ? '继续作答' : (sv.kind === '投票' ? '去投票' : '开始作答')}}</view>
+  </block>
+  <view class="row sub-ops">
+    <view class="sub-op fav {{fav ? 'on' : ''}}" bindtap="onFav">{{fav ? '★ 已收藏' : '☆ 收藏'}}</view>
+    <view class="sub-op to-poster" bindtap="onShare">生成分享海报</view>
+  </view>
+</view>

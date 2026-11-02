@@ -1,0 +1,3 @@
+.wrap { height: 100vh; display: flex; flex-direction: column; }
+.tip { font-size: 24rpx; color: #ff7d00; background: #fff7e8; padding: 16rpx 24rpx; }
+.cl { flex: 1; height: 0; display: flex; flex-direction: column; }

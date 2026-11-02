@@ -1,0 +1,15 @@
+.form { padding-top: 4rpx; padding-bottom: 4rpx; }
+.f { display: flex; flex-direction: row; align-items: center; min-height: 100rpx; border-bottom: 1rpx solid #f2f3f5; }
+.f.last { border-bottom: none; }
+.f-k { width: 150rpx; font-size: 28rpx; color: #5c616b; flex-shrink: 0; }
+/* 引擎把 padding 为 0 当成「没写」，套 12px 默认内边距，所以写 1rpx */
+.f-in { flex: 1; height: 100rpx; font-size: 28rpx; padding: 0 0 0 1rpx; }
+.unit { font-size: 26rpx; color: #8b909a; margin-left: 12rpx; }
+.ph { color: #b8bcc4; }
+.goals { display: flex; flex-direction: row; flex-wrap: wrap; margin-top: 20rpx; }
+.g { width: 311rpx; height: 80rpx; margin: 0 24rpx 20rpx 0; border-radius: 16rpx; background: #f7f8fa; border: 2rpx solid #f7f8fa; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
+.g:nth-child(2n) { margin-right: 0; }
+.g.on { background: #fff0ea; border-color: #ff5a36; }
+.g-tx { font-size: 28rpx; color: #3a3f4b; white-space: nowrap; }
+.g.on .g-tx { color: #ff5a36; font-weight: bold; }
+.save { margin: 40rpx 24rpx 0; }

@@ -1,0 +1,603 @@
+# 滴达出行（sample/ride）探针脚本：第一行 smoke 每页能开，之后真点击走完
+# 叫车 → 应答 → 司机到达 → 行程中 → 到达支付 → 评价、取消规则、预约 / 接送机 / 代叫车、券、钱包、常用地址、紧急联系人、发票、我的
+smoke pages/trip-detail/trip-detail?id=T20261023A1 pages/pay/pay?id=none pages/invoice/invoice?ids=T20261023A1
+# ① 叫车闭环：选目的地 → 预估（券自动抵）→ 呼叫 → 应答 → 发消息 / 打电话 / 分享 → 司机到达 → 上车 → 改目的地 / 报警 / 录音 → 到达支付（换券、钱包）→ 评价 → 开票 → 投诉
+open
+expect getCurrentPages()[0].data.from.name === '望京SOHO T1-东门'
+tap .addr-to
+route pages/place/place
+type .search-input => 三里屯
+count 1 .poi
+shot target/_polish_shots/place-search.png
+tap .poi
+route pages/index/index
+expect getCurrentPages()[0].data.to.name === '三里屯太古里'
+expect getCurrentPages()[0].data.km === 8.3 && getCurrentPages()[0].data.min === 24
+expect getCurrentPages()[0].data.fare.total === 35.7
+expect getCurrentPages()[0].data.cut === 8 && getCurrentPages()[0].data.price === 27.7 && getCurrentPages()[0].data.couponName === '新客专享券'
+expect getCurrentPages()[0].data.types[1].sub === '约 ¥53.8'
+shot target/_polish_shots/index-estimate.png
+tap .est-tap
+expect getCurrentPages()[0].data.sheet === 'fare' && getCurrentPages()[0].data.fareLines.length === 4
+shot target/_polish_shots/sheet-fare.png
+tap .sheet-close
+tap .call-btn
+route pages/calling/calling
+expect wx.getStorageSync('ride_order').stage === 'waiting'
+expect getCurrentPages().slice(-1)[0].data.est.pay === 27.7
+eval (function () { var p = getCurrentPages().slice(-1)[0]; for (var i = 0; i < 40 && p.data.stage === 'waiting'; i++) p.tick(); return p.data.stage; })()
+expect getCurrentPages().slice(-1)[0].data.stage === 'accepted' && getCurrentPages().slice(-1)[0].data.o.driver.name === '王师傅'
+toast 王师傅已接单
+# 发消息：司机两拍后回复
+tap .act-msg
+sheet 0 4
+expect getCurrentPages().slice(-1)[0].data.msgs[0].text === '我在路边等你'
+eval (function () { var p = getCurrentPages().slice(-1)[0]; p.tick(); p.tick(); })()
+expect getCurrentPages().slice(-1)[0].data.msgs[1].text === '好的，马上到'
+# 打电话：宿主不能拨号 → 弹隐私号
+tap .act-call
+modal?
+expect __ui.slice(-1)[0].content === '171 8056 2391'
+modal ok
+# 分享行程：宿主不能发短信 → 页内确认发给紧急联系人
+tap .share-btn
+modal?
+expect __ui.slice(-1)[0].title === '发送给 林晓雨'
+modal ok
+expect wx.getStorageSync('ride_order').shared === true
+toast 已分享给 林晓雨
+shot target/_polish_shots/calling-accepted.png
+eval (function () { var p = getCurrentPages().slice(-1)[0]; for (var i = 0; i < 40 && p.data.stage === 'accepted'; i++) p.tick(); return p.data.stage; })()
+expect getCurrentPages().slice(-1)[0].data.stage === 'arrived'
+shot target/_polish_shots/calling-arrived.png
+tap .board-btn
+expect getCurrentPages().slice(-1)[0].data.stage === 'ongoing'
+toast 行程开始
+# 行程中改目的地：国贸商城，里程与券后预估跟着变（满 40 的快车券变成可用）
+tap .act-more
+sheet 0 3
+route pages/place/place
+type .search-input => 国贸商城
+tap .poi
+wait 700
+route pages/calling/calling
+expect wx.getStorageSync('ride_order').to.name === '国贸商城'
+expect getCurrentPages().slice(-1)[0].data.o.km === 11.9
+expect getCurrentPages().slice(-1)[0].data.est.pay === 30.8 && getCurrentPages().slice(-1)[0].data.est.couponName === '快车立减券'
+# 一键报警：确认后拨 110（宿主不能拨号 → 弹号码）。harness 的 modal ok 自下往上扫到没有弹窗为止，
+# 确认框一关、号码框马上弹出来，同一次扫描会把两个都点掉：用 __ui 记录断言号码框弹过
+tap .alarm-btn
+modal?
+expect __ui.slice(-1)[0].title === '一键报警'
+modal ok
+wait 200
+nomodal
+expect __ui.slice(-1)[0].title === '报警电话' && __ui.slice(-1)[0].content === '110'
+expect wx.getStorageSync('ride_order').alarm > 0
+# 安全中心：关 / 开行程录音
+tap .act-safe
+sheet 2 4
+expect wx.getStorageSync('ride_record') === false && getCurrentPages().slice(-1)[0].data.recording === false
+tap .act-safe
+sheet 2 4
+expect wx.getStorageSync('ride_record') === true
+shot target/_polish_shots/calling-ongoing.png
+# 到达：生成待支付行程，跳支付页
+eval (function () { var p = getCurrentPages().slice(-1)[0]; for (var i = 0; i < 40 && !p.done; i++) p.tick(); return p.done; })()
+route pages/pay/pay
+expect getCurrentPages().slice(-1)[0].data.due === 30.8 && getCurrentPages().slice(-1)[0].data.couponId === 'c1'
+expect getCurrentPages().slice(-1)[0].data.payBy === 'wallet'
+expect wx.getStorageSync('ride_order') === '' && wx.getStorageSync('ride_to') === ''
+shot target/_polish_shots/pay-ride.png
+# 换券：不用券 45.8 → 新客券 37.8 → 快车券 30.8
+tap .coupon-row
+count 3 .cp
+tapn 2 .cp
+expect getCurrentPages().slice(-1)[0].data.due === 45.8 && getCurrentPages().slice(-1)[0].data.couponId === ''
+tap .coupon-row
+tapn 1 .cp
+expect getCurrentPages().slice(-1)[0].data.due === 37.8 && getCurrentPages().slice(-1)[0].data.couponId === 'c2'
+tap .coupon-row
+tapn 0 .cp
+expect getCurrentPages().slice(-1)[0].data.due === 30.8
+# 钱包支付
+tap .pay-btn
+modal?
+modal ok
+wait 900
+route pages/trip-detail/trip-detail
+expect wx.getStorageSync('ride_wallet').balance === 95.7
+expect wx.getStorageSync('ride_wallet').logs[0].amount === -30.8
+expect wx.getStorageSync('ride_trips')[0].status === 'done' && wx.getStorageSync('ride_trips')[0].payBy === 'wallet' && wx.getStorageSync('ride_trips')[0].pay === 30.8
+expect wx.getStorageSync('ride_coupon_used').indexOf('c1') >= 0
+expect getCurrentPages().slice(-1)[0].data.payName === '钱包余额'
+# 评价：三星换成「哪里不满意」且必须选一个；五星选「驾驶平稳」+ 文字（先等 pageScrollTo 把评价卡滚到位）
+wait 500
+tapn 2 .star
+expect getCurrentPages().slice(-1)[0].data.rateTags[0].name === '车内有异味'
+tap .rate-btn
+toast 哪里不满意
+tapn 4 .star
+expect getCurrentPages().slice(-1)[0].data.rateTags[0].name === '车内整洁'
+tapn 1 .rate-tag
+type .rate-input => 师傅很专业
+blur
+tap .rate-btn
+toast 感谢评价
+expect wx.getStorageSync('ride_trips')[0].rating.stars === 5 && wx.getStorageSync('ride_trips')[0].rating.tags[0] === '驾驶平稳' && wx.getStorageSync('ride_trips')[0].rating.text === '师傅很专业'
+shot target/_polish_shots/detail-rated.png
+# 开发票：带着这一单进发票页
+tap .op-invoice
+route pages/invoice/invoice
+expect getCurrentPages().slice(-1)[0].data.count === 1 && getCurrentPages().slice(-1)[0].data.amount === 30.8
+type .i-title => 北京滴答科技有限公司
+type .i-tax => 91110105ma01abcd2x
+type .i-email => finance@dida.com
+blur
+tap .submit-btn
+modal?
+modal ok
+expect getCurrentPages().slice(-1)[0].data.tab === 'list'
+expect wx.getStorageSync('ride_invoices')[0].amount === 30.8 && wx.getStorageSync('ride_invoices')[0].taxNo === '91110105MA01ABCD2X'
+count 1 .rec
+shot target/_polish_shots/invoice-list.png
+back
+route pages/trip-detail/trip-detail
+expect getCurrentPages().slice(-1)[0].data.invoice.id === wx.getStorageSync('ride_invoices')[0].id
+# 投诉：多收费用
+tap .op-complain
+sheet 1 6
+expect wx.getStorageSync('ride_trips')[0].complaint.reason === '多收费用'
+toast 差额原路退回
+tap .op-complain
+modal?
+modal cancel
+noerr
+# ② 取消规则：应答前免费 / 接单 2 分钟内免费 / 超过 2 分钟收 ¥5（余额不足 → 去充值 → 钱包付）/ 司机已到达、司机原因免费 + 取消记录
+open
+tap .addr-to
+tapn 0 .poi
+route pages/index/index
+expect getCurrentPages()[0].data.to.name === '望京凯德MALL'
+tap .call-btn
+route pages/calling/calling
+tap .cancel-btn
+modal?
+expect __ui.slice(-1)[0].title === '确定取消呼叫？'
+modal ok
+wait 800
+route pages/index/index
+expect wx.getStorageSync('ride_order') === ''
+expect wx.getStorageSync('ride_trips')[0].status === 'cancel' && wx.getStorageSync('ride_trips')[0].cancelFee === 0 && wx.getStorageSync('ride_trips')[0].cancelReason === '应答前取消呼叫'
+expect getCurrentPages()[0].data.to.name === '望京凯德MALL'
+# 接单 2 分钟内取消：免费，留一张取消记录
+tap .call-btn
+route pages/calling/calling
+eval (function () { var p = getCurrentPages().slice(-1)[0]; for (var i = 0; i < 40 && p.data.stage === 'waiting'; i++) p.tick(); return p.data.stage; })()
+expect getCurrentPages().slice(-1)[0].data.v.freeLeft !== ''
+tap .cancel-btn
+sheet 0 5
+modal?
+expect __ui.slice(-1)[0].title === '确定取消行程？'
+modal ok
+wait 300
+route pages/trip-detail/trip-detail
+expect wx.getStorageSync('ride_trips')[0].status === 'cancel' && wx.getStorageSync('ride_trips')[0].cancelFee === 0 && wx.getStorageSync('ride_trips')[0].cancelStage === 'accepted'
+expect getCurrentPages().slice(-1)[0].data.cancelText.indexOf('未产生任何费用') > 0
+shot target/_polish_shots/detail-cancel-free.png
+# 接单超过 2 分钟：收 ¥5。先点「不取消了」，订单照常；再取消 → 待支付
+eval wx.switchTab({ url: '/pages/index/index' })
+tap .call-btn
+route pages/calling/calling
+eval (function () { var p = getCurrentPages().slice(-1)[0]; for (var i = 0; i < 40 && p.data.stage === 'waiting'; i++) p.tick(); var o = wx.getStorageSync('ride_order'); o.acceptT = o.t - 7; wx.setStorageSync('ride_order', o); p.refresh(); return p.data.v.freeLeft; })()
+expect getCurrentPages().slice(-1)[0].data.v.freeLeft === ''
+tap .cancel-btn
+sheet 0 5
+expect __ui.slice(-1)[0].title === '取消需支付 ¥5'
+modal cancel
+expect wx.getStorageSync('ride_order').stage === 'accepted'
+tap .cancel-btn
+sheet 0 5
+modal ok
+wait 300
+route pages/pay/pay
+expect getCurrentPages().slice(-1)[0].data.due === 5 && wx.getStorageSync('ride_trips')[0].status === 'unpaid' && wx.getStorageSync('ride_trips')[0].cancelled === true
+# 没付就回首页：横条提示，叫车被拦下
+eval wx.switchTab({ url: '/pages/index/index' })
+expect getCurrentPages()[0].data.unpaid.due === 5
+tap .call-btn
+modal?
+expect __ui.slice(-1)[0].title === '还有未支付的订单'
+modal ok
+route pages/pay/pay
+# 钱包只剩 3 元：钱包不可选 → 去充值 50 → 回来钱包支付
+eval (function () { wx.setStorageSync('ride_wallet', { balance: 3, logs: [] }); getCurrentPages().slice(-1)[0].load(); })()
+expect getCurrentPages().slice(-1)[0].data.enough === false && getCurrentPages().slice(-1)[0].data.payBy === 'wechat'
+tapn 0 .way
+toast 余额不足
+shot target/_polish_shots/pay-cancel-fee.png
+tap .way-link
+route pages/wallet/wallet
+tapn 0 .opt
+tap .go
+modal?
+modal ok
+wait 300
+expect wx.getStorageSync('ride_wallet').balance === 53
+shot target/_polish_shots/wallet.png
+back
+route pages/pay/pay
+expect getCurrentPages().slice(-1)[0].data.enough === true
+tapn 0 .way
+expect getCurrentPages().slice(-1)[0].data.payBy === 'wallet'
+tap .pay-btn
+modal ok
+wait 900
+route pages/trip-detail/trip-detail
+expect wx.getStorageSync('ride_wallet').balance === 48 && wx.getStorageSync('ride_wallet').logs[0].title.indexOf('取消费') === 0
+expect wx.getStorageSync('ride_trips')[0].status === 'cancel' && wx.getStorageSync('ride_trips')[0].pay === 5
+expect getCurrentPages().slice(-1)[0].data.cancelText.indexOf('已支付') > 0
+shot target/_polish_shots/detail-cancel-fee.png
+# 司机已到达，但选「司机要求我取消」：司机原因不收费
+eval wx.switchTab({ url: '/pages/index/index' })
+tap .call-btn
+route pages/calling/calling
+eval (function () { var p = getCurrentPages().slice(-1)[0]; for (var i = 0; i < 60 && p.data.stage !== 'arrived'; i++) p.tick(); return p.data.stage; })()
+expect getCurrentPages().slice(-1)[0].data.stage === 'arrived'
+tap .cancel-btn
+sheet 2 5
+expect __ui.slice(-1)[0].title === '确定取消行程？'
+modal ok
+wait 300
+route pages/trip-detail/trip-detail
+expect wx.getStorageSync('ride_trips')[0].cancelFee === 0 && wx.getStorageSync('ride_trips')[0].cancelStage === 'arrived' && wx.getStorageSync('ride_trips')[0].cancelReason === '司机要求我取消'
+# 行程列表：取消记录都在「已取消」
+eval wx.switchTab({ url: '/pages/trips/trips' })
+tapn 2 .tab
+count 5 .trip
+expect getCurrentPages()[0].data.list[0].statusText === '已取消'
+noerr
+# ③ 预约用车：明天 07:00 → 选目的地 → 预约成功（下单即派司机）→ 首页横条 → 取消预约免费
+open
+tapn 0 .svc
+expect getCurrentPages()[0].data.sheet === 'book'
+shot target/_polish_shots/sheet-book.png
+tapn 1 .day-tab
+count 8 .slot
+tapn 0 .slot
+route pages/place/place
+type .search-input => 798
+tap .poi
+route pages/index/index
+expect getCurrentPages()[0].data.whenText === '明天 07:00' && getCurrentPages()[0].data.callText === '预约快车'
+tap .call-btn
+route pages/calling/calling
+expect getCurrentPages().slice(-1)[0].data.stage === 'booked' && getCurrentPages().slice(-1)[0].data.o.driver.name === '王师傅'
+expect getCurrentPages().slice(-1)[0].data.head.title === '预约成功' && getCurrentPages().slice(-1)[0].data.v.whenText === '明天 07:00'
+shot target/_polish_shots/calling-booked.png
+back
+route pages/index/index
+expect getCurrentPages()[0].data.ongoing.stage === 'booked' && getCurrentPages()[0].data.ongoing.text.indexOf('预约 明天 07:00') === 0
+expect getCurrentPages()[0].data.when === 0
+tap .live
+route pages/calling/calling
+tap .cancel-btn
+modal?
+expect __ui.slice(-1)[0].title === '取消预约？'
+modal ok
+wait 300
+route pages/trip-detail/trip-detail
+expect wx.getStorageSync('ride_trips')[0].cancelReason === '取消预约' && wx.getStorageSync('ride_trips')[0].cancelFee === 0
+# ④ 接送机 + 代叫车 + 微信支付：拼车去首都机场 T3，机场接送券最省；帮紧急联系人林晓雨叫车
+eval wx.switchTab({ url: '/pages/index/index' })
+tap .addr-clear
+tapn 2 .type
+tapn 1 .svc
+expect getCurrentPages()[0].data.sheet === 'hub' && getCurrentPages()[0].data.hubs.length === 4
+shot target/_polish_shots/sheet-hub.png
+tapn 0 .hub
+expect getCurrentPages()[0].data.to.name === '北京首都国际机场T3航站楼'
+expect getCurrentPages()[0].data.fare.total === 42 && getCurrentPages()[0].data.fare.discount === 9.2
+expect getCurrentPages()[0].data.couponName === '机场接送券' && getCurrentPages()[0].data.price === 32
+tap .opt-who
+tapn 0 .who-contact
+expect getCurrentPages()[0].data.passenger.name === '林晓雨' && getCurrentPages()[0].data.callText === '帮林晓雨叫拼车'
+shot target/_polish_shots/index-proxy.png
+tap .call-btn
+route pages/calling/calling
+expect wx.getStorageSync('ride_order').passenger.phone === '13910862088'
+eval (function () { var p = getCurrentPages().slice(-1)[0]; for (var i = 0; i < 80 && !p.done; i++) { if (p.data.stage === 'arrived') p.onBoard(); p.tick(); } return p.done; })()
+route pages/pay/pay
+expect getCurrentPages().slice(-1)[0].data.due === 32 && getCurrentPages().slice(-1)[0].data.couponId === 'c5'
+tapn 1 .way
+expect getCurrentPages().slice(-1)[0].data.payBy === 'wechat'
+tap .pay-btn
+modal?
+expect __ui.slice(-1)[0].title === '确认支付'
+modal ok
+wait 900
+route pages/trip-detail/trip-detail
+expect wx.getStorageSync('ride_trips')[0].payBy === 'wechat' && wx.getStorageSync('ride_trips')[0].pay === 32 && wx.getStorageSync('ride_trips')[0].passenger.name === '林晓雨'
+expect wx.getStorageSync('ride_wallet') === '' || wx.getStorageSync('ride_wallet').balance === 126.5
+expect wx.getStorageSync('ride_coupon_used').indexOf('c5') >= 0
+# 返程：起终点对调、车型带回首页
+tap .back-btn
+route pages/index/index
+expect getCurrentPages()[0].data.from.name === '北京首都国际机场T3航站楼' && getCurrentPages()[0].data.to.name === '望京SOHO T1-东门' && getCurrentPages()[0].data.carType === 'pool'
+# ⑤ 优惠券：兑换码（一码一次、无效码）→「去使用」专车商务券：首页切到专车并优先用它，没下单不核销
+open pages/coupons/coupons
+expect getCurrentPages()[0].data.counts.ok === 6
+type .ex-input => dida2026
+tap .ex-btn
+toast 兑换成功
+expect wx.getStorageSync('ride_coupon_extra')[0].name === '兑换码专享券' && getCurrentPages()[0].data.counts.ok === 7
+type .ex-input => DIDA2026
+tap .ex-btn
+toast 已经兑换过
+eval getCurrentPages()[0].setData({ code: '' })
+type .ex-input => HELLO
+tap .ex-btn
+toast 无效
+tapn 3 .c-btn
+route pages/index/index
+expect getCurrentPages()[0].data.carType === 'premier' && wx.getStorageSync('ride_coupon_pick') === 'c3'
+expect wx.getStorageSync('ride_coupon_used') === ''
+tapn 1 .svc
+tapn 0 .hub
+expect getCurrentPages()[0].data.couponName === '专车商务券' && getCurrentPages()[0].data.cut === 20 && getCurrentPages()[0].data.price === 108.8
+# 首页活动：领周末券包（只能领一次）→ 再点去券页
+tap .addr-clear
+tap .banner
+toast 已领取 3 张
+expect wx.getStorageSync('ride_coupon_extra').length === 4 && getCurrentPages()[0].data.claimed === true
+tap .banner
+route pages/coupons/coupons
+expect getCurrentPages().slice(-1)[0].data.counts.ok === 10
+shot target/_polish_shots/coupons.png
+# 预约单到点：出发前 15 分钟司机出发，进入接驾（把预约时间挪到 10 分钟后，走一拍）
+back
+route pages/index/index
+tapn 0 .svc
+tapn 1 .day-tab
+tapn 0 .slot
+route pages/place/place
+type .search-input => 国贸三期
+tap .poi
+route pages/index/index
+tap .call-btn
+route pages/calling/calling
+expect getCurrentPages().slice(-1)[0].data.stage === 'booked'
+eval (function () { var o = wx.getStorageSync('ride_order'); o.when = Date.now() + 10 * 60000; wx.setStorageSync('ride_order', o); getCurrentPages().slice(-1)[0].tick(); return getCurrentPages().slice(-1)[0].data.stage; })()
+expect getCurrentPages().slice(-1)[0].data.stage === 'accepted' && getCurrentPages().slice(-1)[0].data.v.freeLeft !== ''
+toast 已出发
+noerr
+# ⑥ 常用地址：改公司、加「其他」、删家 → 选地点页的「设置家的地址」→ 设好后一键回家；点其他地址直接去那儿
+open pages/address/address
+expect getCurrentPages()[0].data.home.name === '望京西园三区'
+tap .op-set-company
+route pages/place/place
+type .search-input => 国贸三期
+tap .poi
+wait 700
+route pages/address/address
+expect wx.getStorageSync('ride_places').company.name === '国贸三期'
+tap .add-btn
+route pages/place/place
+type .search-input => 颐和园
+tap .poi
+wait 700
+route pages/address/address
+count 1 .other
+expect wx.getStorageSync('ride_places').others[0].name === '颐和园'
+tap .op-del-home
+modal?
+modal ok
+expect wx.getStorageSync('ride_places').home === null
+shot target/_polish_shots/address.png
+tap .s-other
+route pages/index/index
+expect getCurrentPages()[0].data.to.name === '颐和园'
+tap .addr-to
+route pages/place/place
+expect getCurrentPages().slice(-1)[0].data.common[0].set === false
+tapn 0 .common-item
+route pages/place/place
+expect getCurrentPages().slice(-1)[0].data.type === 'home'
+type .search-input => 望京西园
+tap .poi
+wait 700
+expect getCurrentPages().slice(-1)[0].data.type === 'to' && getCurrentPages().slice(-1)[0].data.common[0].set === true
+count 1 .star-icon
+tapn 0 .common-item
+route pages/index/index
+expect getCurrentPages()[0].data.to.name === '望京西园三区'
+# 换上车点：798 艺术区，距离按新上车点重算；上车点和目的地不能相同
+tap .addr-from
+route pages/place/place
+exists .here
+type .search-input => 望京西园
+tap .poi
+toast 不能相同
+tap .clear
+expect getCurrentPages().slice(-1)[0].data.keyword === ''
+type .search-input => 798
+tap .poi
+route pages/index/index
+expect getCurrentPages()[0].data.from.name === '798艺术区' && getCurrentPages()[0].data.km === 5.3
+# 定位：宿主没有定位能力 → 回到推荐上车点
+tap .locate
+toast 推荐上车点
+expect getCurrentPages()[0].data.from.name === '望京SOHO T1-东门'
+# 安全提示条 → 安全中心
+tap .notice
+route pages/contacts/contacts
+# ⑦ 紧急联系人：手机号校验 → 加一位朋友 → 通讯录导入（宿主不支持 → 提示手填）→ 删除；录音开关；一键报警
+count 1 .person
+tap .add-manual
+type .c-name => 周小满
+type .c-phone => 1391234567
+blur
+tap .save-contact
+toast 11 位手机号
+type .c-phone => 8
+blur
+tapn 1 .rel-chip
+tap .save-contact
+toast 已添加
+count 2 .person
+expect wx.getStorageSync('ride_contacts')[1].name === '周小满' && wx.getStorageSync('ride_contacts')[1].phone === '13912345678' && wx.getStorageSync('ride_contacts')[1].relation === '朋友'
+tap .add-import
+toast 通讯录
+exists .c-name
+expect getCurrentPages().slice(-1)[0].data.phone === '' && getCurrentPages().slice(-1)[0].data.name === ''
+shot target/_polish_shots/contacts.png
+tap .cancel-add
+tapn 1 .p-del
+modal?
+modal ok
+count 1 .person
+tap .sw-record
+expect wx.getStorageSync('ride_record') === false
+tap .alarm
+modal?
+modal ok
+wait 200
+expect __ui.slice(-1)[0].title === '报警电话'
+back
+route pages/index/index
+expect getCurrentPages()[0].data.recording === false
+# ⑧ 电子发票：多选两单、个人抬头、邮箱校验 → 开票 → 记录 → 重发
+open pages/invoice/invoice
+count 3 .it
+tap .submit-btn
+toast 请勾选
+tap .all
+expect getCurrentPages()[0].data.count === 3 && getCurrentPages()[0].data.amount === 193.3
+tapn 1 .it
+expect getCurrentPages()[0].data.count === 2 && getCurrentPages()[0].data.amount === 141.1
+tap .import
+toast 不支持导入
+tap .kind-person
+type .i-title => 林晓舟
+type .i-email => linxz
+blur
+tap .submit-btn
+toast 邮箱
+type .i-email => @dida.cn
+blur
+shot target/_polish_shots/invoice-form.png
+tap .submit-btn
+modal?
+shot target/_polish_shots/invoice-confirm.png
+modal ok
+expect wx.getStorageSync('ride_invoices')[0].kind === 'person' && wx.getStorageSync('ride_invoices')[0].amount === 141.1 && wx.getStorageSync('ride_invoices')[0].tripIds.length === 2
+expect getCurrentPages()[0].data.tab === 'list'
+count 1 .rec
+tap .rec
+modal?
+modal ok
+toast 已重新发送
+tap .tab-trip
+count 1 .it
+# ⑨ 我的：数字都来自 store 且能点；改昵称；客服问答 → 去开票；拨客服；会员说明；夜间分享开关
+open pages/mine/mine
+expect getCurrentPages()[0].data.balance === '126.50' && getCurrentPages()[0].data.couponCount === 6 && getCurrentPages()[0].data.tripCount === 4
+expect getCurrentPages()[0].data.invoiceAmount === 193.3 && getCurrentPages()[0].data.level.name === '白银' && getCurrentPages()[0].data.level.need === 1
+shot target/_polish_shots/mine.png
+tap .header-row
+type .nick-input => 2
+blur
+tap .save-btn
+expect wx.getStorageSync('ride_profile').nick === '林晓舟2' && getCurrentPages()[0].data.nick === '林晓舟2'
+tap .w-invoice
+route pages/invoice/invoice
+back
+tap .w-trips
+route pages/trips/trips
+eval wx.switchTab({ url: '/pages/mine/mine' })
+tapn 5 .menu-item
+sheet 3 5
+modal?
+expect __ui.slice(-1)[0].title === '怎么开电子发票？'
+modal ok
+route pages/invoice/invoice
+back
+tapn 5 .menu-item
+sheet 4 5
+modal?
+expect __ui.slice(-1)[0].content === '400-0000-1010'
+modal ok
+tap .vip
+modal?
+modal ok
+tap .sw-share
+expect wx.getStorageSync('ride_autoshare') === false
+toast 已关闭夜间自动分享
+tapn 2 .menu-item
+route pages/address/address
+back
+tapn 3 .menu-item
+route pages/contacts/contacts
+noerr
+# ⑩ 夜间自动分享：把逻辑层的 Date.now 定在 23:10，上车即自动把行程发给紧急联系人
+open
+eval (function () { var d = new Date(); d.setHours(23, 10, 0, 0); var t = d.getTime(); Date.now = function () { return t; }; return new Date(Date.now()).getHours(); })()
+tap .addr-to
+tapn 0 .poi
+tap .call-btn
+route pages/calling/calling
+eval (function () { var p = getCurrentPages().slice(-1)[0]; for (var i = 0; i < 60 && p.data.stage !== 'arrived'; i++) p.tick(); return p.data.stage; })()
+tap .board-btn
+toast 夜间行程已自动分享给 林晓雨
+expect wx.getStorageSync('ride_order').shared === true && wx.getStorageSync('ride_order').autoShared === '林晓雨'
+expect getCurrentPages().slice(-1)[0].data.o.shared === true
+# ⑪ 回到首页订单照样走：横条实时变，到达后变成「待支付」，点横条去支付
+open
+tap .addr-to
+tapn 0 .poi
+tap .call-btn
+route pages/calling/calling
+back
+route pages/index/index
+expect getCurrentPages()[0].data.ongoing.stage === 'waiting'
+shot target/_polish_shots/index-ongoing.png
+eval (function () { var p = getCurrentPages()[0]; for (var i = 0; i < 60 && p.data.ongoing && p.data.ongoing.stage !== 'arrived'; i++) p.tick(); return p.data.ongoing.text; })()
+expect getCurrentPages()[0].data.ongoing.text === '司机已到达上车点，请尽快上车'
+eval (function () { var p = getCurrentPages()[0]; for (var i = 0; i < 60 && p.data.ongoing; i++) p.tick(); return p.data.unpaid; })()
+expect getCurrentPages()[0].data.ongoing === null && getCurrentPages()[0].data.unpaid.due === 9.4 && getCurrentPages()[0].data.to === null
+toast 请支付车费
+# 行程列表：待支付置顶，点开去支付；已完成的「去评价」直达评价
+eval wx.switchTab({ url: '/pages/trips/trips' })
+expect getCurrentPages()[0].data.list[0].statusText === '待支付' && getCurrentPages()[0].data.list[0].foot === '待付 ¥9.4'
+shot target/_polish_shots/trips.png
+tapn 0 .trip
+route pages/pay/pay
+back
+tap .rate-chip
+route pages/trip-detail/trip-detail
+expect getCurrentPages().slice(-1)[0].data.trip.id === 'T20261023A1'
+tap .again-btn
+route pages/index/index
+expect getCurrentPages()[0].data.from.name === '望京SOHO T1-东门' && getCurrentPages()[0].data.to.name === '北京首都国际机场T3航站楼'
+tap .call-btn
+modal?
+expect __ui.slice(-1)[0].title === '还有未支付的订单'
+modal cancel
+tap .live-pay
+route pages/pay/pay
+tap .pay-btn
+modal ok
+wait 900
+route pages/trip-detail/trip-detail
+eval wx.switchTab({ url: '/pages/index/index' })
+expect getCurrentPages()[0].data.unpaid === null
+tap .call-btn
+route pages/calling/calling
+noerr
+# 示例行程逐个打开：取消单（没有 fare）、超 15 公里的远途单
+eval wx.navigateTo({ url: '/pages/trip-detail/trip-detail?id=T20261018C2' })
+route pages/trip-detail/trip-detail
+expect getCurrentPages().slice(-1)[0].data.cancelText === '已取消：行程有变，暂不需要用车；未产生任何费用' && getCurrentPages().slice(-1)[0].data.hero.num === ''
+eval wx.redirectTo({ url: '/pages/trip-detail/trip-detail?id=T20261012D9' })
+expect getCurrentPages().slice(-1)[0].data.lines.length === 5 && getCurrentPages().slice(-1)[0].data.lines[3].value === '¥7' && getCurrentPages().slice(-1)[0].data.trip.pay === 76.3
+noerr

@@ -1,0 +1,51 @@
+<view class="hero">
+  <text class="hero-city">上海 · 徐汇 / 浦东 / 静安 / 长宁 可约</text>
+  <text class="hero-tt">把家交给好管家</text>
+  <text class="hero-sub">实名持证 · 不满意免费返工 · 损坏照价赔付</text>
+</view>
+
+<view class="wrap top">
+  <view class="card act" wx:if="{{active}}" bindtap="goActive">
+    <view class="between">
+      <text class="act-tt">{{active.status === 'serving' ? '师傅正在服务中' : '待上门：' + active.svcName}}</text>
+      <text class="green">查看 ›</text>
+    </view>
+    <text class="sub">{{active.date}} {{active.time}} · {{active.addr.full}}</text>
+  </view>
+
+  <view class="card grid">
+    <view class="g-it" wx:for="{{services}}" wx:key="id" data-id="{{item.id}}" bindtap="goSvc">
+      <image class="g-ic" src="{{item.icon}}"></image>
+      <text class="g-tx">{{item.name}}</text>
+    </view>
+  </view>
+
+  <view class="promo" bindtap="goPromo">
+    <image class="promo-bg" src="/images/banner/promo.jpg" mode="aspectFill"></image>
+    <view class="promo-box">
+      <text class="promo-tag">限时优惠</text>
+      <text class="promo-tt">深度保洁满 400 减 50</text>
+      <text class="promo-sub">{{promo}}</text>
+      <view class="promo-btn">
+        <text>{{couponGot ? '去使用' : '立即预约'}}</text>
+      </view>
+    </view>
+  </view>
+
+  <section-card title="阿姨推荐" sub="按好评率排序" custom-class="staff-card" ext-class="staff-card">
+    <text slot="extra" class="sub" bindtap="goCoupons">领券下单更省 ›</text>
+    <view class="st row" wx:for="{{staff}}" wx:key="id" data-id="{{item.id}}" bindtap="goStaff">
+      <image class="st-av" src="{{item.avatar}}" mode="aspectFill"></image>
+      <view class="col flex1 st-info">
+        <view class="row">
+          <text class="st-nm">{{item.name}}</text>
+          <text class="tag">{{item.title}}</text>
+        </view>
+        <text class="sub">从业 {{item.years}} 年 · 服务 {{item.orders}} 单 · 好评 {{item.good}}</text>
+        <text class="st-intro">{{item.intro}}</text>
+      </view>
+      <text class="st-go">预约</text>
+    </view>
+  </section-card>
+  <view class="tab-gap"></view>
+</view>

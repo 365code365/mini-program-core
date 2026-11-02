@@ -1,0 +1,17 @@
+.top { display: flex; flex-direction: row; align-items: center; padding: 8rpx 4rpx 28rpx; }
+.top-title { font-size: 36rpx; font-weight: bold; }
+.top-sub { font-size: 24rpx; color: #9a9095; margin-top: 6rpx; }
+.shot { display: flex; flex-direction: row; align-items: center; background: #ff7a8a; border-radius: 40rpx; padding: 12rpx 28rpx 12rpx 12rpx; }
+.shot-ic { width: 56rpx; height: 56rpx; }
+.shot-tx { color: #ffffff; font-size: 26rpx; font-weight: bold; margin-left: 8rpx; }
+.empty-ic { width: 96rpx; height: 96rpx; opacity: 0.6; }
+.m-head { padding: 8rpx 0 16rpx; }
+.m-dot { width: 20rpx; height: 20rpx; border-radius: 10rpx; background: #ff7a8a; border: 6rpx solid #ffe0e5; margin-right: 16rpx; }
+.m-title { font-size: 30rpx; font-weight: bold; margin-right: 12rpx; }
+.m-body { margin-left: 15rpx; padding-left: 30rpx; border-left: 3rpx solid #ffe0e5; padding-bottom: 12rpx; }
+.mo { background: #ffffff; border-radius: 20rpx; margin-bottom: 20rpx; overflow: hidden; }
+.mo-img { width: 100%; height: 340rpx; }
+.mo-info { padding: 20rpx 24rpx; }
+.mo-day { font-size: 24rpx; color: #8a8085; }
+.mo-tag { margin-left: 8rpx; }
+.mo-cap { font-size: 28rpx; color: #3a3033; margin-top: 10rpx; line-height: 1.5; }

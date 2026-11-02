@@ -1,0 +1,40 @@
+<view class="page">
+  <view class="tip muted"><text>首页、统计、预算都只看当前账本，点一个账本切换过去</text></view>
+  <view wx:for="{{list}}" wx:key="id" class="card book">
+    <view class="row book-main" hover-class="book-hover" data-id="{{item.id}}" bindtap="onPick">
+      <view class="cat-icon" style="background: {{item.color}};"><text>{{item.ch}}</text></view>
+      <view class="flex1 book-mid">
+        <view class="row">
+          <text class="book-name">{{item.name}}</text>
+          <text wx:if="{{item.id === curId}}" class="cur-tag">当前</text>
+        </view>
+        <view class="muted"><text>{{item.count}} 笔账单 · 本月支出 ¥{{item.outText}}</text></view>
+      </view>
+      <view wx:if="{{item.id === curId}}" class="tick"></view>
+      <view wx:else class="arrow"></view>
+    </view>
+    <view class="row book-acts">
+      <view class="op" hover-class="op-hover" data-id="{{item.id}}" bindtap="onEdit"><text>重命名</text></view>
+      <view wx:if="{{item.canDel}}" class="op op-del" hover-class="op-hover" data-id="{{item.id}}" bindtap="onDelete"><text>删除</text></view>
+      <text wx:else class="default-mark">默认账本</text>
+    </view>
+  </view>
+  <view class="new btn-primary" hover-class="new-hover" bindtap="onNew"><text>+ 新建账本</text></view>
+  <view class="bottom-space"></view>
+
+  <view wx:if="{{panel}}" class="mask" bindtap="onClose"></view>
+  <view wx:if="{{panel}}" class="sheet" catchtap="noop">
+    <view class="sheet-title"><text>{{editId ? '重命名账本' : '新建账本'}}</text></view>
+    <view class="field row">
+      <input id="bookname{{formSeq}}" class="flex1 field-input" placeholder="账本名称，例如：装修账本" placeholder-class="ph" value="{{name}}" maxlength="8" bindinput="onName" />
+    </view>
+    <view class="muted color-lbl"><text>颜色</text></view>
+    <view class="row colors">
+      <view wx:for="{{palette}}" wx:key="*this" class="color {{color === item ? 'color-on' : ''}}" data-c="{{item}}" bindtap="onColor"><view class="dot" style="background: {{item}};"></view></view>
+    </view>
+    <view class="row sheet-btns">
+      <view class="s-btn s-cancel" bindtap="onClose"><text>取消</text></view>
+      <view class="s-btn btn-primary s-ok" bindtap="onSave"><text>保存</text></view>
+    </view>
+  </view>
+</view>

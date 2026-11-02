@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>JSSDK 演示</title>
+<style>
+  body { margin: 0; font: 15px/1.6 -apple-system, "PingFang SC", "Noto Sans CJK SC", sans-serif; background: #f5f5f5; color: #222; }
+  header { padding: 20px 16px 14px; background: linear-gradient(135deg, #07c160, #10aeff); color: #fff; }
+  header h1 { margin: 0; font-size: 20px; }
+  header p { margin: 4px 0 0; font-size: 13px; opacity: .9; }
+  section { margin: 12px; padding: 14px; background: #fff; border-radius: 10px; }
+  h2 { margin: 0 0 8px; font-size: 16px; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; }
+  button { padding: 8px 12px; font-size: 14px; color: #07c160; background: #fff; border: 1px solid #07c160; border-radius: 6px; }
+  button.solid { color: #fff; background: #07c160; }
+  button:active { opacity: .7; }
+  input { width: 100%; box-sizing: border-box; padding: 8px; font-size: 14px; border: 1px solid #ddd; border-radius: 6px; }
+  pre { margin: 8px 0 0; padding: 10px; font-size: 12px; white-space: pre-wrap; word-break: break-all; background: #1f1f1f; color: #9fe6b8; border-radius: 6px; min-height: 60px; }
+  .kv { display: flex; justify-content: space-between; font-size: 13px; color: #666; }
+</style>
+</head>
+<body>
+<header>
+  <h1>网页里调小程序</h1>
+  <p>这是打包在小程序里的离线 H5，由宿主的系统 WebView 打开</p>
+</header>
+<section>
+  <h2>环境</h2>
+  <div class="kv"><span>window.__wxjs_environment</span><b id="env">-</b></div>
+  <div class="kv"><span>wx.miniProgram</span><b id="api">-</b></div>
+  <div class="kv"><span>WeixinJSBridge</span><b id="bridge">-</b></div>
+</section>
+<section>
+  <h2>postMessage（后退时一次送达）</h2>
+  <input id="msg" value="来自网页的问候">
+  <div class="btns" style="margin-top:8px">
+    <button class="solid" onclick="post()">postMessage</button>
+    <button onclick="getEnv()">getEnv</button>
+  </div>
+</section>
+<section>
+  <h2>跳回小程序</h2>
+  <div class="btns">
+    <button onclick="nav('navigateTo', {url: '/pages/detail/detail?from=web-view'})">navigateTo 详情页</button>
+    <button onclick="nav('redirectTo', {url: '/pages/detail/detail?from=redirect'})">redirectTo</button>
+    <button onclick="nav('switchTab', {url: '/pages/host/host'})">switchTab 宿主</button>
+    <button onclick="nav('reLaunch', {url: '/pages/index/index'})">reLaunch 首页</button>
+    <button class="solid" onclick="nav('navigateBack', {})">navigateBack</button>
+  </div>
+  <pre id="out">点上面的按钮</pre>
+</section>
+<script>
+  var out = document.getElementById('out');
+  var sent = 0;
+  function log(s) { out.textContent = s + '\n' + out.textContent; }
+  function mp() { return window.wx && window.wx.miniProgram; }
+  function refresh() {
+    document.getElementById('env').textContent = String(window.__wxjs_environment);
+    document.getElementById('api').textContent = mp() ? '可用' : '没有';
+    document.getElementById('bridge').textContent = window.WeixinJSBridge ? '可用' : '没有';
+  }
+  function post(data) {
+    if (!mp()) return log('没有 wx.miniProgram（不在小程序里）');
+    sent++;
+    mp().postMessage({ data: data || { text: document.getElementById('msg').value, n: sent, at: Date.now() } });
+    log('postMessage 第 ' + sent + ' 条（后退时一次送达）');
+  }
+  function getEnv(cb) {
+    if (!mp()) return log('没有 wx.miniProgram');
+    mp().getEnv(function (res) { log('getEnv ' + JSON.stringify(res)); if (cb) cb(res); });
+  }
+  function nav(api, arg) {
+    if (!mp()) return log('没有 wx.miniProgram');
+    arg.success = function () { log(api + ' ok'); };
+    arg.fail = function (e) { log(api + ' fail ' + JSON.stringify(e)); };
+    mp()[api](arg);
+  }
+  function auto() {
+    // 自测：两条消息（第二条带 getEnv 的结果）→ 返回小程序，入口页按 bindmessage 收到的数组判通过
+    post({ step: 1, text: '自测消息' });
+    getEnv(function (res) {
+      post({ step: 2, env: res });
+      setTimeout(function () { nav('navigateBack', {}); }, 400);
+    });
+  }
+  function ready() {
+    refresh();
+    if (/[?&]auto=1/.test(location.search)) auto();
+  }
+  if (mp()) ready();
+  else document.addEventListener('WeixinJSBridgeReady', ready, false);
+  setTimeout(refresh, 300);
+</script>
+</body>
+</html>

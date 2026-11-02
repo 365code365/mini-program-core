@@ -1,0 +1,11 @@
+.od-head { display: flex; flex-direction: column; }
+.od-st { margin-bottom: 10rpx; }
+.st-paid { color: #13a07b; }
+.st-refunded, .st-expired { color: #86908b; }
+.st-used { color: #1d2722; }
+.od-tk { margin-top: 28rpx; }
+.od-cover { width: 160rpx; height: 120rpx; border-radius: 16rpx; margin-right: 20rpx; flex-shrink: 0; }
+.od-info { flex: 1; min-width: 0; }
+.od-kv { padding: 10rpx 0; font-size: 26rpx; }
+.od-ops { margin-top: 8rpx; }
+.od-op { flex: 1; margin: 0 8rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }

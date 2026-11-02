@@ -39,3 +39,7 @@ page { background: #14161c; }
 .auto-t { font-size: 26rpx; color: #c9ccd3; }
 .pay { margin-top: 32rpx; background: linear-gradient(90deg, #f6dca3, #d9ad62); color: #2a2116; }
 .agree { display: block; margin-top: 20rpx; text-align: center; font-size: 20rpx; color: #5c616b; }
+.vip-v.expired { color: #ff7a7a; font-weight: bold; }
+.sec-row { margin: 44rpx 0 20rpx; }
+.sec-in { margin: 0; }
+.orders-link { color: #8b909a; }

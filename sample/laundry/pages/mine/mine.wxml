@@ -1,0 +1,30 @@
+<view class="page tab-page">
+  <view class="top">
+    <view class="row">
+      <image class="av" src="/images/me.jpg"></image>
+      <view class="flex1">
+        <text class="nm">净衣会员</text>
+        <text class="lv">已洗护 {{washed}} 件 · 节省 {{saved}} 元</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card ost">
+    <view class="row between"><text class="title">我的订单</text><text class="sub" data-k="-2" bindtap="goOrders">全部 ›</text></view>
+    <view class="row os">
+      <view class="os-i" wx:for="{{status}}" wx:key="key" data-k="{{item.key}}" bindtap="goOrders" hover-class="hover">
+        <text class="os-n">{{item.n}}</text>
+        <text class="sub">{{item.name}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card list">
+    <view class="li row" bindtap="goCoupons" hover-class="hover"><text class="flex1">优惠券</text><text class="sub">{{couponN}} 张可用 ›</text></view>
+    <view class="li row" bindtap="goAddr" hover-class="hover"><text class="flex1">取件地址</text><text class="sub">{{addrN}} 个 ›</text></view>
+    <view class="li row" bindtap="call" hover-class="hover"><text class="flex1">客服热线</text><text class="sub">{{phone}} ›</text></view>
+    <view class="li row" bindtap="faq" hover-class="hover"><text class="flex1">洗护须知</text><text class="sub">›</text></view>
+    <view class="li row last" bindtap="clearData" hover-class="hover"><text class="flex1 danger">清除本地数据</text><text class="sub">›</text></view>
+  </view>
+  <text class="ver">净衣到家 v2.6.0 · 苏州工业园区洗护中心</text>
+</view>

@@ -14,6 +14,6 @@
 .mi-ic { width: 60rpx; height: 60rpx; border-radius: 18rpx; font-size: 26rpx; margin-right: 20rpx; }
 .mi-t { flex: 1; font-size: 28rpx; }
 .mi-main { flex: 1; display: flex; flex-direction: column; }
-.mi-main .mi-t { margin-bottom: 4rpx; }
+.mi-main .mi-t { margin-bottom: 4rpx; flex: none; }
 .mi-x { font-size: 24rpx; color: #8a919c; }
 .ver { display: block; text-align: center; margin-top: 32rpx; font-size: 22rpx; color: #b3b8c2; }

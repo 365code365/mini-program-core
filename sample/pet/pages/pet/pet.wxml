@@ -1,67 +1,77 @@
 <view class="switch">
-  <view class="sw {{pet.id === item.id ? 'on' : ''}}" wx:for="{{pets}}" wx:key="id" data-id="{{item.id}}" bindtap="pickPet">
+  <view class="sw {{pet && pet.id === item.id ? 'on' : ''}}" wx:for="{{pets}}" wx:key="id" data-id="{{item.id}}" bindtap="pickPet">
     <view class="pet-av xs" style="background: {{item.color}};"><text>{{item.sx}}</text></view>
     <text class="sw-n">{{item.name}}</text>
   </view>
-  <view class="sw add" bindtap="addPet"><text class="plus">+</text><text class="sw-n">添加</text></view>
+  <view class="sw add {{canAdd ? '' : 'add-off'}}" bindtap="addPet"><text class="plus">+</text><text class="sw-n">添加</text></view>
 </view>
-
-<view class="prof" style="background: {{pet.color}};">
-  <view class="row">
-    <view class="pet-av lg"><text>{{pet.sx}}</text></view>
-    <view class="pf-m">
-      <text class="pf-n">{{pet.name}}</text>
-      <text class="pf-b">{{pet.breed}}</text>
-    </view>
-  </view>
-  <view class="pf-grid">
-    <view class="pg"><text class="pg-v">{{pet.age}}</text><text class="pg-k">年龄</text></view>
-    <view class="pg"><text class="pg-v">{{pet.weight}} kg</text><text class="pg-k">体重</text></view>
-    <view class="pg"><text class="pg-v">{{pet.gender}} · {{pet.neutered ? '已绝育' : '未绝育'}}</text><text class="pg-k">性别</text></view>
-  </view>
-  <text class="pf-chip">生日 {{pet.birth}} · 芯片 {{pet.chip}}</text>
-</view>
-
-<view class="card">
-  <view class="row between">
-    <text class="sec-title">健康提醒</text>
-    <view class="filters">
-      <text class="ft {{filter === item ? 'on' : ''}}" wx:for="{{filters}}" wx:key="*this" data-f="{{item}}" bindtap="setFilter">{{item}}</text>
-    </view>
-  </view>
-  <view class="tl">
-    <view class="tl-i" wx:for="{{records}}" wx:key="name">
-      <view class="tl-axis">
-        <view class="tl-dot st-{{item.status}}"></view>
-        <view class="tl-line" wx:if="{{index < records.length - 1}}"></view>
+<block wx:if="{{pet}}">
+  <view class="prof" style="background: {{pet.color}};">
+    <view class="row">
+      <view class="pet-av lg"><text>{{pet.sx}}</text></view>
+      <view class="pf-m">
+        <text class="pf-n">{{pet.name}}</text>
+        <text class="pf-b">{{pet.breed}}</text>
       </view>
-      <view class="tl-c">
-        <view class="row between">
-          <view class="row"><text class="tl-type t-{{item.type}}">{{item.type}}</text><text class="tl-n">{{item.name}}</text></view>
-          <text class="tl-st st-{{item.status}}">{{statusText[item.status]}}</text>
-        </view>
-        <text class="muted tl-d">上次 {{item.date}} · 下次 {{item.next}}</text>
-        <view class="tl-act" wx:if="{{item.status !== 'ok'}}">
-          <view class="mini" data-name="{{item.name}}" bindtap="book"><text>预约{{item.type === '疫苗' ? '接种' : '驱虫'}}</text></view>
-          <view class="mini ghost" data-name="{{item.name}}" bindtap="markDone"><text>已完成</text></view>
-        </view>
+      <view class="pf-edit" bindtap="editPet"><text>编辑档案</text></view>
+    </view>
+    <view class="pf-grid">
+      <view class="pg"><text class="pg-v">{{pet.age}}</text><text class="pg-k">年龄</text></view>
+      <view class="pg"><text class="pg-v">{{pet.weight}} kg</text><text class="pg-k">体重</text></view>
+      <view class="pg"><text class="pg-v">{{pet.gender}} · {{pet.neutered ? '已绝育' : '未绝育'}}</text><text class="pg-k">性别</text></view>
+    </view>
+    <text class="pf-meta">生日 {{pet.birth}}{{pet.chip ? ' · 芯片 ' + pet.chip : ''}}</text>
+  </view>
+  <view class="card">
+    <view class="row between">
+      <view class="row">
+        <text class="sec-title">健康提醒</text>
+        <text wx:if="{{remind.due}}" class="due-n">{{remind.due}} 项已到期</text>
+      </view>
+      <view class="filters">
+        <text class="ft {{filter === item ? 'on' : ''}}" wx:for="{{filters}}" wx:key="*this" data-f="{{item}}" bindtap="setFilter">{{item}}</text>
       </view>
     </view>
-  </view>
-  <view wx:if="{{!records.length}}" class="empty"><text class="muted">暂无{{filter}}记录</text></view>
-</view>
-
-<view class="card">
-  <view class="row between">
-    <text class="sec-title">体重变化</text>
-    <text class="muted">近 6 个月</text>
-  </view>
-  <view class="wchart">
-    <view class="wc" wx:for="{{weights}}" wx:key="m">
-      <text class="wc-v">{{item.v}}</text>
-      <view class="wc-bar" style="height: {{item.h}}rpx;"></view>
-      <text class="wc-m">{{item.m}}</text>
+    <view class="tl">
+      <view class="tl-i" wx:for="{{records}}" wx:key="id">
+        <view class="tl-axis">
+          <view class="tl-dot st-{{item.status}}"></view>
+          <view class="tl-line" wx:if="{{index < records.length - 1}}"></view>
+        </view>
+        <view class="tl-c">
+          <view class="row between tl-head" data-id="{{item.id}}" bindtap="onRecord">
+            <view class="row tl-title"><text class="tl-type t-{{item.type}}">{{item.type}}</text><text class="tl-n">{{item.name}}</text></view>
+            <text class="tl-st st-{{item.status}}">{{item.status === 'ok' ? statusText.ok : item.leftText}}</text>
+          </view>
+          <text class="muted tl-d">上次 {{item.date}} · 下次 {{item.next}}</text>
+          <view class="tl-act" wx:if="{{item.status !== 'ok'}}">
+            <view class="mini act-book" data-type="{{item.type}}" bindtap="book"><text>预约{{item.type === '疫苗' ? '接种' : item.type}}</text></view>
+            <view class="mini ghost act-done" data-id="{{item.id}}" bindtap="markDone"><text>已完成</text></view>
+          </view>
+        </view>
+      </view>
     </view>
+    <view wx:if="{{!records.length}}" class="empty"><text class="muted">暂无{{filter === '全部' ? '' : filter}}记录</text></view>
+    <view class="add-rec" bindtap="addRecord"><text>+ 添加{{filter === '全部' ? '疫苗 / 驱虫 / 体检' : filter}}记录</text></view>
   </view>
+  <view class="card">
+    <view class="row between">
+      <text class="sec-title">体重变化</text>
+      <view class="link add-w" bindtap="addWeight"><text>记体重</text><view class="chev"></view></view>
+    </view>
+    <view class="wchart">
+      <view class="wc" wx:for="{{weights}}" wx:key="k">
+        <text class="wc-v">{{item.v}}</text>
+        <view class="wc-bar" style="height: {{item.h}}rpx;"></view>
+        <text class="wc-m">{{item.m}}</text>
+      </view>
+    </view>
+    <text class="muted w-tip">最近 {{weights.length}} 次称重 · 单位 kg</text>
+  </view>
+</block>
+<view wx:else class="none">
+  <text class="none-t">还没有宠物档案</text>
+  <text class="muted">建好档案，疫苗、驱虫、体检到期会提醒你</text>
+  <view class="btn none-btn" bindtap="addPet"><text>添加第一只宠物</text></view>
 </view>
 <view style="height: 40rpx;"></view>

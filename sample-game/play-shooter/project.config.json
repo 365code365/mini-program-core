@@ -1,0 +1,34 @@
+{
+  "appid": "wxfdfaa80ca48034b1",
+  "projectname": "play-shooter",
+  "description": "星际战机：竖屏弹幕射击，拖动战机自动开火，三种敌机与首领，双发、护盾、炸弹道具，无尽波次",
+  "compileType": "game",
+  "libVersion": "3.6.0",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": false,
+    "minified": true,
+    "uglifyFileName": false,
+    "ignoreUploadUnusedFiles": true
+  },
+  "packOptions": {
+    "ignore": [
+      {
+        "type": "file",
+        "value": "README.md"
+      },
+      {
+        "type": "file",
+        "value": "store.meta.json"
+      }
+    ],
+    "include": []
+  },
+  "condition": {},
+  "editorSetting": {
+    "tabIndent": "insertSpaces",
+    "tabSize": 2
+  }
+}

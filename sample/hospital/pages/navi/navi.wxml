@@ -1,0 +1,52 @@
+<view class="card map-card">
+  <view class="map" bindtap="openMap">
+    <view class="road r1"></view><view class="road r2"></view><view class="road r3"></view>
+    <view class="block b1"></view><view class="block b2"></view><view class="block b3"></view>
+    <view class="pin"><view class="pin-in"></view></view>
+    <view class="pin-label"><text>{{h.short}}</text></view>
+    <view class="map-hint"><text>点击打开地图导航</text></view>
+  </view>
+  <text class="h-name">{{h.name}}</text>
+  <text class="muted h-line">{{h.address}}</text>
+  <text class="muted h-line">{{h.hours}}</text>
+  <view class="ops">
+    <view class="op pri go-map" bindtap="openMap"><text>导航到医院</text></view>
+    <view class="op go-copy" bindtap="copyAddr"><text>复制地址</text></view>
+    <view class="op go-call" bindtap="callHos"><text>拨打电话</text></view>
+  </view>
+</view>
+<view class="card">
+  <text class="sec-title">交通指引</text>
+  <view class="tr" wx:for="{{h.traffic}}" wx:key="k">
+    <text class="tr-k">{{item.k}}</text>
+    <text class="tr-v">{{item.v}}</text>
+  </view>
+</view>
+<view class="card">
+  <view class="row between">
+    <text class="sec-title">院内导航 · 门诊楼</text>
+    <text class="muted">点楼层看诊区</text>
+  </view>
+  <view wx:if="{{target}}" class="goal">
+    <text class="goal-k">您要去</text>
+    <text class="goal-v">{{target.name}} · {{target.room}}</text>
+  </view>
+  <view class="fl {{open === item.f ? 'fl-open' : ''}}" wx:for="{{floors}}" wx:key="f">
+    <view class="fl-h" data-f="{{item.f}}" bindtap="onFloor">
+      <view class="fl-no {{target && open === item.f ? 'fl-no-on' : ''}}"><text>{{item.f}}F</text></view>
+      <text class="fl-sum">{{item.sum}}</text>
+      <view class="chev {{open === item.f ? 'chev-down' : ''}}"></view>
+    </view>
+    <view wx:if="{{open === item.f}}" class="fl-body">
+      <view class="dp {{d.on ? 'dp-on' : ''}}" wx:for="{{item.depts}}" wx:key="id" wx:for-item="d" data-id="{{d.id}}" bindtap="goDept">
+        <text class="dp-n">{{d.name}}</text>
+        <text class="dp-a">{{d.area}}</text>
+      </view>
+      <view wx:if="{{item.fac}}" class="fac">
+        <text class="fac-k">本层设施</text>
+        <text class="fac-v">{{item.fac}}</text>
+      </view>
+    </view>
+  </view>
+</view>
+<view style="height: 60rpx;"></view>

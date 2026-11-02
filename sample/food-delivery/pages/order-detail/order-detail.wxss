@@ -17,6 +17,131 @@
   opacity: 0.92;
 }
 
+.hero-unpaid {
+  background: linear-gradient(180deg, #ff8a3d 0%, #ffad6b 80%, #f5f6f8 100%);
+}
+
+.hero-cancelled,
+.hero-refund {
+  background: linear-gradient(180deg, #7a8494 0%, #a8b0bc 80%, #f5f6f8 100%);
+}
+
+.hero-pay {
+  margin-top: 32rpx;
+  padding: 24rpx 28rpx;
+  border-radius: 20rpx;
+  background: #ffffff;
+  color: #1f2329;
+}
+
+.hero-pay-label {
+  display: block;
+  font-size: 24rpx;
+  color: #8a8f99;
+}
+
+.hero-pay-num {
+  display: block;
+  font-size: 44rpx;
+  font-weight: bold;
+  color: #ff4d2d;
+  line-height: 1.2;
+}
+
+.hero-pay-btn {
+  height: 72rpx;
+  line-height: 72rpx;
+  padding: 0 44rpx;
+  border-radius: 36rpx;
+  background: linear-gradient(90deg, #ff8a3d, #ff5a1f);
+  color: #ffffff;
+  font-size: 28rpx;
+  font-weight: bold;
+}
+
+.rate .title {
+  display: block;
+}
+
+.stars {
+  margin-top: 16rpx;
+}
+
+.star {
+  font-size: 48rpx;
+  line-height: 60rpx;
+  color: #e3e5ea;
+  margin-right: 12rpx;
+}
+
+.star-on {
+  color: #ff8a00;
+}
+
+.star-text {
+  font-size: 26rpx;
+  color: #ff8a00;
+  margin-left: 8rpx;
+}
+
+.rate-tags {
+  flex-wrap: wrap;
+  margin-top: 12rpx;
+}
+
+.rate-tag {
+  height: 52rpx;
+  line-height: 50rpx;
+  padding: 0 20rpx;
+  margin: 0 14rpx 14rpx 0;
+  border-radius: 26rpx;
+  border: 1rpx solid #f5f6f8;
+  background: #f5f6f8;
+  font-size: 24rpx;
+  color: #5c6370;
+  white-space: nowrap;
+}
+
+.rate-tag-on {
+  border-color: #1677ff;
+  background: #e8f1ff;
+  color: #1677ff;
+}
+
+.rate-input {
+  width: 100%;
+  height: 140rpx;
+  margin-top: 4rpx;
+  padding: 16rpx 20rpx;
+  box-sizing: border-box;
+  border-radius: 14rpx;
+  background: #f7f8fa;
+  font-size: 26rpx;
+}
+
+.ph {
+  color: #b0b4bc;
+}
+
+.rate-btn {
+  margin-top: 24rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  font-size: 28rpx;
+}
+
+.rate-text {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 26rpx;
+  color: #3a3f47;
+}
+
+.none {
+  padding-top: 240rpx;
+  text-align: center;
+}
+
 .route {
   position: relative;
   height: 80rpx;
@@ -203,8 +328,34 @@
 }
 
 .line-item {
-  height: 68rpx;
+  min-height: 68rpx;
   font-size: 26rpx;
+  padding: 6rpx 0;
+}
+
+.li-name {
+  display: block;
+}
+
+.li-spec {
+  display: block;
+  font-size: 22rpx;
+  color: #8a8f99;
+}
+
+.fees {
+  margin-top: 8rpx;
+  padding-top: 8rpx;
+  border-top: 1rpx solid #f0f1f4;
+}
+
+.fee {
+  height: 56rpx;
+  font-size: 24rpx;
+}
+
+.cut {
+  color: #ff4d2d;
 }
 
 .qty {
@@ -233,8 +384,10 @@
 .info-row {
   min-height: 64rpx;
   font-size: 26rpx;
+  line-height: 40rpx;
   align-items: flex-start;
   padding-top: 8rpx;
+  padding-bottom: 4rpx;
 }
 
 .info-k {
@@ -263,14 +416,16 @@
   box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.06);
 }
 
+/* 配送中最多 4 个按钮（客服 / 退款 / 催单 / 确认收货）：间距收窄，375 宽也排得下 */
 .op {
   height: 72rpx;
   line-height: 72rpx;
-  padding: 0 36rpx;
+  padding: 0 26rpx;
   border-radius: 36rpx;
   border: 1rpx solid #d4d7dd;
   font-size: 28rpx;
-  margin-left: 20rpx;
+  margin-left: 14rpx;
+  white-space: nowrap;
 }
 
 .op-primary {

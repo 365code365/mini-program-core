@@ -20,3 +20,6 @@
 .last { font-size: 26rpx; color: #8a9099; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .last.strong { color: #1f2329; }
 .empty { padding: 80rpx 0; display: flex; flex-direction: row; justify-content: center; }
+.notice.iv { margin-top: 0; background: #e8f8ef; }
+.n-icon.green { background: linear-gradient(135deg, #5FD99A, #19BE6B); }
+.body { overflow: hidden; }

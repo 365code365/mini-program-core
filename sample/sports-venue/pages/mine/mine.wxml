@@ -1,0 +1,38 @@
+<view class="hd row" bindtap="openEdit">
+  <view class="av"><text class="av-t">{{initial}}</text></view>
+  <view class="col flex1 hd-info">
+    <text class="hd-n">{{contact.name || '设置常用联系人'}}</text>
+    <text class="hd-p">{{contact.phone || '订场时自动填好，免得每次输入'}}</text>
+  </view>
+  <text class="hd-e">编辑 ›</text>
+</view>
+<view class="card stats row">
+  <view class="st col" data-tab="paid" bindtap="toOrders"><text class="st-v">{{stats.paid}}</text><text class="muted">待使用</text></view>
+  <view class="st col" data-tab="done" bindtap="toOrders"><text class="st-v">{{stats.hours}}</text><text class="muted">运动小时</text></view>
+  <view class="st col" bindtap="toTeams"><text class="st-v">{{stats.teams}}</text><text class="muted">参与组局</text></view>
+  <view class="st col" bindtap="toCard"><text class="st-v">¥{{card.balance}}</text><text class="muted">余额</text></view>
+</view>
+<view class="card menu">
+  <view class="mi row" bindtap="toOrders"><text class="flex1">全部订单</text><text class="muted">›</text></view>
+  <view class="mi row" data-tab="paid" bindtap="toOrders"><text class="flex1">待使用 / 入场码</text><text class="muted">{{stats.paid ? stats.paid + ' 单 ' : ''}}›</text></view>
+  <view class="mi row" bindtap="toTeams"><text class="flex1">我的组局</text><text class="muted">›</text></view>
+  <view class="mi row" bindtap="toCard"><text class="flex1">会员卡</text><text class="muted">{{stats.times ? '次卡剩 ' + stats.times + ' 次 ' : ''}}›</text></view>
+</view>
+<view class="card menu">
+  <button class="mi mi-btn row" open-type="share"><text class="flex1 mi-bt">推荐给球友</text><text class="muted">›</text></button>
+  <view class="mi row" bindtap="call"><text class="flex1">联系客服</text><text class="muted">400-826-3377 ›</text></view>
+  <view class="mi row mi-last" bindtap="more"><text class="flex1">更多</text><text class="muted">›</text></view>
+</view>
+<text class="ver">约场 v1.4.2 · 约场体育科技（杭州）有限公司</text>
+<view class="tabbar-space"></view>
+<view wx:if="{{edit}}" class="mask" bindtap="closeEdit"></view>
+<view wx:if="{{edit}}" class="sheet">
+  <text class="sec-title">常用联系人</text>
+  <view class="fi row"><text class="fi-l">姓名</text><input class="flex1" value="{{name}}" maxlength="10" placeholder="到场核对用" bindinput="onName" /></view>
+  <view class="fi row"><text class="fi-l">手机号</text><input class="flex1" type="number" value="{{phone}}" maxlength="11" placeholder="接收预订短信" bindinput="onPhone" /></view>
+  <text wx:if="{{err}}" class="err">{{err}}</text>
+  <view class="row sh-ops">
+    <view class="btn-ghost flex1" bindtap="closeEdit"><text>取消</text></view>
+    <view class="btn-main flex1 sh-ok" bindtap="saveEdit"><text>保存</text></view>
+  </view>
+</view>

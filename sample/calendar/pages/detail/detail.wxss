@@ -5,3 +5,11 @@
 .cells { padding: 0 24rpx; }
 .btns { padding: 20rpx 32rpx; }
 .btn-del { width: 200rpx; height: 88rpx; line-height: 88rpx; text-align: center; border-radius: 44rpx; background: #ffecea; color: #f2453d; font-size: 30rpx; margin-right: 24rpx; }
+.h-next { display: block; margin-top: 8rpx; font-size: 24rpx; color: #3a6bf0; }
+.more { padding: 4rpx 32rpx 40rpx; justify-content: space-between; }
+.more-item { width: 31%; height: 68rpx; line-height: 68rpx; text-align: center; font-size: 24rpx; color: #3a6bf0; background: #eef3ff; border-radius: 34rpx; }
+.more-down { background: #dfe8ff; }
+.missing-box { display: flex; flex-direction: column; align-items: center; padding: 160rpx 80rpx 0; }
+.missing-ic { width: 160rpx; height: 160rpx; border-radius: 80rpx; background: #eef3ff; display: flex; align-items: center; justify-content: center; }
+.missing-ring { width: 64rpx; height: 64rpx; border-radius: 12rpx; border: 6rpx solid #9db6ff; }
+.back-month { width: 360rpx; margin-top: 24rpx; }

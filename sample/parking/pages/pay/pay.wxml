@@ -18,12 +18,14 @@
   <view class="cell row"><text class="flex1 cell-label">停车时长</text><text class="cell-value v-dur">{{durText}}</text></view>
   <view class="cell row"><text class="flex1 cell-label">停车费</text><text class="cell-value">{{feeText}}</text></view>
   <picker class="pk-coupon" range="{{coupons}}" value="{{couponIdx}}" bindchange="onCoupon">
-    <view class="cell row cell-last"><text class="flex1 cell-label">优惠券</text><text class="cell-value coupon">{{couponIdx ? coupons[couponIdx] + ' ' + offText : '不使用'}}</text><view class="chev"></view></view>
+    <view class="cell row cell-last"><text class="flex1 cell-label">优惠券</text><text class="cell-value coupon">{{card ? '月卡免费（-' + feeText + '）' : couponIdx ? coupons[couponIdx] + ' ' + offText : '不使用'}}</text><view class="chev"></view></view>
   </picker>
 </view>
-<view class="tip" wx:if="{{tip}}">{{tip}}</view>
+<view class="tip" wx:if="{{tip}}"><text>{{tip}}</text></view>
+<view class="card-link row" wx:if="{{lot && !card && lot.month}}" bindtap="goCard"><text class="flex1 sub">常停这里？办 {{lot.name}} 月卡 ¥{{lot.month}}/月，进出不再计费</text><view class="chev"></view></view>
 <text class="err" wx:if="{{err}}">{{err}}</text>
+<view class="pay-space"></view>
 <view class="pay-bar row">
   <view class="flex1"><text class="sub">应付</text><text class="pay-amt">{{payText}}</text></view>
-  <view class="pay-btn {{lot ? '' : 'pay-off'}}" bindtap="submit">立即支付</view>
+  <view class="pay-btn {{lot ? '' : 'pay-off'}}" bindtap="submit">{{lot && pay <= 0 ? '确认离场' : '立即支付'}}</view>
 </view>

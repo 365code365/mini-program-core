@@ -1,0 +1,26 @@
+.page { padding-bottom: 120rpx; }
+.chips { white-space: nowrap; padding: 20rpx 28rpx 0; box-sizing: border-box; }
+.chips-in { padding-bottom: 6rpx; }
+.chip { padding: 10rpx 30rpx; border-radius: 30rpx; background: #ffffff; margin-right: 16rpx; font-size: 26rpx; color: #4a544f; }
+.chip-on { background: #13a07b; color: #ffffff; }
+.head { padding: 20rpx 28rpx 16rpx; }
+.link { font-size: 26rpx; padding: 8rpx 0 8rpx 16rpx; }
+.sw { height: 690rpx; margin: 0 28rpx; }
+.spot { height: 600rpx; background: #ffffff; border-radius: 24rpx; overflow: hidden; position: relative; opacity: 0.55; }
+.spot-on { opacity: 1; }
+.sp-img { width: 100%; height: 250rpx; }
+.sp-no { position: absolute; top: 16rpx; left: 16rpx; background: rgba(0, 0, 0, 0.4); border-radius: 20rpx; padding: 4rpx 16rpx; }
+.sp-no-tx { color: #ffffff; font-size: 22rpx; }
+.sp-body { padding: 20rpx 26rpx; display: flex; flex-direction: column; }
+.sp-name { font-size: 34rpx; font-weight: bold; }
+.sp-tip { font-size: 24rpx; color: #13a07b; margin: 8rpx 0 12rpx; }
+.sp-text { font-size: 26rpx; color: #2d3833; line-height: 40rpx; }
+.player { margin: 12rpx 28rpx 0; background: #ffffff; border-radius: 24rpx; padding: 22rpx 26rpx; }
+.pl-name { font-size: 28rpx; font-weight: bold; margin-bottom: 12rpx; }
+.ctl { justify-content: space-between; margin-top: 16rpx; }
+.c-sm { font-size: 24rpx; color: #4a544f; padding: 10rpx 16rpx; }
+.c-off { color: #c3cbc7; }
+.c-play { width: 88rpx; height: 88rpx; border-radius: 44rpx; background: #13a07b; display: flex; align-items: center; justify-content: center; }
+.c-play-tx { color: #ffffff; font-size: 32rpx; }
+.c-all { font-size: 24rpx; color: #13a07b; background: #e3f4ee; border-radius: 30rpx; padding: 12rpx 22rpx; }
+.c-all-on { background: #ff7a45; color: #ffffff; }

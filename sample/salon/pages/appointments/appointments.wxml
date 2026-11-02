@@ -1,0 +1,50 @@
+<view class="ap-tabs">
+  <view class="ap-tab {{tab === item.key ? 'on' : ''}}" wx:for="{{tabs}}" wx:key="key" data-key="{{item.key}}" bindtap="switchTab">
+    {{item.name}}{{counts[item.key] ? ' ' + counts[item.key] : ''}}
+    <view class="ap-line" wx:if="{{tab === item.key}}"></view>
+  </view>
+</view>
+<view class="card ap-card" wx:for="{{list}}" wx:key="id">
+  <view class="row between">
+    <text class="ap-date">{{item.dateText}} {{item.time}}</text>
+    <text class="ap-st st-{{item.status}}">{{item.status === 'upcoming' ? '待到店' : item.status === 'done' ? (item.review ? '已评价' : '待评价') : '已取消'}}</text>
+  </view>
+  <view class="row ap-body">
+    <image class="ap-av" src="{{item.stylistAvatar}}" mode="aspectFill"></image>
+    <view class="flex1">
+      <text class="ap-svc">{{item.serviceName}}</text>
+      <text class="muted">{{item.stylistName}} · 约 {{item.duration}} 分钟{{item.changes ? ' · 已改约 ' + item.changes + ' 次' : ''}}</text>
+    </view>
+    <text class="price">¥{{item.payPrice}}</text>
+  </view>
+  <view class="ap-code" wx:if="{{item.status === 'upcoming'}}">核销码 <text class="ap-cn">{{item.code}}</text></view>
+  <view class="ap-review" wx:if="{{item.review}}">
+    <rating-stars value="{{item.review.score}}" size="24"></rating-stars>
+    <text class="ap-rt">{{item.rvLine}}</text>
+  </view>
+  <text class="muted" wx:if="{{item.status === 'cancelled'}}">取消原因：{{item.cancelReason}}</text>
+  <view class="row ap-ops" wx:if="{{item.status === 'upcoming'}}">
+    <view class="btn-gray" data-id="{{item.id}}" bindtap="cancel">取消预约</view>
+    <view class="btn-line ap-gap" data-id="{{item.id}}" bindtap="reschedule">改约</view>
+    <view class="btn-line ap-gap" data-id="{{item.id}}" bindtap="checkin">到店核销</view>
+  </view>
+  <view class="row ap-ops" wx:if="{{item.status === 'done' && !item.review}}">
+    <view class="btn-line" data-id="{{item.id}}" bindtap="review">写评价</view>
+  </view>
+</view>
+<view class="empty" wx:if="{{!list.length}}">
+  <text class="empty-tx">{{tab === 'upcoming' ? '没有待到店的预约' : tab === 'done' ? '还没有完成的服务' : '没有取消记录'}}</text>
+  <view class="btn-main ap-eb" bindtap="goBook">立即预约</view>
+</view>
+<view style="height: 60rpx;"></view>
+
+<view class="ap-mask" wx:if="{{rv}}" bindtap="closeReview"></view>
+<view class="ap-sheet" wx:if="{{rv}}">
+  <text class="sec-title">评价 {{rv.stylistName}} 的服务</text>
+  <view class="ap-stars"><rating-stars value="{{rvScore}}" size="48" readonly="{{false}}" show-score bind:change="onScore"></rating-stars></view>
+  <view class="row ap-tags">
+    <view class="ap-tag {{rvTags.indexOf(t) >= 0 ? 'on' : ''}}" wx:for="{{tagPool}}" wx:for-item="t" wx:key="*this" data-t="{{t}}" bindtap="toggleTag">{{t}}</view>
+  </view>
+  <textarea class="ap-ta" maxlength="200" placeholder="说说发型满不满意、服务体验如何" value="{{rvText}}" bindinput="onRvText"></textarea>
+  <view class="btn-main" hover-class="press" bindtap="submitReview">提交评价</view>
+</view>

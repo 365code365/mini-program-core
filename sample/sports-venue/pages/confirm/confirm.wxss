@@ -1,0 +1,25 @@
+.vrow { align-items: flex-start; }
+.v-img { width: 140rpx; height: 110rpx; border-radius: 12rpx; flex-shrink: 0; }
+.v-info { margin-left: 20rpx; }
+.v-n { font-size: 30rpx; font-weight: bold; margin-bottom: 8rpx; }
+.seg { margin-top: 18rpx; }
+.seg-c { font-size: 26rpx; font-weight: bold; width: 150rpx; }
+.seg-t { font-size: 26rpx; }
+.seg-pk { font-size: 20rpx; color: #ff7a1a; background: #fff1e6; border-radius: 6rpx; padding: 0 8rpx; margin-left: 12rpx; }
+.seg-a { font-size: 26rpx; }
+.sum { margin-top: 22rpx; padding-top: 18rpx; border-top: 1rpx solid #f0f2f1; }
+.big { font-size: 36rpx; }
+.fi { height: 92rpx; border-bottom: 1rpx solid #f0f2f1; }
+.fi-l { width: 130rpx; color: #5a5d66; }
+.fi-i { font-size: 28rpx; }
+.err { display: block; color: #e5484d; font-size: 22rpx; margin-top: 6rpx; }
+.link { color: #13b37b; font-size: 24rpx; }
+.pm { padding: 20rpx 0; border-bottom: 1rpx solid #f0f2f1; }
+.pm-off .pm-n { color: #b0b3ba; }
+.pm-n { font-size: 28rpx; margin-bottom: 4rpx; }
+.radio { width: 40rpx; height: 40rpx; border-radius: 20rpx; border: 2rpx solid #cfd2d8; display: flex; align-items: center; justify-content: center; }
+.radio-on { background: #13b37b; border-color: #13b37b; }
+.radio-t { color: #ffffff; font-size: 24rpx; }
+.agree { align-items: flex-start; }
+.agree-t { flex: 1; font-size: 22rpx; color: #5a5d66; margin-left: 8rpx; line-height: 36rpx; }
+.go { width: 260rpx; }

@@ -27,4 +27,19 @@
   </radio-group>
 </view>
 <view class="btn btn-danger del" wx:if="{{!isNew}}" bindtap="onTrash">移到回收站</view>
+<view class="card tools" wx:if="{{!isNew}}">
+  <view class="tool-row row">
+    <text class="flex1 tool-label">置顶这篇笔记</text>
+    <switch class="pin-sw" checked="{{form.pinned}}" color="#f5a623" bindchange="onPin" />
+  </view>
+  <view class="tool-row row go-history" bindtap="onHistory">
+    <text class="flex1 tool-label">历史版本</text>
+    <text class="sub">{{versionCount}} 个</text>
+    <text class="chev">›</text>
+  </view>
+  <view class="tool-row row last copy-all" bindtap="onCopy">
+    <text class="flex1 tool-label">复制全文</text>
+    <text class="chev">›</text>
+  </view>
+</view>
 <view class="safe"></view>

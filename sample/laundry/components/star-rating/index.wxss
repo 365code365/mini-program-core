@@ -1,0 +1,8 @@
+.sr { display: flex; flex-direction: row; align-items: center; }
+.st { position: relative; }
+.st-img { position: absolute; left: 0; top: 0; }
+.st-fg { position: absolute; left: 0; top: 0; overflow: hidden; }
+.hit { position: absolute; top: 0; bottom: 0; width: 50%; }
+.hit-l { left: 0; }
+.hit-r { right: 0; }
+.sr-t { font-size: 24rpx; color: #ff9f1a; margin-left: 12rpx; }

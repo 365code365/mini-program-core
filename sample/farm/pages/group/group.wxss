@@ -1,0 +1,37 @@
+.gd { display: flex; flex-direction: row; }
+.gd-img { width: 160rpx; height: 160rpx; border-radius: 12rpx; }
+.gd-mid { flex: 1; margin-left: 18rpx; display: flex; flex-direction: column; justify-content: space-between; }
+.gd-name { font-size: 28rpx; font-weight: bold; }
+.gd-size { margin-left: 12rpx; }
+.del { font-size: 22rpx; color: #a7ada3; text-decoration: line-through; margin-left: 10rpx; }
+.center { display: flex; flex-direction: column; align-items: center; }
+.st { font-size: 34rpx; font-weight: bold; color: #e4572e; }
+.st-success { color: #3f9a3c; }
+.st-fail { color: #8a9186; }
+.cd { display: flex; flex-direction: row; align-items: center; margin-top: 16rpx; }
+.cd-n { font-size: 26rpx; color: #ffffff; background: #1f2a1c; border-radius: 6rpx; padding: 2rpx 8rpx; }
+.cd-c { margin: 0 6rpx; font-size: 26rpx; }
+.cd-tx { margin-left: 10rpx; font-size: 24rpx; color: #5d6858; }
+.mems { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center; margin: 30rpx 0 20rpx; }
+.mem { width: 150rpx; display: flex; flex-direction: column; align-items: center; position: relative; }
+.mem-av { width: 100rpx; height: 100rpx; border-radius: 50rpx; }
+.mem-empty { border: 3rpx dashed #c4c8c0; display: flex; align-items: center; justify-content: center; }
+.mem-q { color: #c4c8c0; font-size: 36rpx; }
+.mem-lead { position: absolute; top: 80rpx; font-size: 18rpx; color: #ffffff; background: #e4572e; border-radius: 14rpx; padding: 0 12rpx; }
+.mem-name { font-size: 22rpx; color: #5d6858; margin-top: 10rpx; }
+.share { background: #e4572e; color: #ffffff; border-radius: 40rpx; font-size: 28rpx; margin-top: 24rpx; width: 600rpx; }
+.link { margin-top: 20rpx; }
+.tabs { display: flex; flex-direction: row; background: #ffffff; height: 88rpx; }
+.tab { flex: 1; text-align: center; line-height: 88rpx; font-size: 28rpx; color: #5d6858; }
+.tab-on { color: #3f9a3c; font-weight: bold; border-bottom: 4rpx solid #3f9a3c; }
+.hg-img { width: 130rpx; height: 130rpx; border-radius: 12rpx; }
+.og { display: flex; flex-direction: row; align-items: center; margin-top: 18rpx; padding-top: 18rpx; border-top: 1rpx solid #f2f3ef; }
+.og-av { width: 56rpx; height: 56rpx; border-radius: 28rpx; }
+.og-name { font-size: 24rpx; margin-left: 12rpx; width: 170rpx; }
+.og-lack { font-size: 22rpx; color: #e4572e; }
+.og-cd { flex: 1; margin-left: 14rpx; font-size: 22rpx; }
+.og-btn { background: #e4572e; border-radius: 26rpx; padding: 0 24rpx; height: 52rpx; }
+.og-btn-tx { color: #ffffff; font-size: 24rpx; line-height: 52rpx; }
+.mg { display: flex; flex-direction: row; }
+.st-s { font-size: 24rpx; color: #e4572e; }
+.empty-go { margin-top: 24rpx; }

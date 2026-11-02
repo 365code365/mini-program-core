@@ -1,0 +1,5 @@
+.nd-t { display: block; font-size: 36rpx; font-weight: bold; line-height: 1.5; }
+.nd-meta { margin: 16rpx 0 28rpx; }
+.nd-p { display: block; font-size: 30rpx; line-height: 1.8; color: #3d434d; margin-bottom: 16rpx; }
+.nd-ops { justify-content: flex-end; margin-top: 24rpx; }
+.nd-share { margin: 0 0 0 20rpx; line-height: 56rpx; }

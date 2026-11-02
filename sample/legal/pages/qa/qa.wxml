@@ -1,0 +1,25 @@
+<view class="card">
+  <view class="row"><text class="tag">{{cat}}</text></view>
+  <text class="t">{{q.title}}</text>
+  <text class="muted">{{q.views}} 人看过 · 律安心法律编辑部整理</text>
+  <view class="ans"><view class="para" wx:for="{{paras}}" wx:key="index"><rich-text nodes="{{item}}"></rich-text></view></view>
+  <view class="row acts">
+    <view class="a {{helpful ? 'a-on' : ''}}" bindtap="markHelpful">{{helpful ? '已觉得有用' : '有用'}}</view>
+    <view class="a" bindtap="copy">复制解答</view>
+  </view>
+</view>
+
+<view class="card row ask-card">
+  <image class="av" src="{{lawyer.avatar}}"></image>
+  <view class="col flex1">
+    <text class="n">情况不一样？问问 {{lawyer.name}} 律师</text>
+    <text class="muted">{{lawyer.reply}}</text>
+  </view>
+  <view class="go" bindtap="ask">¥{{lawyer.price.text}} 咨询</view>
+</view>
+
+<view class="card">
+  <view class="sec-title">相关问题</view>
+  <view class="rq" wx:for="{{related}}" wx:key="id" data-id="{{item.id}}" bindtap="goRelated"><text>{{item.title}}</text></view>
+</view>
+<view class="disclaimer"><text>以上解答根据现行法律整理，仅供参考，不构成法律意见。</text></view>

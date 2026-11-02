@@ -1,7 +1,7 @@
 <view class="hero">
   <view class="orb o1"></view><view class="orb o2"></view>
   <text class="hero-t">发现有趣的问题</text>
-  <text class="hero-s">今天已有 {{todayText}} 人在问卷星球参与调查</text>
+  <text class="hero-s">已有 {{todayText}} 人在问卷星球参与调查</text>
   <view class="hero-btn row" bindtap="onCreate"><text class="hero-btn-t">+ 发起投票</text></view>
 </view>
 
@@ -25,6 +25,7 @@
         <text class="hot" wx:if="{{item.hot}}">热门</text>
         <view class="flex1"></view>
         <text class="done" wx:if="{{item.done}}">已参与</text>
+        <text class="ended" wx:if="{{item.ended}}">已截止</text>
       </view>
       <text class="sv-title">{{item.title}}</text>
     </view>

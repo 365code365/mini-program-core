@@ -1,0 +1,22 @@
+<view class="tabs">
+  <view class="t {{tab === 0 ? 't-on' : ''}}" data-t="0" bindtap="onTab">收藏 {{fav.length}}</view>
+  <view class="t {{tab === 1 ? 't-on' : ''}}" data-t="1" bindtap="onTab">足迹 {{his.length}}</view>
+</view>
+<block wx:if="{{tab === 0}}">
+  <view wx:if="{{!fav.length}}" class="empty"><view class="empty-ic">☆</view><text class="empty-t">还没有收藏的展品</text><view class="btn empty-btn" bindtap="goHalls">去逛展厅</view></view>
+  <view class="grid">
+    <view class="it" wx:for="{{fav}}" wx:key="id" data-id="{{item.id}}" bindtap="open">
+      <image class="it-img" src="{{item.img}}" mode="aspectFill"></image>
+      <text class="it-n">{{item.name}}</text>
+      <view class="it-f"><text class="muted">{{item.era}}</text><text class="un" data-id="{{item.id}}" catchtap="unfav">取消</text></view>
+    </view>
+  </view>
+</block>
+<block wx:else>
+  <view wx:if="{{!his.length}}" class="empty"><view class="empty-ic">足</view><text class="empty-t">还没有浏览记录</text><view class="btn empty-btn" bindtap="goHalls">去逛展厅</view></view>
+  <view class="row" wx:for="{{his}}" wx:key="id" data-id="{{item.id}}" bindtap="open">
+    <image class="row-img" src="{{item.img}}" mode="aspectFill"></image>
+    <view class="row-b"><text class="it-n0">{{item.name}}</text><text class="muted">{{item.hallName}} · {{item.ago}}</text></view>
+  </view>
+  <view wx:if="{{his.length}}" class="clear" bindtap="clearHis">清空足迹</view>
+</block>

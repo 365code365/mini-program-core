@@ -1,0 +1,69 @@
+<view wx:if="{{!d}}" class="empty">
+  <view class="empty-ic"><text class="empty-ic-t">!</text></view>
+  <text class="empty-t">没有待确认的预订，请先选场地时段</text>
+  <view class="btn-ghost empty-btn" bindtap="back"><text>返回</text></view>
+</view>
+<block wx:else>
+  <view class="card vrow row">
+    <image class="v-img" src="{{v.photo}}" mode="aspectFill"></image>
+    <view class="col flex1 v-info">
+      <text class="v-n">{{v.name}}</text>
+      <text class="muted">{{dateText}} · 共 {{hours}} 小时</text>
+    </view>
+  </view>
+  <view class="card">
+    <text class="sec-title">场地与时段</text>
+    <view wx:for="{{d.segs}}" wx:key="text" class="seg row">
+      <text class="seg-c">{{item.courtLabel}}</text>
+      <text class="seg-t">{{item.text}}</text>
+      <text wx:if="{{item.peakHours}}" class="seg-pk">含高峰 {{item.peakHours}}h</text>
+      <view class="flex1"></view>
+      <text class="seg-a">¥{{item.amount}}</text>
+    </view>
+    <view class="sum row">
+      <text class="muted flex1">连续时段已合并计价</text>
+      <text>合计 </text><text class="price big">¥{{d.total}}</text>
+    </view>
+  </view>
+  <view class="card">
+    <text class="sec-title">联系人</text>
+    <view class="fi row">
+      <text class="fi-l">姓名</text>
+      <input class="fi-i flex1" value="{{name}}" placeholder="到场报名字核对" maxlength="10" bindinput="onName" />
+    </view>
+    <text wx:if="{{errs.name}}" class="err">{{errs.name}}</text>
+    <view class="fi row">
+      <text class="fi-l">手机号</text>
+      <input class="fi-i flex1" type="number" value="{{phone}}" placeholder="接收预订短信" maxlength="11" bindinput="onPhone" />
+    </view>
+    <text wx:if="{{errs.phone}}" class="err">{{errs.phone}}</text>
+  </view>
+  <view class="card">
+    <view class="row">
+      <text class="sec-title flex1">支付方式</text>
+      <text class="link" bindtap="goCard">去充值 / 买次卡 ›</text>
+    </view>
+    <view wx:for="{{methods}}" wx:key="id" class="pm row {{item.ok ? '' : 'pm-off'}}" data-id="{{item.id}}" bindtap="pickMethod">
+      <view class="col flex1">
+        <text class="pm-n">{{item.name}}</text>
+        <text class="muted">{{item.desc}}</text>
+      </view>
+      <view class="radio {{method === item.id ? 'radio-on' : ''}}"><text wx:if="{{method === item.id}}" class="radio-t">✓</text></view>
+    </view>
+  </view>
+  <view class="card notice">
+    <checkbox-group bindchange="onAgree">
+      <label class="row agree">
+        <checkbox value="1" checked="{{agree}}" color="#13b37b"></checkbox>
+        <text class="agree-t">已阅读订场须知：开场前 2 小时以上可免费取消，逾期不退；请提前 10 分钟凭入场码入场</text>
+      </label>
+    </checkbox-group>
+  </view>
+  <view class="bottom-space"></view>
+  <view class="foot">
+    <view class="col flex1">
+      <view class="row"><text class="muted">{{method === 'times' ? '次卡抵扣 ' + hours + ' 次' : '应付'}} </text><text class="price big">¥{{method === 'times' ? 0 : d.total}}</text></view>
+    </view>
+    <view class="btn-main go {{submitting ? 'btn-dis' : ''}}" bindtap="submit"><text>{{method === 'wechat' ? '微信支付' : '确认支付'}}</text></view>
+  </view>
+</block>

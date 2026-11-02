@@ -3,17 +3,18 @@
   <text class="bar-edit" bindtap="toggleEdit">{{editing ? '完成' : '管理'}}</text>
 </view>
 <view wx:if="{{list.length === 0}}" class="card empty-card">
-  <view class="e-ic"><image class="e-img" src="/images/tab/cart.png"></image></view>
+  <view class="e-ic"><image class="e-img" src="/images/tab/cart.png" /></view>
   <text class="e-tx">购物车空空的，挑一束花送给重要的人吧</text>
   <view class="e-btn" bindtap="goHome"><text>去逛逛</text></view>
 </view>
 <view class="card item row" wx:for="{{list}}" wx:key="key">
   <view class="check {{item.checked ? 'on' : ''}}" data-k="{{item.key}}" bindtap="toggle"><view wx:if="{{item.checked}}" class="check-in"></view></view>
-  <image class="img" src="{{item.img}}" mode="aspectFill" data-id="{{item.id}}" bindtap="goDetail"></image>
+  <image class="img" src="{{item.img}}" mode="aspectFill" data-id="{{item.id}}" bindtap="goDetail" />
   <view class="main">
     <text class="name">{{item.name}}</text>
     <text class="spec">{{item.spec}}</text>
     <text class="deliv">{{item.date}} {{item.slot}} 送达</text>
+    <text wx:if="{{item.half}}" class="half">第 2 束半价，结算时自动减</text>
     <view class="row between foot">
       <view class="row pr"><text class="price yen">¥</text><text class="price p">{{item.unit}}</text></view>
       <view wx:if="{{!editing}}" class="stepper row">
@@ -29,7 +30,7 @@
 <view class="rec-title row"><view class="line"></view><text>猜你喜欢</text><view class="line"></view></view>
 <view class="recs">
   <view class="rec" wx:for="{{recs}}" wx:key="id" data-id="{{item.id}}" bindtap="goDetail">
-    <image class="rec-img" src="{{item.img}}" mode="aspectFill"></image>
+    <image class="rec-img" src="{{item.img}}" mode="aspectFill" />
     <text class="rec-name">{{item.name}}</text>
     <view class="row rec-pr"><text class="price yen">¥</text><text class="price rp">{{item.price}}</text></view>
   </view>
@@ -39,7 +40,7 @@
   <view class="row" bindtap="toggleAll"><view class="check {{allOn ? 'on' : ''}}"><view wx:if="{{allOn}}" class="check-in"></view></view><text class="all-tx">全选</text></view>
   <view wx:if="{{!editing}}" class="sum">
     <view class="row sum-row"><text class="sum-l">合计：</text><text class="price yen">¥</text><text class="price sum-p">{{total}}</text></view>
-    <text class="sum-sub">免配送费 · 含精美贺卡</text>
+    <text class="sum-sub">{{saved ? '已优惠 ¥' + saved + ' · 免配送费' : '免配送费 · 含精美贺卡'}}</text>
   </view>
   <view wx:else class="sum"></view>
   <view wx:if="{{!editing}}" class="go {{count ? '' : 'off'}}" bindtap="checkout"><text>结算({{count}})</text></view>

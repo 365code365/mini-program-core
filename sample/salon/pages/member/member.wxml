@@ -1,0 +1,39 @@
+<view class="mb-card" wx:if="{{m}}">
+  <view class="row between">
+    <text class="mb-lv">{{lv.cur.name}}</text>
+    <text class="mb-no" bindtap="copyCard">NO. {{m.cardNo}}</text>
+  </view>
+  <view class="row mb-nums">
+    <view class="mb-ni"><text class="mb-k">储值余额（元）</text><text class="mb-v">{{m.balance}}</text></view>
+    <view class="mb-ni"><text class="mb-k">积分</text><text class="mb-v">{{m.points}}</text></view>
+    <view class="mb-ni"><text class="mb-k">成长值</text><text class="mb-v">{{m.growth}}</text></view>
+  </view>
+  <progress class="mb-pg" percent="{{lv.percent}}" stroke-width="6" activeColor="#f3d9c6" backgroundColor="rgba(255,255,255,0.18)" active show-info font-size="11" border-radius="3"></progress>
+  <text class="mb-gap">{{lv.next ? '再消费 ¥' + lv.gap + ' 升级' + lv.next.name : '已是最高等级'}}</text>
+</view>
+<view class="card">
+  <view class="sec-head"><text class="sec-title">{{lv.cur.name}}权益</text><text class="sec-more">{{lv.cur.discount * 100}} 折</text></view>
+  <view class="row mb-perks"><view class="mb-perk" wx:for="{{lv.cur.perks}}" wx:key="*this">{{item}}</view></view>
+</view>
+<view class="card">
+  <view class="sec-head"><text class="sec-title">储值有礼</text><text class="sec-more">储值金额同时计入成长值</text></view>
+  <view class="row mb-pkgs">
+    <view class="mb-pkg {{pick === index ? 'on' : ''}}" wx:for="{{packages}}" wx:key="id" data-i="{{index}}" bindtap="pickPkg">
+      <text class="mb-pay">¥{{item.pay}}</text>
+      <text class="mb-gift">赠 ¥{{item.gift}}</text>
+    </view>
+  </view>
+  <view class="btn-dark mb-btn" hover-class="press" bindtap="recharge">立即储值 ¥{{packages[pick].pay}}</view>
+</view>
+<view class="card">
+  <view class="sec-head"><text class="sec-title">账户流水</text></view>
+  <view class="mb-rec" wx:for="{{records}}" wx:key="id">
+    <view class="flex1"><text class="mb-rt">{{item.title}}</text><text class="muted">{{item.time}}</text></view>
+    <text class="{{item.amount >= 0 ? 'mb-plus' : 'mb-minus'}}">{{item.type === 'points' ? (item.amount >= 0 ? '+' : '') + item.amount + ' 积分' : (item.amount >= 0 ? '+¥' + item.amount : '-¥' + (-item.amount))}}</text>
+  </view>
+</view>
+<view class="card">
+  <view class="sec-head"><text class="sec-title">等级说明</text></view>
+  <view class="mb-rule" wx:for="{{levels}}" wx:key="name"><text>{{item.name}}</text><text class="muted">累计成长值 ≥ {{item.min}} · {{item.discount * 100}} 折</text></view>
+</view>
+<view style="height: 60rpx;"></view>

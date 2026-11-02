@@ -1,4 +1,5 @@
 const T = require('../../utils/store.js');
+const host = require('../../utils/host.js');
 const { CITIES } = require('../../utils/data.js');
 
 Page({
@@ -22,7 +23,7 @@ Page({
     this.setData({
       trip: { title: t.title, city: t.city, color: city.color, range: T.short(t.start) + ' - ' + T.short(t.end), days: t.plan.length, people: t.people, type: t.type },
       dayTabs, day: Math.min(this.data.day, t.plan.length - 1),
-      budget: { sumText: T.money(sum), totalText: total ? T.money(total) : '未设置', pct: total ? Math.min(100, Math.round(sum / total * 100)) : 0, over: total > 0 && sum > total },
+      budget: { sumText: T.money(sum), totalText: total ? T.money(total) : '未设置', pct: total ? Math.min(100, Math.round(sum / total * 100)) : 0, over: total > 0 && sum > total, spentText: T.money(T.expenseSum(t)) },
       pack: pk
     });
     this.renderDay();
@@ -94,6 +95,65 @@ Page({
       },
       success: res => { res.eventChannel.emit('init', { taken }); }
     });
+  },
+  // —— 移到其他天 ——
+  openMove(e) {
+    const i = Number(e.currentTarget.dataset.i);
+    const s = this.trip.plan[this.data.day][i];
+    if (this.trip.plan.length < 2) { wx.showToast({ title: '只有 1 天，没有别的天可移', icon: 'none' }); return; }
+    this.setData({ move: { i, name: s.name } });
+  },
+  closeMove() { this.setData({ move: null }); },
+  noop() {},
+  moveTo(e) {
+    const to = Number(e.currentTarget.dataset.i);
+    const m = this.data.move;
+    if (!m || to === this.data.day) return;
+    const s = this.trip.plan[this.data.day].splice(m.i, 1)[0];
+    this.trip.plan[to].push(s);
+    T.put(this.trip);
+    this.setData({ move: null, ['dayTabs[' + to + '].n']: this.trip.plan[to].length });
+    this.save();
+    wx.showToast({ title: '已移到第' + (to + 1) + '天', icon: 'none' });
+  },
+  // —— 行程本身：编辑 / 分享 / 复制 / 删除 ——
+  edit() { wx.navigateTo({ url: '/pages/create/create?id=' + this.id }); },
+  share() {
+    wx.showActionSheet({
+      itemList: ['复制行程文字（发给好友）', '查看分享内容'],
+      success: r => {
+        const text = T.shareText(T.get(this.id));
+        if (r.tapIndex === 0) host.copy(text);
+        else wx.showModal({ title: '分享内容', content: text, confirmText: '复制', success: m => { if (m.confirm) host.copy(text); } });
+      }
+    });
+  },
+  copy() {
+    wx.showModal({
+      title: '复制一份行程', content: '景点安排、预算计划和自定义行李会一起复制，勾选状态与记账不复制', confirmText: '复制',
+      success: r => {
+        if (!r.confirm) return;
+        const c = T.copyTrip(this.id);
+        wx.showToast({ title: '已复制为「' + c.title + '」', icon: 'none' });
+        wx.redirectTo({ url: '/pages/detail/detail?id=' + c.id });
+      }
+    });
+  },
+  remove() {
+    wx.showModal({
+      title: '删除行程', content: '「' + this.trip.title + '」的景点、预算和行李清单会一起删除', confirmText: '删除', confirmColor: '#f5222d',
+      success: r => {
+        if (!r.confirm) return;
+        T.remove(this.id);
+        wx.showToast({ title: '已删除', icon: 'none' });
+        wx.navigateBack();
+      }
+    });
+  },
+  // 右上角「转发」：好友打开的是导入页，分享文字里带着全部安排
+  onShareAppMessage() {
+    const t = T.get(this.id);
+    return { title: t.title + ' · 我的行程安排', path: '/pages/import/import?text=' + encodeURIComponent(T.shareText(t)) };
   },
   goBudget() { wx.navigateTo({ url: '/pages/budget/budget?id=' + this.id }); },
   goPacking() { wx.navigateTo({ url: '/pages/packing/packing?id=' + this.id }); }

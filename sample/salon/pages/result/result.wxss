@@ -1,0 +1,15 @@
+.rs { display: flex; flex-direction: column; align-items: center; padding: 56rpx 0 40rpx; }
+.rs-ic { width: 150rpx; height: 150rpx; display: flex; align-items: center; justify-content: center; }
+.rs-t { font-size: 40rpx; font-weight: bold; margin-top: 12rpx; }
+.rs-s { font-size: 24rpx; color: #a39189; margin-top: 12rpx; padding: 0 60rpx; text-align: center; line-height: 1.6; }
+.rs-code { margin-top: 28rpx; display: flex; flex-direction: column; align-items: center; background: #2d2430; border-radius: 20rpx; padding: 20rpx 64rpx; }
+.rs-num { color: #f3d9c6; font-size: 56rpx; font-weight: bold; letter-spacing: 12rpx; margin-top: 6rpx; }
+.rs-card { align-self: stretch; }
+.rs-kv { display: flex; flex-direction: row; justify-content: space-between; padding: 12rpx 0; font-size: 26rpx; }
+.rs-addr { flex: 1; text-align: right; margin-left: 40rpx; }
+.rs-tip { margin-top: 24rpx; }
+.rs-tipt { font-size: 24rpx; color: #a0694f; margin-left: 10rpx; }
+.rs-btns { align-self: stretch; padding: 32rpx 40rpx 0; }
+.rs-row { margin-top: 24rpx; }
+.rs-b { flex: 1; text-align: center; padding: 16rpx 0; font-size: 26rpx; }
+.rs-gap { margin-left: 20rpx; }

@@ -46,7 +46,11 @@
             <text class="price"><text class="price-sym">¥</text>{{item.price}}</text>
             <text wx:if="{{item.origin}}" class="origin">¥{{item.origin}}</text>
             <view class="flex1"></view>
-            <view class="stepper">
+            <view wx:if="{{item.spec}}" class="spec-btn" data-id="{{item.id}}" catchtap="onPlus">
+              <text class="spec-btn-t">选规格</text>
+              <view wx:if="{{counts[item.id]}}" class="spec-badge"><text>{{counts[item.id]}}</text></view>
+            </view>
+            <view wx:else class="stepper">
               <view wx:if="{{counts[item.id]}}" class="step-minus" data-id="{{item.id}}" catchtap="onMinus"><view class="minus-bar"></view></view>
               <text wx:if="{{counts[item.id]}}" class="step-num">{{counts[item.id]}}</text>
               <view class="step-plus" data-id="{{item.id}}" catchtap="onPlus">+</view>
@@ -55,7 +59,7 @@
         </view>
       </view>
     </view>
-    <view class="dish-end">本店已展示全部菜品</view>
+    <view class="dish-end">本店已展示全部商品</view>
   </scroll-view>
 </view>
 
@@ -67,12 +71,17 @@
       <view class="row score-sub"><text>口味 4.9</text><text class="head-gap">包装 4.8</text><text class="head-gap">配送 4.7</text></view>
     </view>
   </view>
-  <view class="card review" wx:for="{{reviews}}" wx:key="name">
+  <view class="card review" wx:for="{{reviews}}" wx:key="id">
     <view class="row">
       <view class="avatar glyph" style="background: {{item.color}};">{{item.short}}</view>
       <view class="flex1">
-        <text class="review-name">{{item.name}}</text>
-        <text class="review-star">{{item.stars}}</text>
+        <view class="row">
+          <text class="review-name">{{item.name}}</text>
+          <text wx:if="{{item.mine}}" class="mine-tag">我的评价</text>
+        </view>
+        <view class="row">
+          <text wx:for="{{starList}}" wx:for-item="n" wx:key="*this" class="review-star {{n <= item.stars ? 'review-star-on' : ''}}">★</text>
+        </view>
       </view>
       <text class="sub">{{item.date}}</text>
     </view>
@@ -81,26 +90,36 @@
 </view>
 
 <view wx:if="{{tabIdx === 2}}" class="card info">
-  <view class="info-row row between"><text class="sub">商家地址</text><text>朝阳区望京街 10 号 B1 层</text></view>
-  <view class="info-row row between"><text class="sub">营业时间</text><text>09:30 - 22:00</text></view>
-  <view class="info-row row between"><text class="sub">商家电话</text><text class="link" bindtap="onCall">010-6478 2211</text></view>
-  <view class="info-row row between"><text class="sub">配送服务</text><text>饱了么专送 · 准时宝</text></view>
-  <view class="info-row row between"><text class="sub">食品安全</text><text>A 级（量化分级）</text></view>
+  <view class="info-row row between" bindtap="onNav">
+    <text class="sub info-k">商家地址</text>
+    <text class="flex1 info-v">{{shop.addr}}</text>
+    <text class="link info-op">导航</text>
+  </view>
+  <view class="info-row row between"><text class="sub info-k">营业时间</text><text>{{shop.hours}}</text></view>
+  <view class="info-row row between" bindtap="onCall">
+    <text class="sub info-k">商家电话</text>
+    <text class="link">{{shop.phone}}</text>
+  </view>
+  <view class="info-row row between"><text class="sub info-k">配送服务</text><text>饱了么专送 · 准时宝</text></view>
+  <view class="info-row row between"><text class="sub info-k">食品安全</text><text>A 级（量化分级）</text></view>
 </view>
 
 <view wx:if="{{showCart && cart.count}}" class="mask" bindtap="onToggleCart"></view>
-<view wx:if="{{showCart && cart.count}}" class="cart-panel">
+<view wx:if="{{showCart && cart.count}}" class="cart-panel" catchtap="noop">
   <view class="row between panel-head">
     <text class="title">已选商品</text>
-    <text class="sub" bindtap="onClearCart">清空购物车</text>
+    <text class="sub panel-clear" bindtap="onClearCart">清空购物车</text>
   </view>
-  <view class="panel-item row" wx:for="{{cart.list}}" wx:key="id">
-    <text class="flex1 ellipsis">{{item.name}}</text>
+  <view class="panel-item row" wx:for="{{cart.list}}" wx:key="key">
+    <view class="flex1 panel-info">
+      <text class="panel-name ellipsis">{{item.name}}</text>
+      <text wx:if="{{item.spec}}" class="panel-spec ellipsis">{{item.spec}}</text>
+    </view>
     <text class="price panel-price">¥{{item.total}}</text>
     <view class="stepper">
-      <view class="step-minus" data-id="{{item.id}}" catchtap="onMinus"><view class="minus-bar"></view></view>
+      <view class="step-minus" data-key="{{item.key}}" catchtap="onLineMinus"><view class="minus-bar"></view></view>
       <text class="step-num">{{item.qty}}</text>
-      <view class="step-plus" data-id="{{item.id}}" catchtap="onPlus">+</view>
+      <view class="step-plus" data-key="{{item.key}}" catchtap="onLinePlus">+</view>
     </view>
   </view>
 </view>
@@ -116,4 +135,35 @@
     <text class="cart-fee">另需配送费 ¥{{shop.deliveryFee}}</text>
   </view>
   <view class="cart-go {{canSubmit ? 'cart-go-on' : ''}}" bindtap="onCheckout">{{goText}}</view>
+</view>
+
+<!-- 规格面板：遮罩与面板是兄弟节点，面板再 catchtap 一道 -->
+<view wx:if="{{sheet}}" class="mask spec-mask" bindtap="onCloseSpec"></view>
+<view wx:if="{{sheet}}" class="spec" catchtap="noop">
+  <view class="row spec-head">
+    <view class="spec-img glyph" style="background: linear-gradient(135deg, {{sheet.c1}}, {{sheet.c2}});">{{sheet.glyph}}</view>
+    <view class="flex1">
+      <text class="title spec-name ellipsis">{{sheet.name}}</text>
+      <text class="sub spec-desc ellipsis">{{sheet.desc}}</text>
+    </view>
+    <view class="spec-x" bindtap="onCloseSpec"><view class="x1"></view><view class="x2"></view></view>
+  </view>
+  <view wx:for="{{sheet.groups}}" wx:for-item="g" wx:for-index="gi" wx:key="name" class="spec-group">
+    <text class="spec-label">{{g.name}}</text>
+    <view class="opts">
+      <view wx:for="{{g.opts}}" wx:for-item="o" wx:for-index="oi" wx:key="n" class="opt {{picks[gi] === oi ? 'opt-on' : ''}}" data-g="{{gi}}" data-o="{{oi}}" bindtap="onSpecPick">
+        <text class="opt-t">{{o.label}}</text>
+      </view>
+    </view>
+  </view>
+  <view class="spec-sel"><text class="sub">已选：{{specText}}</text></view>
+  <view class="row between spec-foot">
+    <text class="price spec-price"><text class="price-sym">¥</text>{{specTotal}}</text>
+    <view class="stepper">
+      <view class="step-minus {{specQty > 1 ? '' : 'step-off'}}" bindtap="onSpecMinus"><view class="minus-bar"></view></view>
+      <text class="step-num">{{specQty}}</text>
+      <view class="step-plus" bindtap="onSpecPlus">+</view>
+    </view>
+  </view>
+  <view class="btn-primary spec-add" bindtap="onSpecAdd">加入购物车</view>
 </view>

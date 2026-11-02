@@ -1,0 +1,209 @@
+# 燃动健身：每页能开 + 门店切换、打卡→记训练、训练计划、团课预约（每日上限 / 候补 / 转正 / 签到 / 免费与爽约取消）、会员过期买单次课与退款、会员卡续费与 7 天退款、身体数据增删、训练记录增删、资料编辑、联系门店
+smoke pages/course/course?id=c3&day=1
+
+open
+expect getCurrentPages()[0].data.name === '陈一鸣' && getCurrentPages()[0].data.streak >= 1
+shot target/_polish_shots/index.png
+tap .store
+sheet 1 3
+expect getCurrentPages()[0].data.storeName === '燃动 · 海岸城店' && wx.getStorageSync('fit_store') === 1
+# 打卡：今天还没记训练 → 去记录 → 跑步 30 分钟，消耗按类型估算
+tap .check-btn
+modal?
+modal ok
+route pages/workout-edit/workout-edit
+tapn 0 .ty
+type .f-min => 30
+blur
+expect getCurrentPages().slice(-1)[0].data.kcal === '300'
+shot target/_polish_shots/workout-add.png
+tap .save
+wait 900
+route pages/index/index
+expect getCurrentPages()[0].data.today.kcal === 300 && getCurrentPages()[0].data.todayChecked === true
+tap .check-btn
+toast 今天已经打过卡啦
+
+# 训练计划：选 21 天燃脂 → 完成今天的训练（记训练 + 打卡）
+tap .plan
+route pages/plan/plan
+tapn 0 .pl-btn
+expect getCurrentPages().slice(-1)[0].data.view.day === 1 && getCurrentPages().slice(-1)[0].data.view.plan.id === 'fat21'
+tap .t-btn
+modal?
+modal ok
+expect getCurrentPages().slice(-1)[0].data.view.today.done === true && getCurrentPages().slice(-1)[0].data.view.doneCount === 1
+shot target/_polish_shots/plan.png
+back
+expect getCurrentPages()[0].data.today.kcal === 520 && getCurrentPages()[0].data.plan.day === 1
+
+# 团课：明天约 2 节（燃脂搏击 + 动感单车），第 3 节被每日上限挡住；满员的晨间瑜伽排候补
+eval wx.switchTab({ url: '/pages/classes/classes' })
+route pages/classes/classes
+tapn 1 .day
+tapn 0 .cc-btn
+toast 预约成功
+expect wx.getStorageSync('fit_bookings')[0].courseId === 'c1' && wx.getStorageSync('fit_bookings')[0].status === 'booked'
+expect getCurrentPages().slice(-1)[0].data.list[0].state === 'booked'
+tapn 2 .cc-btn
+expect wx.getStorageSync('fit_bookings')[0].courseId === 'c3'
+tapn 3 .cc-btn
+toast 每天最多预约 2 节
+expect getCurrentPages().slice(-1)[0].data.list[1].state === 'full'
+tapn 1 .cc-btn
+toast 候补第 1 位
+expect wx.getStorageSync('fit_bookings')[0].courseId === 'c2' && wx.getStorageSync('fit_bookings')[0].status === 'wait'
+shot target/_polish_shots/classes.png
+# 课程页取消燃脂搏击（开课前 2 小时外，免费）
+tapn 0 .cc
+route pages/course/course
+expect getCurrentPages().slice(-1)[0].data.state === 'booked'
+tap .book-btn
+modal?
+expect __ui.slice(-1)[0].content.indexOf('免费取消') >= 0
+modal ok
+expect getCurrentPages().slice(-1)[0].data.state === 'open'
+exists .fire.on
+wait 1600
+shot target/_polish_shots/course.png
+back
+
+# 我的预约：候补第 1 位开课前 2 小时自动转正 → 到点签到（记训练）；动感单车改到 1 小时后再取消 → 记爽约
+eval wx.navigateTo({ url: '/pages/bookings/bookings' })
+route pages/bookings/bookings
+count 2 .bk
+eval (function () { var l = wx.getStorageSync('fit_bookings'); var b = l.filter(function (x) { return x.courseId === 'c2'; })[0]; var p = function (n) { return n < 10 ? '0' + n : '' + n; }; var t = new Date(), d = new Date(Date.now() + 10 * 60000); b.date = t.getFullYear() + '-' + p(t.getMonth() + 1) + '-' + p(t.getDate()); b.time = p(d.getHours()) + ':' + p(d.getMinutes()); wx.setStorageSync('fit_bookings', l); getCurrentPages().slice(-1)[0].refresh(); })()
+expect wx.getStorageSync('fit_bookings').filter(function (x) { return x.courseId === 'c2'; })[0].status === 'booked'
+tap .op-sign
+modal?
+modal ok
+expect wx.getStorageSync('fit_bookings').filter(function (x) { return x.courseId === 'c2'; })[0].status === 'done'
+expect wx.getStorageSync('fit_workouts')[0].name === '晨间流瑜伽' && wx.getStorageSync('fit_workouts')[0].type === '团课'
+eval (function () { var l = wx.getStorageSync('fit_bookings'); var b = l.filter(function (x) { return x.courseId === 'c3'; })[0]; var p = function (n) { return n < 10 ? '0' + n : '' + n; }; var t = new Date(), d = new Date(Date.now() + 60 * 60000); b.date = t.getFullYear() + '-' + p(t.getMonth() + 1) + '-' + p(t.getDate()); b.time = p(d.getHours()) + ':' + p(d.getMinutes()); wx.setStorageSync('fit_bookings', l); getCurrentPages().slice(-1)[0].refresh(); })()
+tap .op-cancel
+modal?
+expect __ui.slice(-1)[0].content.indexOf('爽约') >= 0
+modal ok
+expect wx.getStorageSync('fit_bookings').filter(function (x) { return x.courseId === 'c3'; })[0].late === true
+expect getCurrentPages().slice(-1)[0].data.strikes === 1
+tapn 2 .tab
+count 2 .bk
+shot target/_polish_shots/bookings.png
+
+# 会员卡过期：约课改为单次付费 ¥79 → 取消原路退回
+eval (function () { var d = new Date(Date.now() - 86400000); var p = function (n) { return n < 10 ? '0' + n : '' + n; }; wx.setStorageSync('fit_card', { plan: '黑金年卡', expire: d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) }); })()
+eval wx.reLaunch({ url: '/pages/classes/classes' })
+route pages/classes/classes
+tapn 2 .day
+tapn 3 .cc-btn
+sheet 0 2
+modal?
+modal ok
+wait 300
+expect wx.getStorageSync('fit_bookings')[0].paid === 79 && wx.getStorageSync('fit_orders')[0].kind === 'class'
+eval wx.navigateTo({ url: '/pages/bookings/bookings' })
+tap .op-cancel
+modal ok
+expect wx.getStorageSync('fit_orders')[0].status === 'refund'
+
+# 买月卡（过期了从今天起 30 天）→ 订单里 7 天内退款，有效期退回 → 再买年卡
+eval wx.reLaunch({ url: '/pages/card/card' })
+route pages/card/card
+expect getCurrentPages().slice(-1)[0].data.card.valid === false
+tapn 0 .plan
+tap .pay
+modal?
+modal ok
+wait 300
+expect getCurrentPages().slice(-1)[0].data.card.valid === true && getCurrentPages().slice(-1)[0].data.card.leftDays === 30
+tap .code
+toast 入场码已刷新
+shot target/_polish_shots/card.png
+tap .orders-link
+route pages/orders/orders
+count 2 .od
+tap .op-refund
+modal?
+modal ok
+expect wx.getStorageSync('fit_orders')[0].status === 'refund' && wx.getStorageSync('fit_card').expire < wx.getStorageSync('fit_orders')[0].newExpire
+shot target/_polish_shots/orders.png
+back
+expect getCurrentPages().slice(-1)[0].data.card.valid === false
+tapn 2 .plan
+tap .pay
+modal ok
+wait 300
+expect getCurrentPages().slice(-1)[0].data.card.leftDays === 365
+
+# 身体数据：记一次（体重 + 体脂）→ 删除一条
+eval wx.reLaunch({ url: '/pages/mine/mine' })
+route pages/mine/mine
+expect getCurrentPages().slice(-1)[0].data.card.valid === true && getCurrentPages().slice(-1)[0].data.orderCount === 3
+tap .body
+route pages/body/body
+count 6 .r
+type .f-weight => 71.8
+type .f-fat => 18.1
+blur
+tap .save
+expect getCurrentPages().slice(-1)[0].data.latest.weight === 71.8 && getCurrentPages().slice(-1)[0].data.latest.fat === 18.1
+expect getCurrentPages().slice(-1)[0].data.formSeq === 1
+count 7 .r
+tap .save
+toast 体重请填
+shot target/_polish_shots/body.png
+tapn 6 .r
+modal?
+modal ok
+count 6 .r
+back
+
+# 训练记录：记一次 → 删除
+eval wx.switchTab({ url: '/pages/records/records' })
+route pages/records/records
+expect getCurrentPages().slice(-1)[0].data.history[0].type === '团课'
+tap .add-btn
+route pages/workout-edit/workout-edit
+tapn 1 .ty
+type .f-min => 45
+blur
+tap .save
+wait 900
+route pages/records/records
+# 签到的瑜伽课按开课时间（10 分钟后）记，排在最前；刚记的力量排第 2
+expect getCurrentPages().slice(-1)[0].data.history[1].type === '力量' && getCurrentPages().slice(-1)[0].data.history[1].kcal === 315
+expect getCurrentPages().slice(-1)[0].data.days >= 1 && getCurrentPages().slice(-1)[0].data.totalKcal >= 1055
+shot target/_polish_shots/records.png
+tapn 1 .h
+sheet 0 1
+modal?
+modal ok
+expect wx.getStorageSync('fit_workouts').every(function (w) { return w.type !== '力量' || w.date !== getCurrentPages().slice(-1)[0].data.history[0].date; })
+
+# 资料：昵称、目标
+eval wx.switchTab({ url: '/pages/mine/mine' })
+tap .edit
+route pages/profile/profile
+type .f-name => 同学
+blur
+tapn 1 .g
+tap .save
+wait 800
+route pages/mine/mine
+expect getCurrentPages().slice(-1)[0].data.profile.name === '陈一鸣同学' && getCurrentPages().slice(-1)[0].data.profile.goal === '增肌增重'
+wait 1600
+shot target/_polish_shots/mine.png
+# 联系门店：拨号降级、导航降级、切换常去门店
+tap .m-call
+sheet 0 3
+modal?
+modal ok
+tap .m-call
+sheet 1 3
+modal?
+modal ok
+tap .m-call
+sheet 2 3
+sheet 2 3
+expect getCurrentPages().slice(-1)[0].data.shop.id === 'hhh'
+noerr

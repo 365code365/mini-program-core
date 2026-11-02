@@ -30,9 +30,29 @@
   margin-right: 14rpx;
 }
 
+.vip-off {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
 .phone {
   font-size: 24rpx;
   opacity: 0.9;
+}
+
+.vip-renew {
+  height: 56rpx;
+  line-height: 54rpx;
+  padding: 0 22rpx;
+  margin-right: 14rpx;
+  border-radius: 28rpx;
+  border: 1rpx solid #c8a46a;
+  color: #ffd9a0;
+  font-size: 24rpx;
+}
+
+.all-orders {
+  padding: 6rpx 0 6rpx 20rpx;
 }
 
 .setting {
@@ -94,6 +114,8 @@
   color: #5a3a10;
   font-size: 24rpx;
   font-weight: bold;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .order-entries {

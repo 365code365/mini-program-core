@@ -1,0 +1,49 @@
+<view class="info">
+  <text class="info-t">{{show.title}}</text>
+  <text class="muted info-s">{{sesText}} · {{show.venue}}</text>
+</view>
+
+<view class="legend row">
+  <view wx:for="{{tiers}}" wx:key="name" class="lg row">
+    <view class="lg-box" style="background: {{item.color}};"></view>
+    <text class="lg-t">¥{{item.price}}</text>
+  </view>
+  <view class="lg row"><view class="lg-box lg-sold"></view><text class="lg-t">已售</text></view>
+  <view class="lg row"><view class="lg-box lg-on"></view><text class="lg-t">已选</text></view>
+</view>
+
+<movable-area class="area" style="height: {{areaH}}px;">
+  <movable-view class="map" direction="all" scale scale-min="0.5" scale-max="2" x="{{x}}" y="{{y}}" style="width: {{mvW}}px; height: {{mvH}}px;" bindscale="onScale" bindchange="onMove">
+    <view class="stage"><text class="stage-t">舞 台</text></view>
+    <view wx:for="{{rows}}" wx:for-item="r" wx:for-index="ri" wx:key="row" class="srow row" style="height: {{cell}}px;">
+      <view class="rno" style="width: {{cell}}px;"><text class="rno-t">{{r.row}}</text></view>
+      <view wx:for="{{r.seats}}" wx:for-item="s" wx:for-index="ci" wx:key="id" class="cell" style="width: {{cell}}px; height: {{cell}}px;" data-r="{{ri}}" data-c="{{ci}}" bindtap="tapSeat">
+        <view wx:if="{{!s.gap}}" class="seat {{s.sold ? 'sold' : ''}} {{s.on ? 'on' : ''}}" style="{{s.sold || s.on ? '' : 'background:' + s.color + ';'}}"></view>
+      </view>
+    </view>
+  </movable-view>
+  <view class="zoom col">
+    <view class="zb" bindtap="zoomIn"><text>＋</text></view>
+    <view class="zb" bindtap="zoomOut"><text>－</text></view>
+    <view class="zb zb-s" bindtap="zoomReset"><text>复位</text></view>
+  </view>
+  <view class="zoom-t"><text>{{zoom}}%</text></view>
+</movable-area>
+<view class="tip"><text class="muted">拖动座位图查看全场，点 ＋ / － 缩放，点座位选中或取消（最多 4 个）</text></view>
+
+<view class="panel">
+  <view wx:if="{{picked.length}}" class="picked row">
+    <view wx:for="{{picked}}" wx:key="id" class="pk col" data-i="{{index}}" bindtap="unpick">
+      <text class="pk-l">{{item.label}}</text>
+      <text class="pk-p">{{item.tierName}} ¥{{item.price}}</text>
+      <text class="pk-x">×</text>
+    </view>
+  </view>
+  <view wx:else class="picked-none"><text class="muted">还没有选座位，点座位图上的彩色座位选座</text></view>
+  <view class="row panel-foot">
+    <view class="col flex1">
+      <view class="row"><text class="muted">已选 {{picked.length}} 张 · 合计 </text><text class="price total">¥{{total}}</text></view>
+    </view>
+    <view class="btn-main confirm {{picked.length ? '' : 'btn-dis'}}" bindtap="confirm"><text>确认选座</text></view>
+  </view>
+</view>

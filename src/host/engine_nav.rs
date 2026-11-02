@@ -38,6 +38,8 @@ impl MiniEngine {
         // 分栏对调着（左栏是活页面）：先换回来，返回关掉的是右栏那页（engine_frameset_focus.rs）
         self.frameset_unswap();
         self.route.finish();
+        // 网页 postMessage 攒下的消息在离开之前派给 bindmessage（engine_webview.rs）
+        self.flush_webview_messages();
         // 转场：退栈之前留一张当前画面（要离开的那页），退栈之后它盖在恢复出来的上一页上滑走
         let t = self.pump_notes.start();
         let leaving = if animate { self.snapshot_frame() } else { None };
@@ -109,6 +111,7 @@ impl MiniEngine {
             }
             NavigationRequest::SwitchTab { url } => {
                 self.frameset_unswap();
+                self.flush_webview_messages();
                 let (p, _) = parse_url(&url);
                 self.switch_tab(&p);
             }
@@ -116,6 +119,7 @@ impl MiniEngine {
                 // 替换当前页：栈深不变
                 self.frameset_unswap();
                 let (p, q) = parse_url(&url);
+                self.flush_webview_messages();
                 self.app
                     .eval("if(__currentPage&&__currentPage.onUnload)__currentPage.onUnload()")
                     .ok();
@@ -128,6 +132,7 @@ impl MiniEngine {
                 // query 要带上：`wx.reLaunch({url:'/pages/a?id=1'})` 的 onLoad 收到 {id:'1'}（从前丢了，收到 {}）
                 let (p, q) = parse_url(&url);
                 self.frameset_unswap();
+                self.flush_webview_messages();
                 self.relaunch(&p, q);
             }
         }

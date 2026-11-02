@@ -6,7 +6,9 @@
     "pages/mine/mine",
     "pages/confirm/confirm",
     "pages/pay/pay",
-    "pages/progress/progress"
+    "pages/progress/progress",
+    "pages/card/card",
+    "pages/help/help"
   ],
   "window": {
     "navigationBarTitleText": "禾味食堂",

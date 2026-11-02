@@ -1,0 +1,86 @@
+<view class="page">
+  <map id="map" class="map" latitude="{{center.latitude}}" longitude="{{center.longitude}}" scale="{{scale}}"
+       markers="{{markers}}" show-compass="{{false}}" enable-rotate="{{false}}"
+       bindmarkertap="onMarkerTap" bindregionchange="onRegionChange" bindtap="onMapTap"></map>
+
+  <!-- 顶部横幅：弱网 / 骑行中 / 待支付 -->
+  <cover-view class="banners">
+    <cover-view class="banner b-weak" wx:if="{{weak}}">{{netType === 'none' ? '网络已断开，恢复后才能开锁与结算' : '当前网络较弱（' + netType + '），车辆位置可能有延迟'}}</cover-view>
+    <cover-view class="banner b-ride" wx:if="{{ride}}" bindtap="goRide">
+      <cover-view class="b-txt">{{ride.locked ? '临时锁车中' : '骑行中'}} · {{ride.dur}} · ¥{{ride.fee}}</cover-view>
+      <cover-view class="b-go">回到骑行 ›</cover-view>
+    </cover-view>
+    <cover-view class="banner b-unpaid" wx:if="{{unpaid && !ride}}" bindtap="goPay">
+      <cover-view class="b-txt">有 1 笔行程待支付 ¥{{unpaid.total}}</cover-view>
+      <cover-view class="b-go">去支付 ›</cover-view>
+    </cover-view>
+    <cover-view class="banner b-loc" wx:if="{{locTip && !weak && !ride && !unpaid}}">{{locTip}}</cover-view>
+  </cover-view>
+
+  <!-- 左侧入口 -->
+  <cover-view class="side">
+    <cover-image class="avatar" src="/images/avatar.png" data-url="/pages/mine/mine" bindtap="go"></cover-image>
+    <cover-view class="side-item" data-url="/pages/wallet/wallet" bindtap="go">
+      <cover-image class="side-ic" src="/images/ic-wallet.png"></cover-image>
+      <cover-view class="side-tx">钱包</cover-view>
+    </cover-view>
+    <cover-view class="side-item" data-url="/pages/trips/trips" bindtap="go">
+      <cover-image class="side-ic" src="/images/ic-trip.png"></cover-image>
+      <cover-view class="side-tx">行程</cover-view>
+    </cover-view>
+    <cover-view class="side-item" data-url="/pages/fault/fault" bindtap="go">
+      <cover-image class="side-ic" src="/images/ic-fault.png"></cover-image>
+      <cover-view class="side-tx">报修</cover-view>
+    </cover-view>
+  </cover-view>
+
+  <!-- 右上：计费说明 -->
+  <cover-view class="price-pill" data-url="/pages/pricing/pricing" bindtap="go">
+    <cover-image class="pill-ic" src="/images/ic-price.png"></cover-image>
+    <cover-view class="pill-tx">计费说明</cover-view>
+  </cover-view>
+
+  <!-- 右下：定位 / 刷新 -->
+  <cover-view class="tools {{selected ? 'tools-up' : ''}}">
+    <cover-view class="tool" bindtap="onLocateTap"><cover-image class="tool-ic" src="/images/ic-locate.png"></cover-image></cover-view>
+    <cover-view class="tool" bindtap="onRefreshTap"><cover-image class="tool-ic" src="/images/ic-refresh.png"></cover-image></cover-view>
+  </cover-view>
+
+  <!-- 底部：选中车辆卡片 / 附近概况 + 扫码开锁 -->
+  <cover-view class="bottom">
+    <cover-view class="bike-card" wx:if="{{selected}}">
+      <cover-view class="bc-head">
+        <cover-view class="bc-name">{{selected.type === 'ebike' ? '青桔电单车' : '青桔单车'}}</cover-view>
+        <cover-view class="bc-no">车号 {{selected.no}}</cover-view>
+      </cover-view>
+      <cover-view class="bc-info">
+        <cover-view class="bc-cell"><cover-view class="bc-v">{{selected.dist}} 米</cover-view><cover-view class="bc-k">步行约 {{selected.walk}} 分钟</cover-view></cover-view>
+        <cover-view class="bc-cell" wx:if="{{selected.type === 'ebike'}}"><cover-view class="bc-v">{{selected.battery}}%</cover-view><cover-view class="bc-k">可骑约 {{selected.range}} 公里</cover-view></cover-view>
+        <cover-view class="bc-cell"><cover-view class="bc-v">{{selected.type === 'ebike' ? '2.5' : '1.5'}} 元</cover-view><cover-view class="bc-k">起步价含 15 分钟</cover-view></cover-view>
+      </cover-view>
+      <cover-view class="bc-ring" bindtap="onRingTap">响铃找车</cover-view>
+    </cover-view>
+    <cover-view class="near" wx:else>
+      <cover-view class="near-tx">附近 {{nearCount}} 辆可用车 · 最近 {{nearest}} 米</cover-view>
+      <cover-view class="near-sub">点地图上的车辆图标查看详情</cover-view>
+    </cover-view>
+    <cover-view class="scan" bindtap="onScanTap">
+      <cover-image class="scan-ic" src="/images/ic-scan.png"></cover-image>
+      <cover-view class="scan-tx">{{ride ? '回到骑行' : '扫码开锁'}}</cover-view>
+    </cover-view>
+  </cover-view>
+
+  <!-- 扫码不可用：手动输入车号 -->
+  <view class="mask" wx:if="{{showInput}}" catchtouchmove="noop">
+    <view class="dlg">
+      <text class="dlg-title">输入车辆编号开锁</text>
+      <text class="dlg-sub">编号在车头二维码或车座下方的 9 位数字</text>
+      <input class="dlg-input" type="number" maxlength="9" value="{{inputNo}}" placeholder="请输入 9 位车辆编号" focus="{{showInput}}" bindinput="onInput" bindconfirm="onInputConfirm"></input>
+      <text class="dlg-err" wx:if="{{inputErr}}">{{inputErr}}</text>
+      <view class="dlg-btns">
+        <view class="dlg-btn" bindtap="onInputCancel">取消</view>
+        <view class="dlg-btn dlg-ok" bindtap="onInputConfirm">确认开锁</view>
+      </view>
+    </view>
+  </view>
+</view>

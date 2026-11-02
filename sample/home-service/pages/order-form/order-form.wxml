@@ -1,0 +1,89 @@
+<view class="wrap" wx:if="{{svc}}">
+  <view class="card addr" bindtap="goAddr">
+    <view class="row" wx:if="{{addr}}">
+      <view class="col flex1">
+        <view class="row">
+          <text class="tag" wx:if="{{addr.tag}}">{{addr.tag}}</text>
+          <text class="addr-tx">{{addrText}}</text>
+        </view>
+        <text class="sub">{{addr.name}} {{addr.phone}}</text>
+      </view>
+      <text class="muted">›</text>
+    </view>
+    <view class="between" wx:else>
+      <text class="green">+ 添加服务地址</text>
+      <text class="muted">›</text>
+    </view>
+    <text class="err" wx:if="{{errors.addr}}">{{errors.addr}}</text>
+  </view>
+
+  <view class="card">
+    <view class="row">
+      <image class="cv" src="{{svc.cover}}" mode="aspectFill"></image>
+      <view class="col flex1 cv-info">
+        <text class="sec-title">{{svc.name}}</text>
+        <text class="sub">服务人员：{{staffName}}</text>
+      </view>
+    </view>
+    <picker mode="selector" range="{{svc.specs}}" range-key="name" value="{{specIdx}}" bindchange="onSpec">
+      <view class="between f-row">
+        <text class="f-lb">规格</text>
+        <text>{{svc.specs[specIdx].name}} · ¥{{svc.specs[specIdx].price}} ›</text>
+      </view>
+    </picker>
+    <view class="between f-row">
+      <text class="f-lb">{{svc.type === 'hourly' ? '服务时长' : '数量'}}</text>
+      <stepper id="qty" value="{{qty}}" min="{{svc.minQty}}" max="{{svc.maxQty}}" unit="{{svc.type === 'hourly' ? '小时' : svc.unit}}" bind:change="onQty"></stepper>
+    </view>
+  </view>
+
+  <view class="card">
+    <picker mode="date" value="{{date}}" start="{{minDate}}" end="{{maxDate}}" bindchange="onDate">
+      <view class="between f-row">
+        <text class="f-lb">上门日期</text>
+        <text>{{date}} ›</text>
+      </view>
+    </picker>
+    <picker mode="selector" range="{{slots}}" value="{{slotIdx < 0 ? 4 : slotIdx}}" bindchange="onSlot">
+      <view class="between f-row">
+        <text class="f-lb">上门时段</text>
+        <text class="{{slotIdx < 0 ? 'muted' : ''}}">{{slotIdx < 0 ? '请选择（08:00~18:00）' : slots[slotIdx]}} ›</text>
+      </view>
+    </picker>
+    <text class="err" wx:if="{{errors.time}}">{{errors.time}}</text>
+    <view class="between f-row" bindtap="pickCoupon">
+      <text class="f-lb">优惠券</text>
+      <text class="{{coupon ? 'red' : 'muted'}}">{{coupon ? '-¥' + coupon.amount + '（' + coupon.name + '）' : (coupons.length ? coupons.length + ' 张可用' : '无可用')}} ›</text>
+    </view>
+  </view>
+
+  <view class="card">
+    <text class="sec-title">备注</text>
+    <textarea class="ta" auto-height maxlength="200" value="{{remark}}" placeholder="如：家里有猫请勿开窗；门禁密码 1203#；重点打扫厨房" bindinput="onRemark"></textarea>
+    <text class="cnt">{{remark.length}}/200</text>
+    <view class="between ph-hd">
+      <text class="sec-title">现场照片</text>
+      <text class="sub">选填，最多 4 张，方便师傅带对工具</text>
+    </view>
+    <view class="row ph-list">
+      <image class="ph" wx:for="{{photos}}" wx:key="*this" src="{{item}}" mode="aspectFill" data-i="{{index}}" bindtap="photoOp"></image>
+      <view class="ph ph-add" wx:if="{{photos.length < 4}}" bindtap="addPhoto">
+        <text class="ph-plus">+</text>
+        <text class="sub">拍照 / 相册</text>
+      </view>
+    </view>
+    <text class="sample green" wx:if="{{photos.length < 4}}" bindtap="useSample">没有照片？用示例图</text>
+  </view>
+  <view class="bar-gap"></view>
+</view>
+<view class="footer-bar" wx:if="{{svc}}">
+  <view class="col flex1">
+    <view class="row">
+      <text>合计 </text>
+      <text class="price big">¥{{pay}}</text>
+    </view>
+    <text class="sub" wx:if="{{coupon}}">原价 ¥{{amount}}，已优惠 ¥{{coupon.amount}}</text>
+    <text class="sub" wx:else>服务完成后再付款</text>
+  </view>
+  <view class="btn sb" bindtap="submit">提交订单</view>
+</view>

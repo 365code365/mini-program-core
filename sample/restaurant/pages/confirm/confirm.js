@@ -10,6 +10,8 @@ Page({
     items: [],
     dine: '堂食',
     remark: '',
+    // 点快捷标签 / 清空改了备注时 +1：输入框换个 id 重建（用户打过字的 textarea，setData 改 value 画面不跟）
+    remarkSeq: 0,
     remarkLen: 0,
     maxRemark: MAX_REMARK,
     tags: [],
@@ -56,10 +58,10 @@ Page({
     else parts.push(t);
     let v = parts.join('，');
     if (v.length > MAX_REMARK) { wx.showToast({ title: '备注最多 50 字', icon: 'none' }); return; }
-    this.setData({ remark: v, remarkLen: v.length });
+    this.setData({ remark: v, remarkLen: v.length, remarkSeq: this.data.remarkSeq + 1 });
     this.syncTags(v);
   },
-  clearRemark() { this.setData({ remark: '', remarkLen: 0 }); this.syncTags(''); },
+  clearRemark() { this.setData({ remark: '', remarkLen: 0, remarkSeq: this.data.remarkSeq + 1 }); this.syncTags(''); },
   wareMinus() { if (this.data.tableware > 0) this.setData({ tableware: this.data.tableware - 1 }); },
   warePlus() {
     if (this.data.tableware >= 10) { wx.showToast({ title: '最多 10 份餐具', icon: 'none' }); return; }

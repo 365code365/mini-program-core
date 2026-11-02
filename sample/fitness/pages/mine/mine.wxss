@@ -23,3 +23,15 @@
 .m { display: flex; flex-direction: row; align-items: center; height: 104rpx; border-bottom: 1rpx solid #f2f3f5; }
 .m:last-child { border-bottom: none; }
 .m-t { flex: 1; font-size: 28rpx; }
+.hd-m { min-width: 0; }
+.b-date { display: block; margin-top: 16rpx; }
+.bk-m { min-width: 0; }
+.bk-n { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bk-op { flex-shrink: 0; margin-left: 12rpx; padding: 8rpx 22rpx; border-radius: 24rpx; border: 2rpx solid #e5e6ea; font-size: 22rpx; color: #5c616b; white-space: nowrap; }
+.bk-op.pri { border: none; background: linear-gradient(90deg, #ff7a3d, #ff3d6e); color: #ffffff; }
+.strike { display: block; margin-top: 16rpx; font-size: 22rpx; color: #d9731a; }
+/* 昵称变长后这一行会挤：会员标签不折行，后面的 ID 与目标单行省略 */
+.lv { flex-shrink: 0; white-space: nowrap; }
+.hd-sub { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.edit { flex-shrink: 0; margin-left: 12rpx; white-space: nowrap; }

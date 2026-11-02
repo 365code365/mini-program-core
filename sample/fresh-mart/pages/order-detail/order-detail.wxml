@@ -1,0 +1,125 @@
+<view wx:if="{{order}}">
+  <view class="head">
+    <text class="h-status">{{st.status}}</text>
+    <text class="h-tip">{{st.tip}}</text>
+    <view wx:if="{{st.steps.length}}" class="h-steps row">
+      <view wx:for="{{st.steps}}" wx:key="name" class="h-step {{item.done ? 'h-step-on' : ''}}">
+        <view class="h-bar"></view>
+        <text>{{item.name}}</text>
+      </view>
+    </view>
+    <view class="row h-ops">
+      <view wx:if="{{st.canPay}}" class="h-op h-op-main h-pay" bindtap="onPay">去支付 ¥{{order.pay}}</view>
+      <view wx:if="{{st.canConfirm}}" class="h-op h-op-main h-confirm" bindtap="onConfirm">确认收货</view>
+      <view wx:if="{{st.canCancel}}" class="h-op h-cancel" bindtap="onCancel">取消订单</view>
+      <view wx:if="{{st.canAfter}}" class="h-op h-after" bindtap="onAfter">申请售后</view>
+      <view wx:if="{{st.stage === 2}}" class="h-op h-rider" bindtap="onCallRider">联系骑手</view>
+      <view wx:if="{{!st.canPay}}" class="h-op h-again" bindtap="onAgain">再来一单</view>
+      <view class="h-op h-service" bindtap="onService">联系客服</view>
+    </view>
+  </view>
+
+  <view wx:if="{{st.stage === 3}}" class="card rate">
+    <block wx:if="{{rating}}">
+      <view class="row between">
+        <text class="title">我的评价</text>
+        <text class="sub">{{rating.time}}</text>
+      </view>
+      <view class="row stars">
+        <text wx:for="{{starList}}" wx:key="*this" class="star {{item <= rating.stars ? 'star-on' : ''}}">★</text>
+      </view>
+      <view wx:if="{{rating.tags.length}}" class="row tags">
+        <text wx:for="{{rating.tags}}" wx:key="*this" class="r-tag r-tag-on">{{item}}</text>
+      </view>
+      <text wx:if="{{rating.text}}" class="rate-text">{{rating.text}}</text>
+    </block>
+    <block wx:else>
+      <text class="title">评价本单</text>
+      <view class="row stars">
+        <text wx:for="{{starList}}" wx:key="*this" class="star {{item <= stars ? 'star-on' : ''}}" data-n="{{item}}" bindtap="onStar">★</text>
+        <text class="star-text">{{starText}}</text>
+      </view>
+      <view class="row tags">
+        <text wx:for="{{rateTags}}" wx:key="name" class="r-tag {{item.on ? 'r-tag-on' : ''}}" data-i="{{index}}" bindtap="onRateTag">{{item.name}}</text>
+      </view>
+      <textarea class="rate-input" placeholder="说说商品新鲜度、配送体验吧（选填）" placeholder-class="ph" maxlength="100" value="{{rateText}}" bindinput="onRateText"></textarea>
+      <view class="btn rate-btn" bindtap="onSubmitRate">提交评价 · 得 20 鲜豆</view>
+    </block>
+  </view>
+
+  <view class="card">
+    <view class="row d-row">
+      <view class="d-dot"></view>
+      <view class="flex1">
+        <text class="d-addr">{{order.addr.text}}</text>
+        <text class="sub">{{order.addr.name}} {{order.addr.phone}}</text>
+      </view>
+    </view>
+    <view class="row between d-line">
+      <text class="sub">送达时间</text>
+      <text>{{order.slotStart ? order.slotLabel : (st.eta || '立即送达')}}</text>
+    </view>
+    <view wx:if="{{st.stage === 2}}" class="row between d-line">
+      <text class="sub">配送骑手</text>
+      <view class="row"><text>{{rider.name}}</text><text class="d-call" bindtap="onCallRider">打电话</text></view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="row between">
+      <text class="title">鲜到家 · 望京前置仓</text>
+      <text class="sub">共 {{order.count}} 件</text>
+    </view>
+    <view class="item row" wx:for="{{items}}" wx:key="key" data-id="{{item.id}}" bindtap="onGoods">
+      <image class="item-img" src="{{item.img}}" mode="aspectFill"></image>
+      <view class="flex1">
+        <text class="item-name ellipsis">{{item.name}}</text>
+        <view class="row">
+          <text class="sub">{{item.spec}} ×{{item.qty}}</text>
+          <text wx:if="{{item.refunded}}" class="refunded">已退款</text>
+        </view>
+      </view>
+      <text class="item-total">¥{{item.total}}</text>
+    </view>
+    <view class="lines">
+      <view class="line row between" wx:for="{{lines}}" wx:key="name">
+        <text class="sub">{{item.name}}</text>
+        <text class="{{item.cut ? 'cut' : ''}}">{{item.value}}</text>
+      </view>
+      <view class="line row between paid">
+        <text>{{order.paidAt ? '实付' : '应付'}}</text>
+        <text class="paid-num">¥{{order.pay}}</text>
+      </view>
+      <view wx:if="{{order.refund}}" class="line row between">
+        <text class="sub">已退款</text>
+        <text class="cut">¥{{order.refund}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{afterSales.length}}" class="card">
+    <text class="title">售后记录</text>
+    <view class="as" wx:for="{{afterSales}}" wx:key="id">
+      <view class="row between">
+        <text class="as-reason">{{item.reason}}</text>
+        <text class="as-amt">退款 ¥{{item.amount}}</text>
+      </view>
+      <text class="as-names">{{item.names}}</text>
+      <text class="sub">{{item.time}} · 已原路退回{{item.to}}</text>
+    </view>
+  </view>
+
+  <view class="card info">
+    <view class="info-row row between">
+      <text class="sub">订单号</text>
+      <view class="row"><text>{{order.id}}</text><text class="copy" bindtap="onCopy">复制</text></view>
+    </view>
+    <view class="info-row row between"><text class="sub">下单时间</text><text>{{time}}</text></view>
+    <view class="info-row row between"><text class="sub">支付方式</text><text>{{payName}}</text></view>
+    <view class="info-row row between"><text class="sub">备注</text><text class="ellipsis remark">{{order.remark || '无'}}</text></view>
+  </view>
+  <view class="gap"></view>
+</view>
+<view wx:else class="none">
+  <text class="sub">订单不存在或已被清理</text>
+</view>

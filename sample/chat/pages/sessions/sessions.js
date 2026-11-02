@@ -1,7 +1,7 @@
 const store = require('../../utils/store.js');
 Page({
   data: { list: [], kw: '', total: 0, empty: false },
-  onShow() { this.load(); },
+  onShow() { if (typeof this.getTabBar === 'function' && this.getTabBar()) this.getTabBar().setData({ selected: 0 }); this.load(); },
   load() {
     const now = Date.now();
     const kw = this.data.kw.trim();

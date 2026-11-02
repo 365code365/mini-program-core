@@ -1,0 +1,16 @@
+.top { display: flex; flex-direction: column; align-items: center; padding: 64rpx 48rpx 16rpx; }
+.medal { width: 150rpx; height: 150rpx; border-radius: 75rpx; background: linear-gradient(135deg, #ffcf8a, #f59a5b); display: flex; align-items: center; justify-content: center; }
+.medal-t { font-size: 72rpx; color: #ffffff; font-weight: 700; }
+.d-title { font-size: 40rpx; font-weight: 600; margin-top: 28rpx; }
+.d-sub { font-size: 26rpx; color: #8b8aa3; margin-top: 10rpx; text-align: center; }
+.stats { justify-content: space-around; }
+.st { display: flex; flex-direction: column; align-items: center; }
+.st-n { font-size: 40rpx; font-weight: 700; color: #6c63d9; margin-bottom: 6rpx; }
+.dark .st-n { color: #b4aefc; }
+.cont-k { display: block; font-size: 22rpx; color: #3faa83; }
+.n-t { display: block; font-size: 28rpx; margin-top: 4rpx; }
+.go { font-size: 26rpx; color: #6c63d9; }
+.q { display: block; font-size: 28rpx; margin-bottom: 20rpx; }
+.feel { flex-wrap: wrap; }
+.ops { margin: 48rpx 32rpx 0; }
+.back { margin-top: 24rpx; }

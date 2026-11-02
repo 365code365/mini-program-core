@@ -1,0 +1,85 @@
+<view class="page tab-page {{theme}}">
+  <view class="card">
+    <view class="row between">
+      <text class="title">近 7 天睡眠</text>
+      <text class="sub">目标 8 小时</text>
+    </view>
+    <view class="row sum">
+      <view class="sum-i"><text class="sum-n">{{avgText}}</text><text class="sub">平均时长</text></view>
+      <view class="sum-i"><text class="sum-n">{{avgBed}}</text><text class="sub">平均入睡</text></view>
+      <view class="sum-i"><text class="sum-n">{{goodDays}}</text><text class="sub">达标天数</text></view>
+    </view>
+    <canvas canvas-id="sleepChart" class="chart" style="width: 311px; height: 180px;"></canvas>
+  </view>
+
+  <view wx:if="{{remindDue}}" class="card due row">
+    <text class="due-t">已过 {{settings.remindTime}}，放下手机，准备睡觉吧</text>
+  </view>
+
+  <view class="card">
+    <text class="title">记录{{formDayText}}</text>
+    <view class="row field">
+      <text class="f-l">入睡时间</text>
+      <picker mode="time" value="{{bed}}" bindchange="onBed"><view class="f-v"><text>{{bed}}</text></view></picker>
+    </view>
+    <view class="row field">
+      <text class="f-l">起床时间</text>
+      <picker mode="time" value="{{wake}}" bindchange="onWake"><view class="f-v"><text>{{wake}}</text></view></picker>
+    </view>
+    <view class="row field">
+      <text class="f-l">睡眠质量</text>
+      <view class="row">
+        <view wx:for="{{qualityOpts}}" wx:key="*this" class="qd {{quality >= item ? 'qd-on' : ''}}" data-q="{{item}}" bindtap="onQuality"></view>
+      </view>
+    </view>
+    <view class="row between">
+      <text class="sub">时长 {{previewHours}} 小时</text>
+      <text class="err">{{err}}</text>
+    </view>
+    <view class="btn save" hover-class="btn-hover" bindtap="save"><text>{{hasToday ? '更新今天的记录' : '保存记录'}}</text></view>
+  </view>
+
+  <view class="card">
+    <view class="row between">
+      <text class="title">睡前电台</text>
+      <text class="sub">切到其他页面也会继续播</text>
+    </view>
+    <view wx:for="{{radio}}" wx:key="title" class="radio row" data-i="{{index}}" bindtap="onRadio" hover-class="btn-hover">
+      <image class="r-img" src="{{item.cover}}" mode="aspectFill"></image>
+      <view class="flex1">
+        <text class="r-t {{radioIdx === index ? 'r-on' : ''}}">{{item.title}}</text>
+        <text class="sub">{{radioIdx === index ? (radioPlaying ? '正在播放 ' + radioTime : '已暂停') : item.singer}}</text>
+      </view>
+      <view class="r-btn {{radioIdx === index && radioPlaying ? 'r-btn-on' : ''}}">
+        <text>{{radioIdx === index && radioPlaying ? '暂停' : '播放'}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="row between">
+      <text class="title">睡前提醒</text>
+      <switch checked="{{settings.remind}}" color="#6c63d9" bindchange="onRemind"></switch>
+    </view>
+    <view class="row field" wx:if="{{settings.remind}}">
+      <text class="f-l">提醒时间</text>
+      <picker mode="time" value="{{settings.remindTime}}" start="20:00" end="23:59" bindchange="onRemindTime">
+        <view class="f-v"><text>每晚 {{settings.remindTime}}</text></view>
+      </picker>
+    </view>
+  </view>
+
+  <view class="sec-head"><text class="sec-title">睡眠记录</text><text class="more">{{list.length}} 条</text></view>
+  <view wx:if="{{list.length === 0}}" class="empty">
+    <view class="empty-ic"></view>
+    <text class="empty-tx">还没有睡眠记录</text>
+  </view>
+  <view class="card rec row" wx:for="{{list}}" wx:key="date">
+    <view class="flex1">
+      <text class="rec-d">{{item.date}}{{item.seed ? ' · 手环导入' : ''}}</text>
+      <text class="sub">{{item.bed}} 入睡 → {{item.wake}} 起床 · 质量 {{item.quality}}/5</text>
+    </view>
+    <text class="rec-h {{item.hours >= 7 ? 'ok' : ''}}">{{item.hours}}h</text>
+    <text class="del" data-date="{{item.date}}" bindtap="remove">删除</text>
+  </view>
+</view>

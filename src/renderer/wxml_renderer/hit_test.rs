@@ -177,6 +177,10 @@ impl WxmlRenderer {
         }
         let id = node.attrs.get("id").cloned().unwrap_or_default();
         let is_fixed = self.registering_fixed;
+        let (fixed_layer, fixed_parent) = match (is_fixed, self.fixed_layer_now) {
+            (true, Some((layer, parent))) => (Some(layer), parent),
+            _ => (None, None),
+        };
         for e in &node.events {
             self.event_bindings.push(EventBinding {
                 event_type: e.event_type.clone(),
@@ -191,7 +195,35 @@ impl WxmlRenderer {
                 mut_bind: e.mut_bind,
                 owner: e.owner.clone(),
                 is_fixed,
+                fixed_layer,
+                fixed_parent,
             });
+        }
+    }
+
+    /// 覆盖层在 `p` 处**最上面的那一层**及其外层（DOM 祖先那一层）。不在任何遮挡区里是 None。
+    ///
+    /// 外层号从这一层登记过的任意一条绑定上取（同一层的绑定外层都一样）：这一层一条绑定都没有时
+    /// 取不到，外层的处理函数收不到落在这一层空白处的点击 —— 只影响「fixed 根里套 fixed 子节点、
+    /// 子节点自己什么都没绑」的写法，微信里那样点子节点的空白处会冒泡到外层（多半是关弹窗）。
+    fn fixed_top_layer(&self, p: &crate::Point) -> Option<(u32, Option<u32>)> {
+        let top = self.fixed_hit_regions.iter().rposition(|r| r.contains(p))? as u32;
+        let parent = self
+            .event_bindings
+            .iter()
+            .find(|b| b.fixed_layer == Some(top))
+            .and_then(|b| b.fixed_parent);
+        Some((top, parent))
+    }
+
+    /// 这条绑定在这一点上收不收得到事件：覆盖层的绑定只认最上面那一层与它的外层。
+    ///
+    /// 兄弟关系的遮罩（`.mask` 与 `.sheet` 并列）在下面一层，点面板时它不在冒泡链上 —— 与微信一致：
+    /// 冒泡只沿 DOM 祖先走，遮罩不是面板的祖先。面积排序只在同一层里决定由内到外
+    fn fixed_reachable(b: &EventBinding, top: Option<(u32, Option<u32>)>) -> bool {
+        match (b.fixed_layer, top) {
+            (Some(layer), Some((t, parent))) if b.is_fixed => layer == t || Some(layer) == parent,
+            _ => true,
         }
     }
 
@@ -261,8 +293,9 @@ impl WxmlRenderer {
     /// 只返回与 `event_type` 匹配的绑定（点击对应 "tap"）。
     pub fn hit_test_bubble(&self, x: f32, y: f32, event_type: &str) -> Vec<EventBinding> {
         let p = crate::Point::new(x, y);
+        let top = self.fixed_top_layer(&p);
         let mut matched: Vec<EventBinding> = self.event_bindings.iter()
-            .filter(|b| b.event_type == event_type && b.bounds.contains(&p))
+            .filter(|b| b.event_type == event_type && b.bounds.contains(&p) && Self::fixed_reachable(b, top))
             .cloned()
             .collect();
         Self::bubble_chain(&mut matched)
@@ -277,8 +310,11 @@ impl WxmlRenderer {
         fixed: bool,
     ) -> Vec<EventBinding> {
         let p = crate::Point::new(x, y);
+        let top = self.fixed_top_layer(&p);
         let mut matched: Vec<EventBinding> = self.event_bindings.iter()
-            .filter(|b| b.is_fixed == fixed && b.event_type == event_type && b.bounds.contains(&p))
+            .filter(|b| {
+                b.is_fixed == fixed && b.event_type == event_type && b.bounds.contains(&p) && Self::fixed_reachable(b, top)
+            })
             .cloned()
             .collect();
         Self::bubble_chain(&mut matched)
@@ -301,6 +337,7 @@ impl WxmlRenderer {
         scope: Option<bool>,
     ) -> Vec<EventBinding> {
         let p = crate::Point::new(x, y);
+        let top = self.fixed_top_layer(&p);
         let mut matched: Vec<EventBinding> = self
             .event_bindings
             .iter()
@@ -308,6 +345,7 @@ impl WxmlRenderer {
                 scope.map(|s| b.is_fixed == s).unwrap_or(true)
                     && b.event_type == event_type
                     && b.bounds.contains(&p)
+                    && Self::fixed_reachable(b, top)
             })
             .cloned()
             .collect();
@@ -353,9 +391,10 @@ impl WxmlRenderer {
     /// 完全没有任何绑定的节点这里找不到（渲染层只留了绑定表），返回 None。
     pub fn innermost_binding_at(&self, x: f32, y: f32, scope: Option<bool>) -> Option<EventBinding> {
         let p = crate::Point::new(x, y);
+        let top = self.fixed_top_layer(&p);
         self.event_bindings
             .iter()
-            .filter(|b| scope.map(|s| b.is_fixed == s).unwrap_or(true) && b.bounds.contains(&p))
+            .filter(|b| scope.map(|s| b.is_fixed == s).unwrap_or(true) && b.bounds.contains(&p) && Self::fixed_reachable(b, top))
             .min_by(|a, b| {
                 let area_a = a.bounds.width * a.bounds.height;
                 let area_b = b.bounds.width * b.bounds.height;
@@ -369,9 +408,11 @@ impl WxmlRenderer {
     /// 手势层要用它：遮罩上的 `catchtouchmove` 就是「不许滚动下层页面」的标准写法。
     pub fn has_catch_for(&self, x: f32, y: f32, event_type: &str) -> bool {
         let p = crate::Point::new(x, y);
+        // 兄弟遮罩上的 `catchtouchmove` 管不到压在它上面的面板（面板里的 scroll-view 照样能滑）
+        let top = self.fixed_top_layer(&p);
         self.event_bindings
             .iter()
-            .any(|b| b.is_catch && b.event_type == event_type && b.bounds.contains(&p))
+            .any(|b| b.is_catch && b.event_type == event_type && b.bounds.contains(&p) && Self::fixed_reachable(b, top))
     }
 
     pub(super) fn bubble_chain(matched: &mut Vec<EventBinding>) -> Vec<EventBinding> {

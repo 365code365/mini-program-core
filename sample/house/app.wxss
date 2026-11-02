@@ -123,3 +123,126 @@ page {
 }
 /* 引擎给 input 默认 12px/8px 内边距（微信是 0），而且把 padding 全 0 当成「没写」照样套默认值，
    所以各页输入框 class 里写的是 padding: 0 0 0 1rpx（左边 0.5px，看不出来） */
+/* 通用：分段切换、表单行、小按钮、空态（预约记录 / 订阅 / 委托 / 计算器共用） */
+.seg {
+  margin: 24rpx;
+  background: #ebecef;
+  border-radius: 16rpx;
+  padding: 6rpx;
+}
+.seg-item {
+  flex: 1;
+  height: 64rpx;
+  line-height: 64rpx;
+  text-align: center;
+  border-radius: 12rpx;
+  font-size: 26rpx;
+  color: #6b7280;
+  white-space: nowrap;
+}
+.seg-item.on {
+  background: #ffffff;
+  color: #ff5a1f;
+  font-weight: bold;
+}
+.cells {
+  padding: 0 28rpx;
+}
+.cell {
+  min-height: 104rpx;
+  border-bottom: 1rpx solid #f0f1f4;
+}
+.cell.last {
+  border-bottom: none;
+}
+.label {
+  width: 170rpx;
+  font-size: 28rpx;
+  color: #4a505c;
+  flex-shrink: 0;
+}
+.field {
+  padding: 0 0 0 1rpx;
+  font-size: 28rpx;
+  color: #1f2329;
+}
+.ph {
+  color: #b4b9c2;
+}
+.unit {
+  font-size: 26rpx;
+  color: #8a919f;
+  margin-left: 12rpx;
+}
+.op {
+  font-size: 24rpx;
+  color: #4a505c;
+  padding: 8rpx 22rpx;
+  border-radius: 28rpx;
+  background: #f3f4f6;
+  margin-left: 14rpx;
+  white-space: nowrap;
+}
+.op.main {
+  color: #ffffff;
+  background: #ff6a1f;
+}
+.op.line {
+  color: #ff5a1f;
+  background: #fff1e8;
+}
+.empty-box {
+  padding: 80rpx 0 60rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.empty-btn {
+  margin-top: 28rpx;
+  width: 240rpx;
+  height: 72rpx;
+  line-height: 72rpx;
+  text-align: center;
+  border-radius: 36rpx;
+  border: 2rpx solid #ff6a1f;
+  color: #ff5a1f;
+  font-size: 26rpx;
+}
+.badge {
+  font-size: 22rpx;
+  color: #ff5a1f;
+  background: #fff1e8;
+  padding: 2rpx 12rpx;
+  border-radius: 6rpx;
+  white-space: nowrap;
+}
+.badge.done {
+  color: #19a974;
+  background: #e7f7f0;
+}
+.badge.gray {
+  color: #8a919f;
+  background: #f0f1f4;
+}
+.safe {
+  height: calc(40rpx + env(safe-area-inset-bottom));
+}
+.foot-gap {
+  height: calc(150rpx + env(safe-area-inset-bottom));
+}
+.foot {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #ffffff;
+  padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom));
+  box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.05);
+}
+.more-link {
+  font-size: 24rpx;
+  color: #8a919f;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}

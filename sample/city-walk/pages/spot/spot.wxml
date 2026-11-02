@@ -1,0 +1,31 @@
+<image class="hero" src="{{spot.cover}}" mode="aspectFill"></image>
+<view class="card">
+  <view class="row between">
+    <text class="title">{{spot.name}}</text>
+    <view class="fav {{fav ? 'fav-on' : ''}}" bindtap="toggleFav">{{fav ? '已收藏' : '收藏'}}</view>
+  </view>
+  <text class="intro">{{spot.intro}}</text>
+  <view class="kv"><text class="k">门票</text><text class="v">{{spot.price}}</text></view>
+  <view class="kv"><text class="k">开放时间</text><text class="v">{{spot.hours}}</text></view>
+  <view class="kv"><text class="k">建议游玩</text><text class="v">{{spot.duration}}</text></view>
+  <view class="kv"><text class="k">地址</text><text class="v">{{spot.address}}</text></view>
+</view>
+<view class="card">
+  <text class="h">位置</text>
+  <map id="spotMap" class="mini-map" latitude="{{spot.lat}}" longitude="{{spot.lng}}" scale="16" markers="{{markers}}"
+    circles="{{circles}}" enable-scroll="{{false}}" enable-zoom="{{false}}" bindtap="openLocation"></map>
+  <text class="sub">点地图用手机里的地图 App 导航过去</text>
+</view>
+<view class="card" wx:if="{{tips.length}}">
+  <text class="h">游玩提示</text>
+  <view class="tip" wx:for="{{tips}}" wx:key="*this"><text>· {{item}}</text></view>
+</view>
+<view class="card" wx:if="{{guideNote}}">
+  <text class="h">来自攻略页</text>
+  <text class="sub">{{guideNote}}</text>
+</view>
+<view class="actions">
+  <view class="btn-ghost act" bindtap="openGuide">看攻略</view>
+  <view class="btn-ghost act" wx:if="{{spot.live}}" bindtap="openLive">看实况</view>
+  <view class="btn act" bindtap="addRoute">{{inRoute ? '已在路线里' : '加入路线'}}</view>
+</view>

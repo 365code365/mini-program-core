@@ -1,0 +1,21 @@
+.area { font-size: 48rpx; font-weight: bold; color: #3a7d6c; margin-right: 6rpx; }
+.grades { display: flex; flex-direction: row; margin-top: 20rpx; }
+.grade { flex: 1; margin-right: 14rpx; border: 2rpx solid #ece8e2; border-radius: 16rpx; padding: 18rpx 14rpx; display: flex; flex-direction: column; }
+.grade:last-child { margin-right: 0; }
+.grade-on { border-color: #3a7d6c; background: #f1f7f5; }
+.g-n { font-size: 28rpx; font-weight: bold; margin-left: 6rpx; }
+.g-d { font-size: 20rpx; color: #8a847c; margin-top: 8rpx; line-height: 1.5; }
+.opt { display: flex; flex-direction: row; align-items: center; padding: 20rpx 0; border-bottom: 1rpx solid #f1ede7; }
+.o-n { font-size: 28rpx; margin-bottom: 4rpx; }
+.res { display: flex; flex-direction: row; align-items: center; margin: 20rpx 0; }
+.pie { width: 300rpx; height: 300rpx; margin-right: 24rpx; }
+.lg { display: flex; flex-direction: row; align-items: center; margin-bottom: 10rpx; }
+.lg-dot { width: 16rpx; height: 16rpx; border-radius: 4rpx; margin-right: 10rpx; }
+.lg-n { font-size: 24rpx; color: #5a544c; }
+.lg-v { font-size: 24rpx; color: #2a2723; }
+.bar-row { display: flex; flex-direction: row; align-items: center; margin-top: 14rpx; }
+.br-n { width: 140rpx; font-size: 24rpx; color: #5a544c; }
+.br-p { width: 90rpx; text-align: right; font-size: 22rpx; color: #8a847c; }
+.note { display: block; margin-top: 20rpx; line-height: 1.5; }
+.acts { margin-bottom: 8rpx; }
+.save { width: 240rpx; margin-right: 20rpx; height: 88rpx; }

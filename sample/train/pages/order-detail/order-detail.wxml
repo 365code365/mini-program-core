@@ -1,0 +1,80 @@
+<view wx:if="{{order}}">
+  <view class="head">
+    <text class="h-state">{{st.text}}</text>
+    <text class="h-tip">{{tip}}</text>
+    <view class="row h-trip">
+      <view class="hcol">
+        <text class="htime">{{order.depText}}</text>
+        <text class="hcity">{{order.from}}</text>
+      </view>
+      <view class="flex1 hmid">
+        <text class="hno">{{order.no}}</text>
+        <view class="hline"></view>
+        <text class="hdur">{{order.dateText}}</text>
+      </view>
+      <view class="hcol hcol-r">
+        <text class="htime">{{order.arrText}}</text>
+        <text class="hcity">{{order.to}}</text>
+      </view>
+    </view>
+  </view>
+  <view class="card wait-card" wx:if="{{waiting}}">
+    <text class="sec">候补兑现中</text>
+    <text class="wait-line">已预付 ¥{{order.total}}，约 {{waitLeft}} 秒后再查一次余票；兑现后这里会显示车厢座位。</text>
+  </view>
+  <view class="card">
+    <view class="row">
+      <text class="sec flex1">车票（{{order.count}} 张 · {{order.seat}}）</text>
+      <text class="sub" wx:if="{{order.status === 'paid'}}">{{gate}}</text>
+    </view>
+    <view class="ticket row" wx:for="{{tickets}}" wx:key="name">
+      <view class="flex1 t-main">
+        <text class="t-name">{{item.name}}<text class="tag t-type" wx:if="{{item.type !== '成人票'}}"> {{item.type}} </text></text>
+        <text class="sub">票价 ¥{{item.price}}</text>
+      </view>
+      <text class="t-seat {{order.status === 'paid' ? '' : 't-off'}}">{{order.status === 'cancelled' ? '已退票' : item.text}}</text>
+    </view>
+    <text class="sub prefer" wx:if="{{order.seatsText}}">选座偏好：{{order.seatsText}}</text>
+  </view>
+  <view class="card">
+    <text class="sec">费用明细</text>
+    <view class="line row" wx:for="{{lines}}" wx:key="name">
+      <text class="flex1 line-name">{{item.name}}</text>
+      <text class="{{item.cut ? 'cut' : ''}}">{{item.value}}</text>
+    </view>
+    <text class="sub quote" wx:if="{{quote && !waiting}}">现在退票：{{quote.rule}}，手续费 ¥{{quote.fee}}</text>
+  </view>
+  <view class="card info">
+    <view class="info-row row">
+      <text class="sub flex1">订单号</text>
+      <text>{{order.id}}</text>
+      <text class="copy" bindtap="onCopy">复制</text>
+    </view>
+    <view class="info-row row"><text class="sub flex1">下单时间</text><text>{{created}}</text></view>
+    <view class="info-row row"><text class="sub flex1">支付方式</text><text>微信支付</text></view>
+    <view class="info-row row" wx:if="{{order.changed}}"><text class="sub flex1">改签记录</text><text>原 {{order.changed.no}} {{order.changed.depText}} 开</text></view>
+    <view class="info-row row stops-row" bindtap="onStops">
+      <text class="sub flex1">经停站与时刻</text>
+      <text class="link">查看</text>
+    </view>
+    <view class="info-row row rule-row" bindtap="onRule">
+      <text class="sub flex1">退改签规则</text>
+      <text class="link">查看</text>
+    </view>
+    <view class="info-row row" bindtap="onService">
+      <text class="sub flex1">客服电话</text>
+      <text class="link">12306</text>
+    </view>
+  </view>
+  <view class="bottom-space"></view>
+  <view class="footer row">
+    <view class="f-btn again-btn" wx:if="{{st.done}}" data-back="0" bindtap="onAgain"><text>再次购买</text></view>
+    <view class="f-btn back-btn" data-back="1" bindtap="onAgain"><text>买返程</text></view>
+    <view class="f-btn change-btn" wx:if="{{canChange}}" bindtap="onChange"><text>改签</text></view>
+    <view class="f-btn f-main refund-btn" wx:if="{{!st.done}}" bindtap="onRefund"><text>{{waiting ? '取消候补' : '退票'}}</text></view>
+  </view>
+</view>
+<view wx:else class="none">
+  <text class="none-t">订单不存在或已被清理</text>
+  <view class="btn none-btn" bindtap="onGoOrders"><text class="btn-text">查看全部订单</text></view>
+</view>

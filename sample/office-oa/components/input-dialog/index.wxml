@@ -1,0 +1,10 @@
+<view class="dm" wx:if="{{show}}" catchtap="cancel"></view>
+<view class="dlg" wx:if="{{show}}" catchtap="noop">
+  <text class="dt">{{title}}</text>
+  <textarea class="di" value="{{value}}" placeholder="{{placeholder}}" maxlength="100" show-confirm-bar="{{false}}" bindinput="onInput"></textarea>
+  <text class="de" wx:if="{{err}}">{{err}}</text>
+  <view class="db">
+    <view class="dbtn" bindtap="cancel">取消</view>
+    <view class="dbtn dok" bindtap="confirm">{{confirmText}}</view>
+  </view>
+</view>

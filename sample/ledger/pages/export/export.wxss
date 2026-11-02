@@ -1,0 +1,17 @@
+.seg-wrap { display: flex; flex-direction: row; justify-content: center; }
+.seg { margin: 24rpx 0 0; width: 480rpx; height: 68rpx; border-radius: 34rpx; background: #ebecf0; display: flex; flex-direction: row; padding: 6rpx; box-sizing: border-box; }
+.seg-item { flex: 1; height: 56rpx; line-height: 56rpx; text-align: center; border-radius: 28rpx; font-size: 28rpx; color: #5c6066; white-space: nowrap; }
+.seg-on { background: #ffffff; color: #f57c34; font-weight: bold; }
+.sums { margin-top: 8rpx; display: flex; flex-direction: row; flex-wrap: wrap; }
+.sum-cell { width: 50%; margin-top: 20rpx; }
+.sum-v { font-size: 34rpx; font-weight: bold; margin-top: 6rpx; white-space: nowrap; }
+.csv { margin-top: 20rpx; background: #f8f9fb; border-radius: 16rpx; padding: 20rpx 24rpx; }
+.csv-line { font-size: 22rpx; color: #5c6066; line-height: 40rpx; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: Menlo, monospace; }
+.csv-head { color: #1f2329; font-weight: bold; }
+.csv-rest { margin-top: 8rpx; }
+.empty { text-align: center; padding: 48rpx 0 20rpx; }
+.btns { margin: 40rpx 24rpx 0; }
+.btn-ghost { margin-top: 24rpx; height: 88rpx; line-height: 88rpx; text-align: center; border-radius: 44rpx; font-size: 30rpx; font-weight: bold; color: #f57c34; background: #ffffff; border: 2rpx solid #ffd2b0; box-sizing: border-box; }
+.btn-hover { opacity: 0.8; }
+.foot { text-align: center; margin-top: 28rpx; }
+.bottom-space { height: 60rpx; }

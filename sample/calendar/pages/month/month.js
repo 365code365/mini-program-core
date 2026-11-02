@@ -1,5 +1,6 @@
 const D = require('../../utils/date.js')
 const S = require('../../utils/store.js')
+const R = require('../../utils/remind.js')
 
 Page({
   data: {
@@ -12,7 +13,8 @@ Page({
     selDate: '',
     selLabel: '',
     selEvents: [],
-    monthCount: 0
+    monthCount: 0,
+    remindCount: 0
   },
   onLoad(query) {
     // ?today=2026-03-15：把「今天」钉死（测试 / 演示用）
@@ -48,8 +50,22 @@ Page({
       cells,
       monthCount,
       selLabel: D.longLabel(selDate) + (selDate === today ? ' · 今天' : ''),
-      selEvents: S.eventsOn(events, selDate)
+      selEvents: S.eventsOn(events, selDate),
+      remindCount: this.dueReminds(events)
     })
+  },
+  // 今天已到点、还没点「知道了」的提醒条数（与提醒页同一套推算）
+  dueReminds(events) {
+    const today = this.data.today
+    const ack = wx.getStorageSync('cal_ack') || {}
+    const now = R.nowAbs()
+    let n = 0
+    events.forEach(ev => {
+      if (!S.occursOn(ev, today) || ack[ev.id + '@' + today]) return
+      const at = R.remindAt(ev, today)
+      if (at && at.abs <= now) n++
+    })
+    return n
   },
   goMonth(n) {
     const m = D.addMonths(this.data.year, this.data.month, n)
@@ -95,6 +111,12 @@ Page({
   },
   onList() {
     wx.navigateTo({ url: '/pages/list/list' })
+  },
+  onSearch() {
+    wx.navigateTo({ url: '/pages/search/search' })
+  },
+  onRemind() {
+    wx.navigateTo({ url: '/pages/remind/remind' })
   },
   onSettings() {
     wx.navigateTo({ url: '/pages/settings/settings' })

@@ -1,0 +1,35 @@
+.job-card { background: #fff; margin: 20rpx 24rpx; padding: 24rpx 28rpx; border-radius: 20rpx; }
+.jc-main { margin-right: 16rpx; overflow: hidden; }
+.jc-title { font-size: 30rpx; font-weight: bold; margin-bottom: 6rpx; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jc-right { align-items: flex-end; }
+.jc-right .state { margin-top: 8rpx; }
+.msgs { padding: 0 24rpx; }
+.m-wrap { display: flex; flex-direction: column; }
+.m-time { align-self: center; font-size: 22rpx; color: #9aa0a6; margin: 16rpx 0 8rpx; }
+.sys { align-self: center; background: #e9ecf2; border-radius: 12rpx; padding: 8rpx 20rpx; margin: 12rpx 40rpx; }
+.sys-t { font-size: 22rpx; color: #6b717a; }
+.m-row { align-items: flex-start; margin: 12rpx 0; }
+.m-row.me { justify-content: flex-end; }
+.m-av { width: 72rpx; height: 72rpx; border-radius: 36rpx; font-size: 28rpx; margin-right: 16rpx; flex-shrink: 0; }
+.bubble { max-width: 500rpx; background: #fff; border-radius: 8rpx 24rpx 24rpx 24rpx; padding: 18rpx 24rpx; }
+.bubble.mine { background: #2E6BFF; border-radius: 24rpx 8rpx 24rpx 24rpx; }
+.bubble.resume { background: #e6eeff; }
+.b-t { font-size: 28rpx; color: #1f2329; line-height: 42rpx; }
+.bubble.mine .b-t { color: #fff; }
+.bubble.resume .b-t { color: #2E6BFF; font-weight: bold; }
+.b-call { margin-top: 12rpx; border-top: 1rpx solid #eef0f3; padding-top: 12rpx; }
+.b-call-t { font-size: 26rpx; color: #2E6BFF; font-weight: bold; }
+.invite { width: 480rpx; background: #fff; border-radius: 8rpx 24rpx 24rpx 24rpx; padding: 22rpx 24rpx; }
+.iv-title { font-size: 28rpx; font-weight: bold; color: #1f2329; }
+.iv-line { display: block; font-size: 24rpx; color: #5c6370; margin-top: 8rpx; }
+.iv-go { margin-top: 14rpx; padding-top: 14rpx; border-top: 1rpx solid #eef0f3; justify-content: center; }
+.iv-go-t { font-size: 26rpx; color: #2E6BFF; font-weight: bold; }
+.bottom-space { height: calc(220rpx + env(safe-area-inset-bottom)); }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; padding: 14rpx 24rpx calc(16rpx + env(safe-area-inset-bottom)); box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.04); }
+.acts { margin-bottom: 14rpx; }
+.act { padding: 8rpx 22rpx; border-radius: 26rpx; background: #f2f4f7; margin-right: 14rpx; }
+.act-t { font-size: 24rpx; color: #3a3f47; white-space: nowrap; }
+.in { height: 76rpx; background: #f5f6f8; border-radius: 38rpx; padding: 0 0 0 28rpx; font-size: 27rpx; }
+.ph { color: #b0b5bc; }
+.send { margin-left: 16rpx; height: 76rpx; padding: 0 32rpx; border-radius: 38rpx; background: #2E6BFF; display: flex; flex-direction: row; align-items: center; }
+.send-t { color: #fff; font-size: 28rpx; font-weight: bold; white-space: nowrap; }

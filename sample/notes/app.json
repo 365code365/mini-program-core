@@ -4,7 +4,9 @@
     "pages/edit/edit",
     "pages/trash/trash",
     "pages/tags/tags",
-    "pages/settings/settings"
+    "pages/settings/settings",
+    "pages/history/history",
+    "pages/export/export"
   ],
   "window": {
     "navigationBarTitleText": "灵感笔记",

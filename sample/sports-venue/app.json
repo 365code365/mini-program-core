@@ -1,0 +1,36 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/teams/teams",
+    "pages/card/card",
+    "pages/mine/mine",
+    "pages/venue/venue",
+    "pages/booking/booking",
+    "pages/confirm/confirm",
+    "pages/result/result",
+    "pages/order/order",
+    "pages/pass/pass",
+    "pages/team-create/team-create",
+    "pages/orders/orders"
+  ],
+  "window": {
+    "navigationBarTitleText": "约场",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f3f5f4"
+  },
+  "permission": { "scope.userLocation": { "desc": "用于查找离你最近的场馆" } },
+  "tabBar": {
+    "color": "#969aa4",
+    "selectedColor": "#13b37b",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "订场", "iconPath": "images/tab/home.png", "selectedIconPath": "images/tab/home-on.png" },
+      { "pagePath": "pages/teams/teams", "text": "约球", "iconPath": "images/tab/team.png", "selectedIconPath": "images/tab/team-on.png" },
+      { "pagePath": "pages/card/card", "text": "会员卡", "iconPath": "images/tab/card.png", "selectedIconPath": "images/tab/card-on.png" },
+      { "pagePath": "pages/mine/mine", "text": "我的", "iconPath": "images/tab/user.png", "selectedIconPath": "images/tab/user-on.png" }
+    ],
+    "custom": true
+  }
+}

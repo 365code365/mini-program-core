@@ -7,8 +7,12 @@
       <text class="c-name">{{item.name}}</text>
       <text class="c-prov">{{item.prov}} · {{item.tag}}</text>
       <view class="planned" wx:if="{{planned[item.name]}}"><text>已规划</text></view>
+      <view class="planned wished" wx:elif="{{wish[item.name]}}"><text>想去</text></view>
     </view>
     <text class="c-desc">{{item.desc}}</text>
   </view>
+</view>
+<view class="empty" wx:if="{{!list.length}}">
+  <text class="sub">{{tag === '想去' ? '还没有想去的城市，点城市进攻略页标记「想去」' : '这个分类下暂时没有城市'}}</text>
 </view>
 <view class="tab-space"></view>

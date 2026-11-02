@@ -1,0 +1,35 @@
+<view class="page">
+  <view class="tabs">
+    <view wx:for="{{tabs}}" wx:key="key" class="tab {{cur === item.key ? 'tab-on' : ''}}" data-key="{{item.key}}" bindtap="onTab">
+      <text>{{item.name}}（{{item.n}}）</text>
+    </view>
+  </view>
+
+  <view wx:if="{{claim.length && cur === 'ok'}}" class="card claim">
+    <text class="title">领券中心</text>
+    <view class="cl row" wx:for="{{claim}}" wx:key="id">
+      <view class="flex1">
+        <text class="cl-t">{{item.title}}</text>
+        <text class="sub">{{item.min ? '满 ' + item.min + ' 元可用' : '无门槛'}} · 有效期至 {{item.expire}}</text>
+      </view>
+      <view class="btn-line" data-id="{{item.id}}" bindtap="take"><text>领取</text></view>
+    </view>
+  </view>
+
+  <view wx:if="{{list.length === 0}}" class="empty">
+    <view class="empty-ic"></view>
+    <text class="empty-tx">{{cur === 'ok' ? '暂无可用优惠券' : (cur === 'used' ? '还没有使用过优惠券' : '没有过期的优惠券')}}</text>
+  </view>
+  <view wx:for="{{list}}" wx:key="id" class="cp row {{cur !== 'ok' ? 'cp-off' : ''}}">
+    <view class="cp-l">
+      <view class="row cp-amt"><text class="cp-y">¥</text><text class="cp-n">{{item.amount}}</text></view>
+      <text class="cp-min">{{item.min ? '满 ' + item.min + ' 可用' : '无门槛'}}</text>
+    </view>
+    <view class="flex1 cp-m">
+      <text class="cp-t">{{item.title}}</text>
+      <text class="sub">{{item.scope}} · 至 {{item.expire}}</text>
+    </view>
+    <view wx:if="{{cur === 'ok'}}" class="btn-line cp-go" bindtap="use"><text>去使用</text></view>
+    <text wx:else class="sub cp-st">{{cur === 'used' ? '已使用' : '已过期'}}</text>
+  </view>
+</view>

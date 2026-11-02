@@ -13,7 +13,7 @@
         <text class="m-level">{{level.name}}</text>
         <text class="m-tag">Lv{{level.lv}}</text>
       </view>
-      <text class="m-desc">再喝 {{level.need}} 杯升级 {{level.next}}</text>
+      <text class="m-desc">{{level.top ? '已是最高等级，尽享全部会员权益' : '再喝 ' + level.need + ' 杯升级 ' + level.next}}</text>
     </view>
     <view class="m-code" bindtap="onMemberCode">会员码</view>
   </view>
@@ -23,8 +23,17 @@
     <view class="m-line"></view>
     <view class="m-stat" bindtap="onCoupons"><text class="m-num">{{couponCount}}</text><text class="m-name">优惠券</text></view>
     <view class="m-line"></view>
-    <view class="m-stat"><text class="m-num">¥128</text><text class="m-name">咖啡钱包</text></view>
+    <view class="m-stat" bindtap="onWallet"><text class="m-num">¥{{balance}}</text><text class="m-name">咖啡钱包</text></view>
   </view>
+</view>
+<view wx:if="{{active}}" class="active row" bindtap="onActive">
+  <text class="active-code">{{active.code}}</text>
+  <view class="flex1">
+    <text class="active-status">{{active.status}}</text>
+    <text class="active-tip ellipsis">{{active.tip}}</text>
+  </view>
+  <text class="active-go">查看</text>
+  <view class="arrow"></view>
 </view>
 
 <view class="modes row">

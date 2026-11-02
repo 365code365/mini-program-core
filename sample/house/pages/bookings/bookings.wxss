@@ -1,0 +1,41 @@
+.bk-img {
+  width: 160rpx;
+  height: 120rpx;
+  border-radius: 12rpx;
+  flex-shrink: 0;
+}
+.top {
+  align-items: flex-start;
+}
+.bk-main {
+  margin-left: 20rpx;
+  overflow: hidden;
+}
+.bk-name {
+  font-size: 30rpx;
+  font-weight: bold;
+}
+.bk-time {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 26rpx;
+  font-weight: bold;
+  color: #ff5a1f;
+}
+.bk-time.del {
+  color: #a3a8b3;
+  text-decoration: line-through;
+}
+.bk-who {
+  margin-top: 18rpx;
+  padding: 14rpx 18rpx;
+  background: #f7f8fa;
+  border-radius: 12rpx;
+}
+.note {
+  display: block;
+  margin-top: 6rpx;
+}
+.bk-foot {
+  margin-top: 20rpx;
+}

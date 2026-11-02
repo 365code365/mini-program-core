@@ -1,0 +1,30 @@
+<view class="tabs">
+  <view class="tabs-item {{tab === 'search' ? 'on' : ''}}" data-t="search" bindtap="setTab">馆藏检索<view class="tabs-line" wx:if="{{tab === 'search'}}"></view></view>
+  <view class="tabs-item {{tab === 'mine' ? 'on' : ''}}" data-t="mine" bindtap="setTab">我的借阅 {{borrows.length}}<view class="tabs-line" wx:if="{{tab === 'mine'}}"></view></view>
+</view>
+<block wx:if="{{tab === 'search'}}">
+  <view class="lb-search"><input class="input" placeholder="书名 / 作者 / 索书号" confirm-type="search" value="{{kw}}" bindinput="onKw" bindconfirm="search"></input></view>
+  <view class="card row lb-book" wx:for="{{results}}" wx:key="id">
+    <image class="lb-cover" src="{{item.cover}}" mode="aspectFill" data-src="{{item.cover}}" bindtap="preview"></image>
+    <view class="flex1">
+      <text class="lb-t">{{item.title}}</text>
+      <text class="muted">{{item.author}}</text>
+      <text class="lb-call" data-call="{{item.call}}" bindtap="copyCall">索书号 {{item.call}} 复制</text>
+      <text class="muted">{{item.loc}} · 可借 {{item.left}}/{{item.total}}</text>
+    </view>
+    <view class="btn-sm {{item.left ? '' : 'gray'}}" data-id="{{item.id}}" bindtap="borrow">{{item.left ? '预约' : '已借完'}}</view>
+  </view>
+  <view class="empty" wx:if="{{!results.length}}"><view class="empty-ic">🔍</view><text>没有找到「{{kw}}」相关馆藏</text></view>
+</block>
+<block wx:else>
+  <view class="card" wx:for="{{borrows}}" wx:key="id">
+    <view class="row between"><text class="lb-t">{{item.title}}</text><text class="{{item.overdue ? 'tag red' : item.left <= 7 ? 'tag orange' : 'tag green'}}">{{item.overdue ? '已逾期 ' + (-item.left) + ' 天' : '剩 ' + item.left + ' 天'}}</text></view>
+    <text class="muted">借阅 {{item.borrowed}} · 应还 {{item.due}}{{item.renewed ? ' · 已续借' : ''}}</text>
+    <view class="row lb-ops">
+      <view class="btn-sm ghost" data-id="{{item.id}}" bindtap="giveBack">已归还</view>
+      <view class="btn-sm lb-gap {{item.renewed ? 'gray' : ''}}" data-id="{{item.id}}" bindtap="renew">续借</view>
+    </view>
+  </view>
+  <view class="empty" wx:if="{{!borrows.length}}"><view class="empty-ic">📚</view><text>当前没有借阅中的图书</text></view>
+</block>
+<include src="../common/footer.wxml"></include>

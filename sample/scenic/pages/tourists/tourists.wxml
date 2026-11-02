@@ -1,0 +1,24 @@
+<view class="wrap">
+  <view class="card between" wx:for="{{list}}" wx:key="id">
+    <view class="col flex1" data-id="{{item.id}}" bindtap="edit">
+      <text class="h2">{{item.name}}<text class="muted"> {{item.age}} 岁</text></text>
+      <text class="muted">身份证 {{item.idMask}}</text>
+      <text class="muted" wx:if="{{item.phone}}">手机 {{item.phone}}</text>
+    </view>
+    <text class="tr-del" data-id="{{item.id}}" bindtap="remove">删除</text>
+  </view>
+  <view class="empty" wx:if="{{!list.length}}"><view class="empty-ic">人</view><text class="empty-tx">还没有常用游客</text></view>
+  <view class="btn" hover-class="press" bindtap="add">＋ 添加游客</view>
+  <text class="muted tr-tip">实名信息仅用于购票与入园核验，保存在本机</text>
+</view>
+<view class="tr-mask" wx:if="{{form}}" bindtap="close"></view>
+<view class="tr-sheet" wx:if="{{form}}">
+  <text class="h2">{{form.id ? '编辑游客' : '添加游客'}}</text>
+  <view class="tr-f"><text class="tr-l">姓名</text><input class="tr-i" value="{{form.name}}" placeholder="与证件一致" data-k="name" bindinput="onField"></input></view>
+  <text class="err" wx:if="{{errors.name}}">{{errors.name}}</text>
+  <view class="tr-f"><text class="tr-l">身份证</text><input class="tr-i" type="idcard" maxlength="18" value="{{form.idcard}}" placeholder="18 位居民身份证号" data-k="idcard" bindinput="onField"></input></view>
+  <text class="err" wx:if="{{errors.idcard}}">{{errors.idcard}}</text>
+  <view class="tr-f"><text class="tr-l">手机号</text><input class="tr-i" type="number" maxlength="11" value="{{form.phone}}" placeholder="选填" data-k="phone" bindinput="onField"></input></view>
+  <text class="err" wx:if="{{errors.phone}}">{{errors.phone}}</text>
+  <view class="btn tr-save" hover-class="press" bindtap="save">保存</view>
+</view>

@@ -1,0 +1,108 @@
+<view class="empty" wx:if="{{!order}}">
+  <text class="empty-tx">订单不存在或已被删除</text>
+  <view class="btn-ghost" bindtap="goHome">返回首页</view>
+</view>
+
+<movable-area wx:else class="area" style="height: {{areaH}}px;">
+  <scroll-view scroll-y class="sv" style="height: {{areaH}}px;">
+    <view class="head head-{{order.status}}">
+      <view class="row">
+        <icon type="{{order.status === 'cancelled' ? 'cancel' : order.status === 'pending' && !isNew ? 'waiting' : 'success'}}" size="28" color="#ffffff"></icon>
+        <text class="h-st">{{isNew && order.status === 'pending' ? '预约成功' : statusText}}</text>
+      </view>
+      <text class="h-tip">{{tip}}</text>
+    </view>
+
+    <view class="wrap top">
+      <view class="card">
+        <view class="between">
+          <text class="title">{{order.storeName}}</text>
+          <text class="blue" bindtap="contact">联系 ›</text>
+        </view>
+        <text class="sub">{{order.storeAddr}}</text>
+        <view class="line"></view>
+        <view class="between kv">
+          <text class="muted">到店时间</text>
+          <text class="strong">{{order.date}} {{order.time}}</text>
+        </view>
+        <view class="between kv">
+          <text class="muted">服务车辆</text>
+          <text>{{plateText}} {{order.carName}}</text>
+        </view>
+        <view class="between kv">
+          <text class="muted">联系人</text>
+          <text>{{order.contact}} {{order.phone}}</text>
+        </view>
+        <view class="between kv" wx:if="{{order.pickup}}">
+          <text class="muted">取送车地址</text>
+          <text class="kv-v">{{order.pickupAddr}}</text>
+        </view>
+        <view class="between kv" wx:if="{{order.remark}}">
+          <text class="muted">备注</text>
+          <text class="kv-v">{{order.remark}}</text>
+        </view>
+        <view class="between kv" wx:if="{{order.cancelReason}}">
+          <text class="muted">取消原因</text>
+          <text class="kv-v red">{{order.cancelReason}}</text>
+        </view>
+      </view>
+
+      <view class="card">
+        <text class="sec-title">服务项目</text>
+        <view class="between kv" wx:for="{{order.items}}" wx:key="id">
+          <text>{{item.name}}</text>
+          <text>{{item.price ? '¥' + item.price : '免费'}}</text>
+        </view>
+        <view class="line"></view>
+        <view class="between">
+          <text class="muted">到店付款</text>
+          <text class="price big">¥{{order.total}}</text>
+        </view>
+      </view>
+
+      <view class="card" wx:if="{{order.review}}">
+        <text class="sec-title">我的评价</text>
+        <text class="orange">{{order.review.starText}}</text>
+        <view class="row wrap-tags">
+          <text class="tag" wx:for="{{order.review.tags}}" wx:key="*this">{{item}}</text>
+        </view>
+        <text class="rv-tx" wx:if="{{order.review.text}}">{{order.review.text}}</text>
+      </view>
+
+      <view class="card">
+        <text class="sec-title">服务进度</text>
+        <view class="tl row" wx:for="{{timeline}}" wx:key="k">
+          <view class="tl-dot {{index === 0 ? 'tl-dot-on' : ''}}"></view>
+          <view class="col flex1">
+            <text class="{{index === 0 ? 'strong' : 'muted'}}">{{item.text}}</text>
+            <text class="sub">{{item.t}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="card between" bindtap="copyId">
+        <text class="sub">订单号 {{order.id}}</text>
+        <text class="sub">复制</text>
+      </view>
+      <view class="pad"></view>
+    </view>
+  </scroll-view>
+
+  <!-- 点按写在内层 view 上：引擎里 movable-view 自身的 bindtap 不触发（见报告） -->
+  <movable-view class="fab" direction="all" x="{{fabX}}" y="{{fabY}}" bindchange="onFabMove">
+    <view class="fab-in" bindtap="contact">
+      <text class="fab-tx">联系</text>
+      <text class="fab-tx">门店</text>
+    </view>
+  </movable-view>
+</movable-area>
+
+<view class="bar" wx:if="{{order}}">
+  <block wx:if="{{order.status === 'pending'}}">
+    <view class="btn-gray" bindtap="cancel">取消预约</view>
+    <view class="btn act" bindtap="checkIn">到店签到</view>
+  </block>
+  <view class="btn act" wx:elif="{{order.status === 'serving'}}" bindtap="finish">确认完工取车</view>
+  <view class="btn act" wx:elif="{{order.status === 'done'}}" bindtap="review">去评价</view>
+  <view class="btn act" wx:else bindtap="again">再次预约</view>
+</view>

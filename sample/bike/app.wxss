@@ -1,0 +1,20 @@
+page { background: #f4f6f8; color: #1f2329; font-size: 28rpx; }
+.card { background: #ffffff; border-radius: 20rpx; margin: 24rpx 24rpx 0; padding: 28rpx; }
+.sec-title { font-size: 32rpx; font-weight: bold; color: #1f2329; }
+.muted { color: #8a9099; font-size: 24rpx; }
+.row { display: flex; flex-direction: row; align-items: center; }
+.between { justify-content: space-between; }
+.chev { width: 14rpx; height: 14rpx; border-top: 3rpx solid #c2c7cf; border-right: 3rpx solid #c2c7cf; transform: rotate(45deg); margin-left: 10rpx; flex-shrink: 0; }
+.btn { background: linear-gradient(90deg, #2fd08a, #13a868); color: #ffffff; border-radius: 48rpx; height: 92rpx; display: flex; align-items: center; justify-content: center; font-size: 32rpx; font-weight: bold; }
+.btn-ghost { border: 2rpx solid #13a868; color: #13a868; border-radius: 48rpx; height: 88rpx; display: flex; align-items: center; justify-content: center; font-size: 30rpx; background: #ffffff; }
+.btn-disabled { background: #c9ced6; }
+.price { color: #f05246; font-weight: bold; }
+.green { color: #13a868; }
+.tag { font-size: 20rpx; padding: 4rpx 12rpx; border-radius: 8rpx; }
+.tag-bike { color: #13a868; background: #e3f7ee; }
+.tag-ebike { color: #de6e12; background: #fff0e0; }
+.kv { display: flex; flex-direction: row; justify-content: space-between; padding: 14rpx 0; font-size: 28rpx; }
+.kv-k { color: #646a73; }
+.kv-v { color: #1f2329; }
+.empty { display: flex; flex-direction: column; align-items: center; padding: 120rpx 0; color: #a0a4ab; font-size: 26rpx; }
+.empty-ic { width: 120rpx; height: 120rpx; opacity: 0.35; margin-bottom: 20rpx; }

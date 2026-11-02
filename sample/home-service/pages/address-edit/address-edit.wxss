@@ -1,0 +1,5 @@
+.ta { width: 100%; min-height: 80rpx; background: #f6f8f7; border-radius: 12rpx; padding: 14rpx 16rpx; box-sizing: border-box; font-size: 28rpx; }
+.lb { font-size: 28rpx; color: #2b3430; }
+.tg { font-size: 24rpx; color: #4a544f; border: 2rpx solid #d5dbd8; border-radius: 26rpx; padding: 4rpx 20rpx; margin-left: 14rpx; }
+.tg-on { color: #13a86b; border-color: #13a86b; background: #f0faf5; }
+.del { text-align: center; color: #e5484d; padding: 32rpx 0; }

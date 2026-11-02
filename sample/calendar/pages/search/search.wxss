@@ -1,0 +1,18 @@
+.bar { background: #ffffff; padding: 16rpx 24rpx; }
+.box { height: 72rpx; background: #f1f3f8; border-radius: 36rpx; padding: 0 24rpx; }
+.lens { width: 20rpx; height: 20rpx; border: 3rpx solid #8f95a3; border-radius: 12rpx; margin-right: 16rpx; }
+.kw-input { font-size: 28rpx; height: 72rpx; }
+.x { font-size: 26rpx; color: #a3a8b3; padding: 0 0 0 16rpx; }
+.h-head { padding: 28rpx 32rpx 12rpx; }
+.clear-history { color: #3a6bf0; }
+.chips { flex-wrap: wrap; padding: 0 24rpx; }
+.chip { font-size: 26rpx; color: #5c6370; background: #ffffff; border-radius: 28rpx; padding: 10rpx 24rpx; margin: 0 16rpx 16rpx 0; }
+.count { display: block; padding: 24rpx 32rpx 12rpx; }
+.res-card { padding: 0 24rpx; }
+.res { padding: 20rpx 0; border-bottom: 1rpx solid #f0f1f4; }
+.res-down { background: #f7f8fb; }
+.past .res-title { color: #a3a8b3; }
+.ev-bar { width: 8rpx; height: 60rpx; border-radius: 4rpx; margin-right: 20rpx; }
+.res-title { display: block; font-size: 30rpx; }
+.res-sub { display: block; margin-top: 4rpx; }
+.res-note { display: block; margin-top: 4rpx; color: #a3a8b3; }

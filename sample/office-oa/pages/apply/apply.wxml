@@ -1,0 +1,65 @@
+<view class="head row">
+  <view class="h-ic" style="background: {{typeInfo.color}};">{{typeInfo.ic}}</view>
+  <view class="col"><text class="h-t">{{typeInfo.name}}申请</text><text class="muted">{{typeInfo.desc}}</text></view>
+</view>
+
+<view class="form">
+  <block wx:for="{{fields}}" wx:key="key">
+    <view class="fi {{item.type === 'textarea' || (item.type === 'radio' && item.options.length > 2) ? 'fi-col' : 'row'}}">
+      <view class="lb row"><text class="req" wx:if="{{item.required}}">*</text><text>{{item.label}}</text></view>
+
+      <input wx:if="{{item.type === 'text'}}" class="ipt flex1" value="{{values[item.key]}}" placeholder="{{item.placeholder}}" data-key="{{item.key}}" bindinput="onInput"></input>
+
+      <view wx:elif="{{item.type === 'number' || item.type === 'digit'}}" class="row flex1">
+        <input class="ipt flex1" type="{{item.type}}" value="{{values[item.key]}}" placeholder="{{item.placeholder}}" data-key="{{item.key}}" bindinput="onInput"></input>
+        <text class="unit">{{item.unit}}</text>
+      </view>
+
+      <textarea wx:elif="{{item.type === 'textarea'}}" class="ta" value="{{values[item.key]}}" placeholder="{{item.placeholder}}" maxlength="200" show-confirm-bar="{{false}}" data-key="{{item.key}}" bindinput="onInput"></textarea>
+
+      <picker wx:elif="{{item.type === 'selector'}}" class="flex1" mode="selector" range="{{item.options}}" value="{{item.idx < 0 ? 0 : item.idx}}" data-key="{{item.key}}" bindchange="onPicker">
+        <view class="pv {{values[item.key] ? '' : 'ph'}}">{{values[item.key] || '请选择'}} ›</view>
+      </picker>
+
+      <picker wx:elif="{{item.type === 'date'}}" class="flex1" mode="date" value="{{values[item.key]}}" start="{{item.key === 'end' ? values.start : ''}}" data-key="{{item.key}}" bindchange="onPicker">
+        <view class="pv">{{values[item.key]}} ›</view>
+      </picker>
+
+      <picker wx:elif="{{item.type === 'month'}}" class="flex1" mode="date" fields="month" value="{{values[item.key]}}" end="{{today}}" data-key="{{item.key}}" bindchange="onPicker">
+        <view class="pv">{{values[item.key]}} ›</view>
+      </picker>
+
+      <radio-group wx:elif="{{item.type === 'radio'}}" class="rg {{item.options.length > 2 ? '' : 'rg-in'}}" data-key="{{item.key}}" bindchange="onRadio">
+        <label class="rl row" wx:for="{{item.options}}" wx:for-item="op" wx:key="*this">
+          <radio value="{{op}}" checked="{{values[item.key] === op}}" color="#1677ff"></radio><text>{{op}}</text>
+        </label>
+      </radio-group>
+
+      <view wx:elif="{{item.type === 'switch'}}" class="flex1 row sw">
+        <text class="muted">{{values[item.key] ? '需要带出公司' : '在公司内用印'}}</text>
+        <switch checked="{{values[item.key]}}" color="#1677ff" data-key="{{item.key}}" bindchange="onSwitch"></switch>
+      </view>
+
+      <view wx:elif="{{item.type === 'computed'}}" class="flex1 pv {{values[item.key] ? 'calc' : 'ph'}}">{{values[item.key] ? values[item.key] + ' ' + item.unit : '选择时间后自动计算'}}</view>
+
+      <view wx:elif="{{item.type === 'approver'}}" class="flex1 row ap" bindtap="pickApprover">
+        <view class="col flex1"><text class="ap-n">{{approver.name}}</text><text class="muted">{{approver.deptName}} · {{approver.title}}</text></view>
+        <text class="ap-ch">更换 ›</text>
+      </view>
+    </view>
+    <text class="err fe" wx:if="{{errors[item.key]}}">{{errors[item.key]}}</text>
+  </block>
+</view>
+
+<view class="flow card">
+  <text class="sec-title">审批流程</text>
+  <view class="fl row">
+    <view class="fn col"><view class="fd on">1</view><text class="fx">我提交</text></view>
+    <view class="fline"></view>
+    <view class="fn col"><view class="fd">2</view><text class="fx">{{approver.name}}</text></view>
+    <view class="fline"></view>
+    <view class="fn col"><view class="fd">3</view><text class="fx">{{type === 'leave' ? '人力备案' : (type === 'expense' ? '财务复核' : '总经办')}}</text></view>
+  </view>
+</view>
+<view style="height: 160rpx;"></view>
+<view class="foot"><view class="btn {{submitting ? 'dis' : ''}}" bindtap="submit">{{submitting ? '提交中…' : '提交审批'}}</view></view>

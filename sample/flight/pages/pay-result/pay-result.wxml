@@ -1,0 +1,33 @@
+<view wx:if="{{!o}}" class="empty">
+  <text class="e-ic">✈</text>
+  <text class="muted">没有找到订单</text>
+  <view class="btn e-btn" bindtap="goHome"><text>去订机票</text></view>
+</view>
+<block wx:else>
+  <view class="top col">
+    <view class="ok-ic {{paid ? '' : 'ok-ic-wait'}}"><text class="ok-tx">{{paid ? '✓' : '!'}}</text></view>
+    <text class="top-t">{{paid ? '支付成功，已出票' : o.status}}</text>
+    <view class="row"><text class="top-amt">¥{{o.total}}</text><text wx:if="{{o.method}}" class="top-m">{{o.method}}</text></view>
+  </view>
+  <view class="card">
+    <view wx:for="{{legs}}" wx:key="k" class="leg col">
+      <text class="leg-r">{{item.route}}</text>
+      <text class="small">{{item.text}} · {{item.ap}}</text>
+      <text class="muted small">{{item.no}}</text>
+    </view>
+    <view class="line"></view>
+    <view wx:for="{{pax}}" wx:key="name" class="row between px">
+      <text>{{item.name}}</text>
+      <text class="muted small">票号 {{item.ticket}}</text>
+    </view>
+  </view>
+  <view class="card tips col">
+    <text class="small">温馨提示</text>
+    <text class="muted small">国内航班请提前 2 小时到达机场，起飞前 45 分钟停止办理乘机手续；起飞前 24 小时可在线值机选座。</text>
+  </view>
+  <view class="btns row">
+    <view class="btn btn-ghost flex1" bindtap="goDetail"><text>查看订单</text></view>
+    <view class="btn flex1 b2" bindtap="addCal"><text>添加到日历</text></view>
+  </view>
+  <view class="home" bindtap="goHome"><text class="blue">返回首页</text></view>
+</block>

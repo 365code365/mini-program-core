@@ -1,0 +1,19 @@
+.sw { height: 520rpx; margin-top: 24rpx; }
+.slide { position: relative; height: 480rpx; margin: 20rpx 24rpx; border-radius: 24rpx; overflow: hidden; opacity: 0.6; transform: scale(0.9); transition: all 0.25s; }
+.slide-on { opacity: 1; transform: scale(1); }
+.cover { width: 100%; height: 100%; }
+.using { position: absolute; right: 20rpx; top: 20rpx; background: rgba(0, 0, 0, 0.35); border-radius: 20rpx; padding: 4rpx 16rpx; }
+.using-tx { color: #ffffff; font-size: 22rpx; }
+.dots { justify-content: center; margin: 8rpx 0 8rpx; }
+.dot { width: 12rpx; height: 12rpx; border-radius: 6rpx; background: #c9d1f0; margin: 0 6rpx; }
+.dot-on { width: 32rpx; background: #4f6bed; }
+.info { display: flex; flex-direction: column; }
+.desc { font-size: 26rpx; color: #4a5060; line-height: 40rpx; margin: 16rpx 0 24rpx; }
+.meta { justify-content: space-around; margin-bottom: 20rpx; }
+.m { display: flex; flex-direction: column; align-items: center; }
+.m-v { font-size: 36rpx; font-weight: bold; }
+.learners { margin: 12rpx 0 24rpx; }
+.item { padding: 20rpx 0; border-bottom: 1rpx solid #eef0f5; }
+.it-cover { width: 72rpx; height: 96rpx; border-radius: 8rpx; }
+.it-main { flex: 1; margin-left: 20rpx; }
+.it-name { font-size: 28rpx; font-weight: bold; margin-bottom: 6rpx; }

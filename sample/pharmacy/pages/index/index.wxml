@@ -1,0 +1,64 @@
+<view class="top">
+  <view class="search" bindtap="goSearch">
+    <text class="s-ic">⌕</text><text class="s-ph">搜索药品名、症状或品牌，如「布洛芬」</text>
+  </view>
+  <view class="promise">
+    <text class="pm">✓ 正品保障</text><text class="pm">✓ 执业药师审方</text><text class="pm">✓ 30 分钟送达</text>
+  </view>
+</view>
+
+<swiper class="banner" autoplay circular interval="4000" indicator-dots indicator-color="rgba(255,255,255,0.5)" indicator-active-color="#ffffff">
+  <swiper-item wx:for="{{banners}}" wx:key="id">
+    <view class="bn" data-id="{{item.go}}" bindtap="goDept">
+      <image class="bn-img" src="{{item.img}}" mode="aspectFill"></image>
+      <view class="bn-tx"><text class="bn-t">{{item.t}}</text><text class="bn-s">{{item.s}}</text><text class="bn-go">立即选购 ›</text></view>
+    </view>
+  </swiper-item>
+</swiper>
+
+<view class="depts">
+  <view class="dp" wx:for="{{depts}}" wx:key="id" data-id="{{item.id}}" bindtap="goDept" hover-class="dp-on">
+    <view class="dp-ic" style="background: {{item.color}};">{{item.icon}}</view>
+    <text class="dp-t">{{item.name}}</text>
+  </view>
+</view>
+
+<view class="card remind" bindtap="goRemind">
+  <view class="rm-l">
+    <text class="rm-t">今日用药</text>
+    <text wx:if="{{!doses.total}}" class="muted">还没有设置用药提醒，按时吃药不漏服</text>
+    <text wx:elif="{{doses.left}}" class="muted">待服 {{doses.left}} 次 · 下一次 {{doses.next.time}} {{doses.next.drug}} {{doses.next.dose}}</text>
+    <text wx:else class="muted">今日 {{doses.total}} 次已全部服用 ✓</text>
+  </view>
+  <text class="rm-b">{{doses.total ? '去打卡' : '去设置'}}</text>
+</view>
+
+<view class="card rxe" bindtap="goRx">
+  <view class="rx-ic">方</view>
+  <view class="rm-l"><text class="rm-t">处方药购买 / 在线问诊</text><text class="muted">上传处方或填写问诊信息，药师审核后发货</text></view>
+  <text class="arrow">›</text>
+</view>
+
+<view class="sec-h"><text class="sec-t">家庭常备药</text><text class="sec-more">满 49 元免运费</text></view>
+<view class="staples">
+  <view class="sp" wx:for="{{staples}}" wx:key="id" data-id="{{item.id}}" bindtap="openDrug">
+    <image class="sp-img" src="{{item.img}}" mode="aspectFill"></image>
+    <view class="sp-n"><text class="{{item.tagCls}}">{{item.tagText}}</text><text class="sp-nt">{{item.brand}} {{item.name}}</text></view>
+    <text class="sp-s">{{item.specs[0].s}}</text>
+    <view class="sp-f">
+      <text class="price">¥{{item.from}}</text>
+      <view class="add" data-id="{{item.id}}" catchtap="addCart">＋</view>
+    </view>
+  </view>
+</view>
+
+<view class="sec-h"><text class="sec-t">健康资讯</text></view>
+<view class="card art" wx:for="{{articles}}" wx:key="id" data-id="{{item.id}}" bindtap="openArticle">
+  <view class="art-b"><text class="art-t">{{item.title}}</text><text class="muted">{{item.tag}} · {{item.read}} 人读过</text></view>
+  <image class="art-img" src="{{item.cover}}" mode="aspectFill"></image>
+</view>
+<view class="tab-gap"></view>
+
+<view wx:if="{{ball.on}}" class="ball-x" style="left: {{ball.x}}px; top: {{ball.y}}px;" animation="{{ballX}}">
+  <view class="ball" animation="{{ballY}}"></view>
+</view>

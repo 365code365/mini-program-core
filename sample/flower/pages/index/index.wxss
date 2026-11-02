@@ -1,6 +1,12 @@
 .top { background: #ffffff; padding: 16rpx 24rpx 20rpx; justify-content: space-between; }
 .pin { width: 20rpx; height: 20rpx; border-radius: 10rpx 10rpx 10rpx 0; background: #ef5b7e; transform: rotate(-45deg); margin-right: 12rpx; }
 .loc-tx { font-size: 28rpx; font-weight: bold; }
+.loc-dn { width: 10rpx; height: 10rpx; border-right: 3rpx solid #6d6470; border-bottom: 3rpx solid #6d6470; transform: rotate(45deg); margin: 0 0 8rpx 12rpx; }
+.remind { margin: 24rpx 24rpx 0; padding: 22rpx 24rpx; border-radius: 20rpx; background: linear-gradient(120deg, #fff4e6, #ffe9ef); }
+.rm-ic { width: 72rpx; height: 72rpx; border-radius: 36rpx; background: linear-gradient(135deg, #ffb36b, #ef4f76); color: #ffffff; font-size: 30rpx; font-weight: bold; display: flex; align-items: center; justify-content: center; margin-right: 20rpx; flex-shrink: 0; }
+.rm-t { display: block; font-size: 28rpx; font-weight: bold; color: #26222a; }
+.rm-s { display: block; margin-top: 4rpx; font-size: 22rpx; color: #a3627a; }
+.rm-go { flex-shrink: 0; margin-left: 16rpx; height: 52rpx; line-height: 52rpx; padding: 0 22rpx; border-radius: 26rpx; background: #ef5b7e; color: #ffffff; font-size: 24rpx; }
 .pm { font-size: 22rpx; color: #ef5b7e; background: #fff0f4; padding: 4rpx 12rpx; border-radius: 8rpx; margin-left: 12rpx; }
 .banner-wrap { margin: 20rpx 24rpx 0; height: 280rpx; border-radius: 24rpx; overflow: hidden; }
 .banner { height: 280rpx; }

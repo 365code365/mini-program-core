@@ -5,7 +5,13 @@
     "pages/records/records",
     "pages/mine/mine",
     "pages/course/course",
-    "pages/card/card"
+    "pages/card/card",
+    "pages/plan/plan",
+    "pages/body/body",
+    "pages/workout-edit/workout-edit",
+    "pages/bookings/bookings",
+    "pages/orders/orders",
+    "pages/profile/profile"
   ],
   "window": {
     "navigationBarTitleText": "燃动健身",

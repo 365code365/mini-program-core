@@ -1,11 +1,11 @@
 <view class="card phone-card">
   <view class="row">
-    <input class="ph" type="number" maxlength="13" value="{{phoneTx}}" placeholder="请输入手机号" bindinput="onPhone" />
+    <input id="ph{{phSeq}}" class="ph" type="number" maxlength="13" value="{{phoneTx}}" placeholder="请输入手机号" bindinput="onPhone" />
     <view wx:if="{{phone}}" class="clr" bindtap="clear"><text>×</text></view>
   </view>
   <view class="row ph-sub">
     <text wx:if="{{carrier}}" class="carrier">{{carrier}}</text>
-    <text wx:elif="{{phone.length === 11}}" class="bad">暂不支持该号段</text>
+    <text wx:elif="{{phone.length === 11}}" class="bad">号段无法识别，请核对号码</text>
     <text wx:else class="muted">支持移动、联通、电信全国号码</text>
   </view>
   <view class="recent row">

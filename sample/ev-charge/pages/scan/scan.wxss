@@ -39,3 +39,9 @@ page { background: #f4f6f5; }
 .r-chip-t { font-size: 24rpx; color: #3a3f47; }
 .start { margin-top: 24rpx; }
 .balance { display: block; text-align: center; margin-top: 18rpx; }
+.car { margin-top: 24rpx; border: 2rpx solid #eef0f2; border-radius: 16rpx; padding: 18rpx 20rpx; }
+.car-ic { width: 60rpx; height: 60rpx; border-radius: 30rpx; background: #eaf3fe; display: flex; flex-direction: row; align-items: center; justify-content: center; margin-right: 18rpx; }
+.car-ic-t { color: #2D8CF0; font-size: 26rpx; font-weight: bold; }
+.car-plate { font-size: 30rpx; font-weight: bold; margin-bottom: 2rpx; }
+.car-none { font-size: 26rpx; color: #8a9099; }
+.car-sw { font-size: 24rpx; color: #00A36C; }

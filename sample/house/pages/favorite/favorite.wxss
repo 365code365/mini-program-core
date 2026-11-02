@@ -24,7 +24,8 @@
 .ops {
   margin-top: 10rpx;
 }
-.op-tag {
+.type-tag {
+  margin-right: 10rpx;
   font-size: 20rpx;
   color: #8a919f;
   border: 1rpx solid #dfe2e8;
@@ -78,4 +79,15 @@
   border: 2rpx solid #ff6a1f;
   color: #ff5a1f;
   font-size: 28rpx;
+}
+.type-tag.faved {
+  color: #ff5a1f;
+  border-color: #ffb98c;
+}
+.tip {
+  margin: -8rpx 32rpx 16rpx;
+}
+.clear {
+  font-size: 24rpx;
+  color: #ff5a1f;
 }

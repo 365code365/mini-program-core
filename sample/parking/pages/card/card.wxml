@@ -1,0 +1,37 @@
+<view class="sec-t">我的月卡（{{mine.length}}）</view>
+<view class="empty" wx:if="{{!mine.length}}">还没有月卡，常停的停车场办一张更划算</view>
+<view class="mc" wx:for="{{mine}}" wx:key="id">
+  <view class="mc-top {{item.valid ? '' : 'mc-off'}}" data-i="{{index}}" bindtap="goLot">
+    <view class="row between">
+      <text class="mc-lot">{{item.lotName}}</text>
+      <text class="mc-st">{{item.valid ? '有效' : '已过期'}}</text>
+    </view>
+    <text class="mc-plate">{{item.plate}}</text>
+    <text class="mc-end">有效期 {{item.start}} 至 {{item.end}}</text>
+  </view>
+  <view class="row between mc-foot">
+    <text class="sub">已办理 {{item.logs.length}} 次</text>
+    <view class="mc-renew" data-i="{{index}}" bindtap="onRenew"><text>续费</text></view>
+  </view>
+</view>
+<view class="sec-t">办理月卡</view>
+<view class="card cells">
+  <picker class="pk-lot" range="{{lotNames}}" value="{{lotIdx}}" bindchange="onLot">
+    <view class="cell row"><text class="flex1 cell-label">停车场</text><text class="cell-value">{{lotNames[lotIdx]}}</text><view class="chev"></view></view>
+  </picker>
+  <picker class="pk-car" range="{{plates}}" value="{{carIdx}}" bindchange="onCar">
+    <view class="cell row"><text class="flex1 cell-label">车辆</text><text class="cell-value">{{plates[carIdx] || '未添加车辆'}}</text><view class="chev"></view></view>
+  </picker>
+  <view class="plans row">
+    <view wx:for="{{plans}}" wx:key="key" class="plan {{planIdx === index ? 'plan-on' : ''}}" data-i="{{index}}" bindtap="onPlan">
+      <text class="plan-n">{{item.name}}</text>
+      <text class="plan-p">¥{{item.price}}</text>
+      <text class="plan-d">{{item.days}} 天</text>
+    </view>
+  </view>
+</view>
+<text class="note">有效期内该车在该停车场进出不计费；已有未过期月卡时自动顺延。路侧泊位不办理月卡。</text>
+<view class="foot row">
+  <view class="flex1"><text class="sub">合计</text><text class="total">{{priceText}}</text></view>
+  <view class="btn-primary buy-btn" bindtap="onBuy">立即办理</view>
+</view>

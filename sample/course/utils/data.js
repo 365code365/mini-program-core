@@ -97,8 +97,26 @@ const questions = [
     exp: 'pd.read_csv() 默认会把第一行作为表头，并通过 skip_blank_lines=True 跳过空行。' }
 ];
 
+// 课时数、总时长按目录实算（详情页「64 课时」而目录只有 11 节，学习进度就对不上）
+courses.forEach(c => {
+  let n = 0, mins = 0;
+  c.chapters.forEach(ch => ch.lessons.forEach(l => { n++; mins += l.mins; }));
+  c.lessons = n;
+  c.mins = mins;
+  c.hours = Math.round(mins / 6) / 10;
+});
+// 优惠券模板：cut 立减，min 门槛
+const couponSeeds = [
+  { id: 'q1', name: '新人立减券', cut: 20, min: 99, until: '2026-12-31' },
+  { id: 'q2', name: '好课满减券', cut: 60, min: 299, until: '2026-12-31' }
+];
+function flatLessons(c) {
+  const out = [];
+  c.chapters.forEach((ch, i) => ch.lessons.forEach(l => out.push(Object.assign({ chapter: ch.title, ci: i }, l))));
+  return out;
+}
 function teacherOf(id) { return teachers.find(t => t.id === id); }
 function courseOf(id) { return courses.find(c => c.id === id); }
 function fmtStudents(n) { return n >= 10000 ? (n / 10000).toFixed(1) + '万' : '' + n; }
 
-module.exports = { categories, teachers, courses, reviews, questions, teacherOf, courseOf, fmtStudents };
+module.exports = { categories, teachers, courses, reviews, questions, couponSeeds, flatLessons, teacherOf, courseOf, fmtStudents };

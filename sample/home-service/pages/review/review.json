@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "评价服务",
+  "usingComponents": {
+    "star-rate": "../../components/star-rate/star-rate",
+    "form-item": "../../components/form-item/form-item"
+  }
+}

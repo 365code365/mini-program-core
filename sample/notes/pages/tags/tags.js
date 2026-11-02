@@ -1,6 +1,6 @@
 const S = require('../../utils/store.js')
 Page({
-  data: { tags: [], name: '', error: '' },
+  data: { tags: [], name: '', error: '', editing: '', draft: '' },
   onShow() {
     this.refresh()
   },
@@ -31,6 +31,43 @@ Page({
     this.setData({ name: '', error: '' })
     wx.showToast({ title: '已添加', icon: 'success' })
     this.refresh()
+  },
+  // 改名：同样的校验（不能空、最多 8 字、不与别的标签重名）；笔记上存的是 id，不用改笔记
+  onRename(e) {
+    const t = this.data.tags.find(i => i.id === e.currentTarget.dataset.id)
+    if (t) this.setData({ editing: t.id, draft: t.name, error: '' })
+  },
+  onDraft(e) {
+    this.setData({ draft: e.detail.value })
+  },
+  onRenameCancel() {
+    this.setData({ editing: '', draft: '' })
+  },
+  onRenameSave() {
+    const id = this.data.editing
+    const name = this.data.draft.trim()
+    const tags = S.loadTags()
+    let error = ''
+    if (!name) error = '请输入标签名'
+    else if (name.length > 8) error = '标签名最多 8 个字'
+    else if (tags.some(t => t.id !== id && t.name.toLowerCase() === name.toLowerCase())) error = '标签「' + name + '」已存在'
+    if (error) {
+      this.setData({ error })
+      wx.showToast({ title: error, icon: 'none' })
+      return
+    }
+    const t = tags.find(i => i.id === id)
+    if (t) t.name = name
+    S.saveTags(tags)
+    this.setData({ editing: '', draft: '', error: '' })
+    wx.showToast({ title: '已改名', icon: 'success' })
+    this.refresh()
+  },
+  // 点标签名：回首页按这个标签筛选
+  onBrowse(e) {
+    getApp().globalData.tagFilter = e.currentTarget.dataset.id
+    if (getCurrentPages().length > 1) wx.navigateBack()
+    else wx.reLaunch({ url: '/pages/index/index' })
   },
   // 删除标签：同时从所有笔记上摘掉
   onDel(e) {

@@ -1,0 +1,25 @@
+<image class="hero" src="{{s.img}}" mode="widthFix"></image>
+<view class="card">
+  <text class="title">{{s.title}}</text>
+  <view class="row author">
+    <image class="av" src="{{farmer.avatar}}" mode="scaleToFill"></image>
+    <view class="author-mid">
+      <text class="name">{{farmer.name}}</text>
+      <text class="muted">{{farmer.title}}</text>
+    </view>
+    <view class="btn-ghost {{followed ? 'followed' : ''}}" hover-class="btn-hover" bindtap="toggleFollow">{{followed ? '已关注' : '+ 关注'}}</view>
+  </view>
+  <rich-text class="body" nodes="{{s.body}}"></rich-text>
+</view>
+<view class="card">
+  <text class="sec-title">这片产地的好物</text>
+  <view class="gl" wx:for="{{goods}}" wx:key="id" data-id="{{item.id}}" bindtap="openGoods" hover-class="btn-hover">
+    <image class="gl-img" src="{{item.cover}}" mode="aspectFill"></image>
+    <view class="gl-mid">
+      <text class="gl-name">{{item.name}}</text>
+      <text class="muted">{{item.origin}}</text>
+      <view class="row"><text class="price">¥{{item.groupPrice}}</text><text class="muted gl-single">{{item.groupSize}}人团 · 单买 ¥{{item.price}}</text></view>
+    </view>
+  </view>
+</view>
+<view style="height: 40rpx;"></view>

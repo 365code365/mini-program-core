@@ -1,0 +1,49 @@
+<view class="page">
+  <view class="av-box" bindtap="changeAvatar" hover-class="btn-hover">
+    <image class="av" src="{{f.avatar}}" mode="aspectFill"></image>
+    <text class="muted av-tx">点击更换头像</text>
+  </view>
+
+  <view class="card">
+    <view class="field">
+      <text class="field-label">乳名</text>
+      <input class="field-input" value="{{f.name}}" data-k="name" maxlength="10" placeholder="家里怎么叫宝宝" placeholder-class="placeholder" bindinput="onInput"></input>
+    </view>
+    <text wx:if="{{errs.name}}" class="err">{{errs.name}}</text>
+    <view class="field">
+      <text class="field-label">大名</text>
+      <input class="field-input" value="{{f.fullName}}" data-k="fullName" maxlength="10" placeholder="选填" placeholder-class="placeholder" bindinput="onInput"></input>
+    </view>
+    <view class="field">
+      <text class="field-label">性别</text>
+      <radio-group class="row flex1" bindchange="onSex">
+        <label class="row radio"><radio value="boy" checked="{{f.sex === 'boy'}}" color="#ff7a8a"></radio><text>男宝</text></label>
+        <label class="row radio"><radio value="girl" checked="{{f.sex === 'girl'}}" color="#ff7a8a"></radio><text>女宝</text></label>
+      </radio-group>
+    </view>
+    <picker mode="date" value="{{f.birthday}}" end="{{today}}" bindchange="onBirthday">
+      <view class="field"><text class="field-label">生日</text><text class="field-value">{{f.birthday}}（{{ageText}}）</text><text class="arrow">›</text></view>
+    </picker>
+    <text wx:if="{{errs.birthday}}" class="err">{{errs.birthday}}</text>
+    <picker mode="time" value="{{f.birthTime}}" bindchange="onBirthTime">
+      <view class="field"><text class="field-label">出生时间</text><text class="field-value">{{f.birthTime}}</text><text class="arrow">›</text></view>
+    </picker>
+    <view class="field">
+      <text class="field-label">出生体重</text>
+      <input class="field-input" type="digit" value="{{f.birthWeight}}" data-k="birthWeight" placeholder="kg" placeholder-class="placeholder" bindinput="onInput"></input>
+      <text class="unit">kg</text>
+    </view>
+    <text wx:if="{{errs.birthWeight}}" class="err">{{errs.birthWeight}}</text>
+    <view class="field">
+      <text class="field-label">出生身长</text>
+      <input class="field-input" type="digit" value="{{f.birthHeight}}" data-k="birthHeight" placeholder="cm" placeholder-class="placeholder" bindinput="onInput"></input>
+      <text class="unit">cm</text>
+    </view>
+    <text wx:if="{{errs.birthHeight}}" class="err">{{errs.birthHeight}}</text>
+    <picker mode="selector" range="{{bloods}}" value="{{bloodIdx}}" bindchange="onBlood">
+      <view class="field"><text class="field-label">血型</text><text class="field-value">{{bloods[bloodIdx]}}</text><text class="arrow">›</text></view>
+    </picker>
+  </view>
+
+  <view class="btn" bindtap="save" hover-class="btn-hover">保存资料</view>
+</view>

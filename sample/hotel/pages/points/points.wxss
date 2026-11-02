@@ -1,0 +1,15 @@
+.top { margin: 24rpx 24rpx 24rpx; padding: 36rpx 32rpx; border-radius: 24rpx; background: linear-gradient(120deg, #3A3226, #6B5A3E); display: flex; flex-direction: column; }
+.t-l { font-size: 24rpx; color: rgba(246, 217, 164, 0.85); }
+.t-v { font-size: 72rpx; font-weight: bold; color: #F6D9A4; margin: 6rpx 0; }
+.t-s { font-size: 22rpx; color: rgba(255, 255, 255, 0.7); }
+.t-acts { margin-top: 28rpx; }
+.t-btn { height: 60rpx; padding: 0 28rpx; margin-right: 20rpx; border-radius: 30rpx; border: 2rpx solid rgba(246, 217, 164, 0.7); color: #F6D9A4; font-size: 24rpx; display: flex; flex-direction: row; align-items: center; }
+.t-main { background: #F6D9A4; border-color: #F6D9A4; color: #3A3226; font-weight: bold; }
+.block-title { display: block; font-size: 30rpx; font-weight: bold; margin-bottom: 8rpx; }
+.rule { min-height: 64rpx; }
+.r-n { width: 160rpx; font-size: 26rpx; flex-shrink: 0; }
+.lg { padding: 20rpx 0; border-top: 1rpx solid #f0f1f3; }
+.lg-t { display: block; font-size: 26rpx; margin-bottom: 4rpx; }
+.lg-v { font-size: 30rpx; font-weight: bold; color: #4e5969; }
+.lg-in { color: #FF5A36; }
+.gap { height: 40rpx; }

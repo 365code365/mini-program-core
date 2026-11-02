@@ -1,0 +1,55 @@
+<image class="pic" src="{{d.img}}" mode="aspectFill"></image>
+
+<view class="card head">
+  <view class="pr-row"><text class="price big">¥{{price}}</text><text class="muted">月售 {{d.sales}}</text></view>
+  <view class="nm"><text class="{{d.tagCls}}">{{d.tagText}}</text><text class="nm-t">{{d.brand}} {{d.name}}</text></view>
+  <text class="muted">{{d.maker}}</text>
+</view>
+
+<view wx:if="{{d.type === 'RX'}}" class="card rxbox">
+  <text class="rx-t">处方药 · 须凭处方购买</text>
+  <text class="rx-s">{{rxOk ? '你有 7 天内审核通过的处方，可直接下单。' : '下单前需上传医生开具的处方或在线问诊，执业药师审核通过后发货。请遵医嘱使用。'}}</text>
+</view>
+
+<view class="card">
+  <text class="h">规格</text>
+  <view class="specs">
+    <text wx:for="{{d.specs}}" wx:key="s" class="spec {{si === index ? 'spec-on' : ''}}" data-i="{{index}}" bindtap="onSpec">{{item.s}} ¥{{item.p}}</text>
+  </view>
+  <view class="qty"><text class="h0">数量</text><stepper value="{{qty}}" min="1" max="99" bind:change="onQty" bind:limit="onLimit"></stepper></view>
+</view>
+
+<view class="card">
+  <view class="ins-h"><text class="h0">{{d.device ? '产品说明' : '药品说明书'}}</text><text class="ins-all" bindtap="toggleAll">{{allOpen ? '全部收起' : '全部展开'}}</text></view>
+  <view wx:for="{{secs}}" wx:key="k" class="sec">
+    <view class="ih" data-k="{{item.k}}" bindtap="toggle">
+      <text class="ih-t">{{item.t}}</text><text class="sec-a">{{open[item.k] ? '收起 ▴' : '展开 ▾'}}</text>
+    </view>
+    <text wx:if="{{open[item.k]}}" class="sec-v" user-select>{{item.v}}</text>
+  </view>
+  <text class="muted tip">以上信息仅供参考，请以药品包装内说明书为准。</text>
+</view>
+
+<view class="sec-h2"><text class="sec-t">同科室常用</text></view>
+<view class="rel">
+  <view class="rel-it" wx:for="{{related}}" wx:key="id" data-id="{{item.id}}" bindtap="openDrug">
+    <image class="rel-img" src="{{item.img}}" mode="aspectFill"></image>
+    <text class="rel-n">{{item.name}}</text>
+    <text class="price">¥{{item.from}}</text>
+  </view>
+</view>
+<view class="bar-gap"></view>
+
+<view class="bar">
+  <view class="bar-ic" bindtap="call"><text class="bi">☏</text><text class="bt">问药师</text></view>
+  <view class="bar-ic" id="cartIcon" bindtap="goCart">
+    <text class="bi">🛒</text><text class="bt">购物车</text>
+    <text wx:if="{{cartN}}" class="badge">{{cartN > 99 ? '99+' : cartN}}</text>
+  </view>
+  <view class="b-add" bindtap="addCart">加入购物车</view>
+  <view class="b-buy" bindtap="buyNow">{{d.type === 'RX' && !rxOk ? '提交需求' : '立即购买'}}</view>
+</view>
+
+<view wx:if="{{ball.on}}" class="ball-x" style="left: {{ball.x}}px; top: {{ball.y}}px;" animation="{{ballX}}">
+  <view class="ball" animation="{{ballY}}"></view>
+</view>

@@ -1,0 +1,46 @@
+<view class="map-box">
+  <map id="storeMap" class="map" latitude="{{loc.latitude}}" longitude="{{loc.longitude}}" scale="12" markers="{{markers}}"
+       include-points="{{points}}" show-location bindmarkertap="onMarkerTap" bindcallouttap="onMarkerTap"></map>
+  <view class="map-btn" bindtap="locate">
+    <text class="map-btn-tx">定位</text>
+  </view>
+</view>
+<view class="bar between">
+  <view class="row">
+    <text class="chip {{sort === 'dist' ? 'chip-on' : ''}}" data-k="dist" bindtap="onSort">距离最近</text>
+    <text class="chip {{sort === 'rating' ? 'chip-on' : ''}}" data-k="rating" bindtap="onSort">评分最高</text>
+  </view>
+  <text class="sub" bindtap="chooseFrom">换个出发地 ›</text>
+</view>
+<view class="tip" wx:if="{{locTip}}">
+  <text>{{locTip}}</text>
+</view>
+<view class="wrap">
+  <view class="loading" wx:if="{{loading}}">正在加载门店…</view>
+  <view class="card st {{activeId === item.id ? 'st-on' : ''}}" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="pick">
+    <view class="row">
+      <image class="st-img" src="{{item.img}}" mode="aspectFill" data-id="{{item.id}}" catchtap="goStore"></image>
+      <view class="col flex1 st-info">
+        <view class="between">
+          <text class="st-name" data-id="{{item.id}}" catchtap="goStore">{{item.name}}</text>
+          <text class="blue st-dist">{{item.dist}} km</text>
+        </view>
+        <view class="row">
+          <text class="orange">★ {{item.rating}}</text>
+          <text class="sub st-gap">{{item.hours}}</text>
+        </view>
+        <text class="sub">{{item.address}}</text>
+      </view>
+    </view>
+    <view class="row st-tags">
+      <text class="tag" wx:for="{{item.tags}}" wx:for-item="t" wx:key="*this">{{t}}</text>
+    </view>
+    <view class="row st-ops">
+      <view class="btn-gray" data-id="{{item.id}}" catchtap="call">电话</view>
+      <view class="btn-gray st-op" data-id="{{item.id}}" catchtap="nav">导航</view>
+      <view class="flex1"></view>
+      <view class="btn-ghost" data-id="{{item.id}}" catchtap="goStore">去预约</view>
+    </view>
+  </view>
+  <view class="tab-gap"></view>
+</view>

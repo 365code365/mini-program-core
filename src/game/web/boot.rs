@@ -21,6 +21,8 @@ pub const SEGMENTS: &[&str] = &[
     "host-capabilities", "base-ext", "media-ext",
     "game-global", "game-compat", "game-surface", "game-input", "game-lifecycle", "game-window", "game-keyboard",
     "game-proxies", "game-pc",
+    // nb / gb / mb 与按函数名认出的别名（js/api_alias.rs）：与 wx 同一个对象，放最后也看得见 DOM 层后换上的 wx.*
+    "api-alias",
 ];
 
 /// 高性能+ 多装的普通模式那几层（画布 / 图片 / WebGL 的 JS 语义），它们的原生入口由 wg-remote.js 录下来交回 App
@@ -144,7 +146,9 @@ impl WebGame {
             return None;
         }
         let src = std::fs::read_to_string(self.root.join(format!("{key}.js"))).ok()?;
-        Some(wrap("__defineModule", key, &src))
+        // 认出的别名拼在包装前面、同一行：包装里的源码行号不动（见 wrap 的约定）
+        let alias = crate::js::api_alias::guess_script([src.as_str()]).unwrap_or_default();
+        Some(format!("{alias}{}", wrap("__defineModule", key, &src)))
     }
 
     /// `/__wg/entry.js`：执行 game.js（或独立分包的入口）
@@ -157,7 +161,8 @@ impl WebGame {
             Some((_, key)) => format!("__wgRunEntry(function() {{ __require('', {}); }});", json!(key)),
             None => {
                 let src = std::fs::read_to_string(self.root.join("game.js")).unwrap_or_default();
-                format!("__wgRunEntry(function() {{ {}\n}});\n", wrap("__runAsModule", "game", &src))
+                let alias = crate::js::api_alias::guess_script([src.as_str()]).unwrap_or_default();
+                format!("{alias}__wgRunEntry(function() {{ {}\n}});\n", wrap("__runAsModule", "game", &src))
             }
         }
     }

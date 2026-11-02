@@ -28,6 +28,7 @@ Page({
         const to = S.COLS[res.tapIndex].key
         if (to === card.col) return
         S.update(id, c => { c.col = to })
+        S.log('move', card, '从「' + S.colName(card.col) + '」移到「' + S.colName(to) + '」')
         wx.showToast({ title: '已移到' + S.COLS[res.tapIndex].name, icon: 'none' })
         this.refresh()
       }
@@ -38,5 +39,7 @@ Page({
     wx.navigateTo({ url: '/pages/new/new?col=' + col })
   },
   goStats() { wx.navigateTo({ url: '/pages/stats/stats' }) },
-  goMembers() { wx.navigateTo({ url: '/pages/members/members' }) }
+  goMembers() { wx.navigateTo({ url: '/pages/members/members' }) },
+  goSearch() { wx.navigateTo({ url: '/pages/search/search' }) },
+  goActivity() { wx.navigateTo({ url: '/pages/activity/activity' }) }
 })

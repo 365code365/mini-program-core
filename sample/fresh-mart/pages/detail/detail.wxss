@@ -281,6 +281,54 @@
   line-height: 44rpx;
 }
 
+.review {
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #f3f4f6;
+}
+
+.review:last-child {
+  border-bottom: 0;
+  padding-bottom: 4rpx;
+}
+
+.r-avatar {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 24rpx;
+  background: #e6f8ee;
+  color: #12b76a;
+  font-size: 22rpx;
+  margin-right: 12rpx;
+}
+
+.r-mine {
+  background: #12b76a;
+  color: #ffffff;
+}
+
+.r-user {
+  font-size: 24rpx;
+  color: #3a3f47;
+  margin-right: 12rpx;
+}
+
+.r-star {
+  font-size: 22rpx;
+  color: #e3e6eb;
+}
+
+.r-star-on {
+  color: #ffb020;
+}
+
+.r-text {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 26rpx;
+  line-height: 40rpx;
+  color: #3a3f47;
+}
+
 .bottom-gap {
   height: 160rpx;
 }

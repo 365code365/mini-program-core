@@ -1,0 +1,23 @@
+<view class="top">
+  <text class="t-l">可用积分</text>
+  <text class="t-v">{{points}}</text>
+  <text class="t-s">可抵 ¥{{cash}} · 预订时 100 积分抵 1 元，单笔最多抵 50 元</text>
+  <view class="row t-acts">
+    <view class="t-btn" bindtap="onSign"><text>{{signed ? '今日已签到' : '签到 +10'}}</text></view>
+    <view class="t-btn t-main" bindtap="onUse"><text>去订房抵现</text></view>
+  </view>
+</view>
+<view class="card">
+  <text class="block-title">怎么得积分</text>
+  <view class="rule row"><text class="r-n">每日签到</text><text class="sub flex1">每天 +10</text></view>
+  <view class="rule row"><text class="r-n">预订住宿</text><text class="sub flex1">每消费 1 元 +1，取消订单扣回</text></view>
+  <view class="rule row"><text class="r-n">离店点评</text><text class="sub flex1">每条点评 +50</text></view>
+</view>
+<view class="card">
+  <text class="block-title">积分明细</text>
+  <view class="lg row" wx:for="{{log}}" wx:key="k">
+    <view class="flex1"><text class="lg-t">{{item.title}}</text><text class="sub">{{item.time}}</text></view>
+    <text class="lg-v {{item.delta > 0 ? 'lg-in' : ''}}">{{item.delta > 0 ? '+' : ''}}{{item.delta}}</text>
+  </view>
+</view>
+<view class="gap"></view>

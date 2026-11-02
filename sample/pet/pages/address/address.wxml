@@ -1,0 +1,19 @@
+<view class="card addr" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onPick">
+  <view wx:if="{{select}}" class="radio {{pickedId === item.id ? 'on' : ''}}"><view class="radio-in"></view></view>
+  <view class="a-m">
+    <view class="row">
+      <text wx:if="{{item.isDefault}}" class="a-tag def">默认</text>
+      <text wx:if="{{item.tag}}" class="a-tag">{{item.tag}}</text>
+      <text class="muted">{{item.regionText}}</text>
+    </view>
+    <text class="a-detail">{{item.detail}}</text>
+    <text class="muted">{{item.name}}  {{item.phoneMask}}</text>
+  </view>
+  <view class="edit" data-id="{{item.id}}" catchtap="onEdit"><text>编辑</text></view>
+</view>
+<view wx:if="{{!list.length}}" class="none"><text class="muted">还没有收货地址，下单前先添加一个吧</text></view>
+<view style="height: 180rpx;"></view>
+<view class="bar">
+  <view class="bar-btn ghost" bindtap="onImport"><text>导入微信地址</text></view>
+  <view class="btn bar-btn add-addr" bindtap="onAdd"><text>新增收货地址</text></view>
+</view>

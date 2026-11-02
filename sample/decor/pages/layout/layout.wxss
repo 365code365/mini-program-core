@@ -1,0 +1,17 @@
+.plan { position: relative; width: 690rpx; height: 540rpx; margin-top: 20rpx; }
+.plan-img { position: absolute; left: 0; top: 0; width: 690rpx; height: 540rpx; }
+.room { position: absolute; font-size: 20rpx; color: #9a8f82; }
+.fur { border-radius: 6rpx; display: flex; align-items: center; justify-content: center; opacity: 0.92; }
+.fur-on { border: 2px solid #2a2723; opacity: 1; }
+.fur-in { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.fur-tx { font-size: 18rpx; color: #ffffff; }
+.sel { margin-top: 20rpx; min-height: 40rpx; }
+.sel-t { font-size: 26rpx; color: #3a7d6c; }
+.tools { margin-top: 16rpx; }
+.tool { flex: 1; text-align: center; font-size: 24rpx; color: #4a453f; background: #f3f0eb; padding: 16rpx 0; border-radius: 12rpx; margin-right: 12rpx; }
+.tool:last-child { margin-right: 0; }
+.tips { display: flex; flex-direction: column; }
+.tip { font-size: 24rpx; color: #6a645c; margin-top: 12rpx; line-height: 1.6; }
+.act-main { margin-left: 20rpx; }
+.plan-card { padding: 28rpx 6rpx; }
+.pad { padding: 0 22rpx; }

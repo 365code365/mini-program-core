@@ -1,0 +1,30 @@
+<view class="head col">
+  <view class="ava big" style="background: {{e.color}};">{{e.ini}}</view>
+  <text class="nm">{{e.name}}</text>
+  <text class="tt">{{e.deptName}} · {{e.title}}</text>
+  <view class="busy" wx:if="{{busy}}"><text>{{busy}}</text></view>
+</view>
+
+<view class="acts row">
+  <view class="ac col" bindtap="call"><view class="ac-ic" style="background:#00b42a;">电</view><text class="ac-t">打电话</text></view>
+  <view class="ac col" bindtap="copyMail"><view class="ac-ic" style="background:#1677ff;">邮</view><text class="ac-t">复制邮箱</text></view>
+  <view class="ac col" wx:if="{{!isMe}}" data-type="leave" bindtap="apply"><view class="ac-ic" style="background:#fa8c16;">批</view><text class="ac-t">找 TA 审批</text></view>
+</view>
+
+<view class="card">
+  <view class="kv row"><text class="k">手机</text><text class="v flex1">{{e.phone}}</text></view>
+  <view class="kv row"><text class="k">座机</text><text class="v flex1">0571-8866{{e.ext}}</text></view>
+  <view class="kv row"><text class="k">邮箱</text><text class="v flex1">{{e.email}}</text></view>
+  <view class="kv row"><text class="k">工号</text><text class="v flex1">{{e.id}}</text></view>
+  <view class="kv row"><text class="k">办公地点</text><text class="v flex1">云协同大厦 {{e.dept === 'rd' ? '12F' : '13F'}}</text></view>
+</view>
+
+<view class="card" wx:if="{{peers.length}}">
+  <text class="sec-title">同部门同事</text>
+  <view class="peers">
+    <view class="pe col" wx:for="{{peers}}" wx:key="id" data-id="{{item.id}}" bindtap="goPeer">
+      <view class="ava" style="background: {{item.color}};">{{item.ini}}</view>
+      <text class="pe-n">{{item.name}}</text>
+    </view>
+  </view>
+</view>

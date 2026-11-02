@@ -1,0 +1,9 @@
+.form { margin-top: 20rpx; padding-top: 8rpx; padding-bottom: 8rpx; }
+.types { background: #f2f4f7; border-radius: 12rpx; padding: 4rpx; }
+.ty { padding: 8rpx 22rpx; border-radius: 10rpx; }
+.ty.on { background: #fff; }
+.ty-t { font-size: 24rpx; color: #5c6370; white-space: nowrap; }
+.ty.on .ty-t { color: #2E6BFF; font-weight: bold; }
+.tip { display: block; margin: 0 36rpx; line-height: 36rpx; }
+.save-wrap { padding: 32rpx; }
+.btn-primary.idle { opacity: 0.6; }

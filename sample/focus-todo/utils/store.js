@@ -51,7 +51,8 @@ function seedTodos() {
 
 function loadTodos() {
   let list = wx.getStorageSync('ft_todos')
-  if (!list || !list.length) {
+  // 只在第一次打开（storage 里还没有这个键）时铺示例；用户删光了存的是 []，不能再铺回来
+  if (!Array.isArray(list)) {
     list = seedTodos()
     wx.setStorageSync('ft_todos', list)
   }
@@ -75,7 +76,7 @@ function saveSettings(s) {
 // 专注记录：{ 'YYYY-MM-DD': 分钟 }，另存每条 session
 function loadSessions() {
   let s = wx.getStorageSync('ft_sessions')
-  if (!s || !s.length) {
+  if (!Array.isArray(s)) {
     const seed = [[-6, 3], [-5, 5], [-4, 2], [-3, 6], [-2, 4], [-1, 7], [0, 2]]
     const titles = ['完成 Q1 产品复盘 PPT', '背 30 个雅思单词', '整理本周周报', '读完《原则》第三章']
     s = []
@@ -95,4 +96,39 @@ function addSession(session) {
   wx.setStorageSync('ft_sessions', s)
 }
 
-module.exports = { PRIORITY, WEEK, pad, fmt, today, dayOffset, label, loadTodos, saveTodos, loadSettings, saveSettings, loadSessions, addSession }
+function saveSessions(list) {
+  wx.setStorageSync('ft_sessions', list)
+}
+// 重复规则（与编辑页 repeats 下标对应）：0 不重复 1 每天 2 工作日 3 每周 4 每月
+const REPEATS = ['不重复', '每天', '工作日', '每周', '每月']
+function parse(s) {
+  const p = s.split('-')
+  return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]))
+}
+function nextDate(date, repeat) {
+  const d = parse(date)
+  if (repeat === 1) d.setDate(d.getDate() + 1)
+  else if (repeat === 2) {
+    do { d.setDate(d.getDate() + 1) } while (d.getDay() === 0 || d.getDay() === 6)
+  } else if (repeat === 3) d.setDate(d.getDate() + 7)
+  else if (repeat === 4) {
+    // 每月同一天；31 号遇到小月落在月末
+    const day = d.getDate()
+    const m = new Date(d.getFullYear(), d.getMonth() + 2, 0)
+    m.setDate(Math.min(day, m.getDate()))
+    return fmt(m)
+  } else return ''
+  return fmt(d)
+}
+// 重复待办勾完成：生成下一次（同一条只生成一次，取消完成再勾不会重复生成）。返回新待办或 null
+function spawnNext(list, it) {
+  if (!it.repeat || it.spawned) return null
+  const date = nextDate(it.date, it.repeat)
+  if (!date) return null
+  it.spawned = true
+  const id = list.reduce((m, i) => Math.max(m, i.id), 0) + 1
+  const next = Object.assign({}, it, { id, date, done: false, pomos: 0, spawned: false })
+  list.push(next)
+  return next
+}
+module.exports = { REPEATS, nextDate, spawnNext, saveSessions, parse, PRIORITY, WEEK, pad, fmt, today, dayOffset, label, loadTodos, saveTodos, loadSettings, saveSettings, loadSessions, addSession }

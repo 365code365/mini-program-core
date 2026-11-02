@@ -1,0 +1,34 @@
+.top { padding: 20rpx 24rpx; background: #ffffff; }
+.loc { background: #f3f5f4; border-radius: 30rpx; padding: 8rpx 22rpx; }
+.loc-ic { color: #13b37b; font-size: 24rpx; margin-right: 8rpx; }
+.loc-t { font-size: 28rpx; font-weight: bold; }
+.loc-arrow { font-size: 22rpx; margin-left: 8rpx; color: #8a8d96; }
+.refresh { margin-left: 16rpx; border: 1rpx solid #13b37b; border-radius: 24rpx; padding: 4rpx 18rpx; }
+.refresh-t { font-size: 22rpx; color: #13b37b; }
+.loc-tip { background: #fff7e6; color: #b8741a; font-size: 22rpx; padding: 12rpx 24rpx; }
+.promo { margin: 20rpx 24rpx 0; padding: 28rpx; border-radius: 20rpx; background: linear-gradient(120deg, #13b37b, #0e8f5f); }
+.promo-t { color: #ffffff; font-size: 30rpx; font-weight: bold; }
+.promo-s { color: #d9f4e9; font-size: 22rpx; margin-top: 8rpx; }
+.promo-btn { background: #ffffff; color: #0e8f5f; border-radius: 30rpx; padding: 10rpx 24rpx; font-size: 24rpx; }
+.sports { margin-top: 20rpx; }
+.sp { align-items: center; padding: 12rpx 0; border-radius: 16rpx; }
+.sp-on { background: #e7f8f1; }
+.sp-ic { width: 88rpx; height: 88rpx; }
+.sp-t { font-size: 24rpx; margin-top: 8rpx; color: #3a3d46; }
+.near-head { padding: 32rpx 24rpx 8rpx; }
+.filter { margin-left: 16rpx; background: #13b37b; border-radius: 20rpx; padding: 2rpx 14rpx; }
+.filter-t { color: #ffffff; font-size: 22rpx; }
+.filter-x { color: #ffffff; font-size: 24rpx; margin-left: 6rpx; }
+.sort { font-size: 24rpx; color: #8a8d96; margin-left: 20rpx; }
+.sort-on { color: #13b37b; font-weight: bold; }
+.loading { padding: 20rpx 24rpx; }
+.sk { height: 200rpx; background: #e6e9e8; border-radius: 20rpx; margin-bottom: 20rpx; }
+.loading-t { text-align: center; }
+.vn { background: #ffffff; margin: 16rpx 24rpx 0; padding: 20rpx; border-radius: 20rpx; align-items: flex-start; }
+.vn-img { width: 220rpx; height: 170rpx; border-radius: 12rpx; flex-shrink: 0; }
+.vn-info { margin-left: 20rpx; }
+.vn-n { font-size: 28rpx; font-weight: bold; }
+.vn-l { margin-top: 10rpx; }
+.vn-rate { color: #ff7a1a; font-size: 24rpx; font-weight: bold; }
+.vn-gap { margin-left: 14rpx; }
+.vtag { font-size: 20rpx; color: #0e8f5f; background: #e7f8f1; border-radius: 6rpx; padding: 2rpx 10rpx; margin-right: 10rpx; }

@@ -20,7 +20,7 @@
       <view class="pm-ic pm-card"><text class="pm-ic-t">卡</text></view>
       <view class="col pm-name">
         <text>饭卡余额</text>
-        <text class="sub {{balanceEnough ? '' : 'warn'}}">可用 ¥{{balanceText}}{{balanceEnough ? '' : '，余额不足'}}</text>
+        <text class="sub {{balanceEnough ? '' : 'warn'}}">可用 ¥{{balanceText}}{{balanceEnough ? '' : '，余额不足，点此充值'}}</text>
       </view>
       <view class="radio {{method === 'card' ? 'radio-on' : ''}}"><view class="tick" wx:if="{{method === 'card'}}"></view></view>
     </view>
@@ -31,4 +31,8 @@
     <view wx:if="{{!expired}}" class="link" bindtap="cancelOrder"><text class="sub">取消订单</text></view>
     <view wx:if="{{expired}}" class="btn" bindtap="reorder"><text>重新下单</text></view>
   </view>
+</view>
+<view wx:elif="{{missing}}" class="none">
+  <text class="sub">没有待支付的订单</text>
+  <view class="btn btn-ghost none-btn" bindtap="goOrders"><text>查看我的订单</text></view>
 </view>

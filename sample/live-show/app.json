@@ -1,0 +1,33 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/wallet/wallet",
+    "pages/want/want",
+    "pages/mine/mine",
+    "pages/detail/detail",
+    "pages/seat/seat",
+    "pages/confirm/confirm",
+    "pages/viewer/viewer",
+    "pages/result/result",
+    "pages/ticket/ticket"
+  ],
+  "window": {
+    "navigationBarTitleText": "现场",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f5f5f7"
+  },
+  "tabBar": {
+    "color": "#969aa4",
+    "selectedColor": "#ff3b5c",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "演出", "iconPath": "images/tab/home.png", "selectedIconPath": "images/tab/home-on.png" },
+      { "pagePath": "pages/wallet/wallet", "text": "票夹", "iconPath": "images/tab/ticket.png", "selectedIconPath": "images/tab/ticket-on.png" },
+      { "pagePath": "pages/want/want", "text": "想看", "iconPath": "images/tab/heart.png", "selectedIconPath": "images/tab/heart-on.png" },
+      { "pagePath": "pages/mine/mine", "text": "我的", "iconPath": "images/tab/user.png", "selectedIconPath": "images/tab/user-on.png" }
+    ],
+    "custom": true
+  }
+}

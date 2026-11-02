@@ -1,0 +1,30 @@
+<view class="empty" wx:if="{{!list.length}}">
+  <image class="empty-img" src="/images/misc/empty.png" mode="aspectFit"></image>
+  <text class="empty-tx">还没有收货地址</text>
+</view>
+<view class="card ad" wx:for="{{list}}" wx:key="id">
+  <view class="ad-main" data-id="{{item.id}}" bindtap="onPick" hover-class="{{select ? 'btn-hover' : 'none'}}">
+    <view class="row">
+      <text class="ad-name">{{item.name}}</text>
+      <text class="ad-phone">{{item.phone}}</text>
+      <text class="tag" wx:if="{{item.tag}}">{{item.tag}}</text>
+      <text class="ad-def" wx:if="{{item.isDefault}}">默认</text>
+    </view>
+    <text class="ad-detail">{{item.region[0]}} {{item.region[1]}} {{item.region[2]}} {{item.detail}}</text>
+  </view>
+  <view class="row between ad-ops">
+    <view class="row" data-id="{{item.id}}" bindtap="setDefault">
+      <radio checked="{{item.isDefault}}" color="#3f9a3c"></radio>
+      <text class="muted ad-op-tx">{{item.isDefault ? '默认地址' : '设为默认'}}</text>
+    </view>
+    <view class="row">
+      <text class="ad-op" data-id="{{item.id}}" bindtap="edit">编辑</text>
+      <text class="ad-op" data-id="{{item.id}}" bindtap="remove">删除</text>
+    </view>
+  </view>
+</view>
+<view style="height: 200rpx;"></view>
+<view class="bar">
+  <view class="btn-ghost bar-b" hover-class="btn-hover" bindtap="importWx">导入微信地址</view>
+  <view class="btn bar-b" hover-class="btn-hover" bindtap="add">+ 新增地址</view>
+</view>

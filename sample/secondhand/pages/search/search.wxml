@@ -1,0 +1,74 @@
+<view class="bar">
+  <view class="box">
+    <view class="s-ic"></view>
+    <input class="ipt" value="{{kw}}" focus="{{focus}}" confirm-type="search" placeholder="{{catName ? '在「' + catName + '」里搜' : '搜索想要的宝贝'}}" bindinput="onInput" bindconfirm="onConfirm" />
+    <view class="clr" wx:if="{{kw}}" bindtap="clearKw">×</view>
+  </view>
+  <view class="go" wx:if="{{kw}}" bindtap="onSearchBtn">搜索</view>
+  <view class="go go-cancel" wx:else bindtap="cancel">取消</view>
+</view>
+<!-- 联想词 -->
+<view class="sugg" wx:if="{{sugg.length}}">
+  <view class="sugg-it" wx:for="{{sugg}}" wx:key="*this" data-w="{{item}}" bindtap="tapWord">
+    <view class="s-ic s-ic-sm"></view><text>{{item}}</text>
+  </view>
+</view>
+<!-- 搜索首页：历史 + 热搜 -->
+<view wx:elif="{{mode === 'idle'}}">
+  <view class="sec" wx:if="{{history.length}}">
+    <view class="row between"><text class="sec-t">搜索历史</text><text class="muted" bindtap="clearHistory">清空</text></view>
+    <view class="chips">
+      <view class="chip" wx:for="{{history}}" wx:key="*this" data-w="{{item}}" bindtap="tapWord">{{item}}</view>
+    </view>
+  </view>
+  <view class="sec">
+    <text class="sec-t">闲转热搜</text>
+    <view class="hot">
+      <view class="hot-it" wx:for="{{hot}}" wx:key="*this" data-w="{{item}}" bindtap="tapWord">
+        <text class="hot-no {{index < 3 ? 'hot-top' : ''}}">{{index + 1}}</text>
+        <text class="hot-w">{{item}}</text>
+        <text class="hot-fire" wx:if="{{index < 2}}">热</text>
+      </view>
+    </view>
+  </view>
+</view>
+<!-- 结果 -->
+<view wx:else>
+  <view class="sorts">
+    <view class="sort {{sort === item.k ? 'sort-on' : ''}}" wx:for="{{sorts}}" wx:key="k" data-k="{{item.k}}" bindtap="onSort">{{item.t}}</view>
+    <view class="sort filt {{filterCount ? 'sort-on' : ''}}" bindtap="togglePanel">筛选{{filterCount ? '·' + filterCount : ''}}</view>
+  </view>
+  <view class="panel" wx:if="{{panel}}">
+    <view class="p-t row between"><text>价格区间</text><text class="p-v">¥{{minP}} - {{maxP >= MAXP ? '不限' : '¥' + maxP}}</text></view>
+    <view class="sl-row"><text class="sl-l">最低</text><slider class="sl" min="0" max="{{MAXP}}" step="50" value="{{minP}}" activeColor="#ffb400" block-size="20" bindchanging="onMin" bindchange="onMin" /></view>
+    <view class="sl-row"><text class="sl-l">最高</text><slider class="sl" min="0" max="{{MAXP}}" step="50" value="{{maxP}}" activeColor="#ffb400" block-size="20" bindchanging="onMax" bindchange="onMax" /></view>
+    <view class="p-t">成色</view>
+    <view class="chips">
+      <view class="chip {{condSel[item] ? 'chip-on' : ''}}" wx:for="{{conds}}" wx:key="*this" data-c="{{item}}" bindtap="toggleCond">{{item}}</view>
+      <view class="chip {{freeOnly ? 'chip-on' : ''}}" bindtap="toggleFree">只看包邮</view>
+    </view>
+    <view class="row p-btns">
+      <view class="p-btn" bindtap="resetFilter">重置</view>
+      <view class="p-btn p-ok" bindtap="applyFilter">确定</view>
+    </view>
+  </view>
+  <view class="mask" wx:if="{{panel}}" bindtap="togglePanel"></view>
+  <view class="res" wx:for="{{results}}" wx:key="id" data-id="{{item.id}}" bindtap="goDetail">
+    <image class="r-img" src="{{item.cover}}" mode="aspectFill" lazy-load></image>
+    <view class="r-info">
+      <view class="r-t">{{item.title}}</view>
+      <view class="row"><text class="tag" wx:if="{{item.mine}}">我发布的</text><text class="tag tag-g">{{item.cond}}</text><text class="tag" wx:if="{{item.free}}">包邮</text></view>
+      <view class="row between r-b">
+        <view class="row"><text class="price r-p"><text class="yen">¥</text>{{item.price}}</text><text class="orig">¥{{item.orig}}</text></view>
+        <text class="sold" wx:if="{{item.sold}}">已卖出</text>
+      </view>
+      <text class="muted">{{item.wants}}人想要 · {{item.city}}</text>
+    </view>
+  </view>
+  <view class="empty" wx:if="{{!results.length}}">
+    <view class="empty-ic">?</view>
+    <text>没有找到相关宝贝，换个词或放宽筛选试试</text>
+    <view class="empty-btn" bindtap="resetAndSearch">清除筛选条件</view>
+  </view>
+  <view class="loading-more" wx:else>共 {{results.length}} 件宝贝</view>
+</view>

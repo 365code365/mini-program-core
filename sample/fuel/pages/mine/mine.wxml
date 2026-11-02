@@ -1,0 +1,33 @@
+<view class="head">
+  <view class="av"><text class="av-tx">车</text></view>
+  <view class="hd-mid">
+    <text class="nick">{{plate || '易加油车主'}}</text>
+    <text class="sub">本月已加 {{monthCount}} 次 · 累计省 ¥{{savedTotal}}</text>
+  </view>
+</view>
+<view class="assets">
+  <view class="as" bindtap="goCards" data-tab="card"><text class="as-n">¥{{balance}}</text><text class="as-k">油卡余额</text></view>
+  <view class="as" bindtap="goCards" data-tab="coupon"><text class="as-n">{{couponCount}}</text><text class="as-k">可用券</text></view>
+  <view class="as" bindtap="goInvoice"><text class="as-n">{{todoInvoice}}</text><text class="as-k">待开票</text></view>
+</view>
+
+<view class="card">
+  <text class="sec-title">我的爱车</text>
+  <picker mode="selector" range="{{oils}}" value="{{oilIndex}}" bindchange="onOil">
+    <view class="mi"><text class="mi-k">常用油号</text><text class="mi-v">{{oils[oilIndex]}} ›</text></view>
+  </picker>
+  <view class="mi">
+    <text class="mi-k">车牌号</text>
+    <input class="mi-in" placeholder="如 浙A·D12345" value="{{plate}}" maxlength="9" bindblur="onPlate" bindconfirm="onPlate" />
+  </view>
+  <text class="err" wx:if="{{plateErr}}">{{plateErr}}</text>
+</view>
+
+<view class="card menu">
+  <view class="mi" bindtap="goCards" data-tab="card" hover-class="btn-hover"><text class="mi-k">电子油卡充值</text><text class="mi-v">充 1000 送 20 ›</text></view>
+  <view class="mi" bindtap="goInvoice" hover-class="btn-hover"><text class="mi-k">电子发票</text><text class="mi-v">›</text></view>
+  <view class="mi" bindtap="goTitles" hover-class="btn-hover"><text class="mi-k">发票抬头管理</text><text class="mi-v">{{titleCount}} 个 ›</text></view>
+  <view class="mi" bindtap="checkNet" hover-class="btn-hover"><text class="mi-k">网络状态</text><text class="mi-v {{net.isConnected ? '' : 'off'}}">{{netText}} · 点击检测</text></view>
+  <view class="mi mi-last" bindtap="callService" hover-class="btn-hover"><text class="mi-k">联系客服</text><text class="mi-v">400-860-5517 ›</text></view>
+</view>
+<view class="tabbar-gap"></view>

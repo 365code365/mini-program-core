@@ -1,0 +1,50 @@
+<view wx:if="{{o}}">
+  <view class="dt-head">
+    <text class="dt-st">{{o.statusText}}</text>
+    <text class="dt-sub">{{o.status === 'paid' ? (o.way === 'express' ? '已付款，等待卖家发货' : '已付款，私信卖家约面交') : o.status === 'shipped' ? '宝贝在路上，收到后请确认收货' : o.status === 'done' ? '交易完成，感谢使用闲转' : '已退款：' + o.refundReason}}</text>
+  </view>
+  <view class="card" wx:if="{{o.status !== 'closed'}}">
+    <view class="row dt-steps">
+      <view class="dt-step" wx:for="{{steps}}" wx:key="*this">
+        <view class="dt-dot {{index <= cur ? 'on' : ''}}">{{index + 1}}</view>
+        <text class="dt-sn {{index <= cur ? 'on' : ''}}">{{item}}</text>
+      </view>
+    </view>
+    <view class="row between dt-exp" wx:if="{{o.express}}" bindtap="copy"><text class="muted">物流单号</text><text>{{o.express}} 复制</text></view>
+  </view>
+  <view class="card" wx:if="{{o.addr}}">
+    <text class="dt-an">{{o.addr.name}} {{o.addr.phone}}</text>
+    <text class="muted">{{o.addr.region}} {{o.addr.detail}}</text>
+  </view>
+  <view class="card">
+    <view class="row dt-seller" bindtap="chat">
+      <image class="avatar" src="{{seller.avatar}}"></image><text class="flex1 dt-sname">{{seller.name}}</text><text class="muted">联系卖家 ›</text>
+    </view>
+    <view class="row">
+      <image class="dt-cover" src="{{o.item.cover}}" mode="aspectFill"></image>
+      <view class="flex1"><text class="dt-t">{{o.item.title}}</text><view class="row"><text class="tag">{{o.item.cond}}</text></view></view>
+    </view>
+    <view class="row between dt-kv"><text class="muted">实付</text><text class="price">¥{{o.total}}</text></view>
+    <view class="row between dt-kv"><text class="muted">订单号</text><text>{{o.id}}</text></view>
+    <view class="row between dt-kv"><text class="muted">下单时间</text><text>{{created}}</text></view>
+    <view class="row between dt-kv" wx:if="{{o.remark}}"><text class="muted">留言</text><text>{{o.remark}}</text></view>
+  </view>
+  <view class="card" wx:if="{{o.status === 'done'}}">
+    <block wx:if="{{o.rate}}">
+      <text class="dt-rt">我的评价 {{o.rate}} 星</text>
+      <text class="muted">{{o.review}}</text>
+    </block>
+    <block wx:else>
+      <text class="dt-rt">评价这次交易</text>
+      <view class="row dt-stars"><text class="dt-star {{rate >= item ? 'on' : ''}}" wx:for="{{stars}}" wx:key="*this" data-v="{{item}}" bindtap="setRate">★</text></view>
+      <input class="dt-in" placeholder="宝贝和描述一致吗？卖家怎么样？" value="{{review}}" bindinput="onReview"></input>
+      <view class="btn" bindtap="submitReview">提交评价</view>
+    </block>
+  </view>
+  <view class="safe-bottom"></view>
+  <view class="dt-bar" wx:if="{{o.status === 'paid' || o.status === 'shipped'}}">
+    <view class="btn-ghost" wx:if="{{o.status === 'paid'}}" bindtap="refund">申请退款</view>
+    <view class="btn-ghost" bindtap="chat">联系卖家</view>
+    <view class="btn dt-ok" wx:if="{{o.status === 'shipped'}}" bindtap="confirmRecv">确认收货</view>
+  </view>
+</view>

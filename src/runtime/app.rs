@@ -114,6 +114,7 @@ impl MiniApp {
     pub fn load_script(&self, code: &str) -> Result<(), String> {
         println!("  Loading script...");
         let rt = self.runtime.lock().unwrap();
+        rt.guess_api_alias(code);
         rt.eval(code).map_err(|e| format!("Script error: {}", e))?;
         
         // 打印 JS 输出
@@ -138,15 +139,17 @@ impl MiniApp {
     /// `'exports' is not defined`。`path` 决定相对 require 的基准目录。
     pub fn load_module_script(&self, path: &str, code: &str) -> Result<(), String> {
         let rt = self.runtime.lock().unwrap();
+        // 只取走**这段脚本**打的那几行：缓冲区里原有的（上一页在跳转前 console.log 的、还没被 SDK 收走的）留给
+        // `drain_js_logs` 发 `log` 事件。从前整个清空 —— redirectTo 之前的最后一行日志在手机上就没了（只进了 stdout）
+        let before = rt.eval("__print_buffer.length").ok().and_then(|s| s.trim().parse::<usize>().ok()).unwrap_or(0);
         rt.run_as_module(path, code)
             .map_err(|e| format!("Script error ({}): {}", path, e))?;
-        let output = rt.eval("__print_buffer.join('\\n')").unwrap_or_default();
+        let output = rt.eval(&format!("__print_buffer.splice({before}).join('\\n')")).unwrap_or_default();
         if !output.is_empty() && output != "undefined" {
             println!("\n--- JS Output ---");
             println!("{}", output);
             println!("-----------------\n");
         }
-        rt.eval("__print_buffer = [];").ok();
         Ok(())
     }
 

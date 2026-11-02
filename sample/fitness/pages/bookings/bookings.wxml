@@ -1,0 +1,24 @@
+<view class="tabs">
+  <view class="tab {{tab === item.key ? 'on' : ''}}" wx:for="{{tabs}}" wx:key="key" data-k="{{item.key}}" bindtap="setTab">
+    <text>{{item.name}}</text>
+    <view wx:if="{{tab === item.key}}" class="tab-line"></view>
+  </view>
+</view>
+<view wx:if="{{strikes}}" class="warn"><text>近 30 天爽约 {{strikes}} 次，满 3 次将暂停预约 7 天。开课前 2 小时外取消不算爽约</text></view>
+<view class="card bk" wx:for="{{list}}" wx:key="bid" data-id="{{item.bid}}" bindtap="goCourse">
+  <view class="row between">
+    <text class="bk-n">{{item.name}}</text>
+    <text class="bk-st st-{{item.status}}">{{item.statusText}}</text>
+  </view>
+  <text class="muted bk-l">{{item.when}}</text>
+  <text class="muted bk-l">{{item.store}} · {{item.room}} · {{item.coach}}{{item.paid ? ' · 单次课 ¥' + item.paid : ''}}</text>
+  <view wx:if="{{item.canSign || item.canCancel}}" class="row ops">
+    <view wx:if="{{item.canCancel}}" class="op op-cancel" data-id="{{item.bid}}" catchtap="onCancel"><text>{{item.status === 'wait' ? '取消候补' : '取消预约'}}</text></view>
+    <view wx:if="{{item.canSign}}" class="op pri op-sign" data-id="{{item.bid}}" catchtap="onSign"><text>到店签到</text></view>
+  </view>
+</view>
+<view wx:if="{{!list.length}}" class="empty">
+  <text class="muted">{{tab === 'todo' ? '还没有待上的课' : '这里空空的'}}</text>
+  <view class="btn empty-btn" bindtap="goClasses"><text>去约团课</text></view>
+</view>
+<view style="height: 40rpx;"></view>

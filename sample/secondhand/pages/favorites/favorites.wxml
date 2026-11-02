@@ -1,0 +1,14 @@
+<view class="card row fv-item {{item.sold ? 'fv-sold' : ''}}" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="open">
+  <image class="fv-cover" src="{{item.cover}}" mode="aspectFill"></image>
+  <view class="flex1">
+    <text class="fv-t">{{item.title}}</text>
+    <view class="row"><text class="price"><text class="yen">¥</text>{{item.price}}</text><text class="tag fv-tag">{{item.sold ? '已卖出' : item.cond}}</text></view>
+    <view class="row fv-seller"><image class="fv-av" src="{{item.sellerInfo.avatar}}"></image><text class="muted">{{item.sellerInfo.name}} · {{item.sellerInfo.city}}</text></view>
+  </view>
+  <view class="fv-un" data-id="{{item.id}}" catchtap="unfav">取消</view>
+</view>
+<view class="empty" wx:if="{{!list.length}}">
+  <view class="empty-ic">♡</view>
+  <text>还没有收藏的宝贝</text>
+  <view class="empty-btn" bindtap="goHome">去逛逛</view>
+</view>

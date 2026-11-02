@@ -78,3 +78,4 @@
 
 /* 引擎里定宽块的 margin: 0 auto 不居中，外面套一层 flex 居中 */
 .seg-wrap { display: flex; flex-direction: row; justify-content: center; }
+.manage-icon { background: #ffffff; color: #b8bcc4; border: 2rpx dashed #d5d8de; box-sizing: border-box; font-size: 40rpx; }

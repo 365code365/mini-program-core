@@ -1,7 +1,10 @@
 <view class="addr row">
-  <text class="addr-k">送至</text>
-  <text class="addr-v flex1 ellipsis">{{address}}</text>
-  <text class="edit" bindtap="onEdit">{{editing ? '完成' : '管理'}}</text>
+  <view class="row flex1 addr-pick" bindtap="onAddress">
+    <text class="addr-k">送至</text>
+    <text class="addr-v ellipsis">{{address}}</text>
+    <view class="arrow"></view>
+  </view>
+  <text wx:if="{{list.length}}" class="edit" bindtap="onEdit">{{editing ? '完成' : '管理'}}</text>
 </view>
 
 <view wx:if="{{list.length}}">

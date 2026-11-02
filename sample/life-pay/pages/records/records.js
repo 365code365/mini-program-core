@@ -2,7 +2,7 @@ const data = require('../../utils/data.js');
 const store = require('../../utils/store.js');
 Page({
   data: { filters: [{ k: 'all', name: '全部' }].concat(data.types.map(t => ({ k: t.k, name: t.name }))), filter: 'all', groups: [], total: '0.00', count: 0 },
-  onShow() { this.refresh(); },
+  onShow() { if (typeof this.getTabBar === 'function' && this.getTabBar()) this.getTabBar().setData({ selected: 1 }); this.refresh(); },
   refresh() {
     const f = this.data.filter;
     const list = store.getRecords().filter(r => f === 'all' || r.type === f).sort((a, b) => (a.time < b.time ? 1 : -1));
@@ -24,6 +24,7 @@ Page({
     this.setData({ groups, count: list.length, total: store.money(list.reduce((s, r) => s + r.paid, 0)) });
   },
   onFilter(e) { this.setData({ filter: e.currentTarget.dataset.k }); this.refresh(); },
-  detail(e) { wx.navigateTo({ url: '/pages/result/result?id=' + e.currentTarget.dataset.id }); },
+  detail(e) { wx.navigateTo({ url: '/pages/result/result?from=list&id=' + e.currentTarget.dataset.id }); },
+  goInvoice() { wx.navigateTo({ url: '/pages/invoice/invoice' }); },
   goHome() { wx.switchTab({ url: '/pages/index/index' }); }
 });

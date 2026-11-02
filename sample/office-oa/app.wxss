@@ -1,0 +1,25 @@
+page { background: #f3f5f8; color: #1d2129; font-size: 28rpx; }
+.row { display: flex; flex-direction: row; align-items: center; }
+.col { display: flex; flex-direction: column; }
+.between { justify-content: space-between; }
+.flex1 { flex: 1; }
+.card { background: #ffffff; border-radius: 16rpx; margin: 24rpx 24rpx 0; padding: 28rpx; }
+.sec-title { font-size: 30rpx; font-weight: bold; }
+.sec-more { font-size: 24rpx; color: #86909c; }
+.muted { font-size: 24rpx; color: #86909c; }
+.ava { width: 80rpx; height: 80rpx; border-radius: 16rpx; color: #ffffff; font-size: 26rpx; line-height: 80rpx; text-align: center; flex-shrink: 0; }
+.btn { background: #1677ff; color: #ffffff; font-size: 30rpx; border-radius: 12rpx; height: 88rpx; line-height: 88rpx; text-align: center; }
+.btn-ghost { background: #ffffff; color: #1677ff; border: 2rpx solid #1677ff; box-sizing: border-box; }
+.btn-danger { background: #ffffff; color: #f53f3f; border: 2rpx solid #f53f3f; box-sizing: border-box; }
+.badge { font-size: 22rpx; border-radius: 6rpx; padding: 2rpx 12rpx; }
+.st-pending { color: #ff7d00; background: #fff3e8; }
+.st-approved { color: #00b42a; background: #e8ffea; }
+.st-rejected { color: #f53f3f; background: #ffece8; }
+.st-withdrawn { color: #86909c; background: #f2f3f5; }
+.empty { padding: 100rpx 0; display: flex; flex-direction: column; align-items: center; }
+.empty-ic { width: 112rpx; height: 112rpx; border-radius: 56rpx; background: #e8f3ff; color: #1677ff; font-size: 48rpx; line-height: 112rpx; text-align: center; }
+.empty-tx { margin-top: 20rpx; font-size: 26rpx; color: #86909c; }
+.loading { padding: 40rpx 0; text-align: center; font-size: 24rpx; color: #86909c; }
+.mask { position: fixed; left: 0; top: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.45); z-index: 50; }
+.err { font-size: 22rpx; color: #f53f3f; margin-top: 8rpx; }
+.tab-pad { height: 120rpx; }

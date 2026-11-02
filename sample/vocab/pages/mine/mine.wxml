@@ -1,0 +1,46 @@
+<view class="wrap">
+  <view class="user row">
+    <view class="ava"><text class="ava-tx">词</text></view>
+    <view class="col u-info">
+      <text class="h2">{{s.nick}}</text>
+      <text class="muted">正在学《{{bookName}}》· 连续打卡 {{streak}} 天</text>
+    </view>
+  </view>
+
+  <view class="card nums row">
+    <view class="num" bindtap="goStats"><text class="num-v">{{learned}}</text><text class="muted">已学词</text></view>
+    <view class="num" bindtap="goStats"><text class="num-v">{{mastered}}</text><text class="muted">已掌握</text></view>
+    <view class="num" bindtap="goCalendar"><text class="num-v">{{days}}</text><text class="muted">打卡天数</text></view>
+    <view class="num" bindtap="goWrong"><text class="num-v">{{wrongs}}</text><text class="muted">错题</text></view>
+  </view>
+
+  <view class="card">
+    <view class="between"><text class="h2">每日新词</text><text class="brand plan-v">{{s.plan}} 个</text></view>
+    <slider min="5" max="30" step="1" value="{{s.plan}}" activeColor="#4f6bed" backgroundColor="#e6eaf7" block-size="22" bindchanging="onPlanChanging" bindchange="onPlan"></slider>
+    <text class="muted">{{planTip}}</text>
+  </view>
+
+  <view class="card set">
+    <view class="set-row between">
+      <text>每日学习提醒</text>
+      <switch checked="{{s.remindOn}}" color="#4f6bed" bindchange="onRemind"></switch>
+    </view>
+    <picker mode="time" value="{{s.remind}}" start="06:00" end="23:30" bindchange="onTime">
+      <view class="set-row between"><text>提醒时间</text><text class="muted">{{s.remind}} ›</text></view>
+    </picker>
+    <view class="set-row between">
+      <text>出词自动发音</text>
+      <switch checked="{{s.autoPlay}}" color="#4f6bed" bindchange="onAuto"></switch>
+    </view>
+  </view>
+
+  <view class="card set">
+    <view class="set-row between" hover-class="btn-press" bindtap="goBooks"><text>我的词书</text><text class="muted">{{bookName}} ›</text></view>
+    <view class="set-row between" hover-class="btn-press" bindtap="goCalendar"><text>打卡日历</text><text class="muted">›</text></view>
+    <view class="set-row between" hover-class="btn-press" bindtap="goStats"><text>学习统计</text><text class="muted">›</text></view>
+    <view class="set-row between" hover-class="btn-press" bindtap="goWrong"><text>错题本</text><text class="muted">{{wrongs}} 个 ›</text></view>
+    <view class="set-row between" hover-class="btn-press" bindtap="onReset"><text class="danger">重置学习记录</text><text class="muted">›</text></view>
+  </view>
+  <text class="muted foot">词力 v1.3.0 · 发音由系统语音合成</text>
+  <view style="height: 120rpx;"></view>
+</view>

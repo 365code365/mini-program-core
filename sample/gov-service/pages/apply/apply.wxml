@@ -1,0 +1,124 @@
+<gov-steps steps="{{steps}}" current="{{step}}" bind:jump="onJump"></gov-steps>
+
+<view class="item-bar row">
+  <text class="ib-t">{{item.name}}</text>
+  <text class="muted">{{item.dept}}</text>
+</view>
+
+<!-- 第 1 步：申请人信息 -->
+<view class="card" wx:if="{{step === 0}}">
+  <view class="row between">
+    <text class="sec-t">申请人信息</text>
+    <text class="link" bindtap="fillMine">使用实名信息</text>
+  </view>
+  <view class="fi {{errors.name ? 'bad' : ''}}">
+    <text class="fl">姓名</text>
+    <input class="fv" placeholder="与身份证一致" value="{{form.name}}" data-f="name" bindinput="onInput" maxlength="20"></input>
+  </view>
+  <view class="err row" wx:if="{{errors.name}}"><icon type="warn" size="13" color="#dc2626"></icon><text>{{errors.name}}</text></view>
+  <view class="fi {{errors.idcard ? 'bad' : ''}}">
+    <text class="fl">身份证号</text>
+    <input class="fv" type="idcard" placeholder="18 位公民身份号码" value="{{form.idcard}}" data-f="idcard" bindinput="onInput" maxlength="18"></input>
+  </view>
+  <view class="err row" wx:if="{{errors.idcard}}"><icon type="warn" size="13" color="#dc2626"></icon><text>{{errors.idcard}}</text></view>
+  <view class="fi {{errors.phone ? 'bad' : ''}}">
+    <text class="fl">手机号码</text>
+    <input class="fv" type="number" placeholder="用于接收办理结果短信" value="{{form.phone}}" data-f="phone" bindinput="onInput" maxlength="11"></input>
+  </view>
+  <view class="err row" wx:if="{{errors.phone}}"><icon type="warn" size="13" color="#dc2626"></icon><text>{{errors.phone}}</text></view>
+  <picker mode="region" value="{{form.region}}" bindchange="onRegion">
+    <view class="fi {{errors.region ? 'bad' : ''}}">
+      <text class="fl">户籍所在地</text>
+      <text class="fv {{form.region.length ? '' : 'ph'}}">{{form.region.length ? form.region[0] + ' ' + form.region[1] + ' ' + form.region[2] : '请选择省 / 市 / 区'}}</text>
+      <text class="arr">›</text>
+    </view>
+  </picker>
+  <view class="err row" wx:if="{{errors.region}}"><icon type="warn" size="13" color="#dc2626"></icon><text>{{errors.region}}</text></view>
+  <view class="fi {{errors.address ? 'bad' : ''}}">
+    <text class="fl">居住地址</text>
+    <input class="fv" placeholder="街道、小区、楼栋、门牌号" value="{{form.address}}" data-f="address" bindinput="onInput" maxlength="60"></input>
+  </view>
+  <view class="err row" wx:if="{{errors.address}}"><icon type="warn" size="13" color="#dc2626"></icon><text>{{errors.address}}</text></view>
+</view>
+
+<!-- 第 2 步：事项信息 -->
+<view class="card" wx:if="{{step === 1}}">
+  <text class="sec-t">事项信息</text>
+  <picker mode="selector" range="{{reasons}}" value="{{form.reasonIdx < 0 ? 0 : form.reasonIdx}}" bindchange="onReason">
+    <view class="fi {{errors.reason ? 'bad' : ''}}">
+      <text class="fl">申请类型</text>
+      <text class="fv {{form.reasonIdx < 0 ? 'ph' : ''}}">{{form.reasonIdx < 0 ? '请选择' : reasons[form.reasonIdx]}}</text>
+      <text class="arr">›</text>
+    </view>
+  </picker>
+  <view class="err row" wx:if="{{errors.reason}}"><icon type="warn" size="13" color="#dc2626"></icon><text>{{errors.reason}}</text></view>
+  <view class="fi col">
+    <text class="fl">结果领取</text>
+    <radio-group class="row ways" bindchange="onWay">
+      <label class="way row" wx:for="{{ways}}" wx:key="*this">
+        <radio value="{{item}}" checked="{{form.way === item}}" color="#1d64d8"></radio><text>{{item}}</text>
+      </label>
+    </radio-group>
+  </view>
+  <view class="err row" wx:if="{{errors.way}}"><icon type="warn" size="13" color="#dc2626"></icon><text>{{errors.way}}</text></view>
+  <view class="fi col">
+    <text class="fl">补充说明（选填）</text>
+    <textarea class="ta" placeholder="如需说明特殊情况请在此填写" value="{{form.remark}}" data-f="remark" bindinput="onInput" maxlength="200"></textarea>
+    <text class="muted cnt">{{form.remark.length}}/200</text>
+  </view>
+</view>
+
+<!-- 第 3 步：上传材料 -->
+<view class="card" wx:if="{{step === 2}}">
+  <text class="sec-t">上传材料</text>
+  <text class="muted tip">支持 PDF / JPG / PNG，单个文件不超过 10MB</text>
+  <view class="mt" wx:for="{{item.materials}}" wx:for-item="m" wx:key="name">
+    <view class="row between">
+      <text class="mt-n">{{m.name}}</text>
+      <text class="tag {{m.required ? 'req' : 'opt'}}">{{m.required ? '必交' : '选交'}}</text>
+    </view>
+    <view class="row mt-f" wx:if="{{form.files[index]}}">
+      <icon type="success" size="16" color="#16a34a"></icon>
+      <text class="mt-fn">{{form.files[index].name}}</text>
+      <text class="muted">{{form.files[index].size}}</text>
+      <text class="mt-del" data-i="{{index}}" bindtap="removeFile">删除</text>
+    </view>
+    <view class="mt-pick" wx:else hover-class="tap" data-i="{{index}}" bindtap="pickFile">＋ 从聊天记录选择文件</view>
+  </view>
+  <view class="err row" wx:if="{{errors.files}}"><icon type="warn" size="13" color="#dc2626"></icon><text>{{errors.files}}</text></view>
+</view>
+
+<!-- 第 4 步：确认提交 -->
+<block wx:if="{{step === 3}}">
+  <view class="card">
+    <text class="sec-t">请核对申报信息</text>
+    <view class="kv"><text class="k">申请人</text><text class="v">{{form.name}}</text></view>
+    <view class="kv"><text class="k">身份证号</text><text class="v">{{form.idcard}}</text></view>
+    <view class="kv"><text class="k">手机号码</text><text class="v">{{form.phone}}</text></view>
+    <view class="kv"><text class="k">户籍所在地</text><text class="v">{{form.region[0]}} {{form.region[1]}} {{form.region[2]}}</text></view>
+    <view class="kv"><text class="k">居住地址</text><text class="v">{{form.address}}</text></view>
+    <view class="kv"><text class="k">申请类型</text><text class="v">{{reasons[form.reasonIdx]}}</text></view>
+    <view class="kv"><text class="k">领取方式</text><text class="v">{{form.way}}</text></view>
+    <view class="kv" wx:if="{{form.remark}}"><text class="k">补充说明</text><text class="v">{{form.remark}}</text></view>
+    <view class="kv"><text class="k">已传材料</text>
+      <view class="v"><text class="fline" wx:for="{{item.materials}}" wx:for-item="m" wx:key="name" wx:if="{{form.files[index]}}">· {{form.files[index].name}}</text></view>
+    </view>
+  </view>
+  <view class="card">
+    <checkbox-group bindchange="onAgree">
+      <label class="row agree">
+        <checkbox value="yes" checked="{{form.agree}}" color="#1d64d8"></checkbox>
+        <text class="agree-t">本人承诺所填信息及所交材料真实、有效，如有虚假愿承担相应法律责任。</text>
+      </label>
+    </checkbox-group>
+    <view class="err row" wx:if="{{errors.agree}}"><icon type="warn" size="13" color="#dc2626"></icon><text>{{errors.agree}}</text></view>
+  </view>
+</block>
+
+<view class="safe-bar"></view>
+<view class="bar row">
+  <view class="draft-b" hover-class="tap" bindtap="saveDraft">{{saved ? '已存草稿' : '保存草稿'}}</view>
+  <view class="btn gray bar-b" wx:if="{{step > 0}}" hover-class="tap" bindtap="prev">上一步</view>
+  <view class="btn bar-b" wx:if="{{step < 3}}" hover-class="tap" bindtap="next">下一步</view>
+  <view class="btn bar-b {{submitting ? 'dis' : ''}}" wx:else hover-class="tap" bindtap="submit">确认提交</view>
+</view>

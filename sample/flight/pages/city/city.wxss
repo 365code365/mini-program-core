@@ -1,0 +1,22 @@
+page { background: #ffffff; }
+.sbar { height: 112rpx; padding: 0 24rpx; background: #ffffff; border-bottom: 1rpx solid #eef1f6; }
+.sbox { height: 72rpx; background: #f2f5fa; border-radius: 36rpx; padding: 0 24rpx; }
+.s-ic { color: #8a93a6; font-size: 24rpx; margin-right: 12rpx; }
+.s-in { font-size: 26rpx; height: 72rpx; }
+.s-x { color: #8a93a6; font-size: 36rpx; padding: 0 8rpx; }
+.body { height: calc(100vh - 113rpx); }
+.sec { padding: 24rpx 60rpx 8rpx 24rpx; }
+.sec-t { font-size: 24rpx; color: #8a93a6; }
+.chips { flex-wrap: wrap; margin-top: 16rpx; }
+.chip { width: 196rpx; height: 64rpx; border-radius: 10rpx; background: #f2f5fa; margin: 0 16rpx 16rpx 0; display: flex; align-items: center; justify-content: center; font-size: 26rpx; }
+.chip-on { background: #eaf1ff; color: #1f6fff; }
+.g-h { background: #f6f8fb; padding: 8rpx 24rpx; font-size: 24rpx; color: #5b6478; }
+.item { height: 92rpx; padding: 0 70rpx 0 24rpx; border-bottom: 1rpx solid #f0f2f6; }
+.item-name { font-size: 30rpx; width: 180rpx; }
+.res { padding: 24rpx; border-bottom: 1rpx solid #f0f2f6; }
+.res-name { font-size: 30rpx; font-weight: bold; }
+.res-code { margin-left: 16rpx; }
+.hover { background: #f6f8fb; }
+.idx { position: fixed; right: 8rpx; top: 200rpx; align-items: center; }
+.idx-l { font-size: 22rpx; color: #1f6fff; width: 44rpx; height: 38rpx; text-align: center; line-height: 38rpx; }
+.bubble { position: fixed; left: 315rpx; top: 500rpx; width: 120rpx; height: 120rpx; border-radius: 16rpx; background: rgba(0, 0, 0, 0.6); color: #ffffff; font-size: 56rpx; display: flex; align-items: center; justify-content: center; }

@@ -1,0 +1,28 @@
+<view class="tabs row">
+  <view class="tb {{tab === item.id ? 'tb-on' : ''}}" wx:for="{{tabs}}" wx:key="id" data-id="{{item.id}}" bindtap="pick">{{item.name}}</view>
+</view>
+<view class="loading" wx:if="{{loading}}">加载中…</view>
+<block wx:else>
+  <view class="empty" wx:if="{{list.length === 0}}">
+    <view class="empty-ic">问</view>
+    <text class="empty-tx">还没有{{tab === 'all' ? '' : '这类'}}咨询记录</text>
+    <view class="btn find" bindtap="findLawyer">去找律师</view>
+  </view>
+  <view class="card it" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="open">
+    <view class="row between">
+      <text class="muted">{{item.createdAt}} · {{item.id}}</text>
+      <text class="st st-{{item.status}}">{{item.statusText}}</text>
+    </view>
+    <view class="row body">
+      <image class="av" src="{{item.avatar}}"></image>
+      <view class="col flex1">
+        <text class="t">{{item.lawyerName}} 律师 · {{item.service}} · {{item.cat}}</text>
+        <text class="last">{{item.last}}</text>
+      </view>
+    </view>
+    <view class="row between foot">
+      <view class="row"><text class="muted">实付 </text><text class="price">¥{{item.amount}}</text></view>
+      <text class="op">{{item.status === 'active' ? '继续咨询' : (item.status === 'done' ? '去评价' : '查看记录')}}</text>
+    </view>
+  </view>
+</block>

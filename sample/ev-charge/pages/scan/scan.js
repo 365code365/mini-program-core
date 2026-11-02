@@ -1,34 +1,56 @@
-const data = require('../../utils/data.js');
-
+// 扫码充电：先调系统扫码（wx.scanCode），宿主没有摄像头能力时退回「输入终端编号」
+const store = require('../../utils/store.js');
+const host = require('../../utils/host.js');
+const start = require('../../utils/start.js');
 Page({
-  data: { code: '', error: '', found: null, light: false, recent: ['XX0128-02', 'GW2210-03', 'XJ3301-05'], balance: '0.00' },
+  data: { code: '', error: '', found: null, light: false, recent: [], balance: '0.00', car: null, focus: false, inputSeq: 0 },
+  onLoad(q) {
+    if (q.no) this.lookup(String(q.no).toUpperCase());
+  },
   onShow() {
-    if (wx.getStorageSync('ev_session')) { wx.redirectTo({ url: '/pages/charging/charging' }); return; }
-    this.setData({ balance: data.getBalance().toFixed(2) });
+    if (store.getSession()) { wx.redirectTo({ url: '/pages/charging/charging' }); return; }
+    this.setData({ balance: store.balance().toFixed(2), recent: store.recent(), car: store.defaultCar() });
+    if (this.data.code) this.lookup(this.data.code);
   },
   lookup(code) {
-    const found = data.findTerminal(code);
-    this.setData({ code, found, error: '' });
+    this.setData({ code, found: store.terminal(code), error: '' });
   },
   onInput(e) { this.lookup(e.detail.value.toUpperCase()); },
-  onClear() { this.setData({ code: '', found: null, error: '' }); },
-  onRecent(e) { this.lookup(e.currentTarget.dataset.code); },
+  onBlur() { this.setData({ focus: false }); },
+  onClear() { this.setData({ code: '', found: null, error: '', inputSeq: this.data.inputSeq + 1 }); },
+  onRecent(e) { this.setData({ inputSeq: this.data.inputSeq + 1 }); this.lookup(String(e.currentTarget.dataset.code)); },
   onLight() { this.setData({ light: !this.data.light }); },
   onScanTap() {
-    // 演示环境没有摄像头：模拟识别到一个空闲终端
-    wx.showLoading({ title: '识别中' });
-    setTimeout(() => { wx.hideLoading(); this.lookup('XX0128-02'); wx.showToast({ title: '已识别 XX0128-02', icon: 'none' }); }, 600);
+    host.scan().then(code => {
+      if (code === '') return;
+      if (code === null) {
+        this.setData({ focus: true });
+        wx.showToast({ title: '当前环境无法打开摄像头，请输入桩身编号', icon: 'none' });
+        return;
+      }
+      this.setData({ inputSeq: this.data.inputSeq + 1 });
+      this.lookup(code);
+      wx.showToast({ title: this.data.found ? '已识别 ' + code : '无法识别该二维码', icon: 'none' });
+    });
+  },
+  onCar() {
+    const cars = store.getCars();
+    if (!cars.length) { wx.navigateTo({ url: '/pages/vehicle-edit/vehicle-edit' }); return; }
+    const shown = cars.slice(0, 5);
+    wx.showActionSheet({
+      itemList: shown.map(c => c.plate + ' ' + c.model).concat(['管理车辆']),
+      success: r => {
+        if (r.tapIndex === shown.length) { wx.navigateTo({ url: '/pages/vehicles/vehicles' }); return; }
+        store.setDefaultCar(shown[r.tapIndex].id);
+        this.setData({ car: store.defaultCar() });
+      }
+    });
   },
   onStart() {
     const f = this.data.found;
     if (!this.data.code) { this.setData({ error: '请输入终端编号' }); return; }
     if (!f) { this.setData({ error: '未找到该终端，请核对桩身铭牌上的编号' }); return; }
-    if (f.terminal.status !== 'idle') { this.setData({ error: f.terminal.status === 'busy' ? '该终端正在被使用' : '该终端维护中，请换一个' }); return; }
-    if (data.getBalance() < 10) {
-      wx.showModal({ title: '余额不足', content: '账户余额低于 10 元，请先充值', confirmText: '去充值', confirmColor: '#00B87A',
-        success: (r) => { if (r.confirm) wx.switchTab({ url: '/pages/wallet/wallet' }); } });
-      return;
-    }
-    wx.navigateTo({ url: '/pages/charging/charging?no=' + f.terminal.no });
+    if (!start.guard(f.terminal.no, err => this.setData({ error: err }))) return;
+    start.begin(f.terminal.no, true);
   }
 });

@@ -1,11 +1,13 @@
-.switch { display: flex; flex-direction: row; padding: 20rpx 24rpx 0; }
-.sw { display: flex; flex-direction: row; align-items: center; padding: 8rpx 22rpx 8rpx 8rpx; border-radius: 40rpx; background: #ffffff; margin-right: 16rpx; border: 3rpx solid #ffffff; }
+/* 最多 5 只 + 「添加」：一行放不下就折行 */
+.switch { display: flex; flex-direction: row; flex-wrap: wrap; padding: 20rpx 24rpx 0; }
+.sw { display: flex; flex-direction: row; align-items: center; padding: 8rpx 22rpx 8rpx 8rpx; border-radius: 40rpx; background: #ffffff; margin: 0 16rpx 12rpx 0; border: 3rpx solid #ffffff; }
+.sw-n { white-space: nowrap; }
 .sw.on { border-color: #ff8a3d; }
 .pet-av.xs { width: 52rpx; height: 52rpx; border-radius: 26rpx; font-size: 24rpx; }
 .sw-n { margin-left: 10rpx; font-size: 26rpx; font-weight: bold; }
 .sw.add { padding-left: 20rpx; }
 .plus { font-size: 32rpx; color: #ff8a3d; }
-.prof { margin: 20rpx 24rpx 0; border-radius: 28rpx; padding: 32rpx; }
+.prof { margin: 8rpx 24rpx 0; border-radius: 28rpx; padding: 32rpx; }
 .pet-av.lg { width: 112rpx; height: 112rpx; border-radius: 56rpx; background: rgba(255,255,255,0.3); border: 4rpx solid rgba(255,255,255,0.85); font-size: 48rpx; }
 .pf-m { margin-left: 24rpx; display: flex; flex-direction: column; }
 .pf-n { font-size: 40rpx; font-weight: bold; color: #ffffff; }
@@ -14,7 +16,18 @@
 .pg { flex: 1; display: flex; flex-direction: column; align-items: center; }
 .pg-v { font-size: 28rpx; font-weight: bold; color: #ffffff; }
 .pg-k { margin-top: 4rpx; font-size: 22rpx; color: rgba(255,255,255,0.85); }
-.pf-chip { display: block; margin-top: 20rpx; font-size: 22rpx; color: rgba(255,255,255,0.85); }
+.pf-meta { display: block; margin-top: 20rpx; font-size: 22rpx; color: rgba(255,255,255,0.85); }
+.pf-m { flex: 1; min-width: 0; }
+.pf-edit { padding: 8rpx 22rpx; border-radius: 28rpx; background: rgba(255,255,255,0.25); color: #ffffff; font-size: 22rpx; white-space: nowrap; flex-shrink: 0; }
+.sw.add-off .plus, .sw.add-off .sw-n { color: #c4bcb4; }
+.due-n { margin-left: 12rpx; font-size: 20rpx; color: #ffffff; background: #ff5b35; padding: 2rpx 10rpx; border-radius: 8rpx; white-space: nowrap; }
+.tl-title { flex: 1; min-width: 0; }
+.tl-st { flex-shrink: 0; margin-left: 12rpx; white-space: nowrap; }
+.add-rec { margin-top: 8rpx; height: 72rpx; border-radius: 16rpx; border: 2rpx dashed #ffc69a; color: #ff8a3d; font-size: 26rpx; display: flex; align-items: center; justify-content: center; }
+.w-tip { display: block; margin-top: 16rpx; }
+.none { display: flex; flex-direction: column; align-items: center; padding-top: 160rpx; }
+.none-t { font-size: 32rpx; font-weight: bold; color: #2a2522; margin-bottom: 10rpx; }
+.none-btn { margin-top: 36rpx; width: 320rpx; }
 .filters { display: flex; flex-direction: row; }
 .ft { font-size: 22rpx; color: #9a928b; padding: 6rpx 16rpx; border-radius: 20rpx; margin-left: 8rpx; background: #f7f3ef; }
 .ft.on { color: #ffffff; background: #ff8a3d; }

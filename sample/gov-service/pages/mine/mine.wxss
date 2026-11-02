@@ -1,0 +1,21 @@
+.top { padding: 48rpx 36rpx 90rpx; background: linear-gradient(135deg, #1d64d8, #38a2f0); }
+.av { width: 120rpx; height: 120rpx; border-radius: 60rpx; border: 4rpx solid rgba(255, 255, 255, 0.6); }
+.u { margin-left: 28rpx; display: flex; flex-direction: column; }
+.u-n { font-size: 36rpx; font-weight: 700; color: #fff; }
+.u-id { margin-top: 6rpx; font-size: 24rpx; color: rgba(255, 255, 255, 0.85); }
+.u-l { margin-top: 10rpx; font-size: 20rpx; color: #1d64d8; background: #fff; padding: 2rpx 14rpx; border-radius: 16rpx; align-self: flex-start; }
+.stat { margin: -56rpx 24rpx 0; padding: 28rpx 0; background: #fff; border-radius: 20rpx; }
+.s { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.s-n { font-size: 40rpx; font-weight: 700; color: #1d64d8; margin-bottom: 4rpx; }
+.del { font-size: 24rpx; color: #dc2626; }
+.dr-b { margin-top: 16rpx; padding: 16rpx; background: #fff7ed; border-radius: 12rpx; }
+.dr-t { flex: 1; margin-left: 12rpx; font-size: 25rpx; color: #9a3412; }
+.menu { margin: 20rpx 24rpx 0; background: #fff; border-radius: 20rpx; overflow: hidden; }
+.mi { height: 100rpx; padding: 0 28rpx; border-bottom: 1rpx solid #f0f2f6; }
+.mi-on { background: #f5f7fa; }
+.mi-t { flex: 1; font-size: 28rpx; }
+.arr { font-size: 34rpx; color: #c4cad6; margin-left: 12rpx; width: 24rpx; text-align: center; }
+.favs { padding: 0 28rpx 12rpx; background: #fafbfd; }
+.fv { justify-content: space-between; padding: 18rpx 0; border-bottom: 1rpx solid #eef1f6; }
+.fv-n { font-size: 26rpx; color: #1d64d8; flex: 1; margin-right: 16rpx; }
+.fv-e { padding: 20rpx 0; }

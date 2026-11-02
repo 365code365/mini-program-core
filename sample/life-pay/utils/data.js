@@ -23,6 +23,12 @@ const faces = [
   { v: 100, price: 99.5 }, { v: 200, price: 199 }, { v: 300, price: 298.5 }, { v: 500, price: 497.5 }
 ];
 
+// 停水停电公告（按城市）
+const notices = [
+  { id: 'n1', city: '杭州市', kind: '停水', color: '#3c8cff', title: '文三路片区计划停水', time: '本周六 22:00 至次日 06:00', area: '西湖区文三路（学院路至教工路段）', body: '因供水管网改造，上述区域将暂停供水，恢复供水初期水质可能浑浊，放水片刻即可。请提前储水。', unit: '杭州市水务集团', phone: '0571-96390' },
+  { id: 'n2', city: '杭州市', kind: '停电', color: '#f59a00', title: '湖墅南路计划检修停电', time: '下周二 08:30 至 16:30', area: '拱墅区湖墅南路 150~220 号', body: '因线路检修需要停电，届时电梯、水泵将停止运行，请提前做好准备。如遇恶劣天气检修顺延。', unit: '国网杭州供电公司', phone: '95598' },
+  { id: 'n3', city: '杭州市', kind: '调价', color: '#f2603d', title: '居民管道燃气价格调整说明', time: '下月 1 日起执行', area: '杭州市区', body: '第一档气价维持 2.95 元/立方米不变，第二档、第三档分别调整为 3.54、4.43 元/立方米，以抄表日为准分段计费。', unit: '杭州市燃气集团', phone: '0571-96777' }
+];
 function typeOf(k) { return types.find(t => t.k === k) || types[0]; }
 
-module.exports = { types, cities, units, faces, typeOf };
+module.exports = { types, cities, units, faces, notices, typeOf };

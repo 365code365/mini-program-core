@@ -22,7 +22,16 @@ def find_map(path):
     w, h = im.size
     x = w // 5
     bg = (0xE8, 0xEE, 0xF5)
-    rows = [y for y in range(h) if near(im.getpixel((x, y)), bg)]
+    xs = range(w // 10, w * 9 // 10, 6)
+
+    # 宿主页的地图是 SDK 自带的瓦片地图、卫星图（MiniMapView）：瓦片到了是一片深色，没到是底色 #E8EEF5。
+    # 一行算地图：那一列是底色，或者这一行一大半像素是深色（卡片白底、页面 #f5f5f5、灰字都不算）
+    def is_map(y):
+        if near(im.getpixel((x, y)), bg):
+            return True
+        dark = sum(1 for xx in xs if max(im.getpixel((xx, y))) < 0xD8)
+        return dark > len(xs) * 0.6
+    rows = [y for y in range(h) if is_map(y)]
     if not rows:
         return None
     # 最长的一段连续（网格线会打断：允许 6px 的空隙）
@@ -89,14 +98,16 @@ for v in (sys.argv[2:] or ['native']):
     if kind == 'flutter':
         D('shell', 'monkey', '-p', pkg, '-c', 'android.intent.category.LAUNCHER', '1')
     else:
-        # 原生示例的桌面图标进的是入口页（StoreActivity），内置示例直接起 MainActivity
-        D('shell', 'am', 'start', '-n', f'{pkg}/.MainActivity')
+        # 原生示例的桌面图标进的是入口页（StoreActivity），内置示例直接起 MainActivity，深链进宿主 tab
+        D('shell', 'am', 'start', '-n', f'{pkg}/.MainActivity', '--es', 'route', 'pages/host/host')
     time.sleep(3)
     if kind == 'flutter':
         D('shell', 'input', 'tap', '500', '400')
-    if not wait_log('page pages/index/index'):
-        print(v, '首页没起来'); continue
-    time.sleep(1.5); D('shell', 'input', 'tap', '945', '2270')
+        if not wait_log('page pages/index/index'):
+            print(v, '首页没起来'); continue
+        # 宿主 tab（4 个里的最后一个）：按屏幕尺寸算，别写死坐标（分辨率设置一改就点偏）
+        sw, sh = (int(x) for x in D('shell', 'wm', 'size').decode().split()[-1].split('x'))
+        time.sleep(1.5); D('shell', 'input', 'tap', str(sw * 7 // 8), str(sh - sh * 5 // 100))
     if not wait_log('page pages/host/host'):
         print(v, '没进到宿主页'); continue
     time.sleep(1.5)

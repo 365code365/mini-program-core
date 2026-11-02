@@ -1,0 +1,32 @@
+.label { display: block; font-size: 30rpx; font-weight: bold; margin-bottom: 18rpx; }
+.no-input { height: 88rpx; background: #f4f6f8; border-radius: 12rpx; padding: 0 24rpx; font-size: 32rpx; letter-spacing: 2rpx; margin-bottom: 16rpx; }
+.parts { display: flex; flex-direction: row; flex-wrap: wrap; margin-top: 4rpx; }
+.part { display: flex; flex-direction: row; align-items: center; padding: 12rpx 18rpx 12rpx 10rpx; margin: 0 16rpx 16rpx 0; border-radius: 12rpx; background: #f4f6f8; border: 2rpx solid #f4f6f8; }
+.part-on { background: #e3f7ee; border-color: #13a868; }
+.part-cb { transform: scale(0.75); }
+.part-tx { font-size: 26rpx; color: #1f2329; }
+.desc { width: 100%; height: 180rpx; background: #f4f6f8; border-radius: 12rpx; padding: 20rpx; font-size: 28rpx; box-sizing: border-box; }
+.count { display: block; text-align: right; font-size: 22rpx; color: #a0a4ab; margin: 8rpx 0 20rpx; }
+.photos { display: flex; flex-direction: row; }
+.ph { width: 160rpx; height: 160rpx; border-radius: 12rpx; margin-right: 20rpx; position: relative; overflow: hidden; }
+.ph-img { width: 160rpx; height: 160rpx; }
+.ph-del { position: absolute; right: 0; top: 0; width: 40rpx; height: 40rpx; background: rgba(0, 0, 0, 0.55); color: #ffffff; font-size: 28rpx; display: flex; align-items: center; justify-content: center; }
+.ph-add { background: #f4f6f8; border: 2rpx dashed #c9ced6; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; }
+.plus { font-size: 56rpx; color: #a0a4ab; line-height: 1; }
+.ph-tx { font-size: 22rpx; color: #a0a4ab; margin-top: 6rpx; }
+.err { display: block; margin: 24rpx 32rpx 0; font-size: 26rpx; color: #e5483c; }
+.foot { margin: 32rpx 24rpx 0; }
+.h-item { padding: 22rpx 0; border-bottom: 1rpx solid #f0f0f0; }
+.h-no { font-size: 28rpx; }
+.h-st { font-size: 24rpx; }
+.h-pending { color: #de6e12; }
+.h-fixing { color: #576b95; }
+.h-done { color: #13a868; }
+.h-parts { display: block; font-size: 26rpx; color: #464c55; margin: 10rpx 0; }
+.h-revoke { font-size: 24rpx; color: #576b95; }
+.ok { display: flex; flex-direction: column; align-items: center; padding: 100rpx 48rpx; }
+.ok-ic { width: 120rpx; height: 120rpx; border-radius: 60rpx; background: #13a868; color: #ffffff; font-size: 64rpx; display: flex; align-items: center; justify-content: center; }
+.ok-title { font-size: 38rpx; font-weight: bold; margin-top: 30rpx; }
+.ok-sub { font-size: 26rpx; color: #646a73; text-align: center; margin-top: 16rpx; line-height: 1.6; }
+.ok-btns { display: flex; flex-direction: row; margin-top: 60rpx; width: 100%; }
+.ok-b { flex: 1; margin: 0 12rpx; }

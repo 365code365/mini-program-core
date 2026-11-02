@@ -1,0 +1,11 @@
+<view class="sr">
+  <view wx:for="{{stars}}" wx:key="index" class="st" style="width: {{size}}px; height: {{size}}px; margin-right: {{gap}}px;">
+    <image class="st-img" style="width: {{size}}px; height: {{size}}px;" src="/images/star-off.png"></image>
+    <view class="st-fg" style="width: {{item * size}}px; height: {{size}}px;">
+      <image class="st-img" style="width: {{size}}px; height: {{size}}px;" src="/images/star.png"></image>
+    </view>
+    <view wx:if="{{!readonly}}" class="hit hit-l" data-v="{{index * 2 + 1}}" bindtap="pick"></view>
+    <view wx:if="{{!readonly}}" class="hit hit-r" data-v="{{index * 2 + 2}}" bindtap="pick"></view>
+  </view>
+  <text wx:if="{{showText}}" class="sr-t">{{text}}</text>
+</view>

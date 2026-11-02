@@ -1,0 +1,17 @@
+.search { background: #ffffff; border-radius: 40rpx; height: 80rpx; padding: 0 28rpx; margin-bottom: 20rpx; }
+.s-ic { font-size: 26rpx; margin-right: 12rpx; }
+.s-in { flex: 1; height: 80rpx; font-size: 28rpx; }
+.s-x { font-size: 26rpx; color: #a0a6b0; padding: 10rpx; }
+.bar { margin-bottom: 20rpx; }
+.sort { font-size: 24rpx; color: #8a90a0; margin-left: 24rpx; }
+.sort-on { color: #4f6bed; font-weight: bold; }
+.list { padding: 8rpx 28rpx; }
+.item { padding: 24rpx 0; border-bottom: 1rpx solid #eef0f5; }
+.it-main { flex: 1; }
+.iw { font-size: 32rpx; font-weight: bold; }
+.it-ph { margin-left: 12rpx; }
+.it-mean { font-size: 26rpx; color: #4a5060; margin: 6rpx 0; }
+.del { margin-left: 16rpx; padding: 10rpx 18rpx; border-radius: 24rpx; background: #fde6e9; }
+.del-tx { font-size: 22rpx; color: #f0566a; }
+.e-btn { width: 360rpx; }
+.quiz { margin-top: 12rpx; }

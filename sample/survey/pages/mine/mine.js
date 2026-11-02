@@ -1,7 +1,7 @@
 const data = require('../../utils/data.js');
 
 Page({
-  data: { tabs: ['我发布的', '我参与的'], tIdx: 0, pub: [], joined: [], sum: { pub: 0, votes: 0, joined: 0 } },
+  data: { tabs: ['我发布的', '我参与的', '我收藏的'], tIdx: 0, pub: [], joined: [], favs: [], sum: { pub: 0, votes: 0, joined: 0 } },
   onShow() {
     if (typeof this.getTabBar === 'function' && this.getTabBar()) this.getTabBar().setData({ selected: 2 });
     this.load();
@@ -22,7 +22,11 @@ Page({
       const s = data.getSurvey(id);
       return { id, title: s.title, kind: s.kind, glyph: s.glyph, bg: s.bg, author: s.author, qCount: s.questions.length };
     });
-    this.setData({ pub, joined, sum: { pub: pub.length, votes: pub.reduce((a, p) => a + p.total, 0), joined: joined.length } });
+    const favs = data.getFavs().map(id => {
+      const s = data.getSurvey(id);
+      return { id, title: s.title, kind: s.kind, glyph: s.glyph, bg: s.bg, deadline: s.deadline, ended: data.isEnded(s), done: !!ans[id] };
+    });
+    this.setData({ pub, joined, favs, sum: { pub: pub.length, votes: pub.reduce((a, p) => a + p.total, 0), joined: joined.length } });
   },
   onTab(e) { this.setData({ tIdx: e.currentTarget.dataset.idx }); },
   onResult(e) { wx.navigateTo({ url: '/pages/result/result?id=' + e.currentTarget.dataset.id }); },
@@ -33,9 +37,17 @@ Page({
     wx.showActionSheet({ itemList: items, success: (r) => {
       const act = items[r.tapIndex];
       if (act === '查看结果') wx.navigateTo({ url: '/pages/result/result?id=' + p.id });
-      else if (act === '再发一次') wx.switchTab({ url: '/pages/create/create' });
-      else if (act === '邀请好友投票') wx.showToast({ title: '已生成邀请卡片', icon: 'none' });
-      else if (act === '提前结束投票') this.update(p.id, m => Object.assign(m, { closed: true }), '投票已结束');
+      else if (act === '再发一次') {
+        const m = data.getMine().find(x => x.id === p.id);
+        getApp().globalData.repost = m;
+        wx.switchTab({ url: '/pages/create/create' });
+      }
+      else if (act === '邀请好友投票') wx.navigateTo({ url: '/pages/poster/poster?id=' + p.id });
+      else if (act === '提前结束投票') {
+        wx.showModal({ title: '提前结束', content: '结束后大家不能再投票，结果保留', confirmText: '结束', confirmColor: '#6C5CE7', success: (m) => {
+          if (m.confirm) this.update(p.id, x => Object.assign(x, { closed: true }), '投票已结束');
+        } });
+      }
       else if (act === '删除') {
         wx.showModal({ title: '删除投票', content: '删除后不可恢复，确定删除吗？', confirmColor: '#F5455C', success: (m) => {
           if (!m.confirm) return;
@@ -57,6 +69,12 @@ Page({
     }
     this.load();
     wx.showToast({ title: msg, icon: 'none' });
+  },
+  onFav(e) { wx.navigateTo({ url: '/pages/intro/intro?id=' + e.currentTarget.dataset.id }); },
+  onUnfav(e) {
+    data.toggleFav(e.currentTarget.dataset.id);
+    this.load();
+    wx.showToast({ title: '已取消收藏', icon: 'none' });
   },
   onJoined(e) { wx.navigateTo({ url: '/pages/result/result?id=' + e.currentTarget.dataset.id }); },
   onGo() { wx.switchTab({ url: '/pages/index/index' }); },

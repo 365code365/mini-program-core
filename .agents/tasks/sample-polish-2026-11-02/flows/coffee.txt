@@ -1,0 +1,151 @@
+# 拾光咖啡：每页能开 + 钱包 / 积分商城 / 加料 / 活动价 / 外送地址 / 钱包支付 / 取消退款 / 再来一单 / 评价 / 地址 / 签到
+smoke pages/order-detail/order-detail?id=none pages/address/address?select=1
+
+open
+expect getCurrentPages()[0].data.balance === 128
+tapn 2 .m-stat
+route pages/wallet/wallet
+tapn 0 .opt
+tap .go
+modal?
+modal ok
+wait 300
+expect getCurrentPages().slice(-1)[0].data.balance === 248
+toast 到账
+back
+expect getCurrentPages()[0].data.balance === 248
+
+tapn 0 .m-stat
+route pages/points/points
+tapn 0 .g-btn
+modal ok
+expect getCurrentPages().slice(-1)[0].data.points === 2080
+toast 已放入我的优惠券
+tapn 1 .tab
+exists .log
+back
+
+# 点单：橙C美式（新品）加浓缩，2 杯；规格面板里点选项不能把面板点没（兄弟遮罩）
+eval wx.switchTab({ url: '/pages/menu/menu' })
+route pages/menu/menu
+tapn 0 .drink
+expect getCurrentPages().slice(-1)[0].data.sheet.id === 'k1'
+tapn 1 .opt-size
+expect getCurrentPages().slice(-1)[0].data.sheet && getCurrentPages().slice(-1)[0].data.sizeIdx === 1
+tapn 0 .opt-size
+count 2 .opt-addon
+tapn 0 .opt-addon
+expect getCurrentPages().slice(-1)[0].data.unitPrice === 22
+tap .step-plus
+tap .s-add
+expect getCurrentPages().slice(-1)[0].data.cart.count === 2
+expect getCurrentPages().slice(-1)[0].data.cart.amount === 44
+tap .cart-go
+route pages/cart/cart
+expect getCurrentPages().slice(-1)[0].data.activityCut === 11
+expect getCurrentPages().slice(-1)[0].data.couponCut === 5
+expect getCurrentPages().slice(-1)[0].data.pay === 28
+expect getCurrentPages().slice(-1)[0].data.list[0].spec.indexOf('浓缩 +1 份') > 0
+shot target/_polish_shots/coffee-cart-pickup.png
+
+# 外送：默认地址、外送 8 折券更省
+tapn 1 .seg-item
+expect getCurrentPages().slice(-1)[0].data.addr.name === '林拾光'
+expect getCurrentPages().slice(-1)[0].data.coupon.id === 'q4'
+expect getCurrentPages().slice(-1)[0].data.pay === 26.4
+# 钱包支付
+tapn 1 .pay-way
+expect getCurrentPages().slice(-1)[0].data.payBy === 'wallet'
+shot target/_polish_shots/coffee-cart-delivery.png
+tap .pay-btn
+modal ok
+wait 300
+route pages/pickup/pickup
+expect wx.getStorageSync('cf_wallet').balance === 221.6
+expect getCurrentPages().slice(-1)[0].data.st.canCancel === true
+shot target/_polish_shots/coffee-pickup.png
+
+# 取消：钱、券、积分退回
+tap .code-op
+modal ok
+wait 300
+expect wx.getStorageSync('cf_wallet').balance === 248
+expect wx.getStorageSync('cf_used_coupons').indexOf('q4') < 0
+expect wx.getStorageSync('cf_points') === 2080
+expect getCurrentPages().slice(-1)[0].data.order === null
+expect getCurrentPages().slice(-1)[0].data.history[0].status === '已取消'
+
+# 历史 → 详情 → 再来一单 → 微信支付（宿主没有支付能力：退回页面内确认框）
+tapn 0 .his
+route pages/order-detail/order-detail
+expect getCurrentPages().slice(-1)[0].data.st.status === '已取消'
+tap .h-again
+route pages/cart/cart
+expect getCurrentPages().slice(-1)[0].data.list[0].qty === 2
+tap .pay-btn
+modal?
+modal ok
+wait 300
+route pages/pickup/pickup
+expect getCurrentPages().slice(-1)[0].data.order.payBy === 'wechat'
+
+# 时间往后拨 5 分钟：待取 → 我已取餐 → 评价
+eval (function () { var l = wx.getStorageSync('cf_orders'); l[0].createdAt -= 5 * 60000; wx.setStorageSync('cf_orders', l); getCurrentPages().slice(-1)[0].load(); })()
+expect getCurrentPages().slice(-1)[0].data.st.canConfirm === true
+tap .code-op-main
+expect getCurrentPages().slice(-1)[0].data.order === null
+eval wx.navigateTo({ url: '/pages/orders/orders?tab=done' })
+route pages/orders/orders
+count 1 .order
+tap .o-op
+route pages/order-detail/order-detail
+tapn 3 .star
+expect getCurrentPages().slice(-1)[0].data.stars === 4
+tapn 1 .tag
+type .rate-input => 生椰味很足
+tap .rate-btn
+expect getCurrentPages().slice(-1)[0].data.rating.stars === 4
+expect getCurrentPages().slice(-1)[0].data.rating.tags[0] === '出餐快'
+toast +20 积分
+shot target/_polish_shots/coffee-detail.png
+
+# 地址：新增一个并设为默认
+eval wx.navigateTo({ url: '/pages/address/address' })
+count 1 .addr
+tap .bar-btn.btn
+route pages/address-edit/address-edit
+type .f-name => 周小满
+type .f-phone => 13912345678
+blur
+picker .f-region
+pickok
+type .f-detail => 阜通东大街 6 号 2 号楼 301
+blur
+tap .chip
+tap .save
+wait 600
+route pages/address/address
+count 2 .addr
+expect wx.getStorageSync('cf_addrs')[0].name === '周小满'
+expect wx.getStorageSync('cf_addrs')[0].region.length === 3
+shot target/_polish_shots/coffee-address.png
+
+# 签到：第 7 天送券
+seed cf_sign => 2000-01-01
+open pages/mine/mine
+tap .sign-btn
+expect getCurrentPages().slice(-1)[0].data.signDays === 1
+toast 签到成功
+eval (function () { var d = new Date(Date.now() - 86400000); var p = function (n) { return n < 10 ? '0' + n : '' + n; }; wx.setStorageSync('cf_sign', d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate())); wx.setStorageSync('cf_sign_days', 6); getCurrentPages().slice(-1)[0].onShow(); })()
+tap .sign-btn
+modal?
+modal ok
+expect wx.getStorageSync('cf_extra_coupons').some(function (c) { return c.title.indexOf('连续签到') === 0; })
+expect getCurrentPages().slice(-1)[0].data.signDays === 7
+shot target/_polish_shots/coffee-mine.png
+# 帮助与客服：问答 + 拨号（宿主没有拨号能力：弹号码）
+tapn 4 .menu-item
+sheet 0 5
+modal?
+modal ok
+noerr

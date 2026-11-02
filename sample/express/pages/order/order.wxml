@@ -1,0 +1,61 @@
+<view class="none" wx:if="{{!o}}">
+  <text class="sub">订单不存在</text>
+  <view class="btn-primary none-btn" bindtap="onOrders">查看寄件记录</view>
+</view>
+<block wx:else>
+  <view class="head head-{{st.key}}">
+    <text class="h-st">{{st.text}}</text>
+    <text class="h-tip">{{tip}}</text>
+    <view class="steps row" wx:if="{{st.idx >= 0}}">
+      <view class="step {{item.on ? 'on' : ''}}" wx:for="{{steps}}" wx:key="t">
+        <view class="s-dot"></view>
+        <text class="s-t">{{item.t}}</text>
+      </view>
+    </view>
+  </view>
+  <view class="card addr">
+    <view class="a-row row">
+      <view class="badge send"><text>寄</text></view>
+      <view class="flex1 a-main">
+        <view class="row"><text class="a-name">{{o.sender.name}}</text><text class="sub">{{o.senderPhone}}</text></view>
+        <text class="a-detail">{{o.sender.region}} {{o.sender.detail}}</text>
+      </view>
+    </view>
+    <view class="a-row row">
+      <view class="badge recv"><text>收</text></view>
+      <view class="flex1 a-main">
+        <view class="row"><text class="a-name">{{o.receiver.name}}</text><text class="sub">{{o.receiverPhone}}</text></view>
+        <text class="a-detail">{{o.receiver.region}} {{o.receiver.detail}}</text>
+      </view>
+    </view>
+  </view>
+  <view class="card cells">
+    <view class="cell row"><text class="c-l">快递产品</text><text class="c-v">{{o.productName}}（{{o.eta}}）</text></view>
+    <view class="cell row"><text class="c-l">运单号</text><text class="c-v">{{o.no}}</text><text class="copy" bindtap="onCopy">复制</text></view>
+    <view class="cell row"><text class="c-l">物品</text><text class="c-v">{{o.goods}} · {{o.weight}}kg</text></view>
+    <view class="cell row"><text class="c-l">上门时间</text><text class="c-v">{{o.timeText}}</text></view>
+    <view class="cell row" wx:if="{{o.note}}"><text class="c-l">留言</text><text class="c-v">{{o.note}}</text></view>
+    <view class="cell row"><text class="c-l">隐私面单</text><text class="c-v">{{o.privacy ? '已开启，面单隐藏手机号中间四位' : '未开启'}}</text></view>
+    <view class="cell row last"><text class="c-l">下单时间</text><text class="c-v">{{o.time}}</text></view>
+  </view>
+  <view class="card cells">
+    <view class="cell row"><text class="c-l">运费</text><text class="c-v">¥{{o.baseText}}</text></view>
+    <view class="cell row" wx:if="{{o.insured}}"><text class="c-l">保价服务</text><text class="c-v">¥3.00</text></view>
+    <view class="cell row" wx:if="{{o.cut}}"><text class="c-l">{{o.couponTitle}}</text><text class="c-v cut">-¥{{o.cutText}}</text></view>
+    <view class="cell row last"><text class="c-l">{{st.key === 'cancelled' ? '已退款' : '实付'}}</text><text class="c-v pay">¥{{o.payText}}</text></view>
+  </view>
+  <view class="card courier row" wx:if="{{st.key !== 'cancelled'}}">
+    <view class="avatar"><text>{{o.initial}}</text></view>
+    <view class="flex1 c-main">
+      <text class="c-name">{{o.courier.name}} ★ {{o.courier.rate}}</text>
+      <text class="sub">{{o.carrierName}} · 已服务 {{o.courier.count}} 次</text>
+    </view>
+    <view class="call" bindtap="onCall"><text>联系快递员</text></view>
+  </view>
+  <view class="gap"></view>
+  <view class="bar row">
+    <view class="b-btn op-cancel" wx:if="{{st.canCancel}}" bindtap="onCancel"><text>取消寄件</text></view>
+    <view class="b-btn op-track" wx:if="{{st.key !== 'cancelled'}}" bindtap="onTrack"><text>查看物流</text></view>
+    <view class="b-btn main op-again" bindtap="onAgain"><text>再寄一单</text></view>
+  </view>
+</block>

@@ -70,6 +70,16 @@
 .reset {
   font-size: 24rpx;
   color: #ff5a1f;
+  white-space: nowrap;
+}
+.sub-btn {
+  margin-left: 20rpx;
+  font-size: 22rpx;
+  color: #ff5a1f;
+  border: 1rpx solid #ffb98c;
+  border-radius: 22rpx;
+  padding: 4rpx 16rpx;
+  white-space: nowrap;
 }
 .list {
   padding: 0 28rpx;

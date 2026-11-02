@@ -1,0 +1,6 @@
+.tb { height: calc(100rpx + env(safe-area-inset-bottom)); background: #ffffff; display: flex; flex-direction: row; border-top: 1rpx solid #eceef2; padding-bottom: env(safe-area-inset-bottom); }
+.tb-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.tb-icw { position: relative; width: 48rpx; height: 48rpx; }
+.tb-ic { width: 48rpx; height: 48rpx; }
+.tb-badge { position: absolute; left: 30rpx; top: -8rpx; min-width: 28rpx; height: 28rpx; line-height: 28rpx; padding: 0 6rpx; border-radius: 14rpx; background: #f04a3e; color: #ffffff; font-size: 18rpx; text-align: center; }
+.tb-tx { font-size: 20rpx; margin-top: 4rpx; }

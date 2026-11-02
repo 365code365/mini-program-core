@@ -1,0 +1,45 @@
+<view wx:if="{{!list.length}}" class="empty">
+  <view class="empty-ic">🛒</view>
+  <text class="empty-t">购物车还是空的</text>
+  <text class="muted">家庭常备药、慢病复购，30 分钟送到家</text>
+  <view class="btn empty-btn" bindtap="goShop">去逛逛</view>
+</view>
+
+<block wx:else>
+  <view class="hd">
+    <text class="muted">共 {{list.length}} 种商品{{freeGap ? '，再买 ¥' + freeGap + ' 免运费' : ''}}</text>
+    <text class="hd-e" bindtap="switchEdit">{{edit ? '完成' : '编辑'}}</text>
+  </view>
+  <view wx:if="{{hasRx}}" class="rxtip">选中商品含处方药，结算前需上传处方或在线问诊</view>
+  <view class="card it" wx:for="{{list}}" wx:key="key">
+    <view class="ck {{item.sel ? 'ck-on' : ''}}" data-key="{{item.key}}" bindtap="toggle">{{item.sel ? '✓' : ''}}</view>
+    <image class="it-img" src="{{item.img}}" mode="aspectFill" data-id="{{item.id}}" bindtap="openDrug"></image>
+    <view class="it-b">
+      <view class="it-n" data-id="{{item.id}}" bindtap="openDrug"><text wx:if="{{item.type === 'RX'}}" class="rx">处方药</text><text class="it-nt">{{item.brand}} {{item.name}}</text></view>
+      <text class="muted">{{item.spec}}</text>
+      <view class="it-f">
+        <text class="price">¥{{item.priceText}}</text>
+        <stepper value="{{item.qty}}" min="1" max="99" size="small" data-key="{{item.key}}" bind:change="onQty" bind:limit="onLimit"></stepper>
+      </view>
+    </view>
+  </view>
+</block>
+
+<view class="sec-h"><text class="sec-t">{{list.length ? '凑单推荐' : '大家都在买'}}</text></view>
+<view class="reco">
+  <view class="rc" wx:for="{{reco}}" wx:key="id" data-id="{{item.id}}" bindtap="openDrug">
+    <image class="rc-img" src="{{item.img}}" mode="aspectFill"></image>
+    <text class="rc-n">{{item.brand}} {{item.name}}</text>
+    <view class="rc-f"><text class="price">¥{{item.from}}</text><text class="rc-add" data-id="{{item.id}}" catchtap="addReco">＋</text></view>
+  </view>
+</view>
+<view class="gap"></view>
+
+<view wx:if="{{list.length}}" class="bar">
+  <view class="all" bindtap="toggleAll"><view class="ck {{allSel ? 'ck-on' : ''}}">{{allSel ? '✓' : ''}}</view><text class="all-t">全选</text></view>
+  <block wx:if="{{!edit}}">
+    <view class="sum"><text class="sum-t">合计 </text><text class="price sum-p">¥{{total}}</text></view>
+    <view class="go {{selN ? '' : 'go-dis'}}" bindtap="checkout">结算({{selN}})</view>
+  </block>
+  <view wx:else class="del" bindtap="removeSel">删除</view>
+</view>

@@ -1,0 +1,36 @@
+<view class="card">
+  <text class="sec-title">练了什么</text>
+  <view class="types">
+    <view class="ty {{typeIdx === index ? 'on' : ''}}" wx:for="{{types}}" wx:key="key" data-i="{{index}}" bindtap="pickType"><text class="ty-tx">{{item.name}}</text></view>
+  </view>
+</view>
+<view class="card form">
+  <view class="f">
+    <text class="f-k">名称</text>
+    <input class="f-in f-name" placeholder="选填，如：晨跑 5 公里" placeholder-class="ph" value="{{name}}" maxlength="20" bindinput="onName" />
+  </view>
+  <view class="f">
+    <text class="f-k">时长</text>
+    <input class="f-in f-min" type="number" placeholder="分钟" placeholder-class="ph" value="{{min}}" maxlength="3" bindinput="onMin" />
+    <text class="unit">分钟</text>
+  </view>
+  <view class="f">
+    <text class="f-k">消耗</text>
+    <input class="f-in f-kcal" type="number" placeholder="按类型自动估算，可修改" placeholder-class="ph" value="{{kcal}}" maxlength="4" bindinput="onKcal" />
+    <text class="unit">千卡</text>
+  </view>
+  <view class="f">
+    <text class="f-k">日期</text>
+    <picker class="f-pk f-date" mode="date" value="{{date}}" end="{{today}}" bindchange="onDate">
+      <view class="f-v"><text>{{date}}</text><view class="chev"></view></view>
+    </picker>
+  </view>
+  <view class="f last">
+    <text class="f-k">开始时间</text>
+    <picker class="f-pk f-time" mode="time" value="{{time}}" bindchange="onTime">
+      <view class="f-v"><text>{{time}}</text><view class="chev"></view></view>
+    </picker>
+  </view>
+</view>
+<text class="hint">保存后当天自动打卡，并计入「记录」里的本周统计</text>
+<view class="btn save" bindtap="save"><text>保存训练记录</text></view>

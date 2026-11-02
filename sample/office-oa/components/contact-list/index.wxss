@@ -1,0 +1,30 @@
+.cl { height: 100%; display: flex; flex-direction: column; }
+.row { display: flex; flex-direction: row; align-items: center; }
+.col { display: flex; flex-direction: column; }
+.flex1 { flex: 1; }
+.muted { font-size: 24rpx; color: #86909c; }
+.head { background: #ffffff; padding: 16rpx 24rpx 0; }
+.search { background: #f2f3f5; border-radius: 12rpx; height: 72rpx; padding: 0 20rpx; }
+.s-ic { color: #86909c; font-size: 30rpx; margin-right: 12rpx; }
+.s-ipt { font-size: 26rpx; height: 72rpx; }
+.s-x { color: #86909c; font-size: 36rpx; padding: 0 8rpx; }
+.depts { height: 84rpx; white-space: nowrap; }
+.depts-in { padding: 14rpx 0; }
+.dp { flex-shrink: 0; font-size: 24rpx; color: #4e5969; background: #f2f3f5; border-radius: 26rpx; height: 52rpx; line-height: 52rpx; padding: 0 22rpx; margin-right: 14rpx; }
+.dp-on { color: #1677ff; background: #e8f3ff; }
+.list { flex: 1; height: 0; }
+.gl { font-size: 24rpx; color: #86909c; padding: 12rpx 32rpx; background: #f3f5f8; }
+.it { background: #ffffff; padding: 20rpx 64rpx 20rpx 32rpx; border-bottom: 1rpx solid #f2f3f5; }
+.it-hover { background: #f7f8fa; }
+.ava { width: 80rpx; height: 80rpx; border-radius: 16rpx; color: #ffffff; font-size: 26rpx; line-height: 80rpx; text-align: center; flex-shrink: 0; }
+.it-in { margin-left: 20rpx; }
+.nm { font-size: 30rpx; color: #1d2129; margin-bottom: 4rpx; }
+.pick { font-size: 24rpx; color: #1677ff; border: 2rpx solid #1677ff; border-radius: 24rpx; padding: 4rpx 20rpx; }
+.foot { text-align: center; color: #86909c; font-size: 24rpx; padding: 32rpx 0 160rpx; }
+.empty { padding: 100rpx 0; display: flex; flex-direction: column; align-items: center; }
+.empty-ic { width: 112rpx; height: 112rpx; border-radius: 56rpx; background: #e8f3ff; color: #1677ff; font-size: 48rpx; line-height: 112rpx; text-align: center; }
+.empty-tx { margin-top: 20rpx; font-size: 26rpx; color: #86909c; }
+.bar { position: fixed; right: 8rpx; width: 44rpx; z-index: 20; }
+.bl { text-align: center; font-size: 22rpx; color: #1677ff; font-weight: bold; }
+.bl-on { background: #1677ff; color: #ffffff; border-radius: 22rpx; }
+.hint { position: fixed; left: 50%; top: 40%; width: 160rpx; height: 160rpx; margin-left: -80rpx; margin-top: -80rpx; border-radius: 24rpx; background: rgba(29, 33, 41, 0.72); color: #ffffff; font-size: 80rpx; line-height: 160rpx; text-align: center; z-index: 30; }

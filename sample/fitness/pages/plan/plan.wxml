@@ -1,0 +1,48 @@
+<block wx:if="{{view}}">
+  <view class="hero" style="background: {{view.plan.color}};">
+    <text class="h-name">{{view.plan.name}}</text>
+    <text class="h-sub">{{view.finished ? '计划已结束' : '第 ' + view.day + ' 天 / 共 ' + view.plan.days + ' 天'}} · 已完成 {{view.doneCount}}/{{view.trainDays}} 次训练</text>
+    <view class="h-bar"><view class="h-in" style="width: {{view.pct}}%;"></view></view>
+  </view>
+  <view wx:if="{{!view.finished}}" class="card today">
+    <text class="muted">今天 · 第 {{view.day}} 天</text>
+    <text class="t-name">{{view.today.name}}</text>
+    <text wx:if="{{!view.today.rest}}" class="muted">{{view.today.min}} 分钟 · 约 {{view.today.kcal}} 千卡</text>
+    <view class="btn t-btn {{view.today.rest || view.today.done ? 'gray' : ''}}" bindtap="finishToday"><text>{{view.today.rest ? '今天休息' : (view.today.done ? '今日已完成' : '完成今日训练')}}</text></view>
+  </view>
+  <view class="card">
+    <view class="row between">
+      <text class="sec-title">每日安排</text>
+      <text class="muted">开始于 {{view.start}}</text>
+    </view>
+    <view class="days">
+      <view class="d st-{{item.state}}" wx:for="{{view.list}}" wx:key="i">
+        <text class="d-i">{{item.i}}</text>
+        <text class="d-s">{{item.state === 'rest' ? '休' : (item.state === 'done' ? '完成' : (item.state === 'missed' ? '漏练' : (item.state === 'today' ? '今天' : '')))}}</text>
+      </view>
+    </view>
+    <view class="legend row">
+      <view class="lg"><view class="lg-dot st-done"></view><text class="muted">完成</text></view>
+      <view class="lg"><view class="lg-dot st-today"></view><text class="muted">今天</text></view>
+      <view class="lg"><view class="lg-dot st-missed"></view><text class="muted">漏练</text></view>
+      <view class="lg"><view class="lg-dot st-rest"></view><text class="muted">休息</text></view>
+    </view>
+  </view>
+  <view class="row ops">
+    <view class="op op-quit" bindtap="quit"><text>放弃计划</text></view>
+    <view class="op op-other" bindtap="showOthers"><text>{{view.showOthers ? '收起' : '换一个计划'}}</text></view>
+  </view>
+</block>
+<view wx:if="{{!view || view.showOthers || view.finished}}">
+  <text class="sec plans-h">选一个训练计划</text>
+  <view class="card pl" wx:for="{{plans}}" wx:key="id">
+    <view class="pl-pic" style="background: {{item.color}};"><text>{{item.days}} 天</text></view>
+    <view class="pl-m">
+      <view class="row"><text class="pl-n">{{item.name}}</text><text class="pill lv-{{item.level === '入门' ? 1 : 2}}">{{item.level}}</text></view>
+      <text class="muted pl-d">{{item.desc}}</text>
+      <text class="muted pl-d">共 {{item.trainDays}} 练 · 单次最长 {{item.perDay}} 分钟</text>
+    </view>
+    <view class="pl-btn {{view && view.plan.id === item.id && !view.finished ? 'on' : ''}}" data-id="{{item.id}}" bindtap="start"><text>{{view && view.plan.id === item.id && !view.finished ? '进行中' : '开始'}}</text></view>
+  </view>
+</view>
+<view style="height: 40rpx;"></view>

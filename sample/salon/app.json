@@ -1,0 +1,53 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/services/services",
+    "pages/stylists/stylists",
+    "pages/mine/mine",
+    "pages/service/service",
+    "pages/stylist/stylist",
+    "pages/booking/booking",
+    "pages/result/result",
+    "pages/appointments/appointments",
+    "pages/member/member"
+  ],
+  "window": {
+    "navigationBarTitleText": "型格美业",
+    "navigationBarBackgroundColor": "#2d2430",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f7f3f0"
+  },
+  "tabBar": {
+    "color": "#9aa0a8",
+    "selectedColor": "#c0846a",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "images/tab/home.png",
+        "selectedIconPath": "images/tab/home-on.png"
+      },
+      {
+        "pagePath": "pages/services/services",
+        "text": "项目",
+        "iconPath": "images/tab/service.png",
+        "selectedIconPath": "images/tab/service-on.png"
+      },
+      {
+        "pagePath": "pages/stylists/stylists",
+        "text": "发型师",
+        "iconPath": "images/tab/stylist.png",
+        "selectedIconPath": "images/tab/stylist-on.png"
+      },
+      {
+        "pagePath": "pages/mine/mine",
+        "text": "我的",
+        "iconPath": "images/tab/mine.png",
+        "selectedIconPath": "images/tab/mine-on.png"
+      }
+    ],
+    "custom": true
+  }
+}

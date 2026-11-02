@@ -18,7 +18,8 @@
 <view class="card input-card">
   <text class="section-title">输入终端编号</text>
   <view class="code row {{error ? 'err' : ''}}">
-    <input class="code-input flex1" placeholder="桩身铭牌上的编号，如 XX0128-02" placeholder-class="ph" value="{{code}}" bindinput="onInput" maxlength="12" />
+    <!-- id 跟着 inputSeq 变：引擎里打过字的输入框，页面再 setData 改 value 不会重画，换 id 重建 -->
+    <input id="code{{inputSeq}}" class="code-input flex1" placeholder="桩身铭牌上的编号，如 XX0128-02" placeholder-class="ph" value="{{code}}" focus="{{focus}}" bindinput="onInput" bindblur="onBlur" maxlength="12" />
     <view class="clr" wx:if="{{code}}" bindtap="onClear"><text class="clr-t">清除</text></view>
   </view>
   <text class="err-t" wx:if="{{error}}">{{error}}</text>
@@ -28,6 +29,16 @@
       <text class="f-name">{{found.station.name}}</text>
       <text class="sub">{{found.terminal.type}} {{found.terminal.power}}kW·{{found.terminal.status === 'idle' ? '空闲' : found.terminal.status === 'busy' ? '使用中' : '维护中'}}</text>
     </view>
+  </view>
+  <view class="car row" bindtap="onCar">
+    <view class="car-ic"><text class="car-ic-t">车</text></view>
+    <view class="col flex1" wx:if="{{car}}">
+      <text class="car-plate">{{car.plate}}</text>
+      <text class="sub">{{car.model}}·电池 {{car.battery}} 度</text>
+    </view>
+    <text class="flex1 car-none" wx:else>还没有车辆，点击添加</text>
+    <text class="car-sw">{{car ? '切换' : '添加'}}</text>
+    <view class="chev"></view>
   </view>
   <text class="sub recent-title">最近使用</text>
   <view class="row recent">

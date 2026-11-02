@@ -1,0 +1,49 @@
+<block wx:if="{{!select}}">
+  <view class="tabs row">
+    <view wx:for="{{tabs}}" wx:key="key" class="tab {{tab === item.key ? 'tab-on' : ''}}" data-key="{{item.key}}" bindtap="onTab">
+      <text>{{item.name}}({{counts[item.key]}})</text>
+      <view wx:if="{{tab === item.key}}" class="tab-line"></view>
+    </view>
+  </view>
+  <view wx:if="{{tab === 'red'}}" class="redeem-entry row" bindtap="onToggleRedeem">
+    <text class="flex1 sub">有兑换码？兑换红包</text>
+    <text class="link">{{showRedeem ? '收起' : '去兑换'}}</text>
+  </view>
+  <view wx:if="{{tab === 'red' && showRedeem}}" class="redeem row">
+    <input id="code{{codeSeq}}" class="redeem-input" placeholder="输入兑换码（试试 BAOLE8）" placeholder-class="ph" value="{{code}}" maxlength="12" bindinput="onCode" bindconfirm="onRedeem" />
+    <view class="redeem-btn {{code ? 'redeem-on' : ''}}" bindtap="onRedeem">兑换</view>
+  </view>
+</block>
+<view wx:else class="none-row row" bindtap="onNone">
+  <text class="flex1">不使用{{select === 'red' ? '红包' : '代金券'}}</text>
+  <view class="radio {{cur ? '' : 'radio-on'}}"><view class="radio-in"></view></view>
+</view>
+
+<view class="list">
+  <view class="coupon row {{item.status !== 'valid' || !item.usable ? 'coupon-off' : ''}}" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onPick">
+    <view class="c-left {{item.kind === 'shop' ? 'c-left-shop' : ''}}">
+      <view class="row c-amount-row">
+        <text class="c-sym">¥</text>
+        <text class="c-amount">{{item.amount}}</text>
+      </view>
+      <text class="c-cond">{{item.cond}}</text>
+    </view>
+    <view class="flex1 c-right">
+      <view class="row">
+        <text wx:if="{{item.vip}}" class="c-vip">会员</text>
+        <text class="c-title ellipsis">{{item.title}}</text>
+      </view>
+      <text class="c-desc ellipsis">{{item.scope}}</text>
+      <view class="row between c-foot">
+        <text class="c-expire">有效期至 {{item.expire}}</text>
+        <block wx:if="{{select}}">
+          <text wx:if="{{!item.usable}}" class="c-gap">{{item.gapText}}</text>
+          <view wx:else class="radio {{cur === item.id ? 'radio-on' : ''}}"><view class="radio-in"></view></view>
+        </block>
+        <view wx:elif="{{item.status === 'valid'}}" class="c-use" data-id="{{item.id}}" catchtap="onUse">去使用</view>
+      </view>
+    </view>
+    <view wx:if="{{item.status !== 'valid'}}" class="stamp glyph">{{item.status === 'used' ? '已使用' : '已过期'}}</view>
+  </view>
+  <view wx:if="{{!list.length}}" class="empty sub">{{select ? '没有可用的' + (select === 'red' ? '红包' : '代金券') : '这里空空如也'}}</view>
+</view>

@@ -1,0 +1,32 @@
+<view class="bar row">
+  <view class="box row flex1">
+    <view class="lens"></view>
+    <input class="ipt kw-input flex1" value="{{kw}}" placeholder="搜索标题或备注，如「会」「生日」" confirm-type="search" bindinput="onInput" bindconfirm="onConfirm" />
+    <text class="x" wx:if="{{kw}}" bindtap="onClear">✕</text>
+  </view>
+</view>
+<block wx:if="{{!searched}}">
+  <view class="h-head row between" wx:if="{{history.length}}">
+    <text class="title">搜索历史</text>
+    <text class="sub clear-history" bindtap="onClearHistory">清除</text>
+  </view>
+  <view class="chips row" wx:if="{{history.length}}">
+    <text class="chip" wx:for="{{history}}" wx:key="*this" data-kw="{{item}}" bindtap="onHistory">{{item}}</text>
+  </view>
+  <view class="empty" wx:if="{{!history.length}}">输入关键词查找日程，回车记入搜索历史</view>
+</block>
+<block wx:else>
+  <text class="sub count">找到 {{results.length}} 条</text>
+  <view class="card res-card" wx:if="{{results.length}}">
+    <view class="res row {{item.past ? 'past' : ''}}" wx:for="{{results}}" wx:key="id" data-id="{{item.id}}" bindtap="onOpen" hover-class="res-down">
+      <view class="ev-bar" style="background: {{item.color}}"></view>
+      <view class="flex1">
+        <text class="res-title">{{item.title}}</text>
+        <text class="sub res-sub">{{item.whenText}} · {{item.time}}<text wx:if="{{item.repeat}}"> · {{item.repeat}}</text></text>
+        <text class="sub res-note" wx:if="{{item.note}}">{{item.note}}</text>
+      </view>
+      <view class="chev"></view>
+    </view>
+  </view>
+  <view class="empty" wx:else>没有找到「{{kw}}」相关的日程</view>
+</block>

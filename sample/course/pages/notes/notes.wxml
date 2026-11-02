@@ -1,0 +1,13 @@
+<view wx:if="{{!count}}" class="empty"><text>还没有笔记，学习时在课时页记下要点</text><view class="go" bindtap="goLearn"><text>去学习</text></view></view>
+<view wx:for="{{list}}" wx:key="cid" wx:for-item="g" class="card">
+  <text class="g-t">{{g.title}}</text>
+  <view wx:for="{{g.items}}" wx:key="id" class="note">
+    <view class="row between" data-cid="{{item.cid}}" data-lid="{{item.lid}}" bindtap="open">
+      <text class="n-l">{{item.ltitle}} · {{item.pos}}</text>
+      <view class="chev"></view>
+    </view>
+    <view class="n-text"><text>{{item.text}}</text></view>
+    <view class="row between"><text class="muted">{{item.time}}</text><text class="n-del" data-id="{{item.id}}" bindtap="del">删除</text></view>
+  </view>
+</view>
+<view class="gap"></view>

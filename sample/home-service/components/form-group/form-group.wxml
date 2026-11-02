@@ -1,0 +1,7 @@
+<view class="fg">
+  <view class="fg-hd" wx:if="{{title}}">
+    <text class="fg-tt">{{title}}</text>
+    <text class="fg-err" wx:if="{{errors}}">{{errors}} 项待完善</text>
+  </view>
+  <slot></slot>
+</view>

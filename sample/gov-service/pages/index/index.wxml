@@ -1,0 +1,100 @@
+<template name="itemRow">
+  <view class="it" hover-class="tap" data-id="{{id}}" bindtap="openItem">
+    <view class="it-bar" style="background: {{color}};"></view>
+    <view class="it-main">
+      <text class="it-name">{{name}}</text>
+      <view class="row it-meta">
+        <text class="tag {{online ? 'tag-on' : 'tag-off'}}">{{level}}</text>
+        <text class="muted it-dept">{{dept}} · {{promise}}</text>
+      </view>
+    </view>
+    <text class="it-arrow">›</text>
+  </view>
+</template>
+
+<view class="hero">
+  <image class="hero-bg" src="/images/banner.jpg" mode="aspectFill"></image>
+  <view class="hero-in">
+    <text class="hero-t">云川办事 · 一网通办</text>
+    <text class="hero-s">{{stat.total}} 项高频事项，其中 {{stat.online}} 项可全程网办</text>
+    <view class="search row">
+      <icon type="search" size="16" color="#8a94a6"></icon>
+      <input class="search-in" placeholder="搜索事项或部门，如：公积金" value="{{keyword}}" bindinput="onSearch" confirm-type="search"></input>
+      <icon wx:if="{{keyword}}" type="clear" size="16" color="#b4bccb" bindtap="clearSearch"></icon>
+    </view>
+  </view>
+</view>
+
+<view class="draft row" wx:if="{{draft}}">
+  <icon type="info" size="20" color="#ea580c"></icon>
+  <view class="draft-main" bindtap="continueDraft">
+    <text class="draft-t">「{{draft.name}}」申报未完成</text>
+    <text class="muted">停在第 {{draft.step}} 步，保存于 {{draft.time}}</text>
+  </view>
+  <view class="draft-go" hover-class="tap" bindtap="continueDraft">继续填写</view>
+  <text class="draft-x" bindtap="dropDraft">删除</text>
+</view>
+
+<view class="quick row">
+  <view class="q" hover-class="tap" bindtap="goAppoint"><view class="q-ic" style="background:#e8f0fe;color:#1d64d8;">约</view><text>预约取号</text></view>
+  <view class="q" hover-class="tap" bindtap="goProgress"><view class="q-ic" style="background:#fff1e6;color:#ea580c;">查</view><text>进度查询</text></view>
+  <view class="q" hover-class="tap" bindtap="goLicense"><view class="q-ic" style="background:#e9f8ef;color:#16a34a;">证</view><text>电子证照</text></view>
+  <view class="q" hover-class="tap" bindtap="downloadGuide"><view class="q-ic" style="background:#f3edff;color:#7c3aed;">南</view><text>办事指南</text></view>
+</view>
+
+<view class="card" wx:if="{{keyword}}">
+  <text class="sec-t">搜索「{{keyword}}」共 {{results.length}} 项</text>
+  <block wx:for="{{results}}" wx:key="id"><template is="itemRow" data="{{...item}}"></template></block>
+  <view class="empty" wx:if="{{!results.length}}">没有找到相关事项，换个关键词试试</view>
+</view>
+
+<block wx:else>
+  <view class="card">
+    <view class="row between"><text class="sec-t">热门事项</text><text class="muted">近 30 天办件量前 {{hot.length}}</text></view>
+    <block wx:for="{{hot}}" wx:key="id"><template is="itemRow" data="{{...item}}"></template></block>
+  </view>
+
+  <view class="card">
+    <view class="row between">
+      <text class="sec-t">分类办事</text>
+      <view class="seg row">
+        <text class="seg-i {{mode === 'theme' ? 'on' : ''}}" data-mode="theme" bindtap="switchMode">按主题</text>
+        <text class="seg-i {{mode === 'dept' ? 'on' : ''}}" data-mode="dept" bindtap="switchMode">按部门</text>
+      </view>
+    </view>
+
+    <!-- 宽屏（平板 / 折叠屏展开）：左侧分类竖排 + 右侧事项 -->
+    <match-media min-width="600">
+      <view class="wide row">
+        <view class="wide-l">
+          <block wx:if="{{mode === 'theme'}}">
+            <view class="wl-i {{cat === t.id ? 'on' : ''}}" wx:for="{{themes}}" wx:for-item="t" wx:key="id" data-id="{{t.id}}" bindtap="pickCat">{{t.name}}</view>
+          </block>
+          <block wx:else>
+            <view class="wl-i {{cat === d ? 'on' : ''}}" wx:for="{{depts}}" wx:for-item="d" wx:key="*this" data-id="{{d}}" bindtap="pickCat">{{d}}</view>
+          </block>
+        </view>
+        <view class="wide-r">
+          <block wx:for="{{list}}" wx:key="id"><template is="itemRow" data="{{...item}}"></template></block>
+        </view>
+      </view>
+    </match-media>
+
+    <!-- 窄屏（手机）：横向分类标签 + 单栏列表 -->
+    <match-media max-width="599">
+      <scroll-view class="chips" scroll-x="true">
+        <block wx:if="{{mode === 'theme'}}">
+          <text class="chip {{cat === t.id ? 'on' : ''}}" wx:for="{{themes}}" wx:for-item="t" wx:key="id" data-id="{{t.id}}" bindtap="pickCat">{{t.name}}</text>
+        </block>
+        <block wx:else>
+          <text class="chip {{cat === d ? 'on' : ''}}" wx:for="{{depts}}" wx:for-item="d" wx:key="*this" data-id="{{d}}" bindtap="pickCat">{{d}}</text>
+        </block>
+      </scroll-view>
+      <block wx:for="{{list}}" wx:key="id"><template is="itemRow" data="{{...item}}"></template></block>
+    </match-media>
+    <view class="empty" wx:if="{{!list.length}}">该分类下暂无可在线办理的事项</view>
+  </view>
+</block>
+
+<view class="foot muted">云川市政务服务和数据管理局 主办 · 服务热线 12345</view>
+<view class="safe-bottom"></view>

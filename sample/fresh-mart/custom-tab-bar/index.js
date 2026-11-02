@@ -1,6 +1,7 @@
 Component({
   data: {
     selected: 0,
+    cartCount: 0,
     color: '#8a8f99',
     selectedColor: '#12b76a',
     list: [

@@ -115,7 +115,8 @@ final class MiniViewController: UIViewController {
         v.onClose = { [weak self] in self?.close() }
         v.onEvent = { [weak self] ev in
             guard let self else { return }
-            NSLog("[事件] %@", self.summarize(ev))
+            // nativeViewTouch：按在地图上的每一段触摸都是一条，打出来就是刷屏
+            if ev["type"] as? String != "nativeViewTouch" { NSLog("[事件] %@", self.summarize(ev)) }
             // 第一页出来了才收起 loading（冷启动加载字体那几百毫秒也盖在底下，不露白屏）
             if ev["type"] as? String == "page" { self.pageDepth = (ev["depth"] as? NSNumber)?.intValue ?? self.pageDepth }
             if ev["type"] as? String == "videoFullscreen" { self.videoFullscreen = ev["fullScreen"] as? Bool ?? false }

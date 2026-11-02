@@ -1,0 +1,16 @@
+.tabs { background: #ffffff; padding: 0 12rpx; }
+.tab { flex: 1; height: 88rpx; display: flex; align-items: center; justify-content: center; font-size: 28rpx; color: #4a544f; border-bottom: 4rpx solid #ffffff; }
+.tab-on { color: #13a07b; font-weight: bold; border-bottom-color: #13a07b; }
+.od { background: #ffffff; border-radius: 24rpx; padding: 24rpx; margin-bottom: 24rpx; }
+.od-h { margin-bottom: 18rpx; }
+.st { font-size: 24rpx; }
+.st-paid { color: #ff6a3d; }
+.st-used { color: #86908b; }
+.st-refunded { color: #86908b; }
+.od-img { width: 160rpx; height: 120rpx; border-radius: 12rpx; }
+.od-m { flex: 1; margin-left: 20rpx; }
+.od-n { font-size: 30rpx; font-weight: bold; margin-bottom: 6rpx; }
+.od-f { margin-top: 18rpx; padding-top: 16rpx; border-top: 1rpx solid #edf1ef; }
+.od-b { padding: 10rpx 26rpx; border-radius: 30rpx; background: #13a07b; }
+.od-b-tx { color: #ffffff; font-size: 24rpx; }
+.e-btn { width: 360rpx; }

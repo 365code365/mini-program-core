@@ -1,0 +1,10 @@
+page { background-color: #f4f6f8; color: #1f2933; font-size: 28rpx; }
+.card { margin: 20rpx 24rpx; padding: 24rpx; background: #ffffff; border-radius: 20rpx; }
+.h { font-size: 32rpx; font-weight: bold; color: #1c3d5a; }
+.sub { font-size: 24rpx; color: #8a94a0; }
+.row { display: flex; flex-direction: row; align-items: center; }
+.btn { padding: 18rpx 28rpx; border-radius: 40rpx; background: #1c3d5a; color: #ffffff; font-size: 26rpx; text-align: center; }
+.btn:active { opacity: 0.8; }
+.btn-ghost { padding: 16rpx 26rpx; border-radius: 40rpx; border: 2rpx solid #1c3d5a; color: #1c3d5a; font-size: 26rpx; text-align: center; }
+.btn-ghost:active { background: #eef3f8; }
+.empty { padding: 80rpx 0; text-align: center; color: #9aa5b1; font-size: 26rpx; }

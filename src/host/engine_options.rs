@@ -52,6 +52,9 @@ pub struct EngineOptions {
     /// 同时列了的以这里为准。`video` 见 `components::video::host_feed`；别的标签（`map` …）走通用的
     /// `components::host_view`：宿主按 `sameLayerViews` 事件把控件画进离屏缓冲、帧交给引擎（`mr_native_view_frame_rgba`）
     pub same_layer: Vec<String>,
+    /// 同层渲染组件里由宿主自己处理手势的标签（`"sameLayerGestures": ["map"]`）：按在框里的这串触摸
+    /// 整串交给宿主（`nativeViewTouch` 事件），页面不滚、不派 tap。不在 `sameLayer` 里的不算
+    pub same_layer_gestures: Vec<String>,
     /// 引擎在 `navigationStyle: custom` 的页面上画右上角胶囊（`"menuButton": true`），
     /// 点击发 `menuButton` 事件。默认关；普通页面的胶囊在宿主的导航栏里（见 `capsule.rs`）
     pub menu_button: bool,
@@ -91,6 +94,7 @@ impl EngineOptions {
             host_apis: strings("hostApis"),
             native_components: strings("nativeComponents"),
             same_layer: strings("sameLayer"),
+            same_layer_gestures: strings("sameLayerGestures"),
             menu_button: o.get("menuButton").and_then(|v| v.as_bool()).unwrap_or(false),
             navigation_bar: o.get("navigationBar").and_then(|v| v.as_bool()).unwrap_or(false),
             route_animation: o.get("routeAnimation").and_then(|v| v.as_bool()).unwrap_or(false),
@@ -114,9 +118,15 @@ impl EngineOptions {
         self.same_layer.iter().any(|t| t == "video")
     }
 
-    /// 走通用同层渲染的标签（`sameLayer` 去掉 video：video 有自己的播放器约定）
+    /// `<live-player>` 走同层渲染：与 video 同一套播放器约定（`videos` 事件里 `tag: "live-player"`、
+    /// 帧走 `mr_video_frame_*`），所以要求 video 也在 `sameLayer` 里
+    pub fn same_layer_live(&self) -> bool {
+        self.same_layer_video() && self.same_layer.iter().any(|t| t == "live-player")
+    }
+
+    /// 走通用同层渲染的标签（`sameLayer` 去掉 video / live-player：它们有自己的播放器约定）
     pub fn same_layer_views(&self) -> Vec<String> {
-        self.same_layer.iter().filter(|t| t.as_str() != "video").cloned().collect()
+        self.same_layer.iter().filter(|t| !matches!(t.as_str(), "video" | "live-player")).cloned().collect()
     }
 
     /// 真正由宿主盖控件的标签：`nativeComponents` 去掉同层渲染的那几个
@@ -176,6 +186,14 @@ pub fn install_launch_context(app: &crate::runtime::MiniApp, app_id: &str, launc
     let script = format!("globalThis.__projectAppId = {}; globalThis.__hostLaunchOptions = {launch};", json!(app_id));
     if let Err(e) = app.eval(&script) {
         eprintln!("⚠️  安装启动参数失败: {e}");
+    }
+}
+
+/// 宿主接了哪些原生组件，告诉逻辑层（`app.js` 执行之前调一次）：
+/// - `__sameLayerLive`：`<live-player>` 走同层渲染，`LivePlayerContext` 的播放命令交给引擎（host-objects.js）
+pub fn install_native_flags(app: &crate::runtime::MiniApp, opts: &EngineOptions) {
+    if let Err(e) = app.eval(&format!("globalThis.__sameLayerLive = {};", opts.same_layer_live())) {
+        eprintln!("⚠️  安装原生组件开关失败: {e}");
     }
 }
 

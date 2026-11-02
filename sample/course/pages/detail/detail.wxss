@@ -37,7 +37,10 @@
 .lesson:last-child { border-bottom: none; }
 .play { width: 40rpx; height: 40rpx; border-radius: 20rpx; background: #d5d9e1; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .play.ok { background: #3d6cf6; }
-.tri { width: 0; height: 0; border-top: 9rpx solid transparent; border-bottom: 9rpx solid transparent; border-left: 14rpx solid #ffffff; margin-left: 4rpx; }
+/* 播放键：旋转的 L 形边框（透明边拼的三角画不出来） */
+.tri { width: 10rpx; height: 10rpx; border-top: 4rpx solid #ffffff; border-right: 4rpx solid #ffffff; transform: rotate(45deg); margin-left: -4rpx; }
+.play.done { background: #20b486; }
+.tick { width: 14rpx; height: 8rpx; border-left: 4rpx solid #ffffff; border-bottom: 4rpx solid #ffffff; transform: rotate(-45deg); margin-top: -4rpx; }
 .l-title { flex: 1; margin-left: 16rpx; font-size: 26rpx; color: #2b3140; }
 .free { font-size: 20rpx; color: #ff7a3d; border: 1rpx solid #ffb48a; padding: 0 10rpx; border-radius: 6rpx; margin-right: 12rpx; }
 .l-mins { font-size: 22rpx; color: #9aa0ab; }
@@ -63,3 +66,18 @@
 .bubble { width: 36rpx; height: 30rpx; border: 3rpx solid #6b7282; border-radius: 10rpx; box-sizing: border-box; }
 .buy { flex: 1; margin-left: 20rpx; height: 84rpx; border-radius: 42rpx; background: linear-gradient(90deg, #ff9a3d, #ff5a3d); color: #ffffff; font-size: 30rpx; font-weight: bold; display: flex; align-items: center; justify-content: center; }
 .buy.owned { background: linear-gradient(90deg, #5b8cff, #3d6cf6); }
+.my-pg { margin-top: 18rpx; }
+.pg-bar { flex: 1; }
+.pg-tx { margin-left: 14rpx; font-size: 22rpx; color: #3d6cf6; white-space: nowrap; }
+.t-main { flex: 1; }
+.rv-btn { margin-top: 20rpx; height: 64rpx; line-height: 64rpx; text-align: center; border-radius: 32rpx; background: #edf2ff; color: #3d6cf6; font-size: 26rpx; }
+.mine-rv { background: #f6f8fc; border-radius: 16rpx; padding: 20rpx; margin-top: 20rpx; border-bottom: none; }
+.mask { position: fixed; left: 0; top: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.45); }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; background: #ffffff; border-radius: 28rpx 28rpx 0 0; padding: 36rpx 32rpx calc(32rpx + env(safe-area-inset-bottom)); }
+.sh-t { font-size: 32rpx; font-weight: bold; text-align: center; }
+.sh-stars { justify-content: center; margin-top: 28rpx; }
+.big-star { width: 40rpx; height: 40rpx; border-radius: 8rpx; background: #e3e6ec; margin: 0 16rpx; transform: rotate(45deg); }
+.big-star.on { background: #ffad2e; }
+.sh-score { margin-left: 20rpx; font-size: 28rpx; color: #ff8a1d; font-weight: bold; }
+.rv-ta { width: 100%; height: 200rpx; margin-top: 28rpx; padding: 20rpx; box-sizing: border-box; background: #f6f8fc; border-radius: 12rpx; font-size: 26rpx; }
+.sh-ok { margin-top: 28rpx; }

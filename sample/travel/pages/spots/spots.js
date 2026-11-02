@@ -3,7 +3,7 @@ const { spotsOf } = require('../../utils/data.js');
 const TYPES = ['全部', '人文', '自然', '街区', '美食', '休闲', '购物'];
 
 Page({
-  data: { city: '', day: 1, kw: '', types: TYPES, type: '全部', list: [], picked: {}, count: 0, custom: '', customList: [] },
+  data: { city: '', day: 1, kw: '', types: TYPES, type: '全部', list: [], picked: {}, count: 0, custom: '', customList: [], seq: 0 },
   onLoad(q) {
     this.city = decodeURIComponent(q.city || '成都');
     this.all = spotsOf(this.city);
@@ -41,7 +41,8 @@ Page({
     const s = { name, type: '休闲', hours: 1.5, ticket: '待定' };
     this.all.unshift(s);
     const picked = Object.assign({}, this.data.picked, { [name]: true });
-    this.setData({ custom: '', picked, count: Object.keys(picked).length });
+    // 用户打过字的输入框，setData 清空 value 画面不更新：换个 id 让它重建
+    this.setData({ custom: '', seq: this.data.seq + 1, picked, count: Object.keys(picked).length });
     this.filter();
   },
   confirm() {

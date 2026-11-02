@@ -1,0 +1,53 @@
+<view class="page player {{theme}}">
+  <view class="bg" style="background: {{bg}};"></view>
+
+  <view class="cover-wrap">
+    <view class="halo {{playing ? 'halo-on' : ''}}"></view>
+    <!-- 封面旋转：@keyframes spin；暂停用 animation-play-state，另把当前角度写死（见 player.js 的 spinStyle） -->
+    <image class="cover {{playing ? 'spin' : ''}}" style="{{spinStyle}}" src="{{c.cover}}" mode="aspectFill"></image>
+  </view>
+
+  <view class="info">
+    <text class="ch-t">{{chapter.title}}</text>
+    <text class="ch-s">{{c.title}} · {{c.teacher}} · 第 {{idx + 1}}/{{c.chapters.length}} 节</text>
+  </view>
+
+  <view class="prog">
+    <slider class="sld" min="0" max="{{durInt}}" value="{{cur}}" step="1" block-size="16" activeColor="#ffffff"
+            backgroundColor="rgba(255,255,255,0.3)" block-color="#ffffff" bindchanging="onSeeking" bindchange="onSeek"></slider>
+    <view class="row between time">
+      <text>{{curText}}</text>
+      <text>{{durText}}</text>
+    </view>
+  </view>
+
+  <view class="ctrl row">
+    <view class="c-btn {{loop ? 'c-on' : ''}}" bindtap="toggleLoop"><text class="c-t">循环</text><text class="c-s">{{loop ? '单节' : '关'}}</text></view>
+    <view class="c-btn" bindtap="back15"><text class="c-t">-15s</text><text class="c-s">后退</text></view>
+    <view class="main-btn" hover-class="btn-hover" bindtap="toggle">
+      <view wx:if="{{playing}}" class="pause"><view class="bar1"></view><view class="bar1"></view></view>
+      <image wx:else class="tri" src="/images/play-p.png"></image>
+    </view>
+    <view class="c-btn {{showNoise ? 'c-on' : ''}}" bindtap="toggleNoisePanel"><text class="c-t">混音</text><text class="c-s">{{noiseOnN}} 路</text></view>
+    <view class="c-btn {{timerText ? 'c-on' : ''}}" bindtap="pickTimer"><text class="c-t">定时</text><text class="c-s">{{timerText || '关'}}</text></view>
+  </view>
+
+  <view wx:if="{{showNoise}}" class="noise">
+    <view class="row between n-head">
+      <text class="n-title">白噪音混音</text>
+      <text class="n-sub">可同时开启，单独调音量</text>
+    </view>
+    <view class="n-row row" wx:for="{{noises}}" wx:key="key">
+      <view class="n-sw {{item.on ? 'n-sw-on' : ''}}" style="{{item.on ? 'background:' + item.color + ';' : ''}}" data-i="{{index}}" bindtap="toggleNoise">
+        <text>{{item.name}}</text>
+      </view>
+      <slider class="n-sld" min="0" max="100" value="{{item.vol}}" block-size="14" activeColor="{{item.color}}"
+              backgroundColor="rgba(255,255,255,0.25)" data-i="{{index}}" bindchanging="onVol" bindchange="onVol"></slider>
+      <text class="n-v">{{item.vol}}</text>
+    </view>
+  </view>
+
+  <view class="tips row" wx:if="{{!showNoise}}">
+    <text class="tips-t">找一个舒服的姿势，闭上眼睛，跟随声音慢慢呼吸</text>
+  </view>
+</view>

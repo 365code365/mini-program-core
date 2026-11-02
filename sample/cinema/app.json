@@ -5,7 +5,13 @@
     "pages/seat/seat",
     "pages/confirm/confirm",
     "pages/tickets/tickets",
-    "pages/mine/mine"
+    "pages/mine/mine",
+    "pages/cinema/cinema",
+    "pages/order/order",
+    "pages/review/review",
+    "pages/reviews/reviews",
+    "pages/coupons/coupons",
+    "pages/card/card"
   ],
   "window": {
     "navigationBarTitleText": "光影电影票",

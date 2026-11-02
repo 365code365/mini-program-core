@@ -56,3 +56,4 @@
   margin-top: 20rpx;
   color: #a39e92;
 }
+.soon { color: #e5483d; }

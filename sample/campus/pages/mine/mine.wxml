@@ -1,0 +1,25 @@
+<view class="me-head">
+  <image class="me-av" src="/images/avatar.jpg" mode="aspectFill"></image>
+  <view class="me-info">
+    <text class="me-name">林一帆</text>
+    <text class="me-sub" bindtap="copyId">学号 2024013588 · 计算机科学与技术 2024 级 2 班</text>
+  </view>
+</view>
+<view class="card row me-sum">
+  <view class="me-si" data-p="library" bindtap="go"><text class="me-n">{{borrowCount}}</text><text class="muted">借阅中</text></view>
+  <view class="me-si" data-p="card" bindtap="go"><text class="me-n">¥{{balance}}</text><text class="muted">校园卡</text></view>
+  <view class="me-si" data-p="grades" bindtap="go"><text class="me-n">3.62</text><text class="muted">累计绩点</text></view>
+</view>
+<view class="card">
+  <view class="cell"><text class="flex1">上课提醒</text><switch checked="{{remind}}" color="#14937f" bindchange="onRemind"></switch></view>
+  <view class="cell" wx:if="{{remind}}" bindtap="pickMin"><text class="flex1">提醒时间</text><text class="muted">提前 {{remindMin}} 分钟</text><view class="chev"></view></view>
+</view>
+<view class="card">
+  <view class="cell" data-p="grades" bindtap="go" hover-class="btn-hover"><text class="flex1">成绩查询</text><view class="chev"></view></view>
+  <view class="cell" data-p="library" bindtap="go" hover-class="btn-hover"><text class="flex1">我的借阅</text><view class="chev"></view></view>
+  <view class="cell" data-p="rooms" bindtap="go" hover-class="btn-hover"><text class="flex1">空教室查询</text><view class="chev"></view></view>
+  <view class="cell" bindtap="clear" hover-class="btn-hover"><text class="flex1">清除缓存</text><view class="chev"></view></view>
+</view>
+<text class="me-dev">{{info.model}} · {{info.system}} · 基础库 {{info.sdk}}</text>
+<include src="../common/footer.wxml"></include>
+<view class="tab-space"></view>

@@ -64,6 +64,7 @@ flutter:
   assets:
     - assets/demo/
     - assets/demo/components/behaviors/
+    - assets/demo/h5/
     - assets/demo/components/demo-card/
     - assets/demo/components/demo-counter/
     - assets/demo/images/
@@ -83,6 +84,8 @@ flutter:
     - assets/demo/pages/http/
     - assets/demo/pages/host/
     - assets/demo/pages/index/
+    - assets/demo/pages/live/
+    - assets/demo/pages/map/
     - assets/demo/pages/media/
     - assets/demo/pages/navcustom/
     - assets/demo/pages/network/
@@ -95,6 +98,7 @@ flutter:
     - assets/demo/pages/skyline/
     - assets/demo/pages/storage/
     - assets/demo/pages/swiper/
+    - assets/demo/pages/webview/
     - assets/demo/pages/wxml/
     - assets/demo/pages/wxss/
     - assets/demo/templates/

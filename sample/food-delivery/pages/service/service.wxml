@@ -1,0 +1,46 @@
+<view class="hero">
+  <text class="hero-title">你好，有什么可以帮你？</text>
+  <text class="hero-sub">饱了么客服 7×24 小时在线，订单问题优先处理</text>
+</view>
+<view class="card">
+  <view class="row between">
+    <text class="title">最近订单</text>
+    <view class="row more" bindtap="onAllOrders"><text class="sub">全部订单</text><view class="arrow"></view></view>
+  </view>
+  <view wx:if="{{recent}}" class="recent row" bindtap="onOrder">
+    <view class="r-logo glyph" style="background: linear-gradient(135deg, {{recent.c1}}, {{recent.c2}});">{{recent.logo}}</view>
+    <view class="flex1 r-info">
+      <view class="row">
+        <text class="flex1 r-name ellipsis">{{recent.name}}</text>
+        <text class="r-status">{{recent.status}}</text>
+      </view>
+      <text class="r-sum ellipsis">{{recent.summary}}</text>
+      <text class="sub">{{recent.time}} · 实付 ¥{{recent.pay}}</text>
+    </view>
+  </view>
+  <view wx:if="{{recent}}" class="r-foot row">
+    <text class="flex1 sub">催单、退款、联系骑手都在订单详情里</text>
+    <view class="r-btn" bindtap="onOrder">去处理</view>
+  </view>
+  <view wx:else class="none"><text class="sub">暂无订单</text></view>
+</view>
+<view class="card faq">
+  <text class="title">常见问题</text>
+  <view class="faq-item" wx:for="{{faqs}}" wx:key="i">
+    <view class="row q-row" data-i="{{item.i}}" bindtap="onFaq">
+      <text class="q-mark">Q</text>
+      <text class="flex1 q-text">{{item.q}}</text>
+      <view class="arrow {{item.open ? 'arrow-up' : 'arrow-down'}}"></view>
+    </view>
+    <text wx:if="{{item.open}}" class="a-text">{{item.a}}</text>
+  </view>
+</view>
+<view class="card call row" bindtap="onCall">
+  <view class="call-icon glyph">话</view>
+  <view class="flex1">
+    <text class="call-title">电话客服</text>
+    <text class="sub">{{phone}} · 7×24 小时</text>
+  </view>
+  <view class="call-btn">拨打</view>
+</view>
+<view class="gap"></view>

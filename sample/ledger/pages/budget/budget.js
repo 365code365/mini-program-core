@@ -9,7 +9,7 @@ Page({
     const list = store.monthRecords(now.getFullYear(), now.getMonth() + 1)
     const dim = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
     this.spent = store.sum(list, 'out')
-    this.setData({ spentText: store.money(this.spent), daysLeft: dim - now.getDate() + 1, remind: wx.getStorageSync('ledger_remind') !== false })
+    this.setData({ bookName: store.curBook().name, spentText: store.money(this.spent), daysLeft: dim - now.getDate() + 1, remind: wx.getStorageSync('ledger_remind') !== false })
     this.apply(store.getBudget())
   },
   apply(b) {

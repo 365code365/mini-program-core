@@ -1,0 +1,37 @@
+.est-btn,
+.submit {
+  margin: 0 24rpx 24rpx;
+}
+.est {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.baseline {
+  align-items: baseline;
+  margin: 8rpx 0;
+}
+.est-main {
+  font-size: 56rpx;
+  font-weight: bold;
+  color: #f2453d;
+}
+.est-unit {
+  font-size: 26rpx;
+  color: #f2453d;
+  margin-left: 6rpx;
+}
+.en {
+  margin-top: 24rpx;
+  padding-top: 24rpx;
+  border-top: 1rpx solid #f0f1f4;
+  display: flex;
+  flex-direction: column;
+}
+.en-name {
+  font-size: 28rpx;
+  font-weight: bold;
+}
+.en-foot {
+  margin-top: 12rpx;
+}

@@ -87,6 +87,10 @@ fn ident(node: &RenderNode) -> Option<(String, bool, bool)> {
         "video" if crate::renderer::components::host_feed::host_feeds_video() => {
             Some((crate::renderer::components::host_feed::video_key(&node.attrs), true, false))
         }
+        // 同层渲染的直播：与视频同一个帧表、同一个版本号（components::live_player）
+        "live-player" if crate::renderer::components::host_feed::host_feeds_live() => {
+            Some((crate::renderer::components::host_feed::video_key(&node.attrs), true, false))
+        }
         t if host_view::is_same_layer(t) => Some((host_view::key(t, &node.attrs), true, true)),
         _ => None,
     }
@@ -102,6 +106,9 @@ impl WxmlRenderer {
                 .filter(|s| !s.is_empty())
                 .and_then(|s| crate::renderer::components::animated_frame(s)),
             "video" => crate::renderer::components::video_ui::mark_seq(&crate::renderer::components::host_feed::video_key(&node.attrs)),
+            "live-player" if crate::renderer::components::host_feed::host_feeds_live() => {
+                crate::renderer::components::video_ui::mark_seq(&crate::renderer::components::host_feed::video_key(&node.attrs))
+            }
             // 同层渲染的 `<map>` 这类：宿主交来的帧号（components::host_view）。先判标签再拼键：
             // 每画一个节点都走这里，不能为每个 view / text 分配一个字符串
             t if crate::renderer::components::host_view::is_same_layer(t) => {

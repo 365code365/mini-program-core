@@ -1,0 +1,20 @@
+page { padding-bottom: 0; }
+.mn-head { background: linear-gradient(135deg, #3d7bff, #1f4fd8); padding: 48rpx 32rpx 96rpx; display: flex; flex-direction: row; align-items: center; }
+.mn-av { width: 112rpx; height: 112rpx; border-radius: 56rpx; background: #ffffff; }
+.mn-info { margin-left: 24rpx; display: flex; flex-direction: column; }
+.mn-name { color: #ffffff; font-size: 36rpx; font-weight: bold; }
+.mn-sub { color: rgba(255, 255, 255, 0.8); font-size: 24rpx; margin-top: 8rpx; }
+.card { margin-left: 24rpx; margin-right: 24rpx; }
+.mn-stat { display: flex; flex-direction: row; margin-top: -64rpx; }
+.mn-si { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.mn-num { font-size: 36rpx; font-weight: bold; color: #1f2633; margin-bottom: 6rpx; }
+.mn-cst { color: #2f6bff; }
+.mn-menu { padding-top: 0; padding-bottom: 0; }
+.mn-cell { display: flex; flex-direction: row; justify-content: space-between; align-items: center; padding: 30rpx 0; border-bottom: 1rpx solid #f0f1f4; }
+.mn-danger { color: #f0524a; }
+.mn-mask { position: fixed; left: 0; top: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.45); z-index: 100; }
+.mn-sheet { position: fixed; left: 48rpx; right: 48rpx; top: 360rpx; background: #ffffff; border-radius: 24rpx; padding: 36rpx; z-index: 101; }
+.mn-input { margin-top: 24rpx; height: 84rpx; background: #f4f6fb; border-radius: 12rpx; padding: 0 20rpx; font-size: 30rpx; }
+.mn-sbtns { margin-top: 32rpx; }
+.mn-sb { flex: 1; }
+.mn-sgap { margin-left: 20rpx; }

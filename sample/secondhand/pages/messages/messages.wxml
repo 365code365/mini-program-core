@@ -1,0 +1,22 @@
+<view class="top row between">
+  <text class="top-t">私信 {{unread ? '(' + unread + ' 条未读)' : ''}}</text>
+  <text class="top-a" bindtap="readAll">全部已读</text>
+</view>
+<view class="cv" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="open" bindlongpress="onLong">
+  <view class="cv-av">
+    <image class="cv-avimg" src="{{item.avatar}}" mode="aspectFill"></image>
+    <view class="cv-dot" wx:if="{{item.unread}}">{{item.unread}}</view>
+  </view>
+  <view class="flex1 cv-mid">
+    <view class="row between"><text class="cv-name">{{item.name}}</text><text class="muted">{{item.time}}</text></view>
+    <text class="cv-last">{{item.last}}</text>
+  </view>
+  <image class="cv-item" src="{{item.cover}}" mode="aspectFill"></image>
+</view>
+<view class="empty" wx:if="{{!list.length}}">
+  <view class="empty-ic">…</view>
+  <text>还没有私信，看到喜欢的宝贝就和卖家聊聊吧</text>
+  <view class="empty-btn" bindtap="goHome">去逛逛</view>
+</view>
+<view class="tip" wx:else>长按会话可标为已读或删除</view>
+<view class="safe-bottom"></view>

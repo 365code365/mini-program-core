@@ -33,6 +33,17 @@ internal class EngineViewFactory(private val hostOf: () -> EngineHost?) :
 
 internal class EngineView(context: Context, private val hostOf: () -> EngineHost?) : PlatformView {
     private val frame = FrameLayout(context)
+    /** 盖在引擎画面上的原生控件（插件自带的 web-view，NativeComponents.kt）：在 SurfaceView 之上，第一次要用时才挂上 */
+    private val overlayView = FrameLayout(context)
+    private var overlayAttached = false
+    val overlay: FrameLayout
+        get() {
+            if (!overlayAttached) {
+                overlayAttached = true
+                frame.addView(overlayView, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+            }
+            return overlayView
+        }
     private var surfaceView: SurfaceView? = null
     private var fixed: Pair<Int, Int>? = null
     /** 引擎已在这块 SurfaceView 上交过帧（[reveal]） */
@@ -93,6 +104,8 @@ internal class EngineView(context: Context, private val hostOf: () -> EngineHost
         sv.holder.addCallback(callback)
         fixed?.let { (w, h) -> sv.holder.setFixedSize(w, h) }
         frame.addView(sv, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+        // removeAllViews 把盖着的那层也拿掉了：挂过的话放回 SurfaceView 上面
+        if (overlayAttached) frame.addView(overlayView, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
         surfaceView = sv
     }
 

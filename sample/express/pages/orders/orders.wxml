@@ -1,0 +1,36 @@
+<view class="tabs row">
+  <view class="tab {{tab === item.key ? 'on' : ''}}" wx:for="{{tabs}}" wx:key="key" data-k="{{item.key}}" bindtap="onTab">
+    <text class="tab-t">{{item.text}}</text>
+    <view class="tab-line" wx:if="{{tab === item.key}}"></view>
+  </view>
+</view>
+<view class="empty" wx:if="{{!list.length}}">
+  <text class="sub">{{total ? '这个状态下没有寄件' : '还没有寄过快递'}}</text>
+  <view class="go-send" bindtap="goSend"><text>去寄快递</text></view>
+</view>
+<view class="card ord" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onOpen">
+  <view class="row">
+    <view class="logo" style="background: {{item.color}}">{{item.short}}</view>
+    <view class="flex1 o-main">
+      <view class="row between">
+        <text class="o-name">{{item.productName}}</text>
+        <text class="o-st st-{{item.st}}">{{item.stText}}</text>
+      </view>
+      <text class="sub">{{item.time}} 下单 · 运单号 {{item.no}}</text>
+    </view>
+  </view>
+  <view class="route row">
+    <view class="r-city"><text class="r-c">{{item.from}}</text><text class="sub">{{item.sender}}</text></view>
+    <view class="r-line flex1"><text class="r-goods">{{item.goods}} · {{item.weight}}kg</text><view class="r-bar"></view></view>
+    <view class="r-city right"><text class="r-c">{{item.to}}</text><text class="sub">{{item.receiver}}</text></view>
+  </view>
+  <view class="row between o-foot">
+    <text class="o-pay">实付 ¥{{item.payText}}</text>
+    <view class="row">
+      <view class="o-btn o-cancel" wx:if="{{item.canCancel}}" data-id="{{item.id}}" catchtap="onCancel"><text>取消寄件</text></view>
+      <view class="o-btn o-track" wx:if="{{item.st !== 'cancelled'}}" data-no="{{item.no}}" catchtap="onTrack"><text>查看物流</text></view>
+      <view class="o-btn o-again main" data-id="{{item.id}}" catchtap="onAgain"><text>再寄一单</text></view>
+    </view>
+  </view>
+</view>
+<view class="safe"></view>

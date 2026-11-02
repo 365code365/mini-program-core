@@ -1,0 +1,288 @@
+# 途栖酒店：每页能开 + 城市 / 定位降级 / 房间人数 → 列表筛选排序 → 详情（地图、电话降级、收藏、点评）
+# → 预订（常用入住人、发票抬头、特殊要求、自动选券、积分抵扣）→ 支付降级 → 订单详情（改到店时间、取消全额退 + 券 + 积分退回）
+# → 已完成订单点评（出现在酒店点评里）→ 钟点房 → 常用入住人 / 发票抬头增删改 → 收藏与浏览 / 积分签到 / 券 / 客服
+smoke pages/detail/detail?id=h1 pages/booking/booking?hid=h1&rid=r1 pages/order-detail/order-detail?id=HT20260915 pages/reviews/reviews?hid=h1 pages/guests/guests?select=1&max=2 pages/invoices/invoices?select=1 pages/collect/collect?tab=view
+
+open
+expect getCurrentPages()[0].data.s.city === '杭州'
+expect getCurrentPages()[0].data.recs.every(function (h) { return h.city === '杭州'; })
+# 切到上海；「我的位置」宿主不给定位 → 回到常住城市杭州
+picker .city
+pickrow 0 1 1
+pickok
+expect getCurrentPages()[0].data.s.city === '上海'
+expect getCurrentPages()[0].data.recs[0].city === '上海'
+tap .locate
+toast 无法获取定位
+expect getCurrentPages()[0].data.s.city === '杭州'
+picker .city
+pickrow 0 1 1
+pickok
+expect getCurrentPages()[0].data.s.city === '上海'
+# 日期：3 天后入住住 2 晚（固定下来，免得跑的时刻影响订单状态）
+eval (function () { var p = function (n) { return n < 10 ? '0' + n : '' + n; }; var f = function (d) { return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); }; var t = new Date(); var s = wx.getStorageSync('hotel_search'); s.checkin = f(new Date(t.getFullYear(), t.getMonth(), t.getDate() + 3)); s.checkout = f(new Date(t.getFullYear(), t.getMonth(), t.getDate() + 5)); wx.setStorageSync('hotel_search', s); getCurrentPages()[0].onShow(); })()
+expect getCurrentPages()[0].data.nights === 2
+# 房间与人数：2 间 3 成人 1 儿童
+tap .people
+exists .sheet
+tapn 1 .stp
+tapn 3 .stp
+tapn 5 .stp
+shot target/_polish_shots/people.png
+tap .pp-ok
+absent .sheet
+expect getCurrentPages()[0].data.people === '2间 3成人 1儿童'
+wait 1600
+shot target/_polish_shots/index.png
+
+# 列表：上海 3 家，低价排序、星级、关键字
+tap .search-btn
+route pages/list/list
+count 3 .hotel
+tapn 1 .sort
+expect getCurrentPages().slice(-1)[0].data.list[0].id === 'sh2'
+tapn 4 .chip
+count 1 .hotel
+expect getCurrentPages().slice(-1)[0].data.list[0].id === 'sh1'
+tapn 4 .chip
+type .search-input => 武康路
+count 1 .hotel
+tap .clear
+count 3 .hotel
+shot target/_polish_shots/list.png
+tapn 0 .hotel
+route pages/detail/detail
+expect getCurrentPages().slice(-1)[0].data.h.id === 'sh2'
+expect getCurrentPages().slice(-1)[0].data.hourRooms.length === 1
+# 地图：宿主没有地图能力 → 弹地址，可复制
+tap .map-btn
+modal?
+modal ok
+toast 内容已复制
+# 咨询：拨酒店电话（宿主不能拨号 → 弹号码）
+tapn 1 .bar-ico
+sheet 0 2
+modal?
+modal ok
+tapn 0 .bar-ico
+expect wx.getStorageSync('hotel_favs')[0] === 'sh2'
+# 点评：好评筛选 + 标签
+tap .rv-more
+route pages/reviews/reviews
+count 3 .review
+tapn 2 .ft
+count 1 .review
+tapn 0 .ft
+tapn 2 .tg
+count 1 .review
+shot target/_polish_shots/reviews.png
+back
+shot target/_polish_shots/detail.png
+tapn 0 .book-btn
+route pages/booking/booking
+
+# 预订：2 间 → 2 位住客，从常用入住人里选
+expect getCurrentPages().slice(-1)[0].data.count === 2
+expect getCurrentPages().slice(-1)[0].data.guests.length === 2
+tapn 0 .pick-link
+route pages/guests/guests
+tapn 0 .g
+tapn 1 .g
+tap .f-ok
+route pages/booking/booking
+expect getCurrentPages().slice(-1)[0].data.guests.join(',') === '林晓舟,林小满'
+type .phone-in => 13800006621
+blur
+# 发票：开关 → 常用抬头
+tap .inv-sw
+expect getCurrentPages().slice(-1)[0].data.invoice === true
+tapn 1 .pick-link
+route pages/invoices/invoices
+tap .v
+route pages/booking/booking
+expect getCurrentPages().slice(-1)[0].data.invTitle === '杭州途栖网络科技有限公司'
+expect getCurrentPages().slice(-1)[0].data.invType === 1
+# 特殊要求
+tap .no-border
+sheet 0 5
+expect getCurrentPages().slice(-1)[0].data.needs === '高楼层'
+# 房费 469×2间×2晚=1876，金卡 -94，满 800 减 80 自动选上，积分抵 18
+expect getCurrentPages().slice(-1)[0].data.p.roomFee === 1876
+expect getCurrentPages().slice(-1)[0].data.p.coupon.id === 'k2'
+tap .pts-sw
+expect getCurrentPages().slice(-1)[0].data.p.pointsCut === 18
+expect getCurrentPages().slice(-1)[0].data.p.total === 1684
+shot target/_polish_shots/booking.png
+tap .submit
+modal?
+modal ok
+wait 300
+route pages/order-detail/order-detail
+expect getCurrentPages().slice(-1)[0].data.o.total === 1684
+expect getCurrentPages().slice(-1)[0].data.st.key === 'wait'
+expect getCurrentPages().slice(-1)[0].data.st.free === true
+expect wx.getStorageSync('hotel_points') === 1744
+expect wx.getStorageSync('hotel_used_coupons').indexOf('k2') >= 0
+# 改到店时间
+picker .arrival
+pickrow 0 1 1
+pickok
+expect getCurrentPages().slice(-1)[0].data.o.arrival === '20:00-22:00'
+toast 已通知酒店
+shot target/_polish_shots/order-detail.png
+tap .h-call
+modal?
+modal ok
+# 取消：全额退，券与积分退回
+tap .h-cancel
+modal?
+modal ok
+wait 300
+expect getCurrentPages().slice(-1)[0].data.o.status === 'cancel'
+expect getCurrentPages().slice(-1)[0].data.o.refund === 1684
+expect wx.getStorageSync('hotel_used_coupons').indexOf('k2') < 0
+expect wx.getStorageSync('hotel_points') === 1860
+toast 已取消
+
+# 已完成订单写点评，点评出现在酒店详情
+eval wx.switchTab({ url: '/pages/orders/orders' })
+route pages/orders/orders
+count 3 .order
+tapn 2 .tab
+count 1 .order
+shot target/_polish_shots/orders.png
+tap .o-rate
+route pages/order-detail/order-detail
+tapn 3 .rate-star
+tapn 0 .r-tag
+type .rate-input => 早餐很好吃，前台很热情
+blur
+tap .rate-btn
+expect getCurrentPages().slice(-1)[0].data.o.rating.score === 4
+expect getCurrentPages().slice(-1)[0].data.o.rating.tags[0] === '干净卫生'
+toast +50 积分
+shot target/_polish_shots/rated.png
+tap .h-rebook
+route pages/detail/detail
+expect getCurrentPages().slice(-1)[0].data.h.id === 'h5'
+expect getCurrentPages().slice(-1)[0].data.reviews[0].mine === true
+back
+back
+
+# 钟点房：上海只有全季有；自动用钟点房券
+eval wx.switchTab({ url: '/pages/index/index' })
+route pages/index/index
+tapn 2 .kind
+expect getCurrentPages()[0].data.s.kind === 2
+tap .search-btn
+route pages/list/list
+count 1 .hotel
+tap .hotel
+route pages/detail/detail
+expect getCurrentPages().slice(-1)[0].data.hourly === true
+tap .bar-btn
+route pages/booking/booking
+expect getCurrentPages().slice(-1)[0].data.hourly === true
+expect getCurrentPages().slice(-1)[0].data.guests[0] === '林晓舟'
+expect getCurrentPages().slice(-1)[0].data.p.coupon.id === 'k4'
+expect getCurrentPages().slice(-1)[0].data.p.total === 159
+shot target/_polish_shots/booking-hourly.png
+tap .submit
+modal ok
+wait 300
+route pages/order-detail/order-detail
+expect getCurrentPages().slice(-1)[0].data.o.hourly === true
+expect getCurrentPages().slice(-1)[0].data.o.start === '10:00'
+expect getCurrentPages().slice(-1)[0].data.stay.indexOf('10:00 起') > 0
+
+# 常用入住人：新增 → 改名 → 删除
+eval wx.switchTab({ url: '/pages/mine/mine' })
+route pages/mine/mine
+tapn 0 .menu-item
+route pages/guests/guests
+count 2 .g
+tap .f-add
+exists .sheet
+type .g-name-in => 周一一
+type .g-phone-in => 13912345678
+blur
+tap .g-save
+count 3 .g
+expect wx.getStorageSync('hotel_guests')[0].name === '周一一'
+tapn 0 .edit
+type .g-name-in => 二
+blur
+tap .g-save
+expect wx.getStorageSync('hotel_guests')[0].name === '周一一二'
+shot target/_polish_shots/guests.png
+tapn 0 .edit
+tap .g-del
+modal ok
+count 2 .g
+back
+
+# 发票抬头：个人抬头、企业抬头（税号校验）、导入降级
+tapn 1 .menu-item
+route pages/invoices/invoices
+count 1 .v
+tap .f-add
+tapn 0 .ty
+type .v-title-in => 林晓舟
+blur
+tap .v-save
+count 2 .v
+tap .f-add
+type .v-title-in => 杭州栖木文化有限公司
+blur
+tap .v-save
+toast 纳税人识别号
+type .v-tax-in => 91330106MA2H8K6Q3Y
+blur
+tap .v-save
+count 3 .v
+shot target/_polish_shots/invoices.png
+tap .f-imp
+toast 当前环境不支持导入
+back
+
+# 收藏 / 浏览记录 / 积分 / 券 / 点评 / 客服 / 权益
+tapn 0 .stat
+route pages/collect/collect
+count 1 .h
+tap .fav-btn
+expect wx.getStorageSync('hotel_favs').length === 0
+tapn 1 .tab
+expect getCurrentPages().slice(-1)[0].data.list.length >= 2
+shot target/_polish_shots/collect.png
+tap .clear
+modal ok
+count 0 .h
+back
+tapn 2 .stat
+route pages/points/points
+expect getCurrentPages().slice(-1)[0].data.points === 2069
+tapn 0 .t-btn
+expect getCurrentPages().slice(-1)[0].data.points === 2079
+shot target/_polish_shots/points.png
+back
+expect getCurrentPages().slice(-1)[0].data.signed === true
+tapn 3 .stat
+route pages/coupons/coupons
+count 3 .cp
+tapn 1 .tab
+count 1 .cp
+shot target/_polish_shots/coupons.png
+back
+tapn 2 .menu-item
+route pages/reviews/reviews
+count 1 .review
+back
+shot target/_polish_shots/mine.png
+tapn 3 .menu-item
+sheet 4 5
+modal?
+modal ok
+tap .m-right
+modal?
+modal ok
+noerr

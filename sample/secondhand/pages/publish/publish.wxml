@@ -1,0 +1,55 @@
+<view class="draft row between" wx:if="{{draft}}">
+  <text>已恢复上次没发完的草稿</text>
+  <text class="draft-clr" bindtap="clearDraft">清空重填</text>
+</view>
+<view class="card">
+  <view class="imgs">
+    <view class="im" wx:for="{{imgs}}" wx:key="*this">
+      <image class="im-img" src="{{item}}" mode="aspectFill" data-i="{{index}}" bindtap="previewImg"></image>
+      <view class="im-del" data-i="{{index}}" catchtap="removeImg">×</view>
+      <text class="im-cover" wx:if="{{index === 0}}">封面</text>
+    </view>
+    <view class="im im-add" wx:if="{{imgs.length < 9}}" bindtap="chooseImg">
+      <text class="add-plus">+</text>
+      <text class="add-tx">{{imgs.length ? imgs.length + '/9' : '添加实拍图'}}</text>
+    </view>
+  </view>
+  <text class="err" wx:if="{{err.imgs}}">{{err.imgs}}</text>
+  <input class="t-ipt" value="{{title}}" maxlength="30" placeholder="标题：品牌型号 + 关键信息，如 iPhone 13 128G" bindinput="onTitle" />
+  <text class="err" wx:if="{{err.title}}">{{err.title}}</text>
+  <textarea class="d-ipt" value="{{desc}}" maxlength="500" placeholder="描述一下宝贝的入手渠道、使用时长、有无磕碰和配件…" bindinput="onDesc" />
+  <text class="cnt">{{desc.length}}/500</text>
+</view>
+<view class="card">
+  <view class="f-row">
+    <text class="f-l">成色</text>
+    <view class="conds">
+      <view class="cond {{cond === item ? 'cond-on' : ''}}" wx:for="{{conds}}" wx:key="*this" data-c="{{item}}" bindtap="pickCond">{{item}}</view>
+    </view>
+  </view>
+  <text class="err" wx:if="{{err.cond}}">{{err.cond}}</text>
+  <view class="f-row">
+    <text class="f-l">售价</text>
+    <text class="f-yen">¥</text>
+    <input class="f-ipt" type="digit" value="{{price}}" placeholder="0.00" bindinput="onPrice" />
+    <text class="f-l2">原价</text>
+    <input class="f-ipt" type="digit" value="{{orig}}" placeholder="选填" bindinput="onOrig" />
+  </view>
+  <text class="err" wx:if="{{err.price}}">{{err.price}}</text>
+  <picker mode="selector" range="{{catNames}}" value="{{catIdx < 0 ? 0 : catIdx}}" bindchange="onCat">
+    <view class="f-row">
+      <text class="f-l">分类</text>
+      <text class="flex1 {{catIdx < 0 ? 'ph' : ''}}">{{catIdx < 0 ? '选择宝贝分类' : catNames[catIdx]}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <text class="err" wx:if="{{err.cat}}">{{err.cat}}</text>
+  <view class="f-row f-last">
+    <text class="f-l">包邮</text>
+    <text class="flex1 muted">勾选后买家无需另付邮费</text>
+    <switch checked="{{free}}" color="#ffb400" bindchange="onFree" />
+  </view>
+</view>
+<view class="tips">发布即同意《闲转发布规范》：禁止发布违禁品、虚假宝贝；交易请走闲转担保，确认收货后卖家才收到钱。</view>
+<view class="btn pub" bindtap="submit">确认发布</view>
+<view class="safe-bottom"></view>

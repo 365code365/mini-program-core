@@ -29,7 +29,11 @@
     "pages/perf/perf",
     "pages/http/http",
     "pages/dashboard/dashboard",
-    "pages/detail/detail"
+    "pages/detail/detail",
+    "pages/map/map",
+    "pages/webview/webview",
+    "pages/webview/web",
+    "pages/live/live"
   ],
   "workers": "workers",
   "window": {

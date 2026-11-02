@@ -1,0 +1,40 @@
+<view class="page tab-page">
+  <view class="tabs">
+    <view wx:for="{{tabs}}" wx:key="key" class="tab {{cur === item.key ? 'tab-on' : ''}}" data-key="{{item.key}}" bindtap="onTab">
+      <text>{{item.name}}</text>
+      <view wx:if="{{item.n > 0}}" class="tn"><text>{{item.n}}</text></view>
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}">
+    <view class="card" wx:for="{{skel}}" wx:key="*this">
+      <view class="skeleton sk1"></view>
+      <view class="skeleton sk2"></view>
+      <view class="skeleton sk3"></view>
+    </view>
+  </view>
+
+  <view wx:elif="{{list.length === 0}}" class="empty">
+    <view class="empty-ic"></view>
+    <text class="empty-tx">{{cur === -2 ? '还没有订单，衣服攒多了就叫我们上门吧' : '这个状态下没有订单'}}</text>
+    <view class="btn-line" bindtap="goPrice"><text>去下单</text></view>
+  </view>
+
+  <view wx:else>
+    <view class="card od" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="open" hover-class="hover">
+      <view class="row between">
+        <text class="sub">{{item.bagNo}} · {{item.timeText}}</text>
+        <text class="st st{{item.main}}">{{item.statusName}}</text>
+      </view>
+      <text class="names">{{item.names}}</text>
+      <text class="sub">{{item.stepText}}</text>
+      <view class="row between od-f">
+        <view class="row"><text class="sub">共 {{item.count}} 件 · 实付 </text><text class="price">¥{{item.payable}}</text></view>
+        <view class="row">
+          <view wx:if="{{item.canReview}}" class="btn-line" data-id="{{item.id}}" catchtap="review"><text>去评价</text></view>
+          <view wx:else class="btn-gray"><text>查看详情</text></view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

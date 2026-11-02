@@ -1,0 +1,35 @@
+<view class="card form">
+  <view class="f">
+    <text class="f-k">收货人</text>
+    <input class="f-in f-name" placeholder="收货人姓名" placeholder-class="ph" value="{{name}}" maxlength="16" bindinput="onName" />
+  </view>
+  <view class="f">
+    <text class="f-k">手机号</text>
+    <input class="f-in f-phone" type="number" placeholder="11 位手机号" placeholder-class="ph" value="{{phone}}" maxlength="11" bindinput="onPhone" />
+  </view>
+  <picker mode="region" value="{{region}}" bindchange="onRegion">
+    <view class="f f-region">
+      <text class="f-k">所在地区</text>
+      <text class="f-t {{region.length ? '' : 'ph'}}">{{region.length ? region[0] + ' ' + region[1] + ' ' + region[2] : '省 / 市 / 区'}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <view class="f last">
+    <text class="f-k">详细地址</text>
+    <input class="f-in f-detail" placeholder="街道、楼栋、门牌号" placeholder-class="ph" value="{{detail}}" maxlength="40" bindinput="onDetail" />
+  </view>
+</view>
+<view class="card form">
+  <view class="f">
+    <text class="f-k">标签</text>
+    <view class="chips">
+      <text wx:for="{{tags}}" wx:key="*this" class="chip {{tag === item ? 'on' : ''}}" data-tag="{{item}}" bindtap="onTag">{{item}}</text>
+    </view>
+  </view>
+  <view class="f last">
+    <text class="f-k">设为默认</text>
+    <view class="f-sw"><text class="muted">下单时优先使用</text><switch checked="{{isDefault}}" color="#ff8a3d" bindchange="onDefault" /></view>
+  </view>
+</view>
+<view class="btn save" bindtap="onSave"><text>保存</text></view>
+<view wx:if="{{id}}" class="del" bindtap="onDelete"><text>删除地址</text></view>

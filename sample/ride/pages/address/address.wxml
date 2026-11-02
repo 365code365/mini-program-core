@@ -1,0 +1,48 @@
+<view class="card slots">
+  <view class="slot row">
+    <view class="s-icon home-ic"><text class="s-glyph">家</text></view>
+    <view wx:if="{{home}}" class="flex1 s-body s-home" data-slot="home" bindtap="onGo">
+      <text class="s-name">{{home.name}}</text>
+      <text class="sub s-addr">{{home.addr}}</text>
+    </view>
+    <view wx:else class="flex1 s-body s-home" data-slot="home" bindtap="onSet">
+      <text class="s-name s-empty">设置家的地址</text>
+      <text class="sub s-addr">设好后首页「回家」一键叫车</text>
+    </view>
+    <text class="s-op op-set-home" data-slot="home" bindtap="onSet">{{home ? '修改' : '设置'}}</text>
+    <text wx:if="{{home}}" class="s-op s-del op-del-home" data-slot="home" bindtap="onRemove">删除</text>
+  </view>
+  <view class="slot row">
+    <view class="s-icon work-ic"><text class="s-glyph">司</text></view>
+    <view wx:if="{{company}}" class="flex1 s-body s-company" data-slot="company" bindtap="onGo">
+      <text class="s-name">{{company.name}}</text>
+      <text class="sub s-addr">{{company.addr}}</text>
+    </view>
+    <view wx:else class="flex1 s-body s-company" data-slot="company" bindtap="onSet">
+      <text class="s-name s-empty">设置公司地址</text>
+      <text class="sub s-addr">设好后首页「去公司」一键叫车</text>
+    </view>
+    <text class="s-op op-set-company" data-slot="company" bindtap="onSet">{{company ? '修改' : '设置'}}</text>
+    <text wx:if="{{company}}" class="s-op s-del op-del-company" data-slot="company" bindtap="onRemove">删除</text>
+  </view>
+</view>
+<view class="section-title row between">
+  <text>其他常用地址</text>
+  <text class="sub">{{others.length}}/{{max}}</text>
+</view>
+<view class="card list">
+  <view wx:if="{{!others.length}}" class="none"><text class="sub">健身房、父母家、常去的商场，存起来下次一键选</text></view>
+  <view class="slot row other" wx:for="{{others}}" wx:key="name">
+    <view class="s-icon star-ic"><text class="s-glyph">★</text></view>
+    <view class="flex1 s-body s-other" data-slot="other" data-i="{{index}}" bindtap="onGo">
+      <text class="s-name">{{item.name}}</text>
+      <text class="sub s-addr">{{item.addr}}</text>
+    </view>
+    <text class="s-op s-del op-del-other" data-slot="other" data-i="{{index}}" bindtap="onRemove">删除</text>
+  </view>
+</view>
+<text class="hint">点地址直接设为目的地，回首页叫车</text>
+<view class="gap"></view>
+<view class="bar">
+  <view class="btn-primary add-btn" data-slot="other" bindtap="onSet">添加常用地址</view>
+</view>

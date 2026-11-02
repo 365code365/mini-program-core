@@ -1,0 +1,75 @@
+<view class="page tab-page">
+  <view class="loc row">
+    <text class="loc-t">{{city}}</text>
+    <text class="sub loc-s">{{addrText}}</text>
+    <view class="scan" hover-class="hover" bindtap="scanBag"><text>扫袋码</text></view>
+  </view>
+
+  <swiper class="banner" indicator-dots="true" indicator-active-color="#ffffff" indicator-color="rgba(255,255,255,0.5)" autoplay="true" interval="4000" circular="true">
+    <swiper-item wx:for="{{banners}}" wx:key="img">
+      <view class="b-item" data-cat="{{item.cat}}" bindtap="goCat">
+        <image class="b-img" src="{{item.img}}" mode="aspectFill"></image>
+        <view class="b-txt">
+          <text class="b-t">{{item.title}}</text>
+          <text class="b-s">{{item.sub}}</text>
+          <view class="b-btn"><text>立即预约</text></view>
+        </view>
+      </view>
+    </swiper-item>
+  </swiper>
+
+  <view class="card svc">
+    <view class="svc-grid">
+      <view class="svc-i" wx:for="{{cats}}" wx:key="key" data-cat="{{item.key}}" bindtap="goCat" hover-class="hover">
+        <image class="svc-ic" src="{{item.icon}}"></image>
+        <text class="svc-t">{{item.name}}</text>
+      </view>
+      <view class="svc-i" bindtap="goPrice" hover-class="hover">
+        <view class="svc-ic all"><text class="all-t">全部</text></view>
+        <text class="svc-t">价目表</text>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{active}}" class="card active row" bindtap="goActive" hover-class="hover">
+    <view class="flex1">
+      <view class="row"><text class="a-st">{{active.statusName}}</text><text class="sub a-no">{{active.bagNo}}</text></view>
+      <text class="a-d">{{active.stepText}}</text>
+    </view>
+    <text class="sub">查看 ›</text>
+  </view>
+
+  <view class="card">
+    <text class="title">服务流程</text>
+    <view class="flow row">
+      <view class="f-i" wx:for="{{flow}}" wx:key="t">
+        <view class="f-n"><text>{{index + 1}}</text></view>
+        <text class="f-t">{{item.t}}</text>
+        <text class="f-s">{{item.s}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <text class="title">我们的承诺</text>
+    <view class="promise row" wx:for="{{promises}}" wx:key="t">
+      <view class="p-dot"></view>
+      <view class="flex1">
+        <text class="p-t">{{item.t}}</text>
+        <text class="sub">{{item.s}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{showCode}}" class="mask" bindtap="closeCode"></view>
+  <view wx:if="{{showCode}}" class="dialog">
+    <text class="d-title">输入袋码</text>
+    <text class="sub d-sub">洗衣袋封签上的袋码，如 JY-8T3K</text>
+    <input class="input d-in" value="{{code}}" placeholder="JY-" maxlength="7" bindinput="onCode" focus="{{showCode}}"></input>
+    <text class="err">{{codeErr}}</text>
+    <view class="row d-ops">
+      <view class="btn-gray flex1" bindtap="closeCode"><text>取消</text></view>
+      <view class="btn flex1 d-ok" bindtap="submitCode"><text>查询</text></view>
+    </view>
+  </view>
+</view>

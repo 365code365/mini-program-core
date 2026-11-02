@@ -1,0 +1,70 @@
+<view class="top row">
+  <view class="loc row" bindtap="chooseArea">
+    <text class="loc-ic">◉</text>
+    <text class="loc-t">{{locName}}</text>
+    <text class="loc-arrow">▾</text>
+  </view>
+  <view class="flex1"></view>
+  <text class="muted">{{updated}} 更新</text>
+  <view class="refresh" bindtap="refresh"><text class="refresh-t">刷新空场</text></view>
+</view>
+<view wx:if="{{locTip}}" class="loc-tip"><text>{{locTip}}</text></view>
+
+<view class="promo row" bindtap="toNearby">
+  <view class="col flex1">
+    <text class="promo-t">工作日白天订场 · 低至 ¥30/小时</text>
+    <text class="promo-s">连订 2 小时以上自动合并，储值再享赠送</text>
+  </view>
+  <view class="promo-btn"><text>去订场</text></view>
+</view>
+
+<view class="card sports-card">
+  <text class="sec-title">运动项目</text>
+  <grid-view class="sports" type="aligned" cross-axis-count="4" main-axis-gap="12" cross-axis-gap="8">
+    <view wx:for="{{sports}}" wx:key="id" class="sp col {{sport === item.id ? 'sp-on' : ''}}" data-id="{{item.id}}" bindtap="pickSport">
+      <image class="sp-ic" src="{{item.icon}}"></image>
+      <text class="sp-t">{{item.name}}</text>
+    </view>
+  </grid-view>
+</view>
+
+<view id="nearby" class="near-head row">
+  <text class="sec-title">附近场馆</text>
+  <view wx:if="{{sportName}}" class="filter row" bindtap="clearSport"><text class="filter-t">{{sportName}}</text><text class="filter-x">×</text></view>
+  <view class="flex1"></view>
+  <text class="sort {{sort === 'dist' ? 'sort-on' : ''}}" data-s="dist" bindtap="toggleSort">距离最近</text>
+  <text class="sort {{sort === 'rate' ? 'sort-on' : ''}}" data-s="rate" bindtap="toggleSort">评分最高</text>
+</view>
+
+<view wx:if="{{loading}}" class="loading">
+  <view class="sk"></view><view class="sk"></view>
+  <text class="muted loading-t">正在查找附近场馆…</text>
+</view>
+<view wx:elif="{{list.length}}">
+  <view wx:for="{{list}}" wx:key="id" class="vn row" data-id="{{item.id}}" bindtap="open">
+    <image class="vn-img" src="{{item.photo}}" mode="aspectFill"></image>
+    <view class="col flex1 vn-info">
+      <text class="vn-n">{{item.name}}</text>
+      <view class="row vn-l">
+        <text class="vn-rate">{{item.rating}}分</text>
+        <text class="muted vn-gap">{{item.sport}}</text>
+        <view class="flex1"></view>
+        <text class="muted">{{item.distText}}</text>
+      </view>
+      <view class="row vn-l">
+        <text class="vtag" wx:for="{{item.tags}}" wx:for-item="t" wx:key="*this">{{t}}</text>
+      </view>
+      <view class="row vn-l">
+        <text class="muted flex1">营业 {{item.open}}</text>
+        <text class="price">¥{{item.price}}</text>
+        <text class="muted">/小时起</text>
+      </view>
+    </view>
+  </view>
+</view>
+<view wx:else class="empty">
+  <view class="empty-ic"><text class="empty-ic-t">?</text></view>
+  <text class="empty-t">附近暂无{{sportName}}场馆，看看其他项目吧</text>
+  <view class="btn-ghost empty-btn" bindtap="clearSport"><text>查看全部场馆</text></view>
+</view>
+<view class="tabbar-space"></view>

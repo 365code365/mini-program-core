@@ -1,0 +1,15 @@
+.types { background: #ffffff; padding: 24rpx 16rpx; }
+.ty { flex: 1; margin: 0 8rpx; padding: 16rpx; border-radius: 12rpx; background: #f7f8fa; }
+.ty-hover { background: #e8f3ff; }
+.ty-ic { width: 56rpx; height: 56rpx; border-radius: 14rpx; color: #fff; font-size: 26rpx; line-height: 56rpx; text-align: center; margin-right: 12rpx; flex-shrink: 0; }
+.ty-n { font-size: 26rpx; font-weight: bold; }
+.ty-d { font-size: 18rpx; color: #86909c; margin-top: 2rpx; }
+.tabs { background: #ffffff; border-top: 1rpx solid #f2f3f5; }
+.tb { flex: 1; height: 88rpx; display: flex; flex-direction: row; align-items: center; justify-content: center; font-size: 28rpx; color: #4e5969; }
+.tb-on { color: #1677ff; font-weight: bold; border-bottom: 4rpx solid #1677ff; }
+.tb-c { margin-left: 8rpx; min-width: 32rpx; height: 32rpx; border-radius: 16rpx; background: #f53f3f; color: #fff; font-size: 20rpx; line-height: 32rpx; text-align: center; padding: 0 8rpx; box-sizing: border-box; }
+.sm { width: 56rpx; height: 56rpx; line-height: 56rpx; border-radius: 12rpx; font-size: 22rpx; margin-right: 16rpx; }
+.t { font-size: 30rpx; font-weight: bold; }
+.sum { display: block; font-size: 26rpx; color: #1d2129; margin-top: 16rpx; }
+.reason { display: block; font-size: 24rpx; color: #86909c; margin-top: 8rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.foot { margin-top: 16rpx; padding-top: 16rpx; border-top: 1rpx solid #f2f3f5; }

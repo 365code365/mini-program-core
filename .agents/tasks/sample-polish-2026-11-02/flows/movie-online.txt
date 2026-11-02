@@ -1,0 +1,88 @@
+# 光影放映厅：每页能开 + 写短评（本地保存）→ 详情 / 全部短评里与接口短评合并、排第一 → 修改 → 我的短评删除；
+#            未上映影片不能写；想看清单按 待上映 / 可观看 筛
+demo
+smoke pages/detail/detail?id=1 pages/comments/comments?id=1 pages/write/write?id=1
+demo
+open pages/detail/detail?id=1
+waitfor getCurrentPages()[0].data.status === 'ok' 6000
+print getCurrentPages()[0].data.m.status + ' ' + getCurrentPages()[0].data.m.commentCount + ' ' + getCurrentPages()[0].data.comments.length
+eval globalThis.__n = getCurrentPages()[0].data.m.commentCount
+expect getCurrentPages()[0].data.commentTotal === __n
+tap .bar-btn
+route pages/write/write
+waitfor getCurrentPages().slice(-1)[0].data.status === 'ok' 6000
+tap .btn
+toast 先打个分
+tapn 3 .big-star
+expect getCurrentPages().slice(-1)[0].data.star === 4
+type .ta => 好看
+tap .btn
+toast 至少写 5 个字
+type .ta => 节奏紧凑，配乐很燃，值得二刷
+shot target/_polish_shots/write.png
+tap .btn
+toast 发表成功
+wait 900
+route pages/detail/detail
+expect wx.getStorageSync('movie_my_comments').length === 1
+expect getCurrentPages()[0].data.comments[0].mine === true
+expect getCurrentPages()[0].data.comments[0].content.indexOf('节奏紧凑，配乐很燃，值得二刷') >= 0
+expect getCurrentPages()[0].data.comments.length === 4
+expect getCurrentPages()[0].data.commentTotal === __n + 1
+show .mine-tag
+shot target/_polish_shots/detail-mine.png
+# 全部短评：第一页最前面是自己的，总数 +1，两种排序都在
+tap .all-btn
+route pages/comments/comments
+waitfor getCurrentPages().slice(-1)[0].data.status === 'ok' 6000
+expect getCurrentPages().slice(-1)[0].data.list[0].mine === true
+expect getCurrentPages().slice(-1)[0].data.total === __n + 1
+expect getCurrentPages().slice(-1)[0].data.list.filter(c => c.mine).length === 1
+shot target/_polish_shots/comments.png
+tapn 1 .seg-i
+waitfor getCurrentPages().slice(-1)[0].data.status === 'ok' && getCurrentPages().slice(-1)[0].data.sort === 'new' 6000
+expect getCurrentPages().slice(-1)[0].data.list[0].mine === true
+# 修改：再进写短评是编辑态，改成 5 星
+tapn 0 .like
+route pages/write/write
+waitfor getCurrentPages().slice(-1)[0].data.status === 'ok' 6000
+expect getCurrentPages().slice(-1)[0].data.editing === true
+tapn 4 .big-star
+tap .btn
+wait 900
+route pages/comments/comments
+expect getCurrentPages().slice(-1)[0].data.list[0].star === 5
+expect wx.getStorageSync('movie_my_comments').length === 1
+back
+expect getCurrentPages()[0].data.comments[0].star === 5
+# 想看 → 我的：筛选、短评列表、删除短评
+tap .act
+expect getCurrentPages()[0].data.wished === true
+eval wx.switchTab({ url: '/pages/mine/mine' })
+route pages/mine/mine
+expect getCurrentPages()[0].data.all.length === 1 && getCurrentPages()[0].data.comments.length === 1
+tapn 1 .stat
+expect getCurrentPages()[0].data.filter === 'coming' && getCurrentPages()[0].data.list.length === 0
+tapn 2 .stat
+expect getCurrentPages()[0].data.list.length === 1
+tapn 0 .stat
+shot target/_polish_shots/mine.png
+tapn 1 .mc-act
+modal ok
+wait 300
+expect wx.getStorageSync('movie_my_comments').length === 0
+expect getCurrentPages()[0].data.comments.length === 0
+tapn 3 .stat
+toast 还没写过短评
+# 即将上映的影片：不能写短评
+eval wx.switchTab({ url: '/pages/index/index' })
+route pages/index/index
+waitfor getCurrentPages()[0].data.status === 'ok' 6000
+tapn 1 .tab
+waitfor getCurrentPages()[0].data.tab === 'coming' && getCurrentPages()[0].data.status === 'ok' 6000
+eval wx.navigateTo({ url: '/pages/detail/detail?id=' + getCurrentPages()[0].data.list[0].id })
+waitfor getCurrentPages().slice(-1)[0].data.status === 'ok' 6000
+tap .bar-btn
+toast 上映后才能写短评
+route pages/detail/detail
+noerr

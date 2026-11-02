@@ -1,0 +1,13 @@
+.img { width: 220rpx; height: 120rpx; }
+.info { margin-left: 20rpx; }
+.nm { font-size: 30rpx; font-weight: bold; margin-right: 10rpx; }
+.plate { align-self: flex-start; font-size: 24rpx; color: #ffffff; background: #1f4fbf; border-radius: 6rpx; padding: 2rpx 12rpx; margin-top: 6rpx; }
+.meta { margin: 24rpx 0 16rpx; background: #f6f8fc; border-radius: 12rpx; padding: 16rpx 20rpx; }
+.mv { font-size: 26rpx; font-weight: bold; }
+.ops { justify-content: flex-end; }
+.vin { flex: 1; }
+.op { margin-left: 16rpx; }
+.d-sub { display: block; margin: 8rpx 0 24rpx; }
+.d-ops { margin-top: 32rpx; }
+.d-btn { height: 76rpx; line-height: 72rpx; text-align: center; }
+.d-ok { margin-left: 20rpx; line-height: 76rpx; }

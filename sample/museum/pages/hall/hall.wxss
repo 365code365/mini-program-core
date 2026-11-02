@@ -1,0 +1,17 @@
+.cover { width: 100%; height: 400rpx; }
+.head { margin-top: -40rpx; position: relative; display: flex; flex-direction: column; }
+.row { display: flex; flex-direction: row; align-items: center; }
+.n { font-size: 40rpx; font-weight: bold; margin-right: 16rpx; }
+.th { color: #a45c34; font-size: 26rpx; margin-top: 8rpx; }
+.in { font-size: 26rpx; color: #5c534b; line-height: 44rpx; margin-top: 12rpx; }
+.au-box { padding: 20rpx; }
+.au-ops { display: flex; flex-direction: row; margin-top: 20rpx; }
+.op { flex: 1; margin: 0 10rpx; }
+.ex { display: flex; flex-direction: row; align-items: center; margin: 20rpx 28rpx 0; background: #ffffff; border-radius: 16rpx; padding: 20rpx; }
+.ex-on { background: #faf6f1; }
+.ex-img { width: 160rpx; height: 160rpx; border-radius: 12rpx; margin-right: 20rpx; }
+.ex-b { flex: 1; display: flex; flex-direction: column; }
+.ex-n { font-size: 30rpx; font-weight: bold; margin-bottom: 8rpx; }
+.ex-tags { display: flex; flex-direction: row; margin-top: 10rpx; }
+.arrow { color: #c4b8ab; font-size: 40rpx; }
+.foot { padding: 40rpx 28rpx 60rpx; }

@@ -87,12 +87,12 @@ class MainActivity : Activity() {
         }
         // 登录、支付、定位、扫码……要 App 自己接的 wx.*（选图 / 选文件 SDK 自带，不用登记）
         hostApis.putAll(DemoHostApis(this@MainActivity, ::navigateToMiniProgram).all)
-        // 宿主承载的 <map>：同层渲染（宿主画、引擎画进页面），滑动时跟页面在同一张图里走
-        sameLayerViews["map"] = { DemoMapView() }
+        // <map> / <web-view> / <live-player> 用 SDK 自带的（MiniMapView 瓦片地图同层渲染、系统 WebView、系统播放器），不用登记
         // 胶囊「•••」：微信式底部菜单（转发、收藏 / 重新进入、上传诊断日志、关于），见 MenuSheet.kt
         onAbout = { a -> showCapsuleMenu(a) }
         onEvent = { ev ->
-            Log.i(TAG, "[事件] " + summarize(ev))
+            // nativeViewTouch：按在地图上的每一段触摸都是一条，打出来就是刷屏（还占主线程）
+            if (ev.optString("type") != "nativeViewTouch") Log.i(TAG, "[事件] " + summarize(ev))
             when (ev.optString("type")) {
                 // 第一页出来了才收起 loading（冷启动加载字体那几百毫秒也盖在底下，不露白屏）
                 "page" -> cover?.let { cover = null; it.hide() }

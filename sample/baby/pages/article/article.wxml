@@ -1,0 +1,30 @@
+<view class="page" wx:if="{{a}}">
+  <image class="cover" src="{{a.cover}}" mode="aspectFill"></image>
+  <text class="title">{{a.title}}</text>
+  <view class="row meta">
+    <text class="tag">{{a.tag}}</text>
+    <text class="muted gap">适合 {{stageName}}</text>
+    <text class="muted gap">约 {{a.mins}} 分钟</text>
+  </view>
+  <view class="card body">
+    <text wx:for="{{a.body}}" wx:key="*this" class="para">{{item}}</text>
+  </view>
+  <view class="tip">
+    <text class="tip-h">小贴士</text>
+    <text class="tip-t">{{a.tip}}</text>
+  </view>
+  <text class="muted note">内容仅供日常护理参考，宝宝身体不适请及时咨询儿科医生。</text>
+
+  <view wx:if="{{related.length}}" class="card">
+    <text class="sec-title">同阶段推荐</text>
+    <view wx:for="{{related}}" wx:key="id" class="rel" data-id="{{item.id}}" bindtap="open" hover-class="item-hover">
+      <text class="flex1 rel-t">{{item.title}}</text>
+      <text class="muted">›</text>
+    </view>
+  </view>
+
+  <view class="bar">
+    <view class="btn-ghost flex1 {{fav ? 'faved' : ''}}" bindtap="toggleFav" hover-class="btn-hover">{{fav ? '已收藏' : '收藏'}}</view>
+    <button class="share" open-type="share" hover-class="btn-hover">分享给家人</button>
+  </view>
+</view>

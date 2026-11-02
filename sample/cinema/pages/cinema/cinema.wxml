@@ -1,0 +1,42 @@
+<view class="head">
+  <text class="c-name">{{c.name}}</text>
+  <text class="sub c-addr">{{c.addr}} · {{c.dist}}</text>
+  <view class="row c-tags"><text class="tag" wx:for="{{c.tags}}" wx:key="*this">{{item}}</text></view>
+  <view class="row acts">
+    <view class="op" bindtap="onNav"><view class="op-i op-nav"><text class="op-g">导</text></view><text class="op-t">导航</text></view>
+    <view class="op" bindtap="onCall"><view class="op-i op-call"><text class="op-g">话</text></view><text class="op-t">电话</text></view>
+    <view class="op" bindtap="onFav"><view class="op-i op-fav"><text class="op-g">★</text></view><text class="op-t">{{fav ? '常去影院' : '设为常去'}}</text></view>
+  </view>
+</view>
+<view class="strip">
+  <scroll-view scroll-x class="strip-scroll" show-scrollbar="{{false}}">
+    <view class="strip-row">
+      <view class="pm {{item.id === mid ? 'pm-on' : ''}}" wx:for="{{movies}}" wx:key="id" data-id="{{item.id}}" bindtap="onMovie">
+        <image class="pm-img" src="{{item.poster}}" mode="aspectFill"></image>
+      </view>
+    </view>
+  </scroll-view>
+  <view class="pm-info" bindtap="onDetail">
+    <view class="row pm-title-row"><text class="pm-title">{{m.title}}</text><text class="pm-score">{{m.scoreText}}分</text></view>
+    <view class="row pm-sub-row"><text class="sub">{{m.genre}} · {{m.duration}}分钟</text><text class="sub pm-more">影片详情</text><view class="chev"></view></view>
+  </view>
+</view>
+<view class="days row">
+  <view wx:for="{{days}}" wx:key="label" class="day {{day === index ? 'day-on' : ''}}" data-idx="{{index}}" bindtap="onDay"><text>{{item.label}}</text></view>
+</view>
+<view class="card shows">
+  <view wx:if="{{!shows.length}}" class="sub empty">当天没有场次</view>
+  <view class="show row {{item.stop ? 'stop' : ''}}" wx:for="{{shows}}" wx:key="time" data-i="{{index}}" bindtap="onShowTap">
+    <view class="s-time-col">
+      <text class="s-time">{{item.time}}</text>
+      <text class="sub">{{item.end}} 散场</text>
+    </view>
+    <view class="flex1 s-mid">
+      <text class="s-lang">{{item.lang}}</text>
+      <text class="sub">{{item.hall}}</text>
+    </view>
+    <text class="s-price">¥{{item.price}}</text>
+    <view class="s-buy {{item.stop ? 's-buy-off' : ''}}"><text>{{item.stop ? '停售' : '购票'}}</text></view>
+  </view>
+</view>
+<view class="gap"></view>

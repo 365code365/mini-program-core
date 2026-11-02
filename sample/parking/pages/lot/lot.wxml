@@ -1,6 +1,10 @@
 <view class="card head">
   <text class="h-name">{{lot.name}}</text>
-  <text class="sub h-addr">{{lot.addr}} · 营业 {{lot.open}}</text>
+  <view class="row h-line">
+    <text class="flex1 sub h-addr">{{lot.addr}}</text>
+    <view class="h-op h-nav" bindtap="onNav"><text>导航</text></view>
+    <view class="h-op h-call" bindtap="onCall"><text>电话</text></view>
+  </view>
   <view class="row stat">
     <view class="stat-i"><text class="stat-n free-n {{free ? '' : 'gray'}}">{{free}}</text><text class="sub">剩余空位</text></view>
     <view class="stat-i"><text class="stat-n">{{lot.total}}</text><text class="sub">总车位</text></view>
@@ -10,6 +14,7 @@
 <view class="card">
   <text class="title">收费规则</text>
   <view class="rule row" wx:for="{{rules}}" wx:key="*this"><view class="rule-dot"></view><text class="rule-t">{{item}}</text></view>
+  <view class="rule row"><view class="rule-dot dot-open"></view><text class="rule-t">营业时间 {{lot.open}}</text></view>
 </view>
 <view class="card cells">
   <text class="title sec">预约车位</text>
@@ -28,3 +33,13 @@
 <view class="foot">
   <view class="btn-primary reserve {{free ? '' : 'btn-off'}}" bindtap="reserve">{{free ? '立即预约' : '车位已满'}}</view>
 </view>
+<view class="card month row" wx:if="{{lot.month}}" bindtap="goCard">
+  <view class="m-ic"><text class="m-ic-t">月</text></view>
+  <view class="flex1 m-mid">
+    <text class="m-t">{{card ? '月卡有效至 ' + card.end : '办理月卡 ¥' + lot.month + '/月'}}</text>
+    <text class="sub">{{card ? card.plate + ' 在本场进出不计费' : '有效期内进出不计费，季卡、年卡更省'}}</text>
+  </view>
+  <text class="m-go">{{card ? '续费' : '去办理'}}</text>
+  <view class="chev"></view>
+</view>
+<view class="card month row" wx:else><text class="sub">路侧泊位按次收费，不办理月卡</text></view>

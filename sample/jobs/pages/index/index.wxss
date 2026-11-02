@@ -29,3 +29,20 @@
 .online { width: 12rpx; height: 12rpx; border-radius: 6rpx; background: #19BE6B; margin-left: 10rpx; }
 .empty { display: flex; flex-direction: column; align-items: center; padding: 120rpx 0; }
 .empty-circle { width: 120rpx; height: 120rpx; border-radius: 60rpx; background: #e8eefc; margin-bottom: 24rpx; }
+.tabs { padding-bottom: 4rpx; }
+.filter-btn { padding: 8rpx 22rpx; border-radius: 26rpx; background: #fff; }
+.filter-btn.on { background: #eef3ff; }
+.filter-t { font-size: 24rpx; color: #5c6370; white-space: nowrap; }
+.filter-btn.on .filter-t { color: #2E6BFF; font-weight: bold; }
+.count { padding: 0 32rpx 16rpx; }
+.mark { font-size: 20rpx; color: #19BE6B; background: #e8f8ef; padding: 2rpx 10rpx; border-radius: 6rpx; margin-right: 12rpx; white-space: nowrap; }
+.match { font-size: 20rpx; color: #FF8A00; background: #fff4e6; padding: 2rpx 10rpx; border-radius: 6rpx; margin-right: 12rpx; white-space: nowrap; }
+.f-h { display: block; font-size: 28rpx; font-weight: bold; margin: 16rpx 0 16rpx; }
+.opts { display: flex; flex-direction: row; flex-wrap: wrap; }
+.opt { width: 156rpx; height: 64rpx; border-radius: 12rpx; background: #f2f4f7; margin: 0 14rpx 14rpx 0; display: flex; flex-direction: row; align-items: center; justify-content: center; }
+.opt.on { background: #eef3ff; }
+.opt-t { font-size: 24rpx; color: #3a3f47; white-space: nowrap; }
+.opt.on .opt-t { color: #2E6BFF; font-weight: bold; }
+.f-btns { margin-top: 24rpx; }
+.f-reset { width: 200rpx; height: 88rpx; border-radius: 44rpx; background: #f2f4f7; display: flex; flex-direction: row; align-items: center; justify-content: center; margin-right: 20rpx; font-size: 30rpx; color: #3a3f47; }
+.sheet.drop { top: 0; bottom: auto; border-radius: 0 0 28rpx 28rpx; padding-bottom: 32rpx; }

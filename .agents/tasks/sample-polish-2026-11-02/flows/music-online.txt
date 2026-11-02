@@ -1,0 +1,73 @@
+# 云听音乐：每页能开 + 搜索（热搜 / 历史 / 结果点歌播放）→ 播放模式（列表 / 单曲 / 随机）→ 喜欢
+#          + 歌单收藏（计数 +1、我的「收藏歌单」、取消）+ 歌单头部「首歌 / 播放」可点
+demo
+smoke pages/playlist/playlist?id=1 pages/player/player?id=1 pages/search/search
+demo
+open
+waitfor getCurrentPages()[0].data.status === 'ok' 6000
+shot target/_polish_shots/index.png
+tap .search
+route pages/search/search
+tap .go
+toast 输入歌名或歌手
+tapn 0 .word
+waitfor getCurrentPages().slice(-1)[0].data.status === 'ok' 6000
+expect getCurrentPages().slice(-1)[0].data.kw === '晚风'
+expect getCurrentPages().slice(-1)[0].data.list.length > 0
+expect getCurrentPages().slice(-1)[0].data.list.every(s => s.name.indexOf('晚风') >= 0 || s.singer.name.indexOf('晚风') >= 0)
+expect wx.getStorageSync('music_search_history')[0] === '晚风'
+shot target/_polish_shots/search.png
+eval globalThis.__sid = getCurrentPages().slice(-1)[0].data.list[0].id
+tapn 0 .song
+route pages/player/player
+wait 600
+expect getApp().globalData.player.song.id === __sid
+# 播放模式：循 → 单 → 随 → 循，存 storage
+tapn 0 .ctrl
+expect getCurrentPages().slice(-1)[0].data.mode.key === 'one'
+toast 单曲循环
+shot target/_polish_shots/player.png
+tapn 0 .ctrl
+expect getApp().globalData.player.mode === 'shuffle' && wx.getStorageSync('music_mode') === 'shuffle'
+tapn 0 .ctrl
+expect getCurrentPages().slice(-1)[0].data.mode.key === 'loop'
+tap .like
+expect wx.getStorageSync('music_liked')[0].id === __sid
+back
+route pages/search/search
+expect getCurrentPages().slice(-1)[0].data.playingId === __sid
+back
+# 歌单：收藏是真的（计数 +1、存本地），「播放」直接播放全部
+eval wx.navigateTo({ url: '/pages/playlist/playlist?id=1' })
+waitfor getCurrentPages().slice(-1)[0].data.status === 'ok' 6000
+eval globalThis.__f = getCurrentPages().slice(-1)[0].data.p.subscribed
+tapn 0 .op
+expect getCurrentPages().slice(-1)[0].data.fav === true
+expect getCurrentPages().slice(-1)[0].data.favCount === __f + 1
+expect wx.getStorageSync('music_fav_playlists').length === 1
+toast 已收藏
+shot target/_polish_shots/playlist.png
+tapn 2 .op
+route pages/player/player
+expect getApp().globalData.player.index === 0 && getApp().globalData.player.queue.length === getCurrentPages()[1].data.songs.length
+back
+# 我的：收藏歌单 tab → 进歌单 → 取消收藏 → 回来列表空了
+eval wx.switchTab({ url: '/pages/mine/mine' })
+route pages/mine/mine
+tapn 2 .seg-i
+expect getCurrentPages()[0].data.tab === 'fav' && getCurrentPages()[0].data.list.length === 1
+shot target/_polish_shots/mine-fav.png
+tap .fav
+route pages/playlist/playlist
+waitfor getCurrentPages().slice(-1)[0].data.status === 'ok' 6000
+expect getCurrentPages().slice(-1)[0].data.fav === true
+tapn 0 .op
+toast 已取消收藏
+back
+expect getCurrentPages()[0].data.list.length === 0
+tapn 1 .seg-i
+expect getCurrentPages()[0].data.list.length === 1
+tap .search-btn
+route pages/search/search
+expect getCurrentPages().slice(-1)[0].data.history[0] === '晚风'
+noerr

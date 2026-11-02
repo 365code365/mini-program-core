@@ -136,3 +136,16 @@
   color: #2b6de8;
   font-size: 24rpx;
 }
+.change-bar {
+  background: #fff6ec;
+  padding: 16rpx 28rpx;
+}
+.change-t {
+  font-size: 24rpx;
+  color: #c76a00;
+}
+.wait-tag {
+  font-size: 20rpx;
+  color: #ff7a00;
+  white-space: nowrap;
+}

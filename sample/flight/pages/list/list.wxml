@@ -1,0 +1,101 @@
+<view wx:if="{{firstLeg}}" class="first row">
+  <text class="tag tag-orange">去程已选</text>
+  <text class="small flex1">{{firstLeg.no}} {{firstLeg.text}}</text>
+  <text class="price small">¥{{firstLeg.price}}</text>
+</view>
+
+<scroll-view scroll-x class="days" scroll-into-view="{{dayView}}" scroll-with-animation>
+  <view class="row">
+    <view wx:for="{{days}}" wx:key="date" id="d{{item.date}}" class="day col {{item.date === date ? 'day-on' : ''}}" data-d="{{item.date}}" bindtap="pickDay">
+      <text class="day-md">{{item.md}} {{item.wk}}</text>
+      <text class="day-p">¥{{item.price}}</text>
+    </view>
+  </view>
+</scroll-view>
+
+<view class="trend">
+  <view class="row between">
+    <text class="trend-t">低价走势</text>
+    <text class="muted small">{{trendTip}}</text>
+  </view>
+  <canvas type="2d" id="trend" class="trend-c" bindtap="tapTrend"></canvas>
+</view>
+
+<view wx:if="{{loading}}" class="loading col">
+  <view class="spin"></view>
+  <text class="muted">正在查询实时运价…</text>
+</view>
+<block wx:else>
+  <view class="meta row between">
+    <text class="muted small">共 {{total}} 个航班 · 显示 {{list.length}} 个 · {{sortName}}</text>
+    <text wx:if="{{filterCount}}" class="blue small" bindtap="clearFilter">清空筛选</text>
+  </view>
+  <view wx:if="{{!list.length}}" class="empty">
+    <text class="muted">没有符合筛选条件的航班</text>
+    <view class="btn btn-ghost empty-btn" bindtap="clearFilter"><text>清空筛选条件</text></view>
+  </view>
+  <view wx:for="{{list}}" wx:key="no" class="fl" data-no="{{item.no}}" bindtap="open" hover-class="fl-hover">
+    <view class="row">
+      <view class="col t-box">
+        <text class="t">{{item.depText}}</text>
+        <text class="muted small">{{item.depAirport}}</text>
+      </view>
+      <view class="col mid">
+        <text class="muted small">{{item.durText}}</text>
+        <view class="arrow"></view>
+        <text wx:if="{{item.stop}}" class="stop">经停{{item.stop}}</text>
+        <text wx:else class="muted small">直飞</text>
+      </view>
+      <view class="col t-box">
+        <view class="row"><text class="t">{{item.arrText}}</text><text wx:if="{{item.cross}}" class="cross">+1天</text></view>
+        <text class="muted small">{{item.arrAirport}}</text>
+      </view>
+      <view class="col p-box">
+        <view class="row"><text class="price-sym">¥</text><text class="price p">{{item.price}}</text></view>
+        <text class="muted small">{{item.cabinName}} {{item.discount}}</text>
+        <text wx:if="{{item.seats <= 5}}" class="seats">仅剩{{item.seats}}张</text>
+      </view>
+    </view>
+    <view class="fl-foot row">
+      <image class="logo" src="{{item.logo}}"></image>
+      <text class="muted small">{{item.airlineName}} {{item.no}} · {{item.aircraft}} · 准点率{{item.onTime}}%</text>
+    </view>
+  </view>
+  <view class="bar-space"></view>
+</block>
+
+<view class="bottom row">
+  <view class="b-item col" bindtap="openFilter"><text class="b-ic {{filterCount ? 'blue' : ''}}">筛</text><text class="b-tx {{filterCount ? 'blue' : ''}}">筛选{{filterCount ? '(' + filterCount + ')' : ''}}</text></view>
+  <view class="b-item col" bindtap="chooseSort"><text class="b-ic {{sort ? 'blue' : ''}}">序</text><text class="b-tx {{sort ? 'blue' : ''}}">{{sortName}}</text></view>
+</view>
+
+<page-container show="{{showFilter}}" position="bottom" round="{{true}}" bind:clickoverlay="onOverlay" bind:afterleave="closeFilter">
+  <view class="fp" bindtap="markPanel">
+    <view class="row between fp-head">
+      <text class="card-title">筛选</text>
+      <text class="muted" bindtap="closeFilter">关闭</text>
+    </view>
+    <text class="fp-t">航空公司</text>
+    <view class="chips row">
+      <view wx:for="{{airlineOpts}}" wx:key="code" class="chip {{item.on ? 'chip-on' : ''}}" data-k="airlines" data-v="{{item.code}}" bindtap="toggle"><text>{{item.name}}</text></view>
+    </view>
+    <text class="fp-t">起飞时段</text>
+    <view class="chips row">
+      <view wx:for="{{slotOpts}}" wx:key="k" class="chip {{item.on ? 'chip-on' : ''}}" data-k="slots" data-v="{{item.k}}" bindtap="toggle"><text>{{item.t}}</text></view>
+    </view>
+    <block wx:if="{{airportOpts.length}}">
+      <text class="fp-t">出发机场</text>
+      <view class="chips row">
+        <view wx:for="{{airportOpts}}" wx:key="code" class="chip {{item.on ? 'chip-on' : ''}}" data-k="airports" data-v="{{item.code}}" bindtap="toggle"><text>{{item.name}}</text></view>
+      </view>
+    </block>
+    <view class="row between fp-direct">
+      <text>只看直飞</text>
+      <switch checked="{{draft.direct}}" color="#1f6fff" bindchange="toggleDirect"></switch>
+    </view>
+    <view class="row fp-btns">
+      <view class="btn btn-ghost flex1" bindtap="resetFilter"><text>重置</text></view>
+      <view class="btn flex1 fp-ok" bindtap="confirmFilter"><text>确定</text></view>
+    </view>
+  </view>
+</page-container>

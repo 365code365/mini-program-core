@@ -1,0 +1,27 @@
+// 大学英语六级核心词（精选）：[单词, 音标, 释义, 例句, 例句译文]
+module.exports = [
+  ['abundant', '/əˈbʌndənt/', 'adj. 丰富的；充裕的', 'The region has abundant natural resources.', '该地区自然资源丰富。'],
+  ['accelerate', '/əkˈseləreɪt/', 'v. 加速；促进', 'The new policy will accelerate economic growth.', '新政策将加快经济增长。'],
+  ['accumulate', '/əˈkjuːmjəleɪt/', 'v. 积累；积聚', 'Dust accumulates quickly in this room.', '这个房间很快就会积灰。'],
+  ['advocate', '/ˈædvəkeɪt/', 'v. 提倡；主张', 'Doctors advocate regular exercise.', '医生提倡规律运动。'],
+  ['aggravate', '/ˈæɡrəveɪt/', 'v. 加重；使恶化', 'Stress can aggravate the illness.', '压力会加重病情。'],
+  ['allocate', '/ˈæləkeɪt/', 'v. 分配；拨出', 'The school allocated more money to the library.', '学校给图书馆拨了更多经费。'],
+  ['ambiguous', '/æmˈbɪɡjuəs/', 'adj. 模棱两可的', 'The instructions were ambiguous.', '说明写得模棱两可。'],
+  ['anticipate', '/ænˈtɪsɪpeɪt/', 'v. 预期；预料', "We don't anticipate any problems.", '我们预计不会有任何问题。'],
+  ['appreciate', '/əˈpriːʃieɪt/', 'v. 感激；欣赏', 'I really appreciate your help.', '非常感谢你的帮助。'],
+  ['arbitrary', '/ˈɑːbɪtrəri/', 'adj. 任意的；武断的', 'The decision seemed completely arbitrary.', '这个决定看起来完全是随意做出的。'],
+  ['assess', '/əˈses/', 'v. 评估；评定', 'Teachers assess students in many ways.', '老师用多种方式评价学生。'],
+  ['assume', '/əˈsjuːm/', 'v. 假定；承担', 'I assume you have read the report.', '我想你已经读过报告了。'],
+  ['authentic', '/ɔːˈθentɪk/', 'adj. 真正的；地道的', 'This restaurant serves authentic Sichuan food.', '这家餐馆做的是地道川菜。'],
+  ['boost', '/buːst/', 'v./n. 促进；提升', "The win boosted the team's confidence.", '这场胜利提升了球队的信心。'],
+  ['collaborate', '/kəˈlæbəreɪt/', 'v. 合作；协作', 'The two universities collaborate on research.', '两所大学开展科研合作。'],
+  ['compensate', '/ˈkɒmpenseɪt/', 'v. 补偿；弥补', 'Nothing can compensate for the loss of time.', '失去的时间无可弥补。'],
+  ['comprehensive', '/ˌkɒmprɪˈhensɪv/', 'adj. 全面的；综合的', 'The book gives a comprehensive review of the topic.', '这本书对该主题做了全面综述。'],
+  ['consensus', '/kənˈsensəs/', 'n. 共识；一致意见', 'The committee reached a consensus.', '委员会达成了共识。'],
+  ['controversial', '/ˌkɒntrəˈvɜːʃl/', 'adj. 有争议的', 'It was a controversial decision.', '那是一个有争议的决定。'],
+  ['crucial', '/ˈkruːʃl/', 'adj. 至关重要的', 'Sleep is crucial for memory.', '睡眠对记忆至关重要。'],
+  ['deteriorate', '/dɪˈtɪəriəreɪt/', 'v. 恶化；变坏', 'His health began to deteriorate.', '他的健康开始恶化。'],
+  ['diminish', '/dɪˈmɪnɪʃ/', 'v. 减少；减弱', 'The pain will diminish over time.', '疼痛会随时间减轻。'],
+  ['dilemma', '/dɪˈlemə/', 'n. 困境；进退两难', 'She faced a difficult dilemma.', '她面临一个两难的抉择。'],
+  ['eliminate', '/ɪˈlɪmɪneɪt/', 'v. 消除；淘汰', 'We must eliminate unnecessary costs.', '我们必须削减不必要的开支。']
+];

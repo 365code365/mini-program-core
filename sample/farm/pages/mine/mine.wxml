@@ -1,0 +1,49 @@
+<view class="head">
+  <image class="av" src="/images/misc/farmer1.jpg" mode="scaleToFill"></image>
+  <view class="hd-mid">
+    <text class="nick">{{nick}}</text>
+    <text class="lv">{{levelText}}</text>
+  </view>
+  <view class="sign {{signed ? 'signed' : ''}}" bindtap="sign"><text class="sign-tx">{{signed ? '今日已签' : '签到 +5 积分'}}</text></view>
+</view>
+<view class="stats">
+  <view class="st" bindtap="goFavs"><text class="st-n">{{favCount}}</text><text class="st-k">收藏</text></view>
+  <view class="st" bindtap="goGroups"><text class="st-n">{{groupCount}}</text><text class="st-k">拼团</text></view>
+  <view class="st" bindtap="showPoints"><text class="st-n">{{points}}</text><text class="st-k">积分</text></view>
+</view>
+
+<view class="card">
+  <view class="row between" bindtap="goOrders" data-tab="all">
+    <text class="sec-title">我的订单</text>
+    <text class="muted">全部订单 ›</text>
+  </view>
+  <view class="ords">
+    <view class="ord" wx:for="{{ordTabs}}" wx:key="k" data-tab="{{item.k}}" bindtap="goOrders">
+      <view class="ord-icw">
+        <text class="ord-ic">{{item.ic}}</text>
+        <view class="ord-badge" wx:if="{{item.n}}"><text class="ord-badge-tx">{{item.n}}</text></view>
+      </view>
+      <text class="ord-k">{{item.t}}</text>
+    </view>
+  </view>
+</view>
+
+<view class="card" wx:if="{{favs.length}}" id="favs">
+  <text class="sec-title">我的收藏</text>
+  <scroll-view class="fav" scroll-x="{{true}}" show-scrollbar="{{false}}">
+    <view class="fav-row">
+      <view class="fav-it" wx:for="{{favs}}" wx:key="id" data-id="{{item.id}}" bindtap="openGoods">
+        <image class="fav-img" src="{{item.cover}}" mode="aspectFill"></image>
+        <text class="fav-name">{{item.short}}</text>
+      </view>
+    </view>
+  </scroll-view>
+</view>
+
+<view class="card menu">
+  <view class="mi" bindtap="goAddress" hover-class="btn-hover"><text class="mi-k">收货地址</text><text class="muted">{{addrCount}} 个 ›</text></view>
+  <view class="mi" bindtap="goGroups" hover-class="btn-hover"><text class="mi-k">拼团大厅</text><text class="muted">›</text></view>
+  <view class="mi" bindtap="callService" hover-class="btn-hover"><text class="mi-k">联系客服</text><text class="muted">4008-826-517 ›</text></view>
+  <view class="mi mi-last" bindtap="about" hover-class="btn-hover"><text class="mi-k">关于田园直供</text><text class="muted">v1.6.0 ›</text></view>
+</view>
+<view class="tabbar-gap"></view>

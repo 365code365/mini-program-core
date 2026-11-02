@@ -97,7 +97,8 @@
             wx.canIUse = function(schema) {
                 var parts = String(schema || '').split('.');
                 var head = parts[0];
-                if (head === 'wx' && parts.length > 1) head = parts[1];
+                // nb.request / gb.xxx 等别名开头（api-alias.js）与 wx. 同样处理
+                if ((head === 'wx' || (typeof __wxIsAlias === 'function' && __wxIsAlias(head))) && parts.length > 1) head = parts[1];
                 if (!head) return false;
                 var f = (typeof __wxImpl === 'object' ? __wxImpl : wx)[head];
                 if (typeof f === 'function') return !f.__default;

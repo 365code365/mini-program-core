@@ -20,3 +20,25 @@ page { background: #f5f6f8; color: #1f2329; font-size: 28rpx; }
 /* 引擎把 input padding 全 0 当成没写，套默认内边距，所以写 1rpx */
 input { padding: 0 0 0 1rpx; }
 .tabbar-space { height: calc(120rpx + env(safe-area-inset-bottom)); }
+/* 通用：分段、表单行、小按钮、面板、空态（投递记录 / 面试 / 收藏 / 设置等页共用） */
+.seg { margin: 20rpx 24rpx; background: #e9ecf2; border-radius: 16rpx; padding: 6rpx; }
+.seg-item { flex: 1; height: 60rpx; line-height: 60rpx; text-align: center; border-radius: 12rpx; font-size: 25rpx; color: #5c6370; white-space: nowrap; }
+.seg-item.on { background: #fff; color: #2E6BFF; font-weight: bold; }
+.op { font-size: 24rpx; color: #3a3f47; background: #f2f4f7; padding: 8rpx 22rpx; border-radius: 28rpx; margin-left: 14rpx; white-space: nowrap; }
+.op.main { color: #fff; background: #2E6BFF; }
+.op.line { color: #2E6BFF; background: #eef3ff; }
+.empty-box { padding: 100rpx 0 60rpx; display: flex; flex-direction: column; align-items: center; }
+.empty-btn { margin-top: 28rpx; padding: 14rpx 48rpx; border-radius: 36rpx; border: 2rpx solid #2E6BFF; color: #2E6BFF; font-size: 26rpx; }
+.field { min-height: 96rpx; border-bottom: 1rpx solid #f0f1f3; }
+.field.last { border-bottom: none; }
+.label { width: 160rpx; font-size: 28rpx; color: #5c6370; flex-shrink: 0; }
+.val { font-size: 28rpx; color: #1f2329; }
+.mask { position: fixed; left: 0; right: 0; top: 0; bottom: 0; background: rgba(0, 0, 0, 0.45); }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; border-radius: 28rpx 28rpx 0 0; padding: 32rpx 32rpx calc(32rpx + env(safe-area-inset-bottom)); }
+.sheet-title { font-size: 32rpx; font-weight: bold; text-align: center; margin-bottom: 20rpx; }
+.state { font-size: 22rpx; padding: 4rpx 14rpx; border-radius: 8rpx; white-space: nowrap; }
+.st-blue { color: #2E6BFF; background: #eef3ff; }
+.st-orange { color: #FF8A00; background: #fff4e6; }
+.st-green { color: #19BE6B; background: #e8f8ef; }
+.st-gray { color: #9aa0a6; background: #f2f3f5; }
+.safe-bottom { height: calc(40rpx + env(safe-area-inset-bottom)); }

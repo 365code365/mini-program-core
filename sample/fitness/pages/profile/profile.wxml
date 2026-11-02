@@ -1,0 +1,18 @@
+<view class="card form">
+  <view class="f">
+    <text class="f-k">昵称</text>
+    <input class="f-in f-name" placeholder="你的昵称" placeholder-class="ph" value="{{name}}" maxlength="12" bindinput="onName" />
+  </view>
+  <view class="f last">
+    <text class="f-k">身高</text>
+    <input class="f-in f-height" type="number" placeholder="用来计算 BMI" placeholder-class="ph" value="{{height}}" maxlength="3" bindinput="onHeight" />
+    <text class="unit">cm</text>
+  </view>
+</view>
+<view class="card">
+  <text class="sec-title">训练目标</text>
+  <view class="goals">
+    <view class="g {{goal === item ? 'on' : ''}}" wx:for="{{goals}}" wx:key="*this" data-g="{{item}}" bindtap="pickGoal"><text class="g-tx">{{item}}</text></view>
+  </view>
+</view>
+<view class="btn save" bindtap="save"><text>保存</text></view>

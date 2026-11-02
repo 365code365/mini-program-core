@@ -1,0 +1,30 @@
+<view class="top-gap"></view>
+<view class="card form">
+  <view class="field row">
+    <text class="f-label">车牌号</text>
+    <!-- id 跟着 plateSeq 变：车牌键盘回填时让输入框重建（引擎里打过字的输入框 setData 改 value 不重画） -->
+    <input id="plate{{plateSeq}}" class="f-input f-plate flex1" placeholder="如 浙AD88520" placeholder-class="ph" value="{{plate}}" maxlength="10" bindinput="onPlate" />
+    <text class="kb" bindtap="onPlateKb">车牌键盘</text>
+  </view>
+  <picker mode="selector" range="{{models}}" value="{{mIdx < 0 ? 0 : mIdx}}" bindchange="onModel">
+    <view class="field row f-model">
+      <text class="f-label">车型</text>
+      <text class="flex1 f-val {{mIdx < 0 ? 'ph' : ''}}">{{mIdx < 0 ? '请选择车型' : models[mIdx]}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <view class="field row">
+    <text class="f-label">电池容量</text>
+    <input id="bat{{batSeq}}" class="f-input f-battery flex1" type="digit" placeholder="选车型后自动带出，可修改" placeholder-class="ph" value="{{battery}}" maxlength="6" bindinput="onBattery" />
+    <text class="sub">度</text>
+  </view>
+  <view class="field row last">
+    <text class="f-label flex1">设为默认车辆</text>
+    <switch checked="{{isDefault}}" color="#00B87A" bindchange="onDefault" />
+  </view>
+</view>
+<text class="sub tip">新能源车牌 6 位（如 D88520），燃油车牌 5 位</text>
+<view class="btns">
+  <view class="btn-primary save" bindtap="onSave">保存</view>
+  <view wx:if="{{editing}}" class="btn-ghost del" bindtap="onRemove">删除车辆</view>
+</view>

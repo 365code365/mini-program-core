@@ -1,0 +1,40 @@
+<view class="top">
+  <view class="kw-box row">
+    <text class="kw-ic">🔍</text>
+    <input class="kw-input flex1" value="{{kw}}" placeholder="搜标题、描述、子任务" confirm-type="search" bindinput="onKw" />
+  </view>
+  <text class="f-label">负责人</text>
+  <view class="chips row">
+    <view class="chip owner-chip {{owner === item.id ? 'on' : ''}}" wx:for="{{owners}}" wx:key="id" data-id="{{item.id}}" bindtap="onOwner">
+      <view class="chip-dot" style="background: {{item.color}}"></view>
+      <text>{{item.name}}</text>
+    </view>
+  </view>
+  <text class="f-label">优先级</text>
+  <view class="chips row">
+    <view class="chip prio-chip {{prio === item.i ? 'on' : ''}}" wx:for="{{prios}}" wx:key="i" data-i="{{item.i}}" bindtap="onPrio">
+      <view class="chip-dot" style="background: {{item.color}}"></view>
+      <text>{{item.name}}</text>
+    </view>
+    <view class="chip late-chip {{lateOnly ? 'on' : ''}}" bindtap="onLate"><text>只看逾期</text></view>
+    <view class="chip open-chip {{openOnly ? 'on' : ''}}" bindtap="onOpenOnly"><text>未完成</text></view>
+  </view>
+</view>
+<view class="row between res-head">
+  <text class="sub">{{results.length}} 张卡片{{active ? ' · ' + active + ' 个条件' : ''}}</text>
+  <text class="reset" wx:if="{{active || kw}}" bindtap="onReset">清空条件</text>
+</view>
+<view class="card-box" wx:if="{{results.length}}">
+  <view class="res row" wx:for="{{results}}" wx:key="id" data-id="{{item.id}}" bindtap="onOpen">
+    <text class="res-prio" style="background: {{item.prioColor}}">{{item.prioName}}</text>
+    <view class="flex1">
+      <text class="res-title">{{item.title}}</text>
+      <text class="sub res-sub">{{item.colName}} · {{item.owner}}{{item.subText ? ' · ☑ ' + item.subText : ''}}</text>
+    </view>
+    <text class="res-due {{item.overdue ? 'late' : ''}}">{{item.overdue ? '逾期 ' : ''}}{{item.dueText}}</text>
+  </view>
+</view>
+<view class="empty-box" wx:else>
+  <text class="sub">没有符合条件的卡片</text>
+</view>
+<view class="safe"></view>

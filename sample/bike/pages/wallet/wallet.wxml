@@ -1,0 +1,49 @@
+<view class="bal">
+  <text class="bal-k">账户余额（元）</text>
+  <text class="bal-v">{{balance}}</text>
+  <text class="bal-tip">余额可用于支付骑行费、购买骑行卡，不可提现</text>
+</view>
+
+<view class="card">
+  <text class="sec-title">余额充值</text>
+  <view class="plans">
+    <view class="plan {{plan === index ? 'plan-on' : ''}}" wx:for="{{plans}}" wx:key="amount" data-i="{{index}}" bindtap="onPlan">
+      <text class="plan-v">{{item.amount}} 元</text>
+      <text class="plan-b">{{item.bonus ? '赠 ' + item.bonus + ' 元' : '无赠送'}}</text>
+    </view>
+  </view>
+  <view class="btn" bindtap="onRecharge"><text>立即充值 {{plans[plan].amount}} 元</text></view>
+</view>
+
+<view class="card">
+  <view class="row between"><text class="sec-title">骑行卡</text><text class="muted">骑得越多越划算</text></view>
+  <view class="c-item" wx:for="{{cards}}" wx:key="id">
+    <view class="c-l">
+      <view class="row">
+        <text class="c-name">{{item.name}}</text>
+        <text class="hot" wx:if="{{item.hot}}">热销</text>
+      </view>
+      <text class="c-desc">{{item.desc}}</text>
+      <text class="c-own" wx:if="{{item.own}}">已拥有 · 剩余 {{item.left}} 天</text>
+    </view>
+    <view class="c-r">
+      <text class="price">¥{{item.priceTx}}</text>
+      <view class="c-btn" data-id="{{item.id}}" bindtap="onBuyCard">{{item.own ? '续费' : '购买'}}</view>
+    </view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="row between">
+    <text class="sec-title">账单明细</text>
+    <text class="muted" wx:if="{{txns.length > 5}}" bindtap="onToggleAll">{{showAll ? '收起' : '查看全部'}}</text>
+  </view>
+  <view class="empty small" wx:if="{{!txns.length}}"><text>暂无账单</text></view>
+  <view class="t-item" wx:for="{{txns}}" wx:key="id" wx:if="{{showAll || index < 5}}">
+    <view class="t-l"><text class="t-title">{{item.title}}</text><text class="muted">{{item.at}}</text></view>
+    <text class="{{item.kind === 'in' ? 't-in' : 't-out'}}">{{item.amount}}</text>
+  </view>
+</view>
+<view style="height: 60rpx;"></view>
+
+<cashier show="{{cashier.show}}" amount="{{cashier.amount}}" title="{{cashier.title}}" bindconfirm="onCashierConfirm" bindcancel="onCashierCancel"></cashier>

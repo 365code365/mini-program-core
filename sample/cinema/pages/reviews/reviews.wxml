@@ -1,0 +1,22 @@
+<view wx:if="{{!list.length}}" class="empty">
+  <text class="sub">还没有写过影评</text>
+  <view class="empty-btn" bindtap="onGo"><text>去看过的电影写一条</text></view>
+</view>
+<view class="card rv" wx:for="{{list}}" wx:key="id">
+  <view class="row" data-mid="{{item.mid}}" bindtap="onMovie">
+    <image class="poster" src="{{item.poster}}" mode="aspectFill"></image>
+    <view class="flex1 info">
+      <text class="title">{{item.title}}</text>
+      <view class="row"><text wx:for="{{starList}}" wx:key="*this" wx:for-item="n" class="star {{n <= item.star ? 'star-on' : ''}}">★</text><text class="star-text">{{item.starText}}</text></view>
+      <text class="sub">{{item.date}}</text>
+    </view>
+  </view>
+  <text class="text">{{item.text}}</text>
+  <view class="row tags" wx:if="{{item.tags.length}}"><text class="tag" wx:for="{{item.tags}}" wx:key="*this" wx:for-item="t">{{t}}</text></view>
+  <view class="row acts">
+    <view class="flex1"></view>
+    <view class="op" data-id="{{item.id}}" bindtap="onEdit"><text>编辑</text></view>
+    <view class="op" data-id="{{item.id}}" bindtap="onDelete"><text>删除</text></view>
+  </view>
+</view>
+<view class="gap"></view>

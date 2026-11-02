@@ -35,6 +35,7 @@
   <text class="tips-title">出行提示</text>
   <text class="tips-line">· 车票预售期 30 天，可选今天起 30 天内的日期</text>
   <text class="tips-line">· 每笔订单最多 5 位乘车人，选座按乘车人顺序分配</text>
-  <text class="tips-line">· 发车前可在「订单」里取消，退款原路返回</text>
+  <text class="tips-line">· 开车前可在「订单」里退票、改签，退票按距开车时长收手续费</text>
+  <text class="tips-line">· 席别无票时可提交候补，有票自动出票，未兑现全额退款</text>
 </view>
 <view class="bottom-space"></view>

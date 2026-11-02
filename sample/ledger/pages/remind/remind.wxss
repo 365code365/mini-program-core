@@ -1,0 +1,11 @@
+.t { font-size: 30rpx; font-weight: bold; margin-bottom: 6rpx; }
+.menu { padding: 0 28rpx; }
+.item { height: 104rpx; border-bottom: 1rpx solid #f0f1f4; }
+.last { border-bottom: none; }
+.item-t { font-size: 30rpx; }
+.val { font-size: 30rpx; color: #1f2329; font-weight: bold; }
+.chip { margin-left: 16rpx; padding: 8rpx 26rpx; border-radius: 28rpx; background: #f5f6f8; font-size: 26rpx; color: #5c6066; white-space: nowrap; }
+.chip-on { background: #fff1e6; color: #f57c34; font-weight: bold; }
+.next { margin: 20rpx 36rpx 0; }
+.save { margin: 56rpx 24rpx 0; }
+.save-hover { opacity: 0.8; }

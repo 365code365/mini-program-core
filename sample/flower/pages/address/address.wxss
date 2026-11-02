@@ -1,0 +1,14 @@
+.tip { margin: 20rpx 24rpx 0; padding: 16rpx 20rpx; border-radius: 12rpx; background: #fff0f4; }
+.tip-t { font-size: 22rpx; color: #c4486a; }
+.addr { padding: 28rpx; }
+.radio { width: 40rpx; height: 40rpx; border-radius: 20rpx; border: 3rpx solid #d3cbd4; box-sizing: border-box; display: flex; align-items: center; justify-content: center; margin-right: 20rpx; flex-shrink: 0; }
+.radio-on { background: #ef5b7e; border-color: #ef5b7e; }
+.radio-in { width: 14rpx; height: 14rpx; border-radius: 7rpx; background: #ffffff; }
+.a-name { font-size: 30rpx; font-weight: bold; }
+.a-phone { font-size: 26rpx; color: #7d747f; margin: 0 14rpx; }
+.a-def { color: #ffffff; background: #ef5b7e; margin-right: 10rpx; }
+.a-tag { color: #7d747f; background: #f3eef1; }
+.a-text { display: block; margin-top: 10rpx; font-size: 26rpx; color: #4d4550; line-height: 38rpx; }
+.edit { height: 52rpx; padding: 0 22rpx; margin-left: 16rpx; border-radius: 26rpx; border: 2rpx solid #e3dce1; font-size: 24rpx; color: #6d6470; display: flex; flex-direction: row; align-items: center; flex-shrink: 0; }
+.b-imp { flex: 1; height: 84rpx; font-size: 28rpx; margin-right: 20rpx; }
+.b-add { flex: 1.3; height: 84rpx; font-size: 28rpx; }

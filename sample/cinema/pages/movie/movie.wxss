@@ -45,7 +45,7 @@ page { background: #f5f6f8; }
 .day-on { color: #fff; background: #F0384D; font-weight: bold; }
 .cinema { padding: 26rpx 0 10rpx; border-bottom: 1rpx solid #f0f1f3; }
 .cinema:last-child { border-bottom: none; }
-.c-name { font-size: 30rpx; font-weight: bold; }
+.c-name { flex: 1; font-size: 30rpx; font-weight: bold; margin-right: 12rpx; }
 .c-dist { font-size: 22rpx; color: #9aa0a6; }
 .c-addr { display: block; margin-top: 6rpx; }
 .c-tags { margin-top: 12rpx; }
@@ -57,3 +57,18 @@ page { background: #f5f6f8; }
 .s-lang { font-size: 20rpx; color: #4e5969; margin-top: 6rpx; }
 .s-price { font-size: 26rpx; color: #F0384D; font-weight: bold; margin-top: 4rpx; }
 .gap { height: 32rpx; }
+.show-stop { opacity: 0.45; }
+.rv-head { margin-bottom: 8rpx; }
+.rv-write { font-size: 24rpx; color: #F0384D; border: 2rpx solid #FFB3BD; border-radius: 26rpx; padding: 6rpx 22rpx; white-space: nowrap; }
+.rv { padding: 22rpx 0; border-bottom: 1rpx solid #f0f1f3; display: flex; flex-direction: column; }
+.rv:last-child { border-bottom: none; }
+.rv-avatar { width: 52rpx; height: 52rpx; border-radius: 26rpx; background: linear-gradient(135deg, #8EC5FF, #3D7BFF); display: flex; align-items: center; justify-content: center; }
+.rv-me { background: linear-gradient(135deg, #FF5A6E, #E8243F); }
+.rv-glyph { color: #fff; font-size: 22rpx; font-weight: bold; }
+.rv-name { font-size: 26rpx; margin-left: 14rpx; color: #4e5969; }
+.rv-stars { margin-left: 12rpx; }
+.rv-star { font-size: 22rpx; color: #e3e5e8; }
+.rv-star-on { color: #FFB400; }
+.rv-op { font-size: 24rpx; color: #8a9099; white-space: nowrap; padding: 6rpx 0 6rpx 20rpx; }
+.rv-text { font-size: 26rpx; line-height: 40rpx; margin-top: 12rpx; color: #1f2329; }
+.rv-tags { margin-top: 12rpx; flex-wrap: wrap; }

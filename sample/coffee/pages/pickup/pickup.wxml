@@ -6,8 +6,7 @@
     </view>
     <text class="code-label">{{order.mode === 'pickup' ? '取餐码' : '订单号'}}</text>
     <text class="code">{{order.code}}</text>
-    <text class="code-tip">{{tip}}</text>
-
+    <text class="code-tip">{{st.tip}}</text>
     <view class="steps row">
       <view class="step" wx:for="{{steps}}" wx:key="name">
         <view class="row step-top">
@@ -18,24 +17,34 @@
         <text class="step-name {{item.done ? 'name-on' : ''}}">{{item.name}}</text>
       </view>
     </view>
+    <view class="code-ops row">
+      <view wx:if="{{st.canCancel}}" class="code-op" bindtap="onCancel">取消订单</view>
+      <view wx:if="{{st.canConfirm}}" class="code-op code-op-main" bindtap="onConfirm">{{order.mode === 'pickup' ? '我已取餐' : '确认收货'}}</view>
+      <view class="code-op" bindtap="onDetail">订单详情</view>
+    </view>
   </view>
-
   <view class="card">
     <view class="row">
       <view class="store-icon glyph">店</view>
       <view class="flex1">
         <text class="title">{{store.name}}</text>
-        <text class="sub store-addr">{{store.addr}}</text>
+        <text class="sub store-addr">{{store.addr}} · {{store.hours}}</text>
       </view>
+    </view>
+    <view wx:if="{{order.addr}}" class="deliver row">
+      <text class="deliver-tag">送至</text>
+      <text class="flex1 deliver-text">{{order.addr.text}}（{{order.addr.name}} {{order.addr.phone}}）</text>
     </view>
     <view class="row store-ops">
       <view class="store-op" bindtap="onCall">联系门店</view>
       <view class="store-op" bindtap="onNav">到店导航</view>
     </view>
   </view>
-
   <view class="card">
-    <text class="title">饮品明细</text>
+    <view class="row between">
+      <text class="title">饮品明细</text>
+      <text class="sub" bindtap="onAgain">再来一单</text>
+    </view>
     <view class="item row" wx:for="{{order.items}}" wx:key="spec">
       <image class="item-img" src="{{item.img}}" mode="aspectFill"></image>
       <view class="flex1">
@@ -51,21 +60,7 @@
       <text class="price paid-num">¥{{order.pay}}</text>
     </view>
   </view>
-
-  <view class="card" wx:if="{{history.length}}">
-    <text class="title">历史订单</text>
-    <view class="his row" wx:for="{{history}}" wx:key="id">
-      <text class="his-code">{{item.code}}</text>
-      <view class="flex1">
-        <text class="his-name ellipsis">{{item.summary}}</text>
-        <text class="sub">{{item.time}}</text>
-      </view>
-      <text class="his-pay">¥{{item.pay}}</text>
-    </view>
-  </view>
-  <view class="bottom-gap"></view>
 </view>
-
 <view wx:else class="empty">
   <view class="empty-cup">
     <view class="empty-lid"></view>
@@ -75,3 +70,19 @@
   <text class="sub">下单后在这里查看取餐码与制作进度</text>
   <view class="btn empty-btn" bindtap="onGoMenu">去点一杯</view>
 </view>
+<view class="card" wx:if="{{history.length}}">
+  <view class="row between">
+    <text class="title">历史订单</text>
+    <view class="row" bindtap="onAll"><text class="sub">全部 {{total}} 笔</text><view class="arrow"></view></view>
+  </view>
+  <view class="his row" wx:for="{{history}}" wx:key="id" data-id="{{item.id}}" bindtap="onDetail">
+    <text class="his-code">{{item.code}}</text>
+    <view class="flex1">
+      <text class="his-name ellipsis">{{item.summary}}</text>
+      <text class="sub">{{item.time}} · {{item.status}}</text>
+    </view>
+    <text class="his-pay">¥{{item.pay}}</text>
+    <view class="arrow"></view>
+  </view>
+</view>
+<view class="bottom-gap"></view>

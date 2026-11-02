@@ -1,0 +1,89 @@
+<view class="seg row">
+  <view class="seg-item {{mode === index ? 'on' : ''}}" wx:for="{{modes}}" wx:key="*this" bindtap="onMode" data-i="{{index}}">{{item}}</view>
+</view>
+<view class="card cells">
+  <view class="cell row">
+    <text class="label">小区名称</text>
+    <input id="community{{formSeq}}" class="flex1 field f-community" placeholder="如：江南名府" value="{{community}}" data-k="community" bindinput="onInput" />
+  </view>
+  <picker mode="selector" range="{{districts}}" value="{{dIndex}}" data-k="dIndex" bindchange="onPick">
+    <view class="cell row">
+      <text class="label">所在区域</text>
+      <text class="flex1 field">{{districts[dIndex]}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <view class="cell row">
+    <text class="label">建筑面积</text>
+    <input id="area{{formSeq}}" class="flex1 field f-area" type="digit" maxlength="6" placeholder="请输入面积" value="{{area}}" data-k="area" bindinput="onInput" />
+    <text class="unit">㎡</text>
+  </view>
+  <picker mode="selector" range="{{rooms}}" value="{{rIndex}}" data-k="rIndex" bindchange="onPick">
+    <view class="cell row">
+      <text class="label">户型</text>
+      <text class="flex1 field">{{rooms[rIndex]}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <picker mode="selector" range="{{floors}}" value="{{fIndex}}" data-k="fIndex" bindchange="onPick">
+    <view class="cell row">
+      <text class="label">楼层</text>
+      <text class="flex1 field">{{floors[fIndex]}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <picker mode="selector" range="{{decos}}" value="{{deIndex}}" data-k="deIndex" bindchange="onPick">
+    <view class="cell row">
+      <text class="label">装修</text>
+      <text class="flex1 field">{{decos[deIndex]}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+  <picker mode="selector" range="{{years}}" value="{{yIndex}}" data-k="yIndex" bindchange="onPick">
+    <view class="cell row last">
+      <text class="label">建成年份</text>
+      <text class="flex1 field">{{years[yIndex]}}</text>
+      <view class="chev"></view>
+    </view>
+  </picker>
+</view>
+<view class="est-btn btn-primary" bindtap="onEstimate">免费估价</view>
+<view class="card est" wx:if="{{est}}">
+  <text class="sub">{{mode === 0 ? '参考售价' : '参考月租'}}</text>
+  <view class="row baseline"><text class="est-main">{{est.main}}</text><text class="est-unit">{{est.unit}}</text></view>
+  <text class="sub">{{est.sub}}</text>
+</view>
+<view class="card cells" wx:if="{{est}}">
+  <view class="cell row">
+    <text class="label">期望价格</text>
+    <input id="expect{{formSeq}}" class="flex1 field" type="digit" maxlength="7" placeholder="请输入" value="{{expect}}" data-k="expect" bindinput="onInput" />
+    <text class="unit">{{mode === 0 ? '万' : '元/月'}}</text>
+  </view>
+  <view class="cell row">
+    <text class="label">联系人</text>
+    <input class="flex1 field" placeholder="怎么称呼您" value="{{name}}" data-k="name" bindinput="onInput" />
+  </view>
+  <view class="cell row last">
+    <text class="label">手机号</text>
+    <input class="flex1 field" type="number" maxlength="11" placeholder="经纪人会联系你上门核验" value="{{phone}}" data-k="phone" bindinput="onInput" />
+  </view>
+</view>
+<view class="submit btn-primary" wx:if="{{est}}" bindtap="onSubmit">提交委托</view>
+<view class="card" wx:if="{{entrusts.length}}">
+  <text class="title">我的委托</text>
+  <view class="en" wx:for="{{entrusts}}" wx:key="id">
+    <view class="row between">
+      <text class="en-name">{{item.mode === 'sell' ? '出售' : '出租'}} · {{item.community}}</text>
+      <text class="badge {{item.status === 'withdrawn' ? 'gray' : ''}}">{{item.statusText}}</text>
+    </view>
+    <text class="sub">{{item.district}} · {{item.area}}㎡ · {{item.rooms}} · {{item.floor}} · {{item.deco}}</text>
+    <text class="sub">期望 {{item.expect}} {{item.unit}} · 估价 {{item.estimate}}</text>
+    <text class="sub">{{item.date}} 提交 · 经纪人 {{item.agent}}</text>
+    <view class="row en-foot">
+      <view class="flex1"></view>
+      <text class="op" bindtap="onCallAgent" data-id="{{item.id}}">联系经纪人</text>
+      <text class="op" wx:if="{{item.status !== 'withdrawn'}}" bindtap="onWithdraw" data-id="{{item.id}}">撤销</text>
+    </view>
+  </view>
+</view>
+<view class="safe"></view>

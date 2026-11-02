@@ -1,0 +1,55 @@
+<view class="days row">
+  <view class="day col {{date === item.key ? 'day-on' : ''}}" wx:for="{{days}}" wx:key="key" data-key="{{item.key}}" bindtap="pickDay">
+    <text class="d-t">{{item.top}}</text><text class="d-m">{{item.md}}</text>
+  </view>
+</view>
+
+<view class="grid row">
+  <view class="left">
+    <view class="lh"></view>
+    <view class="lr col" wx:for="{{rows}}" wx:key="room.id">
+      <text class="rn">{{item.room.name}}</text>
+      <text class="ri">{{item.room.id}} · {{item.room.seats}}人</text>
+      <text class="ri">{{item.room.gear}}</text>
+    </view>
+  </view>
+  <scroll-view class="right" scroll-x scroll-left="{{0}}">
+    <view class="tl">
+      <view class="th row"><view class="tt" wx:for="{{slots}}" wx:key="*this">{{index % 2 === 0 ? item : ''}}</view></view>
+      <view class="tr row" wx:for="{{rows}}" wx:for-item="r" wx:key="room.id">
+        <view class="cell c-{{c.st}}" wx:for="{{r.cells}}" wx:for-item="c" wx:key="i" data-room="{{r.room.id}}" data-i="{{c.i}}" bindtap="tapCell">
+          <text class="cl" wx:if="{{c.label}}">{{c.label}}</text>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+</view>
+<view class="legend row">
+  <view class="lgi row"><view class="lgb c-free"></view><text>空闲</text></view>
+  <view class="lgi row"><view class="lgb c-busy"></view><text>已占用</text></view>
+  <view class="lgi row"><view class="lgb c-mine"></view><text>我的预订</text></view>
+  <view class="lgi row"><view class="lgb c-sel"></view><text>已选</text></view>
+</view>
+
+<view class="card">
+  <text class="sec-title">我的预订</text>
+  <view class="empty sm" wx:if="{{mine.length === 0}}"><text class="empty-tx">还没有预订，在上面的网格里点选时段</text></view>
+  <view class="bk row" wx:for="{{mine}}" wx:key="id">
+    <view class="col flex1">
+      <text class="bk-s">{{item.subject}}</text>
+      <text class="muted">{{item.date}} {{item.time}} · {{item.roomName}}（{{item.room}}）</text>
+    </view>
+    <text class="bk-c" data-id="{{item.id}}" bindtap="cancel">取消</text>
+  </view>
+</view>
+<view style="height: 170rpx;"></view>
+
+<view class="foot row">
+  <view class="col flex1">
+    <text class="f-t">{{selText || '未选择时段'}}</text>
+    <text class="muted">{{selText ? '可继续点同一行的格子延长' : '点网格里的空闲格开始选择'}}</text>
+  </view>
+  <view class="btn fbtn {{sel ? '' : 'dis'}}" bindtap="book">预订</view>
+</view>
+
+<input-dialog show="{{dlg.show}}" title="{{dlg.title}}" placeholder="{{dlg.placeholder}}" required="{{dlg.required}}" bindconfirm="onDlgOk" bindcancel="onDlgCancel"></input-dialog>

@@ -1,0 +1,52 @@
+<view class="top">
+  <view class="t-i"><text class="t-v">{{latest ? latest.weight : '--'}}</text><text class="t-k">体重 kg</text></view>
+  <view class="t-i"><text class="t-v">{{latest && latest.fat ? latest.fat : '--'}}</text><text class="t-k">体脂率 %</text></view>
+  <view class="t-i"><text class="t-v">{{latest ? bmi.v : '--'}}</text><text class="t-k">BMI · {{latest ? bmi.text : '未记录'}}</text></view>
+</view>
+<view class="card">
+  <view class="row between">
+    <text class="sec-title">体重趋势</text>
+    <text class="muted">{{diff ? '较最早一次 ' + diff : '最近 ' + bars.length + ' 次'}}</text>
+  </view>
+  <view class="chart">
+    <view class="col" wx:for="{{bars}}" wx:key="id">
+      <text class="col-v">{{item.v}}</text>
+      <view class="col-bar" style="height: {{item.h}}rpx;"></view>
+      <text class="col-d">{{item.d}}</text>
+    </view>
+  </view>
+</view>
+<view class="card form">
+  <text class="sec-title">记一次</text>
+  <view class="f">
+    <text class="f-k">日期</text>
+    <picker class="f-pk f-date" mode="date" value="{{date}}" end="{{today}}" bindchange="onDate">
+      <view class="f-v"><text>{{date}}</text><view class="chev"></view></view>
+    </picker>
+  </view>
+  <view class="f">
+    <text class="f-k">体重</text>
+    <input id="w{{formSeq}}" class="f-in f-weight" type="digit" placeholder="如 72.5" placeholder-class="ph" value="{{weight}}" maxlength="5" bindinput="onWeight" />
+    <text class="unit">kg</text>
+  </view>
+  <view class="f last">
+    <text class="f-k">体脂率</text>
+    <input id="f{{formSeq}}" class="f-in f-fat" type="digit" placeholder="选填，体脂秤上的读数" placeholder-class="ph" value="{{fat}}" maxlength="4" bindinput="onFat" />
+    <text class="unit">%</text>
+  </view>
+  <view class="btn save" bindtap="save"><text>保存</text></view>
+</view>
+<view class="card">
+  <view class="row between">
+    <text class="sec-title">全部记录</text>
+    <text class="muted">点一条可删除 · 身高 {{height}} cm</text>
+  </view>
+  <view class="r" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onItem">
+    <text class="r-d">{{item.date}}</text>
+    <text class="r-w">{{item.weight}} kg</text>
+    <text class="r-f">{{item.fat ? '体脂 ' + item.fat + '%' : '体脂 --'}}</text>
+    <text class="r-b">BMI {{item.bmi}}</text>
+  </view>
+  <view wx:if="{{!list.length}}" class="none"><text class="muted">还没有身体数据，先记一次体重吧</text></view>
+</view>
+<view style="height: 40rpx;"></view>

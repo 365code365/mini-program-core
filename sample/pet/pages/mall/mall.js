@@ -9,7 +9,7 @@ Page({
     sorts: [{ k: 'def', n: '综合' }, { k: 'sales', n: '销量' }, { k: 'price', n: '价格' }], sort: 'def',
     kw: '', list: [], cartCount: 0
   },
-  onShow() { this.refresh(); this.setData({ cartCount: cart.count() }); },
+  onShow() { if (typeof this.getTabBar === 'function' && this.getTabBar()) this.getTabBar().setData({ selected: 2 }); this.refresh(); this.setData({ cartCount: cart.count() }); },
   refresh() {
     const { cat, kw, sort } = this.data;
     let list = data.goods.filter(g => (cat === '全部' || g.cat === cat) && (!kw || g.name.indexOf(kw) >= 0 || g.sub.indexOf(kw) >= 0 || g.cat.indexOf(kw) >= 0));

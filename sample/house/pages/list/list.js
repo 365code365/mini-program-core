@@ -1,56 +1,57 @@
 const D = require('../../utils/data.js')
 
-// 价格档：二手/新房按总价（万），租房按月租（元）
-const PRICE = {
-  second: [{ text: '不限' }, { text: '400 万以下', max: 400 }, { text: '400-500 万', min: 400, max: 500 }, { text: '500 万以上', min: 500 }],
-  new: [{ text: '不限' }, { text: '4 万/㎡ 以下', umax: 40000 }, { text: '4 万/㎡ 以上', umin: 40000 }],
-  rent: [{ text: '不限' }, { text: '5000 元以下', max: 5000 }, { text: '5000 元以上', min: 5000 }]
-}
-
+const S = require('../../utils/store.js')
 Page({
   data: {
     types: [{ key: 'second', text: '二手' }, { key: 'new', text: '新房' }, { key: 'rent', text: '租房' }],
     type: 'second',
     typeText: '二手房',
     kw: '',
-    districts: ['不限', '滨江', '西湖', '余杭', '拱墅', '上城'],
+    districts: D.DISTRICT_NAMES,
     dIndex: 0,
-    priceRanges: PRICE,
+    priceRanges: D.PRICE,
     pIndex: 0,
-    layouts: ['不限', '一室', '两室', '三室', '四室及以上'],
+    layouts: D.LAYOUTS,
     lIndex: 0,
     sorts: ['默认', '总价低', '面积大', '最新'],
     sort: 0,
     houses: []
   },
 
+  // query：type / kw / district（区名）/ l（户型下标）/ p（价格下标）—— 首页、查房价、地图找房、订阅都从这里进
   onLoad(q) {
-    this.setData({ type: q.type || 'second', kw: q.kw ? decodeURIComponent(q.kw) : '' })
+    const type = D.PRICE[q.type] ? q.type : 'second'
+    const district = q.district ? decodeURIComponent(q.district) : ''
+    const dIndex = Math.max(0, D.DISTRICT_NAMES.indexOf(district))
+    const lIndex = Math.min(D.LAYOUTS.length - 1, Math.max(0, Number(q.l) || 0))
+    const pIndex = Math.min(D.PRICE[type].length - 1, Math.max(0, Number(q.p) || 0))
+    this.setData({ type, kw: q.kw ? decodeURIComponent(q.kw) : '', dIndex, lIndex, pIndex })
     this.refresh()
   },
 
+  cond() {
+    const { type, kw, districts, dIndex, pIndex, lIndex } = this.data
+    return { type, kw, district: districts[dIndex], pIndex, lIndex }
+  },
   refresh() {
-    const { type, kw, districts, dIndex, pIndex, lIndex, sort } = this.data
-    const pr = PRICE[type][pIndex] || {}
-    let list = D.all().filter(h => {
-      if (h.type !== type) return false
-      if (kw && (h.title + h.community + h.district + h.subway).indexOf(kw) < 0) return false
-      if (dIndex && h.district !== districts[dIndex]) return false
-      if (pr.min && h.price < pr.min) return false
-      if (pr.max && h.price >= pr.max) return false
-      if (pr.umin && h.unit < pr.umin) return false
-      if (pr.umax && h.unit >= pr.umax) return false
-      if (lIndex && lIndex < 4 && h.rooms !== lIndex) return false
-      if (lIndex === 4 && h.rooms < 4) return false
-      return true
-    })
+    const { type, sort } = this.data
+    let list = D.filter(this.cond())
     if (sort === 1) list = list.sort((a, b) => a.price - b.price)
     if (sort === 2) list = list.sort((a, b) => b.area - a.area)
     if (sort === 3) list = list.sort((a, b) => b.year - a.year)
     this.setData({ houses: list, typeText: D.TYPE_TEXT[type] })
     wx.setNavigationBarTitle({ title: D.TYPE_TEXT[type] })
   },
-
+  // 把当前条件存成订阅（关键词不进订阅：订阅按区域 / 户型 / 价格推新房源）
+  onSubscribe() {
+    const c = this.cond()
+    const s = S.addSub(c)
+    if (!s) return wx.showToast({ title: '这个条件已经订阅过了', icon: 'none' })
+    wx.showModal({
+      title: '订阅成功', content: D.condText(c) + '\n有新房源或降价会第一时间通知你', confirmText: '查看订阅', cancelText: '知道了', confirmColor: '#ff5a1f',
+      success: r => r.confirm && wx.navigateTo({ url: '/pages/subscribe/subscribe' })
+    })
+  },
   onType(e) {
     this.setData({ type: e.currentTarget.dataset.key, pIndex: 0 })
     this.refresh()

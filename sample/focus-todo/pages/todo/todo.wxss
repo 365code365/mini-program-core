@@ -250,3 +250,8 @@
   font-size: 26rpx;
   color: #a3a8b3;
 }
+.meta-repeat {
+  font-size: 22rpx;
+  color: #19a974;
+  margin-right: 16rpx;
+}

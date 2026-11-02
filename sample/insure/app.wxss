@@ -1,0 +1,28 @@
+page { background: #f3f5f9; color: #1f2633; font-size: 28rpx; }
+.wrap { padding: 24rpx 24rpx 40rpx; }
+.card { background: #ffffff; border-radius: 20rpx; padding: 28rpx; margin-bottom: 24rpx; }
+.sec-title { font-size: 32rpx; font-weight: bold; color: #1f2633; }
+.sec-head { display: flex; flex-direction: row; align-items: center; justify-content: space-between; margin-bottom: 20rpx; }
+.sec-more { font-size: 24rpx; color: #8a93a3; }
+.muted { color: #8a93a3; font-size: 24rpx; }
+.tag { font-size: 20rpx; color: #2f6bff; background: #eaf0ff; padding: 4rpx 12rpx; border-radius: 6rpx; margin-right: 10rpx; }
+.tags { display: flex; flex-direction: row; flex-wrap: wrap; margin-top: 12rpx; }
+.price { color: #f0524a; font-weight: bold; }
+.price-unit { font-size: 22rpx; color: #f0524a; }
+.btn { height: 88rpx; line-height: 88rpx; border-radius: 44rpx; text-align: center; font-size: 30rpx; }
+.btn-primary { background: #2f6bff; color: #ffffff; }
+.btn-ghost { background: #ffffff; color: #2f6bff; border: 2rpx solid #2f6bff; }
+.btn-hover { opacity: 0.8; }
+.empty { padding: 120rpx 0; display: flex; flex-direction: column; align-items: center; }
+.empty-ic { width: 120rpx; height: 120rpx; opacity: 0.35; margin-bottom: 20rpx; }
+.empty-tx { color: #8a93a3; font-size: 26rpx; margin-bottom: 30rpx; }
+.empty-btn { padding: 0 48rpx; height: 72rpx; line-height: 72rpx; border-radius: 36rpx; background: #2f6bff; color: #ffffff; font-size: 26rpx; }
+.loading { padding: 60rpx 0; text-align: center; color: #8a93a3; font-size: 26rpx; }
+.row { display: flex; flex-direction: row; align-items: center; }
+.between { justify-content: space-between; }
+.kv { display: flex; flex-direction: row; justify-content: space-between; padding: 14rpx 0; font-size: 26rpx; }
+.kv-k { color: #8a93a3; }
+.kv-v { color: #1f2633; text-align: right; }
+.bottom-bar { position: fixed; left: 0; right: 0; bottom: 0; background: #ffffff; padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom)); display: flex; flex-direction: row; align-items: center; border-top: 1rpx solid #e8ebf2; }
+.tab-pad { height: calc(120rpx + env(safe-area-inset-bottom)); }
+.bar-pad { height: calc(140rpx + env(safe-area-inset-bottom)); }

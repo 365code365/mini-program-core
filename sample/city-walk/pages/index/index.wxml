@@ -1,0 +1,34 @@
+<view class="chips">
+  <view class="chip {{cat === item.key ? 'chip-on' : ''}}" wx:for="{{cats}}" wx:key="key" data-key="{{item.key}}" bindtap="pickCat">{{item.name}}</view>
+</view>
+<map id="cityMap" class="map" latitude="{{lat}}" longitude="{{lng}}" scale="{{scale}}" markers="{{markers}}" show-scale="{{true}}"
+  bindmarkertap="onMarker" bindcallouttap="onMarker" bindtap="onMapTap" bindregionchange="onRegion"></map>
+<view class="tools">
+  <view class="tool" bindtap="locate">定位</view>
+  <view class="tool" bindtap="fitAll">全部</view>
+</view>
+<view class="card spot" wx:if="{{current}}" data-id="{{current.id}}" bindtap="openSpot">
+  <image class="cover" src="{{current.cover}}" mode="aspectFill"></image>
+  <view class="spot-body">
+    <text class="h">{{current.name}}</text>
+    <text class="sub">{{current.hours}}</text>
+    <text class="sub">{{current.price}} · 建议游玩 {{current.duration}}</text>
+    <text class="dist" wx:if="{{currentDist}}">距地图中心 {{currentDist}}</text>
+  </view>
+</view>
+<view class="card">
+  <view class="row between">
+    <text class="h">{{list.length}} 个地点</text>
+    <text class="sub">{{viewHint}}</text>
+  </view>
+  <view class="item" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="focusSpot">
+    <view class="dot" style="background-color: {{item.color}};"></view>
+    <view class="item-body">
+      <text class="item-name">{{item.name}}</text>
+      <text class="sub">{{item.address}}</text>
+    </view>
+    <text class="go">看位置</text>
+  </view>
+  <view class="empty" wx:if="{{!list.length}}">这个分类下还没有地点</view>
+</view>
+<view style="height: 140rpx;"></view>

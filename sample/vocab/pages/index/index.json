@@ -1,0 +1,4 @@
+{
+  "navigationBarTitleText": "词力",
+  "usingComponents": { "ring": "/components/ring/ring" }
+}

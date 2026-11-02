@@ -1,0 +1,68 @@
+.head { position: relative; height: 420rpx; overflow: hidden; }
+.head-bg { position: absolute; left: 0; top: 0; width: 100%; height: 420rpx; }
+.head-mask { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background: rgba(20, 20, 30, 0.78); }
+.head-in { position: absolute; left: 0; right: 0; top: 0; padding: 36rpx 28rpx; align-items: flex-start; }
+.poster { width: 220rpx; height: 294rpx; border-radius: 14rpx; flex-shrink: 0; border: 2rpx solid rgba(255, 255, 255, 0.4); }
+.head-info { flex: 1; margin-left: 24rpx; }
+.title { color: #ffffff; font-size: 32rpx; font-weight: bold; line-height: 46rpx; }
+.artist { color: #d8d8e0; font-size: 24rpx; margin-top: 12rpx; }
+.head-tags { flex-wrap: wrap; margin-top: 14rpx; }
+.htag { font-size: 20rpx; color: #ffd166; border: 1rpx solid rgba(255, 209, 102, 0.6); border-radius: 6rpx; padding: 2rpx 10rpx; margin: 0 10rpx 10rpx 0; }
+.want-n { margin-top: 8rpx; align-items: flex-end; }
+.want-big { color: #ffffff; font-size: 36rpx; font-weight: bold; }
+.want-s { color: #d8d8e0; font-size: 22rpx; margin-left: 6rpx; margin-bottom: 4rpx; }
+
+.cd { margin: 20rpx 24rpx 0; padding: 24rpx 28rpx; border-radius: 20rpx; background: linear-gradient(90deg, #ff5e7e, #ff9f43); }
+.cd-l { color: #ffffff; font-size: 24rpx; }
+.cd-nums { margin-top: 10rpx; }
+.cd-n { background: #ffffff; color: #ff3b5c; font-size: 30rpx; font-weight: bold; border-radius: 8rpx; padding: 2rpx 10rpx; }
+.cd-u { color: #ffffff; font-size: 26rpx; margin: 0 8rpx; }
+.cd-btn { background: #ffffff; color: #ff3b5c; border-radius: 32rpx; padding: 12rpx 26rpx; font-size: 26rpx; }
+.cd-btn-on { background: rgba(255, 255, 255, 0.3); color: #ffffff; }
+
+.tabs { position: sticky; top: 0; z-index: 10; background: #ffffff; height: 88rpx; margin-top: 20rpx; border-bottom: 1rpx solid #ececf0; }
+.tabs-fixed { position: fixed; left: 0; right: 0; top: 0; margin-top: 0; z-index: 20; }
+.tab { flex: 1; height: 88rpx; display: flex; align-items: center; justify-content: center; font-size: 26rpx; color: #5a5d66; border-bottom: 4rpx solid transparent; }
+.tab-on { color: #ff3b5c; font-weight: bold; border-bottom-color: #ff3b5c; }
+
+.chips { display: flex; flex-direction: row; flex-wrap: wrap; margin-top: 16rpx; }
+.chip { display: flex; flex-direction: row; align-items: center; padding: 14rpx 22rpx; border-radius: 12rpx; background: #f5f5f7; border: 2rpx solid #f5f5f7; margin: 0 16rpx 16rpx 0; }
+.chip-t { font-size: 24rpx; }
+.chip-on { background: #fff0f3; border-color: #ff3b5c; color: #ff3b5c; }
+.chip-out { opacity: 0.5; }
+.tier-dot { width: 16rpx; height: 16rpx; border-radius: 8rpx; margin-right: 10rpx; }
+.out-t { font-size: 20rpx; color: #8a8d96; margin-left: 8rpx; }
+.tier-head { margin-top: 12rpx; }
+.qty { margin-top: 12rpx; }
+.step { border: 1rpx solid #d6d7dc; border-radius: 10rpx; }
+.step-b { width: 60rpx; height: 56rpx; display: flex; align-items: center; justify-content: center; font-size: 30rpx; }
+.step-dis { color: #c6c7cc; }
+.step-n { width: 64rpx; text-align: center; font-size: 28rpx; }
+
+.intro { margin-top: 16rpx; }
+.intro-t { font-size: 26rpx; color: #3a3d46; line-height: 44rpx; }
+.kv { margin-top: 16rpx; align-items: flex-start; }
+.k { width: 140rpx; color: #8a8d96; font-size: 24rpx; flex-shrink: 0; }
+.v { flex: 1; font-size: 24rpx; }
+.nt { margin-top: 20rpx; }
+.nt-k { font-size: 26rpx; font-weight: bold; }
+.nt-v { margin-top: 6rpx; font-size: 24rpx; color: #5a5d66; line-height: 38rpx; }
+.venue { margin-top: 16rpx; }
+.venue-n { font-size: 28rpx; font-weight: bold; }
+.venue-a { margin-top: 6rpx; }
+.venue-more { color: #8a8d96; font-size: 24rpx; }
+
+.foot-ic { width: 90rpx; align-items: center; }
+.share-btn { padding: 0; margin: 0; border: none; background: transparent; line-height: 1.2; display: flex; flex-direction: column; align-items: center; }
+.foot-heart { font-size: 40rpx; color: #5a5d66; }
+.heart-on { color: #ff3b5c; }
+.foot-share { font-size: 36rpx; color: #5a5d66; }
+.foot-l { font-size: 20rpx; color: #5a5d66; }
+.cta-wrap { margin-left: 16rpx; }
+.btn-soft { background: #ffd6de; color: #ff3b5c; }
+.breath { animation: breath 1.6s ease-in-out infinite; }
+@keyframes breath {
+  0% { transform: scale(1); box-shadow: 0 0 0 rgba(255, 59, 92, 0.0); }
+  50% { transform: scale(1.04); box-shadow: 0 8rpx 28rpx rgba(255, 59, 92, 0.45); }
+  100% { transform: scale(1); box-shadow: 0 0 0 rgba(255, 59, 92, 0.0); }
+}

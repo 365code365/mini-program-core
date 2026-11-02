@@ -7,3 +7,6 @@
 .off { color: #ff5a1f; }
 .btns { padding: 24rpx 32rpx; }
 .btn-ghost { margin-top: 20rpx; height: 88rpx; line-height: 88rpx; text-align: center; border-radius: 44rpx; border: 2rpx solid #1677ff; color: #1677ff; font-size: 30rpx; }
+.missing { padding-top: 200rpx; }
+.miss-t { display: block; margin-bottom: 40rpx; }
+.miss-btn { margin: 0 120rpx; }

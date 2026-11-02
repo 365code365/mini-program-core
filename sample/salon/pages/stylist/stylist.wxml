@@ -1,0 +1,65 @@
+<view wx:if="{{s}}">
+  <view class="head">
+    <image class="av" src="{{s.avatar}}"></image>
+    <view class="flex1">
+      <view class="row"><text class="n">{{s.name}}</text><text class="lv">{{s.title}}</text></view>
+      <view class="row r"><rating-stars value="{{s.rating}}" size="26" show-score="{{true}}"></rating-stars></view>
+      <text class="sub">从业 {{s.years}} 年 · 服务 {{s.orders}} 次</text>
+    </view>
+    <view class="fav {{fav ? 'fav-on' : ''}}" bindtap="toggleFav">{{fav ? '已收藏' : '+ 收藏'}}</view>
+  </view>
+  <view class="card intro">
+    <text class="it">{{s.intro}}</text>
+    <view class="row tags"><text class="tag" wx:for="{{s.tags}}" wx:key="*this">{{item}}</text></view>
+  </view>
+
+  <view class="tabs row">
+    <view class="tb {{tab === 'works' ? 'tb-on' : ''}}" data-t="works" bindtap="onTab">作品 {{works.length}}</view>
+    <view class="tb {{tab === 'reviews' ? 'tb-on' : ''}}" data-t="reviews" bindtap="onTab">评价 {{total}}</view>
+    <view class="tb {{tab === 'services' ? 'tb-on' : ''}}" data-t="services" bindtap="onTab">可约项目</view>
+  </view>
+
+  <view class="card" wx:if="{{tab === 'works'}}">
+    <view class="wgrid">
+      <view class="w" wx:for="{{works}}" wx:key="id" data-i="{{index}}" bindtap="preview">
+        <image class="wimg" src="{{item.src}}" mode="aspectFill"></image>
+        <text class="wt">{{item.title}}</text>
+      </view>
+    </view>
+    <text class="muted">点击作品查看大图，左右滑动切换</text>
+  </view>
+
+  <view class="card" wx:if="{{tab === 'reviews'}}">
+    <view class="row sum">
+      <text class="avg">{{avg}}</text>
+      <view class="flex1">
+        <rating-stars value="{{avg}}" size="30"></rating-stars>
+        <text class="muted">共 {{total}} 条评价</text>
+      </view>
+    </view>
+    <view class="row fl">
+      <text class="fi {{filterScore === 0 ? 'fi-on' : ''}}" data-v="0" bindtap="onFilter">全部</text>
+      <text class="fi {{filterScore === 5 ? 'fi-on' : ''}}" data-v="5" bindtap="onFilter">5 星好评</text>
+      <text class="fi {{filterScore === 4.5 ? 'fi-on' : ''}}" data-v="4.5" bindtap="onFilter">4.5 星以上</text>
+    </view>
+    <view class="empty" wx:if="{{!reviews.length}}"><text class="empty-tx">暂无符合条件的评价</text></view>
+    <view class="rv" wx:for="{{reviews}}" wx:key="id">
+      <view class="row between">
+        <view class="row"><text class="ru">{{item.user}}</text><text wx:if="{{item.mine}}" class="tag">我的评价</text></view>
+        <text class="muted">{{item.date}}</text>
+      </view>
+      <view class="row rs"><rating-stars value="{{item.score}}" size="22"></rating-stars><text class="muted"> {{item.service}}</text></view>
+      <text class="rt">{{item.text}}</text>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{tab === 'services'}}">
+    <view class="sv row between" wx:for="{{services}}" wx:key="id">
+      <view class="flex1"><text class="svn">{{item.name}}</text><text class="muted">{{item.duration}} 分钟</text></view>
+      <text class="price">¥{{item.price}}</text>
+      <view class="btn-line sv-b" data-id="{{item.id}}" bindtap="bookService">预约</view>
+    </view>
+  </view>
+  <view style="height: 160rpx;"></view>
+  <view class="bar"><view class="btn-main" hover-class="press" bindtap="book">预约 {{s.name}}</view></view>
+</view>

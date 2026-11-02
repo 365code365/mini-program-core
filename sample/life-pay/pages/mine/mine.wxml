@@ -16,7 +16,8 @@
 <view class="card menu">
   <view class="mi row" bindtap="goAccounts"><view class="ic mi-ic" style="background: linear-gradient(135deg, #4fd6a0, #14a06f);"><text>户</text></view><text class="mi-t">户号管理</text><text class="mi-x">{{accCount}} 个</text><view class="chev"></view></view>
   <view class="mi row" bindtap="goMobile"><view class="ic mi-ic" style="background: linear-gradient(135deg, #6aaeff, #3c7cff);"><text>充</text></view><text class="mi-t">话费充值</text><view class="chev"></view></view>
-  <view class="mi row last" bindtap="invoice"><view class="ic mi-ic" style="background: linear-gradient(135deg, #ffcf5c, #ff9d1a);"><text>票</text></view><text class="mi-t">电子发票</text><view class="chev"></view></view>
+  <view class="mi row" bindtap="invoice"><view class="ic mi-ic" style="background: linear-gradient(135deg, #ffcf5c, #ff9d1a);"><text>票</text></view><text class="mi-t">电子票据</text><text class="mi-x">{{invTodo}} 笔可开</text><view class="chev"></view></view>
+  <view class="mi row last" bindtap="goNotice"><view class="ic mi-ic" style="background: linear-gradient(135deg, #ff9a7a, #f2603d);"><text>告</text></view><text class="mi-t">停水停电公告</text><view class="chev"></view></view>
 </view>
 
 <view class="card menu">
@@ -24,7 +25,7 @@
   <picker mode="selector" range="{{days}}" value="{{remindDay}}" bindchange="onDay">
     <view class="mi row"><text class="mi-t">提醒日期</text><text class="mi-x">{{days[remindDay]}}</text><view class="chev"></view></view>
   </picker>
-  <view class="mi row last"><view class="mi-main"><text class="mi-t">自动缴费</text><text class="muted">出账后自动扣款，不再错过缴费</text></view><switch checked="{{autoPay}}" color="#14a06f" bindchange="onAuto" /></view>
+  <view class="mi row last" bindtap="goAuto"><view class="mi-main"><text class="mi-t">自动缴费</text><text class="muted">出账后自动扣款，不再错过缴费</text></view><text class="mi-x">{{autoCount ? '已开通 ' + autoCount + ' 户' : '未开通'}}</text><view class="chev"></view></view>
 </view>
 
 <view class="card menu">

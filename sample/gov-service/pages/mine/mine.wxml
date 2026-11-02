@@ -1,0 +1,44 @@
+<view class="top row">
+  <image class="av" src="/images/avatar.jpg"></image>
+  <view class="u">
+    <text class="u-n">{{user.name}}</text>
+    <text class="u-id">{{user.id}}</text>
+    <text class="u-l">{{user.level}}</text>
+  </view>
+</view>
+
+<view class="stat row">
+  <view class="s" hover-class="tap" bindtap="goOrders"><text class="s-n">{{stat.orders}}</text><text class="muted">我的办件</text></view>
+  <view class="s" hover-class="tap" bindtap="goAppoints"><text class="s-n">{{stat.appoints}}</text><text class="muted">待到场预约</text></view>
+  <view class="s" hover-class="tap" bindtap="goLicense"><text class="s-n">{{stat.licenses}}</text><text class="muted">电子证照</text></view>
+</view>
+
+<view class="card dr" wx:if="{{draft}}">
+  <view class="row between">
+    <text class="sec-t">草稿箱</text>
+    <text class="del" bindtap="dropDraft">删除</text>
+  </view>
+  <view class="row dr-b" bindtap="openDraft">
+    <icon type="waiting" size="18" color="#ea580c"></icon>
+    <text class="dr-t">「{{draft.name}}」保存于 {{draft.time}}</text>
+    <text class="arr">›</text>
+  </view>
+</view>
+
+<view class="menu">
+  <view class="mi row" hover-class="mi-on" bindtap="openDraft"><text class="mi-t">申报草稿</text><text class="muted">{{draft ? '1 份' : '无'}}</text><text class="arr">›</text></view>
+  <view class="mi row" hover-class="mi-on" bindtap="toggleFavs"><text class="mi-t">我的收藏</text><text class="muted">{{favs.length}} 项</text><text class="arr">{{showFavs ? '⌄' : '›'}}</text></view>
+  <view wx:if="{{showFavs}}" class="favs">
+    <view class="fv row" wx:for="{{favs}}" wx:key="id" data-id="{{item.id}}" bindtap="openFav"><text class="fv-n">{{item.name}}</text><text class="muted">{{item.dept}}</text></view>
+    <view class="muted fv-e" wx:if="{{!favs.length}}">在事项详情页点「收藏」后会出现在这里</view>
+  </view>
+  <view class="mi row" hover-class="mi-on" bindtap="goProgress"><text class="mi-t">办件进度查询</text><text class="arr">›</text></view>
+  <view class="mi row" hover-class="mi-on" bindtap="guide"><text class="mi-t">办事指南汇编（PDF）</text><text class="arr">›</text></view>
+  <view class="mi row" hover-class="mi-on" bindtap="call"><text class="mi-t">12345 便民热线</text><text class="arr">›</text></view>
+</view>
+
+<view class="menu">
+  <view class="mi row" hover-class="mi-on" bindtap="clearAll"><text class="mi-t">清除本地数据</text><text class="arr">›</text></view>
+  <view class="mi row" hover-class="mi-on" bindtap="about"><text class="mi-t">关于云川办事</text><text class="muted">v2.6.0</text><text class="arr">›</text></view>
+</view>
+<view class="safe-bottom"></view>

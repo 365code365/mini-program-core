@@ -1,12 +1,12 @@
 <view class="sum">
   <text class="s-l">累计缴费（元）</text>
   <text class="s-n">{{total}}</text>
-  <text class="s-sub">共 {{count}} 笔 · 近 3 个月</text>
+  <view class="row s-row"><text class="s-sub">共 {{count}} 笔</text><view class="s-inv row" bindtap="goInvoice"><text>开电子票据</text><view class="chev w"></view></view></view>
 </view>
 <scroll-view class="filters" scroll-x="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}">
   <view class="f {{filter === item.k ? 'on' : ''}}" wx:for="{{filters}}" wx:key="k" data-k="{{item.k}}" bindtap="onFilter"><text>{{item.name}}</text></view>
 </scroll-view>
-<view wx:if="{{groups.length === 0}}" class="empty"><text>暂无缴费记录</text></view>
+<view wx:if="{{groups.length === 0}}" class="empty"><text>暂无缴费记录</text><view class="empty-go" bindtap="goHome"><text>去缴费</text></view></view>
 <view class="group" wx:for="{{groups}}" wx:key="key" wx:for-item="g">
   <view class="g-head row between"><text class="g-title">{{g.title}}</text><text class="muted">支出 ¥{{g.sumTx}}</text></view>
   <view class="card g-card">
@@ -19,7 +19,7 @@
       <view class="r-right">
         <text class="r-amt">-{{item.paidTx}}</text>
         <text wx:if="{{item.saved}}" class="r-save">已优惠 {{item.saved}}</text>
-        <text wx:else class="r-st">缴费成功</text>
+        <text wx:else class="r-st">{{item.invoice ? '已开票' : '缴费成功'}}</text>
       </view>
     </view>
   </view>

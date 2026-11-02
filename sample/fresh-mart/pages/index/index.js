@@ -1,9 +1,7 @@
 const data = require('../../utils/data.js');
-const cart = require('../../utils/cart.js');
+const store = require('../../utils/store.js');
 
-function pad(n) {
-  return n < 10 ? '0' + n : '' + n;
-}
+const pad = store.pad;
 
 // 瀑布流：每次放到当前更矮的那一列（按估算高度）
 function splitColumns(list) {
@@ -43,14 +41,17 @@ Page({
   onLoad() {
     const flashList = data.flash.map(f => {
       const gd = data.findGoods(f.id);
-      return { id: f.id, img: gd.img, price: gd.price, flashPrice: f.price, stock: f.stock };
+      return { id: f.id, img: gd.img, price: gd.price, flashPrice: f.price, stock: f.stock, out: f.stock >= 100 };
     });
-    this.setData({ flashList, address: getApp().globalData.address });
+    this.setData({ flashList });
     this.loadFeed();
     this.hotIdx = 0;
   },
 
   onShow() {
+    this.syncBar();
+    const a = store.currentAddr();
+    this.setData({ address: a ? a.detail : '请添加收货地址' });
     this.tick();
     clearInterval(this.timer);
     this.timer = setInterval(() => this.tick(), 1000);
@@ -62,6 +63,11 @@ Page({
 
   onUnload() {
     clearInterval(this.timer);
+  },
+
+  // 自定义 tabBar：微信里每个 tab 页一个实例，选中态与购物车角标要各自设
+  syncBar() {
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) this.getTabBar().setData({ selected: 0, cartCount: store.cartCount() });
   },
 
   // 每 2 小时一场，倒计时到本场结束
@@ -101,15 +107,9 @@ Page({
     wx.navigateTo({ url: '/pages/search/search' });
   },
 
+  // 配送地址：去地址簿里挑（回来 onShow 刷新）
   onAddress() {
-    const list = ['望京SOHO T3 座', '花家地北里 8 号院', '方恒国际中心 A 座'];
-    wx.showActionSheet({
-      itemList: list,
-      success: (res) => {
-        getApp().globalData.address = list[res.tapIndex];
-        this.setData({ address: list[res.tapIndex] });
-      }
-    });
+    wx.navigateTo({ url: '/pages/address/address?select=1' });
   },
 
   onCate(e) {
@@ -118,7 +118,7 @@ Page({
   },
 
   onFlashMore() {
-    wx.showToast({ title: '下一场 12:00 开抢', icon: 'none' });
+    wx.navigateTo({ url: '/pages/flash/flash' });
   },
 
   onDetail(e) {
@@ -126,7 +126,8 @@ Page({
   },
 
   onAdd(e) {
-    const n = cart.add(e.currentTarget.dataset.id, 1);
-    wx.showToast({ title: `已加入购物车（${n}）`, icon: 'none' });
+    const r = store.addToCart(e.currentTarget.dataset.id, 1);
+    this.syncBar();
+    wx.showToast({ title: r.ok ? r.msg || `已加入购物车（${r.count}）` : r.msg, icon: 'none' });
   }
 });

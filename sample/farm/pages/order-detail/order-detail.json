@@ -1,0 +1,1 @@
+{ "navigationBarTitleText": "订单详情", "usingComponents": { "cashier": "/components/cashier/index" } }

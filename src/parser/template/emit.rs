@@ -43,6 +43,7 @@ impl TemplateEngine {
         // 收集模式只关心组件出现在哪，普通元素的属性不必插值
         if !cx.collecting() {
             let mut str_keys: Vec<String> = Vec::new();
+            let native_json = Self::native_json_tag(&node.tag_name);
             for (key, value) in &node.attributes {
                 if Self::is_directive(key) {
                     continue;
@@ -60,7 +61,8 @@ impl TemplateEngine {
                         }
                     }
                 }
-                new_node.attributes.insert(key.clone(), Self::interpolate_attr(key, value, data));
+                let v = if native_json { Self::interpolate_native_attr(key, value, data) } else { Self::interpolate_attr(key, value, data) };
+                new_node.attributes.insert(key.clone(), v);
             }
             if !str_keys.is_empty() {
                 str_keys.sort();

@@ -1,0 +1,13 @@
+.res { align-items: center; padding: 60rpx 0 30rpx; background: #ffffff; }
+.ok { width: 120rpx; height: 120rpx; border-radius: 60rpx; background: #ff3b5c; display: flex; align-items: center; justify-content: center; }
+.ok-t { color: #ffffff; font-size: 64rpx; }
+.res-t { font-size: 38rpx; font-weight: bold; margin-top: 24rpx; }
+.res-s { margin-top: 10rpx; }
+.res-amt { font-size: 48rpx; font-weight: bold; margin-top: 16rpx; }
+.kv { margin-top: 16rpx; align-items: flex-start; }
+.k { width: 110rpx; color: #8a8d96; font-size: 24rpx; flex-shrink: 0; }
+.v { flex: 1; font-size: 24rpx; }
+.tips-t { font-size: 24rpx; color: #5a5d66; line-height: 38rpx; }
+.btns { padding: 40rpx 24rpx; }
+.btns2 { margin-top: 24rpx; }
+.gap { margin-left: 20rpx; }

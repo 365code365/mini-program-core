@@ -128,7 +128,8 @@
                 var res;
                 try { res = JSON.parse(resultJson || '{}'); } catch (e) { res = { data: resultJson }; }
                 if (res === null || typeof res !== 'object' || Array.isArray(res)) res = { data: res };
-                if (!res.errMsg) res.errMsg = task.name + (ok ? ':ok' : ':fail');
+                // 对象方法（`MapContext.getCenterLocation`）与微信一致只写方法名：`getCenterLocation:ok`
+                if (!res.errMsg) res.errMsg = (task.name.indexOf('.') > 0 ? task.name.slice(task.name.indexOf('.') + 1) : task.name) + (ok ? ':ok' : ':fail');
                 var hook = __hostCallHooks[task.name];
                 if (ok && hook && hook.finish) {
                     try { res = hook.finish(res, task.args || {}) || res; } catch (e) { console.error(e); }

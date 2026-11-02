@@ -1,0 +1,25 @@
+<text class="g-title">简历隐私</text>
+<view class="card form">
+  <view class="field row">
+    <view class="col flex1"><text class="val">公开简历</text><text class="sub">关闭后只有你投递过的公司能看到简历</text></view>
+    <switch checked="{{open}}" color="#2E6BFF" bindchange="onOpen" />
+  </view>
+  <view class="field row">
+    <view class="col flex1"><text class="val">隐藏手机号</text><text class="sub">HR 只能在沟通里联系你，交换电话前会再确认</text></view>
+    <switch checked="{{hidePhone}}" color="#2E6BFF" bindchange="onHidePhone" />
+  </view>
+  <view class="field row last">
+    <view class="col flex1"><text class="val">新消息通知</text><text class="sub">HR 回复、面试邀请时提醒你</text></view>
+    <switch checked="{{notify}}" color="#2E6BFF" bindchange="onNotify" />
+  </view>
+</view>
+<text class="g-title">屏蔽公司</text>
+<text class="g-sub sub">屏蔽后，这家公司看不到你的简历，你也不会在首页看到它的职位</text>
+<view class="card form">
+  <view class="field row {{index === cos.length - 1 ? 'last' : ''}}" wx:for="{{cos}}" wx:key="id">
+    <view class="logo small" style="background: {{item.color}}"><text>{{item.short}}</text></view>
+    <view class="col flex1 c-body"><text class="val">{{item.name}}</text><text class="sub">{{item.industry}}</text></view>
+    <switch checked="{{item.blocked}}" color="#F5455C" data-id="{{item.id}}" bindchange="onBlock" />
+  </view>
+</view>
+<view class="safe-bottom"></view>

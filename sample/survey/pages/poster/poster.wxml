@@ -1,0 +1,11 @@
+<view class="wrap col">
+  <canvas type="2d" id="poster" class="poster"></canvas>
+  <text class="sub hint">{{ready ? '海报已生成，可保存到相册后发朋友圈' : '海报生成中…'}}</text>
+</view>
+<view class="ops">
+  <view class="btn-primary save {{ready && !saving ? '' : 'btn-disabled'}}" bindtap="onSave">{{saving ? '正在保存…' : '保存到相册'}}</view>
+  <view class="row ops2">
+    <view class="btn-ghost flex1 copy-link" bindtap="onCopyLink">复制邀请文字</view>
+    <button class="btn-ghost flex1 share-btn" open-type="share"><text class="share-t">转发给好友</text></button>
+  </view>
+</view>

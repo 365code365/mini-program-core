@@ -1,0 +1,37 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/growth/growth",
+    "pages/album/album",
+    "pages/knowledge/knowledge",
+    "pages/mine/mine",
+    "pages/feed/feed",
+    "pages/sleep/sleep",
+    "pages/growth-add/growth-add",
+    "pages/vaccine/vaccine",
+    "pages/shoot/shoot",
+    "pages/moment/moment",
+    "pages/article/article",
+    "pages/profile/profile"
+  ],
+  "window": {
+    "navigationBarTitleText": "宝贝成长记",
+    "navigationBarBackgroundColor": "#fff5f6",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f8f6f7"
+  },
+  "tabBar": {
+    "color": "#a3a9b3",
+    "selectedColor": "#ff7a8a",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "首页", "iconPath": "images/tab/home.png", "selectedIconPath": "images/tab/home-on.png" },
+      { "pagePath": "pages/growth/growth", "text": "成长", "iconPath": "images/tab/growth.png", "selectedIconPath": "images/tab/growth-on.png" },
+      { "pagePath": "pages/album/album", "text": "相册", "iconPath": "images/tab/album.png", "selectedIconPath": "images/tab/album-on.png" },
+      { "pagePath": "pages/knowledge/knowledge", "text": "知识", "iconPath": "images/tab/book.png", "selectedIconPath": "images/tab/book-on.png" },
+      { "pagePath": "pages/mine/mine", "text": "我的", "iconPath": "images/tab/user.png", "selectedIconPath": "images/tab/user-on.png" }
+    ],
+    "custom": true
+  }
+}

@@ -1,0 +1,27 @@
+<view class="page">
+  <view class="seg-wrap"><view class="seg">
+    <view class="seg-item {{type === 'out' ? 'seg-on' : ''}}" data-t="out" bindtap="onType"><text>支出分类</text></view>
+    <view class="seg-item {{type === 'in' ? 'seg-on' : ''}}" data-t="in" bindtap="onType"><text>收入分类</text></view>
+  </view></view>
+  <view class="card new-card">
+    <text class="card-title">添加分类</text>
+    <view class="row new-row">
+      <view class="cat-icon" style="background: {{color}};"><text>{{preview}}</text></view>
+      <input id="catname{{formSeq}}" class="flex1 add-input" placeholder="名称，最多 4 个字" placeholder-class="ph" value="{{name}}" maxlength="4" bindinput="onName" />
+      <view class="add-btn" hover-class="add-hover" bindtap="onAdd"><text>添加</text></view>
+    </view>
+    <view class="row colors">
+      <view wx:for="{{palette}}" wx:key="*this" class="color {{color === item ? 'color-on' : ''}}" data-c="{{item}}" bindtap="onColor"><view class="dot" style="background: {{item}};"></view></view>
+    </view>
+  </view>
+  <view class="card list">
+    <view wx:for="{{list}}" wx:key="name" class="row cat {{index === list.length - 1 ? 'last' : ''}}">
+      <view class="cat-icon small" style="background: {{item.color}};"><text>{{item.ch}}</text></view>
+      <text class="flex1 cat-name">{{item.name}}</text>
+      <text class="muted cat-count">{{item.count}} 笔</text>
+      <view wx:if="{{item.custom}}" class="del" hover-class="del-hover" data-name="{{item.name}}" bindtap="onDelete"><text>删除</text></view>
+      <text wx:else class="sys">系统</text>
+    </view>
+  </view>
+  <view class="foot muted"><text>系统分类不能删除；删掉的自定义分类，账单会归入「其他」</text></view>
+</view>

@@ -1,0 +1,15 @@
+.top { background: #ffffff; padding: 20rpx 0 20rpx; }
+.people { white-space: nowrap; padding: 0 24rpx; }
+.person { display: inline-flex; padding: 10rpx 28rpx; margin-right: 16rpx; border-radius: 28rpx; background: #f2f4f8; color: #5a6475; font-size: 26rpx; }
+.person.on { background: #eaf2ff; color: #1f7cf0; font-weight: bold; }
+.top-sub { display: block; margin: 16rpx 32rpx 0; }
+.rp { display: flex; flex-direction: row; align-items: center; }
+.rp-ic { width: 80rpx; height: 80rpx; border-radius: 20rpx; display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 32rpx; font-weight: bold; flex-shrink: 0; background: linear-gradient(135deg, #a18cff, #7b6cf6); }
+.rp-ic.k-exam { background: linear-gradient(135deg, #63c2ff, #2a9df4); }
+.rp-main { flex: 1; margin-left: 22rpx; display: flex; flex-direction: column; min-width: 0; }
+.rp-main .muted { margin-top: 6rpx; }
+.rp-name { font-size: 30rpx; font-weight: bold; color: #1d2330; }
+.rp-new { margin-left: 12rpx; font-size: 20rpx; color: #ffffff; background: #ff4d4f; padding: 2rpx 10rpx; border-radius: 8rpx; }
+.empty-box { display: flex; flex-direction: column; align-items: center; padding-top: 180rpx; }
+.empty-tx { font-size: 28rpx; color: #a0a7b4; margin-bottom: 12rpx; }
+.empty-btn { margin-top: 36rpx; width: 280rpx; height: 76rpx; line-height: 76rpx; font-size: 28rpx; }

@@ -1,0 +1,106 @@
+.radio {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 20rpx;
+  border: 2rpx solid #c8ccd4;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20rpx;
+  flex-shrink: 0;
+}
+
+.radio-on {
+  border-color: #12b76a;
+  background: #12b76a;
+}
+
+.radio-in {
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 7rpx;
+  background: #ffffff;
+}
+
+.a-tag {
+  font-size: 20rpx;
+  line-height: 32rpx;
+  padding: 0 10rpx;
+  margin-right: 10rpx;
+  border-radius: 6rpx;
+  background: #e6f8ee;
+  color: #12b76a;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.a-default {
+  background: #12b76a;
+  color: #ffffff;
+}
+
+.a-out {
+  background: #fff1ea;
+  color: #ff5a1f;
+}
+
+.a-region {
+  font-size: 24rpx;
+  color: #8a8f99;
+}
+
+.a-detail {
+  display: block;
+  font-size: 30rpx;
+  font-weight: bold;
+  line-height: 44rpx;
+  margin: 6rpx 0 4rpx;
+}
+
+.edit {
+  height: 52rpx;
+  line-height: 52rpx;
+  padding: 0 22rpx;
+  margin-left: 16rpx;
+  border-radius: 26rpx;
+  border: 1rpx solid #d4d7dd;
+  font-size: 24rpx;
+  color: #5c6370;
+  flex-shrink: 0;
+}
+
+.none {
+  padding-top: 240rpx;
+  text-align: center;
+}
+
+.gap {
+  height: 180rpx;
+}
+
+.bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 20rpx 24rpx calc(20rpx + env(safe-area-inset-bottom));
+  background: #ffffff;
+  box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.06);
+}
+
+.bar-btn {
+  flex: 1;
+  height: 84rpx;
+  line-height: 84rpx;
+  border-radius: 42rpx;
+  text-align: center;
+  font-size: 28rpx;
+}
+
+.bar-ghost {
+  margin-right: 20rpx;
+  border: 2rpx solid #12b76a;
+  color: #12b76a;
+  box-sizing: border-box;
+}

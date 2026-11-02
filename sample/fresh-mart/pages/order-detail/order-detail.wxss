@@ -1,0 +1,297 @@
+.head {
+  margin: 20rpx 24rpx 0;
+  padding: 32rpx;
+  border-radius: 20rpx;
+  background: linear-gradient(160deg, #12b76a, #0b8f52);
+  color: #ffffff;
+}
+
+.h-status {
+  display: block;
+  font-size: 40rpx;
+  font-weight: bold;
+}
+
+.h-tip {
+  display: block;
+  font-size: 24rpx;
+  margin-top: 8rpx;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.h-steps {
+  margin-top: 28rpx;
+}
+
+.h-step {
+  flex: 1;
+  margin-right: 8rpx;
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.h-step:last-child {
+  margin-right: 0;
+}
+
+.h-bar {
+  height: 8rpx;
+  border-radius: 4rpx;
+  background: rgba(255, 255, 255, 0.25);
+  margin-bottom: 8rpx;
+}
+
+.h-step-on {
+  color: #ffffff;
+  font-weight: bold;
+}
+
+.h-step-on .h-bar {
+  background: #ffe28a;
+}
+
+.h-ops {
+  margin-top: 28rpx;
+  flex-wrap: wrap;
+}
+
+.h-op {
+  height: 56rpx;
+  line-height: 56rpx;
+  padding: 0 24rpx;
+  margin: 0 14rpx 12rpx 0;
+  border-radius: 28rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.6);
+  font-size: 24rpx;
+  white-space: nowrap;
+}
+
+.h-op-main {
+  background: #ffffff;
+  border-color: #ffffff;
+  color: #0b8f52;
+  font-weight: bold;
+}
+
+.stars {
+  margin-top: 16rpx;
+}
+
+.star {
+  font-size: 48rpx;
+  line-height: 60rpx;
+  color: #e3e6eb;
+  margin-right: 12rpx;
+}
+
+.star-on {
+  color: #ffb020;
+}
+
+.star-text {
+  font-size: 26rpx;
+  color: #ff5a1f;
+  margin-left: 8rpx;
+}
+
+.tags {
+  flex-wrap: wrap;
+  margin-top: 16rpx;
+}
+
+.r-tag {
+  height: 52rpx;
+  line-height: 52rpx;
+  padding: 0 20rpx;
+  margin: 0 14rpx 14rpx 0;
+  border-radius: 26rpx;
+  background: #f3f4f6;
+  border: 1rpx solid #f3f4f6;
+  font-size: 24rpx;
+  color: #3a3f47;
+  white-space: nowrap;
+}
+
+.r-tag-on {
+  background: #e6f8ee;
+  border-color: #12b76a;
+  color: #12b76a;
+}
+
+.rate-input {
+  width: 100%;
+  height: 140rpx;
+  margin-top: 8rpx;
+  padding: 16rpx 20rpx;
+  box-sizing: border-box;
+  border-radius: 14rpx;
+  background: #f7f8fa;
+  font-size: 26rpx;
+}
+
+.ph {
+  color: #b0b4bc;
+}
+
+.rate-btn {
+  margin-top: 24rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  font-size: 28rpx;
+}
+
+.rate-text {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 26rpx;
+  color: #3a3f47;
+}
+
+.d-row {
+  align-items: flex-start;
+}
+
+.d-dot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 8rpx;
+  background: #12b76a;
+  margin: 14rpx 18rpx 0 0;
+  flex-shrink: 0;
+}
+
+.d-addr {
+  display: block;
+  font-size: 28rpx;
+  font-weight: bold;
+  line-height: 42rpx;
+}
+
+.d-line {
+  margin-top: 18rpx;
+  padding-top: 18rpx;
+  border-top: 1rpx solid #f3f4f6;
+  font-size: 26rpx;
+}
+
+.d-call {
+  margin-left: 16rpx;
+  font-size: 22rpx;
+  color: #12b76a;
+  padding: 0 16rpx;
+  line-height: 40rpx;
+  border-radius: 20rpx;
+  border: 1rpx solid #9fe0c0;
+}
+
+.item {
+  margin-top: 24rpx;
+}
+
+.item-img {
+  width: 104rpx;
+  height: 104rpx;
+  border-radius: 12rpx;
+  margin-right: 18rpx;
+  flex-shrink: 0;
+}
+
+.item-name {
+  display: block;
+  font-size: 28rpx;
+  line-height: 40rpx;
+}
+
+.refunded {
+  font-size: 20rpx;
+  line-height: 30rpx;
+  padding: 0 10rpx;
+  margin-left: 12rpx;
+  border-radius: 6rpx;
+  background: #eef0f3;
+  color: #7a8494;
+}
+
+.item-total {
+  margin-left: 16rpx;
+  font-size: 28rpx;
+  font-weight: bold;
+}
+
+.lines {
+  margin-top: 24rpx;
+  padding-top: 12rpx;
+  border-top: 1rpx solid #f3f4f6;
+}
+
+.line {
+  height: 60rpx;
+  font-size: 26rpx;
+}
+
+.cut {
+  color: #ff5a1f;
+}
+
+.paid {
+  height: 72rpx;
+}
+
+.paid-num {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #ff5a1f;
+}
+
+.as {
+  margin-top: 18rpx;
+  padding: 18rpx 20rpx;
+  border-radius: 14rpx;
+  background: #f7f8fa;
+}
+
+.as-reason {
+  font-size: 26rpx;
+  font-weight: bold;
+}
+
+.as-amt {
+  font-size: 26rpx;
+  color: #ff5a1f;
+  font-weight: bold;
+}
+
+.as-names {
+  display: block;
+  font-size: 24rpx;
+  color: #3a3f47;
+  margin: 6rpx 0 4rpx;
+}
+
+.info-row {
+  height: 64rpx;
+  font-size: 26rpx;
+}
+
+.copy {
+  margin-left: 16rpx;
+  font-size: 22rpx;
+  color: #12b76a;
+  padding: 0 14rpx;
+  line-height: 36rpx;
+  border-radius: 18rpx;
+  border: 1rpx solid #9fe0c0;
+}
+
+.remark {
+  max-width: 420rpx;
+}
+
+.gap {
+  height: 48rpx;
+}
+
+.none {
+  padding-top: 240rpx;
+  text-align: center;
+}

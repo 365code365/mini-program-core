@@ -1,0 +1,15 @@
+page { background: #f6f2ec; color: #2b2622; font-size: 28rpx; font-family: -apple-system, "PingFang SC", sans-serif; }
+.card { background: #ffffff; border-radius: 20rpx; margin: 24rpx 28rpx 0; padding: 28rpx; }
+.sec-h { display: flex; flex-direction: row; align-items: center; justify-content: space-between; margin: 36rpx 28rpx 0; }
+.sec-t { font-size: 34rpx; font-weight: bold; color: #2b2622; }
+.sec-more { font-size: 24rpx; color: #9a8f84; }
+.btn { background: #a45c34; color: #ffffff; border-radius: 44rpx; height: 88rpx; line-height: 88rpx; text-align: center; font-size: 30rpx; }
+.btn-ghost { border: 2rpx solid #a45c34; color: #a45c34; border-radius: 44rpx; height: 76rpx; line-height: 72rpx; text-align: center; font-size: 28rpx; }
+.btn-dis { background: #d8cfc6; }
+.muted { color: #9a8f84; font-size: 24rpx; }
+.tag { font-size: 20rpx; color: #a45c34; background: #f7ebe2; border-radius: 6rpx; padding: 2rpx 10rpx; margin-right: 10rpx; }
+.empty { display: flex; flex-direction: column; align-items: center; padding: 120rpx 0; }
+.empty-ic { width: 120rpx; height: 120rpx; border-radius: 60rpx; background: #efe6dc; display: flex; align-items: center; justify-content: center; font-size: 56rpx; color: #c4a88e; }
+.empty-t { margin-top: 24rpx; color: #9a8f84; font-size: 26rpx; }
+.empty-btn { margin-top: 32rpx; width: 280rpx; }
+.tab-gap { height: calc(120rpx + env(safe-area-inset-bottom)); }

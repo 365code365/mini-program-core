@@ -1,17 +1,20 @@
 const data = require('../../utils/data.js');
 const store = require('../../utils/store.js');
 Page({
-  data: { list: [], allOn: false, total: 0, count: 0, editing: false, recs: [] },
-  onShow() { this.refresh(); },
+  data: { list: [], allOn: false, total: 0, saved: 0, count: 0, editing: false, recs: [] },
+  onShow() { if (typeof this.getTabBar === 'function' && this.getTabBar()) this.getTabBar().setData({ selected: 1 }); this.refresh(); },
   refresh() {
     const list = store.getCart().map(store.expand);
     const on = list.filter(x => x.checked);
     const inCart = {};
     list.forEach(x => { inCart[x.id] = true; });
+    // 合计按结算页同一套规则估算（活动、会员折扣、最省的券），结算页可以再换券
+    const p = on.length ? store.price(on) : null;
     this.setData({
       list,
       allOn: list.length > 0 && on.length === list.length,
-      total: on.reduce((s, x) => s + x.sum, 0),
+      total: p ? p.total : 0,
+      saved: p ? store.round2(p.goods - p.total) : 0,
       count: on.reduce((s, x) => s + x.qty, 0),
       recs: data.products.filter(p => !inCart[p.id]).slice(0, 4)
     });

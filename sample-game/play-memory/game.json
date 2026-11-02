@@ -1,0 +1,6 @@
+{
+  "deviceOrientation": "portrait",
+  "subpackages": [
+    { "name": "themes", "root": "themes/" }
+  ]
+}

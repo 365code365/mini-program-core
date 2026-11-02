@@ -1,0 +1,131 @@
+<view class="empty" wx:if="{{!order}}">
+  <text class="empty-tx">订单不存在或已删除</text>
+  <view class="btn-line" bindtap="goHome">返回首页</view>
+</view>
+<block wx:else>
+  <view class="head head-{{order.status}}">
+    <text class="h-t">{{head.t}}</text>
+    <text class="h-s">{{head.s}}</text>
+    <view class="steps row" wx:if="{{step >= 0}}">
+      <view class="stp" wx:for="{{steps}}" wx:key="*this">
+        <view class="stp-dot {{index <= step ? 'stp-on' : ''}}"></view>
+        <text class="stp-tx {{index <= step ? 'stp-tx-on' : ''}}">{{item}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="wrap top">
+    <view class="card row" wx:if="{{staff}}">
+      <image class="av" src="{{staff.avatar}}" mode="aspectFill"></image>
+      <view class="col flex1 av-info">
+        <view class="row">
+          <text class="av-nm">{{staff.name}}</text>
+          <text class="tag">{{staff.title}}</text>
+        </view>
+        <text class="sub">从业 {{staff.years}} 年 · 好评 {{staff.good}} · 已实名认证</text>
+      </view>
+      <view class="btn-line" bindtap="callStaff">联系</view>
+    </view>
+
+    <view class="card">
+      <view class="between kv">
+        <text class="muted">服务项目</text>
+        <text>{{order.svcName}} · {{order.specName}} × {{order.qty}}{{order.unit}}</text>
+      </view>
+      <view class="between kv">
+        <text class="muted">上门时间</text>
+        <text class="strong">{{order.date}} {{order.time}}</text>
+      </view>
+      <view class="between kv">
+        <text class="muted">服务地址</text>
+        <text class="kv-v">{{order.addr.full}}</text>
+      </view>
+      <view class="between kv">
+        <text class="muted">联系人</text>
+        <text>{{order.addr.name}} {{order.addr.phone}}</text>
+      </view>
+      <view class="between kv" wx:if="{{order.remark}}">
+        <text class="muted">备注</text>
+        <text class="kv-v">{{order.remark}}</text>
+      </view>
+      <view class="between kv" wx:if="{{order.cancelReason}}">
+        <text class="muted">取消原因</text>
+        <text class="kv-v red">{{order.cancelReason}}</text>
+      </view>
+      <view class="row phs" wx:if="{{order.photos.length}}">
+        <image class="ph" wx:for="{{order.photos}}" wx:key="path" src="{{item.path}}" mode="aspectFill" data-src="{{item.path}}" bindtap="preview"></image>
+      </view>
+      <view class="line"></view>
+      <view class="between kv">
+        <text class="muted">服务费</text>
+        <text>¥{{order.amount}}</text>
+      </view>
+      <view class="between kv" wx:if="{{order.discount}}">
+        <text class="muted">优惠券</text>
+        <text class="red">-¥{{order.discount}}</text>
+      </view>
+      <view class="between kv">
+        <text class="muted">{{order.status === 'waiting' || order.status === 'serving' ? '待支付' : order.status === 'cancelled' ? '无需支付' : '实付'}}</text>
+        <text class="price big">¥{{order.pay}}</text>
+      </view>
+    </view>
+
+    <view class="card" wx:if="{{order.review}}">
+      <text class="sec-title">我的评价</text>
+      <text class="orange rv-star">{{order.review.star}} 星 · {{reviewTags}}</text>
+      <text class="rv-tx" wx:if="{{order.review.text}}">{{order.review.text}}</text>
+    </view>
+
+    <view class="card">
+      <text class="sec-title">服务记录</text>
+      <view class="tl row" wx:for="{{timeline}}" wx:key="k">
+        <view class="tl-dot {{index === 0 ? 'tl-on' : ''}}"></view>
+        <view class="col flex1">
+          <text class="{{index === 0 ? 'strong' : 'muted'}}">{{item.text}}</text>
+          <text class="sub">{{item.t}}</text>
+        </view>
+      </view>
+    </view>
+    <view class="between card" bindtap="copyId">
+      <text class="sub">订单号 {{order.id}} · 下单 {{order.createdAt}}</text>
+      <text class="sub">复制</text>
+    </view>
+    <view class="bar-gap"></view>
+  </view>
+
+  <view class="footer-bar ops">
+    <text class="sub svc" bindtap="callService">客服</text>
+    <view class="flex1"></view>
+    <block wx:if="{{order.status === 'waiting'}}">
+      <view class="btn-gray" bindtap="openCancel">取消订单</view>
+      <view class="btn act" bindtap="arrived">师傅已上门</view>
+    </block>
+    <view class="btn act" wx:elif="{{order.status === 'serving'}}" bindtap="finish">确认完成</view>
+    <view class="btn act" wx:elif="{{order.status === 'review'}}" bindtap="review">去评价</view>
+    <block wx:elif="{{order.status === 'done'}}">
+      <view class="btn-gray" wx:if="{{!order.invoiced}}" bindtap="invoice">申请发票</view>
+      <view class="btn act" bindtap="again">再来一单</view>
+    </block>
+    <block wx:else>
+      <view class="btn-gray" bindtap="remove">删除订单</view>
+      <view class="btn act" bindtap="again">再来一单</view>
+    </block>
+  </view>
+
+  <view class="mask" wx:if="{{showCancel}}" bindtap="closeCancel"></view>
+  <view class="sheet" wx:if="{{showCancel}}">
+    <text class="sec-title">请选择取消原因</text>
+    <text class="sub sh-sub">距上门 2 小时以上取消不收费，优惠券原路退回</text>
+    <radio-group class="rg" bindchange="onReason">
+      <label class="rd row" wx:for="{{reasons}}" wx:key="*this">
+        <radio value="{{index}}" checked="{{reasonIdx === index}}" color="#13a86b"></radio>
+        <text class="rd-tx">{{item}}</text>
+      </label>
+    </radio-group>
+    <input wx:if="{{reasonIdx === reasons.length - 1}}" class="other" value="{{other}}" placeholder="请简单说明原因" maxlength="40" bindinput="onOther" />
+    <view class="row sh-ops">
+      <view class="btn-gray flex1" bindtap="closeCancel">再想想</view>
+      <view class="btn flex1 sh-ok" bindtap="confirmCancel">确认取消</view>
+    </view>
+  </view>
+</block>

@@ -1,8 +1,7 @@
 <view class="top">
-  <view class="loc" bindtap="pickCity"><text class="loc-t">杭州 · 西溪</text><view class="down"></view></view>
-  <view class="search" bindtap="goMall"><view class="s-ic"></view><text class="s-ph">搜索猫粮、驱虫药、洗护服务</text></view>
+  <view class="loc" bindtap="pickCity"><text class="loc-t">{{area}}</text><view class="down"></view></view>
+  <view class="search" bindtap="goMall"><view class="s-ic"></view><text class="s-ph">搜索猫粮、驱虫药、洗护用品</text></view>
 </view>
-
 <swiper class="pets" previous-margin="24rpx" next-margin="48rpx" current="{{petIdx}}" bindchange="onPet">
   <swiper-item wx:for="{{pets}}" wx:key="id">
     <view class="pet" style="background: {{item.color}};" data-id="{{item.id}}" bindtap="goPet">
@@ -15,13 +14,19 @@
         </view>
       </view>
       <view class="remind">
-        <view class="r-dot"></view>
-        <text class="r-t">{{item.remindText}}</text>
+        <view class="r-dot {{item.remind.due ? '' : (item.remind.soon ? 'r-soon' : 'r-ok')}}"></view>
+        <text class="r-t">{{item.remind.text}}</text>
       </view>
     </view>
   </swiper-item>
+  <swiper-item wx:if="{{canAdd}}">
+    <view class="pet pet-add" bindtap="addPet">
+      <text class="add-plus">+</text>
+      <text class="add-t">添加宠物档案</text>
+      <text class="add-s">疫苗、驱虫到期自动提醒 · 最多 5 只</text>
+    </view>
+  </swiper-item>
 </swiper>
-
 <view class="card entries">
   <view class="en" wx:for="{{entries}}" wx:key="key" data-key="{{item.key}}" bindtap="onEntry">
     <view class="en-ic" style="background: {{item.bg}};">
@@ -31,7 +36,6 @@
     <text class="en-s">{{item.sub}}</text>
   </view>
 </view>
-
 <view class="promo" bindtap="goBookingDefault">
   <view>
     <text class="pr-t">新客洗护首单立减 30 元</text>
@@ -39,15 +43,14 @@
   </view>
   <view class="pr-btn"><text>去预约</text></view>
 </view>
-
 <view class="card">
   <view class="row between">
     <text class="sec-title">附近门店</text>
-    <text class="muted">按距离</text>
+    <text class="muted">按距离 · 点门店看地图</text>
   </view>
   <view class="st" wx:for="{{stores}}" wx:key="id">
-    <view class="st-pic" style="background: {{item.color}};"><text>{{item.short}}</text></view>
-    <view class="st-m">
+    <view class="st-pic" style="background: {{item.color}};" data-id="{{item.id}}" bindtap="openStore"><text>{{item.short}}</text></view>
+    <view class="st-m" data-id="{{item.id}}" bindtap="openStore">
       <text class="st-n">{{item.name}}</text>
       <view class="row st-meta">
         <text class="star">★ {{item.rate}}</text>

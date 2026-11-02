@@ -19,3 +19,17 @@
 <view class="card">
   <text class="stats">{{stats}}</text>
 </view>
+<view class="card cells">
+  <view class="cell row go-export" bindtap="goExport">
+    <view class="flex1">
+      <text class="cell-label">导出与备份</text>
+      <text class="cell-desc">纯文本 / Markdown 复制到剪贴板，或备份后在新设备导入</text>
+    </view>
+    <text class="chev">›</text>
+  </view>
+  <view class="cell row last go-trash-s" bindtap="goTrash">
+    <text class="flex1 cell-label">回收站</text>
+    <text class="cell-desc">{{trashCount}} 篇 · 保留 30 天</text>
+    <text class="chev">›</text>
+  </view>
+</view>

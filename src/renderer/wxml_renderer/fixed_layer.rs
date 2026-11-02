@@ -92,20 +92,29 @@ impl WxmlRenderer {
     ) {
         let sf = self.scale_factor;
         let vp_width = self.screen_width * sf;
-        let mut fixed_ids: Vec<(NodeId, NodeStyle)> = Vec::new();
+        // (子树根, 样式, 外层 fixed 根)：页面根上的 fixed 节点里再写 fixed 子节点时，子节点单独成一层，
+        // 外层是它真正的 DOM 祖先（事件要冒泡上去，见 EventBinding::fixed_parent）
+        let mut fixed_ids: Vec<(NodeId, NodeStyle, Option<NodeId>)> = Vec::new();
         {
-            let mut fixed_nodes: Vec<&RenderNode> = Vec::new();
+            let mut fixed_nodes: Vec<(&RenderNode, Option<NodeId>)> = Vec::new();
             for root in roots {
-                if root.style.is_fixed {
-                    fixed_nodes.push(root);
-                }
-                Self::collect_fixed_nodes(root, &mut fixed_nodes);
+                let outer = if root.style.is_fixed {
+                    fixed_nodes.push((root, None));
+                    Some(root.taffy_node)
+                } else {
+                    None
+                };
+                let mut inner = Vec::new();
+                Self::collect_fixed_nodes(root, &mut inner);
+                fixed_nodes.extend(inner.into_iter().map(|n| (n, outer)));
             }
-            fixed_nodes.sort_by(|a, b| a.style.z_index.cmp(&b.style.z_index));
-            for n in fixed_nodes {
-                fixed_ids.push((n.taffy_node, n.style.clone()));
+            fixed_nodes.sort_by(|a, b| a.0.style.z_index.cmp(&b.0.style.z_index));
+            for (n, outer) in fixed_nodes {
+                fixed_ids.push((n.taffy_node, n.style.clone(), outer));
             }
         }
+        // 每棵子树根登记到的遮挡区下标（= 层号，越大越靠上）
+        let mut layer_of: HashMap<NodeId, u32> = HashMap::new();
 
         // 建立 taffy_node -> RenderNode 引用查找（fixed 子树根）
         fn find_node<'a>(nodes: &'a [RenderNode], id: NodeId) -> Option<&'a RenderNode> {
@@ -116,7 +125,7 @@ impl WxmlRenderer {
             None
         }
 
-        for (id, st) in &fixed_ids {
+        for (id, st, outer) in &fixed_ids {
             // 当前（相对根容器的）布局，用作缺省尺寸
             let cur = match taffy.layout(*id) { Ok(l) => *l, Err(_) => continue };
             let mut target_w = cur.size.width;
@@ -186,14 +195,20 @@ impl WxmlRenderer {
                     self.fixed_origins = (self.layout_generation, HashMap::new());
                 }
                 self.fixed_origins.1.insert(*id, (base_x, base_y));
-                // 记录遮挡区域（逻辑坐标）：落在这里的点击不允许穿透到下层
+                // 记录遮挡区域（逻辑坐标）：落在这里的点击不允许穿透到下层。
+                // 它的下标就是这一层的层号：这棵子树里登记的绑定都带上它（hit_test.rs 按层过滤）
+                self.fixed_layer_now = None;
                 if self.registering_fixed && w > 0.0 && h > 0.0 {
+                    let layer = self.fixed_hit_regions.len() as u32;
                     self.fixed_hit_regions.push(GeoRect::new(
                         pinned_x / sf,
                         pinned_y / sf,
                         w / sf,
                         h / sf,
                     ));
+                    layer_of.insert(*id, layer);
+                    let parent = outer.and_then(|o| layer_of.get(&o).copied());
+                    self.fixed_layer_now = Some((layer, parent));
                 }
                 match interaction.as_deref_mut() {
                     Some(im) => {
@@ -204,6 +219,7 @@ impl WxmlRenderer {
                     }
                     None => self.draw(canvas, taffy, node, base_x, base_y),
                 }
+                self.fixed_layer_now = None;
             }
         }
     }

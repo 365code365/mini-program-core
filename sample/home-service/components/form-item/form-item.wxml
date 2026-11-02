@@ -1,0 +1,12 @@
+<view class="fi-box {{error ? 'fi-bad' : ''}}">
+  <view class="fi-row {{column ? 'fi-col' : ''}}">
+    <view class="fi-lb">
+      <text class="fi-star" wx:if="{{required}}">*</text>
+      <text class="fi-lb-tx">{{label}}</text>
+    </view>
+    <view class="fi-ctl">
+      <slot></slot>
+    </view>
+  </view>
+  <text class="fi-err" wx:if="{{error}}">{{error}}</text>
+</view>

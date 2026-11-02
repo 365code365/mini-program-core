@@ -33,12 +33,64 @@
       <view class="dot" style="background: {{item.color}};"></view>
       <text class="it-t">{{item.t}}</text>
       <view class="it-in-wrap">
-        <input class="it-in" type="digit" value="{{item.val}}" placeholder="0" data-k="{{item.k}}" bindinput="onItem" />
+        <input class="it-in it-in-{{item.k}}" type="digit" value="{{item.val}}" placeholder="0" data-k="{{item.k}}" bindinput="onItem" />
       </view>
       <text class="sub it-share">{{item.share}}%</text>
     </view>
     <view class="track it-track"><view class="fill {{over ? 'fill-over' : ''}}" style="width: {{item.w}}%; background: {{over ? '#f5222d' : item.color}};"></view></view>
   </view>
 </view>
+<view class="card">
+  <view class="row between">
+    <text class="title">记账 · 实际花费</text>
+    <view class="rec-add" bindtap="openRec"><text>记一笔</text></view>
+  </view>
+  <view class="row spent-row">
+    <text class="spent-v {{spentOver ? 'danger' : ''}}">¥{{spentText}}</text>
+    <text class="sub spent-s">{{spentNote}}</text>
+  </view>
+  <view class="acts-grid">
+    <view wx:for="{{actual}}" wx:key="k" class="ac">
+      <view class="row"><view class="dot" style="background: {{item.color}};"></view><text class="ac-t">{{item.t}}</text></view>
+      <text class="ac-v {{item.over ? 'danger' : ''}}">¥{{item.spent}}</text>
+      <text class="sub">计划 {{item.plan ? '¥' + item.plan : '未填'}}</text>
+    </view>
+  </view>
+  <view wx:if="{{!records.length}}" class="rec-empty"><text class="sub">还没有记账，花了钱点「记一笔」</text></view>
+  <view wx:for="{{records}}" wx:key="id" class="rec">
+    <view class="dot" style="background: {{item.color}};"></view>
+    <view class="rec-info">
+      <text class="rec-t">{{item.t}} · {{item.note || '未备注'}}</text>
+      <text class="sub">{{item.dayText}}</text>
+    </view>
+    <text class="rec-v">-¥{{item.amountText}}</text>
+    <view class="rec-del" data-id="{{item.id}}" bindtap="delRec"><text class="sub">删除</text></view>
+  </view>
+</view>
 <view class="space"></view>
 <view class="bottom"><view class="btn" bindtap="done"><text>保存预算</text></view></view>
+<block wx:if="{{rec}}">
+  <view class="mask" bindtap="closeRec"></view>
+  <view class="sheet" catchtap="noop">
+    <text class="sheet-t">记一笔</text>
+    <view class="cats">
+      <view wx:for="{{items}}" wx:key="k" class="cat {{rec.k === item.k ? 'cat-on' : ''}}" data-k="{{item.k}}" bindtap="onRecCat"><text>{{item.t}}</text></view>
+    </view>
+    <view class="f-row">
+      <text class="f-l">金额</text>
+      <input class="f-in rec-amount" type="digit" value="{{rec.amount}}" placeholder="0.00" bindinput="onRecAmount" />
+    </view>
+    <view class="f-row">
+      <text class="f-l">备注</text>
+      <input class="f-in rec-note" value="{{rec.note}}" placeholder="例如：午饭 · 火锅" bindinput="onRecNote" />
+    </view>
+    <picker mode="selector" range="{{dayNames}}" value="{{rec.day}}" bindchange="onRecDay">
+      <view class="f-row rec-day">
+        <text class="f-l">日期</text>
+        <text class="f-v">{{dayNames[rec.day]}}</text>
+        <view class="arrow"></view>
+      </view>
+    </picker>
+    <view class="btn rec-ok" bindtap="saveRec"><text>记下</text></view>
+  </view>
+</block>

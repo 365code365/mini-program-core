@@ -25,6 +25,7 @@
 .cc-left { margin-left: 12rpx; font-size: 22rpx; color: #8b909a; }
 .cc-left.warn { color: #ff3d6e; }
 .cc-btn { width: 112rpx; height: 56rpx; border-radius: 28rpx; background: linear-gradient(90deg, #ff7a3d, #ff3d6e); color: #ffffff; font-size: 24rpx; display: flex; align-items: center; justify-content: center; margin-left: 12rpx; flex-shrink: 0; }
-.cc-btn.mine { background: #fff0ea; color: #ff5a36; }
-.cc-btn.full { background: #2b2f3a; }
+.cc-btn.st-booked, .cc-btn.st-wait { background: #fff0ea; color: #ff5a36; }
+.cc-btn.st-full { background: #2b2f3a; }
+.cc-btn.st-done, .cc-btn.st-miss, .cc-btn.st-started, .cc-btn.st-ended { background: #eceef2; color: #9aa0a8; }
 .empty { padding: 120rpx 0; text-align: center; color: #a0a5ae; }

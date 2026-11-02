@@ -1,7 +1,31 @@
 .missing {
-  padding: 200rpx 0;
-  text-align: center;
+  padding: 180rpx 80rpx 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   color: #8c8c8c;
+}
+.missing-ic {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 80rpx;
+  background: #e6ebff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.missing-sheet {
+  width: 56rpx;
+  height: 72rpx;
+  border-radius: 8rpx;
+  border: 6rpx solid #85a5ff;
+}
+.missing-text {
+  margin: 28rpx 0 32rpx;
+  font-size: 28rpx;
+}
+.missing-back {
+  width: 320rpx;
 }
 .head {
   margin-top: 24rpx;
@@ -76,4 +100,55 @@
 }
 .safe {
   height: 80rpx;
+}
+.comments {
+  margin-top: 24rpx;
+}
+.cm-new {
+  margin: 16rpx 0 8rpx;
+  background: #f5f6fa;
+  border-radius: 12rpx;
+  padding: 0 0 0 20rpx;
+}
+.cm-input {
+  height: 72rpx;
+  font-size: 26rpx;
+  padding: 0 0 0 1rpx;
+}
+.cm-send {
+  color: #bfbfbf;
+  font-size: 26rpx;
+  padding: 8rpx 24rpx;
+}
+.cm-send.on {
+  color: #2f54eb;
+  font-weight: bold;
+}
+.cm {
+  align-items: flex-start;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+.cm-avatar {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 28rpx;
+  line-height: 56rpx;
+  font-size: 24rpx;
+  margin-right: 16rpx;
+}
+.cm-name {
+  font-size: 26rpx;
+  font-weight: bold;
+}
+.cm-text {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 26rpx;
+  color: #434343;
+  line-height: 1.5;
+}
+.cm-empty {
+  display: block;
+  padding: 16rpx 0 4rpx;
 }

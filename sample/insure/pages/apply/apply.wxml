@@ -1,0 +1,110 @@
+<view class="wrap" wx:if="{{p}}">
+  <view class="card plan">
+    <image class="plan-img" src="{{p.cover}}" mode="aspectFill"></image>
+    <view class="plan-info">
+      <text class="plan-n">{{p.name}}</text>
+      <text class="muted">保额 {{amountText}} · {{term}} · 可投 {{p.ages}}</text>
+      <text class="muted">{{p.insurer}}</text>
+    </view>
+  </view>
+
+  <form bindsubmit="onSubmit" bindreset="onReset">
+    <view class="card">
+      <view class="g-title">投保人信息<text class="g-sub">（被保人为本人）</text></view>
+      <view class="f-row">
+        <text class="f-k">姓名</text>
+        <input class="f-in" name="name" placeholder="与身份证一致" maxlength="15" />
+      </view>
+      <text class="err" wx:if="{{errors.name}}">{{errors.name}}</text>
+      <view class="f-row">
+        <text class="f-k">身份证号</text>
+        <input class="f-in" name="idcard" type="idcard" maxlength="18" placeholder="18 位居民身份证号" bindblur="onIdBlur" />
+      </view>
+      <text class="err" wx:if="{{errors.idcard}}">{{errors.idcard}}</text>
+      <view class="f-row">
+        <text class="f-k">出生日期</text>
+        <picker class="f-in" mode="date" name="birthday" value="{{birthday}}" start="1940-01-01" end="{{today}}" bindchange="onBirthday">
+          <view class="{{birthday ? '' : 'ph'}}">{{birthday || '请选择（填身份证号后自动带出）'}}</view>
+        </picker>
+      </view>
+      <text class="err" wx:if="{{errors.birthday}}">{{errors.birthday}}</text>
+      <view class="f-row">
+        <text class="f-k">性别</text>
+        <radio-group class="f-in radios" name="gender" bindchange="onGender">
+          <label class="radio-l"><radio value="M" checked="{{gender === 'M'}}" color="#2f6bff" />男</label>
+          <label class="radio-l"><radio value="F" checked="{{gender === 'F'}}" color="#2f6bff" />女</label>
+        </radio-group>
+      </view>
+      <text class="err" wx:if="{{errors.gender}}">{{errors.gender}}</text>
+      <view class="f-row">
+        <text class="f-k">职业</text>
+        <picker class="f-in" mode="multiSelector" name="occupation" range="{{occCols}}" value="{{occIdx}}" bindcolumnchange="onOccColumn" bindchange="onOcc">
+          <view class="{{occText ? '' : 'ph'}}">{{occText || '请选择行业 / 职业'}}</view>
+        </picker>
+      </view>
+      <text class="err" wx:if="{{errors.occupation}}">{{errors.occupation}}</text>
+      <view class="f-row">
+        <text class="f-k">手机号</text>
+        <input class="f-in" name="phone" type="number" maxlength="11" placeholder="用于接收保单短信" />
+      </view>
+      <text class="err" wx:if="{{errors.phone}}">{{errors.phone}}</text>
+      <view class="f-row last">
+        <text class="f-k">年收入</text>
+        <input class="f-in" name="income" type="digit" maxlength="7" placeholder="单位：万元，如 18.5" />
+        <text class="f-unit">万元</text>
+      </view>
+      <text class="err" wx:if="{{errors.income}}">{{errors.income}}</text>
+    </view>
+
+    <view class="card" wx:if="{{health.length}}">
+      <view class="g-title">健康告知<text class="g-sub">（请如实勾选被保人的情况）</text></view>
+      <checkbox-group name="health">
+        <label class="hl" wx:for="{{health}}" wx:key="v">
+          <checkbox value="{{item.v}}" color="#2f6bff" />
+          <text class="hl-t {{item.v === 'none' ? 'hl-none' : ''}}">{{item.t}}</text>
+        </label>
+      </checkbox-group>
+      <text class="err" wx:if="{{errors.health}}">{{errors.health}}</text>
+    </view>
+
+    <view class="card">
+      <view class="f-row" wx:if="{{shortTerm}}">
+        <text class="f-k f-wide">到期自动续保</text>
+        <switch name="autoRenew" checked="{{autoRenew}}" color="#2f6bff" bindchange="onAutoRenew" />
+      </view>
+      <view class="f-row last" bindtap="editReferral">
+        <text class="f-k f-wide">推荐码</text>
+        <text class="f-in ref {{referral ? '' : 'ph'}}">{{referral || '填写推荐码（选填）'}} ›</text>
+      </view>
+    </view>
+
+    <checkbox-group name="agree" class="agree">
+      <label class="agree-l">
+        <checkbox value="1" color="#2f6bff" />
+        <text class="agree-t">我已阅读并同意<text class="link" catchtap="openTerms">《投保须知》《保险条款》《免责说明》</text>，确认已如实告知</text>
+      </label>
+    </checkbox-group>
+    <text class="err agree-err" wx:if="{{errors.agree}}">{{errors.agree}}</text>
+
+    <view class="bar-pad"></view>
+    <view class="bottom-bar">
+      <view class="bb-price">
+        <text class="muted">{{age !== null ? age + '岁 · ' : ''}}保费</text>
+        <text class="price bb-v">¥{{premiumText}}</text>
+      </view>
+      <button class="bb-reset" form-type="reset" hover-class="btn-hover">重填</button>
+      <button class="bb-submit" form-type="submit" hover-class="btn-hover" loading="{{submitting}}">提交并支付</button>
+    </view>
+  </form>
+</view>
+
+<view class="mask" wx:if="{{refDialog}}">
+  <view class="dlg">
+    <text class="dlg-t">填写推荐码</text>
+    <input class="dlg-in" value="{{refInput}}" maxlength="6" placeholder="6 位字母或数字" focus bindinput="onRefInput" />
+    <view class="dlg-btns">
+      <text class="dlg-b" bindtap="refCancel">取消</text>
+      <text class="dlg-b dlg-ok" bindtap="refOk">确定</text>
+    </view>
+  </view>
+</view>

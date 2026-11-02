@@ -18,18 +18,21 @@
     </picker>
   </view>
   <view wx:else>
-    <view class="row info-line">
+    <view class="row addr" bindtap="onAddr">
       <view class="dot dot-orange"></view>
-      <text class="info-main flex1 ellipsis">望京SOHO T3 座 18 层 1806</text>
+      <view class="flex1" wx:if="{{addr}}">
+        <text class="info-main addr-main">{{addr.text}}</text>
+        <text class="addr-sub">{{addr.name}} {{addr.phoneMask}}<text wx:if="{{addr.tag}}" class="addr-tag">{{addr.tag}}</text></text>
+      </view>
+      <text wx:else class="flex1 info-main addr-empty">请添加收货地址</text>
+      <view class="arrow"></view>
     </view>
-    <text class="info-sub">林拾光 186****0520</text>
     <view class="row between time-row">
       <text>预计送达</text>
       <text class="time-val">约 30 分钟 · 配送费 {{deliveryFee ? '¥' + deliveryFee : '已免'}}</text>
     </view>
   </view>
 </view>
-
 <view class="card">
   <view class="row between">
     <text class="title">已选饮品</text>
@@ -39,7 +42,7 @@
     <image class="item-img" src="{{item.img}}" mode="aspectFill"></image>
     <view class="flex1">
       <text class="item-name ellipsis">{{item.name}}</text>
-      <text class="item-spec ellipsis">{{item.size}} / {{item.temp}} / {{item.sugar}}</text>
+      <text class="item-spec ellipsis">{{item.spec}}</text>
       <text class="price item-price">¥{{item.total}}</text>
     </view>
     <view class="stepper">
@@ -53,12 +56,23 @@
     <view class="btn empty-btn" bindtap="onGoMenu">去点单</view>
   </view>
 </view>
-
 <view class="card" wx:if="{{list.length}}">
-  <view class="fee-row row between" bindtap="onCoupon">
+  <view class="fee-row row between">
+    <text>饮品金额</text>
+    <text>¥{{goods}}</text>
+  </view>
+  <view class="fee-row row between" wx:if="{{activityCut}}">
+    <view class="row"><text class="badge">活</text><text>新品第 2 杯半价</text></view>
+    <text class="cut">-¥{{activityCut}}</text>
+  </view>
+  <view class="fee-row row between" wx:if="{{memberCut}}">
+    <view class="row"><text class="badge">会</text><text>会员日 8 折</text></view>
+    <text class="cut">-¥{{memberCut}}</text>
+  </view>
+  <view class="fee-row row between coupon-row" bindtap="onCoupon">
     <view class="row"><text class="badge">券</text><text>优惠券</text></view>
     <view class="row">
-      <text class="{{couponCut ? 'cut' : 'sub'}}">{{couponCut ? '-¥' + couponCut : couponHint}}</text>
+      <text class="{{couponCut ? 'cut' : 'sub'}}">{{couponText}}</text>
       <view class="arrow"></view>
     </view>
   </view>
@@ -67,8 +81,9 @@
     <text>{{deliveryFee ? '¥' + deliveryFee : '¥0（满 29 免）'}}</text>
   </view>
   <view class="fee-row row between">
-    <text>使用 {{usePointsNum}} 积分抵扣 ¥{{pointsCut}}</text>
-    <switch checked="{{usePoints}}" color="#6b4226" bindchange="onPoints" />
+    <text wx:if="{{usePointsNum}}">使用 {{usePointsNum}} 积分抵扣 ¥{{pointsCut}}</text>
+    <text wx:else class="sub">积分满 100 可抵扣</text>
+    <switch checked="{{usePoints}}" disabled="{{!usePointsNum}}" color="#6b4226" bindchange="onPoints" />
   </view>
   <view class="fee-row row between">
     <text>备注</text>
@@ -81,14 +96,28 @@
     <text class="price total-num">¥{{pay}}</text>
   </view>
 </view>
-
+<view class="card" wx:if="{{list.length}}">
+  <text class="title">支付方式</text>
+  <view class="pay-way row" data-by="wechat" bindtap="onPayBy">
+    <view class="way-icon glyph way-wx">微</view>
+    <text class="flex1">微信支付</text>
+    <view class="radio {{payBy === 'wechat' ? 'radio-on' : ''}}"><view class="radio-in"></view></view>
+  </view>
+  <view class="pay-way row no-border" data-by="wallet" bindtap="onPayBy">
+    <view class="way-icon glyph way-wallet">钱</view>
+    <view class="flex1">
+      <text>咖啡钱包</text>
+      <text class="way-sub {{balance < pay ? 'way-low' : ''}}">余额 ¥{{balance}}{{balance < pay ? '，余额不足去充值' : ''}}</text>
+    </view>
+    <view class="radio {{payBy === 'wallet' ? 'radio-on' : ''}}"><view class="radio-in"></view></view>
+  </view>
+</view>
 <view class="bottom-gap"></view>
-
 <view class="pay-bar row" wx:if="{{list.length}}">
   <view class="flex1 row pay-left">
     <text class="pay-label">待支付</text>
     <text class="price pay-num">¥{{pay}}</text>
     <text class="pay-off" wx:if="{{saved}}">已省 ¥{{saved}}</text>
   </view>
-  <view class="btn pay-btn" bindtap="onPay">去支付</view>
+  <view class="btn pay-btn" bindtap="onPay">{{payBy === 'wallet' ? '钱包支付' : '去支付'}}</view>
 </view>

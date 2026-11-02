@@ -1,0 +1,12 @@
+<view wx:if="{{!list.length}}" class="empty"><text>{{city}}近期没有停水停电公告</text></view>
+<view wx:for="{{list}}" wx:key="id" class="card">
+  <view class="row"><text class="kind" style="background: {{item.color}};">{{item.kind}}</text><text class="t">{{item.title}}</text></view>
+  <view class="kv row"><text class="k">时间</text><text class="v">{{item.time}}</text></view>
+  <view class="kv row"><text class="k">范围</text><text class="v">{{item.area}}</text></view>
+  <view class="body"><text>{{item.body}}</text></view>
+  <view class="row between foot">
+    <text class="muted">{{item.unit}}</text>
+    <view class="call" data-p="{{item.phone}}" bindtap="call"><text>咨询 {{item.phone}}</text></view>
+  </view>
+</view>
+<view class="gap"></view>

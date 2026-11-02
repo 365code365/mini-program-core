@@ -1,0 +1,33 @@
+<view class="head row">
+  <view class="av">律</view>
+  <view class="col flex1">
+    <text class="nick">律安心用户</text>
+    <text class="sub">138****6721 · 已实名</text>
+  </view>
+</view>
+<view class="stats row">
+  <view class="st col" data-tab="all" bindtap="goConsults"><text class="v">{{stats.consult}}</text><text class="k">全部咨询</text></view>
+  <view class="st col" data-tab="active" bindtap="goConsults"><text class="v">{{stats.active}}</text><text class="k">进行中</text></view>
+  <view class="st col" bindtap="goDrafts"><text class="v">{{stats.draft}}</text><text class="k">合同草稿</text></view>
+  <view class="st col" bindtap="goFavs"><text class="v">{{stats.fav}}</text><text class="k">收藏律师</text></view>
+</view>
+
+<view class="card recent row" wx:if="{{recent}}" bindtap="goRecent">
+  <image class="r-av" src="{{recent.avatar}}"></image>
+  <view class="col flex1">
+    <text class="r-t">{{recent.lawyerName}} 律师 · {{recent.service}}</text>
+    <text class="muted r-q">{{recent.question}}</text>
+  </view>
+  <text class="tag">{{statusText}}</text>
+</view>
+
+<view class="card menu">
+  <view class="mi row" data-tab="all" bindtap="goConsults"><text class="mi-t flex1">我的咨询订单</text><text class="go">›</text></view>
+  <view class="mi row" bindtap="goDrafts"><text class="mi-t flex1">合同草稿</text><text class="go">›</text></view>
+  <view class="mi row" bindtap="goCalc"><text class="mi-t flex1">法律计算器</text><text class="go">›</text></view>
+  <view class="mi row" bindtap="callService"><text class="mi-t flex1">联系客服</text><text class="muted">400-820-6688 ›</text></view>
+  <view class="mi row" bindtap="about"><text class="mi-t flex1">免责声明</text><text class="go">›</text></view>
+  <view class="mi row" bindtap="clearData"><text class="mi-t flex1 danger">清除本地数据</text><text class="go">›</text></view>
+</view>
+<view class="disclaimer"><text>平台内容仅供参考，不构成法律意见。</text></view>
+<view class="tab-pad"></view>

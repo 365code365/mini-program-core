@@ -185,3 +185,10 @@
 .safe {
   height: calc(40rpx + env(safe-area-inset-bottom));
 }
+.links { padding: 0 28rpx; }
+.link { height: 96rpx; border-bottom: 1rpx solid #f0f2f5; }
+.link.last { border-bottom: none; }
+.link-t { font-size: 28rpx; color: #1f2329; }
+.del-t { color: #f2453d; }
+.none { display: flex; flex-direction: column; align-items: center; padding: 200rpx 0; }
+.none-btn { margin-top: 40rpx; width: 320rpx; }

@@ -1,4 +1,8 @@
-<view class="empty" wx:if="{{missing}}">日程不存在或已被删除</view>
+<view class="missing-box" wx:if="{{missing}}">
+  <view class="missing-ic"><view class="missing-ring"></view></view>
+  <text class="empty">日程不存在或已被删除</text>
+  <view class="btn-primary back-month" bindtap="onBackMonth">回到月视图</view>
+</view>
 <block wx:if="{{ev}}">
   <view class="card hero">
     <view class="row">
@@ -6,6 +10,7 @@
       <text class="h-title flex1">{{ev.title}}</text>
     </view>
     <text class="sub h-sub">{{info.dateLabel}}  {{info.time}}</text>
+    <text class="sub h-next v-next" wx:if="{{info.next}}">下一次：{{info.next}}</text>
   </view>
   <view class="card cells">
     <view class="cell row"><text class="flex1 cell-label">重复</text><text class="cell-value v-repeat">{{info.repeat}}</text></view>
@@ -16,5 +21,10 @@
   <view class="btns row">
     <view class="btn-del" bindtap="onDelete">删除</view>
     <view class="btn-primary flex1 edit" bindtap="onEdit">编辑</view>
+  </view>
+  <view class="more row">
+    <view class="more-item dup" bindtap="onDuplicate" hover-class="more-down">复制为新日程</view>
+    <view class="more-item to-phone" bindtap="onPhoneCalendar" hover-class="more-down">加到手机日历</view>
+    <view class="more-item share-text" bindtap="onCopyText" hover-class="more-down">复制文字</view>
   </view>
 </block>

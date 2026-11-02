@@ -1,0 +1,10 @@
+.fi-box { border-bottom: 1rpx solid #eef1ef; padding: 18rpx 0; }
+.fi-row { display: flex; flex-direction: row; align-items: center; min-height: 56rpx; }
+.fi-col { flex-direction: column; align-items: flex-start; }
+.fi-lb { width: 160rpx; display: flex; flex-direction: row; align-items: center; }
+.fi-col .fi-lb { margin-bottom: 12rpx; }
+.fi-star { color: #e5484d; font-size: 26rpx; margin-right: 4rpx; line-height: 1.5; }
+.fi-lb-tx { font-size: 28rpx; color: #4a544f; line-height: 1.5; }
+.fi-ctl { flex: 1; width: 100%; }
+.fi-err { display: block; font-size: 22rpx; color: #e5484d; margin-top: 6rpx; line-height: 1.5; }
+.fi-col .fi-lb { width: auto; }

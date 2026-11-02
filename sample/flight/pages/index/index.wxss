@@ -1,0 +1,37 @@
+.hero { position: relative; height: 300rpx; }
+.hero-img { width: 750rpx; height: 300rpx; }
+.hero-tx { position: absolute; left: 40rpx; top: 60rpx; }
+.hero-t1 { color: #ffffff; font-size: 40rpx; font-weight: bold; }
+.hero-t2 { color: #ffffff; text-shadow: 0 2rpx 6rpx rgba(20, 60, 140, 0.5); font-size: 24rpx; margin-top: 12rpx; }
+.search { margin: -70rpx 24rpx 0; background: #ffffff; border-radius: 24rpx; position: relative; overflow: hidden; }
+.trip { background: #eef3fb; border-radius: 24rpx 24rpx 0 0; }
+.trip-l { border-radius: 24rpx 0 0 0; }
+.trip-r { border-radius: 0 24rpx 0 0; }
+.trip-item { flex: 1; height: 88rpx; display: flex; align-items: center; justify-content: center; color: #5b6478; font-size: 30rpx; }
+.trip-on { background: #ffffff; color: #1f6fff; font-weight: bold; }
+.sbody { padding: 24rpx 32rpx 28rpx; }
+.cities { justify-content: space-between; padding: 12rpx 0; }
+.city { width: 260rpx; }
+.city-r { align-items: flex-end; }
+.city-name { font-size: 44rpx; font-weight: bold; color: #1d2433; margin-bottom: 6rpx; }
+.swap { width: 64rpx; height: 64rpx; }
+.dates { justify-content: space-between; padding: 6rpx 0; }
+.date { font-size: 36rpx; font-weight: bold; }
+.wk { font-size: 24rpx; color: #5b6478; margin-left: 10rpx; }
+.nights { font-size: 20rpx; color: #1f6fff; border: 1rpx solid #1f6fff; border-radius: 16rpx; padding: 0 12rpx; margin-right: 16rpx; }
+.add-ret { font-size: 24rpx; }
+.cabin { font-size: 30rpx; }
+.go { margin-top: 32rpx; }
+.his { margin-top: 24rpx; }
+.his-scroll { flex: 1; width: 560rpx; white-space: nowrap; }
+.his-item { background: #f2f5fa; border-radius: 24rpx; padding: 8rpx 20rpx; margin-right: 14rpx; font-size: 22rpx; color: #5b6478; }
+.his-clear { font-size: 22rpx; color: #8a93a6; margin-left: 12rpx; }
+.deals { flex-wrap: wrap; justify-content: space-between; margin-top: 20rpx; }
+.deal { width: 312rpx; border-radius: 16rpx; overflow: hidden; background: #f7f9fc; margin-bottom: 20rpx; }
+.deal-img { width: 312rpx; height: 190rpx; }
+.deal-info { padding: 14rpx 16rpx; }
+.deal-name { font-size: 28rpx; font-weight: bold; }
+.svc { justify-content: space-around; }
+.svc-item { align-items: center; }
+.svc-ic { width: 72rpx; height: 72rpx; border-radius: 36rpx; background: #eaf1ff; color: #1f6fff; font-size: 30rpx; font-weight: bold; text-align: center; line-height: 72rpx; }
+.svc-tx { font-size: 22rpx; color: #5b6478; margin-top: 10rpx; }

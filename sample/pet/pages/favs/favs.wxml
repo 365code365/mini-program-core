@@ -1,0 +1,17 @@
+<view class="card fv" wx:for="{{list}}" wx:key="id">
+  <image class="fv-img" src="{{item.img}}" mode="aspectFill" data-id="{{item.id}}" bindtap="goGoods"></image>
+  <view class="fv-m" data-id="{{item.id}}" bindtap="goGoods">
+    <text class="fv-n">{{item.name}}</text>
+    <text class="muted fv-s">{{item.sub}}</text>
+    <view class="row"><text class="price"><text class="yen">¥</text>{{item.price}}</text><text class="fv-o">¥{{item.orig}}</text></view>
+  </view>
+  <view class="fv-ops">
+    <view class="fv-btn fv-add" data-id="{{item.id}}" bindtap="addCart"><text>加购</text></view>
+    <view class="fv-btn ghost fv-del" data-id="{{item.id}}" bindtap="unfav"><text>取消收藏</text></view>
+  </view>
+</view>
+<view wx:if="{{!list.length}}" class="empty">
+  <text class="muted">还没有收藏的商品，在商品详情页点「收藏」</text>
+  <view class="btn empty-btn" bindtap="goMall"><text>去商城逛逛</text></view>
+</view>
+<view style="height: 40rpx;"></view>

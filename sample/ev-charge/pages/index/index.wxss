@@ -73,3 +73,12 @@
 .free-n.none { color: #a3aab2; }
 .free-total { font-size: 24rpx; color: #9aa0a6; }
 .price { font-size: 36rpx; color: #FF7A1A; }
+.unpaid-tip { background: #fff4ea; }
+.pulse.warn { background: #FF7A1A; }
+.warn-t { color: #c25a0c; }
+.nav-btn { border: 2rpx solid #b9d8fa; border-radius: 24rpx; padding: 4rpx 18rpx 4rpx 14rpx; }
+.nav-ar { width: 10rpx; height: 10rpx; border-top: 3rpx solid #2D8CF0; border-right: 3rpx solid #2D8CF0; transform: rotate(45deg); margin-right: 10rpx; }
+.nav-btn-t { font-size: 22rpx; color: #2D8CF0; white-space: nowrap; }
+.empty { align-items: center; padding: 80rpx 0; }
+.empty-ic { width: 110rpx; height: 110rpx; border-radius: 55rpx; background: #e1f5ec; display: flex; flex-direction: row; align-items: center; justify-content: center; margin-bottom: 20rpx; }
+.empty-ic-t { color: #00A36C; font-size: 40rpx; font-weight: bold; }

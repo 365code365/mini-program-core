@@ -1,0 +1,51 @@
+<page-meta background-text-style="dark">
+  <navigation-bar title="参观预约" front-color="#000000" background-color="#f6f2ec"></navigation-bar>
+</page-meta>
+<view class="card">
+  <text class="h">参观日期</text>
+  <scroll-view class="days" scroll-x>
+    <view wx:for="{{days}}" wx:key="date" class="day {{date === item.date ? 'on' : ''}}" data-date="{{item.date}}" bindtap="onDate">
+      <text class="day-w">{{item.wk}}</text><text class="day-d">{{item.md}}</text>
+    </view>
+  </scroll-view>
+  <text class="muted">周一闭馆不可约，仅开放未来 7 个开放日</text>
+</view>
+
+<view class="card">
+  <text class="h">入馆时段</text>
+  <view class="slots">
+    <view wx:for="{{slots}}" wx:key="id" class="slot {{slotId === item.id ? 'on' : ''}} {{item.full ? 'full' : ''}}" data-id="{{item.id}}" bindtap="onSlot">
+      <text class="slot-t">{{item.label}}</text>
+      <text class="slot-l {{item.tight ? 'tight' : ''}}">{{item.full ? '已约满' : '余 ' + item.left}}</text>
+    </view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="row">
+    <text class="h0">参观人数</text>
+    <view class="stp">
+      <text class="stp-b {{count <= 1 ? 'stp-dis' : ''}}" data-d="-1" bindtap="step">－</text>
+      <text class="stp-n">{{count}}</text>
+      <text class="stp-b {{count >= 5 ? 'stp-dis' : ''}}" data-d="1" bindtap="step">＋</text>
+    </view>
+  </view>
+  <view wx:if="{{saved.length}}" class="saved">
+    <text class="muted">常用参观人：</text>
+    <text wx:for="{{saved}}" wx:key="id" class="sv" data-i="{{index}}" bindtap="useSaved">{{item.name}}</text>
+  </view>
+  <view wx:for="{{visitors}}" wx:key="index" class="vis">
+    <text class="vis-h">参观人 {{index + 1}}</text>
+    <view class="fld"><text class="fl">姓名</text><input class="ipt" placeholder="与证件一致" value="{{item.name}}" data-i="{{index}}" data-f="name" bindinput="onInput" maxlength="15"/></view>
+    <view class="fld"><text class="fl">身份证</text><input class="ipt" type="idcard" placeholder="18 位身份证号" value="{{item.id}}" data-i="{{index}}" data-f="id" bindinput="onInput" maxlength="18"/></view>
+    <text wx:if="{{item.err}}" class="err">{{item.err}}</text>
+  </view>
+</view>
+
+<view class="agree">
+  <checkbox-group bindchange="onAgree">
+    <label class="ag-l"><checkbox value="ok" checked="{{agree}}" color="#a45c34"/><text class="ag-t">我已阅读并同意《参观须知》：凭证当日当时段有效，入馆需出示本人证件</text></label>
+  </checkbox-group>
+</view>
+<text wx:if="{{formErr}}" class="form-err">{{formErr}}</text>
+<view class="foot"><view class="btn {{submitting ? 'btn-dis' : ''}}" bindtap="submit">提交预约（{{count}} 人）</view></view>

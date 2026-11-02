@@ -1,0 +1,17 @@
+<image class="cover" src="{{a.cover}}" mode="aspectFill"></image>
+<view class="card body">
+  <text class="t">{{a.title}}</text>
+  <text class="muted">{{a.tag}} · 康源药师团队 · {{a.read}} 人读过</text>
+  <text class="p" wx:for="{{a.paras}}" wx:key="*this" user-select>{{item}}</text>
+  <text class="muted note">本文仅作健康科普，不能替代医生的诊断与治疗建议。</text>
+</view>
+<view class="sec-h"><text class="sec-t">文中提到</text></view>
+<view class="card dg" wx:for="{{drugs}}" wx:key="id" data-id="{{item.id}}" bindtap="openDrug">
+  <image class="dg-img" src="{{item.img}}" mode="aspectFill"></image>
+  <view class="dg-b"><view class="dg-n"><text class="{{item.tagCls}}">{{item.tagText}}</text><text class="dg-nt">{{item.brand}} {{item.name}}</text></view><text class="price">¥{{item.from}}</text></view>
+  <text class="arrow">›</text>
+</view>
+<view class="ops">
+  <view class="btn-o op" bindtap="like">{{liked ? '已反馈有用 ✓' : '这篇有用'}}</view>
+  <view class="btn op" bindtap="remind">设置用药提醒</view>
+</view>

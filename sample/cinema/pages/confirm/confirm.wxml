@@ -13,7 +13,7 @@
 <view class="card">
   <text class="block-title">座位（{{pick.seats.length}}张）</text>
   <view class="seats">
-    <view class="seat-chip" wx:for="{{pick.seats}}" wx:key="*this">{{item}}</view>
+    <text class="seat-tag" wx:for="{{pick.seats}}" wx:key="*this">{{item}}</text>
   </view>
   <view class="row note"><view class="dot-g"></view><text class="sub">支持开场前 60 分钟退改签</text></view>
 </view>
@@ -32,15 +32,31 @@
   </picker>
   <view class="f-row no-border">
     <text class="f-label">卖品</text>
-    <text class="flex1 f-val">爆米花可乐套餐 ¥39</text>
+    <text class="flex1 f-val">爆米花可乐套餐 ¥{{snackPrice}}</text>
     <switch checked="{{snack}}" color="#F0384D" bindchange="onSnack" />
   </view>
 </view>
 
+<view class="card form">
+  <view class="f-row pay-way" data-way="wx" bindtap="onPayBy">
+    <view class="pw-i pw-wx"><text class="pw-g">微</text></view>
+    <text class="flex1 f-val">微信支付</text>
+    <view class="radio {{payBy === 'wx' ? 'radio-on' : ''}}"><view wx:if="{{payBy === 'wx'}}" class="radio-dot"></view></view>
+  </view>
+  <view class="f-row no-border pay-way" data-way="card" bindtap="onPayBy">
+    <view class="pw-i pw-card"><text class="pw-g">卡</text></view>
+    <view class="flex1 pw-mid">
+      <text class="f-val">会员卡余额</text>
+      <text class="sub {{balance < total ? 'red' : ''}}">余额 ¥{{balance}}{{balance < total ? '，不足' : ''}}</text>
+    </view>
+    <text class="pw-link" catchtap="onCard">充值</text>
+    <view class="radio {{payBy === 'card' ? 'radio-on' : ''}}"><view wx:if="{{payBy === 'card'}}" class="radio-dot"></view></view>
+  </view>
+</view>
 <view class="card">
   <view class="fee row between"><text>票价（¥{{pick.price}} × {{pick.seats.length}}）</text><text>¥{{ticketFee}}</text></view>
-  <view class="fee row between"><text>服务费</text><text>¥{{service}}</text></view>
-  <view class="fee row between" wx:if="{{snack}}"><text>卖品</text><text>¥39</text></view>
+  <view class="fee row between"><text>服务费{{vip ? '（会员免）' : ''}}</text><text>¥{{service}}</text></view>
+  <view class="fee row between" wx:if="{{snack}}"><text>卖品</text><text>¥{{snackPrice}}</text></view>
   <view class="fee row between" wx:if="{{discount > 0}}"><text>优惠</text><text class="red">-¥{{discount}}</text></view>
 </view>
 <view class="bottom-space"></view>

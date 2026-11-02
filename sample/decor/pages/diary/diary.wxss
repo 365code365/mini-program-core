@@ -1,0 +1,12 @@
+.tabs { display: flex; flex-direction: row; margin-bottom: 24rpx; padding: 0 4rpx; }
+.tb { font-size: 30rpx; color: #8a847c; margin-right: 40rpx; padding-bottom: 8rpx; }
+.tb-on { color: #2a2723; font-weight: bold; border-bottom: 5rpx solid #3a7d6c; }
+.go { width: 360rpx; margin-top: 32rpx; }
+.pj { display: flex; flex-direction: column; }
+.pj-t { font-size: 30rpx; font-weight: bold; margin-bottom: 6rpx; }
+.pj-bar { margin: 20rpx 0 12rpx; }
+.pj-pc { font-size: 26rpx; color: #3a7d6c; font-weight: bold; margin-left: 16rpx; }
+.more { margin-top: 8rpx; }
+.dy-t { display: block; font-size: 28rpx; line-height: 1.7; margin-top: 12rpx; color: #3a3530; }
+.dy-img { width: 100%; height: 340rpx; border-radius: 12rpx; margin-top: 14rpx; }
+.dy-w { display: block; margin-top: 12rpx; }

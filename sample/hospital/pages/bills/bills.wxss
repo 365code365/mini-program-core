@@ -1,0 +1,40 @@
+.tabs { display: flex; flex-direction: row; background: #ffffff; height: 88rpx; }
+.tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 28rpx; color: #5a6475; position: relative; white-space: nowrap; }
+.tab.on { color: #1f7cf0; font-weight: bold; }
+.tab-line { position: absolute; bottom: 8rpx; width: 48rpx; height: 6rpx; border-radius: 3rpx; background: #1f7cf0; }
+.tip { padding: 20rpx 32rpx; background: #fff7e8; color: #c27c0e; font-size: 24rpx; }
+.b-left { flex: 1; min-width: 0; }
+.b-kind { font-size: 20rpx; padding: 2rpx 10rpx; border-radius: 6rpx; margin-right: 12rpx; flex-shrink: 0; color: #1f7cf0; background: #eaf2ff; }
+.k-clinic { color: #f2557a; background: #ffeef2; }
+.k-consult { color: #ff8240; background: #fff3ea; }
+.k-deposit, .k-settle { color: #13a8a8; background: #e8f8f6; }
+.b-title { font-size: 28rpx; font-weight: bold; color: #1d2330; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.b-amt { font-size: 30rpx; font-weight: bold; color: #1d2330; margin-left: 16rpx; flex-shrink: 0; }
+.b-amt.refund { color: #13a8a8; }
+.b-sub { display: block; margin-top: 8rpx; }
+.b-items { margin-top: 16rpx; padding: 8rpx 20rpx; border-radius: 12rpx; background: #f7f9fc; }
+.b-row { display: flex; flex-direction: row; justify-content: space-between; align-items: center; padding: 10rpx 0; }
+.b-n { font-size: 24rpx; color: #5a6475; }
+.b-p { font-size: 24rpx; color: #1d2330; flex-shrink: 0; margin-left: 16rpx; }
+.b-foot { margin-top: 20rpx; justify-content: flex-end; }
+.b-sum { flex: 1; }
+.b-self { font-size: 34rpx; margin: 0 20rpx 0 8rpx; }
+.price { color: #ff5a36; font-weight: bold; }
+.b-st { flex: 1; font-size: 24rpx; color: #13a8a8; }
+.st-refund { color: #a0a7b4; }
+.b-btn { height: 56rpx; padding: 0 28rpx; border-radius: 28rpx; border: 2rpx solid #d5dae2; color: #3a4252; font-size: 24rpx; display: flex; align-items: center; justify-content: center; box-sizing: border-box; flex-shrink: 0; }
+.b-btn.pri { background: linear-gradient(90deg, #3b8cff, #1f7cf0); border: none; color: #ffffff; }
+.empty-box { display: flex; flex-direction: column; align-items: center; padding-top: 200rpx; }
+.empty-tx { font-size: 28rpx; color: #a0a7b4; margin-bottom: 12rpx; }
+.mask { position: fixed; left: 0; top: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.45); }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; background: #ffffff; border-radius: 28rpx 28rpx 0 0; padding: 36rpx 32rpx; padding-bottom: calc(36rpx + env(safe-area-inset-bottom)); }
+.s-sub { display: block; margin-top: 8rpx; }
+.f-row { display: flex; flex-direction: row; align-items: center; min-height: 100rpx; border-bottom: 1rpx solid #f0f2f5; }
+.f-row.last { border-bottom: none; }
+.f-k { width: 160rpx; font-size: 28rpx; color: #3a4252; flex-shrink: 0; }
+/* 引擎把 font-size 恰为 14px、padding 为 0 当成「没写」，套 16px 字号与 12px 内边距，所以写 28.1rpx 与 1rpx */
+.f-in { flex: 1; height: 100rpx; font-size: 28.1rpx; padding: 0 0 0 1rpx; }
+.ph { color: #b8bec8; }
+.chip { padding: 10rpx 32rpx; margin-right: 16rpx; border-radius: 28rpx; background: #f2f4f8; color: #5a6475; font-size: 26rpx; border: 2rpx solid #f2f4f8; }
+.chip.on { background: #eaf2ff; border-color: #1f7cf0; color: #1f7cf0; font-weight: bold; white-space: nowrap; }
+.inv-save { margin-top: 32rpx; }

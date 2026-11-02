@@ -85,4 +85,12 @@ function eventsOn(list, date) {
     .map(ev => ({ id: ev.id, title: ev.title, time: timeText(ev), color: COLORS[ev.color].value, repeat: ev.repeat ? REPEATS[ev.repeat] : '' }))
 }
 
-module.exports = { REPEATS, REMINDS, COLORS, today, loadEvents, saveEvents, getEvent, loadSettings, saveSettings, occursOn, eventsOn, timeText }
+// 导入时逐条校验：字段齐全、取值在范围内才收，id 由调用方重新分配
+function validEvent(e) {
+  if (!e || typeof e.title !== 'string' || !e.title.trim() || e.title.length > 30) return false
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(e.date)) return false
+  if (!e.allDay && !(/^\d{2}:\d{2}$/.test(e.start) && /^\d{2}:\d{2}$/.test(e.end) && e.start <= e.end)) return false
+  return [e.repeat, e.remind, e.color].every(Number.isInteger) && e.repeat >= 0 && e.repeat < REPEATS.length &&
+    e.remind >= 0 && e.remind < REMINDS.length && e.color >= 0 && e.color < COLORS.length
+}
+module.exports = { REPEATS, REMINDS, COLORS, seed, validEvent, today, loadEvents, saveEvents, getEvent, loadSettings, saveSettings, occursOn, eventsOn, timeText }

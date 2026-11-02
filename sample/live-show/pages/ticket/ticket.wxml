@@ -1,0 +1,63 @@
+<view wx:if="{{missing}}" class="empty">
+  <view class="empty-ic"><text class="empty-ic-t">?</text></view>
+  <text class="empty-t">订单不存在或已被清除</text>
+  <view class="btn-ghost empty-btn" bindtap="goWallet"><text>返回票夹</text></view>
+</view>
+<block wx:else>
+<view class="st st-{{o.status}} col">
+  <text class="st-t">{{statusText}}</text>
+  <text wx:if="{{o.status === 'unpaid'}}" class="st-s">座位已锁定，请在 {{left}} 内完成支付</text>
+  <text wx:elif="{{o.status === 'paid'}}" class="st-s">请于开演前 60 分钟凭电子票入场</text>
+  <text wx:elif="{{o.status === 'refunded'}}" class="st-s">已退回 ¥{{o.refundAmount}}，1~3 个工作日原路到账</text>
+  <text wx:else class="st-s">{{o.cancelReason || '订单已取消'}}，座位已释放</text>
+</view>
+
+<view wx:if="{{o.status === 'paid' || o.status === 'refunded'}}" class="tk {{bright ? 'tk-bright' : ''}}">
+  <view class="row tk-head">
+    <view class="nav {{idx > 0 ? '' : 'nav-dis'}}" bindtap="prev"><text>‹</text></view>
+    <text class="flex1 tk-idx">第 {{idx + 1}} 张 / 共 {{o.items.length}} 张</text>
+    <view class="nav {{idx < o.items.length - 1 ? '' : 'nav-dis'}}" bindtap="next"><text>›</text></view>
+  </view>
+  <view class="qr-wrap">
+    <canvas id="qr" type="2d" class="qr" style="width: {{qr}}px; height: {{qr}}px;"></canvas>
+    <view wx:if="{{o.status === 'refunded'}}" class="qr-void"><text class="qr-void-t">已退票</text></view>
+  </view>
+  <text class="tk-no">票号 {{tk.no}}</text>
+  <view class="row tk-info">
+    <view class="col flex1"><text class="muted">座位 / 票档</text><text class="tk-v">{{tk.label}}</text></view>
+    <view class="col flex1"><text class="muted">观演人</text><text class="tk-v">{{tk.viewer}} {{tk.mask}}</text></view>
+  </view>
+  <view wx:if="{{o.status === 'paid'}}" class="bright-btn {{bright ? 'bright-on' : ''}}" bindtap="toggleBright">
+    <text>{{bright ? '恢复亮度' : '出示调亮'}}</text>
+  </view>
+</view>
+
+<view class="card" bindtap="toShow">
+  <text class="sec-title">{{o.title}}</text>
+  <view class="kv row"><text class="k">场次</text><text class="v">{{o.sessionText}}</text></view>
+  <view class="kv row"><text class="k">场馆</text><text class="v">{{o.city}} · {{o.venue}}</text></view>
+</view>
+
+<view class="card">
+  <view class="kv row" wx:for="{{o.items}}" wx:key="index"><text class="k">票品 {{index + 1}}</text><text class="v">{{item.label}}（¥{{item.price}}）</text></view>
+  <view class="kv row"><text class="k">观演人</text>
+    <view class="v col"><text wx:for="{{o.viewers}}" wx:key="mask">{{item.name}} {{item.mask}}</text></view>
+  </view>
+  <view class="kv row"><text class="k">联系手机</text><text class="v">{{o.phone}}</text></view>
+  <view class="kv row"><text class="k">订单号</text><text class="v">{{o.id}}</text></view>
+  <view class="kv row"><text class="k">下单时间</text><text class="v">{{created}}</text></view>
+  <view class="kv row"><text class="k">实付金额</text><text class="v price">¥{{o.amount}}</text></view>
+</view>
+<view class="bottom-space"></view>
+
+<view class="foot">
+  <view class="btn-ghost" bindtap="service"><text>联系客服</text></view>
+  <view class="flex1"></view>
+  <block wx:if="{{o.status === 'unpaid'}}">
+    <view class="btn-ghost gap" bindtap="cancel"><text>取消订单</text></view>
+    <view class="btn-main pay gap" bindtap="pay"><text>去支付 ¥{{o.amount}}</text></view>
+  </block>
+  <view wx:elif="{{o.status === 'paid'}}" class="btn-ghost gap" bindtap="refund"><text>申请退票</text></view>
+  <view wx:else class="btn-ghost gap" bindtap="toShow"><text>再次购买</text></view>
+</view>
+</block>

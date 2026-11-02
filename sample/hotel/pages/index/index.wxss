@@ -7,6 +7,8 @@
 .kind-on { color: #1E6FFF; font-weight: bold; font-size: 30rpx; }
 .line { padding: 26rpx 0; border-bottom: 1rpx solid #f0f1f3; }
 .city { font-size: 40rpx; font-weight: bold; }
+.dn { width: 12rpx; height: 12rpx; border-right: 3rpx solid #4e5969; border-bottom: 3rpx solid #4e5969; transform: rotate(45deg); margin: 0 0 8rpx 14rpx; }
+.locate { padding-left: 24rpx; }
 .loc { width: 22rpx; height: 22rpx; border-radius: 11rpx; border: 5rpx solid #1E6FFF; margin-left: 10rpx; }
 .dates { justify-content: space-between; }
 .date { display: flex; flex-direction: column; }
@@ -15,10 +17,11 @@
 .date-val { font-size: 38rpx; font-weight: bold; margin-top: 4rpx; }
 .date-week { font-size: 24rpx; color: #4e5969; margin-left: 10rpx; margin-top: 10rpx; }
 .nights { font-size: 22rpx; color: #4e5969; border: 1rpx solid #e3e5e8; border-radius: 20rpx; padding: 4rpx 16rpx; }
+.people-t { font-size: 30rpx; font-weight: bold; }
 .kw { font-size: 30rpx; height: 48rpx; }
 .filter-title { font-size: 24rpx; color: #8a9099; margin-top: 24rpx; }
 .chips { display: flex; flex-direction: row; flex-wrap: wrap; margin-top: 14rpx; }
-.chip { height: 40rpx; line-height: 40rpx; font-size: 24rpx; color: #4e5969; background: #f5f6f8; padding: 10rpx 22rpx; border-radius: 10rpx; margin: 0 14rpx 14rpx 0; border: 2rpx solid #f5f6f8; }
+.chip { line-height: 40rpx; font-size: 24rpx; color: #4e5969; background: #f5f6f8; padding: 2rpx 22rpx; border-radius: 10rpx; margin: 0 14rpx 14rpx 0; border: 2rpx solid #f5f6f8; }
 .chip-on { color: #1E6FFF; background: #EAF2FF; border-color: #A9C8FF; }
 .search-btn { margin-top: 20rpx; }
 .perks { display: flex; flex-direction: row; margin: 0 24rpx 32rpx; background: #fff; border-radius: 20rpx; padding: 24rpx 0; }
@@ -39,4 +42,11 @@
 .rec-price-row { margin-top: 10rpx; align-items: flex-end; }
 .yen { font-size: 22rpx; margin-bottom: 4rpx; }
 .rec-price { font-size: 36rpx; font-weight: bold; margin-right: 4rpx; }
-.gap { height: 40rpx; }
+.gap { height: calc(140rpx + env(safe-area-inset-bottom)); }
+.pp-row { padding: 22rpx 0; border-bottom: 1rpx solid #f0f1f3; }
+.pp-t { display: block; font-size: 30rpx; font-weight: bold; }
+.pp-s { display: block; margin-top: 4rpx; }
+.pp-ok { margin-top: 32rpx; }
+
+/* 房间与人数做成居中的卡片而不是贴底面板：首页是 tab 页，贴底面板的「完成」会落在自定义 tabBar 那条上 */
+.sheet.pp-dialog { top: 240rpx; bottom: auto; left: 40rpx; right: 40rpx; border-radius: 28rpx; padding: 32rpx; }

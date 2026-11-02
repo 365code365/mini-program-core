@@ -1,0 +1,36 @@
+<view class="page">
+  <view class="card">
+    <picker mode="date" value="{{date}}" start="{{start}}" end="{{end}}" bindchange="onDate">
+      <view class="field"><text class="field-label">测量日期</text><text class="field-value">{{date}}</text><text class="arrow">›</text></view>
+    </picker>
+    <text wx:if="{{errs.date}}" class="err">{{errs.date}}</text>
+    <view class="field">
+      <text class="field-label">体重</text>
+      <input class="field-input" type="digit" value="{{weight}}" data-k="weight" placeholder="如 8.05" placeholder-class="placeholder" bindinput="onInput"></input>
+      <text class="unit">kg</text>
+    </view>
+    <text wx:if="{{errs.weight}}" class="err">{{errs.weight}}</text>
+    <view class="field">
+      <text class="field-label">身长</text>
+      <input class="field-input" type="digit" value="{{height}}" data-k="height" placeholder="如 67.9" placeholder-class="placeholder" bindinput="onInput"></input>
+      <text class="unit">cm</text>
+    </view>
+    <text wx:if="{{errs.height}}" class="err">{{errs.height}}</text>
+    <view class="field">
+      <text class="field-label">头围（选填）</text>
+      <input class="field-input" type="digit" value="{{head}}" data-k="head" placeholder="如 43.4" placeholder-class="placeholder" bindinput="onInput"></input>
+      <text class="unit">cm</text>
+    </view>
+    <text wx:if="{{errs.head}}" class="err">{{errs.head}}</text>
+    <text wx:if="{{hint}}" class="muted hint">{{hint}}</text>
+  </view>
+
+  <view class="card tips">
+    <text class="sec-title">怎么量更准</text>
+    <text class="tip">· 体重：空腹、换完尿布后，大人抱着称再减去大人体重</text>
+    <text class="tip">· 身长：2 岁以内躺着量，头顶贴墙、膝盖压直、脚跟垂直</text>
+    <text class="tip">· 头围：软尺经过眉弓上缘和后脑勺最突出的地方绕一圈</text>
+  </view>
+
+  <view class="btn" bindtap="save" hover-class="btn-hover">保存</view>
+</view>

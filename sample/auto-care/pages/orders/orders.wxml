@@ -1,0 +1,32 @@
+<view class="tabs">
+  <view class="tb {{tab === item.k ? 'tb-on' : ''}}" wx:for="{{tabs}}" wx:key="k" data-k="{{item.k}}" bindtap="onTab">
+    <text>{{item.name}}</text>
+    <text class="badge" wx:if="{{item.k !== 'all' && item.k !== 'reviewed' && counts[item.k]}}">{{counts[item.k]}}</text>
+  </view>
+</view>
+<view class="wrap">
+  <view class="loading" wx:if="{{loading}}">加载中…</view>
+  <block wx:else>
+    <view class="card od" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="goDetail">
+      <view class="between">
+        <text class="od-store">{{item.storeName}}</text>
+        <text class="st st-{{item.status}}">{{item.statusText}}</text>
+      </view>
+      <text class="od-items">{{item.itemText}}</text>
+      <view class="between od-mid">
+        <text class="sub">{{item.plateText}} · {{item.date}} {{item.time}}</text>
+        <text class="price">¥{{item.total}}</text>
+      </view>
+      <view class="row od-ft" wx:if="{{item.status === 'done'}}">
+        <view class="flex1"></view>
+        <view class="btn-ghost" data-id="{{item.id}}" catchtap="goReview">去评价</view>
+      </view>
+    </view>
+    <view class="empty" wx:if="{{!list.length}}">
+      <image class="empty-ic" src="/images/svc/oil.png"></image>
+      <text class="empty-tx">{{tab === 'all' ? '还没有预约过服务' : '这里还没有订单'}}</text>
+      <view class="btn-ghost" bindtap="goBook">去预约保养</view>
+    </view>
+  </block>
+  <view class="tab-gap"></view>
+</view>

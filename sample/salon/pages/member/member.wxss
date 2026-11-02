@@ -1,0 +1,22 @@
+.mb-card { margin: 24rpx; border-radius: 28rpx; padding: 36rpx 32rpx; background: linear-gradient(135deg, #3a2f3d, #1f1922); color: #f3d9c6; }
+.mb-lv { font-size: 40rpx; font-weight: bold; }
+.mb-no { font-size: 22rpx; opacity: 0.7; }
+.mb-nums { margin: 36rpx 0 28rpx; }
+.mb-ni { flex: 1; display: flex; flex-direction: column; }
+.mb-k { font-size: 22rpx; opacity: 0.7; }
+.mb-v { font-size: 40rpx; font-weight: bold; margin-top: 6rpx; }
+.mb-pg { width: 100%; }
+.mb-gap { display: block; font-size: 22rpx; opacity: 0.75; margin-top: 12rpx; }
+.mb-perks { flex-wrap: wrap; }
+.mb-perk { font-size: 24rpx; background: #f8ece4; color: #a0694f; padding: 10rpx 20rpx; border-radius: 10rpx; margin: 0 16rpx 16rpx 0; }
+.mb-pkgs { flex-wrap: wrap; justify-content: space-between; }
+.mb-pkg { width: 48%; box-sizing: border-box; border: 2rpx solid #eee3dc; border-radius: 16rpx; padding: 24rpx 0; display: flex; flex-direction: column; align-items: center; margin-bottom: 20rpx; }
+.mb-pkg.on { border-color: #c0846a; background: #fbf3ee; }
+.mb-pay { font-size: 36rpx; font-weight: bold; }
+.mb-gift { font-size: 22rpx; color: #c0846a; margin-top: 6rpx; }
+.mb-btn { margin-top: 8rpx; }
+.mb-rec { display: flex; flex-direction: row; align-items: center; padding: 18rpx 0; border-bottom: 1rpx solid #f3eeea; }
+.mb-rt { display: block; font-size: 26rpx; margin-bottom: 4rpx; }
+.mb-plus { color: #c0846a; font-weight: bold; }
+.mb-minus { color: #2d2430; font-weight: bold; }
+.mb-rule { display: flex; flex-direction: row; justify-content: space-between; padding: 12rpx 0; font-size: 26rpx; }

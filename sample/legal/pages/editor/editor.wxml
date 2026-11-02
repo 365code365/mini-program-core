@@ -1,0 +1,31 @@
+<view class="namebar row">
+  <input class="name flex1" value="{{name}}" maxlength="30" placeholder="合同名称" bindinput="onName"></input>
+  <text class="muted">{{words}} 字 · {{saved ? '已保存' : '未保存'}}</text>
+</view>
+
+<view class="tools row">
+  <view class="t {{formats.bold ? 't-on' : ''}}" bindtap="bold"><text class="b">B</text></view>
+  <view class="t" bindtap="undo">撤销</view>
+  <view class="t" bindtap="redo">重做</view>
+  <view class="t" bindtap="insertClause">条款</view>
+  <view class="t" bindtap="insertDate">日期</view>
+  <view class="t" bindtap="paste">粘贴</view>
+  <view class="t" bindtap="copyAll">复制</view>
+</view>
+
+<view class="paper" wx:if="{{!preview}}">
+  <editor id="editor" class="ed" placeholder="在此编辑合同正文，【】为待填写项" bindready="onEditorReady" bindinput="onInput" bindstatuschange="onStatus"></editor>
+</view>
+<view class="paper pv" wx:else>
+  <view class="para" wx:for="{{paras}}" wx:key="index"><rich-text nodes="{{item}}"></rich-text></view>
+</view>
+
+<view class="hint"><text>提示：「条款」可插入争议解决、不可抗力等常用条款；签署前请核对【】处均已填写。</text></view>
+<view style="height: 150rpx;"></view>
+
+<view class="foot row">
+  <view class="fb" bindtap="resetTpl">恢复模板</view>
+  <view class="fb" bindtap="togglePreview">{{preview ? '继续编辑' : '预览'}}</view>
+  <view class="btn btn-ghost fbtn" bindtap="save">保存草稿</view>
+  <view class="btn fbtn" bindtap="review">律师审查</view>
+</view>

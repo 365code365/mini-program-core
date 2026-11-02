@@ -1,0 +1,39 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/stores/stores",
+    "pages/orders/orders",
+    "pages/mine/mine",
+    "pages/store/store",
+    "pages/service/service",
+    "pages/booking/booking",
+    "pages/order-detail/order-detail",
+    "pages/review/review",
+    "pages/garage/garage",
+    "pages/car-edit/car-edit",
+    "pages/violation/violation"
+  ],
+  "window": {
+    "navigationBarTitleText": "车管家",
+    "navigationBarBackgroundColor": "#1f6fff",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f3f5f9"
+  },
+  "tabBar": {
+    "color": "#9aa3b2",
+    "selectedColor": "#1f6fff",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "custom": true,
+    "list": [
+      { "pagePath": "pages/index/index", "text": "首页", "iconPath": "images/tab/home.png", "selectedIconPath": "images/tab/home-on.png" },
+      { "pagePath": "pages/stores/stores", "text": "门店", "iconPath": "images/tab/store.png", "selectedIconPath": "images/tab/store-on.png" },
+      { "pagePath": "pages/orders/orders", "text": "订单", "iconPath": "images/tab/order.png", "selectedIconPath": "images/tab/order-on.png" },
+      { "pagePath": "pages/mine/mine", "text": "我的", "iconPath": "images/tab/user.png", "selectedIconPath": "images/tab/user-on.png" }
+    ]
+  },
+  "permission": {
+    "scope.userLocation": { "desc": "用于查找离你最近的门店并计算距离" }
+  },
+  "requiredPrivateInfos": ["getLocation", "chooseLocation"]
+}

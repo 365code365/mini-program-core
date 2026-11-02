@@ -1,0 +1,15 @@
+.tabs { display: flex; flex-direction: row; background: #ffffff; height: 88rpx; align-items: center; border-bottom: 1rpx solid #eceef2; }
+.tab { position: relative; flex: 1; text-align: center; font-size: 26rpx; color: #4a5260; height: 88rpx; line-height: 88rpx; }
+.tab-on { color: #1e8cf0; font-weight: 600; border-bottom: 4rpx solid #1e8cf0; box-sizing: border-box; }
+.tn { position: absolute; right: 6rpx; top: 14rpx; min-width: 28rpx; height: 28rpx; line-height: 28rpx; border-radius: 14rpx; background: #ff5a36; color: #ffffff; font-size: 18rpx; text-align: center; padding: 0 6rpx; }
+.sk1 { height: 28rpx; width: 300rpx; }
+.sk2 { height: 34rpx; width: 520rpx; margin-top: 20rpx; }
+.sk3 { height: 28rpx; width: 400rpx; margin-top: 20rpx; }
+.st { font-size: 26rpx; font-weight: 600; }
+.st0 { color: #ff9f1a; }
+.st1 { color: #1e8cf0; }
+.st2 { color: #37a58f; }
+.st3 { color: #8a919c; }
+.st-1 { color: #a0a7b2; }
+.names { display: block; font-size: 30rpx; font-weight: 600; margin: 14rpx 0 6rpx; }
+.od-f { margin-top: 18rpx; }

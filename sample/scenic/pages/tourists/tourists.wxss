@@ -1,0 +1,9 @@
+.flex1 { flex: 1; min-width: 0; }
+.tr-del { color: #e5484d; font-size: 26rpx; padding: 10rpx; }
+.tr-tip { display: block; text-align: center; margin-top: 24rpx; }
+.tr-mask { position: fixed; left: 0; top: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.45); z-index: 90; }
+.tr-sheet { position: fixed; left: 0; right: 0; bottom: 0; background: #ffffff; border-radius: 32rpx 32rpx 0 0; padding: 36rpx 32rpx calc(36rpx + env(safe-area-inset-bottom)); z-index: 91; }
+.tr-f { display: flex; flex-direction: row; align-items: center; padding: 24rpx 0; border-bottom: 1rpx solid #edf1ef; }
+.tr-l { width: 140rpx; color: #5b6560; }
+.tr-i { flex: 1; height: 48rpx; font-size: 28rpx; }
+.tr-save { margin-top: 36rpx; }

@@ -1,0 +1,10 @@
+.sp { display: flex; flex-direction: row; align-items: center; }
+.sp-btn { position: relative; width: 48rpx; height: 48rpx; border-radius: 24rpx; display: flex; align-items: center; justify-content: center; }
+.sp-minus { border: 2rpx solid #1e8cf0; box-sizing: border-box; }
+.sp-plus { background: #1e8cf0; }
+.sp-dis { background: #b9d9f7; }
+.sp-hover { opacity: 0.7; }
+.bar-h { width: 22rpx; height: 4rpx; border-radius: 2rpx; background: #1e8cf0; }
+.bar-h.w { background: #ffffff; }
+.bar-v { position: absolute; left: 22rpx; top: 13rpx; width: 4rpx; height: 22rpx; border-radius: 2rpx; background: #ffffff; }
+.sp-n { width: 60rpx; text-align: center; font-size: 28rpx; }

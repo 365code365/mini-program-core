@@ -1,0 +1,68 @@
+<!-- 单笔开票 / 查看 -->
+<block wx:if="{{r}}">
+  <view class="card">
+    <view class="row between"><text class="sec-title">{{r.stationName}}</text><text class="price">¥{{r.pay}}</text></view>
+    <text class="muted">{{timeText}} · {{r.oil}} {{r.liters}} 升 · 订单号 {{r.no}}</text>
+  </view>
+
+  <view class="card done" wx:if="{{r.invoice}}">
+    <icon type="success" size="40" color="#13a874"></icon>
+    <text class="done-t">电子发票已开具</text>
+    <view class="line"><text class="muted">抬头</text><text>{{r.invoice.title}}</text></view>
+    <view class="line" wx:if="{{r.invoice.taxNo}}"><text class="muted">税号</text><text>{{r.invoice.taxNo}}</text></view>
+    <view class="line"><text class="muted">发票号码</text><text>{{r.invoice.number || '—'}}</text></view>
+    <view class="line"><text class="muted">开票时间</text><text>{{issuedText}}</text></view>
+    <view class="line"><text class="muted">发票内容</text><text>*汽油*{{r.oil}} 车用汽油</text></view>
+    <view class="line" wx:if="{{r.invoice.email}}"><text class="muted">已发送至</text><text>{{r.invoice.email}}</text></view>
+    <view class="btn-ghost resend" bindtap="resend">{{r.invoice.email ? '重新发送到邮箱' : '发送到邮箱'}}</view>
+  </view>
+
+  <block wx:else>
+    <view class="card">
+      <view class="row between">
+        <text class="sec-title">发票抬头</text>
+        <text class="link" bindtap="fromWechat">从微信选择</text>
+      </view>
+      <view class="tt {{item.id === titleId ? 'tt-on' : ''}}" wx:for="{{titles}}" wx:key="id" data-id="{{item.id}}" bindtap="pickTitle">
+        <view class="tt-mid">
+          <view class="row"><text class="tt-name">{{item.name}}</text><text class="tag" wx:if="{{item.type === 'company'}}">企业</text><text class="tag tag-gray" wx:else>个人</text></view>
+          <text class="muted" wx:if="{{item.taxNo}}">税号 {{item.taxNo}}</text>
+        </view>
+        <text class="tt-ck">{{item.id === titleId ? '✓' : ''}}</text>
+      </view>
+      <view class="empty-line" wx:if="{{!titles.length}}"><text class="muted">还没有保存的抬头</text></view>
+      <view class="add" bindtap="manage"><text class="add-tx">+ 新增 / 管理抬头</text></view>
+      <text class="err" wx:if="{{err.title}}">{{err.title}}</text>
+    </view>
+    <view class="card">
+      <view class="line"><text>发票类型</text><text class="muted">增值税电子普通发票</text></view>
+      <view class="line"><text>发票金额</text><text class="price">¥{{r.pay}}</text></view>
+      <view class="line mail">
+        <text>接收邮箱</text>
+        <input class="mail-in" placeholder="选填，开票后发送 PDF" value="{{email}}" bindinput="onEmail" />
+      </view>
+      <text class="err" wx:if="{{err.email}}">{{err.email}}</text>
+    </view>
+    <view class="ops"><view class="btn" hover-class="btn-hover" bindtap="submit">提交开票</view></view>
+  </block>
+</block>
+
+<!-- 发票中心（不带 id） -->
+<block wx:else>
+  <view class="seg">
+    <text class="sg {{tab === 'todo' ? 'sg-on' : ''}}" data-t="todo" bindtap="switchTab">可开票 {{todo.length}}</text>
+    <text class="sg {{tab === 'done' ? 'sg-on' : ''}}" data-t="done" bindtap="switchTab">已开票 {{done.length}}</text>
+    <text class="sg-link" bindtap="manage">抬头管理 ›</text>
+  </view>
+  <view class="empty" wx:if="{{!(tab === 'todo' ? todo : done).length}}">
+    <image class="empty-img" src="/images/misc/empty.png" mode="aspectFit"></image>
+    <text class="empty-tx">{{tab === 'todo' ? '没有待开票的加油记录' : '还没有开过发票'}}</text>
+  </view>
+  <view class="card iv" wx:for="{{tab === 'todo' ? todo : done}}" wx:key="id" data-id="{{item.id}}" bindtap="open" hover-class="btn-hover">
+    <view class="iv-mid">
+      <text class="iv-name">{{item.stationName}}</text>
+      <text class="muted">{{item.timeText}} · {{item.oil}} · {{item.invoice ? item.invoice.title : '未开票'}}</text>
+    </view>
+    <text class="price">¥{{item.pay}}</text>
+  </view>
+</block>

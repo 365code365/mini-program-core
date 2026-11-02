@@ -1,0 +1,19 @@
+<wxs module="fmt" src="../../utils/fmt.wxs"></wxs>
+<picker mode="multiSelector" range="{{range}}" value="{{idx}}" bindchange="onPick" bindcolumnchange="onColumn">
+  <view class="card row between"><text>{{range[0][idx[0]]}} 学年 {{range[1][idx[1]]}}</text><view class="row"><text class="primary">切换学期</text><view class="chev"></view></view></view>
+</picker>
+<view class="gr-sum card">
+  <view class="gr-si"><text class="gr-n">{{gpa}}</text><text class="gr-l">平均绩点</text></view>
+  <view class="gr-si"><text class="gr-n">{{avg}}</text><text class="gr-l">加权平均分</text></view>
+  <view class="gr-si"><text class="gr-n">{{credits}}</text><text class="gr-l">已修学分</text></view>
+</view>
+<view class="row between gr-h"><text class="sec-title">课程成绩</text><text class="muted" bindtap="rule">绩点规则 ⓘ</text></view>
+<view class="card" wx:if="{{list.length}}">
+  <view class="gr-row" wx:for="{{list}}" wx:key="name">
+    <view class="flex1"><text class="gr-name">{{item.name}}</text><text class="muted">{{item.type}} · {{item.credit}} 学分 · 绩点 {{item.gp}}</text></view>
+    <view class="gr-sc"><text class="gr-score {{fmt.levelClass(item.score) || item.lvc}}">{{item.score}}</text><text class="gr-lv {{fmt.levelClass(item.score) || item.lvc}}">{{fmt.level(item.score) || item.lv}}</text></view>
+  </view>
+</view>
+<view class="empty" wx:else><view class="empty-ic">📄</view><text>该学期成绩尚未发布</text></view>
+<text class="gr-warn" wx:if="{{failed}}">有 {{failed}} 门课程未通过，请留意补考安排</text>
+<include src="../common/footer.wxml"></include>

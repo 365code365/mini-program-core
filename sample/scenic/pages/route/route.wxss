@@ -1,0 +1,17 @@
+.map { width: 750rpx; height: 520rpx; }
+.tabs { justify-content: space-between; margin-bottom: 12rpx; }
+.tab { width: 48%; background: #ffffff; border-radius: 20rpx; padding: 18rpx 22rpx; display: flex; flex-direction: column; border: 2rpx solid #ffffff; box-sizing: border-box; }
+.tab-on { border-color: #13a07b; background: #e3f4ee; }
+.tab-n { font-size: 28rpx; font-weight: bold; }
+.tab-t { font-size: 22rpx; color: #86908b; margin-top: 4rpx; }
+.loc { display: block; margin: 4rpx 0 20rpx; }
+.stop { align-items: flex-start; }
+.axis { width: 56rpx; display: flex; flex-direction: column; align-items: center; }
+.dot { width: 44rpx; height: 44rpx; border-radius: 22rpx; background: #cfe3db; display: flex; align-items: center; justify-content: center; }
+.dot-on { background: #13a07b; }
+.dot-tx { color: #ffffff; font-size: 22rpx; font-weight: bold; }
+.bar { width: 4rpx; height: 56rpx; background: #cfe3db; }
+.st-r { flex: 1; margin-left: 16rpx; padding-bottom: 20rpx; }
+.st-n { font-size: 28rpx; font-weight: bold; margin-bottom: 4rpx; }
+.ops { justify-content: space-between; }
+.half { width: 47%; }

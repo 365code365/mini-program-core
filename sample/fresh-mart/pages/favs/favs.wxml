@@ -1,0 +1,23 @@
+<view class="card item row" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onDetail">
+  <image class="img" src="{{item.img}}" mode="aspectFill"></image>
+  <view class="flex1 info">
+    <text class="name ellipsis">{{item.name}}</text>
+    <text class="sub">{{item.spec}}</text>
+    <view class="row tags">
+      <text wx:if="{{item.flash}}" class="tag tag-flash">秒杀价</text>
+      <text wx:for="{{item.tags}}" wx:for-item="t" wx:key="*this" class="tag">{{t}}</text>
+    </view>
+    <view class="row foot">
+      <view class="price-row"><text class="p-sym">¥</text><text class="p-num">{{item.price}}</text></view>
+      <text class="p-origin">¥{{item.origin}}</text>
+      <view class="flex1"></view>
+      <view class="unfav" data-id="{{item.id}}" catchtap="onRemove">取消收藏</view>
+      <view class="add-btn" data-id="{{item.id}}" catchtap="onAdd">+</view>
+    </view>
+  </view>
+</view>
+<view wx:if="{{!list.length}}" class="empty">
+  <text class="sub">还没有收藏的商品，在商品详情页点「收藏」就会出现在这里</text>
+  <view class="btn empty-btn" bindtap="onGo">去逛逛</view>
+</view>
+<view class="gap"></view>

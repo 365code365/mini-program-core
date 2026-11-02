@@ -1,0 +1,48 @@
+<view class="page">
+  <view class="head">
+    <view class="between">
+      <text class="h-title">已接种 {{doneCount}} / {{total}} 剂</text>
+      <text class="h-pc">{{percent}}%</text>
+    </view>
+    <progress class="h-bar" percent="{{percent}}" stroke-width="8" border-radius="8" activeColor="#ffffff" backgroundColor="rgba(255,255,255,0.3)" active></progress>
+    <view class="clinic" hover-class="btn-hover" bindtap="chooseClinic">
+      <text class="flex1 clinic-name">常去门诊：{{clinic}}</text>
+      <text class="clinic-op">更换 ›</text>
+    </view>
+    <view class="call" hover-class="btn-hover" bindtap="callClinic">电话预约</view>
+  </view>
+
+  <view class="seg">
+    <view class="seg-item {{filter === 'todo' ? 'seg-on' : ''}}" data-f="todo" bindtap="setFilter">待接种</view>
+    <view class="seg-item {{filter === 'done' ? 'seg-on' : ''}}" data-f="done" bindtap="setFilter">已接种</view>
+    <view class="seg-item {{filter === 'all' ? 'seg-on' : ''}}" data-f="all" bindtap="setFilter">全部</view>
+  </view>
+
+  <view wx:if="{{!groups.length}}" class="empty"><text class="empty-text">{{filter === 'done' ? '还没有接种记录' : '全部疫苗都接种完啦'}}</text></view>
+
+  <view wx:for="{{groups}}" wx:for-item="g" wx:key="label" class="group">
+    <view class="row g-head"><text class="g-label">{{g.label}}</text><text class="muted">{{g.due}}</text></view>
+    <view class="card v" wx:for="{{g.items}}" wx:key="code">
+      <view class="row" data-code="{{item.code}}" bindtap="toggle" hover-class="item-hover">
+        <view class="col flex1">
+          <view class="row">
+            <text class="v-name">{{item.name}}</text>
+            <text class="tag {{item.free ? 'tag-mint' : 'tag-warn'}}">{{item.free ? '免费' : '自费'}}</text>
+          </view>
+          <text class="muted">{{item.dose}} · {{item.statusText}}</text>
+        </view>
+        <text class="st st-{{item.status}}">{{item.status === 'done' ? '已完成' : (item.status === 'over' ? '待补种' : (item.status === 'soon' ? '即将到期' : '未到时间'))}}</text>
+      </view>
+      <view wx:if="{{open === item.code}}" class="detail">
+        <text class="d-line">预防：{{item.disease}}</text>
+        <text class="d-line">接种方式：{{item.site}}</text>
+        <text wx:if="{{item.tip}}" class="d-line">提示：{{item.tip}}</text>
+        <picker wx:if="{{item.status !== 'done'}}" mode="date" value="{{today}}" start="{{birthday}}" end="{{today}}" data-code="{{item.code}}" bindchange="markDone">
+          <view class="btn d-btn" hover-class="btn-hover">选择接种日期，标记已接种</view>
+        </picker>
+        <view wx:else class="btn-ghost d-btn" data-code="{{item.code}}" data-name="{{item.name + item.dose}}" bindtap="undo" hover-class="btn-hover">撤销接种记录</view>
+      </view>
+    </view>
+  </view>
+  <text class="muted foot">依据《国家免疫规划疫苗儿童免疫程序（2021 年版）》，具体以当地接种门诊安排为准。</text>
+</view>

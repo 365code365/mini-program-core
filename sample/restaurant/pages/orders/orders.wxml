@@ -26,7 +26,8 @@
       <text class="left" wx:if="{{item.left}}">{{item.left}}</text>
       <view wx:if="{{item.status === 'unpaid'}}" class="op op-main" data-id="{{item.id}}" catchtap="pay"><text>去支付</text></view>
       <view wx:if="{{item.status === 'paid'}}" class="op" data-id="{{item.id}}" catchtap="open"><text>查看进度</text></view>
-      <view wx:if="{{item.status === 'done' || item.status === 'canceled'}}" class="op op-main" data-id="{{item.id}}" catchtap="again"><text>再来一单</text></view>
+      <view wx:if="{{item.canRate}}" class="op op-rate" data-id="{{item.id}}" catchtap="rate"><text>评价</text></view>
+      <view wx:if="{{item.status === 'done' || item.status === 'canceled'}}" class="op op-main op-again" data-id="{{item.id}}" catchtap="again"><text>再来一单</text></view>
     </view>
   </view>
   <view class="empty" wx:if="{{!list.length}}"><text class="sub">这里还没有订单</text></view>

@@ -1,0 +1,16 @@
+page { background: #13b37b; }
+.bg { padding: 32rpx 32rpx 60rpx; }
+.ticket { background: #ffffff; border-radius: 24rpx; padding: 40rpx 32rpx; align-items: center; }
+.t-n { font-size: 34rpx; font-weight: bold; margin-bottom: 8rpx; }
+.segs { margin-top: 12rpx; display: flex; flex-direction: column; align-items: center; }
+.seg { font-size: 26rpx; color: #3a3d46; }
+.qr-box { position: relative; margin: 28rpx 0 16rpx; }
+.qr { display: block; }
+.qr-mask { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background: rgba(255, 255, 255, 0.6); display: flex; align-items: center; justify-content: center; }
+.qr-mask-t { font-size: 36rpx; font-weight: bold; color: #5a5d66; background: #ffffff; border: 2rpx solid #cfd2d8; border-radius: 12rpx; padding: 8rpx 28rpx; }
+.code { font-size: 48rpx; font-weight: bold; letter-spacing: 12rpx; color: #1d1d22; margin-bottom: 6rpx; }
+.dash { width: 100%; border-top: 2rpx dashed #e3e5e8; margin: 32rpx 0 20rpx; }
+.tips { width: 100%; }
+.link { color: #13b37b; font-size: 24rpx; }
+.in { margin-top: 28rpx; width: 100%; box-sizing: border-box; }
+.ghost-w { background: #ffffff; }

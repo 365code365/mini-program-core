@@ -17,6 +17,15 @@ const groups = [
     ]
   },
   {
+    key: 'native',
+    title: '宿主原生组件',
+    items: [
+      { name: '地图', desc: 'map 标记 · 气泡 · 折线 · 圆 · 多边形 · 拖动缩放 · MapContext', url: '/pages/map/map', icon: '图', color: '#10aeff' },
+      { name: '网页', desc: 'web-view · JSSDK postMessage · 网页里跳回小程序 · 标题', url: '/pages/webview/webview', icon: '网', color: '#576b95' },
+      { name: '直播', desc: 'live-player 拉流 · 状态码 · 静音 · 全屏 · 截图', url: '/pages/live/live', icon: '播', color: '#e64340' }
+    ]
+  },
+  {
     key: 'lang',
     title: '语法与样式',
     items: [

@@ -39,3 +39,4 @@
 .m-st.end { color: #9aa0a6; }
 .m-card.add { align-items: center; justify-content: center; border: 2rpx dashed #c9c2ff; background: #faf9ff; }
 .add-plus { font-size: 52rpx; color: #6C5CE7; line-height: 60rpx; }
+.ended { font-size: 22rpx; color: #8a8f99; margin-left: 12rpx; }

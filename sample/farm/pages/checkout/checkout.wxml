@@ -1,0 +1,61 @@
+<view class="card addr" hover-class="btn-hover" bindtap="pickAddress">
+  <block wx:if="{{address}}">
+    <view class="addr-mid">
+      <view class="row"><text class="addr-name">{{address.name}}</text><text class="addr-phone">{{address.phoneMask}}</text><text class="tag" wx:if="{{address.tag}}">{{address.tag}}</text></view>
+      <text class="addr-detail">{{address.full}}</text>
+    </view>
+  </block>
+  <view class="addr-mid" wx:else>
+    <text class="addr-name">请添加收货地址</text>
+    <text class="muted">生鲜需填写能当天签收的地址</text>
+  </view>
+  <text class="muted">›</text>
+</view>
+<view class="wxaddr" bindtap="useWxAddress"><text class="wxaddr-tx">使用微信收货地址</text></view>
+
+<view class="card group-tip" wx:if="{{groupTip}}">
+  <text class="gt-tx">{{groupTip}}</text>
+</view>
+
+<view class="card">
+  <view class="it" wx:for="{{items}}" wx:key="key">
+    <image class="it-img" src="{{item.cover}}" mode="aspectFill"></image>
+    <view class="it-mid">
+      <text class="it-name">{{item.name}}</text>
+      <text class="muted">{{item.skuText}}</text>
+      <view class="row between">
+        <text class="price">¥{{item.price}}</text>
+        <text class="muted">× {{item.qty}}</text>
+      </view>
+    </view>
+  </view>
+</view>
+
+<view class="card">
+  <picker mode="date" value="{{date}}" start="{{dateStart}}" end="{{dateEnd}}" bindchange="onDate">
+    <view class="line"><text>期望送达日期</text><text class="line-v">{{date}} {{weekday}} ›</text></view>
+  </picker>
+  <picker mode="selector" range="{{slots}}" value="{{slotIndex}}" bindchange="onSlot">
+    <view class="line"><text>配送时段</text><text class="line-v">{{slots[slotIndex]}} ›</text></view>
+  </picker>
+  <view class="line"><text>配送方式</text><text class="line-v">顺丰冷链 · {{freightText}}</text></view>
+  <view class="line remark">
+    <text>备注</text>
+    <input class="remark-in" placeholder="选填，如：放门卫室、不要打电话" maxlength="50" value="{{remark}}" bindinput="onRemark" />
+  </view>
+</view>
+
+<view class="card">
+  <view class="line"><text>商品金额</text><text>¥{{goodsAmount}}</text></view>
+  <view class="line"><text>运费</text><text>{{freight > 0 ? '¥' + freightFix : '包邮'}}</text></view>
+  <view class="line" wx:if="{{saveAmount > 0}}"><text>拼团已省</text><text class="price">-¥{{saveFix}}</text></view>
+  <text class="muted ship-tip">{{shipTip}}</text>
+</view>
+<view style="height: 160rpx;"></view>
+
+<view class="bar">
+  <view class="bar-sum"><text>合计</text><text class="price bar-yen">¥</text><text class="price bar-total">{{total}}</text></view>
+  <view class="bar-pay {{submitting ? 'bar-pay-off' : ''}}" hover-class="btn-hover" bindtap="submit"><text class="bar-pay-tx">{{payText}}</text></view>
+</view>
+
+<cashier show="{{cashier}}" amount="{{total}}" order-no="{{orderNo}}" bind:paid="onPaid" bind:cancel="onPayCancel"></cashier>
