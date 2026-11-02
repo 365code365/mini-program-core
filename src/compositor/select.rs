@@ -138,14 +138,18 @@ pub struct GpuNeeds {
 /// 环形条带纹理每层的行数
 pub const RING_SLICE_ROWS: u32 = 1024;
 
+/// 视口高 `viewport_px` 行、上下各留裁剪余量 `margin_px` 行时，环形条带要几层
+pub fn ring_layers(viewport_px: u32, margin_px: u32) -> u32 {
+    viewport_px.saturating_add(margin_px.saturating_mul(2)).saturating_add(2).div_ceil(RING_SLICE_ROWS)
+}
+
 impl GpuNeeds {
     /// `out_w × out_h` 的输出、宽 `canvas_w` 的页面画布、视口高 `viewport_px` 行、
     /// 裁剪余量 `margin_px` 行（渲染器的 `VIEWPORT_CULL_MARGIN_PX`）
     pub fn for_output(out_w: u32, out_h: u32, canvas_w: u32, viewport_px: u32, margin_px: u32) -> Self {
-        let rows = viewport_px + 2 * margin_px + 2;
         Self {
             max_texture_dimension_2d: out_w.max(out_h).max(canvas_w).max(RING_SLICE_ROWS),
-            array_layers: rows.div_ceil(RING_SLICE_ROWS),
+            array_layers: ring_layers(viewport_px, margin_px),
         }
     }
 }

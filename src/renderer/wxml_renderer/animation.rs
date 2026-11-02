@@ -220,6 +220,11 @@ impl WxmlRenderer {
             return true;
         }
 
+        // 透明度是**成组**的（CSS opacity 连子树一起淡）。离屏那一趟不走 paint_opacity_group，
+        // 从前透明度只落在这个节点自己的背景上、孩子照旧不透明画进离屏、再按 1.0 贴回：
+        // page-container 居中弹层离场（scale 0.9 + opacity 0）时白底淡没了，标题、按钮原样留在遮罩上（「关闭留残影」）。
+        // 改成子树按不透明画进离屏，贴回时整块乘透明度
+        let (resolved, group_opacity) = Self::take_group_opacity(resolved);
         // 离屏只画贴回去时会被采到的那一块（见 compose::offscreen_for）
         let mut offscreen = crate::renderer::compose::offscreen_for(canvas, (tw, th), (x - pad, y - pad), (x + w / 2.0, y + h / 2.0), &transform);
         // 变换后的子树坐标与屏幕不再一一对应：命中区与事件绑定用一次性容器承接，
@@ -273,9 +278,20 @@ impl WxmlRenderer {
             (x - pad, y - pad),
             (x + w / 2.0, y + h / 2.0),
             &transform,
-            1.0,
+            group_opacity,
         );
         true
+    }
+
+    /// 离屏仿射那条路的成组透明度：节点按不透明画（返回的节点 opacity = 1），透明度交给贴回那一步。
+    /// 不透明的节点原样返回（贴回乘 1.0，与从前逐字节相同）
+    fn take_group_opacity(mut resolved: RenderNode) -> (RenderNode, f32) {
+        let op = resolved.style.opacity.clamp(0.0, 1.0);
+        if op >= 0.999 {
+            return (resolved, 1.0);
+        }
+        resolved.style.opacity = 1.0;
+        (resolved, op)
     }
 
     /// 无交互上下文的绘制路径（静态渲染 / 宿主外壳）上的动画与 transform 处理。

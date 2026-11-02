@@ -43,6 +43,9 @@ pub struct VideoFeedSync {
 impl MiniEngine {
     /// 每帧 tick 之后（`tick_scroll_views`）：全屏那一层变了就重新合成；退出全屏后补上按住的安全区
     pub(super) fn sync_fullscreen(&mut self, now_ms: u64) {
+        // 全屏控件按安全区排（video/fullscreen_chrome.rs）。全屏期间宿主收起状态栏报来的新值按住不用
+        // （set_safe_area），这里给的一直是进全屏前那份：顶栏不会因为状态栏收起就钻进灵动岛
+        video_fullscreen::set_safe_insets(self.opts.safe_area.map(|s| s.as_array()).unwrap_or([0.0; 4]));
         let seq = video_fullscreen::compose_seq();
         if seq != self.video_feed.fs_compose {
             if seq.is_none() {

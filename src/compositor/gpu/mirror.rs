@@ -131,7 +131,8 @@ impl PageMirror {
         self.cursor = page.cursor();
         let need = (visible.0.max(0), visible.1.min(canvas_h));
         if len(need) > self.ring_rows as i32 {
-            // 环长按视口算过余量，到不了这里；万一到了只传能装下的那段（下一段会被截掉），并报出来
+            // 合成器每帧按本帧视口给环加够层（`GpuCompositor::ring_layers_for`），只有设备的层数上限
+            // 也装不下时才会到这里：只传能装下的那段（下一段会被截掉），并报出来
             crate::compositor::diag::emit(&format!("⚠ GPU 镜像：要采样 {} 行超过环长 {}", len(need), self.ring_rows));
         }
         let need = (need.0, need.1.min(need.0 + self.ring_rows as i32));

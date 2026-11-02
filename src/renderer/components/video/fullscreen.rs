@@ -19,7 +19,9 @@
 //! 系统下拉通知栏仍是竖着的 —— 微信转的是整个界面，这一点不同。
 //!
 //! 点击：触点先按方向换回画面坐标（[`to_content`]），再交给与页面里同一套命中。
-use super::chrome::{self, Flags};
+use super::chrome::{Flags, Key};
+use super::fullscreen_chrome as fsc;
+pub use super::fullscreen_chrome::set_safe_insets;
 use super::ui::{self, VideoRef};
 use super::*;
 use serde_json::{json, Value};
@@ -43,6 +45,16 @@ struct Press {
     /// 按在进度条上（横着拖起来就是拖进度）
     armed: bool,
     dragging: bool,
+    /// 按在哪个键上；手指挪出点击范围（`TAP_SLOP`）就不再亮（抬手也不算点）
+    key: Option<Key>,
+    inside: bool,
+}
+
+impl Press {
+    /// 正亮着按压态的键
+    fn lit(&self) -> Option<Key> {
+        self.key.filter(|_| self.inside)
+    }
 }
 
 /// 按下后挪了这么多（画面坐标，逻辑像素）就不再算点击
@@ -55,8 +67,23 @@ thread_local! {
     /// 给宿主的通知（`videoFullscreen`：收起 / 放出状态栏）
     static NOTICES: RefCell<Vec<Value>> = const { RefCell::new(Vec::new()) };
     static PRESS: RefCell<Option<Press>> = const { RefCell::new(None) };
+    /// 按压态变一次 +1（进 [`compose_seq`]：按下 / 挪出去 / 抬手都要重新合成一次，按钮才亮、才灭）
+    static PRESS_SEQ: std::cell::Cell<u32> = const { std::cell::Cell::new(0) };
     /// 画全屏那一层的画布（画面方向的尺寸），每帧复用
     static CANVAS: RefCell<Option<Canvas>> = const { RefCell::new(None) };
+}
+
+fn bump_press() {
+    PRESS_SEQ.with(|s| s.set(s.get().wrapping_add(1)));
+}
+
+/// 收掉这串按下（换方向、退出、抬手、取消）；亮着的键要灭，记一次变化
+fn clear_press() -> Option<Press> {
+    let p = PRESS.with(|p| p.borrow_mut().take());
+    if p.and_then(|p| p.lit()).is_some() {
+        bump_press();
+    }
+    p
 }
 
 fn dir_name(d: i32) -> &'static str {
@@ -114,7 +141,7 @@ pub fn follow_device(deg: i32) -> bool {
     });
     let Some(key) = changed else { return false };
     // 换方向：触摸坐标、画布尺寸都变了，按到一半的那串作废
-    PRESS.with(|p| *p.borrow_mut() = None);
+    clear_press();
     CANVAS.with(|c| *c.borrow_mut() = None);
     ui::queue_event(&key, "fullscreenchange", json!({ "fullScreen": true, "direction": dir_name(d) }));
     NOTICES.with(|n| n.borrow_mut().push(json!({ "type": "videoFullscreen", "fullScreen": true, "direction": d, "key": key })));
@@ -127,7 +154,7 @@ pub fn follow_device(deg: i32) -> bool {
 /// 退出全屏（返回键、顶栏的返回、控制条的退出键、`exitFullScreen`）。返回是不是真的退了
 pub fn exit() -> bool {
     let Some(s) = FS.with(|f| f.borrow_mut().take()) else { return false };
-    PRESS.with(|p| *p.borrow_mut() = None);
+    clear_press();
     CANVAS.with(|c| *c.borrow_mut() = None);
     let key = s.video.key;
     ui::queue_event(&key, "fullscreenchange", json!({ "fullScreen": false, "direction": dir_name(s.direction) }));
@@ -141,7 +168,7 @@ pub fn clear_fullscreen() {
     if let Some(s) = FS.with(|f| f.borrow_mut().take()) {
         NOTICES.with(|n| n.borrow_mut().push(json!({ "type": "videoFullscreen", "fullScreen": false, "direction": s.direction, "key": s.video.key })));
     }
-    PRESS.with(|p| *p.borrow_mut() = None);
+    clear_press();
     CANVAS.with(|c| *c.borrow_mut() = None);
 }
 
@@ -153,7 +180,8 @@ pub(super) fn frozen_mark(key: &str) -> Option<u32> {
 pub fn compose_seq() -> Option<u64> {
     let (v, d) = fullscreen_ref()?;
     let frame = host_feed::seq(&v.key).unwrap_or(0) as u64;
-    Some((frame << 32) ^ ((ui::ui_seq(&v.key) as u64) << 2) ^ (d as u64 & 3))
+    let press = PRESS_SEQ.with(|s| s.get()) as u64;
+    Some((frame << 32) ^ ((ui::ui_seq(&v.key) as u64) << 2) ^ (d as u64 & 3) ^ (press << 44))
 }
 
 /// 取走给宿主的通知：`{type:"videoFullscreen", fullScreen, direction, key}`
@@ -195,7 +223,7 @@ pub fn draw_fullscreen(buf: &mut [u32], w: u32, h: u32, sf: f32, text: Option<&T
         }
         let Some(canvas) = slot.as_mut() else { return };
         let t0 = std::time::Instant::now();
-        paint(canvas, &video, sf.max(0.1), text);
+        paint(canvas, &video, sf.max(0.1), text, dir);
         let t1 = std::time::Instant::now();
         blit_rotated(buf, w, h, canvas, dir);
         let ms = |a: std::time::Instant, b: std::time::Instant| b.duration_since(a).as_secs_f32() * 1000.0;
@@ -213,7 +241,7 @@ pub fn last_cost() -> (f32, f32) {
     COST.with(|c| c.get())
 }
 
-fn paint(canvas: &mut Canvas, video: &VideoRef, u: f32, text: Option<&TextRenderer>) {
+fn paint(canvas: &mut Canvas, video: &VideoRef, u: f32, text: Option<&TextRenderer>, dir: i32) {
     let (cw, ch) = (canvas.width() as f32, canvas.height() as f32);
     ui::note(video);
     let st = video.status();
@@ -232,17 +260,8 @@ fn paint(canvas: &mut Canvas, video: &VideoRef, u: f32, text: Option<&TextRender
         None => canvas.clear(Color::BLACK),
     }
     let flags = full_flags(video, cw / u);
-    if ui::controls_shown(&video.key) {
-        let title = video.attrs.get("title").map(|s| s.trim()).unwrap_or("");
-        chrome::draw_top_bar(canvas, text, 0.0, 0.0, cw, u, title);
-        let bar = chrome::bar_layout(0.0, 0.0, cw, ch, &flags, u, true, st.duration);
-        chrome::draw_bar(canvas, text, &bar, &st, ui::drag_ratio(&video.key), u, true);
-    } else if st.playing && flags.bottom_progress {
-        chrome::draw_bottom_progress(canvas, 0.0, 0.0, cw, ch, u, &st);
-    }
-    if !st.playing && flags.center_btn {
-        chrome::draw_center(canvas, 0.0, 0.0, cw, ch, u);
-    }
+    let pressed = PRESS.with(|p| p.borrow().and_then(|p| p.lit()));
+    fsc::paint(canvas, text, video, &st, &flags, u, dir, pressed);
 }
 
 /// 居中的 fw×fh 画面四周填黑（落点与 `blit_image_exact` 的取整一致：偏移四舍五入到整像素）
@@ -320,39 +339,52 @@ pub fn fullscreen_press(x: f32, y: f32, vw: f32, vh: f32) -> bool {
     let Some((video, dir)) = fullscreen_ref() else { return false };
     let (u, v) = to_content(x, y, vw, vh, dir);
     let (cw, ch) = content_size(vw, vh, dir);
+    let st = video.status();
+    let flags = full_flags(&video, cw);
+    let lay = fsc::layout(cw, ch, &flags, 1.0, st.duration, dir);
+    let shown = ui::controls_shown(&video.key);
     let mut armed = false;
-    if ui::controls_shown(&video.key) {
-        let st = video.status();
-        let bar = chrome::bar_layout(0.0, 0.0, cw, ch, &full_flags(&video, cw), 1.0, true, st.duration);
-        if let (Some(_), Some((x0, tw))) = (bar.track_ratio(u, v, 1.0), bar.track) {
-            ui::arm_seek(video, x0, tw);
+    if shown {
+        if let (Some(_), Some((x0, tw))) = (lay.bar.track_ratio(u, v, 1.0), lay.bar.track) {
+            ui::arm_seek(video.clone(), x0, tw);
             armed = true;
         }
     }
-    PRESS.with(|p| *p.borrow_mut() = Some(Press { u0: u, v0: v, armed, dragging: false }));
+    // 按在键上：这一帧就亮（微信的全屏控件按下有按压态；从前点了没有任何反馈，像没点上）
+    let key = if armed { None } else { fsc::key_at(&lay, cw, ch, 1.0, &flags, shown, !st.playing, u, v) };
+    clear_press();
+    if key.is_some() {
+        bump_press();
+    }
+    PRESS.with(|p| *p.borrow_mut() = Some(Press { u0: u, v0: v, armed, dragging: false, key, inside: key.is_some() }));
     true
 }
 
-/// 移动：按在进度条上横着拖就跟手
+/// 移动：按在进度条上横着拖就跟手；按在键上的挪出点击范围就灭
 pub fn fullscreen_move(x: f32, y: f32, vw: f32, vh: f32) -> bool {
     let Some((_, dir)) = fullscreen_ref() else { return false };
-    let (u, _) = to_content(x, y, vw, vh, dir);
-    PRESS.with(|p| {
+    let (u, v) = to_content(x, y, vw, vh, dir);
+    let changed = PRESS.with(|p| {
         let mut p = p.borrow_mut();
-        let Some(p) = p.as_mut() else { return };
+        let Some(p) = p.as_mut() else { return false };
         if p.dragging {
             ui::seek_update(u);
         } else if p.armed && (u - p.u0).abs() > DRAG_SLOP {
             p.dragging = ui::seek_begin(u);
         }
+        let inside = p.key.is_some() && (u - p.u0).hypot(v - p.v0) <= TAP_SLOP;
+        std::mem::replace(&mut p.inside, inside) != inside
     });
+    if changed {
+        bump_press();
+    }
     true
 }
 
 /// 抬起：拖过进度条就 seek，否则当一次点击
 pub fn fullscreen_release(x: f32, y: f32, vw: f32, vh: f32) -> bool {
     let Some((video, dir)) = fullscreen_ref() else { return false };
-    let press = PRESS.with(|p| p.borrow_mut().take());
+    let press = clear_press();
     if press.map(|p| p.dragging).unwrap_or(false) {
         ui::seek_end();
         return true;
@@ -365,49 +397,43 @@ pub fn fullscreen_release(x: f32, y: f32, vw: f32, vh: f32) -> bool {
         }
     }
     let (cw, ch) = content_size(vw, vh, dir);
-    tap(&video, u, v, cw, ch);
+    tap(&video, u, v, cw, ch, dir);
     true
 }
 
 /// 这串触摸被系统打断：拖到一半的进度照样落下去
 pub fn fullscreen_cancel() {
-    if PRESS.with(|p| p.borrow_mut().take()).map(|p| p.dragging).unwrap_or(false) {
+    if clear_press().map(|p| p.dragging).unwrap_or(false) {
         ui::seek_end();
     }
     ui::disarm_seek();
 }
 
-fn tap(video: &VideoRef, u: f32, v: f32, cw: f32, ch: f32) {
+fn tap(video: &VideoRef, u: f32, v: f32, cw: f32, ch: f32, dir: i32) {
     let st = video.status();
     let flags = full_flags(video, cw);
     let key = &video.key;
-    if ui::controls_shown(key) {
-        if chrome::back_hit(0.0, 0.0, 1.0, u, v) {
+    let lay = fsc::layout(cw, ch, &flags, 1.0, st.duration, dir);
+    let shown = ui::controls_shown(key);
+    match fsc::key_at(&lay, cw, ch, 1.0, &flags, shown, !st.playing, u, v) {
+        Some(Key::Back | Key::Exit) => {
             exit();
             return;
         }
-        let bar = chrome::bar_layout(0.0, 0.0, cw, ch, &flags, 1.0, true, st.duration);
-        if bar.contains(u, v) {
-            if bar.on_play(u, v) {
-                video.command(if st.playing { &VideoCommand::Pause } else { &VideoCommand::Play });
-            } else if bar.on_mute(u, v) {
-                video.set_muted(!st.muted);
-            } else if bar.on_fullscreen(u, v) {
-                exit();
-                return;
-            } else if let (Some(r), true) = (bar.track_ratio(u, v, 1.0), st.duration > 0.0) {
+        Some(Key::Play) => video.command(if st.playing { &VideoCommand::Pause } else { &VideoCommand::Play }),
+        Some(Key::Mute) => video.set_muted(!st.muted),
+        Some(Key::Center) => video.command(&VideoCommand::Play),
+        None if shown && lay.bar.contains(u, v) => {
+            if let (Some(r), true) = (lay.bar.track_ratio(u, v, 1.0), st.duration > 0.0) {
                 video.command(&VideoCommand::Seek(st.duration * r));
             }
-            ui::poke(key);
+        }
+        None => {
+            ui::toggle(key);
             return;
         }
     }
-    if !st.playing && flags.center_btn && chrome::center_hit(0.0, 0.0, cw, ch, 1.0, u, v) {
-        video.command(&VideoCommand::Play);
-        ui::poke(key);
-        return;
-    }
-    ui::toggle(key);
+    ui::poke(key);
 }
 
 #[cfg(test)]

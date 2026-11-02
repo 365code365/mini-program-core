@@ -151,8 +151,11 @@ pub struct GpuCompositor {
     offscreen: Option<(wgpu::Texture, u32, u32)>,
     surface: Option<SurfaceState>,
     fault: Option<FaultSpec>,
-    /// 视口高 + 裁剪余量：决定环长（层数）
-    ring_layers: u32,
+    /// 视口裁剪余量（渲染器的 VIEWPORT_CULL_MARGIN_PX）：与**本帧**的输出高一起决定环长（层数），
+    /// 见 [`ring_layers_for`](Self::ring_layers_for)
+    margin_px: u32,
+    /// 设备允许的纹理数组层数（建设备时要的是适配器上限，device.rs）
+    max_ring_layers: u32,
     gpu_frame: u32,
     /// 自检进行中：故障注入（tint / lost@N / timeout@N）一律不生效 ——
     /// 否则 tint 会先让自检判掉 GPU，gpu-parity 就测不到比较链路本身
@@ -163,8 +166,9 @@ pub struct GpuCompositor {
 }
 
 impl GpuCompositor {
-    fn from_gpu(gpu: Gpu, ring_layers: u32, fault: Option<FaultSpec>, log: bool) -> Self {
+    fn from_gpu(gpu: Gpu, margin_px: u32, fault: Option<FaultSpec>, log: bool) -> Self {
         let pipe = Pipeline::new(&gpu.device);
+        let max_ring_layers = gpu.device.limits().max_texture_array_layers.max(1);
         Self {
             gpu,
             pipe,
@@ -186,7 +190,8 @@ impl GpuCompositor {
             offscreen: None,
             surface: None,
             fault,
-            ring_layers,
+            margin_px,
+            max_ring_layers,
             gpu_frame: 0,
             selftesting: false,
             last_pass: false,
@@ -200,6 +205,21 @@ impl GpuCompositor {
 
     pub fn gpu_frame(&self) -> u32 {
         self.gpu_frame
+    }
+
+    /// 本帧的页面环要几层：按**本帧**的输出高算，不按建合成器那一刻的尺寸。
+    ///
+    /// 从前层数在建合成器时定死。Flutter 示例打开小程序时视图从小长到整屏（一加 PLY110：
+    /// `resize 427x816 → 855 → 871 → 911 → 915`），合成器在预热线程上按最初那个尺寸开好，环只有
+    /// 2 层 2048 行，整屏却要采样 2272~2502 行：第 2048 行往下采到的是环里上一圈的内容，屏幕底下
+    /// 那一截重复显示视口顶上那一截（燃动健身会员卡页；日志一串「⚠ GPU 镜像：要采样 2272 行超过环长
+    /// 2048」）。转屏、分屏、桌面窗口拉大同理。
+    ///
+    /// 余量只按输出高留。`visible_rows`（键盘顶起时含多算的 `content_shift` 行）只保证装得下：
+    /// 装不下时 `PageMirror::sync` 每帧报一次「超过环长」并截掉尾巴；键盘动画每帧都在变，不为它多留余量
+    fn ring_layers_for(&self, out_h: u32, visible_rows: u32) -> u32 {
+        let base = crate::compositor::select::ring_layers(out_h, self.margin_px);
+        base.max(visible_rows.div_ceil(mirror::SLICE_ROWS)).min(self.max_ring_layers)
     }
 
     /// 同步本帧要用的图层纹理；返回（上传字节数, 是否直通, 直通原因）
@@ -235,22 +255,34 @@ impl GpuCompositor {
             sent += bytes;
         }
         let (dev, queue) = (&self.gpu.device, &self.gpu.queue);
-        // 页面：宽度或代数变了就重建镜像（尺寸可能变了，旧内容一律作废）
         let canvas = l.page.read();
-        let rebuild = self.page.as_ref().is_none_or(|m| m.width != canvas.width() || m.cursor.0 != l.page.gen());
+        let content_h = l.height - if l.has_tabbar { l.tabbar_px.min(l.height) } else { 0 };
+        // 键盘顶起画面时底下多露出 content_shift 行（在键盘后面，但要与 CPU 合成逐字节相同，照样传上去）
+        let visible = (l.scroll_px, l.scroll_px.saturating_add(content_h as i32 + l.content_shift as i32));
+        let want = self.ring_layers_for(l.height, content_h + l.content_shift);
+        // 页面：宽度或代数变了就重建镜像（尺寸可能变了，旧内容一律作废）；环装不下本帧的视口了也重建
+        let rebuild = self.page.as_ref().is_none_or(|m| m.width != canvas.width() || m.cursor.0 != l.page.gen() || m.layers < want);
         if rebuild {
-            let keep = self.page.as_ref().is_some_and(|m| m.width == canvas.width() && m.layers == self.ring_layers);
+            // 层数够就留着这张纹理，比要的多也留（视图变矮、键盘收起时不为省几 MB 换一张纹理）
+            let keep = self.page.as_ref().is_some_and(|m| m.width == canvas.width() && m.layers >= want);
             if !keep {
-                self.page = Some(PageMirror::new(dev, canvas.width(), self.ring_layers));
+                // 换环只在第一帧、宽度变了、层数不够时发生，留一行可查：环比视口短 = 屏幕底下重复顶上那一截
+                if !self.selftesting {
+                    let from = self.page.as_ref().map(|m| format!("{} → ", m.layers)).unwrap_or_default();
+                    super::diag::emit(&format!(
+                        "🎨 GPU 页面环 {from}{want} 层（{} 行；画布宽 {}，本帧输出高 {}）",
+                        want * mirror::SLICE_ROWS,
+                        canvas.width(),
+                        l.height
+                    ));
+                }
+                self.page = Some(PageMirror::new(dev, canvas.width(), want));
             }
             if let Some(m) = &mut self.page {
                 m.valid = None;
                 m.cursor = (l.page.gen(), u64::MAX);
             }
         }
-        let content_h = l.height - if l.has_tabbar { l.tabbar_px.min(l.height) } else { 0 };
-        // 键盘顶起画面时底下多露出 content_shift 行（在键盘后面，但要与 CPU 合成逐字节相同，照样传上去）
-        let visible = (l.scroll_px, l.scroll_px.saturating_add(content_h as i32 + l.content_shift as i32));
         if let Some(m) = &mut self.page {
             sent += m.sync(queue, l.page, visible);
         }

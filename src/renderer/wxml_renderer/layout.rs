@@ -157,6 +157,7 @@ impl WxmlRenderer {
             root,
         });
         self.layout_generation += 1;
+        self.prune_js_animations();
         plan
     }
 

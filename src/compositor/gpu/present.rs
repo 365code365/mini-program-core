@@ -62,7 +62,7 @@ pub fn open(opts: OpenOptions<'_>, spec: Option<SurfaceSpec>) -> Result<(GpuComp
         return Err(fail("注入故障 init（request_device 之后当作失败）".into()));
     }
     let init_ms = t0.elapsed().as_secs_f32() * 1000.0;
-    let mut comp = GpuCompositor::from_gpu(gpu, needs.array_layers, opts.fault, opts.log);
+    let mut comp = GpuCompositor::from_gpu(gpu, opts.margin_px, opts.fault, opts.log);
     if let Some(surface) = surface {
         comp.attach_surface(surface, opts.width, opts.height).map_err(fail)?;
     }

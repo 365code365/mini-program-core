@@ -72,7 +72,7 @@ impl WxmlRenderer {
         self.apply_pressed_style(&mut node_to_draw, interaction, &component_id);
         let state_checked = interaction.get_state(&component_id).map(|s| s.checked);
         let switch_progress = if node.tag == "switch" {
-            state_checked.map(|checked| self.toggle_progress(interaction, &component_id, checked))
+            state_checked.map(|checked| self.toggle_progress(interaction, &component_id, checked, (x, y, w, h)))
         } else {
             None
         };
@@ -349,7 +349,7 @@ impl WxmlRenderer {
             interaction
                 .get_state(&component_id)
                 .map(|s| s.checked)
-                .map(|checked| self.toggle_progress(interaction, &component_id, checked))
+                .map(|checked| self.toggle_progress(interaction, &component_id, checked, (x, y, w, h)))
         } else {
             None
         };

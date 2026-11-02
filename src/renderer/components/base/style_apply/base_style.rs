@@ -85,6 +85,25 @@ fn build_base_style_uncached(
         ns.line_height = Some(ns.font_size * scale);
     }
 
+    // ── 边框占布局（CSS 盒模型：边框在外边距与内边距之间）──
+    // 从前边框只画不排（布局引擎从没拿到过 border）：孩子从边框外沿排起，绝对定位的 left / top
+    // 也按边框外沿量（CSS 按内边距盒）。`.check{border:3rpx}` 里 `position:absolute; left:10rpx; top:3rpx`
+    // 的对勾整个往左上偏一个边宽（iOS「勾选的时候总是有点歪」）。缺省 border-box、写死宽高的盒子外形不变，
+    // 只是里面的东西往里挪一个边宽；尺寸靠内容撑的盒子大出边宽（与浏览器一致）。
+    // 每边的宽度与画法同一条规则（box_paint.rs：先画整圈 `border_width`，单边宽度 > 0 的再盖上去）。
+    // 组件自己借 `border_width` 存别的（checkbox / radio 的勾选框边长、progress 的条高、button 的默认描边）
+    // 都是在这之后填的，不进布局
+    let side = |w: f32| if w > 0.0 { w } else { ns.border_width.max(0.0) };
+    let sides = [ns.border_top_width, ns.border_right_width, ns.border_bottom_width, ns.border_left_width];
+    if ns.border_width > 0.0 || sides.iter().any(|w| *w > 0.0) {
+        ts.border = Rect {
+            top: length(side(sides[0])),
+            right: length(side(sides[1])),
+            bottom: length(side(sides[2])),
+            left: length(side(sides[3])),
+        };
+    }
+
     // ── 绝对定位的包含块修正（CSS 语义）──
     //
     // `position:absolute` 的包含块是「最近的定位祖先」，一个都没有时是**初始包含块**

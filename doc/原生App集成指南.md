@@ -643,9 +643,13 @@ Android 的 `MiniProgramView`（`sameLayerVideo`，默认开）与 Flutter 插�
 照微信：点画面切换控制条显隐（`bindcontrolstoggle {show}`），播放中 3 秒没碰自动收起，收起后底部一条细进度
 （`show-bottom-progress`）；进度条横着拖跟手、松手 seek 一次，竖着划照样滚页面；`show-play-btn`、`show-progress`
 （没写时宽度大于 240 才有）、`show-mute-btn`、`show-fullscreen-btn`、`show-center-play-btn`、`title`（全屏顶栏）、
-`duration` 都认。全屏方向：`requestFullScreen({direction})` > 节点的 `direction` > 画面宽高比（横的视频横屏 90）。
+`duration` 都认。全屏方向：`requestFullScreen({direction})` > 节点的 `direction` > 手机此刻的朝向（竖着拿就竖屏全屏），
+没指定方向的之后跟着手机转（宿主报 `mr_app_set_device_orientation`，横过来就横屏全屏）。
 横屏是**引擎把全屏那一层转过来画**，不转 Activity（转 Activity 要按横屏宽度整页重排、退出再排回来）；触点按方向换算，
-返回键先退出全屏。全屏期间页面不重画（标记留到退出），只在新帧 / 控制条变了时重新合成；收起状态栏报来的新安全区引擎按住不用。
+返回键先退出全屏。全屏控件是放大的一套（图标 24、按钮点击区 48、时间 15px，`video/chrome.rs` 的 `FULL`），按住有按压态，
+按宿主报的安全区排：顶栏在灵动岛下面、控制条在底部横条上面，横屏两侧按灵动岛那侧对称留（`video/fullscreen_chrome.rs`）。
+宿主收起状态栏 / 横条（iOS 控制器的 `prefersStatusBarHidden` / `prefersHomeIndicatorAutoHidden`，见示例 `MiniViewController.swift`）。
+全屏期间页面不重画（标记留到退出），只在新帧 / 控制条 / 按压态变了时重新合成；收起状态栏报来的新安全区引擎按住不用。
 还不支持：同层渲染的弹幕（`danmu-list` / `sendDanmu`）、`enable-play-gesture` 双击、亮度音量手势、小窗、投屏。
 
 导航栏由宿主画：引擎不画导航栏（微信里它是原生外壳），`navigationStyle: custom` 的页面除外。

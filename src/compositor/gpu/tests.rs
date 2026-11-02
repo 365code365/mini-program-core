@@ -177,6 +177,29 @@ fn incremental_mirror_200_steps_match_cpu() {
     }
 }
 
+/// 合成器按小尺寸建好之后输出变高（Flutter 打开小程序时视图从小长到整屏、转屏、窗口拉大）：
+/// 环要按本帧加层，否则第「环长」行往下采到环里上一圈的内容（一加 PLY110 燃动健身会员卡页底下
+/// 重复视口顶上那一截）。1 层 → 3 层 → 带键盘顶起 → 5 层，每一步都与 CPU 逐字节相同。
+/// 层数改回建合成器时定死，第一步就在 y=1024 处不一致
+#[test]
+fn ring_grows_when_output_gets_taller_than_at_open() {
+    let w = 64u32;
+    // 100 行起：100 + 802 行余量 → 环 1 层 1024 行
+    let Some(mut comp) = open_for_test(w, 100) else { return };
+    let mut rng = Rng(31);
+    let mut page = Canvas::new(w, 4000);
+    noise(&mut page, &mut rng, |r| r.byte());
+    let page = PageCanvas::new(page);
+    for (h, scroll_px, content_shift) in [(1300u32, 0i32, 0u32), (1300, 700, 0), (2200, 300, 1100), (3500, 200, 0)] {
+        let l = FrameLayers {
+            width: w, height: h, scale: 2.0, page: &page, scroll_px, page_bg: 0x203040, has_tabbar: false,
+            tabbar: None, tabbar_px: 0, fixed: None, fixed_rows: None, content_shift, pull: None,
+            overlays: OverlayRefs::none(), edge_back: None, top: None,
+        };
+        check(&mut comp, &l, &format!("输出 {w}×{h} 滚动 {scroll_px} 顶起 {content_shift}"));
+    }
+}
+
 /// 防空转：注入 `tint`（着色器让 R 通道 +1）时比较必须报不一致。
 /// 否则上面两条「全绿」可能只是比较链路没接上（例如读回的其实是 CPU 结果）
 #[test]

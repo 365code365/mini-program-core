@@ -20,20 +20,67 @@ use crate::text::TextRenderer;
 use crate::{Canvas, Color, Paint, PaintStyle, Path};
 use std::collections::HashMap;
 
-/// 控制条高（逻辑像素）：页面里 / 全屏
-pub const BAR_H: f32 = 40.0;
-pub const FULL_BAR_H: f32 = 48.0;
-/// 全屏顶栏（返回键 + 标题）
-pub const TOP_BAR_H: f32 = 48.0;
-const PAD: f32 = 8.0;
-/// 按钮的点击区宽
-const BTN: f32 = 32.0;
-/// 「00:00」占的宽（12px 字实测 33，留点余量；不按实际字宽排，点击命中没有字体也能算）
-const TIME_W: f32 = 38.0;
-const TIME_W_LONG: f32 = 56.0;
-/// 中间播放键的半径 / 点击半径
-const CENTER_R: f32 = 25.0;
-const CENTER_HIT_R: f32 = 36.0;
+/// 控件尺寸（逻辑像素）：页面里一套（按 300 宽上下的小框定的），全屏一套放大的。
+///
+/// 从前全屏只把条高 40→48、字 12→13，图标 16、按钮 32、时间格原样铺到 440×956 的屏上：
+/// 按钮小、字小、缩在角落里（iOS 真机反馈「看不到、很小」）。全屏这套对着微信 iOS 的全屏播放定：
+/// 图标 24、按钮点击区 48（不小于 HIG 的 44）、时间 15px、进度条 3px
+#[derive(Clone, Copy, Debug)]
+pub struct Metrics {
+    /// 控制条高
+    pub bar_h: f32,
+    pad: f32,
+    /// 按钮的点击区宽
+    btn: f32,
+    icon: f32,
+    font: f32,
+    /// 「00:00」占的宽（12px 字实测 33，留点余量；不按实际字宽排，点击命中没有字体也能算）
+    time_w: f32,
+    time_w_long: f32,
+    track_h: f32,
+    knob_r: f32,
+    knob_drag_r: f32,
+    /// 进度条两端放宽的命中余量
+    slop: f32,
+    /// 图标线条的粗细倍数
+    stroke: f32,
+    /// 中间播放键的半径 / 三角边长 / 点击半径
+    center_r: f32,
+    center_icon: f32,
+    center_hit_r: f32,
+}
+
+pub const INLINE: Metrics = Metrics {
+    bar_h: 40.0, pad: 8.0, btn: 32.0, icon: 16.0, font: 12.0, time_w: 38.0, time_w_long: 56.0,
+    track_h: 2.0, knob_r: 6.0, knob_drag_r: 8.0, slop: 8.0, stroke: 1.0,
+    center_r: 25.0, center_icon: 18.0, center_hit_r: 36.0,
+};
+pub const FULL: Metrics = Metrics {
+    bar_h: 56.0, pad: 12.0, btn: 48.0, icon: 24.0, font: 15.0, time_w: 46.0, time_w_long: 70.0,
+    track_h: 3.0, knob_r: 7.0, knob_drag_r: 10.0, slop: 12.0, stroke: 1.4,
+    center_r: 34.0, center_icon: 26.0, center_hit_r: 48.0,
+};
+
+pub fn metrics(fullscreen: bool) -> &'static Metrics {
+    if fullscreen { &FULL } else { &INLINE }
+}
+
+/// 页面里的控制条高（逻辑像素）
+pub const BAR_H: f32 = INLINE.bar_h;
+/// 全屏顶栏（返回键 + 标题），在安全区下面
+pub const TOP_BAR_H: f32 = 52.0;
+/// 全屏顶栏返回键的点击区宽
+const BACK_HIT_W: f32 = 72.0;
+
+/// 全屏里按住的键（画按压态）
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Key {
+    Back,
+    Play,
+    Mute,
+    Exit,
+    Center,
+}
 
 /// 哪些控件要画（属性折算好）
 #[derive(Clone, Copy, Debug)]
@@ -80,6 +127,8 @@ pub struct Bar {
     pub dur_x: Option<f32>,
     pub mute: Option<GeoRect>,
     pub fullscreen: Option<GeoRect>,
+    /// 全屏那套尺寸排的
+    pub full: bool,
 }
 
 impl Bar {
@@ -90,7 +139,7 @@ impl Bar {
     /// 落在进度条上（竖向整条控制条都算，横向两端各放宽半个圆点）：返回比例
     pub fn track_ratio(&self, x: f32, y: f32, u: f32) -> Option<f64> {
         let (x0, w) = self.track?;
-        let slop = 8.0 * u;
+        let slop = metrics(self.full).slop * u;
         (self.contains(x, y) && x >= x0 - slop && x <= x0 + w + slop && w > 0.0).then(|| ((x - x0) / w).clamp(0.0, 1.0) as f64)
     }
 }
@@ -109,6 +158,18 @@ impl Bar {
     pub fn on_fullscreen(&self, x: f32, y: f32) -> bool {
         hit(&self.fullscreen, x, y)
     }
+    /// 落在哪个按钮上（进度条、空白处是 None）
+    pub fn key_at(&self, x: f32, y: f32) -> Option<Key> {
+        if self.on_play(x, y) {
+            Some(Key::Play)
+        } else if self.on_mute(x, y) {
+            Some(Key::Mute)
+        } else if self.on_fullscreen(x, y) {
+            Some(Key::Exit)
+        } else {
+            None
+        }
+    }
 }
 
 /// 时长过了一小时显示成 `h:mm:ss`（时间那一格要宽一些）
@@ -118,47 +179,50 @@ fn long_time(duration: f64) -> bool {
 
 /// 框 (x, y, w, h) 底部那条控制条
 pub fn bar_layout(x: f32, y: f32, w: f32, h: f32, flags: &Flags, u: f32, fullscreen: bool, duration: f64) -> Bar {
-    let bh = if fullscreen { FULL_BAR_H } else { BAR_H } * u;
+    let m = metrics(fullscreen);
+    let bh = m.bar_h * u;
     let by = y + h - bh;
-    let tw = if long_time(duration) { TIME_W_LONG } else { TIME_W } * u;
-    let rect = |rx: f32| Some(GeoRect::new(rx, by, BTN * u, bh));
-    let mut left = x + PAD * u;
+    let tw = if long_time(duration) { m.time_w_long } else { m.time_w } * u;
+    let rect = |rx: f32| Some(GeoRect::new(rx, by, m.btn * u, bh));
+    let mut left = x + m.pad * u;
     let play = flags.play_btn.then(|| {
         let r = rect(left);
-        left += BTN * u;
+        left += m.btn * u;
         r
     }).flatten();
     let cur_x = left + 4.0 * u;
-    let mut right = x + w - PAD * u;
+    let mut right = x + w - m.pad * u;
     let fullscreen_r = flags.fullscreen_btn.then(|| {
-        right -= BTN * u;
+        right -= m.btn * u;
         rect(right)
     }).flatten();
     let mute = flags.mute_btn.then(|| {
-        right -= BTN * u;
+        right -= m.btn * u;
         rect(right)
     }).flatten();
     let (track, dur_x) = if flags.progress {
         let dur_x = right - 4.0 * u - tw;
-        let x0 = cur_x + tw + PAD * u;
-        let x1 = dur_x - PAD * u;
+        let x0 = cur_x + tw + m.pad * u;
+        let x1 = dur_x - m.pad * u;
         ((x1 - x0 > 12.0 * u).then_some((x0, x1 - x0)), Some(dur_x))
     } else {
         (None, None)
     };
-    Bar { x, y: by, w, h: bh, play, cur_x, track, dur_x, mute, fullscreen: fullscreen_r }
+    Bar { x, y: by, w, h: bh, play, cur_x, track, dur_x, mute, fullscreen: fullscreen_r, full: fullscreen }
 }
 
 /// 中间播放键：圆心与点击半径
-pub fn center_hit(x: f32, y: f32, w: f32, h: f32, u: f32, px: f32, py: f32) -> bool {
+#[allow(clippy::too_many_arguments)]
+pub fn center_hit(x: f32, y: f32, w: f32, h: f32, u: f32, full: bool, px: f32, py: f32) -> bool {
     let (cx, cy) = (x + w / 2.0, y + h / 2.0);
-    let r = CENTER_HIT_R * u;
+    let r = metrics(full).center_hit_r * u;
     (px - cx).powi(2) + (py - cy).powi(2) <= r * r
 }
 
-/// 全屏顶栏的返回键（左上角）
+/// 全屏顶栏的返回键：(x, y) 是顶栏左上角（安全区里面）。点击区往左、往上一直放到画面边上 ——
+/// 灵动岛下面那截、横屏时摄像头那侧的空白点了也算返回
 pub fn back_hit(x: f32, y: f32, u: f32, px: f32, py: f32) -> bool {
-    px >= x && px <= x + 64.0 * u && py >= y && py <= y + TOP_BAR_H * u
+    px >= 0.0 && px <= x + BACK_HIT_W * u && py >= 0.0 && py <= y + TOP_BAR_H * u
 }
 
 /// 默认控件的进度轨道（逻辑像素，相对视频左边）：测试与诊断用，算式同 [`bar_layout`]
@@ -186,7 +250,7 @@ fn aa(c: Color) -> Paint {
 }
 
 /// 竖向渐变的黑（`top_alpha` → `bottom_alpha`），逐行填（一行一次整行填充，比路径快得多）
-fn gradient(canvas: &mut Canvas, x: f32, y: f32, w: f32, h: f32, top_alpha: f32, bottom_alpha: f32) {
+pub(super) fn gradient(canvas: &mut Canvas, x: f32, y: f32, w: f32, h: f32, top_alpha: f32, bottom_alpha: f32) {
     let rows = h.ceil().max(1.0) as i32;
     for i in 0..rows {
         let t = (i as f32 + 0.5) / rows as f32;
@@ -226,6 +290,11 @@ fn pause_bars(canvas: &mut Canvas, cx: f32, cy: f32, s: f32) {
 }
 
 /// 扬声器（静音时带一个叉）
+/// 按住的键底下一圈半透明的白（全屏控制条 / 顶栏的返回）
+fn press_halo(canvas: &mut Canvas, cx: f32, cy: f32, r: f32) {
+    canvas.draw_circle(cx, cy, r, &aa(Color::new(255, 255, 255, 60)));
+}
+
 fn speaker(canvas: &mut Canvas, cx: f32, cy: f32, s: f32, muted: bool, u: f32) {
     let mut p = Path::new();
     p.move_to(cx - s * 0.5, cy - s * 0.18);
@@ -267,22 +336,33 @@ fn corners(canvas: &mut Canvas, cx: f32, cy: f32, s: f32, exit: bool, u: f32) {
 }
 
 /// 进度：轨道（半透明）+ 已播（白）+ 圆点
-fn track(canvas: &mut Canvas, x0: f32, w: f32, cy: f32, ratio: f64, u: f32, dragging: bool) {
-    let th = 2.0 * u;
+#[allow(clippy::too_many_arguments)]
+fn track(canvas: &mut Canvas, m: &Metrics, x0: f32, w: f32, cy: f32, ratio: f64, u: f32, dragging: bool) {
+    let th = m.track_h * u;
     fill(canvas, x0, cy - th / 2.0, w, th, Color::new(255, 255, 255, 90));
     let px = x0 + w * ratio.clamp(0.0, 1.0) as f32;
     fill(canvas, x0, cy - th / 2.0, px - x0, th, Color::WHITE);
-    let r = if dragging { 8.0 } else { 6.0 } * u;
+    let r = if dragging { m.knob_drag_r } else { m.knob_r } * u;
     canvas.draw_circle(px, cy, r, &aa(Color::WHITE));
 }
 
-/// 控制条。`drag`：正在拖进度时拖到的比例（圆点与当前时间跟着它）
+/// 控制条。`drag`：正在拖进度时拖到的比例（圆点与当前时间跟着它）；`pressed`：按住的键（画按压态）。
+/// 全屏时底下的渐变由调用方铺（要一直铺到安全区外的屏幕边上），这里不画
 #[allow(clippy::too_many_arguments)]
-pub fn draw_bar(canvas: &mut Canvas, tr: Option<&TextRenderer>, bar: &Bar, st: &Status, drag: Option<f64>, u: f32, fullscreen: bool) {
-    gradient(canvas, bar.x, bar.y, bar.w, bar.h, 0.0, 0.55);
+pub fn draw_bar(canvas: &mut Canvas, tr: Option<&TextRenderer>, bar: &Bar, st: &Status, drag: Option<f64>, u: f32, fullscreen: bool, pressed: Option<Key>) {
+    let m = metrics(fullscreen);
+    if !fullscreen {
+        gradient(canvas, bar.x, bar.y, bar.w, bar.h, 0.0, 0.55);
+    }
     let cy = bar.y + bar.h / 2.0;
-    let icon = 16.0 * u;
+    let icon = m.icon * u;
+    let halo = |canvas: &mut Canvas, r: Option<GeoRect>, key: Key| {
+        if let (Some(r), true) = (r, pressed == Some(key)) {
+            press_halo(canvas, r.x + r.width / 2.0, cy, (r.width * 0.46).min(r.height * 0.46));
+        }
+    };
     if let Some(p) = bar.play {
+        halo(canvas, bar.play, Key::Play);
         let cx = p.x + p.width / 2.0;
         if st.playing {
             pause_bars(canvas, cx, cy, icon * 0.9);
@@ -290,20 +370,22 @@ pub fn draw_bar(canvas: &mut Canvas, tr: Option<&TextRenderer>, bar: &Bar, st: &
             triangle(canvas, cx, cy, icon);
         }
     }
-    if let Some(m) = bar.mute {
-        speaker(canvas, m.x + m.width / 2.0, cy, icon, st.muted, u);
+    if let Some(r) = bar.mute {
+        halo(canvas, bar.mute, Key::Mute);
+        speaker(canvas, r.x + r.width / 2.0, cy, icon, st.muted, u * m.stroke);
     }
     if let Some(f) = bar.fullscreen {
-        corners(canvas, f.x + f.width / 2.0, cy, icon * 0.9, fullscreen, u);
+        halo(canvas, bar.fullscreen, Key::Exit);
+        corners(canvas, f.x + f.width / 2.0, cy, icon * 0.9, fullscreen, u * m.stroke);
     }
     let long = long_time(st.duration);
     let ratio = drag.unwrap_or(if st.duration > 0.0 { st.current / st.duration } else { 0.0 });
     let current = if drag.is_some() { st.duration * ratio } else { st.current };
     if let Some((x0, w)) = bar.track {
-        track(canvas, x0, w, cy, ratio, u, drag.is_some());
+        track(canvas, m, x0, w, cy, ratio, u, drag.is_some());
     }
     let Some(tr) = tr else { return };
-    let size = if fullscreen { 13.0 } else { 12.0 } * u;
+    let size = m.font * u;
     let baseline = cy + size * 0.36;
     let white = Paint::new().with_color(Color::WHITE);
     match bar.dur_x {
@@ -318,11 +400,14 @@ pub fn draw_bar(canvas: &mut Canvas, tr: Option<&TextRenderer>, bar: &Bar, st: &
     }
 }
 
-/// 中间的播放键（半透明黑圆 + 白三角）
-pub fn draw_center(canvas: &mut Canvas, x: f32, y: f32, w: f32, h: f32, u: f32) {
+/// 中间的播放键（半透明黑圆 + 白三角）。按住时圆更黑、整个往里收一点（全屏）
+#[allow(clippy::too_many_arguments)]
+pub fn draw_center(canvas: &mut Canvas, x: f32, y: f32, w: f32, h: f32, u: f32, full: bool, pressed: bool) {
+    let m = metrics(full);
     let (cx, cy) = (x + w / 2.0, y + h / 2.0);
-    canvas.draw_circle(cx, cy, CENTER_R * u, &aa(Color::new(0, 0, 0, 128)));
-    triangle(canvas, cx + 2.0 * u, cy, 18.0 * u);
+    let (k, alpha) = if pressed { (0.92, 190) } else { (1.0, 128) };
+    canvas.draw_circle(cx, cy, m.center_r * u * k, &aa(Color::new(0, 0, 0, alpha)));
+    triangle(canvas, cx + m.center_icon / 9.0 * u * k, cy, m.center_icon * u * k);
 }
 
 /// 控制条收起时最底下那条细进度
@@ -333,16 +418,34 @@ pub fn draw_bottom_progress(canvas: &mut Canvas, x: f32, y: f32, w: f32, h: f32,
     fill(canvas, x, y + h - th, w * ratio as f32, th, Color::WHITE);
 }
 
-/// 全屏顶栏：渐变 + 返回箭头 + 标题（`title` 属性）
-pub fn draw_top_bar(canvas: &mut Canvas, tr: Option<&TextRenderer>, x: f32, y: f32, w: f32, u: f32, title: &str) {
+/// 全屏顶栏：返回箭头 + 标题（`title` 属性）。(x, y) 是顶栏左上角（安全区里面），`w` 是顶栏宽；
+/// 背后的渐变由调用方铺（要一直铺到屏幕边上）
+#[allow(clippy::too_many_arguments)]
+pub fn draw_top_bar(canvas: &mut Canvas, tr: Option<&TextRenderer>, x: f32, y: f32, w: f32, u: f32, title: &str, pressed: bool) {
     let h = TOP_BAR_H * u;
-    gradient(canvas, x, y, w, h, 0.55, 0.0);
-    let (cx, cy, arm) = (x + 22.0 * u, y + h / 2.0, 7.0 * u);
-    thick(canvas, (cx + arm * 0.6, cy - arm), (cx - arm * 0.4, cy), 2.2 * u);
-    thick(canvas, (cx - arm * 0.4, cy), (cx + arm * 0.6, cy + arm), 2.2 * u);
+    let (cx, cy, arm) = (x + 26.0 * u, y + h / 2.0, 10.0 * u);
+    if pressed {
+        press_halo(canvas, cx - arm * 0.1, cy, 22.0 * u);
+    }
+    thick(canvas, (cx + arm * 0.5, cy - arm), (cx - arm * 0.5, cy), 2.6 * u);
+    thick(canvas, (cx - arm * 0.5, cy), (cx + arm * 0.5, cy + arm), 2.6 * u);
     if let (Some(tr), false) = (tr, title.is_empty()) {
-        let size = 16.0 * u;
-        tr.draw_text(canvas, title, x + 44.0 * u, cy + size * 0.36, size, &Paint::new().with_color(Color::WHITE));
+        let size = 17.0 * u;
+        let tx = x + 52.0 * u;
+        // 太长的标题收在顶栏里（右边留一个按钮宽），不压到屏幕外
+        let room = (x + w - 16.0 * u - tx).max(0.0);
+        let fits = |s: &str| tr.measure_text_weighted(s, size, 0.0, false) <= room;
+        let paint = Paint::new().with_color(Color::WHITE);
+        let baseline = cy + size * 0.36;
+        // 在播时每帧都画：放得下（绝大多数）就不分配
+        if fits(title) {
+            tr.draw_text(canvas, title, tx, baseline, size, &paint);
+        } else {
+            let mut shown: String = title.to_string();
+            while shown.pop().is_some() && !fits(&format!("{shown}…")) {}
+            shown.push('…');
+            tr.draw_text(canvas, &shown, tx, baseline, size, &paint);
+        }
     }
 }
 

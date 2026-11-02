@@ -70,7 +70,18 @@ final class MiniViewController: UIViewController {
         }
     }
 
-    override var prefersHomeIndicatorAutoHidden: Bool { false }
+    /// 视频全屏期间收起状态栏与底部横条（与微信一致；引擎发 `videoFullscreen`）。全屏控件已经按安全区排开
+    /// （引擎 video/fullscreen_chrome.rs），收起来画面更干净；横屏是引擎把那一层转过来画、界面还是竖的，
+    /// 不收的话状态栏会竖着压在画面左边
+    private var videoFullscreen = false {
+        didSet {
+            guard videoFullscreen != oldValue else { return }
+            setNeedsStatusBarAppearanceUpdate()
+            setNeedsUpdateOfHomeIndicatorAutoHidden()
+        }
+    }
+    override var prefersStatusBarHidden: Bool { videoFullscreen }
+    override var prefersHomeIndicatorAutoHidden: Bool { videoFullscreen }
     /// 小程序页只竖屏（横屏只给小游戏，由 MiniGameViewController 要）：不锁的话玩完横屏游戏回来，
     /// 系统看本页也支持横屏就不转回去（iOS 16 起只有当前方向不被支持时才自动转）
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask { .portrait }
@@ -107,6 +118,7 @@ final class MiniViewController: UIViewController {
             NSLog("[事件] %@", self.summarize(ev))
             // 第一页出来了才收起 loading（冷启动加载字体那几百毫秒也盖在底下，不露白屏）
             if ev["type"] as? String == "page" { self.pageDepth = (ev["depth"] as? NSNumber)?.intValue ?? self.pageDepth }
+            if ev["type"] as? String == "videoFullscreen" { self.videoFullscreen = ev["fullScreen"] as? Bool ?? false }
             if ev["type"] as? String == "page", let c = self.cover {
                 self.cover = nil
                 c.hide()

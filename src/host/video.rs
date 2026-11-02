@@ -151,7 +151,7 @@ pub fn on_tap(renderer: &WxmlRenderer, interaction: &InteractionManager, x: f32,
             return true;
         }
     }
-    if !st.playing && flags.center_btn && chrome::center_hit(r.x, r.y, r.width, r.height, 1.0, x, y) {
+    if !st.playing && flags.center_btn && chrome::center_hit(r.x, r.y, r.width, r.height, 1.0, false, x, y) {
         video.command(&VideoCommand::Play);
         ui::poke(key);
         return true;

@@ -290,6 +290,7 @@ impl WxmlRenderer {
         cache.rendered = rendered;
         self.cache = Some(cache);
         self.layout_generation += 1;
+        self.prune_js_animations();
         super::layout_verify::check(self, viewport);
         Ok(plan)
     }

@@ -12,21 +12,38 @@ impl WxmlRenderer {
     ///
     /// 微信的开关滑块是带缓动的位移（weui 用 cubic-bezier(.4,.4,.25,1.35) 略带回弹），
     /// 直接跳变会失去"拨动"手感。
+    ///
+    /// `bounds`：开关的框（画布坐标）。在滑的时候记进动画包围盒，宿主才重画这一块 ——
+    /// 页面上还有别的动画在记包围盒时，不记的话开关那块没人重画，滑块停在半路、最后一跳到位。
     pub(super) fn toggle_progress(
         &mut self,
         interaction: &InteractionManager,
         id: &str,
         checked: bool,
+        bounds: (f32, f32, f32, f32),
     ) -> f32 {
         const TOGGLE_DURATION: f32 = 0.3;
+        // 拨动时刻是两帧之间按墙上时钟记的，而帧时刻是 vsync 时刻、落后墙上时钟最多
+        // `RESYNC_MS`（frame_clock::Anchor）：抬手后的第一帧 elapsed 常是负的几毫秒。
+        // 从前负的一律给终态 —— 开关先「啪」地跳到开、下一帧回到关、再滑过去（iOS 上「打开时抖一下」）。
+        // 这个范围里的负数按「刚开始」算；更负的是动画钟被定住了（无头快照 `--time`），照旧给终态
+        const CLOCK_LAG: f32 = crate::frame_clock::RESYNC_MS as f32 / 1000.0;
         let target = if checked { 1.0 } else { 0.0 };
         // 只认「真正拨动」的时刻；按压起点（`transitions`）不算，否则按一下就假拨一次
         let Some(started) = interaction.toggled_at.get(id).copied() else { return target };
         let elapsed = self.animation_time() - started;
-        if elapsed < 0.0 || elapsed >= TOGGLE_DURATION {
+        let live_clock = self.anim_time.is_none();
+        if elapsed >= TOGGLE_DURATION || (elapsed < 0.0 && !(live_clock && elapsed > -CLOCK_LAG)) {
             return target;
         }
+        let elapsed = elapsed.max(0.0);
         self.mark_animating();
+        if !self.drawing_offscreen {
+            // 滑块投影 0 2px 3px：往下、往外各多出 5 个逻辑像素
+            let pad = 6.0 * self.scale_factor;
+            let (x, y, w, h) = bounds;
+            self.animated_bounds.push(GeoRect::new(x - pad, y - pad, w + pad * 2.0, h + pad * 2.0));
+        }
         let eased = crate::renderer::anim::cubic_bezier(elapsed / TOGGLE_DURATION, 0.4, 0.4, 0.25, 1.35);
         if checked { eased.clamp(0.0, 1.0) } else { (1.0 - eased).clamp(0.0, 1.0) }
     }

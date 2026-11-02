@@ -8,7 +8,8 @@ impl WxmlRenderer {
     ///
     /// 载荷形如 `{actions:[{animates:[{type,args}],option:{transition:{duration,delay,timingFunction}}}]}`，
     /// 每个 action 是一「步」：按 delay/duration 顺序播放，步与步之间对目标值做插值。
-    /// 起始时刻按载荷指纹记忆 —— 同一份 export 在后续帧里继续播，换了新的 export 就重新开始。
+    /// 起始时刻按载荷指纹记忆 —— 同一份 export 在后续帧里继续播，换了新的 export 就重新开始；
+    /// 从树上下来过的载荷再挂上去也重新开始（[`Self::prune_js_animations`]）。
     pub(super) fn js_animated_values(&mut self, node: &RenderNode) -> Option<JsAnimValues> {
         let raw = node.attrs.get("animation")?;
         if !raw.contains("actions") {
@@ -21,20 +22,13 @@ impl WxmlRenderer {
             return None;
         }
 
-        let fingerprint = {
-            // FNV-1a：只用来判断「还是不是同一份 export」
-            let mut h: u64 = 0xcbf2_9ce4_8422_2325;
-            for b in raw.as_bytes() {
-                h ^= *b as u64;
-                h = h.wrapping_mul(0x1000_0000_01b3);
-            }
-            h
-        };
+        let fingerprint = export_fingerprint(raw);
         let now = self.animation_time();
         let start = match self.js_animations.get(&fingerprint) {
             Some(s) => *s,
             None => {
-                if self.js_animations.len() > 64 {
+                // 正常不会攒到这么多：每次重建都按树里还挂着的载荷剪过（prune_js_animations）
+                if self.js_animations.len() > 1024 {
                     self.js_animations.clear();
                 }
                 self.js_animations.insert(fingerprint, now);
@@ -100,6 +94,31 @@ impl WxmlRenderer {
             self.mark_animating();
         }
         Some(state)
+    }
+
+    /// 布局树重建之后（setData）：起始时刻只留**树里还挂着**的那些载荷。
+    ///
+    /// 起始时刻按载荷内容记。从前只在攒满 64 条时整表清空：同一份 export 第二次用上
+    /// （page-container 第二次弹出 / 关掉，弹层每次 wx:if 新建、入场离场的 export 与第一次逐字相同）
+    /// 拿到的是第一次的起点，elapsed 早过了时长 —— 不播动画直接跳到终态，居中弹层关的时候遮罩先没了、
+    /// 标题和按钮在页面上悬着等 300ms 的定时器。一份载荷从树上下来过，再挂上去就是新的一次动画（与微信一致：新建的节点从头播）
+    pub(super) fn prune_js_animations(&mut self) {
+        if self.js_animations.is_empty() {
+            return;
+        }
+        fn collect(nodes: &[RenderNode], out: &mut std::collections::HashSet<u64>) {
+            for n in nodes {
+                if let Some(raw) = n.attrs.get("animation").filter(|r| r.contains("actions")) {
+                    out.insert(export_fingerprint(raw));
+                }
+                collect(&n.children, out);
+            }
+        }
+        let mut live = std::collections::HashSet::new();
+        if let Some(cache) = &self.cache {
+            collect(&cache.render_nodes, &mut live);
+        }
+        self.js_animations.retain(|k, _| live.contains(k));
     }
 
     /// 把一步里的 animates 累积到状态上（每步给的是绝对目标值，未提及的属性沿用上一步）
@@ -191,4 +210,14 @@ impl WxmlRenderer {
         }
         out
     }
+}
+
+/// 载荷指纹（FNV-1a）：只用来判断「还是不是同一份 export」
+fn export_fingerprint(raw: &str) -> u64 {
+    let mut h: u64 = 0xcbf2_9ce4_8422_2325;
+    for b in raw.as_bytes() {
+        h ^= *b as u64;
+        h = h.wrapping_mul(0x1000_0000_01b3);
+    }
+    h
 }

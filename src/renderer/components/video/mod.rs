@@ -106,6 +106,8 @@ mod control;
 pub use control::{video_command, video_events_pending, video_poll_events, video_position, VideoCommand};
 /// 全屏画面（画在所有页面层之上，横屏时转过来画）与全屏时的触摸
 pub mod fullscreen;
+/// 全屏控件的排版：安全区、放大的尺寸、按住的键
+mod fullscreen_chrome;
 pub use fullscreen::{clear_fullscreen, draw_fullscreen, fullscreen_video};
 /// 控制条的显隐 / 自动收起 / 拖进度 / 静音，与「视频在哪放」的抽象（两种播放器共用）
 pub mod ui;

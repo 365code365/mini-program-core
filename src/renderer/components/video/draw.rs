@@ -66,14 +66,14 @@ impl VideoComponent {
         if flags.controls {
             if ui::controls_shown(&video.key) {
                 let bar = chrome::bar_layout(x, y, w, h, &flags, sf, false, st.duration);
-                chrome::draw_bar(canvas, tr, &bar, st, ui::drag_ratio(&video.key), sf, false);
+                chrome::draw_bar(canvas, tr, &bar, st, ui::drag_ratio(&video.key), sf, false, None);
             } else if st.playing && flags.bottom_progress {
                 chrome::draw_bottom_progress(canvas, x, y, w, h, sf, st);
             }
         }
         // 暂停 / 没起播：画面正中一个播放键（微信 `show-center-play-btn` 默认开）
         if !st.playing && flags.center_btn {
-            chrome::draw_center(canvas, x, y, w, h, sf);
+            chrome::draw_center(canvas, x, y, w, h, sf, false, false);
         }
     }
 }
