@@ -455,3 +455,19 @@ fn this_animate_与_worklet_写节点样式_webaudio_出_ended() {
     pump_until(&mut e, 150, |_| false);
     assert_eq!(at(&mut e, 25, 25), [255, 0, 0], "clearAnimation 清掉之后回到原样式");
 }
+
+#[test]
+fn 页面自己写的_animate_方法盖住内置的() {
+    // Flutter 示例画布页 `bindtap="animate"`：从前 __decoratePage 把页面的 animate 换成内置的
+    // this.animate(selector, keyframes…)，按钮成了空操作。没自己写的页面照常拿到内置的
+    let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let root = fixture(
+        "own-animate",
+        r#"<view>x</view>"#,
+        r#"Page({ animate(){ getApp().log.push('own animate'); return 'own'; }, onReady(){ this.animate(); } });"#,
+        &[],
+    );
+    let mut e = engine(&root, EngineOptions::default());
+    assert!(pump_until(&mut e, 1000, |e| log(e).iter().any(|s| s == "own animate")), "{:?}", log(&e));
+    assert_eq!(js(&e, "typeof getCurrentPages()[0].clearAnimation"), "function", "没写的内置方法照常在");
+}

@@ -34,6 +34,8 @@ internal object DiagProps {
         "no_resample" to "MINI_NO_RESAMPLE",
         "pace" to "MINI_PACE",
         "cpu_pin" to "MINI_CPU_PIN",
+        // 大块旋转 / 缩放贴回的线程数（含引擎线程，1 = 单线程对照，renderer/compose.rs）；进程里只读一次
+        "blit_threads" to "MINI_BLIT_THREADS",
         "draw_log" to "MINI_DRAW_LOG",
         "img_log" to "MINI_IMG_LOG",
         "no_prefetch" to "MINI_NO_PREFETCH",

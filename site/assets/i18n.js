@@ -197,7 +197,7 @@
     'pipe.6.h': '绘制',
     'pipe.6.p': '自研 2D 光栅器：扫描线 + even-odd 填充、4× 超采样抗锯齿、圆角三次贝塞尔逼近、多字体回退、Apple <code>sbix</code> 彩色 emoji、两级图片过滤、渐变、掩膜化 <code>box-shadow</code>、裁剪栈。',
     'pipe.7.h': '动画',
-    'pipe.7.p': '<code>@keyframes</code> / <code>transition</code> / <code>wx.createAnimation</code> 在<strong>绘制期</strong>按 vsync 时钟求值。<code>transform</code> / <code>opacity</code> / 颜色只影响绘制不触发重排。平移、变色的元素与静态帧差不多贵；大块元素转起来、缩放起来就不是了：CPU 路径每帧逐像素重新采样（一加 PLY110 上一张 440rpx 的旋转封面每帧约 30ms）。',
+    'pipe.7.p': '<code>@keyframes</code> / <code>transition</code> / <code>wx.createAnimation</code> 在<strong>绘制期</strong>按 vsync 时钟求值。<code>transform</code> / <code>opacity</code> / 颜色只影响绘制不触发重排。平移、变色的元素与静态帧差不多贵；大块元素转起来、缩放起来就不是了：CPU 路径每帧逐像素重新采样，分给至多 4 个线程做（一加 PLY110 上一张 440rpx 的旋转封面连同缩放的光晕每帧约 14ms）。',
     'pipe.8.h': '分层合成',
     'pipe.8.p': '正常流 → tabBar → <code>position:fixed</code> 覆盖层，层叠顺序与浏览器一致。<code>setData</code> 之后只重画变了的那块：列表在底部追加只重画从第一处变化往下那截，fixed 按钮出现只重画覆盖层。',
     'pipe.9.h': '上屏',

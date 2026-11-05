@@ -175,7 +175,7 @@
         <div><dt data-i18n="stat.2.k">Repeated frames, 90 Hz phone</dt><dd><span data-count="1.5">1.5</span><small>%</small></dd><p data-i18n="stat.2.v">list scrolling with setData, down from 11.2%</p></div>
         <div><dt data-i18n="stat.3.k">GPU vs CPU</dt><dd><span data-count="34">34</span><small>/34</small></dd><p data-i18n="stat.3.v">scenes byte-identical, fallback included</p></div>
         <div><dt data-i18n="stat.4.k">Difference vs Chrome</dt><dd><span data-count="4.57">4.57</span><small>%</small></dd><p data-i18n="stat.4.v">15 pages of the same source, per pixel</p></div>
-        <div><dt data-i18n="stat.5.k">Automated tests</dt><dd><span data-count="1544">1544</span><small></small></dd><p data-i18n="stat.5.v">plus 65 byte-reproducible baselines</p></div>
+        <div><dt data-i18n="stat.5.k">Automated tests</dt><dd><span data-count="1546">1546</span><small></small></dd><p data-i18n="stat.5.v">plus 65 byte-reproducible baselines</p></div>
         <div><dt data-i18n="stat.6.k">Official wx.* APIs</dt><dd><span data-count="503">503</span><small>/503</small></dd><p data-i18n="stat.6.v">every name in the index, plus 57 component tags</p></div>
       </dl>
     </div>
@@ -757,7 +757,7 @@ XComponent({ type: <span class="s">'surface'</span>,
         <li class="spot">
           <span class="step-no">06′</span>
           <h3 data-i18n="pipe.7.h">Animation</h3>
-          <p data-i18n="pipe.7.p"><code>@keyframes</code> / <code>transition</code> / <code>wx.createAnimation</code> are evaluated <strong>at paint time</strong> against the vsync clock. <code>transform</code> / <code>opacity</code> / colors affect painting only and never trigger reflow. Moving or recoloring an element costs about as much as a static frame; rotating or scaling a large one does not, because the CPU path resamples it pixel by pixel every frame (a 440rpx spinning cover takes about 30 ms a frame on a OnePlus PLY110).</p>
+          <p data-i18n="pipe.7.p"><code>@keyframes</code> / <code>transition</code> / <code>wx.createAnimation</code> are evaluated <strong>at paint time</strong> against the vsync clock. <code>transform</code> / <code>opacity</code> / colors affect painting only and never trigger reflow. Moving or recoloring an element costs about as much as a static frame; rotating or scaling a large one does not, because the CPU path resamples it pixel by pixel every frame, split across up to 4 threads (a 440rpx spinning cover with its pulsing halo takes about 14 ms a frame on a OnePlus PLY110).</p>
         </li>
         <li class="spot">
           <span class="step-no">07</span>
@@ -1517,7 +1517,7 @@ if !mini.goBack() { navigationController?.popViewController(animated: true) }</c
         <article class="card">
           <h3 data-i18n="stack.reg.h">Regression suite<small>all green on every change</small></h3>
           <table class="kv"><tbody>
-            <tr><th scope="row" data-i18n="stack.reg.r1k">Rust tests</th><td>1544</td></tr>
+            <tr><th scope="row" data-i18n="stack.reg.r1k">Rust tests</th><td>1546</td></tr>
             <tr><th scope="row" data-i18n="stack.reg.r2k">Scene gallery</th><td data-i18n="stack.reg.r2v">65 images, byte-reproducible</td></tr>
             <tr><th scope="row" data-i18n="stack.reg.r3k">Partial-repaint check</th><td data-i18n="stack.reg.r3v">5 desktop scenes + 12 SDK cases, frame by frame</td></tr>
             <tr><th scope="row" data-i18n="stack.reg.r4k">SDK vs desktop</th><td data-i18n="stack.reg.r4v">sample 15/15, news 6/6 pixel-identical</td></tr>

@@ -208,7 +208,7 @@
  "pipe.6.h": "페인트",
  "pipe.6.p": "자체 2D 래스터라이저: 스캔라인 + even-odd 채우기, 4× 슈퍼샘플링 안티앨리어싱, 3차 베지어 둥근 모서리, 다중 폰트 폴백, Apple <code>sbix</code> 컬러 이모지, 2단계 이미지 필터링, 그라디언트, 마스크 처리된 <code>box-shadow</code>, 클립 스택.",
  "pipe.7.h": "애니메이션",
- "pipe.7.p": "<code>@keyframes</code> / <code>transition</code> / <code>wx.createAnimation</code>은 vsync 시계를 기준으로 <strong>페인트 시점에</strong> 평가됩니다. <code>transform</code> / <code>opacity</code> / 색상은 페인트에만 영향을 주고 리플로를 일으키지 않으습니다. 요소를 옮기거나 색을 바꾸는 비용은 정적 프레임과 거의 같지만, 큰 요소를 회전하거나 크기를 바꾸면 그렇지 않습니다. CPU 경로가 매 프레임 픽셀 단위로 다시 샘플링하기 때문입니다(OnePlus PLY110에서 440rpx 회전 커버는 프레임당 약 30 ms).",
+ "pipe.7.p": "<code>@keyframes</code> / <code>transition</code> / <code>wx.createAnimation</code>은 vsync 시계를 기준으로 <strong>페인트 시점에</strong> 평가됩니다. <code>transform</code> / <code>opacity</code> / 색상은 페인트에만 영향을 주고 리플로를 일으키지 않으습니다. 요소를 옮기거나 색을 바꾸는 비용은 정적 프레임과 거의 같지만, 큰 요소를 회전하거나 크기를 바꾸면 그렇지 않습니다. CPU 경로가 매 프레임 픽셀 단위로 다시 샘플링하기 때문입니다(최대 4개 스레드로 나눠 처리하며, OnePlus PLY110에서 440rpx 회전 커버와 크기가 변하는 후광을 합쳐 프레임당 약 14 ms).",
  "pipe.8.h": "합성",
  "pipe.8.p": "일반 흐름 → tabBar → <code>position:fixed</code> 오버레이 순으로 브라우저처럼 쌓습니다. <code>setData</code> 후에는 바뀐 영역만 다시 그립니다. 아래쪽으로 늘어나는 리스트는 처음 바뀐 곳부터 아래로, 고정 버튼이 나타나면 오버레이만 다시 그립니다.",
  "pipe.9.h": "화면 출력",

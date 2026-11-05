@@ -95,6 +95,17 @@ pub fn pin_current_thread() -> String {
     }
 }
 
+/// 在帮手线程（变换贴回，`renderer/blit_pool.rs`）上调：一直绑大核，规则与引擎线程相同
+/// （`MINI_CPU_PIN=0` 不绑、各核一样快不绑）。帮手只在贴回时醒着，不跟着交互收放
+pub fn pin_helper_thread() {
+    if std::env::var("MINI_CPU_PIN").is_ok_and(|v| v == "0") {
+        return;
+    }
+    if let Some(mask) = fast_mask(&cpu_max_freqs()) {
+        let _ = set_affinity(mask);
+    }
+}
+
 /// 每个核的最高频率（kHz），读不到的记 0
 fn cpu_max_freqs() -> Vec<u64> {
     (0..64)

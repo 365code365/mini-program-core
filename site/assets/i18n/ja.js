@@ -208,7 +208,7 @@
  "pipe.6.h": "描画",
  "pipe.6.p": "自社製の 2D ラスタライザ：スキャンライン + 偶奇規則の塗りつぶし、4 倍スーパーサンプリングのアンチエイリアス、3 次ベジェによる角丸、複数フォントのフォールバック、Apple <code>sbix</code> カラー絵文字、2 段階の画像フィルタリング、グラデーション、マスク付き <code>box-shadow</code>、クリップスタック。",
  "pipe.7.h": "アニメーション",
- "pipe.7.p": "<code>@keyframes</code> / <code>transition</code> / <code>wx.createAnimation</code> は vsync クロックに合わせて<strong>描画時に</strong>評価されます。<code>transform</code> / <code>opacity</code> / 色は描画にしか影響せず、リフローを起こしません。要素の移動や色の変更は静止フレームとほぼ同じコストですが、大きな要素の回転や拡大縮小はそうはいきません。CPU パスが毎フレーム 1 ピクセルずつ再サンプリングするためです（OnePlus PLY110 では 440rpx の回転するカバーが 1 フレーム約 30 ms）。",
+ "pipe.7.p": "<code>@keyframes</code> / <code>transition</code> / <code>wx.createAnimation</code> は vsync クロックに合わせて<strong>描画時に</strong>評価されます。<code>transform</code> / <code>opacity</code> / 色は描画にしか影響せず、リフローを起こしません。要素の移動や色の変更は静止フレームとほぼ同じコストですが、大きな要素の回転や拡大縮小はそうはいきません。CPU パスが毎フレーム 1 ピクセルずつ再サンプリングするためです（最大 4 スレッドに分割。OnePlus PLY110 では 440rpx の回転するカバーと拡大縮小する光の輪で 1 フレーム約 14 ms）。",
  "pipe.8.h": "合成",
  "pipe.8.p": "通常フロー → tabBar → <code>position:fixed</code> のオーバーレイの順に、ブラウザと同じように重ねます。<code>setData</code> の後は変わった領域だけを再描画します。下に伸びるリストは最初の変更箇所から下だけを、固定ボタンの出現はオーバーレイだけを再描画します。",
  "pipe.9.h": "表示",

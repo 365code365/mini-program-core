@@ -48,8 +48,17 @@
                 // 官方写法 `typeof this.getTabBar === 'function' && this.getTabBar()` 判空能接住）
                 page.getTabBar = function() { return __customTabBarInstance || null; };
                 page.setUpdatePerformanceListener = function(opt, cb) { page.__perfListener = typeof opt === 'function' ? opt : cb; };
+                // 页面自己在 Page({...}) 里写了同名方法（常见的是 `animate()`、`clearAnimation()`）就用页面的：
+                // 微信的这些内置方法在原型上，页面方法是自有属性，自然盖住内置的。从前这里直接覆盖，
+                // Flutter 示例画布页的「画个动画」bindtap="animate" 调到了 this.animate(selector, keyframes…)，
+                // 选择器是 undefined 直接 return，按钮成了空操作
+                var userOwn = {};
+                ['animate', 'clearAnimation', 'applyAnimatedStyle', 'clearAnimatedStyle', 'createMediaQueryObserver'].forEach(function(k) {
+                    if (typeof page[k] === 'function') userOwn[k] = page[k];
+                });
                 if (typeof __attachMediaQuery === 'function') __attachMediaQuery(page);
                 if (typeof __attachAnimate === 'function') __attachAnimate(page);
+                for (var uk in userOwn) page[uk] = userOwn[uk];
 
                 var onLoad = page.onLoad, onShow = page.onShow, onUnload = page.onUnload;
                 // 宿主只在页面「有」onLoad / onShow / onUnload 时才调：这里总给，路由事件才发得出来

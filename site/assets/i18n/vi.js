@@ -208,7 +208,7 @@
  "pipe.6.h": "Vẽ",
  "pipe.6.p": "Bộ raster 2D tự viết: scanline + tô even-odd, khử răng cưa siêu lấy mẫu 4×, bo góc bằng Bézier bậc ba, fallback nhiều font, emoji màu Apple <code>sbix</code>, lọc ảnh hai tầng, gradient, <code>box-shadow</code> có mask, ngăn xếp clip.",
  "pipe.7.h": "Animation",
- "pipe.7.p": "<code>@keyframes</code> / <code>transition</code> / <code>wx.createAnimation</code> được tính <strong>lúc vẽ</strong> theo đồng hồ vsync. <code>transform</code> / <code>opacity</code> / màu chỉ ảnh hưởng việc vẽ và không bao giờ gây reflow. Di chuyển hay đổi màu một phần tử tốn gần bằng khung hình tĩnh; xoay hay co giãn một phần tử lớn thì không, vì đường CPU lấy mẫu lại nó từng pixel mỗi khung hình (một ảnh bìa xoay 440rpx mất khoảng 30 ms mỗi khung hình trên OnePlus PLY110).",
+ "pipe.7.p": "<code>@keyframes</code> / <code>transition</code> / <code>wx.createAnimation</code> được tính <strong>lúc vẽ</strong> theo đồng hồ vsync. <code>transform</code> / <code>opacity</code> / màu chỉ ảnh hưởng việc vẽ và không bao giờ gây reflow. Di chuyển hay đổi màu một phần tử tốn gần bằng khung hình tĩnh; xoay hay co giãn một phần tử lớn thì không, vì đường CPU lấy mẫu lại nó từng pixel mỗi khung hình, chia cho tối đa 4 luồng (một ảnh bìa xoay 440rpx cùng quầng sáng co giãn mất khoảng 14 ms mỗi khung hình trên OnePlus PLY110).",
  "pipe.8.h": "Ghép lớp",
  "pipe.8.p": "Luồng thường → tabBar → lớp phủ <code>position:fixed</code>, xếp chồng như trình duyệt. Sau <code>setData</code> chỉ vùng thay đổi được vẽ lại: danh sách dài thêm ở cuối thì vẽ lại từ chỗ thay đổi đầu tiên trở xuống, một nút fixed xuất hiện thì chỉ vẽ lại lớp phủ.",
  "pipe.9.h": "Hiển thị",

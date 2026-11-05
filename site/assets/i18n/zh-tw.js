@@ -208,7 +208,7 @@
  "pipe.6.h": "繪製",
  "pipe.6.p": "自研 2D 光柵器：掃描線 + even-odd 填充、4× 超取樣抗鋸齒、圓角三次貝塞爾逼近、多字型回退、Apple <code>sbix</code> 彩色 emoji、兩級圖片過濾、漸變、掩膜化 <code>box-shadow</code>、裁剪棧。",
  "pipe.7.h": "動畫",
- "pipe.7.p": "<code>@keyframes</code> / <code>transition</code> / <code>wx.createAnimation</code> 在<strong>繪製期</strong>按 vsync 時鐘求值。<code>transform</code> / <code>opacity</code> / 顏色隻影響繪製不觸發重排。平移、變色的元素與靜態幀差不多貴；大塊元素轉起來、縮放起來就不是了：CPU 路徑每幀逐像素重新取樣（一加 PLY110 上一張 440rpx 的旋轉封面每幀約 30ms）。",
+ "pipe.7.p": "<code>@keyframes</code> / <code>transition</code> / <code>wx.createAnimation</code> 在<strong>繪製期</strong>按 vsync 時鐘求值。<code>transform</code> / <code>opacity</code> / 顏色隻影響繪製不觸發重排。平移、變色的元素與靜態幀差不多貴；大塊元素轉起來、縮放起來就不是了：CPU 路徑每幀逐像素重新取樣，分給至多 4 個執行緒做（一加 PLY110 上一張 440rpx 的旋轉封面連同縮放的光暈每幀約 14ms）。",
  "pipe.8.h": "分層合成",
  "pipe.8.p": "正常流 → tabBar → <code>position:fixed</code> 覆蓋層，層疊順序與瀏覽器一致。<code>setData</code> 之後只重畫變了的那塊：列表在底部追加只重畫從第一處變化往下那截，fixed 按鈕出現只重畫覆蓋層。",
  "pipe.9.h": "上屏",
